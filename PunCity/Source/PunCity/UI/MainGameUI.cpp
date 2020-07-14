@@ -1,0 +1,1925 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#include "MainGameUI.h"
+#include "ToolTipWidgetBase.h"
+#include "../Simulation/GameSimulationCore.h"
+#include "../Simulation/PolicySystem.h"
+#include "../Simulation/UnlockSystem.h"
+#include "../Simulation/Resource/ResourceSystem.h"
+#include "../Simulation/OverlaySystem.h"
+#include "../Simulation/TreeSystem.h"
+#include "../Simulation/UnitSystem.h"
+#include "../Simulation/PlayerOwnedManager.h"
+#include "../Simulation/StatSystem.h"
+
+#include "Materials/MaterialInstanceDynamic.h"
+
+#include <sstream>
+#include "PunCity/Simulation/Buildings/GathererHut.h"
+#include "Kismet/GameplayStatics.h"
+#include "PunRichText.h"
+
+using namespace std;
+
+static int32 kTickCount = 0; // local tick count. Can't use Time::Tick() since it may be paused
+
+void UMainGameUI::PunInit()
+{
+	kTickCount = 0;
+
+	if (!ensure(BuildMenuOverlay)) return;
+	if (!ensure(BuildMenuTogglerButton)) return;
+	if (!ensure(BuildingMenuWrap)) return;
+
+	// Build Menu
+	BuildMenuTogglerButton->OnClicked.AddDynamic(this, &UMainGameUI::ToggleBuildingMenu);
+
+	// Gather Menu
+	GatherButton->OnClicked.AddDynamic(this, &UMainGameUI::ToggleGatherButton);
+
+	DemolishButton->OnClicked.AddDynamic(this, &UMainGameUI::ToggleDemolishButton);
+
+	StatsButton->OnClicked.AddDynamic(this, &UMainGameUI::ToggleStatisticsUI);
+	AddToolTip(StatsButton, "Show statistics");
+
+	CardRerollButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickRerollButton);
+	CardRerollButton1->OnClicked.AddDynamic(this, &UMainGameUI::ClickRerollButton);
+	
+	ResetBottomMenuDisplay();
+
+	// Card hand 1
+	CardHand1Overlay->SetVisibility(ESlateVisibility::Collapsed);
+
+	CardStackButton->IsFocusable = false;
+	CardStackButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickCardStackButton);
+	
+	AddToolTip(CardStackButton, "Show drawn cards that can be bought.\n<Orange>[C]</>");
+	AddToolTip(RoundCountdownImage, "Round timer<space>You get a new card hand each round.<space>Each season contains 2 rounds.");
+
+	CardHand1SubmitButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickCardHand1SubmitButton);
+	CardHand1CancelButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickCardHand1CancelButton);
+	CardHand1CloseButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickCardHand1CancelButton);
+
+	CardHand2Box->ClearChildren();
+
+	RareCardHandOverlay->SetVisibility(ESlateVisibility::Collapsed);
+	RareCardHandSubmitButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickRareCardHandSubmitButton);
+
+	ConverterCardHandOverlay->SetVisibility(ESlateVisibility::Collapsed);
+	//ConverterCardHandSubmitButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickConverterCardHandSubmitButton);
+	ConverterCardHandCancelButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickConverterCardHandCancelButton);
+
+
+	ConfirmationOverlay->SetVisibility(ESlateVisibility::Collapsed);
+	ConfirmationYesButton->OnClicked.AddDynamic(this, &UMainGameUI::OnClickConfirmationYes);
+	ConfirmationNoButton->OnClicked.AddDynamic(this, &UMainGameUI::OnClickConfirmationNo);
+
+	BuildingMenuWrap->ClearChildren();
+
+	//ItemSelectionUI->SetVisibility(ESlateVisibility::Collapsed);
+	//GlobalItemsHorizontalBox->ClearChildren();
+
+	ResearchBarUI->OnClicked.AddDynamic(this, &UMainGameUI::ToggleResearchMenu);
+	AddToolTip(ResearchBarUI, "Bring up technology UI.\n<Orange>[T]</>");
+
+	GatherSettingsOverlay->SetVisibility(ESlateVisibility::Collapsed);
+
+	HarvestCheckBox_All->OnCheckStateChanged.AddDynamic(this, &UMainGameUI::OnCheckHarvest_All);
+	HarvestCheckBox_Wood->OnCheckStateChanged.AddDynamic(this, &UMainGameUI::OnCheckHarvest_Wood);
+	HarvestCheckBox_Stone->OnCheckStateChanged.AddDynamic(this, &UMainGameUI::OnCheckHarvest_Stone);
+	RemoveHarvestCheckBox_All->OnCheckStateChanged.AddDynamic(this, &UMainGameUI::OnCheckRemoveHarvest_All);
+	RemoveHarvestCheckBox_Wood->OnCheckStateChanged.AddDynamic(this, &UMainGameUI::OnCheckRemoveHarvest_Wood);
+	RemoveHarvestCheckBox_Stone->OnCheckStateChanged.AddDynamic(this, &UMainGameUI::OnCheckRemoveHarvest_Stone);
+
+	MidScreenMessage->SetVisibility(ESlateVisibility::Collapsed);
+
+	//WorldMapRegionUI->SetVisibility(ESlateVisibility::Collapsed);
+
+	// Tooltips 
+	AddToolTip(BuildMenuTogglerButton, "Build houses, farms, and infrastructures\n<Orange>[B]</>");
+	AddToolTip(GatherButton, "Gather trees, stone etc\n<Orange>[G]</>");
+	AddToolTip(DemolishButton, "Demolish\n<Orange>[X]</>");
+
+	// Set Icon images
+	auto assetLoader = dataSource()->assetLoader();
+	Happiness->SetImage(assetLoader->SmileIcon);
+	
+	Money->SetImage(assetLoader->CoinIcon);
+	Money->SetTextColorCoin();
+
+	Influence->SetImage(assetLoader->InfluenceIcon);
+	Influence->SetTextColorCulture();
+	
+	Science->SetImage(assetLoader->ScienceIcon);
+	Science->SetTextColorScience();
+
+	LeaderSkillButton->OnClicked.AddDynamic(this, &UMainGameUI::OnClickLeaderSkillButton);
+	LeaderSkillButton->bOverride_Cursor = false;
+
+	// ImportantResources
+	auto SetupImportantResources = [&](UIconTextPairWidget* iconTextPair)
+	{
+		SetChildHUD(iconTextPair);
+		iconTextPair->GetAnimations();
+	};
+	//SetupImportantResources(WoodCount);
+
+	// Create Main resource list
+	FuelList->ClearChildren();
+	MedicineList->ClearChildren();
+	ToolsList->ClearChildren();
+	
+	MainResourceList->ClearChildren();
+	MainFoodList->ClearChildren();
+	LuxuryTier1List->ClearChildren();
+	LuxuryTier2List->ClearChildren();
+	LuxuryTier3List->ClearChildren();
+	
+	for (int i = 0; i < ResourceEnumCount; i++) 
+	{
+		ResourceEnum resourceEnum = static_cast<ResourceEnum>(i);
+		auto iconTextPair = AddWidget<UIconTextPairWidget>(UIEnum::IconTextPair);
+		iconTextPair->SetImage(resourceEnum, assetLoader, true);
+
+		if (IsFuelEnum(resourceEnum)) {
+			FuelList->AddChild(iconTextPair);
+			SetupImportantResources(iconTextPair);
+		}
+		else if (IsMedicineEnum(resourceEnum)) {
+			MedicineList->AddChild(iconTextPair);
+			SetupImportantResources(iconTextPair);
+		}
+		else if (IsToolsEnum(resourceEnum)) {
+			ToolsList->AddChild(iconTextPair);
+			SetupImportantResources(iconTextPair);
+		}
+		else if (IsFoodEnum(resourceEnum)) {
+			MainFoodList->AddChild(iconTextPair);
+		}
+		else if (IsLuxuryEnum(resourceEnum, 1)) {
+			LuxuryTier1List->AddChild(iconTextPair);
+		}
+		else if (IsLuxuryEnum(resourceEnum, 2)) {
+			LuxuryTier2List->AddChild(iconTextPair);
+		}
+		else if (IsLuxuryEnum(resourceEnum, 3)) {
+			LuxuryTier3List->AddChild(iconTextPair);
+		}
+		else {
+			MainResourceList->AddChild(iconTextPair);
+		}
+		iconTextPair->SetVisibility(ESlateVisibility::Collapsed);
+		iconTextPair->ObjectId = i;
+	}
+
+	ExclamationIcon_Build->SetVisibility(ESlateVisibility::Collapsed);
+	ExclamationIcon_Gather->SetVisibility(ESlateVisibility::Collapsed);
+	ExclamationIcon_CardStack->SetVisibility(ESlateVisibility::Collapsed);
+	
+	// Animations
+	GetAnimations(Animations);
+	check(Animations.Num() > 0);
+	//PUN_LOG("Animations %d", Animations.Num());
+	//for (auto& pair : Animations) {
+	//	PUN_LOG("Animation %s", *pair.Key);
+	//	PlayAnimation(pair.Value);
+	//	break;
+	//}
+
+	TestMainMenuOverlay1->SetVisibility(ESlateVisibility::Collapsed);
+	TestMainMenuOverlay2->SetVisibility(ESlateVisibility::Collapsed);
+
+
+	DefaultFont = ResearchingText->Font;
+}
+
+void UMainGameUI::Tick()
+{
+#if !UI_MAINGAME
+	return;
+#endif
+	if (!PunSettings::IsOn("UIMainGame")) {
+		return;
+	}
+	
+	kTickCount++;
+
+	if (InterfacesInvalid()) return;
+
+	
+	GameSimulationCore& simulation = dataSource()->simulation();
+
+
+
+	//! Set visibility
+	bool shouldDisplayMainGameUI = dataSource()->ZoomDistanceBelow(WorldZoomAmountStage3) &&
+									simulation.playerOwned(playerId()).isInitialized() &&
+									!inputSystemInterface()->isSystemMovingCamera();
+
+	if (shouldDisplayMainGameUI && GetVisibility() == ESlateVisibility::Collapsed) {
+		SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	}
+	else if (!shouldDisplayMainGameUI && GetVisibility() != ESlateVisibility::Collapsed) {
+		SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	////! If clicked something else, remove confirmation UI
+	//if (ConfirmationOverlay->GetVisibility() != ESlateVisibility::Collapsed)
+	//{
+	//	// Started other task, close the Confirmation overlay
+	//	int32 numUITasks = GetPunHUD()->NumberOfUITasks();
+	//	if (numUITasks > _onConfirmationNumUITask) {
+	//		OnClickConfirmationNo();
+	//	} else if (numUITasks < _onConfirmationNumUITask) {
+	//		// Rarecard UI was closed
+	//		_onConfirmationNumUITask = numUITasks;
+	//	}
+	//}
+	
+	{
+		// Cards
+		auto& cardSystem = simulation.cardSystem(playerId());
+		int32 rollCountdown = Time::SecondsPerRound - Time::Seconds() % Time::SecondsPerRound;
+		
+		if (_lastRoundCountdown != rollCountdown) {
+			_lastRoundCountdown = rollCountdown;
+			if (_lastRoundCountdown <= 5) {
+				PlayAnimation(Animations["CountdownFlash"]);
+
+				PlayAnimation(Animations["CardHand1Flash"]);
+
+				dataSource()->Spawn2DSound("UI", "RoundCountdown" + to_string(_lastRoundCountdown));
+			}
+
+			// At exact 0
+			if (Time::Seconds() > 10 && _lastRoundCountdown == Time::SecondsPerRound) {
+				PlayAnimation(Animations["CountdownFlash"]);
+
+				dataSource()->Spawn2DSound("UI", "RoundCountdown0");
+			}
+			
+		}
+
+		
+		SetText(RoundCountdownText, to_string(rollCountdown) + "s");
+		RoundCountdownImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", static_cast<float>(Time::Seconds() % Time::SecondsPerRound) / Time::SecondsPerRound);
+
+		ResourceSystem& resourceSystem = simulation.resourceSystem(playerId());
+
+		// Refresh card stack
+		// refresh the stack if its state changed...
+		// Clicking "Submit" closes the UI temporarily. While the command is being verified, we do not update this
+		if (!cardSystem.IsPendingCommand() && _lastIsCardStackBlank != cardSystem.IsCardStackBlank())
+		{
+			_lastIsCardStackBlank = cardSystem.IsCardStackBlank();
+			ESlateVisibility cardStackVisible = _lastIsCardStackBlank ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible;
+
+			CardStack1->SetVisibility(cardStackVisible);
+			CardStack2->SetVisibility(cardStackVisible);
+			CardStack3->SetVisibility(cardStackVisible);
+			CardStack4->SetVisibility(cardStackVisible);
+			CardStack5->SetVisibility(cardStackVisible);
+			CardRerollBox1->SetVisibility(_lastIsCardStackBlank ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+
+			TryPlayAnimation("CardStackFlash");
+		}
+
+		// Reroll price
+		int32 rerollPrice = cardSystem.GetRerollPrice();
+		RerollPrice->SetColorAndOpacity(resourceSystem.money() >= rerollPrice ? FLinearColor::White : FLinearColor(0.4, 0.4, 0.4));
+		if (rerollPrice == 0) {
+			RerollPrice->SetText(FText::FromString(FString("Free")));
+			RerollPrice1->SetText(FText::FromString(FString("Free")));
+			RerollCoinIcon->SetVisibility(ESlateVisibility::Collapsed);
+			RerollCoinIcon1->SetVisibility(ESlateVisibility::Collapsed);
+		} else {
+			RerollPrice->SetText(FText::FromString(FString::FromInt(rerollPrice)));
+			RerollPrice1->SetText(FText::FromString(FString::FromInt(rerollPrice)));
+			RerollCoinIcon->SetVisibility(ESlateVisibility::HitTestInvisible);
+			RerollCoinIcon1->SetVisibility(ESlateVisibility::HitTestInvisible);
+		}
+
+
+		// Money
+		//bool moneyChanged = false;
+		int32 currentMoneyLeft = MoneyLeftAfterTentativeBuy();
+		//if (_lastMoney != currentMoneyLeft) {
+		//	_lastMoney = currentMoneyLeft;
+		//	//moneyChanged = true;
+		//}
+
+		if (currentMoneyLeft < 0) {
+			// Unreserve if there isn't enough money
+			cardSystem.UnreserveIfRanOutOfCash(currentMoneyLeft);
+		}
+
+		// Recalculate need resource
+		std::vector<bool> hand1NeedMoney;
+		{
+			std::vector<CardEnum> hand = cardSystem.GetHand();
+			std::vector<bool> handReservation = cardSystem.GetHand1ReserveStatus();
+			
+			for (size_t i = 0; i < hand.size(); i++) {
+				bool needResource = currentMoneyLeft < cardSystem.GetCardPrice(hand[i]);
+				if (handReservation[i]) {
+					needResource = false; // reserved card doesn't need resource 
+				}
+				hand1NeedMoney.push_back(needResource);
+			}
+		}
+
+		/*
+		 * Refresh hand 1
+		 */
+		auto refreshHand1 = [&]()
+		{
+			CardHand1Box->ClearChildren();
+
+			std::vector<CardEnum> hand = cardSystem.GetHand();
+			
+			for (size_t i = 0; i < hand.size(); i++)
+			{
+				CardEnum buildingEnum = hand[i];
+				auto cardButton = AddCard(CardHandEnum::DrawHand, buildingEnum, CardHand1Box, CallbackEnum::SelectUnboughtCard, i);
+
+
+				// Price
+				cardButton->SetPrice(cardSystem.GetCardPrice(buildingEnum));
+			}
+
+			// Highlight the selected card
+			// Gray out cards that can't be bought
+			TArray<UWidget*> cardButtons = CardHand1Box->GetAllChildren();
+			for (int i = 0; i < cardButtons.Num(); i++) {
+				auto cardButton = CastChecked<UBuildingPlacementButton>(cardButtons[i]);
+				cardButton->SetCardStatus(CardHandEnum::DrawHand, _lastHand1ReserveStatus[i], _lastHand1NeedMoneyStatus[i]);
+			}
+		};
+
+		//bool handChanged = _lastDisplayHand != cardSystem.GetHand();
+		bool questChanged = false;
+		if (_lastQuests != simulation.questSystem(playerId())->quests()) {
+			_lastQuests = simulation.questSystem(playerId())->quests();
+			questChanged = true;
+		}
+
+		if (cardSystem.needHand1Refresh || questChanged)
+		{
+			//_lastDisplayHand = cardSystem.GetHand();
+			_lastHand1ReserveStatus = cardSystem.GetHand1ReserveStatus();
+			_lastHand1NeedMoneyStatus = hand1NeedMoney;
+			refreshHand1();
+
+			TryPlayAnimation("CardStackFlash");
+			cardSystem.needHand1Refresh = false;
+
+			// Show hand
+			if (cardSystem.justRerollButtonPressed) {
+				cardSystem.justRerollButtonPressed = false;
+
+				networkInterface()->ResetGameUI();
+				CardHand1Overlay->SetVisibility(ESlateVisibility::Visible);
+				
+				//if (GetPunHUD()->IsDoingUITask()) {
+				//	_needDrawHandDisplay = true; // Delayed display
+				//} else {
+				//	CardHand1Overlay->SetVisibility(ESlateVisibility::Visible);
+				//}
+
+				// TODO: proper card deal animation+sound
+				dataSource()->Spawn2DSound("UI", "CardDeal");
+
+				TryStopAnimation("CardStackFlash");
+			}
+		}
+		//else if (_lastHand1ReserveStatus != cardSystem.GetHand1ReserveStatus()) {
+		//	_lastHand1ReserveStatus = cardSystem.GetHand1ReserveStatus();
+		//	_lastHand1NeedMoneyStatus = hand1NeedMoney;
+		//	refreshHand1();
+		//}
+		// Note that we need to update both _lastHand1ReserveStatus and _lastHand1ReserveStatus to handle the situation where a save was just loaded.
+		else if (_lastHand1ReserveStatus != cardSystem.GetHand1ReserveStatus() ||
+				_lastHand1NeedMoneyStatus != hand1NeedMoney) 
+		{
+			_lastHand1ReserveStatus = cardSystem.GetHand1ReserveStatus();
+			_lastHand1NeedMoneyStatus = hand1NeedMoney;
+			refreshHand1();
+		}
+
+		/*
+		 * Refresh rare hand
+		 */
+		auto refreshRareHand = [&]()
+		{
+			RareCardHandBox->ClearChildren();
+
+			std::vector<CardEnum> rareHand = cardSystem.GetRareHand();
+
+			// For Loaded game, rareHand might be 0
+			if (rareHand.size() == 0) {
+				return false;
+			}
+			
+			for (size_t i = 0; i < rareHand.size(); i++) {
+				CardEnum buildingEnum = rareHand[i];
+				AddCard(CardHandEnum::RareHand, buildingEnum, RareCardHandBox, CallbackEnum::SelectUnboughtRareCardPrize, i);
+			}
+
+			// Highlight the selected card
+			// Gray out cards that can't be bought
+			TArray<UWidget*> cardButtons = RareCardHandBox->GetAllChildren();
+			for (int i = 0; i < cardButtons.Num(); i++) {
+				auto cardButton = CastChecked<UBuildingPlacementButton>(cardButtons[i]);
+				cardButton->SetCardStatus(CardHandEnum::RareHand, _lastRareHandReserveStatus[i], false, true);
+			}
+
+			// Set RareCardHand message
+			SetText(RareCardHandText, cardSystem.rareHandMessage());
+			SetText(RareCardHandText2, cardSystem.rareHandMessage2());
+
+			return true;
+		};
+
+		// Refresh RareHand if needed
+		if (cardSystem.justRerolledRareHand) {
+			cardSystem.justRerolledRareHand = false;
+
+			_lastRareHandReserveStatus = cardSystem.GetRareHandReserveStatus();
+			bool succeed = refreshRareHand();
+
+			if (succeed) {
+				GetPunHUD()->QueueStickyExclusiveUI(ExclusiveUIEnum::RareCardHand);
+			}
+		}
+		else if (_lastRareHandReserveStatus != cardSystem.GetRareHandReserveStatus())
+		{
+			_lastRareHandReserveStatus = cardSystem.GetRareHandReserveStatus();
+			refreshRareHand();
+		}
+		
+
+		/*
+		 * Refresh converter hand
+		 *
+		 * !!! CONFUSING CARD HANDS
+		 * We do not need special variable like _needDrawHandDisplay because we will never need a delayed hand display for this
+		 */
+		if (cardSystem.converterCardState == ConverterCardUseState::JustUsed)
+		{
+			// Open if not already done so
+			if (ConverterCardHandOverlay->GetVisibility() != ESlateVisibility::Visible)
+			{
+				ConverterCardHandBox->ClearChildren();
+				std::vector<CardEnum> availableCards = cardSystem.GetAllPiles();
+				unordered_set<CardEnum> uniqueAvailableCards(availableCards.begin(), availableCards.end());
+
+				SetText(ConverterCardHandTitle, "CHOOSE A CARD\npay the price to build");
+
+				// Loop through BuildingEnumCount so that cards are arranged by BuildingEnumINt
+				CardEnum wildCardEnum = cardSystem.wildCardEnumUsed;
+
+				if (wildCardEnum == CardEnum::CardRemoval)
+				{
+					for (size_t i = 0; i < BuildingEnumCount; i++)
+					{
+						CardEnum buildingEnum = static_cast<CardEnum>(i);
+
+						if (uniqueAvailableCards.find(buildingEnum) != uniqueAvailableCards.end())
+						{
+							// Can only convert to building
+							if (IsBuildingCard(buildingEnum)) {
+								auto cardButton = AddCard(CardHandEnum::ConverterHand, buildingEnum, ConverterCardHandBox, CallbackEnum::SelectCardRemoval, i);
+
+								// Converter Card requires 50% of price
+								SetText(cardButton->PriceText, to_string(cardSystem.GetCardPrice(buildingEnum)));
+								cardButton->PriceTextBox->SetVisibility(ESlateVisibility::HitTestInvisible);
+							}
+						}
+					}
+				}
+				else
+				{
+					for (size_t i = 0; i < BuildingEnumCount; i++)
+					{
+						CardEnum buildingEnum = static_cast<CardEnum>(i);
+
+						// Show wild card by type
+						if (wildCardEnum == CardEnum::WildCardFood && !IsAgricultureBuilding(buildingEnum)) {
+							continue;
+						}
+						if (wildCardEnum == CardEnum::WildCardIndustry && !IsIndustrialBuilding(buildingEnum)) {
+							continue;
+						}
+						if (wildCardEnum == CardEnum::WildCardMine && !IsMountainMine(buildingEnum)) {
+							continue;
+						}
+						if (wildCardEnum == CardEnum::WildCardService && !IsServiceBuilding(buildingEnum)) {
+							continue;
+						}
+
+						if (uniqueAvailableCards.find(buildingEnum) != uniqueAvailableCards.end())
+						{
+							// Can only convert to building
+							if (IsBuildingCard(buildingEnum)) {
+								auto cardButton = AddCard(CardHandEnum::ConverterHand, buildingEnum, ConverterCardHandBox, CallbackEnum::SelectConverterCard, i);
+
+								// Converter Card requires 50% of price
+								SetText(cardButton->PriceText, to_string(cardSystem.GetCardPrice(buildingEnum)));
+								cardButton->PriceTextBox->SetVisibility(ESlateVisibility::HitTestInvisible);
+							}
+						}
+					}
+				}
+
+				networkInterface()->ResetGameUI();
+				ConverterCardHandOverlay->SetVisibility(ESlateVisibility::Visible);
+				_lastConverterChosenCard = CardEnum::None; // Start off with nothing chosen
+
+				// TODO: proper card deal animation+sound
+				dataSource()->Spawn2DSound("UI", "CardDeal");
+			}
+
+			// Highlight the selected card
+			TArray<UWidget*> cardButtons = ConverterCardHandBox->GetAllChildren();
+			for (int i = 0; i < cardButtons.Num(); i++) {
+				auto cardButton = CastChecked<UBuildingPlacementButton>(cardButtons[i]);
+				bool shouldHighlight = cardButton->buildingEnum == _lastConverterChosenCard;
+				cardButton->SetCardStatus(CardHandEnum::ConverterHand, shouldHighlight, false, false, false);
+			}
+		}
+
+		/*
+		 * Refresh hand 2
+		 */
+		 // Card being placed, taking into account network delay
+		CardEnum cardEnumBeingPlaced = inputSystemInterface()->GetBuildingEnumBeingPlaced();
+		
+		if (_lastDisplayBought != cardSystem.GetCardsBought() ||
+			_lastCardEnumBeingPlaced != cardEnumBeingPlaced ||
+			_lastConverterCardState != cardSystem.converterCardState)
+		{
+			_lastDisplayBought = cardSystem.GetCardsBought();
+			_lastCardEnumBeingPlaced = cardEnumBeingPlaced;
+			_lastConverterCardState = cardSystem.converterCardState;
+
+			// Remove index being placed or used
+			std::vector<BuildingCardStack> actualDisplayBought;
+			for (size_t i = 0; i < _lastDisplayBought.size(); i++)
+			{
+				BuildingCardStack currentStack = _lastDisplayBought[i];
+				if (currentStack.buildingEnum == cardEnumBeingPlaced) {
+					currentStack.stackSize--;
+				}
+				else if (_lastConverterCardState != ConverterCardUseState::None && currentStack.buildingEnum == cardSystem.wildCardEnumUsed)
+				{
+					currentStack.stackSize--;
+				}
+				
+				if (currentStack.stackSize > 0) {
+					actualDisplayBought.push_back(currentStack);
+				}
+			}
+
+			// Bought hand
+			CardHand2Box->ClearChildren();
+			for (size_t i = 0; i < actualDisplayBought.size(); i++)
+			{
+				//// Breakup stack into combo card by level
+				BuildingCardStack stack = actualDisplayBought[i];
+				//int32_t totalStackSize = stack.stackSize;
+				//std::vector<int32> stackForLevel(CardLvlCount);
+				//for (int32 j = CardLvlCount; j-- > 0;) {
+				//	int32 cardsForCombo = CardCountForLvl[j];
+				//	stackForLevel[j] = totalStackSize / cardsForCombo;
+				//	totalStackSize -= stackForLevel[j] * cardsForCombo;
+				//}
+				//PUN_CHECK(totalStackSize == 0);
+
+				//// Add card according to stack size;
+				//for (int32_t j = 0; j < stackForLevel.size(); j++) {
+				//	if (stackForLevel[j] > 0) {
+				//		auto cardButton = AddCard(stack.buildingEnum, CardHand2Box, i, j, stackForLevel[j]);
+
+				//		if (i == indexBeingPlaced) {
+				//			cardButton->SetVisibility(ESlateVisibility::Hidden);
+				//		}
+				//	}
+				//}
+
+				int32_t stackSize = stack.stackSize;// +simulation.buildingIds(playerId(), stack.buildingEnum).size();
+
+				// Show stars??
+				auto cardButton = AddCard(CardHandEnum::BoughtHand, stack.buildingEnum, CardHand2Box, CallbackEnum::SelectBoughtCard, i, 0, stackSize, true);
+			}
+
+			// Warning to bought cards that need resources
+			TArray<UWidget*> cardBoughtButtons = CardHand2Box->GetAllChildren();
+			for (int i = 0; i < cardBoughtButtons.Num(); i++) {
+				auto cardButton = CastChecked<UBuildingPlacementButton>(cardBoughtButtons[i]);
+
+				if (IsBuildingCard(cardButton->buildingEnum)) 
+				{
+					bool needResource = false;
+					const std::vector<int32> resourceNeeded = GetBuildingInfo(cardButton->buildingEnum).constructionResources;
+					
+					for (size_t j = 0; j < _countof(ConstructionResources); j++) {
+						if (resourceNeeded[j] > resourceSystem.resourceCount(ConstructionResources[j])) {
+							needResource = true;
+							break;
+						}
+					}
+
+					cardButton->SetBoughtCardNeedResource(needResource);
+				}
+			}
+
+		}
+	}
+
+	{
+		// Events
+		auto& eventSystem = simulation.eventLogSystem();
+
+		if (eventSystem.needRefreshEventLog[playerId()])
+		{
+			EventBox->ClearChildren();
+			const std::vector<EventLog>& events = eventSystem.events(playerId());
+
+			PUN_LOG("Event log refresh  ------- _playerId:%d", playerId());
+			
+			for (int32 i = 0; i < events.size(); i++) 
+			{
+				auto widget = AddWidget<UPunRichText>(UIEnum::PunRichText);
+
+				FString richMessage = FString::Printf(TEXT("<Chat>%s</>"), *events[i].message);
+				if (events[i].isImportant) {
+					richMessage = FString::Printf(TEXT("<ChatRed>%s</>"), *events[i].message);
+				}
+				
+				widget->SetRichText(richMessage);
+				EventBox->AddChild(widget);
+
+				PUN_LOG(" --- widget: %s", *events[i].message);
+			}
+			
+			eventSystem.needRefreshEventLog[playerId()] = false;
+		}
+	}
+	
+
+	{
+		/*
+		 * Exclamation
+		 */
+		// Gather
+		auto questSys = simulation.questSystem(playerId());
+		PlacementType placementType = inputSystemInterface()->placementState();
+		ExclamationIcon_Gather->SetShow(questSys->GetQuest(QuestEnum::GatherMarkQuest) 
+											&& placementType != PlacementType::Gather 
+											&& placementType != PlacementType::GatherRemove);
+
+		// Card stack
+		{
+			bool needExclamation = false;
+			
+			if (CardStack1->GetVisibility() != ESlateVisibility::Collapsed &&
+				questSys->GetQuest(QuestEnum::FoodBuildingQuest)) 
+			{
+				needExclamation = true;
+				
+				auto cardsBought = simulation.cardSystem(playerId()).GetCardsBought();
+				for (const auto& cardStack : cardsBought) {
+					if (IsAgricultureBuilding(cardStack.buildingEnum)) {
+						needExclamation = false; // Food card alreay bought, don't need too buy more...
+						break;
+					}
+				}
+				
+			}
+
+			ExclamationIcon_CardStack->SetShow(needExclamation);
+		}
+
+		{
+			bool isBuilding = BuildMenuOverlay->GetVisibility() != ESlateVisibility::Collapsed || 
+								placementType == PlacementType::Building;
+			
+			bool needExclamation = false;
+			if (!isBuilding)
+			{
+				if (questSys->GetQuest(QuestEnum::BuildStorageQuest) ||
+					simulation.NeedQuestExclamation(playerId(), QuestEnum::BuildHousesQuest)) {
+					needExclamation = true;
+				}
+			}
+			ExclamationIcon_Build->SetShow(needExclamation);
+		}
+	}
+
+
+	{
+		//! Stats:
+		UnitSystem& unitSystem = simulation.unitSystem();
+		StatSystem& statSystem = simulation.statSystem();
+		ResourceSystem& resourceSystem = simulation.resourceSystem(playerId());
+
+		// Top left
+		{
+			std::stringstream ss;
+			//int32_t minutesIntoSeason = Time::Minutes() - Time::Seasons() * Time::MinutesPerSeason;
+			//if (minutesIntoSeason >= 4) ss << "Late ";
+			//else if (minutesIntoSeason >= 2) ss << "Mid ";
+			//else ss << "Early ";
+
+			ss << Time::SeasonPrefix(Time::Ticks()) << " ";
+
+			ss << Time::SeasonName(Time::Seasons()) << "\n";
+			ss << "Year " << std::to_string(Time::Years());
+			SetText(TimeText, ss.str());
+		}
+		
+		{
+			FloatDet celsius = simulation.Celsius(dataSource()->cameraAtom().worldTile2());
+			SetText(TemperatureText, to_wstring(FDToInt(celsius)) + L"°C (" + to_wstring(FDToInt(CelsiusToFahrenheit(celsius))) + L"°F)");
+
+			float fraction = FDToFloat(celsius - Time::MinCelsiusBase()) / FDToFloat(Time::MaxCelsiusBase() - Time::MinCelsiusBase());
+			TemperatureImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", fraction);
+
+			AddToolTip(TemperatureTextBox, L"Below " + to_wstring(FDToInt(Time::ColdCelsius())) + L"°C, citizens will need wood/coal to heat themselves");
+
+			TemperatureTextBox->SetVisibility(ESlateVisibility::Visible);
+		}
+
+		stringstream ss;
+		//TopLeftText->SetText(FText::FromString(FString(ss.str().c_str())));
+		//ss("");
+
+		int32 population = simulation.population(playerId());
+		int32 childPopulation = simulation.playerOwned(playerId()).childPopulation();
+		int32 adultPopulation = population - childPopulation;
+
+		AdultPopulationText->SetText(FText::FromString(FString::FromInt(adultPopulation)));
+		ChildPopulationText->SetText(FText::FromString(FString::FromInt(childPopulation)));
+		{
+			std::stringstream populationTip;
+			populationTip << "Population: " << population;
+			populationTip << "<bullet>" << adultPopulation << " Adults</>";
+			populationTip << "<bullet>" << childPopulation << " Children</>";
+			
+			AddToolTip(PopulationBox, populationTip.str());
+		}
+
+		if (shouldDisplayMainGameUI)
+		{
+			HousingSpaceText->SetText(FText::FromString(FString::FromInt(population) + FString("/") + FString::FromInt(simulation.HousingCapacity(playerId()))));
+
+			std::vector<int32> storageIds = simulation.buildingIds(playerId(), CardEnum::StorageYard);
+			
+			int32 totalSlots = 0;
+			int32 usedSlots = 0;
+			for (int32 storageId : storageIds) {
+				Building& bld = simulation.building(storageId);
+				if (bld.isConstructed()) {
+					usedSlots += bld.subclass<StorageYard>().tilesOccupied();
+					totalSlots += bld.storageSlotCount();
+				}
+			}
+			StorageSpaceText->SetText(FText::FromString(FString::FromInt(usedSlots) + FString("/") + FString::FromInt(totalSlots)));
+
+			{
+				std::stringstream tip;
+				tip << "Population: " << population << "\n";
+				tip << "Housing space: " << simulation.HousingCapacity(playerId());
+				AddToolTip(HousingSpaceBox, tip.str());
+			}
+			{
+				std::stringstream tip;
+				tip << "Storage space:\n";
+				tip << "Used slots: " << usedSlots << "\n";
+				tip << "Total slots: " << totalSlots;
+				AddToolTip(StorageSpaceBox, tip.str());
+			}
+			
+			//auto& townhall = simulation.townhall(playerId());
+			//MigrationText->SetText(ToFText("Migration " + to_string(townhall.migrationPull())));
+			
+			//std::stringstream migrationTip;
+			//migrationTip << "City's attractiveness in the eyes of immigrants.\n";
+			//migrationTip << " Total: " << townhall.migrationPull() << "\n";
+			//migrationTip << "  population size: " << townhall.migrationPull_populationSize << "\n";
+
+			//if (townhall.migrationPull_freeLivingSpace >= 0) {
+			//	migrationTip << "  free space: " << townhall.migrationPull_freeLivingSpace << "\n";
+			//} else {
+			//	migrationTip << "  homeless: " << townhall.migrationPull_freeLivingSpace << "\n";
+			//}
+			//
+			//migrationTip << "  happiness: " << townhall.migrationPull_happiness << "\n";
+			//migrationTip << "  bonuses: " << townhall.migrationPull_bonuses;
+			//AddToolTip(MigrationText, migrationTip.str());
+		}
+		
+		// Happiness
+		auto& playerOwned = simulation.playerOwned(playerId());
+		Happiness->SetText("", to_string(simulation.GetAverageHappiness(playerId())));
+
+		std::stringstream happinessTip;
+		happinessTip << "Happiness: " << playerOwned.aveHappiness() << "<img id=\"Smile\"/>";
+		happinessTip << "<space>";
+		happinessTip << "Base: " << playerOwned.aveNeedHappiness();
+		happinessTip << "<bullet>" << playerOwned.aveFoodHappiness() << " food</>";
+		happinessTip << "<bullet>" << playerOwned.aveHeatHappiness() << " heat</>";
+		happinessTip << "<bullet>" << playerOwned.aveHousingHappiness() << " housing</>";
+		happinessTip << "<bullet>" << playerOwned.aveFunHappiness() << " fun</>";
+
+		happinessTip << "Modifiers: " << playerOwned.aveHappinessModifierSum();
+		for (size_t i = 0; i < HappinessModifierEnumCount; i++) {
+			int32 modifier = playerOwned.aveHappinessModifier(static_cast<HappinessModifierEnum>(i));
+			if (modifier != 0) happinessTip << "<bullet>" << modifier << " " << HappinessModifierName[i] << "</>";
+		}
+
+		AddToolTip(Happiness, happinessTip.str());
+
+		// Money
+		Money->SetText("", to_string(resourceSystem.money()));
+
+		int32 totalIncome100 = playerOwned.totalIncome100();
+		MoneyChangeText->SetText(ToFText(ToForcedSignedNumber(totalIncome100 / 100)));
+
+		std::stringstream moneyTip;
+		moneyTip << "Coins (Money) is used for purchasing buildings and goods. Coins come from tax and trade.\n\n";
+		playerOwned.AddTaxIncomeToString(moneyTip);
+
+		AddToolTip(Money, moneyTip.str());
+		AddToolTip(MoneyChangeText, moneyTip.str());
+
+		//// Influence
+		//if (simulation.unlockSystem(playerId())->IsResearched(TechEnum::Barrack)) {
+		//	Influence->SetText("", to_string(resourceSystem.influence()));
+		//	InfluenceChangeText->SetText(ToFText("+" + to_string(playerOwned.influencePerRound)));
+
+		//	std::stringstream influenceTip;
+		//	influenceTip << "Influence points used for claiming land and vassalizing other towns.";
+
+		//	AddToolTip(Influence, influenceTip.str());
+		//	AddToolTip(InfluenceChangeText, influenceTip.str());
+
+		//	Influence->SetVisibility(ESlateVisibility::Visible);
+		//	InfluenceChangeText->SetVisibility(ESlateVisibility::Visible);
+		//} else {
+			Influence->SetVisibility(ESlateVisibility::Collapsed);
+			InfluenceChangeText->SetVisibility(ESlateVisibility::Collapsed);
+		//}
+
+		// Science
+		if (simulation.unlockSystem(playerId())->researchEnabled) 
+		{
+			std::stringstream sciOutput;
+			sciOutput << fixed << setprecision(1);
+			sciOutput << "+" << playerOwned.science100PerRound() / 100.0f;
+			Science->SetText("", sciOutput.str());
+
+			std::stringstream scienceTip;
+			scienceTip << fixed << setprecision(1);
+			scienceTip << "Science is used for researching new technology.";
+			scienceTip << " Science per round: " << playerOwned.science100PerRound() / 100.0f << " <img id=\"Science\"/>\n";
+
+			for (size_t i = 0; i < ScienceEnumCount; i++)
+			{
+				int32 science100 = playerOwned.sciences100[i];
+				if (science100 != 0) {
+					scienceTip << "  " << science100 / 100.0f << " " << ScienceEnumName[i] << "\n";
+				}
+			}
+			//scienceTip << "  " << playerOwned.houseBaseScience << " House Base\n";
+			//
+			//scienceTip << "  " << playerOwned.libraryScience << " Library\n";
+			//
+			//scienceTip << "  " << playerOwned.schoolScience << " School\n";
+			
+			AddToolTip(Science, scienceTip.str());
+
+			Science->SetVisibility(ESlateVisibility::Visible);
+		} else {
+			Science->SetVisibility(ESlateVisibility::Collapsed);
+		}
+
+		// Skill
+		{
+			BldInfo cardInfo = GetBuildingInfo(playerOwned.currentSkill());
+			int32 skillMana = GetSkillManaCost(cardInfo.cardEnum);
+			int32 maxMana = playerOwned.maxMana();
+			
+			stringstream tip;
+			tip << "<Bold>" << cardInfo.name << "</>\n";
+			tip << "<SPColor>Leader Skill</>\n";
+			tip << "Hotkey: <Orange>[V]</>";
+			tip << "<line><space>";
+			tip << "SP cost: " << skillMana << "\n";
+			tip << cardInfo.description << "<space>";
+			tip << "<SPColor>SP: " << playerOwned.mana() << "/" << maxMana << "</>";
+			AddToolTip(LeaderSkillButton, tip.str());
+			
+			LeaderManaBar->GetDynamicMaterial()->SetScalarParameterValue("Fraction", Clamp01(playerOwned.manaFloat() / maxMana));
+			SetText(LeaderManaText, "SP " + to_string(playerOwned.mana()) + "/" + to_string(maxMana));
+			LeaderSkillClock->GetDynamicMaterial()->SetScalarParameterValue("Fraction", Clamp01(playerOwned.manaFloat() / skillMana));
+		}
+
+		// Animals
+
+		//FString animalsText;
+		//if (resourceSystem.pigs > 0) animalsText.Append("Pigs (need ranch): ").AppendInt(resourceSystem.pigs);
+		//if (resourceSystem.sheep > 0) animalsText.Append("Sheep (need ranch): ").AppendInt(resourceSystem.sheep);
+		//if (resourceSystem.cows > 0) animalsText.Append("Cows (need ranch): ").AppendInt(resourceSystem.cows);
+		//if (resourceSystem.pandas > 0) animalsText.Append("Pandas (need ranch): ").AppendInt(resourceSystem.pandas);
+		//if (resourceSystem.pigs > 0 || resourceSystem.sheep > 0 || resourceSystem.cows > 0 || resourceSystem.pandas > 0) {
+		//	AnimalsNeedingRanch->SetText(FText::FromString(animalsText));
+		//	AnimalsNeedingRanch->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		//} else {
+			AnimalsNeedingRanch->SetVisibility(ESlateVisibility::Collapsed);
+		//}
+
+		/*
+		 * Resources
+		 */
+
+		// This will set IconTextPair to red text when amount is zero
+		auto SetResourceIconPair = [&](UIconTextPairWidget* iconTextPair, ResourceEnum resourceEnum)
+		{
+			int32 resourceCount = simulation.resourceCount(playerId(), resourceEnum);
+			iconTextPair->SetFString(FString(), FString::FromInt(resourceCount));
+			iconTextPair->SetTextColor(resourceCount == 0 ? FLinearColor::Red : FLinearColor::White);
+
+			if (iconTextPair->HasAnimation()) {
+				iconTextPair->PlayAnimationIf("Flash", resourceCount == 0);
+			}
+			
+			iconTextPair->SetImage(resourceEnum, assetLoader(), true);
+			iconTextPair->InitBackgroundButton(resourceEnum);
+		};
+
+		//SetResourceIconPair(WoodCount, ResourceEnum::Wood);
+
+
+		// Food
+		FString foodTextStr("Food: ");
+		int32 foodCount = simulation.foodCount(playerId());
+		foodTextStr.AppendInt(foodCount);
+		FoodCountText->SetText(FText::FromString(foodTextStr));
+		FoodCountText->SetColorAndOpacity(foodCount > 0 ? FLinearColor::White : FLinearColor::Red);
+		PlayAnimationIf("FoodCountLowFlash", foodCount == 0);
+		
+		AddToolTip(LuxuryTier1Text, LuxuryResourceTip(1));
+		AddToolTip(LuxuryTier2Text, LuxuryResourceTip(2));
+		AddToolTip(LuxuryTier3Text, LuxuryResourceTip(3));
+
+		for (int i = 0; i < ResourceEnumCount; i++)
+		{
+			ResourceEnum resourceEnum = static_cast<ResourceEnum>(i);
+			int amount = dataSource()->GetResourceCount(playerId(), resourceEnum);
+
+			UVerticalBox* listToAdd = MainResourceList;
+			if (IsFuelEnum(resourceEnum)) {
+				listToAdd = FuelList;
+			}
+			else if (IsMedicineEnum(resourceEnum)) {
+				listToAdd = MedicineList;
+			}
+			else if (IsToolsEnum(resourceEnum)) {
+				listToAdd = ToolsList;
+			}
+			else if (IsFoodEnum(resourceEnum)) {
+				listToAdd = MainFoodList;
+			}
+			else if (IsLuxuryEnum(resourceEnum, 1)) {
+				listToAdd = LuxuryTier1List;
+			}
+			else if (IsLuxuryEnum(resourceEnum, 2)) {
+				listToAdd = LuxuryTier2List;
+			}
+			else if (IsLuxuryEnum(resourceEnum, 3)) {
+				listToAdd = LuxuryTier3List;
+			}
+
+			// Go through the list to change the correct iconTextPair
+			for (int j = 0; j < listToAdd->GetChildrenCount(); j++) 
+			{
+				auto iconTextPair = CastChecked<UIconTextPairWidget>(listToAdd->GetChildAt(j));
+				if (iconTextPair->ObjectId == i) 
+				{
+					auto displayNormally = [&]() {
+						if (amount > 0) {
+							iconTextPair->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+							SetResourceIconPair(iconTextPair, resourceEnum);
+						}
+						else {
+							iconTextPair->SetVisibility(ESlateVisibility::Collapsed);
+						}
+					};
+					
+					if (IsFuelEnum(resourceEnum))
+					{
+						int32 fuelCount = dataSource()->GetResourceCount(playerId(), FuelEnums);
+						if (fuelCount > 0) {
+							displayNormally();
+						}
+						else {
+							// Without fuel, we show flashing 0 wood
+							if (resourceEnum == ResourceEnum::Wood) {
+								iconTextPair->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+								SetResourceIconPair(iconTextPair, resourceEnum);
+							}
+							else {
+								iconTextPair->SetVisibility(ESlateVisibility::Collapsed);
+							}
+						}
+					}
+					else if (IsMedicineEnum(resourceEnum)) 
+					{
+						int32 medicineCount = dataSource()->GetResourceCount(playerId(), MedicineEnums);
+						if (medicineCount > 0) {
+							displayNormally();
+						} else {
+							// Without medicine, we show flashing medicine
+							if (resourceEnum == ResourceEnum::Medicine) {
+								iconTextPair->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+								SetResourceIconPair(iconTextPair, resourceEnum);
+							} else {
+								iconTextPair->SetVisibility(ESlateVisibility::Collapsed);
+							}
+						}
+					}
+					else if (IsToolsEnum(resourceEnum)) 
+					{
+						int32 toolsCount = dataSource()->GetResourceCount(playerId(), ToolsEnums);
+						if (toolsCount > 0) {
+							displayNormally();
+						} else {
+							// Without tools, we show flashing steel tools
+							if (resourceEnum == ResourceEnum::SteelTools) {
+								iconTextPair->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+								SetResourceIconPair(iconTextPair, resourceEnum);
+							} else {
+								iconTextPair->SetVisibility(ESlateVisibility::Collapsed);
+							}
+						}
+					}
+					// Special case stone.. Always show
+					else if (resourceEnum == ResourceEnum::Stone) 
+					{
+						iconTextPair->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+						SetResourceIconPair(iconTextPair, resourceEnum);
+					}
+					else {
+						displayNormally();
+					}
+					break;
+				}
+			}
+		}
+
+		/*
+		 * Research
+		 */
+		UnlockSystem* unlockSystem = dataSource()->simulation().unlockSystem(playerId());
+		if (unlockSystem && unlockSystem->researchEnabled)
+		{
+			std::shared_ptr<ResearchInfo> currentTech = unlockSystem->currentResearch();
+
+			ResearchingText->SetText(ToFText(currentTech->GetName()));
+			ResearchBar->SetWidthOverride(unlockSystem->researchFraction() * 250);
+			ResearchBarUI->SetVisibility(ESlateVisibility::Visible);
+		}
+		else {
+			ResearchBarUI->SetVisibility(ESlateVisibility::Collapsed);
+		}
+	}
+
+	// Flash ResearchBarUI if there is nothing being researched
+	UnlockSystem* unlockSystem = simulation.unlockSystem(playerId());
+	if (unlockSystem) {
+		FLinearColor researchBarColor = !unlockSystem->hasTargetResearch() && (kTickCount % 60 < 30) ? FLinearColor(1.0f, 0.33333f, 0.0f, 0.8f) : FLinearColor(.025f, .025f, .025f, 0.8f);
+		ResearchBarUI->SetBackgroundColor(researchBarColor);
+		//PUN_LOG("ResearchBarUI %f, %f, %f", researchBarColor.R, researchBarColor.G, researchBarColor.B);
+
+		if (unlockSystem->allTechsUnlocked()) {
+			ResearchBarUI->SetVisibility(ESlateVisibility::Collapsed);
+		}
+	}
+
+	// Midscreen message
+	{
+		PlacementInfo placementInfo = inputSystemInterface()->PlacementBuildingInfo();
+
+		auto setMidscreenText = [&](std::string str) {
+			MidScreenMessage->SetVisibility(ESlateVisibility::Visible);
+			SetText(MidScreenMessageText, str);
+		};
+
+		if (IsRoadPlacement(placementInfo.placementType)) 
+		{
+			setMidscreenText("Shift-click to repeat");
+		}
+		else {
+			MidScreenMessage->SetVisibility(ESlateVisibility::Collapsed);
+		}
+	}
+
+	/*
+	 * Card animation, the beginning part
+	 */
+	//DescriptionUIState uiState = simulation.descriptionUIState();
+	//
+	//for (int32 i = AnimatedCardOverlay->GetChildrenCount(); i-- > 0;)
+	//{
+	//	// TODO: so much simillar
+	//	auto cardButton = CastChecked<UBuildingPlacementButton>(AnimatedCardOverlay->GetChildAt(i));
+	//	if (cardButton->animationEnum == CardAnimationEnum::ToGlobalSlot)
+	//	{
+	//		if (uiState.objectType == ObjectTypeEnum::Building &&
+	//			simulation.building(uiState.objectId).isEnum(CardEnum::Townhall))
+	//		{
+	//			std::vector<CardStatus> cardStatuses = simulation.cardSystem(playerId()).cardsInTownhall();
+	//			// Remove if the card arrived at the building already
+	//			for (CardStatus& cardStatus : cardStatuses) {
+	//				if ((cardStatus.animationStartTime100 / 100.0f) == cardButton->cardAnimationStartTime) {
+	//					cardButton->RemoveFromParent();
+	//				}
+	//			}
+	//		}
+	//		else {
+	//			// No longer displaying townhall ObjectDescriptionUI, close this
+	//			cardButton->RemoveFromParent();
+	//		}
+	//	}
+	//	else if (cardButton->animationEnum == CardAnimationEnum::ToBuildingSlot)
+	//	{
+	//		if (uiState.objectType == ObjectTypeEnum::Building)
+	//		{
+	//			std::vector<CardStatus> cardStatuses = simulation.building(uiState.objectId).slotCards();
+	//			
+	//			// Remove if the card arrived at the building already
+	//			for (CardStatus& cardStatus : cardStatuses) {
+	//				if ((cardStatus.animationStartTime100 / 100.0f) == cardButton->cardAnimationStartTime) {
+	//					cardButton->RemoveFromParent();
+	//				}
+	//			}
+	//		}
+	//		else {
+	//			// No longer displaying building DescriptionUI, close this
+	//			cardButton->RemoveFromParent();
+	//		}
+	//	}
+	//}
+}
+
+//UBuildingPlacementButton* UMainGameUI::AddAnimationCard(CardEnum buildingEnum)
+//{
+//	if (InterfacesInvalid()) return nullptr;
+//
+//	UBuildingPlacementButton* cardButton = AddWidget<UBuildingPlacementButton>(UIEnum::CardMini);
+//
+//	cardButton->PunInit(buildingEnum, -1, -1, -1, this, CallbackEnum::None);
+//	SetChildHUD(cardButton);
+//
+//	cardButton->SetupMaterials(dataSource()->assetLoader());
+//	cardButton->SetCardStatus(false, false, IsRareCard(buildingEnum));
+//
+//	return cardButton;
+//}
+UBuildingPlacementButton* UMainGameUI::AddCard(CardHandEnum cardHandEnum, CardEnum buildingEnum, UWrapBox* buttonParent, CallbackEnum callbackEnum, int32 cardHandIndex,
+																	int32 buildingLvl, int32 stackSize, bool isMiniature)
+{
+	if (InterfacesInvalid()) return nullptr;
+
+	UBuildingPlacementButton* cardButton = AddWidget<UBuildingPlacementButton>(isMiniature ? UIEnum::CardMini : UIEnum::BuildingPlacementButton);
+	
+	buttonParent->AddChild(cardButton);
+
+	cardButton->PunInit(buildingEnum, cardHandIndex, buildingLvl, stackSize, this, callbackEnum);
+
+	SetChildHUD(cardButton);
+
+	cardButton->SetupMaterials(dataSource()->assetLoader());
+	cardButton->SetCardStatus(cardHandEnum, false, false, IsRareCard(buildingEnum));
+
+	return cardButton;
+}
+
+void UMainGameUI::ResetBottomMenuDisplay()
+{
+	SetButtonImage(BuildMenuTogglerImage, false);
+	SetButtonImage(GatherImage, false);
+	SetButtonImage(DemolishImage, false);
+	SetButtonImage(StatsImage, false);
+
+	if (shouldCloseGatherSettingsOverlay) {
+		GatherSettingsOverlay->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	shouldCloseGatherSettingsOverlay = true;
+	
+	BuildMenuOverlay->SetVisibility(ESlateVisibility::Collapsed);
+}
+
+void UMainGameUI::ToggleBuildingMenu()
+{
+	if (InterfacesInvalid()) return;
+
+	bool wasActive = BuildMenuTogglerImage->GetVisibility() != ESlateVisibility::Collapsed;
+	ResetBottomMenuDisplay();
+
+	if (!wasActive) {
+		// Refresh building buttons
+		std::vector<CardEnum> buildingEnums = simulation().unlockSystem(playerId())->unlockedBuildings();
+
+		auto cardSys = simulation().cardSystem(playerId());
+		int32 money = simulation().money(playerId());
+
+		auto refreshPermanentCard = [&](UBuildingPlacementButton* cardButton)
+		{
+			int32 cardPrice = cardSys.GetCardPrice(cardButton->buildingEnum);
+			cardButton->SetCardStatus(CardHandEnum::PermanentHand, false, money < cardPrice);
+			cardButton->SetPrice(cardPrice);
+		};
+
+		// erase buildingEnums that already have buttons
+		for (int i = BuildingMenuWrap->GetChildrenCount(); i --> 0;) 
+		{
+			auto cardButton = Cast<UBuildingPlacementButton>(BuildingMenuWrap->GetChildAt(i));
+			auto found = find(buildingEnums.begin(), buildingEnums.end(), cardButton->buildingEnum);
+			if (found != buildingEnums.end()) { // found old card, reusing it...
+				buildingEnums.erase(found);
+
+				// Make sure to update old card (for exclamation)
+				cardButton->SetCardStatus(CardHandEnum::PermanentHand, false, false);
+				refreshPermanentCard(cardButton);
+			}
+		}
+
+		// Create the rest of the buttons
+		for (CardEnum buildingEnum : buildingEnums) {
+			auto cardButton = AddCard(CardHandEnum::PermanentHand, buildingEnum, BuildingMenuWrap, CallbackEnum::SelectPermanentCard, -1, -1, -1, true);
+			refreshPermanentCard(cardButton);
+		}
+
+		// Close other UIs
+		networkInterface()->ResetGameUI();
+
+		dataSource()->Spawn2DSound("UI", "UIWindowOpen");
+	}
+	else {
+		dataSource()->Spawn2DSound("UI", "UIWindowClose");
+	}
+
+	SetButtonImage(BuildMenuTogglerImage, !wasActive);
+	BuildMenuOverlay->SetVisibility(wasActive ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
+}
+
+void UMainGameUI::ToggleGatherButton()
+{
+	if (InterfacesInvalid()) return;
+
+	PUN_LOG("ToggleGatherButton");
+
+	bool wasActive = GatherImage->ColorAndOpacity.B == 0.0f;
+	ResetBottomMenuDisplay();
+
+	inputSystemInterface()->CancelPlacement();
+	
+	if (!wasActive) {
+		HarvestCheckBox_All->SetCheckedState(ECheckBoxState::Checked);
+		HarvestCheckBox_Wood->SetCheckedState(ECheckBoxState::Unchecked);
+		HarvestCheckBox_Stone->SetCheckedState(ECheckBoxState::Unchecked);
+		RemoveHarvestCheckBox_All->SetCheckedState(ECheckBoxState::Unchecked);
+		RemoveHarvestCheckBox_Wood->SetCheckedState(ECheckBoxState::Unchecked);
+		RemoveHarvestCheckBox_Stone->SetCheckedState(ECheckBoxState::Unchecked);
+
+		inputSystemInterface()->StartHarvestPlacement(false, ResourceEnum::None);
+		GetPunHUD()->CloseDescriptionUI();
+
+		dataSource()->Spawn2DSound("UI", "ButtonClick"); //TODO: need button click start/end
+	} else {
+		dataSource()->Spawn2DSound("UI", "CancelPlacement");
+	}
+
+	SetButtonImage(GatherImage, !wasActive);
+	GatherSettingsOverlay->SetVisibility(wasActive ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
+}
+
+void UMainGameUI::ToggleDemolishButton()
+{
+	PUN_LOG("ToggleDemolishButton");
+	if (InterfacesInvalid()) return;
+
+	bool wasActive = DemolishImage->ColorAndOpacity.B == 0.0f;
+	ResetBottomMenuDisplay();
+
+	inputSystemInterface()->CancelPlacement();
+	
+	if (!wasActive) {
+		inputSystemInterface()->StartDemolish();
+		GetPunHUD()->CloseDescriptionUI();
+
+		dataSource()->Spawn2DSound("UI", "ButtonClick"); //TODO: need button click start/end
+	} else {
+		dataSource()->Spawn2DSound("UI", "CancelPlacement");
+	}
+
+	
+	SetButtonImage(DemolishImage, !wasActive);
+}
+
+void UMainGameUI::ToggleResearchMenu()
+{
+	UnlockSystem* unlockSystem = dataSource()->simulation().unlockSystem(playerId());
+	if (unlockSystem && unlockSystem->researchEnabled) {
+		GetPunHUD()->ToggleTechTree();
+	}
+}
+
+
+
+void UMainGameUI::ClickRerollButton()
+{
+	auto& cardSystem = simulation().cardSystem(playerId());
+	if (cardSystem.IsPendingCommand()) {
+		return;
+	}
+	
+	int32 money = simulation().resourceSystem(playerId()).money();
+	int32 rerollPrice = cardSystem.GetRerollPrice();
+	if (money >= rerollPrice || rerollPrice == 0) {
+		auto command = make_shared<FRerollCards>();
+		networkInterface()->SendNetworkCommand(command);
+		cardSystem.SetPendingCommand(true);
+	} else {
+		simulation().AddPopupToFront(playerId(), "Not enough money for reroll", ExclusiveUIEnum::CardHand1, "PopupCannot");
+	}
+	
+}
+
+void UMainGameUI::ClickCardStackButton()
+{
+	auto& cardSystem = simulation().cardSystem(playerId());
+	if (cardSystem.IsPendingCommand()) {
+		return;
+	}
+
+	if (CardHand1Overlay->GetVisibility() == ESlateVisibility::Collapsed) {
+		if (!cardSystem.IsCardStackBlank()) {
+			networkInterface()->ResetGameUI();
+			CardHand1Overlay->SetVisibility(ESlateVisibility::Visible);
+
+			// TODO: proper card deal animation+sound
+			dataSource()->Spawn2DSound("UI", "CardDeal");
+			
+			TryStopAnimation("CardStackFlash");
+		}
+	} else {
+		ClickCardHand1CancelButton();
+		//cardSystem.ClearHand1CardReservation();
+		//CardHand1Overlay->SetVisibility(ESlateVisibility::Collapsed);
+
+		//// TODO: proper card deal animation+sound
+		//dataSource()->Spawn2DSound("UI", "CardDeal");
+	}
+	
+	//CardHand1Overlay->SetVisibility(cardSystem.IsCardStackBlank() ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+}
+
+void UMainGameUI::ClickCardHand1SubmitButton()
+{
+	auto& cardSystem = simulation().cardSystem(playerId());
+	if (cardSystem.IsPendingCommand()) {
+		return;
+	}
+	
+	// Check if not enough money, and put on a warning...
+	if (MoneyLeftAfterTentativeBuy() < 0) {
+		simulation().AddPopupToFront(playerId(), "Not enough money to purchase the card.", ExclusiveUIEnum::CardHand1, "PopupCannot");
+		return;
+	}
+
+	// TODO:
+	//if (!simulation().cardSystem(playerId()).CanAddCardToTopRow(buildingEnum)) {
+	//	simulation().AddPopup(playerId(), "Reached hand limit for bought cards.", ExclusiveUIEnum::CardHand1);
+	//	return;
+	//}
+
+	// Issue command and close the UI
+	TArray<UWidget*> cardButtons = CardHand1Box->GetAllChildren();
+	auto command = make_shared<FBuyCard>();
+	for (int i = 0; i < cardButtons.Num(); i++) {
+		auto cardButton = CastChecked<UBuildingPlacementButton>(cardButtons[i]);
+		if (_lastHand1ReserveStatus[i]) {
+			command->cardHandBuyIndices.Add(cardButton->cardHandIndex);
+		}
+	}
+	
+	networkInterface()->SendNetworkCommand(command);
+	cardSystem.SetPendingCommand(true);
+
+	CardHand1Overlay->SetVisibility(ESlateVisibility::Collapsed);
+
+	CardStack1->SetVisibility(ESlateVisibility::Collapsed);
+	CardStack2->SetVisibility(ESlateVisibility::Collapsed);
+	CardStack3->SetVisibility(ESlateVisibility::Collapsed);
+	CardStack4->SetVisibility(ESlateVisibility::Collapsed);
+	CardStack5->SetVisibility(ESlateVisibility::Collapsed);
+	CardRerollBox1->SetVisibility(ESlateVisibility::Visible);
+
+	// TODO: proper card deal animation+sound
+	dataSource()->Spawn2DSound("UI", "CardDeal");
+}
+void UMainGameUI::ClickCardHand1CancelButton()
+{
+	if (CardHand1Overlay->GetVisibility() != ESlateVisibility::Collapsed)
+	{
+		auto& cardSystem = simulation().cardSystem(playerId());
+
+		cardSystem.ClearHand1CardReservation();
+		CardHand1Overlay->SetVisibility(ESlateVisibility::Collapsed);
+
+		// TODO: proper card deal animation+sound
+		dataSource()->Spawn2DSound("UI", "CardDeal");
+	}
+}
+
+void UMainGameUI::ClickRareCardHandSubmitButton()
+{
+	// Issue command and close the UI
+	TArray<UWidget*> cardButtons = RareCardHandBox->GetAllChildren();
+	auto command = make_shared<FSelectRareCard>();
+	command->cardEnum = CardEnum::None;
+	
+	for (int i = 0; i < cardButtons.Num(); i++) {
+		auto cardButton = CastChecked<UBuildingPlacementButton>(cardButtons[i]);
+		if (_lastRareHandReserveStatus[i]) {
+			command->cardEnum = cardButton->buildingEnum;
+			break;
+		}
+	}
+
+	if (command->cardEnum == CardEnum::None) {
+		simulation().AddPopupToFront(playerId(), "Please choose a card before submitting.", ExclusiveUIEnum::RareCardHand, "PopupCannot");
+		return;
+	}
+	
+	networkInterface()->SendNetworkCommand(command);
+
+	RareCardHandOverlay->SetVisibility(ESlateVisibility::Collapsed);
+
+	dataSource()->Spawn2DSound("UI", "CardDeal");
+}
+
+//void UMainGameUI::ClickConverterCardHandSubmitButton()
+//{
+//	if (_lastConverterChosenCard == CardEnum::None) {
+//		simulation().AddPopupToFront(playerId(), "Please choose a card before submitting.", ExclusiveUIEnum::ConverterCardHand, "PopupCannot");
+//		return;
+//	}
+//	
+//	auto command = make_shared<FUseCard>();
+//	command->cardEnum = CardEnum::ConverterCard;
+//	command->variable1 = static_cast<int32>(_lastConverterChosenCard);
+//	networkInterface()->SendNetworkCommand(command);
+//
+//	ConverterCardHandOverlay->SetVisibility(ESlateVisibility::Collapsed);
+//	simulation().cardSystem(playerId()).converterCardState = ConverterCardUseState::SubmittedUI;
+//
+//	dataSource()->Spawn2DSound("UI", "CardDeal");
+//}
+void UMainGameUI::ClickConverterCardHandCancelButton()
+{
+	if (ConverterCardHandOverlay->GetVisibility() != ESlateVisibility::Collapsed)
+	{
+		ConverterCardHandOverlay->SetVisibility(ESlateVisibility::Collapsed);
+		simulation().cardSystem(playerId()).converterCardState = ConverterCardUseState::None;
+
+		dataSource()->Spawn2DSound("UI", "CardDeal");
+	}
+}
+
+void UMainGameUI::OnClickLeaderSkillButton()
+{
+	auto& playerOwned = simulation().playerOwned(playerId());
+	CardEnum skillEnum = playerOwned.currentSkill();
+	if (playerOwned.mana() < GetSkillManaCost(skillEnum)) {
+		simulation().AddPopupToFront(playerId(), "Not enough SP to use the leader skill.", ExclusiveUIEnum::None, "PopupCannot");
+		return;
+	}
+
+	inputSystemInterface()->StartBuildingPlacement(skillEnum, 0, false);
+}
+
+void UMainGameUI::RightMouseDown()
+{
+	if (BuildMenuOverlay->GetVisibility() != ESlateVisibility::Collapsed) {
+		dataSource()->Spawn2DSound("UI", "UIWindowClose");
+	}
+
+	ResetBottomMenuDisplay();
+}
+
+void UMainGameUI::EscDown()
+{
+	if (BuildMenuOverlay->GetVisibility() != ESlateVisibility::Collapsed) {
+		dataSource()->Spawn2DSound("UI", "UIWindowClose");
+	}
+	ResetBottomMenuDisplay();
+
+	// Esc down will also quit any card menu
+	ClickCardHand1CancelButton();
+	ClickConverterCardHandCancelButton();
+}
+
+void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum)
+{
+	UBuildingPlacementButton* cardButton = CastChecked<UBuildingPlacementButton>(punWidgetCaller);
+	int32 cardHandIndex = cardButton->cardHandIndex;
+	CardEnum buildingEnum = cardButton->buildingEnum;
+	auto& cardSystem = simulation().cardSystem(playerId());
+
+	// Permanent cards
+	if (callbackEnum == CallbackEnum::SelectPermanentCard)
+	{
+		int32 money = simulation().money(playerId());
+		if (money < cardSystem.GetCardPrice(buildingEnum)) {
+			simulation().AddPopupToFront(playerId(), "Not enough money to buy the common card.", ExclusiveUIEnum::BuildMenu, "PopupCannot");
+			return;
+		}
+		
+		if (IsRoad(buildingEnum)) {
+			inputSystemInterface()->StartRoadPlacement(buildingEnum == CardEnum::StoneRoad);
+		}
+		else if (buildingEnum == CardEnum::Fence) {
+			inputSystemInterface()->StartFencePlacement();
+		}
+		else if (buildingEnum == CardEnum::Bridge) {
+			inputSystemInterface()->StartBridgePlacement();
+			simulation().parameters(playerId())->BridgeNoticed = true;
+		}
+		else {
+			inputSystemInterface()->StartBuildingPlacement(buildingEnum, 0, false);
+
+			// Noticed farm, no longer need exclamation on farm after this...
+			if (buildingEnum == CardEnum::Farm) {
+				simulation().parameters(playerId())->FarmNoticed = true;
+			}
+		}
+
+		GetPunHUD()->CloseDescriptionUI();
+
+		BuildMenuOverlay->SetVisibility(ESlateVisibility::Collapsed);
+		SetButtonImage(BuildMenuTogglerImage, false);
+		return;
+	}
+	
+	if (callbackEnum == CallbackEnum::SelectUnboughtCard)
+	{
+		if (cardSystem.GetHand1ReserveStatus(cardHandIndex)) {
+			// Is alreadyreserved for buying, cancel it
+			cardSystem.SetHand1CardReservation(cardHandIndex, false);
+		}
+		else {
+			// Check if there is enough money
+			int32 money = MoneyLeftAfterTentativeBuy();
+			if (cardHandIndex != -1 && money < cardSystem.GetCardPrice(buildingEnum)) {
+				simulation().AddPopupToFront(playerId(), "Not enough money to purchase the card.", ExclusiveUIEnum::CardHand1, "PopupCannot");
+				return;
+			}
+
+			// Check if we reached hand limit
+			std::vector<bool> reserveStatuses = cardSystem.GetHand1ReserveStatus();
+			int alreadyReserved = 0;
+			for (bool reserved : reserveStatuses) {
+				if (reserved) {
+					alreadyReserved++;
+				}
+			}
+			if (!cardSystem.CanAddCardToBoughtHand(buildingEnum, alreadyReserved + 1)) {
+				simulation().AddPopupToFront(playerId(), "Reached hand limit for bought cards.", ExclusiveUIEnum::CardHand1, "PopupCannot");
+				return;
+			}
+			
+			cardSystem.SetHand1CardReservation(cardHandIndex, true);
+		}
+		return;
+	}
+
+	if (callbackEnum == CallbackEnum::SelectUnboughtRareCardPrize)
+	{
+		std::vector<bool> cardsRareHandReserved = cardSystem.GetRareHandReserveStatus();
+		if (cardsRareHandReserved[cardHandIndex]) {
+			// Is alreadyreserved for buying, cancel it
+			cardSystem.SetRareHandCardReservation(cardHandIndex, false);
+		}
+		else {
+			for (size_t i = 0; i < cardsRareHandReserved.size(); i++) {
+				if (cardsRareHandReserved[i]) {
+					cardSystem.SetRareHandCardReservation(i, false);
+				}
+			}
+
+			// Check if we reached hand limit
+			if (!simulation().cardSystem(playerId()).CanAddCardToBoughtHand(buildingEnum, 1)) {
+				simulation().AddPopupToFront(playerId(), "Reached hand limit for bought cards.", ExclusiveUIEnum::RareCardHand, "PopupCannot");
+				return;
+			}
+
+			cardSystem.SetRareHandCardReservation(cardHandIndex, true);
+		}
+		return;
+	}
+
+	if (callbackEnum == CallbackEnum::SelectConverterCard)
+	{
+		// Check if there is enough money...
+		if (simulation().money(playerId()) < cardSystem.GetCardPrice(buildingEnum) / 2) {
+			simulation().AddPopupToFront(playerId(), "Not enough money. Need to pay the building price to use wild card.", ExclusiveUIEnum::ConverterCardHand, "PopupCannot");
+			return;
+		}
+
+		dataSource()->Spawn2DSound("UI", "CardDeal");
+		ConverterCardHandOverlay->SetVisibility(ESlateVisibility::Collapsed);
+		cardSystem.converterCardState = ConverterCardUseState::SubmittedUI;
+		
+		inputSystemInterface()->StartBuildingPlacement(buildingEnum, cardButton->buildingLvl, false, cardSystem.wildCardEnumUsed);
+
+		return;
+	}
+	if (callbackEnum == CallbackEnum::SelectCardRemoval)
+	{
+		dataSource()->Spawn2DSound("UI", "CardDeal");
+		ConverterCardHandOverlay->SetVisibility(ESlateVisibility::Collapsed);
+		cardSystem.converterCardState = ConverterCardUseState::SubmittedUI;
+		
+		auto command = make_shared<FUseCard>();
+		command->cardEnum = CardEnum::CardRemoval;
+		command->variable1 = static_cast<int32>(buildingEnum);
+		networkInterface()->SendNetworkCommand(command);
+		return;
+	}
+
+	if (callbackEnum == CallbackEnum::SelectBoughtCard)
+	{
+		// Non-Building Cards
+		if (!IsBuildingCard(buildingEnum))
+		{
+			FString fName = ToFString(GetBuildingInfo(buildingEnum).name);
+			PUN_LOG("Not Building Card %s", *fName);
+			if (IsAreaSpell(buildingEnum)) {
+				inputSystemInterface()->StartBuildingPlacement(buildingEnum, cardButton->buildingLvl, true);
+			}
+
+			auto& resourceSystem = simulation().resourceSystem(playerId());
+
+			/*
+			 * Use Global Slot Card
+			 */
+			if (IsGlobalSlotCard(buildingEnum)) 
+			{
+				DescriptionUIState uiState = simulation().descriptionUIState();
+				if (uiState.objectType == ObjectTypeEnum::Building &&
+					uiState.objectId == simulation().townhall(playerId()).buildingId())
+				{
+					if (simulation().cardSystem(playerId()).CanAddCardToTownhall())
+					{
+						FVector2D initialPosition = GetViewportPosition(cardButton->GetCachedGeometry());
+						
+						auto command = make_shared<FUseCard>();
+						command->cardEnum = buildingEnum;
+						command->SetPosition(initialPosition);
+						networkInterface()->SendNetworkCommand(command);
+
+						// Card initial animation
+						//auto animationCard = AddAnimationCard(buildingEnum);
+						//animationCard->StartAnimation(initialPosition, transitionPosition, CardAnimationEnum::ToGlobalSlot, Time::TicksPerSecond / 10);
+						//AnimatedCardOverlay->AddChild(animationCard);
+
+						//cardButton->SetVisibility(ESlateVisibility::Hidden);
+					}
+					else {
+						simulation().AddPopupToFront(playerId(), "Not enough slot. Unslot a card in this building first.", ExclusiveUIEnum::None, "PopupCannot");
+					}
+				}
+				else
+				{
+					simulation().AddPopupToFront(playerId(), "Global-slot card must be slotted to the townhall. Click the townhall to open its panel before slotting the card.", ExclusiveUIEnum::None, "PopupCannot");
+				}
+				return;
+			}
+
+			/*
+			 * Use Building Slot Card
+			 */
+			if (IsBuildingSlotCard(buildingEnum)) 
+			{
+				DescriptionUIState descriptionUIState = simulation().descriptionUIState();
+				if (descriptionUIState.objectType == ObjectTypeEnum::Building)
+				{
+					int32 buildingId = descriptionUIState.objectId;
+					Building& building = simulation().building(buildingId);
+					
+					if (building.isEnum(CardEnum::Townhall)) {
+						simulation().AddPopupToFront(playerId(), "You cannot insert a building-slot card into the townhall. Townhall's card slot requires a global-slot card.", ExclusiveUIEnum::None, "PopupCannot");
+						return;
+					}
+
+					if (building.maxCardSlots() == 0) {
+						simulation().AddPopupToFront(playerId(), "This building has no card slot.", ExclusiveUIEnum::None, "PopupCannot");
+						return;
+					}
+
+					if (building.slotCard() != CardEnum::None) {
+						simulation().AddPopupToFront(playerId(), "This building already has a slotted card. Remove it first by clicking on the slotted card.", ExclusiveUIEnum::None, "PopupCannot");
+						return;
+					}
+					
+					if (building.CanAddSlotCard()) 
+					{
+						FVector2D initialPosition = GetViewportPosition(cardButton->GetCachedGeometry());
+						
+						auto command = make_shared<FUseCard>();
+						command->cardEnum = buildingEnum;
+						command->variable1 = buildingId;
+						command->SetPosition(initialPosition);
+						networkInterface()->SendNetworkCommand(command);
+
+						// Card initial animation
+						//auto animationCard = AddAnimationCard(buildingEnum);
+						//animationCard->StartAnimation(initialPosition, transitionPosition, CardAnimationEnum::ToBuildingSlot, Time::TicksPerSecond / 10);
+						//AnimatedCardOverlay->AddChild(animationCard);
+
+						//cardButton->SetVisibility(ESlateVisibility::Hidden);
+					}
+				}
+				else {
+					simulation().AddPopupToFront(playerId(), 
+						"Building-slot card must be inserted into a building with card slots.<space>"
+						"Click a card-slottable building to open its panel, before slotting the card.", ExclusiveUIEnum::None, "PopupCannot");
+				}
+				return;
+			}
+
+			if (buildingEnum == CardEnum::Treasure ||
+				buildingEnum == CardEnum::SellFood ||
+				buildingEnum == CardEnum::BuyWood ||
+				buildingEnum == CardEnum::Immigration ||
+				buildingEnum == CardEnum::EmergencyRations ||
+				IsSeedCard(buildingEnum) ||
+				IsCrateCard(buildingEnum))
+			{
+				if (IsSeedCard(buildingEnum)) 
+				{
+					// Special Card, ensure there is a valid georesourceEnum
+					auto hasGeoresource = [&](GeoresourceEnum georesourceEnum)
+					{
+						const std::vector<int32>& provinceIds = simulation().playerOwned(playerId()).provincesClaimed();
+						for (int32 provinceId : provinceIds) {
+							if (simulation().georesource(provinceId).georesourceEnum == georesourceEnum) {
+								return true;
+							}
+						}
+						return false;
+					};
+
+					std::string plantName = GetTileObjInfo(GetSeedInfo(buildingEnum).tileObjEnum).name;
+
+					// TODO: clean up
+					bool noSuitableArea = false;
+					if (buildingEnum == CardEnum::CannabisSeeds && !hasGeoresource(GeoresourceEnum::CannabisFarm)) {
+						noSuitableArea = true;
+					}
+					else if (buildingEnum == CardEnum::GrapeSeeds && !hasGeoresource(GeoresourceEnum::GrapeFarm)) {
+						noSuitableArea = true;
+					}
+					else if (buildingEnum == CardEnum::CocoaSeeds && !hasGeoresource(GeoresourceEnum::CocoaFarm)) {
+						noSuitableArea = true;
+					}
+					else if (buildingEnum == CardEnum::CottonSeeds && !hasGeoresource(GeoresourceEnum::CottonFarm)) {
+						noSuitableArea = true;
+					}
+					else if (buildingEnum == CardEnum::DyeSeeds && !hasGeoresource(GeoresourceEnum::DyeFarm)) {
+						noSuitableArea = true;
+					}
+					if (noSuitableArea) {
+						simulation().AddPopupToFront(playerId(), "None of your land is suitable for growing " + plantName, ExclusiveUIEnum::None, "PopupCannot");
+						return;
+					}
+				}
+
+				
+				auto command = make_shared<FUseCard>();
+				command->cardEnum = buildingEnum;
+
+				auto sendCommand = [&]() {
+					networkInterface()->SendNetworkCommand(command);
+					cardButton->SetVisibility(ESlateVisibility::Hidden);
+				};
+
+				auto sendCommandWithWarning = [&](std::string str) {
+					networkInterface()->ShowConfirmationUI(str, command);
+				};
+
+				if (buildingEnum == CardEnum::SellFood) sendCommandWithWarning("Are you sure you want to sell half of city's food?");
+				else if (buildingEnum == CardEnum::BuyWood) sendCommandWithWarning("Are you sure you want to spend half of city's money to buy wood?");
+				else {
+					sendCommand();
+				}
+				
+				return;
+			}
+
+			// Select ConverterCard
+			if (IsWildCard(buildingEnum)) {
+				// Make sure the hand is not full..
+				if (cardButton->cardCount > 1 &&
+					!cardSystem.CanAddCardToBoughtHand(buildingEnum, 1))
+				{
+					simulation().AddPopupToFront(playerId(), "Reached hand limit for bought cards.", ExclusiveUIEnum::ConverterCardHand, "PopupCannot");
+					return;
+				}
+				
+				cardSystem.converterCardState = ConverterCardUseState::JustUsed;
+				cardSystem.wildCardEnumUsed = buildingEnum;
+				
+				// The network command is sent after submitting chosen card
+				return;
+			}
+
+			auto warnOfBarnWorkMode = [&](UnitEnum unitEnum)
+			{
+				const std::vector<int32_t>& barns = simulation().buildingIds(playerId(), CardEnum::RanchBarn);
+				for (int32_t barnId : barns) {
+					if (simulation().building(barnId).subclass<RanchBarn>().animalEnum() == unitEnum) {
+						return;
+					}
+				}
+				simulation().AddPopupToFront(playerId(), "Need barn with work mode set to " + GetUnitInfo(unitEnum).name);
+			};
+			
+			if (IsAnimalCard(buildingEnum)) 
+			{
+				warnOfBarnWorkMode(GetAnimalEnumFromCardEnum(buildingEnum));
+				cardButton->SetVisibility(ESlateVisibility::Hidden); // Temporily set so people can't click on this twice
+
+				auto command = make_shared<FUseCard>();
+				command->cardEnum = buildingEnum;
+				networkInterface()->SendNetworkCommand(command);
+				return;
+			}
+			
+			GetPunHUD()->CloseDescriptionUI();
+			return;
+		}
+
+		//// Special cases
+		//if (buildingEnum == BuildingEnum::BeerBreweryFamous) {
+		//	if (simulation().buildingCount(playerId(), BuildingEnum::BeerBrewery) < 4) {
+		//		simulation().AddPopupToFront(playerId(), "Build 4 beer breweries before placing the famous beer brewery.");
+		//		GetPunHUD()->CloseDescriptionUI();
+		//		return;
+		//	}
+		//}
+		
+
+		inputSystemInterface()->StartBuildingPlacement(buildingEnum, cardButton->buildingLvl, true);
+		
+		GetPunHUD()->CloseDescriptionUI();
+		return;
+	}
+
+	if (callbackEnum == CallbackEnum::SellCard)
+	{
+		auto command = make_shared<FSellCards>();
+		command->buildingEnum = cardButton->buildingEnum;
+		command->cardCount = cardButton->cardCount;
+
+		int32 cardPrice = simulation().cardSystem(playerId()).GetCardPrice(command->buildingEnum);
+		stringstream ss;
+		ss << "Are you sure you want to sell " << GetBuildingInfo(command->buildingEnum).name;
+		ss << " for <img id=\"Coin\"/>" << cardPrice << "?";
+		networkInterface()->ShowConfirmationUI(ss.str(), command);
+
+		return;
+	}
+}
+
+
+int32 UMainGameUI::MoneyLeftAfterTentativeBuy()
+{
+	int32 money = simulation().resourceSystem(playerId()).money();
+	auto& cardSystem = simulation().cardSystem(playerId());
+	std::vector<bool> reserveStatus = cardSystem.GetHand1ReserveStatus();
+	
+	TArray<UWidget*> cardButtons = CardHand1Box->GetAllChildren();
+	int32 loopSize = min(cardButtons.Num(), static_cast<int32>(reserveStatus.size()));
+	for (int i = 0; i < loopSize; i++) {
+		auto cardButton = CastChecked<UBuildingPlacementButton>(cardButtons[i]);
+		if (reserveStatus[i]) {
+			money -= cardSystem.GetCardPrice(cardButton->buildingEnum);
+		}
+	}
+	return money;
+}

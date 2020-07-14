@@ -1,0 +1,304 @@
+#pragma once
+
+#include "CoreMinimal.h"
+#include "../Building.h"
+#include "PunCity/CppUtils.h"
+
+
+/**
+ * 
+ */
+class House : public Building
+{
+public:
+	void FinishConstruction() override;
+	void OnDeinit() override;
+
+	int32 houseLvl() { return _houseLvl; }
+	
+	void CheckHouseLvl()
+	{
+		int32 lvl = CalculateHouseLevel();
+		
+		if (_houseLvl != lvl)
+		{
+			// Note that houseDowngrade happens right away, but houseUpgrade is fake delayed by 5s
+			if (lvl > _houseLvl) {
+				if (_lastHouseUpgradeTick == -1) {
+					_lastHouseUpgradeTick = Time::Ticks();
+					_simulation->ScheduleTickBuilding(buildingId(), _lastHouseUpgradeTick + houseUpgradeDelayTicks);
+				}
+			} else {
+				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::HouseDowngrade, _centerTile, "");
+				_houseLvl = lvl;
+				_simulation->QuestUpdateStatus(_playerId, QuestEnum::HouseUpgradeQuest);
+				
+				_allowedOccupants = houseBaseOccupants + (lvl - 1) / 2;
+				_simulation->RecalculateTaxDelayed(_playerId); // Recalculate sci
+				ResetDisplay();
+			}
+		}
+	}
+	void UpgradeHouse(int32 lvl);
+	
+	static int32 GetMaxHouseLvl();
+
+	int32 GetAppealPercent();
+	
+	int32 housingHappiness();
+	int32 luxuryHappiness() { return luxuryCount() * 5; }
+
+
+	int32 luxuryCount();
+	void CalculateConsumptions(bool consumeLuxury = false);
+
+	int32 occupancyFactor(int32 value) {
+		return value * occupantCount() / houseBaseOccupants; // Higher house lvl with more occupancy
+	}
+
+	// Income
+	//  Note: tax recalculation refreshed through RecalculateTaxDelayed()
+	int32 GetIncome100Int(int32 incomeEnumInt) { return GetIncome100(static_cast<IncomeEnum>(incomeEnumInt)); }
+	int32 GetIncome100(IncomeEnum incomeEnum);
+
+	// Note: these two includes occupancy factor built in...
+	int32 _roundLuxuryConsumption100 = 0;
+	int32 _roundFoodConsumption100 = 0;
+
+
+	int32 totalHouseIncome100() {
+		int32 result = 0;
+		for (int32 i = 0; i < HouseIncomeEnumCount; i++) {
+			result += GetIncome100Int(i);
+		}
+		return result;
+	}
+
+	
+
+	bool HasAdjacencyBonus() final {
+		return _simulation->IsResearched(_playerId, TechEnum::HouseAdjacency);
+	}
+
+	// Science
+	int32 GetScience100(ScienceEnum scienceEnum);
+	
+	int32 science100PerRound()
+	{
+		int32 result = 0;
+		for (int32 i = 0; i < HouseScienceEnums.size(); i++) {
+			result += GetScience100(HouseScienceEnums[i]);
+		}
+		return result;
+	}
+
+	void OnPickupResource(int32 objectId) override;
+	void OnDropoffResource(int32 objectId) override;
+
+	int32 displayVariationIndex() override {
+		return _houseLvl - 1;
+	}
+
+
+	static int32_t GetLuxuryCountUpgradeRequirement(int32_t houseLvl) {
+		return houseLvl - 1; // houseLvl 2 requires 1 lux
+	}
+	static int32_t GetAppealUpgradeRequirement(int32_t houseLvl) {
+		return 20 + houseLvl * 10;
+	}
+
+//private:
+//	int32_t GetRadiusBonus(BuildingEnum buildingEnum, int32_t radius, const int32_t bonusByLvl[]);
+
+	void Serialize(FArchive& Ar) override {
+		Building::Serialize(Ar);
+		Ar << _houseLvl;
+		Ar << _lastHouseUpgradeTick;
+	}
+
+	void ScheduleTick() override {
+		_lastHouseUpgradeTick = -1;
+		UpgradeHouse(CalculateHouseLevel());
+	}
+
+	bool isUpgrading() {
+		return _lastHouseUpgradeTick != -1;
+	}
+	int32 upgradeProgressPercent() {
+		return (Time::Ticks() - _lastHouseUpgradeTick) * 100 / houseUpgradeDelayTicks;
+	}
+
+	int32 maxCardSlots() override { return 0; }
+
+	/*
+	 * House Upgrade
+	 */
+	std::string HouseNeedDescription();
+	std::string HouseNeedTooltipDescription();
+private:
+	int32 CalculateHouseLevel();
+
+	int32 LuxuryTypeCount(int32 luxuryTier)
+	{
+		int32 typeCount = 0;
+		for (ResourceEnum resourceEnum : TierToLuxuryEnums[luxuryTier]) {
+			if (resourceCount(resourceEnum) > 0) {
+				typeCount++;
+			}
+		}
+		return typeCount;
+	}
+	
+	//void UpdateSubscription();
+
+private:
+	int32 _houseLvl = 1;
+	int32 _lastHouseUpgradeTick = -1;
+	const int32 houseUpgradeDelayTicks = Time::TicksPerSecond * 8;
+
+	const int32 houseBaseOccupants = 4;
+	const int32 houseMaxOccupants = 8;
+};
+
+class StoneHouse : public House
+{
+};
+
+class BoarBurrow : public Building
+{
+public:
+	void FinishConstruction() override;
+	void OnDeinit() override;
+
+	void Serialize(FArchive& Ar) override {
+		Building::Serialize(Ar);
+		inventory >> Ar;
+	}
+
+	UnitInventory inventory;
+};
+
+class RanchBarn final : public BoarBurrow
+{
+public:
+	void FinishConstruction() override;
+	void OnDeinit() override;
+
+	void AddAnimalOccupant(UnitEnum animalEnum, int32_t age);
+	void RemoveAnimalOccupant(int32_t animalId);
+
+	ResourceEnum product() override { return ResourceEnum::Pork; }
+
+	void Tick1Sec() override;
+
+	int32 openAnimalSlots() { return maxAnimals - _animalOccupants.size(); }
+	const std::vector<int32>& animalOccupants() { return _animalOccupants; }
+	
+	UnitEnum animalEnum() { return _animalEnum; }
+	void SetAnimalEnum(UnitEnum animalEnum) { _animalEnum = animalEnum; }
+
+	void Serialize(FArchive& Ar) override {
+		Building::Serialize(Ar);
+		Ar << _animalEnum;
+		SerializeVecValue(Ar, _animalOccupants);
+	}
+
+public:
+	//10 animals ... 5 slaugther per season.. 100 per season... (half year adult growth... )
+	const int32_t maxAnimals = 15;
+
+private:
+	UnitEnum _animalEnum = UnitEnum::Pig;
+	std::vector<int32> _animalOccupants;
+};
+
+class Ranch final : public Building
+{
+public:
+	void FinishConstruction() override {
+		Building::FinishConstruction();
+
+		auto addInitialAnimals = [&](UnitEnum unitEnum) {
+			for (int32 i = 0; i < 3; i++) {
+				AddAnimalOccupant(unitEnum, GetUnitInfo(unitEnum).minBreedingAgeTicks);
+			}
+		};
+
+		switch (buildingEnum()) {
+			case CardEnum::RanchPig: addInitialAnimals(UnitEnum::Pig); break;
+			case CardEnum::RanchSheep: addInitialAnimals(UnitEnum::Sheep); break;
+			case CardEnum::RanchCow: addInitialAnimals(UnitEnum::Cow); break;
+			default:
+				UE_DEBUG_BREAK();
+				break;
+		}
+		
+		AddResourceHolder(ResourceEnum::Hay, ResourceHolderType::Requester, 20);
+
+		workModes = {
+			{"Kill when above full capacity", ResourceEnum::None, ResourceEnum::None, 0},
+			{"Kill when above half capacity", ResourceEnum::None, ResourceEnum::None, 0},
+			{"Kill all", ResourceEnum::None, ResourceEnum::None, 0},
+		};
+		_workMode = workModes[0];
+	}
+
+	
+	
+	void OnDeinit() override;
+
+	void SetAreaWalkable() override
+	{	
+		// Fence
+		for (int32 x = _area.minX; x <= _area.maxX; x++) {
+			_simulation->SetWalkable(WorldTile2(x, _area.minY), false);
+			_simulation->SetWalkable(WorldTile2(x, _area.maxY), false);
+		}
+		for (int32 y = _area.minY; y <= _area.maxY; y++) {
+			_simulation->SetWalkable(WorldTile2(_area.minX, y), false);
+			_simulation->SetWalkable(WorldTile2(_area.maxX, y), false);
+		}
+
+		// Barn area...s
+		// From y: 3 to 6
+		// From x: -4 to -7
+		for (int32 y = 3; y <= 6; y++) {
+			for (int32 x = -7; x <= -4; x++) {
+				bool isWalkable = (y == 5); // Hole through middle of barn so people can get in...
+				SetLocalWalkable_WithDirection(WorldTile2(x, y), isWalkable);
+			}
+		}
+
+		// Prevent non-human units from going into barn
+		_simulation->SetWalkableNonIntelligent(gateTile(), false);
+
+		_simulation->ResetUnitActionsInArea(_area);
+
+		_didSetWalkable = true;
+	}
+	WorldTile2 gateTile() override {
+		WorldTile2 rotatedTile = WorldTile2::RotateTileVector(WorldTile2(-7, 5), _faceDirection);
+		return rotatedTile + _centerTile;
+	}
+	
+	void AddAnimalOccupant(UnitEnum animalEnum, int32 age);
+	
+	void RemoveAnimalOccupant(int32_t animalId) {
+		CppUtils::Remove(_animalOccupants, animalId);
+	}
+
+	int32 openAnimalSlots() { return maxAnimals - _animalOccupants.size(); }
+	const std::vector<int32>& animalOccupants() { return _animalOccupants; }
+
+	void Serialize(FArchive& Ar) override {
+		Building::Serialize(Ar);
+		SerializeVecValue(Ar, _animalOccupants);
+	}
+
+public:
+	//10 animals ... 5 slaugther per season.. 100 per season... (half year adult growth... )
+	const int32 maxAnimals = 15;
+
+private:
+	std::vector<int32> _animalOccupants;
+};

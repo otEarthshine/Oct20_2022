@@ -1,0 +1,63 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include <unordered_map>
+
+/**
+ * 
+ */
+class PunSettings
+{
+public:
+	static std::unordered_map<std::string, int32> Settings;
+
+	static int32 Get(const FString& name) {
+		return Settings[std::string(TCHAR_TO_UTF8(*name))];
+	}
+
+	static void Set(const FString& name, int32 value) {
+		Settings[std::string(TCHAR_TO_UTF8(*name))] = value;
+
+		bShouldRefreshMainMenuDisplay = true;
+	}
+
+	static bool IsOn(std::string settingName) {
+		check(Settings.find(settingName) != Settings.end());
+		return Settings[settingName] > 0;
+	}
+
+	static bool bShouldRefreshMainMenuDisplay;
+};
+
+
+class SimSettings
+{
+public:
+	static std::unordered_map<std::string, int32> Settings;
+
+	static int32 Get(const FString& name) {
+		return Settings[std::string(TCHAR_TO_UTF8(*name))];
+	}
+
+	static void Set(const FString& name, int32 value) {
+		Settings[std::string(TCHAR_TO_UTF8(*name))] = value;
+	}
+
+	static void Toggle(const FString& name) {
+		std::string nameStr(TCHAR_TO_UTF8(*name));
+		if (Settings.find(nameStr) == Settings.end()) {
+			Settings[nameStr] = 1; // First toggle is on
+		}
+		Settings[nameStr] = !(Settings[nameStr]);
+	}
+
+	static bool IsOn(std::string settingName) {
+		if (Settings.find(settingName) == Settings.end()) {
+			Settings[settingName] = 0; // Create off if there is no setting...
+		}
+		return Settings[settingName] > 0;
+	}
+	
+};

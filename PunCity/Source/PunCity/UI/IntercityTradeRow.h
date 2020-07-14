@@ -1,0 +1,66 @@
+// Pun Dumnernchanvanit's
+
+#pragma once
+
+#include "PunCity/UI/PunWidget.h"
+#include "IconTextPairWidget.h"
+
+#include "PunEditableNumberBox.h"
+#include "TradeRowBase.h"
+
+#include "IntercityTradeRow.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class PROTOTYPECITY_API UIntercityTradeRow : public UTradeRowBase
+{
+	GENERATED_BODY()
+public:
+	
+	UPROPERTY(meta = (BindWidget)) UComboBoxString* OfferTypeDropdown;
+	UPROPERTY(meta = (BindWidget)) UPunEditableNumberBox* TargetInventory;
+
+
+	void Init(class UIntercityTradeUI* intercityTradeUI, ResourceEnum resourceEnumIn)
+	{
+		_intercityTradeUI = intercityTradeUI;
+		_resourceEnum = resourceEnumIn;
+
+		OfferTypeDropdown->OnSelectionChanged.AddDynamic(this, &UIntercityTradeRow::OnOfferTypeDropdownChanged);
+
+		SetChildHUD(TargetInventory);
+		TargetInventory->Set(this, CallbackEnum::None);
+		TargetInventory->amount = 0;
+		TargetInventory->UpdateText();
+
+		UpdateTexts();
+	}
+
+	void UpdateTexts()
+	{
+		UpdateTextsBase();
+
+		FString inventoryCount = FString::FromInt(simulation().resourceCount(playerId(), _resourceEnum));
+
+		SetFString(InventoryText, inventoryCount);
+	}
+
+
+
+	// Callback for PunEditableNumberBox
+	void CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callBackEnum) final
+	{
+		
+	}
+
+	UFUNCTION() void OnOfferTypeDropdownChanged(FString sItem, ESelectInfo::Type seltype)
+	{
+		PUN_LOG("OnOfferTypeDropdownChanged %s", *sItem);
+	}
+
+private:
+	
+	UIntercityTradeUI* _intercityTradeUI;
+};

@@ -1,0 +1,74 @@
+#pragma once
+
+#include "CoreMinimal.h"
+#include "PunCity/Simulation/GameSimulationInfo.h"
+#include "PunCity/DisplaySystem/GameDisplayInfo.h"
+#include "PunCity/NetworkStructs.h"
+
+#include "UObject/Interface.h"
+#include "GameManagerInterface.generated.h"
+
+// This class does not need to be modified.
+UINTERFACE(MinimalAPI)
+class UGameManagerInterface : public UInterface
+{
+	GENERATED_BODY()
+};
+
+/**
+ * Interface that allows InputSystem to call GameManager 
+ * Simulation can also GameManager for display?
+ */
+class IGameManagerInterface
+{
+	GENERATED_BODY()
+public:
+	virtual int32 playerId() = 0;
+	
+	virtual FMapSettings GetMapSettings() = 0;
+
+	virtual int32 playerCount() = 0;
+	virtual FString playerNameF(int32 playerId) = 0;
+
+	virtual std::vector<int32> allHumanPlayerIds() = 0;
+	virtual std::vector<int32> connectedPlayerIds() = 0;
+	virtual std::vector<int32> disconnectedPlayerIds() = 0;
+	
+	
+	virtual bool IsPlayerBuildable(WorldTile2 tile) const = 0;
+	virtual bool IsPlayerFrontBuildable(WorldTile2 tile) const = 0;
+	virtual bool IsPlayerRoadBuildable(WorldTile2 tile) const = 0;
+
+	virtual GeoresourceNode RegionGeoresource(WorldRegion2 region) = 0;
+
+	virtual void ResizeDisplaySystemBuildingIds(int newSize) = 0;
+
+	virtual void SetOverlayType(OverlayType overlayType, OverlaySetterType setterType) = 0;
+	virtual void SetOverlayTile(WorldTile2 overlayCenterTile) = 0;
+	virtual WorldTile2 GetOverlayTile() = 0;
+
+	virtual class ULineBatchComponent* lineBatch() = 0;
+
+	virtual class GameSimulationCore& simulation() = 0;
+
+	virtual const GameDisplayInfo& displayInfo() = 0;
+
+	virtual void SetCtrl(bool isDown) = 0;
+	virtual void SetShift(bool isDown) = 0;
+
+	virtual bool isShiftDown() = 0;
+	virtual bool isCtrlDown() = 0;
+
+	virtual void DrawLine(WorldAtom2 atom, FVector startShift, WorldAtom2 endAtom, FVector endShift, FLinearColor Color,
+						 float Thickness = 1.0f, float LifeTime = 10000) = 0;
+
+	virtual float GetDisplayWorldTime() = 0;
+
+	// Audio
+	virtual void SpawnResourceDropoffAudio(ResourceEnum resourceEnum, WorldAtom2 worldAtom) = 0;
+	virtual void SpawnAnimalSound(UnitEnum unitEnum, bool isAngry, WorldAtom2 worldAtom, bool usePlayProbability = false) = 0;
+	virtual void Spawn3DSound(std::string groupName, std::string soundName, WorldAtom2 worldAtom, float height) = 0;
+	virtual void Spawn2DSound(std::string groupName, std::string soundName) = 0;
+
+	// 
+};

@@ -70,5 +70,6 @@ public:
 	virtual void Spawn3DSound(std::string groupName, std::string soundName, WorldAtom2 worldAtom, float height) = 0;
 	virtual void Spawn2DSound(std::string groupName, std::string soundName) = 0;
 
-	// 
+	// Display
+	virtual void RefreshHeightForestColorTexture(TileArea area) = 0;
 };

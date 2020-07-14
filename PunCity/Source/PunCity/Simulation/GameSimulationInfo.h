@@ -465,6 +465,10 @@ public:
 		Ar << _Years;
 		
 		Ar << _MinCelsiusBase << _MaxCelsiusBase;
+
+		//if (Ar.IsLoading()) {
+		//	_TicksLoaded = _Ticks;
+		//}
 	}
 
 private:
@@ -476,6 +480,8 @@ private:
 	static int32 _Years;
 
 	static FloatDet _MinCelsiusBase, _MaxCelsiusBase;
+
+	//static int32 _TicksLoaded = 0; // TODO: Not used yetc
 };
 
 static FloatDet CelsiusToFahrenheit(FloatDet celsius)
@@ -5744,7 +5750,7 @@ static int32 GetTileRadius(float zoomDistance)
 	return WorldToMapZoomAmount * 70 / 475;
 }
 
-const float MinVolume = 0.011f;
+const float MinVolume = 0.0f;// 0.011f;
 
 const float NetworkInputDelayTime = 3.0f;
 

@@ -855,10 +855,6 @@ public:
 	BiomeEnum GetBiomeProvince(int32 provinceId) override {
 		return  terrainGenerator().GetBiome(_provinceSystem.GetProvinceCenterTile(provinceId));
 	}
-
-	int32 regionFlatTileCount(int32 regionId) override {
-		return terrainGenerator().regionFlatTileCount(regionId);
-	}
 	
 
 	void DespawnResourceHolder(ResourceHolderInfo info, int32 playerId) override {
@@ -963,6 +959,14 @@ public:
 		}
 		return false;
 	}
+
+	//
+
+	void RefreshHeightForestColorTexture(TileArea area) override {
+		_gameManager->RefreshHeightForestColorTexture(area);
+	}
+
+	//
 
 	bool IsResearched(int32_t playerId, TechEnum techEnum) final { return unlockSystem(playerId)->IsResearched(techEnum); }
 	bool HasTargetResearch(int32_t playerId) final { return unlockSystem(playerId)->hasTargetResearch(); }

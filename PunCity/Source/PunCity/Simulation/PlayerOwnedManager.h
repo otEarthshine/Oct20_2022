@@ -676,7 +676,7 @@ public:
 								return;
 							}
 							
-							int32 score = _simulation->regionFlatTileCount(connection.provinceId);
+							int32 score = provinceSys.provinceFlatTileCount(connection.provinceId);
 							BiomeEnum biomeEnum = _simulation->GetBiomeProvince(connection.provinceId);
 							if (biomeEnum == BiomeEnum::GrassLand ||
 								biomeEnum == BiomeEnum::Savanna)

@@ -32,9 +32,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) UStaticFastInstancedMeshesComp* _buildingsMeshes;
 
 	void SetupWorldMapMesh(IDisplaySystemDataSource* dataSource, int tileDimXIn, int tileDimYIn, int worldMapSizeX, int worldMapSizeY, MapSizeEnum mapSizeEnum, UAssetLoaderComponent* assetLoader);
-	static void SetupGlobalTextures(int tileDimX, int tileDimY, IGameSimulationCore* simulation, UAssetLoaderComponent* assetLoader);
+	static void SetupGlobalTextures(int tileDimXIn, int tileDimYIn, IGameSimulationCore* simulation, UAssetLoaderComponent* assetLoader);
 
+	// Note that we use texture because mesh is too expensive. A single province mesh takes .2 ms to generate (~8k regions, so 1.6 sec to generate)
 	void SetupProvinceTexture();
+	
 	void RefreshPartialProvinceTexture(TileArea area);
 	void PaintProvinceTexture(ProvinceSystem& provinceSys, GameSimulationCore& sim, WorldTile2x2 provinceTile2x2, std::vector<uint8>& provinceDataPreBlur, WorldTile2x2 preBlur2x2);
 	void SetBlurredProvinceArea(TileArea area2x2, std::vector<uint8>& provinceDataPreBlur);
@@ -44,12 +46,19 @@ public:
 	void InitAnnotations();
 	void RefreshAnnotations();
 
+	void RefreshHeightForestColorTexture(TileArea area) {
+		isHeightForestColorDirty = true;
+		RefreshHeightForestColor(area, &(_dataSource->simulation()), _assetLoader);
+	}
+
+private:
+	static void RefreshHeightForestColor(TileArea area, IGameSimulationCore* simulation, UAssetLoaderComponent* assetLoader);
 	
 private:
-	int tileDimX;
-	int tileDimY;
-	int tileDimX2;
-	int tileDimY2;
+	static int tileDimX;
+	static int tileDimY;
+	static int tileDimX2;
+	static int tileDimY2;
 	float _tileToWorldMapX;
 	float _tileToWorldMapY;
 	MapSizeEnum _mapSizeEnum;
@@ -68,5 +77,8 @@ private:
 
 	// Texture Data
 	std::vector<uint32> provinceData;
+	
 	static std::vector<uint32> heightForestColor;
+	static bool isHeightForestColorDirty;
+	static float lastUpdatedHeightForestColor;
 };

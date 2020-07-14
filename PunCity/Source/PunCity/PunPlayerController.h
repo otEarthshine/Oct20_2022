@@ -592,16 +592,16 @@ public:
 		gameManager->MaxRegionCullDistance = maxRegionCullDistance;
 	}
 
-	UFUNCTION(Exec) void PackageSound() {
-		LLM_SCOPE_(EPunSimLLMTag::PUN_Controller);
-		
-		gameManager->soundSystem()->PackageSound();
-	}
-	UFUNCTION(Exec) void UsePackageSound() {
-		LLM_SCOPE_(EPunSimLLMTag::PUN_Controller);
-		
-		gameManager->soundSystem()->UsePackageSound();
-	}
+	//UFUNCTION(Exec) void PackageSound() {
+	//	LLM_SCOPE_(EPunSimLLMTag::PUN_Controller);
+	//	
+	//	gameManager->soundSystem()->PackageSound();
+	//}
+	//UFUNCTION(Exec) void UsePackageSound() {
+	//	LLM_SCOPE_(EPunSimLLMTag::PUN_Controller);
+	//	
+	//	gameManager->soundSystem()->UsePackageSound();
+	//}
 
 	UFUNCTION(Exec) void SaveCheck();
 	void SaveCheckTick();

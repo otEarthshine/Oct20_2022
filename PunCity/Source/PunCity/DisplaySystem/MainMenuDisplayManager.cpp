@@ -72,6 +72,7 @@ void AMainMenuDisplayManager::InitMainMenuDisplayManager(MapSizeEnum mapSizeEnum
 	for (AActor* actor : backgrounds) {
 		actor->SetActorHiddenInGame(true);
 	}
+
 }
 
 void AMainMenuDisplayManager::UpdateDisplay(WorldAtom2 cameraAtom, float zoomDistance, std::vector<int32> sampleRegionIds)
@@ -86,13 +87,14 @@ void AMainMenuDisplayManager::UpdateDisplay(WorldAtom2 cameraAtom, float zoomDis
 		float(cameraAtom.y) / CoordinateConstants::AtomPerDisplayUnit, 0.0f, 0.0f);
 	_assetLoader->SetMaterialCollectionParametersVector("CameraOffset", cameraOffsetColor);
 
-	int32 tileRadius = GetTileRadius(zoomDistance);
-
-	WorldTile2 centerTile = cameraAtom.worldTile2();
-
 	_cameraAtom = cameraAtom;
 	_zoomDistance = zoomDistance;
-	
+
+	// Must be done to set heightTexture/biomeTexture
+	if (!_isTexturesLoaded) {
+		_isTexturesLoaded = true;
+		UTerrainMapComponent::SetupGlobalTextures(GameMapConstants::TilesPerWorldX, GameMapConstants::TilesPerWorldY, _simulation.get(), _assetLoader);
+	}
 
 	/*
 	 * TODO: Somehow need this...
@@ -102,9 +104,6 @@ void AMainMenuDisplayManager::UpdateDisplay(WorldAtom2 cameraAtom, float zoomDis
 	_regionDisplaySystem->SetRelativeLocation(FVector::ZeroVector);
 	_tileDisplaySystem->SetRelativeLocation(FVector::ZeroVector);
 	_decalDisplaySystem->SetRelativeLocation(FVector::ZeroVector);
-
-	// Must be done to set heightTexture/biomeTexture
-	UTerrainMapComponent::SetupGlobalTextures(GameMapConstants::TilesPerWorldX, GameMapConstants::TilesPerWorldY, _simulation.get(), _assetLoader);
 
 	
 	/*

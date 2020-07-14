@@ -51,6 +51,8 @@ public:
 	TileArea _sampleArea;
 
 	std::vector<int32> _sampleProvinceIds_Empty;
+
+	bool _isTexturesLoaded = false;
 	
 	/**
 	 * IDisplaySystemDataSource

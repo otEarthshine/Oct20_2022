@@ -2877,7 +2877,8 @@ void UObjectDescriptionUISystem::AddGeoresourceInfo(int32 provinceId, UPunBoxWid
 	// Show georesource for province
 	GeoresourceSystem& georesourceSys = simulation.georesourceSystem();
 	GeoresourceNode node = georesourceSys.georesourceNode(provinceId);
-	bool isMountain = simulation.terrainGenerator().regionIsMountain(provinceId);
+	ProvinceSystem& provinceSys = simulation.provinceSystem();
+	bool isMountain = provinceSys.provinceIsMountain(provinceId);
 	
 	if (node.HasResource())
 	{

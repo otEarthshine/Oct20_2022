@@ -131,4 +131,6 @@ public:
 
 public:
 	float playTime(const UObject* WorldContextObject) { return UGameplayStatics::GetAudioTimeSeconds(WorldContextObject) - startTime; }
+
+	bool isFinished(const UObject* WorldContextObject) { return playTime(WorldContextObject) > audio->Sound->GetDuration(); }
 };

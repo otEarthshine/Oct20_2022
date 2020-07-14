@@ -90,7 +90,7 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 	_overlaySystem.Init(this); // Needs to come first for road.
 
 	_provinceSystem.InitProvince(this);
-	_terrainGenerator->SetProvinceMap(_provinceSystem.GetProvinceId2x2Vec());
+	//_terrainGenerator->SetProvinceMap(_provinceSystem.GetProvinceId2x2Vec());
 
 	_unitSystem = make_unique<UnitSystem>();
 	_unitSystem->Init(this);
@@ -195,6 +195,8 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 void GameSimulationCore::InitRegionalBuildings()
 {
 	std::vector<CardEnum> regionalBuildings(GameMapConstants::TotalRegions, CardEnum::None);
+
+	auto& provinceSys = provinceSystem();
 	
 	for (int y = 0; y < GameMapConstants::RegionsPerWorldY; y++) {
 		for (int x = 0; x < GameMapConstants::RegionsPerWorldX; x++)
@@ -204,13 +206,15 @@ void GameSimulationCore::InitRegionalBuildings()
 			}
 			
 			WorldRegion2 region(x, y);
-			WorldTile2 regionCenter = region.centerTile();
+			int32 provinceId = region.regionId();
+			//WorldTile2 regionCenter = region.centerTile();
 
-			if (terrainGenerator().regionIsOcean(region.regionId())) {
+			WorldTile2 provinceCenter = provinceSys.GetProvinceCenterTile(provinceId);
+			if (!provinceCenter.isValid()) {
 				continue;
 			}
 
-			BiomeEnum biomeEnum = terrainGenerator().GetBiome(region);
+			BiomeEnum biomeEnum = terrainGenerator().GetBiome(provinceCenter);
 
 			auto hasNearbyBuilding = [&](CardEnum cardEnum) {
 				bool hasNearby = false;
@@ -259,8 +263,10 @@ void GameSimulationCore::InitRegionalBuildings()
 			for (int32 i = 0; i < tries; i++)
 			{
 				Direction faceDirection = Direction::S;
-				WorldTile2 centerTile(regionCenter.x + (GameRand::Rand() % randSize) - rangeFromCenter,
-					regionCenter.y + (GameRand::Rand() % randSize) - rangeFromCenter); // current unit's tile is gate tile.
+				//WorldTile2 centerTile(provinceCenter.x + (GameRand::Rand() % randSize) - rangeFromCenter,
+				//						provinceCenter.y + (GameRand::Rand() % randSize) - rangeFromCenter); // current unit's tile is gate tile.
+
+				WorldTile2 centerTile = provinceCenter;
 				TileArea area = BuildingArea(centerTile, GetBuildingInfo(buildingEnum).size, faceDirection);
 
 				bool canPlace = true;

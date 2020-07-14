@@ -398,8 +398,8 @@ public:
 	virtual int32 GetFertilityPercent(WorldTile2 tile) = 0;
 	virtual BiomeEnum GetBiomeEnum(WorldTile2 tile) = 0;
 	virtual BiomeEnum GetBiomeProvince(int32 provinceId) = 0;
-	
-	virtual int32 regionFlatTileCount(int32 regionId) = 0;
+
+	virtual void RefreshHeightForestColorTexture(TileArea area) = 0;
 
 	virtual void TryRemoveDescriptionUI(ObjectTypeEnum type, int32_t objectId) = 0;
 

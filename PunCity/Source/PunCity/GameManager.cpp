@@ -1044,7 +1044,7 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 
 			skyLight->SetIntensity(0.5);
 
-			PUN_LOG("directionalLight %f sky %f", directionalLight->Intensity, skyLight->Intensity);
+			//PUN_LOG("directionalLight %f sky %f", directionalLight->Intensity, skyLight->Intensity);
 		}
 
 

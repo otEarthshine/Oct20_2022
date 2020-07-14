@@ -78,7 +78,10 @@ public:
 	TArray<int32> GetTickHashes(int32 startTick) { return _simulation->GetTickHashes(startTick); }
 
 	IGameNetworkInterface* networkInterface() { return _networkInterface; }
-	
+
+	void RefreshHeightForestColorTexture(TileArea area) override {
+		_terrainMap->RefreshHeightForestColorTexture(area);
+	}
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) USceneComponent* _root;

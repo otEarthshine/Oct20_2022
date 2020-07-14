@@ -10,6 +10,9 @@
 
 using namespace std;
 
+bool UTerrainMapComponent::isHeightForestColorDirty = false;
+float UTerrainMapComponent::lastUpdatedHeightForestColor = 0.0f;
+
 // Sets default values for this component's properties
 UTerrainMapComponent::UTerrainMapComponent()
 {
@@ -206,8 +209,23 @@ void UTerrainMapComponent::UpdateTerrainMapDisplay(bool mapTerrainVisible, bool 
 	{
 		_buildingsMeshes->SetWorldLocation(MapUtil::DisplayLocation(_dataSource->cameraAtom(), WorldAtom2::Zero));
 	}
-	
+
+	// HeightForestColorUpdate
+	{
+		const float minUpdateInterval = 20.0f;
+		if (mapTerrainVisible &&
+			UGameplayStatics::GetTimeSeconds(GetWorld()) - lastUpdatedHeightForestColor > minUpdateInterval &&
+			isHeightForestColorDirty)
+		{
+			isHeightForestColorDirty = false;
+			lastUpdatedHeightForestColor = UGameplayStatics::GetTimeSeconds(GetWorld());
+
+			SCOPE_TIMER("SetTextureData heightForestColor Texture");
+			PunUnrealUtils::SetTextureData(_assetLoader->heightTexture, heightForestColor);
+		}
+	}
 }
+
 
 void UTerrainMapComponent::SetupWorldMapMesh(IDisplaySystemDataSource* dataSource, int tileDimXIn, int tileDimYIn, int worldMapSizeX, int worldMapSizeY, MapSizeEnum mapSizeEnum, UAssetLoaderComponent* assetLoader)
 {
@@ -272,12 +290,82 @@ void UTerrainMapComponent::SetupWorldMapMesh(IDisplaySystemDataSource* dataSourc
 	}
 }
 
-//std::vector<uint32> UTerrainMapComponent::heightForestColor;
+std::vector<uint32> UTerrainMapComponent::heightForestColor;
+int UTerrainMapComponent::tileDimX;
+int UTerrainMapComponent::tileDimY;
+int UTerrainMapComponent::tileDimX2;
+int UTerrainMapComponent::tileDimY2;
 
-void UTerrainMapComponent::SetupGlobalTextures(int tileDimX, int tileDimY, IGameSimulationCore* simulation, UAssetLoaderComponent* assetLoader)
+void UTerrainMapComponent::RefreshHeightForestColor(TileArea area, IGameSimulationCore* simulation, UAssetLoaderComponent* assetLoader)
+{
+	SCOPE_TIMER("Refresh HeightForestColor");
+
+	isHeightForestColorDirty = true;
+	
+	PunTerrainGenerator& terrainGenerator = simulation->terrainGenerator();
+	const std::vector<int16>& heightMap = terrainGenerator.heightMap;
+	TreeSystem& treeSystem = simulation->treeSystem();
+
+	area.ExecuteOnArea_Tile([&](int16_t x, int16_t y)
+	{
+		WorldTile2 tile(x, y);
+		int32 tileId = tile.tileId();
+
+		// Height
+		float height = FDToFloat(heightMap[tileId]);
+		int32 heightColor = static_cast<int32_t>(255.0f * height);
+		heightColor = min(255, max(0, heightColor));
+
+		// Forest shade
+		uint8 forestColor = 0;
+		for (int32_t yy = y - 1; yy <= y + 1; yy++) {
+			for (int32_t xx = x - 1; xx <= x + 1; xx++) {
+				forestColor += treeSystem.treeShade(tileId) ? 28 : 0; // 28 = 255/9
+			}
+		}
+
+		// Water
+		FColor color = FColor(static_cast<uint8>(heightColor), (x % 5 == 0) ? 255 : 0, forestColor, forestColor);
+		heightForestColor[tileId] = color.ToPackedARGB();
+	});
+	
+	//for (int y = 0; y < tileDimY; y++) {
+	//	for (int x = 0; x < tileDimX; x++)
+	//	{
+	//		WorldTile2 tile(x, y);
+	//		int32 tileId = tile.tileId();
+
+	//		// Height
+	//		float height = FDToFloat(heightMap[tileId]);
+	//		int32 heightColor = static_cast<int32_t>(255.0f * height);
+	//		heightColor = min(255, max(0, heightColor));
+
+	//		// Forest shade
+	//		uint8 forestColor = 0;
+	//		if (x >= 1 && y >= 1 && x < (tileDimX - 1) && y < (tileDimY - 1))
+	//		{
+	//			for (int32_t yy = y - 1; yy <= y + 1; yy++) {
+	//				for (int32_t xx = x - 1; xx <= x + 1; xx++) {
+	//					forestColor += treeSystem.treeShade(tileId) ? 28 : 0; // 28 = 255/9
+	//				}
+	//			}
+	//		}
+
+
+	//		// Water
+	//		FColor color = FColor(static_cast<uint8>(heightColor), 0, forestColor, forestColor);
+	//		heightForestColor[tileId] = color.ToPackedARGB();
+	//	}
+	//}
+
+}
+
+void UTerrainMapComponent::SetupGlobalTextures(int tileDimXIn, int tileDimYIn, IGameSimulationCore* simulation, UAssetLoaderComponent* assetLoader)
 {
 	PunTerrainGenerator& terrainGenerator = simulation->terrainGenerator();
-	TreeSystem& treeSystem = simulation->treeSystem();
+
+	tileDimX = tileDimXIn;
+	tileDimY = tileDimYIn;
 	
 	//! Textures
 	const int biomeSteps = 16;
@@ -294,67 +382,49 @@ void UTerrainMapComponent::SetupGlobalTextures(int tileDimX, int tileDimY, IGame
 	//std::vector<TerrainRegionInfo>& regionToInfo = terrainGenerator.regionToInfo;
 
 	{
-		SCOPE_TIMER("Setup WorldMap Height Texture");
-
 		heightForestColor.clear();
 		heightForestColor.resize(heightMap.size(), 0);
 
+		TileArea area(1, 1, tileDimX - 1, tileDimY - 1);
+		RefreshHeightForestColor(area, simulation, assetLoader);
 
-		for (int y = 0; y < tileDimY; y++) {
-			for (int x = 0; x < tileDimX; x++)
-			{
-				WorldTile2 tile(x, y);
-				int32 tileId = tile.tileId();
-
-				// Height
-				float height = FDToFloat(heightMap[tileId]);
-				int32 heightColor = static_cast<int32_t>(255.0f * height);
-				heightColor = min(255, max(0, heightColor));
-
-				// Forest shade
-				uint8 forestColor = 0;
-				if (x >= 1 && y >= 1 && x < (tileDimX - 1) && y < (tileDimY - 1))
-				{
-					for (int32_t yy = y - 1; yy <= y + 1; yy++) {
-						for (int32_t xx = x - 1; xx <= x + 1; xx++) {
-							forestColor += treeSystem.treeShade(tileId) ? 28 : 0; // 28 = 255/9
-						}
-					}
-				}
-
-
-				// Water
-				FColor color = FColor(static_cast<uint8>(heightColor), 0, forestColor, forestColor);
-				heightForestColor[tileId] = color.ToPackedARGB();
-
-				//// river map
-				//if ((x % 4 == 0) && (y % 4 == 0))
-				//{
-				//	int tile4x4Id = (x / 4) + (y / 4) * (tileDimX / 4);
-
-				//	int latitude = (x / 4) * 100 / (tileDimX / 4);
-
-				//	// TODO: Temperature range becomes wider as we go away from equator
-				//	int equatorMaxtemperature = 30;
-				//	int poleMaxTemperature = 0;
-
-				//	int absLatitude = abs(latitude - 50);
-
-				//	int temperature = equatorMaxtemperature + (poleMaxTemperature - equatorMaxtemperature) * absLatitude / 50;
-				//	temperature *= 3; // temp since temperature is max at only 30
-
-				//	uint8 mountain = mountainMap[tile4x4Id];
-				//	uint8 rainfall = rainfallMap[tile4x4Id];
-
-				//	//uint8 trimmedRainfall = static_cast<int32_t>(rainfallMap[tile4x4Id]) * 8 / 10;
-				//	//uint8 moisture = max(trimmedRainfall, riverMap[tile4x4Id]); // 0 - 0.8 is normal green... beyond that it is river green...
-
-				//	biomeData[tile4x4Id] = FColor(temperature, rainfall, mountain, riverMap[tile4x4Id]).ToPackedARGB();
-				//}
-			}
-		}
+		SCOPE_TIMER("SetTextureData heightForestColor Texture");
 
 		PunUnrealUtils::SetTextureData(assetLoader->heightTexture, heightForestColor);
+		lastUpdatedHeightForestColor = UGameplayStatics::GetTimeSeconds(assetLoader->GetWorld());
+		
+		//SCOPE_TIMER("Update heightForestColor");
+		//
+		//for (int y = 0; y < tileDimY; y++) {
+		//	for (int x = 0; x < tileDimX; x++)
+		//	{
+		//		WorldTile2 tile(x, y);
+		//		int32 tileId = tile.tileId();
+
+		//		// Height
+		//		float height = FDToFloat(heightMap[tileId]);
+		//		int32 heightColor = static_cast<int32_t>(255.0f * height);
+		//		heightColor = min(255, max(0, heightColor));
+
+		//		// Forest shade
+		//		uint8 forestColor = 0;
+		//		if (x >= 1 && y >= 1 && x < (tileDimX - 1) && y < (tileDimY - 1))
+		//		{
+		//			for (int32_t yy = y - 1; yy <= y + 1; yy++) {
+		//				for (int32_t xx = x - 1; xx <= x + 1; xx++) {
+		//					forestColor += treeSystem.treeShade(tileId) ? 28 : 0; // 28 = 255/9
+		//				}
+		//			}
+		//		}
+
+
+		//		// Water
+		//		FColor color = FColor(static_cast<uint8>(heightColor), 0, forestColor, forestColor);
+		//		heightForestColor[tileId] = color.ToPackedARGB();
+		//	}
+		//}
+
+		//PunUnrealUtils::SetTextureData(assetLoader->heightTexture, heightForestColor);
 	}
 
 	{

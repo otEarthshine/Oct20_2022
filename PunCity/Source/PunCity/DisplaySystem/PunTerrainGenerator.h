@@ -36,7 +36,7 @@ public:
 	bool SaveOrLoad(bool isSaving);
 
 	void SetGameMap(bool isMapSetup = true);
-	void SetProvinceMap(const std::vector<int32>& provinceId2x2Vec);
+	//void SetProvinceMap(const std::vector<int32>& provinceId2x2Vec);
 
 	const std::vector<int16>& GetHeightMap() { return heightMap; }
 
@@ -58,11 +58,11 @@ public:
 	 * Region info
 	 */
 	
-	int16 regionMountainTileCount(int32 regionId) const { return _regionMountainTileCount[regionId]; }
-	int16 regionWaterTileCount(int32 regionId) const { return _regionWaterTileCount[regionId]; }
-	int32 regionFlatTileCount(int32 regionId) const { return CoordinateConstants::TileIdsPerRegion - regionMountainTileCount(regionId) - regionWaterTileCount(regionId); };
-	bool regionIsMountain(int32 regionId) const { return regionMountainTileCount(regionId) > CoordinateConstants::TileIdsPerRegion / 3; }
-	bool regionIsOcean(int32 regionId) const { return regionWaterTileCount(regionId) > CoordinateConstants::TileIdsPerRegion * 3 / 4; }
+	//int16 regionMountainTileCount(int32 regionId) const { return _regionMountainTileCount[regionId]; }
+	//int16 regionWaterTileCount(int32 regionId) const { return _regionWaterTileCount[regionId]; }
+	//int32 regionFlatTileCount(int32 regionId) const { return CoordinateConstants::TileIdsPerRegion - regionMountainTileCount(regionId) - regionWaterTileCount(regionId); };
+	//bool regionIsMountain(int32 regionId) const { return regionMountainTileCount(regionId) > CoordinateConstants::TileIdsPerRegion / 3; }
+	//bool regionIsOcean(int32 regionId) const { return regionWaterTileCount(regionId) > CoordinateConstants::TileIdsPerRegion * 3 / 4; }
 
 
 	const std::vector<uint8>& river4x4Map() { return _river4x4Map; }
@@ -159,16 +159,16 @@ public:
 		return GetBiomeInfoFromTile(tile).name;
 	}
 
-	bool IsRegionWater(WorldRegion2 region) {
-		return regionWaterTileCount(region.regionId()) > CoordinateConstants::TileIdsPerRegion * 3 / 4;
-	}
-	std::string GetBiomeName(WorldRegion2 region)
-	{
-		if (IsRegionWater(region)) {
-			return "Water";
-		}
-		return GetBiomeInfoFromTile(region.centerTile()).name;
-	}
+	//bool IsRegionWater(WorldRegion2 region) {
+	//	return regionWaterTileCount(region.regionId()) > CoordinateConstants::TileIdsPerRegion * 3 / 4;
+	//}
+	//std::string GetBiomeName(WorldRegion2 region)
+	//{
+	//	if (IsRegionWater(region)) {
+	//		return "Water";
+	//	}
+	//	return GetBiomeInfoFromTile(region.centerTile()).name;
+	//}
 
 	int32 IsOceanCoast(WorldTile2 tile) const {
 		int32 tile4x4Id = (tile.x / 4) + (tile.y / 4) * _tile4x4DimX;
@@ -207,8 +207,8 @@ public:
 				SetGameMap(false);
 			}
 			SerializeCrc(Ar, _terrainMap);
-			SerializeCrc(Ar, _regionMountainTileCount);
-			SerializeCrc(Ar, _regionWaterTileCount);
+			//SerializeCrc(Ar, _regionMountainTileCount);
+			//SerializeCrc(Ar, _regionWaterTileCount);
 		}
 	}
 
@@ -279,8 +279,8 @@ private:
 	std::vector<TerrainTileType> _terrainMap;
 
 	// TODO: remove these
-	std::vector<int16> _regionMountainTileCount;
-	std::vector<int16> _regionWaterTileCount;
+	//std::vector<int16> _regionMountainTileCount;
+	//std::vector<int16> _regionWaterTileCount;
 
 private:
 	/*

@@ -34,8 +34,8 @@ void PunTerrainGenerator::Init(IGameSimulationCore* simulation, int tileDimX, in
 
 	_LOG(PunTerrain, "Init tileDimX:%d tileDimY:%d displayUnitPerTile:%f", _tileDimX, _tileDimY, _displayUnitPerTile);
 	
-	_regionMountainTileCount.resize(GameMapConstants::TotalRegions);
-	_regionWaterTileCount.resize(GameMapConstants::TotalRegions);
+	//_regionMountainTileCount.resize(GameMapConstants::TotalRegions);
+	//_regionWaterTileCount.resize(GameMapConstants::TotalRegions);
 
 	_river4x4Map.clear();
 	_river4x4Map.resize(_tile4x4DimX * _tile4x4DimY, 0);
@@ -845,7 +845,7 @@ void PunTerrainGenerator::SetGameMap(bool isMapSetup)
 				_simulation->SetWalkableSkipFlood(tile, false);
 			}
 			_terrainMap[tile.tileId()] = TerrainTileType::Ocean;
-			_regionWaterTileCount[tile.regionId()]++;
+			//_regionWaterTileCount[tile.regionId()]++;
 		};
 		for (int y = 0; y < _tileDimY; y++) {
 			paintBorder(WorldTile2(0, y));
@@ -922,36 +922,36 @@ void PunTerrainGenerator::SetGameMap(bool isMapSetup)
 }
 
 // TODO: remove
-void PunTerrainGenerator::SetProvinceMap(const std::vector<int32>& provinceId2x2Vec)
-{
-	VecReset(_regionMountainTileCount);
-	VecReset(_regionWaterTileCount);
-	
-	const int32 tileDimX2 = _tileDimX / 2;
-	const int32 tileDimY2 = _tileDimY / 2;
-
-	for (int32 y2 = 0; y2 < tileDimY2; y2++) {
-		for (int32 x2 = 0; x2 < tileDimX2; x2++)
-		{
-			int32 provinceId = provinceId2x2Vec[x2 + y2 * tileDimX2];
-
-			if (IsValidProvinceId(provinceId))
-			{
-				provinceId = abs(provinceId);
-
-				WorldTile2x2 tile2x2(x2, y2);
-				TerrainTileType tileType = _terrainMap[tile2x2.worldTile2().tileId()];
-
-				if (tileType == TerrainTileType::Mountain) {
-					_regionMountainTileCount[provinceId]++;
-				}
-				else if (IsWaterTileType(tileType)) {
-					_regionWaterTileCount[provinceId]++;
-				}
-			}
-		}
-	}
-}
+//void PunTerrainGenerator::SetProvinceMap(const std::vector<int32>& provinceId2x2Vec)
+//{
+//	//VecReset(_regionMountainTileCount);
+//	//VecReset(_regionWaterTileCount);
+//	
+//	const int32 tileDimX2 = _tileDimX / 2;
+//	const int32 tileDimY2 = _tileDimY / 2;
+//
+//	for (int32 y2 = 0; y2 < tileDimY2; y2++) {
+//		for (int32 x2 = 0; x2 < tileDimX2; x2++)
+//		{
+//			int32 provinceId = provinceId2x2Vec[x2 + y2 * tileDimX2];
+//
+//			if (IsValidProvinceId(provinceId))
+//			{
+//				provinceId = abs(provinceId);
+//
+//				WorldTile2x2 tile2x2(x2, y2);
+//				TerrainTileType tileType = _terrainMap[tile2x2.worldTile2().tileId()];
+//
+//				//if (tileType == TerrainTileType::Mountain) {
+//				//	_regionMountainTileCount[provinceId]++;
+//				//}
+//				//else if (IsWaterTileType(tileType)) {
+//				//	_regionWaterTileCount[provinceId]++;
+//				//}
+//			}
+//		}
+//	}
+//}
 
 
 static std::vector<int16_t> newOctave;
@@ -1396,8 +1396,8 @@ uint8 PunTerrainGenerator::Init1()
 		}
 	}
 
-	VecReset(_regionMountainTileCount);
-	VecReset(_regionWaterTileCount);
+	//VecReset(_regionMountainTileCount);
+	//VecReset(_regionWaterTileCount);
 
 	// TODO: tileDimY from norm var below
 

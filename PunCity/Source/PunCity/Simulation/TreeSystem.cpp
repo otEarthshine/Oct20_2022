@@ -57,7 +57,8 @@ void TreeSystem::Init(int sizeX, int sizeY, IGameSimulationCore* simulation)
 	for (int i = 0; i < GameMapConstants::TotalRegions; i++) {
 		_regionToMarkTileIds[i].Init(WorldRegion2(i));
 
-		int32 maxBushesForThisRegion = _simulation->terrainGenerator().regionFlatTileCount(i) * GrassToBushValue / 4;
+		// TODO: remove _regionToGrassCount and use 5x5 tiles check when planting grass after init... (init is just normal randomize)
+		int32 maxBushesForThisRegion = CoordinateConstants::TileIdsPerRegion * GrassToBushValue / 4;
 		_regionToGrassCount[i] = maxBushesForThisRegion;
 	}
 
@@ -273,6 +274,12 @@ ResourcePair TreeSystem::RemoveTileObj(WorldTile2 tile, bool animate)
 					//_treeShade[x + y * _sizeX] = false;
 				}
 			}
+		}
+
+		// Update the HeightForestColor texture
+		if (Time::Ticks() > 0) {
+			// trees removal not marked animated are Inits
+			_simulation->RefreshHeightForestColorTexture(checkArea);
 		}
 
 		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Trees, tile.regionId(), true);

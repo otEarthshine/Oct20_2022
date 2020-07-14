@@ -100,7 +100,6 @@ public:
 	{
 		LLM_SCOPE_(EPunSimLLMTag::PUN_Sound);
 		
-		_LOG(LogPunSound, "Sound InitForMainMenu");
 		
 		_playerSettings = playerSettings;
 		_worldContext = worldContext;
@@ -109,7 +108,7 @@ public:
 #if WITH_EDITOR
 		forcedUsedPak = true;
 #endif
-		LoadSounds(forcedUsedPak);
+		LoadSounds();
 		InitUI();
 	}
 
@@ -249,12 +248,14 @@ public:
 		
 		//PUN_LOG("_groupNameToAudioStartTime %d", _groupNameToAudioStartTime.size());
 		
-		for (size_t i = _groupNameToAudioStartTime.size(); i-- > 0;) {
+		for (size_t i = _groupNameToAudioStartTime.size(); i-- > 0;) 
+		{	
 			if (time >= _groupNameToAudioStartTime[i].second) 
 			{	
 				const std::string& groupName = _groupNameToAudioStartTime[i].first;
-				_groupNameToPlayStartTime[groupName] = time;
 				auto punAudio = GetAudioComponent(groupName);
+				
+				_groupNameToPlayStartTime[groupName] = time;
 				UAudioComponent* audio = punAudio->audio;
 				if (audio) {
 					audio->SetPaused(false);
@@ -472,55 +473,54 @@ public:
 			return;
 		}
 
-		checkNoEntry();
+		// If we are taking sound from cachedEngineImport, folder, or pak
+		// Need to make SoundAssets first
+		if (!_isPackagingData) {
+			gameInstance->TryAddSound(ToFString(soundName), NewObject<USoundAssets>());
+		}
 
-		//// If we are taking sound from cachedEngineImport, folder, or pak
-		//// Need to make SoundAssets first
-		//if (!_isPackagingData) {
-		//	gameInstance->TryAddSound(ToFString(soundName), NewObject<USoundAssets>());
-		//}
-		//
-		//if (_forceUseEngineImport)
-		//{
-		//	USoundAssets* soundAssets = GetSoundAssets(soundName);
-		//	TArray<USoundWave*>& waves = soundNameToWaves[ToFString(soundName)];
-		//	for (auto wave : waves)
-		//	{
-		//		USoundAsset* soundAsset = NewObject<USoundAsset>();
-		//		soundAsset->sound = wave;
-		//		soundAsset->isRawData = false;
+		if (_forceUseEngineImport)
+		{
+			USoundAssets* soundAssets = GetSoundAssets(soundName);
+			TArray<USoundWave*>& waves = soundNameToWaves[ToFString(soundName)];
+			for (auto wave : waves)
+			{
+				USoundAsset* soundAsset = NewObject<USoundAsset>();
+				soundAsset->sound = wave;
+				soundAsset->isRawData = false;
 
-		//		soundAsset->soundName = soundName;
-		//		soundAsset->assetIndex = soundAssets->assets.Num();
+				soundAsset->soundName = soundName;
+				soundAsset->assetIndex = soundAssets->assets.Num();
 
-		//		soundAssets->assets.Add(soundAsset);
-		//	}
-		//	
-		//	PUN_CHECK(soundAssets->assets.Num() > 0);
+				soundAssets->assets.Add(soundAsset);
+			}
 
-		//	PUN_LOG("Load from engine import %s %s sounds:%d", ToTChar(soundName), *FString(folderPath), soundAssets->assets.Num());
+			PUN_CHECK(soundAssets->assets.Num() > 0);
 
-		//	return;
-		//}
+			PUN_LOG("Load from engine import %s %s sounds:%d", ToTChar(soundName), *FString(folderPath), soundAssets->assets.Num());
 
-		//
-		//
-		////_LOG(LogPunSound, "LoadRawSoundFolder name:%s _packagingKeys:%d _packagingData:%d", ToTChar(soundName), _packagingKeys.Num(), _packagingData.Num());
-		//
+			return;
+		}
 
-		//FString savedPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir());
-		//FString findDirectory = savedPath + FString("/Sound/") + FString(folderPath) + FString("/");
+		checkNoEntry(); // The rest is legacy
+		return;
+		
+		//_LOG(LogPunSound, "LoadRawSoundFolder name:%s _packagingKeys:%d _packagingData:%d", ToTChar(soundName), _packagingKeys.Num(), _packagingData.Num());
+		
 
-		//TArray<FString> foundFiles;
+		FString savedPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir());
+		FString findDirectory = savedPath + FString("/Sound/") + FString(folderPath) + FString("/");
 
-		//FindOrLookupSoundDirectory(foundFiles, folderPath);
+		TArray<FString> foundFiles;
+
+		FindOrLookupSoundDirectory(foundFiles, folderPath);
 
 
-		//checkf(foundFiles.Num() > 0, TEXT("Failed to find sound in folder: %s"), *findDirectory);
+		checkf(foundFiles.Num() > 0, TEXT("Failed to find sound in folder: %s"), *findDirectory);
 
-		//for (FString filePath : foundFiles) {
-		//	LoadRawSoundFiles(soundName, filePath);
-		//}
+		for (FString filePath : foundFiles) {
+			LoadRawSoundFiles(soundName, filePath);
+		}
 	}
 
 	void FindOrLookupSoundDirectory(TArray<FString>& foundFiles, const char* folderPath)
@@ -724,67 +724,69 @@ public:
 	/*
 	 * Important!
 	 */
-	void PackageSound()
-	{
-		LLM_SCOPE_(EPunSimLLMTag::PUN_Sound);
-		
-		_isPackagingData = true;
-		_packagingKeys.Empty();
-		_packagingData.Empty();
-		_packagingDataCompressed.Empty();
-		
-		LoadRawSoundFolders();
-
-		FAES::FAESKey aesKey = GetAesKey();
-
-		FString path = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
-		FString saveFileName = "Paks/Extras.paka";
-		
-		PunFileUtils::SaveFile(path + saveFileName, [&](FArchive& Ar) 
-		{
-			Ar << _packagingKeys;
-			Ar << _packagingWaveInfo;
-			
-			for (int32 i = 0; i < _packagingKeys.Num(); i++) 
-			{
-				// OGG Compression
-				FAudioPlatformOggModule oggModule;
-				FAudioFormatOgg* oggAudioFormat = static_cast<FAudioFormatOgg*>(oggModule.GetAudioFormat());
-				FSoundQualityInfo qualityInfo;
-				qualityInfo.Quality = 40;
-				qualityInfo.NumChannels = _packagingWaveInfo[i].channelCount;
-				qualityInfo.SampleRate = _packagingWaveInfo[i].samplesPerSec;
-				qualityInfo.SampleDataSize = _packagingWaveInfo[i].sampleDataSize;
-				qualityInfo.Duration = _packagingWaveInfo[i].duration;
-				qualityInfo.bStreaming = false;
-
-				//PUN_LOG("Ogg Cooking RawPCM:%d", _packagingData[i].Num());
-
-				TArray<uint8> compressedPCM;
-				oggAudioFormat->Cook(NAME_OGG, _packagingData[i], qualityInfo, compressedPCM);
-
-				//PUN_LOG("Ogg Cooking Compressed:%d", compressedPCM.Num());
-				
-				Ar << compressedPCM;
-			}
-		}, &aesKey);
-
-		_packagingKeys.Empty();
-		_packagingData.Empty();
-		_packagingDataCompressed.Empty();
-		_isPackagingData = false;
-	}
-
-	void UsePackageSound()
-	{
-		LLM_SCOPE_(EPunSimLLMTag::PUN_Sound);
-		
-		bool forcedUsedPak = false;
-#if WITH_EDITOR
-		forcedUsedPak = true;
-#endif
-		LoadSounds(forcedUsedPak);
-	}
+//	void PackageSound()
+//	{
+//		checkNoEntry();
+//		
+//		LLM_SCOPE_(EPunSimLLMTag::PUN_Sound);
+//		
+//		_isPackagingData = true;
+//		_packagingKeys.Empty();
+//		_packagingData.Empty();
+//		_packagingDataCompressed.Empty();
+//		
+//		LoadRawSoundFolders();
+//
+//		FAES::FAESKey aesKey = GetAesKey();
+//
+//		FString path = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
+//		FString saveFileName = "Paks/Extras.paka";
+//		
+//		PunFileUtils::SaveFile(path + saveFileName, [&](FArchive& Ar) 
+//		{
+//			Ar << _packagingKeys;
+//			Ar << _packagingWaveInfo;
+//			
+//			for (int32 i = 0; i < _packagingKeys.Num(); i++) 
+//			{
+//				// OGG Compression
+//				FAudioPlatformOggModule oggModule;
+//				FAudioFormatOgg* oggAudioFormat = static_cast<FAudioFormatOgg*>(oggModule.GetAudioFormat());
+//				FSoundQualityInfo qualityInfo;
+//				qualityInfo.Quality = 40;
+//				qualityInfo.NumChannels = _packagingWaveInfo[i].channelCount;
+//				qualityInfo.SampleRate = _packagingWaveInfo[i].samplesPerSec;
+//				qualityInfo.SampleDataSize = _packagingWaveInfo[i].sampleDataSize;
+//				qualityInfo.Duration = _packagingWaveInfo[i].duration;
+//				qualityInfo.bStreaming = false;
+//
+//				//PUN_LOG("Ogg Cooking RawPCM:%d", _packagingData[i].Num());
+//
+//				TArray<uint8> compressedPCM;
+//				oggAudioFormat->Cook(NAME_OGG, _packagingData[i], qualityInfo, compressedPCM);
+//
+//				//PUN_LOG("Ogg Cooking Compressed:%d", compressedPCM.Num());
+//				
+//				Ar << compressedPCM;
+//			}
+//		}, &aesKey);
+//
+//		_packagingKeys.Empty();
+//		_packagingData.Empty();
+//		_packagingDataCompressed.Empty();
+//		_isPackagingData = false;
+//	}
+//
+//	void UsePackageSound()
+//	{
+//		LLM_SCOPE_(EPunSimLLMTag::PUN_Sound);
+//		
+//		bool forcedUsedPak = false;
+//#if WITH_EDITOR
+//		forcedUsedPak = true;
+//#endif
+//		LoadSounds(forcedUsedPak);
+//	}
 
 	static FAES::FAESKey GetAesKey() {
 		FAES::FAESKey aesKey;
@@ -794,11 +796,11 @@ public:
 		return aesKey;
 	}
 
-	void LoadSounds(bool forceUsePakSound)
+	void LoadSounds()
 	{
 		LLM_SCOPE_(EPunSimLLMTag::PUN_Sound);
 		
-		_LOG(LogPunSound, "LoadSounds forceUsePakSound:%d", forceUsePakSound);
+		_LOG(LogPunSound, "LoadSounds");
 		
 		SCOPE_TIMER_FILTER(5000, "Init LoadSounds");
 
@@ -811,83 +813,83 @@ public:
 		IFileManager::Get().FindFiles(foundSoundDirs, *soundDirPath, false, true);
 
 		
-		// If no SoundFolder, use pak's sound
-		if (_forceUseEngineImport) {
-			
-		}
-		else if (forceUsePakSound || foundSoundDirs.Num() == 0)
-		{
-			_LOG(LogPunSound, "LoadSounds pak");
-			
-			// Use 
-			FString path = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
-			FString saveFileName = "Paks/Extras.paka";
+		//// If no SoundFolder, use pak's sound
+		//if (_forceUseEngineImport) {
+		//	
+		//}
+		//else if (forceUsePakSound || foundSoundDirs.Num() == 0)
+		//{
+		//	_LOG(LogPunSound, "LoadSounds pak");
+		//	
+		//	// Use 
+		//	FString path = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
+		//	FString saveFileName = "Paks/Extras.paka";
 
-			TArray<FString> foundFiles;
-			IFileManager::Get().FindFiles(foundFiles, *(path + saveFileName), true, false);
+		//	TArray<FString> foundFiles;
+		//	IFileManager::Get().FindFiles(foundFiles, *(path + saveFileName), true, false);
 
-			checkf(foundFiles.Num() > 0, TEXT("Failed to find Extras.paka"));
+		//	checkf(foundFiles.Num() > 0, TEXT("Failed to find Extras.paka"));
 
-			_isLoadingFromPak = true;
-			if (foundFiles.Num() == 0) {
-				_isLoadingFromPak = false;
-				_bFoundSoundFiles = false;
-			} else {
-				_bFoundSoundFiles = true;
-			}
+		//	_isLoadingFromPak = true;
+		//	if (foundFiles.Num() == 0) {
+		//		_isLoadingFromPak = false;
+		//		_bFoundSoundFiles = false;
+		//	} else {
+		//		_bFoundSoundFiles = true;
+		//	}
 
-			// If not yet loaded from the menu, load it
-			if (_packagingKeys.Num() == 0)
-			{
-				_LOG(LogPunSound, "LoadSounds pak, load files begin");
+		//	// If not yet loaded from the menu, load it
+		//	if (_packagingKeys.Num() == 0)
+		//	{
+		//		_LOG(LogPunSound, "LoadSounds pak, load files begin");
 
-				FAES::FAESKey aesKey = GetAesKey();
-				
-				PunFileUtils::LoadFile(path + saveFileName, [&](FArchive& Ar) 
-				{
-					Ar << _packagingKeys;
-					Ar << _packagingWaveInfo;
-					
-					_packagingData.SetNum(_packagingKeys.Num());
-					_packagingDataCompressed.SetNum(_packagingKeys.Num());
-					
-					for (int32 i = 0; i < _packagingKeys.Num(); i++) 
-					{
-						TArray<uint8> compressedPCM;
-						Ar << compressedPCM;
+		//		FAES::FAESKey aesKey = GetAesKey();
+		//		
+		//		PunFileUtils::LoadFile(path + saveFileName, [&](FArchive& Ar) 
+		//		{
+		//			Ar << _packagingKeys;
+		//			Ar << _packagingWaveInfo;
+		//			
+		//			_packagingData.SetNum(_packagingKeys.Num());
+		//			_packagingDataCompressed.SetNum(_packagingKeys.Num());
+		//			
+		//			for (int32 i = 0; i < _packagingKeys.Num(); i++) 
+		//			{
+		//				TArray<uint8> compressedPCM;
+		//				Ar << compressedPCM;
 
-						if (_packagingKeys[i].Left(5) == "Music")
-						{
-							SCOPE_TIMER_("No Decompress OGG %s bytes:%d", *_packagingKeys[i], compressedPCM.Num());
-							_packagingDataCompressed[i] = compressedPCM;
-						}
-						// OGG Decompression for non-music
-						else {
-							SCOPE_TIMER_("Decompress OGG %s", *_packagingKeys[i]);
-							DecompressOGG(_packagingWaveInfo[i], compressedPCM, _packagingData[i]);
-						}
-						//// rawPCM.SetNum(0);
-						//FVorbisAudioInfo AudioInfo;
+		//				if (_packagingKeys[i].Left(5) == "Music")
+		//				{
+		//					SCOPE_TIMER_("No Decompress OGG %s bytes:%d", *_packagingKeys[i], compressedPCM.Num());
+		//					_packagingDataCompressed[i] = compressedPCM;
+		//				}
+		//				// OGG Decompression for non-music
+		//				else {
+		//					SCOPE_TIMER_("Decompress OGG %s", *_packagingKeys[i]);
+		//					DecompressOGG(_packagingWaveInfo[i], compressedPCM, _packagingData[i]);
+		//				}
+		//				//// rawPCM.SetNum(0);
+		//				//FVorbisAudioInfo AudioInfo;
 
-						//// Parse the audio header for the relevant information
-						//FSoundQualityInfo qualityInfo = _packagingWaveInfo[i].qualityInfo();
-						//if (!AudioInfo.ReadCompressedInfo(compressedPCM.GetData(), compressedPCM.Num(), &qualityInfo)) {
-						//	PUN_LOG("Ogg ReadCompressedInfo failed");
-						//}
+		//				//// Parse the audio header for the relevant information
+		//				//FSoundQualityInfo qualityInfo = _packagingWaveInfo[i].qualityInfo();
+		//				//if (!AudioInfo.ReadCompressedInfo(compressedPCM.GetData(), compressedPCM.Num(), &qualityInfo)) {
+		//				//	PUN_LOG("Ogg ReadCompressedInfo failed");
+		//				//}
 
-						//// Decompress all the sample data
-						//_packagingData[i].Empty(qualityInfo.SampleDataSize);
-						//_packagingData[i].AddZeroed(qualityInfo.SampleDataSize);
-						//AudioInfo.ExpandFile(_packagingData[i].GetData(), &qualityInfo);
-					}
-				}, &aesKey);
+		//				//// Decompress all the sample data
+		//				//_packagingData[i].Empty(qualityInfo.SampleDataSize);
+		//				//_packagingData[i].AddZeroed(qualityInfo.SampleDataSize);
+		//				//AudioInfo.ExpandFile(_packagingData[i].GetData(), &qualityInfo);
+		//			}
+		//		}, &aesKey);
 
-				_LOG(LogPunSound, "LoadSounds pak, load files end _packagingKeys:%d _packagingData:%d", _packagingKeys.Num(), _packagingData.Num());
-			}
-			else {
-				_LOG(LogPunSound, "LoadSounds pak: No Sound Folder");
-			}
-		}
+		//		_LOG(LogPunSound, "LoadSounds pak, load files end _packagingKeys:%d _packagingData:%d", _packagingKeys.Num(), _packagingData.Num());
+		//	}
+		//	else {
+		//		_LOG(LogPunSound, "LoadSounds pak: No Sound Folder");
+		//	}
+		//}
 
 		LoadRawSoundFolders();
 
@@ -1154,7 +1156,7 @@ public:
 							if (groupJsonObject->Get()->TryGetNumberField(ToFString(propertyIt.first), value)) {
 								propertyIt.second = value;
 
-								_LOG(PunSound, "Set %s, %s, as %f", ToTChar(groupIt.first), ToTChar(propertyIt.first), value);
+								//_LOG(PunSound, "Set %s, %s, as %f", ToTChar(groupIt.first), ToTChar(propertyIt.first), value);
 							}
 						}
 					}
@@ -1191,7 +1193,7 @@ public:
 									if (soundJsonObject->Get()->TryGetNumberField(ToFString(propertyIt.first), value)) {
 										propertyIt.second = value;
 
-										_LOG(PunSound, "Set %s, %s, %s, as %f", ToTChar(groupIt.first), ToTChar(soundIt.first), ToTChar(propertyIt.first), value);
+										//_LOG(PunSound, "Set %s, %s, %s, as %f", ToTChar(groupIt.first), ToTChar(soundIt.first), ToTChar(propertyIt.first), value);
 									}
 								}
 							}
@@ -1591,7 +1593,7 @@ private:
 		addMusic("Music_NegativeNonWinter");
 		addMusic("Music_NegativeWinter");
 
-		UpdateDecompressedMusicCache();
+		//UpdateDecompressedMusicCache();
 
 		AddHiddenProperty(groupName, "CurrentVolume", 1.0f);
 		AddHiddenProperty(groupName, "RandomVolume", 1.0f);
@@ -1605,18 +1607,18 @@ private:
 		// For FadeOut completely then fadeIn, just fadeOut, and create new sound with delay equal to fadeOutDuration
 		
 		float fadeOutDuration = GetGroupPropertyRef(groupName, "FadeOutDuration");
-		FadeOutFadeInSound(groupName, "Music_PositiveNonWinter", fadeOutDuration, GetRandomPauseDuration(groupName));
+		FadeOutFadeInSound(groupName, "Music_PositiveNonWinter", fadeOutDuration, GetRandomPauseDuration(groupName), false);
 
 		auto getDebugDescriptionFunc = [&](std::string localGroupName) {
 			std::stringstream ss;
 			std::string localSoundName = GetActiveSound(localGroupName);
-			ss << "Track: " << localSoundName;
-
 			auto punAudio = GetAudioComponent(localGroupName);
+			
+			ss << "Track: " << localSoundName << "_" << punAudio->assetIndex;
 			
 			ss << std::fixed << std::showpoint << std::setprecision(1);
 			float duration = punAudio->audio->Sound->GetDuration();
-			ss << ", Duration: " << punAudio->playTime(this) << "/" << duration;
+			ss << ", Duration: " << punAudio->playTime(this) << "/" << duration << ", queue:" << _groupNameToAudioStartTime.size();
 
 			ss << std::setprecision(2);
 			ss << ", Volume:";
@@ -1635,11 +1637,13 @@ private:
 		// Only update every second for performance
 		if (UGameplayStatics::GetAudioTimeSeconds(GetWorld()) > _lastUpdateTime + 1.0f)
 		{
+			_lastUpdateTime = UGameplayStatics::GetAudioTimeSeconds(GetWorld());
+			
 			auto punAudio = GetAudioComponent("Music");
 			
 			//PUN_LOG("Update Music: %s %s Num:%d", ToTChar(punAudio->groupName), ToTChar(punAudio->soundName), punAudios.Num());
 			
-			UpdateDecompressedMusicCache();
+			//UpdateDecompressedMusicCache();
 
 			
 			std::vector<int32> citizenIds = simulation.playerOwned(playerId).adultIds();
@@ -1688,7 +1692,7 @@ private:
 					USoundAsset* soundAsset = getRandomMusic(randomPreferredMusic);
 
 					// Note negative music begins right away without GetRandomPauseDuration(groupName)
-					FadeOutFadeInSound("Music", randomPreferredMusic, fadeOutDuration, fadeOutDuration, true, soundAsset);
+					FadeOutFadeInSound("Music", randomPreferredMusic, fadeOutDuration, fadeOutDuration, false, soundAsset);
 					return;
 				}
 			}
@@ -1709,13 +1713,14 @@ private:
 			if (_forceUseEngineImport)
 			{
 				// Finished playing
-				if (!audio->IsActive())
+				if (punAudio->isFinished(GetWorld()))
 				{
-					// While we are switching to a new track, we shouldn't 
+					// inactive while we are switching to a new track, we shouldn't do anything
 					bool isSwitching = false;
 					for (size_t i = 0; i < _groupNameToAudioStartTime.size(); i++) {
 						if (_groupNameToAudioStartTime[i].first == punAudio->groupName) {
 							isSwitching = true;
+							break;
 						}
 					}
 
@@ -1723,17 +1728,20 @@ private:
 					{
 						std::string randomPreferredMusic = preferredMusicPieces[soundRand.Rand() % preferredMusicPieces.size()];
 
-						//USoundAsset* asset = GetRandomSoundAsset(randomPreferredMusic);
 						USoundAsset* asset = getRandomMusic(randomPreferredMusic);
 						check(asset);
 
 						punAudio->soundName = asset->soundName;
+						punAudio->assetIndex = asset->assetIndex;
 						audio->Sound = asset->sound;
 
 						float pauseDuration = GetRandomPauseDuration("Music");
 						float currentTime = UGameplayStatics::GetAudioTimeSeconds(this);
-						audio->SetPaused(true);
-						_groupNameToAudioStartTime.push_back(std::make_pair(punAudio->groupName, currentTime + pauseDuration));
+						float startTime = currentTime + pauseDuration;
+						audio->Stop();
+						punAudio->startTime = startTime; // negative playTime during pause
+						
+						_groupNameToAudioStartTime.push_back(std::make_pair(punAudio->groupName, startTime));
 
 						PUN_LOG("Switch music audio null: %s %s Num:%d pause:%f", ToTChar(punAudio->groupName), ToTChar(punAudio->soundName), punAudios.Num(), pauseDuration);
 					}
@@ -1741,92 +1749,94 @@ private:
 			}
 			else
 			{
-				/*
-				 * RawData sound
-				 */
-				auto soundProc = CastChecked<USoundWaveProcedural>(audio->Sound);
-				int32 byteCountLeft = soundProc->GetAvailableAudioByteCount();
-				if (byteCountLeft < 1000000)
-				{
-					const uint64 audioComponentID = audio->GetAudioComponentID();
-					auto audioDevice = audio->GetAudioDevice();
-					auto uiInterface = _uiInterface;
 
-					std::string randomPreferredMusic = preferredMusicPieces[soundRand.Rand() % preferredMusicPieces.size()];
-
-					USoundAsset* asset = GetRandomSoundAsset(randomPreferredMusic);
-					check(asset);
-
-					float pauseDuration = GetRandomPauseDuration("Music");
-					int32 bytePerSec = (asset != nullptr) ? (asset->waveInfo.samplesPerSec * asset->waveInfo.sizeOfSample) : 40000;
-					int32 pauseByteCount = bytePerSec * pauseDuration;
-
-					// Negative music starts right away without pause
-					if (negative) {
-						pauseByteCount = 0;
-					}
-
-					if (emptyFeed.Num() < pauseByteCount) {
-						emptyFeed.SetNumZeroed(pauseByteCount, false);
-					}
-
-					if (asset->isPermanentUncompressed())
-					{
-					}
-					else if (asset->bUncompressedDataReady.IsReady()) {
-						MoveMusicAssetToInUse(asset->soundName);
-					}
-					else {
-						// Add 20-sec delay if the music wasn't loaded
-						pauseByteCount = std::fmax(pauseByteCount, bytePerSec * 20.0f);
-					}
-
-
-					FAudioThread::RunCommandOnAudioThread([audioDevice, audioComponentID, uiInterface, asset, pauseByteCount]()
-					{
-						FActiveSound* ActiveSound = audioDevice->FindActiveSound(audioComponentID);
-						if (ActiveSound) {
-							auto soundProc = CastChecked<USoundWaveProcedural>(ActiveSound->GetSound());
-
-							if (pauseByteCount > 0) {
-								soundProc->QueueAudio(emptyFeed.GetData(), pauseByteCount);
-							}
-
-							if (asset == nullptr) {
-								// null asset, don't do anything
-							}
-							else if (asset->isPermanentUncompressed()) {
-								PunAudioData audioData = asset->GetData();
-								soundProc->QueueAudio(audioData.data, audioData.byteCount);
-							}
-							else if (asset->bUncompressedDataReady.IsReady()) {
-								PunAudioData audioData = asset->GetData();
-								soundProc->QueueAudio(audioData.data, audioData.byteCount);
-
-								// After Queuing, we can despawn
-								asset->bUsedUncompressedData = true;
-							}
-
-							//if (rawPCMPtr) {
-							//	soundProc->QueueAudio(rawPCMPtr->GetData(), rawPCMPtr->Num());
-							//}
-						}
-						//AsyncTask(ENamedThreads::GameThread, [&]() {
-						//	uiInterface->PunLog("QueueMusic(Update)");
-						//});
-					});
-				}
-				// RawData sound ends
+				checkNoEntry();
 				
+				///*
+				// * RawData sound
+				// */
+				//auto soundProc = CastChecked<USoundWaveProcedural>(audio->Sound);
+				//int32 byteCountLeft = soundProc->GetAvailableAudioByteCount();
+				//if (byteCountLeft < 1000000)
+				//{
+				//	const uint64 audioComponentID = audio->GetAudioComponentID();
+				//	auto audioDevice = audio->GetAudioDevice();
+				//	auto uiInterface = _uiInterface;
+
+				//	std::string randomPreferredMusic = preferredMusicPieces[soundRand.Rand() % preferredMusicPieces.size()];
+
+				//	USoundAsset* asset = GetRandomSoundAsset(randomPreferredMusic);
+				//	check(asset);
+
+				//	float pauseDuration = GetRandomPauseDuration("Music");
+				//	int32 bytePerSec = (asset != nullptr) ? (asset->waveInfo.samplesPerSec * asset->waveInfo.sizeOfSample) : 40000;
+				//	int32 pauseByteCount = bytePerSec * pauseDuration;
+
+				//	// Negative music starts right away without pause
+				//	if (negative) {
+				//		pauseByteCount = 0;
+				//	}
+
+				//	if (emptyFeed.Num() < pauseByteCount) {
+				//		emptyFeed.SetNumZeroed(pauseByteCount, false);
+				//	}
+
+				//	if (asset->isPermanentUncompressed())
+				//	{
+				//	}
+				//	else if (asset->bUncompressedDataReady.IsReady()) {
+				//		MoveMusicAssetToInUse(asset->soundName);
+				//	}
+				//	else {
+				//		// Add 20-sec delay if the music wasn't loaded
+				//		pauseByteCount = std::fmax(pauseByteCount, bytePerSec * 20.0f);
+				//	}
+
+
+				//	FAudioThread::RunCommandOnAudioThread([audioDevice, audioComponentID, uiInterface, asset, pauseByteCount]()
+				//	{
+				//		FActiveSound* ActiveSound = audioDevice->FindActiveSound(audioComponentID);
+				//		if (ActiveSound) {
+				//			auto soundProc = CastChecked<USoundWaveProcedural>(ActiveSound->GetSound());
+
+				//			if (pauseByteCount > 0) {
+				//				soundProc->QueueAudio(emptyFeed.GetData(), pauseByteCount);
+				//			}
+
+				//			if (asset == nullptr) {
+				//				// null asset, don't do anything
+				//			}
+				//			else if (asset->isPermanentUncompressed()) {
+				//				PunAudioData audioData = asset->GetData();
+				//				soundProc->QueueAudio(audioData.data, audioData.byteCount);
+				//			}
+				//			else if (asset->bUncompressedDataReady.IsReady()) {
+				//				PunAudioData audioData = asset->GetData();
+				//				soundProc->QueueAudio(audioData.data, audioData.byteCount);
+
+				//				// After Queuing, we can despawn
+				//				asset->bUsedUncompressedData = true;
+				//			}
+
+				//			//if (rawPCMPtr) {
+				//			//	soundProc->QueueAudio(rawPCMPtr->GetData(), rawPCMPtr->Num());
+				//			//}
+				//		}
+				//		//AsyncTask(ENamedThreads::GameThread, [&]() {
+				//		//	uiInterface->PunLog("QueueMusic(Update)");
+				//		//});
+				//	});
+				//}
+				//// RawData sound ends
+				//
 			}
 			
 
-			_lastUpdateTime = UGameplayStatics::GetAudioTimeSeconds(GetWorld());
 		}
 
 		float playTime = UGameplayStatics::GetAudioTimeSeconds(this) - GetPlayStartTime("Music");
 		float fadeInVolume = Clamp01(playTime / GetGroupPropertyRef("Music", "FadeInDuration"));
-		fadeInVolume += 0.01; // Need 0.01 to make sure it doesn't just stop the track...
+		fadeInVolume += MinVolume; // Need MinVolume to make sure it doesn't just stop the track...
 
 		GetHiddenPropertyRef("Music", "CurrentVolume") = fadeInVolume;
 	}
@@ -1901,19 +1911,19 @@ private:
 		//return soundArray[soundRand.Rand() % soundArray.Num()];
 	}
 
-	void MoveMusicAssetToInUse(std::string soundName)
-	{
-		for (int32 i = 0; i < _musicSoundNames.size(); i++) {
-			if (_musicSoundNames[i] == soundName) {
-				_musicDecompressedAssetInUse[i] = _musicDecompressedAssetCached[i];
-				_musicDecompressedAssetCached[i] = nullptr;
+	//void MoveMusicAssetToInUse(std::string soundName)
+	//{
+	//	for (int32 i = 0; i < _musicSoundNames.size(); i++) {
+	//		if (_musicSoundNames[i] == soundName) {
+	//			_musicDecompressedAssetInUse[i] = _musicDecompressedAssetCached[i];
+	//			_musicDecompressedAssetCached[i] = nullptr;
 
-				UpdateDecompressedMusicCache(); // refill the music cache rightaway
-				return;
-			}
-		}
-		UE_DEBUG_BREAK();
-	}
+	//			//UpdateDecompressedMusicCache(); // refill the music cache rightaway
+	//			return;
+	//		}
+	//	}
+	//	UE_DEBUG_BREAK();
+	//}
 	
 
 	/*
@@ -1939,66 +1949,66 @@ private:
 		poolArray->bInUse = false;
 	}
 
-	void UpdateDecompressedMusicCache()
-	{
-		if (_forceUseEngineImport) {
-			return;
-		}
-		
-		for (int32 i = 0; i < _musicSoundNames.size(); i++) 
-		{
-			// This ensures we only decompress 1 music at a time
-			if (_musicBeingDecompressed && 
-				_musicBeingDecompressed->bUncompressedDataReady.IsReady())
-			{
-				_musicBeingDecompressed = nullptr;
-			}
-			
-			// Refill the cache if needed
-			if (_musicBeingDecompressed == nullptr &&
-				_musicDecompressedAssetCached[i] == nullptr) 
-			{
-				//_musicDecompressedAssetInUse[i]; // TODO: don't play same music consecutively
+	//void UpdateDecompressedMusicCache()
+	//{
+	//	if (_forceUseEngineImport) {
+	//		return;
+	//	}
+	//	
+	//	for (int32 i = 0; i < _musicSoundNames.size(); i++) 
+	//	{
+	//		// This ensures we only decompress 1 music at a time
+	//		if (_musicBeingDecompressed && 
+	//			_musicBeingDecompressed->bUncompressedDataReady.IsReady())
+	//		{
+	//			_musicBeingDecompressed = nullptr;
+	//		}
+	//		
+	//		// Refill the cache if needed
+	//		if (_musicBeingDecompressed == nullptr &&
+	//			_musicDecompressedAssetCached[i] == nullptr) 
+	//		{
+	//			//_musicDecompressedAssetInUse[i]; // TODO: don't play same music consecutively
 
-				// Add a random asset to the cache
-				TArray<USoundAsset*>& soundArray = GetSoundAssets(_musicSoundNames[i])->assets;
-				PUN_CHECK(soundArray.Num() > 0);
-				USoundAsset* asset = soundArray[soundRand.Rand() % soundArray.Num()];
+	//			// Add a random asset to the cache
+	//			TArray<USoundAsset*>& soundArray = GetSoundAssets(_musicSoundNames[i])->assets;
+	//			PUN_CHECK(soundArray.Num() > 0);
+	//			USoundAsset* asset = soundArray[soundRand.Rand() % soundArray.Num()];
 
-				// Uncompress the compressedData to prepare it for use
-				PunWaveModInfo waveModInfo = asset->waveInfo;
-				UPoolArray* compressedData = asset->compressedData;
+	//			// Uncompress the compressedData to prepare it for use
+	//			PunWaveModInfo waveModInfo = asset->waveInfo;
+	//			UPoolArray* compressedData = asset->compressedData;
 
-				if (_musicSoundNames[i] == "Music_NegativeWinter" ||
-					_musicSoundNames[i] == "Music_NegativeNonWinter") 
-				{
-					asset->data = SpawnMusicData(_smallMusicDecompressedDataPool);
-				} else {
-					asset->data = SpawnMusicData(_largeMusicDecompressedDataPool);
-				}
+	//			if (_musicSoundNames[i] == "Music_NegativeWinter" ||
+	//				_musicSoundNames[i] == "Music_NegativeNonWinter") 
+	//			{
+	//				asset->data = SpawnMusicData(_smallMusicDecompressedDataPool);
+	//			} else {
+	//				asset->data = SpawnMusicData(_largeMusicDecompressedDataPool);
+	//			}
 
-				UPoolArray* data = asset->data;
-				asset->bUncompressedDataReady = Async(EAsyncExecution::Thread, [waveModInfo, compressedData, data]() {
-					return DecompressOGG(waveModInfo, compressedData->data, data->data);
-				});
-				_musicBeingDecompressed = asset;
+	//			UPoolArray* data = asset->data;
+	//			asset->bUncompressedDataReady = Async(EAsyncExecution::Thread, [waveModInfo, compressedData, data]() {
+	//				return DecompressOGG(waveModInfo, compressedData->data, data->data);
+	//			});
+	//			_musicBeingDecompressed = asset;
 
-				
-				_musicDecompressedAssetCached[i] = asset;
-			}
+	//			
+	//			_musicDecompressedAssetCached[i] = asset;
+	//		}
 
-			// Reset and remove _musicDecompressedAssetInUse if it was already used
-			if (_musicDecompressedAssetInUse[i] &&
-				_musicDecompressedAssetInUse[i]->bUsedUncompressedData) 
-			{
-				USoundAsset* asset = _musicDecompressedAssetInUse[i];
-				asset->bUncompressedDataReady.Reset();
-				asset->bUsedUncompressedData = false;
-				DespawnMusicData(asset->data);
-				asset->data = nullptr;
-			}
-		}
-	}
+	//		// Reset and remove _musicDecompressedAssetInUse if it was already used
+	//		if (_musicDecompressedAssetInUse[i] &&
+	//			_musicDecompressedAssetInUse[i]->bUsedUncompressedData) 
+	//		{
+	//			USoundAsset* asset = _musicDecompressedAssetInUse[i];
+	//			asset->bUncompressedDataReady.Reset();
+	//			asset->bUsedUncompressedData = false;
+	//			DespawnMusicData(asset->data);
+	//			asset->data = nullptr;
+	//		}
+	//	}
+	//}
 
 private:
 	/*
@@ -2084,6 +2094,7 @@ private:
 		UAudioComponent* audio = UGameplayStatics::CreateSound2D(_worldContext, sound); // Use Create instead of Spawn to prevent play() right away
 		audio->bAutoDestroy = false;
 		audio->bAlwaysPlay = true;
+		audio->bIsMusic = true;
 
 		// RawData sound
 		if (soundAsset->isRawData) {
@@ -2106,7 +2117,7 @@ private:
 		float& randomVolume = GetHiddenPropertyRef(groupName, "RandomVolume");
 		randomVolume = volumeMin + (volumeMax - volumeMin) * soundRand.Rand01();
 
-		audio->VolumeMultiplier = randomVolume + 0.01; // prevent shutdown..
+		audio->VolumeMultiplier = randomVolume + MinVolume; // prevent shutdown..
 
 		audio->PitchMultiplier = GetSoundPropertyRef(groupName, soundName, "Pitch");
 		audio->PitchModulationMin = GetSoundPropertyRef(groupName, soundName, "PitchModulationMin");

@@ -59,19 +59,7 @@ public:
 		const std::vector<WorldTile2x2>& edges1 = provinceIdIn != -1 ? provinceSys.GetProvinceEdges1(provinceId) : provinceSys.GetTerritoryEdges1(playerId);
 		const std::vector<WorldTile2x2>& edges2 = provinceIdIn != -1 ? provinceSys.GetProvinceEdges2(provinceId) : provinceSys.GetTerritoryEdges2(playerId);
 
-		//for (size_t i = edges1.size(); i-- > 2;)
-		//{
-		//	// If going in the same direction as last edge
-		//	WorldTile2x2 prevTile = edges1[i - 1];
-		//	if (edges1[i] - prevTile == prevTile - edges1[i - 2])
-		//	{
-		//		edges1.erase(edges1.begin() + i);
-		//		edges2.erase(edges2.begin() + i);
-		//	}
-		//};
-		
-
-		PUN_LOG("TerritoryMesh playerId:%d province:%d edges1:%d edges2:%d", playerIdIn, provinceIdIn, edges1.size(), edges2.size());
+		//PUN_LOG("TerritoryMesh playerId:%d province:%d edges1:%d edges2:%d", playerIdIn, provinceIdIn, edges1.size(), edges2.size());
 		
 		size_t borderSize = edges1.size();
 

@@ -965,6 +965,9 @@ public:
 	void RefreshHeightForestColorTexture(TileArea area) override {
 		_gameManager->RefreshHeightForestColorTexture(area);
 	}
+	void SetRoadWorldTexture(WorldTile2 tile, bool isRoad, bool isDirtRoad) override {
+		_gameManager->SetRoadWorldTexture(tile, isRoad, isDirtRoad);
+	}
 
 	//
 

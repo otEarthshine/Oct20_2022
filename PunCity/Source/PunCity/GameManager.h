@@ -82,6 +82,9 @@ public:
 	void RefreshHeightForestColorTexture(TileArea area) override {
 		_terrainMap->RefreshHeightForestColorTexture(area);
 	}
+	void SetRoadWorldTexture(WorldTile2 tile, bool isRoad, bool isDirtRoad) override {
+		_terrainMap->SetRoadWorldTexture(tile, isRoad, isDirtRoad);
+	}
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) USceneComponent* _root;
@@ -143,8 +146,6 @@ private:
 	
 	UPROPERTY(EditAnywhere) UDebugDisplayComponent* _debugDisplaySystem;
 	
-	//UPROPERTY(EditAnywhere) URegionLandmarkDisplayComponent* _landmarkDisplaySystem;
-	
 	UPROPERTY(EditAnywhere) URegionDecalDisplayComponent* _decalDisplaySystem;
 	
 	UPROPERTY(EditAnywhere) UTileObjectDisplayComponent* _tileDisplaySystem;
@@ -163,9 +164,8 @@ private:
 
 	UPROPERTY(EditAnywhere) APostProcessVolume* _postProcessVolume;
 
-	
 	UPROPERTY(EditAnywhere) USoundSystemComponent* _soundSystem;
-	//UPROPERTY(EditAnywhere) class UAudioComponent* _buildingFocusAudioComponent;
+	
 
 	BuildingMeshesListComponent _buildingMeshesList;
 

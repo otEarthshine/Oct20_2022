@@ -336,6 +336,14 @@ struct WorldTile2
 		return WorldTile2();
 	}
 
+	bool IsAdjacentTo(WorldTile2 tile) const {
+		WorldTile2 diffTile = (*this - tile);
+		return diffTile == WorldTile2(1, 0) ||
+			diffTile == WorldTile2(-1, 0) ||
+			diffTile == WorldTile2(0, 1) ||
+			diffTile == WorldTile2(0, -1);
+	}
+
 
 	FArchive& operator>>(FArchive &Ar) {
 		Ar << x << y;
@@ -719,6 +727,10 @@ struct TileArea
 			}
 		}
 		return false;
+	}
+
+	std::vector<WorldRegion2> GetOverlapRegions(bool isSmallArea) const {
+		return isSmallArea ? GetOverlapRegionsSmallArea() : GetOverlapRegions();
 	}
 
 	std::vector<WorldRegion2> GetOverlapRegions() const

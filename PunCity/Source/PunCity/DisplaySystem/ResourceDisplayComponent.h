@@ -3,7 +3,6 @@
 #pragma once
 
 #include "DisplaySystemComponent.h"
-#include "StaticFastInstancedMesh.h"
 #include "StaticFastInstancedMeshesComp.h"
 
 #include "ResourceDisplayComponent.generated.h"
@@ -16,10 +15,15 @@ public:
 
 protected:
 	int CreateNewDisplay(int objectId) override;
-	void OnSpawnDisplay(int objectId, int meshId, WorldAtom2 cameraAtom) override;
 	void UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom) override;
 	void HideDisplay(int meshId) override;
 
-private:
+	void OnSpawnDisplay(int regionId, int meshId, WorldAtom2 cameraAtom) override {
+		_meshes[meshId]->SetActive(true);
+
+		// Refresh
+		simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Resource, regionId, true);
+	}
+
 	UPROPERTY() TArray<UStaticFastInstancedMeshesComp*> _meshes;
 };

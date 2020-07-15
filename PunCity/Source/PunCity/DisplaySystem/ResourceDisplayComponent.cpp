@@ -3,8 +3,8 @@
 
 #include "ResourceDisplayComponent.h"
 
-DECLARE_CYCLE_STAT(TEXT("PUN: [Display]Drops"), STAT_PunDisplayDropTick, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: [Display]Building_Resource"), STAT_PunDisplayBuilding_Resource, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [Display]Drops"), STAT_PunDisplayDropTick, STATGROUP_Game);
 
 using namespace std;
 
@@ -26,14 +26,6 @@ int UResourceDisplayComponent::CreateNewDisplay(int objectId)
 	return meshId;
 }
 
-void UResourceDisplayComponent::OnSpawnDisplay(int regionId, int meshId, WorldAtom2 cameraAtom)
-{
-	_meshes[meshId]->SetActive(true);
-
-	// Refresh
-	simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Resource, regionId, true);
-}
-
 static std::vector<bool> _tileIdToInUse;
 
 void UResourceDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom)
@@ -53,7 +45,7 @@ void UResourceDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 		{
 			SCOPE_CYCLE_COUNTER(STAT_PunDisplayDropTick);
 
-			const std::vector<DropInfo>& drops = dropSystem.Drops(regionId);
+			const std::vector<DropInfo>& drops = dropSystem.DropsInRegion(regionId);
 
 			_tileIdToInUse.resize(maxStack * CoordinateConstants::TileIdsPerRegion);
 			fill(_tileIdToInUse.begin(), _tileIdToInUse.end(), false);
@@ -84,7 +76,7 @@ void UResourceDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 
 			auto& buildingList = buildingSystem.buildingSubregionList();
 
-			buildingList.ExecuteRegion(region, [&](int32_t buildingId)
+			buildingList.ExecuteRegion(region, [&](int32 buildingId)
 			{
 				Building& building = buildingSystem.building(buildingId);
 				std::vector<ResourceHolderInfo>& holderInfos = building.holderInfos();
@@ -188,7 +180,7 @@ void UResourceDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 	// Debug lines
 	if (PunSettings::Settings["DropLines"])
 	{
-		const std::vector<DropInfo>& drops = dropSystem.Drops(regionId);
+		const std::vector<DropInfo>& drops = dropSystem.DropsInRegion(regionId);
 		for (int j = 0; j < drops.size(); j++) {
 			DropInfo dropInfo = drops[j];
 

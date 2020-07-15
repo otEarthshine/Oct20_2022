@@ -434,6 +434,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 			CASE(Fence);
 			CASE(FenceGate);
 			CASE(Bridge);
+			CASE(StorageYard);
 			
 		//	case CardEnum::Farm:
 		//	addBuildIcon(FString("FarmIcon"), FString("SpecialIconAlpha"));

@@ -27,15 +27,21 @@ public:
 	std::vector<int32>& territoryOwnerMap() { return _territoryOwnerMap; }
 
 	void SetProvinceOwner(int32 provinceId, int32 playerId, bool isDirectControl = true)
-	{	
+	{
+		// Also update last owned player
+		int32 lastPlayerId = _territoryOwnerMap[provinceId];
+		if (lastPlayerId != -1) {
+			_simulation->AddNeedDisplayUpdateId(DisplayGlobalEnum::Territory, lastPlayerId);
+		}
+		
 		_territoryOwnerMap[provinceId] = playerId;
 		_isDirectControl[provinceId] = isDirectControl;
 		_simulation->SetNeedDisplayUpdate(DisplayGlobalEnum::Province, true);
 
 		_simulation->AddNeedDisplayUpdateId(DisplayGlobalEnum::Province, provinceId);
-		_simulation->AddNeedDisplayUpdateId(DisplayGlobalEnum::Territory, playerId);
 
 		if (playerId != -1) {
+			_simulation->AddNeedDisplayUpdateId(DisplayGlobalEnum::Territory, playerId);
 			PUN_LOG("SetProvinceOwner province:%d pid:%d", provinceId, playerId);
 		}
 	}

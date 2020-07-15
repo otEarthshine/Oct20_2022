@@ -72,4 +72,5 @@ public:
 
 	// Display
 	virtual void RefreshHeightForestColorTexture(TileArea area) = 0;
+	virtual void SetRoadWorldTexture(WorldTile2 tile, bool isRoad, bool isDirtRoad) = 0;
 };

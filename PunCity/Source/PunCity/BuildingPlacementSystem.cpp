@@ -578,29 +578,29 @@ void ABuildingPlacementSystem::TickLineDrag(WorldAtom2 cameraAtom, function<bool
 			if (_roadPathTileIds.Num() > 0)
 			{
 				for (int32 i = 0; i < _roadPathTileIds.Num(); i++) {
-					_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, WorldTile2(_roadPathTileIds[i]));
+					_placementGrid.SpawnGrid(_canPlaceRoad ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, WorldTile2(_roadPathTileIds[i]));
 				}
 			}
-			else
-			{
-				// Extends isBuildable function to include territory checking
-				auto isBuildableFunc2 = [&](WorldTile2 tile) {
-					if (simulation.tileOwner(tile) != _gameInterface->playerId()) {
-						SetInstruction(PlacementInstructionEnum::OutsideTerritory, true);
-					}
-					return isBuildableFunc(tile);
-				};
-				
-				// Fallback to old method..
-				_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-					_placementGrid.SpawnGrid(isBuildableFunc2(tile) ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, tile);
-				});
-				if (!_area2.isInvalid()) {
-					_area2.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-						_placementGrid.SpawnGrid(isBuildableFunc2(tile) ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, tile);
-					});
-				}
-			}
+			//else
+			//{
+			//	// Extends isBuildable function to include territory checking
+			//	auto isBuildableFunc2 = [&](WorldTile2 tile) {
+			//		if (simulation.tileOwner(tile) != _gameInterface->playerId()) {
+			//			SetInstruction(PlacementInstructionEnum::OutsideTerritory, true);
+			//		}
+			//		return isBuildableFunc(tile);
+			//	};
+			//	
+			//	// Fallback to old method..
+			//	_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+			//		_placementGrid.SpawnGrid(isBuildableFunc2(tile) ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, tile);
+			//	});
+			//	if (!_area2.isInvalid()) {
+			//		_area2.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+			//			_placementGrid.SpawnGrid(isBuildableFunc2(tile) ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, tile);
+			//		});
+			//	}
+			//}
 		}
 	}
 	else {
@@ -860,7 +860,7 @@ void ABuildingPlacementSystem::CalculateRoadLineDrag(function<bool(WorldTile2)> 
 	while (!queueTile.empty())
 	{
 		count++;
-		if (count > 5000) {
+		if (count > 30000) {
 			break;
 		}
 
@@ -881,7 +881,34 @@ void ABuildingPlacementSystem::CalculateRoadLineDrag(function<bool(WorldTile2)> 
 				curTileId = tileIdToPrevTileId[curTileId];
 				_roadPathTileIds.Add(curTileId);
 			}
-			PUN_LOG("FoundPath: %d", _roadPathTileIds.Num());
+
+			// Add corners to non-diagonal road.
+			// When there are 2 tiles adjacent before and after the current tile, we fill in the corner
+			if (_roadPathTileIds.Num() > 5) {
+				for (int32 i = _roadPathTileIds.Num() - 2; i-- > 2;) {
+					WorldTile2 prev1Tile(_roadPathTileIds[i + 1]);
+					WorldTile2 prev2Tile(_roadPathTileIds[i + 2]);
+					WorldTile2 forward0Tile(_roadPathTileIds[i]);
+					WorldTile2 forward1Tile(_roadPathTileIds[i - 1]);
+					
+					bool previousAdjacent = prev1Tile.IsAdjacentTo(prev2Tile);
+					bool midAdjacent = prev2Tile.IsAdjacentTo(forward0Tile);
+					bool forwardAdjacent = forward0Tile.IsAdjacentTo(forward1Tile);
+					if (!midAdjacent && previousAdjacent && forwardAdjacent)
+					{
+						WorldTile2 directionFromPrevious = prev1Tile - prev2Tile;
+						WorldTile2 cornerTile = directionFromPrevious + prev1Tile;
+
+						if (isBuildableFunc(cornerTile)) {
+							_roadPathTileIds.Insert(cornerTile.tileId(), i + 1);
+						}
+					}
+				}
+			}
+
+			_canPlaceRoad = true;
+			
+			PUN_LOG("CalculateRoadLineDrag FoundPath: %d", _roadPathTileIds.Num());
 			return;
 		}
 
@@ -903,42 +930,63 @@ void ABuildingPlacementSystem::CalculateRoadLineDrag(function<bool(WorldTile2)> 
 
 void ABuildingPlacementSystem::CalculateLineDrag()
 {
-	_area = TileArea(min(_dragStartTile.x, _mouseOnTile.x),
-		min(_dragStartTile.y, _mouseOnTile.y),
-		max(_dragStartTile.x, _mouseOnTile.x),
-		max(_dragStartTile.y, _mouseOnTile.y));
-	_area2 = TileArea::Invalid;// Clear to make sure
-	check(_area.minX > -1000);
-	check(_area.minY > -1000);
+	// Backup
+	_roadPathTileIds.Empty();
+	WorldTile2 start = _dragStartTile;
+	WorldTile2 end = _mouseOnTile;
 
-	bool isLongX = _area.sizeX() >= _area.sizeY();
-	if (isLongX) {
-		// LongX means that x goes between dragStartTile.x and mouseOnTile.x, when y is dragStartTile.y
-		_area = TileArea(min(_dragStartTile.x, _mouseOnTile.x), _dragStartTile.y,
-			max(_dragStartTile.x, _mouseOnTile.x), _dragStartTile.y);
-		// Then y goes between dragStartTile.y and mouseOnTile.y, when x is mouseOnTile.x
-		// -1 is to prevent double tile
-		if (_dragStartTile.y > _mouseOnTile.y) {
-			_area2 = TileArea(_mouseOnTile.x, _mouseOnTile.y,
-				_mouseOnTile.x, _dragStartTile.y - 1);
-		}
-		else if (_dragStartTile.y < _mouseOnTile.y) {
-			_area2 = TileArea(_mouseOnTile.x, _dragStartTile.y + 1,
-				_mouseOnTile.x, _mouseOnTile.y);
-		}
+	_roadPathTileIds.Add(start.tileId());
+	WorldTile2 curTile = start;
+	
+	while (curTile != end)
+	{
+		int16 xDiff = end.x - curTile.x;
+		int16 yDiff = end.y - curTile.y;
+		WorldTile2 diff((xDiff == 0) ? 0 : xDiff / abs(xDiff), 
+						(yDiff == 0) ? 0 : yDiff / abs(yDiff));
+		curTile += diff;
+		
+		_roadPathTileIds.Add(curTile.tileId());
 	}
-	else {
-		_area = TileArea(_dragStartTile.x, min(_dragStartTile.y, _mouseOnTile.y),
-			_dragStartTile.x, max(_dragStartTile.y, _mouseOnTile.y));
-		if (_dragStartTile.x > _mouseOnTile.x) {
-			_area2 = TileArea(_mouseOnTile.x, _mouseOnTile.y,
-				_dragStartTile.x - 1, _mouseOnTile.y);
-		}
-		else if (_dragStartTile.x < _mouseOnTile.x) {
-			_area2 = TileArea(_dragStartTile.x + 1, _mouseOnTile.y,
-				_mouseOnTile.x, _mouseOnTile.y);
-		}
-	}
+
+	_canPlaceRoad = false;
+	
+	//_area = TileArea(min(_dragStartTile.x, _mouseOnTile.x),
+	//	min(_dragStartTile.y, _mouseOnTile.y),
+	//	max(_dragStartTile.x, _mouseOnTile.x),
+	//	max(_dragStartTile.y, _mouseOnTile.y));
+	//_area2 = TileArea::Invalid;// Clear to make sure
+	//check(_area.minX > -1000);
+	//check(_area.minY > -1000);
+
+	//bool isLongX = _area.sizeX() >= _area.sizeY();
+	//if (isLongX) {
+	//	// LongX means that x goes between dragStartTile.x and mouseOnTile.x, when y is dragStartTile.y
+	//	_area = TileArea(min(_dragStartTile.x, _mouseOnTile.x), _dragStartTile.y,
+	//		max(_dragStartTile.x, _mouseOnTile.x), _dragStartTile.y);
+	//	// Then y goes between dragStartTile.y and mouseOnTile.y, when x is mouseOnTile.x
+	//	// -1 is to prevent double tile
+	//	if (_dragStartTile.y > _mouseOnTile.y) {
+	//		_area2 = TileArea(_mouseOnTile.x, _mouseOnTile.y,
+	//			_mouseOnTile.x, _dragStartTile.y - 1);
+	//	}
+	//	else if (_dragStartTile.y < _mouseOnTile.y) {
+	//		_area2 = TileArea(_mouseOnTile.x, _dragStartTile.y + 1,
+	//			_mouseOnTile.x, _mouseOnTile.y);
+	//	}
+	//}
+	//else {
+	//	_area = TileArea(_dragStartTile.x, min(_dragStartTile.y, _mouseOnTile.y),
+	//		_dragStartTile.x, max(_dragStartTile.y, _mouseOnTile.y));
+	//	if (_dragStartTile.x > _mouseOnTile.x) {
+	//		_area2 = TileArea(_mouseOnTile.x, _mouseOnTile.y,
+	//			_dragStartTile.x - 1, _mouseOnTile.y);
+	//	}
+	//	else if (_dragStartTile.x < _mouseOnTile.x) {
+	//		_area2 = TileArea(_dragStartTile.x + 1, _mouseOnTile.y,
+	//			_mouseOnTile.x, _mouseOnTile.y);
+	//	}
+	//}
 }
 
 void ABuildingPlacementSystem::CalculateBridgeLineDrag()

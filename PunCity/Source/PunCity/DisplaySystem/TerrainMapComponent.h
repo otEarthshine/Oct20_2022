@@ -48,11 +48,29 @@ public:
 
 	void RefreshHeightForestColorTexture(TileArea area) {
 		isHeightForestColorDirty = true;
-		RefreshHeightForestColor(area, &(_dataSource->simulation()), _assetLoader);
+		RefreshHeightForestColor(area, &(_dataSource->simulation()), false);
+	}
+	void SetRoadWorldTexture(WorldTile2 tile, bool isRoad, bool isDirtRoad)
+	{
+		PUN_LOG("SetRoadWorldTexture %s", *tile.To_FString());
+		
+		isHeightForestColorDirty = true;
+
+		int32 tileId = tile.tileId();
+
+		FColor color(heightForestColor[tileId]);
+		if (isRoad) {
+			// Use height as isDirtRoad for road
+			color = FColor(color.R, 255, 0, isDirtRoad ? 255 : 0);
+		} else {
+			color = FColor(color.R, 0, 0, 0);
+		}
+
+		heightForestColor[tileId] = color.ToPackedARGB();
 	}
 
 private:
-	static void RefreshHeightForestColor(TileArea area, IGameSimulationCore* simulation, UAssetLoaderComponent* assetLoader);
+	static void RefreshHeightForestColor(TileArea area, IGameSimulationCore* simulation, bool useNewHeight);
 	
 private:
 	static int tileDimX;

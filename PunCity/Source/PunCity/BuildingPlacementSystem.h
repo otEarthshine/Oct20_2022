@@ -267,6 +267,7 @@ private:
 	TileArea _area2; // For road, and TODO: Ranch start
 	TileArea _area3; // Storage trimmed TODO: Ranch final form
 	TArray<int32> _roadPathTileIds;
+	bool _canPlaceRoad = false;
 
 	WorldTile2 _mouseOnTile;
 

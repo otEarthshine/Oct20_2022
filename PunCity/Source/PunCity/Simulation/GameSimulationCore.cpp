@@ -2683,6 +2683,9 @@ void GameSimulationCore::ChooseLocation(FChooseLocation command)
 			}
 		}
 
+		// Ensure Map was refreshed (In case AI built city at tick=0)
+		RefreshHeightForestColorTexture(startArea);
+
 		// Give money/seeds
 		resourceSystem(command.playerId).SetMoney(800);
 		resourceSystem(command.playerId).SetInfluence(0);

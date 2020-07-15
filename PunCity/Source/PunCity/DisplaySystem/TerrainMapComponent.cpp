@@ -212,7 +212,8 @@ void UTerrainMapComponent::UpdateTerrainMapDisplay(bool mapTerrainVisible, bool 
 
 	// HeightForestColorUpdate
 	{
-		const float minUpdateInterval = 20.0f;
+		float minUpdateInterval = Time::Ticks() > Time::TicksPerSecond ? 20.0f : 3.0f;
+		
 		if (mapTerrainVisible &&
 			UGameplayStatics::GetTimeSeconds(GetWorld()) - lastUpdatedHeightForestColor > minUpdateInterval &&
 			isHeightForestColorDirty)
@@ -296,7 +297,7 @@ int UTerrainMapComponent::tileDimY;
 int UTerrainMapComponent::tileDimX2;
 int UTerrainMapComponent::tileDimY2;
 
-void UTerrainMapComponent::RefreshHeightForestColor(TileArea area, IGameSimulationCore* simulation, UAssetLoaderComponent* assetLoader)
+void UTerrainMapComponent::RefreshHeightForestColor(TileArea area, IGameSimulationCore* simulation, bool useNewHeight)
 {
 	SCOPE_TIMER("Refresh HeightForestColor");
 
@@ -311,10 +312,23 @@ void UTerrainMapComponent::RefreshHeightForestColor(TileArea area, IGameSimulati
 		WorldTile2 tile(x, y);
 		int32 tileId = tile.tileId();
 
-		// Height
-		float height = FDToFloat(heightMap[tileId]);
-		int32 heightColor = static_cast<int32_t>(255.0f * height);
-		heightColor = min(255, max(0, heightColor));
+		int32 heightColor;
+		uint8 isRoad = 0;
+		uint8 isDirtRoad = 0;
+		if (useNewHeight)
+		{
+			// Height
+			float height = FDToFloat(heightMap[tileId]);
+			heightColor = static_cast<int32_t>(255.0f * height);
+			heightColor = min(255, max(0, heightColor));
+		}
+		else
+		{
+			FColor oldColor(heightForestColor[tileId]);
+			heightColor = oldColor.R;
+			isRoad = oldColor.G;
+			isDirtRoad = oldColor.A;
+		}
 
 		// Forest shade
 		uint8 forestColor = 0;
@@ -325,7 +339,7 @@ void UTerrainMapComponent::RefreshHeightForestColor(TileArea area, IGameSimulati
 		}
 
 		// Water
-		FColor color = FColor(static_cast<uint8>(heightColor), (x % 5 == 0) ? 255 : 0, forestColor, forestColor);
+		FColor color = FColor(static_cast<uint8>(heightColor), isRoad, forestColor, isDirtRoad);
 		heightForestColor[tileId] = color.ToPackedARGB();
 	});
 	
@@ -386,7 +400,7 @@ void UTerrainMapComponent::SetupGlobalTextures(int tileDimXIn, int tileDimYIn, I
 		heightForestColor.resize(heightMap.size(), 0);
 
 		TileArea area(1, 1, tileDimX - 1, tileDimY - 1);
-		RefreshHeightForestColor(area, simulation, assetLoader);
+		RefreshHeightForestColor(area, simulation, true);
 
 		SCOPE_TIMER("SetTextureData heightForestColor Texture");
 

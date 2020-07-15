@@ -96,7 +96,7 @@ AGameManager::AGameManager()
 #endif
 
 #if DISPLAY_RESOURCE
-	_resourceDisplaySystem = CreateDefaultSubobject<UResourceDisplayComponent>("ResourceDropDisplay");
+	_resourceDisplaySystem = CreateDefaultSubobject<UResourceDisplayComponent>("ResourceByRegionDisplay");
 #endif
 
 #if DISPLAY_TERRITORY

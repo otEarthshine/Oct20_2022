@@ -78,6 +78,8 @@ public:
 		roads.push_back(RoadTile(tile, isDirtRoad, isConstructed, buildingId));
 
 		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Road, tile.regionId(), true);
+
+		_simulation->SetRoadWorldTexture(tile, true, isDirtRoad);
 	}
 
 	bool RemoveRoad(WorldTile2 tile) {
@@ -88,6 +90,8 @@ public:
 		if (found != roads.end()) {
 			roads.erase(found);
 			_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Road, tile.regionId(), true);
+
+			_simulation->SetRoadWorldTexture(tile, false, true);
 			//PUN_LOG("Overlay RemoveRoad True");
 			return true;
 		}

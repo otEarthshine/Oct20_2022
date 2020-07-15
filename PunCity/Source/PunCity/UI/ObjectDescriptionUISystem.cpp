@@ -81,12 +81,6 @@ void UObjectDescriptionUISystem::Tick()
 		_objectDescriptionUI->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
-	auto hideHoverDecal = [&]() {
-		if (_regionHoverMesh) {
-			_regionHoverMesh->SetVisibility(false);
-		}
-	};
-
 	// Didn't choose location yet, highlight regions the mouse hover over to hint it should be clicked...
 	// if (!simulation().playerOwned(playerId()).isInitialized())
 	{
@@ -99,6 +93,7 @@ void UObjectDescriptionUISystem::Tick()
 
 		WorldTile2 hitTile = MapUtil::AtomLocation(dataSource()->cameraAtom(), groundPoint).worldTile2();
 
+		bool showHover = false;
 		if (hitTile.isValid())
 		{
 			auto& provinceSys = simulation().provinceSystem();
@@ -106,23 +101,25 @@ void UObjectDescriptionUISystem::Tick()
 			//provinceSys.highlightedProvince = provinceSys.GetProvinceIdRaw(hitTile); // TODO: remove this?
 
 
-			if (provinceId != -1 &&
-				simulation().provinceOwner(provinceId) == -1) 
+			if (provinceId != -1) 
 			{
-				ShowRegionSelectionDecal(hitTile, true);
-			}
-			else {
-				hideHoverDecal();
+				// Highlight Hover if the province isn't owned or if the camera is zoomed out
+				if (dataSource()->zoomDistance() > WorldZoomTransition_RegionToRegion4x4_Mid ||
+					simulation().provinceOwner(provinceId) == -1)
+				{
+					showHover = true;
+					ShowRegionSelectionDecal(hitTile, true);
+				}
 			}
 		}
-		else {
-			hideHoverDecal();
+
+		// Hide Hoover Decal
+		if (!showHover) {
+			if (_regionHoverMesh) {
+				_regionHoverMesh->SetVisibility(false);
+			}
 		}
-		
 	}
-	//else {
-	//	hideHoverDecal();
-	//}
 }
 
 bool UObjectDescriptionUISystem::IsShowingDescriptionUI()
@@ -2297,7 +2294,7 @@ void UObjectDescriptionUISystem::AddSelectStartLocationButton(int32 provinceId, 
 	if (needChooseLocation)
 	{	
 		bool canClaim = true;
-		if (!SimUtils::CanReserveSpot_NotTooCloseToAnother(provinceId, &simulation())) {
+		if (!SimUtils::CanReserveSpot_NotTooCloseToAnother(provinceId, &simulation(), 1)) {
 			descriptionBox->AddRichText("<Red>Too close to another town</>");
 			canClaim = false;
 		}

@@ -53,8 +53,13 @@ public:
 		playerId = playerIdIn;
 		
 		isInnerMesh = isInnerMeshIn;
-		WorldTile2 centerTile = provinceIdIn != -1 ? provinceSys.GetProvinceCenter(provinceId).worldTile2() : sim->townhall(playerId).centerTile();
-
+		WorldTile2 centerTile;
+		if (provinceIdIn != -1) {
+			centerTile = provinceSys.GetProvinceCenter(provinceId).worldTile2();
+		} else {
+			centerTile = sim->townhall(playerId).centerTile();
+		}
+		
 		//const std::vector<WorldTile2>& edgeTiles = provinceSys.GetProvinceEdges(provinceId);
 		const std::vector<WorldTile2x2>& edges1 = provinceIdIn != -1 ? provinceSys.GetProvinceEdges1(provinceId) : provinceSys.GetTerritoryEdges1(playerId);
 		const std::vector<WorldTile2x2>& edges2 = provinceIdIn != -1 ? provinceSys.GetProvinceEdges2(provinceId) : provinceSys.GetTerritoryEdges2(playerId);

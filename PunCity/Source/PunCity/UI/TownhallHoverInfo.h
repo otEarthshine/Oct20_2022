@@ -85,6 +85,14 @@ public:
 			SetRenderScale(FVector2D(0.5, 0.5));
 		}
 
+
+		// No more military
+		ArmyFightBox->SetVisibility(ESlateVisibility::Collapsed);
+		MilitaryButtons->SetVisibility(ESlateVisibility::Collapsed);
+		LeftArmyBox->SetVisibility(ESlateVisibility::Collapsed);
+		RightArmyBox->SetVisibility(ESlateVisibility::Collapsed);
+		return;
+
 		/*
 		 * Battle
 		 */

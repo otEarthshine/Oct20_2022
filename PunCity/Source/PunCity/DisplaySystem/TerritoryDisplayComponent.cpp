@@ -290,11 +290,19 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleIds)
 				_playerIdToTerritoryMesh.SetNum(playerId + 1);
 			}
 
-			if (!_playerIdToTerritoryMesh[playerId]) {
-				_playerIdToTerritoryMesh[playerId] = CreateTerritoryMeshComponent(false);
+			if (simulation().playerOwned(playerId).isInitialized()) 
+			{
+				if (!_playerIdToTerritoryMesh[playerId]) {
+					_playerIdToTerritoryMesh[playerId] = CreateTerritoryMeshComponent(false);
+				}
+				
+				_playerIdToTerritoryMesh[playerId]->UpdateMesh(true, -1, playerId, false, &simulation(), 50);
+				_playerIdToTerritoryMesh[playerId]->SetVisibility(true);
+			} else {
+				if (_playerIdToTerritoryMesh[playerId]) {
+					_playerIdToTerritoryMesh[playerId]->SetVisibility(false);
+				}
 			}
-
-			_playerIdToTerritoryMesh[playerId]->UpdateMesh(true, -1, playerId, false, &simulation(), 50);
 		}
 	}
 	

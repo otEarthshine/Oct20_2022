@@ -400,6 +400,7 @@ public:
 	virtual BiomeEnum GetBiomeProvince(int32 provinceId) = 0;
 
 	virtual void RefreshHeightForestColorTexture(TileArea area) = 0;
+	virtual void SetRoadWorldTexture(WorldTile2 tile, bool isRoad, bool isDirtRoad) = 0;
 
 	virtual void TryRemoveDescriptionUI(ObjectTypeEnum type, int32_t objectId) = 0;
 

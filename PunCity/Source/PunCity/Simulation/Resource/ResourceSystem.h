@@ -903,6 +903,13 @@ public:
 	int SpawnDrop(ResourceEnum resourceEnum, int32 amount,  WorldTile2 tile)
 	{
 		PUN_CHECK(amount > 0);
+
+		// Don't spawn drop if not in player's territory
+		int32 provinceId = _simulation->GetProvinceIdClean(tile);
+		PUN_CHECK(provinceId != -1);
+		if (_simulation->provinceOwner(provinceId) != _playerId) {
+			return -1;
+		}
 		
 		int32 holderId = holderGroup(resourceEnum).SpawnHolder(resourceEnum, ResourceHolderType::Drop, -1, tile, 0, *this);
 		//ResourceHolder& holder = holders(resourceEnum).holderMutable(holderId);
@@ -979,11 +986,12 @@ public:
 	// Used in IsLandCleared
 	DropInfo GetDropFromSmallArea_Any(TileArea area)
 	{
-		std::vector<int32> provinceIds = _simulation->GetProvinceIdsFromArea(area, true);
+		//std::vector<int32> provinceIds = _simulation->GetProvinceIdsFromArea(area, true);
+		std::vector<WorldRegion2> regions = area.GetOverlapRegionsSmallArea();
 
-		for (int32 provinceId : provinceIds)
+		for (WorldRegion2 region : regions)
 		{
-			const std::vector<DropInfo>& drops = _simulation->dropSystem().Drops(provinceId);
+			const std::vector<DropInfo>& drops = _simulation->dropSystem().DropsInRegion(region);
 			for (const DropInfo& drop : drops) {
 				if (area.HasTile(drop.tile) && resourceCount(drop.holderInfo) > 0) {
 					return drop;
@@ -995,11 +1003,12 @@ public:
 	// Used in TryClearLand
 	DropInfo GetDropFromArea_Pickable(TileArea area, bool isSmallArea = false)
 	{
-		std::vector<int32> provinceIds = _simulation->GetProvinceIdsFromArea(area, isSmallArea);
+		//std::vector<int32> provinceIds = _simulation->GetProvinceIdsFromArea(area, isSmallArea);
+		std::vector<WorldRegion2> regions = area.GetOverlapRegions(isSmallArea);
 		
-		for (int32 provinceId : provinceIds)
+		for (WorldRegion2 region : regions)
 		{
-			const std::vector<DropInfo>& drops = _simulation->dropSystem().Drops(provinceId);
+			const std::vector<DropInfo>& drops = _simulation->dropSystem().DropsInRegion(region);
 			for (const DropInfo& drop : drops) {
 				if (area.HasTile(drop.tile) && resourceCountWithPop(drop.holderInfo) > 0) {
 					return drop;
@@ -1013,10 +1022,12 @@ public:
 	{
 		std::vector<DropInfo> results;
 
-		std::vector<int32> provinceIds = _simulation->GetProvinceIdsFromArea(area, isSmallArea);
-		for (int32 provinceId : provinceIds)
+		//std::vector<int32> provinceIds = _simulation->GetProvinceIdsFromArea(area, isSmallArea);
+		std::vector<WorldRegion2> regions = area.GetOverlapRegions(isSmallArea);
+		
+		for (WorldRegion2 region : regions)
 		{
-			const std::vector<DropInfo>& drops = _simulation->dropSystem().Drops(provinceId);
+			const std::vector<DropInfo>& drops = _simulation->dropSystem().DropsInRegion(region);
 			for (const DropInfo& drop : drops) {
 				if (area.HasTile(drop.tile) && resourceCountWithPop(drop.holderInfo) > 0) {
 					results.push_back(drop);

@@ -46,19 +46,21 @@ public:
 		return canPlant;
 	}
 
-	static bool CanReserveSpot_NotTooCloseToAnother(int32 provinceId, IGameSimulationCore* simulation, int spread = -1)
+	static bool CanReserveSpot_NotTooCloseToAnother(int32 provinceId, IGameSimulationCore* simulation, int spread = 2)
 	{
 		// Also do not allow reserveSpot
 		//if (!region.IsInnerRegion()) {
 		//	return false;
 		//}
 		
-		const int _startingSpotSpread = 2;
+		//const int _startingSpotSpread = (spread != -1) ? spread : 2;
 
-		if (spread == -1) {
-			spread = _startingSpotSpread;
-		}
+		//if (spread == -1) {
+		//	spread = _startingSpotSpread;
+		//}
 
+		PUN_LOG("CanReserveSpot_NotTooCloseToAnother spread:%d", spread);
+		
 		bool cannotPlant = simulation->provinceSystem().ExecuteNearbyProvincesWithExitTrue(provinceId, spread, [&](ProvinceConnection connection)
 		{
 			return simulation->provinceOwner(connection.provinceId) != -1;

@@ -5,9 +5,9 @@
 
 using namespace std;
 
-static const int32 maxStack = 1;
-
-static std::vector<bool> _tileIdToInUse;
+//static const int32 maxStack = 1;
+//
+//static std::vector<bool> _tileIdToInUse;
 
 //void UResourceDropDisplayComponent::UpdateDisplay(int provinceId, int meshId, WorldAtom2 cameraAtom)
 //{

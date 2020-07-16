@@ -137,9 +137,9 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleIds)
 	
 	std::vector<int32> provinceIdsToDisplayInner;
 	for (int32 provinceId : sampleProvinceIdsNonPlayer) {
-		if (simulation().regionSystem().isDirectControl(provinceId)) {
+		//if (simulation().regionSystem().isDirectControl(provinceId)) {
 			provinceIdsToDisplayInner.push_back(provinceId);
-		}
+		//}
 	}
 
 	// Helper Func
@@ -198,13 +198,11 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleIds)
 		FVector displayLocation = MapUtil::DisplayLocation(cameraAtom, centerTile.worldAtom2());
 		comp->SetRelativeLocation(displayLocation);
 
-		int32 owner = simulation().provinceOwner(comp->provinceId);
-
 		auto material = _gameManager->ZoomDistanceBelow(WorldZoomTransition_GameToMap) ? comp->MaterialInstance : comp->MaterialInstance_Top;
-		//material->SetScalarParameterValue("IsHighlighted", provinceSys.highlightedProvince == comp->provinceId);
-		material->SetVectorParameterValue("PlayerColor1", owner != -1 ? PlayerColor1(owner) : FLinearColor(0, 0, 0, 0));
-		material->SetVectorParameterValue("PlayerColor2", owner != -1 ? PlayerColor2(owner) : FLinearColor(0, 0, 0, 0));
-		material->SetScalarParameterValue("IsInner", 0);
+
+		// Fade when it is not near our territory
+		int32 owner = simulation().provinceOwner(comp->provinceId);
+		material->SetScalarParameterValue("IsFade", (owner == -1) && !simulation().IsProvinceNextToPlayer(comp->provinceId, playerId()));
 
 		comp->SetMaterial(0, material);
 	}

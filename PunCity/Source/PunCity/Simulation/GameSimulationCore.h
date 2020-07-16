@@ -718,12 +718,18 @@ public:
 	bool HasOutpostAt(int32 playerId, int32 provinceId) final {
 		return playerOwned(playerId).HasOutpostAt(provinceId);
 	}
-	bool IsProvinceNextToPlayer(int32 provinceId, int32 playerId, bool directControlOnly) final {
-		if (directControlOnly) {
-			return _provinceSystem.ExecuteAdjacentProvincesWithExitTrue(provinceId, [&](ProvinceConnection connection) {
-				return provinceOwner(connection.provinceId) == playerId && _regionSystem->isDirectControl(provinceId);
-			});
-		}
+	bool IsProvinceNextToPlayer(int32 provinceId, int32 playerId) final {
+		//if (directControlOnly) {
+		//	return _provinceSystem.ExecuteAdjacentProvincesWithExitTrue(provinceId, [&](ProvinceConnection connection) {
+		//		return provinceOwner(connection.provinceId) == playerId && _regionSystem->isDirectControl(provinceId);
+		//	});
+		//}
+		return _provinceSystem.ExecuteAdjacentProvincesWithExitTrue(provinceId, [&](ProvinceConnection connection) {
+			return (connection.tileType == TerrainTileType::None || connection.tileType == TerrainTileType::River) &&
+					provinceOwner(connection.provinceId) == playerId;
+		});
+	}
+	bool IsProvinceNextToPlayerIncludingNonFlatLand(int32 provinceId, int32 playerId) {
 		return _provinceSystem.ExecuteAdjacentProvincesWithExitTrue(provinceId, [&](ProvinceConnection connection) {
 			return provinceOwner(connection.provinceId) == playerId;
 		});
@@ -755,7 +761,8 @@ public:
 		return AlgorithmUtils::FindNearbyAvailableTile(start, [&](WorldTile2 tile) {
 			return !excludeArea.HasTile(tile) && 
 					(IsBuildable(tile) || overlaySystem().IsRoad(tile)) &&
-					_treeSystem->IsEmptyLandTile(tile.tileId()); // walkable tile outside of the area..
+					_treeSystem->IsEmptyLandTile(tile.tileId()) &&
+					_dropSystem.GetDrops(tile).size() == 0; // walkable tile outside of the area without existing drop...
 		});
 	}
 
@@ -853,7 +860,7 @@ public:
 		return terrainGenerator().GetBiome(tile);
 	}
 	BiomeEnum GetBiomeProvince(int32 provinceId) override {
-		return  terrainGenerator().GetBiome(_provinceSystem.GetProvinceCenterTile(provinceId));
+		return terrainGenerator().GetBiome(_provinceSystem.GetProvinceCenterTile(provinceId));
 	}
 	
 
@@ -1374,6 +1381,8 @@ public:
 
 		{
 			SERIALIZE_TIMER("Regions", data, crcs, crcLabels);
+
+			_provinceSystem.Serialize(Ar);
 
 			_regionSystem->Serialize(Ar);
 			_georesourceSystem->Serialize(Ar);

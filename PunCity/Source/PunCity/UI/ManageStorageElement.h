@@ -21,8 +21,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UImage* ResourceIcon;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* ResourceText;
 
-	UPROPERTY(meta = (BindWidget)) UCheckBox* SetTargetBox;
-	UPROPERTY(meta = (BindWidget)) UPunEditableNumberBox* TargetAmount;
+	//UPROPERTY(meta = (BindWidget)) UPunEditableNumberBox* TargetAmount;
 
 	void PunInit(ResourceEnum resourceEnumIn, std::string sectionName, int32 buildingIdIn)
 	{
@@ -37,6 +36,9 @@ public:
 		bool allowed = sim.building(buildingId).holder(uiResourceEnum).type != ResourceHolderType::Provider;
 		AcceptBox->SetCheckedState(allowed ? ECheckBoxState::Checked : ECheckBoxState::Unchecked);
 
+		SetResourceImage(ResourceIcon, resourceEnumIn, assetLoader());
+		SetText(ResourceText, ResourceName(resourceEnumIn));
+
 		//SetTargetBox->SetCheckedState(allowed, )
 	}
 
@@ -48,6 +50,7 @@ public:
 		command->allowed = active;
 		networkInterface()->SendNetworkCommand(command);
 	}
+
 
 public:
 	int32 buildingId = -1;

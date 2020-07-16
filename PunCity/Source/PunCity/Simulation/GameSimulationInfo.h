@@ -10,7 +10,7 @@
 #include <algorithm>
 #include "PunCity/PunGameSettings.h"
 
-#include "PunCity/PunSTLContainerOverride.h"
+//#include "PunCity/PunSTLContainerOverride.h"
 
 
 //! Utils

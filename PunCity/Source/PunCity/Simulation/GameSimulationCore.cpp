@@ -1861,12 +1861,16 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 			{
 				// Destroy all drops
 				_dropSystem.ResetProvinceDrop(provinceId);
-				
-				// Release region ownership
-				SetProvinceOwner(provinceId, -1);
 
 				// Clear Road
 				_overlaySystem.ClearRoadInProvince(provinceId);
+
+				// Remove all gather marks
+				TileArea area = _provinceSystem.GetProvinceRectArea(provinceId);
+				_treeSystem->MarkArea(playerId, area, true, ResourceEnum::None);
+
+				// Release region ownership
+				SetProvinceOwner(provinceId, -1);
 			}
 			
 
@@ -2477,7 +2481,6 @@ void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 playerId)
 		// Taking over proper land with plantation research grants seeds
 		CheckGetSeedCard(playerId);
 		
-
 		// Claim land hand
 		int32 regionsClaimed = playerOwn.provincesClaimed().size();
 
@@ -2492,7 +2495,8 @@ void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 playerId)
 				buildingList.ExecuteRegion(regionOverlap, [&](int32 buildingId)
 				{
 					auto bld = building(buildingId);
-					if (IsRegionalBuilding(bld.buildingEnum()))
+					if (IsRegionalBuilding(bld.buildingEnum()) && 
+						GetProvinceIdClean(bld.centerTile()) == provinceId)
 					{
 						if (bld.isEnum(CardEnum::RegionTribalVillage)) {
 							ImmigrationEvent(playerId, 5, GenerateTribeName(bld.buildingId()) + " wish to join your city.", PopupReceiverEnum::TribalJoinEvent);

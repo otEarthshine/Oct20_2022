@@ -25,9 +25,13 @@ void UObjectDescriptionUI::Setup()
 
 	CloseButton->OnClicked.AddDynamic(this, &UObjectDescriptionUI::OnClickCloseButton);
 
+	ManageStorageCloseButton->OnClicked.AddDynamic(this, &UObjectDescriptionUI::ClickCloseManageStorageOverlay);
+
 	SetChildHUD(DescriptionPunBox);
 	SetChildHUD(ChooseResourceBox);
 	SetChildHUD(EditableNumberBox);
+
+	SetChildHUD(ManageStorageBox);
 
 	CardSlots->ClearChildren();
 

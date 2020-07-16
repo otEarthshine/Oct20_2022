@@ -79,7 +79,7 @@ public:
 
 		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Road, tile.regionId(), true);
 
-		_simulation->SetRoadWorldTexture(tile, true, isDirtRoad);
+		_simulation->SetRoadWorldTexture(tile, isConstructed, isDirtRoad);
 	}
 
 	bool RemoveRoad(WorldTile2 tile) {
@@ -115,10 +115,10 @@ public:
 		for (WorldRegion2 region : overlapRegions) 
 		{
 			int32 regionId = region.regionId();
-			std::vector<RoadTile> roadTiles = _regionToRoad[regionId];
+			std::vector<RoadTile>& roadTiles = _regionToRoad[regionId];
 			for (size_t i = roadTiles.size(); i-- > 0;) 
 			{
-				if (_simulation->GetProvinceIdRaw(provinceId) == provinceId) {
+				if (_simulation->GetProvinceIdClean(roadTiles[i].tile) == provinceId) {
 					_simulation->SetRoadPathAI(roadTiles[i].tile, false);
 					roadTiles.erase(roadTiles.begin() + i);
 				}

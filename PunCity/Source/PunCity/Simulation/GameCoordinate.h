@@ -858,6 +858,13 @@ struct WorldTile2x2
 	bool IsInvalid() {
 		return x == -1 && y == -1;
 	}
+
+	//! Serialize
+	FArchive& operator>>(FArchive &Ar) {
+		Ar << x;
+		Ar << y;
+		return Ar;
+	}
 };
 
 

@@ -542,7 +542,7 @@ public:
 
 	bool IsProvinceClaimQueuable(int32 provinceId)
 	{
-		if (_simulation->IsProvinceNextToPlayer(provinceId, _playerId, false)) {
+		if (_simulation->IsProvinceNextToPlayer(provinceId, _playerId)) {
 			return true;
 		}
 		

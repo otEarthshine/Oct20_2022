@@ -6,7 +6,6 @@
 #include "GameCoordinate.h"
 #include "GameSimulationConstants.h"
 #include "../GameConstants.h"
-#include <memory>
 #include "IGameSimulationCore.h"
 #include "ProvinceSystem.h"
 
@@ -19,7 +18,7 @@ public:
 	void Init(IGameSimulationCore* simulation) {
 		_simulation = simulation;
 		_territoryOwnerMap.resize(GameMapConstants::TotalRegions, -1);
-		_isDirectControl.resize(GameMapConstants::TotalRegions, false);
+		//_isDirectControl.resize(GameMapConstants::TotalRegions, false);
 		
 		_boarBurrowsToRegion.resize(GameMapConstants::TotalRegions);
 	}
@@ -35,7 +34,7 @@ public:
 		}
 		
 		_territoryOwnerMap[provinceId] = playerId;
-		_isDirectControl[provinceId] = isDirectControl;
+		//_isDirectControl[provinceId] = isDirectControl;
 		_simulation->SetNeedDisplayUpdate(DisplayGlobalEnum::Province, true);
 
 		_simulation->AddNeedDisplayUpdateId(DisplayGlobalEnum::Province, provinceId);
@@ -47,7 +46,7 @@ public:
 	}
 	
 	int32 provinceOwner(int32 provinceId) { return _territoryOwnerMap[provinceId]; }
-	bool isDirectControl(int32 provinceId) { return _isDirectControl[provinceId]; }
+	//bool isDirectControl(int32 provinceId) { return _isDirectControl[provinceId]; }
 
 	//bool IsOwnedByPlayer(WorldRegion2 region, int32 playerId) {
 	//	return region.IsValid() && _territoryOwnerMap[region.regionId()] == playerId;
@@ -76,7 +75,7 @@ private:
 	IGameSimulationCore* _simulation = nullptr;
 	
 	std::vector<int32> _territoryOwnerMap;
-	std::vector<bool> _isDirectControl;
+	//std::vector<bool> _isDirectControl;
 	
 	std::vector<std::vector<int32>> _boarBurrowsToRegion;
 };

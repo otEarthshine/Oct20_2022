@@ -50,9 +50,9 @@ public:
 		isHeightForestColorDirty = true;
 		RefreshHeightForestColor(area, &(_dataSource->simulation()), false);
 	}
-	void SetRoadWorldTexture(WorldTile2 tile, bool isRoad, bool isDirtRoad)
+	static void SetRoadWorldTexture(WorldTile2 tile, bool isRoad, bool isDirtRoad)
 	{
-		PUN_LOG("SetRoadWorldTexture %s", *tile.To_FString());
+		//PUN_LOG("SetRoadWorldTexture %s", *tile.To_FString());
 		
 		isHeightForestColorDirty = true;
 

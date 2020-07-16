@@ -962,11 +962,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						for (int i = 0; i < ResourceEnumCount; i++)
 						{
 							ResourceEnum resourceEnum = static_cast<ResourceEnum>(i);
-							if (IsFoodEnum(resourceEnum))
-							{
-								SetChildHUD(manageStorageBox);
-								auto element = manageStorageBox->AddWidget<UManageStorageElement>(UIEnum::ManageStorageElement);
-								element->PunInit(resourceEnum, "", objectId);
+							if (IsFoodEnum(resourceEnum)) {
+								manageStorageBox->AddManageStorageElement(resourceEnum, "", objectId);
 							}
 						}
 
@@ -2318,13 +2315,13 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 
 	
 
-	auto tryAddExpandCity = [&](bool alreadyHasIndirectControl)
+	auto tryAddExpandCity = [&]()
 	{
 		/*
 		 * Expand City
 		 * Next to City Provinces, we can Expand City
 		 */
-		if (sim.IsProvinceNextToPlayer(provinceId, playerId(), false))
+		if (sim.IsProvinceNextToPlayer(provinceId, playerId()))
 		{
 			if (simulation().GetBiomeProvince(provinceId) == BiomeEnum::Jungle) {
 				descriptionBox->AddSpacer();
@@ -2335,9 +2332,9 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 			{
 				int32 price = playerOwned.GetProvinceClaimPriceGold(provinceId);
 
-				if (alreadyHasIndirectControl) {
-					price = max(10, price - playerOwned.GetInfluenceClaimPriceRefund(provinceId));
-				}
+				//if (alreadyHasIndirectControl) {
+				//	price = max(10, price - playerOwned.GetInfluenceClaimPriceRefund(provinceId));
+				//}
 
 				bool canClaim = simulation().money(playerId()) >= price;
 
@@ -2351,9 +2348,9 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 			{
 				int32 price = playerOwned.GetBaseProvinceClaimPrice(provinceId);
 
-				if (alreadyHasIndirectControl) {
-					price = max(10, price - playerOwned.GetInfluenceClaimPriceRefund(provinceId));
-				}
+				//if (alreadyHasIndirectControl) {
+				//	price = max(10, price - playerOwned.GetInfluenceClaimPriceRefund(provinceId));
+				//}
 				
 				int32 foodNeeded = price / FoodCost;
 				
@@ -2363,6 +2360,11 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 				descriptionBox->AddButton("Claim Province (" + TextRed(to_string(foodNeeded), !canClaim) + " food)", nullptr, "",
 					this, CallbackEnum::ClaimLandFood, canClaim, false, provinceId);
 			}
+		}
+		else if (sim.IsProvinceNextToPlayerIncludingNonFlatLand(provinceId, playerId()))
+		{
+			descriptionBox->AddSpacer();
+			descriptionBox->AddRichText("<Red>Not claimable through mountain or sea</>");
 		}
 	};
 
@@ -2392,7 +2394,7 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 		/*
 		 * Expand City
 		 */
-		tryAddExpandCity(false);
+		tryAddExpandCity();
 
 		descriptionBox->AddSpacer();
 

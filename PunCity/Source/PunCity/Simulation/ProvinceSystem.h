@@ -32,10 +32,19 @@ struct ProvinceConnection
 	int32 provinceId;
 	TerrainTileType tileType;
 
+	ProvinceConnection() : provinceId(-1), tileType(TerrainTileType::None) {}
+
 	ProvinceConnection(int32 provinceId, TerrainTileType tileType) : provinceId(provinceId), tileType(tileType) {}
 
 	bool operator==(const ProvinceConnection& a) const {
 		return a.provinceId == provinceId && a.tileType == tileType;
+	}
+
+	//! Serialize
+	FArchive& operator>>(FArchive &Ar) {
+		Ar << provinceId;
+		Ar << tileType;
+		return Ar;
 	}
 };
 
@@ -51,6 +60,10 @@ public:
 	{
 		SCOPE_TIMER("InitProvince");
 		_simulation = simulation;
+
+		if (simulation->isLoadingFromFile()) {
+			return;
+		}
 
 		auto& terrainGen = simulation->terrainGenerator();
 
@@ -1185,12 +1198,38 @@ private:
 		});
 
 	}
+
+public:
+	/*
+	 * Serialize
+	 */
+	void Serialize(FArchive &Ar)
+	{
+		SerializeVecValue(Ar, _provinceId2x2);
+		SerializeVecObj(Ar, _provinceCenters);
+		
+		SerializeVecVecObj(Ar, _provinceEdges1);
+		SerializeVecVecObj(Ar, _provinceEdges2);
+		
+		SerializeVecVecObj(Ar, _territoryEdges1);
+		SerializeVecVecObj(Ar, _territoryEdges2);
+
+		SerializeVecVecValue(Ar, _regionToProvinceIds);
+
+		SerializeVecValue(Ar, _provinceMountainTileCount);
+		SerializeVecValue(Ar, _provinceRiverTileCount);
+		SerializeVecValue(Ar, _provinceOceanTileCount);
+		SerializeVecValue(Ar, _provinceFlatTileCount);
+
+		SerializeVecVecObj(Ar, _provinceConnections);
+		SerializeVecObj(Ar, _provinceRectAreas);
+		SerializeVecVecObj(Ar, _provinceToRegionsOverlap);
+	}
 	
 private:
 	IGameSimulationCore* _simulation = nullptr;
 	
-	std::vector<int32> _provinceId2x2; // negative represents edge?
-	
+	std::vector<int32> _provinceId2x2; // negative represents edge
 	std::vector<WorldTile2x2> _provinceCenters;
 
 	std::vector<std::vector<WorldTile2x2>> _provinceEdges1;
@@ -1208,7 +1247,6 @@ private:
 	std::vector<int16> _provinceFlatTileCount;
 
 	std::vector<std::vector<ProvinceConnection>> _provinceConnections;
-
 	std::vector<TileArea> _provinceRectAreas;
 	std::vector<std::vector<WorldRegion2>> _provinceToRegionsOverlap;
 };

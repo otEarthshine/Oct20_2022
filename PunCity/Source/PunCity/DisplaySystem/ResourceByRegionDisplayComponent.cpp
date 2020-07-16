@@ -3,7 +3,7 @@
 
 #include "ResourceByRegionDisplayComponent.h"
 
-DECLARE_CYCLE_STAT(TEXT("PUN: [Display]Building_Resource"), STAT_PunDisplayBuilding_Resource, STATGROUP_Game);
+//DECLARE_CYCLE_STAT(TEXT("PUN: [Display]Building_Resource"), STAT_PunDisplayBuilding_Resource, STATGROUP_Game);
 
 using namespace std;
 

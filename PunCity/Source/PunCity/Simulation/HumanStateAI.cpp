@@ -546,7 +546,7 @@ bool HumanStateAI::TryClearLand(TileArea area)
 	// Clear drops
 	WorldTile2 tile = WorldTile2::Invalid;
 	DropInfo drop = resourceSystem().GetDropFromArea_Pickable(area);
-	if (drop.isValid()) 
+	if (drop.isValid())
 	{
 		ResourceHolderInfo holderInfo = drop.holderInfo;
 		int32 amount = resourceSystem().resourceCountWithPop(holderInfo);

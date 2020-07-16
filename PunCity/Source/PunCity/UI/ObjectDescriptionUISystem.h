@@ -29,7 +29,8 @@ public:
 	void CloseDescriptionUI() override;
 
 	bool IsHoveredOnScrollUI() {
-		return _objectDescriptionUI->ChooseResourceBox->IsHovered();
+		return _objectDescriptionUI->ChooseResourceOverlay->IsHovered() ||
+			_objectDescriptionUI->ManageStorageOverlay->IsHovered();
 	}
 
 	TArray<UWidget*> GetEmptyCardSlot() {

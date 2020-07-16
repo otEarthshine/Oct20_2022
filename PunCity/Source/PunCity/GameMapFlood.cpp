@@ -3,6 +3,7 @@
 
 #include "GameMapFlood.h"
 #include "PunCity/CppUtils.h"
+#include "PunCity/PunTimer.h"
 
 using namespace std;
 
@@ -154,10 +155,12 @@ void GameMapFlood::Tick()
 	if (_regions64ToReset.size() > 0)
 	{
 		for (int i = 0; i < _regions64ToReset.size(); i++) {
+			//SCOPE_TIMER("FillRegion");
 			FillRegion(_regions64ToReset[i]);
 		}
 
 		for (int i = 0; i < _regions64ToReset.size(); i++) {
+			//SCOPE_TIMER("RefreshRegionConnections");
 			RefreshRegionConnections(_regions64ToReset[i]);
 		}
 
@@ -196,6 +199,9 @@ void GameMapFlood::FillRegion(int32 region64Id)
 
 			int32 leftIndex = x > 0 ? floods[(x - 1) + yShift] : -1;
 			int32 topIndex = y > 0 ? floods[x + (yShift - Region64Size)] : -1;
+
+			// TODO: Diagonal check: left-top and right-top?
+			
 
 			if (leftIndex != -1) {
 				floods[x + yShift] = leftIndex;

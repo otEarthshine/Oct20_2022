@@ -272,7 +272,7 @@ public:
 	virtual int32 GetProvinceInfluenceIncome(int32 provinceId) = 0;
 	
 	virtual bool HasOutpostAt(int32 playerId, int32 provinceId) = 0;
-	virtual bool IsProvinceNextToPlayer(int32 provinceId, int32 playerId, bool directControlOnly) = 0;
+	virtual bool IsProvinceNextToPlayer(int32 provinceId, int32 playerId) = 0;
 
 	virtual void RefreshTerritoryEdge(int32 playerId) = 0;
 	

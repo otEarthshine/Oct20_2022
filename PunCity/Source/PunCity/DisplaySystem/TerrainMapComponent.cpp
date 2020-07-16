@@ -115,9 +115,11 @@ void UTerrainMapComponent::UpdateTerrainMapDisplay(bool mapTerrainVisible, bool 
 
 	if (mapTerrainWaterVisible) {
 		//terrainMesh->SetWorldLocation(MapUtil::DisplayLocationMapMode(MapUtil::GetCamShiftLocation(_dataSource->cameraAtom()), WorldAtom2::Zero));
-		terrainMeshWater->SetWorldLocation(MapUtil::DisplayLocation(_dataSource->cameraAtom(), WorldAtom2::Zero));
 		terrainMeshWater->SetWorldScale3D(mapScale); // Enlarge to match worldSize..
 	}
+
+	// Always updating waterMesh for terrainMeshWaterOutside to be placed in proper place
+	terrainMeshWater->SetWorldLocation(MapUtil::DisplayLocation(_dataSource->cameraAtom(), WorldAtom2::Zero));
 
 	// Water Mesh
 	{
@@ -401,6 +403,15 @@ void UTerrainMapComponent::SetupGlobalTextures(int tileDimXIn, int tileDimYIn, I
 
 		TileArea area(1, 1, tileDimX - 1, tileDimY - 1);
 		RefreshHeightForestColor(area, simulation, true);
+
+		// Just in-case this is loaded from file, ensure all the roads are recorded in the texture
+		auto& overlaySys = simulation->overlaySystem();
+		for (int32 i = 0; i < GameMapConstants::TotalRegions; i++) {
+			const std::vector<RoadTile>& roads = overlaySys.roads(i);
+			for (const auto& road : roads) {
+				SetRoadWorldTexture(road.tile, road.isConstructed, road.isDirt);
+			}
+		}
 
 		SCOPE_TIMER("SetTextureData heightForestColor Texture");
 

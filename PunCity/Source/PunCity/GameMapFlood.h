@@ -288,23 +288,6 @@ private:
 	void SetFloodRootIds(int32 rootId, int32 currentId, std::vector<int32>& rootIds, std::vector<std::vector<int32>>& connectedIds, std::vector<bool>& visited);
 
 
-	//bool IsImpassableOcean(int32 region64Id)
-	//{
-	//	/*
-	//	 * Skip the impassable ocean regions
-	//	 */
-	//	WorldRegion2 region00(Region64X(region64Id) * 2, Region64Y(region64Id) * 2);
-	//	WorldRegion2 region10(region00.x + 1, region00.y);
-	//	WorldRegion2 region01(region00.x, region00.y + 1);
-	//	WorldRegion2 region11(region00.x + 1, region00.y + 1);
-
-	//	return _terrainGenerator->regionFlatTileCount(region00.regionId()) == 0 &&
-	//		_terrainGenerator->regionFlatTileCount(region10.regionId()) == 0 &&
-	//		_terrainGenerator->regionFlatTileCount(region01.regionId()) == 0 &&
-	//		_terrainGenerator->regionFlatTileCount(region11.regionId()) == 0;
-	//}
-	
-
 private:
 	PunTerrainGenerator* _terrainGenerator = nullptr;
 	PunAStar128x256* _pathAI = nullptr;

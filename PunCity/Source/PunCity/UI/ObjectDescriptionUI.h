@@ -27,6 +27,11 @@ public:
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* DescriptionUITitle;
 	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* DescriptionPunBox;
 	UPROPERTY(meta = (BindWidget)) UButton* BuildingsStatOpener;
+
+	UPROPERTY(meta = (BindWidget)) UEditableTextBox* NameEditTextBox;
+	UPROPERTY(meta = (BindWidget)) UButton* NameEditButton;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* NameEditButtonText;
+	
 	UPROPERTY(meta = (BindWidget)) UButton* CloseButton;
 
 	UPROPERTY(meta = (BindWidget)) UCheckBox* ToolCheckBox;
@@ -46,6 +51,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) UOverlay* ManageStorageOverlay;
 	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* ManageStorageBox;
 	UPROPERTY(meta = (BindWidget)) UButton* ManageStorageCloseButton;
+	UPROPERTY(meta = (BindWidget)) UButton* AllowAllButton;
+	UPROPERTY(meta = (BindWidget)) UButton* DisallowAllButton;
 
 
 	UPROPERTY(meta = (BindWidget)) UWrapBox* CardSlots;
@@ -75,6 +82,9 @@ public:
 		ManageStorageOverlay->SetVisibility(ESlateVisibility::Collapsed);
 
 		CardSlots->SetVisibility(ESlateVisibility::Collapsed);
+
+		NameEditTextBox->SetVisibility(ESlateVisibility::Collapsed);
+		NameEditButtonText->SetText(FText::FromString("Edit"));
 	}
 
 	DescriptionUIState state;
@@ -92,6 +102,19 @@ private:
 	UFUNCTION() void ClickCloseManageStorageOverlay() {
 		ManageStorageOverlay->SetVisibility(ESlateVisibility::Collapsed);
 	}
+	UFUNCTION() void ClickAllowAll() {
+		SetAllowResource(true);
+	}
+	UFUNCTION() void ClickDisallowAll() {
+		SetAllowResource(false);
+	}
+	void SetAllowResource(bool allow) {
+		auto command = std::make_shared<FSetAllowResource>();
+		command->buildingId = simulation().descriptionUIState().objectId;
+		command->resourceEnum = ResourceEnum::None;
+		command->allowed = allow;
+		networkInterface()->SendNetworkCommand(command);
+	}
 
 	UFUNCTION() void OnClickCloseButton() {
 		simulation().SetDescriptionUIState(DescriptionUIState());
@@ -108,6 +131,37 @@ private:
 		//}
 	}
 
+	UFUNCTION() void OnClickNameEditButton() {
+		if (NameEditTextBox->GetVisibility() == ESlateVisibility::Collapsed) {
+			NameEditTextBox->SetText(ToFText(simulation().townName(playerId())));
+			NameEditTextBox->SetVisibility(ESlateVisibility::Visible);
+			NameEditButton->SetVisibility(ESlateVisibility::Collapsed);
+			NameEditButtonText->SetText(FText::FromString("Done"));
+		}
+		else {
+			auto command = make_shared<FChangeName>();
+			command->name = NameEditTextBox->GetText().ToString();
+			command->objectId = simulation().playerOwned(playerId()).townHallId;
+			networkInterface()->SendNetworkCommand(command);
+			
+			NameEditTextBox->SetVisibility(ESlateVisibility::Collapsed);
+			NameEditButton->SetVisibility(ESlateVisibility::Visible);
+			NameEditButtonText->SetText(FText::FromString("Edit"));
+		}
+	}
+	UFUNCTION() void NameEditCommitted(const FText& Text, ETextCommit::Type CommitMethod)
+	{
+		if (CommitMethod == ETextCommit::Type::OnEnter) 
+		{
+			auto command = make_shared<FChangeName>();
+			command->name = Text.ToString();
+			command->objectId = simulation().playerOwned(playerId()).townHallId;
+			networkInterface()->SendNetworkCommand(command);
+			
+			NameEditTextBox->SetVisibility(ESlateVisibility::Collapsed);
+			NameEditButtonText->SetText(FText::FromString("Edit"));
+		}
+	}
 	
 	UFUNCTION() void OnDropDownChanged(FString sItem, ESelectInfo::Type seltype);
 

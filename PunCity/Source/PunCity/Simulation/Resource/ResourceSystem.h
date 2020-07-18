@@ -1079,11 +1079,14 @@ public:
 	}
 
 	//! Influence
-	int32 influence() { return _influence; }
-	void SetInfluence(int32 amount) { _influence = amount; }
+	int32 influence100() { return _influence100; }
+	int32 influence() { return _influence100 / 100; }
+	void SetInfluence(int32 amount) { _influence100 = amount * 100; }
 	void ChangeInfluence(int32 amount) {
-		_influence += amount;
-		PUN_CHECK(_influence >= 0);
+		_influence100 += amount * 100;
+	}
+	void ChangeInfluence100(int32 amount100) {
+		_influence100 += amount100;
 	}
 
 	// TODO: Eventually get rid of GetTile... as we move towards using FoundResourceHolderInfo ???
@@ -1133,7 +1136,7 @@ public:
 	{
 		SerializeVecObj(Ar, _enumToHolders);
 		Ar << _money100;
-		Ar << _influence;
+		Ar << _influence100;
 
 		SerializeVecValue(Ar, _unlockedSeeds);
 	}
@@ -1176,7 +1179,7 @@ private:
 	std::vector<ResourceTypeHolders> _enumToHolders;
 
 	int32 _money100 = 0;
-	int32 _influence = 0;
+	int32 _influence100 = 0;
 
 	std::vector<SeedInfo> _unlockedSeeds;
 };

@@ -3747,6 +3747,21 @@ static bool IsGridOverlay(OverlayType overlayEnum)
 	}
 }
 
+enum class InfluenceIncomeEnum : uint8
+{
+	Population,
+	TerritoryUpkeep,
+	TooMuchInfluencePoints,
+	Count,
+};
+static std::vector<std::string> InfluenceIncomeEnumName
+{
+	"Population",
+	"Territory Upkeep",
+	"Too Much Stored Influence Points",
+};
+static int32 InfluenceIncomeEnumCount = static_cast<int32>(InfluenceIncomeEnum::Count);
+
 enum class IncomeEnum : uint8
 {
 	// House income
@@ -3778,7 +3793,7 @@ enum class IncomeEnum : uint8
 	
 	TerritoryRevenue,
 	TerritoryUpkeep,
-
+	
 	MoneyLastEra,
 
 	Count,
@@ -4592,6 +4607,7 @@ enum class CheatEnum
 	AddResource,
 	AddCard,
 	AddMoney,
+	AddInfluence,
 	AddImmigrants,
 
 	Cheat,
@@ -4635,6 +4651,7 @@ static const std::string CheatName[]
 	"AddResource",
 	"AddCard",
 	"AddMoney",
+	"AddInfluence",
 	"AddImmigrants",
 
 	"Cheat",
@@ -5944,6 +5961,7 @@ enum class CallbackEnum : uint8
 {
 	None,
 	ClaimLandMoney,
+	ClaimLandInfluence,
 	ClaimLandFood,
 	ClaimLandArmy,
 	CancelClaimLandArmy,
@@ -6044,5 +6062,5 @@ static bool IsEdgeProvinceId(int32 provinceId) {
 	return 0 > provinceId && provinceId > EmptyProvinceId; // Edge marked with negative...
 }
 
-static const int32 IncomePer1000Tiles = 5;
-static const int32 ClaimToIncomeRatio = 2; // When 2, actual is 4 since upkeep is half the income
+static const int32 Income100Per1000Tiles = 1000;
+static const int32 ClaimToIncomeRatio = 20; // When 2, actual is 4 since upkeep is half the income

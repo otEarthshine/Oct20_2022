@@ -2388,14 +2388,24 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	}
 	else if (command.claimEnum == CallbackEnum::ClaimLandMoney)
 	{
-		int32 regionPriceMoney = playerOwn.GetProvinceClaimPriceGold(command.provinceId);
+		int32 regionPriceMoney = playerOwn.GetProvinceClaimPrice(command.provinceId);
 		
 		if (resourceSys.money() >= regionPriceMoney &&
 			provinceOwner(command.provinceId) == -1)
 		{
 			SetProvinceOwnerFull(command.provinceId, playerId);
-
 			resourceSys.ChangeMoney(-regionPriceMoney);
+		}
+	}
+	else if (command.claimEnum == CallbackEnum::ClaimLandInfluence)
+	{
+		int32 regionPriceMoney = playerOwn.GetProvinceClaimPrice(command.provinceId);
+
+		if (resourceSys.influence() >= regionPriceMoney &&
+			provinceOwner(command.provinceId) == -1)
+		{
+			SetProvinceOwnerFull(command.provinceId, playerId);
+			resourceSys.ChangeInfluence(-regionPriceMoney);
 		}
 	}
 	else if (command.claimEnum == CallbackEnum::ClaimLandArmy)
@@ -2691,7 +2701,7 @@ void GameSimulationCore::ChooseLocation(FChooseLocation command)
 		RefreshHeightForestColorTexture(startArea);
 
 		// Give money/seeds
-		resourceSystem(command.playerId).SetMoney(800);
+		resourceSystem(command.playerId).SetMoney(1000);
 		resourceSystem(command.playerId).SetInfluence(0);
 
 		// EventLog inform all players someone selected a start
@@ -2816,6 +2826,10 @@ void GameSimulationCore::Cheat(FCheat command)
 		}
 		case CheatEnum::AddMoney: {
 			resourceSystem(command.playerId).ChangeMoney(command.var1);
+			break;
+		}
+		case CheatEnum::AddInfluence: {
+			resourceSystem(command.playerId).ChangeInfluence(command.var1);
 			break;
 		}
 		case CheatEnum::AddCard:

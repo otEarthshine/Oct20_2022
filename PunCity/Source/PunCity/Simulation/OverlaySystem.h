@@ -99,15 +99,16 @@ public:
 		return false;
 	}
 
-	void ClearRoadInRegion(int32 regionId)
-	{
-		std::vector<RoadTile> roadTiles = _regionToRoad[regionId];
-		for (RoadTile roadTile : roadTiles) {
-			_simulation->SetRoadPathAI(roadTile.tile, false);
-		}
-		_regionToRoad[regionId].clear();
-		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Road, regionId, true);
-	}
+	//void ClearRoadInRegion(int32 regionId)
+	//{
+	//	std::vector<RoadTile> roadTiles = _regionToRoad[regionId];
+	//	for (RoadTile roadTile : roadTiles) {
+	//		_simulation->SetRoadPathAI(roadTile.tile, false);
+	//		_simulation->SetRoadWorldTexture(roadTile.tile, false, true);
+	//	}
+	//	_regionToRoad[regionId].clear();
+	//	_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Road, regionId, true);
+	//}
 
 	void ClearRoadInProvince(int32 provinceId)
 	{
@@ -120,6 +121,7 @@ public:
 			{
 				if (_simulation->GetProvinceIdClean(roadTiles[i].tile) == provinceId) {
 					_simulation->SetRoadPathAI(roadTiles[i].tile, false);
+					_simulation->SetRoadWorldTexture(roadTiles[i].tile, false, true);
 					roadTiles.erase(roadTiles.begin() + i);
 				}
 			}

@@ -101,19 +101,19 @@ void TownHall::UpgradeTownhall()
 		cardSys.AddDrawCards(CardEnum::CabbageSeed, 1);
 		cardSys.AddDrawCards(CardEnum::SellFood, 1);
 		cardSys.AddDrawCards(CardEnum::BuyWood, 1);
-		cardSys.AddDrawCards(CardEnum::BarrackClubman, 1);
+		//cardSys.AddDrawCards(CardEnum::BarrackClubman, 1);
 	}
 	else if (townhallLvl == 3) {
 		auto& cardSys = _simulation->cardSystem(_playerId);
 		cardSys.AddDrawCards(CardEnum::Immigration, 1);
 		cardSys.AddDrawCards(CardEnum::Kidnap, 1);
-		cardSys.AddDrawCards(CardEnum::BarrackArcher, 1);
+		//cardSys.AddDrawCards(CardEnum::BarrackArcher, 1);
 		_simulation->unlockSystem(_playerId)->UnlockBuilding(CardEnum::StoneRoad);
 	}
 	else if (townhallLvl == 4) {
 		auto& cardSys = _simulation->cardSystem(_playerId);
 		cardSys.AddDrawCards(CardEnum::SharingIsCaring, 1);
-		cardSys.AddDrawCards(CardEnum::BarrackSwordman, 1);
+		//cardSys.AddDrawCards(CardEnum::BarrackSwordman, 1);
 	}
 	
 	_simulation->AddPopup(_playerId, ss.str(), "UpgradeTownhall");

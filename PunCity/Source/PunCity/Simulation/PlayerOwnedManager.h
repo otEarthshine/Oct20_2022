@@ -96,6 +96,7 @@ public:
 		_aveHappinessModifiers.resize(HappinessModifierEnumCount);
 
 		incomes100.resize(IncomeEnumCount);
+		influenceIncomes100.resize(InfluenceIncomeEnumCount);
 		sciences100.resize(ScienceEnumCount);
 
 		_enumToStatVec.resize(static_cast<int>(PlotStatEnum::Count));
@@ -142,6 +143,7 @@ public:
 		_simulation->QuestUpdateStatus(_playerId, QuestEnum::PopulationQuest, 0);
 
 		RefreshJobDelayed();
+		RecalculateTaxDelayed();
 	}
 
 	//! Houses
@@ -315,6 +317,19 @@ public:
 			ss << " (" << std::to_string(taxPercent()) << "%)";
 		}
 	}
+	void AddInfluenceIncomeToString(std::stringstream& ss) {
+		ss << fixed << setprecision(1);
+		ss << "Influence Per Round: " << totalInfluenceIncome100() / 100.0f << "<img id=\"Coin\"/>\n";
+
+		for (int32 i = 0; i < InfluenceIncomeEnumCount; i++)
+		{
+			if (influenceIncomes100[i] != 0)
+			{
+				ss << " " << (influenceIncomes100[i] > 0 ? "+" : "") << (influenceIncomes100[i] / 100.0f);
+				ss << " " << InfluenceIncomeEnumName[i] << "\n";
+			}
+		}
+	}
 
 	void ChangeIncome(int32 changeAmount, bool showFloatup, WorldTile2 floatupTile)
 	{
@@ -324,12 +339,22 @@ public:
 			_simulation->uiInterface()->ShowFloatupInfo(FloatupInfo(FloatupEnum::GainMoney, Time::Ticks(), floatupTile, ToForcedSignedNumber(changeAmount)));
 		}
 	}
+
+	int32 totalInfluenceIncome100()
+	{
+		int32 influence100 = 0;
+		for (size_t i = 0; i < influenceIncomes100.size(); i++) {
+			influence100 += influenceIncomes100[i];
+		}
+		return influence100;
+	}
 	
 
 	/*
 	 * Claim Region
 	 */
 
+	// TODO: Old
 	int32 GetBaseProvinceClaimPrice(int32 provinceId)
 	{
 		int32 x = (_provincesClaimed.size() + 5);
@@ -391,19 +416,19 @@ public:
 		return finalPriceBeforeMod;
 	}
 
-	int32 GetProvinceClaimPriceGold(int32 provinceId)
-	{
-		int32 price = GetBaseProvinceClaimPrice(provinceId);
-		
-		BiomeEnum biomeEnum = _simulation->GetBiomeProvince(provinceId);
-		if (_simulation->IsResearched(_playerId, TechEnum::BorealLandCost) &&
-			(biomeEnum == BiomeEnum::BorealForest || biomeEnum == BiomeEnum::Tundra))
-		{
-			price /= 2;
-		}
+	//int32 GetProvinceClaimPriceGold(int32 provinceId)
+	//{
+	//	int32 price = GetInfluenceClaimPrice(provinceId);
+	//	
+	//	BiomeEnum biomeEnum = _simulation->GetBiomeProvince(provinceId);
+	//	if (_simulation->IsResearched(_playerId, TechEnum::BorealLandCost) &&
+	//		(biomeEnum == BiomeEnum::BorealForest || biomeEnum == BiomeEnum::Tundra))
+	//	{
+	//		price /= 2;
+	//	}
 
-		return price;
-	}
+	//	return price;
+	//}
 
 	void TryRemoveProvinceClaim(int32 provinceId)
 	{
@@ -477,6 +502,8 @@ public:
 	 * Influence Price
 	 */
 private:
+	// TODO: Other way to prevent strip empire?
+	// TODO: Border Province Count
 	int32 distanceFromCapital_PenaltyPercent(int32 provinceId)
 	{
 		// Distance from Capital
@@ -490,11 +517,13 @@ private:
 		int32 distanceFromCapital = WorldTile2::Distance(townhallCenter, provinceCenter);
 		return min(max(0, distanceFromCapital - penaltyStartDistance) * maxIncreasePercent / penaltyLerpDistance, maxIncreasePercent);
 	}
+
+	// TODO: Include this in Influence increment
 	int32 areaVsPopulation_PenaltyPercent()
 	{
 		// Total Influence Area vs Population
 		// Penalty applies when population is too small for empire.
-		// 500 pop = 250,000 region empire ideal??
+		// 500 pop = 250,000 tiles empire ideal??
 		const int32 tilesPerPopulation_minPenalty = 500;
 		const int32 tilesPerPopulation_lerp = 1000;
 		const int32 maxPenaltyPercent = 100;
@@ -502,28 +531,28 @@ private:
 		return min(max(0, tilesPerPopulation - tilesPerPopulation_minPenalty) * maxPenaltyPercent / tilesPerPopulation_lerp, maxPenaltyPercent);
 	}
 public:
-	int32 GetInfluenceAreaUpkeep(int32 provinceId)
+	int32 GetProvinceUpkeep100(int32 provinceId)
 	{
 		// Upkeep is half of the income in ideal
 		// Upkeep suffers from the same penalty as claim price
-		int32 baseUpkeep = _simulation->GetProvinceInfluenceIncome(provinceId) / 2;
-		return baseUpkeep * (100 + distanceFromCapital_PenaltyPercent(provinceId) + areaVsPopulation_PenaltyPercent()) / 100;
+		int32 baseUpkeep100 = _simulation->GetProvinceIncome100(provinceId) / 2;
+		return baseUpkeep100;
 	}
 
-	int32 GetInfluenceClaimPrice(int32 provinceId)
+	int32 GetProvinceClaimPrice(int32 provinceId)
 	{
-		int32 baseClaimPrice = _simulation->GetProvinceInfluenceIncome(provinceId) * ClaimToIncomeRatio;
-		return baseClaimPrice * (100 + distanceFromCapital_PenaltyPercent(provinceId) + areaVsPopulation_PenaltyPercent()) / 100;
+		int32 baseClaimPrice100 = _simulation->GetProvinceIncome100(provinceId) * ClaimToIncomeRatio;
+		return (baseClaimPrice100 / 100);
 	}
-	int32 GetInfluenceClaimPriceRefund(int32 provinceId) {
-		return _simulation->GetProvinceInfluenceIncome(provinceId) * ClaimToIncomeRatio; // Don't refund penalty cost
-	}
+	//int32 GetInfluenceClaimPriceRefund(int32 provinceId) {
+	//	return _simulation->GetProvinceIncome100(provinceId) * ClaimToIncomeRatio; // Don't refund penalty cost
+	//}
 
 	int32 GetOutpostClaimPrice(int32 provinceId)
 	{
 		const int32 outpostBasePrice = 500;
 		
-		int32 price = GetInfluenceClaimPrice(provinceId);
+		int32 price = GetProvinceClaimPrice(provinceId);
 		price += (_provincesOutpost.size() + 1) * outpostBasePrice;
 		return price;
 	}
@@ -890,11 +919,12 @@ public:
 
 		SerializeVecValue(Ar, incomes100);
 		SerializeVecValue(Ar, sciences100);
+		SerializeVecValue(Ar, influenceIncomes100);
 
 		Ar << economicVictoryPhase;
 		
 		// Influence
-		Ar << influencePerRound;
+		//Ar << influencePerRound;
 
 		// Tax Level
 		Ar << taxLevel;
@@ -1011,8 +1041,7 @@ public:
 
 	std::vector<int32> incomes100;
 	std::vector<int32> sciences100;
-	
-	int32 influencePerRound = 0;
+	std::vector<int32> influenceIncomes100;
 
 	int32 economicVictoryPhase = 0;
 

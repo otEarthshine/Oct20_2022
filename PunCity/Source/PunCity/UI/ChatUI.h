@@ -294,6 +294,15 @@ public:
 			networkInterface()->SendNetworkCommand(command);
 		}
 
+		// AddInfluence
+		if (commandAndParams.size() >= 2 && commandAndParams[0] == "AddInfluence")
+		{
+			auto command = make_shared<FCheat>();
+			command->cheatEnum = GetCheatIndex("AddInfluence");
+			command->var1 = FCString::Atoi(ToTChar(commandAndParams[1]));
+			networkInterface()->SendNetworkCommand(command);
+		}
+
 		// AddCard
 		if (commandAndParams.size() >= 2 && commandAndParams[0] == "AddCard") 
 		{

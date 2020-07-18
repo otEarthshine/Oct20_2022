@@ -561,7 +561,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	//LoadResource(ResourceEnum::WhaleMeat, "WhaleMeat/ResourceWhaleMeat");
 	LoadResource2(ResourceEnum::Grape, "Grape/Grape");
 	LoadResource2(ResourceEnum::Wine, "Wine/Wine");
-	LoadResource(ResourceEnum::Shroom, "BloodMushroom/ResourceBloodMushroom");
+	LoadResource2(ResourceEnum::Shroom, "Mushroom/Mushroom");
 
 	LoadResource2(ResourceEnum::Pork, "Meat/Meat");
 	LoadResource2(ResourceEnum::Beef, "Meat/Meat");

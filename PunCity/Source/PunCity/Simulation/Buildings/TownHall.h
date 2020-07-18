@@ -17,22 +17,19 @@ static const std::vector<std::string> TownhallLvlToUpgradeBonusText =
 	"<bullet>Cabbage seeds</>"
 	"<bullet>Snatch</>"
 	"<bullet>Buy Wood</>"
-	"<bullet>Sell Food</>"
-	"<bullet>Clubman Barrack</>", // Lvl 2
+	"<bullet>Sell Food</>", // Lvl 2
 
-	"Bonuses:"
+	"<bullet>Unlocked Influence Points used to claim land.</>"
 	"<bullet>+10% mine/quarry production.</>"
 	"<space>"
 	"Unlocked Cards:"
 	"<bullet>Immigration Advertisement</>"
-	"<bullet>Kidnap</>"
-	"<bullet>Archer Barrack</>", // 3
+	"<bullet>Kidnap</>", // 3
 
 	"<bullet>+10% industrial production.</>"
 	"<space>"
 	"Unlocked Cards:"
-	"<bullet>Sharing is caring</>"
-	"<bullet>Swordman Barrack</>",// 4
+	"<bullet>Sharing is caring</>",// 4
 
 	"Great job!", // Lvl 5
 };

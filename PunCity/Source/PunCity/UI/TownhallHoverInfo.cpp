@@ -11,6 +11,8 @@ void UTownhallHoverInfo::PunInit(int buildingId)
 	_buildingId = buildingId;
 	//CityNameEditableText->OnTextCommitted.AddDynamic(this, &UTownhallHoverInfo::ChangedCityName);
 
+	BUTTON_ON_CLICK(TradeButton, this, &UTownhallHoverInfo::OnClickTradeButton);
+
 	BUTTON_ON_CLICK(LaborerNonPriorityButton, this, &UTownhallHoverInfo::OnClickLaborerNonPriorityButton);
 	BUTTON_ON_CLICK(LaborerPriorityButton, this, &UTownhallHoverInfo::OnClickLaborerPriorityButton);
 	BUTTON_ON_CLICK(LaborerArrowUp, this, &UTownhallHoverInfo::IncreaseLaborers);

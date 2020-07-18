@@ -246,6 +246,13 @@ public:
 	bool HasSeed(int32 playerId, CardEnum seedCardEnum) final {
 		return resourceSystem(playerId).HasSeed(seedCardEnum);
 	}
+
+	int32 influence(int32 playerId) final {
+		return resourceSystem(playerId).influence();
+	}
+	int32 influence100(int32 playerId) final {
+		return resourceSystem(playerId).influence100();
+	}
 	
 	int32 money(int32 playerId) final {
 		return resourceSystem(playerId).money();
@@ -711,8 +718,25 @@ public:
 		return treeCount;
 	}
 
-	int32 GetProvinceInfluenceIncome(int32 provinceId) final {
-		return std::max(1, IncomePer1000Tiles * _provinceSystem.provinceFlatTileCount(provinceId) / 1000);
+	int32 GetProvinceIncome100(int32 provinceId) final {
+		// Sample fertility, and take that into province income's calculation
+		TileArea area = _provinceSystem.GetProvinceRectArea(provinceId);
+
+		int32 fertilityPercentTotal = 0;
+		int32 tilesExamined = 1; // 1 to prevent /0
+		for (int32 y = area.minY; y <= area.maxY; y += 4) {
+			for (int32 x = area.minX; x <= area.maxX; x += 4) {
+				WorldTile2 tile(x, y);
+				if (_provinceSystem.GetProvinceIdClean(tile) == provinceId &&
+					_terrainGenerator->terrainTileType(tile) == TerrainTileType::None) 
+				{
+					fertilityPercentTotal += _terrainGenerator->GetFertilityPercent(WorldTile2(x, y));
+					tilesExamined++;
+				}
+			}
+		}
+		
+		return std::max(100, fertilityPercentTotal * Income100Per1000Tiles * _provinceSystem.provinceFlatTileCount(provinceId) / (tilesExamined * 100) / 1000);
 	}
 
 	bool HasOutpostAt(int32 playerId, int32 provinceId) final {

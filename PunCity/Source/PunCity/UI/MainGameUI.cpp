@@ -853,23 +853,26 @@ void UMainGameUI::Tick()
 		AddToolTip(Money, moneyTip.str());
 		AddToolTip(MoneyChangeText, moneyTip.str());
 
-		//// Influence
-		//if (simulation.unlockSystem(playerId())->IsResearched(TechEnum::Barrack)) {
-		//	Influence->SetText("", to_string(resourceSystem.influence()));
-		//	InfluenceChangeText->SetText(ToFText("+" + to_string(playerOwned.influencePerRound)));
+		// Influence
+		if (simulation.playerOwned(playerId()).isInitialized() &&
+			simulation.unlockedInfluence(playerId()))
+		{
+			Influence->SetText("", to_string(resourceSystem.influence()));
+			InfluenceChangeText->SetText(ToFText(ToSignedNumber(playerOwned.totalInfluenceIncome100() / 100)));
 
-		//	std::stringstream influenceTip;
-		//	influenceTip << "Influence points used for claiming land and vassalizing other towns.";
+			std::stringstream influenceTip;
+			influenceTip << "Influence points used for claiming land and vassalizing other towns.\n\n";
+			playerOwned.AddInfluenceIncomeToString(influenceTip);
 
-		//	AddToolTip(Influence, influenceTip.str());
-		//	AddToolTip(InfluenceChangeText, influenceTip.str());
+			AddToolTip(Influence, influenceTip.str());
+			AddToolTip(InfluenceChangeText, influenceTip.str());
 
-		//	Influence->SetVisibility(ESlateVisibility::Visible);
-		//	InfluenceChangeText->SetVisibility(ESlateVisibility::Visible);
-		//} else {
+			Influence->SetVisibility(ESlateVisibility::Visible);
+			InfluenceChangeText->SetVisibility(ESlateVisibility::Visible);
+		} else {
 			Influence->SetVisibility(ESlateVisibility::Collapsed);
 			InfluenceChangeText->SetVisibility(ESlateVisibility::Collapsed);
-		//}
+		}
 
 		// Science
 		if (simulation.unlockSystem(playerId())->researchEnabled) 

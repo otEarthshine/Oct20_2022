@@ -56,15 +56,6 @@ public:
 		}
 		else 
 		{
-			FString displayedName = CityNameText->GetText().ToString();
-			//PUN_DEBUG(FString::Printf(TEXT("displayedName: %s"), *displayedName));
-
-			FString newDisplayName = townhall.townFName();
-			
-			if (displayedName != newDisplayName) {
-				CityNameText->SetText(FText::FromString(newDisplayName));
-			}
-
 			if (simulation().playerOwned(playerId()).IsVassal(townhall.buildingId())) {
 				CityNameText->SetColorAndOpacity(FLinearColor(0.5, 0.6, 0.7)); // Vassal
 			}
@@ -75,6 +66,16 @@ public:
 				CityNameText->SetColorAndOpacity(FLinearColor(1, 1, .7));
 			}
 		}
+
+		// Townhall name
+		FString displayedName = CityNameText->GetText().ToString();
+		FString newDisplayName = townhall.townFName();
+
+		if (displayedName != newDisplayName) {
+			CityNameText->SetText(FText::FromString(newDisplayName));
+		}
+
+		
 
 		// PlayerColorImage
 		PlayerColorCircle->GetDynamicMaterial()->SetVectorParameterValue("PlayerColor1", PlayerColor1(townhall.armyNode.lordPlayerId));
@@ -621,6 +622,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) USizeBox* FightIcon;
 	
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* MilitaryButtons;
+
+	UPROPERTY(meta = (BindWidget)) UButton* TradeButton;
 	
 	UPROPERTY(meta = (BindWidget)) UTextBlock* TownHoverPopulationText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* CityNameText;
@@ -673,6 +676,11 @@ private:
 		PriorityButton->SetVisibility(priority ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 		NonPriorityButton->SetVisibility(priority ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 		ArrowOverlay->SetVisibility(priority ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	}
+
+
+	UFUNCTION() void OnClickTradeButton() {
+		GetPunHUD()->OpenIntercityTradeUI(_buildingId);
 	}
 
 	/*

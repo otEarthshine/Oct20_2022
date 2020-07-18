@@ -59,7 +59,7 @@ public:
 		//	spread = _startingSpotSpread;
 		//}
 
-		PUN_LOG("CanReserveSpot_NotTooCloseToAnother spread:%d", spread);
+		//PUN_LOG("CanReserveSpot_NotTooCloseToAnother spread:%d", spread);
 		
 		bool cannotPlant = simulation->provinceSystem().ExecuteNearbyProvincesWithExitTrue(provinceId, spread, [&](ProvinceConnection connection)
 		{

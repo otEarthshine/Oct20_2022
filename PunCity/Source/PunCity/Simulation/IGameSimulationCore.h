@@ -128,6 +128,8 @@ public:
 	virtual std::string townSizeName(int32 playerId) = 0;
 	virtual int32 townAgeTicks(int32 playerId) = 0;
 
+	virtual bool unlockedInfluence(int32 playerId) { return townLvl(playerId) >= 3; }
+
 	virtual class Building& building(int32 id) = 0;
 	virtual class Building& building(ResourceHolderInfo holderInfo, int32 playerId) = 0;
 	virtual CardEnum buildingEnum(int32 id) = 0;
@@ -269,7 +271,7 @@ public:
 
 	virtual int32 GetTreeCount(int32 provinceId) = 0;
 
-	virtual int32 GetProvinceInfluenceIncome(int32 provinceId) = 0;
+	virtual int32 GetProvinceIncome100(int32 provinceId) = 0;
 	
 	virtual bool HasOutpostAt(int32 playerId, int32 provinceId) = 0;
 	virtual bool IsProvinceNextToPlayer(int32 provinceId, int32 playerId) = 0;
@@ -346,6 +348,9 @@ public:
 	virtual int32 GetResourceCount(int32 playerId, const std::vector<ResourceEnum>& resourceEnums) = 0;
 	
 	virtual bool HasSeed(int32 playerId, CardEnum seedCardEnum) = 0;
+
+	virtual int32 influence(int32 playerId) = 0;
+	virtual int32 influence100(int32 playerId) = 0;
 	
 	virtual int32 money(int32 playerId) = 0;
 	virtual void ChangeMoney(int32 playerId, int32 moneyChange) = 0;

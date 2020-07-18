@@ -484,6 +484,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 		int32 objectId = uiState.objectId;
 
+		_objectDescriptionUI->BuildingsStatOpener->SetVisibility(ESlateVisibility::Collapsed);
+		_objectDescriptionUI->NameEditButton->SetVisibility(ESlateVisibility::Collapsed);
+
+
 		//! TileBuilding (such as Building)
 		// TODO: may be TileBuilding should just be TileObject..???
 		if (uiState.objectType == ObjectTypeEnum::Building && objectId < 0) {
@@ -513,6 +517,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			if (buildingEnum == CardEnum::RegionTribalVillage) {
 				ss << "<Header>" << GenerateTribeName(objectId) << " tribe</>";
 			}
+			else if (buildingEnum == CardEnum::Townhall) {
+				ss << "<Header>" << TrimString(simulation.townName(building.playerId()), 15) << "</>";
+			}
 			else
 			{
 				ss << "<Header>" << building.buildingInfo().name << "</>";
@@ -524,6 +531,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 #endif
 			SetText(_objectDescriptionUI->DescriptionUITitle, ss);
 			_objectDescriptionUI->BuildingsStatOpener->SetVisibility(building.maxOccupants() > 0 && !IsHouse(building.buildingEnum()) ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+			_objectDescriptionUI->NameEditButton->SetVisibility((building.isEnum(CardEnum::Townhall) && building.playerId() == playerId()) ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 			
 			//descriptionBox->AddRichText(ss);
 			descriptionBox->AddLineSpacer(8);
@@ -958,14 +966,28 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						 * Fill ManageStorage
 						 */
 						UPunBoxWidget* manageStorageBox = _objectDescriptionUI->ManageStorageBox;
-						
-						for (int i = 0; i < ResourceEnumCount; i++)
-						{
-							ResourceEnum resourceEnum = static_cast<ResourceEnum>(i);
-							if (IsFoodEnum(resourceEnum)) {
+
+						// Food
+						manageStorageBox->AddManageStorageElement(ResourceEnum::None, "Food", objectId);
+						for (ResourceEnum resourceEnum : FoodEnums) {
+							manageStorageBox->AddManageStorageElement(resourceEnum, "", objectId);
+						}
+
+						// Luxury
+						manageStorageBox->AddManageStorageElement(ResourceEnum::None, "Luxury", objectId);
+						for (int32 i = 1; i < TierToLuxuryEnums.size(); i++) {
+							for (ResourceEnum resourceEnum : TierToLuxuryEnums[i]) {
 								manageStorageBox->AddManageStorageElement(resourceEnum, "", objectId);
 							}
 						}
+						
+						//for (int i = 0; i < ResourceEnumCount; i++)
+						//{
+						//	ResourceEnum resourceEnum = static_cast<ResourceEnum>(i);
+						//	//if (IsFoodEnum(resourceEnum)) {
+						//		manageStorageBox->AddManageStorageElement(resourceEnum, "", objectId);
+						//	//}
+						//}
 
 						manageStorageBox->AfterAdd();
 						
@@ -1698,7 +1720,6 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				ss << "<Header>" << unit.typeName() << "</>";
 				SetText(_objectDescriptionUI->DescriptionUITitle, ss);
 			}
-			_objectDescriptionUI->BuildingsStatOpener->SetVisibility(ESlateVisibility::Collapsed);
 			
 #if WITH_EDITOR
 			ss << "[" << objectId << "]"; // ID
@@ -1960,7 +1981,6 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			stringstream ss;
 			ss << "<Header>" << info.name << "</> " << tile.ToString();
 			SetText(_objectDescriptionUI->DescriptionUITitle, ss);
-			_objectDescriptionUI->BuildingsStatOpener->SetVisibility(ESlateVisibility::Collapsed);
 			descriptionBox->AddSpacer(12);
 
 			ss << WrapString(info.description);
@@ -2328,9 +2348,10 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 				descriptionBox->AddRichText(WrapString("The difficulty in clearing jungle makes expansion more costly."));
 			}
 
+			int32 price = playerOwned.GetProvinceClaimPrice(provinceId);
+			
 			// Claim by money
 			{
-				int32 price = playerOwned.GetProvinceClaimPriceGold(provinceId);
 
 				//if (alreadyHasIndirectControl) {
 				//	price = max(10, price - playerOwned.GetInfluenceClaimPriceRefund(provinceId));
@@ -2340,14 +2361,22 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 
 				descriptionBox->AddSpacer();
 				descriptionBox->AddButton("Claim Province (", dataSource()->assetLoader()->CoinIcon, TextRed(to_string(price), !canClaim) + ")",
-					this, CallbackEnum::ClaimLandMoney, canClaim, false, provinceId);
+											this, CallbackEnum::ClaimLandMoney, canClaim, false, provinceId);
+			}
+
+			// Claim by influence
+			if (simulation().unlockedInfluence(playerId()))
+			{
+				bool canClaim = simulation().influence(playerId()) >= price;
+
+				descriptionBox->AddSpacer();
+				descriptionBox->AddButton("Claim Province (", dataSource()->assetLoader()->InfluenceIcon, TextRed(to_string(price), !canClaim) + ")",
+												this, CallbackEnum::ClaimLandInfluence, canClaim, false, provinceId);
 			}
 
 			// Claim by food
 			//if (simulation().IsResearched(playerId(), TechEnum::ClaimLandByFood))
 			{
-				int32 price = playerOwned.GetBaseProvinceClaimPrice(provinceId);
-
 				//if (alreadyHasIndirectControl) {
 				//	price = max(10, price - playerOwned.GetInfluenceClaimPriceRefund(provinceId));
 				//}
@@ -2358,8 +2387,9 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 
 				descriptionBox->AddSpacer();
 				descriptionBox->AddButton("Claim Province (" + TextRed(to_string(foodNeeded), !canClaim) + " food)", nullptr, "",
-					this, CallbackEnum::ClaimLandFood, canClaim, false, provinceId);
+											this, CallbackEnum::ClaimLandFood, canClaim, false, provinceId);
 			}
+
 		}
 		else if (sim.IsProvinceNextToPlayerIncludingNonFlatLand(provinceId, playerId()))
 		{
@@ -2491,6 +2521,7 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 	 * Regions
 	 */
 	if (callbackEnum == CallbackEnum::ClaimLandMoney ||
+		callbackEnum == CallbackEnum::ClaimLandInfluence ||
 		callbackEnum == CallbackEnum::ClaimLandFood ||
 		callbackEnum == CallbackEnum::ClaimLandArmy ||
 		callbackEnum == CallbackEnum::CancelClaimLandArmy ||
@@ -2727,7 +2758,6 @@ void UObjectDescriptionUISystem::AddTileInfo(WorldTile2 tile, UPunBoxWidget* des
 	ss << "<Header>" << sim.terrainGenerator().GetBiomeName(tile) << " Tile</>\n";
 	ss << "<Header>(" << tile.x << ", " << tile.y << ")</>";
 	SetText(_objectDescriptionUI->DescriptionUITitle, ss);
-	_objectDescriptionUI->BuildingsStatOpener->SetVisibility(ESlateVisibility::Collapsed);
 	descriptionBox->AddSpacer(12);
 
 	// Biome
@@ -2836,7 +2866,6 @@ void UObjectDescriptionUISystem::AddMapProvinceInfo(int32 provinceId, UPunBoxWid
 	ss << "<Subheader>" <<  WorldRegion2(provinceId).ToString() << "</>\n";
 	SetText(_objectDescriptionUI->DescriptionUITitle, ss);
 	ss.str("");
-	_objectDescriptionUI->BuildingsStatOpener->SetVisibility(ESlateVisibility::Collapsed);
 	descriptionBox->AddSpacer(12);
 
 	// Biome Description

@@ -243,6 +243,15 @@ void Building::SetResourceActive(bool workActive)
 }
 void Building::SetHolderTypeAndTarget(ResourceEnum resourceEnum, ResourceHolderType type, int32 target)
 {
+	// ResourceEnum::None means 
+	if (resourceEnum == ResourceEnum::None) {
+		for (int32 i = 0; i < ResourceEnumCount; i++) {
+			ResourceHolderInfo info = holderInfo(resourceEnum);
+			resourceSystem().SetHolderTypeAndTarget(info, type, target);
+		}
+		return;
+	}
+	
 	ResourceHolderInfo info = holderInfo(resourceEnum);
 	resourceSystem().SetHolderTypeAndTarget(info, type, target);
 }

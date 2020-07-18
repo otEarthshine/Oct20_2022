@@ -149,6 +149,10 @@ void ACameraPawn::KeyPressed_M()
 void ACameraPawn::KeyPressed_H()
 {
 	WorldAtom2 lookAtAtom = _gameInterface->simulation().homeAtom(_networkInterface->playerId());
+	if (lookAtAtom == WorldAtom2::Zero) {
+		return;
+	}
+	
 	SetCameraAtom(lookAtAtom);
 
 	FRotator rotation = GetActorRotation();

@@ -20,6 +20,9 @@ void UObjectDescriptionUI::Setup()
 
 	BuildingsStatOpener->OnClicked.AddDynamic(this, &UObjectDescriptionUI::OnClickBuildingsStatOpener);
 	
+	NameEditButton->OnClicked.AddDynamic(this, &UObjectDescriptionUI::OnClickNameEditButton);
+	NameEditTextBox->OnTextCommitted.AddDynamic(this, &UObjectDescriptionUI::NameEditCommitted);
+	
 	ChooseResourceCloseButton->OnClicked.AddDynamic(this, &UObjectDescriptionUI::ClickedChooseResource);
 	SearchBox->SelectAllTextWhenFocused = true;
 

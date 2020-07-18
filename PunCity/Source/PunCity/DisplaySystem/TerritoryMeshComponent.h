@@ -66,15 +66,15 @@ public:
 
 		//PUN_LOG("TerritoryMesh playerId:%d province:%d edges1:%d edges2:%d", playerIdIn, provinceIdIn, edges1.size(), edges2.size());
 		
-		size_t borderSize = edges1.size();
+		size_t edges1Size = edges1.size();
 
 		//const std::vector<int32>& _provinceId2x2 = provinceSys.GetProvinceId2x2Vec();
 
 		/*
 		 * Determine vertices
 		 */
-		TArray<FVector> outerVertices;
-		TArray<FVector> innerVertices;
+		TArray<FVector> outerVertices1;
+		TArray<FVector> innerVertices1;
 
 		auto getHeight = [&](const WorldTile2& tile)
 		{
@@ -100,9 +100,9 @@ public:
 		
 		for (size_t i = 0; i < edges1.size(); i++)
 		{
-			FVector prevVec = getMidPoint((i - 1 + borderSize) % borderSize);
+			FVector prevVec = getMidPoint((i - 1 + edges1Size) % edges1Size);
 			FVector curVec = getMidPoint(i);
-			FVector nextVec = getMidPoint((i + 1 + borderSize) % borderSize);
+			FVector nextVec = getMidPoint((i + 1 + edges1Size) % edges1Size);
 			
 			FVector prevToCur = curVec - prevVec;
 			FVector curToNext = nextVec - curVec;
@@ -113,20 +113,98 @@ public:
 			FVector bisect = bisectSource1 * bisectSource2.Size() + bisectSource2 * bisectSource1.Size();
 			bisect.Normalize();
 
-			WorldTile2 curWorldTile = edges1[i].worldTile2();
+			//WorldTile2 curWorldTile = edges1[i].worldTile2();
 
-			outerVertices.Add(curVec - bisect * outerBorderWidth);
-			innerVertices.Add(curVec + bisect * innerBorderWidth);
+			outerVertices1.Add(curVec - bisect * outerBorderWidth);
+			innerVertices1.Add(curVec + bisect * innerBorderWidth);
 		}
+
 		
-		for (size_t i = 0; i < edges1.size(); i++)
-		{	
+
+		/*
+		 * Break each edge point into two 
+		 */
+		TArray<FVector> outerVertices;
+		TArray<FVector> innerVertices;
+
+		int32 vertices1Num = outerVertices1.Num();
+		
+		if (vertices1Num > 5)
+		{
+			for (int32 i = 0; i < vertices1Num; i++)
+			{
+				int32 leftVecIndex = (i - 1 + vertices1Num) % vertices1Num;
+				int32 rightVecIndex = (i + 1) % vertices1Num;
+				
+				FVector leftVec = outerVertices1[leftVecIndex];
+				FVector midVec = outerVertices1[i];
+				FVector rightVec = outerVertices1[rightVecIndex];
+
+				FVector leftVecInner = innerVertices1[leftVecIndex];
+				FVector midVecInner = innerVertices1[i];
+				FVector rightVecInner = innerVertices1[rightVecIndex];
+
+				FVector midToLeft = (leftVec - midVec).GetSafeNormal();
+				FVector midToRight = (rightVec - midVec).GetSafeNormal();
+				
+
+				float dot = FVector::DotProduct(midToLeft, midToRight);
+				// if this is corner is sharp enough, replace the midVec with 2 points instead
+				if (dot > -0.8)
+				{
+					outerVertices.Add(midToLeft * 5.0f + midVec);
+					outerVertices.Add(midToRight * 5.0f + midVec); // 5.0f for .5 tile moved
+
+					innerVertices.Add((leftVecInner - midVecInner).GetSafeNormal() * 5.0f + midVecInner);
+					innerVertices.Add((rightVecInner - midVecInner).GetSafeNormal() * 5.0f + midVecInner);
+				}
+				// not as sharp, put point in as is
+				else if (dot > -0.99)
+				{
+					outerVertices.Add(midVec);
+					innerVertices.Add(midVecInner);
+				}
+				// Straight line, don't add any point
+
+				
+				////
+				//else if (dot < -0.8)
+				//{
+				//	
+				//}
+				//// if this is corner is sharp enough, replace the midVec with 2 points instead
+				//else if (dot < -0.8)
+				//{
+				//	outerVertices[i] = (rightVec - midVec).GetSafeNormal() * 5.0f + midVec; // 5.0f for .5 tile moved
+				//	outerVertices.Insert((leftVec - midVec).GetSafeNormal() * 5.0f + midVec, i);
+
+				//	innerVertices[i] = (rightVecInner - midVecInner).GetSafeNormal() * 5.0f + midVecInner;
+				//	innerVertices.Insert((leftVecInner - midVecInner).GetSafeNormal() * 5.0f + midVecInner, i);
+				//}
+
+				//leftVec = midVec;
+				//leftVecInner = midVecInner;
+			}
+		}
+		else
+		{
+			outerVertices = outerVertices1;
+			innerVertices = innerVertices1;
+		}
+
+		/*
+		 * Generate Mesh
+		 */
+		size_t outerVerticesSize = outerVertices.Num();
+		
+		for (size_t i = 0; i < outerVerticesSize; i++)
+		{
 			UV0.Add(FVector2D(0, 0));
 			UV0.Add(FVector2D(0, 1));
 			UV0.Add(FVector2D(1, 1));
 			UV0.Add(FVector2D(1, 0));
 
-			float pathColor = static_cast<float>(i) / borderSize;
+			float pathColor = static_cast<float>(i) / outerVerticesSize;
 			vertexColors.Add(FLinearColor::White * pathColor);
 			vertexColors.Add(FLinearColor::White * pathColor);
 			vertexColors.Add(FLinearColor::White * pathColor);
@@ -147,8 +225,8 @@ public:
 			 */
 			FVector curOuter = outerVertices[i];
 			FVector curInner = innerVertices[i];
-			FVector lastOuter = outerVertices[(i - 1 + borderSize) % borderSize];
-			FVector lastInner = innerVertices[(i - 1 + borderSize) % borderSize];
+			FVector lastOuter = outerVertices[(i - 1 + outerVerticesSize) % outerVerticesSize];
+			FVector lastInner = innerVertices[(i - 1 + outerVerticesSize) % outerVerticesSize];
 
 			vertices.Add(lastInner);
 			vertices.Add(lastOuter);

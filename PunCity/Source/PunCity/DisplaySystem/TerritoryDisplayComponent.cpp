@@ -157,7 +157,7 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleIds)
 				territoryMesh->SetVisibility(false, true);
 				pool.Add(territoryMesh);
 
-				PUN_LOG("Despawn territory %d pool:%d", territoryMesh->provinceId, pool.Num());
+				//PUN_LOG("Despawn territory %d pool:%d", territoryMesh->provinceId, pool.Num());
 			}
 		}
 
@@ -172,7 +172,7 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleIds)
 				comp->SetVisibility(true, true);
 				territoryMeshes.Add(comp);
 
-				PUN_LOG("Spawn territory %d pool:%d", territoryMeshes.Num(), pool.Num());
+				//PUN_LOG("Spawn territory %d pool:%d", territoryMeshes.Num(), pool.Num());
 			}
 			else
 			{

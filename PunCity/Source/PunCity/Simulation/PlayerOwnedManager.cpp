@@ -114,6 +114,7 @@ void PlayerOwnedManager::PlayerAddHuman(int32 objectId)
 	_simulation->QuestUpdateStatus(_playerId, QuestEnum::PopulationQuest, 0);
 
 	RefreshJobDelayed();
+	RecalculateTaxDelayed();
 }
 
 void PlayerOwnedManager::PlayerAddJobBuilding(Building& building, bool isConstructed)
@@ -544,8 +545,7 @@ void PlayerOwnedManager::TickRound()
 void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 {
 	std::fill(incomes100.begin(), incomes100.end(), 0);
-
-	influencePerRound = 0;
+	std::fill(influenceIncomes100.begin(), influenceIncomes100.end(), 0);
 
 	if (!isInitialized()) {
 		return;
@@ -771,20 +771,37 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 	/*
 	 * Territory
 	 */
+	int32 influence100 = _simulation->influence100(_playerId);
 	{
-		int32 territoryRevenue = 0;
+		int32 territoryRevenue100 = 0;
 		for (int32 provinceId : _provincesClaimed) {
-			territoryRevenue += _simulation->GetProvinceInfluenceIncome(provinceId);
+			territoryRevenue100 += _simulation->GetProvinceIncome100(provinceId);
 		}
-		incomes100[static_cast<int>(IncomeEnum::TerritoryRevenue)] += territoryRevenue;
+		incomes100[static_cast<int>(IncomeEnum::TerritoryRevenue)] += territoryRevenue100;
+		
 
-		int32 territoryUpkeep = 0;
+		// Upkeep goes to influence unless it is 0
+		int32 territoryUpkeep100 = 0;
 		for (int32 provinceId : _provincesClaimed) {
-			territoryUpkeep += GetInfluenceAreaUpkeep(provinceId);
+			territoryUpkeep100 += _simulation->GetProvinceIncome100(provinceId) / 2; // Upkeep half the income as base
 		}
-		incomes100[static_cast<int>(IncomeEnum::TerritoryUpkeep)] += territoryUpkeep;
+
+		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::TerritoryUpkeep)] -= territoryUpkeep100;
 	}
-	
+
+	// Influence gain equals to population
+	if (_simulation->unlockedInfluence(_playerId)) {
+		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Population)] += _simulation->population(_playerId) * 100;
+	}
+
+	// Influence beyond 1 year accumulation gets damped
+	// At 2 years worth accumulation. The influence income becomes 0;
+	int32 influenceIncomeBeforeCapDamp100 = totalInfluenceIncome100();
+	int32 fullYearInfluenceIncome100 = influenceIncomeBeforeCapDamp100 * Time::RoundsPerYear;
+	if (influence100 > 0 && influence100 > fullYearInfluenceIncome100) {
+		int32 influenceDamp100 = (fullYearInfluenceIncome100 == 0) ? 0 : (influenceIncomeBeforeCapDamp100 * (influence100 - fullYearInfluenceIncome100) / fullYearInfluenceIncome100);
+		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::TooMuchInfluencePoints)] -= influenceDamp100;
+	}
 }
 
 
@@ -804,18 +821,28 @@ void PlayerOwnedManager::CollectRoundIncome()
 	}
 
 	ResourceSystem& resourceSys = _simulation->resourceSystem(_playerId);
+
+	// Change Income
 	int32 totalIncome100WithoutHouse = totalRevenue100WithoutHouse() - totalExpense100();
 	resourceSys.ChangeMoney100(totalIncome100WithoutHouse);
 
-	// Disband army if out of cash
-	const int32 maxDisbandPerRound = 3;
-	for (int32 i = 0; i < maxDisbandPerRound; i++) {
-		if (CheckDisbandArmy()) {
-			if (i == 0) {
-				_simulation->AddPopup(_playerId, "Parts of your army have been disbanded for money.", "PopupBad");
-			}
-		}
+	// Change Influence
+	resourceSys.ChangeInfluence100(totalInfluenceIncome100());
+	if (resourceSys.influence100() < 0) {
+		_simulation->AddEventLog(_playerId, "You have 0 influence point, so your money was decreased by " + to_string(-resourceSys.influence100()), true);
+		resourceSys.ChangeMoney100(resourceSys.influence100());
+		resourceSys.SetInfluence(0);
 	}
+
+	//// Disband army if out of cash
+	//const int32 maxDisbandPerRound = 3;
+	//for (int32 i = 0; i < maxDisbandPerRound; i++) {
+	//	if (CheckDisbandArmy()) {
+	//		if (i == 0) {
+	//			_simulation->AddPopup(_playerId, "Parts of your army have been disbanded for money.", "PopupBad");
+	//		}
+	//	}
+	//}
 }
 void PlayerOwnedManager::CollectHouseIncome()
 {

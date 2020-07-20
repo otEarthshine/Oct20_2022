@@ -722,7 +722,7 @@ public:
 		// Sample fertility, and take that into province income's calculation
 		TileArea area = _provinceSystem.GetProvinceRectArea(provinceId);
 
-		int32 fertilityPercentTotal = 0;
+		int32 fertilityPercentTotal = 100;
 		int32 tilesExamined = 1; // 1 to prevent /0
 		for (int32 y = area.minY; y <= area.maxY; y += 4) {
 			for (int32 x = area.minX; x <= area.maxX; x += 4) {
@@ -735,8 +735,9 @@ public:
 				}
 			}
 		}
-		
-		return std::max(100, fertilityPercentTotal * Income100Per1000Tiles * _provinceSystem.provinceFlatTileCount(provinceId) / (tilesExamined * 100) / 1000);
+
+		int32 provinceIncome100 = fertilityPercentTotal * Income100PerTiles * _provinceSystem.provinceFlatTileCount(provinceId) / (tilesExamined * 100);
+		return std::max(100, provinceIncome100);
 	}
 
 	bool HasOutpostAt(int32 playerId, int32 provinceId) final {
@@ -763,6 +764,22 @@ public:
 		return _provinceSystem.RefreshTerritoryEdge(playerId, playerOwned(playerId).provincesClaimed());
 	}
 
+	bool IsBorderProvince(int32 provinceId) final
+	{
+		int32 playerId = provinceOwner(provinceId);
+		check(playerId != -1);
+		const std::vector<ProvinceConnection>& connections = _provinceSystem.GetProvinceConnections(provinceId);
+		for (const ProvinceConnection& connection : connections)
+		{
+			if (connection.tileType == TerrainTileType::None) {
+				if (provinceOwner(connection.provinceId) != playerId) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
 	/*
 	 * 
 	 */
@@ -1112,11 +1129,11 @@ public:
 	}
 	int32 SpaceLeftFor(ResourceEnum resourceEnum, int32 storageId) final {
 		Building& bld = building(storageId);
-		return bld.subclass<StorageYard>(CardEnum::StorageYard).SpaceLeftFor(resourceEnum);
+		return bld.subclass<StorageYard>().SpaceLeftFor(resourceEnum);
 	}
 	void RefreshStorageStatus(int32 storageId) final {
 		Building& bld = building(storageId);
-		bld.subclass<StorageYard>(CardEnum::StorageYard).RefreshStorage();
+		bld.subclass<StorageYard>().RefreshStorage();
 	}
 
 

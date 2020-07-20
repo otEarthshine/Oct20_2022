@@ -230,10 +230,19 @@ PlacementInfo ABuildingPlacementSystem::PlacementBuildingInfo()
 	else if (_placementType == PlacementType::StoneRoad)
 	{
 		ClearInstructions();
-		
+
 		if (_dragState == DragState::Dragging && _canPlace) {
 			int32 stoneNeeded = _roadPathTileIds.Num() * 2;
 			SetInstruction(PlacementInstructionEnum::DragRoadStone, true, stoneNeeded);
+		}
+	}
+	else if (_placementType == PlacementType::IntercityRoad)
+	{
+		ClearInstructions();
+
+		if (_dragState == DragState::Dragging && _canPlace) {
+			int32 goldNeeded = _roadPathTileIds.Num() * 20;
+			SetInstruction(PlacementInstructionEnum::DragRoadIntercity, true, goldNeeded);
 		}
 	}
 	else if (_buildingEnum == CardEnum::Kidnap)
@@ -265,11 +274,11 @@ PlacementInfo ABuildingPlacementSystem::PlacementBuildingInfo()
 	{
 		ClearInstructions();
 		
-		if (_placementType == PlacementType::StoneRoad && _canPlace)
-		{
-			int32 stoneNeeded = _roadPathTileIds.Num() * 2;
-			SetInstruction(PlacementInstructionEnum::DragRoadStone, true, stoneNeeded);
-		}
+		//if (_placementType == PlacementType::StoneRoad && _canPlace)
+		//{
+		//	int32 stoneNeeded = _roadPathTileIds.Num() * 2;
+		//	SetInstruction(PlacementInstructionEnum::DragRoadStone, true, stoneNeeded);
+		//}
 	}
 	// Buildings
 	else
@@ -470,9 +479,13 @@ void ABuildingPlacementSystem::StartDemolish()
 	StartDrag();
 }
 
-void ABuildingPlacementSystem::StartRoad(bool isStoneRoad)
+void ABuildingPlacementSystem::StartRoad(bool isStoneRoad, bool isIntercity)
 {
-	_placementType = isStoneRoad ? PlacementType::StoneRoad : PlacementType::DirtRoad;
+	if (isIntercity) {
+		_placementType = PlacementType::IntercityRoad;
+	} else {
+		_placementType = isStoneRoad ? PlacementType::StoneRoad : PlacementType::DirtRoad;
+	}
 	StartDrag();
 }
 
@@ -2089,6 +2102,20 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 	placeGatherCommand->placementType = static_cast<int8_t>(placementType);
 	placeGatherCommand->harvestResourceEnum = _harvestResourceEnum;
 
+	// Intercity Road, don't allow building if !canPlace or not enough money
+	if (placementType == PlacementType::IntercityRoad) 
+	{
+		int32 playerId = _gameInterface->playerId();
+		if (!_canPlace) {
+			return;
+		}
+		int32 goldNeeded = _roadPathTileIds.Num() * 20;
+		if (goldNeeded < _gameInterface->simulation().money(playerId)) {
+			_gameInterface->simulation().AddEventLog(playerId, "Not enough money.", true);
+			return;
+		}
+	}
+
 	// Demolish only after confirmation
 	if (_placementType == PlacementType::Demolish) 
 	{	
@@ -2101,6 +2128,7 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 		return;
 	}
 
+	// Road/Gather after here
 	networkInterface->SendNetworkCommand(placeGatherCommand);
 
 	_gameInterface->Spawn2DSound("UI", "PlaceBuilding");

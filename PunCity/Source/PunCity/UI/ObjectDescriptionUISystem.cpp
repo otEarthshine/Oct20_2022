@@ -715,7 +715,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						auto& townhallPlayerOwned = simulation.playerOwned(townhall.playerId());
 						int32 lvl = townhall.townhallLvl;
 
-						descriptionBox->AddRichText("Player", TrimString(townhall.townName(), 12));
+						descriptionBox->AddRichText("Player", TrimString(simulation.playerName(townhall.playerId()), 12));
 
 #if WITH_EDITOR
 						descriptionBox->AddRichText("<Yellow>PlayerId</>", to_string(townhall.playerId()));
@@ -951,6 +951,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							ss << building.seasonalProduction() << "<img id=\"Coin\"/>";
 							descriptionBox->AddRichText("Income(per season)", ss);
 						}
+						if (building.isEnum(CardEnum::InventorsWorkshop)) {
+							ss << building.seasonalProduction() << "<img id=\"Science\"/>";
+							descriptionBox->AddRichText("Science(per season)", ss);
+						}
 					}
 					else if (building.isEnum(CardEnum::StorageYard)) 
 					{
@@ -967,18 +971,51 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						 */
 						UPunBoxWidget* manageStorageBox = _objectDescriptionUI->ManageStorageBox;
 
+						std::vector<ResourceInfo> resourceEnums = SortedNameResourceEnum;
+
+						auto tryAddManageStorageElement = [&](ResourceEnum resourceEnum, bool isShowing)
+						{
+							if (isShowing) {
+								bool isAllowed = simulation.building(objectId).holder(resourceEnum).type != ResourceHolderType::Provider;
+								manageStorageBox->AddManageStorageElement(resourceEnum, "", objectId, isAllowed, true);
+							}
+							CppUtils::RemoveIf(resourceEnums, [&](ResourceInfo resourceInfo) { return resourceInfo.resourceEnum == resourceEnum; });
+						};
+
 						// Food
-						manageStorageBox->AddManageStorageElement(ResourceEnum::None, "Food", objectId);
+						bool isFoodAllowed = false;
 						for (ResourceEnum resourceEnum : FoodEnums) {
-							manageStorageBox->AddManageStorageElement(resourceEnum, "", objectId);
+							if (simulation.building(objectId).holder(resourceEnum).type != ResourceHolderType::Provider) {
+								isFoodAllowed = true;
+								break;
+							}
+						}
+						manageStorageBox->AddManageStorageElement(ResourceEnum::Food, "Food", objectId, isFoodAllowed, false);
+						for (ResourceEnum resourceEnum : FoodEnums) {
+							tryAddManageStorageElement(resourceEnum, isFoodAllowed);
 						}
 
 						// Luxury
-						manageStorageBox->AddManageStorageElement(ResourceEnum::None, "Luxury", objectId);
+						bool isLuxuryAllowed = false;
 						for (int32 i = 1; i < TierToLuxuryEnums.size(); i++) {
 							for (ResourceEnum resourceEnum : TierToLuxuryEnums[i]) {
-								manageStorageBox->AddManageStorageElement(resourceEnum, "", objectId);
+								if (simulation.building(objectId).holder(resourceEnum).type != ResourceHolderType::Provider) {
+									isLuxuryAllowed = true;
+									break;
+								}
 							}
+						}
+						manageStorageBox->AddManageStorageElement(ResourceEnum::Luxury, "Luxury", objectId, isLuxuryAllowed, false);
+						for (int32 i = 1; i < TierToLuxuryEnums.size(); i++) {
+							for (ResourceEnum resourceEnum : TierToLuxuryEnums[i]) {
+								tryAddManageStorageElement(resourceEnum, isLuxuryAllowed);
+							}
+						}
+
+						// Other resources
+						for (ResourceInfo resourceInfo : resourceEnums) {
+							bool isAllowed = simulation.building(objectId).holder(resourceInfo.resourceEnum).type != ResourceHolderType::Provider;
+							manageStorageBox->AddManageStorageElement(resourceInfo.resourceEnum, "", objectId, isAllowed, false);
 						}
 						
 						//for (int i = 0; i < ResourceEnumCount; i++)
@@ -1347,6 +1384,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						
 						switch (buildingEnum) {
 							case CardEnum::Mint: setProduct(assetLoader->CoinIcon, to_string(building.productPerBatch()));  break;
+							case CardEnum::InventorsWorkshop: setProduct(assetLoader->ScienceIcon, to_string(building.productPerBatch()));  break;
 							case CardEnum::CardMaker: setProduct(assetLoader->CardBack, "1 card");  break;
 							case CardEnum::ImmigrationOffice: break;
 							default:
@@ -2124,7 +2162,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 		}
 		else if (uiState.objectType == ObjectTypeEnum::Map)
 		{
-			AddMapProvinceInfo(objectId, descriptionBox);
+			AddProvinceInfo(objectId, descriptionBox);
 
 			descriptionBox->AfterAdd();
 		}
@@ -2824,7 +2862,7 @@ void UObjectDescriptionUISystem::AddTileInfo(WorldTile2 tile, UPunBoxWidget* des
 	}
 }
 
-void UObjectDescriptionUISystem::AddMapProvinceInfo(int32 provinceId, UPunBoxWidget* descriptionBox)
+void UObjectDescriptionUISystem::AddProvinceInfo(int32 provinceId, UPunBoxWidget* descriptionBox)
 {
 	auto terrainGenerator = simulation().terrainGenerator();
 
@@ -2877,6 +2915,14 @@ void UObjectDescriptionUISystem::AddMapProvinceInfo(int32 provinceId, UPunBoxWid
 	// Biome number info
 	AddBiomeInfo(provinceCenter, descriptionBox);
 	
+	descriptionBox->AddSpacer();
+
+	// Defense
+	if (simulation().provinceSystem().provinceIsMountain(provinceId)) {
+		descriptionBox->AddRichText("Defense Bonus:", "50%(Mountain)");
+	} else {
+		descriptionBox->AddRichText("Defense Bonus:", "0%");
+	}
 	descriptionBox->AddSpacer();
 
 	// Georesource

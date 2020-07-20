@@ -278,8 +278,6 @@ public:
 	}
 
 	// Helpers
-	int32 science100() { return science100XsecPerRound / Time::SecondsPerRound; }
-
 	int32 scienceNeeded(int32 techsFinished) {
 		/*
 		 * After 40 techs
@@ -289,7 +287,9 @@ public:
 		return (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) / 10 / 10  /* Tech factor: */  * 1800 / 1000;
 	}
 
-	float researchFraction(int32 researchesFinished) { return science100XsecPerRound / (100.0f * scienceNeeded(researchesFinished) * Time::SecondsPerRound); }
+	float researchFraction(int32 researchesFinished, int32 science100XsecPerRound) {
+		return science100XsecPerRound / (100.0f * scienceNeeded(researchesFinished) * Time::SecondsPerRound);
+	}
 
 	virtual TechClassEnum classEnum() { return TechClassEnum::ResearchInfo; }
 	virtual void Serialize(FArchive& Ar, IGameSimulationCore* simulation)
@@ -298,7 +298,7 @@ public:
 		Ar << techEnum;
 		Ar << state;
 
-		Ar << science100XsecPerRound;
+		//Ar << science100XsecPerRound;
 
 		SerializeVecValue(Ar, _buildingEnums);
 		SerializeVecValue(Ar, _permanentBuildingEnums);
@@ -309,7 +309,7 @@ public:
 	TechEnum techEnum = TechEnum::None;
 	TechStateEnum state = TechStateEnum::Locked;
 
-	int32 science100XsecPerRound = 0;
+	//int32 science100XsecPerRound = 0;
 	
 	std::vector<CardEnum> _buildingEnums;
 	std::vector<CardEnum> _permanentBuildingEnums;
@@ -632,7 +632,7 @@ public:
 
 	const std::vector<TechEnum>& techQueue() { return _techQueue; }
 
-	float researchFraction() { return currentResearch()->researchFraction(techsFinished); } // float(currentResearch()->scienceXsecPerRound) / (scienceNeeded() * Time::SecondsPerRound);
+	float researchFraction() { return currentResearch()->researchFraction(techsFinished, science100XsecPerRound); } // float(currentResearch()->scienceXsecPerRound) / (scienceNeeded() * Time::SecondsPerRound);
 
 	bool IsResearched(TechEnum techEnum) {
 		PUN_CHECK(_enumToTech.find(techEnum) != _enumToTech.end());
@@ -657,10 +657,10 @@ public:
 			science100PerRound += 20000 * 100 * 20;
 		}
 
-		// The more _researched, the more amount needed
-		tech->science100XsecPerRound += GameRand::RandRound(science100PerRound, updatesPerSec);
+		// Multiple updates per second, so we divide accordingly science100PerRound/updatesPerSec
+		science100XsecPerRound += GameRand::RandRound(science100PerRound, updatesPerSec);
 
-		if (tech->science100() >= science100Needed()) 
+		if (science100() >= science100Needed()) 
 		{
 			int32 lastEra = currentEra();
 			
@@ -671,6 +671,8 @@ public:
 
 			techsFinished++;
 			needDisplayUpdate = true;
+
+			science100XsecPerRound -= science100Needed() * Time::SecondsPerRound;
 
 			std::vector<std::string> choices = { "Show tech tree", "Close" };
 			PopupReceiverEnum receiver = PopupReceiverEnum::DoneResearchEvent_ShowTree;
@@ -832,6 +834,8 @@ public:
 		return 1;
 	}
 
+	int32 science100() { return science100XsecPerRound / Time::SecondsPerRound; }
+
 	void Serialize(FArchive& Ar)
 	{
 		needDisplayUpdate = true; // After load/save, we need to update the display
@@ -843,6 +847,7 @@ public:
 		Ar << townhallUpgradeUnlocked;
 
 		Ar << shouldOpenTechUI;
+		Ar << science100XsecPerRound;
 
 		/*
 		 * Private
@@ -903,6 +908,8 @@ public:
 	bool townhallUpgradeUnlocked = false;
 
 	bool shouldOpenTechUI = false;
+
+	int32 science100XsecPerRound = 0;
 
 private:
 	IGameSimulationCore* _simulation = nullptr;

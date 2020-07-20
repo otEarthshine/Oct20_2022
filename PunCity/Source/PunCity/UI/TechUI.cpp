@@ -63,11 +63,11 @@ void UTechUI::TickUI()
 	int32 currentEra = unlockSys->currentEra();
 
 	int32 scienceNeeded = unlockSys->scienceNeeded();
-	int32 science100SoFar = unlockSys->currentResearch()->science100();
+	int32 science100SoFar = unlockSys->science100();
 
 	{
 		std::stringstream ss;
-		ss << (scienceNeeded - science100SoFar / 100) << "<img id=\"Science\"/> science to complete technology";
+		ss << (scienceNeeded - science100SoFar / 100) << "/" << unlockSys->currentResearch()->scienceNeeded(unlockSys->techsFinished) << "<img id=\"Science\"/>";
 		ScienceAmountText->SetText(ToFText(ss.str()));
 	}
 

@@ -277,6 +277,8 @@ public:
 	virtual bool IsProvinceNextToPlayer(int32 provinceId, int32 playerId) = 0;
 
 	virtual void RefreshTerritoryEdge(int32 playerId) = 0;
+
+	virtual bool IsBorderProvince(int32 provinceId) = 0;
 	
 	/*
 	 * 

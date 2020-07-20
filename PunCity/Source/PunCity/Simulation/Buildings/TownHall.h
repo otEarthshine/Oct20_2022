@@ -23,15 +23,20 @@ static const std::vector<std::string> TownhallLvlToUpgradeBonusText =
 	"<bullet>+10% mine/quarry production.</>"
 	"<space>"
 	"Unlocked Cards:"
+	"<bullet>Fort</>"
+	"<bullet>Inventor's Workshop</>"
 	"<bullet>Immigration Advertisement</>"
-	"<bullet>Kidnap</>", // 3
+	"<bullet>Kidnap</>"
+	"<bullet>Stone Road</>"
+	"<bullet>Intercity Road</>", // 3
 
-	"<bullet>+10% industrial production.</>"
 	"<space>"
 	"Unlocked Cards:"
+	"<bullet>Warehouse</>"
+	"<bullet>Colony</>"
 	"<bullet>Sharing is caring</>",// 4
 
-	"Great job!", // Lvl 5
+	"<bullet>+10% industrial production.</>", // Lvl 5
 };
 static const std::string& GetTownhallLvlToUpgradeBonusText(int32 townhallLvl) {
 	return TownhallLvlToUpgradeBonusText[townhallLvl];

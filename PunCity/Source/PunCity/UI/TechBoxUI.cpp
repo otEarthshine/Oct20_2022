@@ -40,7 +40,7 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool a
 	auto unlockSys = simulation().unlockSystem(playerId());
 	float researchFraction = 0.0f;
 	if (tech) {
-		researchFraction = tech->researchFraction(unlockSys->techsFinished);
+		researchFraction = tech->researchFraction(unlockSys->techsFinished, unlockSys->science100XsecPerRound);
 	}
 	isLocked = isLockedIn;
 	
@@ -99,7 +99,7 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool a
 		SetText(PercentText, ss.str());
 
 		ss.str("");
-		int32 science100XsecPerRound_Left = (100.0f * tech->scienceNeeded(unlockSys->techsFinished) * Time::SecondsPerRound) - tech->science100XsecPerRound;
+		int32 science100XsecPerRound_Left = (100.0f * tech->scienceNeeded(unlockSys->techsFinished) * Time::SecondsPerRound) - unlockSys->science100XsecPerRound;
 		int32 science100Left = science100XsecPerRound_Left / Time::SecondsPerRound; // Redundant, but just make it easier to read
 
 		int32 science100PerRound = simulation().playerOwned(playerId()).science100PerRound();

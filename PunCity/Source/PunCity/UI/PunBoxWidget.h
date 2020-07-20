@@ -278,10 +278,10 @@ public:
 		return widget;
 	}
 
-	UManageStorageElement* AddManageStorageElement(ResourceEnum resourceEnum, std::string sectionName, int32 buildingId)
+	UManageStorageElement* AddManageStorageElement(ResourceEnum resourceEnum, std::string sectionName, int32 buildingId, bool isSectionAllowed, bool indentation)
 	{
 		auto widget = GetChildElement<UManageStorageElement>(UIEnum::ManageStorageElement);
-		widget->PunInit(resourceEnum, sectionName, buildingId);
+		widget->PunInit(resourceEnum, sectionName, buildingId, isSectionAllowed, indentation);
 		return widget;
 	}
 

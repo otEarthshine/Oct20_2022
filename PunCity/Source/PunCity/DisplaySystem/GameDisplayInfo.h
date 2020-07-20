@@ -674,12 +674,16 @@ public:
 		{ // Warehouse
 			ModuleTransforms::CreateSet("Warehouse")
 		},
-		{ // Outpost
+		{ // Fort
 			ModuleTransforms::CreateSet("Outpost")
 		},
 		{ // Colony
 			ModuleTransforms::CreateSet("Colony")
 		},
+
+			
+		// Intercity Road
+		{ ModuleTransforms({ ModuleTransform("DirtRoad")}) },
 
 		/*
 		 * Decorations

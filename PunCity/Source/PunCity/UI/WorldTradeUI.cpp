@@ -43,7 +43,6 @@ void UWorldTradeUI::OpenUI(int32 objectId)
 		auto tradeRow = AddWidget<UWorldTradeRow>(UIEnum::TradeRow);
 		tradeRow->Init(this, pair.resourceEnum);
 		tradeRow->RefreshSellOnlyState(isSellOnly);
-		
 		WorldTradeRowBox->AddChild(tradeRow);
 	}
 

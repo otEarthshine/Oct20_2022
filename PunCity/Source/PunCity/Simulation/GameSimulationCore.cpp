@@ -1224,9 +1224,23 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuildingParameters parameters)
 				IsRegionalBuilding(cardEnum)) 
 			{}
 			else {
-				frontArea.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-					tryBuildRoad(tile);
-				});
+				// Finish road construction right away for provincial buildings
+				if (cardEnum == CardEnum::Fort ||
+					cardEnum == CardEnum::Colony) 
+				{
+					frontArea.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+						if (IsFrontBuildable(tile) && !_overlaySystem.IsRoad(tile)) {
+							overlaySystem().AddRoad(tile, true, true);
+						}
+					});
+				}
+				else
+				{
+					// Place Road Construction otherwise
+					frontArea.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+						tryBuildRoad(tile);
+					});
+				}
 			}
 		}
 
@@ -1409,7 +1423,8 @@ void GameSimulationCore::PlaceDrag(FPlaceGatherParameters parameters)
 
 		switch (placementType)
 		{
-		case PlacementType::DirtRoad: {
+		case PlacementType::DirtRoad:
+		case PlacementType::IntercityRoad: {
 			buildingEnum = CardEnum::DirtRoad; 
 			canBuild = [&](WorldTile2 tile) { return IsFrontBuildable(tile) && !_overlaySystem.IsRoad(tile); };
 			break;
@@ -1454,6 +1469,22 @@ void GameSimulationCore::PlaceDrag(FPlaceGatherParameters parameters)
 		const TArray<int32>& path = parameters.path;
 		if (parameters.path.Num() > 0)
 		{
+			if (placementType == PlacementType::IntercityRoad)
+			{
+				for (int32 i = 0; i < path.Num(); i++) {
+					WorldTile2 tile(path[i]);
+					if (IsFrontBuildable(tile) && !_overlaySystem.IsRoad(tile)) {
+						_treeSystem->ForceRemoveTileObj(tile, false);
+						overlaySystem().AddRoad(tile, true, true);
+
+						// For road, also refresh the grass since we want it to be more visible
+						SetNeedDisplayUpdate(DisplayClusterEnum::Trees, tile.regionId(), true);
+					}
+				}
+				return;
+			}
+
+			// Dirt/Stone Road
 			for (int32 i = 0; i < path.Num(); i++) {
 				WorldTile2 tile(path[i]);
 				//_treeSystem->ForceRemoveTileObj(tile, false);
@@ -1462,6 +1493,7 @@ void GameSimulationCore::PlaceDrag(FPlaceGatherParameters parameters)
 				// For road, also refresh the grass since we want it to be more visible
 				SetNeedDisplayUpdate(DisplayClusterEnum::Trees, tile.regionId(), true);
 			}
+			
 			return;
 		}
 
@@ -2830,6 +2862,7 @@ void GameSimulationCore::Cheat(FCheat command)
 		}
 		case CheatEnum::AddInfluence: {
 			resourceSystem(command.playerId).ChangeInfluence(command.var1);
+			playerOwned(command.playerId).RecalculateTaxDelayed();
 			break;
 		}
 		case CheatEnum::AddCard:

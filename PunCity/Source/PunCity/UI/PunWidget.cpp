@@ -60,11 +60,13 @@ UToolTipWidgetBase* UPunWidget::AddToolTip(UWidget* widget, std::wstring message
 	return tooltip;
 }
 
-void UPunWidget::AddResourceTooltip(UWidget* widget, ResourceEnum resourceEnum)
+void UPunWidget::AddResourceTooltip(UWidget* widget, ResourceEnum resourceEnum, bool skipWidgetHoverCheck)
 {
 	if (IsSimulationInvalid()) return;
 
-	if (!widget->IsHovered()) {
+	if (!widget->IsHovered() ||
+		skipWidgetHoverCheck) 
+	{
 		ResetTooltip(widget);
 		return;
 	}

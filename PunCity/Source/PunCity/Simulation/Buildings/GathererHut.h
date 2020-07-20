@@ -401,7 +401,7 @@ public:
 	
 	std::vector<BonusPair> GetBonuses() override {
 		std::vector<BonusPair> bonuses = Building::GetBonuses();
-		if (_simulation->townLvl(_playerId) >= 3) {
+		if (_simulation->townLvl(_playerId) >= 5) {
 			bonuses.push_back({ "Townhall upgrade", 10 });
 		}
 		if (IsUpgraded(1) && isOccupantFull()) {
@@ -576,12 +576,20 @@ class GoldSmelter final : public Smelter
 public:
 };
 
-class Mint final : public IndustrialBuilding
+class ConsumerIndustrialBuilding : public IndustrialBuilding
+{
+public:
+	bool NeedWork() final {
+		return MathUtils::SumVector(_workReserved) + _workDone100 < workManSecPerBatch100();
+	}
+};
+
+class Mint final : public ConsumerIndustrialBuilding
 {
 public:
 	void FinishConstruction() final
 	{
-		IndustrialBuilding::FinishConstruction();
+		ConsumerIndustrialBuilding::FinishConstruction();
 
 		_upgrades = {
 			BuildingUpgrade("Improved Production", "+30% production.", 500),
@@ -590,7 +598,7 @@ public:
 	}
 
 	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
+		std::vector<BonusPair> bonuses = ConsumerIndustrialBuilding::GetBonuses();
 
 		if (IsUpgraded(0)) {
 			bonuses.push_back({ "Improved Production", 30 });
@@ -601,10 +609,6 @@ public:
 			}
 		}
 		return bonuses;
-	}
-	
-	bool NeedWork() final {
-		return MathUtils::SumVector(_workReserved) + _workDone100 < workManSecPerBatch100();
 	}
 
 	// Same amount of work required to acquire resources
@@ -619,12 +623,41 @@ public:
 	}
 };
 
-class CardMaker final : public IndustrialBuilding
+class InventorsWorkshop final : public ConsumerIndustrialBuilding
 {
 public:
 	void FinishConstruction() final
 	{
-		IndustrialBuilding::FinishConstruction();
+		ConsumerIndustrialBuilding::FinishConstruction();
+
+		_upgrades = {
+		};
+	}
+
+	std::vector<BonusPair> GetBonuses() override {
+		std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
+		return bonuses;
+	}
+
+	// Same amount of work required to acquire resources
+	int32 workManSecPerBatch100() final
+	{
+		// 500 - 10 * (gold price 25) = 250 profit
+		return (500 - batchCost()) * 100 * 100 / buildingInfo().workRevenuePerSec100_perMan; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
+	}
+
+	int32 productPerBatch() override {
+		return inputPerBatch() *  GetResourceInfo(input1()).basePrice * 2 * efficiency() / 100 / 100;
+	}
+};
+
+
+class CardMaker final : public ConsumerIndustrialBuilding
+{
+public:
+	void FinishConstruction() final
+	{
+		ConsumerIndustrialBuilding::FinishConstruction();
 
 		_upgrades = {
 			BuildingUpgrade("Improved Production", "+30% production.", 500),
@@ -632,16 +665,12 @@ public:
 	}
 
 	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
+		std::vector<BonusPair> bonuses = ConsumerIndustrialBuilding::GetBonuses();
 
 		if (IsUpgraded(0)) {
 			bonuses.push_back({ "Improved Production", 30 });
 		}
 		return bonuses;
-	}
-
-	bool NeedWork() final {
-		return MathUtils::SumVector(_workReserved) + _workDone100 < workManSecPerBatch100();
 	}
 
 	// Same amount of work required to acquire resources
@@ -654,12 +683,12 @@ public:
 	int32 baseInputPerBatch() override { return 10; }
 };
 
-class ImmigrationOffice final : public IndustrialBuilding
+class ImmigrationOffice final : public ConsumerIndustrialBuilding
 {
 public:
 	void FinishConstruction() final
 	{
-		IndustrialBuilding::FinishConstruction();
+		ConsumerIndustrialBuilding::FinishConstruction();
 
 		_upgrades = {
 			BuildingUpgrade("First Impression", "+30% efficiency.", 300),
@@ -667,16 +696,12 @@ public:
 	}
 
 	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
+		std::vector<BonusPair> bonuses = ConsumerIndustrialBuilding::GetBonuses();
 
 		if (IsUpgraded(0)) {
 			bonuses.push_back({ "First Impression Upgrade", 30 });
 		}
 		return bonuses;
-	}
-
-	bool NeedWork() final {
-		return MathUtils::SumVector(_workReserved) + _workDone100 < workManSecPerBatch100();
 	}
 
 	// Same amount of work required to acquire resources
@@ -1757,6 +1782,35 @@ private:
 	int32 _trainingStartTick = -1;
 };
 
+class ProvinceBuilding : public Building
+{
+	void Tick1Sec() override
+	{
+		if (!isConstructed()) 
+		{
+			if (_workDone100 >= buildTime_ManSec100())
+			{
+				FinishConstruction();
+				_simulation->soundInterface()->Spawn3DSound("CitizenAction", "ConstructionComplete", centerTile().worldAtom2());
+				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::BuildingComplete, _centerTile, "");
+			}
+			else
+			{
+				_workDone100 += buildTime_ManSec100() / 100; // takes 100 secs to finish the constrution
+				_simulation->soundInterface()->Spawn3DSound("CitizenAction", "WoodConstruction", centerTile().worldAtom2());
+			}
+		}
+	}
+};
+
+
+class Fort final : public ProvinceBuilding
+{
+};
+
+class Colony final : public ProvinceBuilding
+{
+};
 
 
 //! Other workplace

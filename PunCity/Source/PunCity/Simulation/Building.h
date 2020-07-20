@@ -489,6 +489,11 @@ public:
 			// Scale build time the same ratio as the construction resources
 			return baseBuildTime * GetConstructionResourceCost()[0] / info.constructionResources[0];
 		}
+		if (isEnum(CardEnum::Fort) ||
+			isEnum(CardEnum::Colony))
+		{
+			return 10000;
+		}
 		return baseBuildTime;
 	}
 

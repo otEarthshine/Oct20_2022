@@ -25,7 +25,7 @@ public:
 	virtual void StartBuildingPlacement(CardEnum buildingEnum, int32 buildingLvl, bool useBoughtCard, CardEnum useWildCard = CardEnum::None) = 0;
 	virtual void StartHarvestPlacement(bool isRemoving, ResourceEnum resourceEnum) = 0;
 	virtual void StartDemolish() = 0;
-	virtual void StartRoadPlacement(bool isStoneRoad) = 0;
+	virtual void StartRoadPlacement(bool isStoneRoad, bool isIntercity = false) = 0;
 	virtual void StartFencePlacement() = 0;
 	virtual void StartBridgePlacement() = 0;
 

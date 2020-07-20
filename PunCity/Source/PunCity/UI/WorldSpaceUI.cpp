@@ -990,9 +990,12 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	else if (needInstruction(PlacementInstructionEnum::DragRoadStone)) {
 		int32 stoneNeeded = getInstruction(PlacementInstructionEnum::DragRoadStone).intVar1;
 		punBox->AddRichText(TextRed(to_string(stoneNeeded), simulation().resourceCount(playerId(), ResourceEnum::Stone) < stoneNeeded) + "<img id=\"Stone\"/>");
-
 	}
-
+	else if (needInstruction(PlacementInstructionEnum::DragRoadIntercity)) {
+		int32 goldNeeded = getInstruction(PlacementInstructionEnum::DragRoadIntercity).intVar1;
+		punBox->AddRichText(TextRed(to_string(goldNeeded), simulation().money(playerId()) < goldNeeded) + "<img id=\"Coin\"/>");
+	}
+	
 	else if (needInstruction(PlacementInstructionEnum::DragStorageYard)) {
 		punBox->AddRichTextParsed(getInstruction(PlacementInstructionEnum::DragStorageYard).instruction);
 	}

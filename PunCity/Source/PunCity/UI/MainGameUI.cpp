@@ -858,7 +858,7 @@ void UMainGameUI::Tick()
 			simulation.unlockedInfluence(playerId()))
 		{
 			Influence->SetText("", to_string(resourceSystem.influence()));
-			InfluenceChangeText->SetText(ToFText(ToSignedNumber(playerOwned.totalInfluenceIncome100() / 100)));
+			InfluenceChangeText->SetText(ToFText(ToForcedSignedNumber(playerOwned.totalInfluenceIncome100() / 100)));
 
 			std::stringstream influenceTip;
 			influenceTip << "Influence points used for claiming land and vassalizing other towns.\n\n";
@@ -1551,8 +1551,11 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 			simulation().AddPopupToFront(playerId(), "Not enough money to buy the common card.", ExclusiveUIEnum::BuildMenu, "PopupCannot");
 			return;
 		}
-		
-		if (IsRoad(buildingEnum)) {
+
+		if (buildingEnum == CardEnum::IntercityRoad) {
+			inputSystemInterface()->StartRoadPlacement(false, true);
+		}
+		else if (IsRoad(buildingEnum)) {
 			inputSystemInterface()->StartRoadPlacement(buildingEnum == CardEnum::StoneRoad);
 		}
 		else if (buildingEnum == CardEnum::Fence) {

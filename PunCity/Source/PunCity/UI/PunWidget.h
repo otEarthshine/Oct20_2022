@@ -395,7 +395,7 @@ public:
 	 * Helpers
 	 */
 
-	void AddResourceTooltip(UWidget* widget, ResourceEnum resourceEnum);
+	void AddResourceTooltip(UWidget* widget, ResourceEnum resourceEnum, bool skipWidgetHoverCheck = false);
 
 	void AddArmyTooltip(UWidget* widget, int32 armyEnumInt, ArmyGroup& armyGroup, ArmyNode& node)
 	{

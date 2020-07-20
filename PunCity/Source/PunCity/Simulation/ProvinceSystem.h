@@ -20,21 +20,15 @@ const std::vector<WorldTile2x2> shift8 = {
 		WorldTile2x2(-1, -1),
 };
 
-//const std::vector<WorldTile2x2> shift4 = {
-//		WorldTile2x2(0, -1),
-//		WorldTile2x2(1, 0),
-//		WorldTile2x2(0, 1),
-//		WorldTile2x2(-1, 0),
-//};
-
 struct ProvinceConnection
 {
 	int32 provinceId;
 	TerrainTileType tileType;
+	int32 connectedTiles;
 
-	ProvinceConnection() : provinceId(-1), tileType(TerrainTileType::None) {}
+	ProvinceConnection() : provinceId(-1), tileType(TerrainTileType::None), connectedTiles(0) {}
 
-	ProvinceConnection(int32 provinceId, TerrainTileType tileType) : provinceId(provinceId), tileType(tileType) {}
+	ProvinceConnection(int32 provinceId, TerrainTileType tileType) : provinceId(provinceId), tileType(tileType), connectedTiles(1) {}
 
 	bool operator==(const ProvinceConnection& a) const {
 		return a.provinceId == provinceId && a.tileType == tileType;
@@ -433,7 +427,7 @@ public:
 					{
 						WorldTile2 tileIn = tile2x2In.worldTile2();
 
-						// For Flat connection, also check if self is flat... if not it would be the other type
+						// For Flat connection, also check ifself is flat... if not it would be the other type
 						TerrainTileType tileType = terrainGen.terrainTileType(tileIn);
 						if (tileType == TerrainTileType::None &&
 							prevTileTypeIn != TerrainTileType::None)
@@ -441,8 +435,22 @@ public:
 							tileType = prevTileTypeIn;
 						}
 
-						ProvinceConnection connection(abs(neighborProvinceId), tileType);
-						CppUtils::TryAdd(_provinceConnections[provinceId], connection);
+						std::vector<ProvinceConnection>& connections = _provinceConnections[provinceId];
+						bool addedConnection = false;
+						for (size_t i = connections.size(); i-- > 0;) {
+							if (connections[i].provinceId == abs(neighborProvinceId) &&
+								connections[i].tileType == tileType) 
+							{
+								connections[i].connectedTiles++;
+								addedConnection = true;
+								break;
+							}
+						}
+						if (!addedConnection) {
+							connections.push_back(ProvinceConnection(abs(neighborProvinceId), tileType));
+						}
+						//ProvinceConnection connection(abs(neighborProvinceId), tileType);
+						//CppUtils::TryAdd(_provinceConnections[provinceId], connection);
 					}
 				};
 
@@ -802,6 +810,7 @@ public:
 
 	bool provinceIsMountain(int32 provinceId) const { return provinceMountainTileCount(provinceId) > provinceTileCount(provinceId) / 3; }
 	bool provinceIsCoastal(int32 provinceId) const { return provinceOceanTileCount(provinceId) > 3; }
+	
 
 	static int32 MinTileCountForGeoresource() { return CoordinateConstants::TilesPerRegion * 3 / 4; }
 	

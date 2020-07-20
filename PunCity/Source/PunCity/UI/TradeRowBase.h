@@ -37,10 +37,8 @@ public:
 		SetPriceColor(PriceTextPair, price100, basePrice100);
 
 
-		//ss << "Current price: " << (price100 / 100.0f) << "\n";
-		//ss << "Base price: " << (basePrice100 / 100.0f);
-		//AddToolTip(PriceTextPair, ss.str());
-		AddResourceTooltip(PriceTextPair, _resourceEnum);
+		AddResourceTooltip(ResourceTextPair, _resourceEnum, true);
+		AddResourceTooltip(PriceTextPair, _resourceEnum, true);
 	}
 
 	ResourceEnum resourceEnum() { return _resourceEnum; }

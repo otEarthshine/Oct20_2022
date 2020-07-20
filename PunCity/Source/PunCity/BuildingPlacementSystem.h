@@ -120,7 +120,7 @@ public:
 	void StartBuildingPlacement(CardEnum buildingEnum, int32 buildingLvl, bool useBoughtCard, CardEnum useWildCard);
 	void StartHarvestPlacement(bool isRemoving, ResourceEnum resourceEnum);
 	void StartDemolish();
-	void StartRoad(bool isStoneRoad);
+	void StartRoad(bool isStoneRoad, bool isIntercity);
 	void StartFence();
 	void StartBridge();
 

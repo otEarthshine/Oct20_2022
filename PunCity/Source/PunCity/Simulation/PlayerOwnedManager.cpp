@@ -47,6 +47,7 @@ static const std::vector<CardEnum> JobPriorityListAllSeason
 	CardEnum::IronSmelter,
 	CardEnum::GoldSmelter,
 	CardEnum::Mint,
+	CardEnum::InventorsWorkshop,
 
 	CardEnum::FurnitureWorkshop,
 	CardEnum::Chocolatier,
@@ -771,36 +772,60 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 	/*
 	 * Territory
 	 */
-	int32 influence100 = _simulation->influence100(_playerId);
 	{
+		// Territory Revenue
 		int32 territoryRevenue100 = 0;
 		for (int32 provinceId : _provincesClaimed) {
 			territoryRevenue100 += _simulation->GetProvinceIncome100(provinceId);
 		}
 		incomes100[static_cast<int>(IncomeEnum::TerritoryRevenue)] += territoryRevenue100;
-		
-
-		// Upkeep goes to influence unless it is 0
-		int32 territoryUpkeep100 = 0;
-		for (int32 provinceId : _provincesClaimed) {
-			territoryUpkeep100 += _simulation->GetProvinceIncome100(provinceId) / 2; // Upkeep half the income as base
-		}
-
-		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::TerritoryUpkeep)] -= territoryUpkeep100;
 	}
 
-	// Influence gain equals to population
-	if (_simulation->unlockedInfluence(_playerId)) {
+	int32 influence100 = _simulation->influence100(_playerId);
+
+	// Upkeep goes to influence unless it is 0
+	int32 territoryUpkeep100 = 0;
+	for (int32 provinceId : _provincesClaimed) {
+		territoryUpkeep100 += _simulation->GetProvinceIncome100(provinceId) / 2; // Upkeep half the income as base
+	}
+	
+	if (_simulation->unlockedInfluence(_playerId)) 
+	{
+		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::TerritoryUpkeep)] -= territoryUpkeep100;
+		
+		// Population: Influence gain equals to population
 		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Population)] += _simulation->population(_playerId) * 100;
+
+		// Border Province Upkeep
+		int32 numberOfBorderProvinces = 0;
+		for (int32 provinceId : _provincesClaimed) {
+			if (_simulation->IsBorderProvince(provinceId)) {
+				numberOfBorderProvinces++;
+			}
+		}
+		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::BorderProvinceUpkeep)] -= numberOfBorderProvinces;
+		
+		// Fort/Colony
+		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Fort)] -= _simulation->buildingCount(_playerId, CardEnum::Fort) * 20;
+		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Colony)] -= _simulation->buildingCount(_playerId, CardEnum::Colony) * 30;
+	}
+	else
+	{
+		// Without influence, Territory Upkeep goes to money
+		incomes100[static_cast<int>(IncomeEnum::TerritoryUpkeep)] -= territoryUpkeep100;
 	}
 
 	// Influence beyond 1 year accumulation gets damped
 	// At 2 years worth accumulation. The influence income becomes 0;
 	int32 influenceIncomeBeforeCapDamp100 = totalInfluenceIncome100();
-	int32 fullYearInfluenceIncome100 = influenceIncomeBeforeCapDamp100 * Time::RoundsPerYear;
-	if (influence100 > 0 && influence100 > fullYearInfluenceIncome100) {
-		int32 influenceDamp100 = (fullYearInfluenceIncome100 == 0) ? 0 : (influenceIncomeBeforeCapDamp100 * (influence100 - fullYearInfluenceIncome100) / fullYearInfluenceIncome100);
-		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::TooMuchInfluencePoints)] -= influenceDamp100;
+	int32 fullYearInfluenceIncome100 = max(0, influenceIncomeBeforeCapDamp100) * Time::RoundsPerYear;
+	if (influence100 > fullYearInfluenceIncome100) {
+		// Fully damp to 0 influence income
+		if (fullYearInfluenceIncome100 > 0) {
+			int32 numerator = min(fullYearInfluenceIncome100, influence100 - fullYearInfluenceIncome100);
+			int32 influenceDamp100 = influenceIncomeBeforeCapDamp100 * numerator / fullYearInfluenceIncome100;
+			influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::TooMuchInfluencePoints)] -= influenceDamp100;
+		}
 	}
 }
 
@@ -829,7 +854,7 @@ void PlayerOwnedManager::CollectRoundIncome()
 	// Change Influence
 	resourceSys.ChangeInfluence100(totalInfluenceIncome100());
 	if (resourceSys.influence100() < 0) {
-		_simulation->AddEventLog(_playerId, "You have 0 influence point, so your money was decreased by " + to_string(-resourceSys.influence100()), true);
+		_simulation->AddEventLog(_playerId, "You have 0</><img id=\"Influence\"/><ChatRed>. " + to_string(min(-1, resourceSys.influence())) +"</><img id=\"Coin\"/><ChatRed> instead.", true);
 		resourceSys.ChangeMoney100(resourceSys.influence100());
 		resourceSys.SetInfluence(0);
 	}

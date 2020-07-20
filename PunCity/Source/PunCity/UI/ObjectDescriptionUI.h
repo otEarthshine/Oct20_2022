@@ -131,11 +131,12 @@ private:
 		//}
 	}
 
-	UFUNCTION() void OnClickNameEditButton() {
+	UFUNCTION() void OnClickNameEditButton()
+	{
 		if (NameEditTextBox->GetVisibility() == ESlateVisibility::Collapsed) {
 			NameEditTextBox->SetText(ToFText(simulation().townName(playerId())));
 			NameEditTextBox->SetVisibility(ESlateVisibility::Visible);
-			NameEditButton->SetVisibility(ESlateVisibility::Collapsed);
+			DescriptionUITitle->SetVisibility(ESlateVisibility::Collapsed);
 			NameEditButtonText->SetText(FText::FromString("Done"));
 		}
 		else {
@@ -145,7 +146,7 @@ private:
 			networkInterface()->SendNetworkCommand(command);
 			
 			NameEditTextBox->SetVisibility(ESlateVisibility::Collapsed);
-			NameEditButton->SetVisibility(ESlateVisibility::Visible);
+			DescriptionUITitle->SetVisibility(ESlateVisibility::Visible);
 			NameEditButtonText->SetText(FText::FromString("Edit"));
 		}
 	}
@@ -159,6 +160,7 @@ private:
 			networkInterface()->SendNetworkCommand(command);
 			
 			NameEditTextBox->SetVisibility(ESlateVisibility::Collapsed);
+			DescriptionUITitle->SetVisibility(ESlateVisibility::Visible);
 			NameEditButtonText->SetText(FText::FromString("Edit"));
 		}
 	}

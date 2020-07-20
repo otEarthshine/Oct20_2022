@@ -94,8 +94,9 @@ void TownHall::UpgradeTownhall()
 	//	ss << "  " << GetUpgradeRequirementText();
 	//}
 
+	auto& cardSys = _simulation->cardSystem(_playerId);
+
 	if (townhallLvl == 2) {
-		auto& cardSys = _simulation->cardSystem(_playerId);
 		cardSys.AddDrawCards(CardEnum::Snatch, 1);
 		cardSys.AddDrawCards(CardEnum::WheatSeed, 1);
 		cardSys.AddDrawCards(CardEnum::CabbageSeed, 1);
@@ -104,14 +105,17 @@ void TownHall::UpgradeTownhall()
 		//cardSys.AddDrawCards(CardEnum::BarrackClubman, 1);
 	}
 	else if (townhallLvl == 3) {
-		auto& cardSys = _simulation->cardSystem(_playerId);
+		cardSys.AddDrawCards(CardEnum::Fort, 1);
+		cardSys.AddDrawCards(CardEnum::InventorsWorkshop, 1);
 		cardSys.AddDrawCards(CardEnum::Immigration, 1);
 		cardSys.AddDrawCards(CardEnum::Kidnap, 1);
 		//cardSys.AddDrawCards(CardEnum::BarrackArcher, 1);
 		_simulation->unlockSystem(_playerId)->UnlockBuilding(CardEnum::StoneRoad);
+		_simulation->unlockSystem(_playerId)->UnlockBuilding(CardEnum::IntercityRoad);
 	}
 	else if (townhallLvl == 4) {
-		auto& cardSys = _simulation->cardSystem(_playerId);
+		cardSys.AddDrawCards(CardEnum::Warehouse, 1);
+		cardSys.AddDrawCards(CardEnum::Colony, 1);
 		cardSys.AddDrawCards(CardEnum::SharingIsCaring, 1);
 		//cardSys.AddDrawCards(CardEnum::BarrackSwordman, 1);
 	}

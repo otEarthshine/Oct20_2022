@@ -7,6 +7,7 @@
 #include "BuildingCardSystem.h"
 #include "PlayerOwnedManager.h"
 #include "WorldTradeSystem.h"
+#include "UnlockSystem.h"
 
 
 using namespace std;
@@ -243,10 +244,26 @@ void Building::SetResourceActive(bool workActive)
 }
 void Building::SetHolderTypeAndTarget(ResourceEnum resourceEnum, ResourceHolderType type, int32 target)
 {
+	if (resourceEnum == ResourceEnum::Food)
+	{
+		for (ResourceEnum resourceEnumLocal : FoodEnums) {
+			resourceSystem().SetHolderTypeAndTarget(holderInfo(resourceEnumLocal), type, target);
+		}
+		return;
+	}
+	
+	if (resourceEnum == ResourceEnum::Luxury)
+	{
+		ExecuteOnLuxuryResources([&](ResourceEnum resourceEnumLocal) {
+			resourceSystem().SetHolderTypeAndTarget(holderInfo(resourceEnumLocal), type, target);
+		});
+		return;
+	}
+	
 	// ResourceEnum::None means 
 	if (resourceEnum == ResourceEnum::None) {
 		for (int32 i = 0; i < ResourceEnumCount; i++) {
-			ResourceHolderInfo info = holderInfo(resourceEnum);
+			ResourceHolderInfo info = holderInfo(static_cast<ResourceEnum>(i));
 			resourceSystem().SetHolderTypeAndTarget(info, type, target);
 		}
 		return;
@@ -526,6 +543,21 @@ void Building::DoWork(int unitId, int workAmount100)
 				_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
 				return;
 			}
+			if (isEnum(CardEnum::InventorsWorkshop))
+			{
+				_workDone100 = 0;
+				_filledInputs = false;
+
+				int32 sciReceived = productPerBatch();// inputPerBatch() * _simulation->price100(input1()) * 2 * efficiency() / 100 / 100;
+				_simulation->unlockSystem(_playerId)->Research(sciReceived * 100, 1);
+
+				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainScience, centerTile(), "+" + to_string(sciReceived));
+
+				AddProductionStat(sciReceived);
+
+				_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
+				return;
+			}
 			if (isEnum(CardEnum::CardMaker))
 			{
 				_workDone100 = 0;
@@ -633,6 +665,10 @@ void Building::AddProductionStat(ResourcePair resource)
 		_simulation->statSystem(_playerId).AddStat(SeasonStatEnum::Money, resource.count);
 		return;
 	}
+	if (isEnum(CardEnum::InventorsWorkshop)) {
+		_simulation->statSystem(_playerId).AddStat(SeasonStatEnum::Science, resource.count);
+		return;
+	}
 
 	if (resource.resourceEnum != ResourceEnum::None) {
 		_simulation->statSystem(_playerId).AddResourceStat(ResourceSeasonStatEnum::Production, resource.resourceEnum, resource.count);
@@ -663,6 +699,7 @@ void Building::CheckCombo()
 	case CardEnum::House:
 	case CardEnum::DirtRoad:
 	case CardEnum::StoneRoad:
+	case CardEnum::IntercityRoad:
 	case CardEnum::Fence:
 	case CardEnum::FenceGate:
 	case CardEnum::Bridge:

@@ -329,6 +329,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	TryLoadBuildingModuleSet("Warehouse", "Warehouse");
 	TryLoadBuildingModuleSet("Colony", "Colony");
 	TryLoadBuildingModuleSet("Outpost", "Outpost");
+	TryLoadBuildingModuleSet("InventorsWorkshop", "InventorsWorkshop");
 	
 
 	TryLoadBuildingModuleSet("TribalVillage", "RegionTribalVillage");
@@ -435,6 +436,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 			CASE(FenceGate);
 			CASE(Bridge);
 			CASE(StorageYard);
+
+			case CardEnum::IntercityRoad: addBuildIcon(CardEnum::IntercityRoad, FString(TO_STR(DirtRoadIcon)), FString("SpecialIconAlpha"), true); break;
 			
 		//	case CardEnum::Farm:
 		//	addBuildIcon(FString("FarmIcon"), FString("SpecialIconAlpha"));

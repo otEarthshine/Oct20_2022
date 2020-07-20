@@ -172,9 +172,9 @@ public:
 		_networkInterface->ResetGameUI();
 		buildingPlacementSystem->StartDemolish();
 	}
-	void StartRoadPlacement(bool isStoneRoad) final {
+	void StartRoadPlacement(bool isStoneRoad, bool isIntercity) final {
 		_networkInterface->ResetGameUI();
-		buildingPlacementSystem->StartRoad(isStoneRoad);
+		buildingPlacementSystem->StartRoad(isStoneRoad, isIntercity);
 	}
 	void StartFencePlacement() final {
 		_networkInterface->ResetGameUI();

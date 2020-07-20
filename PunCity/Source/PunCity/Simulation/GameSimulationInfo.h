@@ -647,6 +647,7 @@ enum class ResourceEnum : uint8
 
 	Money,
 	Food,
+	Luxury,
 };
 
 struct ResourceInfo
@@ -1456,8 +1457,10 @@ enum class CardEnum : uint16
 
 	// June 25
 	Warehouse,
-	Outpost,
+	Fort,
 	Colony,
+	InventorsWorkshop,
+	IntercityRoad,
 
 	// Decorations
 	FlowerBed,
@@ -1613,6 +1616,8 @@ static const std::vector<std::pair<CardEnum, int32>> BuildingEnumToUpkeep =
 	{ CardEnum::IronSmelter, 50 },
 	{ CardEnum::GoldSmelter, 50 },
 	{ CardEnum::Mint, 20 },
+	{ CardEnum::InventorsWorkshop, 10 },
+	
 	{ CardEnum::Garden, 5 },
 
 	{ CardEnum::IronSmelterGiant, 100},
@@ -1637,7 +1642,6 @@ static const std::vector<std::pair<CardEnum, int32>> BuildingEnumToUpkeep =
 	{ CardEnum::CandleMaker, 20 },
 	{ CardEnum::CottonMill, 30 },
 	{ CardEnum::PrintingPress, 30 },
-	
 	
 	{ CardEnum::Library, 15 },
 	{ CardEnum::School, 18 },
@@ -1777,8 +1781,13 @@ struct BldInfo
 		}
 
 		// Farm has large area to clear.
-		if (name == "Farm") {
+		if (buildingEnum == CardEnum::Farm) {
 			maxBuilderCount = 2;
+		}
+		else if (buildingEnum == CardEnum::Fort ||
+				buildingEnum == CardEnum::Colony) 
+		{
+			maxBuilderCount = 0;
 		}
 
 		// TEMP... instant building for storage...
@@ -1821,6 +1830,8 @@ struct BldInfo
 			CASE(GardenShrubbery1, 100);
 			CASE(GardenCypress, 200);
 
+			CASE(Fort, 1000);
+			CASE(Colony, 1000);
 #undef CASE
 		default:
 			break;
@@ -2000,10 +2011,11 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::PrintingPress, "Printing Press", WorldTile2(5, 6), ResourceEnum::Paper, ResourceEnum::Dye, ResourceEnum::Book, 20, 5, { 0, 150, 100 }, "Print Books."),
 
 	// June 25 addition
-	BldInfo(CardEnum::Warehouse, "Beekeeper", WorldTile2(6, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 10, 0, { 50,30,0 }, "Store 3 times more goods than a storage yard for the same area."),
-	BldInfo(CardEnum::Outpost, "Outpost", WorldTile2(9, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 10, 0, { 50,30,0 }, "+100% province's defense. Supply point for territory expansion."),
-	BldInfo(CardEnum::Colony, "Colony", WorldTile2(9, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 10, 0, { 50,30,0 }, "Extract resource from faraway land."),
-
+	BldInfo(CardEnum::Warehouse, "Warehouse", WorldTile2(6, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 70,70,0 }, "Advanced storage with 30 storage slots."),
+	BldInfo(CardEnum::Fort, "Fort", WorldTile2(9, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "+100% province's defense."),
+	BldInfo(CardEnum::Colony, "Colony", WorldTile2(10, 10), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "Extract resource from province."),
+	BldInfo(CardEnum::InventorsWorkshop, "Inventor's Workshop", WorldTile2(6, 6), ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::None, 0, 2, { 50,50,0 }, "Generate science points. Use wood as input."),
+	BldInfo(CardEnum::IntercityRoad, "Intercity Road", WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "Build Road to connect with other Cities, Fort, and Colonies."),
 	
 	// Decorations
 	BldInfo(CardEnum::FlowerBed, "Flower Bed", WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "Increase the surrounding appeal by 5 within 5 tiles radius."),
@@ -2492,7 +2504,8 @@ static bool IsMountainMine(CardEnum buildingEnum)
 static bool IsNonAgricultureProducer(CardEnum buildingEnum)
 {
 	if (buildingEnum == CardEnum::Mint ||
-		buildingEnum == CardEnum::CardMaker) 
+		buildingEnum == CardEnum::CardMaker ||
+		buildingEnum == CardEnum::InventorsWorkshop)
 	{
 		return true;
 	}
@@ -2641,6 +2654,7 @@ static bool IsSpecialProducer(CardEnum buildingEnum)
 	switch (buildingEnum) {
 	case CardEnum::Mint:
 	case CardEnum::CardMaker:
+	case CardEnum::InventorsWorkshop:
 	case CardEnum::ImmigrationOffice:
 		return true;
 	default: return false;
@@ -3565,13 +3579,15 @@ enum class PlacementType
 	Demolish,
 	DirtRoad,
 	StoneRoad,
+	IntercityRoad,
 	Fence,
 	Bridge,
 };
 
 static bool IsRoadPlacement(PlacementType placementType) {
 	return placementType == PlacementType::DirtRoad ||
-		placementType == PlacementType::StoneRoad;
+		placementType == PlacementType::StoneRoad ||
+		placementType == PlacementType::IntercityRoad;
 }
 static bool IsGatherPlacement(PlacementType placementType) {
 	return placementType == PlacementType::Gather ||
@@ -3595,6 +3611,7 @@ enum class PlacementInstructionEnum
 	DragRoad1,
 	DragRoad2,
 	DragRoadStone,
+	DragRoadIntercity,
 
 	DragStorageYard,
 	DragFarm,
@@ -3751,14 +3768,23 @@ enum class InfluenceIncomeEnum : uint8
 {
 	Population,
 	TerritoryUpkeep,
+	BorderProvinceUpkeep,
 	TooMuchInfluencePoints,
+
+	Fort,
+	Colony,
+	
 	Count,
 };
 static std::vector<std::string> InfluenceIncomeEnumName
 {
 	"Population",
 	"Territory Upkeep",
+	"Flat-Land Border Province Upkeep",
 	"Too Much Stored Influence Points",
+
+	"Fort",
+	"Colony",
 };
 static int32 InfluenceIncomeEnumCount = static_cast<int32>(InfluenceIncomeEnum::Count);
 
@@ -5014,6 +5040,7 @@ enum class FloatupEnum : uint8
 	
 	GainResource,
 	GainMoney,
+	GainScience,
 };
 struct FloatupInfo
 {
@@ -5569,6 +5596,7 @@ enum class SeasonStatEnum
 	BushEmitSeedSuccess,
 
 	Money,
+	Science,
 };
 static const std::string SeasonStatName[] =
 {
@@ -5589,6 +5617,7 @@ static const std::string SeasonStatName[] =
 	"BushEmitSeedSuccess",
 
 	"Money",
+	"Science",
 };
 static const int32 SeasonStatEnumCount = _countof(SeasonStatName);
 
@@ -6062,5 +6091,5 @@ static bool IsEdgeProvinceId(int32 provinceId) {
 	return 0 > provinceId && provinceId > EmptyProvinceId; // Edge marked with negative...
 }
 
-static const int32 Income100Per1000Tiles = 1000;
+static const int32 Income100PerTiles = 1;
 static const int32 ClaimToIncomeRatio = 20; // When 2, actual is 4 since upkeep is half the income

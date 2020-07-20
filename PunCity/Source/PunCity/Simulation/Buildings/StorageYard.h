@@ -130,3 +130,11 @@ private:
 	// Manipulate what goes into this storage yard.
 	//std::vector<int32>;
 };
+
+class Warehouse : public StorageYard
+{
+public:
+	int32 storageSlotCount() override {
+		return 30;
+	}
+};

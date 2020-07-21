@@ -582,6 +582,23 @@ public:
 	bool NeedWork() final {
 		return MathUtils::SumVector(_workReserved) + _workDone100 < workManSecPerBatch100();
 	}
+
+	// Calculations for work/product are done at basePrice.
+	// If input price rise, there would be less profit
+	int32 workManSecPerBatch100() override
+	{
+		// Same amount of work required to acquire resources
+		return baseInputValue() * 100 * 100 / WorkRevenuePerSec100_perMan_Base; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
+	}
+
+	// Production always yield the same amount of product
+	int32 productPerBatch() override {
+		return (baseInputValue() * 2) * efficiency() / 100;
+	}
+private:
+	int32 baseInputValue() {
+		return GetResourceInfo(input1()).basePrice * inputPerBatch();
+	}
 };
 
 class Mint final : public ConsumerIndustrialBuilding
@@ -611,16 +628,6 @@ public:
 		return bonuses;
 	}
 
-	// Same amount of work required to acquire resources
-	int32 workManSecPerBatch100() final
-	{
-		// 500 - 10 * (gold price 25) = 250 profit
-		return (500 - batchCost()) * 100 * 100 / buildingInfo().workRevenuePerSec100_perMan; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
-	}
-
-	int32 productPerBatch() override {
-		return inputPerBatch() * _simulation->price100(input1()) * 2 * efficiency() / 100 / 100;
-	}
 };
 
 class InventorsWorkshop final : public ConsumerIndustrialBuilding
@@ -638,16 +645,22 @@ public:
 		std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
 		return bonuses;
 	}
+};
 
-	// Same amount of work required to acquire resources
-	int32 workManSecPerBatch100() final
+class Barrack final : public ConsumerIndustrialBuilding
+{
+public:
+	void FinishConstruction() final
 	{
-		// 500 - 10 * (gold price 25) = 250 profit
-		return (500 - batchCost()) * 100 * 100 / buildingInfo().workRevenuePerSec100_perMan; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
+		ConsumerIndustrialBuilding::FinishConstruction();
+
+		_upgrades = {
+		};
 	}
 
-	int32 productPerBatch() override {
-		return inputPerBatch() *  GetResourceInfo(input1()).basePrice * 2 * efficiency() / 100 / 100;
+	std::vector<BonusPair> GetBonuses() override {
+		std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
+		return bonuses;
 	}
 };
 
@@ -1671,116 +1684,116 @@ public:
 };
 
 
-class Barrack final : public Building
-{
-public:
-	void FinishConstruction() final {
-		Building::FinishConstruction();
-	}
-
-	const ArmyInfo& armyInfo() { return GetArmyInfo(_armyEnum); }
-
-	void QueueTrainUnit()
-	{
-		resourceSystem().ChangeMoney(-armyInfo().moneyCost);
-		for (ResourcePair pair : armyInfo().resourceCost) {
-			resourceSystem().RemoveResourceGlobal(pair.resourceEnum, pair.count);
-		}
-		
-		if (_queueCount < maxQueueSize()) {
-			_queueCount++;
-		}
-		TryStartTraining();
-	}
-
-	// Done Training
-	void ScheduleTick() override;
-
-	float trainingPercent() {
-		if (_trainingStartTick == -1) {
-			return 0;
-		}
-		return (Time::Ticks() - _trainingStartTick) * 100.0f / armyInfo().timeCostTicks();
-	}
-
-	static int32 maxQueueSize() { return 10; }
-	int32 queueCount() { return _queueCount; }
-
-	/*
-	 * Build/Unit cost scaling
-	 * - Clubman 1
-	 * - Swordman 3
-	 * - Archer 2
-	 *
-	 */
-
-	void SetArmyEnum(ArmyEnum armyEnum) {
-		_armyEnum = armyEnum;
-	}
-
-	void TryCancelTrainingQueue()
-	{
-		if (_queueCount > 0) {
-			if (_queueCount == 1) {
-				CancelCurrentTraining();
-			}
-			
-			_queueCount--;
-			AddBackTrainingResource();
-		}
-	}
-
-	void Serialize(FArchive& Ar) override
-	{
-		Building::Serialize(Ar);
-		Ar << _armyEnum;
-		Ar << _queueCount;
-		Ar << _trainingStartTick;
-	}
-
-private:
-	void TryStartTraining()
-	{
-		if (_queueCount > 0 && _trainingStartTick == -1) {
-			_trainingStartTick = Time::Ticks();
-
-			int32 timeCost = armyInfo().timeCostTicks();
-			if (SimSettings::IsOn("CheatFastBuild")) {
-				timeCost /= 60;
-			}
-			
-			_simulation->ScheduleTickBuilding(buildingId(), _trainingStartTick + timeCost);
-		}
-	}
-
-	void CancelCurrentTraining()
-	{
-		if (_trainingStartTick != -1) {
-			_trainingStartTick = -1;
-			_simulation->RemoveScheduleTickBuilding(buildingId());
-		}
-	}
-
-	void RemoveTrainingResource()
-	{
-		resourceSystem().ChangeMoney(-armyInfo().moneyCost);
-		for (ResourcePair pair : armyInfo().resourceCost) {
-			resourceSystem().RemoveResourceGlobal(pair.resourceEnum, pair.count);
-		}
-	}
-	void AddBackTrainingResource()
-	{
-		resourceSystem().ChangeMoney(armyInfo().moneyCost);
-		for (ResourcePair pair : armyInfo().resourceCost) {
-			resourceSystem().AddResourceGlobal(pair.resourceEnum, pair.count, *_simulation);
-		}
-	}
-	
-private:
-	ArmyEnum _armyEnum = ArmyEnum::Clubman;
-	int32 _queueCount = 0;
-	int32 _trainingStartTick = -1;
-};
+//class Barrack final : public Building
+//{
+//public:
+//	void FinishConstruction() final {
+//		Building::FinishConstruction();
+//	}
+//
+//	const ArmyInfo& armyInfo() { return GetArmyInfo(_armyEnum); }
+//
+//	void QueueTrainUnit()
+//	{
+//		resourceSystem().ChangeMoney(-armyInfo().moneyCost);
+//		for (ResourcePair pair : armyInfo().resourceCost) {
+//			resourceSystem().RemoveResourceGlobal(pair.resourceEnum, pair.count);
+//		}
+//		
+//		if (_queueCount < maxQueueSize()) {
+//			_queueCount++;
+//		}
+//		TryStartTraining();
+//	}
+//
+//	// Done Training
+//	void ScheduleTick() override;
+//
+//	float trainingPercent() {
+//		if (_trainingStartTick == -1) {
+//			return 0;
+//		}
+//		return (Time::Ticks() - _trainingStartTick) * 100.0f / armyInfo().timeCostTicks();
+//	}
+//
+//	static int32 maxQueueSize() { return 10; }
+//	int32 queueCount() { return _queueCount; }
+//
+//	/*
+//	 * Build/Unit cost scaling
+//	 * - Clubman 1
+//	 * - Swordman 3
+//	 * - Archer 2
+//	 *
+//	 */
+//
+//	void SetArmyEnum(ArmyEnum armyEnum) {
+//		_armyEnum = armyEnum;
+//	}
+//
+//	void TryCancelTrainingQueue()
+//	{
+//		if (_queueCount > 0) {
+//			if (_queueCount == 1) {
+//				CancelCurrentTraining();
+//			}
+//			
+//			_queueCount--;
+//			AddBackTrainingResource();
+//		}
+//	}
+//
+//	void Serialize(FArchive& Ar) override
+//	{
+//		Building::Serialize(Ar);
+//		Ar << _armyEnum;
+//		Ar << _queueCount;
+//		Ar << _trainingStartTick;
+//	}
+//
+//private:
+//	void TryStartTraining()
+//	{
+//		if (_queueCount > 0 && _trainingStartTick == -1) {
+//			_trainingStartTick = Time::Ticks();
+//
+//			int32 timeCost = armyInfo().timeCostTicks();
+//			if (SimSettings::IsOn("CheatFastBuild")) {
+//				timeCost /= 60;
+//			}
+//			
+//			_simulation->ScheduleTickBuilding(buildingId(), _trainingStartTick + timeCost);
+//		}
+//	}
+//
+//	void CancelCurrentTraining()
+//	{
+//		if (_trainingStartTick != -1) {
+//			_trainingStartTick = -1;
+//			_simulation->RemoveScheduleTickBuilding(buildingId());
+//		}
+//	}
+//
+//	void RemoveTrainingResource()
+//	{
+//		resourceSystem().ChangeMoney(-armyInfo().moneyCost);
+//		for (ResourcePair pair : armyInfo().resourceCost) {
+//			resourceSystem().RemoveResourceGlobal(pair.resourceEnum, pair.count);
+//		}
+//	}
+//	void AddBackTrainingResource()
+//	{
+//		resourceSystem().ChangeMoney(armyInfo().moneyCost);
+//		for (ResourcePair pair : armyInfo().resourceCost) {
+//			resourceSystem().AddResourceGlobal(pair.resourceEnum, pair.count, *_simulation);
+//		}
+//	}
+//	
+//private:
+//	ArmyEnum _armyEnum = ArmyEnum::Clubman;
+//	int32 _queueCount = 0;
+//	int32 _trainingStartTick = -1;
+//};
 
 class ProvinceBuilding : public Building
 {

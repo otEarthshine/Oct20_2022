@@ -99,10 +99,10 @@ void UWorldTradeUI::TickUI()
 			}
 
 			// update text if inventory changed
-			if (resourceCount != tradeRow->inventory) {
+			//if (resourceCount != tradeRow->inventory) {
 				tradeRow->inventory = resourceCount;
-				tradeRow->UpdateTexts();
-			}
+				tradeRow->UpdateTexts(); // Always updating tooltip
+			//}
 
 			// If this is a sellonly don't show left Arrow if the amount is 0 or more
 			tradeRow->RefreshSellOnlyState(isSellOnly);

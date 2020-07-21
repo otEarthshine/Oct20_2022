@@ -680,7 +680,9 @@ public:
 		{ // Colony
 			ModuleTransforms::CreateSet("Colony")
 		},
-
+		{ // InventorsWorkshop
+			ModuleTransforms::CreateSet("InventorsWorkshop")
+		},
 			
 		// Intercity Road
 		{ ModuleTransforms({ ModuleTransform("DirtRoad")}) },
@@ -796,12 +798,15 @@ public:
 		InitBuildingSets();
 
 		// For each building
-		for (size_t buildingEnumInt = BuildingEnumToVariationToModuleTransforms.size(); buildingEnumInt-- > 0;) {
+		for (size_t buildingEnumInt = BuildingEnumToVariationToModuleTransforms.size(); buildingEnumInt-- > 0;) 
+		{
 			auto& variationToModuleTransforms = BuildingEnumToVariationToModuleTransforms[buildingEnumInt];
 
 			// For each variations specified
 			for (auto& moduleTransforms : variationToModuleTransforms) 
 			{
+				UE_LOG(LogTemp, Error, TEXT("LoadBuildingSets %d %s %s"), buildingEnumInt, ToTChar(GetBuildingInfoInt(buildingEnumInt).name), ToTChar(moduleTransforms.setName));
+				
 				if (moduleTransforms.setName != "")
 				{
 					// Load building set and replace this moduleTransform with building set..
@@ -885,6 +890,8 @@ public:
 						subMeshName = setName + FString("WindowGlass");
 						if (assetLoader->moduleMesh(subMeshName)) togglableTransforms.push_back(ModuleTransform(subMeshName, FTransform::Identity, 0.0f, ModuleTypeEnum::Window));
 					}
+
+					
 				}
 				
 			}

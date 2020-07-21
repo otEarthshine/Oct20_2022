@@ -109,7 +109,7 @@ void TownHall::UpgradeTownhall()
 		cardSys.AddDrawCards(CardEnum::InventorsWorkshop, 1);
 		cardSys.AddDrawCards(CardEnum::Immigration, 1);
 		cardSys.AddDrawCards(CardEnum::Kidnap, 1);
-		//cardSys.AddDrawCards(CardEnum::BarrackArcher, 1);
+		cardSys.AddDrawCards(CardEnum::BarrackArcher, 1);
 		_simulation->unlockSystem(_playerId)->UnlockBuilding(CardEnum::StoneRoad);
 		_simulation->unlockSystem(_playerId)->UnlockBuilding(CardEnum::IntercityRoad);
 	}
@@ -117,7 +117,7 @@ void TownHall::UpgradeTownhall()
 		cardSys.AddDrawCards(CardEnum::Warehouse, 1);
 		cardSys.AddDrawCards(CardEnum::Colony, 1);
 		cardSys.AddDrawCards(CardEnum::SharingIsCaring, 1);
-		//cardSys.AddDrawCards(CardEnum::BarrackSwordman, 1);
+		cardSys.AddDrawCards(CardEnum::BarrackSwordman, 1);
 	}
 	
 	_simulation->AddPopup(_playerId, ss.str(), "UpgradeTownhall");

@@ -113,10 +113,10 @@ public:
 			building.isEnum(CardEnum::TradingCompany)) {
 			SetTradeProgress(building.subclass<TradeBuilding>(), building.barFraction());
 		}
-		else if (IsBarrack(building.buildingEnum())) {
-			Barrack& barrack = building.subclass<Barrack>();
-			SetProgress(barrack.trainingPercent() / 100.0f, barrack.queueCount());
-		}
+		//else if (IsBarrack(building.buildingEnum())) {
+		//	Barrack& barrack = building.subclass<Barrack>();
+		//	SetProgress(barrack.trainingPercent() / 100.0f, barrack.queueCount());
+		//}
 		else if (IsSpecialProducer(building.buildingEnum())) {
 			SetProgress(building.barFraction());
 		}

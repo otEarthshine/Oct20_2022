@@ -530,16 +530,12 @@ void Building::DoWork(int unitId, int workAmount100)
 				_workDone100 = 0;
 				_filledInputs = false;
 				
-				int32 moneyReceived = productPerBatch();// inputPerBatch() * _simulation->price100(input1()) * 2 * efficiency() / 100 / 100;
+				int32 moneyReceived = productPerBatch();
 				resourceSystem().ChangeMoney(moneyReceived);
-
-				int32 goldBarEquivalent = moneyReceived / GetResourceInfo(ResourceEnum::GoldBar).basePrice;
-				_simulation->worldTradeSystem().ChangeSupply(_playerId, ResourceEnum::GoldBar, goldBarEquivalent);
+				_simulation->worldTradeSystem().ChangeSupply(_playerId, ResourceEnum::GoldBar, inputPerBatch());
 
 				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, centerTile(), "+" + to_string(moneyReceived));
-
 				AddProductionStat(moneyReceived);
-
 				_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
 				return;
 			}
@@ -548,13 +544,24 @@ void Building::DoWork(int unitId, int workAmount100)
 				_workDone100 = 0;
 				_filledInputs = false;
 
-				int32 sciReceived = productPerBatch();// inputPerBatch() * _simulation->price100(input1()) * 2 * efficiency() / 100 / 100;
-				_simulation->unlockSystem(_playerId)->Research(sciReceived * 100, 1);
+				int32 sciReceived = productPerBatch();
+				_simulation->unlockSystem(_playerId)->Research(sciReceived * 100 * Time::SecondsPerRound, 1);
 
 				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainScience, centerTile(), "+" + to_string(sciReceived));
-
 				AddProductionStat(sciReceived);
+				_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
+				return;
+			}
+			if (IsBarrack(buildingEnum()))
+			{
+				_workDone100 = 0;
+				_filledInputs = false;
 
+				int32 influenceReceived = productPerBatch();
+				resourceSystem().ChangeInfluence(influenceReceived);
+
+				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainInfluence, centerTile(), "+" + to_string(influenceReceived));
+				AddProductionStat(influenceReceived);
 				_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
 				return;
 			}
@@ -667,6 +674,11 @@ void Building::AddProductionStat(ResourcePair resource)
 	}
 	if (isEnum(CardEnum::InventorsWorkshop)) {
 		_simulation->statSystem(_playerId).AddStat(SeasonStatEnum::Science, resource.count);
+		return;
+	}
+	if (IsBarrack(buildingEnum())) 
+	{
+		_simulation->statSystem(_playerId).AddStat(SeasonStatEnum::Influence, resource.count);
 		return;
 	}
 

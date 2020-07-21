@@ -514,14 +514,14 @@ void Bank::CalculateRoundProfit()
 }
 
 
-void Barrack::ScheduleTick()
-{
-	_queueCount--;
-	_trainingStartTick = -1;
-
-	std::vector<int32> armyCounts(ArmyEnumCount, 0);
-	armyCounts[static_cast<int>(_armyEnum)] = 1;
-	_simulation->townhall(_playerId).armyNode.AddArmyToCapital(_playerId, armyCounts);
-	
-	TryStartTraining(); // Try to start next training
-}
+//void Barrack::ScheduleTick()
+//{
+//	_queueCount--;
+//	_trainingStartTick = -1;
+//
+//	std::vector<int32> armyCounts(ArmyEnumCount, 0);
+//	armyCounts[static_cast<int>(_armyEnum)] = 1;
+//	_simulation->townhall(_playerId).armyNode.AddArmyToCapital(_playerId, armyCounts);
+//	
+//	TryStartTraining(); // Try to start next training
+//}

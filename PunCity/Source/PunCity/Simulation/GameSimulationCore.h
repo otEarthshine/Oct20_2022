@@ -1667,7 +1667,7 @@ public:
 
 
 	//! Interaction condition helper
-	bool CanTrainUnit(int32 buildingId);
+	//bool CanTrainUnit(int32 buildingId);
 
 private:
 	/**

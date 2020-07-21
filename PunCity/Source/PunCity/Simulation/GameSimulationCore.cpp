@@ -1477,6 +1477,8 @@ void GameSimulationCore::PlaceDrag(FPlaceGatherParameters parameters)
 						_treeSystem->ForceRemoveTileObj(tile, false);
 						overlaySystem().AddRoad(tile, true, true);
 
+						resourceSystem(parameters.playerId).ChangeMoney(-IntercityRoadTileCost);
+
 						// For road, also refresh the grass since we want it to be more visible
 						SetNeedDisplayUpdate(DisplayClusterEnum::Trees, tile.regionId(), true);
 					}
@@ -2190,38 +2192,38 @@ void GameSimulationCore::UnslotCard(FUnslotCard command)
 }
 
 // TODO: move this into barrack
-bool GameSimulationCore::CanTrainUnit(int32 buildingId)
-{
-	Barrack& barrack = building(buildingId).subclass<Barrack>();
-	int32 playerId = barrack.playerId();
-	const ArmyInfo& info = barrack.armyInfo();
-	
-	if (!HasEnoughResource(playerId, info.resourceCost)) {
-		AddPopupToFront(playerId, { "Not enough resource for training." }, ExclusiveUIEnum::None, "PopupCannot");
-		return false;
-	}
-	if (money(playerId) < info.moneyCost) {
-		AddPopupToFront(playerId, { "Not enough money for training." }, ExclusiveUIEnum::None, "PopupCannot");
-		return false;
-	}
-	return true;
-}
+//bool GameSimulationCore::CanTrainUnit(int32 buildingId)
+//{
+//	Barrack& barrack = building(buildingId).subclass<Barrack>();
+//	int32 playerId = barrack.playerId();
+//	const ArmyInfo& info = barrack.armyInfo();
+//	
+//	if (!HasEnoughResource(playerId, info.resourceCost)) {
+//		AddPopupToFront(playerId, { "Not enough resource for training." }, ExclusiveUIEnum::None, "PopupCannot");
+//		return false;
+//	}
+//	if (money(playerId) < info.moneyCost) {
+//		AddPopupToFront(playerId, { "Not enough money for training." }, ExclusiveUIEnum::None, "PopupCannot");
+//		return false;
+//	}
+//	return true;
+//}
 void GameSimulationCore::TrainUnit(FTrainUnit command)
 {
-	PUN_ENSURE(IsValidBuilding(command.buildingId), return);
-	
-	_LOG(LogNetworkInput, " TrainUnit: cancel?%d", command.isCancel);
+	//PUN_ENSURE(IsValidBuilding(command.buildingId), return);
+	//
+	//_LOG(LogNetworkInput, " TrainUnit: cancel?%d", command.isCancel);
 
-	if (command.isCancel)
-	{
-		building(command.buildingId).subclass<Barrack>().TryCancelTrainingQueue();
-	}
-	else
-	{
-		if (CanTrainUnit(command.buildingId)) {
-			building(command.buildingId).subclass<Barrack>().QueueTrainUnit();
-		}
-	}
+	//if (command.isCancel)
+	//{
+	//	building(command.buildingId).subclass<Barrack>().TryCancelTrainingQueue();
+	//}
+	//else
+	//{
+	//	if (CanTrainUnit(command.buildingId)) {
+	//		building(command.buildingId).subclass<Barrack>().QueueTrainUnit();
+	//	}
+	//}
 }
 
 // Any army order, not just attack anymore...

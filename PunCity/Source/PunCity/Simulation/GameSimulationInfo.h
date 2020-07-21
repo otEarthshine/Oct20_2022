@@ -1979,8 +1979,8 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::Mint,			"Mint",					WorldTile2(4, 6),	ResourceEnum::GoldBar,ResourceEnum::None,ResourceEnum::None,		 0, 2,	{80,80,0},	"Mint Gold Bars into <img id=\"Coin\"/>."),
 
 	BldInfo(CardEnum::BarrackClubman,	"Clubman Barrack",	WorldTile2(7, 7),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 0,	{30,0,0},	"Train Clubmen."),
-	BldInfo(CardEnum::BarrackSwordman,	"Swordman Barrack",	WorldTile2(7, 7),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 0,	{30,30,30},	"Train Swordmen (Consume Iron)."),
-	BldInfo(CardEnum::BarrackArcher,		"Archer Barrack",	WorldTile2(7, 7),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 0,	{50,30,0},	"Train Archers (Consume Wood)."),
+	BldInfo(CardEnum::BarrackSwordman,	"Swordman Barrack",	WorldTile2(7, 7),	ResourceEnum::Iron, ResourceEnum::None, ResourceEnum::None,		0, 0,	{30,30,30},	"Consume Iron to increase <img id=\"Influence\"/>."),
+	BldInfo(CardEnum::BarrackArcher,		"Archer Barrack",	WorldTile2(7, 7),	ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::None,		0, 0,	{50,30,0},	"Consume Wood to increase <img id=\"Influence\"/>."),
 
 	BldInfo(CardEnum::ShrineWisdom,	"Shrine of Wisdom",		WorldTile2(4, 4),	ResourceEnum::None,ResourceEnum::None,ResourceEnum::None,	 0, 0,	{0, 50, 0},	"+1 Wild Card to the deck."),
 	BldInfo(CardEnum::ShrineLove,	"Shrine of Love",		WorldTile2(4, 4),	ResourceEnum::None,ResourceEnum::None,ResourceEnum::None,		 0, 0,	{0, 80, 10},	"+5<img id=\"Smile\"/> to surrounding houses."),
@@ -2504,8 +2504,7 @@ static bool IsMountainMine(CardEnum buildingEnum)
 static bool IsNonAgricultureProducer(CardEnum buildingEnum)
 {
 	if (buildingEnum == CardEnum::Mint ||
-		buildingEnum == CardEnum::CardMaker ||
-		buildingEnum == CardEnum::InventorsWorkshop)
+		buildingEnum == CardEnum::CardMaker)
 	{
 		return true;
 	}
@@ -2656,6 +2655,9 @@ static bool IsSpecialProducer(CardEnum buildingEnum)
 	case CardEnum::CardMaker:
 	case CardEnum::InventorsWorkshop:
 	case CardEnum::ImmigrationOffice:
+
+	case CardEnum::BarrackArcher:
+	case CardEnum::BarrackSwordman:
 		return true;
 	default: return false;
 	}
@@ -3593,6 +3595,8 @@ static bool IsGatherPlacement(PlacementType placementType) {
 	return placementType == PlacementType::Gather ||
 		placementType == PlacementType::GatherRemove;
 }
+
+static const int32 IntercityRoadTileCost = 20;
 
 // Drag can start by leftClick down/up on the same tile. This drag will end with another leftClickDown
 // Or leftClick down, mouse move to new tile. This drag ends on mouse release.
@@ -5041,6 +5045,7 @@ enum class FloatupEnum : uint8
 	GainResource,
 	GainMoney,
 	GainScience,
+	GainInfluence,
 };
 struct FloatupInfo
 {
@@ -5597,6 +5602,7 @@ enum class SeasonStatEnum
 
 	Money,
 	Science,
+	Influence,
 };
 static const std::string SeasonStatName[] =
 {

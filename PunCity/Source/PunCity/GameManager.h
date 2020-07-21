@@ -214,11 +214,13 @@ private:
 
 	bool _isCtrlDown = false;
 	bool _isShiftDown = false;
+	bool _alwaysShowProvinceHover = false;
 
 	int _initPhase = 0;
 	bool _isLoadingFromFile = false;
 
 	ResourceEnum _tipResourceEnum = ResourceEnum::None;
+
 
 public:
 	/** 
@@ -422,6 +424,12 @@ public:
 				_simulation->IsFrontBuildable(tile, _playerId) ||
 				_simulation->IsCritterBuilding(tile);
 	}
+	bool IsIntercityRoadBuildable(WorldTile2 tile) const {
+		return GameMap::IsInGrid(tile) &&
+				_simulation->IsFrontBuildable(tile) ||
+				_simulation->IsCritterBuilding(tile);
+	}
+	
 
 	//bool IsGeobuildable(int32_t x, int32_t y) const final {
 	//	return GameMap::IsInGrid(x, y) && GameMap::IsGeoResource(WorldTile2(x, y));
@@ -537,6 +545,10 @@ public:
 	void SetCtrl(bool isDown) final { _isCtrlDown = isDown; }
 	void SetShift(bool isDown) final { _isShiftDown = isDown; }
 
+	bool alwaysShowProvinceHover() final { return _alwaysShowProvinceHover; }
+	void SetAlwaysShowProvinceHover(bool alwaysShowProvinceHoverIn) {
+		_alwaysShowProvinceHover = alwaysShowProvinceHoverIn;
+	}
 
 	ResourceEnum tipResourceEnum() final { return _tipResourceEnum; }
 	void SetTipResourceEnum(ResourceEnum resourceEnum) final {

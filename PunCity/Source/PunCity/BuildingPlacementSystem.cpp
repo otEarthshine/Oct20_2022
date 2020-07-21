@@ -464,6 +464,9 @@ void ABuildingPlacementSystem::StartBuildingPlacement(CardEnum buildingEnum, int
 		_gridGuide->SetVisibility(true);
 		_gridGuide->SetActive(true);
 	}
+
+	// Province Buildings always show province hover
+	_gameInterface->SetAlwaysShowProvinceHover(buildingEnum == CardEnum::Fort || buildingEnum == CardEnum::Colony);
 }
 
 void ABuildingPlacementSystem::StartHarvestPlacement(bool isRemoving, ResourceEnum resourceEnum)
@@ -1287,13 +1290,20 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 	 * Roads / Bridge
 	 */
 	if (_placementType == PlacementType::DirtRoad ||
-		_placementType == PlacementType::StoneRoad || 
+		_placementType == PlacementType::StoneRoad ||
 		_placementType == PlacementType::Fence ||
 		_placementType == PlacementType::Bridge)
 	{
 		//TickLineDrag(cameraAtom, std::bind(&IGameManagerInterface::IsPlayerRoadBuildable, _gameInterface, _1));
 		TickLineDrag(cameraAtom, [&](WorldTile2 tile) {
 			return _gameInterface->IsPlayerRoadBuildable(tile);
+		});
+		return;
+	}
+	if (_placementType == PlacementType::IntercityRoad) 
+	{
+		TickLineDrag(cameraAtom, [&](WorldTile2 tile) {
+			return _gameInterface->IsIntercityRoadBuildable(tile);
 		});
 		return;
 	}
@@ -1727,6 +1737,19 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
 			});
 		}
+		// Colony Grid
+		else if (_buildingEnum == CardEnum::Colony)
+		{
+			auto& sim = _gameInterface->simulation();
+			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+				if (IsPlayerBuildable(tile)) {
+					if (sim.georesource(sim.GetProvinceIdClean(tile)).georesourceEnum != GeoresourceEnum::None) {
+						_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, tile);
+					}
+				}
+				_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
+			});
+		}
 		// Road Overlap Building
 		else if (IsRoadOverlapBuilding(_buildingEnum))
 		{
@@ -2109,8 +2132,15 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 		if (!_canPlace) {
 			return;
 		}
-		int32 goldNeeded = _roadPathTileIds.Num() * 20;
-		if (goldNeeded < _gameInterface->simulation().money(playerId)) {
+		
+		int32 goldNeeded = 0;
+		for (int32 roadTileId : _roadPathTileIds) {
+			if (!_gameInterface->simulation().IsRoadTile(WorldTile2(roadTileId))) {
+				goldNeeded += IntercityRoadTileCost;
+			}
+		}
+
+		if (goldNeeded > 0 && goldNeeded > _gameInterface->simulation().money(playerId)) {
 			_gameInterface->simulation().AddEventLog(playerId, "Not enough money.", true);
 			return;
 		}

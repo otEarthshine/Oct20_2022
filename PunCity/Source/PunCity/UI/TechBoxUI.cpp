@@ -38,10 +38,7 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool a
 	
 
 	auto unlockSys = simulation().unlockSystem(playerId());
-	float researchFraction = 0.0f;
-	if (tech) {
-		researchFraction = tech->researchFraction(unlockSys->techsFinished, unlockSys->science100XsecPerRound);
-	}
+	float researchFraction = unlockSys->researchFraction();
 	isLocked = isLockedIn;
 	
 	float colorState = 0.0f;

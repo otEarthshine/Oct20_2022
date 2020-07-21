@@ -117,9 +117,9 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		
 		//CASE_BUILDING(CardEnum::Barrack, Barrack);
 
-		CASE_BUILDING_PARAM(CardEnum::BarrackClubman, Barrack, SetArmyEnum(ArmyEnum::Clubman));
-		CASE_BUILDING_PARAM(CardEnum::BarrackSwordman, Barrack, SetArmyEnum(ArmyEnum::Swordman));
-		CASE_BUILDING_PARAM(CardEnum::BarrackArcher, Barrack, SetArmyEnum(ArmyEnum::Archer));
+		//CASE_BUILDING_PARAM(CardEnum::BarrackClubman, Barrack, SetArmyEnum(ArmyEnum::Clubman));
+		CASE_BUILDING(CardEnum::BarrackSwordman, Barrack);
+		CASE_BUILDING(CardEnum::BarrackArcher, Barrack);
 
 		CASE_BUILDING(CardEnum::SmallMarket, SmallMarket);
 		CASE_BUILDING(CardEnum::PaperMaker, PaperMaker);

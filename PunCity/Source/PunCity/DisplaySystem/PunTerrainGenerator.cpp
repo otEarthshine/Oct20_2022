@@ -1385,7 +1385,7 @@ uint8 PunTerrainGenerator::Init1()
 	
 	// Perlin
 	{
-		FloatDet freq = FD0_XX(4);
+		FloatDet freq = FD0_XX(8); // 4
 		modifyPerlinFreq(freq);
 
 		for (int i = 0; i < _tileDimX * _tileDimY; i++) {

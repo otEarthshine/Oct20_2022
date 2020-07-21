@@ -42,6 +42,8 @@ public:
 
 		FString iconDirectoryAlpha = ContentGameDir(iconPath + FString("Alpha") + FString::FromInt(index) + FString(".exr"));
 		ExportThumbnailHDR(GetWorld(), IconRenderTargetAlpha, iconDirectoryAlpha);
+
+		PUN_LOG("ExportIcon %s index:%d", *iconPath, index);
 	}
 
 	void BakeCustomIcon()
@@ -59,10 +61,10 @@ public:
 		captureComponent->CaptureScene();
 		captureComponentAlpha->CaptureScene();
 
-		FString iconDirectory = ContentGameDir(FString("PunCity/UI/GeneratedIcons/CustomIcon.exr"));
+		FString iconDirectory = ContentGameDir(FString("UI/GeneratedIcons/CustomIcon.exr"));
 		ExportThumbnailHDR(GetWorld(), IconRenderTarget, iconDirectory);
 
-		FString iconDirectoryAlpha = ContentGameDir(FString("PunCity/UI/GeneratedIcons/CustomIconAlpha.exr"));
+		FString iconDirectoryAlpha = ContentGameDir(FString("UI/GeneratedIcons/CustomIconAlpha.exr"));
 		ExportThumbnailHDR(GetWorld(), IconRenderTargetAlpha, iconDirectoryAlpha);
 
 		skyMesh->SetVisibility(true);
@@ -94,7 +96,7 @@ public:
 			const float baseHouseCaptureDistance = 215;
 
 			for (int i = 0; i < BuildingEnumCount; i++)
-			{
+			{				
 				CardEnum buildingEnum = static_cast<CardEnum>(i);
 				WorldTile2 buildingSize = GetBuildingInfo(buildingEnum).size;
 				float usedSize = std::fmax(buildingSize.x, buildingSize.y);
@@ -118,6 +120,9 @@ public:
 				
 				const ModuleTransforms& modules = displayInfo.GetDisplayModules(buildingEnum, 0);
 				std::vector<ModuleTransform> moduleTransforms = modules.transforms;
+
+				PUN_LOG("BakeIcons %d %s size:%d", i, ToTChar(modules.setName),modules.transforms.size());
+
 
 				// Always show toggleable transforms
 				moduleTransforms.insert(moduleTransforms.end(), modules.togglableTransforms.begin(), modules.togglableTransforms.end());
@@ -148,7 +153,7 @@ public:
 				captureComponent->CaptureScene();
 				captureComponentAlpha->CaptureScene();
 
-				ExportIcon(FString("PunCity/UI/GeneratedIcons/BuildingIcon"), i);
+				ExportIcon(FString("UI/GeneratedIcons/BuildingIcon"), i);
 
 				_buildingMeshes->Hide();
 			}
@@ -167,7 +172,7 @@ public:
 				captureComponent->CaptureScene();
 				captureComponentAlpha->CaptureScene();
 
-				ExportIcon(FString("PunCity/UI/ResourceIcons/ResourceIcon"), i);
+				ExportIcon(FString("UI/ResourceIcons/ResourceIcon"), i);
 			}
 			_resourceMesh->SetVisibility(false);
 		}

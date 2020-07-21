@@ -632,7 +632,7 @@ public:
 
 	const std::vector<TechEnum>& techQueue() { return _techQueue; }
 
-	float researchFraction() { return currentResearch()->researchFraction(techsFinished, science100XsecPerRound); } // float(currentResearch()->scienceXsecPerRound) / (scienceNeeded() * Time::SecondsPerRound);
+	float researchFraction() { return static_cast<float>(science100()) / science100Needed(); }
 
 	bool IsResearched(TechEnum techEnum) {
 		PUN_CHECK(_enumToTech.find(techEnum) != _enumToTech.end());
@@ -650,15 +650,18 @@ public:
 	// Simulation
 	void Research(int32 science100PerRound, int32 updatesPerSec)
 	{
+		// Multiple updates per second, so we divide accordingly science100PerRound/updatesPerSec
+		science100XsecPerRound += GameRand::RandRound(science100PerRound, updatesPerSec);
+		
+		if (!hasTargetResearch()) {
+			return;
+		}
+		
 		auto tech = currentResearch();
-		if (tech->techEnum == TechEnum::None) return;
 
 		if (SimSettings::IsOn("CheatFastTech")) {
 			science100PerRound += 20000 * 100 * 20;
 		}
-
-		// Multiple updates per second, so we divide accordingly science100PerRound/updatesPerSec
-		science100XsecPerRound += GameRand::RandRound(science100PerRound, updatesPerSec);
 
 		if (science100() >= science100Needed()) 
 		{
@@ -824,14 +827,9 @@ public:
 	int32 science100Needed() {
 		return scienceNeeded() * 100;
 	}
-	int32 scienceNeeded()
-	{
-		if (currentResearch()) {
-			return currentResearch()->scienceNeeded(techsFinished);
-			//int32_t techLvl = currentResearch()->techBoxLocation.column;
-			//return (techsFinished + 2) * firstResearchScienceNeeded / 2 * techLvl;
-		}
-		return 1;
+	int32 scienceNeeded() {
+		PUN_CHECK(currentResearch()->techEnum != TechEnum::None);
+		return currentResearch()->scienceNeeded(techsFinished);
 	}
 
 	int32 science100() { return science100XsecPerRound / Time::SecondsPerRound; }

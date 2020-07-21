@@ -235,9 +235,15 @@ void UChatUI::Tick()
 		//ss << "(" << to_string(Time::Minutes()) << "m " << to_string(Time::Seconds() - Time::Minutes() * Time::SecondsPerMinute) << "s) \n";
 		//ss << "(" << to_string(Time::Ticks()) << " ticks) \n";
 
+
+#if DEBUG_BUILD
+		auto& sim = simulation();
+		auto& unitSystem = sim.unitSystem();
+		auto& statSystem = sim.statSystem();
+		
 		//ss << "World units: " << unitSystem.unitCount() << "\n";
 		//ss << "Trees: " << simulation.treeSystem().treeCount() << "\n";
-		//ss << "Bushes: " << simulation.treeSystem().bushCount() << "\n";
+		ss << "Bushes: " << sim.treeSystem().bushCount() << "\n";
 		//ss << "Stones: " << simulation.treeSystem().stoneCount() << "\n";
 
 		//ss << "Births: " << StatSystem::StatsToString(statSystem.GetStatAll(SeasonStatEnum::Birth));
@@ -246,16 +252,14 @@ void UChatUI::Tick()
 		//ss << "Deaths(Cold): " << StatSystem::StatsToString(statSystem.GetStatAll(SeasonStatEnum::DeathCold));
 
 		//ss << "\nBushBirth: " << StatSystem::StatsToString(statSystem.GetStatAll(SeasonStatEnum::BushBirth));
-		//ss << "BushDeath(Age): " << StatSystem::StatsToString(statSystem.GetStatAll(SeasonStatEnum::BushDeathAge));
-		//ss << "BushDeath(Winter): " << StatSystem::StatsToString(statSystem.GetStatAll(SeasonStatEnum::BushDeathWinter));
+		ss << "BushDeath(Age): " << StatSystem::StatsToString(statSystem.GetStatAll(SeasonStatEnum::BushDeathAge));
+		ss << "BushDeath(Winter): " << StatSystem::StatsToString(statSystem.GetStatAll(SeasonStatEnum::BushDeathWinter));
 
-		//ss << "BushUnitTrimmed: " << StatSystem::StatsToString(statSystem.GetStatAll(SeasonStatEnum::BushUnitTrimmed));
-		//ss << "BushEmitSeed: " << StatSystem::StatsToString(statSystem.GetStatAll(SeasonStatEnum::BushEmitSeed));
-		//ss << "BushEmitSeed(GoodSpot): " << StatSystem::StatsToString(statSystem.GetStatAll(SeasonStatEnum::BushEmitSeedGoodSpot));
-		//ss << "BushEmitSeed(Success): " << StatSystem::StatsToString(statSystem.GetStatAll(SeasonStatEnum::BushEmitSeedSuccess));
+		ss << "BushUnitTrimmed: " << StatSystem::StatsToString(statSystem.GetStatAll(SeasonStatEnum::BushUnitTrimmed));
+		ss << "BushEmitSeed: " << StatSystem::StatsToString(statSystem.GetStatAll(SeasonStatEnum::BushEmitSeed));
+		ss << "BushEmitSeed(GoodSpot): " << StatSystem::StatsToString(statSystem.GetStatAll(SeasonStatEnum::BushEmitSeedGoodSpot));
+		ss << "BushEmitSeed(Success): " << StatSystem::StatsToString(statSystem.GetStatAll(SeasonStatEnum::BushEmitSeedSuccess));
 
-#if DEBUG_BUILD
-		auto& unitSystem = simulation().unitSystem();
 		ss << "Moving units: " << unitSystem.stateCount("Moving") << "\n";
 		ss << "NeedActionUpdate units: " << unitSystem.stateCount("NeedActionUpdate") << "\n";
 		ss << "NeedTargetTile units: " << unitSystem.stateCount("NeedTargetTile") << "\n";

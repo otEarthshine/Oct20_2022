@@ -105,7 +105,8 @@ void UObjectDescriptionUISystem::Tick()
 			{
 				// Highlight Hover if the province isn't owned or if the camera is zoomed out
 				if (dataSource()->zoomDistance() > WorldZoomTransition_RegionToRegion4x4_Mid ||
-					simulation().provinceOwner(provinceId) == -1)
+					simulation().provinceOwner(provinceId) == -1 ||
+					dataSource()->alwaysShowProvinceHover())
 				{
 					showHover = true;
 					ShowRegionSelectionDecal(hitTile, true);
@@ -900,49 +901,49 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						ss << building.subclass<BoarBurrow>().inventory.ToString();
 						descriptionBox->AddText(ss);
 					}
-					else if (IsBarrack(building.buildingEnum()))
-					{
-						Barrack& barrack = building.subclass<Barrack>();
-						ArmyInfo info = barrack.armyInfo();
+					//else if (IsBarrack(building.buildingEnum()))
+					//{
+					//	Barrack& barrack = building.subclass<Barrack>();
+					//	ArmyInfo info = barrack.armyInfo();
 
-						// The rest only show if it is the actual player
-						if (barrack.playerId() == playerId())
-						{
-							descriptionBox->AddRichText("Trainings Queued", to_string(barrack.queueCount()));
+					//	// The rest only show if it is the actual player
+					//	if (barrack.playerId() == playerId())
+					//	{
+					//		descriptionBox->AddRichText("Trainings Queued", to_string(barrack.queueCount()));
 
-							ss << std::fixed << std::showpoint << std::setprecision(1);
-							ss << barrack.trainingPercent() << "%";
-							descriptionBox->AddRichText("Training Progress", ss);
+					//		ss << std::fixed << std::showpoint << std::setprecision(1);
+					//		ss << barrack.trainingPercent() << "%";
+					//		descriptionBox->AddRichText("Training Progress", ss);
 
-							ss << "Train " << info.name;
-							ss << "\n";
-							if (info.moneyCost > 0) {
-								ss << MaybeRedText(to_string(info.moneyCost), simulation.money(playerId()) < info.moneyCost) << "<img id=\"Coin\"/> ";
-							}
+					//		ss << "Train " << info.name;
+					//		ss << "\n";
+					//		if (info.moneyCost > 0) {
+					//			ss << MaybeRedText(to_string(info.moneyCost), simulation.money(playerId()) < info.moneyCost) << "<img id=\"Coin\"/> ";
+					//		}
 
-							for (const ResourcePair& pair : info.resourceCost) {
-								if (pair.resourceEnum == ResourceEnum::Wood) {
-									ss << MaybeRedText(to_string(pair.count), simulation.resourceCount(playerId(), pair.resourceEnum) < pair.count) << "<img id=\"Wood\"/>";
-								}
-								else if (pair.resourceEnum == ResourceEnum::Iron) {
-									ss << MaybeRedText(to_string(pair.count), simulation.resourceCount(playerId(), pair.resourceEnum) < pair.count) << "<img id=\"Iron\"/>";
-								}
-								else if (pair.resourceEnum == ResourceEnum::Food) {
-									ss << MaybeRedText(to_string(pair.count), simulation.foodCount(playerId()) < pair.count) << " food";
-								}
-							}
+					//		for (const ResourcePair& pair : info.resourceCost) {
+					//			if (pair.resourceEnum == ResourceEnum::Wood) {
+					//				ss << MaybeRedText(to_string(pair.count), simulation.resourceCount(playerId(), pair.resourceEnum) < pair.count) << "<img id=\"Wood\"/>";
+					//			}
+					//			else if (pair.resourceEnum == ResourceEnum::Iron) {
+					//				ss << MaybeRedText(to_string(pair.count), simulation.resourceCount(playerId(), pair.resourceEnum) < pair.count) << "<img id=\"Iron\"/>";
+					//			}
+					//			else if (pair.resourceEnum == ResourceEnum::Food) {
+					//				ss << MaybeRedText(to_string(pair.count), simulation.foodCount(playerId()) < pair.count) << " food";
+					//			}
+					//		}
 
-							bool isTrainable = true;
+					//		bool isTrainable = true;
 
-							descriptionBox->AddButton(ss.str(), "", nullptr, "", this, CallbackEnum::TrainUnit, isTrainable, false, objectId);
+					//		descriptionBox->AddButton(ss.str(), "", nullptr, "", this, CallbackEnum::TrainUnit, isTrainable, false, objectId);
 
-							// Show cancel button if there is a queued unit
-							descriptionBox->AddButton("Cancel Training", "", nullptr, "", this, CallbackEnum::CancelTrainUnit, barrack.queueCount() > 0, false, objectId);
+					//		// Show cancel button if there is a queued unit
+					//		descriptionBox->AddButton("Cancel Training", "", nullptr, "", this, CallbackEnum::CancelTrainUnit, barrack.queueCount() > 0, false, objectId);
 
 
-							ss.str(string());
-						}
-					}
+					//		ss.str(string());
+					//	}
+					//}
 					else if (IsSpecialProducer(building.buildingEnum())) 
 					{
 						AddEfficiencyText(building, descriptionBox);
@@ -955,11 +956,16 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							ss << building.seasonalProduction() << "<img id=\"Science\"/>";
 							descriptionBox->AddRichText("Science(per season)", ss);
 						}
+						if (IsBarrack(building.buildingEnum())) {
+							ss << building.seasonalProduction() << "<img id=\"Influence\"/>";
+							descriptionBox->AddRichText("Influence(per season)", ss);
+						}
 					}
-					else if (building.isEnum(CardEnum::StorageYard)) 
+					else if (building.isEnum(CardEnum::StorageYard) ||
+							building.isEnum(CardEnum::Warehouse))
 					{
 						ss << building.subclass<StorageYard>().tilesOccupied() << "/" << building.storageSlotCount();
-						descriptionBox->AddRichText("Slots(tiles)", ss);
+						descriptionBox->AddRichText("Slots", ss);
 
 						descriptionBox->AddSpacer(12);
 
@@ -1382,9 +1388,15 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							productStr = productStrIn;
 						};
 						
-						switch (buildingEnum) {
+						switch (buildingEnum)
+						{
 							case CardEnum::Mint: setProduct(assetLoader->CoinIcon, to_string(building.productPerBatch()));  break;
 							case CardEnum::InventorsWorkshop: setProduct(assetLoader->ScienceIcon, to_string(building.productPerBatch()));  break;
+							
+							case CardEnum::BarrackArcher:
+							case CardEnum::BarrackSwordman:
+									setProduct(assetLoader->InfluenceIcon, to_string(building.productPerBatch()));  break;
+							
 							case CardEnum::CardMaker: setProduct(assetLoader->CardBack, "1 card");  break;
 							case CardEnum::ImmigrationOffice: break;
 							default:
@@ -2711,26 +2723,26 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 		command->unslotIndex = cardMini->cardHandIndex;
 		networkInterface()->SendNetworkCommand(command);
 	}
-	else if (callbackEnum == CallbackEnum::TrainUnit)
-	{
-		if (simulation().CanTrainUnit(punWidgetCaller->callbackVar1))
-		{
-			auto command = make_shared<FTrainUnit>();
-			command->buildingId = punWidgetCaller->callbackVar1;
-			networkInterface()->SendNetworkCommand(command);
-		}
-	}
-	else if (callbackEnum == CallbackEnum::CancelTrainUnit)
-	{
-		int32 buildingId = punWidgetCaller->callbackVar1;
-		if (simulation().building(buildingId).subclass<Barrack>().queueCount() > 0)
-		{
-			auto command = make_shared<FTrainUnit>();
-			command->buildingId = buildingId;
-			command->isCancel = true;
-			networkInterface()->SendNetworkCommand(command);
-		}
-	}
+	//else if (callbackEnum == CallbackEnum::TrainUnit)
+	//{
+	//	if (simulation().CanTrainUnit(punWidgetCaller->callbackVar1))
+	//	{
+	//		auto command = make_shared<FTrainUnit>();
+	//		command->buildingId = punWidgetCaller->callbackVar1;
+	//		networkInterface()->SendNetworkCommand(command);
+	//	}
+	//}
+	//else if (callbackEnum == CallbackEnum::CancelTrainUnit)
+	//{
+	//	int32 buildingId = punWidgetCaller->callbackVar1;
+	//	if (simulation().building(buildingId).subclass<Barrack>().queueCount() > 0)
+	//	{
+	//		auto command = make_shared<FTrainUnit>();
+	//		command->buildingId = buildingId;
+	//		command->isCancel = true;
+	//		networkInterface()->SendNetworkCommand(command);
+	//	}
+	//}
 }
 
 void UObjectDescriptionUISystem::AddBiomeInfo(WorldTile2 tile, UPunBoxWidget* descriptionBox)
@@ -2752,6 +2764,8 @@ void UObjectDescriptionUISystem::AddBiomeInfo(WorldTile2 tile, UPunBoxWidget* de
 		int32 provinceId = provinceSys.GetProvinceIdClean(tile);
 		if (provinceId != -1) {
 			ss << "<Bold>Province flat area:</> " << provinceSys.provinceFlatTileCount(provinceSys.GetProvinceIdClean(tile)) << " tiles\n";
+			ss << "Defense Bonus:" << (simulation().provinceSystem().provinceIsMountain(provinceId) ? "50%(Mountain)" : "0%");
+			ss << "\n";
 		}
 	}
 
@@ -2915,14 +2929,6 @@ void UObjectDescriptionUISystem::AddProvinceInfo(int32 provinceId, UPunBoxWidget
 	// Biome number info
 	AddBiomeInfo(provinceCenter, descriptionBox);
 	
-	descriptionBox->AddSpacer();
-
-	// Defense
-	if (simulation().provinceSystem().provinceIsMountain(provinceId)) {
-		descriptionBox->AddRichText("Defense Bonus:", "50%(Mountain)");
-	} else {
-		descriptionBox->AddRichText("Defense Bonus:", "0%");
-	}
 	descriptionBox->AddSpacer();
 
 	// Georesource

@@ -298,6 +298,8 @@ public:
 
 	virtual ResourceEnum tipResourceEnum() = 0;
 	virtual void SetTipResourceEnum(ResourceEnum resourceEnum) = 0;
+
+	virtual bool alwaysShowProvinceHover() = 0;
 	
 	
 	virtual float zoomDistance() = 0;

@@ -13,6 +13,7 @@
 #include "UnlockSystem.h"
 #include "Buildings/GathererHut.h"
 #include "Buildings/TradeBuilding.h"
+#include "WorldTradeSystem.h"
 
 using namespace std;
 
@@ -781,6 +782,15 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 		incomes100[static_cast<int>(IncomeEnum::TerritoryRevenue)] += territoryRevenue100;
 	}
 
+	std::vector<int32> tradePartners = _simulation->worldTradeSystem().GetTradePartners(_playerId);
+	int32 tradeClusterTotalPopulation = 0;
+	if (tradePartners.size() > 0) { // 1 trade parter means self only, no trade route income
+		for (int32 playerId : tradePartners) {
+			tradeClusterTotalPopulation += _simulation->population(playerId);
+		}
+	}
+	incomes100[static_cast<int>(IncomeEnum::TradeRoute)] += tradeClusterTotalPopulation / 2;
+
 	int32 influence100 = _simulation->influence100(_playerId);
 
 	// Upkeep goes to influence unless it is 0
@@ -807,7 +817,7 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 		
 		// Fort/Colony
 		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Fort)] -= _simulation->buildingCount(_playerId, CardEnum::Fort) * 20 * 100;
-		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Colony)] -= _simulation->buildingCount(_playerId, CardEnum::Colony) * 30 * 100;
+		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Colony)] -= _simulation->buildingCount(_playerId, CardEnum::Colony) * Colony::GetColonyUpkeep() * 100;
 	}
 	else
 	{
@@ -1045,6 +1055,14 @@ void PlayerOwnedManager::Tick1Sec()
 		AddDataPoint(PlotStatEnum::Food, _simulation->foodCount(_playerId));
 		AddDataPoint(PlotStatEnum::Fuel, _simulation->resourceCount(_playerId, ResourceEnum::Wood) +
 												_simulation->resourceCount(_playerId, ResourceEnum::Coal));
+	}
+
+
+	/*
+	 * ProvinceClaimProgress
+	 */
+	for (ProvinceClaimProgress& claimProgress : _defendingClaimProgress) {
+		claimProgress.Tick1Sec();
 	}
 }
 

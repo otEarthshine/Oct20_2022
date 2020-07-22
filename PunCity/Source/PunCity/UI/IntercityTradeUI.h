@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "PunCity/UI/PunWidget.h"
 #include "Components/Overlay.h"
+#include "PunBoxWidget.h"
 #include "IntercityTradeRow.h"
 #include "IntercityTradeUI.generated.h"
 
@@ -22,8 +23,6 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) UScrollBox* TradeRowBox;
 
-	UPROPERTY(meta = (BindWidget)) UTextBlock* BuyDisplayText;
-	UPROPERTY(meta = (BindWidget)) UTextBlock* SellDisplayText;
 	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* BuyDisplayBox;
 	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* SellDisplayBox;
 
@@ -73,8 +72,26 @@ public:
 			else {
 				tradeRow->SetVisibility(ESlateVisibility::Collapsed);
 			}
+
+			// Fill Buy/SellDisplayBox with proper amount of goods
+			{
+				IntercityTradeOfferEnum offerEnum = tradeRow->GetOfferEnum();
+				int32 targetInventory = tradeRow->TargetInventory->amount;
+				if (targetInventory > 0)
+				{
+					if (offerEnum == IntercityTradeOfferEnum::BuyWhenBelow) {
+						BuyDisplayBox->AddIconPair(to_string(targetInventory), tradeRow->resourceEnum(), "");
+					}
+					else if (offerEnum == IntercityTradeOfferEnum::SellWhenAbove) {
+						SellDisplayBox->AddIconPair(to_string(targetInventory), tradeRow->resourceEnum(), "");
+					}
+				}
+			}
+			
 		}
-	
+
+		BuyDisplayBox->AfterAdd();
+		SellDisplayBox->AfterAdd();
 	}
 
 	void OpenUI(int32 objectId)
@@ -104,7 +121,6 @@ public:
 			tradeRow->Init(this, pair.resourceEnum);
 			TradeRowBox->AddChild(tradeRow);
 		}
-
 
 		{
 			// Second loop, all other resources
@@ -137,7 +153,26 @@ public:
 
 	UFUNCTION() void ClickedConfirmButton()
 	{
-		
+		// Take UI Info and input them into sim
+
+		auto command = make_shared<FSetIntercityTrade>();
+
+		TArray<UWidget*> tradeRows = TradeRowBox->GetAllChildren();
+		for (int32 i = 0; i < tradeRows.Num(); i++)
+		{
+			auto tradeRow = CastChecked<UIntercityTradeRow>(tradeRows[i]);
+
+			IntercityTradeOfferEnum offerEnum = tradeRow->GetOfferEnum();
+			int32 targetInventory = tradeRow->TargetInventory->amount;
+			if (offerEnum != IntercityTradeOfferEnum::None && targetInventory > 0) 
+			{
+				command->resourceEnums.Add(static_cast<uint8>(tradeRow->resourceEnum()));
+				command->intercityTradeOfferEnum.Add(static_cast<uint8>(offerEnum));
+				command->targetInventories.Add(targetInventory);
+			}
+		}
+
+		networkInterface()->SendNetworkCommand(command);
 	}
 	UFUNCTION() void ClickedDismissButton() {
 		CloseUI();

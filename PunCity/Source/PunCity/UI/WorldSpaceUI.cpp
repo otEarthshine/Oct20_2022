@@ -184,76 +184,103 @@ void UWorldSpaceUI::TickBuildings()
 
 	auto& playerOwned = sim.playerOwned(playerId());
 	auto& provinceSys = sim.provinceSystem();
-	
-	std::vector<RegionClaimProgress> claimProgresses = playerOwned.armyRegionsClaimQueue();
 
 	const std::vector<int32>& sampleProvinceIds = dataSource()->sampleProvinceIds();
 
-	for (int32 provinceId : sampleProvinceIds)
+	//if (zoomDistance < WorldZoomTransition_Tree)
 	{
-		// RegionHoverUI
-		if (zoomDistance < WorldZoomTransition_Tree)
+		for (int32 provinceId : sampleProvinceIds)
 		{
-			int32 claimIndex = -1;
-			for (size_t i = 0; i < claimProgresses.size(); i++) {
-				if (claimProgresses[i].provinceId == provinceId) {
-					claimIndex = i;
-					break;
-				}
-			}
-
-			WorldTile2 provinceCenter = provinceSys.GetProvinceCenterTile(provinceId);
-			
-			if (claimIndex != -1)
+			int32 provinceOwnerId = sim.provinceOwner(provinceId);
+			if (provinceOwnerId != -1)
 			{
-				FVector displayLocation = MapUtil::DisplayLocation(data->cameraAtom(), provinceCenter.worldAtom2(), 50.0f);
-				URegionHoverUI* regionHoverUI = _regionHoverUIs.GetHoverUI<URegionHoverUI>(provinceId, UIEnum::RegionHoverUI, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
-					[&](URegionHoverUI* ui) {}
-				);
+				ProvinceClaimProgress claimProgress = sim.playerOwned(provinceOwnerId).GetDefendingClaimProgress(provinceId);
+				if (claimProgress.isValid())
+				{
+					WorldTile2 provinceCenter = provinceSys.GetProvinceCenterTile(provinceId);
+					FVector displayLocation = MapUtil::DisplayLocation(data->cameraAtom(), provinceCenter.worldAtom2(), 50.0f);
+					URegionHoverUI* regionHoverUI = _regionHoverUIs.GetHoverUI<URegionHoverUI>(provinceId, UIEnum::RegionHoverUI, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
+						[&](URegionHoverUI* ui) {}
+					);
 
-				if (claimIndex == 0) {
 					SetText(regionHoverUI->ClaimingText, "Claiming");
 					regionHoverUI->AutoChoseText->SetVisibility(ESlateVisibility::Collapsed);
 
-					float fraction = static_cast<float>(claimProgresses[claimIndex].claimValue100Inputted / 100) / playerOwned.GetBaseProvinceClaimPrice(provinceId);
+					float fraction = static_cast<float>(claimProgress.ticksElapsed) / BattleClaimTicks;
 					regionHoverUI->ClockImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", fraction);
 					regionHoverUI->ClockBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 				}
-				else
-				{
-					SetText(regionHoverUI->ClaimingText, "Queued for Claiming (" + to_string(claimIndex) + ")");
-					regionHoverUI->AutoChoseText->SetVisibility(ESlateVisibility::Collapsed);
-					regionHoverUI->ClockBox->SetVisibility(ESlateVisibility::Collapsed);
-				}
-			}
-			else if (claimProgresses.size() == 0 && 
-					playerOwned.armyAutoClaimProgress().provinceId == provinceId)
-			{
-				RegionClaimProgress claimProgress = playerOwned.armyAutoClaimProgress();
-				
-				FVector displayLocation = MapUtil::DisplayLocation(data->cameraAtom(), provinceCenter.worldAtom2(), 50.0f);
-				URegionHoverUI* regionHoverUI = _regionHoverUIs.GetHoverUI<URegionHoverUI>(provinceId, UIEnum::RegionHoverUI, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
-					[&](URegionHoverUI* ui) {}
-				);
-				
-				SetText(regionHoverUI->ClaimingText, "Claiming");
-				regionHoverUI->AutoChoseText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-				SetText(regionHoverUI->AutoChoseText, "(Auto)");
-
-				float fraction = static_cast<float>(claimProgress.claimValue100Inputted / 100) / playerOwned.GetBaseProvinceClaimPrice(provinceId);
-				regionHoverUI->ClockImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", fraction);
-				regionHoverUI->ClockBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-			}
-			else
-			{
-				// Not being claimed, might show georesource
-				//FVector displayLocation = MapUtil::DisplayLocation(data->cameraAtom(), curRegion.centerTile().worldAtom2(), 50.0f);
-				//URegionHoverUI* regionHoverUI = _regionHoverUIs.GetHoverUI<URegionHoverUI>(sampleRegionId, UIEnum::RegionHoverUI, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
-				//	[&](URegionHoverUI* ui) {}
-				//);
 			}
 		}
 	}
+	
+	//std::vector<RegionClaimProgress> claimProgresses = playerOwned.armyRegionsClaimQueue();
+
+	//for (int32 provinceId : sampleProvinceIds)
+	//{
+	//	// RegionHoverUI
+	//	if (zoomDistance < WorldZoomTransition_Tree)
+	//	{
+	//		int32 claimIndex = -1;
+	//		for (size_t i = 0; i < claimProgresses.size(); i++) {
+	//			if (claimProgresses[i].provinceId == provinceId) {
+	//				claimIndex = i;
+	//				break;
+	//			}
+	//		}
+
+	//		WorldTile2 provinceCenter = provinceSys.GetProvinceCenterTile(provinceId);
+	//		
+	//		if (claimIndex != -1)
+	//		{
+	//			FVector displayLocation = MapUtil::DisplayLocation(data->cameraAtom(), provinceCenter.worldAtom2(), 50.0f);
+	//			URegionHoverUI* regionHoverUI = _regionHoverUIs.GetHoverUI<URegionHoverUI>(provinceId, UIEnum::RegionHoverUI, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
+	//				[&](URegionHoverUI* ui) {}
+	//			);
+
+	//			if (claimIndex == 0) {
+	//				SetText(regionHoverUI->ClaimingText, "Claiming");
+	//				regionHoverUI->AutoChoseText->SetVisibility(ESlateVisibility::Collapsed);
+
+	//				float fraction = static_cast<float>(claimProgresses[claimIndex].claimValue100Inputted / 100) / playerOwned.GetBaseProvinceClaimPrice(provinceId);
+	//				regionHoverUI->ClockImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", fraction);
+	//				regionHoverUI->ClockBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	//			}
+	//			else
+	//			{
+	//				SetText(regionHoverUI->ClaimingText, "Queued for Claiming (" + to_string(claimIndex) + ")");
+	//				regionHoverUI->AutoChoseText->SetVisibility(ESlateVisibility::Collapsed);
+	//				regionHoverUI->ClockBox->SetVisibility(ESlateVisibility::Collapsed);
+	//			}
+	//		}
+	//		else if (claimProgresses.size() == 0 && 
+	//				playerOwned.armyAutoClaimProgress().provinceId == provinceId)
+	//		{
+	//			RegionClaimProgress claimProgress = playerOwned.armyAutoClaimProgress();
+	//			
+	//			FVector displayLocation = MapUtil::DisplayLocation(data->cameraAtom(), provinceCenter.worldAtom2(), 50.0f);
+	//			URegionHoverUI* regionHoverUI = _regionHoverUIs.GetHoverUI<URegionHoverUI>(provinceId, UIEnum::RegionHoverUI, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
+	//				[&](URegionHoverUI* ui) {}
+	//			);
+	//			
+	//			SetText(regionHoverUI->ClaimingText, "Claiming");
+	//			regionHoverUI->AutoChoseText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	//			SetText(regionHoverUI->AutoChoseText, "(Auto)");
+
+	//			float fraction = static_cast<float>(claimProgress.claimValue100Inputted / 100) / playerOwned.GetBaseProvinceClaimPrice(provinceId);
+	//			regionHoverUI->ClockImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", fraction);
+	//			regionHoverUI->ClockBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	//		}
+	//		else
+	//		{
+	//			// Not being claimed, might show georesource
+	//			//FVector displayLocation = MapUtil::DisplayLocation(data->cameraAtom(), curRegion.centerTile().worldAtom2(), 50.0f);
+	//			//URegionHoverUI* regionHoverUI = _regionHoverUIs.GetHoverUI<URegionHoverUI>(sampleRegionId, UIEnum::RegionHoverUI, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
+	//			//	[&](URegionHoverUI* ui) {}
+	//			//);
+	//		}
+	//	}
+	//}
 
 	OverlayType overlayType = data->GetOverlayType();
 	WorldTile2 overlayTile = dataSource()->GetOverlayTile();
@@ -434,6 +461,8 @@ void UWorldSpaceUI::TickBuildings()
 				//	//iconTextPair->SetImage(floatupInfo.resourceEnum, dataSource()->assetLoader());
 				//}
 				else if (floatupInfo.floatupEnum == FloatupEnum::GainMoney ||
+						floatupInfo.floatupEnum == FloatupEnum::GainScience ||
+						floatupInfo.floatupEnum == FloatupEnum::GainInfluence ||
 						floatupInfo.floatupEnum == FloatupEnum::GainResource)
 				{
 					auto assetLoader = dataSource()->assetLoader();
@@ -444,6 +473,10 @@ void UWorldSpaceUI::TickBuildings()
 
 						if (floatupInfo.floatupEnum == FloatupEnum::GainMoney) {
 							iconTextPair3Lines->IconPair1->SetImage(assetLoader->CoinIcon);
+						} else if (floatupInfo.floatupEnum == FloatupEnum::GainScience) {
+							iconTextPair3Lines->IconPair1->SetImage(assetLoader->ScienceIcon);
+						} else if (floatupInfo.floatupEnum == FloatupEnum::GainInfluence) {
+							iconTextPair3Lines->IconPair1->SetImage(assetLoader->InfluenceIcon);
 						} else {
 							iconTextPair3Lines->IconPair1->SetImage(floatupInfo.resourceEnum, assetLoader);
 						}
@@ -456,7 +489,7 @@ void UWorldSpaceUI::TickBuildings()
 						iconTextPair3Lines->IconPair2->SetText(floatupInfo.text2, "");
 
 						if (floatupInfo.floatupEnum == FloatupEnum::GainMoney) {
-							iconTextPair3Lines->IconPair2->SetImage(assetLoader->InfluenceIcon);
+							iconTextPair3Lines->IconPair2->SetImage(assetLoader->InfluenceIcon); //TODO: this is not used?
 						} else {
 							iconTextPair3Lines->IconPair2->SetImage(floatupInfo.resourceEnum2, assetLoader);
 						}
@@ -1046,6 +1079,20 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	else if (needInstruction(PlacementInstructionEnum::NotThisBuildingTarget)) {
 		punBox->AddRichText("<Red>Cannot be used on this building.</>")->SetJustification(ETextJustify::Type::Center);
 	}
+	else if (needInstruction(PlacementInstructionEnum::ColonyNoGeoresource)) {
+		punBox->AddRichText("<Red>Must be built on a province with georesource</>")->SetJustification(ETextJustify::Type::Center);
+	}
+	else if (needInstruction(PlacementInstructionEnum::Colony)) {
+		int32 provinceId = simulation().GetProvinceIdClean(placementInfo.mouseOnTile);
+		PUN_CHECK(provinceId != -1);
+		ResourceEnum resourceEnum = simulation().georesource(provinceId).info().resourceEnum;
+		int32 resourceCount = Colony::GetColonyResourceIncome(resourceEnum);
+		punBox->AddIconPair("+" + to_string(resourceCount), resourceEnum, " per round");
+	}
+	else if (needInstruction(PlacementInstructionEnum::Fort)) {
+		punBox->AddRichText("Fort does not require citizens nearby to build.")->SetJustification(ETextJustify::Type::Center);
+	}
+	
 
 	bool hasPrimaryInstruction = false;
 	for (int32 i = 0; i < static_cast<int>(PlacementInstructionEnum::Rotate); i++) {

@@ -160,7 +160,7 @@ public:
 		OuterImage->GetDynamicMaterial()->SetScalarParameterValue("IsHovered", 0.0f);
 	}
 
-	void SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool active, std::shared_ptr<ResearchInfo> tech = nullptr);
+	void SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool isInTechQueue, std::shared_ptr<ResearchInfo> tech = nullptr);
 
 public:
 	TechEnum techEnum = TechEnum::None;

@@ -73,7 +73,7 @@ public:
 	}
 
 	template<typename T>
-	static bool Contains(std::vector<T>& v, const T& value) {
+	static bool Contains(std::vector<T>& v, const T& value) { // Note: const std::vector<T>& v causes error...
 		return std::find(v.begin(), v.end(), value) != v.end();
 	}
 

@@ -81,6 +81,34 @@ struct RegionClaimProgress
 	}
 };
 
+struct ProvinceClaimProgress
+{
+	int32 provinceId = -1;
+	int32 attackerPlayerId = -1;
+	int32 committedInfluences = 0;
+	int32 ticksElapsed = 0;
+
+	bool isValid() { return provinceId != -1; }
+
+	void Tick1Sec()
+	{
+		if (committedInfluences >= 0) {
+			ticksElapsed += Time::TicksPerSecond;
+		} else {
+			ticksElapsed -= Time::TicksPerSecond;
+		}
+	}
+
+	//! Serialize
+	FArchive& operator>>(FArchive &Ar) {
+		Ar << provinceId;
+		Ar << attackerPlayerId;
+		Ar << committedInfluences;
+		Ar << ticksElapsed;
+		return Ar;
+	}
+};
+
 /**
  * 
  */
@@ -458,11 +486,61 @@ public:
 
 		RecalculateTax(false);
 	}
-	//void InfluenceProvince(int32 provinceId)
-	//{
-	//	_provincesInfluenced.push_back(provinceId);
-	//	RecalculateTax(false);
-	//}
+
+	/*
+	 * Claim Province Attack
+	 */
+	void StartConquerProvince(int32 attackerPlayerId, int32 provinceId)
+	{
+		ProvinceClaimProgress claimProgress;
+		claimProgress.provinceId = provinceId;
+		claimProgress.attackerPlayerId = attackerPlayerId;
+		claimProgress.committedInfluences = 200;
+		claimProgress.ticksElapsed = 0;
+		
+		_defendingClaimProgress.push_back(claimProgress);
+	}
+	void StartConquerProvince_Attacker(int32 provinceId) {
+		_attackingProvinceIds.push_back(provinceId);
+	}
+	void ReinforceAttacker(int32 provinceId, int32 influenceAmount)
+	{
+		for (auto& claimProgress : _defendingClaimProgress) {
+			if (claimProgress.provinceId == provinceId) {
+				claimProgress.committedInfluences += influenceAmount;
+				break;
+			}
+		}
+	}
+	void ReinforceDefender(int32 provinceId, int32 influenceAmount)
+	{
+		for (auto& claimProgress : _defendingClaimProgress) {
+			if (claimProgress.provinceId == provinceId) {
+				claimProgress.committedInfluences -= influenceAmount;
+				break;
+			}
+		}
+	}
+	const std::vector<ProvinceClaimProgress>& defendingClaimProgress() { return _defendingClaimProgress; }
+
+	ProvinceClaimProgress GetDefendingClaimProgress(int32 provinceId) const {
+		for (const ProvinceClaimProgress& claimProgress : _defendingClaimProgress) {
+			if (claimProgress.provinceId == provinceId) {
+				return claimProgress;
+			}
+		}
+		return ProvinceClaimProgress();
+	}
+	
+	
+	void EndConquer(int32 provinceId) {
+		CppUtils::RemoveOneIf(_defendingClaimProgress, [&](ProvinceClaimProgress& claimProgress) { return claimProgress.provinceId == provinceId; });
+	}
+	void EndConquer_Attacker(int32 provinceId) {
+		CppUtils::Remove(_attackingProvinceIds, provinceId);
+	}
+	
+	
 	void MarkAsOutpost(int32 provinceId) {
 		_provincesOutpost.push_back(provinceId);
 	}
@@ -539,11 +617,6 @@ public:
 		return baseUpkeep100;
 	}
 
-	int32 GetProvinceClaimPrice(int32 provinceId)
-	{
-		int32 baseClaimPrice100 = _simulation->GetProvinceIncome100(provinceId) * ClaimToIncomeRatio;
-		return (baseClaimPrice100 / 100);
-	}
 	//int32 GetInfluenceClaimPriceRefund(int32 provinceId) {
 	//	return _simulation->GetProvinceIncome100(provinceId) * ClaimToIncomeRatio; // Don't refund penalty cost
 	//}
@@ -552,7 +625,7 @@ public:
 	{
 		const int32 outpostBasePrice = 500;
 		
-		int32 price = GetProvinceClaimPrice(provinceId);
+		int32 price = _simulation->GetProvinceClaimPrice(provinceId);
 		price += (_provincesOutpost.size() + 1) * outpostBasePrice;
 		return price;
 	}
@@ -969,6 +1042,9 @@ public:
 		SerializeVecObj(Ar, _armyRegionClaimCanceled);
 		_armyAutoClaimProgress >> Ar;
 
+		SerializeVecValue(Ar, _attackingProvinceIds);
+		SerializeVecObj(Ar, _defendingClaimProgress);
+		
 
 		// Vassal/Annex
 		//Ar << _lordPlayerId;
@@ -1111,6 +1187,9 @@ private:
 	std::vector<RegionClaimProgress> _armyRegionClaimQueue;
 	std::vector<RegionClaimProgress> _armyRegionClaimCanceled; // Canceled regions's progress are still kept to be continued
 	RegionClaimProgress _armyAutoClaimProgress;
+
+	std::vector<int32> _attackingProvinceIds;
+	std::vector<ProvinceClaimProgress> _defendingClaimProgress;
 
 	// Vassal/Annex
 	std::vector<int32> _vassalNodeIds;

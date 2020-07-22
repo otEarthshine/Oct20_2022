@@ -1107,6 +1107,48 @@ static int64 EquilibriumSupplyValue100_PerPerson(ResourceEnum resourceEnum) {
 	return EquilibriumSupplyValue_PerPerson(resourceEnum) * 100;
 }
 
+enum class IntercityTradeOfferEnum : uint8
+{
+	None,
+	BuyWhenBelow,
+	SellWhenAbove,
+};
+static std::vector<std::string> IntercityTradeOfferEnumName
+{
+	"None",
+	"BuyWhenBelow",
+	"SellWhenAbove",
+};
+static std::string GetIntercityTradeOfferEnumName(IntercityTradeOfferEnum offerEnum) {
+	return IntercityTradeOfferEnumName[static_cast<int>(offerEnum)];
+}
+static IntercityTradeOfferEnum GetIntercityTradeOfferEnumFromName(std::string nameIn)
+{
+	for (size_t i = 0; i < IntercityTradeOfferEnumName.size(); i++) {
+		if (IntercityTradeOfferEnumName[i] == nameIn) {
+			return static_cast<IntercityTradeOfferEnum>(i);
+		}
+	}
+	checkNoEntry();
+	return IntercityTradeOfferEnum::None;
+}
+
+
+struct IntercityTradeOffer
+{
+	ResourceEnum resourceEnum = ResourceEnum::None;
+	IntercityTradeOfferEnum offerEnum = IntercityTradeOfferEnum::None;
+	int32 targetInventory = 0;
+
+	//! Serialize
+	FArchive& operator>>(FArchive &Ar) {
+		Ar << resourceEnum
+			<< offerEnum
+			<< targetInventory;
+		return Ar;
+	}
+};
+
 
 /*
  * ResourcePair
@@ -2011,7 +2053,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::PrintingPress, "Printing Press", WorldTile2(5, 6), ResourceEnum::Paper, ResourceEnum::Dye, ResourceEnum::Book, 20, 5, { 0, 150, 100 }, "Print Books."),
 
 	// June 25 addition
-	BldInfo(CardEnum::Warehouse, "Warehouse", WorldTile2(6, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 70,70,0 }, "Advanced storage with 30 storage slots."),
+	BldInfo(CardEnum::Warehouse, "Warehouse", WorldTile2(4, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 70,70,0 }, "Advanced storage with 30 storage slots."),
 	BldInfo(CardEnum::Fort, "Fort", WorldTile2(9, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "+100% province's defense."),
 	BldInfo(CardEnum::Colony, "Colony", WorldTile2(10, 10), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "Extract resource from province."),
 	BldInfo(CardEnum::InventorsWorkshop, "Inventor's Workshop", WorldTile2(6, 6), ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::None, 0, 2, { 50,50,0 }, "Generate science points. Use wood as input."),
@@ -3626,6 +3668,11 @@ enum class PlacementInstructionEnum
 	MountainMine,
 	Dock,
 	ClayPit,
+
+	Fort,
+	Colony,
+	ColonyNoGeoresource,
+	
 	FarmAndRanch,
 	FarmNoValidSeedForRegion,
 	NeedGeoresource,
@@ -3768,6 +3815,9 @@ static bool IsGridOverlay(OverlayType overlayEnum)
 	}
 }
 
+static const int32 BattleInfluencePrice = 200;
+static const int32 BattleClaimTicks = Time::TicksPerSeason;
+
 enum class InfluenceIncomeEnum : uint8
 {
 	Population,
@@ -3823,6 +3873,7 @@ enum class IncomeEnum : uint8
 	
 	TerritoryRevenue,
 	TerritoryUpkeep,
+	TradeRoute,
 	
 	MoneyLastEra,
 
@@ -3857,7 +3908,8 @@ static std::vector<std::string> IncomeEnumName
 	
 	"Territory Income",
 	"Territory Upkeep",
-
+	"Trade Route",
+	
 	"Last Era Tech",
 
 	"Count",
@@ -5998,6 +6050,12 @@ enum class CallbackEnum : uint8
 	ClaimLandMoney,
 	ClaimLandInfluence,
 	ClaimLandFood,
+	
+	StartAttackProvince,
+	ReinforceAttackProvince,
+	DefendProvinceInfluence,
+	DefendProvinceMoney,
+	
 	ClaimLandArmy,
 	CancelClaimLandArmy,
 

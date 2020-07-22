@@ -280,6 +280,12 @@ PlacementInfo ABuildingPlacementSystem::PlacementBuildingInfo()
 		//	SetInstruction(PlacementInstructionEnum::DragRoadStone, true, stoneNeeded);
 		//}
 	}
+	else if (_buildingEnum == CardEnum::Colony) {
+		SetInstruction(PlacementInstructionEnum::Colony, true);
+	}
+	else if (_buildingEnum == CardEnum::Fort) {
+		SetInstruction(PlacementInstructionEnum::Fort, true);
+	}
 	// Buildings
 	else
 	{
@@ -1116,8 +1122,9 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 
 	// Highlight Demolish area
 	{
-		// Close down demolish highlight if no longer need it...	
-		bool showingConfirmation = networkInterface->IsShowingConfirmationUI("Are you sure you want to demolish?");
+		// Close down demolish highlight if no longer need it...
+		bool showingConfirmation = networkInterface->IsShowingConfirmationUI("Are you sure you want to demolish?") ||
+									networkInterface->IsShowingConfirmationUI("Are you sure you want to demolish?\nFort and Colony Cards will not be recovered.");
 		bool isDemolishing = _placementType == PlacementType::Demolish || showingConfirmation;
 		if (!isDemolishing) {
 			_demolishHighlightArea = TileArea();
@@ -1745,9 +1752,13 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				if (IsPlayerBuildable(tile)) {
 					if (sim.georesource(sim.GetProvinceIdClean(tile)).georesourceEnum != GeoresourceEnum::None) {
 						_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, tile);
+					} else {
+						_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
+						SetInstruction(PlacementInstructionEnum::ColonyNoGeoresource, true);
 					}
+				} else {
+					_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
 				}
-				_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
 			});
 		}
 		// Road Overlap Building
@@ -1931,6 +1942,8 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 
 void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkInterface, PlacementType placementType)
 {
+	auto& sim = _gameInterface->simulation();
+	
 	/*
 	 * Farm
 	 */
@@ -1938,7 +1951,6 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 	{
 		if (_canPlace)
 		{
-			auto& sim = _gameInterface->simulation();
 			_gameInterface->Spawn2DSound("UI", "PlaceBuilding");
 			
 			if (_buildingEnum == CardEnum::Farm)
@@ -2148,8 +2160,25 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 
 	// Demolish only after confirmation
 	if (_placementType == PlacementType::Demolish) 
-	{	
-		_networkInterface->ShowConfirmationUI("Are you sure you want to demolish?", placeGatherCommand);
+	{
+		// Fort/Colony warn about card not being recoverable too
+		bool hasFortOrColony = false;
+		_area.ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 tile) {
+			CardEnum buildingEnum = sim.buildingEnumAtTile(tile);
+			if (buildingEnum == CardEnum::Fort ||
+				buildingEnum == CardEnum::Colony) 
+			{
+				hasFortOrColony = true;
+				return true;
+			}
+			return false;
+		});
+		
+		if (hasFortOrColony) {
+			_networkInterface->ShowConfirmationUI("Are you sure you want to demolish?\nFort and Colony Cards will not be recovered.", placeGatherCommand);
+		} else {
+			_networkInterface->ShowConfirmationUI("Are you sure you want to demolish?", placeGatherCommand);
+		}
 
 		CancelPlacement();
 		networkInterface->OnCancelPlacement();

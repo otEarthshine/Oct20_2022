@@ -1819,10 +1819,32 @@ class ProvinceBuilding : public Building
 
 class Fort final : public ProvinceBuilding
 {
+public:
 };
 
 class Colony final : public ProvinceBuilding
 {
+public:
+	static int32 GetColonyIncomeValue() { return GetBuildingInfo(CardEnum::Colony).baseCardPrice / 4; } // 4 rounds or half year to recoup the 
+	static int32 GetColonyUpkeep() { return (GetColonyIncomeValue() / 4) / 10 * 10; }
+
+	static int32 GetColonyResourceIncome(ResourceEnum resourceEnum) {
+		return GetColonyIncomeValue() / GetResourceInfo(resourceEnum).basePrice;
+	}
+	ResourceEnum GetColonyResourceEnum() {
+		return _simulation->georesource(_simulation->GetProvinceIdClean(centerTile())).info().resourceEnum;
+	}
+
+	void TickRound() override
+	{
+		if (isConstructed())
+		{
+			ResourceEnum resourceEnum = GetColonyResourceEnum();
+			int32 resourceCount = GetColonyResourceIncome(resourceEnum);
+			resourceSystem().AddResourceGlobal(resourceEnum, resourceCount, *_simulation);
+			_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainResource, centerTile(), "+" + to_string(resourceCount), resourceEnum);
+		}
+	}
 };
 
 

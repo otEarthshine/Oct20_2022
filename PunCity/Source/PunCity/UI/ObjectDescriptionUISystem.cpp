@@ -2383,13 +2383,16 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 	auto& sim = simulation();
 	auto& playerOwned = sim.playerOwned(playerId());
 
+	/*
+	 * Not owned by anyone
+	 */
+	int32 provinceOwnerId = sim.provinceOwner(provinceId);
+	int32 provincePrice = sim.GetProvinceClaimPrice(provinceId);
 	
-
-	auto tryAddExpandCity = [&]()
+	if (provinceOwnerId == -1)
 	{
 		/*
 		 * Expand City
-		 * Next to City Provinces, we can Expand City
 		 */
 		if (sim.IsProvinceNextToPlayer(provinceId, playerId()))
 		{
@@ -2398,30 +2401,23 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 				descriptionBox->AddRichText(WrapString("The difficulty in clearing jungle makes expansion more costly."));
 			}
 
-			int32 price = playerOwned.GetProvinceClaimPrice(provinceId);
-			
-			// Claim by money
-			{
-
-				//if (alreadyHasIndirectControl) {
-				//	price = max(10, price - playerOwned.GetInfluenceClaimPriceRefund(provinceId));
-				//}
-
-				bool canClaim = simulation().money(playerId()) >= price;
-
-				descriptionBox->AddSpacer();
-				descriptionBox->AddButton("Claim Province (", dataSource()->assetLoader()->CoinIcon, TextRed(to_string(price), !canClaim) + ")",
-											this, CallbackEnum::ClaimLandMoney, canClaim, false, provinceId);
-			}
-
 			// Claim by influence
 			if (simulation().unlockedInfluence(playerId()))
 			{
-				bool canClaim = simulation().influence(playerId()) >= price;
+				bool canClaim = simulation().influence(playerId()) >= provincePrice;
 
 				descriptionBox->AddSpacer();
-				descriptionBox->AddButton("Claim Province (", dataSource()->assetLoader()->InfluenceIcon, TextRed(to_string(price), !canClaim) + ")",
-												this, CallbackEnum::ClaimLandInfluence, canClaim, false, provinceId);
+				descriptionBox->AddButton("Claim Province (", dataSource()->assetLoader()->InfluenceIcon, TextRed(to_string(provincePrice), !canClaim) + ")",
+					this, CallbackEnum::ClaimLandInfluence, canClaim, false, provinceId);
+			}
+
+			// Claim by money
+			{
+				bool canClaim = simulation().money(playerId()) >= provincePrice;
+
+				descriptionBox->AddSpacer();
+				descriptionBox->AddButton("Claim Province (", dataSource()->assetLoader()->CoinIcon, TextRed(to_string(provincePrice), !canClaim) + ")",
+					this, CallbackEnum::ClaimLandMoney, canClaim, false, provinceId);
 			}
 
 			// Claim by food
@@ -2430,14 +2426,14 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 				//if (alreadyHasIndirectControl) {
 				//	price = max(10, price - playerOwned.GetInfluenceClaimPriceRefund(provinceId));
 				//}
-				
-				int32 foodNeeded = price / FoodCost;
-				
+
+				int32 foodNeeded = provincePrice / FoodCost;
+
 				bool canClaim = sim.foodCount(playerId()) >= foodNeeded;
 
 				descriptionBox->AddSpacer();
 				descriptionBox->AddButton("Claim Province (" + TextRed(to_string(foodNeeded), !canClaim) + " food)", nullptr, "",
-											this, CallbackEnum::ClaimLandFood, canClaim, false, provinceId);
+					this, CallbackEnum::ClaimLandFood, canClaim, false, provinceId);
 			}
 
 		}
@@ -2446,35 +2442,6 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 			descriptionBox->AddSpacer();
 			descriptionBox->AddRichText("<Red>Not claimable through mountain or sea</>");
 		}
-	};
-
-	/*
-	 * Not owned by anyone
-	 */
-	if (sim.provinceOwner(provinceId) == -1)
-	{
-
-		///*
-		// * Influence
-		// * Next to Direct/Indirect control territory, we can expand influence
-		// */
-		//if (sim.IsProvinceNextToPlayer(provinceId, playerId(), false))
-		//{
-		//	int32 price = playerOwned.GetInfluenceClaimPrice(provinceId);
-		//	bool canClaim = sim.money(playerId()) >= price;
-
-		//	descriptionBox->AddSpacer();
-		//	auto button = descriptionBox->AddButton("Claim for Indirect Control (", dataSource()->assetLoader()->CoinIcon, TextRed(to_string(price), !canClaim) + ")",
-		//				this, CallbackEnum::ClaimLandIndirect, canClaim, false, provinceId);
-
-		//	AddToolTip(button, "Under indirect control, you will receive Territory Income from this province, but won't be able to build most buildings or gather resources on this province.");
-		//}
-		//
-
-		/*
-		 * Expand City
-		 */
-		tryAddExpandCity();
 
 		descriptionBox->AddSpacer();
 
@@ -2502,41 +2469,74 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 			}
 		}
 	}
-	/*
-	 * Indirect Control
-	 */
-	//else if (sim.provinceOwner(provinceId) == playerId() && 
-	//		sim.regionSystem().isDirectControl(provinceId))
-	//{
-	//	tryAddExpandCity(true);
+	// Other player
+	// Conquer or vassalize
+	else if (provinceOwnerId != playerId())
+	{
+		// Conquer
+		if (simulation().unlockedInfluence(playerId()))
+		{
+			ProvinceClaimProgress claimProgress = simulation().playerOwned(provinceOwnerId).GetDefendingClaimProgress(provinceId);
 
-	//	/*
-	//	 * Outpost
-	//	 * On indirect-controlled land, we can build outpost to:
-	//	 * - Supply line, less money to expand further
-	//	 * - Defense at choke point, harder for enemy to claim
-	//	 */
-	//	//if (playerOwned.HasOutpostAt(provinceId))
-	//	//{
-	//	//	// Demolish
-	//	//	int32 price = playerOwned.GetOutpostClaimPrice(provinceId) / 2;
-	//	//	
-	//	//	descriptionBox->AddSpacer();
-	//	//	descriptionBox->AddButton("Dismantle Outpost (recovers ", dataSource()->assetLoader()->CoinIcon, to_string(price) + ")", this, CallbackEnum::DemolishOutpost, true, false, provinceId);
-	//	//}
-	//	//else
-	//	//{
-	//	//	// Build
-	//	//	int32 price = playerOwned.GetOutpostClaimPrice(provinceId);
-	//	//	bool canClaim = sim.money(playerId()) >= price;
+			// Already a claim, reinforce
+			if (claimProgress.isValid())
+			{
+				bool canClaim = simulation().influence(playerId()) >= BattleInfluencePrice;
 
-	//	//	descriptionBox->AddSpacer();
-	//	//	auto button = descriptionBox->AddButton("Build Outpost (", dataSource()->assetLoader()->CoinIcon, TextRed(to_string(price), !canClaim) + ")",
-	//	//				this, CallbackEnum::BuildOutpost, canClaim, false, provinceId);
+				std::stringstream ss;
+				ss << "Conquer Province (Annex)\n";
+				ss << TextRed(to_string(BattleInfluencePrice), !canClaim) << "<img id=\"Influence\"/>";
 
-	//	//	AddToolTip(button, "Build an outpost to:<bullet>Increase province's defensive bonus</><bullet>Expand further without supply line penalty</>");
-	//	//}
-	//}
+				descriptionBox->AddSpacer();
+				descriptionBox->AddButton(ss.str(), nullptr, "", this, CallbackEnum::ReinforceAttackProvince, canClaim, false, provinceId);
+			}
+			// Start a new claim
+			else
+			{
+				int32 conquerPrice = provincePrice * 2 + BattleInfluencePrice;
+				bool canClaim = simulation().influence(playerId()) >= conquerPrice;
+
+				std::stringstream ss;
+				ss << "Conquer Province (Annex)\n";
+				ss << TextRed(to_string(conquerPrice), !canClaim) << "<img id=\"Influence\"/>";
+
+				descriptionBox->AddSpacer();
+				descriptionBox->AddButton(ss.str(), nullptr, "", this, CallbackEnum::StartAttackProvince, canClaim, false, provinceId);
+			}
+		}
+	}
+	// Self, check if this province is being conquered
+	else
+	{
+		ProvinceClaimProgress claimProgress = simulation().playerOwned(provinceOwnerId).GetDefendingClaimProgress(provinceId);
+
+		if (claimProgress.isValid())
+		{
+			if (simulation().unlockedInfluence(playerId()))
+			{
+				bool canClaim = simulation().influence(playerId()) >= BattleInfluencePrice;
+
+				std::stringstream ss;
+				ss << "Defend Province\n";
+				ss << TextRed(to_string(BattleInfluencePrice), !canClaim) << "<img id=\"Influence\"/>";
+
+				descriptionBox->AddSpacer();
+				descriptionBox->AddButton(ss.str(), nullptr, "", this, CallbackEnum::DefendProvinceInfluence, canClaim, false, provinceId);
+			}
+
+			// Claim by money
+			{
+				bool canClaim = simulation().money(playerId()) >= BattleInfluencePrice;
+
+				std::stringstream ss;
+				ss << "Defend Province\n";
+				ss << TextRed(to_string(BattleInfluencePrice), !canClaim) << "<img id=\"Coin\"/>";
+
+				descriptionBox->AddSpacer();
+				descriptionBox->AddButton(ss.str(), nullptr, "", this, CallbackEnum::DefendProvinceMoney, canClaim, false, provinceId);
+			}
+		}
+	}
 }
 
 void UObjectDescriptionUISystem::AddClaimRuinButton(WorldRegion2 region, UPunBoxWidget* descriptionBox)
@@ -2573,6 +2573,12 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 	if (callbackEnum == CallbackEnum::ClaimLandMoney ||
 		callbackEnum == CallbackEnum::ClaimLandInfluence ||
 		callbackEnum == CallbackEnum::ClaimLandFood ||
+
+		callbackEnum == CallbackEnum::StartAttackProvince ||
+		callbackEnum == CallbackEnum::ReinforceAttackProvince ||
+		callbackEnum == CallbackEnum::DefendProvinceInfluence ||
+		callbackEnum == CallbackEnum::DefendProvinceMoney ||
+
 		callbackEnum == CallbackEnum::ClaimLandArmy ||
 		callbackEnum == CallbackEnum::CancelClaimLandArmy ||
 		callbackEnum == CallbackEnum::ClaimLandIndirect ||

@@ -72,6 +72,14 @@ public:
 
 	void BakeIcons(bool bakeBuilding)
 	{
+		auto postProcessVolume = CastChecked<APostProcessVolume>(PunUnrealUtils::FindWorldActor(GetWorld(), FName("GlobalPostProcessVolume")));
+		PUN_CHECK(postProcessVolume);
+
+		postProcessVolume->Settings.bOverride_AutoExposureMinBrightness = true;
+		postProcessVolume->Settings.bOverride_AutoExposureMaxBrightness = true;
+		postProcessVolume->Settings.AutoExposureMinBrightness = 0.45;
+		postProcessVolume->Settings.AutoExposureMaxBrightness = 0.45;
+		
 		auto skyMesh = PunUnrealUtils::GetComponent<UStaticMeshComponent>(PunUnrealUtils::FindWorldActor(GetWorld(), FName("Sky")));
 		skyMesh->SetVisibility(false);
 		

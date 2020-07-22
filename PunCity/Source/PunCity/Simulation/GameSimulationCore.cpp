@@ -397,6 +397,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 			case NetworkCommandEnum::SetTownPriority:	SetTownPriority(*static_pointer_cast<FSetTownPriority>(commands[i])); break;
 
 			case NetworkCommandEnum::TradeResource:		TradeResource(*static_pointer_cast<FTradeResource>(commands[i])); break;
+			case NetworkCommandEnum::SetIntercityTrade:	SetIntercityTrade(*static_pointer_cast<FSetIntercityTrade>(commands[i])); break;
 			case NetworkCommandEnum::UpgradeBuilding:	UpgradeBuilding(*static_pointer_cast<FUpgradeBuilding>(commands[i])); break;
 			case NetworkCommandEnum::ChangeWorkMode:	ChangeWorkMode(*static_pointer_cast<FChangeWorkMode>(commands[i])); break;
 			case NetworkCommandEnum::ChooseLocation:	ChooseLocation(*static_pointer_cast<FChooseLocation>(commands[i])); break;
@@ -541,6 +542,26 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 					{
 						//_playerOwnedManagers[playerId].RefreshHousing();
 						_playerOwnedManagers[playerId].Tick1Sec();
+
+						// Battle Resolve
+						std::vector<ProvinceClaimProgress> claimProgresses = _playerOwnedManagers[playerId].defendingClaimProgress();
+						for (const ProvinceClaimProgress& claimProgress : claimProgresses) {
+							// One season to conquer in normal case
+							if (claimProgress.ticksElapsed > BattleClaimTicks) {
+								_playerOwnedManagers[playerId].EndConquer(claimProgress.provinceId);
+								_playerOwnedManagers[claimProgress.attackerPlayerId].EndConquer_Attacker(claimProgress.provinceId);
+
+								// Attacker now owns the province
+								// Destroy any leftover building owned by player
+								ClearProvinceBuildings(claimProgress.provinceId);
+								SetProvinceOwner(claimProgress.provinceId, claimProgress.attackerPlayerId);
+							}
+							// Failed to conquer
+							else if (claimProgress.ticksElapsed <= 0) {
+								_playerOwnedManagers[playerId].EndConquer(claimProgress.provinceId);
+								_playerOwnedManagers[claimProgress.attackerPlayerId].EndConquer_Attacker(claimProgress.provinceId);
+							}
+						}
 
 						_cardSystem[playerId].TryRefreshRareHand();
 
@@ -1241,6 +1262,9 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuildingParameters parameters)
 						tryBuildRoad(tile);
 					});
 				}
+
+				// Refresh trade network
+				_worldTradeSystem.RefreshTradeClusters();
 			}
 		}
 
@@ -1342,12 +1366,14 @@ void GameSimulationCore::PlaceDrag(FPlaceGatherParameters parameters)
 					}
 
 					/*
-					 * if this isn't a permanent building, return the card
+					 * if this isn't a permanent building or Fort/Colony, return the card
 					 */
 					// If this building was just built less than 15 sec ago, return the card...
 					//if (bld.buildingAge() < Time::TicksPerSecond * 15)
 					CardEnum buildingEnum = bld.buildingEnum();
-					if (!IsPermanentBuilding(parameters.playerId, buildingEnum))
+					if (!IsPermanentBuilding(parameters.playerId, buildingEnum) &&
+						buildingEnum != CardEnum::Fort && 
+						buildingEnum != CardEnum::Colony)
 					{
 						if (cardSys.CanAddCardToBoughtHand(buildingEnum, 1)) {
 							cardSys.AddCardToHand2(buildingEnum);
@@ -1405,7 +1431,7 @@ void GameSimulationCore::PlaceDrag(FPlaceGatherParameters parameters)
 				_overlaySystem.RemoveRoad(tile);
 				//GameMap::RemoveFrontRoadTile(area.min());
 				PUN_CHECK(IsFrontBuildable(tile));
-
+				
 				_regionToDemolishDisplayInfos[tile.regionId()].push_back({CardEnum::DirtRoad, TileArea(tile, WorldTile2(1, 1)), Time::Ticks() });
 				_regionToDemolishDisplayInfos[tile.regionId()].push_back({ CardEnum::StoneRoad, TileArea(tile, WorldTile2(1, 1)), Time::Ticks() });
 			}
@@ -1413,6 +1439,8 @@ void GameSimulationCore::PlaceDrag(FPlaceGatherParameters parameters)
 			// Critter building demolition
 			DemolishCritterBuildingsIncludingFronts(tile, parameters.playerId);
 		});
+
+		_worldTradeSystem.RefreshTradeClusters();
 	}
 
 	//! Tile placement types
@@ -1621,6 +1649,11 @@ void GameSimulationCore::TradeResource(FTradeResource command)
 		}
 		tradingPost->UsedTrade(command);
 	}
+}
+
+void GameSimulationCore::SetIntercityTrade(FSetIntercityTrade command)
+{
+	worldTradeSystem().SetIntercityTradeOffers(command);
 }
 
 void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
@@ -2422,7 +2455,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	}
 	else if (command.claimEnum == CallbackEnum::ClaimLandMoney)
 	{
-		int32 regionPriceMoney = playerOwn.GetProvinceClaimPrice(command.provinceId);
+		int32 regionPriceMoney = GetProvinceClaimPrice(command.provinceId);
 		
 		if (resourceSys.money() >= regionPriceMoney &&
 			provinceOwner(command.provinceId) == -1)
@@ -2433,7 +2466,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	}
 	else if (command.claimEnum == CallbackEnum::ClaimLandInfluence)
 	{
-		int32 regionPriceMoney = playerOwn.GetProvinceClaimPrice(command.provinceId);
+		int32 regionPriceMoney = GetProvinceClaimPrice(command.provinceId);
 
 		if (resourceSys.influence() >= regionPriceMoney &&
 			provinceOwner(command.provinceId) == -1)
@@ -2442,6 +2475,61 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 			resourceSys.ChangeInfluence(-regionPriceMoney);
 		}
 	}
+
+	/*
+	 * Battle
+	 */
+	else if (command.claimEnum == CallbackEnum::StartAttackProvince)
+	{
+		auto& provincePlayerOwner = playerOwned(provinceOwner(command.provinceId));
+
+		// If there was no claim yet, start the conquer
+		if (!provincePlayerOwner.GetDefendingClaimProgress(command.provinceId).isValid()) 
+		{
+			int32 conquerPrice = GetProvinceClaimPrice(provinceId) * 2 + BattleInfluencePrice;
+			
+			if (influence(command.playerId) >= conquerPrice)
+			{
+				resourceSystem(command.playerId).ChangeInfluence(-conquerPrice);
+				
+				provincePlayerOwner.StartConquerProvince(command.playerId, command.provinceId);
+				playerOwned(command.playerId).StartConquerProvince_Attacker(command.provinceId);
+			}
+		}
+	}
+	else if (command.claimEnum == CallbackEnum::ReinforceAttackProvince)
+	{
+		auto& provincePlayerOwner = playerOwned(provinceOwner(command.provinceId));
+		
+		if (provincePlayerOwner.GetDefendingClaimProgress(command.provinceId).isValid()) 
+		{
+			resourceSystem(command.playerId).ChangeInfluence(-BattleInfluencePrice);
+			provincePlayerOwner.ReinforceAttacker(command.provinceId, BattleInfluencePrice);
+		}
+	}
+	else if (command.claimEnum == CallbackEnum::DefendProvinceInfluence)
+	{
+		auto& provincePlayerOwner = playerOwned(provinceOwner(command.provinceId));
+
+		if (provincePlayerOwner.GetDefendingClaimProgress(command.provinceId).isValid() &&
+			influence(command.playerId) >= BattleInfluencePrice)
+		{
+			resourceSystem(command.playerId).ChangeInfluence(-BattleInfluencePrice);
+			provincePlayerOwner.ReinforceDefender(command.provinceId, BattleInfluencePrice);
+		}
+	}
+	else if (command.claimEnum == CallbackEnum::DefendProvinceMoney)
+	{
+		auto& provincePlayerOwner = playerOwned(provinceOwner(command.provinceId));
+
+		if (provincePlayerOwner.GetDefendingClaimProgress(command.provinceId).isValid() &&
+			money(command.playerId) >= BattleInfluencePrice)
+		{
+			ChangeMoney(command.playerId, -BattleInfluencePrice);
+			provincePlayerOwner.ReinforceDefender(command.provinceId, BattleInfluencePrice);
+		}
+	}
+	
 	else if (command.claimEnum == CallbackEnum::ClaimLandArmy)
 	{
 		playerOwn.QueueArmyProvinceClaim(command.provinceId);
@@ -2562,17 +2650,18 @@ void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 playerId)
 
 		/*
 		 * Outpost
+		 * TODO: remove this??
 		 */
-		// You own an outpost here dismantle it with money back.
-		if (playerOwn.TryRemoveOutpost(provinceId))
-		{
-			ChangeMoney(playerId, playerOwn.GetOutpostClaimPrice(provinceId));
-			AddPopupToFront(playerId, "You expanded your city into a province with an outpost. The outpost was dismantled with its build cost returned to you.");
-		}
-		// Other ppl own an outpost here dismantle it.
-		if (previousOwnerId != -1) {
-			playerOwned(previousOwnerId).TryRemoveOutpost(provinceId);
-		}
+		//// You own an outpost here dismantle it with money back.
+		//if (playerOwn.TryRemoveOutpost(provinceId))
+		//{
+		//	ChangeMoney(playerId, playerOwn.GetOutpostClaimPrice(provinceId));
+		//	AddPopupToFront(playerId, "You expanded your city into a province with an outpost. The outpost was dismantled with its build cost returned to you.");
+		//}
+		//// Other ppl own an outpost here dismantle it.
+		//if (previousOwnerId != -1) {
+		//	playerOwned(previousOwnerId).TryRemoveOutpost(provinceId);
+		//}
 	}
 }
 

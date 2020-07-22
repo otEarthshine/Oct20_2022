@@ -30,12 +30,10 @@ FReply UTechBoxUI::NativeOnMouseButtonDoubleClick(const FGeometry& InGeometry, c
 //}
 
 
-void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool active, std::shared_ptr<ResearchInfo> tech)
+void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool isInTechQueue, std::shared_ptr<ResearchInfo> tech)
 {
 	// TODO: get rid of line color??
 	//FLinearColor lineColor;
-
-	
 
 	auto unlockSys = simulation().unlockSystem(playerId());
 	float researchFraction = unlockSys->researchFraction();
@@ -56,10 +54,10 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool a
 	}
 	else
 	{
-		if (active) {
+		if (isInTechQueue) {
 			colorState = 0.5f;
 			showBubbles = 1.0f;
-			showResearchPercent = true;
+			showResearchPercent = (techStateIn == TechStateEnum::Researching);
 			
 			//lineColor = FLinearColor(1, 1, 1, 1);
 		} else {

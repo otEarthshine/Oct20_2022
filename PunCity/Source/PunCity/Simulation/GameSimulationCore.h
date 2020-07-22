@@ -739,6 +739,11 @@ public:
 		int32 provinceIncome100 = fertilityPercentTotal * Income100PerTiles * _provinceSystem.provinceFlatTileCount(provinceId) / (tilesExamined * 100);
 		return std::max(100, provinceIncome100);
 	}
+	int32 GetProvinceClaimPrice(int32 provinceId) final
+	{
+		int32 baseClaimPrice100 = GetProvinceIncome100(provinceId) * ClaimToIncomeRatio;
+		return (baseClaimPrice100 / 100);
+	}
 
 	bool HasOutpostAt(int32 playerId, int32 provinceId) final {
 		return playerOwned(playerId).HasOutpostAt(provinceId);
@@ -862,17 +867,13 @@ public:
 			// Destroy any building already here
 			int32 bldId = buildingIdAtTile(tile);
 			if (bldId != -1) {
+				Building& bld = building(bldId);
+
+				soundInterface()->TryStopBuildingWorkSound(bld);
 				_buildingSystem->RemoveBuilding(bldId);
+				_regionToDemolishDisplayInfos[tile.regionId()].push_back({ bld.buildingEnum(), bld.area(), Time::Ticks() });
 			}
 		});
-		
-		//region.ExecuteOnRegion_WorldTile([&](WorldTile2 tile) {
-		//	// Destroy any building already here
-		//	int32 bldId = buildingIdAtTile(tile);
-		//	if (bldId != -1) {
-		//		_buildingSystem->RemoveBuilding(bldId);
-		//	}
-		//});
 	}
 
 	void SetProvinceOwner(int32 provinceId, int32 playerId)
@@ -1282,6 +1283,10 @@ public:
 		_endStatus.gameEndEnum = GameEndEnum::ScienceVictory;
 	}
 
+	bool IsPlayerInitialized(int32 playerId) final {
+		return playerOwned(playerId).isInitialized();
+	}
+
 	/*
 	 * Snow
 	 */
@@ -1684,6 +1689,7 @@ private:
 	void SetTownPriority(FSetTownPriority command) final;
 
 	void TradeResource(FTradeResource command) final;
+	void SetIntercityTrade(FSetIntercityTrade command) final;
 	void UpgradeBuilding(FUpgradeBuilding command) final;
 	void ChangeWorkMode(FChangeWorkMode command) final;
 	void ChooseLocation(FChooseLocation command) final;

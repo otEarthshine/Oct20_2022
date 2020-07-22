@@ -21,7 +21,8 @@ void UTechUI::SetupTechBoxUIs()
 		TechScrollBox->AddChild(techEraUI);
 		auto& techs = eraToTechs[i];
 		
-		for (const auto& tech : techs) {
+		for (const auto& tech : techs) 
+		{
 			UTechBoxUI* techBox = AddWidget<UTechBoxUI>(UIEnum::TechBox);
 			techEraUI->TechList->AddChild(techBox);
 			

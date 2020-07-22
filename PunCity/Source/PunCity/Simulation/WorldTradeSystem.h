@@ -30,6 +30,9 @@ public:
 		_enumToSupplyValue100.resize(ResourceEnumCount);
 		_resourceEnumToPrice100Vec.resize(ResourceEnumCount);
 		_resourceEnumToPlayerSupplyChanges.resize(ResourceEnumCount);
+
+		_intercityTradeOffers.resize(ResourceEnumCount);
+		ResetIntercityTradeOffers();
 	}
 
 	void Tick1Sec()
@@ -45,7 +48,7 @@ public:
 		}
 
 		// Non-Food
-		for (int32 i = 0; i < ResourceEnumCount; i++) 
+		for (int32 i = 0; i < ResourceEnumCount; i++)
 		{
 			ResourceEnum resourceEnum = static_cast<ResourceEnum>(i);
 			int64 buyValue100PerSec = EquilibriumSupplyValue100(resourceEnum) / Time::SecondsPerYear; // Assumes total bought/sold per year is equal to EquilibriumSupply
@@ -76,7 +79,7 @@ public:
 		}
 
 		/*
-		 * 
+		 *
 		 */
 		if (Time::IsSeasonStart())
 		{
@@ -98,7 +101,7 @@ public:
 	{
 		_enumToSupplyValue100[static_cast<int>(resourceEnum)] += quantity * GetResourceInfo(resourceEnum).basePrice * 100;
 
-		_resourceEnumToPlayerSupplyChanges[static_cast<int>(resourceEnum)].push_back({playerId, Time::Ticks(), quantity});
+		_resourceEnumToPlayerSupplyChanges[static_cast<int>(resourceEnum)].push_back({ playerId, Time::Ticks(), quantity });
 	}
 
 	int32 price100(ResourceEnum resourceEnum) {
@@ -130,12 +133,34 @@ public:
 			playerToSupplyChanges[supplyChange.playerId] += supplyChange.amount;
 		}
 
-		
+
 		if (isGettingImporter) {
 			return GetTwoMainTradersHelper(playerToSupplyChanges, [&](int32 a, int32 b) { return a < b; });
 		}
-		
+
 		return GetTwoMainTradersHelper(playerToSupplyChanges, [&](int32 a, int32 b) { return a > b; });
+	}
+
+	// Trade Route
+	void RefreshTradeClusters();
+	std::vector<int32> GetTradePartners(int32 playerId); // Note: this includes self
+
+	// Intercity Trade
+	IntercityTradeOffer GetIntercityTradeOffer(ResourceEnum resourceEnum) {
+		return _intercityTradeOffers[static_cast<int>(resourceEnum)];
+	}
+	void SetIntercityTradeOffers(FSetIntercityTrade command)
+	{
+		ResetIntercityTradeOffers();
+		for (int32 i = 0; i < command.resourceEnums.Num(); i++) {
+			_intercityTradeOffers[i] = {static_cast<ResourceEnum>(i),  static_cast<IntercityTradeOfferEnum>(command.intercityTradeOfferEnum[i]), command.targetInventories[i] };
+		}
+	}
+	void ResetIntercityTradeOffers()
+	{
+		for (int32 i = 0; i < ResourceEnumCount; i++) {
+			_intercityTradeOffers[i] = { static_cast<ResourceEnum>(i), IntercityTradeOfferEnum::None, 0 };
+		}
 	}
 	
 
@@ -146,6 +171,9 @@ public:
 		SerializeVecVecValue(Ar, _resourceEnumToPrice100Vec);
 
 		SerializeVecVecObj(Ar, _resourceEnumToPlayerSupplyChanges);
+
+		SerializeVecObj(Ar, _intercityTradeOffers);
+		SerializeVecVecValue(Ar, _tradeClusterToPlayerIds);
 	}
 
 	const std::vector<int32>& GetStatVec(ResourceEnum resourceEnum) const {
@@ -212,4 +240,11 @@ private:
 
 	// Resource -> list of PlayerSupplyChanges
 	std::vector<std::vector<PlayerSupplyChange>> _resourceEnumToPlayerSupplyChanges;
+
+
+	// TradeRoute Clusters
+	std::vector<std::vector<int32>> _tradeClusterToPlayerIds;
+
+	// Intercity Trade Offer
+	std::vector<IntercityTradeOffer> _intercityTradeOffers;
 };

@@ -307,7 +307,7 @@ private:
 	//! Show building's job status
 	UPROPERTY() FHoverUIs _buildingJobUIs;
 	UPROPERTY() FHoverUIs _townhallHoverInfos;
-	UPROPERTY() FHoverUIs _regionHoverUIs; // Claim Land with Army
+	UPROPERTY() FHoverUIs _regionHoverUIs; // Claim Land
 
 	//! Show house/starving/etc. warning icons
 	TSharedPtr<FSlateStyleSet> _style;

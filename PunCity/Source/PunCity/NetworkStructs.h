@@ -141,6 +141,7 @@ enum class NetworkCommandEnum
 	SetTownPriority,
 
 	TradeResource,
+	SetIntercityTrade,
 	UpgradeBuilding,
 	ChangeWorkMode,
 	PopupDecision,
@@ -176,6 +177,7 @@ static const std::string NetworkCommandNames[] =
 	"SetTownPriority",
 
 	"TradeResource",
+	"SetIntercityTrade",
 	"UpgradeBuilding",
 	"ChangeWorkMode",
 	"PopupDecision",
@@ -541,6 +543,35 @@ public:
 		Ar << buyAmounts;
 		Ar << totalGain;
 		Ar << objectId;
+	}
+};
+
+
+class FSetIntercityTrade final : public FNetworkCommand
+{
+public:
+	virtual ~FSetIntercityTrade() {}
+
+	TArray<uint8> resourceEnums;
+	TArray<uint8> intercityTradeOfferEnum;
+	TArray<int32> targetInventories;
+
+	NetworkCommandEnum commandType() final { return NetworkCommandEnum::SetIntercityTrade; }
+
+	void SerializeAndAppendToBlob(TArray<int32>& blob) final
+	{
+		FNetworkCommand::SerializeAndAppendToBlob(blob);
+		SerializeArray(blob, resourceEnums);
+		SerializeArray(blob, intercityTradeOfferEnum);
+		SerializeArray(blob, targetInventories);
+	}
+
+	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final
+	{
+		FNetworkCommand::DeserializeFromBlob(blob, index);
+		DeserializeArray(blob, index, resourceEnums);
+		DeserializeArray(blob, index, intercityTradeOfferEnum);
+		targetInventories = DeserializeArray(blob, index);
 	}
 };
 

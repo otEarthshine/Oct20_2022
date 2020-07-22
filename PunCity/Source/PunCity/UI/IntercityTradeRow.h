@@ -28,11 +28,16 @@ public:
 		_intercityTradeUI = intercityTradeUI;
 		_resourceEnum = resourceEnumIn;
 
+		OfferTypeDropdown->OnSelectionChanged.RemoveAll(this);
 		OfferTypeDropdown->OnSelectionChanged.AddDynamic(this, &UIntercityTradeRow::OnOfferTypeDropdownChanged);
 
 		SetChildHUD(TargetInventory);
+
+		IntercityTradeOffer offer = dataSource()->simulation().worldTradeSystem().GetIntercityTradeOffer(_resourceEnum);
+		OfferTypeDropdown->SetSelectedOption(ToFString(GetIntercityTradeOfferEnumName(offer.offerEnum)));
+		
 		TargetInventory->Set(this, CallbackEnum::None);
-		TargetInventory->amount = 0;
+		TargetInventory->amount = offer.targetInventory;
 		TargetInventory->UpdateText();
 
 		UpdateTexts();
@@ -45,6 +50,11 @@ public:
 		FString inventoryCount = FString::FromInt(simulation().resourceCount(playerId(), _resourceEnum));
 
 		SetFString(InventoryText, inventoryCount);
+	}
+
+	IntercityTradeOfferEnum GetOfferEnum() {
+		std::string name = ToStdString(OfferTypeDropdown->GetSelectedOption());
+		return GetIntercityTradeOfferEnumFromName(name);
 	}
 
 

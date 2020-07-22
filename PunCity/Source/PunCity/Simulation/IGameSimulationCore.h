@@ -272,6 +272,7 @@ public:
 	virtual int32 GetTreeCount(int32 provinceId) = 0;
 
 	virtual int32 GetProvinceIncome100(int32 provinceId) = 0;
+	virtual int32 GetProvinceClaimPrice(int32 provinceId) = 0;
 	
 	virtual bool HasOutpostAt(int32 playerId, int32 provinceId) = 0;
 	virtual bool IsProvinceNextToPlayer(int32 provinceId, int32 playerId) = 0;
@@ -422,6 +423,9 @@ public:
 	virtual void ExecuteScienceVictory(int32 playerId) = 0;
 
 
+	//! Players
+	virtual bool IsPlayerInitialized(int32 playerId) = 0;
+
 	template<typename Func>
 	void ExecuteOnPlayersAndAI(Func func) {
 		std::vector<int32> allHumanPlayerIdsLocal = allHumanPlayerIds();
@@ -481,6 +485,7 @@ public:
 	virtual void SetTownPriority(class FSetTownPriority command) = 0;
 
 	virtual void TradeResource(class FTradeResource tradeResource) = 0;
+	virtual void SetIntercityTrade(class FSetIntercityTrade command) = 0;
 	virtual void UpgradeBuilding(class FUpgradeBuilding upgradeCommand) = 0;
 	virtual void ChangeWorkMode(class FChangeWorkMode command) = 0;
 	virtual void ChooseLocation(class FChooseLocation command) = 0;

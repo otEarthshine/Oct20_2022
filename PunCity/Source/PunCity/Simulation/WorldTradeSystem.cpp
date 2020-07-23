@@ -41,7 +41,7 @@ void WorldTradeSystem::RefreshTradeClusters()
 		tryFindStartTile(WorldTile2(-1, 0));
 		tryFindStartTile(WorldTile2(0, 1));
 		tryFindStartTile(WorldTile2(0, -1));
-		PUN_CHECK(startTile != WorldTile2::Invalid);
+		PUN_CHECK(startTile.isValid());
 		
 
 		std::vector<WorldTile2> tileQueue;
@@ -52,33 +52,46 @@ void WorldTradeSystem::RefreshTradeClusters()
 
 		for (int32 i = 0; i < 30000; i++)
 		{
+			if (tileQueue.empty()) {
+				PUN_LOG("RefreshTradeClusters Flood %d", i);
+				break;
+			}
+			
 			WorldTile2 curTile = tileQueue.back();
 			tileQueue.pop_back();
-			
-			if (visitedTiles[curTile.tileId()]) {
+
+			int32 curTileId = curTile.tileId();
+			if (visitedTiles[curTileId]) {
 				continue;
 			}
-			visitedTiles[curTile.tileId()] = true;
+			visitedTiles[curTileId] = true;
 
-			// Road, try queue more tiles
-			if (pathAI->isRoad(curTile.x, curTile.y))
-			{
-				tileQueue.push_back(curTile + WorldTile2(1, 0));
-				tileQueue.push_back(curTile + WorldTile2(-1, 0));
-				tileQueue.push_back(curTile + WorldTile2(0, 1));
-				tileQueue.push_back(curTile + WorldTile2(0, -1));
-			}
-			else
-			{
-				// Found townhall
-				if (_simulation->tileHasBuilding(curTile) &&
-					_simulation->buildingEnumAtTile(curTile) == CardEnum::Townhall)
-				{
-					CppUtils::TryAdd(newClusterPlayerIds, _simulation->tileOwner(curTile));
+			auto tryQueue = [&](WorldTile2 shift) {
+				WorldTile2 tile = curTile + shift;
+				if (pathAI->isRoad(tile.x, tile.y)) {
+					tileQueue.push_back(tile);
 				}
-			}
+			};
+
+			tryQueue(WorldTile2(1, 0));
+			tryQueue(WorldTile2(-1, 0));
+			tryQueue(WorldTile2(0, 1));
+			tryQueue(WorldTile2(0, -1));
+
+			//// Found townhall
+			//if (_simulation->tileHasBuilding(curTile) &&
+			//	_simulation->buildingEnumAtTile(curTile) == CardEnum::Townhall)
+			//{
+			//	CppUtils::TryAdd(newClusterPlayerIds, _simulation->tileOwner(curTile));
+			//}
 		}
 
+		PUN_CHECK(tileQueue.empty());
+		
+
+		// TODO: remove
+		newClusterPlayerIds.push_back(playerId);
+		
 		PUN_CHECK(newClusterPlayerIds.size() > 0);
 
 		_tradeClusterToPlayerIds.push_back(newClusterPlayerIds);

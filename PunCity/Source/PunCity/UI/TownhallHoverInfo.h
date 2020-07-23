@@ -8,6 +8,7 @@
 #include "DamageFloatupUI.h"
 #include "ArmyLinesUI.h"
 #include "PunSimpleButton.h"
+#include "PunBoxWidget.h"
 
 #include "TownhallHoverInfo.generated.h"
 
@@ -74,13 +75,37 @@ public:
 		if (displayedName != newDisplayName) {
 			CityNameText->SetText(FText::FromString(newDisplayName));
 		}
-
 		
 
 		// PlayerColorImage
 		PlayerColorCircle->GetDynamicMaterial()->SetVectorParameterValue("PlayerColor1", PlayerColor1(townhall.armyNode.lordPlayerId));
 		PlayerColorCircle->GetDynamicMaterial()->SetVectorParameterValue("PlayerColor2", PlayerColor2(townhall.armyNode.lordPlayerId));
-		
+
+
+		/*
+		 * Update TradeInfoBox
+		 */
+		{
+			const std::vector<IntercityTradeOffer>& offers = simulation().worldTradeSystem().GetIntercityTradeOffers(townhall.playerId());
+			TradeInfoBox->SetVisibility(offers.size() > 0 ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+			CallbackEnum callbackEnum = (townhall.playerId() == playerId()) ? CallbackEnum::None : CallbackEnum::IntercityTrade;
+			
+			for (const auto& offer : offers) {
+				int32 inventory = simulation().resourceCount(townhall.playerId(), offer.resourceEnum);
+				if (offer.offerEnum == IntercityTradeOfferEnum::BuyWhenBelow) {
+					if (offer.targetInventory > inventory) {
+						BuyingBox->AddChooseResourceElement2(offer.resourceEnum, std::to_string(offer.targetInventory - inventory), this, callbackEnum);
+					}
+				} else {
+					if (inventory > offer.targetInventory) {
+						BuyingBox->AddChooseResourceElement2(offer.resourceEnum, std::to_string(inventory - offer.targetInventory), this, callbackEnum);
+					}
+				}
+			}
+		}
+
+
+		//
 
 		if (isMini) {
 			SetRenderScale(FVector2D(0.5, 0.5));
@@ -454,13 +479,21 @@ public:
 	TArray<UWidget*> _damageFloatups;
 
 	/*
-	 * Military Buttons callback
+	 * Buttons callback
 	 */
 	float _lastAllyRequestTick = 0;
 	
 	void CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum) override
 	{
 		auto& sim = simulation();
+
+		if (callbackEnum == CallbackEnum::IntercityTrade)
+		{
+			ResourceEnum resourceEnum = CastChecked<UChooseResourceElement>(punWidgetCaller)->resourceEnum;
+			GetPunHUD()->OpenTargetConfirmUI_IntercityTrade(_buildingId, resourceEnum);
+			return;
+		}
+		
 		
 		auto command = std::make_shared<FAttack>();
 		command->armyOrderEnum = callbackEnum;
@@ -624,6 +657,10 @@ public:
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* MilitaryButtons;
 
 	UPROPERTY(meta = (BindWidget)) UButton* TradeButton;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* TradeButtonText;
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* TradeInfoBox;
+	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* BuyingBox;
+	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* SellingBox;
 	
 	UPROPERTY(meta = (BindWidget)) UTextBlock* TownHoverPopulationText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* CityNameText;
@@ -679,8 +716,11 @@ private:
 	}
 
 
-	UFUNCTION() void OnClickTradeButton() {
+	UFUNCTION() void OnClickSetTradeOfferButton() {
 		GetPunHUD()->OpenIntercityTradeUI(_buildingId);
+	}
+	UFUNCTION() void OnClickEstablishTradeRouteButton() {
+		
 	}
 
 	/*

@@ -1797,6 +1797,12 @@ public:
 
 class ProvinceBuilding : public Building
 {
+public:
+	void OnInit() override
+	{
+		InstantClearArea();
+	}
+	
 	void Tick1Sec() override
 	{
 		if (!isConstructed()) 
@@ -1825,8 +1831,8 @@ public:
 class Colony final : public ProvinceBuilding
 {
 public:
-	static int32 GetColonyIncomeValue() { return GetBuildingInfo(CardEnum::Colony).baseCardPrice / 4; } // 4 rounds or half year to recoup the 
-	static int32 GetColonyUpkeep() { return (GetColonyIncomeValue() / 4) / 10 * 10; }
+	static int32 GetColonyIncomeValue() { return GetBuildingInfo(CardEnum::Colony).baseCardPrice / 5; } // 4 rounds or half year to recoup the 
+	static int32 GetColonyUpkeep() { return (GetColonyIncomeValue() / 5) / 10 * 10; }
 
 	static int32 GetColonyResourceIncome(ResourceEnum resourceEnum) {
 		return GetColonyIncomeValue() / GetResourceInfo(resourceEnum).basePrice;

@@ -292,9 +292,6 @@ public:
 				{
 					int32 regionId = region.regionId();
 					
-					// Ensure region is owned by player..
-					// TODO: shut off for provinceId refactor
-					//if (_simulation->regionOwner(regionId) == playerId)
 					{
 						_regionToMarkTileIds[regionId].Execute([&](WorldTile2 tile)
 						{
@@ -304,6 +301,11 @@ public:
 							}
 
 							if (IsReserved(tile.tileId())) {
+								return;
+							}
+
+							// Ensure tile is owned by player..
+							if (_simulation->tileOwner(tile) != playerId) {
 								return;
 							}
 

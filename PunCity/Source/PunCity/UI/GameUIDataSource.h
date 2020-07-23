@@ -24,6 +24,7 @@ enum class UIEnum
 	Policy,
 	Trade,
 	TradeIntercity,
+	TargetConfirm,
 	
 	DragCardSlot,
 	DragCard,
@@ -122,115 +123,6 @@ enum class UIEnum
 
 static const int UIEnumCount = static_cast<int>(UIEnum::Count);
 
-//static const char* UINames[]
-//{
-//	"None",
-//	"MainGame",
-//	"EscMenu",
-//	"Popup",
-//	"Quest",
-//
-//	"Chat",
-//	"TopLayerUI",
-//	"Policy",
-//	"Trade",
-//	"TradeIntercityRow",
-//	
-//	"QuestElement",
-//	"PlayerCompareElement",
-//	"PlayerCompareDetailedElement",
-//	"ResourceStatTableRow",
-//	"BuildingStatTableRow",
-//
-//	"ArmyUI",
-//	"ArmyRow",
-//
-//	"DragCardSlot",
-//	"DragCard",
-//
-//	"BuildingPlacementButton",
-//	"CardMini",
-//	"CardSlot",
-//	"ResearchTypeButton",
-//
-//	"ToolTip",
-//	"TradeRow",
-//	"TradeIntercityRow",
-//
-//	"WorldSpaceUI",
-//	"HoverIcon",
-//	"HoverBuildingJob",
-//	"JobHumanIcon",
-//	"HoverTownhall",
-//	"ResourceCompletionIcon",
-//	"BuildingReadyIcon",
-//	"BuildingNeedSetupIcon",
-//	"BuildingNoStorageIcon",
-//	"RegionHoverUI",
-//
-//	"ObjectDescription",
-//	"ObjectDescriptionSystem",
-//	"ChooseResourceElement",
-//	"ManageStorageElement",
-//	"StatisticsUI",
-//
-//	"IconTextPair",
-//	"BuildingResourceChain",
-//	"PunTextWidget",
-//	"PunSpacerWidget",
-//	"PunLineSpacerWidget",
-//	"PunThinLineSpacerWidget",
-//	"PunScrollBoxWidget",
-//	"PunButton",
-//	"PunDropdown",
-//	"PunEditableNumberBox",
-//	"PunEditableNumberBoxHorizontal",
-//	"PunGraph",
-//	"PunTutorialLink",
-//
-//	"AboveBuildingText",
-//	"HoverTextIconPair",
-//	"HoverTextIconPair3Lines",
-//	
-//	"ComboComplete",
-//	"BuildingComplete",
-//	"HouseUpgrade",
-//	"HouseDowngrade",
-//	"TownhallUpgrade",
-//	
-//	"PunRichText",
-//	"PunRichText_Chat",
-//	"PunRichTextTwoSided",
-//	"PunRichTextBullet",
-//	//"PunEventText",
-//
-//	"PunItemIcon",
-//	"PunItemSelectionChoice",
-//
-//	"TechTree",
-//	"TechUI",
-//	"TechEraUI",
-//	"TechBox",
-//	
-//	"SaveSelection",
-//
-//	"PlayerListElement",
-//	"LobbyListElement",
-//
-//	"HiddenSettingsRow",
-//
-//	"ArmyDeployButton",
-//	"ArmyLinesUILeft",
-//	"ArmyLinesUIRight",
-//	"ArmyUnitLeft",
-//	"ArmyUnitRight",
-//	"ArmyMoveRow",
-//	"ArmyMoveUI",
-//	"ArmyChooseNodeButton",
-//	"DamageFloatup",
-//};
-//
-//static const int UIEnumCount = _countof(UINames);
 
 
 // This class does not need to be modified.

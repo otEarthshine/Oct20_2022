@@ -454,9 +454,14 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 
 			// Bush
 			else if (info.type == ResourceTileType::Bush && 
-					_isFullDisplay &&
-					!simulation().IsRoadTile(worldTile))
+					_isFullDisplay)
 			{
+				// Don't show grass on road construction
+				if (simulation().isInitialized()  &&
+					simulation().IsRoadTile(worldTile)) {
+					return;
+				}
+				
 				int32 ageTick = treeSystem.tileObjAge(worldTileId);
 				int32 ageState = ageTick / TileObjInfo::TicksPerCycle();
 				FTransform transform = GameDisplayUtils::GetBushTransform(localTile.localDisplayLocation(), 0, worldTileId, ageTick, info, terrainGenerator.GetBiome(worldTile));

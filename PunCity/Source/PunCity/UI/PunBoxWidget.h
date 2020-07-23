@@ -231,9 +231,9 @@ public:
 	UPunButton* AddButton(std::string prefix, UTexture2D* texture, std::string suffix, UPunWidget* callbackParent, CallbackEnum callbackEnum,
 							bool showEnabled = true, bool showExclamation = false, int32 callbackVar1In = -1, int32 callbackVar2In = -1)
 	{
-		return AddButton("", prefix, texture, suffix, callbackParent, callbackEnum, showEnabled, showExclamation, callbackVar1In, callbackVar2In);
+		return AddButton2Lines("", prefix, texture, suffix, callbackParent, callbackEnum, showEnabled, showExclamation, callbackVar1In, callbackVar2In);
 	}
-	UPunButton* AddButton(std::string topString, std::string prefix, UTexture2D* texture, std::string suffix, UPunWidget* callbackParent, CallbackEnum callbackEnum,
+	UPunButton* AddButton2Lines(std::string topString, std::string prefix, UTexture2D* texture, std::string suffix, UPunWidget* callbackParent, CallbackEnum callbackEnum,
 							bool showEnabled = true, bool showExclamation = false, int32 callbackVar1In = -1, int32 callbackVar2In = -1)
 	{
 		auto widget = GetChildElement<UPunButton>(UIEnum::PunButton);
@@ -275,6 +275,13 @@ public:
 	{
 		auto widget = GetChildElement<UChooseResourceElement>(UIEnum::ChooseResourceElement);
 		widget->PunInit(callbackParent, callbackEnum, resourceEnum);
+		return widget;
+	}
+	// Warning!!! AddChooseResourceElement and AddChooseResourceElement2 should not be used in the same box
+	UChooseResourceElement* AddChooseResourceElement2(ResourceEnum resourceEnumIn, std::string resourceStr, UPunWidget* callbackParent, CallbackEnum callbackEnum = CallbackEnum::None)
+	{
+		auto widget = GetChildElement<UChooseResourceElement>(UIEnum::ChooseResourceElement);
+		widget->PunInit2(resourceEnumIn, resourceStr, callbackParent, callbackEnum);
 		return widget;
 	}
 

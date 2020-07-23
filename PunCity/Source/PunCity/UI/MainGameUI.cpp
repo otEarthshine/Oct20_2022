@@ -1084,13 +1084,13 @@ void UMainGameUI::Tick()
 		/*
 		 * Research
 		 */
-		UnlockSystem* unlockSystem = dataSource()->simulation().unlockSystem(playerId());
-		if (unlockSystem && unlockSystem->researchEnabled)
+		UnlockSystem* unlockSys = dataSource()->simulation().unlockSystem(playerId());
+		if (unlockSys && unlockSys->researchEnabled)
 		{
-			std::shared_ptr<ResearchInfo> currentTech = unlockSystem->currentResearch();
+			std::shared_ptr<ResearchInfo> currentTech = unlockSys->currentResearch();
 
 			ResearchingText->SetText(ToFText(currentTech->GetName()));
-			ResearchBar->SetWidthOverride(unlockSystem->researchFraction() * 250);
+			ResearchBar->SetWidthOverride(unlockSys->hasTargetResearch() ? (unlockSys->researchFraction() * 250) : 0);
 			ResearchBarUI->SetVisibility(ESlateVisibility::Visible);
 		}
 		else {

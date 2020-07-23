@@ -36,12 +36,13 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 	//FLinearColor lineColor;
 
 	auto unlockSys = simulation().unlockSystem(playerId());
-	float researchFraction = unlockSys->researchFraction();
 	isLocked = isLockedIn;
 	
 	float colorState = 0.0f;
 	float showBubbles = 0.0f;
 	bool showResearchPercent = false;
+
+	
 
 	if (techStateIn == TechStateEnum::Researched)
 	{
@@ -57,7 +58,10 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 		if (isInTechQueue) {
 			colorState = 0.5f;
 			showBubbles = 1.0f;
-			showResearchPercent = (techStateIn == TechStateEnum::Researching);
+
+			auto currentTech = unlockSys->currentResearch();
+			
+			showResearchPercent = (currentTech->techEnum == tech->techEnum); // show research percent on the current tech
 			
 			//lineColor = FLinearColor(1, 1, 1, 1);
 		} else {
@@ -81,12 +85,13 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 	RewardBonusIcon1->SetOpacity(colorState < 0.25f ? 0.3 : 1);
 	RewardBonusIcon2->SetOpacity(colorState < 0.25f ? 0.3 : 1);
 
-	OuterImage->GetDynamicMaterial()->SetScalarParameterValue("ResearchFraction", researchFraction);
 
-	if (showResearchPercent && researchFraction > 0.001f) 
+	if (showResearchPercent && unlockSys->hasTargetResearch())
 	{
 		PercentText->SetVisibility(ESlateVisibility::HitTestInvisible);
 		SecText->SetVisibility(ESlateVisibility::HitTestInvisible);
+
+		float researchFraction = unlockSys->researchFraction();
 
 		stringstream ss;
 		ss << std::fixed << std::showpoint << std::setprecision(1);
@@ -101,10 +106,14 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 		int32 secRequired = (science100Left * Time::SecondsPerRound) / science100PerRound;
 		ss << secRequired << "s";
 		SetText(SecText, ss.str());
+
+		OuterImage->GetDynamicMaterial()->SetScalarParameterValue("ResearchFraction", unlockSys->researchFraction());
 	}
 	else {
 		PercentText->SetVisibility(ESlateVisibility::Collapsed);
 		SecText->SetVisibility(ESlateVisibility::Collapsed);
+
+		OuterImage->GetDynamicMaterial()->SetScalarParameterValue("ResearchFraction", 0);
 	}
 
 	//OuterImage->SetColorAndOpacity(outerImageColor);

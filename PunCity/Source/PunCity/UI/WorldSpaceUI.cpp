@@ -203,7 +203,10 @@ void UWorldSpaceUI::TickBuildings()
 						[&](URegionHoverUI* ui) {}
 					);
 
-					SetText(regionHoverUI->ClaimingText, "Claiming");
+					std::stringstream ss;
+					ss << "Attacker: " << simulation().playerName(claimProgress.attackerPlayerId) << "\n";
+					ss << claimProgress.committedInfluences << "<img id=\"Influence\"/>";
+					SetText(regionHoverUI->ClaimingText, ss.str());
 					regionHoverUI->AutoChoseText->SetVisibility(ESlateVisibility::Collapsed);
 
 					float fraction = static_cast<float>(claimProgress.ticksElapsed) / BattleClaimTicks;
@@ -1086,8 +1089,10 @@ void UWorldSpaceUI::TickPlacementInstructions()
 		int32 provinceId = simulation().GetProvinceIdClean(placementInfo.mouseOnTile);
 		PUN_CHECK(provinceId != -1);
 		ResourceEnum resourceEnum = simulation().georesource(provinceId).info().resourceEnum;
-		int32 resourceCount = Colony::GetColonyResourceIncome(resourceEnum);
-		punBox->AddIconPair("+" + to_string(resourceCount), resourceEnum, " per round");
+		if (resourceEnum != ResourceEnum::None) {
+			int32 resourceCount = Colony::GetColonyResourceIncome(resourceEnum);
+			punBox->AddIconPair("+" + to_string(resourceCount), resourceEnum, " per round");
+		}
 	}
 	else if (needInstruction(PlacementInstructionEnum::Fort)) {
 		punBox->AddRichText("Fort does not require citizens nearby to build.")->SetJustification(ETextJustify::Type::Center);

@@ -816,7 +816,7 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::BorderProvinceUpkeep)] -= numberOfBorderProvinces * 500; // 5 upkeep per border province
 		
 		// Fort/Colony
-		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Fort)] -= _simulation->buildingCount(_playerId, CardEnum::Fort) * 20 * 100;
+		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Fort)] -= _simulation->buildingCount(_playerId, CardEnum::Fort) * 10 * 100;
 		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Colony)] -= _simulation->buildingCount(_playerId, CardEnum::Colony) * Colony::GetColonyUpkeep() * 100;
 	}
 	else

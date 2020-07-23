@@ -23,7 +23,8 @@ public:
 		ExclamationIcon->SetShow(false);
 	}
 
-	void Set(std::string topString, std::string prefix, UTexture2D* texture, std::string suffix, UPunWidget* callbackParent, CallbackEnum callbackEnum, int32 callbackVar1In = -1, int32 callbackVar2In = -1) {
+	void Set(std::string topString, std::string prefix, UTexture2D* texture, std::string suffix, UPunWidget* callbackParent, CallbackEnum callbackEnum, int32 callbackVar1In = -1, int32 callbackVar2In = -1)
+	{
 		_callbackParent = callbackParent;
 		_callbackEnum = callbackEnum;
 		callbackVar1 = callbackVar1In;

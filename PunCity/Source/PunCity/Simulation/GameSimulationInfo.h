@@ -1116,8 +1116,8 @@ enum class IntercityTradeOfferEnum : uint8
 static std::vector<std::string> IntercityTradeOfferEnumName
 {
 	"None",
-	"BuyWhenBelow",
-	"SellWhenAbove",
+	"Buy When Below",
+	"Sell When Above",
 };
 static std::string GetIntercityTradeOfferEnumName(IntercityTradeOfferEnum offerEnum) {
 	return IntercityTradeOfferEnumName[static_cast<int>(offerEnum)];
@@ -1872,7 +1872,7 @@ struct BldInfo
 			CASE(GardenShrubbery1, 100);
 			CASE(GardenCypress, 200);
 
-			CASE(Fort, 1000);
+			CASE(Fort, 500);
 			CASE(Colony, 1000);
 #undef CASE
 		default:
@@ -2053,7 +2053,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::PrintingPress, "Printing Press", WorldTile2(5, 6), ResourceEnum::Paper, ResourceEnum::Dye, ResourceEnum::Book, 20, 5, { 0, 150, 100 }, "Print Books."),
 
 	// June 25 addition
-	BldInfo(CardEnum::Warehouse, "Warehouse", WorldTile2(4, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 70,70,0 }, "Advanced storage with 30 storage slots."),
+	BldInfo(CardEnum::Warehouse, "Warehouse", WorldTile2(6, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 70,70,0 }, "Advanced storage with 30 storage slots."),
 	BldInfo(CardEnum::Fort, "Fort", WorldTile2(9, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "+100% province's defense."),
 	BldInfo(CardEnum::Colony, "Colony", WorldTile2(10, 10), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "Extract resource from province."),
 	BldInfo(CardEnum::InventorsWorkshop, "Inventor's Workshop", WorldTile2(6, 6), ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::None, 0, 2, { 50,50,0 }, "Generate science points. Use wood as input."),
@@ -4947,6 +4947,7 @@ enum class ExclusiveUIEnum : uint8
 
 	Trading,
 	IntercityTrading,
+	TargetConfirm,
 	
 	TechUI,
 	QuestUI,
@@ -6078,7 +6079,9 @@ enum class CallbackEnum : uint8
 	TrainUnit,
 	CancelTrainUnit,
 	OpenStatistics,
+	
 	OpenSetTradeOffers,
+	IntercityTrade,
 
 	OpenChooseResource,
 	PickChooseResource,

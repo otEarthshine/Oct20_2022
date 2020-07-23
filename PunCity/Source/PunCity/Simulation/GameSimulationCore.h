@@ -405,7 +405,7 @@ public:
 		return IsFrontBuildable(tile) && !IsRoadOverlapBuilding(buildingEnumAtTile(tile));
 	}
 	bool IsRoadTile(WorldTile2 tile) final {
-		return overlaySystem().IsRoad(tile);
+		return _pathAIHuman->isRoad(tile.x, tile.y);
 	}
 	
 	
@@ -744,6 +744,27 @@ public:
 		int32 baseClaimPrice100 = GetProvinceIncome100(provinceId) * ClaimToIncomeRatio;
 		return (baseClaimPrice100 / 100);
 	}
+	int32 GetProvinceAttackStartPrice(int32 provinceId) {
+		return (GetProvinceClaimPrice(provinceId) * 2 + BattleInfluencePrice) * GetProvinceAttackCostPercent(provinceId) / 100;
+	}
+	int32 GetProvinceAttackReinforcePrice(int32 provinceId) {
+		return BattleInfluencePrice * GetProvinceAttackCostPercent(provinceId) / 100;
+	}
+	int32 GetProvinceAttackCostPercent(int32 provinceId)
+	{
+		int32 attackCost = 100;
+		
+		int32 provinceOwnerId = provinceOwner(provinceId);
+		if (provinceOwnerId != -1) {
+			const std::vector<int32>& fortIds = buildingIds(provinceOwnerId, CardEnum::Fort);
+			for (int32 fortId : fortIds) {
+				if (building(fortId).provinceId() == provinceId) {
+					attackCost += 100;
+				}
+			}
+		}
+		return attackCost;
+	}
 
 	bool HasOutpostAt(int32 playerId, int32 provinceId) final {
 		return playerOwned(playerId).HasOutpostAt(provinceId);
@@ -1018,7 +1039,7 @@ public:
 		_gameManager->SetRoadWorldTexture(tile, isRoad, isDirtRoad);
 	}
 
-	//
+	// Tech
 
 	bool IsResearched(int32_t playerId, TechEnum techEnum) final { return unlockSystem(playerId)->IsResearched(techEnum); }
 	bool HasTargetResearch(int32_t playerId) final { return unlockSystem(playerId)->hasTargetResearch(); }

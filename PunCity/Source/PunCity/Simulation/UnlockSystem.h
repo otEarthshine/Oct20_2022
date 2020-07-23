@@ -665,6 +665,9 @@ public:
 
 		if (science100() >= science100Needed()) 
 		{
+			// Take away the amount of science used 
+			science100XsecPerRound -= science100Needed() * Time::SecondsPerRound;
+			
 			int32 lastEra = currentEra();
 			
 			tech->state = TechStateEnum::Researched;
@@ -674,8 +677,6 @@ public:
 
 			techsFinished++;
 			needDisplayUpdate = true;
-
-			science100XsecPerRound -= science100Needed() * Time::SecondsPerRound;
 
 			std::vector<std::string> choices = { "Show tech tree", "Close" };
 			PopupReceiverEnum receiver = PopupReceiverEnum::DoneResearchEvent_ShowTree;

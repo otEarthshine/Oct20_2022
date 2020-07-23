@@ -31,9 +31,15 @@ public:
 		OfferTypeDropdown->OnSelectionChanged.RemoveAll(this);
 		OfferTypeDropdown->OnSelectionChanged.AddDynamic(this, &UIntercityTradeRow::OnOfferTypeDropdownChanged);
 
+		if (OfferTypeDropdown->GetOptionCount() == 0) {
+			for (std::string name : IntercityTradeOfferEnumName) {
+				OfferTypeDropdown->AddOption(ToFString(name));
+			}
+		}
+
 		SetChildHUD(TargetInventory);
 
-		IntercityTradeOffer offer = dataSource()->simulation().worldTradeSystem().GetIntercityTradeOffer(_resourceEnum);
+		IntercityTradeOffer offer = dataSource()->simulation().worldTradeSystem().GetIntercityTradeOffer(playerId(), _resourceEnum);
 		OfferTypeDropdown->SetSelectedOption(ToFString(GetIntercityTradeOfferEnumName(offer.offerEnum)));
 		
 		TargetInventory->Set(this, CallbackEnum::None);

@@ -62,18 +62,13 @@ void UTechUI::TickUI()
 
 
 	int32 currentEra = unlockSys->currentEra();
-
-	int32 scienceNeeded = unlockSys->scienceNeeded();
 	int32 science100SoFar = unlockSys->science100();
 
 	{
 		std::stringstream ss;
+		ss << (science100SoFar / 100);
 		if (unlockSys->hasTargetResearch()) {
-			ss << unlockSys->currentResearch()->GetName() << ": ";
-		}
-		ss << (scienceNeeded - science100SoFar / 100);
-		if (unlockSys->hasTargetResearch()) {
-			ss << "/" << scienceNeeded << "<img id=\"Science\"/>";
+			ss << "/" << unlockSys->scienceNeeded() << "<img id=\"Science\"/>";
 		}
 		ScienceAmountText->SetText(ToFText(ss.str()));
 	}

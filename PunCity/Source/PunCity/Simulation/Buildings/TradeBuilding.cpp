@@ -11,42 +11,61 @@ void TradeBuilding::UsedTrade(FTradeResource tradeCommand)
 
 	// Sold stuff executes right away...
 	// Bought stuff will arrive in 1 season
-	ExecuteTradeSell(tradeCommand, tradingFeePercent(), centerTile(), _simulation);
+	ExecuteTrade(tradeCommand, tradingFeePercent(), centerTile(), _simulation);
 
 	_hasPendingTrade = true;
 	_ticksAccumulated = 0;
 	_lastCheckTick = Time::Ticks();
 }
 
-void TradeBuilding::ExecuteTradeSell(FTradeResource tradeCommand, int32 tradingFeePercent, WorldTile2 tile, IGameSimulationCore* simulation)
+void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePercent, WorldTile2 tile, IGameSimulationCore* simulation)
 {
 	// Sold stuff executes on the way right away...
 	int32 playerId = tradeCommand.playerId;
-	ResourceSystem& system = simulation->resourceSystem(playerId);
+	ResourceSystem& resourceSys = simulation->resourceSystem(playerId);
 
+	// This value is used in fee calculation
 	int32 totalTradeMoney100 = 0;
+	
 	for (int i = 0; i < tradeCommand.buyEnums.Num(); i++) {
 		PUN_CHECK(tradeCommand.buyAmounts[i] != 0);
 		ResourceEnum resourceEnum = static_cast<ResourceEnum>(tradeCommand.buyEnums[i]);
 		int32 buyAmount = tradeCommand.buyAmounts[i];
 
 		// This is used just for counting quest's total trade amount (otherwise use tradeCommand.totalGain)
-		totalTradeMoney100 += abs(tradeCommand.buyAmounts[i] * simulation->price100(resourceEnum));
 
-		if (tradeCommand.buyAmounts[i] < 0) {
-			// TODO: this is cheating the system, getting paid more than actually sold, calculate trade gain here?
-			buyAmount = max(buyAmount, -system.resourceCount(resourceEnum));
+		if (buyAmount < 0) // Sell
+		{
+			// TODO: ?? this is cheating the system, getting paid more than actually sold, calculate trade gain here?
 
-			system.RemoveResourceGlobal(resourceEnum, -buyAmount);
+			int32 sellAmount = abs(buyAmount);
+			sellAmount = min(sellAmount, resourceSys.resourceCount(resourceEnum));
+
+			int32 tradeMoney100 = sellAmount * simulation->price100(resourceEnum);
+			totalTradeMoney100 += tradeMoney100;
+
+			resourceSys.RemoveResourceGlobal(resourceEnum, sellAmount);
+			resourceSys.ChangeMoney(tradeMoney100);
 		}
+		else if (buyAmount > 0) // Buy
+		{
+			int32 tradeMoney100 = buyAmount * simulation->price100(resourceEnum);
+			totalTradeMoney100 += tradeMoney100;
+			
+			resourceSys.AddResourceGlobal(resourceEnum, buyAmount, *simulation);
+			resourceSys.ChangeMoney(-tradeMoney100);
+		}
+		
 		simulation->worldTradeSystem().ChangeSupply(playerId, resourceEnum, -buyAmount); // Buying is decreasing world supply
 	}
 
 	// Change money from trade's Total
-	system.ChangeMoney(tradeCommand.totalGain);
+	//resourceSys.ChangeMoney(tradeCommand.totalGain);
 
-	totalTradeMoney100 += totalTradeMoney100 * tradingFeePercent / 100;
-	simulation->QuestUpdateStatus(playerId, QuestEnum::TradeQuest, totalTradeMoney100 / 100);
+	int32 fee = totalTradeMoney100 * tradingFeePercent / 100;
+	resourceSys.ChangeMoney(-fee);
+	
+	simulation->QuestUpdateStatus(playerId, QuestEnum::TradeQuest, abs(totalTradeMoney100 / 100 + fee));
 
 	simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, tile, ToSignedNumber(tradeCommand.totalGain));
 }

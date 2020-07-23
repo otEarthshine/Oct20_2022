@@ -11,7 +11,14 @@ void UTownhallHoverInfo::PunInit(int buildingId)
 	_buildingId = buildingId;
 	//CityNameEditableText->OnTextCommitted.AddDynamic(this, &UTownhallHoverInfo::ChangedCityName);
 
-	BUTTON_ON_CLICK(TradeButton, this, &UTownhallHoverInfo::OnClickTradeButton);
+	auto townhall = simulation().building(_buildingId).subclass<TownHall>(CardEnum::Townhall);
+	if (townhall.playerId() == playerId()) {
+		SetText(TradeButtonText, "Set Trade Offer");
+		BUTTON_ON_CLICK(TradeButton, this, &UTownhallHoverInfo::OnClickSetTradeOfferButton);
+	} else {
+		SetText(TradeButtonText, "Establish Trade Route");
+		BUTTON_ON_CLICK(TradeButton, this, &UTownhallHoverInfo::OnClickEstablishTradeRouteButton);
+	}
 
 	BUTTON_ON_CLICK(LaborerNonPriorityButton, this, &UTownhallHoverInfo::OnClickLaborerNonPriorityButton);
 	BUTTON_ON_CLICK(LaborerPriorityButton, this, &UTownhallHoverInfo::OnClickLaborerPriorityButton);
@@ -28,22 +35,6 @@ void UTownhallHoverInfo::PunInit(int buildingId)
 	BUTTON_ON_CLICK(RoadMakerArrowUp, this, &UTownhallHoverInfo::IncreaseRoadMakers);
 	BUTTON_ON_CLICK(RoadMakerArrowDown, this, &UTownhallHoverInfo::DecreaseRoadMakers);
 
-
-	
-	//LaborerNonPriorityButton->OnClicked.AddDynamic(this, &UTownhallHoverInfo::OnClickLaborerNonPriorityButton);
-	//LaborerPriorityButton->OnClicked.AddDynamic(this, &UTownhallHoverInfo::OnClickLaborerPriorityButton);
-	//LaborerArrowUp->OnClicked.AddDynamic(this, &UTownhallHoverInfo::IncreaseLaborers);
-	//LaborerArrowDown->OnClicked.AddDynamic(this, &UTownhallHoverInfo::DecreaseLaborers);
-	//
-	//BuilderNonPriorityButton->OnClicked.AddDynamic(this, &UTownhallHoverInfo::OnClickBuilderNonPriorityButton);
-	//BuilderPriorityButton->OnClicked.AddDynamic(this, &UTownhallHoverInfo::OnClickBuilderPriorityButton);
-	//BuilderArrowUp->OnClicked.AddDynamic(this, &UTownhallHoverInfo::IncreaseBuilders);
-	//BuilderArrowDown->OnClicked.AddDynamic(this, &UTownhallHoverInfo::DecreaseBuilders);
-
-	//RoadMakerNonPriorityButton->OnClicked.AddDynamic(this, &UTownhallHoverInfo::OnClickRoadMakerNonPriorityButton);
-	//RoadMakerPriorityButton->OnClicked.AddDynamic(this, &UTownhallHoverInfo::OnClickRoadMakerPriorityButton);
-	//RoadMakerArrowUp->OnClicked.AddDynamic(this, &UTownhallHoverInfo::IncreaseRoadMakers);
-	//RoadMakerArrowDown->OnClicked.AddDynamic(this, &UTownhallHoverInfo::DecreaseRoadMakers);
 
 	LeftArmyBox->ClearChildren();
 	RightArmyBox->ClearChildren();

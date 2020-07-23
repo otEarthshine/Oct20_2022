@@ -127,14 +127,15 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 
 	_debugLineSystem.Init();
 
-	_worldTradeSystem.Init(this);
+	_worldTradeSystem.Init(this, GameConstants::MaxPlayersAndAI);
 
 	_terrainChanges.Init(this);
 
 	// Just create all players' system even if there isn't that many
 	// TODO: don't create all?
 	//while (_resourceSystems.size() < GameConstants::MaxPlayersAndAI)
-	for (int32 i = _resourceSystems.size(); i < GameConstants::MaxPlayersAndAI; i++) 
+	PUN_CHECK(_resourceSystems.size() == 0);
+	for (int32 i = 0; i < GameConstants::MaxPlayersAndAI; i++) 
 	{
 		int32 playerId = _resourceSystems.size();
 		_resourceSystems.push_back(ResourceSystem(playerId, this));
@@ -1559,7 +1560,9 @@ void GameSimulationCore::SetAllowResource(FSetAllowResource command)
 	if (IsHouse(bld.buildingEnum())) {
 		playerOwned(command.playerId).SetHouseResourceAllow(command.resourceEnum, command.allowed);
 	}
-	else if (bld.isEnum(CardEnum::StorageYard)) {
+	else if (bld.isEnum(CardEnum::StorageYard) ||
+			bld.isEnum(CardEnum::Warehouse)) 
+	{
 		bld.SetHolderTypeAndTarget(command.resourceEnum, command.allowed ? ResourceHolderType::Storage : ResourceHolderType::Provider, 0);
 	}
 	else {
@@ -1639,7 +1642,8 @@ void GameSimulationCore::TradeResource(FTradeResource command)
 
 	if (bld.isEnum(CardEnum::Townhall))
 	{
-		TradeBuilding::ExecuteTradeSell(command, bld.tradingFeePercent(), bld.centerTile(), this);
+		int32 tradingFeePercent = command.isIntercityTrade ? 0 : bld.tradingFeePercent();
+		TradeBuilding::ExecuteTrade(command, tradingFeePercent, bld.centerTile(), this);
 	}
 	else
 	{

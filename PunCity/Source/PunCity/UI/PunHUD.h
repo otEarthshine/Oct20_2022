@@ -28,6 +28,7 @@
 #include "ArmyMoveUI.h"
 #include "TopLayerGameUI.h"
 #include "IntercityTradeUI.h"
+#include "TargetConfirmUI.h"
 
 #include "PunHUD.generated.h"
 
@@ -202,6 +203,12 @@ public:
 		_intercityTradeUI->OpenUI(objectId);
 	}
 	void CloseIntercityTradeUI() { _intercityTradeUI->CloseUI(); }
+
+	void OpenTargetConfirmUI_IntercityTrade(int32 townhallId, ResourceEnum resourceEnum) final {
+		networkInterface()->ResetGameUI();
+		_targetConfirmUI->OpenUI(townhallId, resourceEnum);
+	}
+	void CloseTargetConfirmUI() { _targetConfirmUI->CloseUI(); }
 	
 
 	void CloseTechTree() final { _techUI->SetVisibility(ESlateVisibility::Collapsed); }
@@ -230,11 +237,16 @@ public:
 	void ResetGameUI() {
 		mainGameUI()->ResetGameUI();
 		CloseTechTree();
+
 		CloseTradeUI();
+		CloseIntercityTradeUI();
+		CloseTargetConfirmUI();
+		
 		CloseQuestUI();
 		CloseDescriptionUI();
 		CloseStatisticsUI();
 		ClosePlayerOverview();
+
 
 		_escMenuUI->EscMenu->SetVisibility(ESlateVisibility::Collapsed);
 		_escMenuUI->TutorialUI->SetVisibility(ESlateVisibility::Collapsed);
@@ -268,6 +280,7 @@ public:
 		case ExclusiveUIEnum::TechUI:			return _techUI->GetVisibility() != ESlateVisibility::Collapsed;
 		case ExclusiveUIEnum::Trading:			return _worldTradeUI->GetVisibility() != ESlateVisibility::Collapsed;
 		case ExclusiveUIEnum::IntercityTrading:	return _intercityTradeUI->GetVisibility() != ESlateVisibility::Collapsed;
+		case ExclusiveUIEnum::TargetConfirm:	return _targetConfirmUI->GetVisibility() != ESlateVisibility::Collapsed;
 			
 		case ExclusiveUIEnum::QuestUI:			return _questUI->QuestDescriptionOverlay->GetVisibility() != ESlateVisibility::Collapsed;
 		case ExclusiveUIEnum::StatisticsUI:		return _statisticsUI->GetVisibility() != ESlateVisibility::Collapsed;
@@ -447,6 +460,7 @@ protected:
 
 	UPROPERTY() UWorldTradeUI* _worldTradeUI;
 	UPROPERTY() UIntercityTradeUI* _intercityTradeUI;
+	UPROPERTY() UTargetConfirmUI* _targetConfirmUI;
 
 	UPROPERTY() TSubclassOf<UUserWidget> _dragCardSlotClass;
 	UPROPERTY() TSubclassOf<UUserWidget> _dragCardClass;

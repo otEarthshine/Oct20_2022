@@ -69,6 +69,36 @@ public:
 		}
 	}
 
+	// For Intercity Trade
+	void PunInit2(ResourceEnum resourceEnumIn, std::string resourceStr, UPunWidget* callbackParent, CallbackEnum callbackEnum = CallbackEnum::None)
+	{
+		_callbackParent = callbackParent;
+		_callbackEnum = callbackEnum;
+		resourceEnum = resourceEnumIn;
+
+		PUN_CHECK(resourceEnum != ResourceEnum::None);
+
+		ResourceButton->SetVisibility(callbackEnum != CallbackEnum::None ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+		
+		ResourceText->SetText(ToFText(resourceStr));
+		ResourceIcon->GetDynamicMaterial()->SetTextureParameterValue("ColorTexture", assetLoader()->GetResourceIcon(resourceEnum));
+		ResourceIcon->GetDynamicMaterial()->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(resourceEnum));
+
+		int32 price100 = simulation().price100(resourceEnum);
+		int32 basePrice100 = GetResourceInfo(resourceEnum).basePrice100();
+
+		std::stringstream ss;
+		ss << fixed << setprecision(2);
+		ss << price100 / 100.0f;
+		SetText(MoneyText, ss);
+		SetPriceColor(MoneyText, price100, basePrice100);
+
+		AddResourceTooltip(ResourceButton, resourceEnum);
+
+		MoneyText->SetVisibility(ESlateVisibility::HitTestInvisible);
+		MoneyIcon->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
+
 	UFUNCTION() void OnClickResourceButton()
 	{
 		PUN_CHECK(_callbackParent);

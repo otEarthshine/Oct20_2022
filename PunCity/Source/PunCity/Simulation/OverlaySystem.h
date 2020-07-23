@@ -53,6 +53,7 @@ public:
 	int32 GetAppealPercent(WorldTile2 tile);
 
 	// TODO: move Road/Fence out???
+	// TODO: IsRoad might be better sampled from pathAI?
 	bool IsRoad(WorldTile2 tile) const {
 		auto &roads = _regionToRoad[tile.regionId()];
 		auto found = std::find_if(roads.begin(), roads.end(), [&](const RoadTile& roadTile) { return roadTile.tile == tile; });

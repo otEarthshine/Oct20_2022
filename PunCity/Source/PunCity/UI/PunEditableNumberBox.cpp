@@ -34,6 +34,7 @@ void UPunEditableNumberBox::NumberChanged(const FText& Text, ETextCommit::Type C
 		//PUN_DEBUG(FString("TradeAmountTextChanged Inside"));
 		FString tradeAmountString = Text.ToString();
 		amount = tradeAmountString.IsNumeric() ? FCString::Atoi(*tradeAmountString) : 0;
+		amount = min(maxAmount, max(minAmount, amount));
 
 		UpdateText();
 		_callbackTarget->CallBack1(this, _callbackEnum);

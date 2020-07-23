@@ -22,6 +22,7 @@ APunHUD::APunHUD()
 	LoadClass(UIEnum::Policy, "PolicyMenuWidget");
 	LoadClass(UIEnum::Trade, "WorldTradeUIWidget");
 	LoadClass(UIEnum::TradeIntercity, "IntercityTradeUIWidget");
+	LoadClass(UIEnum::TargetConfirm, "TargetConfirmUI");
 
 	LoadClass(UIEnum::DragCardSlot, "Drag/DragCardSlotWidget");
 	LoadClass(UIEnum::DragCard, "Drag/DragCardWidget");
@@ -202,6 +203,7 @@ void APunHUD::PunTick(bool isPhotoMode)
 	_policyMenu->TickUI();
 	_worldTradeUI->TickUI();
 	_intercityTradeUI->TickUI();
+	_targetConfirmUI->TickUI();
 	
 	_techUI->TickUI();
 	_statisticsUI->TickUI();
@@ -216,6 +218,7 @@ void APunHUD::PunTick(bool isPhotoMode)
 	
 	_worldTradeUI->CheckPointerOnUI();
 	_intercityTradeUI->CheckPointerOnUI();
+	_targetConfirmUI->CheckPointerOnUI();
 	
 	_techUI->CheckPointerOnUI();
 	_escMenuUI->CheckPointerOnUI();
@@ -287,6 +290,9 @@ void APunHUD::Setup(IPunPlayerController* controller, USceneComponent* worldWidg
 	_intercityTradeUI = AddWidgetToHUDCast<UIntercityTradeUI>(UIEnum::TradeIntercity);
 	_intercityTradeUI->PunInit();
 
+	_targetConfirmUI = AddWidgetToHUDCast<UTargetConfirmUI>(UIEnum::TargetConfirm);
+	_targetConfirmUI->PunInit();
+
 	_techUI = AddWidgetToHUDCast<UTechUI>(UIEnum::TechUI);
 	_techUI->PunInit();
 
@@ -325,6 +331,7 @@ void APunHUD::KeyPressed_Escape()
 
 	_worldTradeUI->CloseUI();
 	_intercityTradeUI->CloseUI();
+	_targetConfirmUI->CloseUI();
 	
 	_techUI->SetShowUI(false);
 

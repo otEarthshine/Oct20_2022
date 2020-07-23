@@ -35,6 +35,9 @@ public:
 		DismissButton->OnClicked.AddDynamic(this, &UIntercityTradeUI::ClickedDismissButton);
 
 		SetVisibility(ESlateVisibility::Collapsed);
+
+		SetChildHUD(BuyDisplayBox);
+		SetChildHUD(SellDisplayBox);
 	}
 
 	void TickUI()
@@ -77,15 +80,23 @@ public:
 			{
 				IntercityTradeOfferEnum offerEnum = tradeRow->GetOfferEnum();
 				int32 targetInventory = tradeRow->TargetInventory->amount;
-				if (targetInventory > 0)
-				{
-					if (offerEnum == IntercityTradeOfferEnum::BuyWhenBelow) {
-						BuyDisplayBox->AddIconPair(to_string(targetInventory), tradeRow->resourceEnum(), "");
+
+				
+				if (offerEnum == IntercityTradeOfferEnum::BuyWhenBelow) {
+					int32 buyCount = targetInventory - resourceCount;
+					if (buyCount > 0) {
+						BuyDisplayBox->AddIconPair(to_string(buyCount), tradeRow->resourceEnum(), "");
 					}
-					else if (offerEnum == IntercityTradeOfferEnum::SellWhenAbove) {
+				}
+				else if (offerEnum == IntercityTradeOfferEnum::SellWhenAbove) {
+					int32 sellCount = resourceCount - targetInventory;
+					if (sellCount > 0) {
 						SellDisplayBox->AddIconPair(to_string(targetInventory), tradeRow->resourceEnum(), "");
 					}
 				}
+
+				// Hide TargetInventory
+				tradeRow->TargetInventory->SetVisibility(offerEnum != IntercityTradeOfferEnum::None ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
 			}
 			
 		}

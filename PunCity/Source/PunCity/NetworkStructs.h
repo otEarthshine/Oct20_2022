@@ -516,6 +516,7 @@ public:
 	TArray<int32> buyAmounts;
 	int32 totalGain;
 	int32 objectId;
+	uint8 isIntercityTrade = 0;
 
 	NetworkCommandEnum commandType() final { return NetworkCommandEnum::TradeResource; }
 
@@ -526,6 +527,7 @@ public:
 		SerializeArray(blob, buyAmounts);
 		blob.Add(totalGain);
 		blob.Add(objectId);
+		blob.Add(isIntercityTrade);
 	}
 
 	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final
@@ -535,6 +537,7 @@ public:
 		buyAmounts = DeserializeArray(blob, index);
 		totalGain = blob[index++];
 		objectId = blob[index++];
+		isIntercityTrade = blob[index++];
 	}
 
 	void operator>>(FArchive& Ar)
@@ -543,6 +546,7 @@ public:
 		Ar << buyAmounts;
 		Ar << totalGain;
 		Ar << objectId;
+		Ar << isIntercityTrade;
 	}
 };
 
@@ -989,6 +993,8 @@ public:
 			CASE_COMMAND(NetworkCommandEnum::SetTownPriority, FSetTownPriority);
 
 			CASE_COMMAND(NetworkCommandEnum::TradeResource, FTradeResource);
+			CASE_COMMAND(NetworkCommandEnum::SetIntercityTrade, FSetIntercityTrade);
+			
 			CASE_COMMAND(NetworkCommandEnum::UpgradeBuilding, FUpgradeBuilding);
 			CASE_COMMAND(NetworkCommandEnum::ChangeWorkMode, FChangeWorkMode);
 			CASE_COMMAND(NetworkCommandEnum::ChooseLocation, FChooseLocation);

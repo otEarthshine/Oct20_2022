@@ -25,14 +25,13 @@ struct PlayerSupplyChange
 class WorldTradeSystem
 {
 public:
-	void Init(IGameSimulationCore* simulation) {
+	void Init(IGameSimulationCore* simulation, int32 maxPlayers) {
 		_simulation = simulation;
 		_enumToSupplyValue100.resize(ResourceEnumCount);
 		_resourceEnumToPrice100Vec.resize(ResourceEnumCount);
 		_resourceEnumToPlayerSupplyChanges.resize(ResourceEnumCount);
 
-		_intercityTradeOffers.resize(ResourceEnumCount);
-		ResetIntercityTradeOffers();
+		_intercityTradeOffers.resize(maxPlayers);
 	}
 
 	void Tick1Sec()
@@ -146,20 +145,23 @@ public:
 	std::vector<int32> GetTradePartners(int32 playerId); // Note: this includes self
 
 	// Intercity Trade
-	IntercityTradeOffer GetIntercityTradeOffer(ResourceEnum resourceEnum) {
-		return _intercityTradeOffers[static_cast<int>(resourceEnum)];
+	const std::vector<IntercityTradeOffer>& GetIntercityTradeOffers(int32 playerId) {
+		return _intercityTradeOffers[playerId];
+	}
+	IntercityTradeOffer GetIntercityTradeOffer(int32 playerId, ResourceEnum resourceEnum) {
+		std::vector<IntercityTradeOffer>& offers = _intercityTradeOffers[playerId];
+		for (IntercityTradeOffer& offer : offers) {
+			if (offer.resourceEnum == resourceEnum) {
+				return offer;
+			}
+		}
+		return IntercityTradeOffer();
 	}
 	void SetIntercityTradeOffers(FSetIntercityTrade command)
 	{
-		ResetIntercityTradeOffers();
+		_intercityTradeOffers[command.playerId].clear();
 		for (int32 i = 0; i < command.resourceEnums.Num(); i++) {
-			_intercityTradeOffers[i] = {static_cast<ResourceEnum>(i),  static_cast<IntercityTradeOfferEnum>(command.intercityTradeOfferEnum[i]), command.targetInventories[i] };
-		}
-	}
-	void ResetIntercityTradeOffers()
-	{
-		for (int32 i = 0; i < ResourceEnumCount; i++) {
-			_intercityTradeOffers[i] = { static_cast<ResourceEnum>(i), IntercityTradeOfferEnum::None, 0 };
+			_intercityTradeOffers[command.playerId].push_back({ static_cast<ResourceEnum>(i),  static_cast<IntercityTradeOfferEnum>(command.intercityTradeOfferEnum[i]), command.targetInventories[i] });
 		}
 	}
 	
@@ -172,7 +174,7 @@ public:
 
 		SerializeVecVecObj(Ar, _resourceEnumToPlayerSupplyChanges);
 
-		SerializeVecObj(Ar, _intercityTradeOffers);
+		SerializeVecVecObj(Ar, _intercityTradeOffers);
 		SerializeVecVecValue(Ar, _tradeClusterToPlayerIds);
 	}
 
@@ -246,5 +248,5 @@ private:
 	std::vector<std::vector<int32>> _tradeClusterToPlayerIds;
 
 	// Intercity Trade Offer
-	std::vector<IntercityTradeOffer> _intercityTradeOffers;
+	std::vector<std::vector<IntercityTradeOffer>> _intercityTradeOffers;
 };

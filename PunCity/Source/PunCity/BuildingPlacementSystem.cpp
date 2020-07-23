@@ -241,7 +241,13 @@ PlacementInfo ABuildingPlacementSystem::PlacementBuildingInfo()
 		ClearInstructions();
 
 		if (_dragState == DragState::Dragging && _canPlace) {
-			int32 goldNeeded = _roadPathTileIds.Num() * 20;
+			int32 goldNeeded = 0;
+			for (int32 roadTileId : _roadPathTileIds) {
+				if (!_gameInterface->simulation().IsRoadTile(WorldTile2(roadTileId))) {
+					goldNeeded += IntercityRoadTileCost;
+				}
+			}
+			
 			SetInstruction(PlacementInstructionEnum::DragRoadIntercity, true, goldNeeded);
 		}
 	}

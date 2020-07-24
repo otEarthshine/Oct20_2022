@@ -66,10 +66,12 @@ void UTechUI::TickUI()
 
 	{
 		std::stringstream ss;
-		ss << (science100SoFar / 100);
+		ss << fixed << setprecision(1);
+		ss << (science100SoFar / 100.0f) << "";
 		if (unlockSys->hasTargetResearch()) {
-			ss << "/" << unlockSys->scienceNeeded() << "<img id=\"Science\"/>";
+			ss << "/" << unlockSys->scienceNeeded();
 		}
+		ss << "<img id=\"Science\"/>";
 		ScienceAmountText->SetText(ToFText(ss.str()));
 	}
 

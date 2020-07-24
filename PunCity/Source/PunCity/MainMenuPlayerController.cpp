@@ -197,7 +197,7 @@ void AMainMenuPlayerController::SetupDisplayManager()
 				}
 
 				// Hardcode to small...
-				WorldRegion2 mapSize = GetMapSize(MapSizeEnum::Large);
+				WorldRegion2 mapSize = GetMapSize(MapSizeEnum::Medium);
 				mainMenuDisplayManager->assetLoader()->SetMaterialCollectionParametersScalar("TotalRegionX", mapSize.x);
 				mainMenuDisplayManager->assetLoader()->SetMaterialCollectionParametersScalar("TotalRegionY", mapSize.y);
 

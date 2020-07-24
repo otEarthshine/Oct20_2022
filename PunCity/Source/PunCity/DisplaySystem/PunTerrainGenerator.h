@@ -259,7 +259,7 @@ public:
 
 private:
 	FString _mapSeed;
-	MapSizeEnum _mapSize = MapSizeEnum::Large;
+	MapSizeEnum _mapSize = MapSizeEnum::Medium;
 	
 	std::vector<uint8> _river4x4Map;
 	std::vector<uint8> _rainfall4x4Map;

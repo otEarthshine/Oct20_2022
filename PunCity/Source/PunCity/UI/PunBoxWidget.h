@@ -91,6 +91,8 @@ public:
 		child->SetVisibility(ESlateVisibility::Visible);
 		currentIndex++;
 
+		// !!! Error here could be caused by leaving items in PunBoxWidget
+
 		PUN_CHECK(PunVerticalBox->GetChildrenCount() >= currentIndex);
 		return child;
 	}
@@ -231,9 +233,18 @@ public:
 	UPunButton* AddButton(std::string prefix, UTexture2D* texture, std::string suffix, UPunWidget* callbackParent, CallbackEnum callbackEnum,
 							bool showEnabled = true, bool showExclamation = false, int32 callbackVar1In = -1, int32 callbackVar2In = -1)
 	{
-		return AddButton2Lines("", prefix, texture, suffix, callbackParent, callbackEnum, showEnabled, showExclamation, callbackVar1In, callbackVar2In);
+		return AddButtonBase("", prefix, texture, suffix, callbackParent, callbackEnum, showEnabled, showExclamation, callbackVar1In, callbackVar2In);
 	}
-	UPunButton* AddButton2Lines(std::string topString, std::string prefix, UTexture2D* texture, std::string suffix, UPunWidget* callbackParent, CallbackEnum callbackEnum,
+	UPunButton* AddButton2Lines(std::string topString, UPunWidget* callbackParent, CallbackEnum callbackEnum,
+		bool showEnabled = true, bool showExclamation = false, int32 callbackVar1In = -1, int32 callbackVar2In = -1)
+	{
+		auto widget = GetChildElement<UPunButton>(UIEnum::PunButton);
+		widget->Set(topString, "", nullptr, "", callbackParent, callbackEnum, callbackVar1In, callbackVar2In);
+		SetButtonEnabled(widget->Button, showEnabled ? ButtonStateEnum::Enabled : ButtonStateEnum::Disabled);
+		widget->ExclamationIcon->SetShow(showExclamation);
+		return widget;
+	}
+	UPunButton* AddButtonBase(std::string topString, std::string prefix, UTexture2D* texture, std::string suffix, UPunWidget* callbackParent, CallbackEnum callbackEnum,
 							bool showEnabled = true, bool showExclamation = false, int32 callbackVar1In = -1, int32 callbackVar2In = -1)
 	{
 		auto widget = GetChildElement<UPunButton>(UIEnum::PunButton);

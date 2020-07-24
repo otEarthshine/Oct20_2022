@@ -91,7 +91,7 @@ public:
 				else if (offerEnum == IntercityTradeOfferEnum::SellWhenAbove) {
 					int32 sellCount = resourceCount - targetInventory;
 					if (sellCount > 0) {
-						SellDisplayBox->AddIconPair(to_string(targetInventory), tradeRow->resourceEnum(), "");
+						SellDisplayBox->AddIconPair(to_string(sellCount), tradeRow->resourceEnum(), "");
 					}
 				}
 
@@ -130,6 +130,7 @@ public:
 		for (ResourcePair pair : availableForSellingPairs) {
 			auto tradeRow = AddWidget<UIntercityTradeRow>(UIEnum::TradeRowIntercity);
 			tradeRow->Init(this, pair.resourceEnum);
+			tradeRow->TargetInventory->minAmount = 0;
 			TradeRowBox->AddChild(tradeRow);
 		}
 
@@ -175,7 +176,9 @@ public:
 
 			IntercityTradeOfferEnum offerEnum = tradeRow->GetOfferEnum();
 			int32 targetInventory = tradeRow->TargetInventory->amount;
-			if (offerEnum != IntercityTradeOfferEnum::None && targetInventory > 0) 
+			
+			if ((offerEnum == IntercityTradeOfferEnum::BuyWhenBelow && targetInventory > 0) ||
+				(offerEnum == IntercityTradeOfferEnum::SellWhenAbove && targetInventory >= 0))
 			{
 				command->resourceEnums.Add(static_cast<uint8>(tradeRow->resourceEnum()));
 				command->intercityTradeOfferEnum.Add(static_cast<uint8>(offerEnum));
@@ -184,6 +187,9 @@ public:
 		}
 
 		networkInterface()->SendNetworkCommand(command);
+
+		dataSource()->Spawn2DSound("UI", "TradeAction");
+		SetVisibility(ESlateVisibility::Collapsed);
 	}
 	UFUNCTION() void ClickedDismissButton() {
 		CloseUI();

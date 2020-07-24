@@ -203,14 +203,18 @@ void UWorldSpaceUI::TickBuildings()
 						[&](URegionHoverUI* ui) {}
 					);
 
+					bool isAttacker = claimProgress.attackerPlayerId == playerId();
+
 					std::stringstream ss;
-					ss << "Attacker: " << simulation().playerName(claimProgress.attackerPlayerId) << "\n";
-					ss << claimProgress.committedInfluences << "<img id=\"Influence\"/>";
+					std::string textType = (isAttacker ? "<Large>" : "<LargeRed>");
+					ss << textType << "Attacker: " << simulation().playerName(claimProgress.attackerPlayerId) << "</>\n";
+					ss << textType << claimProgress.committedInfluences << "</><img id=\"Influence\"/>";
 					SetText(regionHoverUI->ClaimingText, ss.str());
 					regionHoverUI->AutoChoseText->SetVisibility(ESlateVisibility::Collapsed);
 
 					float fraction = static_cast<float>(claimProgress.ticksElapsed) / BattleClaimTicks;
 					regionHoverUI->ClockImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", fraction);
+					regionHoverUI->ClockImage->GetDynamicMaterial()->SetScalarParameterValue("IsRed", !isAttacker);
 					regionHoverUI->ClockBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 				}
 			}

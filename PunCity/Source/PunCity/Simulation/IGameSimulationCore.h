@@ -128,7 +128,12 @@ public:
 	virtual std::string townSizeName(int32 playerId) = 0;
 	virtual int32 townAgeTicks(int32 playerId) = 0;
 
-	virtual bool unlockedInfluence(int32 playerId) { return townLvl(playerId) >= 3; }
+	virtual bool unlockedInfluence(int32 playerId) {
+		if (IsPlayerInitialized(playerId)) {
+			return townLvl(playerId) >= 3;
+		}
+		return false;
+	}
 
 	virtual class Building& building(int32 id) = 0;
 	virtual class Building& building(ResourceHolderInfo holderInfo, int32 playerId) = 0;

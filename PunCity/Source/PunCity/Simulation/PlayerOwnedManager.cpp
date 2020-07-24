@@ -789,7 +789,7 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 			tradeClusterTotalPopulation += _simulation->population(playerId);
 		}
 	}
-	incomes100[static_cast<int>(IncomeEnum::TradeRoute)] += tradeClusterTotalPopulation / 2;
+	incomes100[static_cast<int>(IncomeEnum::TradeRoute)] += 100 * tradeClusterTotalPopulation / 2;
 
 	int32 influence100 = _simulation->influence100(_playerId);
 

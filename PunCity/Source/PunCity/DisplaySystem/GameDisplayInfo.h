@@ -805,7 +805,7 @@ public:
 			// For each variations specified
 			for (auto& moduleTransforms : variationToModuleTransforms) 
 			{
-				UE_LOG(LogTemp, Error, TEXT("LoadBuildingSets %d %s %s"), buildingEnumInt, ToTChar(GetBuildingInfoInt(buildingEnumInt).name), ToTChar(moduleTransforms.setName));
+				//UE_LOG(LogTemp, Error, TEXT("LoadBuildingSets %d %s %s"), buildingEnumInt, ToTChar(GetBuildingInfoInt(buildingEnumInt).name), ToTChar(moduleTransforms.setName));
 				
 				if (moduleTransforms.setName != "")
 				{

@@ -104,7 +104,7 @@ void ULobbyUI::Init()
 
 //#if WITH_EDITOR
 	// Small map for editor play for speed
-	serverMapSettings.mapSizeEnumInt = static_cast<int32>(MapSizeEnum::Large);
+	serverMapSettings.mapSizeEnumInt = static_cast<int32>(MapSizeEnum::Medium);
 	LobbyMapSizeDropdown->SetSelectedIndex(serverMapSettings.mapSizeEnumInt);
 	RefreshAICountDropdown();
 //#endif

@@ -220,8 +220,8 @@ void AGameManager::InitPhase2()
 
 	int32 initialAnimals = PunSettings::Get("InitialAnimals");
 	switch(_simulation->mapSizeEnum()) {
-	case MapSizeEnum::Huge: break;
-	case MapSizeEnum::Large: initialAnimals /= 4; break;
+	case MapSizeEnum::Large: break;
+	case MapSizeEnum::Medium: initialAnimals /= 4; break;
 	case MapSizeEnum::Small: initialAnimals /= 16; break;
 	}
 	unitSystem.AddAnimals(initialAnimals);

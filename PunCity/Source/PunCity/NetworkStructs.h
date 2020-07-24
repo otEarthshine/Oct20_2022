@@ -11,7 +11,7 @@ class FMapSettings
 {
 public:
 	FString mapSeed = FString("seed");
-	int32 mapSizeEnumInt = static_cast<int>(MapSizeEnum::Large);
+	int32 mapSizeEnumInt = static_cast<int>(MapSizeEnum::Medium);
 	int32 playerCount = 0;
 	int32 aiCount = 15;
 	DifficultyLevel difficultyLevel = DifficultyLevel::Normal;
@@ -556,6 +556,8 @@ class FSetIntercityTrade final : public FNetworkCommand
 public:
 	virtual ~FSetIntercityTrade() {}
 
+	int32 buildingIdToEstablishTradeRoute = -1;
+	uint8 isCancelingTradeRoute = 0;
 	TArray<uint8> resourceEnums;
 	TArray<uint8> intercityTradeOfferEnum;
 	TArray<int32> targetInventories;
@@ -565,6 +567,8 @@ public:
 	void SerializeAndAppendToBlob(TArray<int32>& blob) final
 	{
 		FNetworkCommand::SerializeAndAppendToBlob(blob);
+		blob.Add(buildingIdToEstablishTradeRoute);
+		blob.Add(isCancelingTradeRoute);
 		SerializeArray(blob, resourceEnums);
 		SerializeArray(blob, intercityTradeOfferEnum);
 		SerializeArray(blob, targetInventories);
@@ -573,6 +577,8 @@ public:
 	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final
 	{
 		FNetworkCommand::DeserializeFromBlob(blob, index);
+		buildingIdToEstablishTradeRoute = blob[index++];
+		isCancelingTradeRoute = blob[index++];
 		DeserializeArray(blob, index, resourceEnums);
 		DeserializeArray(blob, index, intercityTradeOfferEnum);
 		targetInventories = DeserializeArray(blob, index);

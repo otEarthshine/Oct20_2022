@@ -1657,7 +1657,16 @@ void GameSimulationCore::TradeResource(FTradeResource command)
 
 void GameSimulationCore::SetIntercityTrade(FSetIntercityTrade command)
 {
-	worldTradeSystem().SetIntercityTradeOffers(command);
+	if (command.buildingIdToEstablishTradeRoute != -1) {
+		if (command.isCancelingTradeRoute) {
+			worldTradeSystem().TryCancelTradeRoute(command);
+		} else {
+			worldTradeSystem().TryEstablishTradeRoute(command);
+		}
+	}
+	else {
+		worldTradeSystem().SetIntercityTradeOffers(command);
+	}
 }
 
 void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
@@ -1943,7 +1952,9 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 				// Release region ownership
 				SetProvinceOwner(provinceId, -1);
 			}
-			
+
+			// Remove Trade Route
+			worldTradeSystem().RemoveAllTradeRoutes(playerId);
 
 			// Reset all Systems
 			_resourceSystems[playerId] = ResourceSystem(playerId, this);
@@ -2485,7 +2496,8 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	 */
 	else if (command.claimEnum == CallbackEnum::StartAttackProvince)
 	{
-		auto& provincePlayerOwner = playerOwned(provinceOwner(command.provinceId));
+		int32 provincePlayerId = provinceOwner(command.provinceId);
+		auto& provincePlayerOwner = playerOwned(provincePlayerId);
 
 		// If there was no claim yet, start the conquer
 		if (!provincePlayerOwner.GetDefendingClaimProgress(command.provinceId).isValid()) 
@@ -2498,6 +2510,8 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 				
 				provincePlayerOwner.StartConquerProvince(command.playerId, command.provinceId);
 				playerOwned(command.playerId).StartConquerProvince_Attacker(command.provinceId);
+
+				AddPopup(provincePlayerId, playerName(command.playerId) + " is trying to take over your territory.\nIf you lose the province, all its buildings will be destroyed.");
 			}
 		}
 	}

@@ -336,7 +336,7 @@ void PunTerrainGenerator::GenerateMoisture()
 
 		switch(_mapSize)
 		{
-		case MapSizeEnum::Huge: normalCloudStartSize *= 2; desertCloudStartSize *= 2; break;
+		case MapSizeEnum::Large: normalCloudStartSize *= 2; desertCloudStartSize *= 2; break;
 		case MapSizeEnum::Small: normalCloudStartSize /= 2; desertCloudStartSize /= 2; break;
 		}
 
@@ -494,8 +494,8 @@ void PunTerrainGenerator::Erode(std::vector<int16_t>& heightMapBeforeFlatten, st
 	int32 totalSourceCount = 300;
 	switch(_mapSize) {
 		case MapSizeEnum::Small: totalSourceCount = totalSourceCount / 16; break;
-		case MapSizeEnum::Large: totalSourceCount = totalSourceCount / 4; break;
-		case MapSizeEnum::Huge: break;
+		case MapSizeEnum::Medium: totalSourceCount = totalSourceCount / 4; break;
+		case MapSizeEnum::Large: break;
 		default: break;
 	}
 	
@@ -1375,7 +1375,7 @@ uint8 PunTerrainGenerator::Init1()
 
 	auto modifyPerlinFreq = [&](int32& freq)
 	{
-		if (_mapSize == MapSizeEnum::Huge) {
+		if (_mapSize == MapSizeEnum::Large) {
 			freq *= 2;
 		}
 		if (_mapSize == MapSizeEnum::Small) {

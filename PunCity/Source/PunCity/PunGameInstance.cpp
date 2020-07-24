@@ -300,6 +300,12 @@ void UPunGameInstance::CreateGame_Phase2()
 
 	if (sessionSettings.bIsLANMatch) {
 		sessionInterface->CreateSession(0, SESSION_NAME, sessionSettings);
+
+		//// TODO: REMOVE
+		//AGameModeBase* gameMode = UGameplayStatics::GetGameMode(GetWorld());
+		//bool canTravel = gameMode->CanServerTravel("/Game/Maps/Lobby?listen", false);
+		//PUN_LOG("canTravel %d", canTravel);
+		
 		PUN_DEBUG2("CreateSession: LAN");
 		bIsCreatingSession = true;
 	}
@@ -332,7 +338,18 @@ void UPunGameInstance::OnCreateSessionComplete(FName sessionName, bool success)
 		return;
 	}
 
+	//AGameModeBase* gameMode = UGameplayStatics::GetGameMode(GetWorld());
+	//if (!gameMode->CanServerTravel("/Game/Maps/Lobby?listen", false)) {
+	//	return;
+	//}
+	
 	GetWorld()->ServerTravel("/Game/Maps/Lobby?listen");
+	
+	//FString Error;
+	//GetEngine()->Browse(*WorldContext, FURL(*FString("/Game/Maps/Lobby?listen")), Error);
+	//PUN_LOG("OnCreateSessionComplete %s", *Error);
+	
+	//UGameplayStatics::OpenLevel(GetWorld(), "Lobby", true, "listen");
 }
 
 void UPunGameInstance::OnFindSessionsComplete(bool success)

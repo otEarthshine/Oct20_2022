@@ -11,15 +11,6 @@ void UTownhallHoverInfo::PunInit(int buildingId)
 	_buildingId = buildingId;
 	//CityNameEditableText->OnTextCommitted.AddDynamic(this, &UTownhallHoverInfo::ChangedCityName);
 
-	auto townhall = simulation().building(_buildingId).subclass<TownHall>(CardEnum::Townhall);
-	if (townhall.playerId() == playerId()) {
-		SetText(TradeButtonText, "Set Trade Offer");
-		BUTTON_ON_CLICK(TradeButton, this, &UTownhallHoverInfo::OnClickSetTradeOfferButton);
-	} else {
-		SetText(TradeButtonText, "Establish Trade Route");
-		BUTTON_ON_CLICK(TradeButton, this, &UTownhallHoverInfo::OnClickEstablishTradeRouteButton);
-	}
-
 	BUTTON_ON_CLICK(LaborerNonPriorityButton, this, &UTownhallHoverInfo::OnClickLaborerNonPriorityButton);
 	BUTTON_ON_CLICK(LaborerPriorityButton, this, &UTownhallHoverInfo::OnClickLaborerPriorityButton);
 	BUTTON_ON_CLICK(LaborerArrowUp, this, &UTownhallHoverInfo::IncreaseLaborers);
@@ -39,6 +30,9 @@ void UTownhallHoverInfo::PunInit(int buildingId)
 	LeftArmyBox->ClearChildren();
 	RightArmyBox->ClearChildren();
 	MilitaryButtons->ClearChildren();
+
+	SetChildHUD(BuyingBox);
+	SetChildHUD(SellingBox);
 
 	_lastPriorityInputTime = -999.0f;
 	SyncState();

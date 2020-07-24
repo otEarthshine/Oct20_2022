@@ -802,8 +802,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 						if (building.playerId() == playerId())
 						{
-							descriptionBox->AddButton("Set Trade Offers", nullptr, "", this, CallbackEnum::OpenSetTradeOffers, true, false, townhall.playerId());
-							descriptionBox->AddLineSpacer(10);
+							//descriptionBox->AddButton("Set Trade Offers", nullptr, "", this, CallbackEnum::OpenSetTradeOffers, true, false, townhall.playerId());
+							//descriptionBox->AddLineSpacer(10);
 
 
 							
@@ -1631,7 +1631,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							ss << "Upgrade townhall to lvl " << (townhall.townhallLvl + 1) << "\n";
 							ss << moneyText << "<img id=\"Coin\"/>";
 							
-							UPunButton* button = descriptionBox->AddButton2Lines(ss.str(), "", nullptr, "", this, CallbackEnum::UpgradeBuilding, true, showExclamation, objectId, 0);
+							UPunButton* button = descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::UpgradeBuilding, true, showExclamation, objectId, 0);
 							ss.str(string());
 
 							ss << "Upgrade Rewards<line>";
@@ -1657,7 +1657,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 							bool showEnabled = townhall.wallLvl < townhall.townhallLvl;
 
-							UPunButton* button = descriptionBox->AddButton2Lines(ss.str(), "", nullptr, "", this, CallbackEnum::UpgradeBuilding, showEnabled, false, objectId, 1);
+							UPunButton* button = descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::UpgradeBuilding, showEnabled, false, objectId, 1);
 							ss.str(string());
 
 							ss << "Upgrading the wall to next level will double its HP.";
@@ -1702,7 +1702,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 							bool isUpgradable = !upgrade.isUpgraded;
 
-							UPunButton* button = descriptionBox->AddButton2Lines(ss.str(), "", nullptr, "", this, CallbackEnum::UpgradeBuilding, isUpgradable, false,  objectId, upgradeIndex);
+							UPunButton* button = descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::UpgradeBuilding, isUpgradable, false,  objectId, upgradeIndex);
 							ss.str(string());
 							AddToolTip(button, upgrade.name + "\n" + upgrade.description);
 						};
@@ -2416,18 +2416,24 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 			{
 				bool canClaim = simulation().influence(playerId()) >= provincePrice;
 
+				stringstream ss;
+				ss << "Claim Province\n";
+				ss << TextRed(to_string(provincePrice), !canClaim) << "<img id=\"Influence\"/>";
+
 				descriptionBox->AddSpacer();
-				descriptionBox->AddButton2Lines("Claim Province", TextRed(to_string(provincePrice), !canClaim) + "<img id=\"Influence\"/>", nullptr, "",
-												this, CallbackEnum::ClaimLandInfluence, canClaim, false, provinceId);
+				descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::ClaimLandInfluence, canClaim, false, provinceId);
 			}
 
 			// Claim by money
 			{
 				bool canClaim = simulation().money(playerId()) >= provincePrice;
 
+				stringstream ss;
+				ss << "Claim Province\n";
+				ss << TextRed(to_string(provincePrice), !canClaim) << "<img id=\"Coin\"/>";
+				
 				descriptionBox->AddSpacer();
-				descriptionBox->AddButton2Lines("Claim Province", TextRed(to_string(provincePrice), !canClaim) + "<img id=\"Coin\"/>", nullptr, "",
-												this, CallbackEnum::ClaimLandMoney, canClaim, false, provinceId);
+				descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::ClaimLandMoney, canClaim, false, provinceId);
 			}
 
 			// Claim by food
@@ -2436,16 +2442,19 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 				int32 foodNeeded = provincePrice / FoodCost;
 				bool canClaim = sim.foodCount(playerId()) >= foodNeeded;
 
+				stringstream ss;
+				ss << "Claim Province\n";
+				ss << TextRed(to_string(foodNeeded), !canClaim) << " food";
+
 				descriptionBox->AddSpacer();
-				descriptionBox->AddButton2Lines("Claim Province", TextRed(to_string(foodNeeded), !canClaim) + " food", nullptr, "",
-					this, CallbackEnum::ClaimLandFood, canClaim, false, provinceId);
+				descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::ClaimLandFood, canClaim, false, provinceId);
 			}
 
 		}
 		else if (sim.IsProvinceNextToPlayerIncludingNonFlatLand(provinceId, playerId()))
 		{
 			descriptionBox->AddSpacer();
-			descriptionBox->AddRichText("<Red>Not claimable through mountain or sea</>");
+			descriptionBox->AddRichText("<Red>Cannot claim province through mountain and sea</>");
 		}
 
 		descriptionBox->AddSpacer();
@@ -2481,27 +2490,41 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 		// Conquer
 		if (simulation().unlockedInfluence(playerId()))
 		{
-			ProvinceClaimProgress claimProgress = simulation().playerOwned(provinceOwnerId).GetDefendingClaimProgress(provinceId);
-
-			// Already a claim, reinforce
-			if (claimProgress.isValid())
+			if (sim.IsProvinceNextToPlayer(provinceId, playerId()))
 			{
-				int32 attackReinforcePrice = simulation().GetProvinceAttackReinforcePrice(provinceId);
-				bool canClaim = simulation().influence(playerId()) >= attackReinforcePrice;
+				ProvinceClaimProgress claimProgress = simulation().playerOwned(provinceOwnerId).GetDefendingClaimProgress(provinceId);
 
-				descriptionBox->AddSpacer();
-				descriptionBox->AddButton2Lines("Reinforce (Annex)", TextRed(to_string(attackReinforcePrice), !canClaim) + "<img id=\"Influence\"/>", nullptr, "",
-												this, CallbackEnum::ReinforceAttackProvince, canClaim, false, provinceId);
+				// Already a claim, reinforce
+				if (claimProgress.isValid())
+				{
+					int32 attackReinforcePrice = simulation().GetProvinceAttackReinforcePrice(provinceId);
+					bool canClaim = simulation().influence(playerId()) >= attackReinforcePrice;
+
+					stringstream ss;
+					ss << "Reinforce (Annex)\n";
+					ss << TextRed(to_string(attackReinforcePrice), !canClaim) << "<img id=\"Influence\"/>";
+
+					descriptionBox->AddSpacer();
+					descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::ReinforceAttackProvince, canClaim, false, provinceId);
+				}
+				// Start a new claim
+				else
+				{
+					int32 startAttackPrice = simulation().GetProvinceAttackStartPrice(provinceId);
+					bool canClaim = simulation().influence(playerId()) >= startAttackPrice;
+
+					stringstream ss;
+					ss << "Conquer Province (Annex)\n";
+					ss << TextRed(to_string(startAttackPrice), !canClaim) << "<img id=\"Influence\"/>";
+
+					descriptionBox->AddSpacer();
+					descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::StartAttackProvince, canClaim, false, provinceId);
+				}
 			}
-			// Start a new claim
-			else
+			else if (sim.IsProvinceNextToPlayerIncludingNonFlatLand(provinceId, playerId()))
 			{
-				int32 startAttackPrice = simulation().GetProvinceAttackStartPrice(provinceId);
-				bool canClaim = simulation().influence(playerId()) >= startAttackPrice;
-
 				descriptionBox->AddSpacer();
-				descriptionBox->AddButton2Lines("Conquer Province (Annex)", TextRed(to_string(startAttackPrice), !canClaim) + "<img id=\"Influence\"/>", nullptr, "",
-												this, CallbackEnum::StartAttackProvince, canClaim, false, provinceId);
+				descriptionBox->AddRichText("<Red>Cannot attack through mountain and sea</>");
 			}
 		}
 	}
@@ -2510,8 +2533,11 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 	{
 		ProvinceClaimProgress claimProgress = simulation().playerOwned(provinceOwnerId).GetDefendingClaimProgress(provinceId);
 
-		if (claimProgress.isValid())
+		// Already a claimProgress, and isn't the attacking player, allow anyone to help defend
+		if (claimProgress.isValid() &&
+			claimProgress.attackerPlayerId != playerId())
 		{
+			// Defend by Influence
 			if (simulation().unlockedInfluence(playerId()))
 			{
 				bool canClaim = simulation().influence(playerId()) >= BattleInfluencePrice;
@@ -2521,10 +2547,10 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 				ss << TextRed(to_string(BattleInfluencePrice), !canClaim) << "<img id=\"Influence\"/>";
 
 				descriptionBox->AddSpacer();
-				descriptionBox->AddButton(ss.str(), nullptr, "", this, CallbackEnum::DefendProvinceInfluence, canClaim, false, provinceId);
+				descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::DefendProvinceInfluence, canClaim, false, provinceId);
 			}
 
-			// Claim by money
+			// Defend by money
 			{
 				bool canClaim = simulation().money(playerId()) >= BattleInfluencePrice;
 
@@ -2533,7 +2559,7 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 				ss << TextRed(to_string(BattleInfluencePrice), !canClaim) << "<img id=\"Coin\"/>";
 
 				descriptionBox->AddSpacer();
-				descriptionBox->AddButton(ss.str(), nullptr, "", this, CallbackEnum::DefendProvinceMoney, canClaim, false, provinceId);
+				descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::DefendProvinceMoney, canClaim, false, provinceId);
 			}
 		}
 	}

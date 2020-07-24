@@ -42,7 +42,7 @@ void AMainMenuDisplayManager::InitMainMenuDisplayManager(MapSizeEnum mapSizeEnum
 	_postProcessVolume = CastChecked<APostProcessVolume>(PunUnrealUtils::FindWorldActor(GetWorld(), FName("GlobalPostProcessVolume")));
 	
 	// Hard code this for now... MainMenu should use small map for performance anyway.
-	WorldRegion2 regionPerWorld = GetMapSize(MapSizeEnum::Large);
+	WorldRegion2 regionPerWorld = GetMapSize(MapSizeEnum::Medium);
 	
 	_LOG(PunSaveLoad, "InitMainMenuDisplayManager mapSize(%d, %d)", regionPerWorld.x, regionPerWorld.y);
 	

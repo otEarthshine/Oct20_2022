@@ -28,6 +28,32 @@ public:
 	{
 		TownHall& townhall = simulation().building(_buildingId).subclass<TownHall>(CardEnum::Townhall);
 		auto& playerOwned = simulation().playerOwned(townhall.playerId());
+
+		/*
+		 * Intercity Trade / Trade Route
+		 */
+		if (simulation().IsPlayerInitialized(playerId()))
+		{
+			if (townhall.playerId() == playerId()) {
+				SetText(TradeButtonText, "Set Trade Offer");
+				BUTTON_ON_CLICK(TradeButton, this, &UTownhallHoverInfo::OnClickSetTradeOfferButton);
+			}
+			else {
+				std::vector<int32> tradePartners = simulation().worldTradeSystem().GetTradePartners(playerId());
+				if (CppUtils::Contains(tradePartners, townhall.playerId())) {
+					SetText(TradeButtonText, "Cancel Trade Route");
+					BUTTON_ON_CLICK(TradeButton, this, &UTownhallHoverInfo::OnClickCancelTradeRouteButton);
+				}
+				else {
+					SetText(TradeButtonText, "Establish Trade Route");
+					BUTTON_ON_CLICK(TradeButton, this, &UTownhallHoverInfo::OnClickEstablishTradeRouteButton);
+				}
+			}
+			TradeButton->SetVisibility(ESlateVisibility::Visible);
+		}
+		else {
+			TradeButton->SetVisibility(ESlateVisibility::Collapsed);
+		}
 		
 		// Update population
 		PlayerOwnedManager& townhallPlayerOwned = simulation().playerOwned(townhall.playerId());
@@ -83,11 +109,11 @@ public:
 
 
 		/*
-		 * Update TradeInfoBox
+		 * Update TradeInfoOverlay
 		 */
 		{
 			const std::vector<IntercityTradeOffer>& offers = simulation().worldTradeSystem().GetIntercityTradeOffers(townhall.playerId());
-			TradeInfoBox->SetVisibility(offers.size() > 0 ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+			TradeInfoOverlay->SetVisibility(offers.size() > 0 ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 			CallbackEnum callbackEnum = (townhall.playerId() == playerId()) ? CallbackEnum::None : CallbackEnum::IntercityTrade;
 			
 			for (const auto& offer : offers) {
@@ -98,10 +124,13 @@ public:
 					}
 				} else {
 					if (inventory > offer.targetInventory) {
-						BuyingBox->AddChooseResourceElement2(offer.resourceEnum, std::to_string(inventory - offer.targetInventory), this, callbackEnum);
+						SellingBox->AddChooseResourceElement2(offer.resourceEnum, std::to_string(inventory - offer.targetInventory), this, callbackEnum);
 					}
 				}
 			}
+
+			BuyingBox->AfterAdd();
+			SellingBox->AfterAdd();
 		}
 
 
@@ -658,7 +687,7 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) UButton* TradeButton;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* TradeButtonText;
-	UPROPERTY(meta = (BindWidget)) UHorizontalBox* TradeInfoBox;
+	UPROPERTY(meta = (BindWidget)) UOverlay* TradeInfoOverlay;
 	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* BuyingBox;
 	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* SellingBox;
 	
@@ -719,8 +748,18 @@ private:
 	UFUNCTION() void OnClickSetTradeOfferButton() {
 		GetPunHUD()->OpenIntercityTradeUI(_buildingId);
 	}
-	UFUNCTION() void OnClickEstablishTradeRouteButton() {
-		
+	UFUNCTION() void OnClickEstablishTradeRouteButton()
+	{
+		auto command = make_shared<FSetIntercityTrade>();
+		command->buildingIdToEstablishTradeRoute = _buildingId;
+		networkInterface()->SendNetworkCommand(command);
+	}
+	UFUNCTION() void OnClickCancelTradeRouteButton()
+	{
+		auto command = make_shared<FSetIntercityTrade>();
+		command->buildingIdToEstablishTradeRoute = _buildingId;
+		command->isCancelingTradeRoute = 1;
+		networkInterface()->SendNetworkCommand(command);
 	}
 
 	/*

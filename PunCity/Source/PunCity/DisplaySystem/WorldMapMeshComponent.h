@@ -39,10 +39,10 @@ public:
 
 		FVector mapScale;
 		MapSizeEnum mapSizeEnum = gameManager->simulation().mapSizeEnum();
-		if (mapSizeEnum == MapSizeEnum::Huge) {
+		if (mapSizeEnum == MapSizeEnum::Large) {
 			mapScale = FVector(32, 32, 32);
 		}
-		else if (mapSizeEnum == MapSizeEnum::Large) {
+		else if (mapSizeEnum == MapSizeEnum::Medium) {
 			mapScale = FVector(16, 16, 16);
 		}
 		else if (mapSizeEnum == MapSizeEnum::Small) {

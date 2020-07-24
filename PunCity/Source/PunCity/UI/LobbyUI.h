@@ -167,7 +167,7 @@ private:
 
 		int maxAICount = GameConstants::MaxAIs;
 		switch(serverMapSettings.mapSizeEnum()) {
-			case MapSizeEnum::Large: maxAICount = 8; break;
+			case MapSizeEnum::Medium: maxAICount = 8; break;
 			case MapSizeEnum::Small: maxAICount = 3; break;
 		}
 		

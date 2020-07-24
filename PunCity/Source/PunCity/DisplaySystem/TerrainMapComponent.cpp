@@ -72,10 +72,10 @@ UTerrainMapComponent::UTerrainMapComponent()
 void UTerrainMapComponent::UpdateTerrainMapDisplay(bool mapTerrainVisible, bool mapTerrainWaterVisible, bool tileDisplayNoRegionSkip)
 {
 	FVector mapScale;
-	if (_mapSizeEnum == MapSizeEnum::Huge) {
+	if (_mapSizeEnum == MapSizeEnum::Large) {
 		mapScale = FVector(32, 32, 32);
 	}
-	else if (_mapSizeEnum == MapSizeEnum::Large) {
+	else if (_mapSizeEnum == MapSizeEnum::Medium) {
 		mapScale = FVector(16, 16, 16);
 	}
 	else if (_mapSizeEnum == MapSizeEnum::Small) {
@@ -301,7 +301,7 @@ int UTerrainMapComponent::tileDimY2;
 
 void UTerrainMapComponent::RefreshHeightForestColor(TileArea area, IGameSimulationCore* simulation, bool useNewHeight)
 {
-	SCOPE_TIMER("Refresh HeightForestColor");
+	//SCOPE_TIMER("Refresh HeightForestColor");
 
 	isHeightForestColorDirty = true;
 	

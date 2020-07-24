@@ -84,19 +84,19 @@ public:
 		ResourceIcon->GetDynamicMaterial()->SetTextureParameterValue("ColorTexture", assetLoader()->GetResourceIcon(resourceEnum));
 		ResourceIcon->GetDynamicMaterial()->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(resourceEnum));
 
-		int32 price100 = simulation().price100(resourceEnum);
-		int32 basePrice100 = GetResourceInfo(resourceEnum).basePrice100();
+		//int32 price100 = simulation().price100(resourceEnum);
+		//int32 basePrice100 = GetResourceInfo(resourceEnum).basePrice100();
 
-		std::stringstream ss;
-		ss << fixed << setprecision(2);
-		ss << price100 / 100.0f;
-		SetText(MoneyText, ss);
-		SetPriceColor(MoneyText, price100, basePrice100);
+		//std::stringstream ss;
+		//ss << fixed << setprecision(2);
+		//ss << price100 / 100.0f;
+		//SetText(MoneyText, ss);
+		//SetPriceColor(MoneyText, price100, basePrice100);
 
 		AddResourceTooltip(ResourceButton, resourceEnum);
 
-		MoneyText->SetVisibility(ESlateVisibility::HitTestInvisible);
-		MoneyIcon->SetVisibility(ESlateVisibility::HitTestInvisible);
+		MoneyText->SetVisibility(ESlateVisibility::Collapsed);
+		MoneyIcon->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
 	UFUNCTION() void OnClickResourceButton()

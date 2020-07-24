@@ -1798,6 +1798,8 @@ public:
 class ProvinceBuilding : public Building
 {
 public:
+	int32 maxCardSlots() override { return 0; }
+	
 	void OnInit() override
 	{
 		InstantClearArea();

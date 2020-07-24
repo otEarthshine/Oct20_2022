@@ -14,7 +14,7 @@ class PROTOTYPECITY_API URegionHoverUI : public UPunWidget
 {
 	GENERATED_BODY()
 public:
-	UPROPERTY(meta = (BindWidget)) UTextBlock* ClaimingText;
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* ClaimingText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* AutoChoseText;
 	
 	UPROPERTY(meta = (BindWidget)) USizeBox* ClockBox;

@@ -179,11 +179,14 @@ public:
 
 	void GoToMainMenu() final {
 		LLM_SCOPE_(EPunSimLLMTag::PUN_Controller);
-		
-		if (GetLocalRole() == ROLE_Authority) {
-			gameInstance()->EnsureSessionDestroyed();
-		}
-		ClientTravel("/Game/Maps/MainMenu", TRAVEL_Absolute);
+
+		_LOG(PunNetwork, "GoToMainMenu");
+
+		gameInstance()->ResetPlayerCount();
+		gameInstance()->PrintPlayers();
+
+		gameInstance()->EnsureSessionDestroyed(true);
+		//ClientTravel("/Game/Maps/MainMenu", TRAVEL_Absolute);
 	}
 	void GoToVictoryScreen() final {
 		LLM_SCOPE_(EPunSimLLMTag::PUN_Controller);
@@ -361,6 +364,7 @@ public:
 
 	int32 serverTick() final { return gameInstance()->serverTick(); }
 
+
 public:
 	/**
 	 * Networking
@@ -401,6 +405,23 @@ public:
 
 	UFUNCTION(Exec) void OpenTradeUI();
 	UFUNCTION(Exec) void OpenRareCardUI();
+
+	UFUNCTION(Exec) void SetAIIntercityTrade()
+	{
+		auto command = make_shared<FSetIntercityTrade>();
+		command->playerId = gameManager->simulation().aiStartIndex();
+		
+		command->resourceEnums.Add(static_cast<uint8>(ResourceEnum::Medicine));
+		command->intercityTradeOfferEnum.Add(static_cast<uint8>(IntercityTradeOfferEnum::SellWhenAbove));
+		command->targetInventories.Add(0);
+
+		command->resourceEnums.Add(static_cast<uint8>(ResourceEnum::Wood));
+		command->intercityTradeOfferEnum.Add(static_cast<uint8>(IntercityTradeOfferEnum::BuyWhenBelow));
+		command->targetInventories.Add(500);
+
+		networkInterface()->SendNetworkCommand(command);
+	}
+	
 
 	
 	UFUNCTION(Exec) void SaveMainMenuDisplay()
@@ -583,6 +604,7 @@ public:
 	UFUNCTION(Exec) void PrintLLM() {
 		PUN_LLM_ONLY(PunScopeLLM::Print());
 	}
+
 
 	// Photo taking
 	UFUNCTION(Exec) void SetShadowDistanceMultiplier(float multiplier) {

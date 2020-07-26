@@ -45,7 +45,7 @@ void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePe
 			totalTradeMoney100 += tradeMoney100;
 
 			resourceSys.RemoveResourceGlobal(resourceEnum, sellAmount);
-			resourceSys.ChangeMoney(tradeMoney100);
+			resourceSys.ChangeMoney100(tradeMoney100);
 		}
 		else if (buyAmount > 0) // Buy
 		{
@@ -53,7 +53,7 @@ void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePe
 			totalTradeMoney100 += tradeMoney100;
 			
 			resourceSys.AddResourceGlobal(resourceEnum, buyAmount, *simulation);
-			resourceSys.ChangeMoney(-tradeMoney100);
+			resourceSys.ChangeMoney100(-tradeMoney100);
 		}
 		
 		simulation->worldTradeSystem().ChangeSupply(playerId, resourceEnum, -buyAmount); // Buying is decreasing world supply

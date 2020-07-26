@@ -205,7 +205,7 @@ class FNetworkCommand
 public:
 	virtual ~FNetworkCommand() {}
 
-	int32 playerId; // Note!!! This is filled after being sent on network
+	int32 playerId = -1; // Note!!! This is filled after being sent on network
 
 	virtual NetworkCommandEnum commandType() { return NetworkCommandEnum::None; }
 
@@ -490,6 +490,7 @@ class FSendChat final : public FNetworkCommand
 public:
 	virtual ~FSendChat() {}
 
+	uint8 isSystemMessage = false;
 	FString message;
 
 	NetworkCommandEnum commandType() final { return NetworkCommandEnum::SendChat; }
@@ -497,12 +498,14 @@ public:
 	void SerializeAndAppendToBlob(TArray<int32>& blob) final
 	{
 		FNetworkCommand::SerializeAndAppendToBlob(blob);
+		blob.Add(isSystemMessage);
 		FString_SerializeAndAppendToBlob(message, blob);
 	}
 
 	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final
 	{
 		FNetworkCommand::DeserializeFromBlob(blob, index);
+		isSystemMessage = blob[index++];
 		message = FString_DeserializeFromBlob(blob, index);
 	}
 };

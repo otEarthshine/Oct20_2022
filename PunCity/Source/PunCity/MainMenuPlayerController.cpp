@@ -45,6 +45,7 @@ void AMainMenuPlayerController::BeginPlay()
 	SetupCameraPawn();
 
 	initStage = 2;
+
 }
 
 
@@ -271,9 +272,8 @@ void AMainMenuPlayerController::Client_GotKicked_Implementation()
 		gameInst->mainMenuPopup = FString("You were kicked from the game.");
 		
 		gameInstance()->isReturningToLobbyList = true;
-		gameInstance()->EnsureSessionDestroyed();
-		auto firstController = Cast<AMainMenuPlayerController>(GetWorld()->GetFirstPlayerController());
-		firstController->ClientTravel("/Game/Maps/MainMenu", TRAVEL_Absolute);
+		gameInstance()->EnsureSessionDestroyed(false);
+		GetWorld()->GetFirstPlayerController()->ClientTravel("/Game/Maps/MainMenu", TRAVEL_Absolute);
 	}
 }
 bool AMainMenuPlayerController::Client_GotKicked_Validate() { return true; }

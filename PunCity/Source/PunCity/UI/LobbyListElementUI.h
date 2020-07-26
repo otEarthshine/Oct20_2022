@@ -26,6 +26,9 @@ public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* PlayerCount;
 	//UPROPERTY(meta = (BindWidget)) UTextBlock* Ping;
 
+	UPROPERTY(meta = (BindWidget)) UTextBlock* DifferentVersionWarning;
+	int32 buildUniqueId = -1;
+	
 	FOnlineSessionSearchResult sessionSearchResult;
 
 private:

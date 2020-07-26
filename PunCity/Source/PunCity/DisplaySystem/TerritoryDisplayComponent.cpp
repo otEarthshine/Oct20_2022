@@ -283,7 +283,10 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleIds)
 		 * Update meshes
 		 */
 		std::vector<int32> playerIds = simulation().GetNeedDisplayUpdateIds(DisplayGlobalEnum::Territory);
-		for (int32 playerId : playerIds) {
+		for (int32 playerId : playerIds) 
+		{
+			PUN_LOG("Update TerritoryMesh playerId:%d", playerId);
+			
 			if (_playerIdToTerritoryMesh.Num() <= playerId) {
 				_playerIdToTerritoryMesh.SetNum(playerId + 1);
 			}
@@ -330,6 +333,7 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleIds)
 
 }
 
+// TODO: Remove this
 void UTerritoryDisplayComponent::DisplayPlayerId(int32 playerId, std::vector<int32>& territoryOwnerMap, FTerritoryDecals& decals)
 {
 	//PUN_LOG("DisplayPlayerId %d", playerId);

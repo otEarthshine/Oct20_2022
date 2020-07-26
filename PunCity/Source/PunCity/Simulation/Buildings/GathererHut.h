@@ -1515,15 +1515,6 @@ public:
 	void OnInit() override {
 		FinishConstruction();
 	}
-	
-	void FinishConstruction() final {
-		Building::FinishConstruction();
-
-		//// Make the area on which this was built walkable.
-		//_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-		//	_simulation->SetWalkable(_centerTile, true);
-		//});
-	}
 
 	void OnDeinit() final
 	{
@@ -1531,6 +1522,11 @@ public:
 		
 		_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 			_simulation->SetWalkable(tile, false);
+		});
+
+		// Remove Marked Road
+		_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+			_simulation->SetRoadPathAI(tile, false);
 		});
 	}
 
@@ -1555,6 +1551,11 @@ public:
 		_simulation->ResetUnitActionsInArea(_area);
 
 		_didSetWalkable = true;
+
+		// Mark the area as road for Trade Route
+		_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+			_simulation->SetRoadPathAI(tile, true);
+		});
 	}
 
 	int32 maxCardSlots() override { return 0; }

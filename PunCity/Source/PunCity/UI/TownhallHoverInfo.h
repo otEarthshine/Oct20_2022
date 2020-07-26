@@ -113,7 +113,7 @@ public:
 		 */
 		{
 			const std::vector<IntercityTradeOffer>& offers = simulation().worldTradeSystem().GetIntercityTradeOffers(townhall.playerId());
-			TradeInfoOverlay->SetVisibility(offers.size() > 0 ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+			TradeInfoOverlay->SetVisibility(offers.size() > 0 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 			CallbackEnum callbackEnum = (townhall.playerId() == playerId()) ? CallbackEnum::None : CallbackEnum::IntercityTrade;
 			
 			for (const auto& offer : offers) {
@@ -519,6 +519,8 @@ public:
 		if (callbackEnum == CallbackEnum::IntercityTrade)
 		{
 			ResourceEnum resourceEnum = CastChecked<UChooseResourceElement>(punWidgetCaller)->resourceEnum;
+			_LOG(LogNetworkInput, "Callback1 IntercityTrade %s", ToTChar(ResourceName(resourceEnum)));
+			
 			GetPunHUD()->OpenTargetConfirmUI_IntercityTrade(_buildingId, resourceEnum);
 			return;
 		}

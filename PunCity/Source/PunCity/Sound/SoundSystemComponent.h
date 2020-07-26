@@ -333,6 +333,13 @@ public:
 		}
 	}
 
+	// Special GetAudioTimeSeconds that suppresses warning
+	static float GetAudioTimeSeconds(const UObject* WorldContextObject)
+	{
+		UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::ReturnNull);
+		return World ? World->GetAudioTimeSeconds() : 0.f;
+	}
+
 	// Note: separate this out since it must be called from PunGameInstance
 	void CheckDespawnPunAudio()
 	{
@@ -341,7 +348,7 @@ public:
 		/*
 		 * Despawn audios
 		 */
-		float time = UGameplayStatics::GetAudioTimeSeconds(this);
+		float time = GetAudioTimeSeconds(this);
 		
 		for (int32 i = punAudios.Num(); i-- > 0;)
 		{
@@ -1532,7 +1539,7 @@ public:
 		audio->Play();
 
 		GetSoundPropertyRef(groupName, soundName, "PlayCount")++;
-		GetSoundPropertyRef(groupName, soundName, "LastPlayed") = UGameplayStatics::GetAudioTimeSeconds(this);
+		GetSoundPropertyRef(groupName, soundName, "LastPlayed") = GetAudioTimeSeconds(this);
 	}
 
 private:

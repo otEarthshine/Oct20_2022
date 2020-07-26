@@ -32,6 +32,8 @@ public:
 		ConfirmButton->OnClicked.AddDynamic(this, &UTargetConfirmUI::OnClickConfirmButton);
 		CancelButton->OnClicked.AddDynamic(this, &UTargetConfirmUI::OnClickCancelButton);
 
+		SetChildHUD(TargetAmount);
+
 		SetVisibility(ESlateVisibility::Collapsed);
 	}
 
@@ -46,30 +48,32 @@ public:
 
 		if (offer.offerEnum == IntercityTradeOfferEnum::BuyWhenBelow)
 		{
-			TitleIconPair->SetText(simulation().townName(townhallId) + " is buying ", ".");
+			TitleIconPair->SetText(simulation().townName(townPlayerId) + " is buying ", ".");
 			TitleIconPair->SetImage(resourceEnum, assetLoader());
 
 			int32 maxBuyAmount = offer.targetInventory - simulation().resourceCount(townPlayerId, resourceEnum);
 			SetText(TargetAmountMaxText, "/ " + std::to_string(maxBuyAmount));
 			TargetAmount->maxAmount = maxBuyAmount;
 
-			BottomText->SetText("You receive: " + std::to_string(TargetAmount->amount) + "<img id=\"Coin\"/>");
+			BottomText->SetText("You receive: " + std::to_string(TargetAmount->amount * simulation().price(resourceEnum)) + "<img id=\"Coin\"/>");
 		}
 		else if (offer.offerEnum == IntercityTradeOfferEnum::SellWhenAbove)
 		{
-			TitleIconPair->SetText(simulation().townName(townhallId) + " is selling ", ".");
+			TitleIconPair->SetText(simulation().townName(townPlayerId) + " is selling ", ".");
 			TitleIconPair->SetImage(resourceEnum, assetLoader());
 
 			int32 maxSellAmount = simulation().resourceCount(townPlayerId, resourceEnum) - offer.targetInventory;
 			SetText(TargetAmountMaxText, "/ " + std::to_string(maxSellAmount));
 			TargetAmount->maxAmount = maxSellAmount;
 
-			BottomText->SetText("You pay: " + std::to_string(TargetAmount->amount) + "<img id=\"Coin\"/>");
+			BottomText->SetText("You pay: " + std::to_string(TargetAmount->amount * simulation().price(resourceEnum)) + "<img id=\"Coin\"/>");
 		}
 	}
 
 	void OpenUI(int32 townhallIdIn, ResourceEnum resourceEnumIn)
 	{
+		_LOG(LogNetworkInput, "TargetConfirm OpenUI %d %s", townhallIdIn, ToTChar(ResourceName(resourceEnumIn)));
+		
 		townhallId = townhallIdIn;
 		resourceEnum = resourceEnumIn;
 		
@@ -77,6 +81,8 @@ public:
 		TargetAmount->amount = 0;
 		TargetAmount->minAmount = 0;
 		TargetAmount->UpdateText();
+
+		SetVisibility(ESlateVisibility::Visible);
 	}
 
 	void CloseUI()
@@ -102,20 +108,20 @@ public:
 
 		if (offer.offerEnum == IntercityTradeOfferEnum::SellWhenAbove) {
 			// This town is selling to you, ensure you have enough money to buy
-			if (amount * simulation().price100(resourceEnum) > simulation().money(playerId())) {
-				simulation().AddPopupToFront(playerId(), "Not enough money for trade.", ExclusiveUIEnum::Trading, "PopupCannot");
+			if (amount * simulation().price(resourceEnum) > simulation().money(playerId())) {
+				simulation().AddPopupToFront(playerId(), "Not enough money for trade.", ExclusiveUIEnum::TargetConfirm, "PopupCannot");
 				return;
 			}
 		}
 		if (offer.offerEnum == IntercityTradeOfferEnum::BuyWhenBelow) {
 			// This town is buying from you, ensure you have enough resource
 			if (amount > simulation().resourceCount(playerId(), resourceEnum)) {
-				simulation().AddPopupToFront(playerId(), "Not enough resource for trade.", ExclusiveUIEnum::Trading, "PopupCannot");
+				simulation().AddPopupToFront(playerId(), "Not enough resource for trade.", ExclusiveUIEnum::TargetConfirm, "PopupCannot");
 				return;
 			}
 		}
 
-		//
+		// Counter-party is selling, currentPlayer is buying
 		int32 currentPlayerBuyAmount = (offer.offerEnum == IntercityTradeOfferEnum::SellWhenAbove) ? amount : -amount;
 		
 		auto tradeCommand = make_shared<FTradeResource>();
@@ -128,6 +134,7 @@ public:
 		networkInterface()->SendNetworkCommand(tradeCommand);
 
 		// Townhall Player Trade Command
+		tradeCommand->playerId = simulation().building(townhallId).playerId();
 		tradeCommand->buyAmounts.Empty();
 		tradeCommand->buyAmounts.Add(-currentPlayerBuyAmount);
 		networkInterface()->SendNetworkCommand(tradeCommand);

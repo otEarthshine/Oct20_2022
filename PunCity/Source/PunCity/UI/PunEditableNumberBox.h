@@ -46,6 +46,8 @@ public:
 		}
 
 		justInitialized = false;
+
+		PUN_CHECK(ArrowDownButton->OnClicked.GetAllObjects().Num() > 0); // Ensure initialized
 	}
 
 	void UpdateText() {

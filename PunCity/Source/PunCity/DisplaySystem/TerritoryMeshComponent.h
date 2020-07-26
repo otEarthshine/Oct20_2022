@@ -21,9 +21,10 @@ public:
 	void UpdateMesh(bool createMesh, int32 provinceIdIn, int32 playerIdIn, bool isInnerMeshIn, 
 					IGameSimulationCore* sim, int32 innerBorderWidth = 10)
 	{
-		SCOPE_TIMER("TerritoryMesh Update");
-
 		ProvinceSystem& provinceSys = sim->provinceSystem();
+		
+		SCOPE_TIMER_("TerritoryMesh Update flatTiles:%d", (playerIdIn != -1 ? playerIdIn : provinceSys.provinceFlatTileCount(provinceIdIn)));
+
 		PunTerrainGenerator& terrainGen = sim->terrainGenerator();
 		
 		int32 outerBorderWidth = 0;
@@ -58,6 +59,8 @@ public:
 			centerTile = provinceSys.GetProvinceCenter(provinceId).worldTile2();
 		} else {
 			centerTile = sim->townhall(playerId).centerTile();
+
+			PUN_LOG("Update TerritoryMesh2 %d", playerId);
 		}
 		
 		//const std::vector<WorldTile2>& edgeTiles = provinceSys.GetProvinceEdges(provinceId);

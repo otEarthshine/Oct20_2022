@@ -364,7 +364,8 @@ public:
 	virtual void ChangeMoney(int32 playerId, int32 moneyChange) = 0;
 
 	virtual int32 price100(ResourceEnum resourceEnum) = 0;
-
+	virtual int32 price(ResourceEnum resourceEnum) = 0;
+	
 	virtual void DespawnResourceHolder(ResourceHolderInfo info, int32 playerId) = 0;
 	
 	virtual int32 resourceCount(int32 playerId, ResourceEnum resourceEnum) = 0;

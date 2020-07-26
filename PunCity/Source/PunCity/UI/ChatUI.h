@@ -489,6 +489,17 @@ private:
 	UPunRichText* AddChatRow(const FSendChat& message)
 	{
 		auto widget = AddWidget<UPunRichText>(UIEnum::PunRichText_Chat);
+
+		// System message
+		if (message.isSystemMessage)
+		{
+			std::string messageStd = ToStdString(message.message);
+			std::string wrappedMessage = widget->WrapString(messageStd, 330);
+			widget->SetRichText(ToFString(wrappedMessage));
+			return widget;
+		}
+
+		
 		FString playerName = networkInterface()->playerNameF(message.playerId);
 		std::stringstream ss;
 		ss << TrimString(networkInterface()->playerName(message.playerId), 8) << ": ";
@@ -499,10 +510,12 @@ private:
 
 		std::string wrappedMessage = widget->WrapString(ss.str(), 330);
 		ss.str("");
-		ss << "<ChatName>" << wrappedMessage.substr(0, namePartLength) << "</>";
-		ss << wrappedMessage.substr(namePartLength, wrappedMessage.size());
 
-		widget->SetRichText(ToFString(ss.str()));
+		std::stringstream finalSS;
+		finalSS << "<ChatName>" << wrappedMessage.substr(0, namePartLength) << "</>"; // Name
+		finalSS << wrappedMessage.substr(namePartLength, wrappedMessage.size()); // Message
+
+		widget->SetRichText(ToFString(finalSS.str()));
 		
 		return widget;
 	};

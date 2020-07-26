@@ -12,11 +12,83 @@
 #include "OnlineSessionSettings.h"
 #include "Sound/SoundAssets.h"
 
+#include <sstream>
+
 #include "PunGameInstance.generated.h"
 
-#define SETTING_TEST FName(TEXT("SETTING_TEST"))
+#define SESSION_TICK FName(TEXT("SETTING_TEST"))
+#define SESSION_GAME_VERSION FName(TEXT("GAME_VERSION"))
+#define SESSION_NUM_PLAYERS FName(TEXT("NUM_PLAYERS"))
 
-#define GAME_SETTINGS_VERSION 11111
+static const FName PUN_SESSION_NAME = TEXT("Pun Session Game");
+
+static int32 GetSessionValue(FName key, const FOnlineSessionSettings& sessionSettings) {
+	int32 value = 0;
+	sessionSettings.Get(key, value);
+	return value;
+}
+
+static void PrintSessionSettings(std::stringstream& ss, const FOnlineSessionSettings& sessionSettings)
+{
+	ss << "ShouldAdvertise: " << sessionSettings.bShouldAdvertise << "\n";
+	ss << "IsLANMatch: " << sessionSettings.bIsLANMatch << "\n";
+	ss << "AllowJoin: " << sessionSettings.bAllowJoinInProgress << "\n";
+	//ss << "IsDedicated:" << sessionSettings.bIsDedicated << "\n";
+	//ss << "UsesStats:" << sessionSettings.bUsesStats << "\n";
+	ss << "AllowInvites: " << sessionSettings.bAllowInvites << "\n";
+	ss << "UsesPresence: " << sessionSettings.bUsesPresence << "\n";
+	ss << "AllowJoinViaPresence: " << sessionSettings.bAllowJoinViaPresence << "\n";
+	ss << "AllowJoinViaPresenceFriendsOnly: " << sessionSettings.bAllowJoinViaPresenceFriendsOnly << "\n";
+	//ss << "AntiCheatProtected:" << sessionSettings.bAntiCheatProtected << "\n";
+	ss << "BuildUniqueId: " << sessionSettings.BuildUniqueId << "\n";
+	ss << "\n";
+
+	
+	ss << "SessionTick: " << GetSessionValue(SESSION_TICK, sessionSettings) << "\n";
+	ss << "PlayerCount: " << GetSessionValue(SESSION_NUM_PLAYERS, sessionSettings) << "\n";
+	ss << "GameVersion: " << GetSessionValue(SESSION_GAME_VERSION, sessionSettings) << "\n";
+
+	//FString value;
+	//sessionSettings.Get(SETTING_MAPNAME, value);
+	//ss << "SETTING_MAPNAME: " << ToStdString(value);
+	//ss << "\n";
+}
+static void PrintURL(std::stringstream& ss, FURL url)
+{
+	ss << "[URL:";
+	ss << " protocol:" << ToStdString(url.Protocol);
+	ss << " host:" << ToStdString(url.Host);
+	ss << " port:" << url.Port;
+	ss << " valid:" << url.Valid;
+	ss << " valid:" << url.Valid;
+	ss << " map:" << ToStdString(url.Map);
+
+	for (FString option: url.Op) {
+		ss << " option:" << ToStdString(option);
+	}
+
+	ss << " portal:" << ToStdString(url.Portal);
+	ss << "]";
+}
+
+static void PrintSessionState(std::stringstream& ss, IOnlineSessionPtr& sessionPtr)
+{
+	ss << "Session Info [Debug]:\n";
+	ss << "GetNumSessions: " << sessionPtr->GetNumSessions() << "\n";
+
+	FOnlineSessionSettings* sessionSettings = sessionPtr->GetSessionSettings(PUN_SESSION_NAME);
+	if (sessionSettings) {
+		PrintSessionSettings(ss, *sessionSettings);
+	} else {
+		ss << "No sessionSettings\n";
+	}
+
+	FString connectInfo;
+	sessionPtr->GetResolvedConnectString(PUN_SESSION_NAME, connectInfo);
+	ss << "GetResolvedConnectString: " << ToStdString(connectInfo);
+	ss << "\n\n";
+
+}
 
 /**
  * 
@@ -55,6 +127,31 @@ public:
 		}
 	}
 
+	void PrintSessionInfo()
+	{
+		PUN_DEBUG2("Print Session Info:");
+		PUN_DEBUG2(" playerCount:%d", playerCount());
+		PUN_DEBUG2(" sessionValid:%d", IsSessionInterfaceValid());
+		if (IsSessionInterfaceValid()) {
+			sessionInterface->DumpSessionState();
+			std::stringstream ss;
+			PrintSessionState(ss, sessionInterface);
+			PUN_DEBUG2("%s", ToTChar(ss.str()));
+		}
+	}
+	void PrintPlayers()
+	{
+		PUN_DEBUG2("PlayerCount: %d", playerCount());
+		TArray<FString> playerNames = playerNamesF();
+		for (int32 i = 0; i < playerNames.Num(); i++) {
+			PUN_DEBUG2(" - : %s connected:%d ready:%d", *(playerNames[i]), playerConnectedStates[i], IsPlayerReady(i));
+		}
+	}
+
+	/*
+	 * Save Game
+	 */
+	
 	GameSaveInfo GetSavedGameToLoad() { return _savedGameToLoad; }
 
 	bool IsLoadingSavedGame() { return _savedGameToLoad.IsValid(); }
@@ -126,13 +223,25 @@ public:
 public:
 	// Network Error Check
 	void HandleNetworkFailure(UWorld * World, UNetDriver * NetDriver, ENetworkFailure::Type FailureType, const FString & ErrorString) {
-		PUN_DEBUG2("NetworkFailure %s, %s", ENetworkFailure::ToString(FailureType), *ErrorString);
-		LOG_ERROR(LogNetworkInput, "NetworkFailure %s, %s", ToString(FailureType), *ErrorString);
+		PUN_DEBUG2("!!! NetworkFailure %s, %s", ENetworkFailure::ToString(FailureType), *ErrorString);
+		LOG_ERROR(LogNetworkInput, "!!! NetworkFailure %s, %s", ToString(FailureType), *ErrorString);
 
 		mainMenuPopup = ErrorString + " (" + FString(ENetworkFailure::ToString(FailureType)) + ")";
 	}
+	void HandleTravelFailure(UWorld* World, ETravelFailure::Type FailureType, const FString& ErrorString)
+	{
+		PUN_DEBUG2("!!! TravelFailure %s, %s", ETravelFailure::ToString(FailureType), *ErrorString);
+		LOG_ERROR(LogNetworkInput, "!!! TravelFailure %s, %s", ToString(FailureType), *ErrorString);
+
+		mainMenuPopup = ErrorString + " (" + FString(ETravelFailure::ToString(FailureType)) + ")";
+	}
+	void HandlePreClientTravel(const FString& PendingURL, ETravelType TravelType, bool bIsSeamlessTravel)
+	{
+		PUN_DEBUG2("!!! PreClientTravel %s type:%d seamless:%d", *PendingURL, TravelType, bIsSeamlessTravel);
+	}
+	
 	void OnGameExit();
-	void EnsureSessionDestroyed();
+	void EnsureSessionDestroyed(bool gotoMainMenu);
 
 	FString mainMenuPopup;
 
@@ -151,6 +260,8 @@ public:
 
 	IOnlineSessionPtr sessionInterfaceUsedToFindGame = nullptr;
 	FName subsystemNameInUse = "NULL";
+
+	bool IsLANMatch() { return subsystemNameInUse == "NULL"; }
 
 	void RefreshSessionInterface(FName subsystemName)
 	{
@@ -181,6 +292,7 @@ public:
 	void OnSessionUserInviteAccepted(bool bWasSuccessful, int32 ControllerId, TSharedPtr<const FUniqueNetId> UserId, const FOnlineSessionSearchResult& InviteResult);
 
 	FOnDestroySessionCompleteDelegate DestroySessionBeforeCreatingCompleteDelegate;
+	FOnDestroySessionCompleteDelegate DestroySessionThenGoToMainMenuCompleteDelegate;
 	FOnDestroySessionCompleteDelegate DestroySessionThenDoesNothingCompleteDelegate;
 
 
@@ -220,7 +332,7 @@ private:
 
 public:
 	int32 sessionTickCount = 0;
-	FOnlineSessionSettings GetSessionSettings()
+	FOnlineSessionSettings GetPreferredSessionSettings()
 	{
 		FOnlineSessionSettings sessionSettings;
 
@@ -236,11 +348,23 @@ public:
 		sessionSettings.bAllowJoinViaPresenceFriendsOnly = false;
 
 		sessionSettings.bUsesPresence = true; // bUsesPresence = true, allows non-public ip server to be seen (like in wireless netwoork)
-		sessionSettings.BuildUniqueId = GetBuildUniqueId();
+		sessionSettings.BuildUniqueId = GetBuildUniqueId(); // is for engine..
+
+		// In GameMap, don't allow joining
+		if (IsInGame()) {
+			sessionSettings.bAllowInvites = false;
+			sessionSettings.bShouldAdvertise = false;
+			sessionSettings.bAllowJoinInProgress = false;
+			sessionSettings.bAllowJoinViaPresence = false;
+			sessionSettings.bUsesPresence = false;
+		}
+		
 
 		//FName(TEXT("MAPNAME"))
 		sessionSettings.Set(SETTING_MAPNAME, FString("Game Name"), EOnlineDataAdvertisementType::ViaOnlineService);
-		sessionSettings.Set(SETTING_TEST, sessionTickCount/120, EOnlineDataAdvertisementType::ViaOnlineService);
+		sessionSettings.Set(SESSION_TICK, sessionTickCount/120, EOnlineDataAdvertisementType::ViaOnlineService);
+		sessionSettings.Set(SESSION_NUM_PLAYERS, playerCount(), EOnlineDataAdvertisementType::ViaOnlineService);
+		sessionSettings.Set(SESSION_GAME_VERSION, GAME_VERSION, EOnlineDataAdvertisementType::ViaOnlineService);
 		return sessionSettings;
 	}
 
@@ -254,6 +378,7 @@ public:
 	}
 
 	//static bool
+	bool IsInGame();
 	static bool IsInGame(const UObject* worldContextObject);
 
 private:
@@ -310,6 +435,15 @@ public:
 		playerConnectedStates.SetNum(0);
 
 		clientPacketsReceived.SetNum(0);
+	}
+	void ResetPlayers()
+	{
+		for (int32 i = 0; i < _playerNames.Num(); i++) {
+			_playerNames[i] = "";
+			_playerReadyStates[i] = false;
+			playerConnectedStates[i] = false;
+			clientPacketsReceived[i] = 0;
+		}
 	}
 
 	// Player Name
@@ -418,7 +552,7 @@ public:
 
 					setToExistingSlot(i);
 
-					_LOG(PunSync, "ConnectPlayer Old Spot: %s size:%d", *playerNameF, playerNamesF().Num());
+					_LOG(PunSync, "ConnectPlayer Old Spot: %s pcount:%d size:%d", *playerNameF, playerCount(), playerNamesF().Num());
 					return i;
 				}
 			}
@@ -431,7 +565,7 @@ public:
 			{
 				setToExistingSlot(i);
 
-				_LOG(PunSync, "ConnectPlayer (Empty): %s size:%d", *playerNameF, playerNamesF().Num());
+				_LOG(PunSync, "ConnectPlayer (Same Name): %s pcount:%d size:%d", *playerNameF, playerCount(), playerNamesF().Num());
 				return i;
 			}
 		}
@@ -442,7 +576,7 @@ public:
 			{
 				setToExistingSlot(i);
 
-				_LOG(PunSync, "ConnectPlayer (Empty): %s size:%d", *playerNameF, playerNamesF().Num());
+				_LOG(PunSync, "ConnectPlayer (Empty): %s pcount:%d size:%d", *playerNameF, playerCount(), playerNamesF().Num());
 				return i;
 			}
 		}
@@ -648,12 +782,12 @@ public:
 		LLM_SCOPE_(EPunSimLLMTag::PUN_GameInstance);
 
 		if (Ar.IsSaving()) {
-			loadedVersion = GAME_SETTINGS_VERSION;
+			loadedVersion = GAME_VERSION;
 		}
 		Ar << loadedVersion;
 
 		if (Ar.IsLoading() &&
-			loadedVersion != GAME_SETTINGS_VERSION) {
+			loadedVersion != GAME_VERSION) {
 			return;
 		}
 		

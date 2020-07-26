@@ -264,6 +264,9 @@ public:
 	int32 price100(ResourceEnum resourceEnum) final {
 		return _worldTradeSystem.price100(resourceEnum);
 	}
+	int32 price(ResourceEnum resourceEnum) final {
+		return _worldTradeSystem.price100(resourceEnum) / 100;
+	}
 
 	TownHall& townhall(int32 playerId) final {
 		return building(playerOwned(playerId).townHallId).subclass<TownHall>(CardEnum::Townhall);
@@ -901,7 +904,7 @@ public:
 	{
 		int32 oldPlayerId =  provinceOwner(provinceId);
 		if (oldPlayerId != -1) {
-			playerOwned(oldPlayerId).TryRemoveProvinceClaim(provinceId);
+			playerOwned(oldPlayerId).TryRemoveProvinceClaim(provinceId); // TODO: Try moving this below???
 		}
 		
 		_regionSystem->SetProvinceOwner(provinceId, playerId);
@@ -909,6 +912,9 @@ public:
 		if (playerId != -1) {
 			playerOwned(playerId).ClaimProvince(provinceId);
 			RefreshTerritoryEdge(playerId);
+		}
+		if (oldPlayerId != -1) {
+			RefreshTerritoryEdge(oldPlayerId);
 		}
 	}
 	void SetProvinceOwnerFull(int32 provinceId, int32 playerId) final;

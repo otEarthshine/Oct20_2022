@@ -26,6 +26,8 @@ DECLARE_LOG_CATEGORY_EXTERN(PunSync, Log, Log);
 
 DECLARE_LOG_CATEGORY_EXTERN(PunSaveCheck, Log, Log);
 
+DECLARE_LOG_CATEGORY_EXTERN(PunNetwork, Log, Log);
+
 #define INIT_LOG(Format, ...) UE_LOG(PunInit, Log, TEXT(Format), ##__VA_ARGS__);
 
 #define _LOG(LogCategory, Format, ...) UE_LOG(LogCategory, Log, TEXT(Format), ##__VA_ARGS__);

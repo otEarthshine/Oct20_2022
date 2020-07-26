@@ -12,6 +12,8 @@
 
 //#include "PunCity/PunSTLContainerOverride.h"
 
+#define SAVE_VERSION 9
+#define GAME_VERSION 20072601
 
 //! Utils
 

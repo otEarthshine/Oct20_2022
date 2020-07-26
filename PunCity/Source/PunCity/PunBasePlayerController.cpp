@@ -8,6 +8,7 @@
 #include "PunCity/PunGameMode.h"
 #include "PunCity/UI/PunLobbyHUD.h"
 #include "PunCity/UI/LobbyUI.h"
+#include "UI/PunMainMenuHUD.h"
 
 
 void APunBasePlayerController::OnLogout()
@@ -15,10 +16,7 @@ void APunBasePlayerController::OnLogout()
 	PUN_DEBUG2("OnLogout %s", *PlayerState->GetPlayerName());
 	_LOG(LogNetworkInput, "OnLogout %s", *PlayerState->GetPlayerName());
 
-	// TODO: Turn this on and session will be destroyed when u just created a game...
-	if (UGameplayStatics::GetPlayerControllerID(this) == 0) {
-		//gameInstance()->EnsureSessionDestroyed();
-	}
+
 }
 
 void APunBasePlayerController::SetClientId_Implementation(int32 clientPlayerIdIn) {
@@ -31,9 +29,14 @@ void APunBasePlayerController::SyncPlayersState_ToClient_Implementation(const TA
 																const TArray<int32>& clientDataReceived,
 																int32 hostPlayerIdIn, int32 serverTick)
 {
+	auto hud = GetHUD();
+	
 	gameInstance()->DebugPunSync("SyncPlayersState Before: ");
 
-	if (!IsServer())
+	auto mainMenuHUD = Cast<APunMainMenuHUD>(hud);
+
+	// Sync State if this isn't server. Also don't sync if this is in main menu (leftover queued sync when hitting GoToMainMenu)
+	if (!IsServer() && !mainMenuHUD)
 	{
 		gameInstance()->SetPlayerNamesF(playerNamesF);
 		gameInstance()->SetPlayerReadyStates(playerReadyStates);
@@ -45,7 +48,6 @@ void APunBasePlayerController::SyncPlayersState_ToClient_Implementation(const TA
 
 	gameInstance()->DebugPunSync("SyncPlayersState After: ");
 
-	auto hud = GetHUD();
 	auto lobbyHUD = Cast<APunLobbyHUD>(hud);
 	if (lobbyHUD) {
 		lobbyHUD->lobbyUI()->UpdateLobbyUI();
@@ -94,7 +96,7 @@ void APunBasePlayerController::Tick(float DeltaTime)
 		return;
 	}
 	
-	if (!IsServer())
+	if (!IsServer() && !IsMainMenuController())
 	{
 		if (gameInstance()->clientPacketsReceived[controllerPlayerId()] <= gameInstance()->saveSystem().totalPackets())
 		{

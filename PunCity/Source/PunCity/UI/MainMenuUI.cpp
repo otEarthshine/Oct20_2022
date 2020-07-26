@@ -85,6 +85,8 @@ void UMainMenuUI::Tick()
 	// Lobby List
 	if (MainMenuSwitcher->GetActiveWidget() == MultiplayerLobbyListCanvas)
 	{
+		VersionIdText->SetText(FText::FromString(FString("Version ID: ") + FString::FromInt(GAME_VERSION)));
+		
 		auto sessionSearch = gameInstance()->sessionSearch;
 		
 		// Check if search result changed
@@ -111,11 +113,11 @@ void UMainMenuUI::Tick()
 		{
 			_needLobbyListUIRefresh = false;
 
-			auto& sessions = sessionSearch->SearchResults;
+			auto& searchResults = sessionSearch->SearchResults;
 
-			PUN_DEBUG2("Populating LobbyListBox: %d", sessions.Num());
+			PUN_DEBUG2("Populating LobbyListBox: %d", searchResults.Num());
 			
-			for (int32 i = 0; i < sessions.Num(); i++)
+			for (int32 i = 0; i < searchResults.Num(); i++)
 			{
 				if (i >= lobbyListElements.Num()) {
 					auto lobbyListElement = AddWidget<ULobbyListElementUI>(UIEnum::LobbyListElement);
@@ -124,21 +126,25 @@ void UMainMenuUI::Tick()
 					LobbyListBox->AddChild(lobbyListElement);
 				}
 				
-				if (sessions[i].IsValid())
+				if (searchResults[i].IsValid())
 				{
-					lobbyListElements[i]->sessionSearchResult = sessions[i];
+					lobbyListElements[i]->sessionSearchResult = searchResults[i];
 
 					bool isChosenSession = false;
 					if (_chosenSession.IsValid()) {
 						PUN_DEBUG2(" _chosenSession valid: %s", *_chosenSession.GetSessionIdStr());
-						isChosenSession = sessions[i].GetSessionIdStr() == _chosenSession.GetSessionIdStr();
+						isChosenSession = searchResults[i].GetSessionIdStr() == _chosenSession.GetSessionIdStr();
 					}
 
-					PUN_DEBUG2(" Populate Session: %s", *sessions[i].GetSessionIdStr());
-					PUN_DEBUG2(" - NumPublicConnections: %d", sessions[i].Session.SessionSettings.NumPublicConnections);
-					PUN_DEBUG2(" - NumPrivateConnections: %d", sessions[i].Session.SessionSettings.NumPrivateConnections);
-					PUN_DEBUG2(" - NumOpenPublicConnections: %d", sessions[i].Session.NumOpenPublicConnections);
-					PUN_DEBUG2(" - NumOpenPrivateConnections: %d", sessions[i].Session.NumOpenPrivateConnections);
+					const FOnlineSession& session = searchResults[i].Session;
+					const FOnlineSessionSettings& sessionSettings = session.SessionSettings;
+
+					PUN_DEBUG2(" Populate Session: %s", *searchResults[i].GetSessionIdStr());
+					PUN_DEBUG2(" - Public:%d/%d Private:%d/%d (Open/Num)", session.NumOpenPublicConnections, sessionSettings.NumPublicConnections,
+																			session.NumOpenPrivateConnections, sessionSettings.NumPrivateConnections);
+					//PUN_DEBUG2(" - NumPrivateConnections: %d", sessions[i].Session.SessionSettings.NumPrivateConnections);
+					//PUN_DEBUG2(" - NumOpenPublicConnections: %d", sessions[i].Session.NumOpenPublicConnections);
+					//PUN_DEBUG2(" - NumOpenPrivateConnections: %d", sessions[i].Session.NumOpenPrivateConnections);
 					
 					lobbyListElements[i]->ElementActiveImage->SetVisibility(isChosenSession ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
@@ -147,32 +153,55 @@ void UMainMenuUI::Tick()
 					//lobbyListElements[i]->SessionName->SetText(FText::FromString(value));
 					//lobbyListElements[i]->SessionName->SetText(FText::FromString(sessions[i].GetSessionIdStr()));
 
-					FString hostName = sessions[i].Session.OwningUserName;
+					FString hostName = session.OwningUserName;
 					lobbyListElements[i]->SessionName->SetText(FText::FromString(hostName.Left(15)));
 
 					// Note:
 					// value of "sessions[i].Session.SessionSettings.NumPublicConnections + 1" represents the max number of players (public connections + self)
 					// However, 
-					int32 maxPlayers = sessions[i].Session.SessionSettings.NumPublicConnections;
-					int32 currentPlayers = maxPlayers - sessions[i].Session.NumOpenPublicConnections;
+					int32 maxPlayers = sessionSettings.NumPublicConnections;
+					//int32 currentPlayers = maxPlayers - searchResults[i].Session.NumOpenPublicConnections;
+					int32 currentPlayers = 0;
+					sessionSettings.Get(SESSION_NUM_PLAYERS, currentPlayers);
 
 					//sessions[i].Session.OwningUserName;
 					
 					SetText(lobbyListElements[i]->PlayerCount, to_string(currentPlayers) + "/" + to_string(maxPlayers));
 					//SetText(lobbyListElements[i]->Ping, to_string(sessions[i].PingInMs));
 
-					int32 sessionTick = 0;
-					sessions[i].Session.SessionSettings.Get(SETTING_TEST, sessionTick);
-					PUN_DEBUG2(" - sessionTick %d", sessionTick)
+					//searchResults[i].
+
+					std::stringstream ss;
+
+					ss << "OwningUserId: " << ToStdString(session.OwningUserId->ToDebugString());
+					ss << "\n";
+					ss << "OwningUserName: " << ToStdString(session.OwningUserName);
+					ss << "\n\n";
+
+					//FString value;
+					//sessionSettings.Get(SETTING_MAPNAME, value);
+					//ss << "SETTING_MAPNAME: " << ToStdString(value);
+					PrintSessionSettings(ss, sessionSettings);
+
+					ss << "\n";
+					ss << "SessionInfo:\n" << ToStdString(session.SessionInfo->ToDebugString());
+
+					lobbyListElements[i]->buildUniqueId = sessionSettings.BuildUniqueId;
+					lobbyListElements[i]->DifferentVersionWarning->SetVisibility(
+						GetSessionValue(SESSION_GAME_VERSION, sessionSettings) == GAME_VERSION ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible
+					);
+					
+					AddToolTip(lobbyListElements[i], ss);
 				}
 				else {
 					PUN_DEBUG2(" Invalid session at index: %d", i);
+					AddToolTip(lobbyListElements[i], "Invalid Session");
 				}
 				
 				lobbyListElements[i]->SetVisibility(ESlateVisibility::Visible);
 			}
 
-			for (int32 i = sessions.Num(); i < lobbyListElements.Num(); i++) {
+			for (int32 i = searchResults.Num(); i < lobbyListElements.Num(); i++) {
 				lobbyListElements[i]->SetVisibility(ESlateVisibility::Collapsed);
 			}
 		}
@@ -189,19 +218,23 @@ void UMainMenuUI::Tick()
 		else {
 			LobbyRefreshThrobber->SetVisibility(ESlateVisibility::Collapsed);
 		}
-
-		if (gameInstance()->bIsCreatingSession) {
-			JoinGameDelayOverlay->SetVisibility(ESlateVisibility::Visible);
-			SetText(JoinGameDelayText, "Creating Game...");
-		}
-		else if (gameInstance()->isJoiningGame) {
-			JoinGameDelayOverlay->SetVisibility(ESlateVisibility::Visible);
-			SetText(JoinGameDelayText, "Joining Game...");
-		}
-		else {
-			JoinGameDelayOverlay->SetVisibility(ESlateVisibility::Collapsed);
-		}
 	}
+
+
+	// Create/Join Menu Block
+	if (gameInstance()->bIsCreatingSession) {
+		JoinGameDelayOverlay->SetVisibility(ESlateVisibility::Visible);
+		SetText(JoinGameDelayText, "Creating Game...");
+	}
+	else if (gameInstance()->isJoiningGame) {
+		JoinGameDelayOverlay->SetVisibility(ESlateVisibility::Visible);
+		SetText(JoinGameDelayText, "Joining Game...");
+	}
+	else {
+		JoinGameDelayOverlay->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	
 
 	if (MainMenuSwitcher->GetActiveWidget() == LoadSaveUI)
 	{
@@ -305,6 +338,14 @@ void UMainMenuUI::CreateMultiplayerGame()
 void UMainMenuUI::JoinMultiplayerGame()
 {
 	PUN_DEBUG2("Joining Server");
+
+	// Different Build
+	if (GetSessionValue(SESSION_GAME_VERSION, _chosenSession.Session.SessionSettings) != GAME_VERSION) 
+	{
+		gameInstance()->mainMenuPopup = "Cannot join a game with different version.";
+		Spawn2DSound("UI", "PopupCannot");
+		return;
+	}
 	
 	if (_chosenSession.IsValid()) {
 		gameInstance()->JoinGame(_chosenSession);

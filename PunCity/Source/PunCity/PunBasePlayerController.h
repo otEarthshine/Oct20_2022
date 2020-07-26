@@ -19,7 +19,7 @@ public:
 	
 	void Tick(float DeltaTime) override;
 
-	void OnLogout();
+	virtual void OnLogout();
 
 	// Controller PlayerId
 	// - Useful in determining what playerId the message is from
@@ -29,7 +29,14 @@ public:
 		_controllerPlayerId = playerId;
 		SetClientId(playerId);
 	}
-	
+
+
+	UFUNCTION(Exec) void PrintSessionInfo() {
+		gameInstance()->PrintSessionInfo();
+	}
+	UFUNCTION(Exec) void PrintPlayers() {
+		gameInstance()->PrintPlayers();
+	}
 
 	/*
 	 * Setup Client
@@ -53,6 +60,7 @@ public:
 
 	bool IsServer() { return UGameplayStatics::GetGameMode(this) != nullptr; }
 
+	virtual bool IsMainMenuController() { return false; }
 	
 	/*
 	 * Loading

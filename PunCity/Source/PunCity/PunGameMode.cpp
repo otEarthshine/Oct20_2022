@@ -75,15 +75,14 @@ void APunGameMode::PostLogin(APlayerController* NewPlayer)
 	if (mainMenuController) {
 		mainMenuController->SendChat_ToServer("", playerName + FString(" connected"));
 	}
-
-	gameInst->UpdateSession();
-
 	
 	if (punPlayer) {
 		punPlayer->OnPostLogin();
 	}
 
 	AGameModeBase::PostLogin(NewPlayer);
+
+	gameInst->UpdateSession();
 }
 
 
@@ -115,6 +114,7 @@ void APunGameMode::Logout(AController* Exiting)
 
 	auto exitingController = CastChecked<APunBasePlayerController>(Exiting);
 
+	// MainMenuPlayerController
 	auto mainMenuController = Cast<AMainMenuPlayerController>(exitingController);
 	if (mainMenuController) {
 		mainMenuController->SendChat_ToServer("", playerName + FString(" disconnected"));
@@ -122,18 +122,33 @@ void APunGameMode::Logout(AController* Exiting)
 	
 	_ConnectedControllers.Remove(exitingController);
 
-	exitingController->gameInstance()->DisconnectPlayer(playerName);
+	auto gameInst = exitingController->gameInstance();
+	gameInst->DisconnectPlayer(playerName);
 	Server_SyncPlayerStateToAllControllers();
-	
 
-	auto punPlayer = Cast<APunBasePlayerController>(Exiting);
+	
+	// Server PunPlayerController: Send chat "x disconnected"
+	auto punPlayer = Cast<APunPlayerController>(gameInst->GetFirstLocalPlayerController());
+	_LOG(PunSync, "Logout: punPlayer:%p", punPlayer);
 	if (punPlayer) {
+		auto command = std::make_shared<FSendChat>();
+		command->isSystemMessage = true;
+		command->message = playerName + FString(" disconnected");
+		punPlayer->networkInterface()->SendNetworkCommand(command);
+	}
+
+	
+	// PunBasePlayerController
+	auto punPlayerBase = Cast<APunBasePlayerController>(Exiting);
+	if (punPlayerBase) {
 		PUN_DEBUG2("OnLogout: Starting");
-		punPlayer->OnLogout();
+		punPlayerBase->OnLogout();
 	}
 	else {
 		PUN_DEBUG2("OnLogout: Not APunPlayerController");
 	}
 
 	AGameModeBase::Logout(Exiting);
+
+	gameInst->UpdateSession();
 }

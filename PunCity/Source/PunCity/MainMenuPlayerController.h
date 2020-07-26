@@ -35,6 +35,7 @@ public:
 
 	int32 initStage;
 
+	bool IsMainMenuController() override { return true; }
 	
 public:
 	bool isStartingGame;
@@ -64,15 +65,6 @@ public:
 	}
 
 	UFUNCTION(Exec) void ToggleMainMenu();
-
-	UFUNCTION(Exec) void PrintPlayers()
-	{
-		PUN_DEBUG2("playerCount: %d", gameInstance()->playerCount());
-		TArray<FString> playerNames = gameInstance()->playerNamesF();
-		for (int32 i = 0; i < playerNames.Num(); i++) {
-			PUN_DEBUG2(" - : %s connected:%d ready:%d", *(playerNames[i]), gameInstance()->playerConnectedStates[i], gameInstance()->IsPlayerReady(i));
-		}
-	}
 	
 
 	template<typename Func>

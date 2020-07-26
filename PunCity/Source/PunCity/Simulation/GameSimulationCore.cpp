@@ -544,6 +544,9 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 						//_playerOwnedManagers[playerId].RefreshHousing();
 						_playerOwnedManagers[playerId].Tick1Sec();
 
+						/*
+						 * ProvinceClaimProgress
+						 */
 						// Battle Resolve
 						std::vector<ProvinceClaimProgress> claimProgresses = _playerOwnedManagers[playerId].defendingClaimProgress();
 						for (const ProvinceClaimProgress& claimProgress : claimProgresses) {
@@ -556,6 +559,8 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 								// Destroy any leftover building owned by player
 								ClearProvinceBuildings(claimProgress.provinceId);
 								SetProvinceOwner(claimProgress.provinceId, claimProgress.attackerPlayerId);
+
+								
 							}
 							// Failed to conquer
 							else if (claimProgress.ticksElapsed <= 0) {
@@ -1607,7 +1612,7 @@ void GameSimulationCore::ChangeName(FChangeName command)
 
 void GameSimulationCore::SendChat(FSendChat command)
 {
-	UE_LOG(LogNetworkInput, Log, TEXT(" Chat[%d] %s"), command.playerId,  *command.message);
+	_LOG(PunSync, "Sim SendChat[%d] %s", command.playerId,  *command.message);
 	_chatSystem.AddMessage(command);
 }
 
@@ -1657,6 +1662,10 @@ void GameSimulationCore::TradeResource(FTradeResource command)
 
 void GameSimulationCore::SetIntercityTrade(FSetIntercityTrade command)
 {
+	if (!IsPlayerInitialized(command.playerId)) { // For Direct Command on AIs
+		return;
+	}
+	
 	if (command.buildingIdToEstablishTradeRoute != -1) {
 		if (command.isCancelingTradeRoute) {
 			worldTradeSystem().TryCancelTradeRoute(command);

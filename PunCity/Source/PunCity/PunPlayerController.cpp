@@ -156,6 +156,7 @@ void APunPlayerController::OnPostLogin()
 
 	// Send out message to make clients start loading
 	InitializeClient_ToClient();
+
 }
 
 void APunPlayerController::BeginPlay()
@@ -663,7 +664,9 @@ void APunPlayerController::SendNetworkCommand(std::shared_ptr<FNetworkCommand> n
 	// Don't send command if this controller is not initialized
 	if (gameManager == nullptr) return;
 
-	networkCommand->playerId = controllerPlayerId();
+	if (networkCommand->playerId == -1) {
+		networkCommand->playerId = controllerPlayerId();
+	}
 
 	TArray<int32> blob;
 	NetworkHelper::SerializeAndAppendToBlob(networkCommand, blob);

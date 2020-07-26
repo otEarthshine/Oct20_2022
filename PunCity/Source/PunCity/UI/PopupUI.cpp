@@ -42,8 +42,10 @@ void UPopupUI::Tick()
 			popupToDisplay->choices = { "Close" };
 			popupToDisplay->replyReceiver = PopupReceiverEnum::None;
 		}
-		else if (shouldShowExclusive(ExclusiveUIEnum::Trading))
-		{
+		else if (shouldShowExclusive(ExclusiveUIEnum::Trading)) {
+			shouldPopup = true;
+		}
+		else if (shouldShowExclusive(ExclusiveUIEnum::TargetConfirm)) {
 			shouldPopup = true;
 		}
 		else if (shouldShowExclusive(ExclusiveUIEnum::CardHand1)) {

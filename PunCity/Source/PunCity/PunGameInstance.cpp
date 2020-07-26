@@ -11,10 +11,11 @@
 #include "GameDelegates.h"
 #include "PunCity/PunPlayerController.h"
 
-const static FName SESSION_NAME = TEXT("Pun Session Game");
 
 void UPunGameInstance::Init()
 {
+	_LOG(PunInit, "PunGameInstance Init");
+	
 	InitLLM();
 
 	LLM_SCOPE_(EPunSimLLMTag::PUN_GameInstance);
@@ -24,12 +25,19 @@ void UPunGameInstance::Init()
 	FCoreUObjectDelegates::PreLoadMap.AddUObject(this, &UPunGameInstance::BeginLoadingScreen);
 	FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(this, &UPunGameInstance::EndLoadingScreen);
 
-	InitOnline("Steam");
+#if WITH_EDITOR
 	InitOnline("NULL");
+#else
+	InitOnline("Steam");
+#endif
 
 	_saveSystem = make_unique<GameSaveSystem>();
 
 	GetEngine()->OnNetworkFailure().AddUObject(this, &UPunGameInstance::HandleNetworkFailure);
+	GetEngine()->OnTravelFailure().AddUObject(this, &UPunGameInstance::HandleTravelFailure);
+	OnNotifyPreClientTravel().AddUObject(this, &UPunGameInstance::HandlePreClientTravel);
+	//OnRejoinFailure
+	
 	FGameDelegates::Get().GetExitCommandDelegate().AddUObject(this, &UPunGameInstance::OnGameExit);
 
 #if !WITH_EDITOR
@@ -50,7 +58,7 @@ void UPunGameInstance::CreateMainMenuSound(USoundBase* sound)
 	return;
 #endif
 	
-	PUN_LOG("CreatePersistentSound World %p", this->GetWorld());
+	_LOG(PunInit, "CreatePersistentSound World %p", this->GetWorld());
 
 	if (!_soundSystem) {
 		_soundSystem = NewObject<USoundSystemComponent>();
@@ -79,8 +87,8 @@ void UPunGameInstance::PunTick()
 
 	sessionTickCount++;
 	if (sessionInterface.IsValid() && sessionTickCount % 120 == 0) {
-		FOnlineSessionSettings sessionSettings = GetSessionSettings();
-		//sessionInterface->UpdateSession(SESSION_NAME, sessionSettings);
+		FOnlineSessionSettings sessionSettings = GetPreferredSessionSettings();
+		//sessionInterface->UpdateSession(PUN_SESSION_NAME, sessionSettings);
 
 		//PUN_DEBUG2("UpdateSession %d", sessionTickCount/120);
 	}
@@ -118,13 +126,21 @@ void UPunGameInstance::EndLoadingScreen(UWorld* InLoadedWorld)
 
 void UPunGameInstance::InitOnline(FName subsystemName)
 {
+	_LOG(PunInit, "PunGameInstance InitOnline %s", *subsystemName.ToString());
+	
 	LLM_SCOPE_(EPunSimLLMTag::PUN_GameInstance);
 	
-	IOnlineSubsystem* onlineSubsystem = IOnlineSubsystem::Get(subsystemName); // IOnlineSubsystem::Get(FName("Steam"));
+	IOnlineSubsystem* onlineSubsystem = IOnlineSubsystem::Get(subsystemName);
 	if (onlineSubsystem) 
 	{
 		sessionInterface = onlineSubsystem->GetSessionInterface();
-		if (sessionInterface.IsValid()) {
+
+		_LOG(PunInit, "PunGameInstance sessionInterface %d", sessionInterface.IsValid());
+		
+		if (sessionInterface.IsValid()) 
+		{
+			_LOG(PunInit, "Setup Session Delegates");
+			
 			sessionInterface->OnCreateSessionCompleteDelegates.Clear();
 			sessionInterface->OnDestroySessionCompleteDelegates.Clear();
 			sessionInterface->OnFindSessionsCompleteDelegates.Clear();
@@ -148,6 +164,10 @@ void UPunGameInstance::InitOnline(FName subsystemName)
 				} else {
 					bIsCreatingSession = false;
 				}
+			});
+			DestroySessionThenGoToMainMenuCompleteDelegate.BindLambda([&](FName name, bool success) {
+				PUN_DEBUG2("Done DestroySessionThenGoToMainMenuCompleteDelegate");
+				GetFirstLocalPlayerController()->ClientTravel("/Game/Maps/MainMenu", TRAVEL_Absolute);
 			});
 			DestroySessionThenDoesNothingCompleteDelegate.BindLambda([&](FName name, bool success) {
 				PUN_DEBUG2("Done DestroySessionThenDoesNothingCompleteDelegate");
@@ -212,16 +232,16 @@ void UPunGameInstance::JoinGame(const FOnlineSessionSearchResult& searchResult)
 		return;
 	}
 	
-	FNamedOnlineSession* Session = sessionInterface->GetNamedSession(SESSION_NAME);
+	FNamedOnlineSession* Session = sessionInterface->GetNamedSession(PUN_SESSION_NAME);
 	if (Session) {
 		PUN_DEBUG2("[ERROR]JoinGame: failed, already as session");
 		mainMenuPopup = "Join game failed, try again in a moment.";
 
-		sessionInterface->DestroySession(SESSION_NAME, DestroySessionThenDoesNothingCompleteDelegate);
+		sessionInterface->DestroySession(PUN_SESSION_NAME, DestroySessionThenDoesNothingCompleteDelegate);
 		return;
 	}
 	
-	sessionInterface->JoinSession(0, SESSION_NAME, searchResult);
+	sessionInterface->JoinSession(0, PUN_SESSION_NAME, searchResult);
 	isJoiningGame = true;
 }
 
@@ -229,7 +249,7 @@ void UPunGameInstance::DestroyGame()
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_GameInstance);
 	
-	sessionInterface->DestroySession(SESSION_NAME);
+	sessionInterface->DestroySession(PUN_SESSION_NAME);
 }
 
 void UPunGameInstance::UpdateSession()
@@ -240,10 +260,10 @@ void UPunGameInstance::UpdateSession()
 		PUN_DEBUG2("[ERROR]UpdateSession: Not connected to Steam");
 		return;
 	}
-	
-	PUN_DEBUG2("UpdateSession");
-	auto sessionSettings = GetSessionSettings();
-	sessionInterface->UpdateSession(SESSION_NAME, sessionSettings);
+
+	PUN_DEBUG2("UpdateSession connected:%llu", connectedPlayerIds().size());
+	auto sessionSettings = GetPreferredSessionSettings();
+	sessionInterface->UpdateSession(PUN_SESSION_NAME, sessionSettings);
 }
 
 void UPunGameInstance::ServerOnStartedGame()
@@ -251,11 +271,11 @@ void UPunGameInstance::ServerOnStartedGame()
 	LLM_SCOPE_(EPunSimLLMTag::PUN_GameInstance);
 	
 	PUN_DEBUG2("OnStartedGame: UpdateSession");
-	auto sessionSettings = GetSessionSettings();
+	auto sessionSettings = GetPreferredSessionSettings();
 	sessionSettings.bAllowJoinInProgress = false;
 	sessionSettings.bUsesPresence = false;
 #if !WITH_EDITOR
-	sessionInterface->UpdateSession(SESSION_NAME, sessionSettings);
+	sessionInterface->UpdateSession(PUN_SESSION_NAME, sessionSettings);
 #endif
 }
 
@@ -271,9 +291,14 @@ void UPunGameInstance::CreateGame_Phase1()
 
 	// Check for existing session and destroy it
 	// After session is destroyed, CreateGame_Phase2() is called
-	auto existingSession = sessionInterface->GetNamedSession(SESSION_NAME);
+	auto existingSession = sessionInterface->GetNamedSession(PUN_SESSION_NAME);
 	if (existingSession) {
-		sessionInterface->DestroySession(SESSION_NAME, DestroySessionBeforeCreatingCompleteDelegate);
+		PUN_DEBUG2("CreateGame_Phase1 DestroySession");
+		sessionInterface->DestroySession(PUN_SESSION_NAME, DestroySessionBeforeCreatingCompleteDelegate);
+		if (isSinglePlayer) {
+			GetWorld()->ServerTravel("/Game/Maps/Lobby");
+		}
+		
 		bIsCreatingSession = true;
 		return;
 	}
@@ -295,16 +320,24 @@ void UPunGameInstance::CreateGame_Phase2()
 	bool cancelSucceed = sessionInterface->CancelFindSessions();
 	PUN_DEBUG2("CreateMultiplayerGame - CancelFindSessions:%d", cancelSucceed);
 
-	FOnlineSessionSettings sessionSettings = GetSessionSettings();
+	FOnlineSessionSettings sessionSettings = GetPreferredSessionSettings();
 	//PUN_DEBUG2("CreateSession: subsystem:%s", *IOnlineSubsystem::Get()->GetSubsystemName().ToString());
 
+	std::stringstream ss;
+	PrintSessionSettings(ss, sessionSettings);
+	PUN_LOG("SessionSettings: %s", ToTChar(ss.str()));
+
 	if (sessionSettings.bIsLANMatch) {
-		sessionInterface->CreateSession(0, SESSION_NAME, sessionSettings);
+		sessionInterface->CreateSession(0, PUN_SESSION_NAME, sessionSettings);
 
 		//// TODO: REMOVE
 		//AGameModeBase* gameMode = UGameplayStatics::GetGameMode(GetWorld());
 		//bool canTravel = gameMode->CanServerTravel("/Game/Maps/Lobby?listen", false);
 		//PUN_LOG("canTravel %d", canTravel);
+
+		if (isSinglePlayer) {
+			GetWorld()->ServerTravel("/Game/Maps/Lobby");
+		}
 		
 		PUN_DEBUG2("CreateSession: LAN");
 		bIsCreatingSession = true;
@@ -313,10 +346,14 @@ void UPunGameInstance::CreateGame_Phase2()
 		// Note... CreateSession(FUniqueNetId ... is not done from UE4 side... 
 		TSharedPtr<const FUniqueNetId> localNetId = IOnlineSubsystem::Get()->GetIdentityInterface()->GetUniquePlayerId(0);
 		if (localNetId.IsValid()) {
-			sessionInterface->CreateSession(*localNetId, SESSION_NAME, sessionSettings);
+			sessionInterface->CreateSession(*localNetId, PUN_SESSION_NAME, sessionSettings);
 			PUN_DEBUG2("CreateSession: %s , %s", *IOnlineSubsystem::Get()->GetSubsystemName().ToString(), *localNetId->ToDebugString());
 
-			DumpSessionSettings(&sessionSettings);
+			if (isSinglePlayer) {
+				GetWorld()->ServerTravel("/Game/Maps/Lobby");
+			}
+			
+			//DumpSessionSettings(&sessionSettings);
 			bIsCreatingSession = true;
 		}
 		else {
@@ -331,6 +368,13 @@ void UPunGameInstance::CreateGame_Phase2()
 void UPunGameInstance::OnCreateSessionComplete(FName sessionName, bool success)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_GameInstance);
+
+	// TODO: This is never called anyway??
+	_LOG(PunNetwork, "OnCreateSessionComplete %d", success);
+
+	if (isSinglePlayer) {
+		return;
+	}
 	
 	if (!success) {
 		PUN_DEBUG2("[ERROR]Unable to create session %s", *sessionName.ToString());
@@ -342,7 +386,7 @@ void UPunGameInstance::OnCreateSessionComplete(FName sessionName, bool success)
 	//if (!gameMode->CanServerTravel("/Game/Maps/Lobby?listen", false)) {
 	//	return;
 	//}
-	
+
 	GetWorld()->ServerTravel("/Game/Maps/Lobby?listen");
 	
 	//FString Error;
@@ -373,13 +417,14 @@ void UPunGameInstance::OnFindSessionsComplete(bool success)
 	}
 	
 	PUN_DEBUG2("Finished finding session %d", sessionSearch->SearchResults.Num());
-	for (const FOnlineSessionSearchResult& searchResult : sessionSearch->SearchResults)
-	{
-		FString value;
-		searchResult.Session.SessionSettings.Get(SETTING_MAPNAME, value);
+	// Description Print goes to MainMenu
+	//for (const FOnlineSessionSearchResult& searchResult : sessionSearch->SearchResults)
+	//{
+	//	FString value;
+	//	searchResult.Session.SessionSettings.Get(SETTING_MAPNAME, value);
 
-		PUN_DEBUG2(" Found session name: %s", *value);
-	}
+	//	PUN_DEBUG2(" Found session name: %s", *value);
+	//}
 }
 
 void UPunGameInstance::OnDestroySessionComplete(FName sessionName, bool success)
@@ -410,11 +455,32 @@ void UPunGameInstance::OnJoinSessionComplete(FName sessionName, EOnJoinSessionCo
 	{
 		if (controller)
 		{
-			if (sessionInterface->GetResolvedConnectString(SESSION_NAME, travelURL))
+			if (sessionInterface->GetResolvedConnectString(PUN_SESSION_NAME, travelURL))
 			{
-				PUN_DEBUG2("- Travel URL:%s", *travelURL);
+				PUN_DEBUG2(" --- ClientTravel TRAVEL URL [[[%s]]]", *travelURL);
 				isSinglePlayer = false;
-				controller->ClientTravel(travelURL, ETravelType::TRAVEL_Absolute);
+
+				{
+					// Note: LAN's LastURL causes ClientTravel to break...
+					FWorldContext& context = GetEngine()->GetWorldContextFromWorldChecked(controller->GetWorld());
+					context.LastURL.Map = "/Game/Maps/Lobby";
+				}
+
+				//if (IsLANMatch()) {
+				//	controller->ClientTravel(travelURL, ETravelType::TRAVEL_Relative);
+				//} else {
+					controller->ClientTravel(travelURL, ETravelType::TRAVEL_Absolute);
+				//}
+
+				FWorldContext& context = GetEngine()->GetWorldContextFromWorldChecked(controller->GetWorld());
+				PUN_LOG(" --- Context After: url:%s type:%d last_url:%s", *context.TravelURL, context.TravelType, *context.LastURL.ToString());
+
+				std::stringstream ss;
+				PrintURL(ss, context.LastURL);
+				PUN_LOG(" --- LastURL: %s", ToTChar(ss.str()));
+				ss.str("");
+				
+				PUN_LOG(" --- NextURL: %s", *controller->GetWorld()->NextURL);
 			}
 			else {
 				PUN_DEBUG2("- [ERROR]GetResolvedConnectString Failed");
@@ -506,10 +572,10 @@ void UPunGameInstance::OnGameExit()
 	LLM_SCOPE_(EPunSimLLMTag::PUN_GameInstance);
 	
 	PUN_DEBUG2("OnGameExit");
-	EnsureSessionDestroyed();
+	EnsureSessionDestroyed(false);
 }
 
-void UPunGameInstance::EnsureSessionDestroyed()
+void UPunGameInstance::EnsureSessionDestroyed(bool gotoMainMenu)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_GameInstance);
 	
@@ -517,14 +583,23 @@ void UPunGameInstance::EnsureSessionDestroyed()
 	
 	if (sessionInterface.IsValid())
 	{
-		auto existingSession = sessionInterface->GetNamedSession(SESSION_NAME);
+		auto existingSession = sessionInterface->GetNamedSession(PUN_SESSION_NAME);
 		if (existingSession) {
 			PUN_DEBUG2("EnsureSessionDestroyed: Completed");
-			sessionInterface->DestroySession(SESSION_NAME, DestroySessionThenDoesNothingCompleteDelegate);
+			
+			if (gotoMainMenu) {
+				sessionInterface->DestroySession(PUN_SESSION_NAME, DestroySessionThenGoToMainMenuCompleteDelegate);
+			} else {
+				sessionInterface->DestroySession(PUN_SESSION_NAME, DestroySessionThenDoesNothingCompleteDelegate);
+			}
 		}
 	}
 }
 
+bool UPunGameInstance::IsInGame() {
+	auto gameController = Cast<APunPlayerController>(GetWorld()->GetFirstPlayerController());
+	return gameController != nullptr;
+}
 bool UPunGameInstance::IsInGame(const UObject* worldContextObject) {
 	auto gameController = Cast<APunPlayerController>(worldContextObject->GetWorld()->GetFirstPlayerController());
 	return gameController != nullptr;

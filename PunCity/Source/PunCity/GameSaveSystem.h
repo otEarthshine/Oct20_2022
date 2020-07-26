@@ -13,8 +13,6 @@
 #include "HAL/FileManager.h"
 #include "Misc/FileHelper.h"
 
-#define SAVE_VERSION 9
-
 struct GameSaveInfo
 {
 	int32 version = -1;

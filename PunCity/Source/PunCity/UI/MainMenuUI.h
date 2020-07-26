@@ -63,6 +63,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* LobbyListJoinGameButton;
 	UPROPERTY(meta = (BindWidget)) UButton* LobbyListLoadGameButton;
 	UPROPERTY(meta = (BindWidget)) UButton* LobbyListCreateGameButton;
+
+	UPROPERTY(meta = (BindWidget)) UTextBlock* VersionIdText;
 	
 	UPROPERTY(meta = (BindWidget)) UCircularThrobber* LobbyRefreshThrobber;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyConnectionWarning;

@@ -34,7 +34,7 @@ void UGameSettingsUI::PunInit(UPunWidget* callbackParent)
 	bool hasExistingSettings = gameInstance()->LoadSoundAndOtherSettingsFromFile();
 
 	if (!hasExistingSettings ||
-		gameInstance()->loadedVersion != GAME_SETTINGS_VERSION)
+		gameInstance()->loadedVersion != GAME_VERSION)
 	{
 		RestoreDefault();
 		gameInstance()->RestoreDefaults();

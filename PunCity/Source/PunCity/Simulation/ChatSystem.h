@@ -11,6 +11,7 @@ class ChatSystem
 {
 public:
 	void AddMessage(FSendChat chatMessage) {
+		_LOG(PunSync, "ChatSystem: AddMessage pid:%d %s", chatMessage.playerId, *chatMessage.message);
 		_messages.Add(chatMessage);
 		//if (_messages.Num() > 20) {
 		//	_messages.RemoveAt(0);

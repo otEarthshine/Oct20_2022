@@ -26,6 +26,8 @@ void APunMainMenuHUD::BeginPlay()
 {
 	Super::BeginPlay();
 
+	_LOG(PunInit, "APunMainMenuHUD BeginPlay");
+
 	_mainMenuUI = Cast<UMainMenuUI>(CreateWidget<UUserWidget>(GetWorld(), _mainMenuClass));
 	check(_mainMenuUI);
 	_mainMenuUI->AddToViewport();

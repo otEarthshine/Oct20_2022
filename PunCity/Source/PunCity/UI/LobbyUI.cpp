@@ -105,6 +105,10 @@ void ULobbyUI::Init()
 //#if WITH_EDITOR
 	// Small map for editor play for speed
 	serverMapSettings.mapSizeEnumInt = static_cast<int32>(MapSizeEnum::Medium);
+	LobbyMapSizeDropdown->ClearOptions();
+	for (FString name : MapSizeNames) {
+		LobbyMapSizeDropdown->AddOption(name);
+	}
 	LobbyMapSizeDropdown->SetSelectedIndex(serverMapSettings.mapSizeEnumInt);
 	RefreshAICountDropdown();
 //#endif
@@ -403,9 +407,15 @@ void ULobbyUI::ReturnToMainMenu()
 		CancelWorldGenerationOverlay->SetVisibility(ESlateVisibility::Visible);
 	}
 	else {
-		gameInstance()->isReturningToLobbyList = gameInstance()->isMultiplayer(); // return to lobby list if it is a multiplayer game
-		gameInstance()->EnsureSessionDestroyed();
-		GetFirstController()->ClientTravel("/Game/Maps/MainMenu", TRAVEL_Absolute);
+
+		if (gameInstance()->isSinglePlayer) {
+			GetFirstController()->ClientTravel("/Game/Maps/MainMenu", TRAVEL_Absolute);
+			gameInstance()->EnsureSessionDestroyed(false);
+		}
+		else {
+			gameInstance()->isReturningToLobbyList = gameInstance()->isMultiplayer(); // return to lobby list if it is a multiplayer game
+			gameInstance()->EnsureSessionDestroyed(true);
+		}
 	}
 }
 
@@ -418,9 +428,50 @@ void ULobbyUI::OnChatInputBoxTextCommitted(const FText& text, ETextCommit::Type 
 
 		if (!text.ToString().IsEmpty())
 		{
-			FString playerName = controller->PlayerState->GetPlayerName();
-			controller->SendChat_ToServer(playerName, text.ToString());
-			LobbyChatInputBox->SetText(FText());
+			// Special cases
+			if (text.ToString() == "GetInfo" &&
+				gameInstance()->IsServer(this))
+			{
+				IOnlineSessionPtr sessionPtr = gameInstance()->sessionInterface;
+				sessionPtr->DumpSessionState();
+				
+				std::stringstream ss;
+
+
+				PrintSessionState(ss, sessionPtr);
+				
+				//ss << "Session Info [Debug]:\n";
+				//ss << "GetNumSessions: " << sessionPtr->GetNumSessions() << "\n";
+
+				//FOnlineSessionSettings* sessionSettings = sessionPtr->GetSessionSettings(PUN_SESSION_NAME);
+				//PrintSessionSettings(ss, *sessionSettings);
+
+				//FString connectInfo;
+				//sessionPtr->GetResolvedConnectString(PUN_SESSION_NAME, connectInfo);
+				//ss << "GetResolvedConnectString: " << ToStdString(connectInfo);
+				//ss << "\n\n";
+
+				
+
+				FWorldContext& context = gameInstance()->GetEngine()->GetWorldContextFromWorldChecked(controller->GetWorld());
+				ss << "TravelURL:" << ToStdString(context.TravelURL);
+				ss << "\n";
+				ss << "TravelType: " << context.TravelType << "\n";
+				ss << "LastURL:\n";
+				PrintURL(ss, context.LastURL);
+				ss << "\n";
+
+				//sessionInterface->GetResolvedConnectString(PUN_SESSION_NAME, travelURL)
+				//
+				controller->SendChat_ToServer("", ToFString(ss.str()));
+				LobbyChatInputBox->SetText(FText());
+			}
+			// Send Chat To Server
+			else {
+				FString playerName = controller->PlayerState->GetPlayerName();
+				controller->SendChat_ToServer(playerName, text.ToString());
+				LobbyChatInputBox->SetText(FText());
+			}
 		}
 
 		FInputModeGameAndUI_Pun inputModeData;

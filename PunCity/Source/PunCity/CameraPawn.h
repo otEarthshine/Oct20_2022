@@ -10,8 +10,15 @@
 #include "GameFramework/Pawn.h"
 #include "Camera/CameraComponent.h"
 
-#include "CameraPawn.generated.h"
+struct TrailerCameraRecord {
+	WorldAtom2 cameraAtom;
+	float zoomDistance;
+	FRotator rotator;
+	FString transition;
+	float transitionTime;
+};
 
+#include "CameraPawn.generated.h"
 
 /*
  * Manages Cameras and Inputs
@@ -148,7 +155,9 @@ public:
 							static_cast<int32_t>(_camShiftLocation.Y * CoordinateConstants::AtomPerDisplayUnit));
 	}
 
-	//! Move Camera
+	/*
+	 * Move Camera
+	 */
 	void SetCameraAtom(WorldAtom2 atom) {
 		_camShiftLocation.X = atom.x / CoordinateConstants::AtomPerDisplayUnit;
 		_camShiftLocation.Y = atom.y / CoordinateConstants::AtomPerDisplayUnit;
@@ -157,9 +166,19 @@ public:
 		_cameraZoomStep = GetZoomStepFromAmount(zoomAmount);
 	}
 	
-	void MoveCameraTo(WorldAtom2 atom, float zoomAmount, float timeLength = 3.0f);
+	void MoveCameraTo(WorldAtom2 atom, float zoomAmount, float timeLength = 3.0f, FString lerpType = "ChooseLocation");
 
-	//! Building placement
+	void SetCameraSequence(std::vector<TrailerCameraRecord> cameraSequence) {
+		_cameraSequence = cameraSequence;
+	}
+	void ClearCameraSequence() {
+		_cameraSequence.clear();
+	}
+	
+
+	/*
+	 * Building placement
+	 */
 	void StartBuildingPlacement(CardEnum buildingEnum, int32_t buildingLvl, bool useBoughtCard, CardEnum useWildCard) final {
 		_networkInterface->ResetGameUI();
 		buildingPlacementSystem->StartBuildingPlacement(buildingEnum, buildingLvl, useBoughtCard, useWildCard);
@@ -228,6 +247,8 @@ public:
 	void SetMouseZoomSpeedFraction(float fraction) final {
 		_zoomSpeedFraction = fraction;
 	}
+
+	
 	
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Building Placement")
@@ -250,6 +271,9 @@ private:
 	// TODO: save zoom speed fraction to Settings
 	float _zoomSpeedFraction = 0.5f;
 
+
+	std::vector<TrailerCameraRecord> _cameraSequence;
+	FString _systemLerpType = "ChooseLocation";
 	
 	float _systemMoveTimeSinceStart = -1.0f;
 	float _systemMoveTimeLength = 0.0f;

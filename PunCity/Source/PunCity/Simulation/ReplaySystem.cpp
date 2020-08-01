@@ -6,12 +6,15 @@
 #include <fstream>
 #include <iterator>
 #include "PunCity/PunUtils.h"
+#include "PunCity/PunTimer.h"
 #include "Misc/FileHelper.h"
 
 using namespace std;
 
-void ReplaySystem::SavePlayerActions(int32_t playerId, FString fileName)
+void ReplaySystem::SavePlayerActions(int32 playerId, FString fileName)
 {
+	SCOPE_TIMER("SavePlayerActions");
+	
 	FString path = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir());
 	path += fileName;
 
@@ -19,7 +22,7 @@ void ReplaySystem::SavePlayerActions(int32_t playerId, FString fileName)
 	std::ofstream file;
 	file.open(TCHAR_TO_UTF8(*(path)), ios::out | ios::binary);
 
-	std::vector<int32_t> saveVector;
+	std::vector<int32> saveVector;
 
 	for (size_t i = 0; i < networkTickInfos.size(); i++)
 	{
@@ -33,10 +36,32 @@ void ReplaySystem::SavePlayerActions(int32_t playerId, FString fileName)
 			}
 		}
 
+		// Trim any command type that won't need replay
+		for (size_t j = commands.size(); j-- > 0;) 
+		{
+			switch (commands[j]->commandType())
+			{
+			case NetworkCommandEnum::TradeResource:
+			case NetworkCommandEnum::PopupDecision:	
+			//case NetworkCommandEnum::SelectRareCard: // Test?
+
+			case NetworkCommandEnum::SetIntercityTrade:
+			case NetworkCommandEnum::BuyCard:			
+			case NetworkCommandEnum::SellCards:		
+			case NetworkCommandEnum::UseCard:		
+			case NetworkCommandEnum::UnslotCard:
+			case NetworkCommandEnum::ChooseResearch:
+				commands.erase(commands.begin() + j);
+				break;
+			default:
+				break;
+			}
+		}
+
 		// Record the tick with non-empty commands
 		if (commands.size() > 0) 
 		{
-			TArray<int32> blob;
+			PunSerializedData blob(true);
 			networkTickInfo.SerializeToBlob(blob);
 
 			// For each NetworkTickInfo, record its size, before adding the blob
@@ -59,13 +84,15 @@ void ReplaySystem::SavePlayerActions(int32_t playerId, FString fileName)
 	//PUN_LOG("Saved... File Exist: %d, at path: %s", FPaths::FileExists(path), *path);
 }
 
-void ReplaySystem::LoadPlayerActions(int32_t playerId, FString fileName)
+void ReplaySystem::LoadPlayerActions(int32 playerId, FString fileName)
 {
+	PUN_DEBUG2("LoadPlayerActions: pid:%d %s", playerId, *fileName);
+	
 	FString path = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir());
 	path += fileName;
 
 	if (!FPaths::FileExists(path)) {
-		PUN_LOG("No File to load %s", *path);
+		PUN_DEBUG2("No File to load %s", *path);
 		return;
 	}
 
@@ -83,7 +110,7 @@ void ReplaySystem::LoadPlayerActions(int32_t playerId, FString fileName)
 
 	PUN_LOG("File Exist: %d, at path: %s, size32:%d", FPaths::FileExists(path), *path, length);
 
-	std::vector<int32_t> loadVector(length);
+	std::vector<int32> loadVector(length);
 
 	PUN_LOG("Load Size32: %d", loadVector.size());
 
@@ -95,14 +122,14 @@ void ReplaySystem::LoadPlayerActions(int32_t playerId, FString fileName)
 
 	// Convert loadVector into NetworkTickInfo for playerCommands;
 	int readIndex = 0;
-	TArray<int32> blob;
+	PunSerializedData blob(false);
 
 	LOOP_CHECK_START();
 	while (readIndex < loadVector.size())
 	{
 		LOOP_CHECK_END();
 		
-		int32_t tickInfoSize = loadVector[readIndex++];
+		int32 tickInfoSize = loadVector[readIndex++];
 
 		blob.Empty();
 		blob.Append(&loadVector[readIndex], tickInfoSize);

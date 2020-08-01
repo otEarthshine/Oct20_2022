@@ -31,7 +31,7 @@ public:
 	virtual FString playerNameF(int32 playerId) = 0;
 
 	virtual std::vector<int32> allHumanPlayerIds() = 0;
-	virtual std::vector<int32> connectedPlayerIds() = 0;
+	virtual std::vector<int32> connectedPlayerIds(bool withReplayPlayers = true) = 0;
 	virtual std::vector<int32> disconnectedPlayerIds() = 0;
 	
 	
@@ -63,6 +63,8 @@ public:
 						 float Thickness = 1.0f, float LifeTime = 10000) = 0;
 
 	virtual float GetDisplayWorldTime() = 0;
+
+	virtual TArray<FString> GetReplayFileNames() = 0;
 
 	// Audio
 	virtual void SpawnResourceDropoffAudio(ResourceEnum resourceEnum, WorldAtom2 worldAtom) = 0;

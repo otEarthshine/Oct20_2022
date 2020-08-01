@@ -292,7 +292,8 @@ void UWorldSpaceUI::TickBuildings()
 	OverlayType overlayType = data->GetOverlayType();
 	WorldTile2 overlayTile = dataSource()->GetOverlayTile();
 
-	for (int buildingId : buildingIdsToDisplay) {
+	for (int buildingId : buildingIdsToDisplay) 
+	{
 		if (buildingId == -1) continue; // displayedBuilding list is from BuildingDisplaySystem, invalid objectId is possible
 
 		Building& building = dataSource()->GetBuilding(buildingId);

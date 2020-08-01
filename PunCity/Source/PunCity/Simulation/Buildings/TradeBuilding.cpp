@@ -62,10 +62,10 @@ void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePe
 	// Change money from trade's Total
 	//resourceSys.ChangeMoney(tradeCommand.totalGain);
 
-	int32 fee = totalTradeMoney100 * tradingFeePercent / 100;
-	resourceSys.ChangeMoney(-fee);
+	int32 fee100 = totalTradeMoney100 * tradingFeePercent / 100;
+	resourceSys.ChangeMoney100(-fee100);
 	
-	simulation->QuestUpdateStatus(playerId, QuestEnum::TradeQuest, abs(totalTradeMoney100 / 100 + fee));
+	simulation->QuestUpdateStatus(playerId, QuestEnum::TradeQuest, abs(totalTradeMoney100 / 100 + fee100 / 100));
 
 	simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, tile, ToSignedNumber(tradeCommand.totalGain));
 }

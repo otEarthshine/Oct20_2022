@@ -1221,7 +1221,7 @@ public:
 			FString jsonString;
 			
 			TSharedRef<TJsonWriter<>> writer = TJsonWriterFactory<>::Create(&jsonString);
-			FJsonSerializer::Serialize(jsonObject, writer);;
+			FJsonSerializer::Serialize(jsonObject, writer);
 			
 			FFileHelper::SaveStringToFile(jsonString, *(path + saveFileName));
 		}

@@ -505,7 +505,7 @@ public:
 	virtual void UnslotCard(class FUnslotCard command) = 0;
 
 	virtual void Attack(class FAttack command) = 0;
-	virtual void TrainUnit(class FTrainUnit command) = 0;
+	//virtual void TrainUnit(class FTrainUnit command) = 0;
 
 	virtual void ClaimLand(class FClaimLand command) = 0;
 	virtual void ChooseResearch(class FChooseResearch command) = 0;

@@ -235,8 +235,10 @@ void ACameraPawn::KeyPressed_Escape()
 }
 
 
-void ACameraPawn::MoveCameraTo(WorldAtom2 atom, float zoomAmount, float timeLength)
+void ACameraPawn::MoveCameraTo(WorldAtom2 atom, float zoomAmount, float timeLength, FString lerpType)
 {
+	_systemLerpType = lerpType;
+	
 	_systemMoveTimeSinceStart = 0.0f;
 	_systemMoveTimeLength = timeLength;
 
@@ -297,15 +299,26 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 		//if (_cameraRotateInput.Y != 0) PUN_LOG("Pitch %f", rotation.Pitch);
 	}
 
-
-	// System movement
+	/*
+	 * System movement
+	 */
 	if (isSystemMovingCamera())
 	{
-		
 		_systemMoveTimeSinceStart += fmin(0.02, UGameplayStatics::GetWorldDeltaSeconds(GetWorld()));
 		float lerpFraction = _systemMoveTimeSinceStart / _systemMoveTimeLength;
+
+		// Lerp functions
 		float zoomLerpFraction = lerpFraction;
-		float locationLerpFraction = 1 - exp(-lerpFraction * 20);
+		float locationLerpFraction = lerpFraction;
+		if (_systemLerpType == "ChooseLocation") {
+			locationLerpFraction = 1 - exp(-lerpFraction * 20);
+		}
+		else if (_systemLerpType == "Instant") {
+			zoomLerpFraction = 1;
+			locationLerpFraction = 1;
+		}
+
+		//
 		float lerpedZoomAmount = _systemZoomAmountStart + (_systemZoomAmountTarget - _systemZoomAmountStart) * zoomLerpFraction;
 		_camShiftLocation = _systemCamLocationStart + (_systemCamLocationTarget - _systemCamLocationStart) * locationLerpFraction;
 		//PUN_LOG("System Move Camera %f, %f", zoomLerpFraction, locationLerpFraction);
@@ -333,7 +346,21 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 		return;
 	}
 
-	// Zoom
+	/*
+	 * Trailer sequence
+	 */
+	if (_cameraSequence.size() > 0)
+	{
+		TrailerCameraRecord cameraRecord = _cameraSequence[0];
+		_cameraSequence.erase(_cameraSequence.begin());
+
+		MoveCameraTo(cameraRecord.cameraAtom, cameraRecord.zoomDistance, cameraRecord.transitionTime, cameraRecord.transition);
+	}
+	
+
+	/*
+	 * Zoom
+	 */
 	{	
 		int32 zoomStepSkip = static_cast<int32>(MinZoomSkipSteps + _zoomSpeedFraction * (MaxZoomSkipSteps - MinZoomSkipSteps));
 		if (_cameraZoomInputAxis == -1.0f) 
@@ -380,7 +407,8 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 
 			
 		}
-		if (_cameraZoomInputAxis == 1.0f) {
+		if (_cameraZoomInputAxis == 1.0f) 
+		{
 			int32 preferredZoomStep = max(MinZoomStep, _cameraZoomStep - zoomStepSkip);
 			//_cameraZoomStep = max(MinZoomStep, _cameraZoomStep - zoomStepSkip);
 

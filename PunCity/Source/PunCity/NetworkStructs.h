@@ -5,6 +5,125 @@
 #include "PunUnrealUtils.h"
 
 /*
+ * Light weight alternative to UE4's FArchive FMemoryReader etc.
+ */
+class PunSerializedData : public TArray<int32>
+{
+public:
+	PunSerializedData(bool isSaving) {
+		readIndex = isSaving ? -1 : 0;
+	}
+
+	PunSerializedData(bool isSaving, const TArray<int32>& blob, int32 index = 0)
+	{
+		readIndex = isSaving ? -1 : index;
+		Append(blob);
+	}
+
+	int32 readIndex = -1;
+	
+	bool isSaving() { return readIndex == -1; }
+
+	
+	void operator<<(int32& value) {
+		if (isSaving()) {
+			Add(value);
+		} else {
+			value = (*this)[readIndex++];
+		}
+	}
+	void operator<<(int16& value) {
+		if (isSaving()) {
+			Add(value);
+		}
+		else {
+			value = (*this)[readIndex++];
+		}
+	}
+	void operator<<(int8& value) {
+		if (isSaving()) {
+			Add(value);
+		} else {
+			value = (*this)[readIndex++];
+		}
+	}
+	void operator<<(uint16& value) {
+		if (isSaving()) {
+			Add(value);
+		}
+		else {
+			value = (*this)[readIndex++];
+		}
+	}
+	void operator<<(uint8& value) {
+		if (isSaving()) {
+			Add(value);
+		} else {
+			value = (*this)[readIndex++];
+		}
+	}
+	void operator<<(bool& value) {
+		if (isSaving()) {
+			Add(value);
+		} else {
+			value = (*this)[readIndex++];
+		}
+	}
+
+	// Enum
+	template <
+		typename EnumType,
+		typename = typename TEnableIf<TIsEnumClass<EnumType>::Value>::Type
+	>
+	void operator<<(EnumType& Value) {
+		return (*this) << (__underlying_type(EnumType)&)Value;
+	}
+
+	void operator<<(FString& value) {
+		if (isSaving()) {
+			FString_SerializeAndAppendToBlob(value, *this);
+		} else {
+			value = FString_DeserializeFromBlob(*this, readIndex);
+		}
+	}
+
+	void operator<<(TArray<int32>& inArray) {
+		if (isSaving()) {
+			Add(inArray.Num());
+			Append(inArray);
+		} else {
+			int32 count = (*this)[readIndex++];
+			for (int i = 0; i < count; i++) {
+				inArray.Add((*this)[readIndex++]);
+			}
+		}
+	}
+	void operator<<(TArray<uint8>& inArray) {
+		if (isSaving()) {
+			Add(inArray.Num());
+			Append(inArray);
+		}
+		else {
+			int32 count = (*this)[readIndex++];
+			for (int i = 0; i < count; i++) {
+				inArray.Add((*this)[readIndex++]);
+			}
+		}
+	}
+
+	void operator<<(WorldTile2& value) {
+		(*this) << value.x;
+		(*this) << value.y;
+	}
+	void operator<<(TileArea& value) {
+		(*this) << value.minX;
+		(*this) << value.minY;
+		(*this) << value.maxX;
+		(*this) << value.maxY;
+	}
+};
+
+/*
  * Map settings sent across network in the lobby
  */
 class FMapSettings
@@ -38,24 +157,14 @@ public:
 
 	std::string mapSeedStd() { return ToStdString(mapSeed); }
 
-	void SerializeAndAppendToBlob(TArray<int32>& blob)
-	{
-		FString_SerializeAndAppendToBlob(mapSeed, blob);
-		blob.Add(mapSizeEnumInt);
-		blob.Add(playerCount);
-		blob.Add(aiCount);
-		blob.Add(static_cast<int32>(difficultyLevel));
-		blob.Add(isSinglePlayer);
-	}
 
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index)
-	{
-		mapSeed = FString_DeserializeFromBlob(blob, index);
-		mapSizeEnumInt = blob[index++];
-		playerCount = blob[index++];
-		aiCount = blob[index++];
-		difficultyLevel = static_cast<DifficultyLevel>(blob[index++]);
-		isSinglePlayer = blob[index++];
+	void Serialize(PunSerializedData& Ar) {
+		Ar << mapSeed;
+		Ar << mapSizeEnumInt;
+		Ar << playerCount;
+		Ar << aiCount;
+		Ar << difficultyLevel;
+		Ar << isSinglePlayer;
 	}
 
 	MapSizeEnum mapSizeEnum() { return static_cast<MapSizeEnum>(mapSizeEnumInt); }
@@ -102,18 +211,11 @@ public:
 	int32 victoriousPlayerId = -1;
 	GameEndEnum gameEndEnum = GameEndEnum::None;
 
-	void SerializeAndAppendToBlob(TArray<int32>& blob)
+	void Serialize(PunSerializedData& blob)
 	{
-		blob.Add(playerId);
-		blob.Add(victoriousPlayerId);
-		blob.Add(static_cast<int32>(gameEndEnum));
-	}
-
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index)
-	{
-		playerId = blob[index++];
-		victoriousPlayerId = blob[index++];
-		gameEndEnum = static_cast<GameEndEnum>(blob[index++]);
+		blob << playerId;
+		blob << victoriousPlayerId;
+		blob << gameEndEnum;
 	}
 
 	void Serialize(FArchive &Ar)
@@ -128,7 +230,7 @@ public:
  * Network command
  */
 
-enum class NetworkCommandEnum
+enum class NetworkCommandEnum : uint8
 {
 	None,
 	AddPlayer,
@@ -154,7 +256,7 @@ enum class NetworkCommandEnum
 	UseCard,
 	UnslotCard,
 
-	TrainUnit,
+	//TrainUnit,
 
 	ClaimLand,
 	Attack,
@@ -190,7 +292,7 @@ static const std::string NetworkCommandNames[] =
 	"UseCard",
 	"UnslotCard",
 
-	"TrainUnit",
+	//"TrainUnit",
 
 	"ClaimLand",
 	"Attack",
@@ -209,55 +311,39 @@ public:
 
 	virtual NetworkCommandEnum commandType() { return NetworkCommandEnum::None; }
 
-	//! Append NetworkCommand onto the blob
-	virtual void SerializeAndAppendToBlob(TArray<int32>& blob) {
-		blob.Add((int32)commandType());
-		blob.Add(playerId);
-	}
-	
-	//! Read blob using index
-	virtual void DeserializeFromBlob(const TArray<int32>& blob, int32& index) {
-		blob[index++]; // Skip commandType
-		playerId = blob[index++];
+	virtual void Serialize(PunSerializedData& Ar) {
+		int32 commandInt = 0;
+		if (Ar.isSaving()) {
+			commandInt = static_cast<int32>(commandType());
+		}
+		
+		Ar << commandInt;
+		Ar << playerId;
 	}
 
-	static NetworkCommandEnum GetCommandTypeFromBlob(const TArray<int32>& blob, int32& index) {
-		return (NetworkCommandEnum)blob[index];
+	static NetworkCommandEnum GetCommandTypeFromBlob(PunSerializedData& blob) {
+		return static_cast<NetworkCommandEnum>(blob[blob.readIndex]);
 	}
 };
 
-//class FAddPlayer final : public FNetworkCommand
-//{
-//public:
-//	virtual ~FAddPlayer() {}
-//
-//	int8 isAIPlayer;
-//	//int32 playerId;
-//	FString playerName;
-//	FString replayFileName;
-//
-//	NetworkCommandEnum commandType() final { return NetworkCommandEnum::AddPlayer; }
-//
-//	void SerializeAndAppendToBlob(TArray<int32>& blob) final
-//	{
-//		FNetworkCommand::SerializeAndAppendToBlob(blob);
-//
-//		blob.Add(isAIPlayer);
-//		//blob.Add(playerId);
-//		FString_SerializeAndAppendToBlob(playerName, blob);
-//		FString_SerializeAndAppendToBlob(replayFileName, blob);
-//	}
-//
-//	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final
-//	{
-//		FNetworkCommand::DeserializeFromBlob(blob, index);
-//
-//		isAIPlayer = blob[index++];
-//		//playerId = blob[index++];
-//		playerName = FString_DeserializeFromBlob(blob, index);
-//		replayFileName = FString_DeserializeFromBlob(blob, index);
-//	}
-//};
+// 
+class FBuildingCommand : public FNetworkCommand
+{
+public:
+	virtual ~FBuildingCommand() {}
+
+	int32 buildingId;
+	int32 buildingTileId = -1; // Replay Only
+	CardEnum buildingEnum = CardEnum::None; // Replay Only
+
+	void Serialize(PunSerializedData& blob) override {
+		FNetworkCommand::Serialize(blob);
+		
+		blob << buildingId;
+		blob << buildingTileId;
+		blob << buildingEnum;
+	}
+};
 
 
 class FPlaceBuildingParameters final : public FNetworkCommand
@@ -277,30 +363,18 @@ public:
 
 	NetworkCommandEnum commandType() override { return NetworkCommandEnum::PlaceBuilding; }
 
-	void SerializeAndAppendToBlob(TArray<int32>& blob) override
-	{
-		FNetworkCommand::SerializeAndAppendToBlob(blob);
-		blob.Add(buildingEnum);
-		blob.Add(buildingLevel);
-		area.SerializeAndAppendToBlob(blob);
-		area2.SerializeAndAppendToBlob(blob);
-		center.SerializeAndAppendToBlob(blob);
-		blob.Add(faceDirection);
-		blob.Add(useBoughtCard);
-		blob.Add(static_cast<int32>(useWildCard));
-	}
+	void Serialize(PunSerializedData& blob) override {
+		FNetworkCommand::Serialize(blob);
 
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) override 
-	{
-		FNetworkCommand::DeserializeFromBlob(blob, index);
-		buildingEnum = blob[index++];
-		buildingLevel = blob[index++];
-		area.DeserializeFromBlob(blob, index);
-		area2.DeserializeFromBlob(blob, index);
-		center.DeserializeFromBlob(blob, index);
-		faceDirection = blob[index++];
-		useBoughtCard = blob[index++];
-		useWildCard = static_cast<CardEnum>(blob[index++]);
+		blob << buildingEnum;
+		blob << buildingLevel;
+		
+		blob << area;
+		blob << area2;
+		blob << center;
+		blob << faceDirection;
+		blob << useBoughtCard;
+		blob << useWildCard;
 	}
 };
 
@@ -312,112 +386,72 @@ public:
 	TileArea area = TileArea::Invalid; // Needed in the case for manipulable area
 	TileArea area2 = TileArea::Invalid;
 	TArray<int32> path;
-	int8 placementType;
+	int32 placementType;
 	ResourceEnum harvestResourceEnum;
 
 	NetworkCommandEnum commandType() override { return NetworkCommandEnum::PlaceGather; }
 
-	void SerializeAndAppendToBlob(TArray<int32>& blob) override
+	void Serialize(PunSerializedData& blob) override
 	{
-		FNetworkCommand::SerializeAndAppendToBlob(blob);
-		area.SerializeAndAppendToBlob(blob);
-		area2.SerializeAndAppendToBlob(blob);
-		SerializeArray(blob, path);
-
-		blob.Add(placementType);
-		blob.Add(static_cast<int32>(harvestResourceEnum));
-	}
-
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) override
-	{
-		FNetworkCommand::DeserializeFromBlob(blob, index);
-		area.DeserializeFromBlob(blob, index);
-		area2.DeserializeFromBlob(blob, index);
-		path = DeserializeArray(blob, index);
-
-		placementType = blob[index++];
-		harvestResourceEnum = static_cast<ResourceEnum>(blob[index++]);
+		FNetworkCommand::Serialize(blob);
+		blob << area;
+		blob << area2;
+		blob << path;
+		blob << placementType;
+		blob << harvestResourceEnum;
 	}
 };
 
-class FJobSlotChange final : public FNetworkCommand
+class FJobSlotChange final : public FBuildingCommand
 {
 public:
 	virtual ~FJobSlotChange() {}
 
 	int32 allowedOccupants;
-	int32 buildingId;
 
 	NetworkCommandEnum commandType() final { return NetworkCommandEnum::JobSlotChange; }
 
-	void SerializeAndAppendToBlob(TArray<int32>& blob) final
-	{
-		FNetworkCommand::SerializeAndAppendToBlob(blob);
-		blob.Add(allowedOccupants);
-		blob.Add(buildingId);
-	}
-
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final
-	{
-		FNetworkCommand::DeserializeFromBlob(blob, index);
-		allowedOccupants = blob[index++];
-		buildingId = blob[index++];
+	void Serialize(PunSerializedData& blob) final {
+		FBuildingCommand::Serialize(blob);
+		
+		blob << allowedOccupants;
 	}
 };
 
-class FSetAllowResource final : public FNetworkCommand
+class FSetAllowResource final : public FBuildingCommand
 {
 public:
 	virtual ~FSetAllowResource() {}
 
-	int32 buildingId = -1;
 	ResourceEnum resourceEnum = ResourceEnum::None;
 	bool allowed = false;
 	int32 target = -1;
 
 	NetworkCommandEnum commandType() final { return NetworkCommandEnum::SetAllowResource; }
 
-	void SerializeAndAppendToBlob(TArray<int32>& blob) final
-	{
-		FNetworkCommand::SerializeAndAppendToBlob(blob);
-		blob.Add(buildingId);
-		blob.Add(static_cast<int32>(resourceEnum));
-		blob.Add(allowed);
-		blob.Add(target);
+	void Serialize(PunSerializedData& blob) final {
+		FBuildingCommand::Serialize(blob);
+		
+		blob << resourceEnum;
+		blob << allowed;
+		blob << target;
 	}
 
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final
-	{
-		FNetworkCommand::DeserializeFromBlob(blob, index);
-		buildingId = blob[index++];
-		resourceEnum = static_cast<ResourceEnum>(blob[index++]);
-		allowed = blob[index++];
-		target = blob[index++];
-	}
 };
 
-class FSetPriority final : public FNetworkCommand
+class FSetPriority final : public FBuildingCommand
 {
 public:
 	virtual ~FSetPriority() {}
 
-	int32 priority;
-	int32 buildingId;
+	int32 priority = -1;
 
 	NetworkCommandEnum commandType() final { return NetworkCommandEnum::SetPriority; }
 
-	void SerializeAndAppendToBlob(TArray<int32>& blob) final
-	{
-		FNetworkCommand::SerializeAndAppendToBlob(blob);
-		blob.Add(priority);
-		blob.Add(buildingId);
-	}
-
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final
-	{
-		FNetworkCommand::DeserializeFromBlob(blob, index);
-		priority = blob[index++];
-		buildingId = blob[index++];
+	void Serialize(PunSerializedData& blob) final {
+		FBuildingCommand::Serialize(blob);
+		
+		blob << priority;
 	}
 };
 
@@ -435,28 +469,16 @@ public:
 
 	NetworkCommandEnum commandType() override { return NetworkCommandEnum::SetTownPriority; }
 
-	void SerializeAndAppendToBlob(TArray<int32>& blob) override
+	void Serialize(PunSerializedData& blob) override
 	{
-		FNetworkCommand::SerializeAndAppendToBlob(blob);
-		blob.Add(laborerPriority);
-		blob.Add(builderPriority);
-		blob.Add(roadMakerPriority);
-		
-		blob.Add(targetLaborerCount);
-		blob.Add(targetBuilderCount);
-		blob.Add(targetRoadMakerCount);
-	}
+		FNetworkCommand::Serialize(blob);
+		blob << laborerPriority;
+		blob << builderPriority;
+		blob << roadMakerPriority;
 
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) override
-	{
-		FNetworkCommand::DeserializeFromBlob(blob, index);
-		laborerPriority = blob[index++];
-		builderPriority = blob[index++];
-		roadMakerPriority = blob[index++];
-		
-		targetLaborerCount = blob[index++];
-		targetBuilderCount = blob[index++];
-		targetRoadMakerCount = blob[index++];
+		blob << targetLaborerCount;
+		blob << targetBuilderCount;
+		blob << targetRoadMakerCount;
 	}
 };
 
@@ -470,18 +492,10 @@ public:
 
 	NetworkCommandEnum commandType() final { return NetworkCommandEnum::ChangeName; }
 
-	void SerializeAndAppendToBlob(TArray<int32>& blob) final
-	{
-		FNetworkCommand::SerializeAndAppendToBlob(blob);
-		FString_SerializeAndAppendToBlob(name, blob);
-		blob.Add(objectId);
-	}
-
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final
-	{
-		FNetworkCommand::DeserializeFromBlob(blob, index);
-		name = FString_DeserializeFromBlob(blob, index);
-		objectId = blob[index++];
+	void Serialize(PunSerializedData& blob) final {
+		FNetworkCommand::Serialize(blob);
+		blob << name;
+		blob << objectId;
 	}
 };
 
@@ -495,18 +509,10 @@ public:
 
 	NetworkCommandEnum commandType() final { return NetworkCommandEnum::SendChat; }
 
-	void SerializeAndAppendToBlob(TArray<int32>& blob) final
-	{
-		FNetworkCommand::SerializeAndAppendToBlob(blob);
-		blob.Add(isSystemMessage);
-		FString_SerializeAndAppendToBlob(message, blob);
-	}
-
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final
-	{
-		FNetworkCommand::DeserializeFromBlob(blob, index);
-		isSystemMessage = blob[index++];
-		message = FString_DeserializeFromBlob(blob, index);
+	void Serialize(PunSerializedData& blob) final {
+		FNetworkCommand::Serialize(blob);
+		blob << isSystemMessage;
+		blob << message;
 	}
 };
 
@@ -523,24 +529,13 @@ public:
 
 	NetworkCommandEnum commandType() final { return NetworkCommandEnum::TradeResource; }
 
-	void SerializeAndAppendToBlob(TArray<int32>& blob) final
-	{
-		FNetworkCommand::SerializeAndAppendToBlob(blob);
-		SerializeArray(blob, buyEnums);
-		SerializeArray(blob, buyAmounts);
-		blob.Add(totalGain);
-		blob.Add(objectId);
-		blob.Add(isIntercityTrade);
-	}
-
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final
-	{
-		FNetworkCommand::DeserializeFromBlob(blob, index);
-		DeserializeArray(blob, index, buyEnums);
-		buyAmounts = DeserializeArray(blob, index);
-		totalGain = blob[index++];
-		objectId = blob[index++];
-		isIntercityTrade = blob[index++];
+	void Serialize(PunSerializedData& blob) override {
+		FNetworkCommand::Serialize(blob);
+		blob << buyEnums;
+		blob << buyAmounts;
+		blob << totalGain;
+		blob << objectId;
+		blob << isIntercityTrade;
 	}
 
 	void operator>>(FArchive& Ar)
@@ -567,7 +562,17 @@ public:
 
 	NetworkCommandEnum commandType() final { return NetworkCommandEnum::SetIntercityTrade; }
 
-	void SerializeAndAppendToBlob(TArray<int32>& blob) final
+	void Serialize(PunSerializedData& blob) final
+	{
+		FNetworkCommand::Serialize(blob);
+		blob << buildingIdToEstablishTradeRoute;
+		blob << isCancelingTradeRoute;
+		blob << resourceEnums;
+		blob << intercityTradeOfferEnum;
+		blob << targetInventories;
+	}
+
+	/*void SerializeAndAppendToBlob(TArray<int32>& blob) final
 	{
 		FNetworkCommand::SerializeAndAppendToBlob(blob);
 		blob.Add(buildingIdToEstablishTradeRoute);
@@ -585,7 +590,7 @@ public:
 		DeserializeArray(blob, index, resourceEnums);
 		DeserializeArray(blob, index, intercityTradeOfferEnum);
 		targetInventories = DeserializeArray(blob, index);
-	}
+	}*/
 };
 
 class FUpgradeBuilding : public FNetworkCommand
@@ -599,30 +604,37 @@ public:
 
 	NetworkCommandEnum commandType() override { return NetworkCommandEnum::UpgradeBuilding; }
 
-	void SerializeAndAppendToBlob(TArray<int32>& blob) override
-	{
-		FNetworkCommand::SerializeAndAppendToBlob(blob);
-		blob.Add(buildingId);
-		blob.Add(upgradeLevel);
-		blob.Add(upgradeType);
+	void Serialize(PunSerializedData& blob) override {
+		FNetworkCommand::Serialize(blob);
+		
+		blob << buildingId;
+		blob << upgradeLevel;
+		blob << upgradeType;
 	}
+	
+	//void SerializeAndAppendToBlob(TArray<int32>& blob) override
+	//{
+	//	FNetworkCommand::SerializeAndAppendToBlob(blob);
+	//	blob.Add(buildingId);
+	//	blob.Add(upgradeLevel);
+	//	blob.Add(upgradeType);
+	//}
 
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) override
-	{
-		FNetworkCommand::DeserializeFromBlob(blob, index);
-		buildingId = blob[index++];
-		upgradeLevel = blob[index++];
-		upgradeType = blob[index++];
-	}
+	//void DeserializeFromBlob(const TArray<int32>& blob, int32& index) override
+	//{
+	//	FNetworkCommand::DeserializeFromBlob(blob, index);
+	//	buildingId = blob[index++];
+	//	upgradeLevel = blob[index++];
+	//	upgradeType = blob[index++];
+	//}
 };
 
 // TODO: Generalize this for changing product type for any...
-class FChangeWorkMode : public FNetworkCommand
+class FChangeWorkMode : public FBuildingCommand
 {
 public:
 	virtual ~FChangeWorkMode() {}
 
-	int32 buildingId;
 	int32 enumInt;
 
 	int32 intVar1 = -1;
@@ -631,27 +643,35 @@ public:
 
 	NetworkCommandEnum commandType() override { return NetworkCommandEnum::ChangeWorkMode; }
 
-	void SerializeAndAppendToBlob(TArray<int32>& blob) override
+	void Serialize(PunSerializedData& blob) override
 	{
-		FNetworkCommand::SerializeAndAppendToBlob(blob);
-		blob.Add(buildingId);
-		blob.Add(enumInt);
-		
-		blob.Add(intVar1);
-		blob.Add(intVar2);
-		blob.Add(intVar3);
-	}
+		FBuildingCommand::Serialize(blob);
+		blob << enumInt;
 
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) override
-	{
-		FNetworkCommand::DeserializeFromBlob(blob, index);
-		buildingId = blob[index++];
-		enumInt = blob[index++];
-		
-		intVar1 = blob[index++];
-		intVar2 = blob[index++];
-		intVar3 = blob[index++];
+		blob << intVar1;
+		blob << intVar2;
+		blob << intVar3;
 	}
+	
+	//void SerializeAndAppendToBlob(TArray<int32>& blob) override
+	//{
+	//	FBuildingCommand::SerializeAndAppendToBlob(blob);
+	//	blob.Add(enumInt);
+	//	
+	//	blob.Add(intVar1);
+	//	blob.Add(intVar2);
+	//	blob.Add(intVar3);
+	//}
+
+	//void DeserializeFromBlob(const TArray<int32>& blob, int32& index) override
+	//{
+	//	FBuildingCommand::DeserializeFromBlob(blob, index);
+	//	enumInt = blob[index++];
+	//	
+	//	intVar1 = blob[index++];
+	//	intVar2 = blob[index++];
+	//	intVar3 = blob[index++];
+	//}
 };
 
 class FPopupDecision final : public FNetworkCommand
@@ -664,21 +684,29 @@ public:
 	int8 choiceIndex;
 	int32 replyVar1;
 
-	void SerializeAndAppendToBlob(TArray<int32>& blob) final
+	void Serialize(PunSerializedData& blob) final
 	{
-		FNetworkCommand::SerializeAndAppendToBlob(blob);
-		blob.Add(replyReceiverIndex);
-		blob.Add(choiceIndex);
-		blob.Add(replyVar1);
+		FNetworkCommand::Serialize(blob);
+		blob << replyReceiverIndex;
+		blob << choiceIndex;
+		blob << replyVar1;
 	}
+	
+	//void SerializeAndAppendToBlob(TArray<int32>& blob) final
+	//{
+	//	FNetworkCommand::SerializeAndAppendToBlob(blob);
+	//	blob.Add(replyReceiverIndex);
+	//	blob.Add(choiceIndex);
+	//	blob.Add(replyVar1);
+	//}
 
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final
-	{
-		FNetworkCommand::DeserializeFromBlob(blob, index);
-		replyReceiverIndex = blob[index++];
-		choiceIndex = blob[index++];
-		replyVar1 = blob[index++];
-	}
+	//void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final
+	//{
+	//	FNetworkCommand::DeserializeFromBlob(blob, index);
+	//	replyReceiverIndex = blob[index++];
+	//	choiceIndex = blob[index++];
+	//	replyVar1 = blob[index++];
+	//}
 };
 
 class FRerollCards final : public FNetworkCommand
@@ -687,13 +715,6 @@ public:
 	virtual ~FRerollCards() {}
 	NetworkCommandEnum commandType() final { return NetworkCommandEnum::RerollCards; }
 
-	void SerializeAndAppendToBlob(TArray<int32>& blob) final {
-		FNetworkCommand::SerializeAndAppendToBlob(blob);
-	}
-
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final {
-		FNetworkCommand::DeserializeFromBlob(blob, index);
-	}
 };
 
 class FSelectRareCard final : public FNetworkCommand
@@ -704,15 +725,20 @@ public:
 
 	CardEnum cardEnum = CardEnum::None;
 
-	void SerializeAndAppendToBlob(TArray<int32>& blob) override {
-		FNetworkCommand::SerializeAndAppendToBlob(blob);
-		blob.Add(static_cast<int32>(cardEnum));
+	void Serialize(PunSerializedData& blob) override {
+		FNetworkCommand::Serialize(blob);
+		blob << cardEnum;
 	}
+	
+	//void SerializeAndAppendToBlob(TArray<int32>& blob) override {
+	//	FNetworkCommand::SerializeAndAppendToBlob(blob);
+	//	blob.Add(static_cast<int32>(cardEnum));
+	//}
 
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) override {
-		FNetworkCommand::DeserializeFromBlob(blob, index);
-		cardEnum = static_cast<CardEnum>(blob[index++]);
-	}
+	//void DeserializeFromBlob(const TArray<int32>& blob, int32& index) override {
+	//	FNetworkCommand::DeserializeFromBlob(blob, index);
+	//	cardEnum = static_cast<CardEnum>(blob[index++]);
+	//}
 };
 
 class FBuyCard final : public FNetworkCommand
@@ -723,15 +749,19 @@ public:
 
 	TArray<int32> cardHandBuyIndices;
 
-	void SerializeAndAppendToBlob(TArray<int32>& blob) override {
-		FNetworkCommand::SerializeAndAppendToBlob(blob);
-		SerializeArray(blob, cardHandBuyIndices);
+	void Serialize(PunSerializedData& blob) override {
+		FNetworkCommand::Serialize(blob);
+		blob << cardHandBuyIndices;
 	}
+	//void SerializeAndAppendToBlob(TArray<int32>& blob) override {
+	//	FNetworkCommand::SerializeAndAppendToBlob(blob);
+	//	SerializeArray(blob, cardHandBuyIndices);
+	//}
 
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) override {
-		FNetworkCommand::DeserializeFromBlob(blob, index);
-		cardHandBuyIndices = DeserializeArray(blob, index);
-	}
+	//void DeserializeFromBlob(const TArray<int32>& blob, int32& index) override {
+	//	FNetworkCommand::DeserializeFromBlob(blob, index);
+	//	cardHandBuyIndices = DeserializeArray(blob, index);
+	//}
 };
 
 class FSellCards final : public FNetworkCommand
@@ -741,19 +771,25 @@ public:
 	NetworkCommandEnum commandType() final { return NetworkCommandEnum::SellCards; }
 
 	CardEnum buildingEnum = CardEnum::None;
-	int32_t cardCount = 0;
+	int32 cardCount = 0;
 
-	void SerializeAndAppendToBlob(TArray<int32>& blob) final {
-		FNetworkCommand::SerializeAndAppendToBlob(blob);
-		blob.Add(static_cast<int32>(buildingEnum));
-		blob.Add(cardCount);
+	void Serialize(PunSerializedData& blob) final {
+		FNetworkCommand::Serialize(blob);
+		blob << buildingEnum;
+		blob << cardCount;
 	}
 
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final {
-		FNetworkCommand::DeserializeFromBlob(blob, index);
-		buildingEnum = static_cast<CardEnum>(blob[index++]);
-		cardCount = blob[index++];
-	}
+	//void SerializeAndAppendToBlob(TArray<int32>& blob) final {
+	//	FNetworkCommand::SerializeAndAppendToBlob(blob);
+	//	blob.Add(static_cast<int32>(buildingEnum));
+	//	blob.Add(cardCount);
+	//}
+
+	//void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final {
+	//	FNetworkCommand::DeserializeFromBlob(blob, index);
+	//	buildingEnum = static_cast<CardEnum>(blob[index++]);
+	//	cardCount = blob[index++];
+	//}
 };
 
 class FUseCard final : public FNetworkCommand
@@ -776,29 +812,41 @@ public:
 		positionY100 = static_cast<int32>(position.Y * 100);
 	}
 
-	void SerializeAndAppendToBlob(TArray<int32>& blob) final {
-		FNetworkCommand::SerializeAndAppendToBlob(blob);
-		blob.Add(static_cast<int32>(cardEnum));
-		blob.Add(variable1);
-		blob.Add(variable2);
+	void Serialize(PunSerializedData& blob) final {
+		FNetworkCommand::Serialize(blob);
+		blob << cardEnum;
+		blob << variable1;
+		blob << variable2;
 
-		blob.Add(positionX100);
-		blob.Add(positionY100);
+		blob << positionX100;
+		blob << positionY100;
 
 		//blob.Add(animationStartTime100);
 	}
+	
+	//void SerializeAndAppendToBlob(TArray<int32>& blob) final {
+	//	FNetworkCommand::SerializeAndAppendToBlob(blob);
+	//	blob.Add(static_cast<int32>(cardEnum));
+	//	blob.Add(variable1);
+	//	blob.Add(variable2);
 
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final {
-		FNetworkCommand::DeserializeFromBlob(blob, index);
-		cardEnum = static_cast<CardEnum>(blob[index++]);
-		variable1 = blob[index++];
-		variable2 = blob[index++];
+	//	blob.Add(positionX100);
+	//	blob.Add(positionY100);
 
-		positionX100 = blob[index++];
-		positionY100 = blob[index++];
+	//	//blob.Add(animationStartTime100);
+	//}
 
-		//animationStartTime100 = blob[index++];
-	}
+	//void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final {
+	//	FNetworkCommand::DeserializeFromBlob(blob, index);
+	//	cardEnum = static_cast<CardEnum>(blob[index++]);
+	//	variable1 = blob[index++];
+	//	variable2 = blob[index++];
+
+	//	positionX100 = blob[index++];
+	//	positionY100 = blob[index++];
+
+	//	//animationStartTime100 = blob[index++];
+	//}
 
 	CardStatus GetCardStatus(int32 animationStartTime100) {
 		return { cardEnum, positionX100, positionY100, animationStartTime100 };
@@ -813,14 +861,9 @@ public:
 
 	TechEnum techEnum = TechEnum::None;
 
-	void SerializeAndAppendToBlob(TArray<int32>& blob) final {
-		FNetworkCommand::SerializeAndAppendToBlob(blob);
-		blob.Add(static_cast<int32>(techEnum));
-	}
-
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final {
-		FNetworkCommand::DeserializeFromBlob(blob, index);
-		techEnum = static_cast<TechEnum>(blob[index++]);
+	void Serialize(PunSerializedData& blob) final {
+		FNetworkCommand::Serialize(blob);
+		blob << techEnum;
 	}
 };
 
@@ -833,16 +876,10 @@ public:
 	int32 provinceId = -1;
 	CallbackEnum claimEnum = CallbackEnum::ClaimLandMoney;
 
-	void SerializeAndAppendToBlob(TArray<int32>& blob) final {
-		FNetworkCommand::SerializeAndAppendToBlob(blob);
-		blob.Add(provinceId);
-		blob.Add(static_cast<int32>(claimEnum));
-	}
-
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final {
-		FNetworkCommand::DeserializeFromBlob(blob, index);
-		provinceId = blob[index++];
-		claimEnum = static_cast<CallbackEnum>(blob[index++]);
+	void Serialize(PunSerializedData& blob) final {
+		FNetworkCommand::Serialize(blob);
+		blob << provinceId;
+		blob << claimEnum;
 	}
 };
 
@@ -855,16 +892,10 @@ public:
 	int32 buildingId = -1;
 	int32 unslotIndex = -1;
 
-	void SerializeAndAppendToBlob(TArray<int32>& blob) final {
-		FNetworkCommand::SerializeAndAppendToBlob(blob);
-		blob.Add(buildingId);
-		blob.Add(unslotIndex);
-	}
-
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final {
-		FNetworkCommand::DeserializeFromBlob(blob, index);
-		buildingId = blob[index++];
-		unslotIndex = blob[index++];
+	void Serialize(PunSerializedData& blob) final {
+		FNetworkCommand::Serialize(blob);
+		blob << buildingId;
+		blob << unslotIndex;
 	}
 };
 
@@ -880,45 +911,23 @@ public:
 	TArray<int32> armyCounts;
 	CallbackEnum armyOrderEnum = CallbackEnum::None;
 
-	void SerializeAndAppendToBlob(TArray<int32>& blob) final {
-		FNetworkCommand::SerializeAndAppendToBlob(blob);
-		blob.Add(originNodeId);
-		blob.Add(targetNodeId);
-		blob.Add(helpPlayerId);
-		SerializeArray(blob, armyCounts);
-		blob.Add(static_cast<int32>(armyOrderEnum));
-	}
+	//void SerializeAndAppendToBlob(TArray<int32>& blob) final {
+	//	FNetworkCommand::SerializeAndAppendToBlob(blob);
+	//	blob.Add(originNodeId);
+	//	blob.Add(targetNodeId);
+	//	blob.Add(helpPlayerId);
+	//	SerializeArray(blob, armyCounts);
+	//	blob.Add(static_cast<int32>(armyOrderEnum));
+	//}
 
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final {
-		FNetworkCommand::DeserializeFromBlob(blob, index);
-		originNodeId = blob[index++];
-		targetNodeId = blob[index++];
-		helpPlayerId = blob[index++];
-		armyCounts = DeserializeArray(blob, index);
-		armyOrderEnum = static_cast<CallbackEnum>(blob[index++]);
-	}
-};
-
-class FTrainUnit final : public FNetworkCommand
-{
-public:
-	virtual ~FTrainUnit() {}
-	NetworkCommandEnum commandType() final { return NetworkCommandEnum::TrainUnit; }
-
-	int32 buildingId = -1;
-	bool isCancel = false;
-
-	void SerializeAndAppendToBlob(TArray<int32>& blob) final {
-		FNetworkCommand::SerializeAndAppendToBlob(blob);
-		blob.Add(buildingId);
-		blob.Add(isCancel);
-	}
-
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final {
-		FNetworkCommand::DeserializeFromBlob(blob, index);
-		buildingId = blob[index++];
-		isCancel = blob[index++];
-	}
+	//void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final {
+	//	FNetworkCommand::DeserializeFromBlob(blob, index);
+	//	originNodeId = blob[index++];
+	//	targetNodeId = blob[index++];
+	//	helpPlayerId = blob[index++];
+	//	armyCounts = DeserializeArray(blob, index);
+	//	armyOrderEnum = static_cast<CallbackEnum>(blob[index++]);
+	//}
 };
 
 class FChooseLocation final : public FNetworkCommand
@@ -930,18 +939,11 @@ public:
 	int32 provinceId;
 	int8 isChoosingOrReserving;
 
-	void SerializeAndAppendToBlob(TArray<int32>& blob) override 
-	{
-		FNetworkCommand::SerializeAndAppendToBlob(blob);
-		blob.Add(provinceId);
-		blob.Add(isChoosingOrReserving);
-	}
-
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) override
-	{
-		FNetworkCommand::DeserializeFromBlob(blob, index);
-		provinceId = blob[index++];
-		isChoosingOrReserving = blob[index++];
+	void Serialize(PunSerializedData& blob) override {
+		FNetworkCommand::Serialize(blob);
+		
+		blob << provinceId;
+		blob << isChoosingOrReserving;
 	}
 };
 
@@ -955,20 +957,12 @@ public:
 
 	NetworkCommandEnum commandType() override { return NetworkCommandEnum::Cheat; }
 
-	void SerializeAndAppendToBlob(TArray<int32>& blob) override
-	{
-		FNetworkCommand::SerializeAndAppendToBlob(blob);
-		blob.Add(cheatEnum);
-		blob.Add(var1);
-		blob.Add(var2);
-	}
-
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) override
-	{
-		FNetworkCommand::DeserializeFromBlob(blob, index);
-		cheatEnum = blob[index++];
-		var1 = blob[index++];
-		var2 = blob[index++];
+	void Serialize(PunSerializedData& blob) override {
+		FNetworkCommand::Serialize(blob);
+		
+		blob << cheatEnum;
+		blob << var1;
+		blob << var2;
 	}
 };
 
@@ -977,18 +971,19 @@ public:
 class NetworkHelper
 {
 public:
-	static void SerializeAndAppendToBlob(std::shared_ptr<FNetworkCommand> command, TArray<int32>& blob) 
+	static void SerializeAndAppendToBlob(std::shared_ptr<FNetworkCommand> command, PunSerializedData& blob)
 	{
-		command->SerializeAndAppendToBlob(blob);
+		command->Serialize(blob);
 	}
 
 	//! This is needed since the class of command is not determined in advance.
 #define CASE_COMMAND(commandEnum, classType) case commandEnum: command = std::make_shared<classType>(); break;
-	static std::shared_ptr<FNetworkCommand> DeserializeFromBlob(const TArray<int32>& blob, int32& index) 
+	static std::shared_ptr<FNetworkCommand> DeserializeFromBlob(PunSerializedData& blob)
 	{
-		check(index < blob.Num());
+		PUN_CHECK(!blob.isSaving());
+		check(blob.readIndex < blob.Num());
 
-		NetworkCommandEnum commandEnum = FNetworkCommand::GetCommandTypeFromBlob(blob, index);
+		NetworkCommandEnum commandEnum = FNetworkCommand::GetCommandTypeFromBlob(blob);
 		std::shared_ptr<FNetworkCommand> command;
 		switch (commandEnum)
 		{
@@ -1017,7 +1012,6 @@ public:
 			CASE_COMMAND(NetworkCommandEnum::UnslotCard, FUnslotCard);
 
 			CASE_COMMAND(NetworkCommandEnum::Attack,	FAttack);
-			CASE_COMMAND(NetworkCommandEnum::TrainUnit, FTrainUnit);
 
 			CASE_COMMAND(NetworkCommandEnum::ClaimLand, FClaimLand);
 			CASE_COMMAND(NetworkCommandEnum::ChooseResearch, FChooseResearch);
@@ -1029,7 +1023,7 @@ public:
 
 			default: UE_DEBUG_BREAK();
 		}
-		command->DeserializeFromBlob(blob, index);
+		command->Serialize(blob);
 
 		return command;
 	}
@@ -1051,31 +1045,33 @@ struct NetworkTickInfo
 	void SerializeToBlob(TArray<int32>& blob)
 	{
 		blob.Add(tickCount);
-		//blob.Add(playerCount);
 		blob.Add(gameSpeed);
 		blob.Add(tickCountSim);
 
+		PunSerializedData punBlob(true);
 		for (size_t i = 0; i < commands.size(); i++) {
-			commands[i]->SerializeAndAppendToBlob(blob);
+			commands[i]->Serialize(punBlob);
 		}
+		blob.Append(punBlob);
 	}
 
 	void DeserializeFromBlob(const TArray<int32>& blob, int index = 0)
 	{
 		tickCount = blob[index++];
-		//playerCount = blob[index++];
 		gameSpeed = blob[index++];
 		tickCountSim = blob[index++];
 
 		LOOP_CHECK_START();
+
+		PunSerializedData punBlob(false, blob, index);
 		
-		while (index < blob.Num()) {
-			commands.push_back(NetworkHelper::DeserializeFromBlob(blob, index));
+		while (punBlob.readIndex < punBlob.Num()) {
+			commands.push_back(NetworkHelper::DeserializeFromBlob(punBlob));
 
 			LOOP_CHECK_END();
 		}
 
-		check(index == blob.Num());
+		check(punBlob.readIndex == punBlob.Num()); // Ensure there is no leftover data
 	}
 
 	FString ToString() {

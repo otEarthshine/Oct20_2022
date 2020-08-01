@@ -1314,6 +1314,10 @@ public:
 		return playerOwned(playerId).isInitialized();
 	}
 
+	bool IsReplayPlayer(int32 playerId) {
+		return replaySystem().replayPlayers[playerId].isInitialize();
+	}
+
 	/*
 	 * Snow
 	 */
@@ -1336,7 +1340,7 @@ public:
 			return true;
 		}
 
-		std::vector<int32> connectedPlayerIds = _gameManager->connectedPlayerIds();
+		std::vector<int32> connectedPlayerIds = _gameManager->connectedPlayerIds(false);
 		for (int32 playerId : connectedPlayerIds) {
 			if (!playerOwned(playerId).isInitialized()) {
 				return false;
@@ -1594,7 +1598,7 @@ public:
 
 		TArray<TSharedPtr<FJsonValue>> buildingListJson;
 		
-		for (int32 sampleId : sampleRegionIds) 
+		for (int32 sampleId : sampleRegionIds)
 		{
 			buildingSubregionList.ExecuteRegion(WorldRegion2(sampleId), [&](int32 buildingId)
 			{	
@@ -1730,7 +1734,7 @@ private:
 	void UnslotCard(FUnslotCard command) final;
 
 	void Attack(FAttack command) final;
-	void TrainUnit(FTrainUnit command) final;
+	//void TrainUnit(FTrainUnit command) final;
 
 	void ClaimLand(FClaimLand command) final;
 	void ChooseResearch(FChooseResearch command) final;

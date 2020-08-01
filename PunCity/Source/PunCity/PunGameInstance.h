@@ -167,8 +167,9 @@ public:
 	void SetMapSetttings(const TArray<int32>& mapSettingsBlob) {
 		LLM_SCOPE_(EPunSimLLMTag::PUN_GameInstance);
 		
-		int32 index = 0;
-		_mapSettings.DeserializeFromBlob(mapSettingsBlob, index);
+		PunSerializedData blob(false);
+		blob.Append(mapSettingsBlob);
+		_mapSettings.Serialize(blob);
 	}
 	void SetMapSettings(FMapSettings mapSettingsIn) {
 		_mapSettings = mapSettingsIn;
@@ -380,6 +381,10 @@ public:
 	//static bool
 	bool IsInGame();
 	static bool IsInGame(const UObject* worldContextObject);
+
+
+	TArray<FString> replayFilesToLoad;
+	bool ReplayCount() { return replayFilesToLoad.Num(); }
 
 private:
 	TArray<FString> _playerNames;
@@ -683,6 +688,7 @@ public:
 				results.push_back(i);
 			}
 		}
+		
 		return results;
 	}
 
@@ -699,6 +705,7 @@ public:
 				results.push_back(i);
 			}
 		}
+		
 		return results;
 	}
 

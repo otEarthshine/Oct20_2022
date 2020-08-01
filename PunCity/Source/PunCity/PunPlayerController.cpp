@@ -668,7 +668,7 @@ void APunPlayerController::SendNetworkCommand(std::shared_ptr<FNetworkCommand> n
 		networkCommand->playerId = controllerPlayerId();
 	}
 
-	TArray<int32> blob;
+	PunSerializedData blob(true);
 	NetworkHelper::SerializeAndAppendToBlob(networkCommand, blob);
 
 	//PUN_DEBUG(FString::Printf(TEXT("serializedCommand init: %d"), blob.Num()));
@@ -810,8 +810,8 @@ void APunPlayerController::ServerSendNetworkCommand_Implementation(const TArray<
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_Controller);
 	
-	int index = 0;
-	shared_ptr<FNetworkCommand> command = NetworkHelper::DeserializeFromBlob(serializedCommand, index);
+	PunSerializedData punBlob(false, serializedCommand);
+	shared_ptr<FNetworkCommand> command = NetworkHelper::DeserializeFromBlob(punBlob);
 
 	PUN_DEBUG(FString::Printf(TEXT("ServerSendNetworkCommand serializedCommand: type:%d num:%d"), (int)command->commandType(), serializedCommand.Num()));
 

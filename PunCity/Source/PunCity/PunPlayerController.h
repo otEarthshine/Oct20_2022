@@ -525,9 +525,10 @@ public:
 	/*
 	 * Save and load JSON
 	 */
-	void SaveJsonToFile(const TSharedRef<FJsonObject>& jsonObject, FString saveFileName)
+	void SaveJsonToFile(const TSharedRef<FJsonObject>& jsonObject, FString saveFileName, bool isSaveDir = false)
 	{
-		FString path = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
+		FString relativePath = isSaveDir ? FPaths::ProjectSavedDir() : FPaths::ProjectContentDir();
+		FString path = FPaths::ConvertRelativePathToFull(relativePath);
 
 		FString jsonString;
 		TSharedRef<TJsonWriter<>> writer = TJsonWriterFactory<>::Create(&jsonString);
@@ -535,9 +536,10 @@ public:
 
 		FFileHelper::SaveStringToFile(jsonString, *(path + saveFileName));
 	}
-	TSharedPtr<FJsonObject> LoadJsonFromFile(FString saveFileName)
+	TSharedPtr<FJsonObject> LoadJsonFromFile(FString saveFileName, bool isSaveDir = false)
 	{
-		FString path = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
+		FString relativePath = isSaveDir ? FPaths::ProjectSavedDir() : FPaths::ProjectContentDir();
+		FString path = FPaths::ConvertRelativePathToFull(relativePath);
 		
 		FString jsonString;
 		FFileHelper::LoadFileToString(jsonString, *(path + saveFileName));
@@ -628,6 +630,288 @@ public:
 	UFUNCTION(Exec) void SaveCheck();
 	void SaveCheckTick();
 
+	/*
+	 * Trailer
+	 */
+	UFUNCTION(Exec) void ReplaySave(const FString& replayFileName) {
+		gameManager->simulation().replaySystem().SavePlayerActions(0, replayFileName);
+	}
+
+	std::vector<TrailerCameraRecord> cameraRecords;
+
+	UFUNCTION(Exec) void TrailerRecordClear() {
+		cameraRecords.clear();
+	}
+
+	UFUNCTION(Exec) void TrailerStart() {
+		cameraPawn->SetCameraSequence(cameraRecords);
+	}
+	UFUNCTION(Exec) void TrailerStop() {
+		cameraPawn->ClearCameraSequence();
+	}
+
+	UFUNCTION(Exec) void TrailerRecordPrint() {
+		for (size_t i = 0; i < cameraRecords.size(); i++) {
+			PUN_LOG("cameraRecords %s zoom:%f rotator:%s transition:%s t_time:%f", 
+						ToTChar(cameraRecords[i].cameraAtom.ToString()), 
+						cameraRecords[i].zoomDistance, 
+						*cameraRecords[i].rotator.ToCompactString(),
+						*cameraRecords[i].transition, cameraRecords[i].transitionTime);
+		}
+	}
+	
+	UFUNCTION(Exec) void TrailerRecord(const FString& cameraRecordFileName)
+	{
+		TrailerCameraRecord record;
+		record.cameraAtom = gameManager->cameraAtom();
+		record.zoomDistance = gameManager->zoomDistance();
+		record.rotator = cameraPawn->GetActorRotation();
+		record.transition = "Lerp";
+		record.transitionTime = 3.0f;
+		cameraRecords.push_back(record);
+		
+		TArray<TSharedPtr<FJsonValue>> cameraRecordJsons;
+
+		for (size_t i = 0; i < cameraRecords.size(); i++) 
+		{
+			auto cameraRecordJson = MakeShared<FJsonObject>();
+			
+			// Camera
+			cameraRecordJson->SetNumberField("cameraAtomX", cameraRecords[i].cameraAtom.x);
+			cameraRecordJson->SetNumberField("cameraAtomY", cameraRecords[i].cameraAtom.y);
+			cameraRecordJson->SetNumberField("zoomDistance", cameraRecords[i].zoomDistance);
+
+			FRotator rotator = cameraRecords[i].rotator;
+			cameraRecordJson->SetNumberField("rotatorPitch", rotator.Pitch);
+			cameraRecordJson->SetNumberField("rotatorYaw", rotator.Yaw);
+			cameraRecordJson->SetNumberField("rotatorRoll", rotator.Roll);
+
+			cameraRecordJson->SetStringField("transition", cameraRecords[i].transition);
+			cameraRecordJson->SetNumberField("transitionTime", cameraRecords[i].transitionTime);
+
+			TSharedPtr<FJsonValue> jsonValue = MakeShared<FJsonValueObject>(cameraRecordJson);
+			cameraRecordJsons.Add(jsonValue);
+		}
+
+		auto jsonObject = MakeShared<FJsonObject>();
+		jsonObject->SetArrayField("CameraRecords", cameraRecordJsons);
+		
+		SaveJsonToFile(jsonObject, cameraRecordFileName + ".json", true);
+	}
+
+	UFUNCTION(Exec) void TrailerLoad(const FString& cameraRecordFileName)
+	{
+		cameraRecords.clear();
+		
+		TSharedPtr<FJsonObject> jsonObject = LoadJsonFromFile(cameraRecordFileName + ".json", true);
+
+		const TArray<TSharedPtr<FJsonValue>>& cameraRecordsJson = jsonObject->GetArrayField("CameraRecords");
+		for (const TSharedPtr<FJsonValue>& cameraRecordValue : cameraRecordsJson)
+		{
+			TSharedPtr<FJsonObject> cameraRecordJson = cameraRecordValue->AsObject();
+
+			TrailerCameraRecord record;
+			record.cameraAtom = WorldAtom2(cameraRecordJson->GetNumberField("cameraAtomX"), 
+												cameraRecordJson->GetNumberField("cameraAtomY"));
+			record.zoomDistance = cameraRecordJson->GetNumberField("zoomDistance");
+
+			record.rotator = FRotator(cameraRecordJson->GetNumberField("rotatorPitch"),
+												cameraRecordJson->GetNumberField("rotatorYaw"),
+												cameraRecordJson->GetNumberField("rotatorRoll"));
+
+			record.transition = cameraRecordJson->GetStringField("transition");
+			record.transitionTime = cameraRecordJson->GetNumberField("transitionTime");
+
+			cameraRecords.push_back(record);
+		}
+	}
+
+	// Helpers
+	static void SetAreaField(TSharedRef<FJsonObject>& jsonObj, FString areaName, TileArea& area) {
+		jsonObj->SetNumberField(areaName + "_minX", area.minX);
+		jsonObj->SetNumberField(areaName + "_minY", area.minY);
+		jsonObj->SetNumberField(areaName + "_maxX", area.maxX);
+		jsonObj->SetNumberField(areaName + "_maxY", area.maxY);
+	}
+	static void GetAreaField(TSharedPtr<FJsonObject>& jsonObj, FString areaName, TileArea& area) {
+		area.minX = jsonObj->GetNumberField(areaName + "_minX");
+		area.minY = jsonObj->GetNumberField(areaName + "_minY");
+		area.maxX = jsonObj->GetNumberField(areaName + "_maxX");
+		area.maxY = jsonObj->GetNumberField(areaName + "_maxY");
+	}
+	
+	// Trailer Commands Save
+	UFUNCTION(Exec) void TrailerCitySave(const FString& trailerCityName)
+	{
+		std::vector<std::shared_ptr<FNetworkCommand>>& commands = gameManager->simulation().replaySystem().trailerCommandsSave;
+		PUN_CHECK(commands.size() > 1);
+
+		// Trim off buildings/road that was already demolished.
+		for (size_t i = commands.size(); i-- > 0;)
+		{
+			
+		}
+
+		PUN_CHECK(commands[0]->commandType() == NetworkCommandEnum::ChooseLocation);
+
+		TArray<TSharedPtr<FJsonValue>> jsons;
+		
+		for (size_t i = 0; i < commands.size(); i++)
+		{
+			auto jsonObj = MakeShared<FJsonObject>();
+
+			if (commands[i]->commandType() == NetworkCommandEnum::ChooseLocation)
+			{
+				auto command = std::static_pointer_cast<FChooseLocation>(commands[0]);
+				
+				jsonObj->SetStringField("commandType", "ChooseLocation");
+				jsonObj->SetNumberField("provinceId", command->provinceId);
+				jsonObj->SetNumberField("isChoosingOrReserving", command->isChoosingOrReserving);
+			}
+			if (commands[i]->commandType() == NetworkCommandEnum::PlaceBuilding)
+			{
+				auto command = std::static_pointer_cast<FPlaceBuildingParameters>(commands[i]);
+				
+				jsonObj->SetStringField("commandType", "PlaceBuilding");
+				
+				jsonObj->SetNumberField("buildingEnum", command->buildingEnum);
+				jsonObj->SetStringField("buildingName", ToFString(GetBuildingInfoInt(command->buildingEnum).name));
+				
+				jsonObj->SetNumberField("buildingLevel", command->buildingLevel);
+
+				SetAreaField(jsonObj, "area", command->area);
+				SetAreaField(jsonObj, "area2", command->area2);
+
+				jsonObj->SetNumberField("center_x", command->center.x);
+				jsonObj->SetNumberField("center_y", command->center.y);
+
+				jsonObj->SetNumberField("faceDirection", command->faceDirection);
+			}
+			else if (commands[i]->commandType() == NetworkCommandEnum::PlaceGather)
+			{
+				auto command = std::static_pointer_cast<FPlaceGatherParameters>(commands[i]);
+
+				jsonObj->SetStringField("commandType", "PlaceDrag");
+
+				SetAreaField(jsonObj, "area", command->area);
+				SetAreaField(jsonObj, "area2", command->area2);
+
+				TArray<TSharedPtr<FJsonValue>> pathJsonValues;
+				for (int32 j = 0; j < command->path.Num(); j++) {
+					pathJsonValues.Add(MakeShared<FJsonValueNumber>(command->path[j]));
+				}
+				jsonObj->SetArrayField("path", pathJsonValues);
+
+				jsonObj->SetNumberField("placementType", command->placementType);
+				jsonObj->SetNumberField("harvestResourceEnum", static_cast<double>(command->harvestResourceEnum));
+			}
+			else if (commands[i]->commandType() == NetworkCommandEnum::ClaimLand)
+			{
+				auto command = std::static_pointer_cast<FClaimLand>(commands[i]);
+
+				jsonObj->SetStringField("commandType", "ClaimLand");
+
+				jsonObj->SetNumberField("provinceId", command->provinceId);
+				jsonObj->SetNumberField("claimEnum", static_cast<double>(command->claimEnum));
+			}
+
+			TSharedPtr<FJsonValue> jsonValue = MakeShared<FJsonValueObject>(jsonObj);
+			jsons.Add(jsonValue);
+		}
+
+		auto jsonObject = MakeShared<FJsonObject>();
+		jsonObject->SetArrayField("TrailerCommands", jsons);
+
+		SaveJsonToFile(jsonObject, "TrailerCity_" + trailerCityName + ".json", true);
+	}
+
+
+	UFUNCTION(Exec) void TrailerCityLoad(const FString& trailerCityName)
+	{
+		std::vector<std::shared_ptr<FNetworkCommand>>& commands = gameManager->simulation().replaySystem().trailerCommandsLoad;
+		commands.clear();
+
+		TSharedPtr<FJsonObject> jsonObject = LoadJsonFromFile("TrailerCity_" + trailerCityName + ".json", true);
+
+		const TArray<TSharedPtr<FJsonValue>>& commandsJson = jsonObject->GetArrayField("TrailerCommands");
+		for (const TSharedPtr<FJsonValue>& commandValue : commandsJson)
+		{
+			TSharedPtr<FJsonObject> jsonObj = commandValue->AsObject();
+
+			if (jsonObj->GetStringField("commandType") == "ChooseLocation") 
+			{
+				auto command = std::make_shared<FChooseLocation>();
+				command->provinceId = jsonObj->GetNumberField("provinceId");
+				command->isChoosingOrReserving = jsonObj->GetNumberField("isChoosingOrReserving");
+
+				commands.push_back(command);
+			}
+			else if (jsonObj->GetStringField("commandType") == "PlaceBuilding") 
+			{
+				auto command = std::make_shared<FPlaceBuildingParameters>();
+
+				command->buildingEnum = jsonObj->GetNumberField("buildingEnum");
+
+				command->buildingLevel = jsonObj->GetNumberField("buildingLevel");
+
+				GetAreaField(jsonObj, "area", command->area);
+				GetAreaField(jsonObj, "area2", command->area2);
+
+				command->center.x = jsonObj->GetNumberField("center_x");
+				command->center.y = jsonObj->GetNumberField("center_y");
+
+				command->faceDirection = jsonObj->GetNumberField("faceDirection");
+
+				commands.push_back(command);
+			}
+			else if (jsonObj->GetStringField("commandType") == "PlaceDrag") 
+			{
+				auto command = std::make_shared<FPlaceGatherParameters>();
+
+				GetAreaField(jsonObj, "area", command->area);
+				GetAreaField(jsonObj, "area2", command->area2);
+
+				const TArray<TSharedPtr<FJsonValue>>& pathJson = jsonObj->GetArrayField("path");
+				for (int32 i = 0; i < pathJson.Num(); i++) {
+					command->path.Add(pathJson[i]->AsNumber());
+				}
+
+				command->placementType = jsonObj->GetNumberField("placementType");
+				command->harvestResourceEnum = static_cast<ResourceEnum>(FGenericPlatformMath::RoundToInt(jsonObj->GetNumberField("harvestResourceEnum")));
+
+				commands.push_back(command);
+			}
+			else if (jsonObj->GetStringField("commandType") == "ClaimLand") 
+			{
+				auto command = std::make_shared<FClaimLand>();
+
+				command->provinceId = jsonObj->GetNumberField("provinceId");
+				command->claimEnum = static_cast<CallbackEnum>(FGenericPlatformMath::RoundToInt(jsonObj->GetNumberField("claimEnum")));
+
+				commands.push_back(command);
+			}
+		
+		}
+	}
+
+	UFUNCTION(Exec) void TrailerCityLoadedToSave()
+	{	
+		auto& replaySys = gameManager->simulation().replaySystem();
+
+		PUN_LOG("TrailerCityLoadedToSave[Before] Save:%llu Load:%llu", replaySys.trailerCommandsSave.size(), replaySys.trailerCommandsLoad.size());
+		replaySys.trailerCommandsSave = replaySys.trailerCommandsLoad;
+		PUN_LOG("TrailerCityLoadedToSave[After] Save:%llu Load:%llu", replaySys.trailerCommandsSave.size(), replaySys.trailerCommandsLoad.size());
+	}
+
+	UFUNCTION(Exec) void TrailerCityStart(int32 playerId)
+	{
+		auto& replaySys = gameManager->simulation().replaySystem();
+
+		replaySys.replayPlayers[playerId].SetTrailerCommands(replaySys.trailerCommandsLoad);
+
+		SimSettings::Set("TrailerMode", 1);
+	}
+	
 
 	// Done for map transition so tick doesn't happpen after gameInst's data was cleared
 	void SetTickDisabled(bool tickDisabled) final {

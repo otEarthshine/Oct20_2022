@@ -379,8 +379,8 @@ void ULobbyUI::Tick()
 void ULobbyUI::SendMapSettings()
 {
 	if (GetFirstController()->GetLocalRole() == ROLE_Authority) {
-		TArray<int32> blob;
-		serverMapSettings.SerializeAndAppendToBlob(blob);
+		PunSerializedData blob(true);
+		serverMapSettings.Serialize(blob);
 		GetFirstController()->ExecuteAllControllers([&](AMainMenuPlayerController* controller) {
 			controller->SetMapSettings(blob);
 		});
@@ -660,8 +660,8 @@ void ULobbyUI::LobbyStartGame()
 	for (int i = 0; i < found.Num(); i++) {
 		auto controller = Cast<AMainMenuPlayerController>(found[i]);
 		check(controller);
-		TArray<int32> blob;
-		serverMapSettings.SerializeAndAppendToBlob(blob);
+		PunSerializedData blob(true);
+		serverMapSettings.Serialize(blob);
 		controller->ServerStartGame(blob);
 	}
 

@@ -131,6 +131,8 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 
 	_terrainChanges.Init(this);
 
+	_replaySystem.Init(this);
+
 	// Just create all players' system even if there isn't that many
 	// TODO: don't create all?
 	//while (_resourceSystems.size() < GameConstants::MaxPlayersAndAI)
@@ -152,7 +154,7 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 		_eventLogSystem.AddPlayer();
 		_replaySystem.AddPlayer();
 
-		_playerIdToNonRepeatActionToAvailableTick.push_back(std::vector<int32_t>(static_cast<int>(NonRepeatActionEnum::Count), 0));
+		_playerIdToNonRepeatActionToAvailableTick.push_back(std::vector<int32>(static_cast<int>(NonRepeatActionEnum::Count), 0));
 	}
 
 	// Only set the "InitialAIs" active
@@ -161,6 +163,17 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 		_aiPlayerSystem[GameConstants::MaxPlayers + i].SetActive(true);
 	}
 
+	// Replay is fixed for 1 player for now
+	int32 firstReplayPlayer = 1;
+	TArray<FString> replayNames = gameManager->GetReplayFileNames();
+	for (int32 i = 0; i < replayNames.Num(); i++) {
+		_replaySystem.LoadPlayerActions(firstReplayPlayer, replayNames[i]);
+	}
+
+
+	/*
+	 * Displays
+	 */
 	_displayEnumToRegionToNeedUpdate.resize(static_cast<int>(DisplayClusterEnum::Count));
 	for (int i = 0; i < _displayEnumToRegionToNeedUpdate.size(); i++) {
 		_displayEnumToRegionToNeedUpdate[i].resize(GameMapConstants::TotalRegions, true);
@@ -355,19 +368,87 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 		std::vector<ReplayPlayer>& replayPlayers = _replaySystem.replayPlayers;
 		for (size_t i = 0; i < replayPlayers.size(); i++)
 		{
+			// Replay Actions
 			if (replayPlayers[i].HasRecordedPlayerAction(_tickCount))
 			{
 				NetworkTickInfo replayTickInfo = replayPlayers[i].GetRecordedPlayerActionThenIncrement(_tickCount);
 				auto& replayCommands = replayTickInfo.commands;
 				PUN_CHECK(replayCommands.size() > 0);
 
-				// Add AI commands to other commands
-				for (size_t j = 0; j < replayCommands.size(); j++) {
-					replayCommands[j]->playerId = i;
-					commands.push_back(replayCommands[j]);
+				// Preprocess for commands that requires buildingId
+				// BuildingId won't be valid in the next game, but buildingTileId will
+				for (size_t j = replayCommands.size(); j-- > 0;)
+				{
+					switch (replayCommands[j]->commandType())
+					{
+					case NetworkCommandEnum::JobSlotChange:
+					case NetworkCommandEnum::SetAllowResource:
+					case NetworkCommandEnum::SetPriority:
+					case NetworkCommandEnum::ChangeWorkMode: { 
+						auto command = std::static_pointer_cast<FBuildingCommand>(replayCommands[j]);
+						Building* bld = buildingAtTile(WorldTile2(command->buildingTileId));
+						PUN_CHECK(command->buildingEnum == bld->buildingEnum());
+						command->buildingId = bld->buildingId();
+						break;
+					}
+					default:
+						break;
+					}
+				}
+
+				// Add Replay commands to other commands
+				for (auto& replayCommand : replayCommands) {
+					replayCommand->playerId = i;
+					commands.push_back(replayCommand);
+				}
+			}
+
+
+			// Trailer
+			if (replayPlayers[i].isInitialize() && 
+				replayPlayers[i].trailerCommands.size() > 0)
+			{
+				if (replayPlayers[i].nextTrailerCommandTick != -1 &&
+					Time::Ticks() > replayPlayers[i].nextTrailerCommandTick)
+				{
+					replayPlayers[i].nextTrailerCommandTick = Time::Ticks() + Time::TicksPerSecond;
+
+					auto& trailerCommands = replayPlayers[i].trailerCommands;
+					std::shared_ptr<FNetworkCommand> command = trailerCommands.front();
+					trailerCommands.erase(trailerCommands.begin());
+
+					// Special case: Road
+					// If this is road, build one at a time
+					if (command->commandType() == NetworkCommandEnum::PlaceGather)
+					{
+						auto dragCommand = static_pointer_cast<FPlaceGatherParameters>(command);
+						if (dragCommand->path.Num() > 0)
+						{
+							TArray<int32> newPath = dragCommand->path;
+							int32 firstTileId = newPath[0];
+							newPath.RemoveAt(0);
+							 
+							// Put the command back in front with trimmed
+							if (newPath.Num() > 0) {
+								auto commandToFrontPush = make_shared<FPlaceGatherParameters>(*dragCommand);
+								commandToFrontPush->path = newPath;
+								trailerCommands.insert(trailerCommands.begin(), commandToFrontPush);
+							}
+
+							dragCommand->path = { firstTileId }; // build 1 tile at a time
+
+							replayPlayers[i].nextTrailerCommandTick = Time::Ticks() + Time::TicksPerSecond / 10; // Build 10 tiles a sec
+						}
+					}
+
+					command->playerId = i;
+					commands.push_back(command);
+
+					PUN_LOG("Trailer Command Issued num:%llu pid:%d type:%d tick:%d", trailerCommands.size(), command->playerId, command->commandType(), Time::Ticks());
 				}
 			}
 		}
+		
 	}
 
 
@@ -414,7 +495,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 			case NetworkCommandEnum::UnslotCard:		UnslotCard(*static_pointer_cast<FUnslotCard>(commands[i])); break;
 
 			case NetworkCommandEnum::Attack:			Attack(*static_pointer_cast<FAttack>(commands[i])); break;
-			case NetworkCommandEnum::TrainUnit:			TrainUnit(*static_pointer_cast<FTrainUnit>(commands[i])); break;
+			//case NetworkCommandEnum::TrainUnit:			TrainUnit(*static_pointer_cast<FTrainUnit>(commands[i])); break;
 
 			case NetworkCommandEnum::ClaimLand:			ClaimLand(*static_pointer_cast<FClaimLand>(commands[i])); break;
 			case NetworkCommandEnum::ChooseResearch:	ChooseResearch(*static_pointer_cast<FChooseResearch>(commands[i])); break;
@@ -430,14 +511,16 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 	tickInfo.tickCountSim = _tickCount;
 
 
+	/*
+	 * Replays
+	 */
 	// Record tickInfo
 	_replaySystem.AddNetworkTickInfo(tickInfo);
 
 	// AutoSave Replay
-	if (_tickCount % 60 == 0) {
+	if (_tickCount % Time::TicksPerSeason == 0) {
 		// TODO: for now hard code player action saving (Save client1)
 		_replaySystem.SavePlayerActions(0, "ReplaySave0");
-		_replaySystem.SavePlayerActions(1, "ReplaySave1");
 	}
 
 
@@ -543,6 +626,16 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 					{
 						//_playerOwnedManagers[playerId].RefreshHousing();
 						_playerOwnedManagers[playerId].Tick1Sec();
+
+						// Trailer auto-build
+						if (SimSettings::IsOn("TrailerMode")) {
+							for (int32 enumInt = 0; enumInt < BuildingEnumCount; enumInt++) {
+								std::vector<int32> bldIds =  buildingIds(playerId, static_cast<CardEnum>(enumInt));
+								for (int32 bldId : bldIds) {
+									building(bldId).TickConstruction(10);
+								}
+							}
+						}
 
 						/*
 						 * ProvinceClaimProgress
@@ -846,7 +939,8 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuildingParameters parameters)
 	}
 
 	// Don't allow building without bought card...
-	if (parameters.useBoughtCard && 
+	if (!IsReplayPlayer(parameters.playerId) &&
+		parameters.useBoughtCard && 
 		!_cardSystem[playerId].CanUseBoughtCard(cardEnum))
 	{
 		return -1;
@@ -1034,7 +1128,9 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuildingParameters parameters)
 		//});
 
 		// Use action card, remove the card
-		if (parameters.useBoughtCard) {
+		if (!IsReplayPlayer(parameters.playerId) &&
+			parameters.useBoughtCard) 
+		{
 			_cardSystem[playerId].UseBoughtCard(cardEnum, 1);
 		}
 
@@ -1221,7 +1317,9 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuildingParameters parameters)
 
 
 		// Use bought card, remove the card
-		if (parameters.useBoughtCard) {
+		if (!IsReplayPlayer(parameters.playerId) && 
+			parameters.useBoughtCard) 
+		{
 			// For foreign building, the builder uses the card
 			if (cardEnum == CardEnum::HumanitarianAidCamp) {
 				_cardSystem[foreignBuildingOwner].UseBoughtCard(cardEnum, 1);
@@ -1520,6 +1618,23 @@ void GameSimulationCore::PlaceDrag(FPlaceGatherParameters parameters)
 				return;
 			}
 
+			// Trailer instant road
+			if (SimSettings::IsOn("TrailerMode"))
+			{
+				for (int32 i = 0; i < path.Num(); i++) {
+					WorldTile2 tile(path[i]);
+					if (IsFrontBuildable(tile) && !_overlaySystem.IsRoad(tile)) {
+						TileArea clearArea(tile, 1);
+						_treeSystem->ForceRemoveTileObjArea(clearArea); // Remove 3x3
+						overlaySystem().AddRoad(tile, true, true);
+
+						// For road, also refresh the grass since we want it to be more visible
+						SetNeedDisplayUpdate(DisplayClusterEnum::Trees, tile.regionId(), true);
+					}
+				}
+				return;
+			}
+
 			// Dirt/Stone Road
 			for (int32 i = 0; i < path.Num(); i++) {
 				WorldTile2 tile(path[i]);
@@ -1616,23 +1731,6 @@ void GameSimulationCore::SendChat(FSendChat command)
 	_chatSystem.AddMessage(command);
 }
 
-//void GameSimulationCore::AddPlayer(FAddPlayer command)
-//{
-//	if (_isLoadingFromFile) {
-//		return;
-//	}
-//	
-//	//bool isAIPlayer = static_cast<bool>(command.isAIPlayer);
-//	//if (isAIPlayer) {
-//	//	_replaySystem.LoadPlayerActions(_playerCount, command.replayFileName);
-//	//} else {
-//	//	//_playerOwnedManagers[_playerCount].needChooseLocation = true;
-//	//}
-//	
-//	//_playerNames.push_back(command.playerName);
-//	//_playerCount++;
-//}
-
 void GameSimulationCore::TradeResource(FTradeResource command)
 {
 	_LOG(LogNetworkInput, " TradeResource");
@@ -1680,6 +1778,25 @@ void GameSimulationCore::SetIntercityTrade(FSetIntercityTrade command)
 
 void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
 {
+	// Special case: Replay
+	if (IsReplayPlayer(command.playerId)) 
+	{
+		// Check all the buildings and upgrade as necessary
+		for (int32 i = 0; i < BuildingEnumCount; i++) {
+			const auto& bldIds = buildingIds(command.playerId, static_cast<CardEnum>(i));
+			for (int32 bldId : bldIds) {
+				Building& bld = building(bldId);
+				std::vector<BuildingUpgrade> upgrades = bld.upgrades();
+				for (size_t j = 0; j < upgrades.size(); j++) {
+					if (!upgrades[j].isUpgraded) {
+						bld.UpgradeBuilding(j);
+					}
+				}
+			}
+		}
+		return;
+	}
+	
 	PUN_ENSURE(IsValidBuilding(command.buildingId), return);
 	
 	Building& bld = building(command.buildingId);
@@ -2265,23 +2382,23 @@ void GameSimulationCore::UnslotCard(FUnslotCard command)
 //	}
 //	return true;
 //}
-void GameSimulationCore::TrainUnit(FTrainUnit command)
-{
-	//PUN_ENSURE(IsValidBuilding(command.buildingId), return);
-	//
-	//_LOG(LogNetworkInput, " TrainUnit: cancel?%d", command.isCancel);
-
-	//if (command.isCancel)
-	//{
-	//	building(command.buildingId).subclass<Barrack>().TryCancelTrainingQueue();
-	//}
-	//else
-	//{
-	//	if (CanTrainUnit(command.buildingId)) {
-	//		building(command.buildingId).subclass<Barrack>().QueueTrainUnit();
-	//	}
-	//}
-}
+//void GameSimulationCore::TrainUnit(FTrainUnit command)
+//{
+//	//PUN_ENSURE(IsValidBuilding(command.buildingId), return);
+//	//
+//	//_LOG(LogNetworkInput, " TrainUnit: cancel?%d", command.isCancel);
+//
+//	//if (command.isCancel)
+//	//{
+//	//	building(command.buildingId).subclass<Barrack>().TryCancelTrainingQueue();
+//	//}
+//	//else
+//	//{
+//	//	if (CanTrainUnit(command.buildingId)) {
+//	//		building(command.buildingId).subclass<Barrack>().QueueTrainUnit();
+//	//	}
+//	//}
+//}
 
 // Any army order, not just attack anymore...
 void GameSimulationCore::Attack(FAttack command)

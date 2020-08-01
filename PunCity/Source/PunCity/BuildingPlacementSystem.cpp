@@ -2014,6 +2014,7 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 				}
 
 				if (_gameInterface->isShiftDown()) {
+					_placementType = PlacementType::Building;
 					// TODO: use this for ranch
 					//CancelPlacement();
 					//StartBuildingPlacement(CardEnum::StorageYard, 0, false, CardEnum::None);

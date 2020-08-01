@@ -9,6 +9,7 @@
 #include "Kismet/KismetMaterialLibrary.h"
 
 #include "PunCity/GameRand.h"
+#include "RawMesh.h"
 
 #include "PunCity/PunUtils.h"
 #include <algorithm>
@@ -1309,7 +1310,7 @@ void UAssetLoaderComponent::PaintMeshForConstruction(FString moduleName)
 				}
 
 				// Loop through index buffer to find adjacents
-				for (int indexBufferI = 0; indexBufferI < indexCount; indexBufferI++) // replace while loop with for, so no freeze on error
+				for (int indexBufferI = 0; indexBufferI < indexCount; indexBufferI++)
 				{
 					int32 index = indexBuffer.GetIndex(indexBufferI);
 
@@ -1391,7 +1392,47 @@ void UAssetLoaderComponent::PaintMeshForConstruction(FString moduleName)
 	
 	PUN_LOG("UpdateRHIConstructionMesh BUJUMbi");
 
-	mesh->SetVertexColorData(_colorMap);
+	// Test
+	const uint32 PaintingMeshLODIndex = 0;
+	if (mesh->IsSourceModelValid(PaintingMeshLODIndex))
+	{
+		if (mesh->GetSourceModel(PaintingMeshLODIndex).IsRawMeshEmpty() == false)
+		{
+			// Extract the raw mesh.
+			FRawMesh Mesh;
+			mesh->GetSourceModel(PaintingMeshLODIndex).LoadRawMesh(Mesh);
+
+			// Reserve space for the new vertex colors.
+			if (Mesh.WedgeColors.Num() == 0 || Mesh.WedgeColors.Num() != Mesh.WedgeIndices.Num())
+			{
+				Mesh.WedgeColors.Empty(Mesh.WedgeIndices.Num());
+				Mesh.WedgeColors.AddUninitialized(Mesh.WedgeIndices.Num());
+			}
+
+			// Build a mapping of vertex positions to vertex colors.
+			for (int32 WedgeIndex = 0; WedgeIndex < Mesh.WedgeIndices.Num(); ++WedgeIndex)
+			{
+				FVector Position = Mesh.VertexPositions[Mesh.WedgeIndices[WedgeIndex]];
+				const FColor* Color = _colorMap.Find(Position); // TODO: Don't need map?
+				if (Color)
+				{
+					Mesh.WedgeColors[WedgeIndex] = *Color;
+				}
+				else
+				{
+					Mesh.WedgeColors[WedgeIndex] = FColor(255, 255, 255, 255);
+				}
+			}
+
+			// Save the new raw mesh.
+			mesh->GetSourceModel(PaintingMeshLODIndex).SaveRawMesh(Mesh);
+		}
+	}
+
+
+	//mesh->SetVertexColorData(_colorMap);
+
+	
 	mesh->Build(true);
 	mesh->MarkPackageDirty();
 

@@ -65,6 +65,12 @@ void Building::Init(IGameSimulationCore& simulation, int objectId, int32_t playe
 		if (constructionCosts[i] > 0) AddResourceHolder(ConstructionResources[i], ResourceHolderType::Requester, constructionCosts[i]);
 	}
 
+
+	// Clear area for TrailerMode
+	if (SimSettings::IsOn("TrailerMode")) {
+		InstantClearArea();
+	}
+
 	// Instant build HumanitarianAidCamp
 	bool cheatBuild = SimSettings::IsOn("CheatFastBuild") && !IsRoad(_buildingEnum);
 	

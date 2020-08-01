@@ -3,14 +3,17 @@
 #pragma once
 
 #include "PunCity/NetworkStructs.h"
-#include "PunCity/PunUtils.h"
-
+#include "IGameSimulationCore.h"
 
 class ReplayPlayer
 {
 public:
 	void Init() {
 		currentCommandIndex = 0;
+	}
+
+	bool isInitialize() {
+		return currentCommandIndex != -1;
 	}
 
 	// For recorded play, check HasRecordedPlayerAction to see if this tick has action to replay
@@ -28,7 +31,20 @@ public:
 	}
 
 	std::vector<NetworkTickInfo> playerCommands;
-	int32_t currentCommandIndex = -1;
+	int32 currentCommandIndex = -1;
+
+	/*
+	 * Trailer
+	 */
+	void SetTrailerCommands(std::vector<std::shared_ptr<FNetworkCommand>>& trailerCommandsIn)
+	{
+		currentCommandIndex = 0; // for isInitialize()
+		trailerCommands = trailerCommandsIn;
+		nextTrailerCommandTick = Time::Ticks() + Time::TicksPerSecond;
+	}
+	
+	std::vector<std::shared_ptr<FNetworkCommand>> trailerCommands;
+	int32 nextTrailerCommandTick = -1;
 };
 
 /**
@@ -37,54 +53,81 @@ public:
 class ReplaySystem
 {
 public:
+	void Init(IGameSimulationCore* simulation) {
+		_simulation = simulation;
+	}
+	
 	void AddPlayer() {
 		replayPlayers.push_back(ReplayPlayer());
 	}
 
-	void SavePlayerActions(int32_t playerId, FString fileName);
+	void SavePlayerActions(int32 playerId, FString fileName);
 
-	void LoadPlayerActions(int32_t playerId, FString fileName);
+	void LoadPlayerActions(int32 playerId, FString fileName);
 
-	// 
-	void AddNetworkTickInfo(NetworkTickInfo& networkTickInfo) {
+	// Add Network Ticks as the game is played
+	void AddNetworkTickInfo(NetworkTickInfo& networkTickInfo)
+	{
+		std::vector<std::shared_ptr<FNetworkCommand>>& commands = networkTickInfo.commands;
+
+		// Placement gets recorded for trailer
+		for (size_t j = 0; j < commands.size(); j++) 
+		{
+			if (commands[j]->playerId == 0)
+			{
+				switch (commands[j]->commandType())
+				{
+				case NetworkCommandEnum::ChooseLocation:
+				case NetworkCommandEnum::PlaceBuilding:
+				case NetworkCommandEnum::PlaceGather:
+				case NetworkCommandEnum::ClaimLand:
+					trailerCommandsSave.push_back(commands[j]);
+					PUN_LOG("Add trailerCommands %d", trailerCommandsSave.size());
+					break;
+				default:
+					break;
+				}
+			}
+		}
+
+		// Preprocess for commands that requires buildingId (convert to buildingTileId)
+		// BuildingId won't be valid in the next game, but buildingTileId will
+		for (size_t j = commands.size(); j-- > 0;)
+		{
+			switch (commands[j]->commandType())
+			{
+			case NetworkCommandEnum::JobSlotChange: // Correct
+			case NetworkCommandEnum::SetAllowResource: // Correct
+			case NetworkCommandEnum::SetPriority: // Correct
+			case NetworkCommandEnum::ChangeWorkMode: { // Correct
+				auto command = std::static_pointer_cast<FBuildingCommand>(commands[j]);
+				command->buildingTileId = _simulation->buildingCenter(command->buildingId).tileId();
+				command->buildingEnum = _simulation->buildingEnum(command->buildingId);
+				command->buildingId = -1;
+				break;
+			}
+			default:
+				break;
+			}
+		}
+		
 		networkTickInfos.push_back(networkTickInfo);
 		//PUN_LOG("Add tick %s", *networkTickInfo.ToString());
 	}
 
-	void Serialize(FArchive& Ar)
-	{
-		//TODO: std::vector<ReplayPlayer> replayPlayers;??
+	void Serialize(FArchive& Ar) {}
 
-		//if (Ar.IsSaving())
-		//{
-		//	TArray<int32> blob;
-		//	int32 vecSize = networkTickInfos.size();
-		//	for (size_t i = 0; i < vecSize; i++) {
-		//		networkTickInfos[i].SerializeToBlob(blob);
-		//	}
-		//	Ar << vecSize;
-		//	Ar << blob;
-		//}
-		//else
-		//{
-		//	TArray<int32> blob;
-		//	int32 vecSize;
-		//	
-		//	Ar << vecSize;
-		//	Ar << blob;
-
-		//	int index = 0;
-		//	for (size_t i = 0; i < vecSize; i++) {
-		//		networkTickInfos.push_back(NetworkTickInfo());
-		//		networkTickInfos[i].DeserializeFromBlob(blob, index);
-		//	}
-		//}
-	}
-
-	std::vector<ReplayPlayer> replayPlayers;
+	std::vector<ReplayPlayer> replayPlayers; // 
 
 	//bool isAIInitialized = false;
 
+
+	
+	std::vector<std::shared_ptr<FNetworkCommand>> trailerCommandsSave;
+	std::vector<std::shared_ptr<FNetworkCommand>> trailerCommandsLoad;
+	
 private:
+	IGameSimulationCore* _simulation = nullptr;
+	
 	std::vector<NetworkTickInfo> networkTickInfos;
 };

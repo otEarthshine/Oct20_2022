@@ -29,7 +29,7 @@ DECLARE_CYCLE_STAT(TEXT("PUN: [Display]Building_Farm"), STAT_PunDisplayBuilding_
 
 using namespace std;
 
-void UBuildingDisplayComponent::ShowRadius(int32_t radius, WorldAtom2 centerAtom, Building& building)
+void UBuildingDisplayComponent::ShowRadius(int32 radius, WorldAtom2 centerAtom, Building& building)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayBuilding);
 	

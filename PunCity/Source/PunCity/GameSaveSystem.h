@@ -13,6 +13,22 @@
 #include "HAL/FileManager.h"
 #include "Misc/FileHelper.h"
 
+//static FBufferArchive GetSaveArchive()
+//{
+//	FBufferArchive saveArchive;
+//	saveArchive.SetIsSaving(true);
+//	saveArchive.SetIsLoading(false);
+//	return saveArchive;
+//}
+//static FMemoryReader GetLoadArchive(TArray<uint8>& binary)
+//{
+//	FMemoryReader loadArchive(binary, true);
+//	loadArchive.Seek(0);
+//	loadArchive.SetIsSaving(false);
+//	loadArchive.SetIsLoading(true);
+//	return loadArchive;
+//}
+
 struct GameSaveInfo
 {
 	int32 version = -1;

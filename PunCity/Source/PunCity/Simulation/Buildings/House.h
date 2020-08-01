@@ -40,6 +40,27 @@ public:
 		}
 	}
 	void UpgradeHouse(int32 lvl);
+
+	void ForceSetHouseLevel(int32 lvl)
+	{
+		if (lvl > 1) {
+			switch (lvl)
+			{
+			case 7: AddResource(ResourceEnum::Jewelry, 10);
+			case 6: AddResource(ResourceEnum::Book, 10);
+			case 5: AddResource(ResourceEnum::Chocolate, 10);
+			case 4: AddResource(ResourceEnum::Wine, 10);
+			case 3: AddResource(ResourceEnum::Beer, 10);
+			case 2: AddResource(ResourceEnum::Pottery, 10);
+				break;
+			default:
+				break;
+			}
+			CheckHouseLvl();
+		}
+	}
+
+	
 	
 	static int32 GetMaxHouseLvl();
 

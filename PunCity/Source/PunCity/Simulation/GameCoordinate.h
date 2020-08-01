@@ -297,17 +297,17 @@ struct WorldTile2
 		return x != a.x || y != a.y;
 	}
 
-	//! Append onto the network blob
-	void SerializeAndAppendToBlob(TArray<int32>& blob) {
-		blob.Add(x);
-		blob.Add(y);
-	}
+	////! Append onto the network blob
+	//void SerializeAndAppendToBlob(TArray<int32>& blob) {
+	//	blob.Add(x);
+	//	blob.Add(y);
+	//}
 
-	//! Read from network blob using index
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) {
-		x = blob[index++];
-		y = blob[index++];
-	}
+	////! Read from network blob using index
+	//void DeserializeFromBlob(const TArray<int32>& blob, int32& index) {
+	//	x = blob[index++];
+	//	y = blob[index++];
+	//}
 
 	static WorldTile2 DirectionTile(Direction direction) {
 		switch (direction) {
@@ -775,21 +775,21 @@ struct TileArea
 
 	TileArea tileArea2x2() { return TileArea(minX / 2, minY / 2, maxX / 2, maxY / 2); }
 
-	//! Append onto the network blob
-	void SerializeAndAppendToBlob(TArray<int32>& blob) {
-		blob.Add(minX);
-		blob.Add(minY);
-		blob.Add(maxX);
-		blob.Add(maxY);
-	}
+	////! Append onto the network blob
+	//void SerializeAndAppendToBlob(TArray<int32>& blob) {
+	//	blob.Add(minX);
+	//	blob.Add(minY);
+	//	blob.Add(maxX);
+	//	blob.Add(maxY);
+	//}
 
-	//! Read from network blob using index
-	void DeserializeFromBlob(const TArray<int32>& blob, int32& index) {
-		minX = blob[index++];
-		minY = blob[index++];
-		maxX = blob[index++];
-		maxY = blob[index++];
-	}
+	////! Read from network blob using index
+	//void DeserializeFromBlob(const TArray<int32>& blob, int32& index) {
+	//	minX = blob[index++];
+	//	minY = blob[index++];
+	//	maxX = blob[index++];
+	//	maxY = blob[index++];
+	//}
 
 	TileArea GetFrontArea(Direction faceDirection) const {
 		switch (faceDirection) {

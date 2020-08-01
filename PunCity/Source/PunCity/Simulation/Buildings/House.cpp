@@ -75,21 +75,23 @@ void House::FinishConstruction()
 		addHolder(resourceEnum);
 	});
 
-	if (SimSettings::Get("CheatHouseLevel") > 1) {
-		switch(SimSettings::Get("CheatHouseLevel"))
-		{
-		case 7: AddResource(ResourceEnum::Jewelry, 10);
-		case 6: AddResource(ResourceEnum::Book, 10);
-		case 5: AddResource(ResourceEnum::Chocolate, 10);
-		case 4: AddResource(ResourceEnum::Wine, 10);
-		case 3: AddResource(ResourceEnum::Beer, 10);
-		case 2: AddResource(ResourceEnum::Pottery, 10);
-			break;
-		default:
-			break;
-		}
-		CheckHouseLvl();
-	}
+	ForceSetHouseLevel(SimSettings::Get("CheatHouseLevel"));
+
+	//if (SimSettings::Get("CheatHouseLevel") > 1) {
+	//	switch(SimSettings::Get("CheatHouseLevel"))
+	//	{
+	//	case 7: AddResource(ResourceEnum::Jewelry, 10);
+	//	case 6: AddResource(ResourceEnum::Book, 10);
+	//	case 5: AddResource(ResourceEnum::Chocolate, 10);
+	//	case 4: AddResource(ResourceEnum::Wine, 10);
+	//	case 3: AddResource(ResourceEnum::Beer, 10);
+	//	case 2: AddResource(ResourceEnum::Pottery, 10);
+	//		break;
+	//	default:
+	//		break;
+	//	}
+	//	CheckHouseLvl();
+	//}
 	
 	//AddResourceHolder(ResourceEnum::Wood, ResourceHolderType::Manual, 10);
 	//AddResourceHolder(ResourceEnum::Coal, ResourceHolderType::Manual, 10);

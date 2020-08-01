@@ -76,6 +76,23 @@ public:
 	UFUNCTION(Exec) void PunSet(const FString& settingName, int32 value);
 	UFUNCTION(Exec) void PunTog(const FString& settingName);
 
+
+
+	// Replays
+	UFUNCTION(Exec) void ReplayLoad(const FString& replayFileName) {
+		gameInstance()->replayFilesToLoad.Add(replayFileName);
+	}
+	UFUNCTION(Exec) void ReplayPrint() {
+		TArray<FString> files = gameInstance()->replayFilesToLoad;
+		PUN_DEBUG2("Replays[%d]:", files.Num());
+		for (FString file : files) {
+			PUN_DEBUG2(" %s", *file);
+		}
+	}
+	UFUNCTION(Exec) void ReplayClear() {
+		gameInstance()->replayFilesToLoad.Empty();
+	}
+
 	
 public:
 	UPunGameInstance* gameInstance() { return Cast<UPunGameInstance>(GetGameInstance()); }

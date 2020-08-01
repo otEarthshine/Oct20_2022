@@ -8,7 +8,7 @@ public class PrototypeCity : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UMG", "ProceduralMeshComponent", "RenderCore", "MoviePlayer", "MediaAssets" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UMG", "ProceduralMeshComponent", "RenderCore", "MoviePlayer", "MediaAssets", "RawMesh" });
 
         PublicDependencyModuleNames.AddRange(new string[] { "Json", "JsonUtilities" });
 

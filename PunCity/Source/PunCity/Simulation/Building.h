@@ -909,6 +909,25 @@ public:
 		return bonuses;
 	}
 
+	// 
+	void TickConstruction(int32 tickCount)
+	{
+		if (!isConstructed())
+		{
+			if (_workDone100 >= buildTime_ManSec100())
+			{
+				FinishConstruction();
+				_simulation->soundInterface()->Spawn3DSound("CitizenAction", "ConstructionComplete", centerTile().worldAtom2());
+				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::BuildingComplete, _centerTile, "");
+			}
+			else
+			{
+				_workDone100 += buildTime_ManSec100() / tickCount; // takes tickCount secs to finish the constrution
+				_simulation->soundInterface()->Spawn3DSound("CitizenAction", "WoodConstruction", centerTile().worldAtom2());
+			}
+		}
+	}
+
 	/*
 	 * Card slots
 	 */

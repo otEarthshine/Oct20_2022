@@ -385,10 +385,33 @@ public:
 	}
 
 	std::vector<int32> allHumanPlayerIds() final {
-		return gameInstance()->allHumanPlayerIds();
+		std::vector<int32> results = gameInstance()->allHumanPlayerIds();
+		
+		// Special case: Replay
+		auto& replayPlayers = _simulation->replaySystem().replayPlayers;
+		for (size_t i = 0; i < replayPlayers.size(); i++) {
+			if (replayPlayers[i].isInitialize()) {
+				results.push_back(i);
+			}
+		}
+		
+		return results;
 	}
-	std::vector<int32> connectedPlayerIds() final {
-		return gameInstance()->connectedPlayerIds();
+	std::vector<int32> connectedPlayerIds(bool withReplayPlayers) final {
+		std::vector<int32> results = gameInstance()->connectedPlayerIds();
+
+		// Special case: Replay
+		if (withReplayPlayers)
+		{
+			auto& replayPlayers = _simulation->replaySystem().replayPlayers;
+			for (size_t i = 0; i < replayPlayers.size(); i++) {
+				if (replayPlayers[i].isInitialize()) {
+					results.push_back(i);
+				}
+			}
+		}
+
+		return results;
 	}
 	std::vector<int32> disconnectedPlayerIds() final {
 		return gameInstance()->disconnectedPlayerIds();
@@ -576,6 +599,10 @@ public:
 
 	FMapSettings GetMapSettings() final {
 		return gameInstance()->GetMapSettings();
+	}
+
+	TArray<FString> GetReplayFileNames() final {
+		return gameInstance()->replayFilesToLoad;
 	}
 
 	/**

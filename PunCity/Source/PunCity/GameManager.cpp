@@ -936,8 +936,9 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 			SCOPE_TIMER_FILTER(5000, "Tick Territory -");
 			
 			//SCOPE_TIMER("Tick -- Territory");
-			bool displayTerritory = PunSettings::IsOn("DisplayTerritory");
-			_territoryDisplaySystem->Display(displayTerritory ? _sampleRegionIds : noSample);
+			bool displayTerritory = PunSettings::IsOn("DisplayTerritory") && 
+									!SimSettings::IsOn("TrailerMode");
+			_territoryDisplaySystem->Display(displayTerritory ? _sampleProvinceIds : noSample);
 #endif
 		}
 

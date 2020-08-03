@@ -54,6 +54,7 @@ void BuildingSystem::Tick()
 	for (size_t i = _scheduleTicks.size(); i-- > 0;) {
 		if (Time::Ticks() >= _scheduleTicks[i]) {
 			_buildings[_scheduleBuildingIds[i]]->ScheduleTick();
+			
 			_scheduleTicks.erase(_scheduleTicks.begin() + i);
 			_scheduleBuildingIds.erase(_scheduleBuildingIds.begin() + i);
 		}
@@ -495,8 +496,12 @@ void BuildingSystem::RemoveBuilding(int buildingId)
 	_simulation->TryRemoveDescriptionUI(ObjectTypeEnum::Building, buildingId);
 
 	// Remove from scheduleTicks
-	CppUtils::TryRemove(_scheduleTicks, buildingId);
-	CppUtils::TryRemove(_scheduleBuildingIds, buildingId);
+	for (size_t i = _scheduleBuildingIds.size(); i-- > 0;) {
+		if (_scheduleBuildingIds[i] == buildingId) {
+			_scheduleBuildingIds.erase(_scheduleBuildingIds.begin() + i);
+			_scheduleTicks.erase(_scheduleTicks.begin() + i);
+		}
+	}
 
 	_buildings[buildingId]->Deinit();
 	return;

@@ -57,7 +57,7 @@ public:
 		//_regionBorderDecal = decal;
 	}
 
-	void Display(std::vector<int>& sampleIds) override;
+	void Display(std::vector<int>& sampleProvinceIds) override;
 
 private:
 	UTerritoryMeshComponent* CreateTerritoryMeshComponent(bool isProvince)

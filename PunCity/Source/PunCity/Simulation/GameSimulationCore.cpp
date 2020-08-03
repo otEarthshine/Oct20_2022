@@ -425,8 +425,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 						if (dragCommand->path.Num() > 0)
 						{
 							TArray<int32> newPath = dragCommand->path;
-							int32 firstTileId = newPath[0];
-							newPath.RemoveAt(0);
+							int32 firstTileId = newPath.Pop();
 							 
 							// Put the command back in front with trimmed
 							if (newPath.Num() > 0) {
@@ -437,14 +436,14 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 
 							dragCommand->path = { firstTileId }; // build 1 tile at a time
 
-							replayPlayers[i].nextTrailerCommandTick = Time::Ticks() + Time::TicksPerSecond / 10; // Build 10 tiles a sec
+							replayPlayers[i].nextTrailerCommandTick = Time::Ticks() + Time::TicksPerSecond / 30; // Build 30 tiles a sec
 						}
 					}
 
 					command->playerId = i;
 					commands.push_back(command);
 
-					PUN_LOG("Trailer Command Issued num:%llu pid:%d type:%d tick:%d", trailerCommands.size(), command->playerId, command->commandType(), Time::Ticks());
+					PUN_LOG("Trailer Exec num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *commands[i]->ToCompactString(), Time::Ticks());
 				}
 			}
 		}
@@ -515,7 +514,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 	 * Replays
 	 */
 	// Record tickInfo
-	_replaySystem.AddNetworkTickInfo(tickInfo);
+	_replaySystem.AddNetworkTickInfo(tickInfo, commands);
 
 	// AutoSave Replay
 	if (_tickCount % Time::TicksPerSeason == 0) {
@@ -627,15 +626,6 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 						//_playerOwnedManagers[playerId].RefreshHousing();
 						_playerOwnedManagers[playerId].Tick1Sec();
 
-						// Trailer auto-build
-						if (SimSettings::IsOn("TrailerMode")) {
-							for (int32 enumInt = 0; enumInt < BuildingEnumCount; enumInt++) {
-								std::vector<int32> bldIds =  buildingIds(playerId, static_cast<CardEnum>(enumInt));
-								for (int32 bldId : bldIds) {
-									building(bldId).TickConstruction(10);
-								}
-							}
-						}
 
 						/*
 						 * ProvinceClaimProgress
@@ -753,12 +743,42 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 			// Tick quarter sec
 			if (_tickCount % (Time::TicksPerSecond / 4) == 0)
 			{
-				/*
-				 * Science
-				 */
-				ExecuteOnPlayersAndAI([&](int32 playerId) {
+				ExecuteOnPlayersAndAI([&](int32 playerId) 
+				{
+					/*
+					 * Science
+					 */
 					if (_playerOwnedManagers[playerId].isInitialized()) {
 						unlockSystem(playerId)->Research(_playerOwnedManagers[playerId].science100PerRound(), 4);
+					}
+				});
+			}
+
+			// Tick Trailer AutoBuild
+			int32 trailerBuildTickInterval = Time::TicksPerSecond / 15;
+			if (_tickCount % trailerBuildTickInterval == 0)
+			{
+				ExecuteOnPlayersAndAI([&](int32 playerId)
+				{
+					/*
+					 * Trailer auto-build
+					 */
+					if (SimSettings::IsOn("TrailerMode") &&
+						IsReplayPlayer(playerId))
+					{
+						for (int32 enumInt = 0; enumInt < BuildingEnumCount; enumInt++) {
+							std::vector<int32> bldIds = buildingIds(playerId, static_cast<CardEnum>(enumInt));
+							for (int32 bldId : bldIds) {
+								Building& bld = building(bldId);
+								int32 buildTicks = Time::TicksPerSecond * 8;
+								bld.TickConstruction(buildTicks / trailerBuildTickInterval);
+
+								// Trailer mode house upgrade 1 level at a time
+								if (bld.isEnum(CardEnum::House)) {
+									bld.subclass<House>().TrailerCheckHouseLvl();
+								}
+							}
+						}
 					}
 				});
 			}
@@ -1316,6 +1336,14 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuildingParameters parameters)
 		int32 buildingId = _buildingSystem->AddBuilding(parameters);
 
 
+		// Trailer House Level
+		if (cardEnum == CardEnum::House &&
+			SimSettings::IsOn("TrailerMode"))
+		{
+			building(buildingId).subclass<House>().trailerTargetHouseLvl = parameters.buildingLevel;
+		}
+		
+
 		// Use bought card, remove the card
 		if (!IsReplayPlayer(parameters.playerId) && 
 			parameters.useBoughtCard) 
@@ -1680,8 +1708,7 @@ void GameSimulationCore::SetAllowResource(FSetAllowResource command)
 	if (IsHouse(bld.buildingEnum())) {
 		playerOwned(command.playerId).SetHouseResourceAllow(command.resourceEnum, command.allowed);
 	}
-	else if (bld.isEnum(CardEnum::StorageYard) ||
-			bld.isEnum(CardEnum::Warehouse)) 
+	else if (IsStorage(bld.buildingEnum())) 
 	{
 		bld.SetHolderTypeAndTarget(command.resourceEnum, command.allowed ? ResourceHolderType::Storage : ResourceHolderType::Provider, 0);
 	}
@@ -1781,6 +1808,14 @@ void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
 	// Special case: Replay
 	if (IsReplayPlayer(command.playerId)) 
 	{
+		// Trailer Replay only records townhall
+		if (_replaySystem.replayPlayers[command.playerId].IsTrailerReplay())
+		{
+			ChangeMoney(command.playerId, 20000); // Ensure enough money
+			townhall(command.playerId).UpgradeTownhall();
+			return;
+		}
+		
 		// Check all the buildings and upgrade as necessary
 		for (int32 i = 0; i < BuildingEnumCount; i++) {
 			const auto& bldIds = buildingIds(command.playerId, static_cast<CardEnum>(i));
@@ -1909,6 +1944,99 @@ void GameSimulationCore::ChangeWorkMode(FChangeWorkMode command)
 	}
 }
 
+void GameSimulationCore::AbandonTown(int32 playerId)
+{
+	vector<int32> provinceIds = playerOwned(playerId).provincesClaimed();
+	const SubregionLists<int32>& buildingList = buildingSystem().buildingSubregionList();
+
+	// Kill all humans
+	std::vector<int32> citizenIds = playerOwned(playerId).adultIds();
+	std::vector<int32> childIds = playerOwned(playerId).childIds();
+	citizenIds.insert(citizenIds.end(), childIds.begin(), childIds.end());
+	for (int32 citizenId : citizenIds) {
+		unitSystem().unitStateAI(citizenId).Die();
+	}
+
+	// End all Alliance...
+	std::vector<int32> allyPlayerIds = _playerOwnedManagers[playerId].allyPlayerIds();
+	for (int32 allyPlayerId : allyPlayerIds) {
+		LoseAlly(playerId, allyPlayerId);
+	}
+	PUN_CHECK(_playerOwnedManagers[playerId].allyPlayerIds().size() == 0);
+
+	// End all Vassalage...
+	std::vector<int32> vassalNodeIds = _playerOwnedManagers[playerId].vassalNodeIds();
+	for (int32 vassalNodeId : vassalNodeIds) {
+		ArmyNode& armyNode = building(vassalNodeId).subclass<ArmyNodeBuilding>().GetArmyNode();
+		armyNode.lordPlayerId = armyNode.originalPlayerId;
+
+		_playerOwnedManagers[playerId].LoseVassal(vassalNodeId);
+	}
+	PUN_CHECK(_playerOwnedManagers[playerId].vassalNodeIds().size() == 0);
+
+	// Detach from lord
+	{
+		int32 lordPlayerId = townhall(playerId).armyNode.lordPlayerId;
+
+		PUN_DEBUG2("[BEFORE] Detach from lord %d, size:%llu", lordPlayerId, _playerOwnedManagers[lordPlayerId].vassalNodeIds().size());
+		_playerOwnedManagers[lordPlayerId].LoseVassal(playerId);
+		PUN_DEBUG2("[AFTER] Detach from lord %d, size:%llu", lordPlayerId, _playerOwnedManagers[lordPlayerId].vassalNodeIds().size());
+	}
+
+	std::vector<WorldRegion2> overlapRegions = _provinceSystem.GetRegionOverlaps(provinceIds);
+	for (WorldRegion2 region : overlapRegions)
+	{
+		// Destroy all buildings owned by player
+		buildingList.ExecuteRegion(region, [&](int32 buildingId)
+		{
+			Building& bld = building(buildingId);
+
+			if (bld.playerId() == playerId) {
+				soundInterface()->TryStopBuildingWorkSound(bld);
+				_buildingSystem->RemoveBuilding(buildingId);
+				_regionToDemolishDisplayInfos[region.regionId()].push_back({ bld.buildingEnum(), bld.area(), Time::Ticks() });
+			}
+		});
+	}
+
+	for (int32 provinceId : provinceIds)
+	{
+		// Destroy all drops
+		_dropSystem.ResetProvinceDrop(provinceId);
+
+		// Clear Road
+		_overlaySystem.ClearRoadInProvince(provinceId);
+
+		// Remove all gather marks
+		TileArea area = _provinceSystem.GetProvinceRectArea(provinceId);
+		_treeSystem->MarkArea(playerId, area, true, ResourceEnum::None);
+
+		// Release region ownership
+		SetProvinceOwner(provinceId, -1);
+	}
+
+	// Remove Trade Route
+	worldTradeSystem().RemoveAllTradeRoutes(playerId);
+
+	// Reset all Systems
+	_resourceSystems[playerId] = ResourceSystem(playerId, this);
+	_unlockSystems[playerId] = UnlockSystem(playerId, this);
+	_questSystems[playerId] = QuestSystem(playerId, this);
+	_playerOwnedManagers[playerId] = PlayerOwnedManager(playerId, this);
+	_playerParameters[playerId] = PlayerParameters(playerId, this);
+	_statSystem.ResetPlayer(playerId);
+	_popupSystems[playerId] = PopupSystem(playerId, this);
+	_cardSystem[playerId] = BuildingCardSystem(playerId, this);
+
+	_aiPlayerSystem.push_back(AIPlayerSystem(playerId, this, this));
+
+	_eventLogSystem.ResetPlayer(playerId);
+
+	_playerIdToNonRepeatActionToAvailableTick[playerId] = std::vector<int32>(static_cast<int>(NonRepeatActionEnum::Count), 0);
+
+	AddEventLogToAllExcept(playerId, playerName(playerId) + " abandoned the old town to start a new one.", false);
+}
+
 void GameSimulationCore::PopupDecision(FPopupDecision command) 
 {
 	UE_LOG(LogNetworkInput, Log, TEXT(" PopupDecision replyReceiver:%d choice:%d"), command.replyReceiverIndex, command.choiceIndex);
@@ -2007,98 +2135,8 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 	}
 	else if (replyReceiver == PopupReceiverEnum::Approve_AbandonTown2)
 	{
-		if (command.choiceIndex == 0)
-		{
-			int32 playerId = command.playerId;
-			vector<int32> provinceIds = playerOwned(playerId).provincesClaimed();
-			const SubregionLists<int32>& buildingList = buildingSystem().buildingSubregionList();
-
-			// Kill all humans
-			std::vector<int32> citizenIds = playerOwned(playerId).adultIds();
-			std::vector<int32> childIds = playerOwned(playerId).childIds();
-			citizenIds.insert(citizenIds.end(), childIds.begin(), childIds.end());
-			for (int32 citizenId : citizenIds) {
-				unitSystem().unitStateAI(citizenId).Die();
-			}
-
-			// End all Alliance...
-			std::vector<int32> allyPlayerIds = _playerOwnedManagers[playerId].allyPlayerIds();
-			for (int32 allyPlayerId : allyPlayerIds) {
-				LoseAlly(playerId, allyPlayerId);
-			}
-			PUN_CHECK(_playerOwnedManagers[playerId].allyPlayerIds().size() == 0);
-
-			// End all Vassalage...
-			std::vector<int32> vassalNodeIds = _playerOwnedManagers[playerId].vassalNodeIds();
-			for (int32 vassalNodeId : vassalNodeIds) {
-				ArmyNode& armyNode = building(vassalNodeId).subclass<ArmyNodeBuilding>().GetArmyNode();
-				armyNode.lordPlayerId = armyNode.originalPlayerId;
-				
-				_playerOwnedManagers[playerId].LoseVassal(vassalNodeId);
-			}
-			PUN_CHECK(_playerOwnedManagers[playerId].vassalNodeIds().size() == 0);
-
-			// Detach from lord
-			{
-				int32 lordPlayerId = townhall(playerId).armyNode.lordPlayerId;
-				
-				PUN_DEBUG2("[BEFORE] Detach from lord %d, size:%llu", lordPlayerId, _playerOwnedManagers[lordPlayerId].vassalNodeIds().size());
-				_playerOwnedManagers[lordPlayerId].LoseVassal(playerId);
-				PUN_DEBUG2("[AFTER] Detach from lord %d, size:%llu", lordPlayerId, _playerOwnedManagers[lordPlayerId].vassalNodeIds().size());
-			}
-
-			std::vector<WorldRegion2> overlapRegions = _provinceSystem.GetRegionOverlaps(provinceIds);
-			for (WorldRegion2 region : overlapRegions)
-			{
-				// Destroy all buildings owned by player
-				buildingList.ExecuteRegion(region, [&](int32 buildingId)
-				{
-					Building& bld = building(buildingId);
-
-					if (bld.playerId() == command.playerId) {
-						soundInterface()->TryStopBuildingWorkSound(bld);
-						_buildingSystem->RemoveBuilding(buildingId);
-						_regionToDemolishDisplayInfos[region.regionId()].push_back({ bld.buildingEnum(), bld.area(), Time::Ticks() });
-					}
-				});
-			}
-
-			for (int32 provinceId : provinceIds)
-			{
-				// Destroy all drops
-				_dropSystem.ResetProvinceDrop(provinceId);
-
-				// Clear Road
-				_overlaySystem.ClearRoadInProvince(provinceId);
-
-				// Remove all gather marks
-				TileArea area = _provinceSystem.GetProvinceRectArea(provinceId);
-				_treeSystem->MarkArea(playerId, area, true, ResourceEnum::None);
-
-				// Release region ownership
-				SetProvinceOwner(provinceId, -1);
-			}
-
-			// Remove Trade Route
-			worldTradeSystem().RemoveAllTradeRoutes(playerId);
-
-			// Reset all Systems
-			_resourceSystems[playerId] = ResourceSystem(playerId, this);
-			_unlockSystems[playerId] = UnlockSystem(playerId, this);
-			_questSystems[playerId] = QuestSystem(playerId, this);
-			_playerOwnedManagers[playerId] = PlayerOwnedManager(playerId, this);
-			_playerParameters[playerId] = PlayerParameters(playerId, this);
-			_statSystem.ResetPlayer(playerId);
-			_popupSystems[playerId] = PopupSystem(playerId, this);
-			_cardSystem[playerId] = BuildingCardSystem(playerId, this);
-
-			_aiPlayerSystem.push_back(AIPlayerSystem(playerId, this, this));
-
-			_eventLogSystem.ResetPlayer(playerId);
-
-			_playerIdToNonRepeatActionToAvailableTick[playerId] = std::vector<int32>(static_cast<int>(NonRepeatActionEnum::Count), 0);
-
-			AddEventLogToAllExcept(playerId, playerName(playerId) + " abandoned the old town to start a new one.", false);
+		if (command.choiceIndex == 0) {
+			AbandonTown(command.playerId);
 		}
 	}
 	else if (replyReceiver == PopupReceiverEnum::ChooseLocationDone)
@@ -2988,8 +3026,7 @@ void GameSimulationCore::Cheat(FCheat command)
 
 	auto& cardSys = cardSystem(command.playerId);
 	
-	CheatEnum cheatEnum = static_cast<CheatEnum>(command.cheatEnum);
-	switch (cheatEnum)
+	switch (command.cheatEnum)
 	{
 		case CheatEnum::UnlockAll: {
 			unlockSystem(command.playerId)->researchEnabled = true;
@@ -3127,6 +3164,15 @@ void GameSimulationCore::Cheat(FCheat command)
 		case CheatEnum::HouseLevel:
 		{
 			SimSettings::Set("CheatHouseLevel", command.var1);
+			FSendChat chat;
+			chat.isSystemMessage = true;
+			chat.message = "House Lvl " + FString::FromInt(command.var1);
+			SendChat(chat);
+			break;
+		}
+		case CheatEnum::HouseLevelKey:
+		{
+			SimSettings::Toggle("CheatHouseLevelKey");
 			break;
 		}
 		case CheatEnum::FullFarmRoad: {

@@ -81,6 +81,7 @@ struct ModuleTransform
 	int32 upgradeStates = 0; //TODO: ????
 
 	float moduleConstructionFraction(float constructionFraction) const {
+		PUN_CHECK(constructionFractionBegin >= 0.0f);
 		return (constructionFraction - constructionFractionBegin) / (constructionFractionEnd - constructionFractionBegin);
 	}
 
@@ -140,15 +141,25 @@ struct ModuleTransforms
 
 	void CalculateConstructionFractions()
 	{
+		//if (setName != "") UE_LOG(LogTemp, Log, TEXT("CalculateConstructionFractions %s"), ToTChar(setName));
+		
 		float totalRelativeConstructionTime = 0.0f;
 		for (ModuleTransform& transform : transforms) {
 			totalRelativeConstructionTime += transform.relativeConstructionTime;
 		}
+		//if (setName != "") UE_LOG(LogTemp, Log, TEXT("  totalRelativeConstructionTime %.2f"), totalRelativeConstructionTime);
+		
 		float constructionFraction = 0.0f;
 		for (size_t i = 0; i < transforms.size(); i++) {
 			transforms[i].constructionFractionBegin = constructionFraction;
 			constructionFraction += transforms[i].relativeConstructionTime / totalRelativeConstructionTime;
 			transforms[i].constructionFractionEnd = constructionFraction;
+
+			//if (transforms[i].moduleTypeEnum == ModuleTypeEnum::Frame) {
+			//	if (setName != "") UE_LOG(LogTemp, Log, TEXT("  Frame begin:%.2f end:%.2f"), transforms[i].constructionFractionBegin, transforms[i].constructionFractionEnd);
+			//}
+			
+			PUN_CHECK(constructionFraction <= 1.0f)
 		}
 	}
 

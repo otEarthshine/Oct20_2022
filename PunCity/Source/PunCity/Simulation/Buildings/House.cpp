@@ -75,7 +75,9 @@ void House::FinishConstruction()
 		addHolder(resourceEnum);
 	});
 
-	ForceSetHouseLevel(SimSettings::Get("CheatHouseLevel"));
+	if (!SimSettings::IsOn("TrailerMode")) {
+		ForceSetHouseLevel(SimSettings::Get("CheatHouseLevel"));
+	}
 
 	//if (SimSettings::Get("CheatHouseLevel") > 1) {
 	//	switch(SimSettings::Get("CheatHouseLevel"))

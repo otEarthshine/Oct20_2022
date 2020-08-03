@@ -301,6 +301,10 @@ static const std::string NetworkCommandNames[] =
 	"ChangeName",
 	"SendChat",
 };
+static std::string GetNetworkCommandName(NetworkCommandEnum commandEnum) {
+	return NetworkCommandNames[static_cast<int>(commandEnum)];
+}
+
 
 class FNetworkCommand
 {
@@ -323,6 +327,10 @@ public:
 
 	static NetworkCommandEnum GetCommandTypeFromBlob(PunSerializedData& blob) {
 		return static_cast<NetworkCommandEnum>(blob[blob.readIndex]);
+	}
+
+	virtual FString ToCompactString() {
+		return ToFString(GetNetworkCommandName(commandType()));
 	}
 };
 
@@ -375,6 +383,10 @@ public:
 		blob << faceDirection;
 		blob << useBoughtCard;
 		blob << useWildCard;
+	}
+
+	FString ToCompactString() override {
+		return ToFString(GetNetworkCommandName(commandType()) + "-" + GetBuildingInfoInt(buildingEnum).name);
 	}
 };
 
@@ -951,7 +963,7 @@ class FCheat : public FNetworkCommand
 {
 public:
 	virtual ~FCheat() {}
-	int32 cheatEnum;
+	CheatEnum cheatEnum;
 	int32 var1;
 	int32 var2;
 

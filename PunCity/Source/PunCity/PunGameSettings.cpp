@@ -103,4 +103,5 @@ std::unordered_map<std::string, int32> SimSettings::Settings =
 	{ "CheatFullFarmRoad", 0},
 
 	{ "CheatHouseLevel", 1},
+	{ "CheatHouseLevelKey", 0},
 };

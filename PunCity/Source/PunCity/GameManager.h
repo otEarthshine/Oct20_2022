@@ -389,9 +389,9 @@ public:
 		
 		// Special case: Replay
 		auto& replayPlayers = _simulation->replaySystem().replayPlayers;
-		for (size_t i = 0; i < replayPlayers.size(); i++) {
+		for (int32 i = 0; i < replayPlayers.size(); i++) {
 			if (replayPlayers[i].isInitialize()) {
-				results.push_back(i);
+				CppUtils::TryAdd(results, i); // TryAdd because replay might be started on human, to edit the replay
 			}
 		}
 		
@@ -404,9 +404,9 @@ public:
 		if (withReplayPlayers)
 		{
 			auto& replayPlayers = _simulation->replaySystem().replayPlayers;
-			for (size_t i = 0; i < replayPlayers.size(); i++) {
+			for (int32 i = 0; i < replayPlayers.size(); i++) {
 				if (replayPlayers[i].isInitialize()) {
-					results.push_back(i);
+					CppUtils::TryAdd(results, i);
 				}
 			}
 		}

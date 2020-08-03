@@ -256,7 +256,7 @@ public:
 			for (int i = 0; i < _countof(CheatName); i++) {
 				if (ToFString(CheatName[i]).Equals(ToFString(commandAndParams[1]))) {
 					auto command = std::make_shared<FCheat>();
-					command->cheatEnum = i;
+					command->cheatEnum = static_cast<CheatEnum>(i);
 					networkInterface()->SendNetworkCommand(command);
 				}
 			}
@@ -279,7 +279,7 @@ public:
 			}
 
 			auto command = make_shared<FCheat>();
-			command->cheatEnum = GetCheatIndex("AddResource");
+			command->cheatEnum = GetCheatEnum("AddResource");
 			command->var1 = static_cast<int32>(resourceEnum);
 			command->var2 = FCString::Atoi(ToTChar(commandAndParams[2]));
 			networkInterface()->SendNetworkCommand(command);
@@ -289,7 +289,7 @@ public:
 		if (commandAndParams.size() >= 2 && commandAndParams[0] == "AddMoney") 
 		{
 			auto command = make_shared<FCheat>();
-			command->cheatEnum = GetCheatIndex("AddMoney");
+			command->cheatEnum = GetCheatEnum("AddMoney");
 			command->var1 = FCString::Atoi(ToTChar(commandAndParams[1]));
 			networkInterface()->SendNetworkCommand(command);
 		}
@@ -298,7 +298,7 @@ public:
 		if (commandAndParams.size() >= 2 && commandAndParams[0] == "AddInfluence")
 		{
 			auto command = make_shared<FCheat>();
-			command->cheatEnum = GetCheatIndex("AddInfluence");
+			command->cheatEnum = GetCheatEnum("AddInfluence");
 			command->var1 = FCString::Atoi(ToTChar(commandAndParams[1]));
 			networkInterface()->SendNetworkCommand(command);
 		}
@@ -317,7 +317,7 @@ public:
 			}
 
 			auto command = make_shared<FCheat>();
-			command->cheatEnum = GetCheatIndex("AddCard");
+			command->cheatEnum = GetCheatEnum("AddCard");
 			command->var1 = static_cast<int32>(cardEnum);
 			command->var2 = addCount;
 			networkInterface()->SendNetworkCommand(command);
@@ -327,7 +327,7 @@ public:
 		if (commandAndParams.size() >= 2 && commandAndParams[0] == "AddImmigrants")
 		{
 			auto command = make_shared<FCheat>();
-			command->cheatEnum = GetCheatIndex("AddImmigrants");
+			command->cheatEnum = GetCheatEnum("AddImmigrants");
 			command->var1 = FCString::Atoi(ToTChar(commandAndParams[1]));
 			networkInterface()->SendNetworkCommand(command);
 		}
@@ -336,7 +336,7 @@ public:
 		if (commandAndParams.size() >= 2 && commandAndParams[0] == "HouseLevel")
 		{
 			auto command = make_shared<FCheat>();
-			command->cheatEnum = GetCheatIndex("HouseLevel");
+			command->cheatEnum = GetCheatEnum("HouseLevel");
 			command->var1 = FCString::Atoi(ToTChar(commandAndParams[1]));
 			networkInterface()->SendNetworkCommand(command);
 		}

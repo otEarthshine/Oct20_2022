@@ -15,28 +15,62 @@ public:
 	void OnDeinit() override;
 
 	int32 houseLvl() { return _houseLvl; }
+
+	int32 trailerTargetHouseLvl = 0;
+
+	void TrailerCheckHouseLvl()
+	{
+		if (isConstructed())
+		{
+			if (trailerTargetHouseLvl > _houseLvl)
+			{
+				if (_lastHouseUpgradeTick == -1 ||
+					Time::Ticks() - _lastHouseUpgradeTick > Time::TicksPerSecond * 3)
+				{
+					_lastHouseUpgradeTick = Time::Ticks();
+					_houseLvl++;
+
+					_allowedOccupants = houseBaseOccupants + (_houseLvl - 1) / 2;
+					_simulation->RecalculateTaxDelayed(_playerId); // Recalculate sci
+					ResetDisplay();
+
+					PUN_LOG("Trailer House Upgrade %d", _houseLvl);
+				}
+			}
+			else {
+				_lastHouseUpgradeTick = -1;
+			}
+		}
+	}
 	
 	void CheckHouseLvl()
 	{
+		// Trailer mode house upgrade 1 level at a time using TrailerCheckHouseLvl()
+		if (SimSettings::IsOn("TrailerMode")) {
+			return;
+		}
+		
+		
 		int32 lvl = CalculateHouseLevel();
 		
-		if (_houseLvl != lvl)
+		// Note that houseDowngrade happens right away, but houseUpgrade is fake delayed by 5s
+		if (lvl > _houseLvl) 
 		{
-			// Note that houseDowngrade happens right away, but houseUpgrade is fake delayed by 5s
-			if (lvl > _houseLvl) {
-				if (_lastHouseUpgradeTick == -1) {
-					_lastHouseUpgradeTick = Time::Ticks();
-					_simulation->ScheduleTickBuilding(buildingId(), _lastHouseUpgradeTick + houseUpgradeDelayTicks);
-				}
-			} else {
-				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::HouseDowngrade, _centerTile, "");
-				_houseLvl = lvl;
-				_simulation->QuestUpdateStatus(_playerId, QuestEnum::HouseUpgradeQuest);
-				
-				_allowedOccupants = houseBaseOccupants + (lvl - 1) / 2;
-				_simulation->RecalculateTaxDelayed(_playerId); // Recalculate sci
-				ResetDisplay();
+			if (_lastHouseUpgradeTick == -1) {
+				_lastHouseUpgradeTick = Time::Ticks();
+				// Delayed upgrade
+				_simulation->ScheduleTickBuilding(buildingId(), _lastHouseUpgradeTick + houseUpgradeDelayTicks);
 			}
+		}
+		else if (lvl < _houseLvl) 
+		{
+			_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::HouseDowngrade, _centerTile, "");
+			_houseLvl = lvl;
+			_simulation->QuestUpdateStatus(_playerId, QuestEnum::HouseUpgradeQuest);
+
+			_allowedOccupants = houseBaseOccupants + (lvl - 1) / 2;
+			_simulation->RecalculateTaxDelayed(_playerId); // Recalculate sci
+			ResetDisplay();
 		}
 	}
 	void UpgradeHouse(int32 lvl);

@@ -555,12 +555,10 @@ void APunPlayerController::Tick(float DeltaTime)
 		if (cameraPawn && playerOwned.justChoseLocation) {
 			WorldAtom2 lookAtAtom = gameManager->simulation().homeAtom(playerId());
 
-			//// Zoom time amount depends on the zoomAmount
-			//float timeLength = (zoomDistance - WorldZoomAmountStage1) / (WorldToMapZoomAmount - WorldZoomAmountStage1);
-			//timeLength = fmin(1, fmax(0, timeLength));
-			//timeLength *= 3.0f;
-
-			cameraPawn->MoveCameraTo(lookAtAtom, 350.0f);
+			if (!SimSettings::IsOn("TrailerMode")) {
+				cameraPawn->MoveCameraTo(lookAtAtom, 350.0f);
+			}
+			
 			playerOwned.justChoseLocation = false;
 		}
 	}
@@ -869,7 +867,7 @@ void APunPlayerController::TileConnected(int32 startX, int32 startY, int32 endX,
 void APunPlayerController::Cheat(const FString& cheatName)
 {
 	auto command = make_shared<FCheat>();
-	command->cheatEnum = GetCheatIndex(cheatName);
+	command->cheatEnum = GetCheatEnum(cheatName);
 	SendNetworkCommand(command);
 }
 

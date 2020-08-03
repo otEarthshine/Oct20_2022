@@ -69,17 +69,24 @@ void Building::Init(IGameSimulationCore& simulation, int objectId, int32_t playe
 	// Clear area for TrailerMode
 	if (SimSettings::IsOn("TrailerMode")) {
 		InstantClearArea();
-	}
 
-	// Instant build HumanitarianAidCamp
-	bool cheatBuild = SimSettings::IsOn("CheatFastBuild") && !IsRoad(_buildingEnum);
-	
-	if (cheatBuild || 
-		_buildingEnum == CardEnum::HumanitarianAidCamp ||
-		IsDecorativeBuilding(_buildingEnum))
+		// Insta build for storage yard to accommodate AddResource
+		if (IsStorage(_buildingEnum)) {
+			FinishConstruction();
+		}
+	}
+	else
 	{
-		InstantClearArea();
-		FinishConstruction();
+		// Instant build HumanitarianAidCamp
+		bool cheatBuild = SimSettings::IsOn("CheatFastBuild") && !IsRoad(_buildingEnum);
+
+		if (cheatBuild ||
+			_buildingEnum == CardEnum::HumanitarianAidCamp ||
+			IsDecorativeBuilding(_buildingEnum))
+		{
+			InstantClearArea();
+			FinishConstruction();
+		}
 	}
 
 	InitStatistics();

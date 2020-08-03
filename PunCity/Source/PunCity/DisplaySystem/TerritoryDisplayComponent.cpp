@@ -87,7 +87,7 @@ void FTerritoryDecals::AddNewDecal(int32_t playerId, USceneComponent* parent, UA
 static std::vector<uint32> territoryAdjacencyEncoding;
 static std::vector<uint32> territoryAdjacencyEncoding2;
 
-void UTerritoryDisplayComponent::Display(std::vector<int>& sampleIds)
+void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 {
 	if (!PunSettings::IsOn("DisplayTerritory")) {
 		for (int i = 0; i < playerDecals.decalMaterials.Num(); i++) {
@@ -123,7 +123,6 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleIds)
 	/*
 	 * Territory
 	 */
-	std::vector<int32> sampleProvinceIds = _gameManager->sampleProvinceIds();
 
 	// Filter out player territory
 	std::vector<int32> sampleProvinceIdsNonPlayer;

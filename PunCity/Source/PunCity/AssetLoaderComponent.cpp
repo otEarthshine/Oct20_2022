@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <sstream>
 #include "HAL/PlatformFilemanager.h"
+#include "CppUtils.h"
 
 using namespace std;
 
@@ -1185,253 +1186,463 @@ void UAssetLoaderComponent::PrintConstructionMesh()
 			PUN_LOG("%s ... %s", *vertexBuffers.PositionVertexBuffer.VertexPosition(j).ToCompactString(), *colorStr);
 		}
 
-		_colorMap.Empty();
-		mesh->GetVertexColorData(_colorMap);
-		PUN_LOG("GetVertexColorData %d", _colorMap.Num());
-		for (const auto& pair : _colorMap) {
-			PUN_LOG("pair %s ... %s", *pair.Key.ToCompactString(), *pair.Value.ToString());
-		}
 	}
 }
 
 void UAssetLoaderComponent::UpdateRHIConstructionMesh()
 {
 	PUN_LOG("UpdateRHIConstructionMesh aaa %d", _modulesNeedingPaintConstruction.Num());
-	for (int i = 0; i < _modulesNeedingPaintConstruction.Num(); i++) {
-		FString moduleName = _modulesNeedingPaintConstruction[i];
-		UStaticMesh* mesh = _moduleNameToMesh[moduleName];
+	//for (int i = 0; i < _modulesNeedingPaintConstruction.Num(); i++) {
+	//	FString moduleName = _modulesNeedingPaintConstruction[i];
+	//	UStaticMesh* mesh = _moduleNameToMesh[moduleName];
 
-		mesh->SetVertexColorData(_colorMap);
-		mesh->Build(false); // ??? Some weird bullshit with threading.. slower non-silent build can circumvent the issue
-		mesh->MarkPackageDirty();
-	}
+	//	mesh->SetVertexColorData(_colorMap);
+	//	mesh->Build(false); // ??? Some weird bullshit with threading.. slower non-silent build can circumvent the issue
+	//	mesh->MarkPackageDirty();
+	//}
 }
+
+
+static unordered_map<int32, std::vector<int32>> groupIndexToConnectedVertIndices; //Can't do TMap+TArray
+
+static unordered_map<int32, std::vector<int32>> vertIndexToConnectedTrisIndices;
+
+static unordered_map<int32, std::vector<int32>> mergedVertIndexToVertIndices;
+static std::vector<int32> vertIndexToMergedVertIndex;
+
+static unordered_map<int32, std::vector<int32>> mergedVertIndexToConnectedTrisIndices;
+static unordered_map<int32, std::vector<int32>> groupIndexToConnectedTrisIndices;
+
+static TArray<bool> processedVertices;
+static int32 isPrinting = false;
+
+void UAssetLoaderComponent::TraverseTris(uint32 mergedVertIndex, int32 groupIndex_Parent, const TArray<uint32>& indexBuffer, const TArray<FVector>& vertexPositions)
+{
+	//if (isPrinting) PUN_LOG(" TraverseTris groupIndex:%d groupIndex_Parent:%d %s", groupIndex, groupIndex_Parent, *vertexPositions.VertexPosition(groupIndex).ToCompactString());
+	
+	// already processed
+	if (processedVertices[mergedVertIndex]) {
+		return;
+	}
+	processedVertices[mergedVertIndex] = true;
+
+	const vector<int32>& trisIndices = mergedVertIndexToConnectedTrisIndices[mergedVertIndex];
+
+	for (int32 trisIndex : trisIndices)
+	{
+		int32 vertIndex = indexBuffer[trisIndex];
+		
+		CppUtils::TryAdd(groupIndexToConnectedVertIndices[groupIndex_Parent], vertIndex);
+		processedVertices[vertIndex] = true;
+		
+		int32 trisIndex_0 = (trisIndex / 3) * 3;
+
+		//if (isPrinting) PUN_LOG("   -Recurse trisIndex_0:%d", trisIndex_0);
+
+		PUN_CHECK((indexBuffer.Num() / 3) * 3 == indexBuffer.Num());
+		PUN_CHECK((trisIndex_0 + 2) < indexBuffer.Num());
+
+		TraverseTris(vertIndexToMergedVertIndex[indexBuffer[trisIndex_0]], groupIndex_Parent, indexBuffer, vertexPositions);
+		TraverseTris(vertIndexToMergedVertIndex[indexBuffer[trisIndex_0 + 1]], groupIndex_Parent, indexBuffer, vertexPositions);
+		TraverseTris(vertIndexToMergedVertIndex[indexBuffer[trisIndex_0 + 2]], groupIndex_Parent, indexBuffer, vertexPositions);
+	}
+};
 
 void UAssetLoaderComponent::PaintMeshForConstruction(FString moduleName)
 {
+#if WITH_EDITOR
 	PUN_LOG("PaintMeshForConstruction s1ds33s %s", *moduleName);
 
-	// Example! MeshPaintHelpers::ImportVertexColorsToStaticMesh
-	// EditorFactories is where mesh import happens
+	isPrinting = false; // (moduleName == "HouseLvl1Frame");
 
 	UStaticMesh* mesh = _moduleNameToMesh[moduleName];
-	FStaticMeshVertexBuffers& vertexBuffers = mesh->RenderData->LODResources[0].VertexBuffers;
-	FRawStaticIndexBuffer& indexBuffer = mesh->RenderData->LODResources[0].IndexBuffer;
-	FPositionVertexBuffer& vertexPositions = vertexBuffers.PositionVertexBuffer;
-	FColorVertexBuffer* vertexColorsPtr = &vertexBuffers.ColorVertexBuffer;
 
-	// !! Don't use this, deprecated
-	//FStaticMeshSourceModel& srcModel = mesh->SourceModels[0];
+	//FPlatformProcess::Sleep(0.5f);
+	
+	PUN_LOG("!!! Start Paint !!! UpdateRHIConstructionMesh");
 
-	stringstream ss;
-	ss << "VertexPos:" << to_string(vertexPositions.GetNumVertices()) << ", VertexColor:" << to_string(vertexColorsPtr->GetNumVertices()) << "\n";
-	//PUN_LOG("VertexPos:%d VertexColor:%d", vertexPositions.GetNumVertices(), vertexColorsPtr->GetNumVertices());
-
-
-	//check(vertexPositions.GetNumVertices() == vertexColors.GetNumVertices());
-	//vertexColors.VertexColor(0)
-	//vertexPositions.VertexPosition(0);
-	//const FVector WorldSpaceVertexLocation = GetActorLocation() + GetTransform().TransformVector(VertexBuffer->VertexPosition(Index));
-
-	//SetVertexColorData
-
-	int32 vertexCount = vertexPositions.GetNumVertices();
-
-	//check(!vertexColorsPtr);
-	if (!vertexColorsPtr) {
-		PUN_LOG("No vertexColorPtr %s", *moduleName);
-		return;
-	}
-
-	//mesh->RemoveVertexColors();
-
-	if (vertexColorsPtr->GetNumVertices() == 0) {
-		PUN_LOG("0 vertexColorsPtr->GetNumVertices() %d", vertexColorsPtr->GetNumVertices());
-		vertexColorsPtr->Init(vertexCount);
-	}
-
-	int32 indexCount = indexBuffer.GetNumIndices();
-	TArray<bool> paintedVertices;
-	//TArray<bool> indicesWithSameGroup;
-	TArray<bool> processedVertices;
-	paintedVertices.SetNumZeroed(vertexCount);
-	processedVertices.SetNumZeroed(vertexCount);
-
-	TArray<int32> indexToProcess;
-	unordered_map<int32, std::vector<int32>> groupIndexToConnectedIndices; //Can't do TMap+TArray
-
-	//PUN_LOG("Start Painting");
-
-	for (int i = 0; i < vertexCount; i++)
+	/*
+	 * Paint
+	 */
+	const uint32 PaintingMeshLODIndex = 0;
+	if (mesh->IsSourceModelValid(PaintingMeshLODIndex) &&
+		mesh->GetSourceModel(PaintingMeshLODIndex).IsRawMeshEmpty() == false)
 	{
-		//FVector& position = vertexPositions.VertexPosition(i);
-		//PUN_LOG("--------- %d Color %s", i, *vertexColorsPtr->VertexColor(i).ToString());
-		//PUN_LOG("SetVertexColor %d Color: %s", i, *vertexColorsPtr->VertexColor(i).ToString());
+		// Extract the raw mesh.
+		FRawMesh rawMesh;
+		mesh->GetSourceModel(PaintingMeshLODIndex).LoadRawMesh(rawMesh);
 
-		//FColor& color = vertexColorsPtr->VertexColor(i);
-		FColor color(GameRand::DisplayRand(i * 100), GameRand::DisplayRand(i * 1003), GameRand::DisplayRand(i * 1030), 255);
-
-		//PUN_LOG("----- %d Color: %s", i, *vertexColorsPtr->VertexColor(i).ToString());
-
-		ss << "Vertex " << to_string(i) << " Pos:" << TCHAR_TO_UTF8(*vertexPositions.VertexPosition(i).ToCompactString()) << "\n";
-		ss << "-------- Color:" << TCHAR_TO_UTF8(*vertexColorsPtr->VertexColor(i).ToString()) << "\n";
-
-		// Not processed yet, meaning previous group finding passes didn't find this vertex
-		if (!processedVertices[i])
+		// Reserve space for the new vertex colors.
+		if (rawMesh.WedgeColors.Num() == 0 || rawMesh.WedgeColors.Num() != rawMesh.WedgeIndices.Num())
 		{
-			// Use index buffer to find all adjacent vertices and place them in indexToProcess
-			// Keep repeating for the next index in indexToProcess until none is left...
+			rawMesh.WedgeColors.Empty(rawMesh.WedgeIndices.Num());
+			rawMesh.WedgeColors.AddUninitialized(rawMesh.WedgeIndices.Num());
+		}
 
-			indexToProcess.Empty();
-			indexToProcess.Add(i);
-			processedVertices[i] = true;
+		// ---------------
 
-			LOOP_CHECK_START();
-			while (indexToProcess.Num() > 0)
+		stringstream ss;
+
+		const TArray<FVector>& vertexPositions = rawMesh.VertexPositions;
+		const TArray<uint32>& wedgeIndices = rawMesh.WedgeIndices;
+		int32 vertexCount = vertexPositions.Num();
+		int32 indexCount = wedgeIndices.Num();
+
+		//PUN_LOG("Start Painting");
+
+		auto vertToString = [&](int32 vertIndex) -> FString {
+			return vertexPositions[vertIndex].ToCompactString();
+		};
+
+		// Print Vertices
+		if (isPrinting) {
+			PUN_LOG("Print Vertices:");
+			for (int32 i = 0; i < vertexCount; i++) {
+				PUN_LOG(" %s", *vertToString(i));
+			}
+		}
+
+
+		/*
+		 * Merge nearby vertices
+		 */
+		{
+			mergedVertIndexToVertIndices.clear();
+			vertIndexToMergedVertIndex.clear();
+			vertIndexToMergedVertIndex.resize(vertexCount, 0);
+
+
+			processedVertices.Empty();
+			processedVertices.SetNumZeroed(vertexCount);
+
+			if (isPrinting) PUN_LOG("Merge nearby vertices");
+
+			for (int i = 0; i < vertexCount; i++)
 			{
-				LOOP_CHECK_END();
-				
-				int32 currentIndex = indexToProcess.Pop();
-				groupIndexToConnectedIndices[i].push_back(currentIndex);
+				if (isPrinting) PUN_LOG(" i = %d", i);
 
-				//// Set same group to same color
-				//FColor& colorToProcess = vertexColorsPtr->VertexColor(currentIndex);
-				//colorToProcess = color;
-
-				// Also add any vertex with the same position
-				// This is because UE4 import sometimes split up the geometry...
-				for (int j = 0; j < vertexCount; j++) {
-					if (!processedVertices[j] &&
-						vertexPositions.VertexPosition(currentIndex).Equals(vertexPositions.VertexPosition(j), 0.001f))
-					{
-						indexToProcess.Add(j);
-						processedVertices[j] = true;
-					}
-				}
-
-				// Loop through index buffer to find adjacents
-				for (int indexBufferI = 0; indexBufferI < indexCount; indexBufferI++)
+				if (!processedVertices[i])
 				{
-					int32 index = indexBuffer.GetIndex(indexBufferI);
+					processedVertices[i] = true;
+					mergedVertIndexToVertIndices[i].push_back(i);
+					vertIndexToMergedVertIndex[i] = i;
 
-					if (index == currentIndex)
-					{
-						// Try adding indices in this tris to the indexToProcess
-						int32 indexBufferI_tris0 = (indexBufferI / 3) * 3;
-						for (int localI = 0; localI < 3; localI++) {
-							int32 indexBufferI_tris = indexBufferI_tris0 + localI;
-							int32 adjacentIndex = indexBuffer.GetIndex(indexBufferI_tris);
-							if (!processedVertices[adjacentIndex]) {
-								indexToProcess.Add(adjacentIndex);
-								processedVertices[adjacentIndex] = true;
-							}
+					if (isPrinting) PUN_LOG(" i,i groupIndexToVertIndices_PositionMerge[%d].push_back(%d)", i, i);
+
+					// Add any vertex with the same position
+					// This is because UE4 import sometimes split up the geometry...
+					for (int j = i + 1; j < vertexCount; j++) {
+						if (!processedVertices[j] &&
+							vertexPositions[i].Equals(vertexPositions[j], 0.01f))
+						{
+							processedVertices[j] = true;
+							mergedVertIndexToVertIndices[i].push_back(j);
+							vertIndexToMergedVertIndex[j] = i;
+
+							if (isPrinting) PUN_LOG(" i,j groupIndexToVertIndices_PositionMerge[%d].push_back(%d)", i, j);
 						}
 					}
 				}
+			}
 
+
+			PUN_LOG("Position Merge Group Count:%d vertCount:%d", mergedVertIndexToVertIndices.size(), vertexCount);
+
+			if (isPrinting)
+			{
+				PUN_LOG("________");
+				PUN_LOG("Print mergedVertIndexToVertIndices size:%d", mergedVertIndexToVertIndices.size());
+				for (const auto& it : mergedVertIndexToVertIndices) {
+					PUN_LOG(" mergedVertIndex:%d", it.first);
+					for (int32 vertIndex : it.second) {
+						PUN_LOG("  vertIndex:%d %s", vertIndex, *vertToString(vertIndex));
+					}
+				}
 			}
 		}
-	}
 
-	//PUN_LOG("Group Count %d", groupIndexToConnectedIndices.size());
-	ss << "Group Count: " << to_string(groupIndexToConnectedIndices.size()) << "\n";
 
-	// Build meshGroupInfo list sorted by submesh's lowest height
-	struct MeshGroupInfo {
-		int32 groupIndex;
-		float lowestHeight;
-	};
-	std::vector<MeshGroupInfo> meshGroupInfos;
-
-	ss << "Start Loop groupIndexToConnectedIndices\n";
-	for (auto& it : groupIndexToConnectedIndices)
-	{
-		float lowestHeight = -999.0f;
-		std::vector<int32>& connectedIndices = it.second;
-
-		ss << "connectedIndices size:" << to_string(connectedIndices.size()) << "\n";
-
-		for (auto& connectedIndex : connectedIndices) {
-			float height = vertexPositions.VertexPosition(connectedIndex).Z;
-			if (height > lowestHeight) {
-				lowestHeight = height;
-			}
-		}
-		PUN_CHECK2(lowestHeight > -999.0f, ss.str());
-		meshGroupInfos.push_back({ it.first, lowestHeight });
-	}
-
-	sort(meshGroupInfos.begin(), meshGroupInfos.end(), [&](const MeshGroupInfo& a, const MeshGroupInfo& b) -> bool {
-		return a.lowestHeight < b.lowestHeight;
-	});
-
-	_colorMap.Empty();
-
-	float colorIncrement = 1.0f / meshGroupInfos.size();
-	float currentColor = 0.0f;
-	for (int i = 0; i < meshGroupInfos.size(); i++) {
-		std::vector<int32> connectedIndices = groupIndexToConnectedIndices[meshGroupInfos[i].groupIndex];
-		for (int32 currentIndex : connectedIndices) {
-			FColor& colorRef = vertexColorsPtr->VertexColor(currentIndex);
-			colorRef = FLinearColor(currentColor, currentColor, currentColor, 1.0f).ToFColor(false);
-
-			FVector vertexPos = vertexPositions.VertexPosition(currentIndex);
-			if (!_colorMap.Contains(vertexPos)) {
-				_colorMap.Add(vertexPos, FLinearColor(currentColor, currentColor, currentColor, 1.0f).ToFColor(false));
-			}
-		}
-		currentColor += colorIncrement;
-	}
-
-	PUN_LOG("SetVertexColorData %d", _colorMap.Num());
-	for (const auto& pair : _colorMap) {
-		PUN_LOG("pair %s ... %s", *pair.Key.ToCompactString(), *pair.Value.ToString());
-	}
-
-	FPlatformProcess::Sleep(0.5f);
-	
-	PUN_LOG("UpdateRHIConstructionMesh BUJUMbi");
-
-	// Test
-	const uint32 PaintingMeshLODIndex = 0;
-	if (mesh->IsSourceModelValid(PaintingMeshLODIndex))
-	{
-		if (mesh->GetSourceModel(PaintingMeshLODIndex).IsRawMeshEmpty() == false)
+		/*
+		 * Generate vertIndexToConnectedTrisIndices
+		 */
+		vertIndexToConnectedTrisIndices.clear();
+		
+		for (int indexBufferI = 0; indexBufferI < indexCount; indexBufferI++)
 		{
-			// Extract the raw mesh.
-			FRawMesh Mesh;
-			mesh->GetSourceModel(PaintingMeshLODIndex).LoadRawMesh(Mesh);
+			int32 vertIndex = wedgeIndices[indexBufferI];
+			vertIndexToConnectedTrisIndices[vertIndex].push_back(indexBufferI);
 
-			// Reserve space for the new vertex colors.
-			if (Mesh.WedgeColors.Num() == 0 || Mesh.WedgeColors.Num() != Mesh.WedgeIndices.Num())
-			{
-				Mesh.WedgeColors.Empty(Mesh.WedgeIndices.Num());
-				Mesh.WedgeColors.AddUninitialized(Mesh.WedgeIndices.Num());
-			}
-
-			// Build a mapping of vertex positions to vertex colors.
-			for (int32 WedgeIndex = 0; WedgeIndex < Mesh.WedgeIndices.Num(); ++WedgeIndex)
-			{
-				FVector Position = Mesh.VertexPositions[Mesh.WedgeIndices[WedgeIndex]];
-				const FColor* Color = _colorMap.Find(Position); // TODO: Don't need map?
-				if (Color)
-				{
-					Mesh.WedgeColors[WedgeIndex] = *Color;
-				}
-				else
-				{
-					Mesh.WedgeColors[WedgeIndex] = FColor(255, 255, 255, 255);
-				}
-			}
-
-			// Save the new raw mesh.
-			mesh->GetSourceModel(PaintingMeshLODIndex).SaveRawMesh(Mesh);
+			if (isPrinting) PUN_LOG("- indexI:%d vertIndex:%d vertIndexToConnectedTrisIndices.size:%d", indexBufferI, vertIndex, vertIndexToConnectedTrisIndices.size());
 		}
+
+		if (isPrinting)
+		{
+			PUN_LOG("________");
+			PUN_LOG("Print vertIndexToConnectedTrisIndices size:%d", vertIndexToConnectedTrisIndices.size());
+			for (const auto& it : vertIndexToConnectedTrisIndices)
+			{
+				PUN_LOG(" vertIndex:%d %s", it.first, *vertToString(it.first));
+				for (int32 trisIndex : it.second) {
+					PUN_CHECK(trisIndex < wedgeIndices.Num());
+					int32 connectedVertIndex = wedgeIndices[trisIndex];
+					PUN_LOG("  trisIndex:%d vertIndex:%d %s", trisIndex, connectedVertIndex, *vertToString(connectedVertIndex));
+				}
+			}
+		}
+
+		// How much average tris connected to vert?
+		{
+			int32 total = 0;
+			for (const auto& it : vertIndexToConnectedTrisIndices) {
+				total += it.second.size();
+			}
+			PUN_LOG("Average trisIndices per Vert: %f", static_cast<float>(total) / vertIndexToConnectedTrisIndices.size());
+		}
+
+		/*
+		 * Merge into mergedVertIndexToConnectedTrisIndices
+		 *  - Allow for easy traversal to other vertIndex via tris
+		 */
+		mergedVertIndexToConnectedTrisIndices.clear();
+
+		for (const auto& it : mergedVertIndexToVertIndices)
+		{
+			for (int32 vertIndex : it.second) {
+				const vector<int32>& trisIndices = vertIndexToConnectedTrisIndices[vertIndex];
+				vector<int32>& result = mergedVertIndexToConnectedTrisIndices[it.first];
+				result.insert(result.end(), trisIndices.begin(), trisIndices.end());
+			}
+		}
+
+		if (isPrinting)
+		{
+			PUN_LOG("________");
+			PUN_LOG("Print mergedVertIndexToConnectedTrisIndices num:%d", mergedVertIndexToConnectedTrisIndices.size());
+			for (const auto& it : mergedVertIndexToConnectedTrisIndices) {
+				PUN_LOG(" mergedVertIndex:%d", it.first);
+				for (int32 trisIndex : it.second) {
+					PUN_CHECK(trisIndex < wedgeIndices.Num());
+					int32 vertIndex = wedgeIndices[trisIndex];
+					PUN_LOG(" trisIndex:%d vertIndex:%d %s", trisIndex, vertIndex, *vertToString(vertIndex));
+				}
+			}
+		}
+
+
+		/*
+		 * Traverse tris to merge
+		 */
+		{
+			processedVertices.Empty();
+			processedVertices.SetNumZeroed(vertexCount);
+
+			groupIndexToConnectedVertIndices.clear();
+
+			if (isPrinting) PUN_LOG("Traverse Tris");
+
+			for (const auto& it : mergedVertIndexToVertIndices) {
+				if (isPrinting) PUN_LOG(" groupIndex:%d", it.first);
+
+				TraverseTris(it.first, it.first, wedgeIndices, vertexPositions);
+			}
+		}
+
+		// Check vertexCount to ensure no group has duplicate vertIndex
+		{
+			int32 vertCount = 0;
+			for (const auto& it : groupIndexToConnectedVertIndices) {
+				vertCount += it.second.size();
+			}
+			PUN_CHECK(vertCount <= vertexCount);
+		}
+
+		// Print groupIndexToConnectedVertIndices
+		if (isPrinting)
+		{
+			PUN_LOG("________");
+			PUN_LOG("Print groupIndexToConnectedVertIndices size:%d", groupIndexToConnectedVertIndices.size());
+			for (const auto& it : groupIndexToConnectedVertIndices) {
+				PUN_LOG(" groupIndex:%d", it.first);
+				const auto& vertIndices = it.second;
+				for (int32 vertIndex : vertIndices) {
+					PUN_LOG("  vertIndex:%d pos:%s", vertIndex, *vertToString(vertIndex));
+				}
+			}
+		}
+
+		PUN_LOG("Group Count %d", groupIndexToConnectedVertIndices.size());
+
+
+		/*
+		 * Build meshGroupInfo list sorted by submesh's lowest height
+		 */
+		struct MeshGroupInfo {
+			int32 groupIndex;
+			float lowestX;
+			float lowestY;
+			float lowestZ;
+			float highestZ;
+		};
+		std::vector<MeshGroupInfo> meshGroupInfos;
+
+		ss << "Start Loop groupIndexToConnectedIndices\n";
+		for (auto& it : groupIndexToConnectedVertIndices)
+		{
+			float lowestZ = 999.0f;
+			float lowestX = 999.0f;
+			float lowestY = 999.0f;
+			float highestZ = -999.0f;
+			std::vector<int32>& connectedVertIndices = it.second;
+
+			ss << "connectedIndices size:" << to_string(connectedVertIndices.size()) << "\n";
+
+			for (auto& connectedVertIndex : connectedVertIndices) {
+				float x = vertexPositions[connectedVertIndex].X;
+				if (x < lowestX) {
+					lowestX = x;
+				}
+				float y = vertexPositions[connectedVertIndex].Y;
+				if (y < lowestY) {
+					lowestY = y;
+				}
+				float z = vertexPositions[connectedVertIndex].Z;
+				if (z < lowestZ) {
+					lowestZ = z;
+				}
+				if (z > highestZ) {
+					highestZ = z;
+				}
+			}
+			PUN_CHECK2(lowestZ < 999.0f, ss.str());
+			PUN_CHECK2(highestZ > -999.0f, ss.str());
+			meshGroupInfos.push_back({ it.first, lowestX, lowestY, lowestZ, highestZ });
+		}
+
+		sort(meshGroupInfos.begin(), meshGroupInfos.end(), [&](const MeshGroupInfo& a, const MeshGroupInfo& b) -> bool {
+			// Same level Z
+			if (FGenericPlatformMath::RoundToInt(a.lowestZ) == FGenericPlatformMath::RoundToInt(b.lowestZ)) {
+				return a.lowestX > b.lowestX;
+				
+				//// compare highestZ
+				//if (FGenericPlatformMath::RoundToInt(a.highestZ / 2) == FGenericPlatformMath::RoundToInt(b.highestZ / 2)) {
+				//	// Same highestZ, compare X, Y
+				//	return a.lowestX < b.lowestX;
+				//}
+				//return a.highestZ > b.highestZ; // the group with higher highestZ, or higher length is probably vertical, which should come first
+			}
+			return a.lowestZ < b.lowestZ;
+		});
+
+		PUN_LOG("meshGroupInfos %d groupTrisCount:%f indices:%d indices/3:%d verts:%d", meshGroupInfos.size(), static_cast<float>(indexCount / 3) / meshGroupInfos.size(), indexCount, indexCount / 3, vertexCount);
+
+
+		/*
+		 * Make groupIndexToConnectedTrisIndices
+		 */
+		{
+			groupIndexToConnectedTrisIndices.clear();
+			for (const auto& it : groupIndexToConnectedVertIndices)
+			{
+				for (int32 vertIndex : it.second) {
+					int32 mergedVertIndex = vertIndexToMergedVertIndex[vertIndex];
+					vector<int32>& trisIndices = mergedVertIndexToConnectedTrisIndices[mergedVertIndex];
+					vector<int32>& result = groupIndexToConnectedTrisIndices[it.first];
+					result.insert(result.end(), trisIndices.begin(), trisIndices.end());
+				}
+			}
+
+			if (isPrinting)
+			{
+				PUN_LOG("________");
+				PUN_LOG("Print groupIndexToConnectedTrisIndices size:%d", groupIndexToConnectedTrisIndices.size());
+				for (const auto& it : groupIndexToConnectedTrisIndices) {
+					PUN_LOG(" groupIndex:%d", it.first);
+					for (int32 trisIndex : it.second) {
+						int32 vertIndex = wedgeIndices[trisIndex];
+						PUN_LOG("  trisIndex:%d vertIndex:%d %s", trisIndex, vertIndex, *vertToString(vertIndex));
+					}
+				}
+			}
+		}
+
+
+		/*
+		 * Get Longest Edge
+		 */
+		 // Longer Edge = More time weight
+		unordered_map<int32, float> groupIndexToMaxEdgeLength;
+
+		for (const auto& it : groupIndexToConnectedTrisIndices)
+		{
+			float maxEdgeLength = 0.0f;
+
+			const std::vector<int32>& trisIndices = it.second;
+
+			for (int32 trisIndex : trisIndices)
+			{
+				int32 index_tris0 = (trisIndex / 3) * 3;
+				FVector vert1 = vertexPositions[wedgeIndices[index_tris0]];
+				FVector vert2 = vertexPositions[wedgeIndices[index_tris0 + 1]];
+				FVector vert3 = vertexPositions[wedgeIndices[index_tris0 + 2]];
+
+				float length1 = FVector::Dist(vert1, vert2);
+				float length2 = FVector::Dist(vert2, vert3);
+				float length3 = FVector::Dist(vert1, vert3);
+				maxEdgeLength = max(maxEdgeLength, max(length1, max(length2, length3)));
+			}
+
+			groupIndexToMaxEdgeLength[it.first] = maxEdgeLength;
+		}
+
+
+
+
+
+
+
+		/*
+		 * Paint
+		 */
+
+		float totalEdgeLength = 0;
+		for (const auto& it : groupIndexToMaxEdgeLength) {
+			PUN_CHECK(it.second > 0);
+			totalEdgeLength += it.second;
+		}
+		
+		float currentColorFloat = 0.0f;
+
+		PUN_LOG("meshGroupInfos:%d", meshGroupInfos.size());
+		
+		for (int i = 0; i < meshGroupInfos.size(); i++) 
+		{
+			PUN_CHECK(currentColorFloat <= 1.01f);
+			
+			int32 groupIndex = meshGroupInfos[i].groupIndex;
+
+			if (isPrinting) PUN_LOG("  groupIndex:%d", groupIndex);
+
+			// Color by group
+			FColor currentColorVec = FLinearColor(currentColorFloat, currentColorFloat, currentColorFloat, 1.0f).ToFColor(false);
+			//FColor currentColorVec(GameRand::DisplayRand(i * 100) % 255, GameRand::DisplayRand(i * 1003) % 255, GameRand::DisplayRand(i * 1030) % 255, 255);
+			
+			const vector<int32>& trisIndices = groupIndexToConnectedTrisIndices[groupIndex];
+			for (int32 trisIndex : trisIndices) {
+				rawMesh.WedgeColors[trisIndex] = currentColorVec;
+
+				int32 vertIndex = wedgeIndices[trisIndex];
+				if (isPrinting) PUN_LOG("  - tris:%d vertIndex:%d %s", trisIndex, vertIndex, *vertToString(vertIndex));
+			}
+			
+			currentColorFloat += groupIndexToMaxEdgeLength[groupIndex] / totalEdgeLength;
+		}
+
+		// Save the new raw mesh.
+		mesh->GetSourceModel(PaintingMeshLODIndex).SaveRawMesh(rawMesh);
+		
 	}
 
-
-	//mesh->SetVertexColorData(_colorMap);
-
+	//FPlatformProcess::Sleep(0.1f);
 	
 	mesh->Build(true);
 	mesh->MarkPackageDirty();
@@ -1477,6 +1688,7 @@ void UAssetLoaderComponent::PaintMeshForConstruction(FString moduleName)
 	// Get Worldspace position of vertices
 	//const FVector WorldSpaceVertexLocation = GetActorLocation() + GetTransform().TransformVector(VertexBuffer->VertexPosition(Index));
 
+#endif
 }
 
 /**

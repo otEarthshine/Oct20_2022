@@ -1318,6 +1318,8 @@ public:
 		return replaySystem().replayPlayers[playerId].isInitialize();
 	}
 
+	void AbandonTown(int32 playerId);
+
 	/*
 	 * Snow
 	 */
@@ -1342,7 +1344,9 @@ public:
 
 		std::vector<int32> connectedPlayerIds = _gameManager->connectedPlayerIds(false);
 		for (int32 playerId : connectedPlayerIds) {
-			if (!playerOwned(playerId).isInitialized()) {
+			if (!playerOwned(playerId).isInitialized() &&
+				!IsReplayPlayer(playerId))  // ReplayPlayer shouldn't pause the game
+			{
 				return false;
 			}
 		};

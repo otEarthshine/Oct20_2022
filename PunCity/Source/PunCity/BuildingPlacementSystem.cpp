@@ -2241,6 +2241,9 @@ void ABuildingPlacementSystem::NetworkTryPlaceBuilding(IGameNetworkInterface* ne
 			command->useBoughtCard = _useBoughtCard;
 			command->useWildCard = _useWildCard;
 
+			// Trailer Mode record house lvl
+			command->buildingLevel = SimSettings::Get("CheatHouseLevel");
+
 			//// Special cases
 			//if (_buildingEnum == CardEnum::SpeedBoost)
 			//{

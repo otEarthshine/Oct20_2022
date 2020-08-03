@@ -2735,6 +2735,15 @@ static bool IsRoad(CardEnum buildingEnum) {
 	}
 }
 
+static bool IsStorage(CardEnum buildingEnum) {
+	switch (buildingEnum) {
+	case CardEnum::StorageYard:
+	case CardEnum::Warehouse:
+		return true;
+	default: return false;
+	}
+}
+
 
 static bool IsStackableTileBuilding(CardEnum buildingEnum) {
 	switch (buildingEnum) {
@@ -4676,7 +4685,7 @@ static FLinearColor PlayerColor2(int32_t playerId)
 }
 
 //! Cheat
-enum class CheatEnum
+enum class CheatEnum : int32
 {
 	UnlockAll,
 	Money,
@@ -4703,6 +4712,7 @@ enum class CheatEnum
 	YearlyTrade,
 
 	HouseLevel,
+	HouseLevelKey,
 	FullFarmRoad,
 	
 	NoCameraSnap,
@@ -4747,6 +4757,7 @@ static const std::string CheatName[]
 	"YearlyTrade",
 
 	"HouseLevel",
+	"HouseLevelKey",
 	"FullFarmRoad",
 
 	"NoCameraSnap",
@@ -4763,15 +4774,19 @@ static const std::string CheatName[]
 	"TrailerCityGreen2",
 	"TrailerCityBrown",
 };
+static std::string GetCheatName(CheatEnum cheatEnum) {
+	return CheatName[static_cast<int>(cheatEnum)];
+}
 
-static int32 GetCheatIndex(const FString& cheatName)
+static CheatEnum GetCheatEnum(const FString& cheatName)
 {
 	for (int i = 0; i < _countof(CheatName); i++) {
 		if (ToFString(CheatName[i]).Equals(cheatName)) {
-			return i;
+			return static_cast<CheatEnum>(i);
 		}
 	}
-	return 0;
+	UE_DEBUG_BREAK();
+	return CheatEnum::UnlockAll;
 }
 
 enum class ObjectTypeEnum

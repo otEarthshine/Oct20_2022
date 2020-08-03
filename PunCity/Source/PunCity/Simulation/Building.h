@@ -498,6 +498,7 @@ public:
 	}
 
 	float constructionFraction() { return _workDone100 / static_cast<float>(buildTime_ManSec100()); }
+	int32 constructionPercent() { return _workDone100 * 100 / buildTime_ManSec100(); }
 
 	virtual float barFraction() { return workFraction(); }
 
@@ -910,7 +911,7 @@ public:
 	}
 
 	// 
-	void TickConstruction(int32 tickCount)
+	void TickConstruction(int32 updateCount)
 	{
 		if (!isConstructed())
 		{
@@ -918,12 +919,23 @@ public:
 			{
 				FinishConstruction();
 				_simulation->soundInterface()->Spawn3DSound("CitizenAction", "ConstructionComplete", centerTile().worldAtom2());
-				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::BuildingComplete, _centerTile, "");
+
+				if (!SimSettings::IsOn("TrailerMode")) {
+					_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::BuildingComplete, _centerTile, "");
+				}
 			}
 			else
 			{
-				_workDone100 += buildTime_ManSec100() / tickCount; // takes tickCount secs to finish the constrution
-				_simulation->soundInterface()->Spawn3DSound("CitizenAction", "WoodConstruction", centerTile().worldAtom2());
+				_workDone100 += buildTime_ManSec100() / updateCount; // takes tickCount secs to finish the constrution
+
+				PUN_LOG("TickConstruction[%d] %s percent:%d", buildingId(), ToTChar(buildingInfo().name), constructionPercent());
+
+				ResetDisplay(); // Slow??
+				
+				if (SimSettings::IsOn("TrailerMode")) {
+				} else {
+					_simulation->soundInterface()->Spawn3DSound("CitizenAction", "WoodConstruction", centerTile().worldAtom2());
+				}
 			}
 		}
 	}

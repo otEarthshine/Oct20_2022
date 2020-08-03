@@ -81,6 +81,9 @@ public:
 	void PrintConstructionMesh();
 	void RemoveVertexColor();
 
+private:
+	void TraverseTris(uint32 groupIndex_PositionMerge, int32 groupIndex_Parent, const TArray<uint32>& indexBuffer, const TArray<FVector>& vertexPositions);
+
 public:
 	UStaticMesh* moduleMesh(FString moduleName);
 
@@ -407,5 +410,4 @@ private:
 
 private:
 	UPROPERTY() TArray<FString> _modulesNeedingPaintConstruction;
-	UPROPERTY() TMap<FVector, FColor> _colorMap;
 };

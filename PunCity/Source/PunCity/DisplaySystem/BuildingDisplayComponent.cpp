@@ -177,6 +177,8 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 
 	if (simulation().NeedDisplayUpdate(DisplayClusterEnum::Building, regionId) || isMainMenuDisplay)
 	{
+		//PUN_LOG("--- Display Construction NeedDisplayUpdate regionId:%d", regionId);
+		
 		//SCOPE_TIMER("Tick Building: Building");
 		SCOPE_CYCLE_COUNTER(STAT_PunDisplayBuilding_Core);
 
@@ -188,11 +190,13 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 			selectedBuildingId = simulation().descriptionUIState().objectId;
 		}
 
-		buildingList.ExecuteRegion(region, [&](int32_t buildingId)
+		buildingList.ExecuteRegion(region, [&](int32 buildingId)
 		{
 			Building& building = buildingSystem.building(buildingId);
 			CardEnum buildingEnum = building.buildingEnum();
 			const std::vector<BuildingUpgrade>& upgrades = building.upgrades();
+
+			//PUN_LOG(" -- Display Construction[%d] (1) %s construct:%d", building.buildingId(), ToTChar(building.buildingInfo().name), building.constructionPercent());
 
 			// Don't display road
 			if (IsRoad(buildingEnum)) {
@@ -391,6 +395,8 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 					modules.pop_back();
 				}
 
+				//PUN_LOG("  - Display Construction[%d] (2) %s construct:%d", building.buildingId(), ToTChar(building.buildingInfo().name), building.constructionPercent());
+
 				for (int i = 0; i < modules.size(); i++)
 				{
 					// Check if this mesh should be displayed during this construction phase
@@ -423,10 +429,11 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 							if (modules[i].moduleTypeEnum == ModuleTypeEnum::Frame) {
 								float moduleFraction = modules[i].moduleConstructionFraction(constructionFraction);
 								moduleTransform.SetScale3D(FVector(1, 1, moduleFraction * 0.99f + 0.01f));
-								int32 constructionPercent = constructionFraction * 100;
-								_moduleMeshes[meshId]->Add(moduleName, instanceKey, moduleTransform, constructionPercent, buildingId);
+								int32 modulePercent = moduleFraction * 100;
+								_moduleMeshes[meshId]->Add(moduleName, instanceKey, moduleTransform, modulePercent, buildingId);
 
-								//PUN_LOG("FrameConstruction Z:%f age:%d", transform.GetScale3D().Z, static_cast<int32>(constructionFraction * 100));
+								//PUN_LOG("    Display FrameConstruction[%d] module:%d construct:%d", building.buildingId(), modulePercent, building.constructionPercent());
+								//PUN_LOG("FrameConstruction Z:%f age:%d", transform.GetScale3D().Z, constructionPercent);
 							}
 							else {
 								_moduleMeshes[meshId]->Add(moduleName, instanceKey, moduleTransform, 0, buildingId);
@@ -434,7 +441,12 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 
 						}
 					}
-
+					else
+					{
+						//if (modules[i].moduleTypeEnum == ModuleTypeEnum::Frame) {
+							//PUN_LOG("    Display FrameConstruction[%d] (not ready) construct:%d", building.buildingId(), building.constructionPercent());
+						//}
+					}
 				}
 				
 			}

@@ -66,6 +66,10 @@ bool TownHall::HasEnoughUpgradeMoney()
 
 void TownHall::UpgradeTownhall()
 {
+	if (townhallLvl >= GetMaxUpgradeLvl()) {
+		return;
+	}
+	
 	// Remove Upgrade cost
 	//const std::vector<int32_t>& upgradeResources = GetUpgradeResources(townhallLvl + 1);
 	//for (int32_t j = 0; j < upgradeResources.size(); j++) {

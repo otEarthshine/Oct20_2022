@@ -97,6 +97,11 @@ public:
 		_mainGameUI->SetVisibility(_mainGameUI->GetVisibility() == ESlateVisibility::Visible ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 #endif
 	}
+	void HideMainGameUI() {
+#if UI_ALL
+		_mainGameUI->SetVisibility(ESlateVisibility::Collapsed);
+#endif
+	}
 
 	void ToggleJobUI() {
 		//_worldSpaceUI->jobUIActive = !_worldSpaceUI->jobUIActive;

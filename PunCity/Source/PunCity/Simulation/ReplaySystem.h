@@ -38,13 +38,26 @@ public:
 	 */
 	void SetTrailerCommands(std::vector<std::shared_ptr<FNetworkCommand>>& trailerCommandsIn)
 	{
+		PUN_LOG("Trailer Start %d", trailerCommandsIn.size());
 		currentCommandIndex = 0; // for isInitialize()
 		trailerCommands = trailerCommandsIn;
 		nextTrailerCommandTick = Time::Ticks() + Time::TicksPerSecond;
 	}
+	void PauseTrailerCommands() {
+		pausedNextTrailerCommandTick = nextTrailerCommandTick;
+		nextTrailerCommandTick = -1;
+	}
+	void UnpauseTrailerCommands() {
+		nextTrailerCommandTick = pausedNextTrailerCommandTick;
+	}
+
+	bool IsTrailerReplay() {
+		return nextTrailerCommandTick != -1;
+	}
 	
 	std::vector<std::shared_ptr<FNetworkCommand>> trailerCommands;
 	int32 nextTrailerCommandTick = -1;
+	int32 pausedNextTrailerCommandTick = -1;
 };
 
 /**
@@ -66,10 +79,8 @@ public:
 	void LoadPlayerActions(int32 playerId, FString fileName);
 
 	// Add Network Ticks as the game is played
-	void AddNetworkTickInfo(NetworkTickInfo& networkTickInfo)
+	void AddNetworkTickInfo(NetworkTickInfo& networkTickInfo, std::vector<std::shared_ptr<FNetworkCommand>> commands)
 	{
-		std::vector<std::shared_ptr<FNetworkCommand>>& commands = networkTickInfo.commands;
-
 		// Placement gets recorded for trailer
 		for (size_t j = 0; j < commands.size(); j++) 
 		{
@@ -81,8 +92,10 @@ public:
 				case NetworkCommandEnum::PlaceBuilding:
 				case NetworkCommandEnum::PlaceGather:
 				case NetworkCommandEnum::ClaimLand:
+				case NetworkCommandEnum::Cheat:
+				case NetworkCommandEnum::UpgradeBuilding:
 					trailerCommandsSave.push_back(commands[j]);
-					PUN_LOG("Add trailerCommands %d", trailerCommandsSave.size());
+					PUN_LOG("Add trailerCommands[Save] %d %s", trailerCommandsSave.size(), ToTChar(GetNetworkCommandName(commands[j]->commandType())));
 					break;
 				default:
 					break;

@@ -62,6 +62,7 @@ public:
 	void Zoom(float axisValue);
 
 	void KeyPressed_R();
+	void KeyPressed_CtrlT();
 	void KeyPressed_M();
 	void KeyPressed_H();
 	void LeftMouseDown();
@@ -167,9 +168,13 @@ public:
 	}
 	
 	void MoveCameraTo(WorldAtom2 atom, float zoomAmount, float timeLength = 3.0f, FString lerpType = "ChooseLocation");
+	void MoveCameraTo(WorldAtom2 atom, float zoomAmount, FRotator rotation, float timeLength = 3.0f, FString lerpType = "ChooseLocation");
+
+	void AdjustCameraZoomTilt();
 
 	void SetCameraSequence(std::vector<TrailerCameraRecord> cameraSequence) {
 		_cameraSequence = cameraSequence;
+		_systemTrailerTimeSinceStart = 0.0f;
 	}
 	void ClearCameraSequence() {
 		_cameraSequence.clear();
@@ -274,13 +279,20 @@ private:
 
 	std::vector<TrailerCameraRecord> _cameraSequence;
 	FString _systemLerpType = "ChooseLocation";
-	
+
 	float _systemMoveTimeSinceStart = -1.0f;
 	float _systemMoveTimeLength = 0.0f;
+
+	float _systemTrailerTimeSinceStart = -1.0f;
+	
 	FVector _systemCamLocationStart;
 	FVector _systemCamLocationTarget;
 	float _systemZoomAmountStart = 0.0f;
 	float _systemZoomAmountTarget = 0.0f;
+
+	bool _systemIsRotating = false;
+	FRotator _systemRotatorStart = FRotator::ZeroRotator;
+	FRotator _systemRotatorTarget = FRotator::ZeroRotator;
 	
 	enum class DisplayState : uint8
 	{

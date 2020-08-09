@@ -10,12 +10,15 @@
 #include "GameFramework/Pawn.h"
 #include "Camera/CameraComponent.h"
 
-struct TrailerCameraRecord {
+struct TrailerCameraRecord
+{
 	WorldAtom2 cameraAtom;
 	float zoomDistance;
 	FRotator rotator;
 	FString transition;
 	float transitionTime;
+
+	bool isCameraReplayUnpause = false;
 };
 
 #include "CameraPawn.generated.h"

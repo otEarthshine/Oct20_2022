@@ -818,7 +818,7 @@ public:
 		return -1;
 	}
 
-	int32_t buildingAge() { return Time::Ticks() - _buildingPlacedTick; }
+	int32 buildingAge() { return Time::Ticks() - _buildingPlacedTick; }
 
 	bool isUsable() { return isConstructed() && !isFireDisabled(); }
 

@@ -24,6 +24,7 @@ const FloatDet FloatDetShifts = 14; // 2096, only 3 bits limit per float??
 #define FDDiv(floatDetX, floatDetY) ((FloatDet(floatDetX) << FloatDetShifts) / (floatDetY)) // This shit can easily overflow , careful..
 #define FDHalf(floatDetX) (floatDetX >> 1)
 #define FDQuarter(floatDetX) (floatDetX >> 2)
+#define FDEight(floatDetX) (floatDetX >> 3)
 #define FDSqrt(floatDetX) (FloatToFD(sqrtf(FDToFloat(floatDetX))))
 
 // Note: FDSafeMul(floatDetX, uint16) is also fine

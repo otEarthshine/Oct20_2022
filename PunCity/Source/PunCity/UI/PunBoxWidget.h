@@ -443,22 +443,22 @@ public:
 
 		// Card type
 		if (IsIndustrialBuilding(buildingEnum)) {
-			tooltipBox->AddRichText("Type: industry");
+			tooltipBox->AddRichText("Type: Industry");
 		}
 		else if (IsAgricultureBuilding(buildingEnum)) {
-			tooltipBox->AddRichText("Type: food");
+			tooltipBox->AddRichText("Type: Agriculture");
 		}
 		else if (IsMountainMine(buildingEnum)) {
-			tooltipBox->AddRichText("Type: mine");
+			tooltipBox->AddRichText("Type: Mine");
 		}
 		else if (IsGlobalSlotCard(buildingEnum)) {
-			tooltipBox->AddRichText("Type: global-slot");
+			tooltipBox->AddRichText("Type: Global-Slot");
 		}
 		else if (IsBuildingSlotCard(buildingEnum)) {
-			tooltipBox->AddRichText("Type: building-slot");
+			tooltipBox->AddRichText("Type: Building-Slot");
 		}
 		else if (IsActionCard(buildingEnum)) {
-			tooltipBox->AddRichText("Type: action");
+			tooltipBox->AddRichText("Type: Action");
 		}
 		//else {
 		//	UE_DEBUG_BREAK();

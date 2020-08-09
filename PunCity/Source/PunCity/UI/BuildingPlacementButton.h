@@ -323,7 +323,10 @@ public:
 			return;
 		}
 
-		// Animate too 0 local pos
+		/*
+		 * Animate to 0 local pos
+		 * !!! Main?
+		 */
 		if (time - cardAnimationStartTime < animationLength)
 		{
 			const FGeometry& viewportGeometry = GetViewportGeometry();

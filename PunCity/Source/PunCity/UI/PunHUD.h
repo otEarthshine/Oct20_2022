@@ -183,19 +183,6 @@ public:
 		return _descriptionUISystem->GetEmptyCardSlot();
 	}
 
-	//int32 NumberOfUITasks() override
-	//{
-	//	int32 tasks = 0;
-	//	
-	//	//if (IsChoosingCard()) tasks++;
-	//	//if (_mainGameUI->IsConfirmingAction()) tasks++;
-	//	//if (IsTrading()) tasks++;
-	//	//if (IsUsingTechUI()) tasks++;
-	//	//if (inputSystemInterface()->placementState() != PlacementType::None) tasks++;
-	//	
-	//	return tasks;
-	//}
-
 	// Open/close UI
 	void OpenTradeUI(int32 objectId) final {
 		networkInterface()->ResetGameUI();
@@ -282,6 +269,7 @@ public:
 		case ExclusiveUIEnum::BuildMenu:		return _mainGameUI->BuildMenuOverlay->GetVisibility() != ESlateVisibility::Collapsed;
 		case ExclusiveUIEnum::Placement:		return inputSystemInterface()->placementState() != PlacementType::None;
 		case ExclusiveUIEnum::ConfirmingAction: return _mainGameUI->ConfirmationOverlay->GetVisibility() != ESlateVisibility::Collapsed;
+		case ExclusiveUIEnum::EscMenu:			return _escMenuUI->EscMenu->GetVisibility() != ESlateVisibility::Collapsed;
 		case ExclusiveUIEnum::TechUI:			return _techUI->GetVisibility() != ESlateVisibility::Collapsed;
 		case ExclusiveUIEnum::Trading:			return _worldTradeUI->GetVisibility() != ESlateVisibility::Collapsed;
 		case ExclusiveUIEnum::IntercityTrading:	return _intercityTradeUI->GetVisibility() != ESlateVisibility::Collapsed;

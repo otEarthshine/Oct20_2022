@@ -207,25 +207,6 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 	}
 
 	/*
-	 * Inner Display
-	 */
-	//showTerritoryMeshes(_territoryMeshesInner, provinceIdsToDisplayInner, true);
-
-	//for (UTerritoryMeshComponent* comp : _territoryMeshesInner)
-	//{
-	//	WorldTile2 centerTile = provinceSys.GetProvinceCenter(comp->provinceId).worldTile2();
-	//	FVector displayLocation = MapUtil::DisplayLocation(cameraAtom, centerTile.worldAtom2());
-	//	comp->SetRelativeLocation(displayLocation);
-
-	//	int32 owner = simulation().provinceOwner(comp->provinceId);
-
-	//	comp->MaterialInstance->SetScalarParameterValue("IsHighlighted", provinceSys.highlightedProvince == comp->provinceId);
-	//	comp->MaterialInstance->SetVectorParameterValue("PlayerColor1", owner != -1 ? PlayerColor1(owner) : FLinearColor(0, 0, 0, 0));
-	//	comp->MaterialInstance->SetVectorParameterValue("PlayerColor2", owner != -1 ? PlayerColor2(owner) : FLinearColor(0, 0, 0, 0));
-	//	comp->MaterialInstance->SetScalarParameterValue("IsInner", 1);
-	//}
-
-	/*
 	 * Territory Update
 	 */
 	{
@@ -254,15 +235,19 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 		 */
 		for (int32 playerId = 0; playerId < _playerIdToTerritoryMesh.Num(); playerId++)
 		{
-			if (simulation().playerOwned(playerId).isInitialized())
+			auto& playerOwned = simulation().playerOwned(playerId);
+			if (playerOwned.hasChosenLocation())
 			{
-				WorldTile2 centerTile = simulation().townhall(playerId).centerTile();
+				PUN_CHECK(playerOwned.provincesClaimed().size() > 0);
+				WorldTile2 centerTile = simulation().GetProvinceCenterTile(playerOwned.provincesClaimed()[0]);
 				FVector displayLocation = MapUtil::DisplayLocation(cameraAtom, centerTile.worldAtom2());
 
 				auto comp = _playerIdToTerritoryMesh[playerId];
 				if (comp)
 				{
-					if (CppUtils::Contains(sampleTerritoryPlayerIds, playerId)) {
+					if (!SimSettings::IsOn("TrailerMode") &&
+						CppUtils::Contains(sampleTerritoryPlayerIds, playerId)) 
+					{
 						comp->SetVisibility(true);
 						comp->SetRelativeLocation(displayLocation);
 
@@ -290,7 +275,7 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 				_playerIdToTerritoryMesh.SetNum(playerId + 1);
 			}
 
-			if (simulation().playerOwned(playerId).isInitialized()) 
+			if (simulation().playerOwned(playerId).hasChosenLocation()) 
 			{
 				if (!_playerIdToTerritoryMesh[playerId]) {
 					_playerIdToTerritoryMesh[playerId] = CreateTerritoryMeshComponent(false);

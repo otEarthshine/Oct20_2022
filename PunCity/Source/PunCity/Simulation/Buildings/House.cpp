@@ -75,7 +75,10 @@ void House::FinishConstruction()
 		addHolder(resourceEnum);
 	});
 
-	if (!SimSettings::IsOn("TrailerMode")) {
+	if (SimSettings::IsOn("TrailerMode")) {
+		// Add more population in trailer mode
+		_simulation->AddImmigrants(_playerId, 2, gateTile());
+	} else {
 		ForceSetHouseLevel(SimSettings::Get("CheatHouseLevel"));
 	}
 

@@ -117,7 +117,7 @@ public:
 	virtual int unitCount() = 0;
 	virtual bool unitAlive(UnitFullId fullId) = 0;
 
-	virtual void AddImmigrants(int32 playerId, int32 count) = 0;
+	virtual void AddImmigrants(int32 playerId, int32 count, WorldTile2 tile = WorldTile2::Invalid) = 0;
 
 	// Building
 	virtual class TownHall& townhall(int32 playerId) = 0;
@@ -285,6 +285,8 @@ public:
 	virtual void RefreshTerritoryEdge(int32 playerId) = 0;
 
 	virtual bool IsBorderProvince(int32 provinceId) = 0;
+
+	virtual const std::vector<ProvinceConnection>& GetProvinceConnections(int32 provinceId) = 0;
 	
 	/*
 	 * 
@@ -343,6 +345,11 @@ public:
 	virtual void AddBoarBurrow(int32 regionId, int32 buildingId) = 0;
 	virtual void RemoveBoarBurrow(int32 regionId, int32 buildingId) = 0;
 
+	virtual const std::vector<int32>& provinceAnimals(int32 provinceId) = 0;
+	virtual void AddProvinceAnimals(int32 provinceId, int32 animalId) = 0;
+	virtual void RemoveProvinceAnimals(int32 provinceId, int32 animalId) = 0;
+	virtual int32 RefreshAnimalHomeProvince(int32 provinceId, int32 animalId) = 0;
+
 	virtual int population(int32 playerId) = 0;
 	virtual int32 worldPlayerPopulation() = 0;
 	
@@ -392,7 +399,7 @@ public:
 	virtual int32 BoughtCardCount(int32 playerId, CardEnum buildingEnum) = 0;
 	virtual int32 TownhallCardCount(int32 playerId, CardEnum cardEnum) = 0;
 	virtual bool HasCardInPile(int32 playerId, CardEnum cardEnum) = 0;
-	virtual void AddCards(int32 playerId, CardEnum cardEnum, int32 count = 1) = 0;
+	virtual void AddDrawCards(int32 playerId, CardEnum cardEnum, int32 count = 1) = 0;
 	
 	virtual void GenerateRareCardSelection(int32 playerId, RareHandEnum rareHandEnum, std::string rareHandMessage) = 0;
 

@@ -115,7 +115,7 @@ public:
 		}
 		
 		// move the EscMenuToggler to correct position
-		EscMenuSpacer->SetVisibility(simulation().playerOwned(playerId()).isInitialized() ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+		EscMenuSpacer->SetVisibility(simulation().playerOwned(playerId()).hasChosenLocation() ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 
 		//SetLoadingText(ToFString(simulation().loadingText()));
 
@@ -310,8 +310,8 @@ public:
 		}
 		// Nothing up, bring up EscMenu
 		else {
+			networkInterface()->ResetGameUI();
 			EscMenu->SetVisibility(ESlateVisibility::Visible);
-
 			dataSource()->Spawn2DSound("UI", "UIWindowOpen");
 		}
 

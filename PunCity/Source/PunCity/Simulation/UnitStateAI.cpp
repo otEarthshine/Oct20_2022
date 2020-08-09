@@ -35,6 +35,9 @@ using namespace std;
 
 static std::vector<uint32_t> rawWaypoint;
 
+int32 UnitStateAI::debugFindFullBushSuccessCount = 0;
+int32 UnitStateAI::debugFindFullBushFailCount = 0;
+
 void UnitStateAI::AddUnit(UnitEnum unitEnum, int32 playerId, UnitFullId fullId, IUnitDataSource* unitData, IGameSimulationCore* simulation)
 {
 	_unitData = unitData;
@@ -63,6 +66,7 @@ void UnitStateAI::AddUnit(UnitEnum unitEnum, int32 playerId, UnitFullId fullId, 
 	_inventory = UnitInventory();
 	_workplaceId = -1;
 	_houseId = -1;
+	_homeProvinceId = -1;
 
 	_hp100 = 10000;
 	_isSick = false;
@@ -70,12 +74,19 @@ void UnitStateAI::AddUnit(UnitEnum unitEnum, int32 playerId, UnitFullId fullId, 
 
 	_justDidResetActions = false;
 
+	// Animal's workplaceId is regionId
+	if (IsWildAnimal(unitEnum)) {
+		//WorldTile2 tile = _unitData->atomLocation(_id).worldTile2();
+		//_homeProvinceId = _simulation->GetProvinceIdRaw(tile);
+		//PUN_CHECK(IsValidProvinceId(_homeProvinceId));
+		//_homeProvinceId = abs(_homeProvinceId);
+		//
+		//PUN_CHECK(_simulation->IsProvinceValid(_homeProvinceId));
+		//_simulation->AddProvinceAnimals(_homeProvinceId, _id);
+	}
+
 	PUN_CHECK2(reservations.empty(), debugStr());
 	AddDebugSpeech("Birth");
-
-#if DEBUG_BUILD
-	_unitEnum = unitEnum;
-#endif
 
 	//PUN_LOG("AddUnit %s", ToTChar(compactStr()));
 }
@@ -299,6 +310,13 @@ void UnitStateAI::Update()
 				bool canGiveBirth = Time::Ticks() - _lastPregnant > uInfo.gestationTicks &&
 									food() > minWarnFood();
 
+				// Domesticated animal can't reproduce outside
+				if (IsDomesticatedAnimal(unitEnum())) {
+					if (houseId() == -1) {
+						canGiveBirth = false;
+					}
+				}
+
 				if (canGiveBirth)
 				{
 					// TODO: Boar put out multiple units and raise their young
@@ -448,6 +466,11 @@ void UnitStateAI::Die()
 		
 	}
 
+	// Animal's workplaceId is regionId
+	if (IsWildAnimal(_unitEnum)) {
+		_simulation->RemoveProvinceAnimals(_homeProvinceId, _id);
+	}
+
 	PUN_CHECK2(_unitData->unitLean(_id).alive(), debugStr());
 
 	//PUN_LOG("Unit Died (Removing) %s", ToTChar(compactStr()));
@@ -554,9 +577,10 @@ void UnitStateAI::CalculateActions()
 		if (TryGoNearbyHome()) return;
 
 		_unitState = UnitState::Idle;
-		int32 waitTicks = 60 * (GameRand::Rand() % 3 + 4);
+		int32 waitTicks = Time::TicksPerSecond * (GameRand::Rand() % 3 + 4);
 		Add_Wait(waitTicks);
 		Add_MoveRandomly();
+		
 		AddDebugSpeech("(Success)Idle MoveRandomly");
 	}
 	else if (IsDomesticatedAnimal(unitEnum()))
@@ -668,7 +692,7 @@ void UnitStateAI::CalculateActions()
 		if (TryGoNearbyHome()) return;
 
 		_unitState = UnitState::Idle;
-		int32_t waitTicks = 60 * (GameRand::Rand() % 3 + 4);
+		int32 waitTicks = 60 * (GameRand::Rand() % 3 + 4);
 		Add_Wait(waitTicks);
 		Add_MoveRandomly();
 		AddDebugSpeech("(Success)Idle MoveRandomly");
@@ -881,8 +905,9 @@ bool UnitStateAI::TryStockBurrowFood()
 	//	return true;
 	//}
 
-	WorldTile2 fullBushTile = treeSystem().FindNearestUnreservedFullBush(unitTile(), 32, unitMaxFloodDistance(), false);
-	if (fullBushTile.isValid()) {
+	WorldTile2 fullBushTile = treeSystem().FindNearestUnreservedFullBush(unitTile(), boarBurrow.gateTile().region(), unitMaxFloodDistance(), false);
+	if (fullBushTile.isValid()) 
+	{
 		PUN_CHECK2(treeSystem().isBushReadyForHarvest(fullBushTile.tileId()), "readyForHarvest:" + to_string(treeSystem().isBushReadyForHarvest(fullBushTile.tileId())) + 
 																			" fullBushTile:" + fullBushTile.ToString() + "\n" + debugStr());
 
@@ -913,10 +938,14 @@ bool UnitStateAI::TryStockBurrowFood()
 
 		_unitState = UnitState::GatherBush;
 		AddDebugSpeech("(Success)TryStockBurrowFood:");
+		debugFindFullBushSuccessCount++;
 		return true;
 	}
 
+	Add_Wait(Time::TicksPerSecond * 5);
+	
 	AddDebugSpeech("(Failed)TryStockBurrowFood: nearestTree invalid");
+	debugFindFullBushFailCount++;
 	return false;
 }
 
@@ -1076,8 +1105,29 @@ bool UnitStateAI::TryFindWildFood(bool getFruit, int32 radius)
 		}
 	}
 
-	WorldTile2 bushTile = treeSystem().FindNearestUnreservedFullBush(unitTile(), radius, GameConstants::MaxFloodDistance_Animal, IsIntelligentUnit(unitEnum()));
-	if (bushTile.isValid()) {
+
+	// Search region..
+	//PUN_CHECK(_simulation->IsProvinceValid(_homeProvinceId));
+	//WorldRegion2 searchRegion = _simulation->GetProvinceCenterTile(_homeProvinceId).region();
+	//PUN_CHECK(searchRegion.IsValid());
+
+	//// Move the animal too far from home region.
+	//if (WorldTile2::Distance(searchRegion.centerTile(), unitTile()) < 200) {
+	//	_simulation->RemoveProvinceAnimals(_homeProvinceId, _id);
+
+	//	_homeProvinceId = _simulation->GetProvinceIdClean(unitTile());
+	//	_simulation->AddProvinceAnimals(_homeProvinceId, _id);
+	//	searchRegion = _simulation->GetProvinceCenterTile(_homeProvinceId).region();
+	//}
+	//PUN_CHECK(WorldTile2::Distance(searchRegion.centerTile(), unitTile()) < 300);
+
+	WorldRegion2 searchRegion = unitTile().region();
+
+	
+
+	WorldTile2 bushTile = treeSystem().FindNearestUnreservedFullBush(unitTile(), searchRegion, GameConstants::MaxFloodDistance_Animal, IsIntelligentUnit(unitEnum()));
+	if (bushTile.isValid()) 
+	{
 		ReserveTreeTile(bushTile.tileId());
 
 		int32 trimWaitTicks = 360;
@@ -1097,10 +1147,14 @@ bool UnitStateAI::TryFindWildFood(bool getFruit, int32 radius)
 		_simulation->soundInterface()->SpawnAnimalSound(unitEnum(), false, unitAtom());
 
 		AddDebugSpeech("(Success)TryFindWildFood: Bush");
+		debugFindFullBushSuccessCount++;
 		return true;
 	}
 
+	Add_Wait(Time::TicksPerSecond * 5);
+
 	AddDebugSpeech("(Failed)TryFindWildFood: nearestTree invalid");
+	debugFindFullBushFailCount++;
 	return false;
 }
 
@@ -1128,6 +1182,9 @@ void UnitStateAI::ResetActions_UnitPart(int32 waitTicks)
 ;
 	// TODO: note setting waitTicks for nextTickState break the game..
 	_unitData->SetNextTickState(_id, TransformState::NeedActionUpdate, "ResetActions", 1, true);
+
+	// TODO: Test adding wait action manually
+	Add_Wait(waitTicks);
 
 	_justDidResetActions = true;
 	AddDebugSpeech("[RESET] ... workplace:" + to_string(workplaceId()));
@@ -1542,10 +1599,25 @@ void UnitStateAI::MoveRandomly()
 	area.maxX = action().int32val3;
 	area.maxY = action().int32val4;
 
-	// No area specified, walk 10 tiles away..
-	if (!area.isValid()) {
-		area = TileArea(tile, 10);
-		area.EnforceWorldLimit();
+	// No area specified
+	if (!area.isValid()) 
+	{
+		//// Animals should check for migration, then walk within its territory
+		//if (IsWildAnimalNoHome(_unitEnum) && _simulation->IsProvinceValid(_homeProvinceId))
+		//{
+		//	_homeProvinceId = _simulation->RefreshAnimalHomeProvince(_homeProvinceId, _id);
+		//	tile = _simulation->GetProvinceCenterTile(_homeProvinceId);
+
+		//	// walk 10 tiles away..
+		//	area = TileArea(tile, 10);
+		//	area.EnforceWorldLimit();
+		//}
+		//else
+		//{
+			// walk 10 tiles away..
+			area = TileArea(tile, 10);
+			area.EnforceWorldLimit();
+		//}
 	}
 
 	const int tries = 10;
@@ -1579,7 +1651,8 @@ void UnitStateAI::MoveRandomly()
 
 	// Whatever, just wait a bit to try again..
 	if (!canWalk) {
-		_simulation->ResetUnitActions(_id, 60);  // Can't walk, (No need for extra wait since there is already Wait() before MoveRandomly()
+		// TODO: waitTicks doesn't work.. 
+		_simulation->ResetUnitActions(_id, Time::TicksPerSecond * 5);  // Can't walk, (No need for extra wait since there is already Wait() before MoveRandomly()
 		AddDebugSpeech("(Bad)MoveRandomly: Can't find walkable spot in 10 tiles");
 		return;
 	}
@@ -2152,7 +2225,8 @@ void UnitStateAI::AddDebugSpeech(std::string message)
 	SCOPE_CYCLE_COUNTER(STAT_PunUnitAddDebugSpeech);
 	_debugSpeech << message << " Time:" << Time::Ticks() << ", " << nextActiveTick() << " act:" << _actions.size();
 
-	if (_workplaceId != -1) {
+	if (!IsWildAnimal(_unitEnum) && _workplaceId != -1) 
+	{
 		_debugSpeech << ", workType:" << workplace()->buildingInfo().name
 			<< ", isConstructed:" << to_string(workplace()->isConstructed())
 			<< ", isAlive:" << to_string(_simulation->buildingIsAlive(_workplaceId));

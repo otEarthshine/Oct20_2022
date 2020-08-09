@@ -62,16 +62,11 @@ void UTechUI::TickUI()
 
 
 	int32 currentEra = unlockSys->currentEra();
-	int32 science100SoFar = unlockSys->science100();
 
 	{
 		std::stringstream ss;
-		ss << fixed << setprecision(1);
-		ss << (science100SoFar / 100.0f) << "";
-		if (unlockSys->hasTargetResearch()) {
-			ss << "/" << unlockSys->scienceNeeded();
-		}
-		ss << "<img id=\"Science\"/>";
+		unlockSys->SetDisplaySciencePoint(ss);
+		ss << " Science Points";
 		ScienceAmountText->SetText(ToFText(ss.str()));
 	}
 
@@ -128,6 +123,13 @@ void UTechUI::TickUI()
 		techEnumToTechBox[static_cast<int>(tech->techEnum)]->SetTechState(tech->state, false, true, tech);
 	}
 
+
+	/*
+	 * Update tooltip
+	 */
+	for (const auto& pair : techEnumToTechBox) {
+		pair.Value->UpdateTooltip();
+	}
 }
 
 void UTechUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callBackEnum)

@@ -39,7 +39,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* SelectedSaveGameYear;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* SelectedSavePopulation;
 
-	UPROPERTY(meta = (BindWidget)) UVerticalBox* SaveSelectionList;
+	UPROPERTY(meta = (BindWidget)) UScrollBox* SaveSelectionList;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* LoadGameButtonText;
 
 	UPROPERTY(meta = (BindWidget)) UTextBlock* NoSavedGameText;

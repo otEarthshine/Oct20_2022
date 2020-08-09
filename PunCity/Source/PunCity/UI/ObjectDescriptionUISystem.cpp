@@ -445,6 +445,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 	// Selection Meshes
 	meshIndex = 0;
 
+	if (!dataSource()->HasSimulation()) {
+		return;
+	}
+
 	GameSimulationCore& simulation = dataSource()->simulation();
 	DescriptionUIState uiState = simulation.descriptionUIState();
 
@@ -680,6 +684,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							auto addCheckBoxIconPair = [&](ResourceEnum resourceEnum) {
 								UIconTextPairWidget* widget = descriptionBox->AddIconPair("", resourceEnum, to_string(building.resourceCount(resourceEnum)));
 								widget->UpdateAllowCheckBox(resourceEnum);
+								widget->ObjectId = building.buildingId();
 							};
 
 							descriptionBox->AddRichText("<Subheader>Fuel:</>");
@@ -1644,34 +1649,34 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							AddToolTip(button, ss);
 						}
 
-						if (townhall.wallLvl < TownHall::GetMaxUpgradeLvl())
-						{
-							int32 upgradeStone = townhall.GetUpgradeStones();
-							string resourceText = to_string(upgradeStone);
-							if (resourceSys.resourceCount(ResourceEnum::Stone) < upgradeStone) {
-								resourceText = "<Red>" + resourceText + "</>";
-							}
+						//if (townhall.wallLvl < TownHall::GetMaxUpgradeLvl())
+						//{
+						//	int32 upgradeStone = townhall.GetUpgradeStones();
+						//	string resourceText = to_string(upgradeStone);
+						//	if (resourceSys.resourceCount(ResourceEnum::Stone) < upgradeStone) {
+						//		resourceText = "<Red>" + resourceText + "</>";
+						//	}
 
-							ss << "Upgrade wall to lvl " << (townhall.wallLvl + 1) << "\n";
-							ss << resourceText << "<img id=\"Stone\"/>";
+						//	ss << "Upgrade wall to lvl " << (townhall.wallLvl + 1) << "\n";
+						//	ss << resourceText << "<img id=\"Stone\"/>";
 
-							bool showEnabled = townhall.wallLvl < townhall.townhallLvl;
+						//	bool showEnabled = townhall.wallLvl < townhall.townhallLvl;
 
-							UPunButton* button = descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::UpgradeBuilding, showEnabled, false, objectId, 1);
-							ss.str(string());
+						//	UPunButton* button = descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::UpgradeBuilding, showEnabled, false, objectId, 1);
+						//	ss.str(string());
 
-							ss << "Upgrading the wall to next level will double its HP.";
+						//	ss << "Upgrading the wall to next level will double its HP.";
 
-							if (!showEnabled) {
-								ss << "<space>";
-								ss << "<Red>Wall level cannot exceed townhall level.</>";
-							}
-							else if (resourceSys.resourceCount(ResourceEnum::Stone) < upgradeStone) {
-								ss << "<space>";
-								ss << "<Red>Not enough stone to upgrade.</>";
-							}
-							AddToolTip(button, ss);
-						}
+						//	if (!showEnabled) {
+						//		ss << "<space>";
+						//		ss << "<Red>Wall level cannot exceed townhall level.</>";
+						//	}
+						//	else if (resourceSys.resourceCount(ResourceEnum::Stone) < upgradeStone) {
+						//		ss << "<space>";
+						//		ss << "<Red>Not enough stone to upgrade.</>";
+						//	}
+						//	AddToolTip(button, ss);
+						//}
 					}
 					//! Upgrade Button Others
 					else
@@ -2302,7 +2307,9 @@ void UObjectDescriptionUISystem::ShowTileSelectionDecal(FVector displayLocation,
 }
 void UObjectDescriptionUISystem::ShowRegionSelectionDecal(WorldTile2 tile, bool isHover)
 {
-	if (dataSource()->zoomDistance() < 190) {
+	if (dataSource()->zoomDistance() < 190 ||
+		SimSettings::IsOn("TrailerMode")) 
+	{
 		if (_regionHoverMesh) {
 			_regionHoverMesh->SetVisibility(false);
 		}
@@ -2383,8 +2390,17 @@ void UObjectDescriptionUISystem::AddSelectStartLocationButton(int32 provinceId, 
 			canClaim = false;
 		}
 
-		descriptionBox->AddButton("Select Starting Location", nullptr, "",
-								this, CallbackEnum::SelectStartingLocation, canClaim, false, provinceId);
+
+		int32 provincePrice = simulation().GetProvinceClaimPrice(provinceId);
+
+		stringstream ss;
+		ss << "Select Starting Location\n";
+		if (area.isValid()) {
+			ss << TextRed(to_string(provincePrice), !canClaim) << "<img id=\"Coin\"/>";
+		} else {
+			ss << "<Red>Not enough buildable space.</>";
+		}
+		descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::SelectStartingLocation, canClaim, false, provinceId);
 	}
 }
 

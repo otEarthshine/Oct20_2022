@@ -569,9 +569,10 @@ void AGameManager::Sample()
 void AGameManager::SampleRegions()
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_GameManager);
-	
+
 	// Zoom distance is above threshold, don't sample any region...
-	if (ZoomDistanceBelow(WorldToMapZoomAmount)) 
+	if (PunSettings::IsOn("ForceShowTileObj") || 
+		ZoomDistanceBelow(WorldToMapZoomAmount)) 
 	{
 		SampleRegions(_sampleRegionIds);
 
@@ -895,17 +896,20 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 			SCOPE_TIMER_FILTER(5000, "Tick TileObj -");
 
 			bool isOn = PunSettings::IsOn("DisplayTiles");
+			bool isZoomedAllTheWayOut = zoomDistance > WorldZoomTransition_Tree;
 
-			if (zoomDistance > WorldZoomTransition_Tree) {
+			// Note: TODO: turn this on for Non-Trailer
+			if (isZoomedAllTheWayOut && !PunSettings::IsOn("ForceShowTileObj")) {
+				// TODO: Is this cache working?
 				// Zoomed all the way out, cache tileObj for when we zoom in...
 				_tileDisplaySystem->BeforeDisplay(false, (isOn ? _sampleTileObjCacheRegionIds : noSample), true, zoomDistance > WorldZoomTransition_TreeHidden);
 				_tileDisplaySystem->Display(isOn ? _sampleTileObjCacheRegionIds : noSample);
 			}
 			else {
-				bool displayTileObj = isOn && zoomDistance < WorldZoomTransition_Tree;
+				bool displayTileObj = isOn;
 				bool displayFull = PunSettings::IsOn("TileObjFull") && smoothZoomDistance < WorldZoomTransition_Bush;
 
-				_tileDisplaySystem->BeforeDisplay(displayFull, _sampleRegionIds, zoomDistance > WorldZoomTransition_Tree);
+				_tileDisplaySystem->BeforeDisplay(displayFull, _sampleRegionIds, isZoomedAllTheWayOut);
 				_tileDisplaySystem->Display(displayTileObj ? _sampleRegionIds : noSample);
 			}
 			

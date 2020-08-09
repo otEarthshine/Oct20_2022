@@ -39,7 +39,7 @@ public:
 		if (networkInterface()->IsHost()) {
 			gameSpeed = networkInterface()->hostGameSpeed();
 
-			if (!simulation().playerOwned(playerId()).isInitialized()) {
+			if (!simulation().playerOwned(playerId()).hasChosenLocation()) {
 				gameSpeed = 0;
 			}
 		}
@@ -47,7 +47,7 @@ public:
 
 		{
 			bool showPause = false;
-			if (!simulation().playerOwned(playerId()).isInitialized()) {
+			if (!simulation().playerOwned(playerId()).hasChosenLocation()) {
 				SetText(GamePauseText, "Choose a starting location");
 				showPause = true;
 			}

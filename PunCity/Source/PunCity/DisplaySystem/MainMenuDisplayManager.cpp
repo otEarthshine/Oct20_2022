@@ -80,6 +80,9 @@ void AMainMenuDisplayManager::UpdateDisplay(WorldAtom2 cameraAtom, float zoomDis
 #if !MAIN_MENU_DISPLAY
 	return;
 #endif
+	if (failedToLoadMainMenuJson) {
+		return;
+	}
 	
 	_LOG(PunSaveLoad, "AMainMenuDisplayManager::UpdateDisplay %s samples:%llu", ToTChar(cameraAtom.worldTile2().ToString()), sampleRegionIds.size());
 	

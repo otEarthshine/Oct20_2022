@@ -213,7 +213,7 @@ void UMainGameUI::Tick()
 
 	//! Set visibility
 	bool shouldDisplayMainGameUI = dataSource()->ZoomDistanceBelow(WorldZoomAmountStage3) &&
-									simulation.playerOwned(playerId()).isInitialized() &&
+									simulation.playerOwned(playerId()).hasChosenLocation() &&
 									!inputSystemInterface()->isSystemMovingCamera();
 
 	if (shouldDisplayMainGameUI && GetVisibility() == ESlateVisibility::Collapsed) {
@@ -854,7 +854,7 @@ void UMainGameUI::Tick()
 		AddToolTip(MoneyChangeText, moneyTip.str());
 
 		// Influence
-		if (simulation.playerOwned(playerId()).isInitialized() &&
+		if (simulation.playerOwned(playerId()).hasChosenLocation() &&
 			simulation.unlockedInfluence(playerId()))
 		{
 			Influence->SetText("", to_string(resourceSystem.influence()));
@@ -1090,6 +1090,11 @@ void UMainGameUI::Tick()
 			std::shared_ptr<ResearchInfo> currentTech = unlockSys->currentResearch();
 
 			ResearchingText->SetText(ToFText(currentTech->GetName()));
+			
+			std::stringstream ssSci;
+			unlockSys->SetDisplaySciencePoint(ssSci);
+			SetText(ResearchingScienceText, ssSci.str());
+			
 			ResearchBar->SetWidthOverride(unlockSys->hasTargetResearch() ? (unlockSys->researchFraction() * 250) : 0);
 			ResearchBarUI->SetVisibility(ESlateVisibility::Visible);
 		}

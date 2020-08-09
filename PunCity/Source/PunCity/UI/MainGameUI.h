@@ -225,6 +225,7 @@ private:
 
 	UPROPERTY(meta = (BindWidget)) UButton* ResearchBarUI;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* ResearchingText;
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* ResearchingScienceText;
 	UPROPERTY(meta = (BindWidget)) USizeBox* ResearchBar;
 
 	//UPROPERTY(meta = (BindWidget)) UButton* ChooseLocationButton;

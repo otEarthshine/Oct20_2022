@@ -91,6 +91,11 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	//! Initial settings
 	{ "InitialAnimals", GameConstants::InitialWorldPop },
 	//{ "InitialAnimals", 1 },
+
+	{ "ForceSnow", 0 },
+	{ "ForceSnowPercent", 0 },
+	{ "TrailerTundraMinSnowPercent", 0 },
+	{ "ForceShowTileObj", 0 },
 };
 
 

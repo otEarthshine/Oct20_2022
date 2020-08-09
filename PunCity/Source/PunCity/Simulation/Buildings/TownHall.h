@@ -108,8 +108,12 @@ public:
 	void ImmigrationEvent(int32 exactAmount, std::string message, PopupReceiverEnum replyReceiver = PopupReceiverEnum::ImmigrationEvent);
 	//void AnimalVendorEvent();
 
-	void AddImmigrants(int32 immigrantCount) {
-		WorldTile2 tile = gateTile();
+	void AddImmigrants(int32 immigrantCount, WorldTile2 tile = WorldTile2::Invalid)
+	{
+		if (tile == WorldTile2::Invalid) {
+			tile = gateTile();
+		}
+
 		for (int i = 0; i < immigrantCount; i++) {
 			int32 ageTicks = GameRand::Rand() % _simulation->parameters(_playerId)->DeathAgeTicks();
 			_simulation->AddUnit(UnitEnum::Human, _playerId, tile.worldAtom2(), ageTicks);

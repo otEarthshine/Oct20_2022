@@ -8,19 +8,19 @@
 #include <algorithm>
 
 
-enum class Direction
+enum class Direction : uint8
 {
-	N,
-	W,
 	S,
 	E,
+	N,
+	W,
 };
 
 static const std::string DirectionName[] = {
-	"North",
-	"West",
 	"South",
 	"East",
+	"North",
+	"West",
 };
 
 inline Direction OppositeDirection(Direction direction) {
@@ -31,14 +31,17 @@ inline Direction OppositeDirection(Direction direction) {
 	case Direction::W: return Direction::E;
 	}
 	UE_DEBUG_BREAK();
-	return Direction::N;
+	return Direction::N; // TODO: change to +2
 }
 
-static const int32_t DirectionCount = _countof(DirectionName);
+static const int32 DirectionCount = _countof(DirectionName);
 
-inline Direction RotateDirection(Direction direction)
-{
+inline Direction RotateDirection(Direction direction) {
 	return static_cast<Direction>((static_cast<int>(direction) + 1) % 4);
+}
+
+inline Direction RotateDirection(Direction direction, Direction directionRotator) {
+	return static_cast<Direction>((static_cast<int>(direction) + static_cast<int>(directionRotator)) % 4);
 }
 
 inline float RotationFromDirection(Direction direction) 
@@ -56,6 +59,7 @@ inline float RotationFromDirection(Direction direction)
 		return 270.0f;
 	}
 }
+
 
 struct Float2
 {
@@ -334,6 +338,13 @@ struct WorldTile2
 			UE_DEBUG_BREAK();
 		}
 		return WorldTile2();
+	}
+	// This is needed if we use _area.centerTile() when there are actually rotations
+	static WorldTile2 EvenSizeRotationCenterShift(WorldTile2 tile, Direction direction) {
+		if (direction == Direction::E) return tile + WorldTile2(0, 1);
+		if (direction == Direction::N) return tile + WorldTile2(1, 1);
+		if (direction == Direction::W) return tile + WorldTile2(1, 0);
+		return tile;
 	}
 
 	bool IsAdjacentTo(WorldTile2 tile) const {
@@ -658,6 +669,7 @@ struct TileArea
 	}
 
 	void EnforceWorldLimit();
+	
 
 	template<typename Functor>
 	void ExecuteOnArea_Zero(Functor functor) {
@@ -800,6 +812,14 @@ struct TileArea
 			UE_DEBUG_BREAK();
 		}
 		return TileArea::Invalid;
+	}
+
+	void ExpandArea(int32 tiles)
+	{
+		minX -= tiles;
+		minY -= tiles;
+		maxX += tiles;
+		maxY += tiles;
 	}
 
 	static TileArea CombineAreas(const TileArea& a, const TileArea& b)

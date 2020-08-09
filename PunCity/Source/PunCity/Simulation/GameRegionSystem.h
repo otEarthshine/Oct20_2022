@@ -21,6 +21,7 @@ public:
 		//_isDirectControl.resize(GameMapConstants::TotalRegions, false);
 		
 		_boarBurrowsToRegion.resize(GameMapConstants::TotalRegions);
+		_provinceToAnimalIds.resize(GameMapConstants::TotalRegions);
 	}
 
 	std::vector<int32>& territoryOwnerMap() { return _territoryOwnerMap; }
@@ -65,11 +66,76 @@ public:
 	void RemoveBoarBurrow(int32 regionId, int32 buildingId);
 
 
+	const std::vector<int32>& provinceAnimals(int32 provinceId) {
+		return _provinceToAnimalIds[provinceId];
+	}
+	void AddProvinceAnimals(int32 provinceId, int32 animalId)
+	{
+//		PUN_CHECK(_simulation->IsProvinceValid(provinceId));
+//		debugTotalProvinceAnimalCount++;
+//		_provinceToAnimalIds[provinceId].push_back(animalId);
+//
+//#if !UE_BUILD_SHIPPING
+//		if (_provinceToAnimalIds[provinceId].size() > debugMaxAnimalCount) {
+//			debugMaxAnimalCount = _provinceToAnimalIds[provinceId].size();
+//			debugMaxAnimalCountProvinceId = provinceId;
+//		}
+//#endif
+	}
+	void RemoveProvinceAnimals(int32 provinceId, int32 animalId)
+	{
+//		PUN_CHECK(_simulation->IsProvinceValid(provinceId));
+//		
+//		debugTotalProvinceAnimalCount--;
+//		CppUtils::Remove(_provinceToAnimalIds[provinceId], animalId);
+//
+//#if !UE_BUILD_SHIPPING
+//		if (provinceId == debugMaxAnimalCountProvinceId) {
+//			debugMaxAnimalCount = _provinceToAnimalIds[provinceId].size();
+//		}
+//#endif
+	}
+	int32 RefreshAnimalHomeProvince(int32 provinceIdIn, int32 animalId)
+	{
+		// Find a nearby province with least animals
+		const std::vector<ProvinceConnection>& connections = _simulation->GetProvinceConnections(provinceIdIn);
+		int32 minAnimalCount = _provinceToAnimalIds[provinceIdIn].size();
+		int32 minAnimalProvinceId = provinceIdIn;
+
+		//for (const ProvinceConnection& connection : connections) {
+		//	if (connection.tileType == TerrainTileType::None) {
+		//		int32 animalCount = _provinceToAnimalIds[connection.provinceId].size();
+		//		if (animalCount < minAnimalCount) {
+		//			minAnimalCount = animalCount;
+		//			minAnimalProvinceId = connection.provinceId;
+		//		}
+		//	}
+		//}
+
+		//// Move the animal
+		//if (minAnimalProvinceId != provinceIdIn)
+		//{
+		//	RemoveProvinceAnimals(provinceIdIn, animalId);
+		//	AddProvinceAnimals(minAnimalProvinceId, animalId);
+		//}
+		
+		return minAnimalProvinceId;
+	}
+	
+
+
 	void Serialize(FArchive &Ar)
 	{
 		SerializeVecValue(Ar, _territoryOwnerMap);
 		SerializeVecVecValue(Ar, _boarBurrowsToRegion);
+		SerializeVecVecValue(Ar, _provinceToAnimalIds);
 	}
+
+#if !UE_BUILD_SHIPPING
+	int32 debugMaxAnimalCount = 0;
+	int32 debugMaxAnimalCountProvinceId = -1;
+	int32 debugTotalProvinceAnimalCount = 0;
+#endif
 
 private:
 	IGameSimulationCore* _simulation = nullptr;
@@ -78,4 +144,5 @@ private:
 	//std::vector<bool> _isDirectControl;
 	
 	std::vector<std::vector<int32>> _boarBurrowsToRegion;
+	std::vector<std::vector<int32>> _provinceToAnimalIds;
 };

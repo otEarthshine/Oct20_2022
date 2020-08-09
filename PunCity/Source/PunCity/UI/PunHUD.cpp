@@ -335,8 +335,8 @@ void APunHUD::KeyPressed_Escape()
 	
 	_techUI->SetShowUI(false);
 
-	if (uiEnum == ExclusiveUIEnum::None &&
-		!_descriptionUISystem->IsShowingDescriptionUI())
+	//if (uiEnum == ExclusiveUIEnum::None &&
+	//	!_descriptionUISystem->IsShowingDescriptionUI())
 	{
 		_escMenuUI->KeyPressed_Escape();
 	}

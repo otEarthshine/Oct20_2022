@@ -759,6 +759,16 @@ public:
 
 	void OnEraUnlocked(std::stringstream& ss);
 
+	void SetDisplaySciencePoint(std::stringstream& ss) {
+		ss << std::fixed << std::setprecision(1);
+		ss << (science100() / 100.0f) << "";
+		if (hasTargetResearch()) {
+			ss << "/" << scienceNeeded();
+		}
+		ss << "<img id=\"Science\"/>";
+	}
+	
+
 	std::shared_ptr<ResearchInfo> GetTechInfo(TechEnum researchEnum) {
 		PUN_CHECK(_enumToTech.find(researchEnum) != _enumToTech.end());
 		return _enumToTech[researchEnum];

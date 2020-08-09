@@ -144,6 +144,8 @@ void ABuildingPlacementSystem::Init(UAssetLoaderComponent* assetLoader)
 	_timesShifted = 0;
 
 	_placementInstructions.resize(static_cast<int>(PlacementInstructionEnum::Count), { false, -1, -1 });
+
+	_faceDirection = Direction::S;
 }
 
 PlacementInfo ABuildingPlacementSystem::PlacementBuildingInfo()
@@ -1687,9 +1689,14 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			}
 
 			GeoresourceSystem& georesourceSystem = simulation.georesourceSystem();
-			auto isCorrectResource = [&](WorldTile2 tile) {
+			auto isCorrectResource = [&](WorldTile2 tile)
+			{
+				// FastBuild doesn't need correct resource
+				if (SimSettings::IsOn("CheatFastBuild")) {
+					return true;
+				}
 				return _buildingEnum == CardEnum::Quarry || 
-						georesourceSystem.georesourceNode(tile.regionId()).info().georesourceEnum == georesourceEnum;
+						georesourceSystem.georesourceNode(simulation.GetProvinceIdClean(tile)).info().georesourceEnum == georesourceEnum;
 			};
 
 			// First loop for
@@ -1765,6 +1772,76 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				} else {
 					_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
 				}
+			});
+		}
+		// Townhall Initial
+		else if (_buildingEnum == CardEnum::Townhall)
+		{
+			auto tryPlaceBuilding = [&](WorldTile2 tile)
+			{
+				bool isGreen = IsPlayerBuildable(tile) && !isAllRed;
+				_placementGrid.SpawnGrid(isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, tile);
+			};
+
+			auto tryPlaceRoad = [&](WorldTile2 tile, PlacementGridEnum redEnum, PlacementGridEnum greenEnum, PlacementGridEnum yellowEnum, Direction direction)
+			{
+				PlacementGridEnum gridEnum = redEnum;
+				if (simulation.overlaySystem().IsRoad(tile)) {
+					gridEnum = greenEnum;
+				}
+				else if (gameInterface->IsPlayerFrontBuildable(tile)) {
+					gridEnum = yellowEnum;
+				}
+
+				_placementGrid.SpawnGrid(gridEnum, cameraAtom, tile, direction);
+
+				if (simulation.tileOwner(tile) != playerId) {
+					SetInstruction(PlacementInstructionEnum::OutsideTerritory, true);
+				}
+			};
+
+			// Borders
+			TileArea topRoad(_area.maxX + 1, _area.minY, _area.maxX + 1, _area.maxY);
+			topRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+				tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, _faceDirection);
+			});
+			TileArea bottomRoad(_area.minX - 1, _area.minY, _area.minX - 1, _area.maxY);
+			bottomRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+				tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, _faceDirection);
+			});
+			TileArea leftRoad(_area.minX, _area.minY - 1, _area.maxX, _area.minY - 1);
+			leftRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+				tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, RotateDirection(_faceDirection));
+			});
+			TileArea rightRoad(_area.minX, _area.maxY + 1, _area.maxX, _area.maxY + 1);
+			rightRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+				tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, RotateDirection(_faceDirection));
+			});
+
+			// Corners
+			tryPlaceRoad(WorldTile2(_area.minX - 1, _area.minY - 1), PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, _faceDirection);
+			tryPlaceRoad(WorldTile2(_area.minX - 1, _area.maxY + 1), PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, _faceDirection);
+			tryPlaceRoad(WorldTile2(_area.maxX + 1, _area.minY - 1), PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, _faceDirection);
+			tryPlaceRoad(WorldTile2(_area.maxX + 1, _area.maxY + 1), PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, _faceDirection);
+
+
+			// Townhall
+			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+				tryPlaceBuilding(tile);
+			});
+			
+			// Storage
+			WorldTile2 storageCenter1 = WorldTile2::EvenSizeRotationCenterShift(_area.centerTile(), _faceDirection) + WorldTile2::RotateTileVector(Storage1ShiftTileVec, _faceDirection);
+			WorldTile2 storageCenter2 = storageCenter1 + WorldTile2::RotateTileVector(InitialStorage2Shift, _faceDirection);
+
+			TileArea storageArea1 = BuildingArea(storageCenter1, InitialStorageTileSize, RotateDirection(Direction::E, _faceDirection));
+			TileArea storageArea2 = BuildingArea(storageCenter2, InitialStorageTileSize, RotateDirection(Direction::E, _faceDirection));
+
+			storageArea1.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+				tryPlaceBuilding(tile);
+			});
+			storageArea2.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+				tryPlaceBuilding(tile);
 			});
 		}
 		// Road Overlap Building

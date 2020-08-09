@@ -426,7 +426,7 @@ void PlayerOwnedManager::FillHouseSlots_FromWorkplace(std::vector<int32>& tempHu
 
 void PlayerOwnedManager::RefreshHousing()
 {
-	if (!isInitialized()) return;
+	if (!hasChosenLocation()) return;
 
 	// Clear tenants
 	for (auto houseId : _houseIds) {
@@ -525,7 +525,7 @@ void PlayerOwnedManager::TickRound()
 		int32 sourceHappiness = _simulation->GetAverageHappiness(_playerId);
 		_simulation->ExecuteOnPlayersAndAI([&](int32 playerId) {
 			// Go to a happier place only
-			if (_simulation->playerOwned(playerId).isInitialized() &&
+			if (_simulation->playerOwned(playerId).hasChosenLocation() &&
 				_simulation->GetAverageHappiness(playerId) > sourceHappiness) 
 			{
 				playerIdsAvailable.push_back(playerId);
@@ -549,7 +549,7 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 	std::fill(incomes100.begin(), incomes100.end(), 0);
 	std::fill(influenceIncomes100.begin(), influenceIncomes100.end(), 0);
 
-	if (!isInitialized()) {
+	if (!hasTownhall()) {
 		return;
 	}
 
@@ -803,8 +803,8 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 	{
 		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::TerritoryUpkeep)] -= territoryUpkeep100;
 		
-		// Population: Influence gain equals to population
-		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Population)] += _simulation->population(_playerId) * 100;
+		// Population: Influence gain equals to population x2
+		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Population)] += _simulation->population(_playerId) * 200;
 
 		// Border Province Upkeep
 		int32 numberOfBorderProvinces = 0;
@@ -915,7 +915,7 @@ bool PlayerOwnedManager::CheckDisbandArmy()
 
 void PlayerOwnedManager::Tick1Sec()
 {
-	if (!isInitialized()) return;
+	if (!hasChosenLocation()) return;
 	//PUN_CHECK(_playerId < _simulation->playerCount() || (_simulation->aiStartIndex() <= _playerId && _playerId <= _simulation->aiEndIndex()));
 	PUN_CHECK(_simulation->IsValidPlayer(_playerId));
 

@@ -38,10 +38,17 @@ public:
 		_popups.insert(_popups.begin(), popup);
 	}
 
-	PopupInfo* PopupToDisplay() {
+	PopupInfo* PopupToDisplay()
+	{
 		if (waitingForReply) {
 			return nullptr;
 		}
+
+		if (SimSettings::IsOn("TrailerMode")) {
+			ClearPopups();
+			return nullptr;
+		}
+		
 		return _popups.empty() ? nullptr : &_popups[0];
 	}
 

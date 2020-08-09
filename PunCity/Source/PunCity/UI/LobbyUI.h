@@ -53,12 +53,18 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) UEditableTextBox* LobbyMapSeedInputBox;
 	UPROPERTY(meta = (BindWidget)) UComboBoxString* LobbyMapSizeDropdown;
+	UPROPERTY(meta = (BindWidget)) UComboBoxString* LobbySeaLevelDropdown;
+	UPROPERTY(meta = (BindWidget)) UComboBoxString* LobbyMoistureDropdown;
+	UPROPERTY(meta = (BindWidget)) UComboBoxString* LobbyTemperatureDropdown;
 	UPROPERTY(meta = (BindWidget)) UComboBoxString* LobbyAICountDropdown;
 	UPROPERTY(meta = (BindWidget)) UComboBoxString* LobbyDifficultyDropdown;
 
 	UPROPERTY(meta = (BindWidget)) UImage* SettingsBackgroundImage;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyMapSeedText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyMapSizeText;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* LobbySeaLevelText;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyMoistureText;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyTemperatureText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyAICountText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyDifficultyText;
 
@@ -107,6 +113,9 @@ public:
 
 	UFUNCTION() void OnLobbyMapSeedInputBoxTextCommitted(const FText& text, ETextCommit::Type CommitMethod);
 	UFUNCTION() void OnLobbyMapSizeDropdownChanged(FString sItem, ESelectInfo::Type seltype);
+	UFUNCTION() void OnLobbySeaLevelDropdownChanged(FString sItem, ESelectInfo::Type seltype);
+	UFUNCTION() void OnLobbyMoistureDropdownChanged(FString sItem, ESelectInfo::Type seltype);
+	UFUNCTION() void OnLobbyTemperatureDropdownChanged(FString sItem, ESelectInfo::Type seltype);
 	UFUNCTION() void OnLobbyAICountDropdownChanged(FString sItem, ESelectInfo::Type seltype);
 	UFUNCTION() void OnLobbyDifficultyDropdownChanged(FString sItem, ESelectInfo::Type seltype);
 
@@ -122,7 +131,7 @@ public:
 			return;
 		}
 		FMapSettings mapSettings = gameInstance()->GetMapSettings();
-		std::string mapSeed = mapSettings.mapSeedStd();
+		//std::string mapSeed = mapSettings.mapSeedStd();
 		WorldRegion2 regionPerWorld = GetMapSize(mapSettings.mapSizeEnum());
 		GameMapConstants::SetRegionsPerWorld(regionPerWorld.x, regionPerWorld.y);
 
@@ -134,8 +143,8 @@ public:
 		_isGeneratingTerrain = true;
 		
 		PunTerrainGenerator* terrainGenerator = _terrainGenerator.get();
-		_worldInitCompletedFuture = Async(EAsyncExecution::Thread, [mapSeed, terrainGenerator]() {
-			terrainGenerator->CalculateWorldTerrain(mapSeed);
+		_worldInitCompletedFuture = Async(EAsyncExecution::Thread, [mapSettings, terrainGenerator]() {
+			terrainGenerator->CalculateWorldTerrain(mapSettings);
 			return static_cast<uint8>(false);
 		});
 

@@ -58,8 +58,9 @@ public:
 		if (provinceIdIn != -1) {
 			centerTile = provinceSys.GetProvinceCenter(provinceId).worldTile2();
 		} else {
-			centerTile = sim->townhall(playerId).centerTile();
-
+			auto& playerOwned = sim->playerOwned(playerId);
+			PUN_CHECK(playerOwned.provincesClaimed().size() > 0);
+			centerTile = sim->GetProvinceCenterTile(playerOwned.provincesClaimed()[0]);
 			PUN_LOG("Update TerritoryMesh2 %d", playerId);
 		}
 		

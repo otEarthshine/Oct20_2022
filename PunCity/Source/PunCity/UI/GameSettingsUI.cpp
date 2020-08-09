@@ -142,15 +142,11 @@ void UGameSettingsUI::PunInit(UPunWidget* callbackParent)
 	UIScalingDropdown->OnSelectionChanged.AddDynamic(this, &UGameSettingsUI::OnUIScalingDropdownChanged);
 	UIScalingDropdown->SetVisibility(ESlateVisibility::Collapsed);
 	
-	ResolutionDropdown->ClearOptions();
-	UKismetSystemLibrary::GetSupportedFullscreenResolutions(resolutions);
-	for (FIntPoint point : resolutions) {
-		ResolutionDropdown->AddOption(FString::FromInt(point.X) + "x" + FString::FromInt(point.Y));
-	}
+	SetupResolutionDropdown();
 
 	WindowModeDropdown->ClearOptions();
-	WindowModeDropdown->AddOption("Fullscreen"); // TODO: Fullscreen causing crash...
-	WindowModeDropdown->AddOption("WindowedFullscreen");
+	WindowModeDropdown->AddOption("Fullscreen");
+	//WindowModeDropdown->AddOption("WindowedFullscreen");
 	WindowModeDropdown->AddOption("Windowed");
 
 	
@@ -312,8 +308,8 @@ void UGameSettingsUI::OnWindowModeDropdownChanged(FString sItem, ESelectInfo::Ty
 {
 	_videoModeChanged = true;
 
-	int32 optionIndex = WindowModeDropdown->FindOptionIndex(sItem) + 1; // TODO: +1 for avoiding fullscreen which crashes
-	EWindowMode::Type windowMode = EWindowMode::ConvertIntToWindowMode(optionIndex);
+	EWindowMode::Type windowMode = (sItem == "Fullscreen") ? EWindowMode::WindowedFullscreen : EWindowMode::Windowed;
+	//EWindowMode::Type windowMode = EWindowMode::ConvertIntToWindowMode(optionIndex);
 	GetGameUserSettings()->SetFullscreenMode(windowMode);
 
 	Spawn2DSound("UI", "DropdownChange");
@@ -431,6 +427,19 @@ void UGameSettingsUI::OnClickSettingsApply()
 		//settings->SetScreenResolution(settings->GetLastConfirmedScreenResolution());
 		//settings->SetFullscreenMode(settings->GetLastConfirmedFullscreenMode());
 		settings->ApplyResolutionSettings(false);
+
+		// Disable the resolution combobox if it is in windwed fullscreen mode
+		if (settings->GetFullscreenMode() == EWindowMode::Windowed) {
+			SetupResolutionDropdown();
+			ResolutionDropdown->SetIsEnabled(true);
+		}
+		else {
+			ResolutionDropdown->ClearOptions();
+			FIntPoint point = settings->GetDesktopResolution();
+			ResolutionDropdown->AddOption(FString::FromInt(point.X) + "x" + FString::FromInt(point.Y));
+			ResolutionDropdown->SetSelectedIndex(0);
+			ResolutionDropdown->SetIsEnabled(false);
+		}
 	}
 	settings->ApplyNonResolutionSettings();
 

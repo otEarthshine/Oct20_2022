@@ -666,15 +666,22 @@ bool HumanStateAI::TryHeatup()
 
 	// Can heat with either coal or wood
 	int32 fuelCount = house.GetResourceCountWithPush(ResourceEnum::Wood) + house.GetResourceCountWithPush(ResourceEnum::Coal);
-	if (fuelCount < 5) {
+	if (fuelCount < 5) 
+	{
+		auto& playerOwned = _simulation->playerOwned(_playerId);
+		
 		// Try to fill with coal first since it is cheaper
-		if (TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, house.GetFoundHolderInfo(ResourceEnum::Coal, 10))) {
+		if (playerOwned.GetHouseResourceAllow(ResourceEnum::Coal) &&
+			TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, house.GetFoundHolderInfo(ResourceEnum::Coal, 10))) 
+		{
 			AddDebugSpeech("(Succeed)TryHeatup move coal");
 			return true;
 		}
 
 		// Otherwise fill with wood
-		if (TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, house.GetFoundHolderInfo(ResourceEnum::Wood, 10))) {
+		if (playerOwned.GetHouseResourceAllow(ResourceEnum::Wood) &&
+			TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, house.GetFoundHolderInfo(ResourceEnum::Wood, 10)))
+		{
 			AddDebugSpeech("(Succeed)TryHeatup move firewood");
 			return true;
 		}

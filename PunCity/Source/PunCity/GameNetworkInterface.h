@@ -75,4 +75,6 @@ public:
 	virtual bool IsShowingConfirmationUI(std::string confirmationStr) = 0;
 
 	virtual TileArea GetDemolishHighlightArea() = 0;
+
+	virtual void TrailerCityReplayUnpause() = 0;
 };

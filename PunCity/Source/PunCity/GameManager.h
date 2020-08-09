@@ -86,6 +86,8 @@ public:
 		_terrainMap->SetRoadWorldTexture(tile, isRoad, isDirtRoad);
 	}
 
+	class ADirectionalLight* directionalLight() { return _directionalLight; }
+
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) USceneComponent* _root;
 

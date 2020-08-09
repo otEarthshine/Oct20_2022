@@ -294,16 +294,33 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 			/*
 			 * Show full farm
 			 */
+			Building* bld = sim.buildingAtTile(worldTile);
 			if (SimSettings::IsOn("CheatFullFarmRoad") &&
-				sim.buildingAtTile(worldTile) && 
-				sim.buildingAtTile(worldTile)->isEnum(CardEnum::Farm))
+				bld && bld->isEnum(CardEnum::Farm))
 			{
-				Farm& farm = sim.buildingAtTile(worldTile)->subclass<Farm>(CardEnum::Farm);
+				Farm& farm = bld->subclass<Farm>(CardEnum::Farm);
 				info = GetTileObjInfo(farm.currentPlantEnum);
 
 				int32 ageTick = info.maxGrowthTick;
 				int32 ageState = ageTick / TileObjInfo::TicksPerCycle();
 				FTransform transform = GameDisplayUtils::GetBushTransform(localTile.localDisplayLocation(), 0, worldTileId, ageTick, info, terrainGenerator.GetBiome(worldTile));
+
+				showBush(info, worldTileId, transform, localTile, ageState);
+			}
+			/*
+			 * Show growing farm in trailer mode
+			 */
+			else if (SimSettings::IsOn("TrailerMode") &&
+					bld && bld->isEnum(CardEnum::Farm))
+			{
+				Farm& farm = bld->subclass<Farm>(CardEnum::Farm);
+				info = GetTileObjInfo(farm.currentPlantEnum);
+
+				// Age according to buildingAge 
+				const int32 ticksToFullGrown = Time::TicksPerSecond * 10; // when buildingAge == ticksToFullGrown, 
+				int32 ageTick = info.maxGrowthTick * farm.buildingAge() / ticksToFullGrown; 
+				int32 ageState = ageTick;
+				FTransform transform = GameDisplayUtils::GetBushTransform(localTile.localDisplayLocation(), 0, worldTileId, ageTick, info, terrainGenerator.GetBiome(worldTile), false);
 
 				showBush(info, worldTileId, transform, localTile, ageState);
 			}

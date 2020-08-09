@@ -46,7 +46,7 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 	}
 
 	_mapSettings = gameManager->GetMapSettings();
-	std::string mapSeed = ToStdString(_mapSettings.mapSeed);
+	//std::string mapSeed = ToStdString(_mapSettings.mapSeed);
 
 	// Terrain Gen
 	{
@@ -62,12 +62,12 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 #define FORCE_GENERATION 0
 
 #if FORCE_GENERATION
-			_terrainGenerator->CalculateWorldTerrain(mapSeed);
+			_terrainGenerator->CalculateWorldTerrain(_mapSettings);
 			_terrainGenerator->SetGameMap();
 #else
-			if (!_terrainGenerator->HasSavedMap(ToFString(mapSeed), _mapSettings.mapSizeEnum())) {
-				INIT_LOG("CalculateWorldTerrain %s", *ToFString(mapSeed));
-				_terrainGenerator->CalculateWorldTerrain(mapSeed);
+			if (!_terrainGenerator->HasSavedMap(_mapSettings)) {
+				INIT_LOG("CalculateWorldTerrain %s", ToTChar(_mapSettings.ToString()));
+				_terrainGenerator->CalculateWorldTerrain(_mapSettings);
 				
 				_terrainGenerator->SetGameMap();
 
@@ -409,7 +409,8 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 				replayPlayers[i].trailerCommands.size() > 0)
 			{
 				if (replayPlayers[i].nextTrailerCommandTick != -1 &&
-					Time::Ticks() > replayPlayers[i].nextTrailerCommandTick)
+					Time::Ticks() > replayPlayers[i].nextTrailerCommandTick &&
+					!replayPlayers[i].isCameraTrailerReplayPaused)
 				{
 					replayPlayers[i].nextTrailerCommandTick = Time::Ticks() + Time::TicksPerSecond;
 
@@ -417,33 +418,81 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 					std::shared_ptr<FNetworkCommand> command = trailerCommands.front();
 					trailerCommands.erase(trailerCommands.begin());
 
-					// Special case: Road
-					// If this is road, build one at a time
-					if (command->commandType() == NetworkCommandEnum::PlaceGather)
+					CheatEnum cheatEnum = static_pointer_cast<FCheat>(command)->cheatEnum;
+					NetworkCommandEnum commandType = command->commandType();
+					
+					// Special case: Trailer Pause
+					if (commandType == NetworkCommandEnum::Cheat &&
+						cheatEnum == CheatEnum::TrailerPauseForCamera)
 					{
-						auto dragCommand = static_pointer_cast<FPlaceGatherParameters>(command);
-						if (dragCommand->path.Num() > 0)
-						{
-							TArray<int32> newPath = dragCommand->path;
-							int32 firstTileId = newPath.Pop();
-							 
-							// Put the command back in front with trimmed
-							if (newPath.Num() > 0) {
-								auto commandToFrontPush = make_shared<FPlaceGatherParameters>(*dragCommand);
-								commandToFrontPush->path = newPath;
-								trailerCommands.insert(trailerCommands.begin(), commandToFrontPush);
-							}
+						replayPlayers[i].isCameraTrailerReplayPaused = true;
 
-							dragCommand->path = { firstTileId }; // build 1 tile at a time
-
-							replayPlayers[i].nextTrailerCommandTick = Time::Ticks() + Time::TicksPerSecond / 30; // Build 30 tiles a sec
-						}
+						PUN_LOG("Trailer Pause (Camera) num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
+						command->playerId = i;
+						_replaySystem.AddTrailerCommands({ command });
 					}
+					// Special case: Trailer Snow
+					else if (commandType == NetworkCommandEnum::Cheat &&
+							cheatEnum == CheatEnum::TrailerForceSnowStart)
+					{
+						PunSettings::Set("ForceSnow", 1);
+						PUN_LOG("TrailerForceSnowStart num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
+						command->playerId = i;
+						_replaySystem.AddTrailerCommands({ command });
+					}
+					else if (commandType == NetworkCommandEnum::Cheat &&
+							cheatEnum == CheatEnum::TrailerForceSnowStop)
+					{
+						PunSettings::Set("ForceSnow", 0);
+						PUN_LOG("TrailerForceSnowStop num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
+						command->playerId = i;
+						_replaySystem.AddTrailerCommands({ command });
+					}
+					// Special case: Trailer House upgrade
+					else if (commandType == NetworkCommandEnum::Cheat &&
+							cheatEnum == CheatEnum::TrailerIncreaseAllHouseLevel)
+					{
+						SimSettings::Set("TrailerIncreaseAllHouseLevelIndex", 1);
+						PUN_LOG("TrailerIncreaseAllHouseLevel num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
+						command->playerId = i;
+						_replaySystem.AddTrailerCommands({ command });
+					}
+					else
+					{
+						// Special case: Road
+						// If this is road, build one at a time
+						if (commandType == NetworkCommandEnum::PlaceGather)
+						{
+							auto dragCommand = static_pointer_cast<FPlaceGatherParameters>(command);
 
-					command->playerId = i;
-					commands.push_back(command);
+							// harvestResourceEnum stores if dragCommand should be instant
+							if (static_cast<int>(dragCommand->harvestResourceEnum) == 0)
+							{
+								// Non-instant road
+								if (dragCommand->path.Num() > 0)
+								{
+									TArray<int32> newPath = dragCommand->path;
+									int32 firstTileId = newPath.Pop();
 
-					PUN_LOG("Trailer Exec num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *commands[i]->ToCompactString(), Time::Ticks());
+									// Put the command back in front with trimmed
+									if (newPath.Num() > 0) {
+										auto commandToFrontPush = make_shared<FPlaceGatherParameters>(*dragCommand);
+										commandToFrontPush->path = newPath;
+										trailerCommands.insert(trailerCommands.begin(), commandToFrontPush);
+									}
+
+									dragCommand->path = { firstTileId }; // build 1 tile at a time
+
+									replayPlayers[i].nextTrailerCommandTick = Time::Ticks() + 1;// Time::TicksPerSecond / 30; // Build 30 tiles a sec
+								}
+							}
+						}
+
+						command->playerId = i;
+						commands.push_back(command);
+
+						PUN_LOG("Trailer Exec num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *commands[i]->ToCompactString(), Time::Ticks());
+					}
 				}
 			}
 		}
@@ -514,6 +563,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 	 * Replays
 	 */
 	// Record tickInfo
+	_replaySystem.AddTrailerCommands(commands);
 	_replaySystem.AddNetworkTickInfo(tickInfo, commands);
 
 	// AutoSave Replay
@@ -565,7 +615,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 			if (Time::Ticks() % Time::TicksPerRound == 0) 
 			{
 				ExecuteOnPlayersAndAI([&] (int32_t playerId) {
-					if (_playerOwnedManagers[playerId].isInitialized()) {
+					if (_playerOwnedManagers[playerId].hasChosenLocation()) {
 						_cardSystem[playerId].TickRound();
 						_playerOwnedManagers[playerId].TickRound();
 
@@ -587,7 +637,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 				// Event log check
 				ExecuteOnConnectedPlayers([&](int32 playerId)
 				{
-					if (_playerOwnedManagers[playerId].isInitialized())
+					if (_playerOwnedManagers[playerId].hasChosenLocation())
 					{
 						if (isStorageAllFull(playerId)) {
 							_eventLogSystem.AddEventLog(playerId, FString("Need more storage space."), true);
@@ -621,7 +671,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 			{
 				ExecuteOnPlayersAndAI([&](int32 playerId)
 				{
-					if (_playerOwnedManagers[playerId].isInitialized()) 
+					if (_playerOwnedManagers[playerId].hasTownhall()) 
 					{
 						//_playerOwnedManagers[playerId].RefreshHousing();
 						_playerOwnedManagers[playerId].Tick1Sec();
@@ -748,7 +798,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 					/*
 					 * Science
 					 */
-					if (_playerOwnedManagers[playerId].isInitialized()) {
+					if (_playerOwnedManagers[playerId].hasChosenLocation()) {
 						unlockSystem(playerId)->Research(_playerOwnedManagers[playerId].science100PerRound(), 4);
 					}
 				});
@@ -766,9 +816,11 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 					if (SimSettings::IsOn("TrailerMode") &&
 						IsReplayPlayer(playerId))
 					{
-						for (int32 enumInt = 0; enumInt < BuildingEnumCount; enumInt++) {
+						for (int32 enumInt = 0; enumInt < BuildingEnumCount; enumInt++) 
+						{
 							std::vector<int32> bldIds = buildingIds(playerId, static_cast<CardEnum>(enumInt));
-							for (int32 bldId : bldIds) {
+							for (int32 bldId : bldIds) 
+							{
 								Building& bld = building(bldId);
 								int32 buildTicks = Time::TicksPerSecond * 8;
 								bld.TickConstruction(buildTicks / trailerBuildTickInterval);
@@ -777,6 +829,31 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 								if (bld.isEnum(CardEnum::House)) {
 									bld.subclass<House>().TrailerCheckHouseLvl();
 								}
+
+								// Farm
+								if (bld.isEnum(CardEnum::Farm)) {
+									SetNeedDisplayUpdate(DisplayClusterEnum::Trees, bld.area().corner00().regionId());
+									SetNeedDisplayUpdate(DisplayClusterEnum::Trees, bld.area().corner01().regionId());
+									SetNeedDisplayUpdate(DisplayClusterEnum::Trees, bld.area().corner10().regionId());
+									SetNeedDisplayUpdate(DisplayClusterEnum::Trees, bld.area().corner11().regionId());
+								}
+							}
+
+							// TrailerIncreaseAllHouseLevelIndex
+							if (static_cast<CardEnum>(enumInt) == CardEnum::House)
+							{
+								int32 index = SimSettings::Get("TrailerIncreaseAllHouseLevelIndex") - 1;
+								if (index >= 0) 
+								{
+									if (index < bldIds.size()) {
+										Building& bld = building(bldIds[index]);
+										bld.subclass<House>().trailerTargetHouseLvl++;
+										SimSettings::Set("TrailerIncreaseAllHouseLevelIndex", index + 2);
+									} else {
+										// Reset the index
+										SimSettings::Set("TrailerIncreaseAllHouseLevelIndex", 0);
+									}
+								}
 							}
 						}
 					}
@@ -784,7 +861,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 			}
 
 			ExecuteOnPlayersAndAI([&](int32 playerId) {
-				if (_playerOwnedManagers[playerId].isInitialized()) {
+				if (_playerOwnedManagers[playerId].hasTownhall()) {
 					_playerOwnedManagers[playerId].Tick();
 
 					questSystem(playerId)->Tick();
@@ -965,6 +1042,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuildingParameters parameters)
 	{
 		return -1;
 	}
+	
 
 	// Used converter card, decrease the converter card we have
 	if (parameters.useWildCard != CardEnum::None)
@@ -1276,7 +1354,8 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuildingParameters parameters)
 		});
 	}
 	// Townhall doesn't need to check for land ownership
-	else if (cardEnum == CardEnum::Townhall) {
+	else if (cardEnum == CardEnum::Townhall) 
+	{	
 		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 			if (!IsBuildable(tile)) {
 				canPlace = false;
@@ -1314,7 +1393,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuildingParameters parameters)
 	}
 
 	if (canPlace)
-	{
+	{		
 		// TileObjs
 		_treeSystem->ForceRemoveTileReservationArea(area);
 		if (HasBuildingFront(cardEnum)) {
@@ -1335,12 +1414,34 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuildingParameters parameters)
 		// Place Building ***
 		int32 buildingId = _buildingSystem->AddBuilding(parameters);
 
+		// Special case: Townhall
+		if (cardEnum == CardEnum::Townhall) {
+			PlaceInitialTownhallHelper(parameters, buildingId);
+		}
 
-		// Trailer House Level
-		if (cardEnum == CardEnum::House &&
-			SimSettings::IsOn("TrailerMode"))
+		/*
+		 * Trailer
+		 */
+		if (SimSettings::IsOn("TrailerMode"))
 		{
-			building(buildingId).subclass<House>().trailerTargetHouseLvl = parameters.buildingLevel;
+			// Trailer House Level
+			if (cardEnum == CardEnum::House) {
+				building(buildingId).subclass<House>().trailerTargetHouseLvl = parameters.buildingLevel;
+			}
+			// Farm 
+			if (cardEnum == CardEnum::Farm) {
+				TileObjEnum plantEnum = static_cast<TileObjEnum>(parameters.buildingLevel);
+				if (GetTileObjInfo(plantEnum).type != ResourceTileType::Bush) {
+					plantEnum = TileObjEnum::WheatBush;
+				}
+				building(buildingId).subclass<Farm>().currentPlantEnum = plantEnum;
+				building(buildingId).FinishConstruction();
+			}
+
+			// Trailer clear Forests
+			TileArea expandedArea = area;
+			expandedArea.ExpandArea(1);
+			treeSystem().ForceRemoveTileObjArea(expandedArea);
 		}
 		
 
@@ -1461,7 +1562,7 @@ void GameSimulationCore::PlaceDrag(FPlaceGatherParameters parameters)
 					if (bld.isEnum(CardEnum::Townhall))
 					{
 						if (!SimSettings::IsOn("CheatFastBuild")) {
-							AddPopupToFront(parameters.playerId, "Cannot demolish the Townhall.");
+							AddPopupToFront(parameters.playerId, "Cannot demolish the Townhall.", ExclusiveUIEnum::None, "PopupCannot");
 							return;
 						}
 						
@@ -1631,6 +1732,8 @@ void GameSimulationCore::PlaceDrag(FPlaceGatherParameters parameters)
 		{
 			if (placementType == PlacementType::IntercityRoad)
 			{
+				vector<int32> foreignPlayerIds;
+				
 				for (int32 i = 0; i < path.Num(); i++) {
 					WorldTile2 tile(path[i]);
 					if (IsFrontBuildable(tile) && !_overlaySystem.IsRoad(tile)) {
@@ -1641,8 +1744,18 @@ void GameSimulationCore::PlaceDrag(FPlaceGatherParameters parameters)
 
 						// For road, also refresh the grass since we want it to be more visible
 						SetNeedDisplayUpdate(DisplayClusterEnum::Trees, tile.regionId(), true);
+
+						int32 foreignPlayerId = tileOwner(tile);
+						if (foreignPlayerId != parameters.playerId) {
+							CppUtils::TryAdd(foreignPlayerIds, foreignPlayerId);
+						}
 					}
 				}
+
+				for (int32 foreignPlayerId : foreignPlayerIds) {
+					AddPopup(foreignPlayerId, townName(parameters.playerId) + " built an intercity road in your territory.");
+				}
+				
 				return;
 			}
 
@@ -2852,7 +2965,7 @@ void GameSimulationCore::ChooseLocation(FChooseLocation command)
 	_LOG(LogNetworkInput, " ChooseLocation");
 
 	// No duplicate choosing...
-	if (playerOwned(command.playerId).isInitialized()) {
+	if (playerOwned(command.playerId).hasChosenLocation()) {
 		return;
 	}
 	
@@ -2862,6 +2975,13 @@ void GameSimulationCore::ChooseLocation(FChooseLocation command)
 		TileArea startArea = SimUtils::FindStartSpot(command.provinceId, this);
 
 		if (!startArea.isValid()) {
+			return;
+		}
+
+		// Ensure province price is less than 1000
+		int32 provincePrice = GetProvinceClaimPrice(command.provinceId);
+		if (provincePrice > GameConstants::InitialMoney) {
+			AddPopup(command.playerId, "Not enough initial money to buy the province.", "PopupCannot");
 			return;
 		}
 
@@ -2878,135 +2998,17 @@ void GameSimulationCore::ChooseLocation(FChooseLocation command)
 		// Claim Land
 		SetProvinceOwnerFull(command.provinceId, command.playerId);
 		
-		// Build Townhall
-		{
-			FPlaceBuildingParameters params;
-			params.buildingEnum = static_cast<uint8>(CardEnum::Townhall);
-			params.faceDirection = static_cast<uint8>(Direction::S);
-			params.center = townhallCenter;
-
-			WorldTile2 size = GetBuildingInfo(CardEnum::Townhall).size;
-			params.area = BuildingArea(params.center, size, static_cast<Direction>(params.faceDirection));
-			params.playerId = command.playerId;
-			int32 townhallId = PlaceBuilding(params);
-			PUN_CHECK2(townhallId != -1, ("provinceId:" + to_string(command.provinceId)));
-
-			if (townhallId == -1) {
-				return;
-			}
-
-			building(townhallId).InstantClearArea();
-			building(townhallId).SetAreaWalkable();
-			building(townhallId).FinishConstruction();
-
-			// Place road around townhall
-			WorldTile2 roadMin(params.area.minX - 1, params.area.minY - 1);
-			WorldTile2 roadMax = roadMin + WorldTile2(size.x + 1, size.y + 1);
-
-			std::vector<TileArea> roadAreas;
-			roadAreas.push_back(TileArea(roadMin, WorldTile2(size.x + 2, 1))); 
-			roadAreas.push_back(TileArea(WorldTile2(roadMin.x, roadMax.y), WorldTile2(size.x + 2, 1))); 
-			roadAreas.push_back(TileArea(WorldTile2(roadMin.x, roadMin.y + 1), WorldTile2(1, size.y))); 
-			roadAreas.push_back(TileArea(WorldTile2(roadMax.x, roadMin.y + 1), WorldTile2(1, size.y))); 
-
-			for (size_t i = 0; i < roadAreas.size(); i++) {
-				_treeSystem->ForceRemoveTileObjArea(roadAreas[i]);
-				roadAreas[i].ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-					if (IsFrontBuildable(tile) && !_overlaySystem.IsRoad(tile)) {
-						overlaySystem().AddRoad(tile, true, true);
-					}
-				});
-			}
-
-			// PlayerOwnedManager
-			auto& playerOwned = _playerOwnedManagers[command.playerId];
-			playerOwned.townHallId = townhallId;
-			playerOwned.justChoseLocation = true;
-			playerOwned.needChooseLocation = false;
-			playerOwned.TryAddArmyNodeVisited(townhallId);
-		}
-
-		// Build storage yard
-		{
-			FPlaceBuildingParameters params;
-			params.buildingEnum = static_cast<uint8>(CardEnum::StorageYard);
-			params.faceDirection = static_cast<uint8>(Direction::E);
+		// For Camera Movement
+		playerOwned(command.playerId).justChoseLocation = true;
 
 
-			auto makeStorage = [&]() -> StorageYard*
-			{
-				params.area = BuildingArea(params.center, WorldTile2(4, 4), static_cast<Direction>(params.faceDirection));
-				//params.area2 = params.area; // Storage's special case for Non-Human placement
-				params.playerId = command.playerId;
-
-				PUN_LOG("Place storage area: %d, %d, %d ,%d", params.area.minX, params.area.minY, params.area.maxX, params.area.maxY);
-
-				int32 storageId = PlaceBuilding(params);
-				if (storageId == -1) {
-					return nullptr;
-				}
-
-				StorageYard& storage = building(storageId).subclass<StorageYard>(CardEnum::StorageYard);
-				storage.InstantClearArea();
-				storage.SetAreaWalkable();
-				storage.FinishConstruction();
-
-				return &storage;
-			};
-			
-			{
-				WorldTile2 storageSize = WorldTile2(4, 4);
-				int32 shiftFromTownhall = GetBuildingInfo(CardEnum::Townhall).size.y / 2 + storageSize.y / 2;
-				params.center = townhallCenter + WorldTile2(0, -shiftFromTownhall); // Old 8x8 WorldTile2(-2, -shiftFromTownhall);
-				
-				StorageYard* storagePtr = makeStorage();
-				PUN_ENSURE(storagePtr, return);
-				StorageYard& storage = *storagePtr;
-
-				// Initial Resources
-				if (terrainGenerator().GetBiome(params.center) == BiomeEnum::Jungle) {
-					storage.AddResource(ResourceEnum::Papaya, 240);
-				} else {
-					storage.AddResource(ResourceEnum::Orange, 240);
-				}
-				
-				storage.AddResource(ResourceEnum::Wood, 120);
-				storage.AddResource(ResourceEnum::Stone, 120);
-
-				//_LOG(PunResource, "(3)%s", ToTChar(resourceSystem(storage.playerId()).resourcedebugStr()));
-			}
-
-			// Extra storage
-			{
-				params.center = params.center + WorldTile2(4, 0);
-				//params.area = BuildingArea(params.center, GetBuildingInfo(CardEnum::StorageYard).size, static_cast<Direction>(params.faceDirection));
-				//params.playerId = command.playerId;
-				//int32 storageId = PlaceBuilding(params);
-				//PUN_ENSURE(storageId != -1, return;);
-
-				//StorageYard& storage = building(storageId).subclass<StorageYard>(CardEnum::StorageYard);
-				//storage.InstantClearArea();
-				//storage.SetAreaWalkable();
-				//storage.FinishConstruction();
-
-				StorageYard* storagePtr = makeStorage();
-				PUN_ENSURE(storagePtr, return);
-				StorageYard& storage = *storagePtr;
-
-				/*
-				 * Must have tools to last at least 3 years. avg pop 30 -> 30  tools?? .... 120 tools
-				 * Must have medicine to last as least 6 years. avg pop 30 -> 30*10*8 = 2400... 120 medicine...
-				 */
-				storage.AddResource(ResourceEnum::SteelTools, 180);
-				storage.AddResource(ResourceEnum::Medicine, 240);
-			}
-		}
+		cardSystem(command.playerId).AddCardToHand2(CardEnum::Townhall);
 
 		// Ensure Map was refreshed (In case AI built city at tick=0)
 		RefreshHeightForestColorTexture(startArea);
 
 		// Give money/seeds
-		resourceSystem(command.playerId).SetMoney(1000);
+		resourceSystem(command.playerId).SetMoney(GameConstants::InitialMoney - provincePrice);
 		resourceSystem(command.playerId).SetInfluence(0);
 
 		// EventLog inform all players someone selected a start
@@ -3294,6 +3296,124 @@ std::string GameSimulationCore::unitdebugStr(int id)
 void GameSimulationCore::unitAddDebugSpeech(int32 id, std::string message)
 {
 	return _unitSystem->unitStateAI(id).AddDebugSpeech(message);
+}
+
+void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuildingParameters command, int32 townhallId)
+{
+	// Build Townhall
+	{
+		FPlaceBuildingParameters params = command;
+		//params.buildingEnum = static_cast<uint8>(CardEnum::Townhall);
+		//params.faceDirection = static_cast<uint8>(Direction::S);
+		//params.center = townhallCenter;
+		WorldTile2 size = GetBuildingInfo(CardEnum::Townhall).size;
+		//params.area = BuildingArea(params.center, size, static_cast<Direction>(params.faceDirection));
+		//params.playerId = command.playerId;
+		
+		//int32 townhallId = PlaceBuilding(params);
+		//PUN_CHECK(townhallId != -1);
+		//if (townhallId == -1) {
+		//	return;
+		//}
+
+		building(townhallId).InstantClearArea();
+		building(townhallId).SetAreaWalkable();
+		building(townhallId).FinishConstruction();
+
+		// Place road around townhall
+		WorldTile2 roadMin(params.area.minX - 1, params.area.minY - 1);
+		WorldTile2 roadMax = roadMin + WorldTile2(size.x + 1, size.y + 1);
+
+		std::vector<TileArea> roadAreas;
+		roadAreas.push_back(TileArea(roadMin, WorldTile2(size.x + 2, 1)));
+		roadAreas.push_back(TileArea(WorldTile2(roadMin.x, roadMax.y), WorldTile2(size.x + 2, 1)));
+		roadAreas.push_back(TileArea(WorldTile2(roadMin.x, roadMin.y + 1), WorldTile2(1, size.y)));
+		roadAreas.push_back(TileArea(WorldTile2(roadMax.x, roadMin.y + 1), WorldTile2(1, size.y)));
+
+		for (size_t i = 0; i < roadAreas.size(); i++) {
+			_treeSystem->ForceRemoveTileObjArea(roadAreas[i]);
+			roadAreas[i].ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+				if (IsFrontBuildable(tile) && !_overlaySystem.IsRoad(tile)) {
+					overlaySystem().AddRoad(tile, true, true);
+				}
+			});
+		}
+
+		// PlayerOwnedManager
+		auto& playerOwned = _playerOwnedManagers[command.playerId];
+		playerOwned.townHallId = townhallId;
+		playerOwned.needChooseLocation = false;
+		playerOwned.TryAddArmyNodeVisited(townhallId);
+	}
+
+	// Build storage yard
+	{
+		Direction townhallFaceDirection = static_cast<Direction>(command.faceDirection);
+		WorldTile2 storageCenter1 = command.center + WorldTile2::RotateTileVector(Storage1ShiftTileVec, townhallFaceDirection);
+		WorldTile2 storageCenter2 = storageCenter1 + WorldTile2::RotateTileVector(InitialStorage2Shift, townhallFaceDirection);
+
+		
+		FPlaceBuildingParameters params;
+		params.buildingEnum = static_cast<uint8>(CardEnum::StorageYard);
+		params.faceDirection = static_cast<uint8>(Direction::E);
+
+		auto makeStorage = [&]() -> StorageYard*
+		{
+			params.area = BuildingArea(params.center, InitialStorageTileSize, RotateDirection(Direction::E, townhallFaceDirection)); //
+			params.playerId = command.playerId;
+
+			PUN_LOG("Place storage area: %d, %d, %d ,%d", params.area.minX, params.area.minY, params.area.maxX, params.area.maxY);
+
+			int32 storageId = PlaceBuilding(params);
+			if (storageId == -1) {
+				return nullptr;
+			}
+
+			StorageYard& storage = building(storageId).subclass<StorageYard>(CardEnum::StorageYard);
+			storage.InstantClearArea();
+			storage.SetAreaWalkable();
+			storage.FinishConstruction();
+
+			return &storage;
+		};
+
+		{
+			//params.center = command.center + WorldTile2(0, -InitialStorageShiftFromTownhall); // Old 8x8 WorldTile2(-2, -shiftFromTownhall);
+			params.center = storageCenter1;
+
+			StorageYard* storage = makeStorage();
+			PUN_ENSURE(storage, return);
+
+			// Initial Resources
+			if (terrainGenerator().GetBiome(params.center) == BiomeEnum::Jungle) {
+				storage->AddResource(ResourceEnum::Papaya, 240);
+			}
+			else {
+				storage->AddResource(ResourceEnum::Orange, 240);
+			}
+
+			storage->AddResource(ResourceEnum::Wood, 120);
+			storage->AddResource(ResourceEnum::Stone, 120);
+
+			//_LOG(PunResource, "(3)%s", ToTChar(resourceSystem(storage.playerId()).resourcedebugStr()));
+		}
+
+		// Extra storage
+		{
+			//params.center = params.center + InitialStorage2Shift;
+			params.center = storageCenter2;
+
+			StorageYard* storage = makeStorage();
+			PUN_ENSURE(storage, return);
+
+			/*
+			 * Must have tools to last at least 3 years. avg pop 30 -> 30  tools?? .... 120 tools
+			 * Must have medicine to last as least 6 years. avg pop 30 -> 30*10*8 = 2400... 120 medicine...
+			 */
+			storage->AddResource(ResourceEnum::SteelTools, 180);
+			storage->AddResource(ResourceEnum::Medicine, 240);
+		}
+	}
 }
 
 void GameSimulationCore::DemolishCritterBuildingsIncludingFronts(WorldTile2 tile, int32 playerId) 

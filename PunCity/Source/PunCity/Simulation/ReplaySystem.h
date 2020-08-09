@@ -58,6 +58,8 @@ public:
 	std::vector<std::shared_ptr<FNetworkCommand>> trailerCommands;
 	int32 nextTrailerCommandTick = -1;
 	int32 pausedNextTrailerCommandTick = -1;
+
+	bool isCameraTrailerReplayPaused = false;
 };
 
 /**
@@ -78,11 +80,13 @@ public:
 
 	void LoadPlayerActions(int32 playerId, FString fileName);
 
-	// Add Network Ticks as the game is played
-	void AddNetworkTickInfo(NetworkTickInfo& networkTickInfo, std::vector<std::shared_ptr<FNetworkCommand>> commands)
+	/*
+	 * AddCommands
+	 */
+	void AddTrailerCommands(std::vector<std::shared_ptr<FNetworkCommand>> commands)
 	{
 		// Placement gets recorded for trailer
-		for (size_t j = 0; j < commands.size(); j++) 
+		for (size_t j = 0; j < commands.size(); j++)
 		{
 			if (commands[j]->playerId == 0)
 			{
@@ -102,7 +106,11 @@ public:
 				}
 			}
 		}
+	}
 
+	// Add Network Ticks as the game is played
+	void AddNetworkTickInfo(NetworkTickInfo& networkTickInfo, std::vector<std::shared_ptr<FNetworkCommand>> commands)
+	{
 		// Preprocess for commands that requires buildingId (convert to buildingTileId)
 		// BuildingId won't be valid in the next game, but buildingTileId will
 		for (size_t j = commands.size(); j-- > 0;)
@@ -138,6 +146,12 @@ public:
 	
 	std::vector<std::shared_ptr<FNetworkCommand>> trailerCommandsSave;
 	std::vector<std::shared_ptr<FNetworkCommand>> trailerCommandsLoad;
+
+	void TrailerCityReplayUnpause() {
+		for (ReplayPlayer& replayPlayer : replayPlayers) {
+			replayPlayer.isCameraTrailerReplayPaused = false;
+		}
+	}
 	
 private:
 	IGameSimulationCore* _simulation = nullptr;

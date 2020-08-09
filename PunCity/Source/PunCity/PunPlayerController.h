@@ -457,10 +457,13 @@ public:
 	{
 		auto jsonObject = MakeShared<FJsonObject>();
 
-		// Map Settings
+		// Map Settings TODO: needed?
 		FMapSettings mapSettings = gameManager->GetMapSettings();
 		jsonObject->SetStringField("mapSeed", mapSettings.mapSeed);
 		jsonObject->SetNumberField("mapSize", mapSettings.mapSizeEnumInt);
+		jsonObject->SetNumberField("mapSeaLevel", static_cast<double>(mapSettings.mapSeaLevel));
+		jsonObject->SetNumberField("mapMoisture", static_cast<double>(mapSettings.mapMoisture));
+		jsonObject->SetNumberField("mapTemperature", static_cast<double>(mapSettings.mapTemperature));
 		
 		// Camera
 		jsonObject->SetNumberField("cameraAtomX", gameManager->cameraAtom().x);
@@ -609,11 +612,18 @@ public:
 
 
 	// Photo taking
+	// !!! In-Game Only
 	UFUNCTION(Exec) void SetShadowDistanceMultiplier(float multiplier) {
 		gameManager->ShadowDistanceMultiplier = multiplier;
 	}
 	UFUNCTION(Exec) void SetMaxRegionCullDistance(float maxRegionCullDistance) {
 		gameManager->MaxRegionCullDistance = maxRegionCullDistance;
+	}
+
+	UFUNCTION(Exec) void SetLightAngle(float lightAngle) {
+		gameManager->directionalLight()->SetActorRotation(FRotator(308, lightAngle, 0));
+		PUN_LOG("SetLightAngle %f", lightAngle);
+		// Default lightAngle: 47.5
 	}
 
 	//UFUNCTION(Exec) void PackageSound() {
@@ -633,6 +643,10 @@ public:
 	/*
 	 * Trailer
 	 */
+	UFUNCTION(Exec) void TrailerCityReplayUnpause() override {
+		gameManager->simulation().replaySystem().TrailerCityReplayUnpause();
+	}
+	
 	UFUNCTION(Exec) void ReplaySave(const FString& replayFileName) {
 		gameManager->simulation().replaySystem().SavePlayerActions(0, replayFileName);
 	}
@@ -690,6 +704,16 @@ public:
 			cameraRecordJson->SetStringField("transition", cameraRecords[i].transition);
 			cameraRecordJson->SetNumberField("transitionTime", cameraRecords[i].transitionTime);
 
+			cameraRecordJson->SetNumberField("unpause", cameraRecords[i].isCameraReplayUnpause);
+
+			// TileMoveDistance is useful in determining transitionTime
+			float tileMoveDistance = 0;
+			if (i > 0) {
+				int32 atomDistance = WorldAtom2::Distance(cameraRecords[i].cameraAtom, cameraRecords[i - 1].cameraAtom);
+				tileMoveDistance = static_cast<float>(atomDistance) / CoordinateConstants::AtomsPerTile;
+			}
+			cameraRecordJson->SetNumberField("tileMoveDistance", tileMoveDistance);
+
 			TSharedPtr<FJsonValue> jsonValue = MakeShared<FJsonValueObject>(cameraRecordJson);
 			cameraRecordJsons.Add(jsonValue);
 		}
@@ -723,6 +747,8 @@ public:
 			record.transition = cameraRecordJson->GetStringField("transition");
 			record.transitionTime = cameraRecordJson->GetNumberField("transitionTime");
 
+			record.isCameraReplayUnpause = FGenericPlatformMath::RoundToInt(cameraRecordJson->GetNumberField("unpause"));
+
 			cameraRecords.push_back(record);
 		}
 	}
@@ -747,6 +773,9 @@ public:
 		auto& sim = gameManager->simulation();
 		std::vector<std::shared_ptr<FNetworkCommand>> commands = sim.replaySystem().trailerCommandsSave;
 		PUN_CHECK(commands.size() > 1);
+		if (commands.size() <= 1) {
+			return;
+		}
 
 		// Trim off buildings/road that was already demolished.
 		for (size_t i = commands.size(); i-- > 0;)
@@ -793,6 +822,10 @@ public:
 				switch(command->cheatEnum)
 				{
 				case CheatEnum::AddResource:
+				case CheatEnum::TrailerPauseForCamera:
+				case CheatEnum::TrailerForceSnowStart:
+				case CheatEnum::TrailerForceSnowStop:
+				case CheatEnum::TrailerIncreaseAllHouseLevel:
 					break;
 				default:
 					commands.erase(commands.begin() + i);
@@ -801,7 +834,32 @@ public:
 			}
 		}
 
+		// Merge PlaceDrag for roads
+		for (size_t i = commands.size() - 1; i-- > 1;)
+		{
+			auto& command = commands[i];
+			auto& nextCommand = commands[i + 1];
+
+			if (command->commandType() == NetworkCommandEnum::PlaceGather &&
+				nextCommand->commandType() == NetworkCommandEnum::PlaceGather)
+			{
+				auto commandCasted = std::static_pointer_cast<FPlaceGatherParameters>(command);
+				auto nextCommandCasted = std::static_pointer_cast<FPlaceGatherParameters>(nextCommand);
+
+				if (commandCasted->placementType == static_cast<int32>(PlacementType::DirtRoad) &&
+					nextCommandCasted->placementType == static_cast<int32>(PlacementType::DirtRoad)) 
+				{
+					commandCasted->path.Append(nextCommandCasted->path);
+					commands.erase(commands.begin() + i + 1);
+				}
+			}
+		}
+
+
+		
+
 		PUN_CHECK(commands[0]->commandType() == NetworkCommandEnum::ChooseLocation);
+		
 
 		TArray<TSharedPtr<FJsonValue>> jsons;
 		
@@ -850,9 +908,10 @@ public:
 					pathJsonValues.Add(MakeShared<FJsonValueNumber>(command->path[j]));
 				}
 				jsonObj->SetArrayField("path", pathJsonValues);
+				jsonObj->SetNumberField("pathSize", command->path.Num()); // For calculating transitionTime
 
 				jsonObj->SetNumberField("placementType", command->placementType);
-				jsonObj->SetNumberField("harvestResourceEnum", static_cast<double>(command->harvestResourceEnum));
+				jsonObj->SetNumberField("isInstantRoad", 0); // use command->harvestResourceEnum for isInstantRoad
 			}
 			else if (commands[i]->commandType() == NetworkCommandEnum::ClaimLand)
 			{
@@ -961,7 +1020,7 @@ public:
 				}
 
 				command->placementType = jsonObj->GetNumberField("placementType");
-				command->harvestResourceEnum = static_cast<ResourceEnum>(FGenericPlatformMath::RoundToInt(jsonObj->GetNumberField("harvestResourceEnum")));
+				command->harvestResourceEnum = static_cast<ResourceEnum>(FGenericPlatformMath::RoundToInt(jsonObj->GetNumberField("isInstantRoad")));
 
 				commands.push_back(command);
 			}
@@ -979,6 +1038,7 @@ public:
 				auto command = std::make_shared<FCheat>();
 
 				command->cheatEnum = static_cast<CheatEnum>(FGenericPlatformMath::RoundToInt(jsonObj->GetNumberField("cheatEnum")));
+
 				command->var1 = jsonObj->GetNumberField("var1");
 				command->var2 = jsonObj->GetNumberField("var2");
 
@@ -1012,13 +1072,17 @@ public:
 	UFUNCTION(Exec) void TrailerCityStart(int32 playerId)
 	{
 		auto& replaySys = gameManager->simulation().replaySystem();
+		replaySys.trailerCommandsSave.clear(); // Clear old saves
 
 		replaySys.replayPlayers[playerId].SetTrailerCommands(replaySys.trailerCommandsLoad);
 
 		SimSettings::Set("TrailerMode", 1);
 	}
-	UFUNCTION(Exec) void TrailerStopMode() {
+	UFUNCTION(Exec) void TrailerModeStop() {
 		SimSettings::Set("TrailerMode", 0);
+	}
+	UFUNCTION(Exec) void TrailerModeStart() {
+		SimSettings::Set("TrailerMode", 1);
 	}
 
 	UFUNCTION(Exec) void TrailerCityPause(int32 playerId)
@@ -1035,7 +1099,7 @@ public:
 	}
 
 	UFUNCTION(Exec) void TrailerStartAll(const FString& trailerName)
-	{
+	{	
 		SetGameSpeed(2);
 		TrailerCityLoad(trailerName);
 		TrailerCityStart(0);
@@ -1045,10 +1109,17 @@ public:
 		
 		GetPunHUD()->HideMainGameUI(); // TODO: why not working?
 	}
-	
+	UFUNCTION(Exec) void TrailerStartCityOnly(const FString& trailerName)
+	{
+		SetGameSpeed(2);
+		TrailerCityLoad(trailerName);
+		TrailerCityStart(0);
+	}
 
 	UFUNCTION(Exec) void AbandonTown(int32 playerId) {
-		gameManager->simulation().AbandonTown(playerId);
+		if (gameManager->simulation().IsPlayerInitialized(playerId)) {
+			gameManager->simulation().AbandonTown(playerId);
+		}
 	}
 	
 

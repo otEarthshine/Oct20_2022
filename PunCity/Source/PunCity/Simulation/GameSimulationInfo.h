@@ -12,8 +12,8 @@
 
 //#include "PunCity/PunSTLContainerOverride.h"
 
-#define SAVE_VERSION 9
-#define GAME_VERSION 20072601
+#define SAVE_VERSION 10
+#define GAME_VERSION 20080601
 
 //! Utils
 
@@ -28,6 +28,7 @@
 #define FToUTF8(fString) (TCHAR_TO_UTF8(*(fString)));
 
 #define DEBUG_BUILD WITH_EDITOR //!UE_BUILD_SHIPPING
+#define DEV_BUILD !UE_BUILD_SHIPPING
 
 #if !defined(PUN_CHECK)
 	#if DEBUG_BUILD
@@ -388,7 +389,12 @@ public:
 
 	static FloatDet ColdCelsius() { return IntToFD(0); }
 
-	static FloatDet CelsiusHelper(FloatDet minCelsius, FloatDet maxCelsius) {
+	static FloatDet CelsiusHelper(FloatDet minCelsius, FloatDet maxCelsius)
+	{
+		if (PunSettings::IsOn("ForceSnow")) { 
+			return minCelsius;
+		}
+		
 		int32 yearTick = _Ticks % Time::TicksPerYear;
 
 		// NOTE!!!: One of the few places to use double.... Might not be good for determinism
@@ -407,6 +413,9 @@ public:
 	{
 		if (SimSettings::IsOn("ToggleRain")) {
 			return true;
+		}
+		if (SimSettings::IsOn("TrailerMode")) {
+			return false;
 		}
 		
 		if (IsWinter() || IsAutumn() || Ticks() < TicksPerMinute) { // Do not start rain until at least 1 min into the game
@@ -531,6 +540,68 @@ static MapSizeEnum GetMapSizeEnumFromString(const FString& str) {
 	UE_DEBUG_BREAK();
 	return MapSizeEnum::Medium;
 }
+
+template <typename TEnum>
+static TEnum GetEnumFromName(const FString& str, const std::vector<FString>& names) {
+	for (size_t i = 0; i < names.size(); i++) {
+		if (names[i] == str) {
+			return static_cast<TEnum>(i);
+		}
+	}
+	UE_DEBUG_BREAK();
+	return static_cast<TEnum>(0);
+}
+enum class MapSeaLevelEnum : uint8
+{
+	VeryLow,
+	Low,
+	Medium,
+	High,
+	VeryHigh
+};
+static const std::vector<FString> MapSeaLevelNames
+{
+	"Very Low",
+	"Low",
+	"Medium",
+	"High",
+	"Very High",
+};
+
+enum class MapMoistureEnum : uint8
+{
+	VeryLow,
+	Low,
+	Medium,
+	High,
+	VeryHigh
+};
+static const std::vector<FString> MapMoistureNames
+{
+	"Very Dry",
+	"Dry",
+	"Medium",
+	"Wet",
+	"Very Wet",
+};
+
+enum class MapTemperatureEnum : uint8
+{
+	VeryLow,
+	Low,
+	Medium,
+	High,
+	VeryHigh
+};
+static const std::vector<FString> MapTemperatureNames
+{
+	"Very Low",
+	"Low",
+	"Medium",
+	"High",
+	"Very High",
+};
+
 
 enum class DifficultyLevel : uint8
 {
@@ -917,9 +988,7 @@ static bool IsTradeResource(ResourceEnum resourceEnum) {
 	case ResourceEnum::StoneTools:
 	case ResourceEnum::CrudeIronTools:
 
-		// Disable
-	case ResourceEnum::Paper:
-	case ResourceEnum::Brick:
+	// Disable
 	case ResourceEnum::Shroom:
 		return false;
 	default:
@@ -4728,6 +4797,11 @@ enum class CheatEnum : int32
 	TrailerCityGreen1,
 	TrailerCityGreen2,
 	TrailerCityBrown,
+	
+	TrailerPauseForCamera,
+	TrailerForceSnowStart,
+	TrailerForceSnowStop,
+	TrailerIncreaseAllHouseLevel,
 };
 
 static const std::string CheatName[]
@@ -4773,6 +4847,11 @@ static const std::string CheatName[]
 	"TrailerCityGreen1",
 	"TrailerCityGreen2",
 	"TrailerCityBrown",
+	
+	"TrailerPauseForCamera",
+	"TrailerForceSnowStart",
+	"TrailerForceSnowStop",
+	"TrailerIncreaseAllHouseLevel",
 };
 static std::string GetCheatName(CheatEnum cheatEnum) {
 	return CheatName[static_cast<int>(cheatEnum)];
@@ -4965,6 +5044,7 @@ enum class ExclusiveUIEnum : uint8
 	BuildMenu,
 	Placement,
 	ConfirmingAction,
+	EscMenu,
 
 	Trading,
 	IntercityTrading,
@@ -6174,6 +6254,9 @@ static bool IsValidProvinceId(int32 provinceId) {
 static bool IsMountainOrWaterProvinceId(int32 provinceId) {
 	return provinceId <= MountainProvinceId;
 }
+static bool IsWaterProvinceId(int32 provinceId) {
+	return provinceId <= OceanProvinceId;
+}
 static bool IsValidNonEdgeProvinceId(int32 provinceId) {
 	return provinceId >= 0; // Edge marked with negative...
 }
@@ -6184,3 +6267,34 @@ static bool IsEdgeProvinceId(int32 provinceId) {
 
 static const int32 Income100PerTiles = 1;
 static const int32 ClaimToIncomeRatio = 20; // When 2, actual is 4 since upkeep is half the income
+
+struct ProvinceConnection
+{
+	int32 provinceId;
+	TerrainTileType tileType;
+	int32 connectedTiles;
+
+	ProvinceConnection() : provinceId(-1), tileType(TerrainTileType::None), connectedTiles(0) {}
+
+	ProvinceConnection(int32 provinceId, TerrainTileType tileType) : provinceId(provinceId), tileType(tileType), connectedTiles(1) {}
+
+	bool operator==(const ProvinceConnection& a) const {
+		return a.provinceId == provinceId && a.tileType == tileType;
+	}
+
+	//! Serialize
+	FArchive& operator>>(FArchive &Ar) {
+		Ar << provinceId;
+		Ar << tileType;
+		return Ar;
+	}
+};
+
+/*
+ * Game Constants
+ */
+static const int32 InitialStorageSize = 4;
+static const WorldTile2 InitialStorageTileSize(4, 4);
+static const int32 InitialStorageShiftFromTownhall = GetBuildingInfo(CardEnum::Townhall).size.y / 2 + InitialStorageSize / 2;
+static const WorldTile2 Storage1ShiftTileVec(0, -InitialStorageShiftFromTownhall);
+static const WorldTile2 InitialStorage2Shift(4, 0);

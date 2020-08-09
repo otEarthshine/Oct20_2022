@@ -82,6 +82,10 @@ void ULobbyUI::Init()
 		// "Small" If adding another map size, also change the options on UI editor
 		// Note: Using UI Editor for this to prevent ::Direct selection issue
 
+		LobbySeaLevelDropdown->OnSelectionChanged.AddDynamic(this, &ULobbyUI::OnLobbySeaLevelDropdownChanged);
+		LobbyMoistureDropdown->OnSelectionChanged.AddDynamic(this, &ULobbyUI::OnLobbyMoistureDropdownChanged);
+		LobbyTemperatureDropdown->OnSelectionChanged.AddDynamic(this, &ULobbyUI::OnLobbyTemperatureDropdownChanged);
+
 		LobbyAICountDropdown->OnSelectionChanged.AddDynamic(this, &ULobbyUI::OnLobbyAICountDropdownChanged);
 		RefreshAICountDropdown();
 		LobbyAICountDropdown->SetSelectedIndex(LobbyAICountDropdown->GetOptionCount() - 1);
@@ -102,7 +106,6 @@ void ULobbyUI::Init()
 	// Popup
 	LobbyPopupCloseButton->OnClicked.AddDynamic(this, &ULobbyUI::OnClickPopupCloseButton);
 
-//#if WITH_EDITOR
 	// Small map for editor play for speed
 	serverMapSettings.mapSizeEnumInt = static_cast<int32>(MapSizeEnum::Medium);
 	LobbyMapSizeDropdown->ClearOptions();
@@ -111,7 +114,33 @@ void ULobbyUI::Init()
 	}
 	LobbyMapSizeDropdown->SetSelectedIndex(serverMapSettings.mapSizeEnumInt);
 	RefreshAICountDropdown();
-//#endif
+
+
+	{
+		auto setupDropdown = [&](UComboBoxString* LobbyDropdown, const std::vector<FString>& enumNames)
+		{
+			LobbyDropdown->ClearOptions();
+			for (FString name : enumNames) {
+				LobbyDropdown->AddOption(name);
+			}
+		};
+
+		// Sea level
+		serverMapSettings.mapSeaLevel = MapSeaLevelEnum::Medium;
+		setupDropdown(LobbySeaLevelDropdown, MapSeaLevelNames);
+		LobbySeaLevelDropdown->SetSelectedIndex(static_cast<int>(serverMapSettings.mapSeaLevel));
+
+		// Moisture
+		serverMapSettings.mapMoisture = MapMoistureEnum::Medium;
+		setupDropdown(LobbyMoistureDropdown, MapMoistureNames);
+		LobbyMoistureDropdown->SetSelectedIndex(static_cast<int>(serverMapSettings.mapMoisture));
+
+		// Temperature
+		serverMapSettings.mapTemperature = MapTemperatureEnum::Medium;
+		setupDropdown(LobbyTemperatureDropdown, MapTemperatureNames);
+		LobbyTemperatureDropdown->SetSelectedIndex(static_cast<int>(serverMapSettings.mapTemperature));
+	}
+	
 
 	gameInstance()->Spawn2DSound("UI", "UIWindowOpen");
 
@@ -234,6 +263,10 @@ void ULobbyUI::Tick()
 	FMapSettings mapSettings = gameInst->GetMapSettings();
 	setServerVsClientUI(LobbyMapSeedInputBox, LobbyMapSeedText, mapSettings.mapSeed);
 	setServerVsClientUI(LobbyMapSizeDropdown, LobbyMapSizeText, MapSizeNames[mapSettings.mapSizeEnumInt]);
+	setServerVsClientUI(LobbySeaLevelDropdown, LobbySeaLevelText, MapSeaLevelNames[static_cast<int>(mapSettings.mapSeaLevel)]);
+	setServerVsClientUI(LobbyMoistureDropdown, LobbyMoistureText, MapMoistureNames[static_cast<int>(mapSettings.mapMoisture)]);
+	setServerVsClientUI(LobbyTemperatureDropdown, LobbyTemperatureText, MapTemperatureNames[static_cast<int>(mapSettings.mapTemperature)]);
+	
 	setServerVsClientUI(LobbyAICountDropdown, LobbyAICountText, FString::FromInt(mapSettings.aiCount));
 	setServerVsClientUI(LobbyDifficultyDropdown, LobbyDifficultyText, DifficultyLevelNames[static_cast<int>(mapSettings.difficultyLevel)]);
 
@@ -504,6 +537,37 @@ void ULobbyUI::OnLobbyMapSizeDropdownChanged(FString sItem, ESelectInfo::Type se
 		gameInstance()->Spawn2DSound("UI", "DropdownChange");
 	}
 }
+void ULobbyUI::OnLobbySeaLevelDropdownChanged(FString sItem, ESelectInfo::Type seltype)
+{
+	serverMapSettings.mapSeaLevel = GetEnumFromName<MapSeaLevelEnum>(sItem, MapSeaLevelNames);
+
+	SendMapSettings();
+
+	if (seltype != ESelectInfo::Type::Direct) {
+		gameInstance()->Spawn2DSound("UI", "DropdownChange");
+	}
+}
+void ULobbyUI::OnLobbyMoistureDropdownChanged(FString sItem, ESelectInfo::Type seltype)
+{
+	serverMapSettings.mapMoisture = GetEnumFromName<MapMoistureEnum>(sItem, MapMoistureNames);
+
+	SendMapSettings();
+
+	if (seltype != ESelectInfo::Type::Direct) {
+		gameInstance()->Spawn2DSound("UI", "DropdownChange");
+	}
+}
+void ULobbyUI::OnLobbyTemperatureDropdownChanged(FString sItem, ESelectInfo::Type seltype)
+{
+	serverMapSettings.mapTemperature = GetEnumFromName<MapTemperatureEnum>(sItem, MapTemperatureNames);
+
+	SendMapSettings();
+
+	if (seltype != ESelectInfo::Type::Direct) {
+		gameInstance()->Spawn2DSound("UI", "DropdownChange");
+	}
+}
+
 void ULobbyUI::OnLobbyAICountDropdownChanged(FString sItem, ESelectInfo::Type seltype)
 {
 	serverMapSettings.aiCount = FCString::Atoi(*sItem);
@@ -542,7 +606,7 @@ void ULobbyUI::CheckMapReady()
 	if (gameInstance()->IsLoadingSavedGame()) {
 		_isMapReady = true;
 	} else {
-		_isMapReady = PunTerrainGenerator::HasSavedMap(mapSettings.mapSeed, mapSettings.mapSizeEnum());
+		_isMapReady = PunTerrainGenerator::HasSavedMap(mapSettings);
 	}
 }
 

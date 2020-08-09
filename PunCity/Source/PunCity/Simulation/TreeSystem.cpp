@@ -455,28 +455,26 @@ NonWalkableTileAccessInfo TreeSystem::FindNearestUnreservedFruitTree(WorldTile2 
 	return nearestAccessInfo;
 }
 
-WorldTile2 TreeSystem::FindNearestUnreservedFullBush(WorldTile2 origin, int32 radius, int32 maxFloodDist, bool canPassGate)
+WorldTile2 TreeSystem::FindNearestUnreservedFullBush(WorldTile2 unitTile, WorldRegion2 originRegion, int32 maxFloodDist, bool canPassGate)
 {
 	SCOPE_CYCLE_COUNTER(STAT_PunFindFullBush);
 
-	PUN_CHECK2(origin.isValid(), origin.ToString());
-	if (!origin.isValid()) {
+	PUN_CHECK(originRegion.IsValid());
+	if (!originRegion.IsValid()) {
 		return WorldTile2::Invalid;
 	}
 
-	WorldRegion2 region = origin.region();
-
 	WorldTile2 nearestTile = WorldTile2::Invalid;
-	int32 nearestDist = radius; // GameMapConstants::TilesPerWorldX;
+	int32 nearestDist = GameMapConstants::TilesPerWorldX;
 
 	auto findNearest = [&](WorldRegion2 curRegion)
 	{
 		_regionToReadyBushes[curRegion.regionId()].Execute([&](WorldTile2 curTile)
 		{
 			if (!_reservations.Contains(curTile.tileId()) &&
-				_simulation->IsConnected(origin, curTile, maxFloodDist, canPassGate)) //TODO: faster with precomputed floodInfo??
+				_simulation->IsConnected(unitTile, curTile, maxFloodDist, canPassGate)) //TODO: faster with precomputed floodInfo??
 			{
-				int dist = WorldTile2::ManDistance(curTile, origin);
+				int dist = WorldTile2::ManDistance(curTile, unitTile);
 				if (dist < nearestDist) {
 					nearestDist = dist;
 					nearestTile = curTile;
@@ -486,17 +484,17 @@ WorldTile2 TreeSystem::FindNearestUnreservedFullBush(WorldTile2 origin, int32 ra
 	};
 
 	// Try middle first, if already one just return..
-	findNearest(region);
+	findNearest(originRegion);
 	if (nearestTile.isValid()) {
 		return nearestTile;
 	}
 
 
-	for (int xx = region.x - 1; xx <= region.x + 1; xx++) {
-		for (int yy = region.y - 1; yy <= region.y + 1; yy++)
+	for (int xx = originRegion.x - 1; xx <= originRegion.x + 1; xx++) {
+		for (int yy = originRegion.y - 1; yy <= originRegion.y + 1; yy++)
 		{
 			WorldRegion2 curRegion(xx, yy);
-			if (curRegion == region) {
+			if (curRegion == originRegion) {
 				continue; // Skip mid
 			}
 			if (!curRegion.IsValid()) {

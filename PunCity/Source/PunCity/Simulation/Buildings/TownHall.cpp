@@ -35,6 +35,15 @@ void TownHall::FinishConstruction()
 	armyNode.Init(_playerId, buildingId(), _simulation);
 
 	_townStartTick = Time::Ticks();
+
+
+	// Trailer Mode and Editor show no rare card
+	if (SimSettings::IsOn("TrailerMode")) {
+		alreadyGotInitialCard = true;
+	}
+#if WITH_EDITOR
+	//alreadyGotInitialCard = true;
+#endif
 }
 
 static const std::vector<int32_t> townhallLvlToUpgradeMoney =

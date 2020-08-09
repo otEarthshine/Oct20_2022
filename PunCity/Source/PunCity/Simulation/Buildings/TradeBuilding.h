@@ -93,7 +93,7 @@ public:
 
 	void UsedTrade(FTradeResource tradeCommand);
 
-	static void ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePercent, WorldTile2 tile, IGameSimulationCore* simulation);
+	static void ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePercent, WorldTile2 tile, IGameSimulationCore* simulation, bool isInstantBuy = true);
 
 	void Tick1Sec() override;
 

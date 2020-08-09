@@ -444,6 +444,7 @@ public:
 	}
 
 	void AddDebugSpeech(std::string message);
+	
 
 	int32 lastActionTick() { return _lastUpdateTick; }
 
@@ -495,6 +496,8 @@ public:
 		return isMale() ? MaleNames[rand % MaleNames.size()] : FemaleNames[rand % FemaleNames.size()];
 	}
 
+
+	
 public:
 	//! Serialize
 	virtual UnitAIClassEnum classEnum() { return UnitAIClassEnum::UnitStateAI; }
@@ -638,6 +641,10 @@ protected:
 
 	bool justReset() { return _justDidResetActions; }
 
+public:
+	static int32 debugFindFullBushSuccessCount;
+	static int32 debugFindFullBushFailCount;
+
 protected:
 	IUnitDataSource* _unitData;
 	IGameSimulationCore* _simulation;
@@ -677,6 +684,8 @@ protected:
 	int32 _houseId;
 	int32 _workplaceId;
 	int32 _lastworkplaceId;
+
+	int32 _homeProvinceId = -1;
 
 	std::vector<UnitReservation> reservations;
 

@@ -131,6 +131,10 @@ class FMapSettings
 public:
 	FString mapSeed = FString("seed");
 	int32 mapSizeEnumInt = static_cast<int>(MapSizeEnum::Medium);
+	MapSeaLevelEnum mapSeaLevel = MapSeaLevelEnum::Medium;
+	MapMoistureEnum mapMoisture = MapMoistureEnum::Medium;
+	MapTemperatureEnum mapTemperature = MapTemperatureEnum::Medium;
+	
 	int32 playerCount = 0;
 	int32 aiCount = 15;
 	DifficultyLevel difficultyLevel = DifficultyLevel::Normal;
@@ -145,6 +149,10 @@ public:
 	{
 		return mapSeed == a.mapSeed &&
 			mapSizeEnumInt == a.mapSizeEnumInt &&
+			mapSeaLevel == a.mapSeaLevel &&
+			mapMoisture == a.mapMoisture &&
+			mapTemperature == a.mapTemperature &&
+
 			playerCount == a.playerCount &&
 			aiCount == a.aiCount &&
 			difficultyLevel == a.difficultyLevel;
@@ -161,6 +169,10 @@ public:
 	void Serialize(PunSerializedData& Ar) {
 		Ar << mapSeed;
 		Ar << mapSizeEnumInt;
+		Ar << mapSeaLevel;
+		Ar << mapMoisture;
+		Ar << mapTemperature;
+		
 		Ar << playerCount;
 		Ar << aiCount;
 		Ar << difficultyLevel;
@@ -174,6 +186,10 @@ public:
 		std::stringstream ss;
 		ss << "[seed:" << ToStdString(mapSeed);
 		ss << ", size:" << ToStdString(MapSizeNames[mapSizeEnumInt]);
+		ss << ", seaLevel:" << ToStdString(MapSeaLevelNames[static_cast<int>(mapSeaLevel)]);
+		ss << ", moisture:" << ToStdString(MapMoistureNames[static_cast<int>(mapMoisture)]);
+		ss << ", temperature:" << ToStdString(MapTemperatureNames[static_cast<int>(mapTemperature)]);
+		
 		ss << ", playerCount:" << playerCount;
 		ss << ", ai:" << aiCount;
 		ss << ", mode:" << ToStdString(DifficultyLevelNames[static_cast<int>(difficultyLevel)]);
@@ -186,6 +202,10 @@ public:
 	{
 		Ar << mapSeed;
 		Ar << mapSizeEnumInt;
+		Ar << mapSeaLevel;
+		Ar << mapMoisture;
+		Ar << mapTemperature;
+		
 		Ar << playerCount;
 		Ar << aiCount;
 		Ar << difficultyLevel;
@@ -264,6 +284,8 @@ enum class NetworkCommandEnum : uint8
 
 	ChangeName,
 	SendChat,
+
+	ReplayPause,
 };
 
 static const std::string NetworkCommandNames[] =
@@ -300,6 +322,8 @@ static const std::string NetworkCommandNames[] =
 
 	"ChangeName",
 	"SendChat",
+
+	"ReplayPause",
 };
 static std::string GetNetworkCommandName(NetworkCommandEnum commandEnum) {
 	return NetworkCommandNames[static_cast<int>(commandEnum)];
@@ -360,7 +384,7 @@ public:
 	virtual ~FPlaceBuildingParameters() {}
 
 	uint8 buildingEnum;
-	int32 buildingLevel = 0;
+	int32 buildingLevel = 0; // Note: in TrailerMode, use buildingLevel to specify plant type (need after-edit..)
 
 	TileArea area; // Needed in the case for manipulable area
 	TileArea area2;
@@ -977,6 +1001,7 @@ public:
 		blob << var2;
 	}
 };
+
 
 
 //! Abstract away the conversion to network blob

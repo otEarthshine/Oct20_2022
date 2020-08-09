@@ -27,6 +27,9 @@ void UnitSystem::Init(IGameSimulationCore* simulation)
 
 	_unitSubregionLists.Init();
 	_updateBuffer.Init(9); // 9 shift is 512 ticks
+
+	UnitStateAI::debugFindFullBushSuccessCount = 0;
+	UnitStateAI::debugFindFullBushFailCount = 0;
 }
 
 int16 UnitSystem::food(int id)
@@ -75,7 +78,7 @@ void UnitSystem::AddAnimals(int animalCount)
 			int16 randY = GameRand::Rand() % GameMapConstants::TilesPerWorldY;
 			WorldTile2 tile(randX, randY);
 
-			if (_simulation->pathAI(false)->isWalkable(randX, randY)) 
+			if (_simulation->pathAI(false)->isWalkable(randX, randY))
 			{
 				BiomeEnum biomeEnum = _simulation->GetBiomeEnum(tile);
 				BiomeInfo biomeInfo = GetBiomeInfo(biomeEnum);

@@ -292,8 +292,8 @@ public:
 	}
 
 
-	void AddImmigrants(int32 playerId, int32 count) final {
-		townhall(playerId).AddImmigrants(count);
+	void AddImmigrants(int32 playerId, int32 count, WorldTile2 tile) final {
+		townhall(playerId).AddImmigrants(count, tile);
 	}
 
 	int32 lordPlayerId(int32 playerId) final {
@@ -310,9 +310,10 @@ public:
 	}
 
 	WorldAtom2 homeAtom(int32 playerId) {
-		int32 townhallId = playerOwned(playerId).townHallId;
-		if (townhallId == -1) return WorldAtom2::Zero;
-		return  _buildingSystem->building(townhallId).centerTile().worldAtom2();
+		if (playerOwned(playerId).hasChosenLocation()) {
+			return GetProvinceCenterTile(playerOwned(playerId).provincesClaimed().front()).worldAtom2();
+		}
+		return WorldAtom2::Zero;
 	}
 
 	bool IsPermanentBuilding(int32 playerId, CardEnum cardEnum) final {
@@ -477,7 +478,7 @@ public:
 
 	int32 playerId() final { return _gameManager->playerId(); }
 
-	void ResetUnitActions(int id, int32_t waitTicks = 1) final;
+	void ResetUnitActions(int id, int32 waitTicks = 1) final;
 	int AddUnit(UnitEnum unitEnum, int32_t playerId, WorldAtom2 location, int32_t ageTicks) final;
 	void RemoveUnit(int id) final;
 	void ResetUnitActionsInArea(TileArea area) final {
@@ -808,6 +809,10 @@ public:
 		}
 		return false;
 	}
+
+	const std::vector<ProvinceConnection>& GetProvinceConnections(int32 provinceId) final {
+		return _provinceSystem.GetProvinceConnections(provinceId);
+	}
 	
 	/*
 	 * 
@@ -857,6 +862,18 @@ public:
 	void RemoveBoarBurrow(int32 regionId, int32 buildingId) override {
 		_regionSystem->RemoveBoarBurrow(regionId, buildingId);
 	}
+
+	const std::vector<int32>& provinceAnimals(int32 regionId) override { return _regionSystem->provinceAnimals(regionId); }
+	void AddProvinceAnimals(int32 regionId, int32 animalId) override {
+		_regionSystem->AddProvinceAnimals(regionId, animalId);
+	}
+	void RemoveProvinceAnimals(int32 regionId, int32 animalId) override {
+		_regionSystem->RemoveProvinceAnimals(regionId, animalId);
+	}
+	int32 RefreshAnimalHomeProvince(int32 regionId, int32 animalId) override {
+		return _regionSystem->RefreshAnimalHomeProvince(regionId, animalId);
+	}
+	
 
 	int HousingCapacity(int32 playerId) override { return _playerOwnedManagers[playerId].housingCapacity(); }
 
@@ -1142,7 +1159,7 @@ public:
 	bool HasCardInPile(int32 playerId, CardEnum cardEnum) final {
 		return cardSystem(playerId).HasCardInPile(cardEnum);
 	}
-	void AddCards(int32 playerId, CardEnum cardEnum, int32 count) final {
+	void AddDrawCards(int32 playerId, CardEnum cardEnum, int32 count) final {
 		return cardSystem(playerId).AddDrawCards(cardEnum, count);
 	}
 
@@ -1311,7 +1328,7 @@ public:
 	}
 
 	bool IsPlayerInitialized(int32 playerId) final {
-		return playerOwned(playerId).isInitialized();
+		return playerOwned(playerId).hasTownhall();
 	}
 
 	bool IsReplayPlayer(int32 playerId) {
@@ -1327,12 +1344,27 @@ public:
 		return _lastTickSnowAccumulation2 == 0 && _snowAccumulation2 > 0;
 	}
 
-	float snowHeightTundraStart() { return FDToFloat(_snowAccumulation3); }
-	float snowHeightBorealStart() { return FDToFloat(_snowAccumulation2); }
-	float snowHeightForestStart() { return FDToFloat(_snowAccumulation1); }
+	float snowHeightTundraStart() {
+		if (PunSettings::Get("ForceSnowPercent") > 0) {
+			return PunSettings::Get("ForceSnowPercent") / 100.0f;
+		}
+		if (SimSettings::IsOn("TrailerMode")) {
+			float minSnowFraction = PunSettings::Get("TrailerTundraMinSnowPercent") / 100.0f;
+			return FDToFloat(_snowAccumulation3) * (1.0f - minSnowFraction) + minSnowFraction;
+		}
+		return FDToFloat(_snowAccumulation3);
+	}
+	float snowHeightBorealStart() {
+		//return 1.0f;
+		return FDToFloat(_snowAccumulation2);
+	}
+	float snowHeightForestStart() {
+		
+		return FDToFloat(_snowAccumulation1);
+	}
 	
 
-	bool playerChoseLocation(int32 playerId) { return playerOwned(playerId).isInitialized(); }
+	bool playerChoseLocation(int32 playerId) { return playerOwned(playerId).hasChosenLocation(); }
 
 	// Used to pause the game until the last player chose location
 	bool AllPlayerChoseLocationAfterInitialTicks() final
@@ -1344,7 +1376,7 @@ public:
 
 		std::vector<int32> connectedPlayerIds = _gameManager->connectedPlayerIds(false);
 		for (int32 playerId : connectedPlayerIds) {
-			if (!playerOwned(playerId).isInitialized() &&
+			if (!playerOwned(playerId).hasChosenLocation() &&
 				!IsReplayPlayer(playerId))  // ReplayPlayer shouldn't pause the game
 			{
 				return false;
@@ -1750,6 +1782,8 @@ private:
 
 
 private:
+	void PlaceInitialTownhallHelper(FPlaceBuildingParameters command, int32 townhallId);
+	
 	void InitRegionalBuildings();
 
 	void DemolishCritterBuildingsIncludingFronts(WorldTile2 tile, int32 playerId);
@@ -1808,8 +1842,8 @@ private:
 	std::vector<std::vector<int32>> _playerIdToNonRepeatActionToAvailableTick;
 
 	// TODO: Remove
-	//int32 _playerCount = 0;
-	//std::vector<FString> _playerNames;
+	// int32 _playerCount = 0;
+	// std::vector<FString> _playerNames;
 
 	FMapSettings _mapSettings;
 	FGameEndStatus _endStatus;

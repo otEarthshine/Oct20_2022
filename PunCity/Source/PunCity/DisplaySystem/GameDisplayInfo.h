@@ -946,7 +946,7 @@ public:
 		return FTransform(rotator, displayLocation, FVector(scale, scale, scale));
 	}
 
-	static FTransform GetBushTransform(FVector displayLocation, float xRotation, int worldTileId, int32 ageTicks, TileObjInfo info, BiomeEnum biomeEnum)
+	static FTransform GetBushTransform(FVector displayLocation, float xRotation, int worldTileId, int32 ageTicks, TileObjInfo info, BiomeEnum biomeEnum, bool isSqrt = true)
 	{
 		uint32_t rand = GameRand::DisplayRand(worldTileId);
 		displayLocation.X += rand % 3;
@@ -956,7 +956,7 @@ public:
 		FRotator rotator(xRotation, static_cast<float>(rand % 360), 0);
 
 		float growthFraction = std::min(1.0f, ageTicks / static_cast<float>(info.maxGrowthTick));
-		float scale = 0.2f + 0.8f * sqrtf(growthFraction);
+		float scale = 0.2f + 0.8f * (isSqrt ? sqrtf(growthFraction) : growthFraction);
 
 		//rand = GameRand::DisplayRand(rand);
 		//float scale = 0.9f + 0.6f * (float)(rand % 100) / 100.0f;

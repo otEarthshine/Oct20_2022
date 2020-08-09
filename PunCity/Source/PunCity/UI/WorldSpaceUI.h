@@ -265,7 +265,10 @@ public:
 	void StartHideAllUI()
 	{
 		_buildingJobUIs.AfterAdd();
+		
 		_townhallHoverInfos.AfterAdd();
+		_townhallHoverInfos.AfterAdd(); // Double times to ensure there townhallHover is gone.
+		
 		_regionHoverUIs.AfterAdd();
 		
 		_buildingHoverIcons.AfterAdd();

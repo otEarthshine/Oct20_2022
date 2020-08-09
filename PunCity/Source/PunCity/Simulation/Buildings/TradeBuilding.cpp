@@ -11,14 +11,14 @@ void TradeBuilding::UsedTrade(FTradeResource tradeCommand)
 
 	// Sold stuff executes right away...
 	// Bought stuff will arrive in 1 season
-	ExecuteTrade(tradeCommand, tradingFeePercent(), centerTile(), _simulation);
+	ExecuteTrade(tradeCommand, tradingFeePercent(), centerTile(), _simulation, false);
 
 	_hasPendingTrade = true;
 	_ticksAccumulated = 0;
 	_lastCheckTick = Time::Ticks();
 }
 
-void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePercent, WorldTile2 tile, IGameSimulationCore* simulation)
+void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePercent, WorldTile2 tile, IGameSimulationCore* simulation, bool isInstantBuy)
 {
 	// Sold stuff executes on the way right away...
 	int32 playerId = tradeCommand.playerId;
@@ -51,8 +51,10 @@ void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePe
 		{
 			int32 tradeMoney100 = buyAmount * simulation->price100(resourceEnum);
 			totalTradeMoney100 += tradeMoney100;
-			
-			resourceSys.AddResourceGlobal(resourceEnum, buyAmount, *simulation);
+
+			if (isInstantBuy) {
+				resourceSys.AddResourceGlobal(resourceEnum, buyAmount, *simulation);
+			}
 			resourceSys.ChangeMoney100(-tradeMoney100);
 		}
 		

@@ -20,28 +20,6 @@ const std::vector<WorldTile2x2> shift8 = {
 		WorldTile2x2(-1, -1),
 };
 
-struct ProvinceConnection
-{
-	int32 provinceId;
-	TerrainTileType tileType;
-	int32 connectedTiles;
-
-	ProvinceConnection() : provinceId(-1), tileType(TerrainTileType::None), connectedTiles(0) {}
-
-	ProvinceConnection(int32 provinceId, TerrainTileType tileType) : provinceId(provinceId), tileType(tileType), connectedTiles(1) {}
-
-	bool operator==(const ProvinceConnection& a) const {
-		return a.provinceId == provinceId && a.tileType == tileType;
-	}
-
-	//! Serialize
-	FArchive& operator>>(FArchive &Ar) {
-		Ar << provinceId;
-		Ar << tileType;
-		return Ar;
-	}
-};
-
 
 /**
  * 
@@ -325,7 +303,14 @@ public:
 						return abs(provinceRawId) == curProvinceId;
 					};
 					
-					GenerateEdge(i, curProvinceId, curTile2x2, _provinceEdges1[curProvinceId], _provinceEdges2[curProvinceId], isInArea, tryFloodEdge);
+					bool succeed = GenerateEdge(i, curProvinceId, curTile2x2, _provinceEdges1[curProvinceId], _provinceEdges2[curProvinceId], isInArea, tryFloodEdge);
+
+					// Remove the provinceId
+					if (!succeed) {
+						int32 absCurProvinceId = abs(curProvinceId);
+						CppUtils::TryRemove(_regionToProvinceIds[curTile2x2.worldTile2().regionId()], absCurProvinceId);
+						_provinceId2x2[i] = EmptyProvinceId;
+					}
 				}
 			}
 		}
@@ -467,6 +452,30 @@ public:
 			}
 		}
 
+
+		/*
+		 * Set any leftover EmptyProvinceId tile to mountain so nothing uses it
+		 */
+		//auto pathAI = _simulation->pathAI(true);
+		//for (int32 i = 0; i < GameMapConstants::TilesPerWorld; i++) 
+		//{
+		//	WorldTile2 tile(i);
+		//	if (pathAI->isWalkable(tile.x, tile.y)) 
+		//	{
+		//		int32 provinceId = _provinceId2x2[WorldTile2x2(tile).tile2x2Id()];
+		//		if (provinceId == MountainProvinceId || 
+		//			provinceId == EmptyProvinceId)
+		//		{
+		//			//PUN_LOG("SetMountainTile %s", *tile.To_FString());
+		//			_simulation->terrainGenerator().SetMountainTile(tile);
+		//		}
+		//		else if (IsWaterProvinceId(provinceId))
+		//		{
+		//			//PUN_LOG("SetWaterTile %s", *tile.To_FString());
+		//			_simulation->terrainGenerator().SetWaterTile(tile);
+		//		}
+		//	}
+		//}
 	}
 
 	/*
@@ -925,7 +934,7 @@ private:
 
 
 	template <typename Func1, typename Func2>
-	void GenerateEdge(size_t& curTile2x2Id, int32& curProvinceId, WorldTile2x2& curTile2x2, 
+	bool GenerateEdge(size_t& curTile2x2Id, int32& curProvinceId, WorldTile2x2& curTile2x2, 
 						std::vector<WorldTile2x2>& edges1, std::vector<WorldTile2x2>& edges2, 
 						Func1 isInArea, Func2 tryFloodEdge, bool isProvince = true)
 	{
@@ -966,7 +975,11 @@ private:
 			}
 		}
 
-		PUN_CHECK(prevStack.size() == 1);
+		// Failed to create edge (because flood area is 1 tiles?)
+		//PUN_CHECK(prevStack.size() == 1);
+		if (prevStack.size() != 1) {
+			return false;
+		}
 
 		WorldTile2x2 startTile2x2 = curTile2x2;
 		WorldTile2x2 startPrevTile2x2 = prevStack[0];
@@ -1080,7 +1093,9 @@ private:
 				lastTileIsInside = curTileInside;
 			}
 		}
-	};
+
+		return true;
+	}
 
 	/*
 	 * 

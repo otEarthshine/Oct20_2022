@@ -78,7 +78,7 @@ public:
 			for (int32 x = 0; x < totalChunksX; x++)
 			{
 				auto terrainComp = NewObject<UTerrainLargeChunkComponent>(this);
-				terrainComp->Rename(*FString(("WorldMapMesh" + to_string(x) + to_string(y)).c_str()));
+				terrainComp->Rename(*FString(("WorldMapMesh" + to_string(x) + "_" + to_string(y)).c_str()));
 				terrainComp->AttachToComponent(_terrainChunkParent, FAttachmentTransformRules::KeepRelativeTransform, NAME_None);
 				terrainComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 				terrainComp->SetGenerateOverlapEvents(false);

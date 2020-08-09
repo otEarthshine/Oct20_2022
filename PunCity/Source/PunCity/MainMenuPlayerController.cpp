@@ -205,6 +205,7 @@ void AMainMenuPlayerController::SetupDisplayManager()
 				mainMenuDisplayManager->UpdateDisplay(cameraState.cameraAtom, cameraState.zoomDistance, cameraState.sampleRegionIds);
 			}
 			else {
+				mainMenuDisplayManager->failedToLoadMainMenuJson = true;
 				_LOG(PunSaveLoad, "AMainMenuPlayerController Load MainMenuDisplayCache Failed");
 			}
 		}

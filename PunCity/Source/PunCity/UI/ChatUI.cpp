@@ -187,6 +187,9 @@ void UChatUI::RefreshHiddenSettingsUI()
 
 void UChatUI::Tick()
 {
+	TickDebugUI();
+
+	
 	// Don't display in single player unless toggled single player chat
 	if (gameInstance()->isSinglePlayer && 
 		!PunSettings::IsOn("SinglePlayerChat"))
@@ -222,26 +225,37 @@ void UChatUI::Tick()
 
 #endif
 
+}
+
+void UChatUI::TickDebugUI()
+{
 	/*
 	 * Debug
+	 *  !!! Must open SinglePlayerChat !!!
 	 */
-#if WITH_EDITOR
 	stringstream ss;
 
+#if DEV_BUILD
 	if (PunSettings::IsOn("DebugUI"))
 	{
+		SetVisibility(ESlateVisibility::Collapsed);
 		DebugOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
 		//ss << "(" << to_string(Time::Minutes()) << "m " << to_string(Time::Seconds() - Time::Minutes() * Time::SecondsPerMinute) << "s) \n";
 		//ss << "(" << to_string(Time::Ticks()) << " ticks) \n";
 
-
-#if DEBUG_BUILD
 		auto& sim = simulation();
 		auto& unitSystem = sim.unitSystem();
 		auto& statSystem = sim.statSystem();
-		
-		//ss << "World units: " << unitSystem.unitCount() << "\n";
+
+		ss << "World units: " << unitSystem.unitCount() << "\n";
+		ss << "Max animal in province: " << sim.regionSystem().debugMaxAnimalCount << "\n";
+		ss << "Total province animals: " << sim.regionSystem().debugTotalProvinceAnimalCount << "\n";
+
+		int32 findFullBushTotal = UnitStateAI::debugFindFullBushSuccessCount + UnitStateAI::debugFindFullBushFailCount;
+		ss << "FindFullBush Success: " << (static_cast<float>(UnitStateAI::debugFindFullBushSuccessCount) / findFullBushTotal) << "\n";
+		ss << "FindFullBush Count: " << findFullBushTotal << "\n";
+
 		//ss << "Trees: " << simulation.treeSystem().treeCount() << "\n";
 		ss << "Bushes: " << sim.treeSystem().bushCount() << "\n";
 		//ss << "Stones: " << simulation.treeSystem().stoneCount() << "\n";
@@ -260,6 +274,7 @@ void UChatUI::Tick()
 		ss << "BushEmitSeed(GoodSpot): " << StatSystem::StatsToString(statSystem.GetStatAll(SeasonStatEnum::BushEmitSeedGoodSpot));
 		ss << "BushEmitSeed(Success): " << StatSystem::StatsToString(statSystem.GetStatAll(SeasonStatEnum::BushEmitSeedSuccess));
 
+#if DEBUG_BUILD
 		ss << "Moving units: " << unitSystem.stateCount("Moving") << "\n";
 		ss << "NeedActionUpdate units: " << unitSystem.stateCount("NeedActionUpdate") << "\n";
 		ss << "NeedTargetTile units: " << unitSystem.stateCount("NeedTargetTile") << "\n";
@@ -269,7 +284,6 @@ void UChatUI::Tick()
 
 		DEBUG_AI(ResetCountPerSec);
 		DEBUG_AI(FailedToFindPath);
-		DEBUG_AI(ResetCountPerSec);
 
 		DEBUG_AI(MoveRandomly);
 
@@ -313,16 +327,16 @@ void UChatUI::Tick()
 
 		DEBUG_AI(WorldSpaceUICreate);
 		DEBUG_AI(AddWidget)
-		DEBUG_AI(AddToolTip);
-		
-#undef DEBUG_AI
+			DEBUG_AI(AddToolTip);
 
+#undef DEBUG_AI
 #endif
 
-			TopLeftTextDebug->SetText(FText::FromString(FString(ss.str().c_str())));
+		TopLeftTextDebug->SetText(FText::FromString(FString(ss.str().c_str())));
 	}
 	else {
 		DebugOverlay->SetVisibility(ESlateVisibility::Collapsed);
 	}
+
 #endif
 }

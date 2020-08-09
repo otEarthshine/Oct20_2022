@@ -178,7 +178,7 @@ void ACameraPawn::LeftMouseDown()
 {
 	PUN_LOG("LeftMouseDown");
 	// Don't accept click before game actually start
-	if (Time::Ticks() < 5) {
+	if (Time::Ticks() < Time::TicksPerSecond) { // 1.5 sec is when HideLoadingScreen triggers
 		return;
 	}
 
@@ -342,12 +342,12 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 	if (isSystemMovingCamera())
 	{
 		if (SimSettings::IsOn("TrailerMode")) {
-			_systemMoveTimeSinceStart += UGameplayStatics::GetWorldDeltaSeconds(GetWorld());
+			_systemMoveTimeSinceStart += fmin(0.02, UGameplayStatics::GetWorldDeltaSeconds(GetWorld()));
 			_systemTrailerTimeSinceStart += UGameplayStatics::GetWorldDeltaSeconds(GetWorld());
 			PUN_LOG("Cam Trail shot:%.2f/%.2f time:%.2f", _systemMoveTimeSinceStart, _systemMoveTimeLength, _systemTrailerTimeSinceStart);
 		}
 		else {
-			_systemMoveTimeSinceStart += fmin(0.025, UGameplayStatics::GetWorldDeltaSeconds(GetWorld()));
+			_systemMoveTimeSinceStart += fmin(0.02, UGameplayStatics::GetWorldDeltaSeconds(GetWorld()));
 		}
 		
 		
@@ -417,11 +417,20 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 		_cameraSequence.erase(_cameraSequence.begin());
 
 		MoveCameraTo(cameraRecord.cameraAtom, cameraRecord.zoomDistance, cameraRecord.rotator, cameraRecord.transitionTime, cameraRecord.transition);
-	}
 
-	if (SimSettings::IsOn("TrailerMode") && _systemTrailerTimeSinceStart < 60 * 2) { // 2 mins trailer
-		_systemTrailerTimeSinceStart += UGameplayStatics::GetWorldDeltaSeconds(GetWorld());
-		PUN_LOG("Cam Trail ended time:%.2f", _systemTrailerTimeSinceStart);
+		if (cameraRecord.isCameraReplayUnpause) {
+			_networkInterface->TrailerCityReplayUnpause();
+		}
+	}
+	else if (SimSettings::IsOn("TrailerMode"))
+	{
+		if (_systemTrailerTimeSinceStart != -1) {
+			PUN_LOG("Cam Trail ended time:%.2f", _systemTrailerTimeSinceStart);
+			_systemMoveTimeSinceStart = -1.0f;
+			_systemMoveTimeLength = 0.0f;
+			_systemTrailerTimeSinceStart = -1;
+			SimSettings::Set("TrailerMode", 0);
+		}
 	}
 	
 

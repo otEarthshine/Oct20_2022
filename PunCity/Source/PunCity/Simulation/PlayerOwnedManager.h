@@ -273,8 +273,9 @@ public:
 	const std::vector<int32>& adultIds() { return _adultIds; }
 	const std::vector<int32>& childIds() { return _childIds; }
 
-	bool isInitialized() { return townHallId != -1; }
-
+	bool hasChosenLocation() { return _provincesClaimed.size() > 0; }
+	bool hasTownhall() { return townHallId != -1; }
+	
 public:
 	int32 totalRevenue100() {
 		int32 revenue100 = 0;
@@ -340,7 +341,7 @@ public:
 		}
 
 
-		if (isInitialized()) {
+		if (hasChosenLocation()) {
 			ss << ToStdString(TaxOptions[taxLevel]);
 			ss << " (" << std::to_string(taxPercent()) << "%)";
 		}

@@ -17,7 +17,8 @@ void PunTerrainGenerator::Init(IGameSimulationCore* simulation, int tileDimX, in
 	_simulation = simulation;
 	_lineBatch = lineBatch;
 
-	_mapSize = mapSize;
+	//_mapSize = mapSize;
+	_mapSettings.mapSizeEnumInt = static_cast<int32>(mapSize);
 
 	PUN_CHECK(tileDimX > 0 && tileDimX > 0);
 
@@ -331,14 +332,20 @@ void PunTerrainGenerator::GenerateMoisture()
 		/*
 		 * Parameters
 		 */
-		int32 normalCloudStartSize = 20000;
-		int32 desertCloudStartSize = 5000;
-
-		switch(_mapSize)
+		int32 normalCloudStartSize = 5800; // 12000 // 20000;
+		int32 desertCloudStartSize = 3000; // 5000;
+		switch(_mapSettings.mapSizeEnum())
 		{
 		case MapSizeEnum::Large: normalCloudStartSize *= 2; desertCloudStartSize *= 2; break;
 		case MapSizeEnum::Small: normalCloudStartSize /= 2; desertCloudStartSize /= 2; break;
+		default: break;
 		}
+
+		int32 moistureInt = static_cast<int>(_mapSettings.mapMoisture);
+		const int32 normalCloudLevelVariation = 4000;
+		const int32 desertCloudLevelVariation = 1000;
+		normalCloudStartSize += (moistureInt - 2) * normalCloudLevelVariation;
+		desertCloudStartSize += (moistureInt - 2) * desertCloudLevelVariation;
 
 #define WESTWARD_WIND
 #ifdef WESTWARD_WIND
@@ -491,36 +498,46 @@ void PunTerrainGenerator::Erode(std::vector<int16_t>& heightMapBeforeFlatten, st
 
 	std::vector<uint8> passedRivers(_tile4x4DimX * _tile4x4DimY, 0);
 
-	int32 totalSourceCount = 300;
-	switch(_mapSize) {
-		case MapSizeEnum::Small: totalSourceCount = totalSourceCount / 16; break;
-		case MapSizeEnum::Medium: totalSourceCount = totalSourceCount / 4; break;
+	int32 totalSourceCount = 700;
+	switch(_mapSettings.mapSizeEnum()) {
+		case MapSizeEnum::Small: totalSourceCount = totalSourceCount / 9; break;
+		case MapSizeEnum::Medium: totalSourceCount = totalSourceCount / 3; break;
 		case MapSizeEnum::Large: break;
 		default: break;
 	}
+
+	int32 riverSucceeded = 0;
 	
 	for (int sourceCount = 0; sourceCount < totalSourceCount; sourceCount++)
 	{
 		int sourceX, sourceY;
 		int loopCount = 0;
-		while (true) {
-			sourceX = GameRand::Rand() % _tileDimX;
+
+		// Don't start beyond tundra
+		int32 tundraBandSize = _tileDimX / 2 * (100 - tundraTemperatureStart100) / 100;
+		
+		while (true) 
+		{
+			sourceX = GameRand::Rand() % (_tileDimX - tundraBandSize * 2) + tundraBandSize; // do not start river in tundra
 			sourceY = GameRand::Rand() % _tileDimY;
 			
 			loopCount++;
 			if (loopCount > 10000) {
+				PUN_LOG("River Error");
 				return;
 			}
 
 			FloatDet height = heightMap[sourceX + sourceY * _tileDimX];
-			if (FD0_XXX(124) <= height && height <= FD0_XXX(130)) {
 
+			// Start on flat land
+			if (FD0_XXX(124) <= height && height <= FD0_XXX(130)) 
+			{
 				// also shouldn't start near other river...
 				bool nearOtherRiver = false;
 
 				int32_t x4mid = (sourceX / 4);
 				int32_t y4mid = (sourceY / 4);
-				int32_t span = 5;
+				int32_t span = 4; // 5
 				for (int32_t y4 = y4mid - span; y4 <= y4mid + span; y4++) {
 					for (int32_t x4 = x4mid - span; x4 <= x4mid + span; x4++) {
 						if (passedRivers[x4 + y4 * _tile4x4DimX] > 0) {
@@ -734,7 +751,7 @@ void PunTerrainGenerator::Erode(std::vector<int16_t>& heightMapBeforeFlatten, st
 					WorldTile4x4::AddTileTo4x4(dropTile.x, dropTile.y, _river4x4Map, _tile4x4DimX, _tile4x4DimY);
 				}
 
-				
+				riverSucceeded++;
 				//PUN_LOG("Completed River, droplets: %llu lifeTime: %d", riverTileIndices.size(), lifeTime);
 			}
 
@@ -747,6 +764,8 @@ void PunTerrainGenerator::Erode(std::vector<int16_t>& heightMapBeforeFlatten, st
 			}
 		}
 	}
+
+	PUN_LOG("riverSourceCount:%d riverSucceeded:%d", totalSourceCount, riverSucceeded)
 
 	// Debug river
 	PUN_DEBUG_EXPR(
@@ -781,7 +800,7 @@ void PunTerrainGenerator::Load4x4Map(std::vector<uint8_t>& map4x4, const char* p
 	check(map4x4.size() > 0);
 }
 
-bool PunTerrainGenerator::HasSavedMap(FString mapSeed, MapSizeEnum mapSizeEnum)
+bool PunTerrainGenerator::HasSavedMap(const FMapSettings& mapSettings)
 {
 	FString path = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()) + "terrainMetaData.dat";
 
@@ -789,14 +808,12 @@ bool PunTerrainGenerator::HasSavedMap(FString mapSeed, MapSizeEnum mapSizeEnum)
 		return false;
 	}
 
-	FString tempMapSeed;
-	MapSizeEnum tempMapSizeEnum;
+	FMapSettings tempMapSettings;
 	PunFileUtils::LoadFile(path, [&](FArchive& Ar) {
-		Ar << tempMapSeed;
-		Ar << tempMapSizeEnum;
+		tempMapSettings.Serialize(Ar);
 	});
 
-	return tempMapSeed == mapSeed && tempMapSizeEnum == mapSizeEnum;
+	return tempMapSettings == mapSettings;
 }
 
 bool PunTerrainGenerator::SaveOrLoad(bool isSaving)
@@ -814,8 +831,7 @@ bool PunTerrainGenerator::SaveOrLoad(bool isSaving)
 		
 		// Metadata
 		PunFileUtils::SaveFile(saveMetaDataPath, [&](FArchive& Ar) {
-			Ar << _mapSeed;
-			Ar << _mapSize;
+			_mapSettings.Serialize(Ar);
 		});
 		return PunFileUtils::SaveFile(saveDataPath, serialize);
 	}
@@ -824,8 +840,7 @@ bool PunTerrainGenerator::SaveOrLoad(bool isSaving)
 	
 	// Metadata
 	PunFileUtils::LoadFile(saveMetaDataPath, [&](FArchive& Ar) {
-		Ar << _mapSeed;
-		Ar << _mapSize;
+		_mapSettings.Serialize(Ar);
 	});
 	return PunFileUtils::LoadFile(saveDataPath, serialize);
 }
@@ -921,37 +936,16 @@ void PunTerrainGenerator::SetGameMap(bool isMapSetup)
 	}
 }
 
-// TODO: remove
-//void PunTerrainGenerator::SetProvinceMap(const std::vector<int32>& provinceId2x2Vec)
-//{
-//	//VecReset(_regionMountainTileCount);
-//	//VecReset(_regionWaterTileCount);
-//	
-//	const int32 tileDimX2 = _tileDimX / 2;
-//	const int32 tileDimY2 = _tileDimY / 2;
-//
-//	for (int32 y2 = 0; y2 < tileDimY2; y2++) {
-//		for (int32 x2 = 0; x2 < tileDimX2; x2++)
-//		{
-//			int32 provinceId = provinceId2x2Vec[x2 + y2 * tileDimX2];
-//
-//			if (IsValidProvinceId(provinceId))
-//			{
-//				provinceId = abs(provinceId);
-//
-//				WorldTile2x2 tile2x2(x2, y2);
-//				TerrainTileType tileType = _terrainMap[tile2x2.worldTile2().tileId()];
-//
-//				//if (tileType == TerrainTileType::Mountain) {
-//				//	_regionMountainTileCount[provinceId]++;
-//				//}
-//				//else if (IsWaterTileType(tileType)) {
-//				//	_regionWaterTileCount[provinceId]++;
-//				//}
-//			}
-//		}
-//	}
-//}
+void PunTerrainGenerator::SetMountainTile(WorldTile2 tile)
+{
+	_terrainMap[tile.tileId()] = TerrainTileType::Mountain;
+	_simulation->SetWalkable(tile, false);
+}
+void PunTerrainGenerator::SetWaterTile(WorldTile2 tile)
+{
+	_terrainMap[tile.tileId()] = TerrainTileType::Ocean;
+	_simulation->SetWalkable(tile, false);
+}
 
 
 static std::vector<int16_t> newOctave;
@@ -1025,332 +1019,22 @@ void PunTerrainGenerator::QuadrantMirror2(std::vector<int16_t>& lastOctave, std:
 	}
 }
 
-void PunTerrainGenerator::CalculateWorldTerrain(std::string seed)
+void PunTerrainGenerator::CalculateWorldTerrain(const FMapSettings& mapSettings)
 {
-	_mapSeed = ToFString(seed);
+	_mapSettings = mapSettings;
 
-	PUN_LOG("CalculateWorldTerrain: %s", *_mapSeed);
-	
+	PUN_LOG("CalculateWorldTerrain: %s", *_mapSettings.mapSeed);
+
+	string mapSeed = ToStdString(mapSettings.mapSeed);
 	std::hash<std::string> hasher;
-	int32 seedNumber = hasher(seed);
+	int32 seedNumber = hasher(mapSeed);
 	
 	GameRand::ResetStateToTickCount(seedNumber);
 	perlinGenerator.Init(seedNumber);
+	perlinGenerator2.Init(GameRand::Rand(seedNumber));
+	perlinGenerator3.Init(GameRand::Rand(GameRand::Rand(seedNumber)));
 
 	_initStage = 1;
-
-	//// Perlin
-	//{
-	//	FloatDet freq = FD0_XX(4);
-	//	if (_simulation->mapSizeEnum() == MapSizeEnum::Large) {
-	//		freq *= 2;
-	//	}
-
-	//	for (int i = 0; i < _tileDimX * _tileDimY; i++) {
-	//		int x = i % _tileDimX;
-	//		int y = i / _tileDimY;
-
-	//		_perlinMap[i] = perlinGenerator.noise01(x * freq, y * freq);
-	//	}
-	//}
-
-	//VecReset(_regionMountainTileCount);
-	//VecReset(_regionWaterTileCount);
-
-	//// TODO: tileDimY from norm var below
-
-	//// This is int16 but it is actually compressed FloatDet
-	//std::vector<int16> continentPerlin(_tileDimY * _tileDimX);
-	//std::vector<int16> roughnessPerlin(_tileDimY * _tileDimX);
-	//{
-	//	SCOPE_TIMER_MUL("Generate base perlin", timerMultiplier);
-	//	// Perlins
-	//	//const int continentPerlinFreq = 2;
-	//	int32 roughnessPerlinFreq = 32;
-	//	int32 continentPerlinFreq1 = 2;
-	//	int32 continentPerlinFreq2 = 3;
-	//	int32 continentPerlinFreq3 = 5;
-
-	//	if (_simulation->mapSizeEnum() == MapSizeEnum::Large) {
-	//		roughnessPerlinFreq *= 2;;
-	//		continentPerlinFreq1 *= 2;
-	//		continentPerlinFreq2 *= 2;
-	//		continentPerlinFreq3 *= 2;
-	//	}
-
-	//	for (int y = 0; y < _tileDimY; y++) {
-	//		for (int x = 0; x < _tileDimX; x++)
-	//		{
-	//			FloatDet normX = x * FDOne / _tileDimX;
-	//			FloatDet normY = y * FDOne / _tileDimX; // This is to prevent perlin's stretch
-
-	//			int index = x + y * _tileDimX;
-	//			roughnessPerlin[index] = perlinGenerator.noise(normX * roughnessPerlinFreq, normY * roughnessPerlinFreq);
-	//			continentPerlin[index] = perlinGenerator.noise(normX * continentPerlinFreq1, normY * continentPerlinFreq1) +
-	//									 perlinGenerator.noise(normX * continentPerlinFreq2, normY * continentPerlinFreq2) * 3 / 4 +
-	//									 perlinGenerator.noise(normX * continentPerlinFreq3, normY * continentPerlinFreq3) * 9 / 16; // 8 / 5 * 8 / 10 = 32 / 25
-	//		}
-	//	}
-
-	//	// TODO: make perlin map scaler to scale maps up (better performance)
-	//}
-
-	//// Note that having low initial persistence (curPersistence) lead to a less pronounced mirroring.
-	//std::vector<int16> continentPerlinOctave(continentPerlin);
-	//std::vector<int16> continentPerlinBeforeMirror(continentPerlin);
-	//std::vector<int16> mirroredRoughness(roughnessPerlin);
-	//QuadrantMirror(continentPerlin, continentPerlinOctave, 3, FD0_XX(80), FD0_XX(50));
-	//QuadrantMirror(roughnessPerlin, mirroredRoughness, 7, FD0_XX(90), FD0_XX(50));
-
-	//QuadrantMirror2(mirroredRoughness, highFreqRoughness);
-
-	///*
-	// * Voronoi
-	// */
-	//// Only Sample non deep sea points ??
-	//std::vector<WorldTile2> subContinentPoints;
-	//TileArea subContinentSampleArea(WorldTile2(-_tileDimX / 4, -_tileDimY / 4), WorldTile2(_tileDimX * 6 / 4, _tileDimY * 6 / 4));
-	//for (int i = 0; i < 300; i++) {
-	//	int x = GameRand::Rand() % subContinentSampleArea.sizeX() + subContinentSampleArea.minX; // 6/4 - 1/4
-	//	int y = GameRand::Rand() % subContinentSampleArea.sizeY() + subContinentSampleArea.minY; // TDOO: after making a cylinder world, get rid of this in y direction?
-	//	subContinentPoints.push_back(WorldTile2(x, y));
-	//}
-
-	//// Delaunay
-	//std::vector<int> delaunayTris;
-	//std::vector<CircleTile2> delaunayCircles;
-	//std::vector<pair<int, int>> adjacentTrisPairs;
-	//Delaunay(subContinentPoints, delaunayTris, delaunayCircles, _tileDimX, _tileDimY, subContinentSampleArea, _displayUnitPerTile);
-	//FindAdjacentTrisPairs(delaunayCircles, delaunayTris, _tileDimX, _tileDimY, adjacentTrisPairs);
-
-	//// Draw Delaunay
-	//if (_lineBatch)
-	//{
-	//	for (int i = 0; i < subContinentPoints.size(); i++) {
-	//		//FVector p1 = _mapOrigin + FVector((subContinentPoints[i] % _tileDimX) * _displayUnitPerTile, (subContinentPoints[i] / _tileDimX)* _displayUnitPerTile + 50, 0); // + 50 for weird shift
-	//		FVector p1 = _mapOrigin + FVector(subContinentPoints[i].x * _displayUnitPerTile, subContinentPoints[i].y * _displayUnitPerTile + 50, 0); // + 50 for weird shift
-	//		FVector p2 = p1 + FVector(0, 0, 100);
-	//		_lineBatch->DrawLine(p1, p2, FLinearColor::Red, 0, 2, 120);
-	//	}
-
-	//	//DrawDebugTris(subContinentPoints, delaunayTris, _tileDimX, _lineBatch, _displayUnitPerTile);
-	//	DrawAdjacentTrisPairs(delaunayCircles, adjacentTrisPairs, _lineBatch, _displayUnitPerTile);
-	//}
-
-	////std::vector<std::vector<pair<WorldTile2, WorldTile2>>> regionToCenterPairs(GameMapConstants::TotalRegions);
-	//std::vector<bool> regionToCenterPairs(GameMapConstants::TotalRegions);
-	//{
-	//	SCOPE_TIMER_MUL("Filter Voronoi by region", timerMultiplier);
-	//	// For each region, go through all adjacentTrisPairs and determine if the pair should be placed within the region
-	//	// regionToCenterPairs can be queried later when we loop through all tileX*tileY. This is for performance.
-	//	for (int regionId = 0; regionId < regionToCenterPairs.size(); regionId++) {
-	//		for (int i = adjacentTrisPairs.size(); i-- > 0;)
-	//		{
-	//			WorldTile2 center1 = delaunayCircles[adjacentTrisPairs[i].first].center;
-	//			WorldTile2 center2 = delaunayCircles[adjacentTrisPairs[i].second].center;
-	//			WorldTile2 regionCenter = WorldRegion2(regionId).centerTile();
-
-	//			WorldTile2 center1toCurrent = regionCenter - center1;
-	//			// 1 + before sqrt prevent div by 0
-	//			//int center1toCurrentDist = 1 + (int)sqrtf(center1toCurrent.x*center1toCurrent.x + center1toCurrent.y * center1toCurrent.y);
-
-	//			WorldTile2 center1toCenter2 = center2 - center1;
-	//			int center1toCenter2Dist = 1 + (int)sqrtf(center1toCenter2.x*center1toCenter2.x + center1toCenter2.y * center1toCenter2.y);
-
-	//			FloatDet dirX = center1toCenter2.x * FDOne / center1toCenter2Dist;
-	//			FloatDet dirY = center1toCenter2.y * FDOne / center1toCenter2Dist;
-
-	//			// dot is for projection... center1toCurrent gets projected onto center1toCenter2
-	//			//  use int and not FloatDot to prevent overflow
-	//			int dot = FDToInt(dirX * center1toCurrent.x + dirY * center1toCurrent.y);
-
-	//			// Shave off regions in direction parallel to the edge.
-	//			// dot needs be between 0 and center1toCenter2Dist for the point to be between edge's two points
-	//			if (dot > center1toCenter2Dist || dot <= 0) continue;
-
-	//			int pointAlongLineX = FDToInt(dot * dirX) + center1.x;
-	//			int pointAlongLineY = FDToInt(dot * dirY) + center1.y;
-
-	//			int perpendicularX = regionCenter.x - pointAlongLineX;
-	//			int perpendicularY = regionCenter.y - pointAlongLineY;
-
-	//			// 1 + before sqrt prevent div by 0
-	//			int perpendicularDist = 1 + (int)sqrtf(perpendicularX * perpendicularX + perpendicularY * perpendicularY);
-
-	//			// Shave off regions in direction perpendicular the the edge.
-	//			// TODO: tileDimX / 4 is temporary
-	//			if (perpendicularDist < _tileDimX / 32) {
-	//				//regionToCenterPairs[regionId].push_back(pair<WorldTile2, WorldTile2>(center1, center2));
-	//				regionToCenterPairs[regionId] = true;
-	//			}
-	//		}
-	//	}
-	//}
-
-	//// map that has tiles 4 units apart... used to smooth the jagged subcontinent voronoi.
-	//const int32 tile4x4PerWorldX = GameMapConstants::TilesPerWorldX / 4;
-	//const int32 tile4x4PerWorldY = GameMapConstants::TilesPerWorldY / 4;
-	//const int32 tile4x4PerRegion = CoordinateConstants::TilesPerRegion / 4;
-	//const int32 totalTile4x4 = tile4x4PerWorldX * tile4x4PerWorldY;
-
-	//std::vector<FloatDet> tile4x4ToMountainRangeHeights(totalTile4x4);
-	//std::vector<FloatDet> tile4x4ToMountainRangeHeightsTemp(totalTile4x4);
-	//{
-	//	SCOPE_TIMER_MUL("Mountain Range", timerMultiplier);
-
-	//	// fill tile4x4 map.
-	//	const int32 regionPerWorldX = GameMapConstants::RegionsPerWorldX;
-	//	const int32 regionPerWorldY = GameMapConstants::RegionsPerWorldY;
-
-	//	for (int regionX = 0; regionX < regionPerWorldX; regionX++) { 
-	//		for (int regionY = 0; regionY < regionPerWorldY; regionY++)
-	//		{
-	//			int32 regionX1 = min(regionX + 1, regionPerWorldX - 1);
-	//			int32 regionY1 = min(regionY + 1, regionPerWorldY - 1);
-
-	//			FloatDet height_x0_y0 = regionToCenterPairs[regionX + regionY * regionPerWorldX] ? FDOne : 0;
-	//			FloatDet height_x0_y1 = regionToCenterPairs[regionX + regionY1 * regionPerWorldX] ? FDOne : 0;
-	//			FloatDet height_x1_y0 = regionToCenterPairs[regionX1 + regionY * regionPerWorldX] ? FDOne : 0;
-	//			FloatDet height_x1_y1 = regionToCenterPairs[regionX1 + regionY1 * regionPerWorldX] ? FDOne : 0;
-
-	//			for (int y = 0; y < tile4x4PerRegion; y++) {
-	//				for (int x = 0; x < tile4x4PerRegion; x++)
-	//				{
-	//					FloatDet xAt0Lerp = (height_x0_y0 * (tile4x4PerRegion - y) + height_x0_y1 * y) / tile4x4PerRegion;
-	//					FloatDet xAt1Lerp = (height_x1_y0 * (tile4x4PerRegion - y) + height_x1_y1 * y) / tile4x4PerRegion;
-	//					int32_t tile4x4_X = x + regionX * tile4x4PerRegion;
-	//					int32_t tile4x4_Y = y + regionY * tile4x4PerRegion;
-	//					int tile4x4Id = tile4x4_X + tile4x4_Y * tile4x4PerWorldX;
-	//					tile4x4ToMountainRangeHeights[tile4x4Id] = (xAt0Lerp * (tile4x4PerRegion - x) + xAt1Lerp * x) / tile4x4PerRegion;
-	//				}
-	//			}
-	//		}
-	//	}
-
-	//	// 2 Pass Smooth ..
-	//	// TODO: optimize with moving sum???
-	//	const int32_t kernelSize = 4;
-	//	const int32_t kernelSize2 = 1 + kernelSize * 2;
-	//	for (int tile4x4_Y = 0; tile4x4_Y < tile4x4PerWorldY; tile4x4_Y++) {
-	//		for (int tile4x4_X = kernelSize; tile4x4_X < tile4x4PerWorldX - kernelSize; tile4x4_X++)
-	//		{
-	//			FloatDet sum = 0;
-	//			for (int xx = -kernelSize; xx < kernelSize + 1; xx++) {
-	//				sum += tile4x4ToMountainRangeHeights[(tile4x4_X + xx) + tile4x4_Y * tile4x4PerWorldX];
-	//			}
-	//			tile4x4ToMountainRangeHeightsTemp[tile4x4_X + tile4x4_Y * tile4x4PerWorldX] = sum / kernelSize2;
-	//		}
-	//	}
-	//	for (int tile4x4_Y = kernelSize; tile4x4_Y < tile4x4PerWorldY - kernelSize; tile4x4_Y++) {
-	//		for (int tile4x4_X = 0; tile4x4_X < tile4x4PerWorldX; tile4x4_X++)
-	//		{
-	//			FloatDet sum = 0;
-	//			for (int yy = -kernelSize; yy < kernelSize + 1; yy++) {
-	//				sum += tile4x4ToMountainRangeHeightsTemp[tile4x4_X + (tile4x4_Y + yy) * tile4x4PerWorldX];
-	//			}
-	//			tile4x4ToMountainRangeHeights[tile4x4_X + tile4x4_Y * tile4x4PerWorldX] = sum / kernelSize2;
-	//		}
-	//	}
-
-	//	// Reuse continentPerlin to do subcontinentVoronoi lerp
-	//	for (int tile4x4_Y = 0; tile4x4_Y < tile4x4PerWorldY; tile4x4_Y++) {
-	//		for (int tile4x4_X = 0; tile4x4_X < tile4x4PerWorldX; tile4x4_X++)
-	//		{
-	//			int32_t tile4x4_X_1 = min(tile4x4_X + 1, tile4x4PerWorldX - 1);
-	//			int32_t tile4x4_Y_1 = min(tile4x4_Y + 1, tile4x4PerWorldY - 1);
-
-	//			FloatDet height_x0_y0 = tile4x4ToMountainRangeHeights[tile4x4_X + tile4x4_Y * tile4x4PerWorldX];
-	//			FloatDet height_x0_y1 = tile4x4ToMountainRangeHeights[tile4x4_X + tile4x4_Y_1 * tile4x4PerWorldX];
-	//			FloatDet height_x1_y0 = tile4x4ToMountainRangeHeights[tile4x4_X_1 + tile4x4_Y * tile4x4PerWorldX];
-	//			FloatDet height_x1_y1 = tile4x4ToMountainRangeHeights[tile4x4_X_1 + tile4x4_Y_1 * tile4x4PerWorldX];
-
-	//			for (int y = 0; y < 4; y++) {
-	//				for (int x = 0; x < 4; x++)
-	//				{
-	//					FloatDet x0Lerp = (height_x0_y0 * (4 - y) + height_x0_y1 * y) / 4;
-	//					FloatDet x1Lerp = (height_x1_y0 * (4 - y) + height_x1_y1 * y) / 4;
-	//					int32_t tileX = x + tile4x4_X * 4;
-	//					int32_t tileY = y + tile4x4_Y * 4;
-	//					int tileId = tileX + tileY * _tileDimX;
-	//					continentPerlin[tileId] = (x0Lerp * (4 - x) + x1Lerp * x) / 4;
-	//				}
-	//			}
-	//		}
-	//	}
-
-	//}
-
-	///*
-	// * Assemble HeightMap
-	// */
-	//{
-	//	SCOPE_TIMER_MUL("Assemble HeightMap", timerMultiplier);
-	//	int count = 0;
-	//	const FloatDet continentPerlinFactor = FD0_XX(35); // The higher factor, the less land mass???
-
-	//	for (int y = 0; y < _tileDimY; y++) {
-	//		for (int x = 0; x < _tileDimX; x++)
-	//		{
-	//			FloatDet normX = IntToFD(x) / _tileDimX;
-	//			FloatDet normY = IntToFD(y) / _tileDimY;
-	//			
-	//			int tileId = x + y * _tileDimX;
-	//			/*
-	//			 * Parabola Tapering
-	//			 */
-	//			PUN_CHECK(0 <= normX && normX < FDOne)
-	//			FloatDet parabolaX2 = (normX - FDHalf) * 2; // Turn [0 to 1] -> [-1 to 1]
-	//			parabolaX2 = abs(parabolaX2);
-	//			//parabolaX2 = FDMul(parabolaX2, parabolaX2);
-	//			FloatDet parabolaTaperingX = FDOne - parabolaX2;
-
-	//			FloatDet parabolaY2 = (normY - FDHalf) * 2;
-	//			parabolaY2 = FDMul(parabolaY2, parabolaY2);
-	//			//parabolaY2 = FDMul(parabolaY2, parabolaY2);
-	//			FloatDet parabolaTaperingY = FDOne - parabolaY2;
-
-	//			FloatDet parabolaTapering = FDMin(parabolaTaperingX, parabolaTaperingY);
-
-	//			// Perlin
-	//			FloatDet roughPerlin_n1to1 = mirroredRoughness[tileId];
-	//			FloatDet continentPerlinFinal = continentPerlinOctave[tileId] + FDQuarter(roughPerlin_n1to1);
-	//			continentPerlinFinal = FDHalf(continentPerlinFinal) + FDHalf;
-	//			FloatDet continentPerlinTapered = FDMul(continentPerlinFinal - continentPerlinFactor, parabolaTapering);
-	//			FloatDet continents = FDMin(FD0_XXX(125), continentPerlinTapered); // Flat land + ocean
-
-	//			FloatDet subcontinentVoronoi = continentPerlin[tileId];
-	//			
-	//			// The more continentLandFactor, the closer an ocean floor is to land. at continents=0.125f, this is 1.0f which means mountains have full strength
-	//			FloatDet continentLandFactor = FDDiv(continents - FD0_X(1), FD0_XXX(025));
-	//			continentLandFactor = FDMax(continentLandFactor, 0);
-
-	//			// Make mountain range
-	//			FloatDet roughPerlinMountain = FDMax(0, roughPerlin_n1to1 - FDOne / 8);
-	//			FloatDet roughPerlinMountainWithVoronoiPlain = FDMul(subcontinentVoronoi, roughPerlinMountain);
-	//			FloatDet mountainRange = FDMul(roughPerlinMountainWithVoronoiPlain, continentLandFactor);
-
-	//			// Main!!!
-	//			FloatDet finalZ = continents;
-	//			finalZ += mountainRange;
-
-	//			heightMap[x + y * _tileDimX] = FDMax(0, FDMin(FDOne, finalZ));
-
-	//			// Reuse continentPerlin as unflatted continent for river calcation
-	//			// We don't use continentLandFactor directly because that is a flat land
-	//			FloatDet subcontinentVoronoiAdjustedForRiver = max(0, (int)FDMul(subcontinentVoronoi, roughPerlin_n1to1)); // only half of perlin protrude up
-	//			continentPerlin[tileId] = (FDHalf(continentPerlinBeforeMirror[tileId]) + FDHalf) * 2 + subcontinentVoronoiAdjustedForRiver / 4 + roughPerlin_n1to1 / 16;// continentPerlinTapered / 3 + (subcontinentVoronoiAdjustedForRiver / 32);
-	//			//continentPerlin[tileId] = (continentPerlinBeforeMirror[tileId]) * 2;// +subcontinentVoronoiAdjustedForRiver / 4 + roughPerlin_n1to1 / 16;// continentPerlinTapered / 3 + (subcontinentVoronoiAdjustedForRiver / 32);
-
-	//		}
-	//	}
-	//}
-
-	//Erode(continentPerlin, continentPerlinBeforeMirror, mirroredRoughness);
-
-	//// rainfall4x4map
-	//GenerateMoisture();
-
-	//SCOPE_TIMER_LOOP_PRINT("subcontinentVoronoi");
 
 	PUN_LOG("RandState Done %d", GameRand::RandState());
 }
@@ -1375,10 +1059,10 @@ uint8 PunTerrainGenerator::Init1()
 
 	auto modifyPerlinFreq = [&](int32& freq)
 	{
-		if (_mapSize == MapSizeEnum::Large) {
+		if (_mapSettings.mapSizeEnum() == MapSizeEnum::Large) {
 			freq *= 2;
 		}
-		if (_mapSize == MapSizeEnum::Small) {
+		if (_mapSettings.mapSizeEnum() == MapSizeEnum::Small) {
 			freq /= 2;
 		}
 	};
@@ -1402,7 +1086,8 @@ uint8 PunTerrainGenerator::Init1()
 	// TODO: tileDimY from norm var below
 
 	// This is int16 but it is actually compressed FloatDet
-	continentPerlin = std::vector<int16>(_tileDimY * _tileDimX);
+	continentPerlin1 = std::vector<int16>(_tileDimY * _tileDimX);
+	continentPerlin2 = std::vector<int16>(_tileDimY * _tileDimX);
 	roughnessPerlin = std::vector<int16>(_tileDimY * _tileDimX);
 	{
 		SCOPE_TIMER_MUL("Generate base perlin", timerMultiplier);
@@ -1413,9 +1098,6 @@ uint8 PunTerrainGenerator::Init1()
 		int32 continentPerlinFreq3 = 5;
 
 		modifyPerlinFreq(roughnessPerlinFreq);
-		//modifyPerlinFreq(continentPerlinFreq1);
-		//modifyPerlinFreq(continentPerlinFreq2);
-		//modifyPerlinFreq(continentPerlinFreq3);
 
 		for (int y = 0; y < _tileDimY; y++) {
 			for (int x = 0; x < _tileDimX; x++)
@@ -1425,9 +1107,67 @@ uint8 PunTerrainGenerator::Init1()
 
 				int index = x + y * _tileDimX;
 				roughnessPerlin[index] = perlinGenerator.noise(normX * roughnessPerlinFreq, normY * roughnessPerlinFreq);
-				continentPerlin[index] = perlinGenerator.noise(normX * continentPerlinFreq1, normY * continentPerlinFreq1) +
-					perlinGenerator.noise(normX * continentPerlinFreq2, normY * continentPerlinFreq2) * 3 / 4 +
-					perlinGenerator.noise(normX * continentPerlinFreq3, normY * continentPerlinFreq3) * 9 / 16; // 8 / 5 * 8 / 10 = 32 / 25
+
+				// Multiple perlins since QuadrantMirror starts to look weird after multiple octaves
+				// Solution is to do only 1 QuadrantMirror, to get the octaves between the initial 3 octaves
+				// 2, 3, 5 each has around 0.8^2 spacing (frequency decreases 0.8 each octave)
+				//
+				//const int32 initialFrequency = 2;
+				//const FloatDet frequencyPercentStep = 70;
+				//const FloatDet persistent1000 = 850;
+				//FloatDet strength1000 = 1000;
+
+				//FloatDet perlinTotal = 0;
+				//FloatDet perlinX = normX * initialFrequency;
+				//FloatDet perlinY = normY * initialFrequency;
+				//for (int32 i = 0; i < 7; i++) {
+				//	perlinTotal += perlinGenerator.noise(perlinX, perlinY) * strength1000 / 1000;
+				//	
+				//	perlinX = perlinX * frequencyPercentStep / 100;
+				//	perlinY = perlinY * frequencyPercentStep / 100;
+				//	strength1000 = strength1000 * persistent1000 / 1000;
+				//}
+				
+				//continentPerlin[index] = perlinTotal;
+
+				
+				
+				
+				//// .85 persistent (.9 is too much, too scattered)
+				//continentPerlin[index] = perlinGenerator.noise(normX * 2, normY * 2) +
+				//						perlinGenerator2.noise(normX * 3, normY * 3) * 85 / 100 + // * 13 / 20 +
+				//						perlinGenerator3.noise(normX * 5, normY * 5) * 72 / 100 + // * 3 / 4 + // .85^2 ~= 3/4
+				//						perlinGenerator.noise(normX * 7, normY * 7) * 61 / 100 + // * 3 / 5 + // .85^3 = 3/5
+				//						perlinGenerator2.noise(normX * 10, normY * 10) * 52 / 100 + // / 2 + // .85^4 ~= 1/2
+				//						
+				//						perlinGenerator3.noise(normX * 15, normY * 15) * 44 / 100 +
+				//						perlinGenerator.noise(normX * 23, normY * 23) * 38 / 100 +
+				//						perlinGenerator.noise(normX * 35, normY * 35) * 32 / 100 +
+				//						perlinGenerator.noise(normX * 53, normY * 53) * 27 / 100 +
+				//						perlinGenerator.noise(normX * 80, normY * 80) * 23 / 100;
+
+				// 1) less detail for river...
+				continentPerlin1[index] =
+					perlinGenerator.noise(normX * 3, normY * 3) +
+					perlinGenerator2.noise(normX * 5, normY * 5) * 80 / 100;
+
+				// 2) details
+				continentPerlin2[index] =
+					perlinGenerator3.noise(normX * 7, normY * 7) * 67 / 100 +
+					perlinGenerator.noise(normX * 10, normY * 10) * 55 / 100 +
+					perlinGenerator2.noise(normX * 15, normY * 15) * 45 / 100 +
+
+					perlinGenerator3.noise(normX * 23, normY * 23) * 37 / 100 +
+					perlinGenerator.noise(normX * 35, normY * 35) * 30 / 100;
+					//perlinGenerator.noise(normX * 52, normY * 52) * 25 / 100;
+
+					//perlinGenerator.noise(normX * continentPerlinFreq1, normY * continentPerlinFreq1) +
+					//perlinGenerator.noise(normX * continentPerlinFreq2, normY * continentPerlinFreq2) * 3 / 4 +
+					//perlinGenerator.noise(normX * continentPerlinFreq3, normY * continentPerlinFreq3) * 9 / 16; // 8 / 5 * 8 / 10 = 32 / 25
+
+				//continentPerlin2[index] = perlinGenerator2.noise(normX * continentPerlinFreq2, normY * continentPerlinFreq2);
+
+				// Use 2 perlins since doing mirroring too much create artifact
 			}
 		}
 
@@ -1442,11 +1182,19 @@ uint8 PunTerrainGenerator::Init2()
 	INIT_LOG("WorldInit2: %d, %d .. %d", _tileDimX, _tileDimY, GameMapConstants::TilesPerWorldX);
 	
 	// Note that having low initial persistence (curPersistence) lead to a less pronounced mirroring.
-	continentPerlinOctave = std::vector<int16>(continentPerlin);
-	continentPerlinBeforeMirror = std::vector<int16>(continentPerlin);
+	//continentPerlinOctave = std::vector<int16>(continentPerlin1);
+	
+	continentPerlinBeforeMirror = std::vector<int16>(continentPerlin1);
 	mirroredRoughness = std::vector<int16>(roughnessPerlin);
-	QuadrantMirror(continentPerlin, continentPerlinOctave, 3, FD0_XX(80), FD0_XX(50));
+
+
+	// TODO: has quality settings for octave?
+	//QuadrantMirror(continentPerlin, continentPerlinOctave, 1, FD0_XX(85), FD0_XX(85)); // 5 octave
+
+	//QuadrantMirror(continentPerlin, continentPerlinOctave, 3, FD0_XX(80), FD0_XX(50));
 	QuadrantMirror(roughnessPerlin, mirroredRoughness, 7, FD0_XX(90), FD0_XX(50));
+
+	
 
 	_initStage = 3;
 	return false;
@@ -1455,9 +1203,9 @@ uint8 PunTerrainGenerator::Init3()
 {
 	INIT_LOG("WorldInit3: %d, %d .. %d", _tileDimX, _tileDimY, GameMapConstants::TilesPerWorldX);
 	/*
- * Voronoi
- */
- // Only Sample non deep sea points ??
+	 * Voronoi
+	 */
+	 // Only Sample non deep sea points ??
 	std::vector<WorldTile2> subContinentPoints;
 	TileArea subContinentSampleArea(WorldTile2(-_tileDimX / 4, -_tileDimY / 4), WorldTile2(_tileDimX * 6 / 4, _tileDimY * 6 / 4));
 	for (int i = 0; i < 300; i++) {
@@ -1602,7 +1350,8 @@ uint8 PunTerrainGenerator::Init3()
 			}
 		}
 
-		// Reuse continentPerlin to do subcontinentVoronoi lerp
+		// subcontinentVoronoi lerp
+		subcontinentVoronois = std::vector<int16>(_tileDimY * _tileDimX);
 		for (int tile4x4_Y = 0; tile4x4_Y < tile4x4PerWorldY; tile4x4_Y++) {
 			for (int tile4x4_X = 0; tile4x4_X < tile4x4PerWorldX; tile4x4_X++)
 			{
@@ -1622,7 +1371,7 @@ uint8 PunTerrainGenerator::Init3()
 						int32_t tileX = x + tile4x4_X * 4;
 						int32_t tileY = y + tile4x4_Y * 4;
 						int tileId = tileX + tileY * _tileDimX;
-						continentPerlin[tileId] = (x0Lerp * (4 - x) + x1Lerp * x) / 4;
+						subcontinentVoronois[tileId] = (x0Lerp * (4 - x) + x1Lerp * x) / 4;
 					}
 				}
 			}
@@ -1636,6 +1385,11 @@ uint8 PunTerrainGenerator::Init3()
 uint8 PunTerrainGenerator::Init4()
 {
 	INIT_LOG("WorldInit4: %d, %d .. %d", _tileDimX, _tileDimY, GameMapConstants::TilesPerWorldX);
+
+	FloatDet continentPerlinFactor = FD0_XX(35); // The higher factor, the less land mass???
+
+	FloatDet continentPerlinFactorVariation = FD0_XX(07);
+	continentPerlinFactor += (static_cast<int>(_mapSettings.mapSeaLevel) - 2) * continentPerlinFactorVariation;
 	
 	/*
 	 * Assemble HeightMap
@@ -1643,7 +1397,6 @@ uint8 PunTerrainGenerator::Init4()
 	{
 		SCOPE_TIMER_MUL("Assemble HeightMap", timerMultiplier);
 		int count = 0;
-		const FloatDet continentPerlinFactor = FD0_XX(35); // The higher factor, the less land mass???
 
 		for (int y = 0; y < _tileDimY; y++) {
 			for (int x = 0; x < _tileDimX; x++)
@@ -1655,27 +1408,30 @@ uint8 PunTerrainGenerator::Init4()
 				/*
 				 * Parabola Tapering
 				 */
-				PUN_CHECK(0 <= normX && normX < FDOne)
-					FloatDet parabolaX2 = (normX - FDHalf) * 2; // Turn [0 to 1] -> [-1 to 1]
-				parabolaX2 = abs(parabolaX2);
+				PUN_CHECK(0 <= normX && normX < FDOne);
+				FloatDet parabolaX2 = (normX - FDHalf) * 2; // Turn [0 to 1] -> [-1 to 1]
+				//parabolaX2 = FDQuarter(abs(parabolaX2)) + FDQuarter(FDMul(parabolaX2, parabolaX2)) * 3;
+				parabolaX2 = abs(parabolaX2); // Less cold land, but more organic looking shape towards poles
 				//parabolaX2 = FDMul(parabolaX2, parabolaX2);
 				FloatDet parabolaTaperingX = FDOne - parabolaX2;
 
 				FloatDet parabolaY2 = (normY - FDHalf) * 2;
+				//parabolaY2 = abs(parabolaY2);
 				parabolaY2 = FDMul(parabolaY2, parabolaY2);
-				//parabolaY2 = FDMul(parabolaY2, parabolaY2);
 				FloatDet parabolaTaperingY = FDOne - parabolaY2;
 
 				FloatDet parabolaTapering = FDMin(parabolaTaperingX, parabolaTaperingY);
 
 				// Perlin
 				FloatDet roughPerlin_n1to1 = mirroredRoughness[tileId];
-				FloatDet continentPerlinFinal = continentPerlinOctave[tileId] + FDQuarter(roughPerlin_n1to1);
+				FloatDet continentPerlinFinal = continentPerlin1[tileId] + continentPerlin2[tileId] +roughPerlin_n1to1 / 16 * 3;
+				//continentPerlinFinal = FDHalf(continentPerlinFinal) + FDHalf;
 				continentPerlinFinal = FDHalf(continentPerlinFinal) + FDHalf;
+				
 				FloatDet continentPerlinTapered = FDMul(continentPerlinFinal - continentPerlinFactor, parabolaTapering);
 				FloatDet continents = FDMin(FD0_XXX(125), continentPerlinTapered); // Flat land + ocean
 
-				FloatDet subcontinentVoronoi = continentPerlin[tileId];
+				FloatDet subcontinentVoronoi = subcontinentVoronois[tileId];
 
 				// The more continentLandFactor, the closer an ocean floor is to land. at continents=0.125f, this is 1.0f which means mountains have full strength
 				FloatDet continentLandFactor = FDDiv(continents - FD0_X(1), FD0_XXX(025));
@@ -1695,7 +1451,7 @@ uint8 PunTerrainGenerator::Init4()
 				// Reuse continentPerlin as unflatted continent for river calcation
 				// We don't use continentLandFactor directly because that is a flat land
 				FloatDet subcontinentVoronoiAdjustedForRiver = max(0, (int)FDMul(subcontinentVoronoi, roughPerlin_n1to1)); // only half of perlin protrude up
-				continentPerlin[tileId] = (FDHalf(continentPerlinBeforeMirror[tileId]) + FDHalf) * 2 + subcontinentVoronoiAdjustedForRiver / 4 + roughPerlin_n1to1 / 16;// continentPerlinTapered / 3 + (subcontinentVoronoiAdjustedForRiver / 32);
+				continentPerlin1[tileId] = (FDHalf(continentPerlinBeforeMirror[tileId]) + FDHalf) * 2 + subcontinentVoronoiAdjustedForRiver / 4 + roughPerlin_n1to1 / 16;// continentPerlinTapered / 3 + (subcontinentVoronoiAdjustedForRiver / 32);
 				//continentPerlin[tileId] = (continentPerlinBeforeMirror[tileId]) * 2;// +subcontinentVoronoiAdjustedForRiver / 4 + roughPerlin_n1to1 / 16;// continentPerlinTapered / 3 + (subcontinentVoronoiAdjustedForRiver / 32);
 
 			}
@@ -1709,7 +1465,7 @@ uint8 PunTerrainGenerator::Init5()
 {
 	INIT_LOG("WorldInit5: %d, %d .. %d", _tileDimX, _tileDimY, GameMapConstants::TilesPerWorldX);
 	
-	Erode(continentPerlin, continentPerlinBeforeMirror, mirroredRoughness);
+	Erode(continentPerlin1, continentPerlin2, mirroredRoughness);
 
 	GenerateMoisture(); // rainfall4x4map
 
@@ -1717,9 +1473,11 @@ uint8 PunTerrainGenerator::Init5()
 	
 	// Clean
 	_initStage = 0;
-	continentPerlin = std::vector<int16>();
+	continentPerlin1 = std::vector<int16>();
+	continentPerlin2 = std::vector<int16>();
+	
 	roughnessPerlin = std::vector<int16>();
-	continentPerlinOctave = std::vector<int16>();
+	//continentPerlinOctave = std::vector<int16>();
 	continentPerlinBeforeMirror = std::vector<int16>();
 	mirroredRoughness = std::vector<int16>();
 

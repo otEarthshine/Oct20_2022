@@ -98,55 +98,7 @@ public:
 		
 		RewardBonusIcon2->SetVisibility(ESlateVisibility::Collapsed);
 
-		// Add Tooltip to self
-		{
-			std::vector<CardEnum> unlockCards = techInfo->GetUnlockNames();
-			
-			UPunBoxWidget* tooltipBox = UPunBoxWidget::AddToolTip(this, this)->TooltipPunBoxWidget;
-			if (tooltipBox) 
-			{
-				tooltipBox->AfterAdd();
-
-				// Header
-				tooltipBox->AddRichText("<TipHeader>" + techInfo->GetName() + "</>");
-				tooltipBox->AddSpacer();
-
-
-				std::stringstream ss;
-				//ss << techInfo->scienceNeeded(unlockSys->techsFinished) << "<img id=\"Science\"/> Science";
-				//tooltipBox->AddRichText(ss);
-				//tooltipBox->AddLineSpacer(12);
-
-				// Bonus body
-				if (techInfo->HasBonus()) {
-					tooltipBox->AddRichText(techInfo->GetBonusDescription());
-				}
-
-				if (techInfo->HasBonus() && unlockCards.size() > 0) {
-					tooltipBox->AddLineSpacer(12);
-				}
-
-				// Unlock body
-				if (unlockCards.size() > 0) {
-					ss << "Unlocks:";
-					for (const CardEnum& cardEnum : unlockCards) {
-						if (IsBuildingCard(cardEnum)) {
-							ss << "\n - Building: " << GetBuildingInfo(cardEnum).name;
-						}
-						else if (IsActionCard(cardEnum)) {
-							ss << "\n - Action card: " << GetBuildingInfo(cardEnum).name;
-						}
-						else if (IsGlobalSlotCard(cardEnum)) {
-							ss << "\n - Slot card (Global): " << GetBuildingInfo(cardEnum).name;
-						}
-						else {
-							ss << "\n - Slot card (Building): " << GetBuildingInfo(cardEnum).name;
-						}
-					}
-					tooltipBox->AddRichText(ss);
-				}
-			}
-		}
+		UpdateTooltip();
 	}
 
 	FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
@@ -162,6 +114,63 @@ public:
 
 	void SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool isInTechQueue, std::shared_ptr<ResearchInfo> tech = nullptr);
 
+	
+	void UpdateTooltip()
+	{
+		auto unlockSys = simulation().unlockSystem(playerId());
+		auto techInfo = unlockSys->GetTechInfo(techEnum);
+		std::vector<CardEnum> unlockCards = techInfo->GetUnlockNames();
+
+		UPunBoxWidget* tooltipBox = UPunBoxWidget::AddToolTip(this, this)->TooltipPunBoxWidget;
+		if (tooltipBox)
+		{
+			tooltipBox->AfterAdd();
+
+			// Header
+			tooltipBox->AddRichText("<TipHeader>" + techInfo->GetName() + "</>");
+			tooltipBox->AddSpacer();
+
+			// Sci points
+			//std::stringstream ss;
+			//tooltipBox->AddSpacer();
+
+			std::stringstream ss;
+			ss << "Cost: " << techInfo->scienceNeeded(unlockSys->techsFinished) << "<img id=\"Science\"/>";
+			tooltipBox->AddRichText(ss);
+			tooltipBox->AddSpacer();
+			//tooltipBox->AddLineSpacer(12);
+
+			// Bonus body
+			if (techInfo->HasBonus()) {
+				tooltipBox->AddRichText(techInfo->GetBonusDescription());
+			}
+
+			if (techInfo->HasBonus() && unlockCards.size() > 0) {
+				tooltipBox->AddLineSpacer(12);
+			}
+
+			// Unlock body
+			if (unlockCards.size() > 0) {
+				ss << "Unlocks:";
+				for (const CardEnum& cardEnum : unlockCards) {
+					if (IsBuildingCard(cardEnum)) {
+						ss << "\n - Building: " << GetBuildingInfo(cardEnum).name;
+					}
+					else if (IsActionCard(cardEnum)) {
+						ss << "\n - Action card: " << GetBuildingInfo(cardEnum).name;
+					}
+					else if (IsGlobalSlotCard(cardEnum)) {
+						ss << "\n - Slot card (Global): " << GetBuildingInfo(cardEnum).name;
+					}
+					else {
+						ss << "\n - Slot card (Building): " << GetBuildingInfo(cardEnum).name;
+					}
+				}
+				tooltipBox->AddRichText(ss);
+			}
+		}
+	}
+	
 public:
 	TechEnum techEnum = TechEnum::None;
 

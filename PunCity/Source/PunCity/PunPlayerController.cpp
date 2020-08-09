@@ -563,6 +563,10 @@ void APunPlayerController::Tick(float DeltaTime)
 		}
 	}
 
+	// Trailer Mode has no mouse
+	bShowMouseCursor = !SimSettings::IsOn("TrailerMode");
+	
+
 	// Inputs
 	if (cameraPawn) {
 		MouseInfo mouseInfo;
@@ -885,8 +889,14 @@ void APunPlayerController::ShowUnit(const FString& unitName)
 void APunPlayerController::AnimalCount()
 {
 	auto& unitSystem = gameManager->simulation().unitSystem();
-	
+
+#if !WITH_EDITOR
+	GEngine->bEnableOnScreenDebugMessages = true;
+#endif
 	PUN_DEBUG2("Unit Count:%d", unitSystem.unitCount());
+#if !WITH_EDITOR
+	GEngine->bEnableOnScreenDebugMessages = false;
+#endif
 }
 void APunPlayerController::AddAnimals(int32 unitCount)
 {

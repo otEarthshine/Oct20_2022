@@ -56,6 +56,24 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) UButton* RestoreDefaultsButton;
 
+
+private:
+	void SetupResolutionDropdown() {
+		ResolutionDropdown->ClearOptions();
+		UKismetSystemLibrary::GetSupportedFullscreenResolutions(resolutions);
+		FIntPoint screenResolution = GetGameUserSettings()->GetScreenResolution();
+		
+		int32 selectedIndex = 0;
+		for (FIntPoint point : resolutions) {
+			ResolutionDropdown->AddOption(FString::FromInt(point.X) + "x" + FString::FromInt(point.Y));
+			if (screenResolution == point) {
+				selectedIndex = ResolutionDropdown->GetOptionCount() - 1;
+			}
+		}
+		ResolutionDropdown->SetSelectedIndex(selectedIndex);
+	}
+	
+
 private:
 	UFUNCTION() void OnMasterVolumeChanged(float volume) {
 		gameInstance()->SetMasterVolume(std::max(volume, MinVolume)); // 0.01 is so that it doesn't Stop()

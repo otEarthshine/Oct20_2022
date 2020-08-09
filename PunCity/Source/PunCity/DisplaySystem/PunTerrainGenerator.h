@@ -19,7 +19,7 @@ class PunTerrainGenerator
 public:
 	void Init(IGameSimulationCore* simulation, int tileDimX, int tileDimY, float displayUnitPerTile, MapSizeEnum mapSize, ULineBatchComponent* _lineBatch);
 
-	void CalculateWorldTerrain(std::string seed);
+	void CalculateWorldTerrain(const FMapSettings& mapSettings);
 
 	bool isGeneratingTerrain() { return _initStage > 0; }
 	int32 percentLoaded() {
@@ -32,11 +32,15 @@ public:
 	uint8 Init4();
 	uint8 Init5();
 
-	static bool HasSavedMap(FString mapSeed, MapSizeEnum mapSizeEnum);
+	static bool HasSavedMap(const FMapSettings& mapSettings);
 	bool SaveOrLoad(bool isSaving);
 
 	void SetGameMap(bool isMapSetup = true);
 	//void SetProvinceMap(const std::vector<int32>& provinceId2x2Vec);
+
+	// Set some tiles to terrain (such as those without provinceId)
+	void SetMountainTile(WorldTile2 tile);
+	void SetWaterTile(WorldTile2 tile);
 
 	const std::vector<int16>& GetHeightMap() { return heightMap; }
 
@@ -258,8 +262,9 @@ public:
 	std::vector<int16> heightMap;
 
 private:
-	FString _mapSeed;
-	MapSizeEnum _mapSize = MapSizeEnum::Medium;
+	//FString _mapSeed;
+	//MapSizeEnum _mapSize = MapSizeEnum::Medium;
+	FMapSettings _mapSettings;
 	
 	std::vector<uint8> _river4x4Map;
 	std::vector<uint8> _rainfall4x4Map;
@@ -271,6 +276,9 @@ private:
 	std::vector<uint16> _appealMap;
 
 	Perlin perlinGenerator;
+	Perlin perlinGenerator2;
+	Perlin perlinGenerator3;
+	
 	std::vector<uint16> _perlinMap; // Nice perlin map for trees/stones/farming/appeals etc.
 
 	/*
@@ -287,9 +295,12 @@ private:
 	 * Temp variables
 	 */
 	int32 _initStage = 0;
-	std::vector<int16> continentPerlin;
+	std::vector<int16> continentPerlin1;
+	std::vector<int16> continentPerlin2;
+	std::vector<int16> subcontinentVoronois;
+	
 	std::vector<int16> roughnessPerlin;
-	std::vector<int16> continentPerlinOctave;
+	//std::vector<int16> continentPerlinOctave;
 	std::vector<int16> continentPerlinBeforeMirror;
 	std::vector<int16> mirroredRoughness;
 };

@@ -93,6 +93,7 @@ public:
 	UFUNCTION() void OnCheckAllowResource(bool active)
 	{
 		auto command = std::make_shared<FSetAllowResource>();
+		command->buildingId = ObjectId;
 		command->resourceEnum = uiResourceEnum;
 		command->allowed = active;
 		networkInterface()->SendNetworkCommand(command);

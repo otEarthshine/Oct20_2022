@@ -67,6 +67,8 @@ public:
 
 	void Tick();
 
+	void TickDebugUI();
+
 	void ScrollChatToEnd()
 	{
 		ChatBox->ScrollWidgetIntoView(ChatBox->GetChildAt(ChatBox->GetChildrenCount() - 1), false, EDescendantScrollDestination::Center);

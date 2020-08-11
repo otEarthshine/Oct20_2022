@@ -835,22 +835,27 @@ public:
 		}
 
 		// Merge PlaceDrag for roads
-		for (size_t i = commands.size() - 1; i-- > 1;)
+		for (size_t i = commands.size(); i-- > 1;)
 		{
 			auto& command = commands[i];
-			auto& nextCommand = commands[i + 1];
+			auto& prevCommand = commands[i - 1];
 
 			if (command->commandType() == NetworkCommandEnum::PlaceGather &&
-				nextCommand->commandType() == NetworkCommandEnum::PlaceGather)
+				prevCommand->commandType() == NetworkCommandEnum::PlaceGather)
 			{
 				auto commandCasted = std::static_pointer_cast<FPlaceGatherParameters>(command);
-				auto nextCommandCasted = std::static_pointer_cast<FPlaceGatherParameters>(nextCommand);
+				auto prevCommandCasted = std::static_pointer_cast<FPlaceGatherParameters>(prevCommand);
 
 				if (commandCasted->placementType == static_cast<int32>(PlacementType::DirtRoad) &&
-					nextCommandCasted->placementType == static_cast<int32>(PlacementType::DirtRoad)) 
+					prevCommandCasted->placementType == static_cast<int32>(PlacementType::DirtRoad))
 				{
-					commandCasted->path.Append(nextCommandCasted->path);
-					commands.erase(commands.begin() + i + 1);
+					// TODO: weird why duplicates
+					for (int32 j = 0; j < commandCasted->path.Num(); j++) {
+						if (!prevCommandCasted->path.Contains(commandCasted->path[j])) {
+							prevCommandCasted->path.Add(commandCasted->path[j]);
+						}
+					}
+					commands.erase(commands.begin() + i);
 				}
 			}
 		}

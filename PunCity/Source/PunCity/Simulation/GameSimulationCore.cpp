@@ -1429,10 +1429,17 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuildingParameters parameters)
 				building(buildingId).subclass<House>().trailerTargetHouseLvl = parameters.buildingLevel;
 			}
 			// Farm 
-			if (cardEnum == CardEnum::Farm) {
-				TileObjEnum plantEnum = static_cast<TileObjEnum>(parameters.buildingLevel);
-				if (GetTileObjInfo(plantEnum).type != ResourceTileType::Bush) {
-					plantEnum = TileObjEnum::WheatBush;
+			if (cardEnum == CardEnum::Farm) 
+			{
+				TileObjEnum plantEnum = TileObjEnum::WheatBush;
+				if (0 <= parameters.buildingLevel && parameters.buildingLevel < TileObjEnumCount)  
+				{
+					if (GetTileObjInfo(plantEnum).type != ResourceTileType::Bush) {
+						plantEnum = TileObjEnum::WheatBush;
+					}
+					else {
+						plantEnum = static_cast<TileObjEnum>(parameters.buildingLevel);
+					}
 				}
 				building(buildingId).subclass<Farm>().currentPlantEnum = plantEnum;
 				building(buildingId).FinishConstruction();
@@ -3413,6 +3420,25 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuildingParameters com
 			storage->AddResource(ResourceEnum::SteelTools, 180);
 			storage->AddResource(ResourceEnum::Medicine, 240);
 		}
+	}
+
+	/*
+	 * Trailer Special Case
+	 */
+	if (SimSettings::IsOn("TrailerMode"))
+	{
+		// Buy Map
+		// Loop through whole map setting
+		for (int32 provinceId = 0; provinceId < GameMapConstants::TotalRegions; provinceId++) {
+			if (_provinceSystem.IsProvinceValid(provinceId) &&
+				_regionSystem->provinceOwner(provinceId) != command.playerId)
+			{
+				SetProvinceOwner(provinceId, command.playerId);
+			}
+		}
+
+		// Unlimited Money
+		ChangeMoney(command.playerId, 50000);
 	}
 }
 

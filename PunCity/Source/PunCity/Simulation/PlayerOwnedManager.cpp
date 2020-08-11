@@ -553,6 +553,10 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 		return;
 	}
 
+	if (SimSettings::IsOn("TrailerMode")) {
+		return;
+	}
+
 	/*
 	 * Houses
 	 */

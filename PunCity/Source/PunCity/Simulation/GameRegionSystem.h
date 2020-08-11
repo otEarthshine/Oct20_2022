@@ -26,7 +26,7 @@ public:
 
 	std::vector<int32>& territoryOwnerMap() { return _territoryOwnerMap; }
 
-	void SetProvinceOwner(int32 provinceId, int32 playerId, bool isDirectControl = true)
+	void SetProvinceOwner(int32 provinceId, int32 playerId, bool lightMode = false)
 	{
 		// Also update last owned player
 		int32 lastPlayerId = _territoryOwnerMap[provinceId];
@@ -36,8 +36,15 @@ public:
 		
 		_territoryOwnerMap[provinceId] = playerId;
 		//_isDirectControl[provinceId] = isDirectControl;
-		_simulation->SetNeedDisplayUpdate(DisplayGlobalEnum::Province, true);
 
+		if (SimSettings::IsOn("TrailerMode")) {
+			return;
+		}
+		if (lightMode) {
+			return;
+		}
+		
+		_simulation->SetNeedDisplayUpdate(DisplayGlobalEnum::Province, true);
 		_simulation->AddNeedDisplayUpdateId(DisplayGlobalEnum::Province, provinceId);
 
 		if (playerId != -1) {

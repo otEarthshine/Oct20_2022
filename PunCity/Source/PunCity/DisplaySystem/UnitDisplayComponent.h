@@ -6,7 +6,6 @@
 #include "StaticFastInstancedMeshesComp.h"
 #include "Components/SkeletalMeshComponent.h"
 
-
 struct FRotationInfo
 {
 	float rotationFloat = 0;
@@ -72,9 +71,11 @@ public:
 
 	void BeforeAdd() override {
 		LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayUnit);
-		
-		std::swap(_lastTransforms, _thisTransform);
-		_thisTransform.clear();
+
+		// TODO: find a way to swap TMap
+		//std::swap(_lastTransforms, _thisTransform);
+		_lastTransforms = _thisTransform;
+		_thisTransform.Empty();
 	}
 	void AfterAdd() override
 	{
@@ -94,6 +95,8 @@ public:
 				_lastWorkRotatorRotation.Remove(it.Key);
 			}
 		}
+
+		SkelMeshAfterAdd();
 	}
 
 	// Hide displays when sampleIds.size() becomes zero (Switch to world map)
@@ -129,16 +132,85 @@ private:
 		return unitMeshName;
 	}
 
+
+private:
+	/*
+	 * Skel Mesh
+	 */
+	void AddUnit(int32 unitId , UnitStateAI& unit)
+	{
+		FTransform transform;
+		int32 variationIndex = GetUnitTransformAndVariation(unitId, transform);
+		
+		int32 index = -1;
+		if (_lastUnitIdToSkelMeshIndex.Contains(unitId)) {
+			index = _lastUnitIdToSkelMeshIndex[unitId];
+			_lastUnitIdToSkelMeshIndex.Remove(unitId);
+		}
+		else {
+			for (int32 i = 0; i < _unitSkelMeshes.Num(); i++) {
+				if (!_unitSkelMeshes[i]->IsVisible()) {
+					index = i;
+					break;
+				}
+			}
+			if (index == -1) {
+				index = _unitSkelMeshes.Num();
+				auto skelMesh = NewObject<USkeletalMeshComponent>(this);
+				skelMesh->AttachToComponent(this, FAttachmentTransformRules::KeepRelativeTransform);
+				skelMesh->RegisterComponent();
+				skelMesh->SetSkeletalMesh(_assetLoader->unitSkelMesh(UnitEnum::Human, 0));
+				//skelMesh->SetAnimation(_assetLoader->unitAnimation(UnitAnimationEnum::Walk));
+				//skelMesh->SetPlayRate();
+				_unitSkelMeshes.Add(skelMesh);
+				_unitAnimationEnum.push_back(UnitAnimationEnum::None);
+			}
+		}
+		_unitIdToSkelMeshIndex.Add(unitId, index);
+
+		// Setup the mesh
+		USkeletalMeshComponent* skelMesh = _unitSkelMeshes[index];
+		skelMesh->SetWorldTransform(transform);
+		skelMesh->SetVisibility(true);
+
+		//
+		UnitAnimationEnum animationEnum = UnitAnimationEnum::Waiting;
+		// TODO: need animationEnum in UnitEnum for this...
+
+		if (_unitAnimationEnum[index] != animationEnum) {
+			skelMesh->SetPlayRate(1.0f);
+			skelMesh->PlayAnimation(_assetLoader->unitAnimation(animationEnum), true);
+		}
+
+		_thisTransform.Add(unitId, transform);
+	}
+
+	void SkelMeshAfterAdd()
+	{
+		// Despawn all unused meshes
+		for (auto it : _lastUnitIdToSkelMeshIndex) {
+			_unitSkelMeshes[it.Value]->SetVisibility(false);
+		}
+		_lastUnitIdToSkelMeshIndex = _unitIdToSkelMeshIndex;
+		_unitIdToSkelMeshIndex.Empty(); // _unitIdToSkelMeshIndex.Num());
+	}
+
 private:
 	UPROPERTY() UStaticFastInstancedMeshesComp* _unitMeshes;
 	UPROPERTY() UStaticFastInstancedMeshesComp* _resourceMeshes;
 
-	std::unordered_map<int32, FTransform> _lastTransforms;
-	std::unordered_map<int32, FTransform> _thisTransform;
+	TMap<int32, FTransform> _lastTransforms;
+	TMap<int32, FTransform> _thisTransform;
 
 	UPROPERTY() UStaticFastInstancedMeshesComp* _animatingModuleMeshes;
 
 	TMap<int32, FRotationInfo> _lastWorkRotatorRotation;
 
 	//UPROPERTY() USkeletalMeshComponent* _testAnimatedMesh;
+
+	// Skel
+	UPROPERTY() TArray<USkeletalMeshComponent*> _unitSkelMeshes;
+	std::vector<UnitAnimationEnum> _unitAnimationEnum;
+	TMap<int32, int32> _unitIdToSkelMeshIndex;
+	TMap<int32, int32> _lastUnitIdToSkelMeshIndex;
 };

@@ -23,7 +23,7 @@ public:
 	{
 		ProvinceSystem& provinceSys = sim->provinceSystem();
 		
-		SCOPE_TIMER_("TerritoryMesh Update flatTiles:%d", (playerIdIn != -1 ? playerIdIn : provinceSys.provinceFlatTileCount(provinceIdIn)));
+		//SCOPE_TIMER_("TerritoryMesh Update flatTiles:%d", (playerIdIn != -1 ? playerIdIn : provinceSys.provinceFlatTileCount(provinceIdIn)));
 
 		PunTerrainGenerator& terrainGen = sim->terrainGenerator();
 		

@@ -44,7 +44,10 @@ int32 UUnitDisplayComponent::GetUnitTransformAndVariation(int32 unitId, FTransfo
 	
 
 	
-	FTransform lastTransform = _lastTransforms[unitId];
+	FTransform lastTransform = FTransform::Identity;
+	if (_lastTransforms.Contains(unitId)) {
+		lastTransform = _lastTransforms[unitId];
+	}
 	float lastAnimationTime = lastTransform.GetScale3D().Z;
 	
 	float scale = 1.0f;// unit.age() >= (float)unit.unitInfo().adultTicks ? 1.0f : 0.7f;
@@ -57,9 +60,11 @@ int32 UUnitDisplayComponent::GetUnitTransformAndVariation(int32 unitId, FTransfo
 	FRotator targetRotation = targetDirection.Rotation();
 
 	//! TODO: !!! hack around vertex animate laziness
-	//if (IsAnimal(unit.unitEnum())) {
-	targetRotation.Yaw -= 90;
-	//}
+	if (unit.unitEnum() == UnitEnum::Human) {
+		targetRotation.Yaw += 90;
+	} else {
+		targetRotation.Yaw -= 90;
+	}
 
 	if (targetDirection.Size() > 0.01f) {
 		targetDirection.Normalize();
@@ -105,8 +110,10 @@ int32 UUnitDisplayComponent::GetUnitTransformAndVariation(int32 unitId, FTransfo
 	//if (IsAnimal(unit.unitEnum())) {
 		// Don't exceed the scale of 300 to prevent stuttering animation from inaccurate float
 
-	float gameSpeed = sim.gameSpeedFloat();
-	scale = std::fmodf(lastAnimationTime + (unitSystem.isMoving(unitId) ? (GetWorld()->GetDeltaSeconds() * 2.0f * gameSpeed) : 0.0f), 2.0f);
+	if (unit.unitEnum() != UnitEnum::Human) {
+		float gameSpeed = sim.gameSpeedFloat();
+		scale = std::fmodf(lastAnimationTime + (unitSystem.isMoving(unitId) ? (GetWorld()->GetDeltaSeconds() * 2.0f * gameSpeed) : 0.0f), 2.0f);
+	}
 
 	//if (!unitSystem.isMoving(unitId)) {
 	//	scale = 0.0f;
@@ -164,45 +171,25 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 		}
 
 		UnitStateAI& unit = unitSystem.unitStateAI(unitId);
-		//FTransform lastTransform = _lastTransforms[unitId];
-		//float lastAnimationTime = lastTransform.GetScale3D().Z;
 
-		//// Get Transform info
-		//UnitPoseInfo pose;
-		//pose.actualLocation = unitSystem.actualAtomLocation(unitId);
-		//pose.facingLocation = unitSystem.targetLocation(unitId);
+		/*
+		 *
+		 */
 
-		//FVector displayLocation = MapUtil::DisplayLocation(cameraAtom, pose.actualLocation);
-		//float scale = 1.0f;// unit.age() >= (float)unit.unitInfo().adultTicks ? 1.0f : 0.7f;
+		if (unit.unitEnum() == UnitEnum::Human)
+		{
+			AddUnit(unitId, unit);
+			return;
+		}
 
-		//// Calculate rotation
-		//FRotator rotator = lastTransform.Rotator();
 
-		//FVector targetDisplayLocation = MapUtil::DisplayLocation(cameraAtom, pose.facingLocation);
-		//FVector targetDirection = targetDisplayLocation - displayLocation;
-		//FRotator targetRotation = targetDirection.Rotation();
 
-		////! TODO: !!! hack around vertex animate laziness
-		////if (IsAnimal(unit.unitEnum())) {
-		//	targetRotation.Yaw -= 90;
-		////}
 
-		//if (targetDirection.Size() > 0.01f) {
-		//	targetDirection.Normalize();
-		//	rotator = FMath::Lerp(rotator, targetRotation, 0.3f);
-		//}
 
-		//FTransform transform(rotator, displayLocation, FVector(scale, scale, scale));
-		//FTransform collisionTransform(rotator, displayLocation, FVector(scale, scale, scale));
-
-		////! TODO: !!! hack around vertex animate laziness
-		////if (IsAnimal(unit.unitEnum())) {
-		//	// Don't exceed the scale of 300 to prevent stuttering animation from inaccurate float 
-		//	scale = std::fmodf(lastAnimationTime + (unitSystem.isMoving(unitId) ? (GetWorld()->GetDeltaSeconds() * 2.0f) : 0.0f), 300.0f);
-		//	//scale = unitSystem.isMoving(unitId) ? 1.0f : 0.01f;
-		//	transform.SetScale3D(FVector(scale, scale, scale)); // Need same scale x,y,z to make lighting work properly...
-		////}
-
+		
+		/*
+		 * Vertex Animate
+		 */
 
 		FTransform transform;
 		int32 variationIndex = 0;
@@ -259,7 +246,7 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 
 
 		
-		_thisTransform.emplace(unitId, transform);
+		_thisTransform.Add(unitId, transform);
 
 		//FString unitMeshName = ToFString(unit.unitInfo().name);
 

@@ -459,13 +459,16 @@ public:
 	//	return price;
 	//}
 
-	void TryRemoveProvinceClaim(int32 provinceId)
+	void TryRemoveProvinceClaim(int32 provinceId, bool lightMode)
 	{
 		CppUtils::TryRemove(_provincesClaimed, provinceId);
-		RecalculateTax(false);
+
+		if (!lightMode) {
+			RecalculateTax(false);
+		}
 	}
 	
-	void ClaimProvince(int32 provinceId)
+	void ClaimProvince(int32 provinceId, bool lightMode = false)
 	{
 		PUN_LOG("ClaimProvince province:%d pid:%d", provinceId, _playerId);
 		
@@ -485,6 +488,10 @@ public:
 			_armyAutoClaimProgress = RegionClaimProgress();
 		}
 
+		if (lightMode) {
+			return;
+		}
+		
 		RecalculateTax(false);
 	}
 

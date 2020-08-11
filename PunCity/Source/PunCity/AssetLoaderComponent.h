@@ -49,6 +49,17 @@ enum class ParticleEnum
 	Count,
 };
 
+enum class UnitAnimationEnum : uint8
+{
+	None,
+	Walk,
+	Build,
+	ChopWood,
+	StoneMining,
+	FarmPlanting,
+	Waiting,
+};
+
 
 USTRUCT()
 struct FTileMeshAssets
@@ -102,8 +113,8 @@ public:
 	UStaticMesh* unitMesh(UnitEnum unitEnum, int32 variationIndex = 0);
 	int32 unitMeshCount(UnitEnum unitEnum) { return _unitToMeshes[unitEnum].size(); }
 
-	USkeletalMesh* unitSkelMesh(UnitEnum unitEnum) { return _unitToSkeletalMesh[unitEnum]; }
-	
+	USkeletalMesh* unitSkelMesh(UnitEnum unitEnum, int32 variationIndex = 0);
+	UAnimSequence* unitAnimation(UnitAnimationEnum animationEnum) { return _animationEnumToSequence[animationEnum]; }
 
 	UStaticMesh* resourceMesh(ResourceEnum resourceEnum);
 	UStaticMesh* resourceHandMesh(ResourceEnum resourceEnum);
@@ -352,6 +363,7 @@ private:
 
 	void LoadUnit(UnitEnum unitEnum, std::string meshFile);
 	void LoadUnitSkel(UnitEnum unitEnum, std::string meshFile);
+	void LoadUnitAnimation(UnitAnimationEnum unitAnimation, std::string file);
 	
 	void LoadResource(ResourceEnum resourceEnum, std::string meshFile);
 	void LoadResource2(ResourceEnum resourceEnum, std::string meshFilePrefix);
@@ -379,7 +391,9 @@ private:
 	UPROPERTY() TArray<FString> _togglableModuleNames;
 	
 	std::unordered_map<UnitEnum, std::vector<UStaticMesh*>> _unitToMeshes;
-
+	std::unordered_map<UnitEnum, std::vector<USkeletalMesh*>> _unitToSkeletalMesh;
+	std::unordered_map<UnitAnimationEnum, UAnimSequence*> _animationEnumToSequence;
+	
 	std::unordered_map<ResourceEnum, UStaticMesh*> _resourceToMesh;
 	std::unordered_map<ResourceEnum, UStaticMesh*> _resourceToHandMesh;
 
@@ -404,9 +418,6 @@ private:
 
 	//! ArmyIcon
 	UPROPERTY() TArray<UTexture2D*> _armyIcons;
-
-	//! Test
-	std::unordered_map<UnitEnum, USkeletalMesh*> _unitToSkeletalMesh;
 
 private:
 	UPROPERTY() TArray<FString> _modulesNeedingPaintConstruction;

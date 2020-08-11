@@ -525,8 +525,14 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadUnit(UnitEnum::ProjectileArrow, "Projectiles/Arrow/Arrow");
 
 
-	LoadUnitSkel(UnitEnum::Human, "");
-
+	LoadUnitSkel(UnitEnum::Human, "Human/CitizenMale/CitizenMale");
+	LoadUnitAnimation(UnitAnimationEnum::Walk, "Human/CitizenMale/MOB1_Walk_F_IPC");
+	LoadUnitAnimation(UnitAnimationEnum::Build, "Human/CitizenMale/Builder_1");
+	LoadUnitAnimation(UnitAnimationEnum::ChopWood, "Human/CitizenMale/Choping_wood");
+	LoadUnitAnimation(UnitAnimationEnum::StoneMining, "Human/CitizenMale/Stone_mining");
+	LoadUnitAnimation(UnitAnimationEnum::FarmPlanting, "Human/CitizenMale/Rake_cleaning_1");
+	LoadUnitAnimation(UnitAnimationEnum::Waiting, "Human/CitizenMale/Waiting_2");
+	
 	/**
 	 * Resource
 	 */
@@ -1055,13 +1061,22 @@ void UAssetLoaderComponent::LoadModuleWithConstruction(FString moduleName, FStri
  * Units
  */
 
-UStaticMesh * UAssetLoaderComponent::unitMesh(UnitEnum unitEnum, int32 variationIndex)
+UStaticMesh* UAssetLoaderComponent::unitMesh(UnitEnum unitEnum, int32 variationIndex)
 {
 	auto got = _unitToMeshes.find(unitEnum);
 	if (got != _unitToMeshes.end()) {
 		return _unitToMeshes[unitEnum][variationIndex];
 	}
 	_LOG(PunAsset, "No Unit Mesh For %d", static_cast<int>(unitEnum));
+	return nullptr;
+}
+USkeletalMesh* UAssetLoaderComponent::unitSkelMesh(UnitEnum unitEnum, int32 variationIndex)
+{
+	auto got = _unitToSkeletalMesh.find(unitEnum);
+	if (got != _unitToSkeletalMesh.end()) {
+		return _unitToSkeletalMesh[unitEnum][variationIndex];
+	}
+	_LOG(PunAsset, "No Unit SkelMesh For %d", static_cast<int>(unitEnum));
 	return nullptr;
 }
 
@@ -1073,10 +1088,13 @@ void UAssetLoaderComponent::LoadUnit(UnitEnum unitEnum, std::string meshFile)
 
 void UAssetLoaderComponent::LoadUnitSkel(UnitEnum unitEnum, std::string meshFile)
 {
-	//const std::string path = "/Game/Models/Units/";
-	//_unitToMeshes[unitEnum].push_back(Load<UStaticMesh>((path + meshFile).c_str()));
-
-	_unitToSkeletalMesh[unitEnum] = Load<USkeletalMesh>("/Game/AnimalsFullPack/Goat/Meshes/SK_Goat");
+	const std::string path = "/Game/Models/Units/";
+	_unitToSkeletalMesh[unitEnum].push_back(Load<USkeletalMesh>((path + meshFile).c_str()));
+}
+void UAssetLoaderComponent::LoadUnitAnimation(UnitAnimationEnum unitAnimation, std::string file)
+{
+	const std::string path = "/Game/Models/Units/";
+	_animationEnumToSequence[unitAnimation] = Load<UAnimSequence>((path + file).c_str());
 }
 
 /**

@@ -917,21 +917,26 @@ public:
 		});
 	}
 
-	void SetProvinceOwner(int32 provinceId, int32 playerId)
+	void SetProvinceOwner(int32 provinceId, int32 playerId, bool lightMode = false)
 	{
 		int32 oldPlayerId =  provinceOwner(provinceId);
 		if (oldPlayerId != -1) {
-			playerOwned(oldPlayerId).TryRemoveProvinceClaim(provinceId); // TODO: Try moving this below???
+			playerOwned(oldPlayerId).TryRemoveProvinceClaim(provinceId, lightMode); // TODO: Try moving this below???
 		}
 		
-		_regionSystem->SetProvinceOwner(provinceId, playerId);
+		_regionSystem->SetProvinceOwner(provinceId, playerId, lightMode);
 		
 		if (playerId != -1) {
-			playerOwned(playerId).ClaimProvince(provinceId);
-			RefreshTerritoryEdge(playerId);
+			playerOwned(playerId).ClaimProvince(provinceId, lightMode);
+
+			if (!lightMode) {
+				RefreshTerritoryEdge(playerId);
+			}
 		}
 		if (oldPlayerId != -1) {
-			RefreshTerritoryEdge(oldPlayerId);
+			if (!lightMode) {
+				RefreshTerritoryEdge(oldPlayerId);
+			}
 		}
 	}
 	void SetProvinceOwnerFull(int32 provinceId, int32 playerId) final;

@@ -49,17 +49,6 @@ enum class ParticleEnum
 	Count,
 };
 
-enum class UnitAnimationEnum : uint8
-{
-	None,
-	Walk,
-	Build,
-	ChopWood,
-	StoneMining,
-	FarmPlanting,
-	Waiting,
-};
-
 
 USTRUCT()
 struct FTileMeshAssets

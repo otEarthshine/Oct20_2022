@@ -317,6 +317,8 @@ void HumanStateAI::GatherSequence(NonWalkableTileAccessInfo accessInfo)
 
 	int32 cutTicks = 1;
 
+	UnitAnimationEnum animationEnum = UnitAnimationEnum::ChopWood;
+
 	TileObjInfo info = treeSystem().tileInfo(tileId);
 	ResourceTileType tileType = info.type;
 	if (tileType == ResourceTileType::Tree) {
@@ -331,13 +333,14 @@ void HumanStateAI::GatherSequence(NonWalkableTileAccessInfo accessInfo)
 	}
 	else if (tileType == ResourceTileType::Deposit) {
 		cutTicks = playerParameters().HarvestDepositTicks();
+		animationEnum = UnitAnimationEnum::StoneMining;
 	}
 
 	cutTicks = cutTicks * 100 / workEfficiency100();
 
 	// Set Actions
 	Add_HarvestTileObj(accessInfo.tile);
-	Add_Wait(cutTicks);
+	Add_Wait(cutTicks, animationEnum);
 	Add_MoveToward(accessInfo.tile.worldAtom2(), 5000);
 	Add_MoveTo(accessInfo.nearbyTile);
 }
@@ -1186,7 +1189,7 @@ bool HumanStateAI::TryFarm()
 
 			int32_t waitTicks = 60;
 			Add_DoFarmWork(seedTile, FarmStage::Seeding);
-			Add_Wait(waitTicks);
+			Add_Wait(waitTicks, UnitAnimationEnum::FarmPlanting);
 			Add_MoveTo(seedTile);
 
 			_unitState = UnitState::Farm;
@@ -1525,7 +1528,7 @@ bool HumanStateAI::TryForestingPlant(TileObjEnum tileObjEnum, NonWalkableTileAcc
 	
 
 	Add_PlantTree(tile, tileObjEnum);
-	Add_Wait(plantTicks);
+	Add_Wait(plantTicks, UnitAnimationEnum::FarmPlanting);
 	Add_MoveToward(tile.worldAtom2(), 5000);
 	Add_MoveTo(accessInfo.nearbyTile);
 

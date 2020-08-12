@@ -531,7 +531,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadUnitAnimation(UnitAnimationEnum::ChopWood, "Human/CitizenMale/Choping_wood");
 	LoadUnitAnimation(UnitAnimationEnum::StoneMining, "Human/CitizenMale/Stone_mining");
 	LoadUnitAnimation(UnitAnimationEnum::FarmPlanting, "Human/CitizenMale/Rake_cleaning_1");
-	LoadUnitAnimation(UnitAnimationEnum::Waiting, "Human/CitizenMale/Waiting_2");
+	LoadUnitAnimation(UnitAnimationEnum::Wait, "Human/CitizenMale/Waiting_2");
 	
 	/**
 	 * Resource

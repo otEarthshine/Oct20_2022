@@ -160,10 +160,12 @@ private:
 				skelMesh->AttachToComponent(this, FAttachmentTransformRules::KeepRelativeTransform);
 				skelMesh->RegisterComponent();
 				skelMesh->SetSkeletalMesh(_assetLoader->unitSkelMesh(UnitEnum::Human, 0));
+				skelMesh->SetReceivesDecals(false);
 				//skelMesh->SetAnimation(_assetLoader->unitAnimation(UnitAnimationEnum::Walk));
 				//skelMesh->SetPlayRate();
 				_unitSkelMeshes.Add(skelMesh);
-				_unitAnimationEnum.push_back(UnitAnimationEnum::None);
+				_unitAnimationEnum.push_back(UnitAnimationEnum::Wait);
+				_unitAnimationPlayRate.push_back(1.0f);
 			}
 		}
 		_unitIdToSkelMeshIndex.Add(unitId, index);
@@ -174,12 +176,14 @@ private:
 		skelMesh->SetVisibility(true);
 
 		//
-		UnitAnimationEnum animationEnum = UnitAnimationEnum::Waiting;
-		// TODO: need animationEnum in UnitEnum for this...
-
-		if (_unitAnimationEnum[index] != animationEnum) {
-			skelMesh->SetPlayRate(1.0f);
-			skelMesh->PlayAnimation(_assetLoader->unitAnimation(animationEnum), true);
+		float playRate = GetUnitAnimationPlayRate(unit.animationEnum()) * simulation().gameSpeedFloat();
+		if (_unitAnimationEnum[index] != unit.animationEnum() ||
+			_unitAnimationPlayRate[index] != playRate) 
+		{
+			skelMesh->SetPlayRate(playRate);
+			skelMesh->PlayAnimation(_assetLoader->unitAnimation(unit.animationEnum()), true);
+			_unitAnimationEnum[index] = unit.animationEnum();
+			_unitAnimationPlayRate[index] = playRate;
 		}
 
 		_thisTransform.Add(unitId, transform);
@@ -211,6 +215,7 @@ private:
 	// Skel
 	UPROPERTY() TArray<USkeletalMeshComponent*> _unitSkelMeshes;
 	std::vector<UnitAnimationEnum> _unitAnimationEnum;
+	std::vector<float> _unitAnimationPlayRate;
 	TMap<int32, int32> _unitIdToSkelMeshIndex;
 	TMap<int32, int32> _lastUnitIdToSkelMeshIndex;
 };

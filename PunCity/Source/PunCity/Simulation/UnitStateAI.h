@@ -128,6 +128,9 @@ public:
 		None,
 		
 		Wait,
+		//PlayAnimation,
+		//StopAnimation,
+		
 		MoveRandomly,
 		GatherFruit,
 		TrimFullBush,
@@ -208,19 +211,23 @@ public:
 		_actions.push_back(Action(actionEnum, int32val1, int32val2, int32val3, int32val4, fullId1));
 	}
 
-	const std::vector<std::string> UnitActionEnumString = {
-		"Wait",
-		"MoveRandomly",
-		"GatherFruit",
-		"TrimFullBush",
-	};
+	//const std::vector<std::string> UnitActionEnumString = {
+	//	"Wait",
+	//	"MoveRandomly",
+	//	"GatherFruit",
+	//	"TrimFullBush",
+	//};
 
 	Action& action() { return _currentAction; }
-	virtual void ExecuteAction() {
+	virtual void ExecuteAction()
+	{
 #define CASE(Action) case ActionEnum::Action: Action(); break;
 		switch (_currentAction.actionEnum)
 		{
 			CASE(Wait);
+			//CASE(PlayAnimation);
+			//CASE(StopAnimation);
+			
 			CASE(MoveRandomly);
 			CASE(GatherFruit);
 			CASE(TrimFullBush);
@@ -261,7 +268,11 @@ public:
 #undef CASE
 	}
 
-	void Add_Wait(int32 tickCount);					void Wait();
+	void Add_Wait(int32 tickCount, UnitAnimationEnum animationEnum = UnitAnimationEnum::Wait);		void Wait();
+
+	//void Add_PlayAnimation(UnitAnimationEnum animationEnum);	void PlayAnimation();
+	//void Add_StopAnimation();									void StopAnimation();
+	
 	void Add_MoveRandomly(TileArea area = TileArea::Invalid);	void MoveRandomly();
 	void Add_GatherFruit(WorldTile2 targetTile);	void GatherFruit();
 	void Add_TrimFullBush(WorldTile2 targetTile);	void TrimFullBush();
@@ -496,6 +507,7 @@ public:
 		return isMale() ? MaleNames[rand % MaleNames.size()] : FemaleNames[rand % FemaleNames.size()];
 	}
 
+	UnitAnimationEnum animationEnum() { return _animationEnum; }
 
 	
 public:
@@ -538,6 +550,8 @@ public:
 		Ar << _nextToolNeedTick;
 
 		Ar << _justDidResetActions;
+
+		Ar << _animationEnum;
 	}
 	void LoadInit(IUnitDataSource* unitData, IGameSimulationCore* simulation) {
 		_unitData = unitData;
@@ -595,6 +609,10 @@ protected:
 			PopReservation(i);
 		}
 		reservations.clear();
+	}
+
+	void ResetAnimation() {
+		_animationEnum = UnitAnimationEnum::Wait;
 	}
 
 	//! Helpers
@@ -694,4 +712,6 @@ protected:
 	int32 _nextToolNeedTick;
 
 	bool _justDidResetActions;
+
+	UnitAnimationEnum _animationEnum;
 };

@@ -74,6 +74,8 @@ void UnitStateAI::AddUnit(UnitEnum unitEnum, int32 playerId, UnitFullId fullId, 
 
 	_justDidResetActions = false;
 
+	_animationEnum = UnitAnimationEnum::Wait;
+
 	// Animal's workplaceId is regionId
 	if (IsWildAnimal(unitEnum)) {
 		//WorldTile2 tile = _unitData->atomLocation(_id).worldTile2();
@@ -387,10 +389,14 @@ void UnitStateAI::Update()
 		}
 	}
 
+
+	ResetAnimation();
+
 	// Action
 	if (_actions.empty())
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUnitCalcAction);
+		
 		// Do the action next tick
 		NextAction("EmptyActions");
 		CalculateActions();
@@ -1183,19 +1189,21 @@ void UnitStateAI::ResetActions_UnitPart(int32 waitTicks)
 	// TODO: note setting waitTicks for nextTickState break the game..
 	_unitData->SetNextTickState(_id, TransformState::NeedActionUpdate, "ResetActions", 1, true);
 
-	// TODO: Test adding wait action manually
+	
 	Add_Wait(waitTicks);
 
 	_justDidResetActions = true;
+	
 	AddDebugSpeech("[RESET] ... workplace:" + to_string(workplaceId()));
 }
 
-void UnitStateAI::Add_Wait(int32 tickCount) {
-	_actions.push_back(Action(ActionEnum::Wait, tickCount, 0, 0));
+void UnitStateAI::Add_Wait(int32 tickCount, UnitAnimationEnum animationEnum) {
+	_actions.push_back(Action(ActionEnum::Wait, tickCount, static_cast<int32>(animationEnum), 0));
 }
 void UnitStateAI::Wait()
 {
 	int32 tickCount = action().int32val1;
+	_animationEnum = static_cast<UnitAnimationEnum>(action().int32val2);
 	
 	PUN_DEBUG_EXPR(CheckIntegrity());
 	PUN_CHECK2(tickCount < Time::TicksPerMinute, ("badTickCount:" + to_string(tickCount) + debugStr()));
@@ -1213,6 +1221,22 @@ void UnitStateAI::Wait()
 	NextAction(tickCount, "(Done)Wait:");
 	AddDebugSpeech("Wait: Done tickCount:" + to_string(tickCount));
 }
+
+
+//void UnitStateAI::Add_PlayAnimation(UnitAnimationEnum animationEnum) {
+//	_actions.push_back(Action(ActionEnum::PlayAnimation, static_cast<int32>(animationEnum)));
+//}
+//void UnitStateAI::PlayAnimation() {
+//	_animationEnum = static_cast<UnitAnimationEnum>(action().int32val1());
+//	NextAction("(Done)PlayAnimation:");
+//}
+//void UnitStateAI::Add_StopAnimation() {
+//	_actions.push_back(Action(ActionEnum::StopAnimation));
+//}
+//void UnitStateAI::StopAnimation() {
+//	_animationEnum = UnitAnimationEnum::Wait;
+//	NextAction("(Done)StopAnimation:");
+//}
 
 void UnitStateAI::Add_GatherFruit(WorldTile2 targetTile) {
 	_actions.push_back(Action(ActionEnum::GatherFruit, targetTile.tileId(), 0, 0));
@@ -1706,6 +1730,8 @@ bool UnitStateAI::MoveTo(WorldTile2 end)
 		return false;
 	}
 
+	_animationEnum = UnitAnimationEnum::Walk;
+
 	MapUtil::UnpackAStarPath(rawWaypoint, _unitData->waypoint(_id));
 	_unitData->SetForceMove(_id, false);
 
@@ -1758,6 +1784,8 @@ void UnitStateAI::MoveToForceLongDistance()
 		MoveToRobust(end);
 		return;
 	}
+
+	_animationEnum = UnitAnimationEnum::Walk;
 
 	MapUtil::UnpackAStarPath(rawWaypoint, _unitData->waypoint(_id));
 	_unitData->SetForceMove(_id, true);
@@ -1837,6 +1865,8 @@ void UnitStateAI::MoveToward()
 
 	// Make sure that tick is more than 0
 	ticksNeeded = ticksNeeded > 0 ? ticksNeeded : 1;
+
+	_animationEnum = UnitAnimationEnum::Walk;
 
 	// Be in the moving state until we arrived at destination.
 	_unitData->SetNextTickState(_id, TransformState::Moving, "(Done)MoveTowards", ticksNeeded);
@@ -2025,6 +2055,8 @@ void UnitStateAI::Construct()
 		PopReservationWorkplace(workplaceId);
 		AddDebugSpeech(" Already constructed");
 	}
+
+	_animationEnum = UnitAnimationEnum::Build;
 
 	NextAction(waitTicks, "(Done)Construct:");
 	AddDebugSpeech("(Done)Construct: workAmount:" + to_string(workManSec100) + ", tickCount:" + to_string(waitTicks));

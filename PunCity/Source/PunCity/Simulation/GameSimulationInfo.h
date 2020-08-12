@@ -4707,6 +4707,33 @@ static bool IsIntelligentUnit(UnitEnum unitEnum) {
 	}
 }
 
+enum class UnitAnimationEnum : uint8
+{
+	None,
+	Wait,
+	Walk,
+	Build,
+	
+	ChopWood,
+	StoneMining,
+	FarmPlanting,
+};
+
+static const std::vector<float> UnitAnimationPlayRate =
+{
+	1.0f,
+	1.0f,
+	1.4f,
+	1.0f,
+	
+	1.0f,
+	1.0f,
+	1.0f,
+};
+static float GetUnitAnimationPlayRate(UnitAnimationEnum animationEnum) {
+	return UnitAnimationPlayRate[static_cast<int>(animationEnum)];
+}
+
 //! Colors
 
 static FLinearColor PlayerColor(int32_t playerId)

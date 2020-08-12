@@ -61,7 +61,7 @@ int32 UUnitDisplayComponent::GetUnitTransformAndVariation(int32 unitId, FTransfo
 
 	//! TODO: !!! hack around vertex animate laziness
 	if (unit.unitEnum() == UnitEnum::Human) {
-		targetRotation.Yaw += 90;
+		targetRotation.Yaw -= 90;
 	} else {
 		targetRotation.Yaw -= 90;
 	}

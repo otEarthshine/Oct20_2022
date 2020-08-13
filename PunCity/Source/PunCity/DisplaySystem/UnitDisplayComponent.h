@@ -137,53 +137,95 @@ private:
 	/*
 	 * Skel Mesh
 	 */
-	void AddUnit(int32 unitId , UnitStateAI& unit)
+	static const int32 animationChangeDelayTicks = 12;
+	
+	void AddUnit(int32 unitId, UnitStateAI& unit, FTransform& transform)
 	{
-		FTransform transform;
 		int32 variationIndex = GetUnitTransformAndVariation(unitId, transform);
 		
 		int32 index = -1;
+		// Use the existing unit already displayed
 		if (_lastUnitIdToSkelMeshIndex.Contains(unitId)) {
 			index = _lastUnitIdToSkelMeshIndex[unitId];
 			_lastUnitIdToSkelMeshIndex.Remove(unitId);
 		}
-		else {
+		else 
+		{
+			// Try to spawn new unit from despawn pool
 			for (int32 i = 0; i < _unitSkelMeshes.Num(); i++) {
 				if (!_unitSkelMeshes[i]->IsVisible()) {
 					index = i;
+					
+					_unitSkelMeshes[index]->SetVisibility(true);
+					_unitWeaponMeshes[index]->SetVisibility(false);
+					_unitAnimationEnum[index] = UnitAnimationEnum::None;
+					_unitAnimationChangeDelayCountDown[index] = animationChangeDelayTicks;
+					_unitAnimationPlayRate[index] = 1.0f;
 					break;
 				}
 			}
+			// Spawn brand new unit
 			if (index == -1) {
 				index = _unitSkelMeshes.Num();
 				auto skelMesh = NewObject<USkeletalMeshComponent>(this);
 				skelMesh->AttachToComponent(this, FAttachmentTransformRules::KeepRelativeTransform);
 				skelMesh->RegisterComponent();
-				skelMesh->SetSkeletalMesh(_assetLoader->unitSkelMesh(UnitEnum::Human, 0));
 				skelMesh->SetReceivesDecals(false);
-				//skelMesh->SetAnimation(_assetLoader->unitAnimation(UnitAnimationEnum::Walk));
-				//skelMesh->SetPlayRate();
 				_unitSkelMeshes.Add(skelMesh);
-				_unitAnimationEnum.push_back(UnitAnimationEnum::Wait);
+
+				FAttachmentTransformRules attachmentRules(EAttachmentRule::SnapToTarget, false);
+				auto weaponMesh = NewObject<UStaticMeshComponent>(this);
+				weaponMesh->AttachToComponent(skelMesh, attachmentRules, TEXT("WeaponSocket"));
+				weaponMesh->RegisterComponent();
+				weaponMesh->SetReceivesDecals(false);
+				weaponMesh->SetVisibility(false);
+				_unitWeaponMeshes.Add(weaponMesh);
+				
+				_unitAnimationEnum.push_back(UnitAnimationEnum::None);
+				_unitAnimationChangeDelayCountDown.push_back(animationChangeDelayTicks);
 				_unitAnimationPlayRate.push_back(1.0f);
 			}
+
+			_unitSkelMeshes[index]->SetSkeletalMesh(_assetLoader->unitSkelAsset(UnitEnum::Human, static_cast<int>(GetHumanVariationEnum(unit.isChild(), unit.isMale()))).skeletalMesh);
+			
 		}
 		_unitIdToSkelMeshIndex.Add(unitId, index);
 
 		// Setup the mesh
 		USkeletalMeshComponent* skelMesh = _unitSkelMeshes[index];
 		skelMesh->SetWorldTransform(transform);
-		skelMesh->SetVisibility(true);
 
 		//
-		float playRate = GetUnitAnimationPlayRate(unit.animationEnum()) * simulation().gameSpeedFloat();
-		if (_unitAnimationEnum[index] != unit.animationEnum() ||
+		UnitAnimationEnum animationEnum = unit.animationEnum();
+		float playRate = GetUnitAnimationPlayRate(animationEnum) * simulation().gameSpeedFloat();
+		if (_unitAnimationEnum[index] != animationEnum ||
 			_unitAnimationPlayRate[index] != playRate) 
 		{
-			skelMesh->SetPlayRate(playRate);
-			skelMesh->PlayAnimation(_assetLoader->unitAnimation(unit.animationEnum()), true);
-			_unitAnimationEnum[index] = unit.animationEnum();
-			_unitAnimationPlayRate[index] = playRate;
+			// Countdown first before switching
+			// This prevent slight flash in animation when constructing
+			if (_unitAnimationChangeDelayCountDown[index] > 0) {
+				_unitAnimationChangeDelayCountDown[index]--;
+			}
+			else
+			{
+				_unitAnimationChangeDelayCountDown[index] = animationChangeDelayTicks;
+
+				FSkeletonAsset skelAsset = _assetLoader->unitSkelAsset(UnitEnum::Human, variationIndex);
+
+				skelMesh->PlayAnimation(skelAsset.animationEnumToSequence[animationEnum], true);
+				skelMesh->SetPlayRate(10.0f);
+				_unitAnimationEnum[index] = animationEnum;
+				_unitAnimationPlayRate[index] = playRate;
+
+				UStaticMesh* weaponMesh = _assetLoader->unitWeaponMesh(animationEnum);
+				if (weaponMesh) {
+					_unitWeaponMeshes[index]->SetStaticMesh(weaponMesh);
+					_unitWeaponMeshes[index]->SetVisibility(true);
+				}
+				else {
+					_unitWeaponMeshes[index]->SetVisibility(false);
+				}
+			}
 		}
 
 		_thisTransform.Add(unitId, transform);
@@ -199,6 +241,8 @@ private:
 		_unitIdToSkelMeshIndex.Empty(); // _unitIdToSkelMeshIndex.Num());
 	}
 
+	void UpdateResourceDisplay(int32 unitId, UnitStateAI& unit, FTransform& transform);
+	
 private:
 	UPROPERTY() UStaticFastInstancedMeshesComp* _unitMeshes;
 	UPROPERTY() UStaticFastInstancedMeshesComp* _resourceMeshes;
@@ -214,7 +258,9 @@ private:
 
 	// Skel
 	UPROPERTY() TArray<USkeletalMeshComponent*> _unitSkelMeshes;
+	UPROPERTY() TArray<UStaticMeshComponent*> _unitWeaponMeshes;
 	std::vector<UnitAnimationEnum> _unitAnimationEnum;
+	std::vector<int32> _unitAnimationChangeDelayCountDown;
 	std::vector<float> _unitAnimationPlayRate;
 	TMap<int32, int32> _unitIdToSkelMeshIndex;
 	TMap<int32, int32> _lastUnitIdToSkelMeshIndex;

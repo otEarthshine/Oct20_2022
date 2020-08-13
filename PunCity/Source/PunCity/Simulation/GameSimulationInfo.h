@@ -4707,6 +4707,7 @@ static bool IsIntelligentUnit(UnitEnum unitEnum) {
 	}
 }
 
+UENUM()
 enum class UnitAnimationEnum : uint8
 {
 	None,
@@ -4719,11 +4720,27 @@ enum class UnitAnimationEnum : uint8
 	FarmPlanting,
 };
 
+enum class HumanVariationEnum : uint8
+{
+	AdultMale,
+	AdultFemale,
+	ChildMale,
+	ChildFemale,
+};
+
+static HumanVariationEnum GetHumanVariationEnum(bool isChild, bool isMale)
+{
+	if (isChild) {
+		return isMale ? HumanVariationEnum::ChildMale : HumanVariationEnum::ChildFemale;
+	}
+	return isMale ? HumanVariationEnum::AdultMale : HumanVariationEnum::AdultFemale;
+}
+
 static const std::vector<float> UnitAnimationPlayRate =
 {
 	1.0f,
 	1.0f,
-	1.4f,
+	3.0f,
 	1.0f,
 	
 	1.0f,

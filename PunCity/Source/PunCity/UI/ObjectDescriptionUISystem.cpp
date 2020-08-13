@@ -334,10 +334,22 @@ void UObjectDescriptionUISystem::LeftMouseDown()
 							FTransform transform;
 							int32 variationIndex = dataSource()->GetUnitTransformAndVariation(unitId, transform);
 							transform.SetScale3D(FVector::OneVector);
-							
-							if (TryMouseCollision(assetLoader()->unitMesh(unit.unitEnum(), variationIndex), transform, shortestHit)) {
-								uiState.objectType = ObjectTypeEnum::Unit;
-								uiState.objectId = unitId;
+
+
+							if (unit.unitEnum() == UnitEnum::Human)
+							{
+								// Human uses USkeletonAsset, should just mark in sim for UnitDisplayComponent to adjust customDepth
+								//if (TryMouseCollision(assetLoader()->unitMesh(unit.unitEnum(), 0), transform, shortestHit)) {
+								//	uiState.objectType = ObjectTypeEnum::Unit;
+								//	uiState.objectId = unitId;
+								//}
+							}
+							else
+							{
+								if (TryMouseCollision(assetLoader()->unitMesh(unit.unitEnum(), variationIndex), transform, shortestHit)) {
+									uiState.objectType = ObjectTypeEnum::Unit;
+									uiState.objectId = unitId;
+								}
 							}
 						});
 					}
@@ -2200,8 +2212,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 	dataSource()->SetOverlayType(overlayType, OverlaySetterType::ObjectDescriptionUI);
 
 	// Clear unused Selection Meshes
-	for (int i = meshIndex; i < _selectionMeshes.Num(); i++) {
+	for (int32 i = meshIndex; i < _selectionMeshes.Num(); i++) {
 		_selectionMeshes[i]->SetVisibility(false);
+	}
+
+	for (int32 i = skelMeshIndex; i < _selectionSkelMeshes.Num(); i++) {
+		_selectionSkelMeshes[i]->SetVisibility(false);
 	}
 
 	//if (_buildingMesh) {
@@ -2284,6 +2300,7 @@ void UObjectDescriptionUISystem::SpawnMesh(UStaticMesh* mesh, UMaterialInterface
 	meshIndex++;
 
 }
+
 
 void UObjectDescriptionUISystem::ShowTileSelectionDecal(FVector displayLocation, WorldTile2 size, UMaterial* material)
 {

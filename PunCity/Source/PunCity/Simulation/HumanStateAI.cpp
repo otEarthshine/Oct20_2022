@@ -341,7 +341,7 @@ void HumanStateAI::GatherSequence(NonWalkableTileAccessInfo accessInfo)
 	// Set Actions
 	Add_HarvestTileObj(accessInfo.tile);
 	Add_Wait(cutTicks, animationEnum);
-	Add_MoveToward(accessInfo.tile.worldAtom2(), 5000);
+	Add_MoveToward(accessInfo.tile.worldAtom2(), 20000);
 	Add_MoveTo(accessInfo.nearbyTile);
 }
 
@@ -1987,6 +1987,7 @@ bool HumanStateAI::TryConstructHelper(int32 workplaceId)
 
 	_unitState = UnitState::WorkConstruct;
 	Add_Construct(workManSec100, waitTicks, 5, workplaceId);
+	Add_MoveToward(workplace.centerTile().worldAtom2(), 12000);
 	Add_MoveTo(workplace.gateTile());
 
 	AddDebugSpeech("(Succeed)TryConstruct: Succeed -- work actions");

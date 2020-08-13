@@ -50,6 +50,7 @@ enum class ModuleTypeEnum
 {
 	Normal,
 	ConstructionOnly,
+	ConstructionBaseHighlight,
 	Frame,
 	Window,
 	RotateRoll,

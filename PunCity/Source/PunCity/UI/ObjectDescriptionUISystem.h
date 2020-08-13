@@ -77,6 +77,10 @@ private:
 
 	int meshIndex = 0;
 	UPROPERTY() TArray<UStaticMeshComponent*> _selectionMeshes;
+
+	int32 skelMeshIndex = 0;
+	UPROPERTY() TArray<USkeletalMeshComponent*> _selectionSkelMeshes;
+	
 	//UPROPERTY() UBuildingMeshesComponent* _buildingMesh = nullptr;
 
 	UPROPERTY() UStaticMeshComponent* _collider; // Collider used for mouseHitTesting

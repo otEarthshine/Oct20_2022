@@ -277,6 +277,7 @@ public:
 	}
 
 	//! This is for human only
+	// regionDistance is the farthest distance we will look for gather marks
 	NonWalkableTileAccessInfo FindNearestMark(int32 playerId, WorldTile2 originTile, bool treeOnly, int32_t regionDistance = 2)
 	{
 		WorldRegion2 originRegion = originTile.region();
@@ -309,6 +310,7 @@ public:
 								return;
 							}
 
+							// After finding an inaccessible target tile, find an adjacent tile to walk to
 							NonWalkableTileAccessInfo accessInfo = _simulation->TryAccessNonWalkableTile(originTile, tile, regionDistance, true);
 							if (accessInfo.isValid()) {
 								int32 dist = WorldTile2::ManDistance(tile, originTile);

@@ -366,10 +366,12 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 						FVector position(size.x % 2 == 0 ? 5 : 0, size.y % 2 == 0 ? 5 : 0, 0.0f);
 						FTransform siteMarkTransform(FRotator::ZeroRotator, position, siteMarkingScale);
 						
-						// Highlight the construction base before the land is cleared
-						if (!simulation().IsLandCleared_SmallOnly(building.playerId(), building.area())) {
-							modules.insert(modules.begin(), ModuleTransform("ConstructionBaseHighlight", siteMarkTransform, 0.0f, ModuleTypeEnum::ConstructionOnly));
-						}
+						// Outline the construction base before the land is cleared
+						//  Note that this must be displayed for the depth-based outline to work.
+						//  So we just need to make sure that the color of ConstructionBaseHighlight is as similar as possible to the decal
+						//if (!simulation().IsLandCleared_SmallOnly(building.playerId(), building.area())) {
+							modules.insert(modules.begin(), ModuleTransform("ConstructionBaseHighlight", siteMarkTransform, 0.0f, ModuleTypeEnum::ConstructionBaseHighlight));
+						//}
 					}
 
 					if (building.isEnum(CardEnum::Fisher)) {
@@ -435,6 +437,9 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 								//PUN_LOG("    Display FrameConstruction[%d] module:%d construct:%d", building.buildingId(), modulePercent, building.constructionPercent());
 								//PUN_LOG("FrameConstruction Z:%f age:%d", transform.GetScale3D().Z, constructionPercent);
 							}
+							//else if (modules[i].moduleTypeEnum == ModuleTypeEnum::ConstructionBaseHighlight) {
+							//	_moduleMeshes[meshId]->Add(moduleName, instanceKey, moduleTransform, 0, buildingId, false, true);
+							//}
 							else {
 								_moduleMeshes[meshId]->Add(moduleName, instanceKey, moduleTransform, 0, buildingId);
 							}

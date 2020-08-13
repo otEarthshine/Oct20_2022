@@ -49,6 +49,15 @@ enum class ParticleEnum
 	Count,
 };
 
+USTRUCT()
+struct FSkeletonAsset
+{
+	GENERATED_BODY();
+	
+	UPROPERTY() USkeletalMesh* skeletalMesh = nullptr;
+	UPROPERTY() TMap<UnitAnimationEnum, UAnimSequence*> animationEnumToSequence;
+};
+
 
 USTRUCT()
 struct FTileMeshAssets
@@ -102,8 +111,15 @@ public:
 	UStaticMesh* unitMesh(UnitEnum unitEnum, int32 variationIndex = 0);
 	int32 unitMeshCount(UnitEnum unitEnum) { return _unitToMeshes[unitEnum].size(); }
 
-	USkeletalMesh* unitSkelMesh(UnitEnum unitEnum, int32 variationIndex = 0);
-	UAnimSequence* unitAnimation(UnitAnimationEnum animationEnum) { return _animationEnumToSequence[animationEnum]; }
+	FSkeletonAsset unitSkelAsset(UnitEnum unitEnum, int32 variationIndex = 0);
+	
+	UStaticMesh* unitWeaponMesh(UnitAnimationEnum animationEnum) {
+		auto found = _animationEnumToWeaponMesh.find(animationEnum);
+		if (found != _animationEnumToWeaponMesh.end()) {
+			return found->second;
+		}
+		return nullptr;
+	}
 
 	UStaticMesh* resourceMesh(ResourceEnum resourceEnum);
 	UStaticMesh* resourceHandMesh(ResourceEnum resourceEnum);
@@ -351,8 +367,9 @@ private:
 	}
 
 	void LoadUnit(UnitEnum unitEnum, std::string meshFile);
-	void LoadUnitSkel(UnitEnum unitEnum, std::string meshFile);
-	void LoadUnitAnimation(UnitAnimationEnum unitAnimation, std::string file);
+	void LoadUnitSkel(UnitEnum unitEnum, std::string folderPath, std::string skelFileName, std::unordered_map<UnitAnimationEnum, std::string> animationFileNames);
+	//void LoadUnitAnimation(UnitEnum unitEnum, int32 variationIndex, UnitAnimationEnum unitAnimation, std::string file);
+	void LoadUnitWeapon(UnitAnimationEnum unitAnimation, std::string file);
 	
 	void LoadResource(ResourceEnum resourceEnum, std::string meshFile);
 	void LoadResource2(ResourceEnum resourceEnum, std::string meshFilePrefix);
@@ -380,8 +397,12 @@ private:
 	UPROPERTY() TArray<FString> _togglableModuleNames;
 	
 	std::unordered_map<UnitEnum, std::vector<UStaticMesh*>> _unitToMeshes;
-	std::unordered_map<UnitEnum, std::vector<USkeletalMesh*>> _unitToSkeletalMesh;
-	std::unordered_map<UnitAnimationEnum, UAnimSequence*> _animationEnumToSequence;
+
+	std::unordered_map<UnitEnum, std::vector<FSkeletonAsset>> _unitToSkelAsset;
+	//std::unordered_map<UnitEnum, std::vector<USkeletalMesh*>> _unitToSkeletalMesh;
+	//std::unordered_map<UnitEnum, std::vector<std::unordered_map<UnitAnimationEnum, UAnimSequence*>>> _animationEnumToSequence;
+	
+	std::unordered_map<UnitAnimationEnum, UStaticMesh*> _animationEnumToWeaponMesh;
 	
 	std::unordered_map<ResourceEnum, UStaticMesh*> _resourceToMesh;
 	std::unordered_map<ResourceEnum, UStaticMesh*> _resourceToHandMesh;

@@ -125,6 +125,11 @@ int32 UUnitDisplayComponent::GetUnitTransformAndVariation(int32 unitId, FTransfo
 	transform.SetScale3D(FVector(scale, scale, scale)); // Need same scale x,y,z to make lighting work properly...
 	//}}
 
+	// Human
+	if (unit.unitEnum() == UnitEnum::Human) {
+		return static_cast<int>(GetHumanVariationEnum(unit.isChild(), unit.isMale()));
+	}
+	
 	if (_assetLoader->unitMeshCount(unit.unitEnum()) >= 2) {
 		return unit.isChild() ? 1 : 0;
 	}
@@ -178,7 +183,9 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 
 		if (unit.unitEnum() == UnitEnum::Human)
 		{
-			AddUnit(unitId, unit);
+			FTransform transform;
+			AddUnit(unitId, unit, transform);
+			UpdateResourceDisplay(unitId, unit, transform);
 			return;
 		}
 
@@ -274,32 +281,36 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 
 		//PUN_LOG("UnitAddEnd ticks:%d id:%d regionId:%d", TimeDisplay::Ticks(), unitId, regionId);
 
-		//! TODO: !!! hack around vertex animate laziness
-		//if (IsAnimal(unit.unitEnum())) {
-			FRotator rotator = transform.Rotator();
-			transform.SetScale3D(FVector(1, 1, 1));
-			rotator.Yaw += 90;
+		////! TODO: !!! hack around vertex animate laziness
+		////if (IsAnimal(unit.unitEnum())) {
+		//	FRotator rotator = transform.Rotator();
+		//	transform.SetScale3D(FVector(1, 1, 1));
+		//	rotator.Yaw += 90;
+		////}
+
+		//// Resource display
+		//ResourceEnum heldEnum = unit.inventory().Display();
+		//if (heldEnum != ResourceEnum::None) 
+		//{
+		//	// Display smaller resource on units
+		//	transform.SetScale3D(FVector(0.7, 0.7, 0.7));
+
+		//	float inventoryShift = unit.isEnum(UnitEnum::Human) ? 4 : 8;
+
+		//	FVector horizontalShift = rotator.RotateVector(FVector(inventoryShift, 0, 0));
+		//	transform.SetTranslation(transform.GetTranslation() + horizontalShift + FVector(0, 0, 10));
+
+		//	// Zeros the rotation
+		//	FRotator resourceRotator = transform.Rotator();
+		//	resourceRotator.Yaw -= 90;
+		//	FTransform resourceTransform(resourceRotator, transform.GetTranslation(), transform.GetScale3D());
+
+		//	_resourceMeshes->Add(ResourceNameF(heldEnum), unitId, resourceTransform, 0, unitId);
 		//}
 
-		// Resource display
-		ResourceEnum heldEnum = unit.inventory().Display();
-		if (heldEnum != ResourceEnum::None) 
-		{
-			// Display smaller resource on units
-			transform.SetScale3D(FVector(0.7, 0.7, 0.7));
 
-			float inventoryShift = unit.isEnum(UnitEnum::Human) ? 4 : 8;
-
-			FVector horizontalShift = rotator.RotateVector(FVector(inventoryShift, 0, 0));
-			transform.SetTranslation(transform.GetTranslation() + horizontalShift + FVector(0, 0, 10));
-
-			// Zeros the rotation
-			FRotator resourceRotator = transform.Rotator();
-			resourceRotator.Yaw -= 90;
-			FTransform resourceTransform(resourceRotator, transform.GetTranslation(), transform.GetScale3D());
-
-			_resourceMeshes->Add(ResourceNameF(heldEnum), unitId, resourceTransform, 0, unitId);
-		}
+		UpdateResourceDisplay(unitId, unit, transform);
+		
 
 		// DEBUG
 		if (PunSettings::Settings["PathLines"])
@@ -432,4 +443,35 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 		});
 	}
 
+}
+
+
+void UUnitDisplayComponent::UpdateResourceDisplay(int32 unitId, UnitStateAI& unit, FTransform& transform)
+{
+	//! TODO: !!! hack around vertex animate laziness
+	//if (IsAnimal(unit.unitEnum())) {
+	FRotator rotator = transform.Rotator();
+	transform.SetScale3D(FVector(1, 1, 1));
+	rotator.Yaw += 90;
+	//}
+
+	// Resource display
+	ResourceEnum heldEnum = unit.inventory().Display();
+	if (heldEnum != ResourceEnum::None)
+	{
+		// Display smaller resource on units
+		transform.SetScale3D(FVector(0.7, 0.7, 0.7));
+
+		float inventoryShift = unit.isEnum(UnitEnum::Human) ? 4 : 8;
+
+		FVector horizontalShift = rotator.RotateVector(FVector(inventoryShift, 0, 0));
+		transform.SetTranslation(transform.GetTranslation() + horizontalShift + FVector(0, 0, 10));
+
+		// Zeros the rotation
+		FRotator resourceRotator = transform.Rotator();
+		resourceRotator.Yaw -= 90;
+		FTransform resourceTransform(resourceRotator, transform.GetTranslation(), transform.GetScale3D());
+
+		_resourceMeshes->Add(ResourceNameF(heldEnum), unitId, resourceTransform, 0, unitId);
+	}
 }

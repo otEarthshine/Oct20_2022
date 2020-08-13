@@ -234,30 +234,43 @@ public:
 
 	// Can go within 1 tile of non-walkable tile such as trees/stones etc.
 	// For these cases, we try to find any nearby tile that is within the same flood
-	NonWalkableTileAccessInfo TryAccessNonWalkableTile(WorldTile2 start, WorldTile2 nonwalkableTile, int maxRegionDistance) {
+	NonWalkableTileAccessInfo TryAccessNonWalkableTile(WorldTile2 start, WorldTile2 nonwalkableTile, int maxRegionDistance)
+	{
 		FloodInfo startFlood = GetFloodInfo(start);
 
 		WorldTile2 curTile = nonwalkableTile;
 
-		curTile.x++;
-		if (curTile.isValid() && IsConnected(startFlood, GetFloodInfo(curTile), maxRegionDistance)) {
-			return NonWalkableTileAccessInfo(nonwalkableTile, curTile);
-		}
-		curTile.x -= 2;
-		if (curTile.isValid() && IsConnected(startFlood, GetFloodInfo(curTile), maxRegionDistance)) {
-			return NonWalkableTileAccessInfo(nonwalkableTile, curTile);
-		}
-		curTile.x++;
+		NonWalkableTileAccessInfo nonWalkableTileInfo;
+		int32 minDistance = 9999;
 
+		auto checkAdjacentTile = [&]() {
+			if (curTile.isValid() && IsConnected(startFlood, GetFloodInfo(curTile), maxRegionDistance)) {
+				int32 distance = WorldTile2::ManDistance(start, curTile);
+				if (distance < minDistance) {
+					nonWalkableTileInfo = NonWalkableTileAccessInfo(nonwalkableTile, curTile);
+					minDistance = distance;
+				}
+			}
+		};
+
+		curTile.x++;
+		checkAdjacentTile();
+		
+		curTile.x -= 2;
+		checkAdjacentTile();
+		
+		curTile.x++;
 		curTile.y++;
-		if (curTile.isValid() && IsConnected(startFlood, GetFloodInfo(curTile), maxRegionDistance)) {
-			return NonWalkableTileAccessInfo(nonwalkableTile, curTile);
-		}
+		checkAdjacentTile();
+		
 		curTile.y -= 2;
-		if (curTile.isValid() && IsConnected(startFlood, GetFloodInfo(curTile), maxRegionDistance)) {
-			return NonWalkableTileAccessInfo(nonwalkableTile, curTile);
-		}
-		return NonWalkableTileAccessInfoInvalid;
+		checkAdjacentTile();
+		
+		//if (curTile.isValid() && IsConnected(startFlood, GetFloodInfo(curTile), maxRegionDistance)) {
+		//	return NonWalkableTileAccessInfo(nonwalkableTile, curTile);
+		//}
+
+		return nonWalkableTileInfo;
 	}
 
 	std::vector<RegionFloodConnections>& region64ToConnections() { 

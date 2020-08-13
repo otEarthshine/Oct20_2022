@@ -332,8 +332,8 @@ void PunTerrainGenerator::GenerateMoisture()
 		/*
 		 * Parameters
 		 */
-		int32 normalCloudStartSize = 5800; // 12000 // 20000;
-		int32 desertCloudStartSize = 3000; // 5000;
+		int32 normalCloudStartSize = 5800 + 4000; // 12000 // 20000;
+		int32 desertCloudStartSize = 3000 + 1000; // 5000;
 		switch(_mapSettings.mapSizeEnum())
 		{
 		case MapSizeEnum::Large: normalCloudStartSize *= 2; desertCloudStartSize *= 2; break;

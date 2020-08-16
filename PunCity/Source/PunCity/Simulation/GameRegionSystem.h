@@ -9,6 +9,24 @@
 #include "IGameSimulationCore.h"
 #include "ProvinceSystem.h"
 
+struct AnimalColony
+{
+	UnitEnum unitEnum = UnitEnum::Human;
+	int32 provinceId = -1;
+	WorldTile2 center = WorldTile2::Invalid;
+	int32 radius = -1;
+	std::vector<UnitFullId> units;
+
+	void operator>>(FArchive& Ar)
+	{
+		Ar << unitEnum;
+		Ar << provinceId;
+		center >> Ar;
+		Ar << radius;
+		SerializeVecObj(Ar, units);
+	}
+};
+
 /**
  * 
  */
@@ -128,6 +146,9 @@ public:
 		
 		return minAnimalProvinceId;
 	}
+
+	void AddAnimalColony(UnitEnum unitEnum, WorldTile2 center, int32 radius, int32 chancePercentMultiplier);
+	void RemoveAnimalColony(UnitEnum unitEnum);
 	
 
 
@@ -136,6 +157,7 @@ public:
 		SerializeVecValue(Ar, _territoryOwnerMap);
 		SerializeVecVecValue(Ar, _boarBurrowsToRegion);
 		SerializeVecVecValue(Ar, _provinceToAnimalIds);
+		SerializeVecObj(Ar, _animalColonies);
 	}
 
 #if !UE_BUILD_SHIPPING
@@ -152,4 +174,5 @@ private:
 	
 	std::vector<std::vector<int32>> _boarBurrowsToRegion;
 	std::vector<std::vector<int32>> _provinceToAnimalIds;
+	std::vector<AnimalColony> _animalColonies;
 };

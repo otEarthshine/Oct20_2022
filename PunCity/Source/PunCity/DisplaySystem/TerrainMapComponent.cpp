@@ -807,7 +807,7 @@ void UTerrainMapComponent::RefreshAnnotations()
 	 * Georesources
 	 */
 	GeoresourceSystem& georesourceSystem = _dataSource->simulation().georesourceSystem();
-	const std::vector<GeoresourceNode>& georesources = georesourceSystem.regionToGeoresources();
+	const std::vector<GeoresourceNode>& georesources = georesourceSystem.provinceToGeoresource();
 
 	for (const GeoresourceNode& node : georesources)
 	{

@@ -276,7 +276,7 @@ public:
 		/*
 		 * Choose Location
 		 */
-		if (playerOwned.needChooseLocation)
+		if (!playerOwned.hasChosenLocation())
 		{
 			for (int count = 10000; count-- > 0;) 
 			{
@@ -294,6 +294,7 @@ public:
 					if (purposeEnum != AIRegionProposedPurposeEnum::None &&
 						SimUtils::CanReserveSpot_NotTooCloseToAnother(provinceId, _simulation, 5))
 					{
+						// Note, FindStartSpot isn't always valid
 						TileArea finalArea = SimUtils::FindStartSpot(provinceId, _simulation);
 
 						if (finalArea.isValid())
@@ -306,6 +307,78 @@ public:
 						}
 					}
 				}
+			}
+			
+			return;
+		}
+
+		/*
+		 * Build townhall
+		 */
+		if (!playerOwned.hasTownhall())
+		{
+			PUN_CHECK(playerOwned.provincesClaimed().size() == 1);
+			int32 provinceId = playerOwned.provincesClaimed()[0];
+			TileArea provinceRectArea = provinceSys.GetProvinceRectArea(provinceId);
+
+			WorldTile2 townhallSize = GetBuildingInfo(CardEnum::Townhall).size;
+			TileArea area = BuildingArea(provinceRectArea.centerTile(), townhallSize, Direction::S);
+
+			// Add Road...
+			area.minX = area.minX - 1;
+			area.minY = area.minY - 1;
+			area.maxX = area.maxX + 1;
+			area.maxY = area.maxY + 1;
+
+			// Add Storages
+			area.minY = area.minY - 5;
+
+			PUN_CHECK(area.isValid());
+			
+			TileArea buildableArea = SimUtils::SpiralFindAvailableBuildArea(area, [&](WorldTile2 tile)
+			{
+				// Out of province, can't build...
+				if (provinceSys.GetProvinceIdClean(tile) != provinceId) {
+					return false;
+				}
+
+				// Not buildable and not critter building
+				if (!_simulation->IsBuildable(tile) &&
+					!_simulation->IsCritterBuildingIncludeFronts(tile))
+				{
+					std::vector<int32> frontIds = _simulation->frontBuildingIds(tile);
+					if (frontIds.size() > 0)
+					{
+						// If any front isn't regional building, we can't plant
+						for (int32 frontId : frontIds) {
+							if (!IsRegionalBuilding(_simulation->buildingEnum(frontId))) {
+								return false;
+							}
+						}
+						return true;
+					}
+
+					CardEnum buildingEnum = _simulation->buildingEnumAtTile(tile);
+					return IsRegionalBuilding(buildingEnum);
+				}
+				return true;
+			},
+				[&](WorldTile2 tile) {
+				return !provinceRectArea.HasTile(tile);
+			});
+
+			if (buildableArea.isValid())
+			{
+				auto command = MakeCommand<FPlaceBuilding>();
+				command->buildingEnum = static_cast<uint8>(CardEnum::Townhall);
+				command->playerId = _playerId;
+				command->center = buildableArea.centerTile();
+				command->faceDirection = static_cast<uint8>(Direction::S);
+
+				BldInfo buildingInfo = GetBuildingInfoInt(command->buildingEnum);
+				command->area = BuildingArea(command->center, buildingInfo.size, Direction::S);
+				
+				_playerInterface->PlaceBuilding(*command);
 			}
 			
 			return;
@@ -637,7 +710,7 @@ private:
 			WorldTile2 centerTile(currentX + sign * xShift, currentY + sign * yShift);
 			Direction faceDirection = isFaceSouth ? Direction::S : Direction::N;
 
-			auto command = MakeCommand<FPlaceBuildingParameters>();
+			auto command = MakeCommand<FPlaceBuilding>();
 			command->buildingEnum = static_cast<uint8>(buildingEnum);
 			command->area = BuildingArea(centerTile, size, faceDirection);
 			command->center = centerTile;
@@ -678,7 +751,7 @@ private:
 				path.Add(WorldTile2(blockArea.maxX, y).tileId());
 			}
 
-			auto command = MakeCommand<FPlaceGatherParameters>();
+			auto command = MakeCommand<FPlaceDrag>();
 			command->path = path;
 			command->placementType = static_cast<int8>(PlacementType::DirtRoad);
 			_playerInterface->PlaceDrag(*command);

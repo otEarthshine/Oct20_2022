@@ -42,6 +42,7 @@ public:
 		currentCommandIndex = 0; // for isInitialize()
 		trailerCommands = trailerCommandsIn;
 		nextTrailerCommandTick = Time::Ticks() + Time::TicksPerSecond;
+		commandPercentAccumulated = 0;
 	}
 	void PauseTrailerCommands() {
 		pausedNextTrailerCommandTick = nextTrailerCommandTick;
@@ -57,6 +58,7 @@ public:
 	
 	std::vector<std::shared_ptr<FNetworkCommand>> trailerCommands;
 	int32 nextTrailerCommandTick = -1;
+	int32 commandPercentAccumulated = 0;
 	int32 pausedNextTrailerCommandTick = -1;
 
 	bool isCameraTrailerReplayPaused = false;
@@ -86,7 +88,7 @@ public:
 	void AddTrailerCommands(std::vector<std::shared_ptr<FNetworkCommand>> commands)
 	{
 		// Placement gets recorded for trailer
-		for (size_t j = 0; j < commands.size(); j++)
+		for (size_t j = commands.size(); j-- > 0;)
 		{
 			if (commands[j]->playerId == 0)
 			{
@@ -94,12 +96,19 @@ public:
 				{
 				case NetworkCommandEnum::ChooseLocation:
 				case NetworkCommandEnum::PlaceBuilding:
-				case NetworkCommandEnum::PlaceGather:
+				case NetworkCommandEnum::PlaceDrag:
 				case NetworkCommandEnum::ClaimLand:
 				case NetworkCommandEnum::Cheat:
 				case NetworkCommandEnum::UpgradeBuilding:
 					trailerCommandsSave.push_back(commands[j]);
+					trailerCommandsSaveIssueTime.push_back(_simulation->soundInterface()->GetDisplayTime() - lastTrailerStartTime);
 					PUN_LOG("Add trailerCommands[Save] %d %s", trailerCommandsSave.size(), ToTChar(GetNetworkCommandName(commands[j]->commandType())));
+
+					if (commands[j]->commandType() == NetworkCommandEnum::PlaceBuilding) {
+						auto placeCommand = std::static_pointer_cast<FPlaceBuilding>(commands[j]);
+						PUN_LOG("PlaceBuilding %s %s", *ToFString(GetBuildingInfoInt(placeCommand->buildingEnum).name), ToTChar(placeCommand->center.ToString()));
+					}
+					
 					break;
 				default:
 					break;
@@ -143,9 +152,9 @@ public:
 	//bool isAIInitialized = false;
 
 
-	
+	float lastTrailerStartTime = 0.0f;
 	std::vector<std::shared_ptr<FNetworkCommand>> trailerCommandsSave;
-	std::vector<std::shared_ptr<FNetworkCommand>> trailerCommandsLoad;
+	std::vector<float> trailerCommandsSaveIssueTime;
 
 	void TrailerCityReplayUnpause() {
 		for (ReplayPlayer& replayPlayer : replayPlayers) {

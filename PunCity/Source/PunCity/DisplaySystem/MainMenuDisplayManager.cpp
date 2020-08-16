@@ -70,7 +70,7 @@ void AMainMenuDisplayManager::InitMainMenuDisplayManager(MapSizeEnum mapSizeEnum
 
 	TArray<AActor*> backgrounds = PunUnrealUtils::FindWorldActors(GetWorld(), "BlackBackground");
 	for (AActor* actor : backgrounds) {
-		actor->SetActorHiddenInGame(true);
+		actor->SetActorHiddenInGame(false);
 	}
 
 }

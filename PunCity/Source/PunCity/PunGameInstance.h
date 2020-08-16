@@ -164,7 +164,7 @@ public:
 	/*
 	 * Map Settings
 	 */
-	void SetMapSetttings(const TArray<int32>& mapSettingsBlob) {
+	void SetMapSettings(const TArray<int32>& mapSettingsBlob) {
 		LLM_SCOPE_(EPunSimLLMTag::PUN_GameInstance);
 		
 		PunSerializedData blob(false);
@@ -179,8 +179,6 @@ public:
 
 	FMapSettings GetMapSettings() {
 		return _mapSettings;
-		//std::string mapSeed = ToStdString(mapSettings.mapSeed);
-		//return (mapSeed == "seed") ? ("Love Oh") : mapSeed;
 	}
 
 	/*

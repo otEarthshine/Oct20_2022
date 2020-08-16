@@ -561,6 +561,10 @@ void TreeSystem::PlantInitial()
 			WorldTile2 tile(x, y);
 
 			BiomeEnum biomeEnum = terrainGenerator.GetBiome(tile);
+
+			if (biomeEnum == BiomeEnum::Tundra) {
+				continue;
+			}
 			
 			// Plant randomly
 			//if (GameRand::Rand() % initialPlantChance == 0 && !treeShade(i) && GameMap::PathAI->isWalkable(x, y)) {
@@ -584,7 +588,7 @@ void TreeSystem::PlantInitial()
 						if (coastal > 125) {
 							treeEnum = TileObjEnum::Coconut;
 						}
-
+						
 						PlantTree(x, y, treeEnum, true);
 
 						int32 maxGrowth = GetTileObjInfo(treeEnum).maxGrowthTick;
@@ -616,9 +620,12 @@ void TreeSystem::PlantInitial()
 						BiomeInfo biomeInfo = GetBiomeInfo(biomeEnum);
 						TileObjEnum treeEnum = biomeInfo.GetRandomTreeEnum();
 
-						int32 coastal = terrainGenerator.IsOceanCoast(tile);
-						if (coastal > 125) {
-							treeEnum = TileObjEnum::Coconut;
+						if (biomeEnum != BiomeEnum::BorealForest)
+						{
+							int32 coastal = terrainGenerator.IsOceanCoast(tile);
+							if (coastal > 125) {
+								treeEnum = TileObjEnum::Coconut;
+							}
 						}
 
 						//uint32_t treeEnumInt = GameRand::Rand() % TreeEnumSize; //TileObjEnum
@@ -728,6 +735,11 @@ void TreeSystem::PlantInitial()
 			//}
 			//else {
 				BiomeEnum biomeEnum = terrainGenerator.GetBiome(WorldTile2(x, y));
+
+				if (biomeEnum == BiomeEnum::Tundra) {
+					continue;
+				}
+				
 				BiomeInfo biomeInfo = GetBiomeInfo(biomeEnum);
 
 				int32 plantChance = biomeInfo.initialBushChance;

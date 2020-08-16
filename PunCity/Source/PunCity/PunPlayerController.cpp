@@ -547,11 +547,8 @@ void APunPlayerController::Tick(float DeltaTime)
 
 		// If gameManager just initialize this player, go to the spawn point
 		PlayerOwnedManager& playerOwned = gameManager->simulation().playerOwned(playerId());
-		//if (cameraPawn && playerOwned.needChooseLocation) {
-			// Snap camera to map to let players choose locations
-			//cameraPawn->KeyPressed_M();
-			//playerOwned.needChooseLocation = false;
-		//}
+
+
 		if (cameraPawn && playerOwned.justChoseLocation) {
 			WorldAtom2 lookAtAtom = gameManager->simulation().homeAtom(playerId());
 

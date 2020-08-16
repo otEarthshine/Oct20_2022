@@ -132,6 +132,8 @@ public:
 		//StopAnimation,
 		
 		MoveRandomly,
+		MoveRandomlyPerlin,
+		
 		GatherFruit,
 		TrimFullBush,
 
@@ -229,6 +231,8 @@ public:
 			//CASE(StopAnimation);
 			
 			CASE(MoveRandomly);
+			CASE(MoveRandomlyPerlin);
+			
 			CASE(GatherFruit);
 			CASE(TrimFullBush);
 
@@ -274,6 +278,7 @@ public:
 	//void Add_StopAnimation();									void StopAnimation();
 	
 	void Add_MoveRandomly(TileArea area = TileArea::Invalid);	void MoveRandomly();
+	void Add_MoveRandomlyPerlin(TileArea area);	void MoveRandomlyPerlin();
 	void Add_GatherFruit(WorldTile2 targetTile);	void GatherFruit();
 	void Add_TrimFullBush(WorldTile2 targetTile);	void TrimFullBush();
 

@@ -77,7 +77,6 @@ public:
 		postProcessVolume->Settings.AmbientOcclusionQuality = 0;
 		postProcessVolume->Settings.AmbientOcclusionMipBlend = 1;
 		
-		postProcessVolume->Settings.MotionBlurAmount = 0;
 		postProcessVolume->Settings.LPVIntensity = 0;
 		postProcessVolume->Settings.ScreenSpaceReflectionQuality = 0;
 

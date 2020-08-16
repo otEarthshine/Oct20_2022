@@ -1385,14 +1385,16 @@ public:
 
 	UFireForgetAudioComponent* Spawn3DSound(std::string groupName, std::string soundName, WorldAtom2 worldAtom, float height, bool usePlayProbability = true, bool isLooping = false)
 	{
-		//return nullptr; //TODO: 4.25
-
-		LLM_SCOPE_(EPunSimLLMTag::PUN_Sound);
-
+		if (SimSettings::IsOn("TrailerMode")) {
+			return nullptr;
+		}
 		// Note: usePlayProbability is needed to separate Animal's UI sound vs animal random ambient
 		if (usePlayProbability && soundRand.Rand01() > GetSoundPropertyRef(groupName, soundName, "PlayProbability")) {
 			return nullptr;
 		}
+		
+
+		LLM_SCOPE_(EPunSimLLMTag::PUN_Sound);
 
 		// Less construction sound at high game speed
 		if (soundName == "WoodConstruction") {
@@ -1489,11 +1491,14 @@ public:
 
 	void Spawn2DSound(std::string groupName, std::string soundName)
 	{
-		LLM_SCOPE_(EPunSimLLMTag::PUN_Sound);
-		
+		if (SimSettings::IsOn("TrailerMode")) {
+			return;
+		}
 		if (IsolateVolume(groupName, soundName) == 0.0f) {
 			return;
 		}
+		
+		LLM_SCOPE_(EPunSimLLMTag::PUN_Sound);
 		
 		USoundAsset* soundAsset = GetRandomSoundAsset(soundName);
 		PUN_CHECK(soundAsset);

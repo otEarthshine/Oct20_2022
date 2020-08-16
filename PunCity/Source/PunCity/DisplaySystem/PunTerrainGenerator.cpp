@@ -332,8 +332,9 @@ void PunTerrainGenerator::GenerateMoisture()
 		/*
 		 * Parameters
 		 */
-		int32 normalCloudStartSize = 5800 + 4000; // 12000 // 20000;
-		int32 desertCloudStartSize = 3000 + 1000; // 5000;
+		// Note: 5800,3000 is for Trailer
+		int32 normalCloudStartSize = 5800;// +2000; // 12000 // 20000;
+		int32 desertCloudStartSize = 3000;// +1000; // 5000;
 		switch(_mapSettings.mapSizeEnum())
 		{
 		case MapSizeEnum::Large: normalCloudStartSize *= 2; desertCloudStartSize *= 2; break;
@@ -1026,6 +1027,13 @@ void PunTerrainGenerator::CalculateWorldTerrain(const FMapSettings& mapSettings)
 	PUN_LOG("CalculateWorldTerrain: %s", *_mapSettings.mapSeed);
 
 	string mapSeed = ToStdString(mapSettings.mapSeed);
+
+	// Special "seed"
+	if (mapSeed == "seed") {
+		mapSeed = "PunSeed";
+	}
+
+	
 	std::hash<std::string> hasher;
 	int32 seedNumber = hasher(mapSeed);
 	
@@ -1205,10 +1213,29 @@ uint8 PunTerrainGenerator::Init3()
 	/*
 	 * Voronoi
 	 */
-	 // Only Sample non deep sea points ??
+	int32 subContinentPointsCount = 300;
+
+	// Mountain Density
+	switch (_mapSettings.mapMountainDensity) {
+	case MapMountainDensityEnum::VeryLow: subContinentPointsCount = 20; break;
+	case MapMountainDensityEnum::Low: subContinentPointsCount = 80; break;
+	case MapMountainDensityEnum::Medium: subContinentPointsCount = 170; break;
+	case MapMountainDensityEnum::High: subContinentPointsCount = 300; break;
+	case MapMountainDensityEnum::VeryHigh: subContinentPointsCount = 500; break;
+	default: break;
+	}
+
+	// Vary with map size
+	switch (_mapSettings.mapSizeEnum()) {
+		case MapSizeEnum::Small: subContinentPointsCount /= 2; break; // Note we skip large map adjustment since it will look weird
+		default: break;
+	}
+
+	
+	// Only Sample non deep sea points ??
 	std::vector<WorldTile2> subContinentPoints;
 	TileArea subContinentSampleArea(WorldTile2(-_tileDimX / 4, -_tileDimY / 4), WorldTile2(_tileDimX * 6 / 4, _tileDimY * 6 / 4));
-	for (int i = 0; i < 300; i++) {
+	for (int i = 0; i < subContinentPointsCount; i++) {
 		int x = GameRand::Rand() % subContinentSampleArea.sizeX() + subContinentSampleArea.minX; // 6/4 - 1/4
 		int y = GameRand::Rand() % subContinentSampleArea.sizeY() + subContinentSampleArea.minY; // TDOO: after making a cylinder world, get rid of this in y direction?
 		subContinentPoints.push_back(WorldTile2(x, y));

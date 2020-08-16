@@ -464,6 +464,7 @@ public:
 		jsonObject->SetNumberField("mapSeaLevel", static_cast<double>(mapSettings.mapSeaLevel));
 		jsonObject->SetNumberField("mapMoisture", static_cast<double>(mapSettings.mapMoisture));
 		jsonObject->SetNumberField("mapTemperature", static_cast<double>(mapSettings.mapTemperature));
+		jsonObject->SetNumberField("mapMountainDensity", static_cast<double>(mapSettings.mapMountainDensity));
 		
 		// Camera
 		jsonObject->SetNumberField("cameraAtomX", gameManager->cameraAtom().x);
@@ -643,6 +644,72 @@ public:
 	/*
 	 * Trailer
 	 */
+	UFUNCTION(Exec) void TrailerSession()
+	{
+		auto& sim = gameManager->simulation();
+
+		
+		SimSettings::Set("TrailerSession", 1);
+		SimSettings::Set("CheatFastBuild", 1);
+		SetLightAngle(225);
+		sim.unlockSystem(playerId())->UnlockAll();
+		sim.ClearPopups(playerId());
+
+		AddPenguinColony(378, 2279, 10, 200);
+
+		// Wildman
+		{
+			FPlaceBuilding placeCommand;
+			placeCommand.buildingEnum = static_cast<uint8>(CardEnum::FakeTribalVillage);
+			placeCommand.buildingLevel = 0;
+			placeCommand.center = WorldTile2(988, 2537);
+			placeCommand.faceDirection = static_cast<uint8>(Direction::S);
+			placeCommand.area = BuildingArea(placeCommand.center, GetBuildingInfoInt(placeCommand.buildingEnum).size, static_cast<Direction>(placeCommand.faceDirection));
+			int32 buildingId = sim.PlaceBuilding(placeCommand);
+			sim.building(buildingId).InstantClearArea();
+			sim.building(buildingId).FinishConstruction();
+
+			AddWildManColony(988, 2537, 12, 33);
+		}
+
+		// Hippo
+		{
+			WorldTile2 center(1014, 2690);
+			int32 radius = 23;
+
+			SimUtils::PerlinRadius_ExecuteOnArea_WorldTile2(center, radius, &sim, [&](int32 chancePercent, WorldTile2 tile)
+			{
+				if (chancePercent > 20) {
+					sim.treeSystem().ForceRemoveTileObj(tile, false);
+				}
+			});
+
+			AddHippoColony(center.x, center.y, radius, 9);
+		}
+
+		// Chichen
+		{
+			FPlaceBuilding placeCommand;
+			placeCommand.buildingEnum = static_cast<uint8>(CardEnum::ChichenItza);
+			placeCommand.buildingLevel = 0;
+			placeCommand.center = WorldTile2(1057, 2754);
+			placeCommand.faceDirection = static_cast<uint8>(Direction::S);
+			placeCommand.area = BuildingArea(placeCommand.center, GetBuildingInfoInt(placeCommand.buildingEnum).size, static_cast<Direction>(placeCommand.faceDirection));
+			int32 buildingId = sim.PlaceBuilding(placeCommand);
+			sim.building(buildingId).InstantClearArea();
+			sim.building(buildingId).FinishConstruction();
+		}
+	}
+
+	UFUNCTION(Exec) void RestartGame()
+	{
+		gameInstance()->UnreadyAll(); // Unready all, so readyStates can be used to determine if the player is loaded
+		gameInstance()->DebugPunSync("Traveling to GameMap");
+		gameInstance()->CachePlayerNames();
+		
+		GetWorld()->ServerTravel("/Game/Maps/GameMap");
+	}
+	
 	UFUNCTION(Exec) void TrailerCityReplayUnpause() override {
 		gameManager->simulation().replaySystem().TrailerCityReplayUnpause();
 	}
@@ -684,14 +751,23 @@ public:
 		record.transition = "Lerp";
 		record.transitionTime = transitionTime;
 		cameraRecords.push_back(record);
+
+		auto& sim = gameManager->simulation();
 		
 		TArray<TSharedPtr<FJsonValue>> cameraRecordJsons;
 
+		float startTime = -2.0f; // 2 sec delay...
+		
 		for (size_t i = 0; i < cameraRecords.size(); i++) 
 		{
 			auto cameraRecordJson = MakeShared<FJsonObject>();
 			
 			// Camera
+			cameraRecordJson->SetNumberField("TimeStart", startTime);
+			startTime += cameraRecords[i].transitionTime;
+			cameraRecordJson->SetNumberField("TimeTransition", cameraRecords[i].transitionTime);
+			cameraRecordJson->SetStringField("transition", cameraRecords[i].transition);
+			
 			cameraRecordJson->SetNumberField("cameraAtomX", cameraRecords[i].cameraAtom.x);
 			cameraRecordJson->SetNumberField("cameraAtomY", cameraRecords[i].cameraAtom.y);
 			cameraRecordJson->SetNumberField("zoomDistance", cameraRecords[i].zoomDistance);
@@ -701,18 +777,21 @@ public:
 			cameraRecordJson->SetNumberField("rotatorYaw", rotator.Yaw);
 			cameraRecordJson->SetNumberField("rotatorRoll", rotator.Roll);
 
-			cameraRecordJson->SetStringField("transition", cameraRecords[i].transition);
-			cameraRecordJson->SetNumberField("transitionTime", cameraRecords[i].transitionTime);
+			cameraRecordJson->SetStringField("Biome", ToFString(GetBiomeInfo(sim.GetBiomeEnum(cameraRecords[i].cameraAtom.worldTile2())).name));
 
 			cameraRecordJson->SetNumberField("unpause", cameraRecords[i].isCameraReplayUnpause);
 
 			// TileMoveDistance is useful in determining transitionTime
 			float tileMoveDistance = 0;
+			float zoomMoveDistance = 0;
 			if (i > 0) {
 				int32 atomDistance = WorldAtom2::Distance(cameraRecords[i].cameraAtom, cameraRecords[i - 1].cameraAtom);
 				tileMoveDistance = static_cast<float>(atomDistance) / CoordinateConstants::AtomsPerTile;
+				zoomMoveDistance = cameraRecords[i].zoomDistance - cameraRecords[i - 1].zoomDistance;
 			}
 			cameraRecordJson->SetNumberField("tileMoveDistance", tileMoveDistance);
+			cameraRecordJson->SetNumberField("zoomMoveDistance", zoomMoveDistance);
+			cameraRecordJson->SetStringField("transitionType:", (tileMoveDistance > 100.0f) ? "farTransition" : "");
 
 			TSharedPtr<FJsonValue> jsonValue = MakeShared<FJsonValueObject>(cameraRecordJson);
 			cameraRecordJsons.Add(jsonValue);
@@ -721,14 +800,14 @@ public:
 		auto jsonObject = MakeShared<FJsonObject>();
 		jsonObject->SetArrayField("CameraRecords", cameraRecordJsons);
 		
-		SaveJsonToFile(jsonObject, "TrailerCamera_" + cameraRecordFileName + ".json", true);
+		SaveJsonToFile(jsonObject, "Camera_" + cameraRecordFileName + ".json", true);
 	}
 
 	UFUNCTION(Exec) void TrailerCameraLoad(const FString& cameraRecordFileName)
 	{
 		cameraRecords.clear();
 		
-		TSharedPtr<FJsonObject> jsonObject = LoadJsonFromFile("TrailerCamera_" + cameraRecordFileName + ".json", true);
+		TSharedPtr<FJsonObject> jsonObject = LoadJsonFromFile("Camera_" + cameraRecordFileName + ".json", true);
 
 		const TArray<TSharedPtr<FJsonValue>>& cameraRecordsJson = jsonObject->GetArrayField("CameraRecords");
 		for (const TSharedPtr<FJsonValue>& cameraRecordValue : cameraRecordsJson)
@@ -745,7 +824,7 @@ public:
 												cameraRecordJson->GetNumberField("rotatorRoll"));
 
 			record.transition = cameraRecordJson->GetStringField("transition");
-			record.transitionTime = cameraRecordJson->GetNumberField("transitionTime");
+			record.transitionTime = cameraRecordJson->GetNumberField("TimeTransition");
 
 			record.isCameraReplayUnpause = FGenericPlatformMath::RoundToInt(cameraRecordJson->GetNumberField("unpause"));
 
@@ -781,7 +860,7 @@ public:
 		for (size_t i = commands.size(); i-- > 0;)
 		{
 			if (commands[i]->commandType() == NetworkCommandEnum::PlaceBuilding) {
-				auto command = std::static_pointer_cast<FPlaceBuildingParameters>(commands[i]);
+				auto command = std::static_pointer_cast<FPlaceBuilding>(commands[i]);
 
 				// Check by buildingId
 				bool isDemolished = command->area.ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 tile) {
@@ -826,6 +905,8 @@ public:
 				case CheatEnum::TrailerForceSnowStart:
 				case CheatEnum::TrailerForceSnowStop:
 				case CheatEnum::TrailerIncreaseAllHouseLevel:
+				case CheatEnum::TrailerIncreasePlaceSpeed:
+				case CheatEnum::TrailerDecreasePlaceSpeed:
 					break;
 				default:
 					commands.erase(commands.begin() + i);
@@ -840,21 +921,26 @@ public:
 			auto& command = commands[i];
 			auto& prevCommand = commands[i - 1];
 
-			if (command->commandType() == NetworkCommandEnum::PlaceGather &&
-				prevCommand->commandType() == NetworkCommandEnum::PlaceGather)
+			if (command->commandType() == NetworkCommandEnum::PlaceDrag &&
+				prevCommand->commandType() == NetworkCommandEnum::PlaceDrag)
 			{
-				auto commandCasted = std::static_pointer_cast<FPlaceGatherParameters>(command);
-				auto prevCommandCasted = std::static_pointer_cast<FPlaceGatherParameters>(prevCommand);
+				auto commandCasted = std::static_pointer_cast<FPlaceDrag>(command);
+				auto prevCommandCasted = std::static_pointer_cast<FPlaceDrag>(prevCommand);
 
 				if (commandCasted->placementType == static_cast<int32>(PlacementType::DirtRoad) &&
 					prevCommandCasted->placementType == static_cast<int32>(PlacementType::DirtRoad))
 				{
 					// TODO: weird why duplicates
+					TArray<int32> newPath;
 					for (int32 j = 0; j < commandCasted->path.Num(); j++) {
 						if (!prevCommandCasted->path.Contains(commandCasted->path[j])) {
-							prevCommandCasted->path.Add(commandCasted->path[j]);
+							newPath.Add(commandCasted->path[j]);
 						}
 					}
+					newPath.Append(prevCommandCasted->path);
+
+					prevCommandCasted->path = newPath;
+					
 					commands.erase(commands.begin() + i);
 				}
 			}
@@ -864,17 +950,28 @@ public:
 		
 
 		PUN_CHECK(commands[0]->commandType() == NetworkCommandEnum::ChooseLocation);
+
+		std::vector<float> commandIssueTimeVec = sim.replaySystem().trailerCommandsSaveIssueTime;
 		
 
 		TArray<TSharedPtr<FJsonValue>> jsons;
+
+		WorldTile2 lastBuildTile = WorldTile2::Invalid;
 		
 		for (size_t i = 0; i < commands.size(); i++)
 		{
 			auto jsonObj = MakeShared<FJsonObject>();
 
+			auto tryAddTime = [&]() {
+				if (i < commandIssueTimeVec.size()) {
+					jsonObj->SetNumberField("time", commandIssueTimeVec[i]);
+				}
+			};
+
 			if (commands[i]->commandType() == NetworkCommandEnum::ChooseLocation)
 			{
 				auto command = std::static_pointer_cast<FChooseLocation>(commands[i]);
+				tryAddTime();
 				
 				jsonObj->SetStringField("commandType", "ChooseLocation");
 				jsonObj->SetNumberField("provinceId", command->provinceId);
@@ -882,7 +979,14 @@ public:
 			}
 			if (commands[i]->commandType() == NetworkCommandEnum::PlaceBuilding)
 			{
-				auto command = std::static_pointer_cast<FPlaceBuildingParameters>(commands[i]);
+				auto command = std::static_pointer_cast<FPlaceBuilding>(commands[i]);
+				tryAddTime();
+
+				if (lastBuildTile.isValid() && WorldTile2::Distance(lastBuildTile, command->center) > 100) {
+					jsonObj->SetStringField("scene transition", "--------------------------");
+				}
+				lastBuildTile = command->center;
+				
 				
 				jsonObj->SetStringField("commandType", "PlaceBuilding");
 				
@@ -892,44 +996,63 @@ public:
 				jsonObj->SetNumberField("buildingLevel", command->buildingLevel);
 
 				SetAreaField(jsonObj, "area", command->area);
-				SetAreaField(jsonObj, "area2", command->area2);
+				//SetAreaField(jsonObj, "area2", command->area2);
 
 				jsonObj->SetNumberField("center_x", command->center.x);
 				jsonObj->SetNumberField("center_y", command->center.y);
 
 				jsonObj->SetNumberField("faceDirection", command->faceDirection);
+				jsonObj->SetNumberField("prebuilt", command->area2.minX); // Area2.minX to keep prebuilt
+				
+				jsonObj->SetStringField("biome", ToFString(GetBiomeInfo(sim.GetBiomeEnum(command->center)).name));
 			}
-			else if (commands[i]->commandType() == NetworkCommandEnum::PlaceGather)
+			else if (commands[i]->commandType() == NetworkCommandEnum::PlaceDrag)
 			{
-				auto command = std::static_pointer_cast<FPlaceGatherParameters>(commands[i]);
+				auto command = std::static_pointer_cast<FPlaceDrag>(commands[i]);
+				tryAddTime();
 
 				jsonObj->SetStringField("commandType", "PlaceDrag");
 
 				SetAreaField(jsonObj, "area", command->area);
-				SetAreaField(jsonObj, "area2", command->area2);
+				//SetAreaField(jsonObj, "area2", command->area2);
 
 				TArray<TSharedPtr<FJsonValue>> pathJsonValues;
 				for (int32 j = 0; j < command->path.Num(); j++) {
 					pathJsonValues.Add(MakeShared<FJsonValueNumber>(command->path[j]));
 				}
 				jsonObj->SetArrayField("path", pathJsonValues);
+
+				
+				TArray<TSharedPtr<FJsonValue>> pathJsonValuesX;
+				for (int32 j = 0; j < command->path.Num(); j++) {
+					pathJsonValuesX.Add(MakeShared<FJsonValueNumber>(WorldTile2(command->path[j]).x));
+				}
+				jsonObj->SetArrayField("pathX", pathJsonValuesX);
+				TArray<TSharedPtr<FJsonValue>> pathJsonValuesY;
+				for (int32 j = 0; j < command->path.Num(); j++) {
+					pathJsonValuesY.Add(MakeShared<FJsonValueNumber>(WorldTile2(command->path[j]).y));
+				}
+				jsonObj->SetArrayField("pathY", pathJsonValuesY);
+
+				
 				jsonObj->SetNumberField("pathSize", command->path.Num()); // For calculating transitionTime
 
 				jsonObj->SetNumberField("placementType", command->placementType);
 				jsonObj->SetNumberField("isInstantRoad", 0); // use command->harvestResourceEnum for isInstantRoad
 			}
-			else if (commands[i]->commandType() == NetworkCommandEnum::ClaimLand)
-			{
-				auto command = std::static_pointer_cast<FClaimLand>(commands[i]);
+			//else if (commands[i]->commandType() == NetworkCommandEnum::ClaimLand)
+			//{
+			//	auto command = std::static_pointer_cast<FClaimLand>(commands[i]);
 
-				jsonObj->SetStringField("commandType", "ClaimLand");
+			//	jsonObj->SetStringField("commandType", "ClaimLand");
 
-				jsonObj->SetNumberField("provinceId", command->provinceId);
-				jsonObj->SetNumberField("claimEnum", static_cast<double>(command->claimEnum));
-			}
+			//	jsonObj->SetNumberField("provinceId", command->provinceId);
+			//	jsonObj->SetNumberField("claimEnum", static_cast<double>(command->claimEnum));
+			//}
 			else if (commands[i]->commandType() == NetworkCommandEnum::Cheat)
 			{
 				auto command = std::static_pointer_cast<FCheat>(commands[i]);
+				tryAddTime();
 
 				jsonObj->SetStringField("commandType", "Cheat");
 
@@ -941,6 +1064,7 @@ public:
 			else if (commands[i]->commandType() == NetworkCommandEnum::UpgradeBuilding)
 			{
 				auto command = std::static_pointer_cast<FUpgradeBuilding>(commands[i]);
+				tryAddTime();
 
 				jsonObj->SetStringField("commandType", "UpgradeBuilding");
 				jsonObj->SetNumberField("upgradeLevel", command->upgradeLevel);
@@ -954,7 +1078,7 @@ public:
 		auto jsonObject = MakeShared<FJsonObject>();
 		jsonObject->SetArrayField("TrailerCommands", jsons);
 
-		SaveJsonToFile(jsonObject, "TrailerCity_" + trailerCityName + ".json", true);
+		SaveJsonToFile(jsonObject, "City_" + trailerCityName + ".json", true);
 
 		PUN_LOG("TrailerCitySave %d", commands.size());
 		for (size_t i = 0; i < commands.size(); i++) {
@@ -976,10 +1100,10 @@ public:
 
 	UFUNCTION(Exec) void TrailerCityLoad(const FString& trailerCityName)
 	{
-		std::vector<std::shared_ptr<FNetworkCommand>>& commands = gameManager->simulation().replaySystem().trailerCommandsLoad;
+		std::vector<std::shared_ptr<FNetworkCommand>>& commands = gameManager->simulation().replaySystem().trailerCommandsSave;
 		commands.clear();
 
-		TSharedPtr<FJsonObject> jsonObject = LoadJsonFromFile("TrailerCity_" + trailerCityName + ".json", true);
+		TSharedPtr<FJsonObject> jsonObject = LoadJsonFromFile("City_" + trailerCityName + ".json", true);
 
 		const TArray<TSharedPtr<FJsonValue>>& commandsJson = jsonObject->GetArrayField("TrailerCommands");
 		for (const TSharedPtr<FJsonValue>& commandValue : commandsJson)
@@ -996,28 +1120,30 @@ public:
 			}
 			else if (jsonObj->GetStringField("commandType") == "PlaceBuilding") 
 			{
-				auto command = std::make_shared<FPlaceBuildingParameters>();
+				auto command = std::make_shared<FPlaceBuilding>();
 
 				command->buildingEnum = jsonObj->GetNumberField("buildingEnum");
 
 				command->buildingLevel = jsonObj->GetNumberField("buildingLevel");
 
 				GetAreaField(jsonObj, "area", command->area);
-				GetAreaField(jsonObj, "area2", command->area2);
+				//GetAreaField(jsonObj, "area2", command->area2);
 
 				command->center.x = jsonObj->GetNumberField("center_x");
 				command->center.y = jsonObj->GetNumberField("center_y");
 
 				command->faceDirection = jsonObj->GetNumberField("faceDirection");
 
+				command->area2.minX = jsonObj->GetNumberField("prebuilt");
+
 				commands.push_back(command);
 			}
 			else if (jsonObj->GetStringField("commandType") == "PlaceDrag") 
 			{
-				auto command = std::make_shared<FPlaceGatherParameters>();
+				auto command = std::make_shared<FPlaceDrag>();
 
 				GetAreaField(jsonObj, "area", command->area);
-				GetAreaField(jsonObj, "area2", command->area2);
+				//GetAreaField(jsonObj, "area2", command->area2);
 
 				const TArray<TSharedPtr<FJsonValue>>& pathJson = jsonObj->GetArrayField("path");
 				for (int32 i = 0; i < pathJson.Num(); i++) {
@@ -1065,21 +1191,16 @@ public:
 		}
 	}
 
-	UFUNCTION(Exec) void TrailerCityLoadedToSave()
-	{	
-		auto& replaySys = gameManager->simulation().replaySystem();
-
-		PUN_LOG("TrailerCityLoadedToSave[Before] Save:%llu Load:%llu", replaySys.trailerCommandsSave.size(), replaySys.trailerCommandsLoad.size());
-		replaySys.trailerCommandsSave = replaySys.trailerCommandsLoad;
-		PUN_LOG("TrailerCityLoadedToSave[After] Save:%llu Load:%llu", replaySys.trailerCommandsSave.size(), replaySys.trailerCommandsLoad.size());
-	}
-
-	UFUNCTION(Exec) void TrailerCityStart(int32 playerId)
+	UFUNCTION(Exec) void TrailerCityStart(const FString& trailerCityName)
 	{
+		TrailerCityLoad(trailerCityName);
+		
 		auto& replaySys = gameManager->simulation().replaySystem();
-		replaySys.trailerCommandsSave.clear(); // Clear old saves
+		
+		replaySys.replayPlayers[0].SetTrailerCommands(replaySys.trailerCommandsSave);
 
-		replaySys.replayPlayers[playerId].SetTrailerCommands(replaySys.trailerCommandsLoad);
+		replaySys.trailerCommandsSave.clear(); // Clear old saves since new commands will be written to this
+		replaySys.lastTrailerStartTime = UGameplayStatics::GetTimeSeconds(this);
 
 		SimSettings::Set("TrailerMode", 1);
 	}
@@ -1106,8 +1227,7 @@ public:
 	UFUNCTION(Exec) void TrailerStartAll(const FString& trailerName)
 	{	
 		SetGameSpeed(2);
-		TrailerCityLoad(trailerName);
-		TrailerCityStart(0);
+		TrailerCityStart(trailerName);
 		
 		TrailerCameraLoad(trailerName);
 		TrailerCameraStart();
@@ -1117,8 +1237,7 @@ public:
 	UFUNCTION(Exec) void TrailerStartCityOnly(const FString& trailerName)
 	{
 		SetGameSpeed(2);
-		TrailerCityLoad(trailerName);
-		TrailerCityStart(0);
+		TrailerCityStart(trailerName);
 	}
 
 	UFUNCTION(Exec) void AbandonTown(int32 playerId) {
@@ -1126,7 +1245,26 @@ public:
 			gameManager->simulation().AbandonTown(playerId);
 		}
 	}
-	
+
+
+	UFUNCTION(Exec) void AddHippoColony(int32 centerX, int32 centerY, int32 radius, int32 chancePercentMultiplier) {
+		gameManager->simulation().regionSystem().AddAnimalColony(UnitEnum::Hippo, WorldTile2(centerX, centerY), radius, chancePercentMultiplier);
+	}
+	UFUNCTION(Exec) void AddPenguinColony(int32 centerX, int32 centerY, int32 radius, int32 chancePercentMultiplier) {
+		gameManager->simulation().regionSystem().AddAnimalColony(UnitEnum::Penguin, WorldTile2(centerX, centerY), radius, chancePercentMultiplier);
+	}
+	UFUNCTION(Exec) void AddWildManColony(int32 centerX, int32 centerY, int32 radius, int32 chancePercentMultiplier) {
+		gameManager->simulation().regionSystem().AddAnimalColony(UnitEnum::WildMan, WorldTile2(centerX, centerY), radius, chancePercentMultiplier);
+	}
+	UFUNCTION(Exec) void ClearHippoColony() {
+		gameManager->simulation().regionSystem().RemoveAnimalColony(UnitEnum::Hippo);
+	}
+	UFUNCTION(Exec) void ClearPenguinColony() {
+		gameManager->simulation().regionSystem().RemoveAnimalColony(UnitEnum::Penguin);
+	}
+	UFUNCTION(Exec) void ClearWildManColony() {
+		gameManager->simulation().regionSystem().RemoveAnimalColony(UnitEnum::WildMan);
+	}
 
 	// Done for map transition so tick doesn't happpen after gameInst's data was cleared
 	void SetTickDisabled(bool tickDisabled) final {

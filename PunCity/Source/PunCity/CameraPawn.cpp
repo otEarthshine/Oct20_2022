@@ -344,7 +344,7 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 		if (SimSettings::IsOn("TrailerMode")) {
 			_systemMoveTimeSinceStart += fmin(0.02, UGameplayStatics::GetWorldDeltaSeconds(GetWorld()));
 			_systemTrailerTimeSinceStart += UGameplayStatics::GetWorldDeltaSeconds(GetWorld());
-			PUN_LOG("Cam Trail shot:%.2f/%.2f time:%.2f", _systemMoveTimeSinceStart, _systemMoveTimeLength, _systemTrailerTimeSinceStart);
+			//PUN_LOG("Cam Trail shot:%.2f/%.2f time:%.2f", _systemMoveTimeSinceStart, _systemMoveTimeLength, _systemTrailerTimeSinceStart);
 		}
 		else {
 			_systemMoveTimeSinceStart += fmin(0.02, UGameplayStatics::GetWorldDeltaSeconds(GetWorld()));

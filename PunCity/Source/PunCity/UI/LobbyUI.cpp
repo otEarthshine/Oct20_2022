@@ -85,6 +85,7 @@ void ULobbyUI::Init()
 		LobbySeaLevelDropdown->OnSelectionChanged.AddDynamic(this, &ULobbyUI::OnLobbySeaLevelDropdownChanged);
 		LobbyMoistureDropdown->OnSelectionChanged.AddDynamic(this, &ULobbyUI::OnLobbyMoistureDropdownChanged);
 		LobbyTemperatureDropdown->OnSelectionChanged.AddDynamic(this, &ULobbyUI::OnLobbyTemperatureDropdownChanged);
+		LobbyMountainDensityDropdown->OnSelectionChanged.AddDynamic(this, &ULobbyUI::OnLobbyMountainDensityDropdownChanged);
 
 		LobbyAICountDropdown->OnSelectionChanged.AddDynamic(this, &ULobbyUI::OnLobbyAICountDropdownChanged);
 		RefreshAICountDropdown();
@@ -127,7 +128,7 @@ void ULobbyUI::Init()
 
 		// Sea level
 		serverMapSettings.mapSeaLevel = MapSeaLevelEnum::Medium;
-		setupDropdown(LobbySeaLevelDropdown, MapSeaLevelNames);
+		setupDropdown(LobbySeaLevelDropdown, MapSettingsLevelNames);
 		LobbySeaLevelDropdown->SetSelectedIndex(static_cast<int>(serverMapSettings.mapSeaLevel));
 
 		// Moisture
@@ -137,8 +138,13 @@ void ULobbyUI::Init()
 
 		// Temperature
 		serverMapSettings.mapTemperature = MapTemperatureEnum::Medium;
-		setupDropdown(LobbyTemperatureDropdown, MapTemperatureNames);
+		setupDropdown(LobbyTemperatureDropdown, MapSettingsLevelNames);
 		LobbyTemperatureDropdown->SetSelectedIndex(static_cast<int>(serverMapSettings.mapTemperature));
+
+		// Mountain Density
+		serverMapSettings.mapMountainDensity = MapMountainDensityEnum::Medium;
+		setupDropdown(LobbyMountainDensityDropdown, MapSettingsLevelNames);
+		LobbyMountainDensityDropdown->SetSelectedIndex(static_cast<int>(serverMapSettings.mapMountainDensity));
 	}
 	
 
@@ -263,9 +269,11 @@ void ULobbyUI::Tick()
 	FMapSettings mapSettings = gameInst->GetMapSettings();
 	setServerVsClientUI(LobbyMapSeedInputBox, LobbyMapSeedText, mapSettings.mapSeed);
 	setServerVsClientUI(LobbyMapSizeDropdown, LobbyMapSizeText, MapSizeNames[mapSettings.mapSizeEnumInt]);
-	setServerVsClientUI(LobbySeaLevelDropdown, LobbySeaLevelText, MapSeaLevelNames[static_cast<int>(mapSettings.mapSeaLevel)]);
+	setServerVsClientUI(LobbySeaLevelDropdown, LobbySeaLevelText, MapSettingsLevelNames[static_cast<int>(mapSettings.mapSeaLevel)]);
 	setServerVsClientUI(LobbyMoistureDropdown, LobbyMoistureText, MapMoistureNames[static_cast<int>(mapSettings.mapMoisture)]);
-	setServerVsClientUI(LobbyTemperatureDropdown, LobbyTemperatureText, MapTemperatureNames[static_cast<int>(mapSettings.mapTemperature)]);
+	setServerVsClientUI(LobbyTemperatureDropdown, LobbyTemperatureText, MapSettingsLevelNames[static_cast<int>(mapSettings.mapTemperature)]);
+	setServerVsClientUI(LobbyMountainDensityDropdown, LobbyMountainDensityText, MapSettingsLevelNames[static_cast<int>(mapSettings.mapMountainDensity)]);
+
 	
 	setServerVsClientUI(LobbyAICountDropdown, LobbyAICountText, FString::FromInt(mapSettings.aiCount));
 	setServerVsClientUI(LobbyDifficultyDropdown, LobbyDifficultyText, DifficultyLevelNames[static_cast<int>(mapSettings.difficultyLevel)]);
@@ -539,7 +547,7 @@ void ULobbyUI::OnLobbyMapSizeDropdownChanged(FString sItem, ESelectInfo::Type se
 }
 void ULobbyUI::OnLobbySeaLevelDropdownChanged(FString sItem, ESelectInfo::Type seltype)
 {
-	serverMapSettings.mapSeaLevel = GetEnumFromName<MapSeaLevelEnum>(sItem, MapSeaLevelNames);
+	serverMapSettings.mapSeaLevel = GetEnumFromName<MapSeaLevelEnum>(sItem, MapSettingsLevelNames);
 
 	SendMapSettings();
 
@@ -559,7 +567,7 @@ void ULobbyUI::OnLobbyMoistureDropdownChanged(FString sItem, ESelectInfo::Type s
 }
 void ULobbyUI::OnLobbyTemperatureDropdownChanged(FString sItem, ESelectInfo::Type seltype)
 {
-	serverMapSettings.mapTemperature = GetEnumFromName<MapTemperatureEnum>(sItem, MapTemperatureNames);
+	serverMapSettings.mapTemperature = GetEnumFromName<MapTemperatureEnum>(sItem, MapSettingsLevelNames);
 
 	SendMapSettings();
 
@@ -567,6 +575,17 @@ void ULobbyUI::OnLobbyTemperatureDropdownChanged(FString sItem, ESelectInfo::Typ
 		gameInstance()->Spawn2DSound("UI", "DropdownChange");
 	}
 }
+void ULobbyUI::OnLobbyMountainDensityDropdownChanged(FString sItem, ESelectInfo::Type seltype)
+{
+	serverMapSettings.mapMountainDensity = GetEnumFromName<MapMountainDensityEnum>(sItem, MapSettingsLevelNames);
+
+	SendMapSettings();
+
+	if (seltype != ESelectInfo::Type::Direct) {
+		gameInstance()->Spawn2DSound("UI", "DropdownChange");
+	}
+}
+
 
 void ULobbyUI::OnLobbyAICountDropdownChanged(FString sItem, ESelectInfo::Type seltype)
 {

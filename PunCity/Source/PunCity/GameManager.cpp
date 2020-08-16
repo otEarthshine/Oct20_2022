@@ -262,7 +262,7 @@ void AGameManager::InitPhase2()
 	_territoryDisplaySystem->Init(0, this, _assetLoader);
 #endif
 
-	_snowParticles->SetTemplate(_assetLoader->snowParticles);
+	_snowParticles->SetTemplate(_assetLoader->blizzardParticles); // Trailer blizzard
 	_rainParticles->SetTemplate(_assetLoader->rainParticles);
 	_rainWetnessDecal->SetDecalMaterial(UMaterialInstanceDynamic::Create(_assetLoader->M_RainWetness, this));
 
@@ -571,7 +571,7 @@ void AGameManager::SampleRegions()
 	LLM_SCOPE_(EPunSimLLMTag::PUN_GameManager);
 
 	// Zoom distance is above threshold, don't sample any region...
-	if (PunSettings::IsOn("ForceShowTileObj") || 
+	if (SimSettings::IsOn("TrailerSession") || 
 		ZoomDistanceBelow(WorldToMapZoomAmount)) 
 	{
 		SampleRegions(_sampleRegionIds);
@@ -835,9 +835,6 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 				if (smoothZoomDistance < WorldZoomTransition_RegionToRegion4x4_Mid) {
 					_regionDisplaySystem->BeforeDisplay(false);
 					_regionDisplaySystem->Display(_sampleRegionIds);
-				//} else if (smoothZoomDistance < WorldZoomTransition_Tree) {
-				//	_regionDisplaySystem->BeforeDisplay(true);
-				//	_regionDisplaySystem->Display(_sampleNearRegionIds);
 				} else {
 					_regionDisplaySystem->Display(noSample);
 				}
@@ -899,7 +896,7 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 			bool isZoomedAllTheWayOut = zoomDistance > WorldZoomTransition_Tree;
 
 			// Note: TODO: turn this on for Non-Trailer
-			if (isZoomedAllTheWayOut && !PunSettings::IsOn("ForceShowTileObj")) {
+			if (isZoomedAllTheWayOut && !SimSettings::IsOn("TrailerSession")) {
 				// TODO: Is this cache working?
 				// Zoomed all the way out, cache tileObj for when we zoom in...
 				_tileDisplaySystem->BeforeDisplay(false, (isOn ? _sampleTileObjCacheRegionIds : noSample), true, zoomDistance > WorldZoomTransition_TreeHidden);
@@ -941,7 +938,7 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 			
 			//SCOPE_TIMER("Tick -- Territory");
 			bool displayTerritory = PunSettings::IsOn("DisplayTerritory") && 
-									!SimSettings::IsOn("TrailerMode");
+									!SimSettings::IsOn("TrailerSession");
 			_territoryDisplaySystem->Display(displayTerritory ? _sampleProvinceIds : noSample);
 #endif
 		}

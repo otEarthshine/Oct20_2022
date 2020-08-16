@@ -389,7 +389,7 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 				FTransform transform = GameDisplayUtils::GetTreeTransform(localTile.localDisplayLocation(), 0, worldTileId, ageTick, info);
 
 
-				if (!_isFullDisplay) {
+				if (!_isFullDisplay && !SimSettings::IsOn("TrailerSession")) {
 					// Low Poly Leaf
 					meshes->Add(tileObjectName + FString::FromInt(static_cast<int32>(TileSubmeshEnum::LeafLowPoly)), worldTileId, transform, ageState, worldTileId, false, false);
 					meshes->Add(tileObjectName + FString::FromInt(static_cast<int32>(TileSubmeshEnum::LeafShadow)), worldTileId, transform, ageState, worldTileId, true, true);

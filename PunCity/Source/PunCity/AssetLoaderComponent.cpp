@@ -332,6 +332,9 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	TryLoadBuildingModuleSet("Colony", "Colony");
 	TryLoadBuildingModuleSet("Outpost", "Outpost");
 	TryLoadBuildingModuleSet("InventorsWorkshop", "InventorsWorkshop");
+
+
+	TryLoadBuildingModuleSet("ChichenItza", "ChichenItza");
 	
 
 	TryLoadBuildingModuleSet("TribalVillage", "RegionTribalVillage");
@@ -517,6 +520,11 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadUnit(UnitEnum::BrownBear, "Bear/BrownBear_Game");
 	LoadUnit(UnitEnum::Panda, "Panda/Panda_Game");
 
+	// Proper way to do skel collision
+	LoadUnit(UnitEnum::WildMan, "Human/Man/Man1");
+	LoadUnit(UnitEnum::Hippo, "Human/Man/Man1");
+	LoadUnit(UnitEnum::Penguin, "Human/Man/Man1");
+
 	LoadUnit(UnitEnum::Pig, "Pig/StorePig");
 	LoadUnit(UnitEnum::Sheep, "Sheep/Sheep_Game");
 	LoadUnit(UnitEnum::Cow, "Cow/Cow_Game");
@@ -525,20 +533,11 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadUnit(UnitEnum::ProjectileArrow, "Projectiles/Arrow/Arrow");
 
 
-	LoadUnitSkel(UnitEnum::Human, "Human/CitizenMale/", "CitizenMale", 
-		{
-			{ UnitAnimationEnum::Walk, "MOB1_Walk_F_IPC" },
-			{ UnitAnimationEnum::Build, "Builder_1" },
-			{ UnitAnimationEnum::ChopWood, "Choping_wood" },
-			{ UnitAnimationEnum::StoneMining, "Stone_mining" },
-			{ UnitAnimationEnum::FarmPlanting, "Rake_cleaning_1" },
-			{ UnitAnimationEnum::Wait, "Waiting_2" },
-		}
-	);
-
 	/*
 	 * SkeletalMesh
 	 */
+	_unitEnumToSkelAsset.resize(UnitEnumCount);
+	
 	std::unordered_map<UnitAnimationEnum, std::string> animationFileNames = {
 		{ UnitAnimationEnum::Walk, "MOB1_Walk_F_IPC" },
 		{ UnitAnimationEnum::Build, "Builder_1" },
@@ -552,14 +551,28 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadUnitSkel(UnitEnum::Human, "Human/CitizenMale/", "CitizenMale", animationFileNames);
 
 	// Adult Female
-	LoadUnitSkel(UnitEnum::Human, "Human/CitizenMale/", "CitizenMale", animationFileNames);
+	LoadUnitSkel(UnitEnum::Human, "Human/CitizenFemale/", "CitizenFemale", animationFileNames);
 
 	// Child Male
 	LoadUnitSkel(UnitEnum::Human, "Human/CitizenChildMale/", "CitizenChildMale", animationFileNames);
 
 	// Child Female
-	LoadUnitSkel(UnitEnum::Human, "Human/CitizenChildMale/", "CitizenChildMale", animationFileNames);
+	LoadUnitSkel(UnitEnum::Human, "Human/CitizenChildFemale/", "CitizenChildFemale", animationFileNames);
+
+
+	// Wild Man
+	LoadUnitSkel(UnitEnum::WildMan, "Human/WildMan/", "WildMan", animationFileNames);
+
+	// Hippo
+	LoadUnitSkel(UnitEnum::Hippo, "Hippo/", "Hippo", {
+		{ UnitAnimationEnum::Walk, "Hippo_Walk"},
+		{ UnitAnimationEnum::Wait, "Hippo_LookAround"},
+	});
 	
+	// Penguin
+	LoadUnitSkel(UnitEnum::Penguin, "Penguin/", "Penguin", {
+		{ UnitAnimationEnum::Wait, "Penguin_Wait"},
+	});
 	
 	//LoadUnitSkel(UnitEnum::Human, "Human/CitizenMale/CitizenMale");
 	//LoadUnitAnimation(UnitAnimationEnum::Walk, "Human/CitizenMale/MOB1_Walk_F_IPC");
@@ -876,6 +889,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	collection = Load<UMaterialParameterCollection>("/Game/Models/Ground/GlobalWeather");
 	snowParticles = Load<UParticleSystem>("/Game/Models/Weather/Snow/SnowParticles");
+	blizzardParticles = Load<UParticleSystem>("/Game/Models/Weather/Snow/BlizzardParticles");
 	rainParticles = Load<UParticleSystem>("/Game/Models/Weather/Rain/RainParticles");
 	M_RainWetness = Load<UMaterial>("/Game/Models/Weather/Rain/M_RainWetness");
 
@@ -1113,12 +1127,17 @@ UStaticMesh* UAssetLoaderComponent::unitMesh(UnitEnum unitEnum, int32 variationI
 }
 FSkeletonAsset UAssetLoaderComponent::unitSkelAsset(UnitEnum unitEnum, int32 variationIndex)
 {
-	auto got = _unitToSkelAsset.find(unitEnum);
-	if (got != _unitToSkelAsset.end()) {
-		return _unitToSkelAsset[unitEnum][variationIndex];
-	}
-	_LOG(PunAsset, "No Unit SkelMesh For %d", static_cast<int>(unitEnum));
-	return FSkeletonAsset();
+	PUN_CHECK(static_cast<int>(unitEnum) < UnitEnumCount);
+	const FSkeletonAsset& asset = _unitEnumToSkelAsset[static_cast<int>(unitEnum)][variationIndex];
+	PUN_CHECK(asset.skeletalMesh);
+	return asset;
+	
+	//auto got = _unitToSkelAsset.find(unitEnum);
+	//if (got != _unitToSkelAsset.end()) {
+	//	return _unitToSkelAsset[unitEnum][variationIndex];
+	//}
+	//_LOG(PunAsset, "No Unit SkelMesh For %d", static_cast<int>(unitEnum));
+	//return FSkeletonAsset();
 }
 
 const std::string unitsPath = "/Game/Models/Units/";
@@ -1133,14 +1152,8 @@ void UAssetLoaderComponent::LoadUnitSkel(UnitEnum unitEnum, std::string folderPa
 	for (const auto it : animationFileNames) {
 		asset.animationEnumToSequence.Add(it.first, Load<UAnimSequence>((unitsPath + folderPath + it.second).c_str()));
 	}
-	_unitToSkelAsset[unitEnum].push_back(asset);
+	_unitEnumToSkelAsset[static_cast<int>(unitEnum)].push_back(asset);
 }
-//void UAssetLoaderComponent::LoadUnitAnimation(UnitEnum unitEnum, int32 variationIndex, UnitAnimationEnum unitAnimation, std::string file)
-//{
-//	_animationEnumToSequence[unitEnum].push_back(nullptr);
-//	
-//	_animationEnumToSequence[unitEnum][unitAnimation] = Load<UAnimSequence>((unitsPath + file).c_str());
-//}
 void UAssetLoaderComponent::LoadUnitWeapon(UnitAnimationEnum unitAnimation, std::string file)
 {
 	_animationEnumToWeaponMesh[unitAnimation] = Load<UStaticMesh>((unitsPath + file).c_str());

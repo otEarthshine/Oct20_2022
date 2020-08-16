@@ -51,20 +51,26 @@ public:
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* LobbyChatContentRichText;
 	UPROPERTY(meta = (BindWidget)) UEditableTextBox* LobbyChatInputBox;
 
+	// Map Dropdown
 	UPROPERTY(meta = (BindWidget)) UEditableTextBox* LobbyMapSeedInputBox;
 	UPROPERTY(meta = (BindWidget)) UComboBoxString* LobbyMapSizeDropdown;
 	UPROPERTY(meta = (BindWidget)) UComboBoxString* LobbySeaLevelDropdown;
 	UPROPERTY(meta = (BindWidget)) UComboBoxString* LobbyMoistureDropdown;
 	UPROPERTY(meta = (BindWidget)) UComboBoxString* LobbyTemperatureDropdown;
+	UPROPERTY(meta = (BindWidget)) UComboBoxString* LobbyMountainDensityDropdown;
+	
 	UPROPERTY(meta = (BindWidget)) UComboBoxString* LobbyAICountDropdown;
 	UPROPERTY(meta = (BindWidget)) UComboBoxString* LobbyDifficultyDropdown;
 
+	// Map Text
 	UPROPERTY(meta = (BindWidget)) UImage* SettingsBackgroundImage;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyMapSeedText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyMapSizeText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* LobbySeaLevelText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyMoistureText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyTemperatureText;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyMountainDensityText;
+	
 	UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyAICountText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyDifficultyText;
 
@@ -116,6 +122,7 @@ public:
 	UFUNCTION() void OnLobbySeaLevelDropdownChanged(FString sItem, ESelectInfo::Type seltype);
 	UFUNCTION() void OnLobbyMoistureDropdownChanged(FString sItem, ESelectInfo::Type seltype);
 	UFUNCTION() void OnLobbyTemperatureDropdownChanged(FString sItem, ESelectInfo::Type seltype);
+	UFUNCTION() void OnLobbyMountainDensityDropdownChanged(FString sItem, ESelectInfo::Type seltype);
 	UFUNCTION() void OnLobbyAICountDropdownChanged(FString sItem, ESelectInfo::Type seltype);
 	UFUNCTION() void OnLobbyDifficultyDropdownChanged(FString sItem, ESelectInfo::Type seltype);
 
@@ -162,6 +169,7 @@ private:
 
 	UFUNCTION() void ReturnToMainMenu();
 	UFUNCTION() void OnClickLobbyStartGameButton();
+	
 
 	void LobbyStartGame();
 

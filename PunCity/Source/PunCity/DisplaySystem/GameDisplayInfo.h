@@ -699,6 +699,20 @@ public:
 		// Intercity Road
 		{ ModuleTransforms({ ModuleTransform("DirtRoad")}) },
 
+
+		/*
+		 * August 16
+		 */
+		{ // FakeTownhall
+			ModuleTransforms::CreateSet("Townhall0")
+		},
+		{ // FakeTribalVillage
+			ModuleTransforms::CreateSet("TribalVillage")
+		},
+		{ // ChichenItza
+			ModuleTransforms::CreateSet("ChichenItza")
+		},
+			
 		/*
 		 * Decorations
 		 */

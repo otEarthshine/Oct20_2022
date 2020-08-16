@@ -74,7 +74,7 @@ public:
 	std::vector<std::unique_ptr<Building>>& buildings() { return _buildings; }
 
 	int AddTileBuilding(WorldTile2 tile, CardEnum buildingEnum, int32 playerId);
-	int AddBuilding(FPlaceBuildingParameters parameters);
+	int AddBuilding(FPlaceBuilding parameters);
 	void RemoveBuilding(int buildingId);
 
 	void AddTickBuilding(int32 buildingId) {

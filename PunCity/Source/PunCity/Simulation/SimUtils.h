@@ -259,14 +259,36 @@ public:
 			
 		}
 
-		check(loop > 1);
+		// Note: FindStartSpot isn't always valid
+		//check(loop > 1);
 
 		return TileArea::Invalid;
 	}
 
 
-
-
+	template<typename Func>
+	static void PerlinRadius_ExecuteOnArea_WorldTile2(WorldTile2 center, int32 radius, IGameSimulationCore* simulation, Func func)
+	{
+		auto& terrainGen = simulation->terrainGenerator();
+		
+		TileArea area(center, radius);
+		int32 random = center.tileId();
+		const int32 atomShiftAmount = CoordinateConstants::AtomsPerTile / 3;
+		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile)
+		{
+			if (simulation->IsBuildable(tile))
+			{
+				FloatDet perlinChance = terrainGen.resourcePerlin(tile);
+				int32 dist = WorldTile2::Distance(tile, center);
+				FloatDet distChance = FD0_XX(FDMax(100 - dist * 100 / radius, 0));
+				FloatDet chance = FDMul(perlinChance, distChance);
+				chance = FDMax(chance, 0);
+				int32 chancePercent = 100 * chance / FDOne;
+				
+				func(chancePercent, tile);
+			}
+		});
+	}
 
 	
 };

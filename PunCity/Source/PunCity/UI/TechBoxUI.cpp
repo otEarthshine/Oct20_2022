@@ -103,9 +103,11 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 		int32 science100Left = science100XsecPerRound_Left / Time::SecondsPerRound; // Redundant, but just make it easier to read
 
 		int32 science100PerRound = simulation().playerOwned(playerId()).science100PerRound();
-		int32 secRequired = (science100Left * Time::SecondsPerRound) / science100PerRound;
-		ss << secRequired << "s";
-		SetText(SecText, ss.str());
+		if (science100PerRound > 0) {
+			int32 secRequired = (science100Left * Time::SecondsPerRound) / science100PerRound;
+			ss << secRequired << "s";
+			SetText(SecText, ss.str());
+		}
 
 		OuterImage->GetDynamicMaterial()->SetScalarParameterValue("ResearchFraction", unlockSys->researchFraction());
 	}

@@ -18,10 +18,10 @@ public:
 		if (provinceId == -1) {
 			return GeoresourceNode(); // invalid province, return null
 		}
-		return _regionToGeoresource[provinceId];
+		return _provinceToGeoresource[provinceId];
 	}
 	
-	const std::vector<GeoresourceNode>& regionToGeoresources() { return _regionToGeoresource; }
+	const std::vector<GeoresourceNode>& provinceToGeoresource() { return _provinceToGeoresource; }
 	const std::vector<int32>& georesourceRegions() { return _georesourcesProvinceIds; }
 
 
@@ -44,18 +44,18 @@ public:
 
 	void MineStone(int32 regionId, int32 amount)
 	{
-		int32& depositAmount = _regionToGeoresource[regionId].stoneAmount;
+		int32& depositAmount = _provinceToGeoresource[regionId].stoneAmount;
 		depositAmount = std::max(0, depositAmount - amount);
 	}
 	void MineOre(int32 regionId, int32 amount)
 	{
-		int32& depositAmount = _regionToGeoresource[regionId].depositAmount;
+		int32& depositAmount = _provinceToGeoresource[regionId].depositAmount;
 		depositAmount = std::max(0, depositAmount - amount);
 	}
 
 	void Serialize(FArchive &Ar)
 	{
-		SerializeVecObj(Ar, _regionToGeoresource);
+		SerializeVecObj(Ar, _provinceToGeoresource);
 		SerializeVecValue(Ar, _georesourcesProvinceIds);
 	}
 
@@ -68,6 +68,6 @@ private:
 private:
 	IGameSimulationCore* _simulation = nullptr;
 
-	std::vector<GeoresourceNode> _regionToGeoresource;
+	std::vector<GeoresourceNode> _provinceToGeoresource;
 	std::vector<int32> _georesourcesProvinceIds;
 };

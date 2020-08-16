@@ -1978,15 +1978,16 @@ bool HumanStateAI::TryConstructHelper(int32 workplaceId)
 		AddDebugSpeech("(Failed)TryConstruct: !workplace.NeedConstruct");
 		return false;
 	}
-	
+
 	int32 waitTicks = Time::TicksPerSecond / 4; //15
 	int32 workManSec100 = 100;
 	workManSec100 = workManSec100 * workEfficiency100() / 100;
 
 	ReserveWork(workManSec100, workplaceId);
+	
 
 	_unitState = UnitState::WorkConstruct;
-	Add_Construct(workManSec100, waitTicks, 5, workplaceId);
+	Add_Construct(workManSec100, waitTicks, ConstructTimesPerBatch, workplaceId);
 	Add_MoveToward(workplace.centerTile().worldAtom2(), 12000);
 	Add_MoveTo(workplace.gateTile());
 

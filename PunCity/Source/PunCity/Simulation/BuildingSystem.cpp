@@ -74,7 +74,7 @@ void BuildingSystem::Tick()
 
 int BuildingSystem::AddTileBuilding(WorldTile2 tile, CardEnum buildingEnum, int32 playerId)
 {
-	FPlaceBuildingParameters placeBuildingParams;
+	FPlaceBuilding placeBuildingParams;
 	placeBuildingParams.buildingEnum = static_cast<uint8>(buildingEnum);
 	placeBuildingParams.area = TileArea(tile, WorldTile2(1, 1));
 	placeBuildingParams.center = tile;
@@ -149,6 +149,12 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		CASE_BUILDING(CardEnum::Warehouse, Warehouse);
 		CASE_BUILDING(CardEnum::Fort, Fort);
 		CASE_BUILDING(CardEnum::Colony, Colony);
+
+		// August 16
+		CASE_BUILDING(CardEnum::FakeTownhall, Building);
+		CASE_BUILDING(CardEnum::FakeTribalVillage, Building);
+		CASE_BUILDING(CardEnum::ChichenItza, Building);
+		
 
 		CASE_BUILDING(CardEnum::BoarBurrow, BoarBurrow);
 
@@ -241,7 +247,7 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 #undef CASE_BUILDING_PARAM
 }
 
-int BuildingSystem::AddBuilding(FPlaceBuildingParameters parameters)
+int BuildingSystem::AddBuilding(FPlaceBuilding parameters)
 {
 	WorldTile2 center = parameters.center;
 	CardEnum buildingEnum = static_cast<CardEnum>(parameters.buildingEnum);

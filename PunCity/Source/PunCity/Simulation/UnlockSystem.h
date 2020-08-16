@@ -469,6 +469,10 @@ public:
 			//UnlockBuilding(BuildingEnum::Fence);
 			//UnlockBuilding(BuildingEnum::FenceGate);
 
+			if (SimSettings::IsOn("TrailerSession")) {
+				UnlockAll();
+			}
+
 			//-------------
 			_eraToTechs.push_back({}); // Era 0 as blank
 			_enumToTech[TechEnum::None] = std::static_pointer_cast<ResearchInfo>(std::make_shared<ResearchNone>());
@@ -583,6 +587,10 @@ public:
 
 	void UnlockAll()
 	{
+		if (!isUnlocked(CardEnum::Farm)) {
+			UnlockBuilding(CardEnum::Farm);
+		}
+		
 		for (auto& techs : _eraToTechs) {
 			for (auto& tech : techs) {
 				if (tech->state != TechStateEnum::Researched) {

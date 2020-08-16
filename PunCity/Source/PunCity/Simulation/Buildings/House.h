@@ -208,7 +208,7 @@ private:
 
 private:
 	int32 _houseLvl = 1;
-	int32 _lastHouseUpgradeTick = -1;
+	static int32 _lastHouseUpgradeTick;
 	const int32 houseUpgradeDelayTicks = Time::TicksPerSecond * 8;
 
 	const int32 houseBaseOccupants = 4;

@@ -363,7 +363,7 @@ void ABuildingPlacementSystem::StartBuildingPlacement(CardEnum buildingEnum, int
 
 	
 	
-	PUN_LOG("StartBuildingPlacement: %d lvl:%d", static_cast<int>(buildingEnum), buildingLvl);
+	PUN_LOG("StartBuildingPlacement: %s lvl:%d", ToTChar(GetBuildingInfo(buildingEnum).name), buildingLvl);
 
 	_placementType = PlacementType::Building;
 	_buildingEnum = buildingEnum;
@@ -2038,7 +2038,7 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 			
 			if (_buildingEnum == CardEnum::Farm)
 			{
-				auto command = make_shared<FPlaceBuildingParameters>();
+				auto command = make_shared<FPlaceBuilding>();
 				command->buildingEnum = buildingEnumInt();
 				command->buildingLevel = _buildingLvl;
 				command->area = _area;
@@ -2068,7 +2068,7 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 			}
 			else if (_buildingEnum == CardEnum::StorageYard)
 			{
-				auto command = make_shared<FPlaceBuildingParameters>();
+				auto command = make_shared<FPlaceBuilding>();
 				command->buildingEnum = buildingEnumInt();
 				command->buildingLevel = _buildingLvl;
 				command->area = _area3; // Storage trimmed area
@@ -2185,7 +2185,7 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 					int32 maxY = max(firstBridgeWaterTile.y, lastBridgeWaterTile.y);
 					TileArea bridgeArea(minX, minY, maxX, maxY);
 					
-					auto command = make_shared<FPlaceBuildingParameters>();
+					auto command = make_shared<FPlaceBuilding>();
 					command->buildingEnum = static_cast<uint8>(CardEnum::Bridge);
 					command->buildingLevel = _buildingLvl;
 					command->area = bridgeArea;
@@ -2213,7 +2213,7 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 	}
 	
 	PUN_LOG("NetworkDragPlace: %d, %d, %d, %d", _area.minX, _area.minY, _area.maxX, _area.maxY);
-	auto placeGatherCommand = make_shared<FPlaceGatherParameters>();
+	auto placeGatherCommand = make_shared<FPlaceDrag>();
 
 	placeGatherCommand->area = _area;
 	placeGatherCommand->area2 = _area2;
@@ -2309,7 +2309,7 @@ void ABuildingPlacementSystem::NetworkTryPlaceBuilding(IGameNetworkInterface* ne
 		{
 			auto& sim = _gameInterface->simulation();
 
-			auto command = make_shared<FPlaceBuildingParameters>();
+			auto command = make_shared<FPlaceBuilding>();
 			command->buildingEnum = buildingEnumInt();
 			command->buildingLevel = _buildingLvl;
 			command->area = _area;

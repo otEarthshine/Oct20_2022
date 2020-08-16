@@ -8,11 +8,54 @@
 class StorageYard : public Building
 {
 public:
-	void FinishConstruction() override {
+	void FinishConstruction() override
+	{
 		Building::FinishConstruction();
 
 		for (ResourceInfo info : ResourceInfos) {
 			AddResourceHolder(info.resourceEnum, ResourceHolderType::Storage, 0);
+		}
+
+		// Special case: Trailer AddResources from input/output of nearby buildings
+		if (SimSettings::IsOn("TrailerSession"))
+		{
+			bool alreadyHasResource = false;
+			for (ResourceInfo info : ResourceInfos) {
+				if (resourceCount(info.resourceEnum) > 0) {
+					alreadyHasResource = true;
+					break;
+				}
+			}
+
+			if (!alreadyHasResource)
+			{
+				auto& buildingList = _simulation->buildingSubregionList();
+
+				std::vector<ResourceEnum> resourceEnums;
+
+				buildingList.ExecuteRegion(centerTile().region(), [&](int32 buildingId)
+				{
+					if (resourceEnums.size() >= 2) {
+						return;
+					}
+
+					Building& building = _simulation->building(buildingId);
+					if (building.product() != ResourceEnum::None) {
+						resourceEnums.push_back(building.product());
+					}
+					if (building.input1() != ResourceEnum::None) {
+						resourceEnums.push_back(building.input1());
+					}
+					if (building.input2() != ResourceEnum::None) {
+						resourceEnums.push_back(building.input2());
+					}
+				});
+
+				size_t enumCount = std::min(static_cast<size_t>(2), resourceEnums.size());
+				for (size_t i = 0; i < enumCount; i++) {
+					AddResource(resourceEnums[i], GameConstants::StorageCountPerTile + GameRand::Rand(centerTile().tileId()) % GameConstants::StorageCountPerTile);
+				}
+			}
 		}
 	}
 

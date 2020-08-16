@@ -338,11 +338,12 @@ void UObjectDescriptionUISystem::LeftMouseDown()
 
 							if (unit.unitEnum() == UnitEnum::Human)
 							{
-								// Human uses USkeletonAsset, should just mark in sim for UnitDisplayComponent to adjust customDepth
-								//if (TryMouseCollision(assetLoader()->unitMesh(unit.unitEnum(), 0), transform, shortestHit)) {
-								//	uiState.objectType = ObjectTypeEnum::Unit;
-								//	uiState.objectId = unitId;
-								//}
+								// VariationIndex 0 for human.. TODO: proper code here?
+								if (TryMouseCollision(assetLoader()->unitMesh(unit.unitEnum(), 0), transform, shortestHit)) {
+									// Human uses USkeletonAsset, should just mark in sim for UnitDisplayComponent to adjust customDepth
+									uiState.objectType = ObjectTypeEnum::Unit;
+									uiState.objectId = unitId;
+								}
 							}
 							else
 							{
@@ -978,8 +979,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							descriptionBox->AddRichText("Influence(per season)", ss);
 						}
 					}
-					else if (building.isEnum(CardEnum::StorageYard) ||
-							building.isEnum(CardEnum::Warehouse))
+					else if (IsStorage(building.buildingEnum()))
 					{
 						ss << building.subclass<StorageYard>().tilesOccupied() << "/" << building.storageSlotCount();
 						descriptionBox->AddRichText("Slots", ss);
@@ -1220,7 +1220,13 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					}
 					else if (IsMountainMine(building.buildingEnum()))
 					{
-						descriptionBox->AddRichText("Resource left", to_string(building.subclass<Mine>().oreLeft()));
+						int32 oreLeft = building.subclass<Mine>().oreLeft();
+						if (oreLeft > 0) {
+							descriptionBox->AddRichText("Resource left", to_string(oreLeft), building.product());
+						} else {
+							ss << "<Red>Mine Depleted</>";
+							descriptionBox->AddRichText(ss);
+						}
 					}
 					else if (IsRegionalBuilding(building.buildingEnum()))
 					{
@@ -1398,13 +1404,21 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						if (building.workPercent() > 0) {
 							//ss << "(get " << building.productPerBatch() << " " << ResourceName(building.product()) << ")\n";
 						}
-						else if (!building.filledInputs()) {
-							ss << "<Orange>Require ";
-							if (hasInput1) ss << building.inputPerBatch() << " " << ResourceName(building.input1());
-							if (hasInput1 && hasInput2) ss << ", ";
-							if (hasInput2) ss << building.inputPerBatch() << " " << ResourceName(building.input2());
-							ss << "</>";
-							descriptionBox->AddRichText(ss);
+						else if (!building.filledInputs()) 
+						{
+							// Special case IsMountainMine
+							if (IsMountainMine(building.buildingEnum()))
+							{
+							}
+							else
+							{
+								ss << "<Orange>Require ";
+								if (hasInput1) ss << building.inputPerBatch() << " " << ResourceName(building.input1());
+								if (hasInput1 && hasInput2) ss << ", ";
+								if (hasInput2) ss << building.inputPerBatch() << " " << ResourceName(building.input2());
+								ss << "</>";
+								descriptionBox->AddRichText(ss);
+							}
 						}
 
 					}
@@ -1819,6 +1833,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			descriptionBox->AddRichText(ss);
 			ss << "-- lastBirthTick:(" << unit.lastPregnantTick() << ")";
 			descriptionBox->AddRichText(ss);
+			ss << "animation: " << GetUnitAnimationName(unit.animationEnum());
+			descriptionBox->AddRichText(ss);
 #endif
 
 			ss << "Age: " << unit.age() * PlayerParameters::PeopleAgeToGameYear / Time::TicksPerYear + 3 << " years"; // cheat 3 years older so no 0 years old ppl
@@ -1997,10 +2013,13 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			WorldAtom2 atom = dataSource()->unitDataSource().actualAtomLocation(objectId);
 			SpawnSelectionMesh(assetLoader->SelectionMaterialGreen, dataSource()->DisplayLocation(atom) + FVector(0, 0, 30));
 
-			FTransform transform;
-			int32 variationIndex = dataSource()->GetUnitTransformAndVariation(objectId, transform);
-			UStaticMesh* unitMesh = assetLoader->unitMesh(unit.unitEnum(), variationIndex);
-			SpawnMesh(unitMesh, unitMesh->GetMaterial(0), transform, false, 2);
+			if (unit.unitEnum() != UnitEnum::Human)
+			{
+				FTransform transform;
+				int32 variationIndex = dataSource()->GetUnitTransformAndVariation(objectId, transform);
+				UStaticMesh* unitMesh = assetLoader->unitMesh(unit.unitEnum(), variationIndex);
+				SpawnMesh(unitMesh, unitMesh->GetMaterial(0), transform, false, 2);
+			}
 
 			descriptionBox->AfterAdd();
 		}
@@ -2390,9 +2409,9 @@ void UObjectDescriptionUISystem::ShowRegionSelectionDecal(WorldTile2 tile, bool 
 
 void UObjectDescriptionUISystem::AddSelectStartLocationButton(int32 provinceId, UPunBoxWidget* descriptionBox)
 {
-	bool needChooseLocation = simulation().playerOwned(playerId()).needChooseLocation;
+	bool hasChosenLocation = simulation().playerOwned(playerId()).hasChosenLocation();
 	// If player hasn't select starting location
-	if (needChooseLocation)
+	if (!hasChosenLocation)
 	{	
 		bool canClaim = true;
 		if (!SimUtils::CanReserveSpot_NotTooCloseToAnother(provinceId, &simulation(), 1)) {
@@ -3023,7 +3042,7 @@ void UObjectDescriptionUISystem::AddGeoresourceInfo(int32 provinceId, UPunBoxWid
 	GeoresourceSystem& georesourceSys = simulation.georesourceSystem();
 	GeoresourceNode node = georesourceSys.georesourceNode(provinceId);
 	ProvinceSystem& provinceSys = simulation.provinceSystem();
-	bool isMountain = provinceSys.provinceIsMountain(provinceId);
+	bool isMountain = provinceSys.provinceMountainTileCount(provinceId) > 0;
 	
 	if (node.HasResource())
 	{

@@ -134,6 +134,7 @@ public:
 	MapSeaLevelEnum mapSeaLevel = MapSeaLevelEnum::Medium;
 	MapMoistureEnum mapMoisture = MapMoistureEnum::Medium;
 	MapTemperatureEnum mapTemperature = MapTemperatureEnum::Medium;
+	MapMountainDensityEnum mapMountainDensity = MapMountainDensityEnum::Medium;
 	
 	int32 playerCount = 0;
 	int32 aiCount = 15;
@@ -152,6 +153,7 @@ public:
 			mapSeaLevel == a.mapSeaLevel &&
 			mapMoisture == a.mapMoisture &&
 			mapTemperature == a.mapTemperature &&
+			mapMountainDensity == a.mapMountainDensity &&
 
 			playerCount == a.playerCount &&
 			aiCount == a.aiCount &&
@@ -172,6 +174,7 @@ public:
 		Ar << mapSeaLevel;
 		Ar << mapMoisture;
 		Ar << mapTemperature;
+		Ar << mapMountainDensity;
 		
 		Ar << playerCount;
 		Ar << aiCount;
@@ -186,9 +189,10 @@ public:
 		std::stringstream ss;
 		ss << "[seed:" << ToStdString(mapSeed);
 		ss << ", size:" << ToStdString(MapSizeNames[mapSizeEnumInt]);
-		ss << ", seaLevel:" << ToStdString(MapSeaLevelNames[static_cast<int>(mapSeaLevel)]);
+		ss << ", seaLevel:" << ToStdString(MapSettingsLevelNames[static_cast<int>(mapSeaLevel)]);
 		ss << ", moisture:" << ToStdString(MapMoistureNames[static_cast<int>(mapMoisture)]);
-		ss << ", temperature:" << ToStdString(MapTemperatureNames[static_cast<int>(mapTemperature)]);
+		ss << ", temperature:" << ToStdString(MapSettingsLevelNames[static_cast<int>(mapTemperature)]);
+		ss << ", mountain:" << ToStdString(MapSettingsLevelNames[static_cast<int>(mapMountainDensity)]);
 		
 		ss << ", playerCount:" << playerCount;
 		ss << ", ai:" << aiCount;
@@ -205,6 +209,7 @@ public:
 		Ar << mapSeaLevel;
 		Ar << mapMoisture;
 		Ar << mapTemperature;
+		Ar << mapMountainDensity;
 		
 		Ar << playerCount;
 		Ar << aiCount;
@@ -256,7 +261,7 @@ enum class NetworkCommandEnum : uint8
 	AddPlayer,
 
 	PlaceBuilding,
-	PlaceGather,
+	PlaceDrag,
 	JobSlotChange,
 	SetAllowResource,
 	SetPriority,
@@ -378,20 +383,22 @@ public:
 };
 
 
-class FPlaceBuildingParameters final : public FNetworkCommand
+class FPlaceBuilding final : public FNetworkCommand
 {
 public:
-	virtual ~FPlaceBuildingParameters() {}
+	virtual ~FPlaceBuilding() {}
 
 	uint8 buildingEnum;
-	int32 buildingLevel = 0; // Note: in TrailerMode, use buildingLevel to specify plant type (need after-edit..)
+	int32 buildingLevel = 0; // Note TrailerMode - Farm: use buildingLevel to specify plant type (need after-edit..)
 
 	TileArea area; // Needed in the case for manipulable area
 	TileArea area2;
 	WorldTile2 center;
 	uint8 faceDirection;
-	bool useBoughtCard = false;
+	bool useBoughtCard = false; //  Note TrailerMode - use useBoughtCard to specify if it is prebuilt
 	CardEnum useWildCard = CardEnum::None;
+
+	bool isTrailerPreBuilt() { return area2.minX; }
 
 	NetworkCommandEnum commandType() override { return NetworkCommandEnum::PlaceBuilding; }
 
@@ -415,17 +422,19 @@ public:
 };
 
 
-class FPlaceGatherParameters final : public FNetworkCommand
+class FPlaceDrag final : public FNetworkCommand
 {
 public:
-	virtual ~FPlaceGatherParameters() {}
+	virtual ~FPlaceDrag() {}
 	TileArea area = TileArea::Invalid; // Needed in the case for manipulable area
 	TileArea area2 = TileArea::Invalid;
 	TArray<int32> path;
 	int32 placementType;
 	ResourceEnum harvestResourceEnum;
 
-	NetworkCommandEnum commandType() override { return NetworkCommandEnum::PlaceGather; }
+	bool isTrailerPreBuilt() { return area2.minX; }
+
+	NetworkCommandEnum commandType() override { return NetworkCommandEnum::PlaceDrag; }
 
 	void Serialize(PunSerializedData& blob) override
 	{
@@ -1026,8 +1035,8 @@ public:
 		{
 			//CASE_COMMAND(NetworkCommandEnum::AddPlayer, FAddPlayer);
 
-			CASE_COMMAND(NetworkCommandEnum::PlaceBuilding, FPlaceBuildingParameters);
-			CASE_COMMAND(NetworkCommandEnum::PlaceGather, FPlaceGatherParameters);
+			CASE_COMMAND(NetworkCommandEnum::PlaceBuilding, FPlaceBuilding);
+			CASE_COMMAND(NetworkCommandEnum::PlaceDrag, FPlaceDrag);
 			CASE_COMMAND(NetworkCommandEnum::JobSlotChange, FJobSlotChange);
 			CASE_COMMAND(NetworkCommandEnum::SetAllowResource, FSetAllowResource);
 			CASE_COMMAND(NetworkCommandEnum::SetPriority, FSetPriority);

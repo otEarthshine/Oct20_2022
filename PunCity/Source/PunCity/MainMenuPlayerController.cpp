@@ -227,7 +227,7 @@ void AMainMenuPlayerController::SendReadyStatus_ToServer_Implementation(bool pla
 
 
 void AMainMenuPlayerController::SetMapSettings_Implementation(const TArray<int32>& mapSettingsBlob) {
-	gameInstance()->SetMapSetttings(mapSettingsBlob);
+	gameInstance()->SetMapSettings(mapSettingsBlob);
 
 	//PUN_DEBUG2("SetMapSettings_Impl %s", ToTChar(gameInstance()->GetMapSettings().ToString()));
 }
@@ -236,7 +236,7 @@ bool AMainMenuPlayerController::SetMapSettings_Validate(const TArray<int32>& map
 void AMainMenuPlayerController::ServerStartGame_Implementation(const TArray<int32>& mapSettingsBlob) {
 	isStartingGame = true;
 	
-	gameInstance()->SetMapSetttings(mapSettingsBlob);
+	gameInstance()->SetMapSettings(mapSettingsBlob);
 
 	PUN_DEBUG2("ServerStartGame_Impl %s", ToTChar(gameInstance()->GetMapSettings().ToString()));
 }

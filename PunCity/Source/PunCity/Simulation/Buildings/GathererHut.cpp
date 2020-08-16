@@ -296,7 +296,7 @@ int32 Beekeeper::BeekeeperBaseEfficiency(int32 playerId, WorldTile2 centerTileIn
 
 int32 Mine::oreLeft()
 {
-	auto node = _simulation->georesourceSystem().georesourceNode(centerTile().regionId());
+	auto node = _simulation->georesourceSystem().georesourceNode(_simulation->GetProvinceIdClean(centerTile()));
 	if (isEnum(CardEnum::Quarry)) {
 		return node.stoneAmount;
 	}

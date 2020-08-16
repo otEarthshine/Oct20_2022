@@ -23,6 +23,9 @@ public:
 	//virtual void SpawnBuildingWorkSound(class Building& building) = 0;
 	virtual void TryStartBuildingWorkSound(class Building& building) = 0;
 	virtual void TryStopBuildingWorkSound(class Building& building) = 0;
+
+
+	virtual float GetDisplayTime() = 0;
 };
 
 class IGameUIInterface
@@ -93,7 +96,7 @@ public:
 
 	virtual class IGameSoundInterface* soundInterface() = 0;
 	virtual class IGameUIInterface* uiInterface() = 0;
-
+	
 	//virtual class IUnitDataSource& unitDataSource() = 0;
 
 	virtual int32 playerCount() = 0;
@@ -382,7 +385,7 @@ public:
 	virtual void SetProvinceOwnerFull(int32 provinceId, int32 playerId) = 0;
 	virtual int32 provinceOwner(int32 provinceId) = 0;
 
-	virtual int PlaceBuilding(class FPlaceBuildingParameters parameters) = 0;
+	virtual int PlaceBuilding(class FPlaceBuilding parameters) = 0;
 
 	//virtual void SetLoadingText(std::string loadingText) = 0;
 
@@ -490,8 +493,8 @@ public:
 	//virtual void AddPlayer(class FAddPlayer command) = 0;
 
 	//virtual void PoliciesSelected(class FPoliciesSelects policies) = 0;
-	virtual int32 PlaceBuilding(FPlaceBuildingParameters parameters) = 0;
-	virtual void PlaceDrag(class FPlaceGatherParameters parameters) = 0;
+	virtual int32 PlaceBuilding(FPlaceBuilding parameters) = 0;
+	virtual void PlaceDrag(class FPlaceDrag parameters) = 0;
 	virtual void JobSlotChange(class FJobSlotChange jobSlotChange) = 0;
 	virtual void SetAllowResource(FSetAllowResource command) = 0;
 	virtual void SetPriority(class FSetPriority command) = 0;

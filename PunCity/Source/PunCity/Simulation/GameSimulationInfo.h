@@ -12,8 +12,8 @@
 
 //#include "PunCity/PunSTLContainerOverride.h"
 
-#define SAVE_VERSION 10
-#define GAME_VERSION 20080601
+#define SAVE_VERSION 20081502
+#define GAME_VERSION 20081502
 
 //! Utils
 
@@ -275,14 +275,6 @@ static void InitLLM()
 }
 
 
-/*
- * Constants
- */
-const int32 MaxPacketSize = 1024;
-
-
-
-
 /**
  * Time
  */
@@ -505,6 +497,20 @@ static FloatDet CelsiusToFahrenheit(FloatDet celsius)
  */
 static const int32 TicksPerStatInterval = Time::TicksPerSecond * 30;
 
+
+/*
+ * Constants
+ */
+const int32 MaxPacketSize = 1024;
+
+const int32 ConstructionWaitTicks = Time::TicksPerSecond / 4; //15;
+const int32 ConstructTimesPerBatch = 20 * 4; // 20 sec
+
+
+/*
+ * Map
+ */
+
 enum class MapSizeEnum : uint8
 {
 	Small,
@@ -559,7 +565,8 @@ enum class MapSeaLevelEnum : uint8
 	High,
 	VeryHigh
 };
-static const std::vector<FString> MapSeaLevelNames
+
+static const std::vector<FString> MapSettingsLevelNames
 {
 	"Very Low",
 	"Low",
@@ -593,14 +600,16 @@ enum class MapTemperatureEnum : uint8
 	High,
 	VeryHigh
 };
-static const std::vector<FString> MapTemperatureNames
+enum class MapMountainDensityEnum : uint8
 {
-	"Very Low",
-	"Low",
-	"Medium",
-	"High",
-	"Very High",
+	VeryLow,
+	Low,
+	Medium,
+	High,
+	VeryHigh
 };
+
+
 
 
 enum class DifficultyLevel : uint8
@@ -854,7 +863,7 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::Flour,		"Wheat Flour", 5, "Ingredient used to bake Bread"),
 	ResourceInfo(ResourceEnum::Bread,		"Bread", 3, "Delicious food baked from Wheat Flour"), // 3 bread from 1 flour
 	ResourceInfo(ResourceEnum::Gemstone,	"Gemstone", 20, "Precious stone that can be crafted into Jewelry"),
-	ResourceInfo(ResourceEnum::Jewelry,		"Jewelry", 50, "Luxury tier 3 used for housing upgrade. Expensive adornment of Gold and Gems."),
+	ResourceInfo(ResourceEnum::Jewelry,		"Jewelry", 70, "Luxury tier 3 used for housing upgrade. Expensive adornment of Gold and Gems."),
 
 	// June 9
 	
@@ -1575,6 +1584,12 @@ enum class CardEnum : uint16
 	InventorsWorkshop,
 	IntercityRoad,
 
+	// August 16
+	FakeTownhall,
+	FakeTribalVillage,
+	ChichenItza,
+	
+
 	// Decorations
 	FlowerBed,
 	GardenShrubbery1,
@@ -2105,7 +2120,7 @@ static const BldInfo BuildingInfo[]
 
 	BldInfo(CardEnum::HumanitarianAidCamp,	"Humanitarian Aid Camp",	WorldTile2(4, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, {0, 0, 0}, "Supply your neighbor with 100 food."),
 
-	BldInfo(CardEnum::RegionTribalVillage,	"Tribal Village",	WorldTile2(6, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, {0, 0, 0}, "Tribal village that might want to join your city."),
+	BldInfo(CardEnum::RegionTribalVillage,	"Tribal Village",	WorldTile2(9, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, {0, 0, 0}, "Tribal village that might want to join your city."),
 	BldInfo(CardEnum::RegionShrine,	"Ancient Shrine",	WorldTile2(4, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, {0, 0, 0}, "Shrines built by the ancients that grants wisdom to those who seek it."),
 	BldInfo(CardEnum::RegionPort,	"Port Settlement",	WorldTile2(12, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, {0, 0, 0}, "Port settlement specialized in trading certain resources."),
 	BldInfo(CardEnum::RegionCrates,	"Crates",			WorldTile2(4, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, {0, 0, 0}, "Crates that may contain valuable resources."),
@@ -2114,7 +2129,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::Windmill, "Windmill", WorldTile2(5, 5), ResourceEnum::Wheat, ResourceEnum::None, ResourceEnum::Flour, 10, 2, { 150,0,0 }, "Grind Wheat into Wheat Flour."),
 	BldInfo(CardEnum::Bakery, "Bakery", WorldTile2(5, 5), ResourceEnum::Flour, ResourceEnum::Coal, ResourceEnum::Bread, 30, 2, { 70,30,0 }, "Bake Bread with Wheat Flour and heat."),
 	BldInfo(CardEnum::GemstoneMine, "Gemstone Mine", WorldTile2(5, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::Gemstone, 10, 3, { 70,30,0 }, "Mine Gemstone from Gemstone Deposits."),
-	BldInfo(CardEnum::Jeweler, "Jeweler", WorldTile2(4, 7), ResourceEnum::Gemstone, ResourceEnum::None, ResourceEnum::Jewelry, 10, 3, { 150,0,50 }, "Craft Gemstone and Gold Bar into Jewelry."),
+	BldInfo(CardEnum::Jeweler, "Jeweler", WorldTile2(4, 7), ResourceEnum::Gemstone, ResourceEnum::GoldBar, ResourceEnum::Jewelry, 10, 3, { 150,0,50 }, "Craft Gemstone and Gold Bar into Jewelry."),
 
 	// June 9 addition
 	BldInfo(CardEnum::Beekeeper, "Beekeeper", WorldTile2(6, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::Beeswax, 10, 2, { 50,30,0 }, "Produce Beeswax and Honey. Efficiency increases with more surrounding trees."),
@@ -2129,6 +2144,11 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::Colony, "Colony", WorldTile2(10, 10), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "Extract resource from province."),
 	BldInfo(CardEnum::InventorsWorkshop, "Inventor's Workshop", WorldTile2(6, 6), ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::None, 0, 2, { 50,50,0 }, "Generate science points. Use wood as input."),
 	BldInfo(CardEnum::IntercityRoad, "Intercity Road", WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "Build Road to connect with other Cities, Fort, and Colonies."),
+
+	BldInfo(CardEnum::FakeTownhall, "FakeTownhall", WorldTile2(12, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "..."),
+	BldInfo(CardEnum::FakeTribalVillage, "FakeTribalVillage", WorldTile2(12, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "..."),
+	BldInfo(CardEnum::ChichenItza, "ChichenItza", WorldTile2(16, 16), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "..."),
+
 	
 	// Decorations
 	BldInfo(CardEnum::FlowerBed, "Flower Bed", WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "Increase the surrounding appeal by 5 within 5 tiles radius."),
@@ -3808,7 +3828,9 @@ static bool HasBuildingFront(CardEnum cardEnum)
 {
 	PUN_CHECK(IsBuildingCard(cardEnum));
 	return cardEnum != CardEnum::Farm &&
-			cardEnum != CardEnum::StorageYard && 
+			cardEnum != CardEnum::StorageYard &&
+			cardEnum != CardEnum::FakeTribalVillage &&
+			cardEnum != CardEnum::ChichenItza &&
 			!IsDecorativeBuilding(cardEnum);
 }
 
@@ -4272,6 +4294,10 @@ enum class UnitEnum : uint8
 	BlackBear,
 	Panda,
 
+	WildMan,
+	Hippo,
+	Penguin,
+
 	Pig,
 	Sheep,
 	Cow,
@@ -4374,7 +4400,7 @@ static const BiomeInfo BiomeInfos[]
 	{ "Tundra",
 		"Extremely cold, frozen plain where almost nothing grows.",
 		{ TileObjEnum::Pine1, TileObjEnum::Pine2 },
-		{ TileObjEnum::OreganoBush },
+		{ }, // TileObjEnum::OreganoBush
 		{TileObjEnum::WhiteFlowerBush},
 		{},
 		{}
@@ -4415,7 +4441,7 @@ static const float FlatLandHeightFloat = FDToFloat(FlatLandHeight);
 // Desert latitude 15-35
 
 // Temperature Band
-const int32 tundraTemperatureStart100 = 52;
+const int32 tundraTemperatureStart100 = 60;
 const int32 borealTemperatureStart100 = 40;
 const int32 forestTemperatureStart100 = 7;
 
@@ -4550,6 +4576,11 @@ static const UnitInfo UnitInfos[]
 	UnitInfo(UnitEnum::BlackBear,"Black Bear",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop}, {ResourceEnum::Leather, BaseUnitDrop}}),
 	UnitInfo(UnitEnum::Panda,"Panda",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop}, {ResourceEnum::Leather, BaseUnitDrop}}),
 
+	UnitInfo(UnitEnum::WildMan, "WildMan",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop}, {ResourceEnum::Leather, BaseUnitDrop}}),
+	UnitInfo(UnitEnum::Hippo, "Hippo",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop}, {ResourceEnum::Leather, BaseUnitDrop}}),
+	UnitInfo(UnitEnum::Penguin, "Penguin",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop}, {ResourceEnum::Leather, BaseUnitDrop}}),
+	
+	
 	UnitInfo(UnitEnum::Pig,"Pig",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Pork, 5 * BaseUnitDrop}}),
 	UnitInfo(UnitEnum::Sheep,"Sheep",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Lamb, 2 * BaseUnitDrop}, {ResourceEnum::Wool, 3 * BaseUnitDrop}}),
 	UnitInfo(UnitEnum::Cow,"Cow",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Milk, 5 * BaseUnitDrop}, {ResourceEnum::Leather,  3 * BaseUnitDrop}}),
@@ -4559,7 +4590,7 @@ static const UnitInfo UnitInfos[]
 	//UnitInfo("Bear",	050,	500,	200,		010,	050,	5),
 };
 
-static const int32_t UnitEnumCount = _countof(UnitInfos);
+static const int32 UnitEnumCount = _countof(UnitInfos);
 
 static UnitInfo GetUnitInfo(UnitEnum unitEnum) {
 	return UnitInfos[static_cast<int>(unitEnum)];
@@ -4640,6 +4671,10 @@ static const UnitEnum WildAnimalNoHomeEnums[] =
 	UnitEnum::BrownBear,
 	UnitEnum::BlackBear,
 	UnitEnum::Panda,
+
+	UnitEnum::Hippo,
+	UnitEnum::Penguin,
+	UnitEnum::WildMan,
 };
 
 static const UnitEnum WildAnimalWithHomeEnums[] =
@@ -4660,6 +4695,35 @@ static bool IsWildAnimalNoHome(UnitEnum unitEnum) {
 static bool IsWildAnimalWithHome(UnitEnum unitEnum) {
 	for (UnitEnum animalEnum : WildAnimalWithHomeEnums) {
 		if (animalEnum == unitEnum) {
+			return true;
+		}
+	}
+	return false;
+}
+
+static const UnitEnum WildAnimalWithColony[] = {
+	UnitEnum::WildMan,
+	UnitEnum::Hippo,
+	UnitEnum::Penguin,
+};
+static bool IsWildAnimalWithColony(UnitEnum unitEnum) {
+	for (UnitEnum animalEnum : WildAnimalWithColony) {
+		if (animalEnum == unitEnum) {
+			return true;
+		}
+	}
+	return false;
+}
+
+static const UnitEnum SkelMeshUnits[] = {
+	UnitEnum::Human,
+	UnitEnum::WildMan,
+	UnitEnum::Hippo,
+	UnitEnum::Penguin,
+};
+static bool IsUsingSkeletalMesh(UnitEnum unitEnumIn) {
+	for (UnitEnum unitEnum : SkelMeshUnits) {
+		if (unitEnum == unitEnumIn) {
 			return true;
 		}
 	}
@@ -4718,7 +4782,25 @@ enum class UnitAnimationEnum : uint8
 	ChopWood,
 	StoneMining,
 	FarmPlanting,
+
+	Rest,
 };
+static const std::vector<std::string> UnitAnimationNames =
+{
+	"None",
+	"Wait",
+	"Walk",
+	"Build",
+
+	"ChopWood",
+	"StoneMining",
+	"FarmPlanting",
+
+	"Rest",
+};
+static const std::string& GetUnitAnimationName(UnitAnimationEnum animationEnum) {
+	return UnitAnimationNames[static_cast<int>(animationEnum)];
+}
 
 enum class HumanVariationEnum : uint8
 {
@@ -4740,11 +4822,11 @@ static const std::vector<float> UnitAnimationPlayRate =
 {
 	1.0f,
 	1.0f,
-	3.0f,
-	1.0f,
+	2.5f, // Walk
+	1.0f, // Build
 	
-	1.0f,
-	1.0f,
+	2.0f, // ChopWood
+	3.0f, // StoneMining
 	1.0f,
 };
 static float GetUnitAnimationPlayRate(UnitAnimationEnum animationEnum) {
@@ -4846,6 +4928,8 @@ enum class CheatEnum : int32
 	TrailerForceSnowStart,
 	TrailerForceSnowStop,
 	TrailerIncreaseAllHouseLevel,
+	TrailerIncreasePlaceSpeed,
+	TrailerDecreasePlaceSpeed,
 };
 
 static const std::string CheatName[]
@@ -4896,6 +4980,8 @@ static const std::string CheatName[]
 	"TrailerForceSnowStart",
 	"TrailerForceSnowStop",
 	"TrailerIncreaseAllHouseLevel",
+	"TrailerIncreasePlaceSpeed",
+	"TrailerDecreasePlaceSpeed",
 };
 static std::string GetCheatName(CheatEnum cheatEnum) {
 	return CheatName[static_cast<int>(cheatEnum)];
@@ -5953,19 +6039,23 @@ const float WorldZoomAmountStage2 = 680; // 680
 const float WorldZoomAmountStage3 = 810; // 810
 const float WorldZoomAmountStage4 = 1200;
 const float WorldZoomAmountStage5 = 1800;
-const float WorldToMapZoomAmount = 2000; // Below this, sampleRegions won't get sampled
 
 const float WorldZoomTransition_WorldSpaceUIShrink = 480;
 const float WorldZoomTransition_WorldSpaceUIHide = 680;
 
 const float WorldZoomTransition_RegionToRegion4x4 = GetCameraZoomAmount(zoomStepBounceLow + 1);
 const float WorldZoomTransition_RegionToRegion4x4_Mid = GetCameraZoomAmount((zoomStepBounceLow + zoomStepBounceHigh) / 2); // swap Region in at mid height when zoom bouncing to prevent flash
-const float WorldZoomTransition_Region4x4ToMap = GetCameraZoomAmount(69); // 2260, When terrain region chunks changed to TerrainMap mesh
-const float WorldZoomTransition_Region4x4ToMap_SlightBelow = GetCameraZoomAmount(68); // 1900
-const float WorldZoomTransition_Buildings = 810;
-const float WorldZoomTransition_BuildingsMini = 2000;
 
-const float WorldZoomTransition_Tree = 2000;
+const int32 ZoomStep_Region4x4ToMap = 69; // 2260, When terrain region chunks changed to TerrainMap mesh
+const float WorldZoomTransition_Region4x4ToMap = GetCameraZoomAmount(ZoomStep_Region4x4ToMap); 
+const float WorldZoomTransition_Region4x4ToMap_SlightBelow = GetCameraZoomAmount(ZoomStep_Region4x4ToMap - 1); // 1900
+
+const float WorldZoomTransition_Buildings = 810;
+const float WorldZoomTransition_BuildingsMini = WorldZoomTransition_Region4x4ToMap;
+
+const float WorldToMapZoomAmount = WorldZoomTransition_Region4x4ToMap;
+
+const float WorldZoomTransition_Tree = WorldZoomTransition_Region4x4ToMap;
 const float WorldZoomTransition_Bush = GetCameraZoomAmount(zoomStepBounceLow + 1);
 const float WorldZoomTransition_TreeHidden = 5000;
 

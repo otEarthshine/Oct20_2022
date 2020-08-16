@@ -928,7 +928,7 @@ public:
 			{
 				_workDone100 += buildTime_ManSec100() / updateCount; // takes tickCount secs to finish the constrution
 
-				PUN_LOG("TickConstruction[%d] %s percent:%d", buildingId(), ToTChar(buildingInfo().name), constructionPercent());
+				//PUN_LOG("TickConstruction[%d] %s percent:%d", buildingId(), ToTChar(buildingInfo().name), constructionPercent());
 
 				ResetDisplay(); // Slow??
 				

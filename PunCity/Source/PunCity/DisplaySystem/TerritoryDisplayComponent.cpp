@@ -134,12 +134,10 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 	
 	auto& provinceSys = simulation().provinceSystem();
 	
-	std::vector<int32> provinceIdsToDisplayInner;
-	for (int32 provinceId : sampleProvinceIdsNonPlayer) {
-		//if (simulation().regionSystem().isDirectControl(provinceId)) {
-			provinceIdsToDisplayInner.push_back(provinceId);
-		//}
-	}
+	//std::vector<int32> provinceIdsToDisplayInner;
+	//for (int32 provinceId : sampleProvinceIdsNonPlayer) {
+	//	provinceIdsToDisplayInner.push_back(provinceId);
+	//}
 
 	// Helper Func
 	auto showTerritoryMeshes = [&](TArray<UTerritoryMeshComponent*>& territoryMeshes, TArray<UTerritoryMeshComponent*>& pool, std::vector<int32>& provinceIds, bool isInnerMesh)
@@ -245,7 +243,7 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 				auto comp = _playerIdToTerritoryMesh[playerId];
 				if (comp)
 				{
-					if (!SimSettings::IsOn("TrailerMode") &&
+					if (!SimSettings::IsOn("TrailerSession") &&
 						CppUtils::Contains(sampleTerritoryPlayerIds, playerId)) 
 					{
 						comp->SetVisibility(true);

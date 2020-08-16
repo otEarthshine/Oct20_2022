@@ -13,13 +13,13 @@ using namespace std;
 void GeoresourceSystem::InitGeoresourceSystem(IGameSimulationCore* simulation, bool isFullInit)
 {
 	_simulation = simulation;
-	_regionToGeoresource.reserve(GameMapConstants::TotalRegions);
+	_provinceToGeoresource.reserve(GameMapConstants::TotalRegions);
 
 	auto& terrainGenerator = simulation->terrainGenerator();
 	auto& provinceSys = simulation->provinceSystem();
 
 	for (int i = 0; i < GameMapConstants::TotalRegions; i++) {
-		_regionToGeoresource.push_back({ GeoresourceEnum::None, InvalidProvinceId, WorldTile2::Invalid });
+		_provinceToGeoresource.push_back({ GeoresourceEnum::None, InvalidProvinceId, WorldTile2::Invalid });
 	}
 
 	if (!isFullInit) {
@@ -31,7 +31,7 @@ void GeoresourceSystem::InitGeoresourceSystem(IGameSimulationCore* simulation, b
 	auto hasNearbyGeoresource = [&](int32 provinceId)
 	{
 		return provinceSys.ExecuteAdjacentProvincesWithExitTrue(provinceId, [&](const ProvinceConnection& connection) -> bool {
-			return _regionToGeoresource[connection.provinceId].HasResource();
+			return _provinceToGeoresource[connection.provinceId].HasResource();
 		});
 	};
 
@@ -243,7 +243,7 @@ void GeoresourceSystem::PlantResource(int32 provinceId, GeoresourceEnum georesou
 		
 		if (canPlant)
 		{
-			_regionToGeoresource[provinceId] = node;
+			_provinceToGeoresource[provinceId] = node;
 			_georesourcesProvinceIds.push_back(provinceId);
 			
 			//georesourceArea.ExecuteOnArea_Tile([&](int16_t x, int16_t y) {
@@ -259,13 +259,13 @@ void GeoresourceSystem::PlantResource(int32 provinceId, GeoresourceEnum georesou
 	}
 	else
 	{
-		_regionToGeoresource[provinceId] = node;
+		_provinceToGeoresource[provinceId] = node;
 		_georesourcesProvinceIds.push_back(provinceId);
 	}
 
 	if (depositAmount > 0)
 	{
-		_regionToGeoresource[provinceId].depositAmount = depositAmount;
+		_provinceToGeoresource[provinceId].depositAmount = depositAmount;
 	}
 
 	//if (canPlant)

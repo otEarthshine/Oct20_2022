@@ -474,7 +474,9 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 		simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Building, regionId, false);
 	}
 	
-	bool needBuildingAnimationUpdate = simulation().NeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, regionId) || isMainMenuDisplay;
+	bool needBuildingAnimationUpdate = simulation().NeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, regionId) || 
+										isMainMenuDisplay ||
+										SimSettings::IsOn("TrailerMode");
 
 	// TODO: This is a hack to check every sec anyway
 	//needBuildingAnimationUpdate = needBuildingAnimationUpdate || Time::Tick
@@ -510,7 +512,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 					return;
 				}
 
-				bool shouldDisplayParticles = building.shouldDisplayParticles() || isMainMenuDisplay;
+				bool shouldDisplayParticles = building.shouldDisplayParticles() || isMainMenuDisplay || SimSettings::IsOn("TrailerMode");
 
 				// Building mesh
 				float buildingRotation = RotationFromDirection(building.faceDirection());

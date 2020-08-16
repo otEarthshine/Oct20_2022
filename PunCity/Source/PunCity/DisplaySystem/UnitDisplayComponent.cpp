@@ -60,11 +60,7 @@ int32 UUnitDisplayComponent::GetUnitTransformAndVariation(int32 unitId, FTransfo
 	FRotator targetRotation = targetDirection.Rotation();
 
 	//! TODO: !!! hack around vertex animate laziness
-	if (unit.unitEnum() == UnitEnum::Human) {
-		targetRotation.Yaw -= 90;
-	} else {
-		targetRotation.Yaw -= 90;
-	}
+	targetRotation.Yaw -= 90;
 
 	if (targetDirection.Size() > 0.01f) {
 		targetDirection.Normalize();
@@ -110,7 +106,7 @@ int32 UUnitDisplayComponent::GetUnitTransformAndVariation(int32 unitId, FTransfo
 	//if (IsAnimal(unit.unitEnum())) {
 		// Don't exceed the scale of 300 to prevent stuttering animation from inaccurate float
 
-	if (unit.unitEnum() != UnitEnum::Human) {
+	if (!IsUsingSkeletalMesh(unit.unitEnum())) {
 		float gameSpeed = sim.gameSpeedFloat();
 		scale = std::fmodf(lastAnimationTime + (unitSystem.isMoving(unitId) ? (GetWorld()->GetDeltaSeconds() * 2.0f * gameSpeed) : 0.0f), 2.0f);
 	}
@@ -128,6 +124,9 @@ int32 UUnitDisplayComponent::GetUnitTransformAndVariation(int32 unitId, FTransfo
 	// Human
 	if (unit.unitEnum() == UnitEnum::Human) {
 		return static_cast<int>(GetHumanVariationEnum(unit.isChild(), unit.isMale()));
+	}
+	if (IsUsingSkeletalMesh(unit.unitEnum())) {
+		return 0;
 	}
 	
 	if (_assetLoader->unitMeshCount(unit.unitEnum()) >= 2) {
@@ -181,10 +180,10 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 		 *
 		 */
 
-		if (unit.unitEnum() == UnitEnum::Human)
+		if (IsUsingSkeletalMesh(unit.unitEnum()))
 		{
 			FTransform transform;
-			AddUnit(unitId, unit, transform);
+			AddSkelMesh(unitId, unit, transform);
 			UpdateResourceDisplay(unitId, unit, transform);
 			return;
 		}
@@ -252,24 +251,7 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 		}
 
 
-		
 		_thisTransform.Add(unitId, transform);
-
-		//FString unitMeshName = ToFString(unit.unitInfo().name);
-
-		//if (_assetLoader->unitMeshCount(unit.unitEnum()) >= 2)
-		//{
-		//	if (unit.isChild()) {
-		//		unitMeshName += FString::FromInt(1);
-		//	} else {
-		//		unitMeshName += FString::FromInt(0);
-		//	}
-		//}
-		//else {
-		//	unitMeshName += FString::FromInt(0);
-		//}
-
-		//unitMeshName += FString::FromInt(variationIndex);
 		
 		_unitMeshes->Add(GetMeshName(unit.unitInfo(), variationIndex), unitId, transform, 0, unitId);
 
@@ -277,37 +259,6 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 		if (_gameManager->zoomDistance() > WorldZoomTransition_UnitAnimate) {
 			return;
 		}
-		
-
-		//PUN_LOG("UnitAddEnd ticks:%d id:%d regionId:%d", TimeDisplay::Ticks(), unitId, regionId);
-
-		////! TODO: !!! hack around vertex animate laziness
-		////if (IsAnimal(unit.unitEnum())) {
-		//	FRotator rotator = transform.Rotator();
-		//	transform.SetScale3D(FVector(1, 1, 1));
-		//	rotator.Yaw += 90;
-		////}
-
-		//// Resource display
-		//ResourceEnum heldEnum = unit.inventory().Display();
-		//if (heldEnum != ResourceEnum::None) 
-		//{
-		//	// Display smaller resource on units
-		//	transform.SetScale3D(FVector(0.7, 0.7, 0.7));
-
-		//	float inventoryShift = unit.isEnum(UnitEnum::Human) ? 4 : 8;
-
-		//	FVector horizontalShift = rotator.RotateVector(FVector(inventoryShift, 0, 0));
-		//	transform.SetTranslation(transform.GetTranslation() + horizontalShift + FVector(0, 0, 10));
-
-		//	// Zeros the rotation
-		//	FRotator resourceRotator = transform.Rotator();
-		//	resourceRotator.Yaw -= 90;
-		//	FTransform resourceTransform(resourceRotator, transform.GetTranslation(), transform.GetScale3D());
-
-		//	_resourceMeshes->Add(ResourceNameF(heldEnum), unitId, resourceTransform, 0, unitId);
-		//}
-
 
 		UpdateResourceDisplay(unitId, unit, transform);
 		

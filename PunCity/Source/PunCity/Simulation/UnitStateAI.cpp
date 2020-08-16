@@ -241,7 +241,8 @@ void UnitStateAI::Update()
 		 */
 		if (_food < 0 || _heat < 0) 
 		{
-			if (!SimSettings::IsOn("CheatUndead")) 
+			if (!SimSettings::IsOn("CheatUndead") &&
+				!IsWildAnimalWithColony(unitEnum()))
 			{
 				// Roll the dice...
 				// If ticksPassed == 1.5 round, certain death
@@ -368,7 +369,8 @@ void UnitStateAI::Update()
 		// Aging Death
 		if (age() > maxAge()) 
 		{
-			if (!SimSettings::IsOn("CheatUndead")) 
+			if (!SimSettings::IsOn("CheatUndead") &&
+				!IsWildAnimalWithColony(unitEnum()))
 			{
 				if (_playerId != GameInfo::PlayerIdNone) {
 					PUN_LOG("DeathAge: %d reservations:%d", _id, reservations.size());
@@ -391,6 +393,7 @@ void UnitStateAI::Update()
 
 
 	ResetAnimation();
+	//PUN_LOG("Anim UnitStateAI::Update() ResetAnimation id:%d", _id);
 
 	// Action
 	if (_actions.empty())
@@ -436,7 +439,7 @@ void UnitStateAI::Die()
 	if (IsAnimal(unitEnum()) && _playerId != -1) 
 	{
 		// TODO: why is building sometimes BoarBurrow when it should always be RanchBarn
-		PUN_CHECK2(_houseId != -1, debugStr());
+		//PUN_CHECK2(_houseId != -1, debugStr());
 
 		// Note: need this check to combat (_houseId == -1) weirdness
 		if (_houseId != -1)
@@ -570,6 +573,18 @@ void UnitStateAI::CalculateActions()
 
 	AddDebugSpeech("CalculateActions (Animals)");
 
+	// Special case:
+	if (IsWildAnimalWithColony(unitEnum()))
+	{
+		_unitState = UnitState::Idle;
+		int32 waitTicks = 60 * (GameRand::Rand() % 3 + 4);
+		Add_Wait(waitTicks);
+		//Add_MoveRandomlyPerlin();
+		AddDebugSpeech("(Success)Idle MoveRandomly");
+		return;
+	}
+	
+
 	if (TryCheckBadTile()) return;
 
 	if (TryStoreAnimalInventory()) return;
@@ -678,7 +693,7 @@ void UnitStateAI::CalculateActions()
 
 				if (canPlace)
 				{
-					FPlaceBuildingParameters parameters;
+					FPlaceBuilding parameters;
 					parameters.buildingEnum = static_cast<uint8>(CardEnum::BoarBurrow);
 					parameters.faceDirection = static_cast<uint8>(faceDirection);
 					parameters.area = area;
@@ -1223,21 +1238,6 @@ void UnitStateAI::Wait()
 }
 
 
-//void UnitStateAI::Add_PlayAnimation(UnitAnimationEnum animationEnum) {
-//	_actions.push_back(Action(ActionEnum::PlayAnimation, static_cast<int32>(animationEnum)));
-//}
-//void UnitStateAI::PlayAnimation() {
-//	_animationEnum = static_cast<UnitAnimationEnum>(action().int32val1());
-//	NextAction("(Done)PlayAnimation:");
-//}
-//void UnitStateAI::Add_StopAnimation() {
-//	_actions.push_back(Action(ActionEnum::StopAnimation));
-//}
-//void UnitStateAI::StopAnimation() {
-//	_animationEnum = UnitAnimationEnum::Wait;
-//	NextAction("(Done)StopAnimation:");
-//}
-
 void UnitStateAI::Add_GatherFruit(WorldTile2 targetTile) {
 	_actions.push_back(Action(ActionEnum::GatherFruit, targetTile.tileId(), 0, 0));
 }
@@ -1687,6 +1687,42 @@ void UnitStateAI::MoveRandomly()
 	MoveTo(end);
 }
 
+void UnitStateAI::Add_MoveRandomlyPerlin(TileArea area)
+{
+	_actions.push_back(Action(ActionEnum::MoveRandomlyPerlin, area.minX, area.minY, area.maxX, area.maxY));
+}
+void UnitStateAI::MoveRandomlyPerlin()
+{
+	TileArea area;
+	area.minX = action().int32val1;
+	area.minY = action().int32val2;
+	area.maxX = action().int32val3;
+	area.maxY = action().int32val4;
+
+	WorldTile2 tile = unitTile();
+	PUN_CHECK(tile.isValid());
+
+	const int tries = 10;
+	WorldTile2 end = WorldTile2::Invalid;
+	bool canWalk = false;
+	for (int i = 0; i < tries; i++) {
+		end = area.RandomTile();
+		if (_simulation->IsConnected(tile, end, 1, IsIntelligentUnit(unitEnum()))) { // MoveRandomly is not critical, so give it just 1 flood range to make it less likely to overload PathAI
+			AddDebugSpeech("(-)MoveRandomlyPerlin: Found on first loop" + tile.ToString() + end.ToString());
+			canWalk = true;
+			break;
+		}
+	}
+
+	if (canWalk) {
+		AddDebugSpeech("(Transfer)MoveRandomlyPerlin: Transfer to MoveTo() " + tile.ToString() + end.ToString());
+		MoveTo(end);
+	} else {
+		NextAction("(Failed)MoveRandomlyPerlin");
+	}
+}
+
+
 void UnitStateAI::Add_MoveTo(WorldTile2 end) {
 	_actions.push_back(Action(ActionEnum::MoveTo, end.tileId()));
 }
@@ -1697,6 +1733,16 @@ bool UnitStateAI::MoveTo(WorldTile2 end)
 {
 	SCOPE_CYCLE_COUNTER(STAT_PunUnitDoMoveTo);
 	WorldTile2 tile = unitTile();
+
+	// Trailer
+	if (SimSettings::IsOn("TrailerSession"))
+	{
+		// Too far, in another city, don't walk there and walk randomly instead
+		if (WorldTile2::Distance(tile, end) > 80) {
+			MoveRandomly();
+			return true;
+		}
+	}
 
 	// Possibly something got in the way before this was called...
 	// This should also guard against unit's tile becoming invalid (construction built on top)
@@ -1729,6 +1775,8 @@ bool UnitStateAI::MoveTo(WorldTile2 end)
 		_simulation->DrawLine(end.worldAtom2(), FVector(0, 0, 0), end.worldAtom2(), FVector(0, 0, 40), FLinearColor::Red);
 		return false;
 	}
+
+	//PUN_LOG("MoveTo() UnitAnimationEnum::Walk id:%d", _id);
 
 	_animationEnum = UnitAnimationEnum::Walk;
 
@@ -1865,6 +1913,8 @@ void UnitStateAI::MoveToward()
 
 	// Make sure that tick is more than 0
 	ticksNeeded = ticksNeeded > 0 ? ticksNeeded : 1;
+
+	//PUN_LOG("MoveToward() UnitAnimationEnum::Walk id:%d", _id);
 
 	_animationEnum = UnitAnimationEnum::Walk;
 
@@ -2034,6 +2084,8 @@ void UnitStateAI::Construct()
 	int32 waitTicks = action().int32val2;
 	int32 timesLeft = action().int32val3;
 	int32 workplaceId = action().int32val4;
+
+	//PUN_LOG("Construct() UnitAnimationEnum::Build id:%d timesLeft:%d", _id, timesLeft);
 	
 	//UnitReservation reservation = GetReservation(workplaceId);
 
@@ -2047,6 +2099,8 @@ void UnitStateAI::Construct()
 		if (!justReset() && !workplace.isConstructed() && timesLeft > 0) {
 			ReserveWork(workManSec100, workplaceId);
 			Add_Construct(workManSec100, waitTicks, timesLeft - 1, workplaceId);
+
+			PUN_LOG("Add_Construct tick:%d id:%d timesLeft:%d", Time::Ticks(), _id, timesLeft - 1);
 			
 			AddDebugSpeech(" Push another Construct() timesLeft:" + to_string(timesLeft - 1));
 		}

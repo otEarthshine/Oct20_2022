@@ -549,6 +549,13 @@ public:
 #endif
 	}
 
+	float GetDisplayTime() override {
+		return UGameplayStatics::GetTimeSeconds(this);
+	}
+	
+	/*
+	 * 
+	 */
 
 	// Overlay setting conflict resolution...
 	void SetOverlayType(OverlayType overlayType, OverlaySetterType setterType) final {

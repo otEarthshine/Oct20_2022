@@ -316,6 +316,7 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterialParameterCollection* collection;
 	UPROPERTY(EditAnywhere, Category = "Weather") UParticleSystem* snowParticles;
+	UPROPERTY(EditAnywhere, Category = "Weather") UParticleSystem* blizzardParticles;
 	UPROPERTY(EditAnywhere, Category = "Weather") UParticleSystem* rainParticles;
 	UPROPERTY(EditAnywhere, Category = "Weather") UMaterial* M_RainWetness;
 
@@ -398,7 +399,7 @@ private:
 	
 	std::unordered_map<UnitEnum, std::vector<UStaticMesh*>> _unitToMeshes;
 
-	std::unordered_map<UnitEnum, std::vector<FSkeletonAsset>> _unitToSkelAsset;
+	std::vector<std::vector<FSkeletonAsset>> _unitEnumToSkelAsset;
 	//std::unordered_map<UnitEnum, std::vector<USkeletalMesh*>> _unitToSkeletalMesh;
 	//std::unordered_map<UnitEnum, std::vector<std::unordered_map<UnitAnimationEnum, UAnimSequence*>>> _animationEnumToSequence;
 	

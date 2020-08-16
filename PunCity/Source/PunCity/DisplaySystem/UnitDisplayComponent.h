@@ -12,6 +12,16 @@ struct FRotationInfo
 	float rotationSpeed = 0;
 };
 
+struct UnitSkelMeshState
+{
+	static const int32 animationChangeDelayTicks = 12;
+	
+	UnitAnimationEnum animationEnum = UnitAnimationEnum::None;
+	int32 animationChangeDelayCountDown = animationChangeDelayTicks;
+	float animationPlayRate = 10.0f;
+	int32 customDepth = 0;
+};
+
 
 #include "UnitDisplayComponent.generated.h"
 
@@ -137,9 +147,8 @@ private:
 	/*
 	 * Skel Mesh
 	 */
-	static const int32 animationChangeDelayTicks = 12;
 	
-	void AddUnit(int32 unitId, UnitStateAI& unit, FTransform& transform)
+	void AddSkelMesh(int32 unitId, UnitStateAI& unit, FTransform& transform)
 	{
 		int32 variationIndex = GetUnitTransformAndVariation(unitId, transform);
 		
@@ -158,9 +167,7 @@ private:
 					
 					_unitSkelMeshes[index]->SetVisibility(true);
 					_unitWeaponMeshes[index]->SetVisibility(false);
-					_unitAnimationEnum[index] = UnitAnimationEnum::None;
-					_unitAnimationChangeDelayCountDown[index] = animationChangeDelayTicks;
-					_unitAnimationPlayRate[index] = 1.0f;
+					_unitSkelState[index] = UnitSkelMeshState();
 					break;
 				}
 			}
@@ -180,13 +187,12 @@ private:
 				weaponMesh->SetReceivesDecals(false);
 				weaponMesh->SetVisibility(false);
 				_unitWeaponMeshes.Add(weaponMesh);
-				
-				_unitAnimationEnum.push_back(UnitAnimationEnum::None);
-				_unitAnimationChangeDelayCountDown.push_back(animationChangeDelayTicks);
-				_unitAnimationPlayRate.push_back(1.0f);
+
+				_unitSkelState.push_back(UnitSkelMeshState());
 			}
 
-			_unitSkelMeshes[index]->SetSkeletalMesh(_assetLoader->unitSkelAsset(UnitEnum::Human, static_cast<int>(GetHumanVariationEnum(unit.isChild(), unit.isMale()))).skeletalMesh);
+			FSkeletonAsset asset = _assetLoader->unitSkelAsset(unit.unitEnum(), variationIndex);
+			_unitSkelMeshes[index]->SetSkeletalMesh(asset.skeletalMesh);
 			
 		}
 		_unitIdToSkelMeshIndex.Add(unitId, index);
@@ -198,24 +204,28 @@ private:
 		//
 		UnitAnimationEnum animationEnum = unit.animationEnum();
 		float playRate = GetUnitAnimationPlayRate(animationEnum) * simulation().gameSpeedFloat();
-		if (_unitAnimationEnum[index] != animationEnum ||
-			_unitAnimationPlayRate[index] != playRate) 
+		if (unit.isChild()) {
+			playRate /= 0.8f;
+		}
+		
+		if (_unitSkelState[index].animationEnum != animationEnum ||
+			_unitSkelState[index].animationPlayRate != playRate)
 		{
 			// Countdown first before switching
 			// This prevent slight flash in animation when constructing
-			if (_unitAnimationChangeDelayCountDown[index] > 0) {
-				_unitAnimationChangeDelayCountDown[index]--;
-			}
-			else
-			{
-				_unitAnimationChangeDelayCountDown[index] = animationChangeDelayTicks;
+			//if (_unitSkelState[index].animationChangeDelayCountDown > 0) {
+			//	_unitSkelState[index].animationChangeDelayCountDown--;
+			//}
+			//else
+			//{
+			//	_unitSkelState[index].animationChangeDelayCountDown = UnitSkelMeshState::animationChangeDelayTicks;
 
-				FSkeletonAsset skelAsset = _assetLoader->unitSkelAsset(UnitEnum::Human, variationIndex);
+				FSkeletonAsset skelAsset = _assetLoader->unitSkelAsset(unit.unitEnum(), variationIndex);
 
 				skelMesh->PlayAnimation(skelAsset.animationEnumToSequence[animationEnum], true);
-				skelMesh->SetPlayRate(10.0f);
-				_unitAnimationEnum[index] = animationEnum;
-				_unitAnimationPlayRate[index] = playRate;
+				skelMesh->SetPlayRate(playRate);
+				_unitSkelState[index].animationEnum = animationEnum;
+				_unitSkelState[index].animationPlayRate = playRate;
 
 				UStaticMesh* weaponMesh = _assetLoader->unitWeaponMesh(animationEnum);
 				if (weaponMesh) {
@@ -225,7 +235,14 @@ private:
 				else {
 					_unitWeaponMeshes[index]->SetVisibility(false);
 				}
-			}
+			//}
+		}
+
+		DescriptionUIState uiState = simulation().descriptionUIState();
+		int32 targetCustomDepth = (uiState.objectType == ObjectTypeEnum::Unit && uiState.objectId == unitId) ? 2 : 0;
+		if (_unitSkelState[index].customDepth != targetCustomDepth) {
+			_unitSkelState[index].customDepth = targetCustomDepth;
+			GameDisplayUtils::SetCustomDepth(skelMesh, targetCustomDepth);
 		}
 
 		_thisTransform.Add(unitId, transform);
@@ -259,9 +276,7 @@ private:
 	// Skel
 	UPROPERTY() TArray<USkeletalMeshComponent*> _unitSkelMeshes;
 	UPROPERTY() TArray<UStaticMeshComponent*> _unitWeaponMeshes;
-	std::vector<UnitAnimationEnum> _unitAnimationEnum;
-	std::vector<int32> _unitAnimationChangeDelayCountDown;
-	std::vector<float> _unitAnimationPlayRate;
+	std::vector<UnitSkelMeshState> _unitSkelState;
 	TMap<int32, int32> _unitIdToSkelMeshIndex;
 	TMap<int32, int32> _lastUnitIdToSkelMeshIndex;
 };

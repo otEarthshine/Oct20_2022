@@ -150,6 +150,7 @@ public:
 
 	IGameSoundInterface* soundInterface() final { return _soundInterface; }
 	IGameUIInterface* uiInterface() final { return _uiInterface; }
+	
 
 	DebugLineSystem& debugLineSystem() final { return _debugLineSystem; }
 
@@ -293,7 +294,9 @@ public:
 
 
 	void AddImmigrants(int32 playerId, int32 count, WorldTile2 tile) final {
-		townhall(playerId).AddImmigrants(count, tile);
+		if (playerOwned(playerId).hasTownhall()) {
+			townhall(playerId).AddImmigrants(count, tile);
+		}
 	}
 
 	int32 lordPlayerId(int32 playerId) final {
@@ -990,15 +993,19 @@ public:
 			}
 		});
 	}
-	PopupInfo* PopupToDisplay(int32_t playerId) final {
+	PopupInfo* PopupToDisplay(int32 playerId) final {
 		return _popupSystems[playerId].PopupToDisplay();
 	}
-	void CloseCurrentPopup(int32_t playerId) final {
+	void CloseCurrentPopup(int32 playerId) final {
 		_popupSystems[playerId].ClosePopupToDisplay();
 	}
-	void WaitForReply(int32_t playerId) {
+	void WaitForReply(int32 playerId) {
 		_popupSystems[playerId].waitingForReply = true;
 	}
+	void ClearPopups(int32 playerId) {
+		_popupSystems[playerId].ClearPopups();
+	}
+	
 
 	//
 	void AddEventLog(int32 playerId, std::string eventMessage, bool isImportant) final {
@@ -1566,20 +1573,6 @@ public:
 			LOOP("AI", _aiPlayerSystem[i].Serialize(Ar));
 			LOOP("NonRepeatAction", SerializeVecValue(Ar, _playerIdToNonRepeatActionToAvailableTick[i]));
 			
-			//for (size_t i = 0; i < GameConstants::MaxPlayersAndAI; i++) {
-			//	_resourceSystems[i].Serialize(Ar);
-			//	_questSystems[i].Serialize(Ar);
-			//	
-			//	_unlockSystems[i].Serialize(Ar);
-			//	_playerParameters[i].Serialize(Ar);
-			//	_playerOwnedManagers[i].Serialize(Ar);
-			//	_popupSystems[i].Serialize(Ar);
-			//	_cardSystem[i].Serialize(Ar);
-
-			//	_aiPlayerSystem[i].Serialize(Ar);
-			//	SerializeVecValue(Ar, _playerIdToNonRepeatActionToAvailableTick[i]);
-			//}
-
 #undef LOOP
 		}
 
@@ -1594,6 +1587,13 @@ public:
 		Ar << _lastTickSnowAccumulation3;
 		Ar << _lastTickSnowAccumulation2;
 		Ar << _lastTickSnowAccumulation1;
+
+		// Refresh Territory Display
+		for (size_t playerId = 0; playerId < _playerOwnedManagers.size(); playerId++) {
+			if (_playerOwnedManagers[playerId].hasChosenLocation()) {
+				AddNeedDisplayUpdateId(DisplayGlobalEnum::Territory, playerId);
+			}
+		}
 	}
 
 	void MainMenuDisplayInit()
@@ -1686,7 +1686,7 @@ public:
 				// Claim Land
 				SetProvinceOwnerFull(provinceId, playerId());
 
-				FPlaceBuildingParameters params;
+				FPlaceBuilding params;
 				params.buildingEnum = static_cast<uint8>(CardEnum::Townhall);
 				params.faceDirection = static_cast<uint8>(Direction::S);
 				params.center = center;
@@ -1730,7 +1730,7 @@ public:
 		for (const TSharedPtr<FJsonValue>& buildingJsonValue : buildingListJson)
 		{
 			TSharedPtr<FJsonObject> buildingJson = buildingJsonValue->AsObject();
-			FPlaceBuildingParameters command;
+			FPlaceBuilding command;
 			command.buildingEnum = buildingJson->GetIntegerField("buildingEnum");
 			command.center = WorldTile2(buildingJson->GetIntegerField("centerX"), buildingJson->GetIntegerField("centerY"));
 			command.faceDirection = buildingJson->GetIntegerField("faceDirection");
@@ -1750,11 +1750,10 @@ private:
 	/**
 	 * Player interactions
 	 */
-	//void AddPlayer(FAddPlayer command) final;
-
-	//void PoliciesSelected(FPoliciesSelects policies) final;
-	int32 PlaceBuilding(FPlaceBuildingParameters parameters) final;
-	void PlaceDrag(FPlaceGatherParameters parameters) final;
+public:
+	int32 PlaceBuilding(FPlaceBuilding parameters) final;
+private:
+	void PlaceDrag(FPlaceDrag parameters) final;
 	void JobSlotChange(FJobSlotChange command) final;
 	void SetAllowResource(FSetAllowResource command) final;
 	void SetPriority(FSetPriority command) final;
@@ -1787,7 +1786,7 @@ private:
 
 
 private:
-	void PlaceInitialTownhallHelper(FPlaceBuildingParameters command, int32 townhallId);
+	void PlaceInitialTownhallHelper(FPlaceBuilding command, int32 townhallId);
 	
 	void InitRegionalBuildings();
 

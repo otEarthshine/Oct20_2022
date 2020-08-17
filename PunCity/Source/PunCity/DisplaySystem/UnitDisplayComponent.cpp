@@ -168,7 +168,38 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 		}
 	}
 
-	unitList.ExecuteRegion(WorldRegion2(regionId), [&](int32 unitId) 
+	WorldRegion2 region(regionId);
+
+	// Trailer's chopper/builder
+#if TRAILER_MODE
+	auto addTrailerUnit = [&](int32 unitId, UnitAnimationEnum animationEnum, int32 variationIndex, WorldTile2 tile, float yaw, FVector displayUnitShift)
+	{
+		if (tile.region() == region) {
+			FVector displayLocation = MapUtil::DisplayLocation(cameraAtom, tile.worldAtom2());
+			FTransform transform(FRotator(0, yaw, 0), displayLocation + displayUnitShift, FVector::OneVector);
+			AddSkelMesh(unitId, UnitEnum::Human, animationEnum, false, transform, variationIndex);
+		}
+	};
+	addTrailerUnit(99997, UnitAnimationEnum::ChopWood, static_cast<int32>(HumanVariationEnum::AdultMale), WorldTile2(705, 2615), -90, FVector(3, 0, 0));
+	addTrailerUnit(99998, UnitAnimationEnum::ChopWood, static_cast<int32>(HumanVariationEnum::AdultFemale), WorldTile2(703, 2614), 180, FVector(0, -1, 0));
+	addTrailerUnit(99999, UnitAnimationEnum::Build, static_cast<int32>(HumanVariationEnum::AdultMale), WorldTile2(709, 2624), -90, FVector(0, 0, 0));
+
+#endif
+	
+	//if (PunSettings::TrailerTile_Chopper.isValid() &&
+	//	PunSettings::TrailerTile_Chopper.region() == region) 
+	//{
+	//	for (int32 i = 0; i < 32; i++) {
+	//		addTrailerUnit(99997 - i, UnitAnimationEnum::ChopWood, static_cast<int32>(HumanVariationEnum::AdultMale), PunSettings::TrailerTile_Chopper + WorldTile2(i, i));
+	//	}
+	//}
+	//if (PunSettings::TrailerTile_Builder.isValid() &&
+	//	PunSettings::TrailerTile_Builder.region() == region) {
+	//	addTrailerUnit(99998, UnitAnimationEnum::Build, static_cast<int32>(HumanVariationEnum::AdultFemale), PunSettings::TrailerTile_Builder);
+	//}
+	
+
+	unitList.ExecuteRegion(region, [&](int32 unitId)
 	{
 		if (!unitSystem.aliveUnsafe(unitId)) {
 			return;

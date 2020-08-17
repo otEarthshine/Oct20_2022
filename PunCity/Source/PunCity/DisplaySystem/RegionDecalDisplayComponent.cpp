@@ -312,7 +312,7 @@ void URegionDecalDisplayComponent::UpdateRoadDisplay(int32 regionId, int meshId,
 		// A > 0.95 is stone... A > 0.2 is road
 		int alpha = roadTile.isConstructed ? 0 : 255;
 
-		if (SimSettings::IsOn("CheatFullFarmRoad")) {
+		if (PunSettings::CheatFullFarmRoad()) {
 			alpha = 0;
 		}
 
@@ -388,7 +388,7 @@ void URegionDecalDisplayComponent::UpdateRoadDisplay(int32 regionId, int meshId,
 		//// A > 0.95 is stone... A > 0.2 is road
 		//int alpha = roadTile.isConstructed ? 0 : 255;
 
-		//if (SimSettings::IsOn("CheatFullFarmRoad")) {
+		//if (PunSettings::CheatFullFarmRoad()) {
 		//	alpha = 0;
 		//}
 

@@ -38,11 +38,12 @@ public:
 	 */
 	void SetTrailerCommands(std::vector<std::shared_ptr<FNetworkCommand>>& trailerCommandsIn)
 	{
-		PUN_LOG("Trailer Start %d", trailerCommandsIn.size());
+		_LOG(PunTrailer, "Trailer Start %d", trailerCommandsIn.size());
 		currentCommandIndex = 0; // for isInitialize()
 		trailerCommands = trailerCommandsIn;
 		nextTrailerCommandTick = Time::Ticks() + Time::TicksPerSecond;
 		commandPercentAccumulated = 0;
+		houseUpgradePercentAccumulated = 0;
 	}
 	void PauseTrailerCommands() {
 		pausedNextTrailerCommandTick = nextTrailerCommandTick;
@@ -58,8 +59,10 @@ public:
 	
 	std::vector<std::shared_ptr<FNetworkCommand>> trailerCommands;
 	int32 nextTrailerCommandTick = -1;
-	int32 commandPercentAccumulated = 0;
 	int32 pausedNextTrailerCommandTick = -1;
+
+	int32 commandPercentAccumulated = 0;
+	int32 houseUpgradePercentAccumulated = 0;
 
 	bool isCameraTrailerReplayPaused = false;
 };
@@ -156,10 +159,13 @@ public:
 	std::vector<std::shared_ptr<FNetworkCommand>> trailerCommandsSave;
 	std::vector<float> trailerCommandsSaveIssueTime;
 
+	float GetTrailerTime() { return _simulation->soundInterface()->GetDisplayTime() - lastTrailerStartTime; }
+
 	void TrailerCityReplayUnpause() {
 		for (ReplayPlayer& replayPlayer : replayPlayers) {
 			replayPlayer.isCameraTrailerReplayPaused = false;
 		}
+		PUN_LOG("TrailerCityReplayUnpause %d", replayPlayers[0].isCameraTrailerReplayPaused);
 	}
 	
 private:

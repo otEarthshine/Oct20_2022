@@ -67,7 +67,7 @@ void Building::Init(IGameSimulationCore& simulation, int objectId, int32_t playe
 
 
 	// Clear area for TrailerMode
-	if (SimSettings::IsOn("TrailerMode")) {
+	if (PunSettings::TrailerMode()) {
 		InstantClearArea();
 
 		// Insta build for storage yard to accommodate AddResource

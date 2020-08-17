@@ -29,6 +29,25 @@ public:
 	}
 
 	static bool bShouldRefreshMainMenuDisplay;
+
+	/*
+	 * Fast Settings
+	 */
+	static void SetTrailerMode(bool value) { _TrailerMode = value; }
+	static bool TrailerMode() { return _TrailerMode; }
+
+	static void SetCheatFullFarmRoad(bool value) { _CheatFullFarmRoad = value; }
+	static bool CheatFullFarmRoad() { return _CheatFullFarmRoad; }
+
+	static bool MarkedTreesNoDisplay;
+	
+	static bool TrailerSession;
+	static struct WorldTile2 TrailerTile_Chopper;
+	static struct WorldTile2 TrailerTile_Builder;
+	
+private:
+	static bool _TrailerMode;
+	static bool _CheatFullFarmRoad;
 };
 
 
@@ -59,5 +78,4 @@ public:
 		}
 		return Settings[settingName] > 0;
 	}
-	
 };

@@ -44,7 +44,7 @@ public:
 			return nullptr;
 		}
 
-		if (SimSettings::IsOn("TrailerMode")) {
+		if (PunSettings::TrailerMode()) {
 			ClearPopups();
 			return nullptr;
 		}

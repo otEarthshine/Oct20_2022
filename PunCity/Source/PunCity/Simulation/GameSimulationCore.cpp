@@ -210,6 +210,11 @@ void GameSimulationCore::InitRegionalBuildings()
 {
 	std::vector<CardEnum> regionalBuildings(GameMapConstants::TotalRegions, CardEnum::None);
 
+
+	// TODO: TrailerMode turn off for now
+	return;
+
+	
 	auto& provinceSys = provinceSystem();
 	
 	for (int y = 0; y < GameMapConstants::RegionsPerWorldY; y++) {
@@ -403,39 +408,52 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 				}
 			}
 
-
-			// Trailer
+			
+			/*
+			 * Trailer
+			 */
 			if (replayPlayers[i].isInitialize() && 
-				replayPlayers[i].trailerCommands.size() > 0)
+				replayPlayers[i].nextTrailerCommandTick != -1 &&
+				Time::Ticks() > replayPlayers[i].nextTrailerCommandTick &&
+				!replayPlayers[i].isCameraTrailerReplayPaused)
 			{
-				if (replayPlayers[i].nextTrailerCommandTick != -1 &&
-					Time::Ticks() > replayPlayers[i].nextTrailerCommandTick &&
-					!replayPlayers[i].isCameraTrailerReplayPaused)
+				PUN_CHECK(PunSettings::Get("TrailerPlaceSpeed") > 10);
+				
+				int32 commandPercent = replayPlayers[i].commandPercentAccumulated + PunSettings::Get("TrailerPlaceSpeed");
+				int32 numberOfCommandsToExecute = commandPercent / 100;
+				replayPlayers[i].commandPercentAccumulated += commandPercent % 100;
+				
+				//replayPlayers[i].nextTrailerCommandTick = Time::Ticks() + Time::TicksPerSecond;
+				replayPlayers[i].nextTrailerCommandTick = ((Time::Ticks() + Time::TicksPerSecond) / Time::TicksPerSecond) * Time::TicksPerSecond;
+
+				for (int32 k = 0; k < numberOfCommandsToExecute; k++)
 				{
-					int32 commandPercent = replayPlayers[i].commandPercentAccumulated + PunSettings::Get("TrailerPlaceSpeed");
-					int32 numberOfCommandsToExecute = commandPercent / 100;
-					replayPlayers[i].commandPercentAccumulated += commandPercent % 100;
+					auto& trailerCommands = replayPlayers[i].trailerCommands;
+					if (trailerCommands.size() == 0) {
+						break;
+					}
 					
-					replayPlayers[i].nextTrailerCommandTick = Time::Ticks() + Time::TicksPerSecond;
+					std::shared_ptr<FNetworkCommand> command = trailerCommands.front();
+					trailerCommands.erase(trailerCommands.begin());
 
-					for (int32 k = 0; k < numberOfCommandsToExecute; k++)
+					NetworkCommandEnum commandType = command->commandType();
+
+					bool recordedCommand = false;
+					command->playerId = i;
+					
+					// Add back to TrailerCommands so it will be recorded for the next save
+					auto recordCommand = [&]() {
+						_replaySystem.AddTrailerCommands({ command });
+						recordedCommand = true;
+					};
+
+					if (commandType == NetworkCommandEnum::Cheat)
 					{
-						auto& trailerCommands = replayPlayers[i].trailerCommands;
-						std::shared_ptr<FNetworkCommand> command = trailerCommands.front();
-						trailerCommands.erase(trailerCommands.begin());
-
-						CheatEnum cheatEnum = static_pointer_cast<FCheat>(command)->cheatEnum;
-						NetworkCommandEnum commandType = command->commandType();
-
-						// Add back to TrailerCommands so it will be recorded for the next save
-						auto recordCommand = [&]() {
-							command->playerId = i;
-							_replaySystem.AddTrailerCommands({ command });
-						};
+						auto cheat = static_pointer_cast<FCheat>(command);
+						CheatEnum cheatEnum = cheat->cheatEnum;
 
 						// Special case: Trailer Pause
-						if (commandType == NetworkCommandEnum::Cheat &&
-							cheatEnum == CheatEnum::TrailerPauseForCamera)
+						if (cheatEnum == CheatEnum::TrailerPauseForCamera)
 						{
 							replayPlayers[i].isCameraTrailerReplayPaused = true;
 
@@ -443,45 +461,55 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 							recordCommand();
 						}
 						// Special case: Trailer Snow
-						else if (commandType == NetworkCommandEnum::Cheat &&
-							cheatEnum == CheatEnum::TrailerForceSnowStart)
+						else if (cheatEnum == CheatEnum::TrailerForceSnowStart)
 						{
 							PunSettings::Set("ForceSnow", 1);
 							PUN_LOG("TrailerForceSnowStart num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
 							recordCommand();
 						}
-						else if (commandType == NetworkCommandEnum::Cheat &&
-							cheatEnum == CheatEnum::TrailerForceSnowStop)
+						else if (cheatEnum == CheatEnum::TrailerForceSnowStop)
 						{
 							PunSettings::Set("ForceSnow", 0);
 							PUN_LOG("TrailerForceSnowStop num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
 							recordCommand();
 						}
 						// Special case: Trailer Place Speed
-						else if (commandType == NetworkCommandEnum::Cheat &&
-							cheatEnum == CheatEnum::TrailerIncreasePlaceSpeed)
+						else if (cheatEnum == CheatEnum::TrailerPlaceSpeed)
 						{
-							PunSettings::Set("TrailerPlaceSpeed", PunSettings::Get("TrailerPlaceSpeed") + 50);
-							PUN_LOG("TrailerIncreasePlaceSpeed num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
+							PunSettings::Set("TrailerPlaceSpeed", cheat->var1);
+							PUN_LOG("TrailerPlaceSpeed num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
 							recordCommand();
 						}
-						else if (commandType == NetworkCommandEnum::Cheat &&
-							cheatEnum == CheatEnum::TrailerDecreasePlaceSpeed)
+						else if (cheatEnum == CheatEnum::TrailerHouseUpgradeSpeed)
 						{
-							PunSettings::Set("TrailerPlaceSpeed", PunSettings::Get("TrailerPlaceSpeed") - 50);
-							PUN_LOG("TrailerDecreasePlaceSpeed num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
+							PunSettings::Set("TrailerHouseUpgradeSpeed", cheat->var1);
+							PUN_LOG("TrailerHouseUpgradeSpeed num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
 							recordCommand();
 						}
 						// Special case: Trailer House upgrade
-						else if (commandType == NetworkCommandEnum::Cheat &&
-							cheatEnum == CheatEnum::TrailerIncreaseAllHouseLevel)
+						else if (cheatEnum == CheatEnum::TrailerIncreaseAllHouseLevel)
 						{
-							SimSettings::Set("TrailerIncreaseAllHouseLevelIndex", 1);
+							const std::vector<int32>& bldIds = buildingIds(command->playerId, CardEnum::House);
+							for (int32 bldId : bldIds) {
+								building<House>(bldId).trailerTargetHouseLvl++;
+							}
 							PUN_LOG("TrailerIncreaseAllHouseLevel num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
 							recordCommand();
 						}
+						// Trailer Force Autumn
+						else if (cheatEnum == CheatEnum::TrailerForceAutumn)
+						{
+							PunSettings::Set("ForceAutumn", cheat->var1);
+							PUN_LOG("TrailerForceAutumn num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
+							recordCommand();
+						}
+					}
+
+
+					if (!recordedCommand)
+					{
 						// Ignore Prebuilt adding them to TrailerCommands
-						else if (commandType == NetworkCommandEnum::PlaceDrag &&
+						if (commandType == NetworkCommandEnum::PlaceDrag &&
 							static_pointer_cast<FPlaceDrag>(command)->area2.minX == 1)
 						{
 							recordCommand();
@@ -522,15 +550,54 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 								}
 							}
 
-							command->playerId = i;
 							commands.push_back(command);
-
-							PUN_LOG("Trailer Exec num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *commands[i]->ToCompactString(), Time::Ticks());
+							
+							PUN_LOG("Trailer Exec num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
 						}
-						// Command Executed
+					}
+					
+					// Commands Executed
+				}
+
+				// Trailer mode house upgrade 1 level at a time
+				{
+					const std::vector<int32>& bldIds = buildingIds(i, CardEnum::House);
+
+					int32 percent = replayPlayers[i].houseUpgradePercentAccumulated + PunSettings::Get("TrailerHouseUpgradeSpeed");
+					int32 numberOfUpgradesToExecute = percent / 100;
+					replayPlayers[i].houseUpgradePercentAccumulated += percent % 100;
+
+					for (int jj = 0; jj < numberOfUpgradesToExecute; jj++)
+					{
+						// Try 10 times until hit something upgradable
+						for (int ii = 0; ii < 10; ii++)
+						{
+							int32 index = SimSettings::Get("TrailerHouseUpgradeIndex");
+							if (index >= 0)
+							{
+								if (index < bldIds.size()) {
+									Building& bld = building(bldIds[index]);
+									bool upgraded = bld.subclass<House>().TrailerCheckHouseLvl();
+									SimSettings::Set("TrailerHouseUpgradeIndex", index + 1);
+									if (upgraded) {
+										//PUN_LOG("TrailerHouseUpgradeIndex index:%d tick:%d id:%d", index, _tickCount, bld.buildingId());
+										break;
+									}
+								}
+								else {
+									// Reset the index
+									SimSettings::Set("TrailerHouseUpgradeIndex", 0);
+									break;
+								}
+							}
+						}
 					}
 				}
-			}
+
+				
+			} // Trailer End
+
+			
 		}
 		
 	}
@@ -587,6 +654,38 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 			case NetworkCommandEnum::ChangeName:		ChangeName(*static_pointer_cast<FChangeName>(commands[i])); break;
 			case NetworkCommandEnum::SendChat:			SendChat(*static_pointer_cast<FSendChat>(commands[i])); break;
 			default: UE_DEBUG_BREAK();
+		}
+
+		// Special case: Townhall after refresh and put in animation
+		if (commands[i]->commandType() == NetworkCommandEnum::PlaceBuilding)
+		{
+			auto placeCommand = static_pointer_cast<FPlaceBuilding>(commands[i]);
+			if (placeCommand->buildingEnum == static_cast<int>(CardEnum::Townhall))
+			{
+				_gameManager->RefreshMapAnnotation();
+
+				// Ensure Map was refreshed (In case AI built city at tick=0)
+				RefreshHeightForestColorTexture(TileArea(placeCommand->center, 12), true);
+				RefreshHeightForestRoadTexture();
+
+				if (PunSettings::TrailerSession) {
+					PunSettings::TrailerTile_Chopper = placeCommand->center + WorldTile2(0, -30);
+					PunSettings::TrailerTile_Builder = placeCommand->center + WorldTile2(0, -31);
+
+					// Initial house for builder scene
+					FPlaceBuilding houseCommand;
+					houseCommand.playerId = 0;
+					houseCommand.buildingEnum = static_cast<uint8>(CardEnum::House);
+					houseCommand.buildingLevel = 0;
+					houseCommand.center = WorldTile2(710, 2623);
+					houseCommand.faceDirection = static_cast<uint8>(Direction::S);
+					houseCommand.area = BuildingArea(houseCommand.center, GetBuildingInfoInt(houseCommand.buildingEnum).size, static_cast<Direction>(houseCommand.faceDirection));
+					int32 buildingId = PlaceBuilding(houseCommand);
+					building(buildingId).InstantClearArea();
+					building(buildingId).AddResourceHolder(ResourceEnum::Wood, ResourceHolderType::Requester, 0);
+					building(buildingId).SetConstructionPercent(80);
+				}
+			}
 		}
 	}
 
@@ -849,8 +948,9 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 					/*
 					 * Trailer auto-build
 					 */
-					if (SimSettings::IsOn("TrailerMode") &&
-						IsReplayPlayer(playerId))
+					if (PunSettings::TrailerMode() &&
+						IsReplayPlayer(playerId) &&
+						!replaySystem().replayPlayers[playerId].isCameraTrailerReplayPaused)
 					{
 						for (int32 enumInt = 0; enumInt < BuildingEnumCount; enumInt++)
 						{
@@ -861,34 +961,12 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 								int32 buildTicks = Time::TicksPerSecond * 8;
 								bld.TickConstruction(buildTicks / trailerBuildTickInterval);
 
-								// Trailer mode house upgrade 1 level at a time
-								if (bld.isEnum(CardEnum::House)) {
-									bld.subclass<House>().TrailerCheckHouseLvl();
-								}
-
 								// Farm
 								if (bld.isEnum(CardEnum::Farm)) {
 									SetNeedDisplayUpdate(DisplayClusterEnum::Trees, bld.area().corner00().regionId());
 									SetNeedDisplayUpdate(DisplayClusterEnum::Trees, bld.area().corner01().regionId());
 									SetNeedDisplayUpdate(DisplayClusterEnum::Trees, bld.area().corner10().regionId());
 									SetNeedDisplayUpdate(DisplayClusterEnum::Trees, bld.area().corner11().regionId());
-								}
-							}
-
-							// TrailerIncreaseAllHouseLevelIndex
-							if (static_cast<CardEnum>(enumInt) == CardEnum::House)
-							{
-								int32 index = SimSettings::Get("TrailerIncreaseAllHouseLevelIndex") - 1;
-								if (index >= 0) 
-								{
-									if (index < bldIds.size()) {
-										Building& bld = building(bldIds[index]);
-										bld.subclass<House>().trailerTargetHouseLvl++;
-										SimSettings::Set("TrailerIncreaseAllHouseLevelIndex", index + 2);
-									} else {
-										// Reset the index
-										SimSettings::Set("TrailerIncreaseAllHouseLevelIndex", 0);
-									}
 								}
 							}
 						}
@@ -926,7 +1004,6 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 		{
 
 		}
-
 		// Hashes
 		{
 			int32 unitHash = _unitSystem->GetDebugHash();
@@ -1458,7 +1535,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 		/*
 		 * Trailer
 		 */
-		if (SimSettings::IsOn("TrailerMode"))
+		if (PunSettings::TrailerMode())
 		{
 			// Trailer House Level
 			if (cardEnum == CardEnum::House) {
@@ -1524,7 +1601,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 				// Finish road construction right away for provincial buildings and TrailerMode
 				if (cardEnum == CardEnum::Fort ||
 					cardEnum == CardEnum::Colony ||
-					SimSettings::IsOn("TrailerSession")) 
+					PunSettings::TrailerSession) 
 				{
 					frontArea.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 						if (IsFrontBuildable(tile) && !_overlaySystem.IsRoad(tile)) {
@@ -1664,7 +1741,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 					 * Spawn resource drops
 					 */
 					if (!SimSettings::IsOn("DemolishNoDrop") &&
-						!SimSettings::IsOn("TrailerSession"))
+						!PunSettings::TrailerSession)
 					{
 						std::vector<ResourceHolderInfo>& holderInfos = bld.holderInfos();
 						int32 tileCount = 0;
@@ -1805,8 +1882,10 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 			}
 
 			// Trailer instant road
-			if (SimSettings::IsOn("TrailerMode"))
+			if (PunSettings::TrailerMode())
 			{
+				float trailerTime = replaySystem().GetTrailerTime();
+				
 				for (int32 i = 0; i < path.Num(); i++) {
 					WorldTile2 tile(path[i]);
 					if (IsFrontBuildable(tile) && !_overlaySystem.IsRoad(tile)) {
@@ -1815,7 +1894,10 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 						overlaySystem().AddRoad(tile, true, true);
 
 						// Road construct smoke
-						_regionToDemolishDisplayInfos[tile.regionId()].push_back({ CardEnum::DirtRoad, TileArea(tile, WorldTile2(1, 1)), Time::Ticks() });
+						if (trailerTime > 5.0f) {
+							PUN_LOG("Road smoke %f %s", trailerTime, ToTChar(tile.ToString()));
+							_regionToDemolishDisplayInfos[tile.regionId()].push_back({ CardEnum::DirtRoad, TileArea(tile, WorldTile2(1, 1)), Time::Ticks() });
+						}
 
 						// For road, also refresh the grass since we want it to be more visible
 						SetNeedDisplayUpdate(DisplayClusterEnum::Trees, tile.regionId(), true);
@@ -3049,9 +3131,6 @@ void GameSimulationCore::ChooseLocation(FChooseLocation command)
 
 		cardSystem(command.playerId).AddCardToHand2(CardEnum::Townhall);
 
-		// Ensure Map was refreshed (In case AI built city at tick=0)
-		RefreshHeightForestColorTexture(startArea);
-
 		// Give money/seeds
 		resourceSystem(command.playerId).SetMoney(GameConstants::InitialMoney - provincePrice);
 		resourceSystem(command.playerId).SetInfluence(0);
@@ -3223,7 +3302,7 @@ void GameSimulationCore::Cheat(FCheat command)
 			break;
 		}
 		case CheatEnum::FullFarmRoad: {
-			SimSettings::Toggle("CheatFullFarmRoad");
+			PunSettings::SetCheatFullFarmRoad(!PunSettings::CheatFullFarmRoad());
 			break;
 		}
 
@@ -3240,7 +3319,7 @@ void GameSimulationCore::Cheat(FCheat command)
 			break;
 		}
 		case CheatEnum::MarkedTreesNoDisplay: {
-			SimSettings::Toggle("MarkedTreesNoDisplay");
+			PunSettings::MarkedTreesNoDisplay = !PunSettings::MarkedTreesNoDisplay;
 			break;
 		}
 		case CheatEnum::WorkAnimate: {
@@ -3253,15 +3332,15 @@ void GameSimulationCore::Cheat(FCheat command)
 		}
 		case CheatEnum::God: {
 			auto setSettings = [&](const FString& name) {
-				SimSettings::Toggle(name);
+				//SimSettings::Toggle(name);
 				SimSettings::Set(name, 1);
 			};
 				
-			setSettings("CheatFullFarmRoad");
+			PunSettings::SetCheatFullFarmRoad(true);
 			setSettings("NoCameraSnap");
 			setSettings("GeoresourceAnywhere");
 			setSettings("NoFarmSizeCap");
-			setSettings("MarkedTreesNoDisplay");
+			PunSettings::MarkedTreesNoDisplay = true;
 			setSettings("WorkAnimate");
 			setSettings("DemolishNoDrop");
 
@@ -3463,15 +3542,14 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 	/*
 	 * Trailer Special Case
 	 */
-	if (SimSettings::IsOn("TrailerMode"))
+	if (PunSettings::TrailerMode())
 	{
-		// Buy Map
-		// Loop through whole map setting
+		// Buy the large chunk of map
 		for (int32 provinceId = 0; provinceId < GameMapConstants::TotalRegions; provinceId++) {
 			if (_provinceSystem.IsProvinceValid(provinceId) &&
 				_regionSystem->provinceOwner(provinceId) != command.playerId)
 			{
-				SetProvinceOwner(provinceId, command.playerId);
+				SetProvinceOwner(provinceId, command.playerId, true);
 			}
 		}
 
@@ -3490,6 +3568,7 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 				auto placeCommand = static_pointer_cast<FPlaceBuilding>(trailerCommand);
 				if (placeCommand->isTrailerPreBuilt())
 				{
+					placeCommand->playerId = command.playerId;
 					int32 buildingId = PlaceBuilding(*placeCommand);
 					if (buildingId != -1) {
 						building(buildingId).InstantClearArea();
@@ -3502,6 +3581,7 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 			{
 				auto placeCommand = static_pointer_cast<FPlaceDrag>(trailerCommand);
 				if (placeCommand->isTrailerPreBuilt()) {
+					placeCommand->playerId = command.playerId;
 					PlaceDrag(*placeCommand); // PlaceDrag is only for road which is already instant
 				}
 			}

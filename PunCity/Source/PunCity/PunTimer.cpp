@@ -4,4 +4,4 @@
 
 DEFINE_LOG_CATEGORY(LogTimer);
 
-std::unordered_map<std::string, nanoseconds> ScopeTimerLoop::time_spans;
+std::unordered_map<std::string, std::chrono::nanoseconds> ScopeTimerLoop::time_spans;

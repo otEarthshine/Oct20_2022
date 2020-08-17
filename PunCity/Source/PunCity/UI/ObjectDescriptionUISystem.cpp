@@ -2344,7 +2344,7 @@ void UObjectDescriptionUISystem::ShowTileSelectionDecal(FVector displayLocation,
 void UObjectDescriptionUISystem::ShowRegionSelectionDecal(WorldTile2 tile, bool isHover)
 {
 	if (dataSource()->zoomDistance() < 190 ||
-		SimSettings::IsOn("TrailerMode")) 
+		PunSettings::TrailerMode()) 
 	{
 		if (_regionHoverMesh) {
 			_regionHoverMesh->SetVisibility(false);

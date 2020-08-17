@@ -38,7 +38,7 @@ void TownHall::FinishConstruction()
 
 
 	// Trailer Mode and Editor show no rare card
-	if (SimSettings::IsOn("TrailerMode")) {
+	if (PunSettings::TrailerMode()) {
 		alreadyGotInitialCard = true;
 	}
 #if WITH_EDITOR

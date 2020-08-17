@@ -262,12 +262,12 @@ void ACameraPawn::MoveCameraTo(WorldAtom2 atom, float zoomAmount, float timeLeng
 	_systemZoomAmountStart = zoomDistance();
 	_systemZoomAmountTarget = GetCameraZoomAmount(GetZoomStepFromAmount(zoomAmount)); // Go to new zoom step
 
-	PUN_LOG("MoveCameraTo time:%f", _systemMoveTimeLength);
+	_LOG(PunDisplay, "MoveCameraTo time:%f", _systemMoveTimeLength);
 }
 
 void ACameraPawn::MoveCameraTo(WorldAtom2 atom, float zoomAmount, FRotator rotation, float timeLength, FString lerpType)
 {
-	PUN_LOG("Cam Trailer MoveCameraTo zoom:%.2f length:%.2f", zoomAmount, timeLength);
+	_LOG(PunTrailer, "CAM Trailer MoveCameraTo time:%.2f zoom:%.2f->%.2f timeLength:%.2f", _gameInterface->simulation().replaySystem().GetTrailerTime(), zoomDistance(), zoomAmount, timeLength);
 	
 	MoveCameraTo(atom, zoomAmount, timeLength, lerpType);
 
@@ -341,7 +341,7 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 	 */
 	if (isSystemMovingCamera())
 	{
-		if (SimSettings::IsOn("TrailerMode")) {
+		if (PunSettings::TrailerMode()) {
 			_systemMoveTimeSinceStart += fmin(0.02, UGameplayStatics::GetWorldDeltaSeconds(GetWorld()));
 			_systemTrailerTimeSinceStart += UGameplayStatics::GetWorldDeltaSeconds(GetWorld());
 			//PUN_LOG("Cam Trail shot:%.2f/%.2f time:%.2f", _systemMoveTimeSinceStart, _systemMoveTimeLength, _systemTrailerTimeSinceStart);
@@ -396,8 +396,8 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 			
 			_systemMoveTimeSinceStart = -1.0f;
 
-			if (SimSettings::IsOn("TrailerMode")) {
-				PUN_LOG("Cam Trailer Move Done");
+			if (PunSettings::TrailerMode()) {
+				_LOG(PunTrailer, "CAM Trailer Move Done");
 			}
 		}
 
@@ -422,14 +422,14 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 			_networkInterface->TrailerCityReplayUnpause();
 		}
 	}
-	else if (SimSettings::IsOn("TrailerMode"))
+	else if (PunSettings::TrailerMode())
 	{
 		if (_systemTrailerTimeSinceStart != -1) {
-			PUN_LOG("Cam Trail ended time:%.2f", _systemTrailerTimeSinceStart);
+			_LOG(PunTrailer, "Cam Trail ended time:%.2f", _systemTrailerTimeSinceStart);
 			_systemMoveTimeSinceStart = -1.0f;
 			_systemMoveTimeLength = 0.0f;
 			_systemTrailerTimeSinceStart = -1;
-			SimSettings::Set("TrailerMode", 0);
+			PunSettings::SetTrailerMode(0);
 		}
 	}
 	

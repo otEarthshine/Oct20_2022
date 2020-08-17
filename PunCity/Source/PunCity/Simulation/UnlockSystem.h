@@ -469,7 +469,7 @@ public:
 			//UnlockBuilding(BuildingEnum::Fence);
 			//UnlockBuilding(BuildingEnum::FenceGate);
 
-			if (SimSettings::IsOn("TrailerSession")) {
+			if (PunSettings::TrailerSession) {
 				UnlockAll();
 			}
 

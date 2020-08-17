@@ -2,8 +2,18 @@
 
 #include "PunCity/PunGameSettings.h"
 #include "PunCity/GameConstants.h"
+#include "PunCity/Simulation/GameCoordinate.h"
 
 bool PunSettings::bShouldRefreshMainMenuDisplay = true;
+
+
+bool PunSettings::MarkedTreesNoDisplay = false;
+bool PunSettings::TrailerSession = false;
+WorldTile2 PunSettings::TrailerTile_Chopper = WorldTile2::Invalid;
+WorldTile2 PunSettings::TrailerTile_Builder = WorldTile2::Invalid;
+
+bool PunSettings::_TrailerMode = false;
+bool PunSettings::_CheatFullFarmRoad = false;
 
 std::unordered_map<std::string, int32> PunSettings::Settings = 
 {
@@ -38,6 +48,7 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	
 	{ "DisplayUnits", 1 },
 	{ "DisplayRegions", 1 },
+	{ "DisplayRegions4x4", 1 },
 	{ "DisplayDecals", 1 },
 	{ "DisplayTiles", 1 },
 	{ "DisplayResources", 1 },
@@ -94,8 +105,10 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 
 	{ "ForceSnow", 0 },
 	{ "ForceSnowPercent", 0 },
+	{ "ForceAutumn", 0 },
 	{ "TrailerTundraMinSnowPercent", 0 },
-	{ "TrailerPlaceSpeed", 100 }
+	{ "TrailerPlaceSpeed", 100 },
+	{ "TrailerHouseUpgradeSpeed", 100 }
 	//{ "ForceShowTileObj", 0 },
 };
 
@@ -105,8 +118,6 @@ std::unordered_map<std::string, int32> SimSettings::Settings =
 	{ "CheatFastBuild", 0 },
 	{ "CheatUndead", 0 },
 	{ "CheatFastTech", 0},
-
-	{ "CheatFullFarmRoad", 0},
 
 	{ "CheatHouseLevel", 1},
 	{ "CheatHouseLevelKey", 0},

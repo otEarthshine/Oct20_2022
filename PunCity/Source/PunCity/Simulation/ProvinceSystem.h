@@ -484,6 +484,10 @@ public:
 	void RefreshTerritoryEdge(int32 playerId, const std::vector<int32>& provinceIds)
 	{
 		SCOPE_TIMER("RefreshTerritoryEdge");
+
+		if (PunSettings::TrailerMode()) {
+			return;
+		}
 		
 		if (_territoryEdges1.size() <= playerId) {
 			_territoryEdges1.resize(playerId + 1);

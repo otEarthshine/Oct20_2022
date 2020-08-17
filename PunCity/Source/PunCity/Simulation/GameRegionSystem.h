@@ -55,7 +55,7 @@ public:
 		_territoryOwnerMap[provinceId] = playerId;
 		//_isDirectControl[provinceId] = isDirectControl;
 
-		if (SimSettings::IsOn("TrailerMode")) {
+		if (PunSettings::TrailerMode()) {
 			return;
 		}
 		if (lightMode) {

@@ -89,6 +89,11 @@ void UTerrainLargeDisplayComponent::UpdateDisplay(int regionId, int meshId, Worl
 	if (PunSettings::IsOn("PlainTerrain") != _terrainChunks[meshId]->bIsPlainMaterial) {
 		_terrainChunks[meshId]->SetTerrainMaterial(_assetLoader, PunSettings::IsOn("PlainTerrain"));
 	}
+
+	// Trailer jitter fix
+	if (PunSettings::TrailerSession) {
+		_terrainChunks[meshId]->SetVisibility(_gameManager->zoomDistance() > WorldZoomTransition_RegionToRegion4x4);
+	}
 }
 
 void UTerrainLargeDisplayComponent::HideDisplay(int meshId)

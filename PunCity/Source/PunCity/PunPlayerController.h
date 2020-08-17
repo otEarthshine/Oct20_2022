@@ -649,7 +649,7 @@ public:
 		auto& sim = gameManager->simulation();
 
 		
-		SimSettings::Set("TrailerSession", 1);
+		PunSettings::TrailerSession = true;
 		SimSettings::Set("CheatFastBuild", 1);
 		SetLightAngle(225);
 		sim.unlockSystem(playerId())->UnlockAll();
@@ -699,6 +699,15 @@ public:
 			sim.building(buildingId).InstantClearArea();
 			sim.building(buildingId).FinishConstruction();
 		}
+
+
+		// Chop/Build area clear
+		{
+			sim.treeSystem().ForceRemoveTileObjArea(TileArea(701, 2614, 705, 2619)); // Chop
+			sim.treeSystem().ForceRemoveTileObjArea(TileArea(708, 2627, 712, 2631)); // Build
+		}
+
+		PunSettings::Set("ForceAutumn", 0);
 	}
 
 	UFUNCTION(Exec) void RestartGame()
@@ -706,12 +715,15 @@ public:
 		gameInstance()->UnreadyAll(); // Unready all, so readyStates can be used to determine if the player is loaded
 		gameInstance()->DebugPunSync("Traveling to GameMap");
 		gameInstance()->CachePlayerNames();
+
+		TrailerModeStop();
 		
 		GetWorld()->ServerTravel("/Game/Maps/GameMap");
 	}
 	
 	UFUNCTION(Exec) void TrailerCityReplayUnpause() override {
 		gameManager->simulation().replaySystem().TrailerCityReplayUnpause();
+		SetGameSpeed(2);
 	}
 	
 	UFUNCTION(Exec) void ReplaySave(const FString& replayFileName) {
@@ -732,9 +744,9 @@ public:
 	}
 
 	UFUNCTION(Exec) void TrailerCameraPrint() {
-		PUN_LOG("TrailerCameraPrint:");
+		_LOG(PunTrailer, "TrailerCameraPrint:");
 		for (size_t i = 0; i < cameraRecords.size(); i++) {
-			PUN_LOG("trailerCamera %s zoom:%f rotator:%s transition:%s t_time:%f", 
+			_LOG(PunTrailer, "trailerCamera %s zoom:%f rotator:%s transition:%s t_time:%f",
 						ToTChar(cameraRecords[i].cameraAtom.ToString()), 
 						cameraRecords[i].zoomDistance, 
 						*cameraRecords[i].rotator.ToCompactString(),
@@ -765,7 +777,7 @@ public:
 			// Camera
 			cameraRecordJson->SetNumberField("TimeStart", startTime);
 			startTime += cameraRecords[i].transitionTime;
-			cameraRecordJson->SetNumberField("TimeTransition", cameraRecords[i].transitionTime);
+			cameraRecordJson->SetNumberField("transitionTime", cameraRecords[i].transitionTime);
 			cameraRecordJson->SetStringField("transition", cameraRecords[i].transition);
 			
 			cameraRecordJson->SetNumberField("cameraAtomX", cameraRecords[i].cameraAtom.x);
@@ -779,7 +791,7 @@ public:
 
 			cameraRecordJson->SetStringField("Biome", ToFString(GetBiomeInfo(sim.GetBiomeEnum(cameraRecords[i].cameraAtom.worldTile2())).name));
 
-			cameraRecordJson->SetNumberField("unpause", cameraRecords[i].isCameraReplayUnpause);
+			cameraRecordJson->SetNumberField("unpause", static_cast<int>(cameraRecords[i].isCameraReplayUnpause));
 
 			// TileMoveDistance is useful in determining transitionTime
 			float tileMoveDistance = 0;
@@ -824,11 +836,16 @@ public:
 												cameraRecordJson->GetNumberField("rotatorRoll"));
 
 			record.transition = cameraRecordJson->GetStringField("transition");
-			record.transitionTime = cameraRecordJson->GetNumberField("TimeTransition");
+			record.transitionTime = cameraRecordJson->GetNumberField("transitionTime");
 
 			record.isCameraReplayUnpause = FGenericPlatformMath::RoundToInt(cameraRecordJson->GetNumberField("unpause"));
+			//_LOG(PunTrailer, "TrailerCameraLoad isCameraReplayUnpause %d", record.isCameraReplayUnpause);
 
 			cameraRecords.push_back(record);
+		}
+
+		for (int32 i = 0; i < cameraRecords.size(); i++) {
+			_LOG(PunTrailer,"TrailerCameraLoad[%d] isCameraReplayUnpause:%d", i, cameraRecords[i].isCameraReplayUnpause);
 		}
 	}
 
@@ -870,23 +887,6 @@ public:
 					commands.erase(commands.begin() + i);
 				}
 			}
-			//else if (commands[i]->commandType() == NetworkCommandEnum::PlaceGather) {
-			//	auto command = std::static_pointer_cast<FPlaceGatherParameters>(commands[i]);
-
-			//	// Check if it is road
-			//	if (IsRoadPlacement(static_cast<PlacementType>(command->placementType))) {
-			//		bool isDemolished = false;
-			//		for (int32 tile : command->path) {
-			//			if (!sim.IsRoadTile(tile)) {
-			//				isDemolished = true;
-			//				break;
-			//			}
-			//		}
-			//		if (isDemolished) {
-			//			commands.erase(commands.begin() + i);
-			//		}
-			//	}
-			//}
 			// UpgradeBuilding is only for townhall
 			else if (commands[i]->commandType() == NetworkCommandEnum::UpgradeBuilding)
 			{
@@ -905,8 +905,9 @@ public:
 				case CheatEnum::TrailerForceSnowStart:
 				case CheatEnum::TrailerForceSnowStop:
 				case CheatEnum::TrailerIncreaseAllHouseLevel:
-				case CheatEnum::TrailerIncreasePlaceSpeed:
-				case CheatEnum::TrailerDecreasePlaceSpeed:
+				case CheatEnum::TrailerPlaceSpeed:
+				case CheatEnum::TrailerHouseUpgradeSpeed:
+				case CheatEnum::TrailerForceAutumn:
 					break;
 				default:
 					commands.erase(commands.begin() + i);
@@ -974,10 +975,15 @@ public:
 				tryAddTime();
 				
 				jsonObj->SetStringField("commandType", "ChooseLocation");
-				jsonObj->SetNumberField("provinceId", command->provinceId);
+
+				// Save province center instead for Editor-Game compatibility
+				WorldTile2 tile = sim.GetProvinceCenterTile(command->provinceId);
+				jsonObj->SetNumberField("provinceCenterX", tile.x);
+				jsonObj->SetNumberField("provinceCenterY", tile.y);
+				
 				jsonObj->SetNumberField("isChoosingOrReserving", command->isChoosingOrReserving);
 			}
-			if (commands[i]->commandType() == NetworkCommandEnum::PlaceBuilding)
+			else if (commands[i]->commandType() == NetworkCommandEnum::PlaceBuilding)
 			{
 				auto command = std::static_pointer_cast<FPlaceBuilding>(commands[i]);
 				tryAddTime();
@@ -1040,15 +1046,6 @@ public:
 				jsonObj->SetNumberField("placementType", command->placementType);
 				jsonObj->SetNumberField("isInstantRoad", 0); // use command->harvestResourceEnum for isInstantRoad
 			}
-			//else if (commands[i]->commandType() == NetworkCommandEnum::ClaimLand)
-			//{
-			//	auto command = std::static_pointer_cast<FClaimLand>(commands[i]);
-
-			//	jsonObj->SetStringField("commandType", "ClaimLand");
-
-			//	jsonObj->SetNumberField("provinceId", command->provinceId);
-			//	jsonObj->SetNumberField("claimEnum", static_cast<double>(command->claimEnum));
-			//}
 			else if (commands[i]->commandType() == NetworkCommandEnum::Cheat)
 			{
 				auto command = std::static_pointer_cast<FCheat>(commands[i]);
@@ -1071,8 +1068,10 @@ public:
 				jsonObj->SetNumberField("upgradeType", command->upgradeType);
 			}
 
-			TSharedPtr<FJsonValue> jsonValue = MakeShared<FJsonValueObject>(jsonObj);
-			jsons.Add(jsonValue);
+			if (jsonObj->Values.Num() > 0) {
+				TSharedPtr<FJsonValue> jsonValue = MakeShared<FJsonValueObject>(jsonObj);
+				jsons.Add(jsonValue);
+			}
 		}
 
 		auto jsonObject = MakeShared<FJsonObject>();
@@ -1080,16 +1079,16 @@ public:
 
 		SaveJsonToFile(jsonObject, "City_" + trailerCityName + ".json", true);
 
-		PUN_LOG("TrailerCitySave %d", commands.size());
+		_LOG(PunTrailer, "TrailerCitySave %d", commands.size());
 		for (size_t i = 0; i < commands.size(); i++) {
-			PUN_LOG("  trailer[%d] %s", i, *commands[i]->ToCompactString());
+			_LOG(PunTrailer, "  trailer[%d] %s", i, *commands[i]->ToCompactString());
 		}
 	}
 	UFUNCTION(Exec) void TrailerCityPrintSave() {
 		auto commands = gameManager->simulation().replaySystem().trailerCommandsSave;
-		PUN_LOG("TrailerCityPrintSave %d", commands.size());
+		_LOG(PunTrailer, "TrailerCityPrintSave %d", commands.size());
 		for (size_t i = 0; i < commands.size(); i++) {
-			PUN_LOG("  trailer[%d] %s", i, *commands[i]->ToCompactString());
+			_LOG(PunTrailer, "  trailer[%d] %s", i, *commands[i]->ToCompactString());
 		}
 	}
 
@@ -1113,7 +1112,10 @@ public:
 			if (jsonObj->GetStringField("commandType") == "ChooseLocation") 
 			{
 				auto command = std::make_shared<FChooseLocation>();
-				command->provinceId = jsonObj->GetNumberField("provinceId");
+				WorldTile2 provinceCenter(FGenericPlatformMath::RoundToInt(jsonObj->GetNumberField("provinceCenterX")),
+											FGenericPlatformMath::RoundToInt(jsonObj->GetNumberField("provinceCenterY")));
+				command->provinceId = gameManager->simulation().GetProvinceIdClean(provinceCenter);
+				
 				command->isChoosingOrReserving = jsonObj->GetNumberField("isChoosingOrReserving");
 
 				commands.push_back(command);
@@ -1185,9 +1187,9 @@ public:
 			}
 		}
 
-		PUN_LOG("TrailerCityLoad %d", commands.size());
+		_LOG(PunTrailer, "TrailerCityLoad %d", commands.size());
 		for (size_t i = 0; i < commands.size(); i++) {
-			PUN_LOG("  trailer[%d] %s", i, *commands[i]->ToCompactString());
+			_LOG(PunTrailer, "  trailer[%d] %s", i, *commands[i]->ToCompactString());
 		}
 	}
 
@@ -1202,31 +1204,35 @@ public:
 		replaySys.trailerCommandsSave.clear(); // Clear old saves since new commands will be written to this
 		replaySys.lastTrailerStartTime = UGameplayStatics::GetTimeSeconds(this);
 
-		SimSettings::Set("TrailerMode", 1);
+		PunSettings::SetTrailerMode(1);
 	}
 	UFUNCTION(Exec) void TrailerModeStop() {
-		SimSettings::Set("TrailerMode", 0);
+		PunSettings::SetTrailerMode(0);
 	}
 	UFUNCTION(Exec) void TrailerModeStart() {
-		SimSettings::Set("TrailerMode", 1);
+		PunSettings::SetTrailerMode(1);
 	}
 
 	UFUNCTION(Exec) void TrailerCityPause(int32 playerId)
 	{
 		auto& replaySys = gameManager->simulation().replaySystem();
 		replaySys.replayPlayers[playerId].PauseTrailerCommands();
-		SimSettings::Set("TrailerMode", 0);
+		PunSettings::SetTrailerMode(0);
 	}
 	UFUNCTION(Exec) void TrailerCityUnpause(int32 playerId)
 	{
 		auto& replaySys = gameManager->simulation().replaySystem();
 		replaySys.replayPlayers[playerId].UnpauseTrailerCommands();
-		SimSettings::Set("TrailerMode", 1);
+		PunSettings::SetTrailerMode(1);
 	}
 
 	UFUNCTION(Exec) void TrailerStartAll(const FString& trailerName)
-	{	
-		SetGameSpeed(2);
+	{
+		if (!PunSettings::TrailerSession) {
+			TrailerSession();
+		}
+		
+		SetGameSpeed(GameSpeedHalf);
 		TrailerCityStart(trailerName);
 		
 		TrailerCameraLoad(trailerName);
@@ -1236,13 +1242,22 @@ public:
 	}
 	UFUNCTION(Exec) void TrailerStartCityOnly(const FString& trailerName)
 	{
-		SetGameSpeed(2);
+		SetGameSpeed(GameSpeedHalf);
 		TrailerCityStart(trailerName);
 	}
 
 	UFUNCTION(Exec) void AbandonTown(int32 playerId) {
 		if (gameManager->simulation().IsPlayerInitialized(playerId)) {
 			gameManager->simulation().AbandonTown(playerId);
+		}
+	}
+
+	UFUNCTION(Exec) void PrintHouseUpgrade()
+	{
+		auto& bldIds = gameManager->simulation().buildingIds(playerId(), CardEnum::House);
+		for (int32 bldId : bldIds) {
+			House& house = gameManager->simulation().building<House>(bldId);
+			_LOG(PunTrailer, "House trailerLvl:%d houseLvl:%d", house.trailerTargetHouseLvl, house.houseLvl());
 		}
 	}
 

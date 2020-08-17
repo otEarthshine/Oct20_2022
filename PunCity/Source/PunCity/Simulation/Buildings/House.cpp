@@ -77,7 +77,7 @@ void House::FinishConstruction()
 		addHolder(resourceEnum);
 	});
 
-	if (SimSettings::IsOn("TrailerMode")) {
+	if (PunSettings::TrailerMode()) {
 		// Add more population in trailer mode
 		_simulation->AddImmigrants(_playerId, 2, gateTile());
 	} else {

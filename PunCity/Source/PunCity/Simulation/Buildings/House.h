@@ -18,35 +18,29 @@ public:
 
 	int32 trailerTargetHouseLvl = 0;
 
-	void TrailerCheckHouseLvl()
+	bool TrailerCheckHouseLvl()
 	{
-		if (isConstructed())
+		if (isConstructed() &&
+			trailerTargetHouseLvl > _houseLvl)
 		{
-			if (trailerTargetHouseLvl > _houseLvl)
-			{
-				if (_lastHouseUpgradeTick == -1 ||
-					Time::Ticks() - _lastHouseUpgradeTick > Time::TicksPerSecond * 3)
-				{
-					_lastHouseUpgradeTick = Time::Ticks();
-					_houseLvl++;
-
-					_allowedOccupants = houseBaseOccupants + (_houseLvl - 1) / 2;
-					_simulation->RecalculateTaxDelayed(_playerId); // Recalculate sci
-					ResetDisplay();
-
-					PUN_LOG("Trailer House Upgrade %d", _houseLvl);
-				}
+			if (_houseLvl < GetMaxHouseLvl()) {
+				_houseLvl++;
 			}
-			else {
-				_lastHouseUpgradeTick = -1;
-			}
+
+			_allowedOccupants = houseBaseOccupants + (_houseLvl - 1) / 2;
+			_simulation->RecalculateTaxDelayed(_playerId); // Recalculate sci
+			ResetDisplay();
+
+			//PUN_LOG("TrailerHouseUpgrade houseLvl:%d trailerTargetHouseLvl:%d", _houseLvl, trailerTargetHouseLvl);
+			return true;
 		}
+		return false;
 	}
 	
 	void CheckHouseLvl()
 	{
 		// Trailer mode house upgrade 1 level at a time using TrailerCheckHouseLvl()
-		if (SimSettings::IsOn("TrailerMode")) {
+		if (PunSettings::TrailerMode()) {
 			return;
 		}
 		

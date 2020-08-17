@@ -290,11 +290,11 @@ public:
 
 		{
 			if (createMesh) {
-				SCOPE_TIMER("Terrain Large Chunk Creation");
+				//SCOPE_TIMER("Terrain Large Chunk Creation");
 				CreateMeshSection_LinearColor(0, vertices, tris, normals, UV0, vertexColors, tangents, false);
 			}
 			else {
-				SCOPE_TIMER("Terrain Large Chunk Update");
+				//SCOPE_TIMER("Terrain Large Chunk Update");
 				UpdateMeshSection_LinearColor(0, vertices, normals, UV0, vertexColors, tangents);
 			}
 		}

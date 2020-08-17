@@ -12,6 +12,8 @@
 
 //#include "PunCity/PunSTLContainerOverride.h"
 
+#define TRAILER_MODE 1
+
 #define SAVE_VERSION 20081502
 #define GAME_VERSION 20081502
 
@@ -406,7 +408,7 @@ public:
 		if (SimSettings::IsOn("ToggleRain")) {
 			return true;
 		}
-		if (SimSettings::IsOn("TrailerMode")) {
+		if (PunSettings::TrailerMode()) {
 			return false;
 		}
 		
@@ -435,8 +437,15 @@ public:
 		return startTick <= Ticks() && Ticks() <= startTick + lengthTicks;
 	}
 
+	static float kForcedFallSeason;
 	
-	static float FallSeason() { // 0 before fall and 1 after fall
+	static float FallSeason() // 0 before fall and 1 after fall
+	{
+#if TRAILER_MODE
+		kForcedFallSeason = Clamp01(kForcedFallSeason + (PunSettings::IsOn("ForceAutumn") ? 1 : -1) * 1.0f / 240.0f); // change in 2*2 sec
+		return kForcedFallSeason;
+#endif
+		
 		const float fallSeasonFullFraction = 0.3;
 		int32_t fallProgressionTicks = Ticks() % TicksPerYear - TicksPerSeason * 2;
 		float fallProgression = static_cast<float>(fallProgressionTicks) / TicksPerSeason / fallSeasonFullFraction;
@@ -4823,9 +4832,15 @@ static const std::vector<float> UnitAnimationPlayRate =
 	1.0f,
 	1.0f,
 	2.5f, // Walk
+
+#if TRAILER_MODE
+	1.18333f, // Build
+	1.6666f, // ChopWood
+#else
 	1.0f, // Build
-	
 	2.0f, // ChopWood
+#endif
+	
 	3.0f, // StoneMining
 	1.0f,
 };
@@ -4928,8 +4943,9 @@ enum class CheatEnum : int32
 	TrailerForceSnowStart,
 	TrailerForceSnowStop,
 	TrailerIncreaseAllHouseLevel,
-	TrailerIncreasePlaceSpeed,
-	TrailerDecreasePlaceSpeed,
+	TrailerPlaceSpeed,
+	TrailerHouseUpgradeSpeed,
+	TrailerForceAutumn,
 };
 
 static const std::string CheatName[]
@@ -4980,8 +4996,9 @@ static const std::string CheatName[]
 	"TrailerForceSnowStart",
 	"TrailerForceSnowStop",
 	"TrailerIncreaseAllHouseLevel",
-	"TrailerIncreasePlaceSpeed",
-	"TrailerDecreasePlaceSpeed",
+	"TrailerPlaceSpeed",
+	"TrailerHouseUpgradeSpeed",
+	"TrailerForceAutumn",
 };
 static std::string GetCheatName(CheatEnum cheatEnum) {
 	return CheatName[static_cast<int>(cheatEnum)];

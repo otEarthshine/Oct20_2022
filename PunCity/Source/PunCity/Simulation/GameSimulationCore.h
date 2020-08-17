@@ -1067,11 +1067,14 @@ public:
 
 	//
 
-	void RefreshHeightForestColorTexture(TileArea area) override {
-		_gameManager->RefreshHeightForestColorTexture(area);
+	void RefreshHeightForestColorTexture(TileArea area, bool isInstant) override {
+		_gameManager->RefreshHeightForestColorTexture(area, isInstant);
 	}
 	void SetRoadWorldTexture(WorldTile2 tile, bool isRoad, bool isDirtRoad) override {
 		_gameManager->SetRoadWorldTexture(tile, isRoad, isDirtRoad);
+	}
+	void RefreshHeightForestRoadTexture() override {
+		_gameManager->RefreshHeightForestRoadTexture();
 	}
 
 	// Tech
@@ -1360,7 +1363,7 @@ public:
 		if (PunSettings::Get("ForceSnowPercent") > 0) {
 			return PunSettings::Get("ForceSnowPercent") / 100.0f;
 		}
-		if (SimSettings::IsOn("TrailerMode")) {
+		if (PunSettings::TrailerMode()) {
 			float minSnowFraction = PunSettings::Get("TrailerTundraMinSnowPercent") / 100.0f;
 			return FDToFloat(_snowAccumulation3) * (1.0f - minSnowFraction) + minSnowFraction;
 		}

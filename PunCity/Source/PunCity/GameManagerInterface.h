@@ -73,6 +73,9 @@ public:
 	virtual void Spawn2DSound(std::string groupName, std::string soundName) = 0;
 
 	// Display
-	virtual void RefreshHeightForestColorTexture(TileArea area) = 0;
+	virtual void RefreshHeightForestColorTexture(TileArea area, bool isInstant) = 0;
 	virtual void SetRoadWorldTexture(WorldTile2 tile, bool isRoad, bool isDirtRoad) = 0;
+	virtual void RefreshHeightForestRoadTexture() = 0;
+
+	virtual void RefreshMapAnnotation() = 0;
 };

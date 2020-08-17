@@ -46,9 +46,13 @@ public:
 	void InitAnnotations();
 	void RefreshAnnotations();
 
-	void RefreshHeightForestColorTexture(TileArea area) {
-		isHeightForestColorDirty = true;
+	void RefreshHeightForestColorTexture(TileArea area, bool isInstant) {
 		RefreshHeightForestColor(area, &(_dataSource->simulation()), false);
+		if (isInstant) {
+			PunUnrealUtils::SetTextureData(_assetLoader->heightTexture, heightForestColor);
+		} else {
+			isHeightForestColorDirty = true;
+		}
 	}
 	static void SetRoadWorldTexture(WorldTile2 tile, bool isRoad, bool isDirtRoad)
 	{
@@ -67,6 +71,9 @@ public:
 		}
 
 		heightForestColor[tileId] = color.ToPackedARGB();
+	}
+	void RefreshHeightForestRoadTexture() {
+		PunUnrealUtils::SetTextureData(_assetLoader->heightTexture, heightForestColor);
 	}
 
 private:

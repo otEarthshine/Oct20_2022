@@ -711,6 +711,7 @@ void UTerrainMapComponent::InitAnnotations()
 void UTerrainMapComponent::RefreshAnnotations()
 {
 	_LOG(PunDisplay, "RefreshAnnotations");
+	SCOPE_TIMER("RefreshAnnotations");
 
 	/*
 	 * Buildings
@@ -730,6 +731,9 @@ void UTerrainMapComponent::RefreshAnnotations()
 			}
 			
 			const std::vector<int32> buildingIds = simulation.buildingIds(playerId, buildingEnum);
+
+			//PUN_LOG("RefreshAnnotations count:%d", buildingIds.size());
+			
 			for (int32 buildingId : buildingIds) 
 			{
 				Building& building = simulation.building(buildingId);
@@ -801,6 +805,12 @@ void UTerrainMapComponent::RefreshAnnotations()
 	});
 
 	_buildingsMeshes->AfterAdd();
+
+	// No showing Georesource for trailer
+	if (PunSettings::TrailerSession) {
+		_georesourceEnumToMesh->AfterAdd();
+		return;
+	}
 	
 
 	/*

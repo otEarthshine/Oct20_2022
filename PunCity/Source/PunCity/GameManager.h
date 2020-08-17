@@ -48,7 +48,18 @@ public:
 	// Sets default values for this actor's properties
 	AGameManager();
 	~AGameManager();
-	
+
+	template <typename T>
+	void HideActorType() {
+		for (TActorIterator<T> ActorItr(GetWorld()); ActorItr; ++ActorItr)
+		{
+			// Same as with the Object Iterator, access the subclass instance with the * or -> operators.
+			auto component = *ActorItr;
+			component->SetActorHiddenInGame(true);
+			component->SetActorEnableCollision(false);
+			component->SetActorTickEnabled(false);
+		}
+	}
 
 	void Init(int32 playerId, bool isLoadingFromFile, IGameUIInterface* uiInterface, IGameNetworkInterface* networkInterface);
 
@@ -79,11 +90,18 @@ public:
 
 	IGameNetworkInterface* networkInterface() { return _networkInterface; }
 
-	void RefreshHeightForestColorTexture(TileArea area) override {
-		_terrainMap->RefreshHeightForestColorTexture(area);
+	void RefreshHeightForestColorTexture(TileArea area, bool isInstant) override {
+		_terrainMap->RefreshHeightForestColorTexture(area, isInstant);
 	}
 	void SetRoadWorldTexture(WorldTile2 tile, bool isRoad, bool isDirtRoad) override {
 		_terrainMap->SetRoadWorldTexture(tile, isRoad, isDirtRoad);
+	}
+	void RefreshHeightForestRoadTexture() override {
+		_terrainMap->RefreshHeightForestRoadTexture();
+	}
+
+	void RefreshMapAnnotation() override {
+		_terrainMap->RefreshAnnotations();
 	}
 
 	class ADirectionalLight* directionalLight() { return _directionalLight; }

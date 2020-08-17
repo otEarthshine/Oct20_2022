@@ -792,6 +792,16 @@ bool UnitStateAI::TryGoNearbyHome()
 	// If too far from home humans will force themself to go home...
 	if (isEnum(UnitEnum::Human))
 	{
+		// Trailer
+		if (PunSettings::TrailerSession)
+		{
+			// Too far, in another city, don't walk there and walk randomly instead
+			if (WorldTile2::Distance(unitTile(), houseGate) > 80) {
+				MoveRandomly();
+				return true;
+			}
+		}
+		
 		if (!IsMoveValid(houseGate)) {
 			Add_MoveToRobust(houseGate);
 			AddDebugSpeech("(Succeed)TryGoNearbyHome: Force Go Home");
@@ -1735,7 +1745,7 @@ bool UnitStateAI::MoveTo(WorldTile2 end)
 	WorldTile2 tile = unitTile();
 
 	// Trailer
-	if (SimSettings::IsOn("TrailerSession"))
+	if (PunSettings::TrailerSession)
 	{
 		// Too far, in another city, don't walk there and walk randomly instead
 		if (WorldTile2::Distance(tile, end) > 80) {
@@ -2091,7 +2101,8 @@ void UnitStateAI::Construct()
 
 	Building& workplace = _simulation->building(workplaceId);
 
-	if (!workplace.isConstructed()) {
+	if (!workplace.isConstructed()) 
+	{
 		DoWork(workManSec100, workplaceId);
 
 		AddDebugSpeech(" Not done constructing");
@@ -2204,7 +2215,9 @@ void UnitStateAI::DoWork(int32 workAmount, int32 workplaceId)
 	UnitReservation unitReservation = workplaceId != -1 ? PopReservationWorkplace(workplaceId) : PopReservation(ReservationType::Workplace);
 	PUN_UNIT_CHECK(unitReservation.amount == workAmount);
 
+#if !TRAILER_MODE
 	_simulation->building(unitReservation.reserveWorkplaceId).DoWork(_id, unitReservation.amount);
+#endif
 	//PUN_CHECK2(reservations.empty(), debugStr());
 
 	AddDebugSpeech("DoWork: " + ReservationsToString());

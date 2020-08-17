@@ -176,7 +176,7 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 				auto comp = CreateTerritoryMeshComponent(true);
 				territoryMeshes.Add(comp);
 
-				PUN_LOG("Create territory %d pool:%d", territoryMeshes.Num(), pool.Num());
+				//PUN_LOG("Create territory %d pool:%d", territoryMeshes.Num(), pool.Num());
 			}
 
 			territoryMeshes.Last()->UpdateMesh(true, provinceId, -1, isInnerMesh, &simulation());
@@ -243,7 +243,7 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 				auto comp = _playerIdToTerritoryMesh[playerId];
 				if (comp)
 				{
-					if (!SimSettings::IsOn("TrailerSession") &&
+					if (!PunSettings::TrailerSession &&
 						CppUtils::Contains(sampleTerritoryPlayerIds, playerId)) 
 					{
 						comp->SetVisibility(true);

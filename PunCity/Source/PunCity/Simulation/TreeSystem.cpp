@@ -279,7 +279,7 @@ ResourcePair TreeSystem::RemoveTileObj(WorldTile2 tile, bool animate)
 		// Update the HeightForestColor texture
 		if (Time::Ticks() > 0) {
 			// trees removal not marked animated are Inits
-			_simulation->RefreshHeightForestColorTexture(checkArea);
+			_simulation->RefreshHeightForestColorTexture(checkArea, false);
 		}
 
 		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Trees, tile.regionId(), true);

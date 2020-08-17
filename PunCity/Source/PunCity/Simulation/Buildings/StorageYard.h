@@ -17,7 +17,7 @@ public:
 		}
 
 		// Special case: Trailer AddResources from input/output of nearby buildings
-		if (SimSettings::IsOn("TrailerSession"))
+		if (PunSettings::TrailerSession)
 		{
 			bool alreadyHasResource = false;
 			for (ResourceInfo info : ResourceInfos) {

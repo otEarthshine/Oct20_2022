@@ -16,6 +16,8 @@
 #include "GameRegionSystem.h"
 #include "ArmyNode.h"
 
+using namespace std;
+
 static const int32_t TownSizeMinPopulation[]
 {
 	0,
@@ -470,7 +472,7 @@ public:
 	
 	void ClaimProvince(int32 provinceId, bool lightMode = false)
 	{
-		PUN_LOG("ClaimProvince province:%d pid:%d", provinceId, _playerId);
+		//PUN_LOG("ClaimProvince province:%d pid:%d", provinceId, _playerId);
 		
 		//WorldTile2 minTile = region.minTile();
 		//WorldTile2 maxTile = region.maxTile();

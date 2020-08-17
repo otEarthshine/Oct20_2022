@@ -1,11 +1,10 @@
-#include "GameSimulationInfo.h"
+#include "PunCity/Simulation/GameSimulationInfo.h"
 #include <algorithm>
-#include "PunCity/PunTimer.h"
 //#include "PunCity/PunUtils.h"
 
-using namespace std;
-
 int32 TimeDisplay::_Ticks = 0;
+
+float Time::kForcedFallSeason = 0.0f;
 
 TileArea BuildingArea(WorldTile2 centerTile, WorldTile2 size, Direction faceDirection)
 {

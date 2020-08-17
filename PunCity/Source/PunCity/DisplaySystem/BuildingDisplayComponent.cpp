@@ -369,9 +369,12 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 						// Outline the construction base before the land is cleared
 						//  Note that this must be displayed for the depth-based outline to work.
 						//  So we just need to make sure that the color of ConstructionBaseHighlight is as similar as possible to the decal
-						//if (!simulation().IsLandCleared_SmallOnly(building.playerId(), building.area())) {
+						//  Note also that if we always leave this on, the construction frame will always have weird outlines
+						if (building.playerId() != -1 &&
+							!simulation().IsLandCleared_SmallOnly(building.playerId(), building.area())) 
+						{
 							modules.insert(modules.begin(), ModuleTransform("ConstructionBaseHighlight", siteMarkTransform, 0.0f, ModuleTypeEnum::ConstructionBaseHighlight));
-						//}
+						}
 					}
 
 					if (building.isEnum(CardEnum::Fisher)) {
@@ -476,7 +479,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 	
 	bool needBuildingAnimationUpdate = simulation().NeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, regionId) || 
 										isMainMenuDisplay ||
-										SimSettings::IsOn("TrailerMode");
+										PunSettings::TrailerMode();
 
 	// TODO: This is a hack to check every sec anyway
 	//needBuildingAnimationUpdate = needBuildingAnimationUpdate || Time::Tick
@@ -512,7 +515,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 					return;
 				}
 
-				bool shouldDisplayParticles = building.shouldDisplayParticles() || isMainMenuDisplay || SimSettings::IsOn("TrailerMode");
+				bool shouldDisplayParticles = building.shouldDisplayParticles() || isMainMenuDisplay || PunSettings::TrailerMode();
 
 				// Building mesh
 				float buildingRotation = RotationFromDirection(building.faceDirection());
@@ -640,9 +643,20 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 			SCOPE_TIMER("Tick Building: Demolish");
 			
 			auto& demolishInfos = *demolishInfosPtr;
+
+			float trailerTime = simulation().replaySystem().GetTrailerTime();
 			
 			for (size_t i = demolishInfos.size(); i-- > 0;) 
 			{
+				// Trailer only show dust on DirtRoad
+				if (PunSettings::TrailerMode() && 
+					demolishInfos[i].buildingEnum != CardEnum::DirtRoad &&
+					trailerTime > 5.0f)
+				{
+					demolishInfos.erase(demolishInfos.begin() + i);
+					continue;
+				}
+				
 				TileArea area = demolishInfos[i].area;
 				int32 demolishId = area.min().tileId();
 				

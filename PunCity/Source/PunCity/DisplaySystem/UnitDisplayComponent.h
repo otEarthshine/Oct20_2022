@@ -147,11 +147,14 @@ private:
 	/*
 	 * Skel Mesh
 	 */
-	
-	void AddSkelMesh(int32 unitId, UnitStateAI& unit, FTransform& transform)
-	{
+
+	void AddSkelMesh(int32 unitId, UnitStateAI& unit, FTransform& transform) {
 		int32 variationIndex = GetUnitTransformAndVariation(unitId, transform);
-		
+		AddSkelMesh(unitId, unit.unitEnum(), unit.animationEnum(), unit.isChild(), transform, variationIndex);
+	}
+	
+	void AddSkelMesh(int32 unitId, UnitEnum unitEnum, UnitAnimationEnum animationEnum, bool isChild, FTransform& transform, int32 variationIndex)
+	{
 		int32 index = -1;
 		// Use the existing unit already displayed
 		if (_lastUnitIdToSkelMeshIndex.Contains(unitId)) {
@@ -180,6 +183,9 @@ private:
 				skelMesh->SetReceivesDecals(false);
 				_unitSkelMeshes.Add(skelMesh);
 
+				FSkeletonAsset asset = _assetLoader->unitSkelAsset(unitEnum, variationIndex);
+				_unitSkelMeshes[index]->SetSkeletalMesh(asset.skeletalMesh);
+
 				FAttachmentTransformRules attachmentRules(EAttachmentRule::SnapToTarget, false);
 				auto weaponMesh = NewObject<UStaticMeshComponent>(this);
 				weaponMesh->AttachToComponent(skelMesh, attachmentRules, TEXT("WeaponSocket"));
@@ -191,7 +197,7 @@ private:
 				_unitSkelState.push_back(UnitSkelMeshState());
 			}
 
-			FSkeletonAsset asset = _assetLoader->unitSkelAsset(unit.unitEnum(), variationIndex);
+			FSkeletonAsset asset = _assetLoader->unitSkelAsset(unitEnum, variationIndex);
 			_unitSkelMeshes[index]->SetSkeletalMesh(asset.skeletalMesh);
 			
 		}
@@ -202,40 +208,28 @@ private:
 		skelMesh->SetWorldTransform(transform);
 
 		//
-		UnitAnimationEnum animationEnum = unit.animationEnum();
 		float playRate = GetUnitAnimationPlayRate(animationEnum) * simulation().gameSpeedFloat();
-		if (unit.isChild()) {
+		if (isChild) {
 			playRate /= 0.8f;
 		}
 		
 		if (_unitSkelState[index].animationEnum != animationEnum ||
 			_unitSkelState[index].animationPlayRate != playRate)
 		{
-			// Countdown first before switching
-			// This prevent slight flash in animation when constructing
-			//if (_unitSkelState[index].animationChangeDelayCountDown > 0) {
-			//	_unitSkelState[index].animationChangeDelayCountDown--;
-			//}
-			//else
-			//{
-			//	_unitSkelState[index].animationChangeDelayCountDown = UnitSkelMeshState::animationChangeDelayTicks;
+			FSkeletonAsset skelAsset = _assetLoader->unitSkelAsset(unitEnum, variationIndex);
 
-				FSkeletonAsset skelAsset = _assetLoader->unitSkelAsset(unit.unitEnum(), variationIndex);
+			skelMesh->PlayAnimation(skelAsset.animationEnumToSequence[animationEnum], true);
+			skelMesh->SetPlayRate(playRate);
+			_unitSkelState[index].animationEnum = animationEnum;
+			_unitSkelState[index].animationPlayRate = playRate;
 
-				skelMesh->PlayAnimation(skelAsset.animationEnumToSequence[animationEnum], true);
-				skelMesh->SetPlayRate(playRate);
-				_unitSkelState[index].animationEnum = animationEnum;
-				_unitSkelState[index].animationPlayRate = playRate;
-
-				UStaticMesh* weaponMesh = _assetLoader->unitWeaponMesh(animationEnum);
-				if (weaponMesh) {
-					_unitWeaponMeshes[index]->SetStaticMesh(weaponMesh);
-					_unitWeaponMeshes[index]->SetVisibility(true);
-				}
-				else {
-					_unitWeaponMeshes[index]->SetVisibility(false);
-				}
-			//}
+			UStaticMesh* weaponMesh = _assetLoader->unitWeaponMesh(animationEnum);
+			if (weaponMesh) {
+				_unitWeaponMeshes[index]->SetStaticMesh(weaponMesh);
+				_unitWeaponMeshes[index]->SetVisibility(true);
+			} else {
+				_unitWeaponMeshes[index]->SetVisibility(false);
+			}
 		}
 
 		DescriptionUIState uiState = simulation().descriptionUIState();

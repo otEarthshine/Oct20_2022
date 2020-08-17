@@ -132,6 +132,7 @@ AGameManager::~AGameManager()
 {
 }
 
+
 void AGameManager::Init(int32 playerId, bool isLoadingFromFile, IGameUIInterface* uiInterface, IGameNetworkInterface* networkInterface)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_GameManager);
@@ -150,22 +151,10 @@ void AGameManager::Init(int32 playerId, bool isLoadingFromFile, IGameUIInterface
 	_isPhotoMode = false;
 
 	{ // Hide test scene items
-		for (TActorIterator<AStaticMeshActor> ActorItr(GetWorld()); ActorItr; ++ActorItr)
-		{
-			// Same as with the Object Iterator, access the subclass instance with the * or -> operators.
-			auto component = *ActorItr;
-			component->SetActorHiddenInGame(true);
-			component->SetActorEnableCollision(false);
-			component->SetActorTickEnabled(false);
-		}
-		for (TActorIterator<AEmitter> ActorItr(GetWorld()); ActorItr; ++ActorItr)
-		{
-			// Same as with the Object Iterator, access the subclass instance with the * or -> operators.
-			auto component = *ActorItr;
-			component->SetActorHiddenInGame(true);
-			component->SetActorEnableCollision(false);
-			component->SetActorTickEnabled(false);
-		}
+		HideActorType<AStaticMeshActor>();
+		HideActorType<AEmitter>();
+		HideActorType<ADecalActor>();
+		HideActorType<APointLight>();
 	}
 
 	// Loading from file means we need _simulation right from the start??
@@ -571,7 +560,7 @@ void AGameManager::SampleRegions()
 	LLM_SCOPE_(EPunSimLLMTag::PUN_GameManager);
 
 	// Zoom distance is above threshold, don't sample any region...
-	if (SimSettings::IsOn("TrailerSession") || 
+	if (PunSettings::TrailerSession ||
 		ZoomDistanceBelow(WorldToMapZoomAmount)) 
 	{
 		SampleRegions(_sampleRegionIds);
@@ -827,37 +816,59 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 
 		{
 #if DISPLAY_TERRAIN
-			SCOPE_CYCLE_COUNTER(STAT_PunDisplayRegion);
-			SCOPE_TIMER_FILTER(5000, "Tick Region - zoom:%f trans:%f bouncing:%d", smoothZoomDistance, WorldZoomTransition_RegionToRegion4x4, isBounceZooming);
-			
-			if (PunSettings::IsOn("DisplayRegions")) 
+			if (PunSettings::IsOn("DisplayRegions"))
 			{
-				if (smoothZoomDistance < WorldZoomTransition_RegionToRegion4x4_Mid) {
+				SCOPE_CYCLE_COUNTER(STAT_PunDisplayRegion);
+				SCOPE_TIMER_FILTER(5000, "Tick Region - zoom:%f trans:%f bouncing:%d", smoothZoomDistance, WorldZoomTransition_RegionToRegion4x4, isBounceZooming);
+				
+				if (smoothZoomDistance < WorldZoomTransition_RegionToRegion4x4_Mid ||
+					PunSettings::TrailerSession)
+				{
 					_regionDisplaySystem->BeforeDisplay(false);
 					_regionDisplaySystem->Display(_sampleRegionIds);
-				} else {
+				}
+				else {
 					_regionDisplaySystem->Display(noSample);
 				}
 
+			}
+			else {
+				_regionDisplaySystem->Display(noSample);
+			}
+
+			if (PunSettings::IsOn("DisplayRegions4x4"))
+			{
+				SCOPE_CYCLE_COUNTER(STAT_PunDisplayRegion);
+				SCOPE_TIMER_FILTER(5000, "Tick Region4x4 - zoom:%f trans:%f bouncing:%d", smoothZoomDistance, WorldZoomTransition_RegionToRegion4x4, isBounceZooming);
+
 				// Terrain large is 4x4 regions
-				if (smoothZoomDistance < WorldZoomTransition_RegionToRegion4x4) {
-					_terrainDisplaySystem->Display(noSample);
-				}
-				else if (smoothZoomDistance < WorldZoomTransition_Region4x4ToMap) {
+				auto displayNormally = [&]() {
 					std::vector<int32> sampleNearRegionIds4x4;
 					for (int32 regionId : _sampleRegionIds) {
 						WorldRegion2 region(regionId);
 						CppUtils::TryAdd(sampleNearRegionIds4x4, WorldRegion2(region.x / 4 * 4, region.y / 4 * 4).regionId());
 					}
-					
+
 					_terrainDisplaySystem->Display(sampleNearRegionIds4x4);
+				};
+				
+				if (PunSettings::TrailerSession) {
+					displayNormally();
 				}
-				else {
-					_terrainDisplaySystem->Display(noSample);
+				else
+				{
+					if (smoothZoomDistance < WorldZoomTransition_RegionToRegion4x4) {
+						_terrainDisplaySystem->Display(noSample);
+					}
+					else if (smoothZoomDistance < WorldZoomTransition_Region4x4ToMap) {
+						displayNormally();
+					}
+					else {
+						_terrainDisplaySystem->Display(noSample);
+					}
 				}
 			}
 			else {
-				_regionDisplaySystem->Display(noSample);
 				_terrainDisplaySystem->Display(noSample);
 			}
 #endif
@@ -896,7 +907,7 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 			bool isZoomedAllTheWayOut = zoomDistance > WorldZoomTransition_Tree;
 
 			// Note: TODO: turn this on for Non-Trailer
-			if (isZoomedAllTheWayOut && !SimSettings::IsOn("TrailerSession")) {
+			if (isZoomedAllTheWayOut && !PunSettings::TrailerSession) {
 				// TODO: Is this cache working?
 				// Zoomed all the way out, cache tileObj for when we zoom in...
 				_tileDisplaySystem->BeforeDisplay(false, (isOn ? _sampleTileObjCacheRegionIds : noSample), true, zoomDistance > WorldZoomTransition_TreeHidden);
@@ -905,6 +916,10 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 			else {
 				bool displayTileObj = isOn;
 				bool displayFull = PunSettings::IsOn("TileObjFull") && smoothZoomDistance < WorldZoomTransition_Bush;
+
+				if (PunSettings::TrailerSession) {
+					displayFull = true;
+				}
 
 				_tileDisplaySystem->BeforeDisplay(displayFull, _sampleRegionIds, isZoomedAllTheWayOut);
 				_tileDisplaySystem->Display(displayTileObj ? _sampleRegionIds : noSample);
@@ -938,7 +953,7 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 			
 			//SCOPE_TIMER("Tick -- Territory");
 			bool displayTerritory = PunSettings::IsOn("DisplayTerritory") && 
-									!SimSettings::IsOn("TrailerSession");
+									!PunSettings::TrailerSession;
 			_territoryDisplaySystem->Display(displayTerritory ? _sampleProvinceIds : noSample);
 #endif
 		}

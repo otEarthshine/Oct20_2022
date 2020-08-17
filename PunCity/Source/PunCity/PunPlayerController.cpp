@@ -552,7 +552,7 @@ void APunPlayerController::Tick(float DeltaTime)
 		if (cameraPawn && playerOwned.justChoseLocation) {
 			WorldAtom2 lookAtAtom = gameManager->simulation().homeAtom(playerId());
 
-			if (!SimSettings::IsOn("TrailerMode")) {
+			if (!PunSettings::TrailerMode()) {
 				cameraPawn->MoveCameraTo(lookAtAtom, 350.0f);
 			}
 			
@@ -561,7 +561,7 @@ void APunPlayerController::Tick(float DeltaTime)
 	}
 
 	// Trailer Mode has no mouse
-	bShowMouseCursor = !SimSettings::IsOn("TrailerMode");
+	bShowMouseCursor = !PunSettings::TrailerMode();
 	
 
 	// Inputs

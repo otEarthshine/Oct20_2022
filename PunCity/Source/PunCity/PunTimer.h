@@ -5,28 +5,26 @@
 #include "CoreMinimal.h"
 #include <chrono>
 #include <unordered_map>
+#include <string>
 #include "PunCity/PunUtils.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTimer, Log, All);
 
-using namespace std;
-using namespace std::chrono;
-
-static time_point<steady_clock> TimerStart() {
-	return high_resolution_clock::now();
+static std::chrono::time_point<std::chrono::steady_clock> TimerStart() {
+	return std::chrono::high_resolution_clock::now();
 }
 
-static void TimerEnd(time_point<steady_clock> time1, FString message, int multiplier = 1)
+static void TimerEnd(std::chrono::time_point<std::chrono::steady_clock> time1, FString message, int multiplier = 1)
 {
-	auto time2 = high_resolution_clock::now();
-	auto time_span = duration_cast<nanoseconds>(time2 - time1);
+	auto time2 = std::chrono::high_resolution_clock::now();
+	auto time_span = std::chrono::duration_cast<std::chrono::nanoseconds>(time2 - time1);
 	UE_LOG(LogTimer, Log, TEXT("%d ms, %s"), time_span.count() * multiplier / 1000000, *message);
 }
 
 // Scope timer
 struct ScopeTimer
 {
-	time_point<steady_clock> time1;
+	std::chrono::time_point<std::chrono::steady_clock> time1;
 	FString message;
 	int multiplier;
 	long nanoSecondsThreshold;
@@ -41,7 +39,7 @@ struct ScopeTimer
 	{
 		nanoSecondsThreshold = microSecondsThreshold * 1000;
 		initialSize = 0;
-		time1 = high_resolution_clock::now();
+		time1 = std::chrono::high_resolution_clock::now();
 	}
 
 	static ScopeTimer CreateSerializeTimer(FString message, TArray<uint8>* data, std::vector<int32>* crcs)
@@ -61,8 +59,8 @@ struct ScopeTimer
 			return;
 		}
 		
-		auto time2 = high_resolution_clock::now();
-		auto time_span = duration_cast<nanoseconds>(time2 - time1);
+		auto time2 = std::chrono::high_resolution_clock::now();
+		auto time_span = std::chrono::duration_cast<std::chrono::nanoseconds>(time2 - time1);
 		auto nanoseconds = time_span.count();
 		
 		// Serialize Timer
@@ -83,7 +81,7 @@ struct ScopeTimer
 			if (nanoseconds > nanoSecondsThreshold) {
 				UE_LOG(LogTimer, Log, TEXT("%d.%d ms, %s"), nanoseconds / 1000000, (nanoseconds / 1000) % 1000, *message);
 			}
-		}
+		} 
 		else {
 			UE_LOG(LogTimer, Log, TEXT("%d ms, mul:%d, %s"), nanoseconds / 1000000, nanoseconds * multiplier / 1000000, *message);
 		}
@@ -97,7 +95,7 @@ struct ScopeTimer
 														if (crcLabels) crcLabels->push_back(message);
 
 // Editor only, since this is every tick
-#if WITH_EDITOR
+#if WITH_EDITOR || TRAILER_MODE
 	#define SCOPE_TIMER_FILTER(microSecondsThreshold, Format, ...) ScopeTimer scopeTimer(FString::Printf(TEXT(Format), ##__VA_ARGS__), 1, microSecondsThreshold);
 #else
 	#define SCOPE_TIMER_FILTER(microSecondsThreshold, Format, ...) 
@@ -109,16 +107,16 @@ struct ScopeTimer
 struct ScopeTimerLoop
 {
 	std::string message;
-	time_point<steady_clock> time1;
+	std::chrono::time_point<std::chrono::steady_clock> time1;
 
-	static std::unordered_map<std::string, nanoseconds> time_spans;
+	static std::unordered_map<std::string, std::chrono::nanoseconds> time_spans;
 
 	ScopeTimerLoop(std::string message) : message(message) {
-		time1 = high_resolution_clock::now();
+		time1 = std::chrono::high_resolution_clock::now();
 	}
 	~ScopeTimerLoop() {
-		auto time2 = high_resolution_clock::now();
-		time_spans[message] += duration_cast<nanoseconds>(time2 - time1);
+		auto time2 = std::chrono::high_resolution_clock::now();
+		time_spans[message] += std::chrono::duration_cast<std::chrono::nanoseconds>(time2 - time1);
 	}
 };
 

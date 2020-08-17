@@ -295,7 +295,7 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 			 * Show full farm
 			 */
 			Building* bld = sim.buildingAtTile(worldTile);
-			if (SimSettings::IsOn("CheatFullFarmRoad") &&
+			if (PunSettings::CheatFullFarmRoad() &&
 				bld && bld->isEnum(CardEnum::Farm))
 			{
 				Farm& farm = bld->subclass<Farm>(CardEnum::Farm);
@@ -310,7 +310,7 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 			/*
 			 * Show growing farm in trailer mode
 			 */
-			else if (SimSettings::IsOn("TrailerMode") &&
+			else if (PunSettings::TrailerMode() &&
 					bld && bld->isEnum(CardEnum::Farm))
 			{
 				Farm& farm = bld->subclass<Farm>(CardEnum::Farm);
@@ -374,7 +374,7 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 			else if (info.type == ResourceTileType::Tree)
 			{
 				// Don't show tree if marked
-				if (SimSettings::IsOn("MarkedTreesNoDisplay") &&
+				if (PunSettings::MarkedTreesNoDisplay &&
 					treeSystem.HasMark(playId, worldTileId)) {
 					return;
 				}
@@ -389,7 +389,7 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 				FTransform transform = GameDisplayUtils::GetTreeTransform(localTile.localDisplayLocation(), 0, worldTileId, ageTick, info);
 
 
-				if (!_isFullDisplay && !SimSettings::IsOn("TrailerSession")) {
+				if (!_isFullDisplay && !PunSettings::TrailerSession) {
 					// Low Poly Leaf
 					meshes->Add(tileObjectName + FString::FromInt(static_cast<int32>(TileSubmeshEnum::LeafLowPoly)), worldTileId, transform, ageState, worldTileId, false, false);
 					meshes->Add(tileObjectName + FString::FromInt(static_cast<int32>(TileSubmeshEnum::LeafShadow)), worldTileId, transform, ageState, worldTileId, true, true);

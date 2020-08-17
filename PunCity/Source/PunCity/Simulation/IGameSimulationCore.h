@@ -423,8 +423,9 @@ public:
 	virtual BiomeEnum GetBiomeEnum(WorldTile2 tile) = 0;
 	virtual BiomeEnum GetBiomeProvince(int32 provinceId) = 0;
 
-	virtual void RefreshHeightForestColorTexture(TileArea area) = 0;
+	virtual void RefreshHeightForestColorTexture(TileArea area, bool isInstant) = 0;
 	virtual void SetRoadWorldTexture(WorldTile2 tile, bool isRoad, bool isDirtRoad) = 0;
+	virtual void RefreshHeightForestRoadTexture() = 0;
 
 	virtual void TryRemoveDescriptionUI(ObjectTypeEnum type, int32_t objectId) = 0;
 

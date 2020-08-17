@@ -1385,7 +1385,7 @@ public:
 
 	UFireForgetAudioComponent* Spawn3DSound(std::string groupName, std::string soundName, WorldAtom2 worldAtom, float height, bool usePlayProbability = true, bool isLooping = false)
 	{
-		if (SimSettings::IsOn("TrailerMode")) {
+		if (PunSettings::TrailerMode()) {
 			return nullptr;
 		}
 		// Note: usePlayProbability is needed to separate Animal's UI sound vs animal random ambient
@@ -1491,7 +1491,7 @@ public:
 
 	void Spawn2DSound(std::string groupName, std::string soundName)
 	{
-		if (SimSettings::IsOn("TrailerMode")) {
+		if (PunSettings::TrailerMode()) {
 			return;
 		}
 		if (IsolateVolume(groupName, soundName) == 0.0f) {

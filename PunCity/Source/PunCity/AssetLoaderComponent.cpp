@@ -564,7 +564,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadUnitSkel(UnitEnum::WildMan, "Human/WildMan/", "WildMan", animationFileNames);
 
 	// Hippo
-	LoadUnitSkel(UnitEnum::Hippo, "Hippo/", "Hippo", {
+	LoadUnitSkel(UnitEnum::Hippo, "Hippo/", "HippoSmall", {
 		{ UnitAnimationEnum::Walk, "Hippo_Walk"},
 		{ UnitAnimationEnum::Wait, "Hippo_LookAround"},
 	});

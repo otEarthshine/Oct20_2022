@@ -930,7 +930,8 @@ public:
 			}
 			else
 			{
-				_workDone100 += buildTime_ManSec100() / updateCount; // takes tickCount secs to finish the constrution
+				const int32 autoBuildMultiplier = 2;
+				_workDone100 += buildTime_ManSec100() / updateCount * autoBuildMultiplier; // takes tickCount secs to finish the constrution
 
 				//PUN_LOG("TickConstruction[%d] %s percent:%d", buildingId(), ToTChar(buildingInfo().name), constructionPercent());
 

@@ -1749,7 +1749,8 @@ bool UnitStateAI::MoveTo(WorldTile2 end)
 	{
 		// Too far, in another city, don't walk there and walk randomly instead
 		if (WorldTile2::Distance(tile, end) > 80) {
-			MoveRandomly();
+			Add_Wait(Time::TicksPerSecond);
+			Add_MoveRandomly();
 			return true;
 		}
 	}

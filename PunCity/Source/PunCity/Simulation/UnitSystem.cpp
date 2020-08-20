@@ -84,6 +84,12 @@ void UnitSystem::AddAnimals(int animalCount)
 				BiomeInfo biomeInfo = GetBiomeInfo(biomeEnum);
 
 				UnitEnum unitEnum;
+
+#if TRAILER_MODE
+				if (biomeEnum == BiomeEnum::Tundra || biomeEnum == BiomeEnum::BorealForest) {
+					continue;
+				}
+#endif
 				
 				if (biomeEnum == BiomeEnum::Forest && GameRand::Rand() % 500 == 0) { // 1/500 to spawn panda
 					unitEnum = UnitEnum::Panda;
@@ -236,6 +242,10 @@ void UnitSystem::ResetUnitActionsInArea(TileArea area)
 
 void UnitSystem::UnitCheckIntegrity(bool full)
 {
+#if TRAILER_MODE
+	return;
+#endif
+	
 	// Make sure lastTick is not too faraway for alive units
 	for (size_t i = 0; i < _unitLeans.size(); i++) {
 		UnitLean& unitLean = _unitLeans[i];

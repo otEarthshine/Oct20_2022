@@ -643,6 +643,10 @@ class FUpgradeBuilding : public FNetworkCommand
 public:
 	virtual ~FUpgradeBuilding() {}
 
+#if TRAILER_MODE
+	int32 tileId = -1;
+#endif
+	
 	int32 buildingId;
 	int32 upgradeLevel = -1; // use -1 if not needed
 	int32 upgradeType = -1;
@@ -651,7 +655,10 @@ public:
 
 	void Serialize(PunSerializedData& blob) override {
 		FNetworkCommand::Serialize(blob);
-		
+
+#if TRAILER_MODE
+		blob << tileId;
+#endif
 		blob << buildingId;
 		blob << upgradeLevel;
 		blob << upgradeType;

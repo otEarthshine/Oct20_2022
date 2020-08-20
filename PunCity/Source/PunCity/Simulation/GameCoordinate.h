@@ -355,6 +355,19 @@ struct WorldTile2
 			diffTile == WorldTile2(0, -1);
 	}
 
+	bool Is8AdjacentTo(WorldTile2 tile) const {
+		WorldTile2 diffTile = (*this - tile);
+		return diffTile == WorldTile2(1, 0) ||
+			diffTile == WorldTile2(-1, 0) ||
+			diffTile == WorldTile2(0, 1) ||
+			diffTile == WorldTile2(0, -1) ||
+
+			diffTile == WorldTile2(1, 1) ||
+			diffTile == WorldTile2(-1, 1) ||
+			diffTile == WorldTile2(1, -1) ||
+			diffTile == WorldTile2(-1, -1);
+	}
+
 
 	FArchive& operator>>(FArchive &Ar) {
 		Ar << x << y;

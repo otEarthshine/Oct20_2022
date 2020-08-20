@@ -32,7 +32,7 @@ public:
 		/*
 		 * Intercity Trade / Trade Route
 		 */
-		if (simulation().IsPlayerInitialized(playerId()))
+		if (simulation().HasTownhall(playerId()))
 		{
 			if (townhall.playerId() == playerId()) {
 				SetText(TradeButtonText, "Set Trade Offer");

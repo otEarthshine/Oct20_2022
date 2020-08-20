@@ -78,4 +78,7 @@ public:
 	virtual void RefreshHeightForestRoadTexture() = 0;
 
 	virtual void RefreshMapAnnotation() = 0;
+
+	virtual float zoomDistance() = 0;
+	virtual bool IsInSampleRange(WorldTile2 tile) = 0;
 };

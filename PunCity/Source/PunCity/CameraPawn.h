@@ -19,6 +19,7 @@ struct TrailerCameraRecord
 	float transitionTime;
 
 	bool isCameraReplayUnpause = false;
+	float lightAngle = 225.0f;
 };
 
 #include "CameraPawn.generated.h"
@@ -171,7 +172,7 @@ public:
 	}
 	
 	void MoveCameraTo(WorldAtom2 atom, float zoomAmount, float timeLength = 3.0f, FString lerpType = "ChooseLocation");
-	void MoveCameraTo(WorldAtom2 atom, float zoomAmount, FRotator rotation, float timeLength = 3.0f, FString lerpType = "ChooseLocation");
+	void MoveCameraTo(WorldAtom2 atom, float zoomAmount, FRotator rotation, float lightAngle, float timeLength = 3.0f, FString lerpType = "ChooseLocation");
 
 	void AdjustCameraZoomTilt();
 
@@ -296,6 +297,9 @@ private:
 	bool _systemIsRotating = false;
 	FRotator _systemRotatorStart = FRotator::ZeroRotator;
 	FRotator _systemRotatorTarget = FRotator::ZeroRotator;
+	float _systemIsRotatingLight = false;
+	float _systemLightAngleStart = 0.0f;
+	float _systemLightAngleTarget = 0.0f;
 	
 	enum class DisplayState : uint8
 	{

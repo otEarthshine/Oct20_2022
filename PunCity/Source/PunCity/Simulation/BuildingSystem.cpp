@@ -487,6 +487,14 @@ void BuildingSystem::RemoveBuilding(int buildingId)
 	TileArea frontArea = area.GetFrontArea(faceDirection);
 	int32 playerId = _buildings[buildingId]->playerId();
 
+
+#if TRAILER_MODE
+	if (buildingEnum == CardEnum::Windmill) {
+		PUN_LOG("Windmill why delete?");
+	}
+#endif
+	
+
 	PlaceBuildingOnMap(buildingId, false, false);
 
 	//RemoveBuildingFromBuildingSystem(buildingId);
@@ -510,101 +518,6 @@ void BuildingSystem::RemoveBuilding(int buildingId)
 	}
 
 	_buildings[buildingId]->Deinit();
-	return;
-
-	// Stackable special cases
-	// - Demolish hit trapspike ... clear everything including possible road child (GameSimCore will clear overlaySystem.Road)
-	// - Demolish hit road
-	//    There is no trapspike in the tile (or else it would have been promoted to parent)
-	// - FinishConstruction() for RoadConstruction calls RemoveBuilding()
-	//    Road could be child or parent. If child, just delete the child.. If parent just delete as usual (no trapspike in tile anyway, else it would be promoted)
-	//if (IsRoadOverlapBuilding(buildingEnum))
-	//{
-	//	// In this case, RemoveBuilding is always called from demolish... just clear everything in this tile..
-	//	// TrapSpike is always the parent...
-	//	PUN_CHECK(_buildings[buildingId]->parent == -1);
-
-	//	// Parent building: destroy all children...
-	//	if (_buildings[buildingId]->children.size() > 0) {
-	//		int32_t childRoadId = _buildings[buildingId]->children[0];
-	//		PUN_CHECK(IsRoad(_buildings[childRoadId]->buildingEnum()));
-
-	//		RemoveBuildingFromBuildingSystem(childRoadId);
-	//		_buildings[childRoadId]->Deinit();
-	//	}
-
-	//	SetBuildingTile(centerTile, -1, CardEnum::None);
-	//	_buildings[buildingId]->Deinit();
-	//	return;
-	//}
-	if (IsRoad(buildingEnum))
-	{
-		PUN_CHECK(_buildings[buildingId]->children.empty());
-
-		// If this has parent, just remove self, don't touch the parent
-		// (In this case, RemoveBuilding is called from RoadConstruction FinishConstruction())
-		//int32_t parentId = _buildings[buildingId]->parent;
-		//if (parentId != -1) {
-		//	// Unlink
-		//	CppUtils::Remove(_buildings[parentId]->children, buildingId);
-		//	_buildings[buildingId]->parent = -1;
-
-		//	_buildings[buildingId]->Deinit();
-		//	return;
-		//}
-
-		SetBuildingTile(centerTile, -1);
-		_buildings[buildingId]->Deinit();
-		return;
-	}
-
-	// Bridge special case
-	if (buildingEnum == CardEnum::Bridge) {
-		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-			SetBuildingTile(tile, -1);
-			_simulation->SetWalkable(tile, false);
-		});
-		return;
-	}
-
-	/*
-	 * Nonstackable
-	 */
-
-	//! Remove Grid
-	{
-		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-			SetBuildingTile(tile, -1);
-			_simulation->SetWalkable(tile, true);
-		});
-
-
-		//PUN_LOG("RemoveBuilding: id:%d", buildingId);
-
-		// Front Grid
-		if (buildingEnum == CardEnum::Fence ||
-			buildingEnum == CardEnum::Farm)
-		{}
-		else
-		{
-			frontArea.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-				PUN_CHECK(_simulation->IsFrontBuildable(tile));
-				//RemoveFrontTile(tile, faceDirection);
-			});
-		}
-
-		//// Fence gate also have backArea
-		//if (buildingEnum == BuildingEnum::FenceGate) {
-		//	TileArea backArea = area.GetFrontArea(OppositeDirection(faceDirection));
-		//	backArea.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-		//		GameMap::RemoveFrontTile(tile, faceDirection);
-		//	});
-		//}
-
-		// Deinit comes last, as it may drop items
-		_buildings[buildingId]->Deinit();
-	}
-	// TODO: recycle buildings
 }
 
 int32 BuildingSystem::GetHouseLvlCount(int32_t playerId, int32_t houseLvl, bool includeHigherLvl) {

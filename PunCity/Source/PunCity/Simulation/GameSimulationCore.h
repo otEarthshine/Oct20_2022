@@ -915,7 +915,9 @@ public:
 
 				soundInterface()->TryStopBuildingWorkSound(bld);
 				_buildingSystem->RemoveBuilding(bldId);
-				_regionToDemolishDisplayInfos[tile.regionId()].push_back({ bld.buildingEnum(), bld.area(), Time::Ticks() });
+
+				AddDemolishDisplayInfo(tile, { bld.buildingEnum(), bld.area(), Time::Ticks() });
+				//_regionToDemolishDisplayInfos[tile.regionId()].push_back({ bld.buildingEnum(), bld.area(), Time::Ticks() });
 			}
 		});
 	}
@@ -1102,6 +1104,15 @@ public:
 			DrawLine(tile.worldAtom2(), FVector::ZeroVector, tile.worldAtom2(), FVector(0, tilt, 10), color, 1.0f);
 		});
 #endif
+	}
+
+	void AddDemolishDisplayInfo(WorldTile2 tile, DemolishDisplayInfo demolishInfo)
+	{
+		if (_gameManager->IsInSampleRange(tile) &&
+			_gameManager->zoomDistance() < WorldZoomTransition_Buildings) 
+		{
+			_regionToDemolishDisplayInfos[tile.regionId()].push_back(demolishInfo);
+		}
 	}
 
 	std::vector<DemolishDisplayInfo>& GetDemolishDisplayInfo(int32 regionId)
@@ -1342,9 +1353,17 @@ public:
 		_endStatus.gameEndEnum = GameEndEnum::ScienceVictory;
 	}
 
-	bool IsPlayerInitialized(int32 playerId) final {
+	bool HasTownhall(int32 playerId) final {
 		return playerOwned(playerId).hasTownhall();
 	}
+
+	int32 TownAge(int32 playerId) {
+		if (!HasTownhall(playerId)) {
+			return 0;
+		}
+		return townhall(playerId).buildingAge();
+	}
+	
 
 	bool IsReplayPlayer(int32 playerId) {
 		return replaySystem().replayPlayers[playerId].isInitialize();

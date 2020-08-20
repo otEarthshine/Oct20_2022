@@ -196,6 +196,11 @@ ResourcePair TreeSystem::UnitHarvestBush(WorldTile2 tile) {
 	if (tileInfo(id).type == ResourceTileType::None) {
 		return ResourcePair(ResourceEnum::Hay, 1);
 	}
+#if TRAILER_MODE
+	if (tileInfo(id).type != ResourceTileType::Bush) {
+		return ResourcePair(ResourceEnum::Hay, 1);
+	}
+#endif
 	PUN_CHECK2(tileInfo(id).type == ResourceTileType::Bush, tileObjdebugStr(id));
 
 	_simulation->statSystem(-1).AddStat(SeasonStatEnum::BushDeathGather);
@@ -209,6 +214,11 @@ void TreeSystem::UnitNourishBush(WorldTile2 tile) {
 	if (tileInfo(id).type == ResourceTileType::None) {
 		return;
 	}
+#if TRAILER_MODE
+	if (tileInfo(id).type != ResourceTileType::Bush) {
+		return;
+	}
+#endif
 	PUN_CHECK2(tileInfo(id).type == ResourceTileType::Bush, tileObjdebugStr(id));
 
 	// Nourish

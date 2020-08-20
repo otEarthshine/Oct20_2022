@@ -265,7 +265,7 @@ void ACameraPawn::MoveCameraTo(WorldAtom2 atom, float zoomAmount, float timeLeng
 	_LOG(PunDisplay, "MoveCameraTo time:%f", _systemMoveTimeLength);
 }
 
-void ACameraPawn::MoveCameraTo(WorldAtom2 atom, float zoomAmount, FRotator rotation, float timeLength, FString lerpType)
+void ACameraPawn::MoveCameraTo(WorldAtom2 atom, float zoomAmount, FRotator rotation, float lightAngle, float timeLength, FString lerpType)
 {
 	_LOG(PunTrailer, "CAM Trailer MoveCameraTo time:%.2f zoom:%.2f->%.2f timeLength:%.2f", _gameInterface->simulation().replaySystem().GetTrailerTime(), zoomDistance(), zoomAmount, timeLength);
 	
@@ -274,14 +274,24 @@ void ACameraPawn::MoveCameraTo(WorldAtom2 atom, float zoomAmount, FRotator rotat
 	_systemIsRotating = true;
 	_systemRotatorStart = GetActorRotation();
 	_systemRotatorTarget = rotation;
+
+	if (lightAngle > 0)
+	{
+		_systemIsRotatingLight = true;
+		_systemLightAngleStart = _networkInterface->GetLightAngle();
+		_systemLightAngleTarget = lightAngle;
+	}
 }
 
 void ACameraPawn::AdjustCameraZoomTilt()
 {
-	// Always point the camera at 0.5 MinZoomAmount Height
-	float camHeight = CameraComponent->GetComponentLocation().Z;
-	float degreeFromHorizontal = UKismetMathLibrary::DegAtan((camHeight - MinZoomLookAtHeight) / _smoothZoomDistance);
-	CameraComponent->SetRelativeRotation(FRotator(41.7 - degreeFromHorizontal, 0, 0));
+	if (!PunSettings::TrailerMode()) 
+	{
+		// Always point the camera at 0.5 MinZoomAmount Height
+		float camHeight = CameraComponent->GetComponentLocation().Z;
+		float degreeFromHorizontal = UKismetMathLibrary::DegAtan((camHeight - MinZoomLookAtHeight) / _smoothZoomDistance);
+		CameraComponent->SetRelativeRotation(FRotator(41.7 - degreeFromHorizontal, 0, 0));
+	}
 }
 
 void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, MouseInfo mouseInfo)
@@ -369,8 +379,17 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 		float lerpedZoomAmount = _systemZoomAmountStart + (_systemZoomAmountTarget - _systemZoomAmountStart) * zoomLerpFraction;
 		_camShiftLocation = _systemCamLocationStart + (_systemCamLocationTarget - _systemCamLocationStart) * locationLerpFraction;
 
+
+
+		// Get Old Value to check for jump
+		//GetActorRotation()
+		
+
 		if (_systemIsRotating) {
 			SetActorRotation(FMath::Lerp(_systemRotatorStart, _systemRotatorTarget, rotationLerpFraction));
+		}
+		if (_systemIsRotatingLight) {
+			_networkInterface->SetLightAngle(_systemLightAngleStart + (_systemLightAngleTarget - _systemLightAngleStart) * zoomLerpFraction);
 		}
 		
 		//PUN_LOG("System Move Camera %f, %f", zoomLerpFraction, locationLerpFraction);
@@ -378,6 +397,8 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 		// Zoom Adjust
 		_cameraZoomStep = GetZoomStepFromAmount(lerpedZoomAmount); // Update this so that the surrounding gets updated...
 		CameraComponent->SetRelativeLocation(FVector(-lerpedZoomAmount, 0, 0));
+
+		// Adjust tilt up if this isn't trailer
 		AdjustCameraZoomTilt();
 		
 		if (lerpedZoomAmount < WorldToMapZoomAmount) {
@@ -392,6 +413,10 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 			if (_systemIsRotating) {
 				SetActorRotation(_systemRotatorTarget);
 				_systemIsRotating = false;
+			}
+			if (_systemIsRotatingLight) {
+
+				_systemIsRotatingLight = false;
 			}
 			
 			_systemMoveTimeSinceStart = -1.0f;
@@ -416,20 +441,28 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 		TrailerCameraRecord cameraRecord = _cameraSequence[0];
 		_cameraSequence.erase(_cameraSequence.begin());
 
-		MoveCameraTo(cameraRecord.cameraAtom, cameraRecord.zoomDistance, cameraRecord.rotator, cameraRecord.transitionTime, cameraRecord.transition);
+		MoveCameraTo(cameraRecord.cameraAtom, cameraRecord.zoomDistance, cameraRecord.rotator, cameraRecord.lightAngle, cameraRecord.transitionTime, cameraRecord.transition);
 
 		if (cameraRecord.isCameraReplayUnpause) {
 			_networkInterface->TrailerCityReplayUnpause();
 		}
+
+		// Move and return right away
+		CameraComponent->SetRelativeLocation(FVector(-_systemZoomAmountTarget, 0, 0));
+		SetActorRotation(_systemRotatorTarget);
+		_networkInterface->SetLightAngle(_systemLightAngleTarget);
+
+		return;
 	}
-	else if (PunSettings::TrailerMode())
+	
+	if (PunSettings::TrailerMode())
 	{
 		if (_systemTrailerTimeSinceStart != -1) {
 			_LOG(PunTrailer, "Cam Trail ended time:%.2f", _systemTrailerTimeSinceStart);
 			_systemMoveTimeSinceStart = -1.0f;
 			_systemMoveTimeLength = 0.0f;
 			_systemTrailerTimeSinceStart = -1;
-			PunSettings::SetTrailerMode(0);
+			PunSettings::SetTrailerMode(false);
 		}
 	}
 	
@@ -582,8 +615,10 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 		if (abs(zoomAmount - WorldToMapZoomAmount) < 200.0f) {
 			_smoothZoomDistance = zoomAmount;
 		}
+
 		
 		CameraComponent->SetRelativeLocation(FVector(-_smoothZoomDistance, 0, 0));
+		
 		AdjustCameraZoomTilt();
 
 		if (Time::Ticks() % 30 == 0)

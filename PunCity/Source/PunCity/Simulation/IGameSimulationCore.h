@@ -132,7 +132,7 @@ public:
 	virtual int32 townAgeTicks(int32 playerId) = 0;
 
 	virtual bool unlockedInfluence(int32 playerId) {
-		if (IsPlayerInitialized(playerId)) {
+		if (HasTownhall(playerId)) {
 			return townLvl(playerId) >= 3;
 		}
 		return false;
@@ -441,7 +441,7 @@ public:
 
 
 	//! Players
-	virtual bool IsPlayerInitialized(int32 playerId) = 0;
+	virtual bool HasTownhall(int32 playerId) = 0;
 
 	template<typename Func>
 	void ExecuteOnPlayersAndAI(Func func) {

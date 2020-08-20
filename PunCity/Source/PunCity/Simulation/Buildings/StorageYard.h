@@ -51,7 +51,7 @@ public:
 					}
 				});
 
-				size_t enumCount = std::min(static_cast<size_t>(2), resourceEnums.size());
+				size_t enumCount = std::min(static_cast<size_t>(std::min(storageSlotCount() / 2, 2)), resourceEnums.size());
 				for (size_t i = 0; i < enumCount; i++) {
 					AddResource(resourceEnums[i], GameConstants::StorageCountPerTile + GameRand::Rand(centerTile().tileId()) % GameConstants::StorageCountPerTile);
 				}

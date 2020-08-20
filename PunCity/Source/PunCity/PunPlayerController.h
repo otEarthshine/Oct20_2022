@@ -621,7 +621,10 @@ public:
 		gameManager->MaxRegionCullDistance = maxRegionCullDistance;
 	}
 
-	UFUNCTION(Exec) void SetLightAngle(float lightAngle) {
+	UFUNCTION(Exec) float GetLightAngle() override {
+		return gameManager->directionalLight()->GetActorRotation().Yaw;
+	}
+	UFUNCTION(Exec) void SetLightAngle(float lightAngle) override {
 		gameManager->directionalLight()->SetActorRotation(FRotator(308, lightAngle, 0));
 		PUN_LOG("SetLightAngle %f", lightAngle);
 		// Default lightAngle: 47.5
@@ -647,7 +650,6 @@ public:
 	UFUNCTION(Exec) void TrailerSession()
 	{
 		auto& sim = gameManager->simulation();
-
 		
 		PunSettings::TrailerSession = true;
 		SimSettings::Set("CheatFastBuild", 1);
@@ -655,7 +657,7 @@ public:
 		sim.unlockSystem(playerId())->UnlockAll();
 		sim.ClearPopups(playerId());
 
-		AddPenguinColony(378, 2279, 10, 200);
+		AddPenguinColony(396, 2448, 10, 200);
 
 		// Wildman
 		{
@@ -663,7 +665,7 @@ public:
 			placeCommand.buildingEnum = static_cast<uint8>(CardEnum::FakeTribalVillage);
 			placeCommand.buildingLevel = 0;
 			placeCommand.center = WorldTile2(988, 2537);
-			placeCommand.faceDirection = static_cast<uint8>(Direction::S);
+			placeCommand.faceDirection = static_cast<uint8>(Direction::E);
 			placeCommand.area = BuildingArea(placeCommand.center, GetBuildingInfoInt(placeCommand.buildingEnum).size, static_cast<Direction>(placeCommand.faceDirection));
 			int32 buildingId = sim.PlaceBuilding(placeCommand);
 			sim.building(buildingId).InstantClearArea();
@@ -793,6 +795,8 @@ public:
 
 			cameraRecordJson->SetNumberField("unpause", static_cast<int>(cameraRecords[i].isCameraReplayUnpause));
 
+			cameraRecordJson->SetNumberField("lightAngle", static_cast<int>(cameraRecords[i].lightAngle));
+
 			// TileMoveDistance is useful in determining transitionTime
 			float tileMoveDistance = 0;
 			float zoomMoveDistance = 0;
@@ -841,6 +845,11 @@ public:
 			record.isCameraReplayUnpause = FGenericPlatformMath::RoundToInt(cameraRecordJson->GetNumberField("unpause"));
 			//_LOG(PunTrailer, "TrailerCameraLoad isCameraReplayUnpause %d", record.isCameraReplayUnpause);
 
+			record.lightAngle = cameraRecordJson->GetNumberField("lightAngle");
+			if (record.lightAngle == 0.0f) {
+				record.lightAngle = 225.0f;
+			}
+
 			cameraRecords.push_back(record);
 		}
 
@@ -867,7 +876,7 @@ public:
 	UFUNCTION(Exec) void TrailerCitySave(const FString& trailerCityName)
 	{
 		auto& sim = gameManager->simulation();
-		std::vector<std::shared_ptr<FNetworkCommand>> commands = sim.replaySystem().trailerCommandsSave;
+		std::vector<std::shared_ptr<FNetworkCommand>>& commands = sim.replaySystem().trailerCommandsSave;
 		PUN_CHECK(commands.size() > 1);
 		if (commands.size() <= 1) {
 			return;
@@ -881,7 +890,11 @@ public:
 
 				// Check by buildingId
 				bool isDemolished = command->area.ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 tile) {
-					return static_cast<CardEnum>(command->buildingEnum) != sim.buildingEnumAtTile(tile);
+					if (static_cast<CardEnum>(command->buildingEnum) != sim.buildingEnumAtTile(tile)) {
+						return true;
+					}
+					Building* building = sim.buildingAtTile(tile);
+					return command->center != building->centerTile();
 				});
 				if (isDemolished) {
 					commands.erase(commands.begin() + i);
@@ -891,6 +904,11 @@ public:
 			else if (commands[i]->commandType() == NetworkCommandEnum::UpgradeBuilding)
 			{
 				auto command = std::static_pointer_cast<FUpgradeBuilding>(commands[i]);
+
+				if (command->buildingId == -1) {
+					command->buildingId = sim.buildingIdAtTile(WorldTile2(command->tileId));
+				}
+				
 				if (!sim.building(command->buildingId).isEnum(CardEnum::Townhall)) {
 					commands.erase(commands.begin() + i);
 				}
@@ -916,6 +934,22 @@ public:
 			}
 		}
 
+
+		// Print Road
+		_LOG(PunTrailer, "Print Road Backward")
+		for (size_t i = commands.size(); i-- > 1;)
+		{
+			auto& command = commands[i];
+			if (command->commandType() == NetworkCommandEnum::PlaceDrag)
+			{
+				auto commandCasted = std::static_pointer_cast<FPlaceDrag>(command);
+				for (int32 j = 0; j < commandCasted->path.Num(); j++) {
+					_LOG(PunTrailer, " - command:%d %s", i, ToTChar(WorldTile2(commandCasted->path[j]).ToString()));
+				}
+			}
+		}
+		
+
 		// Merge PlaceDrag for roads
 		for (size_t i = commands.size(); i-- > 1;)
 		{
@@ -931,18 +965,25 @@ public:
 				if (commandCasted->placementType == static_cast<int32>(PlacementType::DirtRoad) &&
 					prevCommandCasted->placementType == static_cast<int32>(PlacementType::DirtRoad))
 				{
-					// TODO: weird why duplicates
+					// Possibility of duplication since we can build road on road tile
 					TArray<int32> newPath;
 					for (int32 j = 0; j < commandCasted->path.Num(); j++) {
 						if (!prevCommandCasted->path.Contains(commandCasted->path[j])) {
 							newPath.Add(commandCasted->path[j]);
 						}
 					}
-					newPath.Append(prevCommandCasted->path);
 
-					prevCommandCasted->path = newPath;
+					// Merge the path to previous path only if it is connected
+					if (newPath.Num() > 0) {
+						if (WorldTile2(newPath.Last()).Is8AdjacentTo(prevCommandCasted->path[0]))
+						{
+							newPath.Append(prevCommandCasted->path);
+							prevCommandCasted->path = newPath;
+							commands.erase(commands.begin() + i);
+						}
+					}
 					
-					commands.erase(commands.begin() + i);
+					
 				}
 			}
 		}
@@ -1015,6 +1056,20 @@ public:
 			else if (commands[i]->commandType() == NetworkCommandEnum::PlaceDrag)
 			{
 				auto command = std::static_pointer_cast<FPlaceDrag>(commands[i]);
+
+				// Remove demolished path
+				if (command->placementType == static_cast<int32>(PlacementType::DirtRoad)) {
+					for (int32 j = command->path.Num(); j-- > 0;) {
+						WorldTile2 pathTile(command->path[j]);
+						if (!sim.overlaySystem().IsRoad(pathTile)) {
+							command->path.RemoveAt(j);
+						}
+					}
+				}
+				if (command->path.Num() == 0) {
+					continue;
+				}
+				
 				tryAddTime();
 
 				jsonObj->SetStringField("commandType", "PlaceDrag");
@@ -1045,6 +1100,8 @@ public:
 
 				jsonObj->SetNumberField("placementType", command->placementType);
 				jsonObj->SetNumberField("isInstantRoad", 0); // use command->harvestResourceEnum for isInstantRoad
+
+				jsonObj->SetNumberField("prebuilt", command->area2.minX); // Area2.minX to keep prebuilt
 			}
 			else if (commands[i]->commandType() == NetworkCommandEnum::Cheat)
 			{
@@ -1064,6 +1121,9 @@ public:
 				tryAddTime();
 
 				jsonObj->SetStringField("commandType", "UpgradeBuilding");
+				WorldTile2 center = sim.building(command->buildingId).centerTile();
+				jsonObj->SetNumberField("centerX", center.x);
+				jsonObj->SetNumberField("centerY", center.y);
 				jsonObj->SetNumberField("upgradeLevel", command->upgradeLevel);
 				jsonObj->SetNumberField("upgradeType", command->upgradeType);
 			}
@@ -1109,12 +1169,14 @@ public:
 		{
 			TSharedPtr<FJsonObject> jsonObj = commandValue->AsObject();
 
+			auto& sim = gameManager->simulation();
+
 			if (jsonObj->GetStringField("commandType") == "ChooseLocation") 
 			{
 				auto command = std::make_shared<FChooseLocation>();
 				WorldTile2 provinceCenter(FGenericPlatformMath::RoundToInt(jsonObj->GetNumberField("provinceCenterX")),
 											FGenericPlatformMath::RoundToInt(jsonObj->GetNumberField("provinceCenterY")));
-				command->provinceId = gameManager->simulation().GetProvinceIdClean(provinceCenter);
+				command->provinceId = sim.GetProvinceIdClean(provinceCenter);
 				
 				command->isChoosingOrReserving = jsonObj->GetNumberField("isChoosingOrReserving");
 
@@ -1153,7 +1215,15 @@ public:
 				}
 
 				command->placementType = jsonObj->GetNumberField("placementType");
+
+				// Demolish, don't do it!!!
+				if (command->placementType == static_cast<int32>(PlacementType::Demolish)) {
+					continue;
+				}
+				
 				command->harvestResourceEnum = static_cast<ResourceEnum>(FGenericPlatformMath::RoundToInt(jsonObj->GetNumberField("isInstantRoad")));
+
+				command->area2.minX = jsonObj->GetNumberField("prebuilt");
 
 				commands.push_back(command);
 			}
@@ -1180,6 +1250,12 @@ public:
 			else if (jsonObj->GetStringField("commandType") == "UpgradeBuilding")
 			{
 				auto command = std::make_shared<FUpgradeBuilding>();
+
+				WorldTile2 center(jsonObj->GetNumberField("centerX"),
+									jsonObj->GetNumberField("centerY"));
+
+				command->tileId = center.tileId();
+				command->buildingId = -1;
 				command->upgradeLevel = jsonObj->GetNumberField("upgradeLevel");
 				command->upgradeType = jsonObj->GetNumberField("upgradeType");
 
@@ -1247,7 +1323,7 @@ public:
 	}
 
 	UFUNCTION(Exec) void AbandonTown(int32 playerId) {
-		if (gameManager->simulation().IsPlayerInitialized(playerId)) {
+		if (gameManager->simulation().HasTownhall(playerId)) {
 			gameManager->simulation().AbandonTown(playerId);
 		}
 	}
@@ -1281,9 +1357,28 @@ public:
 		gameManager->simulation().regionSystem().RemoveAnimalColony(UnitEnum::WildMan);
 	}
 
+	UFUNCTION(Exec) void CheckWindmill()
+	{
+		std::vector<int32> buildingIds = simulation().buildingIds(0, CardEnum::Windmill);
+		_LOG(PunTrailer, "Check Windmill %d", buildingIds.size());
+		if (buildingIds.size() > 0) {
+			Building& building = simulation().building(buildingIds[0]);
+			_LOG(PunTrailer, "Windmill %s", ToTChar(building.centerTile().ToString()));
+			simulation().buildingSubregionList().ExecuteRegion(building.centerTile().region(), [&](int32 buildingIdLocal) {
+				if (simulation().building(buildingIdLocal).buildingEnum() == CardEnum::Windmill) {
+					_LOG(PunTrailer, "buildingSubregionList Windmill %s", ToTChar(simulation().building(buildingIdLocal).centerTile().ToString())); //
+				}
+			});
+		}
+	}
+
 	// Done for map transition so tick doesn't happpen after gameInst's data was cleared
 	void SetTickDisabled(bool tickDisabled) final {
 		_tickDisabled = tickDisabled;
+	}
+
+	IGameSimulationCore& simulation() {
+		return gameManager->simulation();
 	}
 
 private:

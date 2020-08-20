@@ -640,18 +640,15 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 		
 		if (demolishInfosPtr && demolishInfosPtr->size() > 0)
 		{
-			SCOPE_TIMER("Tick Building: Demolish");
+			SCOPE_TIMER_FILTER(5000, "Tick Building: Demolish count:%d", demolishInfosPtr->size());
 			
 			auto& demolishInfos = *demolishInfosPtr;
-
-			float trailerTime = simulation().replaySystem().GetTrailerTime();
 			
 			for (size_t i = demolishInfos.size(); i-- > 0;) 
 			{
 				// Trailer only show dust on DirtRoad
 				if (PunSettings::TrailerMode() && 
-					demolishInfos[i].buildingEnum != CardEnum::DirtRoad &&
-					trailerTime > 5.0f)
+					demolishInfos[i].buildingEnum != CardEnum::DirtRoad)
 				{
 					demolishInfos.erase(demolishInfos.begin() + i);
 					continue;

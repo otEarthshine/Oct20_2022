@@ -91,7 +91,7 @@ public:
 	void AddTrailerCommands(std::vector<std::shared_ptr<FNetworkCommand>> commands)
 	{
 		// Placement gets recorded for trailer
-		for (size_t j = commands.size(); j-- > 0;)
+		for (size_t j = 0; j < commands.size(); j++)
 		{
 			if (commands[j]->playerId == 0)
 			{
@@ -105,8 +105,8 @@ public:
 				case NetworkCommandEnum::UpgradeBuilding:
 					trailerCommandsSave.push_back(commands[j]);
 					trailerCommandsSaveIssueTime.push_back(_simulation->soundInterface()->GetDisplayTime() - lastTrailerStartTime);
-					PUN_LOG("Add trailerCommands[Save] %d %s", trailerCommandsSave.size(), ToTChar(GetNetworkCommandName(commands[j]->commandType())));
-
+					PUN_LOG("Add trailerCommands[Save] %d %s", trailerCommandsSave.size(), *commands[j]->ToCompactString());
+					
 					if (commands[j]->commandType() == NetworkCommandEnum::PlaceBuilding) {
 						auto placeCommand = std::static_pointer_cast<FPlaceBuilding>(commands[j]);
 						PUN_LOG("PlaceBuilding %s %s", *ToFString(GetBuildingInfoInt(placeCommand->buildingEnum).name), ToTChar(placeCommand->center.ToString()));

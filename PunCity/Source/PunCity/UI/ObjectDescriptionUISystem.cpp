@@ -545,6 +545,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			
 #if WITH_EDITOR
 			ss << "[" << objectId << "]"; // ID
+			ss << "\n" << building.centerTile().ToString();
 			//ss << "GateTile:(" << building.gateTile().x << "," << building.gateTile().y << ")\n";
 #endif
 			SetText(_objectDescriptionUI->DescriptionUITitle, ss);

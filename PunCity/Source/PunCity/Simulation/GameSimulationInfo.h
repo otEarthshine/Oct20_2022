@@ -23,7 +23,7 @@
 
 #define ToFName(stdString) FName(*ToFString(stdString))
 
-#define ToTChar(stdString) UTF8_TO_TCHAR(stdString.c_str())
+#define ToTChar(stdString) UTF8_TO_TCHAR((stdString).c_str())
 
 #define ToStdString(fString) (std::string(TCHAR_TO_UTF8(*(fString))));
 
@@ -3595,6 +3595,16 @@ enum class TerrainTileType : uint8
 	Ocean,
 	Mountain,
 };
+static const std::vector<std::string> TerrainTileTypeName
+{
+	"None",
+	"River",
+	"Ocean",
+	"Mountain",
+};
+static std::string GetTerrainTileTypeName(TerrainTileType type) {
+	return TerrainTileTypeName[static_cast<int>(type)];
+}
 
 static bool IsWaterTileType(TerrainTileType tileType) {
 	return tileType == TerrainTileType::River || tileType == TerrainTileType::Ocean;
@@ -4401,10 +4411,10 @@ static const BiomeInfo BiomeInfos[]
 	{"Boreal Forest",
 		"Coniferous forest with long and punishing winters.",
 		{ TileObjEnum::Pine1, TileObjEnum::Pine2 },
-		{TileObjEnum::OreganoBush },
-		{TileObjEnum::WhiteFlowerBush},
-		{UnitEnum::RedDeer, UnitEnum::Boar},
-		{UnitEnum::BrownBear},
+		{ TileObjEnum::OreganoBush },
+		{ TileObjEnum::WhiteFlowerBush},
+		{ UnitEnum::RedDeer },
+		{ UnitEnum::BrownBear},
 	},
 	{ "Tundra",
 		"Extremely cold, frozen plain where almost nothing grows.",

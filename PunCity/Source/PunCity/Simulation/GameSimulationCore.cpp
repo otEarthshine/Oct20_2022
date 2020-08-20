@@ -438,15 +438,15 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 
 					NetworkCommandEnum commandType = command->commandType();
 
-					bool recordedCommand = false;
 					command->playerId = i;
 					
 					// Add back to TrailerCommands so it will be recorded for the next save
 					auto recordCommand = [&]() {
 						_replaySystem.AddTrailerCommands({ command });
-						recordedCommand = true;
 					};
 
+					// Cheat Commands should be the only one executing in a single tick.
+					// This is to prevent command shuffle in json, since these commands get added instantly, while other commands gets added in command loop
 					if (commandType == NetworkCommandEnum::Cheat)
 					{
 						auto cheat = static_pointer_cast<FCheat>(command);
@@ -455,10 +455,18 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 						// Special case: Trailer Pause
 						if (cheatEnum == CheatEnum::TrailerPauseForCamera)
 						{
-							replayPlayers[i].isCameraTrailerReplayPaused = true;
+							// Pause command cannot be played with other commands
+							// queue for the next tick if k > 0
+							if (k > 0) {
+								trailerCommands.insert(trailerCommands.begin(), command);
+							}
+							else {
+								replayPlayers[i].isCameraTrailerReplayPaused = true;
 
-							PUN_LOG("Trailer Pause (Camera) num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
-							recordCommand();
+								PUN_LOG("Trailer Pause (Camera) num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
+								recordCommand();
+							}
+							break;
 						}
 						// Special case: Trailer Snow
 						else if (cheatEnum == CheatEnum::TrailerForceSnowStart)
@@ -466,12 +474,16 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 							PunSettings::Set("ForceSnow", 1);
 							PUN_LOG("TrailerForceSnowStart num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
 							recordCommand();
+							numberOfCommandsToExecute++;
+							continue; // Doesn't use up execution count
 						}
 						else if (cheatEnum == CheatEnum::TrailerForceSnowStop)
 						{
 							PunSettings::Set("ForceSnow", 0);
 							PUN_LOG("TrailerForceSnowStop num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
 							recordCommand();
+							numberOfCommandsToExecute++;
+							continue; // Doesn't use up execution count
 						}
 						// Special case: Trailer Place Speed
 						else if (cheatEnum == CheatEnum::TrailerPlaceSpeed)
@@ -479,12 +491,16 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 							PunSettings::Set("TrailerPlaceSpeed", cheat->var1);
 							PUN_LOG("TrailerPlaceSpeed num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
 							recordCommand();
+							numberOfCommandsToExecute++;
+							continue; // Doesn't use up execution count
 						}
 						else if (cheatEnum == CheatEnum::TrailerHouseUpgradeSpeed)
 						{
 							PunSettings::Set("TrailerHouseUpgradeSpeed", cheat->var1);
 							PUN_LOG("TrailerHouseUpgradeSpeed num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
 							recordCommand();
+							numberOfCommandsToExecute++;
+							continue; // Doesn't use up execution count
 						}
 						// Special case: Trailer House upgrade
 						else if (cheatEnum == CheatEnum::TrailerIncreaseAllHouseLevel)
@@ -495,6 +511,8 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 							}
 							PUN_LOG("TrailerIncreaseAllHouseLevel num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
 							recordCommand();
+							numberOfCommandsToExecute++;
+							continue; // Doesn't use up execution count
 						}
 						// Trailer Force Autumn
 						else if (cheatEnum == CheatEnum::TrailerForceAutumn)
@@ -502,58 +520,74 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 							PunSettings::Set("ForceAutumn", cheat->var1);
 							PUN_LOG("TrailerForceAutumn num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
 							recordCommand();
+							numberOfCommandsToExecute++;
+							continue; // Doesn't use up execution count
 						}
 					}
 
+					
 
-					if (!recordedCommand)
+					// Ignore Prebuilt adding them to TrailerCommands
+					if (commandType == NetworkCommandEnum::PlaceDrag &&
+						static_pointer_cast<FPlaceDrag>(command)->area2.minX == 1)
 					{
-						// Ignore Prebuilt adding them to TrailerCommands
-						if (commandType == NetworkCommandEnum::PlaceDrag &&
-							static_pointer_cast<FPlaceDrag>(command)->area2.minX == 1)
+						recordCommand();
+						break;
+					}
+					else if (commandType == NetworkCommandEnum::PlaceBuilding &&
+						static_pointer_cast<FPlaceBuilding>(command)->area2.minX == 1)
+					{
+						recordCommand();
+						break;
+					}
+					else
+					{
+						// Special case: Road
+						// If this is road, build one at a time
+						if (commandType == NetworkCommandEnum::PlaceDrag)
 						{
-							recordCommand();
-						}
-						else if (commandType == NetworkCommandEnum::PlaceBuilding &&
-							static_pointer_cast<FPlaceBuilding>(command)->area2.minX == 1)
-						{
-							recordCommand();
-						}
-						else
-						{
-							// Special case: Road
-							// If this is road, build one at a time
-							if (commandType == NetworkCommandEnum::PlaceDrag)
-							{
-								auto dragCommand = static_pointer_cast<FPlaceDrag>(command);
-
-								// harvestResourceEnum stores if dragCommand should be instant
-								if (static_cast<int>(dragCommand->harvestResourceEnum) == 0)
-								{
-									// Non-instant road
-									if (dragCommand->path.Num() > 0)
-									{
-										TArray<int32> newPath = dragCommand->path;
-										int32 firstTileId = newPath.Pop();
-
-										// Put the command back in front with trimmed
-										if (newPath.Num() > 0) {
-											auto commandToFrontPush = make_shared<FPlaceDrag>(*dragCommand);
-											commandToFrontPush->path = newPath;
-											trailerCommands.insert(trailerCommands.begin(), commandToFrontPush);
-										}
-
-										dragCommand->path = { firstTileId }; // build 1 tile at a time
-
-										replayPlayers[i].nextTrailerCommandTick = Time::Ticks() + 1;// Time::TicksPerSecond / 30; // Build 30 tiles a sec
-									}
-								}
+							// if this is the second command, don't execute it and mix it up with PlaceBuilding etc.
+							if (k > 0) {
+								break;
 							}
-
-							commands.push_back(command);
 							
-							PUN_LOG("Trailer Exec num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
+							auto dragCommand = static_pointer_cast<FPlaceDrag>(command);
+
+							// harvestResourceEnum stores if dragCommand should be instant
+							if (static_cast<int>(dragCommand->harvestResourceEnum) == 0)
+							{
+								// Non-instant road
+								if (dragCommand->path.Num() > 0)
+								{
+									TArray<int32> newPath = dragCommand->path;
+									int32 firstTileId = newPath.Pop();
+									//int32 secondTileId = newPath.Pop();
+
+									// Put the command back in front with trimmed
+									if (newPath.Num() > 0) {
+										auto commandToFrontPush = make_shared<FPlaceDrag>(*dragCommand);
+										commandToFrontPush->path = newPath;
+										trailerCommands.insert(trailerCommands.begin(), commandToFrontPush);
+									}
+
+									// Build the one tile...
+									dragCommand->path = { firstTileId, /*secondTileId*/ }; // build 1 tile at a time
+
+									replayPlayers[i].nextTrailerCommandTick = Time::Ticks() + 1;// Time::TicksPerSecond / 30; // Build 30 tiles a sec
+
+									commands.push_back(dragCommand);
+
+									PUN_LOG("Trailer Road num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *WorldTile2(firstTileId).To_FString(), Time::Ticks());
+								}
+
+								// Only build road this tick
+								break;
+							}
 						}
+
+						commands.push_back(command);
+						
+						PUN_LOG("Trailer Exec num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
 					}
 					
 					// Commands Executed
@@ -602,6 +636,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 		
 	}
 
+	vector<bool> commandSuccess(commands.size(), true);
 
 	for (size_t i = 0; i < commands.size(); i++) 
 	{
@@ -622,8 +657,12 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 		{
 			//case NetworkCommandEnum::AddPlayer:			AddPlayer(*static_pointer_cast<FAddPlayer>(commands[i])); break;
 
-			case NetworkCommandEnum::PlaceBuilding:		PlaceBuilding(*static_pointer_cast<FPlaceBuilding>(commands[i])); break;
-			case NetworkCommandEnum::PlaceDrag:		PlaceDrag(*static_pointer_cast<FPlaceDrag>(commands[i])); break;
+			case NetworkCommandEnum::PlaceBuilding:	{
+				int32 buildingId = PlaceBuilding(*static_pointer_cast<FPlaceBuilding>(commands[i]));
+				commandSuccess[i] = (buildingId != -1);
+				break;
+			}
+			case NetworkCommandEnum::PlaceDrag:			PlaceDrag(*static_pointer_cast<FPlaceDrag>(commands[i])); break;
 			case NetworkCommandEnum::JobSlotChange:		JobSlotChange(*static_pointer_cast<FJobSlotChange>(commands[i])); break;
 			case NetworkCommandEnum::SetAllowResource:	SetAllowResource(*static_pointer_cast<FSetAllowResource>(commands[i])); break;
 			case NetworkCommandEnum::SetPriority:		SetPriority(*static_pointer_cast<FSetPriority>(commands[i])); break;
@@ -681,9 +720,11 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 					houseCommand.faceDirection = static_cast<uint8>(Direction::S);
 					houseCommand.area = BuildingArea(houseCommand.center, GetBuildingInfoInt(houseCommand.buildingEnum).size, static_cast<Direction>(houseCommand.faceDirection));
 					int32 buildingId = PlaceBuilding(houseCommand);
-					building(buildingId).InstantClearArea();
-					building(buildingId).AddResourceHolder(ResourceEnum::Wood, ResourceHolderType::Requester, 0);
-					building(buildingId).SetConstructionPercent(80);
+					if (buildingId != -1) {
+						building(buildingId).InstantClearArea();
+						building(buildingId).AddResourceHolder(ResourceEnum::Wood, ResourceHolderType::Requester, 0);
+						building(buildingId).SetConstructionPercent(80);
+					}
 				}
 			}
 		}
@@ -697,6 +738,13 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 	/*
 	 * Replays
 	 */
+	// Remove unsuccessful commands
+	for (size_t i = commands.size(); i-- > 0;) {
+		if (!commandSuccess[i]) {
+			commands.erase(commands.begin() + i);
+		}
+	}
+	
 	// Record tickInfo
 	_replaySystem.AddTrailerCommands(commands);
 	_replaySystem.AddNetworkTickInfo(tickInfo, commands);
@@ -939,6 +987,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 				});
 			}
 
+#if TRAILER_MODE
 			// Tick Trailer AutoBuild
 			int32 trailerBuildTickInterval = Time::TicksPerSecond / 15;
 			if (_tickCount % trailerBuildTickInterval == 0)
@@ -952,27 +1001,32 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 						IsReplayPlayer(playerId) &&
 						!replaySystem().replayPlayers[playerId].isCameraTrailerReplayPaused)
 					{
-						for (int32 enumInt = 0; enumInt < BuildingEnumCount; enumInt++)
-						{
-							std::vector<int32> bldIds = buildingIds(playerId, static_cast<CardEnum>(enumInt));
-							for (int32 bldId : bldIds)
+						// play after 5 sec (2.5 sec trailer)
+						// This prevent the example construction from completing before isCameraTrailerReplayPaused triggers
+						if (TownAge(playerId) > Time::TicksPerSecond * 5) {
+							for (int32 enumInt = 0; enumInt < BuildingEnumCount; enumInt++)
 							{
-								Building& bld = building(bldId);
-								int32 buildTicks = Time::TicksPerSecond * 8;
-								bld.TickConstruction(buildTicks / trailerBuildTickInterval);
+								std::vector<int32> bldIds = buildingIds(playerId, static_cast<CardEnum>(enumInt));
+								for (int32 bldId : bldIds)
+								{
+									Building& bld = building(bldId);
+									int32 buildTicks = Time::TicksPerSecond * 8;
+									bld.TickConstruction(buildTicks / trailerBuildTickInterval);
 
-								// Farm
-								if (bld.isEnum(CardEnum::Farm)) {
-									SetNeedDisplayUpdate(DisplayClusterEnum::Trees, bld.area().corner00().regionId());
-									SetNeedDisplayUpdate(DisplayClusterEnum::Trees, bld.area().corner01().regionId());
-									SetNeedDisplayUpdate(DisplayClusterEnum::Trees, bld.area().corner10().regionId());
-									SetNeedDisplayUpdate(DisplayClusterEnum::Trees, bld.area().corner11().regionId());
+									// Farm
+									if (bld.isEnum(CardEnum::Farm)) {
+										SetNeedDisplayUpdate(DisplayClusterEnum::Trees, bld.area().corner00().regionId());
+										SetNeedDisplayUpdate(DisplayClusterEnum::Trees, bld.area().corner01().regionId());
+										SetNeedDisplayUpdate(DisplayClusterEnum::Trees, bld.area().corner10().regionId());
+										SetNeedDisplayUpdate(DisplayClusterEnum::Trees, bld.area().corner11().regionId());
+									}
 								}
 							}
 						}
 					}
 				});
 			}
+#endif
 
 			ExecuteOnPlayersAndAI([&](int32 playerId) {
 				if (_playerOwnedManagers[playerId].hasTownhall()) {
@@ -1140,7 +1194,19 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 	//if (cardEnum == CardEnum::StorageYard) {
 	//	frontArea = parameters.area2.GetFrontArea(faceDirection);
 	//}
+
+#if TRAILER_MODE
+	if (playerId == 0) {
+		_LOG(PunTrailer, "PlaceBuilding %s %s", ToTChar(GetBuildingInfoInt(parameters.buildingEnum).name), ToTChar(parameters.area.ToString()));
+		if (static_cast<CardEnum>(parameters.buildingEnum) == CardEnum::Windmill) {
+			_LOG(PunTrailer, "Place Windmill %s %s", ToTChar(GetBuildingInfoInt(parameters.buildingEnum).name), ToTChar(parameters.area.ToString()));
+		}
+	}
 	
+	#define TRAILER_LOG(x) if (playerId == 0) _LOG(PunTrailer, "!!!Place Failed %s %s %s", ToTChar(GetBuildingInfoInt(parameters.buildingEnum).name), ToTChar(parameters.area.ToString()), ToTChar(std::string(x)));
+#else
+	#define TRAILER_LOG(x) 
+#endif
 
 	if (cardEnum != CardEnum::BoarBurrow &&
 		parameters.playerId != -1) 
@@ -1153,6 +1219,9 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 		parameters.useBoughtCard && 
 		!_cardSystem[playerId].CanUseBoughtCard(cardEnum))
 	{
+		TRAILER_LOG("IsReplayPlayer:" + to_string(IsReplayPlayer(parameters.playerId)) + 
+					" useBoughtCard:" + to_string(parameters.useBoughtCard) + 
+					" CanUseBought:" + to_string(_cardSystem[playerId].CanUseBoughtCard(cardEnum)));
 		return -1;
 	}
 	
@@ -1161,12 +1230,14 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 	if (parameters.useWildCard != CardEnum::None)
 	{
 		if (!_cardSystem[playerId].HasBoughtCard(parameters.useWildCard)) {
+			TRAILER_LOG("!HasBoughtCard");
 			return -1;
 		}
 
 		int32 converterPrice = cardSystem(playerId).GetCardPrice(cardEnum);
 		if (money(playerId) < converterPrice) {
 			AddPopupToFront(playerId, "Need " + to_string(converterPrice) + "<img id=\"Coin\"/> to convert wild card to this building.", ExclusiveUIEnum::ConverterCardHand, "PopupCannot");
+			TRAILER_LOG("money(playerId) < converterPrice");
 			return -1;
 		}
 
@@ -1488,10 +1559,24 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 	else {
 		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 			if (!IsBuildable(tile, playerId)) {
+				if (canPlace) {
+					int32 tileId = tile.tileId();
+					TRAILER_LOG(" area tileOwner" + to_string(tileOwner(tile)) + " buildable:" + to_string(IsBuildable(tile)) +
+								" terrain:" + GetTerrainTileTypeName(terraintileType(tile.tileId())) +
+								" frontclear:" + to_string(_buildingSystem->HasNoBuildingOrFront(tileId)) +
+								" isRoad:" + to_string(overlaySystem().IsRoad(tile)));
+				}
+				
 				canPlace = false;
 			}
 		});
 	}
+
+
+	if (playerId == 0 && !canPlace) {
+		PUN_LOG(" !!! Failed to place %s %s", ToTChar(GetBuildingInfoInt(parameters.buildingEnum).name), ToTChar(parameters.area.ToString()));
+	}
+	
 
 	/*
 	 * Front Grid
@@ -1500,6 +1585,10 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 	{
 		frontArea.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 			if (!IsFrontBuildable(tile)) {
+				if (canPlace) {
+					TRAILER_LOG(" front buildingEnumAtTile" + GetBuildingInfo(buildingEnumAtTile(tile)).name);
+				}
+				
 				canPlace = false;
 			}
 		});
@@ -1621,6 +1710,19 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 				_worldTradeSystem.RefreshTradeClusters();
 			}
 		}
+
+#if TRAILER_MODE
+		if (playerId == 0) {
+			if (static_cast<CardEnum>(parameters.buildingEnum) == CardEnum::Windmill) {
+				_LOG(PunTrailer, "End Place Windmill size:%d ", buildingIds(playerId, CardEnum::Windmill).size()); //
+				buildingSubregionList().ExecuteRegion(parameters.center.region(), [&](int32 buildingIdLocal) {
+					if (building(buildingIdLocal).buildingEnum() == CardEnum::Windmill) {
+						_LOG(PunTrailer, "buildingSubregionList Windmill %s", ToTChar(building(buildingIdLocal).centerTile().ToString())); //
+					}
+				});
+			}
+		}
+#endif
 
 		return buildingId;
 	}
@@ -1768,7 +1870,8 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 					
 					_buildingSystem->RemoveBuilding(buildingId);
 
-					_regionToDemolishDisplayInfos[bld.centerTile().regionId()].push_back({ bld.buildingEnum(), bld.area(), Time::Ticks() });
+					AddDemolishDisplayInfo(bld.centerTile(), { bld.buildingEnum(), bld.area(), Time::Ticks() });
+					//_regionToDemolishDisplayInfos[bld.centerTile().regionId()].push_back({ bld.buildingEnum(), bld.area(), Time::Ticks() });
 				}
 				// Regional buildings (Shrines etc.)
 				//  Allow demolition for shrine in player's region.
@@ -1777,18 +1880,23 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 				{
 					_buildingSystem->RemoveBuilding(buildingId);
 
-					_regionToDemolishDisplayInfos[bld.centerTile().regionId()].push_back({ bld.buildingEnum(), bld.area(), Time::Ticks() });
+					AddDemolishDisplayInfo(bld.centerTile(), { bld.buildingEnum(), bld.area(), Time::Ticks() });
+					//_regionToDemolishDisplayInfos[bld.centerTile().regionId()].push_back({ bld.buildingEnum(), bld.area(), Time::Ticks() });
 				}
 			}
 
 			// Delete road (non-construction)
 			if (_overlaySystem.IsRoad(tile)) {
+				RoadTile roadTile = _overlaySystem.GetRoad(tile);
 				_overlaySystem.RemoveRoad(tile);
 				//GameMap::RemoveFrontRoadTile(area.min());
 				PUN_CHECK(IsFrontBuildable(tile));
+
 				
-				_regionToDemolishDisplayInfos[tile.regionId()].push_back({CardEnum::DirtRoad, TileArea(tile, WorldTile2(1, 1)), Time::Ticks() });
-				_regionToDemolishDisplayInfos[tile.regionId()].push_back({ CardEnum::StoneRoad, TileArea(tile, WorldTile2(1, 1)), Time::Ticks() });
+				AddDemolishDisplayInfo(tile, { roadTile.isDirt ? CardEnum::DirtRoad : CardEnum::StoneRoad, TileArea(tile, WorldTile2(1, 1)), Time::Ticks() });
+				
+				//_regionToDemolishDisplayInfos[tile.regionId()].push_back({CardEnum::DirtRoad, TileArea(tile, WorldTile2(1, 1)), Time::Ticks() });
+				//_regionToDemolishDisplayInfos[tile.regionId()].push_back({ CardEnum::StoneRoad, TileArea(tile, WorldTile2(1, 1)), Time::Ticks() });
 			}
 
 			// Critter building demolition
@@ -1884,8 +1992,6 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 			// Trailer instant road
 			if (PunSettings::TrailerMode())
 			{
-				float trailerTime = replaySystem().GetTrailerTime();
-				
 				for (int32 i = 0; i < path.Num(); i++) {
 					WorldTile2 tile(path[i]);
 					if (IsFrontBuildable(tile) && !_overlaySystem.IsRoad(tile)) {
@@ -1894,10 +2000,8 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 						overlaySystem().AddRoad(tile, true, true);
 
 						// Road construct smoke
-						if (trailerTime > 5.0f) {
-							PUN_LOG("Road smoke %f %s", trailerTime, ToTChar(tile.ToString()));
-							_regionToDemolishDisplayInfos[tile.regionId()].push_back({ CardEnum::DirtRoad, TileArea(tile, WorldTile2(1, 1)), Time::Ticks() });
-						}
+						PUN_LOG("Road smoke %s", ToTChar(tile.ToString()));
+						AddDemolishDisplayInfo(tile, { CardEnum::DirtRoad, TileArea(tile, WorldTile2(1, 1)), Time::Ticks() });
 
 						// For road, also refresh the grass since we want it to be more visible
 						SetNeedDisplayUpdate(DisplayClusterEnum::Trees, tile.regionId(), true);
@@ -2030,7 +2134,7 @@ void GameSimulationCore::TradeResource(FTradeResource command)
 
 void GameSimulationCore::SetIntercityTrade(FSetIntercityTrade command)
 {
-	if (!IsPlayerInitialized(command.playerId)) { // For Direct Command on AIs
+	if (!HasTownhall(command.playerId)) { // For Direct Command on AIs
 		return;
 	}
 	
@@ -2074,15 +2178,25 @@ void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
 		}
 		return;
 	}
-	
-	PUN_ENSURE(IsValidBuilding(command.buildingId), return);
-	
-	Building& bld = building(command.buildingId);
 
-	_LOG(LogNetworkInput, " UpgradeBuilding: pid:%d id:%d bldType:%s upgradeType:%d", command.playerId, command.buildingId, ToTChar(bld.buildingInfo().name), command.upgradeType);
+#if TRAILER_MODE
+	Building* bld = nullptr;
+	if (command.buildingId == -1) {
+		bld = buildingAtTile(command.tileId);
+		command.buildingId = bld->buildingId();
+	} else {
+		bld = &(building(command.buildingId));
+	}
+#else
+	PUN_ENSURE(IsValidBuilding(command.buildingId), return);
+
+	Building* bld = &(building(command.buildingId));
+#endif
+
+	_LOG(LogNetworkInput, " UpgradeBuilding: pid:%d id:%d bldType:%s upgradeType:%d", command.playerId, command.buildingId, ToTChar(bld->buildingInfo().name), command.upgradeType);
 
 	// Townhall special case
-	if (bld.isEnum(CardEnum::Townhall))
+	if (bld->isEnum(CardEnum::Townhall))
 	{
 		auto& townhall = building(command.buildingId).subclass<TownHall>();
 		if (command.upgradeType == 0) {
@@ -2105,7 +2219,7 @@ void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
 	// Other buildings
 	else
 	{
-		bld.UpgradeBuilding(command.upgradeType);
+		bld->UpgradeBuilding(command.upgradeType);
 	}
 }
 
@@ -2237,7 +2351,9 @@ void GameSimulationCore::AbandonTown(int32 playerId)
 			if (bld.playerId() == playerId) {
 				soundInterface()->TryStopBuildingWorkSound(bld);
 				_buildingSystem->RemoveBuilding(buildingId);
-				_regionToDemolishDisplayInfos[region.regionId()].push_back({ bld.buildingEnum(), bld.area(), Time::Ticks() });
+
+				AddDemolishDisplayInfo(region.centerTile(), { bld.buildingEnum(), bld.area(), Time::Ticks() });
+				//_regionToDemolishDisplayInfos[region.regionId()].push_back({ bld.buildingEnum(), bld.area(), Time::Ticks() });
 			}
 		});
 	}
@@ -3600,7 +3716,8 @@ void GameSimulationCore::DemolishCritterBuildingsIncludingFronts(WorldTile2 tile
 
 		_buildingSystem->RemoveBuilding(critterBuildings[i]);
 
-		_regionToDemolishDisplayInfos[burrow.centerTile().regionId()].push_back({ CardEnum::BoarBurrow, burrow.area(), Time::Ticks() });
+		AddDemolishDisplayInfo(burrow.centerTile(), { CardEnum::BoarBurrow, burrow.area(), Time::Ticks() });
+		//_regionToDemolishDisplayInfos[burrow.centerTile().regionId()].push_back({ CardEnum::BoarBurrow, burrow.area(), Time::Ticks() });
 
 		//inventory.Execute([&](ResourcePair& resource) {
 		//	if (resource.count > 0) {

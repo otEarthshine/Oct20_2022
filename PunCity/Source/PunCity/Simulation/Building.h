@@ -915,8 +915,9 @@ public:
 	}
 
 	// 
-	void TickConstruction(int32 updateCount)
+	void TickConstruction(int32 ticksToFinish)
 	{
+		
 		if (!isConstructed())
 		{
 			if (_workDone100 >= buildTime_ManSec100())
@@ -930,8 +931,7 @@ public:
 			}
 			else
 			{
-				const int32 autoBuildMultiplier = 2;
-				_workDone100 += buildTime_ManSec100() / updateCount * autoBuildMultiplier; // takes tickCount secs to finish the constrution
+				_workDone100 += buildTime_ManSec100() / ticksToFinish; // takes tickCount secs to finish the constrution
 
 				//PUN_LOG("TickConstruction[%d] %s percent:%d", buildingId(), ToTChar(buildingInfo().name), constructionPercent());
 

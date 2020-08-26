@@ -41,30 +41,31 @@ public:
 		_LOG(PunTrailer, "Trailer Start %d", trailerCommandsIn.size());
 		currentCommandIndex = 0; // for isInitialize()
 		trailerCommands = trailerCommandsIn;
-		nextTrailerCommandTick = Time::Ticks() + Time::TicksPerSecond;
+		nextTrailerCommandTime = 0.0f;
 		commandPercentAccumulated = 0;
 		houseUpgradePercentAccumulated = 0;
+		trailerAutoBuildPaused = true;
 	}
 	void PauseTrailerCommands() {
-		pausedNextTrailerCommandTick = nextTrailerCommandTick;
-		nextTrailerCommandTick = -1;
+		isPaused = true;
 	}
 	void UnpauseTrailerCommands() {
-		nextTrailerCommandTick = pausedNextTrailerCommandTick;
+		isPaused = false;
 	}
 
 	bool IsTrailerReplay() {
-		return nextTrailerCommandTick != -1;
+		return nextTrailerCommandTime != -1;
 	}
 	
 	std::vector<std::shared_ptr<FNetworkCommand>> trailerCommands;
-	int32 nextTrailerCommandTick = -1;
-	int32 pausedNextTrailerCommandTick = -1;
+	float nextTrailerCommandTime = -1;
+	bool isPaused = false;
 
 	int32 commandPercentAccumulated = 0;
 	int32 houseUpgradePercentAccumulated = 0;
 
 	bool isCameraTrailerReplayPaused = false;
+	bool trailerAutoBuildPaused = false;
 };
 
 /**
@@ -158,8 +159,6 @@ public:
 	float lastTrailerStartTime = 0.0f;
 	std::vector<std::shared_ptr<FNetworkCommand>> trailerCommandsSave;
 	std::vector<float> trailerCommandsSaveIssueTime;
-
-	float GetTrailerTime() { return _simulation->soundInterface()->GetDisplayTime() - lastTrailerStartTime; }
 
 	void TrailerCityReplayUnpause() {
 		for (ReplayPlayer& replayPlayer : replayPlayers) {

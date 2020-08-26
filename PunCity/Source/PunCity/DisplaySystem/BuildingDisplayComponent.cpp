@@ -60,6 +60,23 @@ void UBuildingDisplayComponent::AfterAdd()
 	PunUnrealUtils::UpdateDecals(_constructionBaseDecals, _constructionBaseCount);
 
 	PunUnrealUtils::UpdateLights(_pointLights, _pointLightCount);
+
+
+	for (int32 i = 0; i < _demolishInfos.size(); i++) {
+		if (_demolishInfos[i].isInUse()) 
+		{
+			//float displayX = (area.maxX + area.minX) / 2.0f * CoordinateConstants::DisplayUnitPerTile - CoordinateConstants::DisplayUnitPerRegion * region.x;
+			//float displayY = (area.maxY + area.minY) / 2.0f * CoordinateConstants::DisplayUnitPerTile - CoordinateConstants::DisplayUnitPerRegion * region.y;
+			TileArea area = _demolishInfos[i].area;
+			FVector displayLocation = MapUtil::DisplayLocation(_gameManager->cameraAtom(), area.centerTile().worldAtom2());
+			_demolishParticlePool[i]->SetWorldLocation(displayLocation);
+
+			if (_demolishParticlePool[i]->bWasCompleted) {
+				_demolishParticlePool[i]->SetVisibility(false);
+				_demolishInfos[i] = DemolishDisplayInfo();
+			}
+		}
+	}
 }
 
 /*
@@ -479,7 +496,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 	
 	bool needBuildingAnimationUpdate = simulation().NeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, regionId) || 
 										isMainMenuDisplay ||
-										PunSettings::TrailerMode();
+										PunSettings::TrailerSession;
 
 	// TODO: This is a hack to check every sec anyway
 	//needBuildingAnimationUpdate = needBuildingAnimationUpdate || Time::Tick
@@ -515,7 +532,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 					return;
 				}
 
-				bool shouldDisplayParticles = building.shouldDisplayParticles() || isMainMenuDisplay || PunSettings::TrailerMode();
+				bool shouldDisplayParticles = building.shouldDisplayParticles() || isMainMenuDisplay || PunSettings::TrailerSession;
 
 				// Building mesh
 				float buildingRotation = RotationFromDirection(building.faceDirection());
@@ -640,46 +657,56 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 		
 		if (demolishInfosPtr && demolishInfosPtr->size() > 0)
 		{
-			SCOPE_TIMER_FILTER(5000, "Tick Building: Demolish count:%d", demolishInfosPtr->size());
+			SCOPE_TIMER_FILTER(5000, "Tick Building: Demolish count:%llu", demolishInfosPtr->size());
 			
 			auto& demolishInfos = *demolishInfosPtr;
 			
 			for (size_t i = demolishInfos.size(); i-- > 0;) 
 			{
 				// Trailer only show dust on DirtRoad
-				if (PunSettings::TrailerMode() && 
+				if (PunSettings::TrailerSession && 
 					demolishInfos[i].buildingEnum != CardEnum::DirtRoad)
 				{
 					demolishInfos.erase(demolishInfos.begin() + i);
 					continue;
 				}
-				
-				TileArea area = demolishInfos[i].area;
-				int32 demolishId = area.min().tileId();
-				
-				if (!_demolishParticles.Contains(demolishId))
-				{
-					FVector scale = FVector(demolishInfos[i].area.sizeX() / 4.0f, demolishInfos[i].area.sizeY() / 4.0f, 1.0f);
 
-					UParticleSystemComponent* particleComp = UGameplayStatics::SpawnEmitterAtLocation(this, _assetLoader->particleSystem(ParticleEnum::DemolishDust),
-						FVector::ZeroVector, FRotator::ZeroRotator, scale);
-					particleComp->AttachToComponent(_moduleMeshes[meshId], FAttachmentTransformRules::KeepRelativeTransform);
-					particleComp->bAutoDestroy = false;
-					_demolishParticles.Add(demolishId, particleComp);
+				// Find and spawn
+				for (int32 j = 0; j < _demolishInfos.size(); j++) {
+					if (!_demolishInfos[j].isInUse()) {
+						_demolishInfos[j] = demolishInfos[i];
+						_demolishParticlePool[j]->SetVisibility(true);
+						_demolishParticlePool[j]->Activate(true);
+						
+						FVector scale = FVector(demolishInfos[i].area.sizeX() / 4.0f, demolishInfos[i].area.sizeY() / 4.0f, 1.0f);
+						_demolishParticlePool[j]->SetWorldScale3D(scale);
+						break;
+					}
+				}
+				
+				//TileArea area = demolishInfos[i].area;
+				//int32 demolishId = area.min().tileId();
+				
+				{
+					//FVector scale = FVector(demolishInfos[i].area.sizeX() / 4.0f, demolishInfos[i].area.sizeY() / 4.0f, 1.0f);
+					//{
+					//	SCOPE_TIMER_FILTER(5000, "Tick Building _demolishParticles %d", _demolishParticles.Num());
+					//	particleComp = UGameplayStatics::SpawnEmitterAtLocation(this, _assetLoader->particleSystem(ParticleEnum::DemolishDust),
+					//													FVector::ZeroVector, FRotator::ZeroRotator, scale, false, EPSCPoolMethod::AutoRelease);
+					//}
+					//particleComp->AttachToComponent(_moduleMeshes[meshId], FAttachmentTransformRules::KeepRelativeTransform);
+					//_demolishParticles.Add(demolishId, particleComp);
 				}
 				
 				// Display within the region
-				//  Note: somehow couldn't do this without SetWorldLocation()
-				float displayX = (area.maxX + area.minX) / 2.0f * CoordinateConstants::DisplayUnitPerTile - CoordinateConstants::DisplayUnitPerRegion * region.x;
-				float displayY = (area.maxY + area.minY) / 2.0f * CoordinateConstants::DisplayUnitPerTile - CoordinateConstants::DisplayUnitPerRegion * region.y;
+				////  Note: somehow couldn't do this without SetWorldLocation()
+				//float displayX = (area.maxX + area.minX) / 2.0f * CoordinateConstants::DisplayUnitPerTile - CoordinateConstants::DisplayUnitPerRegion * region.x;
+				//float displayY = (area.maxY + area.minY) / 2.0f * CoordinateConstants::DisplayUnitPerTile - CoordinateConstants::DisplayUnitPerRegion * region.y;
 
-				_demolishParticles[demolishId]->SetWorldLocation(FVector(displayX, displayY, 0) + regionDisplayLocation + FVector(5, 5, 0));
-				
-				if (_demolishParticles[demolishId]->bWasCompleted) {
-					_demolishParticles.Remove(demolishId);
-					demolishInfos.erase(demolishInfos.begin() + i);
-				}
+				//particleComp->SetWorldLocation(FVector(displayX, displayY, 0) + regionDisplayLocation + FVector(5, 5, 0));
 			}
+
+			demolishInfos.clear();
 		}
 	}
 
@@ -987,5 +1014,6 @@ void UBuildingDisplayComponent::HideDisplay(int meshId)
 
 	_moduleMeshes[meshId]->SetActive(false);
 	_togglableModuleMeshes[meshId]->SetActive(false);
+
 	_particles[meshId]->SetActive(false);
 }

@@ -12,6 +12,11 @@ bool PunSettings::TrailerSession = false;
 WorldTile2 PunSettings::TrailerTile_Chopper = WorldTile2::Invalid;
 WorldTile2 PunSettings::TrailerTile_Builder = WorldTile2::Invalid;
 
+WorldAtom2 PunSettings::TrailerAtomStart_Ship = WorldAtom2::Invalid;
+WorldAtom2 PunSettings::TrailerAtomTarget_Ship = WorldAtom2::Invalid;
+float PunSettings::TrailerShipStartTime = -1;
+float PunSettings::TrailerShipTargetTime = -1;
+
 bool PunSettings::_TrailerMode = false;
 bool PunSettings::_CheatFullFarmRoad = false;
 
@@ -108,7 +113,10 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "ForceAutumn", 0 },
 	{ "TrailerTundraMinSnowPercent", 0 },
 	{ "TrailerPlaceSpeed", 100 },
-	{ "TrailerHouseUpgradeSpeed", 100 }
+	{ "TrailerHouseUpgradeSpeed", 100 },
+	{ "TrailerBeatShiftBack", 0 },
+	{ "TrailerTimePerBeat", 40 },
+	{ "TrailerBeatOn", 1 },
 	//{ "ForceShowTileObj", 0 },
 };
 

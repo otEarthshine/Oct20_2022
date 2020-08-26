@@ -251,8 +251,6 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Mesh Import") UStaticMesh* GatherMarkMeshMaterial;
 
-	UPROPERTY(EditAnywhere, Category = "Mesh Import") UStaticMesh* ProjectileArrow;
-
 	/**
 	 * Placement
 	 */

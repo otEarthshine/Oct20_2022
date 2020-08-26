@@ -42,7 +42,6 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	GatherMarkMeshMaterial = Load<UStaticMesh>("/Game/Models/Trees/GatherMark");
 
-	//ProjectileArrow = Load<UStaticMesh>("/Game/Models/Projectiles/Arrow/Arrow");
 
 	/**
 	 * Building
@@ -531,6 +530,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	LoadUnit(UnitEnum::Infantry, "Infantry/Infantry");
 	LoadUnit(UnitEnum::ProjectileArrow, "Projectiles/Arrow/Arrow");
+
+	LoadUnit(UnitEnum::SmallShip, "Ship/SmallShip");
 
 
 	/*

@@ -626,7 +626,7 @@ public:
 	}
 	UFUNCTION(Exec) void SetLightAngle(float lightAngle) override {
 		gameManager->directionalLight()->SetActorRotation(FRotator(308, lightAngle, 0));
-		PUN_LOG("SetLightAngle %f", lightAngle);
+		//PUN_LOG("SetLightAngle %f", lightAngle);
 		// Default lightAngle: 47.5
 	}
 
@@ -661,17 +661,25 @@ public:
 
 		// Wildman
 		{
+			WorldTile2 center(1013, 2601); // WorldTile2(988, 2537);
+			
 			FPlaceBuilding placeCommand;
 			placeCommand.buildingEnum = static_cast<uint8>(CardEnum::FakeTribalVillage);
 			placeCommand.buildingLevel = 0;
-			placeCommand.center = WorldTile2(988, 2537);
-			placeCommand.faceDirection = static_cast<uint8>(Direction::E);
+			placeCommand.center = center;
+			placeCommand.faceDirection = static_cast<uint8>(Direction::S);
 			placeCommand.area = BuildingArea(placeCommand.center, GetBuildingInfoInt(placeCommand.buildingEnum).size, static_cast<Direction>(placeCommand.faceDirection));
 			int32 buildingId = sim.PlaceBuilding(placeCommand);
 			sim.building(buildingId).InstantClearArea();
 			sim.building(buildingId).FinishConstruction();
 
-			AddWildManColony(988, 2537, 12, 33);
+			AddWildManColony(center.x, center.y, 12, 33);
+
+			SimUtils::PerlinRadius_ExecuteOnArea_WorldTile2(center, 17, &sim, [&](int32 chancePercent, WorldTile2 tile) {
+				if (chancePercent > 25) {
+					sim.treeSystem().ForceRemoveTileObj(tile, false);
+				}
+			});
 		}
 
 		// Hippo
@@ -710,6 +718,9 @@ public:
 		}
 
 		PunSettings::Set("ForceAutumn", 0);
+
+		PunSettings::TrailerAtomStart_Ship = WorldAtom2::Invalid;
+		PunSettings::TrailerAtomTarget_Ship = WorldAtom2::Invalid;
 	}
 
 	UFUNCTION(Exec) void RestartGame()
@@ -726,6 +737,14 @@ public:
 	UFUNCTION(Exec) void TrailerCityReplayUnpause() override {
 		gameManager->simulation().replaySystem().TrailerCityReplayUnpause();
 		SetGameSpeed(2);
+	}
+	UFUNCTION(Exec) void TrailerShipStart() override {
+		PunSettings::TrailerAtomStart_Ship = WorldTile2(351, 2432).worldAtom2();
+		PunSettings::TrailerAtomTarget_Ship = WorldTile2(391, 2432).worldAtom2();
+		PunSettings::TrailerShipStartTime = cameraPawn->GetTrailerTime();
+		PunSettings::TrailerShipTargetTime = cameraPawn->GetTrailerTime() + 3.0f;
+
+		PUN_LOG("TrailerShipStart");
 	}
 	
 	UFUNCTION(Exec) void ReplaySave(const FString& replayFileName) {
@@ -844,7 +863,7 @@ public:
 
 			record.isCameraReplayUnpause = FGenericPlatformMath::RoundToInt(cameraRecordJson->GetNumberField("unpause"));
 			//_LOG(PunTrailer, "TrailerCameraLoad isCameraReplayUnpause %d", record.isCameraReplayUnpause);
-
+			
 			record.lightAngle = cameraRecordJson->GetNumberField("lightAngle");
 			if (record.lightAngle == 0.0f) {
 				record.lightAngle = 225.0f;
@@ -926,6 +945,8 @@ public:
 				case CheatEnum::TrailerPlaceSpeed:
 				case CheatEnum::TrailerHouseUpgradeSpeed:
 				case CheatEnum::TrailerForceAutumn:
+				case CheatEnum::TrailerBeatShiftBack:
+				case CheatEnum::TrailerTimePerBeat:
 					break;
 				default:
 					commands.erase(commands.begin() + i);
@@ -1101,7 +1122,8 @@ public:
 				jsonObj->SetNumberField("placementType", command->placementType);
 				jsonObj->SetNumberField("isInstantRoad", 0); // use command->harvestResourceEnum for isInstantRoad
 
-				jsonObj->SetNumberField("prebuilt", command->area2.minX); // Area2.minX to keep prebuilt
+				
+				jsonObj->SetNumberField("prebuilt", (command->area2.minX != -1) ? command->area2.minX : 0); // Area2.minX to keep prebuilt
 			}
 			else if (commands[i]->commandType() == NetworkCommandEnum::Cheat)
 			{
@@ -1372,6 +1394,13 @@ public:
 		}
 	}
 
+
+	float GetTrailerTime() override {
+		return cameraPawn->GetTrailerTime();
+	}
+
+	
+	
 	// Done for map transition so tick doesn't happpen after gameInst's data was cleared
 	void SetTickDisabled(bool tickDisabled) final {
 		_tickDisabled = tickDisabled;

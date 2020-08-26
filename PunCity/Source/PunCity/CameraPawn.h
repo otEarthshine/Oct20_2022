@@ -19,7 +19,7 @@ struct TrailerCameraRecord
 	float transitionTime;
 
 	bool isCameraReplayUnpause = false;
-	float lightAngle = 225.0f;
+	float lightAngle = 225.0f; // Light Angle 1000.0f is code for ship leaving...
 };
 
 #include "CameraPawn.generated.h"
@@ -178,10 +178,16 @@ public:
 
 	void SetCameraSequence(std::vector<TrailerCameraRecord> cameraSequence) {
 		_cameraSequence = cameraSequence;
-		_systemTrailerTimeSinceStart = 0.0f;
+		_trailerStartTime = UGameplayStatics::GetAudioTimeSeconds(this);
+		_trailerAccumulatedMoveTime = 0.0f;
+		_trailerSoundStarted = false;
 	}
 	void ClearCameraSequence() {
 		_cameraSequence.clear();
+	}
+
+	float GetTrailerTime() {
+		return UGameplayStatics::GetAudioTimeSeconds(this) - _trailerStartTime;
 	}
 	
 
@@ -287,7 +293,9 @@ private:
 	float _systemMoveTimeSinceStart = -1.0f;
 	float _systemMoveTimeLength = 0.0f;
 
-	float _systemTrailerTimeSinceStart = -1.0f;
+	float _trailerStartTime = -1.0f;
+	float _trailerAccumulatedMoveTime = 0.0f;
+	bool _trailerSoundStarted = false;
 	
 	FVector _systemCamLocationStart;
 	FVector _systemCamLocationTarget;

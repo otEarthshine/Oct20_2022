@@ -570,6 +570,9 @@ public:
 	float GetDisplayTime() override {
 		return UGameplayStatics::GetTimeSeconds(this);
 	}
+	float GetTrailerTime() override {
+		return networkInterface()->GetTrailerTime();
+	}
 	
 	/*
 	 * 

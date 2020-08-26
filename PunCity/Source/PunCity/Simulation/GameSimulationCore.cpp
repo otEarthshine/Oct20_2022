@@ -412,9 +412,10 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 			/*
 			 * Trailer
 			 */
+			float trailerTime = soundInterface()->GetTrailerTime();
 			if (replayPlayers[i].isInitialize() && 
-				replayPlayers[i].nextTrailerCommandTick != -1 &&
-				Time::Ticks() > replayPlayers[i].nextTrailerCommandTick &&
+				replayPlayers[i].nextTrailerCommandTime != -1 &&
+				trailerTime >= replayPlayers[i].nextTrailerCommandTime &&
 				!replayPlayers[i].isCameraTrailerReplayPaused)
 			{
 				PUN_CHECK(PunSettings::Get("TrailerPlaceSpeed") > 10);
@@ -423,8 +424,23 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 				int32 numberOfCommandsToExecute = commandPercent / 100;
 				replayPlayers[i].commandPercentAccumulated += commandPercent % 100;
 				
-				//replayPlayers[i].nextTrailerCommandTick = Time::Ticks() + Time::TicksPerSecond;
-				replayPlayers[i].nextTrailerCommandTick = ((Time::Ticks() + Time::TicksPerSecond) / Time::TicksPerSecond) * Time::TicksPerSecond;
+				// 150 bpm, or 24 ticks per beat
+				//  24->48 since gameSpeed is 2, *2 again to build every two beat
+				// and sync to 0,48 etc. exactly
+				// 45, 93
+				// (0 + 48 - 3) / 48 * 48 + 3 = 51;
+				// (48 + 48 - 3) / 48 * 48 + 3 = 51;
+				// (51 + 48 - 3) / 48 * 48 + 3 = 96 + 3 = 99;
+				// (0 + 48 + 3) / 48 * 48 - 3 = 45;
+				// (48 + 48 + 3) / 48 * 48 - 3 = 93;
+				// (45 + 48 + 3) / 48 * 48 - 3 = 93;
+				//const int32 ticksPerBeat = PunSettings::Get("TrailerTimePerBeat"); // 24 * 2;
+				//int32 tickShift = PunSettings::Get("TrailerBeatShiftBack");
+				float timePerBeat = PunSettings::Get("TrailerTimePerBeat") / 100.0f;
+				float timeShift = PunSettings::Get("TrailerBeatShiftBack") / 100.0f;
+				replayPlayers[i].nextTrailerCommandTime = FPlatformMath::FloorToFloat((trailerTime + timePerBeat - timeShift) / timePerBeat) * timePerBeat + timeShift;
+
+				_LOG(PunTrailer, "Trailer .. perBeat:%.2f backShift:%.2f next:%.3f", timePerBeat, timeShift, replayPlayers[i].nextTrailerCommandTime);
 
 				for (int32 k = 0; k < numberOfCommandsToExecute; k++)
 				{
@@ -463,7 +479,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 							else {
 								replayPlayers[i].isCameraTrailerReplayPaused = true;
 
-								PUN_LOG("Trailer Pause (Camera) num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
+								_LOG(PunTrailer, "Trailer Pause (Camera) num:%llu pid:%d %s time:%f", trailerCommands.size(), command->playerId, *command->ToCompactString(), trailerTime);
 								recordCommand();
 							}
 							break;
@@ -472,7 +488,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 						else if (cheatEnum == CheatEnum::TrailerForceSnowStart)
 						{
 							PunSettings::Set("ForceSnow", 1);
-							PUN_LOG("TrailerForceSnowStart num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
+							_LOG(PunTrailer, "TrailerForceSnowStart num:%llu pid:%d %s time:%f", trailerCommands.size(), command->playerId, *command->ToCompactString(), trailerTime);
 							recordCommand();
 							numberOfCommandsToExecute++;
 							continue; // Doesn't use up execution count
@@ -480,7 +496,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 						else if (cheatEnum == CheatEnum::TrailerForceSnowStop)
 						{
 							PunSettings::Set("ForceSnow", 0);
-							PUN_LOG("TrailerForceSnowStop num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
+							_LOG(PunTrailer, "TrailerForceSnowStop num:%llu pid:%d %s time:%f", trailerCommands.size(), command->playerId, *command->ToCompactString(), trailerTime);
 							recordCommand();
 							numberOfCommandsToExecute++;
 							continue; // Doesn't use up execution count
@@ -489,7 +505,9 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 						else if (cheatEnum == CheatEnum::TrailerPlaceSpeed)
 						{
 							PunSettings::Set("TrailerPlaceSpeed", cheat->var1);
-							PUN_LOG("TrailerPlaceSpeed num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
+							replayPlayers[i].trailerAutoBuildPaused = false;
+							
+							_LOG(PunTrailer, "TrailerPlaceSpeed num:%llu pid:%d %s time:%f", trailerCommands.size(), command->playerId, *command->ToCompactString(), trailerTime);
 							recordCommand();
 							numberOfCommandsToExecute++;
 							continue; // Doesn't use up execution count
@@ -497,7 +515,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 						else if (cheatEnum == CheatEnum::TrailerHouseUpgradeSpeed)
 						{
 							PunSettings::Set("TrailerHouseUpgradeSpeed", cheat->var1);
-							PUN_LOG("TrailerHouseUpgradeSpeed num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
+							_LOG(PunTrailer, "TrailerHouseUpgradeSpeed num:%llu pid:%d %s time:%f", trailerCommands.size(), command->playerId, *command->ToCompactString(), trailerTime);
 							recordCommand();
 							numberOfCommandsToExecute++;
 							continue; // Doesn't use up execution count
@@ -509,7 +527,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 							for (int32 bldId : bldIds) {
 								building<House>(bldId).trailerTargetHouseLvl++;
 							}
-							PUN_LOG("TrailerIncreaseAllHouseLevel num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
+							_LOG(PunTrailer, "TrailerIncreaseAllHouseLevel num:%llu pid:%d %s time:%f", trailerCommands.size(), command->playerId, *command->ToCompactString(), trailerTime);
 							recordCommand();
 							numberOfCommandsToExecute++;
 							continue; // Doesn't use up execution count
@@ -518,7 +536,23 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 						else if (cheatEnum == CheatEnum::TrailerForceAutumn)
 						{
 							PunSettings::Set("ForceAutumn", cheat->var1);
-							PUN_LOG("TrailerForceAutumn num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
+							_LOG(PunTrailer, "TrailerForceAutumn num:%llu pid:%d %s time:%f", trailerCommands.size(), command->playerId, *command->ToCompactString(), trailerTime);
+							recordCommand();
+							numberOfCommandsToExecute++;
+							continue; // Doesn't use up execution count
+						}
+						else if (cheatEnum == CheatEnum::TrailerBeatShiftBack)
+						{
+							PunSettings::Set("TrailerBeatShiftBack", cheat->var1);
+							_LOG(PunTrailer, "TrailerBeatShiftBack num:%llu pid:%d %s time:%f", trailerCommands.size(), command->playerId, *command->ToCompactString(), trailerTime);
+							recordCommand();
+							numberOfCommandsToExecute++;
+							continue; // Doesn't use up execution count
+						}
+						else if (cheatEnum == CheatEnum::TrailerTimePerBeat)
+						{
+							PunSettings::Set("TrailerTimePerBeat", cheat->var1);
+							_LOG(PunTrailer, "TrailerTimePerBeat num:%llu pid:%d %s time:%f", trailerCommands.size(), command->playerId, *command->ToCompactString(), trailerTime);
 							recordCommand();
 							numberOfCommandsToExecute++;
 							continue; // Doesn't use up execution count
@@ -561,7 +595,14 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 								{
 									TArray<int32> newPath = dragCommand->path;
 									int32 firstTileId = newPath.Pop();
-									//int32 secondTileId = newPath.Pop();
+									int32 secondTileId = -1;
+									int32 thirdTileId = -1;
+									if (newPath.Num() > 0) {
+										secondTileId = newPath.Pop();
+									}
+									if (newPath.Num() > 0) {
+										thirdTileId = newPath.Pop();
+									}
 
 									// Put the command back in front with trimmed
 									if (newPath.Num() > 0) {
@@ -571,13 +612,20 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 									}
 
 									// Build the one tile...
-									dragCommand->path = { firstTileId, /*secondTileId*/ }; // build 1 tile at a time
+									dragCommand->path = { firstTileId }; // build 1 tile at a time
 
-									replayPlayers[i].nextTrailerCommandTick = Time::Ticks() + 1;// Time::TicksPerSecond / 30; // Build 30 tiles a sec
+									if (secondTileId != -1) {
+										dragCommand->path.Add(secondTileId);
+									}
+									if (thirdTileId != -1) {
+										dragCommand->path.Add(thirdTileId);
+									}
+
+									replayPlayers[i].nextTrailerCommandTime = trailerTime + 1.0f/90.0f;// Time::TicksPerSecond / 30; // Build 120 tiles a sec
 
 									commands.push_back(dragCommand);
 
-									PUN_LOG("Trailer Road num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *WorldTile2(firstTileId).To_FString(), Time::Ticks());
+									PUN_LOG("Trailer Road num:%llu pid:%d %s time:%f", trailerCommands.size(), command->playerId, *WorldTile2(firstTileId).To_FString(), trailerTime);
 								}
 
 								// Only build road this tick
@@ -585,9 +633,14 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 							}
 						}
 
+						// Metronome beat
+						if (PunSettings::IsOn("TrailerBeatOn")) {
+							soundInterface()->Spawn2DSound("UI", "TrailerBeat", 0);
+						}
+
 						commands.push_back(command);
 						
-						PUN_LOG("Trailer Exec num:%llu pid:%d %s tick:%d", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks());
+						_LOG(PunTrailer, "Trailer EXEC num:%llu pid:%d %s tick:%d time:%f", trailerCommands.size(), command->playerId, *command->ToCompactString(), Time::Ticks(), trailerTime);
 					}
 					
 					// Commands Executed
@@ -989,7 +1042,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 
 #if TRAILER_MODE
 			// Tick Trailer AutoBuild
-			int32 trailerBuildTickInterval = Time::TicksPerSecond / 15;
+			const int32 trailerBuildTickInterval = Time::TicksPerSecond / 15;
 			if (_tickCount % trailerBuildTickInterval == 0)
 			{
 				ExecuteOnPlayersAndAI([&](int32 playerId)
@@ -999,7 +1052,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 					 */
 					if (PunSettings::TrailerMode() &&
 						IsReplayPlayer(playerId) &&
-						!replaySystem().replayPlayers[playerId].isCameraTrailerReplayPaused)
+						!replaySystem().replayPlayers[playerId].trailerAutoBuildPaused)
 					{
 						// play after 5 sec (2.5 sec trailer)
 						// This prevent the example construction from completing before isCameraTrailerReplayPaused triggers
@@ -1010,8 +1063,8 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 								for (int32 bldId : bldIds)
 								{
 									Building& bld = building(bldId);
-									int32 buildTicks = Time::TicksPerSecond * 8;
-									bld.TickConstruction(buildTicks / trailerBuildTickInterval);
+									int32 buildTicks = 24 * 2 * 8;//Time::TicksPerSecond * 8;
+									bld.TickConstruction(buildTicks / trailerBuildTickInterval); // updateCount is the number of ticks per second
 
 									// Farm
 									if (bld.isEnum(CardEnum::Farm)) {
@@ -2000,7 +2053,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 						overlaySystem().AddRoad(tile, true, true);
 
 						// Road construct smoke
-						PUN_LOG("Road smoke %s", ToTChar(tile.ToString()));
+						//PUN_LOG("Road smoke %s", ToTChar(tile.ToString()));
 						AddDemolishDisplayInfo(tile, { CardEnum::DirtRoad, TileArea(tile, WorldTile2(1, 1)), Time::Ticks() });
 
 						// For road, also refresh the grass since we want it to be more visible

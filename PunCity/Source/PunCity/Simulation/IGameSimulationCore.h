@@ -26,6 +26,7 @@ public:
 
 
 	virtual float GetDisplayTime() = 0;
+	virtual float GetTrailerTime() = 0;
 };
 
 class IGameUIInterface

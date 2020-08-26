@@ -77,6 +77,8 @@ public:
 	virtual TileArea GetDemolishHighlightArea() = 0;
 
 	virtual void TrailerCityReplayUnpause() = 0;
+	virtual void TrailerShipStart() = 0;
 	virtual void SetLightAngle(float lightAngle) = 0;
 	virtual float GetLightAngle() = 0;
+	virtual float GetTrailerTime() = 0;
 };

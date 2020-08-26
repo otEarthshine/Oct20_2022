@@ -1385,7 +1385,7 @@ public:
 
 	UFireForgetAudioComponent* Spawn3DSound(std::string groupName, std::string soundName, WorldAtom2 worldAtom, float height, bool usePlayProbability = true, bool isLooping = false)
 	{
-		if (PunSettings::TrailerMode()) {
+		if (PunSettings::TrailerSession) {
 			return nullptr;
 		}
 		// Note: usePlayProbability is needed to separate Animal's UI sound vs animal random ambient
@@ -1491,7 +1491,10 @@ public:
 
 	void Spawn2DSound(std::string groupName, std::string soundName)
 	{
-		if (PunSettings::TrailerMode()) {
+		if (PunSettings::TrailerSession 
+			//&& soundName != "TrailerMusic" 
+			//&& soundName != "TrailerBeat"
+			) {
 			return;
 		}
 		if (IsolateVolume(groupName, soundName) == 0.0f) {
@@ -2698,6 +2701,9 @@ private:
 		Add2DSoundProperties("UI", "NeedStorageBell");
 		Add2DSoundProperties("UI", "DeathBell");
 		Add2DSoundProperties("UI", "BabyBornBell");
+
+		Add2DSoundProperties("UI", "TrailerMusic");
+		Add2DSoundProperties("UI", "TrailerBeat");
 
 		GetSoundPropertyRef("UI", "UIIncrementalChange", "Volume") = 2.0f;
 

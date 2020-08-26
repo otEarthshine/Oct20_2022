@@ -62,6 +62,8 @@ public:
 
 	virtual bool IsInSampleRange(WorldTile2 tile) = 0;
 
+	virtual float GetTrailerTime() = 0;
+
 	static void SetPostProcessVolume(APostProcessVolume* postProcessVolume, UPunGameInstance* gameInstance)
 	{
 		postProcessVolume->Settings.bOverride_AutoExposureMinBrightness = true;

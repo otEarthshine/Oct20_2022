@@ -44,6 +44,11 @@ public:
 	static bool TrailerSession;
 	static struct WorldTile2 TrailerTile_Chopper;
 	static struct WorldTile2 TrailerTile_Builder;
+
+	static struct WorldAtom2 TrailerAtomStart_Ship;
+	static struct WorldAtom2 TrailerAtomTarget_Ship;
+	static float TrailerShipStartTime;
+	static float TrailerShipTargetTime;
 	
 private:
 	static bool _TrailerMode;

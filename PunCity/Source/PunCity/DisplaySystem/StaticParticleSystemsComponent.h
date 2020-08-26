@@ -49,6 +49,9 @@ private:
 
 	static void SetParticleActive(UParticleSystemComponent* particleComponent, bool bNewActive) {
 		particleComponent->bSuppressSpawning = !bNewActive;
+
+		// TODO: move particles doesn't work either
+		//particleComponent->SetRelativeLocation(particleComponent->GetRelativeLocation() + FVector(0, 0, -1000)); // move it to another location...
 	}
 
 

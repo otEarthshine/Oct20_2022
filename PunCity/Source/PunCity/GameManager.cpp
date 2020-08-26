@@ -805,6 +805,11 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 #if DISPLAY_MINIBUILDING
 			bool miniBuildingDisplayOn = PunSettings::IsOn("DisplayMiniBuildings");
 			bool displayMiniBuildings = miniBuildingDisplayOn && !displayBuildings && zoomDistance < WorldZoomTransition_BuildingsMini;
+			
+			if (PunSettings::TrailerMode()) {
+				displayMiniBuildings = miniBuildingDisplayOn && !displayBuildings;
+			}
+			
 			{
 				SCOPE_CYCLE_COUNTER(STAT_PunDisplayMiniBuilding);
 				SCOPE_TIMER_FILTER(5000, "Tick MiniBuilding -");
@@ -894,6 +899,9 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 			SCOPE_TIMER_FILTER(5000, "Tick Decals -");
 			
 			bool displayRegionDecal = PunSettings::IsOn("DisplayDecals") && zoomDistance < WorldToMapZoomAmount;
+			if (PunSettings::TrailerMode()) {
+				displayRegionDecal = true;
+			}
 			_decalDisplaySystem->Display(displayRegionDecal ? _sampleRegionIds : noSample);
 #endif
 		}

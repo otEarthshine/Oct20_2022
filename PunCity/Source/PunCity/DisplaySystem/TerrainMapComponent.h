@@ -60,6 +60,10 @@ public:
 		
 		isHeightForestColorDirty = true;
 
+		if (PunSettings::TrailerSession) {
+			isHeightForestColorDirty = false;
+		}
+
 		int32 tileId = tile.tileId();
 
 		FColor color(heightForestColor[tileId]);

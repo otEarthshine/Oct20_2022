@@ -215,7 +215,7 @@ void UTerrainMapComponent::UpdateTerrainMapDisplay(bool mapTerrainVisible, bool 
 	// HeightForestColorUpdate
 	{
 		float minUpdateInterval = Time::Ticks() > Time::TicksPerSecond ? 20.0f : 3.0f;
-		
+
 		if (mapTerrainVisible &&
 			UGameplayStatics::GetTimeSeconds(GetWorld()) - lastUpdatedHeightForestColor > minUpdateInterval &&
 			isHeightForestColorDirty)

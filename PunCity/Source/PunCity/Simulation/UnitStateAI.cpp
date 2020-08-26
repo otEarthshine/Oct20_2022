@@ -1861,7 +1861,7 @@ void UnitStateAI::Add_MoveInRange(WorldTile2 end, int32_t range) {
 void UnitStateAI::MoveInRange()
 {
 	WorldTile2 end(action().int32val1);
-	int32_t range = action().int32val2;
+	int32 range = action().int32val2;
 	
 	if (!MoveTo(end)) {
 		AddDebugSpeech("(Bad)MoveInRange: ");
@@ -1869,6 +1869,14 @@ void UnitStateAI::MoveInRange()
 	}
 
 	std::vector<WorldTile2>& waypoints = _unitData->waypoint(_id);
+
+#if TRAILER_MODE
+	if (waypoints.size() == 0) {
+		_simulation->ResetUnitActions(_id, 60);
+		return;
+	}
+#endif
+	
 	check(waypoints.size() > 0);
 
 	// TODO: handle case with less than 2
@@ -1880,6 +1888,7 @@ void UnitStateAI::MoveInRange()
 	}
 
 	//PUN_LOG("MoveInRange");
+	NextAction("(Done)MoveInRange");
 }
 
 // TODO: MoveToRobust should eventually use special PathAI map that only has terrain + bridge + tunnels

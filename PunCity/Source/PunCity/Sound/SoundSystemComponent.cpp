@@ -211,6 +211,9 @@ void USoundSystemComponent::LoadRawSoundFoldersUIOnly()
 	LoadRawSoundFolder("NeedStorageBell", "/UI/BellNeedStorage");
 	LoadRawSoundFolder("DeathBell", "/UI/BellDeath");
 	LoadRawSoundFolder("BabyBornBell", "/UI/BellBabyBorn");
+
+	LoadRawSoundFolder("TrailerMusic", "/UI/TrailerMusic");
+	LoadRawSoundFolder("TrailerBeat", "/UI/TrailerBeat");
 }
 
 

@@ -107,6 +107,40 @@ public:
 		}
 
 		SkelMeshAfterAdd();
+
+		/*
+		 * Ship
+		 */
+		if (PunSettings::TrailerAtomTarget_Ship != WorldAtom2::Invalid)
+		{
+			if (!_smallShip) {
+				_smallShip = NewObject<UStaticMeshComponent>(this);
+				_smallShip->AttachToComponent(this, FAttachmentTransformRules::KeepRelativeTransform);
+				_smallShip->RegisterComponent();
+				_smallShip->SetReceivesDecals(false);
+				_smallShip->SetStaticMesh(_assetLoader->unitMesh(UnitEnum::SmallShip));
+			}
+			_smallShip->SetVisibility(true);
+
+			// TODO: Calc TrailerAtom_Ship from start/target
+
+			float lerpFraction = (_gameManager->GetTrailerTime() - PunSettings::TrailerShipStartTime) / (PunSettings::TrailerShipTargetTime - PunSettings::TrailerShipStartTime);
+			lerpFraction = Clamp01(lerpFraction);
+
+			WorldAtom2 lerped = WorldAtom2::Lerp(PunSettings::TrailerAtomStart_Ship, PunSettings::TrailerAtomTarget_Ship, static_cast<int64>(lerpFraction * 100000));
+
+			FVector displayLocation = MapUtil::DisplayLocation(_gameManager->cameraAtom(), lerped);
+
+			//PUN_LOG("Ship time:%f lerp:%f %s %s", _gameManager->GetTrailerTime(), lerpFraction, *lerped.worldTile2().To_FString(), *displayLocation.ToCompactString());
+			
+			_smallShip->SetWorldLocation(displayLocation + FVector(0, 0, -15));
+			_smallShip->SetWorldRotation(FRotator(0, -180, 0));
+		}
+		//else {
+		//	if (_smallShip) {
+		//		_smallShip->SetVisibility(false);
+		//	}
+		//}
 	}
 
 	// Hide displays when sampleIds.size() becomes zero (Switch to world map)
@@ -273,4 +307,8 @@ private:
 	std::vector<UnitSkelMeshState> _unitSkelState;
 	TMap<int32, int32> _unitIdToSkelMeshIndex;
 	TMap<int32, int32> _lastUnitIdToSkelMeshIndex;
+
+
+	// Trailer special
+	UPROPERTY() UStaticMeshComponent* _smallShip = nullptr;
 };

@@ -19,6 +19,19 @@ public:
 		PrimaryComponentTick.bCanEverTick = false;
 	}
 
+	void Init(int size, TScriptInterface<IDisplaySystemDataSource> gameManager, UAssetLoaderComponent* assetLoader) override
+	{
+		UDisplaySystemComponent::Init(size, gameManager, assetLoader);
+
+		_demolishParticlePool.SetNum(100);
+		_demolishInfos.resize(100);
+		for (int32 i = 0; i < _demolishParticlePool.Num(); i++) {
+			_demolishParticlePool[i] = UGameplayStatics::SpawnEmitterAtLocation(this, _assetLoader->particleSystem(ParticleEnum::DemolishDust),
+																		FVector::ZeroVector, FRotator::ZeroRotator, FVector::OneVector, false);
+			_demolishParticlePool[i]->AttachToComponent(_gameManager->componentToAttach(), FAttachmentTransformRules::KeepRelativeTransform);
+		}
+	}
+
 	void BeforeAdd() override { 
 		//PUN_LOG("BeforeAdd");
 		//_radiusCount = 0;
@@ -103,5 +116,6 @@ private:
 
 
 	//!
-	UPROPERTY() TMap<int32, UParticleSystemComponent*> _demolishParticles;
+	UPROPERTY() TArray<UParticleSystemComponent*> _demolishParticlePool;
+	std::vector<DemolishDisplayInfo> _demolishInfos;
 };

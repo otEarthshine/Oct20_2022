@@ -89,6 +89,8 @@ public:
 	const std::vector<int32>& sampleProvinceIds() final { return _sampleProvinceIds_Empty; }
 
 	FVector DisplayLocation(WorldAtom2 atom) final { return MapUtil::DisplayLocation(_cameraAtom, atom); }
+
+	float GetTrailerTime() final { return 0.0f; }
 	
 	int timeSinceTickStart() final {
 		return 0;

@@ -4324,6 +4324,8 @@ enum class UnitEnum : uint8
 	Infantry,
 	ProjectileArrow,
 	Bear,
+
+	SmallShip,
 };
 
 struct BiomeInfo
@@ -4606,6 +4608,8 @@ static const UnitInfo UnitInfos[]
 
 	UnitInfo(UnitEnum::Infantry,"Infantry",	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
 	UnitInfo(UnitEnum::ProjectileArrow,"ProjectileArrow",	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
+
+	UnitInfo(UnitEnum::SmallShip, "SmallShip",	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
 	//UnitInfo("Bear",	050,	500,	200,		010,	050,	5),
 };
 
@@ -4844,8 +4848,8 @@ static const std::vector<float> UnitAnimationPlayRate =
 	2.5f, // Walk
 
 #if TRAILER_MODE
-	1.18333f, // Build
-	1.6666f, // ChopWood
+	1.479f, // Build 1.183 for 0.5s
+	2.0833, // ChopWood 1.6666
 #else
 	1.0f, // Build
 	2.0f, // ChopWood
@@ -4956,6 +4960,8 @@ enum class CheatEnum : int32
 	TrailerPlaceSpeed,
 	TrailerHouseUpgradeSpeed,
 	TrailerForceAutumn,
+	TrailerBeatShiftBack,
+	TrailerTimePerBeat,
 };
 
 static const std::string CheatName[]
@@ -5009,6 +5015,8 @@ static const std::string CheatName[]
 	"TrailerPlaceSpeed",
 	"TrailerHouseUpgradeSpeed",
 	"TrailerForceAutumn",
+	"TrailerBeatShiftBack",
+	"TrailerTimePerBeat",
 };
 static std::string GetCheatName(CheatEnum cheatEnum) {
 	return CheatName[static_cast<int>(cheatEnum)];
@@ -5102,11 +5110,13 @@ enum class DisplayGlobalEnum
 
 struct DemolishDisplayInfo
 {
-	CardEnum buildingEnum;
+	CardEnum buildingEnum = CardEnum::None;
 	TileArea area;
-	int32 tickDemolished;
+	int32 tickDemolished = -1;
 
 	int32 animationTicks() { return Time::Ticks() - tickDemolished; }
+
+	bool isInUse() { return tickDemolished != -1; }
 };
 
 // Prevent flood of some actions. For example, event log shouldn't get flooded with "Food reserve low." text.

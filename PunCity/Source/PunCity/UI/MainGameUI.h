@@ -145,6 +145,13 @@ public:
 	UPROPERTY(meta = (BindWidget)) UOverlay* TestMainMenuOverlay2;
 	
 	FSlateFontInfo DefaultFont;
+
+	// For Non-card Hide
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* BuildGatherMenu;
+	UPROPERTY(meta = (BindWidget)) USizeBox* CardStackSizeBox;
+	UPROPERTY(meta = (BindWidget)) UOverlay* RoundCountdownOverlay;
+	UPROPERTY(meta = (BindWidget)) UOverlay* LeaderSkillOverlay;
+
 	
 private:
 	UPROPERTY(meta = (BindWidget)) UButton* BuildMenuTogglerButton;

@@ -297,9 +297,9 @@ void UnitStateAI::Update()
 				age() < parameters->EndBreedingAgeTicks())
 			{
 				// Play BabyBornBell
-				if (_simulation->TryDoNonRepeatAction(_playerId, NonRepeatActionEnum::BabyBornBell, Time::TicksPerSecond * 30 * _simulation->gameSpeedMultiplier())) {
-					_simulation->soundInterface()->Spawn2DSound("UI", "BabyBornBell", _playerId);
-				}
+				//if (_simulation->TryDoNonRepeatAction(_playerId, NonRepeatActionEnum::BabyBornBell, Time::TicksPerSecond * 30 * _simulation->gameSpeedMultiplier())) {
+				//	_simulation->soundInterface()->Spawn2DSound("UI", "BabyBornBell", _playerId);
+				//}
 
 				_simulation->AddUnit(unitEnum(), _playerId, _unitData->atomLocation(_id), 0);
 
@@ -533,10 +533,7 @@ void UnitStateAI::AttackIncoming(UnitFullId attacker, int32 ownerWorkplaceId, in
 			std::vector<ResourcePair> drops = unitInfo().resourceDrops;
 			for (ResourcePair& drop : drops) 
 			{
-				// more meat for low difficulty level
-				int32 dropCount = drop.count * (_simulation->difficultyProductivityAdjustment() + 100) / 100;
-				
-				_simulation->resourceSystem(unitAI.playerId()).SpawnDrop(drop.resourceEnum, dropCount, unitTile());
+				_simulation->resourceSystem(unitAI.playerId()).SpawnDrop(drop.resourceEnum, drop.count, unitTile());
 			}
 
 			// Workplace stat
@@ -1258,10 +1255,10 @@ void UnitStateAI::GatherFruit()
 	UnitReservation reservation = PopReservation(ReservationType::TreeTile);
 	PUN_CHECK2(reservation.reserveTileId == targetTile.tileId(), debugStr());
 
-	ResourcePair resourcePair = _simulation->treeSystem().UnitGatherFruit(targetTile);
+	ResourcePair resourcePair100 = _simulation->treeSystem().UnitGatherFruit100(targetTile);
 
 	// Tree dead by the time arrived
-	if (!resourcePair.isValid()) {
+	if (!resourcePair100.isValid()) {
 		_simulation->ResetUnitActions(id());
 		return;
 	}
@@ -1269,12 +1266,15 @@ void UnitStateAI::GatherFruit()
 	// Berry Gatherer's bonus
 	if (workplace() && workplace()->isEnum(CardEnum::FruitGatherer)) 
 	{
-		resourcePair.count = GameRand::Rand100RoundTo1(resourcePair.count * workplace()->efficiency());
+		resourcePair100.count = GameRand::Rand100RoundTo1(resourcePair100.count * workplace()->efficiency());
 
 		if (workplace()->workMode().name == "Meticulous") {
-			resourcePair.count = GameRand::Rand100RoundTo1(resourcePair.count * 130);
+			resourcePair100.count = GameRand::Rand100RoundTo1(resourcePair100.count * 130);
 		}
 	}
+
+	ResourcePair resourcePair = resourcePair100;
+	resourcePair.count /= 100;
 
 	_inventory.Add(resourcePair);
 
@@ -1342,8 +1342,8 @@ void UnitStateAI::HarvestTileObj()
 	// Get fruit first
 	ResourcePair resourcePairFruit;
 	if (_simulation->treeSystem().hasFruit(targetTile.tileId())) {
-		resourcePairFruit = _simulation->treeSystem().UnitGatherFruit(targetTile);
-		resourcePairFruit.count /= 2; // Gather by chopping tree lead to less fruit
+		resourcePairFruit = _simulation->treeSystem().UnitGatherFruit100(targetTile);
+		resourcePairFruit.count /= 200; // Gather by chopping tree lead to less fruit /2, and also get rid of 100 with /100
 	}
 
 	ResourcePair resourcePair = _simulation->treeSystem().HumanHarvest(targetTile);
@@ -1446,7 +1446,7 @@ void UnitStateAI::Eat()
 
 		// Food consumption changes
 		if (isEnum(UnitEnum::Human)) {
-			int32 foodConsumptionModifier = 0;
+			int32 foodConsumptionModifier = _simulation->difficultyConsumptionAdjustment();
 
 			foodIncrement = foodIncrement * 100 / (100 + foodConsumptionModifier);
 		}
@@ -1497,6 +1497,9 @@ void UnitStateAI::Heat()
 			//if (_playerId == 0) {
 			//	PUN_LOG("amount:%d heatToAdd:%d celsiusSec:%d", amount, heatToAdd, heatToAdd/Time::TicksPerSecond);
 			//}
+
+			heatToAdd = heatToAdd * 100 / (100 + _simulation->difficultyConsumptionAdjustment());
+			
 			
 			if (resourceEnum == ResourceEnum::Coal) {
 				heatToAdd *= 2;

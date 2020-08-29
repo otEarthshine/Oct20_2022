@@ -45,9 +45,11 @@ struct GameSaveInfo
 	
 	int32 compressedDataSize = 0;
 
-	bool IsValid() { return name.Len() > 0; }
+	bool IsValid() const { return name.Len() > 0; }
 
-	FString DefaultSaveName()
+	bool IsAutosave() const { return name.Left(8) == "Autosave"; }
+
+	FString DefaultSaveName(bool isAutoSave = false)
 	{
 		FString date = FString::Printf(TEXT("%02d/%02d"), dateTime.GetMonth(), dateTime.GetDay());
 		FString time = FString::Printf(TEXT("%02d:%02d"), dateTime.GetHour(), dateTime.GetMinute());
@@ -56,7 +58,7 @@ struct GameSaveInfo
 		//ss << ToStdString(name);
 		//ss << " " << dateTime.GetMonth() << "/" << dateTime.GetDay();
 		//ss << std::setw(2) << std::setfill('0') << ", " << dateTime.GetHour() << ":" << dateTime.GetMinute() << ":" << dateTime.GetSecond();
-		return name + " " + date + ", " + time;
+		return (isAutoSave ? "Autosave" : name) + " " + date + ", " + time;
 	}
 
 	FString GetLastPlayerName(int32 playerId) {
@@ -89,6 +91,10 @@ struct GameSaveInfo
 		Ar << checksum;
 
 		Ar << compressedDataSize;
+	}
+
+	bool operator==(const GameSaveInfo& a) {
+		return folderPath == a.folderPath;
 	}
 };
 

@@ -51,6 +51,10 @@ public:
 				SetText(GamePauseText, "Choose a starting location");
 				showPause = true;
 			}
+			else if (!simulation().playerOwned(playerId()).hasTownhall()) {
+				SetText(GamePauseText, "Place the townhall");
+				showPause = true;
+			}
 			// If not all players chose location, warn so 
 			else {
 				if (simulation().AllPlayerChoseLocationAfterInitialTicks())

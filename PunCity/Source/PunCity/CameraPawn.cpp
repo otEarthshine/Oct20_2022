@@ -48,6 +48,8 @@ void ACameraPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("KeyPressed_CtrlT", IE_Pressed, this, &ACameraPawn::KeyPressed_CtrlT);
 	PlayerInputComponent->BindAction("KeyPressed_M", IE_Pressed, this, &ACameraPawn::KeyPressed_M);
 	PlayerInputComponent->BindAction("KeyPressed_H", IE_Pressed, this, &ACameraPawn::KeyPressed_H);
+	PlayerInputComponent->BindAction("KeyPressed_F", IE_Pressed, this, &ACameraPawn::KeyPressed_F);
+	
 	PlayerInputComponent->BindAction("LeftMouseButton", IE_Pressed, this, &ACameraPawn::LeftMouseDown);
 	PlayerInputComponent->BindAction("LeftMouseButton", IE_Released, this, &ACameraPawn::LeftMouseUp);
 
@@ -160,19 +162,6 @@ void ACameraPawn::KeyPressed_M()
 	//_gameNetworkInterface->SetMainGameUIActive(!_isWorldMap);
 }
 
-void ACameraPawn::KeyPressed_H()
-{
-	WorldAtom2 lookAtAtom = _gameInterface->simulation().homeAtom(_networkInterface->playerId());
-	if (lookAtAtom == WorldAtom2::Zero) {
-		return;
-	}
-	
-	SetCameraAtom(lookAtAtom);
-
-	FRotator rotation = GetActorRotation();
-	rotation.Yaw = 0;
-	SetActorRotation(rotation);
-}
 
 void ACameraPawn::LeftMouseDown()
 {

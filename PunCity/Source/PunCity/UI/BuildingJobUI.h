@@ -43,6 +43,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* OtherIconsBox;
 
 	UPROPERTY(meta = (BindWidget)) USizeBox* SpeedBoostIcon;
+	UPROPERTY(meta = (BindWidget)) UButton* TradeButton;
 
 public:
 	void PunInit(int buildingId, bool isHouse);
@@ -209,11 +210,13 @@ public:
 			SetText(textWidget->PunText, tradeBuilding.buildingInfo().name + "\nStorage Full");
 		};
 
-
+		bool hasTradeButton = false;
+		
 		if (IsTradingPostLike(tradeBuilding.buildingEnum()))
 		{
 			if (tradeBuilding.CanTrade()) {
-				setWarningIcons(0);
+				setWarningIcons(-1);
+				hasTradeButton = true;
 			}
 			else if (tradeBuilding.IsTradeBuildingFull()) {
 				setWarningTradeBuildingFull();
@@ -242,6 +245,8 @@ public:
 				}
 			}
 		}
+
+		TradeButton->SetVisibility(hasTradeButton? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
 		ClockBox->SetVisibility(showClock ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 	}
@@ -361,6 +366,16 @@ private:
 	}
 	UFUNCTION() void DisabledButtonDown() {
 		ChangePriorityFromButton(PriorityEnum::NonPriority);
+	}
+
+	UFUNCTION() void OnClickTradeButton()
+	{
+		Building& building = dataSource()->simulation().building(_buildingId);
+		PUN_CHECK(IsTradingPostLike(building.buildingEnum()));
+
+		if (static_cast<TradingPost*>(&building)->CanTrade()) {
+			GetPunHUD()->OpenTradeUI(_buildingId);
+		}
 	}
 	
 

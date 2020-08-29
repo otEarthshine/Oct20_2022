@@ -21,32 +21,61 @@ public:
 	UPROPERTY(meta = (BindWidget)) UImage* ResourceIcon;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* ResourceText;
 
+	UPROPERTY(meta = (BindWidget)) UButton* ExpandArrow;
+
 	//UPROPERTY(meta = (BindWidget)) UPunEditableNumberBox* TargetAmount;
 
-	void PunInit(ResourceEnum resourceEnumIn, std::string sectionNameIn, int32 buildingIdIn, bool allowed, bool indentation)
+	bool IsExpanded() {
+		return FMath::IsNearlyEqual(ExpandArrow->GetRenderTransformAngle(), 90.0f);
+	}
+
+	void PunInit(ResourceEnum resourceEnumIn, std::string sectionNameIn, int32 buildingIdIn, ECheckBoxState checkBoxState, bool indentation)
 	{
 		sectionName = sectionNameIn;
 		buildingId = buildingIdIn;
 		uiResourceEnum = resourceEnumIn;
+		
 		AcceptBox->SetVisibility(ESlateVisibility::Visible);
 		if (AcceptBox->OnCheckStateChanged.GetAllObjects().Num() == 0) {
 			AcceptBox->OnCheckStateChanged.AddDynamic(this, &UManageStorageElement::OnCheckAllowResource);
 		}
 
+		if (ExpandArrow->OnClicked.GetAllObjects().Num() == 0) {
+			ExpandArrow->OnClicked.AddDynamic(this, &UManageStorageElement::OnClickExpandArrow);
+		}
+
 		IndentationSpacer->SetVisibility(indentation ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-		AcceptBox->SetCheckedState(allowed ? ECheckBoxState::Checked : ECheckBoxState::Unchecked);
+
+		AcceptBox->SetCheckedState(HasDelayOverride() ? checkStateOverride : checkBoxState);
 		
 		if (uiResourceEnum == ResourceEnum::Food ||
 			uiResourceEnum == ResourceEnum::Luxury)
 		{
 			ResourceIcon->SetVisibility(ESlateVisibility::Collapsed);
 			SetText(ResourceText, sectionName);
+
+			ExpandArrow->SetVisibility(ESlateVisibility::Visible);
+
+			if (HasDelayOverride()) {
+				ExpandArrow->SetRenderTransformAngle(expandedOverride ? 90.0f : 0.0f);
+			}
+			else {
+				auto& storage = simulation().building<StorageYard>(buildingId);
+				if (uiResourceEnum == ResourceEnum::Food) {
+					ExpandArrow->SetRenderTransformAngle(storage.expandedFood ? 90.0f : 0.0f);
+				}
+				else if (uiResourceEnum == ResourceEnum::Luxury) {
+					ExpandArrow->SetRenderTransformAngle(storage.expandedLuxury ? 90.0f : 0.0f);
+				}
+			}
 		}
 		else 
 		{
 			ResourceIcon->SetVisibility(ESlateVisibility::Visible);
 			SetResourceImage(ResourceIcon, resourceEnumIn, assetLoader());
 			SetText(ResourceText, ResourceName(resourceEnumIn));
+
+			ExpandArrow->SetVisibility(ESlateVisibility::Collapsed);
 		}
 
 		//SetTargetBox->SetCheckedState(allowed, )
@@ -58,13 +87,42 @@ public:
 		command->buildingId = buildingId;
 		command->resourceEnum = uiResourceEnum;
 		command->allowed = active;
+
 		networkInterface()->SendNetworkCommand(command);
+
+		delayOverrideStartTime = UGameplayStatics::GetTimeSeconds(this);
+		expandedOverride = IsExpanded();
+		checkStateOverride = active ? ECheckBoxState::Checked : ECheckBoxState::Unchecked;
 	}
 
+	UFUNCTION() void OnClickExpandArrow()
+	{
+		auto command = std::make_shared<FSetAllowResource>();
+		command->buildingId = buildingId;
+		command->resourceEnum = uiResourceEnum;
+
+		command->isExpansionCommand = true;
+		command->expanded = !IsExpanded();
+		
+		networkInterface()->SendNetworkCommand(command);
+
+		delayOverrideStartTime = UGameplayStatics::GetTimeSeconds(this);
+		expandedOverride = command->expanded;
+		checkStateOverride = AcceptBox->GetCheckedState();
+	}
+
+	bool HasDelayOverride() {
+		return UGameplayStatics::GetTimeSeconds(this) - delayOverrideStartTime < 2.0f;
+	}
 
 public:
 	int32 buildingId = -1;
 	ResourceEnum uiResourceEnum = ResourceEnum::None;
 
 	std::string sectionName;
+
+
+	float delayOverrideStartTime = 0.0f;
+	bool expandedOverride = false;
+	ECheckBoxState checkStateOverride = ECheckBoxState::Unchecked;
 };

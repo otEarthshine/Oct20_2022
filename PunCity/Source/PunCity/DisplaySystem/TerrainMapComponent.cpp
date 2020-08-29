@@ -705,7 +705,6 @@ void UTerrainMapComponent::InitAnnotations()
 			}
 		}
 	}
-
 }
 
 void UTerrainMapComponent::RefreshAnnotations()
@@ -719,6 +718,8 @@ void UTerrainMapComponent::RefreshAnnotations()
 	const GameDisplayInfo& displayInfo = _dataSource->displayInfo();
 
 	auto& simulation = _dataSource->simulation();
+
+#if DISPLAY_WORLDMAP_BUILDING
 	simulation.ExecuteOnPlayersAndAI([&](int32 playerId)
 	{
 		for (int32 j = 0; j < BuildingEnumCount; j++)
@@ -803,8 +804,11 @@ void UTerrainMapComponent::RefreshAnnotations()
 
 		
 	});
+#endif
 
 	_buildingsMeshes->AfterAdd();
+	bool mapCityVisible = !_dataSource->ZoomDistanceBelow(WorldZoomTransition_BuildingsMini);
+	_buildingsMeshes->SetActive(mapCityVisible, true);
 
 	// No showing Georesource for trailer
 	if (PunSettings::TrailerSession) {

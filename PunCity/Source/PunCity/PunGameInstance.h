@@ -761,25 +761,33 @@ public:
 	void SetAmbientVolume(float ambientVolume) { _ambientVolume = ambientVolume; }
 	void SetSoundEffectsVolume(float soundEffectsVolume) { _soundEffectsVolume = soundEffectsVolume; }
 
+	AutosaveEnum autosaveEnum = AutosaveEnum::Year;
+	
 public:
 	/*
 	 * Settings
 	 */
 	bool needSettingsUpdate = false;
 
-	void RestoreDefaults()
-	{
+	void RestoreDefaultsGraphics() {
+		_resolutionQuality = 70.0f;
+	}
+	void RestoreDefaultsSound() {
 		LLM_SCOPE_(EPunSimLLMTag::PUN_GameInstance);
 		
 		_masterVolume = 1.0f;
 		_musicVolume = 1.0f;
 		_soundEffectsVolume = 1.0f;
 		_ambientVolume = 1.0f;
-
-		mouseZoomSpeedFraction = 0.5f;
-		_resolutionQuality = 70.0f;
 		
 		RefreshSoundSettings();
+	}
+	void RestoreDefaultsInputs() {
+		mouseZoomSpeedFraction = 0.5f;
+	}
+
+	void RestoreDefaultsOthers() {
+		autosaveEnum = AutosaveEnum::Year;
 	}
 
 	void SerializeSoundAndOtherSettings(FArchive& Ar)
@@ -801,6 +809,8 @@ public:
 		Ar << _soundEffectsVolume;
 		Ar << _ambientVolume;
 
+		Ar << autosaveEnum;
+
 		Ar << mouseZoomSpeedFraction;
 
 		Ar << _resolutionQuality;
@@ -809,9 +819,9 @@ public:
 	void RefreshSoundSettings()
 	{
 		LLM_SCOPE_(EPunSimLLMTag::PUN_GameInstance);
-		
-		// TODO: remove this???
 		needSettingsUpdate = true;
+
+		// This is for Main Menu Music
 		if (AudioComponent) {
 			AudioComponent->SetVolumeMultiplier(_masterVolume * _musicVolume);
 		}

@@ -99,7 +99,7 @@ void UEscMenuUI::OnClickEscMenuSettingsButton()
 {
 	EscMenu->SetVisibility(ESlateVisibility::Collapsed);
 	GameSettingsUI->SetVisibility(ESlateVisibility::Visible);
-	GameSettingsUI->Refresh();
+	GameSettingsUI->RefreshUI();
 
 	dataSource()->Spawn2DSound("UI", "UIWindowOpen");
 }
@@ -162,7 +162,7 @@ void UEscMenuUI::CallBack2(UPunWidget* punWidgetCaller, CallbackEnum callbackEnu
 	}
 	if (callbackEnum == CallbackEnum::CloseLoadSaveUI) {
 		LoadSaveUI->SetVisibility(ESlateVisibility::Collapsed);
-		EscMenu->SetVisibility(ESlateVisibility::Visible);
+		EscMenu->SetVisibility(LoadSaveUI->isAutosaving() ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 		BackBlur->SetVisibility(ESlateVisibility::Collapsed);
 	}
 	if (callbackEnum == CallbackEnum::SaveGameOverrideConfirm) {

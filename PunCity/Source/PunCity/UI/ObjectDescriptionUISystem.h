@@ -55,7 +55,6 @@ private:
 
 	void AddSelectStartLocationButton(int32 provinceId, UPunBoxWidget* descriptionBox);
 	void AddClaimLandButtons(int32 provinceId, UPunBoxWidget* descriptionBox);
-	void AddClaimRuinButton(WorldRegion2 region, UPunBoxWidget* descriptionBox);
 	
 	void CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum) final;
 

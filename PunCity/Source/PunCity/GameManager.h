@@ -103,6 +103,7 @@ public:
 	void RefreshMapAnnotation() override {
 		_terrainMap->RefreshAnnotations();
 	}
+	
 
 	class ADirectionalLight* directionalLight() { return _directionalLight; }
 
@@ -162,7 +163,7 @@ private:
 	UPROPERTY(EditAnywhere) UBuildingDisplayComponent* _buildingDisplaySystem;
 	UPROPERTY(EditAnywhere) UMiniBuildingDisplayComponent* _miniBuildingDisplaySystem;
 	UPROPERTY(EditAnywhere) URegionDisplayComponent* _regionDisplaySystem;
-	UPROPERTY(EditAnywhere) UTerrainLargeDisplayComponent* _terrainDisplaySystem;
+	UPROPERTY(EditAnywhere) UTerrainLargeDisplayComponent* _terrainLargeDisplaySystem;
 	
 	UPROPERTY(EditAnywhere) UDebugDisplayComponent* _debugDisplaySystem;
 	
@@ -436,6 +437,14 @@ public:
 	std::vector<int32> disconnectedPlayerIds() final {
 		return gameInstance()->disconnectedPlayerIds();
 	}
+
+	bool isSinglePlayer() final {
+		return CastChecked<UPunGameInstance>(GetGameInstance())->isSinglePlayer;
+	}
+	AutosaveEnum autosaveEnum() final {
+		return gameInstance()->autosaveEnum;
+	}
+	
 
 	// TODO: IsPlayerBuildable, IsPlayerFrontBuildable are relics that should go to simCore
 	bool IsPlayerBuildable(WorldTile2 tile) const final

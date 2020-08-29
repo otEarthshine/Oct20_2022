@@ -8,13 +8,21 @@
 class StorageYard : public Building
 {
 public:
+	void OnInit() override
+	{
+		queuedResourceAllowed.clear();
+		queuedResourceAllowed.resize(ResourceEnumCount, true);
+	}
+	
 	void FinishConstruction() override
 	{
 		Building::FinishConstruction();
 
 		for (ResourceInfo info : ResourceInfos) {
-			AddResourceHolder(info.resourceEnum, ResourceHolderType::Storage, 0);
+			ResourceHolderType holderType = queuedResourceAllowed[info.resourceEnumInt()] ? ResourceHolderType::Storage : ResourceHolderType::Provider;
+			AddResourceHolder(info.resourceEnum, holderType, 0);
 		}
+		queuedResourceAllowed.clear();
 
 		// Special case: Trailer AddResources from input/output of nearby buildings
 		if (PunSettings::TrailerSession)
@@ -154,17 +162,36 @@ public:
 	}
 
 	int32 maxCardSlots() override { return 0; }
+
+
+	bool ResourceAllowed(ResourceEnum resourceEnum)
+	{
+		if (isConstructed()) {
+			return holder(resourceEnum).type != ResourceHolderType::Provider;
+		}
+		return queuedResourceAllowed[static_cast<int>(resourceEnum)];
+	}
 	
 
 	void Serialize(FArchive& Ar) override {
 		Building::Serialize(Ar);
 		Ar << _tilesOccupied;
+		Ar << expandedFood;
+		Ar << expandedLuxury;
+
+		SerializeVecValue(Ar, queuedResourceAllowed);
 
 		// TODO: Reuse this for ranch ..... remove once new save... UPDATE MAINMENU
 		//if (!_simulation->isLoadingForMainMenu()) {
 		//	_miniArea >> Ar;
 		//}
 	}
+
+public:
+	bool expandedFood = true;
+	bool expandedLuxury = true;
+
+	std::vector<uint8> queuedResourceAllowed;
 
 private:
 	// This includes push

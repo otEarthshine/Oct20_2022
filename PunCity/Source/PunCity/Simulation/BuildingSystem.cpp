@@ -520,7 +520,7 @@ void BuildingSystem::RemoveBuilding(int buildingId)
 	_buildings[buildingId]->Deinit();
 }
 
-int32 BuildingSystem::GetHouseLvlCount(int32_t playerId, int32_t houseLvl, bool includeHigherLvl) {
+int32 BuildingSystem::GetHouseLvlCount(int32 playerId, int32 houseLvl, bool includeHigherLvl) {
 	const std::vector<int32>& houseIds = buildingIds(playerId, CardEnum::House);
 	int32 count = 0;
 	for (int32 houseId : houseIds) {

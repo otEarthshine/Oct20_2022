@@ -45,12 +45,14 @@ void Building_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulation
 		// TODO: Forced Popup to force people to choose whether to buy or refuse... (For all  Event popups? But then there is UnlockAll... Trim popup by choosing "refuse" in that case)
 		if (IsBuildingCard(buildingEnum))
 		{
-			unlockSys->lastUnlockedBuildings.push_back(buildingEnum);
+			int32 buildingEnumInt = static_cast<int32>(buildingEnum);
 			
 			std::stringstream ss;
 			ss << "Unlocked " << GetBuildingInfo(buildingEnum).name;
 			ss << "\nWould you like to buy a " << GetBuildingInfo(buildingEnum).name << " card for " << cardSystem.GetCardPrice(buildingEnum) << " <img id=\"Coin\"/>.";
-			_simulation->AddPopup(PopupInfo(playerId, ss.str(), { "buy", "refuse" }, PopupReceiverEnum::DoneResearchBuyCardEvent, false, "ResearchComplete"));
+			_simulation->AddPopup(
+				PopupInfo(playerId, ss.str(), { "buy", "refuse" }, PopupReceiverEnum::DoneResearchBuyCardEvent, false, "ResearchComplete", buildingEnumInt)
+			);
 		}
 	}
 

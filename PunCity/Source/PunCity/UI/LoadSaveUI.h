@@ -6,6 +6,7 @@
 #include "PunSelectButton.h"
 #include "PunCity/GameSaveSystem.h"
 #include <iomanip>
+#include "Components/BackgroundBlur.h"
 
 
 #include "LoadSaveUI.generated.h"
@@ -46,7 +47,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* NoSavedGameSelectedText;
 
 	UPROPERTY(meta = (BindWidget)) UOverlay* SavingBlur;
-	UPROPERTY(meta = (BindWidget)) UOverlay* LoadingBlur;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* SavingBlurText;
+	UPROPERTY(meta = (BindWidget)) UBackgroundBlur* BackgroundBlur;
 	
 	void OpenSaveUI()
 	{
@@ -74,8 +76,11 @@ public:
 
 	void Tick()
 	{
-		if (_delayedActionCountDown != -1) {
+		if (_delayedActionCountDown != -1) {	
 			_delayedActionCountDown--;
+			
+			_LOG(PunSaveLoad, "_delayedActionCountDown:%d", _delayedActionCountDown);
+			
 			if (_delayedActionCountDown == 0) {
 				_delayedActionCountDown = -1;
 				
@@ -229,19 +234,36 @@ public:
 		}
 	}
 
-	void SaveGameDelayed()
+	bool isSavingGame() { return _isSavingGame; }
+	bool isAutosaving() { return _isAutosaving; }
+
+	void SaveGameDelayed(bool isAutoSaving = false)
 	{
 		_LOG(PunSaveLoad, "SaveConfirm");
+
+		SetVisibility(ESlateVisibility::Visible);
 		LoadSaveOverlay->SetVisibility(ESlateVisibility::Collapsed);
 		SavingBlur->SetVisibility(ESlateVisibility::Visible);
-		_delayedActionCountDown = 5;
+		BackgroundBlur->SetVisibility(ESlateVisibility::Visible); // TODO: Remove this not needed?
+		//SetText(SavingBlurText, isAutoSaving ? "Autosaving..." : "Saving...");
+		SetText(SavingBlurText, "Saving...");
+
+		_isSavingGame = true;
+		_delayedActionCountDown = 10;
+		_isAutosaving = isAutoSaving;
 	}
 	void LoadGameDelayed()
 	{
 		_LOG(PunSaveLoad, "Load ServerTravel");
+		
 		LoadSaveOverlay->SetVisibility(ESlateVisibility::Collapsed);
-		LoadingBlur->SetVisibility(ESlateVisibility::Visible);
-		_delayedActionCountDown = 5;
+		SavingBlur->SetVisibility(ESlateVisibility::Visible);
+		BackgroundBlur->SetVisibility(ESlateVisibility::Visible);
+		SetText(SavingBlurText, "Loading...");
+
+		_isSavingGame = false;
+		_delayedActionCountDown = 10;
+		_isAutosaving = false;
 	}
 	
 private:
@@ -273,14 +295,63 @@ private:
 
 	void SaveGame()
 	{
-		FString nameString = SelectedSavePlayerNameEditable->Text.ToString();
+		SCOPE_TIMER("SaveGame");
+		
+		FString nameString;
+
+		if (_isAutosaving) 
+		{
+			// Remove the oldest autosaves if there are 3 or more autosaves
+			saveSystem().RefreshSaveList();
+			const TArray<GameSaveInfo>& saveList = saveSystem().saveList();
+			TArray<GameSaveInfo> autoSaves;
+			for (int32 i = 0; i < saveList.Num(); i++) {
+				if (saveList[i].IsAutosave()) {
+					autoSaves.Add(saveList[i]);
+				}
+			}
+
+			while (autoSaves.Num() >= 3)
+			{
+				GameSaveInfo oldestAutosave = autoSaves[0];
+				for (int32 i = 1; i < autoSaves.Num(); i++) {
+					if (autoSaves[i].dateTime < oldestAutosave.dateTime) {
+						oldestAutosave = autoSaves[i];
+					}
+				}
+				saveSystem().DeleteSave(oldestAutosave.folderPath);
+				autoSaves.Remove(oldestAutosave);
+
+				saveSystem().RefreshSaveList();
+				RefreshSaveSelectionList(SaveActiveIndex_SelectFirstAvailable);
+			}
+			
+			GameSaveInfo saveInfo;
+			
+			// Show info for current save
+			saveInfo.name = TrimStringF(simulation().playerNameF(playerId()), 10);
+			saveInfo.dateTime = FDateTime::Now();
+			saveInfo.gameTicks = Time::Ticks();
+			saveInfo.population = simulation().population(playerId());
+			saveInfo.mapSettings = dataSource()->GetMapSettings();
+			
+			nameString = saveInfo.DefaultSaveName(true);
+		}
+		else {
+			nameString = SelectedSavePlayerNameEditable->Text.ToString();
+		}
+		
+		
 		GameSaveInfo saveInfo = saveSystem().SaveDataToFile(nameString);
 
 #if WITH_EDITOR
-		// Test that after loading the file up and saving again, the checksum is still the same
-		saveSystem().Load(saveInfo.folderPath);
-		GameSaveInfo saveInfoCheck = saveSystem().SaveDataToFile(nameString);
-		PUN_CHECK(saveInfo.checksum == saveInfoCheck.checksum);
+		if (!saveInfo.IsAutosave())
+		{
+			// Test that after loading the file up and saving again, the checksum is still the same
+			saveSystem().Load(saveInfo.folderPath);
+			GameSaveInfo saveInfoCheck = saveSystem().SaveDataToFile(nameString);
+			PUN_CHECK(saveInfo.checksum == saveInfoCheck.checksum);
+		}
 #endif
 
 		_callbackParent->CallBack2(_callbackParent, CallbackEnum::CloseLoadSaveUI);
@@ -288,6 +359,8 @@ private:
 	}
 	void LoadGame()
 	{
+		SCOPE_TIMER("LoadGame");
+		
 		auto gameInstance = Cast<UPunGameInstance>(GetGameInstance());
 		auto saveInfo = saveSystem().saveList()[activeIndex];
 		gameInstance->SetSavedGameToLoad(saveSystem().saveList()[activeIndex]);
@@ -344,4 +417,5 @@ private:
 	int32 activeIndex = -1;
 
 	int32 _delayedActionCountDown = -1;
+	bool _isAutosaving = false;
 };

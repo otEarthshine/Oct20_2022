@@ -352,6 +352,14 @@ public:
 #endif
 	}
 
+	void AutosaveGame() final {
+		escMenuUI()->LoadSaveUI->SaveGameDelayed(true);
+		PUN_LOG("AutosaveGame %d %d %d %d", static_cast<int>(escMenuUI()->GetVisibility()),
+										static_cast<int>(escMenuUI()->LoadSaveUI->GetVisibility()), 
+										static_cast<int>(escMenuUI()->LoadSaveUI->SavingBlur->GetVisibility()),
+										static_cast<int>(escMenuUI()->LoadSaveUI->BackgroundBlur->GetVisibility()));
+	}
+
 public:
 	/*
 	 * IPunHUDInterface

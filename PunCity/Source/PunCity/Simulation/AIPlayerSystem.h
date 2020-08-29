@@ -426,8 +426,8 @@ public:
 		bool notTooManyUnderConstruction = otherBuildingsUnderConstruction <= 1;
 
 		// Need Food 1 month in advance
-		bool hasEnoughFood = _simulation->foodCount(_playerId) >= population * BaseHumanFoodCostPerYear / 2;
-		bool outOfFood = _simulation->foodCount(_playerId) <= population * BaseHumanFoodCostPerYear / 8;
+		bool hasEnoughFood = _simulation->foodCount(_playerId) >= (population * BaseHumanFoodCost100PerYear / 2 / 100);
+		bool outOfFood = _simulation->foodCount(_playerId) <= (population * BaseHumanFoodCost100PerYear / 8 / 100);
 
 		// Need heat to survive winter
 		int32 heatResources = resourceSystem.resourceCount(ResourceEnum::Coal) + resourceSystem.resourceCount(ResourceEnum::Wood);

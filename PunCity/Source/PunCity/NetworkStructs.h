@@ -472,6 +472,9 @@ public:
 	bool allowed = false;
 	int32 target = -1;
 
+	bool isExpansionCommand = false;
+	bool expanded = false;
+
 	NetworkCommandEnum commandType() final { return NetworkCommandEnum::SetAllowResource; }
 
 	void Serialize(PunSerializedData& blob) final {
@@ -480,8 +483,10 @@ public:
 		blob << resourceEnum;
 		blob << allowed;
 		blob << target;
-	}
 
+		blob << isExpansionCommand;
+		blob << expanded;
+	}
 };
 
 class FSetPriority final : public FBuildingCommand

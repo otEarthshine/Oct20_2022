@@ -200,7 +200,6 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 	_lastTickSnowAccumulation3 = 0;
 	_lastTickSnowAccumulation2 = 0;
 	_lastTickSnowAccumulation1 = 0;
-	
 
 	// Integrity check
 	TileObjInfosIntegrityCheck();
@@ -211,9 +210,9 @@ void GameSimulationCore::InitRegionalBuildings()
 	std::vector<CardEnum> regionalBuildings(GameMapConstants::TotalRegions, CardEnum::None);
 
 
-	// TODO: TrailerMode turn off for now
+#if TRAILER_MODE
 	return;
-
+#endif
 	
 	auto& provinceSys = provinceSystem();
 	
@@ -850,12 +849,31 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 			// Per round
 			if (Time::Ticks() % Time::TicksPerRound == 0) 
 			{
-				ExecuteOnPlayersAndAI([&] (int32_t playerId) {
-					if (_playerOwnedManagers[playerId].hasChosenLocation()) {
+				ExecuteOnPlayersAndAI([&] (int32 playerId) 
+				{
+					if (_playerOwnedManagers[playerId].hasChosenLocation()) 
+					{
 						_cardSystem[playerId].TickRound();
 						_playerOwnedManagers[playerId].TickRound();
 
 						_popupSystems[playerId].TickRound();
+
+
+						// Autosave
+						if (_gameManager->isSinglePlayer() &&
+							Time::Seconds() > 0)
+						{
+							AutosaveEnum autosaveEnum = _gameManager->autosaveEnum();
+							if (autosaveEnum == AutosaveEnum::HalfYear && Time::Ticks() % (Time::TicksPerYear / 2) == 0) {
+								_uiInterface->AutosaveGame();
+							}
+							else if (autosaveEnum == AutosaveEnum::Year && Time::Ticks() % Time::TicksPerYear == 0) {
+								_uiInterface->AutosaveGame();
+							}
+							else if (autosaveEnum == AutosaveEnum::TwoYears && Time::Ticks() % (Time::TicksPerYear * 2) == 0) {
+								_uiInterface->AutosaveGame();
+							}
+						}
 					}
 				});
 			}
@@ -873,7 +891,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 				// Event log check
 				ExecuteOnConnectedPlayers([&](int32 playerId)
 				{
-					if (_playerOwnedManagers[playerId].hasChosenLocation())
+					if (_playerOwnedManagers[playerId].hasTownhall())
 					{
 						if (isStorageAllFull(playerId)) {
 							_eventLogSystem.AddEventLog(playerId, FString("Need more storage space."), true);
@@ -2029,7 +2047,8 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 						SetNeedDisplayUpdate(DisplayClusterEnum::Trees, tile.regionId(), true);
 
 						int32 foreignPlayerId = tileOwner(tile);
-						if (foreignPlayerId != parameters.playerId) {
+						if (foreignPlayerId != -1 &&
+							foreignPlayerId != parameters.playerId) {
 							CppUtils::TryAdd(foreignPlayerIds, foreignPlayerId);
 						}
 					}
@@ -2110,7 +2129,43 @@ void GameSimulationCore::SetAllowResource(FSetAllowResource command)
 	}
 	else if (IsStorage(bld.buildingEnum())) 
 	{
-		bld.SetHolderTypeAndTarget(command.resourceEnum, command.allowed ? ResourceHolderType::Storage : ResourceHolderType::Provider, 0);
+		if (command.isExpansionCommand) 
+		{
+			if (command.resourceEnum == ResourceEnum::Food) {
+				bld.subclass<StorageYard>().expandedFood = command.expanded;
+			}
+			else if (command.resourceEnum == ResourceEnum::Luxury) {
+				bld.subclass<StorageYard>().expandedLuxury = command.expanded;
+			}
+		}
+		else {
+			if (bld.isConstructed()) {
+				bld.SetHolderTypeAndTarget(command.resourceEnum, command.allowed ? ResourceHolderType::Storage : ResourceHolderType::Provider, 0);
+			} else {
+				// Not yet constructed, queue the checkState to apply once construction finishes
+				if (command.resourceEnum == ResourceEnum::Food)
+				{
+					for (ResourceEnum resourceEnumLocal : FoodEnums) {
+						bld.subclass<StorageYard>().queuedResourceAllowed[static_cast<int>(resourceEnumLocal)] = command.allowed;
+					}
+				}
+				else if (command.resourceEnum == ResourceEnum::Luxury)
+				{
+					ExecuteOnLuxuryResources([&](ResourceEnum resourceEnumLocal) {
+						bld.subclass<StorageYard>().queuedResourceAllowed[static_cast<int>(resourceEnumLocal)] = command.allowed;
+					});
+				}
+				else if (command.resourceEnum == ResourceEnum::None) {
+					for (int32 i = 0; i < ResourceEnumCount; i++) {
+						bld.subclass<StorageYard>().queuedResourceAllowed[i] = command.allowed;
+					}
+				}
+				else
+				{
+					bld.subclass<StorageYard>().queuedResourceAllowed[static_cast<int>(command.resourceEnum)] = command.allowed;
+				}
+			}
+		}
 	}
 	else {
 		UE_DEBUG_BREAK();
@@ -2520,23 +2575,18 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 
 	else if (replyReceiver == PopupReceiverEnum::DoneResearchBuyCardEvent)
 	{
-		std::vector<CardEnum>& lastUnlockedBuildings = unlockSystem(command.playerId)->lastUnlockedBuildings;
-		
-		if (command.choiceIndex == 0) {
-			CardEnum lastUnlockedEnum = lastUnlockedBuildings.front();
-			
-			PUN_CHECK(lastUnlockedEnum != CardEnum::None);
+		if (command.choiceIndex == 0) 
+		{
+			CardEnum unlockedEnum = static_cast<CardEnum>(command.replyVar1);
+			PUN_CHECK(unlockedEnum != CardEnum::None);
 
-			if (CanBuyCard(command.playerId, lastUnlockedEnum))
+			if (CanBuyCard(command.playerId, unlockedEnum))
 			{
 				auto& cardSys = cardSystem(command.playerId);
-				cardSys.AddCardToHand2(lastUnlockedEnum);
-				resourceSystem(command.playerId).ChangeMoney(-cardSys.GetCardPrice(lastUnlockedEnum));
+				cardSys.AddCardToHand2(unlockedEnum);
+				resourceSystem(command.playerId).ChangeMoney(-cardSys.GetCardPrice(unlockedEnum));
 			}
 		}
-
-		// Remove the unlockedBuilding regardless or choiceIndex
-		lastUnlockedBuildings.erase(lastUnlockedBuildings.begin());
 	}
 	else if (replyReceiver == PopupReceiverEnum::Approve_Cannibalism)
 	{

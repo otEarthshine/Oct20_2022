@@ -599,6 +599,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					descriptionBox->AddRichText("Upkeep: ", ss);
 				}
 
+				
+
 				// Upgrade Level / Appeal / tax
 				if (building.isConstructed())
 				{
@@ -982,75 +984,11 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					}
 					else if (IsStorage(building.buildingEnum()))
 					{
-						ss << building.subclass<StorageYard>().tilesOccupied() << "/" << building.storageSlotCount();
+						StorageYard& storage = building.subclass<StorageYard>();
+						ss << storage.tilesOccupied() << "/" << storage.storageSlotCount();
 						descriptionBox->AddRichText("Slots", ss);
 
 						descriptionBox->AddSpacer(12);
-
-						descriptionBox->AddButton("Manage Storage", nullptr, "", this, CallbackEnum::OpenManageStorage, true, false, objectId);
-						descriptionBox->AddLineSpacer(12);
-						
-						/*
-						 * Fill ManageStorage
-						 */
-						UPunBoxWidget* manageStorageBox = _objectDescriptionUI->ManageStorageBox;
-
-						std::vector<ResourceInfo> resourceEnums = SortedNameResourceEnum;
-
-						auto tryAddManageStorageElement = [&](ResourceEnum resourceEnum, bool isShowing)
-						{
-							if (isShowing) {
-								bool isAllowed = simulation.building(objectId).holder(resourceEnum).type != ResourceHolderType::Provider;
-								manageStorageBox->AddManageStorageElement(resourceEnum, "", objectId, isAllowed, true);
-							}
-							CppUtils::RemoveIf(resourceEnums, [&](ResourceInfo resourceInfo) { return resourceInfo.resourceEnum == resourceEnum; });
-						};
-
-						// Food
-						bool isFoodAllowed = false;
-						for (ResourceEnum resourceEnum : FoodEnums) {
-							if (simulation.building(objectId).holder(resourceEnum).type != ResourceHolderType::Provider) {
-								isFoodAllowed = true;
-								break;
-							}
-						}
-						manageStorageBox->AddManageStorageElement(ResourceEnum::Food, "Food", objectId, isFoodAllowed, false);
-						for (ResourceEnum resourceEnum : FoodEnums) {
-							tryAddManageStorageElement(resourceEnum, isFoodAllowed);
-						}
-
-						// Luxury
-						bool isLuxuryAllowed = false;
-						for (int32 i = 1; i < TierToLuxuryEnums.size(); i++) {
-							for (ResourceEnum resourceEnum : TierToLuxuryEnums[i]) {
-								if (simulation.building(objectId).holder(resourceEnum).type != ResourceHolderType::Provider) {
-									isLuxuryAllowed = true;
-									break;
-								}
-							}
-						}
-						manageStorageBox->AddManageStorageElement(ResourceEnum::Luxury, "Luxury", objectId, isLuxuryAllowed, false);
-						for (int32 i = 1; i < TierToLuxuryEnums.size(); i++) {
-							for (ResourceEnum resourceEnum : TierToLuxuryEnums[i]) {
-								tryAddManageStorageElement(resourceEnum, isLuxuryAllowed);
-							}
-						}
-
-						// Other resources
-						for (ResourceInfo resourceInfo : resourceEnums) {
-							bool isAllowed = simulation.building(objectId).holder(resourceInfo.resourceEnum).type != ResourceHolderType::Provider;
-							manageStorageBox->AddManageStorageElement(resourceInfo.resourceEnum, "", objectId, isAllowed, false);
-						}
-						
-						//for (int i = 0; i < ResourceEnumCount; i++)
-						//{
-						//	ResourceEnum resourceEnum = static_cast<ResourceEnum>(i);
-						//	//if (IsFoodEnum(resourceEnum)) {
-						//		manageStorageBox->AddManageStorageElement(resourceEnum, "", objectId);
-						//	//}
-						//}
-
-						manageStorageBox->AfterAdd();
 						
 					}
 					else if (building.isEnum(CardEnum::Tavern) || 
@@ -1254,6 +1192,101 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 
 				/*
+				 * Special case: Manage Storage (Display regardless of if the storage is constructed
+				 */
+				if (IsStorage(building.buildingEnum()))
+				{
+					descriptionBox->AddButton("Manage Storage", nullptr, "", this, CallbackEnum::OpenManageStorage, true, false, objectId);
+					descriptionBox->AddLineSpacer(12);
+
+					/*
+					 * Fill ManageStorage
+					 */
+					StorageYard& storage = building.subclass<StorageYard>();
+					UPunBoxWidget* manageStorageBox = _objectDescriptionUI->ManageStorageBox;
+
+					std::vector<ResourceInfo> resourceEnums = SortedNameResourceEnum;
+
+					auto tryAddManageStorageElement_UnderExpansion = [&](ResourceEnum resourceEnum, bool isShowing)
+					{
+						// Note: isShowing is needed since we should do RemoveIf even if we aren't showing the resource row 
+						if (isShowing) {
+							bool isAllowed = storage.ResourceAllowed(resourceEnum);
+							ECheckBoxState checkState = (isAllowed ? ECheckBoxState::Checked : ECheckBoxState::Unchecked);
+							manageStorageBox->AddManageStorageElement(resourceEnum, "", objectId, checkState, true);
+						}
+						CppUtils::RemoveIf(resourceEnums, [&](ResourceInfo resourceInfo) { return resourceInfo.resourceEnum == resourceEnum; });
+					};
+
+					// Food
+					{
+						int32 foodAllowCount = 0;
+						for (ResourceEnum resourceEnum : FoodEnums) {
+							if (storage.ResourceAllowed(resourceEnum)) {
+								foodAllowCount++;
+							}
+						}
+						ECheckBoxState checkState;
+						if (foodAllowCount == _countof(FoodEnums)) {
+							checkState = ECheckBoxState::Checked;
+						}
+						else if (foodAllowCount > 0) {
+							checkState = ECheckBoxState::Undetermined;
+						}
+						else {
+							checkState = ECheckBoxState::Unchecked;
+						}
+
+						auto element = manageStorageBox->AddManageStorageElement(ResourceEnum::Food, "Food", objectId, checkState, false);
+						bool expanded = element->HasDelayOverride() ? element->expandedOverride : storage.expandedFood;
+						for (ResourceEnum resourceEnum : FoodEnums) {
+							tryAddManageStorageElement_UnderExpansion(resourceEnum, expanded);
+						}
+					}
+
+					// Luxury
+					{
+						int32 luxuryAllowCount = 0;
+						for (int32 i = 1; i < TierToLuxuryEnums.size(); i++) {
+							for (ResourceEnum resourceEnum : TierToLuxuryEnums[i]) {
+								if (storage.ResourceAllowed(resourceEnum)) {
+									luxuryAllowCount++;
+								}
+							}
+						}
+						ECheckBoxState checkState;
+						if (luxuryAllowCount == LuxuryResourceCount()) {
+							checkState = ECheckBoxState::Checked;
+						}
+						else if (luxuryAllowCount > 0) {
+							checkState = ECheckBoxState::Undetermined;
+						}
+						else {
+							checkState = ECheckBoxState::Unchecked;
+						}
+
+						auto element = manageStorageBox->AddManageStorageElement(ResourceEnum::Luxury, "Luxury", objectId, checkState, false);
+						bool expanded = element->HasDelayOverride() ? element->expandedOverride : storage.expandedLuxury;
+						for (int32 i = 1; i < TierToLuxuryEnums.size(); i++) {
+							for (ResourceEnum resourceEnum : TierToLuxuryEnums[i]) {
+								tryAddManageStorageElement_UnderExpansion(resourceEnum, expanded);
+							}
+						}
+					}
+
+					// Other resources
+					for (ResourceInfo resourceInfo : resourceEnums) {
+						bool isAllowed = storage.ResourceAllowed(resourceInfo.resourceEnum);
+						ECheckBoxState checkState = (isAllowed ? ECheckBoxState::Checked : ECheckBoxState::Unchecked);
+						manageStorageBox->AddManageStorageElement(resourceInfo.resourceEnum, "", objectId, checkState, false);
+					}
+
+					manageStorageBox->AfterAdd();
+				}
+				
+
+
+				/*
 				 * Work Status 1
 				 */
 				bool hasInput1 = building.hasInput1();
@@ -1384,7 +1417,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						//if (BuildingHasDropdown(building.buildingEnum())) {
 						//	addDropDown();
 						//}
-						
+
+						descriptionBox->AddSpacer();
 						descriptionBox->AddRichText("<Subheader>Production batch:</>");
 						descriptionBox->AddProductionChain({ building.input1(), building.inputPerBatch() },
 							{ building.input2(), building.inputPerBatch() },
@@ -1451,6 +1485,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 						if (productTexture)
 						{
+							descriptionBox->AddSpacer();
 							descriptionBox->AddRichText("<Subheader>Production batch:</>");
 							descriptionBox->AddProductionChain({ building.input1(), building.inputPerBatch() },
 								{ building.input2(), building.inputPerBatch() },
@@ -1921,10 +1956,6 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					ss << " adjustments:\n";
 					if (human.speedBoostEfficiency100() != 0) {
 						ss << "  " << human.speedBoostEfficiency100() << "% leader speed boost\n";
-					}
-					ss << " difficulty:\n";
-					if (human.difficultyProductivity100() != 0) {
-						ss << "  " << human.difficultyProductivity100() << "% difficulty level\n";
 					}
 					
 					AddToolTip(widget, ss);
@@ -2410,6 +2441,10 @@ void UObjectDescriptionUISystem::ShowRegionSelectionDecal(WorldTile2 tile, bool 
 
 void UObjectDescriptionUISystem::AddSelectStartLocationButton(int32 provinceId, UPunBoxWidget* descriptionBox)
 {
+	if (provinceId == -1) {
+		return;
+	}
+	
 	bool hasChosenLocation = simulation().playerOwned(playerId()).hasChosenLocation();
 	// If player hasn't select starting location
 	if (!hasChosenLocation)
@@ -2443,6 +2478,10 @@ void UObjectDescriptionUISystem::AddSelectStartLocationButton(int32 provinceId, 
 
 void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWidget* descriptionBox)
 {
+	if (provinceId == -1) {
+		return;
+	}
+	
 	auto& sim = simulation();
 	auto& playerOwned = sim.playerOwned(playerId());
 
@@ -2618,30 +2657,6 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 	}
 }
 
-void UObjectDescriptionUISystem::AddClaimRuinButton(WorldRegion2 region, UPunBoxWidget* descriptionBox)
-{
-	//if (!simulation().playerOwned(playerId()).isInitialized()) {
-	//	return;
-	//}
-
-	//int32 regionId = region.regionId();
-	//int32 regionOwner = simulation().regionOwner(region.regionId());
-	//if (regionOwner == -1 || regionOwner == playerId())
-	//{
-	//	auto& georesourceSys = simulation().georesourceSystem();
-	//	GeoresourceNode node = georesourceSys.georesourceNode(regionId);
-	//	
-	//	if (node.georesourceEnum == GeoresourceEnum::Ruin)
-	//	{
-	//		bool canClaim = georesourceSys.CanClaimRuin(playerId(), regionId);
-	//		const int ruinPrice = 500;
-
-	//		descriptionBox->AddSpacer();
-	//		descriptionBox->AddButton("Investigate Ruin (", dataSource()->assetLoader()->CoinIcon, to_string(ruinPrice) + ")",
-	//										this, CallbackEnum::ClaimRuin, canClaim, false, regionId);
-	//	}
-	//}
-}
 
 
 void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum)
@@ -2842,7 +2857,11 @@ void UObjectDescriptionUISystem::AddBiomeInfo(WorldTile2 tile, UPunBoxWidget* de
 	ss << fixed << setprecision(0);
 
 	// Don't display Fertility on water
-	if (IsWaterTileType(terrainGenerator.terrainTileType(tile))) {
+	if (terrainGenerator.terrainTileType(tile) == TerrainTileType::ImpassableFlat) {
+		ss << "<Red>Impassable Terrain</>\n";
+	}
+	else if (IsWaterTileType(terrainGenerator.terrainTileType(tile))) {
+		
 	} else {
 		ss << "<Bold>Fertility:</> " << terrainGenerator.GetFertilityPercent(tile) << "%\n";
 
@@ -2963,6 +2982,10 @@ void UObjectDescriptionUISystem::AddTileInfo(WorldTile2 tile, UPunBoxWidget* des
 
 void UObjectDescriptionUISystem::AddProvinceInfo(int32 provinceId, UPunBoxWidget* descriptionBox)
 {
+	if (provinceId == -1) {
+		return;
+	}
+	
 	auto terrainGenerator = simulation().terrainGenerator();
 
 	stringstream ss;
@@ -3019,12 +3042,9 @@ void UObjectDescriptionUISystem::AddProvinceInfo(int32 provinceId, UPunBoxWidget
 	// Georesource
 	AddGeoresourceInfo(provinceId, descriptionBox);
 
-	WorldRegion2 region(provinceId);
-
 	// Claim land
 	AddSelectStartLocationButton(provinceId, descriptionBox);
 	AddClaimLandButtons(provinceId, descriptionBox);
-	AddClaimRuinButton(region, descriptionBox);
 
 	// If no longer in map mode, don't display the selections
 	ShowRegionSelectionDecal(provinceCenter);
@@ -3032,7 +3052,7 @@ void UObjectDescriptionUISystem::AddProvinceInfo(int32 provinceId, UPunBoxWidget
 
 void UObjectDescriptionUISystem::AddGeoresourceInfo(int32 provinceId, UPunBoxWidget* descriptionBox, bool showTopLine)
 {
-	if (!IsValidProvinceId(provinceId)) {
+	if (provinceId == -1) {
 		return;
 	}
 	provinceId = abs(provinceId);

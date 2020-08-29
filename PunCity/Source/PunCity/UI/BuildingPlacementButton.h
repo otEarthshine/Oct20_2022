@@ -67,6 +67,16 @@ public:
 		DescriptionRichText->SetText(ToFText(description));
 		BuildingNameText->SetText(ToFText(info.name));
 
+		if (buildingEnum == CardEnum::House) {
+			BuildingHotkeyText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			SetText(BuildingHotkeyText, "[H]");
+		} else if(buildingEnum == CardEnum::Farm) {
+			BuildingHotkeyText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			SetText(BuildingHotkeyText, "[F]");
+		} else {
+			BuildingHotkeyText->SetVisibility(ESlateVisibility::Collapsed);
+		}
+
 		CardGlow->SetVisibility(ESlateVisibility::Hidden);
 
 		if (stackSize > 0) {
@@ -245,7 +255,10 @@ public:
 		}
 		else
 		{
-			if (simulation().HasQuest(playerId(), QuestEnum::FoodBuildingQuest) && IsAgricultureBuilding(buildingEnum)) {
+			if (buildingEnum == CardEnum::Townhall) {
+				needExclamation = true;
+			}
+			else if (simulation().HasQuest(playerId(), QuestEnum::FoodBuildingQuest) && IsAgricultureBuilding(buildingEnum)) {
 				needExclamation = true;
 			}
 
@@ -365,6 +378,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UOverlay* ParentOverlay;
 
 	UPROPERTY(meta = (BindWidget)) UTextBlock* BuildingNameText;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* BuildingHotkeyText;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* DescriptionRichText;
 	UPROPERTY(meta = (BindWidget)) UImage* BuildingIcon;
 

@@ -658,6 +658,10 @@ public:
 	// Simulation
 	void Research(int32 science100PerRound, int32 updatesPerSec)
 	{
+		if (SimSettings::IsOn("CheatFastTech")) {
+			science100PerRound += 20000 * 100 * 20;
+		}
+		
 		// Multiple updates per second, so we divide accordingly science100PerRound/updatesPerSec
 		science100XsecPerRound += GameRand::RandRound(science100PerRound, updatesPerSec);
 		
@@ -666,10 +670,6 @@ public:
 		}
 		
 		auto tech = currentResearch();
-
-		if (SimSettings::IsOn("CheatFastTech")) {
-			science100PerRound += 20000 * 100 * 20;
-		}
 
 		if (science100() >= science100Needed()) 
 		{
@@ -856,8 +856,7 @@ public:
 	void Serialize(FArchive& Ar)
 	{
 		needDisplayUpdate = true; // After load/save, we need to update the display
-		
-		SerializeVecValue(Ar, lastUnlockedBuildings);
+
 
 		Ar << researchEnabled;
 		Ar << techsFinished;
@@ -918,7 +917,6 @@ public:
 	 * Serialize
 	 */
 	bool needDisplayUpdate = true;
-	std::vector<CardEnum> lastUnlockedBuildings;
 
 	bool researchEnabled;
 	int32 techsFinished = -1;

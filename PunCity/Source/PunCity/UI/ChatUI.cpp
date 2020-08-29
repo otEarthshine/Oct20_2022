@@ -200,6 +200,11 @@ void UChatUI::Tick()
 	SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
 	
+	if (!simulation().HasTownhall(playerId())) {
+		SetVisibility(ESlateVisibility::Collapsed);
+		return;
+	}
+	
 	
 	if (!PunSettings::IsOn("UIChat")) {
 		return;

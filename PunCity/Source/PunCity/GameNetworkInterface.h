@@ -74,6 +74,9 @@ public:
 	virtual void ShowConfirmationUI(std::string confirmationStr, std::shared_ptr<FNetworkCommand> commandIn) = 0;
 	virtual bool IsShowingConfirmationUI(std::string confirmationStr) = 0;
 
+	virtual void KeyPressed_H() = 0;
+	virtual void KeyPressed_F() = 0;
+
 	virtual TileArea GetDemolishHighlightArea() = 0;
 
 	virtual void TrailerCityReplayUnpause() = 0;

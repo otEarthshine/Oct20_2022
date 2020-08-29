@@ -588,7 +588,7 @@ public:
 	int32 workManSecPerBatch100() override
 	{
 		// Same amount of work required to acquire resources
-		return baseInputValue() * 100 * 100 / WorkRevenuePerSec100_perMan_Base; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
+		return baseInputValue() * 100 * 100 / WorkRevenue100PerSec_perMan_Base; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
 	}
 
 	// Production always yield the same amount of product
@@ -668,6 +668,15 @@ public:
 class CardMaker final : public ConsumerIndustrialBuilding
 {
 public:
+	void OnInit() override
+	{
+		SetupWorkMode({
+			WorkMode::Create("Productivity Book", "Create Productivity Book Card"),
+			WorkMode::Create("Sustainability Book", "Create Sustainability Book Card"),
+			WorkMode::Create("Frugality Book", "Create Frugality Book Card"),
+		});
+	}
+	
 	void FinishConstruction() final
 	{
 		ConsumerIndustrialBuilding::FinishConstruction();

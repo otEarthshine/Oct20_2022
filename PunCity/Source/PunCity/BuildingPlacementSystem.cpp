@@ -526,7 +526,7 @@ void ABuildingPlacementSystem::StartDrag()
 	_lastMouseOnTile = WorldTile2::Invalid;
 	_lastDragState = DragState::None;
 	_roadPathTileIds.Empty();
-
+	
 	_useBoughtCard = false;
 
 	_placementGrid.SetActive(true);
@@ -779,6 +779,15 @@ void ABuildingPlacementSystem::CancelPlacement()
 	if (!_gameInterface) return;
 
 	//_buildingMeshes->Hide();
+
+	if (_dragState == DragState::Dragging) {
+		if (_buildingEnum == CardEnum::StorageYard) {
+			_placementType = PlacementType::Building;
+		}
+		StartDrag();
+		return;
+	}
+	
 
 	_placementType = PlacementType::None;
 	_dragState = DragState::None;

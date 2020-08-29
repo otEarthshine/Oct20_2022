@@ -27,7 +27,7 @@ UDecalComponent* PunUnrealUtils::CreateDecal(USceneComponent* scene, UMaterialIn
 }
 
 UDecalComponent* PunUnrealUtils::ShowDecal(WorldAtom2 centerAtom, WorldTile2 size, TArray<UDecalComponent*>& decals, int32& decalCount, 
-								USceneComponent* scene, UMaterialInterface* material, IDisplaySystemDataSource* gameInterface, bool useMaterialInstance)
+								USceneComponent* scene, UMaterialInterface* material, IDisplaySystemDataSource* gameInterface, bool useMaterialInstance, float scaleX)
 {
 	int currentIndex = decalCount;
 	decalCount++;
@@ -54,7 +54,7 @@ UDecalComponent* PunUnrealUtils::ShowDecal(WorldAtom2 centerAtom, WorldTile2 siz
 
 	PunUnrealUtils::SetActive(decals[currentIndex], true);
 	decal->SetWorldLocation(displayLocation);
-	decal->SetWorldScale3D(FVector(1, size.y, size.x));
+	decal->SetWorldScale3D(FVector(scaleX, size.y, size.x));
 
 	decalCount++;
 

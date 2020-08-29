@@ -167,33 +167,6 @@ public:
 			play3Color = setPlayButtonColor(GameSpeedValue3);
 			play4Color = setPlayButtonColor(GameSpeedValue4);
 			
-			
-			//switch (gameSpeed)
-			//{
-			//case 0: pauseColor = activeColor;
-			//	break;
-			//case GameSpeedIndex1:
-			//	play1Color = activeColor;
-			//	play2Color = hoverColor;
-			//	break;
-			//case GameSpeedIndex2:
-			//	play1Color = activeColor;
-			//	play2Color = activeColor;
-			//	play3Color = hoverColor;
-			//	break;
-			//case GameSpeedIndex3:
-			//	play1Color = activeColor;
-			//	play2Color = activeColor;
-			//	play3Color = activeColor;
-			//	play4Color = hoverColor;
-			//	break;
-			//case GameSpeedIndex4:
-			//	play1Color = hoverColor;
-			//	play2Color = hoverOffColor;
-			//	play3Color = hoverOffColor;
-			//	play4Color = hoverOffColor;
-			//	break;
-			//}
 		}
 		else
 		{
@@ -258,6 +231,23 @@ public:
 			dataSource()->SetOverlayType(overlayTypeToChangeTo, OverlaySetterType::OverlayToggler);
 			overlayTypeToChangeTo = OverlayType::None;
 		}
+
+		/*
+		 * Loading screen
+		 */
+		if (LoadingScreen->loadingScreenHideCountdown >= 0.0f)
+		{
+			LoadingScreen->loadingScreenHideCountdown -= UGameplayStatics::GetWorldDeltaSeconds(this);
+			LoadingScreen->loadingScreenHideCountdown = fmax(LoadingScreen->loadingScreenHideCountdown, 0.0f);
+
+			if (LoadingScreen->loadingScreenHideCountdown == 0.0f) {
+				LoadingScreen->SetVisibility(ESlateVisibility::Collapsed);
+			}
+			else
+			{
+				LoadingScreen->GameStartBlockerBackground2->GetDynamicMaterial()->SetScalarParameterValue("InputTime", 3.0f - LoadingScreen->loadingScreenHideCountdown);
+			}
+		}
 	}
 
 	float lastShaderCachePrint = 0.0f;
@@ -276,8 +266,22 @@ public:
 #if !UI_ALL
 		return;
 #endif
-		LoadingScreen->SetVisibility(ESlateVisibility::Collapsed);
+		if (LoadingScreen->GameStartBlockerBackground1->GetVisibility() != ESlateVisibility::Collapsed) {
+			StartLoadingScreenFade();
+		}
 	}
+	void StartLoadingScreenFade()
+	{
+		LoadingScreen->loadingScreenHideCountdown = 3.0f;
+		LoadingScreen->SetVisibility(ESlateVisibility::HitTestInvisible);
+		LoadingScreen->GameStartBlockerBackground1->SetVisibility(ESlateVisibility::Collapsed);
+		LoadingScreen->GameStartBlockerBackground2->SetVisibility(ESlateVisibility::HitTestInvisible);
+
+		LoadingScreen->LoadingText->SetVisibility(ESlateVisibility::Collapsed);
+		LoadingScreen->LoadingTextBox->SetVisibility(ESlateVisibility::Collapsed);
+		LoadingScreen->Logo->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	
 
 	void KeyPressed_Escape() {
 		// Close ExitConfirm to EscMenu

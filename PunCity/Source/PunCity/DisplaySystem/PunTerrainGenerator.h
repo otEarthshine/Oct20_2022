@@ -41,6 +41,7 @@ public:
 	// Set some tiles to terrain (such as those without provinceId)
 	void SetMountainTile(WorldTile2 tile);
 	void SetWaterTile(WorldTile2 tile);
+	void SetImpassableFlatTile(WorldTile2 tile);
 
 	const std::vector<int16>& GetHeightMap() { return heightMap; }
 
@@ -204,16 +205,19 @@ public:
 		perlinGenerator >> Ar;
 		SerializeVecValue(Ar, _perlinMap);
 
-		// SetGameMap
-		if (withSimulation)
-		{
-			if (Ar.IsLoading()) {
-				SetGameMap(false);
-			}
+		if (withSimulation) {
+			SerializeVecValue(Ar, _terrainMap);
 			SerializeCrc(Ar, _terrainMap);
-			//SerializeCrc(Ar, _regionMountainTileCount);
-			//SerializeCrc(Ar, _regionWaterTileCount);
 		}
+
+		//// SetGameMap
+		//if (withSimulation)
+		//{
+		//	if (Ar.IsLoading()) {
+		//		SetGameMap(false);
+		//	}
+		//	SerializeCrc(Ar, _terrainMap);
+		//}
 	}
 
 	void SerializeForMainMenu(FArchive &Ar, const std::vector<int32>& sampleRegionIds)
@@ -285,10 +289,6 @@ private:
 	 * Non-Serialize
 	 */
 	std::vector<TerrainTileType> _terrainMap;
-
-	// TODO: remove these
-	//std::vector<int16> _regionMountainTileCount;
-	//std::vector<int16> _regionWaterTileCount;
 
 private:
 	/*

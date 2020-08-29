@@ -527,10 +527,11 @@ void UnitSystem::Serialize(FArchive& Ar)
 	SerializeVecValue(Ar, _deadUnits);
 	_updateBuffer.Serialize(Ar);
 
+	int32 animalUnitCount = 0;
 	SerializeVecLoop(Ar, _stateAI, [&](std::unique_ptr<UnitStateAI>& unitAI) {
 		SerializePtr<std::unique_ptr<UnitStateAI>, UnitAIClassEnum>(Ar, unitAI, [&](UnitAIClassEnum classEnum) {
 			switch (classEnum) {
-			case UnitAIClassEnum::UnitStateAI: unitAI = std::make_unique<UnitStateAI>(); break;
+			case UnitAIClassEnum::UnitStateAI: unitAI = std::make_unique<UnitStateAI>(); animalUnitCount++; break;
 			case UnitAIClassEnum::HumanStateAI: unitAI = std::make_unique<HumanStateAI>(); break;
 			case UnitAIClassEnum::ProjectileArrow: unitAI = std::make_unique<ProjectileArrow>(); break;
 			default: UE_DEBUG_BREAK();
@@ -546,6 +547,16 @@ void UnitSystem::Serialize(FArchive& Ar)
 		int32 id = _stateAI[i]->id();
 		PUN_CHECK(id == i);
 	}
+
+	int32 deadUnitCount = 0;
+	for (const UnitLean& unitLean : _unitLeans) {
+		if (!unitLean.alive()) {
+			deadUnitCount++;
+		}
+	}
+	PUN_CHECK(_deadUnits.size() == deadUnitCount);
+	PUN_LOG("UnitSystem isSaving:%d dead:%d animals:%d", Ar.IsSaving(), _deadUnits.size(), animalUnitCount);
+	
 
 	UnitCheckIntegrity(true);
 }

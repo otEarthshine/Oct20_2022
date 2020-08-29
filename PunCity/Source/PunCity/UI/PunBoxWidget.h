@@ -296,10 +296,10 @@ public:
 		return widget;
 	}
 
-	UManageStorageElement* AddManageStorageElement(ResourceEnum resourceEnum, std::string sectionName, int32 buildingId, bool isSectionAllowed, bool indentation)
+	UManageStorageElement* AddManageStorageElement(ResourceEnum resourceEnum, std::string sectionName, int32 buildingId, ECheckBoxState checkBoxState, bool indentation)
 	{
 		auto widget = GetChildElement<UManageStorageElement>(UIEnum::ManageStorageElement);
-		widget->PunInit(resourceEnum, sectionName, buildingId, isSectionAllowed, indentation);
+		widget->PunInit(resourceEnum, sectionName, buildingId, checkBoxState, indentation);
 		return widget;
 	}
 

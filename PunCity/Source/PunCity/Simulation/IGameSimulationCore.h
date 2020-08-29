@@ -41,6 +41,8 @@ public:
 	virtual void OpenIntercityTradeUI(int32 objectId) = 0;
 
 	virtual void SetLoadingText(FString message) = 0;
+
+	virtual void AutosaveGame() = 0;
 };
 
 // TODO: move this???
@@ -108,7 +110,7 @@ public:
 	virtual std::vector<int32> connectedPlayerIds() = 0;
 
 	virtual MapSizeEnum mapSizeEnum() = 0;
-	virtual int32 difficultyProductivityAdjustment() = 0;
+	virtual int32 difficultyConsumptionAdjustment() = 0;
 	virtual FMapSettings mapSettings() = 0;
 
 	virtual bool AllPlayerChoseLocationAfterInitialTicks() = 0;
@@ -313,6 +315,7 @@ public:
 
 	virtual PopupInfo* PopupToDisplay(int32 playerId) = 0;
 	virtual void CloseCurrentPopup(int32 playerId) = 0;
+	virtual void TryRemovePopups(int32 playerId, PopupReceiverEnum receiverEnum) = 0;
 
 	virtual void AddEventLog(int32 playerId, std::string eventMessage, bool isImportant) = 0;
 	virtual void AddEventLogF(int32 playerId, FString eventMessage, bool isImportant) = 0;
@@ -402,7 +405,7 @@ public:
 	//! Card system
 	virtual int32 BoughtCardCount(int32 playerId, CardEnum buildingEnum) = 0;
 	virtual int32 TownhallCardCount(int32 playerId, CardEnum cardEnum) = 0;
-	virtual bool HasCardInPile(int32 playerId, CardEnum cardEnum) = 0;
+	virtual bool HasCardInAnyPile(int32 playerId, CardEnum cardEnum) = 0;
 	virtual void AddDrawCards(int32 playerId, CardEnum cardEnum, int32 count = 1) = 0;
 	
 	virtual void GenerateRareCardSelection(int32 playerId, RareHandEnum rareHandEnum, std::string rareHandMessage) = 0;
@@ -433,6 +436,8 @@ public:
 	virtual int32 aiStartIndex() = 0;
 	virtual int32 aiEndIndex() = 0;
 	virtual bool IsAI(int32 playerId) = 0;
+
+	virtual WorldAtom2 homeAtom(int32 playerId) = 0;
 
 	//! Snow
 

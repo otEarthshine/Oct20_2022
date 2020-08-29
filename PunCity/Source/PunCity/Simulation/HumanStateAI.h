@@ -110,8 +110,6 @@ public:
 
 		result += speedBoostEfficiency100();
 
-		result = (100 + difficultyProductivity100()) * result / 100;
-
 		PUN_CHECK(result >= 0);
 		return result;
 	}
@@ -152,9 +150,6 @@ public:
 		return 0;
 	}
 
-	int32 difficultyProductivity100() {
-		return _simulation->difficultyProductivityAdjustment();
-	}
 	int32 speedBoostEfficiency100();
 
 	/*

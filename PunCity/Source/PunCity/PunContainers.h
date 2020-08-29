@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "PunCity/Simulation/GameSimulationInfo.h"
 #include "PunCity/PunUtils.h"
 #include "Serialization/BufferArchive.h"

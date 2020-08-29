@@ -312,7 +312,7 @@ public:
 		return nodes;
 	}
 
-	WorldAtom2 homeAtom(int32 playerId) {
+	WorldAtom2 homeAtom(int32 playerId) final {
 		if (playerOwned(playerId).hasChosenLocation()) {
 			return GetProvinceCenterTile(playerOwned(playerId).provincesClaimed().front()).worldAtom2();
 		}
@@ -971,6 +971,8 @@ public:
 		AddPopup(info);
 	}
 	void AddPopup(PopupInfo popupInfo) final {
+		PUN_CHECK(0 <= popupInfo.playerId);
+		PUN_CHECK(popupInfo.playerId < _popupSystems.size());
 		_popupSystems[popupInfo.playerId].AddPopup(popupInfo);
 	}
 
@@ -998,6 +1000,12 @@ public:
 	PopupInfo* PopupToDisplay(int32 playerId) final {
 		return _popupSystems[playerId].PopupToDisplay();
 	}
+
+
+	void TryRemovePopups(int32 playerId, PopupReceiverEnum receiverEnum) final {
+		_popupSystems[playerId].TryRemovePopups(receiverEnum);
+	}
+	
 	void CloseCurrentPopup(int32 playerId) final {
 		_popupSystems[playerId].ClosePopupToDisplay();
 	}
@@ -1182,8 +1190,8 @@ public:
 	int32 TownhallCardCount(int32 playerId, CardEnum cardEnum) final {
 		return cardSystem(playerId).TownhallCardCount(cardEnum);
 	}
-	bool HasCardInPile(int32 playerId, CardEnum cardEnum) final {
-		return cardSystem(playerId).HasCardInPile(cardEnum);
+	bool HasCardInAnyPile(int32 playerId, CardEnum cardEnum) final {
+		return cardSystem(playerId).HasCardInAnyPile(cardEnum);
 	}
 	void AddDrawCards(int32 playerId, CardEnum cardEnum, int32 count) final {
 		return cardSystem(playerId).AddDrawCards(cardEnum, count);
@@ -1314,8 +1322,8 @@ public:
 	MapSizeEnum mapSizeEnum() final {
 		return _mapSettings.mapSizeEnum();
 	}
-	int32 difficultyProductivityAdjustment() final {
-		return DifficultyProductivityAdjustment[static_cast<int>(_mapSettings.difficultyLevel)];
+	int32 difficultyConsumptionAdjustment() final {
+		return DifficultyConsumptionAdjustment[static_cast<int>(_mapSettings.difficultyLevel)];
 	}
 	
 	FMapSettings mapSettings() final {
@@ -1372,6 +1380,10 @@ public:
 	void AbandonTown(int32 playerId);
 
 	/*
+	 * Settings
+	 */
+
+	/*
 	 * Snow
 	 */
 	bool IsSnowStart() {
@@ -1410,7 +1422,7 @@ public:
 
 		std::vector<int32> connectedPlayerIds = _gameManager->connectedPlayerIds(false);
 		for (int32 playerId : connectedPlayerIds) {
-			if (!playerOwned(playerId).hasChosenLocation() &&
+			if (!playerOwned(playerId).hasTownhall() &&
 				!IsReplayPlayer(playerId))  // ReplayPlayer shouldn't pause the game
 			{
 				return false;
@@ -1884,7 +1896,7 @@ private:
 	FloatDet _lastTickSnowAccumulation3 = 0;
 	FloatDet _lastTickSnowAccumulation2 = 0;
 	FloatDet _lastTickSnowAccumulation1 = 0;
-
+	
 private:
 	//! Not serialized
 	IGameManagerInterface* _gameManager = nullptr;

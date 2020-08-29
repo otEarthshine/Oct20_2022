@@ -174,7 +174,7 @@ public:
 	void UnitNourishBush(WorldTile2 tile);
 	void UnitNourishTree(WorldTile2 tile);
 
-	ResourcePair UnitGatherFruit(WorldTile2 tile);
+	ResourcePair UnitGatherFruit100(WorldTile2 tile);
 	ResourcePair AnimalTrimBush(WorldTile2 tile, int32 trimEfficiency);
 
 	// Force = not a reserver, but trying to remove the tile anyway...
@@ -260,7 +260,7 @@ public:
 				+ "\n growth:" + std::to_string(info.growthPercent(age)) 
 				+ "\n yield:" + std::to_string(info.tileYieldPercent(age))
 				+ "\n cutdown10:" + std::to_string(info.cutDownResource(age, 10).count)
-				+ "\n fruit:" + std::to_string(info.fruitResource(age).count);
+				+ "\n fruit100:" + std::to_string(info.fruitResource100(age).count);
 	}
 
 public:

@@ -223,6 +223,28 @@ void UMainGameUI::Tick()
 		SetVisibility(ESlateVisibility::Collapsed);
 	}
 
+
+	/*
+	 * Initial hide before building a townhall
+	 */
+	if (simulation.HasTownhall(playerId()))
+	{
+		BuildGatherMenu->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		CardStackSizeBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		RoundCountdownOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		LeaderSkillOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		ResourceOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	}
+	else
+	{
+		BuildGatherMenu->SetVisibility(ESlateVisibility::Hidden);
+		CardStackSizeBox->SetVisibility(ESlateVisibility::Hidden);
+		RoundCountdownOverlay->SetVisibility(ESlateVisibility::Hidden);
+		LeaderSkillOverlay->SetVisibility(ESlateVisibility::Hidden);
+		ResourceOverlay->SetVisibility(ESlateVisibility::Hidden);
+	}
+	
+
 	////! If clicked something else, remove confirmation UI
 	//if (ConfirmationOverlay->GetVisibility() != ESlateVisibility::Collapsed)
 	//{
@@ -774,6 +796,8 @@ void UMainGameUI::Tick()
 			HousingSpaceText->SetText(FText::FromString(FString::FromInt(population) + FString("/") + FString::FromInt(simulation.HousingCapacity(playerId()))));
 
 			std::vector<int32> storageIds = simulation.buildingIds(playerId(), CardEnum::StorageYard);
+			std::vector<int32> warehouseIds = simulation.buildingIds(playerId(), CardEnum::Warehouse);
+			storageIds.insert(storageIds.end(), warehouseIds.begin(), warehouseIds.end());
 			
 			int32 totalSlots = 0;
 			int32 usedSlots = 0;
@@ -1085,7 +1109,8 @@ void UMainGameUI::Tick()
 		 * Research
 		 */
 		UnlockSystem* unlockSys = dataSource()->simulation().unlockSystem(playerId());
-		if (unlockSys && unlockSys->researchEnabled)
+		if (unlockSys && 
+			unlockSys->researchEnabled)
 		{
 			std::shared_ptr<ResearchInfo> currentTech = unlockSys->currentResearch();
 

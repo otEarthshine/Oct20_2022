@@ -18,12 +18,16 @@ class PROTOTYPECITY_API UGameSettingsUI : public UPunWidget
 public:
 	void PunInit(UPunWidget* callbackParent);
 
-	void Refresh();
+	void RefreshUI(bool resetTabs = true);
 	
 	UPROPERTY(meta = (BindWidget)) UWidgetSwitcher* SettingsMenu;
 
+	// Settings Apply
+	UPROPERTY(meta = (BindWidget)) UButton* ConfirmChangesButton;
+	UPROPERTY(meta = (BindWidget)) UButton* DiscardChangesButton;
+	UPROPERTY(meta = (BindWidget)) UOverlay* ConfirmOverlay;
+	
 	UPROPERTY(meta = (BindWidget)) UButton* BackButton;
-	UPROPERTY(meta = (BindWidget)) UButton* SettingsCancelButton;
 	UPROPERTY(meta = (BindWidget)) UButton* SettingsConfirmButton;
 	UPROPERTY(meta = (BindWidget)) UButton* SettingsApplyButton;
 
@@ -56,6 +60,9 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) UButton* RestoreDefaultsButton;
 
+	// Others
+	UPROPERTY(meta = (BindWidget)) UButton* OtherSettingsButton;
+	UPROPERTY(meta = (BindWidget)) UComboBoxString* AutosaveDropdown;
 
 private:
 	void SetupResolutionDropdown() {
@@ -72,38 +79,91 @@ private:
 		}
 		ResolutionDropdown->SetSelectedIndex(selectedIndex);
 	}
-	
+
+	void ApplyChanges();
+	void UndoChanges();
+	void ExecuteAfterConfirmOrDiscard();
+
+	bool _isSettingsDirty = false;
+	int32 _tabIndexToChangeTo = -1; // -1 is for UI Close
+
 
 private:
+	/*
+	 * Confirmation Popup
+	 */
+	UFUNCTION() void OnClickedConfirmChangesButton() {
+		ConfirmOverlay->SetVisibility(ESlateVisibility::Collapsed);
+		ApplyChanges();
+		ExecuteAfterConfirmOrDiscard();
+	}
+	UFUNCTION() void OnClickedDiscardChangesButton() {
+		ConfirmOverlay->SetVisibility(ESlateVisibility::Collapsed);
+		UndoChanges();
+		ExecuteAfterConfirmOrDiscard();
+	}
+
+	/*
+	 * Settings Apply
+	 */
+	UFUNCTION() void OnClickSettingsApply() {
+		ApplyChanges();
+		Spawn2DSound("UI", "ButtonClick");
+	}
+	UFUNCTION() void OnClickSettingsConfirm() {
+		TryOpenConfirmUI(-1);
+		Spawn2DSound("UI", "ButtonClick");
+	}
+	UFUNCTION() void OnClickSettingsCancel() {
+		TryOpenConfirmUI(-1); // Note, same path as Confirm...
+		Spawn2DSound("UI", "UIWindowClose");
+	}
+
+	void ChangeTab(int32 tabIndex);
+	void TryOpenConfirmUI(int32 tabIndexToChangeTo) {
+		if (_isSettingsDirty) {
+			ConfirmOverlay->SetVisibility(ESlateVisibility::Visible);
+			_tabIndexToChangeTo = tabIndexToChangeTo;
+		} else {
+			_tabIndexToChangeTo = tabIndexToChangeTo;
+			ExecuteAfterConfirmOrDiscard();
+		}
+	}
+
+	UFUNCTION() void OnClickGraphicsSettings() { TryOpenConfirmUI(0); }
+	UFUNCTION() void OnClickAudioSettings() { TryOpenConfirmUI(1); }
+	UFUNCTION() void OnClickInputSettings() { TryOpenConfirmUI(2); }
+	UFUNCTION() void OnClickOtherSettings() { TryOpenConfirmUI(3); }
+
+	/*
+	 * 
+	 */
 	UFUNCTION() void OnMasterVolumeChanged(float volume) {
+		_isSettingsDirty = true;
 		gameInstance()->SetMasterVolume(std::max(volume, MinVolume)); // 0.01 is so that it doesn't Stop()
 		gameInstance()->RefreshSoundSettings();
 	}
 	UFUNCTION() void OnMusicVolumeChanged(float volume) {
+		_isSettingsDirty = true;
 		gameInstance()->SetMusicVolume(std::max(volume, MinVolume));
 		gameInstance()->RefreshSoundSettings();
 	}
 	UFUNCTION() void OnSoundEffectsVolumeChanged(float volume) {
+		_isSettingsDirty = true;
 		gameInstance()->SetSoundEffectsVolume(std::max(volume, MinVolume));
 		gameInstance()->RefreshSoundSettings();
 	}
 	UFUNCTION() void OnAmbientSoundsVolumeChanged(float volume) {
+		_isSettingsDirty = true;
 		gameInstance()->SetAmbientVolume(std::max(volume, MinVolume));
 		gameInstance()->RefreshSoundSettings();
 	}
 
 	UFUNCTION() void OnMouseWheelSpeedChanged(float fraction) {
+		_isSettingsDirty = true;
 		gameInstance()->mouseZoomSpeedFraction = fraction;
 		gameInstance()->RefreshSoundSettings();
 	}
-
-	UFUNCTION() void OnClickSettingsApply();
-	UFUNCTION() void OnClickSettingsConfirm();
-	UFUNCTION() void OnClickSettingsCancel();
-
-	UFUNCTION() void OnClickGraphicsSettings();
-	UFUNCTION() void OnClickAudioSettings();
-	UFUNCTION() void OnClickInputSettings();
 
 	UFUNCTION() void OnResolutionDropdownChanged(FString sItem, ESelectInfo::Type seltype);
 	UFUNCTION() void OnUIScalingDropdownChanged(FString sItem, ESelectInfo::Type seltype);
@@ -120,10 +180,14 @@ private:
 	UFUNCTION() void OnVSyncCheckBoxChecked(bool active);
 	
 	UFUNCTION() void RestoreDefault();
+
+	UFUNCTION() void OnAutosaveDropdownChanged(FString sItem, ESelectInfo::Type seltype);
 	
 	void ResetTabSelection();
 
 private:
+
+	void RefreshResolutionDropdown();
 
 	static UGameUserSettings* GetGameUserSettings() {
 		if (GEngine != nullptr) {

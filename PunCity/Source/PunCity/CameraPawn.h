@@ -68,7 +68,9 @@ public:
 	void KeyPressed_R();
 	void KeyPressed_CtrlT();
 	void KeyPressed_M();
-	void KeyPressed_H();
+	void KeyPressed_H() { _networkInterface->KeyPressed_H(); }
+	void KeyPressed_F() { _networkInterface->KeyPressed_F(); }
+	
 	void LeftMouseDown();
 	void LeftMouseUp();
 	void RightMouseDown();

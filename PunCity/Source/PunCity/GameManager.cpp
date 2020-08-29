@@ -78,7 +78,7 @@ AGameManager::AGameManager()
 
 #if DISPLAY_TERRAIN
 	_regionDisplaySystem = CreateDefaultSubobject<URegionDisplayComponent>("RegionDisplay");
-	_terrainDisplaySystem = CreateDefaultSubobject<UTerrainLargeDisplayComponent>("TerrainLargeDisplay");
+	_terrainLargeDisplaySystem = CreateDefaultSubobject<UTerrainLargeDisplayComponent>("TerrainLargeDisplay");
 #endif
 
 	_debugDisplaySystem = CreateDefaultSubobject<UDebugDisplayComponent>("DebugDisplay");
@@ -233,7 +233,7 @@ void AGameManager::InitPhase2()
 
 #if DISPLAY_TERRAIN
 	_regionDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader);
-	_terrainDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader);
+	_terrainLargeDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader);
 #endif
 
 	_debugDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader);
@@ -408,8 +408,7 @@ void AGameManager::TickNetworking()
 	int32 gameTickClogged = 120;
 
 	// Lower latency for single player mode
-	auto gameInstance = CastChecked<UPunGameInstance>(GetGameInstance());
-	if (gameInstance->isSinglePlayer) {
+	if (isSinglePlayer()) {
 		//gameTickQuarter = 1;
 		//gameTickHalf = 2;
 		//gameTickNormal = 5;
@@ -854,7 +853,7 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 						CppUtils::TryAdd(sampleNearRegionIds4x4, WorldRegion2(region.x / 4 * 4, region.y / 4 * 4).regionId());
 					}
 
-					_terrainDisplaySystem->Display(sampleNearRegionIds4x4);
+					_terrainLargeDisplaySystem->Display(sampleNearRegionIds4x4);
 				};
 				
 				if (PunSettings::TrailerSession) {
@@ -863,18 +862,18 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 				else
 				{
 					if (smoothZoomDistance < WorldZoomTransition_RegionToRegion4x4) {
-						_terrainDisplaySystem->Display(noSample);
+						_terrainLargeDisplaySystem->Display(noSample);
 					}
 					else if (smoothZoomDistance < WorldZoomTransition_Region4x4ToMap) {
 						displayNormally();
 					}
 					else {
-						_terrainDisplaySystem->Display(noSample);
+						_terrainLargeDisplaySystem->Display(noSample);
 					}
 				}
 			}
 			else {
-				_terrainDisplaySystem->Display(noSample);
+				_terrainLargeDisplaySystem->Display(noSample);
 			}
 #endif
 		}

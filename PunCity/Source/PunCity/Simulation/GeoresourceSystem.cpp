@@ -63,6 +63,10 @@ void GeoresourceSystem::InitGeoresourceSystem(IGameSimulationCore* simulation, b
 			continue;
 		}
 
+		if (provinceSys.provinceFlatTileCount(provinceId) < CoordinateConstants::TileIdsPerRegion / 2) {
+			continue;
+		}
+
 		if (hasNearbyGeoresource(provinceId)) {
 			continue;
 		}

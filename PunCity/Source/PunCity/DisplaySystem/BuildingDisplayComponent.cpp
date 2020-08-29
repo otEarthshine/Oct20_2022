@@ -736,7 +736,8 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 				{
 					TileArea area = building.area();
 
-					UDecalComponent* decals = PunUnrealUtils::ShowDecal(building.area().trueCenterAtom(), area.size(), _farmDecals, _farmCount, this, _assetLoader->FarmDecalMaterial, gameManager(), true);
+					UDecalComponent* decals = PunUnrealUtils::ShowDecal(building.area().trueCenterAtom(), area.size(), _farmDecals, _farmCount, 
+						this, _assetLoader->FarmDecalMaterial, gameManager(), true, 0.01f);
 					auto farmMaterial = CastChecked<UMaterialInstanceDynamic>(decals->GetDecalMaterial());
 					farmMaterial->SetScalarParameterValue("FarmTilesX", area.sizeX());
 					farmMaterial->SetScalarParameterValue("FarmTilesY", area.sizeY());

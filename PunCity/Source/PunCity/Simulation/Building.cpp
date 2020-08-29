@@ -65,6 +65,7 @@ void Building::Init(IGameSimulationCore& simulation, int objectId, int32_t playe
 		if (constructionCosts[i] > 0) AddResourceHolder(ConstructionResources[i], ResourceHolderType::Requester, constructionCosts[i]);
 	}
 
+	OnInit();
 
 	// Clear area for TrailerMode
 	if (PunSettings::TrailerMode()) {
@@ -92,8 +93,7 @@ void Building::Init(IGameSimulationCore& simulation, int objectId, int32_t playe
 	InitStatistics();
 
 	_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Overlay, _centerTile.regionId(), true);
-
-	OnInit();
+	
 
 	// If land is cleared, just SetWalkable without needing ppl to do this.
 	// This allows multiple roads to be queued without failing workplace.didSetWalkable()
@@ -273,7 +273,7 @@ void Building::SetHolderTypeAndTarget(ResourceEnum resourceEnum, ResourceHolderT
 		return;
 	}
 	
-	// ResourceEnum::None means 
+	// ResourceEnum::None means All (Allow/Disallow All)
 	if (resourceEnum == ResourceEnum::None) {
 		for (int32 i = 0; i < ResourceEnumCount; i++) {
 			ResourceHolderInfo info = holderInfo(static_cast<ResourceEnum>(i));
@@ -583,7 +583,20 @@ void Building::DoWork(int unitId, int workAmount100)
 				_workDone100 = 0;
 				_filledInputs = false;
 
-				_simulation->cardSystem(_playerId).AddCardToHand2(CardEnum::ProductivityBook);
+				auto& cardSys = _simulation->cardSystem(_playerId);
+
+				if (workMode().name == "Productivity Book") {
+					cardSys.AddCardToHand2(CardEnum::ProductivityBook);
+				}
+				else if (workMode().name == "Sustainability Book") {
+					cardSys.AddCardToHand2(CardEnum::SustainabilityBook);
+				}
+				else if (workMode().name == "Frugality Book") {
+					cardSys.AddCardToHand2(CardEnum::FrugalityBook);
+				}
+				else {
+					PUN_NOENTRY();
+				}
 
 				_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
 				return;

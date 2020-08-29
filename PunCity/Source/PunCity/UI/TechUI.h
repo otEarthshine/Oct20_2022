@@ -42,6 +42,8 @@ public:
 		if (show) {
 			networkInterface()->ResetGameUI();
 
+			simulation().TryRemovePopups(playerId(), PopupReceiverEnum::DoneResearchEvent_ShowTree);
+
 			dataSource()->Spawn2DSound("UI", "UIWindowOpen");
 		} else {
 			dataSource()->Spawn2DSound("UI", "UIWindowClose");

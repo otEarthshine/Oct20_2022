@@ -23,6 +23,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* QuestDescriptionBox;
 	UPROPERTY(meta = (BindWidget)) UButton* QuestDescriptionCloseButton;
 
+	UPROPERTY(meta = (BindWidget)) UOverlay* PlayerCompareOverlay;
 	UPROPERTY(meta = (BindWidget)) UOverlay* PlayerCompareInnerOverlay;
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* PlayerCompareBox;
 	
@@ -123,58 +124,69 @@ public:
 		/*
 		 * Player Compare
 		 */
-		std::vector<int32> playerIds = GetPlayersSortedByPopulation();
-		
-		for (int32 i = 0; i < playerIds.size(); i++)
+		if (simulation().HasTownhall(playerId()))
 		{
-			int32 curId = playerIds[i];
-			if (i >= PlayerCompareBox->GetChildrenCount()) {
-				PlayerCompareBox->AddChild(AddWidget<UPlayerCompareElement>(UIEnum::PlayerCompareElement));
-			}
+			std::vector<int32> playerIds = GetPlayersSortedByPopulation();
 
-			int32 pop = simulation().population(curId);
-			FString name = dataSource()->playerNameF(curId);
-
-			auto element = CastChecked<UPlayerCompareElement>(PlayerCompareBox->GetChildAt(i));
-			if (element->PlayerNameText->GetText().ToString() != name ||
-				element->PopulationText->GetText().ToString() != FString::FromInt(pop))
+			for (int32 i = 0; i < playerIds.size(); i++)
 			{
-				SetChildHUD(element);
-				element->PunInit(curId);
-
-				auto setHomeTownIcon = [&]() {
-					element->HomeTownIcon->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-					element->HomeTownIcon->SetRenderOpacity(gameInstance()->IsPlayerConnected(curId) ? 1.0f : 0.2f);
-				};
-
-				bool isPlayer = (curId == playerId());
-				if (isPlayer) {
-					SetTextF(element->PlayerNameBoldText, TrimStringF(name, 17));
-					SetText(element->PopulationBoldText, std::to_string(pop));
-					setHomeTownIcon();
-					
-					AddToolTip(element->PlayerZoomButton, "Click to travel home <Orange>[H]</>");
-				} else {
-					SetTextF(element->PlayerNameText, TrimStringF(name, 17));
-					SetText(element->PopulationText, std::to_string(pop));
-					setHomeTownIcon();
-
-					std::string nameStd = ToStdString(name);
-					AddToolTip(element->PlayerZoomButton, "Click to travel to " + nameStd);
+				int32 curId = playerIds[i];
+				if (i >= PlayerCompareBox->GetChildrenCount()) {
+					PlayerCompareBox->AddChild(AddWidget<UPlayerCompareElement>(UIEnum::PlayerCompareElement));
 				}
-				element->PlayerNameBoldText->SetVisibility(isPlayer ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
-				element->PopulationBoldText->SetVisibility(isPlayer ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
-				element->PlayerNameText->SetVisibility(isPlayer ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
-				element->PopulationText->SetVisibility(isPlayer ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
+
+				int32 pop = simulation().population(curId);
+				FString name = dataSource()->playerNameF(curId);
+
+				auto element = CastChecked<UPlayerCompareElement>(PlayerCompareBox->GetChildAt(i));
+				if (element->PlayerNameText->GetText().ToString() != name ||
+					element->PopulationText->GetText().ToString() != FString::FromInt(pop))
+				{
+					SetChildHUD(element);
+					element->PunInit(curId);
+
+					auto setHomeTownIcon = [&]() {
+						element->HomeTownIcon->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+						element->HomeTownIcon->SetRenderOpacity(gameInstance()->IsPlayerConnected(curId) ? 1.0f : 0.2f);
+					};
+
+					bool isPlayer = (curId == playerId());
+					if (isPlayer) {
+						SetTextF(element->PlayerNameBoldText, TrimStringF(name, 17));
+						SetText(element->PopulationBoldText, std::to_string(pop));
+						setHomeTownIcon();
+
+						AddToolTip(element->PlayerZoomButton, "Click to travel home <Orange>[H]</>");
+					}
+					else {
+						SetTextF(element->PlayerNameText, TrimStringF(name, 17));
+						SetText(element->PopulationText, std::to_string(pop));
+						setHomeTownIcon();
+
+						std::string nameStd = ToStdString(name);
+						AddToolTip(element->PlayerZoomButton, "Click to travel to " + nameStd);
+					}
+					element->PlayerNameBoldText->SetVisibility(isPlayer ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+					element->PopulationBoldText->SetVisibility(isPlayer ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+					element->PlayerNameText->SetVisibility(isPlayer ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
+					element->PopulationText->SetVisibility(isPlayer ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
+				}
+
+				// Element visible if it has a valid name
+				element->SetVisibility(name.Len() > 0 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 			}
 
-			// Element visible if it has a valid name
-			element->SetVisibility(name.Len() > 0 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+			for (size_t i = playerIds.size(); i < PlayerCompareBox->GetChildrenCount(); i++) {
+				PlayerCompareBox->GetChildAt(i)->SetVisibility(ESlateVisibility::Collapsed);
+			}
+			
+			PlayerCompareOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		}
+		else
+		{
+			PlayerCompareOverlay->SetVisibility(ESlateVisibility::Hidden);
 		}
 
-		for (size_t i = playerIds.size(); i < PlayerCompareBox->GetChildrenCount(); i++) {
-			PlayerCompareBox->GetChildAt(i)->SetVisibility(ESlateVisibility::Collapsed);
-		}
 
 		TickPlayerDetails();
 	}

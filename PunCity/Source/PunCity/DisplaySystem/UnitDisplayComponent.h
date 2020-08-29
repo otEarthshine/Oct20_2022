@@ -108,6 +108,7 @@ public:
 
 		SkelMeshAfterAdd();
 
+#if TRAILER_MODE
 		/*
 		 * Ship
 		 */
@@ -141,6 +142,7 @@ public:
 		//		_smallShip->SetVisibility(false);
 		//	}
 		//}
+#endif
 	}
 
 	// Hide displays when sampleIds.size() becomes zero (Switch to world map)

@@ -190,7 +190,7 @@ protected:
 
 							// Show the edge
 							auto& provinceSys = sim.provinceSystem();
-							if (IsValidProvinceId(provinceId))
+							if (IsValidRawProvinceId(provinceId))
 							{
 								provinceId = abs(provinceId);
 								if (!provinceSys.displayedProvinceThisTick[provinceId])

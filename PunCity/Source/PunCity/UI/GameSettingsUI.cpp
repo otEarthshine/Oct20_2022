@@ -37,7 +37,7 @@ void UGameSettingsUI::PunInit(UPunWidget* callbackParent)
 		gameInstance()->loadedVersion != GAME_VERSION)
 	{
 		RestoreDefault();
-		gameInstance()->RestoreDefaults();
+		gameInstance()->RestoreDefaultsSound();
 		gameInstance()->SaveSettingsToFile();
 	}
 
@@ -107,6 +107,13 @@ void UGameSettingsUI::PunInit(UPunWidget* callbackParent)
 	 * Special cases
 	 */
 	//GetGameUserSettings()->SetPostProcessingQuality(2); // 4.25 postprocessing broken...
+
+	ConfirmChangesButton->OnClicked.AddDynamic(this, &UGameSettingsUI::OnClickedConfirmChangesButton);
+	DiscardChangesButton->OnClicked.AddDynamic(this, &UGameSettingsUI::OnClickedDiscardChangesButton);
+
+	SettingsApplyButton->OnClicked.AddDynamic(this, &UGameSettingsUI::OnClickSettingsApply);
+	SettingsConfirmButton->OnClicked.AddDynamic(this, &UGameSettingsUI::OnClickSettingsConfirm);
+	BackButton->OnClicked.AddDynamic(this, &UGameSettingsUI::OnClickSettingsCancel);
 	
 	/*
 	 * 
@@ -117,15 +124,10 @@ void UGameSettingsUI::PunInit(UPunWidget* callbackParent)
 	SoundEffectsSlider->OnValueChanged.AddDynamic(this, &UGameSettingsUI::OnSoundEffectsVolumeChanged);
 	AmbientSoundsSlider->OnValueChanged.AddDynamic(this, &UGameSettingsUI::OnAmbientSoundsVolumeChanged);
 
-
-	SettingsApplyButton->OnClicked.AddDynamic(this, &UGameSettingsUI::OnClickSettingsApply);
-	SettingsConfirmButton->OnClicked.AddDynamic(this, &UGameSettingsUI::OnClickSettingsConfirm);
-	SettingsCancelButton->OnClicked.AddDynamic(this, &UGameSettingsUI::OnClickSettingsCancel);
-	BackButton->OnClicked.AddDynamic(this , &UGameSettingsUI::OnClickSettingsCancel);
-
 	GraphicsSettingsButton->OnClicked.AddDynamic(this, &UGameSettingsUI::OnClickGraphicsSettings);
 	AudioSettingsButton->OnClicked.AddDynamic(this, &UGameSettingsUI::OnClickAudioSettings);
 	InputSettingsButton->OnClicked.AddDynamic(this, &UGameSettingsUI::OnClickInputSettings);
+	OtherSettingsButton->OnClicked.AddDynamic(this, &UGameSettingsUI::OnClickOtherSettings);
 
 	MouseWheelSpeedSlider->OnValueChanged.AddDynamic(this, &UGameSettingsUI::OnMouseWheelSpeedChanged);
 
@@ -146,7 +148,6 @@ void UGameSettingsUI::PunInit(UPunWidget* callbackParent)
 
 	WindowModeDropdown->ClearOptions();
 	WindowModeDropdown->AddOption("Fullscreen");
-	//WindowModeDropdown->AddOption("WindowedFullscreen");
 	WindowModeDropdown->AddOption("Windowed");
 
 	
@@ -184,10 +185,17 @@ void UGameSettingsUI::PunInit(UPunWidget* callbackParent)
 	setupDropdown(TexturesDropdown);
 	setupDropdown(EffectsDropdown);
 
+
+	AutosaveDropdown->OnSelectionChanged.AddDynamic(this, &UGameSettingsUI::OnAutosaveDropdownChanged);
+	AutosaveDropdown->ClearOptions();
+	for (size_t i = 0; i < AutosaveOptions.size(); i++) {
+		AutosaveDropdown->AddOption(AutosaveOptions[i]);
+	}
+
 	ResetTabSelection();
 }
 
-void UGameSettingsUI::Refresh()
+void UGameSettingsUI::RefreshUI(bool resetTabs)
 {
 	// Refresh does SetSelectedIndex which makes sound, suppress it...
 	_lastOpened = UGameplayStatics::GetTimeSeconds(this);
@@ -211,7 +219,14 @@ void UGameSettingsUI::Refresh()
 	}
 	
 	ResolutionDropdown->SetSelectedIndex(resolutionIndex);
-	WindowModeDropdown->SetSelectedIndex(static_cast<int32>(GEngine->GameViewport->Viewport->GetWindowMode()) - 1); // TODO: +1 for avoiding fullscreen which crashes
+	//WindowModeDropdown->SetSelectedIndex(static_cast<int32>(GEngine->GameViewport->Viewport->GetWindowMode()) - 1); // TODO: +1 for avoiding fullscreen which crashes
+	if (resetTabs) { // Reset tabs means this is when Settings UI gets opened
+		WindowModeDropdown->SetSelectedIndex(GEngine->GameViewport->Viewport->GetWindowMode() == EWindowMode::WindowedFullscreen ? 0 : 1);
+	} else {
+		WindowModeDropdown->SetSelectedIndex(settings->GetFullscreenMode() == EWindowMode::WindowedFullscreen ? 0 : 1);
+	}
+	RefreshResolutionDropdown();
+	
 	UIScalingDropdown->SetSelectedIndex(0);
 
 	//ResolutionSlider->SetValue(settings->ScalabilityQuality.ResolutionQuality / 100.0f);
@@ -224,19 +239,19 @@ void UGameSettingsUI::Refresh()
 	EffectsDropdown->SetSelectedIndex(settings->ScalabilityQuality.EffectsQuality);
 
 	if (settings->GetFrameRateLimit() <= 30.01) {
-		MaxFrameRateDropdown->SetSelectedIndex(30);
+		MaxFrameRateDropdown->SetSelectedOption("30 FPS");
 	}
 	else if (settings->GetFrameRateLimit() <= 60.01) {
-		MaxFrameRateDropdown->SetSelectedIndex(60);
+		MaxFrameRateDropdown->SetSelectedOption("60 FPS");
 	}
 	else if (settings->GetFrameRateLimit() <= 90.01) {
-		MaxFrameRateDropdown->SetSelectedIndex(90);
+		MaxFrameRateDropdown->SetSelectedOption("90 FPS");
 	}
 	else if (settings->GetFrameRateLimit() <= 120.01) {
-		MaxFrameRateDropdown->SetSelectedIndex(120);
+		MaxFrameRateDropdown->SetSelectedOption("120 FPS");
 	}
 	else {
-		MaxFrameRateDropdown->SetSelectedIndex(0);
+		MaxFrameRateDropdown->SetSelectedOption("None");
 	}
 	VSyncCheckBox->SetIsChecked(settings->IsVSyncEnabled());
 	
@@ -248,9 +263,16 @@ void UGameSettingsUI::Refresh()
 	
 	MouseWheelSpeedSlider->SetValue(gameInst->mouseZoomSpeedFraction);
 
-	ResetTabSelection();
-	SetButtonHighlight(GraphicsSettingsButton, true);
-	SettingsMenu->SetActiveWidgetIndex(0);
+	if (resetTabs) {
+		ResetTabSelection();
+		SetButtonHighlight(GraphicsSettingsButton, true);
+		SettingsMenu->SetActiveWidgetIndex(0);
+	}
+
+	AutosaveDropdown->SetSelectedIndex(static_cast<int32>(gameInst->autosaveEnum));
+
+	_isSettingsDirty = false;
+	ConfirmOverlay->SetVisibility(ESlateVisibility::Collapsed);
 }
 
 void UGameSettingsUI::ResetTabSelection()
@@ -258,105 +280,118 @@ void UGameSettingsUI::ResetTabSelection()
 	SetButtonHighlight(GraphicsSettingsButton, false);
 	SetButtonHighlight(AudioSettingsButton, false);
 	SetButtonHighlight(InputSettingsButton, false);
+	SetButtonHighlight(OtherSettingsButton, false);
 }
 
-void UGameSettingsUI::OnClickGraphicsSettings()
+void UGameSettingsUI::ChangeTab(int32 tabIndex)
 {
 	ResetTabSelection();
-	SetButtonHighlight(GraphicsSettingsButton, true);
-	SettingsMenu->SetActiveWidgetIndex(0);
+	switch (tabIndex)
+	{
+	case 0: SetButtonHighlight(GraphicsSettingsButton, true); break;
+	case 1: SetButtonHighlight(AudioSettingsButton, true); break;
+	case 2: SetButtonHighlight(InputSettingsButton, true); break;
+	case 3: SetButtonHighlight(OtherSettingsButton, true); break;
+	default: break;
+	}
+	
+	SettingsMenu->SetActiveWidgetIndex(tabIndex);
 
 	Spawn2DSound("UI", "ButtonClick");
 }
-void UGameSettingsUI::OnClickAudioSettings()
-{
-	ResetTabSelection();
-	SetButtonHighlight(AudioSettingsButton, true);
-	SettingsMenu->SetActiveWidgetIndex(1);
 
-	Spawn2DSound("UI", "ButtonClick");
-}
-void UGameSettingsUI::OnClickInputSettings()
-{
-	ResetTabSelection();
-	SetButtonHighlight(InputSettingsButton, true);
-	SettingsMenu->SetActiveWidgetIndex(2);
-
-	Spawn2DSound("UI", "ButtonClick");
-}
+/*
+ * Graphics
+ */
 
 void UGameSettingsUI::OnResolutionDropdownChanged(FString sItem, ESelectInfo::Type seltype)
 {
-	_videoModeChanged = true;
+	if (seltype != ESelectInfo::Type::Direct) {
+		_isSettingsDirty = true;
+		_videoModeChanged = true;
 
-	int32 optionIndex = ResolutionDropdown->FindOptionIndex(sItem);
-	if (optionIndex != -1)
-	{
-		FIntPoint resolution = resolutions[optionIndex];
-		GetGameUserSettings()->SetScreenResolution(resolution);
+		int32 optionIndex = ResolutionDropdown->FindOptionIndex(sItem);
+		if (optionIndex != -1)
+		{
+			FIntPoint resolution = resolutions[optionIndex];
+			GetGameUserSettings()->SetScreenResolution(resolution);
 
-		Spawn2DSound("UI", "DropdownChange");
+			Spawn2DSound("UI", "DropdownChange");
+		}
 	}
 }
 void UGameSettingsUI::OnUIScalingDropdownChanged(FString sItem, ESelectInfo::Type seltype)
 {
-	//GetGameUserSettings()->();
+	if (seltype != ESelectInfo::Type::Direct) {
+		_isSettingsDirty = true;
+		//GetGameUserSettings()->();
 
-	Spawn2DSound("UI", "DropdownChange");
+		Spawn2DSound("UI", "DropdownChange");
+	}
 }
 void UGameSettingsUI::OnWindowModeDropdownChanged(FString sItem, ESelectInfo::Type seltype)
 {
-	_videoModeChanged = true;
+	if (seltype != ESelectInfo::Type::Direct) {
+		_isSettingsDirty = true;
+		_videoModeChanged = true;
 
-	EWindowMode::Type windowMode = (sItem == "Fullscreen") ? EWindowMode::WindowedFullscreen : EWindowMode::Windowed;
-	//EWindowMode::Type windowMode = EWindowMode::ConvertIntToWindowMode(optionIndex);
-	GetGameUserSettings()->SetFullscreenMode(windowMode);
+		EWindowMode::Type windowMode = (sItem == "Fullscreen") ? EWindowMode::WindowedFullscreen : EWindowMode::Windowed;
+		//EWindowMode::Type windowMode = EWindowMode::ConvertIntToWindowMode(optionIndex);
+		GetGameUserSettings()->SetFullscreenMode(windowMode);
+		RefreshResolutionDropdown();
 
-	Spawn2DSound("UI", "DropdownChange");
+		Spawn2DSound("UI", "DropdownChange");
+	}
 }
 
 
 void UGameSettingsUI::OnResolutionChanged(float value)
 {
+	_isSettingsDirty = true;
 	//GetGameUserSettings()->SetResolutionScaleValueEx(volume * 100.0f);
 	gameInstance()->SetResolutionQuality(value * 65 + 35);
 }
 void UGameSettingsUI::OnAntiAliasingDropdownChanged(FString sItem, ESelectInfo::Type seltype)
 {
-	if (seltype != ESelectInfo::Type::Direct)
-	{
+	if (seltype != ESelectInfo::Type::Direct) {
+		_isSettingsDirty = true;
+		
 		GetGameUserSettings()->SetAntiAliasingQuality(GetGraphicsOptionIndex(sItem));
 		Spawn2DSound("UI", "DropdownChange");
 	}
 }
 void UGameSettingsUI::OnPostProcessingDropdownChanged(FString sItem, ESelectInfo::Type seltype)
 {
-	if (seltype != ESelectInfo::Type::Direct)
-	{
+	if (seltype != ESelectInfo::Type::Direct) {
+		_isSettingsDirty = true;
+		
 		GetGameUserSettings()->SetPostProcessingQuality(GetGraphicsOptionIndex(sItem));
 		Spawn2DSound("UI", "DropdownChange");
 	}
 }
 void UGameSettingsUI::OnShadowsDropdownChanged(FString sItem, ESelectInfo::Type seltype)
 {
-	if (seltype != ESelectInfo::Type::Direct)
-	{
+	if (seltype != ESelectInfo::Type::Direct) {
+		_isSettingsDirty = true;
+		
 		GetGameUserSettings()->SetShadowQuality(GetGraphicsOptionIndex(sItem) + 1); // Low shadow quality is unacceptable...
 		Spawn2DSound("UI", "DropdownChange");
 	}
 }
 void UGameSettingsUI::OnTexturesDropdownChanged(FString sItem, ESelectInfo::Type seltype)
 {
-	if (seltype != ESelectInfo::Type::Direct)
-	{
+	if (seltype != ESelectInfo::Type::Direct) {
+		_isSettingsDirty = true;
+		
 		GetGameUserSettings()->SetTextureQuality(GetGraphicsOptionIndex(sItem));
 		Spawn2DSound("UI", "DropdownChange");
 	}
 }
 void UGameSettingsUI::OnEffectsDropdownChanged(FString sItem, ESelectInfo::Type seltype)
 {
-	if (seltype != ESelectInfo::Type::Direct)
-	{
+	if (seltype != ESelectInfo::Type::Direct) {
+		_isSettingsDirty = true;
+		
 		GetGameUserSettings()->SetVisualEffectQuality(GetGraphicsOptionIndex(sItem));
 		Spawn2DSound("UI", "DropdownChange");
 	}
@@ -364,8 +399,8 @@ void UGameSettingsUI::OnEffectsDropdownChanged(FString sItem, ESelectInfo::Type 
 
 void UGameSettingsUI::OnMaxFrameRateDropdownChanged(FString sItem, ESelectInfo::Type seltype)
 {
-	if (seltype != ESelectInfo::Type::Direct)
-	{
+	if (seltype != ESelectInfo::Type::Direct) {
+		_isSettingsDirty = true;
 		_videoModeChanged = true;
 
 		if (sItem == FString("None")) {
@@ -387,6 +422,7 @@ void UGameSettingsUI::OnMaxFrameRateDropdownChanged(FString sItem, ESelectInfo::
 }
 void UGameSettingsUI::OnVSyncCheckBoxChecked(bool active)
 {
+	_isSettingsDirty = true;
 	_videoModeChanged = true;
 	
 	GetGameUserSettings()->SetVSyncEnabled(active);
@@ -396,28 +432,68 @@ void UGameSettingsUI::OnVSyncCheckBoxChecked(bool active)
 	PUN_LOG("Checked settings->IsVSyncDirty(): %d", GetGameUserSettings()->IsVSyncDirty());
 }
 
-
-void UGameSettingsUI::RestoreDefault()
+void UGameSettingsUI::OnAutosaveDropdownChanged(FString sItem, ESelectInfo::Type seltype)
 {
-	auto settings = GetGameUserSettings();
-	settings->SetScreenResolution(settings->GetDefaultResolution());
-	settings->SetFullscreenMode(settings->GetDefaultWindowMode());
-	
-	settings->SetAntiAliasingQuality(2);
-	settings->SetPostProcessingQuality(2);
-	settings->SetShadowQuality(3);
-	settings->SetTextureQuality(2);
-	settings->SetVisualEffectQuality(2);
+	if (seltype != ESelectInfo::Type::Direct) {
+		_isSettingsDirty = true;
 
-	gameInstance()->RestoreDefaults();
+		for (size_t i = 0; i < AutosaveOptions.size(); i++) {
+			if (AutosaveOptions[i] == sItem) {
+				gameInstance()->autosaveEnum = static_cast<AutosaveEnum>(i);
+				break;
+			}
+		}
 
-	Spawn2DSound("UI", "ButtonClick");
-
-	Refresh();
+		Spawn2DSound("UI", "DropdownChange");
+	}
 }
 
 
-void UGameSettingsUI::OnClickSettingsApply()
+
+void UGameSettingsUI::RestoreDefault()
+{
+	_isSettingsDirty = true;
+	
+	if (SettingsMenu->GetActiveWidgetIndex() == 0)
+	{
+		auto settings = GetGameUserSettings();
+		settings->SetScreenResolution(FIntPoint(1920, 1080));
+		settings->SetFullscreenMode(EWindowMode::Windowed);
+		RefreshResolutionDropdown();
+
+		settings->SetAntiAliasingQuality(2);
+		settings->SetPostProcessingQuality(2);
+		settings->SetShadowQuality(3);
+		settings->SetTextureQuality(2);
+		settings->SetVisualEffectQuality(2);
+
+		gameInstance()->RestoreDefaultsGraphics();
+
+		Spawn2DSound("UI", "ButtonClick");
+
+		RefreshUI(false);
+	}
+	else if (SettingsMenu->GetActiveWidgetIndex() == 1)
+	{
+		gameInstance()->RestoreDefaultsSound();
+		RefreshUI(false);
+	}
+	else if (SettingsMenu->GetActiveWidgetIndex() == 2)
+	{
+		gameInstance()->RestoreDefaultsInputs();
+		RefreshUI(false);
+	}
+	else if (SettingsMenu->GetActiveWidgetIndex() == 3)
+	{
+		gameInstance()->RestoreDefaultsOthers();
+		RefreshUI(false);
+	}
+	else {
+		PUN_NOENTRY();
+	}
+}
+
+void UGameSettingsUI::ApplyChanges()
 {
 	auto settings = GetGameUserSettings();
 
@@ -427,25 +503,8 @@ void UGameSettingsUI::OnClickSettingsApply()
 		//settings->SetScreenResolution(settings->GetLastConfirmedScreenResolution());
 		//settings->SetFullscreenMode(settings->GetLastConfirmedFullscreenMode());
 		settings->ApplyResolutionSettings(false);
-
-		// Disable the resolution combobox if it is in windwed fullscreen mode
-		if (settings->GetFullscreenMode() == EWindowMode::Windowed) {
-			SetupResolutionDropdown();
-			ResolutionDropdown->SetIsEnabled(true);
-		}
-		else {
-			ResolutionDropdown->ClearOptions();
-			FIntPoint point = settings->GetDesktopResolution();
-			ResolutionDropdown->AddOption(FString::FromInt(point.X) + "x" + FString::FromInt(point.Y));
-			ResolutionDropdown->SetSelectedIndex(0);
-			ResolutionDropdown->SetIsEnabled(false);
-		}
 	}
 	settings->ApplyNonResolutionSettings();
-
-	//if (GEngine->IsInitialized()) {
-	//	Scalability::SetQualityLevels(settings->ScalabilityQuality);
-	//}
 
 	settings->RequestUIUpdate();
 	settings->SaveSettings();
@@ -453,29 +512,11 @@ void UGameSettingsUI::OnClickSettingsApply()
 
 	PunSettings::bShouldRefreshMainMenuDisplay = true;
 
-	Spawn2DSound("UI", "ButtonClick");
+	RefreshUI(false);
 
 	PUN_LOG("settings->IsVSyncDirty(): %d", settings->IsVSyncDirty());
 }
-
-// !!! Note that Civ 6 only has Confirm/Back ... we just have Apply/Close??
-void UGameSettingsUI::OnClickSettingsConfirm()
-{
-	auto settings = GetGameUserSettings();
-
-	OnClickSettingsApply();
-	
-	
-	settings->RequestUIUpdate();
-	settings->SaveSettings();
-	gameInstance()->SaveSettingsToFile();
-
-	Spawn2DSound("UI", "ButtonClick");
-	
-	_callbackParent->CallBack2(_callbackParent, CallbackEnum::CloseGameSettingsUI);
-}
-
-void UGameSettingsUI::OnClickSettingsCancel()
+void UGameSettingsUI::UndoChanges()
 {
 	auto settings = GetGameUserSettings();
 
@@ -484,10 +525,39 @@ void UGameSettingsUI::OnClickSettingsCancel()
 		settings->RevertVideoMode();
 	}
 
-	Spawn2DSound("UI", "UIWindowClose");
-	
 	settings->LoadSettings(true);
 	gameInstance()->LoadSoundAndOtherSettingsFromFile();
+	gameInstance()->RefreshSoundSettings();
+
+	RefreshUI(false);
+}
+
+void UGameSettingsUI::ExecuteAfterConfirmOrDiscard()
+{
+	if (_tabIndexToChangeTo == -1) {
+		_callbackParent->CallBack2(_callbackParent, CallbackEnum::CloseGameSettingsUI);
+	}
+	else {
+		ChangeTab(_tabIndexToChangeTo);
+	}
+	RefreshUI(false);
+}
+
+
+void UGameSettingsUI::RefreshResolutionDropdown()
+{
+	auto settings = GetGameUserSettings();
 	
-	_callbackParent->CallBack2(_callbackParent, CallbackEnum::CloseGameSettingsUI);
+	// Disable the resolution combobox if it is in windwed fullscreen mode
+	if (settings->GetFullscreenMode() == EWindowMode::Windowed) {
+		SetupResolutionDropdown();
+		ResolutionDropdown->SetIsEnabled(true);
+	}
+	else {
+		ResolutionDropdown->ClearOptions();
+		FIntPoint point = settings->GetDesktopResolution();
+		ResolutionDropdown->AddOption(FString::FromInt(point.X) + "x" + FString::FromInt(point.Y));
+		ResolutionDropdown->SetSelectedIndex(0);
+		ResolutionDropdown->SetIsEnabled(false);
+	}
 }

@@ -350,6 +350,44 @@ public:
 #endif
 	}
 
+	/*
+	 * Keys
+	 */
+	void KeyPressed_H() final
+	{
+		if (GetPunHUD()->mainGameUI()->BuildMenuOverlay->GetVisibility() != ESlateVisibility::Collapsed)
+		{
+			inputSystemInterface()->StartBuildingPlacement(CardEnum::House, 0, false);
+		}
+		else
+		{
+			WorldAtom2 lookAtAtom = simulation().homeAtom(playerId());
+			if (lookAtAtom == WorldAtom2::Zero) {
+				return;
+			}
+
+			SetCameraAtom(lookAtAtom);
+
+			FRotator rotation = cameraPawn->GetActorRotation();
+			rotation.Yaw = 0;
+			cameraPawn->SetActorRotation(rotation);
+		}
+	}
+	void KeyPressed_F() final
+	{
+		if (GetPunHUD()->mainGameUI()->BuildMenuOverlay->GetVisibility() != ESlateVisibility::Collapsed)
+		{
+			inputSystemInterface()->StartBuildingPlacement(CardEnum::Farm, 0, false);
+
+			// Noticed farm, no longer need exclamation on farm after this...
+			simulation().parameters(playerId())->FarmNoticed = true;
+		}
+	}
+
+
+	/*
+	 * Helpers
+	 */
 	FString playerNameF(int32_t playerId) final {
 		auto gameInstance = CastChecked<UPunGameInstance>(GetGameInstance());
 		if (gameInstance->playerNamesF().Num() == 0) {
@@ -421,8 +459,16 @@ public:
 
 		networkInterface()->SendNetworkCommand(command);
 	}
-	
 
+	UFUNCTION(Exec) void TestLoadingScreenFade() {
+		GetPunHUD()->escMenuUI()->StartLoadingScreenFade();
+	}
+	UFUNCTION(Exec) void TestCrash() {
+		PUN_NOENTRY();
+	}
+	UFUNCTION(Exec) void TestAutosave() {
+		GetPunHUD()->AutosaveGame();
+	}
 	
 	UFUNCTION(Exec) void SaveMainMenuDisplay()
 	{
@@ -924,9 +970,11 @@ public:
 			{
 				auto command = std::static_pointer_cast<FUpgradeBuilding>(commands[i]);
 
+#if TRAILER_MODE
 				if (command->buildingId == -1) {
 					command->buildingId = sim.buildingIdAtTile(WorldTile2(command->tileId));
 				}
+#endif
 				
 				if (!sim.building(command->buildingId).isEnum(CardEnum::Townhall)) {
 					commands.erase(commands.begin() + i);
@@ -1273,10 +1321,12 @@ public:
 			{
 				auto command = std::make_shared<FUpgradeBuilding>();
 
+#if TRAILER_MODE
 				WorldTile2 center(jsonObj->GetNumberField("centerX"),
 									jsonObj->GetNumberField("centerY"));
-
 				command->tileId = center.tileId();
+#endif
+				
 				command->buildingId = -1;
 				command->upgradeLevel = jsonObj->GetNumberField("upgradeLevel");
 				command->upgradeType = jsonObj->GetNumberField("upgradeType");

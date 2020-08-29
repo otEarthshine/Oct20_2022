@@ -12,10 +12,10 @@
 
 //#include "PunCity/PunSTLContainerOverride.h"
 
-#define TRAILER_MODE 1
+#define TRAILER_MODE 0
 
-#define SAVE_VERSION 20081502
-#define GAME_VERSION 20081502
+#define SAVE_VERSION 30081502
+#define GAME_VERSION 30081502
 
 //! Utils
 
@@ -125,6 +125,7 @@ static bool SearchBoxCompare(const std::string& searchString, const std::string&
 
 #define DISPLAY_TERRAIN 1
 #define DISPLAY_WORLDMAP 1
+#define DISPLAY_WORLDMAP_BUILDING 1
 
 #define DISPLAY_REGIONDECAL 1
 #define DISPLAY_TERRITORY 1
@@ -633,11 +634,11 @@ static const std::vector<FString> DifficultyLevelNames
 	"Hard",
 	"Brutal",
 };
-static const std::vector<int32> DifficultyProductivityAdjustment
+static const std::vector<int32> DifficultyConsumptionAdjustment
 {
 	0,
-	-25,
-	-40,
+	25,
+	50,
 };
 
 static DifficultyLevel GetDifficultyLevelFromString(const FString& str) {
@@ -762,7 +763,7 @@ struct ResourceInfo
 //
 static const int32 HumanFoodPerYear = 35; // 70
 static const int32 FoodCost = 3;
-static const int32 BaseHumanFoodCostPerYear = HumanFoodPerYear * FoodCost;
+static const int32 BaseHumanFoodCost100PerYear = 100 * HumanFoodPerYear * FoodCost;
 
 /*
  * HumanFoodCostPerYear affects:
@@ -785,15 +786,15 @@ static const int32 WorkRevenueToCost_Base = 150;
 
 // TODO: WorkRevenueToCost is not yet affected by resource modifiers...
 
-static const int32 WorkRevenuePerYear_perMan_Base = BaseHumanFoodCostPerYear * WorkRevenueToCost_Base / 100;
+static const int32 WorkRevenue100PerYear_perMan_Base = BaseHumanFoodCost100PerYear * WorkRevenueToCost_Base / 100;
 // This is the same as WorkRevenuePerManSec100_Base
-static const int32 WorkRevenuePerSec100_perMan_Base = WorkRevenuePerYear_perMan_Base * 100 / Time::SecondsPerYear;
+static const int32 WorkRevenue100PerSec_perMan_Base = WorkRevenue100PerYear_perMan_Base / Time::SecondsPerYear;
 
-static const int32 AssumedFoodProductionPerYear = WorkRevenuePerYear_perMan_Base / 3; // Food has cost of 3...
+static const int32 AssumedFoodProduction100PerYear = WorkRevenue100PerYear_perMan_Base / 3; // Food has cost of 3...
 
 // How much a person spend on each type of luxury per year. ... /4 comes from testing... it makes houselvl 2 gives x2 income compare to house lvl 1
-static const int32 HumanLuxuryCostPerYear_ForEachType = BaseHumanFoodCostPerYear / 8;
-static const int32 HumanLuxuryCostPerRound_ForEachType = HumanLuxuryCostPerYear_ForEachType / Time::RoundsPerYear;
+static const int32 HumanLuxuryCost100PerYear_ForEachType = BaseHumanFoodCost100PerYear / 8;
+static const int32 HumanLuxuryCost100PerRound_ForEachType = HumanLuxuryCost100PerYear_ForEachType / Time::RoundsPerYear;
 
 //static const int32 MineTuneFactor = 200;
 //static const int32 IndustryTuneFactor = 300;
@@ -1097,6 +1098,10 @@ static const std::vector<ResourceEnum>& GetLuxuryResources() {
 	return _LuxuryResources;
 }
 
+static int32 LuxuryResourceCount() {
+	return GetLuxuryResources().size();
+}
+
 template <typename Func>
 static void ExecuteOnLuxuryResources(Func func) {
 	const std::vector<ResourceEnum>& luxuryResources = GetLuxuryResources();
@@ -1117,9 +1122,6 @@ static bool IsLuxuryEnum(ResourceEnum resourceEnum) {
 		if (IsLuxuryEnum(resourceEnum, i)) return true;
 	}
 	return false;
-}
-static int32 LuxuryResourceCount() {
-	return GetLuxuryResources().size();
 }
 
 static std::string LuxuryResourceTip(int32 tier)
@@ -1313,8 +1315,8 @@ enum class ResourceHolderType : uint8
 	Provider,
 	Drop,
 	Dead,
+
 	
-	Count,
 };
 
 static const std::vector<std::string> ResourceHolderTypeName
@@ -1325,6 +1327,8 @@ static const std::vector<std::string> ResourceHolderTypeName
 	"Provider",
 	"Drop",
 	"Dead",
+
+	
 };
 
 static std::string GetResourceHolderTypeName(ResourceHolderType type) {
@@ -1891,7 +1895,7 @@ struct BldInfo
 		buildTime_ManSec100 = 3000; // base
 		for (size_t i = 0; i < _countof(ConstructionResources); i++) {
 			int32 constructionCost = constructionResources[i] * GetResourceInfo(ResourceEnum::Wood).basePrice; // Just calculate based on wood cost.. or else iron building seems to take too long to build // GetResourceInfo(ConstructionResources[i]).cost;
-			int32 resourceCostManSec = constructionCost * 100 / WorkRevenuePerSec100_perMan_Base; // For house this is 384, meaning it takes 384 sec to complete a house...
+			int32 resourceCostManSec = constructionCost * 100 / WorkRevenue100PerSec_perMan_Base; // For house this is 384, meaning it takes 384 sec to complete a house...
 			buildTime_ManSec100 += resourceCostManSec * BuildManSecCostFactor100;
 		}
 
@@ -1906,7 +1910,7 @@ struct BldInfo
 		}
 
 		// Note: 40 is hack to make it double previous
-		const int32 baseHouseSecCost100 = (40 * GetResourceInfo(ResourceEnum::Wood).basePrice * 100 / WorkRevenuePerSec100_perMan_Base) * BuildManSecCostFactor100; // For house, with 20 resource, we leave 2 people so that they can carry resource all at once
+		const int32 baseHouseSecCost100 = (40 * GetResourceInfo(ResourceEnum::Wood).basePrice * 100 / WorkRevenue100PerSec_perMan_Base) * BuildManSecCostFactor100; // For house, with 20 resource, we leave 2 people so that they can carry resource all at once
 		int32 bldToHouseRatio = buildTime_ManSec100 / baseHouseSecCost100;
 
 		maxBuilderCount = 1 + bldToHouseRatio; // Do this so there isn't too many builders on expensive buildings...
@@ -1999,7 +2003,7 @@ struct BldInfo
 
 			revenuePerSec100_upkeep_perMan = revenuePerSec100_fromUpkeep / workerCount;
 			
-			workRevenuePerSec100_perMan = WorkRevenuePerSec100_perMan_Base
+			workRevenuePerSec100_perMan = WorkRevenue100PerSec_perMan_Base
 											+ revenuePerSec100_initialCost_perMan
 											+ revenuePerSec100_upkeep_perMan;
 
@@ -3415,7 +3419,7 @@ public:
 
 	bool IsFruitBearer() { return fruitResourceBase100.isValid(); }
 
-	ResourcePair fruitResource(int32 age) const {
+	ResourcePair fruitResource100(int32 age) const {
 		int32 yield100 = fruitResourceBase100.count * tileYieldPercent(age);
 		int32 amount = yield100 / 100;
 		if ((yield100 % 100) > (GameRand::Rand() % 100)) { // use random number to fluctuate yield to get accurate yield...
@@ -3454,8 +3458,8 @@ static const int32 GrassToBushValue = 3;
  * Note: Gather production tied into the HumanFoodCostPerYear through AssumedFoodProductionPerYear
  */
 static const int32 GatherUnitsPerYear = 6;  // GatherBaseYield 4 gives 60 fruits per year... So 15 estimated gather per year...
-static const int32 GatherBaseYield = AssumedFoodProductionPerYear / GatherUnitsPerYear;
-static const int32 JungleGatherBaseYield = GatherBaseYield * 2;
+static const int32 GatherBaseYield100 = AssumedFoodProduction100PerYear / GatherUnitsPerYear;
+static const int32 JungleGatherBaseYield100 = GatherBaseYield100 * 2;
 
 static const int32 defaultMaxGrowthSeasons100 = 1200;
 static const ResourcePair defaultWood100(ResourceEnum::Wood, WoodGatherYield_Base100);
@@ -3469,16 +3473,16 @@ static const TileObjInfo TreeInfos[] = {
 	//int32_t deathChancePerCycleIn, int32_t fruitChancePerCycleIn,  int32_t maxGrowthSeasons100,
 	//ResourcePair fruitResourceBaseIn, ResourcePair cutDownResourceBaseIn, std::string descriptionIn)
 TileObjInfo(TileObjEnum::Birch,	"Birch",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair::Invalid(),									defaultWood100, "Fast-growing hardwood tree."),
-TileObjInfo(TileObjEnum::Orange,	"Orange",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair(ResourceEnum::Orange, GatherBaseYield), defaultWood100, "Orange trees bear delicious fruits during non-winter seasons."),
+TileObjInfo(TileObjEnum::Orange,	"Orange",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair(ResourceEnum::Orange, GatherBaseYield100), defaultWood100, "Orange trees bear delicious fruits during non-winter seasons."),
 
-TileObjInfo(TileObjEnum::Apple,	"Apple",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair(ResourceEnum::Orange, GatherBaseYield), defaultWood100, "Apple trees bear delicious fruits during non-winter seasons."),
-TileObjInfo(TileObjEnum::Papaya,	"Papaya",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair(ResourceEnum::Papaya, JungleGatherBaseYield), defaultWood100, "Papaya trees bear delicious fruits during non-winter seasons."),
-	TileObjInfo(TileObjEnum::Durian,	"Durian",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair(ResourceEnum::Orange, GatherBaseYield), defaultWood100, "Durian trees bear delicious fruits during non-winter seasons."),
+TileObjInfo(TileObjEnum::Apple,	"Apple",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair(ResourceEnum::Orange, GatherBaseYield100), defaultWood100, "Apple trees bear delicious fruits during non-winter seasons."),
+TileObjInfo(TileObjEnum::Papaya,	"Papaya",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair(ResourceEnum::Papaya, JungleGatherBaseYield100), defaultWood100, "Papaya trees bear delicious fruits during non-winter seasons."),
+	TileObjInfo(TileObjEnum::Durian,	"Durian",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair(ResourceEnum::Orange, GatherBaseYield100), defaultWood100, "Durian trees bear delicious fruits during non-winter seasons."),
 	TileObjInfo(TileObjEnum::Pine1,	"Pine",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair::Invalid(),									defaultWood100, "Fast-growing hardwood tree."),
 	TileObjInfo(TileObjEnum::Pine2,	"Pine",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair::Invalid(),									defaultWood100, "Fast-growing hardwood tree."),
 	TileObjInfo(TileObjEnum::GiantMushroom,	"Giant Mushroom",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair::Invalid(),					ResourcePair(ResourceEnum::Mushroom, WoodGatherYield_Base100 * 2), "A very large mushroom..."),
 
-	TileObjInfo(TileObjEnum::Cherry,	"Cherry",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair(ResourceEnum::Orange, GatherBaseYield), defaultWood100, "Cherry trees bear delicious fruit during non-winter seasons."),
+	TileObjInfo(TileObjEnum::Cherry,	"Cherry",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair(ResourceEnum::Orange, GatherBaseYield100), defaultWood100, "Cherry trees bear delicious fruit during non-winter seasons."),
 	TileObjInfo(TileObjEnum::Coconut,	"Coconut",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair::Invalid(),								defaultWood100, "Coconut bears delicious fruit during non-winter seasons."),
 	TileObjInfo(TileObjEnum::Cyathea,	"Cyathea",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair::Invalid(),								defaultWood100, "Fern tree."),
 	TileObjInfo(TileObjEnum::ZamiaDrosi,	"Zamia Drosi",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair::Invalid(),						defaultWood100, "Giant leaf tropical tree."),
@@ -3594,6 +3598,7 @@ enum class TerrainTileType : uint8
 	River,
 	Ocean,
 	Mountain,
+	ImpassableFlat,
 };
 static const std::vector<std::string> TerrainTileTypeName
 {
@@ -3601,6 +3606,7 @@ static const std::vector<std::string> TerrainTileTypeName
 	"River",
 	"Ocean",
 	"Mountain",
+	"Impassable Terrain",
 };
 static std::string GetTerrainTileTypeName(TerrainTileType type) {
 	return TerrainTileTypeName[static_cast<int>(type)];
@@ -4569,7 +4575,7 @@ struct UnitInfo
  * Note: Hunting production tied into the HumanFoodCostPerYear through AssumedFoodProductionPerYear
  */
 static const int32 AssumedHuntUnitPerYear = 6; // at BaseUnitDrop 5... hunters produce 60 per year ... or 12 Hunt Unit...
-static const int32 BaseUnitDrop = AssumedFoodProductionPerYear / AssumedHuntUnitPerYear;
+static const int32 BaseUnitDrop = AssumedFoodProduction100PerYear / AssumedHuntUnitPerYear / 100;
 
 static const int32 AnimalFoodPerYear = 300;
 
@@ -5299,8 +5305,10 @@ struct PopupInfo
 		startTick = Time::Ticks();
 	}
 
-	PopupInfo(int32 playerId, std::string body, std::vector<std::string> choices, PopupReceiverEnum replyReceiver = PopupReceiverEnum::None, bool forcedNetworking = false, std::string popupSound = "", int32 replyVar1 = -1)
-			: playerId(playerId), body(body), choices(choices), replyReceiver(replyReceiver), popupSound(popupSound), replyVar1(replyVar1), forcedNetworking(forcedNetworking) {
+	PopupInfo(int32 playerId, std::string body, std::vector<std::string> choices, PopupReceiverEnum replyReceiver = PopupReceiverEnum::None, 
+				bool forcedNetworking = false, std::string popupSound = "", int32 replyVar1 = -1)
+			: playerId(playerId), body(body), choices(choices), replyReceiver(replyReceiver), popupSound(popupSound), replyVar1(replyVar1), forcedNetworking(forcedNetworking)
+	{
 		startTick = Time::Ticks();
 	}
 
@@ -5900,6 +5908,21 @@ static const TArray<FString> VassalTaxOptions = {
 	FString("Very high vassal tax"), 
 };
 
+
+enum class AutosaveEnum : uint8
+{
+	Off,
+	HalfYear,
+	Year,
+	TwoYears,
+};
+static const std::vector<FString> AutosaveOptions = {
+	"Off",
+	"Every Half Year",
+	"Yearly",
+	"Every Two Years",
+};
+
 /*
  * Stat
  */
@@ -6366,6 +6389,8 @@ enum class CallbackEnum : uint8
 
 	CloseGameSettingsUI,
 	CloseLoadSaveUI,
+	OpenSaveBlur,
+	CloseSaveBlur,
 	SaveGameOverrideConfirm,
 	SelectSaveGame,
 	AbandonTown,
@@ -6419,7 +6444,7 @@ const int32 MountainProvinceId = -INT32_MAX + 2;
 const int32 InvalidProvinceId = -INT32_MAX + 3;
 const int32 EmptyProvinceId = -INT32_MAX + 4;
 
-static bool IsValidProvinceId(int32 provinceId) {
+static bool IsValidRawProvinceId(int32 provinceId) {
 	return provinceId > EmptyProvinceId;
 }
 static bool IsMountainOrWaterProvinceId(int32 provinceId) {

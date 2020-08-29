@@ -9,6 +9,8 @@
 #include "PunCity/PunUtils.h"
 #include "PunCity/PunFileUtils.h"
 
+using namespace std;
+
 // Used for displaying lines
 static FVector _mapOrigin;
 
@@ -945,6 +947,11 @@ void PunTerrainGenerator::SetMountainTile(WorldTile2 tile)
 void PunTerrainGenerator::SetWaterTile(WorldTile2 tile)
 {
 	_terrainMap[tile.tileId()] = TerrainTileType::Ocean;
+	_simulation->SetWalkable(tile, false);
+}
+void PunTerrainGenerator::SetImpassableFlatTile(WorldTile2 tile)
+{
+	_terrainMap[tile.tileId()] = TerrainTileType::ImpassableFlat;
 	_simulation->SetWalkable(tile, false);
 }
 

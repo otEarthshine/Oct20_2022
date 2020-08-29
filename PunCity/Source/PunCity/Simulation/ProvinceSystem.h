@@ -137,7 +137,7 @@ public:
 #if WITH_EDITOR
 		for (size_t i = 0; i < totalTiles2x2; i++) {
 			int32 provinceId = _provinceId2x2[i];
-			if (IsValidProvinceId(provinceId)) {
+			if (IsValidRawProvinceId(provinceId)) {
 				PUN_CHECK(provinceId < proviceIdsSize);
 				PUN_CHECK(provinceId >= 0);
 			}
@@ -155,7 +155,7 @@ public:
 		for (size_t i = 0; i < totalTiles2x2; i++)
 		{
 			int32 provinceId = _provinceId2x2[i];
-			if (IsValidProvinceId(provinceId)) {
+			if (IsValidRawProvinceId(provinceId)) {
 				// Get edges
 				WorldTile2x2 tile2x2(i);
 				if (IsMountainOrWaterProvinceId(_provinceId2x2[WorldTile2x2(tile2x2.x + 1, tile2x2.y).tile2x2Id()]) ||
@@ -272,7 +272,7 @@ public:
 				int32 curProvinceId = _provinceId2x2[i];
 
 				// Fill _regionToProvinceIds for display
-				if (IsValidProvinceId(curProvinceId)) {
+				if (IsValidRawProvinceId(curProvinceId)) {
 					int32 absCurProvinceId = abs(curProvinceId);
 					CppUtils::TryAdd(_regionToProvinceIds[curTile2x2.worldTile2().regionId()], absCurProvinceId);
 				}
@@ -345,7 +345,7 @@ public:
 					WorldTile2x2 neighborTile2x2 = outerVerts[i];
 
 					int32 neighborProvinceId = _provinceId2x2[neighborTile2x2.tile2x2Id()];
-					if (IsValidProvinceId(neighborProvinceId))
+					if (IsValidRawProvinceId(neighborProvinceId))
 					{
 						neighborProvinceId = abs(neighborProvinceId);
 						PUN_CHECK(IsValidNonEdgeProvinceId(neighborProvinceId));
@@ -407,7 +407,7 @@ public:
 				auto checkConnection = [&](WorldTile2x2 tile2x2In, TerrainTileType prevTileTypeIn)
 				{
 					int32 neighborProvinceId = _provinceId2x2[tile2x2In.tile2x2Id()];
-					if (IsValidProvinceId(neighborProvinceId) &&
+					if (IsValidRawProvinceId(neighborProvinceId) &&
 						abs(neighborProvinceId) != provinceId)
 					{
 						WorldTile2 tileIn = tile2x2In.worldTile2();
@@ -452,6 +452,54 @@ public:
 			}
 		}
 
+		/*
+		 * Get rid of any tiny provinces
+		 */
+		const int32 tinyProvinceThreshold = CoordinateConstants::TileIdsPerRegion / 8;
+
+		for (int32 provinceId = 0; provinceId < proviceIdsSize; provinceId++)
+		{
+			if (0 < _provinceFlatTileCount[provinceId] && 
+				_provinceFlatTileCount[provinceId] < tinyProvinceThreshold)
+			{
+				ExecuteOnProvinceTiles(provinceId, [&](WorldTile2& tile)
+				{
+					TerrainTileType tileType = terrainGen.terrainTileType(tile);
+					if (tileType == TerrainTileType::None) {
+						_provinceId2x2[WorldTile2x2(tile).tile2x2Id()] = EmptyProvinceId;
+
+						// Ensure no entry
+						terrainGen.SetImpassableFlatTile(tile);
+					}
+					else if (tileType == TerrainTileType::Mountain) {
+						_provinceId2x2[WorldTile2x2(tile).tile2x2Id()] = MountainProvinceId;
+					}
+					else if (tileType == TerrainTileType::Ocean) {
+						_provinceId2x2[WorldTile2x2(tile).tile2x2Id()] = OceanProvinceId;
+					}
+					else if (tileType == TerrainTileType::River) {
+						_provinceId2x2[WorldTile2x2(tile).tile2x2Id()] = RiverProvinceId;
+					}
+				});
+
+				_provinceCenters[provinceId] = WorldTile2x2();
+				_provinceEdges1[provinceId].clear();
+				_provinceEdges2[provinceId].clear();
+				
+				for (const WorldRegion2& region : _provinceToRegionsOverlap[provinceId]) {
+					CppUtils::TryRemove(_regionToProvinceIds[region.regionId()], region.regionId());
+				}
+
+				_provinceMountainTileCount[provinceId] = 0;
+				_provinceRiverTileCount[provinceId] = 0;
+				_provinceOceanTileCount[provinceId] = 0;
+				_provinceFlatTileCount[provinceId] = 0;
+
+				_provinceConnections[provinceId].clear();
+				_provinceRectAreas[provinceId] = TileArea::GetLoopMinMaxInitial();
+				_provinceToRegionsOverlap[provinceId].clear();
+			}
+		}
 
 		/*
 		 * Set any leftover EmptyProvinceId tile to mountain so nothing uses it
@@ -516,7 +564,7 @@ public:
 			int32 localTile2x2Id = localTile2x2.tile2x2Id();
 			int32 localProvinceId = _provinceId2x2[localTile2x2Id];
 
-			if (!IsValidProvinceId(localProvinceId)) {
+			if (!IsValidRawProvinceId(localProvinceId)) {
 				return;
 			}
 			localProvinceId = abs(localProvinceId);
@@ -528,7 +576,7 @@ public:
 				auto isInvalidSide = [&](int16 x2, int16 y2)
 				{
 					int32 lambdaProvinceIdId = _provinceId2x2[WorldTile2x2(x2, y2).tile2x2Id()];
-					if (!IsValidProvinceId(lambdaProvinceIdId)) {
+					if (!IsValidRawProvinceId(lambdaProvinceIdId)) {
 						return true;
 					}
 					lambdaProvinceIdId = abs(lambdaProvinceIdId);
@@ -560,7 +608,7 @@ public:
 
 			//PUN_LOG("Loop %d %d curProvinceId:%d targetPlayerId:%d", x2, y2, curProvinceId, playerId);
 
-			if (!IsValidProvinceId(curProvinceId)) {
+			if (!IsValidRawProvinceId(curProvinceId)) {
 				return false;
 			}
 
@@ -575,7 +623,7 @@ public:
 				//};
 				
 				auto isInArea = [&](int32 provinceRawId) -> bool {
-					if (!IsValidProvinceId(provinceRawId)) {
+					if (!IsValidRawProvinceId(provinceRawId)) {
 						return false;
 					}
 					return _simulation->provinceOwner(abs(provinceRawId)) == playerId;
@@ -617,7 +665,7 @@ public:
 			return -1;
 		}
 		int32 provinceId = _provinceId2x2[WorldTile2x2(tile).tile2x2Id()];
-		if (IsValidProvinceId(provinceId)) {
+		if (IsValidRawProvinceId(provinceId)) {
 			return abs(provinceId);
 		}
 		return -1;
@@ -781,7 +829,7 @@ public:
 		PUN_CHECK(IsProvinceValid(provinceId));
 		TileArea area = _provinceRectAreas[provinceId];
 		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-			if (GetProvinceIdRaw(tile) == provinceId) {
+			if (abs(GetProvinceIdRaw(tile)) == provinceId) {
 				func(tile);
 			}
 		});

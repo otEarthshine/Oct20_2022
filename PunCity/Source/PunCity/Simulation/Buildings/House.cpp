@@ -184,7 +184,7 @@ void House::CalculateConsumptions(bool consumeLuxury)
 			int32 price100 = _simulation->price100(resourceEnum);
 
 			// Target tax taking into account Science/Culture benefit of lux resources
-			int32 luxuryConsumption100_perRound = HumanLuxuryCostPerRound_ForEachType * occupantCount() * 100;
+			int32 luxuryConsumption100_perRound = HumanLuxuryCost100PerRound_ForEachType * occupantCount();
 
 			int32 actualConsumption = GameRand::RandRound(luxuryConsumption100_perRound, price100, Time::Rounds());
 			//actualConsumption = max(1, actualConsumption);
@@ -201,7 +201,7 @@ void House::CalculateConsumptions(bool consumeLuxury)
 	});
 
 	// Food consumption
-	const int32 foodCost100PerRound_perMan = 100 * BaseHumanFoodCostPerYear / Time::RoundsPerYear;
+	const int32 foodCost100PerRound_perMan = BaseHumanFoodCost100PerYear / Time::RoundsPerYear;
 	int32 foodCost100PerRound_house = occupancyFactor(foodCost100PerRound_perMan * houseBaseOccupants);
 
 	_roundFoodConsumption100 = foodCost100PerRound_house;

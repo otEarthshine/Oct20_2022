@@ -145,12 +145,12 @@ public:
 		pile.insert(pile.end(), _cardsHand.begin(), _cardsHand.end());
 		pile.insert(pile.end(), _cardsDrawPile.begin(), _cardsDrawPile.end());
 		pile.insert(pile.end(), _cardsDiscardPile.begin(), _cardsDiscardPile.end());
-		//pile.insert(pile.end(), _cardsInTownhall.begin(), _cardsInTownhall.end());
-		// TODO: eventually has _cardsDisabled for those hidden by buildings
+		pile.insert(pile.end(), _cardsRemovedPile.begin(), _cardsRemovedPile.end());
+
 		return pile;
 	}
 
-	bool HasCardInPile(CardEnum cardEnumIn)
+	bool HasCardInAnyPile(CardEnum cardEnumIn)
 	{
 		std::vector<CardEnum> pile = GetAllPiles();
 		for (CardEnum cardEnum : pile) {
@@ -554,10 +554,20 @@ public:
 	/*
 	 * Card Removal
 	 */
-	void RemoveDrawCards(CardEnum buildingEnum) {
-		CppUtils::RemoveAll(_cardsHand, buildingEnum);
-		CppUtils::RemoveAll(_cardsDrawPile, buildingEnum);
-		CppUtils::RemoveAll(_cardsDiscardPile, buildingEnum);
+	void RemoveDrawCards(CardEnum cardEnum)
+	{
+		auto loop = [&](std::vector<CardEnum>& cards) {
+			for (size_t i = cards.size(); i-- > 0;) {
+				if (cards[i] == cardEnum) {
+					cards.erase(cards.begin() + i);
+					_cardsRemovedPile.push_back(cardEnum);
+				}
+			}
+		};
+		
+		loop(_cardsHand);
+		loop(_cardsDrawPile);
+		loop(_cardsDiscardPile);
 	}
 	
 
@@ -583,6 +593,8 @@ public:
 		SerializeVecValue(Ar, _cardsDrawPile);
 		SerializeVecValue(Ar, _cardsHand);
 		SerializeVecValue(Ar, _cardsDiscardPile);
+
+		SerializeVecValue(Ar, _cardsRemovedPile);
 
 		SerializeVecObj(Ar, _cardsBought);
 
@@ -790,6 +802,8 @@ private:
 	std::vector<CardEnum> _cardsDrawPile;
 	std::vector<CardEnum> _cardsHand;
 	std::vector<CardEnum> _cardsDiscardPile;
+
+	std::vector<CardEnum> _cardsRemovedPile;
 
 	std::vector<BuildingCardStack> _cardsBought;
 	std::vector<CardStatus> _cardsInTownhall;

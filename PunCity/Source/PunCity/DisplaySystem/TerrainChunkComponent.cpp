@@ -39,7 +39,7 @@ void UTerrainChunkComponent::UpdateTerrainChunkMesh(GameSimulationCore& simulati
 	static TArray<float> meshHeightsNoTess;
 	static TArray<FLinearColor> meshColorsNoTess;
 
-	static TArray<float> meshHeights;
+	static TArray<float> meshHeightsTess;
 	//static TArray<float> meshHeightsSmooth;
 	static TArray<FLinearColor> meshColors;
 	static TArray<FLinearColor> meshColorsSmooth;
@@ -51,12 +51,12 @@ void UTerrainChunkComponent::UpdateTerrainChunkMesh(GameSimulationCore& simulati
 
 	static TArray<int32> tris;
 
-	if (meshHeights.Num() == 0)
+	if (meshHeightsTess.Num() == 0)
 	{
 		meshHeightsNoTess.Reserve(outerVertTotal);
 		meshColorsNoTess.Reserve(outerVertTotal);
 
-		meshHeights.Reserve(tessOuterVertTotal);
+		meshHeightsTess.Reserve(tessOuterVertTotal);
 		meshHeightsSmooth.Reserve(tessOuterVertTotal);
 		meshColors.Reserve(tessOuterVertTotal);
 		meshColorsSmooth.Reserve(tessOuterVertTotal);
@@ -73,7 +73,7 @@ void UTerrainChunkComponent::UpdateTerrainChunkMesh(GameSimulationCore& simulati
 	meshHeightsNoTess.Empty(outerVertTotal);
 	meshColorsNoTess.Empty(outerVertTotal);
 
-	meshHeights.Empty(tessOuterVertTotal);
+	meshHeightsTess.Empty(tessOuterVertTotal);
 	meshHeightsSmooth.Empty(tessOuterVertTotal);
 	meshColors.Empty(tessOuterVertTotal);
 	meshColorsSmooth.Empty(tessOuterVertTotal);
@@ -189,7 +189,7 @@ void UTerrainChunkComponent::UpdateTerrainChunkMesh(GameSimulationCore& simulati
 
 				// special case for outer rim...
 				if (x == tessOuterVertSize - 1 || y == tessOuterVertSize - 1) {
-					meshHeights.Add(meshHeightsNoTess[xx + yy * outerVertSize]);
+					meshHeightsTess.Add(meshHeightsNoTess[xx + yy * outerVertSize]);
 					meshColors.Add(meshColorsNoTess[xx + yy * outerVertSize]);
 					continue;
 				}
@@ -200,24 +200,24 @@ void UTerrainChunkComponent::UpdateTerrainChunkMesh(GameSimulationCore& simulati
 
 				if (x % 2 == 0) {
 					if (y % 2 == 0) {
-						meshHeights.Add(height00);
+						meshHeightsTess.Add(height00);
 						meshColors.Add(color00);
 					}
 					else {
 						// Lerp on y
-						meshHeights.Add(0.5f * (height00 + meshHeightsNoTess[xx + (yy + 1) * outerVertSize]));
+						meshHeightsTess.Add(0.5f * (height00 + meshHeightsNoTess[xx + (yy + 1) * outerVertSize]));
 						meshColors.Add(0.5f * (color00 + meshColorsNoTess[xx + (yy + 1) * outerVertSize]));
 					}
 				}
 				else {
 					if (y % 2 == 0) {
 						// Lerp on x
-						meshHeights.Add(0.5f *(height00 + meshHeightsNoTess[(xx + 1) + yy * outerVertSize]));
+						meshHeightsTess.Add(0.5f *(height00 + meshHeightsNoTess[(xx + 1) + yy * outerVertSize]));
 						meshColors.Add(0.5f *(color00 + meshColorsNoTess[(xx + 1) + yy * outerVertSize]));
 					}
 					else {
 						// Lerp on x y
-						meshHeights.Add(0.25f * (height00 +
+						meshHeightsTess.Add(0.25f * (height00 +
 							meshHeightsNoTess[(xx + 1) + yy * outerVertSize] +
 							meshHeightsNoTess[xx + (yy + 1) * outerVertSize] +
 							meshHeightsNoTess[(xx + 1) + (yy + 1) * outerVertSize]));
@@ -235,7 +235,7 @@ void UTerrainChunkComponent::UpdateTerrainChunkMesh(GameSimulationCore& simulati
 		for (int y = 0; y < tessOuterVertSize; y++) {
 			for (int x = 0; x < tessOuterVertSize; x++)
 			{
-				float height = meshHeights[x + y * tessOuterVertSize];
+				float height = meshHeightsTess[x + y * tessOuterVertSize];
 				FLinearColor color = meshColors[x + y * tessOuterVertSize];
 
 				// Smooth where applicable
@@ -243,15 +243,15 @@ void UTerrainChunkComponent::UpdateTerrainChunkMesh(GameSimulationCore& simulati
 				{
 					height = height / 4;
 
-					height += meshHeights[(x - 1) + (y - 1) * tessOuterVertSize] / 16;
-					height += meshHeights[(x - 1) + (y + 1) * tessOuterVertSize] / 16;
-					height += meshHeights[(x + 1) + (y - 1) * tessOuterVertSize] / 16;
-					height += meshHeights[(x + 1) + (y + 1) * tessOuterVertSize] / 16;
+					height += meshHeightsTess[(x - 1) + (y - 1) * tessOuterVertSize] / 16;
+					height += meshHeightsTess[(x - 1) + (y + 1) * tessOuterVertSize] / 16;
+					height += meshHeightsTess[(x + 1) + (y - 1) * tessOuterVertSize] / 16;
+					height += meshHeightsTess[(x + 1) + (y + 1) * tessOuterVertSize] / 16;
 
-					height += meshHeights[x + (y - 1) * tessOuterVertSize] / 8;
-					height += meshHeights[x + (y + 1) * tessOuterVertSize] / 8;
-					height += meshHeights[(x - 1) + y * tessOuterVertSize] / 8;
-					height += meshHeights[(x + 1) + y * tessOuterVertSize] / 8;
+					height += meshHeightsTess[x + (y - 1) * tessOuterVertSize] / 8;
+					height += meshHeightsTess[x + (y + 1) * tessOuterVertSize] / 8;
+					height += meshHeightsTess[(x - 1) + y * tessOuterVertSize] / 8;
+					height += meshHeightsTess[(x + 1) + y * tessOuterVertSize] / 8;
 
 					color = color / 4;
 
@@ -269,6 +269,27 @@ void UTerrainChunkComponent::UpdateTerrainChunkMesh(GameSimulationCore& simulati
 				meshHeightsSmooth.Add(height);
 				meshColorsSmooth.Add(color);
 			}
+		}
+
+		/*
+		 * Holes
+		 */
+		for (size_t i = 0; i < holes.size(); i++) 
+		{
+			WorldTile2 tile = holes[i];
+			//WorldRegion2 tileRegion = tile.region();
+			//if (region == tileRegion) {
+				LocalTile2 localTile = tile.localTile(region);
+				if (localTile.x >= -1 && localTile.y >= -1) 
+				{
+					int32 tessTileX = localTile.x * tessMultiplier + tessMultiplier + 1;
+					int32 tessTileY = localTile.y * tessMultiplier + tessMultiplier + 1;
+					meshHeightsSmooth[tessTileX + tessTileY * tessOuterVertSize] = -CoordinateConstants::BelowWaterDisplayUnitHeight;
+					meshHeightsSmooth[(tessTileX + 1) + tessTileY * tessOuterVertSize] = -CoordinateConstants::BelowWaterDisplayUnitHeight;
+					meshHeightsSmooth[tessTileX + (tessTileY + 1) * tessOuterVertSize] = -CoordinateConstants::BelowWaterDisplayUnitHeight;
+					meshHeightsSmooth[(tessTileX + 1) + (tessTileY + 1) * tessOuterVertSize] = -CoordinateConstants::BelowWaterDisplayUnitHeight;
+				}
+			//}
 		}
 
 		
@@ -307,6 +328,7 @@ void UTerrainChunkComponent::UpdateTerrainChunkMesh(GameSimulationCore& simulati
 		}
 
 		
+		//bool isCreatingMesh = createMesh;
 		bool isCreatingMesh = createMesh || holes.size() != _lastHoleCount;
 		if (isCreatingMesh)
 		{
@@ -337,35 +359,35 @@ void UTerrainChunkComponent::UpdateTerrainChunkMesh(GameSimulationCore& simulati
 				}
 			}
 
-			// Dig hole
-			// Do this by setting tris to same vertices to hide it.
-			// tessOuterVertSize is 32*2 + 2*2 = 68
-			auto hideTris = [&](int32 tessIndex)
-			{
-				tris[tessIndex * 6] = 0;
-				tris[tessIndex * 6 + 1] = 0;
-				tris[tessIndex * 6 + 2] = 0;
+			//// Dig hole
+			//// Do this by setting tris to same vertices to hide it.
+			//// tessOuterVertSize is 32*2 + 2*2 = 68
+			//auto hideTris = [&](int32 tessIndex)
+			//{
+			//	tris[tessIndex * 6] = 0;
+			//	tris[tessIndex * 6 + 1] = 0;
+			//	tris[tessIndex * 6 + 2] = 0;
 
-				tris[tessIndex * 6 + 3] = 0;
-				tris[tessIndex * 6 + 4] = 0;
-				tris[tessIndex * 6 + 5] = 0;
-			};
+			//	tris[tessIndex * 6 + 3] = 0;
+			//	tris[tessIndex * 6 + 4] = 0;
+			//	tris[tessIndex * 6 + 5] = 0;
+			//};
 
-			for (WorldTile2 tile : holes)
-			{
-				WorldRegion2 tileRegion = tile.region();
-				if (region == tileRegion) {
-					LocalTile2 localTile = tile.localTile();
-					if (localTile.isValid()) {
-						int32 tessTileX = localTile.x * tessMultiplier;
-						int32 tessTileY = localTile.y * tessMultiplier;
-						hideTris(tessTileX + tessTileY * tessTileSize);
-						hideTris((tessTileX + 1) + tessTileY * tessTileSize);
-						hideTris(tessTileX + (tessTileY + 1) * tessTileSize);
-						hideTris((tessTileX + 1) + (tessTileY + 1) * tessTileSize);
-					}
-				}
-			}
+			//for (WorldTile2 tile : holes)
+			//{
+			//	WorldRegion2 tileRegion = tile.region();
+			//	if (region == tileRegion) {
+			//		LocalTile2 localTile = tile.localTile();
+			//		if (localTile.isValid()) {
+			//			int32 tessTileX = localTile.x * tessMultiplier;
+			//			int32 tessTileY = localTile.y * tessMultiplier;
+			//			hideTris(tessTileX + tessTileY * tessTileSize);
+			//			hideTris((tessTileX + 1) + tessTileY * tessTileSize);
+			//			hideTris(tessTileX + (tessTileY + 1) * tessTileSize);
+			//			hideTris((tessTileX + 1) + (tessTileY + 1) * tessTileSize);
+			//		}
+			//	}
+			//}
 		}
 		
 	}

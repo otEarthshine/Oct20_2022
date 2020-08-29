@@ -59,6 +59,15 @@ public:
 		waitingForReply = false;
 	}
 
+	void TryRemovePopups(PopupReceiverEnum receiverEnum)
+	{
+		for (size_t i = _popups.size(); i-- > 0;) {
+			if (_popups[i].replyReceiver == receiverEnum) {
+				_popups.erase(_popups.begin() + i);
+			}
+		}
+	}
+
 	void ClearPopups() {
 		_popups.clear();
 		waitingForReply = false;

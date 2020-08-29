@@ -338,7 +338,7 @@ ResourcePair TreeSystem::RemoveTileObj(WorldTile2 tile, bool animate)
 	return ResourcePair();
 }
 
-ResourcePair TreeSystem::UnitGatherFruit(WorldTile2 tile)
+ResourcePair TreeSystem::UnitGatherFruit100(WorldTile2 tile)
 {
 	int id = tile.tileId();
 	if (!IsAliveTree(id)) {
@@ -349,7 +349,7 @@ ResourcePair TreeSystem::UnitGatherFruit(WorldTile2 tile)
 
 	_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Trees, tile.regionId(), true);
 
-	return tileInfo(id).fruitResource(_tileObjAge[id]);
+	return tileInfo(id).fruitResource100(_tileObjAge[id]);
 }
 
 

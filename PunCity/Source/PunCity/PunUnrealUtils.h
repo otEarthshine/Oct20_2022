@@ -22,7 +22,7 @@ public:
 	static UDecalComponent* CreateDecal(USceneComponent* scene, UMaterialInterface* material);
 
 	static UDecalComponent* ShowDecal(WorldAtom2 centerAtom, WorldTile2 size, TArray<UDecalComponent*>& decals, int32& decalCount, 
-										USceneComponent* scene, UMaterialInterface* material, IDisplaySystemDataSource* gameInterface, bool useMaterialInstance = false);
+										USceneComponent* scene, UMaterialInterface* material, IDisplaySystemDataSource* gameInterface, bool useMaterialInstance = false, float scaleX = 1.0f);
 	static void UpdateDecals(TArray<UDecalComponent*>& decals, int32& decalCount);
 
 	// Light... Note: Only need ShowLight() and UpdateLights()

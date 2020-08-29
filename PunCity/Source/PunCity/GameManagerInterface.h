@@ -33,6 +33,9 @@ public:
 	virtual std::vector<int32> allHumanPlayerIds() = 0;
 	virtual std::vector<int32> connectedPlayerIds(bool withReplayPlayers = true) = 0;
 	virtual std::vector<int32> disconnectedPlayerIds() = 0;
+
+	virtual bool isSinglePlayer() = 0;
+	virtual AutosaveEnum autosaveEnum() = 0;
 	
 	
 	virtual bool IsPlayerBuildable(WorldTile2 tile) const = 0;

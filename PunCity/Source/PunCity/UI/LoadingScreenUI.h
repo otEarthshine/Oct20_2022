@@ -20,4 +20,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* LoadingText;
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* LoadingTextBox;
 	UPROPERTY(meta = (BindWidget)) UImage* Logo;
+
+	UPROPERTY(meta = (BindWidget)) UImage* GameStartBlockerBackground1;
+	UPROPERTY(meta = (BindWidget)) UImage* GameStartBlockerBackground2;
+	float loadingScreenHideCountdown = -1.0f;
 };

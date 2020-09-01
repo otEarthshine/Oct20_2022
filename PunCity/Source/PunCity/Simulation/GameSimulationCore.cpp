@@ -362,6 +362,9 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 										FString::Printf(TEXT("Tick:%d, buffer:%d, commands:%zu"), _tickCount, bufferCount, tickInfo.commands.size()));
 	}
 
+
+	//PUN_LOG("TickSim UnitSystem unitCount():%d _unitLeans:%d", unitSystem().unitCount(), unitCount() - unitSystem().deadCount());
+
 	CheckIntegrity();
 
 	// Issue Commands

@@ -335,7 +335,9 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 		else {
 			_systemMoveTimeSinceStart += fmin(0.02, UGameplayStatics::GetWorldDeltaSeconds(GetWorld()));
 		}
-		
+
+		float lastSmoothZoomDistance = _smoothZoomDistance;
+		float lastPitch = CameraComponent->GetRelativeRotation().Pitch;
 		
 		float lerpFraction = Clamp01(_systemMoveTimeSinceStart / _systemMoveTimeLength);
 
@@ -354,7 +356,8 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 		// Lerped Amount
 		float lerpedZoomAmount = _systemZoomAmountStart + (_systemZoomAmountTarget - _systemZoomAmountStart) * zoomLerpFraction;
 		_smoothZoomDistance = lerpedZoomAmount;
-		
+
+		FVector lastCamShiftLocation = _camShiftLocation;
 		_camShiftLocation = _systemCamLocationStart + (_systemCamLocationTarget - _systemCamLocationStart) * locationLerpFraction;
 
 
@@ -362,6 +365,7 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 		//GetActorRotation()
 		
 		FRotator rotator;
+		FRotator lastRotator = GetActorRotation();
 		if (_systemIsRotating) {
 			rotator = FMath::Lerp(_systemRotatorStart, _systemRotatorTarget, rotationLerpFraction);
 			SetActorRotation(rotator);
@@ -378,10 +382,18 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 		_cameraZoomStep = GetZoomStepFromAmount(lerpedZoomAmount); // Update this so that the surrounding gets updated...
 		CameraComponent->SetRelativeLocation(FVector(-lerpedZoomAmount, 0, 0));
 
-		//PUN_LOG("Cam Trailer Update zoomStep:%d %f|%f, rotator:%s", _cameraZoomStep, lerpedZoomAmount, _systemZoomAmountTarget, *rotator.ToCompactString());
+		float zoomDiff = lerpedZoomAmount - lastSmoothZoomDistance;
+		float yawDiff = rotator.Yaw - lastRotator.Yaw;
+		float locationDiff = FVector::Distance(lastCamShiftLocation, _camShiftLocation);
+		if (zoomDiff > 1.0f) _LOG(PunTrailer, "Cam Trailer Zoom Step:%d zoom:%f diff:%f target:%f, rotator:%s", _cameraZoomStep, lerpedZoomAmount, zoomDiff, _systemZoomAmountTarget);
+		if (yawDiff > 0.5f) _LOG(PunTrailer, "Cam Trailer Rotation last:%s now:%s diff:%f", *lastRotator.ToCompactString(), *rotator.ToCompactString(), yawDiff);
+		if (locationDiff > 1.0f) _LOG(PunTrailer, "Cam Trailer Location last:%s now:%s diff:%f", *lastCamShiftLocation.ToCompactString(), *_camShiftLocation.ToCompactString(), locationDiff);
 
 		// Adjust tilt up if this isn't trailer
 		AdjustCameraZoomTilt();
+
+		float tiltDiff = lastPitch - CameraComponent->GetRelativeRotation().Pitch;
+		if (tiltDiff > 0.5f) _LOG(PunTrailer, "Cam Trailer Tilt last:%f now:%f diff:%f", lastPitch, CameraComponent->GetRelativeRotation().Pitch, tiltDiff);
 		
 		if (lerpedZoomAmount < WorldToMapZoomAmount) {
 			_state = DisplayState::World;

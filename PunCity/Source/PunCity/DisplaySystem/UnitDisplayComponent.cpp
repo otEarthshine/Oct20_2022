@@ -430,17 +430,18 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 
 void UUnitDisplayComponent::UpdateResourceDisplay(int32 unitId, UnitStateAI& unit, FTransform& transform)
 {
-	//! TODO: !!! hack around vertex animate laziness
-	//if (IsAnimal(unit.unitEnum())) {
-	FRotator rotator = transform.Rotator();
-	transform.SetScale3D(FVector(1, 1, 1));
-	rotator.Yaw += 90;
-	//}
-
 	// Resource display
 	ResourceEnum heldEnum = unit.inventory().Display();
 	if (heldEnum != ResourceEnum::None)
 	{
+		//! TODO: !!! hack around vertex animate laziness
+		//if (IsAnimal(unit.unitEnum())) {
+		FRotator rotator = transform.Rotator();
+		transform.SetScale3D(FVector(1, 1, 1));
+		rotator.Yaw += 90;
+		//}
+
+		
 		// Display smaller resource on units
 		transform.SetScale3D(FVector(0.7, 0.7, 0.7));
 

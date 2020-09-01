@@ -32,7 +32,11 @@
 #include "PunCity/DisplaySystem/WorldMapMeshComponent.h"
 
 
-DECLARE_CYCLE_STAT(TEXT("PUN: [Sound] Sound"), STAT_PunSound, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [Sound] Dropoff"), STAT_PunSoundDropoff, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [Sound] Animal"), STAT_PunSoundAnimal, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [Sound] 3D"), STAT_PunSound3D, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [Sound] 2D"), STAT_PunSound2D, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [Sound] UpdateParameters"), STAT_PunSoundParam, STATGROUP_Game);
 
 #include "GameManager.generated.h"
 
@@ -88,7 +92,7 @@ public:
 
 	TArray<int32> GetTickHashes(int32 startTick) { return _simulation->GetTickHashes(startTick); }
 
-	IGameNetworkInterface* networkInterface() { return _networkInterface; }
+	IGameNetworkInterface* networkInterface() override { return _networkInterface; }
 
 	void RefreshHeightForestColorTexture(TileArea area, bool isInstant) override {
 		_terrainMap->RefreshHeightForestColorTexture(area, isInstant);
@@ -232,6 +236,8 @@ private:
 
 	std::vector<OverlayType> _overlaySetterTypeToType;
 	WorldTile2 _overlayCenterTile = WorldTile2::Invalid;
+
+	bool _isHidingTrees = false;
 
 	bool _isCtrlDown = false;
 	bool _isShiftDown = false;
@@ -390,6 +396,7 @@ public:
 		return WorldTile2::Distance(cameraTile, tile) < tileRadius * 3 / 2;
 	}
 
+
 	/**
 	 * IGameManagerInterface
 	 */
@@ -502,7 +509,7 @@ public:
 	 */
 	void SpawnResourceDropoffAudio(ResourceEnum resourceEnum, WorldAtom2 worldAtom) override {
 #if AUDIO_ALL
-		SCOPE_CYCLE_COUNTER(STAT_PunSound);
+		SCOPE_CYCLE_COUNTER(STAT_PunSoundDropoff);
 		if (IsInSampleRange(worldAtom.worldTile2())) {
 			_soundSystem->SpawnResourceDropoffAudio(resourceEnum, worldAtom);
 		}
@@ -510,7 +517,7 @@ public:
 	}
 	void SpawnAnimalSound(UnitEnum unitEnum, bool isAngry, WorldAtom2 worldAtom, bool usePlayProbability) override {
 #if AUDIO_ALL
-		SCOPE_CYCLE_COUNTER(STAT_PunSound);
+		SCOPE_CYCLE_COUNTER(STAT_PunSoundAnimal);
 		if (IsInSampleRange(worldAtom.worldTile2())) {
 			_soundSystem->SpawnAnimalSound(unitEnum, isAngry, worldAtom, usePlayProbability);
 		}
@@ -518,7 +525,7 @@ public:
 	}
 	void Spawn3DSound(std::string groupName, std::string soundName, WorldAtom2 worldAtom, float height) override {
 #if AUDIO_ALL
-		SCOPE_CYCLE_COUNTER(STAT_PunSound);
+		SCOPE_CYCLE_COUNTER(STAT_PunSound3D);
 		if (IsInSampleRange(worldAtom.worldTile2())) {
 			_soundSystem->Spawn3DSound(groupName, soundName, worldAtom, height);
 		}
@@ -546,7 +553,7 @@ public:
 
 	void Spawn2DSound_Helper(const std::string& groupName, const std::string& soundName) {
 #if AUDIO_ALL
-		SCOPE_CYCLE_COUNTER(STAT_PunSound);
+		SCOPE_CYCLE_COUNTER(STAT_PunSound2D);
 		if (_soundSystem) {
 			_soundSystem->Spawn2DSound(groupName, soundName);
 		}
@@ -600,6 +607,14 @@ public:
 			}
 		}
 		return OverlayType::None;
+	}
+
+	bool isHidingTree() final {
+		return _isHidingTrees || IsRoadPlacement(networkInterface()->placementType());
+	}
+	void SetOverlayHideTree(bool isHiding) final {
+		_isHidingTrees = isHiding;
+		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Trees, _sampleRegionIds);
 	}
 
 	bool isCtrlDown() final { return _isCtrlDown; }

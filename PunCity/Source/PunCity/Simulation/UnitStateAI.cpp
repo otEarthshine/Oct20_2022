@@ -2124,7 +2124,7 @@ void UnitStateAI::Construct()
 			ReserveWork(workManSec100, workplaceId);
 			Add_Construct(workManSec100, waitTicks, timesLeft - 1, workplaceId);
 
-			PUN_LOG("Add_Construct tick:%d id:%d timesLeft:%d", Time::Ticks(), _id, timesLeft - 1);
+			//PUN_LOG("Add_Construct tick:%d id:%d timesLeft:%d", Time::Ticks(), _id, timesLeft - 1);
 			
 			AddDebugSpeech(" Push another Construct() timesLeft:" + to_string(timesLeft - 1));
 		}

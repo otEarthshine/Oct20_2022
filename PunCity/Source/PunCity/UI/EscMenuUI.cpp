@@ -75,10 +75,13 @@ void UEscMenuUI::PunInit()
 	// Overlay toggler
 	OverlaySettingsOverlay->SetVisibility(ESlateVisibility::Collapsed);
 	OverlayToggler->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickOverlayToggler);
+	OverlayCheckBox_None->OnCheckStateChanged.AddDynamic(this, &UEscMenuUI::OnCheckOverlay_None);
 	OverlayCheckBox_Appeal->OnCheckStateChanged.AddDynamic(this, &UEscMenuUI::OnCheckOverlay_Appeal);
 	OverlayCheckBox_Fertility->OnCheckStateChanged.AddDynamic(this, &UEscMenuUI::OnCheckOverlay_Fertility);
 	OverlayCheckBox_Animals->OnCheckStateChanged.AddDynamic(this, &UEscMenuUI::OnCheckOverlay_Animals);
-	
+	MapCheckBox_HideTrees->OnCheckStateChanged.AddDynamic(this, &UEscMenuUI::OnCheckMap_HideTrees);
+
+	SetOverlayCheckBox(OverlayCheckBox_None);
 
 	VictoryScoreScreenButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickVictoryPopupScoreScreen);
 	VictoryReturnToGame->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickVictoryPopupReturnToGame);
@@ -160,6 +163,9 @@ void UEscMenuUI::CallBack2(UPunWidget* punWidgetCaller, CallbackEnum callbackEnu
 		GameSettingsUI->SetVisibility(ESlateVisibility::Collapsed);
 		EscMenu->SetVisibility(ESlateVisibility::Visible);
 	}
+	if (callbackEnum == CallbackEnum::OpenBlur) {
+		BackBlur->SetVisibility(ESlateVisibility::Visible);
+	}
 	if (callbackEnum == CallbackEnum::CloseLoadSaveUI) {
 		LoadSaveUI->SetVisibility(ESlateVisibility::Collapsed);
 		EscMenu->SetVisibility(LoadSaveUI->isAutosaving() ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
@@ -191,6 +197,7 @@ void UEscMenuUI::OnClickEscMenuLoadButton()
 void UEscMenuUI::SetOverlayCheckBox(UCheckBox* activeCheckBox)
 {
 	TArray<UCheckBox*> checkBoxes{
+		OverlayCheckBox_None,
 		OverlayCheckBox_Fertility,
 		OverlayCheckBox_Appeal,
 		OverlayCheckBox_Animals,

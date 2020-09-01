@@ -13,5 +13,5 @@ UCLASS()
 class PROTOTYPECITY_API UProsperityColumnUI : public UUserWidget
 {
 	GENERATED_BODY()
-	
+public:
 };

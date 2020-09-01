@@ -96,7 +96,7 @@ struct ScopeTimer
 
 // Editor only, since this is every tick
 #if WITH_EDITOR || TRAILER_MODE
-	#define SCOPE_TIMER_FILTER(microSecondsThreshold, Format, ...) ScopeTimer scopeTimer(FString::Printf(TEXT(Format), ##__VA_ARGS__), 1, microSecondsThreshold);
+	#define SCOPE_TIMER_FILTER(microSecondsThreshold, Format, ...) ScopeTimer scopeTimer(FString("[TIME_FILTER]") + FString::Printf(TEXT(Format), ##__VA_ARGS__), 1, microSecondsThreshold);
 #else
 	#define SCOPE_TIMER_FILTER(microSecondsThreshold, Format, ...) 
 #endif

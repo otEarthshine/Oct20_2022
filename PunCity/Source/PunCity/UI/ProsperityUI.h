@@ -3,16 +3,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Blueprint/UserWidget.h"
+#include "ProsperityUI.generated.h"
 
 /**
  * 
  */
-class PROTOTYPECITY_API ProsperityUI
+UCLASS()
+class PROTOTYPECITY_API UProsperityUI : public UUserWidget
 {
-public:
-
-
-
-
+	GENERATED_BODY()
 	
 };

@@ -220,6 +220,8 @@ void APunPlayerController::LoadController_GameManager()
 		gameInstance->saveSystem().Load(saveInfo.folderPath);
 
 		gameInstance->SetSavedGameToLoad(GameSaveInfo());
+
+		//PUN_LOG("UnitSystem LoadController unitCount():%d _unitLeans:%d", simulation().unitSystem().unitCount(), simulation().unitCount() - simulation().unitSystem().deadCount());
 	}
 
 	_loadStep = LoadStepEnum::GameManagerInProgress;
@@ -383,6 +385,7 @@ void APunPlayerController::Tick(float DeltaTime)
 
 			LoadController_Prepare();
 		}
+
 		return;
 	}
 
@@ -393,6 +396,7 @@ void APunPlayerController::Tick(float DeltaTime)
 			PUN_DEBUG2("[InitSync] Done WaitingForLoadedCallbacks : %d", gameInstance->playerCount());
 			_serverLoadStage = ServerLoadStage::Completed;
 		}
+
 		return;
 	}
 

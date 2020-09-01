@@ -68,6 +68,7 @@ public:
 	USceneComponent* componentToAttach() final { return _root; }
 
 	OverlayType GetOverlayType() final { return OverlayType::None; }
+	bool isHidingTree() override { return false; }
 
 	ULineBatchComponent* lineBatch() final {
 		if (UWorld* world = GetWorld()) {

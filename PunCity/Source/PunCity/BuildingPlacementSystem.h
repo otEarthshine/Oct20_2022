@@ -132,7 +132,8 @@ public:
 	void TickPlacement(AGameManager* gameInterface, IGameNetworkInterface* networkInterface, 
 						MouseInfo mouseInfo, WorldAtom2 cameraAtom);
 
-	PlacementInfo PlacementBuildingInfo();
+	// Determine instructions for display
+	PlacementInfo GetPlacementInfo();
 
 	PlacementType placementState() { return _placementType; }
 

@@ -35,6 +35,7 @@ public:
 	virtual USceneComponent* componentToAttach() = 0;
 
 	virtual OverlayType GetOverlayType() = 0;
+	virtual bool isHidingTree() = 0;
 	
 	virtual class ULineBatchComponent* lineBatch() = 0;
 

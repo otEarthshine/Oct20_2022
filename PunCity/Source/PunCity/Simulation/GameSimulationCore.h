@@ -615,6 +615,13 @@ public:
 			_displayEnumToRegionToNeedUpdate[static_cast<int>(displayEnum)][regionId] = needUpdate;
 		}
 	}
+	void SetNeedDisplayUpdate(DisplayClusterEnum displayEnum, const std::vector<int32>& regionIds, bool needUpdate = true) {
+		if (isInitialized()) {
+			for (int32 regionId : regionIds) {
+				_displayEnumToRegionToNeedUpdate[static_cast<int>(displayEnum)][regionId] = needUpdate;
+			}
+		}
+	}
 	bool NeedDisplayUpdate(DisplayClusterEnum displayEnum, int32_t regionId) final {
 		return isInitialized() && _displayEnumToRegionToNeedUpdate[static_cast<int>(displayEnum)][regionId];
 	}
@@ -1628,6 +1635,8 @@ public:
 				AddNeedDisplayUpdateId(DisplayGlobalEnum::Territory, playerId);
 			}
 		}
+
+		//PUN_LOG("UnitSystem Tick unitCount():%d _unitLeans:%d", unitSystem().unitCount(), unitSystem().unitCount() - unitSystem().deadCount());
 	}
 
 	void MainMenuDisplayInit()

@@ -17,7 +17,7 @@ void ULoadSaveUI::PunInit(UPunWidget* parent)
 
 	SaveSelectionList->ClearChildren();
 
-	SavingBlur->SetVisibility(ESlateVisibility::Collapsed);
+	SavingBlurText->SetVisibility(ESlateVisibility::Collapsed);
 }
 
 void ULoadSaveUI::OnClickBackButton()

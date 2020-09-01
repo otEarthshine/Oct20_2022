@@ -211,6 +211,9 @@ public:
 	void StartRoadPlacement(bool isStoneRoad, bool isIntercity) final {
 		_networkInterface->ResetGameUI();
 		buildingPlacementSystem->StartRoad(isStoneRoad, isIntercity);
+
+		// Ensure TileObj Refresh to hide trees
+		_gameInterface->simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Trees, _gameInterface->sampleRegionIds());
 	}
 	void StartFencePlacement() final {
 		_networkInterface->ResetGameUI();
@@ -225,7 +228,7 @@ public:
 	CardEnum GetBuildingEnumBeingPlaced() final { return buildingPlacementSystem->GetBuildingEnumBeingPlaced(); }
 
 	PlacementInfo PlacementBuildingInfo() final {
-		return buildingPlacementSystem->PlacementBuildingInfo();
+		return buildingPlacementSystem->GetPlacementInfo();
 	}
 	PlacementType placementState() final { return buildingPlacementSystem->placementState(); }
 	void CancelPlacement() final { buildingPlacementSystem->CancelPlacement(); }

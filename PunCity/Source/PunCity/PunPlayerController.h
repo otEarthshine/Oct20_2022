@@ -304,6 +304,7 @@ public:
 		return GetPunHUD()->IsHoveredOnScrollUI();
 	}
 
+	PlacementType placementType() final { return cameraPawn->buildingPlacementSystem->placementState(); }
 	void OnCancelPlacement() final {
 #if !UI_ALL
 		return;

@@ -181,6 +181,8 @@ public:
 	virtual WorldTile2 GetOverlayTile() = 0;
 	virtual OverlayType GetOverlayType() = 0;
 
+	virtual void SetOverlayHideTree(bool isHiding) = 0;
+
 	virtual bool isCtrlDown() = 0;
 	virtual bool isShiftDown() = 0;
 

@@ -207,13 +207,16 @@ void AGameManager::InitPhase2()
 	
 	UnitSystem& unitSystem = _simulation->unitSystem();
 
-	int32 initialAnimals = PunSettings::Get("InitialAnimals");
-	switch(_simulation->mapSizeEnum()) {
-	case MapSizeEnum::Large: break;
-	case MapSizeEnum::Medium: initialAnimals /= 4; break;
-	case MapSizeEnum::Small: initialAnimals /= 16; break;
+	if (!_isLoadingFromFile)
+	{
+		int32 initialAnimals = PunSettings::Get("InitialAnimals");
+		switch (_simulation->mapSizeEnum()) {
+		case MapSizeEnum::Large: break;
+		case MapSizeEnum::Medium: initialAnimals /= 4; break;
+		case MapSizeEnum::Small: initialAnimals /= 16; break;
+		}
+		unitSystem.AddAnimals(initialAnimals);
 	}
-	unitSystem.AddAnimals(initialAnimals);
 
 	/*
 	 * Init display systems
@@ -1089,7 +1092,7 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 
 		{
 #if AUDIO_ALL
-			SCOPE_CYCLE_COUNTER(STAT_PunSound);
+			SCOPE_CYCLE_COUNTER(STAT_PunSoundParam);
 			_soundSystem->UpdateParameters(playerId(), DeltaTime);
 #endif
 		}

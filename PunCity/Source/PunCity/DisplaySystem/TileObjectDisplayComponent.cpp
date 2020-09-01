@@ -248,6 +248,7 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 
 		GeoresourceNode georesourceNode = simulation().georesourceSystem().georesourceNode(regionId);
 
+		bool isHidingTree = gameManager()->isHidingTree();
 
 		auto showBush = [&](TileObjInfo info, int32 worldTileId, FTransform transform, LocalTile2 localTile, int32 ageState)
 		{
@@ -372,7 +373,7 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 
 			// Tree
 			else if (info.type == ResourceTileType::Tree)
-			{
+			{	
 				// Don't show tree if marked
 				if (PunSettings::MarkedTreesNoDisplay &&
 					treeSystem.HasMark(playId, worldTileId)) {
@@ -387,6 +388,12 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 
 				
 				FTransform transform = GameDisplayUtils::GetTreeTransform(localTile.localDisplayLocation(), 0, worldTileId, ageTick, info);
+
+				// Show only stump
+				if (isHidingTree) {
+					meshes->Add(tileObjectName + FString::FromInt(static_cast<int32>(TileSubmeshEnum::Stump)), worldTileId + 1 * GameMapConstants::TilesPerWorld, transform, ageState, worldTileId);
+					return;
+				}
 
 
 				if (!_isFullDisplay && !PunSettings::TrailerSession) {
@@ -473,6 +480,10 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 			else if (info.type == ResourceTileType::Bush && 
 					_isFullDisplay)
 			{
+				if (isHidingTree) {
+					return;
+				}
+				
 				// Don't show grass on road construction
 				if (simulation().isInitialized()  &&
 					simulation().IsRoadTile(worldTile)) {

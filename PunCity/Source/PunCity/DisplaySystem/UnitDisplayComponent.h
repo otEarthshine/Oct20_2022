@@ -6,6 +6,10 @@
 #include "StaticFastInstancedMeshesComp.h"
 #include "Components/SkeletalMeshComponent.h"
 
+DECLARE_CYCLE_STAT(TEXT("PUN: [Display] Unit Skel"), STAT_PunDisplayUnitSkel, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [Display] Unit Skel1"), STAT_PunDisplayUnitSkel1, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [Display] Unit Skel2"), STAT_PunDisplayUnitSkel2, STATGROUP_Game);
+
 struct FRotationInfo
 {
 	float rotationFloat = 0;
@@ -191,6 +195,8 @@ private:
 	
 	void AddSkelMesh(int32 unitId, UnitEnum unitEnum, UnitAnimationEnum animationEnum, bool isChild, FTransform& transform, int32 variationIndex)
 	{
+		SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitSkel);
+		
 		int32 index = -1;
 		// Use the existing unit already displayed
 		if (_lastUnitIdToSkelMeshIndex.Contains(unitId)) {
@@ -230,6 +236,10 @@ private:
 				weaponMesh->SetVisibility(false);
 				_unitWeaponMeshes.Add(weaponMesh);
 
+				//skelMesh->EnableExternalTickRateControl(true);
+				//skelMesh->bEnableUpdateRateOptimizations = true;
+				//skelMesh->bDisplayDebugUpdateRateOptimizations = true;
+
 				_unitSkelState.push_back(UnitSkelMeshState());
 			}
 
@@ -252,6 +262,8 @@ private:
 		if (_unitSkelState[index].animationEnum != animationEnum ||
 			_unitSkelState[index].animationPlayRate != playRate)
 		{
+			SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitSkel1);
+			
 			FSkeletonAsset skelAsset = _assetLoader->unitSkelAsset(unitEnum, variationIndex);
 
 			skelMesh->PlayAnimation(skelAsset.animationEnumToSequence[animationEnum], true);
@@ -270,7 +282,10 @@ private:
 
 		DescriptionUIState uiState = simulation().descriptionUIState();
 		int32 targetCustomDepth = (uiState.objectType == ObjectTypeEnum::Unit && uiState.objectId == unitId) ? 2 : 0;
-		if (_unitSkelState[index].customDepth != targetCustomDepth) {
+		if (_unitSkelState[index].customDepth != targetCustomDepth) 
+		{
+			SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitSkel2);
+			
 			_unitSkelState[index].customDepth = targetCustomDepth;
 			GameDisplayUtils::SetCustomDepth(skelMesh, targetCustomDepth);
 		}

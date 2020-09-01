@@ -24,7 +24,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UImage* OuterImage;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* TechName;
 
-	UPROPERTY(meta = (BindWidget)) UTextBlock* LevelCountText;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* HouseCountText;
 
 	UPROPERTY(meta = (BindWidget)) UImage* RewardBuildingIcon1;
 	UPROPERTY(meta = (BindWidget)) UImage* RewardBuildingIcon2;

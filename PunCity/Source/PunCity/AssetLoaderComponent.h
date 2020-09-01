@@ -20,6 +20,7 @@ enum class TileSubmeshEnum
 	Fruit,
 	LeafLowPoly,
 	LeafShadow,
+	Stump,
 };
 
 const std::string TileSubmeshName[]
@@ -29,6 +30,7 @@ const std::string TileSubmeshName[]
 	"Fruit",
 	"LeafLowPoly",
 	"LeafShadow",
+	"Stump",
 };
 static const int32 TileSubmeshCount = _countof(TileSubmeshName);
 
@@ -382,7 +384,7 @@ private:
 
 	void LoadGeoresource(GeoresourceEnum georesourceEnum, std::string folder, std::string meshFileNamePrefix, int32 numberOfMeshes);
 	void LoadTree(TileObjEnum treeEnum, std::string trunkMeshFile, std::string leafMeshFile,
-									std::string fruitMeshFile, std::string leafLowMeshFile, std::string leafShadowMeshFile);
+									std::string fruitMeshFile, std::string leafLowMeshFile, std::string leafShadowMeshFile, std::string stumpMeshFile);
 	void LoadTileObject(TileObjEnum treeEnum, std::vector<std::string> meshFiles);
 
 	void PaintMeshForConstruction(FString moduleName);

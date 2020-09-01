@@ -45,9 +45,12 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) UButton* OverlayToggler;
 	UPROPERTY(meta = (BindWidget)) UOverlay* OverlaySettingsOverlay;
-	UPROPERTY(meta = (BindWidget)) class UCheckBox* OverlayCheckBox_Appeal;
+	UPROPERTY(meta = (BindWidget)) class UCheckBox* OverlayCheckBox_None;
+	UPROPERTY(meta = (BindWidget)) UCheckBox* OverlayCheckBox_Appeal;
 	UPROPERTY(meta = (BindWidget)) UCheckBox* OverlayCheckBox_Fertility;
 	UPROPERTY(meta = (BindWidget)) UCheckBox* OverlayCheckBox_Animals;
+	UPROPERTY(meta = (BindWidget)) UCheckBox* MapCheckBox_HideTrees;
+	
 	
 	UPROPERTY(meta = (BindWidget)) UGameSettingsUI* GameSettingsUI;
 
@@ -328,7 +331,7 @@ public:
 
 	void CloseOverlayUI() {
 		OverlaySettingsOverlay->SetVisibility(ESlateVisibility::Collapsed);
-		dataSource()->SetOverlayType(OverlayType::None, OverlaySetterType::OverlayToggler);
+		//dataSource()->SetOverlayType(OverlayType::None, OverlaySetterType::OverlayToggler);
 	}
 
 private:
@@ -413,17 +416,28 @@ private:
 		networkInterface()->SetGameSpeed(newGameSpeed);
 	}
 
+	/*
+	 * Overlay
+	 */
+	UFUNCTION() void OnCheckOverlay_None(bool active) {
+		dataSource()->SetOverlayType(OverlayType::None, OverlaySetterType::OverlayToggler);
+		overlayTypeToChangeTo = OverlayType::None;
 
+		SetOverlayCheckBox(OverlayCheckBox_None);
+	}
+
+	// Set OverlayCheckBoxes so there is only one active.
 	void SetOverlayCheckBox(UCheckBox* activeCheckBox);
+	
 	UFUNCTION() void OnClickOverlayToggler() {
 		if (OverlaySettingsOverlay->GetVisibility() != ESlateVisibility::Collapsed) {
 			CloseOverlayUI();
 		} else {
 			networkInterface()->ResetGameUI();
 			OverlaySettingsOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-			dataSource()->SetOverlayType(OverlayType::Farm, OverlaySetterType::OverlayToggler);
-
-			SetOverlayCheckBox(OverlayCheckBox_Fertility);
+			
+			//dataSource()->SetOverlayType(OverlayType::Farm, OverlaySetterType::OverlayToggler);
+			//SetOverlayCheckBox(OverlayCheckBox_Fertility);
 		}
 	}
 	UFUNCTION() void OnCheckOverlay_Fertility(bool active) {
@@ -447,6 +461,9 @@ private:
 
 	OverlayType overlayTypeToChangeTo = OverlayType::None;
 
+	UFUNCTION() void OnCheckMap_HideTrees(bool active) {
+		dataSource()->SetOverlayHideTree(active);
+	}
 
 
 

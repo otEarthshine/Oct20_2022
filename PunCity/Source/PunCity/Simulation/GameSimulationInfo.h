@@ -12,10 +12,10 @@
 
 //#include "PunCity/PunSTLContainerOverride.h"
 
-#define TRAILER_MODE 0
+#define TRAILER_MODE 1
 
-#define SAVE_VERSION 30081502
-#define GAME_VERSION 30081502
+#define SAVE_VERSION 31081502
+#define GAME_VERSION 31081502
 
 //! Utils
 
@@ -6389,8 +6389,7 @@ enum class CallbackEnum : uint8
 
 	CloseGameSettingsUI,
 	CloseLoadSaveUI,
-	OpenSaveBlur,
-	CloseSaveBlur,
+	OpenBlur,
 	SaveGameOverrideConfirm,
 	SelectSaveGame,
 	AbandonTown,

@@ -148,7 +148,7 @@ void ABuildingPlacementSystem::Init(UAssetLoaderComponent* assetLoader)
 	_faceDirection = Direction::S;
 }
 
-PlacementInfo ABuildingPlacementSystem::PlacementBuildingInfo()
+PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 {
 	if (!_gameInterface) return PlacementInfo();
 	
@@ -779,6 +779,11 @@ void ABuildingPlacementSystem::CancelPlacement()
 	if (!_gameInterface) return;
 
 	//_buildingMeshes->Hide();
+
+	if (IsRoadPlacement(_placementType)) {
+		// Ensure TileObj Refresh to hide trees
+		_gameInterface->simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Trees, _gameInterface->sampleRegionIds());
+	}
 
 	if (_dragState == DragState::Dragging) {
 		if (_buildingEnum == CardEnum::StorageYard) {

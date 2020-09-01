@@ -123,7 +123,7 @@ int UnitSystem::AddUnit(UnitEnum unitEnum, int32 playerId, WorldAtom2 location, 
 {
 	int objectId = -1;
 
-	// Resolve UnitAI type
+	// Resolve UnitAI
 	unique_ptr<UnitStateAI> unitAI;
 	switch (unitEnum)
 	{
@@ -271,6 +271,9 @@ void UnitSystem::Tick()
 	if (Time::Ticks() > 0) {
 		_updateBuffer.AfterProcess();
 	}
+
+	//int32 startUnitCount = unitCount();
+	
 
 	UnitCheckIntegrity();
 
@@ -436,6 +439,10 @@ void UnitSystem::Tick()
 	}
 
 	//SystemIntegrityCheck();
+
+	//if (startUnitCount != unitCount()) {
+	//	PUN_LOG("UnitSystem Tick unitCount():%d _unitLeans:%d", unitCount(), _unitLeans.size());
+	//}
 }
 
 void UnitSystem::SetNextTickState(int32 id, TransformState state, std::string caller, int ticksNeeded, bool resetActions)
@@ -554,9 +561,11 @@ void UnitSystem::Serialize(FArchive& Ar)
 			deadUnitCount++;
 		}
 	}
+	SerializeCrc(Ar, _deadUnits);
 	PUN_CHECK(_deadUnits.size() == deadUnitCount);
-	PUN_LOG("UnitSystem isSaving:%d dead:%d animals:%d", Ar.IsSaving(), _deadUnits.size(), animalUnitCount);
 	
+	//PUN_LOG("UnitSystem Serialize isSaving:%d dead:%d animals:%d", Ar.IsSaving(), _deadUnits.size(), animalUnitCount);
+	//PUN_LOG("UnitSystem Serialize unitCount():%d _unitLeans:%d", unitCount(), _unitLeans.size());
 
 	UnitCheckIntegrity(true);
 }

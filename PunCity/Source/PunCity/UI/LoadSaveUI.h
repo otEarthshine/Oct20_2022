@@ -46,9 +46,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* NoSavedGameText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* NoSavedGameSelectedText;
 
-	UPROPERTY(meta = (BindWidget)) UOverlay* SavingBlur;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* SavingBlurText;
-	UPROPERTY(meta = (BindWidget)) UBackgroundBlur* BackgroundBlur;
 	
 	void OpenSaveUI()
 	{
@@ -243,10 +241,11 @@ public:
 
 		SetVisibility(ESlateVisibility::Visible);
 		LoadSaveOverlay->SetVisibility(ESlateVisibility::Collapsed);
-		SavingBlur->SetVisibility(ESlateVisibility::Visible);
-		BackgroundBlur->SetVisibility(ESlateVisibility::Visible); // TODO: Remove this not needed?
-		//SetText(SavingBlurText, isAutoSaving ? "Autosaving..." : "Saving...");
-		SetText(SavingBlurText, "Saving...");
+
+		SavingBlurText->SetVisibility(ESlateVisibility::Visible);
+		SetText(SavingBlurText, isAutoSaving ? "Autosaving..." : "Saving...");
+		
+		_callbackParent->CallBack2(this, CallbackEnum::OpenBlur);
 
 		_isSavingGame = true;
 		_delayedActionCountDown = 10;
@@ -257,8 +256,9 @@ public:
 		_LOG(PunSaveLoad, "Load ServerTravel");
 		
 		LoadSaveOverlay->SetVisibility(ESlateVisibility::Collapsed);
-		SavingBlur->SetVisibility(ESlateVisibility::Visible);
-		BackgroundBlur->SetVisibility(ESlateVisibility::Visible);
+		_callbackParent->CallBack2(this, CallbackEnum::OpenBlur);
+
+		SavingBlurText->SetVisibility(ESlateVisibility::Visible);
 		SetText(SavingBlurText, "Loading...");
 
 		_isSavingGame = false;
@@ -354,8 +354,8 @@ private:
 		}
 #endif
 
-		_callbackParent->CallBack2(_callbackParent, CallbackEnum::CloseLoadSaveUI);
-		SavingBlur->SetVisibility(ESlateVisibility::Collapsed);
+		SavingBlurText->SetVisibility(ESlateVisibility::Collapsed);
+		_callbackParent->CallBack2(this, CallbackEnum::CloseLoadSaveUI);
 	}
 	void LoadGame()
 	{

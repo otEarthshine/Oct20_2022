@@ -54,8 +54,9 @@ protected:
 
 	virtual void OnSpawnDisplay(int32 objectId, int32 meshId, WorldAtom2 cameraAtom) {}
 	virtual void UpdateDisplay(int32 objectId, int32 meshId, WorldAtom2 cameraAtom) {}
-	virtual void HideDisplay(int32 meshId) {}
-
+	
+	virtual void HideDisplay(int32 meshId, int32 regionId) {}
+	
 	virtual void BeforeAdd() {}
 	virtual void AfterAdd() {}
 

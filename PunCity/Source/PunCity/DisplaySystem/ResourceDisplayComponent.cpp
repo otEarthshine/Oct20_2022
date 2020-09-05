@@ -191,7 +191,7 @@ void UResourceDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 	}
 }
 
-void UResourceDisplayComponent::HideDisplay(int meshId)
+void UResourceDisplayComponent::HideDisplay(int meshId, int32 regionId)
 {
 	_meshes[meshId]->SetActive(false);
 }

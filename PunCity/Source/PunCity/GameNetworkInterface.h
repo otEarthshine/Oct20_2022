@@ -85,4 +85,6 @@ public:
 	virtual void SetLightAngle(float lightAngle) = 0;
 	virtual float GetLightAngle() = 0;
 	virtual float GetTrailerTime() = 0;
+
+	virtual void ExecuteInitialCloudFade() = 0;
 };

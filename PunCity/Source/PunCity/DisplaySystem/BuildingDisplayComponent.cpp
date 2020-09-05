@@ -1007,7 +1007,7 @@ void UBuildingDisplayComponent::UpdateDisplayBuilding(int objectId, int meshId, 
 	//}
 }
 
-void UBuildingDisplayComponent::HideDisplay(int meshId)
+void UBuildingDisplayComponent::HideDisplay(int meshId, int32 regionId)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayBuilding);
 	

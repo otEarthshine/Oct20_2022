@@ -11,7 +11,7 @@ class AlgorithmUtils
 {
 public:
 	template<typename Func>
-	static WorldTile2 FindNearbyAvailableTile(WorldTile2 start, Func isAvailable, int32_t maxLookup = 2000)
+	static WorldTile2 FindNearbyAvailableTile(WorldTile2 start, Func isAvailable, int32 maxLookup = 2000)
 	{
 		// Spiral
 		int x = 0;

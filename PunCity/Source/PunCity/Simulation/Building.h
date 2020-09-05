@@ -1123,6 +1123,8 @@ protected:
 	void ResetWorkReservers();
 	void ResetOccupants();
 
+	void TrailerAddResource();
+
 protected:
 	IGameSimulationCore* _simulation = nullptr;
 	

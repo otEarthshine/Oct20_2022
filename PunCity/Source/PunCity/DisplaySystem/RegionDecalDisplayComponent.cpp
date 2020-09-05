@@ -507,7 +507,7 @@ void URegionDecalDisplayComponent::UpdateRoadDisplay(int32 regionId, int meshId,
 	simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Road, regionId, false);
 }
 
-void URegionDecalDisplayComponent::HideDisplay(int meshId)
+void URegionDecalDisplayComponent::HideDisplay(int meshId, int32 regionId)
 {
 	_overlayDecals[meshId].decal->SetVisibility(false);
 

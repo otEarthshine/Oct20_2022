@@ -6,9 +6,11 @@
 #include "StaticFastInstancedMeshesComp.h"
 #include "Components/SkeletalMeshComponent.h"
 
-DECLARE_CYCLE_STAT(TEXT("PUN: [Display] Unit Skel"), STAT_PunDisplayUnitSkel, STATGROUP_Game);
-DECLARE_CYCLE_STAT(TEXT("PUN: [Display] Unit Skel1"), STAT_PunDisplayUnitSkel1, STATGROUP_Game);
-DECLARE_CYCLE_STAT(TEXT("PUN: [Display] Unit Skel2"), STAT_PunDisplayUnitSkel2, STATGROUP_Game);
+
+DECLARE_CYCLE_STAT(TEXT("PUN: [Display] Unit.Transform"), STAT_PunDisplayUnitTransform, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [Display] Unit.Skel"), STAT_PunDisplayUnitSkel, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [Display] Unit.Skel1"), STAT_PunDisplayUnitSkel1, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [Display] Unit.Skel2"), STAT_PunDisplayUnitSkel2, STATGROUP_Game);
 
 struct FRotationInfo
 {

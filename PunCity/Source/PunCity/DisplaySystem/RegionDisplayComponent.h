@@ -13,11 +13,7 @@ class URegionDisplayComponent : public UDisplaySystemComponent
 {
 	GENERATED_BODY()
 public:
-	URegionDisplayComponent()
-	{
-		PrimaryComponentTick.bCanEverTick = false;
-		_maxSpawnPerTick = 3;
-	}
+	URegionDisplayComponent();
 
 	float GetTerrainDisplayHeight(WorldTile2 tile);
 
@@ -40,7 +36,7 @@ protected:
 	int CreateNewDisplay(int objectId) override;
 	void OnSpawnDisplay(int objectId, int meshId, WorldAtom2 cameraAtom) override;
 	void UpdateDisplay(int objectId, int meshId, WorldAtom2 cameraAtom) override;
-	void HideDisplay(int meshId) override;
+	void HideDisplay(int meshId, int32 regionId) override;
 
 //private:
 //	void UpdateOverlayDisplay(int regionId, int meshId, OverlaySystem& overlaySystem);

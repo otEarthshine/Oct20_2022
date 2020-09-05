@@ -449,11 +449,43 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 			_gameInterface->Spawn2DSound("UI", "TrailerMusic");
 			_trailerStartTime = UGameplayStatics::GetAudioTimeSeconds(this);
 			_trailerAccumulatedMoveTime = 0.0f;
+
+			_networkInterface->ExecuteInitialCloudFade();
 		}
 
-		if (fabs(cameraRecord.lightAngle - 1000.0f)  < 0.1f) {
-			_networkInterface->TrailerShipStart();
+		if (fabs(cameraRecord.lightAngle - 800.0f) < 0.1f) {
+			PunSettings::Set("ForceSnow", 1);
 			cameraRecord.lightAngle = 225.0f;
+		}
+		if (fabs(cameraRecord.lightAngle - 1000.0f)  < 0.1f) {
+			// Arrive at Snow
+			_networkInterface->TrailerShipStart();
+			PunSettings::Set("TrailerNoTreeRefresh", 0);
+			cameraRecord.lightAngle = 225.0f;
+		}
+		if (fabs(cameraRecord.lightAngle - 1200.0f) < 0.1f) {
+			// Leave Jungle
+			PunSettings::Set("TrailerNoTreeRefresh", 1);
+			SimSettings::Set("ToggleRain", 0);
+			cameraRecord.lightAngle = 225.0f;
+		}
+		if (fabs(cameraRecord.lightAngle - 1400.0f) < 0.1f) {
+			PunSettings::Set("ForceAutumn", 1);
+			cameraRecord.lightAngle = 225.0f;
+		}
+		if (fabs(cameraRecord.lightAngle - 1500.0f) < 0.1f) {
+			PunSettings::Set("ForceAutumn", 0);
+			cameraRecord.lightAngle = 225.0f;
+		}
+		if (fabs(cameraRecord.lightAngle - 2000.0f) < 0.1f) {
+			PunSettings::Set("ForceSnow", 0);
+			cameraRecord.lightAngle = 225.0f;
+		}
+
+		if (fabs(cameraRecord.lightAngle - 3000.0f) < 0.1f) {
+			// Arrive at Jungle
+			SimSettings::Set("ToggleRain", 1);
+			cameraRecord.lightAngle = 45.0f;
 		}
 
 		MoveCameraTo(cameraRecord.cameraAtom, cameraRecord.zoomDistance, cameraRecord.rotator, cameraRecord.lightAngle, cameraRecord.transitionTime, cameraRecord.transition);

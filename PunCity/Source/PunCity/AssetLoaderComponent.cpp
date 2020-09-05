@@ -258,8 +258,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	// Townhall Modules
 	TryLoadBuildingModuleSet("TownhallThatch", "TownhallThatch");
 	TryLoadBuildingModuleSet("Townhall0", "TownhallModules");
-	TryLoadBuildingModuleSet("Townhall3", "TownhallModules");
-	TryLoadBuildingModuleSet("Townhall4", "TownhallLvl2Modules");
+	TryLoadBuildingModuleSet("Townhall3", "TownhallLvl3");
+	TryLoadBuildingModuleSet("Townhall4", "TownhallLvl3");
 	TryLoadBuildingModuleSet("TownhallLvl5", "TownhallLvl5");
 	LoadModule("TownhallLvl5GardenAndSpire", "TownhallLvl5/TownhallLvl5GardenAndSpire");
 	
@@ -267,18 +267,18 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 
 	// TownhallLvl2 Modules
-	LoadModule("Townhall2Floor", "TownhallLvl2Modules/TownhallLvl2Floor");
-	LoadModule("Townhall2Chimney", "TownhallLvl2Modules/TownhallLvl2Chimney");
+	//LoadModule("Townhall2Floor", "TownhallLvl2Modules/TownhallLvl2Floor");
+	//LoadModule("Townhall2Chimney", "TownhallLvl2Modules/TownhallLvl2Chimney");
 
-	LoadModule("Townhall2Roof", "TownhallLvl2Modules/TownhallLvl2Roof");
-	LoadModule("Townhall2RoofEdge", "TownhallLvl2Modules/TownhallLvl2RoofEdge");
+	//LoadModule("Townhall2Roof", "TownhallLvl2Modules/TownhallLvl2Roof");
+	//LoadModule("Townhall2RoofEdge", "TownhallLvl2Modules/TownhallLvl2RoofEdge");
 
-	LoadModule("Townhall2Body", "TownhallLvl2Modules/TownhallLvl2Body");
-	LoadModule("Townhall2Frame", "TownhallLvl2Modules/TownhallLvl2Frames");
-	LoadModule("Townhall2FrameAux", "TownhallLvl2Modules/TownhallLvl2FramesAux");
+	//LoadModule("Townhall2Body", "TownhallLvl2Modules/TownhallLvl2Body");
+	//LoadModule("Townhall2Frame", "TownhallLvl2Modules/TownhallLvl2Frames");
+	//LoadModule("Townhall2FrameAux", "TownhallLvl2Modules/TownhallLvl2FramesAux");
 
-	LoadModule("Townhall2WindowsFrame", "TownhallLvl2Modules/TownhallLvl2WindowsFrame");
-	LoadModule("Townhall2WindowsGlass", "TownhallLvl2Modules/TownhallLvl2WindowsGlass");
+	//LoadModule("Townhall2WindowsFrame", "TownhallLvl2Modules/TownhallLvl2WindowsFrame");
+	//LoadModule("Townhall2WindowsGlass", "TownhallLvl2Modules/TownhallLvl2WindowsGlass");
 
 	// Fisher Modules
 	TryLoadBuildingModuleSet("Fisher", "FisherModules");
@@ -549,20 +549,20 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	};
 
 	// Adult Male
-	LoadUnitSkel(UnitEnum::Human, "Human/CitizenMale/", "CitizenMale", animationFileNames);
+	LoadUnitSkel(UnitEnum::Human, "Human/CitizenMale/", "CitizenMale", animationFileNames, "Human/CitizenMale/CitizenMaleStatic");
 
 	// Adult Female
-	LoadUnitSkel(UnitEnum::Human, "Human/CitizenFemale/", "CitizenFemale", animationFileNames);
+	LoadUnitSkel(UnitEnum::Human, "Human/CitizenFemale/", "CitizenFemale", animationFileNames, "Human/CitizenMale/CitizenMaleStatic");
 
 	// Child Male
-	LoadUnitSkel(UnitEnum::Human, "Human/CitizenChildMale/", "CitizenChildMale", animationFileNames);
+	LoadUnitSkel(UnitEnum::Human, "Human/CitizenChildMale/", "CitizenChildMale", animationFileNames, "Human/CitizenMale/CitizenMaleStatic");
 
 	// Child Female
-	LoadUnitSkel(UnitEnum::Human, "Human/CitizenChildFemale/", "CitizenChildFemale", animationFileNames);
+	LoadUnitSkel(UnitEnum::Human, "Human/CitizenChildFemale/", "CitizenChildFemale", animationFileNames, "Human/CitizenMale/CitizenMaleStatic");
 
 
 	// Wild Man
-	LoadUnitSkel(UnitEnum::WildMan, "Human/WildMan/", "WildMan", animationFileNames);
+	LoadUnitSkel(UnitEnum::WildMan, "Human/WildMan/", "WildMan", animationFileNames, "Human/CitizenMale/CitizenMaleStatic");
 
 	// Hippo
 	LoadUnitSkel(UnitEnum::Hippo, "Hippo/", "HippoSmall", {
@@ -1112,6 +1112,12 @@ void UAssetLoaderComponent::LoadModuleWithConstruction(FString moduleName, FStri
 
 UStaticMesh* UAssetLoaderComponent::unitMesh(UnitEnum unitEnum, int32 variationIndex)
 {
+	if (unitEnum == UnitEnum::Human) {
+		auto skelAsset = unitSkelAsset(unitEnum, variationIndex);
+		PUN_CHECK(skelAsset.staticMesh);
+		return skelAsset.staticMesh;
+	}
+	
 	auto got = _unitToMeshes.find(unitEnum);
 	if (got != _unitToMeshes.end()) {
 		return _unitToMeshes[unitEnum][variationIndex];
@@ -1139,13 +1145,18 @@ void UAssetLoaderComponent::LoadUnit(UnitEnum unitEnum, std::string meshFile)
 {
 	_unitToMeshes[unitEnum].push_back(Load<UStaticMesh>((unitsPath + meshFile).c_str()));
 }
-void UAssetLoaderComponent::LoadUnitSkel(UnitEnum unitEnum, std::string folderPath, std::string skelFileName, std::unordered_map<UnitAnimationEnum, std::string> animationFileNames)
+void UAssetLoaderComponent::LoadUnitSkel(UnitEnum unitEnum, std::string folderPath, std::string skelFileName, std::unordered_map<UnitAnimationEnum, std::string> animationFileNames, std::string staticFileName)
 {
 	FSkeletonAsset asset;
 	asset.skeletalMesh = Load<USkeletalMesh>((unitsPath + folderPath + skelFileName).c_str());
 	for (const auto it : animationFileNames) {
 		asset.animationEnumToSequence.Add(it.first, Load<UAnimSequence>((unitsPath + folderPath + it.second).c_str()));
 	}
+	if (staticFileName != "") {
+		PUN_LOG("LoadUnitSkel staticFileName %s static:%s", ToTChar(skelFileName), ToTChar(staticFileName));
+		asset.staticMesh = Load<UStaticMesh>((unitsPath + staticFileName).c_str());
+	}
+	
 	_unitEnumToSkelAsset[static_cast<int>(unitEnum)].push_back(asset);
 }
 void UAssetLoaderComponent::LoadUnitWeapon(UnitAnimationEnum unitAnimation, std::string file)
@@ -1721,46 +1732,6 @@ void UAssetLoaderComponent::PaintMeshForConstruction(FString moduleName)
 	mesh->Build(true);
 	mesh->MarkPackageDirty();
 
-
-	//AsyncTask(ENamedThreads::GetRenderThread(), [vertexColorsPtr]() {
-	//	vertexColorsPtr->UpdateRHI();
-	//});
-
-
-
-	//FStaticMeshVertexBuffers* vertexBuffersPtr = &mesh->RenderData->LODResources[0].VertexBuffers;
-	//ENQUEUE_RENDER_COMMAND(FAssetLoaderPaintConstructionVertexColor)(
-	//	[vertexBuffersPtr](FRHICommandListImmediate& RHICmdList)
-	//{
-	//	vertexBuffersPtr->ColorVertexBuffer.UpdateRHI();
-	//});
-
-	//ss << "BeforeRelease... VertexPos:" << to_string(vertexPositions.GetNumVertices()) << ", VertexColor:" << to_string(vertexColorsPtr->GetNumVertices()) << "\n";
-
-	//mesh->ReleaseResources();
-	////mesh->ReleaseResourcesFence.Wait();
-
-	//ss << "AfterRelease... VertexPos:" << to_string(vertexPositions.GetNumVertices()) << ", VertexColor:" << to_string(vertexColorsPtr->GetNumVertices()) << "\n";
-	//PUN_CHECK2(vertexPositions.GetNumVertices() > 0, ss.str());
-
-	//mesh->InitResources();
-
-	//ENamedThreads::GetRenderThread_Local()
-
-	//AsyncTask(ENamedThreads::GetRenderThread(), [&]()
-	//{
-	//	mesh->RenderData->LODResources[0].VertexBuffers.ColorVertexBuffer.UpdateRHI();
-
-	//	//mesh->RenderData->LODResources[0].VertexBuffers.PositionVertexBuffer.InitRHI();
-	//	//mesh->RenderData->LODResources[0].VertexBuffers.ColorVertexBuffer.ReleaseRHI();
-	//	//mesh->RenderData->LODResources[0].VertexBuffers.ColorVertexBuffer.ReleaseResource();
-	//	//mesh->RenderData->LODResources[0].VertexBuffers.ColorVertexBuffer.InitResource();
-	//	//mesh->RenderData->LODResources[0].VertexBuffers.ColorVertexBuffer.InitRHI();
-	//	//mesh->RenderData->LODResources[0].VertexBuffers.ColorVertexBuffer.UpdateRHI();
-	//});
-
-	// Get Worldspace position of vertices
-	//const FVector WorldSpaceVertexLocation = GetActorLocation() + GetTransform().TransformVector(VertexBuffer->VertexPosition(Index));
 
 #endif
 }

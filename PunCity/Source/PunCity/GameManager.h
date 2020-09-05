@@ -36,7 +36,6 @@ DECLARE_CYCLE_STAT(TEXT("PUN: [Sound] Dropoff"), STAT_PunSoundDropoff, STATGROUP
 DECLARE_CYCLE_STAT(TEXT("PUN: [Sound] Animal"), STAT_PunSoundAnimal, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: [Sound] 3D"), STAT_PunSound3D, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: [Sound] 2D"), STAT_PunSound2D, STATGROUP_Game);
-DECLARE_CYCLE_STAT(TEXT("PUN: [Sound] UpdateParameters"), STAT_PunSoundParam, STATGROUP_Game);
 
 #include "GameManager.generated.h"
 

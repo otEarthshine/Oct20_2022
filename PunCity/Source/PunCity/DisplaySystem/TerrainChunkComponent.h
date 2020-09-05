@@ -19,7 +19,10 @@ class UTerrainChunkComponent : public UProceduralMeshComponent
 {
 	GENERATED_BODY()
 public:
-
+#if TRAILER_MODE
+	static void ResetCache();
+#endif
+	
 	bool GetShadowIndirectOnly() const override {
 		return true;
 	}

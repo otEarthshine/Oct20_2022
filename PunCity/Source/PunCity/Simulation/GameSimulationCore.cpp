@@ -16,7 +16,6 @@ using namespace std::chrono;
 
 DEFINE_LOG_CATEGORY(LogNetworkInput);
 
-DECLARE_CYCLE_STAT(TEXT("PUN: GameTree"), STAT_PunGameTreeTick, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: [Sim]Total"), STAT_PunSimTotal, STATGROUP_Game);
 
 void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInterface* soundInterface, IGameUIInterface* uiInterface, bool isLoadingFromFile)
@@ -424,7 +423,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 				
 				int32 commandPercent = replayPlayers[i].commandPercentAccumulated + PunSettings::Get("TrailerPlaceSpeed");
 				int32 numberOfCommandsToExecute = commandPercent / 100;
-				replayPlayers[i].commandPercentAccumulated += commandPercent % 100;
+				replayPlayers[i].commandPercentAccumulated = commandPercent % 100;
 				
 				// 150 bpm, or 24 ticks per beat
 				//  24->48 since gameSpeed is 2, *2 again to build every two beat
@@ -489,7 +488,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 						// Special case: Trailer Snow
 						else if (cheatEnum == CheatEnum::TrailerForceSnowStart)
 						{
-							PunSettings::Set("ForceSnow", 1);
+							//PunSettings::Set("ForceSnow", 1);
 							_LOG(PunTrailer, "TrailerForceSnowStart num:%llu pid:%d %s time:%f", trailerCommands.size(), command->playerId, *command->ToCompactString(), trailerTime);
 							recordCommand();
 							numberOfCommandsToExecute++;
@@ -537,7 +536,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 						// Trailer Force Autumn
 						else if (cheatEnum == CheatEnum::TrailerForceAutumn)
 						{
-							PunSettings::Set("ForceAutumn", cheat->var1);
+							//PunSettings::Set("ForceAutumn", cheat->var1);
 							_LOG(PunTrailer, "TrailerForceAutumn num:%llu pid:%d %s time:%f", trailerCommands.size(), command->playerId, *command->ToCompactString(), trailerTime);
 							recordCommand();
 							numberOfCommandsToExecute++;
@@ -707,48 +706,9 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 				continue;
 			}
 		}
-		
-		switch (commands[i]->commandType())
-		{
-			//case NetworkCommandEnum::AddPlayer:			AddPlayer(*static_pointer_cast<FAddPlayer>(commands[i])); break;
 
-			case NetworkCommandEnum::PlaceBuilding:	{
-				int32 buildingId = PlaceBuilding(*static_pointer_cast<FPlaceBuilding>(commands[i]));
-				commandSuccess[i] = (buildingId != -1);
-				break;
-			}
-			case NetworkCommandEnum::PlaceDrag:			PlaceDrag(*static_pointer_cast<FPlaceDrag>(commands[i])); break;
-			case NetworkCommandEnum::JobSlotChange:		JobSlotChange(*static_pointer_cast<FJobSlotChange>(commands[i])); break;
-			case NetworkCommandEnum::SetAllowResource:	SetAllowResource(*static_pointer_cast<FSetAllowResource>(commands[i])); break;
-			case NetworkCommandEnum::SetPriority:		SetPriority(*static_pointer_cast<FSetPriority>(commands[i])); break;
-			case NetworkCommandEnum::SetTownPriority:	SetTownPriority(*static_pointer_cast<FSetTownPriority>(commands[i])); break;
+		commandSuccess[i] = ExecuteNetworkCommand(commands[i]);
 
-			case NetworkCommandEnum::TradeResource:		TradeResource(*static_pointer_cast<FTradeResource>(commands[i])); break;
-			case NetworkCommandEnum::SetIntercityTrade:	SetIntercityTrade(*static_pointer_cast<FSetIntercityTrade>(commands[i])); break;
-			case NetworkCommandEnum::UpgradeBuilding:	UpgradeBuilding(*static_pointer_cast<FUpgradeBuilding>(commands[i])); break;
-			case NetworkCommandEnum::ChangeWorkMode:	ChangeWorkMode(*static_pointer_cast<FChangeWorkMode>(commands[i])); break;
-			case NetworkCommandEnum::ChooseLocation:	ChooseLocation(*static_pointer_cast<FChooseLocation>(commands[i])); break;
-			case NetworkCommandEnum::Cheat:				Cheat(*static_pointer_cast<FCheat>(commands[i])); break;
-			case NetworkCommandEnum::PopupDecision:		PopupDecision(*static_pointer_cast<FPopupDecision>(commands[i])); break;
-
-			case NetworkCommandEnum::RerollCards:		RerollCards(*static_pointer_cast<FRerollCards>(commands[i])); break;
-
-			case NetworkCommandEnum::SelectRareCard:	SelectRareCard(*static_pointer_cast<FSelectRareCard>(commands[i])); break;
-			case NetworkCommandEnum::BuyCard:			BuyCards(*static_pointer_cast<FBuyCard>(commands[i])); break;
-			case NetworkCommandEnum::SellCards:			SellCards(*static_pointer_cast<FSellCards>(commands[i])); break;
-			case NetworkCommandEnum::UseCard:			UseCard(*static_pointer_cast<FUseCard>(commands[i])); break;
-			case NetworkCommandEnum::UnslotCard:		UnslotCard(*static_pointer_cast<FUnslotCard>(commands[i])); break;
-
-			case NetworkCommandEnum::Attack:			Attack(*static_pointer_cast<FAttack>(commands[i])); break;
-			//case NetworkCommandEnum::TrainUnit:			TrainUnit(*static_pointer_cast<FTrainUnit>(commands[i])); break;
-
-			case NetworkCommandEnum::ClaimLand:			ClaimLand(*static_pointer_cast<FClaimLand>(commands[i])); break;
-			case NetworkCommandEnum::ChooseResearch:	ChooseResearch(*static_pointer_cast<FChooseResearch>(commands[i])); break;
-
-			case NetworkCommandEnum::ChangeName:		ChangeName(*static_pointer_cast<FChangeName>(commands[i])); break;
-			case NetworkCommandEnum::SendChat:			SendChat(*static_pointer_cast<FSendChat>(commands[i])); break;
-			default: UE_DEBUG_BREAK();
-		}
 
 		// Special case: Townhall after refresh and put in animation
 		if (commands[i]->commandType() == NetworkCommandEnum::PlaceBuilding)
@@ -1124,7 +1084,6 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 		if (PunSettings::IsOn("TickTiles")) 
 		{
 			//PUN_LLM(PunSimLLMTag::Trees);
-			SCOPE_CYCLE_COUNTER(STAT_PunGameTreeTick);
 			_treeSystem->Tick();
 		}
 
@@ -1151,7 +1110,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 				FloatDet currentCelsius = Time::CelsiusHelper(minCelsius, maxCelsius);
 
 				const FloatDet snowAccumulationStarts = -FD0_X(21);// FD0_X(59); // Starts at 5.9 C
-				snow += (-currentCelsius + snowAccumulationStarts) / Time::TicksPerSeason;
+				snow += (-currentCelsius + snowAccumulationStarts) / Time::TicksPerSeason * PunSettings::Get("ForceSnowSpeed") / 100;
 				snow = FDMin(FDMax(snow, 0), FDOne);
 				//PUN_LOG("SnowAccumulation snow:%f celsius:%f", FDToFloat(snow), FDToFloat(currentCelsius));
 			};
@@ -1254,6 +1213,49 @@ void GameSimulationCore::RemoveUnit(int id)
 /**
  * Player interactions
  */
+
+bool GameSimulationCore::ExecuteNetworkCommand(std::shared_ptr<FNetworkCommand> command)
+{
+	switch (command->commandType())
+	{
+	case NetworkCommandEnum::PlaceBuilding: {
+		int32 buildingId = PlaceBuilding(*static_pointer_cast<FPlaceBuilding>(command));
+		return (buildingId != -1);
+	}
+	case NetworkCommandEnum::PlaceDrag:			PlaceDrag(*static_pointer_cast<FPlaceDrag>(command)); break;
+	case NetworkCommandEnum::JobSlotChange:		JobSlotChange(*static_pointer_cast<FJobSlotChange>(command)); break;
+	case NetworkCommandEnum::SetAllowResource:	SetAllowResource(*static_pointer_cast<FSetAllowResource>(command)); break;
+	case NetworkCommandEnum::SetPriority:		SetPriority(*static_pointer_cast<FSetPriority>(command)); break;
+	case NetworkCommandEnum::SetTownPriority:	SetTownPriority(*static_pointer_cast<FSetTownPriority>(command)); break;
+
+	case NetworkCommandEnum::TradeResource:		TradeResource(*static_pointer_cast<FTradeResource>(command)); break;
+	case NetworkCommandEnum::SetIntercityTrade:	SetIntercityTrade(*static_pointer_cast<FSetIntercityTrade>(command)); break;
+	case NetworkCommandEnum::UpgradeBuilding:	UpgradeBuilding(*static_pointer_cast<FUpgradeBuilding>(command)); break;
+	case NetworkCommandEnum::ChangeWorkMode:	ChangeWorkMode(*static_pointer_cast<FChangeWorkMode>(command)); break;
+	case NetworkCommandEnum::ChooseLocation:	ChooseLocation(*static_pointer_cast<FChooseLocation>(command)); break;
+	case NetworkCommandEnum::Cheat:				Cheat(*static_pointer_cast<FCheat>(command)); break;
+	case NetworkCommandEnum::PopupDecision:		PopupDecision(*static_pointer_cast<FPopupDecision>(command)); break;
+
+	case NetworkCommandEnum::RerollCards:		RerollCards(*static_pointer_cast<FRerollCards>(command)); break;
+
+	case NetworkCommandEnum::SelectRareCard:	SelectRareCard(*static_pointer_cast<FSelectRareCard>(command)); break;
+	case NetworkCommandEnum::BuyCard:			BuyCards(*static_pointer_cast<FBuyCard>(command)); break;
+	case NetworkCommandEnum::SellCards:			SellCards(*static_pointer_cast<FSellCards>(command)); break;
+	case NetworkCommandEnum::UseCard:			UseCard(*static_pointer_cast<FUseCard>(command)); break;
+	case NetworkCommandEnum::UnslotCard:		UnslotCard(*static_pointer_cast<FUnslotCard>(command)); break;
+
+	case NetworkCommandEnum::Attack:			Attack(*static_pointer_cast<FAttack>(command)); break;
+
+	case NetworkCommandEnum::ClaimLand:			ClaimLand(*static_pointer_cast<FClaimLand>(command)); break;
+	case NetworkCommandEnum::ChooseResearch:	ChooseResearch(*static_pointer_cast<FChooseResearch>(command)); break;
+
+	case NetworkCommandEnum::ChangeName:		ChangeName(*static_pointer_cast<FChangeName>(command)); break;
+	case NetworkCommandEnum::SendChat:			SendChat(*static_pointer_cast<FSendChat>(command)); break;
+	default: UE_DEBUG_BREAK();
+	}
+
+	return true;
+}
 
 int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 {	
@@ -3076,7 +3078,8 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 
 	if (command.claimEnum == CallbackEnum::ClaimLandFood)
 	{
-		int32 baseRegionPrice = playerOwn.GetBaseProvinceClaimPrice(command.provinceId);
+		int32 baseRegionPrice = GetProvinceClaimPrice(command.provinceId);
+		//int32 baseRegionPrice = playerOwn.GetBaseProvinceClaimPrice(command.provinceId);
 		int32 neededFood = baseRegionPrice / FoodCost;
 		
 		if (foodCount(playerId) >= neededFood &&

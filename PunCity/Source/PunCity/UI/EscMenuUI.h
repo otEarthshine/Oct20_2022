@@ -31,6 +31,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* EscMenuExitToMainMenuButton;
 	UPROPERTY(meta = (BindWidget)) UButton* EscMenuQuitButton;
 
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* TopLeftBoxWithSpacer;
+
 	UPROPERTY(meta = (BindWidget)) UOverlay* GameSpeedOverlay;
 	UPROPERTY(meta = (BindWidget)) UImage* PauseIcon;
 	UPROPERTY(meta = (BindWidget)) UButton* PauseButton;
@@ -235,6 +237,11 @@ public:
 			overlayTypeToChangeTo = OverlayType::None;
 		}
 
+		TickLoadingScreen();
+	}
+
+	void TickLoadingScreen()
+	{
 		/*
 		 * Loading screen
 		 */

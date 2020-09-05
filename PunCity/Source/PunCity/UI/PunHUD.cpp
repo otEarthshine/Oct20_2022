@@ -166,7 +166,10 @@ void APunHUD::PunTick(bool isPhotoMode)
 			_questUI->SetVisibility(ESlateVisibility::Collapsed);
 			_chatUI->SetVisibility(ESlateVisibility::Collapsed);
 			_topLayerGameUI->SetVisibility(ESlateVisibility::Collapsed);
-			_escMenuUI->SetVisibility(ESlateVisibility::Collapsed);
+
+			//_escMenuUI->SetVisibility(ESlateVisibility::Collapsed);
+			_escMenuUI->TopLeftBoxWithSpacer->SetVisibility(ESlateVisibility::Collapsed);
+			
 			_worldSpaceUI->SetVisibility(ESlateVisibility::Collapsed);
 
 			_worldSpaceUI->StartHideAllUI();
@@ -175,6 +178,8 @@ void APunHUD::PunTick(bool isPhotoMode)
 			
 			_isUIHideMode = true;
 		}
+
+		_escMenuUI->TickLoadingScreen();
 		return;
 	}
 
@@ -184,7 +189,7 @@ void APunHUD::PunTick(bool isPhotoMode)
 		_questUI->SetVisibility(uiVisibilityBeforeUIHideMode[1]);
 		_chatUI->SetVisibility(uiVisibilityBeforeUIHideMode[2]);
 		_topLayerGameUI->SetVisibility(uiVisibilityBeforeUIHideMode[3]);
-		_escMenuUI->SetVisibility(uiVisibilityBeforeUIHideMode[4]);
+		_escMenuUI->TopLeftBoxWithSpacer->SetVisibility(uiVisibilityBeforeUIHideMode[4]);
 		_worldSpaceUI->SetVisibility(uiVisibilityBeforeUIHideMode[5]);
 		
 		_isUIHideMode = false;
@@ -194,7 +199,9 @@ void APunHUD::PunTick(bool isPhotoMode)
 	_mainGameUI->Tick();
 	_popupUI->Tick();
 	_questUI->Tick();
+
 	_escMenuUI->Tick();
+	
 	_chatUI->Tick();
 	_topLayerGameUI->Tick();
 	

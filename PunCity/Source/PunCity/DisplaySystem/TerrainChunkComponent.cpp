@@ -7,8 +7,36 @@
 #include <chrono>
 #include "Kismet/GameplayStatics.h"
 
+USTRUCT()
+struct FVectorArray {
+	UPROPERTY() TArray<FVector> Array;
+};
+USTRUCT()
+struct FLinearColorArray {
+	UPROPERTY() TArray<FLinearColor> Array;
+};
+USTRUCT()
+struct FProcMeshTangentArray {
+	UPROPERTY() TArray<FProcMeshTangent> Array;
+};
+
 using namespace std;
 using namespace std::chrono;
+
+#if TRAILER_MODE
+static TArray<FVectorArray> verticesCache;
+static TArray<FLinearColorArray> vertexColorsCache;
+static TArray<FVectorArray> normalsCache;
+static TArray<FProcMeshTangentArray> tangentsCache;
+void UTerrainChunkComponent::ResetCache()
+{
+	verticesCache.Empty();
+	vertexColorsCache.Empty();
+	normalsCache.Empty();
+	tangentsCache.Empty();
+}
+#endif
+
 
 void UTerrainChunkComponent::UpdateTerrainChunkMesh(GameSimulationCore& simulation, WorldRegion2 region, int tileDimX, int tileDimY,
 													bool createMesh, bool& containsWater)
@@ -19,7 +47,7 @@ void UTerrainChunkComponent::UpdateTerrainChunkMesh(GameSimulationCore& simulati
 	//PUN_LOG("UpdateTerrainChunkMesh: %f", updatedTime);
 	
 	PunTerrainGenerator& terrainGenerator = simulation.terrainGenerator();
-	std::vector<int16_t>& heightMap = terrainGenerator.heightMap;
+	std::vector<int16>& heightMap = terrainGenerator.heightMap;
 	
 	PunTerrainChanges& terrainChanges = simulation.terrainChanges();
 	std::vector<WorldTile2> holes = terrainChanges.GetRegionHoles(region);
@@ -62,32 +90,91 @@ void UTerrainChunkComponent::UpdateTerrainChunkMesh(GameSimulationCore& simulati
 		meshColorsSmooth.Reserve(tessOuterVertTotal);
 
 		vertices.Reserve(tessVertTotal);
-		UV0.Reserve(tessVertTotal);
 		vertexColors.Reserve(tessVertTotal);
 		normals.Reserve(tessVertTotal);
 		tangents.Reserve(tessVertTotal);
 
+		// UV0 always same
+		UV0.Reserve(tessVertTotal);
+		for (int y = 0; y < tessVertSize; y++) {
+			for (int x = 0; x < tessVertSize; x++)
+			{
+				UV0.Add(FVector2D(float(x) / tessTileSize, float(y) / tessTileSize)); // use tile size because for UV (since UV is length, not vert)
+			}
+		}
+
+		// Tris is always the same, so we can cache it
 		tris.Reserve(tessTileTotal * 6);
+		for (int y = 0; y < tessTileSize; y++) {
+			for (int x = 0; x < tessTileSize; x++)
+			{
+				int i = x + y * tessVertSize;
+				if (((x & 1) + (y & 1)) & 1) {
+
+					tris.Add(i);
+					tris.Add(i + 1 + tessVertSize);
+					tris.Add(i + 1);
+
+					tris.Add(i);
+					tris.Add(i + tessVertSize);
+					tris.Add(i + 1 + tessVertSize);
+				}
+				else
+				{
+					tris.Add(i);
+					tris.Add(i + tessVertSize);
+					tris.Add(i + 1);
+
+					tris.Add(i + 1);
+					tris.Add(i + tessVertSize);
+					tris.Add(i + 1 + tessVertSize);
+				}
+			}
+		}
 	}
 
-	meshHeightsNoTess.Empty(outerVertTotal);
-	meshColorsNoTess.Empty(outerVertTotal);
+	//tris.Empty(tessTileTotal * 6);
 
-	meshHeightsTess.Empty(tessOuterVertTotal);
-	meshHeightsSmooth.Empty(tessOuterVertTotal);
-	meshColors.Empty(tessOuterVertTotal);
-	meshColorsSmooth.Empty(tessOuterVertTotal);
+	// Use cache if possible
+#if TRAILER_MODE
 
-	vertices.Empty(tessVertTotal);
-	UV0.Empty(tessVertTotal);
-	vertexColors.Empty(tessVertTotal);
-	normals.Empty(tessVertTotal);
-	tangents.Empty(tessVertTotal);
+	if (verticesCache.Num() == 0) {
+		verticesCache.SetNum(GameMapConstants::TotalRegions);
+		vertexColorsCache.SetNum(GameMapConstants::TotalRegions);
+		normalsCache.SetNum(GameMapConstants::TotalRegions);
+		tangentsCache.SetNum(GameMapConstants::TotalRegions);
+	}
 
-	tris.Empty(tessTileTotal * 6);
-
-
+	int32 regionId = region.regionId();
+	if (verticesCache[regionId].Array.Num() > 0)
 	{
+		for (int32 i = 0; i < vertices.Num(); i++) {
+			vertices[i] = verticesCache[regionId].Array[i];
+			vertexColors[i] = vertexColorsCache[regionId].Array[i];
+			normals[i] = normalsCache[regionId].Array[i];
+			tangents[i] = tangentsCache[regionId].Array[i];
+		}
+
+		containsWater = true;
+	}
+	else
+#endif
+	{
+		meshHeightsNoTess.Empty(outerVertTotal);
+		meshColorsNoTess.Empty(outerVertTotal);
+
+		meshHeightsTess.Empty(tessOuterVertTotal);
+		meshHeightsSmooth.Empty(tessOuterVertTotal);
+		meshColors.Empty(tessOuterVertTotal);
+		meshColorsSmooth.Empty(tessOuterVertTotal);
+
+		vertices.Empty(tessVertTotal);
+		//UV0.Empty(tessVertTotal);
+		vertexColors.Empty(tessVertTotal);
+		normals.Empty(tessVertTotal);
+		tangents.Empty(tessVertTotal);
+
+		
 		//SCOPE_TIMER("Setup Mesh Arrays... aasff");
 
 		containsWater = false;
@@ -307,7 +394,7 @@ void UTerrainChunkComponent::UpdateTerrainChunkMesh(GameSimulationCore& simulati
 				float height = meshHeightsSmooth[outerX + outerY * tessOuterVertSize];
 
 				vertices.Add(FVector(x * displayUnitPerTile + vertStart, y * displayUnitPerTile + vertStart, height));
-				UV0.Add(FVector2D(float(x) / tessTileSize, float(y) / tessTileSize)); // use tile size because for UV (since UV is length, not vert)
+				//UV0.Add(FVector2D(float(x) / tessTileSize, float(y) / tessTileSize)); // use tile size because for UV (since UV is length, not vert)
 
 				// Normal and Tangents
 				float heightNegX = meshHeightsSmooth[(outerX - 1) + outerY * tessOuterVertSize];
@@ -328,68 +415,60 @@ void UTerrainChunkComponent::UpdateTerrainChunkMesh(GameSimulationCore& simulati
 		}
 
 		
-		//bool isCreatingMesh = createMesh;
-		bool isCreatingMesh = createMesh || holes.size() != _lastHoleCount;
-		if (isCreatingMesh)
+		//bool isCreatingMesh = createMesh || holes.size() != _lastHoleCount;
+		//if (isCreatingMesh)
+		//{
+		//	// tris
+		//	
+		//	for (int y = 0; y < tessTileSize; y++) {
+		//		for (int x = 0; x < tessTileSize; x++)
+		//		{
+		//			int i = x + y * tessVertSize;
+		//			if (((x & 1) + (y & 1)) & 1) {
+
+		//				tris.Add(i);
+		//				tris.Add(i + 1 + tessVertSize);
+		//				tris.Add(i + 1);
+
+		//				tris.Add(i);
+		//				tris.Add(i + tessVertSize);
+		//				tris.Add(i + 1 + tessVertSize);
+		//			}
+		//			else
+		//			{
+		//				tris.Add(i);
+		//				tris.Add(i + tessVertSize);
+		//				tris.Add(i + 1);
+
+		//				tris.Add(i + 1);
+		//				tris.Add(i + tessVertSize);
+		//				tris.Add(i + 1 + tessVertSize);
+		//			}
+		//		}
+		//	}
+
+		//}
+
+#if TRAILER_MODE
+		static int32 count = 0;
+		if (verticesCache[regionId].Array.Num() == 0)
 		{
-			for (int y = 0; y < tessTileSize; y++) {
-				for (int x = 0; x < tessTileSize; x++)
-				{
-					int i = x + y * tessVertSize;
-					if (((x & 1) + (y & 1)) & 1) {
+			count++;
+			PUN_LOG("CACHE Vertices:%d", count);
+			verticesCache[regionId].Array.SetNum(vertices.Num());
+			vertexColorsCache[regionId].Array.SetNum(vertices.Num());
+			normalsCache[regionId].Array.SetNum(vertices.Num());
+			tangentsCache[regionId].Array.SetNum(vertices.Num());
 
-						tris.Add(i);
-						tris.Add(i + 1 + tessVertSize);
-						tris.Add(i + 1);
-
-						tris.Add(i);
-						tris.Add(i + tessVertSize);
-						tris.Add(i + 1 + tessVertSize);
-					}
-					else
-					{
-						tris.Add(i);
-						tris.Add(i + tessVertSize);
-						tris.Add(i + 1);
-
-						tris.Add(i + 1);
-						tris.Add(i + tessVertSize);
-						tris.Add(i + 1 + tessVertSize);
-					}
-				}
+			for (int32 i = 0; i < vertices.Num(); i++)
+			{
+				verticesCache[regionId].Array[i] = vertices[i];
+				vertexColorsCache[regionId].Array[i] = vertexColors[i];
+				normalsCache[regionId].Array[i] = normals[i];
+				tangentsCache[regionId].Array[i] = tangents[i];
 			}
-
-			//// Dig hole
-			//// Do this by setting tris to same vertices to hide it.
-			//// tessOuterVertSize is 32*2 + 2*2 = 68
-			//auto hideTris = [&](int32 tessIndex)
-			//{
-			//	tris[tessIndex * 6] = 0;
-			//	tris[tessIndex * 6 + 1] = 0;
-			//	tris[tessIndex * 6 + 2] = 0;
-
-			//	tris[tessIndex * 6 + 3] = 0;
-			//	tris[tessIndex * 6 + 4] = 0;
-			//	tris[tessIndex * 6 + 5] = 0;
-			//};
-
-			//for (WorldTile2 tile : holes)
-			//{
-			//	WorldRegion2 tileRegion = tile.region();
-			//	if (region == tileRegion) {
-			//		LocalTile2 localTile = tile.localTile();
-			//		if (localTile.isValid()) {
-			//			int32 tessTileX = localTile.x * tessMultiplier;
-			//			int32 tessTileY = localTile.y * tessMultiplier;
-			//			hideTris(tessTileX + tessTileY * tessTileSize);
-			//			hideTris((tessTileX + 1) + tessTileY * tessTileSize);
-			//			hideTris(tessTileX + (tessTileY + 1) * tessTileSize);
-			//			hideTris((tessTileX + 1) + (tessTileY + 1) * tessTileSize);
-			//		}
-			//	}
-			//}
 		}
-		
+#endif
 	}
 
 	{

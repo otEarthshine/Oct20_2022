@@ -16,13 +16,13 @@ DECLARE_CYCLE_STAT(TEXT("PUN: FindTree"), STAT_PunFindTree, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: FindFruit"), STAT_PunFindFruit, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: FindFullBush"), STAT_PunFindFullBush, STATGROUP_Game);
 
-DECLARE_CYCLE_STAT(TEXT("PUN: TreeTick"), STAT_PunTreeTickTiles, STATGROUP_Game);
-DECLARE_CYCLE_STAT(TEXT("PUN: TreeTickInitial"), STAT_PunTreeTickInitial, STATGROUP_Game);
-DECLARE_CYCLE_STAT(TEXT("PUN: TreeTickAgeDeath"), STAT_PunTreeAgeDeath, STATGROUP_Game);
-DECLARE_CYCLE_STAT(TEXT("PUN: TreeTickFruit"), STAT_PunTreeFruit, STATGROUP_Game);
-DECLARE_CYCLE_STAT(TEXT("PUN: TreeTickFish"), STAT_PunTreeFish, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: Tree.Tick"), STAT_PunTreeTickTiles, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: Tree.TickInitial"), STAT_PunTreeTickInitial, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: Tree.TickAgeDeath"), STAT_PunTreeAgeDeath, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: Tree.TickFruit"), STAT_PunTreeFruit, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: Tree.TickFish"), STAT_PunTreeFish, STATGROUP_Game);
 
-DECLARE_CYCLE_STAT(TEXT("PUN: TreeFallen"), STAT_PunTreeFallen, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: Tree.Fallen"), STAT_PunTreeFallen, STATGROUP_Game);
 
 #pragma runtime_checks( "sc", restore )
 
@@ -886,15 +886,15 @@ void TreeSystem::TickTile(int32_t id)
 	}
 	//check(TreeEnumSize > (int)tileObjEnum && (int)tileObjEnum >= 0);
 
-	TileObjInfo info = GetTileObjInfo(treeEnum);
-
-	if (info.IsPlant())
+	if (IsPlantFast(treeEnum))
 	{
+		TileObjInfo info = GetTileObjInfo(treeEnum);
+		
 		WorldTile2 tile(id);
 		uint32_t rand = GameRand::Rand();
 
 		{
-			SCOPE_CYCLE_COUNTER(STAT_PunTreeAgeDeath);
+			//SCOPE_CYCLE_COUNTER(STAT_PunTreeAgeDeath); // Note: This screws up Tree.Tick Count
 
 			// Tree Death
 			if (info.canDieFromAge(_tileObjAge[id]) && 
@@ -912,7 +912,7 @@ void TreeSystem::TickTile(int32_t id)
 		}
 
 		{
-			SCOPE_CYCLE_COUNTER(STAT_PunTreeFruit);
+			//SCOPE_CYCLE_COUNTER(STAT_PunTreeFruit); // Note: This screws up Tree.Tick Count
 
 			// No Fruit in winter
 			if (Time::IsSnowing()) {

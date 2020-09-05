@@ -622,7 +622,7 @@ public:
 			}
 		}
 	}
-	bool NeedDisplayUpdate(DisplayClusterEnum displayEnum, int32_t regionId) final {
+	bool NeedDisplayUpdate(DisplayClusterEnum displayEnum, int32 regionId) final {
 		return isInitialized() && _displayEnumToRegionToNeedUpdate[static_cast<int>(displayEnum)][regionId];
 	}
 
@@ -1794,6 +1794,14 @@ private:
 	 * Player interactions
 	 */
 public:
+	void ExecuteNetworkCommands(std::vector<std::shared_ptr<FNetworkCommand>>& commands) final
+	{
+		for (auto& command : commands) {
+			ExecuteNetworkCommand(command);
+		}
+	}
+	bool ExecuteNetworkCommand(std::shared_ptr<FNetworkCommand> command) final;
+	
 	int32 PlaceBuilding(FPlaceBuilding parameters) final;
 private:
 	void PlaceDrag(FPlaceDrag parameters) final;

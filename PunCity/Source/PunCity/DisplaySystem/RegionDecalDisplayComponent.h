@@ -33,7 +33,7 @@ public:
 	int CreateNewDisplay(int objectId) override;
 	void OnSpawnDisplay(int regionId, int meshId, WorldAtom2 cameraAtom) override;
 	void UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom) override;
-	void HideDisplay(int meshId) override;
+	void HideDisplay(int meshId, int32 regionId) override;
 	
 	void UpdateRoadDisplay(int regionId, int meshId, OverlaySystem& overlaySystem);
 	

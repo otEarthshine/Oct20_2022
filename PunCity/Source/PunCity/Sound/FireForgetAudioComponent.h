@@ -110,6 +110,7 @@ public:
 
 	WorldAtom2 spotAtom;
 	float spotHeight = -1.0f;
+	bool shouldUpdateSpot = true;
 
 	UPROPERTY() UAudioComponent* audio;
 	UPROPERTY() USoundWave* sound;

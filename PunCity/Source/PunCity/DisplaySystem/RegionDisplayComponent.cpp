@@ -13,6 +13,15 @@
 
 using namespace std;
 
+URegionDisplayComponent::URegionDisplayComponent()
+{
+	PrimaryComponentTick.bCanEverTick = false;
+	_maxSpawnPerTick = 3;
+
+#if TRAILER_MODE
+	UTerrainChunkComponent::ResetCache();
+#endif
+}
 
 float URegionDisplayComponent::GetTerrainDisplayHeight(WorldTile2 tile)
 {
@@ -176,7 +185,7 @@ void URegionDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2
 	
 }
 
-void URegionDisplayComponent::HideDisplay(int meshId)
+void URegionDisplayComponent::HideDisplay(int meshId, int32 regionId)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayTerrain);
 	

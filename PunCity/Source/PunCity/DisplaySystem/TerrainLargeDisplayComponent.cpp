@@ -96,7 +96,7 @@ void UTerrainLargeDisplayComponent::UpdateDisplay(int regionId, int meshId, Worl
 	}
 }
 
-void UTerrainLargeDisplayComponent::HideDisplay(int meshId)
+void UTerrainLargeDisplayComponent::HideDisplay(int meshId, int32 regionId)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayTerrain);
 

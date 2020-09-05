@@ -16,7 +16,7 @@ public:
 protected:
 	int CreateNewDisplay(int objectId) override;
 	void UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom) override;
-	void HideDisplay(int meshId) override;
+	void HideDisplay(int meshId, int32 regionId) override;
 
 	void OnSpawnDisplay(int regionId, int meshId, WorldAtom2 cameraAtom) override {
 		_meshes[meshId]->SetActive(true);

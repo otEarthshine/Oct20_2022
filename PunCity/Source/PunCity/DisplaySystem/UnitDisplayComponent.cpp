@@ -19,6 +19,8 @@ using namespace std;
 
 int32 UUnitDisplayComponent::GetUnitTransformAndVariation(int32 unitId, FTransform& transform)
 {
+	SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitTransform);
+	
 	LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayUnit);
 	
 	WorldAtom2 cameraAtom = gameManager()->cameraAtom();
@@ -186,18 +188,9 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 
 #endif
 	
-	//if (PunSettings::TrailerTile_Chopper.isValid() &&
-	//	PunSettings::TrailerTile_Chopper.region() == region) 
-	//{
-	//	for (int32 i = 0; i < 32; i++) {
-	//		addTrailerUnit(99997 - i, UnitAnimationEnum::ChopWood, static_cast<int32>(HumanVariationEnum::AdultMale), PunSettings::TrailerTile_Chopper + WorldTile2(i, i));
-	//	}
-	//}
-	//if (PunSettings::TrailerTile_Builder.isValid() &&
-	//	PunSettings::TrailerTile_Builder.region() == region) {
-	//	addTrailerUnit(99998, UnitAnimationEnum::Build, static_cast<int32>(HumanVariationEnum::AdultFemale), PunSettings::TrailerTile_Builder);
-	//}
-	
+
+	float zoomDistance = _gameManager->zoomDistance();
+	bool displayOnlyLargeUnits = (zoomDistance > WorldZoomTransition_UnitSmall);
 
 	unitList.ExecuteRegion(region, [&](int32 unitId)
 	{
@@ -206,17 +199,28 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 		}
 
 		UnitStateAI& unit = unitSystem.unitStateAI(unitId);
+		UnitEnum unitEnum = unit.unitEnum();
 
 		/*
 		 *
 		 */
 
-		if (IsUsingSkeletalMesh(unit.unitEnum()))
-		{
-			FTransform transform;
-			AddSkelMesh(unitId, unit, transform);
-			UpdateResourceDisplay(unitId, unit, transform);
+		if (displayOnlyLargeUnits && unitEnum != UnitEnum::Hippo) {
 			return;
+		}
+
+		if (IsUsingSkeletalMesh(unitEnum))
+		{
+			// Zoomed out human should use instancedStaticMesh
+			if (unitEnum == UnitEnum::Human && zoomDistance > WorldZoomTransition_HumanNoAnimate)
+			{}
+			else
+			{
+				FTransform transform;
+				AddSkelMesh(unitId, unit, transform);
+				UpdateResourceDisplay(unitId, unit, transform);
+				return;
+			}
 		}
 
 

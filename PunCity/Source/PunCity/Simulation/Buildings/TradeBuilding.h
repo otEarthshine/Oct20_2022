@@ -136,6 +136,8 @@ public:
 		};
 
 		_simulation->TryAddQuest(_playerId, std::make_shared<TradeQuest>());
+
+		TrailerAddResource();
 	}
 
 	int32 maxTradeQuatity() override {
@@ -177,6 +179,8 @@ public:
 		};
 
 		_simulation->TryAddQuest(_playerId, std::make_shared<TradeQuest>());
+
+		TrailerAddResource();
 	}
 
 	int32 maxTradeQuatity() override {

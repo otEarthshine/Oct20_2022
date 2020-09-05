@@ -15,162 +15,6 @@
 #include "PunCity/CppUtils.h"
 #include "SimUtils.h"
 
-enum class AIRegionProposedPurposeEnum : uint8
-{
-	None,
-	Tree,
-	Fertility,
-	Ranch,
-};
-
-static const std::vector<std::string> AIRegionProposedPurposeName
-{
-	"None",
-	"Tree",
-	"Fertility",
-	"Ranch",
-};
-
-enum class AIRegionPurposeEnum : uint8
-{
-	None,
-	City,
-	FruitGather,
-	Forester,
-	Farm,
-	Ranch,
-};
-
-static const std::vector<std::string> AIRegionPurposeName
-{
-	"None",
-	"City",
-	"FruitGather",
-	"Forester",
-	"Farm",
-	"Ranch",
-};
-
-/*
- * Represent a building block that can be placed onto a region..
- */
-class AICityBlock
-{
-public:
-	WorldTile2 minTile() { return _minTile; }
-	WorldTile2 size() { return _size; }
-
-	bool IsValid() {
-		return topTileSizeX > 0 || bottomTileSizeX > 0;
-	}
-
-	void SetMinTile(WorldTile2 minTile) {
-		_minTile = minTile;
-	}
-
-	TileArea area() { return TileArea(_minTile, _size); }
-
-	int32 midRoadTileX() { return _minTile.x + bottomTileSizeX; }
-
-	void CalculateSize() {
-		topTileSizeX = 0;
-		int32 topTileSizeY = 0;
-		for(CardEnum buildingEnum : topBuildingEnums) {
-			WorldTile2 size = GetBuildingInfo(buildingEnum).size;
-			topTileSizeX = std::max(topTileSizeX, static_cast<int32_t>(size.x));
-			topTileSizeY += size.y;
-		}
-		bottomTileSizeX = 0;
-		int32 bottomTileSizeY = 0;
-		for (CardEnum buildingEnum : bottomBuildingEnums) {
-			WorldTile2 size = GetBuildingInfo(buildingEnum).size;
-			bottomTileSizeX = std::max(bottomTileSizeX, static_cast<int32_t>(size.x));
-			bottomTileSizeY += size.y;
-		}
-		
-		int32 tileSizeX = topTileSizeX + bottomTileSizeX;
-		int32 tileSizeY = std::max(topTileSizeY, bottomTileSizeY);
-		const int32_t roadShift = 2;
-
-		_size = WorldTile2(tileSizeX + roadShift, tileSizeY + roadShift);
-	}
-
-	bool CanPlaceForest(WorldTile2 minTile, int32 playerId, IGameSimulationCore* simulation)
-	{
-		// Check block area for invalid tile
-		TileArea area(minTile, _size);
-		bool hasInvalid = area.ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 curTile) {
-			if (curTile.isValid() && simulation->IsBuildable(curTile, playerId)) {
-				return false;
-			}
-			return true;
-		});
-
-		return !hasInvalid;
-	}
-
-	bool CanPlaceCityBlock(WorldTile2 minTile, int32_t playerId, IGameSimulationCore* simulation)
-	{
-		// outer rim is checked for FrontBuildable instead
-		TileArea area(minTile, _size);
-		WorldTile2 maxTile = area.max();
-
-		auto isRimBuildable = [&](TileArea rimArea) {
-			bool hasInvalid = rimArea.ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 curTile) {
-				return !(curTile.isValid() && simulation->IsFrontBuildable(curTile));
-			});
-			return !hasInvalid;
-		};
-		
-		if (!isRimBuildable(TileArea(WorldTile2(minTile.x, minTile.y), WorldTile2(_size.x, 1)))) return false;
-		if (!isRimBuildable(TileArea(WorldTile2(minTile.x, maxTile.y), WorldTile2(_size.x, 1)))) return false;
-		if (!isRimBuildable(TileArea(WorldTile2(minTile.x, minTile.y), WorldTile2(1, _size.y)))) return false;
-		if (!isRimBuildable(TileArea(WorldTile2(maxTile.x, minTile.y), WorldTile2(1, _size.y)))) return false;
-
-		// Trim the area
-		area.minX++;
-		area.maxX--;
-		area.minY++;
-		area.maxY--;
-
-		bool hasInvalid = area.ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 curTile) {
-			return !(curTile.isValid() && simulation->IsBuildable(curTile, playerId));
-		});
-		return !hasInvalid;
-	}
-
-	void operator>>(FArchive& Ar)
-	{
-		SerializeVecValue(Ar, topBuildingEnums);
-		SerializeVecValue(Ar, bottomBuildingEnums);
-
-		SerializeVecValue(Ar, topBuildingIds);
-		SerializeVecValue(Ar, bottomBuildingIds);
-
-		Ar << topTileSizeX;
-		Ar << bottomTileSizeX;
-
-		_minTile >> Ar;
-		_size >> Ar;
-	}
-
-public:
-	// City block is composed of two opposite facing sides
-	// arranged from left to right
-	std::vector<CardEnum> topBuildingEnums;
-	std::vector<CardEnum> bottomBuildingEnums;
-
-	std::vector<int32> topBuildingIds;
-	std::vector<int32> bottomBuildingIds;
-
-	int32 topTileSizeX = 0;
-	int32 bottomTileSizeX = 0;
-
-private:
-	WorldTile2 _minTile = WorldTile2::Invalid;
-	WorldTile2 _size = WorldTile2::Invalid;
-};
-
 
 class AIRegionStatus
 {
@@ -332,6 +176,7 @@ public:
 
 			// Add Storages
 			area.minY = area.minY - 5;
+			area.maxY = area.maxY + 5; // Ensure area center is also townhall center
 
 			PUN_CHECK(area.isValid());
 			
@@ -363,7 +208,7 @@ public:
 				}
 				return true;
 			},
-				[&](WorldTile2 tile) {
+			[&](WorldTile2 tile) {
 				return !provinceRectArea.HasTile(tile);
 			});
 
@@ -372,7 +217,7 @@ public:
 				auto command = MakeCommand<FPlaceBuilding>();
 				command->buildingEnum = static_cast<uint8>(CardEnum::Townhall);
 				command->playerId = _playerId;
-				command->center = buildableArea.centerTile();
+				command->center = buildableArea.centerTile(); // area center is also townhall center
 				command->faceDirection = static_cast<uint8>(Direction::S);
 
 				BldInfo buildingInfo = GetBuildingInfoInt(command->buildingEnum);
@@ -442,20 +287,23 @@ public:
 			if (housingCapacity < maxHouseCapacity && population > housingCapacity)
 			{
 				// Group 4 houses into a block...
-				AICityBlock block = AICityBlock();
+				AICityBlock block;
 
 				block.topBuildingEnums = { CardEnum::House, CardEnum::House };
 				block.bottomBuildingEnums = { CardEnum::House, CardEnum::House };
 				block.CalculateSize();
 
-				block.SetMinTile(
-					AlgorithmUtils::FindNearbyAvailableTile(townhall.centerTile(), [&](const WorldTile2& tile) {
-						return block.CanPlaceCityBlock(tile, _playerId, _simulation);
-					})
-				);
+				//block.SetMinTile(
+				//	AlgorithmUtils::FindNearbyAvailableTile(townhall.centerTile(), [&](const WorldTile2& tile) {
+				//		return block.CanPlaceCityBlock(tile, _playerId, _simulation);
+				//	})
+				//);
+				block.TryFindArea(townhall.centerTile(), _playerId, _simulation);
 
-				if (block.minTile() != WorldTile2::Invalid) {
-					PlaceCityBlock(block);
+				if (block.HasArea()) {
+					std::vector<std::shared_ptr<FNetworkCommand>> commands;
+					SimUtils::PlaceCityBlock(block, _playerId, commands);
+					_simulation->ExecuteNetworkCommands(commands);
 				}
 			}
 		}
@@ -521,14 +369,9 @@ public:
 					}
 					
 					block.CalculateSize();
+					block.TryFindArea(provinceCenter, _playerId, _simulation);
 
-					block.SetMinTile(
-						AlgorithmUtils::FindNearbyAvailableTile(provinceCenter, [&](const WorldTile2& tile) {
-							return block.CanPlaceForest(tile, _playerId, _simulation);
-						}, 500)
-					);
-
-					if (!block.minTile().isValid()) {
+					if (!block.HasArea()) {
 						continue;
 					}
 
@@ -579,7 +422,11 @@ public:
 						!_regionStatuses[i].blockPlaced) 
 					{
 						if (_regionStatuses[i].proposedBlock.IsValid()) {
-							PlaceForestBlock(_regionStatuses[i].proposedBlock);
+							std::vector<std::shared_ptr<FNetworkCommand>> commands;
+							SimUtils::PlaceForestBlock(_regionStatuses[i].proposedBlock, _playerId, commands);
+							_simulation->ExecuteNetworkCommands(commands);
+							
+							//PlaceForestBlock(_regionStatuses[i].proposedBlock);
 						}
 						_regionStatuses[i].blockPlaced = true;
 						break;
@@ -641,11 +488,6 @@ public:
 			
 			for (int32 provinceId : provincesClaimed) {
 				provinceSys.ExecuteAdjacentProvinces(provinceId, checkAdjacent);
-				
-				//checkAdjacent(WorldRegion2(claimedRegion.x + 1, claimedRegion.y));
-				//checkAdjacent(WorldRegion2(claimedRegion.x - 1, claimedRegion.y));
-				//checkAdjacent(WorldRegion2(claimedRegion.x, claimedRegion.y + 1));
-				//checkAdjacent(WorldRegion2(claimedRegion.x, claimedRegion.y - 1));
 			}
 
 			if (bestClaimProvinceId != -1)
@@ -690,93 +532,93 @@ private:
 		return command;
 	}
 
-	void PlaceBuildingRow(const std::vector<CardEnum>& buildingEnums, WorldTile2 start, bool isFaceSouth)
-	{
-		int32 currentY = start.y;
-		int32 currentX = start.x;
+	//void PlaceBuildingRow(const std::vector<CardEnum>& buildingEnums, WorldTile2 start, bool isFaceSouth)
+	//{
+	//	int32 currentY = start.y;
+	//	int32 currentX = start.x;
 
-		auto placeRow = [&](CardEnum buildingEnum, int32_t sign)
-		{
-			WorldTile2 size = GetBuildingInfo(buildingEnum).size;
+	//	auto placeRow = [&](CardEnum buildingEnum, int32_t sign)
+	//	{
+	//		WorldTile2 size = GetBuildingInfo(buildingEnum).size;
 
-			// Storage yard always 4x4
-			if (buildingEnum == CardEnum::StorageYard) {
-				size = WorldTile2(4, 4);
-			}
-			
-			// 1 shift 1 ... 2 shift 1 .. 3 shift 2 ... 4 shift 2 ... 5 shift 3
-			int32_t yShift = (size.y + 1) / 2;
-			int32_t xShift = (size.x + 1) / 2;
-			WorldTile2 centerTile(currentX + sign * xShift, currentY + sign * yShift);
-			Direction faceDirection = isFaceSouth ? Direction::S : Direction::N;
+	//		// Storage yard always 4x4
+	//		if (buildingEnum == CardEnum::StorageYard) {
+	//			size = WorldTile2(4, 4);
+	//		}
+	//		
+	//		// 1 shift 1 ... 2 shift 1 .. 3 shift 2 ... 4 shift 2 ... 5 shift 3
+	//		int32_t yShift = (size.y + 1) / 2;
+	//		int32_t xShift = (size.x + 1) / 2;
+	//		WorldTile2 centerTile(currentX + sign * xShift, currentY + sign * yShift);
+	//		Direction faceDirection = isFaceSouth ? Direction::S : Direction::N;
 
-			auto command = MakeCommand<FPlaceBuilding>();
-			command->buildingEnum = static_cast<uint8>(buildingEnum);
-			command->area = BuildingArea(centerTile, size, faceDirection);
-			command->center = centerTile;
-			command->faceDirection = uint8(faceDirection);
+	//		auto command = MakeCommand<FPlaceBuilding>();
+	//		command->buildingEnum = static_cast<uint8>(buildingEnum);
+	//		command->area = BuildingArea(centerTile, size, faceDirection);
+	//		command->center = centerTile;
+	//		command->faceDirection = uint8(faceDirection);
 
-			
-			_playerInterface->PlaceBuilding(*command);
+	//		
+	//		_playerInterface->PlaceBuilding(*command);
 
-			//PUN_LOG("AI Build %s", *centerTile.To_FString());
+	//		//PUN_LOG("AI Build %s", *centerTile.To_FString());
 
-			currentY += sign * size.y;
-		};
+	//		currentY += sign * size.y;
+	//	};
 
-		if (isFaceSouth) {
-			for (CardEnum buildingEnum : buildingEnums) {
-				placeRow(buildingEnum, 1);
-			}
-		} else {
-			for (size_t i = buildingEnums.size(); i-- > 0;) {
-				placeRow(buildingEnums[i], -1);
-			}
-		}
-	}
+	//	if (isFaceSouth) {
+	//		for (CardEnum buildingEnum : buildingEnums) {
+	//			placeRow(buildingEnum, 1);
+	//		}
+	//	} else {
+	//		for (size_t i = buildingEnums.size(); i-- > 0;) {
+	//			placeRow(buildingEnums[i], -1);
+	//		}
+	//	}
+	//}
 
-	void PlaceCityBlock(AICityBlock& block)
-	{
-		TileArea blockArea = block.area();
+	//void PlaceCityBlock(AICityBlock& block)
+	//{
+	//	TileArea blockArea = block.area();
 
-		// Build surrounding road...
-		{
-			TArray<int32> path;
-			for (int32_t x = blockArea.minX; x <= blockArea.maxX; x++) {
-				path.Add(WorldTile2(x, blockArea.minY).tileId());
-				path.Add(WorldTile2(x, blockArea.maxY).tileId());
-			}
-			for (int32_t y = blockArea.minY + 1; y <= blockArea.maxY - 1; y++) {
-				path.Add(WorldTile2(blockArea.minX, y).tileId());
-				path.Add(WorldTile2(blockArea.maxX, y).tileId());
-			}
+	//	// Build surrounding road...
+	//	{
+	//		TArray<int32> path;
+	//		for (int32_t x = blockArea.minX; x <= blockArea.maxX; x++) {
+	//			path.Add(WorldTile2(x, blockArea.minY).tileId());
+	//			path.Add(WorldTile2(x, blockArea.maxY).tileId());
+	//		}
+	//		for (int32_t y = blockArea.minY + 1; y <= blockArea.maxY - 1; y++) {
+	//			path.Add(WorldTile2(blockArea.minX, y).tileId());
+	//			path.Add(WorldTile2(blockArea.maxX, y).tileId());
+	//		}
 
-			auto command = MakeCommand<FPlaceDrag>();
-			command->path = path;
-			command->placementType = static_cast<int8>(PlacementType::DirtRoad);
-			_playerInterface->PlaceDrag(*command);
-		}
+	//		auto command = MakeCommand<FPlaceDrag>();
+	//		command->path = path;
+	//		command->placementType = static_cast<int8>(PlacementType::DirtRoad);
+	//		_playerInterface->PlaceDrag(*command);
+	//	}
 
-		// Build buildings
-		{
-			PlaceBuildingRow(block.topBuildingEnums, blockArea.max(), false);
-			PlaceBuildingRow(block.bottomBuildingEnums, blockArea.min(), true);
-		}
-	}
+	//	// Build buildings
+	//	{
+	//		PlaceBuildingRow(block.topBuildingEnums, blockArea.max(), false);
+	//		PlaceBuildingRow(block.bottomBuildingEnums, blockArea.min(), true);
+	//	}
+	//}
 
-	void PlaceForestBlock(AICityBlock& block)
-	{
-		PUN_CHECK(block.IsValid());
-		
-		TileArea blockArea = block.area();
-		int32 roadTileX = block.midRoadTileX();
+	//void PlaceForestBlock(AICityBlock& block)
+	//{
+	//	PUN_CHECK(block.IsValid());
+	//	
+	//	TileArea blockArea = block.area();
+	//	int32 roadTileX = block.midRoadTileX();
 
-		//PUN_LOG("PlaceForestBlock %s", *ToFString(blockArea.ToString()));
+	//	//PUN_LOG("PlaceForestBlock %s", *ToFString(blockArea.ToString()));
 
-		// Face up row
-		PlaceBuildingRow(block.topBuildingEnums, WorldTile2(roadTileX, blockArea.maxY), false);
-		PlaceBuildingRow(block.bottomBuildingEnums, WorldTile2(roadTileX, blockArea.minY), true);
-	}
+	//	// Face up row
+	//	PlaceBuildingRow(block.topBuildingEnums, WorldTile2(roadTileX, blockArea.maxY), false);
+	//	PlaceBuildingRow(block.bottomBuildingEnums, WorldTile2(roadTileX, blockArea.minY), true);
+	//}
 
 	AIRegionProposedPurposeEnum DetermineProvincePurpose(int32 provinceId)
 	{

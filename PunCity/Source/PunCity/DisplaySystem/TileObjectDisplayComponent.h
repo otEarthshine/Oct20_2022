@@ -8,6 +8,8 @@
 
 #include "TileObjectDisplayComponent.generated.h"
 
+#define TILE_OBJ_CACHE TRAILER_MODE
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UTileObjectDisplayComponent : public UDisplaySystemComponent
 {
@@ -41,6 +43,10 @@ public:
 				}
 			}
 		}
+
+#if TRAILER_MODE
+		_objectIdToMeshes.Empty();
+#endif
 	}
 
 	void AfterAdd() override {
@@ -50,11 +56,19 @@ public:
 	}
 
 	int32 GetObjectId(int32 meshId, FString protoName, int32 instanceIndex) {
+#if TILE_OBJ_CACHE
+		return meshId;
+#else
 		return _meshIdToMeshes[meshId]->GetObjectId(protoName, instanceIndex);
+#endif
 	}
 
 	void RefreshDisplay(const std::vector<int>& sampleIds)
 	{
+#if TILE_OBJ_CACHE
+		return;
+#endif
+		
 		_displayStateChanged = true;
 		for (int32 sampleId : sampleIds)
 		{
@@ -88,14 +102,14 @@ public:
 
 		_isHiddenDisplay = hideTreeDisplay;
 		
-		_noRegionSkipThisTick = true;
+		_noRegionSkipThisTickYet = true;
 	}
 	void AfterDisplay() {
 		_displayStateChanged = false;
 	}
 
 	bool NoRegionSkipThisTick() {
-		return _noRegionSkipThisTick;
+		return _noRegionSkipThisTickYet;
 	}
 
 
@@ -103,14 +117,17 @@ protected:
 	int CreateNewDisplay(int32 objectId) override;
 	void OnSpawnDisplay(int32 objectId, int32 meshId, WorldAtom2 cameraAtom) override;
 	void UpdateDisplay(int32 regionId, int32 meshId, WorldAtom2 cameraAtom) override;
-	void HideDisplay(int32 meshId) override;
+	void HideDisplay(int32 meshId, int32 regionId) override;
 
 private:
 	bool _isFullDisplay = true;
 	bool _isHiddenDisplay = false; // Hidden, but still being generated
 	bool _displayStateChanged = true;
-	bool _noRegionSkipThisTick = true;
-	
+	bool _noRegionSkipThisTickYet = true;
+
+
+	UPROPERTY() TArray<UStaticFastInstancedMeshesComp*> _objectIdToMeshes; // For TRAILER_MODE
+
 	UPROPERTY() TArray<UStaticFastInstancedMeshesComp*> _meshIdToMeshes;
 	UPROPERTY() TArray<UStaticFastInstancedMesh*> _meshIdToGatherMarks;
 

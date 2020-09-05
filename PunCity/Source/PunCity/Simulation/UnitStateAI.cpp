@@ -15,6 +15,7 @@
 
 #include "UnlockSystem.h"
 
+
 DECLARE_CYCLE_STAT(TEXT("PUN: Unit.FoodAgeAI [3]"), STAT_PunUnitFoodAgeAI, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: Unit.CalcAction [4]"), STAT_PunUnitCalcAction, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: Unit.DoAction [5]"), STAT_PunUnitDoAction, STATGROUP_Game);
@@ -25,11 +26,15 @@ DECLARE_CYCLE_STAT(TEXT("PUN: Unit.Do.MoveTo [5.2]"), STAT_PunUnitDoMoveTo, STAT
 DECLARE_CYCLE_STAT(TEXT("PUN: Unit.CalcAnimal [4.1]"), STAT_PunUnitCalcAnimal, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: Unit.CalcWildNoHome [4.1.1]"), STAT_PunUnitCalcWildNoHome, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: Unit.CalcWildHome [4.1.2]"), STAT_PunUnitCalcWildHome, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: Unit.FindWildFood [4...]"), STAT_PunUnitCalcFindWildFood, STATGROUP_Game);
 
 DECLARE_CYCLE_STAT(TEXT("PUN: Unit.CalcBoarGetHome [4.1.2.1]"), STAT_PunUnitCalcBoarGetHome, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: Unit.CalcBoarHomeFood [4.1.2.2]"), STAT_PunUnitCalcBoarHomeFood, STATGROUP_Game);
 
 DECLARE_CYCLE_STAT(TEXT("PUN: Unit.AddDebugSpeech [-]"), STAT_PunUnitAddDebugSpeech, STATGROUP_Game);
+
+
+#define USE_DEBUG_SPEECH 0
 
 using namespace std;
 
@@ -592,7 +597,8 @@ void UnitStateAI::CalculateActions()
 
 		if (TryFindWildFood(false)) return;
 
-		if (TryGoNearbyHome()) return;
+		//if (TryGoNearbyHome()) return;
+		// TODO: animal go to home province...
 
 		_unitState = UnitState::Idle;
 		int32 waitTicks = Time::TicksPerSecond * (GameRand::Rand() % 3 + 4);
@@ -623,9 +629,10 @@ void UnitStateAI::CalculateActions()
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUnitCalcWildHome);
 
-		if (TryAvoidOthers()) {
-			return;
-		}
+		// TODO: replace with territorial instinct
+		//if (TryAvoidOthers()) {
+		//	return;
+		//}
 
 		if (TryFindWildFood(false)) {
 			return;
@@ -767,7 +774,7 @@ bool UnitStateAI::TryCheckBadTile()
 
 bool UnitStateAI::TryGoNearbyHome()
 {
-	int32_t homeId = houseId();
+	int32 homeId = houseId();
 	if (homeId == -1) {
 		// Human has townhall as backup
 		if (isEnum(UnitEnum::Human)) {
@@ -1102,6 +1109,8 @@ bool UnitStateAI::TryAvoidOthers()
 
 bool UnitStateAI::TryFindWildFood(bool getFruit, int32 radius)
 {
+	SCOPE_CYCLE_COUNTER(STAT_PunUnitCalcFindWildFood);
+	
 	// Go get food only if 3/4 of stomach full
 	if (_food >= maxFood() * 3 / 4) {
 		AddDebugSpeech("(Failed)TryFindWildFood: Not needed");
@@ -2333,7 +2342,7 @@ UnitReservation UnitStateAI::PopReservation(int index)
 
 void UnitStateAI::AddDebugSpeech(std::string message) 
 {
-#if DEBUG_BUILD
+#if USE_DEBUG_SPEECH
 	SCOPE_CYCLE_COUNTER(STAT_PunUnitAddDebugSpeech);
 	_debugSpeech << message << " Time:" << Time::Ticks() << ", " << nextActiveTick() << " act:" << _actions.size();
 

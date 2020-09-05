@@ -123,7 +123,7 @@ void UMiniBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, Worl
 	//});
 }
 
-void UMiniBuildingDisplayComponent::HideDisplay(int meshId)
+void UMiniBuildingDisplayComponent::HideDisplay(int meshId, int32 regionId)
 {
 	_moduleMeshes[meshId]->SetActive(false);
 }

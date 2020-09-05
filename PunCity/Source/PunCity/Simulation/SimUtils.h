@@ -5,6 +5,9 @@
 #include "IGameSimulationCore.h"
 #include "ProvinceSystem.h"
 #include "Misc/AES.h"
+#include "PunCity/AlgorithmUtils.h"
+#include "AIPlayerBase.h"
+
 
 /**
  * 
@@ -110,7 +113,8 @@ public:
 		area.maxY = area.maxY + 1;
 
 		// Add Storages
-		area.minY = area.minY - 4;
+		area.minY = area.minY - 5;
+		area.maxY = area.maxY + 5; // Ensure area center is also townhall center
 
 		if (!area.isValid()) {
 			return TileArea::Invalid;
@@ -290,5 +294,114 @@ public:
 		});
 	}
 
-	
+	/*
+	 * Automatic placement
+	 */
+	template<class T>
+	static std::shared_ptr<T> MakeCommand(int32 playerId) {
+		auto command = std::make_shared<T>();
+		std::static_pointer_cast<FNetworkCommand>(command)->playerId = playerId;
+		return command;
+	}
+
+	static void PlaceBuildingRow(const std::vector<CardEnum>& buildingEnums, WorldTile2 start, bool isFaceSouth, int32 playerId, std::vector<std::shared_ptr<FNetworkCommand>>& commands)
+	{
+		int32 currentY = start.y;
+		int32 currentX = start.x;
+
+		auto placeRow = [&](CardEnum buildingEnum, int32 sign)
+		{
+			WorldTile2 size = GetBuildingInfo(buildingEnum).size;
+
+			// Storage yard always 4x4
+			if (buildingEnum == CardEnum::StorageYard) {
+				size = WorldTile2(4, 4);
+			}
+
+			// 1 shift 1 ... 2 shift 1 .. 3 shift 2 ... 4 shift 2 ... 5 shift 3
+			int32_t yShift = (size.y + 1) / 2;
+			int32_t xShift = (size.x + 1) / 2;
+			WorldTile2 centerTile(currentX + sign * xShift, currentY + sign * yShift);
+			Direction faceDirection = isFaceSouth ? Direction::S : Direction::N;
+
+			auto command = MakeCommand<FPlaceBuilding>(playerId);
+			command->buildingEnum = static_cast<uint8>(buildingEnum);
+			command->area = BuildingArea(centerTile, size, faceDirection);
+			command->center = centerTile;
+			command->faceDirection = uint8(faceDirection);
+
+			commands.push_back(command);
+
+			//PUN_LOG("AI Build %s", *centerTile.To_FString());
+
+			currentY += sign * size.y;
+		};
+
+		if (isFaceSouth) {
+			for (CardEnum buildingEnum : buildingEnums) {
+				placeRow(buildingEnum, 1);
+			}
+		}
+		else {
+			for (size_t i = buildingEnums.size(); i-- > 0;) {
+				placeRow(buildingEnums[i], -1);
+			}
+		}
+	}
+
+	static void PlaceCityBlock(AICityBlock& block, int32 playerId, std::vector<std::shared_ptr<FNetworkCommand>>& commands)
+	{
+		TileArea blockArea = block.area();
+
+		// Build surrounding road...
+		{
+			TArray<int32> path;
+			for (int32_t x = blockArea.minX; x <= blockArea.maxX; x++) {
+				path.Add(WorldTile2(x, blockArea.minY).tileId());
+				path.Add(WorldTile2(x, blockArea.maxY).tileId());
+			}
+			for (int32_t y = blockArea.minY + 1; y <= blockArea.maxY - 1; y++) {
+				path.Add(WorldTile2(blockArea.minX, y).tileId());
+				path.Add(WorldTile2(blockArea.maxX, y).tileId());
+			}
+
+			auto command = MakeCommand<FPlaceDrag>(playerId);
+			command->path = path;
+			command->placementType = static_cast<int8>(PlacementType::DirtRoad);
+			commands.push_back(command);
+		}
+
+		// Build buildings
+		{
+			PlaceBuildingRow(block.topBuildingEnums, blockArea.max(), false, playerId, commands);
+			PlaceBuildingRow(block.bottomBuildingEnums, blockArea.min(), true, playerId, commands);
+		}
+	}
+
+	// TODO: eventually only use city block??? Easiest way??
+	static void PlaceForestBlock(AICityBlock& block, int32 playerId, std::vector<std::shared_ptr<FNetworkCommand>>& commands)
+	{
+		PUN_CHECK(block.IsValid());
+
+		TileArea blockArea = block.area();
+		int32 roadTileX = block.midRoadTileX();
+
+		//PUN_LOG("PlaceForestBlock %s", *ToFString(blockArea.ToString()));
+
+		// Face up row
+		PlaceBuildingRow(block.topBuildingEnums, WorldTile2(roadTileX, blockArea.maxY), false, playerId, commands);
+		PlaceBuildingRow(block.bottomBuildingEnums, WorldTile2(roadTileX, blockArea.minY), true, playerId, commands);
+	}
+
+	static bool TryPlaceArea(AICityBlock& block, WorldTile2 provinceCenter, int32 playerId, IGameSimulationCore* simulation, int32 maxLookup)
+	{
+		block.TryFindArea(provinceCenter, playerId, simulation, maxLookup);
+		if (block.HasArea()) {
+			std::vector<std::shared_ptr<FNetworkCommand>> commands;
+			PlaceCityBlock(block, playerId, commands);
+			simulation->ExecuteNetworkCommands(commands);
+			return true;
+		}
+		return false;
+	}
 };

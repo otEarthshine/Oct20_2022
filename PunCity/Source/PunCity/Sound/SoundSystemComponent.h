@@ -27,6 +27,17 @@
 
 DECLARE_LOG_CATEGORY_EXTERN(LogPunSound, All, All);
 
+DECLARE_CYCLE_STAT(TEXT("PUN: [Sound] UpdateParameters"), STAT_PunSoundParam, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [Sound] _PositionVolume"), STAT_PunSoundParamPositionVolume, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [Sound] _CheckDespawn"), STAT_PunSoundParamCheckDespawn, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [Sound] _DelayQueue"), STAT_PunSoundParamDelayQueue, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [Sound] _Music"), STAT_PunSoundParamMusic, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [Sound] _BirdTweet"), STAT_PunSoundParamBirdTweet, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [Sound] _NonMusicLoop"), STAT_PunSoundParamNonMusicLoop, STATGROUP_Game);
+
+DECLARE_CYCLE_STAT(TEXT("PUN: [Sound] _PositionVolume_Position"), STAT_PunSoundParamPositionVolumePosition, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [Sound] _PositionVolume_Building"), STAT_PunSoundParamPositionVolumeBuilding, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [Sound] _PositionVolume_FadingOut"), STAT_PunSoundParamPositionVolumeFadingOut, STATGROUP_Game);
 
 
 static const std::vector<std::string> TreeBiomeExtensions
@@ -114,6 +125,7 @@ public:
 
 	void UpdateParameters(int32 playerId, float deltaTime)
 	{
+		SCOPE_CYCLE_COUNTER(STAT_PunSoundParam);
 		LLM_SCOPE_(EPunSimLLMTag::PUN_Sound); 
 		
 		IGameSimulationCore& simulation = _dataSource->simulation();
@@ -121,215 +133,237 @@ public:
 		_deltaTime = deltaTime;
 		float time = UGameplayStatics::GetAudioTimeSeconds(this);
 
-		// Update audio positions if needed
-		for (int32 i = punAudios.Num(); i-- > 0;) 
+		const int32 updatesPerPositionMove = 10;
+		static int32 updateCount = 0;
+		updateCount++;
+		if (updateCount > updatesPerPositionMove) {
+			updateCount = 0;
+		}
+
+		// Update audio positions volume etc.
 		{
-			UAudioComponent* audioComp = punAudios[i]->audio;
-			std::string groupName = punAudios[i]->groupName;
-			std::string soundName = punAudios[i]->soundName;
-
-			PUN_ENSURE(i < punAudios.Num(), continue);
+			SCOPE_CYCLE_COUNTER(STAT_PunSoundParamPositionVolume);
 			
-			// Update position/parameters
-			if (audioComp &&
-				punAudios[i]->spotAtom != WorldAtom2::Invalid)
+			// Update audio positions if needed
+			for (int32 i = punAudios.Num(); i-- > 0;)
 			{
-				FVector location = _dataSource->DisplayLocation(punAudios[i]->spotAtom);
-				location.Z = punAudios[i]->spotHeight;
-				audioComp->SetWorldLocation(location);
+				// Only move once every X times
+				if (updateCount != (i % updatesPerPositionMove)) {
+					continue;
+				}
+				
+				UAudioComponent* audioComp = punAudios[i]->audio;
+				std::string groupName = punAudios[i]->groupName;
+				std::string soundName = punAudios[i]->soundName;
 
+				PUN_ENSURE(i < punAudios.Num(), continue);
 
-				// Calc volumeMultiplier
-				float volumeMultiplier = GetSoundPropertyRef(groupName, soundName, "Volume");
-				volumeMultiplier *= GetGroupPropertyRef(groupName, "World_MasterVolume");
-				volumeMultiplier *= _playerSettings->masterVolume() * _playerSettings->soundEffectsVolume();;
-				volumeMultiplier *= IsolateVolume(groupName, punAudios[i]->soundName);
-
-				SetVolumeMultiplier(audioComp, volumeMultiplier);
-
-				audioComp->SetPitchMultiplier(GetSoundPropertyRef(groupName, soundName, "Pitch"));
-
-				Adjust3DAttenuation(audioComp, groupName, soundName);
-			}
-
-			PUN_ENSURE(i < punAudios.Num(), continue);
-
-			// Building
-			if (punAudios[i]->isBuildingSound) // Need isBuildingSound since OneShot sound is also tagged "Building"
-			{
-				// Spawn one-shot sound
-				if (punAudios[i]->hasOneShotSound)
+				// Update position/parameters
+				if (audioComp &&
+					punAudios[i]->shouldUpdateSpot &&
+					punAudios[i]->spotAtom != WorldAtom2::Invalid)
 				{
-					auto setNextRandomPlayTime = [&](int32 index) {
-						float minInterval = GetSoundPropertyRef("Building", punAudios[i]->soundName + "_OneShot", "MinInterval");
-						float maxInterval = GetSoundPropertyRef("Building", punAudios[i]->soundName + "_OneShot", "MaxInterval");
-						float interval = minInterval + (maxInterval - minInterval) * soundRand.Rand01();
-						
-						punAudios[i]->nextRandomSoundPlayTime = time + interval;
-					};
+					SCOPE_CYCLE_COUNTER(STAT_PunSoundParamPositionVolumePosition);
 					
-					if (punAudios[i]->nextRandomSoundPlayTime < 0) { // initial random play
-						setNextRandomPlayTime(i);
-					}
-					else if (time > punAudios[i]->nextRandomSoundPlayTime) { // interval up
-						setNextRandomPlayTime(i);
+					FVector location = _dataSource->DisplayLocation(punAudios[i]->spotAtom);
+					location.Z = punAudios[i]->spotHeight;
+					audioComp->SetWorldLocation(location);
 
-						Spawn3DSound("Building", punAudios[i]->soundName + "_OneShot",
-										punAudios[i]->spotAtom, punAudios[i]->spotHeight);
-					}
+
+					// Calc volumeMultiplier
+					float volumeMultiplier = GetSoundPropertyRef(groupName, soundName, "Volume");
+					volumeMultiplier *= GetGroupPropertyRef(groupName, "World_MasterVolume");
+					volumeMultiplier *= _playerSettings->masterVolume() * _playerSettings->soundEffectsVolume();;
+					volumeMultiplier *= IsolateVolume(groupName, punAudios[i]->soundName);
+
+					SetVolumeMultiplier(audioComp, volumeMultiplier);
+
+					audioComp->SetPitchMultiplier(GetSoundPropertyRef(groupName, soundName, "Pitch"));
+
+					Adjust3DAttenuation(audioComp, groupName, soundName);
+
+					PUN_CHECK(soundName != "WoodConstruction");
 				}
 
-				// Building's continuous sound
-				if (audioComp && punAudios[i]->byteCount != -1)
+				PUN_ENSURE(i < punAudios.Num(), continue);
+
+				// Building
+				if (punAudios[i]->isBuildingSound) // Need isBuildingSound since OneShot sound is also tagged "Building"
 				{
-					auto soundProc = CastChecked<USoundWaveProcedural>(audioComp->Sound);
-					int32 byteCountLeft = soundProc->GetAvailableAudioByteCount();
-					if (byteCountLeft < punAudios[i]->byteCount / 2)
+					SCOPE_CYCLE_COUNTER(STAT_PunSoundParamPositionVolumeBuilding);
+					
+					// Spawn one-shot sound
+					if (punAudios[i]->hasOneShotSound)
 					{
-						const uint64 audioComponentID = audioComp->GetAudioComponentID();
-						auto audioDevice = audioComp->GetAudioDevice();
+						auto setNextRandomPlayTime = [&](int32 index) {
+							float minInterval = GetSoundPropertyRef("Building", punAudios[i]->soundName + "_OneShot", "MinInterval");
+							float maxInterval = GetSoundPropertyRef("Building", punAudios[i]->soundName + "_OneShot", "MaxInterval");
+							float interval = minInterval + (maxInterval - minInterval) * soundRand.Rand01();
 
-						PunAudioData audioData = GetSoundAsset(punAudios[i]->soundName, punAudios[i]->assetIndex)->GetData();
-						FAudioThread::RunCommandOnAudioThread([audioDevice, audioComponentID, audioData]()
+							punAudios[i]->nextRandomSoundPlayTime = time + interval;
+						};
+
+						if (punAudios[i]->nextRandomSoundPlayTime < 0) { // initial random play
+							setNextRandomPlayTime(i);
+						}
+						else if (time > punAudios[i]->nextRandomSoundPlayTime) { // interval up
+							setNextRandomPlayTime(i);
+
+							Spawn3DSound("Building", punAudios[i]->soundName + "_OneShot",
+								punAudios[i]->spotAtom, punAudios[i]->spotHeight);
+						}
+					}
+
+					// Building's continuous sound
+					if (audioComp && punAudios[i]->byteCount != -1)
+					{
+						auto soundProc = CastChecked<USoundWaveProcedural>(audioComp->Sound);
+						int32 byteCountLeft = soundProc->GetAvailableAudioByteCount();
+						if (byteCountLeft < punAudios[i]->byteCount / 2)
 						{
-							FActiveSound* activeSound = audioDevice->FindActiveSound(audioComponentID);
-							if (activeSound) {
-								// Must get USoundWaveProcedural again just in case pointer changed?
-								CastChecked<USoundWaveProcedural>(activeSound->GetSound())->QueueAudio(audioData.data, audioData.byteCount);
-							}
-						});
+							const uint64 audioComponentID = audioComp->GetAudioComponentID();
+							auto audioDevice = audioComp->GetAudioDevice();
+
+							PunAudioData audioData = GetSoundAsset(punAudios[i]->soundName, punAudios[i]->assetIndex)->GetData();
+							FAudioThread::RunCommandOnAudioThread([audioDevice, audioComponentID, audioData]()
+							{
+								FActiveSound* activeSound = audioDevice->FindActiveSound(audioComponentID);
+								if (activeSound) {
+									// Must get USoundWaveProcedural again just in case pointer changed?
+									CastChecked<USoundWaveProcedural>(activeSound->GetSound())->QueueAudio(audioData.data, audioData.byteCount);
+								}
+							});
+						}
 					}
 				}
-			}
 
-			PUN_ENSURE(i < punAudios.Num(), continue);
+				PUN_ENSURE(i < punAudios.Num(), continue);
 
-			if (punAudios[i]->isFadingOut && audioComp)
-			{
-				float fadeVolume = (punAudios[i]->fadeEndTime - time) / (punAudios[i]->fadeEndTime - punAudios[i]->fadeStartTime);
+				if (punAudios[i]->isFadingOut && audioComp)
+				{
+					SCOPE_CYCLE_COUNTER(STAT_PunSoundParamPositionVolumeFadingOut);
+					
+					float fadeVolume = (punAudios[i]->fadeEndTime - time) / (punAudios[i]->fadeEndTime - punAudios[i]->fadeStartTime);
 
-				if (fadeVolume > MinVolume) {
-					bool includeCrossFadeIn = punAudios[i]->groupName == "Music" ? false : true;
-					float volumeMultiplier = GetPunAudioVolumeWithFadeIn(punAudios[i]->groupName, punAudios[i]->soundName, punAudios[i]->playTime(this), includeCrossFadeIn);
-					SetVolumeMultiplier(audioComp, volumeMultiplier * fadeVolume);
-				} else 	{
-					//punAudios[i]->isDone = true;
-					RemovePunAudio(i);
-					PUN_LOG("isFadingOut Done %s %s fadeVolume:%f Num:%d", ToTChar(groupName), ToTChar(soundName), fadeVolume, punAudios.Num());
+					if (fadeVolume > MinVolume) {
+						bool includeCrossFadeIn = punAudios[i]->groupName == "Music" ? false : true;
+						float volumeMultiplier = GetPunAudioVolumeWithFadeIn(punAudios[i]->groupName, punAudios[i]->soundName, punAudios[i]->playTime(this), includeCrossFadeIn);
+						SetVolumeMultiplier(audioComp, volumeMultiplier * fadeVolume);
+					}
+					else {
+						//punAudios[i]->isDone = true;
+						RemovePunAudio(i);
+						PUN_LOG("isFadingOut Done %s %s fadeVolume:%f Num:%d", ToTChar(groupName), ToTChar(soundName), fadeVolume, punAudios.Num());
+					}
 				}
 			}
 		}
 
-		CheckDespawnPunAudio();
-
-		
-		/*
-		 * Remove buildinSoundPlayTime cache for regions that are out of range...
-		 */
-		//std::vector<int32> regionsToRemove;
-		//for (auto& it : _regionIdToBuildingIdToSound) {
-		//	if (!_dataSource->IsInSampleRange(WorldRegion2(it.first).centerTile())) {
-		//		regionsToRemove.push_back(it.first);
-		//	}
-		//}
-		//for (int32 regionId : regionsToRemove) {
-		//	// Mark sound as done before removing them
-		//	auto& buildingIdToSound = _regionIdToBuildingIdToSound[regionId];
-		//	for (auto& it : buildingIdToSound) 
-		//	{
-		//		if (it.second) {
-		//			it.second->isDone = true;
-		//		}
-		//	}
-		//	
-		//	_regionIdToBuildingIdToSound.erase(regionId);
-		//}
-
+		{
+			SCOPE_CYCLE_COUNTER(STAT_PunSoundParamCheckDespawn);
+			CheckDespawnPunAudio();
+		}
 		
 		//PUN_LOG("_groupNameToAudioStartTime %d", _groupNameToAudioStartTime.size());
-		
-		for (size_t i = _groupNameToAudioStartTime.size(); i-- > 0;) 
-		{	
-			if (time >= _groupNameToAudioStartTime[i].second) 
-			{	
-				const std::string& groupName = _groupNameToAudioStartTime[i].first;
-				auto punAudio = GetAudioComponent(groupName);
-				
-				_groupNameToPlayStartTime[groupName] = time;
-				UAudioComponent* audio = punAudio->audio;
-				if (audio) {
-					audio->SetPaused(false);
-					audio->Stop();
-					audio->Play();
-				}
-				_groupNameToAudioStartTime.erase(_groupNameToAudioStartTime.begin() + i);
 
-				PUN_LOG("_groupNameToAudioStartTime %s %s", ToTChar(_groupNameToAudioStartTime[i].first), ToTChar(punAudio->soundName));
+		// Delayed audio start queue
+		{
+			SCOPE_CYCLE_COUNTER(STAT_PunSoundParamDelayQueue);
+			
+			for (size_t i = _groupNameToAudioStartTime.size(); i-- > 0;)
+			{
+				if (time >= _groupNameToAudioStartTime[i].second)
+				{
+					const std::string& groupName = _groupNameToAudioStartTime[i].first;
+					auto punAudio = GetAudioComponent(groupName);
+
+					_groupNameToPlayStartTime[groupName] = time;
+					UAudioComponent* audio = punAudio->audio;
+					if (audio) {
+						audio->SetPaused(false);
+						audio->Stop();
+						audio->Play();
+					}
+					_groupNameToAudioStartTime.erase(_groupNameToAudioStartTime.begin() + i);
+
+					PUN_LOG("_groupNameToAudioStartTime %s %s", ToTChar(_groupNameToAudioStartTime[i].first), ToTChar(punAudio->soundName));
+				}
 			}
 		}
 		
 
 		// Music
-		UpdateMusic(simulation, playerId);
+		{
+			SCOPE_CYCLE_COUNTER(STAT_PunSoundParamMusic);
+			UpdateMusic(simulation, playerId);
+		}
 
-		// Bird tweet
 #if AUDIO_BIRD
-		UpdateBirdTweets();
+		// Bird tweet
+		{
+			SCOPE_CYCLE_COUNTER(STAT_PunSoundParamBirdTweet);
+			UpdateBirdTweets();
+		}
 #endif
 
-		/*
-		 * Adjust Non-Music looping Volume
-		 *  FadeIn/OutDuration are used to cap the speed at which the whole group fade in (such as rain fading in)
-		 *  CrossFadeDuration is when we change between sounds within the group (WindSpring->WindSummer)
-		 */
-		for (auto& pair : GroupNameToAudioComponent)
+		// Non-music looping volume
 		{
-			auto punAudio = pair.Value;
-			std::string groupName = punAudio->groupName;
-			std::string activeSoundName = punAudio->soundName;
+			SCOPE_CYCLE_COUNTER(STAT_PunSoundParamNonMusicLoop);
 
-			if (groupName == "Music") {
-				continue; // Music updated elsewhere
-			}
-
-			float playTime = punAudio->playTime(this);
-			
-			// Fade out the old sound if needed to play a new sound
-			// Make sure the old sound played for at least 5.8 sec
-			if (playTime > 5.8f)
+			/*
+			 * Adjust Non-Music looping Volume
+			 *  FadeIn/OutDuration are used to cap the speed at which the whole group fade in (such as rain fading in)
+			 *  CrossFadeDuration is when we change between sounds within the group (WindSpring->WindSummer)
+			 */
+			for (auto& pair : GroupNameToAudioComponent)
 			{
-				std::string preferredSoundName = GetPreferredSound(groupName);
-				if (preferredSoundName != activeSoundName) {
-					CrossFadeInSound(groupName, preferredSoundName);
+				auto punAudio = pair.Value;
+				std::string groupName = punAudio->groupName;
+				std::string activeSoundName = punAudio->soundName;
+
+				if (groupName == "Music") {
+					continue; // Music updated elsewhere
+				}
+
+				float playTime = punAudio->playTime(this);
+
+				// Fade out the old sound if needed to play a new sound
+				// Make sure the old sound played for at least 5.8 sec
+				if (playTime > 5.8f)
+				{
+					std::string preferredSoundName = GetPreferredSound(groupName);
+					if (preferredSoundName != activeSoundName) {
+						CrossFadeInSound(groupName, preferredSoundName);
+						continue;
+					}
+				}
+
+				float volumeMultiplier = GetPunAudioVolumeWithFadeIn(groupName, activeSoundName, playTime, true);
+
+				//! Move to target volume if target volume is valid...
+				auto found = _groupToGetTargetVolumeFunc.find(groupName);
+				if (found != _groupToGetTargetVolumeFunc.end())
+				{
+					float targetVolume = found->second(); // Execute targetVolumeFunc
+					float& currentVolume = GetHiddenPropertyRef(groupName, "CurrentVolume");
+
+					float fadeInDuration = GetGroupPropertyRef(groupName, "FadeInDuration");
+					float fadeOutDuration = GetGroupPropertyRef(groupName, "FadeOutDuration");
+
+					// Move current volume closer to target volume
+					UpdateFraction(currentVolume, targetVolume, deltaTime, fadeInDuration, fadeOutDuration);
+
+					float finalVolume = currentVolume * volumeMultiplier;
+					if (playTime >= 0.0f) { // TODO: otherwise something stopped it when doing SetVolumeMultiplier]
+						SetVolumeMultiplier(punAudio->audio, finalVolume);
+					}
 					continue;
 				}
+
+				// Adjust volume according to fade
+				SetVolumeMultiplier(punAudio->audio, volumeMultiplier);
+
 			}
-
-			float volumeMultiplier = GetPunAudioVolumeWithFadeIn(groupName, activeSoundName, playTime, true);
-
-			//! Move to target volume if target volume is valid...
-			auto found = _groupToGetTargetVolumeFunc.find(groupName);
-			if (found != _groupToGetTargetVolumeFunc.end())
-			{
-				float targetVolume = found->second(); // Execute targetVolumeFunc
-				float& currentVolume = GetHiddenPropertyRef(groupName, "CurrentVolume");
-
-				float fadeInDuration = GetGroupPropertyRef(groupName, "FadeInDuration");
-				float fadeOutDuration = GetGroupPropertyRef(groupName, "FadeOutDuration");
-
-				// Move current volume closer to target volume
-				UpdateFraction(currentVolume, targetVolume, deltaTime, fadeInDuration, fadeOutDuration);
-
-				float finalVolume = currentVolume * volumeMultiplier;
-				if (playTime >= 0.0f) { // TODO: otherwise something stopped it when doing SetVolumeMultiplier]
-					SetVolumeMultiplier(punAudio->audio, finalVolume);
-				}
-				continue;
-			}
-
-			// Adjust volume according to fade
-			SetVolumeMultiplier(punAudio->audio, volumeMultiplier);
-
 		}
 	}
 
@@ -1431,6 +1465,11 @@ public:
 			fireAndForget = CreateRuntimeSound_EngineImport(groupName, soundAsset, isLooping);
 			fireAndForget->spotAtom = worldAtom;
 			fireAndForget->spotHeight = height;
+
+			fireAndForget->shouldUpdateSpot = (soundName != "WoodConstruction") &&
+												(soundName != "ConstructionCompleteRoad") &&
+												(soundName != "CropPlanting") &&
+												(soundName != "BowShoot");
 		}
 
 		UAudioComponent* audio = UGameplayStatics::SpawnSoundAtLocation(this, sound, spawnLocation);

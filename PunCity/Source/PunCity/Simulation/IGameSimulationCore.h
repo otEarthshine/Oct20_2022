@@ -99,6 +99,9 @@ public:
 
 	virtual class IGameSoundInterface* soundInterface() = 0;
 	virtual class IGameUIInterface* uiInterface() = 0;
+
+	virtual void ExecuteNetworkCommands(std::vector<std::shared_ptr<FNetworkCommand>>& commands) = 0;
+	virtual bool ExecuteNetworkCommand(std::shared_ptr<FNetworkCommand> command) = 0;
 	
 	//virtual class IUnitDataSource& unitDataSource() = 0;
 

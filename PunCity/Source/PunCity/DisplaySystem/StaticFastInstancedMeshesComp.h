@@ -110,6 +110,7 @@ public:
 		for (auto mesh : meshPool) {
 			if (!mesh->meshName.IsEmpty()) {
 				mesh->SetVisibility(active);
+				mesh->SetCastShadow(active);
 			}
 		}
 	}

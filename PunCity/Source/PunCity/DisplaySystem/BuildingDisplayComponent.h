@@ -42,7 +42,7 @@ public:
 	}
 	void AfterAdd() override;
 
-	int32_t GetObjectId(int32 meshId, FString protoName, int32 instanceIndex) {
+	int32 GetObjectId(int32 meshId, FString protoName, int32 instanceIndex) {
 		return _moduleMeshes[meshId]->GetObjectId(protoName, instanceIndex);
 	}
 
@@ -71,7 +71,7 @@ protected:
 	int CreateNewDisplay(int objectId) override;
 	void OnSpawnDisplay(int objectId, int meshId, WorldAtom2 cameraAtom) override;
 	void UpdateDisplay(int objectId, int meshId, WorldAtom2 cameraAtom) override;
-	void HideDisplay(int meshId) override;
+	void HideDisplay(int meshId, int32 regionId) override;
 
 private:
 	UInstancedStaticMeshComponent* CreateInstancedMesh(FString name, UStaticMesh* mesh, USceneComponent* parent);

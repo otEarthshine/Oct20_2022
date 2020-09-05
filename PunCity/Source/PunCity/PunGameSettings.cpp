@@ -110,14 +110,19 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 
 	{ "ForceSnow", 0 },
 	{ "ForceSnowPercent", 0 },
+	{ "ForceSnowSpeed", 100 },
 	{ "ForceAutumn", 0 },
+	{ "ForceAutumnTicks", 180 * 2 },
+	
 	{ "TrailerTundraMinSnowPercent", 0 },
 	{ "TrailerPlaceSpeed", 100 },
 	{ "TrailerHouseUpgradeSpeed", 100 },
 	{ "TrailerBeatShiftBack", 0 },
 	{ "TrailerTimePerBeat", 40 },
 	{ "TrailerBeatOn", 1 },
-	//{ "ForceShowTileObj", 0 },
+	
+	{ "TrailerShipTime", 300 },
+	{ "TrailerNoTreeRefresh", 0 },
 };
 
 

@@ -87,7 +87,7 @@ void UDisplaySystemComponent::Display(std::vector<int>& sampleIds)
 			int regionId = _objectIdByMeshId[i];
 			if (regionId != -1)
 			{
-				HideDisplay(i);
+				HideDisplay(i, regionId);
 
 				_meshIdByObjectId[regionId] = -1;
 				_objectIdByMeshId[i] = -1;

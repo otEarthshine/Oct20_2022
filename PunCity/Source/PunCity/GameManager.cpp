@@ -333,7 +333,8 @@ void AGameManager::InitPhase3()
 		_skyLight = CastChecked<ASkyLight>(PunUnrealUtils::FindWorldActor(GetWorld(), FName("SkyLight")));
 		AActor* fogActor = CastChecked<AExponentialHeightFog>(PunUnrealUtils::FindWorldActor(GetWorld(), FName("ExponentialHeightFog")));
 		_exponentialFogComponent = PunUnrealUtils::GetComponent<UExponentialHeightFogComponent>(fogActor);
-
+		_exponentialFogComponent->SetVisibility(true);
+		
 		_postProcessVolume = CastChecked<APostProcessVolume>(PunUnrealUtils::FindWorldActor(GetWorld(), FName("GlobalPostProcessVolume")));
 
 #if AUDIO_ALL
@@ -975,11 +976,11 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 			_rainParticles->bSuppressSpawning = !Time::IsRaining();
 
 			// Rain fog
-			const float fogFadeInSeconds = 15.0f;
-			const float maxFogDensity = 0.5f;
+			const float fogFadeInSeconds = 3.0f;
+			const float maxFogDensity = 0.3f;
 			const float fogFadeSpeed = maxFogDensity / fogFadeInSeconds;
 			float fogDensity = _exponentialFogComponent->FogDensity;
-			if (Time::IsRaining() || Time::IsFogging()) {
+			if (Time::IsRaining() || Time::IsFogging() || Time::IsSnowing()) {
 				fogDensity = fmin(maxFogDensity, fogDensity + fogFadeSpeed * DeltaTime);
 			} else {
 				fogDensity = fmax(0.0f, fogDensity - fogFadeSpeed * DeltaTime);
@@ -1092,7 +1093,6 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 
 		{
 #if AUDIO_ALL
-			SCOPE_CYCLE_COUNTER(STAT_PunSoundParam);
 			_soundSystem->UpdateParameters(playerId(), DeltaTime);
 #endif
 		}

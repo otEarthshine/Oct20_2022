@@ -20,7 +20,7 @@ protected:
 	int CreateNewDisplay(int objectId) override;
 	void OnSpawnDisplay(int objectId, int meshId, WorldAtom2 cameraAtom) override;
 	void UpdateDisplay(int objectId, int meshId, WorldAtom2 cameraAtom) override;
-	void HideDisplay(int meshId) override;
+	void HideDisplay(int meshId, int32 regionId) override;
 
 private:
 	UPROPERTY() TArray<class UTerrainLargeChunkComponent*> _terrainChunks;

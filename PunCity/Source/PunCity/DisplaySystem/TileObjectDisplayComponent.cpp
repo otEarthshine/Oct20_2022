@@ -18,11 +18,16 @@ using namespace std;
 
 DECLARE_CYCLE_STAT(TEXT("PUN: [Display]TileObjects_Move"), STAT_PunDisplayTreeTickMove, STATGROUP_Game);
 
-int UTileObjectDisplayComponent::CreateNewDisplay(int32_t objectId)
+
+int UTileObjectDisplayComponent::CreateNewDisplay(int32 objectId)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayTileObj);
 	
 	int meshId = _meshIdToMeshes.Num();
+
+#if TILE_OBJ_CACHE
+	return meshId;
+#endif
 
 	_meshIdToMeshes.Add(NewObject<UStaticFastInstancedMeshesComp>(this));
 	//_meshIdToMeshes[meshId]->Init("TileObjects" + to_string(meshId) + "_", this, CoordinateConstants::TileIdsPerRegion / 16, "TileObjects", meshId, false);
@@ -66,12 +71,58 @@ int UTileObjectDisplayComponent::CreateNewDisplay(int32_t objectId)
 void UTileObjectDisplayComponent::OnSpawnDisplay(int32 regionId, int32 meshId, WorldAtom2 cameraAtom)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayTileObj);
+
+#if TILE_OBJ_CACHE
+	if (_objectIdToMeshes.Num() == 0) {
+		_objectIdToMeshes.SetNum(GameMapConstants::TotalRegions);
+	}
+	if (!_objectIdToMeshes[regionId]) // Start caching during TrailerSession
+	{
+		if (PunSettings::TrailerSession)
+		{
+			static int32 count = 0;
+			count++;
+			PUN_LOG("TileObj Cache:%d", count);
+
+			_objectIdToMeshes[regionId] = NewObject<UStaticFastInstancedMeshesComp>(this);
+			_objectIdToMeshes[regionId]->Init("TileObjects" + to_string(regionId) + "_", this, CoordinateConstants::TileIdsPerRegion / 16, "", regionId, false);
+
+			for (int i = 0; i < TileObjEnumSize; i++)
+			{
+				TileObjInfo info = GetTileObjInfoInt(i);
+				TArray<UStaticMesh*> meshAssets = _assetLoader->tileMeshAsset(info.treeEnum).assets;
+				TArray<UMaterialInstanceDynamic*> dynamicMaterials = _assetLoader->tileMeshAsset(info.treeEnum).materials;
+
+				if (dynamicMaterials.Num() == 0) {
+					for (int j = 0; j < meshAssets.Num(); j++) {
+						// Set rainfall texture
+						dynamicMaterials.Add(UMaterialInstanceDynamic::Create(meshAssets[j]->GetMaterial(0), this));
+						PUN_CHECK(_assetLoader->biomeTexture);
+						dynamicMaterials[j]->SetTextureParameterValue("BiomeMap", _assetLoader->biomeTexture);
+						_assetLoader->tileMeshAsset(info.treeEnum).materials = dynamicMaterials;
+					}
+				}
+				PUN_CHECK(dynamicMaterials.Num() == meshAssets.Num());
+
+				for (int j = 0; j < meshAssets.Num(); j++) {
+					FString meshName = ToFString(info.name) + FString::FromInt(j);
+					_objectIdToMeshes[regionId]->AddProtoMesh(meshName, meshAssets[j], dynamicMaterials[j], false, false);
+				}
+			}
+		}
+	}
+	else {
+		_objectIdToMeshes[regionId]->SetVisibilityQuick(true);
+	}
 	
+#else
 	_meshIdToMeshes[meshId]->SetActive(true);
 	_meshIdToGatherMarks[meshId]->SetActive(true);
 
+
 	// Refresh
 	simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Trees, regionId, true);
+#endif
 }
 
 void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, WorldAtom2 cameraAtom)
@@ -81,14 +132,28 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 	//SCOPE_TIMER_("Tick TileObj");
 
 	// Skip if this Tick already used too many microseconds
-	if (gameManager()->timeSinceTickStart() > 1000 * 100) {
-		_noRegionSkipThisTick = false;
+	int32 nanoSecSinceTickStart = gameManager()->timeSinceTickStart();
+	if (nanoSecSinceTickStart > 1000 * 100) {
+		_noRegionSkipThisTickYet = false;
 		return;
 	}
 
 	auto& sim = simulation();
 	TreeSystem& treeSystem = sim.treeSystem();
 	WorldRegion2 region(regionId);
+
+#if TILE_OBJ_CACHE
+	if (_objectIdToMeshes.Num() == 0) {
+		return;
+	}
+	UStaticFastInstancedMeshesComp* meshes = _objectIdToMeshes[regionId];
+	if (!meshes) {
+		return;
+	}
+#else
+	UStaticFastInstancedMeshesComp* meshes = _meshIdToMeshes[meshId];
+#endif
+	
 	
 	// Set mesh parent's location
 	{
@@ -99,8 +164,10 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 			region.y * CoordinateConstants::AtomsPerRegion);
 		FVector regionDisplayLocation = MapUtil::DisplayLocation(cameraAtom, regionAtomLocation) + FVector(5, 5, 0);
 
-		_meshIdToMeshes[meshId]->SetRelativeLocation(regionDisplayLocation);
+		meshes->SetRelativeLocation(regionDisplayLocation);
+#if !TILE_OBJ_CACHE
 		_meshIdToGatherMarks[meshId]->SetRelativeLocation(regionDisplayLocation);
+#endif
 	}
 
 	// Overlay highlights
@@ -109,8 +176,8 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 		int32 customDepth = overlayType == OverlayType::Gatherer ? 1 : 0;
 		FString orangeMeshName = ToFString(GetTileObjInfo(TileObjEnum::Orange).name) + FString::FromInt(2);
 		FString papayaMeshName = ToFString(GetTileObjInfo(TileObjEnum::Papaya).name) + FString::FromInt(2);
-		_meshIdToMeshes[meshId]->SetCustomDepth(orangeMeshName, customDepth);
-		_meshIdToMeshes[meshId]->SetCustomDepth(papayaMeshName, customDepth);
+		meshes->SetCustomDepth(orangeMeshName, customDepth);
+		meshes->SetCustomDepth(papayaMeshName, customDepth);
 	}
 	
 
@@ -233,14 +300,19 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 	 // Only update alive tree if needed
 	if (simulation().NeedDisplayUpdate(DisplayClusterEnum::Trees, regionId) || _displayStateChanged)
 	{
+		// Don't need to update anymore until something else change
+		simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Trees, regionId, false);
+
+		if (PunSettings::IsOn("TrailerNoTreeRefresh")) {
+			return;
+		}
+		
 		//SCOPE_TIMER("Tick TileObj Alive");
 		//SCOPE_TIMER_("TileObj - Trees %d %d full:%d", region.x, region.y, _isFullDisplay);
 		
 		int32 playId = playerId();
 
 		//PUN_ALOG_ALL("FastMesh", "ExecuteTileRegionStart ticks:%d regionId:%d", TimeDisplay::Ticks(), regionId);
-
-		UStaticFastInstancedMeshesComp* meshes = _meshIdToMeshes[meshId];
 
 		PunTerrainGenerator& terrainGenerator = simulation().terrainGenerator();
 		const std::vector<int16_t>& heightMap = terrainGenerator.GetHeightMap();
@@ -325,6 +397,7 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 
 				showBush(info, worldTileId, transform, localTile, ageState);
 			}
+#if !TILE_OBJ_CACHE
 			// Ores
 			else if (terrainGenerator.terrainTileType(worldTileId) == TerrainTileType::Mountain && _isFullDisplay)
 			{
@@ -370,6 +443,7 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 					}
 				}
 			}
+#endif
 
 			// Tree
 			else if (info.type == ResourceTileType::Tree)
@@ -418,6 +492,7 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 					meshes->Add(tileObjectName + FString::FromInt(static_cast<int32>(TileSubmeshEnum::Fruit)), worldTileId + 2 * GameMapConstants::TilesPerWorld, transform, ageState, worldTileId);
 				}
 
+#if !TILE_OBJ_CACHE
 				// See if it is marked for gather
 				//  Don't show mark if within building area
 				if (!isMainMenuDisplay &&
@@ -431,7 +506,7 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 
 					_meshIdToGatherMarks[meshId]->Add(worldTileId, transform, ageState);
 				}
-				
+#endif
 			}
 
 			// Deposit
@@ -463,6 +538,7 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 				//
 				meshes->Add(ToFString(info.name) + FString::FromInt(variationIndex), worldTileId, transform, 0, worldTileId);
 
+#if !TILE_OBJ_CACHE
 				// See if it is marked for gather
 				if (!isMainMenuDisplay && 
 					treeSystem.HasMark(playId, worldTileId))
@@ -474,6 +550,7 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 
 					_meshIdToGatherMarks[meshId]->Add(worldTileId, transform, 0);
 				}
+#endif
 			}
 
 			// Bush
@@ -530,21 +607,27 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 		//PUN_ALOG_ALL("FastMesh", "ExecuteTileRegionEnd ticks:%d regionId:%d", TimeDisplay::Ticks(), regionId);
 
 		// After Add
-		_meshIdToMeshes[meshId]->AfterAdd();
+		meshes->AfterAdd();
+#if !TILE_OBJ_CACHE
 		_meshIdToGatherMarks[meshId]->AfterAdd();
-
-		// Don't need to update anymore until something else change
-		simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Trees, regionId, false);
+#endif
+		
 	}
 
 	// Hide meshes without clearing instances upon zooming out
-	_meshIdToMeshes[meshId]->SetVisibilityQuick(!_isHiddenDisplay);
+	meshes->SetVisibilityQuick(!_isHiddenDisplay);
 }
 
-void UTileObjectDisplayComponent::HideDisplay(int32 meshId)
+void UTileObjectDisplayComponent::HideDisplay(int32 meshId, int32 regionId)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayTileObj);
+#if TILE_OBJ_CACHE
+	if (_objectIdToMeshes.Num() > 0 && _objectIdToMeshes[regionId]) {
+		_objectIdToMeshes[regionId]->SetVisibilityQuick(false);
+	}
+#else
 	
 	_meshIdToMeshes[meshId]->SetActive(false);
 	_meshIdToGatherMarks[meshId]->SetActive(false);
+#endif
 }

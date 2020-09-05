@@ -644,7 +644,7 @@ protected:
 
 protected:
 	// Try
-	bool TryAvoidOthers();
+	bool TryAvoidOthers(); // TODO: replaced by territorial instinct
 	bool TryFindWildFood(bool getFruit, int32 radius = 32);
 
 	bool TryGetBurrowFood();

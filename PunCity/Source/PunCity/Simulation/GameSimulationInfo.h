@@ -12,7 +12,7 @@
 
 //#include "PunCity/PunSTLContainerOverride.h"
 
-#define TRAILER_MODE 1
+#define TRAILER_MODE 0
 
 #define SAVE_VERSION 31081502
 #define GAME_VERSION 31081502
@@ -443,7 +443,7 @@ public:
 	static float FallSeason() // 0 before fall and 1 after fall
 	{
 #if TRAILER_MODE
-		kForcedFallSeason = Clamp01(kForcedFallSeason + (PunSettings::IsOn("ForceAutumn") ? 1 : -1) * 1.0f / 240.0f); // change in 2*2 sec
+		kForcedFallSeason = Clamp01(kForcedFallSeason + (PunSettings::IsOn("ForceAutumn") ? 1 : -1) * 1.0f / (PunSettings::Get("ForceAutumnTicks"))); // change in X*2 sec
 		return kForcedFallSeason;
 #endif
 		
@@ -3243,8 +3243,6 @@ enum class TileObjEnum : uint8
 	
 
 	// ... TreeEnumSize ... Don't forget!!!
-
-	Stone,
 	GrassGreen, // Currently includes savanna grass
 
 	OreganoBush,
@@ -3279,7 +3277,8 @@ enum class TileObjEnum : uint8
 	
 	Herb,
 	//BaconBush,
-
+	
+	Stone,
 	CoalMountainOre,
 	IronMountainOre,
 	GoldMountainOre,
@@ -3315,6 +3314,10 @@ static bool IsOutcrop(TileObjEnum tileResourceEnum) {
 		return true;
 	}
 	return false;
+}
+
+static bool IsPlantFast(TileObjEnum tileObjEnum) {
+	return static_cast<int32>(tileObjEnum) < static_cast<uint8>(TileObjEnum::Stone);
 }
 
 struct TileObjInfo
@@ -3489,9 +3492,6 @@ TileObjInfo(TileObjEnum::Papaya,	"Papaya",	ResourceTileType::Tree,	10000, FruitC
 
 	TileObjInfo(TileObjEnum::Cactus1,	"Cactus",	ResourceTileType::Tree,	10000, FruitChancePerCycleHardyTree,	defaultMaxGrowthSeasons100,	ResourcePair::Invalid(),						defaultWood100, "Giant leaf tropical tree."),
 	TileObjInfo(TileObjEnum::SavannaTree1,	"Savanna Acacia",	ResourceTileType::Tree,	10000, FruitChancePerCycleHardyTree,	defaultMaxGrowthSeasons100,	ResourcePair::Invalid(),						defaultWood100, "Myths say acacia trees descended from an ancient tree of life."),
-
-	
-	TileObjInfo(TileObjEnum::Stone, "Stone",	ResourceTileType::Deposit,	0,	0,	0,	ResourcePair::Invalid(),								ResourcePair(ResourceEnum::Stone, 2) /*this is not used?*/, "Easily-accessible stone deposits."),
 	
 	TileObjInfo(TileObjEnum::GrassGreen, "Grass",	ResourceTileType::Bush,	defaultBushDeathChance,	FruitChancePerCycleBush,	90,	ResourcePair::Invalid(),		defaultGrass100, "Common grass. A nice food-source for grazing animals."),
 
@@ -3532,7 +3532,8 @@ TileObjInfo(TileObjEnum::Papaya,	"Papaya",	ResourceTileType::Tree,	10000, FruitC
 	TileObjInfo(TileObjEnum::Herb,		"Herb",		ResourceTileType::Bush,				defaultBushDeathChance,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Herb, FarmBaseYield100 / 2), "Herb used to heal sickness or make medicine."),
 	//TileObjInfo(TileObjEnum::BaconBush, "Bacon bush",	ResourceTileType::Bush,				1,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), "Plant with delicious leaves that tastes like bacon when grilled. Legend says, this plant was created by an ancient advanced civilization of giants."),
 
-	
+	TileObjInfo(TileObjEnum::Stone, "Stone",	ResourceTileType::Deposit,	0,	0,	0,	ResourcePair::Invalid(),								ResourcePair(ResourceEnum::Stone, 2) /*this is not used?*/, "Easily-accessible stone deposits."),
+
 	TileObjInfo(TileObjEnum::CoalMountainOre, "Coal Ore",	ResourceTileType::Deposit,	0,	0,	0,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), "This region contains Coal Ore that can be mined from mountain."),
 	TileObjInfo(TileObjEnum::IronMountainOre, "Iron Ore",	ResourceTileType::Deposit,	0,	0,	0,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), "This region contains Iron Ore that can be mined from mountain."),
 	TileObjInfo(TileObjEnum::GoldMountainOre, "Gold Ore",	ResourceTileType::Deposit,	0,	0,	0,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), "This region contains Gold Ore that can be mined from mountain."),
@@ -6123,8 +6124,14 @@ const float WorldZoomTransition_GameToMap = GetCameraZoomAmount(zoomStepBounceLo
 
 const float WorldZoomTransition_PostProcessEnable = 3000;
 
+#if TRAILER_MODE
+const float WorldZoomTransition_Unit = 1200;
+#else
 const float WorldZoomTransition_Unit = 680; // 680
+#endif
+const float WorldZoomTransition_UnitSmall = 680;
 const float WorldZoomTransition_UnitAnimate = 1500;
+const float WorldZoomTransition_HumanNoAnimate = 480;
 
 const float MapIconShrinkZoomAmount = 5382;
 

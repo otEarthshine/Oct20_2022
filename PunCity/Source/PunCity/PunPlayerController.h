@@ -461,11 +461,11 @@ public:
 		networkInterface()->SendNetworkCommand(command);
 	}
 
-	UFUNCTION(Exec) void TestLoadingScreenFade() {
+	UFUNCTION(Exec) void ExecuteInitialCloudFade() final {
 		GetPunHUD()->escMenuUI()->StartLoadingScreenFade();
 	}
 	UFUNCTION(Exec) void TestCrash() {
-		PUN_NOENTRY();
+		checkNoEntry();
 	}
 	UFUNCTION(Exec) void TestAutosave() {
 		GetPunHUD()->AutosaveGame();
@@ -692,6 +692,85 @@ public:
 	void SaveCheckTick();
 
 	/*
+	 * Auto Build
+	 */
+	UFUNCTION(Exec) void AutoBuildHouse(int32 count)
+	{
+		if (simulation().HasTownhall(playerId())) 
+		{
+			for (int32 i = 0; i < count; i++)
+			{
+				AICityBlock block;
+
+				block.topBuildingEnums = { CardEnum::House, CardEnum::House };
+				block.bottomBuildingEnums = { CardEnum::House, CardEnum::House };
+				block.CalculateSize();
+				SimUtils::TryPlaceArea(block, simulation().townhallGateTile(playerId()), playerId(), &(simulation()), 20000);
+			}
+		}
+	}
+
+	UFUNCTION(Exec) void AutoBuildFarm(int32 count)
+	{
+		if (simulation().HasTownhall(playerId()))
+		{
+			for (int32 i = 0; i < count; i++)
+			{
+				AICityBlock block;
+				block.topBuildingEnums = { CardEnum::Farm, CardEnum::Farm , CardEnum::StorageYard };
+				block.bottomBuildingEnums = { CardEnum::Farm, CardEnum::Farm, CardEnum::StorageYard };
+				block.CalculateSize();
+				SimUtils::TryPlaceArea(block, simulation().townhallGateTile(playerId()), playerId(), &(simulation()), 20000);
+			}
+		}
+	}
+
+	UFUNCTION(Exec) void AutoBuild()
+	{
+		auto& sim = simulation();
+		auto& provinceSys = sim.provinceSystem();
+		sim.ChangeMoney(playerId(), 50000);
+
+		// Claim X pieces of land
+		int32 landClaimTarget = 15;
+		int32 landClaimed = 0;
+		while (landClaimed < landClaimTarget)
+		{
+			int32 claimedThisRound = 0;
+			std::vector<int32> provincesClaimed = sim.playerOwned(playerId()).provincesClaimed();
+			for (int32 provinceId : provincesClaimed) {
+				provinceSys.ExecuteAdjacentProvinces(provinceId, [&](ProvinceConnection connection) 
+				{
+					if (sim.IsProvinceValid(connection.provinceId) &&
+						sim.provinceOwner(connection.provinceId) == -1)
+					{
+						auto command = SimUtils::MakeCommand<FClaimLand>(playerId());
+						command->provinceId = connection.provinceId;
+						sim.ExecuteNetworkCommand(command);
+						
+						landClaimed++;
+						claimedThisRound++;
+					}
+				});
+			}
+
+			if (claimedThisRound == 0) {
+				break;
+			}
+		}
+		
+		SimSettings::Set("CheatFastBuild", 1);
+		for (int32 i = 0; i < 4; i++) {
+			AutoBuildHouse(3);
+			AutoBuildFarm(3);
+		}
+		auto command = make_shared<FCheat>();
+		command->cheatEnum = GetCheatEnum("AddImmigrants");
+		command->var1 = 150;
+		networkInterface()->SendNetworkCommand(command);
+	}
+
+	/*
 	 * Trailer
 	 */
 	UFUNCTION(Exec) void TrailerSession()
@@ -789,7 +868,7 @@ public:
 		PunSettings::TrailerAtomStart_Ship = WorldTile2(351, 2432).worldAtom2();
 		PunSettings::TrailerAtomTarget_Ship = WorldTile2(391, 2432).worldAtom2();
 		PunSettings::TrailerShipStartTime = cameraPawn->GetTrailerTime();
-		PunSettings::TrailerShipTargetTime = cameraPawn->GetTrailerTime() + 3.0f;
+		PunSettings::TrailerShipTargetTime = cameraPawn->GetTrailerTime() + PunSettings::Get("TrailerShipTime") / 100.0f;
 
 		PUN_LOG("TrailerShipStart");
 	}

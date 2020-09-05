@@ -58,6 +58,8 @@ struct FSkeletonAsset
 	
 	UPROPERTY() USkeletalMesh* skeletalMesh = nullptr;
 	UPROPERTY() TMap<UnitAnimationEnum, UAnimSequence*> animationEnumToSequence;
+
+	UPROPERTY() UStaticMesh* staticMesh = nullptr;
 };
 
 
@@ -111,7 +113,13 @@ public:
 	TArray<FString>& togglableModuleNames() { return _togglableModuleNames; }
 
 	UStaticMesh* unitMesh(UnitEnum unitEnum, int32 variationIndex = 0);
-	int32 unitMeshCount(UnitEnum unitEnum) { return _unitToMeshes[unitEnum].size(); }
+	int32 unitMeshCount(UnitEnum unitEnum)
+	{
+		if (unitEnum == UnitEnum::Human) {
+			return _unitEnumToSkelAsset[static_cast<int>(unitEnum)].size();
+		}
+		return _unitToMeshes[unitEnum].size();
+	}
 
 	FSkeletonAsset unitSkelAsset(UnitEnum unitEnum, int32 variationIndex = 0);
 	
@@ -368,7 +376,7 @@ private:
 	}
 
 	void LoadUnit(UnitEnum unitEnum, std::string meshFile);
-	void LoadUnitSkel(UnitEnum unitEnum, std::string folderPath, std::string skelFileName, std::unordered_map<UnitAnimationEnum, std::string> animationFileNames);
+	void LoadUnitSkel(UnitEnum unitEnum, std::string folderPath, std::string skelFileName, std::unordered_map<UnitAnimationEnum, std::string> animationFileNames, std::string staticFileName = "");
 	//void LoadUnitAnimation(UnitEnum unitEnum, int32 variationIndex, UnitAnimationEnum unitAnimation, std::string file);
 	void LoadUnitWeapon(UnitAnimationEnum unitAnimation, std::string file);
 	

@@ -15,7 +15,8 @@ DECLARE_CYCLE_STAT(TEXT("PUN: Flood.connectedFlood"), STAT_PunFloodConnectedFloo
 //! RegionFloodConnections
 std::vector<FloodInfo> RegionFloodConnections::connectedFloods(FloodInfo info)
 {
-	SCOPE_CYCLE_COUNTER(STAT_PunFloodConnectedFloods);
+	//SCOPE_CYCLE_COUNTER(STAT_PunFloodConnectedFloods);
+	// TODO: this is not used anymore??
 
 	check(info.region64Id == _region64Id);
 	static std::vector<FloodInfo> connectedFloodsResults;
@@ -299,7 +300,7 @@ bool GameMapFlood::IsConnected(WorldTile2 start, WorldTile2 end, int maxRegionDi
 	int32 startFloodId;
 	int32 endFloodId;
 	{
-		SCOPE_CYCLE_COUNTER(STAT_PunIsConnectedLight);
+		//SCOPE_CYCLE_COUNTER(STAT_PunIsConnectedLight); // Note: Turning on affect overall speed
 
 		check(start.isValid());
 		check(end.isValid());
@@ -389,7 +390,7 @@ bool GameMapFlood::IsConnected(FloodInfo startFlood, FloodInfo endFlood, int max
 		// - Greedy search is actually slower... tested...
 
 		{
-			SCOPE_CYCLE_COUNTER(STAT_PunFloodConnectedFloods);
+			//SCOPE_CYCLE_COUNTER(STAT_PunFloodConnectedFloods); // Note: this is in range of 10k at x5 speed.. affect overall performance
 
 			check(info.region64Id == regionConnections.region64Id());
 

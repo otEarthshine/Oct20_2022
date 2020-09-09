@@ -673,9 +673,9 @@ void UMainGameUI::Tick()
 			{
 				auto widget = AddWidget<UPunRichText>(UIEnum::PunRichText);
 
-				FString richMessage = FString::Printf(TEXT("<Chat>%s</>"), *events[i].message);
+				FString richMessage = FString::Printf(TEXT("<EventLog>%s</>"), *events[i].message);
 				if (events[i].isImportant) {
-					richMessage = FString::Printf(TEXT("<ChatRed>%s</>"), *events[i].message);
+					richMessage = FString::Printf(TEXT("<EventLogRed>%s</>"), *events[i].message);
 				}
 				
 				widget->SetRichText(richMessage);

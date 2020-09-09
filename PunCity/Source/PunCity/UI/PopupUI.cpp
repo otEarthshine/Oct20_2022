@@ -74,7 +74,8 @@ void UPopupUI::Tick()
 	{
 		// Popup changed, play sound...
 		if (currentPopup.body != popupToDisplay->body ||
-			currentPopup.startTick != popupToDisplay->startTick)
+			currentPopup.startTick != popupToDisplay->startTick ||
+			currentPopup.startDisplayTick != popupToDisplay->startDisplayTick)
 		{
 			currentPopup = *popupToDisplay;
 			dataSource()->Spawn2DSound("UI", currentPopup.popupSound == "" ? "PopupNeutral" : currentPopup.popupSound);

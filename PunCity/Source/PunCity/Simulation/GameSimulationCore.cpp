@@ -1233,6 +1233,8 @@ bool GameSimulationCore::ExecuteNetworkCommand(std::shared_ptr<FNetworkCommand> 
 	case NetworkCommandEnum::UpgradeBuilding:	UpgradeBuilding(*static_pointer_cast<FUpgradeBuilding>(command)); break;
 	case NetworkCommandEnum::ChangeWorkMode:	ChangeWorkMode(*static_pointer_cast<FChangeWorkMode>(command)); break;
 	case NetworkCommandEnum::ChooseLocation:	ChooseLocation(*static_pointer_cast<FChooseLocation>(command)); break;
+	case NetworkCommandEnum::ChooseInitialResources:ChooseInitialResources(*static_pointer_cast<FChooseInitialResources>(command)); break;
+		
 	case NetworkCommandEnum::Cheat:				Cheat(*static_pointer_cast<FCheat>(command)); break;
 	case NetworkCommandEnum::PopupDecision:		PopupDecision(*static_pointer_cast<FPopupDecision>(command)); break;
 
@@ -3354,8 +3356,6 @@ void GameSimulationCore::ChooseLocation(FChooseLocation command)
 		playerOwned(command.playerId).justChoseLocation = true;
 
 
-		cardSystem(command.playerId).AddCardToHand2(CardEnum::Townhall);
-
 		// Give money/seeds
 		resourceSystem(command.playerId).SetMoney(GameConstants::InitialMoney - provincePrice);
 		resourceSystem(command.playerId).SetInfluence(0);
@@ -3369,6 +3369,13 @@ void GameSimulationCore::ChooseLocation(FChooseLocation command)
 		}
 
 	}
+}
+
+void GameSimulationCore::ChooseInitialResources(FChooseInitialResources command)
+{
+	playerOwned(command.playerId).initialResources = command;
+	
+	cardSystem(command.playerId).AddCardToHand2(CardEnum::Townhall);
 }
 
 void GameSimulationCore::Cheat(FCheat command)
@@ -3649,7 +3656,11 @@ void GameSimulationCore::unitAddDebugSpeech(int32 id, std::string message)
 
 void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int32 townhallId)
 {
-	// Build Townhall
+	auto& playerOwned = _playerOwnedManagers[command.playerId];
+	
+	/*
+	 * Build Townhall
+	 */
 	{
 		FPlaceBuilding params = command;
 		//params.buildingEnum = static_cast<uint8>(CardEnum::Townhall);
@@ -3689,7 +3700,6 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 		}
 
 		// PlayerOwnedManager
-		auto& playerOwned = _playerOwnedManagers[command.playerId];
 		playerOwned.townHallId = townhallId;
 		playerOwned.needChooseLocation = false;
 		playerOwned.TryAddArmyNodeVisited(townhallId);
@@ -3733,17 +3743,30 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 			StorageYard* storage = makeStorage();
 			PUN_ENSURE(storage, return);
 
-			// Initial Resources
+			/*
+			 * Initial Resources
+			 */
+			//if (terrainGenerator().GetBiome(params.center) == BiomeEnum::Jungle) {
+			//	storage->AddResource(ResourceEnum::Papaya, 240);
+			//}
+			//else {
+			//	storage->AddResource(ResourceEnum::Orange, 240);
+			//}
+
+			//storage->AddResource(ResourceEnum::Wood, 120);
+			//storage->AddResource(ResourceEnum::Stone, 120);
+
+			PUN_CHECK(playerOwned.initialResources.isValid());
+			
 			if (terrainGenerator().GetBiome(params.center) == BiomeEnum::Jungle) {
-				storage->AddResource(ResourceEnum::Papaya, 240);
-			}
-			else {
-				storage->AddResource(ResourceEnum::Orange, 240);
+				storage->AddResource(ResourceEnum::Papaya, playerOwned.initialResources.foodAmount);
+			} else {
+				storage->AddResource(ResourceEnum::Orange, playerOwned.initialResources.foodAmount);
 			}
 
-			storage->AddResource(ResourceEnum::Wood, 120);
-			storage->AddResource(ResourceEnum::Stone, 120);
-
+			storage->AddResource(ResourceEnum::Wood, playerOwned.initialResources.woodAmount);
+			storage->AddResource(ResourceEnum::Stone, playerOwned.initialResources.stoneAmount);
+			
 			//_LOG(PunResource, "(3)%s", ToTChar(resourceSystem(storage.playerId()).resourcedebugStr()));
 		}
 
@@ -3759,8 +3782,11 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 			 * Must have tools to last at least 3 years. avg pop 30 -> 30  tools?? .... 120 tools
 			 * Must have medicine to last as least 6 years. avg pop 30 -> 30*10*8 = 2400... 120 medicine...
 			 */
-			storage->AddResource(ResourceEnum::SteelTools, 180);
-			storage->AddResource(ResourceEnum::Medicine, 240);
+			//storage->AddResource(ResourceEnum::Medicine, 240);
+			//storage->AddResource(ResourceEnum::SteelTools, 180);
+
+			storage->AddResource(ResourceEnum::Medicine, playerOwned.initialResources.medicineAmount);
+			storage->AddResource(ResourceEnum::SteelTools, playerOwned.initialResources.toolsAmount);
 		}
 	}
 

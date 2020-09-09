@@ -67,9 +67,10 @@ void UStaticFastInstancedMesh::Init(USceneComponent* parent, int tileIdCount, bo
 }
 
 
-void UStaticFastInstancedMesh::Add(int32_t key, FTransform transform, int32_t state, int32_t objectId)
+void UStaticFastInstancedMesh::Add(int32 key, FTransform transform, int32 state, int32 objectId)
 {
-	SCOPE_CYCLE_COUNTER(STAT_PunDisplayFastAdd);
+	// x5 count:600 time:0.5ms
+	//SCOPE_CYCLE_COUNTER(STAT_PunDisplayFastAdd);
 
 
 	PUN_CHECK(GetStaticMesh());

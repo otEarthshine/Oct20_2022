@@ -2229,7 +2229,7 @@ static const BldInfo CardInfos[]
 
 	BldInfo(CardEnum::WheatSeed,			"Wheat Seeds", 300, "Unlock Wheat farming. Wheat can be eaten or brewed into Beer."),
 	BldInfo(CardEnum::CabbageSeed,			"Cabbage Seeds", 350, "Unlock Cabbage farming. Cabbage has high fertility sensitivity."),
-	BldInfo(CardEnum::HerbSeed,			"Herb Seeds", 500, "Unlock Herb farming."),
+	BldInfo(CardEnum::HerbSeed,			"Herb Seeds", 500, "Unlock Herb farming. Herb can be used to heal the sick."),
 
 	BldInfo(CardEnum::CannabisSeeds,			"Cannabis Seeds", 0, "Unlock Cannabis farming. Require region suitable for Cannabis."),
 	BldInfo(CardEnum::GrapeSeeds,			"Grape Seeds", 0, "Unlock Grape farming. Requires region suitable for Grape."),
@@ -3262,6 +3262,7 @@ enum class TileObjEnum : uint8
 	FieldFlowerHeart,
 	FieldFlowerPic,
 
+	//! Wheat to Stone are farm crops
 	WheatBush,
 	BarleyBush,
 	Grapevines,
@@ -3277,7 +3278,8 @@ enum class TileObjEnum : uint8
 	
 	Herb,
 	//BaconBush,
-	
+
+	//! Beyond stone are ores
 	Stone,
 	CoalMountainOre,
 	IronMountainOre,
@@ -3319,6 +3321,13 @@ static bool IsOutcrop(TileObjEnum tileResourceEnum) {
 static bool IsPlantFast(TileObjEnum tileObjEnum) {
 	return static_cast<int32>(tileObjEnum) < static_cast<uint8>(TileObjEnum::Stone);
 }
+static bool IsCrop(TileObjEnum tileObjEnum) {
+	return static_cast<uint8>(TileObjEnum::WheatBush) <= static_cast<int32>(tileObjEnum) && static_cast<int32>(tileObjEnum) < static_cast<uint8>(TileObjEnum::Stone);
+}
+
+
+static const int32 WinterTrimGrowthPercent = 20;
+static const int32 HardyTreeChance = 100;
 
 struct TileObjInfo
 {
@@ -3346,16 +3355,56 @@ struct TileObjInfo
 
 	TileObjInfo(
 		TileObjEnum treeEnumIn, std::string nameIn, ResourceTileType typeIn,
-		int32 deathChancePerCycleIn, int32 fruitChancePerCycleIn,  int32_t maxGrowthSeasons100, 
 		ResourcePair fruitResourceBase100In, ResourcePair cutDownResourceBase100In, std::string descriptionIn)
 	{
 		treeEnum = treeEnumIn;
 		name = nameIn;
 		type = typeIn;
 
-		deathChancePerCycle = deathChancePerCycleIn;
-		fruitChancePerCycle = fruitChancePerCycleIn;
+		// Death Chance
+		deathChancePerCycle = 0;
+		if (typeIn == ResourceTileType::Bush && !IsCrop(treeEnum)) {
+			deathChancePerCycle = Time::TicksPerYear / UpdateChunkCount; // most likely die in 1 season after full age
+		}
+		if (typeIn == ResourceTileType::Tree) {
+			deathChancePerCycle = 10000;
+		}
+
+
+		// Fruit Chance
+		static const int32 FruitChancePerCycleTree = 50;
+		static const int32 FruitChancePerCycleBush = 20;
+		
+		fruitChancePerCycle = 0;
+		if (typeIn == ResourceTileType::Tree) {
+			fruitChancePerCycle = FruitChancePerCycleTree;
+			if (treeEnum == TileObjEnum::Cactus1 ||
+				treeEnum == TileObjEnum::SavannaTree1) 
+			{
+				fruitChancePerCycle = FruitChancePerCycleTree * HardyTreeChance;
+			}
+		}
+		if (typeIn == ResourceTileType::Bush && !IsCrop(treeEnum)) {
+			fruitChancePerCycle = FruitChancePerCycleBush;
+		}
+
+		// maxGrowthSeasons100
+		int32 maxGrowthSeasons100 = 0;
+		if (typeIn == ResourceTileType::Tree) {
+			maxGrowthSeasons100 = 1200;
+		}
+		if (typeIn == ResourceTileType::Bush) {
+			if (IsCrop(treeEnum)) {
+				maxGrowthSeasons100 = 170;
+			}
+			else {
+				maxGrowthSeasons100 = 170;
+			}
+		}
+		
+		
 		maxGrowthTick = maxGrowthSeasons100 * Time::TicksPerSeason / 100;
+		
 
 		fruitResourceBase100 = fruitResourceBase100In;
 		cutDownResourceBase100 = cutDownResourceBase100In;
@@ -3447,13 +3496,6 @@ public:
 
 };
 
-static const int32 WinterTrimGrowthPercent = 20;
-static const int32 FruitChancePerCycleTree = 50;
-static const int32 FruitChancePerCycleBush = 20;
-
-static const int32 HardyTreeChance = 100;
-static const int32 FruitChancePerCycleHardyTree = FruitChancePerCycleTree * HardyTreeChance;
-
 static const int32 GrassToBushValue = 3;
 
 /*
@@ -3464,80 +3506,79 @@ static const int32 GatherUnitsPerYear = 6;  // GatherBaseYield 4 gives 60 fruits
 static const int32 GatherBaseYield100 = AssumedFoodProduction100PerYear / GatherUnitsPerYear;
 static const int32 JungleGatherBaseYield100 = GatherBaseYield100 * 2;
 
-static const int32 defaultMaxGrowthSeasons100 = 1200;
 static const ResourcePair defaultWood100(ResourceEnum::Wood, WoodGatherYield_Base100);
 static const ResourcePair defaultHay100(ResourceEnum::Hay, FarmBaseYield100 / 5); //5 is from tuning
 static const ResourcePair defaultGrass100(ResourceEnum::Hay, FarmBaseYield100 / 5 / GrassToBushValue);
 
-static const int32 defaultBushDeathChance = Time::TicksPerYear / TileObjInfo::UpdateChunkCount; // most likely die in 1 season after full age
 
 static const TileObjInfo TreeInfos[] = {
 	//TileObjEnum treeEnumIn, std::string nameIn, ResourceTileType typeIn,
 	//int32_t deathChancePerCycleIn, int32_t fruitChancePerCycleIn,  int32_t maxGrowthSeasons100,
 	//ResourcePair fruitResourceBaseIn, ResourcePair cutDownResourceBaseIn, std::string descriptionIn)
-TileObjInfo(TileObjEnum::Birch,	"Birch",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair::Invalid(),									defaultWood100, "Fast-growing hardwood tree."),
-TileObjInfo(TileObjEnum::Orange,	"Orange",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair(ResourceEnum::Orange, GatherBaseYield100), defaultWood100, "Orange trees bear delicious fruits during non-winter seasons."),
+	TileObjInfo(TileObjEnum::Birch,	"Birch",	ResourceTileType::Tree,	ResourcePair::Invalid(),									defaultWood100, "Fast-growing hardwood tree."),
+	TileObjInfo(TileObjEnum::Orange,	"Orange",	ResourceTileType::Tree,	ResourcePair(ResourceEnum::Orange, GatherBaseYield100), defaultWood100, "Orange trees bear delicious fruits during non-winter seasons."),
 
-TileObjInfo(TileObjEnum::Apple,	"Apple",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair(ResourceEnum::Orange, GatherBaseYield100), defaultWood100, "Apple trees bear delicious fruits during non-winter seasons."),
-TileObjInfo(TileObjEnum::Papaya,	"Papaya",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair(ResourceEnum::Papaya, JungleGatherBaseYield100), defaultWood100, "Papaya trees bear delicious fruits during non-winter seasons."),
-	TileObjInfo(TileObjEnum::Durian,	"Durian",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair(ResourceEnum::Orange, GatherBaseYield100), defaultWood100, "Durian trees bear delicious fruits during non-winter seasons."),
-	TileObjInfo(TileObjEnum::Pine1,	"Pine",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair::Invalid(),									defaultWood100, "Fast-growing hardwood tree."),
-	TileObjInfo(TileObjEnum::Pine2,	"Pine",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair::Invalid(),									defaultWood100, "Fast-growing hardwood tree."),
-	TileObjInfo(TileObjEnum::GiantMushroom,	"Giant Mushroom",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair::Invalid(),					ResourcePair(ResourceEnum::Mushroom, WoodGatherYield_Base100 * 2), "A very large mushroom..."),
+	TileObjInfo(TileObjEnum::Apple,	"Apple",	ResourceTileType::Tree,	ResourcePair(ResourceEnum::Orange, GatherBaseYield100), defaultWood100, "Apple trees bear delicious fruits during non-winter seasons."),
+	TileObjInfo(TileObjEnum::Papaya,	"Papaya",	ResourceTileType::Tree,	ResourcePair(ResourceEnum::Papaya, JungleGatherBaseYield100), defaultWood100, "Papaya trees bear delicious fruits during non-winter seasons."),
+	TileObjInfo(TileObjEnum::Durian,	"Durian",	ResourceTileType::Tree,	ResourcePair(ResourceEnum::Orange, GatherBaseYield100), defaultWood100, "Durian trees bear delicious fruits during non-winter seasons."),
+	TileObjInfo(TileObjEnum::Pine1,	"Pine",	ResourceTileType::Tree,	ResourcePair::Invalid(),									defaultWood100, "Fast-growing hardwood tree."),
+	TileObjInfo(TileObjEnum::Pine2,	"Pine",	ResourceTileType::Tree,	ResourcePair::Invalid(),									defaultWood100, "Fast-growing hardwood tree."),
+	TileObjInfo(TileObjEnum::GiantMushroom,	"Giant Mushroom",	ResourceTileType::Tree,	ResourcePair::Invalid(),					ResourcePair(ResourceEnum::Mushroom, WoodGatherYield_Base100 * 2), "A very large mushroom..."),
 
-	TileObjInfo(TileObjEnum::Cherry,	"Cherry",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair(ResourceEnum::Orange, GatherBaseYield100), defaultWood100, "Cherry trees bear delicious fruit during non-winter seasons."),
-	TileObjInfo(TileObjEnum::Coconut,	"Coconut",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair::Invalid(),								defaultWood100, "Coconut bears delicious fruit during non-winter seasons."),
-	TileObjInfo(TileObjEnum::Cyathea,	"Cyathea",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair::Invalid(),								defaultWood100, "Fern tree."),
-	TileObjInfo(TileObjEnum::ZamiaDrosi,	"Zamia Drosi",	ResourceTileType::Tree,	10000, FruitChancePerCycleTree,	defaultMaxGrowthSeasons100,	ResourcePair::Invalid(),						defaultWood100, "Giant leaf tropical tree."),
+	TileObjInfo(TileObjEnum::Cherry,	"Cherry",	ResourceTileType::Tree,	ResourcePair(ResourceEnum::Orange, GatherBaseYield100), defaultWood100, "Cherry trees bear delicious fruit during non-winter seasons."),
+	TileObjInfo(TileObjEnum::Coconut,	"Coconut",	ResourceTileType::Tree,	ResourcePair::Invalid(),								defaultWood100, "Coconut bears delicious fruit during non-winter seasons."),
+	TileObjInfo(TileObjEnum::Cyathea,	"Cyathea",	ResourceTileType::Tree,	ResourcePair::Invalid(),								defaultWood100, "Fern tree."),
+	TileObjInfo(TileObjEnum::ZamiaDrosi,	"Zamia Drosi",	ResourceTileType::Tree,	ResourcePair::Invalid(),						defaultWood100, "Giant leaf tropical tree."),
 
-	TileObjInfo(TileObjEnum::Cactus1,	"Cactus",	ResourceTileType::Tree,	10000, FruitChancePerCycleHardyTree,	defaultMaxGrowthSeasons100,	ResourcePair::Invalid(),						defaultWood100, "Giant leaf tropical tree."),
-	TileObjInfo(TileObjEnum::SavannaTree1,	"Savanna Acacia",	ResourceTileType::Tree,	10000, FruitChancePerCycleHardyTree,	defaultMaxGrowthSeasons100,	ResourcePair::Invalid(),						defaultWood100, "Myths say acacia trees descended from an ancient tree of life."),
+	TileObjInfo(TileObjEnum::Cactus1,	"Cactus",	ResourceTileType::Tree,	ResourcePair::Invalid(),						defaultWood100, "Giant leaf tropical tree."),
+	TileObjInfo(TileObjEnum::SavannaTree1,	"Savanna Acacia",	ResourceTileType::Tree,	ResourcePair::Invalid(),						defaultWood100, "Myths say acacia trees descended from an ancient tree of life."),
 	
-	TileObjInfo(TileObjEnum::GrassGreen, "Grass",	ResourceTileType::Bush,	defaultBushDeathChance,	FruitChancePerCycleBush,	90,	ResourcePair::Invalid(),		defaultGrass100, "Common grass. A nice food-source for grazing animals."),
+	TileObjInfo(TileObjEnum::GrassGreen, "Grass",	ResourceTileType::Bush,	ResourcePair::Invalid(),		defaultGrass100, "Common grass. A nice food-source for grazing animals."),
 
-	TileObjInfo(TileObjEnum::OreganoBush, "Common Bush",	ResourceTileType::Bush,	defaultBushDeathChance,	FruitChancePerCycleBush,	170,	ResourcePair::Invalid(), defaultHay100, "Fluffy little bush. A nice food-source for grazing animals."),
-	TileObjInfo(TileObjEnum::CommonBush, "Common Bush", ResourceTileType::Bush,	defaultBushDeathChance,	FruitChancePerCycleBush,	170,	ResourcePair::Invalid(), defaultHay100, "Fluffy little  bush. A nice food-source for grazing animals."),
+	TileObjInfo(TileObjEnum::OreganoBush, "Common Bush",	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, "Fluffy little bush. A nice food-source for grazing animals."),
+	TileObjInfo(TileObjEnum::CommonBush, "Common Bush", ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, "Fluffy little  bush. A nice food-source for grazing animals."),
 
-	TileObjInfo(TileObjEnum::Fern, "Fern",					ResourceTileType::Bush,	defaultBushDeathChance,	FruitChancePerCycleBush,	170,	ResourcePair::Invalid(), defaultHay100, "Common plant. A nice food-source for grazing animals."),
-	TileObjInfo(TileObjEnum::SavannaGrass, "Savanna Grass",	ResourceTileType::Bush,	defaultBushDeathChance,	FruitChancePerCycleBush,	170,	ResourcePair::Invalid(), defaultGrass100, "Common plant. A nice food-source for grazing animals."),
-	TileObjInfo(TileObjEnum::JungleThickLeaf, "Jungle plant",	ResourceTileType::Bush,	defaultBushDeathChance,	FruitChancePerCycleBush,	170,	ResourcePair::Invalid(), defaultHay100, "Common plant. A nice food-source for grazing animals."),
+	TileObjInfo(TileObjEnum::Fern, "Fern",					ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, "Common plant. A nice food-source for grazing animals."),
+	TileObjInfo(TileObjEnum::SavannaGrass, "Savanna Grass",	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultGrass100, "Common plant. A nice food-source for grazing animals."),
+	TileObjInfo(TileObjEnum::JungleThickLeaf, "Jungle plant",	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, "Common plant. A nice food-source for grazing animals."),
 
 	
-	TileObjInfo(TileObjEnum::BlueFlowerBush, "Primula Flower",	ResourceTileType::Bush,	0,	0,	0,	ResourcePair::Invalid(), defaultHay100, "Common flower. A nice food-source for grazing animals."),
-	TileObjInfo(TileObjEnum::WhiteFlowerBush, "Daisy Flower",	ResourceTileType::Bush, defaultBushDeathChance,	FruitChancePerCycleBush,	100,	ResourcePair::Invalid(), defaultHay100, "Common flower. A nice food-source for grazing animals."),
+	TileObjInfo(TileObjEnum::BlueFlowerBush, "Primula Flower",	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, "Common flower. A nice food-source for grazing animals."),
+	TileObjInfo(TileObjEnum::WhiteFlowerBush, "Daisy Flower",	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, "Common flower. A nice food-source for grazing animals."),
 
-	TileObjInfo(TileObjEnum::RedPinkFlowerBush, "Porin Flower",	ResourceTileType::Bush,	0,	0,	0,	ResourcePair::Invalid(), defaultHay100, "Common flower. A nice food-source for grazing animals."),
+	TileObjInfo(TileObjEnum::RedPinkFlowerBush, "Porin Flower",	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, "Common flower. A nice food-source for grazing animals."),
 
-	TileObjInfo(TileObjEnum::CommonBush2, "Common Bush", ResourceTileType::Bush,	defaultBushDeathChance,	FruitChancePerCycleBush,	170,	ResourcePair::Invalid(), defaultHay100, "Fluffy little  bush. A nice food-source for grazing animals."),
-	//TileObjInfo(TileObjEnum::FieldFlowerPurple, "FieldFlowerPurple",	ResourceTileType::Bush,	0,	0,	0,	ResourcePair::Invalid(), defaultHay100, "Common flower. A nice food-source for grazing animals."),
-	TileObjInfo(TileObjEnum::FieldFlowerYellow, "FieldFlowerYellow",	ResourceTileType::Bush,	0,	0,	0,	ResourcePair::Invalid(), defaultHay100, "Common flower. A nice food-source for grazing animals."),
+	TileObjInfo(TileObjEnum::CommonBush2, "Common Bush", ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, "Fluffy little  bush. A nice food-source for grazing animals."),
+	//TileObjInfo(TileObjEnum::FieldFlowerPurple, "FieldFlowerPurple",	ResourceTileType::Bush,	0,	0,	ResourcePair::Invalid(), defaultHay100, "Common flower. A nice food-source for grazing animals."),
+	TileObjInfo(TileObjEnum::FieldFlowerYellow, "FieldFlowerYellow",	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, "Common flower. A nice food-source for grazing animals."),
 
-	TileObjInfo(TileObjEnum::FieldFlowerHeart, "FieldFlowerHeart",	ResourceTileType::Bush,	0,	0,	0,	ResourcePair::Invalid(), defaultHay100, "Common flower. A nice food-source for grazing animals."),
-	TileObjInfo(TileObjEnum::FieldFlowerPic, "FieldFlowerPic",	ResourceTileType::Bush,		0,	0,	0,	ResourcePair::Invalid(), defaultHay100, "Common flower. A nice food-source for grazing animals."),
+	TileObjInfo(TileObjEnum::FieldFlowerHeart, "FieldFlowerHeart",	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, "Common flower. A nice food-source for grazing animals."),
+	TileObjInfo(TileObjEnum::FieldFlowerPic, "FieldFlowerPic",	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, "Common flower. A nice food-source for grazing animals."),
 
-	TileObjInfo(TileObjEnum::WheatBush, "Wheat",	ResourceTileType::Bush,					defaultBushDeathChance,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), "Grass that can be cultivated for its seed."),
-	TileObjInfo(TileObjEnum::BarleyBush, "Barley",	ResourceTileType::Bush,					defaultBushDeathChance,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), "Grass that can be cultivated for its seed."),
-	TileObjInfo(TileObjEnum::Grapevines, "Grapevines",	ResourceTileType::Bush,				defaultBushDeathChance,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Grape, FarmBaseYield100), "Produces delicious Grape that can be eaten fresh or make expensive wine."),
-	TileObjInfo(TileObjEnum::Cannabis, "Cannabis",	ResourceTileType::Bush,				defaultBushDeathChance,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cannabis, FarmBaseYield100 / 2), "Plant whose parts can be smoked or added to food for recreational purposes."),
+	// Wheat to Stone are farm crops
+	TileObjInfo(TileObjEnum::WheatBush, "Wheat",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), "Grass that can be cultivated for its seed."),
+	TileObjInfo(TileObjEnum::BarleyBush, "Barley",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), "Grass that can be cultivated for its seed."),
+	TileObjInfo(TileObjEnum::Grapevines, "Grapevines",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Grape, FarmBaseYield100), "Produces delicious Grape that can be eaten fresh or make expensive wine."),
+	TileObjInfo(TileObjEnum::Cannabis, "Cannabis",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cannabis, FarmBaseYield100 / 2), "Plant whose parts can be smoked or added to food for recreational purposes."),
 
 	//TileObjInfo(TileObjEnum::PlumpCob, "Plump cob",	ResourceTileType::Bush,				1,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), "Produces large soft yellow tasty cob. Need 2 years before it is ready for harvest, but has 3x yield."),
 	//TileObjInfo(TileObjEnum::CreamPod, "Cream pod",	ResourceTileType::Bush,				1,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), "Produces round pods, which, when cut open, reveals thick sweet cream substance."),
-	TileObjInfo(TileObjEnum::Cabbage, "Cabbage",	ResourceTileType::Bush,				defaultBushDeathChance,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cabbage, FarmBaseYield100), "Healthy vegetable great for making salad."),
+	TileObjInfo(TileObjEnum::Cabbage, "Cabbage",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cabbage, FarmBaseYield100), "Healthy vegetable great for making salad."),
 
-	TileObjInfo(TileObjEnum::Cocoa,	"Cocoa",	ResourceTileType::Bush,				defaultBushDeathChance,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cocoa, FarmBaseYield100), "Cocoa used to make delicious chocolate."),
-	TileObjInfo(TileObjEnum::Cotton,	"Cotton",	ResourceTileType::Bush,				defaultBushDeathChance,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cotton, FarmBaseYield100), "Cotton used to make Cotton Fabric."),
-	TileObjInfo(TileObjEnum::Dye,		"Dye",	ResourceTileType::Bush,				defaultBushDeathChance,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Dye, FarmBaseYield100), "Dye used to dye Cotton Fabric or print Book."),
+	TileObjInfo(TileObjEnum::Cocoa,	"Cocoa",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cocoa, FarmBaseYield100), "Cocoa used to make delicious chocolate."),
+	TileObjInfo(TileObjEnum::Cotton,	"Cotton",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cotton, FarmBaseYield100), "Cotton used to make Cotton Fabric."),
+	TileObjInfo(TileObjEnum::Dye,		"Dye",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Dye, FarmBaseYield100), "Dye used to dye Cotton Fabric or print Book."),
 
 	
-	TileObjInfo(TileObjEnum::Herb,		"Herb",		ResourceTileType::Bush,				defaultBushDeathChance,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Herb, FarmBaseYield100 / 2), "Herb used to heal sickness or make medicine."),
+	TileObjInfo(TileObjEnum::Herb,		"Herb",		ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Herb, FarmBaseYield100 / 2), "Herb used to heal sickness or make medicine."),
 	//TileObjInfo(TileObjEnum::BaconBush, "Bacon bush",	ResourceTileType::Bush,				1,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), "Plant with delicious leaves that tastes like bacon when grilled. Legend says, this plant was created by an ancient advanced civilization of giants."),
 
-	TileObjInfo(TileObjEnum::Stone, "Stone",	ResourceTileType::Deposit,	0,	0,	0,	ResourcePair::Invalid(),								ResourcePair(ResourceEnum::Stone, 2) /*this is not used?*/, "Easily-accessible stone deposits."),
+	TileObjInfo(TileObjEnum::Stone, "Stone",	ResourceTileType::Deposit,	ResourcePair::Invalid(),								ResourcePair(ResourceEnum::Stone, 2) /*this is not used?*/, "Easily-accessible stone deposits."),
 
-	TileObjInfo(TileObjEnum::CoalMountainOre, "Coal Ore",	ResourceTileType::Deposit,	0,	0,	0,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), "This region contains Coal Ore that can be mined from mountain."),
-	TileObjInfo(TileObjEnum::IronMountainOre, "Iron Ore",	ResourceTileType::Deposit,	0,	0,	0,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), "This region contains Iron Ore that can be mined from mountain."),
-	TileObjInfo(TileObjEnum::GoldMountainOre, "Gold Ore",	ResourceTileType::Deposit,	0,	0,	0,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), "This region contains Gold Ore that can be mined from mountain."),
-	TileObjInfo(TileObjEnum::GemstoneOre, "Gemstone",	ResourceTileType::Deposit,	0,	0,	0,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), "This region contains Gemstone that can be mined from mountain."),
+	TileObjInfo(TileObjEnum::CoalMountainOre, "Coal Ore",	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), "This region contains Coal Ore that can be mined from mountain."),
+	TileObjInfo(TileObjEnum::IronMountainOre, "Iron Ore",	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), "This region contains Iron Ore that can be mined from mountain."),
+	TileObjInfo(TileObjEnum::GoldMountainOre, "Gold Ore",	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), "This region contains Gold Ore that can be mined from mountain."),
+	TileObjInfo(TileObjEnum::GemstoneOre, "Gemstone",	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), "This region contains Gemstone that can be mined from mountain."),
 
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -3547,9 +3588,9 @@ TileObjInfo(TileObjEnum::Papaya,	"Papaya",	ResourceTileType::Tree,	10000, FruitC
 	//TileObjInfo(TileObjEnum::WheatBush, "Saguaro Cactus",	ResourceTileType::Bush,ResourceEnum::None,			1,	10,	2,	0, "Hardy cactus can be harvest wood."),
 
 
-	TileObjInfo(TileObjEnum::Count, "-----------",	ResourceTileType::Bush, 	0,	0,	0,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::None, 5), "-----------"),
+	TileObjInfo(TileObjEnum::Count, "-----------",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::None, 5), "-----------"),
 
-	TileObjInfo(TileObjEnum::Fish, "Fish",	ResourceTileType::Fish,		0,	0,	0,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Fish, 5), "Fish..."),
+	TileObjInfo(TileObjEnum::Fish, "Fish",	ResourceTileType::Fish,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Fish, 5), "Fish..."),
 
 	//TileObjInfo(TileObjEnum::Avocado, "Avocado",	ResourceTileType::Tree,	10000,	80 * 3,	50,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::None, 5), "A tree that bears delicious and healthy fruits"),
 };
@@ -3563,16 +3604,16 @@ static void TileObjInfosIntegrityCheck()
 	}
 }
 
-static TileObjInfo GetTileObjInfoInt(int32_t tileObjEnumInt) {
-	if (tileObjEnumInt == static_cast<int32_t>(TileObjEnum::None)) {
-		static TileObjInfo noneTileInfo(TileObjEnum::None, "None", ResourceTileType::None, 0, 0, 0, ResourcePair::Invalid(), ResourcePair::Invalid(), "None");
+static TileObjInfo GetTileObjInfoInt(int32 tileObjEnumInt) {
+	if (tileObjEnumInt == static_cast<int32>(TileObjEnum::None)) {
+		static TileObjInfo noneTileInfo(TileObjEnum::None, "None", ResourceTileType::None, ResourcePair::Invalid(), ResourcePair::Invalid(), "None");
 		return noneTileInfo;
 	}
 	PUN_CHECK(tileObjEnumInt < TileObjEnumCount);
 	return TreeInfos[tileObjEnumInt];
 }
 static TileObjInfo GetTileObjInfo(TileObjEnum tileObjEnum) {
-	return GetTileObjInfoInt(static_cast<int32_t>(tileObjEnum));
+	return GetTileObjInfoInt(static_cast<int32>(tileObjEnum));
 }
 
 static bool IsGrass(TileObjEnum tileObjEnum) {
@@ -5300,6 +5341,7 @@ struct PopupInfo
 	
 	ExclusiveUIEnum warningForExclusiveUI = ExclusiveUIEnum::None;
 	int32 startTick = -1;
+	int32 startDisplayTick = -1;
 
 	PopupInfo() : playerId(-1) {}
 	PopupInfo(int32 playerId, std::string body, std::string popupSound = "") : playerId(playerId), body(body), popupSound(popupSound) {
@@ -5341,7 +5383,9 @@ struct PopupInfo
 
 		Ar << forcedNetworking;
 		Ar << warningForExclusiveUI;
+		
 		Ar << startTick;
+		Ar << startDisplayTick;
 	}
 
 	bool operator==(const PopupInfo& a) const
@@ -5432,6 +5476,7 @@ static const std::vector<std::string> MaleNames
 	"Tim",
 	"Edwin",
 	"Elvis",
+	"Elvis",
 	"Stephen",
 	"Albert",
 	"Kirk",
@@ -5441,11 +5486,64 @@ static const std::vector<std::string> MaleNames
 	"Geoffrey",
 	"Joseph",
 	"Abraham",
+	"Lincoln",
 	"Shawn",
 	"Dave",
 	"Danny",
 	"Diego",
 	"Donald",
+
+	"Elton",
+	"Chris",
+	"Kevin",
+	"Martin",
+	"Fluffy",
+	"Robert",
+	"Marlon",
+	"Denzel",
+	"Arnold",
+	"Daniel",
+	"Sidney",
+	"Clark",
+	"Tom",
+	"Trump",
+	"Greg",
+	"Kanye",
+	"Leonardo",
+	"Spencer",
+	"Bruce",
+	"Henry",
+	"Morgan",
+	"Johnny",
+	"Charles",
+	"Kirk",
+	"Will",
+	"Harrison",
+	"Gary",
+	"Gerard",
+	"Justin",
+	"Dustin",
+	"Samuel",
+	"Robin",
+	"Don",
+	"Eddie",
+	"Anthony",
+	"Lennon",
+	"Tyler",
+	"Steven",
+	"Solomon",
+	"Willie",
+	"Frankie",
+	"Ron",
+	"Harry",
+	"Bob",
+	"Marvin",
+	"Richard",
+	"Freddie",
+	"Marley",
+	"Chuck",
+	"Bobby",
+	"Kurt",
 };
 
 static const std::vector<std::string> FemaleNames
@@ -5469,6 +5567,45 @@ static const std::vector<std::string> FemaleNames
 	"Ava",
 	"Natalie",
 	"Molly",
+
+	"Katherine",
+	"Meryl",
+	"Daniela",
+	"Ingrid",
+	"Elizabeth",
+	"Betty",
+	"Katy",
+	"Kylie",
+	"Kate",
+	"Audrey",
+	"Viola",
+	"Sophia",
+	"Vivien",
+	"Judy",
+	"Cindy",
+	"Grace",
+	"Angela",
+	"Olivia",
+	"Julie",
+	"Isabelle",
+	"Isabella",
+	"Diane",
+	"Rita",
+	"Susan",
+	"Angelina",
+	"Jolie",
+	"Sandra",
+	"Emma",
+	"Michelle",
+	"Faye",
+	"Nicole",
+	"Karen",
+	"Annie",
+	"Mariah",
+	"Hermione",
+	"Patsy",
+	
+	
 };
 
 // UnitId with aliveAndLifeCount for proper comparison countering reuse 
@@ -6131,7 +6268,7 @@ const float WorldZoomTransition_Unit = 680; // 680
 #endif
 const float WorldZoomTransition_UnitSmall = 680;
 const float WorldZoomTransition_UnitAnimate = 1500;
-const float WorldZoomTransition_HumanNoAnimate = 480;
+const float WorldZoomTransition_HumanNoAnimate = 490;
 
 const float MapIconShrinkZoomAmount = 5382;
 

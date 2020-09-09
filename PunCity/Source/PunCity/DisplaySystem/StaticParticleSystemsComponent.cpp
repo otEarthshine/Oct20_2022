@@ -149,7 +149,9 @@ void UStaticParticleSystemsComponent::SetActive(bool bNewActive, bool bReset)
 	PUN_CHECK_EDITOR(NoBug());
 
 	Super::SetActive(bNewActive, bReset);
-	SetVisibility(bNewActive, true);
+	if (!bNewActive) {
+		SetVisibility(bNewActive, true);
+	}
 
 	// On disable.
 	if (!bNewActive) {

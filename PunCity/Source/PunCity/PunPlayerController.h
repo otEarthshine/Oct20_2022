@@ -464,6 +464,10 @@ public:
 	UFUNCTION(Exec) void ExecuteInitialCloudFade() final {
 		GetPunHUD()->escMenuUI()->StartLoadingScreenFade();
 	}
+	TArray<class UFireForgetAudioComponent*> GetPunAudios() final {
+		return gameManager->soundSystem()->punAudios;
+	}
+	
 	UFUNCTION(Exec) void TestCrash() {
 		checkNoEntry();
 	}

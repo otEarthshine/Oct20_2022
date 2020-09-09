@@ -157,6 +157,16 @@ public:
 		}
 
 		/*
+		 * Choose initial resources
+		 */
+		if (!playerOwned.hasChosenInitialResources()) {
+			FChooseInitialResources command = FChooseInitialResources::GetDefault();
+			command.playerId = _playerId;
+			_playerInterface->ChooseInitialResources(command);
+			return;
+		}
+
+		/*
 		 * Build townhall
 		 */
 		if (!playerOwned.hasTownhall())

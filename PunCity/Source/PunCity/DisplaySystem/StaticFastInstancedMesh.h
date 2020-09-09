@@ -44,10 +44,10 @@ public:
 	// Add if necessary. 
 	// -tileId that was already added won't be touched
 	// -tileId that wasn't added for an update will get despawned automatically
-	void Add(int32_t key, FTransform transform, int32_t state, int32_t objectId = -1);
+	void Add(int32 key, FTransform transform, int32 state, int32 objectId = -1);
 	void AfterAdd();
 
-	bool ContainsKey(int32_t key) { return CppUtils::Contains(_keysThisTick, key); }
+	bool ContainsKey(int32 key) { return CppUtils::Contains(_keysThisTick, key); }
 
 	void SetActive(bool bNewActive, bool bReset = false) override;
 	

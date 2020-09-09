@@ -236,7 +236,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 
 			// Building mesh
 			float buildingRotation;
-			int32_t displayVariationIndex;
+			int32 displayVariationIndex;
 			if (buildingEnum == CardEnum::Fence) {
 				pair<GridConnectType, int8_t> connectInfo = GetGridConnectType(building.centerTile());
 				displayVariationIndex = static_cast<int32_t>(connectInfo.first);

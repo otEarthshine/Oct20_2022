@@ -11,6 +11,9 @@ DECLARE_CYCLE_STAT(TEXT("PUN: [Display] Unit.Transform"), STAT_PunDisplayUnitTra
 DECLARE_CYCLE_STAT(TEXT("PUN: [Display] Unit.Skel"), STAT_PunDisplayUnitSkel, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: [Display] Unit.Skel1"), STAT_PunDisplayUnitSkel1, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: [Display] Unit.Skel2"), STAT_PunDisplayUnitSkel2, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [Display] Unit.Projectile"), STAT_PunDisplayUnitProjectile, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [Display] Unit.AddInst"), STAT_PunDisplayUnitAddInst, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [Display] Unit.Resource"), STAT_PunDisplayUnitResource, STATGROUP_Game);
 
 struct FRotationInfo
 {

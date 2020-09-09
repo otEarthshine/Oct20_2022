@@ -79,6 +79,7 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 
 	//! Debug
 	{ "DebugUI", 0 },
+	{ "SoundDebugUI", 0 },
 	{ "DebugTemp", 0 },
 	{ "DebugTemp1", 0 },
 	{ "DebugTemp2", 0 },

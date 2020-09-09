@@ -182,8 +182,8 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 			AddSkelMesh(unitId, UnitEnum::Human, animationEnum, false, transform, variationIndex);
 		}
 	};
-	addTrailerUnit(99997, UnitAnimationEnum::ChopWood, static_cast<int32>(HumanVariationEnum::AdultMale), WorldTile2(705, 2615), -90, FVector(3, 0, 0));
-	addTrailerUnit(99998, UnitAnimationEnum::ChopWood, static_cast<int32>(HumanVariationEnum::AdultFemale), WorldTile2(703, 2614), 180, FVector(0, -1, 0));
+	addTrailerUnit(99997, UnitAnimationEnum::ChopWood, static_cast<int32>(HumanVariationEnum::AdultMale), WorldTile2(705, 2614), -90, FVector(3, 0, 0));
+	addTrailerUnit(99998, UnitAnimationEnum::ChopWood, static_cast<int32>(HumanVariationEnum::AdultFemale), WorldTile2(704, 2613), 180, FVector(0, -1, 0));
 	addTrailerUnit(99999, UnitAnimationEnum::Build, static_cast<int32>(HumanVariationEnum::AdultMale), WorldTile2(709, 2624), -90, FVector(0, 0, 0));
 
 #endif
@@ -211,10 +211,12 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 
 		if (IsUsingSkeletalMesh(unitEnum))
 		{
+#if !TRAILER_MODE
 			// Zoomed out human should use instancedStaticMesh
 			if (unitEnum == UnitEnum::Human && zoomDistance > WorldZoomTransition_HumanNoAnimate)
 			{}
 			else
+#endif
 			{
 				FTransform transform;
 				AddSkelMesh(unitId, unit, transform);
@@ -240,6 +242,8 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 		// Special case projectile
 		if (IsProjectile(unit.unitEnum())) 
 		{
+			SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitProjectile);
+			
 			auto arrow = static_cast<ProjectileArrow*>(&unit);
 			ProjectileDisplayInfo projectileInfo = arrow->GetProjectileDisplayInfo();
 			FVector projectileLocation = MapUtil::DisplayLocation(cameraAtom, projectileInfo.location);
@@ -287,8 +291,12 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 
 
 		_thisTransform.Add(unitId, transform);
+
+		{
+			SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitAddInst);
+			_unitMeshes->Add(GetMeshName(unit.unitInfo(), variationIndex), unitId, transform, 0, unitId);
+		}
 		
-		_unitMeshes->Add(GetMeshName(unit.unitInfo(), variationIndex), unitId, transform, 0, unitId);
 
 		// No Animation
 		if (_gameManager->zoomDistance() > WorldZoomTransition_UnitAnimate) {
@@ -434,6 +442,8 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 
 void UUnitDisplayComponent::UpdateResourceDisplay(int32 unitId, UnitStateAI& unit, FTransform& transform)
 {
+	SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitResource);
+	
 	// Resource display
 	ResourceEnum heldEnum = unit.inventory().Display();
 	if (heldEnum != ResourceEnum::None)

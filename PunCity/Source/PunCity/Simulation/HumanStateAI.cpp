@@ -1471,8 +1471,8 @@ void HumanStateAI::TryForestingPlantAction()
 	TileObjEnum tileObjEnum = static_cast<TileObjEnum>(action().int32val1);
 	NonWalkableTileAccessInfo accessInfo(WorldTile2(action().int32val2), WorldTile2(action().int32val3));
 	
-	NextAction("(Done)TryForestingPlantAction");
-	AddDebugSpeech("(Done)TryForestingPlantAction");
+	NextAction(UnitUpdateCallerEnum::TryForestingPlantAction_Done);
+	AddDebugSpeech("TryForestingPlantAction_Done");
 
 	TryForestingPlant(tileObjEnum, accessInfo);
 }
@@ -2064,7 +2064,7 @@ void HumanStateAI::AttackOutgoing()
 	//_actions.push_back(bind(&HumanStateAI::SearchAreaForDrop, this, ResourceEnum::Pork));
 	Add_Wait(waitTicks);
 
-	NextAction("(Done)AttackOutgoing");
+	NextAction(UnitUpdateCallerEnum::AttackOutgoing_Done);
 }
 
 void HumanStateAI::Add_DoFarmWork(WorldTile2 tile, FarmStage farmStage) {
@@ -2089,7 +2089,7 @@ void HumanStateAI::DoFarmWork()
 	farm.DoFarmWork(_id, tile, farmStage);
 
 	AddDebugSpeech("(Done)DoFarmWork: bld:" + building.buildingInfo().name + " reservation:" + ReservationsToString());
-	NextAction("(Done)DoFarmWork");
+	NextAction(UnitUpdateCallerEnum::DoFarmWork);
 }
 
 

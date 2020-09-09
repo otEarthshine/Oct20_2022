@@ -919,20 +919,7 @@ void TreeSystem::TickTile(int32_t id)
 				RemoveFruit(tile); // TODO: don't need to call this multiple times????
 				_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Trees, tile.regionId(), true);
 
-				//// Bush is trimmed to 20% and has a chance to die during winter...
-				//if (info.type == ResourceTileType::Bush) {
-
-				//	if (growthPercent(id) > WinterTrimGrowthPercent) {
-				//		ForceRemoveTileReservation(tile);
-				//		TrimBush(tile);
-				//	}
-
-				//	if (rand % 50 == 0) {
-				//		ForceRemoveTileObj(tile);
-				//		_simulation->statSystem(-1).AddStat(SeasonStatEnum::BushDeathWinter);
-				//	}
-				//}
-
+				// Note: Bush used to be trimmed in winter, but that is just a waste of CPU time
 				// Nothing grows during winter
 			}
 			// Fruit and seed

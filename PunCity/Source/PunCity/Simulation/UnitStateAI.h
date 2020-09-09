@@ -112,10 +112,10 @@ public:
 	// Don't call this directly... Call sim's reset actions
 	void ResetActions_UnitPart(int32 waitTicks);
 
-	void NextAction(std::string caller) {
+	void NextAction(UnitUpdateCallerEnum caller) {
 		_unitData->SetNextTickState(_id, TransformState::NeedActionUpdate, caller);
 	}
-	void NextAction(int tickCount, std::string caller) {
+	void NextAction(int tickCount, UnitUpdateCallerEnum caller) {
 		_unitData->SetNextTickState(_id, TransformState::NeedActionUpdate, caller, tickCount);
 	}
 

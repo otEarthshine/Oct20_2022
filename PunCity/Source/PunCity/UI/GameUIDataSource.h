@@ -25,6 +25,7 @@ enum class UIEnum
 	Trade,
 	TradeIntercity,
 	TargetConfirm,
+	InitialResourceUI,
 	
 	DragCardSlot,
 	DragCard,

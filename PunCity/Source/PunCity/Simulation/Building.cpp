@@ -547,6 +547,10 @@ bool Building::UpgradeBuilding(int upgradeIndex)
 			OnUpgradeBuilding(upgradeIndex);
 			return true;
 		}
+
+		_simulation->AddPopupToFront(_playerId, { "Not enough " + ResourceName(resourceNeeded.resourceEnum) + " for upgrade." }, 
+						ExclusiveUIEnum::None, "PopupCannot");
+		return false;
 	}
 	
 	

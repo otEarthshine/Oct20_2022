@@ -406,7 +406,7 @@ void UnitStateAI::Update()
 		SCOPE_CYCLE_COUNTER(STAT_PunUnitCalcAction);
 		
 		// Do the action next tick
-		NextAction("EmptyActions");
+		NextAction(UnitUpdateCallerEnum::EmptyActions);
 		CalculateActions();
 	}
 	else
@@ -652,9 +652,9 @@ void UnitStateAI::CalculateActions()
 
 			// Get an existing burrow to live
 			WorldTile2 tile = unitTile();
-			const std::vector<int32_t>& burrowIds = _simulation->boarBurrows(tile.regionId());
+			const std::vector<int32>& burrowIds = _simulation->boarBurrows(tile.regionId());
 
-			for (int32_t burrowId : burrowIds)
+			for (int32 burrowId : burrowIds)
 			{
 				// If Burrow is accessible and isn't full. add this as an occupant
 				Building& burrow = _simulation->building(burrowId);
@@ -1049,7 +1049,7 @@ void UnitStateAI::DropoffFoodAnimal()
 	//boarBurrow->resources[ResourceEnum::Orange] += amount;
 	//_inventory.Remove(ResourcePair(ResourceEnum::Orange, amount));
 	
-	NextAction("(Done)DropoffFoodAnimal:");
+	NextAction(UnitUpdateCallerEnum::DropoffFoodAnimal);
 	AddDebugSpeech("(Done)DropoffFoodAnimal:");
 }
 
@@ -1089,7 +1089,7 @@ void UnitStateAI::PickupFoodAnimal()
 	//	}
 	//}
 
-	NextAction("(Done)PickupFoodAnimal:");
+	NextAction(UnitUpdateCallerEnum::PickupFoodAnimal);
 	AddDebugSpeech("(Done)PickupFoodAnimal:");
 }
 
@@ -1218,7 +1218,7 @@ void UnitStateAI::ResetActions_UnitPart(int32 waitTicks)
 	_actions.clear();
 ;
 	// TODO: note setting waitTicks for nextTickState break the game..
-	_unitData->SetNextTickState(_id, TransformState::NeedActionUpdate, "ResetActions", 1, true);
+	_unitData->SetNextTickState(_id, TransformState::NeedActionUpdate, UnitUpdateCallerEnum::ResetActions, 1, true);
 
 	
 	Add_Wait(waitTicks);
@@ -1249,7 +1249,7 @@ void UnitStateAI::Wait()
 	}
 	
 
-	NextAction(tickCount, "(Done)Wait:");
+	NextAction(tickCount, UnitUpdateCallerEnum::Wait);
 	AddDebugSpeech("Wait: Done tickCount:" + to_string(tickCount));
 }
 
@@ -1294,7 +1294,7 @@ void UnitStateAI::GatherFruit()
 
 	// AddStatistics done on drop-poff
 
-	NextAction("(Done)GatherFruit:");
+	NextAction(UnitUpdateCallerEnum::GatherFruit);
 	AddDebugSpeech("(Done)GatherFruit:");
 }
 
@@ -1334,7 +1334,7 @@ void UnitStateAI::TrimFullBush()
 		}
 	}
 
-	NextAction("(Done)TrimFullBush:");
+	NextAction(UnitUpdateCallerEnum::TrimFullBush);
 	AddDebugSpeech("(Done)TrimFullBush:");
 }
 
@@ -1400,7 +1400,7 @@ void UnitStateAI::HarvestTileObj()
 		_simulation->uiInterface()->ShowFloatupInfo(floatupInfo);
 	}
 
-	NextAction("(Done)HarvestTileObj");
+	NextAction(UnitUpdateCallerEnum::HarvestTileObj);
 	AddDebugSpeech("(Done)HarvestTileObj: enum:" + ResourceName(resourcePair.resourceEnum) + " amount:" + to_string(_inventory.Amount(resourcePair.resourceEnum)));
 }
 
@@ -1425,7 +1425,7 @@ void UnitStateAI::PlantTree()
 		treeSystem().PlantTree(targetTile.x, targetTile.y, tileObjEnum);
 	}
 
-	NextAction("(Done)PlantTree");
+	NextAction(UnitUpdateCallerEnum::PlantTree);
 	AddDebugSpeech("(Done)PlantTree: enum:" + GetTileObjInfo(tileObjEnum).name);
 }
 
@@ -1436,7 +1436,7 @@ void UnitStateAI::NourishTree() {
 	WorldTile2 targetTile(action().int32val1);
 	treeSystem().UnitNourishTree(targetTile);
 
-	NextAction("(Done)NourishTree");
+	NextAction(UnitUpdateCallerEnum::NourishTree);
 	AddDebugSpeech("(Done)NourishTree: enum:" + targetTile.ToString());
 }
 
@@ -1477,12 +1477,12 @@ void UnitStateAI::Eat()
 		_simulation->statSystem(_playerId).AddResourceStat(ResourceSeasonStatEnum::Consumption, resourceEnum, amount);
 		_inventory.Remove(ResourcePair(resourceEnum, amount));
 
-		NextAction("(Done)Eat:");
+		NextAction(UnitUpdateCallerEnum::Eat_Done);
 		AddDebugSpeech("(Done)Eat:");
 		return;
 	}
 
-	NextAction("(Failed)Eat: Someone else took the food.");
+	NextAction(UnitUpdateCallerEnum::Eat_SomeoneElseTookFood);
 	AddDebugSpeech("(Failed)Eat: Someone else took the food.");
 }
 
@@ -1537,7 +1537,7 @@ void UnitStateAI::Heat()
 	tryHeatWith(ResourceEnum::Wood);
 	tryHeatWith(ResourceEnum::Coal);
 
-	NextAction("(Done)Heat:");
+	NextAction(UnitUpdateCallerEnum::Heat);
 	AddDebugSpeech("(Done)Heat:");
 }
 
@@ -1558,7 +1558,7 @@ void UnitStateAI::UseMedicine()
 	statSystem().AddResourceStat(ResourceSeasonStatEnum::Consumption, resourceEnum, amount);
 	_inventory.Remove(ResourcePair(resourceEnum, amount));
 
-	NextAction("(Done)Heal:");
+	NextAction(UnitUpdateCallerEnum::Heal);
 	AddDebugSpeech("(Done)Heal:");
 }
 void UnitStateAI::Add_UseTools(ResourceEnum resourceEnum) {
@@ -1596,7 +1596,7 @@ void UnitStateAI::UseTools()
 	statSystem().AddResourceStat(ResourceSeasonStatEnum::Consumption, resourceEnum, amount);
 	_inventory.Remove(ResourcePair(resourceEnum, amount));
 
-	NextAction("(Done)Tool:");
+	NextAction(UnitUpdateCallerEnum::Tool);
 	AddDebugSpeech("(Done)Tool:");
 }
 
@@ -1625,7 +1625,7 @@ void UnitStateAI::HaveFun()
 		AddDebugSpeech("(Done)HaveFun ... Building Gone");
 	}
 
-	NextAction("(Done)HaveFun:");
+	NextAction(UnitUpdateCallerEnum::HaveFun);
 }
 
 void UnitStateAI::Add_MoveRandomly(TileArea area) {
@@ -1740,7 +1740,7 @@ void UnitStateAI::MoveRandomlyPerlin()
 		AddDebugSpeech("(Transfer)MoveRandomlyPerlin: Transfer to MoveTo() " + tile.ToString() + end.ToString());
 		MoveTo(end);
 	} else {
-		NextAction("(Failed)MoveRandomlyPerlin");
+		NextAction(UnitUpdateCallerEnum::MoveRandomlyPerlin_Failed);
 	}
 }
 
@@ -1807,7 +1807,7 @@ bool UnitStateAI::MoveTo(WorldTile2 end)
 	_unitData->SetForceMove(_id, false);
 
 	// Convert waypoint to targetTile next tick.
-	_unitData->SetNextTickState(_id, TransformState::NeedTargetAtom, "(Done)MoveTo:");
+	_unitData->SetNextTickState(_id, TransformState::NeedTargetAtom, UnitUpdateCallerEnum::MoveTo_Done);
 	PUN_CHECK2(nextActiveTick() > Time::Ticks(), debugStr());
 	AddDebugSpeech("---DONE]MoveTo:" + end.ToString());
 	return true;
@@ -1862,7 +1862,7 @@ void UnitStateAI::MoveToForceLongDistance()
 	_unitData->SetForceMove(_id, true);
 
 	// Convert waypoint to targetTile next tick.
-	_unitData->SetNextTickState(_id, TransformState::NeedTargetAtom, "(Done)MoveToForceLongDistance:");
+	_unitData->SetNextTickState(_id, TransformState::NeedTargetAtom, UnitUpdateCallerEnum::MoveToForceLongDistance_Done);
 	AddDebugSpeech("(Done)MoveToForceLongDistance:" + end.ToString());
 }
 
@@ -1900,7 +1900,7 @@ void UnitStateAI::MoveInRange()
 	}
 
 	//PUN_LOG("MoveInRange");
-	NextAction("(Done)MoveInRange");
+	NextAction(UnitUpdateCallerEnum::MoveInRange);
 }
 
 // TODO: MoveToRobust should eventually use special PathAI map that only has terrain + bridge + tunnels
@@ -1923,7 +1923,7 @@ void UnitStateAI::MoveToRobust(WorldTile2 end)
 	_unitData->SetForceMove(_id, true);
 
 	// Convert waypoint to targetTile next tick.
-	_unitData->SetNextTickState(_id, TransformState::NeedTargetAtom, "(Done)MoveToRobust:");
+	_unitData->SetNextTickState(_id, TransformState::NeedTargetAtom, UnitUpdateCallerEnum::MoveToRobust_Done);
 	AddDebugSpeech("(Done)MoveToRobust:" + end.ToString());
 }
 
@@ -1951,7 +1951,7 @@ void UnitStateAI::MoveToward()
 	_animationEnum = UnitAnimationEnum::Walk;
 
 	// Be in the moving state until we arrived at destination.
-	_unitData->SetNextTickState(_id, TransformState::Moving, "(Done)MoveTowards", ticksNeeded);
+	_unitData->SetNextTickState(_id, TransformState::Moving, UnitUpdateCallerEnum::MoveTowards_Done, ticksNeeded);
 	AddDebugSpeech("(Done)MoveToward: " + end.ToString());
 }
 
@@ -1985,7 +1985,7 @@ void UnitStateAI::PickupResource()
 
 	_simulation->soundInterface()->Spawn3DSound("ResourceDropoffPickup", "Pickup", unitAtom());
 	
-	NextAction("(Done)PickupResource");
+	NextAction(UnitUpdateCallerEnum::PickupResource);
 }
 
 void UnitStateAI::Add_DropoffResource(ResourceHolderInfo info, int amount) {
@@ -2019,7 +2019,7 @@ void UnitStateAI::DropoffResource()
 
 	_simulation->soundInterface()->SpawnResourceDropoffAudio(info.resourceEnum, unitAtom());
 
-	NextAction("(Done)DropoffResource");
+	NextAction(UnitUpdateCallerEnum::DropoffResource);
 }
 
 void UnitStateAI::Add_DropInventoryAction() {
@@ -2036,7 +2036,7 @@ void UnitStateAI::DropInventoryAction()
 	_inventory.Clear();
 
 	AddDebugSpeech("(Done)DropInventoryAction");
-	NextAction("(Done)DropInventoryAction");
+	NextAction(UnitUpdateCallerEnum::DropInventoryAction);
 }
 
 void UnitStateAI::Add_StoreGatheredAtWorkplace() {
@@ -2070,7 +2070,7 @@ void UnitStateAI::StoreGatheredAtWorkplace()
 	Add_MoveToResource(dropoffInfo);
 	//Add_MoveTo(dropoffBld.gateTile());
 
-	NextAction("(Done)StoreGatheredAtWorkplace");
+	NextAction(UnitUpdateCallerEnum::StoreGatheredAtWorkplace);
 	AddDebugSpeech("(Done)StoreGatheredAtWorkplace");
 }
 
@@ -2103,7 +2103,7 @@ void UnitStateAI::Produce()
 		PopReservationWorkplace(workplaceId);
 	}
 
-	NextAction(waitTicks, "(Done)Produce:");
+	NextAction(waitTicks, UnitUpdateCallerEnum::Produce_Done);
 	AddDebugSpeech("(Done)Produce:" + ReservationsToString());
 }
 
@@ -2145,7 +2145,7 @@ void UnitStateAI::Construct()
 
 	_animationEnum = UnitAnimationEnum::Build;
 
-	NextAction(waitTicks, "(Done)Construct:");
+	NextAction(waitTicks, UnitUpdateCallerEnum::Construct_Done);
 	AddDebugSpeech("(Done)Construct: workAmount:" + to_string(workManSec100) + ", tickCount:" + to_string(waitTicks));
 }
 
@@ -2212,7 +2212,7 @@ void UnitStateAI::FillInputs()
 	// Set fillInput to true in workplace
 	workplace.FillInputs();
 
-	NextAction("(Done)FillInputs:");
+	NextAction(UnitUpdateCallerEnum::FillInputs_Done);
 	AddDebugSpeech("(Done)FillInputs:" + ReservationsToString());
 }
 

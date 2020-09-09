@@ -6,16 +6,6 @@
 #include <array>
 #include "PunCity/PunUtils.h"
 
-//struct UnitUpdateInfo
-//{
-//	int32_t unitId = -1;
-//	int32_t nextUpdateTick = 0; // pack state into this??
-//	TransformState state;
-//
-//	//! Debug
-//	int32_t queuedTick;
-//	std::string caller = "";
-//};
 
 struct UpdateRingInfo
 {
@@ -46,7 +36,7 @@ public:
 	// For example, tick = 5, size = 10
 	// next = 15: (15 - 5 - 1) / 10 = 0
 	// next = 16: (16 - 5 - 1) / 10 = 1
-	void AddUpdateInfo(int32_t unitId, int32_t nextUpdateTick, TransformState state, std::string& caller)
+	void AddUpdateInfo(int32_t unitId, int32_t nextUpdateTick, TransformState state/*, std::string& caller*/)
 	{
 		//SCOPE_CYCLE_COUNTER(STAT_PunUnitUpdateAdd);
 

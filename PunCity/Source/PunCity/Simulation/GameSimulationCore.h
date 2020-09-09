@@ -150,7 +150,7 @@ public:
 
 	IGameSoundInterface* soundInterface() final { return _soundInterface; }
 	IGameUIInterface* uiInterface() final { return _uiInterface; }
-	
+	IGameManagerInterface* gameManagerInterface() final { return _gameManager; }
 
 	DebugLineSystem& debugLineSystem() final { return _debugLineSystem; }
 
@@ -1530,8 +1530,8 @@ public:
 		Ar << _tickCount;
 
 		_mapSettings.Serialize(Ar);
-
 		_endStatus.Serialize(Ar);
+
 
 		Time::Serialize(Ar, data);
 
@@ -1815,6 +1815,7 @@ private:
 	void UpgradeBuilding(FUpgradeBuilding command) final;
 	void ChangeWorkMode(FChangeWorkMode command) final;
 	void ChooseLocation(FChooseLocation command) final;
+	void ChooseInitialResources(FChooseInitialResources command) final;
 	void PopupDecision(FPopupDecision command) final;
 	void RerollCards(FRerollCards command) final;
 	

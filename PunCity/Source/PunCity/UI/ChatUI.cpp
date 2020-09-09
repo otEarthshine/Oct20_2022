@@ -4,6 +4,7 @@
 #include "ChatUI.h"
 #include "PunSpacerElement.h"
 #include "PunButton.h"
+#include "PunCity/Sound/FireForgetAudioComponent.h"
 
 using namespace std;
 
@@ -241,9 +242,29 @@ void UChatUI::TickDebugUI()
 	stringstream ss;
 
 #if DEV_BUILD
-	if (PunSettings::IsOn("DebugUI"))
+	if (PunSettings::IsOn("SoundDebugUI"))
 	{
 		SetVisibility(ESlateVisibility::Collapsed);
+		DebugOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+
+		TArray<UFireForgetAudioComponent*> punAudios = networkInterface()->GetPunAudios();
+		for (int32 i = 0; i < punAudios.Num(); i++)
+		{
+			ss << punAudios[i]->soundName;
+			if (punAudios[i]->audio) {
+				ss << fixed << setprecision(2);
+				ss << "(" << punAudios[i]->audio->VolumeMultiplier << ")";
+			}
+			ss << "\n";
+		}
+		
+		TopLeftTextDebug->SetText(FText::FromString(FString(ss.str().c_str())));
+		return;
+	}
+
+	if (PunSettings::IsOn("DebugUI"))
+	{
+		SetVisibility(ESlateVisibility::Collapsed); // Why this?
 		DebugOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
 		//ss << "(" << to_string(Time::Minutes()) << "m " << to_string(Time::Seconds() - Time::Minutes() * Time::SecondsPerMinute) << "s) \n";

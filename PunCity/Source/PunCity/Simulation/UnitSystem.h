@@ -93,7 +93,7 @@ public:
 public:
 	//! Unit Data Setters
 
-	void SetNextTickState(int32 id, TransformState state, std::string caller, int ticksNeeded = 1, bool resetActions = false) final;
+	void SetNextTickState(int32 id, TransformState state, UnitUpdateCallerEnum caller, int ticksNeeded = 1, bool resetActions = false) final;
 	TransformState transformState(int id) const final { 
 		return _unitLeans[id].nextUpdate.state;
 	}

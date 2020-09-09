@@ -276,6 +276,7 @@ public:
 	const std::vector<int32>& childIds() { return _childIds; }
 
 	bool hasChosenLocation() { return _provincesClaimed.size() > 0; }
+	bool hasChosenInitialResources() { return initialResources.isValid(); }
 	bool hasTownhall() { return townHallId != -1; }
 	
 public:
@@ -999,6 +1000,7 @@ public:
 		Ar << needChooseLocation;
 		Ar << justChoseLocation;
 		Ar << townHallId;
+		initialResources.Serialize(Ar);
 
 		SerializeVecValue(Ar, incomes100);
 		SerializeVecValue(Ar, sciences100);
@@ -1124,6 +1126,7 @@ public:
 	bool needChooseLocation = true;
 	bool justChoseLocation = false;
 	int32 townHallId = -1;
+	FChooseInitialResources initialResources;
 
 	std::vector<int32> incomes100;
 	std::vector<int32> sciences100;

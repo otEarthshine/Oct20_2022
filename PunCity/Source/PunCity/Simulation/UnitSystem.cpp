@@ -13,9 +13,15 @@
 #include "ProjectileSystem.h"
 
 DECLARE_CYCLE_STAT(TEXT("PUN: Unit"), STAT_PunUnit, STATGROUP_Game);
-DECLARE_CYCLE_STAT(TEXT("PUN: Unit.Outer [0.2]"), STAT_PunUnitOuter, STATGROUP_Game);
+//DECLARE_CYCLE_STAT(TEXT("PUN: Unit.Outer [0.2]"), STAT_PunUnitOuter, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: Unit.Moving [1]"), STAT_PunUnitMoving, STATGROUP_Game);
+
 DECLARE_CYCLE_STAT(TEXT("PUN: Unit.NeedTargetAtom [2]"), STAT_PunUnitNeedTargetAtom, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: Unit.NeedTargetAtom.Start [2]"), STAT_PunUnitNeedTargetAtomStart, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: Unit.NeedTargetAtom.Road [2]"), STAT_PunUnitNeedTargetAtomRoad, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: Unit.NeedTargetAtom.SetNextTick [2]"), STAT_PunUnitNeedTargetAtomSetNextTick, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: Unit.NeedTargetAtom.Force [2]"), STAT_PunUnitNeedTargetAtomForce, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: Unit.NeedTargetAtom.NeedActionUpdate [2]"), STAT_PunUnitNeedTargetAtomNeedActionUpdate, STATGROUP_Game);
 
 DECLARE_CYCLE_STAT(TEXT("PUN: Unit.SetNextTick [-]"), STAT_PunUnitSetNextTick, STATGROUP_Game);
 
@@ -147,7 +153,7 @@ int UnitSystem::AddUnit(UnitEnum unitEnum, int32 playerId, WorldAtom2 location, 
 		_unitLeans.push_back(unitLean);
 
 		//UE_LOG(LogTemp, Error, TEXT("AddUnit1 id:%d tick:%d"), objectId, Time::Ticks());
-		SetNextTickState(objectId, TransformState::NeedActionUpdate, "AddUnit1", GameRand::Rand() % 300 + 1); // Activate units a bit randomly to make CPU more balanced
+		SetNextTickState(objectId, TransformState::NeedActionUpdate, UnitUpdateCallerEnum::AddUnit1, GameRand::Rand() % 300 + 1); // Activate units a bit randomly to make CPU more balanced
 
 		//if (unitEnum == UnitEnum::Human) {
 		//	_stateAI.push_back(std::make_unique<HumanStateAI>());
@@ -180,7 +186,7 @@ int UnitSystem::AddUnit(UnitEnum unitEnum, int32 playerId, WorldAtom2 location, 
 		//if (objectId < 0 || (objectId >= 50000 && objectId < 50010)) {
 			//UE_LOG(LogTemp, Error, TEXT("AddUnit2 id:%d tick:%d"), objectId, Time::Ticks());
 		//}
-		SetNextTickState(objectId, TransformState::NeedActionUpdate, "AddUnit2");
+		SetNextTickState(objectId, TransformState::NeedActionUpdate, UnitUpdateCallerEnum::AddUnit2);
 
 		//if ((UnitEnum)unitEnum == UnitEnum::Human) {
 		//	_stateAI[objectId] = std::make_unique<HumanStateAI>();
@@ -288,7 +294,8 @@ void UnitSystem::Tick()
 		int32_t id = info.unitId;
 
 		{
-			SCOPE_CYCLE_COUNTER(STAT_PunUnitOuter);
+			// x5 speed:  1150 count, 0.2 ms
+			//SCOPE_CYCLE_COUNTER(STAT_PunUnitOuter);
 
 			// Continue while decreasing round count if this needs more than 1 round
 			if (info.nextUpdateTick != Time::Ticks()) {
@@ -321,15 +328,16 @@ void UnitSystem::Tick()
 		{
 			SCOPE_CYCLE_COUNTER(STAT_PunUnitMoving);
 
-#if WITH_EDITOR
-			int32_t tick = Time::Ticks();
-			if (unitLean.nextUpdate.caller == "TransformState::NeedTargetAtom1") {
-				//PUN_CHECK(unitLean.ticksNeeded + unitLean.lastMoveTick == tick);
-				if (unitLean.ticksNeeded + unitLean.lastMoveTick != tick) {
-					continue; // This is a dupe leftover unmatched call... skip
-				}
-			}
-#endif
+			// TODO: What is this for???
+//#if WITH_EDITOR
+//			int32 tick = Time::Ticks();
+//			if (unitLean.nextUpdate.caller == UnitUpdateCallerEnum::TransformState_NeedTargetAtom1) {
+//				//PUN_CHECK(unitLean.ticksNeeded + unitLean.lastMoveTick == tick);
+//				if (unitLean.ticksNeeded + unitLean.lastMoveTick != tick) {
+//					continue; // This is a dupe leftover unmatched call... skip
+//				}
+//			}
+//#endif
 
 			// Move Unit to new region if needed
 			_unitSubregionLists.TryMove(unitLean.atomLocation.worldTile2(), unitLean.targetLocation.worldTile2(), id);
@@ -337,20 +345,27 @@ void UnitSystem::Tick()
 			// Arrived at the old target.
 			unitLean.atomLocation = unitLean.targetLocation;
 
-			SetNextTickState(id, TransformState::NeedTargetAtom, "TransformState::Moving");
+			SetNextTickState(id, TransformState::NeedTargetAtom, UnitUpdateCallerEnum::TransformState_Moving);
 			//_stateAI[id]->AddDebugSpeech("TransformState::Moving");
 
 			PUN_DEBUG_EXPR(_statesCount["Moving"]++);
 		}
 		else if (state == TransformState::NeedTargetAtom)
 		{
-			SCOPE_CYCLE_COUNTER(STAT_PunUnitNeedTargetAtom);
+			//SCOPE_CYCLE_COUNTER(STAT_PunUnitNeedTargetAtom);
 
 			auto& waypoint = unitLean.waypointStack;
-			if (!waypoint.empty()) {
-				WorldTile2 tile = waypoint.back();
-				unitLean.targetLocation = tile.worldAtom2();
-				waypoint.pop_back();
+			if (!waypoint.empty()) 
+			{
+				WorldTile2 tile;
+				{
+					// count:200 time:0.06ms
+					//SCOPE_CYCLE_COUNTER(STAT_PunUnitNeedTargetAtomStart);
+
+					tile = waypoint.back();
+					unitLean.targetLocation = tile.worldAtom2();
+					waypoint.pop_back();
+				}
 
 				//check(_targetLocation[i].x >= 0 && _targetLocation[i].y >= 0);
 				int32 moveSpeed = HumanGlobalInfo::MoveAtomsPerTick;
@@ -358,8 +373,11 @@ void UnitSystem::Tick()
 				// Humans have to consider road and weight
 				if (unitLean.unitEnum == UnitEnum::Human) 
 				{
+					SCOPE_CYCLE_COUNTER(STAT_PunUnitNeedTargetAtomRoad);
+					
 					RoadTile road = _simulation->overlaySystem().GetRoad(unitLean.targetLocation.worldTile2());
-					// TODO: may be GetRoad() is bad for performance?
+					//bool isRoad = _simulation->IsRoadTile(tile); // Not using this because we need RoadTile
+
 					// 
 					// Hauling cases to deal with
 					// - notHauling, no road ... 0
@@ -384,28 +402,33 @@ void UnitSystem::Tick()
 					moveSpeed = moveSpeed * workEfficiency100 / 100;
 				}
 
-				PUN_CHECK(moveSpeed > 0);
-				PUN_CHECK(moveSpeed < HumanGlobalInfo::MoveAtomsPerTick * 5);
-				// TODO: Hack to prevent crash...
-				if (moveSpeed <= 0) {
-					moveSpeed = HumanGlobalInfo::MoveAtomsPerTick;
-				}
+				{
+					// count:537 time:0.13ms
+					//SCOPE_CYCLE_COUNTER(STAT_PunUnitNeedTargetAtomSetNextTick);
+					
+					PUN_CHECK(moveSpeed > 0);
+					PUN_CHECK(moveSpeed < HumanGlobalInfo::MoveAtomsPerTick * 5);
+					// TODO: Hack to prevent crash...
+					if (moveSpeed <= 0) {
+						moveSpeed = HumanGlobalInfo::MoveAtomsPerTick;
+					}
 
-				// Find how long it takes to get to target tile and set the nextActiveFrame to that point
-				int32_t distance = WorldAtom2::Distance(unitLean.targetLocation, unitLean.atomLocation);
-				int32_t ticksNeeded = distance / moveSpeed;
+					// Find how long it takes to get to target tile and set the nextActiveFrame to that point
+					int32 distance = WorldAtom2::Distance(unitLean.targetLocation, unitLean.atomLocation);
+					int32 ticksNeeded = distance / moveSpeed;
 
-				// Make sure that tick is more than 0
-				ticksNeeded = ticksNeeded > 0 ? ticksNeeded : 1;
+					// Make sure that tick is more than 0
+					ticksNeeded = ticksNeeded > 0 ? ticksNeeded : 1;
 
-				// Be in the moving state until we arrived at destination.
-				SetNextTickState(id, TransformState::Moving, "TransformState::NeedTargetAtom1", ticksNeeded);
-				//_stateAI[id]->AddDebugSpeech("TransformState::NeedTargetAtom1");
+					// Be in the moving state until we arrived at destination.
+					SetNextTickState(id, TransformState::Moving, UnitUpdateCallerEnum::TransformState_NeedTargetAtom1, ticksNeeded);
+					//_stateAI[id]->AddDebugSpeech("TransformState::NeedTargetAtom1");
 
 #if WITH_EDITOR
-				unitLean.ticksNeeded = ticksNeeded;
-				unitLean.lastMoveTick = Time::Ticks();
+					unitLean.ticksNeeded = ticksNeeded;
+					unitLean.lastMoveTick = Time::Ticks();
 #endif
+				}
 
 				//if (unitLean.unitEnum == UnitEnum::Human)
 
@@ -413,6 +436,9 @@ void UnitSystem::Tick()
 				// Note: this must be after SetNextTickState..
 				if (!unitLean.isForceMove)
 				{
+					// count:200 time:0.06ms
+					//SCOPE_CYCLE_COUNTER(STAT_PunUnitNeedTargetAtomForce);
+					
 					auto pathAI = _simulation->pathAI(IsIntelligentUnit(unitLean.unitEnum));
 					if (!pathAI->isWalkable(tile.x, tile.y)) {
 						waypoint.clear();
@@ -422,7 +448,10 @@ void UnitSystem::Tick()
 				}
 			}
 			else {
-				SetNextTickState(id, TransformState::NeedActionUpdate, "TransformState::NeedTargetAtom2");
+				// count:85 time:0.02ms
+				//SCOPE_CYCLE_COUNTER(STAT_PunUnitNeedTargetAtomNeedActionUpdate);
+				
+				SetNextTickState(id, TransformState::NeedActionUpdate, UnitUpdateCallerEnum::TransformState_NeedTargetAtom2);
 				//_stateAI[id]->AddDebugSpeech("TransformState::NeedTargetAtom2");
 			}
 
@@ -445,7 +474,7 @@ void UnitSystem::Tick()
 	//}
 }
 
-void UnitSystem::SetNextTickState(int32 id, TransformState state, std::string caller, int ticksNeeded, bool resetActions)
+void UnitSystem::SetNextTickState(int32 id, TransformState state, UnitUpdateCallerEnum caller, int ticksNeeded, bool resetActions)
 {
 	//SCOPE_CYCLE_COUNTER(STAT_PunUnitSetNextTick);
 
@@ -490,7 +519,7 @@ void UnitSystem::SetNextTickState(int32 id, TransformState state, std::string ca
 	PUN_CHECK(ticksNeeded > 0);
 	
 	int32 nextUpdateTick = ticksNeeded + ticks;
-	_updateBuffer.AddUpdateInfo(id, nextUpdateTick, state, caller);
+	_updateBuffer.AddUpdateInfo(id, nextUpdateTick, state/*, caller*/);
 	
 	unitLean.lastLastUpdate = unitLean.lastUpdate.isValid() ? unitLean.lastUpdate : UnitUpdateInfo::InitialState();
 	unitLean.lastUpdate = unitLean.nextUpdate.isValid() ? unitLean.nextUpdate : UnitUpdateInfo::InitialState();
@@ -507,11 +536,12 @@ void UnitSystem::SetNextTickState(int32 id, TransformState state, std::string ca
 				+ " _last.queuedTick:" + std::to_string(_updateBuffer.lastUpdateInfo(id).queuedTick)
 				+ " _last.nextUpdateTick:" + std::to_string(_updateBuffer.lastUpdateInfo(id).nextUpdateTick)
 				+ " _last.state:" + TransformStateLabel(_updateBuffer.lastUpdateInfo(id).state)
-				+ " _last.caller:" + _updateBuffer.lastUpdateInfo(id).caller
+				//+ " _last.caller:" + _updateBuffer.lastUpdateInfo(id).caller
 				+ " ----- _next.queuedTick:" + std::to_string(_updateBuffer.nextUpdateInfo(id).queuedTick)
 				+ " _next.nextUpdateTick:" + std::to_string(_updateBuffer.nextUpdateInfo(id).nextUpdateTick)
 				+ " _next.state:" + TransformStateLabel(_updateBuffer.nextUpdateInfo(id).state)
-				+ " _next.caller:" + _updateBuffer.nextUpdateInfo(id).caller;
+				//+ " _next.caller:" + _updateBuffer.nextUpdateInfo(id).caller
+			;
 			UE_LOG(LogTemp, Error, TEXT("Duplicate Update Ticks: %s"), *ToFString(message))
 		}
 	}

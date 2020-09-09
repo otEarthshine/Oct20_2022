@@ -751,7 +751,8 @@ public:
 
 	int32 resourceCount(ResourceEnum resourceEnum) const
 	{
-		SCOPE_CYCLE_COUNTER(STAT_PunResourceCountTotal);
+		// At x5, 700 count, 0.35ms
+		//SCOPE_CYCLE_COUNTER(STAT_PunResourceCountTotal);
 		
 		int resourceEnumInt = static_cast<int>(resourceEnum);
 		bool isValid = 0 <= resourceEnumInt && resourceEnumInt < _enumToHolders.size();

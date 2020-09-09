@@ -17,6 +17,57 @@ enum class TransformState : uint8
 
 std::string TransformStateLabel(TransformState state);
 
+enum class UnitUpdateCallerEnum : uint8
+{
+	None,
+	FirstEverUpdate,
+	ResetActions,
+	MoveTo_Done,
+	MoveToForceLongDistance_Done,
+	MoveToRobust_Done,
+	MoveTowards_Done,
+
+	AddUnit1,
+	AddUnit2,
+
+	TransformState_Moving,
+	TransformState_NeedTargetAtom1,
+	TransformState_NeedTargetAtom2,
+
+	TryForestingPlantAction_Done,
+	AttackOutgoing_Done,
+	DoFarmWork,
+
+	LaunchArrow,
+	EmptyActions,
+
+	DropoffFoodAnimal,
+	PickupFoodAnimal,
+	Wait,
+	GatherFruit,
+	TrimFullBush,
+	HarvestTileObj,
+	PlantTree,
+	NourishTree,
+	Eat_Done,
+	Eat_SomeoneElseTookFood,
+	Heat,
+	Heal,
+	Tool,
+	HaveFun,
+
+	MoveRandomlyPerlin_Failed,
+	MoveInRange,
+	PickupResource,
+	DropoffResource,
+	DropInventoryAction,
+	StoreGatheredAtWorkplace,
+
+	Produce_Done,
+	Construct_Done,
+	FillInputs_Done,
+};
+
 class IUnitDataSource
 {
 public:
@@ -40,7 +91,7 @@ public:
 	virtual std::vector<WorldTile2>& waypoint(int id) = 0;
 	virtual void TrimWaypoint(int storageIdToTrim, int32 unitId) = 0;
 
-	virtual void SetNextTickState(int id, TransformState state, std::string caller, int ticks = 1, bool resetActions = false) = 0;
+	virtual void SetNextTickState(int id, TransformState state, UnitUpdateCallerEnum caller, int ticks = 1, bool resetActions = false) = 0;
 	virtual int nextActiveTick(int id) const = 0;
 
 	virtual void SetTargetLocation(int id, WorldAtom2& targetLocation) = 0;
@@ -105,6 +156,7 @@ public:
 	}
 };
 
+
 // Pack the most often used vars together for less cache miss...
 struct UnitUpdateInfo
 {
@@ -113,12 +165,12 @@ struct UnitUpdateInfo
 
 	//! Debug
 	int32 queuedTick = -1;
-	std::string caller = "";
+	UnitUpdateCallerEnum caller = UnitUpdateCallerEnum::None;
 
 	bool isValid() { return nextUpdateTick != -1; }
 
 	static UnitUpdateInfo InitialState() {
-		return { Time::Ticks(), TransformState::NeedActionUpdate, Time::Ticks(), "FirstEverUpdate" };
+		return { Time::Ticks(), TransformState::NeedActionUpdate, Time::Ticks(), UnitUpdateCallerEnum::FirstEverUpdate };
 	}
 
 	//! Serialize
@@ -126,7 +178,7 @@ struct UnitUpdateInfo
 		Ar << nextUpdateTick;
 		Ar << state;
 		Ar << queuedTick;
-		SerializeStr(Ar, caller);
+		Ar << caller;
 		return Ar;
 	}
 };

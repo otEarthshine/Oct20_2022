@@ -46,13 +46,19 @@ public:
 
 
 		{
+			auto& playerOwned = simulation().playerOwned(playerId());
+			
 			bool showPause = false;
-			if (!simulation().playerOwned(playerId()).hasChosenLocation()) {
+			if (!playerOwned.hasChosenLocation()) {
 				SetText(GamePauseText, "Choose a starting location");
 				showPause = true;
 			}
-			else if (!simulation().playerOwned(playerId()).hasTownhall()) {
-				SetText(GamePauseText, "Place the townhall");
+			else if (!playerOwned.hasTownhall()) {
+				if (playerOwned.initialResources.isValid()) {
+					SetText(GamePauseText, "Place the townhall");
+				} else {
+					SetText(GamePauseText, "Confirm initial resources");
+				}
 				showPause = true;
 			}
 			// If not all players chose location, warn so 

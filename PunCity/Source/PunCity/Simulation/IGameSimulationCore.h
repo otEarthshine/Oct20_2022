@@ -99,6 +99,7 @@ public:
 
 	virtual class IGameSoundInterface* soundInterface() = 0;
 	virtual class IGameUIInterface* uiInterface() = 0;
+	virtual class IGameManagerInterface* gameManagerInterface() = 0;
 
 	virtual void ExecuteNetworkCommands(std::vector<std::shared_ptr<FNetworkCommand>>& commands) = 0;
 	virtual bool ExecuteNetworkCommand(std::shared_ptr<FNetworkCommand> command) = 0;
@@ -515,6 +516,8 @@ public:
 	virtual void UpgradeBuilding(class FUpgradeBuilding upgradeCommand) = 0;
 	virtual void ChangeWorkMode(class FChangeWorkMode command) = 0;
 	virtual void ChooseLocation(class FChooseLocation command) = 0;
+	virtual void ChooseInitialResources(class FChooseInitialResources command) = 0;
+	
 	virtual void PopupDecision(class FPopupDecision command) = 0;
 	virtual void RerollCards(class FRerollCards command) = 0;
 

@@ -46,7 +46,7 @@ void ProjectileArrow::Launch(UnitFullId ownerIdIn, int32 ownerWorkplaceIdIn, Uni
 	Add_Wait(ticksNeeded);
 
 	AddDebugSpeech("(Success)Launching: " + to_string(ticksNeeded));
-	NextAction(ticksNeeded, "LaunchArrow");
+	NextAction(ticksNeeded, UnitUpdateCallerEnum::LaunchArrow);
 }
 
 

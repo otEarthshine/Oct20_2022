@@ -21,22 +21,9 @@ public:
 		_simulation = simulation;
 	}
 
-	void AddPopup(PopupInfo popup) {
-		_popups.push_back(popup);
-		if (_popups.size() > maxPopupsBeforeDelete) {
-			_popups.erase(_popups.begin());
-		}
-	}
+	void AddPopup(PopupInfo popup);
 
-	void AddPopupToFront(PopupInfo popup) {
-		if (popup.popupSound == "PopupCannot" &&
-			_popups.size() > 0 &&
-			_popups.front() == popup) 
-		{
-			return; // No popup stacks for PopupCannot warning...
-		}
-		_popups.insert(_popups.begin(), popup);
-	}
+	void AddPopupToFront(PopupInfo popup);
 
 	PopupInfo* PopupToDisplay()
 	{

@@ -1746,6 +1746,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						auto setUpgradeButton = [&](BuildingUpgrade upgrade, int32 upgradeIndex)
 						{
 							ss << "Upgrade " << upgrade.name;
+							
 							if (upgrade.isUpgraded) {
 								ss << "\nDone";
 							}
@@ -2732,6 +2733,14 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 					return;
 				}
 			}
+		}
+		else
+		{
+			//const BuildingUpgrade& upgrade = bld.upgrades()[punWidgetCaller->callbackVar2];
+			//if (upgrade.)
+			//{
+			//	
+			//}
 		}
 		
 		

@@ -947,8 +947,8 @@ void UWorldSpaceUI::TickMap()
 		/*
 		 * Townhall
 		 */
-		simulation.ExecuteOnPlayersAndAI([&](int32_t playerId) {
-			int32_t townhallId = simulation.playerOwned(playerId).townHallId;
+		simulation.ExecuteOnPlayersAndAI([&](int32 playerId) {
+			int32 townhallId = simulation.playerOwned(playerId).townHallId;
 			if (townhallId != -1)
 			{
 				Building& building = simulation.building(townhallId);

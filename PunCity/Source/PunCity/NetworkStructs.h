@@ -273,6 +273,8 @@ enum class NetworkCommandEnum : uint8
 	ChangeWorkMode,
 	PopupDecision,
 	ChooseLocation,
+	ChooseInitialResources,
+	
 	Cheat,
 	RerollCards,
 	SelectRareCard,
@@ -311,6 +313,8 @@ static const std::string NetworkCommandNames[] =
 	"ChangeWorkMode",
 	"PopupDecision",
 	"ChooseLocation",
+	"ChooseInitialResources",
+	
 	"Cheat",
 	"RerollCards",
 	"SelectRareCard",
@@ -1004,6 +1008,71 @@ public:
 	}
 };
 
+class FChooseInitialResources final : public FNetworkCommand
+{
+public:
+	virtual ~FChooseInitialResources() {}
+	NetworkCommandEnum commandType() override { return NetworkCommandEnum::ChooseInitialResources; }
+
+	int32 foodAmount = -1;
+	int32 woodAmount = -1;
+	int32 medicineAmount = -1;
+	int32 toolsAmount = -1;
+	int32 stoneAmount = -1;
+
+	bool isValid() { return foodAmount >= 0; }
+
+	int32 totalCost()
+	{
+		return foodAmount * FoodCost +
+			woodAmount * GetResourceInfo(ResourceEnum::Wood).basePrice +
+			medicineAmount * GetResourceInfo(ResourceEnum::Medicine).basePrice +
+			toolsAmount * GetResourceInfo(ResourceEnum::SteelTools).basePrice +
+			stoneAmount * GetResourceInfo(ResourceEnum::Stone).basePrice;
+	}
+	std::unordered_map<ResourceEnum, int32> resourceMap()
+	{
+		std::unordered_map<ResourceEnum, int32> resourceMap;
+		resourceMap[ResourceEnum::Orange] = foodAmount;
+		resourceMap[ResourceEnum::Wood] = woodAmount;
+		resourceMap[ResourceEnum::Medicine] = medicineAmount;
+		resourceMap[ResourceEnum::SteelTools] = toolsAmount;
+		resourceMap[ResourceEnum::Stone] = stoneAmount;
+		return resourceMap;
+	}
+
+	static FChooseInitialResources GetDefault()
+	{
+		FChooseInitialResources command;
+		command.foodAmount = 240;
+		command.woodAmount = 120;
+		command.stoneAmount = 120;
+		
+		command.medicineAmount = 240;
+		command.toolsAmount = 180;
+		return command;
+	}
+
+	void Serialize(PunSerializedData& blob) override {
+		FNetworkCommand::Serialize(blob);
+
+		blob << foodAmount;
+		blob << woodAmount;
+		blob << medicineAmount;
+		blob << toolsAmount;
+		blob << stoneAmount;
+	}
+
+	void Serialize(FArchive &Ar)
+	{
+		Ar << foodAmount;
+		Ar << woodAmount;
+		Ar << medicineAmount;
+		Ar << toolsAmount;
+		Ar << stoneAmount;
+	}
+};
+
 class FCheat : public FNetworkCommand
 {
 public:
@@ -1060,6 +1129,8 @@ public:
 			CASE_COMMAND(NetworkCommandEnum::UpgradeBuilding, FUpgradeBuilding);
 			CASE_COMMAND(NetworkCommandEnum::ChangeWorkMode, FChangeWorkMode);
 			CASE_COMMAND(NetworkCommandEnum::ChooseLocation, FChooseLocation);
+			CASE_COMMAND(NetworkCommandEnum::ChooseInitialResources, FChooseInitialResources);
+			
 			CASE_COMMAND(NetworkCommandEnum::Cheat, FCheat);
 			CASE_COMMAND(NetworkCommandEnum::PopupDecision, FPopupDecision);
 			CASE_COMMAND(NetworkCommandEnum::RerollCards, FRerollCards);

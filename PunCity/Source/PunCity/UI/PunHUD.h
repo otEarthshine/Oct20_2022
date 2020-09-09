@@ -13,6 +13,7 @@
 #include "TradeUIWidgetBase.h"
 #include "WorldSpaceUI.h"
 #include "ObjectDescriptionUISystem.h"
+#include "InitialResourceUI.h"
 
 #include "GameUIInputSystemInterface.h"
 #include "../GameNetworkInterface.h"
@@ -460,6 +461,7 @@ protected:
 	UPROPERTY() UWorldTradeUI* _worldTradeUI;
 	UPROPERTY() UIntercityTradeUI* _intercityTradeUI;
 	UPROPERTY() UTargetConfirmUI* _targetConfirmUI;
+	UPROPERTY() UInitialResourceUI* _initialResourceUI;
 
 	UPROPERTY() TSubclassOf<UUserWidget> _dragCardSlotClass;
 	UPROPERTY() TSubclassOf<UUserWidget> _dragCardClass;

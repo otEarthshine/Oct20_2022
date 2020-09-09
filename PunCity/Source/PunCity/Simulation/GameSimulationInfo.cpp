@@ -1,5 +1,6 @@
 #include "PunCity/Simulation/GameSimulationInfo.h"
 #include <algorithm>
+#include "Kismet/GameplayStatics.h"
 //#include "PunCity/PunUtils.h"
 
 int32 TimeDisplay::_Ticks = 0;
@@ -43,6 +44,7 @@ WorldTile2 GetBuildingCenter(TileArea area, Direction faceDirection)
 	//}
 	return WorldTile2::Invalid;
 }
+
 
 
 /**

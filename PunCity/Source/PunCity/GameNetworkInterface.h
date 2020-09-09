@@ -87,4 +87,6 @@ public:
 	virtual float GetTrailerTime() = 0;
 
 	virtual void ExecuteInitialCloudFade() = 0;
+
+	virtual TArray<class UFireForgetAudioComponent*> GetPunAudios() = 0;
 };

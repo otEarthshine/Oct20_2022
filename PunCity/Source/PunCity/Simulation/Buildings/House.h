@@ -144,8 +144,17 @@ public:
 	void OnPickupResource(int32 objectId) override;
 	void OnDropoffResource(int32 objectId) override;
 
-	int32 displayVariationIndex() override {
-		return _houseLvl - 1;
+	static const int32 houseTypesPerLevel = 3;
+	
+	int32 displayVariationIndex() override
+	{
+		if (_simulation->GetBiomeEnum(centerTile()) == BiomeEnum::Desert &&
+			_houseLvl <= 3) 
+		{
+			return (_houseLvl - 1) * houseTypesPerLevel + 2;
+		}
+		
+		return (_houseLvl - 1) * houseTypesPerLevel;
 	}
 
 

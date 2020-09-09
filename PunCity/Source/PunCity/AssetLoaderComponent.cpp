@@ -139,8 +139,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	// Modules:
 	_modulesNeedingPaintConstruction.Empty();
 
-	LoadModuleWithConstruction("House", "House/House");
-	LoadModuleWithConstruction("StoneHouse", "House/StoneHouse");
+	//LoadModuleWithConstruction("House", "House/House");
+	//LoadModuleWithConstruction("StoneHouse", "House/StoneHouse");
 
 
 	/*
@@ -205,7 +205,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	//LoadModuleWithConstruction("StorageYard", "StorageYard/StorageYard");
 
 	LoadModuleWithConstruction("IronStatue", "IronStatue/IronStatue");
-	LoadModuleWithConstruction("Bank", "Bank/Bank");
+	//LoadModuleWithConstruction("Bank", "Bank/Bank");
 	LoadModuleWithConstruction("TempleGrograth", "TempleGrograth/TempleGrograth");
 
 	//LoadModuleWithConstruction("Farm", "Farm/Farm");
@@ -552,13 +552,13 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadUnitSkel(UnitEnum::Human, "Human/CitizenMale/", "CitizenMale", animationFileNames, "Human/CitizenMale/CitizenMaleStatic");
 
 	// Adult Female
-	LoadUnitSkel(UnitEnum::Human, "Human/CitizenFemale/", "CitizenFemale", animationFileNames, "Human/CitizenMale/CitizenMaleStatic");
+	LoadUnitSkel(UnitEnum::Human, "Human/CitizenFemale/", "CitizenFemale", animationFileNames, "Human/CitizenFemale/CitizenFemaleStatic");
 
 	// Child Male
-	LoadUnitSkel(UnitEnum::Human, "Human/CitizenChildMale/", "CitizenChildMale", animationFileNames, "Human/CitizenMale/CitizenMaleStatic");
+	LoadUnitSkel(UnitEnum::Human, "Human/CitizenChildMale/", "CitizenChildMale", animationFileNames, "Human/CitizenChildMale/CitizenChildMaleStatic");
 
 	// Child Female
-	LoadUnitSkel(UnitEnum::Human, "Human/CitizenChildFemale/", "CitizenChildFemale", animationFileNames, "Human/CitizenMale/CitizenMaleStatic");
+	LoadUnitSkel(UnitEnum::Human, "Human/CitizenChildFemale/", "CitizenChildFemale", animationFileNames, "Human/CitizenChildFemale/CitizenChildFemaleStatic");
 
 
 	// Wild Man
@@ -1153,7 +1153,7 @@ void UAssetLoaderComponent::LoadUnitSkel(UnitEnum unitEnum, std::string folderPa
 		asset.animationEnumToSequence.Add(it.first, Load<UAnimSequence>((unitsPath + folderPath + it.second).c_str()));
 	}
 	if (staticFileName != "") {
-		PUN_LOG("LoadUnitSkel staticFileName %s static:%s", ToTChar(skelFileName), ToTChar(staticFileName));
+		//PUN_LOG("LoadUnitSkel staticFileName %s static:%s", ToTChar(skelFileName), ToTChar(staticFileName));
 		asset.staticMesh = Load<UStaticMesh>((unitsPath + staticFileName).c_str());
 	}
 	

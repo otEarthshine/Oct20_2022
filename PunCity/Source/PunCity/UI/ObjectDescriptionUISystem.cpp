@@ -543,7 +543,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				ss << "<Header>" << building.buildingInfo().name << "</>";
 			}
 			
-#if WITH_EDITOR
+#if WITH_EDITOR || TRAILER_MODE
 			ss << "[" << objectId << "]"; // ID
 			ss << "\n" << building.centerTile().ToString();
 			//ss << "GateTile:(" << building.gateTile().x << "," << building.gateTile().y << ")\n";

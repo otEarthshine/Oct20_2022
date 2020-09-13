@@ -231,12 +231,28 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	// Houses
 	TryLoadBuildingModuleSet("HouseLvl1", "HouseLvl1");
+	TryLoadBuildingModuleSet("HouseLvl1V2", "HouseLvl1");
+	TryLoadBuildingModuleSet("HouseClayLvl1", "HouseClayLvl1");
+	
 	TryLoadBuildingModuleSet("HouseLvl2", "HouseLvl2");
+	TryLoadBuildingModuleSet("HouseLvl2V2", "HouseLvl2");
+	TryLoadBuildingModuleSet("HouseClayLvl2", "HouseClayLvl2");
+	
 	TryLoadBuildingModuleSet("HouseLvl3", "HouseLvl3");
+	TryLoadBuildingModuleSet("HouseLvl3V2", "HouseLvl3");
+	TryLoadBuildingModuleSet("HouseClayLvl3", "HouseClayLvl3");
+	
 	TryLoadBuildingModuleSet("HouseLvl4", "HouseLvl4");
+	TryLoadBuildingModuleSet("HouseLvl4V2", "HouseLvl4");
+	
 	TryLoadBuildingModuleSet("HouseLvl5", "HouseLvl5");
+	TryLoadBuildingModuleSet("HouseLvl5V2", "HouseLvl5");
+	
 	TryLoadBuildingModuleSet("HouseLvl6", "HouseLvl6");
+	TryLoadBuildingModuleSet("HouseLvl6V2", "HouseLvl6");
+	
 	TryLoadBuildingModuleSet("HouseLvl7", "HouseLvl7");
+	TryLoadBuildingModuleSet("HouseLvl7V2", "HouseLvl7");
 	
 	// Construction
 	//LoadModule("ConstructionBase", "BuildingModule1/ConstructionBase/ConstructionBase");

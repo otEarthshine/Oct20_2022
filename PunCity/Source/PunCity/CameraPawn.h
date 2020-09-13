@@ -191,7 +191,10 @@ public:
 	float GetTrailerTime() {
 		return UGameplayStatics::GetAudioTimeSeconds(this) - _trailerStartTime;
 	}
-	
+
+	float GetCameraSystemMoveLerpFraction() {
+		return Clamp01(_systemMoveTimeSinceStart / _systemMoveTimeLength);
+	}
 
 	/*
 	 * Building placement
@@ -286,6 +289,10 @@ private:
 
 	// Move speed changes as we zoom in/out
 	const float moveSpeedAtMinZoomAmount = 100;
+
+	UFUNCTION() void StartForceSnow() {
+		PunSettings::Set("ForceSnow", 1);
+	}
 	
 private:
 	// TODO: save zoom speed fraction to Settings

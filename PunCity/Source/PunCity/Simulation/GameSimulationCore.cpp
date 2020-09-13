@@ -521,12 +521,23 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 							numberOfCommandsToExecute++;
 							continue; // Doesn't use up execution count
 						}
+						else if (cheatEnum == CheatEnum::TrailerRoadPerTick)
+						{
+							PunSettings::Set("TrailerRoadPerTick", cheat->var1);
+							_LOG(PunTrailer, "TrailerRoadPerTick num:%llu pid:%d %s time:%f", trailerCommands.size(), command->playerId, *command->ToCompactString(), trailerTime);
+							recordCommand();
+							numberOfCommandsToExecute++;
+							continue; // Doesn't use up execution count
+						}
 						// Special case: Trailer House upgrade
 						else if (cheatEnum == CheatEnum::TrailerIncreaseAllHouseLevel)
 						{
 							const std::vector<int32>& bldIds = buildingIds(command->playerId, CardEnum::House);
 							for (int32 bldId : bldIds) {
-								building<House>(bldId).trailerTargetHouseLvl++;
+								House& house = building<House>(bldId);
+								if (gameManagerInterface()->IsInSampleRange(house.centerTile())) {
+									house.trailerTargetHouseLvl++;
+								}
 							}
 							_LOG(PunTrailer, "TrailerIncreaseAllHouseLevel num:%llu pid:%d %s time:%f", trailerCommands.size(), command->playerId, *command->ToCompactString(), trailerTime);
 							recordCommand();
@@ -595,14 +606,15 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 								if (dragCommand->path.Num() > 0)
 								{
 									TArray<int32> newPath = dragCommand->path;
-									int32 firstTileId = newPath.Pop();
-									int32 secondTileId = -1;
-									int32 thirdTileId = -1;
-									if (newPath.Num() > 0) {
-										secondTileId = newPath.Pop();
-									}
-									if (newPath.Num() > 0) {
-										thirdTileId = newPath.Pop();
+
+									int32 roadPerTicks = PunSettings::Get("TrailerRoadPerTick");
+
+									// Build X tiles at a time
+									dragCommand->path = {};
+									int32 roadTickCount = 0;
+									while (roadTickCount < roadPerTicks && newPath.Num() > 0) {
+										roadTickCount++;
+										dragCommand->path.Add(newPath.Pop());
 									}
 
 									// Put the command back in front with trimmed
@@ -612,21 +624,11 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 										trailerCommands.insert(trailerCommands.begin(), commandToFrontPush);
 									}
 
-									// Build the one tile...
-									dragCommand->path = { firstTileId }; // build 1 tile at a time
-
-									if (secondTileId != -1) {
-										dragCommand->path.Add(secondTileId);
-									}
-									if (thirdTileId != -1) {
-										dragCommand->path.Add(thirdTileId);
-									}
-
 									replayPlayers[i].nextTrailerCommandTime = trailerTime + 1.0f/90.0f;// Time::TicksPerSecond / 30; // Build 120 tiles a sec
 
 									commands.push_back(dragCommand);
 
-									PUN_LOG("Trailer Road num:%llu pid:%d %s time:%f", trailerCommands.size(), command->playerId, *WorldTile2(firstTileId).To_FString(), trailerTime);
+									_LOG(PunTrailer, "Trailer Road num:%d queueNum:%llu pid:%d time:%f", dragCommand->path.Num(), trailerCommands.size(), command->playerId, trailerTime);
 								}
 
 								// Only build road this tick
@@ -653,20 +655,23 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 
 					int32 percent = replayPlayers[i].houseUpgradePercentAccumulated + PunSettings::Get("TrailerHouseUpgradeSpeed");
 					int32 numberOfUpgradesToExecute = percent / 100;
-					replayPlayers[i].houseUpgradePercentAccumulated += percent % 100;
+					replayPlayers[i].houseUpgradePercentAccumulated = percent % 100;
+
 
 					for (int jj = 0; jj < numberOfUpgradesToExecute; jj++)
 					{
-						// Try 10 times until hit something upgradable
-						for (int ii = 0; ii < 10; ii++)
+						// Try 30 times until hit something upgradable
+						for (int ii = 0; ii < 30; ii++)
 						{
 							int32 index = SimSettings::Get("TrailerHouseUpgradeIndex");
 							if (index >= 0)
 							{
-								if (index < bldIds.size()) {
+								if (index < bldIds.size()) 
+								{
 									Building& bld = building(bldIds[index]);
-									bool upgraded = bld.subclass<House>().TrailerCheckHouseLvl();
 									SimSettings::Set("TrailerHouseUpgradeIndex", index + 1);
+									
+									bool upgraded = bld.subclass<House>().TrailerCheckHouseLvl();
 									if (upgraded) {
 										//PUN_LOG("TrailerHouseUpgradeIndex index:%d tick:%d id:%d", index, _tickCount, bld.buildingId());
 										break;
@@ -706,7 +711,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 				continue;
 			}
 		}
-
+		
 		commandSuccess[i] = ExecuteNetworkCommand(commands[i]);
 
 
@@ -743,6 +748,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 				}
 			}
 		}
+
 	}
 
 	// Server tick is not the same as SimulationTick
@@ -3756,7 +3762,13 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 			//storage->AddResource(ResourceEnum::Wood, 120);
 			//storage->AddResource(ResourceEnum::Stone, 120);
 
-			PUN_CHECK(playerOwned.initialResources.isValid());
+#if TRAILER_MODE
+			if (!playerOwned.initialResources.isValid()) {
+				FChooseInitialResources initResourceCommand = FChooseInitialResources::GetDefault();
+				initResourceCommand.playerId = playerOwned.initialResources.isValid();
+				ChooseInitialResources(initResourceCommand);
+			}
+#endif
 			
 			if (terrainGenerator().GetBiome(params.center) == BiomeEnum::Jungle) {
 				storage->AddResource(ResourceEnum::Papaya, playerOwned.initialResources.foodAmount);

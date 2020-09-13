@@ -128,7 +128,7 @@ void ACameraPawn::KeyPressed_CtrlT()
 {
 	if (SimSettings::IsOn("CheatHouseLevelKey")) {
 		int32 oldLvl = SimSettings::Get("CheatHouseLevel");
-		int32 newLvl = (oldLvl + 1) % House::GetMaxHouseLvl();
+		int32 newLvl = (oldLvl + 1) % (House::GetMaxHouseLvl() + 1);
 		SimSettings::Set("CheatHouseLevel", newLvl);
 		auto command = make_shared<FSendChat>();
 		command->isSystemMessage = true;
@@ -454,7 +454,9 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 		}
 
 		if (fabs(cameraRecord.lightAngle - 800.0f) < 0.1f) {
-			PunSettings::Set("ForceSnow", 1);
+			FTimerHandle UnusedHandle;
+			GetWorldTimerManager().SetTimer(UnusedHandle, this, &ACameraPawn::StartForceSnow, PunSettings::Get("ForceSnowDelay"));
+			//PunSettings::Set("ForceSnow", 1);
 			cameraRecord.lightAngle = 225.0f;
 		}
 		if (fabs(cameraRecord.lightAngle - 1000.0f)  < 0.1f) {

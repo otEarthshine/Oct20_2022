@@ -121,6 +121,7 @@ public:
 		/*
 		 * Ship
 		 */
+		static float lastLerpFraction = 0.0f; // No turning back for ship
 		if (PunSettings::TrailerAtomTarget_Ship != WorldAtom2::Invalid)
 		{
 			if (!_smallShip) {
@@ -129,13 +130,16 @@ public:
 				_smallShip->RegisterComponent();
 				_smallShip->SetReceivesDecals(false);
 				_smallShip->SetStaticMesh(_assetLoader->unitMesh(UnitEnum::SmallShip));
+				lastLerpFraction = 0.0f;
 			}
 			_smallShip->SetVisibility(true);
 
 			// TODO: Calc TrailerAtom_Ship from start/target
-
-			float lerpFraction = (_gameManager->GetTrailerTime() - PunSettings::TrailerShipStartTime) / (PunSettings::TrailerShipTargetTime - PunSettings::TrailerShipStartTime);
+			float lerpFraction = gameManager()->networkInterface()->GetCameraSystemMoveLerpFraction();
+			lerpFraction = std::max(lastLerpFraction, lerpFraction); // No turning back for ship
+			//float lerpFraction = (_gameManager->GetTrailerTime() - PunSettings::TrailerShipStartTime) / (PunSettings::TrailerShipTargetTime - PunSettings::TrailerShipStartTime);
 			lerpFraction = Clamp01(lerpFraction);
+			lastLerpFraction = lerpFraction;
 
 			WorldAtom2 lerped = WorldAtom2::Lerp(PunSettings::TrailerAtomStart_Ship, PunSettings::TrailerAtomTarget_Ship, static_cast<int64>(lerpFraction * 100000));
 

@@ -12,7 +12,7 @@
 
 //#include "PunCity/PunSTLContainerOverride.h"
 
-#define TRAILER_MODE 0
+#define TRAILER_MODE 1
 
 #define SAVE_VERSION 31081502
 #define GAME_VERSION 31081502
@@ -5010,6 +5010,7 @@ enum class CheatEnum : int32
 	TrailerForceAutumn,
 	TrailerBeatShiftBack,
 	TrailerTimePerBeat,
+	TrailerRoadPerTick,
 };
 
 static const std::string CheatName[]
@@ -5065,6 +5066,7 @@ static const std::string CheatName[]
 	"TrailerForceAutumn",
 	"TrailerBeatShiftBack",
 	"TrailerTimePerBeat",
+	"TrailerRoadPerTick",
 };
 static std::string GetCheatName(CheatEnum cheatEnum) {
 	return CheatName[static_cast<int>(cheatEnum)];

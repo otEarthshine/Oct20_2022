@@ -800,6 +800,7 @@ public:
 			placeCommand.faceDirection = static_cast<uint8>(Direction::S);
 			placeCommand.area = BuildingArea(placeCommand.center, GetBuildingInfoInt(placeCommand.buildingEnum).size, static_cast<Direction>(placeCommand.faceDirection));
 			int32 buildingId = sim.PlaceBuilding(placeCommand);
+			
 			sim.building(buildingId).InstantClearArea();
 			sim.building(buildingId).FinishConstruction();
 
@@ -875,6 +876,10 @@ public:
 		PunSettings::TrailerShipTargetTime = cameraPawn->GetTrailerTime() + PunSettings::Get("TrailerShipTime") / 100.0f;
 
 		PUN_LOG("TrailerShipStart");
+	}
+
+	float GetCameraSystemMoveLerpFraction() override {
+		return cameraPawn->GetCameraSystemMoveLerpFraction();
 	}
 	
 	UFUNCTION(Exec) void ReplaySave(const FString& replayFileName) {
@@ -1076,6 +1081,7 @@ public:
 				case CheatEnum::TrailerIncreaseAllHouseLevel:
 				case CheatEnum::TrailerPlaceSpeed:
 				case CheatEnum::TrailerHouseUpgradeSpeed:
+				case CheatEnum::TrailerRoadPerTick:
 				case CheatEnum::TrailerForceAutumn:
 				case CheatEnum::TrailerBeatShiftBack:
 				case CheatEnum::TrailerTimePerBeat:

@@ -153,15 +153,16 @@ public:
 		{
 			return (_houseLvl - 1) * houseTypesPerLevel + 2;
 		}
-		
-		return (_houseLvl - 1) * houseTypesPerLevel;
+		// Checker board like pattern so houses doesn't look the same next to each other...
+		int32 localIndex = (((centerTile().x / 6) % 2) + ((centerTile().y / 6) % 2) + 1) % 2;
+		return (_houseLvl - 1) * houseTypesPerLevel + localIndex;
 	}
 
 
-	static int32_t GetLuxuryCountUpgradeRequirement(int32_t houseLvl) {
+	static int32 GetLuxuryCountUpgradeRequirement(int32 houseLvl) {
 		return houseLvl - 1; // houseLvl 2 requires 1 lux
 	}
-	static int32_t GetAppealUpgradeRequirement(int32_t houseLvl) {
+	static int32 GetAppealUpgradeRequirement(int32 houseLvl) {
 		return 20 + houseLvl * 10;
 	}
 

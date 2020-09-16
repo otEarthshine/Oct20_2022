@@ -117,7 +117,7 @@ public:
 	virtual int32 difficultyConsumptionAdjustment() = 0;
 	virtual FMapSettings mapSettings() = 0;
 
-	virtual bool AllPlayerChoseLocationAfterInitialTicks() = 0;
+	virtual bool AllPlayerHasTownhallAfterInitialTicks() = 0;
 
 	// Unit
 	virtual void ResetUnitActions(int id, int32 waitTicks = 1) = 0;

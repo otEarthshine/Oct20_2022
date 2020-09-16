@@ -37,7 +37,7 @@ inline Direction OppositeDirection(Direction direction) {
 static const int32 DirectionCount = _countof(DirectionName);
 
 inline Direction RotateDirection(Direction direction) {
-	return static_cast<Direction>((static_cast<int>(direction) + 1) % 4);
+	return static_cast<Direction>((static_cast<int>(direction) - 1 + 4) % 4); // -1 to make it clock-wise
 }
 
 inline Direction RotateDirection(Direction direction, Direction directionRotator) {

@@ -12,7 +12,7 @@
 
 //#include "PunCity/PunSTLContainerOverride.h"
 
-#define TRAILER_MODE 1
+#define TRAILER_MODE 0
 
 #define SAVE_VERSION 31081502
 #define GAME_VERSION 31081502
@@ -406,6 +406,9 @@ public:
 
 	static bool IsRaining()
 	{
+		if (PunSettings::IsOn("ForceNoRain")) {
+			return false;
+		}
 		if (SimSettings::IsOn("ToggleRain")) {
 			return true;
 		}
@@ -2249,7 +2252,7 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::CoalPipeline,			"Coal Pipeline", 150, "+30% productivity for smelters if the town has more than 1,000 Coal"),
 	BldInfo(CardEnum::MiningEquipment,		"Mining Equipment", 150, "+30% productivity for mines if you have a Blacksmith"),
 	BldInfo(CardEnum::Conglomerate,			"Conglomerate", 150, "+50<img id=\"Coin\"/> income if there are 2+ Trading Companies"),
-	BldInfo(CardEnum::SmeltCombo,			"Smelter Combo", 150, "2 or more smelters in the same region gets +30% productivity"),
+	BldInfo(CardEnum::SmeltCombo,			"Iron Smelter Combo", 150, "+30% productivity to all Iron Smelter with adjacent Iron Smelter"),
 
 
 	BldInfo(CardEnum::Immigration,			"Immigration Advertisement", 500, "5 immigrants join upon use."),
@@ -3016,10 +3019,10 @@ struct BuildingUpgrade
 
 	BuildingUpgrade() : name(""), description(""), resourceNeeded(ResourcePair()), moneyNeeded(-1), isUpgraded(false) {}
 	
-	BuildingUpgrade(std::string name, std::string description, ResourcePair resourceNeeded, int32_t moneyNeeded = 0)
+	BuildingUpgrade(std::string name, std::string description, ResourcePair resourceNeeded, int32 moneyNeeded = 0)
 		: name(name), description(description), resourceNeeded(resourceNeeded), moneyNeeded(moneyNeeded), isUpgraded(false) {}
 
-	BuildingUpgrade(std::string name, std::string description, int32_t moneyNeeded)
+	BuildingUpgrade(std::string name, std::string description, int32 moneyNeeded)
 		: name(name), description(description), resourceNeeded(ResourcePair()), moneyNeeded(moneyNeeded), isUpgraded(false) {}
 
 	void operator>>(FArchive& Ar) {
@@ -3502,7 +3505,7 @@ static const int32 GrassToBushValue = 3;
  *
  * Note: Gather production tied into the HumanFoodCostPerYear through AssumedFoodProductionPerYear
  */
-static const int32 GatherUnitsPerYear = 6;  // GatherBaseYield 4 gives 60 fruits per year... So 15 estimated gather per year...
+static const int32 GatherUnitsPerYear = 4; // 6;  // GatherBaseYield 4 gives 60 fruits per year... So 15 estimated gather per year...
 static const int32 GatherBaseYield100 = AssumedFoodProduction100PerYear / GatherUnitsPerYear;
 static const int32 JungleGatherBaseYield100 = GatherBaseYield100 * 2;
 
@@ -4556,7 +4559,7 @@ struct UnitInfo
 	int32 foodPerFetch;
 	int32 foodTicksPerResource;
 
-	std::vector<ResourcePair> resourceDrops;
+	std::vector<ResourcePair> resourceDrops100;
 
 	std::vector<BiomeEnum> biomes;
 
@@ -4574,7 +4577,7 @@ struct UnitInfo
 		int32 gestation_Years100,
 		int32 winterSurvivalLength_Years100,
 		int32 foodResourcePerYear,
-		std::vector<ResourcePair> resourceDropsIn
+		std::vector<ResourcePair> resourceDrops100In
 	) :
 		unitEnum(unitEnum),
 		name(name)
@@ -4597,7 +4600,7 @@ struct UnitInfo
 		maxFoodTicks = foodTicksPerFetch * (name == "Human" ? 1 : 2); // Fragile humans
 		foodTicksPerResource = Time::TicksPerYear / foodResourcePerYear;
 
-		resourceDrops = resourceDropsIn;
+		resourceDrops100 = resourceDrops100In;
 
 		// Calculate biomes for animals using BiomeInfo
 		for (size_t i = 0; i < _countof(BiomeInfos); i++) {
@@ -4616,8 +4619,8 @@ struct UnitInfo
  *
  * Note: Hunting production tied into the HumanFoodCostPerYear through AssumedFoodProductionPerYear
  */
-static const int32 AssumedHuntUnitPerYear = 6; // at BaseUnitDrop 5... hunters produce 60 per year ... or 12 Hunt Unit...
-static const int32 BaseUnitDrop = AssumedFoodProduction100PerYear / AssumedHuntUnitPerYear / 100;
+static const int32 AssumedHuntUnitPerYear = 4; // 6; // at BaseUnitDrop 5... hunters produce 60 per year ... or 12 Hunt Unit...
+static const int32 BaseUnitDrop100 = AssumedFoodProduction100PerYear / AssumedHuntUnitPerYear;
 
 static const int32 AnimalFoodPerYear = 300;
 
@@ -4633,26 +4636,26 @@ static const UnitInfo UnitInfos[]
 
 	//	adultYears100, maxAgeYears100, minBreedingAgeYears100,
 	//	gestationYears100, winterSurvivalLength_Years100, foodPerYear
-	UnitInfo(UnitEnum::Alpaca, "Feral Alpaca",	500,	100,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Pork, 2 * BaseUnitDrop}}),
-	UnitInfo(UnitEnum::Human, "Human",	1000,	100,		025,	020,	HumanFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop}}),
-	UnitInfo(UnitEnum::Human,"Boar",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 3 * BaseUnitDrop}}),
+	UnitInfo(UnitEnum::Alpaca, "Feral Alpaca",	500,	100,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Pork, 2 * BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::Human, "Human",	1000,	100,		025,	020,	HumanFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::Human,"Boar",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 3 * BaseUnitDrop100}}),
 
-	UnitInfo(UnitEnum::RedDeer,"Red Deer",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop}, {ResourceEnum::Leather, BaseUnitDrop}}),
-	UnitInfo(UnitEnum::YellowDeer,"Mule Deer",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop}, {ResourceEnum::Leather, BaseUnitDrop}}),
-	UnitInfo(UnitEnum::DarkDeer,"Sambar Deer",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop}, {ResourceEnum::Leather, BaseUnitDrop}}),
+	UnitInfo(UnitEnum::RedDeer,"Red Deer",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::YellowDeer,"Mule Deer",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::DarkDeer,"Sambar Deer",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 
-	UnitInfo(UnitEnum::BrownBear,"Brown Bear",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop}, {ResourceEnum::Leather, BaseUnitDrop}}),
-	UnitInfo(UnitEnum::BlackBear,"Black Bear",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop}, {ResourceEnum::Leather, BaseUnitDrop}}),
-	UnitInfo(UnitEnum::Panda,"Panda",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop}, {ResourceEnum::Leather, BaseUnitDrop}}),
+	UnitInfo(UnitEnum::BrownBear,"Brown Bear",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::BlackBear,"Black Bear",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::Panda,"Panda",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 
-	UnitInfo(UnitEnum::WildMan, "WildMan",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop}, {ResourceEnum::Leather, BaseUnitDrop}}),
-	UnitInfo(UnitEnum::Hippo, "Hippo",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop}, {ResourceEnum::Leather, BaseUnitDrop}}),
-	UnitInfo(UnitEnum::Penguin, "Penguin",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop}, {ResourceEnum::Leather, BaseUnitDrop}}),
+	UnitInfo(UnitEnum::WildMan, "WildMan",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::Hippo, "Hippo",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::Penguin, "Penguin",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 	
 	
-	UnitInfo(UnitEnum::Pig,"Pig",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Pork, 5 * BaseUnitDrop}}),
-	UnitInfo(UnitEnum::Sheep,"Sheep",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Lamb, 2 * BaseUnitDrop}, {ResourceEnum::Wool, 3 * BaseUnitDrop}}),
-	UnitInfo(UnitEnum::Cow,"Cow",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Milk, 5 * BaseUnitDrop}, {ResourceEnum::Leather,  3 * BaseUnitDrop}}),
+	UnitInfo(UnitEnum::Pig,"Pig",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Pork, 5 * BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::Sheep,"Sheep",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Lamb, 2 * BaseUnitDrop100}, {ResourceEnum::Wool, 3 * BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::Cow,"Cow",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Milk, 5 * BaseUnitDrop100}, {ResourceEnum::Leather,  3 * BaseUnitDrop100}}),
 
 	UnitInfo(UnitEnum::Infantry,"Infantry",	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
 	UnitInfo(UnitEnum::ProjectileArrow,"ProjectileArrow",	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
@@ -5274,6 +5277,8 @@ enum class ExclusiveUIEnum : uint8
 	StatisticsUI,
 	PlayerOverviewUI,
 	ArmyMoveUI,
+
+	InitialResourceUI,
 
 	Count,
 

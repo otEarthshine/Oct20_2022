@@ -18,7 +18,6 @@
 using namespace std;
 using namespace std::placeholders;
 
-int32 House::_lastHouseUpgradeTick = -1;
 
 //int32_t House::GetRadiusBonus(BuildingEnum buildingEnum, int32_t radius, const int32_t bonusByLvl[])
 //{

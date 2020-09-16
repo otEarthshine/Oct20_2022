@@ -53,7 +53,11 @@ public:
 			if (_lastHouseUpgradeTick == -1) {
 				_lastHouseUpgradeTick = Time::Ticks();
 				// Delayed upgrade
+#if TRAILER_MODE
+				_simulation->ScheduleTickBuilding(buildingId(), _lastHouseUpgradeTick + 1);
+#else
 				_simulation->ScheduleTickBuilding(buildingId(), _lastHouseUpgradeTick + houseUpgradeDelayTicks);
+#endif
 			}
 		}
 		else if (lvl < _houseLvl) 
@@ -212,7 +216,7 @@ private:
 
 private:
 	int32 _houseLvl = 1;
-	static int32 _lastHouseUpgradeTick;
+	int32 _lastHouseUpgradeTick = -1;
 	const int32 houseUpgradeDelayTicks = Time::TicksPerSecond * 8;
 
 	const int32 houseBaseOccupants = 4;

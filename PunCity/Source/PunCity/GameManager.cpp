@@ -985,6 +985,11 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 			} else {
 				fogDensity = fmax(0.0f, fogDensity - fogFadeSpeed * DeltaTime);
 			}
+			
+			if (PunSettings::IsOn("ForceNoFog")) {
+				fogDensity = 0;
+			}
+			
 			_exponentialFogComponent->SetFogDensity(fogDensity);
 
 			// Wetness

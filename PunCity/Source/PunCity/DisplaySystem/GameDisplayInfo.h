@@ -389,11 +389,11 @@ public:
 					ModuleTransform("DecorativeSack", TransformFromPositionYaw(1.09, 2.94, 0.22, 142)),
 				},
 				{
-					{ParticleEnum::Smoke, TransformFromPosition(51.8, -25.5, 39)},
-					{ParticleEnum::CampFire, TransformFromPositionYawScale(-2.75 + 10, 9.9, 1.85, 0, 0.17)}
+					{ParticleEnum::Smoke, TransformFromPosition(34.99, -25.34, 51.55)},
+					{ParticleEnum::CampFire, TransformFromPositionYawScale(-10.88, 8.19, 0.37, 0, 0.17)}
 				},
 				{}, {},
-				{{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-2.3 + 10, 10.2, 8.5), FVector::OneVector}}
+				{{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-10.88, 8.19, 8.5), FVector::OneVector}}
 			),
 			// 4
 			ModuleTransforms::CreateSet("Townhall4",
@@ -412,11 +412,11 @@ public:
 					ModuleTransform("DecorativeSack", TransformFromPositionYaw(1.09, 2.94, 0.22, 142)),
 				},
 				{
-					//{ParticleEnum::Smoke, TransformFromPosition(48.7, -26.2, 33.7)},
-					//{ParticleEnum::CampFire, TransformFromPositionYawScale(-2.75 + 10, 9.9, 1.85, 0, 0.17)}
+					{ParticleEnum::Smoke, TransformFromPosition(34.99, -25.34, 51.55)},
+					{ParticleEnum::CampFire, TransformFromPositionYawScale(-10.88, 8.19, 0.37, 0, 0.17)}
 				},
 				{}, {},
-				{/*{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-2.3 + 10, 10.2, 8.5), FVector::OneVector}*/}
+				{{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-10.88, 8.19, 8.5), FVector::OneVector}}
 			),
 			// 5
 			ModuleTransforms::CreateSet("TownhallLvl5", { ModuleTransform("TownhallLvl5GardenAndSpire", TransformFromPositionYaw(-15, -1.35, -2.364, 0)) }),
@@ -713,7 +713,13 @@ public:
 		},
 
 		{ // RegionTribalVillage
-			ModuleTransforms::CreateSet("TribalVillage"),
+			ModuleTransforms::CreateSet("TribalVillage", {},
+				{
+					{ParticleEnum::CampFire, TransformFromPositionYawScale(-5.4, -0.82, 0.62, 0, 0.17)}
+				},
+				{}, {},
+				{{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-5.4, -0.82, 8.5), FVector::OneVector}}
+			),
 		},
 		{ // RegionShrine
 			ModuleTransforms::CreateSet("AncientShrine"),
@@ -792,7 +798,13 @@ public:
 			ModuleTransforms::CreateSet("Townhall0")
 		},
 		{ // FakeTribalVillage
-			ModuleTransforms::CreateSet("TribalVillage")
+			ModuleTransforms::CreateSet("TribalVillage", {},
+				{
+					{ParticleEnum::CampFire, TransformFromPositionYawScale(-5.4, -0.82, 0.62, 0, 0.17)}
+				},
+				{}, {},
+				{{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-5.4, -0.82, 8.5), FVector::OneVector}}
+			)
 		},
 		{ // ChichenItza
 			ModuleTransforms::CreateSet("ChichenItza")

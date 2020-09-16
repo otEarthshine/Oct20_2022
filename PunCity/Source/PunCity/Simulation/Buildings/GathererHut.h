@@ -31,8 +31,8 @@ public:
 		AddResourceHolder(ResourceEnum::Papaya, ResourceHolderType::Provider, 0);
 
 		_upgrades = {
-			BuildingUpgrade("Delicate gathering", "+20% efficiency.", 80),
-			BuildingUpgrade("Fruit bait for hunters", "Hunter in the same region gets +30% efficiency (does not stack).", 80),
+			BuildingUpgrade("Delicate gathering", "+20% efficiency.", ResourcePair(ResourceEnum::SteelTools, 10)),
+			BuildingUpgrade("Fruit bait for hunters", "Adjacent Hunter gets +30% efficiency (does not stack).", ResourcePair(ResourceEnum::Wood, 10)),
 		};
 	}
 
@@ -45,14 +45,18 @@ public:
 		if (IsUpgraded(0)) {
 			bonuses.push_back({ "Delicate gathering upgrade", 20 });
 		}
-		
-		std::vector<Building*> buildings = GetBuildingsInRegion(CardEnum::HuntingLodge);
-		for (Building* building : buildings) {
-			if (building->IsUpgraded(1)) {
-				bonuses.push_back({ "Hunting lodge upgrade", 30 });
-				break;
-			}
+
+		if (adjacentCount(CardEnum::HuntingLodge) > 0) {
+			bonuses.push_back({ "Hunting lodge upgrade", 30 });
 		}
+		
+		//std::vector<Building*> buildings = GetBuildingsInRegion(CardEnum::HuntingLodge);
+		//for (Building* building : buildings) {
+		//	if (building->IsUpgraded(1)) {
+		//		bonuses.push_back({ "Hunting lodge upgrade", 30 });
+		//		break;
+		//	}
+		//}
 		
 		return bonuses;
 	}
@@ -80,7 +84,7 @@ public:
 
 		_upgrades = {
 			BuildingUpgrade("Smoking chamber", "+30% efficiency.", 80),
-			BuildingUpgrade("Trap fruit-eating pests.", "Fruit gatherer in the same region gets +30% productivity (does not stack).", 80),
+			BuildingUpgrade("Trap fruit-eating pests", "Adjacent Fruit Gatherer gets +30% productivity (does not stack).", 80),
 		};
 	}
 
@@ -90,17 +94,21 @@ public:
 		if (IsUpgraded(0)) {
 			bonuses.push_back({ "Smoking chamber", 30 });
 		}
-		
-		const std::vector<int32>& buildingIds = _simulation->buildingIds(_playerId, CardEnum::FruitGatherer);
-		for (int32 buildingId : buildingIds) {
-			Building& building = _simulation->building(buildingId);
-			PUN_CHECK(building.isEnum(CardEnum::FruitGatherer));
-			if (building.centerTile().region() == centerTile().regionId() &&
-				building.IsUpgraded(1))
-			{
-				bonuses.push_back({ "Gatherer upgrade", 30 });
-			}
+
+		if (adjacentCount(CardEnum::FruitGatherer) > 0) {
+			bonuses.push_back({ "Gatherer upgrade", 30 });
 		}
+		
+		//const std::vector<int32>& buildingIds = _simulation->buildingIds(_playerId, CardEnum::FruitGatherer);
+		//for (int32 buildingId : buildingIds) {
+		//	Building& building = _simulation->building(buildingId);
+		//	PUN_CHECK(building.isEnum(CardEnum::FruitGatherer));
+		//	if (building.centerTile().region() == centerTile().regionId() &&
+		//		building.IsUpgraded(1))
+		//	{
+		//		bonuses.push_back({ "Gatherer upgrade", 30 });
+		//	}
+		//}
 		return bonuses;
 	}
 
@@ -552,8 +560,11 @@ public:
 		std::vector<BonusPair> bonuses = Smelter::GetBonuses();
 
 		if (_simulation->TownhallCardCount(_playerId, CardEnum::SmeltCombo) > 0) {
-			if (GetBuildingsInRegion(CardEnum::IronSmelter).size() >= 2) {
-				bonuses.push_back({ "Iron smelt combo", 30 });
+			//if (GetBuildingsInRegion(CardEnum::IronSmelter).size() >= 2) {
+			//	bonuses.push_back({ "Iron smelt combo", 30 });
+			//}
+			if (adjacentCount(CardEnum::IronSmelter) > 0) {
+				bonuses.push_back({ "Iron smelter combo", 30 });
 			}
 		}
 
@@ -1416,7 +1427,7 @@ public:
 		ChangeFisherTilesInRadius(-1);
 	}
 
-	static const int32 Radius = 8;
+	static const int32 Radius = 12;
 
 	//ResourceEnum product() final {
 	//	return IsUpgraded(1) ? ResourceEnum::WhaleMeat : ResourceEnum::Fish;
@@ -1530,6 +1541,7 @@ public:
 		Building::OnDeinit();
 		
 		_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+			PUN_LOG("Bridge SetAreaWalkable false: %s", *tile.To_FString());
 			_simulation->SetWalkable(tile, false);
 		});
 
@@ -1544,10 +1556,10 @@ public:
 		// Make the area on which this was built walkable.
 		_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 			_simulation->SetWalkable(tile, true);
+			PUN_LOG("Bridge SetAreaWalkable true: %s", *tile.To_FString());
 		});
 
 		// clear the tile on each side of the bridge, in case the tree is blocking
-		// TODO: this is not working
 		if (_area.sizeX() > 1) {
 			_simulation->treeSystem().ForceRemoveTileObj(WorldTile2(_area.minX - 1, _area.minY));
 			_simulation->treeSystem().ForceRemoveTileObj(WorldTile2(_area.maxX + 1, _area.minY));

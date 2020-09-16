@@ -86,6 +86,7 @@ void UMainGameUI::PunInit()
 
 	HarvestCheckBox_All->OnCheckStateChanged.AddDynamic(this, &UMainGameUI::OnCheckHarvest_All);
 	HarvestCheckBox_Wood->OnCheckStateChanged.AddDynamic(this, &UMainGameUI::OnCheckHarvest_Wood);
+	HarvestCheckBox_NonFruitTrees->OnCheckStateChanged.AddDynamic(this, &UMainGameUI::OnCheckHarvest_NonFruitTrees);
 	HarvestCheckBox_Stone->OnCheckStateChanged.AddDynamic(this, &UMainGameUI::OnCheckHarvest_Stone);
 	RemoveHarvestCheckBox_All->OnCheckStateChanged.AddDynamic(this, &UMainGameUI::OnCheckRemoveHarvest_All);
 	RemoveHarvestCheckBox_Wood->OnCheckStateChanged.AddDynamic(this, &UMainGameUI::OnCheckRemoveHarvest_Wood);
@@ -1322,6 +1323,7 @@ void UMainGameUI::ToggleGatherButton()
 	if (!wasActive) {
 		HarvestCheckBox_All->SetCheckedState(ECheckBoxState::Checked);
 		HarvestCheckBox_Wood->SetCheckedState(ECheckBoxState::Unchecked);
+		HarvestCheckBox_NonFruitTrees->SetCheckedState(ECheckBoxState::Unchecked);
 		HarvestCheckBox_Stone->SetCheckedState(ECheckBoxState::Unchecked);
 		RemoveHarvestCheckBox_All->SetCheckedState(ECheckBoxState::Unchecked);
 		RemoveHarvestCheckBox_Wood->SetCheckedState(ECheckBoxState::Unchecked);

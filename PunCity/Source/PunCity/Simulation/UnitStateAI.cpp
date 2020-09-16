@@ -535,9 +535,19 @@ void UnitStateAI::AttackIncoming(UnitFullId attacker, int32 ownerWorkplaceId, in
 			PUN_CHECK2(unitAI.isEnum(UnitEnum::Human), debugStr());
 
 			// Drops
-			std::vector<ResourcePair> drops = unitInfo().resourceDrops;
-			for (ResourcePair& drop : drops) 
+			std::vector<ResourcePair> drops = unitInfo().resourceDrops100;
+
+			// Random 100 to 1, add efficiency
+			for (size_t i = 0; i < drops.size(); i++) 
 			{
+				PUN_CHECK(drops[i].count >= 100);
+				
+				Building* workplace = unitAI.workplace();
+				int32 efficiency = workplace ? workplace->efficiency() : 0;
+				drops[i].count = GameRand::Rand100RoundTo1(drops[i].count * efficiency / 100);
+			}
+			
+			for (ResourcePair& drop : drops)  {
 				_simulation->resourceSystem(unitAI.playerId()).SpawnDrop(drop.resourceEnum, drop.count, unitTile());
 			}
 
@@ -549,12 +559,14 @@ void UnitStateAI::AttackIncoming(UnitFullId attacker, int32 ownerWorkplaceId, in
 			}
 		}
 
-		if (attackPlayerId != -1) {
-			std::vector<ResourcePair> drops = unitInfo().resourceDrops;
-			for (ResourcePair& drop : drops) {
-				_simulation->resourceSystem(attackPlayerId).SpawnDrop(drop.resourceEnum, drop.count, unitTile());
-			}
-		}
+		// TODO: Why this here???
+		//if (attackPlayerId != -1) {
+		//	std::vector<ResourcePair> drops100 = unitInfo().resourceDrops100;
+		//	for (ResourcePair& drop100 : drops100) {
+		//		int32 dropCount = GameRand::Rand100RoundTo1(drop100.count);
+		//		_simulation->resourceSystem(attackPlayerId).SpawnDrop(drop100.resourceEnum, dropCount, unitTile());
+		//	}
+		//}
 
 		Die();
 	}
@@ -2027,7 +2039,7 @@ void UnitStateAI::Add_DropInventoryAction() {
 }
 void UnitStateAI::DropInventoryAction()
 {
-	std::vector<ResourcePair> drops = unitInfo().resourceDrops;
+	//std::vector<ResourcePair> drops = unitInfo().resourceDrops;
 	_inventory.ForEachResource([&](ResourcePair pair) {
 		resourceSystem().SpawnDrop(pair.resourceEnum, pair.count, unitTile());
 

@@ -39,7 +39,7 @@ public:
 	{
 		//PUN_LOG("WorldTrade Tick1Sec");
 		// Initialize after allplayers started
-		if (!_isInitialized && _simulation->AllPlayerChoseLocationAfterInitialTicks())
+		if (!_isInitialized && _simulation->AllPlayerHasTownhallAfterInitialTicks())
 		{
 			for (size_t i = 0; i < _enumToSupplyValue100.size(); i++) {
 				_enumToSupplyValue100[i] = EquilibriumSupplyValue100_PerPerson(static_cast<ResourceEnum>(i)) * worldPopulationWithBase();

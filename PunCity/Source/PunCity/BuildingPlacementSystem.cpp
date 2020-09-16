@@ -1243,18 +1243,22 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				SetInstruction(PlacementInstructionEnum::OutsideTerritory, true);
 				return PlacementGridEnum::Red;
 			}
-			
-			ResourceTileType tileType = treeSystem.tileInfo(tile.tileId()).type;
+
+			const TileObjInfo& tileInfo = treeSystem.tileInfo(tile.tileId());
+			ResourceTileType tileType = tileInfo.type;
 
 			bool gatherable = false;
 			if (_harvestResourceEnum == ResourceEnum::Wood) {
-				gatherable = tileType == ResourceTileType::Tree;
+				gatherable = (tileType == ResourceTileType::Tree);
+			}
+			else if (_harvestResourceEnum == ResourceEnum::Orange) {
+				gatherable = (tileType == ResourceTileType::Tree && (tileInfo.treeEnum != TileObjEnum::Orange && tileInfo.treeEnum != TileObjEnum::Papaya));
 			}
 			else if (_harvestResourceEnum == ResourceEnum::Stone) {
-				gatherable = tileType == ResourceTileType::Deposit;
+				gatherable = (tileType == ResourceTileType::Deposit);
 			}
 			else if (_harvestResourceEnum == ResourceEnum::None) {
-				gatherable = tileType == ResourceTileType::Tree || tileType == ResourceTileType::Deposit;
+				gatherable = (tileType == ResourceTileType::Tree || tileType == ResourceTileType::Deposit);
 			}
 
 			//bool notGatherable = tileType != ResourceTileType::Tree && tileType != ResourceTileType::Deposit;
@@ -1817,19 +1821,19 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			// Borders
 			TileArea topRoad(_area.maxX + 1, _area.minY, _area.maxX + 1, _area.maxY);
 			topRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-				tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, _faceDirection);
+				tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, Direction::S);
 			});
 			TileArea bottomRoad(_area.minX - 1, _area.minY, _area.minX - 1, _area.maxY);
 			bottomRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-				tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, _faceDirection);
+				tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, Direction::S);
 			});
 			TileArea leftRoad(_area.minX, _area.minY - 1, _area.maxX, _area.minY - 1);
 			leftRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-				tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, RotateDirection(_faceDirection));
+				tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, Direction::E);
 			});
 			TileArea rightRoad(_area.minX, _area.maxY + 1, _area.maxX, _area.maxY + 1);
 			rightRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-				tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, RotateDirection(_faceDirection));
+				tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, Direction::E);
 			});
 
 			// Corners

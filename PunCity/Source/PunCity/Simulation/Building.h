@@ -740,20 +740,20 @@ public:
 	}
 	virtual int32 productPerBatch() { return baseProductPerBatch() * efficiency() / 100; }
 
-	// TODO: refactor into proper region??
-	std::vector<Building*> GetBuildingsInRegion(CardEnum cardEnum)
-	{
-		std::vector<Building*> buildings;
-		
-		const std::vector<int32>& buildingIds = _simulation->buildingIds(_playerId, cardEnum);
-		for (int32 buildingId : buildingIds) {
-			Building& building = _simulation->building(buildingId);
-			if (building.centerTile().region() == centerTile().region()) {
-				buildings.push_back(&building);
-			}
-		}
-		return buildings;
-	}
+	//// TODO: refactor into proper region??
+	//std::vector<Building*> GetBuildingsInRegion(CardEnum cardEnum)
+	//{
+	//	std::vector<Building*> buildings;
+	//	
+	//	const std::vector<int32>& buildingIds = _simulation->buildingIds(_playerId, cardEnum);
+	//	for (int32 buildingId : buildingIds) {
+	//		Building& building = _simulation->building(buildingId);
+	//		if (building.centerTile().region() == centerTile().region()) {
+	//			buildings.push_back(&building);
+	//		}
+	//	}
+	//	return buildings;
+	//}
 
 	/*
 	 * Input

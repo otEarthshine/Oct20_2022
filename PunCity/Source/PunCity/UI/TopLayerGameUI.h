@@ -63,7 +63,7 @@ public:
 			}
 			// If not all players chose location, warn so 
 			else {
-				if (simulation().AllPlayerChoseLocationAfterInitialTicks())
+				if (simulation().AllPlayerHasTownhallAfterInitialTicks())
 				{
 					if (gameSpeed == 0) {
 						SetText(GamePauseText, "Game Paused");

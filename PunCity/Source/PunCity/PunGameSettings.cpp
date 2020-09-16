@@ -115,6 +115,10 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "ForceSnowSpeed", 100 },
 	{ "ForceAutumn", 0 },
 	{ "ForceAutumnTicks", 120 * 2 },
+
+	{ "ForceNoFog", 0 },
+	{ "ForceNoRain", 0 },
+	{ "ForceNoSnow", 0 },
 	
 	{ "TrailerTundraMinSnowPercent", 0 },
 	{ "TrailerPlaceSpeed", 100 },

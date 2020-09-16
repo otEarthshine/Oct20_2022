@@ -400,7 +400,8 @@ void UWorldSpaceUI::TickBuildings()
 				WorldTile2::Distance(building.centerTile(), overlayTile) < BadAppealRadius)
 		{
 			UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
-				_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
+				_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {},
+			WorldZoomTransition_WorldSpaceUIShrink, 1.5);
 
 			hoverIcon->SetImage(assetLoader()->UnhappyIcon);
 			hoverIcon->SetText("", "");

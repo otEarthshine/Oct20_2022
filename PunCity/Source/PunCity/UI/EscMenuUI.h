@@ -143,6 +143,11 @@ public:
 		//  Host use hostGameSpeed() while clients use simulation.gameSpeed()
 		int32 gameSpeed = networkInterface()->IsHost() ? networkInterface()->hostGameSpeed() : simulation().gameSpeed();
 
+		// Special case: This is needed because we are using hostGameSpeed() which does not reflect chosenTownhall state
+		if (!simulation().AllPlayerHasTownhallAfterInitialTicks()) {
+			gameSpeed = 0; // Pause while players are still choosing location.
+		}
+
 		FLinearColor activeColor(1, 1, 1);
 		FLinearColor inactiveColor(.1, .1, .1);
 		FLinearColor hoverColor(.38, .38, 0.2);
@@ -363,18 +368,6 @@ private:
 	UFUNCTION() void OnClickEscMenuSaveButton();
 	UFUNCTION() void OnClickEscMenuLoadButton();
 
-	UFUNCTION() void OnClickPauseButton() {
-		if (networkInterface()->IsHost()) {
-			if (networkInterface()->hostGameSpeed() == 0) {
-				PUN_LOG("Click Pause: Resume");
-				networkInterface()->Resume();
-			} else {
-				PUN_LOG("Click Pause: Pause");
-				networkInterface()->Pause();
-			}
-		}
-	}
-
 	/*
 	 * Hover play
 	 */
@@ -420,7 +413,31 @@ private:
 		if (!networkInterface()->IsHost()) {
 			return;
 		}
+		// Do not allow speed adjustment before start loc is chosen..
+		if (!simulation().AllPlayerHasTownhallAfterInitialTicks()) {
+			return;
+		}
 		networkInterface()->SetGameSpeed(newGameSpeed);
+	}
+
+	UFUNCTION() void OnClickPauseButton()
+	{
+		if (!networkInterface()->IsHost()) {
+			return;
+		}
+		// Do not allow speed adjustment before start loc is chosen..
+		if (!simulation().AllPlayerHasTownhallAfterInitialTicks()) {
+			return;
+		}
+		
+		if (networkInterface()->hostGameSpeed() == 0) {
+			PUN_LOG("Click Pause: Resume");
+			networkInterface()->Resume();
+		}
+		else {
+			PUN_LOG("Click Pause: Pause");
+			networkInterface()->Pause();
+		}
 	}
 
 	/*

@@ -1751,14 +1751,28 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								ss << "\nDone";
 							}
 							else {
-								if (upgrade.resourceNeeded.resourceEnum == ResourceEnum::Stone) {
-									ss << "\n" << TextRed(to_string(upgrade.resourceNeeded.count), 
-															resourceSys.resourceCount(ResourceEnum::Stone) < upgrade.resourceNeeded.count) << "<img id=\"Stone\"/>";
+								ResourceEnum resourceEnum = upgrade.resourceNeeded.resourceEnum;
+								
+								auto showResourceText = [&](std::string resourceString) {
+									ss << "\n" << TextRed(to_string(upgrade.resourceNeeded.count),
+										resourceSys.resourceCount(resourceEnum) < upgrade.resourceNeeded.count) << "<img id=\"" << resourceString << "\"/>";
+								};
+								
+								if (resourceEnum == ResourceEnum::Stone) {
+									//ss << "\n" << TextRed(to_string(upgrade.resourceNeeded.count), 
+									//						resourceSys.resourceCount(ResourceEnum::Stone) < upgrade.resourceNeeded.count) << "<img id=\"Stone\"/>";
+									showResourceText("Stone");
 								}
-								else if (upgrade.resourceNeeded.isValid()) {
-									ss << " (" << upgrade.resourceNeeded.ToString() << ")";
-								}
+								else if (resourceEnum == ResourceEnum::Wood) { showResourceText("Wood"); }
+								else if (resourceEnum == ResourceEnum::Iron) { showResourceText("IronBar"); }
+								else if (resourceEnum == ResourceEnum::SteelTools) { showResourceText("SteelTools"); }
+								else if (resourceEnum == ResourceEnum::Brick) { showResourceText("Brick"); }
+								//else if (upgrade.resourceNeeded.isValid()) {
+								//	ss << " (" << upgrade.resourceNeeded.ToString() << ")";
+								//}
 								else {
+									PUN_CHECK(resourceEnum == ResourceEnum::None);
+									
 									string moneyText = to_string(upgrade.moneyNeeded);
 									if (resourceSys.money() < upgrade.moneyNeeded) {
 										moneyText = "<Red>" + moneyText + "</>";

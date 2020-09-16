@@ -1420,7 +1420,7 @@ public:
 	bool playerChoseLocation(int32 playerId) { return playerOwned(playerId).hasChosenLocation(); }
 
 	// Used to pause the game until the last player chose location
-	bool AllPlayerChoseLocationAfterInitialTicks() final
+	bool AllPlayerHasTownhallAfterInitialTicks() final
 	{
 		// Below 2 sec, don't pause
 		if (Time::Ticks() < Time::TicksPerSecond * 2) {

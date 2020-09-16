@@ -280,6 +280,8 @@ public:
 		case ExclusiveUIEnum::StatisticsUI:		return _statisticsUI->GetVisibility() != ESlateVisibility::Collapsed;
 		case ExclusiveUIEnum::PlayerOverviewUI:	return _questUI->PlayerDetailsOverlay->GetVisibility() != ESlateVisibility::Collapsed;
 		case ExclusiveUIEnum::ArmyMoveUI:		return _armyMoveUI->GetVisibility() != ESlateVisibility::Collapsed;
+
+		case ExclusiveUIEnum::InitialResourceUI:return _initialResourceUI->InitialResourceUI->GetVisibility() != ESlateVisibility::Collapsed;
 		default:
 			UE_DEBUG_BREAK();
 			return false;

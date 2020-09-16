@@ -169,6 +169,7 @@ private:
 
 	UPROPERTY(meta = (BindWidget)) UCheckBox* HarvestCheckBox_All;
 	UPROPERTY(meta = (BindWidget)) UCheckBox* HarvestCheckBox_Wood;
+	UPROPERTY(meta = (BindWidget)) UCheckBox* HarvestCheckBox_NonFruitTrees;
 	UPROPERTY(meta = (BindWidget)) UCheckBox* HarvestCheckBox_Stone;
 	UPROPERTY(meta = (BindWidget)) UCheckBox* RemoveHarvestCheckBox_All;
 	UPROPERTY(meta = (BindWidget)) UCheckBox* RemoveHarvestCheckBox_Wood;
@@ -368,6 +369,9 @@ private:
 	UFUNCTION() void OnCheckHarvest_Wood(bool active) {
 		OnCheckHarvest(false, ResourceEnum::Wood);
 	}
+	UFUNCTION() void OnCheckHarvest_NonFruitTrees(bool active) {
+		OnCheckHarvest(false, ResourceEnum::Orange);
+	}
 	UFUNCTION() void OnCheckHarvest_Stone(bool active) {
 		OnCheckHarvest(false, ResourceEnum::Stone);
 	}
@@ -384,6 +388,7 @@ private:
 	void OnCheckHarvest(bool isRemoving, ResourceEnum resourceEnum) {
 		HarvestCheckBox_All->SetIsChecked(!isRemoving && resourceEnum == ResourceEnum::None);
 		HarvestCheckBox_Wood->SetIsChecked(!isRemoving && resourceEnum == ResourceEnum::Wood);
+		HarvestCheckBox_NonFruitTrees->SetIsChecked(!isRemoving && resourceEnum == ResourceEnum::Orange);
 		HarvestCheckBox_Stone->SetIsChecked(!isRemoving && resourceEnum == ResourceEnum::Stone);
 		RemoveHarvestCheckBox_All->SetIsChecked(isRemoving && resourceEnum == ResourceEnum::None);
 		RemoveHarvestCheckBox_Wood->SetIsChecked(isRemoving && resourceEnum == ResourceEnum::Wood);

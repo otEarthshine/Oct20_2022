@@ -785,7 +785,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 	// Note: _tickCount contains simulation local tick as oppose to server's tick
 
 	int32 gameSpeed = tickInfo.gameSpeed;
-	if (!AllPlayerChoseLocationAfterInitialTicks()) {
+	if (!AllPlayerHasTownhallAfterInitialTicks()) {
 		gameSpeed = 0; // Pause while players are still choosing location.
 	}
 	_lastGameSpeed = gameSpeed;
@@ -3250,7 +3250,7 @@ void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 playerId)
 			_provinceSystem.provinceOceanTileCount(provinceId) > 0)
 		{
 			if (!unlockSystem(playerId)->isUnlocked(CardEnum::Bridge)) {
-				AddPopupToFront(playerId, "Unlocked bridge!");
+				AddPopupToFront(playerId, "Unlocked bridge!", ExclusiveUIEnum::None, "PopupNeutral");
 				unlockSystem(playerId)->UnlockBuilding(CardEnum::Bridge);
 			}
 		}

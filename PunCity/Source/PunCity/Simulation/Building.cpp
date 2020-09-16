@@ -363,22 +363,25 @@ void Building::TrailerAddResource()
 
 			std::vector<ResourceEnum> resourceEnums;
 
-			buildingList.ExecuteRegion(centerTile().region(), [&](int32 buildingId)
+			centerTile().region().ExecuteOnNearbyRegions([&](WorldRegion2 region)
 			{
-				if (resourceEnums.size() >= 2) {
-					return;
-				}
+				buildingList.ExecuteRegion(region, [&](int32 buildingId)
+				{
+					if (resourceEnums.size() >= 2) {
+						return;
+					}
 
-				Building& building = _simulation->building(buildingId);
-				if (building.product() != ResourceEnum::None) {
-					resourceEnums.push_back(building.product());
-				}
-				if (building.input1() != ResourceEnum::None) {
-					resourceEnums.push_back(building.input1());
-				}
-				if (building.input2() != ResourceEnum::None) {
-					resourceEnums.push_back(building.input2());
-				}
+					Building& building = _simulation->building(buildingId);
+					if (building.product() != ResourceEnum::None) {
+						resourceEnums.push_back(building.product());
+					}
+					if (building.input1() != ResourceEnum::None) {
+						resourceEnums.push_back(building.input1());
+					}
+					if (building.input2() != ResourceEnum::None) {
+						resourceEnums.push_back(building.input2());
+					}
+				});
 			});
 
 			// Trailer AddResource
@@ -502,28 +505,6 @@ bool Building::UpgradeBuilding(int upgradeIndex)
 		_simulation->AddPopup(_playerId, "Already upgraded");
 		return false;
 	}
-
-	//ResourcePair resourceNeeded = _upgrades[upgradeIndex].resourceNeeded;
-	//if (resourceNeeded.isValid())
-	//{
-	//	// Resources Upgrade
-	//	if (resourceSystem().resourceCount(resourceNeeded.resourceEnum) >= resourceNeeded.count)
-	//	{
-	//		resourceSystem().RemoveResourceGlobal(resourceNeeded.resourceEnum, resourceNeeded.count);
-	//		_upgrades[upgradeIndex].isUpgraded = true;
-
-	//		ResetDisplay();
-
-	//		_simulation->AddPopup(_playerId, "Upgraded " + _upgrades[upgradeIndex].name);
-
-	//		OnUpgradeBuilding(upgradeIndex);
-	//		return true;
-	//	}
-
-	//	_simulation->AddPopup(_playerId, "Not enough resource for upgrade.");
-	//	return false;
-	//}
-
 
 	ResourcePair resourceNeeded = _upgrades[upgradeIndex].resourceNeeded;
 	int32 moneyNeeded = _upgrades[upgradeIndex].moneyNeeded;

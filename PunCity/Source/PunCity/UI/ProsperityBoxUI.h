@@ -18,7 +18,13 @@ public:
 
 
 	
+	TechEnum techEnum = TechEnum::None;
 
+	void Init(UPunWidget* callbackParent, TechEnum techEnumIn)
+	{
+
+	}
+	
 public:
 	UPROPERTY(meta = (BindWidget)) UImage* InnerImage;
 	UPROPERTY(meta = (BindWidget)) UImage* OuterImage;

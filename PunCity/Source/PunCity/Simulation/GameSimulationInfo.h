@@ -5279,6 +5279,7 @@ enum class ExclusiveUIEnum : uint8
 	ArmyMoveUI,
 
 	InitialResourceUI,
+	ProsperityUI,
 
 	Count,
 
@@ -5317,6 +5318,7 @@ enum class PopupReceiverEnum : uint8
 	TradeRequest,
 	DoneResearchBuyCardEvent,
 	DoneResearchEvent_ShowTree,
+	UnlockedHouseTree_ShowProsperityUI,
 
 	//"PopulationQuest",
 	//"HouseUpgradeQuest",

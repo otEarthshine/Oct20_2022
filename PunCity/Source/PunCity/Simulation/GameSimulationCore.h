@@ -1496,6 +1496,12 @@ public:
 				unlockSystem(playerId)->shouldOpenTechUI = true;
 			}
 		}
+		else if (replyReceiver == PopupReceiverEnum::UnlockedHouseTree_ShowProsperityUI)
+		{
+			if (choiceIndex == 0) {
+				unlockSystem(playerId)->shouldOpenProsperityUI = true;
+			}
+		}
 		else if (replyReceiver == PopupReceiverEnum::Approve_AbandonTown1)
 		{
 			if (choiceIndex == 0) {

@@ -113,6 +113,7 @@ public:
 	UFUNCTION() void ToggleDemolishButton();
 	
 	UFUNCTION() void ToggleResearchMenu();
+	UFUNCTION() void ToggleProsperityUI();
 
 	UFUNCTION() void ToggleStatisticsUI()
 	{
@@ -233,8 +234,16 @@ private:
 
 	UPROPERTY(meta = (BindWidget)) UButton* ResearchBarUI;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* ResearchingText;
-	UPROPERTY(meta = (BindWidget)) URichTextBlock* ResearchingScienceText;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* ResearchingAmountText;
 	UPROPERTY(meta = (BindWidget)) USizeBox* ResearchBar;
+
+
+	UPROPERTY(meta = (BindWidget)) UOverlay* JobPriorityOverlay;
+	UPROPERTY(meta = (BindWidget)) UScrollBox* JobPriorityScrollBox;
+	
+	UPROPERTY(meta = (BindWidget)) UButton* ProsperityBarUI;
+	UPROPERTY(meta = (BindWidget)) USizeBox* ProsperityBar;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* ProsperityAmountText;
 
 	//UPROPERTY(meta = (BindWidget)) UButton* ChooseLocationButton;
 	//UPROPERTY(meta = (BindWidget)) UOverlay* WorldMapRegionUI;

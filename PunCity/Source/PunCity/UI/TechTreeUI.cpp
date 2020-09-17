@@ -61,6 +61,7 @@ void UTechTreeUI::TickUI()
 		}
 		return;
 	}
+	
 
 	// Try initialize
 	if (!isInitialized) {

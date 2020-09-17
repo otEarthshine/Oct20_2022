@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/UserWidget.h"
+#include "PunWidget.h"
 #include "ProsperityColumnUI.generated.h"
 
 /**
@@ -14,4 +14,10 @@ class PROTOTYPECITY_API UProsperityColumnUI : public UUserWidget
 {
 	GENERATED_BODY()
 public:
+	UPROPERTY(meta = (BindWidget)) UTextBlock* HouseLevelText;
+	UPROPERTY(meta = (BindWidget)) UScrollBox* ProsperityTechList;
+
+
+
+	
 };

@@ -30,6 +30,7 @@
 #include "TopLayerGameUI.h"
 #include "IntercityTradeUI.h"
 #include "TargetConfirmUI.h"
+#include "ProsperityUI.h"
 
 #include "PunHUD.generated.h"
 
@@ -119,7 +120,8 @@ public:
 #if !UI_ALL
 		return false;
 #endif
-		return _techUI->IsHovered() || 
+		return _techUI->IsHovered() ||
+				_prosperityUI->IsHovered() ||
 				_descriptionUISystem->IsHoveredOnScrollUI() ||
 				_statisticsUI->IsHovered() ||
 				_worldTradeUI->IsHovered() ||
@@ -203,10 +205,20 @@ public:
 	}
 	void CloseTargetConfirmUI() { _targetConfirmUI->CloseUI(); }
 	
-
-	void CloseTechTree() final { _techUI->SetVisibility(ESlateVisibility::Collapsed); }
-	void ToggleTechTree() final {
+	// Tech Tree
+	void CloseTechUI() final {
+		_techUI->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	void ToggleTechUI() final {
 		_techUI->SetShowUI(_techUI->GetVisibility() == ESlateVisibility::Collapsed);
+	}
+
+	// ProsperityTree
+	void CloseProsperityUI() final {
+		_prosperityUI->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	void ToggleProsperityUI() final {
+		_prosperityUI->SetShowUI(_prosperityUI->GetVisibility() == ESlateVisibility::Collapsed);
 	}
 
 	void TogglePlayerDetails() final {
@@ -227,9 +239,12 @@ public:
 		_armyMoveUI->CloseArmyMoveUI();
 	}
 
-	void ResetGameUI() {
+	void ResetGameUI()
+	{
 		mainGameUI()->ResetGameUI();
-		CloseTechTree();
+		
+		CloseTechUI();
+		CloseProsperityUI();
 
 		CloseTradeUI();
 		CloseIntercityTradeUI();
@@ -266,12 +281,15 @@ public:
 		{
 		case ExclusiveUIEnum::CardHand1:		return _mainGameUI->CardHand1Overlay->GetVisibility() == ESlateVisibility::Visible;
 		case ExclusiveUIEnum::RareCardHand:		return _mainGameUI->RareCardHandOverlay->GetVisibility() == ESlateVisibility::Visible;
-		case ExclusiveUIEnum::ConverterCardHand: return _mainGameUI->ConverterCardHandOverlay->GetVisibility() == ESlateVisibility::Visible;
+		case ExclusiveUIEnum::ConverterCardHand:return _mainGameUI->ConverterCardHandOverlay->GetVisibility() == ESlateVisibility::Visible;
 		case ExclusiveUIEnum::BuildMenu:		return _mainGameUI->BuildMenuOverlay->GetVisibility() != ESlateVisibility::Collapsed;
 		case ExclusiveUIEnum::Placement:		return inputSystemInterface()->placementState() != PlacementType::None;
 		case ExclusiveUIEnum::ConfirmingAction: return _mainGameUI->ConfirmationOverlay->GetVisibility() != ESlateVisibility::Collapsed;
 		case ExclusiveUIEnum::EscMenu:			return _escMenuUI->EscMenu->GetVisibility() != ESlateVisibility::Collapsed;
+
 		case ExclusiveUIEnum::TechUI:			return _techUI->GetVisibility() != ESlateVisibility::Collapsed;
+		case ExclusiveUIEnum::ProsperityUI:		return _prosperityUI->GetVisibility() != ESlateVisibility::Collapsed;
+			
 		case ExclusiveUIEnum::Trading:			return _worldTradeUI->GetVisibility() != ESlateVisibility::Collapsed;
 		case ExclusiveUIEnum::IntercityTrading:	return _intercityTradeUI->GetVisibility() != ESlateVisibility::Collapsed;
 		case ExclusiveUIEnum::TargetConfirm:	return _targetConfirmUI->GetVisibility() != ESlateVisibility::Collapsed;
@@ -475,6 +493,7 @@ protected:
 	UPROPERTY() UStatisticsUI* _statisticsUI;
 
 	UPROPERTY() UTechUI* _techUI;
+	UPROPERTY() UProsperityUI* _prosperityUI;
 
 	UPROPERTY() UArmyMoveUI* _armyMoveUI;
 

@@ -64,7 +64,9 @@ private:
 
 	void CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callBackEnum) final;
 
-	UFUNCTION() void CloseUI();
+	UFUNCTION() void CloseUI() {
+		SetShowUI(false);
+	}
 
 private:
 	std::vector<TechEnum> _lastTechQueue;

@@ -42,6 +42,9 @@ void UPopupUI::Tick()
 			popupToDisplay->choices = { "Close" };
 			popupToDisplay->replyReceiver = PopupReceiverEnum::None;
 		}
+		if (shouldShowExclusive(ExclusiveUIEnum::ProsperityUI)) {
+			shouldPopup = true;
+		}
 		else if (shouldShowExclusive(ExclusiveUIEnum::Trading)) {
 			shouldPopup = true;
 		}

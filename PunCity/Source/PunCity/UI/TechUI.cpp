@@ -155,8 +155,3 @@ void UTechUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callBackEnum)
 	// Play Sound
 	dataSource()->Spawn2DSound("UI", "ResearchInitiated");
 }
-
-void UTechUI::CloseUI()
-{
-	SetShowUI(false);
-}

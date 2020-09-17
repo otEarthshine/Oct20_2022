@@ -80,7 +80,10 @@ void UMainGameUI::PunInit()
 	//GlobalItemsHorizontalBox->ClearChildren();
 
 	ResearchBarUI->OnClicked.AddDynamic(this, &UMainGameUI::ToggleResearchMenu);
-	AddToolTip(ResearchBarUI, "Bring up technology UI.\n<Orange>[T]</>");
+	AddToolTip(ResearchBarUI, "Bring up Technology UI.\n<Orange>[T]</>");
+
+	ProsperityBarUI->OnClicked.AddDynamic(this, &UMainGameUI::ToggleProsperityUI);
+	AddToolTip(ProsperityBarUI, "Bring up House Upgrade Unlocks UI.");
 
 	GatherSettingsOverlay->SetVisibility(ESlateVisibility::Collapsed);
 
@@ -1119,9 +1122,9 @@ void UMainGameUI::Tick()
 			
 			std::stringstream ssSci;
 			unlockSys->SetDisplaySciencePoint(ssSci);
-			SetText(ResearchingScienceText, ssSci.str());
+			SetText(ResearchingAmountText, ssSci.str());
 			
-			ResearchBar->SetWidthOverride(unlockSys->hasTargetResearch() ? (unlockSys->researchFraction() * 250) : 0);
+			ResearchBar->SetWidthOverride(unlockSys->hasTargetResearch() ? (unlockSys->researchFraction() * 240) : 0);
 			ResearchBarUI->SetVisibility(ESlateVisibility::Visible);
 		}
 		else {
@@ -1368,10 +1371,16 @@ void UMainGameUI::ToggleResearchMenu()
 {
 	UnlockSystem* unlockSystem = dataSource()->simulation().unlockSystem(playerId());
 	if (unlockSystem && unlockSystem->researchEnabled) {
-		GetPunHUD()->ToggleTechTree();
+		GetPunHUD()->ToggleTechUI();
 	}
 }
-
+void UMainGameUI::ToggleProsperityUI()
+{
+	UnlockSystem* unlockSystem = dataSource()->simulation().unlockSystem(playerId());
+	if (unlockSystem && unlockSystem->prosperityEnabled) {
+		GetPunHUD()->ToggleProsperityUI();
+	}
+}
 
 
 void UMainGameUI::ClickRerollButton()

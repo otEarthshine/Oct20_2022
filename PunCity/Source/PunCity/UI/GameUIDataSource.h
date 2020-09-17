@@ -101,6 +101,13 @@ enum class UIEnum
 	TechUI,
 	TechEraUI,
 	TechBox,
+
+	ProsperityUI,
+	ProsperityColumnUI,
+	ProsperityBoxUI,
+
+	JobPriorityRow,
+	
 	
 	SaveSelection,
 

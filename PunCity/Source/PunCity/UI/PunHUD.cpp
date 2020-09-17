@@ -102,6 +102,13 @@ APunHUD::APunHUD()
 	LoadClass(UIEnum::TechEraUI, "TechTree/TechEraUIWidget");
 	LoadClass(UIEnum::TechBox, "TechTree/TechBoxUIWidget");
 	
+	LoadClass(UIEnum::ProsperityUI, "TechTree/ProsperityUIWidget");
+	LoadClass(UIEnum::ProsperityColumnUI, "TechTree/ProsperityColumnUIWidget");
+	LoadClass(UIEnum::ProsperityBoxUI, "TechTree/ProsperityBoxUIWidget");
+
+	LoadClass(UIEnum::JobPriorityRow, "TechTree/TechTreeUIWidget");
+	
+	
 	LoadClass(UIEnum::SaveSelection, "EscMenu/SaveSelectionWidget");
 
 	LoadClass(UIEnum::PlayerListElement, "MainMenu/PlayerListElement");
@@ -216,6 +223,8 @@ void APunHUD::PunTick(bool isPhotoMode)
 	_initialResourceUI->TickUI();
 	
 	_techUI->TickUI();
+	_prosperityUI->TickUI();
+	
 	_statisticsUI->TickUI();
 	_armyMoveUI->TickUI();
 
@@ -232,6 +241,8 @@ void APunHUD::PunTick(bool isPhotoMode)
 	_initialResourceUI->CheckPointerOnUI();
 	
 	_techUI->CheckPointerOnUI();
+	_prosperityUI->CheckPointerOnUI();
+	
 	_escMenuUI->CheckPointerOnUI();
 	_armyMoveUI->CheckPointerOnUI();
 	UPunWidget::TickIsHovered();
@@ -310,6 +321,9 @@ void APunHUD::Setup(IPunPlayerController* controller, USceneComponent* worldWidg
 	_techUI = AddWidgetToHUDCast<UTechUI>(UIEnum::TechUI);
 	_techUI->PunInit();
 
+	_prosperityUI = AddWidgetToHUDCast<UProsperityUI>(UIEnum::ProsperityUI);
+	_prosperityUI->PunInit();
+
 	_armyMoveUI = AddWidgetToHUDCast<UArmyMoveUI>(UIEnum::ArmyMoveUI);
 	_armyMoveUI->PunInit();
 
@@ -348,6 +362,7 @@ void APunHUD::KeyPressed_Escape()
 	_targetConfirmUI->CloseUI();
 	
 	_techUI->SetShowUI(false);
+	_prosperityUI->SetShowUI(false);
 
 	//if (uiEnum == ExclusiveUIEnum::None &&
 	//	!_descriptionUISystem->IsShowingDescriptionUI())

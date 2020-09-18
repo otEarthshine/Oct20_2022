@@ -107,6 +107,7 @@ public:
 	}
 
 	int32 GetHouseLvlCount(int32 playerId, int32 houseLvl, bool includeHigherLvl);
+	
 
 	void StartFire(int32 buildingId) {
 		building(buildingId).StartFire();
@@ -259,6 +260,7 @@ private:
 
 	std::vector<int32> _scheduleBuildingIds;
 	std::vector<int32> _scheduleTicks;
+	
 
 private:
 	/*

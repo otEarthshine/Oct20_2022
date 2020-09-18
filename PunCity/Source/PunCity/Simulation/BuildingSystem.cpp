@@ -238,6 +238,8 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		  CASE_BUILDING(CardEnum::Cattery, Building);
 		  CASE_BUILDING(CardEnum::InvestmentBank, Bank);
 
+		  CASE_BUILDING(CardEnum::StatisticsBureau, Building);
+		  CASE_BUILDING(CardEnum::JobManagementBureau, Building);
 
 	default:
 		building = make_unique<Building>();
@@ -486,7 +488,7 @@ void BuildingSystem::RemoveBuilding(int buildingId)
 	Direction faceDirection = _buildings[buildingId]->faceDirection();
 	TileArea frontArea = area.GetFrontArea(faceDirection);
 	int32 playerId = _buildings[buildingId]->playerId();
-
+	bool isConstructed = _buildings[buildingId]->isConstructed();
 
 #if TRAILER_MODE
 	if (buildingEnum == CardEnum::Windmill) {
@@ -517,6 +519,7 @@ void BuildingSystem::RemoveBuilding(int buildingId)
 		}
 	}
 
+	
 	_buildings[buildingId]->Deinit();
 }
 

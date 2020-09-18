@@ -146,6 +146,12 @@ public:
 		ResetGameUI();
 		_statisticsUI->OpenStatisticsUI(playerId);
 	}
+	void OpenJobPriorityUI() override {
+		ResetGameUI();
+		_mainGameUI->ToggleJobPriorityUI();
+	}
+
+	
 	bool IsResourcePriceUIOpened(ResourceEnum resourceEnum) override {
 		return _statisticsUI->GetVisibility() != ESlateVisibility::Collapsed &&
 			_statisticsUI->StatSwitcher->GetActiveWidgetIndex() == 7 &&

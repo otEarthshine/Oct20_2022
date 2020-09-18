@@ -130,6 +130,10 @@ public:
 
 	UFUNCTION() void OnClickLeaderSkillButton();
 
+	void ToggleJobPriorityUI() {
+		JobPriorityOverlay->SetVisibility(JobPriorityOverlay->GetVisibility() == ESlateVisibility::Collapsed ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	}
+
 public:
 	//UPROPERTY(meta = (BindWidget)) UOverlay* AnimatedCardOverlay;
 	
@@ -240,6 +244,7 @@ private:
 
 	UPROPERTY(meta = (BindWidget)) UOverlay* JobPriorityOverlay;
 	UPROPERTY(meta = (BindWidget)) UScrollBox* JobPriorityScrollBox;
+	UPROPERTY(meta = (BindWidget)) UButton* JobPriorityCloseButton;
 	
 	UPROPERTY(meta = (BindWidget)) UButton* ProsperityBarUI;
 	UPROPERTY(meta = (BindWidget)) USizeBox* ProsperityBar;
@@ -370,6 +375,10 @@ private:
 	//UFUNCTION() void ClickConverterCardHandSubmitButton();
 	UFUNCTION() void ClickConverterCardHandCancelButton();
 
+
+	UFUNCTION() void OnClickJobPriorityCloseButton() {
+		JobPriorityOverlay->SetVisibility(ESlateVisibility::Collapsed);
+	}
 
 
 	UFUNCTION() void OnCheckHarvest_All(bool active) {

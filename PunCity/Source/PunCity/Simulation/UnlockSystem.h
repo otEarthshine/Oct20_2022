@@ -6,6 +6,7 @@
 #include "PunCity/CppUtils.h"
 #include <unordered_map>
 #include "PunCity/PunUtils.h"
+#include "Buildings/House.h"
 
 
 const std::vector<std::string> eraNumberToText =
@@ -556,7 +557,6 @@ public:
 			era = 2;
 			//AddTech_Building(era, TechEnum::BeerBrewery, CardEnum::BeerBrewery);
 			AddTech_Building(era, TechEnum::Pottery, { CardEnum::Potter, CardEnum::ClayPit, CardEnum::Brickworks });
-			AddTech_Building(era, TechEnum::FurnitureWorkshop, { CardEnum::FurnitureWorkshop, CardEnum::PaperMaker});
 			AddTech_Bonus(era, TechEnum::Plantation);
 			
 			AddTech_Building(era, TechEnum::DeepMining, { CardEnum::IronMine, CardEnum::GoldMine, CardEnum::GemstoneMine });
@@ -566,9 +566,6 @@ public:
 
 			//
 			era = 3;
-			AddTech_Building(era, TechEnum::IronRefining, { CardEnum::IronSmelter });
-			AddTech_Building(era, TechEnum::GoldRefining, { CardEnum::GoldSmelter });
-			AddTech_Building(era, TechEnum::JewelryCrafting, { CardEnum::Jeweler });
 			AddTech_Building(era, TechEnum::TradingCompany, CardEnum::TradingCompany);
 			AddTech_Building(era, TechEnum::HerbFarming, { CardEnum::HerbSeed });
 			
@@ -616,7 +613,6 @@ public:
 			AddTech_Building(era, TechEnum::Theatre, CardEnum::Theatre);
 			AddTech_Bonus(era, TechEnum::TraderDiscount);
 
-			AddTech_Building(era, TechEnum::CottonMilling, { CardEnum::CottonMill });
 			AddTech_Building(era, TechEnum::Printing, { CardEnum::PrintingPress });
 			
 			//
@@ -641,13 +637,87 @@ public:
 			 * Prosperity UI
 			 */
 			era = 1;
+			AddProsperityTech_Building(era, 8, TechEnum::FurnitureWorkshop, CardEnum::FurnitureWorkshop);
+
+			era = 2;
 			AddProsperityTech_Building(era, 4, TechEnum::BeerBrewery, CardEnum::BeerBrewery);
 
-			
+			era = 3;
+			AddProsperityTech_Building(era, 4, TechEnum::PaperMaker, CardEnum::PaperMaker);
+
+			era = 4;
+			AddProsperityTech_Building(era, 4, TechEnum::IronRefining, CardEnum::IronSmelter);
+
+			era = 5;
+			AddProsperityTech_Building(era, 4, TechEnum::GoldRefining, CardEnum::GoldSmelter);
+
+			era = 6;
+			AddProsperityTech_Building(era, 4, TechEnum::JewelryCrafting, CardEnum::Jeweler);
+
+			era = 7;
+			AddProsperityTech_Building(era, 4, TechEnum::CottonMilling, CardEnum::CottonMill);
 		}
 	}
 	//virtual ~UnlockSystem() = default;
 
+	void UpdateProsperityHouseCount()
+	{
+		if (!prosperityEnabled) 
+		{
+			// Prosperity unlock at 4 houses
+			PopupInfo popupInfo(_playerId, "Unlocked: House Upgrade Unlocks Menu.", {"Show House Upgrade Unlocks", "Close"}, 
+								PopupReceiverEnum::UnlockedHouseTree_ShowProsperityUI);
+			popupInfo.warningForExclusiveUI = ExclusiveUIEnum::ProsperityUI;
+			popupInfo.forcedSkipNetworking = true;
+			_simulation->AddPopupToFront(popupInfo);
+
+			prosperityEnabled = true;
+		}
+
+		if (!prosperityEnabled) {
+			return;
+		}
+		
+		for (int32 i = 1; i < House::GetMaxHouseLvl(); i++)
+		{
+			int32 houseCount = _simulation->GetHouseLvlCount(_playerId, i, true);
+			
+			std::vector<std::shared_ptr<ResearchInfo>>& prosperityTechs = _houseLvlToProsperityTech[i];
+			for (size_t j = 0; j < prosperityTechs.size(); j++) 
+			{
+				auto& properityTech = prosperityTechs[j];
+				if (properityTech->state != TechStateEnum::Researched)
+				{
+					if (houseCount >= _houseLvlToUnlockCount[i][j]) 
+					{
+						// Unlocked
+						// Take away the amount of science used 
+						properityTech->state = TechStateEnum::Researched;
+						properityTech->OnUnlock(_playerId, _simulation);
+
+						techsFinished++;
+						needProsperityDisplayUpdate = true;
+
+						//// popup
+						//{
+						//	std::stringstream ss;
+						//	ss << "Reached " << _houseLvlToUnlockCount[i][j] << " house lvl " << i << ".\n";
+						//	ss << "Unlocked " << properityTech->GetName() << ".";
+						//	PopupInfo popupInfo(_playerId, ss.str());
+						//	popupInfo.warningForExclusiveUI = ExclusiveUIEnum::ProsperityUI;
+						//	popupInfo.forcedSkipNetworking = true;
+						//	_simulation->AddPopupToFront(popupInfo);
+
+						//	_simulation->soundInterface()->Spawn2DSound("UI", "ResearchComplete", _playerId);
+						//}
+					}
+					else {
+						break;
+					}
+				}
+			}
+		}
+	}
 
 	void UnlockAll()
 	{
@@ -748,7 +818,7 @@ public:
 			tech->OnUnlock(_playerId, _simulation);
 
 			techsFinished++;
-			needDisplayUpdate = true;
+			needTechDisplayUpdate = true;
 
 			std::vector<std::string> choices = { "Show tech tree", "Close" };
 			PopupReceiverEnum receiver = PopupReceiverEnum::DoneResearchEvent_ShowTree;
@@ -923,8 +993,8 @@ public:
 	 */
 	void Serialize(FArchive& Ar)
 	{
-		needDisplayUpdate = true; // After load/save, we need to update the display
-
+		needTechDisplayUpdate = true; // After load/save, we need to update the display
+		needProsperityDisplayUpdate = true;
 
 		Ar << researchEnabled;
 		Ar << techsFinished;
@@ -995,18 +1065,21 @@ public:
 	/*
 	 * Serialize
 	 */
-	bool needDisplayUpdate = true;
-
-	bool researchEnabled;
+	bool needTechDisplayUpdate = true;
+	
 	int32 techsFinished = -1;
 	bool townhallUpgradeUnlocked = false;
 
-	bool prosperityEnabled;
-
+	bool researchEnabled;
 	bool shouldOpenTechUI = false;
-	bool shouldOpenProsperityUI = false;
 
 	int32 science100XsecPerRound = 0;
+	
+	// prospertiy
+	bool prosperityEnabled;
+	bool needProsperityDisplayUpdate = true;
+	
+	bool shouldOpenProsperityUI = false;
 
 private:
 	IGameSimulationCore* _simulation = nullptr;

@@ -892,6 +892,12 @@ public:
 			ModuleTransforms::CreateSet("Ministry", {}, {})
 		},
 
+		{ // Statistics Bureau
+			ModuleTransforms::CreateSet("Ministry", {}, {})
+		},
+		{ // JobManagementBureau
+			ModuleTransforms::CreateSet("Ministry", {}, {})
+		},
 			
 		};
 	}

@@ -35,6 +35,12 @@ void UBuildingJobUI::PunInit(int buildingId, bool isHouse)
 	TradeButton->OnClicked.AddDynamic(this, &UBuildingJobUI::OnClickTradeButton);
 	TradeButton->SetVisibility(ESlateVisibility::Collapsed);
 
+	BUTTON_ON_CLICK(StatisticsButton, this, &UBuildingJobUI::OnClickStatisticsButton);
+	StatisticsButton->SetVisibility(ESlateVisibility::Collapsed);
+
+	BUTTON_ON_CLICK(JobPriorityButton, this, &UBuildingJobUI::OnClickJobPriorityButton);
+	JobPriorityButton->SetVisibility(ESlateVisibility::Collapsed);
+
 	//if (isHouse)
 	//{
 	//	ArrowUp->SetVisibility(ESlateVisibility::Collapsed);

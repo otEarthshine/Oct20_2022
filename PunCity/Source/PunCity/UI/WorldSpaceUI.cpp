@@ -673,7 +673,9 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 						IsSpecialProducer(building.buildingEnum()) ||
 						IsTradingPostLike(building.buildingEnum()) ||
 						building.isEnum(CardEnum::TradingCompany) ||
-						IsBarrack(building.buildingEnum());
+						IsBarrack(building.buildingEnum()) ||
+						building.isEnum(CardEnum::JobManagementBureau) ||
+						building.isEnum(CardEnum::StatisticsBureau);
 
 	// Every buildings can be boosted
 	buildingJobUI->SetSpeedBoost(building);

@@ -1634,6 +1634,9 @@ enum class CardEnum : uint16
 
 	Cattery,
 	InvestmentBank,
+
+	StatisticsBureau,
+	JobManagementBureau,
 	
 	//! Non-Building Cards
 	Investment,
@@ -2197,6 +2200,11 @@ static const BldInfo BuildingInfo[]
 	
 	BldInfo(CardEnum::Cattery,				"Cattery",					WorldTile2(4, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 30, 30, 0 }, "+15% housing appeal to surrounding houses."),
 	BldInfo(CardEnum::InvestmentBank,		"Investment Bank",			WorldTile2(4, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0, 70, 20 }, "Gain <img id=\"Coin\"/> equals to +10% of <img id=\"Coin\"/> every round."),
+
+	// Unique Cards
+	BldInfo(CardEnum::StatisticsBureau, "Statistics Bureau", WorldTile2(4, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 30, 0, 0 }, "Show Town Statistics."),
+	BldInfo(CardEnum::JobManagementBureau, "Job Management Bureau", WorldTile2(4, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 30, 0, 0 }, "Allow managing job priority (global)."),
+
 	
 	// Can no longer pickup cards
 	//BldInfo("Necromancer tower",	WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0,	{30, 30, 0},	"All citizens become zombie minions. Happiness becomes irrelevant. Immigration ceased."),

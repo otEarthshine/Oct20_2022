@@ -45,6 +45,9 @@ public:
 	UPROPERTY(meta = (BindWidget)) USizeBox* SpeedBoostIcon;
 	UPROPERTY(meta = (BindWidget)) UButton* TradeButton;
 
+	UPROPERTY(meta = (BindWidget)) UButton* StatisticsButton;
+	UPROPERTY(meta = (BindWidget)) UButton* JobPriorityButton;
+
 public:
 	void PunInit(int buildingId, bool isHouse);
 
@@ -120,6 +123,12 @@ public:
 		//}
 		else if (IsSpecialProducer(building.buildingEnum())) {
 			SetProgress(building.barFraction());
+		}
+		else if (building.isEnum(CardEnum::JobManagementBureau)) {
+			
+		}
+		else if (building.isEnum(CardEnum::JobManagementBureau)) {
+
 		}
 		else {
 			std::vector<float> inputFractions;
@@ -377,7 +386,13 @@ private:
 			GetPunHUD()->OpenTradeUI(_buildingId);
 		}
 	}
-	
+
+	UFUNCTION() void OnClickStatisticsButton() {
+		GetPunHUD()->OpenStatisticsUI(playerId());
+	}
+	UFUNCTION() void OnClickJobPriorityButton() {
+		GetPunHUD()->OpenJobPriorityUI();
+	}
 
 	void SetPriorityButton(PriorityEnum priority)
 	{

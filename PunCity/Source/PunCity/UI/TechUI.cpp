@@ -96,7 +96,7 @@ void UTechUI::TickUI()
 
 	// Update highlight to highlight the tech queue
 	const auto& techQueue = unlockSys->techQueue();
-	if (techQueue != _lastTechQueue || unlockSys->needDisplayUpdate)
+	if (techQueue != _lastTechQueue || unlockSys->needTechDisplayUpdate)
 	{
 		// First pass: isResearched or isLocked
 		for (const auto& pair : techEnumToTechBox) {
@@ -114,7 +114,7 @@ void UTechUI::TickUI()
 		}
 		
 		_lastTechQueue = techQueue;
-		unlockSys->needDisplayUpdate = false;
+		unlockSys->needTechDisplayUpdate = false;
 	}
 
 	// Move research fraction...

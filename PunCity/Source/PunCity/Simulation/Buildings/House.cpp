@@ -384,6 +384,11 @@ void House::UpgradeHouse(int32 lvl)
 	_houseLvl = lvl;
 
 	_simulation->QuestUpdateStatus(_playerId, QuestEnum::HouseUpgradeQuest);
+
+
+	_simulation->UpdateProsperityHouseCount(_playerId);
+	
+	
 	_simulation->soundInterface()->Spawn2DSound("UI", "UpgradeHouse", -1, _centerTile);
 
 	_allowedOccupants = houseBaseOccupants + (lvl - 1) / 2;

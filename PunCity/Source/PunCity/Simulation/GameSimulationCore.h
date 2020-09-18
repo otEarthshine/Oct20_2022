@@ -554,6 +554,17 @@ public:
 		}
 		return finishedCount;
 	}
+
+	int32 jobBuildingCount(int32 playerId) final
+	{
+		const std::vector<std::vector<int32>>& jobBuildingEnumToIds = playerOwned(playerId).jobBuildingEnumToIds();
+		int32 jobBuildingCount = 0;
+		for (size_t i = 0; i < jobBuildingEnumToIds.size(); i++) {
+			jobBuildingCount += jobBuildingEnumToIds[i].size();
+		}
+		return jobBuildingCount;
+	}
+	
 	const SubregionLists<int32>& buildingSubregionList() final {
 		return _buildingSystem->buildingSubregionList();
 	}
@@ -1096,9 +1107,16 @@ public:
 
 	// Tech
 
-	bool IsResearched(int32_t playerId, TechEnum techEnum) final { return unlockSystem(playerId)->IsResearched(techEnum); }
-	bool HasTargetResearch(int32_t playerId) final { return unlockSystem(playerId)->hasTargetResearch(); }
+	bool IsResearched(int32 playerId, TechEnum techEnum) final { return unlockSystem(playerId)->IsResearched(techEnum); }
+	bool HasTargetResearch(int32 playerId) final { return unlockSystem(playerId)->hasTargetResearch(); }
 	int32 techsCompleted(int32 playerId) final { return unlockSystem(playerId)->techsCompleted(); }
+
+
+	// Prosperity
+	void UpdateProsperityHouseCount(int32 playerId) final {
+		unlockSystem(playerId)->UpdateProsperityHouseCount();
+	}
+
 	
 
 	//! Debug

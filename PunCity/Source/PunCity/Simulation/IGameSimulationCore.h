@@ -175,6 +175,9 @@ public:
 	virtual const std::vector<int32>& buildingIds(int32 playerId, CardEnum buildingEnum) = 0;
 	virtual int32 buildingCount(int32 playerId, CardEnum buildingEnum) = 0;
 	virtual int32 buildingFinishedCount(int32 playerId, CardEnum cardEnum) = 0;
+
+	virtual int32 jobBuildingCount(int32 playerId) = 0;
+	
 	virtual const SubregionLists<int32>& buildingSubregionList() = 0;
 
 	template<typename Func>
@@ -340,6 +343,8 @@ public:
 	virtual bool IsResearched(int32 playerId, TechEnum techEnum) = 0;
 	virtual bool HasTargetResearch(int32 playerId) = 0;;
 	virtual int32 techsCompleted(int32 playerId) = 0;
+
+	virtual void UpdateProsperityHouseCount(int32 playerId) = 0;
 
 	// Buildings associated with Players
 	virtual void PlayerAddHouse(int32 playerId, int objectId) = 0;

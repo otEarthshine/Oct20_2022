@@ -132,6 +132,21 @@ void House::FinishConstruction()
 	//UpdateSubscription();
 
 	_simulation->RecalculateTaxDelayed(_playerId); // Recalculate sci
+
+
+	// Prosperity unlock at 3 houses
+	auto unlockSys = _simulation->unlockSystem(_playerId);
+	if (!unlockSys->prosperityEnabled && 
+		_simulation->buildingFinishedCount(_playerId, CardEnum::House) >= 3)
+	{
+		unlockSys->prosperityEnabled = true;
+		
+		PopupInfo popupInfo(_playerId, "Unlocked: House Upgrade Unlocks Menu.", { "Show House Upgrade Unlocks", "Close" },
+			PopupReceiverEnum::UnlockedHouseTree_ShowProsperityUI);
+		popupInfo.warningForExclusiveUI = ExclusiveUIEnum::ProsperityUI;
+		popupInfo.forcedSkipNetworking = true;
+		_simulation->AddPopupToFront(popupInfo);
+	}
 }
 
 int32 House::GetAppealPercent() {

@@ -26,6 +26,8 @@ public:
 
 	void PunInit()
 	{
+		SetVisibility(ESlateVisibility::Collapsed);
+		
 		CloseButton->OnClicked.AddDynamic(this, &UProsperityUI::CloseUI);
 		CloseButton2->OnClicked.AddDynamic(this, &UProsperityUI::CloseUI);
 	}

@@ -54,6 +54,10 @@ void ACameraPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("LeftMouseButton", IE_Released, this, &ACameraPawn::LeftMouseUp);
 
 	PlayerInputComponent->BindAction("RightMouseButton", IE_Pressed, this, &ACameraPawn::RightMouseDown);
+	PlayerInputComponent->BindAction("RightMouseButton", IE_Released, this, &ACameraPawn::RightMouseUp);
+
+	PlayerInputComponent->BindAction("MiddleMouseButton", IE_Pressed, this, &ACameraPawn::MiddleMouseDown);
+	PlayerInputComponent->BindAction("MiddleMouseButton", IE_Released, this, &ACameraPawn::MiddleMouseUp);
 
 	PlayerInputComponent->BindAction("KeyPressed_Escape", IE_Pressed, this, &ACameraPawn::KeyPressed_Escape);
 
@@ -219,6 +223,33 @@ void ACameraPawn::RightMouseDown()
 	if (_networkInterface) {
 		_networkInterface->GetPunHUD()->RightMouseDown();
 	}
+
+	isRightMouseDown = true;
+	rightMouseDragStartAtom = _networkInterface->GetMouseGroundAtom();
+	rightMouseDragCamStartAtom = cameraAtom();
+}
+
+void ACameraPawn::RightMouseUp()
+{
+#if !UI_ALL
+	return;
+#endif
+	isRightMouseDown = false;
+}
+
+void ACameraPawn::MiddleMouseDown()
+{
+	// FrostPunk: if right mouse down, don't activate middle mouse when clicked
+	if (!isRightMouseDown)
+	{
+		isMiddleMouseDown = true;
+		middleDragStartMousePosition = _networkInterface->GetMousePositionPun();
+	}
+}
+
+void ACameraPawn::MiddleMouseUp()
+{
+	isMiddleMouseDown = false;
 }
 
 void ACameraPawn::KeyPressed_Escape()
@@ -292,36 +323,6 @@ void ACameraPawn::AdjustCameraZoomTilt()
 void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, MouseInfo mouseInfo)
 {
 	Super::Tick(DeltaTime);
-
-	// Input Mouse edge pan
-	{
-		FVector2D mouseLocation = _networkInterface->GetMousePositionPun();
-		FVector2D viewportSize = _networkInterface->GetViewportSizePun();
-
-		//float closestX = std::min(mouseLocation.X, viewportSize.X - mouseLocation.X);
-		//float closestY = std::min(mouseLocation.Y, viewportSize.Y - mouseLocation.Y);
-		//PUN_LOG("Mouse: %f %f", closestX, closestY);
-
-		_cameraEdgeMovementInput = FVector2D(0, 0);
-
-		if (mouseLocation.X >= 0.0f && mouseLocation.Y >= 0.0f)  // ensure validity
-		{
-			if (mouseLocation.X < 10) {
-				_cameraEdgeMovementInput.Y = -1.0f;
-			}
-			else if (viewportSize.X - mouseLocation.X < 10) {
-				_cameraEdgeMovementInput.Y = 1.0f;
-			}
-
-			if (mouseLocation.Y < 10) {
-				_cameraEdgeMovementInput.X = 1.0f;
-			}
-			else if (viewportSize.Y - mouseLocation.Y < 10) {
-				_cameraEdgeMovementInput.X = -1.0f;
-			}
-		}
-
-	}
 
 	/*
 	 * System movement
@@ -511,7 +512,16 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 	}
 
 	/*
-	 * Rotate
+	 * MANUAL CONTROL BEYOND
+	 *  In FrostPunk:
+	 *  - Keyboard precedes mouseControl. If keyboard control is activated, don't update mouse control
+	 *  - If right or middle mouse down, don't edge pan
+	 *  
+	 */
+
+
+	/*
+	 * Keyboard Rotate
 	 */
 	// Rotate Yaw
 	FRotator rotation;
@@ -520,8 +530,10 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 		rotation.Yaw += _cameraRotateInput.X;
 		SetActorRotation(rotation);
 	}
+	bool isKeyboardRotating = !_cameraRotateInput.Equals(FVector2D::ZeroVector);
 
 	// Rotate Pitch
+	if (PunSettings::IsOn("AllowCameraPitch"))
 	{
 		rotation = GetActorRotation();
 		rotation.Pitch += _cameraRotateInput.Y;
@@ -532,10 +544,14 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 	
 
 	/*
-	 * Zoom
+	 * Scroll Zoom
+	 * - this set the target _cameraZoomStep
+	 *
+	 * Note: FrostPunk scroll zoom is disabled when the middle mouse is down
 	 */
+	if (!isMiddleMouseDown)
 	{	
-		int32 zoomStepSkip = static_cast<int32>(MinZoomSkipSteps + _zoomSpeedFraction * (MaxZoomSkipSteps - MinZoomSkipSteps));
+		int32 zoomStepSkip = static_cast<int32>(MinZoomSkipSteps + zoomSpeedFraction * (MaxZoomSkipSteps - MinZoomSkipSteps));
 		if (_cameraZoomInputAxis == -1.0f) 
 		{
 			int32 preferredZoomStep = min(MaxZoomStep, _cameraZoomStep + zoomStepSkip);
@@ -651,9 +667,11 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 
 	
 
+	/*
+	 * Mouse Zoom Updates
+	 * - Use _cameraZoomStep to calculate the smooth camera zoom movement
+	 */
 	float lastZoomAmount = zoomDistance();
-
-	// Set camera component zoom
 	{
 		// During transition state, isMapZoom should use the old state
 		// This prevent zoom flash while the display system catch up
@@ -697,13 +715,15 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 	//PUN_LOG("Cam Update zoomStep:%d %f, rotator:%s", _cameraZoomStep, _smoothZoomDistance, *rotation.ToCompactString());
 	
 
-	// Movement
+	/*
+	 * Keyboard Movement
+	 */
+	auto moveCamera = [&](FVector2D movementInput)
 	{
 		float moveSpeed = moveSpeedAtMinZoomAmount * lastZoomAmount / MinZoomAmount;
+		
 		FVector actorHorizontalForward = GetActorForwardVector();
 		actorHorizontalForward.Z = 0.0f;
-
-		FVector2D movementInput = _cameraMovementInput + _cameraEdgeMovementInput;
 		
 		FVector locationShift = actorHorizontalForward * movementInput.X * DeltaTime * moveSpeed;
 		locationShift += GetActorRightVector() * movementInput.Y * DeltaTime * moveSpeed;
@@ -716,7 +736,7 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 		if (_camShiftLocation.Y < 0) {
 			_camShiftLocation.Y = 0;
 		}
-		
+
 		float maxX = GameMapConstants::TilesPerWorldX * CoordinateConstants::DisplayUnitPerTile;
 		if (_camShiftLocation.X > maxX) {
 			_camShiftLocation.X = maxX;
@@ -725,11 +745,138 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 		if (_camShiftLocation.Y > maxY) {
 			_camShiftLocation.Y = maxY;
 		}
+	};
+	
+	{
+		moveCamera(_cameraMovementInput);
+		
+		//float moveSpeed = moveSpeedAtMinZoomAmount * lastZoomAmount / MinZoomAmount;
 
-		//if (_cameraMovementInput.X > 0 || _cameraMovementInput.Y) {
-		//	PUN_LOG("Movement %s", *_camShiftLocation.ToString());
+		//FVector2D movementInput = _cameraMovementInput + _cameraEdgeMovementInput;
+		
+		//FVector actorHorizontalForward = GetActorForwardVector();
+		//actorHorizontalForward.Z = 0.0f;
+
+		//FVector2D movementInput = _cameraMovementInput + _cameraEdgeMovementInput;
+		//
+		//FVector locationShift = actorHorizontalForward * movementInput.X * DeltaTime * moveSpeed;
+		//locationShift += GetActorRightVector() * movementInput.Y * DeltaTime * moveSpeed;
+
+		//_camShiftLocation += locationShift;
+
+		//if (_camShiftLocation.X < 0) {
+		//	_camShiftLocation.X = 0;
 		//}
+		//if (_camShiftLocation.Y < 0) {
+		//	_camShiftLocation.Y = 0;
+		//}
+		//
+		//float maxX = GameMapConstants::TilesPerWorldX * CoordinateConstants::DisplayUnitPerTile;
+		//if (_camShiftLocation.X > maxX) {
+		//	_camShiftLocation.X = maxX;
+		//}
+		//float maxY = GameMapConstants::TilesPerWorldY * CoordinateConstants::DisplayUnitPerTile;
+		//if (_camShiftLocation.Y > maxY) {
+		//	_camShiftLocation.Y = maxY;
+		//}
+
+		////if (_cameraMovementInput.X > 0 || _cameraMovementInput.Y) {
+		////	PUN_LOG("Movement %s", *_camShiftLocation.ToString());
+		////}
 	}
+	bool isKeyboardMoving = !_cameraMovementInput.Equals(FVector2D::ZeroVector, 0.01);
+
+
+	/*
+	 * Right Mouse Down Drag Pan
+	 *  - FrostPunk: Keyboard precedes mouseControl. If keyboard control is activated, don't update mouse control
+	 */
+	FVector2D currentMousePosition = _networkInterface->GetMousePositionPun();
+	
+	if (isRightMouseDown &&
+		!isKeyboardMoving && !isKeyboardRotating)
+	{
+		WorldAtom2 currentGroundAtom = _networkInterface->GetMouseGroundAtom();
+
+		// Special case out of bound return mouse to the initial position
+		if (currentGroundAtom == WorldAtom2::Invalid) {
+			SetCameraAtom(rightMouseDrag_LastWorkingAtom);
+		}
+		else
+		{
+			WorldAtom2 camAtomMoved = cameraAtom() - rightMouseDragCamStartAtom; // camera moved from its drag start pos
+
+			// if camAtom doesn't move, the shift from right mouse drag would be  camAtom - (currentMouseGroundAtom - rightMouseDragStartAtom)
+			//  but camAtom will move and must be corrected with camAtomMoved
+
+			// currentGroundAtom is affected by cameraAtom's adjustment and must be readjusted
+			WorldAtom2 currentMouseGroundAtomShiftedback = currentGroundAtom - camAtomMoved;
+
+			WorldAtom2 rightMouseMovedAtom = currentMouseGroundAtomShiftedback - rightMouseDragStartAtom;
+			WorldAtom2 newCameraAtom = rightMouseDragCamStartAtom - rightMouseMovedAtom;
+			
+			rightMouseDrag_LastWorkingAtom = newCameraAtom;
+			SetCameraAtom(newCameraAtom);
+		}
+	}
+
+	/*
+	 * Middle Mouse Down Drag Rotate
+	 */
+	if (isMiddleMouseDown &&
+		!isKeyboardMoving && !isKeyboardRotating)
+	{
+		float mousePositionDiffX = currentMousePosition.X - middleDragStartMousePosition.X;
+		float halfViewportSizeX = _networkInterface->GetViewportSizePun().X / 2.0f;
+
+		float anglePerHalfScreen = MinMouseRotateAnglePerHalfScreenMove + (MaxMouseRotateAnglePerHalfScreenMove - MinMouseRotateAnglePerHalfScreenMove) * mouseRotateSpeedFraction;
+		float diffAngle = mousePositionDiffX * anglePerHalfScreen / halfViewportSizeX;
+
+		rotation = GetActorRotation();
+		rotation.Yaw += diffAngle;
+		SetActorRotation(rotation);
+		
+		// Mouse always stay in the same spot when doing drag Rotate
+		_networkInterface->SetMouseLocationPun(middleDragStartMousePosition);
+	}
+
+	/*
+	 * Input Mouse edge pan
+	 */
+	if (!isRightMouseDown && !isMiddleMouseDown && 
+		!isKeyboardMoving && !isKeyboardRotating)
+	{
+		FVector2D mouseLocation = _networkInterface->GetMousePositionPun();
+		FVector2D viewportSize = _networkInterface->GetViewportSizePun();
+
+		//float closestX = std::min(mouseLocation.X, viewportSize.X - mouseLocation.X);
+		//float closestY = std::min(mouseLocation.Y, viewportSize.Y - mouseLocation.Y);
+		//PUN_LOG("Mouse: %f %f", closestX, closestY);
+
+		_cameraEdgeMovementInput = FVector2D::ZeroVector;
+
+		if (mouseLocation.X >= 0.0f && mouseLocation.Y >= 0.0f)  // ensure validity
+		{
+			if (mouseLocation.X < 10) {
+				_cameraEdgeMovementInput.Y = -1.0f;
+			}
+			else if (viewportSize.X - mouseLocation.X < 10) {
+				_cameraEdgeMovementInput.Y = 1.0f;
+			}
+
+			if (mouseLocation.Y < 10) {
+				_cameraEdgeMovementInput.X = 1.0f;
+			}
+			else if (viewportSize.Y - mouseLocation.Y < 10) {
+				_cameraEdgeMovementInput.X = -1.0f;
+			}
+		}
+
+		if (!_cameraEdgeMovementInput.Equals(FVector2D::ZeroVector)) {
+			moveCamera(_cameraEdgeMovementInput);
+		}
+	}
+	
 
 	// Testing
 	//auto viewport = GEngine->GameViewport->Viewport;

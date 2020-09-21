@@ -10,6 +10,7 @@
 #include "PunCity/CppUtils.h"
 #include "../QuestSystem.h"
 #include "../BuildingCardSystem.h"
+#include "../UnlockSystem.h"
 
 using namespace std;
 
@@ -52,8 +53,8 @@ static const std::vector<int32_t> townhallLvlToUpgradeMoney =
 	0,
 	200, // Lvl 2
 	1000,
-	3000,
-	10000, // Lvl 5
+	5000,
+	30000, // Lvl 5
 };
 
 int32 TownHall::GetMaxUpgradeLvl() {
@@ -95,19 +96,21 @@ void TownHall::UpgradeTownhall()
 	townhallLvl++;
 	ResetDisplay();
 
-	std::stringstream ss;
-	ss << "Congratulation!";
-	ss << "<space>";
-	ss << "Your townhall is now lvl " << townhallLvl << ".";
-	ss << "<space>";
-	ss << TownhallLvlToUpgradeBonusText[townhallLvl];
+	// Unlock Popup
+	{
+		std::stringstream ss;
+		ss << "Congratulation!";
+		ss << "<space>";
+		ss << "Your townhall is now lvl " << townhallLvl << ".";
+		ss << "<space>";
+		ss << TownhallLvlToUpgradeBonusText[townhallLvl];
 
-	//if (townhallLvl < GetMaxUpgradeLvl()) {
-	//	ss << "Requirements for next upgrade (lvl " << (townhallLvl + 1) << "):\n";
-	//	ss << "  " << GetUpgradeRequirementText();
-	//}
+		_simulation->AddPopup(_playerId, ss.str(), "UpgradeTownhall");
+		_simulation->AddPopupAll(PopupInfo(_playerId, townName() + " has been upgraded to level " + to_string(townhallLvl)), _playerId);
+	}
 
 	auto& cardSys = _simulation->cardSystem(_playerId);
+	auto unlockSys = _simulation->unlockSystem(_playerId);
 
 	if (townhallLvl == 2) {
 		cardSys.AddDrawCards(CardEnum::Snatch, 1);
@@ -116,6 +119,17 @@ void TownHall::UpgradeTownhall()
 		cardSys.AddDrawCards(CardEnum::SellFood, 1);
 		cardSys.AddDrawCards(CardEnum::BuyWood, 1);
 		//cardSys.AddDrawCards(CardEnum::BarrackClubman, 1);
+
+		std::stringstream ss;
+		ss << "Unlocked Priority Button <img id=\"NonPriorityStar\"/>!";
+		ss << "<space>";
+		ss << "Click it to switch building's priority between 3 states:\n";
+		ss << "  <img id=\"NonPriorityStar\"/> Default worker allocation\n";
+		ss << "  <img id=\"PriorityStar\"/> Prioritize working here\n";
+		ss << "  <img id=\"PriorityStop\"/> Don't allow working here";
+		
+		_simulation->AddPopup(_playerId,  ss.str());
+		unlockSys->unlockedPriorityStar = true;
 	}
 	else if (townhallLvl == 3) {
 		cardSys.AddDrawCards(CardEnum::Fort, 1);
@@ -125,6 +139,15 @@ void TownHall::UpgradeTownhall()
 		cardSys.AddDrawCards(CardEnum::BarrackArcher, 1);
 		_simulation->unlockSystem(_playerId)->UnlockBuilding(CardEnum::StoneRoad);
 		_simulation->unlockSystem(_playerId)->UnlockBuilding(CardEnum::IntercityRoad);
+
+		std::stringstream ss;
+		ss << "Unlocked [Set Trade Offer] Button.";
+		ss << "<space>";
+		ss << "Use it to put up Trade Offers at the Townhall.";
+		ss << " Other players can examine your Trade Offers, and directly trade with you (0% Fee).";
+
+		_simulation->AddPopup(_playerId, ss.str());
+		unlockSys->unlockedSetTradeAmount = true;
 	}
 	else if (townhallLvl == 4) {
 		cardSys.AddDrawCards(CardEnum::Warehouse, 1);
@@ -132,9 +155,8 @@ void TownHall::UpgradeTownhall()
 		cardSys.AddDrawCards(CardEnum::SharingIsCaring, 1);
 		cardSys.AddDrawCards(CardEnum::BarrackSwordman, 1);
 	}
-	
-	_simulation->AddPopup(_playerId, ss.str(), "UpgradeTownhall");
-	_simulation->AddPopupAll(PopupInfo(_playerId, townName() + " has been upgraded to level " + to_string(townhallLvl)), _playerId);
+
+
 
 	_simulation->RecalculateTaxDelayed(_playerId);
 

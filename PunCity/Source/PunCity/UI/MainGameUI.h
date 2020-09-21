@@ -11,6 +11,7 @@
 #include <algorithm>
 #include "Components/WidgetSwitcher.h"
 #include "GameSettingsUI.h"
+#include "JobPriorityRow.h"
 
 #include "MainGameUI.generated.h"
 
@@ -32,7 +33,7 @@ public:
 															int32 buildingLvl = -1, int32 stackSize = -1, bool isMiniature = false);
 
 	void CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum) override;
-	
+	void CallBack2(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum) override;
 
 	//void OnCancelPlacement()
 	//{
@@ -76,7 +77,8 @@ public:
 	//}
 
 	bool IsHoveredOnScrollUI() {
-		return ConverterCardHandOverlay->IsHovered();
+		return ConverterCardHandOverlay->IsHovered() ||
+				JobPriorityOverlay->IsHovered();
 	}
 
 	void ShowConfirmationUI(std::string confirmationStr, std::shared_ptr<FNetworkCommand> commandIn) {
@@ -169,6 +171,7 @@ private:
 	UPROPERTY(meta = (BindWidget)) UImage* GatherImage;
 	UPROPERTY(meta = (BindWidget)) UOverlay* GatherSettingsOverlay;
 
+	UPROPERTY(meta = (BindWidget)) UOverlay* StatsButtonOverlay;
 	UPROPERTY(meta = (BindWidget)) UButton* StatsButton;
 	UPROPERTY(meta = (BindWidget)) UImage* StatsImage;
 
@@ -245,6 +248,7 @@ private:
 	UPROPERTY(meta = (BindWidget)) UOverlay* JobPriorityOverlay;
 	UPROPERTY(meta = (BindWidget)) UScrollBox* JobPriorityScrollBox;
 	UPROPERTY(meta = (BindWidget)) UButton* JobPriorityCloseButton;
+	UPROPERTY() TArray<UJobPriorityRow*> JobPriorityRows;
 	
 	UPROPERTY(meta = (BindWidget)) UButton* ProsperityBarUI;
 	UPROPERTY(meta = (BindWidget)) USizeBox* ProsperityBar;

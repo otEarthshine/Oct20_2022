@@ -84,7 +84,8 @@ void UnitSystem::AddAnimals(int animalCount)
 			int16 randY = GameRand::Rand() % GameMapConstants::TilesPerWorldY;
 			WorldTile2 tile(randX, randY);
 
-			if (_simulation->pathAI(false)->isWalkable(randX, randY))
+			if (_simulation->pathAI(false)->isWalkable(randX, randY) &&
+				_simulation->GetProvinceIdClean(tile) != -1)
 			{
 				BiomeEnum biomeEnum = _simulation->GetBiomeEnum(tile);
 				BiomeInfo biomeInfo = GetBiomeInfo(biomeEnum);

@@ -100,17 +100,25 @@ void UBuildingJobUI::SetShowHumanSlots(bool isVisible, bool canManipulateOccupan
 		if (canManipulateOccupants) {
 			PriorityEnum priority = building().priority();
 
-			if (UGameplayStatics::GetTimeSeconds(this) > _lastPriorityInputTime + NetworkInputDelayTime) {
-				SetPriorityButton(priority);
+			// Show priority button if it is available
+			if (simulation().unlockSystem(playerId())->unlockedPriorityStar)
+			{
+				if (UGameplayStatics::GetTimeSeconds(this) > _lastPriorityInputTime + NetworkInputDelayTime) {
+					SetPriorityButton(priority);
+				}
+			}
+			else {
+				ClosePriorityButton();
 			}
 
 			ArrowUp->SetVisibility(ESlateVisibility::Visible);
 			ArrowDown->SetVisibility(ESlateVisibility::Visible);
 		}
 		else {
-			PriorityButton->SetVisibility(ESlateVisibility::Collapsed);
-			NonPriorityButton->SetVisibility(ESlateVisibility::Collapsed);
-			DisabledButton->SetVisibility(ESlateVisibility::Collapsed);
+			ClosePriorityButton();
+			//PriorityButton->SetVisibility(ESlateVisibility::Collapsed);
+			//NonPriorityButton->SetVisibility(ESlateVisibility::Collapsed);
+			//DisabledButton->SetVisibility(ESlateVisibility::Collapsed);
 
 			ArrowUp->SetVisibility(ESlateVisibility::Collapsed);
 			ArrowDown->SetVisibility(ESlateVisibility::Collapsed);

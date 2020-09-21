@@ -286,89 +286,9 @@ int BuildingSystem::AddBuilding(FPlaceBuilding parameters)
 	building->ResetDisplay();
 
 	PlaceBuildingOnMap(buildingId, true);
-	
-	/*
-	 * Tile setups (also parent/child)
-	 */
-	//{
-	//	// Stack Tile Buildings
-	//	if (IsRoad(buildingEnum))
-	//	{
-	//		// Already a trap here, put this as trap's child
-	//		// for example: trap built on road construction, flower next to the road, Custom buildings??
-	//		// Could use this same trick on Unit's tile?? (Double unit one same tile becomes child unit..
-	//		int32 parentId = buildingIdAtTile(center);
-	//		if (parentId != -1)
-	//		{
-	//			PUN_CHECK(IsRoadOverlapBuilding(buildingEnumAtTile(center)));
 
-	//			_buildings[parentId]->children.push_back(buildingId);
-	//			_buildings[buildingId]->parent = parentId;
-	//			return buildingId;
-	//		}
-
-	//		// Otherwise, we need to set the tile for this
-	//		SetBuildingTile(center, buildingId, buildingEnum);
-
-	//		return buildingId;
-	//	}
-	//	if (IsRoadOverlapBuilding(buildingEnum))
-	//	{
-	//		// If already road here, replace road as the parent, and put road as child
-	//		int32 existingId = buildingIdAtTile(center);
-	//		if (existingId != -1) {
-	//			PUN_CHECK(IsRoad(buildingEnumAtTile(center)));
-
-	//			_buildings[buildingId]->children.push_back(existingId);
-	//			_buildings[existingId]->parent = buildingId;
-	//		}
-
-	//		SetBuildingTile(center, buildingId, buildingEnum);
-	//		return buildingId;
-	//	}
-
-	//	// Fence special case
-	//	if (buildingEnum == CardEnum::Fence) 
-	//	{
-	//		SetBuildingTile(center, buildingId, buildingEnum);
-	//		return buildingId;
-	//	}
-
-	//	// Bridge special case
-	//	if (buildingEnum == CardEnum::Bridge)
-	//	{
-	//		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-	//			SetBuildingTile(tile, buildingId, buildingEnum);
-	//		});
-	//		return buildingId;
-	//	}
-	//	
-	//	/*
-	//	 * Typical buildings
-	//	 */
-
-	//	area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-	//		SetBuildingTile(tile, buildingId, buildingEnum);
-	//	});
-
-	//	// Front Grid
-	//	if (buildingEnum != CardEnum::Farm &&
-	//		buildingEnum != CardEnum::RegionTribalVillage)
-	//	{
-	//		Direction faceDirection = _buildings.back()->faceDirection();
-	//		TileArea frontArea = area.GetFrontArea(faceDirection);
-	//		frontArea.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-	//			AddFrontTile(tile, faceDirection, buildingId);
-	//		});
-	//	}
-
-	//	//if (parameters.playerId != -1) {
-	//	//	PUN_LOG("AddBuilding: %d, %d", _buildings.size(), parameters.buildingEnum);
-	//	//}
-
-	//	_buildings.back()->CheckAdjacency();
-	//	_buildings.back()->CheckCombo();
-	//}
+	// Should CheckAdjacency after placing it on world map
+	building->CheckAdjacency();
 
 	return buildingId;
 }
@@ -460,7 +380,6 @@ void BuildingSystem::PlaceBuildingOnMap(int32 buildingIdIn, bool isBuildingIniti
 
 	// Check combo only for newly created building (not loaded one)
 	if (isBuildingInitialAdd) {
-		bld.CheckAdjacency();
 		bld.CheckCombo();
 	}
 }
@@ -521,6 +440,9 @@ void BuildingSystem::RemoveBuilding(int buildingId)
 
 	
 	_buildings[buildingId]->Deinit();
+
+	// Note: should check after PlaceBuildingOnMap
+	_buildings[buildingId]->CheckAdjacency(true, true);
 }
 
 int32 BuildingSystem::GetHouseLvlCount(int32 playerId, int32 houseLvl, bool includeHigherLvl) {

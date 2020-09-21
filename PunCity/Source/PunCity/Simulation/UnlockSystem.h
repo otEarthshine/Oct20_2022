@@ -464,7 +464,7 @@ public:
 	{
 		PUN_CHECK(_enumToTech.find(tech->techEnum) == _enumToTech.end());
 		auto techCasted = std::static_pointer_cast<ResearchInfo>(tech);
-		if (houseLevel >= _houseLvlToProsperityTech.size()) {
+		while (houseLevel >= _houseLvlToProsperityTech.size()) {
 			_houseLvlToProsperityTech.push_back({});
 			_houseLvlToUnlockCount.push_back({});
 		}
@@ -632,6 +632,11 @@ public:
 			AddTech_Bonus(era, TechEnum::MilitaryLastEra);
 
 			townhallUpgradeUnlocked = false;
+			unlockedStatisticsBureau = false;
+			unlockedEmploymentBureau = false;
+
+			unlockedPriorityStar = false;
+			unlockedSetTradeAmount = false;
 
 			/*
 			 * Prosperity UI
@@ -662,18 +667,6 @@ public:
 
 	void UpdateProsperityHouseCount()
 	{
-		if (!prosperityEnabled) 
-		{
-			// Prosperity unlock at 4 houses
-			PopupInfo popupInfo(_playerId, "Unlocked: House Upgrade Unlocks Menu.", {"Show House Upgrade Unlocks", "Close"}, 
-								PopupReceiverEnum::UnlockedHouseTree_ShowProsperityUI);
-			popupInfo.warningForExclusiveUI = ExclusiveUIEnum::ProsperityUI;
-			popupInfo.forcedSkipNetworking = true;
-			_simulation->AddPopupToFront(popupInfo);
-
-			prosperityEnabled = true;
-		}
-
 		if (!prosperityEnabled) {
 			return;
 		}
@@ -852,24 +845,25 @@ public:
 				/*
 				 * Science victory
 				 */
-				if (currentEra() >= 8) {
-					std::vector<std::shared_ptr<ResearchInfo>> finalTechs = _eraToTechs[8];
-					int32 finalEraTechsDone = 0;
-					for (auto& finalTech : finalTechs) {
-						if (IsResearched(finalTech->techEnum)) {
-							finalEraTechsDone++;
-						}
-					}
+				if (currentEra() >= 8) 
+				{
+					//std::vector<std::shared_ptr<ResearchInfo>> finalTechs = _eraToTechs[8];
+					//int32 finalEraTechsDone = 0;
+					//for (auto& finalTech : finalTechs) {
+					//	if (IsResearched(finalTech->techEnum)) {
+					//		finalEraTechsDone++;
+					//	}
+					//}
 
-					if (finalEraTechsDone == 3) {
-						_simulation->AddPopupAll(PopupInfo(_playerId,
-							_simulation->playerName(_playerId) + " is only 2 technolgies away from the science victory."
-						), _playerId);
-						_simulation->AddPopup(_playerId, "You are only 2 technolgies away from the science victory.");
-					}
-					else if (finalEraTechsDone == 5) {
-						_simulation->ExecuteScienceVictory(_playerId);
-					}
+					//if (finalEraTechsDone == 3) {
+					//	_simulation->AddPopupAll(PopupInfo(_playerId,
+					//		_simulation->playerName(_playerId) + " is only 2 technolgies away from the science victory."
+					//	), _playerId);
+					//	_simulation->AddPopup(_playerId, "You are only 2 technolgies away from the science victory.");
+					//}
+					//else if (finalEraTechsDone == 5) {
+					//	_simulation->ExecuteScienceVictory(_playerId);
+					//}
 				}
 			}
 
@@ -901,13 +895,15 @@ public:
 
 	void OnEraUnlocked(std::stringstream& ss);
 
-	void SetDisplaySciencePoint(std::stringstream& ss) {
+	void SetDisplaySciencePoint(std::stringstream& ss, bool hasIcon = true) {
 		ss << std::fixed << std::setprecision(1);
 		ss << (science100() / 100.0f) << "";
 		if (hasTargetResearch()) {
 			ss << "/" << scienceNeeded();
 		}
-		ss << "<img id=\"Science\"/>";
+		if (hasIcon) {
+			ss << "<img id=\"Science\"/>";
+		}
 	}
 	
 
@@ -998,13 +994,19 @@ public:
 
 		Ar << researchEnabled;
 		Ar << techsFinished;
-		Ar << townhallUpgradeUnlocked;
+		Ar << science100XsecPerRound;
 		Ar << shouldOpenTechUI;
 
 		Ar << prosperityEnabled;
 		Ar << shouldOpenProsperityUI;
-		
-		Ar << science100XsecPerRound;
+	
+
+		Ar << townhallUpgradeUnlocked;
+		Ar << unlockedStatisticsBureau;
+		Ar << unlockedEmploymentBureau;
+
+		Ar << unlockedPriorityStar;
+		Ar << unlockedSetTradeAmount;
 
 		/*
 		 * Private
@@ -1066,20 +1068,23 @@ public:
 	 * Serialize
 	 */
 	bool needTechDisplayUpdate = true;
-	
-	int32 techsFinished = -1;
-	bool townhallUpgradeUnlocked = false;
-
-	bool researchEnabled;
-	bool shouldOpenTechUI = false;
-
-	int32 science100XsecPerRound = 0;
-	
-	// prospertiy
-	bool prosperityEnabled;
 	bool needProsperityDisplayUpdate = true;
 	
+	int32 techsFinished = -1;
+	bool researchEnabled;
+	int32 science100XsecPerRound = 0;
+	bool shouldOpenTechUI = false;
+	
+	// prosperity
+	bool prosperityEnabled;
 	bool shouldOpenProsperityUI = false;
+
+	bool townhallUpgradeUnlocked = false;
+	bool unlockedStatisticsBureau = false;
+	bool unlockedEmploymentBureau = false;
+
+	bool unlockedPriorityStar = false;
+	bool unlockedSetTradeAmount = false;
 
 private:
 	IGameSimulationCore* _simulation = nullptr;

@@ -34,11 +34,20 @@ public:
 		 */
 		if (simulation().HasTownhall(playerId()))
 		{
-			if (townhall.playerId() == playerId()) {
-				SetText(TradeButtonText, "Set Trade Offer");
-				BUTTON_ON_CLICK(TradeButton, this, &UTownhallHoverInfo::OnClickSetTradeOfferButton);
+			if (townhall.playerId() == playerId()) 
+			{
+				if (simulation().unlockSystem(playerId())->unlockedSetTradeAmount) {
+					SetText(TradeButtonText, "Set Trade Offer");
+					BUTTON_ON_CLICK(TradeButton, this, &UTownhallHoverInfo::OnClickSetTradeOfferButton);
+					TradeButton->SetVisibility(ESlateVisibility::Visible);
+				}
+				else {
+					TradeButton->SetVisibility(ESlateVisibility::Collapsed);
+				}
 			}
-			else {
+			else 
+			{
+				// Other ppl's town, show trade route button instead
 				std::vector<int32> tradePartners = simulation().worldTradeSystem().GetTradePartners(playerId());
 				if (CppUtils::Contains(tradePartners, townhall.playerId())) {
 					SetText(TradeButtonText, "Cancel Trade Route");
@@ -48,8 +57,8 @@ public:
 					SetText(TradeButtonText, "Establish Trade Route");
 					BUTTON_ON_CLICK(TradeButton, this, &UTownhallHoverInfo::OnClickEstablishTradeRouteButton);
 				}
+				TradeButton->SetVisibility(ESlateVisibility::Visible);
 			}
-			TradeButton->SetVisibility(ESlateVisibility::Visible);
 		}
 		else {
 			TradeButton->SetVisibility(ESlateVisibility::Collapsed);

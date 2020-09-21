@@ -81,15 +81,16 @@ void UnitStateAI::AddUnit(UnitEnum unitEnum, int32 playerId, UnitFullId fullId, 
 
 	_animationEnum = UnitAnimationEnum::Wait;
 
-	// Animal's workplaceId is regionId
-	if (IsWildAnimal(unitEnum)) {
-		//WorldTile2 tile = _unitData->atomLocation(_id).worldTile2();
-		//_homeProvinceId = _simulation->GetProvinceIdRaw(tile);
-		//PUN_CHECK(IsValidProvinceId(_homeProvinceId));
-		//_homeProvinceId = abs(_homeProvinceId);
-		//
-		//PUN_CHECK(_simulation->IsProvinceValid(_homeProvinceId));
-		//_simulation->AddProvinceAnimals(_homeProvinceId, _id);
+
+	if (IsWildAnimal(unitEnum)) 
+	{
+		WorldTile2 tile = _unitData->atomLocation(_id).worldTile2();
+		_homeProvinceId = _simulation->GetProvinceIdClean(tile);
+		PUN_CHECK(_homeProvinceId != -1);
+		PUN_CHECK(_simulation->IsProvinceValid(_homeProvinceId));
+
+		// Start off in parent's province
+		_simulation->AddProvinceAnimals(_homeProvinceId, _id);
 	}
 
 	PUN_CHECK2(reservations.empty(), debugStr());
@@ -316,7 +317,8 @@ void UnitStateAI::Update()
 			if (_lastPregnant > 0) // breeded before
 			{
 				bool canGiveBirth = Time::Ticks() - _lastPregnant > uInfo.gestationTicks &&
-									food() > minWarnFood();
+									food() > minWarnFood() && 
+									_simulation->GetProvinceIdClean(unitTile()) != -1;
 
 				// Domesticated animal can't reproduce outside
 				if (IsDomesticatedAnimal(unitEnum())) {
@@ -607,15 +609,16 @@ void UnitStateAI::CalculateActions()
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUnitCalcWildNoHome);
 
-		if (TryFindWildFood(false)) return;
-
-		//if (TryGoNearbyHome()) return;
-		// TODO: animal go to home province...
+		// Find food only if already in home province
+		if (_simulation->GetProvinceIdClean(unitTile()) == _homeProvinceId)
+		{
+			if (TryFindWildFood(false)) return;
+		}
 
 		_unitState = UnitState::Idle;
 		int32 waitTicks = Time::TicksPerSecond * (GameRand::Rand() % 3 + 4);
 		Add_Wait(waitTicks);
-		Add_MoveRandomly();
+		Add_MoveRandomlyAnimal(); // This will bring the animal to home province...
 		
 		AddDebugSpeech("(Success)Idle MoveRandomly");
 	}
@@ -1200,6 +1203,31 @@ bool UnitStateAI::TryFindWildFood(bool getFruit, int32 radius)
 		return true;
 	}
 
+	
+	// Can't find food, look to migrate to the province with least animals
+	{
+		PUN_CHECK(_homeProvinceId != -1);
+		int32 leastAnimalProvinceId = -1;
+		int32 leastAnimalCount = _simulation->provinceAnimals(_homeProvinceId).size();
+
+		const std::vector<ProvinceConnection>& connections = _simulation->GetProvinceConnections(_homeProvinceId);
+		for (ProvinceConnection connection : connections)
+		{
+			int32 animalCount = _simulation->provinceAnimals(connection.provinceId).size();
+			if (animalCount < leastAnimalCount) {
+				leastAnimalCount = animalCount;
+				leastAnimalProvinceId = connection.provinceId;
+			}
+		}
+
+		if (leastAnimalProvinceId != -1) 
+		{	
+			_simulation->RemoveProvinceAnimals(_homeProvinceId, _id);
+			_homeProvinceId = leastAnimalProvinceId;
+			_simulation->AddProvinceAnimals(_homeProvinceId, _id);
+		}
+	}
+
 	Add_Wait(Time::TicksPerSecond * 5);
 
 	AddDebugSpeech("(Failed)TryFindWildFood: nearestTree invalid");
@@ -1515,9 +1543,9 @@ void UnitStateAI::Heat()
 			_inventory.Remove(ResourcePair(resourceEnum, amount));
 			
 			int32 heatToAdd = amount * HeatPerResource_CelsiusTicks();
-			//if (_playerId == 0) {
-			//	PUN_LOG("amount:%d heatToAdd:%d celsiusSec:%d", amount, heatToAdd, heatToAdd/Time::TicksPerSecond);
-			//}
+			if (_playerId == 0) {
+				PUN_LOG("amount:%d heatToAdd:%d celsiusSec:%d", amount, heatToAdd, heatToAdd/Time::TicksPerSecond);
+			}
 
 			heatToAdd = heatToAdd * 100 / (100 + _simulation->difficultyConsumptionAdjustment());
 			
@@ -1640,6 +1668,34 @@ void UnitStateAI::HaveFun()
 	NextAction(UnitUpdateCallerEnum::HaveFun);
 }
 
+void UnitStateAI::Add_MoveRandomlyAnimal() {
+	_actions.push_back(Action(ActionEnum::MoveRandomly));
+}
+void UnitStateAI::MoveRandomlyAnimal()
+{
+	SCOPE_CYCLE_COUNTER(STAT_PunUnitDoMoveRandomly);
+
+	// TODO: make animals with home also use _homeProvinceId
+	PUN_CHECK(_homeProvinceId != -1);
+	
+	const int tries = 10;
+	WorldTile2 uTile = unitTile();
+	WorldTile2 end = _simulation->GetProvinceRandomTile(_homeProvinceId, uTile, 1, false, tries);
+
+	// Whatever, just wait a bit to try again..
+	if (end == WorldTile2::Invalid) {
+		// TODO: waitTicks doesn't work ?? Should work now?
+		_simulation->ResetUnitActions(_id, Time::TicksPerSecond * 5);  // Can't walk, (No need for extra wait since there is already Wait() before MoveRandomly()
+		AddDebugSpeech("(Bad)MoveRandomly: Can't find walkable spot in 10 tiles");
+		return;
+	}
+
+	check(_simulation->IsConnected(uTile, end, 1, IsIntelligentUnit(unitEnum())));
+
+	AddDebugSpeech("(Transfer)MoveRandomly: Transfer to MoveTo " + uTile.ToString() + end.ToString());
+	MoveTo(end);
+}
+
 void UnitStateAI::Add_MoveRandomly(TileArea area) {
 	_actions.push_back(Action(ActionEnum::MoveRandomly, area.minX, area.minY, area.maxX, area.maxY));
 }
@@ -1660,22 +1716,9 @@ void UnitStateAI::MoveRandomly()
 	// No area specified
 	if (!area.isValid()) 
 	{
-		//// Animals should check for migration, then walk within its territory
-		//if (IsWildAnimalNoHome(_unitEnum) && _simulation->IsProvinceValid(_homeProvinceId))
-		//{
-		//	_homeProvinceId = _simulation->RefreshAnimalHomeProvince(_homeProvinceId, _id);
-		//	tile = _simulation->GetProvinceCenterTile(_homeProvinceId);
-
-		//	// walk 10 tiles away..
-		//	area = TileArea(tile, 10);
-		//	area.EnforceWorldLimit();
-		//}
-		//else
-		//{
-			// walk 10 tiles away..
-			area = TileArea(tile, 10);
-			area.EnforceWorldLimit();
-		//}
+		// walk 10 tiles away..
+		area = TileArea(tile, 10);
+		area.EnforceWorldLimit();
 	}
 
 	const int tries = 10;

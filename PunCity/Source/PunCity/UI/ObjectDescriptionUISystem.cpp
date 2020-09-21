@@ -84,14 +84,16 @@ void UObjectDescriptionUISystem::Tick()
 	// Didn't choose location yet, highlight regions the mouse hover over to hint it should be clicked...
 	// if (!simulation().playerOwned(playerId()).isInitialized())
 	{
-		FVector origin;
-		FVector direction;
-		UGameplayStatics::DeprojectScreenToWorld(CastChecked<APlayerController>(networkInterface()), networkInterface()->GetMousePositionPun(), origin, direction);
+		//FVector origin;
+		//FVector direction;
+		//UGameplayStatics::DeprojectScreenToWorld(CastChecked<APlayerController>(networkInterface()), networkInterface()->GetMousePositionPun(), origin, direction);
 
-		float traceDistanceToGround = fabs(origin.Z / direction.Z);
-		FVector groundPoint = direction * traceDistanceToGround + origin;
+		//float traceDistanceToGround = fabs(origin.Z / direction.Z);
+		//FVector groundPoint = direction * traceDistanceToGround + origin;
 
-		WorldTile2 hitTile = MapUtil::AtomLocation(dataSource()->cameraAtom(), groundPoint).worldTile2();
+		//WorldTile2 hitTile = MapUtil::AtomLocation(dataSource()->cameraAtom(), groundPoint).worldTile2();
+
+		WorldTile2 hitTile = networkInterface()->GetMouseGroundAtom().worldTile2();
 
 		bool showHover = false;
 		if (hitTile.isValid())
@@ -1177,8 +1179,22 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						ss << colony.GetColonyUpkeep() << "<img id=\"Influence\"/>";
 						descriptionBox->AddRichText("Upkeep: ", ss);
 
+						descriptionBox->AddSpacer();
+
 						ResourceEnum resourceEnum = colony.GetColonyResourceEnum();
-						descriptionBox->AddRichText("Production (per round):", to_string(colony.GetColonyResourceIncome(resourceEnum)), resourceEnum);
+						int32 resourceIncome = colony.GetColonyResourceIncome(resourceEnum);
+						descriptionBox->AddRichText("Production (per round):", to_string(resourceIncome), resourceEnum);
+
+						descriptionBox->AddSpacer();
+						
+						int32 oreLeft = building.subclass<Mine>().oreLeft();
+						if (oreLeft > 0) {
+							descriptionBox->AddRichText("Resource left", to_string(oreLeft), building.product());
+						}
+						else {
+							ss << "<Red>Mine Depleted</>";
+							descriptionBox->AddRichText(ss);
+						}
 					}
 					else if (building.isEnum(CardEnum::Fort))
 					{

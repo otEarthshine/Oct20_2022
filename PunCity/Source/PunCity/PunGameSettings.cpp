@@ -109,6 +109,8 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "InitialAnimals", GameConstants::InitialWorldPop },
 	//{ "InitialAnimals", 1 },
 
+	{ "AllowCameraPitch", 0 },
+
 	{ "ForceSnow", 0 },
 	{ "ForceSnowDelay", 5 },
 	{ "ForceSnowPercent", 0 },
@@ -119,6 +121,8 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "ForceNoFog", 0 },
 	{ "ForceNoRain", 0 },
 	{ "ForceNoSnow", 0 },
+
+	// Trailer
 	
 	{ "TrailerTundraMinSnowPercent", 0 },
 	{ "TrailerPlaceSpeed", 100 },

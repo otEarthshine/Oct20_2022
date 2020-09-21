@@ -17,93 +17,44 @@
 
 using namespace std;
 
-// Priority list for what job need people living closer
-static const std::vector<CardEnum> JobPriorityListAllSeason
-{
-	CardEnum::MushroomFarm,
-	CardEnum::Fisher,
-	CardEnum::HuntingLodge,
-	CardEnum::RanchBarn,
-	
-	CardEnum::Windmill,
-	CardEnum::Bakery,
-
-	CardEnum::StoneToolShop,
-	CardEnum::Blacksmith,
-	CardEnum::Herbalist,
-	CardEnum::MedicineMaker,
-
-	CardEnum::Forester,
-	CardEnum::CharcoalMaker,
-	CardEnum::BeerBrewery,
-	CardEnum::ClayPit,
-	CardEnum::Potter,
-	CardEnum::Tailor,
-
-	CardEnum::GoldMine,
-	CardEnum::Quarry,
-	CardEnum::CoalMine,
-	CardEnum::IronMine,
-
-	CardEnum::IronSmelter,
-	CardEnum::GoldSmelter,
-	CardEnum::Mint,
-	CardEnum::InventorsWorkshop,
-
-	CardEnum::FurnitureWorkshop,
-	CardEnum::Chocolatier,
-	CardEnum::Winery,
-
-	CardEnum::GemstoneMine,
-	CardEnum::Jeweler,
-
-	CardEnum::Beekeeper,
-	CardEnum::Brickworks,
-	CardEnum::CandleMaker,
-	CardEnum::CottonMill,
-	CardEnum::PrintingPress,
-
-	CardEnum::PaperMaker,
-};
-
-static const std::vector<CardEnum> JobPriorityListNonWinter
-{
-	CardEnum::FruitGatherer,
-	CardEnum::Farm,
-};
-
-static std::vector<CardEnum> JobBuildingEnumPriorityListWinterFull;
-static std::vector<CardEnum> JobBuildingEnumPriorityListNonWinterFull;
-
-static const std::vector<CardEnum>& JobBuildingEnumPriorityList()
-{
-	// lazy init
-	if (JobBuildingEnumPriorityListWinterFull.size() == 0)
-	{
-		JobBuildingEnumPriorityListWinterFull.insert(JobBuildingEnumPriorityListWinterFull.end(), JobPriorityListAllSeason.begin(), JobPriorityListAllSeason.end());
-		JobBuildingEnumPriorityListWinterFull.insert(JobBuildingEnumPriorityListWinterFull.end(), JobPriorityListNonWinter.begin(), JobPriorityListNonWinter.end());
-		for (int i = 0; i < BuildingEnumCount; i++) {
-			CardEnum buildingEnum = static_cast<CardEnum>(i);
-			if (!CppUtils::Contains(JobBuildingEnumPriorityListWinterFull, buildingEnum)) {
-				JobBuildingEnumPriorityListWinterFull.push_back(buildingEnum);
-			}
-		}
-
-		JobBuildingEnumPriorityListNonWinterFull.insert(JobBuildingEnumPriorityListNonWinterFull.end(), JobPriorityListNonWinter.begin(), JobPriorityListNonWinter.end());
-		JobBuildingEnumPriorityListNonWinterFull.insert(JobBuildingEnumPriorityListNonWinterFull.end(), JobPriorityListAllSeason.begin(), JobPriorityListAllSeason.end());
-		for (int i = 0; i < BuildingEnumCount; i++) {
-			CardEnum buildingEnum = static_cast<CardEnum>(i);
-			if (!CppUtils::Contains(JobBuildingEnumPriorityListNonWinterFull, buildingEnum)) {
-				JobBuildingEnumPriorityListNonWinterFull.push_back(buildingEnum);
-			}
-		}
-	}
-
-	if (Time::IsWinter()) {
-		return JobBuildingEnumPriorityListWinterFull;
-	}
-	return JobBuildingEnumPriorityListNonWinterFull;
-}
+//static const std::vector<CardEnum> JobPriorityListNonWinter
+//{
+//	CardEnum::FruitGatherer,
+//	CardEnum::Farm,
+//};
+//
+//static std::vector<CardEnum> JobBuildingEnumPriorityListWinterFull;
+//static std::vector<CardEnum> JobBuildingEnumPriorityListNonWinterFull;
+//
+//static const std::vector<CardEnum>& JobBuildingEnumPriorityList()
+//{
+//	// lazy init
+//	if (JobBuildingEnumPriorityListWinterFull.size() == 0)
+//	{
+//		JobBuildingEnumPriorityListWinterFull.insert(JobBuildingEnumPriorityListWinterFull.end(), DefaultJobPriorityListAllSeason.begin(), DefaultJobPriorityListAllSeason.end());
+//		JobBuildingEnumPriorityListWinterFull.insert(JobBuildingEnumPriorityListWinterFull.end(), JobPriorityListNonWinter.begin(), JobPriorityListNonWinter.end());
+//		for (int i = 0; i < BuildingEnumCount; i++) {
+//			CardEnum buildingEnum = static_cast<CardEnum>(i);
+//			if (!CppUtils::Contains(JobBuildingEnumPriorityListWinterFull, buildingEnum)) {
+//				JobBuildingEnumPriorityListWinterFull.push_back(buildingEnum);
+//			}
+//		}
+//
+//		JobBuildingEnumPriorityListNonWinterFull.insert(JobBuildingEnumPriorityListNonWinterFull.end(), JobPriorityListNonWinter.begin(), JobPriorityListNonWinter.end());
+//		JobBuildingEnumPriorityListNonWinterFull.insert(JobBuildingEnumPriorityListNonWinterFull.end(), DefaultJobPriorityListAllSeason.begin(), DefaultJobPriorityListAllSeason.end());
+//		for (int i = 0; i < BuildingEnumCount; i++) {
+//			CardEnum buildingEnum = static_cast<CardEnum>(i);
+//			if (!CppUtils::Contains(JobBuildingEnumPriorityListNonWinterFull, buildingEnum)) {
+//				JobBuildingEnumPriorityListNonWinterFull.push_back(buildingEnum);
+//			}
+//		}
+//	}
+//
+//	if (Time::IsWinter()) {
+//		return JobBuildingEnumPriorityListWinterFull;
+//	}
+//	return JobBuildingEnumPriorityListNonWinterFull;
+//}
 
 void PlayerOwnedManager::PlayerAddHuman(int32 objectId)
 {
@@ -149,6 +100,27 @@ void PlayerOwnedManager::PlayerAddJobBuilding(Building& building, bool isConstru
 	//_LOG(PunPlayerOwned, "- : %llu %llu %llu", _roadConstructionIds.size(), _constructionIds.size(), _jobBuildingEnumToIds.size());
 
 	RefreshJobDelayed();
+
+	// Job Building Unlocks
+	auto unlockSys = _simulation->unlockSystem(_playerId);
+	if (!unlockSys->unlockedStatisticsBureau &&
+		jobBuildingCount() >= 3)
+	{
+		unlockSys->unlockedStatisticsBureau = true;
+		
+		if (_simulation->TryAddCardToBoughtHand(_playerId, CardEnum::StatisticsBureau)) {
+			_simulation->AddPopup(_playerId, "Unlocked Statistics Bureau. Once built, allow you to view Town Statistics.");
+		}
+	}
+	if (!unlockSys->unlockedEmploymentBureau &&
+		jobBuildingCount() >= 7)
+	{
+		unlockSys->unlockedEmploymentBureau = true;
+
+		if (_simulation->TryAddCardToBoughtHand(_playerId, CardEnum::JobManagementBureau)) {
+			_simulation->AddPopup(_playerId, "Unlocked Employment Bureau. Once built, you gain the ability to manage the job priority (global).");
+		}
+	}
 }
 void PlayerOwnedManager::PlayerRemoveJobBuilding(Building& building, bool isConstructed)
 {
@@ -282,12 +254,21 @@ void PlayerOwnedManager::RefreshJobs()
 	/*
 	 * Priority buildings
 	 */
-	const std::vector<CardEnum>& buildingEnumPriorityList = JobBuildingEnumPriorityList();
+	const std::vector<CardEnum>& buildingEnumPriorityList = GetJobPriorityList();
 	for (CardEnum buildingEnum : buildingEnumPriorityList) {
 		int buildingEnumInt = static_cast<int>(buildingEnum);
 		if (buildingEnumInt >= _jobBuildingEnumToIds.size()) {
 			continue;
 		}
+
+		// Special case Winter
+		if (Time::IsWinter()) {
+			if (buildingEnum == CardEnum::FruitGatherer ||
+				buildingEnum == CardEnum::Farm) {
+				continue;
+			}
+		}
+		
 		TryFillJobBuildings(_jobBuildingEnumToIds[buildingEnumInt], PriorityEnum::Priority, index);
 	}
 
@@ -403,15 +384,23 @@ void PlayerOwnedManager::FillHouseSlots_FromWorkplace(std::vector<int32>& tempHu
 	
 
 	// Go through the building list and put people near their job
-	const std::vector<CardEnum>& buildingEnumPriorityList = JobBuildingEnumPriorityList();
+	const std::vector<CardEnum>& buildingEnumPriorityList = GetJobPriorityList();
 	for (CardEnum buildingEnum : buildingEnumPriorityList)
 	{
 		int buildingEnumInt = static_cast<int>(buildingEnum);
 		if (buildingEnumInt >= _jobBuildingEnumToIds.size()) {
 			continue;
 		}
+
+		// Special case Winter
+		if (Time::IsWinter()) {
+			if (buildingEnum == CardEnum::FruitGatherer ||
+				buildingEnum == CardEnum::Farm) {
+				continue;
+			}
+		}
 		
-		const std::vector<int32_t>& jobBuildingIds = _jobBuildingEnumToIds[buildingEnumInt];// _simulation->buildingIds(_playerId, buildingEnum);
+		const std::vector<int32>& jobBuildingIds = _jobBuildingEnumToIds[buildingEnumInt];// _simulation->buildingIds(_playerId, buildingEnum);
 		
 		
 		bool shouldExit = fillHouseFromJobBuildings(jobBuildingIds);
@@ -1026,7 +1015,8 @@ void PlayerOwnedManager::Tick1Sec()
 
 		for (int32 humanId : _adultIds)
 		{
-			int32 sickPercent100PerCheck = 10000 / 20;  // 20 checks per year
+			int32 sickPercent100PerYear = 10000; // 
+			int32 sickPercent100PerCheck = sickPercent100PerYear / 20;  // 20 checks per year
 
 			if (Time::IsWinter()) {
 				sickPercent100PerCheck *= 3;

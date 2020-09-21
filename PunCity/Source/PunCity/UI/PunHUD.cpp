@@ -106,7 +106,7 @@ APunHUD::APunHUD()
 	LoadClass(UIEnum::ProsperityColumnUI, "TechTree/ProsperityColumnUIWidget");
 	LoadClass(UIEnum::ProsperityBoxUI, "TechTree/ProsperityBoxUIWidget");
 
-	LoadClass(UIEnum::JobPriorityRow, "TechTree/TechTreeUIWidget");
+	LoadClass(UIEnum::JobPriorityRow, "JobPriorityRowWidget");
 	
 	
 	LoadClass(UIEnum::SaveSelection, "EscMenu/SaveSelectionWidget");

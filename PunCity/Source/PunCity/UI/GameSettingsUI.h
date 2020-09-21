@@ -57,6 +57,7 @@ public:
 	// Input
 	UPROPERTY(meta = (BindWidget)) UButton* InputSettingsButton;
 	UPROPERTY(meta = (BindWidget)) USlider* MouseWheelSpeedSlider;
+	UPROPERTY(meta = (BindWidget)) USlider* MouseDragRotateSpeedSlider;
 
 	UPROPERTY(meta = (BindWidget)) UButton* RestoreDefaultsButton;
 
@@ -162,6 +163,11 @@ private:
 	UFUNCTION() void OnMouseWheelSpeedChanged(float fraction) {
 		_isSettingsDirty = true;
 		gameInstance()->mouseZoomSpeedFraction = fraction;
+		gameInstance()->RefreshSoundSettings();
+	}
+	UFUNCTION() void OnMouseDragRotateSpeedChanged(float fraction) {
+		_isSettingsDirty = true;
+		gameInstance()->mouseRotateSpeedFraction = fraction;
 		gameInstance()->RefreshSoundSettings();
 	}
 

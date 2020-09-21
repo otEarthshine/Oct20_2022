@@ -70,6 +70,66 @@ static std::string GetTownSizeSuffix(int32 population)
 	return TownSizeSuffix[TownSizeCount() - 1];
 }
 
+// Priority list for what job need people living closer
+static const std::vector<CardEnum> DefaultJobPriorityListAllSeason
+{
+	CardEnum::FruitGatherer,
+	CardEnum::Farm,
+	
+	CardEnum::MushroomFarm,
+	CardEnum::Fisher,
+	CardEnum::HuntingLodge,
+	CardEnum::RanchBarn,
+
+	CardEnum::Windmill,
+	CardEnum::Bakery,
+
+	CardEnum::StoneToolShop,
+	CardEnum::Blacksmith,
+	CardEnum::Herbalist,
+	CardEnum::MedicineMaker,
+
+	CardEnum::Forester,
+	CardEnum::CharcoalMaker,
+	CardEnum::BeerBrewery,
+	CardEnum::ClayPit,
+	CardEnum::Potter,
+	CardEnum::Tailor,
+
+	CardEnum::GoldMine,
+	CardEnum::Quarry,
+	CardEnum::CoalMine,
+	CardEnum::IronMine,
+
+	CardEnum::IronSmelter,
+	CardEnum::GoldSmelter,
+	CardEnum::Mint,
+	CardEnum::InventorsWorkshop,
+
+	CardEnum::FurnitureWorkshop,
+	CardEnum::Chocolatier,
+	CardEnum::Winery,
+
+	CardEnum::GemstoneMine,
+	CardEnum::Jeweler,
+
+	CardEnum::Beekeeper,
+	CardEnum::Brickworks,
+	CardEnum::CandleMaker,
+	CardEnum::CottonMill,
+	CardEnum::PrintingPress,
+
+	CardEnum::PaperMaker,
+};
+
+//static const std::vector<CardEnum> DefaultLaborerPriorityList
+//{
+//	CardEnum::Constructor,
+//	CardEnum::GatherTiles,
+//	CardEnum::Hauler,
+//};
+
+
 struct RegionClaimProgress
 {
 	int32 provinceId = -1;
@@ -117,7 +177,8 @@ struct ProvinceClaimProgress
 class PlayerOwnedManager
 {
 public:
-	PlayerOwnedManager(int32 playerId, IGameSimulationCore* simulation) {
+	PlayerOwnedManager(int32 playerId, IGameSimulationCore* simulation)
+	{
 		_playerId = playerId;
 		townHallId = -1;
 		_simulation = simulation;
@@ -139,6 +200,8 @@ public:
 		_nextDiseaseCheckTick = 0;
 
 		_houseResourceAllowed.resize(static_cast<int>(ResourceEnumCount), true);
+
+		_jobPriorityList = DefaultJobPriorityListAllSeason;
 	}
 
 	//! Population
@@ -852,6 +915,46 @@ public:
 
 	const std::vector<int32>& roadConstructionIds() { return _roadConstructionIds; }
 
+	int32 jobBuildingCount()
+	{
+		int32 jobBuildingCount = 0;
+		for (size_t i = 0; i < _jobBuildingEnumToIds.size(); i++) {
+			jobBuildingCount += _jobBuildingEnumToIds[i].size();
+		}
+		return jobBuildingCount;
+	}
+
+
+	const std::vector<CardEnum>& GetJobPriorityList() {
+		return _jobPriorityList;
+	}
+	const std::vector<CardEnum>& GetLaborerPriorityList() {
+		return _laborerPriorityList;
+	}
+
+	void SetGlobalJobPriority(FSetGlobalJobPriority command)
+	{
+		//if (command.jobPriorityList.Num() == 3) {
+		//	TArray<int32> laborerPriorityListInt = command.jobPriorityList;
+		//
+		//	return;
+		//}
+		
+		PUN_CHECK(command.jobPriorityList.Num() == DefaultJobPriorityListAllSeason.size());
+
+		_jobPriorityList.clear();
+		for (int32 i = 0; i < command.jobPriorityList.Num(); i++) {
+			_jobPriorityList.push_back(static_cast<CardEnum>(command.jobPriorityList[i]));
+		}
+
+#if WITH_EDITOR
+		for (int32 i = 0; i < _jobPriorityList.size(); i++) {
+			PUN_LOG("_jobPriorityList %s", ToTChar(GetBuildingInfo(_jobPriorityList[i]).name));
+		}
+#endif
+	}
+	
+
 	/*
 	 * Science
 	 */
@@ -1037,6 +1140,10 @@ public:
 		SerializeVecValue(Ar, _constructionIds);
 		SerializeVecValue(Ar, _bonusBuildingIds);
 
+		SerializeVecValue(Ar, _jobPriorityList);
+		SerializeVecValue(Ar, _laborerPriorityList);
+		
+
 		Ar << _employedCount;
 		Ar << _builderCount;
 		SerializeVecValue(Ar, _roadMakerIds);
@@ -1179,6 +1286,11 @@ private:
 	std::vector<int32> _constructionIds;
 	std::vector<int32> _roadConstructionIds;
 	std::vector<int32> _bonusBuildingIds;
+
+	std::vector<CardEnum> _jobPriorityList;
+	std::vector<CardEnum> _laborerPriorityList;
+
+	//
 
 	int32 _employedCount = 0;
 	int32 _builderCount = 0;

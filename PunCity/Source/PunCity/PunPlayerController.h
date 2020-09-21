@@ -227,7 +227,28 @@ public:
 		return FVector2D(resultX, resultY);
 	}
 
-	WorldAtom2 cameraAtom() final { return cameraPawn->cameraAtom(); }
+	WorldAtom2 GetMouseGroundAtom() const final
+	{
+		FVector2D mousePosition = GetMousePositionPun();
+		if (mousePosition.Equals(FVector2D(-1, -1), 0.01)) {
+			return WorldAtom2::Invalid;
+		}
+		
+		FVector origin;
+		FVector direction;
+		UGameplayStatics::DeprojectScreenToWorld(this, mousePosition, origin, direction);
+
+		float traceDistanceToGround = fabs(origin.Z / direction.Z);
+		FVector groundPoint = direction * traceDistanceToGround + origin;
+
+		return MapUtil::AtomLocation(cameraAtom(), groundPoint);
+	}
+
+	void SetMouseLocationPun(FVector2D mousePositionIn) final {
+		SetMouseLocation(FMath::RoundToInt(mousePositionIn.X), FMath::RoundToInt(mousePositionIn.Y));
+	}
+
+	WorldAtom2 cameraAtom() const final { return cameraPawn->cameraAtom(); }
 	void SetCameraAtom(WorldAtom2 lookAtAtom) final {
 		cameraPawn->SetCameraAtom(lookAtAtom);
 	}

@@ -11,6 +11,7 @@
 #include "../ArmyStateAI.h"
 #include "../PlayerOwnedManager.h"
 #include "../GeoresourceSystem.h"
+#include "../BuildingCardSystem.h"
 #include "PunCity/CppUtils.h"
 #include "House.h"
 
@@ -194,6 +195,32 @@ int32 MushroomHut::baseInputPerBatch() {
 	return _simulation->unlockSystem(_playerId)->IsResearched(TechEnum::MushroomSubstrateSterilization) ? 4 : 8;
 }
 
+//! CardMaker
+
+CardEnum CardMaker::GetCardProduced()
+{
+	const std::string& name = workMode().name;
+
+	if (name == "Productivity Book") {
+		return CardEnum::ProductivityBook;
+	}
+	if (name == "Sustainability Book") {
+		return CardEnum::SustainabilityBook;
+	}
+	if (name == "Frugality Book") {
+		return CardEnum::FrugalityBook;
+	}
+	if (name == "Wild Card") {
+		return CardEnum::WildCard;
+	}
+	if (name == "Card Removal Card") {
+		return CardEnum::CardRemoval;
+	}
+
+	checkNoEntry();
+	return CardEnum::None;
+}
+
 
 //! Fisher
 
@@ -293,15 +320,6 @@ int32 Beekeeper::BeekeeperBaseEfficiency(int32 playerId, WorldTile2 centerTileIn
 }
 
 //! Mine
-
-int32 Mine::oreLeft()
-{
-	auto node = _simulation->georesourceSystem().georesourceNode(_simulation->GetProvinceIdClean(centerTile()));
-	if (isEnum(CardEnum::Quarry)) {
-		return node.stoneAmount;
-	}
-	return node.depositAmount;
-}
 
 void Mine::OnProduce(int32 productionAmount)
 {
@@ -525,3 +543,20 @@ void Bank::CalculateRoundProfit()
 //	
 //	TryStartTraining(); // Try to start next training
 //}
+
+void Colony::TickRound()
+{
+	if (isConstructed())
+	{
+		ResourceEnum resourceEnum = GetColonyResourceEnum();
+		int32 resourceCount = GetColonyResourceIncome(resourceEnum);
+
+		// Deplete province resource
+		if (IsOreEnum(resourceEnum)) {
+			_simulation->georesourceSystem().MineOre(_simulation->GetProvinceIdRaw(centerTile()), resourceCount);
+		}
+
+		resourceSystem().AddResourceGlobal(resourceEnum, resourceCount, *_simulation);
+		_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainResource, centerTile(), "+" + to_string(resourceCount), resourceEnum);
+	}
+}

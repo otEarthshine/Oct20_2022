@@ -2545,18 +2545,20 @@ private:
 			return "Dropoff_Metal";
 		}
 
+		if (resourceEnum == ResourceEnum::Coal) {
+			return "Dropoff_Coal";
+		}
+
 		if (IsOreEnum(resourceEnum)) {
 			return "Dropoff_Ore";
 		}
 
 		switch (resourceEnum)
 		{
-		case ResourceEnum::Coal: return "Dropoff_Coal";
 		case ResourceEnum::Cloth: return "Dropoff_Cloth";
 		case ResourceEnum::Wood: return "Dropoff_Wood";
 		case ResourceEnum::Stone: return "Dropoff_Stone";
 		case ResourceEnum::Leather: return "Dropoff_Leather";
-
 		default:
 			return "Dropoff_Crops";
 		}

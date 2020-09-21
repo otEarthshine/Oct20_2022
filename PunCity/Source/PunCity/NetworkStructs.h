@@ -266,6 +266,7 @@ enum class NetworkCommandEnum : uint8
 	SetAllowResource,
 	SetPriority,
 	SetTownPriority,
+	SetGlobalJobPriority,
 
 	TradeResource,
 	SetIntercityTrade,
@@ -306,6 +307,7 @@ static const std::string NetworkCommandNames[] =
 	"SetAllowResource",
 	"SetPriority",
 	"SetTownPriority",
+	"SetGlobalJobPriority",
 
 	"TradeResource",
 	"SetIntercityTrade",
@@ -506,6 +508,21 @@ public:
 		FBuildingCommand::Serialize(blob);
 		
 		blob << priority;
+	}
+};
+
+class FSetGlobalJobPriority final : public FNetworkCommand
+{
+public:
+	virtual ~FSetGlobalJobPriority() {}
+	NetworkCommandEnum commandType() final { return NetworkCommandEnum::SetGlobalJobPriority; }
+
+	TArray<int32> jobPriorityList;
+
+	void Serialize(PunSerializedData& blob) override
+	{
+		FNetworkCommand::Serialize(blob);
+		blob << jobPriorityList;
 	}
 };
 
@@ -1148,7 +1165,7 @@ public:
 			CASE_COMMAND(NetworkCommandEnum::ChangeName, FChangeName);
 			CASE_COMMAND(NetworkCommandEnum::SendChat, FSendChat);
 
-			
+			CASE_COMMAND(NetworkCommandEnum::SetGlobalJobPriority, FSetGlobalJobPriority);
 
 			default: UE_DEBUG_BREAK();
 		}

@@ -8,7 +8,8 @@
 #include "PlayerOwnedManager.h"
 #include "WorldTradeSystem.h"
 #include "UnlockSystem.h"
-
+#include "PunCity/Simulation/Buildings/GathererHut.h"
+#include "PunCity/Simulation/GeoresourceSystem.h"
 
 using namespace std;
 
@@ -95,12 +96,21 @@ void Building::Init(IGameSimulationCore& simulation, int objectId, int32_t playe
 	_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Overlay, _centerTile.regionId(), true);
 	
 
-	// If land is cleared, just SetWalkable without needing ppl to do this.
-	// This allows multiple roads to be queued without failing workplace.didSetWalkable()
-	if (_simulation->IsLandCleared_SmallOnly(_playerId, area) &&
-		_simulation->IsLandCleared_SmallOnly(_playerId, frontArea())) 
+	// Special case Bridge,
+	// Note: Done for bridge Walkable issue
+	if (_buildingEnum == CardEnum::Bridge)
 	{
 		SetAreaWalkable();
+	}
+	else
+	{
+		// If land is cleared, just SetWalkable without needing ppl to do this.
+		// This allows multiple roads to be queued without failing workplace.didSetWalkable()
+		if (_simulation->IsLandCleared_SmallOnly(_playerId, area) &&
+			_simulation->IsLandCleared_SmallOnly(_playerId, frontArea()))
+		{
+			SetAreaWalkable();
+		}
 	}
 
 	/*
@@ -109,7 +119,6 @@ void Building::Init(IGameSimulationCore& simulation, int objectId, int32_t playe
 	if (IsAgricultureBuilding(_buildingEnum)) {
 		_simulation->QuestUpdateStatus(_playerId, QuestEnum::FoodBuildingQuest);
 	}
-	
 
 	PUN_DEBUG_EXPR(buildingInfo_ = info);
 }
@@ -617,19 +626,7 @@ void Building::DoWork(int unitId, int workAmount100)
 				_filledInputs = false;
 
 				auto& cardSys = _simulation->cardSystem(_playerId);
-
-				if (workMode().name == "Productivity Book") {
-					cardSys.AddCardToHand2(CardEnum::ProductivityBook);
-				}
-				else if (workMode().name == "Sustainability Book") {
-					cardSys.AddCardToHand2(CardEnum::SustainabilityBook);
-				}
-				else if (workMode().name == "Frugality Book") {
-					cardSys.AddCardToHand2(CardEnum::FrugalityBook);
-				}
-				else {
-					PUN_NOENTRY();
-				}
+				cardSys.AddCardToHand2(static_cast<CardMaker*>(this)->GetCardProduced());
 
 				_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
 				return;
@@ -758,6 +755,15 @@ void Building::AddConsumption2Stat(ResourcePair resource)
 void Building::AddDepletionStat(ResourcePair resource)
 {
 	_seasonalConsumption1[0] += resource.count;
+}
+
+int32 Building::oreLeft()
+{
+	auto node = _simulation->georesourceSystem().georesourceNode(_simulation->GetProvinceIdClean(centerTile()));
+	if (isEnum(CardEnum::Quarry)) {
+		return node.stoneAmount;
+	}
+	return node.depositAmount;
 }
 
 

@@ -164,7 +164,7 @@ void UWorldSpaceUI::TickBuildings()
 	{
 		WorldRegion2 curRegion(sampleRegionId);
 
-		buildingList.ExecuteRegion(curRegion, [&](int32_t buildingId)
+		buildingList.ExecuteRegion(curRegion, [&](int32 buildingId)
 		{
 			Building& building = dataSource()->GetBuilding(buildingId);
 			if (IsRoad(building.buildingEnum()) ||
@@ -329,10 +329,8 @@ void UWorldSpaceUI::TickBuildings()
 			}
 		}
 
-		/*
-		 * Science
-		 */
-		auto isInOverlayRadius = [&](OverlayType overlayTypeCurrent, int32 minimumHouseLvl, int32 radius)
+
+		auto isInOverlayRadiusHouse = [&](OverlayType overlayTypeCurrent, int32 minimumHouseLvl, int32 radius)
 		{
 			return overlayType == overlayTypeCurrent &&
 				building.isEnum(CardEnum::House) &&
@@ -340,8 +338,20 @@ void UWorldSpaceUI::TickBuildings()
 				WorldTile2::Distance(building.centerTile(), overlayTile) < radius &&
 				building.playerId() == playerId();
 		};
+
+		auto isInOverlayRadius = [&](OverlayType overlayTypeCurrent, CardEnum buildingEnum, int32 radius)
+		{
+			return overlayType == overlayTypeCurrent &&
+				building.isEnum(buildingEnum) &&
+				WorldTile2::Distance(building.centerTile(), overlayTile) < radius &&
+				building.playerId() == playerId();
+		};
 		
-		if (isInOverlayRadius(OverlayType::Library, Library::MinHouseLvl, Library::Radius)) 
+		/*
+		 * Science
+		 */
+		
+		if (isInOverlayRadiusHouse(OverlayType::Library, Library::MinHouseLvl, Library::Radius)) 
 		{
 			UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
 																								_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
@@ -352,7 +362,7 @@ void UWorldSpaceUI::TickBuildings()
 			bool alreadyHasLibrary = building.subclass<House>().GetScience100(ScienceEnum::Library) > 0;
 			hoverIcon->SetTextColor(alreadyHasLibrary ? FLinearColor(0.38, 0.38, 0.38) : FLinearColor::White);
 		}
-		else if (isInOverlayRadius(OverlayType::School, School::MinHouseLvl, School::Radius))
+		else if (isInOverlayRadiusHouse(OverlayType::School, School::MinHouseLvl, School::Radius))
 		{
 			UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
 																								_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
@@ -366,7 +376,7 @@ void UWorldSpaceUI::TickBuildings()
 		/*
 		 * Entertainment
 		 */
-		else if (isInOverlayRadius(OverlayType::Tavern, 1, Tavern::Radius))
+		else if (isInOverlayRadiusHouse(OverlayType::Tavern, 1, Tavern::Radius))
 		{
 			UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
 				_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
@@ -374,7 +384,7 @@ void UWorldSpaceUI::TickBuildings()
 			hoverIcon->SetImage(assetLoader()->SmileIcon);
 			hoverIcon->SetText("", "");
 		}
-		else if (isInOverlayRadius(OverlayType::Theatre, Theatre::MinHouseLvl, Theatre::Radius))
+		else if (isInOverlayRadiusHouse(OverlayType::Theatre, Theatre::MinHouseLvl, Theatre::Radius))
 		{
 			UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
 				_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
@@ -387,7 +397,7 @@ void UWorldSpaceUI::TickBuildings()
 		/*
 		 * Others
 		 */
-		else if (isInOverlayRadius(OverlayType::Bank, Bank::MinHouseLvl, Bank::Radius))
+		else if (isInOverlayRadiusHouse(OverlayType::Bank, Bank::MinHouseLvl, Bank::Radius))
 		{
 			UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
 				_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
@@ -406,6 +416,22 @@ void UWorldSpaceUI::TickBuildings()
 			hoverIcon->SetImage(assetLoader()->UnhappyIcon);
 			hoverIcon->SetText("", "");
 		}
+
+		/*
+		 * Workplace
+		 */
+		else if (isInOverlayRadius(OverlayType::Windmill, CardEnum::Farm, Windmill::Radius))
+		{
+			UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
+				_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
+
+			//hoverIcon->SetImage(assetLoader()->ScienceIcon);
+			hoverIcon->IconImage->SetVisibility(ESlateVisibility::Collapsed);
+			hoverIcon->SetText("", "+10%");
+			hoverIcon->SetTextColor(FLinearColor::White);
+		}
+
+		
 		
 		//else if (overlayType == OverlayType::Theatre && IsHumanHouse(building.buildingEnum()) &&
 		//		WorldTile2::Distance(building.centerTile(), overlayTile) < Theatre::Radius) 

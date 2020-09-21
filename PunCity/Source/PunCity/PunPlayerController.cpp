@@ -588,7 +588,8 @@ void APunPlayerController::Tick(float DeltaTime)
 		}
 
 		if (cameraPawn) {
-			cameraPawn->SetMouseZoomSpeedFraction(gameInstance->mouseZoomSpeedFraction);
+			cameraPawn->zoomSpeedFraction = gameInstance->mouseZoomSpeedFraction;
+			cameraPawn->mouseRotateSpeedFraction = gameInstance->mouseRotateSpeedFraction;
 		}
 	}
 

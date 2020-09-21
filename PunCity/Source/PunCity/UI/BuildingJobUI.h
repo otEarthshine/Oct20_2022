@@ -124,11 +124,13 @@ public:
 		else if (IsSpecialProducer(building.buildingEnum())) {
 			SetProgress(building.barFraction());
 		}
-		else if (building.isEnum(CardEnum::JobManagementBureau)) {
-			
+		else if (building.isEnum(CardEnum::StatisticsBureau)) {
+			// Note StatisticsButton gets its visibility set to Collapsed when it gets init
+			StatisticsButton->SetVisibility(ESlateVisibility::Visible);
 		}
 		else if (building.isEnum(CardEnum::JobManagementBureau)) {
-
+			// Note JobPriorityButton gets its visibility set to Collapsed when it gets init
+			JobPriorityButton->SetVisibility(ESlateVisibility::Visible);
 		}
 		else {
 			std::vector<float> inputFractions;
@@ -255,6 +257,7 @@ public:
 			}
 		}
 
+		// Note TradeButton gets its visibility set to Collapsed when it gets init
 		TradeButton->SetVisibility(hasTradeButton? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
 		ClockBox->SetVisibility(showClock ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
@@ -399,6 +402,12 @@ private:
 		PriorityButton->SetVisibility(priority == PriorityEnum::Priority ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 		NonPriorityButton->SetVisibility(priority == PriorityEnum::NonPriority ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 		DisabledButton->SetVisibility(priority == PriorityEnum::Disable ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	}
+	void ClosePriorityButton()
+	{
+		PriorityButton->SetVisibility(ESlateVisibility::Collapsed);
+		NonPriorityButton->SetVisibility(ESlateVisibility::Collapsed);
+		DisabledButton->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
 	void ChangePriorityFromButton(PriorityEnum priority)

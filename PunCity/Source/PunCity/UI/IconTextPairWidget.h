@@ -43,7 +43,11 @@ public:
 		SuffixText->SetColorAndOpacity(color);
 	}
 	
-	void SetImage(UTexture2D* texture) { IconImage->SetBrushFromTexture(texture); }
+	void SetImage(UTexture2D* texture)
+	{
+		IconImage->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		IconImage->SetBrushFromTexture(texture);
+	}
 
 	
 	void SetImage(ResourceEnum resourceEnum, UAssetLoaderComponent* assetLoader, bool autoAddToolTip = false)
@@ -54,6 +58,7 @@ public:
 		//materialInstance->SetTextureParameterValue("DepthTexture", assetLoader->GetResourceIconAlpha(resourceEnum));
 		//IconImage->SetBrushFromMaterial(materialInstance);
 
+		IconImage->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		IconImage->SetBrushFromMaterial(assetLoader->GetResourceIconMaterial(resourceEnum));
 
 		if (autoAddToolTip) {

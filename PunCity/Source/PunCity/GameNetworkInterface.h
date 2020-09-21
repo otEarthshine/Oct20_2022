@@ -45,8 +45,11 @@ public:
 
 	virtual FVector2D GetMousePositionPun() const = 0;
 	virtual FVector2D GetViewportSizePun() const = 0;
+
+	virtual WorldAtom2 GetMouseGroundAtom() const = 0;
+	virtual void SetMouseLocationPun(FVector2D mousePositionIn) = 0;
 	
-	virtual WorldAtom2 cameraAtom() = 0;
+	virtual WorldAtom2 cameraAtom() const = 0;
 	virtual void SetCameraAtom(WorldAtom2 lookAtAtom) = 0;
 	
 	virtual class APunHUD* GetPunHUD() = 0;

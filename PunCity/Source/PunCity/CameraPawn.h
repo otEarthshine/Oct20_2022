@@ -74,6 +74,9 @@ public:
 	void LeftMouseDown();
 	void LeftMouseUp();
 	void RightMouseDown();
+	void RightMouseUp();
+	void MiddleMouseDown();
+	void MiddleMouseUp();
 
 	void KeyPressed_Build() {
 		ExecuteUsingMainGameUI([&](auto ui) { ui->ToggleBuildingMenu(); });
@@ -157,9 +160,9 @@ public:
 	UCameraComponent* camera() { return CameraComponent; }
 
 	//! This where displaySystem gets its camera position. 
-	WorldAtom2 cameraAtom() final {
-		return WorldAtom2(static_cast<int32_t>(_camShiftLocation.X * CoordinateConstants::AtomPerDisplayUnit),
-							static_cast<int32_t>(_camShiftLocation.Y * CoordinateConstants::AtomPerDisplayUnit));
+	WorldAtom2 cameraAtom() const final {
+		return WorldAtom2(static_cast<int32>(_camShiftLocation.X * CoordinateConstants::AtomPerDisplayUnit),
+							static_cast<int32>(_camShiftLocation.Y * CoordinateConstants::AtomPerDisplayUnit));
 	}
 
 	/*
@@ -264,13 +267,9 @@ public:
 	//	return _camShiftLocation / CoordinateConstants::MapToWorldMultiple;
 	//}
 
-	float GetMouseZoomSpeedFraction() final {
-		return _zoomSpeedFraction;
-	}
-	void SetMouseZoomSpeedFraction(float fraction) final {
-		_zoomSpeedFraction = fraction;
-	}
-
+	
+	float zoomSpeedFraction = 0.3f;
+	float mouseRotateSpeedFraction = 0.3f;
 	
 	
 public:
@@ -295,10 +294,6 @@ private:
 	}
 	
 private:
-	// TODO: save zoom speed fraction to Settings
-	float _zoomSpeedFraction = 0.5f;
-
-
 	std::vector<TrailerCameraRecord> _cameraSequence;
 	FString _systemLerpType = "ChooseLocation";
 
@@ -352,6 +347,17 @@ private:
 	int32 _zoomSnapThresholdCount = 0;
 	int32 _lastTryZoomSnapTick = 0;
 
+
+	// Right mouse drag pan
+	bool isRightMouseDown = false;
+	WorldAtom2 rightMouseDragStartAtom = WorldAtom2::Invalid;
+	WorldAtom2 rightMouseDragCamStartAtom = WorldAtom2::Invalid;
+	WorldAtom2 rightMouseDrag_LastWorkingAtom = WorldAtom2::Invalid;
+
+	// Middle mouse drag rotate
+	bool isMiddleMouseDown = false;
+	FVector2D middleDragStartMousePosition;
+	
 public:
 	void Serialize(FArchive& archive) final
 	{

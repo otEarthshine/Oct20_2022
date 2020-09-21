@@ -173,7 +173,7 @@ public:
 		return textWidget;
 	}
 	
-	void AddSpacer(int32_t height = 5) {
+	void AddSpacer(int32 height = 5) {
 		auto widget = GetChildElement<UPunSpacerElement>(UIEnum::PunSpacerWidget);
 		widget->Spacer->SetSize(FVector2D(0, height));
 	}
@@ -450,6 +450,12 @@ public:
 		}
 		else if (IsMountainMine(buildingEnum)) {
 			tooltipBox->AddRichText("Type: Mine");
+		}
+		else if (IsServiceBuilding(buildingEnum)) {
+			tooltipBox->AddRichText("Type: Service");
+		}
+		else if (IsSpecialProducer(buildingEnum)) {
+			tooltipBox->AddRichText("Type: Special");
 		}
 		else if (IsGlobalSlotCard(buildingEnum)) {
 			tooltipBox->AddRichText("Type: Global-Slot");

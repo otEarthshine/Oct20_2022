@@ -14,8 +14,8 @@
 
 #define TRAILER_MODE 0
 
-#define SAVE_VERSION 31081502
-#define GAME_VERSION 31081502
+#define SAVE_VERSION 20092133 // Day/Month/Time
+#define GAME_VERSION 20092133
 
 //! Utils
 
@@ -764,7 +764,7 @@ struct ResourceInfo
 // BALANCE
 // human consume 100 food per year, 100 food is roughly 300 coins, 1 year is 20 mins or 1200 sec..
 //
-static const int32 HumanFoodPerYear = 35; // 70
+static const int32 HumanFoodPerYear = 45; // 35 // 70
 static const int32 FoodCost = 3;
 static const int32 BaseHumanFoodCost100PerYear = 100 * HumanFoodPerYear * FoodCost;
 
@@ -861,7 +861,7 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::Cloth,		"Clothes", 15, "Luxury tier 2 used for housing upgrade. Provide cover and comfort."),
 
 	ResourceInfo(ResourceEnum::GoldOre,		"Gold Ore", 10, "Precious ore that can be smelted into Gold Bar"),
-	ResourceInfo(ResourceEnum::GoldBar,		"Gold Bar", 25, "Precious metal that can be minted into <img id=\"Coin\"/> and crafted into Jewelry"),
+	ResourceInfo(ResourceEnum::GoldBar,		"Gold Bar", 25, "Precious metal that can be minted into money or crafted into Jewelry"),
 
 	ResourceInfo(ResourceEnum::Beer,			"Beer", 8, "Luxury tier 1 used for housing upgrade. The cause and solution to all life's problems."),
 	//ResourceInfo(ResourceEnum::Barley,		"Barley", FoodCost, 100, "Edible grain, obtained from farming. Ideal for brewing Beer"),
@@ -989,6 +989,7 @@ static bool IsOreEnum(ResourceEnum resourceEnum) {
 	case ResourceEnum::IronOre:
 	case ResourceEnum::GoldOre:
 	case ResourceEnum::Gemstone:
+	case ResourceEnum::Coal:
 		return true;
 	default:
 		return false;
@@ -1728,6 +1729,11 @@ enum class CardEnum : uint16
 	SpeedBoost,
 	
 	None,
+
+	//! For Laborer Priority
+	GatherTiles,
+	Hauler,
+	Constructor,
 };
 
 enum class CardHandEnum
@@ -1978,7 +1984,11 @@ struct BldInfo
 			CASE(GardenCypress, 200);
 
 			CASE(Fort, 500);
-			CASE(Colony, 1000);
+			CASE(Colony, 2000);
+
+			CASE(ProductivityBook, 800);
+			CASE(FrugalityBook, 800);
+			CASE(SustainabilityBook, 800);
 #undef CASE
 		default:
 			break;
@@ -2058,7 +2068,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::FenceGate,		"Fence Gate",			WorldTile2(1, 1),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,0,0},	"Fence gate blocks animals from entering while letting people through.", "Block animals from walking on tile, while letting citizens through."),
 	BldInfo(CardEnum::Bridge,		"Bridge",				WorldTile2(1, 1),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,0,0},	"Allow citizens to cross over water."),
 	
-	BldInfo(CardEnum::Forester,		"Forester",				WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 2,	{50,50,0},	"Chop/plant trees for within your city's boundary."),
+	BldInfo(CardEnum::Forester,		"Forester",				WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 2,	{50,50,0},	"Chop/plant trees within your territory."),
 
 	BldInfo(CardEnum::CoalMine,		"Coal Mine",			WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::Coal,		10, 3,	{50,30,0},	"Mine Coal from Coal Deposits."),
 	BldInfo(CardEnum::IronMine,		"Iron Mine",			WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::IronOre,	 10, 3,	{50,30,0},	"Mine Iron Ores from Iron Deposits."),
@@ -2145,7 +2155,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::RegionCrates,	"Crates",			WorldTile2(4, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, {0, 0, 0}, "Crates that may contain valuable resources."),
 
 	// June 1 addition
-	BldInfo(CardEnum::Windmill, "Windmill", WorldTile2(5, 5), ResourceEnum::Wheat, ResourceEnum::None, ResourceEnum::Flour, 10, 2, { 150,0,0 }, "Grind Wheat into Wheat Flour."),
+	BldInfo(CardEnum::Windmill, "Windmill", WorldTile2(5, 5), ResourceEnum::Wheat, ResourceEnum::None, ResourceEnum::Flour, 10, 2, { 150,0,0 }, "Grind Wheat into Wheat Flour. +10% Productivity to surrounding Farms"),
 	BldInfo(CardEnum::Bakery, "Bakery", WorldTile2(5, 5), ResourceEnum::Flour, ResourceEnum::Coal, ResourceEnum::Bread, 30, 2, { 70,30,0 }, "Bake Bread with Wheat Flour and heat."),
 	BldInfo(CardEnum::GemstoneMine, "Gemstone Mine", WorldTile2(5, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::Gemstone, 10, 3, { 70,30,0 }, "Mine Gemstone from Gemstone Deposits."),
 	BldInfo(CardEnum::Jeweler, "Jeweler", WorldTile2(4, 7), ResourceEnum::Gemstone, ResourceEnum::GoldBar, ResourceEnum::Jewelry, 10, 3, { 150,0,50 }, "Craft Gemstone and Gold Bar into Jewelry."),
@@ -2203,7 +2213,7 @@ static const BldInfo BuildingInfo[]
 
 	// Unique Cards
 	BldInfo(CardEnum::StatisticsBureau, "Statistics Bureau", WorldTile2(4, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 30, 0, 0 }, "Show Town Statistics."),
-	BldInfo(CardEnum::JobManagementBureau, "Job Management Bureau", WorldTile2(4, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 30, 0, 0 }, "Allow managing job priority (global)."),
+	BldInfo(CardEnum::JobManagementBureau, "Employment Bureau", WorldTile2(4, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 30, 0, 0 }, "Allow managing job priority (global)."),
 
 	
 	// Can no longer pickup cards
@@ -2658,11 +2668,10 @@ static bool IsMountainMine(CardEnum buildingEnum)
 	}
 }
 
-static bool IsNonAgricultureProducer(CardEnum buildingEnum)
+// For IsIndustry...
+static bool IsDirtyProducer(CardEnum buildingEnum)
 {
-	if (buildingEnum == CardEnum::Mint ||
-		buildingEnum == CardEnum::CardMaker)
-	{
+	if (buildingEnum == CardEnum::Mint) {
 		return true;
 	}
 	if (IsProducer(buildingEnum)) {
@@ -2683,12 +2692,17 @@ static bool IsNonAgricultureProducer(CardEnum buildingEnum)
 	return false;
 }
 
+// Used for
+// - Appeal
+// - WildCard
+// - Bonuses
 static bool IsIndustrialBuilding(CardEnum buildingEnum)
 {
 	if (IsMountainMine(buildingEnum)) {
 		return false;
 	}
-	return IsNonAgricultureProducer(buildingEnum);
+	
+	return IsDirtyProducer(buildingEnum);
 }
 
 static bool IsIndustryOrMine(CardEnum buildingEnum)
@@ -2696,7 +2710,8 @@ static bool IsIndustryOrMine(CardEnum buildingEnum)
 	if (IsMountainMine(buildingEnum)) {
 		return true;
 	}
-	return IsNonAgricultureProducer(buildingEnum);
+	
+	return IsDirtyProducer(buildingEnum);
 }
 
 static bool IsHeavyIndustryOrMine(CardEnum buildingEnum)
@@ -2997,14 +3012,28 @@ static bool IsSkillEnum(CardEnum cardEnum) {
 	return IsCardInList(cardEnum, SkillEnums);
 }
 
-static bool CannotGetSpeedBoosted(CardEnum buildingEnum, bool isConstructed)
+static bool CanGetSpeedBoosted(CardEnum buildingEnum, bool isConstructed)
 {
-	return buildingEnum == CardEnum::Townhall ||
-		buildingEnum == CardEnum::StorageYard ||
-		buildingEnum == CardEnum::Farm ||
-		IsDecorativeBuilding(buildingEnum) ||
-		(IsHouse(buildingEnum) && isConstructed) ||
-		(IsRanch(buildingEnum) && isConstructed);
+	if (!isConstructed) {
+		return true;
+	}
+
+	if (IsRanch(buildingEnum)) {
+		return false;
+	}
+
+	return IsProducer(buildingEnum) || 
+		IsSpecialProducer(buildingEnum) ||
+		IsTradingPostLike(buildingEnum) ||
+		buildingEnum == CardEnum::TradingCompany;
+	
+	//return buildingEnum == CardEnum::Townhall ||
+	//	IsStorage(buildingEnum) ||
+	//	buildingEnum == CardEnum::Farm ||
+	//	IsDecorativeBuilding(buildingEnum) ||
+	//	(IsHouse(buildingEnum) && isConstructed) ||
+	//	(IsRanch(buildingEnum) && isConstructed) ||
+	//	IsRareCard(buildingEnum);
 }
 
 
@@ -4728,7 +4757,7 @@ static const int32 HumanBaseBirthChance = 3;
 // BALANCE
 // Heat _Year100Per10Resource... 10 resources will go through 4 winters (but 4 ppl in a house, so just 1 winter, hence 025 or 0.25 year)
 // Mar29 ... 3 -> 30ppl -> 50
-static const int32 HumanHeatResourcePerYear = 15; // 5 (for most of Feb) // 10 = 025 * 5 / 2
+static const int32 HumanHeatResourcePerYear = 10; // 5 (for most of Feb) // 10 = 025 * 5 / 2
 
 // Assume area is just a box: (ColdCelsius - MinCelsius) * Time::TicksPerSeason
 inline int32 MaxWinterCelsiusBelowComfort() { return std::max(0, FDToInt(Time::ColdCelsius() - Time::MinCelsiusBase())); }
@@ -5561,6 +5590,17 @@ static const std::vector<std::string> MaleNames
 	"Chuck",
 	"Bobby",
 	"Kurt",
+
+	// Discord
+	"Maxo",
+	"Noot",
+	"Biffa",
+	"Jakob",
+	"Jimba",
+	"Rufio",
+	"Tjelve",
+	"Kuro",
+	"Ralinad",
 };
 
 static const std::vector<std::string> FemaleNames
@@ -6314,6 +6354,12 @@ static int32 GetTileRadius(float zoomDistance)
 	return WorldToMapZoomAmount * 70 / 475;
 }
 
+const int32 MinMouseRotateAnglePerHalfScreenMove = 20;
+const int32 MaxMouseRotateAnglePerHalfScreenMove = 180;
+
+
+
+
 const float MinVolume = 0.0f;// 0.011f;
 
 const float NetworkInputDelayTime = 3.0f;
@@ -6510,19 +6556,19 @@ enum class CallbackEnum : uint8
 	ClaimLandMoney,
 	ClaimLandInfluence,
 	ClaimLandFood,
-	
+
 	StartAttackProvince,
 	ReinforceAttackProvince,
 	DefendProvinceInfluence,
 	DefendProvinceMoney,
-	
+
 	ClaimLandArmy,
 	CancelClaimLandArmy,
 
 	ClaimLandIndirect,
 	BuildOutpost,
 	DemolishOutpost,
-	
+
 	ClaimRuin,
 	SelectPermanentCard,
 	SelectUnboughtCard,
@@ -6538,7 +6584,7 @@ enum class CallbackEnum : uint8
 	TrainUnit,
 	CancelTrainUnit,
 	OpenStatistics,
-	
+
 	OpenSetTradeOffers,
 	IntercityTrade,
 
@@ -6560,6 +6606,11 @@ enum class CallbackEnum : uint8
 	QuestOpenDescription,
 
 	SelectEmptySlot,
+
+	SetGlobalJobPriority_Up,
+	SetGlobalJobPriority_Down,
+	SetGlobalJobPriority_FastUp,
+	SetGlobalJobPriority_FastDown,
 
 	// Military
 	ArmyConquer,

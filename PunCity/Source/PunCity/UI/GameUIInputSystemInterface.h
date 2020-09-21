@@ -36,12 +36,9 @@ public:
 	virtual PlacementType placementState() = 0;
 	virtual void CancelPlacement() = 0;
 
-	virtual WorldAtom2 cameraAtom() = 0;
+	virtual WorldAtom2 cameraAtom() const = 0;
 
 	virtual bool isSystemMovingCamera() = 0;
 
 	virtual void Serialize(FArchive& archive) = 0;
-
-	virtual float GetMouseZoomSpeedFraction() = 0;
-	virtual void SetMouseZoomSpeedFraction(float fraction) = 0;
 };

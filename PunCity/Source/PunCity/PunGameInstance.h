@@ -784,10 +784,19 @@ public:
 	}
 	void RestoreDefaultsInputs() {
 		mouseZoomSpeedFraction = 0.5f;
+		mouseRotateSpeedFraction = 0.5f;
 	}
 
 	void RestoreDefaultsOthers() {
 		autosaveEnum = AutosaveEnum::Year;
+	}
+
+	void RestoreDefaultsAll()
+	{
+		RestoreDefaultsGraphics();
+		RestoreDefaultsSound();
+		RestoreDefaultsInputs();
+		RestoreDefaultsOthers();
 	}
 
 	void SerializeSoundAndOtherSettings(FArchive& Ar)
@@ -812,6 +821,7 @@ public:
 		Ar << autosaveEnum;
 
 		Ar << mouseZoomSpeedFraction;
+		Ar << mouseRotateSpeedFraction;
 
 		Ar << _resolutionQuality;
 	}
@@ -835,6 +845,7 @@ public:
 
 	int32 loadedVersion = -1;
 	float mouseZoomSpeedFraction;
+	float mouseRotateSpeedFraction;
 
 private:
 	float _resolutionQuality;

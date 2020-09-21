@@ -149,6 +149,14 @@ public:
 
 		return pile;
 	}
+	std::vector<CardEnum> GetUnremovedPiles()
+	{
+		std::vector<CardEnum> pile;
+		pile.insert(pile.end(), _cardsHand.begin(), _cardsHand.end());
+		pile.insert(pile.end(), _cardsDrawPile.begin(), _cardsDrawPile.end());
+		pile.insert(pile.end(), _cardsDiscardPile.begin(), _cardsDiscardPile.end());
+		return pile;
+	}
 
 	bool HasCardInAnyPile(CardEnum cardEnumIn)
 	{
@@ -489,6 +497,16 @@ public:
 		return true;
 	}
 
+	bool TryAddCardToBoughtHand(CardEnum cardEnum, int32 cardCount = 1)
+	{
+		if (CanAddCardToBoughtHand(cardEnum, cardCount)) {
+			AddCardToHand2(cardEnum);
+			return true;
+		}
+		return false;
+	}
+	
+
 	int32 BoughtCardCount(CardEnum cardEnum) {
 		for (size_t i = _cardsBought.size(); i-- > 0;) {
 			if (_cardsBought[i].buildingEnum == cardEnum) {
@@ -686,8 +704,8 @@ private:
 			//RandomInsertToRareHand(cardEnums, 3);
 
 			std::stringstream ss;
-			ss << "Would you advices?";
-			PopupInfo popup(_playerId, ss.str(), { "Please advise me", "I already know what to do" }, PopupReceiverEnum::StartGame_AskAboutAdvice, true);
+			ss << "Would you like some guidance?";
+			PopupInfo popup(_playerId, ss.str(), { "Please guide me", "I already know what to do" }, PopupReceiverEnum::StartGame_AskAboutAdvice, true);
 			_simulation->AddPopup(popup);
 		}
 		else if (_rareHandEnum == RareHandEnum::BuildingSlotCards)

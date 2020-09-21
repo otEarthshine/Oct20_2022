@@ -555,14 +555,8 @@ public:
 		return finishedCount;
 	}
 
-	int32 jobBuildingCount(int32 playerId) final
-	{
-		const std::vector<std::vector<int32>>& jobBuildingEnumToIds = playerOwned(playerId).jobBuildingEnumToIds();
-		int32 jobBuildingCount = 0;
-		for (size_t i = 0; i < jobBuildingEnumToIds.size(); i++) {
-			jobBuildingCount += jobBuildingEnumToIds[i].size();
-		}
-		return jobBuildingCount;
+	int32 jobBuildingCount(int32 playerId) final {
+		return playerOwned(playerId).jobBuildingCount();
 	}
 	
 	const SubregionLists<int32>& buildingSubregionList() final {
@@ -728,6 +722,9 @@ public:
 	WorldTile2 GetProvinceCenterTile(int32 provinceId) final {
 		return _provinceSystem.GetProvinceCenterTile(provinceId);
 	}
+	WorldTile2 GetProvinceRandomTile(int32 provinceId, WorldTile2 floodOrigin, int32 maxRegionDist = 1, bool isIntelligent = false, int32 tries = 100) final {
+		return _provinceSystem.GetProvinceRandomTile(provinceId, floodOrigin, maxRegionDist, isIntelligent, tries);
+	}
 
 	TileArea GetProvinceRectArea(int32 provinceId) final {
 		return _provinceSystem.GetProvinceRectArea(provinceId);
@@ -891,10 +888,6 @@ public:
 	void RemoveProvinceAnimals(int32 regionId, int32 animalId) override {
 		_regionSystem->RemoveProvinceAnimals(regionId, animalId);
 	}
-	int32 RefreshAnimalHomeProvince(int32 regionId, int32 animalId) override {
-		return _regionSystem->RefreshAnimalHomeProvince(regionId, animalId);
-	}
-	
 
 	int HousingCapacity(int32 playerId) override { return _playerOwnedManagers[playerId].housingCapacity(); }
 
@@ -1222,8 +1215,24 @@ public:
 		return cardSystem(playerId).AddDrawCards(cardEnum, count);
 	}
 
-	bool isStorageAllFull(int32 playerId) final {
+	bool TryAddCardToBoughtHand(int32 playerId, CardEnum cardEnum, int32 cardCount = 1) final {
+		return cardSystem(playerId).TryAddCardToBoughtHand(cardEnum, cardCount);
+	}
+
+
+
+	/*
+	 * Storage
+	 */
+
+	bool isStorageAllFull(int32 playerId) final
+	{
 		std::vector<int32> storageIds = buildingIds(playerId, CardEnum::StorageYard);
+
+		// Add warehouses
+		std::vector<int32> warehouseIds = buildingIds(playerId, CardEnum::Warehouse);
+		storageIds.insert(storageIds.end(), warehouseIds.begin(), warehouseIds.end());
+		
 		for (int32 storageId : storageIds) {
 			if (!building(storageId).subclass<StorageYard>().isFull()) {
 				return false;
@@ -1833,6 +1842,7 @@ private:
 	void SetAllowResource(FSetAllowResource command) final;
 	void SetPriority(FSetPriority command) final;
 	void SetTownPriority(FSetTownPriority command) final;
+	void SetGlobalJobPriority(FSetGlobalJobPriority command) final;
 
 	void TradeResource(FTradeResource command) final;
 	void SetIntercityTrade(FSetIntercityTrade command) final;

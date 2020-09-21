@@ -560,41 +560,47 @@ public:
 	/*
 	 * Adjacency bonuses
 	 */
-	void CheckAdjacency(bool shouldCheckNearbyToo = true) {
+	void CheckAdjacency(bool shouldCheckNearbyToo = true, bool checkNearbyOnly = false)
+	{
 		if (_playerId == -1) return;
 
-		int32 lastAdjacentEfficiencyCount = adjacentBonusCount();
+		if (!checkNearbyOnly)
+		{
+			int32 lastAdjacentEfficiencyCount = adjacentBonusCount();
 
-		TileArea checkArea = _area;
-		checkArea.minX -= 2; checkArea.maxX += 2;
-		checkArea.minY -= 2; checkArea.maxY += 2;
-		checkArea.EnforceWorldLimit();
+			TileArea checkArea = _area;
+			checkArea.minX -= 2; checkArea.maxX += 2;
+			checkArea.minY -= 2; checkArea.maxY += 2;
+			checkArea.EnforceWorldLimit();
 
-		//if (_playerId != -1 && _buildingEnum != CardEnum::DirtRoad) {
-			//PUN_LOG("checkArea %s", *ToFString(checkArea.ToString()));
-			//_simulation->DrawArea(checkArea, FLinearColor::Red, -10);
-		//}
+			//if (_playerId != -1 && _buildingEnum != CardEnum::DirtRoad) {
+				//PUN_LOG("checkArea %s", *ToFString(checkArea.ToString()));
+				//_simulation->DrawArea(checkArea, FLinearColor::Red, -10);
+			//}
 
-		_adjacentIds.clear();
-		checkArea.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-			int32 buildingId = _simulation->buildingIdAtTile(tile);
+			_adjacentIds.clear();
+			checkArea.ExecuteOnArea_WorldTile2([&](WorldTile2 tile)
+			{
+				int32 buildingId = _simulation->buildingIdAtTile(tile);
 
-			if (buildingId == -1 || buildingId == _objectId) {
-				//_simulation->DrawLine(tile.worldAtom2(), FVector::ZeroVector, tile.worldAtom2(), FVector(0, 0, 20), FLinearColor::Black, 0.5f);
-				return;
+				if (buildingId == -1 || buildingId == _objectId) {
+					//_simulation->DrawLine(tile.worldAtom2(), FVector::ZeroVector, tile.worldAtom2(), FVector(0, 0, 20), FLinearColor::Black, 0.5f);
+					return;
+				}
+				//_simulation->DrawLine(tile.worldAtom2(), FVector::ZeroVector, tile.worldAtom2(), FVector(0, 0, 20), FLinearColor::Green, 0.5f);
+
+				CppUtils::TryAdd(_adjacentIds, buildingId);
+			});
+
+			// Combo buildings
+			//  Override HasAdjacencyBonus to trigger this
+			int32 newAdjacencyEffCount = adjacentBonusCount();
+			if (newAdjacencyEffCount > lastAdjacentEfficiencyCount) {
+				// TODO: may be back after combo is gone??
+				//_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::ComboComplete, centerTile(), std::to_string(newAdjacencyEffCount) + " Adjacents");
 			}
-			//_simulation->DrawLine(tile.worldAtom2(), FVector::ZeroVector, tile.worldAtom2(), FVector(0, 0, 20), FLinearColor::Green, 0.5f);
-
-			_adjacentIds.push_back(buildingId);
-		});
-
-		// Combo buildings
-		//  Override HasAdjacencyBonus to trigger this
-		int32 newAdjacencyEffCount = adjacentBonusCount();
-		if (newAdjacencyEffCount > lastAdjacentEfficiencyCount) {
-			// TODO: may be back after combo is gone??
-			//_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::ComboComplete, centerTile(), std::to_string(newAdjacencyEffCount) + " Adjacents");
 		}
+		
 
 		if (shouldCheckNearbyToo) {
 			for (auto& adjacentId : _adjacentIds) {
@@ -740,20 +746,8 @@ public:
 	}
 	virtual int32 productPerBatch() { return baseProductPerBatch() * efficiency() / 100; }
 
-	//// TODO: refactor into proper region??
-	//std::vector<Building*> GetBuildingsInRegion(CardEnum cardEnum)
-	//{
-	//	std::vector<Building*> buildings;
-	//	
-	//	const std::vector<int32>& buildingIds = _simulation->buildingIds(_playerId, cardEnum);
-	//	for (int32 buildingId : buildingIds) {
-	//		Building& building = _simulation->building(buildingId);
-	//		if (building.centerTile().region() == centerTile().region()) {
-	//			buildings.push_back(&building);
-	//		}
-	//	}
-	//	return buildings;
-	//}
+
+	int32 oreLeft();
 
 	/*
 	 * Input
@@ -826,6 +820,8 @@ public:
 
 	bool isUsable() { return isConstructed() && !isFireDisabled(); }
 
+
+	
 	/*
 	 * Fire
 	 */

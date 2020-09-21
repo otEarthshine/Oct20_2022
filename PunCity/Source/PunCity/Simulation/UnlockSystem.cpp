@@ -106,13 +106,13 @@ void UnlockSystem::OnEraUnlocked(std::stringstream& ss)
 		ss << "<space>";
 		ss << " You have reached the final era.";
 		ss << "<space>";
-		ss << " Once you researched all technologies in this era, you win the game.";
+		//ss << " Once you researched all technologies in this era, you win the game.";
 
 
 		// Warn other players
 		std::stringstream warnSS;
 		warnSS << _simulation->playerName(_playerId) << " has reached the final era.<space>";
-		warnSS << "Once all final era technologies are researched, " << _simulation->playerName(_playerId) + " will be victorious.";
+		//warnSS << "Once all final era technologies are researched, " << _simulation->playerName(_playerId) + " will be victorious.";
 		_simulation->AddPopupAll(PopupInfo(_playerId, warnSS.str()), _playerId);
 	}
 }

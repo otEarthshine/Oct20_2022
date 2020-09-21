@@ -32,7 +32,7 @@ public:
 
 		_upgrades = {
 			BuildingUpgrade("Delicate gathering", "+20% efficiency.", ResourcePair(ResourceEnum::SteelTools, 10)),
-			BuildingUpgrade("Fruit bait for hunters", "Adjacent Hunter gets +30% efficiency (does not stack).", ResourcePair(ResourceEnum::Wood, 10)),
+			BuildingUpgrade("Pests traps", "+30% productivity if there is an adjacent hunter (does not stack).", 80),
 		};
 	}
 
@@ -46,8 +46,8 @@ public:
 			bonuses.push_back({ "Delicate gathering upgrade", 20 });
 		}
 
-		if (adjacentCount(CardEnum::HuntingLodge) > 0) {
-			bonuses.push_back({ "Hunting lodge upgrade", 30 });
+		if (IsUpgraded(1) && adjacentCount(CardEnum::HuntingLodge) > 0) {
+			bonuses.push_back({ "Pests traps", 30 });
 		}
 		
 		//std::vector<Building*> buildings = GetBuildingsInRegion(CardEnum::HuntingLodge);
@@ -84,7 +84,7 @@ public:
 
 		_upgrades = {
 			BuildingUpgrade("Smoking chamber", "+30% efficiency.", 80),
-			BuildingUpgrade("Trap fruit-eating pests", "Adjacent Fruit Gatherer gets +30% productivity (does not stack).", 80),
+			BuildingUpgrade("Fruit bait", "+30% efficiency if there is an adjacent Fruit Gatherer (does not stack).", ResourcePair(ResourceEnum::Wood, 10)),
 		};
 	}
 
@@ -95,8 +95,8 @@ public:
 			bonuses.push_back({ "Smoking chamber", 30 });
 		}
 
-		if (adjacentCount(CardEnum::FruitGatherer) > 0) {
-			bonuses.push_back({ "Gatherer upgrade", 30 });
+		if (IsUpgraded(1) && adjacentCount(CardEnum::FruitGatherer) > 0) {
+			bonuses.push_back({ "Fruit bait", 30 });
 		}
 		
 		//const std::vector<int32>& buildingIds = _simulation->buildingIds(_playerId, CardEnum::FruitGatherer);
@@ -435,8 +435,6 @@ public:
 		return bonuses;
 	}
 
-	int32 oreLeft();
-
 	void OnProduce(int32 productionAmount) override;
 };
 
@@ -685,6 +683,8 @@ public:
 			WorkMode::Create("Productivity Book", "Create Productivity Book Card"),
 			WorkMode::Create("Sustainability Book", "Create Sustainability Book Card"),
 			WorkMode::Create("Frugality Book", "Create Frugality Book Card"),
+			WorkMode::Create("Wild Card", "Create Wild Card"),
+			WorkMode::Create("Card Removal Card", "Create Card Removal Card"),
 		});
 	}
 	
@@ -709,10 +709,13 @@ public:
 	// Same amount of work required to acquire resources
 	int32 workManSecPerBatch100() final
 	{
-		// Assume card 800 price here...
-		return (800 - batchCost()) * 100 * 100 / buildingInfo().workRevenuePerSec100_perMan; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
+		// Assume card 800 price for SlotCards
+		int32 cardPrice = GetBuildingInfo(GetCardProduced()).baseCardPrice;
+		return (cardPrice - batchCost()) * 100 * 100 / buildingInfo().workRevenuePerSec100_perMan; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
 	}
 
+	CardEnum GetCardProduced();
+	
 	int32 baseInputPerBatch() override { return 10; }
 };
 
@@ -960,9 +963,9 @@ public:
 	{
 		Building::FinishConstruction();
 
-		AddResourceHolder(ResourceEnum::Wheat, ResourceHolderType::Requester, 20);
-		AddResourceHolder(ResourceEnum::Orange, ResourceHolderType::Requester, 20);
-		AddResourceHolder(ResourceEnum::Mushroom, ResourceHolderType::Requester, 20);
+		AddResourceHolder(ResourceEnum::Wheat, ResourceHolderType::Requester, 0);
+		AddResourceHolder(ResourceEnum::Orange, ResourceHolderType::Requester, 0);
+		AddResourceHolder(ResourceEnum::Mushroom, ResourceHolderType::Requester, 0);
 		AddResourceHolder(ResourceEnum::Beer, ResourceHolderType::Provider, 0);
 		
 		_upgrades = {
@@ -1058,7 +1061,7 @@ public:
 		return WindmillBaseEfficiency(_playerId, centerTile(), _simulation);
 	}
 
-	static const int32 Radius = 20;
+	static const int32 Radius = 16;
 };
 class Bakery final : public IndustrialBuilding
 {
@@ -1540,8 +1543,10 @@ public:
 	{
 		Building::OnDeinit();
 		
+		//PUN_LOG("Bridge OnDeinit");
+		
 		_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-			PUN_LOG("Bridge SetAreaWalkable false: %s", *tile.To_FString());
+			//PUN_LOG("Bridge SetAreaWalkable false: %s", *tile.To_FString());
 			_simulation->SetWalkable(tile, false);
 		});
 
@@ -1556,7 +1561,7 @@ public:
 		// Make the area on which this was built walkable.
 		_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 			_simulation->SetWalkable(tile, true);
-			PUN_LOG("Bridge SetAreaWalkable true: %s", *tile.To_FString());
+			//PUN_LOG("Bridge SetAreaWalkable true: %s", *tile.To_FString());
 		});
 
 		// clear the tile on each side of the bridge, in case the tree is blocking
@@ -1851,16 +1856,7 @@ public:
 		return _simulation->georesource(_simulation->GetProvinceIdClean(centerTile())).info().resourceEnum;
 	}
 
-	void TickRound() override
-	{
-		if (isConstructed())
-		{
-			ResourceEnum resourceEnum = GetColonyResourceEnum();
-			int32 resourceCount = GetColonyResourceIncome(resourceEnum);
-			resourceSystem().AddResourceGlobal(resourceEnum, resourceCount, *_simulation);
-			_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainResource, centerTile(), "+" + to_string(resourceCount), resourceEnum);
-		}
-	}
+	void TickRound() override;
 };
 
 

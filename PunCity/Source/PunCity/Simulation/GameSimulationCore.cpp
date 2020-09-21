@@ -974,9 +974,9 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 						}
 
 						// Economic Victory
-						const int32 thousandsToWarn1 = 60;
-						const int32 thousandsToWarn2 = 70;
-						const int32 thousandsToWin = 80;
+						const int32 thousandsToWarn1 = 300;
+						const int32 thousandsToWarn2 = 400;
+						const int32 thousandsToWin = 500;
 						
 						if (_playerOwnedManagers[playerId].economicVictoryPhase == 0 && money(playerId) > (thousandsToWarn1 * 1000)) {
 							_playerOwnedManagers[playerId].economicVictoryPhase = 1;
@@ -1233,6 +1233,7 @@ bool GameSimulationCore::ExecuteNetworkCommand(std::shared_ptr<FNetworkCommand> 
 	case NetworkCommandEnum::SetAllowResource:	SetAllowResource(*static_pointer_cast<FSetAllowResource>(command)); break;
 	case NetworkCommandEnum::SetPriority:		SetPriority(*static_pointer_cast<FSetPriority>(command)); break;
 	case NetworkCommandEnum::SetTownPriority:	SetTownPriority(*static_pointer_cast<FSetTownPriority>(command)); break;
+	case NetworkCommandEnum::SetGlobalJobPriority:SetGlobalJobPriority(*static_pointer_cast<FSetGlobalJobPriority>(command)); break;
 
 	case NetworkCommandEnum::TradeResource:		TradeResource(*static_pointer_cast<FTradeResource>(command)); break;
 	case NetworkCommandEnum::SetIntercityTrade:	SetIntercityTrade(*static_pointer_cast<FSetIntercityTrade>(command)); break;
@@ -2210,6 +2211,12 @@ void GameSimulationCore::SetTownPriority(FSetTownPriority command)
 	playerOwn.targetRoadMakerCount = command.targetRoadMakerCount;
 
 	playerOwn.RefreshJobDelayed();
+}
+
+void GameSimulationCore::SetGlobalJobPriority(FSetGlobalJobPriority command)
+{
+	_LOG(LogNetworkInput, " SetGlobalJobPriority");
+	playerOwned(command.playerId).SetGlobalJobPriority(command);
 }
 
 void GameSimulationCore::ChangeName(FChangeName command)

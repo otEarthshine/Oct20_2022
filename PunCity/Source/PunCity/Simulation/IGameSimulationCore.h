@@ -272,7 +272,10 @@ public:
 	
 	virtual bool AreAdjacentProvinces(int32 provinceId1, int32 provinceId2) = 0;
 	virtual bool IsProvinceValid(int32 provinceId) = 0;
+	
 	virtual WorldTile2 GetProvinceCenterTile(int32 provinceId) = 0;
+	virtual WorldTile2 GetProvinceRandomTile(int32 provinceId, WorldTile2 floodOrigin, int32 maxRegionDist = 1, bool isIntelligent = false, int32 tries = 100) = 0;
+	
 	virtual TileArea GetProvinceRectArea(int32 provinceId) = 0;
 
 	template <typename Func>
@@ -364,7 +367,6 @@ public:
 	virtual const std::vector<int32>& provinceAnimals(int32 provinceId) = 0;
 	virtual void AddProvinceAnimals(int32 provinceId, int32 animalId) = 0;
 	virtual void RemoveProvinceAnimals(int32 provinceId, int32 animalId) = 0;
-	virtual int32 RefreshAnimalHomeProvince(int32 provinceId, int32 animalId) = 0;
 
 	virtual int population(int32 playerId) = 0;
 	virtual int32 worldPlayerPopulation() = 0;
@@ -414,8 +416,12 @@ public:
 	//! Card system
 	virtual int32 BoughtCardCount(int32 playerId, CardEnum buildingEnum) = 0;
 	virtual int32 TownhallCardCount(int32 playerId, CardEnum cardEnum) = 0;
+	
 	virtual bool HasCardInAnyPile(int32 playerId, CardEnum cardEnum) = 0;
+	
 	virtual void AddDrawCards(int32 playerId, CardEnum cardEnum, int32 count = 1) = 0;
+
+	virtual bool TryAddCardToBoughtHand(int32 playerId, CardEnum cardEnum, int32 cardCount = 1) = 0;
 	
 	virtual void GenerateRareCardSelection(int32 playerId, RareHandEnum rareHandEnum, std::string rareHandMessage) = 0;
 
@@ -515,6 +521,7 @@ public:
 	virtual void SetAllowResource(FSetAllowResource command) = 0;
 	virtual void SetPriority(class FSetPriority command) = 0;
 	virtual void SetTownPriority(class FSetTownPriority command) = 0;
+	virtual void SetGlobalJobPriority(class FSetGlobalJobPriority command) = 0;
 
 	virtual void TradeResource(class FTradeResource tradeResource) = 0;
 	virtual void SetIntercityTrade(class FSetIntercityTrade command) = 0;

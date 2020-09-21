@@ -839,6 +839,38 @@ public:
 		return _provinceRectAreas[provinceId];
 	}
 
+	WorldTile2 GetProvinceRandomTile(int32 provinceId, WorldTile2 floodOrigin, int32 maxRegionDist = 1, bool isIntelligent = false, int32 tries = 100)
+	{
+		PUN_CHECK(IsProvinceValid(provinceId));
+		TileArea area = _provinceRectAreas[provinceId];
+
+		for (int32 i = 0; i < tries; i++) {
+			WorldTile2 tile = area.RandomTile();
+			if (abs(GetProvinceIdRaw(tile)) == provinceId &&
+				_simulation->IsConnected(floodOrigin, tile, maxRegionDist, isIntelligent)) 
+			{
+				return tile;
+			}
+		}
+
+		return WorldTile2::Invalid;
+	}
+	WorldTile2 GetProvinceAnyTile(int32 provinceId, bool)
+	{
+		PUN_CHECK(IsProvinceValid(provinceId));
+		TileArea area = _provinceRectAreas[provinceId];
+		
+		WorldTile2 anyTile = WorldTile2::Invalid;
+		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+			if (abs(GetProvinceIdRaw(tile)) == provinceId) {
+				anyTile = tile;
+			}
+		});
+		PUN_CHECK(anyTile.isValid());
+		return anyTile;
+	}
+	
+
 
 	const std::vector<WorldRegion2>& GetRegionOverlaps(int32 provinceId) {
 		return _provinceToRegionsOverlap[provinceId];

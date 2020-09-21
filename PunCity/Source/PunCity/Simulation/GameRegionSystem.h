@@ -33,7 +33,8 @@ struct AnimalColony
 class GameRegionSystem
 {
 public:
-	void Init(IGameSimulationCore* simulation) {
+	void Init(IGameSimulationCore* simulation)
+	{
 		_simulation = simulation;
 		_territoryOwnerMap.resize(GameMapConstants::TotalRegions, -1);
 		//_isDirectControl.resize(GameMapConstants::TotalRegions, false);
@@ -119,32 +120,6 @@ public:
 //			debugMaxAnimalCount = _provinceToAnimalIds[provinceId].size();
 //		}
 //#endif
-	}
-	int32 RefreshAnimalHomeProvince(int32 provinceIdIn, int32 animalId)
-	{
-		// Find a nearby province with least animals
-		const std::vector<ProvinceConnection>& connections = _simulation->GetProvinceConnections(provinceIdIn);
-		int32 minAnimalCount = _provinceToAnimalIds[provinceIdIn].size();
-		int32 minAnimalProvinceId = provinceIdIn;
-
-		//for (const ProvinceConnection& connection : connections) {
-		//	if (connection.tileType == TerrainTileType::None) {
-		//		int32 animalCount = _provinceToAnimalIds[connection.provinceId].size();
-		//		if (animalCount < minAnimalCount) {
-		//			minAnimalCount = animalCount;
-		//			minAnimalProvinceId = connection.provinceId;
-		//		}
-		//	}
-		//}
-
-		//// Move the animal
-		//if (minAnimalProvinceId != provinceIdIn)
-		//{
-		//	RemoveProvinceAnimals(provinceIdIn, animalId);
-		//	AddProvinceAnimals(minAnimalProvinceId, animalId);
-		//}
-		
-		return minAnimalProvinceId;
 	}
 
 	void AddAnimalColony(UnitEnum unitEnum, WorldTile2 center, int32 radius, int32 chancePercentMultiplier);

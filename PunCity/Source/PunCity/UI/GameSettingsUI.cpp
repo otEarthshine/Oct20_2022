@@ -37,7 +37,7 @@ void UGameSettingsUI::PunInit(UPunWidget* callbackParent)
 		gameInstance()->loadedVersion != GAME_VERSION)
 	{
 		RestoreDefault();
-		gameInstance()->RestoreDefaultsSound();
+		gameInstance()->RestoreDefaultsAll();
 		gameInstance()->SaveSettingsToFile();
 	}
 
@@ -130,6 +130,7 @@ void UGameSettingsUI::PunInit(UPunWidget* callbackParent)
 	OtherSettingsButton->OnClicked.AddDynamic(this, &UGameSettingsUI::OnClickOtherSettings);
 
 	MouseWheelSpeedSlider->OnValueChanged.AddDynamic(this, &UGameSettingsUI::OnMouseWheelSpeedChanged);
+	MouseDragRotateSpeedSlider->OnValueChanged.AddDynamic(this, &UGameSettingsUI::OnMouseDragRotateSpeedChanged);
 
 	RestoreDefaultsButton->OnClicked.AddDynamic(this, &UGameSettingsUI::RestoreDefault);
 
@@ -262,6 +263,7 @@ void UGameSettingsUI::RefreshUI(bool resetTabs)
 	AmbientSoundsSlider->SetValue(gameInst->ambientVolume());
 	
 	MouseWheelSpeedSlider->SetValue(gameInst->mouseZoomSpeedFraction);
+	MouseDragRotateSpeedSlider->SetValue(gameInst->mouseRotateSpeedFraction);
 
 	if (resetTabs) {
 		ResetTabSelection();

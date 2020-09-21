@@ -15,6 +15,7 @@ using namespace std::chrono;
 DECLARE_CYCLE_STAT(TEXT("PUN: FindTree"), STAT_PunFindTree, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: FindFruit"), STAT_PunFindFruit, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: FindFullBush"), STAT_PunFindFullBush, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: FindFullBush2"), STAT_PunFindFullBush2, STATGROUP_Game);
 
 DECLARE_CYCLE_STAT(TEXT("PUN: Tree.Tick"), STAT_PunTreeTickTiles, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: Tree.TickInitial"), STAT_PunTreeTickInitial, STATGROUP_Game);
@@ -520,6 +521,8 @@ WorldTile2 TreeSystem::FindNearestUnreservedFullBush(WorldTile2 unitTile, WorldR
 
 	return nearestTile;
 }
+
+
 
 const int initialPlantChance = 5;
 const int initialStonePlaceChance = 2;

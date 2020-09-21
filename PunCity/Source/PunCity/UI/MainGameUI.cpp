@@ -18,6 +18,7 @@
 #include "PunCity/Simulation/Buildings/GathererHut.h"
 #include "Kismet/GameplayStatics.h"
 #include "PunRichText.h"
+#include "JobPriorityRow.h"
 
 using namespace std;
 
@@ -39,8 +40,9 @@ void UMainGameUI::PunInit()
 
 	DemolishButton->OnClicked.AddDynamic(this, &UMainGameUI::ToggleDemolishButton);
 
-	StatsButton->OnClicked.AddDynamic(this, &UMainGameUI::ToggleStatisticsUI);
-	AddToolTip(StatsButton, "Show statistics");
+	//StatsButton->OnClicked.AddDynamic(this, &UMainGameUI::ToggleStatisticsUI);
+	//AddToolTip(StatsButton, "Show statistics");
+	StatsButtonOverlay->SetVisibility(ESlateVisibility::Collapsed);
 
 	CardRerollButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickRerollButton);
 	CardRerollButton1->OnClicked.AddDynamic(this, &UMainGameUI::ClickRerollButton);
@@ -120,6 +122,9 @@ void UMainGameUI::PunInit()
 	LeaderSkillButton->OnClicked.AddDynamic(this, &UMainGameUI::OnClickLeaderSkillButton);
 	LeaderSkillButton->bOverride_Cursor = false;
 
+	JobPriorityCloseButton->OnClicked.AddDynamic(this, &UMainGameUI::OnClickJobPriorityCloseButton);
+	JobPriorityOverlay->SetVisibility(ESlateVisibility::Collapsed);
+
 	// ImportantResources
 	auto SetupImportantResources = [&](UIconTextPairWidget* iconTextPair)
 	{
@@ -189,6 +194,8 @@ void UMainGameUI::PunInit()
 	//	PlayAnimation(pair.Value);
 	//	break;
 	//}
+
+	//
 
 	TestMainMenuOverlay1->SetVisibility(ESlateVisibility::Collapsed);
 	TestMainMenuOverlay2->SetVisibility(ESlateVisibility::Collapsed);
@@ -506,11 +513,14 @@ void UMainGameUI::Tick()
 
 				if (wildCardEnum == CardEnum::CardRemoval)
 				{
+					std::vector<CardEnum> unremovedCards = cardSystem.GetUnremovedPiles();
+					unordered_set<CardEnum> uniqueUnremovedCards(unremovedCards.begin(), unremovedCards.end());
+					
 					for (size_t i = 0; i < BuildingEnumCount; i++)
 					{
 						CardEnum buildingEnum = static_cast<CardEnum>(i);
 
-						if (uniqueAvailableCards.find(buildingEnum) != uniqueAvailableCards.end())
+						if (uniqueUnremovedCards.find(buildingEnum) != uniqueUnremovedCards.end())
 						{
 							// Can only convert to building
 							if (IsBuildingCard(buildingEnum)) {
@@ -1121,7 +1131,7 @@ void UMainGameUI::Tick()
 			ResearchingText->SetText(ToFText(currentTech->GetName()));
 			
 			std::stringstream ssSci;
-			unlockSys->SetDisplaySciencePoint(ssSci);
+			unlockSys->SetDisplaySciencePoint(ssSci, false);
 			SetText(ResearchingAmountText, ssSci.str());
 			
 			ResearchBar->SetWidthOverride(unlockSys->hasTargetResearch() ? (unlockSys->researchFraction() * 240) : 0);
@@ -1132,15 +1142,26 @@ void UMainGameUI::Tick()
 		}
 	}
 
-	// Flash ResearchBarUI if there is nothing being researched
 	UnlockSystem* unlockSystem = simulation.unlockSystem(playerId());
-	if (unlockSystem) {
+	if (unlockSystem) 
+	{
+		// ResearchBarUI
+		// Flash ResearchBarUI if there is nothing being researched
 		FLinearColor researchBarColor = !unlockSystem->hasTargetResearch() && (kTickCount % 60 < 30) ? FLinearColor(1.0f, 0.33333f, 0.0f, 0.8f) : FLinearColor(.025f, .025f, .025f, 0.8f);
 		ResearchBarUI->SetBackgroundColor(researchBarColor);
 		//PUN_LOG("ResearchBarUI %f, %f, %f", researchBarColor.R, researchBarColor.G, researchBarColor.B);
 
 		if (unlockSystem->allTechsUnlocked()) {
 			ResearchBarUI->SetVisibility(ESlateVisibility::Collapsed);
+		}
+
+
+		// ProsperityBarUI Tick
+		if (unlockSystem->prosperityEnabled) {
+			ProsperityBarUI->SetBackgroundColor(researchBarColor);
+			ProsperityBarUI->SetVisibility(ESlateVisibility::Visible);
+		} else {
+			ProsperityBarUI->SetVisibility(ESlateVisibility::Collapsed);
 		}
 	}
 
@@ -1161,6 +1182,28 @@ void UMainGameUI::Tick()
 			MidScreenMessage->SetVisibility(ESlateVisibility::Collapsed);
 		}
 	}
+
+	/*
+	 * Job Priority Tick
+	 */
+	 // lazy init
+	if (JobPriorityRows.Num() == 0)
+	{
+		auto& playerOwned = simulation.playerOwned(playerId());
+		const std::vector<CardEnum>& jobPriorityList = playerOwned.GetJobPriorityList();
+		
+		JobPriorityScrollBox->ClearChildren();
+		for (int32 i = 0; i < jobPriorityList.size(); i++)
+		{
+			CardEnum jobEnum = jobPriorityList[i];
+
+			UJobPriorityRow* jobRow = AddWidget<UJobPriorityRow>(UIEnum::JobPriorityRow);
+			jobRow->Init(this, jobEnum);
+			JobPriorityScrollBox->AddChild(jobRow);
+			JobPriorityRows.Add(jobRow);
+		}
+	}
+	
 
 	/*
 	 * Card animation, the beginning part
@@ -1951,6 +1994,68 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 
 		return;
 	}
+}
+
+void UMainGameUI::CallBack2(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum)
+{
+	/*
+	 * Job Priority Callback
+	 */
+
+	UJobPriorityRow* jobPriorityCaller = CastChecked<UJobPriorityRow>(punWidgetCaller);
+	CardEnum cardEnum = jobPriorityCaller->cardEnum;
+
+	int32 currentIndex = -1;
+	for (int32 i = 0; i < JobPriorityRows.Num(); i++) {
+		if (JobPriorityRows[i]->cardEnum == cardEnum) {
+			currentIndex = i;
+		}
+	}
+	check(currentIndex != -1);
+
+	UJobPriorityRow* row = JobPriorityRows[currentIndex];
+
+	// Move the element in JobPriorityRows
+	if (callbackEnum == CallbackEnum::SetGlobalJobPriority_Up)
+	{
+		if (currentIndex > 0) {
+			JobPriorityRows.RemoveAt(currentIndex);
+			JobPriorityRows.Insert(row, currentIndex - 1);
+		}
+	}
+	else if (callbackEnum == CallbackEnum::SetGlobalJobPriority_Down)
+	{
+		if (currentIndex < JobPriorityRows.Num() - 1) {
+			JobPriorityRows.RemoveAt(currentIndex);
+			JobPriorityRows.Insert(row, currentIndex + 1);
+		}
+	}
+	else if (callbackEnum == CallbackEnum::SetGlobalJobPriority_FastUp)
+	{
+		if (currentIndex > 0) {
+			JobPriorityRows.RemoveAt(currentIndex);
+			JobPriorityRows.Insert(row, 0);
+		}
+	}
+	else if (callbackEnum == CallbackEnum::SetGlobalJobPriority_FastDown)
+	{
+		if (currentIndex < JobPriorityRows.Num() - 1) {
+			JobPriorityRows.RemoveAt(currentIndex);
+			JobPriorityRows.Add(row);
+		}
+	}
+
+	// Put JobPriorityRows into JobPriorityScrollBox
+	// Construct command
+	auto command = make_shared<FSetGlobalJobPriority>();
+	
+	JobPriorityScrollBox->ClearChildren();
+	for (int32 i = 0; i < JobPriorityRows.Num(); i++) {
+		JobPriorityScrollBox->AddChild(JobPriorityRows[i]);
+		command->jobPriorityList.Add(static_cast<int32>(JobPriorityRows[i]->cardEnum));
+	}
+
+	networkInterface()->SendNetworkCommand(command);
 }
 
 

@@ -233,8 +233,18 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 	{
 		ClearInstructions();
 
-		if (_dragState == DragState::Dragging && _canPlace) {
-			int32 stoneNeeded = _roadPathTileIds.Num() * 2;
+		if (_dragState == DragState::Dragging && _canPlace) 
+		{
+			int32 stoneNeeded = 0;
+			for (int32 tileId : _roadPathTileIds) {
+				WorldTile2 tile(tileId);
+				if (sim.buildingEnumAtTile(tile) == CardEnum::None && 
+					!sim.IsRoadTile(tile)) 
+				{
+					stoneNeeded += 2;
+				}
+			}
+			//int32 stoneNeeded = _roadPathTileIds.Num() * 2;
 			SetInstruction(PlacementInstructionEnum::DragRoadStone, true, stoneNeeded);
 		}
 	}
@@ -1595,7 +1605,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 							//	IsDecorativeBuilding(buildingEnum) ||
 							//	(IsHouse(buildingEnum) && isConstructed) ||
 							//	(IsRanch(buildingEnum) && isConstructed))
-							if (CannotGetSpeedBoosted(buildingEnum, isConstructed))
+							if (!CanGetSpeedBoosted(buildingEnum, isConstructed))
 							{
 								_networkInterface->SetCursor("Slate/MouseCursorSkillInvalid");
 								SetInstruction(PlacementInstructionEnum::NotThisBuildingTarget, true);

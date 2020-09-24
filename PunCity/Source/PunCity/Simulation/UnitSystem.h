@@ -114,6 +114,9 @@ public:
 	int unitCount() const { return _unitLeans.size() - _deadUnits.size(); }
 	int deadCount() const { return _deadUnits.size(); }
 
+	int32 unitCount(UnitEnum unitEnum) const { return _unitEnumToUnitCount[static_cast<int>(unitEnum)]; }
+	int32 animalInitialCount(UnitEnum unitEnum) const { return _animalEnumToInitialCount[static_cast<int>(unitEnum)]; }
+
 	void AddAnimals(int animalCount);
 	int AddUnit(UnitEnum unitEnum, int32 playerId, WorldAtom2 location, int32 ageTicks);
 	void RemoveUnit(int32 objectId);
@@ -157,6 +160,9 @@ private:
 	UpdateRingBuffer _updateBuffer;
 	
 	std::vector<std::unique_ptr<UnitStateAI>> _stateAI;
+
+	std::vector<int32> _unitEnumToUnitCount;
+	std::vector<int32> _animalEnumToInitialCount; // This is useful for controlling animal population.
 
 private:
 	PUN_DEBUG_EXPR(PunStates _statesCount);

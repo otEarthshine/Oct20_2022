@@ -34,8 +34,10 @@ void UTownhallHoverInfo::PunInit(int buildingId)
 	SetChildHUD(BuyingBox);
 	SetChildHUD(SellingBox);
 
-	_lastPriorityInputTime = -999.0f;
-	SyncState();
+	_laborerPriorityState.lastPriorityInputTime = -999.0f;
+	//_laborerPriorityState.PunInit(&simulation(), simulation().building(_buildingId).playerId());c
+	//_lastPriorityInputTime = -999.0f;
+	//SyncState();
 }
 
 void UTownhallHoverInfo::ChangedCityName(const FText& Text, ETextCommit::Type CommitMethod)

@@ -232,6 +232,9 @@ public:
 	virtual class UnitStateAI& unitAI(int32 id) = 0;
 	virtual WorldAtom2 unitAtom(int32 id) = 0;
 
+	virtual int32 animalInitialCount(UnitEnum unitEnum) = 0;
+	virtual int32 unitEnumCount(UnitEnum unitEnum) = 0;
+
 	virtual int16_t GetFloodId(WorldTile2 tile) = 0;
 	virtual void SetWalkable(WorldTile2 tile, bool isWalkable) = 0;
 	virtual void SetWalkableSkipFlood(WorldTile2 tile, bool isWalkable) = 0;

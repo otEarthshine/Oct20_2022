@@ -146,35 +146,47 @@ struct BuildHousesQuest final : Quest
 
 	void OnStartQuest() override { AddStartPopup(); }
 
-	std::string numberDescription() override { return std::to_string(houseBuilt()) + "/5"; }
-
-	float fraction() override { return houseBuilt() / 5.0f; }
-
 	bool NeedExclamation() override {
 		return simulation->buildingCount(playerId, CardEnum::House) < 5;
 	}
 
-	void UpdateStatus(int32 value) override
+	void OnFinishQuest() override
 	{
-		if (houseBuilt() >= 5) {
-			PUN_CHECK(simulation);
-			auto unlockSys = simulation->unlockSystem(playerId);
-			unlockSys->townhallUpgradeUnlocked = true;
+		PUN_CHECK(simulation);
+		auto unlockSys = simulation->unlockSystem(playerId);
+		unlockSys->townhallUpgradeUnlocked = true;
 
-			AddEndPopup(
-				"Quest completed! (" + questTitle() + ")\n");
-			
-
-			if (simulation->townLvl(playerId) == 1) {
-				simulation->parameters(playerId)->NeedTownhallUpgradeNoticed = true;
-			}
-			
-			EndQuest();
+		AddEndPopup("Well done! Your people are happy that they finally have houses to live in."
+						"<space>"
+						"Providing enough housing is important. Homeless people can migrate away, or die during winter. On the other hand, having extra houses can attract immigrants.");
+		
+		if (simulation->townLvl(playerId) == 1) {
+			simulation->parameters(playerId)->NeedTownhallUpgradeNoticed = true;
 		}
 	}
 
-private:
-	int32 houseBuilt() { return simulation->buildingFinishedCount(playerId, CardEnum::House); }
+	//void UpdateStatus(int32 value) override
+	//{
+	//	if (currentValue() >= neededValue()) {
+	//		PUN_CHECK(simulation);
+	//		auto unlockSys = simulation->unlockSystem(playerId);
+	//		unlockSys->townhallUpgradeUnlocked = true;
+
+	//		AddEndPopup(
+	//			"Quest completed! (" + questTitle() + ")\n");
+	//		
+
+	//		if (simulation->townLvl(playerId) == 1) {
+	//			simulation->parameters(playerId)->NeedTownhallUpgradeNoticed = true;
+	//		}
+	//		
+	//		EndQuest();
+	//	}
+	//}
+
+
+	int32 currentValue() override { return simulation->buildingFinishedCount(playerId, CardEnum::House); }
+	int32 neededValue() override { return 5; }
 };
 
 struct PopulationQuest : Quest
@@ -748,20 +760,20 @@ private:
 		//}
 
 		case QuestEnum::FoodBuildingQuest: {
-			AddQuest(std::make_shared<BuildHousesQuest>());
-			return;
-		}
-
-		case QuestEnum::BuildHousesQuest: {
 			AddQuest(std::make_shared<ClaimLandQuest>());
 			return;
 		}
 
 		case QuestEnum::ClaimLandQuest: {
+			AddQuest(std::make_shared<BuildHousesQuest>());
+			return;
+		}
+
+		case QuestEnum::BuildHousesQuest: {
 			auto popQuest = std::make_shared<PopulationQuest>();
 			popQuest->townSizeTier = 1;
 			AddQuest(popQuest);
-
+			
 			AddQuest(std::make_shared<SurviveWinterQuest>());
 			return;
 		}
@@ -773,11 +785,11 @@ private:
 				popQuest->townSizeTier = std::static_pointer_cast<PopulationQuest>(quest)->townSizeTier + 1;
 				AddQuest(popQuest);
 			}
-			// First house upgrade quest after first pop quest
+			// House upgrade tree after first pop quest
 			if (nextTier == 2) {
-				auto newQuest = std::make_shared<HouseUpgradeQuest>();
-				newQuest->upgradeQuestLvl = 1;
-				AddQuest(newQuest);
+				//auto newQuest = std::make_shared<HouseUpgradeQuest>();
+				//newQuest->upgradeQuestLvl = 1;
+				//AddQuest(newQuest);
 			}
 			return;
 		}

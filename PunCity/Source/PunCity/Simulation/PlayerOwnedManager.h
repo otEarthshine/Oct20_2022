@@ -21,7 +21,7 @@ using namespace std;
 static const int32_t TownSizeMinPopulation[]
 {
 	0,
-	30,
+	25,
 	50,
 	100,
 	150,
@@ -75,11 +75,14 @@ static const std::vector<CardEnum> DefaultJobPriorityListAllSeason
 {
 	CardEnum::FruitGatherer,
 	CardEnum::Farm,
-	
+
 	CardEnum::MushroomFarm,
 	CardEnum::Fisher,
 	CardEnum::HuntingLodge,
-	CardEnum::RanchBarn,
+
+	CardEnum::RanchCow,
+	CardEnum::RanchSheep,
+	CardEnum::RanchPig,
 
 	CardEnum::Windmill,
 	CardEnum::Bakery,
@@ -120,6 +123,11 @@ static const std::vector<CardEnum> DefaultJobPriorityListAllSeason
 	CardEnum::PrintingPress,
 
 	CardEnum::PaperMaker,
+	CardEnum::CardMaker,
+	CardEnum::ImmigrationOffice,
+
+	CardEnum::BarrackSwordman,
+	CardEnum::BarrackArcher,
 };
 
 //static const std::vector<CardEnum> DefaultLaborerPriorityList
@@ -202,6 +210,10 @@ public:
 		_houseResourceAllowed.resize(static_cast<int>(ResourceEnumCount), true);
 
 		_jobPriorityList = DefaultJobPriorityListAllSeason;
+
+		_lastResourceCounts.resize(ResourceEnumCount);
+
+		_jobBuildingEnumToIds.resize(BuildingEnumCount);
 	}
 
 	//! Population
@@ -947,6 +959,8 @@ public:
 			_jobPriorityList.push_back(static_cast<CardEnum>(command.jobPriorityList[i]));
 		}
 
+		RefreshJobDelayed();
+
 #if WITH_EDITOR
 		for (int32 i = 0; i < _jobPriorityList.size(); i++) {
 			PUN_LOG("_jobPriorityList %s", ToTChar(GetBuildingInfo(_jobPriorityList[i]).name));
@@ -1131,6 +1145,8 @@ public:
 		Ar << _needTaxRecalculation;
 		Ar << _needRefreshJob;
 
+		SerializeVecValue(Ar, _lastResourceCounts);
+
 		SerializeVecValue(Ar, _adultIds);
 		SerializeVecValue(Ar, _childIds);
 		SerializeVecValue(Ar, _houseIds);
@@ -1277,6 +1293,8 @@ private:
 	 */
 	bool _needTaxRecalculation = false;
 	bool _needRefreshJob = false;
+
+	std::vector<int32> _lastResourceCounts; // Use this to check if resource goes from 0 to nonzero.
 
 	std::vector<int32> _childIds;
 	std::vector<int32> _adultIds;

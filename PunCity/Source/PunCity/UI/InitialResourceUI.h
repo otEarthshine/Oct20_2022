@@ -142,14 +142,14 @@ private:
 		if (valueIncrease > GetMoney()) {
 			// Not enough money... revert the change
 			initialResources = lastInitialResources;
-			simulation().AddPopupToFront(playerId(), "Not enough money", ExclusiveUIEnum::None, "PopupCannot");
+			simulation().AddPopupToFront(playerId(), "Not enough money", ExclusiveUIEnum::InitialResourceUI, "PopupCannot");
 			return;
 		}
 		auto resourceMap = initialResources.resourceMap();
 		if (StorageTilesOccupied(resourceMap) > 8) {
 			// Not enough space
 			initialResources = lastInitialResources;
-			simulation().AddPopupToFront(playerId(), "Not enough storage space", ExclusiveUIEnum::None, "PopupCannot");
+			simulation().AddPopupToFront(playerId(), "Not enough storage space", ExclusiveUIEnum::InitialResourceUI, "PopupCannot");
 			return;
 		}
 	}

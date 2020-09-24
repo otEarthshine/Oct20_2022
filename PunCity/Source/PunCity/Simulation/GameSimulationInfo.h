@@ -1985,10 +1985,6 @@ struct BldInfo
 
 			CASE(Fort, 500);
 			CASE(Colony, 2000);
-
-			CASE(ProductivityBook, 800);
-			CASE(FrugalityBook, 800);
-			CASE(SustainabilityBook, 800);
 #undef CASE
 		default:
 			break;
@@ -2164,7 +2160,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::Beekeeper, "Beekeeper", WorldTile2(6, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::Beeswax, 10, 2, { 50,30,0 }, "Produce Beeswax and Honey. Efficiency increases with more surrounding trees."),
 	BldInfo(CardEnum::Brickworks, "Brickworks", WorldTile2(6, 5), ResourceEnum::Clay, ResourceEnum::Coal, ResourceEnum::Brick, 20, 3, { 20,100,0 }, "Produce Brick from Clay and Coal."),
 	BldInfo(CardEnum::CandleMaker, "Candle Maker", WorldTile2(5, 6), ResourceEnum::Beeswax, ResourceEnum::Cotton, ResourceEnum::Candle, 20, 3, { 150,50,0 }, "Make Candles from Beeswax and Cotton wicks."),
-	BldInfo(CardEnum::CottonMill, "Cotton Mill", WorldTile2(7, 6), ResourceEnum::Cotton, ResourceEnum::None, ResourceEnum::CottonFabric, 20, 5, { 0, 100, 100 }, "Spun and weave Cotton into Cotton Fabric."),
+	BldInfo(CardEnum::CottonMill, "Cotton Mill", WorldTile2(7, 6), ResourceEnum::Cotton, ResourceEnum::None, ResourceEnum::CottonFabric, 20, 5, { 0, 100, 100 }, "Mass-produce Cotton into Cotton Fabric."),
 	BldInfo(CardEnum::PrintingPress, "Printing Press", WorldTile2(5, 6), ResourceEnum::Paper, ResourceEnum::Dye, ResourceEnum::Book, 20, 5, { 0, 150, 100 }, "Print Books."),
 
 	// June 25 addition
@@ -2242,7 +2238,7 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::CooperativeFishing,"Cooperative Fishing", 200, "+10% Fish production when there are 2 or more Fishing Lodges"),
 	BldInfo(CardEnum::CompaniesAct,		"Companies Act", 200, "-10% trade fees for Trading Companies."),
 
-	BldInfo(CardEnum::ProductivityBook,	"Productivity Book", 150, "+20% productivity"),
+	BldInfo(CardEnum::ProductivityBook,	"Productivity Book", 100, "+20% productivity"),
 	BldInfo(CardEnum::SustainabilityBook,"Sustainability Book", 100, "Consume 40% less input"),
 	BldInfo(CardEnum::FrugalityBook,		"Frugality Book", 100, "Decrease upkeep by 50%."),
 
@@ -2298,9 +2294,9 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::WildCardService,		"Service Wild Card", 10, "Build an unlocked service building of your choice."),
 	BldInfo(CardEnum::CardRemoval,			"Card Removal", 30, "Remove a card from the draw deck."),
 	
-	BldInfo(CardEnum::HappyBreadDay,		"Happy Bread Day", 15, "+5<img id=\"Smile\"/> to everyone if the town has more than 1,000 Bread"),
-	BldInfo(CardEnum::BlingBling,		"Bling Bling", 15, "Houses with Jewelry get +7<img id=\"Smile\"/>"),
-	BldInfo(CardEnum::GoldRush,		"Gold Rush", 15, "+30% productivity from Gold Mine."),
+	BldInfo(CardEnum::HappyBreadDay,		"Happy Bread Day", 150, "+5<img id=\"Smile\"/> to everyone if the town has more than 1,000 Bread"),
+	BldInfo(CardEnum::BlingBling,		"Bling Bling", 150, "Houses with Jewelry get +7<img id=\"Smile\"/>"),
+	BldInfo(CardEnum::GoldRush,		"Gold Rush", 150, "+30% productivity from Gold Mine."),
 
 	// Rare cards
 	BldInfo(CardEnum::MiddleClassTax,	"Middle Class Tax", 200, "+2 <img id=\"Coin\"/> income from each level 2+ house"),
@@ -2590,10 +2586,10 @@ inline bool IsAreaSpell(CardEnum cardEnum) {
 
 
 inline bool IsBuildingCard(CardEnum buildingEnum) {
-	return static_cast<int32_t>(buildingEnum) < BuildingEnumCount;
+	return static_cast<int32>(buildingEnum) < BuildingEnumCount;
 }
 
-inline const BldInfo& GetBuildingInfoInt(int32_t buildingEnumInt) {
+inline const BldInfo& GetBuildingInfoInt(int32 buildingEnumInt) {
 	if (buildingEnumInt >= BuildingEnumCount) {
 		return CardInfos[buildingEnumInt - BuildingEnumCount];
 	}
@@ -2601,7 +2597,7 @@ inline const BldInfo& GetBuildingInfoInt(int32_t buildingEnumInt) {
 }
 inline const BldInfo& GetBuildingInfo(CardEnum cardEnum) {
 	PUN_CHECK(cardEnum != CardEnum::None);
-	return GetBuildingInfoInt(static_cast<int32_t>(cardEnum));
+	return GetBuildingInfoInt(static_cast<int32>(cardEnum));
 }
 
 inline CardEnum FindCardEnumByName(std::string nameIn)
@@ -2638,7 +2634,7 @@ inline CardEnum FindCardEnumByName(std::string nameIn)
 
 
 inline bool IsProducer(CardEnum buildingEnum) {
-	return BuildingInfo[static_cast<int32_t>(buildingEnum)].produce != ResourceEnum::None;
+	return BuildingInfo[static_cast<int32>(buildingEnum)].produce != ResourceEnum::None;
 }
 
 // Producers without Gatherer/Hunter
@@ -2677,8 +2673,8 @@ static bool IsDirtyProducer(CardEnum buildingEnum)
 	if (IsProducer(buildingEnum)) {
 		// Excludes
 		switch (buildingEnum) {
-		case CardEnum::FruitGatherer:
-		case CardEnum::HuntingLodge:
+		//case CardEnum::FruitGatherer: // Note: FruitGatherer and HuntingLodge
+		//case CardEnum::HuntingLodge:
 		case CardEnum::Fisher:
 		case CardEnum::MushroomFarm:
 		case CardEnum::Windmill:
@@ -3022,6 +3018,12 @@ static bool CanGetSpeedBoosted(CardEnum buildingEnum, bool isConstructed)
 		return false;
 	}
 
+	if (buildingEnum == CardEnum::FruitGatherer ||
+		buildingEnum == CardEnum::HuntingLodge) 
+	{
+		return true;
+	}
+
 	return IsProducer(buildingEnum) || 
 		IsSpecialProducer(buildingEnum) ||
 		IsTradingPostLike(buildingEnum) ||
@@ -3061,6 +3063,9 @@ struct BuildingUpgrade
 
 	BuildingUpgrade(std::string name, std::string description, int32 moneyNeeded)
 		: name(name), description(description), resourceNeeded(ResourcePair()), moneyNeeded(moneyNeeded), isUpgraded(false) {}
+
+	BuildingUpgrade(std::string name, std::string description, ResourceEnum resourceEnum, int32 resourceCount)
+		: name(name), description(description), resourceNeeded(ResourcePair(resourceEnum, resourceCount)), moneyNeeded(0), isUpgraded(false) {}
 
 	void operator>>(FArchive& Ar) {
 		Ar << isUpgraded;
@@ -3431,7 +3436,7 @@ struct TileObjInfo
 		// maxGrowthSeasons100
 		int32 maxGrowthSeasons100 = 0;
 		if (typeIn == ResourceTileType::Tree) {
-			maxGrowthSeasons100 = 1200;
+			maxGrowthSeasons100 = 600; // 1.5 years to grow for trees
 		}
 		if (typeIn == ResourceTileType::Bush) {
 			if (IsCrop(treeEnum)) {
@@ -4150,6 +4155,8 @@ enum class ScienceEnum : uint8
 	KnowledgeTransfer,
 	ScienceLastEra,
 
+	Rationalism,
+
 	Count,
 };
 static int32 ScienceEnumCount = static_cast<int32>(ScienceEnum::Count);
@@ -4164,6 +4171,8 @@ static std::vector<std::string> ScienceEnumName
 
 	"Knowledge transfer",
 	"Last Era Technology",
+
+	"Rationalism",
 };
 
 static std::vector<ScienceEnum> HouseScienceEnums
@@ -4225,6 +4234,7 @@ enum class TechEnum : uint8
 	CharcoalMaker,
 	BeerBrewery,
 	Pottery,
+	BrickMaking,
 
 	BorealLandCost,
 	DesertTrade,
@@ -4236,6 +4246,7 @@ enum class TechEnum : uint8
 	Baking,
 	JewelryCrafting,
 
+	Beekeeper,
 	CandleMaker,
 	CottonMilling,
 	Printing,
@@ -4300,6 +4311,20 @@ enum class TechEnum : uint8
 	FarmLastEra,
 	IndustryLastEra,
 	MilitaryLastEra,
+
+	/*
+	 * Prosperity
+	 */
+	FlowerBed,
+	GardenShrubbery1,
+	GardenCypress,
+
+	Rationalism,
+
+	Fort,
+	Colony,
+	InventorsWorkshop,
+	IntercityRoad,
 
 	Count,
 };
@@ -4411,7 +4436,6 @@ enum class UnitEnum : uint8
 
 	Infantry,
 	ProjectileArrow,
-	Bear,
 
 	SmallShip,
 };
@@ -5591,6 +5615,11 @@ static const std::vector<std::string> MaleNames
 	"Bobby",
 	"Kurt",
 
+	"Victor",
+	"Vincent",
+	"Bjorn",
+	"Ragnar",
+
 	// Discord
 	"Maxo",
 	"Noot",
@@ -5601,6 +5630,7 @@ static const std::vector<std::string> MaleNames
 	"Tjelve",
 	"Kuro",
 	"Ralinad",
+	"Shevy",
 };
 
 static const std::vector<std::string> FemaleNames
@@ -5661,8 +5691,13 @@ static const std::vector<std::string> FemaleNames
 	"Mariah",
 	"Hermione",
 	"Patsy",
+
+	"Freya",
+	"Vivien",
+	"Liza",
 	
-	
+	// Discord
+	"Venti",
 };
 
 // UnitId with aliveAndLifeCount for proper comparison countering reuse 

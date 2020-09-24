@@ -20,7 +20,10 @@ void TownHall::FinishConstruction()
 	townhallLvl = 1;
 	wallLvl = 1;
 
-	AddInitialImmigrants();
+	// Need this check because Cheat FastBuild may activate FinishConstruction two times
+	if (_simulation->population(_playerId) == 0) {
+		AddInitialImmigrants();
+	}
 
 	// Townhall name
 	if (_simulation->IsAI(_playerId)) {
@@ -132,13 +135,9 @@ void TownHall::UpgradeTownhall()
 		unlockSys->unlockedPriorityStar = true;
 	}
 	else if (townhallLvl == 3) {
-		cardSys.AddDrawCards(CardEnum::Fort, 1);
-		cardSys.AddDrawCards(CardEnum::InventorsWorkshop, 1);
 		cardSys.AddDrawCards(CardEnum::Immigration, 1);
 		cardSys.AddDrawCards(CardEnum::Kidnap, 1);
 		cardSys.AddDrawCards(CardEnum::BarrackArcher, 1);
-		_simulation->unlockSystem(_playerId)->UnlockBuilding(CardEnum::StoneRoad);
-		_simulation->unlockSystem(_playerId)->UnlockBuilding(CardEnum::IntercityRoad);
 
 		std::stringstream ss;
 		ss << "Unlocked [Set Trade Offer] Button.";
@@ -151,7 +150,6 @@ void TownHall::UpgradeTownhall()
 	}
 	else if (townhallLvl == 4) {
 		cardSys.AddDrawCards(CardEnum::Warehouse, 1);
-		cardSys.AddDrawCards(CardEnum::Colony, 1);
 		cardSys.AddDrawCards(CardEnum::SharingIsCaring, 1);
 		cardSys.AddDrawCards(CardEnum::BarrackSwordman, 1);
 	}

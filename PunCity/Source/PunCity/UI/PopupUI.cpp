@@ -66,6 +66,9 @@ void UPopupUI::Tick()
 		else if (shouldShowExclusive(ExclusiveUIEnum::BuildMenu)) {
 			shouldPopup = true;
 		}
+		else if (shouldShowExclusive(ExclusiveUIEnum::InitialResourceUI)) {
+			shouldPopup = true;
+		}
 	}
 	
 	if (!shouldPopup) {

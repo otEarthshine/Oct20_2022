@@ -190,14 +190,24 @@ void UnitStateAI::Update()
 
 		if (isEnum(UnitEnum::Human))
 		{
+			auto& resourceSys = _simulation->resourceSystem(_playerId);
+			
 			// Food cheat: if there is food in storage, ppl won't go into starvation...
-			if (_food < minWarnFood() && _simulation->resourceSystem(_playerId).HasAvailableFood()) {
+			if (_food < minWarnFood() && resourceSys.HasAvailableFood()) {
 				_food = minWarnFood();
 			}
 
 			// Cold cheat:
-			if (_heat < minWarnHeat() && _simulation->resourceSystem(_playerId).HasAvailableHeat()) {
-				_heat = minWarnHeat();
+			//  Need to take into account GetAllowedResource
+			//  Anything ppl check anything off don't check it for cheat
+			if (_heat < minWarnHeat()) {
+				auto& playerOwned = _simulation->playerOwned(_playerId);
+				bool isCoalAvailableForHeating = playerOwned.GetHouseResourceAllow(ResourceEnum::Coal) && resourceSys.resourceCountWithPop(ResourceEnum::Coal);
+				bool isWoodAvailableForHeating = playerOwned.GetHouseResourceAllow(ResourceEnum::Wood) && resourceSys.resourceCountWithPop(ResourceEnum::Wood);
+
+				if (isCoalAvailableForHeating || isWoodAvailableForHeating) {
+					_heat = minWarnHeat();
+				}
 			}
 
 			// Homeless people could leave your town
@@ -483,7 +493,7 @@ void UnitStateAI::Die()
 	}
 
 	// Animal's workplaceId is regionId
-	if (IsWildAnimal(_unitEnum)) {
+	if (IsWildAnimal(_unitEnum) && _simulation->IsProvinceValid(_homeProvinceId)) {
 		_simulation->RemoveProvinceAnimals(_homeProvinceId, _id);
 	}
 
@@ -625,7 +635,9 @@ void UnitStateAI::CalculateActions()
 	else if (IsDomesticatedAnimal(unitEnum()))
 	{
 		// Only find food within 16 radius since ranch is 16x16
-		if (TryFindWildFood(false, 16)) return;
+		if (TryFindWildFood(false, 16)) {
+			return;
+		}
 		
 		_unitState = UnitState::Idle;
 		int32 waitTicks = 60 * (GameRand::Rand() % 3 + 4);
@@ -648,6 +660,15 @@ void UnitStateAI::CalculateActions()
 		//if (TryAvoidOthers()) {
 		//	return;
 		//}
+
+		// Walk home if too far
+		if (_houseId != -1 &&
+			_simulation->building(_houseId).DistanceTo(unitTile()) > 50)
+		{
+			if (TryGoNearbyHome()) {
+				return;
+			}
+		}
 
 		if (TryFindWildFood(false)) {
 			return;
@@ -729,7 +750,9 @@ void UnitStateAI::CalculateActions()
 			}
 		}
 
-		if (TryGoNearbyHome()) return;
+		if (TryGoNearbyHome()) {
+			return;
+		}
 
 		_unitState = UnitState::Idle;
 		int32 waitTicks = 60 * (GameRand::Rand() % 3 + 4);
@@ -1205,6 +1228,7 @@ bool UnitStateAI::TryFindWildFood(bool getFruit, int32 radius)
 
 	
 	// Can't find food, look to migrate to the province with least animals
+	if (IsWildAnimalNoHome(_unitEnum))
 	{
 		PUN_CHECK(_homeProvinceId != -1);
 		int32 leastAnimalProvinceId = -1;
@@ -1214,7 +1238,9 @@ bool UnitStateAI::TryFindWildFood(bool getFruit, int32 radius)
 		for (ProvinceConnection connection : connections)
 		{
 			int32 animalCount = _simulation->provinceAnimals(connection.provinceId).size();
-			if (animalCount < leastAnimalCount) {
+			if (_simulation->IsProvinceValid(connection.provinceId) &&
+				animalCount < leastAnimalCount) 
+			{
 				leastAnimalCount = animalCount;
 				leastAnimalProvinceId = connection.provinceId;
 			}
@@ -1500,7 +1526,7 @@ void UnitStateAI::Eat()
 			foodIncrement = foodIncrement * 100 / (100 + foodConsumptionModifier);
 		}
 		else
-		{
+		{	
 			// Animals with biome gets eating penalty out of its own biome
 			std::vector<BiomeEnum> biomes = unitInfo().biomes;
 			if (biomes.size() > 0)
@@ -1509,6 +1535,32 @@ void UnitStateAI::Eat()
 				if (find(biomes.begin(), biomes.end(), biomeEnum) == biomes.end())  {
 					foodIncrement /= 2; // half food intake...
 				}
+			}
+
+			static int32 animalNoHome = 0;
+			static int32 animaWithHome = 0;
+
+			//if (IsWildAnimalNoHome(_unitEnum)) {
+			//	animalNoHome++;
+			//	if (animalNoHome % 10 == 0) PUN_LOG("NoHome animal eat:%d", animalNoHome);
+			//} else {
+			//	animaWithHome++;
+			//	if (animaWithHome % 10 == 0) PUN_LOG("animal - WithHome eat:%d", animaWithHome);
+			//}
+
+			// Animals with low count 
+			int32 animalCountPercent = _simulation->unitEnumCount(_unitEnum) * 100 / max(1, _simulation->animalInitialCount(_unitEnum));
+			if (animalCountPercent > 150) {
+				foodIncrement /= 7;
+			}
+			if (animalCountPercent > 120) {
+				foodIncrement /= 3;
+			}
+			if (animalCountPercent < 90) {
+				foodIncrement *= 3;
+			}
+			if (animalCountPercent < 60) {
+				foodIncrement *= 7;
 			}
 		}
 		

@@ -12,6 +12,7 @@
 
 #include "TownhallHoverInfo.generated.h"
 
+
 /**
  * 
  */
@@ -75,13 +76,13 @@ public:
 		}
 		else 
 		{
-			// Sync to simulation only 3 sec after input (prevent fight)
-			if (UGameplayStatics::GetTimeSeconds(this) > _lastPriorityInputTime + 3.0f) {
-				SyncState();
-			}
-
+			//// Sync to simulation only 3 sec after input (prevent fight)
+			//if (UGameplayStatics::GetTimeSeconds(this) > _lastPriorityInputTime + 3.0f) {
+			//	SyncState();
+			//}
+			int32 playerId = simulation().building(_buildingId).playerId();
+			_laborerPriorityState.TrySyncToSimulation(&simulation(), playerId, this);
 			RefreshUI();
-
 			LaborerBuilderBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		}
 
@@ -610,79 +611,105 @@ public:
 	}
 	
 
-	void SyncState()
-	{
-		int32 playerId = simulation().building(_buildingId).subclass<TownHall>(CardEnum::Townhall).playerId();
-		auto& playerOwned = simulation().playerOwned(playerId);
-		_townPriorityState = *(playerOwned.CreateTownPriorityCommand());
-		_laborerCount = std::max(playerOwned.laborerCount(), 0); // Requires clamp since laborerCount() may be negative when someone died
-		_builderCount = std::max(playerOwned.builderCount(), 0);
-		_roadMakerCount = std::max(playerOwned.roadMakerCount(), 0);
-	}
+	//void SyncState()
+	//{
+	//	int32 playerId = simulation().building(_buildingId).subclass<TownHall>(CardEnum::Townhall).playerId();
+	//	auto& playerOwned = simulation().playerOwned(playerId);
+	//	_townPriorityState = *(playerOwned.CreateTownPriorityCommand());
+	//	_laborerCount = std::max(playerOwned.laborerCount(), 0); // Requires clamp since laborerCount() may be negative when someone died
+	//	_builderCount = std::max(playerOwned.builderCount(), 0);
+	//	_roadMakerCount = std::max(playerOwned.roadMakerCount(), 0);
+	//}
 	
 	void RefreshUI()
 	{
-		// Employed
-		auto& sim = simulation();
-		int32 playerId = sim.building(_buildingId).subclass<TownHall>(CardEnum::Townhall).playerId();
-		{
-			auto& playerOwned = sim.playerOwned(playerId);
-
-			int32 totalJobSlots = 0;
-			const std::vector<std::vector<int32>>& jobBuildingEnumToIds = playerOwned.jobBuildingEnumToIds();
-			for (const std::vector<int32>& buildingIds : jobBuildingEnumToIds) {
-				for (int32 buildingId : buildingIds) {
-					totalJobSlots += sim.building(buildingId).maxOccupants();
-				}
-			}
-			
-			std::stringstream ss;
-			ss << playerOwned.employedCount_WithoutBuilder() << "/" << totalJobSlots;
-			SetText(Employed, ss.str());
-
-			AddToolTip(EmployedBox, "People assigned to buildings\n/ Total buildings' job slots");
-		}
+		int32 playerId = simulation().building(_buildingId).subclass<TownHall>(CardEnum::Townhall).playerId();
 		
-		// Laborer
-		FString laborerString = FString::FromInt(_laborerCount);
-		if (_townPriorityState.laborerPriority) {
-			laborerString += FString("/") + FString::FromInt(_townPriorityState.targetLaborerCount);
-		}
-		SetPriorityButtons(LaborerPriorityButton, LaborerNonPriorityButton, LaborerArrowOverlay, _townPriorityState.laborerPriority);
+		_laborerPriorityState.RefreshUI(
+			this,
+			&simulation(),
+			playerId,
 
-		if (_laborerCount == 0) {
-			LaborerRed->SetText(FText::FromString(laborerString));
-			LaborerRed->SetVisibility(ESlateVisibility::HitTestInvisible);
-			Laborer->SetVisibility(ESlateVisibility::Collapsed);
+			EmployedBox,
+			Employed,
 
-			AddToolTip(LaborerRed, "People not assigned to buildings become laborers. Laborers haul goods.");
-		}
-		else {
-			Laborer->SetText(FText::FromString(laborerString));
-			Laborer->SetVisibility(ESlateVisibility::HitTestInvisible);
-			LaborerRed->SetVisibility(ESlateVisibility::Collapsed);
+			LaborerBox,
+			LaborerPriorityButton, LaborerNonPriorityButton, LaborerArrowOverlay,
+			Laborer,
+			LaborerRed,
 
-			AddToolTip(LaborerBox, "People not assigned to buildings become laborers. Laborers haul goods.");
-		}
+			BuilderBox,
+			BuilderNonPriorityButton,
+			BuilderPriorityButton,
+			Builder,
+			BuilderArrowOverlay
+		);
 
 		
-		// Builder
-		FString builderString = FString::FromInt(_builderCount);
-		if (_townPriorityState.builderPriority) {
-			builderString += FString("/") + FString::FromInt(_townPriorityState.targetBuilderCount);
-		}
-		SetPriorityButtons(BuilderPriorityButton, BuilderNonPriorityButton, BuilderArrowOverlay, _townPriorityState.builderPriority);
-		Builder->SetText(FText::FromString(builderString));
+		//// Employed
+		//auto& sim = simulation();
+		//int32 playerId = sim.building(_buildingId).subclass<TownHall>(CardEnum::Townhall).playerId();
+		//{
+		//	auto& playerOwned = sim.playerOwned(playerId);
 
-		AddToolTip(BuilderBox, "People assigned to buildings under construction.");
+		//	int32 totalJobSlots = 0;
+		//	const std::vector<std::vector<int32>>& jobBuildingEnumToIds = playerOwned.jobBuildingEnumToIds();
+		//	for (const std::vector<int32>& buildingIds : jobBuildingEnumToIds) {
+		//		for (int32 buildingId : buildingIds) {
+		//			totalJobSlots += sim.building(buildingId).allowedOccupants();
+		//		}
+		//	}
+		//	
+		//	std::stringstream ss;
+		//	ss << playerOwned.employedCount_WithoutBuilder() << "/" << totalJobSlots;
+		//	SetText(Employed, ss.str());
 
+		//	AddToolTip(EmployedBox, "People assigned to buildings\n/ Total buildings' job slots");
+		//}
+		
+		
+		//// Laborer
+		//FString laborerString = FString::FromInt(_laborerCount);
+		//if (_townPriorityState.laborerPriority) {
+		//	laborerString += FString("/") + FString::FromInt(_townPriorityState.targetLaborerCount);
+		//}
+		//SetPriorityButtons(LaborerPriorityButton, LaborerNonPriorityButton, LaborerArrowOverlay, _townPriorityState.laborerPriority);
+
+		//if (_laborerCount == 0) {
+		//	LaborerRed->SetText(FText::FromString(laborerString));
+		//	LaborerRed->SetVisibility(ESlateVisibility::HitTestInvisible);
+		//	Laborer->SetVisibility(ESlateVisibility::Collapsed);
+
+		//	AddToolTip(LaborerRed, "People not assigned to buildings become laborers. Laborers haul goods.");
+		//}
+		//else {
+		//	Laborer->SetText(FText::FromString(laborerString));
+		//	Laborer->SetVisibility(ESlateVisibility::HitTestInvisible);
+		//	LaborerRed->SetVisibility(ESlateVisibility::Collapsed);
+
+		//	AddToolTip(LaborerBox, "People not assigned to buildings become laborers. Laborers haul goods.");
+		//}
+
+		//
+		//// Builder
+		//FString builderString = FString::FromInt(_builderCount);
+		//if (_townPriorityState.builderPriority) {
+		//	builderString += FString("/") + FString::FromInt(_townPriorityState.targetBuilderCount);
+		//}
+		//SetPriorityButtons(BuilderPriorityButton, BuilderNonPriorityButton, BuilderArrowOverlay, _townPriorityState.builderPriority);
+		//Builder->SetText(FText::FromString(builderString));
+
+		//AddToolTip(BuilderBox, "People assigned to buildings under construction.");
+
+
+		
 		// RoadMaker
 		// TODO: Remove?
-		FString roadMakerString = FString::FromInt(_roadMakerCount);
-		if (_townPriorityState.roadMakerPriority) {
-			roadMakerString += FString("/") + FString::FromInt(_townPriorityState.targetRoadMakerCount);
+		FString roadMakerString = FString::FromInt(_laborerPriorityState.roadMakerCount);
+		if (_laborerPriorityState.townPriorityState.roadMakerPriority) {
+			roadMakerString += FString("/") + FString::FromInt(_laborerPriorityState.townPriorityState.targetRoadMakerCount);
 		}
-		SetPriorityButtons(RoadMakerPriorityButton, RoadMakerNonPriorityButton, RoadMakerArrowOverlay, _townPriorityState.roadMakerPriority);
+		_laborerPriorityState.SetPriorityButtons(RoadMakerPriorityButton, RoadMakerNonPriorityButton, RoadMakerArrowOverlay, _laborerPriorityState.townPriorityState.roadMakerPriority);
 		RoadMaker->SetText(FText::FromString(roadMakerString));
 
 	}
@@ -742,18 +769,18 @@ private:
 	void SendNetworkPriority()
 	{
 		auto command = std::make_shared<FSetTownPriority>();
-		*command = _townPriorityState;
+		*command = townPriorityState();
 		networkInterface()->SendNetworkCommand(command);
 
-		_lastPriorityInputTime = UGameplayStatics::GetTimeSeconds(this);
+		_laborerPriorityState.lastPriorityInputTime = UGameplayStatics::GetTimeSeconds(this);
 	}
 
-	static void SetPriorityButtons(UButton* PriorityButton, UButton* NonPriorityButton, USizeBox* ArrowOverlay, bool priority)
-	{
-		PriorityButton->SetVisibility(priority ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-		NonPriorityButton->SetVisibility(priority ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
-		ArrowOverlay->SetVisibility(priority ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-	}
+	//static void SetPriorityButtons(UButton* PriorityButton, UButton* NonPriorityButton, USizeBox* ArrowOverlay, bool priority)
+	//{
+	//	PriorityButton->SetVisibility(priority ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	//	NonPriorityButton->SetVisibility(priority ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+	//	ArrowOverlay->SetVisibility(priority ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	//}
 
 
 	UFUNCTION() void OnClickSetTradeOfferButton() {
@@ -776,25 +803,26 @@ private:
 	/*
 	 * Laborer
 	 */
+	
 	UFUNCTION() void OnClickLaborerNonPriorityButton() {
-		_townPriorityState.laborerPriority = true;
+		townPriorityState().laborerPriority = true;
 		RefreshUI();
 		SendNetworkPriority();
 	}
 	UFUNCTION() void OnClickLaborerPriorityButton() {
-		_townPriorityState.laborerPriority = false;
+		townPriorityState().laborerPriority = false;
 		RefreshUI();
 		SendNetworkPriority();
 	}
 	UFUNCTION() void IncreaseLaborers() {
-		_townPriorityState.targetLaborerCount++;
+		townPriorityState().targetLaborerCount++;
 		RefreshUI();
 		SendNetworkPriority();
 		
 		dataSource()->Spawn2DSound("UI", "UIIncrementalChange");
 	}
 	UFUNCTION() void DecreaseLaborers() {
-		_townPriorityState.targetLaborerCount = std::max(0, _townPriorityState.targetLaborerCount - 1);
+		townPriorityState().targetLaborerCount = std::max(0, townPriorityState().targetLaborerCount - 1);
 		RefreshUI();
 		SendNetworkPriority();
 
@@ -805,24 +833,24 @@ private:
 	 * Builder
 	 */
 	UFUNCTION() void OnClickBuilderNonPriorityButton() {
-		_townPriorityState.builderPriority = true;
+		townPriorityState().builderPriority = true;
 		RefreshUI();
 		SendNetworkPriority();
 	}
 	UFUNCTION() void OnClickBuilderPriorityButton() {
-		_townPriorityState.builderPriority = false;
+		townPriorityState().builderPriority = false;
 		RefreshUI();
 		SendNetworkPriority();
 	}
 	UFUNCTION() void IncreaseBuilders() {
-		_townPriorityState.targetBuilderCount++;
+		townPriorityState().targetBuilderCount++;
 		RefreshUI();
 		SendNetworkPriority();
 
 		dataSource()->Spawn2DSound("UI", "UIIncrementalChange");
 	}
 	UFUNCTION() void DecreaseBuilders() {
-		_townPriorityState.targetBuilderCount = std::max(0, _townPriorityState.targetBuilderCount - 1);
+		townPriorityState().targetBuilderCount = std::max(0, townPriorityState().targetBuilderCount - 1);
 		RefreshUI();
 		SendNetworkPriority();
 
@@ -833,24 +861,24 @@ private:
 	 * RoadMaker
 	 */
 	UFUNCTION() void OnClickRoadMakerNonPriorityButton() {
-		_townPriorityState.roadMakerPriority = true;
+		townPriorityState().roadMakerPriority = true;
 		RefreshUI();
 		SendNetworkPriority();
 	}
 	UFUNCTION() void OnClickRoadMakerPriorityButton() {
-		_townPriorityState.roadMakerPriority = false;
+		townPriorityState().roadMakerPriority = false;
 		RefreshUI();
 		SendNetworkPriority();
 	}
 	UFUNCTION() void IncreaseRoadMakers() {
-		_townPriorityState.targetRoadMakerCount++;
+		townPriorityState().targetRoadMakerCount++;
 		RefreshUI();
 		SendNetworkPriority();
 
 		dataSource()->Spawn2DSound("UI", "UIIncrementalChange");
 	}
 	UFUNCTION() void DecreaseRoadMakers() {
-		_townPriorityState.targetRoadMakerCount = std::max(0, _townPriorityState.targetRoadMakerCount - 1);
+		townPriorityState().targetRoadMakerCount = std::max(0, townPriorityState().targetRoadMakerCount - 1);
 		RefreshUI();
 		SendNetworkPriority();
 
@@ -888,15 +916,15 @@ private:
 	//	networkInterface()->SendNetworkCommand(command);
 	//}
 
-	bool _shouldSendTextChange = false;
-	FText _textToSend;
+	FSetTownPriority& townPriorityState() { return _laborerPriorityState.townPriorityState; }
+	LaborerPriorityState _laborerPriorityState;
 
-	float _lastPriorityInputTime = -999.0f;
-	
-	FSetTownPriority _townPriorityState;
-	int32 _laborerCount = -1;
-	int32 _builderCount = -1;
-	int32 _roadMakerCount = -1;
+	//float _lastPriorityInputTime = -999.0f;
+	//
+	//FSetTownPriority _townPriorityState;
+	//int32 _laborerCount = -1;
+	//int32 _builderCount = -1;
+	//int32 _roadMakerCount = -1;
 
 private:
 	int _buildingId;

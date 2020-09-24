@@ -123,6 +123,9 @@ void House::FinishConstruction()
 	};
 
 	
+
+	auto unlockSys = _simulation->unlockSystem(_playerId);
+	unlockSys->UpdateProsperityHouseCount();
 	
 
 	// Quest
@@ -134,19 +137,6 @@ void House::FinishConstruction()
 	_simulation->RecalculateTaxDelayed(_playerId); // Recalculate sci
 
 
-	// Prosperity unlock at 3 houses
-	auto unlockSys = _simulation->unlockSystem(_playerId);
-	if (!unlockSys->prosperityEnabled && 
-		_simulation->buildingFinishedCount(_playerId, CardEnum::House) >= 3)
-	{
-		unlockSys->prosperityEnabled = true;
-		
-		PopupInfo popupInfo(_playerId, "Unlocked: House Upgrade Unlocks Menu.", { "Show House Upgrade Unlocks", "Close" },
-			PopupReceiverEnum::UnlockedHouseTree_ShowProsperityUI);
-		popupInfo.warningForExclusiveUI = ExclusiveUIEnum::ProsperityUI;
-		popupInfo.forcedSkipNetworking = true;
-		_simulation->AddPopupToFront(popupInfo);
-	}
 }
 
 int32 House::GetAppealPercent() {
@@ -308,7 +298,7 @@ int32 House::GetScience100(ScienceEnum scienceEnum)
 		if (_houseLvl < Library::MinHouseLvl) {
 			return 0;
 		}
-		int32 radiusBonus = GetRadiusBonus(CardEnum::Library, Library::Radius, [&](int32_t bonus, Building& building) {
+		int32 radiusBonus = GetRadiusBonus(CardEnum::Library, Library::Radius, [&](int32 bonus, Building& building) {
 			return max(bonus, Library::SciencePerHouse);
 		});
 		return occupancyFactor(radiusBonus * 100);
@@ -318,7 +308,7 @@ int32 House::GetScience100(ScienceEnum scienceEnum)
 		if (_houseLvl < School::MinHouseLvl) {
 			return 0;
 		}
-		int32 radiusBonus = GetRadiusBonus(CardEnum::School, Library::Radius, [&](int32_t bonus, Building& building) {
+		int32 radiusBonus = GetRadiusBonus(CardEnum::School, Library::Radius, [&](int32 bonus, Building& building) {
 			return max(bonus, School::SciencePerHouse);
 		});
 		return occupancyFactor(radiusBonus * 100);
@@ -369,24 +359,25 @@ void House::UpgradeHouse(int32 lvl)
 
 		if (lvl == 2)
 		{
-			ss << "Unlocked:";
-			ss << "<bullet>Flower bed</>";
+			// TODO: use this for something else
+			//ss << "Unlocked:";
+			//ss << "<bullet>Flower bed</>";
 
-			unlockSys->UnlockBuilding(CardEnum::FlowerBed);
+			//unlockSys->UnlockBuilding(CardEnum::FlowerBed);
 		}
 		else if (lvl == 3)
 		{
-			ss << "Unlocked:";
-			ss << "<bullet>Shrubbery</>";
+			//ss << "Unlocked:";
+			//ss << "<bullet>Shrubbery</>";
 
-			unlockSys->UnlockBuilding(CardEnum::GardenShrubbery1);
+			//unlockSys->UnlockBuilding(CardEnum::GardenShrubbery1);
 		}
 		else if (lvl == 4)
 		{
-			ss << "Unlocked:";
-			ss << "<bullet>Garden cypress</>";
+			//ss << "Unlocked:";
+			//ss << "<bullet>Garden cypress</>";
 
-			unlockSys->UnlockBuilding(CardEnum::GardenCypress);
+			//unlockSys->UnlockBuilding(CardEnum::GardenCypress);
 		}
 
 		_simulation->AddPopup(_playerId, ss.str());
@@ -398,7 +389,7 @@ void House::UpgradeHouse(int32 lvl)
 	_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::HouseUpgrade, _centerTile, "");
 	_houseLvl = lvl;
 
-	_simulation->QuestUpdateStatus(_playerId, QuestEnum::HouseUpgradeQuest);
+	//_simulation->QuestUpdateStatus(_playerId, QuestEnum::HouseUpgradeQuest);
 
 
 	_simulation->UpdateProsperityHouseCount(_playerId);
@@ -523,7 +514,7 @@ void RanchBarn::Tick1Sec()
 	}
 }
 
-void RanchBarn::AddAnimalOccupant(UnitEnum animalEnum, int32_t age) 
+void RanchBarn::AddAnimalOccupant(UnitEnum animalEnum, int32 age) 
 {
 	PUN_CHECK(_animalEnum == animalEnum);
 	int32 newAnimalId = _simulation->AddUnit(animalEnum, _playerId, gateTile().worldAtom2(), age);
@@ -532,7 +523,7 @@ void RanchBarn::AddAnimalOccupant(UnitEnum animalEnum, int32_t age)
 	_simulation->unitAI(newAnimalId).SetHouseId(buildingId());
 }
 
-void RanchBarn::RemoveAnimalOccupant(int32_t animalId)
+void RanchBarn::RemoveAnimalOccupant(int32 animalId)
 {
 	CppUtils::Remove(_animalOccupants, animalId);
 }

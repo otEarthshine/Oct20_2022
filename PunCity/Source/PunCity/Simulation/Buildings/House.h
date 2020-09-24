@@ -64,7 +64,7 @@ public:
 		{
 			_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::HouseDowngrade, _centerTile, "");
 			_houseLvl = lvl;
-			_simulation->QuestUpdateStatus(_playerId, QuestEnum::HouseUpgradeQuest);
+			//_simulation->QuestUpdateStatus(_playerId, QuestEnum::HouseUpgradeQuest);
 
 			_allowedOccupants = houseBaseOccupants + (lvl - 1) / 2;
 			_simulation->RecalculateTaxDelayed(_playerId); // Recalculate sci

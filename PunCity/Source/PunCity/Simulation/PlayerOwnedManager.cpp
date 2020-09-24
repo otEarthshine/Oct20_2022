@@ -90,11 +90,7 @@ void PlayerOwnedManager::PlayerAddJobBuilding(Building& building, bool isConstru
 		_constructionIds.push_back(buildingId);
 	}
 	else {
-		int32 buildingEnumInt = static_cast<int>(buildingEnum);
-		if (buildingEnumInt >= _jobBuildingEnumToIds.size()) {
-			_jobBuildingEnumToIds.resize(buildingEnumInt + 1);
-		}
-		_jobBuildingEnumToIds[buildingEnumInt].push_back(buildingId);
+		_jobBuildingEnumToIds[static_cast<int>(buildingEnum)].push_back(buildingId);
 	}
 
 	//_LOG(PunPlayerOwned, "- : %llu %llu %llu", _roadConstructionIds.size(), _constructionIds.size(), _jobBuildingEnumToIds.size());
@@ -731,6 +727,10 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 		sciences100[static_cast<int>(ScienceEnum::ScienceLastEra)] += sumFromHouses * 20 / 100;
 	}
 
+	if (_simulation->IsResearched(_playerId, TechEnum::Rationalism)) {
+		sciences100[static_cast<int>(ScienceEnum::Rationalism)] += sumFromHouses * 20 / 100;
+	}
+
 	/*
 	 * Vassal
 	 */
@@ -912,6 +912,22 @@ void PlayerOwnedManager::Tick1Sec()
 	//PUN_CHECK(_playerId < _simulation->playerCount() || (_simulation->aiStartIndex() <= _playerId && _playerId <= _simulation->aiEndIndex()));
 	PUN_CHECK(_simulation->IsValidPlayer(_playerId));
 
+
+	// Check resourceCount to detect change betwen 0 and non-zero, and refresh accordingly
+	auto& resourceSys = _simulation->resourceSystem(_playerId);
+	for (int32 i = 0; i < ResourceEnumCount; i++) {
+		int32 newResourceCount = resourceSys.resourceCount(static_cast<ResourceEnum>(i));
+		bool newIsZero = (newResourceCount == 0);
+		bool lastIsZero = (_lastResourceCounts[i] == 0);
+		if (newIsZero != lastIsZero) {
+			RefreshJobDelayed();
+		}
+		
+		_lastResourceCounts[i] = newResourceCount;
+	}
+	
+
+	// Refresh Job if needed
 	if (_needRefreshJob) {
 		_needRefreshJob = false;
 		RefreshJobs();

@@ -531,12 +531,12 @@ class FSetTownPriority final : public FNetworkCommand
 public:
 	virtual ~FSetTownPriority() {}
 
-	bool laborerPriority;
-	bool builderPriority;
-	bool roadMakerPriority;
-	int32 targetLaborerCount;
-	int32 targetBuilderCount;
-	int32 targetRoadMakerCount;
+	bool laborerPriority = false;
+	bool builderPriority = false;
+	bool roadMakerPriority = false;
+	int32 targetLaborerCount = -1;
+	int32 targetBuilderCount = -1;
+	int32 targetRoadMakerCount = -1;
 
 	NetworkCommandEnum commandType() override { return NetworkCommandEnum::SetTownPriority; }
 

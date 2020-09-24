@@ -224,8 +224,21 @@ public:
 	
 	virtual void OnUpgradeBuilding(int upgradeIndex) {}
 
+	BuildingUpgrade MakeUpgrade(std::string name, std::string description, ResourceEnum resourceEnum, int32 percentOfTotalPrice)
+	{
+		int32 totalCost = buildingInfo().constructionCostAsMoney();
+		int32 resourceCount = 1 + totalCost * percentOfTotalPrice / 100 / GetResourceInfo(resourceEnum).basePrice;
+		return BuildingUpgrade(name, description, resourceEnum, resourceCount);
+	}
+	BuildingUpgrade MakeUpgrade(std::string name, std::string description, int32 percentOfTotalPrice)
+	{
+		int32 totalCost = buildingInfo().constructionCostAsMoney();
+		int32 upgradeCost = totalCost * percentOfTotalPrice / 100;
+		return BuildingUpgrade(name, description, upgradeCost);
+	}
+
 	//! level from 0
-	int32_t level() { return _level; }
+	int32 level() { return _level; }
 
 	//! Occupancy
 	int occupantCount() { return _occupantIds.size(); }
@@ -621,11 +634,11 @@ public:
 	 * Radius
 	 */
 	template<typename BonusFunc>
-	int32 GetRadiusBonus(CardEnum buildingEnum, int32_t radius, BonusFunc getBonus)
+	int32 GetRadiusBonus(CardEnum buildingEnum, int32 radius, BonusFunc getBonus)
 	{
-		const std::vector<int32_t>& buildingIds = _simulation->buildingIds(_playerId, buildingEnum);
-		int32_t bonus = 0;
-		for (int32_t buildingId : buildingIds) {
+		const std::vector<int32>& buildingIds = _simulation->buildingIds(_playerId, buildingEnum);
+		int32 bonus = 0;
+		for (int32 buildingId : buildingIds) {
 			Building& building = _simulation->building(buildingId);
 			PUN_CHECK(building.isEnum(buildingEnum))
 			

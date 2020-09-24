@@ -129,7 +129,8 @@ void UStatisticsUI::TickUI()
 
 			// If any season has this resource... display the graph
 			if (CppUtils::Sum(stat.productionStats) > 0 ||
-				CppUtils::Sum(stat.consumptionStats) > 0)
+				CppUtils::Sum(stat.consumptionStats) > 0 ||
+				simulation().resourceCount(uiPlayerId, stat.resourceEnum) > 0)
 			{
 				auto row = GetBoxChild<UResourceStatTableRow>(ResourceStatisticsBox, resourceStatIndex, UIEnum::ResourceStatTableRow, true);
 

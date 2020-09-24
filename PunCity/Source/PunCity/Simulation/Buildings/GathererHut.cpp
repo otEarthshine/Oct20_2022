@@ -66,6 +66,39 @@ bool Farm::NoFarmerOnTileId(int32_t farmTileId) {
 	return !CppUtils::Contains(_reservingUnitIdToFarmTileId, [&](pair<int32_t, int32_t>& pair) { return pair.second == farmTileId; });
 }
 
+std::vector<BonusPair> Farm::GetBonuses()
+{
+	std::vector<BonusPair> bonuses = Building::GetBonuses();
+
+	if (_simulation->IsResearched(_playerId, TechEnum::FarmingBreakthrough)) {
+		bonuses.push_back({ "Farm breakthrough upgrade", 20 });
+	}
+	if (_simulation->IsResearched(_playerId, TechEnum::FarmImprovement)) {
+		bonuses.push_back({ "Farm improvement upgrade", 5 });
+	}
+	if (_simulation->buildingFinishedCount(_playerId, CardEnum::DepartmentOfAgriculture) &&
+		_simulation->buildingCount(_playerId, CardEnum::Farm) >= 8)
+	{
+		bonuses.push_back({ "Department of agriculture", 5 });
+	}
+	if (_simulation->buildingFinishedCount(_playerId, CardEnum::CensorshipInstitute)) {
+		bonuses.push_back({ "Censorship", 7 });
+	}
+
+	if (_simulation->IsResearched(_playerId, TechEnum::FarmLastEra)) {
+		bonuses.push_back({ "Last era technology", 20 });
+	}
+
+	int32 radiusBonus = GetRadiusBonus(CardEnum::Windmill, Windmill::Radius, [&](int32 bonus, Building& building) {
+		return max(bonus, 10);
+	});
+	if (radiusBonus > 0) {
+		bonuses.push_back({ "Near Windmill", radiusBonus });
+	}
+
+	return bonuses;
+}
+
 WorldTile2 Farm::FindFarmableTile(int32 unitId) {
 	WorldTile2 resultTile = WorldTile2::Invalid;
 

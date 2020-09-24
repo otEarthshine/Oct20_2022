@@ -244,11 +244,123 @@ private:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* ResearchingAmountText;
 	UPROPERTY(meta = (BindWidget)) USizeBox* ResearchBar;
 
+	// Job Priority
 
 	UPROPERTY(meta = (BindWidget)) UOverlay* JobPriorityOverlay;
 	UPROPERTY(meta = (BindWidget)) UScrollBox* JobPriorityScrollBox;
 	UPROPERTY(meta = (BindWidget)) UButton* JobPriorityCloseButton;
+	UPROPERTY(meta = (BindWidget)) UButton* JobPriorityCloseButton2;
 	UPROPERTY() TArray<UJobPriorityRow*> JobPriorityRows;
+
+	UPROPERTY(meta = (BindWidget)) UTextBlock* EmployedText;
+
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* LaborerBox;
+	UPROPERTY(meta = (BindWidget)) UButton* LaborerNonPriorityButton;
+	UPROPERTY(meta = (BindWidget)) UButton* LaborerPriorityButton;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* Laborer;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* LaborerRed;
+	UPROPERTY(meta = (BindWidget)) UButton* LaborerArrowUp;
+	UPROPERTY(meta = (BindWidget)) UButton* LaborerArrowDown;
+	UPROPERTY(meta = (BindWidget)) USizeBox* LaborerArrowOverlay;
+
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* BuilderBox;
+	UPROPERTY(meta = (BindWidget)) UButton* BuilderNonPriorityButton;
+	UPROPERTY(meta = (BindWidget)) UButton* BuilderPriorityButton;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* Builder;
+	UPROPERTY(meta = (BindWidget)) UButton* BuilderArrowUp;
+	UPROPERTY(meta = (BindWidget)) UButton* BuilderArrowDown;
+	UPROPERTY(meta = (BindWidget)) USizeBox* BuilderArrowOverlay;
+
+	FSetTownPriority& townPriorityState() { return _laborerPriorityState.townPriorityState; }
+	LaborerPriorityState _laborerPriorityState;
+
+	void SendNetworkPriority()
+	{
+		auto command = std::make_shared<FSetTownPriority>();
+		*command = townPriorityState();
+		networkInterface()->SendNetworkCommand(command);
+
+		_laborerPriorityState.lastPriorityInputTime = UGameplayStatics::GetTimeSeconds(this);
+	}
+
+	void RefreshLaborerUI()
+	{
+		_laborerPriorityState.RefreshUI(
+			this,
+			&simulation(),
+			playerId(),
+
+			nullptr,
+			EmployedText,
+
+			LaborerBox,
+			LaborerPriorityButton, LaborerNonPriorityButton, LaborerArrowOverlay,
+			Laborer,
+			LaborerRed,
+
+			BuilderBox,
+			BuilderNonPriorityButton,
+			BuilderPriorityButton,
+			Builder,
+			BuilderArrowOverlay
+		);
+	}
+
+	// Laborer
+	UFUNCTION() void OnClickLaborerNonPriorityButton() {
+		townPriorityState().laborerPriority = true;
+		RefreshLaborerUI();
+		SendNetworkPriority();
+	}
+	UFUNCTION() void OnClickLaborerPriorityButton() {
+		townPriorityState().laborerPriority = false;
+		RefreshLaborerUI();
+		SendNetworkPriority();
+	}
+	UFUNCTION() void IncreaseLaborers() {
+		townPriorityState().targetLaborerCount++;
+		RefreshLaborerUI();
+		SendNetworkPriority();
+
+		dataSource()->Spawn2DSound("UI", "UIIncrementalChange");
+	}
+	UFUNCTION() void DecreaseLaborers() {
+		townPriorityState().targetLaborerCount = std::max(0, townPriorityState().targetLaborerCount - 1);
+		RefreshLaborerUI();
+		SendNetworkPriority();
+
+		dataSource()->Spawn2DSound("UI", "UIIncrementalChange");
+	}
+
+	// Builder
+	UFUNCTION() void OnClickBuilderNonPriorityButton() {
+		townPriorityState().builderPriority = true;
+		RefreshLaborerUI();
+		SendNetworkPriority();
+	}
+	UFUNCTION() void OnClickBuilderPriorityButton() {
+		townPriorityState().builderPriority = false;
+		RefreshLaborerUI();
+		SendNetworkPriority();
+	}
+	UFUNCTION() void IncreaseBuilders() {
+		townPriorityState().targetBuilderCount++;
+		RefreshLaborerUI();
+		SendNetworkPriority();
+
+		dataSource()->Spawn2DSound("UI", "UIIncrementalChange");
+	}
+	UFUNCTION() void DecreaseBuilders() {
+		townPriorityState().targetBuilderCount = std::max(0, townPriorityState().targetBuilderCount - 1);
+		RefreshLaborerUI();
+		SendNetworkPriority();
+
+		dataSource()->Spawn2DSound("UI", "UIIncrementalChange");
+	}
+
+	/*
+	 * Prosperity
+	 */
 	
 	UPROPERTY(meta = (BindWidget)) UButton* ProsperityBarUI;
 	UPROPERTY(meta = (BindWidget)) USizeBox* ProsperityBar;

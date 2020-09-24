@@ -16,10 +16,13 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* ArrowUpButton;
 	UPROPERTY(meta = (BindWidget)) UButton* ArrowDownButton;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* JobNameText;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* JobCountText;
 	UPROPERTY(meta = (BindWidget)) UButton* ArrowFastUpButton;
 	UPROPERTY(meta = (BindWidget)) UButton* ArrowFastDownButton;
 
 	CardEnum cardEnum = CardEnum::None;
+	int32 index = -1;
+	int32 visibleIndex = -1;
 
 	void Init(UPunWidget* parent, CardEnum cardEnumIn)
 	{
@@ -29,7 +32,7 @@ public:
 		BUTTON_ON_CLICK(ArrowUpButton, this, &UJobPriorityRow::OnClickUpButton);
 		BUTTON_ON_CLICK(ArrowDownButton, this, &UJobPriorityRow::OnClickDownButton);
 		BUTTON_ON_CLICK(ArrowFastUpButton, this, &UJobPriorityRow::OnClickFastUpButton);
-		BUTTON_ON_CLICK(ArrowFastUpButton, this, &UJobPriorityRow::OnClickFastDownButton);
+		BUTTON_ON_CLICK(ArrowFastDownButton, this, &UJobPriorityRow::OnClickFastDownButton);
 		
 		_parent = parent;
 	}

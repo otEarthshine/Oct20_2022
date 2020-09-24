@@ -654,13 +654,16 @@ public:
 		return {};
 	}
 
-	IQuestSystem* iquestSystem(int32_t playerId) final { return playerId < _questSystems.size() ? &_questSystems[playerId] : nullptr; }
+	IQuestSystem* iquestSystem(int32 playerId) final { return playerId < _questSystems.size() ? &_questSystems[playerId] : nullptr; }
 
 	UnitStateAI& unitAI(int32 id) final { return _unitSystem->unitStateAI(id); }
 	WorldAtom2 unitAtom(int32 id) final { return _unitSystem->atomLocation(id); }
+
+	int32 animalInitialCount(UnitEnum unitEnum) final { return _unitSystem->animalInitialCount(unitEnum); }
+	int32 unitEnumCount(UnitEnum unitEnum) final { return _unitSystem->unitCount(unitEnum); }
 	
 	std::string unitdebugStr(int id) final;
-	void unitAddDebugSpeech(int32_t id, std::string message) final;
+	void unitAddDebugSpeech(int32 id, std::string message) final;
 
 	void SetWalkableSkipFlood(WorldTile2 tile, bool isWalkable) final {
 		_pathAI->SetWalkable(tile.x, tile.y, isWalkable);
@@ -882,11 +885,11 @@ public:
 	}
 
 	const std::vector<int32>& provinceAnimals(int32 regionId) override { return _regionSystem->provinceAnimals(regionId); }
-	void AddProvinceAnimals(int32 regionId, int32 animalId) override {
-		_regionSystem->AddProvinceAnimals(regionId, animalId);
+	void AddProvinceAnimals(int32 provinceId, int32 animalId) override {
+		_regionSystem->AddProvinceAnimals(provinceId, animalId);
 	}
-	void RemoveProvinceAnimals(int32 regionId, int32 animalId) override {
-		_regionSystem->RemoveProvinceAnimals(regionId, animalId);
+	void RemoveProvinceAnimals(int32 provinceId, int32 animalId) override {
+		_regionSystem->RemoveProvinceAnimals(provinceId, animalId);
 	}
 
 	int HousingCapacity(int32 playerId) override { return _playerOwnedManagers[playerId].housingCapacity(); }

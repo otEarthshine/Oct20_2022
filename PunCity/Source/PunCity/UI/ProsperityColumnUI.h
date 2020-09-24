@@ -15,9 +15,5 @@ class PROTOTYPECITY_API UProsperityColumnUI : public UUserWidget
 	GENERATED_BODY()
 public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* HouseLevelText;
-	UPROPERTY(meta = (BindWidget)) UScrollBox* ProsperityTechList;
-
-
-
-	
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* ProsperityTechList;
 };

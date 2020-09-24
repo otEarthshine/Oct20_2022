@@ -97,29 +97,33 @@ public:
 	}
 	void AddProvinceAnimals(int32 provinceId, int32 animalId)
 	{
-//		PUN_CHECK(_simulation->IsProvinceValid(provinceId));
-//		debugTotalProvinceAnimalCount++;
-//		_provinceToAnimalIds[provinceId].push_back(animalId);
-//
-//#if !UE_BUILD_SHIPPING
-//		if (_provinceToAnimalIds[provinceId].size() > debugMaxAnimalCount) {
-//			debugMaxAnimalCount = _provinceToAnimalIds[provinceId].size();
-//			debugMaxAnimalCountProvinceId = provinceId;
-//		}
-//#endif
+		PUN_CHECK(_simulation->IsProvinceValid(provinceId));
+		PUN_CHECK(!CppUtils::Contains(_provinceToAnimalIds[provinceId], animalId));
+		
+		debugTotalProvinceAnimalCount++;
+		_provinceToAnimalIds[provinceId].push_back(animalId);
+
+#if !UE_BUILD_SHIPPING
+		if (_provinceToAnimalIds[provinceId].size() > debugMaxAnimalCount) {
+			debugMaxAnimalCount = _provinceToAnimalIds[provinceId].size();
+			debugMaxAnimalCountProvinceId = provinceId;
+		}
+#endif
 	}
 	void RemoveProvinceAnimals(int32 provinceId, int32 animalId)
 	{
-//		PUN_CHECK(_simulation->IsProvinceValid(provinceId));
-//		
-//		debugTotalProvinceAnimalCount--;
-//		CppUtils::Remove(_provinceToAnimalIds[provinceId], animalId);
-//
-//#if !UE_BUILD_SHIPPING
-//		if (provinceId == debugMaxAnimalCountProvinceId) {
-//			debugMaxAnimalCount = _provinceToAnimalIds[provinceId].size();
-//		}
-//#endif
+		PUN_CHECK(_simulation->IsProvinceValid(provinceId));
+		
+		debugTotalProvinceAnimalCount--;
+		CppUtils::Remove(_provinceToAnimalIds[provinceId], animalId);
+
+		PUN_CHECK(!CppUtils::Contains(_provinceToAnimalIds[provinceId], animalId));
+
+#if !UE_BUILD_SHIPPING
+		if (provinceId == debugMaxAnimalCountProvinceId) {
+			debugMaxAnimalCount = _provinceToAnimalIds[provinceId].size();
+		}
+#endif
 	}
 
 	void AddAnimalColony(UnitEnum unitEnum, WorldTile2 center, int32 radius, int32 chancePercentMultiplier);

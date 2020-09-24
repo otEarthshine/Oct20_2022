@@ -275,6 +275,9 @@ void UChatUI::TickDebugUI()
 		auto& statSystem = sim.statSystem();
 
 		ss << "World units: " << unitSystem.unitCount() << "\n";
+		ss << "deer units: " << unitSystem.unitCount(UnitEnum::DarkDeer) + unitSystem.unitCount(UnitEnum::YellowDeer) + unitSystem.unitCount(UnitEnum::RedDeer) << "\n";
+		ss << "boar units: " << unitSystem.unitCount(UnitEnum::Boar) << "\n";
+		ss << "human units: " << unitSystem.unitCount(UnitEnum::Human) << "\n";
 		ss << "Max animal in province: " << sim.regionSystem().debugMaxAnimalCount << "\n";
 		ss << "Total province animals: " << sim.regionSystem().debugTotalProvinceAnimalCount << "\n";
 

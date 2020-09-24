@@ -36,6 +36,9 @@ void UnitSystem::Init(IGameSimulationCore* simulation)
 
 	UnitStateAI::debugFindFullBushSuccessCount = 0;
 	UnitStateAI::debugFindFullBushFailCount = 0;
+
+	_unitEnumToUnitCount.resize(UnitEnumCount);
+	_animalEnumToInitialCount.resize(UnitEnumCount);
 }
 
 int16 UnitSystem::food(int id)
@@ -117,6 +120,8 @@ void UnitSystem::AddAnimals(int animalCount)
 				int32 ageTicks = GameRand::Rand() % GetUnitInfo(unitEnum).maxAgeTicks;
 				
 				AddUnit(unitEnum, GameInfo::PlayerIdNone, tile.worldAtom2(), ageTicks);
+
+				_animalEnumToInitialCount[static_cast<int>(unitEnum)]++;
 				
 				break;
 			}
@@ -206,6 +211,8 @@ int UnitSystem::AddUnit(UnitEnum unitEnum, int32 playerId, WorldAtom2 location, 
 
 	_unitSubregionLists.Add(location.worldTile2(), objectId);
 
+	_unitEnumToUnitCount[static_cast<int>(unitEnum)]++;
+
 	return objectId;
 }
 
@@ -213,6 +220,7 @@ void UnitSystem::RemoveUnit(int32 unitId)
 {
 	//UE_LOG(LogTemp, Error, TEXT("RemoveUnit:%d"), objectId);
 	UnitLean& unitLean = _unitLeans[unitId];
+	UnitEnum unitEnum = unitLean.unitEnum;
 
 	_updateBuffer.RemoveUpdateInfo(unitId, unitLean.nextUpdate.nextUpdateTick);
 	// Don't need to RemoveUpdateInfo for last update...
@@ -221,6 +229,8 @@ void UnitSystem::RemoveUnit(int32 unitId)
 	_deadUnits.push_back(unitId); // TODO:
 
 	_unitSubregionLists.Remove(unitLean.atomLocation.worldTile2(), unitId);
+
+	_unitEnumToUnitCount[static_cast<int>(unitEnum)]--;
 }
 
 void UnitSystem::ResetActions_SystemPart(int id, int32_t waitTicks)
@@ -597,6 +607,9 @@ void UnitSystem::Serialize(FArchive& Ar)
 	
 	//PUN_LOG("UnitSystem Serialize isSaving:%d dead:%d animals:%d", Ar.IsSaving(), _deadUnits.size(), animalUnitCount);
 	//PUN_LOG("UnitSystem Serialize unitCount():%d _unitLeans:%d", unitCount(), _unitLeans.size());
+
+	SerializeVecValue(Ar, _unitEnumToUnitCount);
+	SerializeVecValue(Ar, _animalEnumToInitialCount);
 
 	UnitCheckIntegrity(true);
 }

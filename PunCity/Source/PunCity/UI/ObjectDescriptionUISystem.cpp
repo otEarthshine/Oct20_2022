@@ -820,7 +820,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							
 						}
 
-						descriptionBox->AddButton("Show Statistics", nullptr, "", this, CallbackEnum::OpenStatistics, true, false, townhall.playerId());
+						// Note: Statistics replaced with Statistics Bureau
+						//descriptionBox->AddButton("Show Statistics", nullptr, "", this, CallbackEnum::OpenStatistics, true, false, townhall.playerId());
 						descriptionBox->AddLineSpacer(10);
 
 						if (building.playerId() == playerId())
@@ -1008,6 +1009,13 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 //						ss << "guestReservations: " << funBuilding.guestReservations() << "\n";
 //						descriptionBox->AddSpecialRichText("<Yellow>", ss);
 //#endif
+					}
+					else if (building.isEnum(CardEnum::Library) ||
+							building.isEnum(CardEnum::School)) 
+					{
+						descriptionBox->AddSpacer();
+						ss << building.buildingInfo().description;
+						descriptionBox->AddRichText(ss);
 					}
 					else if (building.isEnum(CardEnum::OreSupplier)) {
 						ss << building.buildingInfo().description;
@@ -1774,15 +1782,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 										resourceSys.resourceCount(resourceEnum) < upgrade.resourceNeeded.count) << "<img id=\"" << resourceString << "\"/>";
 								};
 								
-								if (resourceEnum == ResourceEnum::Stone) {
-									//ss << "\n" << TextRed(to_string(upgrade.resourceNeeded.count), 
-									//						resourceSys.resourceCount(ResourceEnum::Stone) < upgrade.resourceNeeded.count) << "<img id=\"Stone\"/>";
-									showResourceText("Stone");
-								}
+								if (resourceEnum == ResourceEnum::Stone) { showResourceText("Stone"); }
 								else if (resourceEnum == ResourceEnum::Wood) { showResourceText("Wood"); }
 								else if (resourceEnum == ResourceEnum::Iron) { showResourceText("IronBar"); }
 								else if (resourceEnum == ResourceEnum::SteelTools) { showResourceText("SteelTools"); }
 								else if (resourceEnum == ResourceEnum::Brick) { showResourceText("Brick"); }
+								else if (resourceEnum == ResourceEnum::Paper) { showResourceText("Paper"); }
 								//else if (upgrade.resourceNeeded.isValid()) {
 								//	ss << " (" << upgrade.resourceNeeded.ToString() << ")";
 								//}
@@ -2711,6 +2716,31 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 		callbackEnum == CallbackEnum::DemolishOutpost
 		)
 	{
+		// If there is a province Building and townhall hasn't been placed, don't claim the land
+		int32 provinceId = punWidgetCaller->callbackVar1;
+
+		bool hasProvinceBuilding = false;
+		const std::vector<WorldRegion2>& regionOverlaps = simulation().provinceSystem().GetRegionOverlaps(provinceId);
+		for (WorldRegion2 regionOverlap : regionOverlaps) {
+			auto& buildingList = simulation().buildingSubregionList();
+			buildingList.ExecuteRegion(regionOverlap, [&](int32 buildingId)
+			{
+				auto bld = simulation().building(buildingId);
+				if (IsRegionalBuilding(bld.buildingEnum()) &&
+					simulation().GetProvinceIdClean(bld.centerTile()) == provinceId)
+				{
+					hasProvinceBuilding = true;
+				}
+			});
+		}
+
+		
+		if (!simulation().HasTownhall(playerId()) && hasProvinceBuilding) {
+			simulation().AddPopupToFront(playerId(), { "Please build the Townhall before claiming non-empty Province." }, ExclusiveUIEnum::None, "PopupCannot");
+			return;
+		}
+
+		
 		PUN_LOG("Claim land");
 		auto command = make_shared<FClaimLand>();
 		command->claimEnum = callbackEnum;

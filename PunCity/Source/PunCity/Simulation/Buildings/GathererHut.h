@@ -31,8 +31,8 @@ public:
 		AddResourceHolder(ResourceEnum::Papaya, ResourceHolderType::Provider, 0);
 
 		_upgrades = {
-			BuildingUpgrade("Delicate gathering", "+20% efficiency.", ResourcePair(ResourceEnum::SteelTools, 10)),
-			BuildingUpgrade("Pests traps", "+30% productivity if there is an adjacent hunter (does not stack).", 80),
+			MakeUpgrade("Delicate gathering", "+20% efficiency.", ResourceEnum::SteelTools, 50),
+			MakeUpgrade("Pests traps", "+30% productivity if there is an adjacent hunter (does not stack).", ResourceEnum::Wood, 30),
 		};
 	}
 
@@ -83,8 +83,8 @@ public:
 		AddResourceHolder(ResourceEnum::Pork, ResourceHolderType::Provider, 0);
 
 		_upgrades = {
-			BuildingUpgrade("Smoking chamber", "+30% efficiency.", 80),
-			BuildingUpgrade("Fruit bait", "+30% efficiency if there is an adjacent Fruit Gatherer (does not stack).", ResourcePair(ResourceEnum::Wood, 10)),
+			MakeUpgrade("Smoking chamber", "+30% efficiency.", ResourceEnum::Stone, 50),
+			MakeUpgrade("Fruit bait", "+30% efficiency if there is an adjacent Fruit Gatherer (does not stack).",ResourceEnum::Wood, 30),
 		};
 	}
 
@@ -133,8 +133,8 @@ public:
 		Building::FinishConstruction();
 
 		_upgrades = {
-			BuildingUpgrade("Timber management", "+30% efficiency.", 200),
-			BuildingUpgrade("Forest Town", "+30% production when you own 3+ foresters.", 300),
+			MakeUpgrade("Timber management", "+30% efficiency.", ResourceEnum::Stone,50),
+			MakeUpgrade("Forest Town", "+30% production when you own 3+ foresters.", ResourceEnum::Stone, 50),
 		};
 	}
 
@@ -170,8 +170,8 @@ public:
 
 		AddResourceHolder(ResourceEnum::Shroom, ResourceHolderType::Provider, 0);
 		_upgrades = {
-			//BuildingUpgrade("Shroomery", "Produce psychedelic shroom (luxury) instead.", 200),
-			BuildingUpgrade("Intensive care", "+30% production bonus when worker slots are full", 200),
+			//MakeUpgrade("Shroomery", "Produce psychedelic shroom (luxury) instead.", 200),
+			MakeUpgrade("Intensive care", "+30% production bonus when worker slots are full", ResourceEnum::Stone, 50),
 		};
 	}
 
@@ -195,7 +195,7 @@ public:
 		Building::FinishConstruction();
 
 		_upgrades = {
-			BuildingUpgrade("Intensive care", "+30% production bonus when worker slots are full", 200),
+			MakeUpgrade("Intensive care", "+30% production bonus when worker slots are full", ResourceEnum::Brick, 50),
 		};
 	}
 
@@ -237,32 +237,7 @@ public:
 		return _simulation->IsResearched(_playerId, TechEnum::FarmAdjacency);
 	}
 
-	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = Building::GetBonuses();
-		//if (_simulation->townLvl(_playerId) >= 2) {
-		//	bonuses.push_back({ "Townhall upgrade", 30 });
-		//}
-		if (_simulation->IsResearched(_playerId, TechEnum::FarmingBreakthrough)) {
-			bonuses.push_back({ "Farm breakthrough upgrade", 20 });
-		}
-		if (_simulation->IsResearched(_playerId, TechEnum::FarmImprovement)) {
-			bonuses.push_back({ "Farm improvement upgrade", 5 });
-		}
-		if (_simulation->buildingFinishedCount(_playerId, CardEnum::DepartmentOfAgriculture) && 
-			_simulation->buildingCount(_playerId, CardEnum::Farm) >= 8)
-		{
-			bonuses.push_back({ "Department of agriculture", 5 });
-		}
-		if (_simulation->buildingFinishedCount(_playerId, CardEnum::CensorshipInstitute)) {
-			bonuses.push_back({ "Censorship", 7 });
-		}
-
-		if (_simulation->IsResearched(_playerId, TechEnum::FarmLastEra)) {
-			bonuses.push_back({ "Last era technology", 20 });
-		}
-
-		return bonuses;
-	}
+	std::vector<BonusPair> GetBonuses() override;
 
 	int32 totalFarmTiles() { return _area.sizeX() * _area.sizeY();  }
 
@@ -338,10 +313,11 @@ public:
 		Ar << currentPlantEnum;
 		Ar << _farmStage;
 		SerializeVecBool(Ar, _isTileWorked);
-		SerializeVecLoop(Ar, _reservingUnitIdToFarmTileId, [&](std::pair<int32_t, int32_t>& pair) {
+		SerializeVecLoop(Ar, _reservingUnitIdToFarmTileId, [&](std::pair<int32, int32>& pair) {
 			Ar << pair.first;
 			Ar << pair.second;
 		});
+		Ar << _fertility;
 	}
 
 	static int32 GetAverageFertility(TileArea area, IGameSimulationCore* simulation)
@@ -394,8 +370,8 @@ public:
 		Building::FinishConstruction();
 
 		_upgrades = {
-			BuildingUpgrade("More Workers", "+2 worker slots", 120),
-			BuildingUpgrade("Improved shift", "Mine with full worker slots get 20% production bonus", 500),
+			MakeUpgrade("More Workers", "+2 worker slots", ResourceEnum::Stone, 50),
+			MakeUpgrade("Improved shift", "Mine with full worker slots get 20% production bonus", ResourceEnum::Stone, 40),
 		};
 
 	}
@@ -502,8 +478,8 @@ public:
 	void FinishConstruction() final
 	{
 		_upgrades = {
-			BuildingUpgrade("Better process", "Uses 50% less wood to produce paper.", 500),
-			BuildingUpgrade("More workers", "+2 worker slots.", 120),
+			MakeUpgrade("Better process", "Uses 50% less wood to produce paper.", ResourceEnum::Brick, 50),
+			MakeUpgrade("More workers", "+2 worker slots.", ResourceEnum::Brick, 20),
 		};
 
 		Building::FinishConstruction();
@@ -529,8 +505,8 @@ public:
 		Building::FinishConstruction();
 
 		_upgrades = {
-			BuildingUpgrade("Teamwork", "Smelter with full worker slots get 50% production bonus", 500),
-			BuildingUpgrade("Efficient furnace", "Decrease input by 30%", 1000),
+			MakeUpgrade("Teamwork", "Smelter with full worker slots get 50% production bonus", ResourceEnum::Stone, 100),
+			MakeUpgrade("Efficient furnace", "Decrease input by 30%", ResourceEnum::Brick, 200),
 		};
 	}
 
@@ -618,8 +594,8 @@ public:
 		ConsumerIndustrialBuilding::FinishConstruction();
 
 		_upgrades = {
-			BuildingUpgrade("Improved Production", "+30% production.", 500),
-			BuildingUpgrade("Mint Town", "+30% production when you have 4 or more Mints.", 500),
+			MakeUpgrade("Improved Production", "+30% production.", ResourceEnum::Brick, 50),
+			MakeUpgrade("Mint Town", "+30% production when you have 4 or more Mints.", ResourceEnum::Brick, 50),
 		};
 	}
 
@@ -693,7 +669,7 @@ public:
 		ConsumerIndustrialBuilding::FinishConstruction();
 
 		_upgrades = {
-			BuildingUpgrade("Improved Production", "+30% production.", 500),
+			MakeUpgrade("Improved Production", "+30% production.", ResourceEnum::SteelTools, 50),
 		};
 	}
 
@@ -710,13 +686,29 @@ public:
 	int32 workManSecPerBatch100() final
 	{
 		// Assume card 800 price for SlotCards
-		int32 cardPrice = GetBuildingInfo(GetCardProduced()).baseCardPrice;
+		CardEnum cardEnum = GetCardProduced();
+		int32 cardPrice = GetBuildingInfo(cardEnum).baseCardPrice;
+
+		if (IsBuildingSlotCard(cardEnum)) {
+			cardPrice = 500;
+		}
+		// ensure Wild Card and Card Removal cards are not negative
+		cardPrice = max(cardPrice, 120);
+		
 		return (cardPrice - batchCost()) * 100 * 100 / buildingInfo().workRevenuePerSec100_perMan; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
 	}
 
 	CardEnum GetCardProduced();
 	
-	int32 baseInputPerBatch() override { return 10; }
+	int32 baseInputPerBatch() override
+	{
+		return 10;
+		//CardEnum cardEnum = GetCardProduced();
+		//if (IsBuildingSlotCard(cardEnum)) {
+		//	return 10;
+		//}
+		//return 5;
+	}
 };
 
 class ImmigrationOffice final : public ConsumerIndustrialBuilding
@@ -727,7 +719,7 @@ public:
 		ConsumerIndustrialBuilding::FinishConstruction();
 
 		_upgrades = {
-			BuildingUpgrade("First Impression", "+30% efficiency.", 300),
+			MakeUpgrade("First Impression", "+30% efficiency.", ResourceEnum::Stone, 30),
 		};
 	}
 
@@ -762,9 +754,9 @@ public:
 		Building::FinishConstruction();
 
 		_upgrades = {
-			BuildingUpgrade("Improved Forge", "+30% production.", 1000),
-			BuildingUpgrade("Alloy Recipe", "+30% production.", 1200),
-			BuildingUpgrade("Blacksmith Guild", "+30% production when you have 4 or more Blacksmith.", 1000),
+			MakeUpgrade("Improved Forge", "+30% production.", ResourceEnum::Brick, 50),
+			MakeUpgrade("Alloy Recipe", "+30% production.", ResourceEnum::Paper, 50),
+			MakeUpgrade("Blacksmith Guild", "+30% production when you have 4 or more Blacksmith.", ResourceEnum::Stone, 30),
 		};
 	}
 
@@ -804,8 +796,8 @@ public:
 		Building::FinishConstruction();
 
 		_upgrades = {
-			BuildingUpgrade("Charcoal Conversion", "Use 30% less wood input.", 50),
-			BuildingUpgrade("Improved Production", "+30% production.", 200),
+			MakeUpgrade("Charcoal Conversion", "Use 30% less wood input.", 20),
+			MakeUpgrade("Improved Production", "+30% production.", 50),
 		};
 	}
 
@@ -838,10 +830,10 @@ public:
 
 
 		_upgrades = {
-			BuildingUpgrade("Cocoa Processing", "Consumes 50% less input.", 2000),
-			BuildingUpgrade("Improved Production", "+50% production.", 1000),
-			BuildingUpgrade("Chocolate Town", "+50% production when you have 4 or more chocolatiers.", 1000),
-			BuildingUpgrade("Reduce Upkeep", "Reduce upkeep by 50%", 1000),
+			MakeUpgrade("Cocoa Processing", "Consumes 50% less input.", ResourceEnum::Iron, 70),
+			MakeUpgrade("Improved Production", "+50% production.", ResourceEnum::Iron, 70),
+			MakeUpgrade("Chocolate Town", "+50% production when you have 4 or more chocolatiers.", ResourceEnum::Iron, 50),
+			MakeUpgrade("Reduce Upkeep", "Reduce upkeep by 50%", ResourceEnum::Brick, 50),
 		};
 	}
 
@@ -879,8 +871,8 @@ public:
 		Building::FinishConstruction();
 
 		_upgrades = {
-			BuildingUpgrade("Wine appreciation", "+50% production.", 2000),
-			BuildingUpgrade("Wine Town", "+50% production when you have 4 or more wineries.", 1000),
+			MakeUpgrade("Wine appreciation", "+50% production.", 70),
+			MakeUpgrade("Wine Town", "+50% production when you have 4 or more wineries.", 50),
 		};
 	}
 
@@ -924,8 +916,8 @@ public:
 		ChangeWorkMode(_workMode);
 
 		_upgrades = {
-			BuildingUpgrade("Weaving Machine", "+100% production.", 3000),
-			BuildingUpgrade("Tailor Town", "+50% production when you have 4 or more tailors.", 1000),
+			MakeUpgrade("Weaving Machine", "+100% production.", ResourceEnum::Iron, 150),
+			MakeUpgrade("Tailor Town", "+50% production when you have 4 or more tailors.", ResourceEnum::Iron, 70),
 		};
 	}
 
@@ -969,9 +961,9 @@ public:
 		AddResourceHolder(ResourceEnum::Beer, ResourceHolderType::Provider, 0);
 		
 		_upgrades = {
-			BuildingUpgrade("Improved Malting", "Consumes 30% less input.", 200),
-			BuildingUpgrade("Fast Malting", "+30% production.", 200),
-			BuildingUpgrade("Brewery Town", "+30% production when you have 4 or more breweries.", 300),
+			MakeUpgrade("Improved Malting", "Consumes 30% less input.", ResourceEnum::Stone, 50),
+			MakeUpgrade("Fast Malting", "+30% production.", ResourceEnum::Stone, 50),
+			MakeUpgrade("Brewery Town", "+30% production when you have 4 or more breweries.", ResourceEnum::Stone, 30),
 		};
 
 		_simulation->TryAddQuest(_playerId, std::make_shared<BeerQuest>());
@@ -1022,7 +1014,7 @@ public:
 		Building::FinishConstruction();
 
 		_upgrades = {
-			BuildingUpgrade("Improved Grinder", "+10% productivity", 500),
+			MakeUpgrade("Improved Grinder", "+10% productivity", ResourceEnum::Stone, 30),
 		};
 	}
 
@@ -1084,8 +1076,8 @@ public:
 		AddResourceHolder(ResourceEnum::Bread, ResourceHolderType::Provider, 0);
 
 		_upgrades = {
-			BuildingUpgrade("Improved Oven", "+10% productivity", 700),
-			BuildingUpgrade("Baker's Guild", "+10% production when you have 4 or more Bakery.", 300),
+			MakeUpgrade("Improved Oven", "+10% productivity", ResourceEnum::Stone, 50),
+			MakeUpgrade("Baker's Guild", "+10% production when you have 4 or more Bakery.", ResourceEnum::Stone, 30),
 		};
 
 		ChangeWorkMode(_workMode); // Need this to setup resource target etc.
@@ -1123,9 +1115,9 @@ public:
 		Building::FinishConstruction();
 
 		_upgrades = {
-			BuildingUpgrade("Rigorous Training", "+50% productivity", 1000),
-			BuildingUpgrade("Specialized Tools", "+50% productivity", 1000),
-			BuildingUpgrade("Jeweler's Guild", "+30% production when you have 4 or more Jeweler.", 500),
+			MakeUpgrade("Rigorous Training", "+50% productivity", ResourceEnum::Brick, 80),
+			MakeUpgrade("Specialized Tools", "+50% productivity", ResourceEnum::SteelTools, 80),
+			MakeUpgrade("Jeweler's Guild", "+30% production when you have 4 or more Jeweler.", ResourceEnum::Brick, 50),
 		};
 	}
 
@@ -1158,8 +1150,8 @@ public:
 		Building::FinishConstruction();
 
 		_upgrades = {
-			BuildingUpgrade("Specialized Tools", "+30% productivity", 500),
-			BuildingUpgrade("Brickworks Town", "+30% production when you have 4 or more Brickworks.", 500),
+			MakeUpgrade("Specialized Tools", "+30% productivity", ResourceEnum::Stone, 50),
+			MakeUpgrade("Brickworks Town", "+30% production when you have 4 or more Brickworks.", ResourceEnum::Stone, 30),
 		};
 	}
 
@@ -1187,8 +1179,8 @@ public:
 		Building::FinishConstruction();
 
 		_upgrades = {
-			BuildingUpgrade("Specialized Tools", "+30% productivity", 500),
-			BuildingUpgrade("Candle Maker's Guild", "+30% production when you have 4 or more Candle Maker.", 500),
+			MakeUpgrade("Specialized Tools", "+30% productivity", ResourceEnum::SteelTools, 50),
+			MakeUpgrade("Candle Maker's Guild", "+30% production when you have 4 or more Candle Maker.", ResourceEnum::Brick, 50),
 		};
 	}
 
@@ -1216,8 +1208,8 @@ public:
 		Building::FinishConstruction();
 
 		_upgrades = {
-			BuildingUpgrade("Advanced Machinery", "+200% productivity", 5000),
-			BuildingUpgrade("Cotton Mill Town", "+50% production when you have 4 or more Cotton Mill.", 800),
+			MakeUpgrade("Advanced Machinery", "+200% productivity", ResourceEnum::Iron, 250),
+			MakeUpgrade("Cotton Mill Town", "+100% production when you have 4 or more Cotton Mill.", ResourceEnum::Iron, 80),
 		};
 	}
 
@@ -1229,7 +1221,7 @@ public:
 		}
 		if (IsUpgraded(1)) {
 			if (_simulation->buildingCount(_playerId, CardEnum::CottonMill) >= 4) {
-				bonuses.push_back({ "Cotton Mill Town", 50 });
+				bonuses.push_back({ "Cotton Mill Town", 100 });
 			}
 		}
 
@@ -1245,8 +1237,8 @@ public:
 		Building::FinishConstruction();
 
 		_upgrades = {
-			BuildingUpgrade("Advanced Machinery", "+300% productivity", 7000),
-			BuildingUpgrade("Printing Press Town", "+50% production when you have 4 or more Printing Press.", 800),
+			MakeUpgrade("Advanced Machinery", "+300% productivity", ResourceEnum::Iron, 350),
+			MakeUpgrade("Printing Press Town", "+100% production when you have 4 or more Printing Press.", ResourceEnum::Iron, 80),
 		};
 	}
 

@@ -71,6 +71,18 @@ public:
 				return;
 			}
 		}
+
+		// TickUI for Boxes
+		const std::vector<std::vector<std::shared_ptr<ResearchInfo>>>& houseLvlToProsperityTech = unlockSys->houseLvlToProsperityTech();
+		const std::vector<std::vector<int32>>& houseLvlToUnlockCounts = unlockSys->houseLvlToUnlockCounts();
+
+		for (size_t i = 1; i < houseLvlToProsperityTech.size(); i++)
+		{
+			auto& techs = houseLvlToProsperityTech[i];
+			for (size_t j = techs.size(); j-- > 0;) {
+				techEnumToProsperityBox[static_cast<int>(techs[j]->techEnum)]->TickUI();
+			}
+		}
 	}
 
 private:
@@ -81,7 +93,7 @@ private:
 		
 		UnlockSystem* unlockSys = simulation().unlockSystem(playerId());
 		const std::vector<std::vector<std::shared_ptr<ResearchInfo>>>& houseLvlToProsperityTech = unlockSys->houseLvlToProsperityTech();
-		const std::vector<std::vector<int32>>& houseLvlToUnlockCount = unlockSys->houseLvlToUnlockCount();
+		const std::vector<std::vector<int32>>& houseLvlToUnlockCounts = unlockSys->houseLvlToUnlockCounts();
 		
 		for (size_t i = 1; i < houseLvlToProsperityTech.size(); i++)
 		{
@@ -91,17 +103,16 @@ private:
 			ProsperityScrollBox->AddChild(prosperityColumnUI);
 			
 			auto& techs = houseLvlToProsperityTech[i];
-			for (const auto& tech : techs)
+			for (size_t j = techs.size(); j-- > 0;) // Prosperity Techs are arrange upward...
 			{
 				UProsperityBoxUI* prosperityBox = AddWidget<UProsperityBoxUI>(UIEnum::ProsperityBoxUI);
 				prosperityColumnUI->ProsperityTechList->AddChild(prosperityBox);
 
-				techEnumToProsperityBox.Add(static_cast<int32>(tech->techEnum), prosperityBox);
+				techEnumToProsperityBox.Add(static_cast<int32>(techs[j]->techEnum), prosperityBox);
 				PUN_CHECK(prosperityBox->techEnum == TechEnum::None);
 
-				prosperityBox->Init(this, tech->techEnum);
-
-				prosperityBox->TechName->SetText(ToFText(tech->GetName()));
+				prosperityBox->Init(this, techs[j]->techEnum, i, houseLvlToUnlockCounts[i][j], j);
+				prosperityBox->TechName->SetText(ToFText(techs[j]->GetName()));
 			}
 		}
 

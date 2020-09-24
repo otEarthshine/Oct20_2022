@@ -122,8 +122,27 @@ void UMainGameUI::PunInit()
 	LeaderSkillButton->OnClicked.AddDynamic(this, &UMainGameUI::OnClickLeaderSkillButton);
 	LeaderSkillButton->bOverride_Cursor = false;
 
+	/*
+	 * Job Priority
+	 */
 	JobPriorityCloseButton->OnClicked.AddDynamic(this, &UMainGameUI::OnClickJobPriorityCloseButton);
+	JobPriorityCloseButton2->OnClicked.AddDynamic(this, &UMainGameUI::OnClickJobPriorityCloseButton);
 	JobPriorityOverlay->SetVisibility(ESlateVisibility::Collapsed);
+	_laborerPriorityState.lastPriorityInputTime = -999.0f;
+
+	BUTTON_ON_CLICK(LaborerNonPriorityButton, this, &UMainGameUI::OnClickLaborerNonPriorityButton);
+	BUTTON_ON_CLICK(LaborerPriorityButton, this, &UMainGameUI::OnClickLaborerPriorityButton);
+	BUTTON_ON_CLICK(LaborerArrowUp, this, &UMainGameUI::IncreaseLaborers);
+	BUTTON_ON_CLICK(LaborerArrowDown, this, &UMainGameUI::DecreaseLaborers);
+
+	BUTTON_ON_CLICK(BuilderNonPriorityButton, this, &UMainGameUI::OnClickBuilderNonPriorityButton);
+	BUTTON_ON_CLICK(BuilderPriorityButton, this, &UMainGameUI::OnClickBuilderPriorityButton);
+	BUTTON_ON_CLICK(BuilderArrowUp, this, &UMainGameUI::IncreaseBuilders);
+	BUTTON_ON_CLICK(BuilderArrowDown, this, &UMainGameUI::DecreaseBuilders);
+
+	
+
+	
 
 	// ImportantResources
 	auto SetupImportantResources = [&](UIconTextPairWidget* iconTextPair)
@@ -1147,7 +1166,8 @@ void UMainGameUI::Tick()
 	{
 		// ResearchBarUI
 		// Flash ResearchBarUI if there is nothing being researched
-		FLinearColor researchBarColor = !unlockSystem->hasTargetResearch() && (kTickCount % 60 < 30) ? FLinearColor(1.0f, 0.33333f, 0.0f, 0.8f) : FLinearColor(.025f, .025f, .025f, 0.8f);
+		FLinearColor researchBarDark = FLinearColor(.025f, .025f, .025f, 0.8f);
+		FLinearColor researchBarColor = !unlockSystem->hasTargetResearch() && (kTickCount % 60 < 30) ? FLinearColor(1.0f, 0.33333f, 0.0f, 0.8f) : researchBarDark;
 		ResearchBarUI->SetBackgroundColor(researchBarColor);
 		//PUN_LOG("ResearchBarUI %f, %f, %f", researchBarColor.R, researchBarColor.G, researchBarColor.B);
 
@@ -1157,9 +1177,58 @@ void UMainGameUI::Tick()
 
 
 		// ProsperityBarUI Tick
-		if (unlockSystem->prosperityEnabled) {
-			ProsperityBarUI->SetBackgroundColor(researchBarColor);
+		if (unlockSystem->prosperityEnabled) 
+		{
+			ProsperityBarUI->SetBackgroundColor(researchBarDark);
 			ProsperityBarUI->SetVisibility(ESlateVisibility::Visible);
+
+			// Find the tech that is closest to done and display that...
+			//  Note: This system allow for flexibility in tweaking unlockCount to get the desired techs to come first
+			int32 closestTech_HouseNeeded = 99999;
+			int32 closestTech_HouseLvl = -1;
+			int32 closestTech_CurrentHouseCount = 0;
+			
+			const std::vector<std::vector<int32>>& houseLvlToUnlockCount = unlockSystem->houseLvlToUnlockCounts();
+			for (size_t lvl = 1; lvl < houseLvlToUnlockCount.size(); lvl++) 
+			{
+				int32 houseLvlCount = simulation.GetHouseLvlCount(playerId(), lvl, true);
+				for (size_t i = 0; i < houseLvlToUnlockCount[lvl].size(); i++) 
+				{
+					// skip i == 0 for the tech with unfinished left
+					if (i == 0 && lvl > 1)
+					{
+						int32 houseLvlCountToLeft = simulation.GetHouseLvlCount(playerId(), lvl - 1, true);
+						// If the left tech is unfinished, skip this
+						if (houseLvlCountToLeft < houseLvlToUnlockCount[lvl - 1][0]) {
+							continue;
+						}
+					}
+
+					// skip showing the part of the column
+					if (simulation.GetHouseLvlCount(playerId(), lvl, true) == 0) {
+						continue;
+					}
+					
+					int32 houseNeeded = houseLvlToUnlockCount[lvl][i] - houseLvlCount;
+					if (houseNeeded > 0 && 
+						houseNeeded < closestTech_HouseNeeded) 
+					{
+						closestTech_HouseNeeded = houseNeeded;
+						closestTech_HouseLvl = lvl;
+						closestTech_CurrentHouseCount = houseLvlCount;
+					}
+				}
+			}
+
+			if (closestTech_HouseLvl != -1) 
+			{
+				std::stringstream ss;
+				ss << "House Lvl " << closestTech_HouseLvl << ": " << closestTech_CurrentHouseCount << "/" << (closestTech_CurrentHouseCount + closestTech_HouseNeeded);
+				SetText(ProsperityAmountText, ss.str());
+			}
+			else {
+				ProsperityAmountText->SetVisibility(ESlateVisibility::Collapsed);
+			}
 		} else {
 			ProsperityBarUI->SetVisibility(ESlateVisibility::Collapsed);
 		}
@@ -1186,10 +1255,11 @@ void UMainGameUI::Tick()
 	/*
 	 * Job Priority Tick
 	 */
-	 // lazy init
+	auto& playerOwned = simulation.playerOwned(playerId());
+
+	// lazy init
 	if (JobPriorityRows.Num() == 0)
 	{
-		auto& playerOwned = simulation.playerOwned(playerId());
 		const std::vector<CardEnum>& jobPriorityList = playerOwned.GetJobPriorityList();
 		
 		JobPriorityScrollBox->ClearChildren();
@@ -1201,7 +1271,66 @@ void UMainGameUI::Tick()
 			jobRow->Init(this, jobEnum);
 			JobPriorityScrollBox->AddChild(jobRow);
 			JobPriorityRows.Add(jobRow);
+			jobRow->Rename(ToTChar(GetBuildingInfo(jobEnum).name + "_job"));
 		}
+	}
+
+	if (JobPriorityOverlay->GetVisibility() != ESlateVisibility::Collapsed)
+	{
+		CardEnum firstCardEnum = CardEnum::None;
+		CardEnum lastCardEnum = CardEnum::None;
+		for (int32 i = 0; i < JobPriorityRows.Num(); i++) {
+			CardEnum cardEnum = JobPriorityRows[i]->cardEnum;;
+			if (playerOwned.jobBuildingEnumToIds()[static_cast<int>(cardEnum)].size() > 0) {
+				if (firstCardEnum == CardEnum::None) {
+					firstCardEnum = cardEnum;
+				}
+				lastCardEnum = cardEnum;
+			}
+		}
+
+		int32 visibleIndex = 0;
+		for (int32 i = 0; i < JobPriorityRows.Num(); i++)
+		{
+			auto jobRow = JobPriorityRows[i];
+			CardEnum cardEnum = jobRow->cardEnum;
+			
+			const std::vector<int32>& buildingIds = playerOwned.jobBuildingEnumToIds()[static_cast<int>(cardEnum)];
+			if (buildingIds.size() == 0) {
+				jobRow->SetVisibility(ESlateVisibility::Collapsed);
+				continue;
+			}
+
+			int32 occupantCount = 0;
+			int32 allowedCount = 0;
+			for (int32 buildingId : buildingIds)
+			{
+				auto& building = simulation.building(buildingId);
+				occupantCount += building.occupantCount();
+				allowedCount += building.allowedOccupants();
+			}
+
+			std::stringstream ss;
+			ss << occupantCount << "/" << allowedCount;
+			SetText(jobRow->JobCountText, ss.str());
+
+			jobRow->SetVisibility(ESlateVisibility::Visible);
+
+			bool hideArrowUp = (cardEnum == firstCardEnum);
+			jobRow->ArrowUpButton->SetVisibility(hideArrowUp ? ESlateVisibility::Hidden : ESlateVisibility::Visible);
+			jobRow->ArrowFastUpButton->SetVisibility(hideArrowUp ? ESlateVisibility::Hidden : ESlateVisibility::Visible);
+
+			bool hideArrowDown = (cardEnum == lastCardEnum);
+			jobRow->ArrowDownButton->SetVisibility(hideArrowDown ? ESlateVisibility::Hidden : ESlateVisibility::Visible);
+			jobRow->ArrowFastDownButton->SetVisibility(hideArrowDown ? ESlateVisibility::Hidden : ESlateVisibility::Visible);
+
+			jobRow->index = i;
+			jobRow->visibleIndex = visibleIndex;
+			visibleIndex++;
+		}
+
+		_laborerPriorityState.TrySyncToSimulation(&simulation, playerId(), this);
+		RefreshLaborerUI();
 	}
 	
 
@@ -2002,47 +2131,53 @@ void UMainGameUI::CallBack2(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 	 * Job Priority Callback
 	 */
 
-	UJobPriorityRow* jobPriorityCaller = CastChecked<UJobPriorityRow>(punWidgetCaller);
-	CardEnum cardEnum = jobPriorityCaller->cardEnum;
-
-	int32 currentIndex = -1;
-	for (int32 i = 0; i < JobPriorityRows.Num(); i++) {
-		if (JobPriorityRows[i]->cardEnum == cardEnum) {
-			currentIndex = i;
-		}
-	}
-	check(currentIndex != -1);
-
-	UJobPriorityRow* row = JobPriorityRows[currentIndex];
+	UJobPriorityRow* row = CastChecked<UJobPriorityRow>(punWidgetCaller);
+	int32 index = row->index;
 
 	// Move the element in JobPriorityRows
 	if (callbackEnum == CallbackEnum::SetGlobalJobPriority_Up)
 	{
-		if (currentIndex > 0) {
-			JobPriorityRows.RemoveAt(currentIndex);
-			JobPriorityRows.Insert(row, currentIndex - 1);
+		if (index > 0)
+		{
+			JobPriorityRows.RemoveAt(index);
+
+			// Find next visible index to replace
+			for (int32 insertIndex = index - 1; insertIndex >= 0; insertIndex--) {
+				if (JobPriorityRows[insertIndex]->IsVisible() || insertIndex == 0) {
+					JobPriorityRows.Insert(row, insertIndex);
+					break;
+				}
+			}
 		}
+
+		PUN_CHECK(JobPriorityRows.Num() == DefaultJobPriorityListAllSeason.size());
 	}
 	else if (callbackEnum == CallbackEnum::SetGlobalJobPriority_Down)
 	{
-		if (currentIndex < JobPriorityRows.Num() - 1) {
-			JobPriorityRows.RemoveAt(currentIndex);
-			JobPriorityRows.Insert(row, currentIndex + 1);
+		if (index < JobPriorityRows.Num() - 1)
+		{
+			JobPriorityRows.RemoveAt(index);
+
+			// Find next visible index to replace
+			for (int32 insertIndex = index + 1; insertIndex < JobPriorityRows.Num(); insertIndex++) {
+				if (JobPriorityRows[insertIndex]->IsVisible() || insertIndex == (JobPriorityRows.Num() - 1)) {
+					JobPriorityRows.Insert(row, insertIndex);
+					break;
+				}
+			}
 		}
+
+		PUN_CHECK(JobPriorityRows.Num() == DefaultJobPriorityListAllSeason.size());
 	}
 	else if (callbackEnum == CallbackEnum::SetGlobalJobPriority_FastUp)
 	{
-		if (currentIndex > 0) {
-			JobPriorityRows.RemoveAt(currentIndex);
-			JobPriorityRows.Insert(row, 0);
-		}
+		JobPriorityRows.RemoveAt(index);
+		JobPriorityRows.Insert(row, 0);
 	}
 	else if (callbackEnum == CallbackEnum::SetGlobalJobPriority_FastDown)
 	{
-		if (currentIndex < JobPriorityRows.Num() - 1) {
-			JobPriorityRows.RemoveAt(currentIndex);
-			JobPriorityRows.Add(row);
-		}
+		JobPriorityRows.RemoveAt(index);
+		JobPriorityRows.Add(row);
 	}
 
 	// Put JobPriorityRows into JobPriorityScrollBox

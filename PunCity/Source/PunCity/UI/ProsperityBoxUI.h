@@ -15,14 +15,19 @@ class PROTOTYPECITY_API UProsperityBoxUI : public UPunWidget
 {
 	GENERATED_BODY()
 public:
-
-
 	
 	TechEnum techEnum = TechEnum::None;
+	int32 houseLvl = -1;
+	
+	int32 localIndex = -1;
+	int32 unlockCount = -1;
 
-	void Init(UPunWidget* callbackParent, TechEnum techEnumIn)
+	void Init(UPunWidget* callbackParent, TechEnum techEnumIn, int32 houseLvlIn, int32 unlockCountIn, int32 localIndexIn)
 	{
 		techEnum = techEnumIn;
+		houseLvl = houseLvlIn;
+		unlockCount = unlockCountIn;
+		localIndex = localIndexIn;
 
 		auto unlockSys = simulation().unlockSystem(playerId());
 		auto techInfo = unlockSys->GetTechInfo(techEnumIn);
@@ -106,6 +111,75 @@ public:
 
 	void UpdateTooltip()
 	{
+		
+	}
+
+	void TickUI()
+	{
+		auto unlockSys = simulation().unlockSystem(playerId());
+		
+		// House Count Text
+		int32 houseLvlCount = simulation().GetHouseLvlCount(playerId(), houseLvl, true);
+
+		const auto& tech = unlockSys->GetProsperityTech(houseLvl, localIndex);
+
+		// Done Tech
+		if (tech->state == TechStateEnum::Researched)
+		{
+			HouseCountText->SetVisibility(ESlateVisibility::Collapsed);
+			OuterImage->GetDynamicMaterial()->SetScalarParameterValue("ResearchFraction", 1);
+			return;
+		}
+		
+
+		// Helpers
+		auto setTechNotReachedYet = [&]() {
+			SetText(HouseCountText, std::to_string(unlockCount));
+			HouseCountText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			OuterImage->GetDynamicMaterial()->SetScalarParameterValue("ResearchFraction", 0);
+		};
+
+		auto setTechActive = [&]() {
+			std::stringstream ss;
+			ss << houseLvlCount << "/" << unlockCount;
+			SetText(HouseCountText, ss.str());
+			HouseCountText->SetColorAndOpacity(FLinearColor::White);
+			HouseCountText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+
+			OuterImage->GetDynamicMaterial()->SetScalarParameterValue("ResearchFraction", static_cast<float>(houseLvlCount) / unlockCount);
+		};
+		
+
+		// Not the first tech in column
+		if (localIndex > 0)
+		{
+			const auto& techBelow = unlockSys->GetProsperityTech(houseLvl, localIndex - 1);
+
+			// Tech below is researched, this one is active
+			if (techBelow->state == TechStateEnum::Researched) {
+				setTechActive();
+				return;
+			}
+
+			// Haven't reach this tech yet...
+			setTechNotReachedYet();
+			return;
+		}
+		
+		// First tech in column
+		bool isAdjacentTechDone = true;
+		if (houseLvl > 1) {
+			const auto& techToTheLeft = unlockSys->GetProsperityTech(houseLvl - 1, localIndex);
+			isAdjacentTechDone = (techToTheLeft->state == TechStateEnum::Researched);
+		}
+
+		if (isAdjacentTechDone) {
+			setTechActive();
+			return;
+		}
+		
+		// Haven't reach this tech yet...
+		setTechNotReachedYet();
 		
 	}
 	

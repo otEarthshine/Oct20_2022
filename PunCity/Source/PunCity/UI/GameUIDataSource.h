@@ -6,6 +6,14 @@
 #include "UObject/Interface.h"
 #include "../Simulation/GameSimulationInfo.h"
 #include "../DisplaySystem/GameDisplayInfo.h"
+#include "PunCity/NetworkStructs.h"
+#include "Kismet/GameplayStatics.h"
+#include "PunCity/Simulation/Buildings/TownHall.h"
+#include "Components/Widget.h"
+#include "Components/Button.h"
+#include "Components/SizeBox.h"
+#include "Components/TextBlock.h"
+#include "Components/HorizontalBox.h"
 
 #include "GameUIDataSource.generated.h"
 
@@ -139,6 +147,62 @@ class UGameUIDataSource : public UInterface
 {
 	GENERATED_BODY()
 };
+
+
+class LaborerPriorityState
+{
+public:
+	float lastPriorityInputTime = -999.0f;
+
+	FSetTownPriority townPriorityState;
+	int32 laborerCount = -1;
+	int32 builderCount = -1;
+	int32 roadMakerCount = -1;
+
+	void TrySyncToSimulation(IGameSimulationCore* sim, int32 playerId, UWidget* widget)
+	{
+		if (UGameplayStatics::GetTimeSeconds(widget) > lastPriorityInputTime + 3.0f) {
+			SyncState(sim, playerId);
+		}
+	}
+
+	void SyncState(IGameSimulationCore* sim, int32 playerId)
+	{
+		auto& playerOwned = sim->playerOwned(playerId);
+		townPriorityState = *(playerOwned.CreateTownPriorityCommand());
+		laborerCount = std::max(playerOwned.laborerCount(), 0); // Requires clamp since laborerCount() may be negative when someone died
+		builderCount = std::max(playerOwned.builderCount(), 0);
+		roadMakerCount = std::max(playerOwned.roadMakerCount(), 0);
+	}
+
+	void RefreshUI(
+		class UPunWidget* widget,
+		IGameSimulationCore* sim,
+		int32 playerId,
+
+		UHorizontalBox* EmployedBox,
+		UTextBlock* Employed,
+
+		UHorizontalBox* LaborerBox,
+		UButton* LaborerPriorityButton, UButton* LaborerNonPriorityButton, USizeBox* LaborerArrowOverlay,
+		UTextBlock* Laborer,
+		UTextBlock* LaborerRed,
+
+		UHorizontalBox* BuilderBox,
+		UButton* BuilderNonPriorityButton,
+		UButton* BuilderPriorityButton,
+		UTextBlock* Builder,
+		USizeBox* BuilderArrowOverlay
+	);
+
+	static void SetPriorityButtons(UButton* PriorityButton, UButton* NonPriorityButton, USizeBox* ArrowOverlay, bool priority)
+	{
+		PriorityButton->SetVisibility(priority ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+		NonPriorityButton->SetVisibility(priority ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+		ArrowOverlay->SetVisibility(priority ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	}
+};
+
 
 /**
  * 

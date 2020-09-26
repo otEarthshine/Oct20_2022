@@ -35,8 +35,17 @@ void APunGameMode::PostLogin(APlayerController* NewPlayer)
 	_ConnectedControllers.Add(newController);
 
 	// Host logged in first. Later on, host may change to other position changing the hostPlayerId
-	if (_ConnectedControllers.Num() == 1) {
+	if (_ConnectedControllers.Num() == 1) 
+	{
 		gameInst->hostPlayerId = 0;
+
+		// Cleanup for the first player
+		if (!punPlayer) { // Don't ResetPlayerCount when starting play
+			gameInst->ResetPlayerCount();
+
+			// Clear game save when exiting to the lobby search. This prevent the next lobby from showing "Load"
+			gameInst->saveSystem().ClearSyncData();
+		}
 
 		// If this is the GameMap, load the cached playerNames
 		if (punPlayer) {
@@ -67,6 +76,8 @@ void APunGameMode::PostLogin(APlayerController* NewPlayer)
 
 		GameSaveInfo saveInfo = gameInst->GetSavedGameToLoad();
 		saveInfo.Serialize(SaveArchive);
+
+		_LOG(LogNetworkInput, "Sync - Server...SendSaveInfo_ToClient %s size:%d", *saveInfo.name, saveInfo.compressedDataSize);
 
 		newController->SendSaveInfo_ToClient(SaveArchive);
 	}

@@ -35,7 +35,11 @@ public:
 		gameInstance()->PrintSessionInfo();
 	}
 	UFUNCTION(Exec) void PrintPlayers() {
+		GEngine->bEnableOnScreenDebugMessages = true;
 		gameInstance()->PrintPlayers();
+#if !WITH_EDITOR
+		GEngine->bEnableOnScreenDebugMessages = false;
+#endif
 	}
 
 	/*
@@ -61,6 +65,13 @@ public:
 	bool IsServer() { return UGameplayStatics::GetGameMode(this) != nullptr; }
 
 	virtual bool IsMainMenuController() { return false; }
+
+	virtual bool IsLobbyUIOpened() { return false; }
+
+	bool ShouldSkipLobbyNetworkCommand() {
+		_LOG(PunNetwork, "Sync - ShouldSkipLobbyNetworkCommand uiOpened:%d", IsLobbyUIOpened());
+		return !IsLobbyUIOpened();
+	}
 	
 	/*
 	 * Loading
@@ -93,10 +104,12 @@ public:
 		gameInstance()->replayFilesToLoad.Empty();
 	}
 
+
 	
 public:
 	UPunGameInstance* gameInstance() { return Cast<UPunGameInstance>(GetGameInstance()); }
 
+	//bool isExitingToMainMenu = false;
 
 private:
 	int32 _controllerPlayerId = -1;
@@ -104,4 +117,6 @@ private:
 
 	int32 _dataSyncTick = 0;
 	int32 _packetsRequested = 0;
+
+	float _dataSendTime = 0;
 };

@@ -23,14 +23,18 @@ AMainMenuPlayerController* ULobbyUI::GetFirstController()
 
 void ULobbyUI::Init()
 {
-	//_playerInfoUIClass = playerInfoUIClass;
-
-	//if (GetFirstController()->Role == ROLE_Authority) {
-	//	StartGameButton->OnClicked.AddDynamic(this, &ULobbyUI::StartGameButtonDown);
-	//} else {
-	//	StartGameButton->SetVisibility(ESlateVisibility::Hidden);
+	AGameModeBase* gameMode = UGameplayStatics::GetGameMode(this);
+	auto gameInst = gameInstance();
+	
+	/*
+	 * Open the Lobby UI
+	 * - clear any leftover playerData
+	 */
+	// Doesn't work...
+	//if (gameMode) { // ResetPlayerCount if server
+	//	gameInst->ResetPlayerCount();
 	//}
-
+	
 	/*
 	 * Singleplayer vs multiplayer
 	 */
@@ -43,7 +47,6 @@ void ULobbyUI::Init()
 	/*
 	 * Loading Multiplayer Saves
 	 */
-	auto gameInst = gameInstance();
 	if (gameInst->isMultiplayer() &&
 		gameInst->IsServer(this) &&
 		gameInst->IsLoadingSavedGame())
@@ -150,16 +153,16 @@ void ULobbyUI::Init()
 
 	gameInstance()->Spawn2DSound("UI", "UIWindowOpen");
 
-	PUN_DEBUG2("LobbyUI Init");
+	PUN_DEBUG2("LobbyUI Open");
 
 
 	gameInstance()->lobbyChatDirty = true;
 	gameInstance()->lobbyChatMessages.Empty();
 	gameInstance()->lobbyChatPlayerNames.Empty();
 
-	AGameModeBase* gameMode = UGameplayStatics::GetGameMode(this);
+
 	if (gameMode) {
-		PUN_DEBUG2("LobbyUI Init: SetPlayerCount 6");
+		PUN_DEBUG2("LobbyUI Open: SetPlayerCount 6");
 		
 		// Set player count settings
 		serverMapSettings.playerCount = 6;
@@ -414,6 +417,8 @@ void ULobbyUI::Tick()
 	// This is clean up popups from HandleNetworkFailure (For example, client joining error shouldn't popup after we exited created room)
 	gameInstance()->mainMenuPopup = "";
 
+	UpdateLobbyUI();
+
 	// End Tick()
 }
 
@@ -439,6 +444,8 @@ void ULobbyUI::InputBoxChange_InitialAnimals(const FText& text)
 
 void ULobbyUI::ReturnToMainMenu()
 {
+	_LOG(PunNetwork, "ReturnToMainMenu (from Lobby)");
+	
 	// Clear any sync data
 	gameInstance()->saveSystem().ClearSyncData();
 	gameInstance()->ResetPlayerCount();
@@ -633,8 +640,7 @@ void ULobbyUI::OnClickReadyButton()
 {
 	// Not ready
 	auto& saveSys = gameInstance()->saveSystem();
-	if (saveSys.HasSyncData() && 
-		!saveSys.IsSyncDataReady()) 
+	if (saveSys.NeedSyncData())
 	{
 		AddPopup("Please wait for data sync to complete.");
 		gameInstance()->Spawn2DSound("UI", "ButtonClickInvalid");
@@ -848,8 +854,12 @@ void ULobbyUI::UpdateLobbyUI()
 			// Ready vs Data transfer
 			if (saveInfo.IsValid())
 			{
-				if (gameInst->clientPacketsReceived[i] == gameInst->saveSystem().totalPackets()) 
-				{
+				// when using percent >= 99... gameInst->clientPacketsReceived[i] == gameInst->saveSystem().totalPackets()
+				// Client's side all ready checkboxes before 100%
+				// Host's side all numbers
+				int32 percentLoaded = gameInst->clientPacketsReceived[i] * 100 / gameInst->saveSystem().totalPackets();
+				//if (gameInst->clientPacketsReceived[i] == gameInst->saveSystem().totalPackets())
+				if (percentLoaded >= 99) {
 					showReadyCheckBox();
 				}
 				else
@@ -858,7 +868,7 @@ void ULobbyUI::UpdateLobbyUI()
 					element->SaveGameTransferBar->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 					element->SaveGameTransferText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
-					int32 percentLoaded = gameInst->clientPacketsReceived[i] * 100 / gameInst->saveSystem().totalPackets();
+					//int32 percentLoaded = gameInst->clientPacketsReceived[i] * 100 / gameInst->saveSystem().totalPackets();
 					element->SaveGameTransferBar->GetDynamicMaterial()->SetScalarParameterValue("Fraction", percentLoaded / 100.0f);
 					SetText(element->SaveGameTransferText, to_string(percentLoaded) + "%");
 

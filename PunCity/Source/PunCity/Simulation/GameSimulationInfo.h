@@ -3414,6 +3414,7 @@ struct TileObjInfo
 		if (typeIn == ResourceTileType::Tree) {
 			deathChancePerCycle = 10000;
 		}
+		deathChancePerCycle = std::max(deathChancePerCycle, 1);
 
 
 		// Fruit Chance
@@ -5631,6 +5632,8 @@ static const std::vector<std::string> MaleNames
 	"Kuro",
 	"Ralinad",
 	"Shevy",
+	"Coryn",
+	
 };
 
 static const std::vector<std::string> FemaleNames
@@ -5698,6 +5701,7 @@ static const std::vector<std::string> FemaleNames
 	
 	// Discord
 	"Venti",
+	"Firis",
 };
 
 // UnitId with aliveAndLifeCount for proper comparison countering reuse 

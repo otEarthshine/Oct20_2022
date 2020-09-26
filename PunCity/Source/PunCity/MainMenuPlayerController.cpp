@@ -93,6 +93,12 @@ void AMainMenuPlayerController::Tick(float DeltaTime)
 	}
 }
 
+bool AMainMenuPlayerController::IsLobbyUIOpened()
+{
+	auto lobbyHUD = Cast<APunLobbyHUD>(GetWorld()->GetFirstPlayerController()->GetHUD());
+	return lobbyHUD != nullptr;
+}
+
 void AMainMenuPlayerController::ToggleMainMenu()
 {
 	auto hud = GetHUD();
@@ -218,6 +224,10 @@ void AMainMenuPlayerController::SetupDisplayManager()
 
 void AMainMenuPlayerController::SendReadyStatus_ToServer_Implementation(bool playerReadyState)
 {
+	if (ShouldSkipLobbyNetworkCommand()) {
+		return;
+	}
+	
 	gameInstance()->SetPlayerReady(controllerPlayerId(), playerReadyState);
 
 	auto gameMode = CastChecked<APunGameMode>(UGameplayStatics::GetGameMode(this));
@@ -226,46 +236,63 @@ void AMainMenuPlayerController::SendReadyStatus_ToServer_Implementation(bool pla
 
 
 
-void AMainMenuPlayerController::SetMapSettings_Implementation(const TArray<int32>& mapSettingsBlob) {
+void AMainMenuPlayerController::SetMapSettings_Implementation(const TArray<int32>& mapSettingsBlob)
+{
+	if (ShouldSkipLobbyNetworkCommand()) {
+		return;
+	}
+	
 	gameInstance()->SetMapSettings(mapSettingsBlob);
 
 	//PUN_DEBUG2("SetMapSettings_Impl %s", ToTChar(gameInstance()->GetMapSettings().ToString()));
 }
 bool AMainMenuPlayerController::SetMapSettings_Validate(const TArray<int32>& mapSettingsBlob) { return true; }
 
-void AMainMenuPlayerController::ServerStartGame_Implementation(const TArray<int32>& mapSettingsBlob) {
+void AMainMenuPlayerController::ServerStartGame_Implementation(const TArray<int32>& mapSettingsBlob)
+{
+	if (ShouldSkipLobbyNetworkCommand()) {
+		return;
+	}
+	
 	isStartingGame = true;
 	
 	gameInstance()->SetMapSettings(mapSettingsBlob);
 
 	PUN_DEBUG2("ServerStartGame_Impl %s", ToTChar(gameInstance()->GetMapSettings().ToString()));
 }
-bool AMainMenuPlayerController::ServerStartGame_Validate(const TArray<int32>& mapSettingsBlob) { return true; }
 
 
 void AMainMenuPlayerController::SendChat_ToServer_Implementation(const FString& playerName, const FString& message)
 {
 	PUN_DEBUG2("SendChat_ToServer_Impl %s, %s", *playerName, *message);
+	if (ShouldSkipLobbyNetworkCommand()) {
+		return;
+	}
 
 	ExecuteAllControllers([&](AMainMenuPlayerController* controller) {
 		controller->SendChat_ToClient(playerName, message);
 	});
 }
-bool AMainMenuPlayerController::SendChat_ToServer_Validate(const FString& playerName, const FString& message) { return true; }
 
 void AMainMenuPlayerController::SendChat_ToClient_Implementation(const FString& playerName, const FString& message)
 {
 	PUN_DEBUG2("SendChat_ToClient_Impl %s, %s", *playerName, *message);
+	if (ShouldSkipLobbyNetworkCommand()) {
+		return;
+	}
 	
 	gameInstance()->lobbyChatDirty = true;
 	gameInstance()->lobbyChatPlayerNames.Add(playerName);
 	gameInstance()->lobbyChatMessages.Add(message);
 }
-bool AMainMenuPlayerController::SendChat_ToClient_Validate(const FString& playerName, const FString& message) { return true; }
 
 
 void AMainMenuPlayerController::Client_GotKicked_Implementation()
 {
+	if (ShouldSkipLobbyNetworkCommand()) {
+		return;
+	}
+	
 	UPunGameInstance* gameInst = Cast<UPunGameInstance>(GetWorld()->GetGameInstance());
 	if (gameInst)
 	{

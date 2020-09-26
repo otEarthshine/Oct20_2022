@@ -189,10 +189,18 @@ public:
 	bool IsSyncDataReady() {
 		return _syncSaveInfo.IsValid() && _receivedPacketCount == _receivedData.Num();
 	}
+	bool NeedSyncData() { // !!! This is only for server
+		return HasSyncData() && !IsSyncDataReady();
+	}
+
+	
 	int32 GetSyncDataLoadPercent() {
 		return _syncCompressedData.Num() * 100 / _syncSaveInfo.compressedDataSize;
 	}
-	void ClearSyncData() {
+	void ClearSyncData()
+	{
+		_LOG(LogNetworkInput, "Sync - ClearSyncData");
+		
 		_lastSyncSaveInfo = _syncSaveInfo;
 		_syncSaveInfo = GameSaveInfo();
 		_syncCompressedData.Empty();
@@ -204,7 +212,10 @@ public:
 	const GameSaveInfo& GetLastSyncSaveInfo() { return _lastSyncSaveInfo; }
 
 	// Note: Called when loading MP Save (including on server)
-	void SetSyncSaveInfo(GameSaveInfo saveInfo) {
+	void SetSyncSaveInfo(GameSaveInfo saveInfo)
+	{
+		_LOG(LogNetworkInput, "Sync - SetSyncSaveInfo %s", *saveInfo.name);
+		
 		_syncSaveInfo = saveInfo;
 		_syncCompressedData.SetNum(_syncSaveInfo.compressedDataSize);
 		_receivedData.SetNum((_syncSaveInfo.compressedDataSize - 1) / MaxPacketSize + 1);
@@ -212,6 +223,8 @@ public:
 		_receivedPacketIterator = 0;
 	}
 	void ServerPrepareSync() {
+		_LOG(LogNetworkInput, "Sync - ServerPrepareSync %d", _receivedData.Num());
+		
 		_receivedPacketCount = _receivedData.Num();
 	}
 

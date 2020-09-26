@@ -36,6 +36,8 @@ public:
 	int32 initStage;
 
 	bool IsMainMenuController() override { return true; }
+
+	bool IsLobbyUIOpened() override;
 	
 public:
 	bool isStartingGame;
@@ -46,11 +48,11 @@ public:
 	UFUNCTION(Reliable, Client, WithValidation) void SetMapSettings(const TArray<int32>& mapSettingsBlob);
 
 	// Send clients the mapSeed, and make client display GameStartBlocker
-	UFUNCTION(Reliable, Client, WithValidation) void ServerStartGame(const TArray<int32>& mapSettingsBlob);
+	UFUNCTION(Reliable, Client) void ServerStartGame(const TArray<int32>& mapSettingsBlob);
 
 
-	UFUNCTION(Reliable, Server, WithValidation) void SendChat_ToServer(const FString& playerName, const FString& message);
-	UFUNCTION(Reliable, Client, WithValidation) void SendChat_ToClient(const FString& playerName, const FString& message);
+	UFUNCTION(Reliable, Server) void SendChat_ToServer(const FString& playerName, const FString& message);
+	UFUNCTION(Reliable, Client) void SendChat_ToClient(const FString& playerName, const FString& message);
 
 	
 	UFUNCTION(Reliable, Client, WithValidation) void Client_GotKicked();

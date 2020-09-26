@@ -83,6 +83,8 @@ void APunBasePlayerController::SendSaveInfo_ToClient_Implementation(const TArray
 	GameSaveInfo saveInfo;
 	saveInfo.Serialize(LoadArchive);
 
+	_LOG(PunNetwork, "Sync - SendSaveInfo_ToClient %s", *saveInfo.name);
+
 	gameInstance()->SetSavedGameToLoad(saveInfo);
 	gameInstance()->saveSystem().SetSyncSaveInfo(saveInfo);
 
@@ -95,18 +97,32 @@ void APunBasePlayerController::Tick(float DeltaTime)
 	if (_dataSyncTick % 5 != 0) {
 		return;
 	}
+
+	/*
+	 * Lobby Load Data Transfer
+	 */
+	auto& saveSys = gameInstance()->saveSystem();
 	
-	if (!IsServer() && !IsMainMenuController())
+	if (!IsServer() && saveSys.NeedSyncData())
 	{
-		if (gameInstance()->clientPacketsReceived[controllerPlayerId()] <= gameInstance()->saveSystem().totalPackets())
+		_dataSendTime += DeltaTime; // Tick by fixed delta time to prevent buffer overflow
+		const float fixedDeltaTime = 0.02;
+		
+		if (_dataSendTime >= fixedDeltaTime &&
+			controllerPlayerId() < gameInstance()->clientPacketsReceived.Num() &&
+			gameInstance()->clientPacketsReceived[controllerPlayerId()] <= saveSys.totalPackets())
 		{
-			int32 receivedPacketsCount = gameInstance()->saveSystem().receivedPacketCount();
+			_dataSendTime -= fixedDeltaTime;
+			
+			int32 receivedPacketsCount = saveSys.receivedPacketCount();
 
 			//PUN_DEBUG2("Tick %d received:%d", packets.Num(), gameInstance()->clientPacketsReceived[controllerPlayerId()]);
 
+			_LOG(PunNetwork, "Sync - Controller Tick %d/%d", receivedPacketsCount, _packetsRequested);
+			
 			// Don't overflow the buffer
-			const int32 packetsPerRequest = 50;
-			const int32 packetCountThreshold = 100;
+			const int32 packetsPerRequest = 40;
+			const int32 packetCountThreshold = 80;
 			if (_packetsRequested - receivedPacketsCount <= packetCountThreshold)
 			{
 				TArray<int32> packets = gameInstance()->saveSystem().GetSyncPacketIndices(packetsPerRequest);
@@ -120,19 +136,35 @@ void APunBasePlayerController::Tick(float DeltaTime)
 			}
 		}
 	}
+
+
+	// !!! Don't try this ResetPlayerCount() on Tick... It breaks...
+	//if (IsServer() && !IsLobbyUIOpened()) {
+	//	gameInstance()->ResetPlayerCount();
+	//}
 }
 
 // TODO: since we can't use unrealiable, Simplify this?
 void APunBasePlayerController::RequestDataChunks_ToServer_Implementation(int32 clientPacketsReceived, const TArray<int32>& packetIndices)
 {
+	//if (ShouldSkipLobbyNetworkCommand()) {
+	//	return;
+	//}
+	
 	//PUN_DEBUG2("RequestDataChunks %d, %d", clientPacketsReceived, packetIndices.Num());
 
 	auto gameInst = gameInstance();
+
+	if (controllerPlayerId() >= gameInst->clientPacketsReceived.Num()) {
+		return;
+	}
 	
 	gameInst->clientPacketsReceived[controllerPlayerId()] = clientPacketsReceived;
 	
 	int32 lastPacketIndex = gameInst->saveSystem().totalPackets() - 1;
 	const TArray<uint8>& sourceData = gameInst->saveSystem().GetSyncCompressedData();
+
+	_LOG(PunNetwork, "Sync - RequestDataChunks_ToServer last:%d packIndicesCount:%d", lastPacketIndex, packetIndices.Num());
 	
 	for (int32 packetIndex : packetIndices)
 	{
@@ -141,6 +173,8 @@ void APunBasePlayerController::RequestDataChunks_ToServer_Implementation(int32 c
 		if (packetIndex == lastPacketIndex) {
 			packetSize = gameInst->saveSystem().lastPacketSize();
 		}
+
+		_LOG(PunNetwork, "Sync - RequestDataChunks_ToServer packetSize:%d sourceData:%d", packetSize, sourceData.Num());
 
 		TArray<uint8> dataChunk;
 		dataChunk.Reserve(packetSize);
@@ -156,6 +190,11 @@ void APunBasePlayerController::RequestDataChunks_ToServer_Implementation(int32 c
 }
 void APunBasePlayerController::SendSaveDataChunk_ToClient_Implementation(int32 packetIndex, const TArray<uint8>& saveDataChunk)
 {
+	_LOG(PunNetwork, "Sync - SendSaveDataChunk_ToClient packetIndex:%d saveDataChunk:%d", packetIndex, saveDataChunk.Num());
+	//if (ShouldSkipLobbyNetworkCommand()) {
+	//	return;
+	//}
+	
 	//PUN_DEBUG2("Client Get Data[%d] %d", packetIndex, saveDataChunk.Num());
 	gameInstance()->saveSystem().ReceivePacket(packetIndex, saveDataChunk);
 }

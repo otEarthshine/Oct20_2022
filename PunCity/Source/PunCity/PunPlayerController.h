@@ -177,13 +177,14 @@ public:
 	void Pause() final;
 	void Resume() final;
 
-	void GoToMainMenu() final {
+	void GoToMainMenu() final
+	{
 		LLM_SCOPE_(EPunSimLLMTag::PUN_Controller);
 
 		_LOG(PunNetwork, "GoToMainMenu");
 
-		gameInstance()->ResetPlayerCount();
-		gameInstance()->PrintPlayers();
+		//gameInstance()->ResetPlayerCount(); // Do this every tick when in main menu
+		//gameInstance()->PrintPlayers();
 
 		gameInstance()->EnsureSessionDestroyed(true);
 		//ClientTravel("/Game/Maps/MainMenu", TRAVEL_Absolute);

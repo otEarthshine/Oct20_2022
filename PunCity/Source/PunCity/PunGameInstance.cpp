@@ -167,7 +167,8 @@ void UPunGameInstance::InitOnline(FName subsystemName)
 			});
 			DestroySessionThenGoToMainMenuCompleteDelegate.BindLambda([&](FName name, bool success) {
 				PUN_DEBUG2("Done DestroySessionThenGoToMainMenuCompleteDelegate");
-				GetFirstLocalPlayerController()->ClientTravel("/Game/Maps/MainMenu", TRAVEL_Absolute);
+				auto controller = Cast<APunBasePlayerController>(GetFirstLocalPlayerController());
+				controller->ClientTravel("/Game/Maps/MainMenu", TRAVEL_Absolute);
 			});
 			DestroySessionThenDoesNothingCompleteDelegate.BindLambda([&](FName name, bool success) {
 				PUN_DEBUG2("Done DestroySessionThenDoesNothingCompleteDelegate");

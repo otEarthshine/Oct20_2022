@@ -590,6 +590,9 @@ private:
 		{
 			int32 amountAtLeast = foundInfos.size() > 0 ? foundInfos.back().amount : 1; // amountAt least is 1 in the beginning... (no point to add holder with 0 amount)
 
+			// amountAtLeast can still be 0 if foundInfos.back().amount is 0
+			amountAtLeast = std::max(1, amountAtLeast);
+
 			if (availableAmount >= amountAtLeast) // Don't get resource from node with less amount, unless necessary
 			{
 				// Make sure this is not an id to avoid
@@ -903,7 +906,9 @@ public:
 	// AddDrops
 	int SpawnDrop(ResourceEnum resourceEnum, int32 amount,  WorldTile2 tile)
 	{
-		PUN_CHECK(amount > 0);
+		if (amount <= 0) {
+			return -1;
+		}
 
 		// Don't spawn drop if not in player's territory
 		int32 provinceId = _simulation->GetProvinceIdClean(tile);

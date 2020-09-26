@@ -477,8 +477,12 @@ void APunPlayerController::Tick(float DeltaTime)
 
 	// Waiting For Player Load Screen
 	// Applies to both server/clients
-	if (!gameInstance->IsAllPlayersReady())
-	{
+	if (gameInstance->IsAllPlayersReady()) {
+		if (punHUD->escMenuUI()->LoadingScreen->GameStartBlockerBackground1->GetVisibility() != ESlateVisibility::Collapsed) {
+			punHUD->escMenuUI()->HideLoadingScreen();
+		}
+	}
+	else {
 		FString waitMessage = FString::Printf(TEXT("Waiting For Players: %d / %d"), gameInstance->playerCount() - gameInstance->playerReadyCount(), gameInstance->playerCount());
 		PUN_DEBUG2("[InitSync] %s", *waitMessage);
 		

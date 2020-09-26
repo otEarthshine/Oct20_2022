@@ -141,11 +141,11 @@ public:
 	}
 	void PrintPlayers()
 	{
-		PUN_DEBUG2("PlayerCount: %d", playerCount());
 		TArray<FString> playerNames = playerNamesF();
 		for (int32 i = 0; i < playerNames.Num(); i++) {
-			PUN_DEBUG2(" - : %s connected:%d ready:%d", *(playerNames[i]), playerConnectedStates[i], IsPlayerReady(i));
+			PUN_DEBUG2(" -- %s connected:%d ready:%d", *(playerNames[i]), playerConnectedStates[i], IsPlayerReady(i));
 		}
+		PUN_DEBUG2(" - PlayerCount: %d", playerCount());
 	}
 
 	/*
@@ -399,7 +399,7 @@ public:
 	TArray<bool> playerConnectedStates;
 	int32 hostPlayerId = -1;
 	
-	TArray<int32> clientPacketsReceived;
+	TArray<int32> clientPacketsReceived; // For client to track packets received
 
 
 	// When switching map (Lobby to Game), keep the targetPlayerCount
@@ -431,6 +431,10 @@ public:
 		clientPacketsReceived.SetNum(count);
 	}
 
+	// This is done upon:
+	// - Returning to main menu
+	// - Disconnected from host
+	// - Go to singleplayer mode
 	void ResetPlayerCount()
 	{
 		_playerNames.SetNum(0);

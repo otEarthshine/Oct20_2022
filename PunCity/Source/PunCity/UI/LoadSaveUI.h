@@ -248,7 +248,7 @@ public:
 		_callbackParent->CallBack2(this, CallbackEnum::OpenBlur);
 
 		_isSavingGame = true;
-		_delayedActionCountDown = 10;
+		_delayedActionCountDown = 10;\
 		_isAutosaving = isAutoSaving;
 	}
 	void LoadGameDelayed()
@@ -258,8 +258,13 @@ public:
 		LoadSaveOverlay->SetVisibility(ESlateVisibility::Collapsed);
 		_callbackParent->CallBack2(this, CallbackEnum::OpenBlur);
 
-		SavingBlurText->SetVisibility(ESlateVisibility::Visible);
-		SetText(SavingBlurText, "Loading...");
+		if (gameInstance()->isMultiplayer()) {
+			SavingBlurText->SetVisibility(ESlateVisibility::Collapsed);
+		}
+		else {
+			SavingBlurText->SetVisibility(ESlateVisibility::Visible);
+			SetText(SavingBlurText, "Loading...");
+		}
 
 		_isSavingGame = false;
 		_delayedActionCountDown = 10;

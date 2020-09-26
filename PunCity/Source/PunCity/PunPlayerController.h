@@ -651,6 +651,13 @@ public:
 		PUN_LOG("Zoom Distance: %f", gameManager->zoomDistance());
 	}
 
+	// For testing...
+	UFUNCTION(Exec) void AddAllResources() {
+		for (ResourceInfo info : ResourceInfos) {
+			gameManager->simulation().resourceSystem(playerId()).AddResourceGlobal(info.resourceEnum, 10, gameManager->simulation());
+		}
+	}
+
 	UFUNCTION(Exec) void PrintResourceSys()
 	{
 		std::stringstream ss;

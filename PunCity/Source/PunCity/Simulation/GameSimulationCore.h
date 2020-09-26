@@ -794,14 +794,17 @@ public:
 	bool HasOutpostAt(int32 playerId, int32 provinceId) final {
 		return playerOwned(playerId).HasOutpostAt(provinceId);
 	}
-	bool IsProvinceNextToPlayer(int32 provinceId, int32 playerId) final {
-		//if (directControlOnly) {
-		//	return _provinceSystem.ExecuteAdjacentProvincesWithExitTrue(provinceId, [&](ProvinceConnection connection) {
-		//		return provinceOwner(connection.provinceId) == playerId && _regionSystem->isDirectControl(provinceId);
-		//	});
-		//}
-		return _provinceSystem.ExecuteAdjacentProvincesWithExitTrue(provinceId, [&](ProvinceConnection connection) {
-			return (connection.tileType == TerrainTileType::None || connection.tileType == TerrainTileType::River) &&
+	bool IsProvinceNextToPlayer(int32 provinceId, int32 playerId) final
+	{
+		return _provinceSystem.ExecuteAdjacentProvincesWithExitTrue(provinceId, [&](ProvinceConnection connection) 
+		{
+			bool isValidConnectionType = connection.tileType == TerrainTileType::None || 
+											connection.tileType == TerrainTileType::River;
+			if (unlockSystem(playerId)->IsResearched(TechEnum::ShallowWaterEmbark)) {
+				isValidConnectionType = isValidConnectionType || connection.tileType == TerrainTileType::Ocean;
+			}
+			
+			return isValidConnectionType && 
 					provinceOwner(connection.provinceId) == playerId;
 		});
 	}
@@ -1107,6 +1110,10 @@ public:
 	bool HasTargetResearch(int32 playerId) final { return unlockSystem(playerId)->hasTargetResearch(); }
 	int32 techsCompleted(int32 playerId) final { return unlockSystem(playerId)->techsCompleted(); }
 
+
+	bool IsBuildingUnlocked(int32 playerId, CardEnum cardEnumIn) final {
+		return unlockSystem(playerId)->isUnlocked(cardEnumIn);
+	}
 
 	// Prosperity
 	void UpdateProsperityHouseCount(int32 playerId) final {

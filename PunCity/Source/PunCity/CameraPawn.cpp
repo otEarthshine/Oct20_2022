@@ -214,11 +214,6 @@ void ACameraPawn::RightMouseDown()
 	
 	PUN_LOG("RightMouseDown");
 
-	if (buildingPlacementSystem->placementState() != PlacementType::None) {
-		buildingPlacementSystem->CancelPlacement();
-		_gameInterface->Spawn2DSound("UI", "CancelPlacement");
-	}
-
 	
 	if (_networkInterface) {
 		_networkInterface->GetPunHUD()->RightMouseDown();
@@ -234,6 +229,17 @@ void ACameraPawn::RightMouseUp()
 #if !UI_ALL
 	return;
 #endif
+	// Building placement cancel if not doing camera drag
+	// If cam moved more than some amount, don't cancel placement
+	if (WorldAtom2::Distance(cameraAtom(), rightMouseDragCamStartAtom) < CoordinateConstants::AtomsPerTile)
+	{
+		if (buildingPlacementSystem->placementState() != PlacementType::None) {
+			buildingPlacementSystem->CancelPlacement();
+			_gameInterface->Spawn2DSound("UI", "CancelPlacement");
+		}
+	}
+
+	
 	isRightMouseDown = false;
 }
 

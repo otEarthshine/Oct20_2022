@@ -18,6 +18,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* PunRichText;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* PunRichTextRight;
 
+	// Note, thiis gets swapped to the left..
 	UPROPERTY(meta = (BindWidget)) USizeBox* RightImageSizeBox;
 	UPROPERTY(meta = (BindWidget)) UImage* RightImage;
 

@@ -61,6 +61,11 @@ public:
 				}
 				showPause = true;
 			}
+			else if (GetPunHUD()->ShouldPauseGameFromUI())
+			{
+				SetText(GamePauseText, "Game Paused");
+				showPause = true;
+			}
 			// If not all players chose location, warn so 
 			else {
 				if (simulation().AllPlayerHasTownhallAfterInitialTicks())

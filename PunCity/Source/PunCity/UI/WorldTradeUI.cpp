@@ -152,11 +152,11 @@ void UWorldTradeUI::UpdateTotal()
 		int32 tradeMoneyGainBeforeFee = -tradeMoney100BeforeFee / 100;
 		int32 tradeMoneyGainAfterFee = -tradeMoney100AfterFee / 100;
 		if (tradeMoneyGainAfterFee > 0) {
-			sellMoneyBeforeFee += tradeMoneyGainBeforeFee;
-			sellMoneyAfterFee += tradeMoneyGainAfterFee;
-		} else {
 			buyMoneyBeforeFee += tradeMoneyGainBeforeFee;
 			buyMoneyAfterFee += tradeMoneyGainAfterFee;
+		} else {
+			sellMoneyBeforeFee += tradeMoneyGainBeforeFee;
+			sellMoneyAfterFee += tradeMoneyGainAfterFee;
 		}
 		
 		totalFee100 += tradeFee100;

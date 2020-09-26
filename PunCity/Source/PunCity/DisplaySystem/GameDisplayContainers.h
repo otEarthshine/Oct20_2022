@@ -71,6 +71,9 @@ public:
 
 	bool TryGet(int32_t key, T& value)
 	{
+		// Miriam Crashed here ??
+		PUN_CHECK(_buckets.size() == _bucketCount);
+		
 		auto& bucket = _buckets[key % _bucketCount];
 
 		check(_count == 0 ? bucket.pairs.size() == 0 : true);

@@ -94,5 +94,6 @@ private:
 
 	UPROPERTY() TArray<UTerritoryMeshComponent*> _playerIdToTerritoryMesh;
 	
+	
 	int32 territoryNameCounter = 0;
 };

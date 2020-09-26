@@ -67,7 +67,7 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 	}},
 
 	{TechEnum::FarmImprovement, {
-		"Farm improvements",
+		"Farm Improvements",
 		"+5% farm production."
 	}},
 
@@ -82,21 +82,21 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 	{TechEnum::FurnitureWorkshop, {"Wood Industry"}},
 	
 	{TechEnum::HouseLvl2Income, {
-		"Upgraded house tax",
+		"Upgraded House Tax",
 		"House level 2+ gain +2 income."
 	}},
 	{TechEnum::TaxAdjustment, {
-		"Tax adjustment",
+		"Tax Adjustment",
 		"Allow tax adjustment from townhall."
 	}},
 
 	{TechEnum::TradingPost, {
-		"Foreign trade",
+		"Foreign Trade",
 		"Increase the number of immigrants by 20%."
 	}},
 	
 	{TechEnum::TraderDiscount, {
-		"Trader discount",
+		"Trader Discount",
 		"If trading company and trading post are on the same region, both gain -5% trading fee.",
 	}},
 	// TODO: BuildingComboEnum?? Encourage ppl to build next building... holes to fill...
@@ -111,11 +111,11 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 	}},
 
 	{TechEnum::ShrineRot, {
-		"Unlock shrines.",
+		"Unlock Shrines.",
 	}},
 
 	{TechEnum::CropStudy, {
-		"Crop variety",
+		"Crop Variety",
 		"Unlock crops: plump cob, honey pot",
 	}},
 
@@ -125,7 +125,7 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 	}},
 	
 	{TechEnum::MushroomSubstrateSterilization, {
-		"Mushroom log sterilization",
+		"Mushroom Log Sterilization",
 		"Decrease mushroom farm's wood consumption by 50%."
 	}},
 	
@@ -135,17 +135,21 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 	}},
 
 	{TechEnum::WineryImprovement, {
-		"Wine snob",
+		"Wine Snob",
 		"+30% production to winery."
 	}},
 
 	{TechEnum::BorealLandCost, {
-		"Boreal and tundra expedition",
+		"Boreal and Tundra Expedition",
 		"Claiming boreal forest and tundra land cost half the usual gold."
 	}},
 	{TechEnum::DesertTrade, {
 		"Silk Road",
 		"Trading post and company built on desert gets -10% trade fee."
+	}},
+	{TechEnum::ShallowWaterEmbark, {
+		"Shallow Water Embark",
+		"Allow claiming land an unclaimed land across a body of water."
 	}},
 
 	{TechEnum::Sawmill, {
@@ -292,7 +296,7 @@ public:
 		 * - 1250 cost ... (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) / 10 / 10
 		 * - at 125 sci production... it is 2.5 seasons
 		 */
-		return (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) / 10 / 10  /* Tech factor: */  * 5400 / 1000;
+		return (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) / 10 / 10  /* Tech factor: */  * 15000 / 1000; // 5400 / 1000;
 	}
 
 	float researchFraction(int32 researchesFinished, int32 science100XsecPerRound) {
@@ -407,13 +411,7 @@ public:
 	TechClassEnum classEnum() override { return TechClassEnum::BonusToggle_Research; }
 
 	
-	void OnUnlock(int32 playerId, IGameSimulationCore* simulation) final
-	{
-		if (techEnum == TechEnum::Plantation)
-		{
-			simulation->CheckGetSeedCard(playerId);
-		}
-	}
+	void OnUnlock(int32 playerId, IGameSimulationCore* simulation) final;
 };
 
 //class 
@@ -559,30 +557,32 @@ public:
 			AddTech_Bonus(era, TechEnum::ImprovedWoodCutting);
 			AddTech_Bonus(era, TechEnum::RerollCardsPlus1);
 			AddTech_Bonus(era, TechEnum::CheapReroll);
-			
 			AddTech_Bonus(era, TechEnum::MushroomSubstrateSterilization);
 			AddTech_Bonus(era, TechEnum::BorealLandCost);
 			
 			//
 			era = 2;
 			AddTech_Building(era, TechEnum::HerbFarming, { CardEnum::HerbSeed });
-			AddTech_Building(era, TechEnum::DeepMining, { CardEnum::IronMine, CardEnum::GoldMine, CardEnum::GemstoneMine });
+			//AddTech_Building(era, TechEnum::DeepMining, { CardEnum::GemstoneMine });
 			AddTech_Building(era, TechEnum::TradingPost, { CardEnum::TradingPost, CardEnum::TradingPort });
-			AddTech_Building(era, TechEnum::RanchSheep, { CardEnum::RanchSheep });
-
+			AddTech_Bonus(era, TechEnum::Plantation);
+			AddTech_Building(era, TechEnum::IronRefining, { CardEnum::IronMine, CardEnum::IronSmelter });
+			AddTech_Building(era, TechEnum::Blacksmith, CardEnum::Blacksmith);
+			
 			//
 			era = 3;
 			AddTech_Building(era, TechEnum::TradingCompany, CardEnum::TradingCompany);
 			AddTech_Bonus(era, TechEnum::DesertTrade);
+			AddTech_Bonus(era, TechEnum::ShallowWaterEmbark);
 			AddTech_Bonus(era, TechEnum::Sawmill);
-			AddTech_Bonus(era, TechEnum::HouseAdjacency);
 			AddTech_Building(era, TechEnum::Medicine, CardEnum::MedicineMaker);
+			AddTech_Building(era, TechEnum::RanchSheep, { CardEnum::RanchSheep });
 			
 			//
 			era = 4;
 			//AddTech_Building(era, TechEnum::Forester, CardEnum::Forester);
 			AddTech_Building(era, TechEnum::RanchCow, { CardEnum::RanchCow });
-			
+			AddTech_Bonus(era, TechEnum::HouseAdjacency);
 			AddTech_Bonus(era, TechEnum::QuarryImprovement);
 			AddTech_Bonus(era, TechEnum::HouseLvl2Income);
 			
@@ -639,7 +639,6 @@ public:
 			
 
 			era = 2;
-			AddProsperityTech_Bonus(era, 10, TechEnum::Plantation);
 			AddProsperityTech_BuildingX(era, 20, TechEnum::Baking, { CardEnum::Windmill, CardEnum::Bakery });
 			AddProsperityTech_Bonus(era, 20, TechEnum::FarmAdjacency);
 			AddProsperityTech_Bonus(era, 30, TechEnum::FarmingBreakthrough);
@@ -658,19 +657,17 @@ public:
 			
 			
 			era = 4;
-			AddProsperityTech_Building(era, 10, TechEnum::School, CardEnum::School);
-			AddProsperityTech_Building(era, 10, TechEnum::IronRefining, CardEnum::IronSmelter);
-			AddProsperityTech_Building(era, 10, TechEnum::Blacksmith, CardEnum::Blacksmith);
-			AddProsperityTech_Building(era, 10, TechEnum::InventorsWorkshop, CardEnum::InventorsWorkshop);
-
 			AddProsperityTech_Building(era, 10, TechEnum::Winery, CardEnum::Winery);
 			AddProsperityTech_Building(era, 20, TechEnum::Chocolatier, CardEnum::Chocolatier);
+			
+			AddProsperityTech_Building(era, 10, TechEnum::School, CardEnum::School);
+			AddProsperityTech_Building(era, 10, TechEnum::InventorsWorkshop, CardEnum::InventorsWorkshop);
 		
 			
 			era = 5;
-			AddProsperityTech_Building(era, 4, TechEnum::GoldRefining, CardEnum::GoldSmelter);
+			AddProsperityTech_BuildingX(era, 4, TechEnum::GoldRefining, { CardEnum::GoldMine, CardEnum::GoldSmelter });
 			AddProsperityTech_Building(era, 4, TechEnum::Mint, CardEnum::Mint);
-			AddProsperityTech_Building(era, 4, TechEnum::JewelryCrafting, CardEnum::Jeweler);
+			AddProsperityTech_BuildingX(era, 4, TechEnum::JewelryCrafting, { CardEnum::GemstoneMine, CardEnum::Jeweler });
 			AddProsperityTech_Building(era, 20, TechEnum::PaperMaker, CardEnum::PaperMaker);
 			AddProsperityTech_Building(era, 20, TechEnum::Printing, { CardEnum::PrintingPress });
 			

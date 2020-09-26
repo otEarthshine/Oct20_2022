@@ -473,7 +473,8 @@ public:
 		
 		int32 cardPrice = punWidgetSupport->dataSource()->simulation().cardSystem(punWidgetSupport->playerId()).GetCardPrice(buildingEnum);
 		if (cardPrice > 0) {
-			tooltipBox->AddIconPair("Card price: ", punWidgetSupport->assetLoader()->CoinIcon, std::to_string(cardPrice));
+			tooltipBox->AddRichText("Card price: <img id=\"Coin\"/>" + std::to_string(cardPrice));
+			//tooltipBox->AddIconPair("Card price: ", punWidgetSupport->assetLoader()->CoinIcon, std::to_string(cardPrice));
 		}
 		
 
@@ -481,7 +482,8 @@ public:
 		{
 			int32 upkeep = GetCardUpkeepBase(buildingEnum);
 			if (upkeep > 0) {
-				tooltipBox->AddIconPair("Upkeep: ", punWidgetSupport->assetLoader()->CoinIcon, std::to_string(upkeep));
+				tooltipBox->AddRichText("Upkeep: <img id=\"Coin\"/>" + std::to_string(upkeep));
+				//tooltipBox->AddIconPair("Upkeep: ", punWidgetSupport->assetLoader()->CoinIcon, std::to_string(upkeep));
 			}
 
 			if (!isPermanent) {

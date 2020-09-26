@@ -116,3 +116,20 @@ void UnlockSystem::OnEraUnlocked(std::stringstream& ss)
 		_simulation->AddPopupAll(PopupInfo(_playerId, warnSS.str()), _playerId);
 	}
 }
+
+
+void BonusToggle_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulation)
+{
+	if (techEnum == TechEnum::Plantation)
+	{
+		simulation->CheckGetSeedCard(playerId);
+	}
+
+	if (techEnum == TechEnum::ShallowWaterEmbark)
+	{
+		if (!simulation->IsBuildingUnlocked(playerId, CardEnum::Bridge)) {
+			simulation->AddPopupToFront(playerId, "Unlocked bridge!", ExclusiveUIEnum::None, "PopupNeutral");
+			simulation->unlockSystem(playerId)->UnlockBuilding(CardEnum::Bridge);
+		}
+	}
+}

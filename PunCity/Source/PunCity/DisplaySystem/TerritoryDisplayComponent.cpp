@@ -204,6 +204,7 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 		comp->SetMaterial(0, material);
 	}
 
+
 	/*
 	 * Territory Update
 	 */
@@ -261,8 +262,9 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 			}
 		}
 
+
 		/*
-		 * Update meshes
+		 * Update territory meshes
 		 */
 		std::vector<int32> playerIds = simulation().GetNeedDisplayUpdateIds(DisplayGlobalEnum::Territory);
 		for (int32 playerId : playerIds) 
@@ -280,7 +282,7 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 				}
 				
 				_playerIdToTerritoryMesh[playerId]->UpdateMesh(true, -1, playerId, false, &simulation(), 50);
-				_playerIdToTerritoryMesh[playerId]->SetVisibility(true);
+				_playerIdToTerritoryMesh[playerId]->SetVisibility(false);
 			} else {
 				if (_playerIdToTerritoryMesh[playerId]) {
 					_playerIdToTerritoryMesh[playerId]->SetVisibility(false);
@@ -289,29 +291,6 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 		}
 	}
 	
-	// TODO: remove don't need territory decal anymore?
-	//// After this point, update on dirty only
-	//if (!simulation().NeedDisplayUpdate(DisplayGlobalEnum::Territory)) {
-	//	return;
-	//}
-	//PUN_LOG("Need Display Territory update");
-	//simulation().SetNeedDisplayUpdate(DisplayGlobalEnum::Territory, false);
-
-	//
-	//GameRegionSystem& regionSystem = simulation().regionSystem();
-
-	//std::vector<int32>& territoryOwnerMap = regionSystem.territoryOwnerMap();
-	//territoryAdjacencyEncoding.resize(GameMapConstants::TotalRegions);
-	//territoryAdjacencyEncoding2.resize(GameMapConstants::TotalRegions);
-
-
-	//int maxRegionX = GameMapConstants::RegionsPerWorldX - 1;
-	//int maxRegionY = GameMapConstants::RegionsPerWorldY - 1;
-
-	//// Display for each player
-	//simulation().ExecuteOnPlayersAndAI([&](int32 playerId) {
-	//	DisplayPlayerId(playerId, territoryOwnerMap, playerDecals);
-	//});
 
 }
 

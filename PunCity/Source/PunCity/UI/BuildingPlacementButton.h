@@ -258,7 +258,9 @@ public:
 			if (buildingEnum == CardEnum::Townhall) {
 				needExclamation = true;
 			}
-			else if (simulation().HasQuest(playerId(), QuestEnum::FoodBuildingQuest) && IsAgricultureBuilding(buildingEnum)) {
+			else if (simulation().HasQuest(playerId(), QuestEnum::FoodBuildingQuest) && 
+					(IsAgricultureBuilding(buildingEnum) && buildingEnum != CardEnum::Forester)) 
+			{
 				needExclamation = true;
 			}
 

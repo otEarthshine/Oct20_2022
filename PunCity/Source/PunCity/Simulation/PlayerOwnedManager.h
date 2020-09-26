@@ -200,8 +200,8 @@ public:
 
 		_enumToStatVec.resize(static_cast<int>(PlotStatEnum::Count));
 
-		_manaTicks = 0;
-		_maxManaTicks = 120 * ticksPerMana();
+		_spTicks = 0;
+		_maxSPTicks = MaxSP * ticksPerSP();
 		_currentSkill = CardEnum::SpeedBoost;
 
 		_isInDarkAge = false;
@@ -311,8 +311,8 @@ public:
 		}
 
 		// Tick Mana
-		int32 manaIncrement = _isInDarkAge ? 2 : 1;
-		_manaTicks = min(_manaTicks + manaIncrement, _maxManaTicks);
+		int32 spIncrement = _isInDarkAge ? 2 : 1;
+		_spTicks = min(_spTicks + spIncrement, _maxSPTicks);
 
 		// Remove skill buff once timer ran out
 		for (size_t i = _usedSkillTicks.size(); i-- > 0;) {
@@ -1069,13 +1069,13 @@ public:
 	/*
 	 * Mana
 	 */
-	float manaFloat() { return static_cast<float>(_manaTicks) / ticksPerMana(); }
-	int32 mana() { return _manaTicks / ticksPerMana(); }
-	int32 maxMana() { return _maxManaTicks/ ticksPerMana(); }
+	float spFloat() { return static_cast<float>(_spTicks) / ticksPerSP(); }
+	int32 GetSP() { return _spTicks / ticksPerSP(); }
+	int32 maxSP() { return _maxSPTicks/ ticksPerSP(); }
 	CardEnum currentSkill() { return _currentSkill; }
 
 	void UseSkill(int32 buildingId) {
-		_manaTicks = max(0, _manaTicks - GetSkillManaCost(_currentSkill) * ticksPerMana());
+		_spTicks = max(0, _spTicks - GetSkillManaCost(_currentSkill) * ticksPerSP());
 
 		_usedSkillEnums.push_back(_currentSkill);
 		_usedSkillBuildingIds.push_back(buildingId);
@@ -1191,8 +1191,8 @@ public:
 		// Stats
 		SerializeVecVecValue(Ar, _enumToStatVec);
 
-		Ar << _manaTicks;
-		Ar << _maxManaTicks;
+		Ar << _spTicks;
+		Ar << _maxSPTicks;
 		Ar << _currentSkill;
 
 		Ar << _isInDarkAge;
@@ -1342,10 +1342,13 @@ private:
 	// 
 	std::vector<std::vector<int32>> _enumToStatVec;
 
-	static int32 ticksPerMana() { return Time::TicksPerSecond * 2; }
-	int32 _manaTicks;
-	int32 _maxManaTicks;
+	static int32 ticksPerSP() { return Time::TicksPerSecond * 2; }
+	int32 _spTicks;
+	int32 _maxSPTicks;
 	CardEnum _currentSkill;
+
+	static const int32 MaxSP = 240;
+	
 
 	std::vector<CardEnum> _usedSkillEnums;
 	std::vector<int32> _usedSkillBuildingIds;

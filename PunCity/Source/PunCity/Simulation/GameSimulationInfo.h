@@ -14,8 +14,8 @@
 
 #define TRAILER_MODE 0
 
-#define SAVE_VERSION 20092133 // Day/Month/Time
-#define GAME_VERSION 20092133
+#define SAVE_VERSION 26091722 // Day/Month/Time
+#define GAME_VERSION 26091722
 
 //! Utils
 
@@ -2220,7 +2220,7 @@ static const BldInfo BuildingInfo[]
 
 static const BldInfo CardInfos[]
 {
-	BldInfo(CardEnum::Investment,		"Investment", 300, "+20<img id=\"Coin\"/> income"),
+	BldInfo(CardEnum::Investment,		"Investment", 300, "+<img id=\"Coin\"/>20 income"),
 	BldInfo(CardEnum::InstantBuild,		"Instant Build", 200, "Use on a construction site to pay x3 the resource cost and instantly build it."),
 	BldInfo(CardEnum::ShrineWisdomPiece,	"OLD", 200, "OLD"),
 	BldInfo(CardEnum::ShrineLovePiece,	"Shrine Piece: Love", 200, "Collect 3 shrine pieces to build a shrine."),
@@ -2994,7 +2994,7 @@ static bool IsCardInList(CardEnum cardEnumIn, const std::vector<CardEnum>& cardE
 static int32 GetSkillManaCost(CardEnum cardEnum)
 {
 	switch (cardEnum) {
-	case CardEnum::SpeedBoost: return 30;
+	case CardEnum::SpeedBoost: return 60;
 	default:
 		UE_DEBUG_BREAK();
 		return 10;
@@ -4239,6 +4239,7 @@ enum class TechEnum : uint8
 
 	BorealLandCost,
 	DesertTrade,
+	ShallowWaterEmbark,
 
 	RanchSheep,
 	RanchCow,

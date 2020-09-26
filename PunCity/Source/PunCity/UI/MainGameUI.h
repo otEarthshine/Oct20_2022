@@ -78,7 +78,10 @@ public:
 
 	bool IsHoveredOnScrollUI() {
 		return ConverterCardHandOverlay->IsHovered() ||
-				JobPriorityOverlay->IsHovered();
+				JobPriorityOverlay->IsHovered() ||
+
+			ResourceListScrollOverlay->IsHovered() ||
+			ResourceListScrollBox->IsHovered();
 	}
 
 	void ShowConfirmationUI(std::string confirmationStr, std::shared_ptr<FNetworkCommand> commandIn) {
@@ -228,6 +231,9 @@ private:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* LuxuryTier3Text;
 	
 	UPROPERTY(meta = (BindWidget)) UOverlay* ResourceOverlay;
+
+	UPROPERTY(meta = (BindWidget)) UOverlay* ResourceListScrollOverlay;
+	UPROPERTY(meta = (BindWidget)) UScrollBox* ResourceListScrollBox;
 
 	//UPROPERTY(meta = (BindWidget)) class UTextBlock* TopLeftText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* TimeText;

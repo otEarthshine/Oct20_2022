@@ -597,7 +597,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				int32 upkeep = building.upkeep();
 				if (building.isConstructed() && upkeep > 0)
 				{
-					ss << upkeep << "<img id=\"Coin\"/>";
+					ss << "<img id=\"Coin\"/>" << upkeep;
 					descriptionBox->AddRichText("Upkeep: ", ss);
 				}
 
@@ -751,7 +751,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 						// Only show these if it is player's townhall
 						if (townhall.playerId() == playerId()) {
-							descriptionBox->AddRichText("Townhall Income", to_string(townhall.townhallIncome()) + "<img id=\"Coin\"/>");
+							descriptionBox->AddRichText("Townhall Income", "<img id=\"Coin\"/>" + to_string(townhall.townhallIncome()));
 						}
 
 						// Show how much money he has..
@@ -973,15 +973,15 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						AddEfficiencyText(building, descriptionBox);
 
 						if (building.isEnum(CardEnum::Mint)) {
-							ss << building.seasonalProduction() << "<img id=\"Coin\"/>";
+							ss << "<img id=\"Coin\"/>" << building.seasonalProduction();
 							descriptionBox->AddRichText("Income(per season)", ss);
 						}
 						if (building.isEnum(CardEnum::InventorsWorkshop)) {
-							ss << building.seasonalProduction() << "<img id=\"Science\"/>";
+							ss << "<img id=\"Science\"/>" << building.seasonalProduction();
 							descriptionBox->AddRichText("Science(per season)", ss);
 						}
 						if (IsBarrack(building.buildingEnum())) {
-							ss << building.seasonalProduction() << "<img id=\"Influence\"/>";
+							ss << "<img id=\"Influence\"/>" << building.seasonalProduction();
 							descriptionBox->AddRichText("Influence(per season)", ss);
 						}
 					}
@@ -1095,7 +1095,31 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							ss << " until ";
 							ss << tradingCompany.targetAmount;
 							descriptionBox->AddIconPair(ss.str(), tradingCompany.activeResourceEnum, " target");
-							ss.str(std::string());
+							ss.str("");
+
+							if (tradingCompany.activeResourceEnum != ResourceEnum::None)
+							{
+								int32 target = tradingCompany.targetAmount;
+								int32 count = resourceSys.resourceCount(tradingCompany.activeResourceEnum);
+								
+								if (tradingCompany.isImport) {
+									if (target > count) {
+										ss << "(import remaining: " << (target - count) << ")";
+									} else {
+										ss << "(import storage-target reached)";
+									}
+								}
+								else {
+									// Export
+									if (target < count) {
+										ss << "(export remaining: " << (count - target) << ")";
+									} else {
+										ss << "(resources in storage already below storage-target)";
+									}
+								}
+								descriptionBox->AddRichText(ss.str());
+								ss.str("");
+							}
 						}
 
 						descriptionBox->AddSpacer(12);
@@ -1720,7 +1744,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							bool showExclamation = simulation.parameters(playerId())->NeedTownhallUpgradeNoticed;
 
 							ss << "Upgrade townhall to lvl " << (townhall.townhallLvl + 1) << "\n";
-							ss << moneyText << "<img id=\"Coin\"/>";
+							ss << "<img id=\"Coin\"/>" << moneyText;
 							
 							UPunButton* button = descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::UpgradeBuilding, true, showExclamation, objectId, 0);
 							ss.str(string());
@@ -1778,8 +1802,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								ResourceEnum resourceEnum = upgrade.resourceNeeded.resourceEnum;
 								
 								auto showResourceText = [&](std::string resourceString) {
-									ss << "\n" << TextRed(to_string(upgrade.resourceNeeded.count),
-										resourceSys.resourceCount(resourceEnum) < upgrade.resourceNeeded.count) << "<img id=\"" << resourceString << "\"/>";
+									ss << "\n"
+										<< "<img id=\"" << resourceString << "\"/>"
+										<< TextRed(to_string(upgrade.resourceNeeded.count),
+											resourceSys.resourceCount(resourceEnum) < upgrade.resourceNeeded.count);
 								};
 								
 								if (resourceEnum == ResourceEnum::Stone) { showResourceText("Stone"); }
@@ -1799,7 +1825,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 										moneyText = "<Red>" + moneyText + "</>";
 									}
 									
-									ss << "\n" << moneyText << "<img id=\"Coin\"/>";
+									ss << "\n" << "<img id=\"Coin\"/>" << moneyText;
 								}
 							}
 
@@ -2504,7 +2530,7 @@ void UObjectDescriptionUISystem::AddSelectStartLocationButton(int32 provinceId, 
 		stringstream ss;
 		ss << "Select Starting Location\n";
 		if (area.isValid()) {
-			ss << TextRed(to_string(provincePrice), !canClaim) << "<img id=\"Coin\"/>";
+			ss << "<img id=\"Coin\"/>" << TextRed(to_string(provincePrice), !canClaim);
 		} else {
 			ss << "<Red>Not enough buildable space.</>";
 		}
@@ -2546,7 +2572,7 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 
 				stringstream ss;
 				ss << "Claim Province\n";
-				ss << TextRed(to_string(provincePrice), !canClaim) << "<img id=\"Influence\"/>";
+				ss << "<img id=\"Influence\"/>" << TextRed(to_string(provincePrice), !canClaim);
 
 				descriptionBox->AddSpacer();
 				descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::ClaimLandInfluence, canClaim, false, provinceId);
@@ -2558,7 +2584,7 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 
 				stringstream ss;
 				ss << "Claim Province\n";
-				ss << TextRed(to_string(provincePrice), !canClaim) << "<img id=\"Coin\"/>";
+				ss << "<img id=\"Coin\"/>" << TextRed(to_string(provincePrice), !canClaim);
 				
 				descriptionBox->AddSpacer();
 				descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::ClaimLandMoney, canClaim, false, provinceId);

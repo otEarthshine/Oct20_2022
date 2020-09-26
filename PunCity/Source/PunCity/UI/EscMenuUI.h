@@ -131,6 +131,14 @@ public:
 		EscMenuLoadButtonOverlay->SetVisibility(gameInstance()->isMultiplayer() ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 		
 
+		if (ShouldPauseGameFromUI() && networkInterface()->hostGameSpeed() != 0) {
+			networkInterface()->Pause();
+		}
+		else if (!ShouldPauseGameFromUI() && networkInterface()->hostGameSpeed() == 0) {
+			networkInterface()->Resume();
+		}
+
+		
 		
 		if (UGameplayStatics::GetTimeSeconds(this) >  lastShaderCachePrint + 1.0f &&
 			FShaderPipelineCache::NumPrecompilesRemaining() > 0) 
@@ -141,11 +149,14 @@ public:
 
 		// Update the gameSpeedBar
 		//  Host use hostGameSpeed() while clients use simulation.gameSpeed()
-		int32 gameSpeed = networkInterface()->IsHost() ? networkInterface()->hostGameSpeed() : simulation().gameSpeed();
+		int32 gameSpeedToDisplay = networkInterface()->IsHost() ? networkInterface()->hostGameSpeed() : simulation().gameSpeed();
 
 		// Special case: This is needed because we are using hostGameSpeed() which does not reflect chosenTownhall state
-		if (!simulation().AllPlayerHasTownhallAfterInitialTicks()) {
-			gameSpeed = 0; // Pause while players are still choosing location.
+		//   Pause while players are still choosing location.
+		if (!simulation().AllPlayerHasTownhallAfterInitialTicks() ||
+			ShouldPauseGameFromUI()) 
+		{
+			gameSpeedToDisplay = 0;
 		}
 
 		FLinearColor activeColor(1, 1, 1);
@@ -164,7 +175,7 @@ public:
 		{
 			auto setPlayButtonColor = [&](int32 buttonSpeed)
 			{
-				if (buttonSpeed > gameSpeed) {
+				if (buttonSpeed > gameSpeedToDisplay) {
 					return buttonSpeed <= hoveredGameSpeed ? hoverColor : inactiveColor;
 				}
 				else { // buttonSpeed <= gameSpeed
@@ -180,7 +191,7 @@ public:
 		}
 		else
 		{
-			switch (gameSpeed)
+			switch (gameSpeedToDisplay)
 			{
 			case 0: pauseColor = activeColor;
 				break;
@@ -198,11 +209,11 @@ public:
 		PlayIcon4->SetColorAndOpacity(play4Color);
 
 
-		AddToolTip(PauseButton, gameSpeed == 0 ? "Resume game" : "Pause game<space>Hotkey: <Orange>[spacebar]</>");
-		AddToolTip(PlayButton1, "Change to " + GameSpeedName(GameSpeedValue1) + "<space>(current: " + GameSpeedName(gameSpeed) + ")<space>Hotkey: <Orange>[1]</>");
-		AddToolTip(PlayButton2, "Change to " + GameSpeedName(GameSpeedValue2) + "<space>(current: " + GameSpeedName(gameSpeed) + ")<space>Hotkey: <Orange>[2]</>");
-		AddToolTip(PlayButton3, "Change to " + GameSpeedName(GameSpeedValue3) + "<space>(current: " + GameSpeedName(gameSpeed) + ")<space>Hotkey: <Orange>[3]</>");
-		AddToolTip(PlayButton4, "Change to " + GameSpeedName(GameSpeedValue4) + "<space>(current: " + GameSpeedName(gameSpeed) + ")<space>Hotkey: <Orange>[4]</>");
+		AddToolTip(PauseButton, gameSpeedToDisplay == 0 ? "Resume game" : "Pause game<space>Hotkey: <Orange>[spacebar]</>");
+		AddToolTip(PlayButton1, "Change to " + GameSpeedName(GameSpeedValue1) + "<space>(current: " + GameSpeedName(gameSpeedToDisplay) + ")<space>Hotkey: <Orange>[1]</>");
+		AddToolTip(PlayButton2, "Change to " + GameSpeedName(GameSpeedValue2) + "<space>(current: " + GameSpeedName(gameSpeedToDisplay) + ")<space>Hotkey: <Orange>[2]</>");
+		AddToolTip(PlayButton3, "Change to " + GameSpeedName(GameSpeedValue3) + "<space>(current: " + GameSpeedName(gameSpeedToDisplay) + ")<space>Hotkey: <Orange>[3]</>");
+		AddToolTip(PlayButton4, "Change to " + GameSpeedName(GameSpeedValue4) + "<space>(current: " + GameSpeedName(gameSpeedToDisplay) + ")<space>Hotkey: <Orange>[4]</>");
 		
 
 		// Close Flash animation
@@ -346,6 +357,13 @@ public:
 		//dataSource()->SetOverlayType(OverlayType::None, OverlaySetterType::OverlayToggler);
 	}
 
+
+	// Pause game when in the esc menu or tutorial
+	bool ShouldPauseGameFromUI() {
+		return gameInstance()->isSinglePlayer && 
+				(EscMenu->IsVisible() || TutorialUI->IsVisible());
+	}
+
 private:
 	UFUNCTION() void ToggleEscMenu() {
 		ToggleUI(EscMenu);
@@ -414,7 +432,9 @@ private:
 			return;
 		}
 		// Do not allow speed adjustment before start loc is chosen..
-		if (!simulation().AllPlayerHasTownhallAfterInitialTicks()) {
+		if (!simulation().AllPlayerHasTownhallAfterInitialTicks() ||
+			ShouldPauseGameFromUI()) 
+		{
 			return;
 		}
 		networkInterface()->SetGameSpeed(newGameSpeed);
@@ -426,7 +446,9 @@ private:
 			return;
 		}
 		// Do not allow speed adjustment before start loc is chosen..
-		if (!simulation().AllPlayerHasTownhallAfterInitialTicks()) {
+		if (!simulation().AllPlayerHasTownhallAfterInitialTicks() ||
+			ShouldPauseGameFromUI()) 
+		{
 			return;
 		}
 		
@@ -516,6 +538,7 @@ private:
 			dataSource()->Spawn2DSound("UI", "UIWindowOpen");
 		}
 	}
+
 	
 private:
 	enum ConfirmEnum {
@@ -523,4 +546,6 @@ private:
 		ExitGame,
 		OverrideSave,
 	} _confirmEnum;
+
+	bool wasGamePausedFromUI = false;
 };

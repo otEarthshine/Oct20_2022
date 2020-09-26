@@ -344,7 +344,6 @@ public:
 			}
 		}
 	}
-	
 
 public:
 	/*
@@ -426,6 +425,10 @@ public:
 	}
 
 	UWorld* GetWorldPun() final { return GetWorld(); }
+
+	bool ShouldPauseGameFromUI() override {
+		return _escMenuUI->ShouldPauseGameFromUI();
+	}
 
 private:
 	UUserWidget* AddWidgetToHUDBase(TSubclassOf<UUserWidget> widgetClass, UIEnum uiEnum) {

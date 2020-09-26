@@ -350,6 +350,8 @@ public:
 	virtual bool HasTargetResearch(int32 playerId) = 0;;
 	virtual int32 techsCompleted(int32 playerId) = 0;
 
+	virtual bool IsBuildingUnlocked(int32 playerId, CardEnum cardEnumIn) = 0;
+
 	virtual void UpdateProsperityHouseCount(int32 playerId) = 0;
 
 	// Buildings associated with Players

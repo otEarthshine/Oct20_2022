@@ -313,6 +313,9 @@ private:
 	{
 		int32 count = 0;
 		for (CardEnum cardEnum : FoodBuildings) {
+			if (cardEnum == CardEnum::Forester) {
+				continue;
+			}
 			count += simulation->buildingCount(playerId, cardEnum);
 		}
 		return count;

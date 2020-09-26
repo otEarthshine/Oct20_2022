@@ -968,7 +968,7 @@ void UMainGameUI::Tick()
 		{
 			BldInfo cardInfo = GetBuildingInfo(playerOwned.currentSkill());
 			int32 skillMana = GetSkillManaCost(cardInfo.cardEnum);
-			int32 maxMana = playerOwned.maxMana();
+			int32 maxMana = playerOwned.maxSP();
 			
 			stringstream tip;
 			tip << "<Bold>" << cardInfo.name << "</>\n";
@@ -977,12 +977,12 @@ void UMainGameUI::Tick()
 			tip << "<line><space>";
 			tip << "SP cost: " << skillMana << "\n";
 			tip << cardInfo.description << "<space>";
-			tip << "<SPColor>SP: " << playerOwned.mana() << "/" << maxMana << "</>";
+			tip << "<SPColor>SP: " << playerOwned.GetSP() << "/" << maxMana << "</>";
 			AddToolTip(LeaderSkillButton, tip.str());
 			
-			LeaderManaBar->GetDynamicMaterial()->SetScalarParameterValue("Fraction", Clamp01(playerOwned.manaFloat() / maxMana));
-			SetText(LeaderManaText, "SP " + to_string(playerOwned.mana()) + "/" + to_string(maxMana));
-			LeaderSkillClock->GetDynamicMaterial()->SetScalarParameterValue("Fraction", Clamp01(playerOwned.manaFloat() / skillMana));
+			LeaderManaBar->GetDynamicMaterial()->SetScalarParameterValue("Fraction", Clamp01(playerOwned.spFloat() / maxMana));
+			SetText(LeaderManaText, "SP " + to_string(playerOwned.GetSP()) + "/" + to_string(maxMana));
+			LeaderSkillClock->GetDynamicMaterial()->SetScalarParameterValue("Fraction", Clamp01(playerOwned.spFloat() / skillMana));
 		}
 
 		// Animals
@@ -1720,7 +1720,7 @@ void UMainGameUI::OnClickLeaderSkillButton()
 {
 	auto& playerOwned = simulation().playerOwned(playerId());
 	CardEnum skillEnum = playerOwned.currentSkill();
-	if (playerOwned.mana() < GetSkillManaCost(skillEnum)) {
+	if (playerOwned.GetSP() < GetSkillManaCost(skillEnum)) {
 		simulation().AddPopupToFront(playerId(), "Not enough SP to use the leader skill.", ExclusiveUIEnum::None, "PopupCannot");
 		return;
 	}

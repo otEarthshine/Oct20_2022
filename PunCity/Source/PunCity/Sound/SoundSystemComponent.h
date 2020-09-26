@@ -428,7 +428,9 @@ public:
 			//	punAudios.RemoveAt(i);
 			//}
 			// despawn when its audio was destroyed
-			if (punAudios[i]->audio == nullptr) {
+			if (i < punAudios.Num() &&
+				punAudios[i]->audio == nullptr) 
+			{
 				//PUN_LOG("Despawn2 audio null: %s %s Num:%d", ToTChar(punAudios[i]->groupName), ToTChar(punAudios[i]->soundName), punAudios.Num());
 				
 				punAudios.RemoveAt(i);

@@ -131,10 +131,13 @@ public:
 		EscMenuLoadButtonOverlay->SetVisibility(gameInstance()->isMultiplayer() ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 		
 
-		if (ShouldPauseGameFromUI() && networkInterface()->hostGameSpeed() != 0) {
+		if (ShouldPauseGameFromUI() && networkInterface()->hostGameSpeed() != 0) // hostGameSpeed() must be checked all the time since players should be able too unpause.
+		{
+			_isPausingFromEscMenu = true;
 			networkInterface()->Pause();
 		}
-		else if (!ShouldPauseGameFromUI() && networkInterface()->hostGameSpeed() == 0) {
+		else if (!ShouldPauseGameFromUI() && _isPausingFromEscMenu) {
+			_isPausingFromEscMenu = false;
 			networkInterface()->Resume();
 		}
 
@@ -363,6 +366,7 @@ public:
 		return gameInstance()->isSinglePlayer && 
 				(EscMenu->IsVisible() || TutorialUI->IsVisible());
 	}
+	bool _isPausingFromEscMenu = false;
 
 private:
 	UFUNCTION() void ToggleEscMenu() {

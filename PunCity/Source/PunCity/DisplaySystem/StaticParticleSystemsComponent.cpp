@@ -32,6 +32,12 @@ void UStaticParticleSystemsComponent::Add(int32_t key, UParticleSystem* protoPar
 	PUN_CHECK_EDITOR(find(_keysThisTick.begin(), _keysThisTick.end(), key) == _keysThisTick.end());
 	PUN_DEBUG_EXPR(_keysThisTick.push_back(key));
 
+	// Check prevent Miriam Crash
+	if (!_keyToInstanceInfo.IsMiriamValid()) {
+		return;
+	}
+	
+
 	int8_t stateMod = static_cast<int8_t>(state % 127);
 
 	InstanceInfo info;

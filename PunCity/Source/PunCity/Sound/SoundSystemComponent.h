@@ -391,9 +391,12 @@ public:
 
 			// Remove building sound from list if out of range
 			if (punAudios[i]->isBuildingSound) {
-				if (!_dataSource->IsInSampleRange(WorldRegion2(punAudios[i]->regionId).centerTile())) {
-					punAudios[i]->audio->bAutoDestroy = true;
-					punAudios[i]->audio->Stop();
+				if (!_dataSource->IsInSampleRange(WorldRegion2(punAudios[i]->regionId).centerTile())) 
+				{
+					if (punAudios[i]->audio) {
+						punAudios[i]->audio->bAutoDestroy = true;
+						punAudios[i]->audio->Stop();
+					}
 					punAudios.RemoveAt(i);
 
 					PUN_LOG("Despawn Audio isBuildingSound out of range %d", i);

@@ -69,6 +69,11 @@ public:
 		return bucket.pairs[0].value;
 	}
 
+	// Check here for Miriam crash
+	bool IsMiriamValid() {
+		return _buckets.size() == _bucketCount;
+	}
+
 	bool TryGet(int32_t key, T& value)
 	{
 		// Miriam Crashed here ??

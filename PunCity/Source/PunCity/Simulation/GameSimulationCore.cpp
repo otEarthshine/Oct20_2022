@@ -2835,7 +2835,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 			resourceSys.ChangeMoney(amountToRemove * FoodCost);
 			totalRemoved += amountToRemove;
 		}
-		AddPopupToFront(command.playerId, "Sold " + to_string(totalRemoved) + " food for " + to_string(totalRemoved * FoodCost) + "<img id=\"Coin\"/>.");
+		AddPopupToFront(command.playerId, "Sold " + to_string(totalRemoved) + " food for " + "<img id=\"Coin\"/>." + to_string(totalRemoved * FoodCost));
 	}
 	else if (command.cardEnum == CardEnum::BuyWood) {
 		int32 cost = GetResourceInfo(ResourceEnum::Wood).basePrice;
@@ -2844,7 +2844,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 		int32 moneyPaid = amountToBuy * cost;
 		resourceSys.ChangeMoney(-moneyPaid);
 
-		AddPopupToFront(command.playerId, "Bought " + to_string(amountToBuy) + " wood for " + to_string(moneyPaid)  + "<img id=\"Coin\"/>.");
+		AddPopupToFront(command.playerId, "Bought " + to_string(amountToBuy) + " wood for " + "<img id=\"Coin\"/>." + to_string(moneyPaid));
 	}
 	else if (command.cardEnum == CardEnum::Immigration) {
 		townhall(command.playerId).AddImmigrants(5);

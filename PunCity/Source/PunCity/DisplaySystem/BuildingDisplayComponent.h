@@ -86,6 +86,9 @@ private:
 	// give back connectionType and mesh rotation from default
 	std::pair<GridConnectType, int8_t> GetGridConnectType(WorldTile2 tile, bool isGate = false);
 
+	void UpdateDisplayOverlay(Building& building, OverlayType overlayType);
+	void UpdateDisplayLight(Building& building);
+
 private:
 	//UPROPERTY() TArray<class UPointLightComponent*> _lights;
 	UPROPERTY() TArray<UStaticParticleSystemsComponent*> _particles;

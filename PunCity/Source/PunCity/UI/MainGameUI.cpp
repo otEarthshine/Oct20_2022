@@ -1197,9 +1197,12 @@ void UMainGameUI::Tick()
 					// skip i == 0 for the tech with unfinished left
 					if (i == 0 && lvl > 1)
 					{
-						int32 houseLvlCountToLeft = simulation.GetHouseLvlCount(playerId(), lvl - 1, true);
-						// If the left tech is unfinished, skip this
-						if (houseLvlCountToLeft < houseLvlToUnlockCount[lvl - 1][0]) {
+						//int32 houseLvlCountToLeft = simulation.GetHouseLvlCount(playerId(), lvl - 1, true);
+						//// If the left tech is unfinished, skip this
+						//if (houseLvlCountToLeft < houseLvlToUnlockCount[lvl - 1][0]) {
+						//	continue;
+						//}
+						if (houseLvlCount == 0) {
 							continue;
 						}
 					}

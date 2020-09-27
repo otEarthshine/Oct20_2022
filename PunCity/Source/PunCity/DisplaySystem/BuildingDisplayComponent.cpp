@@ -359,7 +359,8 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 				}
 				
 			}
-			else {
+			else 
+			{
 				float constructionFraction = building.constructionFraction();
 
 				// Storage yard, don't display special
@@ -548,28 +549,29 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 				/*
 				 * Particles
 				 */
-				{
-					// Burning
-					int32 startIndex = modulePrototype.particleInfos.size();
-					if (building.isOnFire())
-					{
-						FTransform finalTransform;
+				// TODO: Bring this back
+				//{
+				//	// Burning
+				//	int32 startIndex = modulePrototype.particleInfos.size();
+				//	if (building.isOnFire())
+				//	{
+				//		FTransform finalTransform;
 
-						// scale based on 5x5 ranch
-						{
-							FVector scale = FVector(.4 * (building.buildingSize().x / 5.0f), .3 * (building.buildingSize().y / 5.0f), .4);
-							FTransform fireTransform(FQuat::Identity, FVector::ZeroVector, scale);
-							FTransform::Multiply(&finalTransform, &fireTransform, &transform);
-							_particles[meshId]->Add(centerTile.tileId() + (startIndex)* GameMapConstants::TilesPerWorld, _assetLoader->particleSystem(ParticleEnum::BuildingFire), finalTransform, 0);
-						}
-						{
-							FVector scale = FVector(3.2 * (building.buildingSize().x / 5.0f), 2.4 * (building.buildingSize().y / 5.0f), .5);
-							FTransform fireSmokeTransform(FQuat::Identity, FVector::ZeroVector, scale);
-							FTransform::Multiply(&finalTransform, &fireSmokeTransform, &transform);
-							_particles[meshId]->Add(centerTile.tileId() + (startIndex + 1)* GameMapConstants::TilesPerWorld, _assetLoader->particleSystem(ParticleEnum::BuildingFireSmoke), finalTransform, 0);
-						}
-					}
-				}
+				//		// scale based on 5x5 ranch
+				//		{
+				//			FVector scale = FVector(.4 * (building.buildingSize().x / 5.0f), .3 * (building.buildingSize().y / 5.0f), .4);
+				//			FTransform fireTransform(FQuat::Identity, FVector::ZeroVector, scale);
+				//			FTransform::Multiply(&finalTransform, &fireTransform, &transform);
+				//			_particles[meshId]->Add(centerTile.tileId() + (startIndex)* GameMapConstants::TilesPerWorld, _assetLoader->particleSystem(ParticleEnum::BuildingFire), finalTransform, 0);
+				//		}
+				//		{
+				//			FVector scale = FVector(3.2 * (building.buildingSize().x / 5.0f), 2.4 * (building.buildingSize().y / 5.0f), .5);
+				//			FTransform fireSmokeTransform(FQuat::Identity, FVector::ZeroVector, scale);
+				//			FTransform::Multiply(&finalTransform, &fireSmokeTransform, &transform);
+				//			_particles[meshId]->Add(centerTile.tileId() + (startIndex + 1)* GameMapConstants::TilesPerWorld, _assetLoader->particleSystem(ParticleEnum::BuildingFireSmoke), finalTransform, 0);
+				//		}
+				//	}
+				//}
 
 				if (building.isConstructed() && shouldDisplayParticles)
 				{
@@ -581,17 +583,10 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 
 						// need to take into account variationIndex change... Assume max particleInfos of 5
 						int32 particleKey = centerTile.tileId() + (i + 5 * displayVariationIndex) * GameMapConstants::TilesPerWorld;
+
+						PUN_CHECK(_particles[meshId] != nullptr);
 						_particles[meshId]->Add(particleKey, _assetLoader->particleSystem(particleInfos[i].particleEnum), finalTransform, 0);
 					}
-					//if (!modulePrototype.smokePosition.Equals(FVector::ZeroVector, 0.01f)) {
-					//	//PUN_LOG("modulePrototype.smokePosition: %s", *modulePrototype.smokePosition.ToString());
-					//	FVector smokePosition = transform.TransformPosition(modulePrototype.smokePosition);
-					//	_chimneySmokes[meshId]->Add(centerTile.tileId(), smokePosition, 0);
-					//}
-					//if (!modulePrototype.blackSmokePosition.Equals(FVector::ZeroVector, 0.01f)) {
-					//	FVector smokePosition = transform.TransformPosition(modulePrototype.blackSmokePosition);
-					//	_chimneyBlackSmokes[meshId]->Add(centerTile.tileId(), smokePosition, 0);
-					//}
 				}
 
 				/*
@@ -748,87 +743,89 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 
 			// Overlay
 			{
-				WorldAtom2 centerAtom = building.centerTile().worldAtom2();
+				UpdateDisplayOverlay(building, overlayType);
+				//WorldAtom2 centerAtom = building.centerTile().worldAtom2();
 
-				if (overlayType == OverlayType::Fish && building.isEnum(CardEnum::Fisher)) {
-					if (!building.IsUpgraded(0)) { // Skip whale
-						//PUN_LOG("BldDisp Fish Overlay: %s", *ToFString(building.debugStr()));
-						ShowRadius(Fisher::Radius, centerAtom, building);
-					}
-				}
-				else if (overlayType == OverlayType::Gatherer && building.isEnum(CardEnum::FruitGatherer)) {
-					//PUN_LOG("BldDisp Gatherer Overlay: %d", buildingId);
-					ShowRadius(GathererHut::Radius, centerAtom, building);
-				}
-				else if (overlayType == OverlayType::Hunter && building.isEnum(CardEnum::HuntingLodge)) {
-					ShowRadius(HuntingLodge::Radius, centerAtom, building);
-				}
-				else if (overlayType == OverlayType::Forester && building.isEnum(CardEnum::Forester)) {
-					ShowRadius(Forester::Radius, centerAtom, building);
-				}
-				else if (overlayType == OverlayType::Windmill && building.isEnum(CardEnum::Windmill)) {
-					ShowRadius(Windmill::Radius, centerAtom, building);
-				}
-				else if (overlayType == OverlayType::Beekeeper && building.isEnum(CardEnum::Beekeeper)) {
-					ShowRadius(Beekeeper::Radius, centerAtom, building);
-				}
-				//else if (overlayType == OverlayType::ConstructionOffice && building.isEnum(BuildingEnum::ConstructionOffice)) {
-				//	ShowRadius(ConstructionOffice::Radius, centerAtom, building);
+				//if (overlayType == OverlayType::Fish && building.isEnum(CardEnum::Fisher)) {
+				//	if (!building.IsUpgraded(0)) { // Skip whale
+				//		//PUN_LOG("BldDisp Fish Overlay: %s", *ToFString(building.debugStr()));
+				//		ShowRadius(Fisher::Radius, centerAtom, building);
+				//	}
 				//}
-				else if (overlayType == OverlayType::Industrialist && building.isEnum(CardEnum::IndustrialistsGuild)) {
-					ShowRadius(10, centerAtom, building);
-				}
-				else if (overlayType == OverlayType::Consulting && building.isEnum(CardEnum::ConsultingFirm)) {
-					ShowRadius(10, centerAtom, building);
-				}
+				//else if (overlayType == OverlayType::Gatherer && building.isEnum(CardEnum::FruitGatherer)) {
+				//	//PUN_LOG("BldDisp Gatherer Overlay: %d", buildingId);
+				//	ShowRadius(GathererHut::Radius, centerAtom, building);
+				//}
+				//else if (overlayType == OverlayType::Hunter && building.isEnum(CardEnum::HuntingLodge)) {
+				//	ShowRadius(HuntingLodge::Radius, centerAtom, building);
+				//}
+				//else if (overlayType == OverlayType::Forester && building.isEnum(CardEnum::Forester)) {
+				//	ShowRadius(Forester::Radius, centerAtom, building);
+				//}
+				//else if (overlayType == OverlayType::Windmill && building.isEnum(CardEnum::Windmill)) {
+				//	ShowRadius(Windmill::Radius, centerAtom, building);
+				//}
+				//else if (overlayType == OverlayType::Beekeeper && building.isEnum(CardEnum::Beekeeper)) {
+				//	ShowRadius(Beekeeper::Radius, centerAtom, building);
+				//}
+				////else if (overlayType == OverlayType::ConstructionOffice && building.isEnum(BuildingEnum::ConstructionOffice)) {
+				////	ShowRadius(ConstructionOffice::Radius, centerAtom, building);
+				////}
+				//else if (overlayType == OverlayType::Industrialist && building.isEnum(CardEnum::IndustrialistsGuild)) {
+				//	ShowRadius(10, centerAtom, building);
+				//}
+				//else if (overlayType == OverlayType::Consulting && building.isEnum(CardEnum::ConsultingFirm)) {
+				//	ShowRadius(10, centerAtom, building);
+				//}
 
-				else if (overlayType == OverlayType::Library && building.isEnum(CardEnum::Library)) {
-					ShowRadius(Library::Radius, centerAtom, building);
-				}
-				else if (overlayType == OverlayType::School && building.isEnum(CardEnum::School)) {
-					ShowRadius(School::Radius, centerAtom, building);
-				}
-				else if (overlayType == OverlayType::Bank && building.isEnum(CardEnum::Bank)) {
-					ShowRadius(Bank::Radius, centerAtom, building);
-				}
+				//else if (overlayType == OverlayType::Library && building.isEnum(CardEnum::Library)) {
+				//	ShowRadius(Library::Radius, centerAtom, building);
+				//}
+				//else if (overlayType == OverlayType::School && building.isEnum(CardEnum::School)) {
+				//	ShowRadius(School::Radius, centerAtom, building);
+				//}
+				//else if (overlayType == OverlayType::Bank && building.isEnum(CardEnum::Bank)) {
+				//	ShowRadius(Bank::Radius, centerAtom, building);
+				//}
 
-				else if (overlayType == OverlayType::Theatre && building.isEnum(CardEnum::Theatre)) {
-					ShowRadius(Theatre::Radius, centerAtom, building);
-				}
-				else if (overlayType == OverlayType::Tavern && building.isEnum(CardEnum::Tavern)) {
-					ShowRadius(Tavern::Radius, centerAtom, building);
-				}
+				//else if (overlayType == OverlayType::Theatre && building.isEnum(CardEnum::Theatre)) {
+				//	ShowRadius(Theatre::Radius, centerAtom, building);
+				//}
+				//else if (overlayType == OverlayType::Tavern && building.isEnum(CardEnum::Tavern)) {
+				//	ShowRadius(Tavern::Radius, centerAtom, building);
+				//}
 			}
 
 			// Light
 			if (building.isConstructed())
 			{
-				const ModuleTransforms& modulePrototype = displayInfo.GetDisplayModules(building.buildingEnum(), building.displayVariationIndex());
-				const std::vector<PointLightInfo>& lightInfos = modulePrototype.lightInfos;
-				if (lightInfos.size() > 0)
-				{
-					float buildingRotation = RotationFromDirection(building.faceDirection());
-					FVector displayLocation = gameManager()->DisplayLocation(building.centerTile().worldAtom2());
-					FTransform transform(FRotator(0, buildingRotation, 0), displayLocation);
+				UpdateDisplayLight(building);
+				//const ModuleTransforms& modulePrototype = displayInfo.GetDisplayModules(building.buildingEnum(), building.displayVariationIndex());
+				//const std::vector<PointLightInfo>& lightInfos = modulePrototype.lightInfos;
+				//if (lightInfos.size() > 0)
+				//{
+				//	float buildingRotation = RotationFromDirection(building.faceDirection());
+				//	FVector displayLocation = gameManager()->DisplayLocation(building.centerTile().worldAtom2());
+				//	FTransform transform(FRotator(0, buildingRotation, 0), displayLocation);
 
-					for (const PointLightInfo& lightInfo : lightInfos)
-					{
-						FTransform localLightTransform(FRotator::ZeroRotator, lightInfo.position, lightInfo.scale);
+				//	for (const PointLightInfo& lightInfo : lightInfos)
+				//	{
+				//		FTransform localLightTransform(FRotator::ZeroRotator, lightInfo.position, lightInfo.scale);
 
-						FTransform finalTransform;
-						FTransform::Multiply(&finalTransform, &localLightTransform, &transform);
+				//		FTransform finalTransform;
+				//		FTransform::Multiply(&finalTransform, &localLightTransform, &transform);
 
-						UPointLightComponent* pointLight = PunUnrealUtils::ShowLight(finalTransform, _pointLights, _pointLightCount, this);
+				//		UPointLightComponent* pointLight = PunUnrealUtils::ShowLight(finalTransform, _pointLights, _pointLightCount, this);
 
-						pointLight->SetIntensityUnits(ELightUnits::Candelas);
-						pointLight->SetIntensity(lightInfo.intensity);
-						pointLight->SetLightColor(lightInfo.color);
-						pointLight->SetAttenuationRadius(lightInfo.attenuationRadius);
+				//		pointLight->SetIntensityUnits(ELightUnits::Candelas);
+				//		pointLight->SetIntensity(lightInfo.intensity);
+				//		pointLight->SetLightColor(lightInfo.color);
+				//		pointLight->SetAttenuationRadius(lightInfo.attenuationRadius);
 
-						//pointLight->SetIntensity(100);
-						//pointLight->SetAttenuationRadius(100);
-					}
-				}
+				//		//pointLight->SetIntensity(100);
+				//		//pointLight->SetAttenuationRadius(100);
+				//	}
+				//}
 			}
 			
 			// Debug
@@ -972,6 +969,7 @@ pair<GridConnectType, int8_t> UBuildingDisplayComponent::GetGridConnectType(Worl
 	return pair<GridConnectType, int8_t>();
 }
 
+
 void UBuildingDisplayComponent::UpdateDisplayBuilding(int objectId, int meshId, WorldAtom2 cameraAtom)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayBuilding);
@@ -1005,6 +1003,93 @@ void UBuildingDisplayComponent::UpdateDisplayBuilding(int objectId, int meshId, 
 	//		}
 	//	}
 	//}
+}
+
+
+void UBuildingDisplayComponent::UpdateDisplayOverlay(Building& building, OverlayType overlayType)
+{
+	WorldAtom2 centerAtom = building.centerTile().worldAtom2();
+
+	if (overlayType == OverlayType::Fish && building.isEnum(CardEnum::Fisher)) {
+		if (!building.IsUpgraded(0)) { // Skip whale
+			//PUN_LOG("BldDisp Fish Overlay: %s", *ToFString(building.debugStr()));
+			ShowRadius(Fisher::Radius, centerAtom, building);
+		}
+	}
+	else if (overlayType == OverlayType::Gatherer && building.isEnum(CardEnum::FruitGatherer)) {
+		//PUN_LOG("BldDisp Gatherer Overlay: %d", buildingId);
+		ShowRadius(GathererHut::Radius, centerAtom, building);
+	}
+	else if (overlayType == OverlayType::Hunter && building.isEnum(CardEnum::HuntingLodge)) {
+		ShowRadius(HuntingLodge::Radius, centerAtom, building);
+	}
+	else if (overlayType == OverlayType::Forester && building.isEnum(CardEnum::Forester)) {
+		ShowRadius(Forester::Radius, centerAtom, building);
+	}
+	else if (overlayType == OverlayType::Windmill && building.isEnum(CardEnum::Windmill)) {
+		ShowRadius(Windmill::Radius, centerAtom, building);
+	}
+	else if (overlayType == OverlayType::Beekeeper && building.isEnum(CardEnum::Beekeeper)) {
+		ShowRadius(Beekeeper::Radius, centerAtom, building);
+	}
+	//else if (overlayType == OverlayType::ConstructionOffice && building.isEnum(BuildingEnum::ConstructionOffice)) {
+	//	ShowRadius(ConstructionOffice::Radius, centerAtom, building);
+	//}
+	else if (overlayType == OverlayType::Industrialist && building.isEnum(CardEnum::IndustrialistsGuild)) {
+		ShowRadius(10, centerAtom, building);
+	}
+	else if (overlayType == OverlayType::Consulting && building.isEnum(CardEnum::ConsultingFirm)) {
+		ShowRadius(10, centerAtom, building);
+	}
+
+	else if (overlayType == OverlayType::Library && building.isEnum(CardEnum::Library)) {
+		ShowRadius(Library::Radius, centerAtom, building);
+	}
+	else if (overlayType == OverlayType::School && building.isEnum(CardEnum::School)) {
+		ShowRadius(School::Radius, centerAtom, building);
+	}
+	else if (overlayType == OverlayType::Bank && building.isEnum(CardEnum::Bank)) {
+		ShowRadius(Bank::Radius, centerAtom, building);
+	}
+
+	else if (overlayType == OverlayType::Theatre && building.isEnum(CardEnum::Theatre)) {
+		ShowRadius(Theatre::Radius, centerAtom, building);
+	}
+	else if (overlayType == OverlayType::Tavern && building.isEnum(CardEnum::Tavern)) {
+		ShowRadius(Tavern::Radius, centerAtom, building);
+	}
+}
+
+void UBuildingDisplayComponent::UpdateDisplayLight(Building& building)
+{
+	const GameDisplayInfo& displayInfo = gameManager()->displayInfo();
+	
+	const ModuleTransforms& modulePrototype = displayInfo.GetDisplayModules(building.buildingEnum(), building.displayVariationIndex());
+	const std::vector<PointLightInfo>& lightInfos = modulePrototype.lightInfos;
+	if (lightInfos.size() > 0)
+	{
+		float buildingRotation = RotationFromDirection(building.faceDirection());
+		FVector displayLocation = gameManager()->DisplayLocation(building.centerTile().worldAtom2());
+		FTransform transform(FRotator(0, buildingRotation, 0), displayLocation);
+
+		for (const PointLightInfo& lightInfo : lightInfos)
+		{
+			FTransform localLightTransform(FRotator::ZeroRotator, lightInfo.position, lightInfo.scale);
+
+			FTransform finalTransform;
+			FTransform::Multiply(&finalTransform, &localLightTransform, &transform);
+
+			UPointLightComponent* pointLight = PunUnrealUtils::ShowLight(finalTransform, _pointLights, _pointLightCount, this);
+
+			pointLight->SetIntensityUnits(ELightUnits::Candelas);
+			pointLight->SetIntensity(lightInfo.intensity);
+			pointLight->SetLightColor(lightInfo.color);
+			pointLight->SetAttenuationRadius(lightInfo.attenuationRadius);
+
+			//pointLight->SetIntensity(100);
+			//pointLight->SetAttenuationRadius(100);
+		}
+	}
 }
 
 void UBuildingDisplayComponent::HideDisplay(int meshId, int32 regionId)

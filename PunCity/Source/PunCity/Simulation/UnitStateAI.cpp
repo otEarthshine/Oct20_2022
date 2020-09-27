@@ -1430,12 +1430,19 @@ void UnitStateAI::HarvestTileObj()
 		if (_playerId != -1 && resourcePair.isEnum(ResourceEnum::Wood))
 		{
 			auto unlockSys = _simulation->unlockSystem(_playerId);
+			int32 efficiency = 100;
 			if (unlockSys->IsResearched(TechEnum::ImprovedWoodCutting2)) {
-				resourcePair.count = GameRand::Rand100RoundTo1(resourcePair.count * 120);
+				efficiency += 20;
 			}
 			else if (unlockSys->IsResearched(TechEnum::ImprovedWoodCutting)) {
-				resourcePair.count = GameRand::Rand100RoundTo1(resourcePair.count * 140);
+				efficiency += 20;
 			}
+
+			if (workplace() && workplace()->isEnum(CardEnum::Forester)) {
+				efficiency += std::max(0, workplace()->efficiency() - 100);
+			}
+
+			resourcePair.count = GameRand::Rand100RoundTo1(resourcePair.count * efficiency);
 		}
 
 		_inventory.Add(resourcePair);

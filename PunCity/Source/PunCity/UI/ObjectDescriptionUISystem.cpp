@@ -1150,7 +1150,11 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 						descriptionBox->AddSpacer(12);
 
-						descriptionBox->AddEditableNumberBox(this, CallbackEnum::EditNumberChooseResource, building.buildingId(), "Target: ", tradingCompany.targetAmount);
+						int32 targetAmount = tradingCompany.targetAmount;
+						if (Time::Ticks() - tradingCompany.lastTargetSetTick < Time::TicksPerSecond * 3) {
+							targetAmount = tradingCompany.lastTargetAmountSet;
+						}
+						descriptionBox->AddEditableNumberBox(this, CallbackEnum::EditNumberChooseResource, building.buildingId(), "Target: ", targetAmount);
 
 						descriptionBox->AddLineSpacer(12);
 						if (tradingCompany.HasPendingTrade()) {
@@ -2901,6 +2905,10 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 		command->intVar2 = static_cast<int32>(tradingCompany.isImport);
 		command->intVar3 = static_cast<int32>(numberBox->amount);
 		networkInterface()->SendNetworkCommand(command);
+
+		// Delayed UI
+		tradingCompany.lastTargetSetTick = Time::Ticks();
+		tradingCompany.lastTargetAmountSet = numberBox->amount;
 	}
 
 	else if (callbackEnum == CallbackEnum::OpenManageStorage)

@@ -646,12 +646,12 @@ public:
 			
 			
 			era = 3;
-			AddProsperityTech_Building(era, 10, TechEnum::Library, CardEnum::Library);
-			AddProsperityTech_BuildingX(era, 10, TechEnum::BrickMaking, { CardEnum::Brickworks });
+			AddProsperityTech_Building(era, 4, TechEnum::Library, CardEnum::Library);
+			AddProsperityTech_BuildingX(era, 2, TechEnum::BrickMaking, { CardEnum::Brickworks });
 
-			AddProsperityTech_Building(era, 10, TechEnum::Tailor, CardEnum::Tailor);
-			AddProsperityTech_Building(era, 10, TechEnum::Beekeeper, CardEnum::Beekeeper);
-			AddProsperityTech_Building(era, 10, TechEnum::CandleMaker, CardEnum::CandleMaker);
+			AddProsperityTech_Building(era, 2, TechEnum::Tailor, CardEnum::Tailor);
+			AddProsperityTech_Building(era, 2, TechEnum::Beekeeper, CardEnum::Beekeeper);
+			AddProsperityTech_Building(era, 2, TechEnum::CandleMaker, CardEnum::CandleMaker);
 
 			AddProsperityTech_BuildingPermanent(era, 10, TechEnum::GardenShrubbery1, { CardEnum::GardenShrubbery1 });
 			

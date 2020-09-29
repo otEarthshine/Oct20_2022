@@ -594,6 +594,11 @@ void UPunGameInstance::EnsureSessionDestroyed(bool gotoMainMenu)
 				sessionInterface->DestroySession(PUN_SESSION_NAME, DestroySessionThenDoesNothingCompleteDelegate);
 			}
 		}
+		else {
+			PUN_DEBUG2("No existingSession: Go to MainMenu");
+			auto controller = Cast<APunBasePlayerController>(GetFirstLocalPlayerController());
+			controller->ClientTravel("/Game/Maps/MainMenu", TRAVEL_Absolute);
+		}
 	}
 }
 

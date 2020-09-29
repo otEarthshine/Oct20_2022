@@ -133,8 +133,12 @@ public:
 			case NetworkCommandEnum::JobSlotChange: // Correct
 			case NetworkCommandEnum::SetAllowResource: // Correct
 			case NetworkCommandEnum::SetPriority: // Correct
-			case NetworkCommandEnum::ChangeWorkMode: { // Correct
+			case NetworkCommandEnum::ChangeWorkMode:
+			{ // Correct
 				auto command = std::static_pointer_cast<FBuildingCommand>(commands[j]);
+				if (!_simulation->IsValidBuilding(command->buildingId)) {
+					return;
+				}
 				command->buildingTileId = _simulation->buildingCenter(command->buildingId).tileId();
 				command->buildingEnum = _simulation->buildingEnum(command->buildingId);
 				command->buildingId = -1;

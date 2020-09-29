@@ -156,6 +156,7 @@ public:
 	virtual int32 buildingIdAtTile(WorldTile2 tile) = 0;
 	virtual bool tileHasBuilding(WorldTile2 tile) = 0;
 
+	virtual bool IsValidBuilding(int32 id) = 0;
 
 	virtual std::vector<int32> frontBuildingIds(WorldTile2 tile) = 0;
 

@@ -494,10 +494,10 @@ public:
 	Building& building(int32 id) final {
 		return _buildingSystem->building(id); 
 	}
-	bool IsValidBuilding(int32 id) {
+	bool IsValidBuilding(int32 id) final {
 		bool isValid = (0 <= id && id < _buildingSystem->buildingCount()) && _buildingSystem->alive(id);
 		if (!isValid) {
-			LOG_ERROR(LogNetworkInput, "IsValidBuilding: id:%d bldCount:%d alive:%d", id, _buildingSystem->buildingCount(), _buildingSystem->alive(id));
+			LOG_ERROR(LogNetworkInput, "IsValidBuilding: !isValid id:%d bldCount:%d alive:%d", id, _buildingSystem->buildingCount(), _buildingSystem->alive(id));
 		}
 		return isValid;
 	}

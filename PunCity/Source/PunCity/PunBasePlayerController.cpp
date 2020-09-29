@@ -118,7 +118,7 @@ void APunBasePlayerController::Tick(float DeltaTime)
 
 			//PUN_DEBUG2("Tick %d received:%d", packets.Num(), gameInstance()->clientPacketsReceived[controllerPlayerId()]);
 
-			_LOG(PunNetwork, "Sync - Controller Tick %d/%d", receivedPacketsCount, _packetsRequested);
+			//_LOG(PunNetwork, "Sync - Controller Tick %d/%d", receivedPacketsCount, _packetsRequested);
 			
 			// Don't overflow the buffer
 			const int32 packetsPerRequest = 40;
@@ -164,7 +164,7 @@ void APunBasePlayerController::RequestDataChunks_ToServer_Implementation(int32 c
 	int32 lastPacketIndex = gameInst->saveSystem().totalPackets() - 1;
 	const TArray<uint8>& sourceData = gameInst->saveSystem().GetSyncCompressedData();
 
-	_LOG(PunNetwork, "Sync - RequestDataChunks_ToServer last:%d packIndicesCount:%d", lastPacketIndex, packetIndices.Num());
+	//_LOG(PunNetwork, "Sync - RequestDataChunks_ToServer last:%d packIndicesCount:%d", lastPacketIndex, packetIndices.Num());
 	
 	for (int32 packetIndex : packetIndices)
 	{
@@ -174,7 +174,7 @@ void APunBasePlayerController::RequestDataChunks_ToServer_Implementation(int32 c
 			packetSize = gameInst->saveSystem().lastPacketSize();
 		}
 
-		_LOG(PunNetwork, "Sync - RequestDataChunks_ToServer packetSize:%d sourceData:%d", packetSize, sourceData.Num());
+		//_LOG(PunNetwork, "Sync - RequestDataChunks_ToServer packetSize:%d sourceData:%d", packetSize, sourceData.Num());
 
 		TArray<uint8> dataChunk;
 		dataChunk.Reserve(packetSize);

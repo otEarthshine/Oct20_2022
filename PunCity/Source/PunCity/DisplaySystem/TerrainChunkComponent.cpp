@@ -474,7 +474,7 @@ void UTerrainChunkComponent::UpdateTerrainChunkMesh(GameSimulationCore& simulati
 	{
 		//SCOPE_TIMER("Terrain Chunk Creation");
 
-		if (createMesh || holes.size() != _lastHoleCount) {
+		if (createMesh) { // || holes.size() != _lastHoleCount) {
 			CreateMeshSection_LinearColor(0, vertices, tris, normals, UV0, vertexColors, tangents, false);
 		}
 		else {

@@ -116,12 +116,12 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 
 	{TechEnum::CropStudy, {
 		"Crop Variety",
-		"Unlock crops: plump cob, honey pot",
+		"aaaa",
 	}},
 
 	{TechEnum::Plantation, {
 		"Plantation",
-		"Unlock crops: cannabis, grape, cocoa"
+		"Unlock farm crops cards: Cannabis Seeds, Grape Seeds, Cocoa Seeds"
 	}},
 	
 	{TechEnum::MushroomSubstrateSterilization, {
@@ -639,6 +639,7 @@ public:
 			
 
 			era = 2;
+			AddProsperityTech_Building(era, 4, TechEnum::Library, CardEnum::Library);
 			AddProsperityTech_BuildingX(era, 20, TechEnum::Baking, { CardEnum::Windmill, CardEnum::Bakery });
 			AddProsperityTech_Bonus(era, 20, TechEnum::FarmAdjacency);
 			AddProsperityTech_Bonus(era, 30, TechEnum::FarmingBreakthrough);
@@ -646,10 +647,9 @@ public:
 			
 			
 			era = 3;
-			AddProsperityTech_Building(era, 4, TechEnum::Library, CardEnum::Library);
-			AddProsperityTech_BuildingX(era, 2, TechEnum::BrickMaking, { CardEnum::Brickworks });
+			AddProsperityTech_BuildingX(era, 4, TechEnum::BrickMaking, { CardEnum::Brickworks });
 
-			AddProsperityTech_Building(era, 2, TechEnum::Tailor, CardEnum::Tailor);
+			AddProsperityTech_Building(era, 4, TechEnum::Tailor, CardEnum::Tailor);
 			AddProsperityTech_Building(era, 2, TechEnum::Beekeeper, CardEnum::Beekeeper);
 			AddProsperityTech_Building(era, 2, TechEnum::CandleMaker, CardEnum::CandleMaker);
 

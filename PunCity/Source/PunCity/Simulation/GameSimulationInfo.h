@@ -2076,7 +2076,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::StoneToolShop,	"Stone Tool Shop",		WorldTile2(5, 8),	ResourceEnum::Stone, ResourceEnum::Wood, ResourceEnum::StoneTools,		 10, 2,	{50,20,0},	"."),
 	BldInfo(CardEnum::Blacksmith,	"Blacksmith",			WorldTile2(5, 8),	ResourceEnum::Iron, ResourceEnum::Wood, ResourceEnum::SteelTools,		 10, 2,	{50,50,20},	"Forge Tools from Iron Bars and Wood."),
 	BldInfo(CardEnum::Herbalist,		"Herbalist",			WorldTile2(4, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 10, 2,	{50,30,0},	"."),
-	BldInfo(CardEnum::MedicineMaker,	"Medicine Maker",		WorldTile2(4, 4),	ResourceEnum::Herb, ResourceEnum::None, ResourceEnum::Medicine,		 10, 2,	{50,50,20},	"."),
+	BldInfo(CardEnum::MedicineMaker,	"Medicine Maker",		WorldTile2(4, 4),	ResourceEnum::Herb, ResourceEnum::None, ResourceEnum::Medicine,		 10, 2,	{50,50,20},	"Make Medicine from Medicinal Herb."),
 
 	
 	BldInfo(CardEnum::FurnitureWorkshop,"Furniture Workshop",	WorldTile2(6, 7),	ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::Furniture,	 10, 2,	{50,20,0},	"Make Furniture from Wood."),

@@ -101,11 +101,6 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 	}},
 	// TODO: BuildingComboEnum?? Encourage ppl to build next building... holes to fill...
 
-	{TechEnum::Library, {
-		"Writing",
-		"+10% science."
-	}},
-
 	{TechEnum::Espionage, {
 		"Espionage",
 	}},
@@ -117,6 +112,11 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 	{TechEnum::CropStudy, {
 		"Crop Variety",
 		"aaaa",
+	}},
+
+	{TechEnum::CityToCityTrade, {
+		"City-to-city Trade",
+		"Allow player to set trade offers for other players to directly trade with.",
 	}},
 
 	{TechEnum::Plantation, {
@@ -149,7 +149,7 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 	}},
 	{TechEnum::ShallowWaterEmbark, {
 		"Shallow Water Embark",
-		"Allow claiming land an unclaimed land across a body of water."
+		"Allow claiming bordering unclaimed province across a body of water."
 	}},
 
 	{TechEnum::Sawmill, {
@@ -206,23 +206,23 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 
 	{ TechEnum::ScienceLastEra, {
 		"Thinking Machine",
-		"+20% science output (Counts toward scientific victory)",
+		"+20% science output",
 	}},
 	{ TechEnum::MoneyLastEra, {
 		"Advanced Economics",
-		"+20% house income (Counts toward scientific victory)",
+		"+20% house income",
 	}},
 	{ TechEnum::FarmLastEra, {
 		"Microbial Mastery",
-		"+20% farm output (Counts toward scientific victory)",
+		"+20% farm output",
 	}},
 	{ TechEnum::IndustryLastEra, {
-		"Mastery of Machinery",
-		"+20% industry output (Counts toward scientific victory)",
+		"Machinery Mastery",
+		"+20% industry output",
 	}},
 	{ TechEnum::MilitaryLastEra, {
 		"Advanced Military",
-		"+20% attack damage for all military units (Counts toward scientific victory)",
+		"+100% influence points from Barracks",
 	}},
 
 	/*
@@ -232,6 +232,22 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 		"Rationalism",
 		"+20% Science Output",
 	}},
+
+	{ TechEnum::InfluencePoints, {
+		"Influence Points",
+		"Unlock Influence Points <img id=\"Influence\"/> used to claim land.",
+	}},
+
+	{ TechEnum::Conquer, {
+		"Conquer Province",
+		"Unlock Province Conquering",
+	}},
+
+	{ TechEnum::Vassalize, {
+		"Vassalize",
+		"Unlock Vassalization which allows you to turn other city into a vassal.",
+	}},
+	
 };
 
 enum class TechClassEnum
@@ -559,6 +575,7 @@ public:
 			AddTech_Bonus(era, TechEnum::CheapReroll);
 			AddTech_Bonus(era, TechEnum::MushroomSubstrateSterilization);
 			AddTech_Bonus(era, TechEnum::BorealLandCost);
+			AddTech_Building(era, TechEnum::BarrackArcher, CardEnum::BarrackArcher);
 			
 			//
 			era = 2;
@@ -574,9 +591,11 @@ public:
 			AddTech_Building(era, TechEnum::TradingCompany, CardEnum::TradingCompany);
 			AddTech_Bonus(era, TechEnum::DesertTrade);
 			AddTech_Bonus(era, TechEnum::ShallowWaterEmbark);
+			
 			AddTech_Bonus(era, TechEnum::Sawmill);
 			AddTech_Building(era, TechEnum::Medicine, CardEnum::MedicineMaker);
 			AddTech_Building(era, TechEnum::RanchSheep, { CardEnum::RanchSheep });
+			AddTech_Building(era, TechEnum::BarrackKnight, CardEnum::BarrackSwordman);
 			
 			//
 			era = 4;
@@ -635,7 +654,11 @@ public:
 			AddProsperityTech_Building(era, 8, TechEnum::FurnitureWorkshop, CardEnum::FurnitureWorkshop);
 			AddProsperityTech_BuildingX(era, 2, TechEnum::Pottery, { CardEnum::Potter, CardEnum::ClayPit });
 			AddProsperityTech_Building(era, 2, TechEnum::BeerBrewery, CardEnum::BeerBrewery);
-			AddProsperityTech_BuildingPermanent(era, 20, TechEnum::FlowerBed, { CardEnum::FlowerBed });
+			//AddProsperityTech_Bonus(era, 4, TechEnum::CityToCityTrade);
+			AddProsperityTech_Bonus(era, 4, TechEnum::InfluencePoints);
+			AddProsperityTech_Bonus(era, 4, TechEnum::Conquer);
+			AddProsperityTech_Bonus(era, 4, TechEnum::Vassalize);
+			AddProsperityTech_BuildingPermanent(era, 4, TechEnum::FlowerBed, { CardEnum::FlowerBed });
 			
 
 			era = 2;
@@ -700,6 +723,10 @@ public:
 
 			std::stringstream ss;
 			ss << "Unlocked: House Upgrade Unlocks Menu.";
+			ss << "<space>";
+			ss << "Houses can be upgraded by supplying them with Luxury Resources. ";
+			ss << "Achieving certain house level count will unlock new technologies.";
+			
 			PopupInfo popupInfo(_playerId, ss.str(), { "Show House Upgrade Unlocks", "Close" },
 				PopupReceiverEnum::UnlockedHouseTree_ShowProsperityUI);
 			popupInfo.warningForExclusiveUI = ExclusiveUIEnum::ProsperityUI;

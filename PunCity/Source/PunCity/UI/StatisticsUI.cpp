@@ -31,16 +31,16 @@ void UStatisticsUI::InitStatisticsUI()
 	ResourceStatisticsBox->ClearChildren();
 
 	AddSeries(PopulationGraph, {
-		{ FString("Adult population"), PlotStatEnum::AdultPopulation, FLinearColor::Yellow },
-		{ FString("Child population"), PlotStatEnum::ChildPopulation, FLinearColor::Blue },
+		//{ FString("Adult population"), PlotStatEnum::AdultPopulation, FLinearColor::Yellow },
 		{ FString("Population"), PlotStatEnum::Population, FLinearColor::Green },
-		});
+		{ FString("Child population"), PlotStatEnum::ChildPopulation, FLinearColor::Blue },
+	});
 
 	AddSeries(IncomeGraph, {
 		{FString("Income"), PlotStatEnum::Income, FLinearColor::Green },
 		{FString("Revenue"), PlotStatEnum::Revenue, FLinearColor::Blue },
 		{FString("Expense"), PlotStatEnum::Expense, FLinearColor::Red },
-		});
+	});
 	AddSeries(ScienceGraph, { {FString("Science"), PlotStatEnum::Science, FLinearColor::Blue } });
 
 	AddSeries(FoodFuelGraph, {

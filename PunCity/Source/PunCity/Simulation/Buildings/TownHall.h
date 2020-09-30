@@ -19,19 +19,16 @@ static const std::vector<std::string> TownhallLvlToUpgradeBonusText =
 	"<bullet>Buy Wood</>"
 	"<bullet>Sell Food</>", // Lvl 2
 
-	"<bullet>Unlocked Influence Points used to claim land.</>"
 	"<bullet>+10% mine/quarry production.</>"
 	"<space>"
 	"Unlocked Cards:"
 	"<bullet>Immigration Advertisement</>"
-	"<bullet>Kidnap</>"
-	"<bullet>Archer Barrack</>", // 3
+	"<bullet>Kidnap</>", // 3
 
 	"<space>"
 	"Unlocked Cards:"
 	"<bullet>Warehouse</>"
-	"<bullet>Sharing is caring</>"
-	"<bullet>Swordman Barrack</>",// 4
+	"<bullet>Sharing is caring</>",// 4
 
 	"<bullet>+10% industrial production.</>", // Lvl 5
 };
@@ -99,6 +96,13 @@ public:
 	//std::string UpgradeButtonString();
 	//std::string UpgradeButtonTooltip();
 
+	std::vector<std::string> getImmigrationEventChoices() {
+		std::vector<std::string> choices = { "accept", "refuse" };
+		if (_simulation->TownhallCardCount(_playerId, CardEnum::Cannibalism)) {
+			choices.push_back("kill, steal, and eat (Cannibalism)");
+		}
+		return choices;
+	}
 	void ImmigrationEvent(int32 exactAmount = -1);
 	void ImmigrationEvent(int32 exactAmount, std::string message, PopupReceiverEnum replyReceiver = PopupReceiverEnum::ImmigrationEvent);
 	//void AnimalVendorEvent();

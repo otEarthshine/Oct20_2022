@@ -122,9 +122,9 @@ public:
 	void OnInit() override
 	{
 		SetupWorkMode({
-			{"Cut and plant", ResourceEnum::None, ResourceEnum::None, 0},
-			{"Prioritize planting", ResourceEnum::None, ResourceEnum::None, 0},
-			{"Prioritize cutting", ResourceEnum::None, ResourceEnum::None, 0},
+			{"Cut and Plant", ResourceEnum::None, ResourceEnum::None, 0},
+			{"Prioritize Planting", ResourceEnum::None, ResourceEnum::None, 0},
+			{"Prioritize Cutting", ResourceEnum::None, ResourceEnum::None, 0},
 		});
 	}
 	
@@ -133,7 +133,8 @@ public:
 		Building::FinishConstruction();
 
 		_upgrades = {
-			MakeUpgrade("Timber management", "+30% efficiency.", ResourceEnum::Stone,50),
+			MakeUpgrade("Timber Management", "+30% efficiency.", ResourceEnum::Stone,50),
+			MakeUpgrade("Tree-felling Technique", "+30% efficiency.", ResourceEnum::Stone,80),
 			MakeUpgrade("Forest Town", "+30% production when you own 3+ foresters.", ResourceEnum::Stone, 50),
 		};
 	}
@@ -144,9 +145,12 @@ public:
 		std::vector<BonusPair> bonuses = Building::GetBonuses();
 
 		if (IsUpgraded(0)) {
-			bonuses.push_back({ "Timber management", 30 });
+			bonuses.push_back({ "Timber Management", 30 });
 		}
 		if (IsUpgraded(1)) {
+			bonuses.push_back({ "Tree-felling Technique", 30 });
+		}
+		if (IsUpgraded(2)) {
 			if (_simulation->buildingCount(_playerId, CardEnum::Forester) >= 3) {
 				bonuses.push_back({ "Forest Town", 30 });
 			}
@@ -573,16 +577,22 @@ public:
 	int32 workManSecPerBatch100() override
 	{
 		// Same amount of work required to acquire resources
-		return baseInputValue() * 100 * 100 / WorkRevenue100PerSec_perMan_Base; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
+		return baseProfitValue() * 100 * 100 / WorkRevenue100PerSec_perMan_Base; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
 	}
 
-	// Production always yield the same amount of product
+	// Production always yield the same amount of product (2 * baseinput)
 	int32 productPerBatch() override {
 		return (baseInputValue() * 2) * efficiency() / 100;
 	}
+	
 private:
 	int32 baseInputValue() {
-		return GetResourceInfo(input1()).basePrice * inputPerBatch();
+		return GetResourceInfo(input1()).basePrice * baseInputPerBatch();
+	}
+	int32 baseProfitValue() {
+		// Without sustainability card, baseProfitValue == baseInputValue
+		// With Sustainability, baseProfitValue would increase, increase the work time...
+		return GetResourceInfo(input1()).basePrice * (baseInputPerBatch() - inputPerBatch()); // inputPerBatch default to 10 taking into account sustainability card...
 	}
 };
 
@@ -645,6 +655,11 @@ public:
 
 	std::vector<BonusPair> GetBonuses() override {
 		std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
+
+		if (_simulation->IsResearched(_playerId, TechEnum::MilitaryLastEra)) {
+			bonuses.push_back({ "Advanced Military", 100 });
+		}
+		
 		return bonuses;
 	}
 };
@@ -1406,7 +1421,8 @@ public:
 		//AddResourceHolder(ResourceEnum::WhaleMeat, ResourceHolderType::Provider, 0);
 
 		_upgrades = {
-			BuildingUpgrade("Juicier bait", "Juicier bait that attracts more fish. +25% production when fishing.", 350),
+			BuildingUpgrade("Juicier Bait", "Juicier bait that attracts more fish. +25% productivity.", 350),
+			MakeUpgrade("Improved Fishing Tools", "+30% productivity.", ResourceEnum::SteelTools, 70),
 			BuildingUpgrade("More Workers", "+1 worker slots", 100),
 			//BuildingUpgrade("Whaling", "Catch whale from deep sea instead.\n  Produces whale meat.\n  +2 worker slots.\n  No effect nearby fish population", 120)
 		};
@@ -1449,10 +1465,13 @@ public:
 		std::vector<BonusPair> bonuses = Building::GetBonuses();
 		int32 cardCount = _simulation->TownhallCardCount(_playerId, CardEnum::CooperativeFishing);
 		if (cardCount > 0) {
-			bonuses.push_back({ "Cooperative fishing", cardCount * 10 });
+			bonuses.push_back({ "Cooperative Fishing", cardCount * 10 });
 		}
 		if (IsUpgraded(0)) {
-			bonuses.push_back({ "Juicier bait", 25 });
+			bonuses.push_back({ "Juicier Bait", 25 });
+		}
+		if (IsUpgraded(1)) {
+			bonuses.push_back({ "Improved Fishing Tools", 25 });
 		}
 		return bonuses;
 	}

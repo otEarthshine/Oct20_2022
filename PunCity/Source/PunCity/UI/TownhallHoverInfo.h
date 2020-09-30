@@ -731,7 +731,6 @@ public:
 	
 	UPROPERTY(meta = (BindWidget)) UTextBlock* TownHoverPopulationText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* CityNameText;
-	//UPROPERTY(meta = (BindWidget)) UEditableText* CityNameEditableText;
 	UPROPERTY(meta = (BindWidget)) UImage* PlayerColorCircle;
 
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* LaborerBuilderBox;

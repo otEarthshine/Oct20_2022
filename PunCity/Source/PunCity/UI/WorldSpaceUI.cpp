@@ -1182,7 +1182,7 @@ void UWorldSpaceUI::TickPlacementInstructions()
 
 		int32 appealPercent = simulation().overlaySystem().GetAppealPercent(placementInfo.mouseOnTile);
 		ss << "Appeal: " << appealPercent << "%";
-		punBox->AddRichText(ss)->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichText(TextRed(ss.str(), appealPercent < 60))->SetJustification(ETextJustify::Type::Center);
 		punBox->AddSpacer(12);
 
 	}
@@ -1190,21 +1190,21 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	{
 		int32 efficiency = Fisher::FisherAreaEfficiency(placementInfo.mouseOnTile, false, WorldTile2::Invalid, &simulation());
 		ss << "Efficiency: " << efficiency << "%";
-		punBox->AddRichText(ss)->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichText(TextRed(ss.str(), efficiency < 60))->SetJustification(ETextJustify::Type::Center);
 		punBox->AddSpacer(12);
 	}
 	else if (placementInfo.buildingEnum == CardEnum::Windmill)
 	{
 		int32 efficiency = Windmill::WindmillBaseEfficiency(playerId(), placementInfo.mouseOnTile, &simulation());
 		ss << "Efficiency: " << efficiency << "%";
-		punBox->AddRichText(ss)->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichText(TextRed(ss.str(), efficiency < 60))->SetJustification(ETextJustify::Type::Center);
 		punBox->AddSpacer(12);
 	}
 	else if (placementInfo.buildingEnum == CardEnum::Beekeeper)
 	{
 		int32 efficiency = Beekeeper::BeekeeperBaseEfficiency(playerId(), placementInfo.mouseOnTile, &simulation());
 		ss << "Efficiency: " << efficiency << "%";
-		punBox->AddRichText(ss)->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichText(TextRed(ss.str(), efficiency < 60))->SetJustification(ETextJustify::Type::Center);
 		punBox->AddSpacer(12);
 	}
 

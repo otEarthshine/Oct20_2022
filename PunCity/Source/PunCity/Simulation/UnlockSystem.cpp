@@ -72,14 +72,14 @@ void UnlockSystem::OnEraUnlocked(std::stringstream& ss)
 		ss << "<space>";
 		ss << " Unlocked Global Slot Cards:";
 		ss << "<bullet>Chimney Restrictor</>";
-		ss << "<bullet>Child Marriage</>";
+		//ss << "<bullet>Child Marriage</>";
 		ss << "<bullet>Prolong Life</>";
 		ss << "<bullet>Birth Control</>";
 		ss << "<bullet>Coal Treatment</>";
 		
 		auto& cardSys = _simulation->cardSystem(_playerId);
 		cardSys.AddDrawCards(CardEnum::ChimneyRestrictor, 1);
-		cardSys.AddDrawCards(CardEnum::ChildMarriage, 1);
+		//cardSys.AddDrawCards(CardEnum::ChildMarriage, 1);
 		cardSys.AddDrawCards(CardEnum::ProlongLife, 1);
 		cardSys.AddDrawCards(CardEnum::BirthControl, 1);
 		cardSys.AddDrawCards(CardEnum::CoalTreatment, 1); // Encourage coal usage...
@@ -131,5 +131,22 @@ void BonusToggle_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulat
 			simulation->AddPopupToFront(playerId, "Unlocked bridge!", ExclusiveUIEnum::None, "PopupNeutral");
 			simulation->unlockSystem(playerId)->UnlockBuilding(CardEnum::Bridge);
 		}
+	}
+
+	if (techEnum == TechEnum::InfluencePoints) {
+		simulation->AddPopup(playerId, "Unlocked Influence Points <img id=\"Influence\"/> used to claim land.");
+	}
+	if (techEnum == TechEnum::Conquer) {
+		simulation->AddPopup(playerId, "Unlocked Province Conquering"
+												"<space>"
+												"You can now conquer opponent's provinces with Influence Points <img id=\"Influence\"/>.");
+	}
+	if (techEnum == TechEnum::Vassalize) 
+	{
+		simulation->AddPopup(playerId, "Unlocked Vassalization"
+			"<space>"
+			"You can now vassalize another city with Influence Points <img id=\"Influence\"/>.\n"
+			"To vassalize another city, click on the townhall "
+			"Your vassal city keep their control, but must pay vassal tax to you.");
 	}
 }

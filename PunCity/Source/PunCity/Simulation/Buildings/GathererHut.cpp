@@ -582,14 +582,17 @@ void Colony::TickRound()
 	if (isConstructed())
 	{
 		ResourceEnum resourceEnum = GetColonyResourceEnum();
-		int32 resourceCount = GetColonyResourceIncome(resourceEnum);
+		if (IsResourceValid(resourceEnum))
+		{
+			int32 resourceCount = GetColonyResourceIncome(resourceEnum);
 
-		// Deplete province resource
-		if (IsOreEnum(resourceEnum)) {
-			_simulation->georesourceSystem().MineOre(_simulation->GetProvinceIdRaw(centerTile()), resourceCount);
+			// Deplete province resource
+			if (IsOreEnum(resourceEnum)) {
+				_simulation->georesourceSystem().MineOre(_simulation->GetProvinceIdRaw(centerTile()), resourceCount);
+			}
+
+			resourceSystem().AddResourceGlobal(resourceEnum, resourceCount, *_simulation);
+			_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainResource, centerTile(), "+" + to_string(resourceCount), resourceEnum);
 		}
-
-		resourceSystem().AddResourceGlobal(resourceEnum, resourceCount, *_simulation);
-		_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainResource, centerTile(), "+" + to_string(resourceCount), resourceEnum);
 	}
 }

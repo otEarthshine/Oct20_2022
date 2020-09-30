@@ -78,11 +78,11 @@ public:
 		_descriptionUISystem->LeftMouseDown();
 #endif
 	}
-	void RightMouseDown() {
+	void RightMouseUp() {
 #if UI_ALL
 		_descriptionUISystem->CloseDescriptionUI();
-		_mainGameUI->RightMouseDown();
-		_escMenuUI->RightMouseDown();
+		_mainGameUI->RightMouseUp();
+		_escMenuUI->RightMouseUp();
 #endif
 	}
 	void KeyPressed_Escape();

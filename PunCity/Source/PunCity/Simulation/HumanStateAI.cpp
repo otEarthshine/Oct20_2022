@@ -1539,8 +1539,9 @@ bool HumanStateAI::TryForestingPlant(TileObjEnum tileObjEnum, NonWalkableTileAcc
 bool HumanStateAI::TryForesting()
 {
 	Forester& forester = workplace()->subclass<Forester>(CardEnum::Forester);
+	const std::string& workModeName = forester.workMode().name;
 	
-	if (forester.workMode().name == "Cut and plant") {
+	if (workModeName == "Cut and Plant") {
 		if (TryForestingCut(true)) {
 			return true;
 		}
@@ -1550,7 +1551,7 @@ bool HumanStateAI::TryForesting()
 		return TryForestingNourish();
 	}
 	
-	if (forester.workMode().name == "Prioritize planting")
+	if (workModeName == "Prioritize Planting")
 	{
 		if (TryForestingPlant(TileObjEnum::None)) {
 			return true;
@@ -1561,7 +1562,7 @@ bool HumanStateAI::TryForesting()
 		return TryForestingNourish();
 	}
 
-	if (forester.workMode().name == "Prioritize cutting")
+	if (workModeName == "Prioritize Cutting")
 	{
 		if (TryForestingCut(false)) {
 			return true;

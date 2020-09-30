@@ -137,13 +137,12 @@ void TownHall::UpgradeTownhall()
 	else if (townhallLvl == 3) {
 		cardSys.AddDrawCards(CardEnum::Immigration, 1);
 		cardSys.AddDrawCards(CardEnum::Kidnap, 1);
-		cardSys.AddDrawCards(CardEnum::BarrackArcher, 1);
 
 		std::stringstream ss;
-		ss << "Unlocked [Set Trade Offer] Button.";
+		ss << "Unlocked \"Set Trade Offer\" Button.";
 		ss << "<space>";
-		ss << "Use it to put up Trade Offers at the Townhall.";
-		ss << " Other players can examine your Trade Offers, and directly trade with you (0% Fee).";
+		ss << "Use it to put up Trade Offers at the Townhall.\n";
+		ss << "Other players can examine your Trade Offers, and directly trade with you (0% Fee).";
 
 		_simulation->AddPopup(_playerId, ss.str());
 		unlockSys->unlockedSetTradeAmount = true;
@@ -151,7 +150,6 @@ void TownHall::UpgradeTownhall()
 	else if (townhallLvl == 4) {
 		cardSys.AddDrawCards(CardEnum::Warehouse, 1);
 		cardSys.AddDrawCards(CardEnum::SharingIsCaring, 1);
-		cardSys.AddDrawCards(CardEnum::BarrackSwordman, 1);
 	}
 
 
@@ -228,7 +226,7 @@ void TownHall::Tick1Sec()
 void TownHall::ImmigrationEvent(int32 exactAmount, std::string message, PopupReceiverEnum replyReceiver)
 {
 	askedMigration = exactAmount;
-	_simulation->AddPopup(PopupInfo(_playerId, message, { "accept", "refuse", "kill and steal" }, replyReceiver));
+	_simulation->AddPopup(PopupInfo(_playerId, message, getImmigrationEventChoices(), replyReceiver));
 }
 
 void TownHall::ImmigrationEvent(int32 exactAmount)
@@ -240,7 +238,7 @@ void TownHall::ImmigrationEvent(int32 exactAmount)
 	if (exactAmount != -1) {
 		askedMigration = exactAmount;
 		_simulation->AddPopup(PopupInfo(_playerId, to_string(askedMigration) + " immigrants asked to join your colony.",
-							{ "accept", "refuse", "kill and steal" }, PopupReceiverEnum::ImmigrationEvent));
+								getImmigrationEventChoices(), PopupReceiverEnum::ImmigrationEvent));
 		return;
 	}
 
@@ -250,19 +248,16 @@ void TownHall::ImmigrationEvent(int32 exactAmount)
 
 	if (migrationType == 1) {
 		// Low happiness... less immigration
-		ImmigrationEvent(askedMigration, to_string(askedMigration) + " desparate immigrants asked to join your colony. Low happiness lessen immigration.");
-		//_simulation->AddPopup(PopupInfo(_playerId, to_string(askedMigration) + " desparate immigrants asked to join your colony. Low happiness lessen immigration.",
-		//	{ "accept", "refuse", "kill and steal" }, PopupReceiverEnum::ImmigrationEvent));
+		ImmigrationEvent(askedMigration, to_string(askedMigration) + 
+			" desparate immigrants asked to join your colony. Low happiness lessen immigration.");
 	}
 	else if (migrationType == 2) {
-		ImmigrationEvent(askedMigration, to_string(askedMigration) + " immigrants asked to join your colony. They heard that your town has plenty of available living space. Would you let them join your town?");
-		//_simulation->AddPopup(PopupInfo(_playerId, to_string(askedMigration) + " immigrants asked to join your colony. They heard that your town has plenty of available living space. Would you let them join your town?",
-		//	{ "accept", "refuse", "kill and steal" }, PopupReceiverEnum::ImmigrationEvent));
+		ImmigrationEvent(askedMigration, to_string(askedMigration) + 
+			" immigrants asked to join your colony. They heard that your town has plenty of available living space. Would you let them join your town?");
 	}
 	else if (migrationType == 0) {
-		ImmigrationEvent(askedMigration, to_string(askedMigration) + " immigrants asked to join your colony. They came from faraway land, filled with hope, after hearing great rumors about your town. Would you let them join your town?");
-		//_simulation->AddPopup(PopupInfo(_playerId, to_string(askedMigration) + " immigrants asked to join your colony. They came from faraway land, filled with hope, after hearing great rumors about your town. Would you let them join your town?",
-		//	{ "accept", "refuse", "kill and steal" }, PopupReceiverEnum::ImmigrationEvent));
+		ImmigrationEvent(askedMigration, to_string(askedMigration) + 
+			" immigrants asked to join your colony. They came from faraway land, filled with hope, after hearing great rumors about your town. Would you let them join your town?");
 	}
 	else {
 		UE_DEBUG_BREAK();

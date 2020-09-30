@@ -894,11 +894,27 @@ static const ResourceInfo ResourceInfos[]
 
 };
 
+static const int ResourceEnumCount = _countof(ResourceInfos);
+
+static bool IsResourceValid(ResourceEnum resourceEnum)
+{
+	int32 resourceEnumInt = static_cast<int32>(resourceEnum);;
+	return ResourceEnumCount > resourceEnumInt && resourceEnumInt >= 0;
+}
+
+
 inline ResourceInfo GetResourceInfo(ResourceEnum resourceEnum) {
 	return ResourceInfos[static_cast<int>(resourceEnum)];
 }
 inline ResourceInfo GetResourceInfo(int32 resourceEnumInt) {
 	return ResourceInfos[resourceEnumInt];
+}
+
+inline ResourceInfo GetResourceInfoSafe(ResourceEnum resourceEnum) {
+	if (!IsResourceValid(resourceEnum)) {
+		return ResourceInfos[static_cast<int>(ResourceEnum::Wood)];
+	}
+	return ResourceInfos[static_cast<int>(resourceEnum)];
 }
 
 inline std::string ResourceName(ResourceEnum resourceEnum) {
@@ -910,7 +926,6 @@ inline FString ResourceNameF(ResourceEnum resourceEnum) {
 	return FString(ResourceInfos[static_cast<int>(resourceEnum)].name.c_str());
 }
 
-static const int ResourceEnumCount = _countof(ResourceInfos);
 
 inline ResourceEnum FindResourceEnumByName(std::string name)
 {
@@ -2132,7 +2147,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::Mint,			"Mint",					WorldTile2(4, 6),	ResourceEnum::GoldBar,ResourceEnum::None,ResourceEnum::None,		 0, 2,	{80,80,0},	"Mint Gold Bars into <img id=\"Coin\"/>."),
 
 	BldInfo(CardEnum::BarrackClubman,	"Clubman Barrack",	WorldTile2(7, 7),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 2,	{30,0,0},	"Train Clubmen."),
-	BldInfo(CardEnum::BarrackSwordman,	"Swordman Barrack",	WorldTile2(7, 7),	ResourceEnum::Iron, ResourceEnum::None, ResourceEnum::None,		0, 5,	{30,30,30},	"Consume Iron to increase <img id=\"Influence\"/>."),
+	BldInfo(CardEnum::BarrackSwordman,	"Knight Barrack",	WorldTile2(7, 7),	ResourceEnum::Iron, ResourceEnum::None, ResourceEnum::None,		0, 5,	{30,30,30},	"Consume Iron to increase <img id=\"Influence\"/>."),
 	BldInfo(CardEnum::BarrackArcher,		"Archer Barrack",	WorldTile2(7, 7),	ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::None,		0, 2,	{50,30,0},	"Consume Wood to increase <img id=\"Influence\"/>."),
 
 	BldInfo(CardEnum::ShrineWisdom,	"Shrine of Wisdom",		WorldTile2(4, 4),	ResourceEnum::None,ResourceEnum::None,ResourceEnum::None,	 0, 0,	{0, 50, 0},	"+1 Wild Card to the deck."),
@@ -2246,7 +2261,7 @@ static const BldInfo CardInfos[]
 
 	BldInfo(CardEnum::WheatSeed,			"Wheat Seeds", 300, "Unlock Wheat farming. Wheat can be eaten or brewed into Beer."),
 	BldInfo(CardEnum::CabbageSeed,			"Cabbage Seeds", 350, "Unlock Cabbage farming. Cabbage has high fertility sensitivity."),
-	BldInfo(CardEnum::HerbSeed,			"Herb Seeds", 500, "Unlock Herb farming. Herb can be used to heal the sick."),
+	BldInfo(CardEnum::HerbSeed,			"Medicinal Herb Seeds", 500, "Unlock Medicinal Herb farming. Medicinal Herb can be used to heal sickness."),
 
 	BldInfo(CardEnum::CannabisSeeds,			"Cannabis Seeds", 0, "Unlock Cannabis farming. Require region suitable for Cannabis."),
 	BldInfo(CardEnum::GrapeSeeds,			"Grape Seeds", 0, "Unlock Grape farming. Requires region suitable for Grape."),
@@ -3576,7 +3591,7 @@ static const TileObjInfo TreeInfos[] = {
 	TileObjInfo(TileObjEnum::Cyathea,	"Cyathea",	ResourceTileType::Tree,	ResourcePair::Invalid(),								defaultWood100, "Fern tree."),
 	TileObjInfo(TileObjEnum::ZamiaDrosi,	"Zamia Drosi",	ResourceTileType::Tree,	ResourcePair::Invalid(),						defaultWood100, "Giant leaf tropical tree."),
 
-	TileObjInfo(TileObjEnum::Cactus1,	"Cactus",	ResourceTileType::Tree,	ResourcePair::Invalid(),						defaultWood100, "Giant leaf tropical tree."),
+	TileObjInfo(TileObjEnum::Cactus1,	"Cactus",	ResourceTileType::Tree,	ResourcePair::Invalid(),						defaultWood100, "Desert plant with thick leafless stem covered in sharp spikes. Hurts to touch."),
 	TileObjInfo(TileObjEnum::SavannaTree1,	"Savanna Acacia",	ResourceTileType::Tree,	ResourcePair::Invalid(),						defaultWood100, "Myths say acacia trees descended from an ancient tree of life."),
 	
 	TileObjInfo(TileObjEnum::GrassGreen, "Grass",	ResourceTileType::Bush,	ResourcePair::Invalid(),		defaultGrass100, "Common grass. A nice food-source for grazing animals."),
@@ -4205,6 +4220,13 @@ enum class TechEnum : uint8
 	TaxAdjustment,
 
 	TradingPost, // With immigrationBoost
+
+	FireStarter,
+
+	CityToCityTrade,
+	InfluencePoints,
+	Conquer,
+	Vassalize,
 	
 	/*
 	 * Building techs
@@ -4276,11 +4298,11 @@ enum class TechEnum : uint8
 	HumanitarianAid,
 
 	TradingCompany,
+
+	BarrackArcher,
+	BarrackKnight,
 	
-	/*
-	 * Non-building card
-	 */
-	FireStarter,
+
 
 	/*
 	 * Bonuses
@@ -5626,6 +5648,16 @@ static const std::vector<std::string> MaleNames
 	"Maxo",
 	"Noot",
 	"Biffa",
+	"Nookrium",
+	"Dan",
+	"Zakh",
+	"Escoces",
+	"Kirill",
+	"Rick",
+	"Indrik",
+	"Boreale",
+	
+	
 	"Jakob",
 	"Jimba",
 	"Rufio",
@@ -5703,6 +5735,8 @@ static const std::vector<std::string> FemaleNames
 	// Discord
 	"Venti",
 	"Firis",
+	"Illia",
+	"Illya",
 };
 
 // UnitId with aliveAndLifeCount for proper comparison countering reuse 
@@ -6299,7 +6333,7 @@ const int32 StepsTakenToDoubleZoomHeight = 4 * NormalZoomSkipSteps;
 const float ZoomDoubleFactor = 1.0f / StepsTakenToDoubleZoomHeight; // = 1 / (steps taken to double the zoom height)
 
 const float MinZoomAmount = 100.0f;
-const float MinZoomLookAtHeight = MinZoomAmount * 0.5f;
+const float MinZoomLookAtHeight = MinZoomAmount * 0.3f; // 0.5f
 
 
 static float GetCameraZoomAmount(int32 cameraZoomStep) {

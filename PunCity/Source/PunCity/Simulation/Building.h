@@ -975,7 +975,8 @@ public:
 		}
 		return 1;
 	}
-	bool CanAddSlotCard() {
+	bool CanAddSlotCard()
+	{
 		if (isEnum(CardEnum::Townhall)) {
 			return false;
 		}

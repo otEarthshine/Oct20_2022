@@ -227,7 +227,9 @@ public:
 		{
 			if (tradeBuilding.CanTrade()) {
 				setWarningIcons(-1);
-				hasTradeButton = true;
+				if (tradeBuilding.playerId() == playerId()) {
+					hasTradeButton = true;
+				}
 			}
 			else if (tradeBuilding.IsTradeBuildingFull()) {
 				setWarningTradeBuildingFull();

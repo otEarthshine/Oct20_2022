@@ -140,30 +140,43 @@ private:
 			NameEditButtonText->SetText(FText::FromString("Done"));
 		}
 		else {
-			auto command = make_shared<FChangeName>();
-			command->name = NameEditTextBox->GetText().ToString();
-			command->objectId = simulation().playerOwned(playerId()).townHallId;
-			networkInterface()->SendNetworkCommand(command);
-			
-			NameEditTextBox->SetVisibility(ESlateVisibility::Collapsed);
-			DescriptionUITitle->SetVisibility(ESlateVisibility::Visible);
-			NameEditButtonText->SetText(FText::FromString("Edit"));
+			EditName(NameEditTextBox->GetText());
+			//auto command = make_shared<FChangeName>();
+			//command->name = TrimStringF(NameEditTextBox->GetText().ToString(), 30);
+			//command->objectId = simulation().playerOwned(playerId()).townHallId;
+			//networkInterface()->SendNetworkCommand(command);
+			//
+			//NameEditTextBox->SetVisibility(ESlateVisibility::Collapsed);
+			//DescriptionUITitle->SetVisibility(ESlateVisibility::Visible);
+			//NameEditButtonText->SetText(FText::FromString("Edit"));
 		}
 	}
 	UFUNCTION() void NameEditCommitted(const FText& Text, ETextCommit::Type CommitMethod)
 	{
 		if (CommitMethod == ETextCommit::Type::OnEnter) 
 		{
-			auto command = make_shared<FChangeName>();
-			command->name = Text.ToString();
-			command->objectId = simulation().playerOwned(playerId()).townHallId;
-			networkInterface()->SendNetworkCommand(command);
-			
-			NameEditTextBox->SetVisibility(ESlateVisibility::Collapsed);
-			DescriptionUITitle->SetVisibility(ESlateVisibility::Visible);
-			NameEditButtonText->SetText(FText::FromString("Edit"));
+			EditName(Text);
+			//auto command = make_shared<FChangeName>();
+			//command->name = Text.ToString();
+			//command->objectId = simulation().playerOwned(playerId()).townHallId;
+			//networkInterface()->SendNetworkCommand(command);
+			//
+			//NameEditTextBox->SetVisibility(ESlateVisibility::Collapsed);
+			//DescriptionUITitle->SetVisibility(ESlateVisibility::Visible);
+			//NameEditButtonText->SetText(FText::FromString("Edit"));
 		}
 	}
+	void EditName(const FText& Text) {
+		auto command = make_shared<FChangeName>();
+		command->name = TrimStringF(Text.ToString(), 30);
+		command->objectId = simulation().playerOwned(playerId()).townHallId;
+		networkInterface()->SendNetworkCommand(command);
+
+		NameEditTextBox->SetVisibility(ESlateVisibility::Collapsed);
+		DescriptionUITitle->SetVisibility(ESlateVisibility::Visible);
+		NameEditButtonText->SetText(FText::FromString("Edit"));
+	}
+	
 	
 	UFUNCTION() void OnDropDownChanged(FString sItem, ESelectInfo::Type seltype);
 

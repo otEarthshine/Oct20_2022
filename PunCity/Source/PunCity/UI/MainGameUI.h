@@ -25,7 +25,7 @@ class UMainGameUI : public UPunWidget, public UResearchTypeButtonUIParent
 public:
 	void PunInit();
 	void Tick();
-	void RightMouseDown();
+	void RightMouseUp();
 	void EscDown();
 
 	//UBuildingPlacementButton* AddAnimationCard(CardEnum buildingEnum);

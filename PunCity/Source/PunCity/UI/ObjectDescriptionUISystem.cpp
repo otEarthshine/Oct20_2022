@@ -835,7 +835,24 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							auto button = descriptionBox->AddButtonRed("", "Abandon town", nullptr, "", this, CallbackEnum::AbandonTown);
 							descriptionBox->AddLineSpacer(10);
 						}
+						else
+						{
+							// Vassalize
+							if (simulation.IsResearched(playerId(), TechEnum::Vassalize))
+							{
 
+								
+							}
+							//int32 startAttackPrice = simulation().GetProvinceAttackStartPrice(provinceId);
+							//bool canClaim = simulation().influence(playerId()) >= startAttackPrice;
+
+							//stringstream ss;
+							//ss << "Conquer Province (Annex)\n";
+							//ss << TextRed(to_string(startAttackPrice), !canClaim) << "<img id=\"Influence\"/>";
+
+							//descriptionBox->AddSpacer();
+							//descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::StartAttackProvince, canClaim, false, provinceId);
+						}
 
 						//ss << "\nBirth: " << StatSystem::StatsToString(statSystem.GetStat(SeasonStatEnum::Birth));
 						//ss << "Death(Age): " << StatSystem::StatsToString(statSystem.GetStat(SeasonStatEnum::DeathAge));
@@ -869,7 +886,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						//	ss << "\nBonus: +" << building.adjacentCount(BuildingEnum::IronSmelter) * 10 << "% productivity\n\n";
 						//}
 					}
-					else if (building.isEnum(CardEnum::Farm)) {
+					else if (building.isEnum(CardEnum::Farm)) 
+					{
 						Farm& farm = building.subclass<Farm>();
 
 						int32 fertility = farm.fertility();
@@ -1061,139 +1079,151 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					{
 						auto& tradingCompany = building.subclass<TradingCompany>();
 
-						// Display status only if the trade type was chosen...
-						if (tradingCompany.activeResourceEnum != ResourceEnum::None) {
-							descriptionBox->AddRichText("Maximum trade per round", to_string(tradingCompany.tradeMaximumPerRound()));
-							
-							//auto feeText = descriptionBox->AddRichText("Trade fee:", to_string(tradingCompany.tradingFeePercent()) + "%");
-							//std::stringstream feeTip;
-							//feeTip << "Trading fee: " << tradingCompany.tradingFeePercent() << "%\n";
-							//feeTip << "base " << tradingCompany.baseTradingFeePercent() << "%\n";
-							//std::vector<BonusPair> bonuses = tradingCompany.GetTradingFeeBonuses();
-							//for (const auto& bonus : bonuses) {
-							//	feeTip << bonus.name << " " << bonus.value;
-							//}
-							//AddToolTip(feeText, feeTip);
-							AddTradeFeeText(building.subclass<TradeBuilding>(), descriptionBox);
-							
-							AddEfficiencyText(building, descriptionBox);
+						// Shouldn't be able to tamper with other ppl's trade
+						if (building.ownedBy(playerId()))
+						{
 
-							if (tradingCompany.isImport) {
-								descriptionBox->AddRichText("Import", ToSignedNumber(tradingCompany.importMoney()) + "<img id=\"Coin\"/>");
-							} else {
-								descriptionBox->AddRichText("Export", ToSignedNumber(tradingCompany.exportMoney()) + "<img id=\"Coin\"/>");
-							}
-
-							descriptionBox->AddLineSpacer();
-						}
-
-						if (tradingCompany.activeResourceEnum == ResourceEnum::None) {
-							descriptionBox->AddRichText("<Red>Setup automatic trade below.</>");
-						}
-						else {
-							ss << (tradingCompany.isImport ? "Importing " : "Exporting ");
-							ss << " until ";
-							ss << tradingCompany.targetAmount;
-							descriptionBox->AddIconPair(ss.str(), tradingCompany.activeResourceEnum, " target");
-							ss.str("");
-
+							// Display status only if the trade type was chosen...
 							if (tradingCompany.activeResourceEnum != ResourceEnum::None)
 							{
-								int32 target = tradingCompany.targetAmount;
-								int32 count = resourceSys.resourceCount(tradingCompany.activeResourceEnum);
-								
+								descriptionBox->AddRichText("Maximum trade per round", to_string(tradingCompany.tradeMaximumPerRound()));
+
+								//auto feeText = descriptionBox->AddRichText("Trade fee:", to_string(tradingCompany.tradingFeePercent()) + "%");
+								//std::stringstream feeTip;
+								//feeTip << "Trading fee: " << tradingCompany.tradingFeePercent() << "%\n";
+								//feeTip << "base " << tradingCompany.baseTradingFeePercent() << "%\n";
+								//std::vector<BonusPair> bonuses = tradingCompany.GetTradingFeeBonuses();
+								//for (const auto& bonus : bonuses) {
+								//	feeTip << bonus.name << " " << bonus.value;
+								//}
+								//AddToolTip(feeText, feeTip);
+								AddTradeFeeText(building.subclass<TradeBuilding>(), descriptionBox);
+
+								AddEfficiencyText(building, descriptionBox);
+
 								if (tradingCompany.isImport) {
-									if (target > count) {
-										ss << "(import remaining: " << (target - count) << ")";
-									} else {
-										ss << "(import storage-target reached)";
-									}
+									descriptionBox->AddRichText("Import", ToSignedNumber(tradingCompany.importMoney()) + "<img id=\"Coin\"/>");
 								}
 								else {
-									// Export
-									if (target < count) {
-										ss << "(export remaining: " << (count - target) << ")";
-									} else {
-										ss << "(resources in storage already below storage-target)";
+									descriptionBox->AddRichText("Export", ToSignedNumber(tradingCompany.exportMoney()) + "<img id=\"Coin\"/>");
+								}
+
+								descriptionBox->AddLineSpacer();
+							}
+
+							if (tradingCompany.activeResourceEnum == ResourceEnum::None) {
+								descriptionBox->AddRichText("<Red>Setup automatic trade below.</>");
+							}
+							else {
+								ss << (tradingCompany.isImport ? "Importing " : "Exporting ");
+								ss << " until ";
+								ss << tradingCompany.targetAmount;
+								descriptionBox->AddIconPair(ss.str(), tradingCompany.activeResourceEnum, " target");
+								ss.str("");
+
+								if (tradingCompany.activeResourceEnum != ResourceEnum::None)
+								{
+									int32 target = tradingCompany.targetAmount;
+									int32 count = resourceSys.resourceCount(tradingCompany.activeResourceEnum);
+
+									if (tradingCompany.isImport) {
+										if (target > count) {
+											ss << "(import remaining: " << (target - count) << ")";
+										}
+										else {
+											ss << "(import storage-target reached)";
+										}
+									}
+									else {
+										// Export
+										if (target < count) {
+											ss << "(export remaining: " << (count - target) << ")";
+										}
+										else {
+											ss << "(resources in storage already below storage-target)";
+										}
+									}
+									descriptionBox->AddRichText(ss.str());
+									ss.str("");
+								}
+							}
+
+							descriptionBox->AddSpacer(12);
+
+							if (building.playerId() == playerId())
+							{
+								descriptionBox->AddDropdown(
+									building.buildingId(),
+									{ "Import", "Export" },
+									tradingCompany.isImport ? "Import" : "Export",
+									[](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface)
+								{
+									auto& trader = dataSource->simulation().building(objectId).subclass<TradingCompany>(CardEnum::TradingCompany);
+
+									auto command = make_shared<FChangeWorkMode>();
+									command->buildingId = objectId;
+									command->intVar1 = static_cast<int32>(trader.activeResourceEnum);
+									command->intVar2 = (sItem == FString("Import")) ? 1 : 0;
+									command->intVar3 = static_cast<int32>(trader.targetAmount);
+									networkInterface->SendNetworkCommand(command);
+								});
+							}
+
+							descriptionBox->AddSpacer(12);
+
+							// Show choose box
+							descriptionBox->AddChooseResourceElement(tradingCompany.activeResourceEnum, this, CallbackEnum::OpenChooseResource);
+
+							descriptionBox->AddSpacer(12);
+
+							int32 targetAmount = tradingCompany.targetAmount;
+							if (Time::Ticks() - tradingCompany.lastTargetSetTick < Time::TicksPerSecond * 3) {
+								targetAmount = tradingCompany.lastTargetAmountSet;
+							}
+							descriptionBox->AddEditableNumberBox(this, CallbackEnum::EditNumberChooseResource, building.buildingId(), "Target: ", targetAmount);
+
+							descriptionBox->AddLineSpacer(12);
+							if (tradingCompany.HasPendingTrade()) {
+								ss << tradingCompany.CountdownSecondsDisplay() << " secs";
+								descriptionBox->AddRichText("Trade complete in", ss);
+							}
+							else if (tradingCompany.lastTradeFailed())
+							{
+								descriptionBox->AddRichText("<Red>Failed last trade</>", ss);
+							}
+							else {
+								ss << max(0, tradingCompany.TradeRetryCountDownTicks() / Time::TicksPerSecond) << " secs";
+								descriptionBox->AddRichText("Retry trade in", ss);
+							}
+
+							// Dropdown / EditableNumberBox set in ObjectDescriptionUI.cpp
+							//_objectDescriptionUI->SetEditableNumberBox(building.buildingId(), this, CallbackEnum::EditNumberChooseResource);
+
+							/*
+							 * Fill choose resource box
+							 */
+							UPunBoxWidget* chooseResourceBox = _objectDescriptionUI->ChooseResourceBox;
+							FString searchString = _objectDescriptionUI->SearchBox->GetText().ToString();
+
+							for (const ResourceInfo& info : SortedNameResourceEnum)
+							{
+								FString name = ToFString(info.name);
+
+								if (IsTradeResource(info.resourceEnum))
+								{
+									if (searchString.IsEmpty() ||
+										name.Find(searchString, ESearchCase::Type::IgnoreCase, ESearchDir::FromStart) != INDEX_NONE)
+									{
+										auto widget = chooseResourceBox->AddChooseResourceElement(info.resourceEnum, this, CallbackEnum::PickChooseResource);
+										widget->punId = building.buildingId();
 									}
 								}
-								descriptionBox->AddRichText(ss.str());
-								ss.str("");
 							}
+							chooseResourceBox->AfterAdd();
+
 						}
 
-						descriptionBox->AddSpacer(12);
-
-						if (building.playerId() == playerId())
-						{
-							descriptionBox->AddDropdown(
-								building.buildingId(),
-								{ "Import", "Export" },
-								tradingCompany.isImport ? "Import" : "Export",
-								[](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface)
-							{
-								auto& trader = dataSource->simulation().building(objectId).subclass<TradingCompany>(CardEnum::TradingCompany);
-
-								auto command = make_shared<FChangeWorkMode>();
-								command->buildingId = objectId;
-								command->intVar1 = static_cast<int32>(trader.activeResourceEnum);
-								command->intVar2 = (sItem == FString("Import")) ? 1 : 0;
-								command->intVar3 = static_cast<int32>(trader.targetAmount);
-								networkInterface->SendNetworkCommand(command);
-							});
-						}
 						
-						descriptionBox->AddSpacer(12);
-						
-						// Show choose box
-						descriptionBox->AddChooseResourceElement(tradingCompany.activeResourceEnum, this, CallbackEnum::OpenChooseResource);
-
-						descriptionBox->AddSpacer(12);
-
-						int32 targetAmount = tradingCompany.targetAmount;
-						if (Time::Ticks() - tradingCompany.lastTargetSetTick < Time::TicksPerSecond * 3) {
-							targetAmount = tradingCompany.lastTargetAmountSet;
-						}
-						descriptionBox->AddEditableNumberBox(this, CallbackEnum::EditNumberChooseResource, building.buildingId(), "Target: ", targetAmount);
-
-						descriptionBox->AddLineSpacer(12);
-						if (tradingCompany.HasPendingTrade()) {
-							ss << tradingCompany.CountdownSecondsDisplay() << " secs";
-							descriptionBox->AddRichText("Trade complete in", ss);
-						}
-						else if (tradingCompany.lastTradeFailed())
-						{
-							descriptionBox->AddRichText("<Red>Failed last trade</>", ss);
-						}
-						else {
-							ss << max(0, tradingCompany.TradeRetryCountDownTicks() / Time::TicksPerSecond) << " secs";
-							descriptionBox->AddRichText("Retry trade in", ss);
-						}
-
-						// Dropdown / EditableNumberBox set in ObjectDescriptionUI.cpp
-						//_objectDescriptionUI->SetEditableNumberBox(building.buildingId(), this, CallbackEnum::EditNumberChooseResource);
-
-						/*
-						 * Fill choose resource box
-						 */
-						UPunBoxWidget* chooseResourceBox = _objectDescriptionUI->ChooseResourceBox;
-						FString searchString = _objectDescriptionUI->SearchBox->GetText().ToString();
-
-						for (const ResourceInfo& info : SortedNameResourceEnum)
-						{
-							FString name = ToFString(info.name);
-							
-							if (IsTradeResource(info.resourceEnum))
-							{
-								if (searchString.IsEmpty() ||
-									name.Find(searchString, ESearchCase::Type::IgnoreCase, ESearchDir::FromStart) != INDEX_NONE)
-								{
-									auto widget = chooseResourceBox->AddChooseResourceElement(info.resourceEnum, this, CallbackEnum::PickChooseResource);
-									widget->punId = building.buildingId();
-								}
-							}
-						}
-						chooseResourceBox->AfterAdd();
 					}
 					else if (IsMountainMine(building.buildingEnum()))
 					{
@@ -1246,7 +1276,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				/*
 				 * Special case: Manage Storage (Display regardless of if the storage is constructed
 				 */
-				if (IsStorage(building.buildingEnum()))
+				if (IsStorage(building.buildingEnum()) &&
+					building.ownedBy(playerId()))
 				{
 					descriptionBox->AddButton("Manage Storage", nullptr, "", this, CallbackEnum::OpenManageStorage, true, false, objectId);
 					descriptionBox->AddLineSpacer(12);
@@ -1943,8 +1974,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			descriptionBox->AddTextWithSpacer(ss);
 
 			// Show Food/Heat as percent
-			ss << "<space>Food: " << unit.foodActual() / 60 << "/" << unit.maxFood() / 60 << " secs";
-			ss << "<space>Heat: " << unit.heatActual() / 60 << "/" << unit.maxHeat() / 60 << " C*secs";
+			//ss << "<space>Food: " << unit.foodActual() / 60 << "/" << unit.maxFood() / 60 << " secs";
+			//ss << "<space>Heat: " << unit.heatActual() / 60 << "/" << unit.maxHeat() / 60 << " C*secs";
+			ss << "<space>Food: " << (unit.foodActual() * 100 / unit.maxFood()) << "/100";
+			ss << "<space>Heat: " << (unit.heatActual() * 100 / unit.maxHeat()) << "/100";
 			ss << "<space>Health: " << unit.hp() << "/ 100";
 
 			if (unit.isEnum(UnitEnum::Human)) {
@@ -2516,6 +2549,12 @@ void UObjectDescriptionUISystem::AddSelectStartLocationButton(int32 provinceId, 
 	if (!hasChosenLocation)
 	{	
 		bool canClaim = true;
+
+		if (simulation().provinceOwner(provinceId) != -1) {
+			descriptionBox->AddRichText("<Red>Already has owner.</>");
+			canClaim = false;
+		}
+		
 		if (!SimUtils::CanReserveSpot_NotTooCloseToAnother(provinceId, &simulation(), 1)) {
 			descriptionBox->AddRichText("<Red>Too close to another town</>");
 			canClaim = false;
@@ -2646,7 +2685,8 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 	else if (provinceOwnerId != playerId())
 	{
 		// Conquer
-		if (simulation().unlockedInfluence(playerId()))
+		/*if (simulation().unlockedInfluence(playerId()))*/
+		if (simulation().IsResearched(playerId(), TechEnum::Conquer))
 		{
 			if (sim.IsProvinceNextToPlayer(provinceId, playerId()))
 			{

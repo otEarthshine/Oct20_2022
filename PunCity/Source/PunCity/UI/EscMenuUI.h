@@ -351,7 +351,7 @@ public:
 		CloseOverlayUI();
 	}
 
-	void RightMouseDown() {
+	void RightMouseUp() {
 		CloseOverlayUI();
 	}
 
@@ -364,7 +364,7 @@ public:
 	// Pause game when in the esc menu or tutorial
 	bool ShouldPauseGameFromUI() {
 		return gameInstance()->isSinglePlayer && 
-				(EscMenu->IsVisible() || TutorialUI->IsVisible());
+				(EscMenu->IsVisible() || TutorialUI->IsVisible() || GameSettingsUI->IsVisible());
 	}
 	bool _isPausingFromEscMenu = false;
 

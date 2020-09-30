@@ -1946,6 +1946,15 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 					}
 
 					/*
+					 * Demolishing farm remove TileObj
+					 */
+					if (buildingEnum == CardEnum::Farm)
+					{
+						_treeSystem->ForceRemoveTileObj(tile, false);
+					}
+					
+
+					/*
 					 * Keep storage demolition stat for quest
 					 */
 					playerStatSystem(bld.playerId()).AddStat(AccumulatedStatEnum::StoragesDestroyed);
@@ -2539,7 +2548,8 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 		if (command.choiceIndex == 0) {
 			AddPopupToFront(command.playerId, "You can't help but notice the wide smile that spread across an immigrant child as she enters her promised land.");
 			town.AddRequestedImmigrants();
-		} else if(command.choiceIndex == 1) {
+		}
+		else if(command.choiceIndex == 1) {
 			//if (Time::Years() % 2 == 0) {
 				int32 sneakedIns = town.migrationPull() / 2;
 				AddPopupToFront(command.playerId, to_string(sneakedIns) + " immigrants decided to illegally sneaked in anyway...");
@@ -2547,9 +2557,11 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 			//} else {
 			//	AddPopupToFront(command.playerId, "Their earlier joyful smiles of hope turned into gloom as the immigrants leave the town.");
 			//}
-		} else {
-			AddPopupToFront(command.playerId, "News of your horrifying atrocity spreads across the world. You stole 100 gold.");
+		}
+		else {
+			AddPopupToFront(command.playerId, "News of your horrifying atrocity spreads across the world. You stole 100 gold and gained 100 pork.");
 			resourceSystem(command.playerId).ChangeMoney(100);
+			resourceSystem(command.playerId).AddResourceGlobal(ResourceEnum::Pork, 100, *this);
 		}
 	}
 
@@ -2772,7 +2784,15 @@ void GameSimulationCore::UseCard(FUseCard command)
 	if (IsBuildingSlotCard(command.cardEnum))
 	{
 		Building& bld = building(command.variable1);
-		if (bld.CanAddSlotCard()) {
+		if (bld.CanAddSlotCard()) 
+		{
+			// Don't allow slotting Mint with "SustainabilityBook"
+			if (command.cardEnum == CardEnum::SustainabilityBook &&
+				bld.isEnum(CardEnum::Mint))
+			{
+				return;
+			}
+			
 			int32 soldPrice = cardSys.RemoveCards(command.cardEnum, 1);
 			if (soldPrice != -1) {
 				bld.AddSlotCard(command.GetCardStatus(_gameManager->GetDisplayWorldTime() * 100.0f));
@@ -2844,7 +2864,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 		int32 moneyPaid = amountToBuy * cost;
 		resourceSys.ChangeMoney(-moneyPaid);
 
-		AddPopupToFront(command.playerId, "Bought " + to_string(amountToBuy) + " wood for " + "<img id=\"Coin\"/>." + to_string(moneyPaid));
+		AddPopupToFront(command.playerId, "Bought " + to_string(amountToBuy) + " wood for " + "<img id=\"Coin\"/>" + to_string(moneyPaid) + ".");
 	}
 	else if (command.cardEnum == CardEnum::Immigration) {
 		townhall(command.playerId).AddImmigrants(5);

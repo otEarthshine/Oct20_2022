@@ -857,7 +857,7 @@ void PlayerOwnedManager::CollectRoundIncome()
 	// Change Influence
 	resourceSys.ChangeInfluence100(totalInfluenceIncome100());
 	if (resourceSys.influence100() < 0) {
-		_simulation->AddEventLog(_playerId, "You have 0</><img id=\"Influence\"/><ChatRed>. " + to_string(min(-1, resourceSys.influence())) +"</><img id=\"Coin\"/><ChatRed> instead.", true);
+		_simulation->AddEventLog(_playerId, "You have 0</><img id=\"Influence\"/><ChatRed>.  " + to_string(min(-1, resourceSys.influence())) +"</><img id=\"Coin\"/><ChatRed> instead.", true);
 		resourceSys.ChangeMoney100(resourceSys.influence100());
 		resourceSys.SetInfluence(0);
 	}
@@ -1054,7 +1054,7 @@ void PlayerOwnedManager::Tick1Sec()
 	if (Time::Ticks() % TicksPerStatInterval == 0)
 	{
 		AddDataPoint(PlotStatEnum::Population, population);
-		AddDataPoint(PlotStatEnum::AdultPopulation, adultPopulation());
+		//AddDataPoint(PlotStatEnum::AdultPopulation, adultPopulation());
 		AddDataPoint(PlotStatEnum::ChildPopulation, childPopulation());
 
 		AddDataPoint(PlotStatEnum::Income, totalIncome100() / 100);

@@ -36,7 +36,7 @@ struct ResourceHolder
 	int32 target() const { return _target; }
 
 	void resourcedebugStr(std::stringstream& ss, WorldTile2 townCenterTile, IGameSimulationCore* sim) const {
-		ss << "[" << GetResourceInfo(info.resourceEnum).name << " " << GetResourceHolderTypeName(type)
+		ss << "[" << GetResourceInfoSafe(info.resourceEnum).name << " " << GetResourceHolderTypeName(type)
 			<< " - " + std::to_string(_current)
 			<< " push:" + std::to_string(_reservedPush)
 			<< " pop:" + std::to_string(_reservedPop)
@@ -795,6 +795,20 @@ public:
 		return _enumToHolders[(int)info.resourceEnum].needResource(info.holderId);
 	}
 
+	int32 resourceCountSafe(ResourceHolderInfo info) const {
+		if (!info.isValid()) {
+			return 0;
+		}
+
+		if (info.holderId < 0 && 
+			info.holderId >= _enumToHolders[static_cast<int>(info.resourceEnum)].holderCount())
+		{
+			return 0;
+		}
+		return holder(info).current(); // _enumToHolders[(int)info.resourceEnum].holderConst(info.holderId)
+	}
+	
+
 	bool hasResource(ResourcePair resource) const {
 		return resourceCount(resource.resourceEnum) >= resource.count;
 	}
@@ -999,7 +1013,7 @@ public:
 		{
 			const std::vector<DropInfo>& drops = _simulation->dropSystem().DropsInRegion(region);
 			for (const DropInfo& drop : drops) {
-				if (area.HasTile(drop.tile) && resourceCount(drop.holderInfo) > 0) {
+				if (area.HasTile(drop.tile) && resourceCountSafe(drop.holderInfo) > 0) {
 					return drop;
 				}
 			}

@@ -1731,7 +1731,7 @@ void UMainGameUI::OnClickLeaderSkillButton()
 	inputSystemInterface()->StartBuildingPlacement(skillEnum, 0, false);
 }
 
-void UMainGameUI::RightMouseDown()
+void UMainGameUI::RightMouseUp()
 {
 	if (BuildMenuOverlay->GetVisibility() != ESlateVisibility::Collapsed) {
 		dataSource()->Spawn2DSound("UI", "UIWindowClose");
@@ -1844,8 +1844,13 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 			}
 
 			// Check if we reached hand limit
-			if (!simulation().cardSystem(playerId()).CanAddCardToBoughtHand(buildingEnum, 1)) {
-				simulation().AddPopupToFront(playerId(), "Reached hand limit for bought cards.", ExclusiveUIEnum::RareCardHand, "PopupCannot");
+			if (!simulation().cardSystem(playerId()).CanAddCardToBoughtHand(buildingEnum, 1)) 
+			{
+				simulation().AddPopupToFront(playerId(), 
+					"Reached hand limit for bought cards."
+					"<space>"
+					"Please sell or use some cards on your hand, then choose a rare card prize again.",
+					ExclusiveUIEnum::RareCardHand, "PopupCannot");
 				return;
 			}
 
@@ -1960,6 +1965,13 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 					
 					if (building.CanAddSlotCard()) 
 					{
+						if (buildingEnum == CardEnum::SustainabilityBook &&
+							building.isEnum(CardEnum::Mint))
+						{
+							simulation().AddPopupToFront(playerId(), "Sustainability Book does not work on Mint. The usage of Gold Bar is already meticulously conserved.", ExclusiveUIEnum::None, "PopupCannot");
+							return;
+						}
+						
 						FVector2D initialPosition = GetViewportPosition(cardButton->GetCachedGeometry());
 						
 						auto command = make_shared<FUseCard>();

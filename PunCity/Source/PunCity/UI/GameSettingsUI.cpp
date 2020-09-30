@@ -239,17 +239,24 @@ void UGameSettingsUI::RefreshUI(bool resetTabs)
 	TexturesDropdown->SetSelectedIndex(settings->ScalabilityQuality.TextureQuality);
 	EffectsDropdown->SetSelectedIndex(settings->ScalabilityQuality.EffectsQuality);
 
-	if (settings->GetFrameRateLimit() <= 30.01) {
-		MaxFrameRateDropdown->SetSelectedOption("30 FPS");
-	}
-	else if (settings->GetFrameRateLimit() <= 60.01) {
-		MaxFrameRateDropdown->SetSelectedOption("60 FPS");
+	//if (settings->GetFrameRateLimit() <= 30.01) {
+	//	MaxFrameRateDropdown->SetSelectedOption("30 FPS");
+	//}
+	//else 
+	if (settings->GetFrameRateLimit() <= 60.01) {
+		MaxFrameRateDropdown->SetSelectedOption("60 fps");
 	}
 	else if (settings->GetFrameRateLimit() <= 90.01) {
-		MaxFrameRateDropdown->SetSelectedOption("90 FPS");
+		MaxFrameRateDropdown->SetSelectedOption("90 fps");
 	}
 	else if (settings->GetFrameRateLimit() <= 120.01) {
-		MaxFrameRateDropdown->SetSelectedOption("120 FPS");
+		MaxFrameRateDropdown->SetSelectedOption("120 fps");
+	}
+	else if (settings->GetFrameRateLimit() <= 144.01) {
+		MaxFrameRateDropdown->SetSelectedOption("144 fps");
+	}
+	else if (settings->GetFrameRateLimit() <= 240.01) {
+		MaxFrameRateDropdown->SetSelectedOption("240 fps");
 	}
 	else {
 		MaxFrameRateDropdown->SetSelectedOption("None");
@@ -408,17 +415,23 @@ void UGameSettingsUI::OnMaxFrameRateDropdownChanged(FString sItem, ESelectInfo::
 		if (sItem == FString("None")) {
 			GetGameUserSettings()->SetFrameRateLimit(600); // unlimited fps
 		}
-		else if (sItem == FString("30 FPS")) {
-			GetGameUserSettings()->SetFrameRateLimit(30);
-		}
-		else if (sItem == FString("60 FPS")) {
+		//else if (sItem == FString("30 FPS")) {
+		//	GetGameUserSettings()->SetFrameRateLimit(30);
+		//}
+		else if (sItem == FString("60 fps")) {
 			GetGameUserSettings()->SetFrameRateLimit(60);
 		}
-		else if (sItem == FString("90 FPS")) {
+		else if (sItem == FString("90 fps")) {
 			GetGameUserSettings()->SetFrameRateLimit(90);
 		}
-		else if (sItem == FString("120 FPS")) {
+		else if (sItem == FString("120 fps")) {
 			GetGameUserSettings()->SetFrameRateLimit(120);
+		}
+		else if (sItem == FString("144 fps")) {
+			GetGameUserSettings()->SetFrameRateLimit(144);
+		}
+		else if (sItem == FString("240 fps")) {
+			GetGameUserSettings()->SetFrameRateLimit(240);
 		}
 	}
 }

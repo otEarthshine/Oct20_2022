@@ -197,11 +197,13 @@ void ACameraPawn::LeftMouseUp()
 	return;
 #endif
 
-	if (_networkInterface) {
+	if (_networkInterface) 
+	{
+		//bool isNotPlacingBuilding = buildingPlacementSystem->placementState() == PlacementType::None;
 		buildingPlacementSystem->LeftClickUp(_networkInterface);
 
-		//if (buildingPlacementSystem->placementState() == PlacementType::None) {
-		//	_gameNetworkInterface->GetPunHUD()->LeftMouseUp();
+		//if (isNotPlacingBuilding) {
+		//	_networkInterface->GetPunHUD()->LeftMouseUp();
 		//}
 	}
 }
@@ -215,9 +217,9 @@ void ACameraPawn::RightMouseDown()
 	PUN_LOG("RightMouseDown");
 
 	
-	if (_networkInterface) {
-		_networkInterface->GetPunHUD()->RightMouseDown();
-	}
+	//if (_networkInterface) {
+	//	_networkInterface->GetPunHUD()->RightMouseUp();
+	//}
 
 	isRightMouseDown = true;
 	rightMouseDragStartAtom = _networkInterface->GetMouseGroundAtom();
@@ -236,6 +238,10 @@ void ACameraPawn::RightMouseUp()
 		if (buildingPlacementSystem->placementState() != PlacementType::None) {
 			buildingPlacementSystem->CancelPlacement();
 			_gameInterface->Spawn2DSound("UI", "CancelPlacement");
+		}
+
+		if (_networkInterface) {
+			_networkInterface->GetPunHUD()->RightMouseUp();
 		}
 	}
 
@@ -317,7 +323,7 @@ void ACameraPawn::AdjustCameraZoomTilt()
 {
 	if (!PunSettings::TrailerMode()) 
 	{
-		// Always point the camera at 0.5 MinZoomAmount Height
+		// Always point the camera at 0.X MinZoomAmount Height
 		float camHeight = CameraComponent->GetComponentLocation().Z;
 		float degreeFromHorizontal = UKismetMathLibrary::DegAtan((camHeight - MinZoomLookAtHeight) / _smoothZoomDistance);
 		CameraComponent->SetRelativeRotation(FRotator(41.7 - degreeFromHorizontal, 0, 0));

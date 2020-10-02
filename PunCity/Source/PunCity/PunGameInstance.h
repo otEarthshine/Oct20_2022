@@ -357,7 +357,7 @@ public:
 			sessionSettings.bAllowJoinViaPresence = false;
 			sessionSettings.bUsesPresence = false;
 		}
-		
+
 
 		//FName(TEXT("MAPNAME"))
 		sessionSettings.Set(SETTING_MAPNAME, FString("Game Name"), EOnlineDataAdvertisementType::ViaOnlineService);
@@ -779,10 +779,10 @@ public:
 	void RestoreDefaultsSound() {
 		LLM_SCOPE_(EPunSimLLMTag::PUN_GameInstance);
 		
-		_masterVolume = 1.0f;
-		_musicVolume = 1.0f;
-		_soundEffectsVolume = 1.0f;
-		_ambientVolume = 1.0f;
+		_masterVolume = 0.8f;
+		_musicVolume = 0.8f;
+		_soundEffectsVolume = 0.8f;
+		_ambientVolume = 0.8f;
 		
 		RefreshSoundSettings();
 	}
@@ -845,6 +845,10 @@ public:
 	void SetResolutionQuality(float value) {
 		_resolutionQuality = value;
 		PUN_LOG("_resolutionQuality %f %f", _resolutionQuality, value);
+	}
+	static const int32 MinResolutionQuality = 40;
+	int32 GetDisplayResolutionQuality() {
+		return FMath::RoundToInt(resolutionQuality() * (100.0f - MinResolutionQuality) / 100.0f) + MinResolutionQuality;
 	}
 
 	int32 loadedVersion = -1;

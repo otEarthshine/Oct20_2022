@@ -29,7 +29,7 @@ void PlacementGrid::Init(UMaterialInterface* material, UStaticMesh* mesh, UInsta
 
 void PlacementGrid::SpawnGrid(WorldAtom2 cameraAtom, WorldTile2 location, Direction direction)
 {
-	check(displayCount < 100000);
+	PUN_CHECK(displayCount < 1000000);
 
 	FVector displayLocation = MapUtil::DisplayLocation(cameraAtom, location.worldAtom2());
 	FTransform transform(FRotator(0, RotationFromDirection(direction), 0), displayLocation, FVector(1.0f, 1.0f, 1.0f) * 5.0);
@@ -845,6 +845,16 @@ void ABuildingPlacementSystem::CalculateDragArea()
 					max(_dragStartTile.x, _mouseOnTile.x),
 					max(_dragStartTile.y, _mouseOnTile.y));
 
+	_area.EnforceWorldLimit();
+
+	// Ensure that the area isn't too large
+	if (_area.sizeX() > 500) {
+		_area.maxX = _area.minX + 499;
+	}
+	if (_area.sizeY() > 500) {
+		_area.maxY = _area.minY + 499;
+	}
+
 	if (_placementType == PlacementType::BuildingDrag) 
 	{
 		// Storage is at least 2 tiles dimension
@@ -1069,10 +1079,14 @@ void ABuildingPlacementSystem::HighlightDemolishAreaBuildingRed()
 {
 	// Highlight any building red
 	std::vector<int32> buildingIds;
-	_demolishHighlightArea.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-		int32 buildingId = _gameInterface->simulation().buildingIdAtTile(tile);
-		if (buildingId != -1) {
-			buildingIds.push_back(buildingId);
+	_demolishHighlightArea.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) 
+	{
+		if (tile.isValid()) 
+		{
+			int32 buildingId = _gameInterface->simulation().buildingIdAtTile(tile);
+			if (buildingId != -1) {
+				buildingIds.push_back(buildingId);
+			}
 		}
 	});
 
@@ -1513,118 +1527,125 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		PUN_CHECK(IsAreaSpell(_buildingEnum));
 		
 		_area = TileArea(_mouseOnTile, AreaSpellRadius(_buildingEnum));
-		_area.ExecuteOnArea_WorldTile2([&](WorldTile2 location) {
-			if (WorldAtom2::DistanceLessThan(_mouseOnTile, location, AreaSpellRadius(_buildingEnum)))
+		_area.ExecuteOnArea_WorldTile2([&](WorldTile2 location) 
+		{
+			if (location.isValid())
 			{
-				int32 buildingId = simulation.buildingIdAtTile(location);
-				
-				if (_buildingEnum == CardEnum::FireStarter) {
-					// Casting on townhall requires additional influence
-					if (buildingId != -1) {
-						Building& building = simulation.building(buildingId);
-						int32_t targetPlayerId = building.playerId();
-						
-						if (building.isEnum(CardEnum::Townhall)) {
-							//SetInstruction(PlacementInstructionEnum::FireOnTownhall, true);
-							_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
+				if (WorldAtom2::DistanceLessThan(_mouseOnTile, location, AreaSpellRadius(_buildingEnum)))
+				{
+					int32 buildingId = simulation.buildingIdAtTileSafe(location);
+
+					if (_buildingEnum == CardEnum::FireStarter) {
+						// Casting on townhall requires additional influence
+						if (buildingId != -1) {
+							Building& building = simulation.building(buildingId);
+							int32_t targetPlayerId = building.playerId();
+
+							if (building.isEnum(CardEnum::Townhall)) {
+								//SetInstruction(PlacementInstructionEnum::FireOnTownhall, true);
+								_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
+							}
+							else {
+								_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, location);
+							}
 						}
 						else {
-							_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, location);
+							_placementGrid.SpawnGrid(PlacementGridEnum::Gray, cameraAtom, location);
 						}
-					} else {
-						_placementGrid.SpawnGrid(PlacementGridEnum::Gray, cameraAtom, location);
 					}
-				}
-				else if(_buildingEnum == CardEnum::Steal ||
+					else if (_buildingEnum == CardEnum::Steal ||
 						_buildingEnum == CardEnum::Snatch ||
 						_buildingEnum == CardEnum::Kidnap ||
 						_buildingEnum == CardEnum::SharingIsCaring)
-				{
-					if (buildingId != -1) {
-						Building& building = simulation.building(buildingId);
-						int32 targetPlayerId = building.playerId();
-						
-						if (building.isEnum(CardEnum::Townhall) && targetPlayerId != playerId) {
-							_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, location);
-							return;
-						}
-					}
-
-					SetInstruction(PlacementInstructionEnum::TownhallTarget, true);
-					
-					_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
-					return;
-				}
-				else if (_buildingEnum == CardEnum::InstantBuild)
-				{
-					if (buildingId != -1) {
-						Building& building = simulation.building(buildingId);
-
-						if (!building.isConstructed()) {
-							int32 cost = building.buildingInfo().constructionCostAsMoney() * 3;
-
-							if (cost < simulation.money(playerId)) {
-								//_buildingSpecificWarning = "Pay " + to_string(cost) + " <img id=\"Coin\"/> to instantly build this.";
-								_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, location);
-							} else {
-								//_buildingSpecificWarning = "<Red>Not enough money to instant build (Require " + to_string(cost) + " </><img id=\"Coin\"/><Red>)</>";
-								_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
-							}
-							return;
-						}
-					}
-					//_buildingSpecificWarning = "<Red>Must be used on a building under construction</>";
-					_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
-					return;
-				}
-				/*
-				 * Skills
-				 */
-				else if (_buildingEnum == CardEnum::SpeedBoost)
-				{
-					if (buildingId != -1) 
 					{
-						Building& building = simulation.building(buildingId);
+						if (buildingId != -1) {
+							Building& building = simulation.building(buildingId);
+							int32 targetPlayerId = building.playerId();
 
-
-						// Show the building that has mouse over it.
-						if (building.isConstructed()) {
-							_gameInterface->ShowBuildingMesh(building, 2);
-						} else {
-							_gameInterface->ShowDecal(building.area(), _assetLoader->M_ConstructionHighlightDecal);
-						}
-						
-						if (building.playerId() == playerId) 
-						{
-							bool isConstructed = building.isConstructed();
-							CardEnum buildingEnum = building.buildingEnum();
-							
-							//if (building.isEnum(CardEnum::Townhall) ||
-							//	building.isEnum(CardEnum::StorageYard) ||
-							//	building.isEnum(CardEnum::Farm) ||
-							//	IsDecorativeBuilding(buildingEnum) ||
-							//	(IsHouse(buildingEnum) && isConstructed) ||
-							//	(IsRanch(buildingEnum) && isConstructed))
-							if (!CanGetSpeedBoosted(buildingEnum, isConstructed))
-							{
-								_networkInterface->SetCursor("Slate/MouseCursorSkillInvalid");
-								SetInstruction(PlacementInstructionEnum::NotThisBuildingTarget, true);
-								_forceCannotPlace = true;
-								//_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
+							if (building.isEnum(CardEnum::Townhall) && targetPlayerId != playerId) {
+								_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, location);
 								return;
 							}
-
-							_networkInterface->SetCursor("Slate/MouseCursorSkill");
-							//_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, location);
-							return;
 						}
+
+						SetInstruction(PlacementInstructionEnum::TownhallTarget, true);
+
+						_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
+						return;
 					}
+					else if (_buildingEnum == CardEnum::InstantBuild)
+					{
+						if (buildingId != -1) {
+							Building& building = simulation.building(buildingId);
 
-					_networkInterface->SetCursor("Slate/MouseCursorSkillInvalid");
-					SetInstruction(PlacementInstructionEnum::YourBuildingTarget, true);
-					//_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
+							if (!building.isConstructed()) {
+								int32 cost = building.buildingInfo().constructionCostAsMoney() * 3;
 
-					return;
+								if (cost < simulation.money(playerId)) {
+									//_buildingSpecificWarning = "Pay " + to_string(cost) + " <img id=\"Coin\"/> to instantly build this.";
+									_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, location);
+								}
+								else {
+									//_buildingSpecificWarning = "<Red>Not enough money to instant build (Require " + to_string(cost) + " </><img id=\"Coin\"/><Red>)</>";
+									_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
+								}
+								return;
+							}
+						}
+						//_buildingSpecificWarning = "<Red>Must be used on a building under construction</>";
+						_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
+						return;
+					}
+					/*
+					 * Skills
+					 */
+					else if (_buildingEnum == CardEnum::SpeedBoost)
+					{
+						if (buildingId != -1)
+						{
+							Building& building = simulation.building(buildingId);
+
+
+							// Show the building that has mouse over it.
+							if (building.isConstructed()) {
+								_gameInterface->ShowBuildingMesh(building, 2);
+							}
+							else {
+								_gameInterface->ShowDecal(building.area(), _assetLoader->M_ConstructionHighlightDecal);
+							}
+
+							if (building.playerId() == playerId)
+							{
+								bool isConstructed = building.isConstructed();
+								CardEnum buildingEnum = building.buildingEnum();
+
+								//if (building.isEnum(CardEnum::Townhall) ||
+								//	building.isEnum(CardEnum::StorageYard) ||
+								//	building.isEnum(CardEnum::Farm) ||
+								//	IsDecorativeBuilding(buildingEnum) ||
+								//	(IsHouse(buildingEnum) && isConstructed) ||
+								//	(IsRanch(buildingEnum) && isConstructed))
+								if (!CanGetSpeedBoosted(buildingEnum, isConstructed))
+								{
+									_networkInterface->SetCursor("Slate/MouseCursorSkillInvalid");
+									SetInstruction(PlacementInstructionEnum::NotThisBuildingTarget, true);
+									_forceCannotPlace = true;
+									//_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
+									return;
+								}
+
+								_networkInterface->SetCursor("Slate/MouseCursorSkill");
+								//_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, location);
+								return;
+							}
+						}
+
+						_networkInterface->SetCursor("Slate/MouseCursorSkillInvalid");
+						SetInstruction(PlacementInstructionEnum::YourBuildingTarget, true);
+						//_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
+
+						return;
+					}
 				}
 			}
 		});

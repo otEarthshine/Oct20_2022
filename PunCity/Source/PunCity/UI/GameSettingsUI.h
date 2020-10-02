@@ -39,6 +39,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) UComboBoxString* UIScalingDropdown;
 
 	UPROPERTY(meta = (BindWidget)) USlider* ResolutionSlider;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* ResolutionNumber;
+	
 	UPROPERTY(meta = (BindWidget)) UComboBoxString* AntiAliasingDropdown;
 	//UPROPERTY(meta = (BindWidget)) UComboBoxString* PostProcessingDropdown;
 	UPROPERTY(meta = (BindWidget)) UComboBoxString* ShadowsDropdown;
@@ -54,10 +56,19 @@ public:
 	UPROPERTY(meta = (BindWidget)) USlider* SoundEffectsSlider;
 	UPROPERTY(meta = (BindWidget)) USlider* AmbientSoundsSlider;
 
+	UPROPERTY(meta = (BindWidget)) UTextBlock* MasterNumber;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* MusicNumber;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* SoundEffectsNumber;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* AmbientSoundsNumber;
+
 	// Input
 	UPROPERTY(meta = (BindWidget)) UButton* InputSettingsButton;
+
 	UPROPERTY(meta = (BindWidget)) USlider* MouseWheelSpeedSlider;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* MouseWheelSpeedNumber;
+	
 	UPROPERTY(meta = (BindWidget)) USlider* MouseDragRotateSpeedSlider;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* MouseDragRotateSpeedNumber;
 
 	UPROPERTY(meta = (BindWidget)) UButton* RestoreDefaultsButton;
 

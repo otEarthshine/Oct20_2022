@@ -652,8 +652,8 @@ public:
 			 */
 			era = 1;
 			AddProsperityTech_Building(era, 8, TechEnum::FurnitureWorkshop, CardEnum::FurnitureWorkshop);
-			AddProsperityTech_BuildingX(era, 2, TechEnum::Pottery, { CardEnum::Potter, CardEnum::ClayPit });
-			AddProsperityTech_Building(era, 2, TechEnum::BeerBrewery, CardEnum::BeerBrewery);
+			AddProsperityTech_BuildingX(era, 1, TechEnum::Pottery, { CardEnum::Potter, CardEnum::ClayPit });
+			AddProsperityTech_Building(era, 1, TechEnum::BeerBrewery, CardEnum::BeerBrewery);
 			//AddProsperityTech_Bonus(era, 4, TechEnum::CityToCityTrade);
 			AddProsperityTech_Bonus(era, 4, TechEnum::InfluencePoints);
 			AddProsperityTech_Bonus(era, 4, TechEnum::Conquer);

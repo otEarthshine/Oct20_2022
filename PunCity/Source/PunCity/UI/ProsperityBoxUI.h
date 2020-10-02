@@ -126,8 +126,12 @@ public:
 		// Done Tech
 		if (tech->state == TechStateEnum::Researched)
 		{
-			HouseCountText->SetVisibility(ESlateVisibility::Collapsed);
+			SetText(HouseCountText, std::to_string(unlockCount));
+			TechName->SetColorAndOpacity(FLinearColor::White);
+			HouseCountText->SetColorAndOpacity(FLinearColor::Gray);
+			HouseCountText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 			OuterImage->GetDynamicMaterial()->SetScalarParameterValue("ResearchFraction", 1);
+			OuterImage->GetDynamicMaterial()->SetScalarParameterValue("IsActive", 0);
 			return;
 		}
 		
@@ -135,18 +139,23 @@ public:
 		// Helpers
 		auto setTechNotReachedYet = [&]() {
 			SetText(HouseCountText, std::to_string(unlockCount));
+			TechName->SetColorAndOpacity(FLinearColor::Gray);
+			HouseCountText->SetColorAndOpacity(FLinearColor::Gray);
 			HouseCountText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 			OuterImage->GetDynamicMaterial()->SetScalarParameterValue("ResearchFraction", 0);
+			OuterImage->GetDynamicMaterial()->SetScalarParameterValue("IsActive", 0);
 		};
 
 		auto setTechActive = [&]() {
 			std::stringstream ss;
 			ss << houseLvlCount << "/" << unlockCount;
 			SetText(HouseCountText, ss.str());
+			TechName->SetColorAndOpacity(FLinearColor::White);
 			HouseCountText->SetColorAndOpacity(FLinearColor::White);
 			HouseCountText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
 			OuterImage->GetDynamicMaterial()->SetScalarParameterValue("ResearchFraction", static_cast<float>(houseLvlCount) / unlockCount);
+			OuterImage->GetDynamicMaterial()->SetScalarParameterValue("IsActive", 1);
 		};
 		
 
@@ -173,7 +182,7 @@ public:
 			isAdjacentTechDone = (techToTheLeft->state == TechStateEnum::Researched);
 		}
 
-		if (isAdjacentTechDone) {
+		if (isAdjacentTechDone || houseLvlCount > 0) {
 			setTechActive();
 			return;
 		}

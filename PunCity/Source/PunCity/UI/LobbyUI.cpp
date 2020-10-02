@@ -14,12 +14,6 @@
 #include "PunCity/PunGameMode.h"
 #include "PunCity/MainMenuPlayerController.h"
 
-AMainMenuPlayerController* ULobbyUI::GetFirstController()
-{
-	auto firstController = Cast<AMainMenuPlayerController>(GetWorld()->GetFirstPlayerController());
-	check(UGameplayStatics::GetPlayerControllerID(firstController) == 0);
-	return firstController;
-}
 
 void ULobbyUI::Init()
 {
@@ -34,30 +28,45 @@ void ULobbyUI::Init()
 	//if (gameMode) { // ResetPlayerCount if server
 	//	gameInst->ResetPlayerCount();
 	//}
+
+	SetChildHUD(LobbySettingsUI);
+	LobbySettingsUI->SetPreLobby(false);
 	
 	/*
 	 * Singleplayer vs multiplayer
 	 */
-	serverMapSettings.isSinglePlayer = gameInstance()->isSinglePlayer;
-	ESlateVisibility multiplayerUIVisible = serverMapSettings.isSinglePlayer ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible;
+	bool isSinglePlayer = gameInstance()->isSinglePlayer;
+	LobbySettingsUI->serverMapSettings.isSinglePlayer = isSinglePlayer;
+	
+	ESlateVisibility multiplayerUIVisible = isSinglePlayer ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible;
 	PlayerListOverlay->SetVisibility(multiplayerUIVisible);
 	ChatOverlay->SetVisibility(multiplayerUIVisible);
 	LobbyReadyBox->SetVisibility(multiplayerUIVisible);
 
+	FMapSettings mapSettings = FMapSettings::GetDefault(true);
+	
 	/*
 	 * Loading Multiplayer Saves
 	 */
 	if (gameInst->isMultiplayer() &&
-		gameInst->IsServer(this) &&
-		gameInst->IsLoadingSavedGame())
+		gameInst->IsServer(this))
 	{
-		gameInst->saveSystem().LoadDataIntoCache();
+		if (gameInst->IsLoadingSavedGame())
+		{
+			// Load Saved Game
+			gameInst->saveSystem().LoadDataIntoCache();
 
-		gameInst->saveSystem().ServerPrepareSync();
-		gameInst->clientPacketsReceived[gameInst->hostPlayerId] = gameInst->saveSystem().totalPackets();
+			gameInst->saveSystem().ServerPrepareSync();
+			gameInst->clientPacketsReceived[gameInst->hostPlayerId] = gameInst->saveSystem().totalPackets();
 
-		// Set serverMapSettings to saveInfo
-		serverMapSettings = gameInst->GetMapSettings();
+			// Set serverMapSettings to saveInfo
+			mapSettings = gameInst->GetMapSettings();
+		}
+		else
+		{
+			// Creating a Multiplayer Game
+			mapSettings = gameInst->GetMapSettings();
+		}
 	}
 
 
@@ -76,26 +85,31 @@ void ULobbyUI::Init()
 	LobbyChatContentRichText->SetText(FText());
 	LobbyPlayerListBox->ClearChildren();
 
-	// Only server can change settings
-	if (GetFirstController()->GetLocalRole() == ROLE_Authority)
-	{
-		LobbyMapSeedInputBox->OnTextCommitted.AddDynamic(this, &ULobbyUI::OnLobbyMapSeedInputBoxTextCommitted);
+	
+	LobbySettingsUI->Init(mapSettings);
+	
+	//// Only server can change settings
+	//if (GetFirstController()->GetLocalRole() == ROLE_Authority)
+	//{
+	//	LobbyPasswordInputBox->OnTextCommitted.AddDynamic(this, &ULobbyUI::OnLobbyPasswordInputBoxTextCommitted);
+	//	
+	//	LobbyMapSeedInputBox->OnTextCommitted.AddDynamic(this, &ULobbyUI::OnLobbyMapSeedInputBoxTextCommitted);
 
-		LobbyMapSizeDropdown->OnSelectionChanged.AddDynamic(this, &ULobbyUI::OnLobbyMapSizeDropdownChanged);
-		// "Small" If adding another map size, also change the options on UI editor
-		// Note: Using UI Editor for this to prevent ::Direct selection issue
+	//	LobbyMapSizeDropdown->OnSelectionChanged.AddDynamic(this, &ULobbyUI::OnLobbyMapSizeDropdownChanged);
+	//	// "Small" If adding another map size, also change the options on UI editor
+	//	// Note: Using UI Editor for this to prevent ::Direct selection issue
 
-		LobbySeaLevelDropdown->OnSelectionChanged.AddDynamic(this, &ULobbyUI::OnLobbySeaLevelDropdownChanged);
-		LobbyMoistureDropdown->OnSelectionChanged.AddDynamic(this, &ULobbyUI::OnLobbyMoistureDropdownChanged);
-		LobbyTemperatureDropdown->OnSelectionChanged.AddDynamic(this, &ULobbyUI::OnLobbyTemperatureDropdownChanged);
-		LobbyMountainDensityDropdown->OnSelectionChanged.AddDynamic(this, &ULobbyUI::OnLobbyMountainDensityDropdownChanged);
+	//	LobbySeaLevelDropdown->OnSelectionChanged.AddDynamic(this, &ULobbyUI::OnLobbySeaLevelDropdownChanged);
+	//	LobbyMoistureDropdown->OnSelectionChanged.AddDynamic(this, &ULobbyUI::OnLobbyMoistureDropdownChanged);
+	//	LobbyTemperatureDropdown->OnSelectionChanged.AddDynamic(this, &ULobbyUI::OnLobbyTemperatureDropdownChanged);
+	//	LobbyMountainDensityDropdown->OnSelectionChanged.AddDynamic(this, &ULobbyUI::OnLobbyMountainDensityDropdownChanged);
 
-		LobbyAICountDropdown->OnSelectionChanged.AddDynamic(this, &ULobbyUI::OnLobbyAICountDropdownChanged);
-		RefreshAICountDropdown();
-		LobbyAICountDropdown->SetSelectedIndex(LobbyAICountDropdown->GetOptionCount() - 1);
+	//	LobbyAICountDropdown->OnSelectionChanged.AddDynamic(this, &ULobbyUI::OnLobbyAICountDropdownChanged);
+	//	RefreshAICountDropdown();
+	//	LobbyAICountDropdown->SetSelectedIndex(LobbyAICountDropdown->GetOptionCount() - 1);
 
-		LobbyDifficultyDropdown->OnSelectionChanged.AddDynamic(this, &ULobbyUI::OnLobbyDifficultyDropdownChanged);
-	}
+	//	LobbyDifficultyDropdown->OnSelectionChanged.AddDynamic(this, &ULobbyUI::OnLobbyDifficultyDropdownChanged);
+	//}
 
 	// Generate World
 	GenerateWorldBar->SetVisibility(ESlateVisibility::Collapsed);
@@ -110,45 +124,45 @@ void ULobbyUI::Init()
 	// Popup
 	LobbyPopupCloseButton->OnClicked.AddDynamic(this, &ULobbyUI::OnClickPopupCloseButton);
 
-	// Small map for editor play for speed
-	serverMapSettings.mapSizeEnumInt = static_cast<int32>(MapSizeEnum::Medium);
-	LobbyMapSizeDropdown->ClearOptions();
-	for (FString name : MapSizeNames) {
-		LobbyMapSizeDropdown->AddOption(name);
-	}
-	LobbyMapSizeDropdown->SetSelectedIndex(serverMapSettings.mapSizeEnumInt);
-	RefreshAICountDropdown();
+	//// Small map for editor play for speed
+	//serverMapSettings.mapSizeEnumInt = static_cast<int32>(MapSizeEnum::Medium);
+	//LobbyMapSizeDropdown->ClearOptions();
+	//for (FString name : MapSizeNames) {
+	//	LobbyMapSizeDropdown->AddOption(name);
+	//}
+	//LobbyMapSizeDropdown->SetSelectedIndex(serverMapSettings.mapSizeEnumInt);
+	//RefreshAICountDropdown();
 
 
-	{
-		auto setupDropdown = [&](UComboBoxString* LobbyDropdown, const std::vector<FString>& enumNames)
-		{
-			LobbyDropdown->ClearOptions();
-			for (FString name : enumNames) {
-				LobbyDropdown->AddOption(name);
-			}
-		};
+	//{
+	//	auto setupDropdown = [&](UComboBoxString* LobbyDropdown, const std::vector<FString>& enumNames)
+	//	{
+	//		LobbyDropdown->ClearOptions();
+	//		for (FString name : enumNames) {
+	//			LobbyDropdown->AddOption(name);
+	//		}
+	//	};
 
-		// Sea level
-		serverMapSettings.mapSeaLevel = MapSeaLevelEnum::Medium;
-		setupDropdown(LobbySeaLevelDropdown, MapSettingsLevelNames);
-		LobbySeaLevelDropdown->SetSelectedIndex(static_cast<int>(serverMapSettings.mapSeaLevel));
+	//	// Sea level
+	//	serverMapSettings.mapSeaLevel = MapSeaLevelEnum::Medium;
+	//	setupDropdown(LobbySeaLevelDropdown, MapSettingsLevelNames);
+	//	LobbySeaLevelDropdown->SetSelectedIndex(static_cast<int>(serverMapSettings.mapSeaLevel));
 
-		// Moisture
-		serverMapSettings.mapMoisture = MapMoistureEnum::Medium;
-		setupDropdown(LobbyMoistureDropdown, MapMoistureNames);
-		LobbyMoistureDropdown->SetSelectedIndex(static_cast<int>(serverMapSettings.mapMoisture));
+	//	// Moisture
+	//	serverMapSettings.mapMoisture = MapMoistureEnum::Medium;
+	//	setupDropdown(LobbyMoistureDropdown, MapMoistureNames);
+	//	LobbyMoistureDropdown->SetSelectedIndex(static_cast<int>(serverMapSettings.mapMoisture));
 
-		// Temperature
-		serverMapSettings.mapTemperature = MapTemperatureEnum::Medium;
-		setupDropdown(LobbyTemperatureDropdown, MapSettingsLevelNames);
-		LobbyTemperatureDropdown->SetSelectedIndex(static_cast<int>(serverMapSettings.mapTemperature));
+	//	// Temperature
+	//	serverMapSettings.mapTemperature = MapTemperatureEnum::Medium;
+	//	setupDropdown(LobbyTemperatureDropdown, MapSettingsLevelNames);
+	//	LobbyTemperatureDropdown->SetSelectedIndex(static_cast<int>(serverMapSettings.mapTemperature));
 
-		// Mountain Density
-		serverMapSettings.mapMountainDensity = MapMountainDensityEnum::Medium;
-		setupDropdown(LobbyMountainDensityDropdown, MapSettingsLevelNames);
-		LobbyMountainDensityDropdown->SetSelectedIndex(static_cast<int>(serverMapSettings.mapMountainDensity));
-	}
+	//	// Mountain Density
+	//	serverMapSettings.mapMountainDensity = MapMountainDensityEnum::Medium;
+	//	setupDropdown(LobbyMountainDensityDropdown, MapSettingsLevelNames);
+	//	LobbyMountainDensityDropdown->SetSelectedIndex(static_cast<int>(serverMapSettings.mapMountainDensity));
+	//}
 	
 
 	gameInstance()->Spawn2DSound("UI", "UIWindowOpen");
@@ -160,18 +174,8 @@ void ULobbyUI::Init()
 	gameInstance()->lobbyChatMessages.Empty();
 	gameInstance()->lobbyChatPlayerNames.Empty();
 
+	LobbySettingsUI->SendMapSettings();
 
-	if (gameMode) {
-		PUN_DEBUG2("LobbyUI Open: SetPlayerCount 6");
-		
-		// Set player count settings
-		serverMapSettings.playerCount = 6;
-		gameInstance()->SetPlayerCount(6);
-	}
-
-	SendMapSettings();
-
-	
 	UpdateLobbyUI();
 }
 
@@ -180,7 +184,7 @@ void ULobbyUI::Tick()
 	auto gameInst = gameInstance();
 	gameInst->PunTick();
 	
-	auto firstController = GetFirstController();
+	auto firstController = LobbySettingsUI->GetFirstController();
 
 	if (firstController->isStartingGame) {
 		//PlayerCountText->SetText(FText::FromString(FString("Starting game...")));
@@ -199,7 +203,7 @@ void ULobbyUI::Tick()
 		SetText(MultiplayerLobbyTitle, "<Title>Load Multiplayer Game Lobby</>");
 		GenerateWorldOverlay->SetVisibility(ESlateVisibility::Collapsed);
 	} else {
-		if (serverMapSettings.isMultiplayer()) {
+		if (serverMapSettings().isMultiplayer()) {
 			SetText(MultiplayerLobbyTitle, "<Title>Multiplayer Lobby</>");
 		} else {
 			SetText(MultiplayerLobbyTitle, "<Title>Single Player</>");
@@ -207,8 +211,7 @@ void ULobbyUI::Tick()
 		GenerateWorldOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	}
 
-	SettingsBackgroundImage->SetVisibility(serverMapSettings.isMultiplayer() ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Hidden);
-
+	LobbySettingsUI->SettingsBackgroundImage->SetVisibility(serverMapSettings().isMultiplayer() ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Hidden);
 
 
 	/*
@@ -248,38 +251,41 @@ void ULobbyUI::Tick()
 	/*
 	 * Settings update
 	 */
+	LobbySettingsUI->Tick(isLoading);
 
-	auto setServerVsClientUI = [&](UWidget* serverWidget, UTextBlock* clientWidget, FString clientString)
-	{
-		// Not loading and is server, show serverWidget to allow settings change
-		if (!isLoading && firstController->GetLocalRole() == ROLE_Authority)
-		{
-			serverWidget->SetVisibility(ESlateVisibility::Visible);
-			clientWidget->SetVisibility(ESlateVisibility::Collapsed);
-		}
-		else 
-		{
-			serverWidget->SetVisibility(ESlateVisibility::Collapsed);
-			clientWidget->SetVisibility(ESlateVisibility::Visible);
+	//auto setServerVsClientUI = [&](UWidget* serverWidget, UTextBlock* clientWidget, FString clientString)
+	//{
+	//	// Not loading and is server, show serverWidget to allow settings change
+	//	if (!isLoading && firstController->GetLocalRole() == ROLE_Authority)
+	//	{
+	//		serverWidget->SetVisibility(ESlateVisibility::Visible);
+	//		clientWidget->SetVisibility(ESlateVisibility::Collapsed);
+	//	}
+	//	else 
+	//	{
+	//		serverWidget->SetVisibility(ESlateVisibility::Collapsed);
+	//		clientWidget->SetVisibility(ESlateVisibility::Visible);
 
-			if (clientString != clientWidget->GetText().ToString()) {
-				PUN_DEBUG2("LobbyClientText SetText %s", *clientString);
-				clientWidget->SetText(FText::FromString(clientString));
-			}
-		}
-	};
+	//		if (clientString != clientWidget->GetText().ToString()) {
+	//			PUN_DEBUG2("LobbyClientText SetText %s", *clientString);
+	//			clientWidget->SetText(FText::FromString(clientString));
+	//		}
+	//	}
+	//};
 
 	FMapSettings mapSettings = gameInst->GetMapSettings();
-	setServerVsClientUI(LobbyMapSeedInputBox, LobbyMapSeedText, mapSettings.mapSeed);
-	setServerVsClientUI(LobbyMapSizeDropdown, LobbyMapSizeText, MapSizeNames[mapSettings.mapSizeEnumInt]);
-	setServerVsClientUI(LobbySeaLevelDropdown, LobbySeaLevelText, MapSettingsLevelNames[static_cast<int>(mapSettings.mapSeaLevel)]);
-	setServerVsClientUI(LobbyMoistureDropdown, LobbyMoistureText, MapMoistureNames[static_cast<int>(mapSettings.mapMoisture)]);
-	setServerVsClientUI(LobbyTemperatureDropdown, LobbyTemperatureText, MapSettingsLevelNames[static_cast<int>(mapSettings.mapTemperature)]);
-	setServerVsClientUI(LobbyMountainDensityDropdown, LobbyMountainDensityText, MapSettingsLevelNames[static_cast<int>(mapSettings.mapMountainDensity)]);
+	//setServerVsClientUI(LobbyMapSeedInputBox, LobbyMapSeedText, mapSettings.mapSeed);
+	//setServerVsClientUI(LobbyMapSizeDropdown, LobbyMapSizeText, MapSizeNames[mapSettings.mapSizeEnumInt]);
+	//setServerVsClientUI(LobbySeaLevelDropdown, LobbySeaLevelText, MapSettingsLevelNames[static_cast<int>(mapSettings.mapSeaLevel)]);
+	//setServerVsClientUI(LobbyMoistureDropdown, LobbyMoistureText, MapMoistureNames[static_cast<int>(mapSettings.mapMoisture)]);
+	//setServerVsClientUI(LobbyTemperatureDropdown, LobbyTemperatureText, MapSettingsLevelNames[static_cast<int>(mapSettings.mapTemperature)]);
+	//setServerVsClientUI(LobbyMountainDensityDropdown, LobbyMountainDensityText, MapSettingsLevelNames[static_cast<int>(mapSettings.mapMountainDensity)]);
+
+	//
+	//setServerVsClientUI(LobbyAICountDropdown, LobbyAICountText, FString::FromInt(mapSettings.aiCount));
+	//setServerVsClientUI(LobbyDifficultyDropdown, LobbyDifficultyText, DifficultyLevelNames[static_cast<int>(mapSettings.difficultyLevel)]);
 
 	
-	setServerVsClientUI(LobbyAICountDropdown, LobbyAICountText, FString::FromInt(mapSettings.aiCount));
-	setServerVsClientUI(LobbyDifficultyDropdown, LobbyDifficultyText, DifficultyLevelNames[static_cast<int>(mapSettings.difficultyLevel)]);
 
 	// Map size or seed was changed, cancel existing world gen and ready state
 	if (clientLastMapSettings != mapSettings) 
@@ -311,7 +317,7 @@ void ULobbyUI::Tick()
 	 */
 	if (UGameplayStatics::GetTimeSeconds(this) - lastSendMapSettingsTime > 2.0f)
 	{
-		SendMapSettings();
+		LobbySettingsUI->SendMapSettings();
 		lastSendMapSettingsTime = UGameplayStatics::GetTimeSeconds(this);
 	}
 
@@ -422,16 +428,6 @@ void ULobbyUI::Tick()
 	// End Tick()
 }
 
-void ULobbyUI::SendMapSettings()
-{
-	if (GetFirstController()->GetLocalRole() == ROLE_Authority) {
-		PunSerializedData blob(true);
-		serverMapSettings.Serialize(blob);
-		GetFirstController()->ExecuteAllControllers([&](AMainMenuPlayerController* controller) {
-			controller->SetMapSettings(blob);
-		});
-	}
-}
 
 void ULobbyUI::InputBoxChange_InitialAnimals(const FText& text)
 {
@@ -529,90 +525,7 @@ void ULobbyUI::OnChatInputBoxTextCommitted(const FText& text, ETextCommit::Type 
 	}
 }
 
-void ULobbyUI::OnLobbyMapSeedInputBoxTextCommitted(const FText& text, ETextCommit::Type CommitMethod)
-{
-	PUN_DEBUG2("OnLobbyMapSeedInputBoxTextCommitted %s", *text.ToString());
-	serverMapSettings.mapSeed = text.ToString();
-	
-	SendMapSettings();
-	
-	//GetFirstController()->ExecuteAllControllers([&](AMainMenuPlayerController* controller) {
-	//	controller->SetMapSeed(text.ToString());
-	//});
-}
 
-void ULobbyUI::OnLobbyMapSizeDropdownChanged(FString sItem, ESelectInfo::Type seltype)
-{
-	serverMapSettings.mapSizeEnumInt = static_cast<int32>(GetMapSizeEnumFromString(sItem));
-	RefreshAICountDropdown();
-	
-	SendMapSettings();
-	
-	if (seltype != ESelectInfo::Type::Direct) {
-		gameInstance()->Spawn2DSound("UI", "DropdownChange");
-	}
-}
-void ULobbyUI::OnLobbySeaLevelDropdownChanged(FString sItem, ESelectInfo::Type seltype)
-{
-	serverMapSettings.mapSeaLevel = GetEnumFromName<MapSeaLevelEnum>(sItem, MapSettingsLevelNames);
-
-	SendMapSettings();
-
-	if (seltype != ESelectInfo::Type::Direct) {
-		gameInstance()->Spawn2DSound("UI", "DropdownChange");
-	}
-}
-void ULobbyUI::OnLobbyMoistureDropdownChanged(FString sItem, ESelectInfo::Type seltype)
-{
-	serverMapSettings.mapMoisture = GetEnumFromName<MapMoistureEnum>(sItem, MapMoistureNames);
-
-	SendMapSettings();
-
-	if (seltype != ESelectInfo::Type::Direct) {
-		gameInstance()->Spawn2DSound("UI", "DropdownChange");
-	}
-}
-void ULobbyUI::OnLobbyTemperatureDropdownChanged(FString sItem, ESelectInfo::Type seltype)
-{
-	serverMapSettings.mapTemperature = GetEnumFromName<MapTemperatureEnum>(sItem, MapSettingsLevelNames);
-
-	SendMapSettings();
-
-	if (seltype != ESelectInfo::Type::Direct) {
-		gameInstance()->Spawn2DSound("UI", "DropdownChange");
-	}
-}
-void ULobbyUI::OnLobbyMountainDensityDropdownChanged(FString sItem, ESelectInfo::Type seltype)
-{
-	serverMapSettings.mapMountainDensity = GetEnumFromName<MapMountainDensityEnum>(sItem, MapSettingsLevelNames);
-
-	SendMapSettings();
-
-	if (seltype != ESelectInfo::Type::Direct) {
-		gameInstance()->Spawn2DSound("UI", "DropdownChange");
-	}
-}
-
-
-void ULobbyUI::OnLobbyAICountDropdownChanged(FString sItem, ESelectInfo::Type seltype)
-{
-	serverMapSettings.aiCount = FCString::Atoi(*sItem);
-	SendMapSettings();
-
-	if (seltype != ESelectInfo::Type::Direct) {
-		gameInstance()->Spawn2DSound("UI", "DropdownChange");
-	}
-}
-void ULobbyUI::OnLobbyDifficultyDropdownChanged(FString sItem, ESelectInfo::Type seltype)
-{
-	serverMapSettings.difficultyLevel = GetDifficultyLevelFromString(sItem);
-	SendMapSettings();
-	
-
-	if (seltype != ESelectInfo::Type::Direct) {
-		gameInstance()->Spawn2DSound("UI", "DropdownChange");
-	}
-}
 
 void ULobbyUI::Unready() {
 	// Settings change, unready everyone
@@ -750,7 +663,7 @@ void ULobbyUI::LobbyStartGame()
 		auto controller = Cast<AMainMenuPlayerController>(found[i]);
 		check(controller);
 		PunSerializedData blob(true);
-		serverMapSettings.Serialize(blob);
+		serverMapSettings().Serialize(blob);
 		controller->ServerStartGame(blob);
 	}
 

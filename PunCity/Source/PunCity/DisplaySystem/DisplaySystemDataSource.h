@@ -84,7 +84,7 @@ public:
 		postProcessVolume->Settings.ScreenSpaceReflectionQuality = 0;
 
 		postProcessVolume->Settings.bOverride_ScreenPercentage = true;
-		postProcessVolume->Settings.ScreenPercentage = gameInstance->resolutionQuality();
+		postProcessVolume->Settings.ScreenPercentage = gameInstance->GetDisplayResolutionQuality();
 		
 		//PUN_LOG("SetPostProcessVolume ScreenPercentage %f %f", postProcessVolume->Settings.ScreenPercentage, gameInstance->resolutionQuality());
 	}

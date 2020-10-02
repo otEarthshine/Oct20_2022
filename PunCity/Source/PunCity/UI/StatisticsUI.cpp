@@ -33,7 +33,7 @@ void UStatisticsUI::InitStatisticsUI()
 	AddSeries(PopulationGraph, {
 		//{ FString("Adult population"), PlotStatEnum::AdultPopulation, FLinearColor::Yellow },
 		{ FString("Population"), PlotStatEnum::Population, FLinearColor::Green },
-		{ FString("Child population"), PlotStatEnum::ChildPopulation, FLinearColor::Blue },
+		{ FString("Children"), PlotStatEnum::ChildPopulation, FLinearColor::Blue },
 	});
 
 	AddSeries(IncomeGraph, {

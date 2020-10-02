@@ -369,11 +369,14 @@ void Mine::OnProduce(int32 productionAmount)
 	int32 depletedAmount = productionAmount * depletionMultiplier / 100;
 
 	AddDepletionStat({ product(), depletedAmount });
-	
+
+	int32 provinceIdLocal = provinceId();
+	PUN_ENSURE(provinceIdLocal != -1, return);
+
 	if (isEnum(CardEnum::Quarry)) {
-		_simulation->georesourceSystem().MineStone(_simulation->GetProvinceIdRaw(centerTile()), depletedAmount);
+		_simulation->georesourceSystem().MineStone(provinceIdLocal, depletedAmount);
 	} else {
-		_simulation->georesourceSystem().MineOre(_simulation->GetProvinceIdRaw(centerTile()), depletedAmount);
+		_simulation->georesourceSystem().MineOre(provinceIdLocal, depletedAmount);
 	}
 }
 

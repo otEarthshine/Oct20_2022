@@ -964,11 +964,7 @@ static const ResourceEnum FoodEnums[] =
 	// Arrange food from high to low grabbing priority
 	ResourceEnum::Bread,
 	ResourceEnum::Cabbage,
-	ResourceEnum::Orange,
 	ResourceEnum::Papaya,
-	
-	ResourceEnum::Milk,
-	ResourceEnum::Mushroom,
 	ResourceEnum::Fish,
 
 	ResourceEnum::Pork,
@@ -976,8 +972,11 @@ static const ResourceEnum FoodEnums[] =
 	ResourceEnum::Beef,
 	ResourceEnum::Lamb,
 
+	ResourceEnum::Orange,
+	ResourceEnum::Milk,
+	ResourceEnum::Mushroom,
 	ResourceEnum::Wheat,
-	//ResourceEnum::Barley,
+	
 	ResourceEnum::Grape,
 };
 
@@ -2166,7 +2165,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::RegionCrates,	"Crates",			WorldTile2(4, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, {0, 0, 0}, "Crates that may contain valuable resources."),
 
 	// June 1 addition
-	BldInfo(CardEnum::Windmill, "Windmill", WorldTile2(5, 5), ResourceEnum::Wheat, ResourceEnum::None, ResourceEnum::Flour, 10, 2, { 150,0,0 }, "Grind Wheat into Wheat Flour. +10% Productivity to surrounding Farms"),
+	BldInfo(CardEnum::Windmill, "Windmill", WorldTile2(5, 5), ResourceEnum::Wheat, ResourceEnum::None, ResourceEnum::Flour, 10, 2, { 150,0,0 }, "Grind Wheat into Wheat Flour. +10% Productivity to surrounding Farms."),
 	BldInfo(CardEnum::Bakery, "Bakery", WorldTile2(5, 5), ResourceEnum::Flour, ResourceEnum::Coal, ResourceEnum::Bread, 30, 2, { 70,30,0 }, "Bake Bread with Wheat Flour and heat."),
 	BldInfo(CardEnum::GemstoneMine, "Gemstone Mine", WorldTile2(5, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::Gemstone, 10, 3, { 70,30,0 }, "Mine Gemstone from Gemstone Deposits."),
 	BldInfo(CardEnum::Jeweler, "Jeweler", WorldTile2(4, 7), ResourceEnum::Gemstone, ResourceEnum::GoldBar, ResourceEnum::Jewelry, 10, 3, { 150,0,50 }, "Craft Gemstone and Gold Bar into Jewelry."),
@@ -4738,9 +4737,9 @@ static const UnitInfo UnitInfos[]
 	UnitInfo(UnitEnum::Penguin, "Penguin",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 	
 	
-	UnitInfo(UnitEnum::Pig,"Pig",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Pork, 5 * BaseUnitDrop100}}),
-	UnitInfo(UnitEnum::Sheep,"Sheep",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Lamb, 2 * BaseUnitDrop100}, {ResourceEnum::Wool, 3 * BaseUnitDrop100}}),
-	UnitInfo(UnitEnum::Cow,"Cow",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Milk, 5 * BaseUnitDrop100}, {ResourceEnum::Leather,  3 * BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::Pig,"Pig",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Pork, BaseUnitDrop100 * 2}}),
+	UnitInfo(UnitEnum::Sheep,"Sheep",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Lamb, BaseUnitDrop100}, {ResourceEnum::Wool, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::Cow,"Cow",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Milk, 2 * BaseUnitDrop100}, {ResourceEnum::Leather,  BaseUnitDrop100}}),
 
 	UnitInfo(UnitEnum::Infantry,"Infantry",	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
 	UnitInfo(UnitEnum::ProjectileArrow,"ProjectileArrow",	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),

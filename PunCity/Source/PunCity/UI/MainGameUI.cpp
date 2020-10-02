@@ -1847,10 +1847,10 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 			if (!simulation().cardSystem(playerId()).CanAddCardToBoughtHand(buildingEnum, 1)) 
 			{
 				simulation().AddPopupToFront(playerId(), 
-					"Reached hand limit for bought cards."
-					"<space>"
-					"Please sell or use some cards on your hand, then choose a rare card prize again.",
-					ExclusiveUIEnum::RareCardHand, "PopupCannot");
+											"Reached hand limit for bought cards."
+											"<space>"
+											"Please sell or use some cards on your hand, then choose a rare card prize again.",
+											ExclusiveUIEnum::RareCardHand, "PopupCannot");
 				return;
 			}
 

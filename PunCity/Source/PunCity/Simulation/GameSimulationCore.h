@@ -527,9 +527,17 @@ public:
 		int32 buildingId = buildingIdAtTile(tile);
 		return (buildingId == -1) ? nullptr : &building(buildingId);
 	}
+	
 	int32 buildingIdAtTile(WorldTile2 tile) final {
 		return _buildingSystem->buildingIdAtTile(tile);
 	}
+	int32 buildingIdAtTileSafe(WorldTile2 tile) {
+		if (_buildingSystem) {
+			return _buildingSystem->buildingIdAtTile(tile);
+		}
+		return -1;
+	}
+	
 	bool tileHasBuilding(WorldTile2 tile) final {
 		return buildingIdAtTile(tile) >= 0;
 	}

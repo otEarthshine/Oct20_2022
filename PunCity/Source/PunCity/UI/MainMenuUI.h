@@ -11,6 +11,7 @@
 #include "GameSettingsUI.h"
 #include "LobbyListElementUI.h"
 #include "Components/CircularThrobber.h"
+#include "LobbySettingsUI.h"
 #include "LoadSaveUI.h"
 
 //#include <memory>
@@ -76,6 +77,14 @@ public:
 	UPROPERTY(meta = (BindWidget)) UGameSettingsUI* GameSettingsUI;
 	UPROPERTY(meta = (BindWidget)) UCanvasPanel* MultiplayerLobbyListCanvas;
 	UPROPERTY(meta = (BindWidget)) ULoadSaveUI* LoadSaveUI;
+	UPROPERTY(meta = (BindWidget)) UOverlay* PreLobbySettingsOverlay;
+
+	// Pre Lobby
+	UPROPERTY(meta = (BindWidget)) ULobbySettingsUI* PreLobbySettingsUI;
+	UPROPERTY(meta = (BindWidget)) UButton* PreLobbySettingsConfirmButton;
+	UPROPERTY(meta = (BindWidget)) UButton* PreLobbySettingsBackButton;
+	
+	//UPROPERTY(meta = (BindWidget)) 
 
 	UPROPERTY(meta = (BindWidget)) UOverlay* JoinGameDelayOverlay;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* JoinGameDelayText;
@@ -145,7 +154,8 @@ public:
 		gameInstance()->isSinglePlayer = true;
 		LoadSaveUI->OpenLoadUI();
 	}
-	
+
+	UFUNCTION() void OpenPreLobbySettings();
 	UFUNCTION() void CreateMultiplayerGame();
 	UFUNCTION() void JoinMultiplayerGame();
 	UFUNCTION() void LoadMultiplayerGame() {
@@ -179,6 +189,8 @@ public:
 	}
 
 	UPROPERTY() TArray<ULobbyListElementUI*> lobbyListElements;
+
+	
 
 	void Spawn2DSound(std::string groupName, std::string soundName);
 	

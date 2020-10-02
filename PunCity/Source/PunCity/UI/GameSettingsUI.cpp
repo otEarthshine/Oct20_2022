@@ -232,6 +232,7 @@ void UGameSettingsUI::RefreshUI(bool resetTabs)
 
 	//ResolutionSlider->SetValue(settings->ScalabilityQuality.ResolutionQuality / 100.0f);
 	ResolutionSlider->SetValue(gameInst->resolutionQuality() / 100.0f);
+	SetText(ResolutionNumber, std::to_string(gameInst->GetDisplayResolutionQuality()) + "%");
 	
 	AntiAliasingDropdown->SetSelectedIndex(settings->ScalabilityQuality.AntiAliasingQuality);
 	//PostProcessingDropdown->SetSelectedIndex(settings->ScalabilityQuality.PostProcessQuality);
@@ -263,14 +264,22 @@ void UGameSettingsUI::RefreshUI(bool resetTabs)
 	}
 	VSyncCheckBox->SetIsChecked(settings->IsVSyncEnabled());
 	
+	// Sound
+	auto setSlider = [&](USlider* slider, UTextBlock* textBlock, float number) {
+		slider->SetValue(number);
+		SetText(textBlock, to_string(FMath::RoundToInt(number * 100)));
+	};
 	
-	MasterSlider->SetValue(gameInst->masterVolume());
-	MusicSlider->SetValue(gameInst->musicVolume());
-	SoundEffectsSlider->SetValue(gameInst->soundEffectsVolume());
-	AmbientSoundsSlider->SetValue(gameInst->ambientVolume());
+	setSlider(MasterSlider, MasterNumber, gameInst->masterVolume());
+	setSlider(MusicSlider, MusicNumber, gameInst->musicVolume());
+	setSlider(SoundEffectsSlider, SoundEffectsNumber, gameInst->soundEffectsVolume());
+	setSlider(AmbientSoundsSlider, AmbientSoundsNumber, gameInst->ambientVolume());
+
 	
-	MouseWheelSpeedSlider->SetValue(gameInst->mouseZoomSpeedFraction);
-	MouseDragRotateSpeedSlider->SetValue(gameInst->mouseRotateSpeedFraction);
+	// Inputs
+	setSlider(MouseWheelSpeedSlider, MouseWheelSpeedNumber, gameInst->mouseZoomSpeedFraction);
+	setSlider(MouseDragRotateSpeedSlider, MouseDragRotateSpeedNumber, gameInst->mouseRotateSpeedFraction);
+
 
 	if (resetTabs) {
 		ResetTabSelection();

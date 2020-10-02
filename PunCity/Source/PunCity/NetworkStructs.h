@@ -146,6 +146,13 @@ public:
 
 	bool isInitialized() { return playerCount > 0; }
 
+	static FMapSettings GetDefault(bool isSinglePlayerIn) {
+		FMapSettings mapSettings;
+		mapSettings.playerCount = 6;
+		mapSettings.isSinglePlayer = isSinglePlayerIn;
+		return mapSettings;
+	}
+
 	bool operator==(const FMapSettings& a)
 	{
 		return mapSeed == a.mapSeed &&

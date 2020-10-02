@@ -136,7 +136,7 @@ void ACameraPawn::KeyPressed_CtrlT()
 		SimSettings::Set("CheatHouseLevel", newLvl);
 		auto command = make_shared<FSendChat>();
 		command->isSystemMessage = true;
-		command->message = "House Level " + FString::FromInt(newLvl);
+		command->message = "House Level " + FString::FromInt(newLvl) + "+";
 		_networkInterface->SendNetworkCommand(command);
 	}
 }

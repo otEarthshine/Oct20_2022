@@ -27,7 +27,7 @@ void UMainMenuUI::Init()
 	LobbyListBackButton->OnClicked.AddDynamic(this, &UMainMenuUI::OnClickReturnToMainMenu);
 	LobbyListRefreshButton->OnClicked.AddDynamic(this, &UMainMenuUI::OnRefreshButtonClick);
 
-	LobbyListCreateGameButton->OnClicked.AddDynamic(this, &UMainMenuUI::CreateMultiplayerGame);
+	LobbyListCreateGameButton->OnClicked.AddDynamic(this, &UMainMenuUI::OpenPreLobbySettings);
 	LobbyListLoadGameButton->OnClicked.AddDynamic(this, &UMainMenuUI::LoadMultiplayerGame);
 	LobbyListJoinGameButton->OnClicked.AddDynamic(this, &UMainMenuUI::JoinMultiplayerGame);
 
@@ -41,6 +41,16 @@ void UMainMenuUI::Init()
 
 	SetChildHUD(LoadSaveUI);
 	LoadSaveUI->PunInit(this);
+
+	SetChildHUD(PreLobbySettingsUI);
+	PreLobbySettingsUI->Init(FMapSettings::GetDefault(false));
+	PreLobbySettingsUI->SetPreLobby(true);
+	PreLobbySettingsUI->SettingsBackgroundImage->SetVisibility(ESlateVisibility::Collapsed);
+	BUTTON_ON_CLICK(PreLobbySettingsConfirmButton, this, &UMainMenuUI::CreateMultiplayerGame);
+	BUTTON_ON_CLICK(PreLobbySettingsBackButton, this, &UMainMenuUI::OnClickReturnToMainMenu);
+
+
+	
 
 	JoinGameDelayOverlay->SetVisibility(ESlateVisibility::Collapsed);
 
@@ -241,6 +251,11 @@ void UMainMenuUI::Tick()
 		LoadSaveUI->Tick();
 	}
 
+	if (MainMenuSwitcher->GetActiveWidget() == PreLobbySettingsOverlay)
+	{
+		PreLobbySettingsUI->Tick(false);
+	}
+
 
 	if (MainMenuPopupOverlay->GetVisibility() == ESlateVisibility::Collapsed &&
 		!gameInstance()->mainMenuPopup.IsEmpty())
@@ -325,10 +340,19 @@ void UMainMenuUI::CreateSinglePlayerGame()
 	Spawn2DSound("UI", "UIWindowOpen");
 }
 
+void UMainMenuUI::OpenPreLobbySettings()
+{
+	MainMenuSwitcher->SetActiveWidget(PreLobbySettingsOverlay);
+
+	Spawn2DSound("UI", "UIWindowOpen");
+}
+
 void UMainMenuUI::CreateMultiplayerGame()
 {
 	// Host
 	PUN_DEBUG2("Hosting Server");
+
+	gameInstance()->SetMapSettings(PreLobbySettingsUI->serverMapSettings);
 
 	gameInstance()->CreateMultiplayerGame();
 

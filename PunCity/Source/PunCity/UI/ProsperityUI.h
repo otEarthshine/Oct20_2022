@@ -98,7 +98,7 @@ private:
 		for (size_t i = 1; i < houseLvlToProsperityTech.size(); i++)
 		{
 			UProsperityColumnUI* prosperityColumnUI = AddWidget<UProsperityColumnUI>(UIEnum::ProsperityColumnUI);
-			prosperityColumnUI->HouseLevelText->SetText(ToFText("House Lvl " + std::to_string(i)));
+			prosperityColumnUI->HouseLevelText->SetText(ToFText("House Lvl " + std::to_string(i) + "+"));
 			prosperityColumnUI->ProsperityTechList->ClearChildren();
 			ProsperityScrollBox->AddChild(prosperityColumnUI);
 			

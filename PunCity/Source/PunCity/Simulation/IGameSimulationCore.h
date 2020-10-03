@@ -298,10 +298,11 @@ public:
 	virtual int32 GetTreeCount(int32 provinceId) = 0;
 
 	virtual int32 GetProvinceIncome100(int32 provinceId) = 0;
-	virtual int32 GetProvinceClaimPrice(int32 provinceId) = 0;
+	//virtual int32 GetProvinceClaimPrice(int32 provinceId) = 0;
 	
 	virtual bool HasOutpostAt(int32 playerId, int32 provinceId) = 0;
 	virtual bool IsProvinceNextToPlayer(int32 provinceId, int32 playerId) = 0;
+	virtual bool IsProvinceNextToPlayerByShallowWater(int32 provinceId, int32 playerId) = 0;
 
 	virtual void RefreshTerritoryEdge(int32 playerId) = 0;
 
@@ -529,6 +530,7 @@ public:
 	virtual void SetPriority(class FSetPriority command) = 0;
 	virtual void SetTownPriority(class FSetTownPriority command) = 0;
 	virtual void SetGlobalJobPriority(class FSetGlobalJobPriority command) = 0;
+	virtual void GenericCommand(class FGenericCommand command) = 0;
 
 	virtual void TradeResource(class FTradeResource tradeResource) = 0;
 	virtual void SetIntercityTrade(class FSetIntercityTrade command) = 0;

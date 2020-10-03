@@ -1563,6 +1563,10 @@ public:
 		}
 	}
 
+	UFUNCTION(Exec) void SetApplicationScale(float NewValue) {
+		FSlateApplication::Get().SetApplicationScale(NewValue);
+	}
+
 
 	float GetTrailerTime() override {
 		return cameraPawn->GetTrailerTime();

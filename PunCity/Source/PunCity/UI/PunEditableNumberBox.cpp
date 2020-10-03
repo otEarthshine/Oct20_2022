@@ -16,7 +16,10 @@ void UPunEditableNumberBox::ClickArrow(bool isDown)
 	amount = min(maxAmount, max(minAmount, amount));
 
 	UpdateText();
-	_callbackTarget->CallBack1(this, _callbackEnum);
+
+	if (_callbackTarget) {
+		_callbackTarget->CallBack1(this, _callbackEnum);
+	}
 
 	dataSource()->Spawn2DSound("UI", "UIIncrementalChange");
 }

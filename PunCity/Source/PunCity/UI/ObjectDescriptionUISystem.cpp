@@ -538,7 +538,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				ss << "<Header>" << GenerateTribeName(objectId) << " tribe</>";
 			}
 			else if (buildingEnum == CardEnum::Townhall) {
-				ss << "<Header>" << TrimString(simulation.townName(building.playerId()), 15) << "</>";
+				ss << "<Header>" << TrimString_Dots(simulation.townName(building.playerId()), 15) << "</>";
 			}
 			else
 			{
@@ -739,7 +739,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						auto& townhallPlayerOwned = simulation.playerOwned(townhall.playerId());
 						int32 lvl = townhall.townhallLvl;
 
-						descriptionBox->AddRichText("Player", TrimString(simulation.playerName(townhall.playerId()), 12));
+						descriptionBox->AddRichText("Player", TrimString_Dots(simulation.playerName(townhall.playerId()), 12));
 
 #if WITH_EDITOR
 						descriptionBox->AddRichText("<Yellow>PlayerId</>", to_string(townhall.playerId()));
@@ -833,6 +833,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							
 							// Abandon town
 							auto button = descriptionBox->AddButtonRed("", "Abandon town", nullptr, "", this, CallbackEnum::AbandonTown);
+							AddToolTip(button, "Abandon this town to build a new one. (Destroy this town)");
 							descriptionBox->AddLineSpacer(10);
 						}
 						else
@@ -2568,7 +2569,7 @@ void UObjectDescriptionUISystem::AddSelectStartLocationButton(int32 provinceId, 
 		}
 
 
-		int32 provincePrice = simulation().GetProvinceClaimPrice(provinceId);
+		int32 provincePrice = simulation().GetProvinceClaimPrice(provinceId, playerId());
 
 		stringstream ss;
 		ss << "Select Starting Location\n";
@@ -2594,15 +2595,13 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 	 * Not owned by anyone
 	 */
 	int32 provinceOwnerId = sim.provinceOwner(provinceId);
-	int32 provincePrice = sim.GetProvinceClaimPrice(provinceId);
 	
 	if (provinceOwnerId == -1)
 	{
-		/*
-		 * Expand City
-		 */
-		if (sim.IsProvinceNextToPlayer(provinceId, playerId()))
+		auto addClaimButtons = [&](ClaimConnectionEnum claimConnectionEnum)
 		{
+			int32 provincePrice = sim.GetProvinceClaimPrice(provinceId, playerId(), claimConnectionEnum);
+			
 			if (simulation().GetBiomeProvince(provinceId) == BiomeEnum::Jungle) {
 				descriptionBox->AddSpacer();
 				descriptionBox->AddRichText(WrapString("The difficulty in clearing jungle makes expansion more costly."));
@@ -2628,7 +2627,7 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 				stringstream ss;
 				ss << "Claim Province\n";
 				ss << "<img id=\"Coin\"/>" << TextRed(to_string(provincePrice), !canClaim);
-				
+
 				descriptionBox->AddSpacer();
 				descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::ClaimLandMoney, canClaim, false, provinceId);
 			}
@@ -2646,7 +2645,13 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 				descriptionBox->AddSpacer();
 				descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::ClaimLandFood, canClaim, false, provinceId);
 			}
+		};
 
+		
+
+		ClaimConnectionEnum claimConnectionEnum = sim.GetProvinceClaimConnectionEnum(provinceId, playerId());
+		if (claimConnectionEnum != ClaimConnectionEnum::None) {
+			addClaimButtons(claimConnectionEnum);
 		}
 		else if (sim.IsProvinceNextToPlayerIncludingNonFlatLand(provinceId, playerId()))
 		{
@@ -2688,14 +2693,14 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 		/*if (simulation().unlockedInfluence(playerId()))*/
 		if (simulation().IsResearched(playerId(), TechEnum::Conquer))
 		{
-			if (sim.IsProvinceNextToPlayer(provinceId, playerId()))
+			auto addAttackButtons = [&](ClaimConnectionEnum claimConnectionEnum)
 			{
 				ProvinceClaimProgress claimProgress = simulation().playerOwned(provinceOwnerId).GetDefendingClaimProgress(provinceId);
 
 				// Already a claim, reinforce
 				if (claimProgress.isValid())
 				{
-					int32 attackReinforcePrice = simulation().GetProvinceAttackReinforcePrice(provinceId);
+					int32 attackReinforcePrice = simulation().GetProvinceAttackReinforcePrice(provinceId, claimConnectionEnum);
 					bool canClaim = simulation().influence(playerId()) >= attackReinforcePrice;
 
 					stringstream ss;
@@ -2708,7 +2713,7 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 				// Start a new claim
 				else
 				{
-					int32 startAttackPrice = simulation().GetProvinceAttackStartPrice(provinceId);
+					int32 startAttackPrice = simulation().GetProvinceAttackStartPrice(provinceId, claimConnectionEnum);
 					bool canClaim = simulation().influence(playerId()) >= startAttackPrice;
 
 					stringstream ss;
@@ -2718,6 +2723,11 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 					descriptionBox->AddSpacer();
 					descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::StartAttackProvince, canClaim, false, provinceId);
 				}
+			};
+
+			ClaimConnectionEnum claimConnectionEnum = sim.GetProvinceClaimConnectionEnum(provinceId, playerId());
+			if (claimConnectionEnum != ClaimConnectionEnum::None) {
+				addAttackButtons(claimConnectionEnum);
 			}
 			else if (sim.IsProvinceNextToPlayerIncludingNonFlatLand(provinceId, playerId()))
 			{

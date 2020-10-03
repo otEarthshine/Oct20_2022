@@ -141,29 +141,12 @@ private:
 		}
 		else {
 			EditName(NameEditTextBox->GetText());
-			//auto command = make_shared<FChangeName>();
-			//command->name = TrimStringF(NameEditTextBox->GetText().ToString(), 30);
-			//command->objectId = simulation().playerOwned(playerId()).townHallId;
-			//networkInterface()->SendNetworkCommand(command);
-			//
-			//NameEditTextBox->SetVisibility(ESlateVisibility::Collapsed);
-			//DescriptionUITitle->SetVisibility(ESlateVisibility::Visible);
-			//NameEditButtonText->SetText(FText::FromString("Edit"));
 		}
 	}
 	UFUNCTION() void NameEditCommitted(const FText& Text, ETextCommit::Type CommitMethod)
 	{
-		if (CommitMethod == ETextCommit::Type::OnEnter) 
-		{
+		if (CommitMethod == ETextCommit::Type::OnEnter)  {
 			EditName(Text);
-			//auto command = make_shared<FChangeName>();
-			//command->name = Text.ToString();
-			//command->objectId = simulation().playerOwned(playerId()).townHallId;
-			//networkInterface()->SendNetworkCommand(command);
-			//
-			//NameEditTextBox->SetVisibility(ESlateVisibility::Collapsed);
-			//DescriptionUITitle->SetVisibility(ESlateVisibility::Visible);
-			//NameEditButtonText->SetText(FText::FromString("Edit"));
 		}
 	}
 	void EditName(const FText& Text) {

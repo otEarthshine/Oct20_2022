@@ -234,7 +234,7 @@ int32 House::GetIncome100(IncomeEnum incomeEnum)
 		return occupancyFactor(adjacentBonusCount() * 100);
 
 	case IncomeEnum::Luxury:
-		return _roundLuxuryConsumption100 * 7 / 10; // 70% of lux goes to income
+		return _roundLuxuryConsumption100 * 4 / 10; // 40% of lux goes to income
 
 	case IncomeEnum::Card_MiddleClass:
 		if (_houseLvl >= 2) {
@@ -292,7 +292,7 @@ int32 House::GetScience100(ScienceEnum scienceEnum)
 		return _roundFoodConsumption100 / 10;
 
 	case ScienceEnum::Luxury:
-		return _roundLuxuryConsumption100 * 3 / 10;
+		return _roundLuxuryConsumption100 * 4 / 10; // 40% lux goes to science
 		
 	case ScienceEnum::Library: {
 		if (_houseLvl < Library::MinHouseLvl) {

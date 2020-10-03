@@ -33,7 +33,7 @@ public:
 	static const int32 StorageCountPerTile = 120;
 	static const int32 StorageSlotCount = 4;
 
-	static const int32 InitialMoney = 1000;
+	static const int32 InitialMoney = 1500;
 };
 
 static const int32 ModuleMeshCount = 416; // 407

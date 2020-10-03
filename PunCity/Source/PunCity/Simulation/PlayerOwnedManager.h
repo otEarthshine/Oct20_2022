@@ -706,15 +706,6 @@ public:
 	//int32 GetInfluenceClaimPriceRefund(int32 provinceId) {
 	//	return _simulation->GetProvinceIncome100(provinceId) * ClaimToIncomeRatio; // Don't refund penalty cost
 	//}
-
-	int32 GetOutpostClaimPrice(int32 provinceId)
-	{
-		const int32 outpostBasePrice = 500;
-		
-		int32 price = _simulation->GetProvinceClaimPrice(provinceId);
-		price += (_provincesOutpost.size() + 1) * outpostBasePrice;
-		return price;
-	}
 	
 
 	/*
@@ -728,65 +719,65 @@ public:
 		return _armyRegionClaimQueue;
 	}
 
-	bool IsProvinceClaimQueuable(int32 provinceId)
-	{
-		if (_simulation->IsProvinceNextToPlayer(provinceId, _playerId)) {
-			return true;
-		}
-		
-		// Could be queued next to the previous one...
-		for (const RegionClaimProgress& claim : _armyRegionClaimQueue) {
-			if (_simulation->AreAdjacentProvinces(claim.provinceId, provinceId)) {
-				return true;
-			}
-		}
-		return false;
-	}
+	//bool IsProvinceClaimQueuable(int32 provinceId)
+	//{
+	//	if (_simulation->IsProvinceNextToPlayer(provinceId, _playerId)) {
+	//		return true;
+	//	}
+	//	
+	//	// Could be queued next to the previous one...
+	//	for (const RegionClaimProgress& claim : _armyRegionClaimQueue) {
+	//		if (_simulation->AreAdjacentProvinces(claim.provinceId, provinceId)) {
+	//			return true;
+	//		}
+	//	}
+	//	return false;
+	//}
 	
-	void QueueArmyProvinceClaim(int32 provinceId)
-	{
-		if (!IsProvinceClaimQueuable(provinceId)) {
-			return;
-		}
-		
-		// if it has existing progress, bring it back
-		auto it = std::find_if(_armyRegionClaimCanceled.begin(), _armyRegionClaimCanceled.end(), [&](RegionClaimProgress& claimProgress) {
-			return claimProgress.provinceId == provinceId;
-		});
-		if (it != _armyRegionClaimCanceled.end()) {
-			_armyRegionClaimQueue.push_back(*it);
-			_armyRegionClaimCanceled.erase(it);
-		} else {
+	//void QueueArmyProvinceClaim(int32 provinceId)
+	//{
+	//	if (!IsProvinceClaimQueuable(provinceId)) {
+	//		return;
+	//	}
+	//	
+	//	// if it has existing progress, bring it back
+	//	auto it = std::find_if(_armyRegionClaimCanceled.begin(), _armyRegionClaimCanceled.end(), [&](RegionClaimProgress& claimProgress) {
+	//		return claimProgress.provinceId == provinceId;
+	//	});
+	//	if (it != _armyRegionClaimCanceled.end()) {
+	//		_armyRegionClaimQueue.push_back(*it);
+	//		_armyRegionClaimCanceled.erase(it);
+	//	} else {
 
-			// If this is the same as _autoClaimProgress
-			if (_armyAutoClaimProgress.provinceId == provinceId) {
-				_armyRegionClaimQueue.push_back(_armyAutoClaimProgress);
-				_armyAutoClaimProgress = RegionClaimProgress();
-			} else {
-				_armyRegionClaimQueue.push_back({ provinceId, 0 });
-			}
-		}
-	}
-	void CancelArmyProvinceClaim(int32 provinceId) {
-		CancelSingleArmyProvinceClaim_Helper(provinceId);
+	//		// If this is the same as _autoClaimProgress
+	//		if (_armyAutoClaimProgress.provinceId == provinceId) {
+	//			_armyRegionClaimQueue.push_back(_armyAutoClaimProgress);
+	//			_armyAutoClaimProgress = RegionClaimProgress();
+	//		} else {
+	//			_armyRegionClaimQueue.push_back({ provinceId, 0 });
+	//		}
+	//	}
+	//}
+	//void CancelArmyProvinceClaim(int32 provinceId) {
+	//	CancelSingleArmyProvinceClaim_Helper(provinceId);
 
-		// Canceling one in a queue could cause others in the queue to become invalid
-		// Solve this by Canceling everything, and readding them making sure the queue is valid
-		std::vector<RegionClaimProgress> claimQueue = _armyRegionClaimQueue;
-		ClearArmyProvinceClaim();
+	//	// Canceling one in a queue could cause others in the queue to become invalid
+	//	// Solve this by Canceling everything, and readding them making sure the queue is valid
+	//	std::vector<RegionClaimProgress> claimQueue = _armyRegionClaimQueue;
+	//	ClearArmyProvinceClaim();
 
-		for (RegionClaimProgress claim : claimQueue) {
-			QueueArmyProvinceClaim(claim.provinceId);
-		}
-		
-		for (size_t i = 0; i < _armyRegionClaimQueue.size();) {
-			if (!IsProvinceClaimQueuable(_armyRegionClaimQueue[i].provinceId)) {
-				CancelSingleArmyProvinceClaim_Helper(_armyRegionClaimQueue[i].provinceId);
-			} else {
-				i++;
-			}
-		}
-	}
+	//	for (RegionClaimProgress claim : claimQueue) {
+	//		QueueArmyProvinceClaim(claim.provinceId);
+	//	}
+	//	
+	//	for (size_t i = 0; i < _armyRegionClaimQueue.size();) {
+	//		if (!IsProvinceClaimQueuable(_armyRegionClaimQueue[i].provinceId)) {
+	//			CancelSingleArmyProvinceClaim_Helper(_armyRegionClaimQueue[i].provinceId);
+	//		} else {
+	//			i++;
+	//		}
+	//	}
+	//}
 	void CancelSingleArmyProvinceClaim_Helper(int32 provinceId) {
 		// Cancel a single region without considering how it may affect others in queue
 		auto it = std::find_if(_armyRegionClaimQueue.begin(), _armyRegionClaimQueue.end(), [&](RegionClaimProgress& claimProgress) {

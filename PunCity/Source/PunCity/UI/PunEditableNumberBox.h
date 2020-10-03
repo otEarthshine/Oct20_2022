@@ -77,6 +77,6 @@ private:
 	void ClickArrow(bool isDown);
 
 private:
-	UPROPERTY() UPunWidget* _callbackTarget;
+	UPROPERTY() UPunWidget* _callbackTarget = nullptr;
 	CallbackEnum _callbackEnum;
 };

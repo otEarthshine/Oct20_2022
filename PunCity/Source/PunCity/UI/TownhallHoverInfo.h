@@ -48,22 +48,33 @@ public:
 			}
 			else 
 			{
-				// Other ppl's town, show trade route button instead
-				std::vector<int32> tradePartners = simulation().worldTradeSystem().GetTradePartners(playerId());
-				if (CppUtils::Contains(tradePartners, townhall.playerId())) {
-					SetText(TradeButtonText, "Cancel Trade Route");
-					BUTTON_ON_CLICK(TradeButton, this, &UTownhallHoverInfo::OnClickCancelTradeRouteButton);
+				if (simulation().IsResearched(playerId(), TechEnum::IntercityRoad))
+				{
+					// Other ppl's town, show trade route button instead
+					std::vector<int32> tradePartners = simulation().worldTradeSystem().GetTradePartners(playerId());
+					if (CppUtils::Contains(tradePartners, townhall.playerId())) {
+						SetText(TradeButtonText, "Cancel Trade Route");
+						BUTTON_ON_CLICK(TradeButton, this, &UTownhallHoverInfo::OnClickCancelTradeRouteButton);
+					}
+					else {
+						SetText(TradeButtonText, "Establish Trade Route");
+						BUTTON_ON_CLICK(TradeButton, this, &UTownhallHoverInfo::OnClickEstablishTradeRouteButton);
+					}
+					TradeButton->SetVisibility(ESlateVisibility::Visible);
 				}
-				else {
-					SetText(TradeButtonText, "Establish Trade Route");
-					BUTTON_ON_CLICK(TradeButton, this, &UTownhallHoverInfo::OnClickEstablishTradeRouteButton);
+				else
+				{
+					TradeButton->SetVisibility(ESlateVisibility::Collapsed);
 				}
-				TradeButton->SetVisibility(ESlateVisibility::Visible);
 			}
 		}
 		else {
 			TradeButton->SetVisibility(ESlateVisibility::Collapsed);
 		}
+
+		// GiftButton
+		BUTTON_ON_CLICK(GiftButton, this, &UTownhallHoverInfo::OnClickGiftButton);
+		
 		
 		// Update population
 		PlayerOwnedManager& townhallPlayerOwned = simulation().playerOwned(townhall.playerId());
@@ -728,6 +739,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) UOverlay* TradeInfoOverlay;
 	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* BuyingBox;
 	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* SellingBox;
+
+	UPROPERTY(meta = (BindWidget)) UButton* GiftButton;
 	
 	UPROPERTY(meta = (BindWidget)) UTextBlock* TownHoverPopulationText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* CityNameText;
@@ -797,6 +810,11 @@ private:
 		command->buildingIdToEstablishTradeRoute = _buildingId;
 		command->isCancelingTradeRoute = 1;
 		networkInterface()->SendNetworkCommand(command);
+	}
+
+	UFUNCTION() void OnClickGiftButton() {
+		int32 targetPlayerId = simulation().building(_buildingId).playerId();
+		GetPunHUD()->OpenGiftUI(targetPlayerId);
 	}
 
 	/*

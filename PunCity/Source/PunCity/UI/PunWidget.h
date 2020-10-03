@@ -216,19 +216,26 @@ public:
 		}
 		textBlock->SetText(FText::FromString(ToFString(str)));
 	}
-	static std::string TrimString(std::string str, int32 trimSize) {
+	static std::string TrimString_Dots(std::string str, int32 trimSize) {
 		if (str.size() > trimSize) {
 			str.resize(trimSize);
 			str += "..";
 		}
 		return str;
 	}
-	static FString TrimStringF(FString str, int32 trimSize) {
+	static FString TrimStringF_Dots(FString str, int32 trimSize) {
 		if (str.Len() > trimSize) {
 			str = str.Left(trimSize) + "..";
 		}
 		return str;
 	}
+	static FString TrimStringF(FString str, int32 trimSize) {
+		if (str.Len() > trimSize) {
+			str = str.Left(trimSize);
+		}
+		return str;
+	}
+	
 	std::string WrapString(std::string str, int32 wrapSize = 330);
 	
 	

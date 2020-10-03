@@ -31,6 +31,7 @@
 #include "IntercityTradeUI.h"
 #include "TargetConfirmUI.h"
 #include "ProsperityUI.h"
+#include "GiftResourceUI.h"
 
 #include "PunHUD.generated.h"
 
@@ -210,6 +211,11 @@ public:
 		_targetConfirmUI->OpenUI(townhallId, resourceEnum);
 	}
 	void CloseTargetConfirmUI() { _targetConfirmUI->CloseUI(); }
+
+	void OpenGiftUI(int32 targetPlayerId) override {
+		_giftResourceUI->OpenUI(targetPlayerId);
+	}
+	
 	
 	// Tech Tree
 	void CloseTechUI() final {
@@ -306,6 +312,7 @@ public:
 		case ExclusiveUIEnum::ArmyMoveUI:		return _armyMoveUI->GetVisibility() != ESlateVisibility::Collapsed;
 
 		case ExclusiveUIEnum::InitialResourceUI:return _initialResourceUI->InitialResourceUI->GetVisibility() != ESlateVisibility::Collapsed;
+		case ExclusiveUIEnum::GiftResourceUI:	return _giftResourceUI->IsVisible();
 		default:
 			UE_DEBUG_BREAK();
 			return false;
@@ -491,6 +498,7 @@ protected:
 	UPROPERTY() UIntercityTradeUI* _intercityTradeUI;
 	UPROPERTY() UTargetConfirmUI* _targetConfirmUI;
 	UPROPERTY() UInitialResourceUI* _initialResourceUI;
+	UPROPERTY() UGiftResourceUI* _giftResourceUI;
 
 	UPROPERTY() TSubclassOf<UUserWidget> _dragCardSlotClass;
 	UPROPERTY() TSubclassOf<UUserWidget> _dragCardClass;

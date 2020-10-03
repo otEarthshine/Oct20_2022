@@ -684,7 +684,7 @@ public:
 		_seasonalConsumption2.resize(Time::MinutesPerSeason);
 	}
 
-	void AddProductionStat(int32_t amount) {
+	void AddProductionStat(int32 amount) {
 		AddProductionStat(ResourcePair(product(), amount));
 	}
 	void AddProductionStat(ResourcePair resource);

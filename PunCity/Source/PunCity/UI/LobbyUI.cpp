@@ -225,7 +225,7 @@ void ULobbyUI::Tick()
 		for (int32 i = 0; i < gameInst->lobbyChatPlayerNames.Num(); i++) {
 			result.Append("\n");
 			if (!gameInst->lobbyChatPlayerNames[i].IsEmpty()) {
-				result.Append("<ChatName>").Append(TrimStringF(gameInst->lobbyChatPlayerNames[i], 8)).Append(":</> ");
+				result.Append("<ChatName>").Append(TrimStringF_Dots(gameInst->lobbyChatPlayerNames[i], 8)).Append(":</> ");
 			}
 			result.Append("<Chat>").Append(gameInst->lobbyChatMessages[i]).Append("</>");
 		}
@@ -711,7 +711,7 @@ void ULobbyUI::UpdateLobbyUI()
 		{
 			FString lastPlayerName;
 			if (saveInfo.IsValid()) {
-				lastPlayerName = TrimStringF(saveInfo.GetLastPlayerName(i), 12);
+				lastPlayerName = TrimStringF_Dots(saveInfo.GetLastPlayerName(i), 12);
 			}
 
 			if (!lastPlayerName.IsEmpty()) {
@@ -729,7 +729,7 @@ void ULobbyUI::UpdateLobbyUI()
 		{
 			//PUN_DEBUG2("playerConnectedStates true");
 			element->playerName = names[i];
-			element->PlayerName->SetText(FText::FromString(TrimStringF(names[i], 12) + (gameInst->hostPlayerId == i ? "(Host)" : "")));
+			element->PlayerName->SetText(FText::FromString(TrimStringF_Dots(names[i], 12) + (gameInst->hostPlayerId == i ? "(Host)" : "")));
 			element->PlayerName->SetVisibility(ESlateVisibility::Visible);
 
 			// if this is the ui controlling player, allow clicking too ready from this button

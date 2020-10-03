@@ -36,6 +36,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* SelectedSavePlayerName;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* SelectedSaveDate;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* SelectedSaveTime;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* SelectedSaveMapSeed;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* SelectedSaveGameTime;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* SelectedSaveGameYear;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* SelectedSavePopulation;
@@ -103,6 +104,13 @@ public:
 		saveSystem().RefreshSaveList();
 		TArray<GameSaveInfo> saveList = saveSystem().saveList();
 
+		
+		// Sort Save List by date
+		saveList.Sort([&](const GameSaveInfo& left, const GameSaveInfo& right) {
+			return left.dateTime > right.dateTime;
+		});
+		
+
 		bool isSinglePlayer = gameInstance()->isSinglePlayer;
 
 		// Remove any wrong mode save from the list
@@ -161,6 +169,7 @@ public:
 		
 		SelectedSaveDate->GetParent()->SetVisibility(visibility);
 		SelectedSaveTime->GetParent()->SetVisibility(visibility);
+		SelectedSaveMapSeed->GetParent()->SetVisibility(visibility);
 		SelectedSaveGameTime->GetParent()->SetVisibility(visibility);
 		SelectedSaveGameYear->GetParent()->SetVisibility(visibility);
 		SelectedSavePopulation->GetParent()->SetVisibility(visibility);
@@ -168,7 +177,7 @@ public:
 		GameSaveInfo saveInfo;
 		if (_isSavingGame) {
 			// Show info for current save
-			saveInfo.name = TrimStringF( simulation().playerNameF(playerId()), 10);
+			saveInfo.name = TrimStringF_Dots( simulation().playerNameF(playerId()), 10);
 			saveInfo.dateTime = FDateTime::Now();
 			saveInfo.gameTicks = Time::Ticks();
 			saveInfo.population = simulation().population(playerId());
@@ -198,6 +207,7 @@ public:
 			SelectedSavePlayerName->SetText(FText::FromString(saveInfo.name));
 			SelectedSaveDate->SetText(FText::FromString(date));
 			SelectedSaveTime->SetText(FText::FromString(time));
+			SelectedSaveMapSeed->SetText(FText::FromString(saveInfo.mapSettings.mapSeed));
 			SelectedSaveGameTime->SetText(FText::FromString(gameSeason));
 			SelectedSaveGameYear->SetText(FText::FromString(FString::FromInt(Time::Years(gameTicks))));
 			SelectedSavePopulation->SetText(FText::FromString(FString::FromInt(saveInfo.population)));
@@ -334,7 +344,7 @@ private:
 			GameSaveInfo saveInfo;
 			
 			// Show info for current save
-			saveInfo.name = TrimStringF(simulation().playerNameF(playerId()), 10);
+			saveInfo.name = TrimStringF_Dots(simulation().playerNameF(playerId()), 10);
 			saveInfo.dateTime = FDateTime::Now();
 			saveInfo.gameTicks = Time::Ticks();
 			saveInfo.population = simulation().population(playerId());

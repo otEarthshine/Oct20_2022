@@ -141,15 +141,20 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 
 	{TechEnum::BorealLandCost, {
 		"Boreal and Tundra Expedition",
-		"Claiming boreal forest and tundra land cost half the usual gold."
+		"Claiming Boreal Forest and Tundra Province cost half as usual."
 	}},
 	{TechEnum::DesertTrade, {
 		"Silk Road",
 		"Trading post and company built on desert gets -10% trade fee."
 	}},
-	{TechEnum::ShallowWaterEmbark, {
+	
+	{ TechEnum::ShallowWaterEmbark, {
 		"Shallow Water Embark",
-		"Allow claiming bordering unclaimed province across a body of water."
+		"Allow claiming bordering provinces across a body of water. 100% cost penalty applied to claim/attack through shallow water."
+	}},
+	{ TechEnum::DeepWaterEmbark, {
+		"Deepwater Embark",
+		"Allow claiming coastal provinces across the sea. 200% cost penalty applied to claim/attack through deep water.",
 	}},
 
 	{TechEnum::Sawmill, {
@@ -247,7 +252,11 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 		"Vassalize",
 		"Unlock Vassalization which allows you to turn other city into a vassal.",
 	}},
-	
+
+	{ TechEnum::IntercityRoad, {
+		"Intercity Connection",
+		"Allow connecting Cities with Intercity Road to establish trade connections",
+	}},
 };
 
 enum class TechClassEnum
@@ -590,12 +599,12 @@ public:
 			era = 3;
 			AddTech_Building(era, TechEnum::TradingCompany, CardEnum::TradingCompany);
 			AddTech_Bonus(era, TechEnum::DesertTrade);
-			AddTech_Bonus(era, TechEnum::ShallowWaterEmbark);
 			
 			AddTech_Bonus(era, TechEnum::Sawmill);
 			AddTech_Building(era, TechEnum::Medicine, CardEnum::MedicineMaker);
 			AddTech_Building(era, TechEnum::RanchSheep, { CardEnum::RanchSheep });
 			AddTech_Building(era, TechEnum::BarrackKnight, CardEnum::BarrackSwordman);
+			AddTech_Bonus(era, TechEnum::ShallowWaterEmbark);
 			
 			//
 			era = 4;
@@ -604,6 +613,7 @@ public:
 			AddTech_Bonus(era, TechEnum::HouseAdjacency);
 			AddTech_Bonus(era, TechEnum::QuarryImprovement);
 			AddTech_Bonus(era, TechEnum::HouseLvl2Income);
+			AddTech_Bonus(era, TechEnum::DeepWaterEmbark);
 			
 			//AddPermanentBuildingResearch(3, TechEnum::Fence, { BuildingEnum::Fence, BuildingEnum::FenceGate });
 
@@ -663,7 +673,7 @@ public:
 
 			era = 2;
 			AddProsperityTech_Building(era, 4, TechEnum::Library, CardEnum::Library);
-			AddProsperityTech_BuildingX(era, 20, TechEnum::Baking, { CardEnum::Windmill, CardEnum::Bakery });
+			AddProsperityTech_BuildingX(era, 8, TechEnum::Baking, { CardEnum::Windmill, CardEnum::Bakery });
 			AddProsperityTech_Bonus(era, 20, TechEnum::FarmAdjacency);
 			AddProsperityTech_Bonus(era, 30, TechEnum::FarmingBreakthrough);
 			AddProsperityTech_Bonus(era, 30, TechEnum::FarmImprovement);
@@ -681,6 +691,7 @@ public:
 			
 			era = 4;
 			AddProsperityTech_Building(era, 10, TechEnum::Winery, CardEnum::Winery);
+			AddProsperityTech_BuildingPermanent(era, 4, TechEnum::IntercityRoad, { CardEnum::IntercityRoad });
 			AddProsperityTech_Building(era, 20, TechEnum::Chocolatier, CardEnum::Chocolatier);
 			
 			AddProsperityTech_Building(era, 10, TechEnum::School, CardEnum::School);
@@ -698,7 +709,6 @@ public:
 			era = 6;
 			AddProsperityTech_BuildingPermanent(era, 4, TechEnum::StoneRoad, { CardEnum::StoneRoad });
 			AddProsperityTech_Building(era, 4, TechEnum::Fort, CardEnum::Fort);
-			AddProsperityTech_BuildingPermanent(era, 4, TechEnum::IntercityRoad, { CardEnum::IntercityRoad });
 			AddProsperityTech_Building(era, 20, TechEnum::Colony, CardEnum::Colony);
 			AddProsperityTech_Building(era, 20, TechEnum::CardMaker, CardEnum::CardMaker);
 			

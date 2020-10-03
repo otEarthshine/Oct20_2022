@@ -1711,6 +1711,8 @@ enum class CardEnum : uint16
 	Snatch,
 	SharingIsCaring,
 	Kidnap,
+	KidnapGuard,
+	TreasuryGuard,
 	Cannibalism,
 
 	WildCard,
@@ -2297,6 +2299,10 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::Snatch,			"Snatch", 30, "Steal 30<img id=\"Coin\"/> from a stronger player. Use on Townhall."),
 	BldInfo(CardEnum::SharingIsCaring,	"Sharing is Caring", 120, "Give 50 Wheat to the target player. Use on Townhall."),
 	BldInfo(CardEnum::Kidnap,			"Kidnap", 100, "Steal up to 3 citizens from target player. Requires 5 x Population<img id=\"Coin\"/> to use. Apply on Townhall."),
+	BldInfo(CardEnum::KidnapGuard,		"Kidnap Guard", 100, "Steal up to 3 citizens from target player. Requires 5 x Population<img id=\"Coin\"/> to use. Apply on Townhall."),
+	BldInfo(CardEnum::TreasuryGuard,		"Treasury Guard", 100, "Steal up to 3 citizens from target player. Requires 5 x Population<img id=\"Coin\"/> to use. Apply on Townhall."),
+
+	
 	BldInfo(CardEnum::Cannibalism,		"Cannibalism", 0, "On death, people drop Meat. -10 <img id=\"Smile\"/> to all citizens."),
 
 	BldInfo(CardEnum::WildCard,		"Wild Card", 15, "Build an unlocked building of your choice."),
@@ -4054,6 +4060,7 @@ static const int32 BattleClaimTicks = Time::TicksPerSeason;
 enum class InfluenceIncomeEnum : uint8
 {
 	Population,
+	Luxury,
 	TerritoryUpkeep,
 	BorderProvinceUpkeep,
 	TooMuchInfluencePoints,
@@ -4066,6 +4073,7 @@ enum class InfluenceIncomeEnum : uint8
 static std::vector<std::string> InfluenceIncomeEnumName
 {
 	"Population",
+	"Luxury Consumption",
 	"Territory Upkeep",
 	"Flat-Land Border Province Upkeep",
 	"Too Much Stored Influence Points",
@@ -4260,7 +4268,9 @@ enum class TechEnum : uint8
 
 	BorealLandCost,
 	DesertTrade,
+	
 	ShallowWaterEmbark,
+	DeepWaterEmbark,
 
 	RanchSheep,
 	RanchCow,
@@ -4359,6 +4369,14 @@ enum class TechStateEnum : uint8
 	Researching,
 	Available,
 	Locked, // was using isLocked instead...
+};
+
+enum class ClaimConnectionEnum : uint8
+{
+	None,
+	Flat,
+	ShallowWater,
+	Deepwater,
 };
 
 
@@ -5363,6 +5381,7 @@ enum class ExclusiveUIEnum : uint8
 	ArmyMoveUI,
 
 	InitialResourceUI,
+	GiftResourceUI,
 	ProsperityUI,
 
 	Count,
@@ -6746,7 +6765,7 @@ static bool IsEdgeProvinceId(int32 provinceId) {
 }
 
 static const int32 Income100PerTiles = 1;
-static const int32 ClaimToIncomeRatio = 20; // When 2, actual is 4 since upkeep is half the income
+static const int32 ClaimToIncomeRatio = 40; // When 2, actual is 4 since upkeep is half the income
 
 struct ProvinceConnection
 {

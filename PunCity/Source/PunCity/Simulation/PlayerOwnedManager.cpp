@@ -560,6 +560,9 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 			incomes100[i] += house.GetIncome100Int(i);
 		}
 
+		// influence from Luxury resource consumption
+		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Luxury)] += house.GetInfluenceIncome100();
+
 		//if (showFloatup) {
 		//	_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, house.centerTile(), "+" + to_string(house.totalHouseIncome()));
 		//}
@@ -784,6 +787,10 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 	}
 	incomes100[static_cast<int>(IncomeEnum::TradeRoute)] += 100 * tradeClusterTotalPopulation / 2;
 
+	/*
+	 * Influence
+	 */
+
 	int32 influence100 = _simulation->influence100(_playerId);
 
 	// Upkeep goes to influence unless it is 0
@@ -794,10 +801,11 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 	
 	if (_simulation->unlockedInfluence(_playerId)) 
 	{
-		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::TerritoryUpkeep)] -= territoryUpkeep100;
-		
 		// Population: Influence gain equals to population x2
-		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Population)] += _simulation->population(_playerId) * 200;
+		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Population)] += _simulation->population(_playerId) * 100;
+		
+		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::TerritoryUpkeep)] -= territoryUpkeep100;
+
 
 		// Border Province Upkeep
 		int32 numberOfBorderProvinces = 0;
@@ -814,7 +822,8 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 	}
 	else
 	{
-		// Without influence, Territory Upkeep goes to money
+		// Without influence unlocked,
+		// Territory Upkeep become to money penalty
 		incomes100[static_cast<int>(IncomeEnum::TerritoryUpkeep)] -= territoryUpkeep100;
 	}
 
@@ -856,9 +865,12 @@ void PlayerOwnedManager::CollectRoundIncome()
 
 	// Change Influence
 	resourceSys.ChangeInfluence100(totalInfluenceIncome100());
-	if (resourceSys.influence100() < 0) {
-		_simulation->AddEventLog(_playerId, "You have 0</><img id=\"Influence\"/><ChatRed>.  " + to_string(min(-1, resourceSys.influence())) +"</><img id=\"Coin\"/><ChatRed> instead.", true);
-		resourceSys.ChangeMoney100(resourceSys.influence100());
+	if (resourceSys.influence100() < 0) 
+	{
+		_simulation->AddEventLog(_playerId, "You have </><img id=\"Influence\"/><ChatRed>0.  "
+			"The </><img id=\"Influence\"/><ChatRed> deduction is applied as -</><img id=\"Coin\"/><ChatRed>"
+							+ to_string(abs(min(-1, resourceSys.influence() * 3))) +" instead.", true);
+		resourceSys.ChangeMoney100(resourceSys.influence100() * 3);
 		resourceSys.SetInfluence(0);
 	}
 
@@ -978,8 +990,8 @@ void PlayerOwnedManager::Tick1Sec()
 
 	std::fill(_aveHappinessModifiers.begin(), _aveHappinessModifiers.end(), 0);
 
-	int32 population = _adultIds.size();
-	if (population > 0) {
+	int32 adultPopulation = _adultIds.size();
+	if (adultPopulation > 0) {
 		for (auto humanId : _adultIds)
 		{
 			HumanStateAI& human =_simulation->unitAI(humanId).subclass<HumanStateAI>(UnitEnum::Human);
@@ -993,14 +1005,14 @@ void PlayerOwnedManager::Tick1Sec()
 				_aveHappinessModifiers[i] += human.GetHappinessModifier(static_cast<HappinessModifierEnum>(i));
 			}
 		}
-		_aveFoodHappiness /= population;
-		_aveHeatHappiness /= population;
-		_aveHousingHappiness /= population;
-		_aveFunHappiness /= population;
+		_aveFoodHappiness /= adultPopulation;
+		_aveHeatHappiness /= adultPopulation;
+		_aveHousingHappiness /= adultPopulation;
+		_aveFunHappiness /= adultPopulation;
 		
 		for (size_t i = 0; i < _aveHappinessModifiers.size(); i++) {
 			int32 sumHappiness = _aveHappinessModifiers[i];
-			_aveHappinessModifiers[i] = sumHappiness / population;
+			_aveHappinessModifiers[i] = sumHappiness / adultPopulation;
 			PUN_CHECK(_aveHappinessModifiers[i] < 1000 && _aveHappinessModifiers[i] > -1000);
 		}
 	}
@@ -1053,7 +1065,7 @@ void PlayerOwnedManager::Tick1Sec()
 	 */
 	if (Time::Ticks() % TicksPerStatInterval == 0)
 	{
-		AddDataPoint(PlotStatEnum::Population, population);
+		AddDataPoint(PlotStatEnum::Population, adultPopulation + childPopulation());
 		//AddDataPoint(PlotStatEnum::AdultPopulation, adultPopulation());
 		AddDataPoint(PlotStatEnum::ChildPopulation, childPopulation());
 

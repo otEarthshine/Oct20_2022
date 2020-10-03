@@ -35,7 +35,10 @@ void ULobbySettingsUI::SendMapSettings()
 void ULobbySettingsUI::OnLobbyMapSeedInputBoxTextCommitted(const FText& text, ETextCommit::Type CommitMethod)
 {
 	PUN_DEBUG2("OnLobbyMapSeedInputBoxTextCommitted %s", *text.ToString());
-	serverMapSettings.mapSeed = text.ToString();
+
+	serverMapSettings.mapSeed = TrimStringF(text.ToString(), 20);
+
+	LobbyMapSeedInputBox->SetText(FText::FromString(serverMapSettings.mapSeed));
 
 	SendMapSettings();
 

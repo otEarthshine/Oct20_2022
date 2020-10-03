@@ -152,14 +152,14 @@ public:
 
 					bool isPlayer = (curId == playerId());
 					if (isPlayer) {
-						SetTextF(element->PlayerNameBoldText, TrimStringF(name, 17));
+						SetTextF(element->PlayerNameBoldText, TrimStringF_Dots(name, 17));
 						SetText(element->PopulationBoldText, std::to_string(pop));
 						setHomeTownIcon();
 
 						AddToolTip(element->PlayerZoomButton, "Click to travel home <Orange>[H]</>");
 					}
 					else {
-						SetTextF(element->PlayerNameText, TrimStringF(name, 17));
+						SetTextF(element->PlayerNameText, TrimStringF_Dots(name, 17));
 						SetText(element->PopulationText, std::to_string(pop));
 						setHomeTownIcon();
 
@@ -266,7 +266,7 @@ public:
 
 			element->HighlightImage->SetVisibility(isUIPlayer ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 
-			setText(element->PlayerNameText, TrimString(simulation().playerName(curId), 14));
+			setText(element->PlayerNameText, TrimString_Dots(simulation().playerName(curId), 14));
 			setText(element->PopulationText, std::to_string(simulation().population(curId)));
 			setText(element->TechnologyText, std::to_string(simulation().techsCompleted(curId)));
 			setText(element->RevenueText, std::to_string(playerOwned.totalRevenue100() / 100));
@@ -363,7 +363,7 @@ public:
 					if (i > 0) {
 						ss << "\n";
 					}
-					addSS(ss, TrimString(simulation().playerName(allyIds[i]), 10));
+					addSS(ss, TrimString_Dots(simulation().playerName(allyIds[i]), 10));
 				}
 				SetText(element->AlliesText, ss.str());
 			}
@@ -377,7 +377,7 @@ public:
 						if (i > 0) {
 							ss << "\n";
 						}
-						addSS(ss, TrimString(simulation().playerName(bld.playerId()), 10));
+						addSS(ss, TrimString_Dots(simulation().playerName(bld.playerId()), 10));
 						i++;
 					}
 				}

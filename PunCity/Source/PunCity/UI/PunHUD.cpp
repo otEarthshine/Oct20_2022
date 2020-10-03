@@ -25,6 +25,7 @@ APunHUD::APunHUD()
 	LoadClass(UIEnum::TargetConfirm, "TargetConfirmUI");
 
 	LoadClass(UIEnum::InitialResourceUI, "InitialResourceWidget");
+	LoadClass(UIEnum::GiftResourceUI, "GiftResourceWidget");
 
 	LoadClass(UIEnum::DragCardSlot, "Drag/DragCardSlotWidget");
 	LoadClass(UIEnum::DragCard, "Drag/DragCardWidget");
@@ -221,6 +222,7 @@ void APunHUD::PunTick(bool isPhotoMode)
 	_intercityTradeUI->TickUI();
 	_targetConfirmUI->TickUI();
 	_initialResourceUI->TickUI();
+	_giftResourceUI->TickUI();
 	
 	_techUI->TickUI();
 	_prosperityUI->TickUI();
@@ -239,6 +241,7 @@ void APunHUD::PunTick(bool isPhotoMode)
 	_intercityTradeUI->CheckPointerOnUI();
 	_targetConfirmUI->CheckPointerOnUI();
 	_initialResourceUI->CheckPointerOnUI();
+	_giftResourceUI->CheckPointerOnUI();
 	
 	_techUI->CheckPointerOnUI();
 	_prosperityUI->CheckPointerOnUI();
@@ -317,6 +320,9 @@ void APunHUD::Setup(IPunPlayerController* controller, USceneComponent* worldWidg
 
 	_initialResourceUI = AddWidgetToHUDCast<UInitialResourceUI>(UIEnum::InitialResourceUI);
 	_initialResourceUI->PunInit();
+
+	_giftResourceUI = AddWidgetToHUDCast<UGiftResourceUI>(UIEnum::GiftResourceUI);
+	_giftResourceUI->PunInit();
 
 	_techUI = AddWidgetToHUDCast<UTechUI>(UIEnum::TechUI);
 	_techUI->PunInit();

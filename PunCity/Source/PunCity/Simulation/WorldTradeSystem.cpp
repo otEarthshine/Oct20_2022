@@ -150,7 +150,7 @@ void WorldTradeSystem::TryEstablishTradeRoute(FSetIntercityTrade command)
 	if (!startTile.isValid() ||
 		!targetTile.isValid()) 
 	{
-		_simulation->AddPopupToFront(playerId, "Need intercity road to establish a trade route. Connect your Townhall to target Townhall with Road.", ExclusiveUIEnum::None, "PopupCannot");
+		_simulation->AddPopupToFront(playerId, "Connect your Townhall to target Townhall with Intercity Road to establish a trade route.", ExclusiveUIEnum::None, "PopupCannot");
 		return;
 	}
 

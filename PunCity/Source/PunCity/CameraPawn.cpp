@@ -233,7 +233,8 @@ void ACameraPawn::RightMouseUp()
 #endif
 	// Building placement cancel if not doing camera drag
 	// If cam moved more than some amount, don't cancel placement
-	if (WorldAtom2::Distance(cameraAtom(), rightMouseDragCamStartAtom) < CoordinateConstants::AtomsPerTile)
+	int32 atomCameraDragThreshold = CoordinateConstants::AtomsPerTile * max(1.0f, zoomDistance() / WorldZoomTransition_WorldSpaceUIHide);// threshold is 1 tile close to ground, scale with zoom
+	if (WorldAtom2::Distance(cameraAtom(), rightMouseDragCamStartAtom) < atomCameraDragThreshold)
 	{
 		if (buildingPlacementSystem->placementState() != PlacementType::None) {
 			buildingPlacementSystem->CancelPlacement();

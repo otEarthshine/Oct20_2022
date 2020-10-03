@@ -274,6 +274,7 @@ enum class NetworkCommandEnum : uint8
 	SetPriority,
 	SetTownPriority,
 	SetGlobalJobPriority,
+	GenericCommand,
 
 	TradeResource,
 	SetIntercityTrade,
@@ -315,6 +316,7 @@ static const std::string NetworkCommandNames[] =
 	"SetPriority",
 	"SetTownPriority",
 	"SetGlobalJobPriority",
+	"GenericCommand",
 
 	"TradeResource",
 	"SetIntercityTrade",
@@ -530,6 +532,30 @@ public:
 	{
 		FNetworkCommand::Serialize(blob);
 		blob << jobPriorityList;
+	}
+};
+
+class FGenericCommand final : public FNetworkCommand
+{
+public:
+	virtual ~FGenericCommand() {}
+	NetworkCommandEnum commandType() final { return NetworkCommandEnum::GenericCommand; }
+
+	enum class Type : uint8 {
+		SendGift,
+	} genericCommandType;
+
+	int32 intVar1 = -1;
+	int32 intVar2 = -1;
+	int32 intVar3 = -1;
+
+	void Serialize(PunSerializedData& blob) override
+	{
+		FNetworkCommand::Serialize(blob);
+		blob << genericCommandType;
+		blob << intVar1;
+		blob << intVar2;
+		blob << intVar3;
 	}
 };
 
@@ -1173,6 +1199,7 @@ public:
 			CASE_COMMAND(NetworkCommandEnum::SendChat, FSendChat);
 
 			CASE_COMMAND(NetworkCommandEnum::SetGlobalJobPriority, FSetGlobalJobPriority);
+			CASE_COMMAND(NetworkCommandEnum::GenericCommand, FGenericCommand);
 
 			default: UE_DEBUG_BREAK();
 		}

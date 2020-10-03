@@ -367,7 +367,8 @@ void UGameSettingsUI::OnResolutionChanged(float value)
 {
 	_isSettingsDirty = true;
 	//GetGameUserSettings()->SetResolutionScaleValueEx(volume * 100.0f);
-	gameInstance()->SetResolutionQuality(value * 65 + 35);
+	gameInstance()->SetResolutionQuality(value * 100);
+	SetText(ResolutionNumber, std::to_string(gameInstance()->GetDisplayResolutionQuality()) + "%");
 }
 void UGameSettingsUI::OnAntiAliasingDropdownChanged(FString sItem, ESelectInfo::Type seltype)
 {

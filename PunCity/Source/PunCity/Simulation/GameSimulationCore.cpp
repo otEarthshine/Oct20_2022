@@ -1234,6 +1234,7 @@ bool GameSimulationCore::ExecuteNetworkCommand(std::shared_ptr<FNetworkCommand> 
 	case NetworkCommandEnum::SetPriority:		SetPriority(*static_pointer_cast<FSetPriority>(command)); break;
 	case NetworkCommandEnum::SetTownPriority:	SetTownPriority(*static_pointer_cast<FSetTownPriority>(command)); break;
 	case NetworkCommandEnum::SetGlobalJobPriority:SetGlobalJobPriority(*static_pointer_cast<FSetGlobalJobPriority>(command)); break;
+	case NetworkCommandEnum::GenericCommand:	GenericCommand(*static_pointer_cast<FGenericCommand>(command)); break;
 
 	case NetworkCommandEnum::TradeResource:		TradeResource(*static_pointer_cast<FTradeResource>(command)); break;
 	case NetworkCommandEnum::SetIntercityTrade:	SetIntercityTrade(*static_pointer_cast<FSetIntercityTrade>(command)); break;
@@ -2228,6 +2229,46 @@ void GameSimulationCore::SetGlobalJobPriority(FSetGlobalJobPriority command)
 	playerOwned(command.playerId).SetGlobalJobPriority(command);
 }
 
+void GameSimulationCore::GenericCommand(FGenericCommand command)
+{
+	_LOG(LogNetworkInput, " GenericCommand");
+
+	if (command.genericCommandType == FGenericCommand::Type::SendGift)
+	{
+		int32 giverPlayerId = command.playerId;
+		int32 targetPlayerId = command.intVar1;
+		ResourceEnum resourceEnum = static_cast<ResourceEnum>(command.intVar2);
+		int32 amount = command.intVar3;
+
+		if (resourceEnum == ResourceEnum::Money)
+		{
+			if (money(giverPlayerId) < amount) {
+				AddPopupToFront(giverPlayerId, "Not enough <img id=\"Coin\"/> to give out.", ExclusiveUIEnum::GiftResourceUI, "PopupCannot");
+				return;
+			}
+
+			ChangeMoney(giverPlayerId, -amount);
+			ChangeMoney(targetPlayerId, amount);
+			AddPopup(giverPlayerId, "You gifted " + playerName(targetPlayerId) + " with <img id=\"Coin\"/>" + to_string(amount) + ".");
+			AddPopup(targetPlayerId, playerName(giverPlayerId) + " gifted you with <img id=\"Coin\"/>" + to_string(amount) + ".");
+		}
+		else
+		{
+			if (resourceCount(giverPlayerId, resourceEnum) < amount) {
+				AddPopupToFront(giverPlayerId, "Not enough resource to give out.", ExclusiveUIEnum::GiftResourceUI, "PopupCannot");
+				return;
+			}
+			
+			resourceSystem(giverPlayerId).RemoveResourceGlobal(resourceEnum, amount);
+			resourceSystem(targetPlayerId).AddResourceGlobal(resourceEnum, amount, *this);
+			AddPopup(giverPlayerId, "You gifted " + playerName(targetPlayerId) + " with " + to_string(amount) + " " + ResourceName(resourceEnum) + ".");
+			AddPopup(targetPlayerId, playerName(giverPlayerId) + " gifted you with " + to_string(amount) + " " + ResourceName(resourceEnum) + ".");
+		}
+		return;
+	}
+	
+}
+
 void GameSimulationCore::ChangeName(FChangeName command)
 {
 	UE_LOG(LogNetworkInput, Log, TEXT(" ChangeName[%d] %s"), command.objectId, *command.name);
@@ -3113,8 +3154,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 
 	if (command.claimEnum == CallbackEnum::ClaimLandFood)
 	{
-		int32 baseRegionPrice = GetProvinceClaimPrice(command.provinceId);
-		//int32 baseRegionPrice = playerOwn.GetBaseProvinceClaimPrice(command.provinceId);
+		int32 baseRegionPrice = GetProvinceClaimPrice(command.provinceId, playerId);
 		int32 neededFood = baseRegionPrice / FoodCost;
 		
 		if (foodCount(playerId) >= neededFood &&
@@ -3134,7 +3174,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	}
 	else if (command.claimEnum == CallbackEnum::ClaimLandMoney)
 	{
-		int32 regionPriceMoney = GetProvinceClaimPrice(command.provinceId);
+		int32 regionPriceMoney = GetProvinceClaimPrice(command.provinceId, playerId);
 		
 		if (resourceSys.money() >= regionPriceMoney &&
 			provinceOwner(command.provinceId) == -1)
@@ -3145,7 +3185,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	}
 	else if (command.claimEnum == CallbackEnum::ClaimLandInfluence)
 	{
-		int32 regionPriceMoney = GetProvinceClaimPrice(command.provinceId);
+		int32 regionPriceMoney = GetProvinceClaimPrice(command.provinceId, playerId);
 
 		if (resourceSys.influence() >= regionPriceMoney &&
 			provinceOwner(command.provinceId) == -1)
@@ -3166,7 +3206,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 		// If there was no claim yet, start the conquer
 		if (!provincePlayerOwner.GetDefendingClaimProgress(command.provinceId).isValid()) 
 		{
-			int32 conquerPrice = GetProvinceClaimPrice(provinceId) * 2 + BattleInfluencePrice;
+			int32 conquerPrice = GetProvinceAttackStartPrice(provinceId, GetProvinceClaimConnectionEnum(command.provinceId, command.playerId));
 			
 			if (influence(command.playerId) >= conquerPrice)
 			{
@@ -3212,14 +3252,14 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 		}
 	}
 	
-	else if (command.claimEnum == CallbackEnum::ClaimLandArmy)
-	{
-		playerOwn.QueueArmyProvinceClaim(command.provinceId);
-	}
-	else if (command.claimEnum == CallbackEnum::CancelClaimLandArmy)
-	{
-		playerOwn.CancelArmyProvinceClaim(command.provinceId);
-	}
+	//else if (command.claimEnum == CallbackEnum::ClaimLandArmy)
+	//{
+	//	playerOwn.QueueArmyProvinceClaim(command.provinceId);
+	//}
+	//else if (command.claimEnum == CallbackEnum::CancelClaimLandArmy)
+	//{
+	//	playerOwn.CancelArmyProvinceClaim(command.provinceId);
+	//}
 	
 	//else if (command.claimEnum == CallbackEnum::ClaimLandIndirect)
 	//{
@@ -3233,26 +3273,26 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	//		resourceSys.ChangeMoney(-price);
 	//	}
 	//}
-	else if (command.claimEnum == CallbackEnum::BuildOutpost)
-	{
-		int32 price = playerOwn.GetOutpostClaimPrice(command.provinceId);
+	//else if (command.claimEnum == CallbackEnum::BuildOutpost)
+	//{
+	//	int32 price = playerOwn.GetOutpostClaimPrice(command.provinceId);
 
-		if (resourceSys.money() >= price &&
-			provinceOwner(command.provinceId) == -1)
-		{
-			playerOwn.MarkAsOutpost(provinceId);
+	//	if (resourceSys.money() >= price &&
+	//		provinceOwner(command.provinceId) == -1)
+	//	{
+	//		playerOwn.MarkAsOutpost(provinceId);
 
-			resourceSys.ChangeMoney(-price);
-		}
-	}
-	else if (command.claimEnum == CallbackEnum::DemolishOutpost)
-	{
-		if (playerOwn.TryRemoveOutpost(provinceId))
-		{
-			int32 price = playerOwn.GetOutpostClaimPrice(command.provinceId) / 2;
-			resourceSys.ChangeMoney(-price);
-		}
-	}
+	//		resourceSys.ChangeMoney(-price);
+	//	}
+	//}
+	//else if (command.claimEnum == CallbackEnum::DemolishOutpost)
+	//{
+	//	if (playerOwn.TryRemoveOutpost(provinceId))
+	//	{
+	//		int32 price = playerOwn.GetOutpostClaimPrice(command.provinceId) / 2;
+	//		resourceSys.ChangeMoney(-price);
+	//	}
+	//}
 	
 	else {
 		UE_DEBUG_BREAK();
@@ -3366,7 +3406,7 @@ void GameSimulationCore::ChooseLocation(FChooseLocation command)
 		}
 
 		// Ensure province price is less than 1000
-		int32 provincePrice = GetProvinceClaimPrice(command.provinceId);
+		int32 provincePrice = GetProvinceClaimPrice(command.provinceId, command.playerId, ClaimConnectionEnum::Flat);
 		if (provincePrice > GameConstants::InitialMoney) {
 			AddPopup(command.playerId, "Not enough initial money to buy the province.", "PopupCannot");
 			return;

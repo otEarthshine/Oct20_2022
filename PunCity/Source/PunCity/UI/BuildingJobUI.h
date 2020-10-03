@@ -140,7 +140,16 @@ public:
 			if (building.hasInput2()) {
 				inputFractions.push_back(static_cast<float>(building.resourceCount(building.input2())) / building.inputPerBatch());
 			}
-			SetResourceCompletion(building.inputs(), inputFractions, { building.product() }, { building.barFraction() });
+
+			std::vector<ResourceEnum> outputs = { building.product() };
+			std::vector<float> outputFractions = { building.barFraction() };
+
+			if (outputs[0] == ResourceEnum::Beeswax) {
+				outputs.push_back(ResourceEnum::Honey);
+				outputFractions.push_back(building.barFraction());
+			}
+			
+			SetResourceCompletion(building.inputs(), inputFractions, outputs, outputFractions);
 		}
 	}
 	

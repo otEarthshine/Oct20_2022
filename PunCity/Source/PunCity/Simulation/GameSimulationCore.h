@@ -772,20 +772,65 @@ public:
 		int32 provinceIncome100 = fertilityPercentTotal * Income100PerTiles * _provinceSystem.provinceFlatTileCount(provinceId) / (tilesExamined * 100);
 		return std::max(100, provinceIncome100);
 	}
-	int32 GetProvinceClaimPrice(int32 provinceId) final
+
+
+	int32 GetProvinceBaseClaimPrice(int32 provinceId)
 	{
 		int32 baseClaimPrice100 = GetProvinceIncome100(provinceId) * ClaimToIncomeRatio;
 		return (baseClaimPrice100 / 100);
 	}
-	int32 GetProvinceAttackStartPrice(int32 provinceId) {
-		return (GetProvinceClaimPrice(provinceId) * 2 + BattleInfluencePrice) * GetProvinceAttackCostPercent(provinceId) / 100;
+
+	int32 GetProvinceClaimPrice(int32 provinceId, int32 playerId) {
+		return GetProvinceClaimPrice(provinceId, playerId, GetProvinceClaimConnectionEnum(provinceId, playerId));
 	}
-	int32 GetProvinceAttackReinforcePrice(int32 provinceId) {
-		return BattleInfluencePrice * GetProvinceAttackCostPercent(provinceId) / 100;
+	int32 GetProvinceClaimPrice(int32 provinceId, int32 playerId, ClaimConnectionEnum claimConnectionEnum)
+	{	
+		return GetProvinceBaseClaimPrice(provinceId) * GetProvinceClaimCostPercent(provinceId, playerId, claimConnectionEnum) / 100;
 	}
-	int32 GetProvinceAttackCostPercent(int32 provinceId)
+	
+	int32 GetProvinceAttackStartPrice(int32 provinceId, ClaimConnectionEnum claimConnectionEnum) {
+		return (GetProvinceBaseClaimPrice(provinceId) * 2 + BattleInfluencePrice) * GetProvinceAttackCostPercent(provinceId, claimConnectionEnum) / 100;
+	}
+	int32 GetProvinceAttackReinforcePrice(int32 provinceId, ClaimConnectionEnum claimConnectionEnum) {
+		return BattleInfluencePrice * GetProvinceAttackCostPercent(provinceId, claimConnectionEnum) / 100;
+	}
+
+	// Claim/Attack Cost Percent
+	//  Base Bonuses
+	int32 GetProvinceBaseClaimCostPercent(int32 provinceId, ClaimConnectionEnum claimConnectionEnum)
 	{
 		int32 attackCost = 100;
+
+		// Attacking over shallow water has attack cost penalty of 100%
+		if (claimConnectionEnum == ClaimConnectionEnum::ShallowWater) {
+			attackCost += 100;
+		}
+
+		// Attacking deepsea has attack cost penalty of 200%
+		if (claimConnectionEnum == ClaimConnectionEnum::Deepwater) {
+			attackCost += 200;
+		}
+		
+		return attackCost;
+	}
+	//  Claim Bonuses
+	int32 GetProvinceClaimCostPercent(int32 provinceId, int32 playerId, ClaimConnectionEnum claimConnectionEnum)
+	{
+		int32 attackCost = GetProvinceBaseClaimCostPercent(provinceId, claimConnectionEnum);
+
+		BiomeEnum biomeEnum = GetBiomeProvince(provinceId);
+		if ((biomeEnum == BiomeEnum::Tundra || biomeEnum == BiomeEnum::BorealForest) &&
+			IsResearched(playerId, TechEnum::BorealLandCost))
+		{
+			attackCost -= 50;
+		}
+
+		return attackCost;
+	}
+	//  Attack Bonuses
+	int32 GetProvinceAttackCostPercent(int32 provinceId, ClaimConnectionEnum claimConnectionEnum)
+	{
+		int32 attackCost = GetProvinceBaseClaimCostPercent(provinceId, claimConnectionEnum);
 		
 		int32 provinceOwnerId = provinceOwner(provinceId);
 		if (provinceOwnerId != -1) {
@@ -808,19 +853,53 @@ public:
 		{
 			bool isValidConnectionType = connection.tileType == TerrainTileType::None || 
 											connection.tileType == TerrainTileType::River;
-			if (unlockSystem(playerId)->IsResearched(TechEnum::ShallowWaterEmbark)) {
-				isValidConnectionType = isValidConnectionType || connection.tileType == TerrainTileType::Ocean;
-			}
-			
+
 			return isValidConnectionType && 
 					provinceOwner(connection.provinceId) == playerId;
 		});
 	}
+	bool IsProvinceNextToPlayerByShallowWater(int32 provinceId, int32 playerId) final {
+		if (!unlockSystem(playerId)->IsResearched(TechEnum::ShallowWaterEmbark)) {
+			return false;
+		}
+		return _provinceSystem.ExecuteAdjacentProvincesWithExitTrue(provinceId, [&](ProvinceConnection connection)
+		{
+			bool isValidConnectionType = (connection.tileType == TerrainTileType::Ocean);
+
+			return isValidConnectionType &&
+				provinceOwner(connection.provinceId) == playerId;
+		});
+	}
+	bool IsProvinceOverseaClaimableByPlayer(int32 provinceId, int32 playerId)
+	{
+		// TODO: have military harbor that do flood check..
+		return unlockSystem(playerId)->IsResearched(TechEnum::DeepWaterEmbark) &&
+			_provinceSystem.provinceIsCoastal(provinceId);
+	}
+	ClaimConnectionEnum GetProvinceClaimConnectionEnum(int32 provinceId, int32 playerId)
+	{
+		if (IsProvinceNextToPlayer(provinceId, playerId))
+		{
+			return ClaimConnectionEnum::Flat;
+		}
+		if (IsProvinceNextToPlayerByShallowWater(provinceId, playerId))
+		{
+			return ClaimConnectionEnum::ShallowWater;
+		}
+		if (IsProvinceOverseaClaimableByPlayer(provinceId, playerId))
+		{
+			return ClaimConnectionEnum::Deepwater;
+		}
+		return ClaimConnectionEnum::None;
+	}
+
+	
 	bool IsProvinceNextToPlayerIncludingNonFlatLand(int32 provinceId, int32 playerId) {
 		return _provinceSystem.ExecuteAdjacentProvincesWithExitTrue(provinceId, [&](ProvinceConnection connection) {
 			return provinceOwner(connection.provinceId) == playerId;
 		});
 	}
+	
 
 	void RefreshTerritoryEdge(int32 playerId) final {
 		return _provinceSystem.RefreshTerritoryEdge(playerId, playerOwned(playerId).provincesClaimed());
@@ -1861,6 +1940,7 @@ private:
 	void SetPriority(FSetPriority command) final;
 	void SetTownPriority(FSetTownPriority command) final;
 	void SetGlobalJobPriority(FSetGlobalJobPriority command) final;
+	void GenericCommand(FGenericCommand command) final;
 
 	void TradeResource(FTradeResource command) final;
 	void SetIntercityTrade(FSetIntercityTrade command) final;

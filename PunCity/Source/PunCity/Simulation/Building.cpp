@@ -653,6 +653,12 @@ void Building::DoWork(int unitId, int workAmount100)
 			AddResource(info.resourceEnum, productionAmount);
 			AddProductionStat(productionAmount);
 
+			// Special case: Beeswax + Honey
+			if (info.resourceEnum == ResourceEnum::Beeswax) {
+				AddResource(ResourceEnum::Honey, productionAmount);
+				AddProductionStat(productionAmount);
+			}
+
 			if (product() == ResourceEnum::Beer) {
 				_simulation->QuestUpdateStatus(_playerId, QuestEnum::BeerQuest, productionAmount);
 			}

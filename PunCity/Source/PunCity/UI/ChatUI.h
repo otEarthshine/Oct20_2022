@@ -504,7 +504,7 @@ private:
 		
 		FString playerName = networkInterface()->playerNameF(message.playerId);
 		std::stringstream ss;
-		ss << TrimString(networkInterface()->playerName(message.playerId), 8) << ": ";
+		ss << TrimString_Dots(networkInterface()->playerName(message.playerId), 8) << ": ";
 		int32 namePartLength = ss.str().size();
 		
 		std::string messageStd = ToStdString(message.message);

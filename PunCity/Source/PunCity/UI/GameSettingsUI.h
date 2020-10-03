@@ -152,32 +152,38 @@ private:
 	 */
 	UFUNCTION() void OnMasterVolumeChanged(float volume) {
 		_isSettingsDirty = true;
+		SetText(MasterNumber, to_string(FMath::RoundToInt(volume * 100)));
 		gameInstance()->SetMasterVolume(std::max(volume, MinVolume)); // 0.01 is so that it doesn't Stop()
 		gameInstance()->RefreshSoundSettings();
 	}
 	UFUNCTION() void OnMusicVolumeChanged(float volume) {
 		_isSettingsDirty = true;
+		SetText(MusicNumber, to_string(FMath::RoundToInt(volume * 100)));
 		gameInstance()->SetMusicVolume(std::max(volume, MinVolume));
 		gameInstance()->RefreshSoundSettings();
 	}
 	UFUNCTION() void OnSoundEffectsVolumeChanged(float volume) {
 		_isSettingsDirty = true;
+		SetText(SoundEffectsNumber, to_string(FMath::RoundToInt(volume * 100)));
 		gameInstance()->SetSoundEffectsVolume(std::max(volume, MinVolume));
 		gameInstance()->RefreshSoundSettings();
 	}
 	UFUNCTION() void OnAmbientSoundsVolumeChanged(float volume) {
 		_isSettingsDirty = true;
+		SetText(AmbientSoundsNumber, to_string(FMath::RoundToInt(volume * 100)));
 		gameInstance()->SetAmbientVolume(std::max(volume, MinVolume));
 		gameInstance()->RefreshSoundSettings();
 	}
 
 	UFUNCTION() void OnMouseWheelSpeedChanged(float fraction) {
 		_isSettingsDirty = true;
+		SetText(MouseWheelSpeedNumber, to_string(FMath::RoundToInt(fraction * 100)));
 		gameInstance()->mouseZoomSpeedFraction = fraction;
 		gameInstance()->RefreshSoundSettings();
 	}
 	UFUNCTION() void OnMouseDragRotateSpeedChanged(float fraction) {
 		_isSettingsDirty = true;
+		SetText(MouseDragRotateSpeedNumber, to_string(FMath::RoundToInt(fraction * 100)));
 		gameInstance()->mouseRotateSpeedFraction = fraction;
 		gameInstance()->RefreshSoundSettings();
 	}

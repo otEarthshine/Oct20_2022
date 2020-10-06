@@ -24,6 +24,7 @@
 DECLARE_CYCLE_STAT(TEXT("PUN: [Display]Building_CoreSpawn"), STAT_PunDisplayBuilding_CoreSpawn, STATGROUP_Game);
 
 DECLARE_CYCLE_STAT(TEXT("PUN: [Display]Building_Core"), STAT_PunDisplayBuilding_Core, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [Display]Building_Particles"), STAT_PunDisplayBuilding_Particles, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: [Display]BuildingAnim_Core"), STAT_PunDisplayBuildingAnim_Core, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: [Display]Building_Farm"), STAT_PunDisplayBuilding_Farm, STATGROUP_Game);
 
@@ -77,6 +78,7 @@ void UBuildingDisplayComponent::AfterAdd()
 			}
 		}
 	}
+
 }
 
 /*
@@ -129,8 +131,13 @@ int UBuildingDisplayComponent::CreateNewDisplay(int objectId)
 		}
 	}
 
+	//_particles.Add(NewObject<UStaticParticleSystemsComponent>(this));
+	//_particles[meshId]->Init(FString("Particles") + FString::FromInt(meshId), _moduleMeshes[meshId], 50);
+
 	_particles.Add(NewObject<UStaticParticleSystemsComponent>(this));
-	_particles[meshId]->Init(FString("Particles") + FString::FromInt(meshId), _moduleMeshes[meshId], 50);
+	//_particles[meshId]->AttachToComponent(_moduleMeshes[meshId], FAttachmentTransformRules::KeepRelativeTransform, NAME_None);
+	_particles[meshId]->AttachToComponent(this, FAttachmentTransformRules::KeepRelativeTransform, NAME_None);
+	_particles[meshId]->parent = _moduleMeshes[meshId];
 
 	//// Attach Light
 	//UPointLightComponent* light = NewObject<UPointLightComponent>(this, UPointLightComponent::StaticClass());
@@ -169,7 +176,7 @@ void UBuildingDisplayComponent::OnSpawnDisplay(int objectId, int meshId, WorldAt
 	_moduleMeshes[meshId]->SetActive(true);
 	_togglableModuleMeshes[meshId]->SetActive(true);
 
-	_particles[meshId]->SetActive(true);
+	_particles[meshId]->SetClusterActive(true);
 
 	simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Building, WorldRegion2(objectId).regionId(), true);
 	simulation().SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, WorldRegion2(objectId).regionId(), true);
@@ -187,6 +194,10 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 	{
 		//SCOPE_TIMER_("Tick Building Move %d", _moduleMeshes[meshId]->meshPool.Num());
 		_moduleMeshes[meshId]->SetRelativeLocation(regionDisplayLocation + FVector(5, 5, 0));
+
+
+		// TODO: Why need this, and not just attach to _moduleMeshes?
+		_particles[meshId]->SetRelativeLocation(regionDisplayLocation + FVector(5, 5, 0));
 	}
 	
 	OverlayType overlayType = gameManager()->GetOverlayType();
@@ -495,6 +506,10 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 		simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Building, regionId, false);
 	}
 	
+
+	/*
+	 * Building Animation
+	 */
 	bool needBuildingAnimationUpdate = simulation().NeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, regionId) || 
 										isMainMenuDisplay ||
 										PunSettings::TrailerSession;
@@ -584,8 +599,22 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 						// need to take into account variationIndex change... Assume max particleInfos of 5
 						int32 particleKey = centerTile.tileId() + (i + 5 * displayVariationIndex) * GameMapConstants::TilesPerWorld;
 
-						PUN_CHECK(_particles[meshId] != nullptr);
-						_particles[meshId]->Add(particleKey, _assetLoader->particleSystem(particleInfos[i].particleEnum), finalTransform, 0);
+						//PUN_CHECK(_particles[meshId] != nullptr);
+						//_particles[meshId]->Add(particleKey, _assetLoader->particleSystem(particleInfos[i].particleEnum), finalTransform, 0);
+
+						
+
+						//// Determine transform
+						//FVector buildingDisplayLocation = MapUtil::DisplayLocation(_gameManager->cameraAtom(), centerTile.worldAtom2());
+						//FTransform buildingDisplayTransform(FRotator(0, buildingRotation, 0), buildingDisplayLocation);
+						//FTransform finalTransform;
+						//FTransform::Multiply(&finalTransform, &particleInfos[i].transform, &buildingDisplayTransform);
+
+
+						// Move the particle to the correct location
+						//comp->SetWorldTransform(finalTransform);
+
+						_particles[meshId]->Add(particleKey, finalTransform, particleInfos[i].particleEnum, _assetLoader);
 					}
 				}
 
@@ -1101,5 +1130,5 @@ void UBuildingDisplayComponent::HideDisplay(int meshId, int32 regionId)
 	_moduleMeshes[meshId]->SetActive(false);
 	_togglableModuleMeshes[meshId]->SetActive(false);
 
-	_particles[meshId]->SetActive(false);
+	_particles[meshId]->SetClusterActive(false);
 }

@@ -34,6 +34,7 @@ public:
 
 	class UMainMenuUI* mainMenuUI() { return _mainMenuUI; }
 	
+	
 private:
 	UPROPERTY() USoundBase* _menuSound;
 	

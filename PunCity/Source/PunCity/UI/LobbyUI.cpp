@@ -124,46 +124,7 @@ void ULobbyUI::Init()
 	// Popup
 	LobbyPopupCloseButton->OnClicked.AddDynamic(this, &ULobbyUI::OnClickPopupCloseButton);
 
-	//// Small map for editor play for speed
-	//serverMapSettings.mapSizeEnumInt = static_cast<int32>(MapSizeEnum::Medium);
-	//LobbyMapSizeDropdown->ClearOptions();
-	//for (FString name : MapSizeNames) {
-	//	LobbyMapSizeDropdown->AddOption(name);
-	//}
-	//LobbyMapSizeDropdown->SetSelectedIndex(serverMapSettings.mapSizeEnumInt);
-	//RefreshAICountDropdown();
 
-
-	//{
-	//	auto setupDropdown = [&](UComboBoxString* LobbyDropdown, const std::vector<FString>& enumNames)
-	//	{
-	//		LobbyDropdown->ClearOptions();
-	//		for (FString name : enumNames) {
-	//			LobbyDropdown->AddOption(name);
-	//		}
-	//	};
-
-	//	// Sea level
-	//	serverMapSettings.mapSeaLevel = MapSeaLevelEnum::Medium;
-	//	setupDropdown(LobbySeaLevelDropdown, MapSettingsLevelNames);
-	//	LobbySeaLevelDropdown->SetSelectedIndex(static_cast<int>(serverMapSettings.mapSeaLevel));
-
-	//	// Moisture
-	//	serverMapSettings.mapMoisture = MapMoistureEnum::Medium;
-	//	setupDropdown(LobbyMoistureDropdown, MapMoistureNames);
-	//	LobbyMoistureDropdown->SetSelectedIndex(static_cast<int>(serverMapSettings.mapMoisture));
-
-	//	// Temperature
-	//	serverMapSettings.mapTemperature = MapTemperatureEnum::Medium;
-	//	setupDropdown(LobbyTemperatureDropdown, MapSettingsLevelNames);
-	//	LobbyTemperatureDropdown->SetSelectedIndex(static_cast<int>(serverMapSettings.mapTemperature));
-
-	//	// Mountain Density
-	//	serverMapSettings.mapMountainDensity = MapMountainDensityEnum::Medium;
-	//	setupDropdown(LobbyMountainDensityDropdown, MapSettingsLevelNames);
-	//	LobbyMountainDensityDropdown->SetSelectedIndex(static_cast<int>(serverMapSettings.mapMountainDensity));
-	//}
-	
 
 	gameInstance()->Spawn2DSound("UI", "UIWindowOpen");
 

@@ -65,6 +65,11 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* LobbyListLoadGameButton;
 	UPROPERTY(meta = (BindWidget)) UButton* LobbyListCreateGameButton;
 
+	UPROPERTY(meta = (BindWidget)) UOverlay* PasswordPopupOverlay;
+	UPROPERTY(meta = (BindWidget)) UEditableTextBox* PasswordEditableText;
+	UPROPERTY(meta = (BindWidget)) UButton* PasswordConfirmButton;
+	UPROPERTY(meta = (BindWidget)) UButton* PasswordCancelButton;
+
 	UPROPERTY(meta = (BindWidget)) UTextBlock* VersionIdText;
 	
 	UPROPERTY(meta = (BindWidget)) UCircularThrobber* LobbyRefreshThrobber;
@@ -157,13 +162,46 @@ public:
 
 	UFUNCTION() void OpenPreLobbySettings();
 	UFUNCTION() void CreateMultiplayerGame();
+
+	// Password
+	UFUNCTION() void TryOpenJoinPasswordUI() {
+		Spawn2DSound("UI", "UIWindowOpen");
+		FString password = GetSessionValueString(SESSION_PASSWORD, _chosenSession.Session.SessionSettings);
+
+		if (password == "") {
+			JoinMultiplayerGame(); // No password
+		} else {
+			PasswordPopupOverlay->SetVisibility(ESlateVisibility::Visible);
+			PasswordEditableText->SetText(FText());
+		}
+	}
+	UFUNCTION() void OnClickJoinPasswordConfirm() {
+		PasswordPopupOverlay->SetVisibility(ESlateVisibility::Collapsed);
+		FString password = GetSessionValueString(SESSION_PASSWORD, _chosenSession.Session.SessionSettings);
+		FString passwordInput = PasswordEditableText->GetText().ToString();
+		
+		if (password == passwordInput) {
+			JoinMultiplayerGame();
+		} else {
+			gameInstance()->mainMenuPopup = "Invalid password.";
+		}
+	}
+	UFUNCTION() void OnClickJoinPasswordCancel() {
+		PasswordPopupOverlay->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	
 	UFUNCTION() void JoinMultiplayerGame();
-	UFUNCTION() void LoadMultiplayerGame() {
+
+	UFUNCTION() void OpenLoadMultiplayerGameUI() {
 		Spawn2DSound("UI", "UIWindowOpen");
 		MainMenuSwitcher->SetActiveWidget(LoadSaveUI);
 		gameInstance()->isSinglePlayer = false;
 		LoadSaveUI->OpenLoadUI();
 	}
+	UFUNCTION() void LoadMultiplayerGame() {
+		gameInstance()->LoadMultiplayerGame();
+	}
+	
 
 	UFUNCTION() void OnRefreshButtonClick() {
 		Spawn2DSound("UI", "ButtonClick");

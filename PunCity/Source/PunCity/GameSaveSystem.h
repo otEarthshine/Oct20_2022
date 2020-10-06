@@ -131,6 +131,11 @@ public:
 			saveList.Add(saveInfo);
 		}
 
+		// Sort Save List by date
+		saveList.Sort([&](const GameSaveInfo& left, const GameSaveInfo& right) {
+			return left.dateTime > right.dateTime;
+		});
+
 		return saveList;
 	}
 

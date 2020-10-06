@@ -438,7 +438,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 		_buildingIconsAlpha.Add(LoadF<UTexture2D>(FString("/Game/UI/GeneratedIcons/") + iconAlphaName));
 	};
 
-
+	// TODO: Icons for all Cards...
 	for (int i = 0; i < BuildingEnumCount; i++) 
 	{
 		// Special cases

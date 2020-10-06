@@ -63,7 +63,7 @@ void Farm::FinishConstruction()
 }
 
 bool Farm::NoFarmerOnTileId(int32_t farmTileId) {
-	return !CppUtils::Contains(_reservingUnitIdToFarmTileId, [&](pair<int32_t, int32_t>& pair) { return pair.second == farmTileId; });
+	return !CppUtils::Contains(_reservingUnitIdToFarmTileId, [&](const pair<int32, int32>& pair) { return pair.second == farmTileId; });
 }
 
 std::vector<BonusPair> Farm::GetBonuses()
@@ -591,11 +591,16 @@ void Colony::TickRound()
 
 			// Deplete province resource
 			if (IsOreEnum(resourceEnum)) {
-				_simulation->georesourceSystem().MineOre(_simulation->GetProvinceIdRaw(centerTile()), resourceCount);
+				resourceCount = min(oreLeft(), resourceCount);
+				if (resourceCount > 0) {
+					_simulation->georesourceSystem().MineOre(_simulation->GetProvinceIdRaw(centerTile()), resourceCount);
+				}
 			}
 
-			resourceSystem().AddResourceGlobal(resourceEnum, resourceCount, *_simulation);
-			_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainResource, centerTile(), "+" + to_string(resourceCount), resourceEnum);
+			if (resourceCount > 0) {
+				resourceSystem().AddResourceGlobal(resourceEnum, resourceCount, *_simulation);
+				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainResource, centerTile(), "+" + to_string(resourceCount), resourceEnum);
+			}
 		}
 	}
 }

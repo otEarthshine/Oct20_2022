@@ -61,6 +61,8 @@ enum class UIEnum
 	HoverBuildingJob,
 	JobHumanIcon,
 	HoverTownhall,
+	BuffIcon,
+	
 	ResourceCompletionIcon,
 	BuildingReadyIcon,
 	BuildingNeedSetupIcon,

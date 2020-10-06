@@ -14,8 +14,8 @@
 
 #define TRAILER_MODE 0
 
-#define SAVE_VERSION 26091722 // Day/Month/Time
-#define GAME_VERSION 26091722
+#define SAVE_VERSION 04101124 // Day/Month/Time
+#define GAME_VERSION 04101124
 
 //! Utils
 
@@ -885,7 +885,7 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::DyedCottonFabric,	"Dyed Cotton Fabric", 17, "Fancy fabric used by tailors to make Fashionable Clothes."),
 	ResourceInfo(ResourceEnum::LuxuriousClothes,	"Fashionable Clothes", 30, "Luxury tier 3 used for housing upgrade."),
 	
-	ResourceInfo(ResourceEnum::Honey,		"Honey", 3, "Delicious, viscous liquid produced by bees."),
+	ResourceInfo(ResourceEnum::Honey,		"Honey", FoodCost, "Delicious, viscous liquid produced by bees."),
 	ResourceInfo(ResourceEnum::Beeswax,		"Beeswax", 7, "Raw material used to make Candles."),
 	ResourceInfo(ResourceEnum::Candle,		"Candles", 15, "Luxury tier 2 used for housing upgrade."),
 	
@@ -971,7 +971,8 @@ static const ResourceEnum FoodEnums[] =
 	ResourceEnum::GameMeat,
 	ResourceEnum::Beef,
 	ResourceEnum::Lamb,
-
+	
+	ResourceEnum::Honey,
 	ResourceEnum::Orange,
 	ResourceEnum::Milk,
 	ResourceEnum::Mushroom,
@@ -2295,12 +2296,12 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::Panda,				"Panda", 1000, "Spawn 3 Pandas on a Ranch."),
 
 	BldInfo(CardEnum::FireStarter,		"Fire Starter", 200, "Start a fire in an area (3 tiles radius)."),
-	BldInfo(CardEnum::Steal,				"Steal", 150, "Steal 20% of a stronger player's treasury<img id=\"Coin\"/>. Use on Townhall."),
-	BldInfo(CardEnum::Snatch,			"Snatch", 30, "Steal 30<img id=\"Coin\"/> from a stronger player. Use on Townhall."),
+	BldInfo(CardEnum::Steal,				"Steal", 200, "Steal 30% of target player's treasury<img id=\"Coin\"/>. Use on Townhall."),
+	BldInfo(CardEnum::Snatch,			"Snatch", 50, "Steal <img id=\"Coin\"/> equal to target player's population. Use on Townhall."),
 	BldInfo(CardEnum::SharingIsCaring,	"Sharing is Caring", 120, "Give 50 Wheat to the target player. Use on Townhall."),
-	BldInfo(CardEnum::Kidnap,			"Kidnap", 100, "Steal up to 3 citizens from target player. Requires 5 x Population<img id=\"Coin\"/> to use. Apply on Townhall."),
-	BldInfo(CardEnum::KidnapGuard,		"Kidnap Guard", 100, "Steal up to 3 citizens from target player. Requires 5 x Population<img id=\"Coin\"/> to use. Apply on Townhall."),
-	BldInfo(CardEnum::TreasuryGuard,		"Treasury Guard", 100, "Steal up to 3 citizens from target player. Requires 5 x Population<img id=\"Coin\"/> to use. Apply on Townhall."),
+	BldInfo(CardEnum::Kidnap,			"Kidnap", 350, "Steal up to 3 citizens from target player. Apply on Townhall."),
+	BldInfo(CardEnum::KidnapGuard,		"Kidnap Guard", 30, "Guard your city against Kidnap for a year. Require <img id=\"Coin\"/>xPopulation to activate."),
+	BldInfo(CardEnum::TreasuryGuard,		"Treasury Guard", 30, "Guard your city against Steal and Snatch for a year. Require <img id=\"Coin\"/>xPopulation to activate."),
 
 	
 	BldInfo(CardEnum::Cannibalism,		"Cannibalism", 0, "On death, people drop Meat. -10 <img id=\"Smile\"/> to all citizens."),
@@ -2330,7 +2331,7 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::CratePottery,		"Pottery Crates", 100, "Instantly gain 80 Pottery"),
 	BldInfo(CardEnum::CrateJewelry,		"Jewelry Crates", 100, "Instantly gain 10 Jewelry"),
 
-	BldInfo(CardEnum::SpeedBoost, "Efficiency Boost", 0, "Boost target building efficiency by +50% for 50s.")
+	BldInfo(CardEnum::SpeedBoost, "Speed Boost", 0, "Boost target building's work speed by +50% for 50s.")
 };
 
 static const int32 BuildingEnumCount = _countof(BuildingInfo);
@@ -2343,11 +2344,11 @@ static const std::vector<CardEnum> ActionCards
 	CardEnum::BuyWood,
 	CardEnum::Immigration,
 	CardEnum::EmergencyRations,
-	
+
 	CardEnum::WheatSeed,
 	CardEnum::CabbageSeed,
 	CardEnum::HerbSeed,
-	
+
 	CardEnum::CannabisSeeds,
 	CardEnum::GrapeSeeds,
 	CardEnum::CocoaSeeds,
@@ -2359,6 +2360,9 @@ static const std::vector<CardEnum> ActionCards
 	CardEnum::Snatch,
 	CardEnum::SharingIsCaring,
 	CardEnum::Kidnap,
+
+	CardEnum::KidnapGuard,
+	CardEnum::TreasuryGuard,
 
 	CardEnum::InstantBuild,
 	
@@ -3104,7 +3108,18 @@ struct BonusPair
 
 
 /*
- * Army
+ * Military
+ */
+enum class ProvinceAttackEnum : uint8
+{
+	ConquerProvince,
+	Vassalize,
+	DeclareIndependence,
+};
+
+
+/*
+ * Old Army
  */
 enum class ArmyEnum : uint8
 {
@@ -3636,7 +3651,7 @@ static const TileObjInfo TreeInfos[] = {
 	TileObjInfo(TileObjEnum::Dye,		"Dye",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Dye, FarmBaseYield100), "Dye used to dye Cotton Fabric or print Book."),
 
 	
-	TileObjInfo(TileObjEnum::Herb,		"Herb",		ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Herb, FarmBaseYield100 / 2), "Herb used to heal sickness or make medicine."),
+	TileObjInfo(TileObjEnum::Herb,		"Medicinal Herb",		ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Herb, FarmBaseYield100 / 2), "Herb used to heal sickness or make medicine."),
 	//TileObjInfo(TileObjEnum::BaconBush, "Bacon bush",	ResourceTileType::Bush,				1,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), "Plant with delicious leaves that tastes like bacon when grilled. Legend says, this plant was created by an ancient advanced civilization of giants."),
 
 	TileObjInfo(TileObjEnum::Stone, "Stone",	ResourceTileType::Deposit,	ResourcePair::Invalid(),								ResourcePair(ResourceEnum::Stone, 2) /*this is not used?*/, "Easily-accessible stone deposits."),
@@ -4234,6 +4249,7 @@ enum class TechEnum : uint8
 	InfluencePoints,
 	Conquer,
 	Vassalize,
+	HomeLandDefense,
 	
 	/*
 	 * Building techs
@@ -4302,6 +4318,7 @@ enum class TechEnum : uint8
 
 	FarmImprovement,
 	Espionage,
+	SpyGuard,
 
 	//Bridge,
 	HumanitarianAid,
@@ -4378,6 +4395,16 @@ enum class ClaimConnectionEnum : uint8
 	ShallowWater,
 	Deepwater,
 };
+
+static void AppendClaimConnectionString(std::stringstream& ss, ClaimConnectionEnum claimConnectionEnum)
+{
+	if (claimConnectionEnum == ClaimConnectionEnum::ShallowWater) {
+		ss << " (shallow water)";
+	}
+	else if (claimConnectionEnum == ClaimConnectionEnum::Deepwater) {
+		ss << " (oversea)";
+	}
+}
 
 
 /*
@@ -5435,6 +5462,8 @@ enum class PopupReceiverEnum : uint8
 
 	StartGame_Story,
 	StartGame_AskAboutAdvice,
+
+	ResetBuff,
 };
 
 struct PopupInfo

@@ -104,12 +104,6 @@ public:
 		saveSystem().RefreshSaveList();
 		TArray<GameSaveInfo> saveList = saveSystem().saveList();
 
-		
-		// Sort Save List by date
-		saveList.Sort([&](const GameSaveInfo& left, const GameSaveInfo& right) {
-			return left.dateTime > right.dateTime;
-		});
-		
 
 		bool isSinglePlayer = gameInstance()->isSinglePlayer;
 
@@ -258,7 +252,7 @@ public:
 		_callbackParent->CallBack2(this, CallbackEnum::OpenBlur);
 
 		_isSavingGame = true;
-		_delayedActionCountDown = 10;\
+		_delayedActionCountDown = 10;
 		_isAutosaving = isAutoSaving;
 	}
 	void LoadGameDelayed()
@@ -372,39 +366,40 @@ private:
 		SavingBlurText->SetVisibility(ESlateVisibility::Collapsed);
 		_callbackParent->CallBack2(this, CallbackEnum::CloseLoadSaveUI);
 	}
-	void LoadGame()
-	{
-		SCOPE_TIMER("LoadGame");
-		
-		auto gameInstance = Cast<UPunGameInstance>(GetGameInstance());
-		auto saveInfo = saveSystem().saveList()[activeIndex];
-		gameInstance->SetSavedGameToLoad(saveSystem().saveList()[activeIndex]);
+	void LoadGame();
+	//{
+	//	SCOPE_TIMER("LoadGame");
+	//	
+	//	auto gameInstance = Cast<UPunGameInstance>(GetGameInstance());
+	//	auto saveInfo = saveSystem().saveList()[activeIndex];
+	//	gameInstance->SetSavedGameToLoad(saveSystem().saveList()[activeIndex]);
 
-		// Set new mapSettings
-		gameInstance->SetMapSettings(saveInfo.mapSettings);
+	//	// Set new mapSettings
+	//	gameInstance->SetMapSettings(saveInfo.mapSettings);
 
-		// If in-game
-		// Transition is starting, Disable any ticking so it doesn't tick after gameInstance data was cleared
-		if (gameInstance->IsInGame(this)) {
-			networkInterface()->SetTickDisabled(true);
-		}
+	//	// If in-game
+	//	// Transition is starting, Disable any ticking so it doesn't tick after gameInstance data was cleared
+	//	if (gameInstance->IsInGame(this)) {
+	//		networkInterface()->SetTickDisabled(true);
+	//	}
 
-		// Reset game instance
-		gameInstance->ResetPlayerCount();
-		
-		gameInstance->isSinglePlayer = saveInfo.mapSettings.isSinglePlayer;
+	//	// Reset game instance
+	//	gameInstance->ResetPlayerCount();
+	//	
+	//	gameInstance->isSinglePlayer = saveInfo.mapSettings.isSinglePlayer;
 
-		// Loading a multiplayer game, create a lobby
-		if (gameInstance->isMultiplayer()) 
-		{
-			gameInstance->LoadMultiplayerGame();
-			Spawn2DSound("UI", "UIWindowOpen");
-		}
-		else {
-			// Load the game up right away
-			GetWorld()->ServerTravel("/Game/Maps/GameMap");
-		}
-	}
+	//	// Loading a multiplayer game, create a lobby
+	//	if (gameInstance->isMultiplayer()) 
+	//	{
+	//		GetPunHUD()->OpenPreLobbySettings();
+	//		gameInstance->LoadMultiplayerGame();
+	//		Spawn2DSound("UI", "UIWindowOpen");
+	//	}
+	//	else {
+	//		// Load the game up right away
+	//		GetWorld()->ServerTravel("/Game/Maps/GameMap");
+	//	}
+	//}
 
 	GameSaveSystem& saveSystem() {
 		auto gameInstance = CastChecked<UPunGameInstance>(GetGameInstance());

@@ -54,7 +54,11 @@ public:
 		GiftTypeDropdown->SetSelectedOption("Money");
 		GiftIcon->SetBrushFromTexture(assetLoader()->CoinIcon);
 		
-		SetVisibility(ESlateVisibility::Visible);
+		SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	}
+
+	void CloseUI() {
+		SetVisibility(ESlateVisibility::Collapsed);
 	}
 
 	void TickUI()

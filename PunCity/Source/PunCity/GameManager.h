@@ -619,7 +619,11 @@ public:
 	bool isCtrlDown() final { return _isCtrlDown; }
 	bool isShiftDown() final { return _isShiftDown; }
 	void SetCtrl(bool isDown) final { _isCtrlDown = isDown; }
-	void SetShift(bool isDown) final { _isShiftDown = isDown; }
+	
+	void SetShift(bool isDown) final {
+		_LOG(PunInput, "SetShift %d", isDown);
+		_isShiftDown = isDown;
+	}
 
 	bool alwaysShowProvinceHover() final { return _alwaysShowProvinceHover; }
 	void SetAlwaysShowProvinceHover(bool alwaysShowProvinceHoverIn) {

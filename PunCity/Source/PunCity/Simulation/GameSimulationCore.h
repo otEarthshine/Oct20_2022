@@ -300,14 +300,14 @@ public:
 	}
 
 	int32 lordPlayerId(int32 playerId) final {
-		return townhall(playerId).armyNode.lordPlayerId;
+		return playerOwned(playerId).lordPlayerId();
 	}
 
 	ArmyNode& GetArmyNode(int32 buildingId) final {
 		return building(buildingId).subclass<ArmyNodeBuilding>().GetArmyNode();
 	}
 	std::vector<int32> GetArmyNodeIds(int32 playerId) final {
-		std::vector<int32> nodes = playerOwned(playerId).vassalNodeIds();
+		std::vector<int32> nodes = playerOwned(playerId).vassalBuildingIds();
 		nodes.push_back(townhall(playerId).armyNode.nodeId);
 		return nodes;
 	}
@@ -509,6 +509,10 @@ public:
 		return _buildingSystem->buildingEnum(id);
 	}
 
+	bool isValidBuildingId(int32 id) final {
+		return _buildingSystem->isValidBuildingId(id);
+	}
+
 	template <typename T>
 	T& building(int32 id) {
 		return _buildingSystem->building(id).subclass<T>();
@@ -562,6 +566,30 @@ public:
 		}
 		return finishedCount;
 	}
+
+
+	int32 buildingFinishedCount(int32 playerId, int32 provinceId)
+	{
+		int32 count = 0;
+		for (int32 i = 0; i < BuildingEnumCount; i++) {
+			count += buildingFinishedCount(playerId, provinceId, static_cast<CardEnum>(i));
+		}
+		return count;
+	}
+	int32 buildingFinishedCount(int32 playerId, int32 provinceId, CardEnum buildingEnum)
+	{
+		const std::vector<int32>& bldIds = buildingIds(playerId, buildingEnum);
+		int32 finishedCount = 0;
+		for (int32 buildingId : bldIds) {
+			Building& bld = building(buildingId);
+			if (bld.provinceId() == provinceId && bld.isConstructed()) {
+				finishedCount++;
+			}
+		}
+		return finishedCount;
+	}
+
+	
 
 	int32 jobBuildingCount(int32 playerId) final {
 		return playerOwned(playerId).jobBuildingCount();
@@ -648,8 +676,8 @@ public:
 		return isInitialized() && _displayEnumToNeedUpdate[static_cast<int>(displayEnum)];
 	}
 
-	void AddNeedDisplayUpdateId(DisplayGlobalEnum displayEnum, int32 id) final {
-		if (isInitialized()) {
+	void AddNeedDisplayUpdateId(DisplayGlobalEnum displayEnum, int32 id, bool updateBeforeInitialized = false) final {
+		if (isInitialized() || updateBeforeInitialized) {
 			_displayEnumToNeedUpdateIds[static_cast<int>(displayEnum)].push_back(id);
 		}
 	}
@@ -751,6 +779,11 @@ public:
 		return treeCount;
 	}
 
+
+	/*
+	 * Province Income/Upkeep/Costs
+	 */
+
 	int32 GetProvinceIncome100(int32 provinceId) final {
 		// Sample fertility, and take that into province income's calculation
 		TileArea area = _provinceSystem.GetProvinceRectArea(provinceId);
@@ -772,6 +805,20 @@ public:
 		int32 provinceIncome100 = fertilityPercentTotal * Income100PerTiles * _provinceSystem.provinceFlatTileCount(provinceId) / (tilesExamined * 100);
 		return std::max(100, provinceIncome100);
 	}
+	int32 GetProvinceBaseUpkeep100(int32 provinceId)
+	{
+		return GetProvinceIncome100(provinceId) / 2; // Upkeep half the income as base
+	}
+	int32 GetProvinceUpkeep100(int32 provinceId, int32 playerId) final
+	{
+		int32 income100 = GetProvinceBaseUpkeep100(provinceId); // Upkeep half the income as base
+		
+		if (IsOverseaProvince(provinceId, playerId)) {
+			income100 = income100 * 3; // +200%
+		}
+		
+		return income100;
+	}
 
 
 	int32 GetProvinceBaseClaimPrice(int32 provinceId)
@@ -784,69 +831,111 @@ public:
 		return GetProvinceClaimPrice(provinceId, playerId, GetProvinceClaimConnectionEnum(provinceId, playerId));
 	}
 	int32 GetProvinceClaimPrice(int32 provinceId, int32 playerId, ClaimConnectionEnum claimConnectionEnum)
-	{	
-		return GetProvinceBaseClaimPrice(provinceId) * GetProvinceClaimCostPercent(provinceId, playerId, claimConnectionEnum) / 100;
+	{
+		int32 percent = 100;
+		percent += GetProvinceSpecialClaimCostPercent(provinceId, playerId);
+		percent += GetProvinceTerrainClaimCostPenalty(claimConnectionEnum);
+		
+		return GetProvinceBaseClaimPrice(provinceId) * percent / 100;
 	}
 	
-	int32 GetProvinceAttackStartPrice(int32 provinceId, ClaimConnectionEnum claimConnectionEnum) {
-		return (GetProvinceBaseClaimPrice(provinceId) * 2 + BattleInfluencePrice) * GetProvinceAttackCostPercent(provinceId, claimConnectionEnum) / 100;
+	int32 GetProvinceAttackStartPrice(int32 provinceId, ClaimConnectionEnum claimConnectionEnum)
+	{
+		return (GetProvinceBaseClaimPrice(provinceId) * 2 + BattleInfluencePrice) * GetTotalAttackPercent(provinceId, claimConnectionEnum) / 100;
 	}
-	int32 GetProvinceAttackReinforcePrice(int32 provinceId, ClaimConnectionEnum claimConnectionEnum) {
-		return BattleInfluencePrice * GetProvinceAttackCostPercent(provinceId, claimConnectionEnum) / 100;
+	int32 GetProvinceAttackReinforcePrice(int32 provinceId, ClaimConnectionEnum claimConnectionEnum)
+	{
+		return BattleInfluencePrice * GetTotalAttackPercent(provinceId, claimConnectionEnum) / 100;
+	}
+	int32 GetTotalAttackPercent(int32 provinceId, ClaimConnectionEnum claimConnectionEnum)
+	{
+		int32 percent = 100;
+		percent += GetProvinceTerrainClaimCostPenalty(claimConnectionEnum);
+		percent += GetProvinceAttackCostPercent(provinceId);
+		return percent;
+	}
+
+	int32 GetProvinceVassalizeStartPrice(int32 provinceId)
+	{
+		int32 provincePlayerId = provinceOwner(provinceId);
+		PUN_CHECK(homeProvinceId(provincePlayerId) == provinceId);
+		
+		return BattleInfluencePrice + population(provincePlayerId) * 10; // 100 pop = 1k influence to take over
 	}
 
 	// Claim/Attack Cost Percent
 	//  Base Bonuses
-	int32 GetProvinceBaseClaimCostPercent(int32 provinceId, ClaimConnectionEnum claimConnectionEnum)
+	int32 GetProvinceTerrainClaimCostPenalty(ClaimConnectionEnum claimConnectionEnum)
 	{
-		int32 attackCost = 100;
+		int32 penalty = 0;
 
 		// Attacking over shallow water has attack cost penalty of 100%
 		if (claimConnectionEnum == ClaimConnectionEnum::ShallowWater) {
-			attackCost += 100;
+			penalty += 100;
 		}
-
 		// Attacking deepsea has attack cost penalty of 200%
-		if (claimConnectionEnum == ClaimConnectionEnum::Deepwater) {
-			attackCost += 200;
+		else if (claimConnectionEnum == ClaimConnectionEnum::Deepwater) {
+			penalty += 200;
 		}
 		
-		return attackCost;
+		return penalty;
 	}
 	//  Claim Bonuses
-	int32 GetProvinceClaimCostPercent(int32 provinceId, int32 playerId, ClaimConnectionEnum claimConnectionEnum)
+	int32 GetProvinceSpecialClaimCostPercent(int32 provinceId, int32 playerId)
 	{
-		int32 attackCost = GetProvinceBaseClaimCostPercent(provinceId, claimConnectionEnum);
+		int32 percent = 0;
 
 		BiomeEnum biomeEnum = GetBiomeProvince(provinceId);
 		if ((biomeEnum == BiomeEnum::Tundra || biomeEnum == BiomeEnum::BorealForest) &&
 			IsResearched(playerId, TechEnum::BorealLandCost))
 		{
-			attackCost -= 50;
+			percent -= 50;
 		}
 
-		return attackCost;
+		return percent;
 	}
 	//  Attack Bonuses
-	int32 GetProvinceAttackCostPercent(int32 provinceId, ClaimConnectionEnum claimConnectionEnum)
+	int32 GetProvinceAttackCostPercent(int32 provinceId)
 	{
-		int32 attackCost = GetProvinceBaseClaimCostPercent(provinceId, claimConnectionEnum);
+		int32 percent = 0;
 		
 		int32 provinceOwnerId = provinceOwner(provinceId);
-		if (provinceOwnerId != -1) {
+		if (provinceOwnerId != -1) 
+		{
+			// Fort
 			const std::vector<int32>& fortIds = buildingIds(provinceOwnerId, CardEnum::Fort);
 			for (int32 fortId : fortIds) {
 				if (building(fortId).provinceId() == provinceId) {
-					attackCost += 100;
+					percent += 100;
 				}
 			}
+
+			// Buildings
+			int32 buildingCount = buildingFinishedCount(provinceOwnerId, provinceId);
+			percent += 10 * buildingCount;
 		}
-		return attackCost;
+		return percent;
 	}
 
-	bool HasOutpostAt(int32 playerId, int32 provinceId) final {
-		return playerOwned(playerId).HasOutpostAt(provinceId);
+	ProvinceAttackEnum GetProvinceAttackEnum(int32 provinceId)
+	{
+		int32 provincePlayerId = provinceOwner(provinceId);
+		auto& provincePlayerOwner = playerOwned(provincePlayerId);
+		
+		if (provincePlayerOwner.lordPlayerId() != -1) {
+			return ProvinceAttackEnum::DeclareIndependence;
+		}
+		if (homeProvinceId(provincePlayerId) == provinceId) {
+			return ProvinceAttackEnum::Vassalize;
+		}
+		return ProvinceAttackEnum::ConquerProvince;
 	}
+
+	
+
+	//bool HasOutpostAt(int32 playerId, int32 provinceId) final {
+	//	return playerOwned(playerId).HasOutpostAt(provinceId);
+	//}
 	bool IsProvinceNextToPlayer(int32 provinceId, int32 playerId) final
 	{
 		return _provinceSystem.ExecuteAdjacentProvincesWithExitTrue(provinceId, [&](ProvinceConnection connection) 
@@ -892,7 +981,49 @@ public:
 		}
 		return ClaimConnectionEnum::None;
 	}
+	bool IsOverseaProvince(int32 provinceIdIn, int32 playerId)
+	{
+		if (!HasTownhall(playerId)) {
+			return false;
+		}
+		
+		int32 townhallProvinceId = townhall(playerId).provinceId();
+		bool isConnectedToTownhall = FloodProvinces(provinceIdIn, [&](int32 provinceId)
+		{
+			return townhallProvinceId == provinceId;
+		});
 
+		return !isConnectedToTownhall;
+	}
+	
+	template <typename Func>
+	bool FloodProvinces(int32 provinceId, Func shouldExitFunc)
+	{
+		TSet<int32> visited;
+		std::vector<int32> floodQueue;
+		floodQueue.push_back(provinceId);
+		visited.Add(provinceId);
+		
+		while (floodQueue.size() > 0)
+		{
+			int32 curProvinceId = floodQueue.back();
+			floodQueue.pop_back();
+			
+			if (shouldExitFunc(curProvinceId)) {
+				return true;
+			}
+
+			const auto& connections = GetProvinceConnections(curProvinceId);
+			for (const ProvinceConnection& connection : connections) {
+				if (!visited.Contains(connection.provinceId)) {
+					floodQueue.push_back(connection.provinceId);
+					visited.Add(connection.provinceId);
+				}
+			}
+		}
+		return false;
+	}
+	
 	
 	bool IsProvinceNextToPlayerIncludingNonFlatLand(int32 provinceId, int32 playerId) {
 		return _provinceSystem.ExecuteAdjacentProvincesWithExitTrue(provinceId, [&](ProvinceConnection connection) {
@@ -1028,6 +1159,13 @@ public:
 
 	void SetProvinceOwner(int32 provinceId, int32 playerId, bool lightMode = false)
 	{
+		// When transfering land if it is oversea, warn of 200% influence upkeep
+		if (playerId != -1 &&
+			GetProvinceClaimConnectionEnum(provinceId, playerId) == ClaimConnectionEnum::Deepwater) 
+		{
+			AddPopup(playerId, "You have claimed a Province oversea.<space>Oversea provinces have upkeep penalty of +200%");
+		}
+		
 		int32 oldPlayerId =  provinceOwner(provinceId);
 		if (oldPlayerId != -1) {
 			playerOwned(oldPlayerId).TryRemoveProvinceClaim(provinceId, lightMode); // TODO: Try moving this below???
@@ -1101,6 +1239,19 @@ public:
 			}
 		});
 	}
+
+	void AddPopupNonDuplicate(PopupInfo popupInfo) final
+	{
+		PUN_CHECK(0 <= popupInfo.playerId);
+		PUN_CHECK(popupInfo.playerId < _popupSystems.size());
+		auto& popupSys = _popupSystems[popupInfo.playerId];
+		if (!popupSys.HasPopup(popupInfo)) {
+			popupSys.AddPopup(popupInfo);
+		}
+	}
+
+
+	
 	PopupInfo* PopupToDisplay(int32 playerId) final {
 		return _popupSystems[playerId].PopupToDisplay();
 	}
@@ -1469,10 +1620,10 @@ public:
 	}
 	void CheckDominationVictory(int32 playerIdToWin)
 	{
-		std::vector<int32> vassalNodeIds = _playerOwnedManagers[playerIdToWin].vassalNodeIds();
+		std::vector<int32> vassalBuildingIds = _playerOwnedManagers[playerIdToWin].vassalBuildingIds();
 
 		int32 capitalsOwned = 1;
-		for (int32 nodeId : vassalNodeIds) {
+		for (int32 nodeId : vassalBuildingIds) {
 			if (building(nodeId).isEnum(CardEnum::Townhall)) {
 				capitalsOwned++;
 			}
@@ -1494,6 +1645,13 @@ public:
 
 	bool HasTownhall(int32 playerId) final {
 		return playerOwned(playerId).hasTownhall();
+	}
+	int32 homeProvinceId(int32 playerId)
+	{
+		if (!HasTownhall(playerId)) {
+			return -1;
+		}
+		return townhall(playerId).provinceId();
 	}
 
 	int32 TownAge(int32 playerId) {

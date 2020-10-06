@@ -9,6 +9,7 @@
 #include "ArmyLinesUI.h"
 #include "PunSimpleButton.h"
 #include "PunBoxWidget.h"
+#include "BuffIcon.h"
 
 #include "TownhallHoverInfo.generated.h"
 
@@ -24,20 +25,25 @@ public:
 	void PunInit(int buildingId);
 
 	int buildingId() { return _buildingId; }
+	TownHall& GetTownhall() {
+		return simulation().building(_buildingId).subclass<TownHall>(CardEnum::Townhall);
+	}
 
 	void UpdateUI(bool isMini)
 	{
-		TownHall& townhall = simulation().building(_buildingId).subclass<TownHall>(CardEnum::Townhall);
-		auto& playerOwned = simulation().playerOwned(townhall.playerId());
+		auto& sim = simulation();
+		TownHall& townhall = GetTownhall();
+		auto& townhallPlayerOwned = sim.playerOwned(townhall.playerId());
 
 		/*
 		 * Intercity Trade / Trade Route
 		 */
-		if (simulation().HasTownhall(playerId()))
+		if (sim.HasTownhall(playerId()))
 		{
-			if (townhall.playerId() == playerId()) 
+			if (townhall.ownedBy(playerId()))
 			{
-				if (simulation().unlockSystem(playerId())->unlockedSetTradeAmount) {
+				// Intercity Trade / Trade Route
+				if (sim.unlockSystem(playerId())->unlockedSetTradeAmount) {
 					SetText(TradeButtonText, "Set Trade Offer");
 					BUTTON_ON_CLICK(TradeButton, this, &UTownhallHoverInfo::OnClickSetTradeOfferButton);
 					TradeButton->SetVisibility(ESlateVisibility::Visible);
@@ -45,10 +51,46 @@ public:
 				else {
 					TradeButton->SetVisibility(ESlateVisibility::Collapsed);
 				}
+
+				
+				// Gift
+				GiftButton->SetVisibility(ESlateVisibility::Collapsed);
+
+				// Vassalize
+				// (Declare Independence)
+				//if (playerOwned.lordPlayerId() != -1)
+				//{
+				//	playerOwned.GetDefendingClaimProgress(command.provinceId);
+				//	
+				//	SetText(VassalizeButtonText, "Declare Independence");
+				//	BUTTON_ON_CLICK(VassalizeButton, this, &UTownhallHoverInfo::OnClickDeclareIndependenceButton);
+				//	
+				//	VassalizeButton->SetVisibility(ESlateVisibility::Visible);
+				//}
+				//else 
+				{
+					VassalizeButton->SetVisibility(ESlateVisibility::Collapsed);
+				}
+
+				// Buffs
+				{
+					std::vector<CardEnum> buffs = townhallPlayerOwned.GetBuffs();
+					
+					int32 index = 0;
+					for (size_t i = 0; i < buffs.size(); i++)
+					{
+						auto buffIcon = GetBoxChild<UBuffIcon>(BuffRow, index, UIEnum::BuffIcon, true);
+						buffIcon->SetBuff(buffs[i]);
+					}
+					BoxAfterAdd(BuffRow, index);
+					
+					BuffRow->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+				}
 			}
 			else 
 			{
-				if (simulation().IsResearched(playerId(), TechEnum::IntercityRoad))
+				// Intercity Trade / Trade Route
+				if (sim.IsResearched(playerId(), TechEnum::IntercityRoad))
 				{
 					// Other ppl's town, show trade route button instead
 					std::vector<int32> tradePartners = simulation().worldTradeSystem().GetTradePartners(playerId());
@@ -66,18 +108,54 @@ public:
 				{
 					TradeButton->SetVisibility(ESlateVisibility::Collapsed);
 				}
+
+				
+				// Gift
+				GiftButton->SetVisibility(ESlateVisibility::Visible);
+				BUTTON_ON_CLICK(GiftButton, this, &UTownhallHoverInfo::OnClickGiftButton);
+
+				// Vassalize
+				if (sim.IsResearched(playerId(), TechEnum::Vassalize) &&
+					townhallPlayerOwned.lordPlayerId() == -1)
+				{
+					if (townhallPlayerOwned.GetDefendingClaimProgress(townhall.provinceId()).isValid())
+					{
+						SetText(VassalizeButtonText, "Reinforce (Vassalize)\n" + std::to_string(BattleInfluencePrice) + " influence");
+						BUTTON_ON_CLICK(VassalizeButton, this, &UTownhallHoverInfo::OnClickVassalizeReinforceButton);
+					}
+					else
+					{
+						// TODO: Rich Text...
+						SetText(VassalizeButtonText, "Conquer (Vassalize)\n" + std::to_string(sim.GetProvinceVassalizeStartPrice(townhall.provinceId())) + " influence");
+						BUTTON_ON_CLICK(VassalizeButton, this, &UTownhallHoverInfo::OnClickVassalizeButton);
+					}
+
+					VassalizeButton->SetVisibility(ESlateVisibility::Visible);
+				}
+				else {
+					VassalizeButton->SetVisibility(ESlateVisibility::Collapsed);
+				}
+
+				// Buffs
+				BuffRow->SetVisibility(ESlateVisibility::Collapsed);
 			}
 		}
 		else {
 			TradeButton->SetVisibility(ESlateVisibility::Collapsed);
+			VassalizeButton->SetVisibility(ESlateVisibility::Collapsed);
 		}
 
-		// GiftButton
-		BUTTON_ON_CLICK(GiftButton, this, &UTownhallHoverInfo::OnClickGiftButton);
+		//// GiftButton
+		//if (townhall.ownedBy(playerId())) {
+		//	GiftButton->SetVisibility(ESlateVisibility::Collapsed);
+		//}
+		//else {
+		//	GiftButton->SetVisibility(ESlateVisibility::Visible);
+		//	BUTTON_ON_CLICK(GiftButton, this, &UTownhallHoverInfo::OnClickGiftButton);
+		//}
 		
 		
 		// Update population
-		PlayerOwnedManager& townhallPlayerOwned = simulation().playerOwned(townhall.playerId());
 		int population = townhallPlayerOwned.population();
 		TownHoverPopulationText->SetText(FText::FromString(FString::FromInt(population)));
 
@@ -742,6 +820,11 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) UButton* GiftButton;
 	
+	UPROPERTY(meta = (BindWidget)) UButton* VassalizeButton;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* VassalizeButtonText;
+
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* BuffRow;
+	
 	UPROPERTY(meta = (BindWidget)) UTextBlock* TownHoverPopulationText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* CityNameText;
 	UPROPERTY(meta = (BindWidget)) UImage* PlayerColorCircle;
@@ -815,6 +898,41 @@ private:
 	UFUNCTION() void OnClickGiftButton() {
 		int32 targetPlayerId = simulation().building(_buildingId).playerId();
 		GetPunHUD()->OpenGiftUI(targetPlayerId);
+	}
+
+	UFUNCTION() void OnClickVassalizeButton()
+	{
+		PUN_CHECK(playerId() != GetTownhall().playerId());
+
+		auto command = make_shared<FClaimLand>();
+		command->claimEnum = CallbackEnum::StartAttackProvince;
+		command->provinceId = GetTownhall().provinceId();
+		PUN_CHECK(command->provinceId != -1);
+		
+		networkInterface()->SendNetworkCommand(command);
+	}
+	UFUNCTION() void OnClickVassalizeReinforceButton()
+	{
+		PUN_CHECK(playerId() != GetTownhall().playerId());
+
+		auto command = make_shared<FClaimLand>();
+		command->claimEnum = CallbackEnum::ReinforceAttackProvince;
+		command->provinceId = GetTownhall().provinceId();
+		PUN_CHECK(command->provinceId != -1);
+
+		networkInterface()->SendNetworkCommand(command);
+	}
+	
+	UFUNCTION() void OnClickDeclareIndependenceButton()
+	{
+		PUN_CHECK(playerId() == GetTownhall().playerId());
+
+		auto command = make_shared<FClaimLand>();
+		command->claimEnum = CallbackEnum::StartAttackProvince;
+		command->provinceId = GetTownhall().provinceId();
+		PUN_CHECK(command->provinceId != -1);
+
+		networkInterface()->SendNetworkCommand(command);
 	}
 
 	/*

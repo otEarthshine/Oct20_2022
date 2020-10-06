@@ -267,6 +267,7 @@ public:
 		CloseStatisticsUI();
 		ClosePlayerOverview();
 
+		_giftResourceUI->CloseUI();
 
 		_escMenuUI->EscMenu->SetVisibility(ESlateVisibility::Collapsed);
 		_escMenuUI->TutorialUI->SetVisibility(ESlateVisibility::Collapsed);

@@ -369,9 +369,9 @@ public:
 			}
 			{
 				std::stringstream ss;
-				const std::vector<int32> vassalNodeIds = playerOwned.vassalNodeIds();
+				const std::vector<int32> vassalBuildingIds = playerOwned.vassalBuildingIds();
 				int32 i = 0;
-				for (int32 nodeId : vassalNodeIds) {
+				for (int32 nodeId : vassalBuildingIds) {
 					Building& bld = simulation().building(nodeId);
 					if (bld.isEnum(CardEnum::Townhall)) {
 						if (i > 0) {

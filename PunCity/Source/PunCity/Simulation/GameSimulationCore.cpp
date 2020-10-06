@@ -83,6 +83,8 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 		}
 	}
 
+	_LOG(PunInit, "GAME_VERSION %s", *FString::FromInt(GAME_VERSION));
+
 	_uiInterface->SetLoadingText("Planting Trees...");
 
 	_gameEventSystem.Init();
@@ -901,30 +903,87 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 
 
 						/*
-						 * ProvinceClaimProgress
+						 * ClaimProgress
 						 */
-						// Battle Resolve
+						// Conquer Province
 						std::vector<ProvinceClaimProgress> claimProgresses = _playerOwnedManagers[playerId].defendingClaimProgress();
-						for (const ProvinceClaimProgress& claimProgress : claimProgresses) {
+						for (const ProvinceClaimProgress& claimProgress : claimProgresses) 
+						{
 							// One season to conquer in normal case
-							if (claimProgress.ticksElapsed > BattleClaimTicks) {
+							if (claimProgress.ticksElapsed > BattleClaimTicks) 
+							{
 								_playerOwnedManagers[playerId].EndConquer(claimProgress.provinceId);
 								_playerOwnedManagers[claimProgress.attackerPlayerId].EndConquer_Attacker(claimProgress.provinceId);
-
-								// Attacker now owns the province
-								// Destroy any leftover building owned by player
-								ClearProvinceBuildings(claimProgress.provinceId);
-								SetProvinceOwner(claimProgress.provinceId, claimProgress.attackerPlayerId);
-
 								
+								if (homeProvinceId(playerId) == claimProgress.provinceId)
+								{
+									// Home town, vassalize/declare independence instead
+									if (claimProgress.attackerPlayerId == playerId)
+									{
+										// Declare Independence
+										int32 oldLordPlayerId = lordPlayerId(playerId);
+										_playerOwnedManagers[oldLordPlayerId].LoseVassal(playerId);
+										_playerOwnedManagers[playerId].SetLordPlayerId(-1);
+
+										_playerOwnedManagers[oldLordPlayerId].RecalculateTaxDelayed();
+										_playerOwnedManagers[playerId].RecalculateTaxDelayed();
+
+										AddPopupAll(PopupInfo(playerId, playerName(playerId) + " declared independence from " + playerName(oldLordPlayerId) + "."), -1);
+									}
+									else
+									{
+										// Vassalize
+										int32 lordId = claimProgress.attackerPlayerId;
+										_playerOwnedManagers[lordId].GainVassal(townhall(playerId).buildingId());
+										_playerOwnedManagers[playerId].SetLordPlayerId(lordId);
+
+										_LOG(PunNetwork, "Vassalize [sim] pid:%d lordId:%d", playerId, _playerOwnedManagers[playerId].lordPlayerId());
+										
+										AddPopupAll(PopupInfo(lordId, playerName(lordId) + " has conquered " + playerName(playerId) + "."), -1);
+										AddPopup(playerId,
+											"<Bold>You became " + playerName(lordId) + "'s vassal.</>"
+													 "<space>"
+													 "<bullet>As a vassal, you pay your lord 5% <img id=\"Coin\"/> revenue as a tribute each round.</>"
+													 "<bullet>If your lord is ahead of you in science, you gain +20% <img id=\"Science\"/> from knowledge transfer.</>");
+										
+										_playerOwnedManagers[lordId].RecalculateTaxDelayed();
+										_playerOwnedManagers[playerId].RecalculateTaxDelayed();
+
+										// CheckDominationVictory(lordPlayerId);
+									}
+								}
+								else
+								{
+									// Attacker now owns the province
+									// Destroy any leftover building owned by player
+									ClearProvinceBuildings(claimProgress.provinceId);
+									SetProvinceOwner(claimProgress.provinceId, claimProgress.attackerPlayerId);
+								}
 							}
 							// Failed to conquer
-							else if (claimProgress.ticksElapsed <= 0) {
+							else if (claimProgress.ticksElapsed <= 0) 
+							{
 								_playerOwnedManagers[playerId].EndConquer(claimProgress.provinceId);
 								_playerOwnedManagers[claimProgress.attackerPlayerId].EndConquer_Attacker(claimProgress.provinceId);
+								
+								if (homeProvinceId(playerId) == claimProgress.provinceId)
+								{
+									// Home town, vassalize instead
+									AddPopupToFront(playerId, "You successfully defend your independence against " + playerName(claimProgress.attackerPlayerId));
+									AddPopupToFront(claimProgress.attackerPlayerId, "Your attempt to vassalize " + playerName(playerId) + " was not successful.");
+								}
+								else
+								{
+									AddPopupToFront(playerId, "You successfully defended your Province against " + playerName(claimProgress.attackerPlayerId));
+									AddPopupToFront(claimProgress.attackerPlayerId, "Your attempt to conquer " + playerName(playerId) + "'s Province was not successful.");
+								}
 							}
 						}
 
+
+						/*
+						 * Cards
+						 */
 						_cardSystem[playerId].TryRefreshRareHand();
 
 
@@ -939,41 +998,43 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 						}
 						
 
-						// Check for owner change, and update vassals accordingly...
-						ArmyNode& armyNode = townhall(playerId).armyNode;
-						int32 lastLordPlayerId = armyNode.lastLordPlayerId;
-						int32 lordPlayerId = armyNode.lordPlayerId;
-						if (lastLordPlayerId != lordPlayerId)
-						{
-							// If the last lord wasn't the original owner, that player lose vassalage
-							if (lastLordPlayerId != armyNode.originalPlayerId) {
-								_playerOwnedManagers[lastLordPlayerId].LoseVassal(armyNode.nodeId);
-							}
+						//// Check for owner change, and update vassals accordingly...
+						//ArmyNode& armyNode = townhall(playerId).armyNode;
+						//int32 lastLordPlayerId = armyNode.lastLordPlayerId;
+						//int32 lordPlayerId = armyNode.lordPlayerId;
+						//if (lastLordPlayerId != lordPlayerId)
+						//{
+						//	// If the last lord wasn't the original owner, that player lose vassalage
+						//	if (lastLordPlayerId != armyNode.originalPlayerId) {
+						//		_playerOwnedManagers[lastLordPlayerId].LoseVassal(armyNode.nodeId);
+						//	}
 
-							// Attacker made node owner's a vassal
-							if (lordPlayerId != armyNode.originalPlayerId) {
-								_playerOwnedManagers[lordPlayerId].GainVassal(armyNode.nodeId);
-								AddPopupAll(PopupInfo(lordPlayerId, playerName(lordPlayerId) + " has conquered " + armyNodeName(armyNode.nodeId) + "."), -1);
-								AddPopup(armyNode.originalPlayerId, 
-									"<Bold>You became " + playerName(lordPlayerId) + "'s vassal.</>"
-											 "<space>"
-											 "<bullet>As a vassal, you pay your lord 5% <img id=\"Coin\"/> revenue as a tribute each round.</>"
-											 "<bullet>If your lord is ahead of you in science, you gain +20% <img id=\"Science\"/> from knowledge transfer.</>");
-								_playerOwnedManagers[lordPlayerId].RecalculateTaxDelayed();
-								_playerOwnedManagers[armyNode.originalPlayerId].RecalculateTaxDelayed();
+						//	// Attacker made node owner's a vassal
+						//	if (lordPlayerId != armyNode.originalPlayerId) {
+						//		_playerOwnedManagers[lordPlayerId].GainVassal(armyNode.nodeId);
+						//		AddPopupAll(PopupInfo(lordPlayerId, playerName(lordPlayerId) + " has conquered " + armyNodeName(armyNode.nodeId) + "."), -1);
+						//		AddPopup(armyNode.originalPlayerId, 
+						//			"<Bold>You became " + playerName(lordPlayerId) + "'s vassal.</>"
+						//					 "<space>"
+						//					 "<bullet>As a vassal, you pay your lord 5% <img id=\"Coin\"/> revenue as a tribute each round.</>"
+						//					 "<bullet>If your lord is ahead of you in science, you gain +20% <img id=\"Science\"/> from knowledge transfer.</>");
+						//		_playerOwnedManagers[lordPlayerId].RecalculateTaxDelayed();
+						//		_playerOwnedManagers[armyNode.originalPlayerId].RecalculateTaxDelayed();
 
-								CheckDominationVictory(lordPlayerId);
-							}
-							// lord title returns to its original owner, liberated!
-							else
-							{
-								AddPopupAll(PopupInfo(lordPlayerId, playerName(armyNode.originalPlayerId) + " has declared independence from " + playerName(lastLordPlayerId) + "."), -1);
-							}
-							
-							armyNode.lastLordPlayerId = lordPlayerId;
-						}
+						//		CheckDominationVictory(lordPlayerId);
+						//	}
+						//	// lord title returns to its original owner, liberated!
+						//	else
+						//	{
+						//		AddPopupAll(PopupInfo(lordPlayerId, playerName(armyNode.originalPlayerId) + " has declared independence from " + playerName(lastLordPlayerId) + "."), -1);
+						//	}
+						//	
+						//	armyNode.lastLordPlayerId = lordPlayerId;
+						//}
 
-						// Economic Victory
+						/*
+						 * Economic Victory
+						 */
 						const int32 thousandsToWarn1 = 300;
 						const int32 thousandsToWarn2 = 400;
 						const int32 thousandsToWin = 500;
@@ -1366,68 +1427,101 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 				cardEnum == CardEnum::SharingIsCaring)
 		{
 			int32 buildingId = buildingIdAtTile(parameters.center);
-			if (buildingId != -1 && building(buildingId).isEnum(CardEnum::Townhall)) {
+			if (buildingId != -1 && building(buildingId).isEnum(CardEnum::Townhall)) 
+			{
 				int32 targetPlayerId = building(buildingId).playerId();
 
 				if (cardEnum == CardEnum::Steal)
 				{
-					if (population(targetPlayerId) < population(playerId)) {
-						AddPopup(playerId, "Cannot steal from a weaker town.");
-						return -1;
+					//if (population(targetPlayerId) < population(playerId)) {
+					//	AddPopup(playerId, "Cannot steal from a weaker town.");
+					//	return -1;
+					//}
+
+					// Guard
+					if (playerOwned(targetPlayerId).HasBuff(CardEnum::TreasuryGuard))
+					{
+						AddPopup(targetPlayerId, playerName(playerId) + " failed to steal money, because of your well-planned Treasury Guard.");
+						AddPopup(playerId, "You failed to steal money from " + playerName(targetPlayerId) + ", because of Treasury Guard.");
 					}
-					int32 targetPlayerMoney = resourceSystem(targetPlayerId).money();
-					int32 actualSteal = targetPlayerMoney * 20 / 100;
-					resourceSystem(targetPlayerId).ChangeMoney(-actualSteal);
-					resourceSystem(playerId).ChangeMoney(actualSteal);
-					AddPopup(targetPlayerId, playerName(playerId) + " stole " + to_string(actualSteal) + "<img id=\"Coin\"/> from you");
-					AddEventLog(playerId, "You stole " + to_string(actualSteal) + "</><img id=\"Coin\"/><Chat> from " + townName(targetPlayerId), false);
+					else
+					{
+						int32 targetPlayerMoney = resourceSystem(targetPlayerId).money();
+						int32 actualSteal = targetPlayerMoney * 30 / 100;
+						resourceSystem(targetPlayerId).ChangeMoney(-actualSteal);
+						resourceSystem(playerId).ChangeMoney(actualSteal);
+						AddPopup(targetPlayerId, playerName(playerId) + " stole " + to_string(actualSteal) + "<img id=\"Coin\"/> from you");
+						AddPopup(playerId, "You stole " + to_string(actualSteal) + "<img id=\"Coin\"/> from " + townName(targetPlayerId));
+					}
 				}
 				else if (cardEnum == CardEnum::Snatch)
 				{
-					if (population(targetPlayerId) < population(playerId)) {
-						AddPopup(playerId, "Cannot steal from a weaker town.");
-						return -1;
+					//if (population(targetPlayerId) < population(playerId)) {
+					//	AddPopup(playerId, "Cannot steal from a weaker town.");
+					//	return -1;
+					//}
+
+					// Guard
+					if (playerOwned(targetPlayerId).HasBuff(CardEnum::TreasuryGuard))
+					{
+						AddPopup(targetPlayerId, playerName(playerId) + " failed to snatch money, because of your well-planned Treasury Guard.");
+						AddPopup(playerId, "You failed to snatch money from " + playerName(targetPlayerId) + ", because of Treasury Guard.");
 					}
-					int32 targetPlayerMoney = resourceSystem(targetPlayerId).money();
-					int32 actualSteal = min(targetPlayerMoney, 30);
-					resourceSystem(targetPlayerId).ChangeMoney(-actualSteal);
-					resourceSystem(playerId).ChangeMoney(actualSteal);
-					AddPopup(targetPlayerId, townName(playerId) + " snatched " + to_string(actualSteal) + "<img id=\"Coin\"/> from you");
-					AddEventLog(playerId, "You snatched " + to_string(actualSteal) + "</><img id=\"Coin\"/><Chat> from " + townName(targetPlayerId), false);
+					else
+					{
+						int32 targetPlayerMoney = resourceSystem(targetPlayerId).money();
+						int32 actualSteal = min(targetPlayerMoney, population(targetPlayerId));
+						resourceSystem(targetPlayerId).ChangeMoney(-actualSteal);
+						resourceSystem(playerId).ChangeMoney(actualSteal);
+						AddPopup(targetPlayerId, townName(playerId) + " snatched " + to_string(actualSteal) + "<img id=\"Coin\"/> from you");
+						AddPopup(playerId, "You snatched " + to_string(actualSteal) + "<img id=\"Coin\"/> from " + townName(targetPlayerId));
+					}
 				}
 				else if (cardEnum == CardEnum::Kidnap)
 				{
-					int32 kidnapMoney = 5 * population(playerId);
-					if (money(playerId) < kidnapMoney) {
-						AddPopup(playerId, "Need (5 x Population)<img id=\"Coin\"/> to kidnap (" + to_string(kidnapMoney) + "<img id=\"Coin\"/>).");
-						return -1;
-					}
+					//int32 kidnapMoney = 5 * population(playerId);
+					//if (money(playerId) < kidnapMoney) {
+					//	AddPopup(playerId, "Need (5 x Population)<img id=\"Coin\"/> to kidnap (" + to_string(kidnapMoney) + "<img id=\"Coin\"/>).");
+					//	return -1;
+					//}
 
-					int32 targetPopulation = population(targetPlayerId);
-					if (targetPopulation < 20) {
-						AddPopup(playerId, "Target town's population is too low for kidnap.");
-						return -1;
-					}
-					
-					int32 unitsStoleCount = 0;
-					std::vector<int32> humanIds = playerOwned(targetPlayerId).adultIds();
-					std::vector<int32> childIds = playerOwned(targetPlayerId).childIds();
-					humanIds.insert(humanIds.end(), childIds.begin(), childIds.end());
-					for (int32 i = 0; i < 3; i++) {
-						UnitStateAI& unitAI = unitSystem().unitStateAI(humanIds[i]);
-						unitAI.Die();
-						unitsStoleCount++;
-					}
-					ChangeMoney(playerId, -kidnapMoney);
+					//int32 targetPopulation = population(targetPlayerId);
+					//if (targetPopulation < 20) {
+					//	AddPopup(playerId, "Target town's population is too low for kidnap.");
+					//	return -1;
+					//}
 
-					AddPopup(targetPlayerId, townName(playerId) + " kidnapped " + to_string(unitsStoleCount) + " people from you");
+					// Guard
+					if (playerOwned(targetPlayerId).HasBuff(CardEnum::KidnapGuard))
+					{
+						AddPopup(targetPlayerId, playerName(playerId) + " failed to kidnap your citizens, because of your well-planned Kidnap Guard.");
+						AddPopup(playerId,  "You failed to kidnap citizens from " + playerName(targetPlayerId) + ", because of Kidnap Guard.");
+					}
+					else
+					{
+						int32 unitsStoleCount = 0;
+						std::vector<int32> humanIds = playerOwned(targetPlayerId).adultIds();
+						std::vector<int32> childIds = playerOwned(targetPlayerId).childIds();
+						humanIds.insert(humanIds.end(), childIds.begin(), childIds.end());
 
-					stringstream ss;
-					ss << "You kidnapped " << unitsStoleCount << " people from " << townName(targetPlayerId);
-					ss << " using " << kidnapMoney << "</><img id=\"Coin\"/><Chat>.";
-					AddEventLog(playerId, ss.str(), false);
-					
-					townhall(playerId).AddImmigrants(unitsStoleCount);
+						int32 kidnapCount = std::min(3, static_cast<int>(humanIds.size()));
+						
+						for (int32 i = 0; i < kidnapCount; i++) {
+							UnitStateAI& unitAI = unitSystem().unitStateAI(humanIds[i]);
+							unitAI.Die();
+							unitsStoleCount++;
+						}
+						//ChangeMoney(playerId, -kidnapMoney);
+
+						AddPopup(targetPlayerId, townName(playerId) + " kidnapped " + to_string(unitsStoleCount) + " people from you");
+
+						stringstream ss;
+						ss << "You kidnapped " << unitsStoleCount << " people from " << townName(targetPlayerId) << ".";
+						//ss << " using " << kidnapMoney << "</><img id=\"Coin\"/><Chat>.";
+						AddPopup(playerId, ss.str());
+
+						townhall(playerId).AddImmigrants(unitsStoleCount);
+					}
 				}
 				else if (cardEnum == CardEnum::SharingIsCaring)
 				{
@@ -1631,6 +1725,8 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 				canPlace = false;
 			}
 		});
+
+		_LOG(PunBuilding, "Try Building Townhall Area pid:%d canPlace:%d", parameters.playerId, canPlace);
 	}
 	else if (cardEnum == CardEnum::HumanitarianAidCamp)
 	{
@@ -1678,6 +1774,10 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 				canPlace = false;
 			}
 		});
+
+		if (cardEnum == CardEnum::Townhall) {
+			_LOG(PunBuilding, "Try Building Townhall frontArea pid:%d canPlace:%d", parameters.playerId, canPlace);
+		}
 	}
 
 	if (canPlace)
@@ -1951,7 +2051,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 					 */
 					if (buildingEnum == CardEnum::Farm)
 					{
-						_treeSystem->ForceRemoveTileObj(tile, false);
+						_treeSystem->ForceRemoveTileObjArea(bld.area());
 					}
 					
 
@@ -2266,7 +2366,7 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 		}
 		return;
 	}
-	
+
 }
 
 void GameSimulationCore::ChangeName(FChangeName command)
@@ -2371,7 +2471,7 @@ void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
 	Building* bld = &(building(command.buildingId));
 #endif
 
-	_LOG(LogNetworkInput, " UpgradeBuilding: pid:%d id:%d bldType:%s upgradeType:%d", command.playerId, command.buildingId, ToTChar(bld->buildingInfo().name), command.upgradeType);
+	_LOG(LogNetworkInput, " UpgradeBuilding: pid:%d id:%d bldType:%s upgradeType:%d isShiftDown:%d", command.playerId, command.buildingId, ToTChar(bld->buildingInfo().name), command.upgradeType, command.isShiftDown);
 
 	// Townhall special case
 	if (bld->isEnum(CardEnum::Townhall))
@@ -2397,7 +2497,23 @@ void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
 	// Other buildings
 	else
 	{
-		bld->UpgradeBuilding(command.upgradeType);
+		bool upgraded = bld->UpgradeBuilding(command.upgradeType);
+		
+		if (command.isShiftDown)
+		{
+			// Try to upgrade as many buildings as possible when using shift
+			int32 upgradedCount = upgraded ? 1 : 0;
+			const std::vector<int32>& bldIds = buildingIds(command.playerId, bld->buildingEnum());
+			for (int32 bldId : bldIds) {
+				if (building(bldId).UpgradeBuilding(command.upgradeType, false)) {
+					upgradedCount++;
+				}
+			}
+
+			BuildingUpgrade upgrade = bld->upgrades()[command.upgradeType];
+
+			AddPopup(command.playerId, "Upgraded " + upgrade.name + " on " + to_string(upgradedCount) + " " + (bld->buildingInfo().name) + ".");
+		}
 	}
 }
 
@@ -2481,6 +2597,14 @@ void GameSimulationCore::ChangeWorkMode(FChangeWorkMode command)
 
 void GameSimulationCore::AbandonTown(int32 playerId)
 {
+	if (playerId == -1) {
+		return;
+	}
+	if (!HasTownhall(playerId)) {
+		return;
+	}
+
+	
 	vector<int32> provinceIds = playerOwned(playerId).provincesClaimed();
 	const SubregionLists<int32>& buildingList = buildingSystem().buildingSubregionList();
 
@@ -2500,22 +2624,22 @@ void GameSimulationCore::AbandonTown(int32 playerId)
 	PUN_CHECK(_playerOwnedManagers[playerId].allyPlayerIds().size() == 0);
 
 	// End all Vassalage...
-	std::vector<int32> vassalNodeIds = _playerOwnedManagers[playerId].vassalNodeIds();
-	for (int32 vassalNodeId : vassalNodeIds) {
-		ArmyNode& armyNode = building(vassalNodeId).subclass<ArmyNodeBuilding>().GetArmyNode();
+	std::vector<int32> vassalBuildingIds = _playerOwnedManagers[playerId].vassalBuildingIds();
+	for (int32 vassalBuildingId : vassalBuildingIds) {
+		ArmyNode& armyNode = building(vassalBuildingId).subclass<ArmyNodeBuilding>().GetArmyNode();
 		armyNode.lordPlayerId = armyNode.originalPlayerId;
 
-		_playerOwnedManagers[playerId].LoseVassal(vassalNodeId);
+		_playerOwnedManagers[playerId].LoseVassal(vassalBuildingId);
 	}
-	PUN_CHECK(_playerOwnedManagers[playerId].vassalNodeIds().size() == 0);
+	PUN_CHECK(_playerOwnedManagers[playerId].vassalBuildingIds().size() == 0);
 
 	// Detach from lord
 	{
 		int32 lordPlayerId = townhall(playerId).armyNode.lordPlayerId;
 
-		PUN_DEBUG2("[BEFORE] Detach from lord %d, size:%llu", lordPlayerId, _playerOwnedManagers[lordPlayerId].vassalNodeIds().size());
+		PUN_DEBUG2("[BEFORE] Detach from lord %d, size:%llu", lordPlayerId, _playerOwnedManagers[lordPlayerId].vassalBuildingIds().size());
 		_playerOwnedManagers[lordPlayerId].LoseVassal(playerId);
-		PUN_DEBUG2("[AFTER] Detach from lord %d, size:%llu", lordPlayerId, _playerOwnedManagers[lordPlayerId].vassalNodeIds().size());
+		PUN_DEBUG2("[AFTER] Detach from lord %d, size:%llu", lordPlayerId, _playerOwnedManagers[lordPlayerId].vassalBuildingIds().size());
 	}
 
 	std::vector<WorldRegion2> overlapRegions = _provinceSystem.GetRegionOverlaps(provinceIds);
@@ -2659,6 +2783,12 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 				cardSys.AddCardToHand2(unlockedEnum);
 				resourceSystem(command.playerId).ChangeMoney(-cardSys.GetCardPrice(unlockedEnum));
 			}
+		}
+	}
+	else if (replyReceiver == PopupReceiverEnum::ResetBuff)
+	{
+		if (command.choiceIndex == 0) {
+			playerOwned(command.playerId).TryApplyBuff(static_cast<CardEnum>(command.replyVar1));
 		}
 	}
 	else if (replyReceiver == PopupReceiverEnum::Approve_Cannibalism)
@@ -2852,6 +2982,13 @@ void GameSimulationCore::UseCard(FUseCard command)
 		resourceSystem(command.playerId).AddResourceGlobal(ResourceEnum::Wheat, 50, *this);
 		AddPopupToFront(command.playerId, "Gained " + to_string(50) + " " + GetResourceInfo(ResourceEnum::Wheat).name + " from emergency ration.");
 	}
+	
+	else if (command.cardEnum == CardEnum::KidnapGuard ||
+			command.cardEnum == CardEnum::TreasuryGuard) 
+	{
+		playerOwned(command.playerId).TryApplyBuff(command.cardEnum);
+	}
+	
 	else if (IsSeedCard(command.cardEnum)) 
 	{
 		SeedInfo seedInfo = GetSeedInfo(command.cardEnum);
@@ -3200,35 +3337,85 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	 */
 	else if (command.claimEnum == CallbackEnum::StartAttackProvince)
 	{
+		// Attack could be: Conquer Province, Vassalize, or Declare Independence
+		
 		int32 provincePlayerId = provinceOwner(command.provinceId);
 		auto& provincePlayerOwner = playerOwned(provincePlayerId);
 
-		// If there was no claim yet, start the conquer
+		// If there was no claim yet, start the attack
 		if (!provincePlayerOwner.GetDefendingClaimProgress(command.provinceId).isValid()) 
 		{
-			int32 conquerPrice = GetProvinceAttackStartPrice(provinceId, GetProvinceClaimConnectionEnum(command.provinceId, command.playerId));
+			ProvinceAttackEnum attackEnum = GetProvinceAttackEnum(command.provinceId);
 			
-			if (influence(command.playerId) >= conquerPrice)
+			int32 conquerPrice = 0;
+			switch(attackEnum)
+			{
+			case ProvinceAttackEnum::ConquerProvince: conquerPrice = GetProvinceAttackStartPrice(provinceId, GetProvinceClaimConnectionEnum(command.provinceId, command.playerId)); break;
+			case ProvinceAttackEnum::Vassalize: conquerPrice = GetProvinceVassalizeStartPrice(provinceId); break;
+			case ProvinceAttackEnum::DeclareIndependence: conquerPrice = BattleInfluencePrice; break;
+			default: break;
+			}
+			
+			if (influence(command.playerId) >= conquerPrice) 
 			{
 				resourceSystem(command.playerId).ChangeInfluence(-conquerPrice);
 				
 				provincePlayerOwner.StartConquerProvince(command.playerId, command.provinceId);
 				playerOwned(command.playerId).StartConquerProvince_Attacker(command.provinceId);
 
-				AddPopup(provincePlayerId, playerName(command.playerId) + " is trying to take over your territory.\nIf you lose the province, all its buildings will be destroyed.");
+				if (attackEnum == ProvinceAttackEnum::ConquerProvince) {
+					std::stringstream ss;
+					ss << playerName(command.playerId) << " is trying to take over your territory.";
+					ss << "<space>If you lose the province, all its buildings will be destroyed.";
+					AddPopup(provincePlayerId, ss.str());
+
+					AddPopup(command.playerId, "You started attacking " + playerName(provincePlayerId) + ".");
+				}
+				else if (attackEnum == ProvinceAttackEnum::Vassalize) {
+					AddPopup(provincePlayerId, playerName(command.playerId) + " had launched an attack to force vassalize you. If you lose this battle, you will become " + playerName(command.playerId) + "'s vassal");
+					AddPopup(command.playerId, "You started attacking " + playerName(provincePlayerId) + ".");
+				}
+				else if (attackEnum == ProvinceAttackEnum::DeclareIndependence) {
+					int32 lordId = lordPlayerId(provincePlayerId);
+					AddPopup(lordId, playerName(provincePlayerId) + " is trying to declare independence from you.");
+
+					AddPopup(provincePlayerId, "You attempt to declare independence from " + playerName(lordId) + ".");
+				}
+			}
+			else
+			{
+				AddPopupToFront(command.playerId, "Not enough <img id=\"Influence\"/> to attack.");
 			}
 		}
 	}
 	else if (command.claimEnum == CallbackEnum::ReinforceAttackProvince)
 	{
 		auto& provincePlayerOwner = playerOwned(provinceOwner(command.provinceId));
+		ProvinceAttackEnum attackEnum = GetProvinceAttackEnum(command.provinceId);
+		
+		int32 price = 0;
+		switch (attackEnum)
+		{
+		case ProvinceAttackEnum::ConquerProvince: price = GetProvinceAttackReinforcePrice(provinceId, GetProvinceClaimConnectionEnum(command.provinceId, command.playerId)); break;
+		case ProvinceAttackEnum::Vassalize: price = BattleInfluencePrice; break; // Vassalize reinforce cost should scale..
+		case ProvinceAttackEnum::DeclareIndependence: price = BattleInfluencePrice; break;
+		default: break;
+		}
 		
 		if (provincePlayerOwner.GetDefendingClaimProgress(command.provinceId).isValid()) 
 		{
-			resourceSystem(command.playerId).ChangeInfluence(-BattleInfluencePrice);
-			provincePlayerOwner.ReinforceAttacker(command.provinceId, BattleInfluencePrice);
+			if (influence(command.playerId) >= price)
+			{
+				resourceSystem(command.playerId).ChangeInfluence(-price);
+				provincePlayerOwner.ReinforceAttacker(command.provinceId, price);
+			}
+			else
+			{
+				AddPopupToFront(command.playerId, "Not enough <img id=\"Influence\"/> to reinforce.");
+			}
 		}
 	}
+	
 	else if (command.claimEnum == CallbackEnum::DefendProvinceInfluence)
 	{
 		auto& provincePlayerOwner = playerOwned(provinceOwner(command.provinceId));
@@ -3729,6 +3916,8 @@ void GameSimulationCore::unitAddDebugSpeech(int32 id, std::string message)
 
 void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int32 townhallId)
 {
+	_LOG(PunBuilding, "PlaceInitialTownhallHelper pid:%d canPlace:%d", command.playerId);
+	
 	auto& playerOwned = _playerOwnedManagers[command.playerId];
 	
 	/*

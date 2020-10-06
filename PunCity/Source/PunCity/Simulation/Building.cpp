@@ -506,12 +506,14 @@ bool Building::NeedConstruct()
 }
 
 
-bool Building::UpgradeBuilding(int upgradeIndex)
+bool Building::UpgradeBuilding(int upgradeIndex, bool showDisplay)
 {
 	PUN_ENSURE(upgradeIndex < _upgrades.size(), return false; );
 	
 	if (IsUpgraded(upgradeIndex)) {
-		_simulation->AddPopup(_playerId, "Already upgraded");
+		if (showDisplay) {
+			_simulation->AddPopup(_playerId, "Already upgraded");
+		}
 		return false;
 	}
 
@@ -530,16 +532,19 @@ bool Building::UpgradeBuilding(int upgradeIndex)
 
 			ResetDisplay();
 
-			//_simulation->AddPopup(_playerId, "Upgraded " + _upgrades[upgradeIndex].name);
-
-			_simulation->soundInterface()->Spawn2DSound("UI", "UpgradeBuilding", _playerId, _centerTile);
+			if (showDisplay) {
+				_simulation->soundInterface()->Spawn2DSound("UI", "UpgradeBuilding", _playerId, _centerTile);
+			}
 
 			OnUpgradeBuilding(upgradeIndex);
 			return true;
 		}
 
-		_simulation->AddPopupToFront(_playerId, { "Not enough " + ResourceName(resourceNeeded.resourceEnum) + " for upgrade." }, 
-						ExclusiveUIEnum::None, "PopupCannot");
+		if (showDisplay) {
+			_simulation->AddPopupToFront(_playerId, { "Not enough " + ResourceName(resourceNeeded.resourceEnum) + " for upgrade." },
+											ExclusiveUIEnum::None, "PopupCannot");
+		}
+		
 		return false;
 	}
 	
@@ -553,15 +558,17 @@ bool Building::UpgradeBuilding(int upgradeIndex)
 
 		ResetDisplay();
 
-		//_simulation->AddPopup(_playerId, "Upgraded " + _upgrades[upgradeIndex].name);
-
-		_simulation->soundInterface()->Spawn2DSound("UI", "UpgradeBuilding", _playerId, _centerTile);
+		if (showDisplay) {
+			_simulation->soundInterface()->Spawn2DSound("UI", "UpgradeBuilding", _playerId, _centerTile);
+		}
 
 		OnUpgradeBuilding(upgradeIndex);
 		return true;
 	}
 
-	_simulation->AddPopupToFront(_playerId, { "Not enough money for upgrade." }, ExclusiveUIEnum::None, "PopupCannot");
+	if (showDisplay) {
+		_simulation->AddPopupToFront(_playerId, { "Not enough money for upgrade." }, ExclusiveUIEnum::None, "PopupCannot");
+	}
 	return false;
 }
 
@@ -654,9 +661,22 @@ void Building::DoWork(int unitId, int workAmount100)
 			AddProductionStat(productionAmount);
 
 			// Special case: Beeswax + Honey
-			if (info.resourceEnum == ResourceEnum::Beeswax) {
+			if (info.resourceEnum == ResourceEnum::Beeswax) 
+			{
 				AddResource(ResourceEnum::Honey, productionAmount);
 				AddProductionStat(productionAmount);
+
+				FloatupInfo floatupInfo(FloatupEnum::GainResource, Time::Ticks(), centerTile(), "+" + to_string(productionAmount), ResourceEnum::Beeswax);
+				floatupInfo.resourceEnum2 = ResourceEnum::Honey;
+				floatupInfo.text2 = "+" + to_string(productionAmount);
+
+				_simulation->uiInterface()->ShowFloatupInfo(floatupInfo);
+			}
+			else
+			{
+				// All other floatups
+				
+				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainResource, centerTile(), "+" + to_string(productionAmount), info.resourceEnum);
 			}
 
 			if (product() == ResourceEnum::Beer) {
@@ -671,7 +691,6 @@ void Building::DoWork(int unitId, int workAmount100)
 				_simulation->QuestUpdateStatus(_playerId, QuestEnum::CooperativeFishingQuest, productionAmount);
 			}
 
-			_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainResource, centerTile(), "+" + to_string(productionAmount), info.resourceEnum);
 
 			OnProduce(productionAmount);
 

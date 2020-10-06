@@ -658,6 +658,25 @@ public:
 		}
 	}
 
+	UFUNCTION(Exec) void MineDeplete(int32 tileX, int32 tileY)
+	{
+		auto& sim = gameManager->simulation();
+		WorldTile2 tile(tileX, tileY);
+		if (tile.isValid()) {
+			int32 provinceId = sim.GetProvinceIdClean(tile);
+			sim.georesourceSystem().MineStone(provinceId, sim.georesource(provinceId).stoneAmount);
+			sim.georesourceSystem().MineOre(provinceId, sim.georesource(provinceId).depositAmount);
+		}
+	}
+
+	UFUNCTION(Exec) void AddKidnapGuardBuff(int32 playerId) {
+		gameManager->simulation().playerOwned(playerId).AddBuff(CardEnum::KidnapGuard);
+	}
+	UFUNCTION(Exec) void AddTreasuryGuardBuff(int32 playerId) {
+		gameManager->simulation().playerOwned(playerId).AddBuff(CardEnum::TreasuryGuard);
+	}
+	
+
 	UFUNCTION(Exec) void PrintResourceSys()
 	{
 		std::stringstream ss;

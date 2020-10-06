@@ -199,9 +199,14 @@ protected:
 
 									int32 playerId = sim.provinceOwner(provinceId);
 
-									const std::vector<WorldTile2x2>& edges1 = playerId != -1 ? provinceSys.GetTerritoryEdges1(playerId) : provinceSys.GetProvinceEdges1(provinceId);
-									const std::vector<WorldTile2x2>& edges2 = playerId != -1 ? provinceSys.GetTerritoryEdges2(playerId) : provinceSys.GetProvinceEdges2(provinceId);
+									int32 clusterId = -1;
+									if (playerId != -1) {
+										clusterId = provinceSys.GetTerritoryClusterId(playerId, provinceId);
+									}
 
+									const std::vector<WorldTile2x2>& edges1 = clusterId != -1 ? provinceSys.GetTerritoryEdges1(playerId, clusterId) : provinceSys.GetProvinceEdges1(provinceId);
+									const std::vector<WorldTile2x2>& edges2 = clusterId != -1 ? provinceSys.GetTerritoryEdges2(playerId, clusterId) : provinceSys.GetProvinceEdges2(provinceId);
+									
 									/*
 									 * Edges
 									 */

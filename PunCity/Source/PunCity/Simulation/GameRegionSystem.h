@@ -67,7 +67,7 @@ public:
 		_simulation->AddNeedDisplayUpdateId(DisplayGlobalEnum::Province, provinceId);
 
 		if (playerId != -1) {
-			_simulation->AddNeedDisplayUpdateId(DisplayGlobalEnum::Territory, playerId);
+			_simulation->AddNeedDisplayUpdateId(DisplayGlobalEnum::Territory, playerId, true);
 			PUN_LOG("SetProvinceOwner province:%d pid:%d", provinceId, playerId);
 		}
 	}

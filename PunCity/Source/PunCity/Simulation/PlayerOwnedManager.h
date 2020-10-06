@@ -200,6 +200,8 @@ public:
 
 		_enumToStatVec.resize(static_cast<int>(PlotStatEnum::Count));
 
+		_buffTicksLeft.resize(NonBuildingCardEnumCount, -1);
+
 		_spTicks = 0;
 		_maxSPTicks = MaxSP * ticksPerSP();
 		_currentSkill = CardEnum::SpeedBoost;
@@ -304,7 +306,8 @@ public:
 
 	void TickRound();
 	void Tick1Sec();
-	void Tick() {
+	void Tick()
+	{
 		if (_needTaxRecalculation) {
 			_needTaxRecalculation = false;
 			RecalculateTax(false);
@@ -581,7 +584,7 @@ public:
 		ProvinceClaimProgress claimProgress;
 		claimProgress.provinceId = provinceId;
 		claimProgress.attackerPlayerId = attackerPlayerId;
-		claimProgress.committedInfluences = 200;
+		claimProgress.committedInfluences = BattleInfluencePrice;
 		claimProgress.ticksElapsed = 0;
 		
 		_defendingClaimProgress.push_back(claimProgress);
@@ -627,12 +630,12 @@ public:
 	}
 	
 	
-	void MarkAsOutpost(int32 provinceId) {
-		_provincesOutpost.push_back(provinceId);
-	}
-	bool TryRemoveOutpost(int32 provinceId) {
-		return CppUtils::TryRemove(_provincesOutpost, provinceId);
-	}
+	//void MarkAsOutpost(int32 provinceId) {
+	//	_provincesOutpost.push_back(provinceId);
+	//}
+	//bool TryRemoveOutpost(int32 provinceId) {
+	//	return CppUtils::TryRemove(_provincesOutpost, provinceId);
+	//}
 
 	int32 GetPlayerLandTileCount(bool includeMountain) {
 		int32 tileCount = 0;
@@ -646,9 +649,9 @@ public:
 		return tileCount;
 	}
 
-	bool HasOutpostAt(int32 provinceId) {
-		return CppUtils::Contains(_provincesOutpost, provinceId);
-	}
+	//bool HasOutpostAt(int32 provinceId) {
+	//	return CppUtils::Contains(_provincesOutpost, provinceId);
+	//}
 
 	const std::vector<int32>& provincesClaimed() {
 		return _provincesClaimed;
@@ -656,9 +659,9 @@ public:
 	//const std::vector<int32>& provincesInfluenced() {
 	//	return _provincesInfluenced;
 	//}
-	const std::vector<int32>& provincesOutpost() {
-		return _provincesOutpost;
-	}
+	//const std::vector<int32>& provincesOutpost() {
+	//	return _provincesOutpost;
+	//}
 
 	TileArea territoryBoxExtent() { return _territoryBoxExtent; }
 
@@ -980,15 +983,20 @@ public:
 	/*
 	 * Vassal
 	 */
-	const std::vector<int32>& vassalNodeIds() const { return _vassalNodeIds; }
-	void GainVassal(int32 vassalNodeId) {
-		_vassalNodeIds.push_back(vassalNodeId);
+	int32 lordPlayerId() { return _lordPlayerId; }
+	void SetLordPlayerId(int32 lordPlayerId) {
+		_lordPlayerId = lordPlayerId;
 	}
-	void LoseVassal(int32 vassalNodeId) {
-		CppUtils::TryRemove(_vassalNodeIds, vassalNodeId);
+	
+	const std::vector<int32>& vassalBuildingIds() const { return _vassalBuildingIds; }
+	void GainVassal(int32 vassalBuildingId) {
+		_vassalBuildingIds.push_back(vassalBuildingId);
 	}
-	bool IsVassal(int32 vassalNodeId) {
-		return CppUtils::Contains(_vassalNodeIds, vassalNodeId);
+	void LoseVassal(int32 vassalBuildingId) {
+		CppUtils::TryRemove(_vassalBuildingIds, vassalBuildingId);
+	}
+	bool IsVassal(int32 vassalBuildingId) {
+		return CppUtils::Contains(_vassalBuildingIds, vassalBuildingId);
 	}
 
 	/*
@@ -1058,7 +1066,52 @@ public:
 	}
 
 	/*
-	 * Mana
+	 * Buffs
+	 */
+	void AddBuff(CardEnum cardEnum) {
+		_buffTicksLeft[static_cast<int>(cardEnum) - BuildingEnumCount] = Time::TicksPerYear;
+	}
+	bool HasBuff(CardEnum cardEnum) {
+		return _buffTicksLeft[static_cast<int>(cardEnum) - BuildingEnumCount] > 0;
+	}
+	std::vector<CardEnum> GetBuffs() {
+		std::vector<CardEnum> buffEnums;
+		for (size_t i = 0; i < _buffTicksLeft.size(); i++) {
+			if (_buffTicksLeft[i] > 0) {
+				buffEnums.push_back(static_cast<CardEnum>(i + BuildingEnumCount));
+			}
+		}
+		return buffEnums;
+	}
+	int32 GetBuffTicksLeft(CardEnum cardEnum) {
+		return _buffTicksLeft[static_cast<int>(cardEnum) - BuildingEnumCount];
+	}
+
+	void TryApplyBuff(CardEnum cardEnum)
+	{
+		if (HasBuff(cardEnum) && GetBuffTicksLeft(cardEnum) > Time::TicksPerMinute * 5) {
+			_simulation->AddPopupToFront(_playerId, GetBuildingInfo(cardEnum).name + " has already been applied.");
+			return;
+		}
+		
+		int32 cost = _simulation->population(_playerId);
+		if (_simulation->money(_playerId) < cost) {
+			_simulation->AddPopupToFront(_playerId, "Require <img id=\"Coin\"/>xPopulation to activate the protection.");
+		}
+		else {
+			_simulation->ChangeMoney(_playerId, -cost);
+			AddBuff(cardEnum);
+
+			if (cardEnum == CardEnum::KidnapGuard) {
+				_simulation->AddPopupToFront(_playerId, "Applied Kidnap Guard. Protect your town against Kidnap for 1 year.");
+			} else {
+				_simulation->AddPopupToFront(_playerId, "Applied Treasury Guard. Protect your town against Snatch and Steal for 1 year.");
+			}
+		}
+	}
+
+	/*
+	 * SP Skill
 	 */
 	float spFloat() { return static_cast<float>(_spTicks) / ticksPerSP(); }
 	int32 GetSP() { return _spTicks / ticksPerSP(); }
@@ -1173,14 +1226,17 @@ public:
 		
 
 		// Vassal/Annex
-		//Ar << _lordPlayerId;
-		SerializeVecValue(Ar, _vassalNodeIds);
+		Ar << _lordPlayerId;
+		SerializeVecValue(Ar, _vassalBuildingIds);
 		SerializeVecValue(Ar, _allyPlayerIds);
 		SerializeVecValue(Ar, _armyNodesVisited);
 		//_battle.Serialize(Ar);
 
 		// Stats
 		SerializeVecVecValue(Ar, _enumToStatVec);
+
+
+		SerializeVecValue(Ar, _buffTicksLeft);
 
 		Ar << _spTicks;
 		Ar << _maxSPTicks;
@@ -1315,7 +1371,7 @@ private:
 	
 	std::vector<int32> _provincesClaimed;
 	//std::vector<int32> _provincesInfluenced; // TODO: Serialize
-	std::vector<int32> _provincesOutpost; // TODO: Serialize
+	//std::vector<int32> _provincesOutpost; // TODO: Serialize
 	TileArea _territoryBoxExtent;
 	
 	std::vector<RegionClaimProgress> _armyRegionClaimQueue;
@@ -1326,13 +1382,18 @@ private:
 	std::vector<ProvinceClaimProgress> _defendingClaimProgress;
 
 	// Vassal/Annex
-	std::vector<int32> _vassalNodeIds;
+	int32 _lordPlayerId = -1;
+	std::vector<int32> _vassalBuildingIds;
 	std::vector<int32> _allyPlayerIds;
 	std::vector<int32> _armyNodesVisited; // Used to loop to find total army...
 
 	// 
 	std::vector<std::vector<int32>> _enumToStatVec;
 
+	// Buffs
+	std::vector<int32> _buffTicksLeft;
+
+	// SP
 	static int32 ticksPerSP() { return Time::TicksPerSecond * 2; }
 	int32 _spTicks;
 	int32 _maxSPTicks;

@@ -20,6 +20,7 @@ public:
 	// Map Dropdown
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* LobbyPasswordRowBox;
 	UPROPERTY(meta = (BindWidget)) UEditableTextBox* LobbyPasswordInputBox;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyPasswordText;
 
 	UPROPERTY(meta = (BindWidget)) UEditableTextBox* LobbyMapSeedInputBox;
 	UPROPERTY(meta = (BindWidget)) UComboBoxString* LobbyMapSizeDropdown;
@@ -50,7 +51,10 @@ public:
 	void SetPreLobby(bool isPreLobby)
 	{
 		_isPreLobby = isPreLobby;
-		LobbyPasswordRowBox->SetVisibility(_isPreLobby ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+
+		if (_isPreLobby) {
+			gameInstance()->lobbyPassword = "";
+		}
 	}
 	
 	bool isServer();
@@ -142,6 +146,29 @@ public:
 
 	void Tick(bool isLoading)
 	{
+		// Password Editable only in Settings before Lobby
+		if (gameInstance()->isMultiplayer()) {
+			LobbyPasswordRowBox->SetVisibility(ESlateVisibility::Visible);
+			if (_isPreLobby) {
+				LobbyPasswordInputBox->SetVisibility(ESlateVisibility::Visible);
+				LobbyPasswordText->SetVisibility(ESlateVisibility::Collapsed);
+			} else {
+				LobbyPasswordInputBox->SetVisibility(ESlateVisibility::Collapsed);
+				LobbyPasswordText->SetVisibility(ESlateVisibility::Visible);
+				
+				if (gameInstance()->lobbyPassword == "") {
+					LobbyPasswordRowBox->SetVisibility(ESlateVisibility::Collapsed);
+				} else {
+					LobbyPasswordText->SetText(FText::FromString(gameInstance()->lobbyPassword));
+				}
+			}
+		} else {
+			LobbyPasswordRowBox->SetVisibility(ESlateVisibility::Collapsed);
+		}
+
+		/*
+		 * Determine if display should be Dropdown or text
+		 */
 		auto setServerVsClientUI = [&](UWidget* serverWidget, UTextBlock* clientWidget, FString clientString)
 		{
 			// Not loading and is server, show serverWidget to allow settings change
@@ -204,9 +231,9 @@ public:
 
 
 public:
-	UFUNCTION() void OnLobbyPasswordInputBoxTextCommitted(const FText& text, ETextCommit::Type CommitMethod)
-	{
-
+	UFUNCTION() void OnLobbyPasswordInputBoxTextCommitted(const FText& text, ETextCommit::Type CommitMethod) {
+		gameInstance()->lobbyPassword = text.ToString();
+		PUN_LOG("WTFFF %s", *gameInstance()->lobbyPassword);
 	}
 
 	UFUNCTION() void OnLobbyMapSeedInputBoxTextCommitted(const FText& text, ETextCommit::Type CommitMethod);

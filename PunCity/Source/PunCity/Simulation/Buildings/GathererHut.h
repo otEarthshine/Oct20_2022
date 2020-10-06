@@ -198,6 +198,8 @@ public:
 	{
 		Building::FinishConstruction();
 
+		AddResourceHolder(ResourceEnum::Honey, ResourceHolderType::Provider, 0);
+
 		_upgrades = {
 			MakeUpgrade("Intensive care", "+30% production bonus when worker slots are full", ResourceEnum::Brick, 50),
 		};
@@ -413,6 +415,10 @@ public:
 		}
 		
 		return bonuses;
+	}
+
+	bool ShouldAddWorker_ConstructedNonPriority() override {
+		return oreLeft() > 0;
 	}
 
 	void OnProduce(int32 productionAmount) override;
@@ -1453,7 +1459,7 @@ public:
 		//	_allowedOccupants = _maxOccupants;
 		//	ChangeFisherTilesInRadius(-1);
 		//}
-		if (upgradeIndex == 1) {
+		if (upgradeIndex == 2) {
 			SetJobBuilding(3);
 		}
 	}
@@ -1857,8 +1863,8 @@ public:
 class Colony final : public ProvinceBuilding
 {
 public:
-	static int32 GetColonyIncomeValue() { return GetBuildingInfo(CardEnum::Colony).baseCardPrice / 5; } // 4 rounds or half year to recoup the 
-	static int32 GetColonyUpkeep() { return (GetColonyIncomeValue() / 5) / 10 * 10; }
+	static int32 GetColonyIncomeValue() { return GetBuildingInfo(CardEnum::Colony).baseCardPrice / 16; } // 16 rounds or 2 year to recoup the 
+	static int32 GetColonyUpkeep() { return (GetColonyIncomeValue() / 3) / 10 * 10; }
 
 	static int32 GetColonyResourceIncome(ResourceEnum resourceEnum) {
 		return GetColonyIncomeValue() / GetResourceInfo(resourceEnum).basePrice;

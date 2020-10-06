@@ -220,7 +220,7 @@ public:
 
 	//! Upgrades
 	const std::vector<BuildingUpgrade>& upgrades() { return _upgrades; }
-	bool UpgradeBuilding(int upgradeIndex);
+	bool UpgradeBuilding(int upgradeIndex, bool showDisplay = true);
 	
 	virtual void OnUpgradeBuilding(int upgradeIndex) {}
 

@@ -698,7 +698,8 @@ void AGameManager::SampleRegions(std::vector<int32>& sampleRegionIds, float cust
 		}
 	};
 
-	for (float y = gridSpacing; y < maxDistanceY; y += gridSpacing) {
+	//for (float y = gridSpacing; y < maxDistanceY; y += gridSpacing) { // TODO: changed y = 0 to detect beyond screen top...
+	for (float y = 0; y < maxDistanceY; y += gridSpacing) {
 		for (float x = gridSpacing; x < maxDistanceX; x += gridSpacing) {
 			checkGridPoint(x, y);
 		}

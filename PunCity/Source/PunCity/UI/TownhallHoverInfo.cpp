@@ -38,6 +38,8 @@ void UTownhallHoverInfo::PunInit(int buildingId)
 	//_laborerPriorityState.PunInit(&simulation(), simulation().building(_buildingId).playerId());c
 	//_lastPriorityInputTime = -999.0f;
 	//SyncState();
+
+	BuffRow->ClearChildren();
 }
 
 void UTownhallHoverInfo::ChangedCityName(const FText& Text, ETextCommit::Type CommitMethod)

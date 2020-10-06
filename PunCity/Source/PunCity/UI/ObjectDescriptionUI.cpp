@@ -112,7 +112,7 @@ void UObjectDescriptionUI::SetDropDown(int id)
 			return;
 		}
 
-		//const std::vector<int32_t>& vassalPlayerIds = townhallPlayerOwned.vassalNodeIds();
+		//const std::vector<int32_t>& vassalPlayerIds = townhallPlayerOwned.vassalBuildingIds();
 		//for (int32 vassalPlayerId : vassalPlayerIds)
 		//{
 		//	if (townhall.playerId() == vassalPlayerId)

@@ -709,6 +709,7 @@ public:
 	int32 buildingId;
 	int32 upgradeLevel = -1; // use -1 if not needed
 	int32 upgradeType = -1;
+	int32 isShiftDown = false;
 
 	NetworkCommandEnum commandType() override { return NetworkCommandEnum::UpgradeBuilding; }
 
@@ -721,23 +722,9 @@ public:
 		blob << buildingId;
 		blob << upgradeLevel;
 		blob << upgradeType;
+		blob << isShiftDown;
 	}
-	
-	//void SerializeAndAppendToBlob(TArray<int32>& blob) override
-	//{
-	//	FNetworkCommand::SerializeAndAppendToBlob(blob);
-	//	blob.Add(buildingId);
-	//	blob.Add(upgradeLevel);
-	//	blob.Add(upgradeType);
-	//}
 
-	//void DeserializeFromBlob(const TArray<int32>& blob, int32& index) override
-	//{
-	//	FNetworkCommand::DeserializeFromBlob(blob, index);
-	//	buildingId = blob[index++];
-	//	upgradeLevel = blob[index++];
-	//	upgradeType = blob[index++];
-	//}
 };
 
 // TODO: Generalize this for changing product type for any...

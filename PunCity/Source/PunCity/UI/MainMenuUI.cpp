@@ -28,8 +28,12 @@ void UMainMenuUI::Init()
 	LobbyListRefreshButton->OnClicked.AddDynamic(this, &UMainMenuUI::OnRefreshButtonClick);
 
 	LobbyListCreateGameButton->OnClicked.AddDynamic(this, &UMainMenuUI::OpenPreLobbySettings);
-	LobbyListLoadGameButton->OnClicked.AddDynamic(this, &UMainMenuUI::LoadMultiplayerGame);
-	LobbyListJoinGameButton->OnClicked.AddDynamic(this, &UMainMenuUI::JoinMultiplayerGame);
+	LobbyListLoadGameButton->OnClicked.AddDynamic(this, &UMainMenuUI::OpenLoadMultiplayerGameUI);
+	
+	//LobbyListJoinGameButton->OnClicked.AddDynamic(this, &UMainMenuUI::JoinMultiplayerGame);
+	LobbyListJoinGameButton->OnClicked.AddDynamic(this, &UMainMenuUI::TryOpenJoinPasswordUI);
+	PasswordConfirmButton->OnClicked.AddDynamic(this, &UMainMenuUI::OnClickJoinPasswordConfirm);
+	PasswordCancelButton->OnClicked.AddDynamic(this, &UMainMenuUI::OnClickJoinPasswordCancel);
 
 	LobbyListBox->ClearChildren();
 
@@ -46,7 +50,6 @@ void UMainMenuUI::Init()
 	PreLobbySettingsUI->Init(FMapSettings::GetDefault(false));
 	PreLobbySettingsUI->SetPreLobby(true);
 	PreLobbySettingsUI->SettingsBackgroundImage->SetVisibility(ESlateVisibility::Collapsed);
-	BUTTON_ON_CLICK(PreLobbySettingsConfirmButton, this, &UMainMenuUI::CreateMultiplayerGame);
 	BUTTON_ON_CLICK(PreLobbySettingsBackButton, this, &UMainMenuUI::OnClickReturnToMainMenu);
 
 
@@ -249,11 +252,18 @@ void UMainMenuUI::Tick()
 	if (MainMenuSwitcher->GetActiveWidget() == LoadSaveUI)
 	{
 		LoadSaveUI->Tick();
+
+		if (gameInstance()->isOpeningLoadMutiplayerPreLobby) {
+			gameInstance()->isOpeningLoadMutiplayerPreLobby = false;
+
+			OpenPreLobbySettings();
+		}
 	}
 
 	if (MainMenuSwitcher->GetActiveWidget() == PreLobbySettingsOverlay)
 	{
-		PreLobbySettingsUI->Tick(false);
+		bool isLoading = gameInstance()->IsLoadingSavedGame();
+		PreLobbySettingsUI->Tick(isLoading);
 	}
 
 
@@ -344,6 +354,12 @@ void UMainMenuUI::OpenPreLobbySettings()
 {
 	MainMenuSwitcher->SetActiveWidget(PreLobbySettingsOverlay);
 
+	if (gameInstance()->IsLoadingSavedGame()) {
+		BUTTON_ON_CLICK(PreLobbySettingsConfirmButton, this, &UMainMenuUI::LoadMultiplayerGame);
+	} else {
+		BUTTON_ON_CLICK(PreLobbySettingsConfirmButton, this, &UMainMenuUI::CreateMultiplayerGame);
+	}
+	
 	Spawn2DSound("UI", "UIWindowOpen");
 }
 

@@ -2112,7 +2112,7 @@ int32 HumanStateAI::luxuryHappinessModifier()
 int32 HumanStateAI::speedBoostEfficiency100() {
 	auto& playerOwned = _simulation->playerOwned(_playerId);
 	if (_workplaceId != -1 && playerOwned.HasSpeedBoost(_workplaceId)) {
-		return playerOwned.IsInDarkAge() ? 100 : 50; // 50% efficiency boost... 100% if dark age
+		return playerOwned.IsInDarkAge() ? 100 : 50; // 50% speed boost... 100% if dark age
 	}
 	return 0;
 }

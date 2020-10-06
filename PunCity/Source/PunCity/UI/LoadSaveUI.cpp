@@ -4,6 +4,7 @@
 #include "LoadSaveUI.h"
 #include "EscMenuUI.h"
 #include "PunCity/PunGameInstance.h"
+#include "PunMainMenuHUD.h"
 
 void ULoadSaveUI::PunInit(UPunWidget* parent)
 {
@@ -83,5 +84,45 @@ void ULoadSaveUI::OnSaveNameCommited(const FText& text, ETextCommit::Type Commit
 		TArray<UWidget*> children = SaveSelectionList->GetAllChildren();
 		PUN_CHECK(activeIndex < children.Num());
 		CastChecked<UPunSelectButton>(children[activeIndex])->SetHighlight(false);
+	}
+}
+
+
+void ULoadSaveUI::LoadGame()
+{
+	SCOPE_TIMER("LoadGame");
+
+	auto gameInstance = Cast<UPunGameInstance>(GetGameInstance());
+
+	const TArray<GameSaveInfo>& saveList = saveSystem().saveList();
+	auto saveInfo = saveList[activeIndex];
+
+	gameInstance->SetSavedGameToLoad(saveList[activeIndex]);
+
+	// Set new mapSettings
+	gameInstance->SetMapSettings(saveInfo.mapSettings);
+
+	// If in-game
+	// Transition is starting, Disable any ticking so it doesn't tick after gameInstance data was cleared
+	if (gameInstance->IsInGame(this)) {
+		networkInterface()->SetTickDisabled(true);
+	}
+
+	// Reset game instance
+	gameInstance->ResetPlayerCount();
+
+	gameInstance->isSinglePlayer = saveInfo.mapSettings.isSinglePlayer;
+
+	// Loading a multiplayer game, create a lobby
+	if (gameInstance->isMultiplayer())
+	{
+		gameInstance->isOpeningLoadMutiplayerPreLobby = true;
+		
+		//gameInstance->LoadMultiplayerGame();
+		Spawn2DSound("UI", "UIWindowOpen");
+	}
+	else {
+		// Load the game up right away
+		GetWorld()->ServerTravel("/Game/Maps/GameMap");
 	}
 }

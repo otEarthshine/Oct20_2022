@@ -5,6 +5,7 @@
 #include "PunCity/Simulation//GameSimulationCore.h"
 #include "ProceduralMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "PunCity/MapUtil.h"
 
 
 #include "TerritoryMeshComponent.generated.h"
@@ -18,7 +19,7 @@ class PROTOTYPECITY_API UTerritoryMeshComponent : public UProceduralMeshComponen
 	GENERATED_BODY()
 public:
 
-	void UpdateMesh(bool createMesh, int32 provinceIdIn, int32 playerIdIn, bool isInnerMeshIn, 
+	void UpdateMesh(bool createMesh, int32 provinceIdIn, int32 playerIdIn, int32 territoryClusterIdIn, bool isInnerMeshIn, 
 					IGameSimulationCore* sim, int32 innerBorderWidth = 10)
 	{
 		ProvinceSystem& provinceSys = sim->provinceSystem();
@@ -64,9 +65,10 @@ public:
 			PUN_LOG("Update TerritoryMesh2 %d", playerId);
 		}
 		
+		
 		//const std::vector<WorldTile2>& edgeTiles = provinceSys.GetProvinceEdges(provinceId);
-		const std::vector<WorldTile2x2>& edges1 = provinceIdIn != -1 ? provinceSys.GetProvinceEdges1(provinceId) : provinceSys.GetTerritoryEdges1(playerId);
-		const std::vector<WorldTile2x2>& edges2 = provinceIdIn != -1 ? provinceSys.GetProvinceEdges2(provinceId) : provinceSys.GetTerritoryEdges2(playerId);
+		const std::vector<WorldTile2x2>& edges1 = provinceIdIn != -1 ? provinceSys.GetProvinceEdges1(provinceId) : provinceSys.GetTerritoryEdges1(playerId, territoryClusterIdIn);
+		const std::vector<WorldTile2x2>& edges2 = provinceIdIn != -1 ? provinceSys.GetProvinceEdges2(provinceId) : provinceSys.GetTerritoryEdges2(playerId, territoryClusterIdIn);
 
 		//PUN_LOG("TerritoryMesh playerId:%d province:%d edges1:%d edges2:%d", playerIdIn, provinceIdIn, edges1.size(), edges2.size());
 		
@@ -208,12 +210,6 @@ public:
 			UV0.Add(FVector2D(1, 1));
 			UV0.Add(FVector2D(1, 0));
 
-			float pathColor = static_cast<float>(i) / outerVerticesSize;
-			vertexColors.Add(FLinearColor::White * pathColor);
-			vertexColors.Add(FLinearColor::White * pathColor);
-			vertexColors.Add(FLinearColor::White * pathColor);
-			vertexColors.Add(FLinearColor::White * pathColor);
-
 			normals.Add(FVector::UpVector);
 			normals.Add(FVector::UpVector);
 			normals.Add(FVector::UpVector);
@@ -236,6 +232,25 @@ public:
 			vertices.Add(lastOuter);
 			vertices.Add(curOuter);
 			vertices.Add(curInner);
+
+
+			// Vertex Color for fading the flat land border
+			auto getFlatLandFade = [&](FVector vec) -> float
+			{
+				WorldTile2 shiftTile(vec.X / CoordinateConstants::DisplayUnitPerTile, vec.Y / CoordinateConstants::DisplayUnitPerTile);
+				WorldTile2 tile = shiftTile + centerTile;
+				TerrainTileType tileType = terrainGen.terrainTileType(tile);
+				return (tileType == TerrainTileType::None || tileType == TerrainTileType::River) ? 0.0f : 1.0f;
+			};
+
+			float pathColor = static_cast<float>(i) / outerVerticesSize;
+			vertexColors.Add(FLinearColor(pathColor, getFlatLandFade(lastInner), 0));
+			vertexColors.Add(FLinearColor(pathColor, getFlatLandFade(lastOuter), 0));
+			vertexColors.Add(FLinearColor(pathColor, getFlatLandFade(curOuter), 0));
+			vertexColors.Add(FLinearColor(pathColor, getFlatLandFade(curInner), 0));
+
+
+			
 
 			int32 trisStartIndex = 4 * i;
 			tris.Add(0 + trisStartIndex);

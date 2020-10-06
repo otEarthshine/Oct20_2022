@@ -179,7 +179,7 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 				//PUN_LOG("Create territory %d pool:%d", territoryMeshes.Num(), pool.Num());
 			}
 
-			territoryMeshes.Last()->UpdateMesh(true, provinceId, -1, isInnerMesh, &simulation());
+			territoryMeshes.Last()->UpdateMesh(true, provinceId, -1, -1, isInnerMesh, &simulation());
 		}
 	};
 
@@ -241,8 +241,8 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 				WorldTile2 centerTile = simulation().GetProvinceCenterTile(playerOwned.provincesClaimed()[0]);
 				FVector displayLocation = MapUtil::DisplayLocation(cameraAtom, centerTile.worldAtom2());
 
-				auto comp = _playerIdToTerritoryMesh[playerId];
-				if (comp)
+				TArray<UTerritoryMeshComponent*>& comps = _playerIdToTerritoryMesh[playerId].TerritoryMeshes;
+				for (auto& comp : comps)
 				{
 					if (!PunSettings::TrailerSession &&
 						CppUtils::Contains(sampleTerritoryPlayerIds, playerId)) 
@@ -250,9 +250,15 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 						comp->SetVisibility(true);
 						comp->SetRelativeLocation(displayLocation);
 
+						// If there is a lord, use lord's color instead
+						int32 paintPlayerId = playerId;
+						if (playerOwned.lordPlayerId() != -1) {
+							paintPlayerId = playerOwned.lordPlayerId();
+						}
+
 						auto material = _gameManager->ZoomDistanceBelow(WorldZoomTransition_GameToMap) ? comp->MaterialInstance : comp->MaterialInstance_Top;
-						material->SetVectorParameterValue("PlayerColor1", playerId != -1 ? PlayerColor1(playerId) : FLinearColor(0, 0, 0, 0));
-						material->SetVectorParameterValue("PlayerColor2", playerId != -1 ? PlayerColor2(playerId) : FLinearColor(0, 0, 0, 0));
+						material->SetVectorParameterValue("PlayerColor1", paintPlayerId != -1 ? PlayerColor1(paintPlayerId) : FLinearColor(0, 0, 0, 0));
+						material->SetVectorParameterValue("PlayerColor2", paintPlayerId != -1 ? PlayerColor2(paintPlayerId) : FLinearColor(0, 0, 0, 0));
 						comp->SetMaterial(0, material);
 					}
 					else {
@@ -275,17 +281,29 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 				_playerIdToTerritoryMesh.SetNum(playerId + 1);
 			}
 
-			if (simulation().playerOwned(playerId).hasChosenLocation()) 
+			TArray<UTerritoryMeshComponent*>& territoryMeshes = _playerIdToTerritoryMesh[playerId].TerritoryMeshes;
+
+			if (simulation().playerOwned(playerId).hasChosenLocation())
 			{
-				if (!_playerIdToTerritoryMesh[playerId]) {
-					_playerIdToTerritoryMesh[playerId] = CreateTerritoryMeshComponent(false);
+				const auto& clusters = simulation().provinceSystem().GetTerritoryClusters(playerId);
+				for (int32 i = 0; i < clusters.size(); i++)
+				{
+					if (territoryMeshes.Num() < clusters.size()) {
+						territoryMeshes.Add(CreateTerritoryMeshComponent(false));
+					}
+
+					territoryMeshes[i]->UpdateMesh(true, -1, playerId, i, false, &simulation(), 50);
+					territoryMeshes[i]->SetVisibility(false); // Hide initially until the colors get updated.
 				}
-				
-				_playerIdToTerritoryMesh[playerId]->UpdateMesh(true, -1, playerId, false, &simulation(), 50);
-				_playerIdToTerritoryMesh[playerId]->SetVisibility(false);
-			} else {
-				if (_playerIdToTerritoryMesh[playerId]) {
-					_playerIdToTerritoryMesh[playerId]->SetVisibility(false);
+
+				for (int32 j = clusters.size(); j < territoryMeshes.Num(); j++) {
+					territoryMeshes[j]->SetVisibility(false);
+				}
+			}
+			else 
+			{
+				for (int32 i = 0; i < territoryMeshes.Num(); i++) {
+					territoryMeshes[i]->SetVisibility(false);
 				}
 			}
 		}

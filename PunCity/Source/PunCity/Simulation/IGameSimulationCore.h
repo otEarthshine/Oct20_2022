@@ -149,6 +149,7 @@ public:
 	virtual class Building& building(int32 id) = 0;
 	virtual class Building& building(ResourceHolderInfo holderInfo, int32 playerId) = 0;
 	virtual CardEnum buildingEnum(int32 id) = 0;
+	virtual bool isValidBuildingId(int32 id) = 0;
 
 	virtual WorldTile2 buildingCenter(int32 id) = 0;
 	
@@ -228,7 +229,7 @@ public:
 	virtual bool NeedDisplayUpdate(DisplayClusterEnum displayEnum, int32_t regionId) = 0;
 	virtual void SetNeedDisplayUpdate(DisplayGlobalEnum displayEnum, bool needUpdate = true) = 0;
 	virtual bool NeedDisplayUpdate(DisplayGlobalEnum displayEnum) = 0;
-	virtual void AddNeedDisplayUpdateId(DisplayGlobalEnum displayEnum, int32 id) = 0;
+	virtual void AddNeedDisplayUpdateId(DisplayGlobalEnum displayEnum, int32 id, bool updateBeforeInitialized = false) = 0;
 	virtual std::vector<int32> GetNeedDisplayUpdateIds(DisplayGlobalEnum displayEnum) = 0;
 
 	virtual class UnitStateAI& unitAI(int32 id) = 0;
@@ -298,9 +299,11 @@ public:
 	virtual int32 GetTreeCount(int32 provinceId) = 0;
 
 	virtual int32 GetProvinceIncome100(int32 provinceId) = 0;
+	virtual int32 GetProvinceUpkeep100(int32 provinceId, int32 playerId) = 0;
+	
 	//virtual int32 GetProvinceClaimPrice(int32 provinceId) = 0;
 	
-	virtual bool HasOutpostAt(int32 playerId, int32 provinceId) = 0;
+	//virtual bool HasOutpostAt(int32 playerId, int32 provinceId) = 0;
 	virtual bool IsProvinceNextToPlayer(int32 provinceId, int32 playerId) = 0;
 	virtual bool IsProvinceNextToPlayerByShallowWater(int32 provinceId, int32 playerId) = 0;
 
@@ -328,6 +331,8 @@ public:
 	virtual void AddPopup(PopupInfo popupInfo) = 0;
 	virtual void AddPopupToFront(PopupInfo popupInfo) = 0;
 	virtual void AddPopupAll(PopupInfo popupInfo, int32 playerToSkip) = 0;
+
+	virtual void AddPopupNonDuplicate(PopupInfo popupInfo) = 0;
 
 	virtual PopupInfo* PopupToDisplay(int32 playerId) = 0;
 	virtual void CloseCurrentPopup(int32 playerId) = 0;

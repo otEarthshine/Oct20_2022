@@ -2001,6 +2001,8 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 				buildingEnum == CardEnum::BuyWood ||
 				buildingEnum == CardEnum::Immigration ||
 				buildingEnum == CardEnum::EmergencyRations ||
+				buildingEnum == CardEnum::KidnapGuard ||
+				buildingEnum == CardEnum::TreasuryGuard ||
 				IsSeedCard(buildingEnum) ||
 				IsCrateCard(buildingEnum))
 			{

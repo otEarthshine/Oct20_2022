@@ -70,6 +70,10 @@ public:
 		return *_buildings[id]; 
 	}
 	int32 buildingCount() { return _buildings.size(); }
+
+	int32 isValidBuildingId(int32 id) {
+		return _buildings.size() > id && id >= 0;
+	}
 	
 	std::vector<std::unique_ptr<Building>>& buildings() { return _buildings; }
 

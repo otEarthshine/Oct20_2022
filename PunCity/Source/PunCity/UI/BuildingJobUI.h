@@ -42,6 +42,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* ResourceCompletionIconBox;
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* OtherIconsBox;
 
+	UPROPERTY(meta = (BindWidget)) UTextBlock* DepletedText;
+
 	UPROPERTY(meta = (BindWidget)) USizeBox* SpeedBoostIcon;
 	UPROPERTY(meta = (BindWidget)) UButton* TradeButton;
 
@@ -113,6 +115,8 @@ public:
 
 	void SetBuildingStatus(Building& building)
 	{
+
+		
 		if (IsTradingPostLike(building.buildingEnum()) ||
 			building.isEnum(CardEnum::TradingCompany)) {
 			SetTradeProgress(building.subclass<TradeBuilding>(), building.barFraction());
@@ -144,10 +148,21 @@ public:
 			std::vector<ResourceEnum> outputs = { building.product() };
 			std::vector<float> outputFractions = { building.barFraction() };
 
+			// Beeswax special case
 			if (outputs[0] == ResourceEnum::Beeswax) {
 				outputs.push_back(ResourceEnum::Honey);
 				outputFractions.push_back(building.barFraction());
 			}
+
+			// MountainMine DepletedText
+			if (IsMountainMine(building.buildingEnum()) &&
+				building.subclass<Mine>().oreLeft() <= 0)
+			{
+				DepletedText->SetVisibility(ESlateVisibility::Visible);
+			}
+
+			
+			
 			
 			SetResourceCompletion(building.inputs(), inputFractions, outputs, outputFractions);
 		}
@@ -338,7 +353,7 @@ public:
 			material->SetScalarParameterValue("IsInput", 0.0f);
 			material->SetScalarParameterValue("HasNoResource", 0.0f);
 
-			index++;
+			//index++;
 
 			std::stringstream ss;
 			ss << ResourceName(outputs[i]);

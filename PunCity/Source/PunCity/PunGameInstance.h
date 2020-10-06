@@ -19,11 +19,18 @@
 #define SESSION_TICK FName(TEXT("SETTING_TEST"))
 #define SESSION_GAME_VERSION FName(TEXT("GAME_VERSION"))
 #define SESSION_NUM_PLAYERS FName(TEXT("NUM_PLAYERS"))
+#define SESSION_PASSWORD FName(TEXT("PASSWORD"))
 
 static const FName PUN_SESSION_NAME = TEXT("Pun Session Game");
 
 static int32 GetSessionValue(FName key, const FOnlineSessionSettings& sessionSettings) {
 	int32 value = 0;
+	sessionSettings.Get(key, value);
+	return value;
+}
+
+static FString GetSessionValueString(FName key, const FOnlineSessionSettings& sessionSettings) {
+	FString value;
 	sessionSettings.Get(key, value);
 	return value;
 }
@@ -154,10 +161,15 @@ public:
 	
 	GameSaveInfo GetSavedGameToLoad() { return _savedGameToLoad; }
 
-	bool IsLoadingSavedGame() { return _savedGameToLoad.IsValid(); }
+	bool IsLoadingSavedGame()
+	{
+		//PUN_DEBUG2("IsLoadingSavedGame %d", _savedGameToLoad.IsValid());
+		return _savedGameToLoad.IsValid();
+	}
 	
 	void SetSavedGameToLoad(GameSaveInfo savedGame)
 	{
+		PUN_DEBUG2("SetSavedGameToLoad %s %s", *savedGame.name, *savedGame.mapSettings.mapSeed);
 		_savedGameToLoad = savedGame;
 	}
 
@@ -246,6 +258,11 @@ public:
 
 	
 	bool isJoiningGame = false;
+
+	bool isOpeningLoadMutiplayerPreLobby = false;
+
+	FString lobbyPassword;
+	
 
 	// Single player?
 	bool isSinglePlayer = false;
@@ -364,6 +381,9 @@ public:
 		sessionSettings.Set(SESSION_TICK, sessionTickCount/120, EOnlineDataAdvertisementType::ViaOnlineService);
 		sessionSettings.Set(SESSION_NUM_PLAYERS, playerCount(), EOnlineDataAdvertisementType::ViaOnlineService);
 		sessionSettings.Set(SESSION_GAME_VERSION, GAME_VERSION, EOnlineDataAdvertisementType::ViaOnlineService);
+
+		sessionSettings.Set(SESSION_PASSWORD, lobbyPassword, EOnlineDataAdvertisementType::ViaOnlineService);
+		
 		return sessionSettings;
 	}
 

@@ -270,7 +270,8 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 			ClearInstructions();
 			
 			stringstream ss;
-			ss << "Spend " << 5 * sim.population(playerId) << "<img id=\"Coin\"/> to kidnap 3 people";
+			//ss << "Spend " << 5 * sim.population(playerId) << "<img id=\"Coin\"/> to kidnap 3 people";
+			ss << "Kidnap 3 people\n" << "Use on opponent's Townhall.";
 			SetInstruction(PlacementInstructionEnum::Kidnap, true, ss.str());
 		}
 	}

@@ -53,6 +53,8 @@ APunHUD::APunHUD()
 	LoadClass(UIEnum::HoverBuildingJob, "WorldSpaceUI/BuildingJobUIWidget");
 	LoadClass(UIEnum::JobHumanIcon, "WorldSpaceUI/HumanIcon");
 	LoadClass(UIEnum::HoverTownhall, "WorldSpaceUI/TownhallHoverInfoWidget");
+	LoadClass(UIEnum::BuffIcon, "BuffIcon");
+	
 	LoadClass(UIEnum::ResourceCompletionIcon, "WorldSpaceUI/ResourceCompletionIcon");
 	LoadClass(UIEnum::BuildingReadyIcon, "WorldSpaceUI/ReadyIcon");
 	LoadClass(UIEnum::BuildingNeedSetupIcon, "WorldSpaceUI/NeedSetupIcon");
@@ -383,4 +385,6 @@ void APunHUD::KeyPressed_Escape()
 	_questUI->OnQuestDescriptionCloseButtonClick();
 
 	_armyMoveUI->CloseArmyMoveUI();
+
+	_giftResourceUI->CloseUI();
 }

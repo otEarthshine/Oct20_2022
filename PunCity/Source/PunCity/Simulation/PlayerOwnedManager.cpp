@@ -17,44 +17,7 @@
 
 using namespace std;
 
-//static const std::vector<CardEnum> JobPriorityListNonWinter
-//{
-//	CardEnum::FruitGatherer,
-//	CardEnum::Farm,
-//};
-//
-//static std::vector<CardEnum> JobBuildingEnumPriorityListWinterFull;
-//static std::vector<CardEnum> JobBuildingEnumPriorityListNonWinterFull;
-//
-//static const std::vector<CardEnum>& JobBuildingEnumPriorityList()
-//{
-//	// lazy init
-//	if (JobBuildingEnumPriorityListWinterFull.size() == 0)
-//	{
-//		JobBuildingEnumPriorityListWinterFull.insert(JobBuildingEnumPriorityListWinterFull.end(), DefaultJobPriorityListAllSeason.begin(), DefaultJobPriorityListAllSeason.end());
-//		JobBuildingEnumPriorityListWinterFull.insert(JobBuildingEnumPriorityListWinterFull.end(), JobPriorityListNonWinter.begin(), JobPriorityListNonWinter.end());
-//		for (int i = 0; i < BuildingEnumCount; i++) {
-//			CardEnum buildingEnum = static_cast<CardEnum>(i);
-//			if (!CppUtils::Contains(JobBuildingEnumPriorityListWinterFull, buildingEnum)) {
-//				JobBuildingEnumPriorityListWinterFull.push_back(buildingEnum);
-//			}
-//		}
-//
-//		JobBuildingEnumPriorityListNonWinterFull.insert(JobBuildingEnumPriorityListNonWinterFull.end(), JobPriorityListNonWinter.begin(), JobPriorityListNonWinter.end());
-//		JobBuildingEnumPriorityListNonWinterFull.insert(JobBuildingEnumPriorityListNonWinterFull.end(), DefaultJobPriorityListAllSeason.begin(), DefaultJobPriorityListAllSeason.end());
-//		for (int i = 0; i < BuildingEnumCount; i++) {
-//			CardEnum buildingEnum = static_cast<CardEnum>(i);
-//			if (!CppUtils::Contains(JobBuildingEnumPriorityListNonWinterFull, buildingEnum)) {
-//				JobBuildingEnumPriorityListNonWinterFull.push_back(buildingEnum);
-//			}
-//		}
-//	}
-//
-//	if (Time::IsWinter()) {
-//		return JobBuildingEnumPriorityListWinterFull;
-//	}
-//	return JobBuildingEnumPriorityListNonWinterFull;
-//}
+
 
 void PlayerOwnedManager::PlayerAddHuman(int32 objectId)
 {
@@ -534,7 +497,16 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 	std::fill(incomes100.begin(), incomes100.end(), 0);
 	std::fill(influenceIncomes100.begin(), influenceIncomes100.end(), 0);
 
+	// Crash Guard
 	if (!hasTownhall()) {
+		return;
+	}
+	if (!_simulation->isValidBuildingId(townHallId)) {
+		_LOG(PunBuilding, "RecalculateTax BuildingId Invalid pid:%d townhallId:%d", _playerId, townHallId);
+		return;
+	}
+	if (_simulation->buildingEnum(townHallId) != CardEnum::Townhall) {
+		_LOG(PunBuilding, "RecalculateTax Building-Not-Townhall pid:%d townhallId:%d", _playerId, townHallId);
 		return;
 	}
 
@@ -718,9 +690,8 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 	int32 sumFromHouses = CppUtils::Sum(sciences100);
 
 	// Less tech than lord, get +20% sci
-	int32 lordPlayerId = _simulation->lordPlayerId(_playerId);
-	if (lordPlayerId != _playerId && 
-		_simulation->techsCompleted(_playerId) < _simulation->techsCompleted(lordPlayerId)) 
+	if (_lordPlayerId != -1 && 
+		_simulation->techsCompleted(_playerId) < _simulation->techsCompleted(_lordPlayerId))
 	{
 		sciences100[static_cast<int>(ScienceEnum::KnowledgeTransfer)] += sumFromHouses * 20 / 100;
 	}
@@ -737,9 +708,9 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 	/*
 	 * Vassal
 	 */
-	for (int32 vassalNodeId : _vassalNodeIds) 
+	for (int32 vassalBuildingId : _vassalBuildingIds) 
 	{
-		int32 vassalPlayerId = _simulation->building<TownHall>(vassalNodeId, CardEnum::Townhall).playerId();
+		int32 vassalPlayerId = _simulation->building<TownHall>(vassalBuildingId, CardEnum::Townhall).playerId();
 		auto& vassalPlayerOwned = _simulation->playerOwned(vassalPlayerId);
 
 		// Tax
@@ -751,7 +722,7 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 	/*
 	 * Pay lord the tax...
 	 */
-	if (lordPlayerId != _playerId) {
+	if (_lordPlayerId != -1) {
 		incomes100[static_cast<int>(IncomeEnum::ToLordTax)] -= totalIncome100() * vassalTaxPercent() / 100;
 	}
 
@@ -796,7 +767,7 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 	// Upkeep goes to influence unless it is 0
 	int32 territoryUpkeep100 = 0;
 	for (int32 provinceId : _provincesClaimed) {
-		territoryUpkeep100 += _simulation->GetProvinceIncome100(provinceId) / 2; // Upkeep half the income as base
+		territoryUpkeep100 += _simulation->GetProvinceUpkeep100(provinceId, _playerId);
 	}
 	
 	if (_simulation->unlockedInfluence(_playerId)) 
@@ -867,9 +838,12 @@ void PlayerOwnedManager::CollectRoundIncome()
 	resourceSys.ChangeInfluence100(totalInfluenceIncome100());
 	if (resourceSys.influence100() < 0) 
 	{
-		_simulation->AddEventLog(_playerId, "You have </><img id=\"Influence\"/><ChatRed>0.  "
-			"The </><img id=\"Influence\"/><ChatRed> deduction is applied as -</><img id=\"Coin\"/><ChatRed>"
-							+ to_string(abs(min(-1, resourceSys.influence() * 3))) +" instead.", true);
+		_simulation->AddEventLog(_playerId, "You have </><img id=\"Influence\"/><ChatRed>0. "
+							"-</><img id=\"Coin\"/><ChatRed>"
+							+ to_string(abs(min(-1, resourceSys.influence() * 2))) + 
+							" penalty is applied from negative </><img id=\"Influence\"/><ChatRed> (</><img id=\"Coin\"/><ChatRed>2 per </><img id=\"Influence\"/><ChatRed>1)."
+							
+							, true);
 		resourceSys.ChangeMoney100(resourceSys.influence100() * 3);
 		resourceSys.SetInfluence(0);
 	}
@@ -977,6 +951,25 @@ void PlayerOwnedManager::Tick1Sec()
 		// TODO: Earn card?? may be x2 leader skill?
 
 		_isInDarkAge = false;
+	}
+
+	/*
+	 * Buffs
+	 */
+	for (size_t i = 0; i < _buffTicksLeft.size(); i++) 
+	{
+		if (_buffTicksLeft[i] > 0) {
+			_buffTicksLeft[i] = max(0, _buffTicksLeft[i] - Time::TicksPerSecond);
+			if (_buffTicksLeft[i] < Time::TicksPerSecond * 30) 
+			{
+				int32 cardEnumInt = i + BuildingEnumCount;
+				std::stringstream ss;
+				ss << "Your " << GetBuildingInfoInt(cardEnumInt).name << " Buff is running out.";
+				ss << "<space>";
+				ss << "Would you like to renew it with <img id=\"Coin\"/>xPopulation?";
+				_simulation->AddPopupNonDuplicate(PopupInfo(_playerId, ss.str(), { "Renew", "Close" }, PopupReceiverEnum::ResetBuff, false, "", cardEnumInt));
+			}
+		}
 	}
 	
 

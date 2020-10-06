@@ -67,6 +67,8 @@ private:
 	void AddProvinceInfo(int32 provinceId, UPunBoxWidget* descriptionBox);
 
 	void AddGeoresourceInfo(int32 provinceId, UPunBoxWidget* descriptionBox, bool showTopLine = false);
+
+	void AddProvinceUpkeepInfo(int32 provinceIdClean, UPunBoxWidget* descriptionBox);
 	
 	void AddEfficiencyText(Building& building, UPunBoxWidget* descriptionBox);
 	void AddTradeFeeText(class TradeBuilding& building, UPunBoxWidget* descriptionBox);
@@ -93,4 +95,7 @@ private:
 
 	UPROPERTY() TArray<class UDecalComponent*> _groundBoxHighlightDecals;
 	int32 _groundBoxHighlightCount = 0;
+
+
+	bool _alreadyDidShiftDownUpgrade = false;
 };

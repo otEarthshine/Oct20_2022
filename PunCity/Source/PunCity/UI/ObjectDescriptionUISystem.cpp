@@ -770,8 +770,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						descriptionBox->AddSpacer(10);
 
 						// Lord
-						if (townhall.armyNode.lordPlayerId != townhall.armyNode.originalPlayerId) {
-							descriptionBox->AddRichText("Lord", simulation.playerName(townhall.armyNode.lordPlayerId));
+						if (townhallPlayerOwned.lordPlayerId() != -1) {
+							descriptionBox->AddRichText("Lord", simulation.playerName(townhallPlayerOwned.lordPlayerId()));
 						} else {
 							descriptionBox->AddRichText("Independent State"); // TODO: many vassal => empire
 						}
@@ -791,16 +791,14 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						}
 
 						// Vassals
-						const auto& vassalNodeIds = townhallPlayerOwned.vassalNodeIds();
+						const auto& vassalBuildingIds = townhallPlayerOwned.vassalBuildingIds();
 						{
 							std::stringstream vassalSS;
 
-							auto getVassalName = [&](int32 vassalNodeId)
+							auto getVassalName = [&](int32 vassalBuildingId)
 							{
-								Building& vassalBld = simulation.building(vassalNodeId);
-								if (vassalBld.isEnum(CardEnum::Townhall) &&
-									!simulation.IsAI(vassalBld.playerId()))
-								{
+								Building& vassalBld = simulation.building(vassalBuildingId);
+								if (vassalBld.isEnum(CardEnum::Townhall)) {
 									return simulation.townhall(vassalBld.playerId()).townName();
 								}
 								else {
@@ -808,12 +806,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								}
 							};
 							
-							for (int32 i = 1; i < vassalNodeIds.size(); i++) {
-								vassalSS << getVassalName(vassalNodeIds[i]) << "\n";
+							for (int32 i = 1; i < vassalBuildingIds.size(); i++) {
+								vassalSS << getVassalName(vassalBuildingIds[i]) << "\n";
 							}
 							
-							if (vassalNodeIds.size() > 0) {
-								descriptionBox->AddRichText("Vassals", getVassalName(vassalNodeIds[0]), ResourceEnum::None, vassalSS.str());
+							if (vassalBuildingIds.size() > 0) {
+								descriptionBox->AddRichText("Vassals", getVassalName(vassalBuildingIds[0]), ResourceEnum::None, vassalSS.str());
 							} else {
 								descriptionBox->AddRichText("Vassals", "None");
 							}
@@ -1253,14 +1251,18 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						descriptionBox->AddRichText("Production (per round):", to_string(resourceIncome), resourceEnum);
 
 						descriptionBox->AddSpacer();
-						
-						int32 oreLeft = building.subclass<Mine>().oreLeft();
-						if (oreLeft > 0) {
-							descriptionBox->AddRichText("Resource left", to_string(oreLeft), building.product());
-						}
-						else {
-							ss << "<Red>Mine Depleted</>";
-							descriptionBox->AddRichText(ss);
+
+						// Mine Resources
+						if (IsOreEnum(resourceEnum))
+						{
+							int32 oreLeft = building.oreLeft();
+							if (oreLeft > 0) {
+								descriptionBox->AddRichText("Resource left", to_string(oreLeft), building.product());
+							}
+							else {
+								ss << "<Red>Mine Depleted</>";
+								descriptionBox->AddRichText(ss);
+							}
 						}
 					}
 					else if (building.isEnum(CardEnum::Fort))
@@ -1868,8 +1870,14 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							bool isUpgradable = !upgrade.isUpgraded;
 
 							UPunButton* button = descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::UpgradeBuilding, isUpgradable, false,  objectId, upgradeIndex);
-							ss.str(string());
-							AddToolTip(button, upgrade.name + "\n" + upgrade.description);
+							ss.str("");
+							ss << upgrade.name << "<space>" << upgrade.description;
+
+							if (!_alreadyDidShiftDownUpgrade) {
+								ss << "<line><space><Orange>Shift-click</> the button to try upgrading all same type buildings.";
+							}
+							
+							AddToolTip(button, ss);
 						};
 
 						const std::vector<BuildingUpgrade>& upgrades = building.upgrades();
@@ -2259,6 +2267,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			// Georesource (automatically add top line)
 			AddGeoresourceInfo(provinceId, descriptionBox);
 
+			// Province Upkeep Info
+			AddProvinceUpkeepInfo(provinceId, descriptionBox);
+
 			/*
 			 * 
 			 */
@@ -2528,7 +2539,7 @@ void UObjectDescriptionUISystem::ShowRegionSelectionDecal(WorldTile2 tile, bool 
 	}
 
 	if (mesh->provinceId != provinceId) {
-		mesh->UpdateMesh(true, provinceId, -1, false, &simulation(), 50);
+		mesh->UpdateMesh(true, provinceId, -1, -1, false, &simulation(), 50);
 	}
 
 	WorldTile2 provinceCenter = provinceSys.GetProvinceCenter(provinceId).worldTile2();
@@ -2613,8 +2624,9 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 				bool canClaim = simulation().influence(playerId()) >= provincePrice;
 
 				stringstream ss;
-				ss << "Claim Province\n";
-				ss << "<img id=\"Influence\"/>" << TextRed(to_string(provincePrice), !canClaim);
+				ss << "Claim Province";
+				AppendClaimConnectionString(ss, claimConnectionEnum);
+				ss << "\n<img id=\"Influence\"/>" << TextRed(to_string(provincePrice), !canClaim);
 
 				descriptionBox->AddSpacer();
 				descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::ClaimLandInfluence, canClaim, false, provinceId);
@@ -2625,8 +2637,9 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 				bool canClaim = simulation().money(playerId()) >= provincePrice;
 
 				stringstream ss;
-				ss << "Claim Province\n";
-				ss << "<img id=\"Coin\"/>" << TextRed(to_string(provincePrice), !canClaim);
+				ss << "Claim Province";
+				AppendClaimConnectionString(ss, claimConnectionEnum);
+				ss << "\n<img id=\"Coin\"/>" << TextRed(to_string(provincePrice), !canClaim);
 
 				descriptionBox->AddSpacer();
 				descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::ClaimLandMoney, canClaim, false, provinceId);
@@ -2639,8 +2652,9 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 				bool canClaim = sim.foodCount(playerId()) >= foodNeeded;
 
 				stringstream ss;
-				ss << "Claim Province\n";
-				ss << TextRed(to_string(foodNeeded), !canClaim) << " food";
+				ss << "Claim Province";
+				AppendClaimConnectionString(ss, claimConnectionEnum);
+				ss << "\n" << TextRed(to_string(foodNeeded), !canClaim) << " food";
 
 				descriptionBox->AddSpacer();
 				descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::ClaimLandFood, canClaim, false, provinceId);
@@ -2686,55 +2700,61 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 		//}
 	}
 	// Other player
-	// Conquer or vassalize
+	// Conquer
 	else if (provinceOwnerId != playerId())
 	{
 		// Conquer
 		/*if (simulation().unlockedInfluence(playerId()))*/
-		if (simulation().IsResearched(playerId(), TechEnum::Conquer))
+		if (sim.HasTownhall(provinceOwnerId) &&
+			simulation().townhall(provinceOwnerId).provinceId() != provinceId)
 		{
-			auto addAttackButtons = [&](ClaimConnectionEnum claimConnectionEnum)
+			if (simulation().IsResearched(playerId(), TechEnum::Conquer))
 			{
-				ProvinceClaimProgress claimProgress = simulation().playerOwned(provinceOwnerId).GetDefendingClaimProgress(provinceId);
-
-				// Already a claim, reinforce
-				if (claimProgress.isValid())
+				auto addAttackButtons = [&](ClaimConnectionEnum claimConnectionEnum)
 				{
-					int32 attackReinforcePrice = simulation().GetProvinceAttackReinforcePrice(provinceId, claimConnectionEnum);
-					bool canClaim = simulation().influence(playerId()) >= attackReinforcePrice;
+					ProvinceClaimProgress claimProgress = simulation().playerOwned(provinceOwnerId).GetDefendingClaimProgress(provinceId);
 
-					stringstream ss;
-					ss << "Reinforce (Annex)\n";
-					ss << TextRed(to_string(attackReinforcePrice), !canClaim) << "<img id=\"Influence\"/>";
+					// Already a claim, reinforce
+					if (claimProgress.isValid())
+					{
+						int32 attackReinforcePrice = simulation().GetProvinceAttackReinforcePrice(provinceId, claimConnectionEnum);
+						bool canClaim = simulation().influence(playerId()) >= attackReinforcePrice;
 
-					descriptionBox->AddSpacer();
-					descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::ReinforceAttackProvince, canClaim, false, provinceId);
+						stringstream ss;
+						ss << "Reinforce (Annex)\n";
+						ss << TextRed(to_string(attackReinforcePrice), !canClaim) << "<img id=\"Influence\"/>";
+
+						descriptionBox->AddSpacer();
+						descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::ReinforceAttackProvince, canClaim, false, provinceId);
+					}
+					// Start a new claim
+					else
+					{
+						int32 startAttackPrice = simulation().GetProvinceAttackStartPrice(provinceId, claimConnectionEnum);
+						bool canClaim = simulation().influence(playerId()) >= startAttackPrice;
+
+						stringstream ss;
+						ss << "Conquer Province (Annex)";
+						AppendClaimConnectionString(ss, claimConnectionEnum);
+						ss << "\n" << TextRed(to_string(startAttackPrice), !canClaim) << "<img id=\"Influence\"/>";
+
+						descriptionBox->AddSpacer();
+						descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::StartAttackProvince, canClaim, false, provinceId);
+					}
+				};
+
+				ClaimConnectionEnum claimConnectionEnum = sim.GetProvinceClaimConnectionEnum(provinceId, playerId());
+				if (claimConnectionEnum != ClaimConnectionEnum::None) {
+					addAttackButtons(claimConnectionEnum);
 				}
-				// Start a new claim
-				else
+				else if (sim.IsProvinceNextToPlayerIncludingNonFlatLand(provinceId, playerId()))
 				{
-					int32 startAttackPrice = simulation().GetProvinceAttackStartPrice(provinceId, claimConnectionEnum);
-					bool canClaim = simulation().influence(playerId()) >= startAttackPrice;
-
-					stringstream ss;
-					ss << "Conquer Province (Annex)\n";
-					ss << TextRed(to_string(startAttackPrice), !canClaim) << "<img id=\"Influence\"/>";
-
 					descriptionBox->AddSpacer();
-					descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::StartAttackProvince, canClaim, false, provinceId);
+					descriptionBox->AddRichText("<Red>Cannot attack through mountain and sea</>");
 				}
-			};
-
-			ClaimConnectionEnum claimConnectionEnum = sim.GetProvinceClaimConnectionEnum(provinceId, playerId());
-			if (claimConnectionEnum != ClaimConnectionEnum::None) {
-				addAttackButtons(claimConnectionEnum);
-			}
-			else if (sim.IsProvinceNextToPlayerIncludingNonFlatLand(provinceId, playerId()))
-			{
-				descriptionBox->AddSpacer();
-				descriptionBox->AddRichText("<Red>Cannot attack through mountain and sea</>");
 			}
 		}
+		
 	}
 	// Self, check if this province is being conquered
 	else
@@ -2874,19 +2894,18 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 				}
 			}
 		}
-		else
-		{
-			//const BuildingUpgrade& upgrade = bld.upgrades()[punWidgetCaller->callbackVar2];
-			//if (upgrade.)
-			//{
-			//	
-			//}
+
+		bool isShiftDown = dataSource()->isShiftDown();
+		if (isShiftDown) {
+			_alreadyDidShiftDownUpgrade = true;
 		}
-		
+
+		_LOG(LogNetworkInput, "[ObjDesc] UpgradeBuilding: isShiftDown:%d", isShiftDown);
 		
 		auto command = make_shared<FUpgradeBuilding>();
 		command->upgradeType = punWidgetCaller->callbackVar2;
 		command->buildingId = punWidgetCaller->callbackVar1;
+		command->isShiftDown = isShiftDown;
 
 		PUN_ENSURE(bld.isEnum(CardEnum::Townhall) || command->upgradeType < bld.upgrades().size(), return);
 		
@@ -3028,8 +3047,9 @@ void UObjectDescriptionUISystem::AddBiomeInfo(WorldTile2 tile, UPunBoxWidget* de
 
 	FloatDet maxCelsius = sim.MaxCelsius(tile);
 	FloatDet minCelsius = sim.MinCelsius(tile);
-	ss << "<Bold>Summer Temperature:</> " << FDToFloat(maxCelsius) << "°C (" << FDToFloat(CelsiusToFahrenheit(maxCelsius)) << "°F)\n";
-	ss << "<Bold>Winter Temperature:</> " << FDToFloat(minCelsius) << "°C (" << FDToFloat(CelsiusToFahrenheit(minCelsius)) << "°F)\n";
+	ss << "<Bold>Temperature:</> " << FDToFloat(minCelsius) << "-" << FDToFloat(maxCelsius) << "°C ("
+		<< FDToFloat(CelsiusToFahrenheit(minCelsius)) << "-" << FDToFloat(CelsiusToFahrenheit(maxCelsius)) << "°F)\n";
+	//ss << "<Bold>Winter Temperature:</> " << FDToFloat(minCelsius) << "°C (" << FDToFloat(CelsiusToFahrenheit(minCelsius)) << "°F)\n";
 
 	if (biomeEnum == BiomeEnum::Jungle) {
 		ss << "<OrangeRed>Disease Frequency: 2.0 per year</>";
@@ -3095,6 +3115,9 @@ void UObjectDescriptionUISystem::AddTileInfo(WorldTile2 tile, UPunBoxWidget* des
 
 	// Georesource
 	AddGeoresourceInfo(provinceId, descriptionBox, true);
+
+	// Province Upkeep Info
+	AddProvinceUpkeepInfo(provinceId, descriptionBox);
 
 	// - Spacer: Georesource, Claim
 	if (ownerId == -1) {
@@ -3195,12 +3218,55 @@ void UObjectDescriptionUISystem::AddProvinceInfo(int32 provinceId, UPunBoxWidget
 	// Georesource
 	AddGeoresourceInfo(provinceId, descriptionBox);
 
+	// Province Upkeep Info
+	AddProvinceUpkeepInfo(provinceId, descriptionBox);
+
 	// Claim land
 	AddSelectStartLocationButton(provinceId, descriptionBox);
 	AddClaimLandButtons(provinceId, descriptionBox);
 
 	// If no longer in map mode, don't display the selections
 	ShowRegionSelectionDecal(provinceCenter);
+}
+
+void UObjectDescriptionUISystem::AddProvinceUpkeepInfo(int32 provinceIdClean, UPunBoxWidget* descriptionBox)
+{
+	if (provinceIdClean == -1) {
+		return;
+	}
+
+	descriptionBox->AddLineSpacer(15);
+
+	auto& sim = simulation();
+	int32 provinceOwnerId = sim.provinceOwner(provinceIdClean);
+	bool unlockedInfluence = sim.unlockedInfluence(playerId());
+	
+	stringstream ss;
+	ss << fixed << setprecision(1);
+	ss << "<Subheader>Province Info:</>\n";
+
+	// Already own this province, Showr real income/upkeep
+	if (provinceOwnerId == playerId())
+	{
+		ss << "Income: <img id=\"Coin\"/>" << sim.GetProvinceIncome100(provinceIdClean) / 100.0f << "\n";
+		if (unlockedInfluence) ss << "Upkeep: <img id=\"Influence\"/>" << sim.GetProvinceUpkeep100(provinceIdClean, provinceOwnerId) / 100.0f << "\n";
+		ss << "Defense Bonus: " << sim.GetProvinceAttackCostPercent(provinceIdClean) << "%";
+	}
+	// Other player's Home Province
+	else if (provinceOwnerId != -1 && sim.homeProvinceId(provinceOwnerId) == provinceIdClean)
+	{
+		ss << "Home Province of " << sim.playerName(provinceOwnerId) << "\n";
+		ss << "Defense Bonus: 0%";
+	}
+	else 
+	{
+		ss << "Base Income: <img id=\"Coin\"/>" << sim.GetProvinceIncome100(provinceIdClean) / 100.0f << "\n";
+		if (unlockedInfluence) ss << "Base Upkeep: <img id=\"Influence\"/>" << sim.GetProvinceBaseUpkeep100(provinceIdClean) / 100.0f << "\n";
+		ss << "Defense Bonus: " << sim.GetProvinceAttackCostPercent(provinceIdClean) << "%";
+	}
+	
+	descriptionBox->AddRichText(ss);
+	descriptionBox->AddSpacer(12);
 }
 
 void UObjectDescriptionUISystem::AddGeoresourceInfo(int32 provinceId, UPunBoxWidget* descriptionBox, bool showTopLine)

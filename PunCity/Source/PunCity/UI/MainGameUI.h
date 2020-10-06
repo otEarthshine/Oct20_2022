@@ -51,7 +51,8 @@ public:
 
 	void ResetBottomMenuDisplay();
 
-	void ResetGameUI() {
+	void ResetGameUI()
+	{
 		ResetBottomMenuDisplay();
 
 		if (RareCardHandOverlay->GetVisibility() != ESlateVisibility::Collapsed) {

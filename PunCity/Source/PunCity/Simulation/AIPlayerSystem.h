@@ -171,6 +171,8 @@ public:
 		 */
 		if (!playerOwned.hasTownhall())
 		{
+			_LOG(PunAI, "%s Try Build Townhall", ToTChar(AIPrintPrefix()));
+			
 			PUN_CHECK(playerOwned.provincesClaimed().size() == 1);
 			int32 provinceId = playerOwned.provincesClaimed()[0];
 			TileArea provinceRectArea = provinceSys.GetProvinceRectArea(provinceId);
@@ -224,6 +226,8 @@ public:
 
 			if (buildableArea.isValid())
 			{
+				_LOG(PunAI, "%s Build Townhall: buildableArea isValid", ToTChar(AIPrintPrefix()));
+				
 				auto command = MakeCommand<FPlaceBuilding>();
 				command->buildingEnum = static_cast<uint8>(CardEnum::Townhall);
 				command->playerId = _playerId;
@@ -661,6 +665,13 @@ private:
 		return AIRegionProposedPurposeEnum::None;
 	}
 
+	std::string AIPrintPrefix()
+	{
+		std::stringstream ss;
+		ss << "[" << _playerId << "_" << _simulation->playerName(_playerId) << "]";
+		return ss.str();
+	}
+	
 private:
 	int32 _playerId;
 	IGameSimulationCore* _simulation;

@@ -31,12 +31,15 @@ public:
 		{
 			rewardBuildingIcon->SetVisibility(ESlateVisibility::Visible);
 			auto material = rewardBuildingIcon->GetDynamicMaterial();
+
 			if (IsBuildingCard(buildingEnum)) {
 				material->SetTextureParameterValue("ColorTexture", assetLoader()->GetBuildingIcon(buildingEnum));
 				material->SetTextureParameterValue("DepthTexture", assetLoader()->GetBuildingIconAlpha(buildingEnum));
-			} else {
-				material->SetTextureParameterValue("ColorTexture", assetLoader()->GetBuildingIcon(CardEnum::House));
-				material->SetTextureParameterValue("DepthTexture", assetLoader()->GetBuildingIconAlpha(CardEnum::House));
+			}
+			else {
+				// TODO: GetBuildingIcon used for all cards..
+				material->SetTextureParameterValue("ColorTexture", nullptr);
+				material->SetTextureParameterValue("DepthTexture", nullptr);
 			}
 
 			// Add Tooltip

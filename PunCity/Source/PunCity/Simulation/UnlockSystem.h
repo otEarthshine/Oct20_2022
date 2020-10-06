@@ -104,6 +104,9 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 	{TechEnum::Espionage, {
 		"Espionage",
 	}},
+	{TechEnum::SpyGuard, {
+		"Spy Guard",
+	}},
 
 	{TechEnum::ShrineRot, {
 		"Unlock Shrines.",
@@ -246,6 +249,11 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 	{ TechEnum::Conquer, {
 		"Conquer Province",
 		"Unlock Province Conquering",
+	}},
+
+	{ TechEnum::HomeLandDefense, {
+		"Homeland Defense",
+		"Provinces gain +10% defense bonus for each building on it.",
 	}},
 
 	{ TechEnum::Vassalize, {
@@ -585,6 +593,7 @@ public:
 			AddTech_Bonus(era, TechEnum::MushroomSubstrateSterilization);
 			AddTech_Bonus(era, TechEnum::BorealLandCost);
 			AddTech_Building(era, TechEnum::BarrackArcher, CardEnum::BarrackArcher);
+			AddTech_Building(era, TechEnum::SpyGuard, { CardEnum::KidnapGuard, CardEnum::TreasuryGuard });
 			
 			//
 			era = 2;
@@ -594,6 +603,7 @@ public:
 			AddTech_Bonus(era, TechEnum::Plantation);
 			AddTech_Building(era, TechEnum::IronRefining, { CardEnum::IronMine, CardEnum::IronSmelter });
 			AddTech_Building(era, TechEnum::Blacksmith, CardEnum::Blacksmith);
+			AddTech_Building(era, TechEnum::Espionage, { CardEnum::Steal });
 			
 			//
 			era = 3;
@@ -635,7 +645,6 @@ public:
 			//
 			era = 7;
 			//AddTech_Bonus(6, TechEnum::CropStudy);
-			AddTech_Building(era, TechEnum::Espionage, { CardEnum::Steal });
 			AddTech_Bonus(era, TechEnum::CheapLand);
 			AddTech_Bonus(era, TechEnum::WineryImprovement);
 			//AddTech_Building(era, TechEnum::ShrineRot, { CardEnum::ShrineGreedPiece });
@@ -667,8 +676,8 @@ public:
 			//AddProsperityTech_Bonus(era, 4, TechEnum::CityToCityTrade);
 			AddProsperityTech_Bonus(era, 4, TechEnum::InfluencePoints);
 			AddProsperityTech_Bonus(era, 4, TechEnum::Conquer);
-			AddProsperityTech_Bonus(era, 4, TechEnum::Vassalize);
-			AddProsperityTech_BuildingPermanent(era, 4, TechEnum::FlowerBed, { CardEnum::FlowerBed });
+			AddProsperityTech_Bonus(era, 2, TechEnum::HomeLandDefense);
+			AddProsperityTech_Bonus(era, 2, TechEnum::Vassalize);
 			
 
 			era = 2;
@@ -692,10 +701,13 @@ public:
 			era = 4;
 			AddProsperityTech_Building(era, 10, TechEnum::Winery, CardEnum::Winery);
 			AddProsperityTech_BuildingPermanent(era, 4, TechEnum::IntercityRoad, { CardEnum::IntercityRoad });
-			AddProsperityTech_Building(era, 20, TechEnum::Chocolatier, CardEnum::Chocolatier);
 			
 			AddProsperityTech_Building(era, 10, TechEnum::School, CardEnum::School);
 			AddProsperityTech_Building(era, 10, TechEnum::InventorsWorkshop, CardEnum::InventorsWorkshop);
+
+			AddProsperityTech_Building(era, 10, TechEnum::Chocolatier, CardEnum::Chocolatier);
+
+			AddProsperityTech_BuildingPermanent(era, 4, TechEnum::FlowerBed, { CardEnum::FlowerBed });
 		
 			
 			era = 5;
@@ -868,6 +880,7 @@ public:
 		
 		// Multiple updates per second, so we divide accordingly science100PerRound/updatesPerSec
 		science100XsecPerRound += GameRand::RandRound(science100PerRound, updatesPerSec);
+		science100XsecPerRound = std::min(science100XsecPerRound, 600000000); // not more than 1m
 		
 		if (!hasTargetResearch()) {
 			return;

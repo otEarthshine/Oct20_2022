@@ -12,6 +12,13 @@
 #include "TerritoryDisplayComponent.generated.h"
 
 USTRUCT()
+struct FTerritoryMeshes
+{
+	GENERATED_BODY();
+	UPROPERTY() TArray<UTerritoryMeshComponent*> TerritoryMeshes;
+};
+
+USTRUCT()
 struct FTerritoryDecals
 {
 	GENERATED_BODY()
@@ -92,7 +99,7 @@ private:
 	UPROPERTY() TArray<UTerritoryMeshComponent*> _territoryMeshesInner;
 	UPROPERTY() TArray<UTerritoryMeshComponent*> _provinceMeshesPool;
 
-	UPROPERTY() TArray<UTerritoryMeshComponent*> _playerIdToTerritoryMesh;
+	UPROPERTY() TArray<FTerritoryMeshes> _playerIdToTerritoryMesh;
 	
 	
 	int32 territoryNameCounter = 0;

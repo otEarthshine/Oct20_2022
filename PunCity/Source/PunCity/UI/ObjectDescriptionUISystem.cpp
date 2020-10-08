@@ -247,16 +247,19 @@ void UObjectDescriptionUISystem::LeftMouseDown()
 						
 						if (info.type == ResourceTileType::Tree)
 						{
-							FTileMeshAssets assets = assetLoader()->tileMeshAsset(info.treeEnum);
-							
-							int32 ageTick = treeSystem.tileObjAge(curTileId);
-							FTransform transform = GameDisplayUtils::GetTreeTransform(displayLocation, 0, curTileId, ageTick, info);
+							if (!dataSource()->isHidingTree())
+							{
+								FTileMeshAssets assets = assetLoader()->tileMeshAsset(info.treeEnum);
 
-							if (TryMouseCollision(assets.assets[static_cast<int32>(TileSubmeshEnum::Leaf)], transform, shortestHit)) {
-								selectTileObjOrConstruction();
-							}
-							else if (TryMouseCollision(assets.assets[static_cast<int32>(TileSubmeshEnum::Trunk)], transform, shortestHit)) {
-								selectTileObjOrConstruction();
+								int32 ageTick = treeSystem.tileObjAge(curTileId);
+								FTransform transform = GameDisplayUtils::GetTreeTransform(displayLocation, 0, curTileId, ageTick, info);
+
+								if (TryMouseCollision(assets.assets[static_cast<int32>(TileSubmeshEnum::Leaf)], transform, shortestHit)) {
+									selectTileObjOrConstruction();
+								}
+								else if (TryMouseCollision(assets.assets[static_cast<int32>(TileSubmeshEnum::Trunk)], transform, shortestHit)) {
+									selectTileObjOrConstruction();
+								}
 							}
 						}
 						else if (info.type == ResourceTileType::Deposit)
@@ -275,34 +278,36 @@ void UObjectDescriptionUISystem::LeftMouseDown()
 						}
 						else if (info.type == ResourceTileType::Bush)
 						{
-							FTileMeshAssets assets = assetLoader()->tileMeshAsset(info.treeEnum);
-							
-							int32_t ageTick = treeSystem.tileObjAge(curTileId);
-							FTransform transform = GameDisplayUtils::GetBushTransform(displayLocation, 0, curTileId, ageTick, info, simulation.terrainGenerator().GetBiome(curTile));
+							if (!dataSource()->isHidingTree())
+							{
+								FTileMeshAssets assets = assetLoader()->tileMeshAsset(info.treeEnum);
 
-							// Plant uses the mesh array for multiple meshes (for example flower + its leaves)
-							int32 submeshCount = assets.assets.Num();
-							for (int32 i = 0; i < submeshCount; i++) {
-								if (TryMouseCollision(assets.assets[i], transform, shortestHit)) 
-								{
-									// If bush is on farm or construction, show those instead...
-									int32 buildingId = simulation.buildingIdAtTile(worldTile);
-									if (buildingId != -1 && 
-										(simulation.building(buildingId).isEnum(CardEnum::Farm) || !simulation.building(buildingId).isConstructed())
-										) 
+								int32_t ageTick = treeSystem.tileObjAge(curTileId);
+								FTransform transform = GameDisplayUtils::GetBushTransform(displayLocation, 0, curTileId, ageTick, info, simulation.terrainGenerator().GetBiome(curTile));
+
+								// Plant uses the mesh array for multiple meshes (for example flower + its leaves)
+								int32 submeshCount = assets.assets.Num();
+								for (int32 i = 0; i < submeshCount; i++) {
+									if (TryMouseCollision(assets.assets[i], transform, shortestHit))
 									{
-										uiState.objectType = ObjectTypeEnum::Building;
-										uiState.objectId = buildingId;
+										// If bush is on farm or construction, show those instead...
+										int32 buildingId = simulation.buildingIdAtTile(worldTile);
+										if (buildingId != -1 &&
+											(simulation.building(buildingId).isEnum(CardEnum::Farm) || !simulation.building(buildingId).isConstructed())
+											)
+										{
+											uiState.objectType = ObjectTypeEnum::Building;
+											uiState.objectId = buildingId;
+										}
+										else
+										{
+											uiState.objectType = ObjectTypeEnum::TileObject;
+											uiState.objectId = curTileId;
+										}
+										break;
 									}
-									else
-									{
-										uiState.objectType = ObjectTypeEnum::TileObject;
-										uiState.objectId = curTileId;
-									}
-									break;
 								}
 							}
-
 						}
 					});
 				}
@@ -426,8 +431,9 @@ void UObjectDescriptionUISystem::LeftMouseDown()
 							uiState.objectId = worldTile.tileId();
 							PUN_LOG("Drop clicked (%d, %d)", worldTile.x, worldTile.y);
 						}
-						// TileObject
-						else if (!simulation.treeSystem().IsEmptyTile_WaterAsEmpty(worldTile.tileId()))
+						// TileOfbject
+						else if (!simulation.treeSystem().IsEmptyTile_WaterAsEmpty(worldTile.tileId()) &&
+								 !dataSource()->isHidingTree())
 						{
 							uiState.objectType = ObjectTypeEnum::TileObject;
 							uiState.objectId = worldTile.tileId();
@@ -1411,8 +1417,13 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						if (pairs.size() == 0) {
 							descriptionBox->AddRichText("Production(per season):", "None");
 						}
-						else if (pairs.size() == 1) {
-							descriptionBox->AddRichText("Production(per season):", to_string(pairs[0].count), pairs[0].resourceEnum);
+						else if (pairs.size() == 1) 
+						{
+							if (building.isEnum(CardEnum::Farm)) {
+								descriptionBox->AddRichText("Production(per year):", to_string(pairs[0].count), pairs[0].resourceEnum);
+							} else {
+								descriptionBox->AddRichText("Production(per season):", to_string(pairs[0].count), pairs[0].resourceEnum);
+							}
 						}
 						else {
 							descriptionBox->AddRichText("Production(per season):");
@@ -1577,6 +1588,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								{ building.input2(), building.inputPerBatch() },
 								{}, productTexture, productStr);
 						}
+
+						PUN_LOG("_workDone100:%d workManSecPerBatch100:%d batchProfit:%d baseInputPerBatch:%d efficiency:%d workRevenuePerSec100_perMan:%d", 
+							building.workDone100(), building.workManSecPerBatch100(), building.batchProfit(), building.baseInputPerBatch(), building.efficiency(), building.buildingInfo().workRevenuePerSec100_perMan);
 						
 						ss << building.workPercent() << "% ";
 						descriptionBox->AddRichText("Work done", ss);
@@ -2895,7 +2909,9 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 			}
 		}
 
-		bool isShiftDown = dataSource()->isShiftDown();
+		const FModifierKeysState modifierKeys = FSlateApplication::Get().GetModifierKeys();
+		bool isShiftDown = modifierKeys.IsShiftDown();
+		//bool isShiftDown = IsShiftDown(GEngine->GameViewport->Viewport);;
 		if (isShiftDown) {
 			_alreadyDidShiftDownUpgrade = true;
 		}

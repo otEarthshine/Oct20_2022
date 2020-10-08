@@ -155,17 +155,22 @@ struct ProvinceClaimProgress
 {
 	int32 provinceId = -1;
 	int32 attackerPlayerId = -1;
-	int32 committedInfluences = 0;
+
+	int32 committedInfluencesAttacker = 0;
+	int32 committedInfluencesDefender = 0;
+	
 	int32 ticksElapsed = 0;
 
 	bool isValid() { return provinceId != -1; }
 
-	void Tick1Sec()
+	void Tick1Sec(IGameSimulationCore* simulation)
 	{
-		if (committedInfluences >= 0) {
-			ticksElapsed += Time::TicksPerSecond;
+		//int32 attackerScaled = committedInfluencesAttacker * simulation->
+		
+		if (committedInfluencesAttacker > committedInfluencesDefender) {
+			ticksElapsed += Time::TicksPerSecond * committedInfluencesAttacker / (committedInfluencesDefender + BattleInfluencePrice);
 		} else {
-			ticksElapsed -= Time::TicksPerSecond;
+			ticksElapsed -= Time::TicksPerSecond * (committedInfluencesDefender + BattleInfluencePrice) / committedInfluencesAttacker;
 		}
 	}
 
@@ -173,7 +178,8 @@ struct ProvinceClaimProgress
 	FArchive& operator>>(FArchive &Ar) {
 		Ar << provinceId;
 		Ar << attackerPlayerId;
-		Ar << committedInfluences;
+		Ar << committedInfluencesAttacker;
+		Ar << committedInfluencesDefender;
 		Ar << ticksElapsed;
 		return Ar;
 	}
@@ -584,7 +590,8 @@ public:
 		ProvinceClaimProgress claimProgress;
 		claimProgress.provinceId = provinceId;
 		claimProgress.attackerPlayerId = attackerPlayerId;
-		claimProgress.committedInfluences = BattleInfluencePrice;
+		claimProgress.committedInfluencesAttacker = BattleInfluencePrice;
+		claimProgress.committedInfluencesDefender = 0;
 		claimProgress.ticksElapsed = 0;
 		
 		_defendingClaimProgress.push_back(claimProgress);
@@ -596,7 +603,7 @@ public:
 	{
 		for (auto& claimProgress : _defendingClaimProgress) {
 			if (claimProgress.provinceId == provinceId) {
-				claimProgress.committedInfluences += influenceAmount;
+				claimProgress.committedInfluencesAttacker += influenceAmount;
 				break;
 			}
 		}
@@ -605,7 +612,7 @@ public:
 	{
 		for (auto& claimProgress : _defendingClaimProgress) {
 			if (claimProgress.provinceId == provinceId) {
-				claimProgress.committedInfluences -= influenceAmount;
+				claimProgress.committedInfluencesDefender -= influenceAmount;
 				break;
 			}
 		}
@@ -986,6 +993,13 @@ public:
 	int32 lordPlayerId() { return _lordPlayerId; }
 	void SetLordPlayerId(int32 lordPlayerId) {
 		_lordPlayerId = lordPlayerId;
+	}
+
+	int32 playerIdForColor() {
+		if (_lordPlayerId != -1) {
+			return _lordPlayerId;
+		}
+		return _playerId;
 	}
 	
 	const std::vector<int32>& vassalBuildingIds() const { return _vassalBuildingIds; }

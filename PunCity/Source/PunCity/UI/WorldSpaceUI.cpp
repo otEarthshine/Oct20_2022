@@ -203,19 +203,73 @@ void UWorldSpaceUI::TickBuildings()
 						[&](URegionHoverUI* ui) {}
 					);
 
-					bool isAttacker = claimProgress.attackerPlayerId == playerId();
+					bool isUIPlayerAttacker = claimProgress.attackerPlayerId == playerId();
 
 					std::stringstream ss;
-					std::string textType = (isAttacker ? "<Large>" : "<LargeRed>");
+					std::string textType = (isUIPlayerAttacker ? "<Large>" : "<LargeRed>");
 					ss << textType << "Attacker: " << simulation().playerName(claimProgress.attackerPlayerId) << "</>\n";
-					ss << textType << claimProgress.committedInfluences << "</><img id=\"Influence\"/>";
-					SetText(regionHoverUI->ClaimingText, ss.str());
-					regionHoverUI->AutoChoseText->SetVisibility(ESlateVisibility::Collapsed);
+					//ss << textType << claimProgress.committedInfluences << "</><img id=\"Influence\"/>";
+					//SetText(regionHoverUI->ClaimingText, ss.str());
+					//regionHoverUI->AutoChoseText->SetVisibility(ESlateVisibility::Collapsed);
 
+					// Battle Bar
 					float fraction = static_cast<float>(claimProgress.ticksElapsed) / BattleClaimTicks;
-					regionHoverUI->ClockImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", fraction);
-					regionHoverUI->ClockImage->GetDynamicMaterial()->SetScalarParameterValue("IsRed", !isAttacker);
-					regionHoverUI->ClockBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+					regionHoverUI->BattleBarImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", 1.0f - fraction);
+					regionHoverUI->BattleBarImage->GetDynamicMaterial()->SetScalarParameterValue("IsGreenLeft", isUIPlayerAttacker);
+					regionHoverUI->BattleBarImage->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+
+					
+					// Player Logo
+					regionHoverUI->PlayerLogoLeft->GetDynamicMaterial()->SetVectorParameterValue("PlayerColor1", PlayerColor1(claimProgress.attackerPlayerId));
+
+					int32 defenderPlayerId = provinceOwnerId;
+					bool isDeclaringIndependence = (claimProgress.attackerPlayerId == provinceOwnerId);
+					if (isDeclaringIndependence) {
+						defenderPlayerId = sim.playerOwned(provinceOwnerId).lordPlayerId(); // Declare Independence
+					} // TODO: Declare Independence should init attack from the Lord
+					regionHoverUI->PlayerLogoRight->GetDynamicMaterial()->SetVectorParameterValue("PlayerColor2", PlayerColor2(defenderPlayerId));
+
+
+					// 
+					SetText(regionHoverUI->BattleInfluenceLeft, "<img id=\"Influence\"/><Shadowed>" + to_string(claimProgress.committedInfluencesAttacker) + "</>");
+					SetText(regionHoverUI->BattleInfluenceRight, "<img id=\"Influence\"/><Shadowed>" + to_string(claimProgress.committedInfluencesDefender) + "</>");
+
+					SetText(regionHoverUI->DefenseBonusLeft, "<img id=\"Shield\"/><Shadowed>" + to_string(0) + "%</>");
+					std::string defenderDefenseBonus = (isDeclaringIndependence ? to_string(0) : to_string(sim.GetProvinceAttackCostPercent(provinceId))) + "%</>";
+					SetText(regionHoverUI->DefenseBonusRight, "<img id=\"Shield\"/><Shadowed>" + defenderDefenseBonus);
+
+					// Fight at home province = Vassalize
+					if (sim.homeProvinceId(provinceOwnerId) == provinceId) {
+						SetText(regionHoverUI->BattleText, "<Shadowed>Vassalize</>");
+					}
+					else {
+						SetText(regionHoverUI->BattleText, "<Shadowed>Annex Province</>");
+					}
+
+					// UI-Player is Attacker
+					if (claimProgress.attackerPlayerId == playerId()) {
+						ClaimConnectionEnum claimConnectionEnum = sim.GetProvinceClaimConnectionEnum(provinceId, claimProgress.attackerPlayerId);
+						SetText(regionHoverUI->ReinforceLeftButtonText, "Reinforce\n<img id=\"Influence\"/>" + to_string(sim.GetProvinceAttackReinforcePrice(provinceId, claimConnectionEnum)));
+						regionHoverUI->ReinforceLeftButtonText->SetVisibility(ESlateVisibility::Visible);
+						regionHoverUI->ReinforceRightButtonText->SetVisibility(ESlateVisibility::Collapsed);
+						regionHoverUI->ReinforceMoneyRightButtonText->SetVisibility(ESlateVisibility::Collapsed);
+					}
+					// UI-Player is Defender
+					else if (provinceOwnerId == playerId())
+					{
+						SetText(regionHoverUI->ReinforceRightButtonText, "Reinforce\n<img id=\"Influence\"/>" + to_string(BattleInfluencePrice));
+						SetText(regionHoverUI->ReinforceMoneyRightButtonText, "Reinforce\n<img id=\"Coin\"/>" + to_string(BattleInfluencePrice));
+						regionHoverUI->ReinforceLeftButtonText->SetVisibility(ESlateVisibility::Collapsed);
+						regionHoverUI->ReinforceRightButtonText->SetVisibility(ESlateVisibility::Visible);
+						regionHoverUI->ReinforceMoneyRightButtonText->SetVisibility(ESlateVisibility::Visible);
+					}
+					else {
+						regionHoverUI->ReinforceLeftButtonText->SetVisibility(ESlateVisibility::Collapsed);
+						regionHoverUI->ReinforceRightButtonText->SetVisibility(ESlateVisibility::Collapsed);
+						regionHoverUI->ReinforceMoneyRightButtonText->SetVisibility(ESlateVisibility::Collapsed);
+					}
+					
+					regionHoverUI->UpdateUI(provinceId);
 				}
 			}
 		}

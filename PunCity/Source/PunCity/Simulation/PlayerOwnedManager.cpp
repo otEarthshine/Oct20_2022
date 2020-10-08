@@ -838,12 +838,15 @@ void PlayerOwnedManager::CollectRoundIncome()
 	resourceSys.ChangeInfluence100(totalInfluenceIncome100());
 	if (resourceSys.influence100() < 0) 
 	{
-		_simulation->AddEventLog(_playerId, "You have </><img id=\"Influence\"/><ChatRed>0. "
-							"-</><img id=\"Coin\"/><ChatRed>"
-							+ to_string(abs(min(-1, resourceSys.influence() * 2))) + 
-							" penalty is applied from negative </><img id=\"Influence\"/><ChatRed> (</><img id=\"Coin\"/><ChatRed>2 per </><img id=\"Influence\"/><ChatRed>1)."
-							
-							, true);
+		std::string influenceStr = "</><img id=\"Influence\"/><EventLogRed>";
+		std::string coinStr = "</><img id=\"Coin\"/><EventLogRed>";
+
+		std::stringstream ss;
+		ss << "You have " << influenceStr << "0. ";
+		ss << "-" << coinStr << abs(min(-1, resourceSys.influence() * 2));
+		ss << " penalty is applied from negative " << influenceStr << " (" << coinStr << "2 per " << influenceStr << "1).";
+		
+		_simulation->AddEventLog(_playerId, ss.str(), true);
 		resourceSys.ChangeMoney100(resourceSys.influence100() * 3);
 		resourceSys.SetInfluence(0);
 	}
@@ -1077,7 +1080,7 @@ void PlayerOwnedManager::Tick1Sec()
 	 * ProvinceClaimProgress
 	 */
 	for (ProvinceClaimProgress& claimProgress : _defendingClaimProgress) {
-		claimProgress.Tick1Sec();
+		claimProgress.Tick1Sec(_simulation);
 	}
 }
 

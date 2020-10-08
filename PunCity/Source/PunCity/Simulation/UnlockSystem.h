@@ -880,7 +880,7 @@ public:
 		
 		// Multiple updates per second, so we divide accordingly science100PerRound/updatesPerSec
 		science100XsecPerRound += GameRand::RandRound(science100PerRound, updatesPerSec);
-		science100XsecPerRound = std::min(science100XsecPerRound, 600000000); // not more than 1m
+		science100XsecPerRound = std::min(science100XsecPerRound, 1800000000); // 600m = 40,000 -> 1800m = 120,000
 		
 		if (!hasTargetResearch()) {
 			return;

@@ -140,9 +140,16 @@ void UnitStateAI::Update()
 
 		// Check status
 		int ticksPassed = Time::Ticks() - _lastUpdateTick;
-		_food -= ticksPassed;
 
-		_heat += ticksPassed * _lastTickCelsiusRate; // use TickCelsius rate from last update. This so that the changes between updates are constant and predictable. (and can be displayed in UI)
+		int32 adjustedTicksPassed = ticksPassed;
+		if (GameConstants::IsAI(_playerId)) {
+			adjustedTicksPassed /= 2; // AI cheat
+		}
+
+		
+		_food -= adjustedTicksPassed;
+
+		_heat += adjustedTicksPassed * _lastTickCelsiusRate; // use TickCelsius rate from last update. This so that the changes between updates are constant and predictable. (and can be displayed in UI)
 		int32 tickCelsiusRate = FDToInt(_simulation->Celsius(unitTile())) - FDToInt(Time::ColdCelsius()); // from 5 Celsius down, it is considered cold...???
 		if (tickCelsiusRate >= 0) 
 		{

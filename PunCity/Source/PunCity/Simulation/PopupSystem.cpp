@@ -19,9 +19,10 @@ void PopupSystem::AddPopupToFront(PopupInfo popup)
 	popup.startDisplayTick = static_cast<int32>(_simulation->gameManagerInterface()->GetDisplayWorldTime() * 60);
 
 	// Things that doesn't need reply shouldn't stack...
-	bool shouldNotRepeat = popup.popupSound == "PopupCannot" || 
-							popup.replyReceiver == PopupReceiverEnum::None ||
-							popup.replyReceiver == PopupReceiverEnum::DoneResearchEvent_ShowTree;
+	bool shouldNotRepeat = true;
+							//popup.popupSound == "PopupCannot" || 
+							//popup.replyReceiver == PopupReceiverEnum::None ||
+							//popup.replyReceiver == PopupReceiverEnum::DoneResearchEvent_ShowTree;
 	
 	if (shouldNotRepeat && 
 		_popups.size() > 0 &&

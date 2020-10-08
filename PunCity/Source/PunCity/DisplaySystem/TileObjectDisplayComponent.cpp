@@ -614,7 +614,7 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 		
 	}
 
-	// Hide meshes without clearing instances upon zooming out
+	// Hide meshes without clearing instances
 	meshes->SetVisibilityQuick(!_isHiddenDisplay);
 }
 

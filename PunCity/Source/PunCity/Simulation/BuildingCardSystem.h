@@ -473,6 +473,7 @@ public:
 		return _cardsBought;
 	}
 
+	// TODO: wtf need to sort this out
 	bool CanAddCardToBoughtHand(CardEnum buildingEnum, int32 additionalCards)
 	{
 		const int32 maxCardsBought = 7;

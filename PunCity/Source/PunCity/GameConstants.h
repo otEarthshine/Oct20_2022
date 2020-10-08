@@ -11,6 +11,8 @@ public:
 	static const int MaxAIs = 15;
 	static const int MaxPlayersAndAI = MaxPlayers + MaxAIs;
 
+	static bool IsAI(int32 playerId) { return playerId >= MaxPlayers; }
+
 	//static const int InitialTownhallUnits = 8;
 
 #if WITH_EDITOR

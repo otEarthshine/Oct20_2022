@@ -382,7 +382,7 @@ private:
 	UPROPERTY(meta = (BindWidget)) UExclamationIcon* ExclamationIcon_CardStack;
 
 	// Cards
-	bool _lastIsCardStackBlank = true;
+	BoolEnum _lastIsCardStackBlank = BoolEnum::NeedUpdate;
 	//std::vector<BuildingEnum> _lastDisplayHand;
 	std::vector<bool> _lastHand1ReserveStatus;
 	std::vector<bool> _lastHand1NeedMoneyStatus;

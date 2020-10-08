@@ -115,18 +115,20 @@ public:
 				BUTTON_ON_CLICK(GiftButton, this, &UTownhallHoverInfo::OnClickGiftButton);
 
 				// Vassalize
-				if (sim.IsResearched(playerId(), TechEnum::Vassalize) &&
-					townhallPlayerOwned.lordPlayerId() == -1)
+				bool vassalizeResearched = (sim.IsResearched(playerId(), TechEnum::Vassalize));
+				bool townhallNotAlreadyVassalized = (townhallPlayerOwned.lordPlayerId() == -1);
+				
+				if (vassalizeResearched && townhallNotAlreadyVassalized)
 				{
 					if (townhallPlayerOwned.GetDefendingClaimProgress(townhall.provinceId()).isValid())
 					{
-						SetText(VassalizeButtonText, "Reinforce (Vassalize)\n" + std::to_string(BattleInfluencePrice) + " influence");
+						SetText(VassalizeButtonRichText, "Reinforce (Vassalize)\n<img id=\"Influence\"/>" + std::to_string(BattleInfluencePrice));
 						BUTTON_ON_CLICK(VassalizeButton, this, &UTownhallHoverInfo::OnClickVassalizeReinforceButton);
 					}
 					else
 					{
 						// TODO: Rich Text...
-						SetText(VassalizeButtonText, "Conquer (Vassalize)\n" + std::to_string(sim.GetProvinceVassalizeStartPrice(townhall.provinceId())) + " influence");
+						SetText(VassalizeButtonRichText, "Conquer (Vassalize)\n<img id=\"Influence\"/>" + std::to_string(sim.GetProvinceVassalizeStartPrice(townhall.provinceId())));
 						BUTTON_ON_CLICK(VassalizeButton, this, &UTownhallHoverInfo::OnClickVassalizeButton);
 					}
 
@@ -203,8 +205,8 @@ public:
 		
 
 		// PlayerColorImage
-		PlayerColorCircle->GetDynamicMaterial()->SetVectorParameterValue("PlayerColor1", PlayerColor1(townhall.armyNode.lordPlayerId));
-		PlayerColorCircle->GetDynamicMaterial()->SetVectorParameterValue("PlayerColor2", PlayerColor2(townhall.armyNode.lordPlayerId));
+		PlayerColorCircle->GetDynamicMaterial()->SetVectorParameterValue("PlayerColor1", PlayerColor1(townhallPlayerOwned.playerIdForColor()));
+		PlayerColorCircle->GetDynamicMaterial()->SetVectorParameterValue("PlayerColor2", PlayerColor2(townhallPlayerOwned.playerIdForColor()));
 
 
 		/*
@@ -821,7 +823,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* GiftButton;
 	
 	UPROPERTY(meta = (BindWidget)) UButton* VassalizeButton;
-	UPROPERTY(meta = (BindWidget)) UTextBlock* VassalizeButtonText;
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* VassalizeButtonRichText;
 
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* BuffRow;
 	

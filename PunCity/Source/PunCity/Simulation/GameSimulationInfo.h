@@ -14,8 +14,8 @@
 
 #define TRAILER_MODE 0
 
-#define SAVE_VERSION 04101124 // Day/Month/Time
-#define GAME_VERSION 04101124
+#define SAVE_VERSION 8100147 // Day/Month/Time
+#define GAME_VERSION 8100147
 
 //! Utils
 
@@ -6816,6 +6816,13 @@ struct ProvinceConnection
 		Ar << tileType;
 		return Ar;
 	}
+};
+
+enum class BoolEnum : uint8
+{
+	False,
+	True,
+	NeedUpdate,
 };
 
 /*

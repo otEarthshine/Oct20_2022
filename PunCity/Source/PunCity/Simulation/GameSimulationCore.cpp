@@ -366,6 +366,8 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 
 	//PUN_LOG("TickSim UnitSystem unitCount():%d _unitLeans:%d", unitSystem().unitCount(), unitCount() - unitSystem().deadCount());
 
+	
+
 	CheckIntegrity();
 
 	// Issue Commands
@@ -2247,6 +2249,11 @@ void GameSimulationCore::JobSlotChange(FJobSlotChange command)
 
 void GameSimulationCore::SetAllowResource(FSetAllowResource command)
 {
+	// Guard against invalid building
+	if (!IsValidBuilding(command.buildingId)) {
+		return;
+	}
+	
 	Building& bld = building(command.buildingId);
 	if (IsHouse(bld.buildingEnum())) {
 		playerOwned(command.playerId).SetHouseResourceAllow(command.resourceEnum, command.allowed);

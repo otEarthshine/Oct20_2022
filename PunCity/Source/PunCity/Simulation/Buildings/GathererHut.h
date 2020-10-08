@@ -588,17 +588,20 @@ public:
 
 	// Production always yield the same amount of product (2 * baseinput)
 	int32 productPerBatch() override {
-		return (baseInputValue() * 2) * efficiency() / 100;
+		return baseOutputValue() * efficiency() / 100;
 	}
 	
 private:
 	int32 baseInputValue() {
 		return GetResourceInfo(input1()).basePrice * baseInputPerBatch();
 	}
+	int32 baseOutputValue() {
+		return baseInputValue() * 2;
+	}
 	int32 baseProfitValue() {
 		// Without sustainability card, baseProfitValue == baseInputValue
 		// With Sustainability, baseProfitValue would increase, increase the work time...
-		return GetResourceInfo(input1()).basePrice * (baseInputPerBatch() - inputPerBatch()); // inputPerBatch default to 10 taking into account sustainability card...
+		return GetResourceInfo(input1()).basePrice * (baseOutputValue() - inputPerBatch()); // inputPerBatch default to 10 taking into account sustainability card...
 	}
 };
 
@@ -1427,8 +1430,8 @@ public:
 		//AddResourceHolder(ResourceEnum::WhaleMeat, ResourceHolderType::Provider, 0);
 
 		_upgrades = {
-			BuildingUpgrade("Juicier Bait", "Juicier bait that attracts more fish. +25% productivity.", 350),
-			MakeUpgrade("Improved Fishing Tools", "+30% productivity.", ResourceEnum::SteelTools, 70),
+			BuildingUpgrade("Juicier Bait", "Juicier bait that attracts more fish. +25% productivity.", 300),
+			MakeUpgrade("Improved Fishing Tools", "+50% productivity.", ResourceEnum::SteelTools, 140),
 			BuildingUpgrade("More Workers", "+1 worker slots", 100),
 			//BuildingUpgrade("Whaling", "Catch whale from deep sea instead.\n  Produces whale meat.\n  +2 worker slots.\n  No effect nearby fish population", 120)
 		};
@@ -1477,7 +1480,7 @@ public:
 			bonuses.push_back({ "Juicier Bait", 25 });
 		}
 		if (IsUpgraded(1)) {
-			bonuses.push_back({ "Improved Fishing Tools", 25 });
+			bonuses.push_back({ "Improved Fishing Tools", 50 });
 		}
 		return bonuses;
 	}

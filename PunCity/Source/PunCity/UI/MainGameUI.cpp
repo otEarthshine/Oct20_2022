@@ -321,17 +321,18 @@ void UMainGameUI::Tick()
 		// Refresh card stack
 		// refresh the stack if its state changed...
 		// Clicking "Submit" closes the UI temporarily. While the command is being verified, we do not update this
-		if (!cardSystem.IsPendingCommand() && _lastIsCardStackBlank != cardSystem.IsCardStackBlank())
+		if (!cardSystem.IsPendingCommand() && 
+			(_lastIsCardStackBlank == BoolEnum::NeedUpdate || _lastIsCardStackBlank != static_cast<BoolEnum>(cardSystem.IsCardStackBlank())))
 		{
-			_lastIsCardStackBlank = cardSystem.IsCardStackBlank();
-			ESlateVisibility cardStackVisible = _lastIsCardStackBlank ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible;
+			_lastIsCardStackBlank = static_cast<BoolEnum>(cardSystem.IsCardStackBlank());
+			ESlateVisibility cardStackVisible = static_cast<bool>(_lastIsCardStackBlank) ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible;
 
 			CardStack1->SetVisibility(cardStackVisible);
 			CardStack2->SetVisibility(cardStackVisible);
 			CardStack3->SetVisibility(cardStackVisible);
 			CardStack4->SetVisibility(cardStackVisible);
 			CardStack5->SetVisibility(cardStackVisible);
-			CardRerollBox1->SetVisibility(_lastIsCardStackBlank ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+			CardRerollBox1->SetVisibility(static_cast<bool>(_lastIsCardStackBlank) ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
 			TryPlayAnimation("CardStackFlash");
 		}
@@ -689,6 +690,11 @@ void UMainGameUI::Tick()
 			}
 
 		}
+	}
+
+	// No Townhall Don't show UI other than Townhall Card
+	if (!simulation.HasTownhall(playerId())) {
+		return;
 	}
 
 	{
@@ -1194,7 +1200,7 @@ void UMainGameUI::Tick()
 				int32 houseLvlCount = simulation.GetHouseLvlCount(playerId(), lvl, true);
 				for (size_t i = 0; i < houseLvlToUnlockCount[lvl].size(); i++) 
 				{
-					// skip i == 0 for the tech with unfinished left
+					// skip i == 0 for the tech with zero left?
 					if (i == 0 && lvl > 1)
 					{
 						//int32 houseLvlCountToLeft = simulation.GetHouseLvlCount(playerId(), lvl - 1, true);
@@ -1202,15 +1208,16 @@ void UMainGameUI::Tick()
 						//if (houseLvlCountToLeft < houseLvlToUnlockCount[lvl - 1][0]) {
 						//	continue;
 						//}
-						if (houseLvlCount == 0) {
+						int32 houseLvlCountToLeft = simulation.GetHouseLvlCount(playerId(), lvl - 1, true);
+						if (houseLvlCountToLeft == 0) {
 							continue;
 						}
 					}
 
 					// skip showing the part of the column
-					if (simulation.GetHouseLvlCount(playerId(), lvl, true) == 0) {
-						continue;
-					}
+					//if (simulation.GetHouseLvlCount(playerId(), lvl, true) == 0) {
+					//	continue;
+					//}
 					
 					int32 houseNeeded = houseLvlToUnlockCount[lvl][i] - houseLvlCount;
 					if (houseNeeded > 0 && 
@@ -1226,8 +1233,10 @@ void UMainGameUI::Tick()
 			if (closestTech_HouseLvl != -1) 
 			{
 				std::stringstream ss;
-				ss << "House Lvl " << closestTech_HouseLvl << ": " << closestTech_CurrentHouseCount << "/" << (closestTech_CurrentHouseCount + closestTech_HouseNeeded);
+				int32 totalHouseCount = closestTech_CurrentHouseCount + closestTech_HouseNeeded;
+				ss << "House Lvl " << closestTech_HouseLvl << ": " << closestTech_CurrentHouseCount << "/" << totalHouseCount;
 				SetText(ProsperityAmountText, ss.str());
+				ProsperityBar->SetWidthOverride(closestTech_CurrentHouseCount * 240.0f / totalHouseCount);
 			}
 			else {
 				ProsperityAmountText->SetVisibility(ESlateVisibility::Collapsed);

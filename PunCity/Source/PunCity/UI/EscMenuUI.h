@@ -316,6 +316,7 @@ public:
 		// Close ExitConfirm to EscMenu
 		if (ConfirmUI->GetVisibility() != ESlateVisibility::Collapsed) {
 			ConfirmUI->SetVisibility(ESlateVisibility::Collapsed);
+			ConfirmBlur->SetVisibility(ESlateVisibility::Collapsed);
 			BackBlur->SetVisibility(ESlateVisibility::Collapsed);
 
 			dataSource()->Spawn2DSound("UI", "UIWindowClose");
@@ -323,6 +324,7 @@ public:
 		// Close Settings out to EscMenu
 		else if (GameSettingsUI->GetVisibility() != ESlateVisibility::Collapsed) {
 			GameSettingsUI->SetVisibility(ESlateVisibility::Collapsed);
+			
 			EscMenu->SetVisibility(ESlateVisibility::Visible);
 
 			dataSource()->Spawn2DSound("UI", "UIWindowClose");

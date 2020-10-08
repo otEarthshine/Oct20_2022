@@ -678,8 +678,14 @@ public:
 	int32 seasonalConsumption1() { return std::accumulate(_seasonalConsumption1.begin(), _seasonalConsumption1.end(), 0); }
 	int32 seasonalConsumption2() { return std::accumulate(_seasonalConsumption2.begin(), _seasonalConsumption2.end(), 0); }
 
-	void InitStatistics() { 
-		_seasonalProductionPairs.resize(Time::MinutesPerSeason);
+	void InitStatistics()
+	{ 
+		if (_buildingEnum == CardEnum::Farm) {
+			_seasonalProductionPairs.resize(Time::MinutesPerYear);
+		} else {
+			_seasonalProductionPairs.resize(Time::MinutesPerSeason);
+		}
+		
 		_seasonalConsumption1.resize(Time::MinutesPerSeason);
 		_seasonalConsumption2.resize(Time::MinutesPerSeason);
 	}
@@ -692,7 +698,8 @@ public:
 	void AddConsumption2Stat(ResourcePair resource);
 	void AddDepletionStat(ResourcePair resource);
 
-	void MinuteStatisticsUpdate() {
+	void MinuteStatisticsUpdate()
+	{
 		_seasonalProductionPairs.insert(_seasonalProductionPairs.begin(), std::vector<ResourcePair>());
 		_seasonalProductionPairs.pop_back();
 		

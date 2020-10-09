@@ -134,7 +134,7 @@ public:
 
 		_upgrades = {
 			MakeUpgrade("Timber Management", "+30% efficiency.", ResourceEnum::Stone,50),
-			MakeUpgrade("Tree-felling Technique", "+30% efficiency.", ResourceEnum::Stone,80),
+			MakeUpgrade("Tree-felling Technique", "+50% efficiency.", ResourceEnum::Stone,80),
 			MakeUpgrade("Forest Town", "+30% production when you own 3+ foresters.", ResourceEnum::Stone, 50),
 		};
 	}
@@ -148,7 +148,7 @@ public:
 			bonuses.push_back({ "Timber Management", 30 });
 		}
 		if (IsUpgraded(1)) {
-			bonuses.push_back({ "Tree-felling Technique", 30 });
+			bonuses.push_back({ "Tree-felling Technique", 50 });
 		}
 		if (IsUpgraded(2)) {
 			if (_simulation->buildingCount(_playerId, CardEnum::Forester) >= 3) {
@@ -583,7 +583,7 @@ public:
 	int32 workManSecPerBatch100() override
 	{
 		// Same amount of work required to acquire resources
-		return baseProfitValue() * 100 * 100 / WorkRevenue100PerSec_perMan_Base; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
+		return baseProfitValue() * 100 * 100 / buildingInfo().workRevenuePerSec100_perMan; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
 	}
 
 	// Production always yield the same amount of product (2 * baseinput)
@@ -591,7 +591,7 @@ public:
 		return baseOutputValue() * efficiency() / 100;
 	}
 	
-private:
+
 	int32 baseInputValue() {
 		return GetResourceInfo(input1()).basePrice * baseInputPerBatch();
 	}
@@ -601,7 +601,7 @@ private:
 	int32 baseProfitValue() {
 		// Without sustainability card, baseProfitValue == baseInputValue
 		// With Sustainability, baseProfitValue would increase, increase the work time...
-		return GetResourceInfo(input1()).basePrice * (baseOutputValue() - inputPerBatch()); // inputPerBatch default to 10 taking into account sustainability card...
+		return baseOutputValue() - GetResourceInfo(input1()).basePrice * inputPerBatch(); // inputPerBatch default to 10 taking into account sustainability card...
 	}
 };
 
@@ -719,7 +719,9 @@ public:
 		// ensure Wild Card and Card Removal cards are not negative
 		cardPrice = max(cardPrice, 120);
 		
-		return (cardPrice - batchCost()) * 100 * 100 / buildingInfo().workRevenuePerSec100_perMan; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
+		int32 result = (cardPrice - batchCost()) * 100 * 100 / buildingInfo().workRevenuePerSec100_perMan; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
+
+		return result * 100 / efficiency();
 	}
 
 	CardEnum GetCardProduced();
@@ -807,8 +809,36 @@ public:
 class MedicineMaker : public IndustrialBuilding
 {
 public:
+	void FinishConstruction() final
+	{
+		Building::FinishConstruction();
+
+		_upgrades = {
+			MakeUpgrade("Catalyst", "+30% production.", 100),
+			MakeUpgrade("Improved Extraction", "+50% production.", 150),
+			MakeUpgrade("Pharmaceutical Guild", "+50% production when you have 4 or more Medicine Maker.", ResourceEnum::Brick, 50),
+		};
+	}
+	
 	int32 baseInputPerBatch() override {
 		return 5;
+	}
+	
+	std::vector<BonusPair> GetBonuses() override {
+		std::vector<BonusPair> bonuses = Building::GetBonuses();
+
+		if (IsUpgraded(0)) {
+			bonuses.push_back({ "Catalyst", 30 });
+		}
+		if (IsUpgraded(1)) {
+			bonuses.push_back({ "Improved Extraction", 50 });
+		}
+		if (IsUpgraded(2)) {
+			if (_simulation->buildingCount(_playerId, CardEnum::MedicineMaker) >= 4) {
+				bonuses.push_back({ "Pharmaceutical Guild", 50 });
+			}
+		}
+		return bonuses;
 	}
 };
 
@@ -1731,7 +1761,7 @@ public:
 };
 
 
-//class Barrack final : public Building
+//class Barracfk final : public Building
 //{
 //public:
 //	void FinishConstruction() final {

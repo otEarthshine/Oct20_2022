@@ -97,7 +97,7 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 	
 	{TechEnum::TraderDiscount, {
 		"Trader Discount",
-		"If trading company and trading post are on the same region, both gain -5% trading fee.",
+		"Trading company adjacent to trading port gain -5% trading fee.",
 	}},
 	// TODO: BuildingComboEnum?? Encourage ppl to build next building... holes to fill...
 
@@ -265,6 +265,11 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 		"Intercity Connection",
 		"Allow connecting Cities with Intercity Road to establish trade connections",
 	}},
+
+	{ TechEnum::Combo, {
+		"Building Combo",
+		"Gain Combo level 1,2,3 by constructing 2,4,8 buildings of the same type.",
+	} },
 };
 
 enum class TechClassEnum
@@ -452,7 +457,7 @@ public:
 /**
  * 
  */
-class UnlockSystem //: public IUnlockSystem
+class UnlockSystem
 {
 public:
 	/*
@@ -682,7 +687,8 @@ public:
 
 			era = 2;
 			AddProsperityTech_Building(era, 4, TechEnum::Library, CardEnum::Library);
-			AddProsperityTech_BuildingX(era, 8, TechEnum::Baking, { CardEnum::Windmill, CardEnum::Bakery });
+			AddProsperityTech_Bonus(era, 4, TechEnum::Combo);
+			AddProsperityTech_BuildingX(era, 4, TechEnum::Baking, { CardEnum::Windmill, CardEnum::Bakery });
 			AddProsperityTech_Bonus(era, 20, TechEnum::FarmAdjacency);
 			AddProsperityTech_Bonus(era, 30, TechEnum::FarmingBreakthrough);
 			AddProsperityTech_Bonus(era, 30, TechEnum::FarmImprovement);

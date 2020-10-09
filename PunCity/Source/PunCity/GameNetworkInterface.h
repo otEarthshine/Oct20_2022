@@ -80,6 +80,7 @@ public:
 
 	virtual void KeyPressed_H() = 0;
 	virtual void KeyPressed_F() = 0;
+	virtual void KeyPressed_Y() = 0;
 
 	virtual TileArea GetDemolishHighlightArea() = 0;
 

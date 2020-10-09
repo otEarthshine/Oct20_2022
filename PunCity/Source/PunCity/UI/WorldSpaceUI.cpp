@@ -1236,7 +1236,7 @@ void UWorldSpaceUI::TickPlacementInstructions()
 
 		int32 appealPercent = simulation().overlaySystem().GetAppealPercent(placementInfo.mouseOnTile);
 		ss << "Appeal: " << appealPercent << "%";
-		punBox->AddRichText(TextRed(ss.str(), appealPercent < 60))->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichText(TextRedOrange(ss.str(), appealPercent, 60, 80))->SetJustification(ETextJustify::Type::Center);
 		punBox->AddSpacer(12);
 
 	}
@@ -1244,21 +1244,40 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	{
 		int32 efficiency = Fisher::FisherAreaEfficiency(placementInfo.mouseOnTile, false, WorldTile2::Invalid, &simulation());
 		ss << "Efficiency: " << efficiency << "%";
-		punBox->AddRichText(TextRed(ss.str(), efficiency < 60))->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichText(TextRedOrange(ss.str(), efficiency, 60, 80))->SetJustification(ETextJustify::Type::Center);
 		punBox->AddSpacer(12);
 	}
 	else if (placementInfo.buildingEnum == CardEnum::Windmill)
 	{
 		int32 efficiency = Windmill::WindmillBaseEfficiency(playerId(), placementInfo.mouseOnTile, &simulation());
 		ss << "Efficiency: " << efficiency << "%";
-		punBox->AddRichText(TextRed(ss.str(), efficiency < 60))->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichText(TextRedOrange(ss.str(), efficiency, 60, 80))->SetJustification(ETextJustify::Type::Center);
 		punBox->AddSpacer(12);
 	}
 	else if (placementInfo.buildingEnum == CardEnum::Beekeeper)
 	{
 		int32 efficiency = Beekeeper::BeekeeperBaseEfficiency(playerId(), placementInfo.mouseOnTile, &simulation());
 		ss << "Efficiency: " << efficiency << "%";
-		punBox->AddRichText(TextRed(ss.str(), efficiency < 60))->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichText(TextRedOrange(ss.str(), efficiency, 60, 80))->SetJustification(ETextJustify::Type::Center);
+		punBox->AddSpacer(12);
+	}
+	else if (placementInfo.buildingEnum == CardEnum::FruitGatherer)
+	{
+		auto& treeSystem = simulation().treeSystem();
+		
+		TileArea area(placementInfo.mouseOnTile, GathererHut::Radius);
+		int32 fruitTreeCount = 0;
+		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+			if (WorldTile2::Distance(placementInfo.mouseOnTile, tile) <= GathererHut::Radius) {
+				if (treeSystem.tileInfo(tile.tileId()).IsFruitBearer()) {
+					fruitTreeCount++;
+				}
+			}
+		});
+		// Less than 12 (=24*24 / 4 / 4 / 3), need to warn red there is too little fruit trees
+		// Less than 18, need to warn orange
+		ss << "Fruit Tree Count: " << fruitTreeCount;
+		punBox->AddRichText(TextRedOrange(ss.str(), fruitTreeCount, 12, 18))->SetJustification(ETextJustify::Type::Center);
 		punBox->AddSpacer(12);
 	}
 

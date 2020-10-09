@@ -50,6 +50,8 @@ public:
 	virtual void SetOverlayTile(WorldTile2 overlayCenterTile) = 0;
 	virtual WorldTile2 GetOverlayTile() = 0;
 
+	virtual void ToggleOverlayHideTree() = 0;
+
 	virtual class ULineBatchComponent* lineBatch() = 0;
 
 	virtual class GameSimulationCore& simulation() = 0;

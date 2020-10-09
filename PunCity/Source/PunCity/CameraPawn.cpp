@@ -49,6 +49,10 @@ void ACameraPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("KeyPressed_M", IE_Pressed, this, &ACameraPawn::KeyPressed_M);
 	PlayerInputComponent->BindAction("KeyPressed_H", IE_Pressed, this, &ACameraPawn::KeyPressed_H);
 	PlayerInputComponent->BindAction("KeyPressed_F", IE_Pressed, this, &ACameraPawn::KeyPressed_F);
+	PlayerInputComponent->BindAction("KeyPressed_Y", IE_Pressed, this, &ACameraPawn::KeyPressed_Y);
+
+	PlayerInputComponent->BindAction("KeyPressed_ToggleHideTree", IE_Pressed, this, &ACameraPawn::KeyPressed_ToggleHideTree);
+	
 	
 	PlayerInputComponent->BindAction("LeftMouseButton", IE_Pressed, this, &ACameraPawn::LeftMouseDown);
 	PlayerInputComponent->BindAction("LeftMouseButton", IE_Released, this, &ACameraPawn::LeftMouseUp);

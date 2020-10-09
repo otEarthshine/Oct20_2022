@@ -753,6 +753,24 @@ public:
 		return _simulation->resourceCount(_playerId, input2()) > 0 || resourceCount(input2()) >= inputPerBatch();
 	}
 
+	bool needInput1()
+	{
+		if (!hasInput1()) {
+			return false;
+		}
+		int32 resourceCountWithPop1 = resourceSystem().resourceCountWithPop(holderInfo(input1()));
+		return resourceCountWithPop1 < inputPerBatch();
+	}
+	bool needInput2()
+	{
+		if (!hasInput2()) {
+			return false;
+		}
+		int32 resourceCountWithPop2 = resourceSystem().resourceCountWithPop(holderInfo(input2()));
+		return resourceCountWithPop2 < inputPerBatch();
+	}
+	
+
 	virtual int32 baseProductPerBatch() {  return buildingInfo().productionBatch; }
 
 	virtual int32 efficiencyBeforeBonus() { return 100; }
@@ -918,9 +936,16 @@ public:
 		if (IsUpgraded(0)) {
 			bonuses.push_back({ "fee discount", -5 });
 		}
-		if (_simulation->IsResearched(playerId(), TechEnum::TraderDiscount)) {
-			bonuses.push_back({ "trader discount", -5 });
+
+		if (_simulation->IsResearched(playerId(), TechEnum::TraderDiscount))
+		{
+			if (isEnum(CardEnum::TradingCompany)) {
+				if (adjacentCount(CardEnum::TradingPort) > 0) {
+					bonuses.push_back({ "trader discount", -5 });
+				}
+			}
 		}
+		
 		if (_simulation->IsResearched(playerId(), TechEnum::DesertTrade) &&
 			_simulation->GetBiomeEnum(_centerTile) == BiomeEnum::Desert)
 		{

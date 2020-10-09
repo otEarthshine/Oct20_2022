@@ -615,6 +615,10 @@ public:
 		_isHidingTrees = isHiding;
 		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Trees, _sampleRegionIds);
 	}
+	void ToggleOverlayHideTree() final {
+		_isHidingTrees = !_isHidingTrees;
+		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Trees, _sampleRegionIds);
+	}
 
 	bool isCtrlDown() final { return _isCtrlDown; }
 	bool isShiftDown() final { return _isShiftDown; }

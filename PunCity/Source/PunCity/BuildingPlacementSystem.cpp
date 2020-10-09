@@ -1615,7 +1615,11 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 								_gameInterface->ShowDecal(building.area(), _assetLoader->M_ConstructionHighlightDecal);
 							}
 
-							if (building.playerId() == playerId)
+							if (building.playerId() == -1) // Shouldn't be able to boost non-player buildings
+							{
+								SetInstruction(PlacementInstructionEnum::NotThisBuildingTarget, true);
+							}
+							else
 							{
 								bool isConstructed = building.isConstructed();
 								CardEnum buildingEnum = building.buildingEnum();
@@ -1637,8 +1641,8 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 
 								_networkInterface->SetCursor("Slate/MouseCursorSkill");
 								//_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, location);
-								return;
 							}
+							return;
 						}
 
 						_networkInterface->SetCursor("Slate/MouseCursorSkillInvalid");
@@ -2342,10 +2346,14 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 		_dragRoadSuccessCount++;
 	}
 
-	if (!_gameInterface->isShiftDown()) {
+	if (!_gameInterface->isShiftDown() &&
+		!IsRoadPlacement(_placementType))
+	{
 		CancelPlacement();
 		networkInterface->OnCancelPlacement();
 	}
+
+	
 	_timesShifted++;
 }
 
@@ -2398,7 +2406,8 @@ void ABuildingPlacementSystem::NetworkTryPlaceBuilding(IGameNetworkInterface* ne
 			int32 playerId = networkInterface->playerId();
 
 			// Multiple placement for permanent buildings when holding shift
-			if (_gameInterface->isShiftDown()) {
+			if (_gameInterface->isShiftDown()) 
+			{
 				if (sim.IsPermanentBuilding(playerId, _buildingEnum))
 				{
 					int32 money = sim.money(playerId);
@@ -2408,6 +2417,11 @@ void ABuildingPlacementSystem::NetworkTryPlaceBuilding(IGameNetworkInterface* ne
 						_timesShifted++;
 						return;
 					}
+				}
+				else if (_buildingEnum == CardEnum::SpeedBoost)
+				{
+					// Queue Leader Skills
+					return;
 				}
 			}
 

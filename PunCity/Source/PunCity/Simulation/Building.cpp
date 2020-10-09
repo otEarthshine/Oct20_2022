@@ -795,9 +795,11 @@ int32 Building::oreLeft()
 void Building::CheckCombo()
 {
 	// Don't check permanent buildings
+	if (IsStorage(_buildingEnum)) {
+		return;
+	}
 	switch(_buildingEnum)
 	{
-	case CardEnum::StorageYard:
 	case CardEnum::House:
 	case CardEnum::DirtRoad:
 	case CardEnum::StoneRoad:
@@ -815,6 +817,10 @@ void Building::CheckCombo()
 
 	// Don't check decorations
 	if (IsDecorativeBuilding(_buildingEnum)) {
+		return;
+	}
+
+	if (!_simulation->IsResearched(_playerId, TechEnum::Combo)) {
 		return;
 	}
 	

@@ -70,10 +70,16 @@ public:
 		if (buildingEnum == CardEnum::House) {
 			BuildingHotkeyText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 			SetText(BuildingHotkeyText, "[H]");
-		} else if(buildingEnum == CardEnum::Farm) {
+		}
+		else if(buildingEnum == CardEnum::Farm) {
 			BuildingHotkeyText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 			SetText(BuildingHotkeyText, "[F]");
-		} else {
+		}
+		else if (buildingEnum == CardEnum::StorageYard) {
+			BuildingHotkeyText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			SetText(BuildingHotkeyText, "[S]");
+		}
+		else {
 			BuildingHotkeyText->SetVisibility(ESlateVisibility::Collapsed);
 		}
 

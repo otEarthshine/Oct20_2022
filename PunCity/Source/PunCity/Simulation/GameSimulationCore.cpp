@@ -3414,7 +3414,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 			if (influence(command.playerId) >= price)
 			{
 				resourceSystem(command.playerId).ChangeInfluence(-price);
-				provincePlayerOwner.ReinforceAttacker(command.provinceId, price);
+				provincePlayerOwner.ReinforceAttacker(command.provinceId, BattleInfluencePrice);
 			}
 			else
 			{

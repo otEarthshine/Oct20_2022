@@ -70,6 +70,11 @@ public:
 	void KeyPressed_M();
 	void KeyPressed_H() { _networkInterface->KeyPressed_H(); }
 	void KeyPressed_F() { _networkInterface->KeyPressed_F(); }
+	void KeyPressed_Y() { _networkInterface->KeyPressed_Y(); }
+
+	void KeyPressed_ToggleHideTree() {
+		_gameInterface->ToggleOverlayHideTree();
+	}
 	
 	void LeftMouseDown();
 	void LeftMouseUp();

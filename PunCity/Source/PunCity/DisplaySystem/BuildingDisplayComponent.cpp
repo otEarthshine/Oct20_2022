@@ -1040,10 +1040,10 @@ void UBuildingDisplayComponent::UpdateDisplayOverlay(Building& building, Overlay
 	WorldAtom2 centerAtom = building.centerTile().worldAtom2();
 
 	if (overlayType == OverlayType::Fish && building.isEnum(CardEnum::Fisher)) {
-		if (!building.IsUpgraded(0)) { // Skip whale
+		//if (!building.IsUpgraded(0)) { // Skip whale
 			//PUN_LOG("BldDisp Fish Overlay: %s", *ToFString(building.debugStr()));
 			ShowRadius(Fisher::Radius, centerAtom, building);
-		}
+		//}
 	}
 	else if (overlayType == OverlayType::Gatherer && building.isEnum(CardEnum::FruitGatherer)) {
 		//PUN_LOG("BldDisp Gatherer Overlay: %d", buildingId);

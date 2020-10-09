@@ -126,7 +126,7 @@ public:
 		//	SetProgress(barrack.trainingPercent() / 100.0f, barrack.queueCount());
 		//}
 		else if (IsSpecialProducer(building.buildingEnum())) {
-			SetProgress(building.barFraction());
+			SetSpecialProducerProgress(building.barFraction(), building);
 		}
 		else if (building.isEnum(CardEnum::StatisticsBureau)) {
 			// Note StatisticsButton gets its visibility set to Collapsed when it gets init
@@ -288,7 +288,7 @@ public:
 
 		ClockBox->SetVisibility(showClock ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 	}
-	void SetProgress(float fraction, int32 clockCount = 0)
+	void SetSpecialProducerProgress(float fraction, Building& building, int32 clockCount = 0)
 	{
 		int32 index = 0;
 		BoxAfterAdd(ResourceCompletionIconBox, index);
@@ -308,6 +308,31 @@ public:
 		} else {
 			ClockText->SetVisibility(ESlateVisibility::Collapsed);
 		}
+
+		// Special case: Barracks
+		ResourceEnum input = building.input1();
+
+		auto completionIcon = GetBoxChild<UResourceCompletionIcon>(ResourceCompletionIconBox, index, UIEnum::ResourceCompletionIcon, true);
+		UMaterialInstanceDynamic* material = completionIcon->ResourceImage->GetDynamicMaterial();
+
+		material->SetTextureParameterValue("ColorTexture", assetLoader()->GetResourceIcon(input));
+		material->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(input));
+
+		int32 inputFraction = static_cast<float>(building.resourceCount(building.input1())) / building.inputPerBatch();
+		material->SetScalarParameterValue("Fraction", inputFraction);
+		material->SetScalarParameterValue("IsInput", 1.0f);
+		material->SetScalarParameterValue("HasNoResource", inputFraction < 1.0f && simulation().resourceCount(playerId(), input) == 0);
+
+		std::stringstream ss;
+		ss << ResourceName(input);
+		ss << "<space>";
+		ss << "Input";
+		auto tooltip = AddToolTip(completionIcon->ResourceImage, ss.str());
+		if (tooltip) {
+			tooltip->TipSizeBox->SetMinDesiredWidth(150);
+		}
+
+		BoxAfterAdd(ResourceCompletionIconBox, index);
 	}
 	void SetResourceCompletion(std::vector<ResourceEnum> inputs, std::vector<float> inputFractions,
 							   std::vector<ResourceEnum> outputs, std::vector<float> outputFractions)

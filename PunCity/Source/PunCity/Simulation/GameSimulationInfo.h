@@ -100,6 +100,16 @@ static std::string TextRed(std::string str, bool isRed)
 	}
 	return str;
 }
+static std::string TextRedOrange(std::string str, int32 value, int32 orangeThreshold, int32 redThreshold)
+{
+	if (value < redThreshold) {
+		str = "<Red>" + str + "</>";
+	}
+	else if (value < orangeThreshold) {
+		str = "<Orange>" + str + "</>";
+	}
+	return str;
+}
 
 static bool SearchBoxCompare(const std::string& searchString, const std::string& compare)
 {
@@ -1787,6 +1797,9 @@ static const std::vector<std::pair<CardEnum, int32>> BuildingEnumToUpkeep =
 	{ CardEnum::GoldSmelter, 50 },
 	{ CardEnum::Mint, 20 },
 	{ CardEnum::InventorsWorkshop, 10 },
+
+	{ CardEnum::Blacksmith, 10 },
+	{ CardEnum::InventorsWorkshop, 10 },
 	
 	{ CardEnum::Garden, 5 },
 
@@ -2149,7 +2162,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::Mint,			"Mint",					WorldTile2(4, 6),	ResourceEnum::GoldBar,ResourceEnum::None,ResourceEnum::None,		 0, 2,	{80,80,0},	"Mint Gold Bars into <img id=\"Coin\"/>."),
 
 	BldInfo(CardEnum::BarrackClubman,	"Clubman Barrack",	WorldTile2(7, 7),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 2,	{30,0,0},	"Train Clubmen."),
-	BldInfo(CardEnum::BarrackSwordman,	"Knight Barrack",	WorldTile2(7, 7),	ResourceEnum::Iron, ResourceEnum::None, ResourceEnum::None,		0, 5,	{30,30,30},	"Consume Iron to increase <img id=\"Influence\"/>."),
+	BldInfo(CardEnum::BarrackSwordman,	"Knight Barrack",	WorldTile2(7, 7),	ResourceEnum::Iron, ResourceEnum::None, ResourceEnum::None,		0, 4,	{80,30,30},	"Consume Iron to increase <img id=\"Influence\"/>."),
 	BldInfo(CardEnum::BarrackArcher,		"Archer Barrack",	WorldTile2(7, 7),	ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::None,		0, 2,	{50,30,0},	"Consume Wood to increase <img id=\"Influence\"/>."),
 
 	BldInfo(CardEnum::ShrineWisdom,	"Shrine of Wisdom",		WorldTile2(4, 4),	ResourceEnum::None,ResourceEnum::None,ResourceEnum::None,	 0, 0,	{0, 50, 0},	"+1 Wild Card to the deck."),
@@ -3644,7 +3657,7 @@ static const TileObjInfo TreeInfos[] = {
 
 	//TileObjInfo(TileObjEnum::PlumpCob, "Plump cob",	ResourceTileType::Bush,				1,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), "Produces large soft yellow tasty cob. Need 2 years before it is ready for harvest, but has 3x yield."),
 	//TileObjInfo(TileObjEnum::CreamPod, "Cream pod",	ResourceTileType::Bush,				1,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), "Produces round pods, which, when cut open, reveals thick sweet cream substance."),
-	TileObjInfo(TileObjEnum::Cabbage, "Cabbage",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cabbage, FarmBaseYield100), "Healthy vegetable great for making salad."),
+	TileObjInfo(TileObjEnum::Cabbage, "Cabbage",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cabbage, FarmBaseYield100 * 120 / 100), "Healthy vegetable great for making salad."),
 
 	TileObjInfo(TileObjEnum::Cocoa,	"Cocoa",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cocoa, FarmBaseYield100), "Cocoa used to make delicious chocolate."),
 	TileObjInfo(TileObjEnum::Cotton,	"Cotton",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cotton, FarmBaseYield100), "Cotton used to make Cotton Fabric."),
@@ -3983,7 +3996,8 @@ static bool HasBuildingFront(CardEnum cardEnum)
 }
 
 static bool IsStorageTooLarge(TileArea area) {
-	return (area.sizeX() / 2 * 2) > 6 || (area.sizeY() / 2 * 2) > 6;
+	return (area.sizeX() / 2 * 2) > 8 || 
+		   (area.sizeY() / 2 * 2) > 8; // 4x4 max storage yard
 }
 static bool IsStorageWidthTooHigh(TileArea area) {
 	return (area.sizeX() / 2) > 16 || (area.sizeY() / 2) > 16;
@@ -4376,6 +4390,8 @@ enum class TechEnum : uint8
 	InventorsWorkshop,
 	IntercityRoad,
 
+	Combo,
+
 	Count,
 };
 
@@ -4767,7 +4783,7 @@ static const UnitInfo UnitInfos[]
 	//	gestationYears100, winterSurvivalLength_Years100, foodPerYear
 	UnitInfo(UnitEnum::Alpaca, "Feral Alpaca",	500,	100,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Pork, 2 * BaseUnitDrop100}}),
 	UnitInfo(UnitEnum::Human, "Human",	1000,	100,		025,	020,	HumanFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}}),
-	UnitInfo(UnitEnum::Human,"Boar",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 3 * BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::Boar,"Boar",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 3 * BaseUnitDrop100}}),
 
 	UnitInfo(UnitEnum::RedDeer,"Red Deer",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 	UnitInfo(UnitEnum::YellowDeer,"Mule Deer",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
@@ -4782,9 +4798,9 @@ static const UnitInfo UnitInfos[]
 	UnitInfo(UnitEnum::Penguin, "Penguin",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 	
 	
-	UnitInfo(UnitEnum::Pig,"Pig",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Pork, BaseUnitDrop100 * 2}}),
-	UnitInfo(UnitEnum::Sheep,"Sheep",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Lamb, BaseUnitDrop100}, {ResourceEnum::Wool, BaseUnitDrop100}}),
-	UnitInfo(UnitEnum::Cow,"Cow",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Milk, 2 * BaseUnitDrop100}, {ResourceEnum::Leather,  BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::Pig,"Pig",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Pork, BaseUnitDrop100 * 240 / 100}}),
+	UnitInfo(UnitEnum::Sheep,"Sheep",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Lamb, BaseUnitDrop100 * 120 / 100}, {ResourceEnum::Wool, BaseUnitDrop100 * 120 / 100}}),
+	UnitInfo(UnitEnum::Cow,"Cow",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Milk, BaseUnitDrop100 * 240 / 100}, {ResourceEnum::Leather,  BaseUnitDrop100 * 120 / 100}}),
 
 	UnitInfo(UnitEnum::Infantry,"Infantry",	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
 	UnitInfo(UnitEnum::ProjectileArrow,"ProjectileArrow",	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),

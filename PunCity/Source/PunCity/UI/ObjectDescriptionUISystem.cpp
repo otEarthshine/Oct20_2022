@@ -1506,6 +1506,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 #if WITH_EDITOR
 						descriptionBox->AddRichText("-- workManSecPerBatch100: " + to_string(building.workManSecPerBatch100()));
 						descriptionBox->AddRichText("-- workRevenuePerSec100_perMan: " + to_string(building.buildingInfo().workRevenuePerSec100_perMan));
+						descriptionBox->AddRichText("-- batchCost: " + to_string(building.batchCost()));
+						descriptionBox->AddRichText("-- batchProfit: " + to_string(building.batchProfit()));
 #endif
 
 						/*
@@ -1536,7 +1538,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						if (building.workPercent() > 0) {
 							//ss << "(get " << building.productPerBatch() << " " << ResourceName(building.product()) << ")\n";
 						}
-						else if (!building.filledInputs()) 
+						else if (building.needInput1() ||
+								 building.needInput2())
 						{
 							// Special case IsMountainMine
 							if (IsMountainMine(building.buildingEnum()))
@@ -1545,9 +1548,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							else
 							{
 								ss << "<Orange>Require ";
-								if (hasInput1) ss << building.inputPerBatch() << " " << ResourceName(building.input1());
-								if (hasInput1 && hasInput2) ss << ", ";
-								if (hasInput2) ss << building.inputPerBatch() << " " << ResourceName(building.input2());
+								if (building.needInput1()) ss << building.inputPerBatch() << " " << ResourceName(building.input1());
+								if (building.needInput1() && building.needInput2()) ss << ", ";
+								if (building.needInput2()) ss << building.inputPerBatch() << " " << ResourceName(building.input2());
 								ss << "</>";
 								descriptionBox->AddRichText(ss);
 							}
@@ -1556,6 +1559,31 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					}
 					else if (IsSpecialProducer(building.buildingEnum()))
 					{
+#if WITH_EDITOR
+						descriptionBox->AddRichText("-- workManSecPerBatch100: " + to_string(building.workManSecPerBatch100()));
+						descriptionBox->AddRichText("-- workRevenuePerSec100_perMan: " + to_string(building.buildingInfo().workRevenuePerSec100_perMan));
+						descriptionBox->AddRichText("-- baseInputValue: " + to_string(GetResourceInfo(building.input1()).basePrice * building.baseInputPerBatch()));
+	
+						switch (building.buildingEnum())
+						{
+						case CardEnum::BarrackArcher:
+						case CardEnum::BarrackClubman:
+						case CardEnum::Mint:
+						case CardEnum::InventorsWorkshop:
+						case CardEnum::CardMaker:
+						case CardEnum::ImmigrationOffice: {
+							auto& consumerIndustry = building.subclass<ConsumerIndustrialBuilding>();
+							descriptionBox->AddRichText("-- baseInputValue: " + to_string(consumerIndustry.baseInputValue()));
+							descriptionBox->AddRichText("-- baseOutputValue: " + to_string(consumerIndustry.baseOutputValue()));
+							descriptionBox->AddRichText("-- baseProfitValue: " + to_string(consumerIndustry.baseProfitValue()));
+							descriptionBox->AddRichText("-- workManSecPerBatch100(calc): " + to_string(consumerIndustry.baseProfitValue() * 100 * 100 / consumerIndustry.buildingInfo().workRevenuePerSec100_perMan));
+							break;
+						}
+						default:
+							break;
+						}
+#endif
+						
 						UTexture2D* productTexture = nullptr;
 						std::string productStr;
 
@@ -1589,8 +1617,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								{}, productTexture, productStr);
 						}
 
-						PUN_LOG("_workDone100:%d workManSecPerBatch100:%d batchProfit:%d baseInputPerBatch:%d efficiency:%d workRevenuePerSec100_perMan:%d", 
-							building.workDone100(), building.workManSecPerBatch100(), building.batchProfit(), building.baseInputPerBatch(), building.efficiency(), building.buildingInfo().workRevenuePerSec100_perMan);
+						//PUN_LOG("_workDone100:%d workManSecPerBatch100:%d batchProfit:%d baseInputPerBatch:%d efficiency:%d workRevenuePerSec100_perMan:%d", 
+						//	building.workDone100(), building.workManSecPerBatch100(), building.batchProfit(), building.baseInputPerBatch(), building.efficiency(), building.buildingInfo().workRevenuePerSec100_perMan);
 						
 						ss << building.workPercent() << "% ";
 						descriptionBox->AddRichText("Work done", ss);
@@ -3343,6 +3371,13 @@ void UObjectDescriptionUISystem::AddGeoresourceInfo(int32 provinceId, UPunBoxWid
 void UObjectDescriptionUISystem::AddEfficiencyText(Building& building, UPunBoxWidget* descriptionBox)
 {
 	stringstream ss;
+
+	if (building.isEnum(CardEnum::CardMaker))
+	{
+		ss << "Scholars Office's Efficiency increases work speed.";
+		ss << "<space>";
+	}
+	
 	ss << building.efficiency() << "%";
 	auto widget = descriptionBox->AddRichText("Efficiency", ss);
 

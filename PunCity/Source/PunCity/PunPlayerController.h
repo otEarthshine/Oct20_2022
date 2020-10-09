@@ -406,6 +406,13 @@ public:
 			simulation().parameters(playerId())->FarmNoticed = true;
 		}
 	}
+	void KeyPressed_Y() final
+	{
+		if (GetPunHUD()->mainGameUI()->BuildMenuOverlay->GetVisibility() != ESlateVisibility::Collapsed)
+		{
+			inputSystemInterface()->StartBuildingPlacement(CardEnum::StorageYard, 0, false);
+		}
+	}
 
 
 	/*

@@ -1644,18 +1644,22 @@ bool HumanStateAI::TryProduce()
 		// If there is nothing at the workplace, we need to go out to grab the resource to fill it
 		ResourceSystem& resourceSystem = _simulation->resourceSystem(_playerId);
 
-		bool needInput1 = false;
-		bool needInput2 = false;
 		int32 inputPerBatch = workplace.inputPerBatch();
 
-		if (workplace.hasInput1()) {
-			int32 resourceCountWithPop1 = resourceSystem.resourceCountWithPop(workplace.holderInfo(workplace.input1()));
-			needInput1 = resourceCountWithPop1 < inputPerBatch;
-		}
-		if (workplace.hasInput2()) {
-			int32 resourceCountWithPop2 = resourceSystem.resourceCountWithPop(workplace.holderInfo(workplace.input2()));
-			needInput2 = resourceCountWithPop2 < inputPerBatch;
-		}
+		//bool needInput1 = false;
+		//bool needInput2 = false;
+
+		//if (workplace.hasInput1()) {
+		//	int32 resourceCountWithPop1 = resourceSystem.resourceCountWithPop(workplace.holderInfo(workplace.input1()));
+		//	needInput1 = resourceCountWithPop1 < inputPerBatch;
+		//}
+		//if (workplace.hasInput2()) {
+		//	int32 resourceCountWithPop2 = resourceSystem.resourceCountWithPop(workplace.holderInfo(workplace.input2()));
+		//	needInput2 = resourceCountWithPop2 < inputPerBatch;
+		//}
+		
+		bool needInput1 = workplace.needInput1();
+		bool needInput2 = workplace.needInput2();
 		
 		if (needInput1 &&
 			TryFillWorkplace(workplace.input1()))
@@ -1673,8 +1677,8 @@ bool HumanStateAI::TryProduce()
 		if (needInput1 || needInput2) {
 			
 			// Check resourceCountWithPush, we would display needInput icon in the case where we need input and no one is trying to deliver them
-			bool needInput1_WithPush = workplace.hasInput1() && resourceSystem.resourceCountWithPush(workplace.holderInfo(workplace.input1())) < workplace.inputPerBatch();
-			bool needInput2_WithPush = workplace.hasInput2() && resourceSystem.resourceCountWithPush(workplace.holderInfo(workplace.input2())) < workplace.inputPerBatch();
+			bool needInput1_WithPush = workplace.hasInput1() && resourceSystem.resourceCountWithPush(workplace.holderInfo(workplace.input1())) < inputPerBatch;
+			bool needInput2_WithPush = workplace.hasInput2() && resourceSystem.resourceCountWithPush(workplace.holderInfo(workplace.input2())) < inputPerBatch;
 			if (needInput1_WithPush) {
 				workplace.workplaceInputNeeded = workplace.input1();
 			}
@@ -1689,10 +1693,10 @@ bool HumanStateAI::TryProduce()
 		// Reserve fill the input
 		{
 			if (workplace.hasInput1()) {
-				ReserveResource(ReservationType::Pop, workplace.holderInfo(workplace.input1()), workplace.inputPerBatch());
+				ReserveResource(ReservationType::Pop, workplace.holderInfo(workplace.input1()), inputPerBatch);
 			}
 			if (workplace.hasInput2()) {
-				ReserveResource(ReservationType::Pop, workplace.holderInfo(workplace.input2()), workplace.inputPerBatch());
+				ReserveResource(ReservationType::Pop, workplace.holderInfo(workplace.input2()), inputPerBatch);
 			}
 			ReserveWork(100); // Reserve work 100 to disallow others from using this building
 		}

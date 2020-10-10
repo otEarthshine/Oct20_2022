@@ -477,26 +477,34 @@ public:
 	bool CanAddCardToBoughtHand(CardEnum buildingEnum, int32 additionalCards)
 	{
 		const int32 maxCardsBought = 7;
-		if (GetCardsBought().size() + additionalCards > maxCardsBought)
-		{
-			for (size_t i = _cardsBought.size(); i-- > 0;) {
-				// TODO: properly work this out... CardSystem needs to know about how many stack of each lvl...
-				// Can still add to 1/3, 2/3, not 3/3, 4/3, 5/3, not 6/3, 7/3, 8/3, not 9/3
-				// Not 3, 6, 9, 12, 15
-				if (_cardsBought[i].buildingEnum == buildingEnum) {
-					if (_cardsBought[i].stackSize != 3 &&
-						_cardsBought[i].stackSize != 6 && 
-						_cardsBought[i].stackSize != 9 && 
-						_cardsBought[i].stackSize != 12 && 
-						_cardsBought[i].stackSize != 15) {
-						return true;
-					}
-				}
+
+		std::vector<BuildingCardStack> cardStacksFinal = GetCardsBought();
+
+		// Add Reserved Cards for final cardStacks calculation
+		std::vector<bool> reserveStatuses = GetHand1ReserveStatus();
+		check(reserveStatuses.size() <= _cardsHand.size());
+		for (size_t i = 0; i < reserveStatuses.size(); i++) {
+			if (reserveStatuses[i]) {
+				AddToCardStacksHelper(_cardsHand[i], 1, cardStacksFinal);
 			}
-			return false;
 		}
-		return true;
+
+		AddToCardStacksHelper(buildingEnum, additionalCards, cardStacksFinal);
+		
+		return cardStacksFinal.size() <= maxCardsBought;
 	}
+
+	void AddToCardStacksHelper(CardEnum buildingEnum, int32 additionalCards, std::vector<BuildingCardStack>& cardStacks)
+	{
+		for (int32 i = cardStacks.size(); i-- > 0;) {
+			if (buildingEnum == cardStacks[i].buildingEnum) {
+				cardStacks[i].stackSize += additionalCards;
+			} else {
+				cardStacks.push_back({ buildingEnum, additionalCards, 0 });
+			}
+		}
+	}
+	
 
 	bool TryAddCardToBoughtHand(CardEnum cardEnum, int32 cardCount = 1)
 	{

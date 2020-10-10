@@ -1161,6 +1161,44 @@ public:
 	// Debug...
 	PUN_DEBUG_EXPR(BldInfo buildingInfo_ = BldInfo(CardEnum::None, "none", -1, "none"));
 
+
+	// Public Non-serialized (Mostly UI)
+	enum class HoverWarning : uint8 {
+		None,
+		Depleted,
+		StoragesFull,
+		StorageTooFar,
+		HouseTooFar,
+	} hoverWarning;
+
+	float lastHoverWarningCheckTime = 0.0f;
+
+	virtual void RefreshHoverWarning()
+	{	
+		// StorageTooFar Warning
+		if (hasInput1() || hasInput2() || product() != ResourceEnum::None) 
+		{
+			if (!_simulation->HasBuildingWithinRadius(_centerTile, 30, _playerId, CardEnum::StorageYard) &&
+				!_simulation->HasBuildingWithinRadius(_centerTile, 30, _playerId, CardEnum::Warehouse)) 
+			{
+				hoverWarning = HoverWarning::StorageTooFar;
+				return;
+			}
+		}
+
+		// HouseTooFar Warning
+		if (_allowedOccupants > 0) 
+		{
+			if (!_simulation->HasBuildingWithinRadius(_centerTile, 30, _playerId, CardEnum::House))
+			{
+				hoverWarning = HoverWarning::HouseTooFar;
+				return;
+			}
+		}
+
+		hoverWarning = HoverWarning::None;
+	}
+
 protected:
 	void ResetWorkReservers();
 	void ResetOccupants();

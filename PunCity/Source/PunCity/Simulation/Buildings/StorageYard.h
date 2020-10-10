@@ -131,6 +131,10 @@ public:
 		}
 		return queuedResourceAllowed[static_cast<int>(resourceEnum)];
 	}
+
+	void RefreshHoverWarning() override {
+		hoverWarning = _simulation->isStorageAllFull(_playerId) ? HoverWarning::StoragesFull : HoverWarning::None;
+	}
 	
 
 	void Serialize(FArchive& Ar) override {

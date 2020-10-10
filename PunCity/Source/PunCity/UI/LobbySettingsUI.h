@@ -43,6 +43,9 @@ public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyAICountText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyDifficultyText;
 
+	// Others
+	UPROPERTY(meta = (BindWidget)) UButton* LobbyMapSeedRandomizeButton;
+
 	// Settings Background
 	UPROPERTY(meta = (BindWidget)) UImage* SettingsBackgroundImage;
 	
@@ -73,6 +76,7 @@ public:
 			LobbyPasswordInputBox->OnTextCommitted.AddDynamic(this, &ULobbySettingsUI::OnLobbyPasswordInputBoxTextCommitted);
 
 			LobbyMapSeedInputBox->OnTextCommitted.AddDynamic(this, &ULobbySettingsUI::OnLobbyMapSeedInputBoxTextCommitted);
+			LobbyMapSeedRandomizeButton->OnClicked.AddDynamic(this, &ULobbySettingsUI::OnClickLobbyMapSeedRandomizeButton);
 
 			LobbyMapSizeDropdown->OnSelectionChanged.AddDynamic(this, &ULobbySettingsUI::OnLobbyMapSizeDropdownChanged);
 			// "Small" If adding another map size, also change the options on UI editor
@@ -237,6 +241,8 @@ public:
 	}
 
 	UFUNCTION() void OnLobbyMapSeedInputBoxTextCommitted(const FText& text, ETextCommit::Type CommitMethod);
+	UFUNCTION() void OnClickLobbyMapSeedRandomizeButton();
+	
 	UFUNCTION() void OnLobbyMapSizeDropdownChanged(FString sItem, ESelectInfo::Type seltype);
 	UFUNCTION() void OnLobbySeaLevelDropdownChanged(FString sItem, ESelectInfo::Type seltype);
 	UFUNCTION() void OnLobbyMoistureDropdownChanged(FString sItem, ESelectInfo::Type seltype);

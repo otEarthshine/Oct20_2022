@@ -115,8 +115,6 @@ public:
 
 	void SetBuildingStatus(Building& building)
 	{
-
-		
 		if (IsTradingPostLike(building.buildingEnum()) ||
 			building.isEnum(CardEnum::TradingCompany)) {
 			SetTradeProgress(building.subclass<TradeBuilding>(), building.barFraction());
@@ -155,16 +153,40 @@ public:
 			}
 
 			// MountainMine DepletedText
-			if (IsMountainMine(building.buildingEnum()) &&
-				building.subclass<Mine>().oreLeft() <= 0)
-			{
-				DepletedText->SetVisibility(ESlateVisibility::Visible);
-			}
+			//if (IsMountainMine(building.buildingEnum()) &&
+			//	building.subclass<Mine>().oreLeft() <= 0)
+			//{
+			//	DepletedText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			//	SetText(DepletedText, "Depleted");
+			//}
 
-			
-			
-			
 			SetResourceCompletion(building.inputs(), inputFractions, outputs, outputFractions);
+		}
+
+		// Refresh Hover Warning
+		// Check every sec
+		float time = UGameplayStatics::GetTimeSeconds(this);
+		if (time - building.lastHoverWarningCheckTime >= 1.0f) 
+		{
+			building.lastHoverWarningCheckTime = time;
+			building.RefreshHoverWarning();
+
+			if (building.hoverWarning == Building::HoverWarning::Depleted) {
+				DepletedText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+				SetText(DepletedText, "Depleted");
+			}
+			else if (building.hoverWarning == Building::HoverWarning::HouseTooFar) {
+				DepletedText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+				SetText(DepletedText, "House Too Far");
+			}
+			else if (building.hoverWarning == Building::HoverWarning::StorageTooFar) {
+				DepletedText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+				SetText(DepletedText, "Storage Too Far");
+			}
+			else if (building.hoverWarning == Building::HoverWarning::StoragesFull) {
+				DepletedText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+				SetText(DepletedText, "Storages Full");
+			}
 		}
 	}
 	

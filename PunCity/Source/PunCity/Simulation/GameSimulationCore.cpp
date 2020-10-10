@@ -920,6 +920,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 								if (homeProvinceId(playerId) == claimProgress.provinceId)
 								{
 									// Home town, vassalize/declare independence instead
+									//  For Declare Independence, the attacker is the town owner
 									if (claimProgress.attackerPlayerId == playerId)
 									{
 										// Declare Independence
@@ -1928,6 +1929,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 
 	if (placementType == PlacementType::Gather) {
 		int32 markCount = _treeSystem->MarkArea(parameters.playerId, area, false, parameters.harvestResourceEnum);
+		playerOwned(parameters.playerId).alreadyDidGatherMark = true;
 
 		QuestUpdateStatus(parameters.playerId, QuestEnum::GatherMarkQuest, markCount);
 	}
@@ -3352,14 +3354,14 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 		// If there was no claim yet, start the attack
 		if (!provincePlayerOwner.GetDefendingClaimProgress(command.provinceId).isValid()) 
 		{
-			ProvinceAttackEnum attackEnum = GetProvinceAttackEnum(command.provinceId);
+			ProvinceAttackEnum attackEnum = provincePlayerOwner.GetProvinceAttackEnum(command.provinceId);
 			
 			int32 conquerPrice = 0;
 			switch(attackEnum)
 			{
 			case ProvinceAttackEnum::ConquerProvince: conquerPrice = GetProvinceAttackStartPrice(provinceId, GetProvinceClaimConnectionEnum(command.provinceId, command.playerId)); break;
 			case ProvinceAttackEnum::Vassalize: conquerPrice = GetProvinceVassalizeStartPrice(provinceId); break;
-			case ProvinceAttackEnum::DeclareIndependence: conquerPrice = BattleInfluencePrice; break;
+			case ProvinceAttackEnum::DeclareIndependence: conquerPrice = BattleInfluencePrice; break; // Declare Independence has no defense/attack advantage...
 			default: break;
 			}
 			
@@ -3378,13 +3380,26 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 
 					AddPopup(command.playerId, "You started attacking " + playerName(provincePlayerId) + ".");
 				}
-				else if (attackEnum == ProvinceAttackEnum::Vassalize) {
-					AddPopup(provincePlayerId, playerName(command.playerId) + " had launched an attack to force vassalize you. If you lose this battle, you will become " + playerName(command.playerId) + "'s vassal");
-					AddPopup(command.playerId, "You started attacking " + playerName(provincePlayerId) + ".");
+				else if (attackEnum == ProvinceAttackEnum::Vassalize) 
+				{
+					int32 oldLordPlayerId = provincePlayerOwner.lordPlayerId();
+					if (oldLordPlayerId != -1) { // Already a lord here, fight against old lord
+						AddPopup(oldLordPlayerId, playerName(command.playerId) + " started attacking on your vassal city, " + playerName(provincePlayerId) + ", to gain control of the vassal."
+													"<space>If you lose this battle, you will lose control of the vassal.");
+						
+						AddPopup(provincePlayerId, playerName(command.playerId) + " started attacking on your city, to expel and replace your old lord, " + playerName(oldLordPlayerId) + ".");
+						
+						AddPopup(command.playerId, "You started attacking " + playerName(oldLordPlayerId) + " to take " + playerName(provincePlayerId) + " as your vassal.");
+					}
+					else {
+						AddPopup(provincePlayerId, playerName(command.playerId) + " started attacking to vassalize you. If you lose this battle, you will become " + playerName(command.playerId) + "'s vassal");
+						AddPopup(command.playerId, "You started attacking " + playerName(provincePlayerId) + ".");
+					}
 				}
 				else if (attackEnum == ProvinceAttackEnum::DeclareIndependence) {
 					int32 lordId = lordPlayerId(provincePlayerId);
-					AddPopup(lordId, playerName(provincePlayerId) + " is trying to declare independence from you.");
+					AddPopup(lordId, playerName(provincePlayerId) + " is trying to declare independence from you."
+											"<space>If you lose this battle, you will lose control of the vassal.");
 
 					AddPopup(provincePlayerId, "You attempt to declare independence from " + playerName(lordId) + ".");
 				}
@@ -3398,14 +3413,15 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	else if (command.claimEnum == CallbackEnum::ReinforceAttackProvince)
 	{
 		auto& provincePlayerOwner = playerOwned(provinceOwner(command.provinceId));
-		ProvinceAttackEnum attackEnum = GetProvinceAttackEnum(command.provinceId);
+		ProvinceAttackEnum attackEnum = provincePlayerOwner.GetProvinceAttackEnum(command.provinceId);
 		
 		int32 price = 0;
 		switch (attackEnum)
 		{
 		case ProvinceAttackEnum::ConquerProvince: price = GetProvinceAttackReinforcePrice(provinceId, GetProvinceClaimConnectionEnum(command.provinceId, command.playerId)); break;
-		case ProvinceAttackEnum::Vassalize: price = BattleInfluencePrice; break; // Vassalize reinforce cost should scale..
+		case ProvinceAttackEnum::Vassalize: price = GetProvinceVassalizeReinforcePrice(provinceId); break;
 		case ProvinceAttackEnum::DeclareIndependence: price = BattleInfluencePrice; break;
+		case ProvinceAttackEnum::VassalCompetition: price = GetProvinceVassalizeReinforcePrice(provinceId); break;
 		default: break;
 		}
 		

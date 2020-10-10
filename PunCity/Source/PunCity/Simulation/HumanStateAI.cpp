@@ -325,10 +325,10 @@ void HumanStateAI::GatherSequence(NonWalkableTileAccessInfo accessInfo)
 		cutTicks = playerParameters().CutTreeTicks();
 	}
 	else if (tileType == ResourceTileType::Bush) {
-		cutTicks = playerParameters().CutTreeTicks() / 3;
+		cutTicks = playerParameters().CutTreeTicks() / 12; // base 600, make it 50
 
 		if (info.treeEnum == TileObjEnum::GrassGreen) {
-			cutTicks /= 4;
+			cutTicks /= 2; // base 600, make it 50
 		}
 	}
 	else if (tileType == ResourceTileType::Deposit) {

@@ -2085,7 +2085,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::GoldMine,		"Gold Mine",			WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::GoldOre,	 10, 3,	{50,50,0},	"Mine Gold Ores from Gold Deposit."),
 	BldInfo(CardEnum::Quarry,		"Quarry",				WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::Stone,	 10, 3,	{110,0,0},	"Mine Stone from mountain."),
 	BldInfo(CardEnum::IronStatue,	"Stone Statue",			WorldTile2(4, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,110,0},	"...Show off"),
-	BldInfo(CardEnum::Bank,			"Bank",					WorldTile2(4, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 1,	{110,110,0},	"+10 <img id=\"Coin\"/> for surrounding level 2+ houses."),
+	BldInfo(CardEnum::Bank,			"Bank",					WorldTile2(4, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{110,110,0},	"+10 <img id=\"Coin\"/> for surrounding level 2+ houses."),
 	BldInfo(CardEnum::IceAgeSpire,	"Ice Age Spire",		WorldTile2(8, 8),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,300,200},	"Spire for worshipping Groth, the god of destruction. Decrease global temperature by -10 C.", "Decrease global temperature by -10 C."),
 
 	BldInfo(CardEnum::Farm,			"Farm",					WorldTile2(8, 8),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 10, 1,	{20,0,0},	"Grow food/raw materials. Harvest during autumn."),
@@ -3128,6 +3128,8 @@ enum class ProvinceAttackEnum : uint8
 	ConquerProvince,
 	Vassalize,
 	DeclareIndependence,
+
+	VassalCompetition,
 };
 
 
@@ -6698,6 +6700,7 @@ enum class CallbackEnum : uint8
 	ReinforceAttackProvince,
 	DefendProvinceInfluence,
 	DefendProvinceMoney,
+	Liberate,
 
 	ClaimLandArmy,
 	CancelClaimLandArmy,

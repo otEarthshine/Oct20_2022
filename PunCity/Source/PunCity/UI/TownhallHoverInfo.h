@@ -58,19 +58,18 @@ public:
 
 				// Vassalize
 				// (Declare Independence)
-				//if (playerOwned.lordPlayerId() != -1)
-				//{
-				//	playerOwned.GetDefendingClaimProgress(command.provinceId);
-				//	
-				//	SetText(VassalizeButtonText, "Declare Independence");
-				//	BUTTON_ON_CLICK(VassalizeButton, this, &UTownhallHoverInfo::OnClickDeclareIndependenceButton);
-				//	
-				//	VassalizeButton->SetVisibility(ESlateVisibility::Visible);
-				//}
-				//else 
+				if (townhallPlayerOwned.lordPlayerId() != -1)
 				{
+					SetText(VassalizeButtonRichText, "Declare Independence");
+					BUTTON_ON_CLICK(VassalizeButton, this, &UTownhallHoverInfo::OnClickDeclareIndependenceButton);
+					
+					VassalizeButton->SetVisibility(ESlateVisibility::Visible);
+				}
+				else {
 					VassalizeButton->SetVisibility(ESlateVisibility::Collapsed);
 				}
+				LiberationButton->SetVisibility(ESlateVisibility::Collapsed);
+				
 
 				// Buffs
 				{
@@ -114,30 +113,32 @@ public:
 				GiftButton->SetVisibility(ESlateVisibility::Visible);
 				BUTTON_ON_CLICK(GiftButton, this, &UTownhallHoverInfo::OnClickGiftButton);
 
-				// Vassalize
-				bool vassalizeResearched = (sim.IsResearched(playerId(), TechEnum::Vassalize));
-				bool townhallNotAlreadyVassalized = (townhallPlayerOwned.lordPlayerId() == -1);
 				
-				if (vassalizeResearched && townhallNotAlreadyVassalized)
+				// Vassalize
+				if (sim.IsResearched(playerId(), TechEnum::Vassalize))
 				{
-					if (townhallPlayerOwned.GetDefendingClaimProgress(townhall.provinceId()).isValid())
+					if (!townhallPlayerOwned.GetDefendingClaimProgress(townhall.provinceId()).isValid())
 					{
-						SetText(VassalizeButtonRichText, "Reinforce (Vassalize)\n<img id=\"Influence\"/>" + std::to_string(BattleInfluencePrice));
-						BUTTON_ON_CLICK(VassalizeButton, this, &UTownhallHoverInfo::OnClickVassalizeReinforceButton);
-					}
-					else
-					{
-						// TODO: Rich Text...
 						SetText(VassalizeButtonRichText, "Conquer (Vassalize)\n<img id=\"Influence\"/>" + std::to_string(sim.GetProvinceVassalizeStartPrice(townhall.provinceId())));
 						BUTTON_ON_CLICK(VassalizeButton, this, &UTownhallHoverInfo::OnClickVassalizeButton);
+
+						// Can also liberate if there is an existing conquerer
+						if (townhallPlayerOwned.lordPlayerId() != -1)  {
+							LiberationButton->SetVisibility(ESlateVisibility::Visible);
+							BUTTON_ON_CLICK(LiberationButton, this, &UTownhallHoverInfo::OnClickLiberateButton);
+						} else {
+							LiberationButton->SetVisibility(ESlateVisibility::Collapsed);
+						}
 					}
 
 					VassalizeButton->SetVisibility(ESlateVisibility::Visible);
 				}
 				else {
 					VassalizeButton->SetVisibility(ESlateVisibility::Collapsed);
+					LiberationButton->SetVisibility(ESlateVisibility::Collapsed);
 				}
 
+				
 				// Buffs
 				BuffRow->SetVisibility(ESlateVisibility::Collapsed);
 			}
@@ -824,6 +825,7 @@ public:
 	
 	UPROPERTY(meta = (BindWidget)) UButton* VassalizeButton;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* VassalizeButtonRichText;
+	UPROPERTY(meta = (BindWidget)) UButton* LiberationButton;
 
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* BuffRow;
 	
@@ -902,39 +904,37 @@ private:
 		GetPunHUD()->OpenGiftUI(targetPlayerId);
 	}
 
-	UFUNCTION() void OnClickVassalizeButton()
+	void AttackDefenseHelper(CallbackEnum claimEnum)
 	{
-		PUN_CHECK(playerId() != GetTownhall().playerId());
-
 		auto command = make_shared<FClaimLand>();
-		command->claimEnum = CallbackEnum::StartAttackProvince;
+		command->claimEnum = claimEnum;
 		command->provinceId = GetTownhall().provinceId();
 		PUN_CHECK(command->provinceId != -1);
-		
+
 		networkInterface()->SendNetworkCommand(command);
 	}
+	UFUNCTION() void OnClickVassalizeButton()
+	{
+		check(playerId() != GetTownhall().playerId());
+		AttackDefenseHelper(CallbackEnum::StartAttackProvince);
+	}
+	
 	UFUNCTION() void OnClickVassalizeReinforceButton()
 	{
-		PUN_CHECK(playerId() != GetTownhall().playerId());
-
-		auto command = make_shared<FClaimLand>();
-		command->claimEnum = CallbackEnum::ReinforceAttackProvince;
-		command->provinceId = GetTownhall().provinceId();
-		PUN_CHECK(command->provinceId != -1);
-
-		networkInterface()->SendNetworkCommand(command);
+		check(playerId() != GetTownhall().playerId());
+		AttackDefenseHelper(CallbackEnum::ReinforceAttackProvince);
 	}
 	
 	UFUNCTION() void OnClickDeclareIndependenceButton()
 	{
-		PUN_CHECK(playerId() == GetTownhall().playerId());
+		check(playerId() == GetTownhall().playerId());
+		AttackDefenseHelper(CallbackEnum::StartAttackProvince);
+	}
 
-		auto command = make_shared<FClaimLand>();
-		command->claimEnum = CallbackEnum::StartAttackProvince;
-		command->provinceId = GetTownhall().provinceId();
-		PUN_CHECK(command->provinceId != -1);
-
-		networkInterface()->SendNetworkCommand(command);
+	UFUNCTION() void OnClickLiberateButton()
+	{
+		check(playerId() != GetTownhall().playerId());
+		AttackDefenseHelper(CallbackEnum::Liberate);
 	}
 
 	/*

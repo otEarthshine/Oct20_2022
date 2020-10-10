@@ -805,9 +805,9 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 	if (influence100 > fullYearInfluenceIncome100) {
 		// Fully damp to 0 influence income
 		if (fullYearInfluenceIncome100 > 0) {
-			int32 numerator = min(fullYearInfluenceIncome100, influence100 - fullYearInfluenceIncome100);
-			int32 influenceDamp100 = influenceIncomeBeforeCapDamp100 * numerator / fullYearInfluenceIncome100;
-			influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::TooMuchInfluencePoints)] -= influenceDamp100;
+			int32 influenceIncomeDamp100 = influenceIncomeBeforeCapDamp100 * influence100 / fullYearInfluenceIncome100; // More damp as influence stored is closer to fullYearInfluenceIncome100
+			influenceIncomeDamp100 = min(influenceIncomeDamp100, influenceIncomeBeforeCapDamp100); // Can't damp more than existing influence income
+			influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::TooMuchInfluencePoints)] -= influenceIncomeDamp100;
 		}
 	}
 }

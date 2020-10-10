@@ -103,7 +103,7 @@ void UMainGameUI::PunInit()
 
 	// Tooltips 
 	AddToolTip(BuildMenuTogglerButton, "Build houses, farms, and infrastructures\n<Orange>[B]</>");
-	AddToolTip(GatherButton, "Gather trees, stone etc\n<Orange>[G]</>");
+	AddToolTip(GatherButton, "Gather trees, stone etc\n<Orange>[G]</><space>Activate this button, then Click and Drag to Gather.");
 	AddToolTip(DemolishButton, "Demolish\n<Orange>[X]</>");
 
 	// Set Icon images

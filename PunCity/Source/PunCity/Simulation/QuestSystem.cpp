@@ -13,3 +13,16 @@ bool Quest::CanGetRewardCard() {
 void Quest::GetRewardCard() {
 	simulation->cardSystem(playerId).AddCardToHand2(rewardCardEnum());
 }
+
+
+bool GatherMarkQuest::ShouldSkipToNextQuest()
+{
+	if (simulation->playerOwned(playerId).alreadyDidGatherMark) {
+		return true;
+	}
+	BiomeEnum biomeEnum = simulation->GetBiomeEnum(simulation->townhall(playerId).centerTile());
+	bool isForestBiome = (biomeEnum == BiomeEnum::Forest) || 
+						(biomeEnum == BiomeEnum::BorealForest) || 
+						(biomeEnum == BiomeEnum::Jungle);
+	return !isForestBiome;
+}

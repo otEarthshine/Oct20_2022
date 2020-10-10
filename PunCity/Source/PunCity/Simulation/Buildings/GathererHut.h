@@ -422,6 +422,11 @@ public:
 	}
 
 	void OnProduce(int32 productionAmount) override;
+
+	void RefreshHoverWarning() override
+	{
+		hoverWarning = (oreLeft() <= 0) ? HoverWarning::Depleted : HoverWarning::None;
+	}
 };
 
 class Quarry final : public Mine
@@ -1083,7 +1088,8 @@ public:
 	}
 
 	// Check other nearby windmill for efficiency
-	static int32 WindmillBaseEfficiency(int32 playerId, WorldTile2 centerTileIn, IGameSimulationCore* simulation) {
+	static int32 WindmillBaseEfficiency(int32 playerId, WorldTile2 centerTileIn, IGameSimulationCore* simulation)
+	{
 		const std::vector<int32>& windmills = simulation->buildingIds(playerId, CardEnum::Windmill);
 
 		// Adjust efficiency by distance linearly

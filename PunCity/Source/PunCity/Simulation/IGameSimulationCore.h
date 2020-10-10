@@ -183,6 +183,9 @@ public:
 	
 	virtual const SubregionLists<int32>& buildingSubregionList() = 0;
 
+	virtual bool HasBuildingWithinRadius(WorldTile2 tileIn, int32 radius, int32 playerId, CardEnum buildingEnum) = 0;
+	
+
 	template<typename Func>
 	std::vector<int32> buildingIdsFiltered(int32 playerId, CardEnum cardEnum, Func shouldRemove) {
 		std::vector<int32> results = buildingIds(playerId, cardEnum);
@@ -476,6 +479,8 @@ public:
 
 	//! Players
 	virtual bool HasTownhall(int32 playerId) = 0;
+
+	virtual int32 homeProvinceId(int32 playerId) = 0;
 
 	template<typename Func>
 	void ExecuteOnPlayersAndAI(Func func) {

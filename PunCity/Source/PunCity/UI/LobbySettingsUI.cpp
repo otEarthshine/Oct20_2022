@@ -39,12 +39,89 @@ void ULobbySettingsUI::OnLobbyMapSeedInputBoxTextCommitted(const FText& text, ET
 	serverMapSettings.mapSeed = TrimStringF(text.ToString(), 20);
 
 	LobbyMapSeedInputBox->SetText(FText::FromString(serverMapSettings.mapSeed));
-
 	SendMapSettings();
+}
 
-	//GetFirstController()->ExecuteAllControllers([&](AMainMenuPlayerController* controller) {
-	//	controller->SetMapSeed(text.ToString());
-	//});
+void ULobbySettingsUI::OnClickLobbyMapSeedRandomizeButton()
+{
+	PUN_DEBUG2("OnClickLobbyMapSeedRandomizeButton");
+
+	FString randomString;
+	
+	// Random sentence
+	if (FMath::RandRange(0, 1))
+	{
+		static const TArray<FString> randomNoun = {
+			"I",
+			"He",
+			"She",
+			"It",
+			"You",
+			"We",
+			"They", // 7
+			
+			"Baboon",
+			"Cat",
+			"Dog",
+			"Barbie",
+			"Monkey",
+			"Ape",
+			"Bernard",
+			"Dingo",
+			"Pichu",
+			"Box",
+			"Bean",
+			"Hair",
+			"Fur",
+			"Elephant",
+			"Stump",
+			"Wood",
+			"River",
+			"Toilet",
+			"House",
+			"Factory",
+			"Hill",
+			"Mountain",
+			"Desert",
+			"Forest",
+			
+		};
+		static const TArray<FString> randomVerb = {
+			"love",
+			"adore",
+			"dig",
+			"touch",
+			"slam",
+			"pickup",
+			"drop",
+			"slap",
+			"see",
+			"hear",
+			"is on",
+			"is under",
+			"is above",
+			"punch",
+			"kiss",
+			"build",
+			"drag",
+			"plant",
+		};
+
+		randomString.Append(randomNoun[FMath::RandHelper(999999999) % randomNoun.Num()]);
+		randomString.Append(" ");
+		randomString.Append(randomVerb[FMath::RandHelper(999999999) % randomNoun.Num()]);
+		randomString.Append(" ");
+		randomString.Append(randomNoun[FMath::RandRange(7, 999999999) % randomNoun.Num()].ToLower());
+	}
+	else
+	{
+		randomString = FString::FromInt(FMath::RandRange(100000000, 999999999));
+	}
+
+	serverMapSettings.mapSeed = randomString;
+
+	LobbyMapSeedInputBox->SetText(FText::FromString(serverMapSettings.mapSeed));
+	SendMapSettings();
 }
 
 void ULobbySettingsUI::OnLobbyMapSizeDropdownChanged(FString sItem, ESelectInfo::Type seltype)

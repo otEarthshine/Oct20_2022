@@ -598,6 +598,27 @@ public:
 	const SubregionLists<int32>& buildingSubregionList() final {
 		return _buildingSystem->buildingSubregionList();
 	}
+
+	// TODO: Optimize to use provinces?
+	bool HasBuildingWithinRadius(WorldTile2 tileIn, int32 radius, int32 playerId, CardEnum buildingEnum) final
+	{
+		const std::vector<int32>& bldIds = buildingIds(playerId, buildingEnum);
+
+		int32 radiusTouchAtom = radius * CoordinateConstants::AtomsPerTile;
+		
+		for (int32 bldId : bldIds) {
+			WorldTile2 centerTile = building(bldId).centerTile();
+			if (tileIn != centerTile) {
+				int32 atomDist = WorldAtom2::Distance(tileIn.worldAtom2(), centerTile.worldAtom2());
+				if (atomDist < radiusTouchAtom) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	
 	
 
 	void RemoveBuilding(int32 buildingId) final {
@@ -841,7 +862,8 @@ public:
 	
 	int32 GetProvinceAttackStartPrice(int32 provinceId, ClaimConnectionEnum claimConnectionEnum)
 	{
-		return (GetProvinceBaseClaimPrice(provinceId) * 2 + BattleInfluencePrice) * GetTotalAttackPercent(provinceId, claimConnectionEnum) / 100;
+		// Province base claim price: pay for acquiring the land
+		return GetProvinceBaseClaimPrice(provinceId) * 2 + GetProvinceAttackReinforcePrice(provinceId, claimConnectionEnum);
 	}
 	int32 GetProvinceAttackReinforcePrice(int32 provinceId, ClaimConnectionEnum claimConnectionEnum)
 	{
@@ -855,12 +877,49 @@ public:
 		return percent;
 	}
 
+	// Vassalize Cost increase with:
+	// - population (initial)
+	// - oversea: double reinforce price
 	int32 GetProvinceVassalizeStartPrice(int32 provinceId)
 	{
 		int32 provincePlayerId = provinceOwner(provinceId);
 		PUN_CHECK(homeProvinceId(provincePlayerId) == provinceId);
 		
 		return BattleInfluencePrice + population(provincePlayerId) * 10; // 100 pop = 1k influence to take over
+	}
+	int32 GetProvinceVassalizeReinforcePrice(int32 provinceId)
+	{
+		return BattleInfluencePrice * GetVassalizeTotalAttackPercent(provinceId) / 100;
+	}
+	// TODO: Campaign Plan
+	// You can conquer through Annexation or Vassalization.
+	// Annexing a province will annihilate all buildings in the province. Annexed Province become your land.
+	// Annexing is costly because your military must take care of erecting a new local governing body.
+	// Alternatively, you can also conquer by Vassalizing which is a less costly when taking over a large patch of land.
+	// When you force Vassalize a state, your military head straight for the city center to force its ruler to submit to you.
+	// The ruler will retain management control of his/her land, but must pay you vassal tax.
+	//
+	// DefenseBonus = 20% per province + max provincial defense.
+	//
+	// To vassalize, you must plan out the attack path to the target city center.
+	// This will determine the opponent's Defense Bonus in the upcoming Battle.
+	// Your path must start from a province under your control.
+	//  - [Set Path] above valid provinces click
+	//  - Step 1, 2, 3... with [Cancel Path] button
+	//  - [Finish Path] once, done, prompt confirm, and start battle
+	int32 GetVassalizeTotalAttackPercent(int32 provinceId)
+	{
+		int32 percent = 100;
+		percent += GetProvinceVassalizeDefenseBonus(provinceId);
+		return percent;
+	}
+	int32 GetProvinceVassalizeDefenseBonus(int32 provinceId)
+	{
+		return 100;
+	}
+	std::string GetProvinceVassalizeDefenseBonusTip(int32 provinceId)
+	{
+		return "Defense Bonus against Vassalize Military Campaign: %100";
 	}
 
 	// Claim/Attack Cost Percent
@@ -903,34 +962,39 @@ public:
 		if (provinceOwnerId != -1) 
 		{
 			// Fort
-			const std::vector<int32>& fortIds = buildingIds(provinceOwnerId, CardEnum::Fort);
-			for (int32 fortId : fortIds) {
-				if (building(fortId).provinceId() == provinceId) {
-					percent += 100;
-				}
-			}
+			percent += GetFortDefenseBonus_Helper(provinceId, provinceOwnerId);
 
 			// Buildings
-			int32 buildingCount = buildingFinishedCount(provinceOwnerId, provinceId);
-			percent += 10 * buildingCount;
+			percent += GetBuildingDefenseBonus_Helper(provinceOwnerId, provinceId);
 		}
 		return percent;
 	}
-
-	ProvinceAttackEnum GetProvinceAttackEnum(int32 provinceId)
+	std::string GetProvinceDefenseBonusTip(int32 provinceId)
 	{
-		int32 provincePlayerId = provinceOwner(provinceId);
-		auto& provincePlayerOwner = playerOwned(provincePlayerId);
-		
-		if (provincePlayerOwner.lordPlayerId() != -1) {
-			return ProvinceAttackEnum::DeclareIndependence;
+		std::stringstream ss;
+		ss << "Defense Bonus: " << GetProvinceAttackCostPercent(provinceId);
+		int32 provinceOwnerId = provinceOwner(provinceId);
+		if (provinceOwnerId != -1) {
+			ss << "<bullet>fort " << GetFortDefenseBonus_Helper(provinceId, provinceOwnerId) << "%</>";
+			ss << "<bullet>buildings " << GetBuildingDefenseBonus_Helper(provinceOwnerId, provinceId) << "%</>";
 		}
-		if (homeProvinceId(provincePlayerId) == provinceId) {
-			return ProvinceAttackEnum::Vassalize;
-		}
-		return ProvinceAttackEnum::ConquerProvince;
+		return ss.str();
 	}
-
+	
+	int32 GetFortDefenseBonus_Helper(int32 provinceId, int32 provinceOwnerId)
+	{
+		const std::vector<int32>& fortIds = buildingIds(provinceOwnerId, CardEnum::Fort);
+		for (int32 fortId : fortIds) {
+			if (building(fortId).provinceId() == provinceId) {
+				return 100;
+			}
+		}
+		return 0;
+	}
+	int32 GetBuildingDefenseBonus_Helper(int32 provinceId, int32 provinceOwnerId)
+	{
+		return 10 * buildingFinishedCount(provinceOwnerId, provinceId);
+	}
 	
 
 	//bool HasOutpostAt(int32 playerId, int32 provinceId) final {
@@ -1646,7 +1710,7 @@ public:
 	bool HasTownhall(int32 playerId) final {
 		return playerOwned(playerId).hasTownhall();
 	}
-	int32 homeProvinceId(int32 playerId)
+	int32 homeProvinceId(int32 playerId) final
 	{
 		if (!HasTownhall(playerId)) {
 			return -1;

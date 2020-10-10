@@ -240,7 +240,7 @@ struct GatherMarkQuest : Quest
 	std::string questDescription() override
 	{
 		std::stringstream ss;
-		ss << "Wood from trees are required for construction.";
+		ss << "Wood from trees can be used for construction or as fuel.";
 		ss << "<space>";
 		ss << "To mark trees for citizens to gather:";
 		ss << "<bullet>Click the \"Gather\" button on the bottom left menu</>";
@@ -271,6 +271,9 @@ struct GatherMarkQuest : Quest
 			EndQuest();	
 		}
 	}
+
+	// Skip if already gathered, or on desert
+	bool ShouldSkipToNextQuest() override;
 
 	void Serialize(FArchive& Ar) override {
 		Quest::Serialize(Ar);
@@ -757,12 +760,12 @@ private:
 		//	return;
 		//}
 
-		//case QuestEnum::GatherMarkQuest: {
-		//	AddQuest(std::make_shared<FoodBuildingQuest>());
-		//	return;
-		//}
-
 		case QuestEnum::FoodBuildingQuest: {
+			AddQuest(std::make_shared<GatherMarkQuest>());
+			return;
+		}
+
+		case QuestEnum::GatherMarkQuest: {
 			AddQuest(std::make_shared<ClaimLandQuest>());
 			return;
 		}

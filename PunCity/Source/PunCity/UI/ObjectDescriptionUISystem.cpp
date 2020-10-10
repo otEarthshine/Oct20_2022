@@ -2759,15 +2759,16 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 					// Already a claim, reinforce
 					if (claimProgress.isValid())
 					{
-						int32 attackReinforcePrice = simulation().GetProvinceAttackReinforcePrice(provinceId, claimConnectionEnum);
-						bool canClaim = simulation().influence(playerId()) >= attackReinforcePrice;
+						// TODO: don't need buttons since there is already a battle UI?
+						//int32 attackReinforcePrice = simulation().GetProvinceAttackReinforcePrice(provinceId, claimConnectionEnum);
+						//bool canClaim = simulation().influence(playerId()) >= attackReinforcePrice;
 
-						stringstream ss;
-						ss << "Reinforce (Annex)\n";
-						ss << TextRed(to_string(attackReinforcePrice), !canClaim) << "<img id=\"Influence\"/>";
+						//stringstream ss;
+						//ss << "Reinforce (Annex)\n";
+						//ss << TextRed(to_string(attackReinforcePrice), !canClaim) << "<img id=\"Influence\"/>";
 
-						descriptionBox->AddSpacer();
-						descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::ReinforceAttackProvince, canClaim, false, provinceId);
+						//descriptionBox->AddSpacer();
+						//descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::ReinforceAttackProvince, canClaim, false, provinceId);
 					}
 					// Start a new claim
 					else
@@ -2807,30 +2808,31 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 		if (claimProgress.isValid() &&
 			claimProgress.attackerPlayerId != playerId())
 		{
-			// Defend by Influence
-			if (simulation().unlockedInfluence(playerId()))
-			{
-				bool canClaim = simulation().influence(playerId()) >= BattleInfluencePrice;
+			// TODO: don't need buttons since there is already a battle UI?
+			//// Defend by Influence
+			//if (simulation().unlockedInfluence(playerId()))
+			//{
+			//	bool canClaim = simulation().influence(playerId()) >= BattleInfluencePrice;
 
-				std::stringstream ss;
-				ss << "Defend Province\n";
-				ss << TextRed(to_string(BattleInfluencePrice), !canClaim) << "<img id=\"Influence\"/>";
+			//	std::stringstream ss;
+			//	ss << "Defend Province\n";
+			//	ss << TextRed(to_string(BattleInfluencePrice), !canClaim) << "<img id=\"Influence\"/>";
 
-				descriptionBox->AddSpacer();
-				descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::DefendProvinceInfluence, canClaim, false, provinceId);
-			}
+			//	descriptionBox->AddSpacer();
+			//	descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::DefendProvinceInfluence, canClaim, false, provinceId);
+			//}
 
-			// Defend by money
-			{
-				bool canClaim = simulation().money(playerId()) >= BattleInfluencePrice;
+			//// Defend by money
+			//{
+			//	bool canClaim = simulation().money(playerId()) >= BattleInfluencePrice;
 
-				std::stringstream ss;
-				ss << "Defend Province\n";
-				ss << TextRed(to_string(BattleInfluencePrice), !canClaim) << "<img id=\"Coin\"/>";
+			//	std::stringstream ss;
+			//	ss << "Defend Province\n";
+			//	ss << TextRed(to_string(BattleInfluencePrice), !canClaim) << "<img id=\"Coin\"/>";
 
-				descriptionBox->AddSpacer();
-				descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::DefendProvinceMoney, canClaim, false, provinceId);
-			}
+			//	descriptionBox->AddSpacer();
+			//	descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::DefendProvinceMoney, canClaim, false, provinceId);
+			//}
 		}
 	}
 }
@@ -3292,24 +3294,48 @@ void UObjectDescriptionUISystem::AddProvinceUpkeepInfo(int32 provinceIdClean, UP
 	// Already own this province, Showr real income/upkeep
 	if (provinceOwnerId == playerId())
 	{
-		ss << "Income: <img id=\"Coin\"/>" << sim.GetProvinceIncome100(provinceIdClean) / 100.0f << "\n";
-		if (unlockedInfluence) ss << "Upkeep: <img id=\"Influence\"/>" << sim.GetProvinceUpkeep100(provinceIdClean, provinceOwnerId) / 100.0f << "\n";
+		ss << "Income: <img id=\"Coin\"/>" << sim.GetProvinceIncome100(provinceIdClean) / 100.0f;
+		descriptionBox->AddRichText(ss);
+		
+		if (unlockedInfluence) {
+			ss << "Upkeep: <img id=\"Influence\"/>" << sim.GetProvinceUpkeep100(provinceIdClean, provinceOwnerId) / 100.0f;
+			descriptionBox->AddRichText(ss);
+
+			if (sim.IsBorderProvince(provinceIdClean)) {
+				ss << "Border Upkeep: <img id=\"Influence\"/>5";
+				descriptionBox->AddRichText(ss);
+			}
+		}
+		
 		ss << "Defense Bonus: " << sim.GetProvinceAttackCostPercent(provinceIdClean) << "%";
+		auto widget = descriptionBox->AddRichText(ss);
+		AddToolTip(widget, sim.GetProvinceDefenseBonusTip(provinceIdClean));
 	}
 	// Other player's Home Province
 	else if (provinceOwnerId != -1 && sim.homeProvinceId(provinceOwnerId) == provinceIdClean)
 	{
-		ss << "Home Province of " << sim.playerName(provinceOwnerId) << "\n";
-		ss << "Defense Bonus: 0%";
+		ss << "Home Province of " << sim.playerName(provinceOwnerId);
+		descriptionBox->AddRichText(ss);
+		
+		ss << "Vassalize Defense Bonus: " << sim.GetProvinceVassalizeDefenseBonus(provinceIdClean) << "%";
+		auto widget = descriptionBox->AddRichText(ss);
+		AddToolTip(widget, sim.GetProvinceVassalizeDefenseBonusTip(provinceIdClean));
 	}
 	else 
 	{
-		ss << "Base Income: <img id=\"Coin\"/>" << sim.GetProvinceIncome100(provinceIdClean) / 100.0f << "\n";
-		if (unlockedInfluence) ss << "Base Upkeep: <img id=\"Influence\"/>" << sim.GetProvinceBaseUpkeep100(provinceIdClean) / 100.0f << "\n";
+		ss << "Base Income: <img id=\"Coin\"/>" << sim.GetProvinceIncome100(provinceIdClean) / 100.0f;
+		descriptionBox->AddRichText(ss);
+		
+		if (unlockedInfluence) {
+			ss << "Base Upkeep: <img id=\"Influence\"/>" << sim.GetProvinceBaseUpkeep100(provinceIdClean) / 100.0f;
+			descriptionBox->AddRichText(ss);
+		}
+		
 		ss << "Defense Bonus: " << sim.GetProvinceAttackCostPercent(provinceIdClean) << "%";
+		auto widget = descriptionBox->AddRichText(ss);
+		AddToolTip(widget, sim.GetProvinceDefenseBonusTip(provinceIdClean));
 	}
 	
-	descriptionBox->AddRichText(ss);
 	descriptionBox->AddSpacer(12);
 }
 

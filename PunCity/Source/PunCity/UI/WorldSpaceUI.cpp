@@ -235,8 +235,11 @@ void UWorldSpaceUI::TickBuildings()
 					SetText(regionHoverUI->BattleInfluenceRight, "<img id=\"Influence\"/><Shadowed>" + to_string(claimProgress.committedInfluencesDefender) + "</>");
 
 					SetText(regionHoverUI->DefenseBonusLeft, "<img id=\"Shield\"/><Shadowed>" + to_string(0) + "%</>");
+					AddToolTip(regionHoverUI->DefenseBonusLeft, "Attack Bonus: 0%");
+					
 					std::string defenderDefenseBonus = (isDeclaringIndependence ? to_string(0) : to_string(sim.GetProvinceAttackCostPercent(provinceId))) + "%</>";
 					SetText(regionHoverUI->DefenseBonusRight, "<img id=\"Shield\"/><Shadowed>" + defenderDefenseBonus);
+					AddToolTip(regionHoverUI->DefenseBonusLeft, sim.GetProvinceDefenseBonusTip(provinceId));
 
 					// Fight at home province = Vassalize
 					if (sim.homeProvinceId(provinceOwnerId) == provinceId) {

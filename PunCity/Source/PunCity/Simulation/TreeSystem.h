@@ -265,7 +265,8 @@ public:
 
 public:
 	//! Mark Resources
-	bool HasMark(int32 playerId, int32 tileId) {
+	bool HasMark(int32 playerId, int32 tileId)
+	{
 		WorldTile2 tile(tileId);
 		if (_simulation->tileOwner(tile) != playerId) {
 			return false;

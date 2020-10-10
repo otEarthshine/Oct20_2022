@@ -612,7 +612,7 @@ public:
 	{
 		for (auto& claimProgress : _defendingClaimProgress) {
 			if (claimProgress.provinceId == provinceId) {
-				claimProgress.committedInfluencesDefender -= influenceAmount;
+				claimProgress.committedInfluencesDefender += influenceAmount;
 				break;
 			}
 		}
@@ -635,6 +635,26 @@ public:
 	void EndConquer_Attacker(int32 provinceId) {
 		CppUtils::Remove(_attackingProvinceIds, provinceId);
 	}
+
+	ProvinceAttackEnum GetProvinceAttackEnum(int32 provinceId)
+	{
+		int32 provincePlayerId = _simulation->provinceOwner(provinceId);
+		ProvinceClaimProgress claimProgress = GetDefendingClaimProgress(provinceId);
+
+		// TODO: Add VassalCompetition
+		if (lordPlayerId() != -1) 
+		{
+			if (claimProgress.attackerPlayerId == _playerId) {
+				return ProvinceAttackEnum::DeclareIndependence;
+			}
+			return ProvinceAttackEnum::VassalCompetition;
+		}
+		if (_simulation->homeProvinceId(provincePlayerId) == provinceId) {
+			return ProvinceAttackEnum::Vassalize;
+		}
+		return ProvinceAttackEnum::ConquerProvince;
+	}
+	
 	
 	
 	//void MarkAsOutpost(int32 provinceId) {
@@ -1269,6 +1289,9 @@ public:
 
 		//_LOG(PunPlayerOwned, "Serialize[%d] After isSaving:%d, %d %d %d", _playerId, Ar.IsSaving(), _roadConstructionIds.size(), _constructionIds.size(), _jobBuildingEnumToIds.size());
 	}
+
+	// Public NonSerial
+	bool alreadyDidGatherMark = false;
 	
 private:
 
@@ -1305,7 +1328,7 @@ private:
 		
 		statVec.push_back(data);
 	};
-
+	
 public:
 	bool needChooseLocation = true;
 	bool justChoseLocation = false;

@@ -658,12 +658,15 @@ public:
 		PUN_LOG("Zoom Distance: %f", gameManager->zoomDistance());
 	}
 
-	// For testing...
-	UFUNCTION(Exec) void AddAllResources() {
-		for (ResourceInfo info : ResourceInfos) {
-			gameManager->simulation().resourceSystem(playerId()).AddResourceGlobal(info.resourceEnum, 10, gameManager->simulation());
-		}
-	}
+	/*
+	 * Test Commands
+	 */
+	// Single Player Only!!!
+	//UFUNCTION(Exec) void AddAllResources() {
+	//	for (ResourceInfo info : ResourceInfos) {
+	//		gameManager->simulation().resourceSystem(playerId()).AddResourceGlobal(info.resourceEnum, 10, gameManager->simulation());
+	//	}
+	//}
 
 	UFUNCTION(Exec) void MineDeplete(int32 tileX, int32 tileY)
 	{
@@ -682,8 +685,33 @@ public:
 	UFUNCTION(Exec) void AddTreasuryGuardBuff(int32 playerId) {
 		gameManager->simulation().playerOwned(playerId).AddBuff(CardEnum::TreasuryGuard);
 	}
-	
 
+	void AttackDefenseHelper(CallbackEnum claimEnum, int32 tileX, int32 tileY)
+	{
+		auto& sim = gameManager->simulation();
+		WorldTile2 tile(tileX, tileY);
+		if (tile.isValid()) {
+			int32 provinceId = sim.GetProvinceIdClean(tile);
+			auto command = make_shared<FClaimLand>();
+			command->claimEnum = claimEnum;
+			command->provinceId = provinceId;
+			PUN_CHECK(command->provinceId != -1);
+
+			networkInterface()->SendNetworkCommand(command);
+		}
+	}
+	UFUNCTION() void OnClickVassalizeButton(int32 tileX, int32 tileY) { AttackDefenseHelper(CallbackEnum::StartAttackProvince, tileX, tileY); }
+
+	UFUNCTION() void OnClickVassalizeReinforceButton(int32 tileX, int32 tileY) { AttackDefenseHelper(CallbackEnum::ReinforceAttackProvince, tileX, tileY); }
+
+	UFUNCTION() void OnClickDeclareIndependenceButton(int32 tileX, int32 tileY) { AttackDefenseHelper(CallbackEnum::StartAttackProvince, tileX, tileY); }
+
+	UFUNCTION() void OnClickLiberateButton(int32 tileX, int32 tileY) { AttackDefenseHelper(CallbackEnum::Liberate, tileX, tileY); }
+
+
+	/*
+	 * Test Print
+	 */
 	UFUNCTION(Exec) void PrintResourceSys()
 	{
 		std::stringstream ss;

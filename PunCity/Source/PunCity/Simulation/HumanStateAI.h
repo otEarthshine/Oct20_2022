@@ -96,10 +96,10 @@ public:
 	 * States
 	 */
 
-	int32 workEfficiency100() {
+	int32 workEfficiency100(bool includeToolPenalty = true) {
 		int32 foodPenalty = foodWorkPenalty100();
 		int32 heatPenalty = heatWorkPenalty100();
-		int32 toolPenalty = toolPenalty100();
+		int32 toolPenalty = includeToolPenalty ? toolPenalty100() : 0;
 		int32 sicknessPenalty = sicknessPenalty100();
 		int32 happinessPenalty = happinessPenalty100();
 		
@@ -113,9 +113,10 @@ public:
 		PUN_CHECK(result >= 0);
 		return result;
 	}
+	
 	int32 foodWorkPenalty100() {
 		if (_food < minWarnFood()) {
-			int32 result = 70 * (minWarnFood() - _food) / minWarnFood();
+			int32 result = 50 * (minWarnFood() - _food) / minWarnFood();
 			PUN_CHECK(result >= 0);
 			return result;
 		}
@@ -123,7 +124,7 @@ public:
 	}
 	int32 heatWorkPenalty100() {
 		if (_heat < minWarnHeat()) {
-			int32 result = 70 * (minWarnHeat() - _heat) / minWarnHeat();
+			int32 result = 50 * (minWarnHeat() - _heat) / minWarnHeat();
 			PUN_CHECK(result >= 0);
 			return result;
 		}
@@ -131,13 +132,13 @@ public:
 	}
 	
 	int32 toolPenalty100() {
-		return needTools() ? -70 : 0;
+		return needTools() ? -50 : 0;
 	}
 	int32 sicknessPenalty100() {
 		if (_simulation->GetResourceCount(_playerId, MedicineResources) > 0) {
 			return 0;
 		}
-		return isSick() ? -70 : 0;
+		return isSick() ? -50 : 0;
 	}
 
 	int32 happinessPenalty100() {

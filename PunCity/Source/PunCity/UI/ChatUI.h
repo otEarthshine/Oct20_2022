@@ -353,13 +353,7 @@ public:
 		 */
 		if (commandAndParams.size() == 1)
 		{
-			if (commandAndParams[0] == "ToggleRain") {
-				SimSettings::Toggle("ToggleRain");
-			}
-			else if (commandAndParams[0] == "ToggleSnow")
-			{
-				
-			}
+
 
 
 		}

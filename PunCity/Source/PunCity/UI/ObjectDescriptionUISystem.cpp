@@ -37,6 +37,8 @@
 #include "CardSlot.h"
 #include "PunCity/MapUtil.h"
 
+DECLARE_CYCLE_STAT(TEXT("PUN: [UI]Select_Start"), STAT_PunUISelect_Start, STATGROUP_Game);
+
 using namespace std;
 
 static WorldTile2 FindGroundColliderHit(FHitResult& hitResult)
@@ -1192,11 +1194,21 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								ss << tradingCompany.CountdownSecondsDisplay() << " secs";
 								descriptionBox->AddRichText("Trade complete in", ss);
 							}
-							else if (tradingCompany.lastTradeFailed())
+							else 
 							{
-								descriptionBox->AddRichText("<Red>Failed last trade</>", ss);
-							}
-							else {
+								if (tradingCompany.hoverWarning == HoverWarning::NotEnoughMoney) {
+									descriptionBox->AddRichText("<Red>Import Failed</>", ss);
+									descriptionBox->AddRichText("<Red>Not enough Money</>", ss);
+								}
+								else if (tradingCompany.hoverWarning == HoverWarning::AlreadyReachedTarget) {
+									descriptionBox->AddRichText("<Red>Import Failed</>", ss);
+									descriptionBox->AddRichText("<Red>Already reached import target</>", ss);
+								}
+								else if (tradingCompany.hoverWarning == HoverWarning::ResourcesBelowTarget) {
+									descriptionBox->AddRichText("<Red>Export Failed</>", ss);
+									descriptionBox->AddRichText("<Red>Resource count below storage target</>", ss);
+								}
+								
 								ss << max(0, tradingCompany.TradeRetryCountDownTicks() / Time::TicksPerSecond) << " secs";
 								descriptionBox->AddRichText("Retry trade in", ss);
 							}
@@ -2597,6 +2609,7 @@ void UObjectDescriptionUISystem::AddSelectStartLocationButton(int32 provinceId, 
 	if (provinceId == -1) {
 		return;
 	}
+	SCOPE_CYCLE_COUNTER(STAT_PunUISelect_Start);
 	
 	bool hasChosenLocation = simulation().playerOwned(playerId()).hasChosenLocation();
 	// If player hasn't select starting location

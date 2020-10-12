@@ -12,6 +12,7 @@
 #include "Components/WidgetSwitcher.h"
 #include "GameSettingsUI.h"
 #include "JobPriorityRow.h"
+#include "ConfirmUI.h"
 
 #include "MainGameUI.generated.h"
 
@@ -373,9 +374,6 @@ private:
 	UPROPERTY(meta = (BindWidget)) USizeBox* ProsperityBar;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* ProsperityAmountText;
 
-	//UPROPERTY(meta = (BindWidget)) UButton* ChooseLocationButton;
-	//UPROPERTY(meta = (BindWidget)) UOverlay* WorldMapRegionUI;
-	//UPROPERTY(meta = (BindWidget)) UTextBlock* WorldMapRegionText;
 
 	UPROPERTY(meta = (BindWidget)) UExclamationIcon* ExclamationIcon_Build;
 	UPROPERTY(meta = (BindWidget)) UExclamationIcon* ExclamationIcon_Gather;
@@ -415,8 +413,11 @@ private:
 
 	// Converter Hand
 	UPROPERTY(meta = (BindWidget)) UWrapBox* ConverterCardHandBox;
-	//UPROPERTY(meta = (BindWidget)) UButton* ConverterCardHandSubmitButton;
 	UPROPERTY(meta = (BindWidget)) UButton* ConverterCardHandCancelButton;
+	UPROPERTY(meta = (BindWidget)) UConfirmUI* ConverterCardHandConfirmUI;
+
+
+	
 	
 	UPROPERTY(meta = (BindWidget)) UWrapBox* CardHand2Box;
 
@@ -495,7 +496,31 @@ private:
 	UFUNCTION() void ClickCardHand1CancelButton();
 
 	UFUNCTION() void ClickRareCardHandSubmitButton();
-	//UFUNCTION() void ClickConverterCardHandSubmitButton();
+
+
+	// Card Removal
+	CardEnum buildingEnumToRemove = CardEnum::None;
+	UFUNCTION() void ClickCardRemovalConfirmYesButton()
+	{
+		if (buildingEnumToRemove == CardEnum::None) {
+			ConverterCardHandConfirmUI->SetVisibility(ESlateVisibility::Collapsed);
+			return;
+		}
+		
+		dataSource()->Spawn2DSound("UI", "CardDeal");
+		ConverterCardHandOverlay->SetVisibility(ESlateVisibility::Collapsed);
+		simulation().cardSystem(playerId()).converterCardState = ConverterCardUseState::SubmittedUI;
+
+		auto command = make_shared<FUseCard>();
+		command->cardEnum = CardEnum::CardRemoval;
+		command->variable1 = static_cast<int32>(buildingEnumToRemove);
+		networkInterface()->SendNetworkCommand(command);
+	}
+	UFUNCTION() void ClickCardRemovalConfirmNoButton() {
+		ConverterCardHandConfirmUI->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	
 	UFUNCTION() void ClickConverterCardHandCancelButton();
 
 

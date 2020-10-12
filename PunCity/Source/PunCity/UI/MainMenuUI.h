@@ -231,6 +231,11 @@ public:
 	
 
 	void Spawn2DSound(std::string groupName, std::string soundName);
+
+
+	void KeyPressed_Escape() {
+		LoadSaveUI->KeyPressed_Escape();
+	}
 	
 private:
 	// Old

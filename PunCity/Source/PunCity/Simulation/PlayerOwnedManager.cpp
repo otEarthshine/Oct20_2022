@@ -120,38 +120,55 @@ int32 PlayerOwnedManager::housingCapacity()
 	return result;
 }
 
-int32 PlayerOwnedManager::TryFillJobBuildings(const std::vector<int32_t>& jobBuildingIds, PriorityEnum priority, int& index, int32_t maximumFill)
+int32 PlayerOwnedManager::TryFillJobBuildings(const std::vector<int32>& jobBuildingIds, PriorityEnum priority, int& index, bool shouldDoDistanceSort, int32 maximumFill)
 {
 	// Sort job buildings by distance from townhall
 	WorldTile2 gateTile = _simulation->townhall(_playerId).gateTile();
 	std::vector<int32> sortedJobBuildingIds;
-	std::vector<int32> distances;
-	
-	for (int32_t jobBuildingId : jobBuildingIds)
+
+	if (shouldDoDistanceSort)
 	{
-		Building& building = _simulation->building(jobBuildingId);
+		std::vector<int32> distances;
 
-		if (building.priority() != priority) {
-			continue;
-		}
+		for (int32 jobBuildingId : jobBuildingIds)
+		{
+			Building& building = _simulation->building(jobBuildingId);
 
-		int32 distance = WorldTile2::ManDistance(building.gateTile(), gateTile);
-		bool inserted = false;
-		for (size_t i = 0; i < sortedJobBuildingIds.size(); i++) {
-			if (distance < distances[i]) {
-				distances.insert(distances.begin() + i, distance);
-				sortedJobBuildingIds.insert(sortedJobBuildingIds.begin() + i, jobBuildingId);
-				inserted = true;
-				break;
+			if (building.priority() != priority) {
+				continue;
 			}
-		}
 
-		// distance is more than last index, add to the back
-		if (!inserted) {
-			distances.push_back(distance);
+			int32 distance = WorldTile2::ManDistance(building.gateTile(), gateTile);
+			bool inserted = false;
+			for (size_t i = 0; i < sortedJobBuildingIds.size(); i++) {
+				if (distance < distances[i]) {
+					distances.insert(distances.begin() + i, distance);
+					sortedJobBuildingIds.insert(sortedJobBuildingIds.begin() + i, jobBuildingId);
+					inserted = true;
+					break;
+				}
+			}
+
+			// distance is more than last index, add to the back
+			if (!inserted) {
+				distances.push_back(distance);
+				sortedJobBuildingIds.push_back(jobBuildingId);
+			}
+
+		}
+	}
+	else
+	{
+		// No Sort
+		for (int32 jobBuildingId : jobBuildingIds)
+		{
+			Building& building = _simulation->building(jobBuildingId);
+			if (building.priority() != priority) {
+				continue;
+			}
+			
 			sortedJobBuildingIds.push_back(jobBuildingId);
 		}
-
 	}
 
 	// Fill jobs from least distance to most distance.
@@ -772,7 +789,9 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 	
 	if (_simulation->unlockedInfluence(_playerId)) 
 	{
-		// Population: Influence gain equals to population x2
+		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Townhall)] += 20 * 100;
+		
+		// Population: Influence gain equals to population
 		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Population)] += _simulation->population(_playerId) * 100;
 		
 		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::TerritoryUpkeep)] -= territoryUpkeep100;

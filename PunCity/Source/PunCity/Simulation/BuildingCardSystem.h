@@ -474,18 +474,20 @@ public:
 	}
 
 	// TODO: wtf need to sort this out
-	bool CanAddCardToBoughtHand(CardEnum buildingEnum, int32 additionalCards)
+	bool CanAddCardToBoughtHand(CardEnum buildingEnum, int32 additionalCards, bool checkHand1Reserved = false)
 	{
 		const int32 maxCardsBought = 7;
 
 		std::vector<BuildingCardStack> cardStacksFinal = GetCardsBought();
 
-		// Add Reserved Cards for final cardStacks calculation
-		std::vector<bool> reserveStatuses = GetHand1ReserveStatus();
-		check(reserveStatuses.size() <= _cardsHand.size());
-		for (size_t i = 0; i < reserveStatuses.size(); i++) {
-			if (reserveStatuses[i]) {
-				AddToCardStacksHelper(_cardsHand[i], 1, cardStacksFinal);
+		if (checkHand1Reserved)
+		{
+			// Add Reserved Cards for final cardStacks calculation
+			check(_cardsHand1Reserved.size() <= _cardsHand.size());
+			for (size_t i = 0; i < _cardsHand1Reserved.size(); i++) {
+				if (_cardsHand1Reserved[i]) {
+					AddToCardStacksHelper(_cardsHand[i], 1, cardStacksFinal);
+				}
 			}
 		}
 

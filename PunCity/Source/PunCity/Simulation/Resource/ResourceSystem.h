@@ -305,6 +305,7 @@ public:
 		RemoveFromAvailableStacks(holderId);
 	}
 
+	int32 CanAddResourceGlobal(int32 amount, ResourceSystem& resourceSys);
 	int32 AddResourceGlobal(int32 amount, ResourceSystem& resourceSys);
 	void RemoveResourceGlobal(int32 amount, ResourceSystem& resourceSys);
 
@@ -863,6 +864,9 @@ public:
 	}
 
 	//! Add/Remove resource global
+	bool CanAddResourceGlobal(ResourceEnum resourceEnum, int32 amount) {
+		return holderGroup(resourceEnum).CanAddResourceGlobal(amount, *this);
+	}
 	void AddResourceGlobal(ResourceEnum resourceEnum, int32 amount, IGameSimulationCore& simulation) {
 		int amountLeft = holderGroup(resourceEnum).AddResourceGlobal(amount, *this);
 
@@ -897,6 +901,8 @@ public:
 	}
 
 	int32 CanReceiveAmount(ResourceHolder& holder) const;
+
+	int32 CanReceiveAmountAfterReset(ResourceHolder& holder) const;
 
 	//! Spawn/Despawn Holder buildings
 	int32 SpawnHolder(ResourceEnum resourceEnum, ResourceHolderType holderType, int32 objectId, WorldTile2 tile, int32 target) {

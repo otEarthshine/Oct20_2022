@@ -252,14 +252,8 @@ struct GatherMarkQuest : Quest
 
 
 	int32 currentValue() override { return _gatherMarkedCount; }
-	int32 neededValue() override { return 20; }
-	
-	//std::string numberDescription() override {
-	//	std::stringstream ss;
-	//	ss << _gatherMarkedCount << "/20";
-	//	return ss.str();
-	//}
-	//float fraction() override { return _gatherMarkedCount / 20.0f; }
+	int32 neededValue() override { return 10; }
+
 
 	void UpdateStatus(int32 value) override
 	{

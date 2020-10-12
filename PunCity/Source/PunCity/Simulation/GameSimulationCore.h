@@ -922,6 +922,33 @@ public:
 		return "Defense Bonus against Vassalize Military Campaign: %100";
 	}
 
+	//  Vassalize/Liberation can only be done if
+	//  - Vassalize is researched
+	//  - you are not a vassal yourself
+	//  - no battle at home
+	bool CanVassalizeOtherPlayers(int32 playerIdIn)
+	{
+		return IsResearched(playerIdIn, TechEnum::Vassalize) &&
+				lordPlayerId(playerIdIn) == -1 &&
+				!playerOwned(playerIdIn).GetDefendingClaimProgress(homeProvinceId(playerIdIn)).isValid();
+	}
+
+	void LoseVassalHelper(int32 oldLordPlayerId, int32 formerVassalPlayerId)
+	{
+		if (!HasTownhall(formerVassalPlayerId)) {
+			return;
+		}
+		int32 formerVassalBuildingId = townhall(formerVassalPlayerId).buildingId();
+		
+		_playerOwnedManagers[oldLordPlayerId].LoseVassal(formerVassalBuildingId);
+		_playerOwnedManagers[formerVassalPlayerId].SetLordPlayerId(-1);
+
+		_playerOwnedManagers[oldLordPlayerId].RecalculateTaxDelayed();
+		_playerOwnedManagers[formerVassalPlayerId].RecalculateTaxDelayed();
+	}
+
+	
+
 	// Claim/Attack Cost Percent
 	//  Base Bonuses
 	int32 GetProvinceTerrainClaimCostPenalty(ClaimConnectionEnum claimConnectionEnum)
@@ -965,7 +992,7 @@ public:
 			percent += GetFortDefenseBonus_Helper(provinceId, provinceOwnerId);
 
 			// Buildings
-			percent += GetBuildingDefenseBonus_Helper(provinceOwnerId, provinceId);
+			percent += GetBuildingDefenseBonus_Helper(provinceId, provinceOwnerId);
 		}
 		return percent;
 	}
@@ -976,7 +1003,7 @@ public:
 		int32 provinceOwnerId = provinceOwner(provinceId);
 		if (provinceOwnerId != -1) {
 			ss << "<bullet>fort " << GetFortDefenseBonus_Helper(provinceId, provinceOwnerId) << "%</>";
-			ss << "<bullet>buildings " << GetBuildingDefenseBonus_Helper(provinceOwnerId, provinceId) << "%</>";
+			ss << "<bullet>buildings " << GetBuildingDefenseBonus_Helper(provinceId, provinceOwnerId) << "%</>";
 		}
 		return ss.str();
 	}
@@ -1408,7 +1435,10 @@ public:
 
 	// Tech
 
-	bool IsResearched(int32 playerId, TechEnum techEnum) final { return unlockSystem(playerId)->IsResearched(techEnum); }
+	bool IsResearched(int32 playerId, TechEnum techEnum) final {
+		PUN_CHECK(playerId >= 0);
+		return unlockSystem(playerId)->IsResearched(techEnum);
+	}
 	bool HasTargetResearch(int32 playerId) final { return unlockSystem(playerId)->hasTargetResearch(); }
 	int32 techsCompleted(int32 playerId) final { return unlockSystem(playerId)->techsCompleted(); }
 

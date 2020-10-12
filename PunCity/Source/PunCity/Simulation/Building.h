@@ -96,6 +96,10 @@ public:
 	BldInfo buildingInfo() { return BuildingInfo[buildingEnumInt()]; }
 	bool isEnum(CardEnum buildingEnum) const { return _buildingEnum == buildingEnum; }
 
+	bool isConstructed(CardEnum buildingEnum) {
+		return isEnum(buildingEnum) && isConstructed();
+	}
+
 	template<class T> 
 	T& subclass(CardEnum buildingEnumIn) { 
 		check(buildingEnum() == buildingEnumIn);
@@ -698,6 +702,12 @@ public:
 	void AddConsumption2Stat(ResourcePair resource);
 	void AddDepletionStat(ResourcePair resource);
 
+	void AddConsumptionStats() {
+		int32 inputCount = inputPerBatch();
+		if (hasInput1()) AddConsumption1Stat(ResourcePair(input1(), inputCount));
+		if (hasInput2()) AddConsumption2Stat(ResourcePair(input2(), inputCount));
+	}
+
 	void MinuteStatisticsUpdate()
 	{
 		_seasonalProductionPairs.insert(_seasonalProductionPairs.begin(), std::vector<ResourcePair>());
@@ -1098,6 +1108,8 @@ public:
 
 		// Upgrade
 		SerializeVecObj(Ar, _upgrades);
+
+		Ar << hoverWarning;
 	}
 
 public:
@@ -1163,13 +1175,9 @@ public:
 
 
 	// Public Non-serialized (Mostly UI)
-	enum class HoverWarning : uint8 {
-		None,
-		Depleted,
-		StoragesFull,
-		StorageTooFar,
-		HouseTooFar,
-	} hoverWarning;
+	HoverWarning hoverWarning;
+
+	
 
 	float lastHoverWarningCheckTime = 0.0f;
 

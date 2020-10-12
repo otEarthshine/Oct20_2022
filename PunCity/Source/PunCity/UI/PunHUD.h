@@ -86,7 +86,7 @@ public:
 		_escMenuUI->RightMouseUp();
 #endif
 	}
-	void KeyPressed_Escape();
+	virtual void KeyPressed_Escape();
 
 
 	

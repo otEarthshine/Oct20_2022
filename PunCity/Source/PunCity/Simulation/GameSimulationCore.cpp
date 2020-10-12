@@ -925,16 +925,27 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 									{
 										// Declare Independence
 										int32 oldLordPlayerId = lordPlayerId(playerId);
-										_playerOwnedManagers[oldLordPlayerId].LoseVassal(playerId);
-										_playerOwnedManagers[playerId].SetLordPlayerId(-1);
 
-										_playerOwnedManagers[oldLordPlayerId].RecalculateTaxDelayed();
-										_playerOwnedManagers[playerId].RecalculateTaxDelayed();
+										LoseVassalHelper(oldLordPlayerId, playerId);
+										//_playerOwnedManagers[oldLordPlayerId].LoseVassal(playerId);
+										//_playerOwnedManagers[playerId].SetLordPlayerId(-1);
+
+										//_playerOwnedManagers[oldLordPlayerId].RecalculateTaxDelayed();
+										//_playerOwnedManagers[playerId].RecalculateTaxDelayed();
 
 										AddPopupAll(PopupInfo(playerId, playerName(playerId) + " declared independence from " + playerName(oldLordPlayerId) + "."), -1);
 									}
 									else
 									{
+										// Player getting vassalized lose all of its own vassals (player vassal only)
+										const std::vector<int32>& vassalBuildingIds = _playerOwnedManagers[playerId].vassalBuildingIds();
+										for (int32 vassalBuildingId : vassalBuildingIds) {
+											if (building(vassalBuildingId).isEnum(CardEnum::Townhall)) {
+												LoseVassalHelper(playerId, building(vassalBuildingId).playerId());
+											}
+										}
+
+
 										// Vassalize
 										int32 lordId = claimProgress.attackerPlayerId;
 										_playerOwnedManagers[lordId].GainVassal(townhall(playerId).buildingId());
@@ -1528,9 +1539,15 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 				}
 				else if (cardEnum == CardEnum::SharingIsCaring)
 				{
-					AddPopup(targetPlayerId, townName(playerId) + " gave you 50 wheat.");
-					AddEventLog(playerId, "You gave " + townName(targetPlayerId) + " 50 wheat", false);
-					resourceSystem(targetPlayerId).AddResourceGlobal(ResourceEnum::Wheat, 50, *this);
+					if (resourceSystem(targetPlayerId).CanAddResourceGlobal(ResourceEnum::Wheat, 50))
+					{
+						AddPopup(targetPlayerId, townName(playerId) + " gave you 50 wheat.");
+						AddPopup(playerId, "You gave " + townName(targetPlayerId) + " 50 wheat");
+						resourceSystem(targetPlayerId).AddResourceGlobal(ResourceEnum::Wheat, 50, *this);
+					}
+					else {
+						AddPopup(playerId, "Failed to give " + townName(targetPlayerId) + " 50 wheat.<space>Not enough storage space at the target city.");
+					}
 				}
 				else
 				{
@@ -1947,7 +1964,8 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 		
 		PUN_LOG("DragPlacement Demolish!!");
 		area.EnforceWorldLimit();
-		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) 
+		{
 			// Delete buildings
 			int32 buildingId = buildingIdAtTile(tile);
 			if (buildingId != -1) 
@@ -2051,9 +2069,9 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 					}
 
 					/*
-					 * Demolishing farm remove TileObj
+					 * Demolishing farm remove TileObj if farm is constructed
 					 */
-					if (buildingEnum == CardEnum::Farm)
+					if (buildingEnum == CardEnum::Farm && bld.isConstructed()) 
 					{
 						_treeSystem->ForceRemoveTileObjArea(bld.area());
 					}
@@ -2099,7 +2117,9 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 			}
 
 			// Critter building demolition
-			DemolishCritterBuildingsIncludingFronts(tile, parameters.playerId);
+			if (tileOwner(tile) == parameters.playerId) {
+				DemolishCritterBuildingsIncludingFronts(tile, parameters.playerId);
+			}
 		});
 
 		_worldTradeSystem.RefreshTradeClusters();
@@ -2367,7 +2387,12 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 				AddPopupToFront(giverPlayerId, "Not enough resource to give out.", ExclusiveUIEnum::GiftResourceUI, "PopupCannot");
 				return;
 			}
-			
+
+			if (!resourceSystem(targetPlayerId).CanAddResourceGlobal(resourceEnum, amount)) {
+				AddPopup(targetPlayerId, "Not enough storage space.");
+				return;
+			}
+		
 			resourceSystem(giverPlayerId).RemoveResourceGlobal(resourceEnum, amount);
 			resourceSystem(targetPlayerId).AddResourceGlobal(resourceEnum, amount, *this);
 			AddPopup(giverPlayerId, "You gifted " + playerName(targetPlayerId) + " with " + to_string(amount) + " " + ResourceName(resourceEnum) + ".");
@@ -2940,7 +2965,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 		if (cardSys.HasBoughtCard(CardEnum::CardRemoval))
 		{
 			std::string cardName = GetBuildingInfoInt(command.variable1).name;
-			AddPopupToFront(command.playerId, "Removed " + cardName + " Card from your deck. " + cardName + " is now only available from Wild Cards.");
+			AddPopupToFront(command.playerId, "Removed " + cardName + " Card from your deck.<space>" + cardName + " is now only available from Wild Cards.");
 			
 			cardSys.RemoveCards(CardEnum::CardRemoval, 1);
 			cardSys.RemoveDrawCards(static_cast<CardEnum>(command.variable1));
@@ -3019,10 +3044,18 @@ void GameSimulationCore::UseCard(FUseCard command)
 			AddPopupToFront(command.playerId, "Unlocked " + plantName + ". " + plantName + " requires suitable regions marked on the map to be grown.");
 		}
 	}
-	else if (IsCrateCard(command.cardEnum)) {
+	else if (IsCrateCard(command.cardEnum)) 
+	{
 		ResourcePair resourcePair = GetCrateResource(command.cardEnum);
-		resourceSystem(command.playerId).AddResourceGlobal(resourcePair.resourceEnum, resourcePair.count, *this);
-		AddPopupToFront(command.playerId, "Gained " + to_string(resourcePair.count) + " " + GetResourceInfo(resourcePair.resourceEnum).name + " from crates.");
+		
+		if (resourceSystem(command.playerId).CanAddResourceGlobal(resourcePair.resourceEnum, resourcePair.count))
+		{
+			resourceSystem(command.playerId).AddResourceGlobal(resourcePair.resourceEnum, resourcePair.count, *this);
+			AddPopupToFront(command.playerId, "Gained " + to_string(resourcePair.count) + " " + GetResourceInfo(resourcePair.resourceEnum).name + " from crates.");
+		}
+		else {
+			AddPopup(command.playerId, "Not enough storage space.");
+		}
 	}
 	else if (command.cardEnum == CardEnum::Pig) {
 		//resourceSys.pigs += 3;
@@ -3042,7 +3075,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 			resourceSys.ChangeMoney(amountToRemove * FoodCost);
 			totalRemoved += amountToRemove;
 		}
-		AddPopupToFront(command.playerId, "Sold " + to_string(totalRemoved) + " food for " + "<img id=\"Coin\"/>." + to_string(totalRemoved * FoodCost));
+		AddPopupToFront(command.playerId, "Sold " + to_string(totalRemoved) + " food for " + "<img id=\"Coin\"/>" + to_string(totalRemoved * FoodCost) + ".");
 	}
 	else if (command.cardEnum == CardEnum::BuyWood) {
 		int32 cost = GetResourceInfo(ResourceEnum::Wood).basePrice;
@@ -3352,7 +3385,8 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 		auto& provincePlayerOwner = playerOwned(provincePlayerId);
 
 		// If there was no claim yet, start the attack
-		if (!provincePlayerOwner.GetDefendingClaimProgress(command.provinceId).isValid()) 
+		if (CanVassalizeOtherPlayers(command.playerId) &&
+			!provincePlayerOwner.GetDefendingClaimProgress(command.provinceId).isValid()) 
 		{
 			ProvinceAttackEnum attackEnum = provincePlayerOwner.GetProvinceAttackEnum(command.provinceId);
 			
@@ -3656,9 +3690,11 @@ void GameSimulationCore::ChooseLocation(FChooseLocation command)
 
 void GameSimulationCore::ChooseInitialResources(FChooseInitialResources command)
 {
-	playerOwned(command.playerId).initialResources = command;
-	
-	cardSystem(command.playerId).AddCardToHand2(CardEnum::Townhall);
+	if (!cardSystem(command.playerId).HasBoughtCard(CardEnum::Townhall)) {
+		cardSystem(command.playerId).AddCardToHand2(CardEnum::Townhall);
+		
+		playerOwned(command.playerId).initialResources = command;
+	}
 }
 
 void GameSimulationCore::Cheat(FCheat command)

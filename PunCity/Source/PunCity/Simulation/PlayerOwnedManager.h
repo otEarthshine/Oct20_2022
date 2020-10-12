@@ -1301,7 +1301,7 @@ private:
 		}
 	}
 
-	int32 TryFillJobBuildings(const std::vector<int32_t>& jobBuildingIds, PriorityEnum priority, int& index, int32_t maximumFill = INT32_MAX);
+	int32 TryFillJobBuildings(const std::vector<int32>& jobBuildingIds, PriorityEnum priority, int& index, bool shouldDoDistanceSort = true, int32 maximumFill = INT32_MAX);
 
 	void CollectRoundIncome();
 	void CollectHouseIncome();

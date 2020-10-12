@@ -19,7 +19,7 @@ void GeoresourceSystem::InitGeoresourceSystem(IGameSimulationCore* simulation, b
 	auto& provinceSys = simulation->provinceSystem();
 
 	for (int i = 0; i < GameMapConstants::TotalRegions; i++) {
-		_provinceToGeoresource.push_back({ GeoresourceEnum::None, InvalidProvinceId, WorldTile2::Invalid });
+		_provinceToGeoresource.push_back(GeoresourceNode::Create(GeoresourceEnum::None, i, provinceSys.GetProvinceCenterTile(i)));
 	}
 
 	if (!isFullInit) {
@@ -105,25 +105,25 @@ void GeoresourceSystem::InitGeoresourceSystem(IGameSimulationCore* simulation, b
 				
 				if (desertPercent >= 80) {
 					if (GameRand::RandChance(3)) {
-						PlantResource(provinceId, GeoresourceEnum::GoldOre, 2000);
+						PlantResource(provinceId, GeoresourceEnum::GoldOre, 8000);
 					}
-					PlantResource(provinceId, GeoresourceEnum::Gemstone, 2000);
+					PlantResource(provinceId, GeoresourceEnum::Gemstone, 8000);
 					continue;
 				}
 				if (desertPercent >= 60) {
-					PlantResource(provinceId, GeoresourceEnum::GoldOre, 3000);
+					PlantResource(provinceId, GeoresourceEnum::GoldOre, 15000);
 					continue;
 				}
 				if (taigaTundraPercent >= 80) {
 					if (GameRand::RandChance(2)) {
-						PlantResource(provinceId, GeoresourceEnum::GoldOre, 3000);
+						PlantResource(provinceId, GeoresourceEnum::GoldOre, 15000);
 					}
 					continue;
 				}
 			}
 			
 			if (GameRand::RandChance(3)) {
-				PlantResource(provinceId, GeoresourceEnum::CoalOre, 5000);
+				PlantResource(provinceId, GeoresourceEnum::CoalOre, 8000);
 
 				const std::vector<ProvinceConnection>& connections = provinceSys.GetProvinceConnections(provinceId);
 				
@@ -132,7 +132,7 @@ void GeoresourceSystem::InitGeoresourceSystem(IGameSimulationCore* simulation, b
 				{
 					bool canPlantResource = provinceSys.CanPlantMountainGeoresource(connection.provinceId);
 					if (canPlantResource) {
-						PlantResource(connection.provinceId, GeoresourceEnum::IronOre, 3000);
+						PlantResource(connection.provinceId, GeoresourceEnum::IronOre, 12000);
 						break;
 					}
 				}
@@ -140,7 +140,7 @@ void GeoresourceSystem::InitGeoresourceSystem(IGameSimulationCore* simulation, b
 				continue;
 			}
 			if (GameRand::RandChance(15)) {
-				PlantResource(provinceId, GeoresourceEnum::CoalOre, 5000);
+				PlantResource(provinceId, GeoresourceEnum::CoalOre, 20000);
 				continue;
 			}
 			//if (GameRand::RandChance(15)) {
@@ -189,10 +189,10 @@ void GeoresourceSystem::InitGeoresourceSystem(IGameSimulationCore* simulation, b
 			//	PlantResource(region, GeoresourceEnum::GiantTree);
 			//	continue;
 			//}
-			if (biomeEnum == BiomeEnum::Forest && GameRand::RandChance(50)) {
-				PlantResource(provinceId, GeoresourceEnum::GiantMushroom);
-				continue;
-			}
+			//if (biomeEnum == BiomeEnum::Forest && GameRand::RandChance(50)) {
+			//	PlantResource(provinceId, GeoresourceEnum::GiantMushroom);
+			//	continue;
+			//}
 			//if (biomeEnum == BiomeEnum::Forest && GameRand::RandChance(50)) {
 			//	PlantResource(region, GeoresourceEnum::CherryBlossom);
 			//	continue;
@@ -229,10 +229,8 @@ void GeoresourceSystem::PlantResource(int32 provinceId, GeoresourceEnum georesou
 
 	TileArea georesourceArea = BuildingArea(centerTile, size, Direction::S);
 
-	GeoresourceNode node = { georesourceEnum, provinceId, centerTile, georesourceArea };
-	//info.area = TileArea(tile, size);
-	//info.centerTile = tile + WorldTile2(1, 1);
-	//info.resourceEnum = resourceEnum;
+	GeoresourceNode node = GeoresourceNode::Create(georesourceEnum, provinceId, centerTile, georesourceArea);
+	
 
 
 	if (node.info().isLandmark()) 
@@ -269,7 +267,9 @@ void GeoresourceSystem::PlantResource(int32 provinceId, GeoresourceEnum georesou
 
 	if (depositAmount > 0)
 	{
-		_provinceToGeoresource[provinceId].depositAmount = depositAmount;
+		int32 fluctuationPercent = 50;
+		int32 fluctuationAmount = depositAmount * fluctuationPercent / 100;
+		_provinceToGeoresource[provinceId].depositAmount = depositAmount + GameRand::Rand(centerTile.tileId()) % fluctuationAmount - fluctuationAmount / 2;
 	}
 
 	//if (canPlant)

@@ -16,11 +16,20 @@ static const TArray<FString> GraphicsOptions =
 	"Ultra",
 };
 
-static int32 GetGraphicsOptionIndex(FString optionIn, bool isShiftedUp = false)
+static const TArray<FString> GraphicsOptionsWithNone =
 {
-	for (int32 i = 0; i < GraphicsOptions.Num(); i++) {
-		if (GraphicsOptions[i] == optionIn) {
-			return isShiftedUp? (i + 1) : i;
+	"None",
+	"Low",
+	"Medium",
+	"High",
+};
+
+static int32 GetGraphicsOptionIndex(FString optionIn, bool useOptionsWithNone = false)
+{
+	const TArray<FString>& options = useOptionsWithNone ? GraphicsOptionsWithNone : GraphicsOptions;
+	for (int32 i = 0; i < options.Num(); i++) {
+		if (options[i] == optionIn) {
+			return i;
 		}
 	}
 	UE_DEBUG_BREAK();
@@ -161,11 +170,11 @@ void UGameSettingsUI::PunInit(UPunWidget* callbackParent)
 	 * Non video settings
 	 */
 
-	auto setupDropdown = [&](UComboBoxString* comboBox, int32 isShiftedDown = false) {
+	auto setupDropdown = [&](UComboBoxString* comboBox, bool hasNone = false) {
 		comboBox->ClearOptions();
-		int32 length = GraphicsOptions.Num() + (isShiftedDown ? -1 : 0); // Don't display ultra if isShiftedDown is true
-		for (int32 i = 0; i < length; i++) {
-			comboBox->AddOption(GraphicsOptions[i]);
+		const TArray<FString>& options = hasNone ? GraphicsOptionsWithNone : GraphicsOptions;
+		for (int32 i = 0; i < options.Num(); i++) {
+			comboBox->AddOption(options[i]);
 		}
 	};
 
@@ -236,7 +245,7 @@ void UGameSettingsUI::RefreshUI(bool resetTabs)
 	
 	AntiAliasingDropdown->SetSelectedIndex(settings->ScalabilityQuality.AntiAliasingQuality);
 	//PostProcessingDropdown->SetSelectedIndex(settings->ScalabilityQuality.PostProcessQuality);
-	ShadowsDropdown->SetSelectedIndex(settings->ScalabilityQuality.ShadowQuality - 1); // Shadow is shifted by 1
+	ShadowsDropdown->SetSelectedIndex(settings->ScalabilityQuality.ShadowQuality);
 	TexturesDropdown->SetSelectedIndex(settings->ScalabilityQuality.TextureQuality);
 	EffectsDropdown->SetSelectedIndex(settings->ScalabilityQuality.EffectsQuality);
 
@@ -393,7 +402,8 @@ void UGameSettingsUI::OnShadowsDropdownChanged(FString sItem, ESelectInfo::Type 
 	if (seltype != ESelectInfo::Type::Direct) {
 		_isSettingsDirty = true;
 		
-		GetGameUserSettings()->SetShadowQuality(GetGraphicsOptionIndex(sItem) + 1); // Low shadow quality is unacceptable...
+		//GetGameUserSettings()->SetShadowQuality(GetGraphicsOptionIndex(sItem) + 1); // Low shadow quality is unacceptable...
+		GetGameUserSettings()->SetShadowQuality(GetGraphicsOptionIndex(sItem, true));
 		Spawn2DSound("UI", "DropdownChange");
 	}
 }

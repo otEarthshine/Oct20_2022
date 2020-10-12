@@ -486,7 +486,7 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 		if (fabs(cameraRecord.lightAngle - 1200.0f) < 0.1f) {
 			// Leave Jungle
 			PunSettings::Set("TrailerNoTreeRefresh", 1);
-			SimSettings::Set("ToggleRain", 0);
+			PunSettings::Set("ToggleRain", 0);
 			cameraRecord.lightAngle = 225.0f;
 		}
 		if (fabs(cameraRecord.lightAngle - 1400.0f) < 0.1f) {
@@ -504,7 +504,7 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 
 		if (fabs(cameraRecord.lightAngle - 3000.0f) < 0.1f) {
 			// Arrive at Jungle
-			SimSettings::Set("ToggleRain", 1);
+			PunSettings::Set("ToggleRain", 1);
 			cameraRecord.lightAngle = 45.0f;
 		}
 

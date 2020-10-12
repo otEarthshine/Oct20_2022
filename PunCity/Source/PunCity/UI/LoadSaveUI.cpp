@@ -19,6 +19,12 @@ void ULoadSaveUI::PunInit(UPunWidget* parent)
 	SaveSelectionList->ClearChildren();
 
 	SavingBlurText->SetVisibility(ESlateVisibility::Collapsed);
+
+	
+	ConfirmBlur->SetVisibility(ESlateVisibility::Collapsed);
+	ConfirmUI->SetVisibility(ESlateVisibility::Collapsed);
+	ConfirmUI->ConfirmYesButton->OnClicked.AddDynamic(this, &ULoadSaveUI::OnClickConfirmDeleteGameButton);
+	ConfirmUI->ConfirmNoButton->OnClicked.AddDynamic(this, &ULoadSaveUI::OnClickCancelDeleteGameButton);
 }
 
 void ULoadSaveUI::OnClickBackButton()
@@ -52,7 +58,7 @@ void ULoadSaveUI::OnClickSaveLoadGameButton()
 
 	Spawn2DSound("UI", "ButtonClick");
 }
-void ULoadSaveUI::OnClickDeleteGameButton()
+void ULoadSaveUI::OnClickConfirmDeleteGameButton()
 {
 	if (activeIndex != -1)
 	{
@@ -66,6 +72,8 @@ void ULoadSaveUI::OnClickDeleteGameButton()
 	}
 
 	Spawn2DSound("UI", "ButtonClick");
+	ConfirmUI->SetVisibility(ESlateVisibility::Collapsed);
+	ConfirmBlur->SetVisibility(ESlateVisibility::Collapsed);
 }
 
 void ULoadSaveUI::OnSaveNameChanged(const FText& text)

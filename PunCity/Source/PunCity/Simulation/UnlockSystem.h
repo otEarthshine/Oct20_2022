@@ -124,7 +124,7 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 
 	{TechEnum::Plantation, {
 		"Plantation",
-		"Unlock farm crops cards: Cannabis Seeds, Grape Seeds, Cocoa Seeds"
+		"Unlock farm crops cards: Cannabis Seeds, Grape Seeds, Cocoa Seeds, Cotton Seeds"
 	}},
 	
 	{TechEnum::MushroomSubstrateSterilization, {
@@ -593,8 +593,8 @@ public:
 			 //
 			int32 era = 1;
 			AddTech_Bonus(era, TechEnum::ImprovedWoodCutting);
+			AddTech_Building(era, TechEnum::HerbFarming, { CardEnum::HerbSeed });
 			AddTech_Bonus(era, TechEnum::RerollCardsPlus1);
-			AddTech_Bonus(era, TechEnum::CheapReroll);
 			AddTech_Bonus(era, TechEnum::MushroomSubstrateSterilization);
 			AddTech_Bonus(era, TechEnum::BorealLandCost);
 			AddTech_Building(era, TechEnum::BarrackArcher, CardEnum::BarrackArcher);
@@ -602,10 +602,10 @@ public:
 			
 			//
 			era = 2;
-			AddTech_Building(era, TechEnum::HerbFarming, { CardEnum::HerbSeed });
 			//AddTech_Building(era, TechEnum::DeepMining, { CardEnum::GemstoneMine });
 			AddTech_Building(era, TechEnum::TradingPost, { CardEnum::TradingPost, CardEnum::TradingPort });
 			AddTech_Bonus(era, TechEnum::Plantation);
+			AddTech_Bonus(era, TechEnum::CheapReroll);
 			AddTech_Building(era, TechEnum::IronRefining, { CardEnum::IronMine, CardEnum::IronSmelter });
 			AddTech_Building(era, TechEnum::Blacksmith, CardEnum::Blacksmith);
 			AddTech_Building(era, TechEnum::Espionage, { CardEnum::Steal });
@@ -778,6 +778,8 @@ public:
 				{
 					if (houseCount >= _houseLvlToUnlockCount[i][j]) 
 					{
+						PUN_LOG("properityTech Researched %s", ToTChar(properityTech->GetName()));
+						
 						// Unlocked
 						// Take away the amount of science used 
 						properityTech->state = TechStateEnum::Researched;

@@ -14,8 +14,8 @@
 
 #define TRAILER_MODE 0
 
-#define SAVE_VERSION 8100147 // Day/Month/Time
-#define GAME_VERSION 8100147
+#define SAVE_VERSION 12100147 // Day/Month/Time
+#define GAME_VERSION 12100147
 
 //! Utils
 
@@ -419,7 +419,7 @@ public:
 		if (PunSettings::IsOn("ForceNoRain")) {
 			return false;
 		}
-		if (SimSettings::IsOn("ToggleRain")) {
+		if (PunSettings::IsOn("ToggleRain")) {
 			return true;
 		}
 		if (PunSettings::TrailerMode()) {
@@ -692,8 +692,8 @@ enum class ResourceEnum : uint8
 	Furniture,
 	Chocolate,
 
-	StoneTools,
-	CrudeIronTools,
+	//StoneTools,
+	//CrudeIronTools,
 	SteelTools,
 	Herb,
 	Medicine,
@@ -836,7 +836,7 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::Hay,			"Hay",		1, "Dried grass that can be used as animal feed"),
 
 	ResourceInfo(ResourceEnum::Paper,		"Paper",	8, "Used for research and book making"),
-	ResourceInfo(ResourceEnum::Clay,		"Clay",		2, "Fine-grained earth used to make Pottery and Bricks"),
+	ResourceInfo(ResourceEnum::Clay,		"Clay",		3, "Fine-grained earth used to make Pottery and Bricks"),
 	ResourceInfo(ResourceEnum::Brick,		"Brick",	10, "Sturdy, versatile construction material"),
 
 	ResourceInfo(ResourceEnum::Coal,		"Coal",		6, "Fuel used to heat houses or smelt ores. When heating houses, provides x2 heat vs. Wood"),
@@ -845,8 +845,8 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::Furniture,	"Furniture", 8,  "Luxury tier 1 used for housing upgrade. Make house a home."),
 	ResourceInfo(ResourceEnum::Chocolate,	"Chocolate", 20,  "Luxury tier 2 used for housing upgrade. Everyone's favorite confectionary."),
 
-	ResourceInfo(ResourceEnum::StoneTools,		"Stone Tools",		15,  "Lowest-grade tool made by Stone Tool Shop."),
-	ResourceInfo(ResourceEnum::CrudeIronTools,	"Crude Iron Tools",	15,  "Medium-grade tool made by Blacksmith using Iron Ore and Wood."),
+	//ResourceInfo(ResourceEnum::StoneTools,		"Stone Tools",		15,  "Lowest-grade tool made by Stone Tool Shop."),
+	//ResourceInfo(ResourceEnum::CrudeIronTools,	"Crude Iron Tools",	15,  "Medium-grade tool made by Blacksmith using Iron Ore and Wood."),
 	ResourceInfo(ResourceEnum::SteelTools,		"Steel Tool",			27,  "High-grade tool made by Blacksmith from Iron Bars and Wood"),
 	ResourceInfo(ResourceEnum::Herb,				"Medicinal Herb",				5, 		"Medicinal plant used to heal sickness"),
 	ResourceInfo(ResourceEnum::Medicine,			"Medicine",			10,  "Potent Medicinal Herb extract used to cure sickness"),
@@ -1033,9 +1033,6 @@ static bool IsMetalEnum(ResourceEnum resourceEnum) {
 static bool IsTradeResource(ResourceEnum resourceEnum) {
 	switch (resourceEnum)
 	{
-	case ResourceEnum::StoneTools:
-	case ResourceEnum::CrudeIronTools:
-
 	// Disable
 	case ResourceEnum::Shroom:
 		return false;
@@ -1072,8 +1069,8 @@ static bool IsMedicineEnum(ResourceEnum resourceEnumIn) {
 static const std::vector<ResourceEnum> ToolsEnums
 {
 	ResourceEnum::SteelTools,
-	ResourceEnum::CrudeIronTools,
-	ResourceEnum::StoneTools,
+	//ResourceEnum::CrudeIronTools,
+	//ResourceEnum::StoneTools,
 };
 static bool IsToolsEnum(ResourceEnum resourceEnumIn) {
 	for (ResourceEnum resourceEnum : ToolsEnums) {
@@ -1166,8 +1163,8 @@ static std::string LuxuryResourceTip(int32 tier)
 
 static const std::vector<ResourceEnum> ToolResources = {
 	ResourceEnum::SteelTools,
-	ResourceEnum::CrudeIronTools,
-	ResourceEnum::StoneTools,
+	//ResourceEnum::CrudeIronTools,
+	//ResourceEnum::StoneTools,
 };
 static const std::vector<ResourceEnum> MedicineResources = {
 	ResourceEnum::Medicine,
@@ -1799,7 +1796,7 @@ static const std::vector<std::pair<CardEnum, int32>> BuildingEnumToUpkeep =
 	{ CardEnum::InventorsWorkshop, 10 },
 
 	{ CardEnum::Blacksmith, 10 },
-	{ CardEnum::InventorsWorkshop, 10 },
+	{ CardEnum::MedicineMaker, 10 },
 	
 	{ CardEnum::Garden, 5 },
 
@@ -2103,7 +2100,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::IronSmelter,	"Iron Smelter",			WorldTile2(5, 6),	ResourceEnum::Coal,ResourceEnum::IronOre,ResourceEnum::Iron,		 10, 5,	{80,80,0},	"Smelt Iron Ores into Iron Bars."),
 
 
-	BldInfo(CardEnum::StoneToolShop,	"Stone Tool Shop",		WorldTile2(5, 8),	ResourceEnum::Stone, ResourceEnum::Wood, ResourceEnum::StoneTools,		 10, 2,	{50,20,0},	"."),
+	BldInfo(CardEnum::StoneToolShop,	"Stone Tool Shop",		WorldTile2(5, 8),	ResourceEnum::Stone, ResourceEnum::Wood, ResourceEnum::SteelTools,		 10, 2,	{50,20,0},	"."),
 	BldInfo(CardEnum::Blacksmith,	"Blacksmith",			WorldTile2(5, 8),	ResourceEnum::Iron, ResourceEnum::Wood, ResourceEnum::SteelTools,		 10, 2,	{50,50,20},	"Forge Tools from Iron Bars and Wood."),
 	BldInfo(CardEnum::Herbalist,		"Herbalist",			WorldTile2(4, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 10, 2,	{50,30,0},	"."),
 	BldInfo(CardEnum::MedicineMaker,	"Medicine Maker",		WorldTile2(4, 4),	ResourceEnum::Herb, ResourceEnum::None, ResourceEnum::Medicine,		 10, 2,	{50,50,20},	"Make Medicine from Medicinal Herb."),
@@ -4090,6 +4087,7 @@ static const int32 BattleClaimTicks = Time::TicksPerSeason;
 
 enum class InfluenceIncomeEnum : uint8
 {
+	Townhall,
 	Population,
 	Luxury,
 	TerritoryUpkeep,
@@ -4103,6 +4101,7 @@ enum class InfluenceIncomeEnum : uint8
 };
 static std::vector<std::string> InfluenceIncomeEnumName
 {
+	"Townhall",
 	"Population",
 	"Luxury Consumption",
 	"Territory Upkeep",
@@ -6066,10 +6065,17 @@ struct GeoresourceNode
 
 	// mining
 	int32 depositAmount = 0;
-	int32 stoneAmount = 2500;
+	int32 stoneAmount = 0;
 	
 	bool isUsedUp = false; // such as ruins etc.
 
+	static GeoresourceNode Create(GeoresourceEnum georesourceEnum, int32 provinceId, WorldTile2 centerTile, TileArea georesourceArea = TileArea())
+	{
+		GeoresourceNode node = { georesourceEnum, provinceId, centerTile, georesourceArea };
+		node.stoneAmount = 7500 + GameRand::Rand(provinceId) % 5000;
+		return node;
+	}
+	
 	GeoresourceInfo info() const {
 		return GetGeoresourceInfo(georesourceEnum);
 	}
@@ -6843,6 +6849,31 @@ enum class BoolEnum : uint8
 	True,
 	NeedUpdate,
 };
+
+enum class HoverWarning : uint8 {
+	None,
+	Depleted,
+	StoragesFull,
+	StorageTooFar,
+	HouseTooFar,
+
+	NotEnoughMoney,
+	AlreadyReachedTarget,
+	ResourcesBelowTarget,
+};
+
+static const std::vector<std::string> HoverWarningString = {
+	"",
+	"Depleted",
+	"Storages Full",
+	"Storage Too Far",
+	"House Too Far",
+
+	"Not Enough Money",
+	"Target Reached",
+	"Resources Below\nStorage Target",
+};
+static std::string GetHoverWarningString(HoverWarning hoverWarning) { return HoverWarningString[static_cast<int>(hoverWarning)]; }
 
 /*
  * Game Constants

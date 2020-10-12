@@ -200,7 +200,9 @@ void UWorldTradeUI::ClickedTradeButton()
 		return;
 	}
 	
-	if (_totalCoinGain + resourceSystem.money() < 0) {
+	if (_totalCoinGain < 0 &&
+		_totalCoinGain + resourceSystem.money() < 0) 
+	{
 		//PopupInfo popup(playerId(), "Not enough money for trade.");
 		//popup.warningForExclusiveUI = ExclusiveUIEnum::Trading;
 		simulation().AddPopupToFront(playerId(), "Not enough money for trade.", ExclusiveUIEnum::Trading, "PopupCannot");

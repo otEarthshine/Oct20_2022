@@ -406,9 +406,9 @@ void UnitSystem::Tick()
 						}
 					}
 
-					int32 workEfficiency100 = unitStateAI(id).subclass<HumanStateAI>().workEfficiency100();
-					if (workEfficiency100 <= 0) {
-						workEfficiency100 = 1;
+					int32 workEfficiency100 = unitStateAI(id).subclass<HumanStateAI>().workEfficiency100(false);
+					if (workEfficiency100 < 50) {
+						workEfficiency100 = 50; // Min movespeed of 50%
 					}
 					moveSpeed = moveSpeed * workEfficiency100 / 100;
 				}

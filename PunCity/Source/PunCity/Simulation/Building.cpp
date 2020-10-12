@@ -598,6 +598,8 @@ void Building::DoWork(int unitId, int workAmount100)
 
 				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, centerTile(), "+" + to_string(moneyReceived));
 				AddProductionStat(moneyReceived);
+				AddConsumptionStats();
+				
 				_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
 				return;
 			}
@@ -611,6 +613,8 @@ void Building::DoWork(int unitId, int workAmount100)
 
 				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainScience, centerTile(), "+" + to_string(sciReceived));
 				AddProductionStat(sciReceived);
+				AddConsumptionStats();
+				
 				_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
 				return;
 			}
@@ -624,6 +628,8 @@ void Building::DoWork(int unitId, int workAmount100)
 
 				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainInfluence, centerTile(), "+" + to_string(influenceReceived));
 				AddProductionStat(influenceReceived);
+				AddConsumptionStats();
+				
 				_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
 				return;
 			}
@@ -634,6 +640,8 @@ void Building::DoWork(int unitId, int workAmount100)
 
 				auto& cardSys = _simulation->cardSystem(_playerId);
 				cardSys.AddCardToHand2(static_cast<CardMaker*>(this)->GetCardProduced());
+
+				AddConsumptionStats();
 
 				_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
 				return;
@@ -659,6 +667,7 @@ void Building::DoWork(int unitId, int workAmount100)
 
 			AddResource(info.resourceEnum, productionAmount);
 			AddProductionStat(productionAmount);
+			AddConsumptionStats();
 
 			// Special case: Beeswax + Honey
 			if (info.resourceEnum == ResourceEnum::Beeswax) 
@@ -794,6 +803,10 @@ int32 Building::oreLeft()
 
 void Building::CheckCombo()
 {
+	if (_playerId == -1) {
+		return;
+	}
+	
 	// Don't check permanent buildings
 	if (IsStorage(_buildingEnum)) {
 		return;

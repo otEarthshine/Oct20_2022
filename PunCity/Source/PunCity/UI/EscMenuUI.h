@@ -312,9 +312,15 @@ public:
 	}
 	
 
-	void KeyPressed_Escape() {
+	void KeyPressed_Escape()
+	{
+		// Close Delete Save Confirmation
+		if (LoadSaveUI->KeyPressed_Escape())
+		{
+			
+		}
 		// Close ExitConfirm to EscMenu
-		if (ConfirmUI->GetVisibility() != ESlateVisibility::Collapsed) {
+		else if (ConfirmUI->GetVisibility() != ESlateVisibility::Collapsed) {
 			ConfirmUI->SetVisibility(ESlateVisibility::Collapsed);
 			ConfirmBlur->SetVisibility(ESlateVisibility::Collapsed);
 			BackBlur->SetVisibility(ESlateVisibility::Collapsed);

@@ -249,7 +249,7 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 			FVector projectileLocation = MapUtil::DisplayLocation(cameraAtom, projectileInfo.location);
 
 			// Height is parabola with a fixed max height
-			const float maxProjectileHeight = projectileInfo.groundAtomDistance / CoordinateConstants::AtomPerDisplayUnit * 0.7f;
+			const float maxProjectileHeight = projectileInfo.groundAtomDistance / CoordinateConstants::AtomPerDisplayUnit * 0.3f;
 			float fractionTime = projectileInfo.fraction100000 / 100000.0f;
 
 			// Quad eqn with root at 0 and 1:

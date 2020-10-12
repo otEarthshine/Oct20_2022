@@ -146,9 +146,9 @@ void TradingCompany::Tick1Sec()
 		return;
 	}
 
-	// Show trade failed for 3 sec...
-	if (tradeRetryDelayTicks - TradeRetryCountDownTicks() > Time::TicksPerSecond * 3) {
-		_tradeFailed = false;
+	// Show trade failed for 5 sec...
+	if (tradeRetryDelayTicks - TradeRetryCountDownTicks() > Time::TicksPerSecond * 5) {
+		hoverWarning = HoverWarning::None;
 	}
 
 	if (TradeRetryCountDownTicks() > 0) {
@@ -193,16 +193,25 @@ void TradingCompany::Tick1Sec()
 	if (isImport)
 	{
 		if (targetAmount > currentResourceCount) {
-			int32 buyAmount = std::min(targetAmount - currentResourceCount, tradeMaximumPerRound());
+			int32 buyAmountFromTarget = std::min(targetAmount - currentResourceCount, tradeMaximumPerRound());
 			int32 moneyLeftToBuyAfterFee = resourceSystem().money() * 100 / (100 + tradingFeePercent());
 			int32 maxAmountMoneyCanBuy = moneyLeftToBuyAfterFee / GetResourceInfo(activeResourceEnum).basePrice;
-			buyAmount = std::min(maxAmountMoneyCanBuy, buyAmount);
+			int32 buyAmount = std::min(maxAmountMoneyCanBuy, buyAmountFromTarget);
 
-			if (buyAmount > 0) {
+			if (buyAmount > 0) 
+			{
 				issueTradeCommand(buyAmount);
 				ResetTradeRetryTick();
 				return;
 			}
+			if (maxAmountMoneyCanBuy == 0) {
+				hoverWarning = HoverWarning::NotEnoughMoney;
+			} else {
+				hoverWarning = HoverWarning::AlreadyReachedTarget;
+			}
+		}
+		else {
+			hoverWarning = HoverWarning::AlreadyReachedTarget;
 		}
 	}
 	else
@@ -210,15 +219,17 @@ void TradingCompany::Tick1Sec()
 		if (currentResourceCount > targetAmount) {
 			int32 sellAmount = std::min(currentResourceCount - targetAmount, tradeMaximumPerRound());
 
-			if (sellAmount > 0) {
+			if (sellAmount > 0) 
+			{
 				issueTradeCommand(-sellAmount);
 				ResetTradeRetryTick();
 				return;
 			}
 		}
+
+		hoverWarning = HoverWarning::ResourcesBelowTarget;
 	}
 
-	_tradeFailed = true;
 	ResetTradeRetryTick();
 }
 

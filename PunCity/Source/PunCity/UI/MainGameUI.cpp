@@ -71,6 +71,9 @@ void UMainGameUI::PunInit()
 	//ConverterCardHandSubmitButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickConverterCardHandSubmitButton);
 	ConverterCardHandCancelButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickConverterCardHandCancelButton);
 
+	ConverterCardHandConfirmUI->ConfirmYesButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickCardRemovalConfirmYesButton);
+	ConverterCardHandConfirmUI->ConfirmNoButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickCardRemovalConfirmNoButton);
+
 
 	ConfirmationOverlay->SetVisibility(ESlateVisibility::Collapsed);
 	ConfirmationYesButton->OnClicked.AddDynamic(this, &UMainGameUI::OnClickConfirmationYes);
@@ -552,6 +555,7 @@ void UMainGameUI::Tick()
 							}
 						}
 					}
+					ConverterCardHandConfirmUI->SetVisibility(ESlateVisibility::Collapsed);
 				}
 				else
 				{
@@ -1073,6 +1077,7 @@ void UMainGameUI::Tick()
 				auto iconTextPair = CastChecked<UIconTextPairWidget>(listToAdd->GetChildAt(j));
 				if (iconTextPair->ObjectId == i) 
 				{
+					// Display normally = display only those above 0
 					auto displayNormally = [&]() {
 						if (amount > 0) {
 							iconTextPair->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
@@ -1083,22 +1088,28 @@ void UMainGameUI::Tick()
 						}
 					};
 					
-					if (IsFuelEnum(resourceEnum))
+					//if (IsFuelEnum(resourceEnum))
+					//{
+					//	int32 fuelCount = dataSource()->GetResourceCount(playerId(), FuelEnums);
+					//	if (fuelCount > 0) {
+					//		displayNormally();
+					//	}
+					//	else {
+					//		// Without fuel, we show flashing 0 wood
+					//		if (resourceEnum == ResourceEnum::Wood) {
+					//			iconTextPair->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+					//			SetResourceIconPair(iconTextPair, resourceEnum);
+					//		}
+					//		else {
+					//			iconTextPair->SetVisibility(ESlateVisibility::Collapsed);
+					//		}
+					//	}
+					//}
+					
+					if (resourceEnum == ResourceEnum::Wood)
 					{
-						int32 fuelCount = dataSource()->GetResourceCount(playerId(), FuelEnums);
-						if (fuelCount > 0) {
-							displayNormally();
-						}
-						else {
-							// Without fuel, we show flashing 0 wood
-							if (resourceEnum == ResourceEnum::Wood) {
-								iconTextPair->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-								SetResourceIconPair(iconTextPair, resourceEnum);
-							}
-							else {
-								iconTextPair->SetVisibility(ESlateVisibility::Collapsed);
-							}
-						}
+						iconTextPair->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+						SetResourceIconPair(iconTextPair, resourceEnum);
 					}
 					else if (IsMedicineEnum(resourceEnum)) 
 					{
@@ -1820,15 +1831,16 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 				return;
 			}
 
-			// Check if we reached hand limit
-			std::vector<bool> reserveStatuses = cardSystem.GetHand1ReserveStatus();
-			int alreadyReserved = 0;
-			for (bool reserved : reserveStatuses) {
-				if (reserved) {
-					alreadyReserved++;
-				}
-			}
-			if (!cardSystem.CanAddCardToBoughtHand(buildingEnum, alreadyReserved + 1)) {
+			// Check if we reached hand limit TODO: delete this
+			//std::vector<bool> reserveStatuses = cardSystem.GetHand1ReserveStatus();
+			//int alreadyReserved = 0;
+			//for (bool reserved : reserveStatuses) {
+			//	if (reserved) {
+			//		alreadyReserved++;
+			//	}
+			//}
+			
+			if (!cardSystem.CanAddCardToBoughtHand(buildingEnum, 1, true)) {
 				simulation().AddPopupToFront(playerId(), "Reached hand limit for bought cards.", ExclusiveUIEnum::CardHand1, "PopupCannot");
 				return;
 			}
@@ -1886,14 +1898,17 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 	}
 	if (callbackEnum == CallbackEnum::SelectCardRemoval)
 	{
-		dataSource()->Spawn2DSound("UI", "CardDeal");
-		ConverterCardHandOverlay->SetVisibility(ESlateVisibility::Collapsed);
-		cardSystem.converterCardState = ConverterCardUseState::SubmittedUI;
-		
-		auto command = make_shared<FUseCard>();
-		command->cardEnum = CardEnum::CardRemoval;
-		command->variable1 = static_cast<int32>(buildingEnum);
-		networkInterface()->SendNetworkCommand(command);
+		buildingEnumToRemove = buildingEnum;
+		SetText(ConverterCardHandConfirmUI->ConfirmText, "Are you sure you want to remove " + GetBuildingInfo(buildingEnum).name + " Card?");
+		ConverterCardHandConfirmUI->SetVisibility(ESlateVisibility::Visible);
+		//dataSource()->Spawn2DSound("UI", "CardDeal");
+		//ConverterCardHandOverlay->SetVisibility(ESlateVisibility::Collapsed);
+		//cardSystem.converterCardState = ConverterCardUseState::SubmittedUI;
+		//
+		//auto command = make_shared<FUseCard>();
+		//command->cardEnum = CardEnum::CardRemoval;
+		//command->variable1 = static_cast<int32>(buildingEnum);
+		//networkInterface()->SendNetworkCommand(command);
 		return;
 	}
 

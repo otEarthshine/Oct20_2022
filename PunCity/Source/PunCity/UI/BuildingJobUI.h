@@ -166,26 +166,18 @@ public:
 		// Refresh Hover Warning
 		// Check every sec
 		float time = UGameplayStatics::GetTimeSeconds(this);
-		if (time - building.lastHoverWarningCheckTime >= 1.0f) 
+		if (time - building.lastHoverWarningCheckTime >= 0.5f) 
 		{
 			building.lastHoverWarningCheckTime = time;
 			building.RefreshHoverWarning();
 
-			if (building.hoverWarning == Building::HoverWarning::Depleted) {
+			if (building.hoverWarning != HoverWarning::None)
+			{
 				DepletedText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-				SetText(DepletedText, "Depleted");
+				SetText(DepletedText, GetHoverWarningString(building.hoverWarning));
 			}
-			else if (building.hoverWarning == Building::HoverWarning::HouseTooFar) {
-				DepletedText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-				SetText(DepletedText, "House Too Far");
-			}
-			else if (building.hoverWarning == Building::HoverWarning::StorageTooFar) {
-				DepletedText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-				SetText(DepletedText, "Storage Too Far");
-			}
-			else if (building.hoverWarning == Building::HoverWarning::StoragesFull) {
-				DepletedText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-				SetText(DepletedText, "Storages Full");
+			else {
+				DepletedText->SetVisibility(ESlateVisibility::Collapsed);
 			}
 		}
 	}

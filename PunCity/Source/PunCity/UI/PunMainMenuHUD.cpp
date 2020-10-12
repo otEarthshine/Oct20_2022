@@ -45,3 +45,8 @@ void APunMainMenuHUD::Tick(float DeltaSeconds) {
 		_mainMenuUI->Tick();
 	}
 }
+
+void APunMainMenuHUD::KeyPressed_Escape()
+{
+	_mainMenuUI->KeyPressed_Escape();
+}

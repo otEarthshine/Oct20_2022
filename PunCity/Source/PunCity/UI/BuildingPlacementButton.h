@@ -65,23 +65,19 @@ public:
 		}
 		
 		DescriptionRichText->SetText(ToFText(description));
-		BuildingNameText->SetText(ToFText(info.name));
 
+		std::stringstream ss;
+		ss << info.name;
 		if (buildingEnum == CardEnum::House) {
-			BuildingHotkeyText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-			SetText(BuildingHotkeyText, "[H]");
+			ss << " <Orange>[H]</>";
 		}
 		else if(buildingEnum == CardEnum::Farm) {
-			BuildingHotkeyText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-			SetText(BuildingHotkeyText, "[F]");
+			ss << " <Orange>[F]</>";
 		}
 		else if (buildingEnum == CardEnum::StorageYard) {
-			BuildingHotkeyText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-			SetText(BuildingHotkeyText, "[S]");
+			ss << " <Orange>[Y]</>";
 		}
-		else {
-			BuildingHotkeyText->SetVisibility(ESlateVisibility::Collapsed);
-		}
+		SetText(BuildingNameRichText, ss.str());
 
 		CardGlow->SetVisibility(ESlateVisibility::Hidden);
 
@@ -385,8 +381,8 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) UOverlay* ParentOverlay;
 
-	UPROPERTY(meta = (BindWidget)) UTextBlock* BuildingNameText;
-	UPROPERTY(meta = (BindWidget)) UTextBlock* BuildingHotkeyText;
+	//UPROPERTY(meta = (BindWidget)) UTextBlock* BuildingNameText;
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* BuildingNameRichText;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* DescriptionRichText;
 	UPROPERTY(meta = (BindWidget)) UImage* BuildingIcon;
 

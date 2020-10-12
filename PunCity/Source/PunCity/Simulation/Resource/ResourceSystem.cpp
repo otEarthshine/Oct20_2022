@@ -135,6 +135,26 @@ FoundResourceHolderInfos ResourceTypeHolders::FindHolder(ResourceFindType type, 
 	return FindHolderHelper(type, amount, origin, avoidIds, maxFloodDist);
 }
 
+int32 ResourceTypeHolders::CanAddResourceGlobal(int32 amount, ResourceSystem& resourceSys)
+{
+	PUN_LOG("CanAddResourceGlobal: %d", amount);
+	
+	for (int i = 0; i < _holders.size(); i++)
+	{
+		// add to storage only
+		if (_holders[i].type == ResourceHolderType::Storage)
+		{
+			int canReceiveAmount = resourceSys.CanReceiveAmountAfterReset(_holders[i]);
+			amount -= canReceiveAmount;
+
+			if (amount <= 0) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
 
 int32 ResourceTypeHolders::AddResourceGlobal(int32 amount, ResourceSystem& resourceSys)
 {
@@ -216,6 +236,42 @@ int32 ResourceSystem::CanReceiveAmount(ResourceHolder& holder) const {
 		if (tilesOccupied > 0 && holder.info == holderInfo) {
 			// Same kind of resource 
 			addToTilesCount += tilesOccupied * countPerTile - resourceCountWithPush(holderInfo);
+		}
+		tilesLeft -= tilesOccupied;
+	}
+
+	PUN_CHECK(tilesLeft >= 0);
+	if (tilesLeft < 0) {
+		return 0;
+	}
+
+	return tilesLeft * countPerTile + addToTilesCount;
+}
+
+// Modified CanReceiveAmount
+//  resourceCountWithPush -> resourceCount
+int32 ResourceSystem::CanReceiveAmountAfterReset(ResourceHolder& holder) const
+{
+	check(holder.type == ResourceHolderType::Storage);
+
+	Building& building = _simulation->building(holder.objectId);
+
+	const std::vector<ResourceHolderInfo>& holderInfos = building.holderInfos();
+	if (holderInfos.size() == 0) {
+		return 0;
+	}
+
+	// Accumulate Filled tiles that isn't by this holder.
+	const int32 countPerTile = GameConstants::StorageCountPerTile;
+	int32 tilesLeft = building.storageSlotCount();
+	int32 addToTilesCount = 0; // amount that can be added to an existing tiles
+
+	for (ResourceHolderInfo holderInfo : holderInfos)
+	{
+		int32 tilesOccupied = (countPerTile - 1 + resourceCount(holderInfo)) / countPerTile;;
+		if (tilesOccupied > 0 && holder.info == holderInfo) {
+			// Same kind of resource 
+			addToTilesCount += tilesOccupied * countPerTile - resourceCount(holderInfo);
 		}
 		tilesLeft -= tilesOccupied;
 	}

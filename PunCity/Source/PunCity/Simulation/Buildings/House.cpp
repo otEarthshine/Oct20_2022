@@ -265,25 +265,6 @@ int32 House::GetIncome100(IncomeEnum incomeEnum)
 	};
 }
 
-//int32_t House::librarySciencePerRound() {
-//	if (_houseLvl < Library::MinHouseLvl) {
-//		return 0;
-//	}
-//	int32_t radiusBonus = GetRadiusBonus(CardEnum::Library, Library::Radius, [&](int32_t bonus, Building& building) {
-//		return max(bonus, Library::SciencePerHouse);
-//	});
-//	return occupancyFactor(radiusBonus);
-//}
-//int32_t House::schoolSciencePerRound() {
-//	if (_houseLvl < School::MinHouseLvl) {
-//		return 0;
-//	}
-//	int32_t radiusBonus = GetRadiusBonus(CardEnum::School, Library::Radius, [&](int32_t bonus, Building& building) {
-//		return max(bonus, School::SciencePerHouse);
-//	});
-//	return occupancyFactor(radiusBonus);
-//}
-
 int32 House::GetScience100(ScienceEnum scienceEnum)
 {
 	switch (scienceEnum)

@@ -525,13 +525,20 @@ public:
 		};
 	}
 
-	std::vector<BonusPair> GetBonuses() override {
+	std::vector<BonusPair> GetBonuses() override
+	{
 		std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
 		if (_simulation->buildingCount(_playerId, CardEnum::EnvironmentalistGuild)) {
 			bonuses.push_back({ "Environmentalist", -30 });
 		}
 		if (IsUpgraded(0) && isOccupantFull()) {
 			bonuses.push_back({ "Teamwork", 50 });
+		}
+
+		if (_simulation->TownhallCardCount(_playerId, CardEnum::CoalPipeline) > 0) {
+			if (_simulation->resourceCount(_playerId, ResourceEnum::Coal) >= 1000) {
+				bonuses.push_back({ "Coal pipeline", 30 });
+			}
 		}
 		
 		return bonuses;
@@ -554,12 +561,6 @@ public:
 			//}
 			if (adjacentCount(CardEnum::IronSmelter) > 0) {
 				bonuses.push_back({ "Iron smelter combo", 30 });
-			}
-		}
-
-		if (_simulation->TownhallCardCount(_playerId, CardEnum::CoalPipeline) > 0) {
-			if (_simulation->resourceCount(_playerId, ResourceEnum::Coal) >= 1000) {
-				bonuses.push_back({ "Coal pipeline", 30 });
 			}
 		}
 
@@ -1095,7 +1096,7 @@ public:
 		// Adjust efficiency by distance linearly
 		// efficiency from pairing with other windmill gets multiplied together for the final efficiency
 		int32 efficiency = 100;
-		int32 radiusTouchAtom = 2 * Radius * CoordinateConstants::AtomsPerTile;
+		int32 radiusTouchAtom = 2 * Radius * CoordinateConstants::AtomsPerTile; // 2*Radius because that is when two windmill's radii starts to overlap
 		for (int32 windmillId : windmills) {
 			WorldTile2 centerTile = simulation->building(windmillId).centerTile();
 			if (centerTileIn != centerTile) {
@@ -1490,6 +1491,10 @@ public:
 	//}
 	ResourceEnum product() final {
 		return ResourceEnum::Fish;
+	}
+
+	int32 workManSecPerBatch100() final {
+		return Building::workManSecPerBatch100() * 100 / 120;
 	}
 
 	void OnUpgradeBuilding(int upgradeIndex) final {

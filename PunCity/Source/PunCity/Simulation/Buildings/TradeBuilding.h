@@ -279,7 +279,6 @@ public:
 		Ar << targetAmount;
 
 		Ar << _ticksToStartTrade;
-		Ar << _tradeFailed;
 
 		Ar << _profitLast1;
 		Ar << _profitLast2;
@@ -294,8 +293,6 @@ public:
 	int32 TradeRetryCountDownTicks() {
 		return std::max(0, _ticksToStartTrade - Time::Ticks());
 	}
-
-	bool lastTradeFailed() { return _tradeFailed; }
 
 	float barFraction() override {
 		if (_hasPendingTrade) {
@@ -321,7 +318,6 @@ private:
 	const int32 tradeRetryDelayTicks = 20 * Time::TicksPerSecond;
 
 	int32 _ticksToStartTrade = -1;
-	bool _tradeFailed = false;
 
 	int32 _profitLast1 = 0;
 	int32 _profitLast2 = 0;

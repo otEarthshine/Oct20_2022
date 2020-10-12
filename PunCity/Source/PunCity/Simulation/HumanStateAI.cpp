@@ -1313,7 +1313,7 @@ bool HumanStateAI::TryFarm()
 			ReserveTreeTile(harvestTile.tileId());
 			ReserveFarmTile(harvestTile.tileId());
 
-			int32_t waitTicks = 60;
+			int32 waitTicks = 30;
 			Add_DoFarmWork(harvestTile, FarmStage::Harvesting);
 			Add_Wait(waitTicks);
 			Add_MoveTo(harvestTile);

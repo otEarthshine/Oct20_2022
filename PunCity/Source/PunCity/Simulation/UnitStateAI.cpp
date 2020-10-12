@@ -1400,7 +1400,8 @@ void UnitStateAI::TrimFullBush()
 	if (tileBuildingId != -1)
 	{
 		Building& tileBuilding = _simulation->building(tileBuildingId);
-		if (tileBuilding.isEnum(CardEnum::Farm)) {
+		if (tileBuilding.isConstructed(CardEnum::Farm))
+		{
 			if (_simulation->TryDoNonRepeatAction(tileBuilding.playerId(), NonRepeatActionEnum::AnimalsEatingCrop, Time::TicksPerSecond * 30)) {
 				_simulation->AddEventLogF(tileBuilding.playerId(), FString("Animals are eating your crop..."), true);
 			}
@@ -1675,9 +1676,7 @@ void UnitStateAI::UseTools()
 	ResourceEnum resourceEnum = static_cast<ResourceEnum>(action().int32val1);
 
 	PUN_CHECK2(_inventory.Has(resourceEnum), debugStr());
-	PUN_CHECK(resourceEnum == ResourceEnum::StoneTools 
-			|| resourceEnum == ResourceEnum::CrudeIronTools
-			|| resourceEnum == ResourceEnum::SteelTools);
+	PUN_CHECK(resourceEnum == ResourceEnum::SteelTools);
 
 	/*
 	 * Stone 8 + wood 5 + 2 ... 15 ... half year
@@ -1686,13 +1685,14 @@ void UnitStateAI::UseTools()
 	 */
 
 	int32 amount = 1;
-	if (resourceEnum == ResourceEnum::StoneTools) {
-		_nextToolNeedTick = Time::Ticks() + Time::TicksPerYear / 2; // Stone tool last half a year
-	}
-	else if (resourceEnum == ResourceEnum::CrudeIronTools) {
-		_nextToolNeedTick = Time::Ticks() + Time::TicksPerYear; // Crude iron tool a year
-	}
-	else if (resourceEnum == ResourceEnum::SteelTools) {
+	//if (resourceEnum == ResourceEnum::StoneTools) {
+	//	_nextToolNeedTick = Time::Ticks() + Time::TicksPerYear / 2; // Stone tool last half a year
+	//}
+	//else if (resourceEnum == ResourceEnum::CrudeIronTools) {
+	//	_nextToolNeedTick = Time::Ticks() + Time::TicksPerYear; // Crude iron tool a year
+	//}
+	//else 
+	if (resourceEnum == ResourceEnum::SteelTools) {
 		_nextToolNeedTick = Time::Ticks() + (Time::TicksPerYear * 2) + (GameRand::Rand() % Time::TicksPerYear * 2); // Steel tool 3 year
 	}
 	else {
@@ -2322,12 +2322,11 @@ void UnitStateAI::FillInputs()
 		PUN_UNIT_CHECK(workplace.resourceCount(resourceEnum) >= reservation.amount);
 		workplace.RemoveResource(resourceEnum, reservation.amount);
 
-		if (i == 0) {
-			workplace.AddConsumption1Stat(ResourcePair(resourceEnum, reservation.amount));
-		} else if (i == 1) {
-			workplace.AddConsumption2Stat(ResourcePair(resourceEnum, reservation.amount));
-		}
-		//_simulation->statSystem(_playerId).AddResourceStat(ResourceSeasonStatEnum::Consumption, resourceEnum, reservation.amount);
+		//if (i == 0) {
+		//	workplace.AddConsumption1Stat(ResourcePair(resourceEnum, reservation.amount));
+		//} else if (i == 1) {
+		//	workplace.AddConsumption2Stat(ResourcePair(resourceEnum, reservation.amount));
+		//}
 	}
 
 	// Set fillInput to true in workplace

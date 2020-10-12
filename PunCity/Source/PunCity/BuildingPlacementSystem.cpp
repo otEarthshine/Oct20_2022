@@ -183,7 +183,7 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 			}
 
 			if (IsStorageTooLarge(TileArea(WorldTile2(0, 0), WorldTile2(sizeX, sizeY)))) {
-				ss << "\n" << "<Red>Width and Height must be less than 6</>";
+				ss << "\n" << "<Red>Width and Height must be less than 8</>";
 			}
 		}
 		SetInstruction(PlacementInstructionEnum::DragStorageYard, true, ss.str());
@@ -826,6 +826,8 @@ void ABuildingPlacementSystem::CancelPlacement()
 	_gameInterface->SetOverlayType(OverlayType::None, OverlaySetterType::BuildingPlacement);
 	_gameInterface->SetOverlayTile(WorldTile2::Invalid);
 
+	_placementGridDelayed.SetActive(false);
+
 	_networkInterface->SetCursor("Slate/MouseCursor");
 }
 
@@ -1069,10 +1071,30 @@ void ABuildingPlacementSystem::CalculateBridgeLineDrag()
 		// LongX means that x goes between dragStartTile.x and mouseOnTile.x, when y is dragStartTile.y
 		_area = TileArea(min(_dragStartTile.x, _mouseOnTile.x), _dragStartTile.y,
 			max(_dragStartTile.x, _mouseOnTile.x), _dragStartTile.y);
+
+		// Do not allow bridge longer than 100 tiles
+		if (_area.sizeX() > 100) {
+			// Shrink so that we keep _dragStartTile
+			if (_area.minX == _dragStartTile.x) {
+				_area.maxX = _area.minX + 100;
+			} else {
+				_area.minX = _area.maxX - 100;
+			}
+		}
 	}
 	else {
 		_area = TileArea(_dragStartTile.x, min(_dragStartTile.y, _mouseOnTile.y),
 			_dragStartTile.x, max(_dragStartTile.y, _mouseOnTile.y));
+
+		// Do not allow bridge longer than 100 tiles
+		if (_area.sizeY() > 100) {
+			// Shrink so that we keep _dragStartTile
+			if (_area.minY == _dragStartTile.y) {
+				_area.maxY = _area.minY + 100;
+			} else {
+				_area.minY = _area.maxY - 100;
+			}
+		}
 	}
 }
 
@@ -1802,7 +1824,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		{
 			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 				if (IsPlayerBuildable(tile)) {
-					if (terrainGenerator.riverFraction(tile) > 0.5f) {
+					if (terrainGenerator.riverFraction(tile) > 0.2f) {
 						_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, tile);
 						return;
 					}

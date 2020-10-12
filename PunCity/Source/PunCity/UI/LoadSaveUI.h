@@ -7,6 +7,7 @@
 #include "PunCity/GameSaveSystem.h"
 #include <iomanip>
 #include "Components/BackgroundBlur.h"
+#include "ConfirmUI.h"
 
 
 #include "LoadSaveUI.generated.h"
@@ -48,6 +49,9 @@ public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* NoSavedGameSelectedText;
 
 	UPROPERTY(meta = (BindWidget)) UTextBlock* SavingBlurText;
+
+	UPROPERTY(meta = (BindWidget)) UOverlay* ConfirmBlur;
+	UPROPERTY(meta = (BindWidget)) UConfirmUI* ConfirmUI;
 	
 	void OpenSaveUI()
 	{
@@ -274,11 +278,48 @@ public:
 		_delayedActionCountDown = 10;
 		_isAutosaving = false;
 	}
+
+	bool KeyPressed_Escape()
+	{
+		// Close ExitConfirm to EscMenu
+		if (ConfirmUI->GetVisibility() != ESlateVisibility::Collapsed) {
+			OnClickCancelDeleteGameButton();
+			return true;
+		}
+		return false;
+	}
 	
 private:
 	UFUNCTION() void OnClickBackButton();
 	UFUNCTION() void OnClickSaveLoadGameButton();
-	UFUNCTION() void OnClickDeleteGameButton();
+	
+	UFUNCTION() void OnClickDeleteGameButton()
+	{
+		if (activeIndex != -1)
+		{
+			ConfirmUI->SetVisibility(ESlateVisibility::Visible);
+			ConfirmBlur->SetVisibility(ESlateVisibility::Visible);
+
+			const TArray<GameSaveInfo>& saveList = saveSystem().saveList();
+			PUN_CHECK(activeIndex < saveList.Num())
+			
+			std::stringstream ss;
+			ss << "<Subheader>Do you want to delete this saved game?</>\n\n";
+			ss << ToStdString(saveList[activeIndex].name);
+			SetText(ConfirmUI->ConfirmText, ss);
+
+			Spawn2DSound("UI", "UIWindowOpen");
+		}
+		else {
+			Spawn2DSound("UI", "ButtonClickInvalid");
+		}
+	}
+	UFUNCTION() void OnClickConfirmDeleteGameButton();
+	UFUNCTION() void OnClickCancelDeleteGameButton() {
+		ConfirmUI->SetVisibility(ESlateVisibility::Collapsed);
+		ConfirmBlur->SetVisibility(ESlateVisibility::Collapsed);
+		Spawn2DSound("UI", "UIWindowClose");
+	}
 
 	UFUNCTION() void OnSaveNameChanged(const FText& text);
 	UFUNCTION() void OnSaveNameCommited(const FText& text, ETextCommit::Type CommitMethod);

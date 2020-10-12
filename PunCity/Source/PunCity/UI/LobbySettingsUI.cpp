@@ -109,7 +109,7 @@ void ULobbySettingsUI::OnClickLobbyMapSeedRandomizeButton()
 
 		randomString.Append(randomNoun[FMath::RandHelper(999999999) % randomNoun.Num()]);
 		randomString.Append(" ");
-		randomString.Append(randomVerb[FMath::RandHelper(999999999) % randomNoun.Num()]);
+		randomString.Append(randomVerb[FMath::RandHelper(999999999) % randomVerb.Num()]);
 		randomString.Append(" ");
 		randomString.Append(randomNoun[FMath::RandRange(7, 999999999) % randomNoun.Num()].ToLower());
 	}

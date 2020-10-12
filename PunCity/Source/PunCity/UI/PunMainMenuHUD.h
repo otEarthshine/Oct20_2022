@@ -33,7 +33,9 @@ public:
 	UPROPERTY() TSubclassOf<UUserWidget> LoadingScreenClass;
 
 	class UMainMenuUI* mainMenuUI() { return _mainMenuUI; }
-	
+
+	// TODO: Keypress doesn't work on MainMenu yet... Need something like CameraPawn
+	void KeyPressed_Escape() override;
 	
 private:
 	UPROPERTY() USoundBase* _menuSound;

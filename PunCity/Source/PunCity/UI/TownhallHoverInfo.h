@@ -115,23 +115,20 @@ public:
 
 				
 				// Vassalize
-				if (sim.IsResearched(playerId(), TechEnum::Vassalize))
+				if (sim.CanVassalizeOtherPlayers(playerId()) &&
+					!townhallPlayerOwned.GetDefendingClaimProgress(townhall.provinceId()).isValid())
 				{
-					if (!townhallPlayerOwned.GetDefendingClaimProgress(townhall.provinceId()).isValid())
-					{
-						SetText(VassalizeButtonRichText, "Conquer (Vassalize)\n<img id=\"Influence\"/>" + std::to_string(sim.GetProvinceVassalizeStartPrice(townhall.provinceId())));
-						BUTTON_ON_CLICK(VassalizeButton, this, &UTownhallHoverInfo::OnClickVassalizeButton);
-
-						// Can also liberate if there is an existing conquerer
-						if (townhallPlayerOwned.lordPlayerId() != -1)  {
-							LiberationButton->SetVisibility(ESlateVisibility::Visible);
-							BUTTON_ON_CLICK(LiberationButton, this, &UTownhallHoverInfo::OnClickLiberateButton);
-						} else {
-							LiberationButton->SetVisibility(ESlateVisibility::Collapsed);
-						}
-					}
-
+					SetText(VassalizeButtonRichText, "Conquer (Vassalize)\n<img id=\"Influence\"/>" + std::to_string(sim.GetProvinceVassalizeStartPrice(townhall.provinceId())));
+					BUTTON_ON_CLICK(VassalizeButton, this, &UTownhallHoverInfo::OnClickVassalizeButton);
 					VassalizeButton->SetVisibility(ESlateVisibility::Visible);
+
+					// Can also liberate if there is an existing conquerer
+					if (townhallPlayerOwned.lordPlayerId() != -1)  {
+						LiberationButton->SetVisibility(ESlateVisibility::Visible);
+						BUTTON_ON_CLICK(LiberationButton, this, &UTownhallHoverInfo::OnClickLiberateButton);
+					} else {
+						LiberationButton->SetVisibility(ESlateVisibility::Collapsed);
+					}
 				}
 				else {
 					VassalizeButton->SetVisibility(ESlateVisibility::Collapsed);
@@ -144,8 +141,14 @@ public:
 			}
 		}
 		else {
+			GiftButton->SetVisibility(ESlateVisibility::Collapsed);
+			
 			TradeButton->SetVisibility(ESlateVisibility::Collapsed);
+			
 			VassalizeButton->SetVisibility(ESlateVisibility::Collapsed);
+			LiberationButton->SetVisibility(ESlateVisibility::Collapsed);
+			
+			BuffRow->SetVisibility(ESlateVisibility::Collapsed);
 		}
 
 		//// GiftButton

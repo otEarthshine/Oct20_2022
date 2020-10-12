@@ -624,8 +624,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadResource2(ResourceEnum::Furniture, "Furniture/Furniture");
 	LoadResource2(ResourceEnum::Chocolate, "Chocolate/Chocolate");
 
-	LoadResource2(ResourceEnum::StoneTools, "StoneTools/StoneTools");
-	LoadResource2(ResourceEnum::CrudeIronTools, "CrudeIronTools/CrudeIronTools");
+	//LoadResource2(ResourceEnum::StoneTools, "StoneTools/StoneTools");
+	//LoadResource2(ResourceEnum::CrudeIronTools, "CrudeIronTools/CrudeIronTools");
 	LoadResource2(ResourceEnum::SteelTools, "SteelTools/SteelTools");
 	LoadResource2(ResourceEnum::Herb, "Herb/Herb");
 	LoadResource2(ResourceEnum::Medicine, "Medicine/Medicine");

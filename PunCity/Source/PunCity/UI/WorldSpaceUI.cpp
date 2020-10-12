@@ -1111,8 +1111,8 @@ void UWorldSpaceUI::TickPlacementInstructions()
 		punBox->AddRichText("to build")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
 	}
 	else if (needInstruction(PlacementInstructionEnum::DragRoad2)) {
-		punBox->AddRichText("Shift-click to repeat")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
-		punBox->AddRichText("to build");
+		//punBox->AddRichText("Shift-click to repeat")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
+		//punBox->AddRichText("to build");
 	}
 	else if (needInstruction(PlacementInstructionEnum::DragRoadStone)) {
 		int32 stoneNeeded = getInstruction(PlacementInstructionEnum::DragRoadStone).intVar1;
@@ -1239,7 +1239,7 @@ void UWorldSpaceUI::TickPlacementInstructions()
 
 		int32 appealPercent = simulation().overlaySystem().GetAppealPercent(placementInfo.mouseOnTile);
 		ss << "Appeal: " << appealPercent << "%";
-		punBox->AddRichText(TextRedOrange(ss.str(), appealPercent, 60, 80))->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichText(TextRedOrange(ss.str(), appealPercent, 80, 60))->SetJustification(ETextJustify::Type::Center);
 		punBox->AddSpacer(12);
 
 	}
@@ -1247,21 +1247,21 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	{
 		int32 efficiency = Fisher::FisherAreaEfficiency(placementInfo.mouseOnTile, false, WorldTile2::Invalid, &simulation());
 		ss << "Efficiency: " << efficiency << "%";
-		punBox->AddRichText(TextRedOrange(ss.str(), efficiency, 60, 80))->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichText(TextRedOrange(ss.str(), efficiency, 80, 60))->SetJustification(ETextJustify::Type::Center);
 		punBox->AddSpacer(12);
 	}
 	else if (placementInfo.buildingEnum == CardEnum::Windmill)
 	{
 		int32 efficiency = Windmill::WindmillBaseEfficiency(playerId(), placementInfo.mouseOnTile, &simulation());
 		ss << "Efficiency: " << efficiency << "%";
-		punBox->AddRichText(TextRedOrange(ss.str(), efficiency, 60, 80))->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichText(TextRedOrange(ss.str(), efficiency, 80, 60))->SetJustification(ETextJustify::Type::Center);
 		punBox->AddSpacer(12);
 	}
 	else if (placementInfo.buildingEnum == CardEnum::Beekeeper)
 	{
 		int32 efficiency = Beekeeper::BeekeeperBaseEfficiency(playerId(), placementInfo.mouseOnTile, &simulation());
 		ss << "Efficiency: " << efficiency << "%";
-		punBox->AddRichText(TextRedOrange(ss.str(), efficiency, 60, 80))->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichText(TextRedOrange(ss.str(), efficiency, 80, 60))->SetJustification(ETextJustify::Type::Center);
 		punBox->AddSpacer(12);
 	}
 	else if (placementInfo.buildingEnum == CardEnum::FruitGatherer)
@@ -1280,7 +1280,7 @@ void UWorldSpaceUI::TickPlacementInstructions()
 		// Less than 12 (=24*24 / 4 / 4 / 3), need to warn red there is too little fruit trees
 		// Less than 18, need to warn orange
 		ss << "Fruit Tree Count: " << fruitTreeCount;
-		punBox->AddRichText(TextRedOrange(ss.str(), fruitTreeCount, 12, 18))->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichText(TextRedOrange(ss.str(), fruitTreeCount, 30, 20))->SetJustification(ETextJustify::Type::Center);
 		punBox->AddSpacer(12);
 	}
 

@@ -121,6 +121,7 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "ForceNoFog", 0 },
 	{ "ForceNoRain", 0 },
 	{ "ForceNoSnow", 0 },
+	{ "ToggleRain", 0 },
 
 	// Trailer
 	

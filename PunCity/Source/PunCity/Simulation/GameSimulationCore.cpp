@@ -2362,6 +2362,20 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 {
 	_LOG(LogNetworkInput, " GenericCommand");
 
+	if (command.callbackEnum != CallbackEnum::None)
+	{
+		if (command.callbackEnum == CallbackEnum::DeclareFriendship) {
+			aiPlayerSystem(command.intVar1).DeclareFriendship(command.playerId);
+			return;
+		}
+		if (command.callbackEnum == CallbackEnum::MarryOut) {
+			aiPlayerSystem(command.intVar1).MarryOut(command.playerId);
+			return;
+		}
+
+		return;
+	}
+
 	if (command.genericCommandType == FGenericCommand::Type::SendGift)
 	{
 		int32 giverPlayerId = command.playerId;
@@ -2959,7 +2973,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 	auto& cardSys = cardSystem(command.playerId);
 	auto& resourceSys = resourceSystem(command.playerId);
 
-	// Special case: CardRemoval
+	// CardRemoval
 	if (command.cardEnum == CardEnum::CardRemoval)
 	{
 		if (cardSys.HasBoughtCard(CardEnum::CardRemoval))
@@ -2973,6 +2987,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 		return;
 	}
 
+	// Global Slot
 	if (IsGlobalSlotCard(command.cardEnum))
 	{
 		if (cardSys.CanAddCardToTownhall()) {
@@ -2986,6 +3001,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 		return;
 	}
 
+	// Building Slot
 	if (IsBuildingSlotCard(command.cardEnum))
 	{
 		Building& bld = building(command.variable1);
@@ -3002,6 +3018,23 @@ void GameSimulationCore::UseCard(FUseCard command)
 			if (soldPrice != -1) {
 				bld.AddSlotCard(command.GetCardStatus(_gameManager->GetDisplayWorldTime() * 100.0f));
 			}
+		}
+		return;
+	}
+
+	// Crate
+	if (IsCrateCard(command.cardEnum))
+	{
+		ResourcePair resourcePair = GetCrateResource(command.cardEnum);
+
+		if (resourceSystem(command.playerId).CanAddResourceGlobal(resourcePair.resourceEnum, resourcePair.count))
+		{
+			resourceSystem(command.playerId).AddResourceGlobal(resourcePair.resourceEnum, resourcePair.count, *this);
+			AddPopupToFront(command.playerId, "Gained " + to_string(resourcePair.count) + " " + GetResourceInfo(resourcePair.resourceEnum).name + " from crates.");
+			cardSys.RemoveCards(command.cardEnum, 1);
+		}
+		else {
+			AddPopup(command.playerId, "Not enough storage space.");
 		}
 		return;
 	}
@@ -3042,19 +3075,6 @@ void GameSimulationCore::UseCard(FUseCard command)
 			PUN_CHECK(IsSpecialSeedCard(command.cardEnum));
 			
 			AddPopupToFront(command.playerId, "Unlocked " + plantName + ". " + plantName + " requires suitable regions marked on the map to be grown.");
-		}
-	}
-	else if (IsCrateCard(command.cardEnum)) 
-	{
-		ResourcePair resourcePair = GetCrateResource(command.cardEnum);
-		
-		if (resourceSystem(command.playerId).CanAddResourceGlobal(resourcePair.resourceEnum, resourcePair.count))
-		{
-			resourceSystem(command.playerId).AddResourceGlobal(resourcePair.resourceEnum, resourcePair.count, *this);
-			AddPopupToFront(command.playerId, "Gained " + to_string(resourcePair.count) + " " + GetResourceInfo(resourcePair.resourceEnum).name + " from crates.");
-		}
-		else {
-			AddPopup(command.playerId, "Not enough storage space.");
 		}
 	}
 	else if (command.cardEnum == CardEnum::Pig) {

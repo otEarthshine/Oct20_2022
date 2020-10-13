@@ -69,6 +69,9 @@ void UPopupUI::Tick()
 		else if (shouldShowExclusive(ExclusiveUIEnum::InitialResourceUI)) {
 			shouldPopup = true;
 		}
+		else if (shouldShowExclusive(ExclusiveUIEnum::DiplomacyUI)) {
+			shouldPopup = true;
+		}
 		else if (shouldShowExclusive(ExclusiveUIEnum::GiftResourceUI)) {
 			shouldPopup = true;
 		}

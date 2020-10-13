@@ -435,7 +435,7 @@ public:
 	}
 	void AddInfluenceIncomeToString(std::stringstream& ss) {
 		ss << fixed << setprecision(1);
-		ss << "Influence Per Round: " << totalInfluenceIncome100() / 100.0f << "<img id=\"Coin\"/>\n";
+		ss << "Influence Per Round: " << totalInfluenceIncome100() / 100.0f << "<img id=\"Influence\"/>\n";
 
 		for (int32 i = 0; i < InfluenceIncomeEnumCount; i++)
 		{
@@ -445,6 +445,17 @@ public:
 				ss << " " << InfluenceIncomeEnumName[i] << "\n";
 			}
 		}
+
+		auto addStoredInfluenceRow = [&](InfluenceIncomeEnum influenceEnum) {
+			ss << " " << (influenceIncomes100[static_cast<int>(influenceEnum)] * storedToInfluenceRevenue)
+			   << " " << InfluenceIncomeEnumName[static_cast<int>(influenceEnum)] <<"\n";
+		};
+		
+		ss << "<space>";
+		ss << "Max Stored Influence: " << maxStoredInfluence100() << "<img id=\"Influence\"/>\n";
+		addStoredInfluenceRow(InfluenceIncomeEnum::Townhall);
+		addStoredInfluenceRow(InfluenceIncomeEnum::Population);
+		addStoredInfluenceRow(InfluenceIncomeEnum::Luxury);
 	}
 
 	void ChangeIncome(int32 changeAmount, bool showFloatup, WorldTile2 floatupTile)
@@ -464,7 +475,14 @@ public:
 		}
 		return influence100;
 	}
-	
+
+	static const int32 storedToInfluenceRevenue = 20;
+	int32 maxStoredInfluence100()
+	{
+		return (influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Townhall)] +
+			influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Population)] +
+			influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Luxury)]) * storedToInfluenceRevenue;
+	}
 
 	/*
 	 * Claim Region

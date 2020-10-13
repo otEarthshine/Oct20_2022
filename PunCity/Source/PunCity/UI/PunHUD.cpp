@@ -25,6 +25,8 @@ APunHUD::APunHUD()
 	LoadClass(UIEnum::TargetConfirm, "TargetConfirmUI");
 
 	LoadClass(UIEnum::InitialResourceUI, "InitialResourceWidget");
+	LoadClass(UIEnum::DiplomacyUI, "DiplomacyUIWidget");
+	
 	LoadClass(UIEnum::GiftResourceUI, "GiftResourceWidget");
 
 	LoadClass(UIEnum::DragCardSlot, "Drag/DragCardSlotWidget");
@@ -224,6 +226,7 @@ void APunHUD::PunTick(bool isPhotoMode)
 	_intercityTradeUI->TickUI();
 	_targetConfirmUI->TickUI();
 	_initialResourceUI->TickUI();
+	_diplomacyUI->TickUI();
 	_giftResourceUI->TickUI();
 	
 	_techUI->TickUI();
@@ -322,6 +325,9 @@ void APunHUD::Setup(IPunPlayerController* controller, USceneComponent* worldWidg
 
 	_initialResourceUI = AddWidgetToHUDCast<UInitialResourceUI>(UIEnum::InitialResourceUI);
 	_initialResourceUI->PunInit();
+
+	_diplomacyUI = AddWidgetToHUDCast<UDiplomacyUI>(UIEnum::DiplomacyUI);
+	_diplomacyUI->PunInit();
 
 	_giftResourceUI = AddWidgetToHUDCast<UGiftResourceUI>(UIEnum::GiftResourceUI);
 	_giftResourceUI->PunInit();

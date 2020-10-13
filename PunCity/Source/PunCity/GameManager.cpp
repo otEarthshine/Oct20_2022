@@ -254,7 +254,7 @@ void AGameManager::InitPhase2()
 	_territoryDisplaySystem->Init(0, this, _assetLoader);
 #endif
 
-	_snowParticles->SetTemplate(_assetLoader->blizzardParticles); // Trailer blizzard
+	_snowParticles->SetTemplate(_assetLoader->snowParticles); // Trailer blizzard
 	_rainParticles->SetTemplate(_assetLoader->rainParticles);
 	_rainWetnessDecal->SetDecalMaterial(UMaterialInstanceDynamic::Create(_assetLoader->M_RainWetness, this));
 
@@ -978,10 +978,10 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 
 			// Rain fog
 			const float fogFadeInSeconds = 3.0f;
-			const float maxFogDensity = 0.3f;
+			const float maxFogDensity = 0.2f; // 0.3f
 			const float fogFadeSpeed = maxFogDensity / fogFadeInSeconds;
 			float fogDensity = _exponentialFogComponent->FogDensity;
-			if (Time::IsRaining() || Time::IsFogging() || Time::IsSnowing()) {
+			if (Time::IsRaining() || Time::IsFogging()) {
 				fogDensity = fmin(maxFogDensity, fogDensity + fogFadeSpeed * DeltaTime);
 			} else {
 				fogDensity = fmax(0.0f, fogDensity - fogFadeSpeed * DeltaTime);

@@ -522,6 +522,31 @@ public:
 	}
 
 	/*
+	 * UI Interface
+	 */
+
+	void GetAIRelationshipText(std::stringstream& ss, int32 playerId)
+	{
+
+	}
+
+	bool shouldShow_DeclareFriendship() {
+		return true;
+	}
+	int32 friendshipPrice() { return 200; }
+	void DeclareFriendship(int32 askingPlayerId) {
+		
+	}
+
+	bool shouldShow_MarryOut() {
+		return true;
+	}
+	int32 marryOutPrice() { return 1000; }
+	void MarryOut(int32 askingPlayerId) {
+
+	}
+	
+	/*
 	 * System
 	 */
 

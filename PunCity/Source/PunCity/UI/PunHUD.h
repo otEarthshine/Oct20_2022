@@ -32,6 +32,7 @@
 #include "TargetConfirmUI.h"
 #include "ProsperityUI.h"
 #include "GiftResourceUI.h"
+#include "DiplomacyUI.h"
 
 #include "PunHUD.generated.h"
 
@@ -215,6 +216,9 @@ public:
 	void OpenGiftUI(int32 targetPlayerId) override {
 		_giftResourceUI->OpenUI(targetPlayerId);
 	}
+	void OpenDiplomacyUI(int32 targetPlayerId) override {
+		_diplomacyUI->OpenUI(targetPlayerId);
+	}
 	
 	
 	// Tech Tree
@@ -267,6 +271,7 @@ public:
 		CloseStatisticsUI();
 		ClosePlayerOverview();
 
+		_diplomacyUI->CloseUI();
 		_giftResourceUI->CloseUI();
 
 		_escMenuUI->EscMenu->SetVisibility(ESlateVisibility::Collapsed);
@@ -312,7 +317,8 @@ public:
 		case ExclusiveUIEnum::PlayerOverviewUI:	return _questUI->PlayerDetailsOverlay->GetVisibility() != ESlateVisibility::Collapsed;
 		case ExclusiveUIEnum::ArmyMoveUI:		return _armyMoveUI->GetVisibility() != ESlateVisibility::Collapsed;
 
-		case ExclusiveUIEnum::InitialResourceUI:return _initialResourceUI->InitialResourceUI->GetVisibility() != ESlateVisibility::Collapsed;
+		case ExclusiveUIEnum::InitialResourceUI:return _initialResourceUI->InitialResourceUI->IsVisible();
+		case ExclusiveUIEnum::DiplomacyUI:		return _diplomacyUI->IsVisible();
 		case ExclusiveUIEnum::GiftResourceUI:	return _giftResourceUI->IsVisible();
 		default:
 			UE_DEBUG_BREAK();
@@ -499,6 +505,7 @@ protected:
 	UPROPERTY() UIntercityTradeUI* _intercityTradeUI;
 	UPROPERTY() UTargetConfirmUI* _targetConfirmUI;
 	UPROPERTY() UInitialResourceUI* _initialResourceUI;
+	UPROPERTY() UDiplomacyUI* _diplomacyUI;
 	UPROPERTY() UGiftResourceUI* _giftResourceUI;
 
 	UPROPERTY() TSubclassOf<UUserWidget> _dragCardSlotClass;

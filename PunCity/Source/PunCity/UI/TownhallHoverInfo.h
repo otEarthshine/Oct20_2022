@@ -56,6 +56,9 @@ public:
 				// Gift
 				GiftButton->SetVisibility(ESlateVisibility::Collapsed);
 
+				// Diplomacy
+				DiplomacyButton->SetVisibility(ESlateVisibility::Collapsed);
+
 				// Vassalize
 				// (Declare Independence)
 				if (townhallPlayerOwned.lordPlayerId() != -1)
@@ -113,6 +116,9 @@ public:
 				GiftButton->SetVisibility(ESlateVisibility::Visible);
 				BUTTON_ON_CLICK(GiftButton, this, &UTownhallHoverInfo::OnClickGiftButton);
 
+				// Diplomacy
+				DiplomacyButton->SetVisibility(ESlateVisibility::Visible);
+				BUTTON_ON_CLICK(DiplomacyButton, this, &UTownhallHoverInfo::OnClickDiplomacyButton);
 				
 				// Vassalize
 				if (sim.CanVassalizeOtherPlayers(playerId()) &&
@@ -142,6 +148,7 @@ public:
 		}
 		else {
 			GiftButton->SetVisibility(ESlateVisibility::Collapsed);
+			DiplomacyButton->SetVisibility(ESlateVisibility::Collapsed);
 			
 			TradeButton->SetVisibility(ESlateVisibility::Collapsed);
 			
@@ -825,6 +832,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* SellingBox;
 
 	UPROPERTY(meta = (BindWidget)) UButton* GiftButton;
+	UPROPERTY(meta = (BindWidget)) UButton* DiplomacyButton;
 	
 	UPROPERTY(meta = (BindWidget)) UButton* VassalizeButton;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* VassalizeButtonRichText;
@@ -905,6 +913,10 @@ private:
 	UFUNCTION() void OnClickGiftButton() {
 		int32 targetPlayerId = simulation().building(_buildingId).playerId();
 		GetPunHUD()->OpenGiftUI(targetPlayerId);
+	}
+	UFUNCTION() void OnClickDiplomacyButton() {
+		int32 targetPlayerId = simulation().building(_buildingId).playerId();
+		GetPunHUD()->OpenDiplomacyUI(targetPlayerId);
 	}
 
 	void AttackDefenseHelper(CallbackEnum claimEnum)

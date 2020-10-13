@@ -35,6 +35,7 @@ public:
 
 	void Init(UMaterialInterface* material, UStaticMesh* mesh, UInstancedStaticMeshComponent* instancedMesh);
 	void SetActive(bool active) {
+		_placementMesh->TranslucencySortPriority = 999;
 		_placementMesh->SetActive(active);
 		_placementMesh->SetVisibility(active);
 		//if (!active) _placementMesh->ClearInstances();

@@ -292,7 +292,7 @@ public:
 
 	void Add_MoveTo(WorldTile2 end);								void MoveTo();  bool MoveTo(WorldTile2 end);
 	void Add_MoveToResource(ResourceHolderInfo holderInfo);			void MoveToResource(); bool MoveToResource(ResourceHolderInfo holderInfo);
-	void Add_MoveInRange(WorldTile2 end, int32_t range);			void MoveInRange();
+	void Add_MoveInRange(WorldTile2 end, int32_t range);			void MoveInRange(); // TODO: REmove??
 	void Add_MoveToForceLongDistance(WorldTile2 end);				void MoveToForceLongDistance();
 	void Add_MoveToRobust(WorldTile2 end);							void MoveToRobust();	void MoveToRobust(WorldTile2 end);
 	void Add_MoveToward(WorldAtom2 end, int32 fraction100000);	void MoveToward();

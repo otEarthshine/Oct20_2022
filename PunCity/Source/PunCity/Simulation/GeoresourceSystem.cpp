@@ -19,7 +19,8 @@ void GeoresourceSystem::InitGeoresourceSystem(IGameSimulationCore* simulation, b
 	auto& provinceSys = simulation->provinceSystem();
 
 	for (int i = 0; i < GameMapConstants::TotalRegions; i++) {
-		_provinceToGeoresource.push_back(GeoresourceNode::Create(GeoresourceEnum::None, i, provinceSys.GetProvinceCenterTile(i)));
+		WorldTile2 centerTile = isFullInit ? provinceSys.GetProvinceCenterTile(i) : WorldTile2::Invalid;
+		_provinceToGeoresource.push_back(GeoresourceNode::Create(GeoresourceEnum::None, i, centerTile));
 	}
 
 	if (!isFullInit) {

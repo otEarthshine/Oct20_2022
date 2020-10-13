@@ -541,6 +541,8 @@ public:
 	virtual ~FGenericCommand() {}
 	NetworkCommandEnum commandType() final { return NetworkCommandEnum::GenericCommand; }
 
+	CallbackEnum callbackEnum = CallbackEnum::None;
+	
 	enum class Type : uint8 {
 		SendGift,
 	} genericCommandType;
@@ -552,6 +554,7 @@ public:
 	void Serialize(PunSerializedData& blob) override
 	{
 		FNetworkCommand::Serialize(blob);
+		blob << callbackEnum;
 		blob << genericCommandType;
 		blob << intVar1;
 		blob << intVar2;

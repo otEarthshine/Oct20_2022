@@ -195,6 +195,8 @@ void TradingCompany::Tick1Sec()
 		if (targetAmount > currentResourceCount) {
 			int32 buyAmountFromTarget = std::min(targetAmount - currentResourceCount, tradeMaximumPerRound());
 			int32 moneyLeftToBuyAfterFee = resourceSystem().money() * 100 / (100 + tradingFeePercent());
+			moneyLeftToBuyAfterFee = std::max(0, moneyLeftToBuyAfterFee);
+			
 			int32 maxAmountMoneyCanBuy = moneyLeftToBuyAfterFee / GetResourceInfo(activeResourceEnum).basePrice;
 			int32 buyAmount = std::min(maxAmountMoneyCanBuy, buyAmountFromTarget);
 

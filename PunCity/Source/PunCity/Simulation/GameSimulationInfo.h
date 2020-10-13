@@ -4801,7 +4801,7 @@ static const UnitInfo UnitInfos[]
 	
 	UnitInfo(UnitEnum::Pig,"Pig",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Pork, BaseUnitDrop100 * 240 / 100}}),
 	UnitInfo(UnitEnum::Sheep,"Sheep",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Lamb, BaseUnitDrop100 * 120 / 100}, {ResourceEnum::Wool, BaseUnitDrop100 * 120 / 100}}),
-	UnitInfo(UnitEnum::Cow,"Cow",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Milk, BaseUnitDrop100 * 240 / 100}, {ResourceEnum::Leather,  BaseUnitDrop100 * 120 / 100}}),
+	UnitInfo(UnitEnum::Cow,"Cow",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Beef, BaseUnitDrop100 * 120 / 100}, {ResourceEnum::Leather,  BaseUnitDrop100 * 120 / 100}}),
 
 	UnitInfo(UnitEnum::Infantry,"Infantry",	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
 	UnitInfo(UnitEnum::ProjectileArrow,"ProjectileArrow",	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
@@ -5059,9 +5059,18 @@ static float GetUnitAnimationPlayRate(UnitAnimationEnum animationEnum) {
 	return UnitAnimationPlayRate[static_cast<int>(animationEnum)];
 }
 
-//! Colors
+/*
+ * Colors
+ */
 
-static FLinearColor PlayerColor(int32_t playerId)
+// H .. max 360, S V.. max 1.0f
+static FLinearColor MakeColorHSV(float H, float S, float V)
+{
+	const FLinearColor HSVColor(H, S, V);
+	return HSVColor.HSVToLinearRGB();
+}
+
+static FLinearColor PlayerColor(int32 playerId)
 {
 	switch (playerId)
 	{
@@ -5073,7 +5082,7 @@ static FLinearColor PlayerColor(int32_t playerId)
 	}
 }
 
-static FLinearColor PlayerColor1(int32_t playerId)
+static FLinearColor PlayerColor1(int32 playerId)
 {
 	static const FLinearColor arr[] = {
 		FLinearColor(0.225, 0.00769, 0.972, 1),
@@ -5082,14 +5091,15 @@ static FLinearColor PlayerColor1(int32_t playerId)
 		FLinearColor(1, 0, 0, 1),
 		FLinearColor(.02, .09, 1, 1),
 		FLinearColor(1, .943, 0, 1),
+		MakeColorHSV(0, 0.9, 0.7),
 	};
 	if (playerId >= _countof(arr)) {
-		return FLinearColor(0.1, 0.1, 0.1, 1);
+		return FLinearColor(0.02, 0.02, 0.02, 1);
 	}
 	return arr[playerId];
 }
 
-static FLinearColor PlayerColor2(int32_t playerId)
+static FLinearColor PlayerColor2(int32 playerId)
 {
 	static const FLinearColor arr[] = {
 		FLinearColor(0.972, 0.875, 0, 1),
@@ -5098,9 +5108,10 @@ static FLinearColor PlayerColor2(int32_t playerId)
 		FLinearColor(1, .9, 0, 1),
 		FLinearColor(.954, 1, 1, 1),
 		FLinearColor(0, 0.105, 1, 1),
+		MakeColorHSV(90, 0.8, 0.5),
 	};
 	if (playerId >= _countof(arr)) {
-		return FLinearColor(1, 1, 1, 1);
+		return FLinearColor(0.02, 0.02, 0.02, 1);
 	}
 	return arr[playerId];
 }
@@ -5425,6 +5436,8 @@ enum class ExclusiveUIEnum : uint8
 	ArmyMoveUI,
 
 	InitialResourceUI,
+	DiplomacyUI,
+	
 	GiftResourceUI,
 	ProsperityUI,
 
@@ -6772,6 +6785,9 @@ enum class CallbackEnum : uint8
 
 	IncrementArmyCount,
 	ChooseArmyNode,
+
+	DeclareFriendship,
+	MarryOut,
 };
 
 static const int32 GameSpeedHalf = -12;
@@ -6874,6 +6890,39 @@ static const std::vector<std::string> HoverWarningString = {
 	"Resources Below\nStorage Target",
 };
 static std::string GetHoverWarningString(HoverWarning hoverWarning) { return HoverWarningString[static_cast<int>(hoverWarning)]; }
+
+/*
+ * Diplomacy
+ */
+
+enum class RelationshipModifierEnum : uint8
+{
+	YouGaveUsGifts,
+	YouAreStrong,
+	YouBefriendedUs,
+	WeAreRelative,
+
+	AdjacentBordersSparkTensions,
+	YouAreWeak,
+	YouStealFromUs,
+	YouKidnapFromUs,
+	YouTookOurTerritory,
+};
+
+static std::vector<std::string> RelationshipModifierName
+{
+	"You gave us gifts",
+	"You are strong",
+	"You befriended us",
+	"We are relative",
+
+	"Adjacent borders spark tensions",
+	"Weaklings don't deserve our respect",
+	"You steal from us",
+	"You kidnap from us",
+	"You took our territory",
+};
+
 
 /*
  * Game Constants

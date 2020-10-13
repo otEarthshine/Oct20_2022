@@ -48,6 +48,7 @@ public:
 	virtual void OpenIntercityTradeUI(int32 objectId) = 0;
 	virtual void OpenTargetConfirmUI_IntercityTrade(int32 townhallId, ResourceEnum resourceEnum) = 0;
 	virtual void OpenGiftUI(int32 targetPlayerId) = 0;
+	virtual void OpenDiplomacyUI(int32 targetPlayerId) = 0;
 
 	virtual void CloseTechUI() = 0;
 	virtual void ToggleTechUI() = 0;

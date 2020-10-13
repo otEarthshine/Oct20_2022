@@ -1077,7 +1077,8 @@ bool HumanStateAI::TryHunt()
 	}
 	
 	Add_AttackOutgoing(targetFullId, damage);
-	Add_MoveInRange(nearestTile, damage);
+	Add_MoveTo(huntingLodgeTile);
+	//Add_MoveInRange(nearestTile, damage);
 
 	_unitState = UnitState::Hunt;
 	AddDebugSpeech("(Succeed)TryHunt: pushed actions");

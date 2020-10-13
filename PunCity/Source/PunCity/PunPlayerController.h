@@ -700,13 +700,12 @@ public:
 			networkInterface()->SendNetworkCommand(command);
 		}
 	}
-	UFUNCTION() void OnClickVassalizeButton(int32 tileX, int32 tileY) { AttackDefenseHelper(CallbackEnum::StartAttackProvince, tileX, tileY); }
+	// Same as Declare Independence..
+	UFUNCTION(Exec) void Vassalize(int32 tileX, int32 tileY) { AttackDefenseHelper(CallbackEnum::StartAttackProvince, tileX, tileY); }
 
-	UFUNCTION() void OnClickVassalizeReinforceButton(int32 tileX, int32 tileY) { AttackDefenseHelper(CallbackEnum::ReinforceAttackProvince, tileX, tileY); }
+	UFUNCTION(Exec) void VassalizeReinforce(int32 tileX, int32 tileY) { AttackDefenseHelper(CallbackEnum::ReinforceAttackProvince, tileX, tileY); }
 
-	UFUNCTION() void OnClickDeclareIndependenceButton(int32 tileX, int32 tileY) { AttackDefenseHelper(CallbackEnum::StartAttackProvince, tileX, tileY); }
-
-	UFUNCTION() void OnClickLiberateButton(int32 tileX, int32 tileY) { AttackDefenseHelper(CallbackEnum::Liberate, tileX, tileY); }
+	UFUNCTION(Exec) void Liberate(int32 tileX, int32 tileY) { AttackDefenseHelper(CallbackEnum::Liberate, tileX, tileY); }
 
 
 	/*

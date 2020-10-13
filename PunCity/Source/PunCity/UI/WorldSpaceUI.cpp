@@ -654,14 +654,14 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 	// Special case hide when constructed
 	if (building.isConstructed())
 	{
-		switch(building.buildingEnum())
-		{
-		case CardEnum::StorageYard:
-			buildingJobUI->SetVisibility(ESlateVisibility::Collapsed);
-			return;
-		default:
-			break;
-		}
+		//switch(building.buildingEnum())
+		//{
+		//case CardEnum::StorageYard:
+		//	buildingJobUI->SetVisibility(ESlateVisibility::Collapsed);
+		//	return;
+		//default:
+		//	break;
+		//}
 	}
 	buildingJobUI->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 

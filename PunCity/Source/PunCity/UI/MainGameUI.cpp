@@ -644,27 +644,7 @@ void UMainGameUI::Tick()
 			CardHand2Box->ClearChildren();
 			for (size_t i = 0; i < actualDisplayBought.size(); i++)
 			{
-				//// Breakup stack into combo card by level
 				BuildingCardStack stack = actualDisplayBought[i];
-				//int32_t totalStackSize = stack.stackSize;
-				//std::vector<int32> stackForLevel(CardLvlCount);
-				//for (int32 j = CardLvlCount; j-- > 0;) {
-				//	int32 cardsForCombo = CardCountForLvl[j];
-				//	stackForLevel[j] = totalStackSize / cardsForCombo;
-				//	totalStackSize -= stackForLevel[j] * cardsForCombo;
-				//}
-				//PUN_CHECK(totalStackSize == 0);
-
-				//// Add card according to stack size;
-				//for (int32_t j = 0; j < stackForLevel.size(); j++) {
-				//	if (stackForLevel[j] > 0) {
-				//		auto cardButton = AddCard(stack.buildingEnum, CardHand2Box, i, j, stackForLevel[j]);
-
-				//		if (i == indexBeingPlaced) {
-				//			cardButton->SetVisibility(ESlateVisibility::Hidden);
-				//		}
-				//	}
-				//}
 
 				int32_t stackSize = stack.stackSize;// +simulation.buildingIds(playerId(), stack.buildingEnum).size();
 

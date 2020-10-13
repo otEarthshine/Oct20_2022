@@ -299,6 +299,7 @@ public:
 		}
 		
 		AddResourceHolder(ResourceEnum::Hay, ResourceHolderType::Requester, 20);
+		AddResourceHolder(ResourceEnum::Milk, ResourceHolderType::Provider, 0);
 
 		workModes = {
 			{"Kill when above full capacity", ResourceEnum::None, ResourceEnum::None, 0},
@@ -358,6 +359,16 @@ public:
 	void Serialize(FArchive& Ar) override {
 		Building::Serialize(Ar);
 		SerializeVecValue(Ar, _animalOccupants);
+	}
+
+	void TickRound() override {
+		// Give 20 milk per round at full occupancy
+		if (isEnum(CardEnum::RanchCow)) {
+			int32 milkPerRound = 20 * _animalOccupants.size() / maxAnimals;
+			if (milkPerRound > 0) {
+				AddResource(ResourceEnum::Milk, milkPerRound);
+			}
+		}
 	}
 
 public:

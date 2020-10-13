@@ -166,7 +166,7 @@ public:
 		// Refresh Hover Warning
 		// Check every sec
 		float time = UGameplayStatics::GetTimeSeconds(this);
-		if (time - building.lastHoverWarningCheckTime >= 0.5f) 
+		if (time - building.lastHoverWarningCheckTime >= 1.0f) 
 		{
 			building.lastHoverWarningCheckTime = time;
 			building.RefreshHoverWarning();

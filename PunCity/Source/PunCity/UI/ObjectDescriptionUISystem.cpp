@@ -2339,7 +2339,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			SpawnSelectionMesh(assetLoader->SelectionMaterialGreen, displayLocation + FVector(0, 0, selectionHeight));
 
 			ShowTileSelectionDecal(dataSource()->DisplayLocation(tile.worldAtom2()));
-			if (simulation.tileOwner(tile) != playerId()) {
+			if (simulation.tileOwner(tile) == playerId()) {
+				ShowRegionSelectionDecal(tile, true);
+			} else {
 				ShowRegionSelectionDecal(tile);
 			}
 

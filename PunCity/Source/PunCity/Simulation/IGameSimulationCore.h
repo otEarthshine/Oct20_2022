@@ -228,8 +228,9 @@ public:
 	virtual std::vector<int32> GetTotalArmyCounts(int32 playerId, bool skipWall = false) = 0;
 
 	// Display
-	virtual void SetNeedDisplayUpdate(DisplayClusterEnum displayEnum, int32_t regionId, bool needUpdate = true) = 0;
-	virtual bool NeedDisplayUpdate(DisplayClusterEnum displayEnum, int32_t regionId) = 0;
+	virtual void SetNeedDisplayUpdate(DisplayClusterEnum displayEnum, int32 regionId, bool needUpdate = true) = 0;
+	virtual void SetNeedDisplayUpdate(DisplayClusterEnum displayEnum, TileArea area, bool isSmallArea, bool needUpdate = true) = 0;
+	virtual bool NeedDisplayUpdate(DisplayClusterEnum displayEnum, int32 regionId) = 0;
 	virtual void SetNeedDisplayUpdate(DisplayGlobalEnum displayEnum, bool needUpdate = true) = 0;
 	virtual bool NeedDisplayUpdate(DisplayGlobalEnum displayEnum) = 0;
 	virtual void AddNeedDisplayUpdateId(DisplayGlobalEnum displayEnum, int32 id, bool updateBeforeInitialized = false) = 0;
@@ -413,6 +414,8 @@ public:
 	virtual int32 resourceCountWithPop(int32 playerId, ResourceEnum resourceEnum) = 0;
 	virtual int32 resourceCountWithDrops(int32 playerId, ResourceEnum resourceEnum) = 0;
 
+	virtual void AddResourceGlobal(int32 playerId, ResourceEnum resourceEnum, int32 amount) = 0;
+
 	virtual void SetProvinceOwnerFull(int32 provinceId, int32 playerId) = 0;
 	virtual int32 provinceOwner(int32 provinceId) = 0;
 
@@ -468,6 +471,8 @@ public:
 	virtual int32 aiEndIndex() = 0;
 	virtual bool IsAI(int32 playerId) = 0;
 
+	virtual void ChangeRelationshipModifier(int32 aiPlayerId, int32 towardPlayerId, RelationshipModifierEnum modifierEnum, int32 amount) = 0;
+
 	virtual WorldAtom2 homeAtom(int32 playerId) = 0;
 
 	//! Snow
@@ -488,6 +493,12 @@ public:
 		for (int32 playerId : allHumanPlayerIdsLocal) {
 			func(playerId);
 		}
+		for (int32 playerId = aiStartIndex(); playerId <= aiEndIndex(); playerId++) {
+			func(playerId);
+		}
+	}
+	template<typename Func>
+	void ExecuteOnAI(Func func) {
 		for (int32 playerId = aiStartIndex(); playerId <= aiEndIndex(); playerId++) {
 			func(playerId);
 		}

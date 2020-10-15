@@ -130,6 +130,7 @@ public:
 
 					// Can also liberate if there is an existing conquerer
 					if (townhallPlayerOwned.lordPlayerId() != -1)  {
+						SetText(LiberationButtonRichText, "Liberation\n<img id=\"Influence\"/>" + std::to_string(BattleInfluencePrice));
 						LiberationButton->SetVisibility(ESlateVisibility::Visible);
 						BUTTON_ON_CLICK(LiberationButton, this, &UTownhallHoverInfo::OnClickLiberateButton);
 					} else {
@@ -157,15 +158,6 @@ public:
 			
 			BuffRow->SetVisibility(ESlateVisibility::Collapsed);
 		}
-
-		//// GiftButton
-		//if (townhall.ownedBy(playerId())) {
-		//	GiftButton->SetVisibility(ESlateVisibility::Collapsed);
-		//}
-		//else {
-		//	GiftButton->SetVisibility(ESlateVisibility::Visible);
-		//	BUTTON_ON_CLICK(GiftButton, this, &UTownhallHoverInfo::OnClickGiftButton);
-		//}
 		
 		
 		// Update population
@@ -837,6 +829,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* VassalizeButton;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* VassalizeButtonRichText;
 	UPROPERTY(meta = (BindWidget)) UButton* LiberationButton;
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* LiberationButtonRichText;
 
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* BuffRow;
 	

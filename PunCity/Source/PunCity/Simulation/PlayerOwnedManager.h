@@ -654,20 +654,20 @@ public:
 		CppUtils::Remove(_attackingProvinceIds, provinceId);
 	}
 
-	ProvinceAttackEnum GetProvinceAttackEnum(int32 provinceId)
+	ProvinceAttackEnum GetProvinceAttackEnum(int32 provinceId, int32 attackerPlayerId)
 	{
 		int32 provincePlayerId = _simulation->provinceOwner(provinceId);
-		ProvinceClaimProgress claimProgress = GetDefendingClaimProgress(provinceId);
 
-		// TODO: Add VassalCompetition
-		if (lordPlayerId() != -1) 
+		if (_simulation->homeProvinceId(provincePlayerId) == provinceId) 
 		{
-			if (claimProgress.attackerPlayerId == _playerId) {
-				return ProvinceAttackEnum::DeclareIndependence;
+			if (lordPlayerId() != -1)
+			{
+				// The attacker is the townhall owner, trying to expel the lord
+				if (attackerPlayerId == _playerId) {
+					return ProvinceAttackEnum::DeclareIndependence;
+				}
+				return ProvinceAttackEnum::VassalCompetition;
 			}
-			return ProvinceAttackEnum::VassalCompetition;
-		}
-		if (_simulation->homeProvinceId(provincePlayerId) == provinceId) {
 			return ProvinceAttackEnum::Vassalize;
 		}
 		return ProvinceAttackEnum::ConquerProvince;

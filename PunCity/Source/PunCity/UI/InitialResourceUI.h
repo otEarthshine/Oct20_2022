@@ -49,6 +49,8 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) UOverlay* InitialResourceUI;
 
+	static const int32 InitialStorageSpace = 12;
+
 	void PunInit()
 	{
 		BUTTON_ON_CLICK(FoodArrowUpButton, this, &UInitialResourceUI::OnClickFoodArrowUpButton);
@@ -122,7 +124,7 @@ public:
 			int32 resourceValueIncrease = initialResources.totalCost() - FChooseInitialResources::GetDefault().totalCost();
 			SetText(InitialMoneyText, std::to_string(GetMoney() - resourceValueIncrease));
 			auto resourceMap = initialResources.resourceMap();
-			SetText(InitialStorageSpaceText, std::to_string(StorageTilesOccupied(resourceMap)) + "/" + std::to_string(8));
+			SetText(InitialStorageSpaceText, std::to_string(StorageTilesOccupied(resourceMap)) + "/" + std::to_string(InitialStorageSpace));
 			return;
 		}
 		
@@ -146,7 +148,7 @@ private:
 			return;
 		}
 		auto resourceMap = initialResources.resourceMap();
-		if (StorageTilesOccupied(resourceMap) > 8) {
+		if (StorageTilesOccupied(resourceMap) > InitialStorageSpace) {
 			// Not enough space
 			initialResources = lastInitialResources;
 			simulation().AddPopupToFront(playerId(), "Not enough storage space", ExclusiveUIEnum::InitialResourceUI, "PopupCannot");

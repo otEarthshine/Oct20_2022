@@ -39,6 +39,9 @@ public:
 	void AddSeries(std::vector<GraphSeries> seriesList) {
 		_seriesList = seriesList;
 	}
+	const std::vector<GraphSeries>& GetSeries() {
+		return _seriesList;
+	}
 
 	int32 GetNumSeries_Implementation() const override { return _seriesList.size(); }
 	FName GetSeriesId_Implementation(int32 CatIdx) const override { return FName(*_seriesList[CatIdx].seriesId); }

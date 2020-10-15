@@ -52,10 +52,16 @@ public:
 class AIPlayerSystem
 {
 public:
-	AIPlayerSystem(int32 playerId, IGameSimulationCore* simulation, IPlayerSimulationInterface* playerInterface) {
-		_playerId = playerId;
+	AIPlayerSystem(int32 playerId, IGameSimulationCore* simulation, IPlayerSimulationInterface* playerInterface)
+	{
+		_aiPlayerId = playerId;
 		_simulation = simulation;
 		_playerInterface = playerInterface;
+
+		_relationshipModifiers.resize(GameConstants::MaxPlayersAndAI);
+		for (size_t i = 0; i < _relationshipModifiers.size(); i++) {
+			_relationshipModifiers[i].resize(RelationshipModifierCount);
+		}
 	}
 
 	void SetActive(bool active) {
@@ -79,8 +85,8 @@ public:
 			return;
 		}
 		
-		auto& playerOwned = _simulation->playerOwned(_playerId);
-		auto& resourceSystem = _simulation->resourceSystem(_playerId);
+		auto& playerOwned = _simulation->playerOwned(_aiPlayerId);
+		auto& resourceSystem = _simulation->resourceSystem(_aiPlayerId);
 		auto& terrainGenerator = _simulation->terrainGenerator();
 		auto& treeSystem = _simulation->treeSystem();
 		auto& buildingSystem = _simulation->buildingSystem();
@@ -117,8 +123,10 @@ public:
 			}
 		}
 
+		
+
 		/*
-		 * Choose Location
+		 * Choose Location (Initialize)
 		 */
 		if (!playerOwned.hasChosenLocation())
 		{
@@ -157,17 +165,17 @@ public:
 		}
 
 		/*
-		 * Choose initial resources
+		 * Choose initial resources (Initialize)
 		 */
 		if (!playerOwned.hasChosenInitialResources()) {
 			FChooseInitialResources command = FChooseInitialResources::GetDefault();
-			command.playerId = _playerId;
+			command.playerId = _aiPlayerId;
 			_playerInterface->ChooseInitialResources(command);
 			return;
 		}
 
 		/*
-		 * Build townhall
+		 * Build townhall (Initialize)
 		 */
 		if (!playerOwned.hasTownhall())
 		{
@@ -230,7 +238,7 @@ public:
 				
 				auto command = MakeCommand<FPlaceBuilding>();
 				command->buildingEnum = static_cast<uint8>(CardEnum::Townhall);
-				command->playerId = _playerId;
+				command->playerId = _aiPlayerId;
 				command->center = buildableArea.centerTile(); // area center is also townhall center
 				command->faceDirection = static_cast<uint8>(Direction::S);
 
@@ -243,10 +251,147 @@ public:
 			return;
 		}
 
+
+		/*
+		 * Update Relationship
+		 */
+		_simulation->ExecuteOnPlayersAndAI([&](int32 playerId)
+		{
+			if (_simulation->HasTownhall(playerId))
+			{
+#define MODIFIER(EnumName) _relationshipModifiers[playerId][static_cast<int>(RelationshipModifierEnum::EnumName)]
+
+				// Decaying modifiers (decay every season)
+				if (Time::Ticks() % Time::TicksPerSeason == 0)
+				{
+					DecreaseToZero(MODIFIER(YouGaveUsGifts));
+					IncreaseToZero(MODIFIER(YouStealFromUs));
+					IncreaseToZero(MODIFIER(YouKidnapFromUs));
+				}
+
+				//if (Time::Ticks() % Time::TicksPerMinute == 0)
+				{
+					// Calculated modifiers
+					auto calculateStrength = [&](int32 playerIdScope) {
+						return _simulation->influence(playerIdScope) + _simulation->playerOwned(playerIdScope).totalInfluenceIncome100() * Time::RoundsPerYear;
+					};
+					int32 aiStrength = calculateStrength(_aiPlayerId);
+					int32 counterPartyStrength = calculateStrength(playerId);
+
+					MODIFIER(YouAreStrong) = Clamp((counterPartyStrength - aiStrength) / 50, 0, 20);
+					MODIFIER(YouAreWeak) = Clamp((aiStrength - counterPartyStrength) / 50, 0, 20);
+
+					const std::vector<int32>& provinceIds = _simulation->playerOwned(_aiPlayerId).provincesClaimed();
+					int32 borderCount = 0;
+					for (int32 provinceId : provinceIds) {
+						const std::vector<ProvinceConnection>& connections = _simulation->GetProvinceConnections(provinceId);
+						for (const ProvinceConnection& connection : connections) {
+							if (_simulation->provinceOwner(connection.provinceId) == playerId) {
+								borderCount++;
+							}
+						}
+					}
+					MODIFIER(AdjacentBordersSparkTensions) = std::max(-borderCount * 5, -20);
+
+					// townhall nearer 500 tiles will cause tensions
+					int32 townhallDistance = WorldTile2::Distance(_simulation->townhallGateTile(_aiPlayerId), _simulation->townhallGateTile(playerId));
+					if (townhallDistance <= 500) {
+						MODIFIER(TownhallProximitySparkTensions) = -20 * (500 - townhallDistance) / 500;
+					}
+					else {
+						MODIFIER(TownhallProximitySparkTensions) = 0;
+					}
+				}
+#undef MODIFIER
+			}
+		});
+
+		/*
+		 * Do good/bad act once every year
+		 */
+		int32 secondToAct = GameRand::Rand(Time::Years()) % Time::SecondsPerYear;
+		if (Time::Seconds() % Time::SecondsPerYear == secondToAct)
+		{
+			PUN_LOG("[AIPlayer] Act pid:%d second:%d", _aiPlayerId, secondToAct);
+
+			int32 maxRelationshipPlayerId = -1;
+			int32 maxRelationship = 0;
+
+			int32 minRelationshipPlayerId = -1;
+			int32 minRelationship = 0;
+			_simulation->ExecuteOnPlayersAndAI([&](int32 playerId)
+			{
+				int32 relationship = GetTotalRelationship(playerId);
+				if (relationship > maxRelationship) {
+					maxRelationship = relationship;
+					maxRelationshipPlayerId = playerId;
+				}
+				if (relationship <= minRelationship)
+				{
+					minRelationship = relationship;
+					minRelationshipPlayerId = playerId;
+				}
+			});
+
+			// Gifting
+			if (maxRelationshipPlayerId != -1 &&
+				_simulation->HasTownhall(maxRelationshipPlayerId) &&
+				_simulation->money(_aiPlayerId) > 500)
+			{
+				_simulation->ChangeMoney(_aiPlayerId, 500);
+				
+				PUN_LOG("[AIPlayer] gift pid:%d target:%d second:%d", _aiPlayerId, maxRelationshipPlayerId, secondToAct);
+				
+				auto command = make_shared<FGenericCommand>();
+				command->genericCommandType = FGenericCommand::Type::SendGift;
+				command->playerId = _aiPlayerId;
+				command->intVar1 = maxRelationshipPlayerId;
+				command->intVar2 = static_cast<int>(ResourceEnum::Money);
+				command->intVar3 = std::min(100, _simulation->money(_aiPlayerId) - 500);
+
+				_playerInterface->GenericCommand(*command);
+			}
+
+			// TODO: ...
+			//// Steal/Kidnap
+			//if (minRelationshipPlayerId != -1 &&
+			//	_simulation->HasTownhall(minRelationshipPlayerId))
+			//{
+			//	// Ideally 20 money per pop
+			//	//  Target also need to have more than 1k
+			//	if (_simulation->money(minRelationshipPlayerId) > 1000 &&
+			//		_simulation->money(_aiPlayerId) < _simulation->population(_aiPlayerId) * 20)
+			//	{
+			//		PUN_LOG("[AIPlayer] Steal pid:%d target:%d second:%d", _aiPlayerId, minRelationshipPlayerId, secondToAct);
+
+			//		auto command = make_shared<FPlaceBuilding>();
+			//		command->playerId = _aiPlayerId;
+			//		command->center = _simulation->townhall(minRelationshipPlayerId).centerTile();
+			//		command->buildingEnum = static_cast<uint8>(CardEnum::Steal);
+
+			//		_playerInterface->PlaceBuilding(*command);
+			//	}
+			//	else
+			//	{
+			//		PUN_LOG("AI Kidnap pid:%d second:%d", _aiPlayerId, secondToAct);
+			//		
+			//		auto command = make_shared<FPlaceBuilding>();
+			//		command->playerId = _aiPlayerId;
+			//		command->center = _simulation->townhall(minRelationshipPlayerId).centerTile();
+			//		command->buildingEnum = static_cast<uint8>(CardEnum::Kidnap);
+
+			//		_playerInterface->PlaceBuilding(*command);
+			//	}
+			//}
+		}
+
+
+		
+
 		/*
 		 * Prepare stats
 		 */
-		TownHall& townhall = _simulation->townhall(_playerId);
+		TownHall& townhall = _simulation->townhall(_aiPlayerId);
 
 		// Make sure townhall is marked as a city block...
 		int32 townhallProvinceId = townhall.provinceId();
@@ -254,7 +399,7 @@ public:
 		{
 			if (status.provinceId == townhallProvinceId) {
 				status.currentPurpose = AIRegionPurposeEnum::City;
-				treeSystem.MarkArea(_playerId, provinceSys.GetProvinceRectArea(status.provinceId), false, ResourceEnum::None);
+				treeSystem.MarkArea(_aiPlayerId, provinceSys.GetProvinceRectArea(status.provinceId), false, ResourceEnum::None);
 				break;
 			}
 		}
@@ -285,8 +430,8 @@ public:
 		bool notTooManyUnderConstruction = otherBuildingsUnderConstruction <= 1;
 
 		// Need Food 1 month in advance
-		bool hasEnoughFood = _simulation->foodCount(_playerId) >= (population * BaseHumanFoodCost100PerYear / 2 / 100);
-		bool outOfFood = _simulation->foodCount(_playerId) <= (population * BaseHumanFoodCost100PerYear / 8 / 100);
+		bool hasEnoughFood = _simulation->foodCount(_aiPlayerId) >= (population * BaseHumanFoodCost100PerYear / 2 / 100);
+		bool outOfFood = _simulation->foodCount(_aiPlayerId) <= (population * BaseHumanFoodCost100PerYear / 8 / 100);
 
 		// Need heat to survive winter
 		int32 heatResources = resourceSystem.resourceCount(ResourceEnum::Coal) + resourceSystem.resourceCount(ResourceEnum::Wood);
@@ -295,8 +440,8 @@ public:
 		// Place houses
 		if (notTooManyHouseUnderConstruction)
 		{
-			int32 housingCapacity = _simulation->HousingCapacity(_playerId);
-			const int32 maxHouseCapacity = 4 * 8;
+			int32 housingCapacity = _simulation->HousingCapacity(_aiPlayerId);
+			const int32 maxHouseCapacity = 4 * 30; // 120 max pop
 			
 			if (housingCapacity < maxHouseCapacity && population > housingCapacity)
 			{
@@ -312,11 +457,11 @@ public:
 				//		return block.CanPlaceCityBlock(tile, _playerId, _simulation);
 				//	})
 				//);
-				block.TryFindArea(townhall.centerTile(), _playerId, _simulation);
+				block.TryFindArea(townhall.centerTile(), _aiPlayerId, _simulation);
 
 				if (block.HasArea()) {
 					std::vector<std::shared_ptr<FNetworkCommand>> commands;
-					SimUtils::PlaceCityBlock(block, _playerId, commands);
+					SimUtils::PlaceCityBlock(block, _aiPlayerId, commands);
 					_simulation->ExecuteNetworkCommands(commands);
 				}
 			}
@@ -366,13 +511,13 @@ public:
 					}
 					else if (status.proposedPurpose == AIRegionProposedPurposeEnum::Tree) {
 						if (!alreadyHaveForester) {
-							block.topBuildingEnums = { CardEnum::Forester, CardEnum::CharcoalMaker };
+							block.topBuildingEnums = { CardEnum::Forester, CardEnum::CharcoalMaker, CardEnum::StorageYard };
 							block.bottomBuildingEnums = { CardEnum::HuntingLodge, CardEnum::StorageYard, CardEnum::StorageYard };
 
 							status.currentPurpose = AIRegionPurposeEnum::Forester;
 						}
 						else {
-							block.topBuildingEnums = { CardEnum::FruitGatherer, CardEnum::StorageYard };
+							block.topBuildingEnums = { CardEnum::FruitGatherer, CardEnum::StorageYard, CardEnum::House };
 							block.bottomBuildingEnums = { CardEnum::HuntingLodge, CardEnum::StorageYard, CardEnum::StorageYard };
 
 							status.currentPurpose = AIRegionPurposeEnum::FruitGather;
@@ -383,7 +528,7 @@ public:
 					}
 					
 					block.CalculateSize();
-					block.TryFindArea(provinceCenter, _playerId, _simulation);
+					block.TryFindArea(provinceCenter, _aiPlayerId, _simulation);
 
 					if (!block.HasArea()) {
 						continue;
@@ -416,10 +561,10 @@ public:
 						bestStatus->currentPurpose == AIRegionPurposeEnum::Farm ||
 						bestStatus->currentPurpose == AIRegionPurposeEnum::Ranch) 
 					{
-						treeSystem.MarkArea(_playerId, bestProvinceRectArea, false, ResourceEnum::None);
+						treeSystem.MarkArea(_aiPlayerId, bestProvinceRectArea, false, ResourceEnum::None);
 					}
 					else {
-						treeSystem.MarkArea(_playerId, bestProvinceRectArea, false, ResourceEnum::Stone);
+						treeSystem.MarkArea(_aiPlayerId, bestProvinceRectArea, false, ResourceEnum::Stone);
 					}
 
 					bestStatus->proposedBlock = bestBlock;
@@ -437,7 +582,7 @@ public:
 					{
 						if (_regionStatuses[i].proposedBlock.IsValid()) {
 							std::vector<std::shared_ptr<FNetworkCommand>> commands;
-							SimUtils::PlaceForestBlock(_regionStatuses[i].proposedBlock, _playerId, commands);
+							SimUtils::PlaceForestBlock(_regionStatuses[i].proposedBlock, _aiPlayerId, commands);
 							_simulation->ExecuteNetworkCommands(commands);
 							
 							//PlaceForestBlock(_regionStatuses[i].proposedBlock);
@@ -452,12 +597,12 @@ public:
 		/*
 		 * Accept immigrants
 		 */
-		PopupInfo* popup = _simulation->PopupToDisplay(_playerId);
+		PopupInfo* popup = _simulation->PopupToDisplay(_aiPlayerId);
 		if (popup && popup->replyReceiver == PopupReceiverEnum::ImmigrationEvent) {
 			if (hasEnoughFood && hasEnoughHeat && population < 50) {
 				townhall.AddRequestedImmigrants();
 			}
-			_simulation->CloseCurrentPopup(_playerId);
+			_simulation->CloseCurrentPopup(_aiPlayerId);
 		}
 
 		/*
@@ -527,23 +672,67 @@ public:
 
 	void GetAIRelationshipText(std::stringstream& ss, int32 playerId)
 	{
-
+		ss << "Overall: " << GetTotalRelationship(playerId) << "\n";
+		
+		const std::vector<int32>& modifiers = _relationshipModifiers[playerId];
+		for (int32 i = 0; i < modifiers.size(); i++) {
+			if (modifiers[i] != 0) {
+				ss << ToSignedNumber(modifiers[i]) << " " << RelationshipModifierName[i] << "\n";
+			}
+		}
 	}
 
-	bool shouldShow_DeclareFriendship() {
-		return true;
+	int32 GetTotalRelationship(int32 towardPlayerId)
+	{
+		return CppUtils::Sum(_relationshipModifiers[towardPlayerId]);
+	}
+
+	// Friendship
+	bool shouldShow_DeclareFriendship(int32 askingPlayerId) {
+		if (GetRelationshipModifier(askingPlayerId, RelationshipModifierEnum::YouAttackedUs) > 0) {
+			return false;
+		}
+		return GetRelationshipModifier(askingPlayerId, RelationshipModifierEnum::YouBefriendedUs) == 0;
 	}
 	int32 friendshipPrice() { return 200; }
 	void DeclareFriendship(int32 askingPlayerId) {
-		
+		SetRelationshipModifier(askingPlayerId, RelationshipModifierEnum::YouBefriendedUs, friendshipPrice() / GoldToRelationship);
+		_simulation->ChangeMoney(askingPlayerId, -friendshipPrice());
 	}
 
-	bool shouldShow_MarryOut() {
-		return true;
+	// Marriage
+	bool shouldShow_MarryOut(int32 askingPlayerId) {
+		return GetRelationshipModifier(askingPlayerId, RelationshipModifierEnum::WeAreFamily) == 0;
 	}
 	int32 marryOutPrice() { return 1000; }
 	void MarryOut(int32 askingPlayerId) {
+		SetRelationshipModifier(askingPlayerId, RelationshipModifierEnum::WeAreFamily, marryOutPrice() / GoldToRelationship);
+		_simulation->ChangeMoney(askingPlayerId, -marryOutPrice());
+	}
 
+	// 
+
+	
+	void DeclareWar(int32 askingPlayerId)
+	{
+		SetRelationshipModifier(askingPlayerId, RelationshipModifierEnum::YouAttackedUs, -100);
+		SetRelationshipModifier(askingPlayerId, RelationshipModifierEnum::YouBefriendedUs, 0);
+	}
+
+	//
+	void SetRelationshipModifier(int32 askingPlayerId, RelationshipModifierEnum modifier, int32 value) {
+		_relationshipModifiers[askingPlayerId][static_cast<int>(modifier)] = value;
+	}
+	void ChangeRelationshipModifier(int32 askingPlayerId, RelationshipModifierEnum modifier, int32 value) {
+		_relationshipModifiers[askingPlayerId][static_cast<int>(modifier)] += value;
+	}
+	int32 GetRelationshipModifier(int32 askingPlayerId, RelationshipModifierEnum modifier) {
+		return _relationshipModifiers[askingPlayerId][static_cast<int>(modifier)];
+	}
+
+	void ClearRelationshipModifiers(int32 towardPlayerId) {
+		std::vector<int32>& modifiers = _relationshipModifiers[towardPlayerId];
+		std::fill(modifiers.begin(), modifiers.end(), 0);
 	}
 	
 	/*
@@ -554,10 +743,12 @@ public:
 	{
 		SerializeVecObj(Ar, _regionStatuses);
 		Ar << _active;
+
+		SerializeVecValue(Ar, _relationshipModifiers);
 	}
 
 	void AIDebugString(std::stringstream& ss) {
-		ss << "-- AI Regions " << _simulation->playerName(_playerId) << "\n";
+		ss << "-- AI Regions " << _simulation->playerName(_aiPlayerId) << "\n";
 		for (AIRegionStatus& status : _regionStatuses) {
 			ss << " Region " << status.provinceId << " purpose:" << AIRegionPurposeName[static_cast<int>(status.currentPurpose)] << " proposed:" << static_cast<int>(status.proposedPurpose);
 		}
@@ -567,7 +758,7 @@ private:
 	template<class T>
 	std::shared_ptr<T> MakeCommand() {
 		auto command = std::make_shared<T>();
-		std::static_pointer_cast<FNetworkCommand>(command)->playerId = _playerId;
+		std::static_pointer_cast<FNetworkCommand>(command)->playerId = _aiPlayerId;
 		return command;
 	}
 
@@ -693,12 +884,12 @@ private:
 	std::string AIPrintPrefix()
 	{
 		std::stringstream ss;
-		ss << "[" << _playerId << "_" << _simulation->playerName(_playerId) << "]";
+		ss << "[" << _aiPlayerId << "_" << _simulation->playerName(_aiPlayerId) << "]";
 		return ss.str();
 	}
 	
 private:
-	int32 _playerId;
+	int32 _aiPlayerId;
 	IGameSimulationCore* _simulation;
 	IPlayerSimulationInterface* _playerInterface;
 
@@ -707,4 +898,7 @@ private:
 	 */
 	std::vector<AIRegionStatus> _regionStatuses;
 	bool _active = false;
+
+	// 1 relationship should cost around 20 gold
+	std::vector<std::vector<int32>> _relationshipModifiers;
 };

@@ -81,6 +81,7 @@ APunHUD::APunHUD()
 	LoadClass(UIEnum::PunEditableNumberBox, "PunEditableNumberBoxWidget");
 	LoadClass(UIEnum::PunEditableNumberBoxHorizontal, "PunEditableNumberBoxHorizontalWidget");
 	LoadClass(UIEnum::PunGraph, "PunGraphWidget");
+	LoadClass(UIEnum::PunThinGraph, "PunThinGraphWidget");
 	LoadClass(UIEnum::PunTutorialLink, "PunTutorialLinkWidget");
 
 	LoadClass(UIEnum::AboveBuildingText, "WorldSpaceUI/AboveBuildingTextWidget");

@@ -89,6 +89,7 @@ enum class UIEnum
 	PunEditableNumberBox,
 	PunEditableNumberBoxHorizontal,
 	PunGraph,
+	PunThinGraph,
 	PunTutorialLink,
 
 	AboveBuildingText,

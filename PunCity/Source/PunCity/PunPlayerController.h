@@ -686,26 +686,32 @@ public:
 		gameManager->simulation().playerOwned(playerId).AddBuff(CardEnum::TreasuryGuard);
 	}
 
-	void AttackDefenseHelper(CallbackEnum claimEnum, int32 tileX, int32 tileY)
+	
+	UFUNCTION(Exec) void OrderAI(int32 claimEnum, int32 aiTileX, int32 aiTileY, int32 tileX, int32 tileY)
 	{
+		// claimEnum:
+		// CallbackEnum::StartAttackProvince = 4
+		// CallbackEnum::ReinforceAttackProvince = 5
+		// CallbackEnum::Liberate = 8
 		auto& sim = gameManager->simulation();
 		WorldTile2 tile(tileX, tileY);
-		if (tile.isValid()) {
-			int32 provinceId = sim.GetProvinceIdClean(tile);
-			auto command = make_shared<FClaimLand>();
-			command->claimEnum = claimEnum;
-			command->provinceId = provinceId;
-			PUN_CHECK(command->provinceId != -1);
+		WorldTile2 aiTile(aiTileX, aiTileY);
+		if (tile.isValid() && aiTile.isValid() )
+		{
+			int32 aiPlayerId = sim.tileOwner(aiTile);
+			if (sim.IsAI(aiPlayerId))
+			{
+				int32 provinceId = sim.GetProvinceIdClean(tile);
+				auto command = make_shared<FClaimLand>();
+				command->playerId = aiPlayerId;
+				command->claimEnum = static_cast<CallbackEnum>(claimEnum);
+				command->provinceId = provinceId;
+				PUN_CHECK(command->provinceId != -1);
 
-			networkInterface()->SendNetworkCommand(command);
+				gameManager->simulation().ClaimLand(*command);
+			}
 		}
 	}
-	// Same as Declare Independence..
-	UFUNCTION(Exec) void Vassalize(int32 tileX, int32 tileY) { AttackDefenseHelper(CallbackEnum::StartAttackProvince, tileX, tileY); }
-
-	UFUNCTION(Exec) void VassalizeReinforce(int32 tileX, int32 tileY) { AttackDefenseHelper(CallbackEnum::ReinforceAttackProvince, tileX, tileY); }
-
-	UFUNCTION(Exec) void Liberate(int32 tileX, int32 tileY) { AttackDefenseHelper(CallbackEnum::Liberate, tileX, tileY); }
 
 
 	/*

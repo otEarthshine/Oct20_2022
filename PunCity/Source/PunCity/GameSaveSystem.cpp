@@ -46,11 +46,18 @@ GameSaveInfo GameSaveSystem::SaveDataToFile(FString saveName, bool isCachingForS
 		SaveArchive.SetIsSaving(true);
 		SaveArchive.SetIsLoading(false);
 
-		inputSystem->Serialize(SaveArchive);
-		simulation.Serialize(SaveArchive, SaveArchive);
-		PUN_CHECK(SaveArchive.Num() > 0);
+		{
+			SCOPE_TIMER("Save Serialize");
+			inputSystem->Serialize(SaveArchive);
+			simulation.Serialize(SaveArchive, SaveArchive);
+			PUN_CHECK(SaveArchive.Num() > 0);
+		}
 
-		saveInfo.checksum = FCrc::MemCrc32(SaveArchive.GetData(), SaveArchive.Num());
+		{
+			SCOPE_TIMER("Save Checksum");
+			saveInfo.checksum = FCrc::MemCrc32(SaveArchive.GetData(), SaveArchive.Num());
+		}
+		
 		_LOG(PunSaveLoad, "Save GameData Uncompressed size:%d checksum:%d", SaveArchive.Num(), saveInfo.checksum);
 
 		FString gameDataPath = folderPath + "/GameData.dat";

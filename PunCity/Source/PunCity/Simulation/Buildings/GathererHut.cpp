@@ -220,6 +220,7 @@ void Farm::DoFarmWork(int32_t unitId, WorldTile2 tile, FarmStage farmStage)
 
 void Farm::ClearAllPlants() {
 	_simulation->treeSystem().ForceRemoveTileObjArea(_area);
+	_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Trees, _area, true);
 }
 
 //! Mushroom

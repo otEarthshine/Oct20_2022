@@ -127,6 +127,10 @@ public:
 				_descriptionUISystem->IsHoveredOnScrollUI() ||
 				_statisticsUI->IsHovered() ||
 				_worldTradeUI->IsHovered() ||
+
+				_giftResourceUI->IsHovered() ||
+				_diplomacyUI->IsHovered() ||
+
 				_intercityTradeUI->IsHovered() ||
 				_mainGameUI->IsHoveredOnScrollUI() ||
 				_chatUI->IsHoveredOnScrollUI() ||
@@ -167,6 +171,18 @@ public:
 		_statisticsUI->StatSwitcher->SetActiveWidgetIndex(7);
 		_statisticsUI->MarketResourceDropdown->SetSelectedOption(ResourceNameF(resourceEnum));
 	}
+
+	bool IsFoodFuelGraphUIOpened() override {
+		return _statisticsUI->GetVisibility() != ESlateVisibility::Collapsed &&
+			_statisticsUI->StatSwitcher->GetActiveWidgetIndex() == 5;
+	}
+	void OpenFoodFuelGraphUI() override {
+		ResetGameUI();
+		_statisticsUI->OpenStatisticsUI(playerId());
+		_statisticsUI->SetTabSelection(_statisticsUI->FoodFuelStatButton);
+		_statisticsUI->StatSwitcher->SetActiveWidgetIndex(5);
+	}
+	
 	void CloseStatisticsUI() override {
 		_statisticsUI->CloseStatisticsUI();
 	}

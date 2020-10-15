@@ -199,10 +199,22 @@ public:
 		return true;
 	}
 
+	void AddResourceGlobal(int32 playerId, ResourceEnum resourceEnum, int32 amount) final {
+		resourceSystem(playerId).AddResourceGlobal(resourceEnum, amount, *this);
+	}
+	
+
 	int32 aiStartIndex() final { return GameConstants::MaxPlayers; }
 	int32 aiEndIndex() final { return GameConstants::MaxPlayersAndAI - 1; }
 	bool IsAI(int32 playerId) final { return playerId >= GameConstants::MaxPlayers; }
 	//bool isAIPlayer(int32_t playerId) { return aiPlayerStartIndex() <= playerId && playerId <= aiPlayerEndIndex(); }
+
+	void ChangeRelationshipModifier(int32 aiPlayerId, int32 towardPlayerId, RelationshipModifierEnum modifierEnum, int32 amount) final
+	{
+		if (IsAI(aiPlayerId)) {
+			aiPlayerSystem(aiPlayerId).ChangeRelationshipModifier(towardPlayerId, RelationshipModifierEnum::YouGaveUsGifts, amount / GoldToRelationship);
+		}
+	}
 	
 	//template<typename Func>
 	//void ExecuteOnPlayersAndAI(Func func) {
@@ -608,11 +620,9 @@ public:
 		
 		for (int32 bldId : bldIds) {
 			WorldTile2 centerTile = building(bldId).centerTile();
-			if (tileIn != centerTile) {
-				int32 atomDist = WorldAtom2::Distance(tileIn.worldAtom2(), centerTile.worldAtom2());
-				if (atomDist < radiusTouchAtom) {
-					return true;
-				}
+			int32 atomDist = WorldAtom2::Distance(tileIn.worldAtom2(), centerTile.worldAtom2());
+			if (atomDist < radiusTouchAtom) {
+				return true;
 			}
 		}
 		return false;
@@ -684,6 +694,11 @@ public:
 			}
 		}
 	}
+	void SetNeedDisplayUpdate(DisplayClusterEnum displayEnum, TileArea area, bool isSmallArea, bool needUpdate = true) final {
+		std::vector<int32> regionIds = WorldRegion2::WorldRegionsToRegionIds(area.GetOverlapRegions(isSmallArea));
+		SetNeedDisplayUpdate(displayEnum, regionIds, needUpdate);
+	}
+	
 	bool NeedDisplayUpdate(DisplayClusterEnum displayEnum, int32 regionId) final {
 		return isInitialized() && _displayEnumToRegionToNeedUpdate[static_cast<int>(displayEnum)][regionId];
 	}
@@ -928,6 +943,9 @@ public:
 	//  - no battle at home
 	bool CanVassalizeOtherPlayers(int32 playerIdIn)
 	{
+		if (IsAI(playerIdIn)) { //TODO: this is for testing for now..
+			return true;
+		}
 		return IsResearched(playerIdIn, TechEnum::Vassalize) &&
 				lordPlayerId(playerIdIn) == -1 &&
 				!playerOwned(playerIdIn).GetDefendingClaimProgress(homeProvinceId(playerIdIn)).isValid();
@@ -2185,7 +2203,6 @@ public:
 	bool ExecuteNetworkCommand(std::shared_ptr<FNetworkCommand> command) final;
 	
 	int32 PlaceBuilding(FPlaceBuilding parameters) final;
-private:
 	void PlaceDrag(FPlaceDrag parameters) final;
 	void JobSlotChange(FJobSlotChange command) final;
 	void SetAllowResource(FSetAllowResource command) final;

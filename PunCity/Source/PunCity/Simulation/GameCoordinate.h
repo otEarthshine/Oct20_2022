@@ -611,6 +611,15 @@ struct WorldRegion2
 		return x >= GameMapConstants::MinInnerRegionX && x < GameMapConstants::MaxInnerRegionX &&
 			y >= GameMapConstants::MinInnerRegionY && y < GameMapConstants::MaxInnerRegionY;
 	}
+
+	static std::vector<int32> WorldRegionsToRegionIds(const std::vector<WorldRegion2>& regions)
+	{
+		std::vector<int32> regionIds;
+		for (WorldRegion2 region : regions) {
+			regionIds.push_back(region.regionId());
+		}
+		return regionIds;
+	}
 	
 
 	//! Serialize

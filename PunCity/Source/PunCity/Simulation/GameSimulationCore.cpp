@@ -927,11 +927,6 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 										int32 oldLordPlayerId = lordPlayerId(playerId);
 
 										LoseVassalHelper(oldLordPlayerId, playerId);
-										//_playerOwnedManagers[oldLordPlayerId].LoseVassal(playerId);
-										//_playerOwnedManagers[playerId].SetLordPlayerId(-1);
-
-										//_playerOwnedManagers[oldLordPlayerId].RecalculateTaxDelayed();
-										//_playerOwnedManagers[playerId].RecalculateTaxDelayed();
 
 										AddPopupAll(PopupInfo(playerId, playerName(playerId) + " declared independence from " + playerName(oldLordPlayerId) + "."), -1);
 									}
@@ -945,6 +940,11 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 											}
 										}
 
+										// If there is an existing lord, the lord lose the vassal
+										int32 oldLordPlayerId = _playerOwnedManagers[playerId].lordPlayerId();
+										if (oldLordPlayerId != -1) {
+											LoseVassalHelper(oldLordPlayerId, playerId);
+										}
 
 										// Vassalize
 										int32 lordId = claimProgress.attackerPlayerId;
@@ -1350,6 +1350,8 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 	CardEnum cardEnum = static_cast<CardEnum>(parameters.buildingEnum);
 	int32 playerId = parameters.playerId;
 
+	bool succeedUsingCard = true;
+
 	// TODO: use this for Ranch
 	// Storage yard uses front with only 2 tiles
 	//if (cardEnum == CardEnum::StorageYard) {
@@ -1466,6 +1468,8 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 						resourceSystem(playerId).ChangeMoney(actualSteal);
 						AddPopup(targetPlayerId, playerName(playerId) + " stole " + to_string(actualSteal) + "<img id=\"Coin\"/> from you");
 						AddPopup(playerId, "You stole " + to_string(actualSteal) + "<img id=\"Coin\"/> from " + townName(targetPlayerId));
+
+						ChangeRelationshipModifier(targetPlayerId, playerId, RelationshipModifierEnum::YouStealFromUs, -actualSteal / GoldToRelationship);
 					}
 				}
 				else if (cardEnum == CardEnum::Snatch)
@@ -1489,6 +1493,8 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 						resourceSystem(playerId).ChangeMoney(actualSteal);
 						AddPopup(targetPlayerId, townName(playerId) + " snatched " + to_string(actualSteal) + "<img id=\"Coin\"/> from you");
 						AddPopup(playerId, "You snatched " + to_string(actualSteal) + "<img id=\"Coin\"/> from " + townName(targetPlayerId));
+
+						ChangeRelationshipModifier(targetPlayerId, playerId, RelationshipModifierEnum::YouStealFromUs, -actualSteal / GoldToRelationship);
 					}
 				}
 				else if (cardEnum == CardEnum::Kidnap)
@@ -1535,18 +1541,23 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 						AddPopup(playerId, ss.str());
 
 						townhall(playerId).AddImmigrants(unitsStoleCount);
+
+						ChangeRelationshipModifier(targetPlayerId, playerId, RelationshipModifierEnum::YouStealFromUs, -(unitsStoleCount * 300) / GoldToRelationship);
 					}
 				}
 				else if (cardEnum == CardEnum::SharingIsCaring)
 				{
-					if (resourceSystem(targetPlayerId).CanAddResourceGlobal(ResourceEnum::Wheat, 50))
+					if (resourceSystem(targetPlayerId).CanAddResourceGlobal(ResourceEnum::Wheat, 100))
 					{
-						AddPopup(targetPlayerId, townName(playerId) + " gave you 50 wheat.");
-						AddPopup(playerId, "You gave " + townName(targetPlayerId) + " 50 wheat");
-						resourceSystem(targetPlayerId).AddResourceGlobal(ResourceEnum::Wheat, 50, *this);
+						AddPopup(targetPlayerId, townName(playerId) + " gave you 100 wheat.");
+						AddPopup(playerId, "You gave " + townName(targetPlayerId) + " 100 wheat");
+						resourceSystem(targetPlayerId).AddResourceGlobal(ResourceEnum::Wheat, 100, *this);
+
+						ChangeRelationshipModifier(targetPlayerId, playerId, RelationshipModifierEnum::YouGaveUsGifts, FoodCost * 100 / GoldToRelationship);
 					}
 					else {
-						AddPopup(playerId, "Failed to give " + townName(targetPlayerId) + " 50 wheat.<space>Not enough storage space at the target city.");
+						AddPopup(playerId, "Failed to give " + townName(targetPlayerId) + " 100 wheat.<space>Not enough storage space at the target city.");
+						succeedUsingCard = false;
 					}
 				}
 				else
@@ -1611,7 +1622,8 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 
 		// Use action card, remove the card
 		if (!IsReplayPlayer(parameters.playerId) &&
-			parameters.useBoughtCard) 
+			parameters.useBoughtCard &&
+			succeedUsingCard)
 		{
 			_cardSystem[playerId].UseBoughtCard(cardEnum, 1);
 		}
@@ -1724,7 +1736,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 	else if (cardEnum == CardEnum::ClayPit)
 	{
 		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-			if (!(IsBuildable(tile) && _terrainGenerator->riverFraction(tile) > 0.5f)) {
+			if (!(IsBuildable(tile) && _terrainGenerator->riverFraction(tile) > ClaypitRiverFractionPercentThreshold / 100.0f)) {
 				canPlace = false;
 			}
 		});
@@ -2073,7 +2085,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 					 */
 					if (buildingEnum == CardEnum::Farm && bld.isConstructed()) 
 					{
-						_treeSystem->ForceRemoveTileObjArea(bld.area());
+						bld.subclass<Farm>().ClearAllPlants();
 					}
 					
 
@@ -2394,6 +2406,8 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 			ChangeMoney(targetPlayerId, amount);
 			AddPopup(giverPlayerId, "You gifted " + playerName(targetPlayerId) + " with <img id=\"Coin\"/>" + to_string(amount) + ".");
 			AddPopup(targetPlayerId, playerName(giverPlayerId) + " gifted you with <img id=\"Coin\"/>" + to_string(amount) + ".");
+
+			ChangeRelationshipModifier(targetPlayerId, giverPlayerId, RelationshipModifierEnum::YouGaveUsGifts, amount / GoldToRelationship);
 		}
 		else
 		{
@@ -2403,7 +2417,7 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 			}
 
 			if (!resourceSystem(targetPlayerId).CanAddResourceGlobal(resourceEnum, amount)) {
-				AddPopup(targetPlayerId, "Not enough storage space.");
+				AddPopup(giverPlayerId, "Not enough storage space in target city.");
 				return;
 			}
 		
@@ -2411,6 +2425,8 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 			resourceSystem(targetPlayerId).AddResourceGlobal(resourceEnum, amount, *this);
 			AddPopup(giverPlayerId, "You gifted " + playerName(targetPlayerId) + " with " + to_string(amount) + " " + ResourceName(resourceEnum) + ".");
 			AddPopup(targetPlayerId, playerName(giverPlayerId) + " gifted you with " + to_string(amount) + " " + ResourceName(resourceEnum) + ".");
+
+			ChangeRelationshipModifier(targetPlayerId, giverPlayerId, RelationshipModifierEnum::YouGaveUsGifts, (amount * price(resourceEnum)) / GoldToRelationship);
 		}
 		return;
 	}
@@ -2726,6 +2742,13 @@ void GameSimulationCore::AbandonTown(int32 playerId)
 
 	// Remove Trade Route
 	worldTradeSystem().RemoveAllTradeRoutes(playerId);
+
+
+	// Remove Relationship
+	ExecuteOnAI([&](int32 aiPlayerId) {
+		aiPlayerSystem(aiPlayerId).ClearRelationshipModifiers(playerId);
+	});
+	
 
 	// Reset all Systems
 	_resourceSystems[playerId] = ResourceSystem(playerId, this);
@@ -3397,19 +3420,25 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	/*
 	 * Battle
 	 */
-	else if (command.claimEnum == CallbackEnum::StartAttackProvince)
+	else if (command.claimEnum == CallbackEnum::StartAttackProvince ||
+			command.claimEnum == CallbackEnum::Liberate)
 	{
 		// Attack could be: Conquer Province, Vassalize, or Declare Independence
 		
 		int32 provincePlayerId = provinceOwner(command.provinceId);
 		auto& provincePlayerOwner = playerOwned(provincePlayerId);
 
+		ProvinceAttackEnum attackEnum = ProvinceAttackEnum::DeclareIndependence;
+		if (command.claimEnum != CallbackEnum::Liberate) {
+			attackEnum = provincePlayerOwner.GetProvinceAttackEnum(command.provinceId, command.playerId);
+		}
+
+		bool canAttack = CanVassalizeOtherPlayers(command.playerId) || attackEnum == ProvinceAttackEnum::DeclareIndependence;
+
 		// If there was no claim yet, start the attack
-		if (CanVassalizeOtherPlayers(command.playerId) &&
+		if (canAttack &&
 			!provincePlayerOwner.GetDefendingClaimProgress(command.provinceId).isValid()) 
 		{
-			ProvinceAttackEnum attackEnum = provincePlayerOwner.GetProvinceAttackEnum(command.provinceId);
-			
 			int32 conquerPrice = 0;
 			switch(attackEnum)
 			{
@@ -3418,13 +3447,20 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 			case ProvinceAttackEnum::DeclareIndependence: conquerPrice = BattleInfluencePrice; break; // Declare Independence has no defense/attack advantage...
 			default: break;
 			}
+
+			//TODO: special AI
+			if (IsAI(command.playerId)) {
+				resourceSystem(command.playerId).ChangeInfluence(conquerPrice * 2);
+			}
 			
 			if (influence(command.playerId) >= conquerPrice) 
 			{
 				resourceSystem(command.playerId).ChangeInfluence(-conquerPrice);
+
+				int32 attackerPlayerId = (command.claimEnum == CallbackEnum::Liberate) ? provincePlayerId : command.playerId;
 				
-				provincePlayerOwner.StartConquerProvince(command.playerId, command.provinceId);
-				playerOwned(command.playerId).StartConquerProvince_Attacker(command.provinceId);
+				provincePlayerOwner.StartConquerProvince(attackerPlayerId, command.provinceId);
+				playerOwned(attackerPlayerId).StartConquerProvince_Attacker(command.provinceId);
 
 				if (attackEnum == ProvinceAttackEnum::ConquerProvince) {
 					std::stringstream ss;
@@ -3433,6 +3469,10 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 					AddPopup(provincePlayerId, ss.str());
 
 					AddPopup(command.playerId, "You started attacking " + playerName(provincePlayerId) + ".");
+
+					if (IsAI(provincePlayerId)) {
+						aiPlayerSystem(provincePlayerId).DeclareWar(command.playerId);
+					}
 				}
 				else if (attackEnum == ProvinceAttackEnum::Vassalize) 
 				{
@@ -3449,13 +3489,32 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 						AddPopup(provincePlayerId, playerName(command.playerId) + " started attacking to vassalize you. If you lose this battle, you will become " + playerName(command.playerId) + "'s vassal");
 						AddPopup(command.playerId, "You started attacking " + playerName(provincePlayerId) + ".");
 					}
-				}
-				else if (attackEnum == ProvinceAttackEnum::DeclareIndependence) {
-					int32 lordId = lordPlayerId(provincePlayerId);
-					AddPopup(lordId, playerName(provincePlayerId) + " is trying to declare independence from you."
-											"<space>If you lose this battle, you will lose control of the vassal.");
 
-					AddPopup(provincePlayerId, "You attempt to declare independence from " + playerName(lordId) + ".");
+					if (IsAI(provincePlayerId)) {
+						aiPlayerSystem(provincePlayerId).DeclareWar(command.playerId);
+					}
+				}
+				else if (attackEnum == ProvinceAttackEnum::DeclareIndependence) 
+				{
+					int32 lordId = lordPlayerId(provincePlayerId);
+					
+					if (command.claimEnum == CallbackEnum::Liberate)
+					{
+						AddPopup(lordId,		playerName(command.playerId) + " is trying to liberate " +
+												playerName(provincePlayerId) + " from you."
+												"<space>If you lose this battle, you will lose control of the vassal.");
+
+						AddPopup(command.playerId, "You attempt to liberate " + playerName(provincePlayerId) + " from " + playerName(lordId) + ".");
+
+						AddPopup(provincePlayerId, playerName(command.playerId) + " tries to liberate your city from " + playerName(lordId) + ".");
+					}
+					else
+					{
+						AddPopup(lordId, playerName(provincePlayerId) + " is trying to declare independence from you."
+							"<space>If you lose this battle, you will lose control of the vassal.");
+
+						AddPopup(provincePlayerId, "You attempt to declare independence from " + playerName(lordId) + ".");
+					}
 				}
 			}
 			else
@@ -3467,27 +3526,28 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	else if (command.claimEnum == CallbackEnum::ReinforceAttackProvince)
 	{
 		auto& provincePlayerOwner = playerOwned(provinceOwner(command.provinceId));
-		ProvinceAttackEnum attackEnum = provincePlayerOwner.GetProvinceAttackEnum(command.provinceId);
+		ProvinceClaimProgress claimProgress = provincePlayerOwner.GetDefendingClaimProgress(command.provinceId);
 		
-		int32 price = 0;
-		switch (attackEnum)
+		if (claimProgress.isValid())
 		{
-		case ProvinceAttackEnum::ConquerProvince: price = GetProvinceAttackReinforcePrice(provinceId, GetProvinceClaimConnectionEnum(command.provinceId, command.playerId)); break;
-		case ProvinceAttackEnum::Vassalize: price = GetProvinceVassalizeReinforcePrice(provinceId); break;
-		case ProvinceAttackEnum::DeclareIndependence: price = BattleInfluencePrice; break;
-		case ProvinceAttackEnum::VassalCompetition: price = GetProvinceVassalizeReinforcePrice(provinceId); break;
-		default: break;
-		}
-		
-		if (provincePlayerOwner.GetDefendingClaimProgress(command.provinceId).isValid()) 
-		{
+			ProvinceAttackEnum attackEnum = provincePlayerOwner.GetProvinceAttackEnum(command.provinceId, claimProgress.attackerPlayerId);
+
+			int32 price = 0;
+			switch (attackEnum)
+			{
+			case ProvinceAttackEnum::ConquerProvince: price = GetProvinceAttackReinforcePrice(provinceId, GetProvinceClaimConnectionEnum(command.provinceId, command.playerId)); break;
+			case ProvinceAttackEnum::Vassalize: price = GetProvinceVassalizeReinforcePrice(provinceId); break;
+			case ProvinceAttackEnum::DeclareIndependence: price = BattleInfluencePrice; break;
+			case ProvinceAttackEnum::VassalCompetition: price = GetProvinceVassalizeReinforcePrice(provinceId); break;
+			default: break;
+			}
+			
 			if (influence(command.playerId) >= price)
 			{
 				resourceSystem(command.playerId).ChangeInfluence(-price);
 				provincePlayerOwner.ReinforceAttacker(command.provinceId, BattleInfluencePrice);
 			}
-			else
-			{
+			else {
 				AddPopupToFront(command.playerId, "Not enough <img id=\"Influence\"/> to reinforce.");
 			}
 		}
@@ -3515,48 +3575,6 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 			provincePlayerOwner.ReinforceDefender(command.provinceId, BattleInfluencePrice);
 		}
 	}
-	
-	//else if (command.claimEnum == CallbackEnum::ClaimLandArmy)
-	//{
-	//	playerOwn.QueueArmyProvinceClaim(command.provinceId);
-	//}
-	//else if (command.claimEnum == CallbackEnum::CancelClaimLandArmy)
-	//{
-	//	playerOwn.CancelArmyProvinceClaim(command.provinceId);
-	//}
-	
-	//else if (command.claimEnum == CallbackEnum::ClaimLandIndirect)
-	//{
-	//	int32 price = playerOwn.GetInfluenceClaimPrice(command.provinceId);
-
-	//	if (resourceSys.money() >= price &&
-	//		provinceOwner(command.provinceId) == -1)
-	//	{
-	//		SetProvinceOwner(command.provinceId, playerId);
-
-	//		resourceSys.ChangeMoney(-price);
-	//	}
-	//}
-	//else if (command.claimEnum == CallbackEnum::BuildOutpost)
-	//{
-	//	int32 price = playerOwn.GetOutpostClaimPrice(command.provinceId);
-
-	//	if (resourceSys.money() >= price &&
-	//		provinceOwner(command.provinceId) == -1)
-	//	{
-	//		playerOwn.MarkAsOutpost(provinceId);
-
-	//		resourceSys.ChangeMoney(-price);
-	//	}
-	//}
-	//else if (command.claimEnum == CallbackEnum::DemolishOutpost)
-	//{
-	//	if (playerOwn.TryRemoveOutpost(provinceId))
-	//	{
-	//		int32 price = playerOwn.GetOutpostClaimPrice(command.provinceId) / 2;
-	//		resourceSys.ChangeMoney(-price);
-	//	}
-	//}
 	
 	else {
 		UE_DEBUG_BREAK();
@@ -4051,7 +4069,7 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 		Direction townhallFaceDirection = static_cast<Direction>(command.faceDirection);
 		WorldTile2 storageCenter1 = command.center + WorldTile2::RotateTileVector(Storage1ShiftTileVec, townhallFaceDirection);
 		WorldTile2 storageCenter2 = storageCenter1 + WorldTile2::RotateTileVector(InitialStorage2Shift, townhallFaceDirection);
-
+		WorldTile2 storageCenter3 = storageCenter1 - WorldTile2::RotateTileVector(InitialStorage2Shift, townhallFaceDirection);
 		
 		FPlaceBuilding params;
 		params.buildingEnum = static_cast<uint8>(CardEnum::StorageYard);
@@ -4087,16 +4105,6 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 			/*
 			 * Initial Resources
 			 */
-			//if (terrainGenerator().GetBiome(params.center) == BiomeEnum::Jungle) {
-			//	storage->AddResource(ResourceEnum::Papaya, 240);
-			//}
-			//else {
-			//	storage->AddResource(ResourceEnum::Orange, 240);
-			//}
-
-			//storage->AddResource(ResourceEnum::Wood, 120);
-			//storage->AddResource(ResourceEnum::Stone, 120);
-
 #if TRAILER_MODE
 			if (!playerOwned.initialResources.isValid()) {
 				FChooseInitialResources initResourceCommand = FChooseInitialResources::GetDefault();
@@ -4105,21 +4113,20 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 			}
 #endif
 			
-			if (terrainGenerator().GetBiome(params.center) == BiomeEnum::Jungle) {
-				storage->AddResource(ResourceEnum::Papaya, playerOwned.initialResources.foodAmount);
-			} else {
-				storage->AddResource(ResourceEnum::Orange, playerOwned.initialResources.foodAmount);
-			}
+			//if (terrainGenerator().GetBiome(params.center) == BiomeEnum::Jungle) {
+			//	storage->AddResource(ResourceEnum::Papaya, playerOwned.initialResources.foodAmount);
+			//} else {
+			//	storage->AddResource(ResourceEnum::Orange, playerOwned.initialResources.foodAmount);
+			//}
 
-			storage->AddResource(ResourceEnum::Wood, playerOwned.initialResources.woodAmount);
-			storage->AddResource(ResourceEnum::Stone, playerOwned.initialResources.stoneAmount);
+			//storage->AddResource(ResourceEnum::Wood, playerOwned.initialResources.woodAmount);
+			//storage->AddResource(ResourceEnum::Stone, playerOwned.initialResources.stoneAmount);
 			
 			//_LOG(PunResource, "(3)%s", ToTChar(resourceSystem(storage.playerId()).resourcedebugStr()));
 		}
 
-		// Extra storage
+		// Storage 2
 		{
-			//params.center = params.center + InitialStorage2Shift;
 			params.center = storageCenter2;
 
 			StorageYard* storage = makeStorage();
@@ -4129,12 +4136,31 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 			 * Must have tools to last at least 3 years. avg pop 30 -> 30  tools?? .... 120 tools
 			 * Must have medicine to last as least 6 years. avg pop 30 -> 30*10*8 = 2400... 120 medicine...
 			 */
-			//storage->AddResource(ResourceEnum::Medicine, 240);
-			//storage->AddResource(ResourceEnum::SteelTools, 180);
-
-			storage->AddResource(ResourceEnum::Medicine, playerOwned.initialResources.medicineAmount);
-			storage->AddResource(ResourceEnum::SteelTools, playerOwned.initialResources.toolsAmount);
+			//storage->AddResource(ResourceEnum::Medicine, playerOwned.initialResources.medicineAmount);
+			//storage->AddResource(ResourceEnum::SteelTools, playerOwned.initialResources.toolsAmount);
 		}
+
+		// Storage 3 ...
+		{
+			params.center = storageCenter3;
+
+			StorageYard* storage = makeStorage();
+			PUN_ENSURE(storage, return);
+		}
+
+		// Add resources
+		if (terrainGenerator().GetBiome(params.center) == BiomeEnum::Jungle) {
+			AddResourceGlobal(command.playerId, ResourceEnum::Papaya, playerOwned.initialResources.foodAmount);
+		}
+		else {
+			AddResourceGlobal(command.playerId, ResourceEnum::Orange, playerOwned.initialResources.foodAmount);
+		}
+
+		AddResourceGlobal(command.playerId, ResourceEnum::Wood, playerOwned.initialResources.woodAmount);
+		AddResourceGlobal(command.playerId, ResourceEnum::Stone, playerOwned.initialResources.stoneAmount);
+
+		AddResourceGlobal(command.playerId, ResourceEnum::Medicine, playerOwned.initialResources.medicineAmount);
+		AddResourceGlobal(command.playerId, ResourceEnum::SteelTools, playerOwned.initialResources.toolsAmount);
 	}
 
 	/*

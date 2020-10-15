@@ -38,6 +38,7 @@
 #include "PunCity/MapUtil.h"
 
 DECLARE_CYCLE_STAT(TEXT("PUN: [UI]Select_Start"), STAT_PunUISelect_Start, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [UI]FindStartSpot"), STAT_PunUIFindStartSpot, STATGROUP_Game);
 
 using namespace std;
 
@@ -950,49 +951,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						ss << building.subclass<BoarBurrow>().inventory.ToString();
 						descriptionBox->AddText(ss);
 					}
-					//else if (IsBarrack(building.buildingEnum()))
-					//{
-					//	Barrack& barrack = building.subclass<Barrack>();
-					//	ArmyInfo info = barrack.armyInfo();
 
-					//	// The rest only show if it is the actual player
-					//	if (barrack.playerId() == playerId())
-					//	{
-					//		descriptionBox->AddRichText("Trainings Queued", to_string(barrack.queueCount()));
-
-					//		ss << std::fixed << std::showpoint << std::setprecision(1);
-					//		ss << barrack.trainingPercent() << "%";
-					//		descriptionBox->AddRichText("Training Progress", ss);
-
-					//		ss << "Train " << info.name;
-					//		ss << "\n";
-					//		if (info.moneyCost > 0) {
-					//			ss << MaybeRedText(to_string(info.moneyCost), simulation.money(playerId()) < info.moneyCost) << "<img id=\"Coin\"/> ";
-					//		}
-
-					//		for (const ResourcePair& pair : info.resourceCost) {
-					//			if (pair.resourceEnum == ResourceEnum::Wood) {
-					//				ss << MaybeRedText(to_string(pair.count), simulation.resourceCount(playerId(), pair.resourceEnum) < pair.count) << "<img id=\"Wood\"/>";
-					//			}
-					//			else if (pair.resourceEnum == ResourceEnum::Iron) {
-					//				ss << MaybeRedText(to_string(pair.count), simulation.resourceCount(playerId(), pair.resourceEnum) < pair.count) << "<img id=\"Iron\"/>";
-					//			}
-					//			else if (pair.resourceEnum == ResourceEnum::Food) {
-					//				ss << MaybeRedText(to_string(pair.count), simulation.foodCount(playerId()) < pair.count) << " food";
-					//			}
-					//		}
-
-					//		bool isTrainable = true;
-
-					//		descriptionBox->AddButton(ss.str(), "", nullptr, "", this, CallbackEnum::TrainUnit, isTrainable, false, objectId);
-
-					//		// Show cancel button if there is a queued unit
-					//		descriptionBox->AddButton("Cancel Training", "", nullptr, "", this, CallbackEnum::CancelTrainUnit, barrack.queueCount() > 0, false, objectId);
-
-
-					//		ss.str(string());
-					//	}
-					//}
 					else if (IsSpecialProducer(building.buildingEnum())) 
 					{
 						AddEfficiencyText(building, descriptionBox);
@@ -1042,7 +1001,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						ss << building.buildingInfo().description;
 						descriptionBox->AddRichText(ss);
 					}
-					else if (building.isEnum(CardEnum::OreSupplier)) {
+					else if (building.isEnum(CardEnum::OreSupplier)) 
+					{
 						ss << building.buildingInfo().description;
 						descriptionBox->AddRichText(ss);
 						descriptionBox->AddLineSpacer();
@@ -1574,7 +1534,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 #if WITH_EDITOR
 						descriptionBox->AddRichText("-- workManSecPerBatch100: " + to_string(building.workManSecPerBatch100()));
 						descriptionBox->AddRichText("-- workRevenuePerSec100_perMan: " + to_string(building.buildingInfo().workRevenuePerSec100_perMan));
-						descriptionBox->AddRichText("-- baseInputValue: " + to_string(GetResourceInfo(building.input1()).basePrice * building.baseInputPerBatch()));
+						if (building.hasInput1()) {
+							descriptionBox->AddRichText("-- baseInputValue: " + to_string(GetResourceInfo(building.input1()).basePrice * building.baseInputPerBatch()));
+						}
 	
 						switch (building.buildingEnum())
 						{
@@ -1585,10 +1547,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						case CardEnum::CardMaker:
 						case CardEnum::ImmigrationOffice: {
 							auto& consumerIndustry = building.subclass<ConsumerIndustrialBuilding>();
-							descriptionBox->AddRichText("-- baseInputValue: " + to_string(consumerIndustry.baseInputValue()));
-							descriptionBox->AddRichText("-- baseOutputValue: " + to_string(consumerIndustry.baseOutputValue()));
-							descriptionBox->AddRichText("-- baseProfitValue: " + to_string(consumerIndustry.baseProfitValue()));
-							descriptionBox->AddRichText("-- workManSecPerBatch100(calc): " + to_string(consumerIndustry.baseProfitValue() * 100 * 100 / consumerIndustry.buildingInfo().workRevenuePerSec100_perMan));
+							if (building.hasInput1()) {
+								descriptionBox->AddRichText("-- baseInputValue: " + to_string(consumerIndustry.baseInputValue()));
+								descriptionBox->AddRichText("-- baseOutputValue: " + to_string(consumerIndustry.baseOutputValue()));
+								descriptionBox->AddRichText("-- baseProfitValue: " + to_string(consumerIndustry.baseProfitValue()));
+								descriptionBox->AddRichText("-- workManSecPerBatch100(calc): " + to_string(consumerIndustry.baseProfitValue() * 100 * 100 / consumerIndustry.buildingInfo().workRevenuePerSec100_perMan));
+							}
 							break;
 						}
 						default:
@@ -2037,8 +2001,6 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			descriptionBox->AddTextWithSpacer(ss);
 
 			// Show Food/Heat as percent
-			//ss << "<space>Food: " << unit.foodActual() / 60 << "/" << unit.maxFood() / 60 << " secs";
-			//ss << "<space>Heat: " << unit.heatActual() / 60 << "/" << unit.maxHeat() / 60 << " C*secs";
 			ss << "<space>Food: " << (unit.foodActual() * 100 / unit.maxFood()) << "/100";
 			ss << "<space>Heat: " << (unit.heatActual() * 100 / unit.maxHeat()) << "/100";
 			ss << "<space>Health: " << unit.hp() << "/ 100";
@@ -2629,7 +2591,11 @@ void UObjectDescriptionUISystem::AddSelectStartLocationButton(int32 provinceId, 
 			canClaim = false;
 		}
 
-		TileArea area = SimUtils::FindStartSpot(provinceId, &simulation());
+		TileArea area;
+		{
+			SCOPE_CYCLE_COUNTER(STAT_PunUIFindStartSpot);
+			area = SimUtils::FindStartSpot(provinceId, &simulation());
+		}
 		
 		if (!area.isValid()) {
 			descriptionBox->AddRichText("<Red>Not enough buildable space.</>");
@@ -3412,6 +3378,10 @@ void UObjectDescriptionUISystem::AddGeoresourceInfo(int32 provinceId, UPunBoxWid
 void UObjectDescriptionUISystem::AddEfficiencyText(Building& building, UPunBoxWidget* descriptionBox)
 {
 	stringstream ss;
+	
+	ss << building.efficiency() << "%";
+	auto widget = descriptionBox->AddRichText("Efficiency", ss);
+
 
 	if (building.isEnum(CardEnum::CardMaker))
 	{
@@ -3419,9 +3389,6 @@ void UObjectDescriptionUISystem::AddEfficiencyText(Building& building, UPunBoxWi
 		ss << "<space>";
 	}
 	
-	ss << building.efficiency() << "%";
-	auto widget = descriptionBox->AddRichText("Efficiency", ss);
-
 	ss << "<Bold>Efficiency: " << building.efficiency() << "%</>";
 	ss << "<space>";
 	ss << " Base: " << building.efficiencyBeforeBonus() << "%";

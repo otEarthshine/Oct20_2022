@@ -221,6 +221,7 @@ void UWorldSpaceUI::TickBuildings()
 					
 					// Player Logo
 					regionHoverUI->PlayerLogoLeft->GetDynamicMaterial()->SetVectorParameterValue("PlayerColor1", PlayerColor1(claimProgress.attackerPlayerId));
+					AddToolTip(regionHoverUI->PlayerLogoLeft, "Attacker: " + sim.playerName(claimProgress.attackerPlayerId));
 
 					int32 defenderPlayerId = provinceOwnerId;
 					bool isDeclaringIndependence = (claimProgress.attackerPlayerId == provinceOwnerId);
@@ -228,7 +229,8 @@ void UWorldSpaceUI::TickBuildings()
 						defenderPlayerId = sim.playerOwned(provinceOwnerId).lordPlayerId(); // Declare Independence
 					} // TODO: Declare Independence should init attack from the Lord
 					regionHoverUI->PlayerLogoRight->GetDynamicMaterial()->SetVectorParameterValue("PlayerColor2", PlayerColor2(defenderPlayerId));
-
+					AddToolTip(regionHoverUI->PlayerLogoRight, "Defender: " + sim.playerName(defenderPlayerId));
+					
 
 					// 
 					SetText(regionHoverUI->BattleInfluenceLeft, "<img id=\"Influence\"/><Shadowed>" + to_string(claimProgress.committedInfluencesAttacker) + "</>");
@@ -250,9 +252,20 @@ void UWorldSpaceUI::TickBuildings()
 					}
 
 					// UI-Player is Attacker
-					if (claimProgress.attackerPlayerId == playerId()) {
+					if (claimProgress.attackerPlayerId == playerId()) 
+					{
+						int32 provincePlayerId = sim.provinceOwner(claimProgress.provinceId);
+						auto& provincePlayerOwner = sim.playerOwned(provincePlayerId);
+						
 						ClaimConnectionEnum claimConnectionEnum = sim.GetProvinceClaimConnectionEnum(provinceId, claimProgress.attackerPlayerId);
-						SetText(regionHoverUI->ReinforceLeftButtonText, "Reinforce\n<img id=\"Influence\"/>" + to_string(sim.GetProvinceAttackReinforcePrice(provinceId, claimConnectionEnum)));
+						ProvinceAttackEnum attackEnum = provincePlayerOwner.GetProvinceAttackEnum(provinceId, claimProgress.attackerPlayerId);
+						
+						int32 reinforcePrice = (attackEnum == ProvinceAttackEnum::DeclareIndependence) ? BattleInfluencePrice : sim.GetProvinceAttackReinforcePrice(provinceId, claimConnectionEnum);
+						bool hasEnoughInfluence = sim.influence(playerId()) >= reinforcePrice;
+
+						SetText(regionHoverUI->ReinforceLeftButtonText, "Reinforce\n<img id=\"Influence\"/>" + TextRed(to_string(reinforcePrice), !hasEnoughInfluence));
+						regionHoverUI->ReinforceLeftButton->SetIsEnabled(hasEnoughInfluence);
+						
 						regionHoverUI->ReinforceLeftButtonText->SetVisibility(ESlateVisibility::Visible);
 						regionHoverUI->ReinforceRightButtonText->SetVisibility(ESlateVisibility::Collapsed);
 						regionHoverUI->ReinforceMoneyRightButtonText->SetVisibility(ESlateVisibility::Collapsed);
@@ -260,8 +273,14 @@ void UWorldSpaceUI::TickBuildings()
 					// UI-Player is Defender
 					else if (provinceOwnerId == playerId())
 					{
-						SetText(regionHoverUI->ReinforceRightButtonText, "Reinforce\n<img id=\"Influence\"/>" + to_string(BattleInfluencePrice));
-						SetText(regionHoverUI->ReinforceMoneyRightButtonText, "Reinforce\n<img id=\"Coin\"/>" + to_string(BattleInfluencePrice));
+						int32 hasEnoughInfluence = sim.influence(playerId()) >= BattleInfluencePrice;
+						SetText(regionHoverUI->ReinforceRightButtonText, "Reinforce\n<img id=\"Influence\"/>" + TextRed(to_string(BattleInfluencePrice), !hasEnoughInfluence));
+						regionHoverUI->ReinforceRightButton->SetIsEnabled(hasEnoughInfluence);
+
+						int32 hasEnoughMoney = sim.money(playerId()) >= BattleInfluencePrice;
+						SetText(regionHoverUI->ReinforceMoneyRightButtonText, "Reinforce\n<img id=\"Coin\"/>" + TextRed(to_string(BattleInfluencePrice), !hasEnoughMoney));
+						regionHoverUI->ReinforceMoneyRightButton->SetIsEnabled(hasEnoughMoney);
+						
 						regionHoverUI->ReinforceLeftButtonText->SetVisibility(ESlateVisibility::Collapsed);
 						regionHoverUI->ReinforceRightButtonText->SetVisibility(ESlateVisibility::Visible);
 						regionHoverUI->ReinforceMoneyRightButtonText->SetVisibility(ESlateVisibility::Visible);
@@ -414,10 +433,22 @@ void UWorldSpaceUI::TickBuildings()
 																								_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
 
 			hoverIcon->SetImage(assetLoader()->ScienceIcon);
-			hoverIcon->SetText("", "+" + to_string(Library::SciencePerHouse));
 
-			bool alreadyHasLibrary = building.subclass<House>().GetScience100(ScienceEnum::Library) > 0;
-			hoverIcon->SetTextColor(alreadyHasLibrary ? FLinearColor(0.38, 0.38, 0.38) : FLinearColor::White);
+			bool alreadyHasLibrary = false; ;
+			if (building.subclass<House>().GetScience100(ScienceEnum::Library) > 0) {
+				alreadyHasLibrary = true;
+			}
+			else if (building.occupantCount() == 0) {
+				int32 radiusBonus = building.GetRadiusBonus(CardEnum::Library, Library::Radius, [&](int32 bonus, Building& buildingScope) {
+					return max(bonus, Library::SciencePerHouse);
+				});
+				if (radiusBonus > 0) {
+					alreadyHasLibrary = true;
+				}
+			}
+			
+			hoverIcon->SetText("", "+" + to_string(alreadyHasLibrary ? 0 : Library::SciencePerHouse));
+			hoverIcon->SetTextColor(alreadyHasLibrary ? FLinearColor(0.38, 0.38, 0.38, 0.5) : FLinearColor::White);
 		}
 		else if (isInOverlayRadiusHouse(OverlayType::School, School::MinHouseLvl, School::Radius))
 		{
@@ -757,6 +788,11 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 						IsTradingPostLike(building.buildingEnum()) ||
 						building.isEnum(CardEnum::TradingCompany) ||
 						IsBarrack(building.buildingEnum()) ||
+
+						building.isEnum(CardEnum::HuntingLodge) ||
+						building.isEnum(CardEnum::FruitGatherer) || 
+						building.isEnum(CardEnum::StorageYard) || // TODO: may be this is for all buildings??
+
 						building.isEnum(CardEnum::JobManagementBureau) ||
 						building.isEnum(CardEnum::StatisticsBureau);
 

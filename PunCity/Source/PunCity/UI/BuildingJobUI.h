@@ -134,6 +134,11 @@ public:
 			// Note JobPriorityButton gets its visibility set to Collapsed when it gets init
 			JobPriorityButton->SetVisibility(ESlateVisibility::Visible);
 		}
+		else if (building.isEnum(CardEnum::StorageYard) ||
+			building.isEnum(CardEnum::FruitGatherer) ||
+			building.isEnum(CardEnum::HuntingLodge)) 
+		{
+		}
 		else {
 			std::vector<float> inputFractions;
 			if (building.hasInput1()) {
@@ -166,19 +171,28 @@ public:
 		// Refresh Hover Warning
 		// Check every sec
 		float time = UGameplayStatics::GetTimeSeconds(this);
-		if (time - building.lastHoverWarningCheckTime >= 1.0f) 
+		if (building.ownedBy(playerId()))
 		{
-			building.lastHoverWarningCheckTime = time;
-			building.RefreshHoverWarning();
-
-			if (building.hoverWarning != HoverWarning::None)
+			if (time - building.lastHoverWarningCheckTime >= 1.0f)
 			{
-				DepletedText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-				SetText(DepletedText, GetHoverWarningString(building.hoverWarning));
+				building.lastHoverWarningCheckTime = time;
+				building.RefreshHoverWarning();
+
+				if (building.hoverWarning != HoverWarning::None)
+				{
+					PUN_LOG("Hover Warning %s warningId:%d", ToTChar(building.buildingInfo().name), static_cast<int>(building.hoverWarning));
+					
+					DepletedText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+					SetText(DepletedText, GetHoverWarningString(building.hoverWarning));
+				}
+				else {
+					DepletedText->SetVisibility(ESlateVisibility::Collapsed);
+				}
 			}
-			else {
-				DepletedText->SetVisibility(ESlateVisibility::Collapsed);
-			}
+		}
+		else
+		{
+			building.hoverWarning = HoverWarning::None;
 		}
 	}
 	
@@ -326,27 +340,30 @@ public:
 		// Special case: Barracks
 		ResourceEnum input = building.input1();
 
-		auto completionIcon = GetBoxChild<UResourceCompletionIcon>(ResourceCompletionIconBox, index, UIEnum::ResourceCompletionIcon, true);
-		UMaterialInstanceDynamic* material = completionIcon->ResourceImage->GetDynamicMaterial();
+		if (input != ResourceEnum::None)
+		{
+			auto completionIcon = GetBoxChild<UResourceCompletionIcon>(ResourceCompletionIconBox, index, UIEnum::ResourceCompletionIcon, true);
+			UMaterialInstanceDynamic* material = completionIcon->ResourceImage->GetDynamicMaterial();
 
-		material->SetTextureParameterValue("ColorTexture", assetLoader()->GetResourceIcon(input));
-		material->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(input));
+			material->SetTextureParameterValue("ColorTexture", assetLoader()->GetResourceIcon(input));
+			material->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(input));
 
-		int32 inputFraction = static_cast<float>(building.resourceCount(building.input1())) / building.inputPerBatch();
-		material->SetScalarParameterValue("Fraction", inputFraction);
-		material->SetScalarParameterValue("IsInput", 1.0f);
-		material->SetScalarParameterValue("HasNoResource", inputFraction < 1.0f && simulation().resourceCount(playerId(), input) == 0);
+			int32 inputFraction = static_cast<float>(building.resourceCount(building.input1())) / building.inputPerBatch();
+			material->SetScalarParameterValue("Fraction", inputFraction);
+			material->SetScalarParameterValue("IsInput", 1.0f);
+			material->SetScalarParameterValue("HasNoResource", inputFraction < 1.0f && simulation().resourceCount(playerId(), input) == 0);
 
-		std::stringstream ss;
-		ss << ResourceName(input);
-		ss << "<space>";
-		ss << "Input";
-		auto tooltip = AddToolTip(completionIcon->ResourceImage, ss.str());
-		if (tooltip) {
-			tooltip->TipSizeBox->SetMinDesiredWidth(150);
+			std::stringstream ss;
+			ss << ResourceName(input);
+			ss << "<space>";
+			ss << "Input";
+			auto tooltip = AddToolTip(completionIcon->ResourceImage, ss.str());
+			if (tooltip) {
+				tooltip->TipSizeBox->SetMinDesiredWidth(150);
+			}
+
+			BoxAfterAdd(ResourceCompletionIconBox, index);
 		}
-
-		BoxAfterAdd(ResourceCompletionIconBox, index);
 	}
 	void SetResourceCompletion(std::vector<ResourceEnum> inputs, std::vector<float> inputFractions,
 							   std::vector<ResourceEnum> outputs, std::vector<float> outputFractions)

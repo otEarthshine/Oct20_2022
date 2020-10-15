@@ -177,11 +177,11 @@ public:
 		SerializeVecVecValue(Ar, _resourceEnumToPrice100Vec);
 
 		SerializeVecVecObj(Ar, _resourceEnumToPlayerSupplyChanges);
-
-		SerializeVecVecObj(Ar, _intercityTradeOffers);
 		
 		//SerializeVecVecValue(Ar, _tradeClusterToPlayerIds);
 		SerializeVecVecValue(Ar, _playerIdToTradePartners);
+
+		SerializeVecVecObj(Ar, _intercityTradeOffers);
 	}
 
 	const std::vector<int32>& GetStatVec(ResourceEnum resourceEnum) const {

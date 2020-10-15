@@ -227,6 +227,7 @@ private:
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* LuxuryTier2List;
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* LuxuryTier3List;
 
+	UPROPERTY(meta = (BindWidget)) UButton* FoodCountButton;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* FoodCountText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* LuxuryTier1Text;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* LuxuryTier2Text;
@@ -564,5 +565,13 @@ private:
 		shouldCloseGatherSettingsOverlay = false;
 		inputSystemInterface()->CancelPlacement();
 		inputSystemInterface()->StartHarvestPlacement(isRemoving, resourceEnum);
+	}
+
+	UFUNCTION() void OnClickFoodCountButton() {
+		if (GetPunHUD()->IsFoodFuelGraphUIOpened()) {
+			GetPunHUD()->CloseStatisticsUI();
+		} else {
+			GetPunHUD()->OpenFoodFuelGraphUI();
+		}
 	}
 };

@@ -26,6 +26,8 @@ public:
 	{
 		BUTTON_ON_CLICK(CloseButton, this, &UDiplomacyUI::CloseUI);
 		BUTTON_ON_CLICK(CloseButton2, this, &UDiplomacyUI::CloseUI);
+
+		SetChildHUD(InteractionBox);
 		
 		CloseUI();
 	}
@@ -33,6 +35,7 @@ public:
 	void OpenUI(int32 playerIdIn)
 	{
 		aiPlayerId = playerIdIn;
+		SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	}
 
 	UFUNCTION() void CloseUI() {
@@ -57,21 +60,23 @@ public:
 			SetText(RelationshipText, ss);
 
 			// Interactions
-			if (aiPlayerSys.shouldShow_DeclareFriendship()) 
+			if (aiPlayerSys.shouldShow_DeclareFriendship(playerId()))
 			{
-				bool isRed = sim.money(aiPlayerId) < aiPlayerSys.friendshipPrice();
+				bool isRed = sim.money(playerId()) < aiPlayerSys.friendshipPrice();
 				ss << "Declare Friendship\n";
 				ss << "<img id=\"Coin\"/>" << TextRed(to_string(aiPlayerSys.friendshipPrice()), isRed);
 				InteractionBox->AddButton2Lines(ss.str(), this, CallbackEnum::DeclareFriendship, !isRed, false);
 			}
+			ss.str("");
 
-			if (aiPlayerSys.shouldShow_MarryOut())
+			if (aiPlayerSys.shouldShow_MarryOut(playerId()))
 			{
-				bool isRed = sim.money(aiPlayerId) < aiPlayerSys.marryOutPrice();
+				bool isRed = sim.money(playerId()) < aiPlayerSys.marryOutPrice();
 				ss << "Marry out daughter or son\n";
 				ss << "<img id=\"Coin\"/>" << TextRed(to_string(aiPlayerSys.marryOutPrice()), isRed);
 				InteractionBox->AddButton2Lines(ss.str(), this, CallbackEnum::MarryOut, !isRed, false);
 			}
+			InteractionBox->AfterAdd();
 		}
 	}
 

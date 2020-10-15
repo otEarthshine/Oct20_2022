@@ -14,8 +14,8 @@
 
 #define TRAILER_MODE 0
 
-#define SAVE_VERSION 12100147 // Day/Month/Time
-#define GAME_VERSION 12100147
+#define SAVE_VERSION 15100147 // Day/Month/Time
+#define GAME_VERSION 15100147
 
 //! Utils
 
@@ -80,6 +80,15 @@ static float Clamp01(float value) {
 }
 static float Clamp(int32 value, int32 minValue, int32 maxValue) {
 	return std::max(minValue, std::min(maxValue, value));
+}
+
+static void DecreaseToZero(int32& value, int32 decrement = 1)
+{
+	value = std::max(value - decrement, 0);
+}
+static void IncreaseToZero(int32& value, int32 increment = 1)
+{
+	value = std::min(value + increment, 0);
 }
 
 static void ToLowerCase(std::string& str) {
@@ -990,8 +999,12 @@ static const ResourceEnum FoodEnums[] =
 	
 	ResourceEnum::Grape,
 };
+static const int32 FoodEnumCount = _countof(FoodEnums);
 
 static bool IsFoodEnum(ResourceEnum resourceEnum) {
+	if (resourceEnum == ResourceEnum::Clay) {
+		return false;
+	}
 	return GetResourceInfo(resourceEnum).basePrice == FoodCost; // !!! No other good's base cost should be the same as food
 }
 
@@ -2194,7 +2207,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::Warehouse, "Warehouse", WorldTile2(6, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 70,70,0 }, "Advanced storage with 30 storage slots."),
 	BldInfo(CardEnum::Fort, "Fort", WorldTile2(9, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "+100% province's defense."),
 	BldInfo(CardEnum::Colony, "Colony", WorldTile2(10, 10), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "Extract resource from province."),
-	BldInfo(CardEnum::InventorsWorkshop, "Inventor's Workshop", WorldTile2(6, 6), ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::None, 0, 2, { 50,50,0 }, "Generate science points. Use wood as input."),
+	BldInfo(CardEnum::InventorsWorkshop, "Inventor's Workshop", WorldTile2(6, 6), ResourceEnum::Iron, ResourceEnum::None, ResourceEnum::None, 0, 2, { 50,50,0 }, "Generate science points. Use wood as input."),
 	BldInfo(CardEnum::IntercityRoad, "Intercity Road", WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "Build Road to connect with other Cities, Fort, and Colonies."),
 
 	BldInfo(CardEnum::FakeTownhall, "FakeTownhall", WorldTile2(12, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "..."),
@@ -2308,7 +2321,7 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::FireStarter,		"Fire Starter", 200, "Start a fire in an area (3 tiles radius)."),
 	BldInfo(CardEnum::Steal,				"Steal", 200, "Steal 30% of target player's treasury<img id=\"Coin\"/>. Use on Townhall."),
 	BldInfo(CardEnum::Snatch,			"Snatch", 50, "Steal <img id=\"Coin\"/> equal to target player's population. Use on Townhall."),
-	BldInfo(CardEnum::SharingIsCaring,	"Sharing is Caring", 120, "Give 50 Wheat to the target player. Use on Townhall."),
+	BldInfo(CardEnum::SharingIsCaring,	"Sharing is Caring", 120, "Give 100 Wheat to the target player. Use on Townhall."),
 	BldInfo(CardEnum::Kidnap,			"Kidnap", 350, "Steal up to 3 citizens from target player. Apply on Townhall."),
 	BldInfo(CardEnum::KidnapGuard,		"Kidnap Guard", 30, "Guard your city against Kidnap for a year. Require <img id=\"Coin\"/>xPopulation to activate."),
 	BldInfo(CardEnum::TreasuryGuard,		"Treasury Guard", 30, "Guard your city against Steal and Snatch for a year. Require <img id=\"Coin\"/>xPopulation to activate."),
@@ -4744,6 +4757,7 @@ struct UnitInfo
 		foodPerFetch = foodResourcePerYear / UnitFoodFetchPerYear;
 
 		maxFoodTicks = foodTicksPerFetch * (name == "Human" ? 1 : 2); // Fragile humans
+		
 		foodTicksPerResource = Time::TicksPerYear / foodResourcePerYear;
 
 		resourceDrops100 = resourceDrops100In;
@@ -6895,18 +6909,22 @@ static std::string GetHoverWarningString(HoverWarning hoverWarning) { return Hov
  * Diplomacy
  */
 
+static const int32 GoldToRelationship = 20;
+
 enum class RelationshipModifierEnum : uint8
 {
 	YouGaveUsGifts,
 	YouAreStrong,
 	YouBefriendedUs,
-	WeAreRelative,
+	WeAreFamily,
 
 	AdjacentBordersSparkTensions,
+	TownhallProximitySparkTensions,
 	YouAreWeak,
 	YouStealFromUs,
 	YouKidnapFromUs,
-	YouTookOurTerritory,
+	YouAttackedUs,
+	WeFearCannibals,
 };
 
 static std::vector<std::string> RelationshipModifierName
@@ -6914,15 +6932,18 @@ static std::vector<std::string> RelationshipModifierName
 	"You gave us gifts",
 	"You are strong",
 	"You befriended us",
-	"We are relative",
+	"We are family",
 
 	"Adjacent borders spark tensions",
+	"Townhalls proximity spark tensions",
 	"Weaklings don't deserve our respect",
-	"You steal from us",
-	"You kidnap from us",
-	"You took our territory",
+	"You stole from us",
+	"You kidnapped our citizens",
+	"You attacked us",
+	"We fear cannibals",
 };
 
+static int32 RelationshipModifierCount = RelationshipModifierName.size();
 
 /*
  * Game Constants
@@ -6932,3 +6953,5 @@ static const WorldTile2 InitialStorageTileSize(4, 4);
 static const int32 InitialStorageShiftFromTownhall = GetBuildingInfo(CardEnum::Townhall).size.y / 2 + InitialStorageSize / 2;
 static const WorldTile2 Storage1ShiftTileVec(0, -InitialStorageShiftFromTownhall);
 static const WorldTile2 InitialStorage2Shift(4, 0);
+
+static const int32 ClaypitRiverFractionPercentThreshold = 20;

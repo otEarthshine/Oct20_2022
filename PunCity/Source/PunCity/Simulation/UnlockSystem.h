@@ -709,20 +709,18 @@ public:
 			AddProsperityTech_BuildingPermanent(era, 4, TechEnum::IntercityRoad, { CardEnum::IntercityRoad });
 			
 			AddProsperityTech_Building(era, 10, TechEnum::School, CardEnum::School);
+			AddProsperityTech_Building(era, 10, TechEnum::PaperMaker, CardEnum::PaperMaker);
 			AddProsperityTech_Building(era, 10, TechEnum::InventorsWorkshop, CardEnum::InventorsWorkshop);
 
 			AddProsperityTech_Building(era, 10, TechEnum::Chocolatier, CardEnum::Chocolatier);
-
-			AddProsperityTech_BuildingPermanent(era, 4, TechEnum::FlowerBed, { CardEnum::FlowerBed });
 		
 			
 			era = 5;
 			AddProsperityTech_BuildingX(era, 4, TechEnum::GoldRefining, { CardEnum::GoldMine, CardEnum::GoldSmelter });
 			AddProsperityTech_Building(era, 4, TechEnum::Mint, CardEnum::Mint);
 			AddProsperityTech_BuildingX(era, 4, TechEnum::JewelryCrafting, { CardEnum::GemstoneMine, CardEnum::Jeweler });
-			AddProsperityTech_Building(era, 20, TechEnum::PaperMaker, CardEnum::PaperMaker);
 			AddProsperityTech_Building(era, 20, TechEnum::Printing, { CardEnum::PrintingPress });
-			
+			AddProsperityTech_BuildingPermanent(era, 4, TechEnum::FlowerBed, { CardEnum::FlowerBed });
 			
 			era = 6;
 			AddProsperityTech_BuildingPermanent(era, 4, TechEnum::StoneRoad, { CardEnum::StoneRoad });

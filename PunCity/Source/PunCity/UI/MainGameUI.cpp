@@ -19,6 +19,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "PunRichText.h"
 #include "JobPriorityRow.h"
+#include "GraphDataSource.h"
 
 using namespace std;
 
@@ -73,7 +74,7 @@ void UMainGameUI::PunInit()
 
 	ConverterCardHandConfirmUI->ConfirmYesButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickCardRemovalConfirmYesButton);
 	ConverterCardHandConfirmUI->ConfirmNoButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickCardRemovalConfirmNoButton);
-
+	ConverterCardHandConfirmUI->SetVisibility(ESlateVisibility::Collapsed);
 
 	ConfirmationOverlay->SetVisibility(ESlateVisibility::Collapsed);
 	ConfirmationYesButton->OnClicked.AddDynamic(this, &UMainGameUI::OnClickConfirmationYes);
@@ -678,6 +679,8 @@ void UMainGameUI::Tick()
 
 	// No Townhall Don't show UI other than Townhall Card
 	if (!simulation.HasTownhall(playerId())) {
+		ResearchBarUI->SetVisibility(ESlateVisibility::Collapsed);
+		ProsperityBarUI->SetVisibility(ESlateVisibility::Collapsed);
 		return;
 	}
 
@@ -837,6 +840,14 @@ void UMainGameUI::Tick()
 				std::stringstream tip;
 				tip << "Population: " << population << "\n";
 				tip << "Housing space: " << simulation.HousingCapacity(playerId());
+				tip << "<space>";
+				for (int32 i = 1; i < House::GetMaxHouseLvl(); i++) {
+					int32 houseLvlCount = simulation.GetHouseLvlCount(playerId(), i, false);
+					if (houseLvlCount > 0) {
+						tip << "<bullet>House lvl " << i << ": " << houseLvlCount << "</>";
+					}
+				}
+				
 				AddToolTip(HousingSpaceBox, tip.str());
 			}
 			{
@@ -1018,7 +1029,73 @@ void UMainGameUI::Tick()
 		FoodCountText->SetText(FText::FromString(foodTextStr));
 		FoodCountText->SetColorAndOpacity(foodCount > 0 ? FLinearColor::White : FLinearColor::Red);
 		PlayAnimationIf("FoodCountLowFlash", foodCount == 0);
+
+		BUTTON_ON_CLICK(FoodCountButton, this, &UMainGameUI::OnClickFoodCountButton);
+
+		{
+			auto& statSys = simulation.statSystem().playerStatSystem(playerId());
+			
+			const std::vector<std::vector<int32>>& productionStats = statSys.GetResourceStat(ResourceSeasonStatEnum::Production);
+			const std::vector<std::vector<int32>>& consumptionStats = statSys.GetResourceStat(ResourceSeasonStatEnum::Consumption);
+
+			int32 foodProduction = 0;
+			int32 foodConsumption = 0;
+			for (int i = 0; i < FoodEnumCount; i++) {
+				foodProduction += CppUtils::Sum(productionStats[static_cast<int>(FoodEnums[i])]);
+				foodConsumption += CppUtils::Sum(consumptionStats[static_cast<int>(FoodEnums[i])]);
+			}
+
+			std::stringstream tip;
+			tip << "Food Production (yearly): <FaintGreen>" << foodProduction << "</>\n";
+			tip << "Food Consumption (yearly): <FaintRed>" << foodConsumption << "</>\n";
+			tip << "Food Count: " << foodCount;
+			
+			auto tooltip = AddToolTip(FoodCountText, tip);
+
+			auto punGraph = tooltip->TooltipPunBoxWidget->AddThinGraph();
+
+			// Food Graph
+			bool shouldUpdateFuel = false;
+			if (bIsHoveredButGraphNotSetup || tooltip->TooltipPunBoxWidget->DidElementResetThisRound()) {
+				bIsHoveredButGraphNotSetup = false;
+				shouldUpdateFuel = true;
+
+				UGraphDataSource* graphDataSource = NewObject<UGraphDataSource>(this);
+				graphDataSource->Init(playerId(), dataSource());
+				graphDataSource->AddSeries({
+					{ FString("Food"), PlotStatEnum::Food, FLinearColor::Green },
+				});
+
+				punGraph->SetDataSource(graphDataSource);
+			}
+
+			// Fuel Graph
+			int32 fuelProduction = CppUtils::Sum(productionStats[static_cast<int>(ResourceEnum::Wood)]) + CppUtils::Sum(productionStats[static_cast<int>(ResourceEnum::Coal)]);
+			int32 fuelConsumption = CppUtils::Sum(consumptionStats[static_cast<int>(ResourceEnum::Wood)]) + CppUtils::Sum(consumptionStats[static_cast<int>(ResourceEnum::Coal)]);
+
+			tip << "<space>";
+			tip << "<space>";
+			tip << "Fuel Production (yearly): <FaintGreen>" << fuelProduction << "</>\n";
+			tip << "Fuel Consumption (yearly): <FaintRed>" << fuelConsumption << "</>\n";
+			tip << "Fuel Count: " << simulation.resourceCount(playerId(), ResourceEnum::Wood) + simulation.resourceCount(playerId(), ResourceEnum::Coal);
+			
+			tooltip->TooltipPunBoxWidget->AddRichTextParsed(tip);
+
+			auto punThinGraph = tooltip->TooltipPunBoxWidget->AddThinGraph();
+
+			if (shouldUpdateFuel)
+			{
+				UGraphDataSource* graphDataSource = NewObject<UGraphDataSource>(this);
+				graphDataSource->Init(playerId(), dataSource());
+				graphDataSource->AddSeries({
+					{ FString("Fuel"), PlotStatEnum::Fuel, FLinearColor::Yellow },
+				});
+
+				punThinGraph->SetDataSource(graphDataSource);
+			}
+		}
 		
+		// Luxury
 		AddToolTip(LuxuryTier1Text, LuxuryResourceTip(1));
 		AddToolTip(LuxuryTier2Text, LuxuryResourceTip(2));
 		AddToolTip(LuxuryTier3Text, LuxuryResourceTip(3));
@@ -1881,14 +1958,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 		buildingEnumToRemove = buildingEnum;
 		SetText(ConverterCardHandConfirmUI->ConfirmText, "Are you sure you want to remove " + GetBuildingInfo(buildingEnum).name + " Card?");
 		ConverterCardHandConfirmUI->SetVisibility(ESlateVisibility::Visible);
-		//dataSource()->Spawn2DSound("UI", "CardDeal");
-		//ConverterCardHandOverlay->SetVisibility(ESlateVisibility::Collapsed);
-		//cardSystem.converterCardState = ConverterCardUseState::SubmittedUI;
-		//
-		//auto command = make_shared<FUseCard>();
-		//command->cardEnum = CardEnum::CardRemoval;
-		//command->variable1 = static_cast<int32>(buildingEnum);
-		//networkInterface()->SendNetworkCommand(command);
+
 		return;
 	}
 

@@ -328,11 +328,6 @@ public:
 	// Now: 1 round of food ... after 0 food, 0.5 round ave before dead (0 - 1 round randomized) .. warn 0.75 round before ave death
 	int32 food() { return _food; }
 	int32 maxFood() {
-		PUN_CHECK(unitInfo().maxFoodTicks > 10);
-		// For humans, maxFoodTicks is 240s or 1/5 year from unitInfo
-		if (_unitEnum == UnitEnum::Human) {
-			return unitInfo().maxFoodTicks * 60 / 100;
-		}
 		return unitInfo().maxFoodTicks;
 	}
 	int32 minWarnFood() {

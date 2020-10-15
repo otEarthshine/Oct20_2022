@@ -316,6 +316,12 @@ public:
 		return widget;
 	}
 
+	UPunGraph* AddThinGraph()
+	{
+		auto widget = GetChildElement<UPunGraph>(UIEnum::PunThinGraph);
+		return widget;
+	}
+
 	UPunTutorialLink* AddTutorialLink(TutorialLinkEnum linkEnum) {
 		auto widget = GetChildElement<UPunTutorialLink>(UIEnum::PunTutorialLink);
 		widget->SetLink(linkEnum);

@@ -231,6 +231,13 @@ void PlayerOwnedManager::RefreshJobs()
 	 * Priority buildings
 	 */
 	const std::vector<CardEnum>& buildingEnumPriorityList = GetJobPriorityList();
+
+	// Special case: Farm high priority fill during harvest season
+	if (Time::FallSeason()) {
+		TryFillJobBuildings(_jobBuildingEnumToIds[static_cast<int>(CardEnum::Farm)], PriorityEnum::Priority, index);
+	}
+
+	// Try fill priority buildings
 	for (CardEnum buildingEnum : buildingEnumPriorityList) {
 		int buildingEnumInt = static_cast<int>(buildingEnum);
 		if (buildingEnumInt >= _jobBuildingEnumToIds.size()) {
@@ -243,6 +250,10 @@ void PlayerOwnedManager::RefreshJobs()
 				buildingEnum == CardEnum::Farm) {
 				continue;
 			}
+		}
+
+		if (buildingEnum == CardEnum::Farm && Time::FallSeason()) {
+			continue;
 		}
 		
 		TryFillJobBuildings(_jobBuildingEnumToIds[buildingEnumInt], PriorityEnum::Priority, index);
@@ -284,11 +295,23 @@ void PlayerOwnedManager::RefreshJobs()
 	/*
 	 * Non priority buildings
 	 */
+	
+	 // Special case: Farm fill first during harvest season to ensure the harvest is done.
+	if (Time::FallSeason()) {
+		TryFillJobBuildings(_jobBuildingEnumToIds[static_cast<int>(CardEnum::Farm)], PriorityEnum::NonPriority, index);
+	}
+
+	// Try Fill Non-priority buildings
 	for (CardEnum buildingEnum : buildingEnumPriorityList) {
 		int buildingEnumInt = static_cast<int>(buildingEnum);
 		if (buildingEnumInt >= _jobBuildingEnumToIds.size()) {
 			continue;
 		}
+
+		if (buildingEnum == CardEnum::Farm && Time::FallSeason()) {
+			continue;
+		}
+		
 		TryFillJobBuildings(_jobBuildingEnumToIds[buildingEnumInt], PriorityEnum::NonPriority, index);
 	}
 
@@ -823,7 +846,7 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 	int32 maxInfluence100 = maxStoredInfluence100();
 	if (influence100 > maxInfluence100) {
 		// Fully damp to 0 influence income at x2 maxStoredInfluence
-		int32 influenceIncomeDamp100 = influenceIncomeBeforeCapDamp100 * (influence100 - maxInfluence100) / maxInfluence100; // More damp as influence stored is closer to fullYearInfluenceIncome100
+		int32 influenceIncomeDamp100 = influenceIncomeBeforeCapDamp100 * (influence100 - maxInfluence100) / max(1, maxInfluence100); // More damp as influence stored is closer to fullYearInfluenceIncome100
 		influenceIncomeDamp100 = min(influenceIncomeDamp100, influenceIncomeBeforeCapDamp100); // Can't damp more than existing influence income
 		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::TooMuchInfluencePoints)] -= influenceIncomeDamp100;
 	}

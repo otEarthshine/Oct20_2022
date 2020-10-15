@@ -367,6 +367,7 @@ public:
 			int32 milkPerRound = 20 * _animalOccupants.size() / maxAnimals;
 			if (milkPerRound > 0) {
 				AddResource(ResourceEnum::Milk, milkPerRound);
+				AddProductionStat(ResourcePair(ResourceEnum::Milk, milkPerRound));
 			}
 		}
 	}

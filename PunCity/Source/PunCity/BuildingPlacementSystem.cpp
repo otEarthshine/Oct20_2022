@@ -1824,7 +1824,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		{
 			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 				if (IsPlayerBuildable(tile)) {
-					if (terrainGenerator.riverFraction(tile) > 0.2f) {
+					if (terrainGenerator.riverFraction(tile) > ClaypitRiverFractionPercentThreshold / 100.0f) {
 						_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, tile);
 						return;
 					}

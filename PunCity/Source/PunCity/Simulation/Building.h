@@ -1184,7 +1184,8 @@ public:
 	virtual void RefreshHoverWarning()
 	{	
 		// StorageTooFar Warning
-		if (hasInput1() || hasInput2() || product() != ResourceEnum::None) 
+		if (hasInput1() || hasInput2() || product() != ResourceEnum::None ||
+			IsAgricultureBuilding(_buildingEnum))
 		{
 			if (!_simulation->HasBuildingWithinRadius(_centerTile, 30, _playerId, CardEnum::StorageYard) &&
 				!_simulation->HasBuildingWithinRadius(_centerTile, 30, _playerId, CardEnum::Warehouse)) 
@@ -1197,7 +1198,7 @@ public:
 		// HouseTooFar Warning
 		if (_allowedOccupants > 0) 
 		{
-			if (!_simulation->HasBuildingWithinRadius(_centerTile, 30, _playerId, CardEnum::House))
+			if (!_simulation->HasBuildingWithinRadius(_centerTile, 55, _playerId, CardEnum::House))
 			{
 				hoverWarning = HoverWarning::HouseTooFar;
 				return;

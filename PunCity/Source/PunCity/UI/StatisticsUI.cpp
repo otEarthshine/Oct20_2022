@@ -46,12 +46,12 @@ void UStatisticsUI::InitStatisticsUI()
 	AddSeries(FoodFuelGraph, {
 		{FString("Food"), PlotStatEnum::Food, FLinearColor::Green },
 		{FString("Fuel"), PlotStatEnum::Fuel, FLinearColor::Yellow },
-		});
+	});
 	AddSeries(ImportExportGraph, {
 		{FString("Trade balance"), PlotStatEnum::TradeBalance, FLinearColor::Green },
 		{FString("Export"), PlotStatEnum::Export, FLinearColor::Blue },
 		{FString("Import"), PlotStatEnum::Import, FLinearColor::Red },
-		});
+	});
 
 	MarketResourceDropdown->ClearOptions();
 	for (int32 i = 0; i < ResourceEnumCount; i++) {

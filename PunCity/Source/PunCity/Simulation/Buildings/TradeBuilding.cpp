@@ -146,10 +146,12 @@ void TradingCompany::Tick1Sec()
 		return;
 	}
 
+	// TODO: WTF??
 	// Show trade failed for 5 sec...
-	if (tradeRetryDelayTicks - TradeRetryCountDownTicks() > Time::TicksPerSecond * 5) {
-		hoverWarning = HoverWarning::None;
-	}
+	//int32 ticksSinceLastRetry = tradeRetryDelayTicks - TradeRetryCountDownTicks();
+	//if (ticksSinceLastRetry > Time::TicksPerSecond * 5) {
+	//	hoverWarning = HoverWarning::None;
+	//}
 
 	if (TradeRetryCountDownTicks() > 0) {
 		return;
@@ -189,6 +191,8 @@ void TradingCompany::Tick1Sec()
 
 		UsedTrade(_tradeCommand);
 	};
+
+	hoverWarning = HoverWarning::None;
 
 	if (isImport)
 	{

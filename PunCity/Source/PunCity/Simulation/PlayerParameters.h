@@ -100,14 +100,14 @@ public:
 		}
 
 		if (_simulation->IsInDarkAge(_playerId)) { // Dark age baby boom
-			result /= 3;
-		}
-		else if (population <= housingCapacity / 2) { // crashing economy
 			result /= 2;
 		}
-		else if (population < housingCapacity - 10) { // house growth boost
-			result = result * 3 / 4;
-		}
+		//else if (population <= housingCapacity / 2) { // crashing economy
+		//	result /= 2;
+		//}
+		//else if (population < housingCapacity - 10) { // house growth boost
+		//	result = result * 3 / 4;
+		//}
 		return result;
 	}
 	int32 TicksBetweenPregnancyRange() { return Time::TicksPerSeason * 3 / 4; }

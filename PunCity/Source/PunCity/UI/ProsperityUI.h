@@ -98,7 +98,19 @@ private:
 		for (size_t i = 1; i < houseLvlToProsperityTech.size(); i++)
 		{
 			UProsperityColumnUI* prosperityColumnUI = AddWidget<UProsperityColumnUI>(UIEnum::ProsperityColumnUI);
+
 			prosperityColumnUI->HouseLevelText->SetText(ToFText("House Lvl " + std::to_string(i) + "+"));
+			{
+				std::stringstream tip;
+				tip << "Unlock technologies in this column by increasing the number of houses with lvl " << i << " and above.";
+				tip << "<space>";
+				
+				tip << "<bullet>Houses lvl " << i << ": " << simulation().GetHouseLvlCount(playerId(), i, false) << "</>";
+				tip << "<bullet>Houses lvl " << i << "+: " << simulation().GetHouseLvlCount(playerId(), i, true) << "</>";
+				
+				AddToolTip(prosperityColumnUI->HouseLevelText, tip);
+			}
+			
 			prosperityColumnUI->ProsperityTechList->ClearChildren();
 			ProsperityScrollBox->AddChild(prosperityColumnUI);
 			

@@ -648,11 +648,26 @@ public:
 		ConsumerIndustrialBuilding::FinishConstruction();
 
 		_upgrades = {
+			MakeUpgrade("Better tools", "+50% production.", ResourceEnum::SteelTools, 100),
+			MakeUpgrade("Component Blueprints", "+50% production.", ResourceEnum::Paper, 100),
+			MakeUpgrade("Inventor's Guild", "+50% production when you have 4 or more Inventor's Workshop.", ResourceEnum::Brick, 50),
 		};
 	}
 
 	std::vector<BonusPair> GetBonuses() override {
 		std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
+
+		if (IsUpgraded(0)) {
+			bonuses.push_back({ "Better tools", 50 });
+		}
+		if (IsUpgraded(1)) {
+			bonuses.push_back({ "Component Blueprints", 50 });
+		}
+		if (IsUpgraded(2)) {
+			if (_simulation->buildingCount(_playerId, CardEnum::InventorsWorkshop) >= 4) {
+				bonuses.push_back({ "Inventor's Guild", 50 });
+			}
+		}
 		return bonuses;
 	}
 };

@@ -501,10 +501,10 @@ public:
 		for (int32 i = cardStacks.size(); i-- > 0;) {
 			if (buildingEnum == cardStacks[i].buildingEnum) {
 				cardStacks[i].stackSize += additionalCards;
-			} else {
-				cardStacks.push_back({ buildingEnum, additionalCards, 0 });
+				return;
 			}
 		}
+		cardStacks.push_back({ buildingEnum, additionalCards, 0 });
 	}
 	
 

@@ -66,6 +66,9 @@ public:
 	
 	virtual bool IsResourcePriceUIOpened(ResourceEnum resourceEnum) = 0;
 	virtual void OpenResourcePriceUI(ResourceEnum resourceEnum) = 0;
+
+	virtual bool IsFoodFuelGraphUIOpened() = 0;
+	virtual void OpenFoodFuelGraphUI() = 0;
 	virtual void CloseStatisticsUI() = 0;
 
 	virtual void ShowTutorialUI(TutorialLinkEnum linkEnum) = 0;

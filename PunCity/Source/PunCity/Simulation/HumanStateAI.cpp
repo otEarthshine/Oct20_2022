@@ -1077,7 +1077,7 @@ bool HumanStateAI::TryHunt()
 	}
 	
 	Add_AttackOutgoing(targetFullId, damage);
-	Add_MoveTo(huntingLodgeTile);
+	Add_MoveTo(huntingLodge.gateTile() + WorldTile2::DirectionTile(huntingLodge.faceDirection()));
 	//Add_MoveInRange(nearestTile, damage);
 
 	_unitState = UnitState::Hunt;

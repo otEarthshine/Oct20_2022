@@ -29,6 +29,7 @@
 //	return loadArchive;
 //}
 
+
 struct GameSaveInfo
 {
 	int32 version = -1;
@@ -41,9 +42,12 @@ struct GameSaveInfo
 	TArray<FString> playerNames;
 
 	FString folderPath;
-	int32 checksum = 0;
 	
-	int32 compressedDataSize = 0;
+	TArray<int32> checksum;
+	TArray<int32> compressedDataSize;
+	TArray<bool> success;
+
+	int32 totalCompressedDataSize() { return CppUtils::Sum(compressedDataSize); }
 
 	bool IsValid() const { return name.Len() > 0; }
 
@@ -88,9 +92,10 @@ struct GameSaveInfo
 		mapSettings.Serialize(Ar);
 
 		Ar << folderPath;
-		Ar << checksum;
 
+		Ar << checksum;
 		Ar << compressedDataSize;
+		Ar << success;
 	}
 
 	bool operator==(const GameSaveInfo& a) {
@@ -152,6 +157,10 @@ public:
 	GameSaveInfo SaveDataToFile(FString saveName, bool isCachingForSync = false);
 
 	
+	static FSaveThreadResults SaveDataToFile_ThreadHelper(bool isCachingForSync, FString folderPath, GameSaveChunkEnum saveChunkEnum, IPunPlayerController* controller);
+
+	TArray<TFuture<FSaveThreadResults>> _saveCompleteFutures;
+	
 	/*
 	 * Delete
 	 */
@@ -200,7 +209,7 @@ public:
 
 	
 	int32 GetSyncDataLoadPercent() {
-		return _syncCompressedData.Num() * 100 / _syncSaveInfo.compressedDataSize;
+		return _syncCompressedData.Num() * 100 / _syncSaveInfo.totalCompressedDataSize();
 	}
 	void ClearSyncData()
 	{
@@ -222,8 +231,8 @@ public:
 		_LOG(LogNetworkInput, "Sync - SetSyncSaveInfo %s", *saveInfo.name);
 		
 		_syncSaveInfo = saveInfo;
-		_syncCompressedData.SetNum(_syncSaveInfo.compressedDataSize);
-		_receivedData.SetNum((_syncSaveInfo.compressedDataSize - 1) / MaxPacketSize + 1);
+		_syncCompressedData.SetNum(_syncSaveInfo.totalCompressedDataSize());
+		_receivedData.SetNum((_syncSaveInfo.totalCompressedDataSize() - 1) / MaxPacketSize + 1);
 		_receivedPacketCount = 0;
 		_receivedPacketIterator = 0;
 	}
@@ -235,7 +244,7 @@ public:
 
 	int32 totalPackets() { return _receivedData.Num(); }
 	int32 lastPacketSize() {
-		int32 remainder = _syncSaveInfo.compressedDataSize % MaxPacketSize;
+		int32 remainder = _syncSaveInfo.totalCompressedDataSize() % MaxPacketSize;
 		return remainder == 0 ? MaxPacketSize : remainder;
 	}
 	int32 receivedPacketCount() { return _receivedPacketCount; }

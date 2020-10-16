@@ -71,6 +71,21 @@ public:
 		BUTTON_ON_CLICK(ConfirmButton, this, &UInitialResourceUI::OnClickConfirmButton);
 
 		InitialResourceUI->SetVisibility(ESlateVisibility::Collapsed);
+
+		AddToolTip(FoodArrowUpButton, "<Orange>Shift-click</> to increment by 100.");
+		AddToolTip(FoodArrowDownButton, "<Orange>Shift-click</> to increment by 100.");
+
+		AddToolTip(WoodArrowUpButton, "<Orange>Shift-click</> to increment by 100.");
+		AddToolTip(WoodArrowDownButton, "<Orange>Shift-click</> to increment by 100.");
+
+		AddToolTip(MedicineArrowUpButton, "<Orange>Shift-click</> to increment by 100.");
+		AddToolTip(MedicineArrowDownButton, "<Orange>Shift-click</> to increment by 100.");
+
+		AddToolTip(ToolsArrowUpButton, "<Orange>Shift-click</> to increment by 100.");
+		AddToolTip(ToolsArrowDownButton, "<Orange>Shift-click</> to increment by 100.");
+
+		AddToolTip(StoneArrowUpButton, "<Orange>Shift-click</> to increment by 100.");
+		AddToolTip(StoneArrowDownButton, "<Orange>Shift-click</> to increment by 100.");
 	}
 
 	void TickUI()
@@ -138,70 +153,59 @@ public:
 private:
 	int32 GetMoney() { return simulation().money(playerId()); }
 
-	void CheckEnoughMoneyAndStorage()
+	bool CheckEnoughMoneyAndStorage()
 	{
 		int32 valueIncrease = initialResources.totalCost() - FChooseInitialResources::GetDefault().totalCost();
 		if (valueIncrease > GetMoney()) {
 			// Not enough money... revert the change
 			initialResources = lastInitialResources;
 			simulation().AddPopupToFront(playerId(), "Not enough money", ExclusiveUIEnum::InitialResourceUI, "PopupCannot");
-			return;
+			return false;
 		}
 		auto resourceMap = initialResources.resourceMap();
 		if (StorageTilesOccupied(resourceMap) > InitialStorageSpace) {
 			// Not enough space
 			initialResources = lastInitialResources;
 			simulation().AddPopupToFront(playerId(), "Not enough storage space", ExclusiveUIEnum::InitialResourceUI, "PopupCannot");
-			return;
+			return false;
 		}
+		return true;
 	}
 	
 private:
-
-	UFUNCTION() void OnClickFoodArrowUpButton() {
+	bool TryIncrement10(int32& amount) {
 		lastInitialResources = initialResources;
-		initialResources.foodAmount += 10;
-		CheckEnoughMoneyAndStorage();
+		amount += 10;
+		return CheckEnoughMoneyAndStorage();
 	}
-	UFUNCTION() void OnClickFoodArrowDownButton() {
-		initialResources.foodAmount = std::max(0, initialResources.foodAmount - 10);
+	void TryIncrement(int32& amount) {
+		int32 loopCount = dataSource()->isShiftDown() ? 10 : 1;
+		for (int32 i = 0; i < loopCount; i++) {
+			if (!TryIncrement10(amount)) {
+				break;
+			}
+		}
 	}
-
-	UFUNCTION() void OnClickWoodArrowUpButton() {
-		lastInitialResources = initialResources;
-		initialResources.woodAmount += 10;
-		CheckEnoughMoneyAndStorage();
-	}
-	UFUNCTION() void OnClickWoodArrowDownButton() {
-		initialResources.woodAmount = std::max(0, initialResources.woodAmount - 10);
-	}
-
-	UFUNCTION() void OnClickMedicineArrowUpButton() {
-		lastInitialResources = initialResources;
-		initialResources.medicineAmount += 10;
-		CheckEnoughMoneyAndStorage();
-	}
-	UFUNCTION() void OnClickMedicineArrowDownButton() {
-		initialResources.medicineAmount = std::max(0, initialResources.medicineAmount - 10);
+	void TryDecrement(int32& amount)
+	{
+		int32 changeAmount = dataSource()->isShiftDown() ? 100 : 10;;
+		amount = std::max(0, amount - changeAmount);
 	}
 
-	UFUNCTION() void OnClickToolsArrowUpButton() {
-		lastInitialResources = initialResources;
-		initialResources.toolsAmount += 10;
-		CheckEnoughMoneyAndStorage();
-	}
-	UFUNCTION() void OnClickToolsArrowDownButton() {
-		initialResources.toolsAmount = std::max(0, initialResources.toolsAmount - 10);
-	}
+	UFUNCTION() void OnClickFoodArrowUpButton() { TryIncrement(initialResources.foodAmount); }
+	UFUNCTION() void OnClickFoodArrowDownButton() { TryDecrement(initialResources.foodAmount); }
 
-	UFUNCTION() void OnClickStoneArrowUpButton() {
-		lastInitialResources = initialResources;
-		initialResources.stoneAmount += 10;
-		CheckEnoughMoneyAndStorage();
-	}
-	UFUNCTION() void OnClickStoneArrowDownButton() {
-		initialResources.stoneAmount = std::max(0, initialResources.stoneAmount - 10);
-	}
+	UFUNCTION() void OnClickWoodArrowUpButton() { TryIncrement(initialResources.woodAmount); }
+	UFUNCTION() void OnClickWoodArrowDownButton() { TryDecrement(initialResources.woodAmount); }
+
+	UFUNCTION() void OnClickMedicineArrowUpButton() { TryIncrement(initialResources.medicineAmount); }
+	UFUNCTION() void OnClickMedicineArrowDownButton() { TryDecrement(initialResources.medicineAmount); }
+
+	UFUNCTION() void OnClickToolsArrowUpButton() { TryIncrement(initialResources.toolsAmount); }
+	UFUNCTION() void OnClickToolsArrowDownButton() { TryDecrement(initialResources.toolsAmount); }
+
+	UFUNCTION() void OnClickStoneArrowUpButton() { TryIncrement(initialResources.stoneAmount); }
+	UFUNCTION() void OnClickStoneArrowDownButton() { TryDecrement(initialResources.stoneAmount); }
 
 	UFUNCTION() void OnClickConfirmButton() {
 		auto command = std::make_shared<FChooseInitialResources>();

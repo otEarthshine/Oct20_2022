@@ -497,6 +497,15 @@ public:
 			func(playerId);
 		}
 	}
+	std::vector<int32> GetAllPlayersAndAI()
+	{
+		std::vector<int32> playersAndAIIds = allHumanPlayerIds();
+		for (int32 playerId = aiStartIndex(); playerId <= aiEndIndex(); playerId++) {
+			playersAndAIIds.push_back(playerId);
+		}
+		return playersAndAIIds;
+	}
+	
 	template<typename Func>
 	void ExecuteOnAI(Func func) {
 		for (int32 playerId = aiStartIndex(); playerId <= aiEndIndex(); playerId++) {

@@ -621,7 +621,11 @@ public:
 	}
 
 	bool isCtrlDown() final { return _isCtrlDown; }
-	bool isShiftDown() final { return _isShiftDown; }
+	bool isShiftDown() final {
+		const FModifierKeysState modifierKeys = FSlateApplication::Get().GetModifierKeys();
+		return modifierKeys.IsShiftDown();
+		//return _isShiftDown;
+	}
 	void SetCtrl(bool isDown) final { _isCtrlDown = isDown; }
 	
 	void SetShift(bool isDown) final {

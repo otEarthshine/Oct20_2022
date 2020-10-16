@@ -1916,123 +1916,148 @@ public:
 	 * Serialize
 	 */
 
-	void Serialize(FArchive& Ar, TArray<uint8>& data, std::vector<int32>* crcs = nullptr, std::vector<std::string>* crcLabels = nullptr)
+	void Serialize(FArchive& Ar, TArray<uint8>& data, GameSaveChunkEnum saveChunkEnum, std::vector<int32>* crcs = nullptr, std::vector<std::string>* crcLabels = nullptr)
 	{
 		PUN_LLM(PunSimLLMTag::Simulation);
 		
 		PUN_CHECK(Ar.IsSaving() || Ar.IsLoading());
 
-		_isLoadingForMainMenu = false;
-		if (Ar.IsLoading()) {
-			_gameEventSystem.ClearSubscriptions();
-		}
+		auto checkChunkEnum = [&](GameSaveChunkEnum saveChunkEnumScope) {
+			return saveChunkEnum == saveChunkEnumScope ||
+					saveChunkEnum == GameSaveChunkEnum::All;
+		};
 
-		Ar << _tickCount;
-
-		_mapSettings.Serialize(Ar);
-		_endStatus.Serialize(Ar);
-
-
-		Time::Serialize(Ar, data);
-
+		if (checkChunkEnum(GameSaveChunkEnum::Terrain))
 		{
-			SERIALIZE_TIMER("Terrain", data, crcs, crcLabels);
-			_terrainGenerator->Serialize(Ar);
+			_isLoadingForMainMenu = false;
+			if (Ar.IsLoading()) {
+				_gameEventSystem.ClearSubscriptions();
+			}
+
+			Ar << _tickCount;
+
+			_mapSettings.Serialize(Ar);
+			_endStatus.Serialize(Ar);
+
+
+			Time::Serialize(Ar, data);
+
+			{
+				SERIALIZE_TIMER("Terrain", data, crcs, crcLabels);
+				_terrainGenerator->Serialize(Ar);
+			}
 		}
 
+		if (checkChunkEnum(GameSaveChunkEnum::Trees))
 		{
 			SERIALIZE_TIMER("Trees", data, crcs, crcLabels);
 			treeSystem().Serialize(Ar, data, crcs, crcLabels);
 		}
 
+		if (checkChunkEnum(GameSaveChunkEnum::Flood1))
 		{
-			SERIALIZE_TIMER("Regions", data, crcs, crcLabels);
-
-			_provinceSystem.Serialize(Ar);
-
-			_regionSystem->Serialize(Ar);
-			_georesourceSystem->Serialize(Ar);
-			_terrainChanges.Serialize(Ar);
-
-		}
-
-		{
-			SERIALIZE_TIMER("PathAndFlood", data, crcs, crcLabels);
-
-			_pathAI->Serialize(Ar);
-			_pathAIHuman->Serialize(Ar);
+			SERIALIZE_TIMER("Flood", data, crcs, crcLabels);
 			_floodSystem.Serialize(Ar);
+		}
+		
+		if (checkChunkEnum(GameSaveChunkEnum::Flood2))
+		{
+			SERIALIZE_TIMER("Flood2", data, crcs, crcLabels);
 			_floodSystemHuman.Serialize(Ar);
-
-			//// Check flood system
-			//for (int32 i = 0; i < GameMapConstants::TilesPerWorld; i++) {
-			//	if (_terrainGenerator->terrainTileType(i) != TerrainTileType::None) {
-			//		PUN_CHECK(_floodSystem.GetFloodId(WorldTile2(i)) == -1);
-			//	}
-			//}
 		}
 
+		
+		if (checkChunkEnum(GameSaveChunkEnum::Others))
 		{
-			SERIALIZE_TIMER("Unit", data, crcs, crcLabels);
-			_unitSystem->Serialize(Ar);
-		}
+			{
+				SERIALIZE_TIMER("Regions", data, crcs, crcLabels);
 
-		{
-			SERIALIZE_TIMER("Building", data, crcs, crcLabels);
-			_buildingSystem->Serialize(Ar, data, crcs, crcLabels, false);
-		}
+				_provinceSystem.Serialize(Ar);
 
-		{
-			SERIALIZE_TIMER("GlobalSys", data, crcs, crcLabels);
-			_overlaySystem.Serialize(Ar);
+				_regionSystem->Serialize(Ar);
+				_georesourceSystem->Serialize(Ar);
+				_terrainChanges.Serialize(Ar);
 
-			_statSystem.Serialize(Ar);
-			_dropSystem.Serialize(Ar);
-			_worldTradeSystem.Serialize(Ar);
+			}
 
-			_replaySystem.Serialize(Ar);
-			_eventLogSystem.Serialize(Ar);
-		}
+			{
+				SERIALIZE_TIMER("PathAI", data, crcs, crcLabels);
+				_pathAI->Serialize(Ar);
 
-		{
-			//SERIALIZE_TIMER("PlayerSys", data, crcs, crcLabels);
+				//// Check flood system
+				//for (int32 i = 0; i < GameMapConstants::TilesPerWorld; i++) {
+				//	if (_terrainGenerator->terrainTileType(i) != TerrainTileType::None) {
+				//		PUN_CHECK(_floodSystem.GetFloodId(WorldTile2(i)) == -1);
+				//	}
+				//}
+			}
+			{
+				SERIALIZE_TIMER("PathAI2", data, crcs, crcLabels);
+				_pathAIHuman->Serialize(Ar);
+			}
+
+			{
+				SERIALIZE_TIMER("Unit", data, crcs, crcLabels);
+				_unitSystem->Serialize(Ar);
+			}
+
+			{
+				//SERIALIZE_TIMER("Building", data, crcs, crcLabels);
+				_buildingSystem->Serialize(Ar, data, crcs, crcLabels, false);
+			}
+
+			{
+				SERIALIZE_TIMER("GlobalSys", data, crcs, crcLabels);
+				_overlaySystem.Serialize(Ar);
+
+				_statSystem.Serialize(Ar);
+				_dropSystem.Serialize(Ar);
+				_worldTradeSystem.Serialize(Ar);
+
+				_replaySystem.Serialize(Ar);
+				_eventLogSystem.Serialize(Ar);
+			}
+
+			{
+				//SERIALIZE_TIMER("PlayerSys", data, crcs, crcLabels);
 
 #define LOOP(sysName, func) {\
 								SERIALIZE_TIMER(sysName, data, crcs, crcLabels)\
 								for (size_t i = 0; i < GameConstants::MaxPlayersAndAI; i++) { func; }\
 							}
-			
-			LOOP("Resource", _resourceSystems[i].Serialize(Ar));
-			LOOP("Quest", _questSystems[i].Serialize(Ar));
 
-			LOOP("Unlock", _unlockSystems[i].Serialize(Ar));
-			LOOP("PlayerParam", _playerParameters[i].Serialize(Ar));
-			LOOP("PlayerOwned", _playerOwnedManagers[i].Serialize(Ar));
-			LOOP("Popup", _popupSystems[i].Serialize(Ar));
-			LOOP("Cards", _cardSystem[i].Serialize(Ar));
+				LOOP("Resource", _resourceSystems[i].Serialize(Ar));
+				LOOP("Quest", _questSystems[i].Serialize(Ar));
 
-			LOOP("AI", _aiPlayerSystem[i].Serialize(Ar));
-			LOOP("NonRepeatAction", SerializeVecValue(Ar, _playerIdToNonRepeatActionToAvailableTick[i]));
-			
+				LOOP("Unlock", _unlockSystems[i].Serialize(Ar));
+				LOOP("PlayerParam", _playerParameters[i].Serialize(Ar));
+				LOOP("PlayerOwned", _playerOwnedManagers[i].Serialize(Ar));
+				LOOP("Popup", _popupSystems[i].Serialize(Ar));
+				LOOP("Cards", _cardSystem[i].Serialize(Ar));
+
+				LOOP("AI", _aiPlayerSystem[i].Serialize(Ar));
+				LOOP("NonRepeatAction", SerializeVecValue(Ar, _playerIdToNonRepeatActionToAvailableTick[i]));
+
 #undef LOOP
-		}
+			}
 
-		//SerializeVecValue(Ar, _tickHashes);
-		//SerializeVecValue(Ar, _serverTickHashes);
+			//SerializeVecValue(Ar, _tickHashes);
+			//SerializeVecValue(Ar, _serverTickHashes);
 
-		// Snow
-		Ar << _snowAccumulation3;
-		Ar << _snowAccumulation2;
-		Ar << _snowAccumulation1;
+			// Snow
+			Ar << _snowAccumulation3;
+			Ar << _snowAccumulation2;
+			Ar << _snowAccumulation1;
 
-		Ar << _lastTickSnowAccumulation3;
-		Ar << _lastTickSnowAccumulation2;
-		Ar << _lastTickSnowAccumulation1;
+			Ar << _lastTickSnowAccumulation3;
+			Ar << _lastTickSnowAccumulation2;
+			Ar << _lastTickSnowAccumulation1;
 
-		// Refresh Territory Display
-		for (size_t playerId = 0; playerId < _playerOwnedManagers.size(); playerId++) {
-			if (_playerOwnedManagers[playerId].hasChosenLocation()) {
-				AddNeedDisplayUpdateId(DisplayGlobalEnum::Territory, playerId);
+			// Refresh Territory Display
+			for (size_t playerId = 0; playerId < _playerOwnedManagers.size(); playerId++) {
+				if (_playerOwnedManagers[playerId].hasChosenLocation()) {
+					AddNeedDisplayUpdateId(DisplayGlobalEnum::Territory, playerId);
+				}
 			}
 		}
 

@@ -62,7 +62,7 @@ public:
 			auto& playerOwned = sim->playerOwned(playerId);
 			PUN_CHECK(playerOwned.provincesClaimed().size() > 0);
 			centerTile = sim->GetProvinceCenterTile(playerOwned.provincesClaimed()[0]);
-			PUN_LOG("Update TerritoryMesh2 %d", playerId);
+			//PUN_LOG("Update TerritoryMesh2 %d", playerId);
 		}
 		
 		

@@ -255,7 +255,8 @@ public:
 		/*
 		 * Update Relationship
 		 */
-		_simulation->ExecuteOnPlayersAndAI([&](int32 playerId)
+		std::vector<int32> allPlayersAndAI = _simulation->GetAllPlayersAndAI();
+		for (int32 playerId = 0; playerId < allPlayersAndAI.size(); playerId++)
 		{
 			if (_simulation->HasTownhall(playerId))
 			{
@@ -304,12 +305,12 @@ public:
 				}
 #undef MODIFIER
 			}
-		});
+		}
 
 		/*
 		 * Do good/bad act once every year
 		 */
-		int32 secondToAct = GameRand::Rand(Time::Years()) % Time::SecondsPerYear;
+		int32 secondToAct = GameRand::Rand(Time::Years() * _aiPlayerId) % Time::SecondsPerYear;
 		if (Time::Seconds() % Time::SecondsPerYear == secondToAct)
 		{
 			PUN_LOG("[AIPlayer] Act pid:%d second:%d", _aiPlayerId, secondToAct);
@@ -744,7 +745,7 @@ public:
 		SerializeVecObj(Ar, _regionStatuses);
 		Ar << _active;
 
-		SerializeVecValue(Ar, _relationshipModifiers);
+		SerializeVecVecValue(Ar, _relationshipModifiers);
 	}
 
 	void AIDebugString(std::stringstream& ss) {

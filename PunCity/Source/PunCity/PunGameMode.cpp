@@ -77,7 +77,7 @@ void APunGameMode::PostLogin(APlayerController* NewPlayer)
 		GameSaveInfo saveInfo = gameInst->GetSavedGameToLoad();
 		saveInfo.Serialize(SaveArchive);
 
-		_LOG(LogNetworkInput, "Sync - Server...SendSaveInfo_ToClient %s size:%d", *saveInfo.name, saveInfo.compressedDataSize);
+		_LOG(LogNetworkInput, "Sync - Server...SendSaveInfo_ToClient %s size:%d", *saveInfo.name, saveInfo.totalCompressedDataSize());
 
 		newController->SendSaveInfo_ToClient(SaveArchive);
 	}

@@ -304,3 +304,12 @@ public:
 	//virtual void Spawn2DSound(std::string groupName, std::string soundName, int32 playerId, WorldTile2 tile = WorldTile2::Invalid) = 0; // UI's triggered sound don't need filter
 	virtual void Spawn2DSound(std::string groupName, std::string soundName) = 0;
 };
+
+USTRUCT()
+struct FSaveThreadResults
+{
+	GENERATED_BODY()
+		UPROPERTY() int32 checksum = -1;
+	UPROPERTY() int32 compressedDataSize = -1;
+	UPROPERTY() bool succeed = false;
+};

@@ -275,7 +275,7 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 		std::vector<int32> playerIds = simulation().GetNeedDisplayUpdateIds(DisplayGlobalEnum::Territory);
 		for (int32 playerId : playerIds) 
 		{
-			PUN_LOG("Update TerritoryMesh playerId:%d", playerId);
+			//PUN_LOG("Update TerritoryMesh playerId:%d", playerId);
 			
 			if (_playerIdToTerritoryMesh.Num() <= playerId) {
 				_playerIdToTerritoryMesh.SetNum(playerId + 1);

@@ -1223,7 +1223,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 				saveCheckCrcLabels.clear();
 				std::vector<int32>* crcs = &(saveCheckCrcsToTick.back());
 				std::vector<std::string>* crcLabels = &saveCheckCrcLabels;
-				Serialize(SaveArchive, SaveArchive, crcs, crcLabels);
+				Serialize(SaveArchive, SaveArchive, GameSaveChunkEnum::All, crcs, crcLabels);
 			};
 
 			auto end = [&]() {
@@ -3732,6 +3732,7 @@ void GameSimulationCore::ChooseInitialResources(FChooseInitialResources command)
 		cardSystem(command.playerId).AddCardToHand2(CardEnum::Townhall);
 		
 		playerOwned(command.playerId).initialResources = command;
+		resourceSystem(command.playerId).ChangeMoney(-(command.totalCost() - FChooseInitialResources::GetDefault().totalCost()));
 	}
 }
 

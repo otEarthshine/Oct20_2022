@@ -1909,14 +1909,19 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			// Storage
 			WorldTile2 storageCenter1 = WorldTile2::EvenSizeRotationCenterShift(_area.centerTile(), _faceDirection) + WorldTile2::RotateTileVector(Storage1ShiftTileVec, _faceDirection);
 			WorldTile2 storageCenter2 = storageCenter1 + WorldTile2::RotateTileVector(InitialStorage2Shift, _faceDirection);
+			WorldTile2 storageCenter3 = storageCenter1 - WorldTile2::RotateTileVector(InitialStorage2Shift, _faceDirection);
 
 			TileArea storageArea1 = BuildingArea(storageCenter1, InitialStorageTileSize, RotateDirection(Direction::E, _faceDirection));
 			TileArea storageArea2 = BuildingArea(storageCenter2, InitialStorageTileSize, RotateDirection(Direction::E, _faceDirection));
+			TileArea storageArea3 = BuildingArea(storageCenter3, InitialStorageTileSize, RotateDirection(Direction::E, _faceDirection));
 
 			storageArea1.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 				tryPlaceBuilding(tile);
 			});
 			storageArea2.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+				tryPlaceBuilding(tile);
+			});
+			storageArea3.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 				tryPlaceBuilding(tile);
 			});
 		}

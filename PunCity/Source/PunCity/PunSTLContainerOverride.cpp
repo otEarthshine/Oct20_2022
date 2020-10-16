@@ -4,7 +4,9 @@
 #include "PunCity/PunSTLContainerOverride.h"
 #include "PunCity/PunUtils.h"
 
+#if !defined(ToTChar)
 #define ToTChar(stdString) UTF8_TO_TCHAR(stdString.c_str())
+#endif
 
 #if PUN_LLM_ON
 

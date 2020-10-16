@@ -14,8 +14,8 @@
 
 #define TRAILER_MODE 0
 
-#define SAVE_VERSION 15100147 // Day/Month/Time
-#define GAME_VERSION 15100147
+#define SAVE_VERSION 16101947 // Day/Month/Time
+#define GAME_VERSION 16101947
 
 //! Utils
 
@@ -6944,6 +6944,19 @@ static std::vector<std::string> RelationshipModifierName
 };
 
 static int32 RelationshipModifierCount = RelationshipModifierName.size();
+
+enum class GameSaveChunkEnum : uint8
+{
+	Terrain,
+	Trees,
+	Flood1,
+	Flood2,
+	Others,
+
+	Count,
+
+	All,
+};
 
 /*
  * Game Constants

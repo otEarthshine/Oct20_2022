@@ -324,7 +324,12 @@ void UnitStateAI::Update()
 				//	_simulation->soundInterface()->Spawn2DSound("UI", "BabyBornBell", _playerId);
 				//}
 
-				_simulation->AddUnit(unitEnum(), _playerId, _unitData->atomLocation(_id), 0);
+				bool isBirthControlActivated = _simulation->TownhallCardCount(_playerId, CardEnum::BirthControl) > 0 &&
+												_simulation->population(_playerId) >= _simulation->HousingCapacity(_playerId);
+
+				if (!isBirthControlActivated) {
+					_simulation->AddUnit(unitEnum(), _playerId, _unitData->atomLocation(_id), 0);
+				}
 
 				_nextPregnantTick = Time::Ticks() + parameters->TicksBetweenPregnancy() - GameRand::Rand() % parameters->TicksBetweenPregnancyRange();
 			}

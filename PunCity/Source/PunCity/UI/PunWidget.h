@@ -236,7 +236,7 @@ public:
 		return str;
 	}
 	
-	std::string WrapString(std::string str, int32 wrapSize = 330);
+	std::string WrapString(std::string str, int32 wrapSize = 330, FSlateFontInfo* fontInfoPtr = nullptr);
 	
 	
 	static void SetText(URichTextBlock* textBlock, std::string str) {

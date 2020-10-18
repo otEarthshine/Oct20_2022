@@ -484,8 +484,12 @@ public:
 
 	//! Needs
 	bool needHouse() { return _houseId == -1 && _simulation->population(_playerId) > _simulation->HousingCapacity(_playerId); }
-	bool needFood() { return _food < minWarnFood(); }
-	bool needHeat() { return _heat < minWarnHeat(); }
+	bool showNeedFood() {
+		return _food < minWarnFood();
+	}
+	bool showNeedHeat() {
+		return _heat < minWarnHeat();
+	}
 	
 	int32 lastPregnantTick() { return _lastPregnant; }
 

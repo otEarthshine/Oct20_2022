@@ -290,18 +290,18 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 	//PUN_LOG("End loop regionId:%d Tick:%d", regionId, Time::Ticks());
 
 	// Update tree in the case plant should wither away
-	if (simulation().IsSnowStart()) {
-		simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Trees, regionId, true);
+	if (sim.IsSnowStart()) {
+		sim.SetNeedDisplayUpdate(DisplayClusterEnum::Trees, regionId, true);
 	}
 
 	/*
 	 * Alive Trees
 	 */
 	 // Only update alive tree if needed
-	if (simulation().NeedDisplayUpdate(DisplayClusterEnum::Trees, regionId) || _displayStateChanged)
+	if (sim.NeedDisplayUpdate(DisplayClusterEnum::Trees, regionId) || _displayStateChanged)
 	{
 		// Don't need to update anymore until something else change
-		simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Trees, regionId, false);
+		sim.SetNeedDisplayUpdate(DisplayClusterEnum::Trees, regionId, false);
 
 		if (PunSettings::IsOn("TrailerNoTreeRefresh")) {
 			return;
@@ -314,11 +314,11 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 
 		//PUN_ALOG_ALL("FastMesh", "ExecuteTileRegionStart ticks:%d regionId:%d", TimeDisplay::Ticks(), regionId);
 
-		PunTerrainGenerator& terrainGenerator = simulation().terrainGenerator();
+		PunTerrainGenerator& terrainGenerator = sim.terrainGenerator();
 		const std::vector<int16_t>& heightMap = terrainGenerator.GetHeightMap();
 		const float flatHeight = FDToFloat(FlatLandHeight);
 
-		GeoresourceNode georesourceNode = simulation().georesourceSystem().georesourceNode(regionId);
+		GeoresourceNode georesourceNode = sim.georesourceSystem().georesourceNode(regionId);
 
 		bool isHidingTree = gameManager()->isHidingTree();
 
@@ -497,7 +497,7 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 				//  Don't show mark if within building area
 				if (!isMainMenuDisplay &&
 					treeSystem.HasMark(playId, worldTileId) && 
-					!simulation().tileHasBuilding(worldTile))
+					!sim.tileHasBuilding(worldTile))
 				{
 					float hoverHeight = GameDisplayUtils::TileObjHoverMeshHeight(info, worldTileId, ageTick);
 					FVector translation = transform.GetTranslation();
@@ -557,13 +557,13 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 			else if (info.type == ResourceTileType::Bush && 
 					_isFullDisplay)
 			{
-				if (isHidingTree) {
+				if (isHidingTree && sim.buildingIdAtTile(worldTile) == -1) {
 					return;
 				}
 				
 				// Don't show grass on road construction
-				if (simulation().isInitialized()  &&
-					simulation().IsRoadTile(worldTile)) {
+				if (sim.isInitialized()  &&
+					sim.IsRoadTile(worldTile)) {
 					return;
 				}
 				
@@ -571,10 +571,6 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 				int32 ageState = ageTick / TileObjInfo::TicksPerCycle();
 				FTransform transform = GameDisplayUtils::GetBushTransform(localTile.localDisplayLocation(), 0, worldTileId, ageTick, info, terrainGenerator.GetBiome(worldTile));
 
-				// If this is on road (under construction) trim the bush to very low with transform scale
-				//if (simulation().IsRoadTile(worldTile)) {
-				//	transform.SetScale3D(transform.GetScale3D() * FVector(1, 1, 0.1f));
-				//}
 
 				showBush(info, worldTileId, transform, localTile, ageState);
 				

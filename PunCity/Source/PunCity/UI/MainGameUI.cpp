@@ -527,6 +527,8 @@ void UMainGameUI::Tick()
 			if (ConverterCardHandOverlay->GetVisibility() != ESlateVisibility::Visible)
 			{
 				ConverterCardHandBox->ClearChildren();
+				ConverterCardHandConfirmUI->SetVisibility(ESlateVisibility::Collapsed);
+				
 				std::vector<CardEnum> availableCards = cardSystem.GetAllPiles();
 				unordered_set<CardEnum> uniqueAvailableCards(availableCards.begin(), availableCards.end());
 
@@ -556,7 +558,6 @@ void UMainGameUI::Tick()
 							}
 						}
 					}
-					ConverterCardHandConfirmUI->SetVisibility(ESlateVisibility::Collapsed);
 				}
 				else
 				{

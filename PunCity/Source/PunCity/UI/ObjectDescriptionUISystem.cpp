@@ -745,7 +745,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					else if (building.isEnum(CardEnum::Townhall))
 					{
 						TownHall& townhall = building.subclass<TownHall>();
-						auto& townhallPlayerOwned = simulation.playerOwned(townhall.playerId());
+						int32 townPlayerId = townhall.playerId();
+						auto& townhallPlayerOwned = simulation.playerOwned(townPlayerId);
 						int32 lvl = townhall.townhallLvl;
 
 						descriptionBox->AddRichText("Player", TrimString_Dots(simulation.playerName(townhall.playerId()), 12));
@@ -759,20 +760,28 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						descriptionBox->AddRichText("Town Level", to_string(lvl));
 
 						// Only show these if it is player's townhall
-						if (townhall.playerId() == playerId()) {
+						if (townPlayerId == playerId()) {
 							descriptionBox->AddRichText("Townhall Income", "<img id=\"Coin\"/>" + to_string(townhall.townhallIncome()));
 						}
 
 						// Show how much money he has..
-						if (townhall.playerId() != playerId()) {
-							ss << simulation.resourceSystem(townhall.playerId()).money() << "<img id=\"Coin\"/>";
+						if (townPlayerId != playerId())
+						{
+							ss << "<img id=\"Coin\"/>" << simulation.resourceSystem(townPlayerId).money();
 							descriptionBox->AddRichText("Money", ss);
 
 							ss << fixed << setprecision(1);
-							ss << townhallPlayerOwned.totalIncome100() / 100.0f << "<img id=\"Coin\"/>";
-							descriptionBox->AddRichText("Income", ss);
+							ss << "<img id=\"Coin\"/>" << townhallPlayerOwned.totalIncome100() / 100.0f;
+							descriptionBox->AddRichText("Money Income", ss);
+							descriptionBox->AddSpacer();
 
-							ss << simulation.GetAverageHappiness(townhall.playerId()) << "<img id=\"Smile\"/>";
+							ss << "<img id=\"Influence\"/>" << simulation.resourceSystem(townPlayerId).influence();
+							descriptionBox->AddRichText("Influence", ss);
+							ss << "<img id=\"Influence\"/>" << townhallPlayerOwned.totalInfluenceIncome100() / 100.0f;
+							descriptionBox->AddRichText("Influence Income", ss);
+							descriptionBox->AddSpacer();
+							
+							ss << "<img id=\"Smile\"/>" << simulation.GetAverageHappiness(townPlayerId);
 							descriptionBox->AddRichText("Happiness", ss);
 						}
 
@@ -1850,13 +1859,13 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						auto setUpgradeButton = [&](BuildingUpgrade upgrade, int32 upgradeIndex)
 						{
 							ss << "Upgrade " << upgrade.name;
+
+							ResourceEnum resourceEnum = upgrade.resourceNeeded.resourceEnum;
 							
 							if (upgrade.isUpgraded) {
 								ss << "\nDone";
 							}
 							else {
-								ResourceEnum resourceEnum = upgrade.resourceNeeded.resourceEnum;
-								
 								auto showResourceText = [&](std::string resourceString) {
 									ss << "\n"
 										<< "<img id=\"" << resourceString << "\"/>"
@@ -1888,8 +1897,18 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							bool isUpgradable = !upgrade.isUpgraded;
 
 							UPunButton* button = descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::UpgradeBuilding, isUpgradable, false,  objectId, upgradeIndex);
+
+							// Tooltip
 							ss.str("");
-							ss << upgrade.name << "<space>" << upgrade.description;
+							ss << upgrade.name << "<space>";
+
+							if (resourceEnum == ResourceEnum::None) {
+								ss << "cost: <img id=\"Coin\"/>" << upgrade.moneyNeeded << "<space>";
+							} else {
+								ss << "cost: " << upgrade.resourceNeeded.count << " " << ResourceName(resourceEnum) << "<space>";
+							}
+							
+							ss << upgrade.description;
 
 							if (!_alreadyDidShiftDownUpgrade) {
 								ss << "<line><space><Orange>Shift-click</> the button to try upgrading all same type buildings.";

@@ -1187,8 +1187,8 @@ public:
 		if (hasInput1() || hasInput2() || product() != ResourceEnum::None ||
 			IsAgricultureBuilding(_buildingEnum))
 		{
-			if (!_simulation->HasBuildingWithinRadius(_centerTile, 30, _playerId, CardEnum::StorageYard) &&
-				!_simulation->HasBuildingWithinRadius(_centerTile, 30, _playerId, CardEnum::Warehouse)) 
+			if (!_simulation->HasBuildingWithinRadius(_centerTile, 40, _playerId, CardEnum::StorageYard) &&
+				!_simulation->HasBuildingWithinRadius(_centerTile, 40, _playerId, CardEnum::Warehouse)) 
 			{
 				hoverWarning = HoverWarning::StorageTooFar;
 				return;

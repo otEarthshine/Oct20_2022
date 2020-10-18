@@ -28,6 +28,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) UImage* ChatMinimizeImage;
 	UPROPERTY(meta = (BindWidget)) USizeBox* ChatSizeBox;
 
+	UPROPERTY(meta = (BindWidget)) UTextBlock* FontExampleChat;
+
 	// Debug
 	UPROPERTY(meta = (BindWidget)) UOverlay* DebugOverlay;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* TopLeftTextDebug;
@@ -486,11 +488,14 @@ private:
 	{
 		auto widget = AddWidget<UPunRichText>(UIEnum::PunRichText_Chat);
 
+		const int32 chatWrapSize = 270;
+		FSlateFontInfo fontInfo = FontExampleChat->Font;
+
 		// System message
 		if (message.isSystemMessage)
 		{
 			std::string messageStd = ToStdString(message.message);
-			std::string wrappedMessage = widget->WrapString(messageStd, 330);
+			std::string wrappedMessage = widget->WrapString(messageStd, chatWrapSize, &fontInfo);
 			widget->SetRichText(ToFString(wrappedMessage));
 			return widget;
 		}
@@ -504,12 +509,12 @@ private:
 		std::string messageStd = ToStdString(message.message);
 		ss << messageStd;
 
-		std::string wrappedMessage = widget->WrapString(ss.str(), 330);
+		std::string wrappedMessage = widget->WrapString(ss.str(), chatWrapSize, &fontInfo);
 		ss.str("");
 
 		std::stringstream finalSS;
 		finalSS << "<ChatName>" << wrappedMessage.substr(0, namePartLength) << "</>"; // Name
-		finalSS << wrappedMessage.substr(namePartLength, wrappedMessage.size()); // Message
+		finalSS << "<Chat>" << wrappedMessage.substr(namePartLength, wrappedMessage.size()) << "</>"; // Message
 
 		widget->SetRichText(ToFString(finalSS.str()));
 		

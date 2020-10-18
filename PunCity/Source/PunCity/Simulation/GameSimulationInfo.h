@@ -2208,7 +2208,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::Fort, "Fort", WorldTile2(9, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "+100% province's defense."),
 	BldInfo(CardEnum::Colony, "Colony", WorldTile2(10, 10), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "Extract resource from province."),
 	BldInfo(CardEnum::InventorsWorkshop, "Inventor's Workshop", WorldTile2(6, 6), ResourceEnum::Iron, ResourceEnum::None, ResourceEnum::None, 0, 2, { 50,50,0 }, "Generate science points. Use wood as input."),
-	BldInfo(CardEnum::IntercityRoad, "Intercity Road", WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "Build Road to connect with other Cities, Fort, and Colonies."),
+	BldInfo(CardEnum::IntercityRoad, "Intercity Road", WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "Build Road to connect with other Cities. Same as Dirt Road, but buildable outside your territory."),
 
 	BldInfo(CardEnum::FakeTownhall, "FakeTownhall", WorldTile2(12, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "..."),
 	BldInfo(CardEnum::FakeTribalVillage, "FakeTribalVillage", WorldTile2(12, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "..."),
@@ -2299,7 +2299,7 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::BuyWood,			"Buy Wood", 50, "Buy Wood with half of your treasury (5<img id=\"Coin\"/> each)."),
 	BldInfo(CardEnum::ChildMarriage,			"Child Marriage", 200, "Decrease the minimum age for having children."),
 	BldInfo(CardEnum::ProlongLife,			"Prolong Life", 200, "People live longer."),
-	BldInfo(CardEnum::BirthControl,			"Birth Control", 200, "Decrease birth rate by 50%."),
+	BldInfo(CardEnum::BirthControl,			"Birth Control", 200, "Prevents childbirth when the housing capacity is full."),
 	BldInfo(CardEnum::CoalTreatment,			"Coal Treatment", 250, "Coal gives 20% more heat"),
 
 

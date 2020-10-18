@@ -94,9 +94,10 @@ public:
 				material->SetScalarParameterValue("HasNoResource", fraction < 1.0f && simulation().resourceCount(building.playerId(), resourceEnum) == 0);
 
 				std::stringstream ss;
+				ss << "Construction Input<space>";
 				ss << ResourceName(resourceEnum) << " " << constructionResourcesCount[i] << "/" << constructionCosts[i];
-				ss << "<space>";
-				ss << "Construction input";
+				ss << "<space>Stored(city): " << simulation().resourceCount(playerId(), resourceEnum);
+				
 				auto tooltip = AddToolTip(completionIcon->ResourceImage, ss.str());
 				if (tooltip) {
 					tooltip->TipSizeBox->SetMinDesiredWidth(200);
@@ -128,11 +129,15 @@ public:
 		}
 		else if (building.isEnum(CardEnum::StatisticsBureau)) {
 			// Note StatisticsButton gets its visibility set to Collapsed when it gets init
-			StatisticsButton->SetVisibility(ESlateVisibility::Visible);
+			if (building.ownedBy(playerId())) {
+				StatisticsButton->SetVisibility(ESlateVisibility::Visible);
+			}
 		}
 		else if (building.isEnum(CardEnum::JobManagementBureau)) {
 			// Note JobPriorityButton gets its visibility set to Collapsed when it gets init
-			JobPriorityButton->SetVisibility(ESlateVisibility::Visible);
+			if (building.ownedBy(playerId())) {
+				JobPriorityButton->SetVisibility(ESlateVisibility::Visible);
+			}
 		}
 		else if (building.isEnum(CardEnum::StorageYard) ||
 			building.isEnum(CardEnum::FruitGatherer) ||
@@ -140,21 +145,21 @@ public:
 		{
 		}
 		else {
-			std::vector<float> inputFractions;
-			if (building.hasInput1()) {
-				inputFractions.push_back(static_cast<float>(building.resourceCount(building.input1())) / building.inputPerBatch());
-			}
-			if (building.hasInput2()) {
-				inputFractions.push_back(static_cast<float>(building.resourceCount(building.input2())) / building.inputPerBatch());
-			}
+			//std::vector<float> inputFractions;
+			//if (building.hasInput1()) {
+			//	inputFractions.push_back(static_cast<float>(building.resourceCount(building.input1())) / building.inputPerBatch());
+			//}
+			//if (building.hasInput2()) {
+			//	inputFractions.push_back(static_cast<float>(building.resourceCount(building.input2())) / building.inputPerBatch());
+			//}
 
 			std::vector<ResourceEnum> outputs = { building.product() };
-			std::vector<float> outputFractions = { building.barFraction() };
+			//std::vector<float> outputFractions = { building.barFraction() };
 
 			// Beeswax special case
 			if (outputs[0] == ResourceEnum::Beeswax) {
 				outputs.push_back(ResourceEnum::Honey);
-				outputFractions.push_back(building.barFraction());
+				//outputFractions.push_back(building.barFraction());
 			}
 
 			// MountainMine DepletedText
@@ -165,7 +170,7 @@ public:
 			//	SetText(DepletedText, "Depleted");
 			//}
 
-			SetResourceCompletion(building.inputs(), inputFractions, outputs, outputFractions);
+			SetResourceCompletion(building.inputs(), outputs, building);
 		}
 
 		// Refresh Hover Warning
@@ -342,31 +347,35 @@ public:
 
 		if (input != ResourceEnum::None)
 		{
-			auto completionIcon = GetBoxChild<UResourceCompletionIcon>(ResourceCompletionIconBox, index, UIEnum::ResourceCompletionIcon, true);
-			UMaterialInstanceDynamic* material = completionIcon->ResourceImage->GetDynamicMaterial();
+			SetResourceCompletion({ input }, {}, building);
+			
+			//auto completionIcon = GetBoxChild<UResourceCompletionIcon>(ResourceCompletionIconBox, index, UIEnum::ResourceCompletionIcon, true);
+			//UMaterialInstanceDynamic* material = completionIcon->ResourceImage->GetDynamicMaterial();
 
-			material->SetTextureParameterValue("ColorTexture", assetLoader()->GetResourceIcon(input));
-			material->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(input));
+			//material->SetTextureParameterValue("ColorTexture", assetLoader()->GetResourceIcon(input));
+			//material->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(input));
 
-			int32 inputFraction = static_cast<float>(building.resourceCount(building.input1())) / building.inputPerBatch();
-			material->SetScalarParameterValue("Fraction", inputFraction);
-			material->SetScalarParameterValue("IsInput", 1.0f);
-			material->SetScalarParameterValue("HasNoResource", inputFraction < 1.0f && simulation().resourceCount(playerId(), input) == 0);
+			//int32 hasCount = building.resourceCount(building.input1());
+			//int32 needCount = building.inputPerBatch();
+			//int32 inputFraction = static_cast<float>(hasCount) / needCount;
+			//material->SetScalarParameterValue("Fraction", inputFraction);
+			//material->SetScalarParameterValue("IsInput", 1.0f);
+			//material->SetScalarParameterValue("HasNoResource", inputFraction < 1.0f && simulation().resourceCount(playerId(), input) == 0);
 
-			std::stringstream ss;
-			ss << ResourceName(input);
-			ss << "<space>";
-			ss << "Input";
-			auto tooltip = AddToolTip(completionIcon->ResourceImage, ss.str());
-			if (tooltip) {
-				tooltip->TipSizeBox->SetMinDesiredWidth(150);
-			}
+			//std::stringstream ss;
+			//ss << "Input<space>";
+			//ss << ResourceName(input) << " " << hasCount << "/" << needCount;
+			//ss << "<space>Stored(city)" << simulation().resourceCount(playerId(), input);
+			//
+			//auto tooltip = AddToolTip(completionIcon->ResourceImage, ss.str());
+			//if (tooltip) {
+			//	tooltip->TipSizeBox->SetMinDesiredWidth(150);
+			//}
 
-			BoxAfterAdd(ResourceCompletionIconBox, index);
+			//BoxAfterAdd(ResourceCompletionIconBox, index);
 		}
 	}
-	void SetResourceCompletion(std::vector<ResourceEnum> inputs, std::vector<float> inputFractions,
-							   std::vector<ResourceEnum> outputs, std::vector<float> outputFractions)
+	void SetResourceCompletion(std::vector<ResourceEnum> inputs, std::vector<ResourceEnum> outputs, Building& building)
 	{
 		int32 index = 0;
 		for (size_t i = 0; i < inputs.size(); i++)
@@ -377,14 +386,18 @@ public:
 			material->SetTextureParameterValue("ColorTexture", assetLoader()->GetResourceIcon(inputs[i]));
 			material->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(inputs[i]));
 
-			material->SetScalarParameterValue("Fraction", inputFractions[i]);
+			int32 hasCount = building.resourceCount(building.input1());
+			int32 needCount = building.inputPerBatch();
+
+			material->SetScalarParameterValue("Fraction", static_cast<float>(hasCount) / needCount);
 			material->SetScalarParameterValue("IsInput", 1.0f);
-			material->SetScalarParameterValue("HasNoResource", inputFractions[i] < 1.0f && simulation().resourceCount(playerId(), inputs[i]) == 0);
+			material->SetScalarParameterValue("HasNoResource", hasCount < needCount && simulation().resourceCount(playerId(), inputs[i]) == 0);
 
 			std::stringstream ss;
-			ss << ResourceName(inputs[i]);
-			ss << "<space>";
-			ss << "Input";
+			ss << "Input<space>";
+			ss << ResourceName(inputs[i]) << " " << hasCount << "/" << needCount;
+			ss << "<space>Stored(city)" << simulation().resourceCount(playerId(), inputs[i]);
+			
 			auto tooltip = AddToolTip(completionIcon->ResourceImage, ss.str());
 			if (tooltip) {
 				tooltip->TipSizeBox->SetMinDesiredWidth(150);
@@ -405,16 +418,17 @@ public:
 				material->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(outputs[i]));
 			}
 
-			material->SetScalarParameterValue("Fraction", outputFractions[i]);
+			float outputFraction = building.barFraction();
+			material->SetScalarParameterValue("Fraction", outputFraction);
 			material->SetScalarParameterValue("IsInput", 0.0f);
 			material->SetScalarParameterValue("HasNoResource", 0.0f);
 
 			//index++;
 
 			std::stringstream ss;
-			ss << ResourceName(outputs[i]);
-			ss << "<space>";
-			ss << "Output";
+			ss << "Output<space>";
+			ss << ResourceName(outputs[i]) << " " << static_cast<int>(outputFraction * 100) << "%";
+			
 			auto tooltip = AddToolTip(completionIcon->ResourceImage, ss.str());
 			if (tooltip) {
 				tooltip->TipSizeBox->SetMinDesiredWidth(150);

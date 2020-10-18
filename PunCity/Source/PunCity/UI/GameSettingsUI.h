@@ -35,6 +35,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* GraphicsSettingsButton;
 
 	UPROPERTY(meta = (BindWidget)) UComboBoxString* ResolutionDropdown;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* ResolutionHiddenText;
+	
 	UPROPERTY(meta = (BindWidget)) UComboBoxString* WindowModeDropdown;
 	UPROPERTY(meta = (BindWidget)) UComboBoxString* UIScalingDropdown;
 
@@ -79,6 +81,7 @@ public:
 private:
 	void SetupResolutionDropdown() {
 		ResolutionDropdown->ClearOptions();
+		resolutions.Empty();
 		UKismetSystemLibrary::GetSupportedFullscreenResolutions(resolutions);
 		FIntPoint screenResolution = GetGameUserSettings()->GetScreenResolution();
 		

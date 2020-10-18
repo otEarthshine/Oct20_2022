@@ -86,6 +86,7 @@ public:
 
 	virtual TArray<UWidget*> GetEmptyCardSlot() = 0;
 
+	// Actually just ResearchingText's font for now
 	virtual FSlateFontInfo defaultFont() = 0;
 };
 

@@ -1509,7 +1509,7 @@ public:
 	}
 
 	int32 workManSecPerBatch100() final {
-		return Building::workManSecPerBatch100() * 100 / 120;
+		return Building::workManSecPerBatch100() * 100 / 130; // Fisher work faster
 	}
 
 	void OnUpgradeBuilding(int upgradeIndex) final {

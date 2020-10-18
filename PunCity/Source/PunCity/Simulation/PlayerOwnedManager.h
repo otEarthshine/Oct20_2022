@@ -610,7 +610,7 @@ public:
 		claimProgress.attackerPlayerId = attackerPlayerId;
 		claimProgress.committedInfluencesAttacker = BattleInfluencePrice;
 		claimProgress.committedInfluencesDefender = 0;
-		claimProgress.ticksElapsed = 0;
+		claimProgress.ticksElapsed = BattleClaimTicks / 4; // Start at 25% for attacker
 		
 		_defendingClaimProgress.push_back(claimProgress);
 	}

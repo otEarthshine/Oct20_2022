@@ -833,8 +833,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 
 
 						// Autosave
-						if (_gameManager->isSinglePlayer() &&
-							Time::Seconds() > 0)
+						if (Time::Seconds() > 0)
 						{
 							AutosaveEnum autosaveEnum = _gameManager->autosaveEnum();
 							if (autosaveEnum == AutosaveEnum::HalfYear && Time::Ticks() % (Time::TicksPerYear / 2) == 0) {
@@ -2114,22 +2113,25 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 				}
 			}
 
-			// Delete road (non-construction)
-			if (_overlaySystem.IsRoad(tile)) {
-				RoadTile roadTile = _overlaySystem.GetRoad(tile);
-				_overlaySystem.RemoveRoad(tile);
-				//GameMap::RemoveFrontRoadTile(area.min());
-				PUN_CHECK(IsFrontBuildable(tile));
+			// Can delete road/critter building within territory
+			if (tileOwner(tile) == parameters.playerId) 
+			{
+				// Delete road (non-construction)
+				if (_overlaySystem.IsRoad(tile)) 
+				{
+					RoadTile roadTile = _overlaySystem.GetRoad(tile);
+					_overlaySystem.RemoveRoad(tile);
+					//GameMap::RemoveFrontRoadTile(area.min());
+					PUN_CHECK(IsFrontBuildable(tile));
 
-				
-				AddDemolishDisplayInfo(tile, { roadTile.isDirt ? CardEnum::DirtRoad : CardEnum::StoneRoad, TileArea(tile, WorldTile2(1, 1)), Time::Ticks() });
-				
-				//_regionToDemolishDisplayInfos[tile.regionId()].push_back({CardEnum::DirtRoad, TileArea(tile, WorldTile2(1, 1)), Time::Ticks() });
-				//_regionToDemolishDisplayInfos[tile.regionId()].push_back({ CardEnum::StoneRoad, TileArea(tile, WorldTile2(1, 1)), Time::Ticks() });
-			}
+					
+					AddDemolishDisplayInfo(tile, { roadTile.isDirt ? CardEnum::DirtRoad : CardEnum::StoneRoad, TileArea(tile, WorldTile2(1, 1)), Time::Ticks() });
+					
+					//_regionToDemolishDisplayInfos[tile.regionId()].push_back({CardEnum::DirtRoad, TileArea(tile, WorldTile2(1, 1)), Time::Ticks() });
+					//_regionToDemolishDisplayInfos[tile.regionId()].push_back({ CardEnum::StoneRoad, TileArea(tile, WorldTile2(1, 1)), Time::Ticks() });
+				}
 
-			// Critter building demolition
-			if (tileOwner(tile) == parameters.playerId) {
+				// Critter building demolition
 				DemolishCritterBuildingsIncludingFronts(tile, parameters.playerId);
 			}
 		});

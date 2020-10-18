@@ -587,6 +587,8 @@ void UGameSettingsUI::RefreshResolutionDropdown()
 	if (settings->GetFullscreenMode() == EWindowMode::Windowed) {
 		SetupResolutionDropdown();
 		ResolutionDropdown->SetIsEnabled(true);
+		ResolutionDropdown->SetVisibility(ESlateVisibility::Visible);
+		ResolutionHiddenText->SetVisibility(ESlateVisibility::Visible);
 	}
 	else {
 		ResolutionDropdown->ClearOptions();
@@ -594,5 +596,7 @@ void UGameSettingsUI::RefreshResolutionDropdown()
 		ResolutionDropdown->AddOption(FString::FromInt(point.X) + "x" + FString::FromInt(point.Y));
 		ResolutionDropdown->SetSelectedIndex(0);
 		ResolutionDropdown->SetIsEnabled(false);
+		ResolutionDropdown->SetVisibility(ESlateVisibility::Hidden);
+		ResolutionHiddenText->SetVisibility(ESlateVisibility::Hidden);
 	}
 }

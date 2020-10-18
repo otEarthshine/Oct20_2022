@@ -137,9 +137,9 @@ void UPunWidget::AddResourceTooltip(UWidget* widget, ResourceEnum resourceEnum, 
 	tooltip->TooltipPunBoxWidget->AddRichTextParsed(ss.str());
 }
 
-std::string UPunWidget::WrapString(std::string str, int32 wrapSize)
+std::string UPunWidget::WrapString(std::string str, int32 wrapSize, FSlateFontInfo* fontInfoPtr)
 {
-	FSlateFontInfo fontInfo = GetPunHUD()->defaultFont();
+	FSlateFontInfo fontInfo = fontInfoPtr ? *fontInfoPtr : GetPunHUD()->defaultFont();
 
 	FString fString = ToFString(str);
 
@@ -206,41 +206,6 @@ std::string UPunWidget::WrapString(std::string str, int32 wrapSize)
 			}
 		}
 	}
-	
-
-	
-
-	//int32 count = 0;
-	//int32 wordCharCount = 0;
-
-	////FSlateFontMeasure::Measure(fString, )
-
-	//for (size_t i = 0; i < str.size(); i++)
-	//{
-	//	if (str.substr(i, 2) == "\n") { // Reset count with line end
-	//		i++;
-	//		count = 0;
-	//		wordCharCount = 0;
-	//	}
-	//	else if (count > wrapSize)
-	//	{
-	//		str.insert(i - wordCharCount, "\n");
-
-	//		i++; // \n is 2 chars, loop already has 1 increment, hence only 1 extra needed
-	//		count = 0;
-	//		wordCharCount = 0;
-	//	}
-	//	else {
-	//		count++;
-
-	//		if (str[i] == ' ') {
-	//			wordCharCount = 0;
-	//		}
-	//		else {
-	//			wordCharCount++;
-	//		}
-	//	}
-	//}
 
 	
 	return ToStdString(fString);

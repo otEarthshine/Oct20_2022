@@ -186,9 +186,9 @@ void ULobbyUI::Tick()
 		for (int32 i = 0; i < gameInst->lobbyChatPlayerNames.Num(); i++) {
 			result.Append("\n");
 			if (!gameInst->lobbyChatPlayerNames[i].IsEmpty()) {
-				result.Append("<ChatName>").Append(TrimStringF_Dots(gameInst->lobbyChatPlayerNames[i], 15)).Append(":</> ");
+				result.Append("<LobbyChatName>").Append(TrimStringF_Dots(gameInst->lobbyChatPlayerNames[i], 15)).Append(":</> ");
 			}
-			result.Append("<Chat>").Append(gameInst->lobbyChatMessages[i]).Append("</>");
+			result.Append("<LobbyChat>").Append(gameInst->lobbyChatMessages[i]).Append("</>");
 		}
 		LobbyChatContentRichText->SetText(FText::FromString(result));
 		LobbyChatScrollBox->ScrollToEnd();

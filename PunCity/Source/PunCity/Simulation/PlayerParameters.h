@@ -86,17 +86,18 @@ public:
 	int32 TicksBetweenPregnancy()
 	{
 		int32 result = Time::TicksPerYear * 5 / 4;
-		if (_simulation->TownhallCardCount(_playerId, CardEnum::BirthControl) > 0) {
-			result *= 2;
-		}
 
 		int32 population = _simulation->population(_playerId);
 		int32 housingCapacity = _simulation->HousingCapacity(_playerId);
-		if (population > housingCapacity) {
+
+		if (population > housingCapacity - 5) {
 			result *= 2;
 		}
-		else if (population > housingCapacity + 5) {
+		else if (population > housingCapacity) {
 			result *= 4;
+		}
+		else if (population > housingCapacity + 5) {
+			result *= 8;
 		}
 
 		if (_simulation->IsInDarkAge(_playerId)) { // Dark age baby boom

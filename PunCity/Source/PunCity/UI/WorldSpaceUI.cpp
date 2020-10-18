@@ -909,8 +909,8 @@ void UWorldSpaceUI::TickUnits()
 		HumanStateAI& human = unitAI.subclass<HumanStateAI>();
 
 		bool needHousing = unitAI.needHouse();
-		bool needFood = unitAI.needFood();
-		bool needHeat = unitAI.needHeat();
+		bool needFood = unitAI.showNeedFood();
+		bool needHeat = unitAI.showNeedHeat();
 		bool needHappiness = human.needHappiness();
 		bool needHealthcare = human.needHealthcare();
 		bool needTools = human.needTools();

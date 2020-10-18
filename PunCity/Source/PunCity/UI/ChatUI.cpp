@@ -201,8 +201,12 @@ void UChatUI::Tick()
 	SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
 	
-	if (!simulation().HasTownhall(playerId())) {
-		SetVisibility(ESlateVisibility::Collapsed);
+	//if (!simulation().HasTownhall(playerId())) {
+	//	SetVisibility(ESlateVisibility::Collapsed);
+	//	return;
+	//}
+
+	if (InterfacesInvalid()) {
 		return;
 	}
 	

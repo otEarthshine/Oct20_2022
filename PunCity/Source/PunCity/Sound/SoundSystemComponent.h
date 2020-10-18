@@ -1711,8 +1711,8 @@ private:
 			float starvingCount = 0;
 			for (int32 id : citizenIds) {
 				UnitStateAI& unit = simulation.unitAI(id);
-				if (unit.needFood()) starvingCount++;
-				if (unit.needHeat()) freezingCount++;
+				if (unit.showNeedFood()) starvingCount++;
+				if (unit.showNeedHeat()) freezingCount++;
 			}
 			bool negative = starvingCount > 0 || freezingCount > 0;
 

@@ -1121,7 +1121,7 @@ public:
 	 * Buffs
 	 */
 	void AddBuff(CardEnum cardEnum) {
-		_buffTicksLeft[static_cast<int>(cardEnum) - BuildingEnumCount] = Time::TicksPerYear;
+		_buffTicksLeft[static_cast<int>(cardEnum) - BuildingEnumCount] = Time::TicksPerYear * 2;
 	}
 	bool HasBuff(CardEnum cardEnum) {
 		return _buffTicksLeft[static_cast<int>(cardEnum) - BuildingEnumCount] > 0;
@@ -1306,10 +1306,17 @@ public:
 		Ar << _migrationPendingCount;
 
 		//_LOG(PunPlayerOwned, "Serialize[%d] After isSaving:%d, %d %d %d", _playerId, Ar.IsSaving(), _roadConstructionIds.size(), _constructionIds.size(), _jobBuildingEnumToIds.size());
+
+		/*
+		 * Public
+		 */
+		Ar << alreadyDidGatherMark;
+		Ar << alreadyBoughtFirstCard;
 	}
 
-	// Public NonSerial
+	// Public Serial
 	bool alreadyDidGatherMark = false;
+	bool alreadyBoughtFirstCard = false;
 	
 private:
 

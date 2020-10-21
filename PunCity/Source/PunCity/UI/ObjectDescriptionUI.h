@@ -49,6 +49,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UEditableTextBox* SearchBox;
 
 	UPROPERTY(meta = (BindWidget)) UOverlay* ManageStorageOverlay;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* ManageStorageTitle;
 	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* ManageStorageBox;
 	UPROPERTY(meta = (BindWidget)) UButton* ManageStorageCloseButton;
 	UPROPERTY(meta = (BindWidget)) UButton* AllowAllButton;

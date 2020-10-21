@@ -147,6 +147,7 @@ public:
 	}
 
 	virtual class Building& building(int32 id) = 0;
+	virtual class Building& buildingChecked(int32 id) = 0;
 	virtual class Building& building(ResourceHolderInfo holderInfo, int32 playerId) = 0;
 	virtual CardEnum buildingEnum(int32 id) = 0;
 	virtual bool isValidBuildingId(int32 id) = 0;
@@ -428,7 +429,8 @@ public:
 	virtual int32 taxHappinessModifier(int32 playerId) = 0;
 	virtual int32 cannibalismHappinessModifier(int32 playerId) = 0;
 	virtual int32 citizenDeathHappinessModifier(int32 playerId, SeasonStatEnum seasonStatEnum) = 0;
-
+	
+	//! Immigration
 	virtual void AddMigrationPendingCount(int32 playerId, int32 migrationCount) = 0;
 	virtual void ImmigrationEvent(int32 playerId, int32 migrationCount, std::string message, PopupReceiverEnum receiverEnum) = 0;
 	

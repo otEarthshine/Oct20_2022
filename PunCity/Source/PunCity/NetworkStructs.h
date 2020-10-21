@@ -410,8 +410,10 @@ public:
 	TileArea area2;
 	WorldTile2 center;
 	uint8 faceDirection;
+	
 	bool useBoughtCard = false; //  Note TrailerMode - use useBoughtCard to specify if it is prebuilt
 	CardEnum useWildCard = CardEnum::None;
+	int32 buildingIdToSetDelivery = -1;
 
 	bool isTrailerPreBuilt() { return area2.minX; }
 
@@ -427,8 +429,10 @@ public:
 		blob << area2;
 		blob << center;
 		blob << faceDirection;
+		
 		blob << useBoughtCard;
 		blob << useWildCard;
+		blob << buildingIdToSetDelivery;
 	}
 
 	FString ToCompactString() override {

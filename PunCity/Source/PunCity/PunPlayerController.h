@@ -713,6 +713,21 @@ public:
 		}
 	}
 
+	UFUNCTION(Exec) void PlaceBuilding(const FString& buildingName, int32 tileX, int32 tileY)
+	{
+		std::string name = ToStdString(buildingName);
+		CardEnum buildingEnum = FindCardEnumByName(name);
+
+		auto command = make_shared<FPlaceBuilding>();
+		command->buildingEnum = static_cast<uint8>(buildingEnum);
+		command->buildingLevel = 1;
+		command->center = WorldTile2(tileX, tileY);
+		command->area = BuildingArea(command->center, GetBuildingInfo(buildingEnum).size, Direction::S);
+		command->faceDirection = static_cast<uint8_t>(Direction::S);
+
+		SendNetworkCommand(command);
+	}
+
 
 	/*
 	 * Test Print

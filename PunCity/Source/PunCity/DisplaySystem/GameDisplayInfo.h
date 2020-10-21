@@ -809,7 +809,20 @@ public:
 		{ // ChichenItza
 			ModuleTransforms::CreateSet("ChichenItza")
 		},
-			
+
+		/*
+		 * October 20
+		 */
+		{ // Market
+			ModuleTransforms::CreateSet("Market", {}, {})
+		},
+		{ // ShippingDepot
+			ModuleTransforms::CreateSet("ShippingDepot", {}, {})
+		},
+		{ // IrrigationReservoir
+			ModuleTransforms::CreateSet("IrrigationReservoir", {}, {})
+		},
+		
 		/*
 		 * Decorations
 		 */

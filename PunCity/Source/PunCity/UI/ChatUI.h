@@ -514,7 +514,7 @@ private:
 
 		std::stringstream finalSS;
 		finalSS << "<ChatName>" << wrappedMessage.substr(0, namePartLength) << "</>"; // Name
-		finalSS << "<Chat>" << wrappedMessage.substr(namePartLength, wrappedMessage.size()) << "</>"; // Message
+		finalSS << wrappedMessage.substr(namePartLength, wrappedMessage.size()); // Message
 
 		widget->SetRichText(ToFString(finalSS.str()));
 		

@@ -39,6 +39,7 @@
 
 DECLARE_CYCLE_STAT(TEXT("PUN: [UI]Select_Start"), STAT_PunUISelect_Start, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: [UI]FindStartSpot"), STAT_PunUIFindStartSpot, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [UI]AddClaimLandButton"), STAT_PunUI_AddClaimLandButton, STATGROUP_Game);
 
 using namespace std;
 
@@ -625,6 +626,19 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 						int32 houseLvl = house->houseLvl();
 						int32 appealNeeded = house->GetAppealUpgradeRequirement(houseLvl + 1);
+
+						// Heating
+						{
+							ss.str("");
+							auto widgetCoal = descriptionBox->AddRichText("Coal Heating Efficiency", to_string(house->GetHeatingEfficiency(ResourceEnum::Coal)) + "%");
+							house->GetHeatingEfficiencyTip(ss, ResourceEnum::Coal);
+							AddToolTip(widgetCoal, ss);
+							
+							auto widgetWood = descriptionBox->AddRichText("Wood Heating Efficiency", to_string(house->GetHeatingEfficiency(ResourceEnum::Wood)) + "%");
+							house->GetHeatingEfficiencyTip(ss, ResourceEnum::Wood);
+							AddToolTip(widgetWood, ss);
+						}
+						descriptionBox->AddSpacer(10);
 						
 						descriptionBox->AddRichText("Appeal", to_string(house->GetAppealPercent()) + "%");
 
@@ -1191,7 +1205,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							UPunBoxWidget* chooseResourceBox = _objectDescriptionUI->ChooseResourceBox;
 							FString searchString = _objectDescriptionUI->SearchBox->GetText().ToString();
 
-							for (const ResourceInfo& info : SortedNameResourceEnum)
+							for (const ResourceInfo& info : SortedNameResourceInfo)
 							{
 								FString name = ToFString(info.name);
 
@@ -1269,7 +1283,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				if (IsStorage(building.buildingEnum()) &&
 					building.ownedBy(playerId()))
 				{
-					descriptionBox->AddButton("Manage Storage", nullptr, "", this, CallbackEnum::OpenManageStorage, true, false, objectId);
+					std::string buttonName = building.isEnum(CardEnum::Market) ? "Manage Market" : "Manage Storage";
+					descriptionBox->AddButton(buttonName, nullptr, "", this, CallbackEnum::OpenManageStorage, true, false, objectId);
 					descriptionBox->AddLineSpacer(12);
 
 					/*
@@ -1278,7 +1293,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					StorageYard& storage = building.subclass<StorageYard>();
 					UPunBoxWidget* manageStorageBox = _objectDescriptionUI->ManageStorageBox;
 
-					std::vector<ResourceInfo> resourceEnums = SortedNameResourceEnum;
+					SetText(_objectDescriptionUI->ManageStorageTitle, buttonName);
+
+					std::vector<ResourceInfo> resourceEnums = SortedNameResourceInfo;
 
 					auto tryAddManageStorageElement_UnderExpansion = [&](ResourceEnum resourceEnum, bool isShowing)
 					{
@@ -1348,10 +1365,13 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					}
 
 					// Other resources
-					for (ResourceInfo resourceInfo : resourceEnums) {
-						bool isAllowed = storage.ResourceAllowed(resourceInfo.resourceEnum);
-						ECheckBoxState checkState = (isAllowed ? ECheckBoxState::Checked : ECheckBoxState::Unchecked);
-						manageStorageBox->AddManageStorageElement(resourceInfo.resourceEnum, "", objectId, checkState, false);
+					if (!building.isEnum(CardEnum::Market))
+					{
+						for (ResourceInfo resourceInfo : resourceEnums) {
+							bool isAllowed = storage.ResourceAllowed(resourceInfo.resourceEnum);
+							ECheckBoxState checkState = (isAllowed ? ECheckBoxState::Checked : ECheckBoxState::Unchecked);
+							manageStorageBox->AddManageStorageElement(resourceInfo.resourceEnum, "", objectId, checkState, false);
+						}
 					}
 
 					manageStorageBox->AfterAdd();
@@ -1659,7 +1679,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 					for (ResourceHolderInfo holderInfo : holderInfos)
 					{
-						int32_t resourceCount = building.GetResourceCount(holderInfo);
+						int32 resourceCount = building.GetResourceCount(holderInfo);
 
 						// Don't display 0
 						if (resourceCount == 0) {
@@ -1920,6 +1940,21 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						const std::vector<BuildingUpgrade>& upgrades = building.upgrades();
 						for (size_t i = 0; i < upgrades.size(); i++) {
 							setUpgradeButton(upgrades[i], i);
+						}
+					}
+
+
+					/*
+					 * Delivery
+					 */
+					if (building.product() != ResourceEnum::None &&
+						simulation.unlockSystem(playerId())->unlockedSetDeliveryTarget)
+					{
+						auto button = descriptionBox->AddButton("Set Delivery Target", nullptr, "", this, CallbackEnum::SetDeliveryTarget, true, false, objectId);
+						AddToolTip(button, "Set the Target Storage/Market where output resources would be delivered");
+						
+						if (building.deliveryTargetId() != -1) {
+							descriptionBox->AddButton("Remove Delivery Target", nullptr, "", this, CallbackEnum::RemoveDeliveryTarget, true, false, objectId);
 						}
 					}
 				}
@@ -2605,7 +2640,7 @@ void UObjectDescriptionUISystem::AddSelectStartLocationButton(int32 provinceId, 
 			canClaim = false;
 		}
 		
-		if (!SimUtils::CanReserveSpot_NotTooCloseToAnother(provinceId, &simulation(), 1)) {
+		if (!SimUtils::CanReserveSpot_NotTooCloseToAnother(provinceId, &simulation(), 2)) {
 			descriptionBox->AddRichText("<Red>Too close to another town</>");
 			canClaim = false;
 		}
@@ -2640,6 +2675,7 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 	if (provinceId == -1) {
 		return;
 	}
+	SCOPE_CYCLE_COUNTER(STAT_PunUI_AddClaimLandButton);
 	
 	auto& sim = simulation();
 	auto& playerOwned = sim.playerOwned(playerId());
@@ -2962,6 +2998,20 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 			simulation().parameters(playerId())->NeedTownhallUpgradeNoticed = false;
 		}
 	}
+	
+	else if (callbackEnum == CallbackEnum::SetDeliveryTarget)
+	{
+		inputSystemInterface()->StartSetDeliveryTarget(punWidgetCaller->callbackVar1);
+	}
+	else if (callbackEnum == CallbackEnum::RemoveDeliveryTarget)
+	{
+		auto command = make_shared<FPlaceBuilding>();
+		command->buildingIdToSetDelivery = punWidgetCaller->callbackVar1;
+		command->center = WorldTile2::Invalid;
+
+		networkInterface()->SendNetworkCommand(command);
+	}
+	
 	else if (callbackEnum == CallbackEnum::OpenStatistics)
 	{
 		GetPunHUD()->OpenStatisticsUI(punWidgetCaller->callbackVar1);

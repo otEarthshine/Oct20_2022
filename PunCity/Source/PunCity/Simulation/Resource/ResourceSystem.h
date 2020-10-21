@@ -900,7 +900,7 @@ public:
 		holderGroup(info.resourceEnum).SetHolderTypeAndTarget(info.holderId, type, target, *this);
 	}
 
-	int32 CanReceiveAmount(ResourceHolder& holder) const;
+	int32 CanReceiveAmount(const ResourceHolder& holder) const;
 
 	int32 CanReceiveAmountAfterReset(ResourceHolder& holder) const;
 

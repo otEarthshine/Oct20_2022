@@ -339,8 +339,6 @@ public:
 				_simulation->HasTownhall(maxRelationshipPlayerId) &&
 				_simulation->money(_aiPlayerId) > 500)
 			{
-				_simulation->ChangeMoney(_aiPlayerId, 500);
-				
 				PUN_LOG("[AIPlayer] gift pid:%d target:%d second:%d", _aiPlayerId, maxRelationshipPlayerId, secondToAct);
 				
 				auto command = make_shared<FGenericCommand>();

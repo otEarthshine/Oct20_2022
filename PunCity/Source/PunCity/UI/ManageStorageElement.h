@@ -23,7 +23,7 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) UButton* ExpandArrow;
 
-	//UPROPERTY(meta = (BindWidget)) UPunEditableNumberBox* TargetAmount;
+	UPROPERTY(meta = (BindWidget)) UPunEditableNumberBox* TargetAmount;
 
 	bool IsExpanded() {
 		return FMath::IsNearlyEqual(ExpandArrow->GetRenderTransformAngle(), 90.0f);

@@ -28,6 +28,7 @@ public:
 	virtual void StartRoadPlacement(bool isStoneRoad, bool isIntercity = false) = 0;
 	virtual void StartFencePlacement() = 0;
 	virtual void StartBridgePlacement() = 0;
+	virtual void StartSetDeliveryTarget(int32 buildingId) = 0;
 
 	//virtual int32_t GetCardHandIndexBeingPlaced() = 0;
 	virtual CardEnum GetBuildingEnumBeingPlaced() = 0;

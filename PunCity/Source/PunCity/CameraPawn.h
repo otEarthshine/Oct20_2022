@@ -234,6 +234,10 @@ public:
 		_networkInterface->ResetGameUI();
 		buildingPlacementSystem->StartBridge();
 	}
+	void StartSetDeliveryTarget(int32 buildingId) final {
+		_networkInterface->ResetGameUI();
+		buildingPlacementSystem->StartSetDeliveryTarget(buildingId);
+	}
 
 	//int32_t GetCardHandIndexBeingPlaced() final { return buildingPlacementSystem->GetCardHandIndexBeingPlaced(); }
 	CardEnum GetBuildingEnumBeingPlaced() final { return buildingPlacementSystem->GetBuildingEnumBeingPlaced(); }

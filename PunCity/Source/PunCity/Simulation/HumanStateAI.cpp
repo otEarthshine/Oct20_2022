@@ -345,6 +345,40 @@ void HumanStateAI::GatherSequence(NonWalkableTileAccessInfo accessInfo)
 	Add_MoveTo(accessInfo.nearbyTile);
 }
 
+bool HumanStateAI::TryMoveResourcesProviderToDropoff(int32 providerBuildingId, int32 dropoffBuildingId, ResourceEnum resourceEnum, int32 amountAtLeast)
+{
+	Building& provider = _simulation->building(providerBuildingId);
+	ResourceHolderInfo providerInfo = provider.holderInfo(resourceEnum);
+	if (!providerInfo.isValid()) {
+		return false;
+	}
+	Building& dropoff = _simulation->building(dropoffBuildingId);
+	ResourceHolderInfo dropoffInfo = dropoff.holderInfo(resourceEnum);
+	if (!dropoffInfo.isValid()) {
+		return false;
+	}
+	
+	auto& resourceSys = resourceSystem();
+	if (resourceSys.resourceCountWithPop(providerInfo) < amountAtLeast) {
+		return false;
+	}
+
+	auto& holder = resourceSys.holder(providerInfo);
+	if (holder.type == ResourceHolderType::Requester) {
+		return false;
+	}
+
+	if (holder.type == ResourceHolderType::Storage) {
+		int32 canReceiveAmount = resourceSys.CanReceiveAmount(holder);
+		if (canReceiveAmount < amountAtLeast) {
+			return false;
+		}
+	}
+	
+	MoveResourceSequence({ FoundResourceHolderInfo(providerInfo, amountAtLeast, provider.centerTile()) }, 
+										{ FoundResourceHolderInfo(dropoffInfo, amountAtLeast, dropoff.centerTile()) });
+	return true;
+}
 
 bool HumanStateAI::TryMoveResourcesAnyProviderToDropoff(ResourceFindType providerType, FoundResourceHolderInfo dropoffInfo)
 {
@@ -379,13 +413,29 @@ bool HumanStateAI::TryMoveResourcesProviderToAnyDropoff(FoundResourceHolderInfo 
 		return false;
 	}
 
-	if (resourceSystem().resourceCountWithPop(providerInfo.info) < providerInfo.amount) {
+	auto& resourceSys = resourceSystem();
+	if (resourceSys.resourceCountWithPop(providerInfo.info) < providerInfo.amount) {
 		//AddDebugSpeech("(Failed)TryMoveResourcesProviderToAnyDropoff: " + providerInfo.resourceName() + " providerInfo has too little resource");
 		return false;
 	}
 
+	// Delivery Target
+	int32 providerBuildingId = resourceSys.objectId(providerInfo.info);
+	if (providerBuildingId != -1)
+	{
+		int32 deliveryTargetId = _simulation->building(providerBuildingId).deliveryTargetId();
+		if (deliveryTargetId != -1)
+		{
+			// Try sending resource to delivery target
+			if (TryMoveResourcesProviderToDropoff(_workplaceId, deliveryTargetId, providerInfo.info.resourceEnum , providerInfo.amount)) {
+				AddDebugSpeech("(Succeed)TryProduce: !workplace.NeedWork, move to delivery target instead");
+				return true;
+			}
+		}
+	}
+
 	// BIBU resourceSystem().GetTile(providerInfo)
-	FoundResourceHolderInfos foundDropoffs = resourceSystem().FindHolder(dropoffType, providerInfo.info.resourceEnum, providerInfo.amount, providerInfo.tile); // starTile is provider's tile
+	FoundResourceHolderInfos foundDropoffs = resourceSys.FindHolder(dropoffType, providerInfo.info.resourceEnum, providerInfo.amount, providerInfo.tile); // starTile is provider's tile
 	if (!foundDropoffs.hasInfos()) {
 		//AddDebugSpeech("(Failed)TryMoveResourcesProviderToAnyDropoff: " + providerInfo.resourceName() + " dropoffInfo invalid: " + ResourceFindTypeName[(int)dropoffType]);
 		return false;
@@ -1631,7 +1681,7 @@ bool HumanStateAI::TryProduce()
 			AddDebugSpeech("(Failed)TryProduce: !workplace.NeedWork, but already enough Pop");
 			return false;
 		}
-
+		
 		if (TryMoveResourcesProviderToAnyDropoff(FoundResourceHolderInfo(holderInfo, amount, workplace.gateTile()), ResourceFindType::AvailableForDropoff)) {
 			AddDebugSpeech("(Succeed)TryProduce: !workplace.NeedWork, move instead");
 			return true;

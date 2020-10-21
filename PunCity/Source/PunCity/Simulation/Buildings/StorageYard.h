@@ -10,6 +10,7 @@ class StorageYard : public Building
 public:
 	void OnInit() override
 	{
+		// queuedResourceAllowed must be here to allow managing storage before it is finished
 		queuedResourceAllowed.clear();
 		queuedResourceAllowed.resize(ResourceEnumCount, true);
 	}
@@ -41,18 +42,24 @@ public:
 
 	void SetAreaWalkable() override
 	{
-		// Make the area on which this was built walkable.
-		_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-			bool isBorder = (tile.x == _area.minX) || 
-							(tile.x == _area.maxX) || 
-							(tile.y == _area.minY) || 
-							(tile.y == _area.maxY);
-			_simulation->SetWalkable(tile, isBorder);
-		});
+		if (isEnum(CardEnum::StorageYard))
+		{
+			// Make the area on which this was built walkable.
+			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+				bool isBorder = (tile.x == _area.minX) ||
+					(tile.x == _area.maxX) ||
+					(tile.y == _area.minY) ||
+					(tile.y == _area.maxY);
+				_simulation->SetWalkable(tile, isBorder);
+			});
 
-		_simulation->ResetUnitActionsInArea(_area);
+			_simulation->ResetUnitActionsInArea(_area);
 
-		_didSetWalkable = true;
+			_didSetWalkable = true;
+		}
+		else {
+			Building::SetAreaWalkable();
+		}
 	}
 
 
@@ -171,4 +178,52 @@ public:
 	int32 storageSlotCount() override {
 		return 30;
 	}
+};
+
+class Market : public StorageYard
+{
+public:
+	int32 storageSlotCount() override {
+		return 50;
+	}
+
+	void OnInit() override
+	{
+		queuedResourceAllowed.clear();
+		queuedResourceAllowed.resize(ResourceEnumCount, false);
+		
+		// queuedResourceAllowed must be here to allow managing storage before it is finished
+		// Market only allow food/fuel/luxury
+		for (ResourceEnum foodEnum : FoodEnums) {
+			queuedResourceAllowed[static_cast<int>(foodEnum)] = true;
+		}
+		ExecuteOnLuxuryResources([&](ResourceEnum resourceEnum) {
+			queuedResourceAllowed[static_cast<int>(resourceEnum)] = true;
+		});
+
+		resourceTargets.clear();
+		resourceTargets.resize(ResourceEnumCount, 240);
+	}
+	
+	void FinishConstruction() override
+	{
+		Building::FinishConstruction();
+
+		for (ResourceInfo info : ResourceInfos) {
+			ResourceHolderType holderType = queuedResourceAllowed[info.resourceEnumInt()] ? ResourceHolderType::Storage : ResourceHolderType::Provider;
+			AddResourceHolder(info.resourceEnum, holderType, 0);
+		}
+		queuedResourceAllowed.clear();
+
+		TrailerAddResource();
+	}
+	
+
+	void Serialize(FArchive& Ar) override {
+		StorageYard::Serialize(Ar);
+		
+		SerializeVecValue(Ar, resourceTargets);
+	}
+
+	std::vector<int32> resourceTargets;
 };

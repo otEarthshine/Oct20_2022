@@ -57,6 +57,9 @@ void UBuildingJobUI::PunInit(int buildingId, bool isHouse)
 
 	ClockBox->SetVisibility(ESlateVisibility::Collapsed);
 
+	PunBox->SetVisibility(ESlateVisibility::Collapsed);
+	SetChildHUD(PunBox);
+
 	_lastInputTime = -999.0f;
 	_lastPriorityInputTime = -999.0f;
 }

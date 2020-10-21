@@ -791,7 +791,7 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 
 						building.isEnum(CardEnum::HuntingLodge) ||
 						building.isEnum(CardEnum::FruitGatherer) || 
-						building.isEnum(CardEnum::StorageYard) || // TODO: may be this is for all buildings??
+						IsStorage(building.buildingEnum()) || // TODO: may be this is for all buildings??
 
 						building.isEnum(CardEnum::JobManagementBureau) ||
 						building.isEnum(CardEnum::StatisticsBureau);
@@ -1173,21 +1173,31 @@ void UWorldSpaceUI::TickPlacementInstructions()
 		punBox->AddRichText("Click and drag cursor")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
 		punBox->AddRichText("to specify the area to demolish")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
 	}
+
+	else if (needInstruction(PlacementInstructionEnum::DeliveryPointInstruction)) {
+		punBox->AddRichText("Choose storage/market")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
+		punBox->AddRichText("to set the delivery point.")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
+	}
+	else if (needInstruction(PlacementInstructionEnum::DeliveryPointMustBeStorage)) {
+		punBox->AddRichText("<Red>Delivery Point must be</>")->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichText("<Red>Storage Yard, Warehouse, or Market</>")->SetJustification(ETextJustify::Type::Center);
+	}
 	
 	else if (needInstruction(PlacementInstructionEnum::Dock)) {
-		punBox->AddRichText("<Red>Dock must face water.</>")->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichText("<Red>Dock must face water</>")->SetJustification(ETextJustify::Type::Center);
 	}
 	else if (needInstruction(PlacementInstructionEnum::NeedGeoresource)) {
 		GeoresourceEnum geoEnum = static_cast<GeoresourceEnum>(getInstruction(PlacementInstructionEnum::NeedGeoresource).intVar1);
 		punBox->AddRichText("<Red>Need region with " + GetGeoresourceInfo(geoEnum).name + "</>")->SetJustification(ETextJustify::Type::Center);
 	}
 	else if (needInstruction(PlacementInstructionEnum::MountainMine)) {
-		punBox->AddRichText("<Red>Mine's back must face mountain.</>")->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichText("<Red>Mine's back must face mountain</>")->SetJustification(ETextJustify::Type::Center);
 	}
 	else if (needInstruction(PlacementInstructionEnum::ForeignBuilding)) {
-		punBox->AddRichText("<Red>Must be placed in foreign land.</>")->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichText("<Red>Must be placed in foreign land</>")->SetJustification(ETextJustify::Type::Center);
 	}
-	else if (needInstruction(PlacementInstructionEnum::ClayPit)) {
+	else if (needInstruction(PlacementInstructionEnum::MustBeNearRiver))
+	{
 		punBox->AddRichText("<Red>Must be built near a river</>")->SetJustification(ETextJustify::Type::Center);
 	}
 	else if (needInstruction(PlacementInstructionEnum::FarmAndRanch)) {

@@ -1943,3 +1943,61 @@ class LaborerGuild final : public Building
 {
 public:
 };
+
+class ShippingDepot final : public Building
+{
+public:
+};
+
+
+class IrrigationReservoir final : public Building
+{
+public:
+	void OnInit() override {
+		TileArea digArea = _area;
+		digArea.minX++;
+		digArea.minY++;
+		digArea.maxX--;
+		digArea.maxY--;
+		digArea.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+			WorldTile2 bldTileBeforeRotation = UndoRotateBuildingTileByDirection(tile - centerTile());
+			if (bldTileBeforeRotation != WorldTile2(-1, -1) &&
+				bldTileBeforeRotation != WorldTile2(0, -1)) {
+				_simulation->terrainChanges().AddHole(tile);
+			}
+		});
+	}
+
+	void FinishConstruction() override {
+		Building::FinishConstruction();
+
+		_upgrades = {
+			MakeUpgrade("Wind-powered Pump", "Halve the upkeep if adjacent to Windmill.", 10),
+		};
+	}
+
+	void OnDeinit() override {
+		TileArea digArea = _area;
+		digArea.minX++;
+		digArea.minY++;
+		digArea.maxX--;
+		digArea.maxY--;
+		digArea.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+			WorldTile2 bldTileBeforeRotation = UndoRotateBuildingTileByDirection(tile - centerTile());
+			if (bldTileBeforeRotation != WorldTile2(-1, -1) &&
+				bldTileBeforeRotation != WorldTile2(0, -1)) {
+				_simulation->terrainChanges().RemoveHole(tile);
+			}
+		});
+	}
+
+	int32 upkeep() override {
+		int32 baseUpkeep = 80;
+		if (IsUpgraded(0)) {
+			return baseUpkeep / 2;
+		}
+		return baseUpkeep;
+	}
+
+	static const int32 Radius = 12;
+};

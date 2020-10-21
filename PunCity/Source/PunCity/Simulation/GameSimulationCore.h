@@ -513,6 +513,12 @@ public:
 		}
 		return isValid;
 	}
+	Building& buildingChecked(int32 id) final {
+		check(IsValidBuilding(id));
+		return _buildingSystem->building(id);
+	}
+
+	
 	static bool IsValidPlayer(int32 playerId) {
 		return 0 <= playerId && playerId <= GameConstants::MaxPlayersAndAI;
 	}
@@ -1592,6 +1598,10 @@ public:
 		// Add warehouses
 		std::vector<int32> warehouseIds = buildingIds(playerId, CardEnum::Warehouse);
 		storageIds.insert(storageIds.end(), warehouseIds.begin(), warehouseIds.end());
+
+		// Add markets
+		std::vector<int32> marketIds = buildingIds(playerId, CardEnum::Market);
+		storageIds.insert(storageIds.end(), marketIds.begin(), marketIds.end());
 		
 		for (int32 storageId : storageIds) {
 			if (!building(storageId).subclass<StorageYard>().isFull()) {

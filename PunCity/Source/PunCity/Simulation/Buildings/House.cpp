@@ -119,7 +119,8 @@ void House::FinishConstruction()
 	}
 
 	_upgrades = {
-		BuildingUpgrade("House Insulation", "Wood/coal gives 20% more heat", ResourcePair(ResourceEnum::Stone, 20)),
+		BuildingUpgrade("Stone Insulation", "Wood/coal gives 20% more heat", ResourcePair(ResourceEnum::Stone, 20)),
+		BuildingUpgrade("Brick Insulation", "Wood/coal gives 30% more heat", ResourcePair(ResourceEnum::Brick, 30)),
 	};
 
 	
@@ -222,8 +223,8 @@ int32 House::GetIncome100(IncomeEnum incomeEnum)
 	case IncomeEnum::Tech_MoreGoldPerHouse:
 		return occupancyFactor(_simulation->IsResearched(_playerId, TechEnum::MoreGoldPerHouse) ? 300 : 0);
 
-	case IncomeEnum::Tech_HouseLvl2Income:
-		return occupancyFactor(_simulation->IsResearched(_playerId, TechEnum::HouseLvl2Income) && (_houseLvl >= 2 ? 200 : 0));
+	case IncomeEnum::Tech_HouseLvl6Income:
+		return occupancyFactor(_simulation->IsResearched(_playerId, TechEnum::HouseLvl6Income) && (_houseLvl >= 6 ? 1000 : 0));
 
 	case IncomeEnum::Appeal: {
 		int32 percentIncomeIncrease = GetAppealPercent() / 5;

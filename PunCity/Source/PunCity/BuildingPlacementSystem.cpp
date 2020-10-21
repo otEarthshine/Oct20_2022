@@ -494,6 +494,12 @@ void ABuildingPlacementSystem::StartBuildingPlacement(CardEnum buildingEnum, int
 	_gameInterface->SetAlwaysShowProvinceHover(buildingEnum == CardEnum::Fort || buildingEnum == CardEnum::Colony);
 }
 
+void ABuildingPlacementSystem::StartSetDeliveryTarget(int32 buildingId)
+{
+	_placementType = PlacementType::DeliveryPoint;
+	_deliveryTargetBuildingId = buildingId;
+}
+
 void ABuildingPlacementSystem::StartHarvestPlacement(bool isRemoving, ResourceEnum resourceEnum)
 {
 	_placementType = isRemoving ? PlacementType::GatherRemove : PlacementType::Gather;
@@ -808,6 +814,8 @@ void ABuildingPlacementSystem::CancelPlacement()
 	_placementType = PlacementType::None;
 	_dragState = DragState::None;
 	_buildingEnum = CardEnum::None;
+
+	_deliveryTargetBuildingId = -1;
 
 	_placementGrid.SetActive(false);
 	_placementGrid.Clear();
@@ -1510,6 +1518,40 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 	//}
 
 	/*
+	 * Delivery Point
+	 */
+	if (_placementType == PlacementType::DeliveryPoint)
+	{
+		_canPlace = false;
+		
+		if (_mouseOnTile.isValid())
+		{
+			Building* buildingAtTile = simulation.buildingAtTile(_mouseOnTile);
+			if (buildingAtTile) {
+				if (IsStorage(buildingAtTile->buildingEnum())) {
+					_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, _mouseOnTile);
+					_canPlace = true;
+				} else {
+					SetInstruction(PlacementInstructionEnum::DeliveryPointMustBeStorage, true);
+					_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, _mouseOnTile);
+				}
+			}
+			else {
+				SetInstruction(PlacementInstructionEnum::DeliveryPointInstruction, true);
+				_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, _mouseOnTile);
+			}
+		}
+		else {
+			_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, _mouseOnTile);
+		}
+
+		_placementGrid.AfterAdd();
+		
+		return;
+	}
+	
+	
+	/*
 	 * Building
 	 */
 	BldInfo buildingInfo = GetBuildingInfo(_buildingEnum);
@@ -1819,16 +1861,17 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				}
 			});
 		}
-		// Clay Pit grid
-		else if (_buildingEnum == CardEnum::ClayPit)
+		// Claypit/Irrigation Reservoir grid
+		else if (_buildingEnum == CardEnum::ClayPit ||
+				_buildingEnum == CardEnum::IrrigationReservoir)
 		{
 			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 				if (IsPlayerBuildable(tile)) {
-					if (terrainGenerator.riverFraction(tile) > ClaypitRiverFractionPercentThreshold / 100.0f) {
+					if (terrainGenerator.riverFraction(tile) > GetRiverFractionPercentThreshold(_buildingEnum) / 100.0f) {
 						_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, tile);
 						return;
 					}
-					SetInstruction(PlacementInstructionEnum::ClayPit, true);
+					SetInstruction(PlacementInstructionEnum::MustBeNearRiver, true);
 				}
 				_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
 			});
@@ -2460,5 +2503,20 @@ void ABuildingPlacementSystem::NetworkTryPlaceBuilding(IGameNetworkInterface* ne
 		}
 	}
 
+	else if (_placementType == PlacementType::DeliveryPoint)
+	{
+		if (_canPlace)
+		{
+			auto command = make_shared<FPlaceBuilding>();
+			command->buildingIdToSetDelivery = _deliveryTargetBuildingId;
+			command->center = _mouseOnTile;
 
+			networkInterface->SendNetworkCommand(command);
+			
+			CancelPlacement();
+		}
+		else {
+			_gameInterface->Spawn2DSound("UI", "PopupCannot");
+		}
+	}
 }

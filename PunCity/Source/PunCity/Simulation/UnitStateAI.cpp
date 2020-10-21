@@ -1620,25 +1620,15 @@ void UnitStateAI::Heat()
 			}
 
 			heatToAdd = heatToAdd * 100 / (100 + _simulation->difficultyConsumptionAdjustment());
+		
 			
-			
-			if (resourceEnum == ResourceEnum::Coal) {
-				heatToAdd *= 2;
-			}
-			
-			if (_simulation->TownhallCardCount(_playerId, CardEnum::ChimneyRestrictor)) {
-				heatToAdd += heatToAdd * 15 / 100;
-			}
-			if (resourceEnum == ResourceEnum::Coal &&
-				_simulation->TownhallCardCount(_playerId, CardEnum::CoalTreatment))
-			{
-				heatToAdd += heatToAdd * 20 / 100;
-			}
-
 			if (_houseId != -1) {
 				House& house = _simulation->building<House>(_houseId, CardEnum::House);
-				if (house.IsUpgraded(0)) {
-					heatToAdd += heatToAdd * 20 / 100;
+				int32 heatingEfficiency = house.GetHeatingEfficiency(resourceEnum);
+				heatToAdd += heatToAdd * heatingEfficiency / 100;
+			} else {
+				if (resourceEnum == ResourceEnum::Coal) {
+					heatToAdd *= 2;
 				}
 			}
 

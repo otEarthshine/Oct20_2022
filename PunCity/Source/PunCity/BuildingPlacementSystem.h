@@ -119,6 +119,8 @@ public:
 	void Init(UAssetLoaderComponent* assetLoader);
 
 	void StartBuildingPlacement(CardEnum buildingEnum, int32 buildingLvl, bool useBoughtCard, CardEnum useWildCard);
+	void StartSetDeliveryTarget(int32 buildingId);
+	
 	void StartHarvestPlacement(bool isRemoving, ResourceEnum resourceEnum);
 	void StartDemolish();
 	void StartRoad(bool isStoneRoad, bool isIntercity);
@@ -257,6 +259,8 @@ private:
 	//int32_t _cardHandIndex = -1;
 	bool _useBoughtCard = false;
 	CardEnum _useWildCard = CardEnum::None;
+
+	int32 _deliveryTargetBuildingId = -1;
 
 	bool _canPlace = false;
 	bool _forceCannotPlace = false;

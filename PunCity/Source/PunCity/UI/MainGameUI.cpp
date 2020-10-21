@@ -55,9 +55,6 @@ void UMainGameUI::PunInit()
 
 	CardStackButton->IsFocusable = false;
 	CardStackButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickCardStackButton);
-	
-	AddToolTip(CardStackButton, "Show drawn cards that can be bought.\n<Orange>[C]</>");
-	AddToolTip(RoundCountdownImage, "Round timer<space>You get a new card hand each round.<space>Each season contains 2 rounds.");
 
 	CardHand1SubmitButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickCardHand1SubmitButton);
 	CardHand1CancelButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickCardHand1CancelButton);
@@ -109,6 +106,9 @@ void UMainGameUI::PunInit()
 	AddToolTip(BuildMenuTogglerButton, "Build houses, farms, and infrastructures\n<Orange>[B]</>");
 	AddToolTip(GatherButton, "Gather trees, stone etc\n<Orange>[G]</><space>Activate this button, then Click and Drag to Gather.");
 	AddToolTip(DemolishButton, "Demolish\n<Orange>[X]</>");
+
+	AddToolTip(CardStackButton, "Show drawn cards that can be bought.\n<Orange>[C]</>");
+	AddToolTip(RoundCountdownImage, "Round timer<space>You get a new card hand each round.<space>Each season contains 2 rounds.");
 
 	// Set Icon images
 	auto assetLoader = dataSource()->assetLoader();
@@ -823,8 +823,12 @@ void UMainGameUI::Tick()
 			HousingSpaceText->SetText(FText::FromString(FString::FromInt(population) + FString("/") + FString::FromInt(simulation.HousingCapacity(playerId()))));
 
 			std::vector<int32> storageIds = simulation.buildingIds(playerId(), CardEnum::StorageYard);
+			
 			std::vector<int32> warehouseIds = simulation.buildingIds(playerId(), CardEnum::Warehouse);
 			storageIds.insert(storageIds.end(), warehouseIds.begin(), warehouseIds.end());
+
+			std::vector<int32> marketIds = simulation.buildingIds(playerId(), CardEnum::Market);
+			storageIds.insert(storageIds.end(), marketIds.begin(), marketIds.end());
 			
 			int32 totalSlots = 0;
 			int32 usedSlots = 0;
@@ -1528,7 +1532,7 @@ void UMainGameUI::ToggleBuildingMenu()
 		auto refreshPermanentCard = [&](UBuildingPlacementButton* cardButton)
 		{
 			int32 cardPrice = cardSys.GetCardPrice(cardButton->buildingEnum);
-			cardButton->SetCardStatus(CardHandEnum::PermanentHand, false, money < cardPrice);
+			cardButton->SetCardStatus(CardHandEnum::PermanentHand, false, cardPrice > 0 && money < cardPrice);
 			cardButton->SetPrice(cardPrice);
 		};
 
@@ -1841,7 +1845,8 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 	if (callbackEnum == CallbackEnum::SelectPermanentCard)
 	{
 		int32 money = simulation().money(playerId());
-		if (money < cardSystem.GetCardPrice(buildingEnum)) {
+		int32 cardPrice = cardSystem.GetCardPrice(buildingEnum);
+		if (cardPrice > 0 && money < cardPrice) {
 			simulation().AddPopupToFront(playerId(), "Not enough money to buy the common card.", ExclusiveUIEnum::BuildMenu, "PopupCannot");
 			return;
 		}

@@ -172,6 +172,55 @@ public:
 		return 20 + houseLvl * 10;
 	}
 
+
+
+	void GetHeatingEfficiencyTip(std::stringstream& ss, ResourceEnum resourceEnum)
+	{
+		ss << ResourceName(resourceEnum) << " Heating Efficiency: " << GetHeatingEfficiency(resourceEnum) << "%<space>";
+		if (_simulation->TownhallCardCount(_playerId, CardEnum::ChimneyRestrictor)) {
+			ss << " +15% Chimney Restrictor\n";
+		}
+		if (IsUpgraded(0)) {
+			ss << " +20% Stone Insulation\n";
+		}
+		if (IsUpgraded(1)) {
+			ss << " +30% Brick Insulation\n";
+		}
+
+		if (resourceEnum == ResourceEnum::Coal) {
+			if (_simulation->TownhallCardCount(_playerId, CardEnum::CoalTreatment)) {
+				ss << " +15% Coal Treatment\n";
+			}
+			ss << " x2 Coal Usage\n";
+		}
+	}
+
+	int32 GetHeatingEfficiency(ResourceEnum resourceEnum)
+	{
+		int32 heatEfficiency = 100;
+		if (_simulation->TownhallCardCount(_playerId, CardEnum::ChimneyRestrictor)) {
+			heatEfficiency += 15;
+		}
+
+		if (IsUpgraded(0)) {
+			heatEfficiency +=  20;
+		}
+		if (IsUpgraded(1)) {
+			heatEfficiency += 30;
+		}
+
+		
+		if (resourceEnum == ResourceEnum::Coal) 
+		{
+			if (_simulation->TownhallCardCount(_playerId, CardEnum::CoalTreatment)) {
+				heatEfficiency += 20;
+			}
+			heatEfficiency *= 2;
+		}
+
+		return heatEfficiency;
+	}
+
 //private:
 //	int32_t GetRadiusBonus(BuildingEnum buildingEnum, int32_t radius, const int32_t bonusByLvl[]);
 

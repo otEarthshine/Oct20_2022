@@ -56,6 +56,8 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 	{TechEnum::IronRefining, { "Ironwork" }},
 	{TechEnum::GoldRefining, { "Goldwork" }},
 
+	{TechEnum::ImprovedLogistics, { "Improved Logistics" }},
+
 	{TechEnum::JewelryCrafting, { "Jewelry Crafting" }},
 	{TechEnum::Baking, { "Baking" }},
 	
@@ -81,9 +83,9 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 
 	{TechEnum::FurnitureWorkshop, {"Wood Industry"}},
 	
-	{TechEnum::HouseLvl2Income, {
-		"Upgraded House Tax",
-		"House level 2+ gain +2 income."
+	{TechEnum::HouseLvl6Income, {
+		"House Level 6 Income",
+		"House level 6+ gain +10 income."
 	}},
 	{TechEnum::TaxAdjustment, {
 		"Tax Adjustment",
@@ -334,7 +336,7 @@ public:
 		 * - 1250 cost ... (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) / 10 / 10
 		 * - at 125 sci production... it is 2.5 seasons
 		 */
-		return (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) / 10 / 10  /* Tech factor: */  * 15000 / 1000; // 5400 / 1000;
+		return (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) / 10 / 10  /* Tech factor: */  * 10000 / 1000; // 5400 / 1000;
 	}
 
 	float researchFraction(int32 researchesFinished, int32 science100XsecPerRound) {
@@ -594,18 +596,18 @@ public:
 			int32 era = 1;
 			AddTech_Bonus(era, TechEnum::ImprovedWoodCutting);
 			AddTech_Building(era, TechEnum::HerbFarming, { CardEnum::HerbSeed });
-			AddTech_Bonus(era, TechEnum::RerollCardsPlus1);
+			AddTech_Building(era, TechEnum::TradingPost, { CardEnum::TradingPost, CardEnum::TradingPort });
 			AddTech_Bonus(era, TechEnum::MushroomSubstrateSterilization);
 			AddTech_Bonus(era, TechEnum::BorealLandCost);
-			AddTech_Building(era, TechEnum::BarrackArcher, CardEnum::BarrackArcher);
 			AddTech_Building(era, TechEnum::SpyGuard, { CardEnum::KidnapGuard, CardEnum::TreasuryGuard });
 			
 			//
 			era = 2;
 			//AddTech_Building(era, TechEnum::DeepMining, { CardEnum::GemstoneMine });
-			AddTech_Building(era, TechEnum::TradingPost, { CardEnum::TradingPost, CardEnum::TradingPort });
 			AddTech_Bonus(era, TechEnum::Plantation);
+			AddTech_Bonus(era, TechEnum::RerollCardsPlus1);
 			AddTech_Bonus(era, TechEnum::CheapReroll);
+			AddTech_Bonus(era, TechEnum::Sawmill);
 			AddTech_Building(era, TechEnum::IronRefining, { CardEnum::IronMine, CardEnum::IronSmelter });
 			AddTech_Building(era, TechEnum::Blacksmith, CardEnum::Blacksmith);
 			AddTech_Building(era, TechEnum::Espionage, { CardEnum::Steal });
@@ -615,43 +617,45 @@ public:
 			AddTech_Building(era, TechEnum::TradingCompany, CardEnum::TradingCompany);
 			AddTech_Bonus(era, TechEnum::DesertTrade);
 			
-			AddTech_Bonus(era, TechEnum::Sawmill);
 			AddTech_Building(era, TechEnum::Medicine, CardEnum::MedicineMaker);
 			AddTech_Building(era, TechEnum::RanchSheep, { CardEnum::RanchSheep });
-			AddTech_Building(era, TechEnum::BarrackKnight, CardEnum::BarrackSwordman);
 			AddTech_Bonus(era, TechEnum::ShallowWaterEmbark);
 			
 			//
 			era = 4;
 			//AddTech_Building(era, TechEnum::Forester, CardEnum::Forester);
-			AddTech_Building(era, TechEnum::RanchCow, { CardEnum::RanchCow });
 			AddTech_Bonus(era, TechEnum::HouseAdjacency);
+			AddTech_Building(era, TechEnum::RanchCow, { CardEnum::RanchCow });
 			AddTech_Bonus(era, TechEnum::QuarryImprovement);
-			AddTech_Bonus(era, TechEnum::HouseLvl2Income);
-			AddTech_Bonus(era, TechEnum::DeepWaterEmbark);
+			AddTech_Building(era, TechEnum::Theatre, CardEnum::Theatre);
+			AddTech_Bonus(era, TechEnum::ImprovedWoodCutting2);
 			
 			//AddPermanentBuildingResearch(3, TechEnum::Fence, { BuildingEnum::Fence, BuildingEnum::FenceGate });
 
 			
 			//
 			era = 5;
-			AddTech_Bonus(era, TechEnum::ImprovedWoodCutting2);
 			AddTech_Bonus(era, TechEnum::MoreGoldPerHouse);
-			AddTech_Building(era, TechEnum::Theatre, CardEnum::Theatre);
+			AddTech_Building(era, TechEnum::BarrackKnight, CardEnum::BarrackSwordman);
+			AddTech_Building(era, TechEnum::Bank, { CardEnum::Bank });
+			AddTech_Building(era, TechEnum::Market, { CardEnum::Market });
+			AddTech_Building(era, TechEnum::ImprovedLogistics, { CardEnum::ShippingDepot });
+			AddTech_Bonus(era, TechEnum::DeepWaterEmbark);
 			
 			//
 			era = 6;
+			AddTech_Bonus(era, TechEnum::HouseLvl6Income);
 			AddTech_Bonus(era, TechEnum::TaxAdjustment);
+			AddTech_Building(era, TechEnum::Irrigation, { CardEnum::IrrigationReservoir });
 			//AddTech_Building(era, TechEnum::HumanitarianAid, { CardEnum::HumanitarianAidCamp });
 			AddTech_Building(era, TechEnum::Garden, CardEnum::Garden);
-			AddTech_Building(era, TechEnum::Bank, { CardEnum::Bank });
-			AddTech_Bonus(era, TechEnum::TraderDiscount);
 			
 			//
 			era = 7;
 			//AddTech_Bonus(6, TechEnum::CropStudy);
 			AddTech_Bonus(era, TechEnum::CheapLand);
 			AddTech_Bonus(era, TechEnum::WineryImprovement);
+			AddTech_Bonus(era, TechEnum::TraderDiscount);
 			//AddTech_Building(era, TechEnum::ShrineRot, { CardEnum::ShrineGreedPiece });
 			
 			//
@@ -668,6 +672,7 @@ public:
 
 			unlockedPriorityStar = false;
 			unlockedSetTradeAmount = false;
+			unlockedSetDeliveryTarget = false;
 
 			/*
 			 * Prosperity UI
@@ -678,20 +683,20 @@ public:
 			AddProsperityTech_Building(era, 8, TechEnum::FurnitureWorkshop, CardEnum::FurnitureWorkshop);
 			AddProsperityTech_BuildingX(era, 1, TechEnum::Pottery, { CardEnum::Potter, CardEnum::ClayPit });
 			AddProsperityTech_Building(era, 1, TechEnum::BeerBrewery, CardEnum::BeerBrewery);
-			//AddProsperityTech_Bonus(era, 4, TechEnum::CityToCityTrade);
-			AddProsperityTech_Bonus(era, 4, TechEnum::InfluencePoints);
-			AddProsperityTech_Bonus(era, 4, TechEnum::Conquer);
-			AddProsperityTech_Bonus(era, 2, TechEnum::HomeLandDefense);
+			AddProsperityTech_Bonus(era, 2, TechEnum::InfluencePoints);
+			AddProsperityTech_Building(era, 2, TechEnum::BarrackArcher, CardEnum::BarrackArcher);
+			AddProsperityTech_Bonus(era, 2, TechEnum::Conquer);
 			AddProsperityTech_Bonus(era, 2, TechEnum::Vassalize);
 			
 
 			era = 2;
+			AddProsperityTech_Bonus(era, 2, TechEnum::Combo);
+			AddProsperityTech_Bonus(era, 2, TechEnum::HomeLandDefense);
 			AddProsperityTech_Building(era, 4, TechEnum::Library, CardEnum::Library);
-			AddProsperityTech_Bonus(era, 4, TechEnum::Combo);
 			AddProsperityTech_BuildingX(era, 4, TechEnum::Baking, { CardEnum::Windmill, CardEnum::Bakery });
 			AddProsperityTech_Bonus(era, 20, TechEnum::FarmAdjacency);
-			AddProsperityTech_Bonus(era, 30, TechEnum::FarmingBreakthrough);
-			AddProsperityTech_Bonus(era, 30, TechEnum::FarmImprovement);
+			AddProsperityTech_Bonus(era, 20, TechEnum::FarmingBreakthrough);
+			AddProsperityTech_Bonus(era, 20, TechEnum::FarmImprovement);
 			
 			
 			era = 3;
@@ -716,23 +721,22 @@ public:
 		
 			
 			era = 5;
+			AddProsperityTech_BuildingPermanent(era, 4, TechEnum::StoneRoad, { CardEnum::StoneRoad });
 			AddProsperityTech_BuildingX(era, 4, TechEnum::GoldRefining, { CardEnum::GoldMine, CardEnum::GoldSmelter });
 			AddProsperityTech_Building(era, 4, TechEnum::Mint, CardEnum::Mint);
 			AddProsperityTech_BuildingX(era, 4, TechEnum::JewelryCrafting, { CardEnum::GemstoneMine, CardEnum::Jeweler });
 			AddProsperityTech_Building(era, 20, TechEnum::Printing, { CardEnum::PrintingPress });
-			AddProsperityTech_BuildingPermanent(era, 4, TechEnum::FlowerBed, { CardEnum::FlowerBed });
 			
 			era = 6;
-			AddProsperityTech_BuildingPermanent(era, 4, TechEnum::StoneRoad, { CardEnum::StoneRoad });
 			AddProsperityTech_Building(era, 4, TechEnum::Fort, CardEnum::Fort);
-			AddProsperityTech_Building(era, 20, TechEnum::Colony, CardEnum::Colony);
-			AddProsperityTech_Building(era, 20, TechEnum::CardMaker, CardEnum::CardMaker);
-			
+			AddProsperityTech_Building(era, 4, TechEnum::Colony, CardEnum::Colony);
+			AddProsperityTech_Building(era, 4, TechEnum::CardMaker, CardEnum::CardMaker);
+			AddProsperityTech_BuildingPermanent(era, 10, TechEnum::FlowerBed, { CardEnum::FlowerBed });
 			
 			era = 7;
-			AddProsperityTech_Bonus(era, 10, TechEnum::IndustrialAdjacency);
-			AddProsperityTech_Bonus(era, 10, TechEnum::Rationalism);
-			AddProsperityTech_Building(era, 20, TechEnum::CottonMilling, CardEnum::CottonMill);
+			AddProsperityTech_Bonus(era, 4, TechEnum::IndustrialAdjacency);
+			AddProsperityTech_Bonus(era, 4, TechEnum::Rationalism);
+			AddProsperityTech_Building(era, 10, TechEnum::CottonMilling, CardEnum::CottonMill);
 
 			AddProsperityTech_BuildingPermanent(era, 30, TechEnum::GardenCypress, { CardEnum::GardenCypress });
 		}
@@ -1103,7 +1107,10 @@ public:
 
 		Ar << unlockedPriorityStar;
 		Ar << unlockedSetTradeAmount;
+		Ar << unlockedSetDeliveryTarget;
 
+		// Other states
+		
 		/*
 		 * Private
 		 */
@@ -1175,12 +1182,16 @@ public:
 	bool prosperityEnabled;
 	bool shouldOpenProsperityUI = false;
 
+	// Unlock states
 	bool townhallUpgradeUnlocked = false;
 	bool unlockedStatisticsBureau = false;
 	bool unlockedEmploymentBureau = false;
 
 	bool unlockedPriorityStar = false;
 	bool unlockedSetTradeAmount = false;
+	bool unlockedSetDeliveryTarget = false;
+
+	// Other states
 
 private:
 	IGameSimulationCore* _simulation = nullptr;

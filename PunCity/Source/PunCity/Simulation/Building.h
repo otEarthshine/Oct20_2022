@@ -825,6 +825,36 @@ public:
 		return _upgrades.size() > index ? _upgrades[index].isUpgraded : false;
 	}
 
+
+	// Delivery
+	int32 deliveryTargetId() { return _deliveryTargetId; }
+	const std::vector<int32>& deliverySourceIds() { return _deliverySourceIds; }
+	
+	void SetDeliveryTarget(int32 deliveryTargetId) {
+		// Remove old target if needed
+		TryRemoveDeliveryTarget();
+		
+		_deliveryTargetId = deliveryTargetId;
+		Building& deliveryTarget = _simulation->buildingChecked(_deliveryTargetId);
+		deliveryTarget._deliverySourceIds.push_back(_objectId);
+	}
+	void TryRemoveDeliveryTarget()
+	{
+		if (_deliveryTargetId != -1) {
+			CppUtils::Remove(_simulation->buildingChecked(_deliveryTargetId)._deliverySourceIds, _deliveryTargetId);
+			_deliveryTargetId = -1;
+		}
+	}
+	void ClearDeliverySources()
+	{
+		std::vector<int32> deliverySourceIds = _deliverySourceIds;
+		for (int32 sourceId : deliverySourceIds) {
+			_simulation->buildingChecked(sourceId).TryRemoveDeliveryTarget();
+		}
+		check(_deliverySourceIds.size() == 0);
+	}
+	
+
 	//bool HasCombo() {
 	//	return _simulation->buildingIds(_playerId, _buildingEnum).size() >= 3;
 	//}
@@ -1109,6 +1139,10 @@ public:
 		// Upgrade
 		SerializeVecObj(Ar, _upgrades);
 
+		// Delivery
+		Ar << _deliveryTargetId;
+		SerializeVecValue(Ar, _deliverySourceIds);
+
 		Ar << hoverWarning;
 	}
 
@@ -1265,6 +1299,9 @@ protected:
 	std::vector<BuildingUpgrade> _upgrades;
 
 	WorkMode _workMode;
+
+	int32 _deliveryTargetId = -1;
+	std::vector<int32> _deliverySourceIds;
 
 	/*
 	 * No Serialize

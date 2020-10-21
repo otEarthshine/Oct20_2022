@@ -350,6 +350,10 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 
 	TryLoadBuildingModuleSet("ChichenItza", "ChichenItza");
+
+	TryLoadBuildingModuleSet("Market", "Market");
+	TryLoadBuildingModuleSet("ShippingDepot", "ShippingDepot");
+	TryLoadBuildingModuleSet("IrrigationReservoir", "IrrigationReservoir");
 	
 
 	TryLoadBuildingModuleSet("TribalVillage", "RegionTribalVillage");

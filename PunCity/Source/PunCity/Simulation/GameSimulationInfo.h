@@ -846,7 +846,7 @@ static const ResourceInfo ResourceInfos[]
 
 	ResourceInfo(ResourceEnum::Paper,		"Paper",	8, "Used for research and book making"),
 	ResourceInfo(ResourceEnum::Clay,		"Clay",		3, "Fine-grained earth used to make Pottery and Bricks"),
-	ResourceInfo(ResourceEnum::Brick,		"Brick",	10, "Sturdy, versatile construction material"),
+	ResourceInfo(ResourceEnum::Brick,		"Brick",	12, "Sturdy, versatile construction material"),
 
 	ResourceInfo(ResourceEnum::Coal,		"Coal",		6, "Fuel used to heat houses or smelt ores. When heating houses, provides x2 heat vs. Wood"),
 	ResourceInfo(ResourceEnum::IronOre,		"Iron Ore",		5, "Valuable ore that can be smelted into Iron Bar"),
@@ -975,7 +975,7 @@ static std::vector<ResourceInfo> GetSortedNameResourceEnum()
 	
 	return results;
 }
-static const std::vector<ResourceInfo> SortedNameResourceEnum = GetSortedNameResourceEnum();
+static const std::vector<ResourceInfo> SortedNameResourceInfo = GetSortedNameResourceEnum();
 
 
 static const ResourceEnum FoodEnums[] =
@@ -1640,7 +1640,11 @@ enum class CardEnum : uint16
 	FakeTownhall,
 	FakeTribalVillage,
 	ChichenItza,
-	
+
+	// October 20
+	Market,
+	ShippingDepot,
+	IrrigationReservoir,
 
 	// Decorations
 	FlowerBed,
@@ -1850,6 +1854,7 @@ static const std::vector<std::pair<CardEnum, int32>> BuildingEnumToUpkeep =
 	{ CardEnum::BarrackClubman, 10 },
 	{ CardEnum::BarrackSwordman, 20 },
 	{ CardEnum::BarrackArcher, 20 },
+
 
 	{ CardEnum::AdventurersGuild, 50 },
 };
@@ -2210,10 +2215,15 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::InventorsWorkshop, "Inventor's Workshop", WorldTile2(6, 6), ResourceEnum::Iron, ResourceEnum::None, ResourceEnum::None, 0, 2, { 50,50,0 }, "Generate science points. Use wood as input."),
 	BldInfo(CardEnum::IntercityRoad, "Intercity Road", WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "Build Road to connect with other Cities. Same as Dirt Road, but buildable outside your territory."),
 
+	// August 16
 	BldInfo(CardEnum::FakeTownhall, "FakeTownhall", WorldTile2(12, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "..."),
 	BldInfo(CardEnum::FakeTribalVillage, "FakeTribalVillage", WorldTile2(12, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "..."),
 	BldInfo(CardEnum::ChichenItza, "ChichenItza", WorldTile2(16, 16), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "..."),
 
+	// October 20
+	BldInfo(CardEnum::Market, "Market", WorldTile2(6, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 120, 120, 0 }, "Provide food/fuel/luxury resources to nearby housing. Bring resources from faraway storages in large bulk."),
+	BldInfo(CardEnum::ShippingDepot, "Shipping Depot", WorldTile2(5, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 30, 30, 0 }, "Shipping worker carry specified resources from within the radius to its delivery target faraway."),
+	BldInfo(CardEnum::IrrigationReservoir, "Irrigation Reservoir", WorldTile2(5, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0, 150, 0 }, "Raise the fertility within its radius to at least 90%."),
 	
 	// Decorations
 	BldInfo(CardEnum::FlowerBed, "Flower Bed", WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "Increase the surrounding appeal by 5 within 5 tiles radius."),
@@ -2323,8 +2333,8 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::Snatch,			"Snatch", 50, "Steal <img id=\"Coin\"/> equal to target player's population. Use on Townhall."),
 	BldInfo(CardEnum::SharingIsCaring,	"Sharing is Caring", 120, "Give 100 Wheat to the target player. Use on Townhall."),
 	BldInfo(CardEnum::Kidnap,			"Kidnap", 350, "Steal up to 3 citizens from target player. Apply on Townhall."),
-	BldInfo(CardEnum::KidnapGuard,		"Kidnap Guard", 30, "Guard your city against Kidnap for a year. Require <img id=\"Coin\"/>xPopulation to activate."),
-	BldInfo(CardEnum::TreasuryGuard,		"Treasury Guard", 30, "Guard your city against Steal and Snatch for a year. Require <img id=\"Coin\"/>xPopulation to activate."),
+	BldInfo(CardEnum::KidnapGuard,		"Kidnap Guard", 20, "Guard your city against Kidnap for two years. Require <img id=\"Coin\"/>xPopulation to activate."),
+	BldInfo(CardEnum::TreasuryGuard,		"Treasury Guard", 20, "Guard your city against Steal and Snatch for two years. Require <img id=\"Coin\"/>xPopulation to activate."),
 
 	
 	BldInfo(CardEnum::Cannibalism,		"Cannibalism", 0, "On death, people drop Meat. -10 <img id=\"Smile\"/> to all citizens."),
@@ -2910,6 +2920,7 @@ static bool IsStorage(CardEnum buildingEnum) {
 	switch (buildingEnum) {
 	case CardEnum::StorageYard:
 	case CardEnum::Warehouse:
+	case CardEnum::Market:
 		return true;
 	default: return false;
 	}
@@ -3903,6 +3914,8 @@ enum class PlacementType
 	IntercityRoad,
 	Fence,
 	Bridge,
+
+	DeliveryPoint,
 };
 
 static bool IsRoadPlacement(PlacementType placementType) {
@@ -3940,11 +3953,13 @@ enum class PlacementInstructionEnum
 	DragFarm,
 	
 	DragDemolish,
-	
+
+	DeliveryPointInstruction,
+	DeliveryPointMustBeStorage,
 
 	MountainMine,
 	Dock,
-	ClayPit,
+	MustBeNearRiver,
 
 	Fort,
 	Colony,
@@ -4131,7 +4146,7 @@ enum class IncomeEnum : uint8
 	// House income
 	Base,
 	Tech_MoreGoldPerHouse,
-	Tech_HouseLvl2Income,
+	Tech_HouseLvl6Income,
 	Appeal,
 	Luxury,
 
@@ -4266,7 +4281,7 @@ enum class TechEnum : uint8
 	RerollCardsPlus1,
 
 	Fence,
-	HouseLvl2Income,
+	HouseLvl6Income,
 	TaxAdjustment,
 
 	TradingPost, // With immigrationBoost
@@ -4355,7 +4370,10 @@ enum class TechEnum : uint8
 
 	BarrackArcher,
 	BarrackKnight,
-	
+
+	Irrigation,
+	Market,
+	ImprovedLogistics,
 
 
 	/*
@@ -6767,6 +6785,9 @@ enum class CallbackEnum : uint8
 
 	OpenManageStorage,
 
+	SetDeliveryTarget,
+	RemoveDeliveryTarget,
+
 	CloseGameSettingsUI,
 	CloseLoadSaveUI,
 	OpenBlur,
@@ -6968,3 +6989,7 @@ static const WorldTile2 Storage1ShiftTileVec(0, -InitialStorageShiftFromTownhall
 static const WorldTile2 InitialStorage2Shift(4, 0);
 
 static const int32 ClaypitRiverFractionPercentThreshold = 20;
+static const int32 IrrigationReservoirRiverFractionPercentThreshold = 10;
+static int32 GetRiverFractionPercentThreshold(CardEnum buildingEnum) {
+	return buildingEnum == CardEnum::ClayPit ? ClaypitRiverFractionPercentThreshold : IrrigationReservoirRiverFractionPercentThreshold;
+}

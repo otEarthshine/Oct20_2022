@@ -36,7 +36,8 @@ public:
 		GiftTypeDropdown->OnSelectionChanged.AddDynamic(this, &UGiftResourceUI::OnDropDownChanged);
 		GiftTypeDropdown->ClearOptions();
 		GiftTypeDropdown->AddOption("Money");
-		for (ResourceInfo info : ResourceInfos) {
+		
+		for (ResourceInfo info : SortedNameResourceInfo) {
 			GiftTypeDropdown->AddOption(ToFString(info.name));
 		}
 

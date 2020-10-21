@@ -52,7 +52,7 @@ void UWorldTradeUI::OpenUI(int32 objectId)
 	if (!isSellOnly)
 	{
 		// Second loop, all other resources
-		for (const ResourceInfo& info : SortedNameResourceEnum)
+		for (const ResourceInfo& info : SortedNameResourceInfo)
 		{
 			if (IsTradeResource(info.resourceEnum) &&
 				resourceSystem.resourceCount(info.resourceEnum) == 0)

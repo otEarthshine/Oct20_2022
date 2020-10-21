@@ -1386,7 +1386,27 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 					" CanUseBought:" + to_string(_cardSystem[playerId].CanUseBoughtCard(cardEnum)));
 		return -1;
 	}
-	
+
+	// Delivery Point
+	if (parameters.buildingIdToSetDelivery != -1)
+	{
+		Building& buildingToSetDelivery = buildingChecked(parameters.buildingIdToSetDelivery);
+
+		if (parameters.center == WorldTile2::Invalid) {
+			buildingToSetDelivery.SetDeliveryTarget(-1);
+			return -1;
+		}
+		
+		int32 deliveryTargetId = buildingIdAtTile(parameters.center);
+		
+		if (deliveryTargetId != -1 &&
+			buildingToSetDelivery.deliveryTargetId() != deliveryTargetId)
+		{
+			PUN_CHECK(IsStorage(buildingChecked(deliveryTargetId).buildingEnum()));
+			buildingToSetDelivery.SetDeliveryTarget(deliveryTargetId);
+		}
+		return -1;
+	}
 
 	// Used converter card, decrease the converter card we have
 	if (parameters.useWildCard != CardEnum::None)
@@ -1732,14 +1752,17 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 		
 	}
 	// Clay pit
-	else if (cardEnum == CardEnum::ClayPit)
+	// Irrigation Reservoir
+	else if (cardEnum == CardEnum::ClayPit ||
+			cardEnum == CardEnum::IrrigationReservoir)
 	{
 		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-			if (!(IsBuildable(tile) && _terrainGenerator->riverFraction(tile) > ClaypitRiverFractionPercentThreshold / 100.0f)) {
+			if (!(IsBuildable(tile) && _terrainGenerator->riverFraction(tile) > GetRiverFractionPercentThreshold(cardEnum) / 100.0f)) {
 				canPlace = false;
 			}
 		});
 	}
+	
 	// Road Overlap Building
 	else if (IsRoadOverlapBuilding(cardEnum)) {
 		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
@@ -2308,7 +2331,8 @@ void GameSimulationCore::SetAllowResource(FSetAllowResource command)
 		else {
 			if (bld.isConstructed()) {
 				bld.SetHolderTypeAndTarget(command.resourceEnum, command.allowed ? ResourceHolderType::Storage : ResourceHolderType::Provider, 0);
-			} else {
+			}
+			else {
 				// Not yet constructed, queue the checkState to apply once construction finishes
 				if (command.resourceEnum == ResourceEnum::Food)
 				{
@@ -2331,6 +2355,13 @@ void GameSimulationCore::SetAllowResource(FSetAllowResource command)
 				{
 					bld.subclass<StorageYard>().queuedResourceAllowed[static_cast<int>(command.resourceEnum)] = command.allowed;
 				}
+			}
+
+			// Market also set target
+			if (bld.isEnum(CardEnum::Market) &&
+				command.target != -1) 
+			{
+				bld.subclass<Market>().resourceTargets[static_cast<int>(command.resourceEnum)] = command.target;
 			}
 		}
 	}
@@ -2407,7 +2438,14 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 			ChangeMoney(giverPlayerId, -amount);
 			ChangeMoney(targetPlayerId, amount);
 			AddPopup(giverPlayerId, "You gifted " + playerName(targetPlayerId) + " with <img id=\"Coin\"/>" + to_string(amount) + ".");
-			AddPopup(targetPlayerId, playerName(giverPlayerId) + " gifted you with <img id=\"Coin\"/>" + to_string(amount) + ".");
+
+			// To Gift Receiver
+			if (IsAI(giverPlayerId)) {
+				AddPopup(targetPlayerId, playerName(giverPlayerId) + " gifted you with <img id=\"Coin\"/>" + to_string(amount) + " for good relationship.");
+			}
+			else {
+				AddPopup(targetPlayerId, playerName(giverPlayerId) + " gifted you with <img id=\"Coin\"/>" + to_string(amount) + ".");
+			}
 
 			ChangeRelationshipModifier(targetPlayerId, giverPlayerId, RelationshipModifierEnum::YouGaveUsGifts, amount / GoldToRelationship);
 		}
@@ -2972,6 +3010,16 @@ void GameSimulationCore::BuyCards(FBuyCard command)
 		if (CanBuyCard(command.playerId, buildingEnum)) {
 			resourceSystem(command.playerId).ChangeMoney(-cardSys.GetCardPrice(buildingEnum)); // Must ChangeMoney before adding cards for cards with lvl...
 			cardSys.AddCardToHand2(buildingEnum, true);
+
+			// First time buying card for this quest? Introduce round timer properly
+			if (!playerOwned(command.playerId).alreadyBoughtFirstCard &&
+				HasQuest(command.playerId, QuestEnum::FoodBuildingQuest))
+			{
+				AddPopup(command.playerId, 
+					"Great job! You have bought your first card.<space>"
+					"Cards selection automatically refreshes every round.<space>"
+					"The round timer is shown next to the card stack.\n(2 rounds per season)");
+			}
 		}
 	}
 	

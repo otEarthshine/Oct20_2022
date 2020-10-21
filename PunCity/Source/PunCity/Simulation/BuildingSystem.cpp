@@ -154,6 +154,11 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		CASE_BUILDING(CardEnum::FakeTownhall, Building);
 		CASE_BUILDING(CardEnum::FakeTribalVillage, Building);
 		CASE_BUILDING(CardEnum::ChichenItza, Building);
+
+		// October 20
+		CASE_BUILDING(CardEnum::Market, Market);
+		CASE_BUILDING(CardEnum::ShippingDepot, ShippingDepot);
+		CASE_BUILDING(CardEnum::IrrigationReservoir, IrrigationReservoir);
 		
 
 		CASE_BUILDING(CardEnum::BoarBurrow, BoarBurrow);

@@ -86,12 +86,15 @@ public:
 
 			bElementResetThisRound = true;
 		}
+		
+		// !!! Error here could be caused by leaving items in PunBoxWidget !!!
+		
 		UWidget* childBeforeCast = PunVerticalBox->GetChildAt(currentIndex);
 		T* child = CastChecked<T>(childBeforeCast);
 		child->SetVisibility(ESlateVisibility::Visible);
 		currentIndex++;
 
-		// !!! Error here could be caused by leaving items in PunBoxWidget
+		// !!! Error here could be caused by leaving items in PunBoxWidget !!!
 
 		PUN_CHECK(PunVerticalBox->GetChildrenCount() >= currentIndex);
 		return child;

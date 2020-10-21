@@ -386,6 +386,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 					if (!building.isEnum(CardEnum::Fisher) &&
 						!building.isEnum(CardEnum::TradingPort) &&
 						!building.isEnum(CardEnum::ClayPit) &&
+						!building.isEnum(CardEnum::IrrigationReservoir) &&
 						!building.isEnum(CardEnum::Farm) &&
 						!building.isEnum(CardEnum::StorageYard)) 
 					{

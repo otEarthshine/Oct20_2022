@@ -8,6 +8,7 @@
 #include <functional>
 #include "PunCity/PunUtils.h"
 #include "PunCity/PunFileUtils.h"
+#include "PunCity/Simulation/Buildings/GathererHut.h"
 
 using namespace std;
 
@@ -335,8 +336,14 @@ void PunTerrainGenerator::GenerateMoisture()
 		 * Parameters
 		 */
 		// Note: 5800,3000 is for Trailer
-		int32 normalCloudStartSize = 5800;// +2000; // 12000 // 20000;
-		int32 desertCloudStartSize = 3000;// +1000; // 5000;
+		const int32 normalCloudStartSize_MediumWet = 5800;// +2000; // 12000 // 20000;
+		const int32 desertCloudStartSize_MediumWet = 3000;// +1000; // 5000;
+
+		int32 moistureInt = static_cast<int>(_mapSettings.mapMoisture);
+		int32 normalCloudStartSize = moistureInt * normalCloudStartSize_MediumWet / 2;
+		int32 desertCloudStartSize = moistureInt * desertCloudStartSize_MediumWet / 2;
+
+		// Scale moisture with map size
 		switch(_mapSettings.mapSizeEnum())
 		{
 		case MapSizeEnum::Large: normalCloudStartSize *= 2; desertCloudStartSize *= 2; break;
@@ -344,11 +351,11 @@ void PunTerrainGenerator::GenerateMoisture()
 		default: break;
 		}
 
-		int32 moistureInt = static_cast<int>(_mapSettings.mapMoisture);
-		const int32 normalCloudLevelVariation = 4000;
-		const int32 desertCloudLevelVariation = 1000;
-		normalCloudStartSize += (moistureInt - 2) * normalCloudLevelVariation;
-		desertCloudStartSize += (moistureInt - 2) * desertCloudLevelVariation;
+		if (_mapSettings.mapMoisture == MapMoistureEnum::VeryHigh) {
+			normalCloudStartSize = normalCloudStartSize * 20;
+			desertCloudStartSize = desertCloudStartSize * 20;
+		}
+		
 
 #define WESTWARD_WIND
 #ifdef WESTWARD_WIND
@@ -508,6 +515,13 @@ void PunTerrainGenerator::Erode(std::vector<int16_t>& heightMapBeforeFlatten, st
 		case MapSizeEnum::Large: break;
 		default: break;
 	}
+
+	// Dry map should have less river
+	int32 mapMoistureInt = static_cast<int>(_mapSettings.mapMoisture);
+	if (mapMoistureInt < static_cast<int>(MapMoistureEnum::Medium)) {
+		totalSourceCount = totalSourceCount * (mapMoistureInt + 1) / 3;
+	}
+	
 
 	int32 riverSucceeded = 0;
 	
@@ -1597,8 +1611,31 @@ int32 PunTerrainGenerator::GetFertilityPercent(WorldTile2 tile)
 				fertility = min(90, fertility);
 			}
 		}
+
+		// nearby
+		int32 provinceOwnerId = _simulation->provinceOwner(provinceId);
+		if (provinceOwnerId != -1) {
+			const std::vector<int32>& buildingIds = _simulation->buildingIds(provinceOwnerId, CardEnum::IrrigationReservoir);
+			for (int32 buildingId: buildingIds)
+			{
+				int32 distance = WorldTile2::Distance(_simulation->building(buildingId).centerTile(), tile);
+				const int32 bandSize = 3;
+				if (distance <= IrrigationReservoir::Radius + bandSize) 
+				{
+					int32 fertilityIrrigated = 90;
+					if (distance > IrrigationReservoir::Radius) {
+						int32 bandFraction100 = (distance - IrrigationReservoir::Radius) * 100 / bandSize;
+						fertilityIrrigated = bandFraction100 * 90 / 100;
+					}
+
+					fertility = max(fertility, fertilityIrrigated);
+				}
+			}
+		}
+
 	}
-	
+
+
 	return max(0, min(fertility, MaxFertility));
 }
 

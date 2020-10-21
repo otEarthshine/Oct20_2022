@@ -215,7 +215,8 @@ void ResourceTypeHolders::CheckIntegrity_ResourceTypeHolder() {
 	PUN_CHECK(_simulation);
 }
 
-int32 ResourceSystem::CanReceiveAmount(ResourceHolder& holder) const {
+int32 ResourceSystem::CanReceiveAmount(const ResourceHolder& holder) const
+{
 	check(holder.type == ResourceHolderType::Storage);
 
 	Building& building = _simulation->building(holder.objectId);

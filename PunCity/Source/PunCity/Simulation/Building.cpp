@@ -39,6 +39,8 @@ void Building::Init(IGameSimulationCore& simulation, int objectId, int32_t playe
 
 	_upgrades.clear();
 
+	_deliveryTargetId = -1;
+
 	_priority = PriorityEnum::NonPriority;
 	_cardSlot1 = CardStatus();
 
@@ -334,6 +336,9 @@ void Building::Deinit()
 	_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 		_simulation->SetWalkable(tile, true);
 	});
+
+	TryRemoveDeliveryTarget();
+	ClearDeliverySources();
 
 	OnDeinit();
 }

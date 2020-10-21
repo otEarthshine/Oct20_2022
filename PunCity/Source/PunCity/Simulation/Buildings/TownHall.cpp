@@ -150,6 +150,19 @@ void TownHall::UpgradeTownhall()
 	else if (townhallLvl == 4) {
 		cardSys.AddDrawCards(CardEnum::Warehouse, 1);
 		cardSys.AddDrawCards(CardEnum::SharingIsCaring, 1);
+
+		std::stringstream ss;
+		ss << "Unlocked ability to Set Delivery Target!";
+		ss << "<space>";
+		ss << "You can set the storage/market where the building's output will be stored.";
+		ss << "<space>";
+		ss << "To set the delivery target:";
+		ss << "<bullet>Click on a production building to bring up its panel</>";
+		ss << "<bullet>Click the [Set Delivery Target] button</>";
+		ss << "<bullet>Select the target you wish to deliver to</>";
+
+		_simulation->AddPopup(_playerId, ss.str());
+		unlockSys->unlockedSetDeliveryTarget = true;
 	}
 
 

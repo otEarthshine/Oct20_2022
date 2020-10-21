@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "PunWidget.h"
+#include "PunBoxWidget.h"
 
 #include "PunCity/Simulation/GameSimulationCore.h"
 
@@ -10,6 +10,7 @@
 #include "ResourceCompletionIcon.h"
 #include "PunCity/Simulation/Buildings/GathererHut.h"
 #include "PunTextWidget.h"
+#include "IconTextPairWidget.h"
 
 #include "BuildingJobUI.generated.h"
 /**
@@ -49,6 +50,8 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) UButton* StatisticsButton;
 	UPROPERTY(meta = (BindWidget)) UButton* JobPriorityButton;
+
+	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* PunBox;
 
 public:
 	void PunInit(int buildingId, bool isHouse);
@@ -139,10 +142,40 @@ public:
 				JobPriorityButton->SetVisibility(ESlateVisibility::Visible);
 			}
 		}
-		else if (building.isEnum(CardEnum::StorageYard) ||
+		else if (IsStorage(building.buildingEnum()) ||
 			building.isEnum(CardEnum::FruitGatherer) ||
 			building.isEnum(CardEnum::HuntingLodge)) 
 		{
+			// Show items above warehouse
+			if (building.isEnum(CardEnum::Warehouse)) 
+			{
+				PunBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+				const std::vector<ResourceHolderInfo>& holderInfos = building.subclass<StorageYard>().holderInfos();
+
+				std::vector<ResourcePair> maxResourcePairs;
+
+				for (ResourceHolderInfo holderInfo : holderInfos)
+				{
+					int32 resourceCount = building.GetResourceCount(holderInfo);
+
+					bool inserted = false;
+					for (size_t i = 0; i < maxResourcePairs.size(); i++) {
+						if (resourceCount > maxResourcePairs[i].count) {
+							maxResourcePairs[i] = { holderInfo.resourceEnum, resourceCount };
+							inserted = true;
+							break;
+						}
+					}
+					if (!inserted && maxResourcePairs.size() < 2) {
+						maxResourcePairs.push_back({ holderInfo.resourceEnum, resourceCount });
+					}
+				}
+
+				for (ResourcePair& pair : maxResourcePairs) {
+					PunBox->AddIconPair("", pair.resourceEnum, std::to_string(pair.count));
+				}
+				PunBox->AfterAdd();
+			}
 		}
 		else {
 			//std::vector<float> inputFractions;
@@ -396,7 +429,7 @@ public:
 			std::stringstream ss;
 			ss << "Input<space>";
 			ss << ResourceName(inputs[i]) << " " << hasCount << "/" << needCount;
-			ss << "<space>Stored(city)" << simulation().resourceCount(playerId(), inputs[i]);
+			ss << "<space>Stored(city): " << simulation().resourceCount(playerId(), inputs[i]);
 			
 			auto tooltip = AddToolTip(completionIcon->ResourceImage, ss.str());
 			if (tooltip) {

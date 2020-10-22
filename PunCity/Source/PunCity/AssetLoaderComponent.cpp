@@ -852,6 +852,9 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	PlacementArrowMaterialYellow = Load<UMaterial>("/Game/Models/Placement/placementArrowMaterialYellow");
 	PlacementArrowMaterialRed = Load<UMaterial>("/Game/Models/Placement/placementArrowMaterialRed");
 
+	DeliveryArrowMesh = Load<UStaticMesh>("/Game/Models/Placement/DeliveryArrow");
+	M_DeliveryArrow = Load<UMaterial>("/Game/Models/Placement/M_DeliveryArrow");
+
 	/**
 	 * Other Materials
 	 */

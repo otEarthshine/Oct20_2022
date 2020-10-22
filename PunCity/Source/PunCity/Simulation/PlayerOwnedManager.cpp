@@ -731,7 +731,7 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 
 	// Less tech than lord, get +20% sci
 	if (_lordPlayerId != -1 && 
-		_simulation->techsCompleted(_playerId) < _simulation->techsCompleted(_lordPlayerId))
+		_simulation->sciTechsCompleted(_playerId) < _simulation->sciTechsCompleted(_lordPlayerId))
 	{
 		sciences100[static_cast<int>(ScienceEnum::KnowledgeTransfer)] += sumFromHouses * 20 / 100;
 	}
@@ -1113,6 +1113,9 @@ void PlayerOwnedManager::Tick1Sec()
 		AddDataPoint(PlotStatEnum::Food, _simulation->foodCount(_playerId));
 		AddDataPoint(PlotStatEnum::Fuel, _simulation->resourceCount(_playerId, ResourceEnum::Wood) +
 												_simulation->resourceCount(_playerId, ResourceEnum::Coal));
+
+		AddDataPoint(PlotStatEnum::Technologies, _simulation->sciTechsCompleted(_playerId));
+		AddDataPoint(PlotStatEnum::InfluencePoints, _simulation->influence(_playerId));
 	}
 
 

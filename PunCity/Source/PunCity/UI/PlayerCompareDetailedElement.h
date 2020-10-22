@@ -23,8 +23,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* MilitarySizeText;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* LandText;
 
-	UPROPERTY(meta = (BindWidget)) URichTextBlock* AlliesText;
-	UPROPERTY(meta = (BindWidget)) URichTextBlock* VassalsText;
+	//UPROPERTY(meta = (BindWidget)) URichTextBlock* AlliesText;
+	//UPROPERTY(meta = (BindWidget)) URichTextBlock* VassalsText;
 	
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* GDPText;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* MainProductionText;

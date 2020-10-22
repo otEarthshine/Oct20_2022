@@ -1061,17 +1061,15 @@ void UMainGameUI::Tick()
 
 			// Food Graph
 			bool shouldUpdateFuel = false;
-			if (bIsHoveredButGraphNotSetup || tooltip->TooltipPunBoxWidget->DidElementResetThisRound()) {
+			if (bIsHoveredButGraphNotSetup || 
+				tooltip->TooltipPunBoxWidget->DidElementResetThisRound()) 
+			{
 				bIsHoveredButGraphNotSetup = false;
 				shouldUpdateFuel = true;
 
-				UGraphDataSource* graphDataSource = NewObject<UGraphDataSource>(this);
-				graphDataSource->Init(playerId(), dataSource());
-				graphDataSource->AddSeries({
+				punGraph->SetupGraph({
 					{ FString("Food"), PlotStatEnum::Food, FLinearColor::Green },
 				});
-
-				punGraph->SetDataSource(graphDataSource);
 			}
 
 			// Fuel Graph
@@ -1090,13 +1088,9 @@ void UMainGameUI::Tick()
 
 			if (shouldUpdateFuel)
 			{
-				UGraphDataSource* graphDataSource = NewObject<UGraphDataSource>(this);
-				graphDataSource->Init(playerId(), dataSource());
-				graphDataSource->AddSeries({
+				punGraph->SetupGraph({
 					{ FString("Fuel"), PlotStatEnum::Fuel, FLinearColor::Yellow },
 				});
-
-				punThinGraph->SetDataSource(graphDataSource);
 			}
 		}
 		

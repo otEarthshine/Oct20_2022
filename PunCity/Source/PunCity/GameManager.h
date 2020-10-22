@@ -237,6 +237,7 @@ private:
 	WorldTile2 _overlayCenterTile = WorldTile2::Invalid;
 
 	bool _isHidingTrees = false;
+	bool _showProvinceOverlay = false;
 
 	bool _isCtrlDown = false;
 	bool _isShiftDown = false;
@@ -311,6 +312,13 @@ public:
 
 	FVector DisplayLocation(WorldAtom2 atom) final { return MapUtil::DisplayLocation(_cameraAtom, atom); }
 
+	FVector DisplayLocationTrueCenter(Building& building) final
+	{
+		FVector displayLocationScope = DisplayLocation(building.centerTile().worldAtom2());
+		AlgorithmUtils::ShiftDisplayLocationToTrueCenter(displayLocationScope, building.area(), building.faceDirection());
+		return displayLocationScope;
+	}
+
 	int32 GetBuildingDisplayObjectId(int32 meshId, FString protoName, int32 instanceIndex) final {
 #if !DISPLAY_BUILDING
 		return 0;
@@ -383,6 +391,13 @@ public:
 	UDecalComponent* ShowDecal(TileArea area, UMaterial* material, TArray<UDecalComponent*>& decals, int32& decalCount, bool useMaterialInstance) final 	{
 		return PunUnrealUtils::ShowDecal(area.trueCenterAtom(), area.size(), decals, decalCount, componentToAttach(), material, this, useMaterialInstance);
 	}
+
+	void ShowDeliveryArrow(FVector start, FVector end) final {
+		_buildingMeshesList.ShowDeliveryArrow(start, end);
+	}
+
+
+	
 
 	bool IsInSampleRange(WorldTile2 tile) final
 	{
@@ -619,6 +634,12 @@ public:
 		_isHidingTrees = !_isHidingTrees;
 		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Trees, _sampleRegionIds);
 	}
+
+	bool isShowingProvinceOverlay() final { return _showProvinceOverlay; }
+	void SetOverlayProvince(bool showProvinceOverlay) final {
+		_showProvinceOverlay = showProvinceOverlay;
+	}
+	
 
 	bool isCtrlDown() final { return _isCtrlDown; }
 	bool isShiftDown() final {

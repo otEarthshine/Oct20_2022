@@ -74,7 +74,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* SoldRecordLeftText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* SoldRecordRightText;
 
-	UPROPERTY() TArray<UGraphDataSource*> dataSources;
+	//UPROPERTY() TArray<UGraphDataSource*> dataSources;
 
 	int32 uiPlayerId = -1;
 	
@@ -156,23 +156,4 @@ public:
 		}
 	}
 
-	void AddSeries(UTimeSeriesPlot* graph, std::vector<GraphSeries> seriesList)
-	{
-		// Set the legend
-		GetFellowChild<UKantanChartLegend>(graph)->SetChart(graph);
-
-		UGraphDataSource* graphDataSource = NewObject<UGraphDataSource>(this);
-		dataSources.Add(graphDataSource);
-		graphDataSource->Init(playerId(), dataSource());
-		graphDataSource->AddSeries(seriesList);
-
-		for (int32 i = 0; i < seriesList.size(); i++)
-		{
-			FName seriesId = FName(*seriesList[i].seriesId);
-			graph->EnableSeries(seriesId, true);
-			graph->ConfigureSeries(seriesId, false, true);
-			graph->AddSeriesStyleOverride(seriesId, nullptr, seriesList[i].color);
-			graph->SetDatasource(graphDataSource);
-		}
-	}
 };

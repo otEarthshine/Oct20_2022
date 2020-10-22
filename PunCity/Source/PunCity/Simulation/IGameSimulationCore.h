@@ -361,7 +361,7 @@ public:
 	// Science
 	virtual bool IsResearched(int32 playerId, TechEnum techEnum) = 0;
 	virtual bool HasTargetResearch(int32 playerId) = 0;;
-	virtual int32 techsCompleted(int32 playerId) = 0;
+	virtual int32 sciTechsCompleted(int32 playerId) = 0;
 
 	virtual bool IsBuildingUnlocked(int32 playerId, CardEnum cardEnumIn) = 0;
 

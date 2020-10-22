@@ -273,6 +273,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* PlacementArrowMaterialYellow;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* PlacementArrowMaterialRed;
 
+	UPROPERTY(EditAnywhere, Category = "Mesh Import") UStaticMesh* DeliveryArrowMesh;
+	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_DeliveryArrow;
+	
 	/**
 	 * Other Materials
 	 */

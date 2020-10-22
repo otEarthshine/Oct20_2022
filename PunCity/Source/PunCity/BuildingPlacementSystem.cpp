@@ -426,6 +426,10 @@ void ABuildingPlacementSystem::StartBuildingPlacement(CardEnum buildingEnum, int
 		ShowRadius(Windmill::Radius, OverlayType::Windmill);
 		//_gameInterface->SetOverlayType(OverlayType::Forester, OverlaySetterType::BuildingPlacement);
 	}
+	else if (buildingEnum == CardEnum::IrrigationReservoir) {
+		ShowRadius(IrrigationReservoir::Radius, OverlayType::IrrigationReservoir);
+		//_gameInterface->SetOverlayType(OverlayType::Forester, OverlaySetterType::BuildingPlacement);
+	}
 	else if (buildingEnum == CardEnum::Beekeeper) {
 		ShowRadius(Beekeeper::Radius, OverlayType::Beekeeper);
 		//_gameInterface->SetOverlayType(OverlayType::Forester, OverlaySetterType::BuildingPlacement);
@@ -496,8 +500,8 @@ void ABuildingPlacementSystem::StartBuildingPlacement(CardEnum buildingEnum, int
 
 void ABuildingPlacementSystem::StartSetDeliveryTarget(int32 buildingId)
 {
-	_placementType = PlacementType::DeliveryPoint;
-	_deliveryTargetBuildingId = buildingId;
+	_placementType = PlacementType::DeliveryTarget;
+	_deliverySourceBuildingId = buildingId;
 }
 
 void ABuildingPlacementSystem::StartHarvestPlacement(bool isRemoving, ResourceEnum resourceEnum)
@@ -815,7 +819,7 @@ void ABuildingPlacementSystem::CancelPlacement()
 	_dragState = DragState::None;
 	_buildingEnum = CardEnum::None;
 
-	_deliveryTargetBuildingId = -1;
+	_deliverySourceBuildingId = -1;
 
 	_placementGrid.SetActive(false);
 	_placementGrid.Clear();
@@ -1520,7 +1524,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 	/*
 	 * Delivery Point
 	 */
-	if (_placementType == PlacementType::DeliveryPoint)
+	if (_placementType == PlacementType::DeliveryTarget)
 	{
 		_canPlace = false;
 		
@@ -1539,6 +1543,20 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			else {
 				SetInstruction(PlacementInstructionEnum::DeliveryPointInstruction, true);
 				_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, _mouseOnTile);
+			}
+
+			// Show DeliveryArrow
+			if (simulation.IsValidBuilding(_deliverySourceBuildingId))
+			{
+				FVector mouseLocation;
+				if (buildingAtTile) {
+					mouseLocation = _gameInterface->DisplayLocationTrueCenter(*buildingAtTile);
+				} else {
+					mouseLocation = _gameInterface->DisplayLocation(_mouseOnTile.worldAtom2());
+				}
+				FVector sourceLocation = _gameInterface->DisplayLocationTrueCenter(simulation.building(_deliverySourceBuildingId));
+
+				_gameInterface->ShowDeliveryArrow(sourceLocation, mouseLocation);
 			}
 		}
 		else {
@@ -2503,12 +2521,12 @@ void ABuildingPlacementSystem::NetworkTryPlaceBuilding(IGameNetworkInterface* ne
 		}
 	}
 
-	else if (_placementType == PlacementType::DeliveryPoint)
+	else if (_placementType == PlacementType::DeliveryTarget)
 	{
 		if (_canPlace)
 		{
 			auto command = make_shared<FPlaceBuilding>();
-			command->buildingIdToSetDelivery = _deliveryTargetBuildingId;
+			command->buildingIdToSetDelivery = _deliverySourceBuildingId;
 			command->center = _mouseOnTile;
 
 			networkInterface->SendNetworkCommand(command);

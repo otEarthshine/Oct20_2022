@@ -153,27 +153,37 @@ public:
 				const std::vector<ResourceHolderInfo>& holderInfos = building.subclass<StorageYard>().holderInfos();
 
 				std::vector<ResourcePair> maxResourcePairs;
+				bool hasMore = false;
 
 				for (ResourceHolderInfo holderInfo : holderInfos)
 				{
 					int32 resourceCount = building.GetResourceCount(holderInfo);
-
-					bool inserted = false;
-					for (size_t i = 0; i < maxResourcePairs.size(); i++) {
-						if (resourceCount > maxResourcePairs[i].count) {
-							maxResourcePairs[i] = { holderInfo.resourceEnum, resourceCount };
-							inserted = true;
-							break;
+					if  (resourceCount > 0)
+					{
+						bool inserted = false;
+						for (size_t i = 0; i < maxResourcePairs.size(); i++) {
+							if (resourceCount > maxResourcePairs[i].count) {
+								maxResourcePairs[i] = { holderInfo.resourceEnum, resourceCount };
+								inserted = true;
+								hasMore = true;
+								break;
+							}
 						}
-					}
-					if (!inserted && maxResourcePairs.size() < 2) {
-						maxResourcePairs.push_back({ holderInfo.resourceEnum, resourceCount });
+						if (!inserted && maxResourcePairs.size() < 2) {
+							maxResourcePairs.push_back({ holderInfo.resourceEnum, resourceCount });
+						}
 					}
 				}
 
 				for (ResourcePair& pair : maxResourcePairs) {
 					PunBox->AddIconPair("", pair.resourceEnum, std::to_string(pair.count));
 				}
+				if (hasMore) {
+					auto textWidget = PunBox->AddText("...");
+					textWidget->PunText->SetShadowOffset(FVector2D(1, 1));
+					textWidget->PunText->SetShadowColorAndOpacity(FLinearColor(1, 1, 1, 0.5));
+				}
+				
 				PunBox->AfterAdd();
 			}
 		}

@@ -841,7 +841,8 @@ public:
 	void TryRemoveDeliveryTarget()
 	{
 		if (_deliveryTargetId != -1) {
-			CppUtils::Remove(_simulation->buildingChecked(_deliveryTargetId)._deliverySourceIds, _deliveryTargetId);
+			std::vector<int32>& sourceIds = _simulation->buildingChecked(_deliveryTargetId)._deliverySourceIds;
+			CppUtils::Remove(sourceIds, _objectId);
 			_deliveryTargetId = -1;
 		}
 	}

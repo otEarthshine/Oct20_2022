@@ -187,21 +187,27 @@ void UWorldSpaceUI::TickBuildings()
 
 	const std::vector<int32>& sampleProvinceIds = dataSource()->sampleProvinceIds();
 
-	//if (zoomDistance < WorldZoomTransition_Tree)
+	/*
+	 * Province UI
+	 */
 	{
 		for (int32 provinceId : sampleProvinceIds)
 		{
 			int32 provinceOwnerId = sim.provinceOwner(provinceId);
 			if (provinceOwnerId != -1)
 			{
+				auto getRegionHoverUI = [&]() {
+					WorldTile2 provinceCenter = provinceSys.GetProvinceCenterTile(provinceId);
+					FVector displayLocation = MapUtil::DisplayLocation(data->cameraAtom(), provinceCenter.worldAtom2(), 50.0f);
+					return _regionHoverUIs.GetHoverUI<URegionHoverUI>(provinceId, UIEnum::RegionHoverUI, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
+						[&](URegionHoverUI* ui) {}
+					);
+				};
+				
 				ProvinceClaimProgress claimProgress = sim.playerOwned(provinceOwnerId).GetDefendingClaimProgress(provinceId);
 				if (claimProgress.isValid())
 				{
-					WorldTile2 provinceCenter = provinceSys.GetProvinceCenterTile(provinceId);
-					FVector displayLocation = MapUtil::DisplayLocation(data->cameraAtom(), provinceCenter.worldAtom2(), 50.0f);
-					URegionHoverUI* regionHoverUI = _regionHoverUIs.GetHoverUI<URegionHoverUI>(provinceId, UIEnum::RegionHoverUI, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
-						[&](URegionHoverUI* ui) {}
-					);
+					URegionHoverUI* regionHoverUI = getRegionHoverUI();
 
 					bool isUIPlayerAttacker = claimProgress.attackerPlayerId == playerId();
 
@@ -292,6 +298,12 @@ void UWorldSpaceUI::TickBuildings()
 					}
 					
 					regionHoverUI->UpdateUI(provinceId);
+				}
+				else if (zoomDistance < WorldZoomTransition_Region4x4ToMap &&
+						dataSource()->isShowingProvinceOverlay())
+				{
+					URegionHoverUI* regionHoverUI = getRegionHoverUI();
+					regionHoverUI->UpdateProvinceOverlayInfo(provinceId);
 				}
 			}
 		}
@@ -1031,6 +1043,7 @@ void UWorldSpaceUI::TickMap()
 
 			switch(node.georesourceEnum)
 			{
+				// TODO: refactor using georesourceNodeINfo's resourceEnum
 			case GeoresourceEnum::CoalOre: setResourceInfo(ResourceEnum::Coal, true); break;
 			case GeoresourceEnum::IronOre: setResourceInfo(ResourceEnum::Iron, true); break;
 			case GeoresourceEnum::GoldOre: setResourceInfo(ResourceEnum::GoldBar, true); break;
@@ -1043,19 +1056,19 @@ void UWorldSpaceUI::TickMap()
 			case GeoresourceEnum::CottonFarm: setResourceInfo(ResourceEnum::Cotton, false); break;
 			case GeoresourceEnum::DyeFarm: setResourceInfo(ResourceEnum::Dye, false); break;
 
-			/*
-			 * Other resources
-			 */
-			case GeoresourceEnum::GiantMushroom: {
-				stringstream ssTip;
-				ssTip << "Weird giant mushrooms.";
-				AddToolTip(hoverIcon->IconImage, ssTip.str());
+			///*
+			// * Other resources
+			// */
+			//case GeoresourceEnum::GiantMushroom: {
+			//	stringstream ssTip;
+			//	ssTip << "Weird giant mushrooms.";
+			//	AddToolTip(hoverIcon->IconImage, ssTip.str());
 
-				GeoresourceEnum georesourceEnum = assetLoader()->HasGeoIcon(node.georesourceEnum) ? node.georesourceEnum : GeoresourceEnum::Ruin;
-				material->SetTextureParameterValue("ColorTexture", assetLoader()->GetGeoIcon(georesourceEnum));
-				material->SetTextureParameterValue("DepthTexture", assetLoader()->GetGeoIconAlpha(georesourceEnum));
-				break;
-			}
+			//	GeoresourceEnum georesourceEnum = assetLoader()->HasGeoIcon(node.georesourceEnum) ? node.georesourceEnum : GeoresourceEnum::Ruin;
+			//	material->SetTextureParameterValue("ColorTexture", assetLoader()->GetGeoIcon(georesourceEnum));
+			//	material->SetTextureParameterValue("DepthTexture", assetLoader()->GetGeoIconAlpha(georesourceEnum));
+			//	break;
+			//}
 				
 			default:
 				GeoresourceEnum georesourceEnum = assetLoader()->HasGeoIcon(node.georesourceEnum) ? node.georesourceEnum : GeoresourceEnum::Ruin;

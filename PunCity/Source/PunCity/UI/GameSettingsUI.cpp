@@ -588,15 +588,16 @@ void UGameSettingsUI::RefreshResolutionDropdown()
 		SetupResolutionDropdown();
 		ResolutionDropdown->SetIsEnabled(true);
 		ResolutionDropdown->SetVisibility(ESlateVisibility::Visible);
-		ResolutionHiddenText->SetVisibility(ESlateVisibility::Visible);
+		ResolutionHiddenText->SetVisibility(ESlateVisibility::Hidden);
 	}
 	else {
-		ResolutionDropdown->ClearOptions();
+		//ResolutionDropdown->ClearOptions();
 		FIntPoint point = settings->GetDesktopResolution();
-		ResolutionDropdown->AddOption(FString::FromInt(point.X) + "x" + FString::FromInt(point.Y));
-		ResolutionDropdown->SetSelectedIndex(0);
+		//ResolutionDropdown->AddOption(FString::FromInt(point.X) + "x" + FString::FromInt(point.Y));
+		//ResolutionDropdown->SetSelectedIndex(0);
 		ResolutionDropdown->SetIsEnabled(false);
 		ResolutionDropdown->SetVisibility(ESlateVisibility::Hidden);
-		ResolutionHiddenText->SetVisibility(ESlateVisibility::Hidden);
+		ResolutionHiddenText->SetVisibility(ESlateVisibility::Visible);
+		ResolutionHiddenText->SetText(FText::FromString(FString::FromInt(point.X) + "x" + FString::FromInt(point.Y)));
 	}
 }

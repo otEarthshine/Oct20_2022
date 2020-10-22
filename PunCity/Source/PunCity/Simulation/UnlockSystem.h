@@ -787,7 +787,6 @@ public:
 						properityTech->state = TechStateEnum::Researched;
 						properityTech->OnUnlock(_playerId, _simulation);
 
-						techsFinished++;
 						needProsperityDisplayUpdate = true;
 
 						//// popup

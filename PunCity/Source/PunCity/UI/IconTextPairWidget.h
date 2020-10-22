@@ -42,6 +42,11 @@ public:
 		PrefixText->SetColorAndOpacity(color);
 		SuffixText->SetColorAndOpacity(color);
 	}
+
+	void SetTextShadow() {
+		PrefixText->SetShadowOffset(FVector2D(1, 1));
+		SuffixText->SetShadowColorAndOpacity(FLinearColor(0, 0, 0, 0.5));
+	}
 	
 	void SetImage(UTexture2D* texture)
 	{

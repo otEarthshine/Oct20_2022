@@ -126,9 +126,13 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 
 	// Filter out player territory
 	std::vector<int32> sampleProvinceIdsNonPlayer;
-	for (int32 provinceId : sampleProvinceIds) {
-		if (simulation().provinceOwner(provinceId) == -1) {
-			sampleProvinceIdsNonPlayer.push_back(provinceId);
+
+	if (!gameManager()->isShowingProvinceOverlay()) // ProvinceOverlay skip removing province meshes in player's territory
+	{
+		for (int32 provinceId : sampleProvinceIds) {
+			if (simulation().provinceOwner(provinceId) == -1) {
+				sampleProvinceIdsNonPlayer.push_back(provinceId);
+			}
 		}
 	}
 	

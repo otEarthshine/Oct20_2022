@@ -207,17 +207,20 @@ public:
 		widget->SetResource(input1, input2, output, productTexture, productStr);
 	}
 
-	UIconTextPairWidget* AddIconPair(std::string prefix, ResourceEnum resourceEnum, std::string suffix, bool isRed = false) {
+	UIconTextPairWidget* AddIconPair(std::string prefix, ResourceEnum resourceEnum, std::string suffix, bool isRed = false, bool hasShadow = false) {
 		auto widget = GetChildElement<UIconTextPairWidget>(UIEnum::IconTextPair);
 		widget->SetText(prefix, suffix);
 		widget->SetImage(resourceEnum, dataSource()->assetLoader(), true);
 		if (isRed) {
 			widget->SetTextRed();
 		}
+		if (hasShadow) {
+			widget->SetTextShadow();
+		}
 		return widget;
 	}
-	UIconTextPairWidget* AddIconPair(std::string prefix, ResourceEnum resourceEnum, std::stringstream& ss, bool isRed = false) {
-		auto widget = AddIconPair(prefix, resourceEnum, ss.str(), isRed);
+	UIconTextPairWidget* AddIconPair(std::string prefix, ResourceEnum resourceEnum, std::stringstream& ss, bool isRed = false, bool hasShadow = false) {
+		auto widget = AddIconPair(prefix, resourceEnum, ss.str(), isRed, hasShadow);
 		ss.str(std::string());
 		return widget;
 	}

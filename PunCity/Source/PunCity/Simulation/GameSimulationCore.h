@@ -1464,7 +1464,7 @@ public:
 		return unlockSystem(playerId)->IsResearched(techEnum);
 	}
 	bool HasTargetResearch(int32 playerId) final { return unlockSystem(playerId)->hasTargetResearch(); }
-	int32 techsCompleted(int32 playerId) final { return unlockSystem(playerId)->techsCompleted(); }
+	int32 sciTechsCompleted(int32 playerId) final { return unlockSystem(playerId)->techsCompleted(); }
 
 
 	bool IsBuildingUnlocked(int32 playerId, CardEnum cardEnumIn) final {

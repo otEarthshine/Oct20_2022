@@ -6,6 +6,7 @@
 #include "PunCity/UI/PunBoxWidget.h"
 #include "PlayerCompareElement.h"
 #include "PlayerCompareDetailedElement.h"
+#include "Components/WidgetSwitcher.h"
 #include "QuestUI.generated.h"
 
 /**
@@ -41,11 +42,7 @@ public:
 
 		SetChildHUD(QuestDescriptionBox);
 
-		
-		PlayerDetailsBox->ClearChildren();
-		PlayerDetailsToggleButton->OnClicked.AddDynamic(this, &UQuestUI::TogglePlayerDetails);
-		PlayerDetailsCloseButton->OnClicked.AddDynamic(this, &UQuestUI::TogglePlayerDetails);
-		PlayerDetailsXButton->OnClicked.AddDynamic(this, &UQuestUI::TogglePlayerDetails);
+		PunInit_PlayerDetails();
 	}
 
 	void Tick()
@@ -226,8 +223,47 @@ public:
 	UPROPERTY(meta = (BindWidget)) UScrollBox* PlayerDetailsBox;
 	UPROPERTY(meta = (BindWidget)) UButton* PlayerDetailsCloseButton;
 	UPROPERTY(meta = (BindWidget)) UButton* PlayerDetailsXButton;
+
+	UPROPERTY(meta = (BindWidget)) UButton* TableTabButton;
+	UPROPERTY(meta = (BindWidget)) UButton* GraphTabButton;
+	UPROPERTY(meta = (BindWidget)) UWidgetSwitcher* PlayerDetailsSwitcher;
 	
-	UFUNCTION() void TogglePlayerDetails() {
+	UPROPERTY(meta = (BindWidget)) UComboBoxString* PlayersGraphDropdown;
+	UPROPERTY(meta = (BindWidget)) UWidgetSwitcher* PlayersGraphSwitcher;
+	UPROPERTY(meta = (BindWidget)) UTimeSeriesPlot* PlayersPopulationGraph;
+	UPROPERTY(meta = (BindWidget)) UTimeSeriesPlot* PlayersRevenueGraph;
+	UPROPERTY(meta = (BindWidget)) UTimeSeriesPlot* PlayersTechnologiesGraph;
+	UPROPERTY(meta = (BindWidget)) UTimeSeriesPlot* PlayersInfluenceGraph;
+
+	bool isInitializedWithSim = false;
+
+	void PunInit_PlayerDetails()
+	{
+		PlayerDetailsBox->ClearChildren();
+		PlayerDetailsToggleButton->OnClicked.AddDynamic(this, &UQuestUI::TogglePlayerDetails);
+		PlayerDetailsCloseButton->OnClicked.AddDynamic(this, &UQuestUI::TogglePlayerDetails);
+		PlayerDetailsXButton->OnClicked.AddDynamic(this, &UQuestUI::TogglePlayerDetails);
+
+		SetTabSelection(TableTabButton);
+		PlayerDetailsSwitcher->SetActiveWidgetIndex(0);
+
+		TableTabButton->OnClicked.AddDynamic(this, &UQuestUI::OnTableTabButtonClick);
+		GraphTabButton->OnClicked.AddDynamic(this, &UQuestUI::OnGraphTabButtonClick);
+
+		PlayersGraphDropdown->ClearOptions();
+		PlayersGraphDropdown->AddOption("Population");
+		PlayersGraphDropdown->AddOption("Revenue");
+		PlayersGraphDropdown->AddOption("Technologies");
+		PlayersGraphDropdown->AddOption("Influence");
+		PlayersGraphDropdown->SetSelectedOption("Population");
+		PlayersGraphDropdown->OnSelectionChanged.AddDynamic(this, &UQuestUI::OnGraphDropDownChanged);
+		PlayersGraphSwitcher->SetActiveWidgetIndex(0);
+
+		isInitializedWithSim = false;
+	}
+	
+	UFUNCTION() void TogglePlayerDetails()
+	{
 		if (PlayerDetailsOverlay->GetVisibility() != ESlateVisibility::Collapsed) {
 			PlayerDetailsOverlay->SetVisibility(ESlateVisibility::Collapsed);
 			Spawn2DSound("UI", "UIWindowClose");
@@ -268,9 +304,9 @@ public:
 
 			setText(element->PlayerNameText, TrimString_Dots(simulation().playerName(curId), 14));
 			setText(element->PopulationText, std::to_string(simulation().population(curId)));
-			setText(element->TechnologyText, std::to_string(simulation().techsCompleted(curId)));
+			setText(element->TechnologyText, std::to_string(simulation().sciTechsCompleted(curId)));
 			setText(element->RevenueText, std::to_string(playerOwned.totalRevenue100() / 100));
-			setText(element->MilitarySizeText, std::to_string(CppUtils::Sum(simulation().GetTotalArmyCounts(curId))));
+			setText(element->MilitarySizeText, std::to_string(simulation().influence(curId)));
 			setText(element->LandText, std::to_string(playerOwned.GetPlayerLandTileCount(true)));
 
 			auto& statSystem = simulation().statSystem(curId);
@@ -355,34 +391,34 @@ public:
 				SetText(element->MainProductionText, ss.str());
 			}
 
-			// Allies and vassals
-			{
-				std::stringstream ss;
-				const std::vector<int32> allyIds = playerOwned.allyPlayerIds();
-				for (int32 i = 0; i < allyIds.size(); i++) {
-					if (i > 0) {
-						ss << "\n";
-					}
-					addSS(ss, TrimString_Dots(simulation().playerName(allyIds[i]), 10));
-				}
-				SetText(element->AlliesText, ss.str());
-			}
-			{
-				std::stringstream ss;
-				const std::vector<int32> vassalBuildingIds = playerOwned.vassalBuildingIds();
-				int32 i = 0;
-				for (int32 nodeId : vassalBuildingIds) {
-					Building& bld = simulation().building(nodeId);
-					if (bld.isEnum(CardEnum::Townhall)) {
-						if (i > 0) {
-							ss << "\n";
-						}
-						addSS(ss, TrimString_Dots(simulation().playerName(bld.playerId()), 10));
-						i++;
-					}
-				}
-				SetText(element->VassalsText, ss.str());
-			}
+			//// Allies and vassals
+			//{
+			//	std::stringstream ss;
+			//	const std::vector<int32> allyIds = playerOwned.allyPlayerIds();
+			//	for (int32 i = 0; i < allyIds.size(); i++) {
+			//		if (i > 0) {
+			//			ss << "\n";
+			//		}
+			//		addSS(ss, TrimString_Dots(simulation().playerName(allyIds[i]), 10));
+			//	}
+			//	SetText(element->AlliesText, ss.str());
+			//}
+			//{
+			//	std::stringstream ss;
+			//	const std::vector<int32> vassalBuildingIds = playerOwned.vassalBuildingIds();
+			//	int32 i = 0;
+			//	for (int32 nodeId : vassalBuildingIds) {
+			//		Building& bld = simulation().building(nodeId);
+			//		if (bld.isEnum(CardEnum::Townhall)) {
+			//			if (i > 0) {
+			//				ss << "\n";
+			//			}
+			//			addSS(ss, TrimString_Dots(simulation().playerName(bld.playerId()), 10));
+			//			i++;
+			//		}
+			//	}
+			//	SetText(element->VassalsText, ss.str());
+			//}
 			
 			//element->AlliesText
 			
@@ -391,6 +427,24 @@ public:
 
 		for (size_t i = playerIds.size(); i < PlayerDetailsBox->GetChildrenCount(); i++) {
 			PlayerDetailsBox->GetChildAt(i)->SetVisibility(ESlateVisibility::Collapsed);
+		}
+
+		// Initialize Graphs later
+		if (!isInitializedWithSim) {
+			isInitializedWithSim = true;
+			
+			std::vector<int32> allHumanIds = simulation().allHumanPlayerIds();
+			auto addSeriesAll = [&](FString graphName, PlotStatEnum plotEnum) {
+				std::vector<GraphSeries> series;
+				for (int32 i = 0; i < allHumanIds.size(); i++) {
+					series.push_back({ graphName, plotEnum, PlayerColor1(allHumanIds[i]), allHumanIds[i] });
+				}
+			};
+
+			addSeriesAll("Population", PlotStatEnum::Population);
+			addSeriesAll("Revenue", PlotStatEnum::Income);
+			addSeriesAll("Technologies", PlotStatEnum::Technologies);
+			addSeriesAll("Influence", PlotStatEnum::InfluencePoints);
 		}
 	}
 
@@ -402,6 +456,54 @@ public:
 			return simulation().population(playerA) > simulation().population(playerB);
 		});
 		return playerIds;
+	}
+
+	/*
+	 * Table/Graph Tab
+	 */
+
+	void SetTabSelection(UButton* button) {
+		auto setHighlight = [&](UButton* buttonLocal) {
+			SetButtonHighlight(buttonLocal, buttonLocal == button);
+		};
+
+		setHighlight(TableTabButton);
+		setHighlight(GraphTabButton);
+	}
+
+	UFUNCTION() void OnTableTabButtonClick() {
+		SetTabSelection(TableTabButton);
+		PlayerDetailsSwitcher->SetActiveWidgetIndex(0);
+		dataSource()->Spawn2DSound("UI", "ButtonClick");
+	}
+	UFUNCTION() void OnGraphTabButtonClick() {
+		SetTabSelection(GraphTabButton);
+		PlayerDetailsSwitcher->SetActiveWidgetIndex(1);
+		dataSource()->Spawn2DSound("UI", "ButtonClick");
+	}
+
+	/*
+	 * Graph
+	 */
+	UFUNCTION() void OnGraphDropDownChanged(FString sItem, ESelectInfo::Type seltype)
+	{
+		if (seltype == ESelectInfo::Type::Direct) {
+			return;
+		}
+
+		int32 index = 0;
+		auto dropDownCheck = [&](const FString& name) {
+			if (sItem == name) {
+				PlayersGraphDropdown->SetSelectedOption(sItem);
+				PlayersGraphSwitcher->SetActiveWidgetIndex(index);
+				index++;
+			}
+		};
+
+		dropDownCheck("Population");
+		dropDownCheck("Revenue");
+		dropDownCheck("Technologies");
+		dropDownCheck("Influence");
 	}
 
 private:

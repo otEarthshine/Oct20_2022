@@ -3017,7 +3017,7 @@ void GameSimulationCore::BuyCards(FBuyCard command)
 			{
 				AddPopup(command.playerId, 
 					"Great job! You have bought your first card.<space>"
-					"Cards selection automatically refreshes every round.<space>"
+					"Card selections automatically refresh every round.<space>"
 					"The round timer is shown next to the card stack.\n(2 rounds per season)");
 			}
 		}

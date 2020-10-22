@@ -253,6 +253,7 @@ public:
 	virtual class UAssetLoaderComponent* assetLoader() = 0;
 
 	virtual FVector DisplayLocation(WorldAtom2 atom) = 0;
+	virtual FVector DisplayLocationTrueCenter(Building& building) = 0;
 	//virtual FVector DisplayLocationMapMode(WorldAtom2 atom) = 0;
 
 	virtual void SetOverlayType(OverlayType overlayType, OverlaySetterType setterType) = 0;
@@ -260,6 +261,7 @@ public:
 	virtual OverlayType GetOverlayType() = 0;
 
 	virtual void SetOverlayHideTree(bool isHiding) = 0;
+	virtual void SetOverlayProvince(bool showProvinceOverlay) = 0;
 
 	virtual bool isCtrlDown() = 0;
 	virtual bool isShiftDown() = 0;
@@ -274,7 +276,7 @@ public:
 	virtual bool alwaysShowProvinceHover() = 0;
 
 	virtual bool isHidingTree() = 0;
-	
+	virtual bool isShowingProvinceOverlay() = 0;
 	
 	virtual float zoomDistance() = 0;
 	virtual bool ZoomDistanceBelow(float threshold) = 0;
@@ -295,6 +297,8 @@ public:
 	
 	virtual class UDecalComponent* ShowDecal(TileArea area, UMaterial* material) = 0; // TODO: remove?
 	virtual class UDecalComponent* ShowDecal(TileArea area, UMaterial* material, TArray<UDecalComponent*>& decals, int32& decalCount, bool useMaterialInstance = false) = 0;
+
+	virtual void ShowDeliveryArrow(FVector start, FVector end) = 0;
 
 	virtual bool IsInSampleRange(WorldTile2 tile) = 0;
 

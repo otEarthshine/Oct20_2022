@@ -32,5 +32,14 @@ public:
 			Graph->SetDatasource(graphDataSource);
 		}
 	}
+
+	void SetupGraph(std::vector<GraphSeries> series)
+	{
+		UGraphDataSource* graphDataSource = NewObject<UGraphDataSource>(this);
+		graphDataSource->Init(playerId(), dataSource());
+		graphDataSource->AddSeries(series);
+
+		SetDataSource(graphDataSource);
+	}
 	
 };

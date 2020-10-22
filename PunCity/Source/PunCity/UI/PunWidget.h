@@ -125,6 +125,10 @@ public:
 	UToolTipWidgetBase* AddToolTip(UWidget* widget, std::string message);
 	UToolTipWidgetBase* AddToolTip(UWidget* widget, std::wstring message);
 
+	void AddSeries(class UTimeSeriesPlot* graph, std::vector<struct GraphSeries> seriesList);
+
+	
+
 	TSubclassOf<UUserWidget> GetPunWidgetClass(UIEnum uiEnumIn) { return GetPunHUD()->GetPunWidgetClass(uiEnumIn); }
 
 	IGameUIDataSource* dataSource() { return GetPunHUD()->dataSource(); }

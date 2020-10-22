@@ -523,7 +523,9 @@ private:
 		dataSource()->SetOverlayHideTree(active);
 	}
 
-
+	UFUNCTION() void OnCheckMap_(bool active) {
+		dataSource()->SetOverlayHideTree(active);
+	}
 
 	
 

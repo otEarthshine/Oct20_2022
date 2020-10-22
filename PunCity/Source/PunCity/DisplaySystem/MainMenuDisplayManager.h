@@ -69,6 +69,7 @@ public:
 
 	OverlayType GetOverlayType() final { return OverlayType::None; }
 	bool isHidingTree() override { return false; }
+	bool isShowingProvinceOverlay() override { return false; }
 
 	ULineBatchComponent* lineBatch() final {
 		if (UWorld* world = GetWorld()) {

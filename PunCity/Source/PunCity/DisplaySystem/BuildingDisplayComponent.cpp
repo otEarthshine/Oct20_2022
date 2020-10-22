@@ -880,6 +880,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 		SetHighlight(_moduleMeshes[meshId], CardEnum::HuntingLodge, overlayType == OverlayType::Hunter);
 		SetHighlight(_moduleMeshes[meshId], CardEnum::Forester, overlayType == OverlayType::Forester);
 		SetHighlight(_moduleMeshes[meshId], CardEnum::Windmill, overlayType == OverlayType::Windmill);
+		SetHighlight(_moduleMeshes[meshId], CardEnum::IrrigationReservoir, overlayType == OverlayType::IrrigationReservoir);
 		SetHighlight(_moduleMeshes[meshId], CardEnum::Beekeeper, overlayType == OverlayType::Beekeeper);
 
 		SetHighlight(_moduleMeshes[meshId], CardEnum::Library, overlayType == OverlayType::Library);
@@ -1058,6 +1059,9 @@ void UBuildingDisplayComponent::UpdateDisplayOverlay(Building& building, Overlay
 	}
 	else if (overlayType == OverlayType::Windmill && building.isEnum(CardEnum::Windmill)) {
 		ShowRadius(Windmill::Radius, centerAtom, building);
+	}
+	else if (overlayType == OverlayType::IrrigationReservoir && building.isEnum(CardEnum::IrrigationReservoir)) {
+		ShowRadius(IrrigationReservoir::Radius, centerAtom, building);
 	}
 	else if (overlayType == OverlayType::Beekeeper && building.isEnum(CardEnum::Beekeeper)) {
 		ShowRadius(Beekeeper::Radius, centerAtom, building);

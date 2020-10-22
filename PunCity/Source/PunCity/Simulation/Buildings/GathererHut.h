@@ -1960,11 +1960,7 @@ public:
 		digArea.maxX--;
 		digArea.maxY--;
 		digArea.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-			WorldTile2 bldTileBeforeRotation = UndoRotateBuildingTileByDirection(tile - centerTile());
-			if (bldTileBeforeRotation != WorldTile2(-1, -1) &&
-				bldTileBeforeRotation != WorldTile2(0, -1)) {
-				_simulation->terrainChanges().AddHole(tile);
-			}
+			_simulation->terrainChanges().AddHole(tile);
 		});
 	}
 
@@ -1983,11 +1979,7 @@ public:
 		digArea.maxX--;
 		digArea.maxY--;
 		digArea.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-			WorldTile2 bldTileBeforeRotation = UndoRotateBuildingTileByDirection(tile - centerTile());
-			if (bldTileBeforeRotation != WorldTile2(-1, -1) &&
-				bldTileBeforeRotation != WorldTile2(0, -1)) {
-				_simulation->terrainChanges().RemoveHole(tile);
-			}
+			_simulation->terrainChanges().RemoveHole(tile);
 		});
 	}
 

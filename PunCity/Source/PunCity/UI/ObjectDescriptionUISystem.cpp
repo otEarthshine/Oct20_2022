@@ -482,6 +482,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 	// Reset the UI if it was swapped
 	// TODO: this seems to fire every tick...
 	if (_objectDescriptionUI->state != uiState) {
+		_objectDescriptionUI->state = uiState;
 		_objectDescriptionUI->CloseAllSubUIs(uiState.shouldCloseStatUI);
 		descriptionBox->ResetBeforeAdd();
 	}
@@ -566,6 +567,11 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			
 			//descriptionBox->AddRichText(ss);
 			descriptionBox->AddLineSpacer(8);
+
+			// Helpers:
+			TileArea area = building.area();
+			FVector displayLocation = dataSource()->DisplayLocation(building.centerTile().worldAtom2());
+			AlgorithmUtils::ShiftDisplayLocationToTrueCenter(displayLocation, area, building.faceDirection());
 
 			/*
 			 * Body
@@ -1761,7 +1767,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				}
 
 
-				// Selection Meshes
+				/*
+				 * Selection Meshes (Related)
+				 */
 				std::vector<int>& occupants = building.occupants();
 				for (int occupantId : occupants) {
 					WorldAtom2 atom = dataSource()->unitDataSource().actualAtomLocation(occupantId);
@@ -1777,6 +1785,25 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					}
 				}
 
+				// DeliveryArrow
+				//   Others
+				const std::vector<int32>& deliverySourceIds = building.deliverySourceIds();
+				for (int32 sourceId : deliverySourceIds)
+				{
+					Building& buildingScope = simulation.buildingChecked(sourceId);
+					FVector displayLocationScope = dataSource()->DisplayLocationTrueCenter(buildingScope);
+					dataSource()->ShowDeliveryArrow(displayLocationScope, displayLocation);
+				}
+				//   Self
+				int32 deliveryTargetId = building.deliveryTargetId();
+				if (deliveryTargetId != -1)
+				{
+					Building& buildingScope = simulation.buildingChecked(deliveryTargetId);
+					FVector displayLocationScope = dataSource()->DisplayLocationTrueCenter(buildingScope);
+					dataSource()->ShowDeliveryArrow(displayLocation, displayLocationScope);
+				}
+				
+
 				// Overlays
 				switch (building.buildingEnum())
 				{
@@ -1786,6 +1813,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				case CardEnum::HuntingLodge: overlayType = OverlayType::Hunter; break;
 				case CardEnum::Forester: overlayType = OverlayType::Forester; break;
 				case CardEnum::Windmill: overlayType = OverlayType::Windmill; break;
+				case CardEnum::IrrigationReservoir: overlayType = OverlayType::IrrigationReservoir; break;
 				case CardEnum::Beekeeper: overlayType = OverlayType::Beekeeper; break;
 					
 				//case BuildingEnum::ConstructionOffice: overlayType = OverlayType::ConstructionOffice; break;
@@ -1967,11 +1995,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				
 			} // Fire
 
-			// Selection Mesh
-			TileArea area = building.area();
-			FVector displayLocation = dataSource()->DisplayLocation(building.centerTile().worldAtom2());
-			AlgorithmUtils::ShiftDisplayLocationToTrueCenter(displayLocation, area, building.faceDirection());
-
+			/*
+			 * Selection Mesh (Self)
+			 */
 			FVector selectionMeshLocation = displayLocation + FVector(0, 0, 30);
 			if (building.isEnum(CardEnum::Bridge)) {
 				// Average using atom to get exact middle

@@ -2223,7 +2223,7 @@ static const BldInfo BuildingInfo[]
 	// October 20
 	BldInfo(CardEnum::Market, "Market", WorldTile2(6, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 120, 120, 0 }, "Provide food/fuel/luxury resources to nearby housing. Bring resources from faraway storages in large bulk."),
 	BldInfo(CardEnum::ShippingDepot, "Shipping Depot", WorldTile2(5, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 30, 30, 0 }, "Shipping worker carry specified resources from within the radius to its delivery target faraway."),
-	BldInfo(CardEnum::IrrigationReservoir, "Irrigation Reservoir", WorldTile2(5, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0, 150, 0 }, "Raise the fertility within its radius to at least 90%."),
+	BldInfo(CardEnum::IrrigationReservoir, "Irrigation Reservoir", WorldTile2(5, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0, 150, 0 }, "Raise the fertility within its radius to at least 95%."),
 	
 	// Decorations
 	BldInfo(CardEnum::FlowerBed, "Flower Bed", WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "Increase the surrounding appeal by 5 within 5 tiles radius."),
@@ -3915,7 +3915,7 @@ enum class PlacementType
 	Fence,
 	Bridge,
 
-	DeliveryPoint,
+	DeliveryTarget,
 };
 
 static bool IsRoadPlacement(PlacementType placementType) {
@@ -4057,7 +4057,10 @@ enum class OverlayType
 	Gatherer,
 	Hunter,
 	Forester,
+	
 	Windmill,
+	IrrigationReservoir,
+	
 	Beekeeper,
 	
 	//ConstructionOffice,
@@ -6388,6 +6391,9 @@ enum class PlotStatEnum
 
 	MarketPrice,
 	TipMarketPrice,
+
+	Technologies,
+	InfluencePoints,
 
 	Count,
 };

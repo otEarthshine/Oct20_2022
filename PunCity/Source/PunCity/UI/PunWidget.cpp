@@ -5,6 +5,7 @@
 #include "EngineFontServices.h"
 #include "GraphDataSource.h"
 #include "PunGraph.h"
+#include "KantanChartLegend.h"
 
 int32 UPunWidget::kPointerOnUI = 0;
 
@@ -136,6 +137,28 @@ void UPunWidget::AddResourceTooltip(UWidget* widget, ResourceEnum resourceEnum, 
 
 	tooltip->TooltipPunBoxWidget->AddRichTextParsed(ss.str());
 }
+
+void UPunWidget::AddSeries(UTimeSeriesPlot* graph, std::vector<GraphSeries> seriesList)
+{
+	// Set the legend
+	GetFellowChild<UKantanChartLegend>(graph)->SetChart(graph);
+
+	UGraphDataSource* graphDataSource = NewObject<UGraphDataSource>(this);
+	//dataSources.Add(graphDataSource);
+	graphDataSource->Init(playerId(), dataSource());
+	graphDataSource->AddSeries(seriesList);
+
+	for (int32 i = 0; i < seriesList.size(); i++)
+	{
+		FName seriesId = FName(*seriesList[i].seriesId);
+		graph->EnableSeries(seriesId, true);
+		graph->ConfigureSeries(seriesId, false, true);
+		graph->AddSeriesStyleOverride(seriesId, nullptr, seriesList[i].color);
+		graph->SetDatasource(graphDataSource);
+	}
+}
+
+
 
 std::string UPunWidget::WrapString(std::string str, int32 wrapSize, FSlateFontInfo* fontInfoPtr)
 {

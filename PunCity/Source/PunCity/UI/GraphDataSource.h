@@ -16,6 +16,8 @@ struct GraphSeries
 	FString seriesId;
 	PlotStatEnum plotStatEnum;
 	FLinearColor color;
+
+	int32 customPlayerId = -1;
 };
 
 /**
@@ -70,7 +72,11 @@ public:
 				
 				statVec.push_back(worldTradeSys.price100(graphResourceEnum));
 				
-			} else {
+			}
+			else if (_seriesList[SeriesIdx].customPlayerId != -1) {
+				statVec = _dataSource->simulation().playerOwned(_seriesList[SeriesIdx].customPlayerId).GetStatVec(plotStatEnum);
+			}
+			else {
 				statVec = _dataSource->simulation().playerOwned(_playerId).GetStatVec(plotStatEnum);
 			}
 

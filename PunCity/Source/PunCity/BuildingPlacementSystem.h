@@ -75,7 +75,7 @@ public:
 		}
 	}
 
-	void BeforeAdd() { 
+	void BeforeAdd() {
 		for (PlacementGrid& grid : _placementGrids) {
 			grid.BeforeAdd();
 		}
@@ -260,7 +260,7 @@ private:
 	bool _useBoughtCard = false;
 	CardEnum _useWildCard = CardEnum::None;
 
-	int32 _deliveryTargetBuildingId = -1;
+	int32 _deliverySourceBuildingId = -1;
 
 	bool _canPlace = false;
 	bool _forceCannotPlace = false;

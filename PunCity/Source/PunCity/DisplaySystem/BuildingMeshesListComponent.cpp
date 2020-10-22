@@ -67,4 +67,6 @@ void BuildingMeshesListComponent::AfterAdd()
 	buildingMeshesIndex = 0;
 
 	PunUnrealUtils::UpdateDecals(_decals, decalIndex);
+
+	AfterAdd_DeliveryArrow();
 }

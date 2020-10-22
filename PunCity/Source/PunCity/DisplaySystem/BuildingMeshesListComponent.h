@@ -4,6 +4,8 @@
 
 #include "DisplaySystemDataSource.h"
 #include "PunCity/BuildingMeshesComponent.h"
+#include "Kismet/KismetArrayLibrary.h"
+#include "Kismet/KismetMathLibrary.h"
 
 /**
  * For showing building mesh or decal
@@ -34,6 +36,47 @@ public:
 
 	int32 decalIndex = 0;
 	TArray<UDecalComponent*> _decals;
+
+	/*
+	 * Delivery Arrow
+	 */
+	void ShowDeliveryArrow(FVector start, FVector end)
+	{
+		if (_deliveryArrowIndex >= _deliveryArrowMeshes.Num()) {
+			auto mesh = PunUnrealUtils::CreateStaticMesh(_dataSource->componentToAttach());
+			mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			mesh->SetReceivesDecals(true);
+
+			mesh->SetStaticMesh(_dataSource->assetLoader()->DeliveryArrowMesh);
+			mesh->SetMaterial(0, UMaterialInstanceDynamic::Create(_dataSource->assetLoader()->M_DeliveryArrow, _dataSource->componentToAttach()));
+			
+			_deliveryArrowMeshes.Add(mesh);
+		}
+		auto mesh = _deliveryArrowMeshes[_deliveryArrowIndex];
+
+		float distance = FVector::Distance(start, end);
+		float baseArrowSize = CoordinateConstants::DisplayUnitPerTile;
+		float scaleScalar = distance / baseArrowSize;
+		FVector scale(scaleScalar, 0.2, 20);
+		FRotator rotation = UKismetMathLibrary::FindLookAtRotation(start, end);
+
+		mesh->SetVisibility(true);
+		mesh->SetWorldTransform(FTransform(rotation, start, scale));
+		CastChecked<UMaterialInstanceDynamic>(mesh->GetMaterial(0))->SetScalarParameterValue("SectionCount", scaleScalar);
+
+		_deliveryArrowIndex++;
+	}
+	void AfterAdd_DeliveryArrow()
+	{
+		for (int32 i = _deliveryArrowIndex; i < _deliveryArrowMeshes.Num(); i++) {
+			_deliveryArrowMeshes[i]->SetVisibility(false);
+		}
+		_deliveryArrowIndex = 0;
+	}
+
+private:
+	int32 _deliveryArrowIndex = 0;
+	TArray<UStaticMeshComponent*> _deliveryArrowMeshes;
 	
 private:
 	UBuildingMeshesComponent* GetBuildingMeshes();

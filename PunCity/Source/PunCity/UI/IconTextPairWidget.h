@@ -45,6 +45,8 @@ public:
 
 	void SetTextShadow() {
 		PrefixText->SetShadowOffset(FVector2D(1, 1));
+		PrefixText->SetShadowColorAndOpacity(FLinearColor(0, 0, 0, 0.5));
+		SuffixText->SetShadowOffset(FVector2D(1, 1));
 		SuffixText->SetShadowColorAndOpacity(FLinearColor(0, 0, 0, 0.5));
 	}
 	

@@ -52,7 +52,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UCheckBox* OverlayCheckBox_Fertility;
 	UPROPERTY(meta = (BindWidget)) UCheckBox* OverlayCheckBox_Animals;
 	UPROPERTY(meta = (BindWidget)) UCheckBox* MapCheckBox_HideTrees;
-	
+	UPROPERTY(meta = (BindWidget)) UCheckBox* MapCheckBox_ProvinceOverlay;
 	
 	UPROPERTY(meta = (BindWidget)) UGameSettingsUI* GameSettingsUI;
 
@@ -493,6 +493,10 @@ private:
 		} else {
 			networkInterface()->ResetGameUI();
 			OverlaySettingsOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+
+			// Ensure checkboxes are up to date
+			MapCheckBox_HideTrees->SetIsChecked(dataSource()->isHidingTree());
+			MapCheckBox_ProvinceOverlay->SetIsChecked(dataSource()->isShowingProvinceOverlay());
 			
 			//dataSource()->SetOverlayType(OverlayType::Farm, OverlaySetterType::OverlayToggler);
 			//SetOverlayCheckBox(OverlayCheckBox_Fertility);
@@ -523,8 +527,8 @@ private:
 		dataSource()->SetOverlayHideTree(active);
 	}
 
-	UFUNCTION() void OnCheckMap_(bool active) {
-		dataSource()->SetOverlayHideTree(active);
+	UFUNCTION() void OnCheckMap_ProvinceOverlay(bool active) {
+		dataSource()->SetOverlayProvince(active);
 	}
 
 	

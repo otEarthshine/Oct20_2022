@@ -1618,17 +1618,22 @@ int32 PunTerrainGenerator::GetFertilityPercent(WorldTile2 tile)
 			const std::vector<int32>& buildingIds = _simulation->buildingIds(provinceOwnerId, CardEnum::IrrigationReservoir);
 			for (int32 buildingId: buildingIds)
 			{
-				int32 distance = WorldTile2::Distance(_simulation->building(buildingId).centerTile(), tile);
-				const int32 bandSize = 3;
-				if (distance <= IrrigationReservoir::Radius + bandSize) 
+				Building& building = _simulation->building(buildingId);
+				if (building.isConstructed())
 				{
-					int32 fertilityIrrigated = 95;
-					if (distance > IrrigationReservoir::Radius) {
-						int32 bandFraction100 = 100 - (distance - IrrigationReservoir::Radius) * 100 / bandSize;
-						fertilityIrrigated = bandFraction100 * 95 / 100;
-					}
+					int32 distance = building.DistanceTo(tile);
+					const int32 bandSize = 3;
+					if (
+						distance <= IrrigationReservoir::Radius + bandSize)
+					{
+						int32 fertilityIrrigated = 95;
+						if (distance > IrrigationReservoir::Radius) {
+							int32 bandFraction100 = 100 - (distance - IrrigationReservoir::Radius) * 100 / bandSize;
+							fertilityIrrigated = bandFraction100 * 95 / 100;
+						}
 
-					fertility = max(fertility, fertilityIrrigated);
+						fertility = max(fertility, fertilityIrrigated);
+					}
 				}
 			}
 		}

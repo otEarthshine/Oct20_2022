@@ -24,6 +24,11 @@ public:
 	}
 
 	template<typename T>
+	static void AppendVec(std::vector<T>& v1, const std::vector<T>& v2) {
+		v1.insert(v1.end(), v2.begin(), v2.end());
+	}
+
+	template<typename T>
 	static void Remove(std::vector<T>& v, T value) {
 		for (int i = v.size(); i-- > 0;) {
 			if (v[i] == value) {

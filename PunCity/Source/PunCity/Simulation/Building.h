@@ -92,6 +92,7 @@ public:
 	int32 DistanceTo(WorldTile2 tile) {
 		return WorldTile2::Distance(_centerTile, tile);
 	}
+	
 
 	BldInfo buildingInfo() { return BuildingInfo[buildingEnumInt()]; }
 	bool isEnum(CardEnum buildingEnum) const { return _buildingEnum == buildingEnum; }
@@ -206,7 +207,7 @@ public:
 		return nearestTile;
 	}
 
-	FoundResourceHolderInfo GetFoundHolderInfo(ResourceEnum resourceEnum, int32_t amount) {
+	FoundResourceHolderInfo GetHolderInfoFull(ResourceEnum resourceEnum, int32 amount) {
 		return FoundResourceHolderInfo(holderInfo(resourceEnum), amount, gateTile());
 	}
 
@@ -240,6 +241,31 @@ public:
 		int32 upgradeCost = totalCost * percentOfTotalPrice / 100;
 		return BuildingUpgrade(name, description, upgradeCost);
 	}
+
+	BuildingUpgrade MakeProductionUpgrade(std::string name, ResourceEnum resourceEnum, int32 percentOfTotalPrice, int32 efficiencyBonus)
+	{
+		BuildingUpgrade upgrade = MakeUpgrade(name, "+" + std::to_string(efficiencyBonus) + "% productivity", resourceEnum, percentOfTotalPrice);
+		upgrade.efficiencyBonus = efficiencyBonus;
+		return upgrade;
+	}
+	BuildingUpgrade MakeProductionUpgrade(std::string name, int32 percentOfTotalPrice, int32 efficiencyBonus)
+	{
+		BuildingUpgrade upgrade = MakeUpgrade(name, "+" + std::to_string(efficiencyBonus) + "% productivity", percentOfTotalPrice);
+		upgrade.efficiencyBonus = efficiencyBonus;
+		return upgrade;
+	}
+
+	BuildingUpgrade MakeComboUpgrade(std::string name, ResourceEnum resourceEnum, int32 percentOfTotalPrice, int32 comboEfficiencyBonus)
+	{
+		std::stringstream ss;
+		ss << "Gain +" << comboEfficiencyBonus << "/" << comboEfficiencyBonus * 2 << "/" << comboEfficiencyBonus * 3
+			<< " productivity if this city has 2/4/8 " << buildingInfo().name << "s";
+
+		BuildingUpgrade upgrade = MakeUpgrade(name, ss.str(), resourceEnum, percentOfTotalPrice);
+		upgrade.comboEfficiencyBonus = comboEfficiencyBonus;
+		return upgrade;
+	}
+	
 
 	//! level from 0
 	int32 level() { return _level; }
@@ -559,8 +585,16 @@ public:
 		return batchProfit() * 100 * 100 / buildingInfo().workRevenuePerSec100_perMan; 
 	}
 
-	virtual int32 upkeep() {
-		int32 baseUpkeep = GetCardUpkeepBase(_buildingEnum);
+	virtual int32 upkeep()
+	{
+		int32 baseUpkeep;
+
+		if (product() != ResourceEnum::None || IsSpecialProducer(_buildingEnum)) {
+			baseUpkeep = buildingInfo().baseUpkeep;
+		} else {
+			baseUpkeep = GetCardUpkeepBase(_buildingEnum);
+		}
+		
 		baseUpkeep = std::max(0, baseUpkeep - baseUpkeep * slotCardCount(CardEnum::FrugalityBook) * 50 / 100);
 		
 		// No worker, half upkeep
@@ -830,22 +864,8 @@ public:
 	int32 deliveryTargetId() { return _deliveryTargetId; }
 	const std::vector<int32>& deliverySourceIds() { return _deliverySourceIds; }
 	
-	void SetDeliveryTarget(int32 deliveryTargetId) {
-		// Remove old target if needed
-		TryRemoveDeliveryTarget();
-		
-		_deliveryTargetId = deliveryTargetId;
-		Building& deliveryTarget = _simulation->buildingChecked(_deliveryTargetId);
-		deliveryTarget._deliverySourceIds.push_back(_objectId);
-	}
-	void TryRemoveDeliveryTarget()
-	{
-		if (_deliveryTargetId != -1) {
-			std::vector<int32>& sourceIds = _simulation->buildingChecked(_deliveryTargetId)._deliverySourceIds;
-			CppUtils::Remove(sourceIds, _objectId);
-			_deliveryTargetId = -1;
-		}
-	}
+	void SetDeliveryTarget(int32 deliveryTargetId);
+	void TryRemoveDeliveryTarget();
 	void ClearDeliverySources()
 	{
 		std::vector<int32> deliverySourceIds = _deliverySourceIds;

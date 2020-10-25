@@ -120,7 +120,7 @@ void House::FinishConstruction()
 
 	_upgrades = {
 		BuildingUpgrade("Stone Insulation", "Wood/coal gives 20% more heat", ResourcePair(ResourceEnum::Stone, 20)),
-		BuildingUpgrade("Brick Insulation", "Wood/coal gives 30% more heat", ResourcePair(ResourceEnum::Brick, 30)),
+		BuildingUpgrade("Hearth Fireplace", "Wood/coal gives 30% more heat", ResourcePair(ResourceEnum::Brick, 30)),
 	};
 
 	

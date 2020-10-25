@@ -126,7 +126,7 @@ public:
 			selectButton->Set(ss.str(), this, CallbackEnum::SelectSaveGame, i);
 
 			// Show the saves in the correct category (single vs. multiplayer)
-			bool showSave = saveList[i].mapSettings.isSinglePlayer == isSinglePlayer && saveList[i].version == SAVE_VERSION;
+			bool showSave = (saveList[i].mapSettings.isSinglePlayer == isSinglePlayer) && saveList[i].version == SAVE_VERSION;
 			selectButton->SetVisibility(showSave ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
 			if (showSave && activeIndexIn == SaveActiveIndex_SelectFirstAvailable) {
@@ -353,10 +353,13 @@ private:
 		{
 			// Remove the oldest autosaves if there are 3 or more autosaves
 			saveSystem().RefreshSaveList();
-			const TArray<GameSaveInfo>& saveList = saveSystem().saveList();
+
+			bool isSinglePlayer = gameInstance()->isSinglePlayer;
+
 			TArray<GameSaveInfo> autoSaves;
+			const TArray<GameSaveInfo>& saveList = saveSystem().saveList();
 			for (int32 i = 0; i < saveList.Num(); i++) {
-				if (saveList[i].IsAutosave()) {
+				if (saveList[i].IsAutosave() && saveList[i].mapSettings.isSinglePlayer == isSinglePlayer) {
 					autoSaves.Add(saveList[i]);
 				}
 			}

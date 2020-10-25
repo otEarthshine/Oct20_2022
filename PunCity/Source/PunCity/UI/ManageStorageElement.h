@@ -29,7 +29,7 @@ public:
 		return FMath::IsNearlyEqual(ExpandArrow->GetRenderTransformAngle(), 90.0f);
 	}
 
-	void PunInit(ResourceEnum resourceEnumIn, std::string sectionNameIn, int32 buildingIdIn, ECheckBoxState checkBoxState, bool indentation)
+	void PunInit(ResourceEnum resourceEnumIn, std::string sectionNameIn, int32 buildingIdIn, ECheckBoxState checkBoxState, bool isSection)
 	{
 		sectionName = sectionNameIn;
 		buildingId = buildingIdIn;
@@ -44,7 +44,7 @@ public:
 			ExpandArrow->OnClicked.AddDynamic(this, &UManageStorageElement::OnClickExpandArrow);
 		}
 
-		IndentationSpacer->SetVisibility(indentation ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+		IndentationSpacer->SetVisibility(isSection ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 
 		AcceptBox->SetCheckedState(HasDelayOverride() ? checkStateOverride : checkBoxState);
 		
@@ -78,7 +78,33 @@ public:
 			ExpandArrow->SetVisibility(ESlateVisibility::Collapsed);
 		}
 
-		//SetTargetBox->SetCheckedState(allowed, )
+		TargetAmount->SetVisibility(ESlateVisibility::Collapsed);
+		SetChildHUD(TargetAmount);
+		TargetAmount->OnInit();
+		TargetAmount->Set(this, CallbackEnum::SetMarketTarget, buildingIdIn);
+	}
+
+	void SetTargetAmount(int32 amount)
+	{
+		TargetAmount->SetVisibility(ESlateVisibility::Visible);
+		TargetAmount->amount = amount;
+		TargetAmount->UpdateText();
+	}
+
+	void CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum) override
+	{
+		PUN_CHECK(callbackEnum == CallbackEnum::SetMarketTarget);
+		
+		auto command = std::make_shared<FSetAllowResource>();
+		command->buildingId = buildingId;
+		command->resourceEnum = uiResourceEnum;
+		command->allowed = true;
+		command->target = CastChecked<UPunEditableNumberBox>(punWidgetCaller)->amount;
+
+		Market& market = simulation().building(buildingId).subclass<Market>(CardEnum::Market);
+		market.lastUIResourceTargets[static_cast<int>(uiResourceEnum)] = command->target;
+
+		networkInterface()->SendNetworkCommand(command);
 	}
 
 	UFUNCTION() void OnCheckAllowResource(bool active)

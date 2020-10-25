@@ -1941,7 +1941,10 @@ bool UnitStateAI::MoveToResource(ResourceHolderInfo holderInfo) {
 	bool succeed = MoveTo(holder.tile);
 
 	// For Storages, trim off excess waypoint
-	if (succeed && holder.type == ResourceHolderType::Storage) {
+	if (succeed && 
+		holder.objectId != -1 && 
+		_simulation->building(holder.objectId).isEnum(CardEnum::StorageYard)) 
+	{
 		_unitData->TrimWaypoint(holder.objectId, _id);
 	}
 	

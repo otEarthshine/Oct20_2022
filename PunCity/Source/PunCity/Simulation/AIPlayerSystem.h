@@ -310,7 +310,7 @@ public:
 		/*
 		 * Do good/bad act once every year
 		 */
-		int32 secondToAct = GameRand::Rand(Time::Years() * _aiPlayerId) % Time::SecondsPerYear;
+		int32 secondToAct = (GameRand::Rand(Time::Years()) + GameRand::Rand(_aiPlayerId)) % Time::SecondsPerYear;
 		if (Time::Seconds() % Time::SecondsPerYear == secondToAct)
 		{
 			PUN_LOG("[AIPlayer] Act pid:%d second:%d", _aiPlayerId, secondToAct);

@@ -718,7 +718,14 @@ public:
 		std::string name = ToStdString(buildingName);
 		CardEnum buildingEnum = FindCardEnumByName(name);
 
+		int32 tileOwner = simulation().tileOwner(WorldTile2(tileX, tileY));
+		if (tileOwner == -1) {
+			PUN_LOG("Invalid tileOwner");
+			return;
+		}
+
 		auto command = make_shared<FPlaceBuilding>();
+		command->playerId = tileOwner;
 		command->buildingEnum = static_cast<uint8>(buildingEnum);
 		command->buildingLevel = 1;
 		command->center = WorldTile2(tileX, tileY);

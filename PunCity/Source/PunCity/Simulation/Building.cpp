@@ -828,6 +828,9 @@ void Building::CheckCombo()
 	case CardEnum::TrapSpike:
 	case CardEnum::None:
 	case CardEnum::BoarBurrow:
+		
+	case CardEnum::Market:
+	case CardEnum::ShippingDepot:
 		return;
 	default:
 		break;
@@ -916,6 +919,29 @@ std::vector<BonusPair> Building::GetBonuses()
 		bonuses.push_back({ "Productivity Book", slotCardCount(CardEnum::ProductivityBook) * 20 });
 	}
 
+	// Upgrade bonuses
+	for (const BuildingUpgrade& upgrade : _upgrades) 
+	{
+		if (upgrade.isUpgraded && upgrade.efficiencyBonus > 0) {
+			bonuses.push_back({ upgrade.name, upgrade.efficiencyBonus });
+		}
+		
+		// Combo Upgrade bonuses
+		if (upgrade.isUpgraded && upgrade.comboEfficiencyBonus > 0) 
+		{
+			int32 finalComboEfficiencyBonus = 0;
+			int32 buildingCount = _simulation->buildingCount(_playerId, _buildingEnum);
+			if (buildingCount >= 8) {
+				finalComboEfficiencyBonus = upgrade.comboEfficiencyBonus * 3;
+			} else if (buildingCount >= 4) {
+				finalComboEfficiencyBonus = upgrade.comboEfficiencyBonus * 2;
+			} else if (buildingCount >= 2) {
+				finalComboEfficiencyBonus = upgrade.comboEfficiencyBonus;
+			}
+			bonuses.push_back({ upgrade.name, finalComboEfficiencyBonus });
+		}
+	}
+
 	//if (_simulation->playerOwned(_playerId).HasSpeedBoost(buildingId())) {
 	//	bonuses.push_back({ "Leader Efficiency Boost", 50 });
 	//}
@@ -931,4 +957,53 @@ std::vector<BonusPair> Building::GetBonuses()
 	//}
 
 	return bonuses;
+}
+
+
+void Building::SetDeliveryTarget(int32 deliveryTargetId)
+{
+	check(deliveryTargetId != -1);
+	
+	// Remove old target if needed
+	TryRemoveDeliveryTarget();
+
+	_deliveryTargetId = deliveryTargetId;
+
+	auto& resourceSys = resourceSystem();
+
+	Building& deliveryTarget = _simulation->buildingChecked(_deliveryTargetId);
+	deliveryTarget._deliverySourceIds.push_back(_objectId);
+
+	if (!isEnum(CardEnum::ShippingDepot)) {
+		_simulation->playerOwned(_playerId).AddDeliverySource(_objectId);
+	}
+
+	// Ensure all Providers are set back to Manual
+	for (const ResourceHolderInfo& info : _holderInfos) {
+		if (resourceSys.holder(info).type == ResourceHolderType::Provider) {
+			SetHolderTypeAndTarget(info.resourceEnum, ResourceHolderType::Manual, 0);
+		}
+	}
+}
+void Building::TryRemoveDeliveryTarget()
+{
+	if (_deliveryTargetId != -1) 
+	{
+		auto& resourceSys = resourceSystem();
+		
+		std::vector<int32>& sourceIds = _simulation->buildingChecked(_deliveryTargetId)._deliverySourceIds;
+		CppUtils::Remove(sourceIds, _objectId);
+		_deliveryTargetId = -1;
+
+		if (!isEnum(CardEnum::ShippingDepot)) {
+			_simulation->playerOwned(_playerId).RemoveDeliverySource(_objectId);
+		}
+
+		// Ensure all Manual are set back to Providers
+		for (const ResourceHolderInfo& info : _holderInfos) {
+			if (resourceSys.holder(info).type == ResourceHolderType::Manual) {
+				SetHolderTypeAndTarget(info.resourceEnum, ResourceHolderType::Provider, 0);
+			}
+		}
+	}
 }

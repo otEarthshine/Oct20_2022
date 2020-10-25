@@ -204,7 +204,8 @@ void URegionDecalDisplayComponent::UpdateDisplay(int regionId, int meshId, World
 					{
 						overlayColor = 255 * treeSystem.fish100Count(worldTile.tileId()) / 100;
 					}
-					else if (overlayType == OverlayType::Farm)
+					else if (overlayType == OverlayType::Farm ||
+							overlayType == OverlayType::IrrigationReservoir)
 					{
 						/*WorldTile2 tile(x + regionMinTileX, y + regionMinTileY);*/
 						if (!simulation().IsWaterOrMountain(worldTile)) {

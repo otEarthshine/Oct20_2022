@@ -13,9 +13,12 @@ public:
 
 	//! Macros
 	bool TryMoveResourcesProviderToDropoff(int32 providerBuildingId, int32 dropoffBuildingId, ResourceEnum resourceEnum, int32 amountAtLeast);
-	bool TryMoveResourcesAnyProviderToDropoff(ResourceFindType providerType, FoundResourceHolderInfo dropoffInfo);
+	bool TryMoveResourcesAnyProviderToDropoff(ResourceFindType providerType, FoundResourceHolderInfo dropoffInfo, bool prioritizeMarket = false, bool checkMarketAfter = false);
 	bool TryMoveResourcesProviderToAnyDropoff(FoundResourceHolderInfo providerInfo, ResourceFindType dropoffType);
 	bool TryMoveResourcesAny(ResourceEnum resourceEnum, ResourceFindType providerType, ResourceFindType dropoffType, int32 amountAtLeast);
+
+	bool TryMoveResourcesToDeliveryTarget(int32 deliverySourceId, ResourceEnum resourceEnum, int32 amountAtLeast);
+	bool TryMoveResourcesToDeliveryTarget(int32 amountAtLeast);
 
 	bool TryMoveResourceAny(ResourceInfo info, int32 amountAtLeast)
 	{
@@ -40,6 +43,8 @@ public:
 	bool TryHealup();
 	bool TryFillLuxuries();
 
+	FoundResourceHolderInfos FindMarketResourceHolderInfo(ResourceEnum resourceEnum, int32 wantAmount);
+
 	bool TryFun();
 
 	bool TryGatherFruit();
@@ -47,6 +52,8 @@ public:
 	bool TryRanch();
 	bool TryFarm();
 
+	bool TryBulkHaul_ShippingDepot();
+	bool TryBulkHaul_Market();
 	//bool TryConsumerWork();
 
 	bool TryGather(bool treeOnly);
@@ -136,7 +143,7 @@ public:
 		return needTools() ? -50 : 0;
 	}
 	int32 sicknessPenalty100() {
-		if (_simulation->GetResourceCount(_playerId, MedicineResources) > 0) {
+		if (_simulation->GetResourceCount(_playerId, MedicineEnums) > 0) {
 			return 0;
 		}
 		return isSick() ? -50 : 0;
@@ -225,7 +232,7 @@ public:
 		_isSick = true;
 	}
 	bool needHealthcare() {
-		if (_simulation->GetResourceCount(_playerId, MedicineResources) > 0) {
+		if (_simulation->GetResourceCount(_playerId, MedicineEnums) > 0) {
 			return false;
 		}
 		return _isSick && _hp100 < 5000;

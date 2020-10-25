@@ -467,7 +467,7 @@ private:
 		// there is need to begin a chain with a processedPiles since that will just lead similar, shorter, lesser chain
 
 		const int32 maxChainLinkDist = 12;
-		FoundResourceHolderInfos bestChain({});
+		FoundResourceHolderInfos bestChain;
 
 		int32 loopCount;
 		for (loopCount = 1000000; loopCount-- > 0;)
@@ -584,7 +584,7 @@ private:
 		int32 targetAmount = amount;
 
 		// foundInfos are arrange from more amount to less, then from less dist to more dist
-		FoundResourceHolderInfos result({});
+		FoundResourceHolderInfos result;
 		std::vector<FoundResourceHolderInfo>& foundInfos = result.foundInfos;
 
 		auto tryAddToFoundInfos = [&](int32 availableAmount, const ResourceHolder& holder)
@@ -840,7 +840,7 @@ public:
 		return resourceCountWithPop(ResourceEnum::Coal) + resourceCountWithPop(ResourceEnum::Wood) > 0;
 	}
 	bool HasAvailableTools() const {
-		for (ResourceEnum resourceEnum : ToolResources) {
+		for (ResourceEnum resourceEnum : ToolsEnums) {
 			if (resourceCountWithPop(resourceEnum) > 0) {
 				return true;
 			}
@@ -968,7 +968,7 @@ public:
 				return foundInfos;
 			}
 		}
-		return FoundResourceHolderInfos({});
+		return FoundResourceHolderInfos();
 	}
 
 	//! Reserve resource, positive = reserve for add, negative = reserve for remove

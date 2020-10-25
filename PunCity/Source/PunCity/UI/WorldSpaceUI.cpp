@@ -194,16 +194,18 @@ void UWorldSpaceUI::TickBuildings()
 		for (int32 provinceId : sampleProvinceIds)
 		{
 			int32 provinceOwnerId = sim.provinceOwner(provinceId);
+			bool showingBattle = false;
+
+			auto getRegionHoverUI = [&]() {
+				WorldTile2 provinceCenter = provinceSys.GetProvinceCenterTile(provinceId);
+				FVector displayLocation = MapUtil::DisplayLocation(data->cameraAtom(), provinceCenter.worldAtom2(), 50.0f);
+				return _regionHoverUIs.GetHoverUI<URegionHoverUI>(provinceId, UIEnum::RegionHoverUI, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
+					[&](URegionHoverUI* ui) {}, WorldZoomTransition_Region4x4ToMap
+				);
+			};
+			
 			if (provinceOwnerId != -1)
-			{
-				auto getRegionHoverUI = [&]() {
-					WorldTile2 provinceCenter = provinceSys.GetProvinceCenterTile(provinceId);
-					FVector displayLocation = MapUtil::DisplayLocation(data->cameraAtom(), provinceCenter.worldAtom2(), 50.0f);
-					return _regionHoverUIs.GetHoverUI<URegionHoverUI>(provinceId, UIEnum::RegionHoverUI, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
-						[&](URegionHoverUI* ui) {}
-					);
-				};
-				
+			{	
 				ProvinceClaimProgress claimProgress = sim.playerOwned(provinceOwnerId).GetDefendingClaimProgress(provinceId);
 				if (claimProgress.isValid())
 				{
@@ -298,13 +300,23 @@ void UWorldSpaceUI::TickBuildings()
 					}
 					
 					regionHoverUI->UpdateUI(provinceId);
+
+					regionHoverUI->ProvinceOverlay->SetVisibility(ESlateVisibility::Collapsed);
+					regionHoverUI->BattleOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+
+					showingBattle = true;
 				}
-				else if (zoomDistance < WorldZoomTransition_Region4x4ToMap &&
-						dataSource()->isShowingProvinceOverlay())
-				{
-					URegionHoverUI* regionHoverUI = getRegionHoverUI();
-					regionHoverUI->UpdateProvinceOverlayInfo(provinceId);
-				}
+			}
+
+			if (!showingBattle &&
+				zoomDistance < WorldZoomTransition_Region4x4ToMap &&
+				dataSource()->isShowingProvinceOverlay())
+			{
+				URegionHoverUI* regionHoverUI = getRegionHoverUI();
+				regionHoverUI->UpdateProvinceOverlayInfo(provinceId);
+
+				regionHoverUI->ProvinceOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+				regionHoverUI->BattleOverlay->SetVisibility(ESlateVisibility::Collapsed);
 			}
 		}
 	}
@@ -1159,10 +1171,10 @@ void UWorldSpaceUI::TickPlacementInstructions()
 		punBox->AddRichText("Click and drag cursor")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
 		punBox->AddRichText("to build")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
 	}
-	else if (needInstruction(PlacementInstructionEnum::DragRoad2)) {
-		//punBox->AddRichText("Shift-click to repeat")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
-		//punBox->AddRichText("to build");
-	}
+	//else if (needInstruction(PlacementInstructionEnum::DragRoad2)) { // Not used yet???
+	//	//punBox->AddRichText("Shift-click to repeat")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
+	//	//punBox->AddRichText("to build");
+	//}
 	else if (needInstruction(PlacementInstructionEnum::DragRoadStone)) {
 		int32 stoneNeeded = getInstruction(PlacementInstructionEnum::DragRoadStone).intVar1;
 		punBox->AddRichText(TextRed(to_string(stoneNeeded), simulation().resourceCount(playerId(), ResourceEnum::Stone) < stoneNeeded) + "<img id=\"Stone\"/>");
@@ -1193,7 +1205,11 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	}
 	else if (needInstruction(PlacementInstructionEnum::DeliveryPointMustBeStorage)) {
 		punBox->AddRichText("<Red>Delivery Point must be</>")->SetJustification(ETextJustify::Type::Center);
-		punBox->AddRichText("<Red>Storage Yard, Warehouse, or Market</>")->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichText("<Red>Storage Yard or Warehouse</>")->SetJustification(ETextJustify::Type::Center);
+	}
+	else if (needInstruction(PlacementInstructionEnum::ShipperDeliveryPointShouldBeOutOfRadius)) {
+		punBox->AddRichText("<Red>Delivery Point must be</>")->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichText("<Red>outside Shipping Depot's Radius</>")->SetJustification(ETextJustify::Type::Center);
 	}
 	
 	else if (needInstruction(PlacementInstructionEnum::Dock)) {

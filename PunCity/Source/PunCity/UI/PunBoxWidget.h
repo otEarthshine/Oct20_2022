@@ -270,10 +270,12 @@ public:
 		return widget;
 	}
 
-	UPunDropdown* AddDropdown(int32 objectId, std::vector<std::string> options, std::string selectedOption, std::function<void(int32, FString, IGameUIDataSource*, IGameNetworkInterface*)> onSelectOption)
+	UPunDropdown* AddDropdown(int32 objectId, std::vector<std::string> options, std::string selectedOption, 
+								std::function<void(int32, FString, IGameUIDataSource*, IGameNetworkInterface*, int32)> onSelectOption, int32 dropdownIndex = 0)
 	{
 		auto widget = GetChildElement<UPunDropdown>(UIEnum::PunDropdown);
 		widget->Set(objectId, options, selectedOption, onSelectOption);
+		widget->dropdownIndex = dropdownIndex;
 		return widget;
 	}
 
@@ -302,10 +304,13 @@ public:
 		return widget;
 	}
 
-	UManageStorageElement* AddManageStorageElement(ResourceEnum resourceEnum, std::string sectionName, int32 buildingId, ECheckBoxState checkBoxState, bool indentation)
+	UManageStorageElement* AddManageStorageElement(ResourceEnum resourceEnum, std::string sectionName, int32 buildingId, ECheckBoxState checkBoxState, bool isSection, bool showTarget, int32 target = -1)
 	{
 		auto widget = GetChildElement<UManageStorageElement>(UIEnum::ManageStorageElement);
-		widget->PunInit(resourceEnum, sectionName, buildingId, checkBoxState, indentation);
+		widget->PunInit(resourceEnum, sectionName, buildingId, checkBoxState, isSection);
+		if (showTarget) {
+			widget->SetTargetAmount(target);
+		}
 		return widget;
 	}
 

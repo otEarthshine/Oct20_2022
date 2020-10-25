@@ -1393,7 +1393,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 		Building& buildingToSetDelivery = buildingChecked(parameters.buildingIdToSetDelivery);
 
 		if (parameters.center == WorldTile2::Invalid) {
-			buildingToSetDelivery.SetDeliveryTarget(-1);
+			buildingToSetDelivery.TryRemoveDeliveryTarget();
 			return -1;
 		}
 		
@@ -2317,43 +2317,44 @@ void GameSimulationCore::SetAllowResource(FSetAllowResource command)
 	if (IsHouse(bld.buildingEnum())) {
 		playerOwned(command.playerId).SetHouseResourceAllow(command.resourceEnum, command.allowed);
 	}
-	else if (IsStorage(bld.buildingEnum())) 
+	else if (IsStorage(bld.buildingEnum()) || bld.isEnum(CardEnum::Market)) 
 	{
+		StorageBase& storage = bld.subclass<StorageBase>();
 		if (command.isExpansionCommand) 
 		{
 			if (command.resourceEnum == ResourceEnum::Food) {
-				bld.subclass<StorageYard>().expandedFood = command.expanded;
+				storage.expandedFood = command.expanded;
 			}
 			else if (command.resourceEnum == ResourceEnum::Luxury) {
-				bld.subclass<StorageYard>().expandedLuxury = command.expanded;
+				storage.expandedLuxury = command.expanded;
 			}
 		}
 		else {
-			if (bld.isConstructed()) {
-				bld.SetHolderTypeAndTarget(command.resourceEnum, command.allowed ? ResourceHolderType::Storage : ResourceHolderType::Provider, 0);
+			if (storage.isConstructed()) {
+				storage.SetHolderTypeAndTarget(command.resourceEnum, command.allowed ? storage.defaultHolderType() : ResourceHolderType::Provider, 0);
 			}
 			else {
 				// Not yet constructed, queue the checkState to apply once construction finishes
 				if (command.resourceEnum == ResourceEnum::Food)
 				{
 					for (ResourceEnum resourceEnumLocal : FoodEnums) {
-						bld.subclass<StorageYard>().queuedResourceAllowed[static_cast<int>(resourceEnumLocal)] = command.allowed;
+						storage.queuedResourceAllowed[static_cast<int>(resourceEnumLocal)] = command.allowed;
 					}
 				}
 				else if (command.resourceEnum == ResourceEnum::Luxury)
 				{
 					ExecuteOnLuxuryResources([&](ResourceEnum resourceEnumLocal) {
-						bld.subclass<StorageYard>().queuedResourceAllowed[static_cast<int>(resourceEnumLocal)] = command.allowed;
+						storage.queuedResourceAllowed[static_cast<int>(resourceEnumLocal)] = command.allowed;
 					});
 				}
 				else if (command.resourceEnum == ResourceEnum::None) {
 					for (int32 i = 0; i < ResourceEnumCount; i++) {
-						bld.subclass<StorageYard>().queuedResourceAllowed[i] = command.allowed;
+						storage.queuedResourceAllowed[i] = command.allowed;
 					}
 				}
 				else
 				{
-					bld.subclass<StorageYard>().queuedResourceAllowed[static_cast<int>(command.resourceEnum)] = command.allowed;
+					storage.queuedResourceAllowed[static_cast<int>(command.resourceEnum)] = command.allowed;
 				}
 			}
 
@@ -2361,7 +2362,7 @@ void GameSimulationCore::SetAllowResource(FSetAllowResource command)
 			if (bld.isEnum(CardEnum::Market) &&
 				command.target != -1) 
 			{
-				bld.subclass<Market>().resourceTargets[static_cast<int>(command.resourceEnum)] = command.target;
+				bld.subclass<Market>().SetMarketTarget(command.resourceEnum, command.target);
 			}
 		}
 	}
@@ -2693,6 +2694,12 @@ void GameSimulationCore::ChangeWorkMode(FChangeWorkMode command)
 		if (tradingCompany.activeResourceEnum != ResourceEnum::None) {
 			tradingCompany.needTradingCompanySetup = false;
 		}
+	}
+	else if (bld.isEnum(CardEnum::ShippingDepot))
+	{
+		// Update trading company values
+		auto& shippingDepot = bld.subclass<ShippingDepot>();
+		shippingDepot.resourceEnums[command.intVar1] = static_cast<ResourceEnum>(command.intVar2);
 	}
 	else {
 		UE_DEBUG_BREAK();
@@ -3483,7 +3490,15 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 			attackEnum = provincePlayerOwner.GetProvinceAttackEnum(command.provinceId, command.playerId);
 		}
 
-		bool canAttack = CanVassalizeOtherPlayers(command.playerId) || attackEnum == ProvinceAttackEnum::DeclareIndependence;
+		bool canAttack = true;
+
+		if (attackEnum == ProvinceAttackEnum::Vassalize ||
+			attackEnum == ProvinceAttackEnum::VassalCompetition) {
+			canAttack = CanVassalizeOtherPlayers(command.playerId);
+		}
+		if (attackEnum == ProvinceAttackEnum::ConquerProvince) {
+			canAttack = CanConquerProvinceOtherPlayers(command.playerId);
+		}
 
 		// If there was no claim yet, start the attack
 		if (canAttack &&

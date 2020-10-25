@@ -5,7 +5,8 @@
 #include "../Building.h"
 #include "../Resource/ResourceSystem.h"
 
-class StorageYard : public Building
+
+class StorageBase : public Building
 {
 public:
 	void OnInit() override
@@ -14,13 +15,15 @@ public:
 		queuedResourceAllowed.clear();
 		queuedResourceAllowed.resize(ResourceEnumCount, true);
 	}
-	
+
+	virtual ResourceHolderType defaultHolderType() { return ResourceHolderType::Storage; }
+
 	void FinishConstruction() override
 	{
 		Building::FinishConstruction();
 
 		for (ResourceInfo info : ResourceInfos) {
-			ResourceHolderType holderType = queuedResourceAllowed[info.resourceEnumInt()] ? ResourceHolderType::Storage : ResourceHolderType::Provider;
+			ResourceHolderType holderType = queuedResourceAllowed[info.resourceEnumInt()] ? defaultHolderType() : ResourceHolderType::Provider;
 			AddResourceHolder(info.resourceEnum, holderType, 0);
 		}
 		queuedResourceAllowed.clear();
@@ -28,6 +31,33 @@ public:
 		TrailerAddResource();
 	}
 
+	bool ResourceAllowed(ResourceEnum resourceEnum)
+	{
+		if (isConstructed()) {
+			return holder(resourceEnum).type != ResourceHolderType::Provider;
+		}
+		return queuedResourceAllowed[static_cast<int>(resourceEnum)];
+	}
+
+	void Serialize(FArchive& Ar) override {
+		Building::Serialize(Ar);
+		Ar << expandedFood;
+		Ar << expandedLuxury;
+
+		SerializeVecValue(Ar, queuedResourceAllowed);
+	}
+
+public:
+	bool expandedFood = true;
+	bool expandedLuxury = true;
+
+	std::vector<uint8> queuedResourceAllowed;
+};
+
+
+class StorageYard : public StorageBase
+{
+public:
 	int32 storageSlotCount() override {
 		return (_area.sizeX() / 2) * (_area.sizeY() / 2);
 	}
@@ -131,38 +161,15 @@ public:
 	int32 maxCardSlots() override { return 0; }
 
 
-	bool ResourceAllowed(ResourceEnum resourceEnum)
-	{
-		if (isConstructed()) {
-			return holder(resourceEnum).type != ResourceHolderType::Provider;
-		}
-		return queuedResourceAllowed[static_cast<int>(resourceEnum)];
-	}
-
 	void RefreshHoverWarning() override {
 		hoverWarning = _simulation->isStorageAllFull(_playerId) ? HoverWarning::StoragesFull : HoverWarning::None;
 	}
 	
 
 	void Serialize(FArchive& Ar) override {
-		Building::Serialize(Ar);
+		StorageBase::Serialize(Ar);
 		Ar << _tilesOccupied;
-		Ar << expandedFood;
-		Ar << expandedLuxury;
-
-		SerializeVecValue(Ar, queuedResourceAllowed);
-
-		// TODO: Reuse this for ranch ..... remove once new save... UPDATE MAINMENU
-		//if (!_simulation->isLoadingForMainMenu()) {
-		//	_miniArea >> Ar;
-		//}
 	}
-
-public:
-	bool expandedFood = true;
-	bool expandedLuxury = true;
-
-	std::vector<uint8> queuedResourceAllowed;
 
 private:
 	// This includes push
@@ -180,50 +187,60 @@ public:
 	}
 };
 
-class Market : public StorageYard
+class Market : public StorageBase
 {
 public:
-	int32 storageSlotCount() override {
-		return 50;
-	}
+	static const int32 Radius = 34;
 
 	void OnInit() override
 	{
 		queuedResourceAllowed.clear();
 		queuedResourceAllowed.resize(ResourceEnumCount, false);
-		
-		// queuedResourceAllowed must be here to allow managing storage before it is finished
-		// Market only allow food/fuel/luxury
-		for (ResourceEnum foodEnum : FoodEnums) {
-			queuedResourceAllowed[static_cast<int>(foodEnum)] = true;
+
+		_resourceTargets.clear();
+		_resourceTargets.resize(ResourceEnumCount, 0);
+
+		for (int32 i = 0; i < _resourceTargets.size(); i++) 
+		{
+			queuedResourceAllowed[i] = true;
+			
+			ResourceEnum resourceEnum = static_cast<ResourceEnum>(i);
+			if (IsFoodEnum(resourceEnum) ||
+				IsFuelEnum(resourceEnum)) {
+				_resourceTargets[i] = 200;
+			}
+			if (IsMedicineEnum(resourceEnum) ||
+				IsToolsEnum(resourceEnum) ||
+				IsLuxuryEnum(resourceEnum)) {
+				_resourceTargets[i] = 100;
+			}
 		}
-		ExecuteOnLuxuryResources([&](ResourceEnum resourceEnum) {
-			queuedResourceAllowed[static_cast<int>(resourceEnum)] = true;
-		});
-
-		resourceTargets.clear();
-		resourceTargets.resize(ResourceEnumCount, 240);
 	}
-	
-	void FinishConstruction() override
-	{
-		Building::FinishConstruction();
 
-		for (ResourceInfo info : ResourceInfos) {
-			ResourceHolderType holderType = queuedResourceAllowed[info.resourceEnumInt()] ? ResourceHolderType::Storage : ResourceHolderType::Provider;
-			AddResourceHolder(info.resourceEnum, holderType, 0);
-		}
-		queuedResourceAllowed.clear();
-
-		TrailerAddResource();
+	bool IsMarketResource(ResourceEnum resourceEnum) {
+		return  IsFoodEnum(resourceEnum) ||
+			IsFuelEnum(resourceEnum) ||
+			IsMedicineEnum(resourceEnum) || 
+			IsToolsEnum(resourceEnum) || 
+			IsLuxuryEnum(resourceEnum);
 	}
-	
 
+	int32 GetMarketTarget(ResourceEnum resourceEnum) { return _resourceTargets[static_cast<int>(resourceEnum)]; }
+	const std::vector<int32>& GetMarketTargets() { return _resourceTargets; }
+	
+	void SetMarketTarget(ResourceEnum resourceEnum, int32 amount) {
+		_resourceTargets[static_cast<int>(resourceEnum)] = amount;
+	}
+
+	ResourceHolderType defaultHolderType() override { return ResourceHolderType::Manual; }
+	
 	void Serialize(FArchive& Ar) override {
-		StorageYard::Serialize(Ar);
-		
-		SerializeVecValue(Ar, resourceTargets);
+		StorageBase::Serialize(Ar);
+		SerializeVecValue(Ar, _resourceTargets);
 	}
-
-	std::vector<int32> resourceTargets;
+	
+	// Non-Serialize
+	std::vector<int32> lastUIResourceTargets;
+private:
+	std::vector<int32> _resourceTargets;
 };

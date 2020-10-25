@@ -880,7 +880,11 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 		SetHighlight(_moduleMeshes[meshId], CardEnum::HuntingLodge, overlayType == OverlayType::Hunter);
 		SetHighlight(_moduleMeshes[meshId], CardEnum::Forester, overlayType == OverlayType::Forester);
 		SetHighlight(_moduleMeshes[meshId], CardEnum::Windmill, overlayType == OverlayType::Windmill);
+
 		SetHighlight(_moduleMeshes[meshId], CardEnum::IrrigationReservoir, overlayType == OverlayType::IrrigationReservoir);
+		SetHighlight(_moduleMeshes[meshId], CardEnum::Market, overlayType == OverlayType::Market);
+		SetHighlight(_moduleMeshes[meshId], CardEnum::ShippingDepot, overlayType == OverlayType::ShippingDepot);
+		
 		SetHighlight(_moduleMeshes[meshId], CardEnum::Beekeeper, overlayType == OverlayType::Beekeeper);
 
 		SetHighlight(_moduleMeshes[meshId], CardEnum::Library, overlayType == OverlayType::Library);
@@ -1041,6 +1045,11 @@ void UBuildingDisplayComponent::UpdateDisplayOverlay(Building& building, Overlay
 {
 	WorldAtom2 centerAtom = building.centerTile().worldAtom2();
 
+#define SHOW_RADIUS(CardEnumName) \
+	else if (overlayType == OverlayType::CardEnumName && building.isEnum(CardEnum::CardEnumName)) { \
+		ShowRadius(CardEnumName::Radius, centerAtom, building); \
+	}
+	
 	if (overlayType == OverlayType::Fish && building.isEnum(CardEnum::Fisher)) {
 		//if (!building.IsUpgraded(0)) { // Skip whale
 			//PUN_LOG("BldDisp Fish Overlay: %s", *ToFString(building.debugStr()));
@@ -1060,9 +1069,11 @@ void UBuildingDisplayComponent::UpdateDisplayOverlay(Building& building, Overlay
 	else if (overlayType == OverlayType::Windmill && building.isEnum(CardEnum::Windmill)) {
 		ShowRadius(Windmill::Radius, centerAtom, building);
 	}
-	else if (overlayType == OverlayType::IrrigationReservoir && building.isEnum(CardEnum::IrrigationReservoir)) {
-		ShowRadius(IrrigationReservoir::Radius, centerAtom, building);
-	}
+	
+	SHOW_RADIUS(IrrigationReservoir)
+	SHOW_RADIUS(Market)
+	SHOW_RADIUS(ShippingDepot)
+	
 	else if (overlayType == OverlayType::Beekeeper && building.isEnum(CardEnum::Beekeeper)) {
 		ShowRadius(Beekeeper::Radius, centerAtom, building);
 	}

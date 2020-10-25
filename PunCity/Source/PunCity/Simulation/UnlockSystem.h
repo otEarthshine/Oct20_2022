@@ -198,7 +198,7 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 	}},
 	{TechEnum::MoreGoldPerHouse, {
 		"Extra house income",
-		"+3 <img id=\"Coin\"/> house income"
+		"+<img id=\"Coin\"/>3 house income"
 	}},
 
 	{TechEnum::FarmAdjacency, {
@@ -207,7 +207,7 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 	}},
 	{TechEnum::HouseAdjacency, {
 		"House adjacency",
-		"Houses get +1 gold for each nearby house. (max at +3 gold)",
+		"Houses get +<img id=\"Coin\"/>1 for each nearby house. (max at +<img id=\"Coin\"/>3)",
 	}},
 	{TechEnum::IndustrialAdjacency, {
 		"Industrial adjacency",
@@ -624,6 +624,7 @@ public:
 			//
 			era = 4;
 			//AddTech_Building(era, TechEnum::Forester, CardEnum::Forester);
+			AddTech_Building(era, TechEnum::Market, { CardEnum::Market });
 			AddTech_Bonus(era, TechEnum::HouseAdjacency);
 			AddTech_Building(era, TechEnum::RanchCow, { CardEnum::RanchCow });
 			AddTech_Bonus(era, TechEnum::QuarryImprovement);
@@ -638,7 +639,6 @@ public:
 			AddTech_Bonus(era, TechEnum::MoreGoldPerHouse);
 			AddTech_Building(era, TechEnum::BarrackKnight, CardEnum::BarrackSwordman);
 			AddTech_Building(era, TechEnum::Bank, { CardEnum::Bank });
-			AddTech_Building(era, TechEnum::Market, { CardEnum::Market });
 			AddTech_Building(era, TechEnum::ImprovedLogistics, { CardEnum::ShippingDepot });
 			AddTech_Bonus(era, TechEnum::DeepWaterEmbark);
 			

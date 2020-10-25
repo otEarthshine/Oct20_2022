@@ -434,17 +434,18 @@ public:
 			isInitializedWithSim = true;
 			
 			std::vector<int32> allHumanIds = simulation().allHumanPlayerIds();
-			auto addSeriesAll = [&](FString graphName, PlotStatEnum plotEnum) {
+			auto addSeriesAll = [&](FString graphName, UTimeSeriesPlot* plot, PlotStatEnum plotEnum) {
 				std::vector<GraphSeries> series;
 				for (int32 i = 0; i < allHumanIds.size(); i++) {
-					series.push_back({ graphName, plotEnum, PlayerColor1(allHumanIds[i]), allHumanIds[i] });
+					series.push_back({ ToFString(simulation().playerName(allHumanIds[i])), plotEnum, PlayerColor1(allHumanIds[i]), allHumanIds[i] });
 				}
+				AddSeries(plot, series);
 			};
 
-			addSeriesAll("Population", PlotStatEnum::Population);
-			addSeriesAll("Revenue", PlotStatEnum::Income);
-			addSeriesAll("Technologies", PlotStatEnum::Technologies);
-			addSeriesAll("Influence", PlotStatEnum::InfluencePoints);
+			addSeriesAll("Population", PlayersPopulationGraph, PlotStatEnum::Population);
+			addSeriesAll("Revenue", PlayersRevenueGraph, PlotStatEnum::Income);
+			addSeriesAll("Technologies", PlayersTechnologiesGraph, PlotStatEnum::Technologies);
+			addSeriesAll("Influence", PlayersInfluenceGraph, PlotStatEnum::InfluencePoints);
 		}
 	}
 
@@ -496,8 +497,8 @@ public:
 			if (sItem == name) {
 				PlayersGraphDropdown->SetSelectedOption(sItem);
 				PlayersGraphSwitcher->SetActiveWidgetIndex(index);
-				index++;
 			}
+			index++;
 		};
 
 		dropDownCheck("Population");

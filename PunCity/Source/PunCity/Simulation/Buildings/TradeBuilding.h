@@ -311,7 +311,6 @@ public:
 	bool needTradingCompanySetup = true;
 
 	// Not Serialized
-	int32 lastTargetSetTick = -1;
 	int32 lastTargetAmountSet = -1;
 
 private:

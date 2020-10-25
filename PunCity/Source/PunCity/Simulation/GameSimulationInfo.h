@@ -9,13 +9,24 @@
 #include <sstream>
 #include <algorithm>
 #include "PunCity/PunGameSettings.h"
+#include <iomanip>
 
 //#include "PunCity/PunSTLContainerOverride.h"
 
 #define TRAILER_MODE 0
 
-#define SAVE_VERSION 16101947 // Day/Month/Time
-#define GAME_VERSION 16101947
+#define MAJOR_VERSION 0
+#define MINOR_VERSION 1 // 3 digit
+
+#define VERSION_DAY 25
+#define VERSION_MONTH 10
+#define VERSION_YEAR 20
+#define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
+
+#define COMBINE_VERSION (MAJOR_VERSION * 1000000000) + (MINOR_VERSION * 1000000) + VERSION_DATE
+
+#define SAVE_VERSION COMBINE_VERSION
+#define GAME_VERSION COMBINE_VERSION
 
 //! Utils
 
@@ -100,6 +111,13 @@ static std::string ToSignedNumber(int32 value) {
 }
 static std::string ToForcedSignedNumber(int32 value) {
 	return (value >= 0 ? "+" : "") + std::to_string(value);
+}
+
+static std::string ToSignedNumber(float value, int32 precision = 1) {
+	std::stringstream ss;
+	ss << std::fixed << std::setprecision(precision);
+	ss << (value > 0 ? "+" : "") << value;
+	return ss.str();
 }
 
 static std::string TextRed(std::string str, bool isRed)
@@ -941,6 +959,13 @@ inline std::string ResourceName(ResourceEnum resourceEnum) {
 	return ResourceInfos[static_cast<int>(resourceEnum)].name;
 }
 
+inline std::string ResourceName_WithNone(ResourceEnum resourceEnum) {
+	if (resourceEnum == ResourceEnum::None) {
+		return "None";
+	}
+	return ResourceInfos[static_cast<int>(resourceEnum)].name;
+}
+
 inline FString ResourceNameF(ResourceEnum resourceEnum) {
 	return FString(ResourceInfos[static_cast<int>(resourceEnum)].name.c_str());
 }
@@ -1057,8 +1082,8 @@ static bool IsTradeResource(ResourceEnum resourceEnum) {
 
 static const std::vector<ResourceEnum> FuelEnums
 {
-	ResourceEnum::Wood,
 	ResourceEnum::Coal,
+	ResourceEnum::Wood,
 };
 static bool IsFuelEnum(ResourceEnum resourceEnumIn) {
 	for (ResourceEnum resourceEnum : FuelEnums) {
@@ -1173,16 +1198,10 @@ static std::string LuxuryResourceTip(int32 tier)
 	return luxuryTip.str();
 }
 
+static bool IsMarketEnums(ResourceEnum resourceEnum) {
+	return IsFoodEnum(resourceEnum) || IsFuelEnum(resourceEnum) || IsMedicineEnum(resourceEnum) || IsLuxuryEnum(resourceEnum) || IsToolsEnum(resourceEnum);
+}
 
-static const std::vector<ResourceEnum> ToolResources = {
-	ResourceEnum::SteelTools,
-	//ResourceEnum::CrudeIronTools,
-	//ResourceEnum::StoneTools,
-};
-static const std::vector<ResourceEnum> MedicineResources = {
-	ResourceEnum::Medicine,
-	ResourceEnum::Herb,
-};
 
 
 // Other than Food, Construction, Luxury
@@ -1445,15 +1464,18 @@ struct FoundResourceHolderInfo
 	ResourceHolderInfo info;
 	int32 amount;
 	WorldTile2 tile;
+	int32 objectId = -1;
+
+	int32 distance = 99999; // convenience variable
 
 	FoundResourceHolderInfo() : info(ResourceHolderInfo::Invalid()), amount(0) {}
-	FoundResourceHolderInfo(ResourceHolderInfo info, int32_t amount, WorldTile2 tile, int32_t distance = 0) : info(info), amount(amount), tile(tile) {}
+	FoundResourceHolderInfo(ResourceHolderInfo info, int32 amount, WorldTile2 tile, int32 objectId = -1, int32 distance = 99999)
+		: info(info), amount(amount), tile(tile), objectId(objectId), distance(distance) {}
 
-	bool isValid() {
-		return info.isValid();
-	}
+	bool isValid() { return info.isValid(); }
+	ResourceEnum resourceEnum() { return info.resourceEnum; }
 
-	static const FoundResourceHolderInfo Invalid() { return FoundResourceHolderInfo(ResourceHolderInfo::Invalid(), -1, WorldTile2::Invalid, -1); }
+	static FoundResourceHolderInfo Invalid() { return FoundResourceHolderInfo(ResourceHolderInfo::Invalid(), -1, WorldTile2::Invalid); }
 
 	std::string resourceName() {
 		return ResourceInfos[static_cast<int>(info.resourceEnum)].name;
@@ -1461,11 +1483,19 @@ struct FoundResourceHolderInfo
 	std::string ToString() {
 		return "[Holder: " + resourceName() + " id:" + std::to_string(info.holderId) + " amount:" + std::to_string(amount) + " tile:" + tile.ToString() + "]";
 	}
+	
+	void operator>>(FArchive &Ar) {
+		info >> Ar;
+		Ar << amount;
+		tile >> Ar;
+		Ar << objectId;
+	}
 };
 struct FoundResourceHolderInfos
 {
 	std::vector<FoundResourceHolderInfo> foundInfos;
 
+	FoundResourceHolderInfos() {}
 	FoundResourceHolderInfos(std::vector<FoundResourceHolderInfo> foundInfos) : foundInfos(foundInfos) {}
 
 	bool hasInfos() {
@@ -1789,56 +1819,57 @@ enum class CardHandEnum
 
 static const std::vector<std::pair<CardEnum, int32>> BuildingEnumToUpkeep =
 {
-	{ CardEnum::FruitGatherer, 4 },
-	{ CardEnum::MushroomFarm, 5 },
-	{ CardEnum::HuntingLodge, 3 },
-	{ CardEnum::Fisher, 5 },
-	{ CardEnum::Farm, 3 },
+	//{ CardEnum::FruitGatherer, 4 },
+	//{ CardEnum::HuntingLodge, 3 },
+	//{ CardEnum::MushroomFarm, 5 },
+	//{ CardEnum::Fisher, 5 },
+	//{ CardEnum::Farm, 3 },
+	//
+	//{ CardEnum::RanchBarn, 8 },
+	//{ CardEnum::RanchPig, 8 },
+	//{ CardEnum::RanchSheep, 12 },
+	//{ CardEnum::RanchCow, 15 },
 	
-	{ CardEnum::RanchBarn, 8 },
-	{ CardEnum::RanchPig, 8 },
-	{ CardEnum::RanchSheep, 12 },
-	{ CardEnum::RanchCow, 15 },
-	
-	{ CardEnum::GoldMine, 20 },
-	{ CardEnum::Quarry, 10 },
-	{ CardEnum::CoalMine, 10 },
-	{ CardEnum::IronMine, 10 },
-	{ CardEnum::Forester, 20 },
-	
-	{ CardEnum::Bank, 20 },
-	{ CardEnum::IronSmelter, 50 },
-	{ CardEnum::GoldSmelter, 50 },
-	{ CardEnum::Mint, 20 },
-	{ CardEnum::InventorsWorkshop, 10 },
+	//{ CardEnum::GoldMine, 20 },
+	//{ CardEnum::Quarry, 10 },
+	//{ CardEnum::CoalMine, 10 },
+	//{ CardEnum::IronMine, 10 },
+	//{ CardEnum::Forester, 20 },
+	//
+	//{ CardEnum::Bank, 20 },
+	//{ CardEnum::IronSmelter, 50 },
+	//{ CardEnum::GoldSmelter, 50 },
+	//{ CardEnum::Mint, 20 },
+	//{ CardEnum::InventorsWorkshop, 10 },
 
-	{ CardEnum::Blacksmith, 10 },
-	{ CardEnum::MedicineMaker, 10 },
-	
+	//{ CardEnum::Blacksmith, 10 },
+	//{ CardEnum::MedicineMaker, 10 },
+
+	//{ CardEnum::IronSmelterGiant, 100},
+
+	//{ CardEnum::BeerBrewery, 12 },
+	//{ CardEnum::BeerBreweryFamous, 35 },
+	//
+	//{ CardEnum::ClayPit, 12 },
+	//{ CardEnum::Potter, 12 },
+	//{ CardEnum::FurnitureWorkshop, 12 },
+	//{ CardEnum::Tailor, 20 },
+	//{ CardEnum::Chocolatier, 150 },
+	//{ CardEnum::Winery, 100 },
+
+	//{ CardEnum::Windmill, 20 },
+	//{ CardEnum::Bakery, 20 },
+	//{ CardEnum::GemstoneMine, 30 },
+	//{ CardEnum::Jeweler, 30 },
+
+	//{ CardEnum::Beekeeper, 10 },
+	//{ CardEnum::Brickworks, 20 },
+	//{ CardEnum::CandleMaker, 20 },
+	//{ CardEnum::CottonMill, 30 },
+	//{ CardEnum::PrintingPress, 30 },
+
+
 	{ CardEnum::Garden, 5 },
-
-	{ CardEnum::IronSmelterGiant, 100},
-
-	{ CardEnum::BeerBrewery, 12 },
-	{ CardEnum::BeerBreweryFamous, 35 },
-	
-	{ CardEnum::ClayPit, 12 },
-	{ CardEnum::Potter, 12 },
-	{ CardEnum::FurnitureWorkshop, 12 },
-	{ CardEnum::Tailor, 20 },
-	{ CardEnum::Chocolatier, 150 },
-	{ CardEnum::Winery, 100 },
-
-	{ CardEnum::Windmill, 20 },
-	{ CardEnum::Bakery, 20 },
-	{ CardEnum::GemstoneMine, 30 },
-	{ CardEnum::Jeweler, 30 },
-
-	{ CardEnum::Beekeeper, 10 },
-	{ CardEnum::Brickworks, 20 },
-	{ CardEnum::CandleMaker, 20 },
-	{ CardEnum::CottonMill, 30 },
-	{ CardEnum::PrintingPress, 30 },
 	
 	{ CardEnum::Library, 15 },
 	{ CardEnum::School, 18 },
@@ -1896,6 +1927,7 @@ struct BldInfo
 	std::string miniDescription;
 
 	int32 baseCardPrice = 0;
+	int32 baseUpkeep = 0;
 
 	bool hasInput1() { return input1 != ResourceEnum::None; }
 	bool hasInput2() { return input2 != ResourceEnum::None; }
@@ -2006,15 +2038,12 @@ struct BldInfo
 		PUN_CHECK(baseCardPrice_LowPart > 0);
 		PUN_CHECK(baseCardPrice_HighPart >= 0);
 		baseCardPrice = baseCardPrice_LowPart + baseCardPrice_HighPart * 2;
-
+		
 
 		// Special case
 		switch (buildingEnum)
 		{
 #define CASE(cardEnumName, cardPriceIn) case CardEnum::cardEnumName: baseCardPrice = cardPriceIn; break;
-		//case CardEnum::Tailor:
-		//	baseCardPrice *= 2;
-		//	break;
 
 			CASE(House, 0);
 			CASE(StorageYard, 0);
@@ -2036,6 +2065,33 @@ struct BldInfo
 		}
 
 
+		/*
+		 * Base upkeep varies with card price
+		 */
+		baseUpkeep = baseCardPrice * PercentUpkeepToPrice / 100;
+
+		// Industry special case
+		//  lux t1 is cheap to build to encourage people to build them, but harder to maintain
+		if (produce != ResourceEnum::None)
+		{
+			if (IsLuxuryEnum(produce, 1)
+				//IsLuxuryEnum(produce, 2) ||
+				//IsLuxuryEnum(produce, 3) ||
+				//produce == ResourceEnum::Iron ||
+				//produce == ResourceEnum::GoldBar ||
+				//produce == ResourceEnum::CottonFabric ||
+				//cardEnum == CardEnum::Blacksmith ||
+				//cardEnum == CardEnum::MedicineMaker ||
+				//cardEnum == CardEnum::Brickworks ||
+				//cardEnum == CardEnum::Mint ||
+				//cardEnum == CardEnum::ClayPit
+				)
+			{
+				baseUpkeep *= 2;
+			}
+		}
+		
+
 		if (workerCount > 0)
 		{
 			// Calculate WorkRevenue received from construction cost.
@@ -2054,7 +2110,7 @@ struct BldInfo
 
 
 			// Adjust revenue by upkeep cost
-			int32 upkeepPerSec100 = GetCardUpkeepBase(buildingEnum) * 100 / Time::SecondsPerRound;
+			int32 upkeepPerSec100 = baseUpkeep * 100 / Time::SecondsPerRound;
 			int32 revenuePerSec100_fromUpkeep = upkeepPerSec100 * 5; // upkeep turns x5 into production revenue
 			revenuePerSec100_fromUpkeep = revenuePerSec100_fromUpkeep * WorkRevenueToCost_Base / 100;
 
@@ -2083,6 +2139,8 @@ struct BldInfo
 			miniDescription = description;
 		}
 	}
+
+	static const int32 PercentUpkeepToPrice = 10;
 };
 
 TileArea BuildingArea(WorldTile2 centerTile, WorldTile2 size, Direction faceDirection);
@@ -2115,17 +2173,17 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::IronMine,		"Iron Mine",			WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::IronOre,	 10, 3,	{50,30,0},	"Mine Iron Ores from Iron Deposits."),
 	BldInfo(CardEnum::SmallMarket,	"Small Market",			WorldTile2(5, 8),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{80,0,0},	"Sell goods to people for <img id=\"Coin\"/>"),
 	BldInfo(CardEnum::PaperMaker,	"Paper Maker",			WorldTile2(6, 6),	ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::Paper,		 20, 3,	{80,0,0},	"Produce Paper."),
-	BldInfo(CardEnum::IronSmelter,	"Iron Smelter",			WorldTile2(5, 6),	ResourceEnum::Coal,ResourceEnum::IronOre,ResourceEnum::Iron,		 10, 5,	{80,80,0},	"Smelt Iron Ores into Iron Bars."),
+	BldInfo(CardEnum::IronSmelter,	"Iron Smelter",			WorldTile2(5, 6),	ResourceEnum::Coal,ResourceEnum::IronOre,ResourceEnum::Iron,		 10, 5,	{120,120,0},	"Smelt Iron Ores into Iron Bars."),
 
 
 	BldInfo(CardEnum::StoneToolShop,	"Stone Tool Shop",		WorldTile2(5, 8),	ResourceEnum::Stone, ResourceEnum::Wood, ResourceEnum::SteelTools,		 10, 2,	{50,20,0},	"."),
-	BldInfo(CardEnum::Blacksmith,	"Blacksmith",			WorldTile2(5, 8),	ResourceEnum::Iron, ResourceEnum::Wood, ResourceEnum::SteelTools,		 10, 2,	{50,50,20},	"Forge Tools from Iron Bars and Wood."),
+	BldInfo(CardEnum::Blacksmith,	"Blacksmith",			WorldTile2(5, 8),	ResourceEnum::Iron, ResourceEnum::Wood, ResourceEnum::SteelTools,		 10, 2,	{50,50,50},	"Forge Tools from Iron Bars and Wood."),
 	BldInfo(CardEnum::Herbalist,		"Herbalist",			WorldTile2(4, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 10, 2,	{50,30,0},	"."),
-	BldInfo(CardEnum::MedicineMaker,	"Medicine Maker",		WorldTile2(4, 4),	ResourceEnum::Herb, ResourceEnum::None, ResourceEnum::Medicine,		 10, 2,	{50,50,20},	"Make Medicine from Medicinal Herb."),
+	BldInfo(CardEnum::MedicineMaker,	"Medicine Maker",		WorldTile2(4, 4),	ResourceEnum::Herb, ResourceEnum::None, ResourceEnum::Medicine,		 10, 2,	{50,50,50},	"Make Medicine from Medicinal Herb."),
 
 	
 	BldInfo(CardEnum::FurnitureWorkshop,"Furniture Workshop",	WorldTile2(6, 7),	ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::Furniture,	 10, 2,	{50,20,0},	"Make Furniture from Wood."),
-	BldInfo(CardEnum::Chocolatier,	"Chocolatier",			WorldTile2(6, 8),	ResourceEnum::Cocoa, ResourceEnum::Milk, ResourceEnum::Chocolate,	 10, 7,	{110, 110, 110},	"Make Chocolate from Milk and Cocoa."),
+	BldInfo(CardEnum::Chocolatier,	"Chocolatier",			WorldTile2(6, 8),	ResourceEnum::Cocoa, ResourceEnum::Milk, ResourceEnum::Chocolate,	 10, 5,	{30, 30, 80},	"Make Chocolate from Milk and Cocoa."),
 
 	// Decorations
 	BldInfo(CardEnum::Garden,		"Garden",				WorldTile2(4, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{30,0,0},	"Increase the surrounding appeal by 5 within 5 tiles radius."),
@@ -2138,7 +2196,7 @@ static const BldInfo BuildingInfo[]
 
 	BldInfo(CardEnum::Fisher,		"Fishing Lodge",		WorldTile2(6, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::Fish,		 10, 2,	{70,0,0},	"Catch Fish from seas, lakes or rivers."),
 	BldInfo(CardEnum::BlossomShrine,	"Blossom Shrine",		WorldTile2(3, 3),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,10,0},	"Increases nearby tree growth/fruit by 100%. Note that this will not help land without trees. While increasing growth helps trees emit more seed, no seed will spawn without any existing tree.", "Increases nearby tree growth / fruit by 100 % ."),
-	BldInfo(CardEnum::Winery,		"Winery",				WorldTile2(6, 6),	ResourceEnum::Grape, ResourceEnum::None, ResourceEnum::Wine,	10, 5,	{200,0,80},	"Ferment Grapes into Wine."),
+	BldInfo(CardEnum::Winery,		"Winery",				WorldTile2(6, 6),	ResourceEnum::Grape, ResourceEnum::None, ResourceEnum::Wine,	10, 5,	{200,0,50},	"Ferment Grapes into Wine."),
 
 	BldInfo(CardEnum::Library,		"Library",				WorldTile2(4, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{80,20,0},	"+2 <img id=\"Science\"/> for surrounding level 2+ houses (effect doesn't stack)."),
 	BldInfo(CardEnum::School,		"School",				WorldTile2(4, 7),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{80,50,10},	"+3 <img id=\"Science\"/> for surrounding level 3+ houses (effect doesn't stack)."),
@@ -2146,7 +2204,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::Theatre,		"Theatre",				WorldTile2(7, 6),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{80,30,0},	"Increase visitor's Fun. Visitors must live in a level 2+ house. Service quality 120."),
 	BldInfo(CardEnum::Tavern,		"Tavern",				WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{50,30,0},	"Increase visitor's Fun. Service quality 90."),
 
-	BldInfo(CardEnum::Tailor,		"Tailor",				WorldTile2(5, 6),	ResourceEnum::Leather, ResourceEnum::None, ResourceEnum::Cloth,	 10, 5,	{80, 80, 30},	"Make Clothes from Leather or Wool."),
+	BldInfo(CardEnum::Tailor,		"Tailor",				WorldTile2(5, 6),	ResourceEnum::Leather, ResourceEnum::None, ResourceEnum::Cloth,	 10, 5,	{120, 100, 30},	"Make Clothes from Leather or Wool."),
 
 	BldInfo(CardEnum::CharcoalMaker,"Charcoal Burner",		WorldTile2(4, 5),	ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::Coal,		 10, 2,	{40,0,0},		"Burn Wood into Coal which provides x2 heat when heating houses."),
 	BldInfo(CardEnum::BeerBrewery,	"Beer Brewery",			WorldTile2(5, 5),	ResourceEnum::Wheat, ResourceEnum::None, ResourceEnum::Beer,		 10, 2,	{40,30,0},		"Brew Wheat into Beer."),
@@ -2173,8 +2231,8 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::RanchCow,		"Cattle Ranch",			WorldTile2(16, 16),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,	0, 1,	{30,10,10},	"Rear Cows for Milk"),
 
 	
-	BldInfo(CardEnum::GoldSmelter,	"Gold Smelter",			WorldTile2(5, 6),	ResourceEnum::Coal,ResourceEnum::GoldOre,ResourceEnum::GoldBar,	 10, 5,	{80,80,0},	"Smelt Gold Ores into Gold Bars."),
-	BldInfo(CardEnum::Mint,			"Mint",					WorldTile2(4, 6),	ResourceEnum::GoldBar,ResourceEnum::None,ResourceEnum::None,		 0, 2,	{80,80,0},	"Mint Gold Bars into <img id=\"Coin\"/>."),
+	BldInfo(CardEnum::GoldSmelter,	"Gold Smelter",			WorldTile2(5, 6),	ResourceEnum::Coal,ResourceEnum::GoldOre,ResourceEnum::GoldBar,	 10, 5,	{120,120,0},	"Smelt Gold Ores into Gold Bars."),
+	BldInfo(CardEnum::Mint,			"Mint",					WorldTile2(4, 6),	ResourceEnum::GoldBar,ResourceEnum::None,ResourceEnum::None,		 0, 2,	{120,120,0},	"Mint Gold Bars into <img id=\"Coin\"/>."),
 
 	BldInfo(CardEnum::BarrackClubman,	"Clubman Barrack",	WorldTile2(7, 7),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 2,	{30,0,0},	"Train Clubmen."),
 	BldInfo(CardEnum::BarrackSwordman,	"Knight Barrack",	WorldTile2(7, 7),	ResourceEnum::Iron, ResourceEnum::None, ResourceEnum::None,		0, 4,	{80,30,30},	"Consume Iron to increase <img id=\"Influence\"/>."),
@@ -2199,12 +2257,12 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::Windmill, "Windmill", WorldTile2(5, 5), ResourceEnum::Wheat, ResourceEnum::None, ResourceEnum::Flour, 10, 2, { 150,0,0 }, "Grind Wheat into Wheat Flour. +10% Productivity to surrounding Farms."),
 	BldInfo(CardEnum::Bakery, "Bakery", WorldTile2(5, 5), ResourceEnum::Flour, ResourceEnum::Coal, ResourceEnum::Bread, 30, 2, { 70,30,0 }, "Bake Bread with Wheat Flour and heat."),
 	BldInfo(CardEnum::GemstoneMine, "Gemstone Mine", WorldTile2(5, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::Gemstone, 10, 3, { 70,30,0 }, "Mine Gemstone from Gemstone Deposits."),
-	BldInfo(CardEnum::Jeweler, "Jeweler", WorldTile2(4, 7), ResourceEnum::Gemstone, ResourceEnum::GoldBar, ResourceEnum::Jewelry, 10, 3, { 150,0,50 }, "Craft Gemstone and Gold Bar into Jewelry."),
+	BldInfo(CardEnum::Jeweler, "Jeweler", WorldTile2(4, 7), ResourceEnum::Gemstone, ResourceEnum::GoldBar, ResourceEnum::Jewelry, 10, 3, { 150, 70, 70 }, "Craft Gemstone and Gold Bar into Jewelry."),
 
 	// June 9 addition
-	BldInfo(CardEnum::Beekeeper, "Beekeeper", WorldTile2(6, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::Beeswax, 10, 2, { 50,30,0 }, "Produce Beeswax and Honey. Efficiency increases with more surrounding trees."),
+	BldInfo(CardEnum::Beekeeper, "Beekeeper", WorldTile2(6, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::Beeswax, 10, 2, { 50,50,0 }, "Produce Beeswax and Honey. Efficiency increases with more surrounding trees."),
 	BldInfo(CardEnum::Brickworks, "Brickworks", WorldTile2(6, 5), ResourceEnum::Clay, ResourceEnum::Coal, ResourceEnum::Brick, 20, 3, { 20,100,0 }, "Produce Brick from Clay and Coal."),
-	BldInfo(CardEnum::CandleMaker, "Candle Maker", WorldTile2(5, 6), ResourceEnum::Beeswax, ResourceEnum::Cotton, ResourceEnum::Candle, 20, 3, { 150,50,0 }, "Make Candles from Beeswax and Cotton wicks."),
+	BldInfo(CardEnum::CandleMaker, "Candle Maker", WorldTile2(5, 6), ResourceEnum::Beeswax, ResourceEnum::Cotton, ResourceEnum::Candle, 20, 3, { 150, 100, 0 }, "Make Candles from Beeswax and Cotton wicks."),
 	BldInfo(CardEnum::CottonMill, "Cotton Mill", WorldTile2(7, 6), ResourceEnum::Cotton, ResourceEnum::None, ResourceEnum::CottonFabric, 20, 5, { 0, 100, 100 }, "Mass-produce Cotton into Cotton Fabric."),
 	BldInfo(CardEnum::PrintingPress, "Printing Press", WorldTile2(5, 6), ResourceEnum::Paper, ResourceEnum::Dye, ResourceEnum::Book, 20, 5, { 0, 150, 100 }, "Print Books."),
 
@@ -2221,8 +2279,8 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::ChichenItza, "ChichenItza", WorldTile2(16, 16), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "..."),
 
 	// October 20
-	BldInfo(CardEnum::Market, "Market", WorldTile2(6, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 120, 120, 0 }, "Provide food/fuel/luxury resources to nearby housing. Bring resources from faraway storages in large bulk."),
-	BldInfo(CardEnum::ShippingDepot, "Shipping Depot", WorldTile2(5, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 30, 30, 0 }, "Shipping worker carry specified resources from within the radius to its delivery target faraway."),
+	BldInfo(CardEnum::Market, "Market", WorldTile2(6, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 5, { 120, 120, 0 }, "Provide food/fuel/medicine/tools/luxury resources to nearby housing. Bring resources from faraway storages in 50-units bulk."),
+	BldInfo(CardEnum::ShippingDepot, "Logistics Office", WorldTile2(5, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 1, { 20, 10, 0 }, "Logistics worker haul specified resources from within the radius to its delivery target faraway in 50-units bulk."),
 	BldInfo(CardEnum::IrrigationReservoir, "Irrigation Reservoir", WorldTile2(5, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0, 150, 0 }, "Raise the fertility within its radius to at least 95%."),
 	
 	// Decorations
@@ -2306,7 +2364,7 @@ static const BldInfo CardInfos[]
 
 	BldInfo(CardEnum::ChimneyRestrictor,	"Chimney Restrictor", 250, "Wood/Coal gives 15% more heat"),
 	BldInfo(CardEnum::SellFood,			"Sell Food", 90, "Sell half of city's food for 3<img id=\"Coin\"/> each."),
-	BldInfo(CardEnum::BuyWood,			"Buy Wood", 50, "Buy Wood with half of your treasury (5<img id=\"Coin\"/> each)."),
+	BldInfo(CardEnum::BuyWood,			"Buy Wood", 50, "Buy Wood with half of your treasury for 5<img id=\"Coin\"/> each."),
 	BldInfo(CardEnum::ChildMarriage,			"Child Marriage", 200, "Decrease the minimum age for having children."),
 	BldInfo(CardEnum::ProlongLife,			"Prolong Life", 200, "People live longer."),
 	BldInfo(CardEnum::BirthControl,			"Birth Control", 200, "Prevents childbirth when the housing capacity is full."),
@@ -2920,7 +2978,6 @@ static bool IsStorage(CardEnum buildingEnum) {
 	switch (buildingEnum) {
 	case CardEnum::StorageYard:
 	case CardEnum::Warehouse:
-	case CardEnum::Market:
 		return true;
 	default: return false;
 	}
@@ -3111,26 +3168,30 @@ struct BuildingUpgrade
 	std::string description;
 	ResourcePair resourceNeeded;
 	int32 moneyNeeded;
+	int32 efficiencyBonus = 0;
+	int32 comboEfficiencyBonus = 0;
 
-	bool isUpgraded;
+	bool isUpgraded = false;
 
-	BuildingUpgrade() : name(""), description(""), resourceNeeded(ResourcePair()), moneyNeeded(-1), isUpgraded(false) {}
+	BuildingUpgrade() : name(""), description(""), resourceNeeded(ResourcePair()), moneyNeeded(-1) {}
 	
 	BuildingUpgrade(std::string name, std::string description, ResourcePair resourceNeeded, int32 moneyNeeded = 0)
-		: name(name), description(description), resourceNeeded(resourceNeeded), moneyNeeded(moneyNeeded), isUpgraded(false) {}
+		: name(name), description(description), resourceNeeded(resourceNeeded), moneyNeeded(moneyNeeded) {}
 
 	BuildingUpgrade(std::string name, std::string description, int32 moneyNeeded)
-		: name(name), description(description), resourceNeeded(ResourcePair()), moneyNeeded(moneyNeeded), isUpgraded(false) {}
+		: name(name), description(description), resourceNeeded(ResourcePair()), moneyNeeded(moneyNeeded) {}
 
 	BuildingUpgrade(std::string name, std::string description, ResourceEnum resourceEnum, int32 resourceCount)
-		: name(name), description(description), resourceNeeded(ResourcePair(resourceEnum, resourceCount)), moneyNeeded(0), isUpgraded(false) {}
+		: name(name), description(description), resourceNeeded(ResourcePair(resourceEnum, resourceCount)), moneyNeeded(0) {}
 
 	void operator>>(FArchive& Ar) {
-		Ar << isUpgraded;
 		SerializeStr(Ar, name);
 		SerializeStr(Ar, description);
 		resourceNeeded >> Ar;
 		Ar << moneyNeeded;
+		Ar << efficiencyBonus;
+
+		Ar << isUpgraded;
 	}
 };
 
@@ -3508,7 +3569,7 @@ struct TileObjInfo
 		// maxGrowthSeasons100
 		int32 maxGrowthSeasons100 = 0;
 		if (typeIn == ResourceTileType::Tree) {
-			maxGrowthSeasons100 = 600; // 1.5 years to grow for trees
+			maxGrowthSeasons100 = 500; // 1 year 1 season to grow for trees
 		}
 		if (typeIn == ResourceTileType::Bush) {
 			if (IsCrop(treeEnum)) {
@@ -3956,6 +4017,7 @@ enum class PlacementInstructionEnum
 
 	DeliveryPointInstruction,
 	DeliveryPointMustBeStorage,
+	ShipperDeliveryPointShouldBeOutOfRadius,
 
 	MountainMine,
 	Dock,
@@ -4060,6 +4122,8 @@ enum class OverlayType
 	
 	Windmill,
 	IrrigationReservoir,
+	Market,
+	ShippingDepot,
 	
 	Beekeeper,
 	
@@ -4108,6 +4172,7 @@ static bool IsGridOverlay(OverlayType overlayEnum)
 	case OverlayType::Appeal:
 	case OverlayType::Fish:
 	case OverlayType::Farm:
+	case OverlayType::IrrigationReservoir:
 		return true;
 	default: return false;
 	}
@@ -5847,6 +5912,8 @@ static const std::vector<std::string> FemaleNames
 	// Discord
 	"Venti",
 	"Firis",
+	"Iris",
+	"Izavel"
 	"Illia",
 	"Illya",
 };
@@ -6811,6 +6878,8 @@ enum class CallbackEnum : uint8
 	SetGlobalJobPriority_Down,
 	SetGlobalJobPriority_FastUp,
 	SetGlobalJobPriority_FastDown,
+
+	SetMarketTarget,
 
 	// Military
 	ArmyConquer,

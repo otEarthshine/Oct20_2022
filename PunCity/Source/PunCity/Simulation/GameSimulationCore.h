@@ -509,7 +509,7 @@ public:
 	bool IsValidBuilding(int32 id) final {
 		bool isValid = (0 <= id && id < _buildingSystem->buildingCount()) && _buildingSystem->alive(id);
 		if (!isValid) {
-			LOG_ERROR(LogNetworkInput, "IsValidBuilding: !isValid id:%d bldCount:%d alive:%d", id, _buildingSystem->buildingCount(), _buildingSystem->alive(id));
+			LOG_ERROR(LogNetworkInput, "IsValidBuilding: !isValid id:%d bldCount:%d alive:%d", id, _buildingSystem->buildingCount(), isValid ? _buildingSystem->alive(id) : 0);
 		}
 		return isValid;
 	}
@@ -621,17 +621,23 @@ public:
 	bool HasBuildingWithinRadius(WorldTile2 tileIn, int32 radius, int32 playerId, CardEnum buildingEnum) final
 	{
 		const std::vector<int32>& bldIds = buildingIds(playerId, buildingEnum);
-
-		int32 radiusTouchAtom = radius * CoordinateConstants::AtomsPerTile;
-		
 		for (int32 bldId : bldIds) {
-			WorldTile2 centerTile = building(bldId).centerTile();
-			int32 atomDist = WorldAtom2::Distance(tileIn.worldAtom2(), centerTile.worldAtom2());
-			if (atomDist < radiusTouchAtom) {
+			if (building(bldId).DistanceTo(tileIn) <= radius) {
 				return true;
 			}
 		}
 		return false;
+	}
+	std::vector<int32> GetBuildingsWithinRadius(WorldTile2 tileIn, int32 radius, int32 playerId, CardEnum buildingEnum) final
+	{
+		const std::vector<int32>& bldIds = buildingIds(playerId, buildingEnum);
+		std::vector<int32> resultIds;
+		for (int32 bldId : bldIds) {
+			if (building(bldId).DistanceTo(tileIn) <= radius) {
+				resultIds.push_back(bldId);
+			}
+		}
+		return resultIds;
 	}
 
 	
@@ -952,8 +958,19 @@ public:
 		if (IsAI(playerIdIn)) { //TODO: this is for testing for now..
 			return true;
 		}
-		return IsResearched(playerIdIn, TechEnum::Vassalize) &&
-				lordPlayerId(playerIdIn) == -1 &&
+		return IsResearched(playerIdIn, TechEnum::Vassalize) && 
+				CanConquerOtherPlayers_Base(playerIdIn);
+	}
+	bool CanConquerProvinceOtherPlayers(int32 playerIdIn)
+	{
+		if (IsAI(playerIdIn)) { //TODO: this is for testing for now..
+			return true;
+		}
+		return IsResearched(playerIdIn, TechEnum::Conquer) &&
+				CanConquerOtherPlayers_Base(playerIdIn);
+	}
+	bool CanConquerOtherPlayers_Base(int32 playerIdIn) {
+		return lordPlayerId(playerIdIn) == -1 &&
 				!playerOwned(playerIdIn).GetDefendingClaimProgress(homeProvinceId(playerIdIn)).isValid();
 	}
 
@@ -1306,6 +1323,9 @@ public:
 	int32 provinceOwner(int32 provinceId) final { return _regionSystem->provinceOwner(provinceId); }
 
 
+	/*
+	 * Terran Gen
+	 */
 	int32 GetFertilityPercent(WorldTile2 tile) override {
 		return terrainGenerator().GetFertilityPercent(tile);
 	}
@@ -1410,8 +1430,9 @@ public:
 	}
 	void AddQuest(int32 playerId, std::shared_ptr<Quest> quest) final
 	{
-		PUN_CHECK(!WasQuestStarted(playerId, quest->classEnum()));
-		questSystem(playerId)->AddQuest(quest);
+		if (!WasQuestStarted(playerId, quest->classEnum())) {
+			questSystem(playerId)->AddQuest(quest);
+		}
 	}
 	void TryAddQuest(int32 playerId, std::shared_ptr<Quest> quest) final
 	{

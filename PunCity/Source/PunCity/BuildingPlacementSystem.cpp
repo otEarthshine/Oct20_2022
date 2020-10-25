@@ -283,8 +283,8 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 		
 		SetInstruction(PlacementInstructionEnum::DragGather, IsGatherPlacement(_placementType) && _dragGatherSuccessCount < 3);
 
-		if (IsRoadPlacement(_placementType)) {
-			SetInstruction(_dragRoadSuccessCount < 3 ? PlacementInstructionEnum::DragRoad1 : PlacementInstructionEnum::DragRoad2, true);
+		if (IsRoadPlacement(_placementType) && _dragRoadSuccessCount < 3) {
+			SetInstruction(PlacementInstructionEnum::DragRoad1, true);
 		}
 		
 		SetInstruction(PlacementInstructionEnum::DragDemolish, _placementType == PlacementType::Demolish && _dragDemolishSuccessCount < 3);
@@ -392,6 +392,12 @@ void ABuildingPlacementSystem::StartBuildingPlacement(CardEnum buildingEnum, int
 	
 	//! Radius and Overlay
 	bool showGridGuide = true;
+
+#define SHOW_RADIUS(CardEnumName) \
+	else if (buildingEnum == CardEnum::CardEnumName) { \
+		ShowRadius(CardEnumName::Radius, OverlayType::Gatherer);\
+	}
+	
 	//! Garden
 	if (buildingEnum == CardEnum::Garden){
 		ShowRadius(GetBuildingAppealInfo(buildingEnum).appealRadius, OverlayType::Appeal);
@@ -407,12 +413,10 @@ void ABuildingPlacementSystem::StartBuildingPlacement(CardEnum buildingEnum, int
 	else if (buildingEnum == CardEnum::Fisher) {
 		ShowRadius(Fisher::Radius, OverlayType::Fish);
 		showGridGuide = false;
-		//_gameInterface->SetOverlayType(OverlayType::Fish, OverlaySetterType::BuildingPlacement);
 	}
 	//! BerryGatherer
 	else if (buildingEnum == CardEnum::FruitGatherer) {
 		ShowRadius(GathererHut::Radius, OverlayType::Gatherer);
-		//_gameInterface->SetOverlayType(OverlayType::Gatherer, OverlaySetterType::BuildingPlacement);
 	}
 	else if (buildingEnum == CardEnum::HuntingLodge) {
 		ShowRadius(HuntingLodge::Radius, OverlayType::Hunter);
@@ -424,12 +428,11 @@ void ABuildingPlacementSystem::StartBuildingPlacement(CardEnum buildingEnum, int
 	}
 	else if (buildingEnum == CardEnum::Windmill) {
 		ShowRadius(Windmill::Radius, OverlayType::Windmill);
-		//_gameInterface->SetOverlayType(OverlayType::Forester, OverlaySetterType::BuildingPlacement);
 	}
-	else if (buildingEnum == CardEnum::IrrigationReservoir) {
-		ShowRadius(IrrigationReservoir::Radius, OverlayType::IrrigationReservoir);
-		//_gameInterface->SetOverlayType(OverlayType::Forester, OverlaySetterType::BuildingPlacement);
-	}
+	SHOW_RADIUS(IrrigationReservoir)
+	SHOW_RADIUS(Market)
+	SHOW_RADIUS(ShippingDepot)
+	
 	else if (buildingEnum == CardEnum::Beekeeper) {
 		ShowRadius(Beekeeper::Radius, OverlayType::Beekeeper);
 		//_gameInterface->SetOverlayType(OverlayType::Forester, OverlaySetterType::BuildingPlacement);
@@ -482,6 +485,8 @@ void ABuildingPlacementSystem::StartBuildingPlacement(CardEnum buildingEnum, int
 		//_gameInterface->SetOverlayType(OverlayType::BadAppeal, OverlaySetterType::BuildingPlacement);
 		ShowRadius(BadAppealRadius, OverlayType::BadAppeal, true);
 	}
+
+#undef SHOW_RADIUS
 
 	// Spell
 	if (IsAreaSpell(buildingEnum)) {
@@ -1530,31 +1535,45 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		
 		if (_mouseOnTile.isValid())
 		{
-			Building* buildingAtTile = simulation.buildingAtTile(_mouseOnTile);
-			if (buildingAtTile) {
-				if (IsStorage(buildingAtTile->buildingEnum())) {
-					_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, _mouseOnTile);
-					_canPlace = true;
-				} else {
-					SetInstruction(PlacementInstructionEnum::DeliveryPointMustBeStorage, true);
-					_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, _mouseOnTile);
-				}
-			}
-			else {
-				SetInstruction(PlacementInstructionEnum::DeliveryPointInstruction, true);
-				_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, _mouseOnTile);
-			}
-
 			// Show DeliveryArrow
 			if (simulation.IsValidBuilding(_deliverySourceBuildingId))
 			{
+				Building& sourceBuilding = simulation.building(_deliverySourceBuildingId);
+				Building* buildingAtTile = simulation.buildingAtTile(_mouseOnTile);
+				if (buildingAtTile) 
+				{
+					WorldTile2 targetCenterTile = buildingAtTile->centerTile();
+					
+					if (IsStorage(buildingAtTile->buildingEnum())) 
+					{
+						if (sourceBuilding.isEnum(CardEnum::ShippingDepot) &&
+							sourceBuilding.DistanceTo(targetCenterTile) <= ShippingDepot::Radius) {
+							// don't allow setting target within shipping depot's radius
+							SetInstruction(PlacementInstructionEnum::ShipperDeliveryPointShouldBeOutOfRadius, true);
+							_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, targetCenterTile);
+						}
+						else {
+							_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, targetCenterTile);
+							_canPlace = true;
+						}
+					}
+					else {
+						SetInstruction(PlacementInstructionEnum::DeliveryPointMustBeStorage, true);
+						_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, targetCenterTile);
+					}
+				}
+				else {
+					SetInstruction(PlacementInstructionEnum::DeliveryPointInstruction, true);
+					_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, _mouseOnTile);
+				}
+
 				FVector mouseLocation;
 				if (buildingAtTile) {
 					mouseLocation = _gameInterface->DisplayLocationTrueCenter(*buildingAtTile);
 				} else {
 					mouseLocation = _gameInterface->DisplayLocation(_mouseOnTile.worldAtom2());
 				}
-				FVector sourceLocation = _gameInterface->DisplayLocationTrueCenter(simulation.building(_deliverySourceBuildingId));
+				FVector sourceLocation = _gameInterface->DisplayLocationTrueCenter(sourceBuilding);
 
 				_gameInterface->ShowDeliveryArrow(sourceLocation, mouseLocation);
 			}
@@ -2530,6 +2549,9 @@ void ABuildingPlacementSystem::NetworkTryPlaceBuilding(IGameNetworkInterface* ne
 			command->center = _mouseOnTile;
 
 			networkInterface->SendNetworkCommand(command);
+
+			// Select the source building
+			_gameInterface->simulation().SetDescriptionUIState(DescriptionUIState(ObjectTypeEnum::Building, _deliverySourceBuildingId));
 			
 			CancelPlacement();
 		}

@@ -844,11 +844,12 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 	// At 2 years worth accumulation. The influence income becomes 0;
 	int32 influenceIncomeBeforeCapDamp100 = totalInfluenceIncome100();
 	int32 maxInfluence100 = maxStoredInfluence100();
-	if (influence100 > maxInfluence100) {
+	if (influence100 > maxInfluence100 && influenceIncomeBeforeCapDamp100 > 0) {
 		// Fully damp to 0 influence income at x2 maxStoredInfluence
 		int32 influenceIncomeDamp100 = influenceIncomeBeforeCapDamp100 * (influence100 - maxInfluence100) / max(1, maxInfluence100); // More damp as influence stored is closer to fullYearInfluenceIncome100
 		influenceIncomeDamp100 = min(influenceIncomeDamp100, influenceIncomeBeforeCapDamp100); // Can't damp more than existing influence income
-		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::TooMuchInfluencePoints)] -= influenceIncomeDamp100;
+		PUN_CHECK(influenceIncomeDamp100 >= 0);
+		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::TooMuchInfluencePoints)] = -influenceIncomeDamp100;
 	}
 }
 

@@ -163,25 +163,29 @@ public:
 						bool inserted = false;
 						for (size_t i = 0; i < maxResourcePairs.size(); i++) {
 							if (resourceCount > maxResourcePairs[i].count) {
-								maxResourcePairs[i] = { holderInfo.resourceEnum, resourceCount };
-								inserted = true;
+								maxResourcePairs.insert(maxResourcePairs.begin() + i, { holderInfo.resourceEnum, resourceCount });
 								hasMore = true;
+								inserted = true;
 								break;
 							}
 						}
-						if (!inserted && maxResourcePairs.size() < 2) {
+						if (!inserted) {
 							maxResourcePairs.push_back({ holderInfo.resourceEnum, resourceCount });
+						}
+						if (maxResourcePairs.size() > 2) {
+							maxResourcePairs.pop_back();
 						}
 					}
 				}
 
 				for (ResourcePair& pair : maxResourcePairs) {
-					PunBox->AddIconPair("", pair.resourceEnum, std::to_string(pair.count));
+					PunBox->AddIconPair("", pair.resourceEnum, std::to_string(pair.count), false, true);
 				}
 				if (hasMore) {
 					auto textWidget = PunBox->AddText("...");
 					textWidget->PunText->SetShadowOffset(FVector2D(1, 1));
-					textWidget->PunText->SetShadowColorAndOpacity(FLinearColor(1, 1, 1, 0.5));
+					textWidget->PunText->SetShadowColorAndOpacity(FLinearColor(0, 0, 0, 0.5));
+					CastChecked<UVerticalBoxSlot>(textWidget->Slot)->SetHorizontalAlignment(HAlign_Center);
 				}
 				
 				PunBox->AfterAdd();

@@ -823,12 +823,7 @@ void UMainGameUI::Tick()
 			HousingSpaceText->SetText(FText::FromString(FString::FromInt(population) + FString("/") + FString::FromInt(simulation.HousingCapacity(playerId()))));
 
 			std::vector<int32> storageIds = simulation.buildingIds(playerId(), CardEnum::StorageYard);
-			
-			std::vector<int32> warehouseIds = simulation.buildingIds(playerId(), CardEnum::Warehouse);
-			storageIds.insert(storageIds.end(), warehouseIds.begin(), warehouseIds.end());
-
-			std::vector<int32> marketIds = simulation.buildingIds(playerId(), CardEnum::Market);
-			storageIds.insert(storageIds.end(), marketIds.begin(), marketIds.end());
+			CppUtils::AppendVec(storageIds,  simulation.buildingIds(playerId(), CardEnum::Warehouse));
 			
 			int32 totalSlots = 0;
 			int32 usedSlots = 0;

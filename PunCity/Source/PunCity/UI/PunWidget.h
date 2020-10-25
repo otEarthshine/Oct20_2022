@@ -211,6 +211,13 @@ public:
 	static void SetTextF(UTextBlock* textBlock, const FString& str) {
 		textBlock->SetText(FText::FromString(str));
 	}
+	
+	static void SetTextNumber(UTextBlock* textBlock, float value, int32 precision) {
+		std::stringstream ss;
+		ss.precision(precision);
+		ss << std::fixed << value;
+		textBlock->SetText(ToFText(ss.str()));
+	}
 
 	
 	static void SetTextShorten(UTextBlock* textBlock, std::string str) {

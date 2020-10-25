@@ -80,6 +80,7 @@ void UEscMenuUI::PunInit()
 	OverlayCheckBox_Fertility->OnCheckStateChanged.AddDynamic(this, &UEscMenuUI::OnCheckOverlay_Fertility);
 	OverlayCheckBox_Animals->OnCheckStateChanged.AddDynamic(this, &UEscMenuUI::OnCheckOverlay_Animals);
 	MapCheckBox_HideTrees->OnCheckStateChanged.AddDynamic(this, &UEscMenuUI::OnCheckMap_HideTrees);
+	MapCheckBox_ProvinceOverlay->OnCheckStateChanged.AddDynamic(this, &UEscMenuUI::OnCheckMap_ProvinceOverlay);
 
 	SetOverlayCheckBox(OverlayCheckBox_None);
 

@@ -123,6 +123,10 @@ static const std::vector<CardEnum> DefaultJobPriorityListAllSeason
 	CardEnum::PrintingPress,
 
 	CardEnum::PaperMaker,
+
+	CardEnum::Market,
+	CardEnum::ShippingDepot,
+	
 	CardEnum::CardMaker,
 	CardEnum::ImmigrationOffice,
 
@@ -439,20 +443,19 @@ public:
 
 		for (int32 i = 0; i < InfluenceIncomeEnumCount; i++)
 		{
-			if (influenceIncomes100[i] != 0)
-			{
-				ss << " " << (influenceIncomes100[i] > 0 ? "+" : "") << (influenceIncomes100[i] / 100.0f);
+			if (influenceIncomes100[i] != 0) {
+				ss << " " << ToSignedNumber(influenceIncomes100[i] / 100.0f);
 				ss << " " << InfluenceIncomeEnumName[i] << "\n";
 			}
 		}
 
 		auto addStoredInfluenceRow = [&](InfluenceIncomeEnum influenceEnum) {
-			ss << " " << (influenceIncomes100[static_cast<int>(influenceEnum)] * storedToInfluenceRevenue)
+			ss << " " << (influenceIncomes100[static_cast<int>(influenceEnum)] * storedToInfluenceRevenue / 100)
 			   << " " << InfluenceIncomeEnumName[static_cast<int>(influenceEnum)] <<"\n";
 		};
 		
 		ss << "<space>";
-		ss << "Max Stored Influence: " << maxStoredInfluence100() << "<img id=\"Influence\"/>\n";
+		ss << "Max Stored Influence: " << maxStoredInfluence100() / 100 << "<img id=\"Influence\"/>\n";
 		addStoredInfluenceRow(InfluenceIncomeEnum::Townhall);
 		addStoredInfluenceRow(InfluenceIncomeEnum::Population);
 		addStoredInfluenceRow(InfluenceIncomeEnum::Luxury);
@@ -1006,7 +1009,16 @@ public:
 		}
 #endif
 	}
-	
+
+	void AddDeliverySource(int32 deliverySource) {
+		CppUtils::TryAdd(_deliverySources, deliverySource);
+	}
+	void RemoveDeliverySource(int32 deliverySource) {
+		CppUtils::TryRemove(_deliverySources, deliverySource);
+	}
+	const std::vector<int32>& allDeliverySources() {
+		return _deliverySources;
+	}
 
 	/*
 	 * Science
@@ -1254,7 +1266,8 @@ public:
 
 		SerializeVecValue(Ar, _jobPriorityList);
 		SerializeVecValue(Ar, _laborerPriorityList);
-		
+
+		SerializeVecValue(Ar, _deliverySources);
 
 		Ar << _employedCount;
 		Ar << _builderCount;
@@ -1416,6 +1429,8 @@ private:
 
 	std::vector<CardEnum> _jobPriorityList;
 	std::vector<CardEnum> _laborerPriorityList;
+
+	std::vector<int32> _deliverySources; // Doesn't count shipping depot
 
 	//
 

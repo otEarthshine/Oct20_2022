@@ -17,13 +17,11 @@ class UPunEditableNumberBox : public UPunWidget
 public:
 	void OnInit() override {
 		DescriptionText->SetVisibility(ESlateVisibility::Collapsed);
-
-		ArrowDownButton->OnClicked.Clear();
-		ArrowUpButton->OnClicked.Clear();
-		EditableNumber->PunEditableTextBox->OnTextCommitted.Clear();
 		
-		ArrowDownButton->OnClicked.AddDynamic(this, &UPunEditableNumberBox::ClickArrowDownButton);
-		ArrowUpButton->OnClicked.AddDynamic(this, &UPunEditableNumberBox::ClickArrowUpButton);
+		BUTTON_ON_CLICK(ArrowDownButton, this, &UPunEditableNumberBox::ClickArrowDownButton);
+		BUTTON_ON_CLICK(ArrowUpButton, this, &UPunEditableNumberBox::ClickArrowUpButton);
+
+		EditableNumber->PunEditableTextBox->OnTextCommitted.Clear();
 		EditableNumber->PunEditableTextBox->OnTextCommitted.AddDynamic(this, &UPunEditableNumberBox::NumberChanged);
 		amount = 0;
 		UpdateText();

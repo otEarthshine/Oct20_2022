@@ -47,8 +47,10 @@ public:
 	
 	UPROPERTY(meta = (BindWidget)) UTextBlock* IncomeText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* IncomeCount;
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* UpkeepBox;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* UpkeepText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* UpkeepCount;
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* BorderUpkeepBox;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* BorderUpkeepText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* BorderUpkeepCount;
 
@@ -65,41 +67,50 @@ public:
 
 	void UpdateProvinceOverlayInfo(int32 provinceIdIn)
 	{
+		provinceId = provinceIdIn;
+		
 		auto& sim = simulation();
 		int32 provinceOwnerId = sim.provinceOwner(provinceIdIn);
-		bool unlockedInfluence = sim.unlockedInfluence(provinceOwnerId);
+		bool unlockedInfluence = sim.unlockedInfluence(playerId());
 
-		BorderUpkeepText->SetVisibility(ESlateVisibility::Hidden);
-		BorderUpkeepCount->SetVisibility(ESlateVisibility::Hidden);
+		UpkeepText->SetVisibility(ESlateVisibility::Collapsed);
+		UpkeepBox->SetVisibility(ESlateVisibility::Collapsed);
+		BorderUpkeepText->SetVisibility(ESlateVisibility::Collapsed);
+		BorderUpkeepBox->SetVisibility(ESlateVisibility::Collapsed);
+		
 		IconSizeBox->SetVisibility(ESlateVisibility::Collapsed);
 		
 		// Already own this province, Showr real income/upkeep
 		if (provinceOwnerId == playerId())
 		{
 			SetText(IncomeText, "Income:");
-			SetText(IncomeCount, std::to_string(sim.GetProvinceIncome100(provinceIdIn) / 100.0f));
+			SetTextNumber(IncomeCount, sim.GetProvinceIncome100(provinceIdIn) / 100.0f, 1);
 			
 			if (unlockedInfluence) {
 				SetText(UpkeepText, "Upkeep:");
-				SetText(UpkeepCount, std::to_string(sim.GetProvinceUpkeep100(provinceIdIn, provinceOwnerId) / 100.0f));
+				SetTextNumber(UpkeepCount, sim.GetProvinceUpkeep100(provinceIdIn, provinceOwnerId) / 100.0f, 1);
+				UpkeepText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+				UpkeepBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
 				if (sim.IsBorderProvince(provinceIdIn)) {
-					SetText(UpkeepText, "Border Upkeep:");
-					SetText(UpkeepCount, std::to_string(5));
+					SetText(BorderUpkeepText, "Border Upkeep:");
+					SetTextNumber(BorderUpkeepCount, 5, 1);
 						
 					BorderUpkeepText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-					BorderUpkeepCount->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+					BorderUpkeepBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 				}
 			}
 		}
 		else
 		{
 			SetText(IncomeText, "Income:");
-			SetText(IncomeCount, std::to_string(sim.GetProvinceIncome100(provinceIdIn) / 100.0f));
+			SetTextNumber(IncomeCount, sim.GetProvinceIncome100(provinceIdIn) / 100.0f, 1);
 
 			if (unlockedInfluence) {
 				SetText(UpkeepText, "Upkeep:");
-				SetText(UpkeepCount, std::to_string(sim.GetProvinceBaseUpkeep100(provinceIdIn) / 100.0f));
+				SetTextNumber(UpkeepCount, sim.GetProvinceBaseUpkeep100(provinceIdIn) / 100.0f, 1);
+				UpkeepText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+				UpkeepBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 			}
 		}
 
@@ -107,6 +118,7 @@ public:
 		GeoresourceNode node = georesourceSys.georesourceNode(provinceId);
 		ProvinceSystem& provinceSys = sim.provinceSystem();
 		bool isMountain = provinceSys.provinceMountainTileCount(provinceId) > 0;
+		SetChildHUD(PunBox);
 		
 		if (node.HasResource())
 		{

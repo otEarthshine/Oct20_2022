@@ -98,4 +98,6 @@ private:
 
 
 	bool _alreadyDidShiftDownUpgrade = false;
+
+	bool _justOpenedDescriptionUI = false;
 };

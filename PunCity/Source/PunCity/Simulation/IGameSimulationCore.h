@@ -138,11 +138,7 @@ public:
 	virtual std::string townSizeName(int32 playerId) = 0;
 	virtual int32 townAgeTicks(int32 playerId) = 0;
 
-	virtual bool unlockedInfluence(int32 playerId) {
-		//if (HasTownhall(playerId)) {
-		//	return townLvl(playerId) >= 3;
-		//}
-		//return false;
+	bool unlockedInfluence(int32 playerId) {
 		return IsResearched(playerId, TechEnum::InfluencePoints);
 	}
 

@@ -38,6 +38,7 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) USizeBox* ClockBox;
 	UPROPERTY(meta = (BindWidget)) UImage* ClockImage;
+	UPROPERTY(meta = (BindWidget)) UImage* ClockPauseImage;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* ClockText;
 	
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* ResourceCompletionIconBox;
@@ -95,6 +96,8 @@ public:
 				material->SetScalarParameterValue("IsInput", 1.0f);
 
 				material->SetScalarParameterValue("HasNoResource", fraction < 1.0f && simulation().resourceCount(building.playerId(), resourceEnum) == 0);
+
+				completionIcon->SetIsPaused(building.priority() == PriorityEnum::Disable);
 
 				std::stringstream ss;
 				ss << "Construction Input<space>";
@@ -382,6 +385,11 @@ public:
 		ClockImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", fraction);
 		ClockBox->SetVisibility((clockCount > 0 || fraction > 0.01f) ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 
+		// Show pause
+		bool isPaused = building.priority() == PriorityEnum::Disable;
+		ClockPauseImage->SetVisibility(isPaused ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+		ClockImage->GetDynamicMaterial()->SetScalarParameterValue("IsPauseGray", isPaused);
+
 		if (clockCount > 0) {
 			ClockText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 			SetText(ClockText, to_string(clockCount));
@@ -395,31 +403,6 @@ public:
 		if (input != ResourceEnum::None)
 		{
 			SetResourceCompletion({ input }, {}, building);
-			
-			//auto completionIcon = GetBoxChild<UResourceCompletionIcon>(ResourceCompletionIconBox, index, UIEnum::ResourceCompletionIcon, true);
-			//UMaterialInstanceDynamic* material = completionIcon->ResourceImage->GetDynamicMaterial();
-
-			//material->SetTextureParameterValue("ColorTexture", assetLoader()->GetResourceIcon(input));
-			//material->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(input));
-
-			//int32 hasCount = building.resourceCount(building.input1());
-			//int32 needCount = building.inputPerBatch();
-			//int32 inputFraction = static_cast<float>(hasCount) / needCount;
-			//material->SetScalarParameterValue("Fraction", inputFraction);
-			//material->SetScalarParameterValue("IsInput", 1.0f);
-			//material->SetScalarParameterValue("HasNoResource", inputFraction < 1.0f && simulation().resourceCount(playerId(), input) == 0);
-
-			//std::stringstream ss;
-			//ss << "Input<space>";
-			//ss << ResourceName(input) << " " << hasCount << "/" << needCount;
-			//ss << "<space>Stored(city)" << simulation().resourceCount(playerId(), input);
-			//
-			//auto tooltip = AddToolTip(completionIcon->ResourceImage, ss.str());
-			//if (tooltip) {
-			//	tooltip->TipSizeBox->SetMinDesiredWidth(150);
-			//}
-
-			//BoxAfterAdd(ResourceCompletionIconBox, index);
 		}
 	}
 	void SetResourceCompletion(std::vector<ResourceEnum> inputs, std::vector<ResourceEnum> outputs, Building& building)
@@ -439,6 +422,8 @@ public:
 			material->SetScalarParameterValue("Fraction", static_cast<float>(hasCount) / needCount);
 			material->SetScalarParameterValue("IsInput", 1.0f);
 			material->SetScalarParameterValue("HasNoResource", hasCount < needCount && simulation().resourceCount(playerId(), inputs[i]) == 0);
+
+			completionIcon->SetIsPaused(building.priority() == PriorityEnum::Disable);
 
 			std::stringstream ss;
 			ss << "Input<space>";
@@ -469,6 +454,8 @@ public:
 			material->SetScalarParameterValue("Fraction", outputFraction);
 			material->SetScalarParameterValue("IsInput", 0.0f);
 			material->SetScalarParameterValue("HasNoResource", 0.0f);
+
+			completionIcon->SetIsPaused(building.priority() == PriorityEnum::Disable);
 
 			//index++;
 

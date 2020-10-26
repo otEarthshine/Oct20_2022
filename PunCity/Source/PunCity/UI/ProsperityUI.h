@@ -73,14 +73,14 @@ public:
 		}
 
 		// TickUI for Boxes
-		const std::vector<std::vector<std::shared_ptr<ResearchInfo>>>& houseLvlToProsperityTech = unlockSys->houseLvlToProsperityTech();
+		const std::vector<std::vector<TechEnum>>& houseLvlToProsperityTechEnum = unlockSys->houseLvlToProsperityTechEnum();
 		const std::vector<std::vector<int32>>& houseLvlToUnlockCounts = unlockSys->houseLvlToUnlockCounts();
 
-		for (size_t i = 1; i < houseLvlToProsperityTech.size(); i++)
+		for (size_t i = 1; i < houseLvlToProsperityTechEnum.size(); i++)
 		{
-			auto& techs = houseLvlToProsperityTech[i];
-			for (size_t j = techs.size(); j-- > 0;) {
-				techEnumToProsperityBox[static_cast<int>(techs[j]->techEnum)]->TickUI();
+			std::vector<TechEnum> techEnums = houseLvlToProsperityTechEnum[i];;
+			for (size_t j = techEnums.size(); j-- > 0;) {
+				techEnumToProsperityBox[static_cast<int>(techEnums[j])]->TickUI();
 			}
 		}
 	}
@@ -92,10 +92,10 @@ private:
 		ProsperityScrollBox->ClearChildren();
 		
 		UnlockSystem* unlockSys = simulation().unlockSystem(playerId());
-		const std::vector<std::vector<std::shared_ptr<ResearchInfo>>>& houseLvlToProsperityTech = unlockSys->houseLvlToProsperityTech();
+		const std::vector<std::vector<TechEnum>>& houseLvlToProsperityTechEnum = unlockSys->houseLvlToProsperityTechEnum();
 		const std::vector<std::vector<int32>>& houseLvlToUnlockCounts = unlockSys->houseLvlToUnlockCounts();
 		
-		for (size_t i = 1; i < houseLvlToProsperityTech.size(); i++)
+		for (size_t i = 1; i < houseLvlToProsperityTechEnum.size(); i++)
 		{
 			UProsperityColumnUI* prosperityColumnUI = AddWidget<UProsperityColumnUI>(UIEnum::ProsperityColumnUI);
 
@@ -114,17 +114,18 @@ private:
 			prosperityColumnUI->ProsperityTechList->ClearChildren();
 			ProsperityScrollBox->AddChild(prosperityColumnUI);
 			
-			auto& techs = houseLvlToProsperityTech[i];
-			for (size_t j = techs.size(); j-- > 0;) // Prosperity Techs are arrange upward...
+			const std::vector<TechEnum>& techEnums = houseLvlToProsperityTechEnum[i];
+			
+			for (size_t j = techEnums.size(); j-- > 0;) // Prosperity Techs are arrange upward...
 			{
 				UProsperityBoxUI* prosperityBox = AddWidget<UProsperityBoxUI>(UIEnum::ProsperityBoxUI);
 				prosperityColumnUI->ProsperityTechList->AddChild(prosperityBox);
 
-				techEnumToProsperityBox.Add(static_cast<int32>(techs[j]->techEnum), prosperityBox);
-				PUN_CHECK(prosperityBox->techEnum == TechEnum::None);
+				techEnumToProsperityBox.Add(static_cast<int32>(techEnums[j]), prosperityBox);
+				PUN_CHECK(prosperityBox->uiTechEnum == TechEnum::None);
 
-				prosperityBox->Init(this, techs[j]->techEnum, i, houseLvlToUnlockCounts[i][j], j);
-				prosperityBox->TechName->SetText(ToFText(techs[j]->GetName()));
+				prosperityBox->Init(this, techEnums[j], i, houseLvlToUnlockCounts[i][j], j);
+				prosperityBox->TechName->SetText(ToFText(unlockSys->GetTechInfo(techEnums[j])->GetName()));
 			}
 		}
 

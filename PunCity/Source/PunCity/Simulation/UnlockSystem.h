@@ -336,7 +336,7 @@ public:
 		 * - 1250 cost ... (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) / 10 / 10
 		 * - at 125 sci production... it is 2.5 seasons
 		 */
-		return (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) / 10 / 10  /* Tech factor: */  * 10000 / 1000; // 5400 / 1000;
+		return (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) / 10 / 10 / 10  /* Tech factor: */  * 10000 / 1000; // 5400 / 1000;
 	}
 
 	float researchFraction(int32 researchesFinished, int32 science100XsecPerRound) {
@@ -467,12 +467,12 @@ public:
 	 */
 	void AddTech(int32 era, std::shared_ptr<ResearchInfo> tech) {
 		PUN_CHECK(_enumToTech.find(tech->techEnum) == _enumToTech.end());
-		auto techCasted = std::static_pointer_cast<ResearchInfo>(tech);
 		if (era >= _eraToTechs.size()) {
 			_eraToTechs.push_back({});
 		}
-		_eraToTechs[era].push_back(techCasted);
-		_enumToTech[tech->techEnum] = techCasted;
+
+		_eraToTechs[era].push_back(tech->techEnum);
+		_enumToTech[tech->techEnum] = std::static_pointer_cast<ResearchInfo>(tech);
 	}
 
 	void AddTech_Building(int32 era, TechEnum researchEnum, CardEnum buildingEnum, int32_t cardCount = 1) {
@@ -508,9 +508,9 @@ public:
 	void AddProsperityTech(int32 houseLevel, int32 unlockCount, std::shared_ptr<ResearchInfo> tech)
 	{	
 		PUN_CHECK(_enumToTech.find(tech->techEnum) == _enumToTech.end());
-		auto techCasted = std::static_pointer_cast<ResearchInfo>(tech);
-		while (houseLevel >= _houseLvlToProsperityTech.size()) {
-			_houseLvlToProsperityTech.push_back({});
+		
+		while (houseLevel >= _houseLvlToProsperityTechEnum.size()) {
+			_houseLvlToProsperityTechEnum.push_back({});
 			_houseLvlToUnlockCount.push_back({});
 		}
 
@@ -520,9 +520,9 @@ public:
 			cumulativeUnlockCount += _houseLvlToUnlockCount[houseLevel][unlockListSize - 1];
 		}
 		
-		_houseLvlToProsperityTech[houseLevel].push_back(techCasted);
+		_houseLvlToProsperityTechEnum[houseLevel].push_back(tech->techEnum);
 		_houseLvlToUnlockCount[houseLevel].push_back(cumulativeUnlockCount);
-		_enumToTech[tech->techEnum] = techCasted;
+		_enumToTech[tech->techEnum] = std::static_pointer_cast<ResearchInfo>(tech);
 	}
 	
 	void AddProsperityTech_Building(int32 era, int32 unlockCount, TechEnum researchEnum, CardEnum buildingEnum, int32 cardCount = 1) {
@@ -549,11 +549,13 @@ public:
 		AddProsperityTech(era, unlockCount, tech);
 	}
 
-	const std::vector<std::vector<std::shared_ptr<ResearchInfo>>>& houseLvlToProsperityTech() { return _houseLvlToProsperityTech; }
+	const std::vector<std::vector<TechEnum>>& houseLvlToProsperityTechEnum() {
+		return _houseLvlToProsperityTechEnum;
+	}
 	const std::vector<std::vector<int32>>& houseLvlToUnlockCounts() { return _houseLvlToUnlockCount; }
 
-	const std::shared_ptr<ResearchInfo>& GetProsperityTech(int32 houseLvl, int32 localIndex) {
-		return _houseLvlToProsperityTech[houseLvl][localIndex];
+	TechEnum GetProsperityTechEnum(int32 houseLvl, int32 localIndex) {
+		return _houseLvlToProsperityTechEnum[houseLvl][localIndex];
 	}
 	
 	/*
@@ -772,10 +774,12 @@ public:
 		{
 			int32 houseCount = _simulation->GetHouseLvlCount(_playerId, i, true);
 			
-			std::vector<std::shared_ptr<ResearchInfo>>& prosperityTechs = _houseLvlToProsperityTech[i];
-			for (size_t j = 0; j < prosperityTechs.size(); j++) 
+			std::vector<TechEnum>& prosperityTechEnums = _houseLvlToProsperityTechEnum[i];
+			for (size_t j = 0; j < prosperityTechEnums.size(); j++)
 			{
-				auto& properityTech = prosperityTechs[j];
+				TechEnum properityTechEnum = prosperityTechEnums[j];
+				auto properityTech = GetTechInfo(properityTechEnum);
+				
 				if (properityTech->state != TechStateEnum::Researched)
 				{
 					if (houseCount >= _houseLvlToUnlockCount[i][j]) 
@@ -816,8 +820,9 @@ public:
 			UnlockBuilding(CardEnum::Farm);
 		}
 		
-		for (auto& techs : _eraToTechs) {
-			for (auto& tech : techs) {
+		for (auto& techEnums : _eraToTechs) {
+			for (TechEnum techEnum : techEnums) {
+				auto tech = GetTechInfo(techEnum);
 				if (tech->state != TechStateEnum::Researched) {
 					tech->state = TechStateEnum::Researched;
 					tech->OnUnlock(_playerId, _simulation);
@@ -851,7 +856,7 @@ public:
 
 	//! Research
 	// UI Display
-	const std::vector<std::vector<std::shared_ptr<ResearchInfo>>>& eraToTechs() { return _eraToTechs; }
+	const std::vector<std::vector<TechEnum>>& eraToTechEnums() { return _eraToTechs; }
 
 	std::shared_ptr<ResearchInfo> currentResearch()
 	{
@@ -1056,8 +1061,8 @@ public:
 	{
 		int32 techsUnlocked = 0;
 		auto& techs = _eraToTechs[era];
-		for (auto& tech : techs) {
-			if (IsResearched(tech->techEnum)) {
+		for (auto& techEnum : techs) {
+			if (IsResearched(techEnum)) {
 				techsUnlocked++;
 			}
 		}
@@ -1138,11 +1143,12 @@ public:
 		};
 
 		// Tech
-		SerializeVecLoop(Ar, _eraToTechs, [&](std::vector<std::shared_ptr<ResearchInfo>>& vecTech) {
-			SerializeVecLoop(Ar, vecTech, [&](std::shared_ptr<ResearchInfo>& tech) {
-				serializeTechPtr(tech);
-			});
-		});
+		SerializeVecVecValue(Ar, _eraToTechs);
+		//SerializeVecLoop(Ar, _eraToTechs, [&](std::vector<std::shared_ptr<ResearchInfo>>& vecTech) {
+		//	SerializeVecLoop(Ar, vecTech, [&](std::shared_ptr<ResearchInfo>& tech) {
+		//		serializeTechPtr(tech);
+		//	});
+		//});
 		
 		SerializeMapLoop(Ar, _enumToTech, [&](std::shared_ptr<ResearchInfo>& tech) {
 			serializeTechPtr(tech);
@@ -1151,11 +1157,12 @@ public:
 		SerializeVecValue(Ar, _techQueue);
 
 		// Prosperity
-		SerializeVecLoop(Ar, _houseLvlToProsperityTech, [&](std::vector<std::shared_ptr<ResearchInfo>>& vecTech) {
-			SerializeVecLoop(Ar, vecTech, [&](std::shared_ptr<ResearchInfo>& tech) {
-				serializeTechPtr(tech);
-			});
-		});
+		SerializeVecVecValue(Ar, _houseLvlToProsperityTechEnum);
+		//SerializeVecLoop(Ar, _houseLvlToProsperityTech, [&](std::vector<std::shared_ptr<ResearchInfo>>& vecTech) {
+		//	SerializeVecLoop(Ar, vecTech, [&](std::shared_ptr<ResearchInfo>& tech) {
+		//		serializeTechPtr(tech);
+		//	});
+		//});
 		SerializeVecVecValue(Ar, _houseLvlToUnlockCount);
 		
 		//SerializeVecLoop(Ar, _techQueue, [&](std::shared_ptr<ResearchInfo>& tech) {
@@ -1203,11 +1210,11 @@ private:
 	std::vector<CardEnum> _unlockedBuildings;
 
 	// Tech
-	std::vector<std::vector<std::shared_ptr<ResearchInfo>>> _eraToTechs; // Need shared_ptr because of polymorphism
+	std::vector<std::vector<TechEnum>> _eraToTechs; // Need shared_ptr because of polymorphism
 	std::unordered_map<TechEnum, std::shared_ptr<ResearchInfo>> _enumToTech;
 	std::vector<TechEnum> _techQueue;
 
 	// Prosperity
-	std::vector<std::vector<std::shared_ptr<ResearchInfo>>> _houseLvlToProsperityTech;
+	std::vector<std::vector<TechEnum>> _houseLvlToProsperityTechEnum;
 	std::vector<std::vector<int32>> _houseLvlToUnlockCount;
 };

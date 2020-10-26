@@ -2164,7 +2164,9 @@ void UnitStateAI::Add_StoreGatheredAtWorkplace() {
 void UnitStateAI::StoreGatheredAtWorkplace()
 {
 	// TODO: right now only fruit, later on will need to be able to clear the whole inventory
-	PUN_CHECK2(_inventory.Has(ResourceEnum::Orange) || _inventory.Has(ResourceEnum::Papaya), debugStr());
+	PUN_CHECK2(_inventory.Has(ResourceEnum::Orange) 
+			|| _inventory.Has(ResourceEnum::Papaya)
+			|| _inventory.Has(ResourceEnum::Coconut), debugStr());
 
 	// End workplace reservation, and switch to drop-off resource reservation instead
 	UnitReservation workplaceReservation = PopReservation(ReservationType::Workplace);

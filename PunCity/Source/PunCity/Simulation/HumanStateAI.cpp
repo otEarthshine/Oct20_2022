@@ -1136,8 +1136,14 @@ bool HumanStateAI::TryGatherFruit()
 
 	ResourceHolderInfo infoPapaya = workplace()->holderInfo(ResourceEnum::Papaya);
 	PUN_UNIT_CHECK(infoPapaya.isValid());
+
+	ResourceHolderInfo infoCoconut = workplace()->holderInfo(ResourceEnum::Coconut);
+	PUN_UNIT_CHECK(infoCoconut.isValid());
 	
-	int resourceCount = resourceSystem().resourceCountWithPush(infoOrange) + resourceSystem().resourceCountWithPush(infoPapaya);
+	int resourceCount = resourceSystem().resourceCountWithPush(infoOrange) + 
+						resourceSystem().resourceCountWithPush(infoPapaya) +
+						resourceSystem().resourceCountWithPush(infoCoconut);
+	
 	if (resourceCount > GameConstants::WorkerEmptyBuildingInventoryAmount) {
 		AddDebugSpeech("(Failed)TryGatherBerry: resourceCount > " + to_string(GameConstants::WorkerEmptyBuildingInventoryAmount));
 		return false;

@@ -151,18 +151,28 @@ void TownHall::UpgradeTownhall()
 		cardSys.AddDrawCards(CardEnum::Warehouse, 1);
 		cardSys.AddDrawCards(CardEnum::SharingIsCaring, 1);
 
-		std::stringstream ss;
-		ss << "Unlocked ability to Set Delivery Target!";
-		ss << "<space>";
-		ss << "You can set the storage/market where the building's output will be stored.";
-		ss << "<space>";
-		ss << "To set the delivery target:";
-		ss << "<bullet>Click on a production building to bring up its panel</>";
-		ss << "<bullet>Click the [Set Delivery Target] button</>";
-		ss << "<bullet>Select the target you wish to deliver to</>";
+		{
+			std::stringstream ss;
+			ss << "Unlocked ability to Set Delivery Target!";
+			ss << "<space>";
+			ss << "You can set the storage/market where the building's output will be stored.";
+			ss << "<space>";
+			ss << "To set the delivery target:";
+			ss << "<bullet>Click on a production building to bring up its panel</>";
+			ss << "<bullet>Click the [Set Delivery Target] button</>";
+			ss << "<bullet>Select the target you wish to deliver to</>";
 
-		_simulation->AddPopup(_playerId, ss.str());
-		unlockSys->unlockedSetDeliveryTarget = true;
+			_simulation->AddPopup(_playerId, ss.str());
+			unlockSys->unlockedSetDeliveryTarget = true;
+		}
+
+		{
+			std::stringstream ss;
+			ss << "Would you like to buy a " << GetBuildingInfo(CardEnum::Warehouse).name << " card for " << _simulation->cardSystem(_playerId).GetCardPrice(CardEnum::Warehouse) << " <img id=\"Coin\"/>.";
+			_simulation->AddPopup(
+				PopupInfo(_playerId, ss.str(), { "buy", "refuse" }, PopupReceiverEnum::DoneResearchBuyCardEvent, false, "ResearchComplete", static_cast<int>(CardEnum::Warehouse))
+			);
+		}
 	}
 
 

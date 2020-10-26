@@ -708,7 +708,7 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 	/*
 	 * Card Bonus
 	 */
-	incomes100[static_cast<int>(IncomeEnum::InvestmentProfit)] = 100 * 20 * _simulation->TownhallCardCount(_playerId, CardEnum::Investment);
+	incomes100[static_cast<int>(IncomeEnum::InvestmentProfit)] = 100 * 30 * _simulation->TownhallCardCount(_playerId, CardEnum::Investment);
 
 
 	bool conglomerateComplete = _simulation->TownhallCardCount(_playerId, CardEnum::Conglomerate) > 0 &&

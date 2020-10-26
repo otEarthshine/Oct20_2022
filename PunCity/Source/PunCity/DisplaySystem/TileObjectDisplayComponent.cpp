@@ -176,8 +176,10 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 		int32 customDepth = overlayType == OverlayType::Gatherer ? 1 : 0;
 		FString orangeMeshName = ToFString(GetTileObjInfo(TileObjEnum::Orange).name) + FString::FromInt(2);
 		FString papayaMeshName = ToFString(GetTileObjInfo(TileObjEnum::Papaya).name) + FString::FromInt(2);
+		FString cococutMeshName = ToFString(GetTileObjInfo(TileObjEnum::Coconut).name) + FString::FromInt(2);
 		meshes->SetCustomDepth(orangeMeshName, customDepth);
 		meshes->SetCustomDepth(papayaMeshName, customDepth);
+		meshes->SetCustomDepth(cococutMeshName, customDepth);
 	}
 	
 

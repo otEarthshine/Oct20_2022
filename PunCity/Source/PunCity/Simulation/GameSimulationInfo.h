@@ -772,7 +772,8 @@ enum class ResourceEnum : uint8
 
 	Dye,
 	Book,
-	
+
+	Coconut,
 
 	// --- End
 	None,
@@ -929,6 +930,9 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::Dye,		"Dye", 7, "Colored substance used for printing or dyeing clothes."),
 	ResourceInfo(ResourceEnum::Book,		"Book", 30, "Luxury tier 3 used for housing upgrade."),
 
+	// Oct 26
+	ResourceInfo(ResourceEnum::Coconut,		"Coconut",	FoodCost, "Large delicious fruit with white meat and refreshing juice."),
+
 };
 
 static const int ResourceEnumCount = _countof(ResourceInfos);
@@ -1009,6 +1013,7 @@ static const ResourceEnum FoodEnums[] =
 	ResourceEnum::Bread,
 	ResourceEnum::Cabbage,
 	ResourceEnum::Papaya,
+	ResourceEnum::Coconut,
 	ResourceEnum::Fish,
 
 	ResourceEnum::Pork,
@@ -1122,6 +1127,7 @@ const ResourceEnum HerbivoreFoodEnums[] =
 	ResourceEnum::Hay,
 	ResourceEnum::Orange,
 	ResourceEnum::Papaya,
+	ResourceEnum::Coconut,
 	
 	ResourceEnum::Wheat,
 	ResourceEnum::Milk,
@@ -2158,7 +2164,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::GoldMine,		"Gold Mine",			WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::GoldOre,	 10, 3,	{50,50,0},	"Mine Gold Ores from Gold Deposit."),
 	BldInfo(CardEnum::Quarry,		"Quarry",				WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::Stone,	 10, 3,	{110,0,0},	"Mine Stone from mountain."),
 	BldInfo(CardEnum::IronStatue,	"Stone Statue",			WorldTile2(4, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,110,0},	"...Show off"),
-	BldInfo(CardEnum::Bank,			"Bank",					WorldTile2(4, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{110,110,0},	"+10 <img id=\"Coin\"/> for surrounding level 2+ houses."),
+	BldInfo(CardEnum::Bank,			"Bank",					WorldTile2(4, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{110,110,0},	"+<img id=\"Coin\"/>10 for each surrounding level 2+ houses."),
 	BldInfo(CardEnum::IceAgeSpire,	"Ice Age Spire",		WorldTile2(8, 8),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,300,200},	"Spire for worshipping Groth, the god of destruction. Decrease global temperature by -10 C.", "Decrease global temperature by -10 C."),
 
 	BldInfo(CardEnum::Farm,			"Farm",					WorldTile2(8, 8),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 10, 1,	{20,0,0},	"Grow food/raw materials. Harvest during autumn."),
@@ -2279,8 +2285,8 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::ChichenItza, "ChichenItza", WorldTile2(16, 16), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "..."),
 
 	// October 20
-	BldInfo(CardEnum::Market, "Market", WorldTile2(6, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 5, { 120, 120, 0 }, "Provide food/fuel/medicine/tools/luxury resources to nearby housing. Bring resources from faraway storages in 50-units bulk."),
-	BldInfo(CardEnum::ShippingDepot, "Logistics Office", WorldTile2(5, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 1, { 20, 10, 0 }, "Logistics worker haul specified resources from within the radius to its delivery target faraway in 50-units bulk."),
+	BldInfo(CardEnum::Market, "Market", WorldTile2(6, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 5, { 120, 120, 0 }, "Provide food/fuel/medicine/tools/luxury to houses. Bring resources in 50-units bulk."),
+	BldInfo(CardEnum::ShippingDepot, "Logistics Office", WorldTile2(4, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 1, { 20, 10, 0 }, "Haul specified resources from within the radius to its delivery target in 50-units bulk."),
 	BldInfo(CardEnum::IrrigationReservoir, "Irrigation Reservoir", WorldTile2(5, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0, 150, 0 }, "Raise the fertility within its radius to at least 95%."),
 	
 	// Decorations
@@ -2328,7 +2334,7 @@ static const BldInfo BuildingInfo[]
 
 static const BldInfo CardInfos[]
 {
-	BldInfo(CardEnum::Investment,		"Investment", 300, "+<img id=\"Coin\"/>20 income"),
+	BldInfo(CardEnum::Investment,		"Investment", 300, "+<img id=\"Coin\"/>30 income"),
 	BldInfo(CardEnum::InstantBuild,		"Instant Build", 200, "Use on a construction site to pay x3 the resource cost and instantly build it."),
 	BldInfo(CardEnum::ShrineWisdomPiece,	"OLD", 200, "OLD"),
 	BldInfo(CardEnum::ShrineLovePiece,	"Shrine Piece: Love", 200, "Collect 3 shrine pieces to build a shrine."),
@@ -3704,7 +3710,7 @@ static const TileObjInfo TreeInfos[] = {
 	TileObjInfo(TileObjEnum::GiantMushroom,	"Giant Mushroom",	ResourceTileType::Tree,	ResourcePair::Invalid(),					ResourcePair(ResourceEnum::Mushroom, WoodGatherYield_Base100 * 2), "A very large mushroom..."),
 
 	TileObjInfo(TileObjEnum::Cherry,	"Cherry",	ResourceTileType::Tree,	ResourcePair(ResourceEnum::Orange, GatherBaseYield100), defaultWood100, "Cherry trees bear delicious fruit during non-winter seasons."),
-	TileObjInfo(TileObjEnum::Coconut,	"Coconut",	ResourceTileType::Tree,	ResourcePair::Invalid(),								defaultWood100, "Coconut bears delicious fruit during non-winter seasons."),
+	TileObjInfo(TileObjEnum::Coconut,	"Coconut",	ResourceTileType::Tree,	ResourcePair(ResourceEnum::Coconut, GatherBaseYield100),								defaultWood100, "Coconut bears delicious fruit during non-winter seasons."),
 	TileObjInfo(TileObjEnum::Cyathea,	"Cyathea",	ResourceTileType::Tree,	ResourcePair::Invalid(),								defaultWood100, "Fern tree."),
 	TileObjInfo(TileObjEnum::ZamiaDrosi,	"Zamia Drosi",	ResourceTileType::Tree,	ResourcePair::Invalid(),						defaultWood100, "Giant leaf tropical tree."),
 

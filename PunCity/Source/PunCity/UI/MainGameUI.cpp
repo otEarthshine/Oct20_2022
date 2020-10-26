@@ -2127,8 +2127,19 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 					networkInterface()->ShowConfirmationUI(str, command);
 				};
 
-				if (buildingEnum == CardEnum::SellFood) sendCommandWithWarning("Are you sure you want to sell half of city's food?");
-				else if (buildingEnum == CardEnum::BuyWood) sendCommandWithWarning("Are you sure you want to spend half of city's money to buy wood?");
+				if (buildingEnum == CardEnum::SellFood) {
+					sendCommandWithWarning("Are you sure you want to sell half of city's food?");
+				} 
+				else if (buildingEnum == CardEnum::BuyWood) {
+					int32 cost = GetResourceInfo(ResourceEnum::Wood).basePrice;
+					int32 amountToBuy = simulation().money(playerId()) / 2 / cost;
+
+					if (simulation().resourceSystem(playerId()).CanAddResourceGlobal(ResourceEnum::Wood, amountToBuy)) {
+						sendCommandWithWarning("Are you sure you want to spend half of city's money to buy wood?");
+					} else {
+						simulation().AddPopupToFront(playerId(), "Not enough storage space to fit " + to_string(amountToBuy) + " wood.", ExclusiveUIEnum::None, "PopupCannot");
+					}
+				}
 				else {
 					sendCommand();
 				}

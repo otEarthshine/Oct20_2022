@@ -23,7 +23,7 @@ public:
 class Shrine : public Building
 {
 public:
-	static const int32_t Radius = 12;
+	static const int32 Radius = 12;
 };
 
 class ShrineWisdom : public Building

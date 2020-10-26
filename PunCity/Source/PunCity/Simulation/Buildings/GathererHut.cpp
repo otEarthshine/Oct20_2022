@@ -555,7 +555,8 @@ void Trap::Tick1Sec()
 
 void Bank::CalculateRoundProfit()
 {
-	roundProfit = GetRadiusBonus(CardEnum::House, Radius, [&](int32 bonus, Building& building) {
+	roundProfit = GetRadiusBonus(CardEnum::House, Radius, [&](int32 bonus, Building& building) 
+	{
 		House& house = building.subclass<House>();
 
 		// Check how many banks is taking this house...

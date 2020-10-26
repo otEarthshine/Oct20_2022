@@ -15,6 +15,7 @@ class PROTOTYPECITY_API UResourceCompletionIcon : public UPunWidget
 	GENERATED_BODY()
 public:
 	UPROPERTY(meta = (BindWidget)) UImage* ResourceImage;
+	UPROPERTY(meta = (BindWidget)) UImage* ResourcePauseImage;
 
 	bool sameAsLast() { return _sameAsLast; }
 	void BeforeSameCheck()
@@ -62,6 +63,12 @@ public:
 		}
 		_lastIntIndex++;
 		return newInt;
+	}
+
+	void SetIsPaused(bool isPaused)
+	{
+		ResourcePauseImage->SetVisibility(isPaused ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+		ResourceImage->GetDynamicMaterial()->SetScalarParameterValue("IsPaused", isPaused);
 	}
 
 	int32 _lastStringIndex;

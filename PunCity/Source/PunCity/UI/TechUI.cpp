@@ -9,20 +9,22 @@ using namespace std;
 void UTechUI::SetupTechBoxUIs()
 {
 	UnlockSystem* unlockSys = simulation().unlockSystem(playerId());
-	const std::vector<std::vector<std::shared_ptr<ResearchInfo>>>& eraToTechs = unlockSys->eraToTechs();
+	const std::vector<std::vector<TechEnum>>& eraToTechEnums = unlockSys->eraToTechEnums();
 
 	TechScrollBox->ClearChildren();
 
-	for (int32 i = 1; i < eraToTechs.size(); i++)
+	for (int32 i = 1; i < eraToTechEnums.size(); i++)
 	{
 		UTechEraUI* techEraUI = AddWidget<UTechEraUI>(UIEnum::TechEraUI);
 		techEraUI->EraText->SetText(ToFText("Era " + eraNumberToText[i]));
 		techEraUI->TechList->ClearChildren();
 		TechScrollBox->AddChild(techEraUI);
-		auto& techs = eraToTechs[i];
+		std::vector<TechEnum> techEnums = eraToTechEnums[i];
 		
-		for (const auto& tech : techs) 
+		for (TechEnum techEnum : techEnums)
 		{
+			auto tech = unlockSys->GetTechInfo(techEnum);
+			
 			UTechBoxUI* techBox = AddWidget<UTechBoxUI>(UIEnum::TechBox);
 			techEraUI->TechList->AddChild(techBox);
 			

@@ -534,13 +534,12 @@ public:
 		}
 	}
 
-
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* PunVerticalBox;
+	
 private:
 	int32 currentIndex = 0;
 	std::vector<UIEnum> _elementEnums;
 	std::vector<int32> _elementHashes;
-
-	UPROPERTY(meta = (BindWidget)) UVerticalBox* PunVerticalBox;
 
 	bool bElementResetThisRound = false; // The box widget got reset within this round (from last AfterAdd())
 };

@@ -29,6 +29,14 @@ public:
 	void CloseDescriptionUI() override;
 
 	bool IsHoveredOnScrollUI() {
+		UVerticalBox* punBox = _objectDescriptionUI->DescriptionPunBox->PunVerticalBox;
+		for (int32 i = 0; i < punBox->GetChildrenCount(); i++) {
+			auto dropdown = Cast<UPunDropdown>(punBox->GetChildAt(i));
+			if (dropdown && dropdown->IsHovered()) {
+				return true;
+			}
+		}
+		
 		return _objectDescriptionUI->ChooseResourceOverlay->IsHovered() ||
 			_objectDescriptionUI->ManageStorageOverlay->IsHovered();
 	}

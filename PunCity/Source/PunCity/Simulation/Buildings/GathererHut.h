@@ -29,6 +29,7 @@ public:
 
 		AddResourceHolder(ResourceEnum::Orange, ResourceHolderType::Provider, 0);
 		AddResourceHolder(ResourceEnum::Papaya, ResourceHolderType::Provider, 0);
+		AddResourceHolder(ResourceEnum::Coconut, ResourceHolderType::Provider, 0);
 
 		_upgrades = {
 			MakeUpgrade("Delicate gathering", "+20% efficiency.", ResourceEnum::SteelTools, 50),
@@ -389,8 +390,8 @@ public:
 	
 	std::vector<BonusPair> GetBonuses() override {
 		std::vector<BonusPair> bonuses = Building::GetBonuses();
-		if (_simulation->townLvl(_playerId) >= 5) {
-			bonuses.push_back({ "Townhall upgrade", 10 });
+		if (_simulation->townLvl(_playerId) >= 3) {
+			bonuses.push_back({ "Townhall lvl 3 upgrade", 10 });
 		}
 		if (IsUpgraded(1) && isOccupantFull()) {
 			bonuses.push_back({ "Improved shift", 20 });
@@ -478,8 +479,8 @@ class IndustrialBuilding : public Building
 public:
 	std::vector<BonusPair> GetBonuses() override {
 		std::vector<BonusPair> bonuses = Building::GetBonuses();
-		if (_simulation->townLvl(_playerId) >= 4) {
-			bonuses.push_back({ "Townhall upgrade", 10 });
+		if (_simulation->townLvl(_playerId) >= 5) {
+			bonuses.push_back({ "Townhall lvl 5 upgrade", 10 });
 		}
 		return bonuses;
 	}
@@ -650,7 +651,7 @@ public:
 	}
 
 	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
+		std::vector<BonusPair> bonuses = ConsumerIndustrialBuilding::GetBonuses();
 
 		if (IsUpgraded(0)) {
 			bonuses.push_back({ "Better tools", 50 });
@@ -675,7 +676,7 @@ public:
 	}
 
 	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
+		std::vector<BonusPair> bonuses = ConsumerIndustrialBuilding::GetBonuses();
 
 		if (_simulation->IsResearched(_playerId, TechEnum::MilitaryLastEra)) {
 			bonuses.push_back({ "Advanced Military", 100 });
@@ -789,7 +790,7 @@ class Blacksmith : public IndustrialBuilding
 public:
 	void FinishConstruction() final
 	{
-		Building::FinishConstruction();
+		IndustrialBuilding::FinishConstruction();
 
 		_upgrades = {
 			MakeProductionUpgrade("Improved Forge", ResourceEnum::Brick, 50, 30),
@@ -822,7 +823,7 @@ public:
 	}
 	
 	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = Building::GetBonuses();
+		std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
 
 		if (IsUpgraded(0)) {
 			bonuses.push_back({ "Catalyst", 30 });
@@ -852,7 +853,7 @@ public:
 	int32 baseInputPerBatch() override { return IsUpgraded(0) ? 7 : 10; }
 
 	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = Building::GetBonuses();
+		std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
 		if (_simulation->buildingCount(_playerId, CardEnum::EnvironmentalistGuild)) {
 			bonuses.push_back({ "Environmentalist", -30 });
 		}
@@ -1547,8 +1548,8 @@ public:
 class Bank final : public Building
 {
 public:
-	static const int32_t Radius = 20;
-	static const int32_t ProfitPerHouse = 10;
+	static const int32 Radius = 20;
+	static const int32 ProfitPerHouse = 10;
 
 	static const int32 MinHouseLvl = 2;
 	
@@ -1784,6 +1785,22 @@ public:
 	void OnInit() override {
 		resourceEnums.resize(3, ResourceEnum::None);
 	}
+
+	void FinishConstruction() override {
+		Building::FinishConstruction();
+
+		_upgrades = {
+			MakeUpgrade("More Workers", "+1 worker slots", 50),
+		};
+	}
+
+	void OnUpgradeBuilding(int upgradeIndex) override {
+		if (upgradeIndex == 0) {
+			_maxOccupants = 2;
+			_allowedOccupants = _maxOccupants;
+		}
+	}
+	
 	
 	void Serialize(FArchive& Ar) override {
 		Building::Serialize(Ar);

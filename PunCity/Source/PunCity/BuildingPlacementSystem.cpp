@@ -395,7 +395,7 @@ void ABuildingPlacementSystem::StartBuildingPlacement(CardEnum buildingEnum, int
 
 #define SHOW_RADIUS(CardEnumName) \
 	else if (buildingEnum == CardEnum::CardEnumName) { \
-		ShowRadius(CardEnumName::Radius, OverlayType::Gatherer);\
+		ShowRadius(CardEnumName::Radius, OverlayType::CardEnumName);\
 	}
 	
 	//! Garden
@@ -1316,7 +1316,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				gatherable = (tileType == ResourceTileType::Tree);
 			}
 			else if (_harvestResourceEnum == ResourceEnum::Orange) {
-				gatherable = (tileType == ResourceTileType::Tree && (tileInfo.treeEnum != TileObjEnum::Orange && tileInfo.treeEnum != TileObjEnum::Papaya));
+				gatherable = (tileType == ResourceTileType::Tree && (tileInfo.treeEnum != TileObjEnum::Orange && tileInfo.treeEnum != TileObjEnum::Papaya && tileInfo.treeEnum != TileObjEnum::Coconut));
 			}
 			else if (_harvestResourceEnum == ResourceEnum::Stone) {
 				gatherable = (tileType == ResourceTileType::Deposit);

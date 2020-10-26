@@ -3119,8 +3119,12 @@ void GameSimulationCore::UseCard(FUseCard command)
 		return;
 	}
 	
-	cardSys.RemoveCards(command.cardEnum, 1);
 
+	/*
+	 * Others
+	 */
+	bool succeedUsingCard = true;
+	
 	if (command.cardEnum == CardEnum::Treasure) {
 		resourceSystem(command.playerId).ChangeMoney(500);
 		AddPopupToFront(command.playerId, "Gained 500<img id=\"Coin\"/> from treasure.");
@@ -3177,14 +3181,22 @@ void GameSimulationCore::UseCard(FUseCard command)
 		}
 		AddPopupToFront(command.playerId, "Sold " + to_string(totalRemoved) + " food for " + "<img id=\"Coin\"/>" + to_string(totalRemoved * FoodCost) + ".");
 	}
-	else if (command.cardEnum == CardEnum::BuyWood) {
+	else if (command.cardEnum == CardEnum::BuyWood) 
+	{
 		int32 cost = GetResourceInfo(ResourceEnum::Wood).basePrice;
 		int32 amountToBuy = resourceSys.money() / 2 / cost;
-		resourceSys.AddResourceGlobal(ResourceEnum::Wood, amountToBuy, *this);
-		int32 moneyPaid = amountToBuy * cost;
-		resourceSys.ChangeMoney(-moneyPaid);
 
-		AddPopupToFront(command.playerId, "Bought " + to_string(amountToBuy) + " wood for " + "<img id=\"Coin\"/>" + to_string(moneyPaid) + ".");
+		if (resourceSystem(command.playerId).CanAddResourceGlobal(ResourceEnum::Wood, amountToBuy)) {
+			resourceSys.AddResourceGlobal(ResourceEnum::Wood, amountToBuy, *this);
+			int32 moneyPaid = amountToBuy * cost;
+			resourceSys.ChangeMoney(-moneyPaid);
+
+			AddPopupToFront(command.playerId, "Bought " + to_string(amountToBuy) + " wood for " + "<img id=\"Coin\"/>" + to_string(moneyPaid) + ".");
+		}
+		else {
+			succeedUsingCard = false;
+			AddPopup(command.playerId, "Not enough storage space in our city.");
+		}
 	}
 	else if (command.cardEnum == CardEnum::Immigration) {
 		townhall(command.playerId).AddImmigrants(5);
@@ -3193,6 +3205,10 @@ void GameSimulationCore::UseCard(FUseCard command)
 
 	else {
 		UE_DEBUG_BREAK();
+	}
+
+	if (succeedUsingCard) {
+		cardSys.RemoveCards(command.cardEnum, 1);
 	}
 }
 

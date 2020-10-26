@@ -16,7 +16,7 @@ class PROTOTYPECITY_API UProsperityBoxUI : public UPunWidget
 	GENERATED_BODY()
 public:
 	
-	TechEnum techEnum = TechEnum::None;
+	TechEnum uiTechEnum = TechEnum::None;
 	int32 houseLvl = -1;
 	
 	int32 localIndex = -1;
@@ -24,7 +24,7 @@ public:
 
 	void Init(UPunWidget* callbackParent, TechEnum techEnumIn, int32 houseLvlIn, int32 unlockCountIn, int32 localIndexIn)
 	{
-		techEnum = techEnumIn;
+		uiTechEnum = techEnumIn;
 		houseLvl = houseLvlIn;
 		unlockCount = unlockCountIn;
 		localIndex = localIndexIn;
@@ -121,7 +121,8 @@ public:
 		// House Count Text
 		int32 houseLvlCount = simulation().GetHouseLvlCount(playerId(), houseLvl, true);
 
-		const auto& tech = unlockSys->GetProsperityTech(houseLvl, localIndex);
+		TechEnum techEnum = unlockSys->GetProsperityTechEnum(houseLvl, localIndex);
+		auto tech = unlockSys->GetTechInfo(techEnum);
 
 		// Done Tech
 		if (tech->state == TechStateEnum::Researched)
@@ -162,7 +163,8 @@ public:
 		// Not the first tech in column
 		if (localIndex > 0)
 		{
-			const auto& techBelow = unlockSys->GetProsperityTech(houseLvl, localIndex - 1);
+			TechEnum techEnumBelow = unlockSys->GetProsperityTechEnum(houseLvl, localIndex - 1);
+			auto techBelow = unlockSys->GetTechInfo(techEnumBelow);
 
 			// Tech below is researched, this one is active
 			if (techBelow->state == TechStateEnum::Researched) {
@@ -178,7 +180,8 @@ public:
 		// First tech in column
 		bool isAdjacentTechDone = true;
 		if (houseLvl > 1) {
-			const auto& techToTheLeft = unlockSys->GetProsperityTech(houseLvl - 1, localIndex);
+			TechEnum techEnumToTheLeft = unlockSys->GetProsperityTechEnum(houseLvl - 1, localIndex);
+			auto techToTheLeft = unlockSys->GetTechInfo(techEnumToTheLeft);
 			isAdjacentTechDone = (techToTheLeft->state == TechStateEnum::Researched);
 		}
 

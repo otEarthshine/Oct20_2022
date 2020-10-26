@@ -991,7 +991,7 @@ void Building::TryRemoveDeliveryTarget()
 	{
 		auto& resourceSys = resourceSystem();
 		
-		std::vector<int32>& sourceIds = _simulation->buildingChecked(_deliveryTargetId)._deliverySourceIds;
+		std::vector<int32>& sourceIds = _simulation->building(_deliveryTargetId)._deliverySourceIds;
 		CppUtils::Remove(sourceIds, _objectId);
 		_deliveryTargetId = -1;
 

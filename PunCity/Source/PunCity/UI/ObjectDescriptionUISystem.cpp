@@ -1105,7 +1105,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								AddEfficiencyText(building, descriptionBox);
 
 								if (tradingCompany.isImport) {
-									descriptionBox->AddRichText("Import", ToSignedNumber(tradingCompany.importMoney()) + "<img id=\"Coin\"/>");
+									descriptionBox->AddRichText("Import", ToSignedNumber(-tradingCompany.importMoney()) + "<img id=\"Coin\"/>");
 								}
 								else {
 									descriptionBox->AddRichText("Export", ToSignedNumber(tradingCompany.exportMoney()) + "<img id=\"Coin\"/>");
@@ -1397,7 +1397,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							checkState = ECheckBoxState::Unchecked;
 						}
 
-						auto element = manageStorageBox->AddManageStorageElement(ResourceEnum::Food, "Food", objectId, checkState, true, false);
+						auto element = manageStorageBox->AddManageStorageElement(ResourceEnum::Food, "Food", objectId, checkState, true, true);
 						bool expanded = element->HasDelayOverride() ? element->expandedOverride : storage.expandedFood;
 						for (ResourceEnum resourceEnum : FoodEnums) {
 							tryAddManageStorageElement_UnderExpansion(resourceEnum, expanded, false);
@@ -1572,6 +1572,58 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					});
 					if (building.workMode().description != "") {
 						descriptionBox->AddRichText(building.workMode().description);
+					}
+				}
+
+				// Forester
+				if (building.isEnum(CardEnum::Forester))
+				{	
+					auto addDropdown = [&](vector<string> options, string defaultOption, int32 dropdownIndex)
+					{
+						descriptionBox->AddDropdown(
+							building.buildingId(),
+							options,
+							defaultOption,
+							[options](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex)
+						{
+							auto FindCutTreeEnumFromName = [&](string name) {
+								for (int32 i = 0; i < options.size(); i++) {
+									if (name == options[i]) {
+										return i;
+									}
+								}
+								return 0;
+							};
+							
+							auto command = make_shared<FChangeWorkMode>();
+							command->buildingId = objectId;
+							command->intVar1 = dropdownIndex;
+							std::string sItemStr = ToStdString(sItem);
+							command->intVar2 = FindCutTreeEnumFromName(sItemStr);
+							networkInterface->SendNetworkCommand(command);
+						}, dropdownIndex);
+					};
+
+					vector<string> cutOptions {
+						"Cut Any Trees",
+						"Cut Fruit Trees Only",
+						"Cut Non-fruit Trees Only",
+					};
+					vector<string> plantOptions {
+						"Plant Any Trees",
+						"Prioritize Planting Fruit Trees",
+						"Prioritize Planting Non-fruit Trees",
+					};
+
+					string workModeName = building.workMode().name;
+					
+					if (workModeName == "Cut and Plant" ||
+						workModeName == "Prioritize Planting") {
+						addDropdown(plantOptions, plantOptions[1], 0);
+					}
+					if (workModeName == "Cut and Plant" ||
+						workModeName == "Prioritize Cutting")  {
+						addDropdown(cutOptions, cutOptions[0], 1);
 					}
 				}
 

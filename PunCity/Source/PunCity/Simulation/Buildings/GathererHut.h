@@ -154,6 +154,15 @@ public:
 
 		return bonuses;
 	}
+
+	void Serialize(FArchive& Ar) override {
+		Building::Serialize(Ar);
+		Ar << cuttingEnum;
+		Ar << plantingEnum;
+	}
+
+	CutTreeEnum cuttingEnum = CutTreeEnum::Any;
+	CutTreeEnum plantingEnum = CutTreeEnum::FruitTreeOnly;
 	
 	static const int32 Radius = 30;
 };
@@ -248,6 +257,10 @@ public:
 	WorldTile2 FindFarmableTile(int32 unitId);
 
 	bool IsStageCompleted();
+	int32 GetStagePercent() {
+		return CppUtils::Sum(_isTileWorked) * 100 / _isTileWorked.size();
+	}
+	
 	int32 MinCropGrowthPercent();
 	void ResetStageTo(FarmStage farmStage) {
 		_farmStage = farmStage;

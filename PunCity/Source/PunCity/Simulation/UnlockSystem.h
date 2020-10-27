@@ -617,6 +617,7 @@ public:
 			//
 			era = 3;
 			AddTech_Building(era, TechEnum::TradingCompany, CardEnum::TradingCompany);
+			AddTech_Building(era, TechEnum::Market, { CardEnum::Market });
 			AddTech_Bonus(era, TechEnum::DesertTrade);
 			
 			AddTech_Building(era, TechEnum::Medicine, CardEnum::MedicineMaker);
@@ -626,7 +627,6 @@ public:
 			//
 			era = 4;
 			//AddTech_Building(era, TechEnum::Forester, CardEnum::Forester);
-			AddTech_Building(era, TechEnum::Market, { CardEnum::Market });
 			AddTech_Bonus(era, TechEnum::HouseAdjacency);
 			AddTech_Building(era, TechEnum::RanchCow, { CardEnum::RanchCow });
 			AddTech_Bonus(era, TechEnum::QuarryImprovement);

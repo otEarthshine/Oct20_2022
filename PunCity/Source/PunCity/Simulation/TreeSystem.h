@@ -334,45 +334,45 @@ public:
 	/*
 	 * Foresting
 	 */
-	NonWalkableTileAccessInfo FindCuttableTree(int32_t playerId, WorldTile2 originTile, int32_t radius)
+	NonWalkableTileAccessInfo FindCuttableTree(int32 playerId, WorldTile2 originTile, int32 radius, CutTreeEnum cutTreeEnum)
 	{
 		TileArea area(originTile, radius);
 		area.EnforceWorldLimit();
 
 		// Try finding larger tree first
-		NonWalkableTileAccessInfo resultAccessInfo = GetCuttableTreeWithAge(originTile, radius, playerId, 80);
+		NonWalkableTileAccessInfo resultAccessInfo = GetCuttableTreeWithAge(originTile, radius, playerId, 80, cutTreeEnum);
 
 		// If larger trees are gone, cut smaller trees
 		if (!resultAccessInfo.isValid()) {
-			resultAccessInfo = GetCuttableTreeWithAge(originTile, radius, playerId, 50);
+			resultAccessInfo = GetCuttableTreeWithAge(originTile, radius, playerId, 50, cutTreeEnum);
 		}
 
 		return resultAccessInfo;
 	}
-	NonWalkableTileAccessInfo FindNourishableTree(int32_t playerId, WorldTile2 originTile, int32_t radius)
+	NonWalkableTileAccessInfo FindNourishableTree(int32 playerId, WorldTile2 originTile, int32 radius, CutTreeEnum cutTreeEnum)
 	{
 		TileArea area(originTile, radius);
 		area.EnforceWorldLimit();
 
 		// Try finding small trees first...
-		NonWalkableTileAccessInfo resultAccessInfo = GetNourishableTreeWithAge(originTile, radius, playerId, 50);
+		NonWalkableTileAccessInfo resultAccessInfo = GetNourishableTreeWithAge(originTile, radius, playerId, 50, cutTreeEnum);
 
 		// If there is no more (all nourished, nourish larger trees)
 		if (!resultAccessInfo.isValid()) {
-			resultAccessInfo = GetNourishableTreeWithAge(originTile, radius, playerId, 80);
+			resultAccessInfo = GetNourishableTreeWithAge(originTile, radius, playerId, 80, cutTreeEnum);
 		}
 
 		return resultAccessInfo;
 	}
 
-	NonWalkableTileAccessInfo FindTreePlantableSpot(int32_t playerId, WorldTile2 originTile, int32_t radius)
+	NonWalkableTileAccessInfo FindTreePlantableSpot(int32 playerId, WorldTile2 originTile, int32_t radius)
 	{
-		const int32_t regionDistance = 1;
+		const int32 regionDistance = 1;
 
 		NonWalkableTileAccessInfo resultAccessInfo = NonWalkableTileAccessInfoInvalid;
 		AlgorithmUtils::FindNearbyAvailableTile(originTile, [&](WorldTile2 tile)
 		{
-			int32_t tileId = tile.tileId();
+			int32 tileId = tile.tileId();
 			if (!IsReserved(tileId) &&
 				!treeShade(tileId) &&
 				CanPlantTreeOrBushInGrid(tile) &&
@@ -517,18 +517,37 @@ public:
 	}
 	
 private:
-	NonWalkableTileAccessInfo GetCuttableTreeWithAge(WorldTile2 originTile, int32_t radius, int32_t playerId, int32_t minGrowthPercent)
+	bool IsValidTree_Helper(int32 tileId, CutTreeEnum cutTreeEnum)
 	{
-		const int32_t regionDistance = 1;
+		TileObjInfo info = tileInfo(tileId);
+		bool isValidTree = info.type == ResourceTileType::Tree;
+
+		if (cutTreeEnum == CutTreeEnum::NonFruitTreeOnly) {
+			if (info.IsFruitBearer()) {
+				return false;
+			}
+		}
+		else if (cutTreeEnum == CutTreeEnum::FruitTreeOnly) {
+			if (!info.IsFruitBearer()) {
+				return false;
+			}
+		}
+		
+		return isValidTree;
+	}
+	
+	NonWalkableTileAccessInfo GetCuttableTreeWithAge(WorldTile2 originTile, int32 radius, int32 playerId, int32 minGrowthPercent, CutTreeEnum cutTreeEnum = CutTreeEnum::Any)
+	{
+		const int32 regionDistance = 1;
 
 		NonWalkableTileAccessInfo resultAccessInfo = NonWalkableTileAccessInfoInvalid;
 		AlgorithmUtils::FindNearbyAvailableTile(originTile, [&](WorldTile2 tile)
 		{
-			int32_t tileId = tile.tileId();
+			int32 tileId = tile.tileId();
 			if (!IsReserved(tileId))
-			{	
-				bool isValidTree = tileInfo(tileId).type == ResourceTileType::Tree && growthPercent(tileId) >= minGrowthPercent;
-				if (isValidTree && 
+			{
+				if (IsValidTree_Helper(tileId, cutTreeEnum) &&
+					growthPercent(tileId) >= minGrowthPercent &&
 					WorldTile2::Distance(originTile, tile) <= radius &&
 					_simulation->tileOwner(tile) == playerId)
 				{
@@ -551,17 +570,18 @@ private:
 		return resultAccessInfo;
 	}
 	
-	NonWalkableTileAccessInfo GetNourishableTreeWithAge(WorldTile2 originTile, int32_t radius, int32_t playerId, int32_t maxGrowthPercent)
+	NonWalkableTileAccessInfo GetNourishableTreeWithAge(WorldTile2 originTile, int32 radius, int32 playerId, int32 maxGrowthPercent, CutTreeEnum cutTreeEnum)
 	{
 		// Note: great thing about this is that the loop may exit early in good cases... is it worth it though??
-		const int32_t regionDistance = 1;
+		const int32 regionDistance = 1;
 
 		NonWalkableTileAccessInfo resultAccessInfo = NonWalkableTileAccessInfoInvalid;
 		AlgorithmUtils::FindNearbyAvailableTile(originTile, [&](WorldTile2 tile)
 		{
-			int32_t tileId = tile.tileId();
-			bool isValidTree = tileInfo(tileId).type == ResourceTileType::Tree && growthPercent(tileId) <= maxGrowthPercent;
-			if (isValidTree &&
+			int32 tileId = tile.tileId();
+
+			if (IsValidTree_Helper(tileId, cutTreeEnum) &&
+				growthPercent(tileId) <= maxGrowthPercent &&
 				WorldTile2::Distance(originTile, tile) <= radius &&
 				_simulation->tileOwner(tile) == playerId)
 			{

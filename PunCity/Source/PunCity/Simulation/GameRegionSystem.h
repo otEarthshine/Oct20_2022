@@ -100,10 +100,10 @@ public:
 		PUN_CHECK(_simulation->IsProvinceValid(provinceId));
 		PUN_CHECK(!CppUtils::Contains(_provinceToAnimalIds[provinceId], animalId));
 		
-		debugTotalProvinceAnimalCount++;
 		_provinceToAnimalIds[provinceId].push_back(animalId);
 
 #if !UE_BUILD_SHIPPING
+		debugTotalProvinceAnimalCount++;
 		if (_provinceToAnimalIds[provinceId].size() > debugMaxAnimalCount) {
 			debugMaxAnimalCount = _provinceToAnimalIds[provinceId].size();
 			debugMaxAnimalCountProvinceId = provinceId;
@@ -114,12 +114,12 @@ public:
 	{
 		PUN_CHECK(_simulation->IsProvinceValid(provinceId));
 		
-		debugTotalProvinceAnimalCount--;
 		CppUtils::Remove(_provinceToAnimalIds[provinceId], animalId);
 
 		PUN_CHECK(!CppUtils::Contains(_provinceToAnimalIds[provinceId], animalId));
 
 #if !UE_BUILD_SHIPPING
+		debugTotalProvinceAnimalCount--;
 		if (provinceId == debugMaxAnimalCountProvinceId) {
 			debugMaxAnimalCount = _provinceToAnimalIds[provinceId].size();
 		}

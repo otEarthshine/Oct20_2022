@@ -13,6 +13,14 @@
 #include "IconTextPairWidget.h"
 
 #include "BuildingJobUI.generated.h"
+
+enum class JobUIState {
+	None,
+	Job,
+	Home,
+	Storage,
+};
+
 /**
  * 
  */
@@ -120,7 +128,7 @@ public:
 		SpeedBoostIcon->SetVisibility(hasSpeedBoost ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 	}
 
-	void SetBuildingStatus(Building& building)
+	void SetBuildingStatus(Building& building, JobUIState jobUIState)
 	{
 		if (IsTradingPostLike(building.buildingEnum()) ||
 			building.isEnum(CardEnum::TradingCompany)) {
@@ -150,7 +158,8 @@ public:
 			building.isEnum(CardEnum::HuntingLodge)) 
 		{
 			// Show items above warehouse
-			if (building.isEnum(CardEnum::Warehouse)) 
+			if (jobUIState == JobUIState::Storage &&
+				building.isEnum(CardEnum::Warehouse)) 
 			{
 				PunBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 				const std::vector<ResourceHolderInfo>& holderInfos = building.subclass<StorageYard>().holderInfos();

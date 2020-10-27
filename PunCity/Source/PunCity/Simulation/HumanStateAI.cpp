@@ -1434,8 +1434,14 @@ bool HumanStateAI::TryFarm()
 	{
 		auto& resourceSys = resourceSystem();
 		std::vector<DropInfo> drops = resourceSys.GetDropsFromArea_Pickable(farm.area(), true);
+
+		int32 stagePercent = farm.GetStagePercent();
+		int32 seasonPercent = Time::SeasonPercent();
+		int32 preferredStagePercent = min(100, seasonPercent * 4 / 3);
 		
-		if (drops.size() > 3)
+		
+		if (stagePercent >= preferredStagePercent && 
+			drops.size() > 3)
 		{
 			int32 targetAmount = 10;
 			int32 amount = 0;
@@ -1459,7 +1465,22 @@ bool HumanStateAI::TryFarm()
 			}
 			
 			// Try dropping the resource off in proper store
-			FoundResourceHolderInfos foundDropoffs = resourceSystem().FindHolder(ResourceFindType::AvailableForDropoff, targetResourceEnum, amount, unitTile());
+			FoundResourceHolderInfos foundDropoffs;
+
+			// Try delivery target first
+			int32 deliveryTargetId = farm.deliveryTargetId();
+			if (deliveryTargetId != -1) {
+				Building& targetBuilding = _simulation->building(deliveryTargetId);
+				if (resourceSys.CanReceiveAmount(targetBuilding.holder(targetResourceEnum)) >= amount) {
+					foundDropoffs.foundInfos.push_back(targetBuilding.GetHolderInfoFull(targetResourceEnum, amount));
+				}
+			}
+
+			// Try any other dropoff
+			if (!foundDropoffs.hasInfos()) {
+				foundDropoffs = resourceSystem().FindHolder(ResourceFindType::AvailableForDropoff, targetResourceEnum, amount, unitTile());
+			}
+			
 			if (foundDropoffs.hasInfos())
 			{
 				for (FoundResourceHolderInfo foundInfo : foundDropoffs.foundInfos) {
@@ -1565,11 +1586,6 @@ bool HumanStateAI::TryBulkHaul_Market()
 
 	std::vector<ResourceInfo> resourceInfos = SortedNameResourceInfo;
 
-	int32 foodCount = 0;
-	for (ResourceEnum foodEnum : FoodEnums) {
-		foodCount += market.resourceCount(foodEnum);
-	}
-
 	auto tryMoveResource = [&](ResourceEnum resourceEnum) {
 		return market.holder(resourceEnum).type != ResourceHolderType::Provider &&
 				market.GetResourceCountWithPush(resourceEnum) < market.GetMarketTarget(resourceEnum) &&
@@ -1577,8 +1593,11 @@ bool HumanStateAI::TryBulkHaul_Market()
 	};
 
 	// Low food count, get food first
+	int32 foodCount = market.GetFoodCount();
+	bool shouldAddFood = foodCount < market.GetFoodTarget();
+	
 	bool isFoodHighPriority = foodCount <= 200;
-	if (isFoodHighPriority) {
+	if (isFoodHighPriority && shouldAddFood) {
 		for (ResourceEnum foodEnum : FoodEnums) {
 			if (tryMoveResource(foodEnum)) {
 				return true;
@@ -1613,7 +1632,7 @@ bool HumanStateAI::TryBulkHaul_Market()
 	}
 
 	// Food low priority
-	if (!isFoodHighPriority) {
+	if (!isFoodHighPriority && shouldAddFood) {
 		for (ResourceEnum foodEnum : FoodEnums) {
 			if (tryMoveResource(foodEnum)) {
 				return true;
@@ -1704,9 +1723,9 @@ bool HumanStateAI::TryGather(bool treeOnly)
 
 bool HumanStateAI::TryForestingCut(bool cutAndPlant)
 {
-	Building* workPlc = workplace();
+	Forester& workPlc = workplace()->subclass<Forester>(CardEnum::Forester);
 
-	NonWalkableTileAccessInfo tileAccessInfo = treeSystem().FindCuttableTree(_playerId, workPlc->gateTile(), Forester::Radius);
+	NonWalkableTileAccessInfo tileAccessInfo = treeSystem().FindCuttableTree(_playerId, workPlc.gateTile(), Forester::Radius, workPlc.cuttingEnum);
 
 	if (!tileAccessInfo.isValid()) {
 		AddDebugSpeech("(Failed)TryForestingCut: no valid tree");
@@ -1727,9 +1746,9 @@ bool HumanStateAI::TryForestingCut(bool cutAndPlant)
 }
 bool HumanStateAI::TryForestingNourish()
 {
-	Building* workPlc = workplace();
+	Forester& workPlc = workplace()->subclass<Forester>(CardEnum::Forester);
 	
-	NonWalkableTileAccessInfo tileAccessInfo = treeSystem().FindNourishableTree(_playerId, workPlc->gateTile(), Forester::Radius);
+	NonWalkableTileAccessInfo tileAccessInfo = treeSystem().FindNourishableTree(_playerId, workPlc.gateTile(), Forester::Radius, workPlc.cuttingEnum);
 
 	if (!tileAccessInfo.isValid()) {
 		AddDebugSpeech("(Failed)TryForestingNourish: no valid tree");
@@ -1761,14 +1780,13 @@ void HumanStateAI::TryForestingPlantAction()
 
 	TryForestingPlant(tileObjEnum, accessInfo);
 }
-bool HumanStateAI::TryForestingPlant(TileObjEnum tileObjEnum, NonWalkableTileAccessInfo accessInfo)
-{	
+bool HumanStateAI::TryForestingPlant(TileObjEnum lastCutTileObjEnum, NonWalkableTileAccessInfo accessInfo)
+{
+	Forester& forester = workplace()->subclass<Forester>(CardEnum::Forester);
+	
 	if (!accessInfo.isValid()) {
 		// Find a valid tile to plant tree...
-		Building* forester = workplace();
-		PUN_UNIT_CHECK(forester);
-		
-		accessInfo = treeSystem().FindTreePlantableSpot(_playerId, forester->gateTile(), Forester::Radius);
+		accessInfo = treeSystem().FindTreePlantableSpot(_playerId, forester.gateTile(), Forester::Radius);
 		if (!accessInfo.isValid()) {
 			AddDebugSpeech("(Failed)TryForestingPlant: No TreePlantableSpot.");
 			return false;
@@ -1780,11 +1798,41 @@ bool HumanStateAI::TryForestingPlant(TileObjEnum tileObjEnum, NonWalkableTileAcc
 
 	WorldTile2 tile = accessInfo.tile;
 
-	if (tileObjEnum == TileObjEnum::None) {
-		BiomeInfo biomeInfo = GetBiomeInfo(_simulation->terrainGenerator().GetBiome(tile));
-		tileObjEnum = biomeInfo.GetRandomTreeEnum();
+	// Get TileObjEnum to plant
+	BiomeEnum biomeEnum = _simulation->terrainGenerator().GetBiome(tile);
+	
+	TileObjEnum tileObjEnum = TileObjEnum::None;
+	if (forester.plantingEnum == CutTreeEnum::Any) {
+		if (lastCutTileObjEnum != TileObjEnum::None) {
+			tileObjEnum = lastCutTileObjEnum;
+		}
+	}
+	else if (forester.plantingEnum == CutTreeEnum::FruitTreeOnly) {
+		int32 coastal = _simulation->terrainGenerator().IsOceanCoast(tile);
+		if (coastal > 125) {
+			tileObjEnum = TileObjEnum::Coconut;
+		}
+		else if (biomeEnum == BiomeEnum::Forest) {
+			tileObjEnum = TileObjEnum::Orange;
+		}
+		else if (biomeEnum == BiomeEnum::Jungle) {
+			tileObjEnum = TileObjEnum::Papaya;
+		}
+	}
+	else if (forester.plantingEnum == CutTreeEnum::NonFruitTreeOnly) {
+		if (biomeEnum == BiomeEnum::Forest) {
+			tileObjEnum = TileObjEnum::Birch;
+		}
+		else if (biomeEnum == BiomeEnum::Jungle) {
+			tileObjEnum = TileObjEnum::ZamiaDrosi;
+		}
 	}
 
+	// Last resort
+	if (tileObjEnum == TileObjEnum::None) {
+		tileObjEnum = GetBiomeInfo(biomeEnum).GetRandomTreeEnum();
+	}
+	
 	// TODO: this is weird, eventually should find the real reason behind this...
 	if (treeSystem().IsReserved(tile.tileId())) {
 		PUN_LOG("Weird: tree already reserved");

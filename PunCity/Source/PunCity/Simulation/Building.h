@@ -208,7 +208,10 @@ public:
 	}
 
 	FoundResourceHolderInfo GetHolderInfoFull(ResourceEnum resourceEnum, int32 amount) {
-		return FoundResourceHolderInfo(holderInfo(resourceEnum), amount, gateTile());
+		return FoundResourceHolderInfo(holderInfo(resourceEnum), amount, gateTile(), _objectId);
+	}
+	FoundResourceHolderInfo GetHolderInfoFull(ResourceEnum resourceEnum, int32 amount, WorldTile2 originTile) {
+		return FoundResourceHolderInfo(holderInfo(resourceEnum), amount, gateTile(), _objectId, DistanceTo(originTile));
 	}
 
 	virtual void Tick1Sec() {

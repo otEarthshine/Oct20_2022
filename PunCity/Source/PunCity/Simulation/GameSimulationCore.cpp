@@ -2503,7 +2503,10 @@ void GameSimulationCore::TradeResource(FTradeResource command)
 	if (bld.isEnum(CardEnum::Townhall))
 	{
 		int32 tradingFeePercent = command.isIntercityTrade ? 0 : bld.tradingFeePercent();
-		TradeBuilding::ExecuteTrade(command, tradingFeePercent, bld.centerTile(), this);
+
+		int32 exportMoney100 = 0;
+		int32 importMoney100 = 0;
+		TradeBuilding::ExecuteTrade(command, tradingFeePercent, bld.centerTile(), this, true, exportMoney100, importMoney100);
 	}
 	else
 	{
@@ -2630,7 +2633,17 @@ void GameSimulationCore::ChangeWorkMode(FChangeWorkMode command)
 
 	_LOG(LogNetworkInput, " ChangeWorkMode %d %s enumInt:%d", command.buildingId, ToTChar(bld.buildingInfo().name), command.enumInt);
 
-	if (bld.isEnum(CardEnum::Farm))
+	// Special case: Forester
+	if (bld.isEnum(CardEnum::Forester) &&
+		command.intVar1 != -1)
+	{
+		if (command.intVar1 == 0) {
+			bld.subclass<Forester>().plantingEnum = static_cast<CutTreeEnum>(command.intVar2);
+		} else {
+			bld.subclass<Forester>().cuttingEnum = static_cast<CutTreeEnum>(command.intVar2);
+		}
+	}
+	else if (bld.isEnum(CardEnum::Farm))
 	{
 		Farm& farm = bld.subclass<Farm>();
 

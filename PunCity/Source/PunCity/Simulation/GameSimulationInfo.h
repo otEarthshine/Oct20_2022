@@ -16,9 +16,9 @@
 #define TRAILER_MODE 0
 
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 1 // 3 digit
+#define MINOR_VERSION 2 // 3 digit
 
-#define VERSION_DAY 25
+#define VERSION_DAY 27
 #define VERSION_MONTH 10
 #define VERSION_YEAR 20
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
@@ -265,42 +265,55 @@ DECLARE_DEBUG_AI_VAR(AddToolTip);
 #define STRINGIFY(x)  #x
 #define TO_STR(x)  STRINGIFY(x)
 
-// LLM Declare
-#define DECLARE_LLM(TagName) DECLARE_LLM_MEMORY_STAT(TEXT(TO_STR(TagName)), STAT_##TagName, STATGROUP_LLMFULL);
-DECLARE_LLM(PUN_GameManager);
-DECLARE_LLM(PUN_Controller);
-DECLARE_LLM(PUN_GameInstance);
-DECLARE_LLM(PUN_Sound);
-
-DECLARE_LLM(PUN_DisplayBuilding);
-DECLARE_LLM(PUN_DisplayTileObj);
-DECLARE_LLM(PUN_DisplayUnit);
-DECLARE_LLM(PUN_DisplayTerrain);
-
-#undef DECLARE_LLM
 
 
-// LLM Enum
-enum class EPunSimLLMTag : LLM_TAG_TYPE
-{
-	PUN_GameManager = static_cast<int32>(ELLMTag::ProjectTagStart) + 20,
-	PUN_Controller,
-	PUN_GameInstance,
-	PUN_Sound,
-	//PunSimulation,
+#if UE_BUILD_SHIPPING
+	#define LLM_SCOPE_(customTag)
 
-	PUN_DisplayBuilding,
-	PUN_DisplayTileObj,
-	PUN_DisplayUnit,
-	PUN_DisplayTerrain,
-};
+#else
+	 // LLM Declare
+	#define DECLARE_LLM(TagName) DECLARE_LLM_MEMORY_STAT(TEXT(TO_STR(TagName)), STAT_##TagName, STATGROUP_LLMFULL);
 
-#define LLM_SCOPE_(customTag) LLM_SCOPE(static_cast<ELLMTag>(customTag));
+	DECLARE_LLM(PUN_GameManager);
+	DECLARE_LLM(PUN_Controller);
+	DECLARE_LLM(PUN_GameInstance);
+	DECLARE_LLM(PUN_Sound);
+
+	DECLARE_LLM(PUN_DisplayBuilding);
+	DECLARE_LLM(PUN_DisplayTileObj);
+	DECLARE_LLM(PUN_DisplayUnit);
+	DECLARE_LLM(PUN_DisplayTerrain);
+
+	#undef DECLARE_LLM
+
+
+	// LLM Enum
+	enum class EPunSimLLMTag : LLM_TAG_TYPE
+	{
+		PUN_GameManager = static_cast<int32>(ELLMTag::ProjectTagStart) + 20,
+		PUN_Controller,
+		PUN_GameInstance,
+		PUN_Sound,
+		//PunSimulation,
+
+		PUN_DisplayBuilding,
+		PUN_DisplayTileObj,
+		PUN_DisplayUnit,
+		PUN_DisplayTerrain,
+	};
+
+	#define LLM_SCOPE_(customTag) LLM_SCOPE(static_cast<ELLMTag>(customTag));
+
+#endif
 
 // LLM Regiser
 static void InitLLM()
 {
-#define REGISTER_LLM(TagName) FLowLevelMemTracker::Get().RegisterProjectTag(static_cast<int32>(EPunSimLLMTag::TagName), TEXT(TO_STR(TagName)), GET_STATFNAME(STAT_##TagName), NAME_None);
+#if UE_BUILD_SHIPPING
+	#define REGISTER_LLM(TagName)
+#else
+	#define REGISTER_LLM(TagName) FLowLevelMemTracker::Get().RegisterProjectTag(static_cast<int32>(EPunSimLLMTag::TagName), TEXT(TO_STR(TagName)), GET_STATFNAME(STAT_##TagName), NAME_None);
+#endif
 	REGISTER_LLM(PUN_GameManager);
 	REGISTER_LLM(PUN_Controller);
 	REGISTER_LLM(PUN_GameInstance);
@@ -390,6 +403,9 @@ public:
 
 	static float SeasonFraction() {
 		return static_cast<float>(Time::Ticks() % Time::TicksPerSeason) / Time::TicksPerSeason;
+	}
+	static int32 SeasonPercent() {
+		return (Ticks() % TicksPerSeason) * 100 / TicksPerSeason;
 	}
 
 	//static bool IsAlmostWinter() { return Time::Ticks() % Time::TicksPerYear >= TicksPerSeason * 5 / 2; }
@@ -2895,6 +2911,9 @@ static bool IsServiceBuilding(CardEnum buildingEnum)
 	case CardEnum::TradingPort:
 	case CardEnum::TradingPost:
 	case CardEnum::TradingCompany:
+
+	case CardEnum::Market:
+	case CardEnum::ShippingDepot:
 		return true;
 	default:
 		return false;
@@ -6951,7 +6970,7 @@ static bool IsEdgeProvinceId(int32 provinceId) {
 }
 
 static const int32 Income100PerTiles = 1;
-static const int32 ClaimToIncomeRatio = 40; // When 2, actual is 4 since upkeep is half the income
+static const int32 ClaimToIncomeRatio = 50; // When 2, actual is 4 since upkeep is half the income
 
 struct ProvinceConnection
 {
@@ -7058,6 +7077,15 @@ enum class GameSaveChunkEnum : uint8
 	Count,
 
 	All,
+};
+
+/*
+ * Buildings
+ */
+enum class CutTreeEnum : uint8 {
+	Any,
+	FruitTreeOnly,
+	NonFruitTreeOnly,
 };
 
 /*

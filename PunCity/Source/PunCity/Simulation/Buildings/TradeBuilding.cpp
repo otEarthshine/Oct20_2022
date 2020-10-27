@@ -11,21 +11,28 @@ void TradeBuilding::UsedTrade(FTradeResource tradeCommand)
 
 	// Sold stuff executes right away...
 	// Bought stuff will arrive in 1 season
-	ExecuteTrade(tradeCommand, tradingFeePercent(), centerTile(), _simulation, false);
+	int32 exportMoney100 = 0;
+	int32 importMoney100 = 0;
+	ExecuteTrade(tradeCommand, tradingFeePercent(), centerTile(), _simulation, false, exportMoney100, importMoney100);
+
+	_exportGainLast1Round += exportMoney100;
+	_importLossLast1Round += importMoney100;
 
 	_hasPendingTrade = true;
 	_ticksAccumulated = 0;
 	_lastCheckTick = Time::Ticks();
 }
 
-void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePercent, WorldTile2 tile, IGameSimulationCore* simulation, bool isInstantBuy)
+void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePercent, WorldTile2 tile, IGameSimulationCore* simulation, bool isInstantBuy, int32& exportMoney100, int32& importMoney100)
 {
 	// Sold stuff executes on the way right away...
 	int32 playerId = tradeCommand.playerId;
 	ResourceSystem& resourceSys = simulation->resourceSystem(playerId);
 
 	// This value is used in fee calculation
-	int32 totalTradeMoney100 = 0;
+	//int32 totalTradeMoney100 = 0;
+	int32 totalImportMoney100 = 0;
+	int32 totalExportMoney100 = 0;
 	
 	for (int i = 0; i < tradeCommand.buyEnums.Num(); i++) {
 		PUN_CHECK(tradeCommand.buyAmounts[i] != 0);
@@ -42,7 +49,7 @@ void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePe
 			sellAmount = min(sellAmount, resourceSys.resourceCount(resourceEnum));
 
 			int32 tradeMoney100 = sellAmount * simulation->price100(resourceEnum);
-			totalTradeMoney100 += tradeMoney100;
+			totalExportMoney100 += tradeMoney100;
 
 			resourceSys.RemoveResourceGlobal(resourceEnum, sellAmount);
 			resourceSys.ChangeMoney100(tradeMoney100);
@@ -50,7 +57,7 @@ void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePe
 		else if (buyAmount > 0) // Buy
 		{
 			int32 tradeMoney100 = buyAmount * simulation->price100(resourceEnum);
-			totalTradeMoney100 += tradeMoney100;
+			totalImportMoney100 += tradeMoney100;
 
 			if (isInstantBuy) {
 				resourceSys.AddResourceGlobal(resourceEnum, buyAmount, *simulation);
@@ -64,12 +71,17 @@ void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePe
 	// Change money from trade's Total
 	//resourceSys.ChangeMoney(tradeCommand.totalGain);
 
+	int32 totalTradeMoney100 = totalImportMoney100 + totalExportMoney100;
+
 	int32 fee100 = totalTradeMoney100 * tradingFeePercent / 100;
 	resourceSys.ChangeMoney100(-fee100);
 	
 	simulation->QuestUpdateStatus(playerId, QuestEnum::TradeQuest, abs(totalTradeMoney100 / 100 + fee100 / 100));
 
 	simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, tile, ToSignedNumber(tradeCommand.totalGain));
+
+	exportMoney100 = totalExportMoney100;
+	importMoney100 = totalImportMoney100;
 }
 
 
@@ -131,6 +143,16 @@ void TradeBuilding::Tick1Sec()
 		_ticksAccumulated += ticksFromLastCheck();
 		_lastCheckTick = Time::Ticks();
 	}
+
+	// Tick move round 1 sec after the last round refresh
+	if (Time::Seconds() % Time::SecondsPerRound == 1)
+	{
+		_exportGainLast2Round = _exportGainLast1Round;
+		_exportGainLast1Round = 0;
+
+		_importLossLast2Round = _importLossLast1Round;
+		_importLossLast1Round = 0;
+	}
 }
 
 void TradingCompany::Tick1Sec()
@@ -167,12 +189,6 @@ void TradingCompany::Tick1Sec()
 	}
 
 	int32 currentResourceCount = _simulation->resourceCount(_playerId, activeResourceEnum);
-
-	//auto changeMoney = [&](int32 profit) {
-	//	resourceSystem().ChangeMoney(profit);
-	//	_profitLast2 = _profitLast1;
-	//	_profitLast1 = profit;
-	//};
 
 	auto issueTradeCommand = [&](int32 buyAmount)
 	{

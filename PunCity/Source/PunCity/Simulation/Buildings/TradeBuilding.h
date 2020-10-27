@@ -93,10 +93,22 @@ public:
 
 	void UsedTrade(FTradeResource tradeCommand);
 
-	static void ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePercent, WorldTile2 tile, IGameSimulationCore* simulation, bool isInstantBuy = true);
+	static void ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePercent, WorldTile2 tile, IGameSimulationCore* simulation, bool isInstantBuy, int32& exportMoney100, int32& importMoney100);
 
 	void Tick1Sec() override;
 
+	
+	int32 exportMoney() {
+		return std::max(0, _exportGainLast1Round + _exportGainLast2Round);
+	}
+	int32 importMoney() {
+		return std::min(0, _importLossLast1Round + _importLossLast2Round);
+	}
+	
+
+	/*
+	 * Serialize
+	 */
 	void Serialize(FArchive& Ar) override {
 		Building::Serialize(Ar);
 		Ar << _lastCheckTick;
@@ -105,6 +117,11 @@ public:
 		Ar << _hasPendingTrade;
 		_tradeCommand >> Ar;
 		Ar << _isTradingPostFull;
+
+		Ar << _importLossLast1Round;
+		Ar << _importLossLast2Round;
+		Ar << _exportGainLast1Round;
+		Ar << _exportGainLast2Round;
 	}
 
 protected:
@@ -117,6 +134,11 @@ protected:
 	bool _hasPendingTrade = false;
 
 	bool _isTradingPostFull = false;
+
+	int32 _importLossLast1Round = 0;
+	int32 _importLossLast2Round = 0;
+	int32 _exportGainLast1Round = 0;
+	int32 _exportGainLast2Round = 0;
 };
 
 class TradingPost final : public TradeBuilding
@@ -253,14 +275,6 @@ public:
 		return Building::upkeep();
 	}
 
-	int32 exportMoney() {
-		return std::max(0, _profitLast1);
-		//+ std::max(0, _profitLast2);
-	}
-	int32 importMoney() {
-		return std::min(0, _profitLast1);
-		//+ std::min(0, _profitLast2);
-	}
 
 	std::vector<BonusPair> GetBonuses() final {
 		std::vector<BonusPair> result;
@@ -279,9 +293,6 @@ public:
 		Ar << targetAmount;
 
 		Ar << _ticksToStartTrade;
-
-		Ar << _profitLast1;
-		Ar << _profitLast2;
 
 		Ar << needTradingCompanySetup;
 	}
@@ -318,8 +329,6 @@ private:
 
 	int32 _ticksToStartTrade = -1;
 
-	int32 _profitLast1 = 0;
-	int32 _profitLast2 = 0;
 };
 
 class HumanitarianAidCamp final : public Building

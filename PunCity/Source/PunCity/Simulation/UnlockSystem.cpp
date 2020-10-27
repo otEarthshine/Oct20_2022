@@ -28,17 +28,13 @@ void Building_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulation
 		if (IsSeedCard(buildingEnum)) {
 			cardCount = 1;
 		}
-		//switch (buildingEnum)
-		//{
-		////case CardEnum::Pig:
-		////case CardEnum::Sheep:
-		////case CardEnum::Cow:
-		////case CardEnum::Panda:
-		//	cardCount = 1;
-		//	break;
-		//default:
-		//	break;
-		//}
+
+		// Special case: herb
+		if (buildingEnum == CardEnum::HerbSeed) {
+			cardSystem.AddCardToHand2(buildingEnum);
+			_simulation->AddPopup(playerId, "You unlocked and received Medicinal Herb Seeds Card.");
+			continue;
+		}
 		
 		cardSystem.AddDrawCards(buildingEnum, cardCount);
 

@@ -137,6 +137,9 @@ void UWorldSpaceUI::TickWorldSpaceUI()
 		else if (IsHumanHouse(building.buildingEnum())) {
 			jobUIState = JobUIState::Home;
 		}
+		else if (IsStorage(building.buildingEnum())) {
+			jobUIState = JobUIState::Storage;
+		}
 		else {
 			jobUIState = JobUIState::Job;
 		}
@@ -814,7 +817,7 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 						IsBarrack(building.buildingEnum()) ||
 
 						building.isEnum(CardEnum::HuntingLodge) ||
-						building.isEnum(CardEnum::FruitGatherer) || 
+						building.isEnum(CardEnum::FruitGatherer) ||  
 						IsStorage(building.buildingEnum()) || // TODO: may be this is for all buildings??
 
 						building.isEnum(CardEnum::JobManagementBureau) ||
@@ -838,7 +841,7 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 			}
 
 			if (showProgress) {
-				buildingJobUI->SetBuildingStatus(building);
+				buildingJobUI->SetBuildingStatus(building, jobUIState);
 			}
 
 			//buildingJobUI->SetStars(building.level());
@@ -852,7 +855,7 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 		buildingJobUI->SetShowBar(false);
 
 		if (showProgress) {
-			buildingJobUI->SetBuildingStatus(building);
+			buildingJobUI->SetBuildingStatus(building, jobUIState);
 		}
 
 		//buildingJobUI->SetStars(building.level());

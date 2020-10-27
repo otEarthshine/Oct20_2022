@@ -279,11 +279,6 @@ public:
 	}
 
 public:
-	enum class JobUIState {
-		None,
-		Job,
-		Home,
-	};
 	JobUIState jobUIState = JobUIState::None;
 
 	bool townhallUIActive = true;

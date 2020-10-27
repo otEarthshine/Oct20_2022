@@ -345,6 +345,13 @@ public:
 			networkInterface()->SendNetworkCommand(command);
 		}
 
+		if (commandAndParams.size() >= 1 && commandAndParams[0] == "PleasePunCrash")
+		{
+			UObject* nullObj = nullptr;
+			nullObj->BeginDestroy();
+			checkNoEntry();
+		}
+
 		//if (commandAndParams.size() >= 2 && commandAndParams[0] == "WorkToCost")
 		//{
 		//	WorkRevenueToCost_Base = std::stoi(commandAndParams[1]);

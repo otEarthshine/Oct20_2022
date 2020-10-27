@@ -128,6 +128,7 @@ bool Farm::IsStageCompleted() {
 	return true;
 }
 
+
 int32 Farm::MinCropGrowthPercent()
 {
 	// Ready for harvest when 8/10 of plants are either full-grown, or was eaten.

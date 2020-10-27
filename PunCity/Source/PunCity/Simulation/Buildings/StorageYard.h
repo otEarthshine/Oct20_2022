@@ -39,6 +39,14 @@ public:
 		return queuedResourceAllowed[static_cast<int>(resourceEnum)];
 	}
 
+	int32 GetFoodCount() {
+		int count = 0;
+		for (ResourceEnum foodEnum : FoodEnums) {
+			count += resourceCount(foodEnum);
+		}
+		return count;
+	}
+
 	void Serialize(FArchive& Ar) override {
 		Building::Serialize(Ar);
 		Ar << expandedFood;
@@ -207,14 +215,16 @@ public:
 			ResourceEnum resourceEnum = static_cast<ResourceEnum>(i);
 			if (IsFoodEnum(resourceEnum) ||
 				IsFuelEnum(resourceEnum)) {
-				_resourceTargets[i] = 200;
+				_resourceTargets[i] = 150;
 			}
 			if (IsMedicineEnum(resourceEnum) ||
 				IsToolsEnum(resourceEnum) ||
 				IsLuxuryEnum(resourceEnum)) {
-				_resourceTargets[i] = 100;
+				_resourceTargets[i] = 70;
 			}
 		}
+		
+		_foodTarget = 500;
 	}
 
 	bool IsMarketResource(ResourceEnum resourceEnum) {
@@ -225,11 +235,21 @@ public:
 			IsLuxuryEnum(resourceEnum);
 	}
 
-	int32 GetMarketTarget(ResourceEnum resourceEnum) { return _resourceTargets[static_cast<int>(resourceEnum)]; }
+	int32 GetMarketTarget(ResourceEnum resourceEnum) {
+		return _resourceTargets[static_cast<int>(resourceEnum)];
+	}
 	const std::vector<int32>& GetMarketTargets() { return _resourceTargets; }
 	
 	void SetMarketTarget(ResourceEnum resourceEnum, int32 amount) {
+		if (resourceEnum == ResourceEnum::Food) {
+			_foodTarget = amount;
+			return;
+		}
 		_resourceTargets[static_cast<int>(resourceEnum)] = amount;
+	}
+
+	int32 GetFoodTarget() {
+		return _foodTarget;
 	}
 
 	ResourceHolderType defaultHolderType() override { return ResourceHolderType::Manual; }
@@ -237,10 +257,12 @@ public:
 	void Serialize(FArchive& Ar) override {
 		StorageBase::Serialize(Ar);
 		SerializeVecValue(Ar, _resourceTargets);
+		Ar << _foodTarget;
 	}
 	
 	// Non-Serialize
 	std::vector<int32> lastUIResourceTargets;
 private:
 	std::vector<int32> _resourceTargets;
+	int32 _foodTarget = 0;
 };

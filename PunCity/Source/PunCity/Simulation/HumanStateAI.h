@@ -59,7 +59,7 @@ public:
 	bool TryGather(bool treeOnly);
 
 	bool TryForestingCut(bool cutAndPlant);
-	bool TryForestingPlant(TileObjEnum tileObjEnum, NonWalkableTileAccessInfo accessInfo = NonWalkableTileAccessInfo());
+	bool TryForestingPlant(TileObjEnum lastCutTileObjEnum, NonWalkableTileAccessInfo accessInfo = NonWalkableTileAccessInfo());
 	bool TryForestingNourish();
 	bool TryForesting();
 

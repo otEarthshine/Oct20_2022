@@ -72,9 +72,7 @@ public:
 		if (Time::Ticks() % TicksPerStatInterval == 0)
 		{
 			for (int32 i = 0; i < ResourceEnumCount; i++) {
-				int32 price100 = _simulation->price100(static_cast<ResourceEnum>(i));
-				std::vector<int32>& statVec = _resourceEnumToPrice100Vec[i];
-				statVec.push_back(price100);
+				_resourceEnumToPrice100Vec[i].push_back(price100(static_cast<ResourceEnum>(i)));
 			}
 		}
 
@@ -173,6 +171,8 @@ public:
 	// Serial
 	void Serialize(FArchive& Ar)
 	{
+		Ar << _isInitialized;
+		
 		SerializeVecValue(Ar, _enumToSupplyValue100);
 		SerializeVecVecValue(Ar, _resourceEnumToPrice100Vec);
 
@@ -238,11 +238,14 @@ private:
 
 private:
 	IGameSimulationCore* _simulation = nullptr;
+
+	/*
+	 * Serialize
+	 */
 	bool _isInitialized = false;
 
 	std::vector<int64> _enumToSupplyValue100;
 
-private:
 	// Stats
 	std::vector<std::vector<int32>> _resourceEnumToPrice100Vec;
 

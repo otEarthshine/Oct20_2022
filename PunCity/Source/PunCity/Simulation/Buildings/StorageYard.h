@@ -80,24 +80,18 @@ public:
 
 	void SetAreaWalkable() override
 	{
-		if (isEnum(CardEnum::StorageYard))
-		{
-			// Make the area on which this was built walkable.
-			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-				bool isBorder = (tile.x == _area.minX) ||
-					(tile.x == _area.maxX) ||
-					(tile.y == _area.minY) ||
-					(tile.y == _area.maxY);
-				_simulation->SetWalkable(tile, isBorder);
-			});
+		// Make the area on which this was built walkable.
+		_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+			bool isBorder = (tile.x == _area.minX) ||
+				(tile.x == _area.maxX) ||
+				(tile.y == _area.minY) ||
+				(tile.y == _area.maxY);
+			_simulation->SetWalkable(tile, isBorder);
+		});
 
-			_simulation->ResetUnitActionsInArea(_area);
+		_simulation->ResetUnitActionsInArea(_area);
 
-			_didSetWalkable = true;
-		}
-		else {
-			Building::SetAreaWalkable();
-		}
+		_didSetWalkable = true;
 	}
 
 
@@ -193,6 +187,14 @@ public:
 	int32 storageSlotCount() override {
 		return 30;
 	}
+
+	WorldTile2 gateTile() override {
+		return Building::gateTile();
+	}
+
+	void SetAreaWalkable() override {
+		Building::SetAreaWalkable();
+	}
 };
 
 class Market : public StorageBase
@@ -262,6 +264,7 @@ public:
 	
 	// Non-Serialize
 	std::vector<int32> lastUIResourceTargets;
+	int32 lastUIFoodTarget = -1;
 private:
 	std::vector<int32> _resourceTargets;
 	int32 _foodTarget = 0;

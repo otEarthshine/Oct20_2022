@@ -142,7 +142,7 @@ void ULobbySettingsUI::OnClickLobbyMapSeedRandomizeButton()
 void ULobbySettingsUI::OnLobbyMapSizeDropdownChanged(FString sItem, ESelectInfo::Type seltype)
 {
 	serverMapSettings.mapSizeEnumInt = static_cast<int32>(GetMapSizeEnumFromString(sItem));
-	RefreshAICountDropdown();
+	RefreshAICountDropdown(LobbyAICountDropdown->GetSelectedIndex());
 
 	SendMapSettings();
 
@@ -203,6 +203,9 @@ void ULobbySettingsUI::OnLobbyAICountDropdownChanged(FString sItem, ESelectInfo:
 }
 void ULobbySettingsUI::OnLobbyDifficultyDropdownChanged(FString sItem, ESelectInfo::Type seltype)
 {
+	if (seltype == ESelectInfo::Direct) {
+		return;
+	}
 	serverMapSettings.difficultyLevel = GetDifficultyLevelFromString(sItem);
 	SendMapSettings();
 

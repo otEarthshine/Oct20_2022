@@ -37,6 +37,7 @@
 #include "CardSlot.h"
 #include "PunCity/MapUtil.h"
 
+DECLARE_CYCLE_STAT(TEXT("PUN: [UI]All"), STAT_PunUIAll, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: [UI]Select_Start"), STAT_PunUISelect_Start, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: [UI]FindStartSpot"), STAT_PunUIFindStartSpot, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: [UI]AddClaimLandButton"), STAT_PunUI_AddClaimLandButton, STATGROUP_Game);
@@ -73,6 +74,8 @@ void UObjectDescriptionUISystem::CreateWidgets()
 
 void UObjectDescriptionUISystem::Tick()
 {
+	SCOPE_CYCLE_COUNTER(STAT_PunUIAll);
+	
 	if (InterfacesInvalid()) return;
 
 	_objectDescriptionUI->CheckPointerOnUI();
@@ -1104,12 +1107,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 								AddEfficiencyText(building, descriptionBox);
 
-								if (tradingCompany.isImport) {
-									descriptionBox->AddRichText("Import", ToSignedNumber(-tradingCompany.importMoney()) + "<img id=\"Coin\"/>");
-								}
-								else {
-									descriptionBox->AddRichText("Export", ToSignedNumber(tradingCompany.exportMoney()) + "<img id=\"Coin\"/>");
-								}
+								descriptionBox->AddRichText("Profit", ToSignedNumber((tradingCompany.exportMoney100() - tradingCompany.importMoney100()) / 100) + "<img id=\"Coin\"/>");
 
 								descriptionBox->AddLineSpacer();
 							}
@@ -1182,13 +1180,11 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							// targetAmount
 							// - just opened UI, get it from targetAmount (actual value)
 							// - after opened, we keep value in lastTargetAmountSet
-							int32 targetAmount;
 							if (_justOpenedDescriptionUI) {
-								targetAmount = tradingCompany.targetAmount;
-								tradingCompany.lastTargetAmountSet = targetAmount;
-							} else {
-								targetAmount = tradingCompany.lastTargetAmountSet;
+								tradingCompany.lastTargetAmountSet = tradingCompany.targetAmount;
 							}
+							int32 targetAmount = tradingCompany.lastTargetAmountSet;
+							
 							descriptionBox->AddEditableNumberBox(this, CallbackEnum::EditNumberChooseResource, building.buildingId(), "Target: ", targetAmount);
 
 							descriptionBox->AddLineSpacer(12);
@@ -1333,10 +1329,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				/*
 				 * Special case: Manage Storage (Display regardless of if the storage is constructed
 				 */
-				if ((IsStorage(building.buildingEnum()) || building.isEnum(CardEnum::Market)) &&
+				bool isMarket = building.isEnum(CardEnum::Market);
+				
+				if ((IsStorage(building.buildingEnum()) || isMarket) &&
 					building.ownedBy(playerId()))
 				{
-					std::string buttonName = building.isEnum(CardEnum::Market) ? "Manage Market" : "Manage Storage";
+					std::string buttonName = isMarket ? "Manage Market" : "Manage Storage";
 					descriptionBox->AddButton(buttonName, nullptr, "", this, CallbackEnum::OpenManageStorage, true, false, objectId);
 					descriptionBox->AddLineSpacer(12);
 
@@ -1347,13 +1345,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					UPunBoxWidget* manageStorageBox = _objectDescriptionUI->ManageStorageBox;
 
 					SetText(_objectDescriptionUI->ManageStorageTitle, buttonName);
-					_objectDescriptionUI->ManageStorageWidthSizeBox->SetWidthOverride(building.isEnum(CardEnum::Market) ? 410 : 270);
+					_objectDescriptionUI->ManageStorageWidthSizeBox->SetWidthOverride(isMarket ? 410 : 270);
 
 					std::vector<ResourceInfo> resourceEnums = SortedNameResourceInfo;
 
-					
 					std::vector<int32> uiResourceTargetsToDisplay;
-					if (building.isEnum(CardEnum::Market)) {
+					if (isMarket) {
 						Market& market = building.subclass<Market>();
 						if (_justOpenedDescriptionUI) {
 							market.lastUIResourceTargets = market.GetMarketTargets();
@@ -1368,10 +1365,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							bool isAllowed = storage.ResourceAllowed(resourceEnum);
 							ECheckBoxState checkState = (isAllowed ? ECheckBoxState::Checked : ECheckBoxState::Unchecked);
 
-							int32 showTarget = uiResourceTargetsToDisplay.size() > 0 && building.subclass<StorageBase>().ResourceAllowed(resourceEnum);
+							int32 showTarget = isMarket && building.subclass<StorageBase>().ResourceAllowed(resourceEnum);
 							int32 target = showTarget ? uiResourceTargetsToDisplay[static_cast<int>(resourceEnum)] : -1;
 							
-							manageStorageBox->AddManageStorageElement(resourceEnum, "", objectId, checkState, isSection, showTarget, target);
+							manageStorageBox->AddManageStorageElement(resourceEnum, "", objectId, checkState, isSection, _justOpenedDescriptionUI, showTarget, target);
 						}
 						if (shouldRemoveFromList) {
 							CppUtils::RemoveIf(resourceEnums, [&](ResourceInfo resourceInfo) { return resourceInfo.resourceEnum == resourceEnum; });
@@ -1397,7 +1394,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							checkState = ECheckBoxState::Unchecked;
 						}
 
-						auto element = manageStorageBox->AddManageStorageElement(ResourceEnum::Food, "Food", objectId, checkState, true, true);
+						int32 target = 0;
+						if (isMarket) {
+							target = building.subclass<Market>().GetFoodTarget();
+						}
+						
+						auto element = manageStorageBox->AddManageStorageElement(ResourceEnum::Food, "Food", objectId, checkState, true, _justOpenedDescriptionUI, isMarket, target);
 						bool expanded = element->HasDelayOverride() ? element->expandedOverride : storage.expandedFood;
 						for (ResourceEnum resourceEnum : FoodEnums) {
 							tryAddManageStorageElement_UnderExpansion(resourceEnum, expanded, false);
@@ -1425,7 +1427,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							checkState = ECheckBoxState::Unchecked;
 						}
 
-						auto element = manageStorageBox->AddManageStorageElement(ResourceEnum::Luxury, "Luxury", objectId, checkState, true, false);
+						auto element = manageStorageBox->AddManageStorageElement(ResourceEnum::Luxury, "Luxury", objectId, checkState, true, _justOpenedDescriptionUI, false);
 						bool expanded = element->HasDelayOverride() ? element->expandedOverride : storage.expandedLuxury;
 						for (int32 i = 1; i < TierToLuxuryEnums.size(); i++) {
 							for (ResourceEnum resourceEnum : TierToLuxuryEnums[i]) {
@@ -1577,7 +1579,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 				// Forester
 				if (building.isEnum(CardEnum::Forester))
-				{	
+				{
+					Forester& forester = building.subclass<Forester>();
+					
 					auto addDropdown = [&](vector<string> options, string defaultOption, int32 dropdownIndex)
 					{
 						descriptionBox->AddDropdown(
@@ -1619,12 +1623,13 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					
 					if (workModeName == "Cut and Plant" ||
 						workModeName == "Prioritize Planting") {
-						addDropdown(plantOptions, plantOptions[1], 0);
+						addDropdown(plantOptions, plantOptions[static_cast<int>(forester.plantingEnum)], 0);
 					}
 					if (workModeName == "Cut and Plant" ||
 						workModeName == "Prioritize Cutting")  {
-						addDropdown(cutOptions, cutOptions[0], 1);
+						addDropdown(cutOptions, cutOptions[static_cast<int>(forester.cuttingEnum)], 1);
 					}
+					descriptionBox->AddSpacer();
 				}
 
 

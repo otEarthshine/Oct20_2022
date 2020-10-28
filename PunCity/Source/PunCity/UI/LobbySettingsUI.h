@@ -88,9 +88,6 @@ public:
 			LobbyMountainDensityDropdown->OnSelectionChanged.AddDynamic(this, &ULobbySettingsUI::OnLobbyMountainDensityDropdownChanged);
 
 			LobbyAICountDropdown->OnSelectionChanged.AddDynamic(this, &ULobbySettingsUI::OnLobbyAICountDropdownChanged);
-			RefreshAICountDropdown();
-			LobbyAICountDropdown->SetSelectedIndex(LobbyAICountDropdown->GetOptionCount() - 1);
-
 			LobbyDifficultyDropdown->OnSelectionChanged.AddDynamic(this, &ULobbySettingsUI::OnLobbyDifficultyDropdownChanged);
 		}
 
@@ -103,7 +100,6 @@ public:
 			LobbyMapSizeDropdown->AddOption(name);
 		}
 		LobbyMapSizeDropdown->SetSelectedIndex(serverMapSettings.mapSizeEnumInt);
-		RefreshAICountDropdown();
 
 		
 
@@ -135,6 +131,13 @@ public:
 			//serverMapSettings.mapMountainDensity = MapMountainDensityEnum::Medium;
 			setupDropdown(LobbyMountainDensityDropdown, MapSettingsLevelNames);
 			LobbyMountainDensityDropdown->SetSelectedIndex(static_cast<int>(serverMapSettings.mapMountainDensity));
+
+			// AI Count
+			RefreshAICountDropdown(serverMapSettings.aiCount);
+
+			// Difficulty Level
+			setupDropdown(LobbyDifficultyDropdown, DifficultyLevelNames);
+			LobbyDifficultyDropdown->SetSelectedIndex(static_cast<int>(serverMapSettings.difficultyLevel));
 		}
 
 
@@ -207,13 +210,8 @@ public:
 	}
 
 	
-	void RefreshAICountDropdown()
+	void RefreshAICountDropdown(int32 preferredSelectedIndex)
 	{
-		int32 selectedIndex = LobbyAICountDropdown->GetSelectedIndex();
-		if (selectedIndex == -1) {
-			selectedIndex = LobbyAICountDropdown->GetOptionCount() - 1;
-		}
-
 		LobbyAICountDropdown->ClearOptions();
 
 		int maxAICount = GameConstants::MaxAIs;
@@ -226,10 +224,10 @@ public:
 			LobbyAICountDropdown->AddOption(FString::FromInt(i));
 		}
 
-		if (selectedIndex > maxAICount) {
-			selectedIndex = maxAICount - 1;
+		if (preferredSelectedIndex > maxAICount) {
+			preferredSelectedIndex = maxAICount;
 		}
-		LobbyAICountDropdown->SetSelectedIndex(selectedIndex);
+		LobbyAICountDropdown->SetSelectedIndex(preferredSelectedIndex);
 	}
 
 

@@ -32,25 +32,25 @@ void UStatisticsUI::InitStatisticsUI()
 
 	AddSeries(PopulationGraph, {
 		//{ FString("Adult population"), PlotStatEnum::AdultPopulation, FLinearColor::Yellow },
-		{ FString("Population"), PlotStatEnum::Population, FLinearColor::Green },
-		{ FString("Children"), PlotStatEnum::ChildPopulation, FLinearColor::Blue },
+		{ FString("Population"), PlotStatEnum::Population, FLinearColor(0.3, 1, 0.3) },
+		{ FString("Children"), PlotStatEnum::ChildPopulation, FLinearColor(0.3, 0.3, 1) },
 	});
 
 	AddSeries(IncomeGraph, {
-		{FString("Income"), PlotStatEnum::Income, FLinearColor::Green },
-		{FString("Revenue"), PlotStatEnum::Revenue, FLinearColor::Blue },
-		{FString("Expense"), PlotStatEnum::Expense, FLinearColor::Red },
+		{FString("Income"), PlotStatEnum::Income, FLinearColor(0.3, 1, 0.3) },
+		{FString("Revenue"), PlotStatEnum::Revenue, FLinearColor(0.3, 0.3, 1) },
+		{FString("Expense"), PlotStatEnum::Expense, FLinearColor(1, 0.3, 0.3) },
 	});
-	AddSeries(ScienceGraph, { {FString("Science"), PlotStatEnum::Science, FLinearColor::Blue } });
+	AddSeries(ScienceGraph, { {FString("Science"), PlotStatEnum::Science, FLinearColor(0.3, 0.3, 1) } });
 
 	AddSeries(FoodFuelGraph, {
-		{FString("Food"), PlotStatEnum::Food, FLinearColor::Green },
-		{FString("Fuel"), PlotStatEnum::Fuel, FLinearColor::Yellow },
+		{FString("Food"), PlotStatEnum::Food, FLinearColor(0.3, 1, 0.3) },
+		{FString("Fuel"), PlotStatEnum::Fuel, FLinearColor(1, 1, 0.3) },
 	});
 	AddSeries(ImportExportGraph, {
-		{FString("Trade balance"), PlotStatEnum::TradeBalance, FLinearColor::Green },
-		{FString("Export"), PlotStatEnum::Export, FLinearColor::Blue },
-		{FString("Import"), PlotStatEnum::Import, FLinearColor::Red },
+		//{FString("Trade balance"), PlotStatEnum::TradeBalance, FLinearColor::Green },
+		{FString("Export"), PlotStatEnum::Export, FLinearColor(0.3, 0.3, 1) },
+		{FString("Import"), PlotStatEnum::Import, FLinearColor(1, 0.3, 0.3) },
 	});
 
 	MarketResourceDropdown->ClearOptions();

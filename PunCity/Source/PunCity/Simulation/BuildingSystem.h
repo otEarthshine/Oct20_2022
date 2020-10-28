@@ -18,7 +18,7 @@ public:
 		_simulation = simulation;
 		_buildingSubregionList.Init();
 
-		_playerIdPlus1ToEnumToBuildingIds.resize(GameConstants::MaxPlayersAndAI + 1, std::vector<std::vector<int32_t>>(BuildingEnumCount));
+		_playerIdPlus1ToEnumToBuildingIds.resize(GameConstants::MaxPlayersAndAI + 1, std::vector<std::vector<int32>>(BuildingEnumCount));
 
 		_buildingIdMap.resize(GameMapConstants::TilesPerWorld, -1);
 		_buildingFrontIdMap.resize(GameMapConstants::TilesPerWorld * 4, -1);
@@ -186,7 +186,7 @@ public:
 		{
 			SERIALIZE_TIMER("Building - AfterLoop", data, crcs, crcLabels);
 			
-			SerializeVecLoop(Ar, _playerIdPlus1ToEnumToBuildingIds, [&](std::vector<std::vector<int32_t>>& vecVecValue) {
+			SerializeVecLoop(Ar, _playerIdPlus1ToEnumToBuildingIds, [&](std::vector<std::vector<int32>>& vecVecValue) {
 				SerializeVecVecValue(Ar, vecVecValue);
 			});
 

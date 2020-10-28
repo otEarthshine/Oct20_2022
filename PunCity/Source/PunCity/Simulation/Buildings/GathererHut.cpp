@@ -203,7 +203,7 @@ void Farm::DoFarmWork(int32_t unitId, WorldTile2 tile, FarmStage farmStage)
 		
 		dropCount = max(1, dropCount);
 			
-		resourceSystem().SpawnDrop(resource.resourceEnum, dropCount, tile);
+		resourceSystem().SpawnDrop(resource.resourceEnum, dropCount, tile, ResourceHolderType::DropManual);
 
 		AddProductionStat(ResourcePair(resource.resourceEnum, dropCount));
 

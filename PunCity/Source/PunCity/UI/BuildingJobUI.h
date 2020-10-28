@@ -202,6 +202,9 @@ public:
 				
 				PunBox->AfterAdd();
 			}
+			else {
+				PunBox->SetVisibility(ESlateVisibility::Collapsed);
+			}
 		}
 		else {
 			//std::vector<float> inputFractions;
@@ -287,6 +290,8 @@ public:
 					material->SetScalarParameterValue("IsInput", 0.0f);
 					material->SetScalarParameterValue("HasNoResource", 0.0f);
 
+					completionIcon->SetIsPaused(false);
+
 					std::stringstream ss;
 					ss << ResourceName(resourceEnum);
 					ss << "<space>";
@@ -300,6 +305,7 @@ public:
 			showClock = true;
 			ClockImage->GetDynamicMaterial()->SetScalarParameterValue("IsGray", 0.0f);
 			ClockImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", fraction);
+			ClockPauseImage->SetVisibility(ESlateVisibility::Collapsed);
 			ClockText->SetVisibility(ESlateVisibility::Collapsed);
 			
 			//auto completionIcon = GetBoxChild<UResourceCompletionIcon>(ResourceCompletionIconBox, index, UIEnum::ResourceCompletionIcon);
@@ -370,6 +376,7 @@ public:
 					showClock = true;
 					ClockImage->GetDynamicMaterial()->SetScalarParameterValue("IsGray", 1.0f);
 					ClockImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", fraction);
+					ClockPauseImage->SetVisibility(ESlateVisibility::Collapsed);
 					ClockText->SetVisibility(ESlateVisibility::Collapsed);
 				}
 			}

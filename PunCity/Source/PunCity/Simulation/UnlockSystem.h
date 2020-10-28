@@ -627,10 +627,10 @@ public:
 			//
 			era = 4;
 			//AddTech_Building(era, TechEnum::Forester, CardEnum::Forester);
+			AddTech_Building(era, TechEnum::ImprovedLogistics, { CardEnum::ShippingDepot });
 			AddTech_Bonus(era, TechEnum::HouseAdjacency);
 			AddTech_Building(era, TechEnum::RanchCow, { CardEnum::RanchCow });
 			AddTech_Bonus(era, TechEnum::QuarryImprovement);
-			AddTech_Building(era, TechEnum::Theatre, CardEnum::Theatre);
 			AddTech_Bonus(era, TechEnum::ImprovedWoodCutting2);
 			
 			//AddPermanentBuildingResearch(3, TechEnum::Fence, { BuildingEnum::Fence, BuildingEnum::FenceGate });
@@ -641,7 +641,7 @@ public:
 			AddTech_Bonus(era, TechEnum::MoreGoldPerHouse);
 			AddTech_Building(era, TechEnum::BarrackKnight, CardEnum::BarrackSwordman);
 			AddTech_Building(era, TechEnum::Bank, { CardEnum::Bank });
-			AddTech_Building(era, TechEnum::ImprovedLogistics, { CardEnum::ShippingDepot });
+			AddTech_Building(era, TechEnum::Theatre, CardEnum::Theatre);
 			AddTech_Bonus(era, TechEnum::DeepWaterEmbark);
 			
 			//

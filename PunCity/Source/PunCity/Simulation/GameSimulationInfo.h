@@ -1394,6 +1394,7 @@ enum class ResourceHolderType : uint8
 	Storage,
 	Provider,
 	Drop,
+	DropManual,
 	Dead,
 
 	
@@ -1406,6 +1407,7 @@ static const std::vector<std::string> ResourceHolderTypeName
 	"Storage",
 	"Provider",
 	"Drop",
+	"DropManual",
 	"Dead",
 
 	
@@ -2276,14 +2278,14 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::RegionCrates,	"Crates",			WorldTile2(4, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, {0, 0, 0}, "Crates that may contain valuable resources."),
 
 	// June 1 addition
-	BldInfo(CardEnum::Windmill, "Windmill", WorldTile2(5, 5), ResourceEnum::Wheat, ResourceEnum::None, ResourceEnum::Flour, 10, 2, { 150,0,0 }, "Grind Wheat into Wheat Flour. +10% Productivity to surrounding Farms."),
-	BldInfo(CardEnum::Bakery, "Bakery", WorldTile2(5, 5), ResourceEnum::Flour, ResourceEnum::Coal, ResourceEnum::Bread, 30, 2, { 70,30,0 }, "Bake Bread with Wheat Flour and heat."),
+	BldInfo(CardEnum::Windmill, "Windmill", WorldTile2(5, 5), ResourceEnum::Wheat, ResourceEnum::None, ResourceEnum::Flour, 10, 2, { 150,0,0 }, "Grinds Wheat into Wheat Flour. +10% Productivity to surrounding Farms."),
+	BldInfo(CardEnum::Bakery, "Bakery", WorldTile2(5, 5), ResourceEnum::Flour, ResourceEnum::Coal, ResourceEnum::Bread, 30, 2, { 70,30,0 }, "Bakes Bread with Wheat Flour and heat."),
 	BldInfo(CardEnum::GemstoneMine, "Gemstone Mine", WorldTile2(5, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::Gemstone, 10, 3, { 70,30,0 }, "Mine Gemstone from Gemstone Deposits."),
 	BldInfo(CardEnum::Jeweler, "Jeweler", WorldTile2(4, 7), ResourceEnum::Gemstone, ResourceEnum::GoldBar, ResourceEnum::Jewelry, 10, 3, { 150, 70, 70 }, "Craft Gemstone and Gold Bar into Jewelry."),
 
 	// June 9 addition
-	BldInfo(CardEnum::Beekeeper, "Beekeeper", WorldTile2(6, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::Beeswax, 10, 2, { 50,50,0 }, "Produce Beeswax and Honey. Efficiency increases with more surrounding trees."),
-	BldInfo(CardEnum::Brickworks, "Brickworks", WorldTile2(6, 5), ResourceEnum::Clay, ResourceEnum::Coal, ResourceEnum::Brick, 20, 3, { 20,100,0 }, "Produce Brick from Clay and Coal."),
+	BldInfo(CardEnum::Beekeeper, "Beekeeper", WorldTile2(6, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::Beeswax, 10, 2, { 50,50,0 }, "Produces Beeswax and Honey. Efficiency increases with more surrounding trees."),
+	BldInfo(CardEnum::Brickworks, "Brickworks", WorldTile2(6, 5), ResourceEnum::Clay, ResourceEnum::Coal, ResourceEnum::Brick, 20, 3, { 20,100,0 }, "Produces Brick from Clay and Coal."),
 	BldInfo(CardEnum::CandleMaker, "Candle Maker", WorldTile2(5, 6), ResourceEnum::Beeswax, ResourceEnum::Cotton, ResourceEnum::Candle, 20, 3, { 150, 100, 0 }, "Make Candles from Beeswax and Cotton wicks."),
 	BldInfo(CardEnum::CottonMill, "Cotton Mill", WorldTile2(7, 6), ResourceEnum::Cotton, ResourceEnum::None, ResourceEnum::CottonFabric, 20, 5, { 0, 100, 100 }, "Mass-produce Cotton into Cotton Fabric."),
 	BldInfo(CardEnum::PrintingPress, "Printing Press", WorldTile2(5, 6), ResourceEnum::Paper, ResourceEnum::Dye, ResourceEnum::Book, 20, 5, { 0, 150, 100 }, "Print Books."),
@@ -3215,6 +3217,7 @@ struct BuildingUpgrade
 		resourceNeeded >> Ar;
 		Ar << moneyNeeded;
 		Ar << efficiencyBonus;
+		Ar << comboEfficiencyBonus;
 
 		Ar << isUpgraded;
 	}
@@ -5858,7 +5861,11 @@ static const std::vector<std::string> MaleNames
 	"Rick",
 	"Indrik",
 	"Boreale",
-	
+
+	"Lewis",
+	"Simon",
+	"Sip",
+	"Splat",
 	
 	"Jakob",
 	"Jimba",
@@ -7021,8 +7028,8 @@ static const std::vector<std::string> HoverWarningString = {
 	"House Too Far",
 
 	"Not Enough Money",
-	"Target Reached",
-	"Resources Below\nStorage Target",
+	"Import Target\nReached",
+	"Resources Below\nExport Target",
 };
 static std::string GetHoverWarningString(HoverWarning hoverWarning) { return HoverWarningString[static_cast<int>(hoverWarning)]; }
 

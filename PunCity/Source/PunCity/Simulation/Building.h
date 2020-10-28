@@ -322,35 +322,10 @@ public:
 	
 	bool ShouldAddWorker(PriorityEnum priority)
 	{
-		if (priority == PriorityEnum::NonPriority) 
+		//if (priority == PriorityEnum::NonPriority) 
 		{
 			if (isConstructed())
 			{
-				//// Farm shouldn't add job when dormant from mid summer to end of winter
-				//if (isEnum(CardEnum::Farm)) {
-				//	if (Time::IsWinter()) {
-				//		return false;
-				//	}
-				//}
-				//// Producer shouldn't add job if there is no input
-				//else if (!_filledInputs) {
-				//	if (hasInput1() && hasInput2()) {
-				//		if (!hasInput1Available() && !hasInput2Available()) {
-				//			return false;
-				//		}
-				//	}
-				//	else if (hasInput1()) {
-				//		if (!hasInput1Available()) {
-				//			return false;
-				//		}
-				//	}
-				//	else if (hasInput2()) {
-				//		if (!hasInput2Available()) {
-				//			return false;
-				//		}
-				//	}
-				//}
-
 				if (!ShouldAddWorker_ConstructedNonPriority()) {
 					return false;
 				}
@@ -1263,7 +1238,10 @@ public:
 			}
 		}
 
-		hoverWarning = HoverWarning::None;
+		if (!isEnum(CardEnum::TradingCompany)) // Trading Company handle its hoverWarning
+		{
+			hoverWarning = HoverWarning::None;
+		}
 	}
 
 protected:

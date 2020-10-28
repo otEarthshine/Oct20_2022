@@ -31,7 +31,7 @@ public:
 	}
 
 	UFUNCTION() void OnClickPlayerZoomButton() {
-		if (simulation().playerOwned(_playerId).hasChosenLocation()) {
+		if (simulation().HasTownhall(_playerId)) {
 			networkInterface()->SetCameraAtom(simulation().townhallGateTile(_playerId).worldAtom2());
 		}
 	}

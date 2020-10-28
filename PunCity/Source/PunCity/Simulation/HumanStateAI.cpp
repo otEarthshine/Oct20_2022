@@ -195,7 +195,7 @@ void HumanStateAI::CalculateActions()
 			SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_GatherNDrop_Emergency);
 			
 			AddDebugSpeech(">>>Emergency gather trees");
-			if (TryMoveResourceAny(GetResourceInfo(ResourceEnum::Wood), 10)) {
+			if (TryMoveResourceAny(GetResourceInfo(ResourceEnum::Wood), 10) || justReset()) {
 				DEBUG_AI_VAR(EmergencyTree10_TryMoveResourceAny);
 				return;
 			}
@@ -205,9 +205,23 @@ void HumanStateAI::CalculateActions()
 				return;
 			}
 
-			if (TryMoveResourceAny(GetResourceInfo(ResourceEnum::Wood), 0)) {
+			if (TryMoveResourceAny(GetResourceInfo(ResourceEnum::Wood), 0) || justReset()) {
 				DEBUG_AI_VAR(EmergencyTree0_TryMoveResourceAny);
 				return;
+			}
+		}
+
+		// Farm Drop pickup
+		{
+			const std::vector<int32>& farmIds = _simulation->buildingIds(_playerId, CardEnum::Farm);
+			for (int32 farmId : farmIds) {
+				Farm& farm = _simulation->building<Farm>(farmId, CardEnum::Farm);
+				if (farm.IsStage(FarmStage::Harvesting)) {
+					if (TryClearFarmDrop(farm, 4) || justReset()) {
+						// DEBUG_AI_VAR
+						return;
+					}
+				}
 			}
 		}
 
@@ -234,7 +248,8 @@ void HumanStateAI::CalculateActions()
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_MoveResource);
 
-		if (TryMoveResourcesToDeliveryTarget(10)) {
+		if (TryMoveResourcesToDeliveryTarget(10) || justReset()) {
+			// DEBUG_AI_VAR
 			return;
 		}
 
@@ -982,7 +997,7 @@ bool HumanStateAI::TryFillLuxuries()
 	}
 	House& house = _simulation->building(_houseId).subclass<House>(CardEnum::House);
 
-	const int32_t maxPickupAmount = 10;
+	const int32 maxPickupAmount = 10;
 
 	// Get resource up to the current level
 	std::vector<ResourceEnum> resourceEnums;
@@ -1006,7 +1021,7 @@ bool HumanStateAI::TryFillLuxuries()
 	{
 		if (playerOwned.GetHouseResourceAllow(resourceEnum) &&
 			house.GetResourceCountWithPush(resourceEnum) < 5 &&
-			TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, house.GetHolderInfoFull(resourceEnum, maxPickupAmount)))
+			TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, house.GetHolderInfoFull(resourceEnum, maxPickupAmount), true))
 		{
 			AddDebugSpeech("(Succeed)TryFillLuxuries: " + house.GetHolderInfoFull(resourceEnum, maxPickupAmount).ToString());
 			return true;
@@ -1432,8 +1447,8 @@ bool HumanStateAI::TryFarm()
 
 	if (farm.IsStage(FarmStage::Harvesting))
 	{
-		auto& resourceSys = resourceSystem();
-		std::vector<DropInfo> drops = resourceSys.GetDropsFromArea_Pickable(farm.area(), true);
+		//auto& resourceSys = resourceSystem();
+		//std::vector<DropInfo> drops = resourceSys.GetDropsFromArea_Pickable(farm.area(), true);
 
 		int32 stagePercent = farm.GetStagePercent();
 		int32 seasonPercent = Time::SeasonPercent();
@@ -1441,74 +1456,77 @@ bool HumanStateAI::TryFarm()
 		
 		
 		if (stagePercent >= preferredStagePercent && 
-			drops.size() > 3)
+			//drops.size() > 3 &&
+			TryClearFarmDrop(farm, 4))
 		{
-			int32 targetAmount = 10;
-			int32 amount = 0;
-			ResourceEnum targetResourceEnum = ResourceEnum::None;
-			std::vector<DropInfo> dropsToMove;
-			for (DropInfo drop : drops) 
-			{
-				if (targetResourceEnum == ResourceEnum::None) {
-					targetResourceEnum = drop.holderInfo.resourceEnum;
-				}
+			AddDebugSpeech("(Succeed)TryFarm: TryClearFarmDrop 4");
+			return true;
+			//int32 targetAmount = 10;
+			//int32 amount = 0;
+			//ResourceEnum targetResourceEnum = ResourceEnum::None;
+			//std::vector<DropInfo> dropsToMove;
+			//for (DropInfo drop : drops) 
+			//{
+			//	if (targetResourceEnum == ResourceEnum::None) {
+			//		targetResourceEnum = drop.holderInfo.resourceEnum;
+			//	}
 
-				int32 dropResourceCount = resourceSys.resourceCountWithPop(drop.holderInfo);
-				if (drop.holderInfo.resourceEnum == targetResourceEnum &&
-					amount + dropResourceCount <= targetAmount) 
-				{
-					amount += dropResourceCount;
-					dropsToMove.push_back(drop);
-				} else {
-					break;
-				}
-			}
-			
-			// Try dropping the resource off in proper store
-			FoundResourceHolderInfos foundDropoffs;
+			//	int32 dropResourceCount = resourceSys.resourceCountWithPop(drop.holderInfo);
+			//	if (drop.holderInfo.resourceEnum == targetResourceEnum &&
+			//		amount + dropResourceCount <= targetAmount) 
+			//	{
+			//		amount += dropResourceCount;
+			//		dropsToMove.push_back(drop);
+			//	} else {
+			//		break;
+			//	}
+			//}
+			//
+			//// Try dropping the resource off in proper store
+			//FoundResourceHolderInfos foundDropoffs;
 
-			// Try delivery target first
-			int32 deliveryTargetId = farm.deliveryTargetId();
-			if (deliveryTargetId != -1) {
-				Building& targetBuilding = _simulation->building(deliveryTargetId);
-				if (resourceSys.CanReceiveAmount(targetBuilding.holder(targetResourceEnum)) >= amount) {
-					foundDropoffs.foundInfos.push_back(targetBuilding.GetHolderInfoFull(targetResourceEnum, amount));
-				}
-			}
+			//// Try delivery target first
+			//int32 deliveryTargetId = farm.deliveryTargetId();
+			//if (deliveryTargetId != -1) {
+			//	Building& targetBuilding = _simulation->building(deliveryTargetId);
+			//	if (resourceSys.CanReceiveAmount(targetBuilding.holder(targetResourceEnum)) >= amount) {
+			//		foundDropoffs.foundInfos.push_back(targetBuilding.GetHolderInfoFull(targetResourceEnum, amount));
+			//	}
+			//}
 
-			// Try any other dropoff
-			if (!foundDropoffs.hasInfos()) {
-				foundDropoffs = resourceSystem().FindHolder(ResourceFindType::AvailableForDropoff, targetResourceEnum, amount, unitTile());
-			}
-			
-			if (foundDropoffs.hasInfos())
-			{
-				for (FoundResourceHolderInfo foundInfo : foundDropoffs.foundInfos) {
-					// Reserve
-					ReserveResource(ReservationType::Push, foundInfo.info, foundInfo.amount);
+			//// Try any other dropoff
+			//if (!foundDropoffs.hasInfos()) {
+			//	foundDropoffs = resourceSystem().FindHolder(ResourceFindType::AvailableForDropoff, targetResourceEnum, amount, unitTile());
+			//}
+			//
+			//if (foundDropoffs.hasInfos())
+			//{
+			//	for (FoundResourceHolderInfo foundInfo : foundDropoffs.foundInfos) {
+			//		// Reserve
+			//		ReserveResource(ReservationType::Push, foundInfo.info, foundInfo.amount);
 
-					// Set Actions
-					Add_DropoffResource(foundInfo.info, foundInfo.amount);
-					Add_MoveToResource(foundInfo.info);
-					//Add_MoveTo(foundInfo.tile);
-				}
+			//		// Set Actions
+			//		Add_DropoffResource(foundInfo.info, foundInfo.amount);
+			//		Add_MoveToResource(foundInfo.info);
+			//		//Add_MoveTo(foundInfo.tile);
+			//	}
 
-				for (DropInfo drop : dropsToMove) {
-					int32 dropResourceCount = resourceSys.resourceCountWithPop(drop.holderInfo);
-					
-					// Reserve
-					ReserveResource(ReservationType::Pop, drop.holderInfo, dropResourceCount);
+			//	for (DropInfo drop : dropsToMove) {
+			//		int32 dropResourceCount = resourceSys.resourceCountWithPop(drop.holderInfo);
+			//		
+			//		// Reserve
+			//		ReserveResource(ReservationType::Pop, drop.holderInfo, dropResourceCount);
 
-					// Set Actions
-					Add_PickupResource(drop.holderInfo, dropResourceCount);
-					Add_MoveToResource(drop.holderInfo);
-				}
+			//		// Set Actions
+			//		Add_PickupResource(drop.holderInfo, dropResourceCount);
+			//		Add_MoveToResource(drop.holderInfo);
+			//	}
 
-				_unitState = UnitState::Farm;
+			//	_unitState = UnitState::Farm;
 
-				AddDebugSpeech("(Succeed)TryFarm: RemoveDrop from farm");
-				return true;
-			}
+			//	AddDebugSpeech("(Succeed)TryFarm: RemoveDrop from farm");
+			//	return true;
+			//}
 		}
 		
 		WorldTile2 harvestTile = farm.FindFarmableTile(_id);
@@ -1528,9 +1546,24 @@ bool HumanStateAI::TryFarm()
 			return true;
 		}
 		else {
+			// Last few drops?
+			if (TryClearFarmDrop(farm, 1)) {
+				AddDebugSpeech("(Succeed)TryFarm: TryClearFarmDrop 1");
+				return true;
+			}
+
+			// Ensure there is no drop left
+			std::vector<DropInfo> drops = resourceSystem().GetDropsFromArea_Pickable(farm.area(), true);
+			if (drops.size() > 0) {
+				return false;
+			}
+			
 			// Check if we can move on to next stage
 			if (farm.IsStageCompleted()) {
 				farm.ResetStageTo(FarmStage::Dormant);
+
+				// Reset the jobs
+				_simulation->playerOwned(_playerId).RefreshJobDelayed();
 			}
 			else {
 				AddDebugSpeech("(Failed)TryFarm: Waiting for another person to nourish");
@@ -1543,6 +1576,88 @@ bool HumanStateAI::TryFarm()
 	UE_DEBUG_BREAK();
 	return false;
 }
+
+bool HumanStateAI::TryClearFarmDrop(Farm& farm, int32 minDropCount)
+{
+	auto& resourceSys = resourceSystem();
+	std::vector<DropInfo> drops = resourceSys.GetDropsFromArea_Pickable(farm.area(), true);
+	
+	if (drops.size() < minDropCount) {
+		return false;
+	}
+	
+	
+	int32 targetAmount = 10;
+	int32 amount = 0;
+	ResourceEnum targetResourceEnum = ResourceEnum::None;
+	std::vector<DropInfo> dropsToMove;
+	for (DropInfo drop : drops)
+	{
+		if (targetResourceEnum == ResourceEnum::None) {
+			targetResourceEnum = drop.holderInfo.resourceEnum;
+		}
+
+		int32 dropResourceCount = resourceSys.resourceCountWithPop(drop.holderInfo);
+		if (drop.holderInfo.resourceEnum == targetResourceEnum &&
+			amount + dropResourceCount <= targetAmount)
+		{
+			amount += dropResourceCount;
+			dropsToMove.push_back(drop);
+		}
+		else {
+			break;
+		}
+	}
+
+	// Try dropping the resource off in proper store
+	FoundResourceHolderInfos foundDropoffs;
+
+	// Try delivery target first
+	int32 deliveryTargetId = farm.deliveryTargetId();
+	if (deliveryTargetId != -1) {
+		Building& targetBuilding = _simulation->building(deliveryTargetId);
+		if (resourceSys.CanReceiveAmount(targetBuilding.holder(targetResourceEnum)) >= amount) {
+			foundDropoffs.foundInfos.push_back(targetBuilding.GetHolderInfoFull(targetResourceEnum, amount));
+		}
+	}
+
+	// Try any other dropoff
+	if (!foundDropoffs.hasInfos()) {
+		foundDropoffs = resourceSystem().FindHolder(ResourceFindType::AvailableForDropoff, targetResourceEnum, amount, unitTile());
+	}
+
+	if (foundDropoffs.hasInfos())
+	{
+		for (FoundResourceHolderInfo foundInfo : foundDropoffs.foundInfos) {
+			// Reserve
+			ReserveResource(ReservationType::Push, foundInfo.info, foundInfo.amount);
+
+			// Set Actions
+			Add_DropoffResource(foundInfo.info, foundInfo.amount);
+			Add_MoveToResource(foundInfo.info);
+			//Add_MoveTo(foundInfo.tile);
+		}
+
+		for (DropInfo drop : dropsToMove) {
+			int32 dropResourceCount = resourceSys.resourceCountWithPop(drop.holderInfo);
+
+			// Reserve
+			ReserveResource(ReservationType::Pop, drop.holderInfo, dropResourceCount);
+
+			// Set Actions
+			Add_PickupResource(drop.holderInfo, dropResourceCount);
+			Add_MoveToResource(drop.holderInfo);
+		}
+
+		_unitState = UnitState::Farm;
+
+		AddDebugSpeech("(Succeed)TryFarm: RemoveDrop from farm");
+		return true;
+	}
+
+	return false;
+}
+
 
 bool HumanStateAI::TryBulkHaul_ShippingDepot()
 {
@@ -1782,7 +1897,14 @@ void HumanStateAI::TryForestingPlantAction()
 }
 bool HumanStateAI::TryForestingPlant(TileObjEnum lastCutTileObjEnum, NonWalkableTileAccessInfo accessInfo)
 {
-	Forester& forester = workplace()->subclass<Forester>(CardEnum::Forester);
+	Building* workPlc = workplace();
+	if (!workPlc) {
+		return false;
+	}
+	if (!workPlc->isEnum(CardEnum::Forester)) {
+		return false;
+	}
+	Forester& forester = workPlc->subclass<Forester>();
 	
 	if (!accessInfo.isValid()) {
 		// Find a valid tile to plant tree...

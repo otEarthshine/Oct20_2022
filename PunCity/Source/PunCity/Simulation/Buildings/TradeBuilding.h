@@ -98,11 +98,11 @@ public:
 	void Tick1Sec() override;
 
 	
-	int32 exportMoney() {
-		return std::max(0, _exportGainLast1Round + _exportGainLast2Round);
+	int32 exportMoney100() {
+		return std::max(0, _exportGain100Last1Round + _exportGain100Last2Round);
 	}
-	int32 importMoney() {
-		return std::min(0, _importLossLast1Round + _importLossLast2Round);
+	int32 importMoney100() {
+		return std::max(0, _importLoss100Last1Round + _importLoss100Last2Round);
 	}
 	
 
@@ -118,10 +118,10 @@ public:
 		_tradeCommand >> Ar;
 		Ar << _isTradingPostFull;
 
-		Ar << _importLossLast1Round;
-		Ar << _importLossLast2Round;
-		Ar << _exportGainLast1Round;
-		Ar << _exportGainLast2Round;
+		Ar << _importLoss100Last1Round;
+		Ar << _importLoss100Last2Round;
+		Ar << _exportGain100Last1Round;
+		Ar << _exportGain100Last2Round;
 	}
 
 protected:
@@ -135,10 +135,10 @@ protected:
 
 	bool _isTradingPostFull = false;
 
-	int32 _importLossLast1Round = 0;
-	int32 _importLossLast2Round = 0;
-	int32 _exportGainLast1Round = 0;
-	int32 _exportGainLast2Round = 0;
+	int32 _importLoss100Last1Round = 0;
+	int32 _importLoss100Last2Round = 0;
+	int32 _exportGain100Last1Round = 0;
+	int32 _exportGain100Last2Round = 0;
 };
 
 class TradingPost final : public TradeBuilding

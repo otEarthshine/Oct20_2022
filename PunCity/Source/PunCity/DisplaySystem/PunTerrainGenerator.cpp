@@ -830,7 +830,7 @@ bool PunTerrainGenerator::HasSavedMap(const FMapSettings& mapSettings)
 		tempMapSettings.Serialize(Ar);
 	});
 
-	return tempMapSettings == mapSettings;
+	return tempMapSettings.MapEquals(mapSettings);
 }
 
 bool PunTerrainGenerator::SaveOrLoad(bool isSaving)

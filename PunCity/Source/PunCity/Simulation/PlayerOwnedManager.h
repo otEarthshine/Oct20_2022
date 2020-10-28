@@ -1354,10 +1354,10 @@ private:
 		return _adultIds.size();
 	}
 
-	void AddDataPoint(PlotStatEnum statEnum, int32 data)
+	void AddDataPoint(PlotStatEnum statEnum, int32 data, int32 ticksPerStatInterval = TicksPerStatInterval)
 	{
 		std::vector<int32>& statVec = _enumToStatVec[static_cast<int>(statEnum)];
-		int32 statTickCount = Time::Ticks() / TicksPerStatInterval;
+		int32 statTickCount = Time::Ticks() / ticksPerStatInterval;
 
 		//while (statVec.size() < statTickCount) {
 		for (int32 i = statVec.size(); i < statTickCount; i++) {

@@ -304,13 +304,16 @@ public:
 		return widget;
 	}
 
-	UManageStorageElement* AddManageStorageElement(ResourceEnum resourceEnum, std::string sectionName, int32 buildingId, ECheckBoxState checkBoxState, bool isSection, bool showTarget, int32 target = -1)
+	UManageStorageElement* AddManageStorageElement(ResourceEnum resourceEnum, std::string sectionName, int32 buildingId, ECheckBoxState checkBoxState, bool isSection, bool justOpenedUI, bool showTarget, int32 target = -1)
 	{
 		auto widget = GetChildElement<UManageStorageElement>(UIEnum::ManageStorageElement);
 		widget->PunInit(resourceEnum, sectionName, buildingId, checkBoxState, isSection);
-		if (showTarget) {
-			widget->SetTargetAmount(target);
+
+		if (justOpenedUI) {
+			widget->TargetAmount_InitOnce(target);
 		}
+		widget->TargetAmount_Update(showTarget);
+		
 		return widget;
 	}
 

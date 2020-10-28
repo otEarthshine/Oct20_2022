@@ -50,7 +50,9 @@ public:
 	bool TryGatherFruit();
 	bool TryHunt();
 	bool TryRanch();
+	
 	bool TryFarm();
+	bool TryClearFarmDrop(class Farm& farm, int32 minDropCount);
 
 	bool TryBulkHaul_ShippingDepot();
 	bool TryBulkHaul_Market();

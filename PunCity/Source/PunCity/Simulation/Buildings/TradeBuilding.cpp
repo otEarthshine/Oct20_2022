@@ -15,8 +15,8 @@ void TradeBuilding::UsedTrade(FTradeResource tradeCommand)
 	int32 importMoney100 = 0;
 	ExecuteTrade(tradeCommand, tradingFeePercent(), centerTile(), _simulation, false, exportMoney100, importMoney100);
 
-	_exportGainLast1Round += exportMoney100;
-	_importLossLast1Round += importMoney100;
+	_exportGain100Last1Round += exportMoney100;
+	_importLoss100Last1Round += importMoney100;
 
 	_hasPendingTrade = true;
 	_ticksAccumulated = 0;
@@ -41,7 +41,7 @@ void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePe
 
 		// This is used just for counting quest's total trade amount (otherwise use tradeCommand.totalGain)
 
-		if (buyAmount < 0) // Sell
+		if (buyAmount < 0) // Sell (Export)
 		{
 			// TODO: ?? this is cheating the system, getting paid more than actually sold, calculate trade gain here?
 
@@ -54,7 +54,7 @@ void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePe
 			resourceSys.RemoveResourceGlobal(resourceEnum, sellAmount);
 			resourceSys.ChangeMoney100(tradeMoney100);
 		}
-		else if (buyAmount > 0) // Buy
+		else if (buyAmount > 0) // Buy (Import)
 		{
 			int32 tradeMoney100 = buyAmount * simulation->price100(resourceEnum);
 			totalImportMoney100 += tradeMoney100;
@@ -71,17 +71,22 @@ void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePe
 	// Change money from trade's Total
 	//resourceSys.ChangeMoney(tradeCommand.totalGain);
 
-	int32 totalTradeMoney100 = totalImportMoney100 + totalExportMoney100;
+	//int32 totalTradeMoney100 = totalImportMoney100 + totalExportMoney100;
 
-	int32 fee100 = totalTradeMoney100 * tradingFeePercent / 100;
+	int32 exportFee100 = totalExportMoney100 * tradingFeePercent / 100;
+	int32 importFee100 = totalImportMoney100 * tradingFeePercent / 100;
+	int32 fee100 = exportFee100 + importFee100;
+	//int32 fee100 = totalTradeMoney100 * tradingFeePercent / 100;
 	resourceSys.ChangeMoney100(-fee100);
 	
-	simulation->QuestUpdateStatus(playerId, QuestEnum::TradeQuest, abs(totalTradeMoney100 / 100 + fee100 / 100));
+	simulation->QuestUpdateStatus(playerId, QuestEnum::TradeQuest, abs((totalExportMoney100 + totalImportMoney100 + fee100) / 100));
 
-	simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, tile, ToSignedNumber(tradeCommand.totalGain));
+	//simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, tile, ToSignedNumber(tradeCommand.totalGain));
 
-	exportMoney100 = totalExportMoney100;
-	importMoney100 = totalImportMoney100;
+	exportMoney100 = totalExportMoney100 - exportFee100;
+	importMoney100 = totalImportMoney100 + importFee100;
+
+	simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, tile, ToSignedNumber((exportMoney100 - importMoney100) / 100));
 }
 
 
@@ -147,11 +152,11 @@ void TradeBuilding::Tick1Sec()
 	// Tick move round 1 sec after the last round refresh
 	if (Time::Seconds() % Time::SecondsPerRound == 1)
 	{
-		_exportGainLast2Round = _exportGainLast1Round;
-		_exportGainLast1Round = 0;
+		_exportGain100Last2Round = _exportGain100Last1Round;
+		_exportGain100Last1Round = 0;
 
-		_importLossLast2Round = _importLossLast1Round;
-		_importLossLast1Round = 0;
+		_importLoss100Last2Round = _importLoss100Last1Round;
+		_importLoss100Last1Round = 0;
 	}
 }
 

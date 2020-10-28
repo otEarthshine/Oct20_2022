@@ -171,6 +171,16 @@ public:
 		return !(*this == a);
 	}
 
+	bool MapEquals(const FMapSettings& a)
+	{
+		return mapSeed == a.mapSeed &&
+			mapSizeEnumInt == a.mapSizeEnumInt &&
+			mapSeaLevel == a.mapSeaLevel &&
+			mapMoisture == a.mapMoisture &&
+			mapTemperature == a.mapTemperature &&
+			mapMountainDensity == a.mapMountainDensity;
+	}
+
 
 	std::string mapSeedStd() { return ToStdString(mapSeed); }
 

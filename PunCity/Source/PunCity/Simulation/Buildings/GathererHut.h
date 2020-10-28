@@ -276,6 +276,7 @@ public:
 	void ClearAllPlants();
 
 	bool IsStage(FarmStage farmStage) { return _farmStage == farmStage; }
+	
 	std::string farmStageName() {
 		switch (_farmStage) {
 		case FarmStage::Dormant: return "Dormant";

@@ -238,7 +238,8 @@ void PlayerOwnedManager::RefreshJobs()
 	}
 
 	// Try fill priority buildings
-	for (CardEnum buildingEnum : buildingEnumPriorityList) {
+	for (CardEnum buildingEnum : buildingEnumPriorityList) 
+	{
 		int buildingEnumInt = static_cast<int>(buildingEnum);
 		if (buildingEnumInt >= _jobBuildingEnumToIds.size()) {
 			continue;
@@ -246,12 +247,12 @@ void PlayerOwnedManager::RefreshJobs()
 
 		// Special case Winter
 		if (Time::IsWinter()) {
-			if (buildingEnum == CardEnum::FruitGatherer ||
-				buildingEnum == CardEnum::Farm) {
+			if (buildingEnum == CardEnum::FruitGatherer) {
 				continue;
 			}
 		}
 
+		// Fall season: Farm has earlier higher priority
 		if (buildingEnum == CardEnum::Farm && Time::FallSeason()) {
 			continue;
 		}
@@ -477,17 +478,25 @@ void PlayerOwnedManager::TickRound()
 	 */
 	if (Time::Ticks() % Time::TicksPerSeason == 0)
 	{
-		std::vector<int32> buildingIds = _simulation->buildingIds(_playerId, CardEnum::TradingCompany);
-		int32 exportMoney = 0;
-		int32 importMoney = 0;
-		for (int32 buildingId : buildingIds) {
-			auto& tradingCompany = _simulation->building(buildingId).subclass<TradingCompany>(CardEnum::TradingCompany);
-			exportMoney += tradingCompany.exportMoney();
-			importMoney += std::abs(tradingCompany.importMoney());
-		}
-		AddDataPoint(PlotStatEnum::Export, exportMoney);
-		AddDataPoint(PlotStatEnum::Import, importMoney);
-		AddDataPoint(PlotStatEnum::TradeBalance, exportMoney - importMoney);
+		int32 exportMoney100 = 0;
+		int32 importMoney100 = 0;
+
+		auto accumulateData = [&](CardEnum buildingEnum)
+		{
+			std::vector<int32> buildingIds = _simulation->buildingIds(_playerId, buildingEnum);
+			for (int32 buildingId : buildingIds) {
+				auto& tradingCompany = _simulation->building(buildingId).subclass<TradeBuilding>(buildingEnum);
+				exportMoney100 += tradingCompany.exportMoney100();
+				importMoney100 += std::abs(tradingCompany.importMoney100());
+			}
+		};
+		accumulateData(CardEnum::TradingCompany);
+		accumulateData(CardEnum::TradingPort);
+		accumulateData(CardEnum::TradingPost);
+		
+		AddDataPoint(PlotStatEnum::Export, exportMoney100 / 100, Time::TicksPerSeason);
+		AddDataPoint(PlotStatEnum::Import, importMoney100 / 100, Time::TicksPerSeason);
+		//AddDataPoint(PlotStatEnum::TradeBalance, (exportMoney100 - importMoney100) / 100, Time::TicksPerSeason);
 	}
 
 	/*

@@ -77,19 +77,26 @@ public:
 
 			ExpandArrow->SetVisibility(ESlateVisibility::Collapsed);
 		}
+	}
 
-		TargetAmount->SetVisibility(ESlateVisibility::Collapsed);
+	//void OnInit() override {
+	//	justInitialized = true;
+	//}
+	void TargetAmount_InitOnce(int32 target)
+	{
 		SetChildHUD(TargetAmount);
 		TargetAmount->OnInit();
-		TargetAmount->Set(this, CallbackEnum::SetMarketTarget, buildingIdIn);
-	}
+		TargetAmount->Set(this, CallbackEnum::SetMarketTarget, buildingId);
 
-	void SetTargetAmount(int32 amount)
-	{
-		TargetAmount->SetVisibility(ESlateVisibility::Visible);
-		TargetAmount->amount = amount;
+		// Editable Number only set amount when UI just initialized
+		TargetAmount->amount = target;
 		TargetAmount->UpdateText();
 	}
+	void TargetAmount_Update(int32 showTarget)
+	{
+		TargetAmount->SetVisibility(showTarget ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	}
+	
 
 	void CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum) override
 	{
@@ -151,4 +158,7 @@ public:
 	float delayOverrideStartTime = 0.0f;
 	bool expandedOverride = false;
 	ECheckBoxState checkStateOverride = ECheckBoxState::Unchecked;
+
+
+	//bool justInitialized = true;
 };

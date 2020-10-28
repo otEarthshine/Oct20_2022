@@ -261,7 +261,8 @@ public:
 		for (int i = 0; i < _holders.size(); i++) {
 			if (_holders[i].type == ResourceHolderType::Storage ||
 				_holders[i].type == ResourceHolderType::Provider ||
-				_holders[i].type == ResourceHolderType::Drop) 
+				_holders[i].type == ResourceHolderType::Drop ||
+				_holders[i].type == ResourceHolderType::DropManual)
 			{
 				count += _holders[i].current();
 			}
@@ -924,7 +925,7 @@ public:
 	}
 
 	// AddDrops
-	int SpawnDrop(ResourceEnum resourceEnum, int32 amount,  WorldTile2 tile)
+	int SpawnDrop(ResourceEnum resourceEnum, int32 amount,  WorldTile2 tile, ResourceHolderType type = ResourceHolderType::Drop)
 	{
 		if (amount <= 0) {
 			return -1;
@@ -937,7 +938,7 @@ public:
 			return -1;
 		}
 		
-		int32 holderId = holderGroup(resourceEnum).SpawnHolder(resourceEnum, ResourceHolderType::Drop, -1, tile, 0, *this);
+		int32 holderId = holderGroup(resourceEnum).SpawnHolder(resourceEnum, type, -1, tile, 0, *this);
 		//ResourceHolder& holder = holders(resourceEnum).holderMutable(holderId);
 		holderGroup(resourceEnum).AddResource(holderId, amount, *this);
 
@@ -1081,7 +1082,9 @@ public:
 		const ResourceHolder& holderLocal = holder(info);
 
 		// Remove the drop when it was completely picked up
-		if (holderLocal.type == ResourceHolderType::Drop) {
+		if (holderLocal.type == ResourceHolderType::Drop ||
+			holderLocal.type == ResourceHolderType::DropManual) 
+		{
 			//PUN_LOG("RemoveResource..Drop player:%d, %s, id:%d", _playerId, *ToFString(info.resourceName()), info.holderId);
 			if (holderLocal.current() == 0) {
 				_simulation->dropSystem().RemoveDrop(_playerId, info, holderLocal.tile);

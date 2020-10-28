@@ -705,8 +705,8 @@ private:
 		{
 			std::vector<CardEnum> cardEnums
 			{
-				CardEnum::HerbSeed,
 				CardEnum::ProductivityBook,
+				CardEnum::CabbageSeed,
 				CardEnum::IronSmelter,
 			};
 			for (CardEnum cardEnum : cardEnums) {

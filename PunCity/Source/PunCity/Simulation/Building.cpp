@@ -496,12 +496,21 @@ void Building::SetResourceTarget(ResourceHolderInfo holderInfo, int32 target) {
 
 bool Building::NeedWork()
 {
-	ResourceHolderInfo info = holderInfo(product());
-	PUN_CHECK2(info.isValid(), string("Probably no holder for product?"));
-	int resourceCount = resourceSystem().resourceCountWithPush(info);
+	std::vector<ResourceEnum> productEnums = products();
+
+	for (ResourceEnum productEnum : productEnums)
+	{
+		ResourceHolderInfo info = holderInfo(productEnum);
+		PUN_CHECK2(info.isValid(), string("Probably no holder for product?"));
+		int resourceCount = resourceSystem().resourceCountWithPush(info); // TODO: shouldn't this be pop?
+
+		if (resourceCount > GameConstants::WorkerEmptyBuildingInventoryAmount) {
+			return false;
+		}
+	}
 
 	// TODO: proper work limit
-	return resourceCount <= GameConstants::WorkerEmptyBuildingInventoryAmount && MathUtils::SumVector(_workReserved) + _workDone100 < workManSecPerBatch100();
+	return MathUtils::SumVector(_workReserved) + _workDone100 < workManSecPerBatch100();
 }
 
 bool Building::NeedConstruct()

@@ -493,14 +493,20 @@ void UGameSettingsUI::RestoreDefault()
 	{
 		auto settings = GetGameUserSettings();
 		settings->SetScreenResolution(FIntPoint(1920, 1080));
-		settings->SetFullscreenMode(EWindowMode::Windowed);
+		settings->SetFullscreenMode(EWindowMode::WindowedFullscreen);
 		RefreshResolutionDropdown();
+
+		// Set to fullscreen
+		settings->ConfirmVideoMode();
+		settings->ApplyResolutionSettings(false);
 
 		settings->SetAntiAliasingQuality(2);
 		settings->SetPostProcessingQuality(2);
 		settings->SetShadowQuality(3);
-		settings->SetTextureQuality(2);
-		settings->SetVisualEffectQuality(2);
+		settings->SetTextureQuality(0);
+		settings->SetVisualEffectQuality(0);
+
+		settings->SetVSyncEnabled(true);
 
 		gameInstance()->RestoreDefaultsGraphics();
 
@@ -591,13 +597,13 @@ void UGameSettingsUI::RefreshResolutionDropdown()
 		ResolutionHiddenText->SetVisibility(ESlateVisibility::Hidden);
 	}
 	else {
-		//ResolutionDropdown->ClearOptions();
-		FIntPoint point = settings->GetDesktopResolution();
-		//ResolutionDropdown->AddOption(FString::FromInt(point.X) + "x" + FString::FromInt(point.Y));
-		//ResolutionDropdown->SetSelectedIndex(0);
 		ResolutionDropdown->SetIsEnabled(false);
 		ResolutionDropdown->SetVisibility(ESlateVisibility::Hidden);
 		ResolutionHiddenText->SetVisibility(ESlateVisibility::Visible);
-		ResolutionHiddenText->SetText(FText::FromString(FString::FromInt(point.X) + "x" + FString::FromInt(point.Y)));
+
+		FIntPoint point = settings->GetDesktopResolution();
+		//ResolutionHiddenText->SetText(FText::FromString(FString::FromInt(point.X) + "x" + FString::FromInt(point.Y)));
+		//ResolutionHiddenText->SetText(FText::FromString(FString::FromInt(point.X) + "x" + FString::FromInt(point.Y) + "(Change to windowed "));
+		ResolutionHiddenText->SetText(FText::FromString(FString("To adjust, change to windowed mode")));
 	}
 }

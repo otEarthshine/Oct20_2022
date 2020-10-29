@@ -1079,7 +1079,7 @@ public:
 	{
 		SetupWorkMode({
 			{"Coal-fired", ResourceEnum::Flour, ResourceEnum::Coal, 5, ResourceEnum::None},
-			{"Wood-fired", ResourceEnum::Flour, ResourceEnum::Wood, 5, ResourceEnum::None, "Wood-fired oven cook food faster locking in more nutrient. +30% productivity"},
+			{"Wood-fired", ResourceEnum::Flour, ResourceEnum::Wood, 5, ResourceEnum::None, "Wood-fired oven cooks food faster locking in more nutrients. +30% productivity"},
 		});
 	}
 	

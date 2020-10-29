@@ -76,7 +76,7 @@ void UnlockSystem::OnEraUnlocked(std::stringstream& ss)
 		auto& cardSys = _simulation->cardSystem(_playerId);
 		cardSys.AddDrawCards(CardEnum::ChimneyRestrictor, 1);
 		//cardSys.AddDrawCards(CardEnum::ChildMarriage, 1);
-		cardSys.AddDrawCards(CardEnum::ProlongLife, 1);
+		//cardSys.AddDrawCards(CardEnum::ProlongLife, 1);
 		cardSys.AddDrawCards(CardEnum::BirthControl, 1);
 		cardSys.AddDrawCards(CardEnum::CoalTreatment, 1); // Encourage coal usage...
 	}

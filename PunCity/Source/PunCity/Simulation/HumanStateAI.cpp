@@ -248,7 +248,7 @@ void HumanStateAI::CalculateActions()
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_MoveResource);
 
-		if (TryMoveResourcesToDeliveryTarget(10) || justReset()) {
+		if (TryMoveResourcesToDeliveryTargetAll(10) || justReset()) {
 			// DEBUG_AI_VAR
 			return;
 		}
@@ -385,27 +385,38 @@ bool HumanStateAI::TryMoveResourcesProviderToDropoff(int32 providerBuildingId, i
 		return false;
 	}
 	Building& dropoff = _simulation->building(dropoffBuildingId);
+	if (dropoff.isEnum(CardEnum::StorageYard)) {
+		if (!dropoff.subclass<StorageBase>().ResourceAllowed(resourceEnum)) {
+			return false;
+		}
+	}
+	
 	ResourceHolderInfo dropoffInfo = dropoff.holderInfo(resourceEnum);
 	if (!dropoffInfo.isValid()) {
 		return false;
 	}
-	
+
+	// Provider valid?
 	auto& resourceSys = resourceSystem();
 	if (resourceSys.resourceCountWithPop(providerInfo) < amountAtLeast) {
 		return false;
 	}
 
-	auto& holder = resourceSys.holder(providerInfo);
-	if (holder.type == ResourceHolderType::Requester) {
+	// Dropoff valid?
+
+	auto& dropoffHolder = resourceSys.holder(dropoffInfo);
+	if (dropoffHolder.type == ResourceHolderType::Requester) {
 		return false;
 	}
 
-	if (holder.type == ResourceHolderType::Storage) {
-		int32 canReceiveAmount = resourceSys.CanReceiveAmount(holder);
+	if (dropoffHolder.type == ResourceHolderType::Storage) 
+	{
+		int32 canReceiveAmount = resourceSys.CanReceiveAmount(dropoffHolder);
 		if (canReceiveAmount < amountAtLeast) {
 			return false;
 		}
 	}
+
 	
 	MoveResourceSequence({ FoundResourceHolderInfo(providerInfo, amountAtLeast, provider.centerTile()) }, 
 										{ FoundResourceHolderInfo(dropoffInfo, amountAtLeast, dropoff.centerTile()) });
@@ -550,7 +561,7 @@ bool HumanStateAI::TryMoveResourcesToDeliveryTarget(int32 deliverySourceId, Reso
 	return false;
 }
 
-bool HumanStateAI::TryMoveResourcesToDeliveryTarget(int32 amountAtLeast)
+bool HumanStateAI::TryMoveResourcesToDeliveryTargetAll(int32 amountAtLeast)
 {
 	auto& resourceSys = resourceSystem();
 	const std::vector<int32>& deliverySourceIds = _simulation->playerOwned(_playerId).allDeliverySources();
@@ -561,13 +572,16 @@ bool HumanStateAI::TryMoveResourcesToDeliveryTarget(int32 amountAtLeast)
 	for (int32 deliverySourceId : deliverySourceIds) {
 		Building& deliverySource = _simulation->building(deliverySourceId);
 		
-		const std::vector<ResourceHolderInfo>& holderInfos = deliverySource.holderInfos();
-		for (const ResourceHolderInfo& info : holderInfos) 
+		std::vector<ResourceEnum> products = deliverySource.products();
+		
+		for (ResourceEnum resourceEnum : products)
 		{
-			FoundResourceHolderInfo holderInfoFull(info, amountAtLeast, deliverySource.gateTile(), deliverySourceId, deliverySource.DistanceTo(uTile));
+			ResourceHolderInfo holderInfo = deliverySource.holderInfo(resourceEnum);
 
-			if (resourceSys.resourceCountWithPop(info) >= amountAtLeast)
+			if (resourceSys.resourceCountWithPop(holderInfo) >= amountAtLeast)
 			{
+				FoundResourceHolderInfo holderInfoFull(holderInfo, amountAtLeast, deliverySource.gateTile(), deliverySourceId, deliverySource.DistanceTo(uTile));
+				
 				// TODO: this can be a templated func???
 				// Ensure amount of 10 or more TrySortedAdd(vec, value, func, maxVecSize)
 				bool inserted = false;
@@ -2072,34 +2086,42 @@ bool HumanStateAI::TryProduce()
 
 	//ResourceHolderInfo info = workplace.holderInfo(workplace.product());
 	//PUN_CHECK2(info.isValid(), debugStr());
-
-	if (!workplace.NeedWork()) {
+	
+	// If work isn't needed, this could be because we need to send resource to delivery target
+	if (!workplace.NeedWork()) 
+	{
 		if (IsSpecialProducer(workplace.buildingEnum())) {
 			AddDebugSpeech("(Failed)TryProduce: !workplace.NeedWork, SpecialProducer");
 			return true;
 		}
+
+		std::vector<ResourceEnum> productEnums = workplace.products();
+
+		for (ResourceEnum productEnum : productEnums)
+		{
+			ResourceHolderInfo productHolderInfo = workplace.holderInfo(productEnum);
+
+			int32 amount = min(10, resourceSystem().resourceCountWithPop(productHolderInfo)); // Don't move more than 10 resources at a time
+			if (amount > 0) {
+				// Try sending resource to delivery target first
+				if (TryMoveResourcesToDeliveryTarget(workplaceId(), productEnum, amount)) {
+					return true;
+				}
+
+				// Try putting resource somewhere else.
+				if (TryMoveResourcesProviderToAnyDropoff(FoundResourceHolderInfo(productHolderInfo, amount, workplace.gateTile()), ResourceFindType::AvailableForDropoff)) {
+					AddDebugSpeech("(Succeed)TryProduce: !workplace.NeedWork, move instead");
+					return true;
+				}
+			}
+		}
 		
-		auto holderInfo = workplace.holderInfo(workplace.product());
-		int32 amount = min(10, resourceSystem().resourceCountWithPop(holderInfo)); // Don't move more than 10 resources at a time
-		if (amount == 0) {
-			AddDebugSpeech("(Failed)TryProduce: !workplace.NeedWork, but already enough Pop");
-			return false;
-		}
-
-		// Try sending resource to delivery target first
-		if (TryMoveResourcesToDeliveryTarget(workplaceId(), workplace.product(), amount)) {
-			return true;
-		}
-
-		// Try putting resource somewhere else.
-		if (TryMoveResourcesProviderToAnyDropoff(FoundResourceHolderInfo(holderInfo, amount, workplace.gateTile()), ResourceFindType::AvailableForDropoff)) {
-			AddDebugSpeech("(Succeed)TryProduce: !workplace.NeedWork, move instead");
-			return true;
-		}
-		AddDebugSpeech("(Failed)TryProduce: !workplace.NeedWork, Failed to find storage");
+		AddDebugSpeech("(Failed)TryProduce: !workplace.NeedWork, No resource to move (all popped?)");
 		return false;
 	}
 
+
+	// Fill Inputs
 	if (!workplace.filledInputs())
 	{
 		// If there is nothing at the workplace, we need to go out to grab the resource to fill it

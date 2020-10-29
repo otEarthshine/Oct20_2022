@@ -30,7 +30,7 @@ public:
 
 	static const int32 MaxFloodDistance_Army = 10;
 
-	static const int WorkerEmptyBuildingInventoryAmount = 80;
+	static const int WorkerEmptyBuildingInventoryAmount = 50;
 
 	static const int32 StorageCountPerTile = 120;
 	static const int32 StorageSlotCount = 4;

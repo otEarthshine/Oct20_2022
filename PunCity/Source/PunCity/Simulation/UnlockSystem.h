@@ -53,8 +53,8 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 {
 	{TechEnum::DeepMining, { "Deep Mining" }},
 	
-	{TechEnum::IronRefining, { "Ironwork" }},
-	{TechEnum::GoldRefining, { "Goldwork" }},
+	{TechEnum::IronRefining, { "Ironworks" }},
+	{TechEnum::GoldRefining, { "Goldworks" }},
 
 	{TechEnum::ImprovedLogistics, { "Improved Logistics" }},
 
@@ -89,12 +89,12 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 	}},
 	{TechEnum::TaxAdjustment, {
 		"Tax Adjustment",
-		"Allow tax adjustment from townhall."
+		"Allows tax adjustment from townhall."
 	}},
 
 	{TechEnum::TradingPost, {
 		"Foreign Trade",
-		"Increase the number of immigrants by 20%."
+		"Increases the number of immigrants by 20%."
 	}},
 	
 	{TechEnum::TraderDiscount, {
@@ -126,12 +126,12 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 
 	{TechEnum::Plantation, {
 		"Plantation",
-		"Unlock farm crops cards: Cannabis Seeds, Grape Seeds, Cocoa Seeds, Cotton Seeds"
+		"Unlocks farm crops cards: Cannabis Seeds, Grape Seeds, Cocoa Seeds, Cotton Seeds"
 	}},
 	
 	{TechEnum::MushroomSubstrateSterilization, {
 		"Mushroom Log Sterilization",
-		"Decrease mushroom farm's wood consumption by 50%."
+		"Decreases mushroom farm's wood consumption by 50%."
 	}},
 	
 	{TechEnum::QuarryImprovement, {
@@ -146,7 +146,7 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 
 	{TechEnum::BorealLandCost, {
 		"Boreal and Tundra Expedition",
-		"Claiming Boreal Forest and Tundra Province cost half as usual."
+		"Claiming Boreal Forest and Tundra Province costs half as usual."
 	}},
 	{TechEnum::DesertTrade, {
 		"Silk Road",
@@ -155,11 +155,11 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 	
 	{ TechEnum::ShallowWaterEmbark, {
 		"Shallow Water Embark",
-		"Allow claiming bordering provinces across a body of water. 100% cost penalty applied to claim/attack through shallow water."
+		"Allows claiming bordering provinces across a body of water. 100% cost penalty applied to claim/attack through shallow water."
 	}},
 	{ TechEnum::DeepWaterEmbark, {
 		"Deepwater Embark",
-		"Allow claiming coastal provinces across the sea. 200% cost penalty applied to claim/attack through deep water.",
+		"Allows claiming coastal provinces across the sea. 200% cost penalty applied to claim/attack through deep water.",
 	}},
 
 	{TechEnum::Sawmill, {
@@ -180,11 +180,11 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 	}},
 	{TechEnum::CheapLand, {
 		"Cheap land",
-		"Claiming land cost 30% less."
+		"Claiming land costs 30% less."
 	}},
 	{TechEnum::CheapReroll, {
 		"Cheap reroll",
-		"Reroll cost half as much."
+		"Rerolls cost half as much."
 	}},
 
 	//{TechEnum::ClaimLandByFood, {

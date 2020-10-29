@@ -44,7 +44,9 @@
 #define DEV_BUILD !UE_BUILD_SHIPPING
 
 #if !defined(PUN_CHECK)
-	#if DEBUG_BUILD
+	#if UE_BUILD_SHIPPING
+		#define PUN_CHECK(x) 
+	#elif DEBUG_BUILD
 		#define PUN_CHECK(x) if (!(x)) { FDebug::DumpStackTraceToLog(); checkNoEntry(); }
 	#else
 		#define PUN_CHECK(x) if (!(x)) { FDebug::DumpStackTraceToLog(); UE_LOG(LogTemp, Error, TEXT("PUN_ERROR")); }
@@ -2191,7 +2193,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::FenceGate,		"Fence Gate",			WorldTile2(1, 1),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,0,0},	"Fence gate blocks animals from entering while letting people through.", "Block animals from walking on tile, while letting citizens through."),
 	BldInfo(CardEnum::Bridge,		"Bridge",				WorldTile2(1, 1),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,0,0},	"Allow citizens to cross over water."),
 	
-	BldInfo(CardEnum::Forester,		"Forester",				WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 2,	{50,50,0},	"Chop/plant trees within your territory."),
+	BldInfo(CardEnum::Forester,		"Forester",				WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 2,	{50,50,0},	"Cut/plants trees within your territory."),
 
 	BldInfo(CardEnum::CoalMine,		"Coal Mine",			WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::Coal,		10, 3,	{50,30,0},	"Mine Coal from Coal Deposits."),
 	BldInfo(CardEnum::IronMine,		"Iron Mine",			WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::IronOre,	 10, 3,	{50,30,0},	"Mine Iron Ores from Iron Deposits."),
@@ -2258,9 +2260,9 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::GoldSmelter,	"Gold Smelter",			WorldTile2(5, 6),	ResourceEnum::Coal,ResourceEnum::GoldOre,ResourceEnum::GoldBar,	 10, 5,	{120,120,0},	"Smelt Gold Ores into Gold Bars."),
 	BldInfo(CardEnum::Mint,			"Mint",					WorldTile2(4, 6),	ResourceEnum::GoldBar,ResourceEnum::None,ResourceEnum::None,		 0, 2,	{120,120,0},	"Mint Gold Bars into <img id=\"Coin\"/>."),
 
-	BldInfo(CardEnum::BarrackClubman,	"Clubman Barrack",	WorldTile2(7, 7),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 2,	{30,0,0},	"Train Clubmen."),
-	BldInfo(CardEnum::BarrackSwordman,	"Knight Barrack",	WorldTile2(7, 7),	ResourceEnum::Iron, ResourceEnum::None, ResourceEnum::None,		0, 4,	{80,30,30},	"Consume Iron to increase <img id=\"Influence\"/>."),
-	BldInfo(CardEnum::BarrackArcher,		"Archer Barrack",	WorldTile2(7, 7),	ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::None,		0, 2,	{50,30,0},	"Consume Wood to increase <img id=\"Influence\"/>."),
+	BldInfo(CardEnum::BarrackClubman,	"Clubman Barracks",	WorldTile2(7, 7),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 2,	{30,0,0},	"Train Clubmen."),
+	BldInfo(CardEnum::BarrackSwordman,	"Knight Barracks",	WorldTile2(7, 7),	ResourceEnum::Iron, ResourceEnum::None, ResourceEnum::None,		0, 4,	{80,30,30},	"Consume Iron to increase <img id=\"Influence\"/>."),
+	BldInfo(CardEnum::BarrackArcher,		"Archer Barracks",	WorldTile2(7, 7),	ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::None,		0, 2,	{50,30,0},	"Consume Wood to increase <img id=\"Influence\"/>."),
 
 	BldInfo(CardEnum::ShrineWisdom,	"Shrine of Wisdom",		WorldTile2(4, 4),	ResourceEnum::None,ResourceEnum::None,ResourceEnum::None,	 0, 0,	{0, 50, 0},	"+1 Wild Card to the deck."),
 	BldInfo(CardEnum::ShrineLove,	"Shrine of Love",		WorldTile2(4, 4),	ResourceEnum::None,ResourceEnum::None,ResourceEnum::None,		 0, 0,	{0, 80, 10},	"+5<img id=\"Smile\"/> to surrounding houses."),

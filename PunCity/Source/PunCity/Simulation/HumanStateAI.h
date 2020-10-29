@@ -18,7 +18,7 @@ public:
 	bool TryMoveResourcesAny(ResourceEnum resourceEnum, ResourceFindType providerType, ResourceFindType dropoffType, int32 amountAtLeast);
 
 	bool TryMoveResourcesToDeliveryTarget(int32 deliverySourceId, ResourceEnum resourceEnum, int32 amountAtLeast);
-	bool TryMoveResourcesToDeliveryTarget(int32 amountAtLeast);
+	bool TryMoveResourcesToDeliveryTargetAll(int32 amountAtLeast);
 
 	bool TryMoveResourceAny(ResourceInfo info, int32 amountAtLeast)
 	{

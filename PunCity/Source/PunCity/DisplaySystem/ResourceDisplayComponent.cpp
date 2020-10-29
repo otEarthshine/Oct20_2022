@@ -88,7 +88,9 @@ void UResourceDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 				LocalTile2 relativeMinTile(relativeMinTileWorld.x, relativeMinTileWorld.y);
 
 				LocalTile2 localCenter = building.centerTile().localTile();
-				check(localCenter.isValid());
+				if (!localCenter.isValid()) {
+					return;
+				}
 				ResourceSystem& resourceSystem = simulation().resourceSystem(building.playerId());
 
 				const int resourcePerDisplay = 10;
@@ -126,12 +128,12 @@ void UResourceDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 
 					for (size_t j = 0; j < holderInfos.size(); j++)
 					{
-						check(holderInfos[j].isValid());
+						PUN_CHECK(holderInfos[j].isValid());
 
 						int resourceCount = resourceSystem.resourceCount(holderInfos[j]);
 						int tileCount = (resourceCount + GameConstants::StorageCountPerTile - 1) / GameConstants::StorageCountPerTile;
-						check(tileCount >= 0);
-						check(tileCount <= building.storageSlotCount());
+						PUN_CHECK(tileCount >= 0);
+						PUN_CHECK(tileCount <= building.storageSlotCount());
 
 						FString resourceName = ToFString(holderInfos[j].resourceName());
 

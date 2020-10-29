@@ -742,6 +742,14 @@ public:
 		}
 		return buildingInfo().produce;
 	}
+	virtual std::vector<ResourceEnum> products() {
+		std::vector<ResourceEnum> outputs{ product() };
+		if (isEnum(CardEnum::Beekeeper)) {
+			outputs.push_back(ResourceEnum::Honey);
+		}
+		return outputs;
+	}
+	
 	virtual ResourceEnum input1()
 	{
 		if (_workMode.input1 != ResourceEnum::None) {

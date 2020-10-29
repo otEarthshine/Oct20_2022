@@ -207,23 +207,6 @@ public:
 			}
 		}
 		else {
-			//std::vector<float> inputFractions;
-			//if (building.hasInput1()) {
-			//	inputFractions.push_back(static_cast<float>(building.resourceCount(building.input1())) / building.inputPerBatch());
-			//}
-			//if (building.hasInput2()) {
-			//	inputFractions.push_back(static_cast<float>(building.resourceCount(building.input2())) / building.inputPerBatch());
-			//}
-
-			std::vector<ResourceEnum> outputs = { building.product() };
-			//std::vector<float> outputFractions = { building.barFraction() };
-
-			// Beeswax special case
-			if (outputs[0] == ResourceEnum::Beeswax) {
-				outputs.push_back(ResourceEnum::Honey);
-				//outputFractions.push_back(building.barFraction());
-			}
-
 			// MountainMine DepletedText
 			//if (IsMountainMine(building.buildingEnum()) &&
 			//	building.subclass<Mine>().oreLeft() <= 0)
@@ -232,7 +215,7 @@ public:
 			//	SetText(DepletedText, "Depleted");
 			//}
 
-			SetResourceCompletion(building.inputs(), outputs, building);
+			SetResourceCompletion(building.inputs(), building.products(), building);
 		}
 
 		// Refresh Hover Warning

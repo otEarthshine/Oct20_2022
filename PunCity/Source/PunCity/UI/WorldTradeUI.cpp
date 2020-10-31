@@ -83,6 +83,8 @@ void UWorldTradeUI::TickUI()
 
 	{
 		FString searchString = SearchBox->GetText().ToString();
+		searchString = searchString.Replace(TEXT(" "), TEXT(""));
+
 		
 		// Recalculate trade amount as resourceCount changes
 		TArray<UWidget*> tradeRows = WorldTradeRowBox->GetAllChildren();
@@ -109,6 +111,7 @@ void UWorldTradeUI::TickUI()
 
 			// Hide if it is not searched...
 			FString resourceName = ResourceNameF(tradeRow->resourceEnum());
+			resourceName = resourceName.Replace(TEXT(" "), TEXT(""));
 
 			if (searchString.IsEmpty() ||
 				resourceName.Find(searchString, ESearchCase::Type::IgnoreCase, ESearchDir::FromStart) != INDEX_NONE) 

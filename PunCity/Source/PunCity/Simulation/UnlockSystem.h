@@ -176,7 +176,7 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 	}},
 	{TechEnum::FarmingBreakthrough, {
 		"Improved farming",
-		"+20% farming yield."
+		"+20% farm production."
 	}},
 	{TechEnum::CheapLand, {
 		"Cheap land",
@@ -223,7 +223,7 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 		"+20% house income",
 	}},
 	{ TechEnum::FarmLastEra, {
-		"Microbial Mastery",
+		"Pesticides",
 		"+20% farm output",
 	}},
 	{ TechEnum::IndustryLastEra, {

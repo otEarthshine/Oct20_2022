@@ -2527,8 +2527,12 @@ void ABuildingPlacementSystem::NetworkTryPlaceBuilding(IGameNetworkInterface* ne
 				}
 				else if (_buildingEnum == CardEnum::SpeedBoost)
 				{
-					// Queue Leader Skills
-					return;
+					// Leader Skills
+					// Shift-Click only if there is enough SP
+					if (sim.playerOwned(playerId).GetSP() >= GetSkillManaCost(_buildingEnum)) {
+						return;
+					}
+					//sim.AddPopupToFront(playerId(), "Not enough SP to use the leader skill.", ExclusiveUIEnum::None, "PopupCannot");
 				}
 			}
 

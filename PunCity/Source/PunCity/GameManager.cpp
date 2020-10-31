@@ -311,11 +311,11 @@ void AGameManager::InitPhase3()
 		//ss << "<space>";
 		//ss << "The task is upon us, surviving few, to rebuild a flourishing civilization.";
 
-		ss << "The Great Freeze left civilization in ruin, none were strong enough to withstand the cold and plague that claimed the earth. "
+		ss << "The Great Freeze left civilization in ruin, very few were strong enough to withstand the cold and plague that claimed the earth. "
 				"<space>"
 				"Decades have passed since the frost took our lands, and our courage and hope have returned with the melting of the ice. "
 				"<space>"
-				"It falls to us, we surviving few, to rebuild a flourising civilization.";
+				"It falls to us, we surviving few, to rebuild a flourishing civilization.";
 
 		PopupInfo popup(_playerId, ss.str(),
 			{ "Cheers to the new beginning!" }, PopupReceiverEnum::StartGame_Story, false, ""

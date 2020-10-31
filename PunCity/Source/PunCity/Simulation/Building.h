@@ -298,9 +298,30 @@ public:
 		return _occupantIds.size() < _allowedOccupants && !isDisabled();
 	}
 
+	bool CanAddInput()
+	{
+		if (hasInput1() && hasInput2()) {
+			if (!hasInput1Available() && !hasInput2Available()) {
+				return false;
+			}
+		}
+		else if (hasInput1()) {
+			if (!hasInput1Available()) {
+				return false;
+			}
+		}
+		else if (hasInput2()) {
+			if (!hasInput2Available()) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	virtual bool ShouldAddWorker_ConstructedNonPriority()
 	{
 		if (!_filledInputs) {
+			// TODO: replace with CanAddInput()
 			if (hasInput1() && hasInput2()) {
 				if (!hasInput1Available() && !hasInput2Available()) {
 					return false;
@@ -556,30 +577,37 @@ public:
 
 	// Work time required per batch...
 	// Calculated based on inputPerBatch() and info.productionBatch
-	virtual int32_t workManSecPerBatch100() {
+	virtual int32 workManSecPerBatch100() {
 		// Calculate workPerBatch...
 		// workManSecPerBatch = batchProfit / WorkRevenuePerManSec
 		// This is since we have to work for profit, so time needed to work depends on "profit amount" and "work rate"
 		return batchProfit() * 100 * 100 / buildingInfo().workRevenuePerSec100_perMan; 
 	}
 
-	virtual int32 upkeep()
+	virtual int32 baseUpkeep()
 	{
 		int32 baseUpkeep;
-
 		if (product() != ResourceEnum::None || IsSpecialProducer(_buildingEnum)) {
 			baseUpkeep = buildingInfo().baseUpkeep;
-		} else {
+		}
+		else {
 			baseUpkeep = GetCardUpkeepBase(_buildingEnum);
 		}
-		
-		baseUpkeep = std::max(0, baseUpkeep - baseUpkeep * slotCardCount(CardEnum::FrugalityBook) * 50 / 100);
+		return baseUpkeep;
+	}
+
+	int32 upkeep()
+	{
+		int32 upkeep = baseUpkeep();
+
+		// Frugality
+		upkeep = std::max(0, upkeep - upkeep * slotCardCount(CardEnum::FrugalityBook) * 50 / 100);
 		
 		// No worker, half upkeep
 		if (maxOccupants() > 0 && occupantCount() == 0) {
-			return baseUpkeep / 2;
+			return upkeep / 2;
 		}
-		return baseUpkeep;
+		return upkeep;
 	}
 	
 
@@ -743,6 +771,9 @@ public:
 		return buildingInfo().produce;
 	}
 	virtual std::vector<ResourceEnum> products() {
+		if (product() == ResourceEnum::None) {
+			return {};
+		}
 		std::vector<ResourceEnum> outputs{ product() };
 		if (isEnum(CardEnum::Beekeeper)) {
 			outputs.push_back(ResourceEnum::Honey);
@@ -1222,8 +1253,48 @@ public:
 
 	float lastHoverWarningCheckTime = 0.0f;
 
-	virtual void RefreshHoverWarning()
-	{	
+	virtual bool RefreshHoverWarning()
+	{
+		// Check if inaccessible
+		// TODO: possible with second townhall and limit to how far you can conquer from townhall
+		//if (_simulation->HasTownhall(_playerId)) {
+		//	if (_simulation->IsConnected(gateTile(), houseGate, 2, true));
+		//	hoverWarning = HoverWarning::Inaccessible;
+		//}
+
+		// HouseTooFar Warning
+		if (_allowedOccupants > 0)
+		{
+			if (!_simulation->HasBuildingWithinRadius(_centerTile, 55, _playerId, CardEnum::House))
+			{
+				hoverWarning = HoverWarning::HouseTooFar;
+				return true;
+			}
+		}
+
+		// Construction will only get above checks
+		if (!isConstructed())
+		{
+			hoverWarning = HoverWarning::None;
+			return true;
+		}
+		// -----
+
+		if (isEnum(CardEnum::TradingCompany) ||
+			isEnum(CardEnum::ShippingDepot)) { // Trading Company handle its hoverWarning
+			return false;
+		}
+
+		
+		// Not enough input Warning
+		if (hasInput1() &&
+			!_filledInputs &&
+			!CanAddInput())
+		{
+			hoverWarning = HoverWarning::NotEnoughInput;
+			return true;
+		}
+		
 		// StorageTooFar Warning
 		if (hasInput1() || hasInput2() || product() != ResourceEnum::None ||
 			IsAgricultureBuilding(_buildingEnum))
@@ -1232,24 +1303,12 @@ public:
 				!_simulation->HasBuildingWithinRadius(_centerTile, 40, _playerId, CardEnum::Warehouse)) 
 			{
 				hoverWarning = HoverWarning::StorageTooFar;
-				return;
+				return true;
 			}
 		}
-
-		// HouseTooFar Warning
-		if (_allowedOccupants > 0) 
-		{
-			if (!_simulation->HasBuildingWithinRadius(_centerTile, 55, _playerId, CardEnum::House))
-			{
-				hoverWarning = HoverWarning::HouseTooFar;
-				return;
-			}
-		}
-
-		if (!isEnum(CardEnum::TradingCompany)) // Trading Company handle its hoverWarning
-		{
-			hoverWarning = HoverWarning::None;
-		}
+		
+		hoverWarning = HoverWarning::None;
+		return false;
 	}
 
 protected:

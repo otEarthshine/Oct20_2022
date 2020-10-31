@@ -268,11 +268,11 @@ public:
 		return quantity;
 	}
 
-	int32 upkeep() override {
+	int32 baseUpkeep() override {
 		if (_simulation->buildingFinishedCount(_playerId, CardEnum::StockMarket)) {
 			return 1;
 		}
-		return Building::upkeep();
+		return Building::baseUpkeep();
 	}
 
 

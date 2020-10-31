@@ -71,6 +71,7 @@ public:
 	{
 		if (!isActive) {
 			for (auto pair : _lastParticles) {
+				pair.Value->Deactivate();
 				pair.Value->ReleaseToPool();
 			}
 			_lastParticles.Empty();

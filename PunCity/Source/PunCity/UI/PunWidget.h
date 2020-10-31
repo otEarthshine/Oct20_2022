@@ -246,8 +246,9 @@ public:
 		}
 		return str;
 	}
-	
-	std::string WrapString(std::string str, int32 wrapSize = 330, FSlateFontInfo* fontInfoPtr = nullptr);
+
+	static const int32 ObjectFocusUIWrapSize = 280; // 330
+	std::string WrapString(std::string str, int32 wrapSize = ObjectFocusUIWrapSize, FSlateFontInfo* fontInfoPtr = nullptr);
 	
 	
 	static void SetText(URichTextBlock* textBlock, std::string str) {
@@ -289,6 +290,32 @@ public:
 		image->GetDynamicMaterial()->SetTextureParameterValue("ColorTexture", assetLoader->GetResourceIcon(resourceEnum));
 		image->GetDynamicMaterial()->SetTextureParameterValue("DepthTexture", assetLoader->GetResourceIconAlpha(resourceEnum));
 	}
+
+	static void SetGeoresourceImage(UImage* image, ResourceEnum resourceEnum, UAssetLoaderComponent* assetLoader, UPunWidget* punWidget)
+	{
+		auto material = image->GetDynamicMaterial();
+		
+		material->SetTextureParameterValue("ColorTexture", assetLoader->GetResourceIcon(resourceEnum));
+		material->SetTextureParameterValue("DepthTexture", assetLoader->GetResourceIconAlpha(resourceEnum));
+
+		if (IsOreEnum(resourceEnum)) {
+			switch (resourceEnum) {
+			case ResourceEnum::Iron: resourceEnum = ResourceEnum::IronOre; break;
+			case ResourceEnum::GoldBar: resourceEnum = ResourceEnum::GoldOre; break;
+			case ResourceEnum::Gemstone: resourceEnum = ResourceEnum::Gemstone; break;
+			}
+
+			stringstream ssTip;
+			ssTip << ResourceName(resourceEnum) << " Deposit in this region that can be mined.";
+			punWidget->AddToolTip(image, ssTip.str());
+		}
+		else {
+			stringstream ssTip;
+			ssTip << "This region is suitable for " << ResourceName(resourceEnum) << " Farming. ";
+			punWidget->AddToolTip(image, ssTip.str());
+		}
+	};
+	
 
 	//! Mouse hovering away for 2 ticks counts as IsPointerOnUI false
 	static int32 kPointerOnUI;

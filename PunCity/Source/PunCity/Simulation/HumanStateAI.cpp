@@ -1623,6 +1623,10 @@ bool HumanStateAI::TryClearFarmDrop(Farm& farm, int32 minDropCount)
 		}
 	}
 
+	if (targetResourceEnum == ResourceEnum::None) {
+		return false;
+	}
+
 	// Try dropping the resource off in proper store
 	FoundResourceHolderInfos foundDropoffs;
 

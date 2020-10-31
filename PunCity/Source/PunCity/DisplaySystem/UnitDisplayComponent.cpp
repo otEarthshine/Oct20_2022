@@ -391,13 +391,13 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 							if (rotation.rotationSpeed < targetDegreePerSec) {
 								rotation.rotationSpeed += rotationAcceleration * deltaTime;
 							}
-							rotation.rotationFloat = rotation.rotationFloat + deltaTime * rotation.rotationSpeed;
+							rotation.rotationFloat = rotation.rotationFloat - deltaTime * rotation.rotationSpeed;
 							//rotationFloat = UGameplayStatics::GetTimeSeconds(GetWorld()) * 180;
 						}
 						else
 						{
 							rotation.rotationSpeed = fmax(rotation.rotationSpeed - rotationAcceleration * deltaTime, 0);
-							rotation.rotationFloat = rotation.rotationFloat + deltaTime * rotation.rotationSpeed;
+							rotation.rotationFloat = rotation.rotationFloat - deltaTime * rotation.rotationSpeed;
 						}
 						_lastWorkRotatorRotation[buildingId] = rotation;
 					}

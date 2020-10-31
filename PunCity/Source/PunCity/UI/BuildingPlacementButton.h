@@ -67,7 +67,7 @@ public:
 		DescriptionRichText->SetText(ToFText(description));
 
 		std::stringstream ss;
-		ss << info.name;
+		ss << "<CardName>" << info.name << "</>";
 		if (buildingEnum == CardEnum::House) {
 			ss << " <Orange>[H]</>";
 		}

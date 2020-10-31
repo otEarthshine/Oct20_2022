@@ -495,7 +495,7 @@ private:
 	{
 		auto widget = AddWidget<UPunRichText>(UIEnum::PunRichText_Chat);
 
-		const int32 chatWrapSize = 270;
+		const int32 chatWrapSize = 260; // 270
 		FSlateFontInfo fontInfo = FontExampleChat->Font;
 
 		// System message

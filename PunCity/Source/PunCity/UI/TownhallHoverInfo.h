@@ -38,7 +38,7 @@ public:
 		/*
 		 * Intercity Trade / Trade Route
 		 */
-		if (sim.HasTownhall(playerId()))
+		if (sim.HasTownhall(playerId())) // Need to have townhall, otherwise don't show anything
 		{
 			if (townhall.ownedBy(playerId()))
 			{
@@ -119,29 +119,33 @@ public:
 				// Diplomacy
 				DiplomacyButton->SetVisibility(ESlateVisibility::Visible);
 				BUTTON_ON_CLICK(DiplomacyButton, this, &UTownhallHoverInfo::OnClickDiplomacyButton);
-				
-				// Vassalize
-				if (sim.CanVassalizeOtherPlayers(playerId()) &&
-					!townhallPlayerOwned.GetDefendingClaimProgress(townhall.provinceId()).isValid())
-				{
-					SetText(VassalizeButtonRichText, "Conquer (Vassalize)\n<img id=\"Influence\"/>" + std::to_string(sim.GetProvinceVassalizeStartPrice(townhall.provinceId())));
-					BUTTON_ON_CLICK(VassalizeButton, this, &UTownhallHoverInfo::OnClickVassalizeButton);
-					VassalizeButton->SetVisibility(ESlateVisibility::Visible);
 
-					// Can also liberate if there is an existing conquerer
-					if (townhallPlayerOwned.lordPlayerId() != -1)  {
-						SetText(LiberationButtonRichText, "Liberation\n<img id=\"Influence\"/>" + std::to_string(BattleInfluencePrice));
-						LiberationButton->SetVisibility(ESlateVisibility::Visible);
-						BUTTON_ON_CLICK(LiberationButton, this, &UTownhallHoverInfo::OnClickLiberateButton);
-					} else {
+				// Not already a vassal?
+				if (!sim.playerOwned(playerId()).IsVassal(townhall.buildingId()))
+				{
+					// Vassalize
+					if (sim.CanVassalizeOtherPlayers(playerId()) &&
+						!townhallPlayerOwned.GetDefendingClaimProgress(townhall.provinceId()).isValid())
+					{
+						SetText(VassalizeButtonRichText, "Conquer (Vassalize)\n<img id=\"Influence\"/>" + std::to_string(sim.GetProvinceVassalizeStartPrice(townhall.provinceId())));
+						BUTTON_ON_CLICK(VassalizeButton, this, &UTownhallHoverInfo::OnClickVassalizeButton);
+						VassalizeButton->SetVisibility(ESlateVisibility::Visible);
+
+						// Can also liberate if there is an existing conquerer
+						if (townhallPlayerOwned.lordPlayerId() != -1) {
+							SetText(LiberationButtonRichText, "Liberation\n<img id=\"Influence\"/>" + std::to_string(BattleInfluencePrice));
+							LiberationButton->SetVisibility(ESlateVisibility::Visible);
+							BUTTON_ON_CLICK(LiberationButton, this, &UTownhallHoverInfo::OnClickLiberateButton);
+						}
+						else {
+							LiberationButton->SetVisibility(ESlateVisibility::Collapsed);
+						}
+					}
+					else {
+						VassalizeButton->SetVisibility(ESlateVisibility::Collapsed);
 						LiberationButton->SetVisibility(ESlateVisibility::Collapsed);
 					}
 				}
-				else {
-					VassalizeButton->SetVisibility(ESlateVisibility::Collapsed);
-					LiberationButton->SetVisibility(ESlateVisibility::Collapsed);
-				}
-
 				
 				// Buffs
 				BuffRow->SetVisibility(ESlateVisibility::Collapsed);

@@ -219,6 +219,10 @@ int32 ResourceSystem::CanReceiveAmount(const ResourceHolder& holder) const
 {
 	check(holder.type == ResourceHolderType::Storage);
 
+	if (holder.objectId == -1) {
+		return 0;
+	}
+
 	Building& building = _simulation->building(holder.objectId);
 	
 	const std::vector<ResourceHolderInfo>& holderInfos = building.holderInfos();

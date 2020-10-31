@@ -203,7 +203,11 @@ void UWorldSpaceUI::TickBuildings()
 				WorldTile2 provinceCenter = provinceSys.GetProvinceCenterTile(provinceId);
 				FVector displayLocation = MapUtil::DisplayLocation(data->cameraAtom(), provinceCenter.worldAtom2(), 50.0f);
 				return _regionHoverUIs.GetHoverUI<URegionHoverUI>(provinceId, UIEnum::RegionHoverUI, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
-					[&](URegionHoverUI* ui) {}, WorldZoomTransition_Region4x4ToMap
+					[&](URegionHoverUI* ui) 
+					{
+						ui->IconImage->SetBrushFromMaterial(assetLoader()->M_GeoresourceIcon); // SetBrushFromMaterial must be here since doing it every tick causes leak
+					}, 
+					WorldZoomTransition_Region4x4ToMap
 				);
 			};
 			
@@ -324,73 +328,6 @@ void UWorldSpaceUI::TickBuildings()
 		}
 	}
 	
-	//std::vector<RegionClaimProgress> claimProgresses = playerOwned.armyRegionsClaimQueue();
-
-	//for (int32 provinceId : sampleProvinceIds)
-	//{
-	//	// RegionHoverUI
-	//	if (zoomDistance < WorldZoomTransition_Tree)
-	//	{
-	//		int32 claimIndex = -1;
-	//		for (size_t i = 0; i < claimProgresses.size(); i++) {
-	//			if (claimProgresses[i].provinceId == provinceId) {
-	//				claimIndex = i;
-	//				break;
-	//			}
-	//		}
-
-	//		WorldTile2 provinceCenter = provinceSys.GetProvinceCenterTile(provinceId);
-	//		
-	//		if (claimIndex != -1)
-	//		{
-	//			FVector displayLocation = MapUtil::DisplayLocation(data->cameraAtom(), provinceCenter.worldAtom2(), 50.0f);
-	//			URegionHoverUI* regionHoverUI = _regionHoverUIs.GetHoverUI<URegionHoverUI>(provinceId, UIEnum::RegionHoverUI, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
-	//				[&](URegionHoverUI* ui) {}
-	//			);
-
-	//			if (claimIndex == 0) {
-	//				SetText(regionHoverUI->ClaimingText, "Claiming");
-	//				regionHoverUI->AutoChoseText->SetVisibility(ESlateVisibility::Collapsed);
-
-	//				float fraction = static_cast<float>(claimProgresses[claimIndex].claimValue100Inputted / 100) / playerOwned.GetBaseProvinceClaimPrice(provinceId);
-	//				regionHoverUI->ClockImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", fraction);
-	//				regionHoverUI->ClockBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-	//			}
-	//			else
-	//			{
-	//				SetText(regionHoverUI->ClaimingText, "Queued for Claiming (" + to_string(claimIndex) + ")");
-	//				regionHoverUI->AutoChoseText->SetVisibility(ESlateVisibility::Collapsed);
-	//				regionHoverUI->ClockBox->SetVisibility(ESlateVisibility::Collapsed);
-	//			}
-	//		}
-	//		else if (claimProgresses.size() == 0 && 
-	//				playerOwned.armyAutoClaimProgress().provinceId == provinceId)
-	//		{
-	//			RegionClaimProgress claimProgress = playerOwned.armyAutoClaimProgress();
-	//			
-	//			FVector displayLocation = MapUtil::DisplayLocation(data->cameraAtom(), provinceCenter.worldAtom2(), 50.0f);
-	//			URegionHoverUI* regionHoverUI = _regionHoverUIs.GetHoverUI<URegionHoverUI>(provinceId, UIEnum::RegionHoverUI, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
-	//				[&](URegionHoverUI* ui) {}
-	//			);
-	//			
-	//			SetText(regionHoverUI->ClaimingText, "Claiming");
-	//			regionHoverUI->AutoChoseText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-	//			SetText(regionHoverUI->AutoChoseText, "(Auto)");
-
-	//			float fraction = static_cast<float>(claimProgress.claimValue100Inputted / 100) / playerOwned.GetBaseProvinceClaimPrice(provinceId);
-	//			regionHoverUI->ClockImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", fraction);
-	//			regionHoverUI->ClockBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-	//		}
-	//		else
-	//		{
-	//			// Not being claimed, might show georesource
-	//			//FVector displayLocation = MapUtil::DisplayLocation(data->cameraAtom(), curRegion.centerTile().worldAtom2(), 50.0f);
-	//			//URegionHoverUI* regionHoverUI = _regionHoverUIs.GetHoverUI<URegionHoverUI>(sampleRegionId, UIEnum::RegionHoverUI, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
-	//			//	[&](URegionHoverUI* ui) {}
-	//			//);
-	//		}
-	//	}
-	//}
 
 	OverlayType overlayType = data->GetOverlayType();
 	WorldTile2 overlayTile = dataSource()->GetOverlayTile();
@@ -742,6 +679,8 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 				}
 			}
 			buildingJobUI->SetConstructionResource(constructionResourceCounts, building);
+
+			buildingJobUI->SetHoverWarning(building);
 		};
 		
 		// Full UI
@@ -817,7 +756,8 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 						IsBarrack(building.buildingEnum()) ||
 
 						building.isEnum(CardEnum::HuntingLodge) ||
-						building.isEnum(CardEnum::FruitGatherer) ||  
+						building.isEnum(CardEnum::FruitGatherer) ||
+						building.isEnum(CardEnum::ShippingDepot) ||
 						IsStorage(building.buildingEnum()) || // TODO: may be this is for all buildings??
 
 						building.isEnum(CardEnum::JobManagementBureau) ||
@@ -842,6 +782,7 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 
 			if (showProgress) {
 				buildingJobUI->SetBuildingStatus(building, jobUIState);
+				buildingJobUI->SetHoverWarning(building);
 			}
 
 			//buildingJobUI->SetStars(building.level());
@@ -856,6 +797,7 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 
 		if (showProgress) {
 			buildingJobUI->SetBuildingStatus(building, jobUIState);
+			buildingJobUI->SetHoverWarning(building);
 		}
 
 		//buildingJobUI->SetStars(building.level());
@@ -1001,7 +943,14 @@ void UWorldSpaceUI::TickMap()
 	}
 
 	IGameUIDataSource* data = dataSource();
-	if (!data->ZoomDistanceBelow(WorldZoomAmountStage3) &&
+	bool shouldShowMapIcon;
+	if (dataSource()->isShowingProvinceOverlay()) {
+		shouldShowMapIcon = data->ZoomDistanceAbove(WorldZoomTransition_Region4x4ToMap);
+	} else {
+		shouldShowMapIcon = data->ZoomDistanceAbove(WorldZoomAmountStage3);
+	}
+	
+	if (shouldShowMapIcon &&
 		PunSettings::IsOn("MapIcon"))
 	{
 		auto& simulation = data->simulation();
@@ -1015,7 +964,6 @@ void UWorldSpaceUI::TickMap()
 		 */
 		for (int32 regionId : georesourceRegions)
 		{
-			WorldRegion2 region(regionId);
 			GeoresourceNode node = georesourceSys.georesourceNode(regionId);
 
 			
@@ -1030,46 +978,12 @@ void UWorldSpaceUI::TickMap()
 				ui->IconImage->SetBrushFromMaterial(assetLoader()->M_GeoresourceIcon);
 				ui->IconSizeBox->SetHeightOverride(36);
 				ui->IconSizeBox->SetWidthOverride(36);
+				ui->IconImage->SetBrushFromMaterial(assetLoader()->M_GeoresourceIcon); // SetBrushFromMaterial must be here since doing it every tick causes leak
 			}, 
 			MapIconShrinkZoomAmount);
-			
-			auto material = hoverIcon->IconImage->GetDynamicMaterial();
-			auto setResourceInfo = [&](ResourceEnum resourceEnum, bool isOre) {
-				material->SetTextureParameterValue("ColorTexture", assetLoader()->GetResourceIcon(resourceEnum));
-				material->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(resourceEnum));
 
-				if (isOre) {
-					switch(resourceEnum) {
-						case ResourceEnum::Iron: resourceEnum = ResourceEnum::IronOre; break;
-						case ResourceEnum::GoldBar: resourceEnum = ResourceEnum::GoldOre; break;
-						case ResourceEnum::Gemstone: resourceEnum = ResourceEnum::Gemstone; break;
-					}
-					
-					stringstream ssTip;
-					ssTip << ResourceName(resourceEnum) << " Deposit in this region that can be mined.";
-					AddToolTip(hoverIcon->IconImage, ssTip.str());
-				}
-				else {
-					stringstream ssTip;
-					ssTip << "This region is suitable for " << ResourceName(resourceEnum) << " Farming. ";
-					AddToolTip(hoverIcon->IconImage, ssTip.str());
-				}
-			};
-
-			switch(node.georesourceEnum)
-			{
-				// TODO: refactor using georesourceNodeINfo's resourceEnum
-			case GeoresourceEnum::CoalOre: setResourceInfo(ResourceEnum::Coal, true); break;
-			case GeoresourceEnum::IronOre: setResourceInfo(ResourceEnum::Iron, true); break;
-			case GeoresourceEnum::GoldOre: setResourceInfo(ResourceEnum::GoldBar, true); break;
-			case GeoresourceEnum::Gemstone: setResourceInfo(ResourceEnum::Gemstone, true); break;
-				
-			case GeoresourceEnum::CannabisFarm: setResourceInfo(ResourceEnum::Cannabis, false); break;
-			case GeoresourceEnum::GrapeFarm: setResourceInfo(ResourceEnum::Grape, false); break;
-			case GeoresourceEnum::CocoaFarm: setResourceInfo(ResourceEnum::Cocoa, false); break;
-
-			case GeoresourceEnum::CottonFarm: setResourceInfo(ResourceEnum::Cotton, false); break;
-			case GeoresourceEnum::DyeFarm: setResourceInfo(ResourceEnum::Dye, false); break;
+			SetGeoresourceImage(hoverIcon->IconImage, node.info().resourceEnum, assetLoader(), this);
+		
 
 			///*
 			// * Other resources
@@ -1085,12 +999,12 @@ void UWorldSpaceUI::TickMap()
 			//	break;
 			//}
 				
-			default:
-				GeoresourceEnum georesourceEnum = assetLoader()->HasGeoIcon(node.georesourceEnum) ? node.georesourceEnum : GeoresourceEnum::Ruin;
-				material->SetTextureParameterValue("ColorTexture", assetLoader()->GetGeoIcon(georesourceEnum));
-				material->SetTextureParameterValue("DepthTexture", assetLoader()->GetGeoIconAlpha(georesourceEnum));
-				break;
-			}
+			//default:
+			//	GeoresourceEnum georesourceEnum = assetLoader()->HasGeoIcon(node.georesourceEnum) ? node.georesourceEnum : GeoresourceEnum::Ruin;
+			//	material->SetTextureParameterValue("ColorTexture", assetLoader()->GetGeoIcon(georesourceEnum));
+			//	material->SetTextureParameterValue("DepthTexture", assetLoader()->GetGeoIconAlpha(georesourceEnum));
+			//	break;
+			//}
 			
 		}
 

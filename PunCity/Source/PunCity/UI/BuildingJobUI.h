@@ -207,17 +207,12 @@ public:
 			}
 		}
 		else {
-			// MountainMine DepletedText
-			//if (IsMountainMine(building.buildingEnum()) &&
-			//	building.subclass<Mine>().oreLeft() <= 0)
-			//{
-			//	DepletedText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-			//	SetText(DepletedText, "Depleted");
-			//}
-
 			SetResourceCompletion(building.inputs(), building.products(), building);
 		}
+	}
 
+	void SetHoverWarning(Building& building)
+	{
 		// Refresh Hover Warning
 		// Check every sec
 		float time = UGameplayStatics::GetTimeSeconds(this);
@@ -227,24 +222,24 @@ public:
 			{
 				building.lastHoverWarningCheckTime = time;
 				building.RefreshHoverWarning();
-
-				if (building.hoverWarning != HoverWarning::None)
-				{
-					PUN_LOG("Hover Warning %s warningId:%d", ToTChar(building.buildingInfo().name), static_cast<int>(building.hoverWarning));
-					
-					DepletedText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-					SetText(DepletedText, GetHoverWarningString(building.hoverWarning));
-				}
-				else {
-					DepletedText->SetVisibility(ESlateVisibility::Collapsed);
-				}
 			}
 		}
-		else
-		{
+		else {
 			building.hoverWarning = HoverWarning::None;
 		}
+
+		if (building.hoverWarning != HoverWarning::None)
+		{
+			PUN_LOG("Hover Warning %s warningId:%d", ToTChar(building.buildingInfo().name), static_cast<int>(building.hoverWarning));
+
+			DepletedText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			SetText(DepletedText, GetHoverWarningString(building.hoverWarning));
+		}
+		else {
+			DepletedText->SetVisibility(ESlateVisibility::Collapsed);
+		}
 	}
+	
 	
 	void SetTradeProgress(TradeBuilding& tradeBuilding, float fraction)
 	{

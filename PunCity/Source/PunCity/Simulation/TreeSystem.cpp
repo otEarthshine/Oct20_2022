@@ -195,7 +195,7 @@ ResourcePair TreeSystem::UnitHarvestBush(WorldTile2 tile) {
 
 	// TODO: probably trying to harvest dead bush?? Resolve this properly?
 	if (tileInfo(id).type == ResourceTileType::None) {
-		return ResourcePair(ResourceEnum::Hay, 1);
+		return ResourcePair::Invalid();
 	}
 #if TRAILER_MODE
 	if (tileInfo(id).type != ResourceTileType::Bush) {

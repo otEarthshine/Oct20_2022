@@ -399,6 +399,7 @@ public:
 		if (upgradeIndex == 0) {
 			_maxOccupants = 5;
 			_allowedOccupants = _maxOccupants;
+			_simulation->playerOwned(_playerId).RefreshJobDelayed();
 		}
 	}
 	
@@ -436,9 +437,18 @@ public:
 
 	void OnProduce(int32 productionAmount) override;
 
-	void RefreshHoverWarning() override
+	bool RefreshHoverWarning() override
 	{
-		hoverWarning = (oreLeft() <= 0) ? HoverWarning::Depleted : HoverWarning::None;
+		if (Building::RefreshHoverWarning()) {
+			return true;
+		}
+		if (oreLeft() <= 0) {
+			hoverWarning = HoverWarning::Depleted;
+			return true;
+		}
+		
+		hoverWarning = HoverWarning::None;
+		return false;
 	}
 };
 
@@ -517,6 +527,7 @@ public:
 		if (upgradeIndex == 1) {
 			_maxOccupants = 5;
 			_allowedOccupants = _maxOccupants;
+			_simulation->playerOwned(_playerId).RefreshJobDelayed();
 		}
 	}
 
@@ -898,11 +909,11 @@ public:
 		return bonuses;
 	}
 
-	int32 upkeep() override {
+	int32 baseUpkeep() override {
 		if (IsUpgraded(3)) {
-			return Building::upkeep() / 2;
+			return Building::baseUpkeep() / 2;
 		}
-		return Building::upkeep();
+		return Building::baseUpkeep();
 	}
 
 	int32 baseInputPerBatch() override {
@@ -939,9 +950,10 @@ public:
 	void OnInit() override
 	{
 		SetupWorkMode({
-			{"Leather clothing", ResourceEnum::Leather, ResourceEnum::None, 10},
-			{"Wool clothing", ResourceEnum::Wool, ResourceEnum::None, 10},
-			{"Warm clothing", ResourceEnum::Leather, ResourceEnum::Wool, 5},
+			{"Leather Clothes", ResourceEnum::Leather, ResourceEnum::None, 10},
+			{"Wool Clothes", ResourceEnum::Wool, ResourceEnum::None, 10},
+			{"Cotton Clothes", ResourceEnum::CottonFabric, ResourceEnum::None, 10},
+			{"Fashionable Clothes", ResourceEnum::DyedCottonFabric, ResourceEnum::None, 10, ResourceEnum::LuxuriousClothes },
 		});
 	}
 	
@@ -951,7 +963,11 @@ public:
 
 		AddResourceHolder(ResourceEnum::Leather, ResourceHolderType::Requester, 0);
 		AddResourceHolder(ResourceEnum::Wool, ResourceHolderType::Requester, 0);
+		AddResourceHolder(ResourceEnum::CottonFabric, ResourceHolderType::Requester, 0);
 		AddResourceHolder(ResourceEnum::Cloth, ResourceHolderType::Provider, 0);
+
+		AddResourceHolder(ResourceEnum::DyedCottonFabric, ResourceHolderType::Requester, 0);
+		AddResourceHolder(ResourceEnum::LuxuriousClothes, ResourceHolderType::Provider, 0);
 
 		ChangeWorkMode(_workMode);
 
@@ -1168,9 +1184,22 @@ public:
 class CottonMill final : public IndustrialBuilding
 {
 public:
+	void OnInit() override
+	{
+		SetupWorkMode({
+			{"Cotton Fabric", ResourceEnum::Cotton, ResourceEnum::None, 10},
+			{"Dyed Cotton Fabric", ResourceEnum::Cotton, ResourceEnum::Dye, 10, ResourceEnum::DyedCottonFabric },
+		});
+	}
+	
 	void FinishConstruction() final
 	{
 		Building::FinishConstruction();
+
+		AddResourceHolder(ResourceEnum::Cotton, ResourceHolderType::Requester, 0);
+		AddResourceHolder(ResourceEnum::Dye, ResourceHolderType::Requester, 0);
+		AddResourceHolder(ResourceEnum::CottonFabric, ResourceHolderType::Requester, 0);
+		AddResourceHolder(ResourceEnum::DyedCottonFabric, ResourceHolderType::Provider, 0);
 
 		_upgrades = {
 			MakeProductionUpgrade("Advanced Machinery", ResourceEnum::Iron, 250, 200),
@@ -1241,6 +1270,7 @@ public:
 	void OnUpgradeBuilding(int upgradeIndex) final {
 		if (upgradeIndex == 0) {
 			SetJobBuilding(3);
+			_simulation->playerOwned(_playerId).RefreshJobDelayed();
 		}
 	}
 };
@@ -1263,6 +1293,7 @@ public:
 	void OnUpgradeBuilding(int upgradeIndex) final {
 		if (upgradeIndex == 1) {
 			SetJobBuilding(3);
+			_simulation->playerOwned(_playerId).RefreshJobDelayed();
 		}
 	}
 
@@ -1293,6 +1324,7 @@ public:
 	void OnUpgradeBuilding(int upgradeIndex) final {
 		if (upgradeIndex == 0) {
 			SetJobBuilding(3);
+			_simulation->playerOwned(_playerId).RefreshJobDelayed();
 		}
 	}
 
@@ -1369,6 +1401,7 @@ public:
 		//}
 		if (upgradeIndex == 2) {
 			SetJobBuilding(3);
+			_simulation->playerOwned(_playerId).RefreshJobDelayed();
 		}
 	}
 
@@ -1569,17 +1602,17 @@ public:
 	
 	void FinishConstruction() final {
 		Building::FinishConstruction();
-		roundProfit = 0;
+		lastRoundProfit = 0;
 	}
 
 	void CalculateRoundProfit();
 
 	void Serialize(FArchive& Ar) override {
 		Building::Serialize(Ar);
-		Ar << roundProfit;
+		Ar << lastRoundProfit;
 	}
 
-	int32 roundProfit;
+	int32 lastRoundProfit;
 };
 
 class FunBuilding : public Building
@@ -1812,7 +1845,37 @@ public:
 		if (upgradeIndex == 0) {
 			_maxOccupants = 2;
 			_allowedOccupants = _maxOccupants;
+			_simulation->playerOwned(_playerId).RefreshJobDelayed();
 		}
+	}
+
+	bool needSetup() {
+		for (ResourceEnum resourceEnum : resourceEnums) {
+			if (resourceEnum != ResourceEnum::None) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	bool RefreshHoverWarning() override
+	{
+		if (Building::RefreshHoverWarning()) {
+			return true;
+		}
+
+		if (needSetup()) {
+			hoverWarning = HoverWarning::NeedSetup;
+			return true;
+		}
+
+		if (deliveryTargetId() == -1) {
+			hoverWarning = HoverWarning::NeedDeliveryTarget;
+			return true;
+		}
+
+		hoverWarning = HoverWarning::None;
+		return true;
 	}
 	
 	
@@ -1859,7 +1922,7 @@ public:
 		});
 	}
 
-	int32 upkeep() override {
+	int32 baseUpkeep() override {
 		int32 baseUpkeep = 80;
 		if (IsUpgraded(0)) {
 			return baseUpkeep / 2;

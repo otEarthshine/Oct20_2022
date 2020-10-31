@@ -86,7 +86,9 @@ void UBuildingJobUI::SetSlots(int filledSlotCount, int allowedSlotCount, int slo
 
 		_humanIcons[i]->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		_humanIcons[i]->SlotFiller->SetVisibility(i < filledSlotCount ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Hidden);
-		_humanIcons[i]->SlotFillerImage->SetColorAndOpacity(color);//SetBrushTintColor(FSlateColor(tint));
+		_humanIcons[i]->SlotFillerImage->SetColorAndOpacity(color);
+		_humanIcons[i]->SlotShadow->SetVisibility(_humanIcons[i]->SlotFiller->IsVisible() ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Hidden);
+		
 		_humanIcons[i]->SlotCross->SetVisibility(i < allowedSlotCount ? ESlateVisibility::Hidden : ESlateVisibility::SelfHitTestInvisible);
 	}
 

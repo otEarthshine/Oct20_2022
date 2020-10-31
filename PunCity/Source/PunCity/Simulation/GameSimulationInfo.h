@@ -877,7 +877,7 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::Papaya,		"Papaya",	FoodCost, "Sweet, tropical fruit obtained from Jungle and Orchards"),
 	
 	ResourceInfo(ResourceEnum::Wheat,		"Wheat",	FoodCost, "Edible grain that can be brewed into Beer"),
-	ResourceInfo(ResourceEnum::Milk,		"Milk",		FoodCost, "Yummy white liquid from cows, sheep, or llamas"),
+	ResourceInfo(ResourceEnum::Milk,		"Milk",		FoodCost, "Yummy white liquid from cows"),
 	ResourceInfo(ResourceEnum::Mushroom,	"Mushroom",	FoodCost, "Delicious, earthy tasting fungus"),
 	ResourceInfo(ResourceEnum::Hay,			"Hay",		1, "Dried grass that can be used as animal feed"),
 
@@ -3197,8 +3197,11 @@ struct BuildingUpgrade
 	std::string description;
 	ResourcePair resourceNeeded;
 	int32 moneyNeeded;
+
 	int32 efficiencyBonus = 0;
 	int32 comboEfficiencyBonus = 0;
+
+	//int32 extraWorkerSlots = 0; // TODO: MakeWorkerSlotUPgrade
 
 	bool isUpgraded = false;
 
@@ -3220,6 +3223,8 @@ struct BuildingUpgrade
 		Ar << moneyNeeded;
 		Ar << efficiencyBonus;
 		Ar << comboEfficiencyBonus;
+
+		//Ar << extraWorkerSlots;
 
 		Ar << isUpgraded;
 	}
@@ -4914,7 +4919,7 @@ static const UnitInfo UnitInfos[]
 	//	gestationYears100, winterSurvivalLength_Years100, foodPerYear
 	UnitInfo(UnitEnum::Alpaca, "Feral Alpaca",	500,	100,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Pork, 2 * BaseUnitDrop100}}),
 	UnitInfo(UnitEnum::Human, "Human",	1000,	100,		025,	020,	HumanFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}}),
-	UnitInfo(UnitEnum::Boar,"Boar",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 3 * BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::Boar,"Boar",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 
 	UnitInfo(UnitEnum::RedDeer,"Red Deer",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 	UnitInfo(UnitEnum::YellowDeer,"Mule Deer",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
@@ -5947,7 +5952,7 @@ static const std::vector<std::string> FemaleNames
 	"Venti",
 	"Firis",
 	"Iris",
-	"Izavel"
+	"Izavel",
 	"Illia",
 	"Illya",
 };
@@ -6175,7 +6180,7 @@ static const std::vector<GeoresourceInfo> GeoresourceInfos
 	{ GeoresourceEnum::Gemstone,			"Gemstone",	TileObjEnum::GemstoneOre,TileObjEnum::None,TileObjEnum::None, ResourceEnum::Gemstone, "Build Gemstone Mine over this Gemstone Deposit to mine Gemstone." },
 
 	
-	{ GeoresourceEnum::CannabisFarm,		"Cannabis" , TileObjEnum::None,TileObjEnum::None, TileObjEnum::Cannabis,  ResourceEnum::Cannabis,"Area suitable for growing Cannibis." },
+	{ GeoresourceEnum::CannabisFarm,		"Cannabis" , TileObjEnum::None,TileObjEnum::None, TileObjEnum::Cannabis,  ResourceEnum::Cannabis,"Area suitable for growing Cannabis." },
 	{ GeoresourceEnum::CocoaFarm,			"Cocoa" , TileObjEnum::None,TileObjEnum::None, TileObjEnum::Cocoa,  ResourceEnum::Cocoa,"Area suitable for growing Cocoa." },
 	{ GeoresourceEnum::GrapeFarm,			"Grape" , TileObjEnum::None,TileObjEnum::None, TileObjEnum::Grapevines,  ResourceEnum::Grape,"Area suitable for growing Grape." },
 
@@ -7017,9 +7022,16 @@ enum class HoverWarning : uint8 {
 	StorageTooFar,
 	HouseTooFar,
 
+	NotEnoughInput,
+
+	Inaccessible,
+
 	NotEnoughMoney,
 	AlreadyReachedTarget,
 	ResourcesBelowTarget,
+
+	NeedSetup,
+	NeedDeliveryTarget,
 };
 
 static const std::vector<std::string> HoverWarningString = {
@@ -7029,9 +7041,16 @@ static const std::vector<std::string> HoverWarningString = {
 	"Storage Too Far",
 	"House Too Far",
 
+	"Not Enough Input",
+
+	"Inaccessible",
+
 	"Not Enough Money",
 	"Import Target\nReached",
 	"Resources Below\nExport Target",
+
+	"Need Setup",
+	"Need\nDelivery Target",
 };
 static std::string GetHoverWarningString(HoverWarning hoverWarning) { return HoverWarningString[static_cast<int>(hoverWarning)]; }
 

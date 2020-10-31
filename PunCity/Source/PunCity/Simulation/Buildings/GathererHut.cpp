@@ -195,17 +195,20 @@ void Farm::DoFarmWork(int32_t unitId, WorldTile2 tile, FarmStage farmStage)
 	}
 	case FarmStage::Harvesting: {
 		ResourcePair resource = treeSystem.UnitHarvestBush(tile);
-			
-		int32 dropCount = GameRand::Rand100RoundTo1(resource.count * efficiency());
 
-		// Farm multiplier for controlling farm production
-		dropCount = GameRand::Rand100RoundTo1(dropCount * FarmFoodMultiplier100);
-		
-		dropCount = max(1, dropCount);
-			
-		resourceSystem().SpawnDrop(resource.resourceEnum, dropCount, tile, ResourceHolderType::DropManual);
+		if (resource.isValid())
+		{
+			int32 dropCount = GameRand::Rand100RoundTo1(resource.count * efficiency());
 
-		AddProductionStat(ResourcePair(resource.resourceEnum, dropCount));
+			// Farm multiplier for controlling farm production
+			dropCount = GameRand::Rand100RoundTo1(dropCount * FarmFoodMultiplier100);
+
+			dropCount = max(1, dropCount);
+
+			resourceSystem().SpawnDrop(resource.resourceEnum, dropCount, tile, ResourceHolderType::DropManual);
+
+			AddProductionStat(ResourcePair(resource.resourceEnum, dropCount));
+		}
 
 		// Play sound
 		_simulation->soundInterface()->Spawn3DSound("CitizenAction", "CropHarvesting", _simulation->unitAtom(unitId));
@@ -556,7 +559,7 @@ void Trap::Tick1Sec()
 
 void Bank::CalculateRoundProfit()
 {
-	roundProfit = GetRadiusBonus(CardEnum::House, Radius, [&](int32 bonus, Building& building) 
+	lastRoundProfit = GetRadiusBonus(CardEnum::House, Radius, [&](int32 bonus, Building& building) 
 	{
 		House& house = building.subclass<House>();
 
@@ -564,7 +567,11 @@ void Bank::CalculateRoundProfit()
 		int32 bankCount = GetRadiusBonus(CardEnum::Bank, Radius, [&](int32 bonus1, Building& building1) {
 			return bonus1 + 1;
 		});
-		PUN_CHECK(bankCount >= 1);
+
+		if (bankCount <= 0) {
+			bankCount = 1;
+		}
+		//PUN_CHECK(bankCount >= 1);
 
 		return bonus + (house.houseLvl() >= 2 ? ProfitPerHouse : 0) / bankCount; // Profit shared between banks...
 	});

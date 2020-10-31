@@ -280,6 +280,8 @@ public:
 	
 	virtual float zoomDistance() = 0;
 	virtual bool ZoomDistanceBelow(float threshold) = 0;
+	bool ZoomDistanceAbove(float threshold) { return !ZoomDistanceBelow(threshold); }
+	
 	virtual WorldAtom2 cameraAtom() = 0;
 	virtual FVector cameraLocation() = 0;
 

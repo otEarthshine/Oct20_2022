@@ -577,6 +577,19 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			//descriptionBox->AddRichText(ss);
 			descriptionBox->AddLineSpacer(8);
 
+			// Show Description for some building
+			if (building.isEnum(CardEnum::Bank) ||
+				building.isEnum(CardEnum::ShippingDepot) || 
+				building.isEnum(CardEnum::Market) || 
+				building.isEnum(CardEnum::TradingCompany))
+			{
+				ss << WrapString(building.buildingInfo().description); // WrapString helps prevent flash
+				descriptionBox->AddRichText(ss);
+				descriptionBox->AddSpacer(8);
+			}
+
+			
+
 			// Helpers:
 			TileArea area = building.area();
 			FVector displayLocation = dataSource()->DisplayLocation(building.centerTile().worldAtom2());
@@ -920,12 +933,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					}
 					else if (building.isEnum(CardEnum::Bank) ||
 							building.isEnum(CardEnum::InvestmentBank)) 
-					{
-						ss << WrapString(building.buildingInfo().description);
-						descriptionBox->AddRichText(ss);
-						descriptionBox->AddSpacer();
-						
-						ss << static_cast<Bank*>(&building)->roundProfit << "<img id=\"Coin\"/>";
+					{	
+						ss << static_cast<Bank*>(&building)->lastRoundProfit << "<img id=\"Coin\"/>";
 						descriptionBox->AddRichText("Round profit", ss);
 					}
 					else if (building.isEnum(CardEnum::IronSmelter)) {
@@ -1336,7 +1345,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				{
 					std::string buttonName = isMarket ? "Manage Market" : "Manage Storage";
 					descriptionBox->AddButton(buttonName, nullptr, "", this, CallbackEnum::OpenManageStorage, true, false, objectId);
-					descriptionBox->AddLineSpacer(12);
+					//descriptionBox->AddLineSpacer(12);
 
 					/*
 					 * Fill ManageStorage
@@ -1357,7 +1366,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						}
 						uiResourceTargetsToDisplay = market.lastUIResourceTargets;
 					}
-
+					
 					auto tryAddManageStorageElement_UnderExpansion = [&](ResourceEnum resourceEnum, bool isShowing, bool isSection, bool shouldRemoveFromList = true)
 					{
 						// Note: isShowing is needed since we should do RemoveIf even if we aren't showing the resource row 
@@ -2451,7 +2460,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			SetText(_objectDescriptionUI->DescriptionUITitle, ss);
 			descriptionBox->AddSpacer(12);
 
-			ss << WrapString(info.description);
+			ss << WrapString(info.description); // WrapString Help Prevent flash
 			descriptionBox->AddRichText(ss);
 			
 			if (info.IsPlant()) {

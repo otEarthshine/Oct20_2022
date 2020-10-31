@@ -4,7 +4,7 @@
 
 #include "../Building.h"
 #include "../Resource/ResourceSystem.h"
-
+#include "../PlayerOwnedManager.h"
 
 class StorageBase : public Building
 {
@@ -163,8 +163,15 @@ public:
 	int32 maxCardSlots() override { return 0; }
 
 
-	void RefreshHoverWarning() override {
-		hoverWarning = _simulation->isStorageAllFull(_playerId) ? HoverWarning::StoragesFull : HoverWarning::None;
+	bool RefreshHoverWarning() override
+	{
+		if (_simulation->isStorageAllFull(_playerId)) {
+			hoverWarning = HoverWarning::StoragesFull;
+			return true;
+		}
+
+		hoverWarning = HoverWarning::None;
+		return false;
 	}
 	
 
@@ -229,6 +236,26 @@ public:
 		_foodTarget = 500;
 	}
 
+
+	void FinishConstruction() override {
+		StorageBase::FinishConstruction();
+
+		_upgrades = {
+			MakeUpgrade("More Workers", "+2 worker slots", 50),
+		};
+	}
+
+	void OnUpgradeBuilding(int upgradeIndex) override {
+		if (upgradeIndex == 0) {
+			_maxOccupants += 2;
+			_allowedOccupants = _maxOccupants;
+			_simulation->playerOwned(_playerId).RefreshJobDelayed();
+		}
+	}
+
+	/*
+	 * Market Targets
+	 */
 	bool IsMarketResource(ResourceEnum resourceEnum) {
 		return  IsFoodEnum(resourceEnum) ||
 			IsFuelEnum(resourceEnum) ||

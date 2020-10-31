@@ -87,6 +87,7 @@ void UEscMenuUI::PunInit()
 	VictoryScoreScreenButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickVictoryPopupScoreScreen);
 	VictoryReturnToGame->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickVictoryPopupReturnToGame);
 
+	AddToolTip(OverlayToggler, "Open the Overlay Menu.");
 	AddToolTip(EscMenuToggler, "Open the Game Menu.");
 	AddToolTip(TutorialToggler, "Open the tutorial.");
 

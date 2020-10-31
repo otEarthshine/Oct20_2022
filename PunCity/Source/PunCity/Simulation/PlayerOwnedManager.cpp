@@ -192,6 +192,7 @@ int32 PlayerOwnedManager::TryFillJobBuildings(const std::vector<int32>& jobBuild
 		if (index >= targetNonLaborerCount()) {
 			break;
 		}
+		// TODO: (maximumFill <= localIndex) break
 	}
 
 	return localIndex;
@@ -269,7 +270,7 @@ void PlayerOwnedManager::RefreshJobs()
 	{
 		if (_builderCount < targetBuilderCount) {
 			int32 maxFill = targetBuilderCount - _builderCount;
-			_builderCount += TryFillJobBuildings(_constructionIds, PriorityEnum::NonPriority, index, maxFill);
+			_builderCount += TryFillJobBuildings(_constructionIds, PriorityEnum::NonPriority, index, false, maxFill);
 		}
 		//if (_builderCount < targetBuilderCount) {
 		//	int32 maxFill = targetBuilderCount - _builderCount;
@@ -316,7 +317,11 @@ void PlayerOwnedManager::RefreshJobs()
 		TryFillJobBuildings(_jobBuildingEnumToIds[buildingEnumInt], PriorityEnum::NonPriority, index);
 	}
 
-	_builderCount += TryFillJobBuildings(_constructionIds, PriorityEnum::NonPriority, index);
+	// If the builders are not manual adjusted, fill them here
+	if (!targetBuilderHighPriority)
+	{
+		_builderCount += TryFillJobBuildings(_constructionIds, PriorityEnum::NonPriority, index);
+	}
 
 	//_builderCount += TryFillJobBuildings(_roadConstructBuildingIds, PriorityEnum::NonPriority, index);
 	////_roadBuilderCount += _builderCount;
@@ -627,28 +632,45 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 				// TODO: InvestmentBank not yet used... Make sure it works as a percentage bank...
 				if (building.isEnum(CardEnum::InvestmentBank)) {
 					Bank* bank = static_cast<Bank*>(&building);
-					bank->roundProfit = resourceSys.money() / 10;
+					bank->lastRoundProfit = resourceSys.money() / 10;
 					PUN_LOG("InvestmentBankGain: %d", resourceSys.money());
 
-					incomes100[static_cast<int>(IncomeEnum::BankProfit)] += bank->roundProfit * 100;
+					incomes100[static_cast<int>(IncomeEnum::BankProfit)] += bank->lastRoundProfit * 100;
 
 					if (showFloatup) {
-						_simulation->uiInterface()->ShowFloatupInfo(FloatupInfo(FloatupEnum::GainMoney, Time::Ticks(), building.centerTile(), "+" + to_string(bank->roundProfit)));
+						_simulation->uiInterface()->ShowFloatupInfo(FloatupInfo(FloatupEnum::GainMoney, Time::Ticks(), building.centerTile(), "+" + to_string(bank->lastRoundProfit)));
 					}
 				}
-				// Bank
-				else if (building.isEnum(CardEnum::Bank)) 
-				{
-					Bank* bank = static_cast<Bank*>(&building);
-					
-					bank->CalculateRoundProfit();
-					incomes100[static_cast<int>(IncomeEnum::BankProfit)] += bank->roundProfit * 100;
+				//// Bank
+				//else if (building.isEnum(CardEnum::Bank)) 
+				//{
+				//	Bank* bank = static_cast<Bank*>(&building);
+				//	
+				//	bank->CalculateRoundProfit();
+				//	incomes100[static_cast<int>(IncomeEnum::BankProfit)] += bank->lastRoundProfit * 100;
 
-					if (showFloatup) {
-						_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, bank->centerTile(), "+" + to_string(bank->roundProfit));
-					}
-				}
+				//	if (showFloatup) {
+				//		_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, bank->centerTile(), "+" + to_string(bank->lastRoundProfit));
+				//	}
+				//}
 				
+			}
+		}
+	}
+
+	/*
+	 * Banks
+	 */
+	{
+		const std::vector<int32>& buildingIds = _simulation->buildingIds(_playerId, CardEnum::Bank);
+		for (int32 buildingId : buildingIds) {
+			Bank& bank = _simulation->building<Bank>(buildingId);
+
+			bank.CalculateRoundProfit();
+			incomes100[static_cast<int>(IncomeEnum::BankProfit)] += bank.lastRoundProfit * 100;
+
+			if (showFloatup) {
+				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, bank.centerTile(), "+" + to_string(bank.lastRoundProfit));
 			}
 		}
 	}

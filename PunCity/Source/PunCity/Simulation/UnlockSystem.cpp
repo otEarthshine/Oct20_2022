@@ -59,21 +59,46 @@ void Building_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulation
 	ResearchInfo::OnUnlock(playerId, simulation);
 }
 
-void UnlockSystem::OnEraUnlocked(std::stringstream& ss)
+void UnlockSystem::EraUnlockedDescription(std::stringstream& ss, int32 era, bool isTip)
 {
-	ss << "Congratulation!<space>";
-	ss << " Your town has advanced to Era " + eraNumberToText[currentEra()] + ".";
-
-	if (currentEra() == 2) {
-		ss << "<space>";
-		ss << " Unlocked Global Slot Cards:";
+	if (era == 2) {
+		if (isTip) {
+			ss << " Global Slot Cards:";
+		} else {
+			ss << " Unlocked Global Slot Cards:";
+		}
 		ss << "<bullet>Chimney Restrictor</>";
 		//ss << "<bullet>Child Marriage</>";
-		ss << "<bullet>Prolong Life</>";
+		//ss << "<bullet>Prolong Life</>";
 		ss << "<bullet>Birth Control</>";
 		ss << "<bullet>Coal Treatment</>";
-		
-		auto& cardSys = _simulation->cardSystem(_playerId);
+	}
+	else if (era == 3) {
+		if (isTip) {
+			ss << " Cards:";
+		} else {
+			ss << " Unlocked Cards:";
+		}
+		ss << "<bullet>Wild Card</>";
+		ss << "<bullet>Agriculture Wild Card</>";
+		ss << "<bullet>Industry Wild Card</>";
+		ss << "<bullet>Mine Wild Card</>";
+		ss << "<bullet>Service Wild Card</>";
+		ss << "<bullet>Card Removal Card</>";
+	}
+}
+
+void UnlockSystem::OnEraUnlocked(std::stringstream& ss)
+{
+	auto& cardSys = _simulation->cardSystem(_playerId);
+	
+	ss << "Congratulation!<space>";
+	ss << " Your town has advanced to Era " + eraNumberToText[currentEra()] + ".";
+	ss << "<space>";
+
+	EraUnlockedDescription(ss, currentEra(), false);
+	
+	if (currentEra() == 2) {
 		cardSys.AddDrawCards(CardEnum::ChimneyRestrictor, 1);
 		//cardSys.AddDrawCards(CardEnum::ChildMarriage, 1);
 		//cardSys.AddDrawCards(CardEnum::ProlongLife, 1);
@@ -81,16 +106,6 @@ void UnlockSystem::OnEraUnlocked(std::stringstream& ss)
 		cardSys.AddDrawCards(CardEnum::CoalTreatment, 1); // Encourage coal usage...
 	}
 	else if (currentEra() == 3) {
-		ss << "<space>";
-		ss << " Unlocked Cards:";
-		ss << "<bullet>Wild Card</>";
-		ss << "<bullet>Agriculture Wild Card</>";
-		ss << "<bullet>Industry Wild Card</>";
-		ss << "<bullet>Mine Wild Card</>";
-		ss << "<bullet>Service Wild Card</>";
-		ss << "<bullet>Card Removal Card</>";
-
-		auto& cardSys = _simulation->cardSystem(_playerId);
 		cardSys.AddDrawCards(CardEnum::WildCard, 1);
 		cardSys.AddDrawCards(CardEnum::WildCardFood, 2);
 		cardSys.AddDrawCards(CardEnum::WildCardIndustry, 2);
@@ -99,7 +114,6 @@ void UnlockSystem::OnEraUnlocked(std::stringstream& ss)
 		cardSys.AddDrawCards(CardEnum::CardRemoval, 1);
 	}
 	else if (currentEra() == 8) {
-		ss << "<space>";
 		ss << " You have reached the final era.";
 		ss << "<space>";
 		//ss << " Once you researched all technologies in this era, you win the game.";

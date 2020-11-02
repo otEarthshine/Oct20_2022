@@ -672,7 +672,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadResource2(ResourceEnum::Cotton, "Cotton/CottonBasket");
 	LoadResource2(ResourceEnum::CottonFabric, "CottonFabric/CottonFabric");
 	LoadResource2(ResourceEnum::DyedCottonFabric, "CottonFabric/DyedCottonFabric");
-	LoadResource2(ResourceEnum::LuxuriousClothes, "Cloth/Cloth");
+	LoadResource2(ResourceEnum::LuxuriousClothes, "Cloth/LuxuriousCloth");
 
 	LoadResource2(ResourceEnum::Honey, "Honey/Honey");
 	LoadResource2(ResourceEnum::Beeswax, "Beeswax/Beeswax");

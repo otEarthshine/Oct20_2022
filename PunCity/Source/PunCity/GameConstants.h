@@ -28,6 +28,8 @@ public:
 	static const int32 MaxFloodDistance_HumanIdle = 3;
 	static const int32 MaxFloodDistance_Animal = 3;
 
+	static const int32 MaxFloodDistance_HumanLogistics = 7;
+
 	static const int32 MaxFloodDistance_Army = 10;
 
 	static const int WorkerEmptyBuildingInventoryAmount = 50;

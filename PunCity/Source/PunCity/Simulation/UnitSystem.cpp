@@ -39,6 +39,9 @@ void UnitSystem::Init(IGameSimulationCore* simulation)
 
 	_unitEnumToUnitCount.resize(UnitEnumCount);
 	_animalEnumToInitialCount.resize(UnitEnumCount);
+
+	// Check
+	check(static_cast<int32>(UnitState::Count) == _countof(UnitStateString));
 }
 
 int16 UnitSystem::food(int id)

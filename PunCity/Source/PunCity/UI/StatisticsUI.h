@@ -33,6 +33,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* IncomeStatButton;
 	UPROPERTY(meta = (BindWidget)) UButton* ScienceStatButton;
 	UPROPERTY(meta = (BindWidget)) UButton* FoodFuelStatButton;
+	UPROPERTY(meta = (BindWidget)) UButton* FoodUsageStatButton;
 	UPROPERTY(meta = (BindWidget)) UButton* ImportExportStatButton;
 	UPROPERTY(meta = (BindWidget)) UButton* MarketStatButton;
 
@@ -51,6 +52,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UTimeSeriesPlot* IncomeGraph;
 	UPROPERTY(meta = (BindWidget)) UTimeSeriesPlot* ScienceGraph;
 	UPROPERTY(meta = (BindWidget)) UTimeSeriesPlot* FoodFuelGraph;
+	UPROPERTY(meta = (BindWidget)) UTimeSeriesPlot* FoodUsageGraph;
 	UPROPERTY(meta = (BindWidget)) UTimeSeriesPlot* ImportExportGraph;
 
 	/*
@@ -101,6 +103,7 @@ public:
 		setHighlight(ScienceStatButton);
 
 		setHighlight(FoodFuelStatButton);
+		setHighlight(FoodUsageStatButton);
 		setHighlight(ImportExportStatButton);
 		setHighlight(MarketStatButton);
 	}
@@ -130,19 +133,26 @@ public:
 		StatSwitcher->SetActiveWidgetIndex(4);
 		dataSource()->Spawn2DSound("UI", "ButtonClick");
 	}
+	
 	UFUNCTION() void OnFoodFuelStatButtonClick() {
 		SetTabSelection(FoodFuelStatButton);
 		StatSwitcher->SetActiveWidgetIndex(5);
 		dataSource()->Spawn2DSound("UI", "ButtonClick");
 	}
+	UFUNCTION() void OnFoodUsageStatButtonClick() {
+		SetTabSelection(FoodUsageStatButton);
+		StatSwitcher->SetActiveWidgetIndex(6);
+		dataSource()->Spawn2DSound("UI", "ButtonClick");
+	}
+	
 	UFUNCTION() void OnImportExportStatButtonClick() {
 		SetTabSelection(ImportExportStatButton);
-		StatSwitcher->SetActiveWidgetIndex(6);
+		StatSwitcher->SetActiveWidgetIndex(7);
 		dataSource()->Spawn2DSound("UI", "ButtonClick");
 	}
 	UFUNCTION() void OnMarketStatButtonClick() {
 		SetTabSelection(MarketStatButton);
-		StatSwitcher->SetActiveWidgetIndex(7);
+		StatSwitcher->SetActiveWidgetIndex(8);
 		dataSource()->Spawn2DSound("UI", "ButtonClick");
 	}
 

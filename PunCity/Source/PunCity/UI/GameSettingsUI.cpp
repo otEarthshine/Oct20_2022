@@ -46,6 +46,8 @@ void UGameSettingsUI::PunInit(UPunWidget* callbackParent)
 		gameInstance()->loadedVersion != GAME_VERSION)
 	{
 		RestoreDefault();
+		ApplyChanges(); // Save to file
+		
 		gameInstance()->RestoreDefaultsAll();
 		gameInstance()->SaveSettingsToFile();
 	}
@@ -157,7 +159,7 @@ void UGameSettingsUI::PunInit(UPunWidget* callbackParent)
 	SetupResolutionDropdown();
 
 	WindowModeDropdown->ClearOptions();
-	WindowModeDropdown->AddOption("Fullscreen");
+	WindowModeDropdown->AddOption("Fullscreen (Borderless Windowed)");
 	WindowModeDropdown->AddOption("Windowed");
 
 	

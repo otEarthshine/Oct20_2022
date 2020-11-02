@@ -1213,6 +1213,22 @@ public:
 	}
 
 	/*
+	 * Data
+	 */
+	void AddDataPoint(PlotStatEnum statEnum, int32 data, int32 ticksPerStatInterval = TicksPerStatInterval)
+	{
+		std::vector<int32>& statVec = _enumToStatVec[static_cast<int>(statEnum)];
+		int32 statTickCount = Time::Ticks() / ticksPerStatInterval;
+
+		//while (statVec.size() < statTickCount) {
+		for (int32 i = statVec.size(); i < statTickCount; i++) {
+			statVec.push_back(0); // PlayerOwned might not be initialized from the first round...
+		}
+
+		statVec.push_back(data);
+	};
+
+	/*
 	 * Serialize
 	 */
 	void Serialize(FArchive& Ar)
@@ -1354,18 +1370,6 @@ private:
 		return _adultIds.size();
 	}
 
-	void AddDataPoint(PlotStatEnum statEnum, int32 data, int32 ticksPerStatInterval = TicksPerStatInterval)
-	{
-		std::vector<int32>& statVec = _enumToStatVec[static_cast<int>(statEnum)];
-		int32 statTickCount = Time::Ticks() / ticksPerStatInterval;
-
-		//while (statVec.size() < statTickCount) {
-		for (int32 i = statVec.size(); i < statTickCount; i++) {
-			statVec.push_back(0); // PlayerOwned might not be initialized from the first round...
-		}
-		
-		statVec.push_back(data);
-	};
 	
 public:
 	bool needChooseLocation = true;

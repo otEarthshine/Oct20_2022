@@ -1867,7 +1867,7 @@ void UnitStateAI::Add_MoveTo(WorldTile2 end) {
 void UnitStateAI::MoveTo() {
 	MoveTo(WorldTile2(action().int32val1));
 }
-bool UnitStateAI::MoveTo(WorldTile2 end)
+bool UnitStateAI::MoveTo(WorldTile2 end, int32 customFloodDistance)
 {
 	SCOPE_CYCLE_COUNTER(STAT_PunUnitDoMoveTo);
 	WorldTile2 tile = unitTile();
@@ -1885,7 +1885,8 @@ bool UnitStateAI::MoveTo(WorldTile2 end)
 
 	// Possibly something got in the way before this was called...
 	// This should also guard against unit's tile becoming invalid (construction built on top)
-	if (!IsMoveValid(end)) {
+	if (!IsMoveValid(end, customFloodDistance)) 
+	{
 		_simulation->ResetUnitActions(_id, 60);
 		AddDebugSpeech("(Bad)MoveTo: IsConnected " + tile.ToString() + end.ToString());
 
@@ -1897,8 +1898,17 @@ bool UnitStateAI::MoveTo(WorldTile2 end)
 		return false;
 	}
 
+	//int32 
+
 	bool isIntelligent = IsIntelligentUnit(unitEnum());
-	bool succeed = _simulation->pathAI(isIntelligent)->FindPath(tile.x, tile.y, end.x, end.y, rawWaypoint, isEnum(UnitEnum::Human), isIntelligent);
+
+	int32 customCalculationCount = 30000;
+	int32 distance = WorldTile2::Distance(tile, end);
+	//if (distance > 70) {
+	//	customCalculationCount = 200000;
+	//}
+	
+	bool succeed = _simulation->pathAI(isIntelligent)->FindPath(tile.x, tile.y, end.x, end.y, rawWaypoint, isEnum(UnitEnum::Human), isIntelligent, customCalculationCount);
 
 	if (!succeed) 
 	{
@@ -1909,7 +1919,7 @@ bool UnitStateAI::MoveTo(WorldTile2 end)
 
 		//PUN_LOG("MoveTo FindPath failed %s", *ToFString(debugStr()));
 
-		_simulation->DrawLine(tile.worldAtom2(), FVector(0, 0, 0), tile.worldAtom2(), FVector(0, 0, 40), FLinearColor(0.9, 0.9, 1));
+		_simulation->DrawLine(tile.worldAtom2(), FVector(0, 0, 0), tile.worldAtom2(), FVector(0, 0, 40), FLinearColor(1, 0.9, 0.9));
 		_simulation->DrawLine(tile.worldAtom2(), FVector(0, 0, 40), end.worldAtom2(), FVector(0, 0, 40), FLinearColor::Red);
 		_simulation->DrawLine(end.worldAtom2(), FVector(0, 0, 0), end.worldAtom2(), FVector(0, 0, 40), FLinearColor::Red);
 		return false;
@@ -1929,16 +1939,16 @@ bool UnitStateAI::MoveTo(WorldTile2 end)
 	return true;
 }
 
-void UnitStateAI::Add_MoveToResource(ResourceHolderInfo holderInfo) {
-	_actions.push_back(Action(ActionEnum::MoveToResource, static_cast<int32>(holderInfo.resourceEnum), holderInfo.holderId));
+void UnitStateAI::Add_MoveToResource(ResourceHolderInfo holderInfo, int32 customFloodDistance) {
+	_actions.push_back(Action(ActionEnum::MoveToResource, static_cast<int32>(holderInfo.resourceEnum), holderInfo.holderId, customFloodDistance));
 }
 void UnitStateAI::MoveToResource() {
-	MoveToResource(ResourceHolderInfo(static_cast<ResourceEnum>(action().int32val1), action().int32val2));
+	MoveToResource(ResourceHolderInfo(static_cast<ResourceEnum>(action().int32val1), action().int32val2), action().int32val3);
 }
-bool UnitStateAI::MoveToResource(ResourceHolderInfo holderInfo) {
+bool UnitStateAI::MoveToResource(ResourceHolderInfo holderInfo, int32 customFloodDistance) {
 	const ResourceHolder& holder = resourceSystem().holder(holderInfo);
 	
-	bool succeed = MoveTo(holder.tile);
+	bool succeed = MoveTo(holder.tile, customFloodDistance);
 
 	// For Storages, trim off excess waypoint
 	if (succeed && 
@@ -1963,7 +1973,9 @@ void UnitStateAI::MoveToForceLongDistance()
 	WorldTile2 tile = unitTile();
 
 	bool isIntelligent = IsIntelligentUnit(unitEnum());
-	bool succeed = _simulation->pathAI(isIntelligent)->FindPath(tile.x, tile.y, end.x, end.y, rawWaypoint, true, isIntelligent, true);
+	
+	const int32 customCalculationCount = 200000;
+	bool succeed = _simulation->pathAI(isIntelligent)->FindPath(tile.x, tile.y, end.x, end.y, rawWaypoint, true, isIntelligent, customCalculationCount);
 
 	if (!succeed) 
 	{

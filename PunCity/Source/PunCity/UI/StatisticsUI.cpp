@@ -21,7 +21,9 @@ void UStatisticsUI::InitStatisticsUI()
 	PopulationStatButton->OnClicked.AddDynamic(this, &UStatisticsUI::OnPopulationStatButtonClick);
 	IncomeStatButton->OnClicked.AddDynamic(this, &UStatisticsUI::OnIncomeStatButtonClick);
 	ScienceStatButton->OnClicked.AddDynamic(this, &UStatisticsUI::OnScienceStatButtonClick);
+	
 	FoodFuelStatButton->OnClicked.AddDynamic(this, &UStatisticsUI::OnFoodFuelStatButtonClick);
+	FoodUsageStatButton->OnClicked.AddDynamic(this, &UStatisticsUI::OnFoodUsageStatButtonClick);
 	ImportExportStatButton->OnClicked.AddDynamic(this, &UStatisticsUI::OnImportExportStatButtonClick);
 	MarketStatButton->OnClicked.AddDynamic(this, &UStatisticsUI::OnMarketStatButtonClick);
 
@@ -47,6 +49,11 @@ void UStatisticsUI::InitStatisticsUI()
 		{FString("Food"), PlotStatEnum::Food, FLinearColor(0.3, 1, 0.3) },
 		{FString("Fuel"), PlotStatEnum::Fuel, FLinearColor(1, 1, 0.3) },
 	});
+	AddSeries(FoodUsageGraph, {
+		{FString("Food Production"), PlotStatEnum::FoodProduction, FLinearColor(0.3, 1, 0.3) },
+		{FString("Food Consumption"), PlotStatEnum::FoodConsumption, FLinearColor(1, 0.3, 0.3) },
+	});
+	
 	AddSeries(ImportExportGraph, {
 		//{FString("Trade balance"), PlotStatEnum::TradeBalance, FLinearColor::Green },
 		{FString("Export"), PlotStatEnum::Export, FLinearColor(0.3, 0.3, 1) },

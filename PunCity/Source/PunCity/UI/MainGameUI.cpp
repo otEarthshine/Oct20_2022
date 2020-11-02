@@ -1067,26 +1067,26 @@ void UMainGameUI::Tick()
 				});
 			}
 
-			// Fuel Graph
-			int32 fuelProduction = CppUtils::Sum(productionStats[static_cast<int>(ResourceEnum::Wood)]) + CppUtils::Sum(productionStats[static_cast<int>(ResourceEnum::Coal)]);
-			int32 fuelConsumption = CppUtils::Sum(consumptionStats[static_cast<int>(ResourceEnum::Wood)]) + CppUtils::Sum(consumptionStats[static_cast<int>(ResourceEnum::Coal)]);
+			//// Fuel Graph
+			//int32 fuelProduction = CppUtils::Sum(productionStats[static_cast<int>(ResourceEnum::Wood)]) + CppUtils::Sum(productionStats[static_cast<int>(ResourceEnum::Coal)]);
+			//int32 fuelConsumption = CppUtils::Sum(consumptionStats[static_cast<int>(ResourceEnum::Wood)]) + CppUtils::Sum(consumptionStats[static_cast<int>(ResourceEnum::Coal)]);
 
-			tip << "<space>";
-			tip << "<space>";
-			tip << "Fuel Production (yearly): <FaintGreen>" << fuelProduction << "</>\n";
-			tip << "Fuel Consumption (yearly): <FaintRed>" << fuelConsumption << "</>\n";
-			tip << "Fuel Count: " << simulation.resourceCount(playerId(), ResourceEnum::Wood) + simulation.resourceCount(playerId(), ResourceEnum::Coal);
-			
-			tooltip->TooltipPunBoxWidget->AddRichTextParsed(tip);
+			//tip << "<space>";
+			//tip << "<space>";
+			//tip << "Fuel Production (yearly): <FaintGreen>" << fuelProduction << "</>\n";
+			//tip << "Fuel Consumption (yearly): <FaintRed>" << fuelConsumption << "</>\n";
+			//tip << "Fuel Count: " << simulation.resourceCount(playerId(), ResourceEnum::Wood) + simulation.resourceCount(playerId(), ResourceEnum::Coal);
+			//
+			//tooltip->TooltipPunBoxWidget->AddRichTextParsed(tip);
 
-			auto punThinGraph = tooltip->TooltipPunBoxWidget->AddThinGraph();
+			//auto punThinGraph = tooltip->TooltipPunBoxWidget->AddThinGraph();
 
-			if (shouldUpdateFuel)
-			{
-				punGraph->SetupGraph({
-					{ FString("Fuel"), PlotStatEnum::Fuel, FLinearColor::Yellow },
-				});
-			}
+			//if (shouldUpdateFuel)
+			//{
+			//	punGraph->SetupGraph({
+			//		{ FString("Fuel"), PlotStatEnum::Fuel, FLinearColor::Yellow },
+			//	});
+			//}
 		}
 		
 		// Luxury

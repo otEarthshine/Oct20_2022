@@ -46,7 +46,7 @@ public:
 	PunAStar128x256();
 	~PunAStar128x256();
 
-	bool FindPath(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path, bool isAccurate, bool isRoadable, bool isLongDistance = false);
+	bool FindPath(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path, bool isAccurate, bool isRoadable, int32 customCalculationCount = -1);
 	bool FindPathRobust(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path);
 
 	void CleanGrid();

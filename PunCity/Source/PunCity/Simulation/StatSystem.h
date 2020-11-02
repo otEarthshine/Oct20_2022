@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "GameSimulationInfo.h"
+#include "IGameSimulationCore.h"
 #include <sstream>
 #include "PunCity/CppUtils.h"
 
@@ -33,22 +33,26 @@ public:
 		_enumToAccumulatedStat.resize(AccumulatedStatEnumCount, 0);
 	}
 
-	void Tick() {
-		if (Time::IsSeasonStart()) {
-			int32_t seasonInt = Time::SeasonMod();
-			check(seasonInt < 4);
+	void Tick(int32 playerId, IGameSimulationCore* simulation);
+	//{
+	//	if (Time::IsSeasonStart()) 
+	//	{
+	//		int32_t seasonInt = Time::SeasonMod();
+	//		check(seasonInt < 4);
+	//		
+	//		// Reset Stat Entry
+	//		for (int i = 0; i < _enumToSeasonToStat.size(); i++) {
+	//			_enumToSeasonToStat[i][seasonInt] = 0;
+	//		}
+	//		for (int i = 0; i < _enumToResourceToSeasonToStat.size(); i++) {
+	//			auto& resourceToSeasonToStat = _enumToResourceToSeasonToStat[i];
+	//			for (int j = 0; j < resourceToSeasonToStat.size(); j++) {
+	//				resourceToSeasonToStat[j][seasonInt] = 0;
+	//			}
+	//		}
 
-			for (int i = 0; i < _enumToSeasonToStat.size(); i++) {
-				_enumToSeasonToStat[i][seasonInt] = 0;
-			}
-			for (int i = 0; i < _enumToResourceToSeasonToStat.size(); i++) {
-				auto& resourceToSeasonToStat = _enumToResourceToSeasonToStat[i];
-				for (int j = 0; j < resourceToSeasonToStat.size(); j++) {
-					resourceToSeasonToStat[j][seasonInt] = 0;
-				}
-			}
-		}
-	}
+	//	}
+	//}
 
 	/*
 	 * Accumulated stats
@@ -84,6 +88,9 @@ public:
 
 	void AddResourceStat(ResourceSeasonStatEnum statEnum, ResourceEnum resourceEnum, int32_t amount) {
 		_enumToResourceToSeasonToStat[(int)statEnum][(int)resourceEnum][Time::SeasonMod()] += amount;
+	}
+	int32 GetCurrentResourceStat(ResourceSeasonStatEnum statEnum, ResourceEnum resourceEnum, int32 seasonInt) {
+		return _enumToResourceToSeasonToStat[static_cast<int>(statEnum)][static_cast<int>(resourceEnum)][seasonInt];
 	}
 
 	// return seasonToStat
@@ -141,11 +148,11 @@ public:
 		_playerIdToSubstatSystem[playerId] = SubStatSystem();
 	}
 
-	void Tick() {
+	void Tick(IGameSimulationCore* simulation) {
 		for (int i = 0; i < _playerIdToSubstatSystem.size(); i++) {
-			_playerIdToSubstatSystem[i].Tick();
+			_playerIdToSubstatSystem[i].Tick(i, simulation);
 		}
-		_globalSubstatSystem.Tick();
+		_globalSubstatSystem.Tick(-1, simulation);
 	}
 
 	SubStatSystem& playerStatSystem(int32 playerId) {

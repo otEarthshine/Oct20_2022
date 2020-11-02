@@ -336,7 +336,7 @@ public:
 		 * - 1250 cost ... (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) / 10 / 10
 		 * - at 125 sci production... it is 2.5 seasons
 		 */
-		return (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) / 10 / 10 / 10  /* Tech factor: */  * 10000 / 1000; // 5400 / 1000;
+		return (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) / 10 / 10 / 10  /* Tech factor: */  * 12000 / 1000; // 5400 / 1000;
 	}
 
 	float researchFraction(int32 researchesFinished, int32 science100XsecPerRound) {
@@ -819,17 +819,23 @@ public:
 		if (!isUnlocked(CardEnum::Farm)) {
 			UnlockBuilding(CardEnum::Farm);
 		}
-		
-		for (auto& techEnums : _eraToTechs) {
-			for (TechEnum techEnum : techEnums) {
-				auto tech = GetTechInfo(techEnum);
-				if (tech->state != TechStateEnum::Researched) {
-					tech->state = TechStateEnum::Researched;
-					tech->OnUnlock(_playerId, _simulation);
-					techsFinished++;
+
+		auto unlockTree = [&](std::vector<std::vector<TechEnum>>& treeTechEnums)
+		{
+			for (auto& techEnums : treeTechEnums) {
+				for (TechEnum techEnum : techEnums) {
+					auto tech = GetTechInfo(techEnum);
+					if (tech->state != TechStateEnum::Researched) {
+						tech->state = TechStateEnum::Researched;
+						tech->OnUnlock(_playerId, _simulation);
+						techsFinished++;
+					}
 				}
 			}
-		}
+		};
+
+		unlockTree(_eraToTechs);
+		unlockTree(_houseLvlToProsperityTechEnum);
 
 		_techQueue.clear();
 	}
@@ -996,6 +1002,8 @@ public:
 			//researchCompletePopup("Research Completed.");
 		}
 	}
+
+	static void EraUnlockedDescription(std::stringstream& ss, int32 era, bool isTip);
 
 	void OnEraUnlocked(std::stringstream& ss);
 

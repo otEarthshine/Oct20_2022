@@ -294,17 +294,8 @@ public:
 	static void SetGeoresourceImage(UImage* image, ResourceEnum resourceEnum, UAssetLoaderComponent* assetLoader, UPunWidget* punWidget)
 	{
 		auto material = image->GetDynamicMaterial();
-		
-		material->SetTextureParameterValue("ColorTexture", assetLoader->GetResourceIcon(resourceEnum));
-		material->SetTextureParameterValue("DepthTexture", assetLoader->GetResourceIconAlpha(resourceEnum));
 
 		if (IsOreEnum(resourceEnum)) {
-			switch (resourceEnum) {
-			case ResourceEnum::Iron: resourceEnum = ResourceEnum::IronOre; break;
-			case ResourceEnum::GoldBar: resourceEnum = ResourceEnum::GoldOre; break;
-			case ResourceEnum::Gemstone: resourceEnum = ResourceEnum::Gemstone; break;
-			}
-
 			stringstream ssTip;
 			ssTip << ResourceName(resourceEnum) << " Deposit in this region that can be mined.";
 			punWidget->AddToolTip(image, ssTip.str());
@@ -314,6 +305,15 @@ public:
 			ssTip << "This region is suitable for " << ResourceName(resourceEnum) << " Farming. ";
 			punWidget->AddToolTip(image, ssTip.str());
 		}
+
+		
+		switch (resourceEnum) {
+		case ResourceEnum::IronOre: resourceEnum = ResourceEnum::Iron; break;
+		case ResourceEnum::GoldOre: resourceEnum = ResourceEnum::GoldBar; break;
+		}
+
+		material->SetTextureParameterValue("ColorTexture", assetLoader->GetResourceIcon(resourceEnum));
+		material->SetTextureParameterValue("DepthTexture", assetLoader->GetResourceIconAlpha(resourceEnum));
 	};
 	
 

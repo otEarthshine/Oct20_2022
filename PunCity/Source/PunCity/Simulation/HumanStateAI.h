@@ -13,7 +13,7 @@ public:
 
 	//! Macros
 	bool TryMoveResourcesProviderToDropoff(int32 providerBuildingId, int32 dropoffBuildingId, ResourceEnum resourceEnum, int32 amountAtLeast);
-	bool TryMoveResourcesAnyProviderToDropoff(ResourceFindType providerType, FoundResourceHolderInfo dropoffInfo, bool prioritizeMarket = false, bool checkMarketAfter = false);
+	bool TryMoveResourcesAnyProviderToDropoff(ResourceFindType providerType, FoundResourceHolderInfo dropoffInfo, bool prioritizeMarket = false, bool checkMarketAfter = false, int32 maxFloodDist = GameConstants::MaxFloodDistance_Human);
 	bool TryMoveResourcesProviderToAnyDropoff(FoundResourceHolderInfo providerInfo, ResourceFindType dropoffType);
 	bool TryMoveResourcesAny(ResourceEnum resourceEnum, ResourceFindType providerType, ResourceFindType dropoffType, int32 amountAtLeast);
 
@@ -43,7 +43,7 @@ public:
 	bool TryHealup();
 	bool TryFillLuxuries();
 
-	FoundResourceHolderInfos FindMarketResourceHolderInfo(ResourceEnum resourceEnum, int32 wantAmount);
+	FoundResourceHolderInfos FindMarketResourceHolderInfo(ResourceEnum resourceEnum, int32 wantAmount, bool checkOnlyOneMarket, int32 maxFloodDist);
 
 	bool TryFun();
 
@@ -263,7 +263,7 @@ public:
 	}
 
 protected:
-	void MoveResourceSequence(std::vector<FoundResourceHolderInfo> providerInfos, std::vector<FoundResourceHolderInfo> dropoffInfos);
+	void MoveResourceSequence(std::vector<FoundResourceHolderInfo> providerInfos, std::vector<FoundResourceHolderInfo> dropoffInfos, int32 customFloodDistance = -1);
 
 	void GatherSequence(NonWalkableTileAccessInfo accessInfo);
 

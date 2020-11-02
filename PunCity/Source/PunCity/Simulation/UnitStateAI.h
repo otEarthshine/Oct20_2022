@@ -46,49 +46,60 @@ enum class UnitState : uint8
 	WorkProduce,
 	WorkConstruct,
 	Hunt,
-	Farm,
+	
+	FarmSeeding,
+	FarmNourishing,
+	FarmHarvesting,
+	FarmClearDrops,
 
 	MoveArmy,
+
+	Count,
 };
 
-const char* const UnitStateString[] = {
-	"GetFood",
-	"GetHeat",
-	"GetFun",
-	"GetTools",
-	"GetMedicine",
+const char* const UnitStateString[] = 
+{
+	"Get Food",
+	"Get Heat",
+	"Get Fun",
+	"Get Tools",
+	"Get Medicine",
 	
-	"GetWildFood",
+	"Get Wild Food",
 	"Idle",
-	"AvoidOthers",
-	"GoNearbyHome",
+	"Avoid Others",
+	"Go Nearby Home",
 
 	"Job",
-	"GatherTree",
-	"GatherStone",
+	"Gather Tree",
+	"Gather Stone",
 	
-	"ClearLandCutBush",
-	"ClearLandCutTree",
-	"ClearLandCutStone",
+	"Clear Land (Cut Bush)",
+	"Clear Land (Cut Tree)",
+	"Clear Land (Cut Stone)",
 	
-	"ClearLandRemoveDrop",
-	"ForestingCut",
-	"ForestingPlant",
-	"ForestingNourish",
-	"MoveResource",
-	"MoveResourceConstruct",
-	"StoreInventory",
-	"GatherBerry",
-	"GatherBush",
+	"Clear Land (Remove Drop)",
+	"Foresting Cut",
+	"Foresting Plant",
+	"Foresting Nourish",
+	"Move Resource",
+	"Move Resource (Construct)",
+	"Store Inventory",
+	"Gather Berry",
+	"Gather Bush",
 	
-	"Work(Consume)",
-	"FillInput",
-	"Work(Produce)",
-	"Work(Construct)",
+	"Work (Consume)",
+	"Fill Input",
+	"Work (Produce)",
+	"Work (Construct)",
 	"Hunt",
-	"Farm",
+	
+	"Seeding (Farm)", // FarmSeeding
+	"Nourishing (Farm)", // FarmNourishing
+	"Harvesting (Farm)", // FarmHarvesting
+	"Clear Drops (Farm)", // FarmClearDrops
 
-	"MoveArmy",
+	"Move Army",
 };
 
 enum class UnitAIClassEnum : uint8
@@ -290,8 +301,8 @@ public:
 	void Add_PlantTree(WorldTile2 targetTile, TileObjEnum tileObjEnum);	void PlantTree();
 	void Add_NourishTree(WorldTile2 targetTile);						void NourishTree();
 
-	void Add_MoveTo(WorldTile2 end);								void MoveTo();  bool MoveTo(WorldTile2 end);
-	void Add_MoveToResource(ResourceHolderInfo holderInfo);			void MoveToResource(); bool MoveToResource(ResourceHolderInfo holderInfo);
+	void Add_MoveTo(WorldTile2 end);								void MoveTo();  bool MoveTo(WorldTile2 end, int32 customFloodDistance = -1);
+	void Add_MoveToResource(ResourceHolderInfo holderInfo, int32 customFloodDistance = -1);			void MoveToResource(); bool MoveToResource(ResourceHolderInfo holderInfo, int32 customFloodDistance);
 	void Add_MoveInRange(WorldTile2 end, int32_t range);			void MoveInRange(); // TODO: REmove??
 	void Add_MoveToForceLongDistance(WorldTile2 end);				void MoveToForceLongDistance();
 	void Add_MoveToRobust(WorldTile2 end);							void MoveToRobust();	void MoveToRobust(WorldTile2 end);
@@ -403,9 +414,16 @@ public:
 	template<class T>
 	T& subclass() { return *static_cast<T*>(this); }
 
-	bool IsMoveValid(WorldTile2 tile) {
-		if (!tile.isValid()) return false;
-		return _simulation->IsConnected(unitTile(), tile, unitMaxFloodDistance(), IsIntelligentUnit(unitEnum()));
+	bool IsMoveValid(WorldTile2 tile, int32 customFloodDistance = -1)
+	{
+		if (!tile.isValid()) {
+			return false;
+		}
+		if (customFloodDistance == -1) {
+			customFloodDistance = unitMaxFloodDistance();
+		}
+		
+		return _simulation->IsConnected(unitTile(), tile, customFloodDistance, IsIntelligentUnit(unitEnum()));
 	}
 	bool IsResourceMoveValid(ResourceHolderInfo info) {
 		if (!info.isValid()) return false;

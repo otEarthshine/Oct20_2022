@@ -258,7 +258,7 @@ void PunAStar128x256::PrintUInt32(uint32_t locInt)
 	UE_LOG(LogTemp, Error, TEXT("PrintUInt32: %d, %d"), x, y);
 }
 
-bool PunAStar128x256::FindPath(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path, bool isAccurate, bool isRoadable, bool isLongDistance)
+bool PunAStar128x256::FindPath(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path, bool isAccurate, bool isRoadable, int32 customCalculationCount)
 {
 	SCOPE_CYCLE_COUNTER(STAT_PunPathAI);
 
@@ -291,7 +291,9 @@ bool PunAStar128x256::FindPath(int startX, int startY, int endX, int endY, std::
 	uint32_t successors[8];
 
 	uint16_t calculationCount = 0;
-	uint16_t maxCalculationCount = isLongDistance ? 200000 : 30000;
+	//uint16_t maxCalculationCount = isLongDistance ? 200000 : 30000;
+
+	uint16_t maxCalculationCount = (customCalculationCount == -1) ? 30000 : customCalculationCount;
 
 	while (!_openList.isEmpty() && calculationCount < maxCalculationCount)
 	{

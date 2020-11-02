@@ -16,7 +16,34 @@ void UTechUI::SetupTechBoxUIs()
 	for (int32 i = 1; i < eraToTechEnums.size(); i++)
 	{
 		UTechEraUI* techEraUI = AddWidget<UTechEraUI>(UIEnum::TechEraUI);
-		techEraUI->EraText->SetText(ToFText("Era " + eraNumberToText[i]));
+
+		{ // EraText
+			techEraUI->EraText->SetText(ToFText("Era " + eraNumberToText[i]));
+
+			std::stringstream ss;
+			ss << "Era " << eraNumberToText[i];
+
+			if (i < eraToTechEnums.size() - 1)
+			{
+				ss << "<space>";
+				ss << "Unlock " << unlockSys->techsToUnlockedNextEra(i)
+					<< " Technologies in Era " << eraNumberToText[i]
+					<< " to unlock Era " << eraNumberToText[i + 1] << ".";
+
+				std::stringstream ss2;
+				UnlockSystem::EraUnlockedDescription(ss2, i + 1, true);
+
+				if (ss2.str().size() > 0) {
+					ss << "<space>";
+					ss << "Rewards for Unlocking Era " << eraNumberToText[i + 1] << ":";
+					ss << "<space>";
+					ss << ss2.str();
+				}
+			}
+
+			AddToolTip(techEraUI->EraText, ss);
+		}
+		
 		techEraUI->TechList->ClearChildren();
 		TechScrollBox->AddChild(techEraUI);
 		std::vector<TechEnum> techEnums = eraToTechEnums[i];

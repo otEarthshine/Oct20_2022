@@ -122,19 +122,11 @@ public:
 		
 		if (node.HasResource())
 		{
-			SetGeoresourceImage(IconImage, node.info().resourceEnum, assetLoader(), this);
+			ResourceEnum resourceEnum = node.info().resourceEnum;
+
+			SetGeoresourceImage(IconImage, resourceEnum, assetLoader(), this);
 			
 			IconSizeBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-			
-			//ResourceEnum resourceEnum = node.info().resourceEnum;
-			//switch (resourceEnum) {
-			//	case ResourceEnum::Iron: resourceEnum = ResourceEnum::IronOre; break;
-			//	case ResourceEnum::GoldBar: resourceEnum = ResourceEnum::GoldOre; break;
-			//	case ResourceEnum::Gemstone: resourceEnum = ResourceEnum::Gemstone; break;
-			//	default: break;
-			//}
-			//
-			//SetResourceImage(IconImage, resourceEnum, assetLoader());
 
 			if (node.depositAmount > 0) {
 				PunBox->AddIconPair("", node.info().resourceEnum, to_string(node.depositAmount));

@@ -2333,7 +2333,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				}
 			}
 
-			ss << "state: " << UnitStateString[(int)unit.unitState()] << "\n";
+			ss << "state: " << UnitStateString[static_cast<int>(unit.unitState())] << "\n";
 
 			if (unit.workplaceId() != -1) {
 				auto workplaceName = simulation.building(unit.workplaceId()).buildingInfo().name;

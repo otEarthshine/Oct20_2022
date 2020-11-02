@@ -303,7 +303,7 @@ void HumanStateAI::CalculateActions()
 	_unitState = UnitState::Idle;
 }
 
-void HumanStateAI::MoveResourceSequence(std::vector<FoundResourceHolderInfo> providerInfos, std::vector<FoundResourceHolderInfo> dropoffInfos)
+void HumanStateAI::MoveResourceSequence(std::vector<FoundResourceHolderInfo> providerInfos, std::vector<FoundResourceHolderInfo> dropoffInfos, int32 customFloodDistance)
 {
 	PUN_UNIT_CHECK(providerInfos.size() > 0);
 	PUN_UNIT_CHECK(dropoffInfos.size() > 0);
@@ -322,7 +322,7 @@ void HumanStateAI::MoveResourceSequence(std::vector<FoundResourceHolderInfo> pro
 		ReserveResource(ReservationType::Push, dropoffInfos[i].info, dropoffInfos[i].amount);
 
 		Add_DropoffResource(dropoffInfos[i].info, dropoffInfos[i].amount);
-		Add_MoveToResource(dropoffInfos[i].info);
+		Add_MoveToResource(dropoffInfos[i].info, customFloodDistance);
 		//Add_MoveTo(resourceSystem().GetTile(dropoffInfos[i].info));
 	}
 
@@ -334,7 +334,7 @@ void HumanStateAI::MoveResourceSequence(std::vector<FoundResourceHolderInfo> pro
 
 		// Set Actions
 		Add_PickupResource(providerInfos[i].info, providerInfos[i].amount);
-		Add_MoveToResource(providerInfos[i].info);
+		Add_MoveToResource(providerInfos[i].info, customFloodDistance);
 		//Add_MoveTo(resourceSystem().GetTile(providerInfos[i].info));
 	}
 
@@ -423,7 +423,7 @@ bool HumanStateAI::TryMoveResourcesProviderToDropoff(int32 providerBuildingId, i
 	return true;
 }
 
-bool HumanStateAI::TryMoveResourcesAnyProviderToDropoff(ResourceFindType providerType, FoundResourceHolderInfo dropoffInfo, bool prioritizeMarket, bool checkMarketAfter)
+bool HumanStateAI::TryMoveResourcesAnyProviderToDropoff(ResourceFindType providerType, FoundResourceHolderInfo dropoffInfo, bool prioritizeMarket, bool checkMarketAfter, int32 maxFloodDist)
 {
 	PUN_CHECK2(dropoffInfo.isValid(), debugStr());
 	if (!IsMoveValid(dropoffInfo.tile)) {
@@ -432,16 +432,25 @@ bool HumanStateAI::TryMoveResourcesAnyProviderToDropoff(ResourceFindType provide
 	}
 
 	FoundResourceHolderInfos foundProviders;
+
+	// Prioritize market is done twice
+	//  1) check just 1 nearby market
+	//  2) check all markets sorted by distance
 	if (prioritizeMarket) {
-		foundProviders = FindMarketResourceHolderInfo(dropoffInfo.info.resourceEnum, dropoffInfo.amount);
+		foundProviders = FindMarketResourceHolderInfo(dropoffInfo.info.resourceEnum, dropoffInfo.amount, true, maxFloodDist);
 	}
 
 	if (!foundProviders.hasInfos()) {
-		foundProviders = resourceSystem().FindHolder(providerType, dropoffInfo.info.resourceEnum, dropoffInfo.amount, unitTile());
+		foundProviders = resourceSystem().FindHolder(providerType, dropoffInfo.info.resourceEnum, dropoffInfo.amount, unitTile(), {}, maxFloodDist);
 	}
 
+	if (!foundProviders.hasInfos() && prioritizeMarket) {
+		foundProviders = FindMarketResourceHolderInfo(dropoffInfo.info.resourceEnum, dropoffInfo.amount, false, maxFloodDist);
+	}
+	
+
 	if (!foundProviders.hasInfos() && checkMarketAfter) {
-		foundProviders = FindMarketResourceHolderInfo(dropoffInfo.info.resourceEnum, dropoffInfo.amount);
+		foundProviders = FindMarketResourceHolderInfo(dropoffInfo.info.resourceEnum, dropoffInfo.amount, true, maxFloodDist);
 	}
 	
 	if (!foundProviders.hasInfos()) {
@@ -456,7 +465,7 @@ bool HumanStateAI::TryMoveResourcesAnyProviderToDropoff(ResourceFindType provide
 	// TODO: this making vector is ugly and FoundResourceHolderInfo should be renamed..
 	// readjust amount to fit foundProviders
 	dropoffInfo.amount = foundProviders.amount();
-	MoveResourceSequence(foundProviders.foundInfos, { dropoffInfo }); // Can't drop off more than what foundProviders can provide
+	MoveResourceSequence(foundProviders.foundInfos, { dropoffInfo }, maxFloodDist); // Can't drop off more than what foundProviders can provide
 	AddDebugSpeech("(Succeed)TryMoveResourcesAnyProviderToDropoff:");
 	return true;
 }
@@ -769,11 +778,17 @@ bool HumanStateAI::TryFindFood()
 	{
 		int32 wantAmount = unitInfo().foodPerFetch;
 
+		int32 maxFloodDist = GameConstants::MaxFloodDistance_Human;
+
 		// Try market first
-		FoundResourceHolderInfos foundProviders = FindMarketResourceHolderInfo(ResourceEnum::Food, wantAmount);
+		FoundResourceHolderInfos foundProviders = FindMarketResourceHolderInfo(ResourceEnum::Food, wantAmount, true, maxFloodDist);
 
 		if (!foundProviders.hasInfos()) {
-			foundProviders = resourceSystem().FindFoodHolder(ResourceFindType::AvailableForPickup, wantAmount, unitTile());
+			foundProviders = resourceSystem().FindFoodHolder(ResourceFindType::AvailableForPickup, wantAmount, unitTile(), maxFloodDist);
+		}
+
+		if (!foundProviders.hasInfos()) {
+			foundProviders = FindMarketResourceHolderInfo(ResourceEnum::Food, wantAmount, false, maxFloodDist);
 		}
 
 		if (foundProviders.hasInfos()) {
@@ -787,7 +802,7 @@ bool HumanStateAI::TryFindFood()
 			Add_Eat(bestProvider.info.resourceEnum);
 			Add_Wait(60);
 			Add_PickupResource(bestProvider.info, bestProvider.amount);
-			Add_MoveToResource(bestProvider.info);
+			Add_MoveToResource(bestProvider.info, maxFloodDist);
 			//Add_MoveTo(bestProvider.tile);
 			
 			_unitState = UnitState::GetFood;
@@ -909,14 +924,21 @@ bool HumanStateAI::TryToolup()
 		auto& resourceSystem = _simulation->resourceSystem(_playerId);
 		bool hasToolsInStorage = false;
 
+		int32 maxFloodDist = GameConstants::MaxFloodDistance_Human;
+
 		for (ResourceEnum resourceEnum : ToolsEnums)
 		{
 			// Look in market first
-			FoundResourceHolderInfos foundProviders = FindMarketResourceHolderInfo(resourceEnum, wantAmount);
+			FoundResourceHolderInfos foundProviders = FindMarketResourceHolderInfo(resourceEnum, wantAmount, true, maxFloodDist);
 
 			if (!foundProviders.hasInfos()) {
-				foundProviders = resourceSystem.FindHolder(ResourceFindType::AvailableForPickup, resourceEnum, wantAmount, unitTile());
+				foundProviders = resourceSystem.FindHolder(ResourceFindType::AvailableForPickup, resourceEnum, wantAmount, unitTile(), {}, maxFloodDist);
 			}
+
+			if (!foundProviders.hasInfos()) {
+				foundProviders = FindMarketResourceHolderInfo(resourceEnum, wantAmount, false, maxFloodDist);
+			}
+			
 
 			if (resourceSystem.resourceCount(resourceEnum) > 0) {
 				hasToolsInStorage = true;
@@ -933,7 +955,7 @@ bool HumanStateAI::TryToolup()
 				Add_UseTools(bestProvider.info.resourceEnum);
 				Add_Wait(60);
 				Add_PickupResource(bestProvider.info, bestProvider.amount);
-				Add_MoveToResource(bestProvider.info);
+				Add_MoveToResource(bestProvider.info, maxFloodDist);
 				//Add_MoveTo(bestProvider.tile);
 
 				_unitState = UnitState::GetTools;
@@ -963,16 +985,23 @@ bool HumanStateAI::TryHealup()
 		int32 wantAmount = 1;
 		auto& resourceSystem = _simulation->resourceSystem(_playerId);
 
+		int32 maxFloodDist = GameConstants::MaxFloodDistance_Human;
+
 		for (ResourceEnum resourceEnum : MedicineEnums)
 		{
 			wantAmount = (resourceEnum == ResourceEnum::Herb) ? 2 : 1;
 
 			// Look in market first
-			FoundResourceHolderInfos foundProviders = FindMarketResourceHolderInfo(resourceEnum, wantAmount);
+			FoundResourceHolderInfos foundProviders = FindMarketResourceHolderInfo(resourceEnum, wantAmount, true, maxFloodDist);
 
 			if (!foundProviders.hasInfos()) {
-				foundProviders = resourceSystem.FindHolder(ResourceFindType::AvailableForPickup, resourceEnum, wantAmount, unitTile());
+				foundProviders = resourceSystem.FindHolder(ResourceFindType::AvailableForPickup, resourceEnum, wantAmount, unitTile(), {}, maxFloodDist);
 			}
+
+			if (!foundProviders.hasInfos()) {
+				foundProviders = FindMarketResourceHolderInfo(resourceEnum, wantAmount, false, maxFloodDist);
+			}
+			
 
 			if (foundProviders.hasInfos()) {
 				// Just go to the best provider (the first one)
@@ -985,8 +1014,7 @@ bool HumanStateAI::TryHealup()
 				Add_UseMedicine(bestProvider.info.resourceEnum);
 				Add_Wait(60);
 				Add_PickupResource(bestProvider.info, bestProvider.amount);
-				Add_MoveToResource(bestProvider.info);
-				//Add_MoveTo(bestProvider.tile);
+				Add_MoveToResource(bestProvider.info, maxFloodDist);
 
 				_unitState = UnitState::GetMedicine;
 
@@ -1042,55 +1070,106 @@ bool HumanStateAI::TryFillLuxuries()
 		}
 	}
 
-	
-	//for (int32 i = 1; i <= house.houseLvl(); i++)
-	//{
-	//	const std::vector<ResourceEnum>& resourceEnums = HouseLvlToUpgradeNeeds[i];
-	//	for (ResourceEnum resourceEnum : resourceEnums) 
-	//	{
-	//		if (house.GetResourceCountWithPush(resourceEnum) < 5 &&
-	//			TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, house.GetFoundHolderInfo(resourceEnum, maxPickupAmount)))
-	//		{
-	//			AddDebugSpeech("(Succeed)TryFillLuxuries: " + house.GetFoundHolderInfo(resourceEnum, maxPickupAmount).ToString());
-	//			return true;
-	//		}
-	//	}
-	//}
 
 	AddDebugSpeech("(Failed)TryFillLuxuries");
 	return false;
 }
 
-FoundResourceHolderInfos HumanStateAI::FindMarketResourceHolderInfo(ResourceEnum resourceEnum, int32 wantAmount)
+FoundResourceHolderInfos HumanStateAI::FindMarketResourceHolderInfo(ResourceEnum resourceEnum, int32 wantAmount, bool checkOnlyOneMarket, int32 maxFloodDist)
 {
-	std::vector<int32> marketIds = _simulation->buildingIds(_playerId, CardEnum::Market);
-	for (int32 marketId : marketIds)
+	auto tryFindMarketResourceHolder = [&](Building& building)
 	{
-		// Ensure this is in market's range
-		Building& building = _simulation->building(marketId);
-		if (building.isConstructed() &&
-			WorldTile2::Distance(building.centerTile(), unitTile()) <= Market::Radius) 
+		if (resourceEnum == ResourceEnum::Food)
 		{
-			if (resourceEnum == ResourceEnum::Food)
-			{
-				for (ResourceEnum foodEnum : FoodEnums) {
-					int32 resourceCount = _simulation->building(marketId).GetResourceCountWithPop(foodEnum);
-					int32 actualAmount = std::min(wantAmount, resourceCount);
-					if (actualAmount > 0) {
-						return FoundResourceHolderInfos({ FoundResourceHolderInfo(_simulation->building(marketId).holderInfo(foodEnum), actualAmount, building.gateTile()) });
-					}
-				}
-			}
-			else 
-			{
-				int32 resourceCount = _simulation->building(marketId).GetResourceCountWithPop(resourceEnum);
+			for (ResourceEnum foodEnum : FoodEnums) {
+				int32 resourceCount = building.GetResourceCountWithPop(foodEnum);
 				int32 actualAmount = std::min(wantAmount, resourceCount);
 				if (actualAmount > 0) {
-					return FoundResourceHolderInfos({ FoundResourceHolderInfo(_simulation->building(marketId).holderInfo(resourceEnum), actualAmount, building.gateTile()) });
+					return FoundResourceHolderInfos({ FoundResourceHolderInfo(building.holderInfo(foodEnum), actualAmount, building.gateTile()) });
 				}
 			}
 		}
+		else
+		{
+			int32 resourceCount = building.GetResourceCountWithPop(resourceEnum);
+			int32 actualAmount = std::min(wantAmount, resourceCount);
+			if (actualAmount > 0) {
+				return FoundResourceHolderInfos({ FoundResourceHolderInfo(building.holderInfo(resourceEnum), actualAmount, building.gateTile()) });
+			}
+		}
+		return FoundResourceHolderInfos();
+	};
+	
+	std::vector<int32> marketIds = _simulation->buildingIds(_playerId, CardEnum::Market);
+
+	/*
+	 * Sort market by distance
+	 */
+	WorldTile2 houseTile = (_houseId != -1) ? _simulation->building(_houseId).centerTile() : unitTile();
+	std::vector<int32> sortedMarketIds;
+	std::vector<int32> sortedMarketDistance;
+	
+	for (int32 marketId : marketIds)
+	{
+		Building& market = _simulation->building(marketId);
+		if (market.isConstructed() &&
+			_simulation->IsConnected(market.centerTile(), houseTile, maxFloodDist, true))
+		{
+			int32 distance = WorldTile2::Distance(market.centerTile(), houseTile);
+			bool inserted = false;
+			for (size_t i = 0; i < sortedMarketIds.size(); i++) {
+				if (distance < sortedMarketDistance[i]) {
+					sortedMarketIds.insert(sortedMarketIds.begin() + i, marketId);
+					sortedMarketDistance.insert(sortedMarketDistance.begin() + i, distance);
+				}
+			}
+			if (!inserted) {
+				sortedMarketIds.push_back(marketId);
+				sortedMarketDistance.push_back(distance);
+			}
+		}
 	}
+
+	// Check only one market close by
+	if (checkOnlyOneMarket)
+	{
+		if (sortedMarketIds.size() > 0 && 
+			sortedMarketDistance[0] <= Market::Radius)
+		{
+			Building& market = _simulation->building(sortedMarketIds[0]);
+			
+			return tryFindMarketResourceHolder(market);
+		}
+		return FoundResourceHolderInfos();
+	}
+
+
+	// Check all sorted markets
+	for (int32 marketId : sortedMarketIds)
+	{
+		Building& market = _simulation->building(marketId);
+
+		FoundResourceHolderInfos holderInfos = tryFindMarketResourceHolder(market);
+		if (holderInfos.hasInfos()) {
+			return holderInfos;
+		}
+	}
+
+	//for (int32 marketId : marketIds)
+	//{
+	//	// Ensure this is in market's range
+	//	//  This is the first check and we should ensure it is the fast one.
+	//	Building& building = _simulation->building(marketId);
+	//	if (building.isConstructed() &&
+	//		WorldTile2::Distance(building.centerTile(), houseTile) <= Market::Radius)
+	//	{
+	//		FoundResourceHolderInfos holderInfos = tryFindMarketResourceHolder(building);
+	//		if (holderInfos.hasInfos()) {
+	//			return holderInfos;
+	//		}
+	//	}
+	//}
+	
 	return FoundResourceHolderInfos();
 }
 
@@ -1102,7 +1181,6 @@ bool HumanStateAI::TryFun()
 	}
 
 	const int32 funPercentToGoToTavern = 70;
-
 	if (_funTicks < FunTicksAt100Percent * funPercentToGoToTavern / 100)
 	{
 		House& house = _simulation->building<House>(_houseId, CardEnum::House);
@@ -1405,7 +1483,7 @@ bool HumanStateAI::TryFarm()
 			Add_Wait(waitTicks, UnitAnimationEnum::FarmPlanting);
 			Add_MoveTo(seedTile);
 
-			_unitState = UnitState::Farm;
+			_unitState = UnitState::FarmSeeding;
 			AddDebugSpeech("(Succeed)TryFarm: Seeding");
 			return true;
 		}
@@ -1442,7 +1520,7 @@ bool HumanStateAI::TryFarm()
 				Add_Wait(waitTicks);
 				Add_MoveTo(nourishTile);
 
-				_unitState = UnitState::Farm;
+				_unitState = UnitState::FarmNourishing;
 				AddDebugSpeech("(Succeed)TryFarm: Nourishing");
 				return true;
 			}
@@ -1468,83 +1546,17 @@ bool HumanStateAI::TryFarm()
 		int32 seasonPercent = Time::SeasonPercent();
 		int32 preferredStagePercent = min(100, seasonPercent * 4 / 3);
 		
-		
+		// Try to clear drops
 		if (stagePercent >= preferredStagePercent && 
-			//drops.size() > 3 &&
 			TryClearFarmDrop(farm, 4))
 		{
 			AddDebugSpeech("(Succeed)TryFarm: TryClearFarmDrop 4");
 			return true;
-			//int32 targetAmount = 10;
-			//int32 amount = 0;
-			//ResourceEnum targetResourceEnum = ResourceEnum::None;
-			//std::vector<DropInfo> dropsToMove;
-			//for (DropInfo drop : drops) 
-			//{
-			//	if (targetResourceEnum == ResourceEnum::None) {
-			//		targetResourceEnum = drop.holderInfo.resourceEnum;
-			//	}
-
-			//	int32 dropResourceCount = resourceSys.resourceCountWithPop(drop.holderInfo);
-			//	if (drop.holderInfo.resourceEnum == targetResourceEnum &&
-			//		amount + dropResourceCount <= targetAmount) 
-			//	{
-			//		amount += dropResourceCount;
-			//		dropsToMove.push_back(drop);
-			//	} else {
-			//		break;
-			//	}
-			//}
-			//
-			//// Try dropping the resource off in proper store
-			//FoundResourceHolderInfos foundDropoffs;
-
-			//// Try delivery target first
-			//int32 deliveryTargetId = farm.deliveryTargetId();
-			//if (deliveryTargetId != -1) {
-			//	Building& targetBuilding = _simulation->building(deliveryTargetId);
-			//	if (resourceSys.CanReceiveAmount(targetBuilding.holder(targetResourceEnum)) >= amount) {
-			//		foundDropoffs.foundInfos.push_back(targetBuilding.GetHolderInfoFull(targetResourceEnum, amount));
-			//	}
-			//}
-
-			//// Try any other dropoff
-			//if (!foundDropoffs.hasInfos()) {
-			//	foundDropoffs = resourceSystem().FindHolder(ResourceFindType::AvailableForDropoff, targetResourceEnum, amount, unitTile());
-			//}
-			//
-			//if (foundDropoffs.hasInfos())
-			//{
-			//	for (FoundResourceHolderInfo foundInfo : foundDropoffs.foundInfos) {
-			//		// Reserve
-			//		ReserveResource(ReservationType::Push, foundInfo.info, foundInfo.amount);
-
-			//		// Set Actions
-			//		Add_DropoffResource(foundInfo.info, foundInfo.amount);
-			//		Add_MoveToResource(foundInfo.info);
-			//		//Add_MoveTo(foundInfo.tile);
-			//	}
-
-			//	for (DropInfo drop : dropsToMove) {
-			//		int32 dropResourceCount = resourceSys.resourceCountWithPop(drop.holderInfo);
-			//		
-			//		// Reserve
-			//		ReserveResource(ReservationType::Pop, drop.holderInfo, dropResourceCount);
-
-			//		// Set Actions
-			//		Add_PickupResource(drop.holderInfo, dropResourceCount);
-			//		Add_MoveToResource(drop.holderInfo);
-			//	}
-
-			//	_unitState = UnitState::Farm;
-
-			//	AddDebugSpeech("(Succeed)TryFarm: RemoveDrop from farm");
-			//	return true;
-			//}
 		}
 		
 		WorldTile2 harvestTile = farm.FindFarmableTile(_id);
 
+		// Try t harvest
 		if (harvestTile.isValid()) {
 			ReserveWork(0);
 			ReserveTreeTile(harvestTile.tileId());
@@ -1555,36 +1567,37 @@ bool HumanStateAI::TryFarm()
 			Add_Wait(waitTicks);
 			Add_MoveTo(harvestTile);
 
-			_unitState = UnitState::Farm;
+			_unitState = UnitState::FarmHarvesting;
 			AddDebugSpeech("(Succeed)TryFarm: Nourishing");
 			return true;
 		}
-		else {
-			// Last few drops?
-			if (TryClearFarmDrop(farm, 1)) {
-				AddDebugSpeech("(Succeed)TryFarm: TryClearFarmDrop 1");
-				return true;
-			}
 
-			// Ensure there is no drop left
-			std::vector<DropInfo> drops = resourceSystem().GetDropsFromArea_Pickable(farm.area(), true);
-			if (drops.size() > 0) {
-				return false;
-			}
-			
-			// Check if we can move on to next stage
-			if (farm.IsStageCompleted()) {
-				farm.ResetStageTo(FarmStage::Dormant);
+		//! Beyond here, farming is almost done, ready to go into dormant stage
 
-				// Reset the jobs
-				_simulation->playerOwned(_playerId).RefreshJobDelayed();
-			}
-			else {
-				AddDebugSpeech("(Failed)TryFarm: Waiting for another person to nourish");
-				return false;
-			}
+		// Last few drops?
+		if (TryClearFarmDrop(farm, 1)) {
+			AddDebugSpeech("(Succeed)TryFarm: TryClearFarmDrop 1");
+			return true;
 		}
-		return true;
+
+		// Ensure there is no drop left
+		std::vector<DropInfo> drops = resourceSystem().GetDropsFromArea_Pickable(farm.area(), true);
+		if (drops.size() > 0) {
+			return false;
+		}
+		
+		// Check if we can move on to next stage
+		if (farm.IsStageCompleted()) {
+			farm.ResetStageTo(FarmStage::Dormant);
+
+			// Reset the jobs
+			_simulation->playerOwned(_playerId).RefreshJobDelayed();
+			
+			return false; // TODO: true here might have caused farm freeze?
+		}
+
+		AddDebugSpeech("(Failed)TryFarm: Waiting for others to complete the stage?");
+		return false;
 	}
 
 	UE_DEBUG_BREAK();
@@ -1667,7 +1680,7 @@ bool HumanStateAI::TryClearFarmDrop(Farm& farm, int32 minDropCount)
 			Add_MoveToResource(drop.holderInfo);
 		}
 
-		_unitState = UnitState::Farm;
+		_unitState = UnitState::FarmClearDrops;
 
 		AddDebugSpeech("(Succeed)TryFarm: RemoveDrop from farm");
 		return true;
@@ -1694,7 +1707,7 @@ bool HumanStateAI::TryBulkHaul_ShippingDepot()
 			for (ResourceEnum resourceEnum : shipper.resourceEnums) {
 				if (resourceEnum != ResourceEnum::None) {
 					for (int32 storageId : storageIds) {
-						if (TryMoveResourcesProviderToDropoff(storageId, deliveryTargetId, resourceEnum, 50)) {
+						if (TryMoveResourcesProviderToDropoff(storageId, deliveryTargetId, resourceEnum, 50), false, false, GameConstants::MaxFloodDistance_HumanLogistics) {
 							return true;
 						}
 					}
@@ -1703,7 +1716,7 @@ bool HumanStateAI::TryBulkHaul_ShippingDepot()
 			for (ResourceEnum resourceEnum : shipper.resourceEnums) {
 				if (resourceEnum != ResourceEnum::None) {
 					for (int32 storageId : storageIds) {
-						if (TryMoveResourcesProviderToDropoff(storageId, deliveryTargetId, resourceEnum, 1)) {
+						if (TryMoveResourcesProviderToDropoff(storageId, deliveryTargetId, resourceEnum, 1), false, false, GameConstants::MaxFloodDistance_HumanLogistics) {
 							return true;
 						}
 					}
@@ -1722,7 +1735,7 @@ bool HumanStateAI::TryBulkHaul_Market()
 	auto tryMoveResource = [&](ResourceEnum resourceEnum) {
 		return market.holder(resourceEnum).type != ResourceHolderType::Provider &&
 				market.GetResourceCountWithPush(resourceEnum) < market.GetMarketTarget(resourceEnum) &&
-				TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, market.GetHolderInfoFull(resourceEnum, 50));
+				TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, market.GetHolderInfoFull(resourceEnum, 50), false, false, GameConstants::MaxFloodDistance_HumanLogistics);
 	};
 
 	// Low food count, get food first

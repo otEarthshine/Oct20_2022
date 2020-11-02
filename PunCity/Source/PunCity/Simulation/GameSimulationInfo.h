@@ -6202,7 +6202,7 @@ static GeoresourceInfo GetGeoresourceInfo(GeoresourceEnum georesourceEnum) {
 	}
 	return GeoresourceInfos[static_cast<int>(georesourceEnum)];
 };
-static GeoresourceInfo GetGeoresourceInfo(int32_t georesourceEnumInt) {
+static GeoresourceInfo GetGeoresourceInfo(int32 georesourceEnumInt) {
 	if (static_cast<GeoresourceEnum>(georesourceEnumInt) == GeoresourceEnum::None) {
 		return GeoresourceInfoNone;
 	}
@@ -6500,6 +6500,9 @@ enum class PlotStatEnum
 
 	Technologies,
 	InfluencePoints,
+
+	FoodProduction,
+	FoodConsumption,
 
 	Count,
 };

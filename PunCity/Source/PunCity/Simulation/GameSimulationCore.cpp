@@ -814,7 +814,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 		//_floodSystem2Human.Tick();
 
 		if (PunSettings::IsOn("TickStats")) {
-			_statSystem.Tick();
+			_statSystem.Tick(this);
 		}
 
 		if (PunSettings::IsOn("TickPlayerOwned"))

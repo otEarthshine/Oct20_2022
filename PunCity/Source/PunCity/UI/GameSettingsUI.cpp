@@ -159,7 +159,7 @@ void UGameSettingsUI::PunInit(UPunWidget* callbackParent)
 	SetupResolutionDropdown();
 
 	WindowModeDropdown->ClearOptions();
-	WindowModeDropdown->AddOption("Fullscreen (Borderless Windowed)");
+	WindowModeDropdown->AddOption("Fullscreen");
 	WindowModeDropdown->AddOption("Windowed");
 
 	

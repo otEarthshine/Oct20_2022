@@ -172,8 +172,8 @@ void BonusToggle_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulat
 		simulation->AddPopup(playerId, "Unlocked Building Combo"
 			"<space>"
 			"You can gain Building Combo by constructing multiple Buildings of the same type."
-			"<bullet>Combo Level 1: 2 same-type buildings</>"
-			"<bullet>Combo Level 2: 4 same-type buildings</>"
-			"<bullet>Combo Level 3: 8 same-type buildings</>");
+			"<bullet>Combo Level 1: 2 same-type buildings (+5% productivity)</>"
+			"<bullet>Combo Level 2: 4 same-type buildings (+10% productivity)</>"
+			"<bullet>Combo Level 3: 8 same-type buildings (+15% productivity)</>");
 	}
 }

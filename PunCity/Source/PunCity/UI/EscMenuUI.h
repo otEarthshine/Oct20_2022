@@ -53,6 +53,11 @@ public:
 	UPROPERTY(meta = (BindWidget)) UCheckBox* OverlayCheckBox_Animals;
 	UPROPERTY(meta = (BindWidget)) UCheckBox* MapCheckBox_HideTrees;
 	UPROPERTY(meta = (BindWidget)) UCheckBox* MapCheckBox_ProvinceOverlay;
+
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* OverlayOuterBox_None;
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* OverlayOuterBox_Appeal;
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* OverlayOuterBox_Fertility;
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* OverlayOuterBox_Animals;
 	
 	UPROPERTY(meta = (BindWidget)) UGameSettingsUI* GameSettingsUI;
 

@@ -86,7 +86,7 @@ public:
 		return CppUtils::Sum(_enumToResourceToSeasonToStat[(int)statEnum][static_cast<int32>(resourceEnum)]);
 	}
 
-	void AddResourceStat(ResourceSeasonStatEnum statEnum, ResourceEnum resourceEnum, int32_t amount) {
+	void AddResourceStat(ResourceSeasonStatEnum statEnum, ResourceEnum resourceEnum, int32 amount) {
 		_enumToResourceToSeasonToStat[(int)statEnum][(int)resourceEnum][Time::SeasonMod()] += amount;
 	}
 	int32 GetCurrentResourceStat(ResourceSeasonStatEnum statEnum, ResourceEnum resourceEnum, int32 seasonInt) {

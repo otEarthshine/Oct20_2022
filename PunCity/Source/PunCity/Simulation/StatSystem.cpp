@@ -10,14 +10,16 @@ void SubStatSystem::Tick(int32 playerId, IGameSimulationCore* simulation)
 		int32 seasonInt = Time::SeasonMod();
 		check(seasonInt < 4);
 
+		int32 lastSeasonInt = (Time::Seasons() - 1) % 4;
+
 		// Add to Graph just before resetting
 		if (playerId != -1)
 		{
 			int32 foodProduction = 0;
 			int32 foodConsumption = 0;
 			for (ResourceEnum foodEnum : FoodEnums) {
-				foodProduction += GetCurrentResourceStat(ResourceSeasonStatEnum::Production, foodEnum, seasonInt - 1);
-				foodConsumption += GetCurrentResourceStat(ResourceSeasonStatEnum::Consumption, foodEnum, seasonInt - 1);
+				foodProduction += GetCurrentResourceStat(ResourceSeasonStatEnum::Production, foodEnum, lastSeasonInt);
+				foodConsumption += GetCurrentResourceStat(ResourceSeasonStatEnum::Consumption, foodEnum, lastSeasonInt);
 			}
 			auto& playerOwned = simulation->playerOwned(playerId);
 			playerOwned.AddDataPoint(PlotStatEnum::FoodProduction, foodProduction, Time::TicksPerSeason);

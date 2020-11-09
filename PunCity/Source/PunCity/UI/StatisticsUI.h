@@ -79,13 +79,13 @@ public:
 	//UPROPERTY() TArray<UGraphDataSource*> dataSources;
 
 	int32 uiPlayerId = -1;
-	
+
 public:
 	void OpenStatisticsUI(int32 playerId) {
 		uiPlayerId = playerId;
 		SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	}
-	
+
 	UFUNCTION() void CloseStatisticsUI() {
 		SetVisibility(ESlateVisibility::Collapsed);
 	}
@@ -108,53 +108,38 @@ public:
 		setHighlight(MarketStatButton);
 	}
 
-	UFUNCTION() void OnOverviewStatButtonClick() {
-		SetTabSelection(OverviewStatButton);
-		StatSwitcher->SetActiveWidgetIndex(0);
+	UButton* GetButtonFromWidgetIndex(int32 widgetIndex)
+	{
+		switch(widgetIndex)
+		{
+		case 0: return OverviewStatButton;
+		case 1: return BuildingsStatButton;
+		case 2: return PopulationStatButton;
+		case 3: return IncomeStatButton;
+		case 4: return ScienceStatButton;
+		case 5: return FoodFuelStatButton;
+		case 6: return FoodUsageStatButton;
+		case 7: return ImportExportStatButton;
+		default:
+			return MarketStatButton;
+		}
+	}
+
+	void OnStatButtonClick(int32 widgetIndex) {
+		SetTabSelection(GetButtonFromWidgetIndex(widgetIndex));
+		StatSwitcher->SetActiveWidgetIndex(widgetIndex);
 		dataSource()->Spawn2DSound("UI", "ButtonClick");
 	}
-	UFUNCTION() void OnBuildingsStatButtonClick() {
-		SetTabSelection(BuildingsStatButton);
-		StatSwitcher->SetActiveWidgetIndex(1);
-		dataSource()->Spawn2DSound("UI", "ButtonClick");
-	}
-	UFUNCTION() void OnPopulationStatButtonClick() {
-		SetTabSelection(PopulationStatButton);
-		StatSwitcher->SetActiveWidgetIndex(2);
-		dataSource()->Spawn2DSound("UI", "ButtonClick");
-	}
-	UFUNCTION() void OnIncomeStatButtonClick() {
-		SetTabSelection(IncomeStatButton);
-		StatSwitcher->SetActiveWidgetIndex(3);
-		dataSource()->Spawn2DSound("UI", "ButtonClick");
-	}
-	UFUNCTION() void OnScienceStatButtonClick() {
-		SetTabSelection(ScienceStatButton);
-		StatSwitcher->SetActiveWidgetIndex(4);
-		dataSource()->Spawn2DSound("UI", "ButtonClick");
-	}
-	
-	UFUNCTION() void OnFoodFuelStatButtonClick() {
-		SetTabSelection(FoodFuelStatButton);
-		StatSwitcher->SetActiveWidgetIndex(5);
-		dataSource()->Spawn2DSound("UI", "ButtonClick");
-	}
-	UFUNCTION() void OnFoodUsageStatButtonClick() {
-		SetTabSelection(FoodUsageStatButton);
-		StatSwitcher->SetActiveWidgetIndex(6);
-		dataSource()->Spawn2DSound("UI", "ButtonClick");
-	}
-	
-	UFUNCTION() void OnImportExportStatButtonClick() {
-		SetTabSelection(ImportExportStatButton);
-		StatSwitcher->SetActiveWidgetIndex(7);
-		dataSource()->Spawn2DSound("UI", "ButtonClick");
-	}
-	UFUNCTION() void OnMarketStatButtonClick() {
-		SetTabSelection(MarketStatButton);
-		StatSwitcher->SetActiveWidgetIndex(8);
-		dataSource()->Spawn2DSound("UI", "ButtonClick");
-	}
+
+	UFUNCTION() void OnOverviewStatButtonClick() { OnStatButtonClick(0); }
+	UFUNCTION() void OnBuildingsStatButtonClick() { OnStatButtonClick(1); }
+	UFUNCTION() void OnPopulationStatButtonClick() { OnStatButtonClick(2); }
+	UFUNCTION() void OnIncomeStatButtonClick() { OnStatButtonClick(3); }
+	UFUNCTION() void OnScienceStatButtonClick() { OnStatButtonClick(4); }
+	UFUNCTION() void OnFoodFuelStatButtonClick() { OnStatButtonClick(5); }
+	UFUNCTION() void OnFoodUsageStatButtonClick() { OnStatButtonClick(6); }
+	UFUNCTION() void OnImportExportStatButtonClick() { OnStatButtonClick(7); }
+	UFUNCTION() void OnMarketStatButtonClick() { OnStatButtonClick(8); }
 
 	UFUNCTION() void OnMarketDropDownChanged(FString sItem, ESelectInfo::Type seltype) {
 		if (seltype == ESelectInfo::Type::Direct) return;

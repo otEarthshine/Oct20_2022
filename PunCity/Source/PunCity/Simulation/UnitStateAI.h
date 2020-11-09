@@ -344,6 +344,12 @@ public:
 	int32 minWarnFood() {
 		return maxFood() / 4; //  warn 0.75 round before ave death... 0.25 + 0.5 ave death time
 	}
+	int32 foodThreshold_Get2() {
+		return maxFood() / 2;
+	}
+	int32 foodThreshold_Get() {
+		return maxFood() * 3 / 4;
+	}
 
 	int32 heat() { return _heat; }
 	int32 maxHeat() { return unitInfo().maxHeatCelsiusTicks; }

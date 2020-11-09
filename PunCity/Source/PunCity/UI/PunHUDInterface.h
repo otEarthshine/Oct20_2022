@@ -69,6 +69,9 @@ public:
 
 	virtual bool IsFoodFuelGraphUIOpened() = 0;
 	virtual void OpenFoodFuelGraphUI() = 0;
+
+	virtual void ToggleGraphUI(int32 widgetIndex) = 0;
+	
 	virtual void CloseStatisticsUI() = 0;
 
 	virtual void ShowTutorialUI(TutorialLinkEnum linkEnum) = 0;

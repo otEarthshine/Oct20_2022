@@ -43,6 +43,8 @@ public:
 	bool TryHealup();
 	bool TryFillLuxuries();
 
+	FoundResourceHolderInfos FindNeedHelper(ResourceEnum resourceEnum, int32 wantAmount, int32 maxFloodDist);
+
 	FoundResourceHolderInfos FindMarketResourceHolderInfo(ResourceEnum resourceEnum, int32 wantAmount, bool checkOnlyOneMarket, int32 maxFloodDist);
 
 	bool TryFun();

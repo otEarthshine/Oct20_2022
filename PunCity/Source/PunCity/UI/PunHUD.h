@@ -182,6 +182,20 @@ public:
 		_statisticsUI->SetTabSelection(_statisticsUI->FoodFuelStatButton);
 		_statisticsUI->StatSwitcher->SetActiveWidgetIndex(5);
 	}
+
+	void ToggleGraphUI(int32 widgetIndex) override
+	{
+		if (_statisticsUI->GetVisibility() != ESlateVisibility::Collapsed &&
+			_statisticsUI->StatSwitcher->GetActiveWidgetIndex() == widgetIndex) 
+		{
+			CloseStatisticsUI();
+		} else {
+			ResetGameUI();
+			_statisticsUI->OpenStatisticsUI(playerId());
+			_statisticsUI->SetTabSelection(_statisticsUI->GetButtonFromWidgetIndex(widgetIndex));
+			_statisticsUI->StatSwitcher->SetActiveWidgetIndex(widgetIndex);
+		}
+	}
 	
 	void CloseStatisticsUI() override {
 		_statisticsUI->CloseStatisticsUI();

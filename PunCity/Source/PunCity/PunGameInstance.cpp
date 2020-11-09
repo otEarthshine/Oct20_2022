@@ -337,8 +337,12 @@ void UPunGameInstance::CreateGame_Phase2()
 	PrintSessionSettings(ss, sessionSettings);
 	PUN_LOG("SessionSettings: %s", ToTChar(ss.str()));
 
-	if (sessionSettings.bIsLANMatch) {
-		sessionInterface->CreateSession(0, PUN_SESSION_NAME, sessionSettings);
+	if (sessionSettings.bIsLANMatch) 
+	{
+		// TODO: Single player ended up here, but might not need CreateSession
+		//if (!isSinglePlayer) {
+		//	sessionInterface->CreateSession(0, PUN_SESSION_NAME, sessionSettings);
+		//}
 
 		//// TODO: REMOVE
 		//AGameModeBase* gameMode = UGameplayStatics::GetGameMode(GetWorld());

@@ -84,6 +84,15 @@ void UEscMenuUI::PunInit()
 
 	SetOverlayCheckBox(OverlayCheckBox_None);
 
+	// Overlay Tooltip
+	AddToolTip(OverlayOuterBox_None, "Check to turn off Overlay.");
+	AddToolTip(OverlayOuterBox_Appeal, "Houses built on high Appeal area give occupants more Happiness.");
+	AddToolTip(OverlayOuterBox_Fertility, "Farms built on high fertility area have higher productivity.");
+	AddToolTip(OverlayOuterBox_Animals, "Highlight animals.");
+
+
+	// others
+
 	VictoryScoreScreenButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickVictoryPopupScoreScreen);
 	VictoryReturnToGame->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickVictoryPopupReturnToGame);
 

@@ -965,6 +965,14 @@ void UMainGameUI::Tick()
 			Science->SetVisibility(ESlateVisibility::Collapsed);
 		}
 
+		/*
+		 * 
+		 */
+		BUTTON_ON_CLICK(LeftUIPopulationButton, this, &UMainGameUI::OnClickPopulationButton);
+		BUTTON_ON_CLICK(LeftUIMoneyButton, this, &UMainGameUI::OnClickMoneyButton);
+		//BUTTON_ON_CLICK(LeftUIInfluenceButton, this, &UMainGameUI::OnClickFoodCountButton);
+		BUTTON_ON_CLICK(LeftUIScienceButton, this, &UMainGameUI::OnClickScienceButton);
+
 		// Skill
 		{
 			BldInfo cardInfo = GetBuildingInfo(playerOwned.currentSkill());
@@ -1047,7 +1055,8 @@ void UMainGameUI::Tick()
 
 			std::stringstream tip;
 			tip << "Food Production (yearly): <FaintGreen>" << foodProduction << "</>\n";
-			tip << "Food Consumption (yearly): <FaintRed>" << foodConsumption << "</>\n";
+			tip << "Food Consumption (yearly): <FaintRed>" << foodConsumption << "</>";
+			tip << "<space>";
 			tip << "Food Count: " << foodCount;
 			
 			auto tooltip = AddToolTip(FoodCountText, tip);

@@ -200,8 +200,8 @@ void UnitStateAI::Update()
 			auto& resourceSys = _simulation->resourceSystem(_playerId);
 			
 			// Food cheat: if there is food in storage, ppl won't go into starvation...
-			if (_food < minWarnFood() && resourceSys.HasAvailableFood()) {
-				_food = minWarnFood();
+			if (_food < minWarnFood() + 1 && resourceSys.HasAvailableFood()) {
+				_food = minWarnFood() + 1;
 			}
 
 			// Cold cheat:

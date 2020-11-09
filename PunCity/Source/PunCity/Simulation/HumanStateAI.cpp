@@ -769,42 +769,83 @@ bool HumanStateAI::TryClearLand(TileArea area)
 	return false;
 }
 
+FoundResourceHolderInfos HumanStateAI::FindNeedHelper(ResourceEnum resourceEnum, int32 wantAmount, int32 maxFloodDist)
+{
+	// Try market first
+	FoundResourceHolderInfos foundProviders = FindMarketResourceHolderInfo(resourceEnum, wantAmount, true, maxFloodDist);
+	if (!foundProviders.hasInfos()) 
+	{
+		// Compare market provider to storage provider
+		if (resourceEnum == ResourceEnum::Food) {
+			foundProviders = resourceSystem().FindFoodHolder(ResourceFindType::AvailableForPickup, wantAmount, unitTile(), maxFloodDist);
+		} else {
+			foundProviders = resourceSystem().FindHolder(ResourceFindType::AvailableForPickup, resourceEnum, wantAmount, unitTile(), {}, maxFloodDist);
+		}
+
+		FoundResourceHolderInfos foundProvidersMarket = FindMarketResourceHolderInfo(resourceEnum, wantAmount, false, maxFloodDist);
+		if (foundProvidersMarket.hasInfos())
+		{
+			if (foundProviders.hasInfos()) {
+				FoundResourceHolderInfo bestProvider = foundProviders.best();
+				FoundResourceHolderInfo bestProviderMarket = foundProvidersMarket.best();
+				if (bestProviderMarket.amount > bestProvider.amount) {
+					return foundProvidersMarket;
+				}
+				if (bestProviderMarket.amount == bestProvider.amount) {
+					if (bestProviderMarket.distance < bestProvider.distance) {
+						return foundProvidersMarket;
+					}
+				}
+			}
+			else {
+				return foundProvidersMarket;
+			}
+		}
+	}
+	
+	return foundProviders;
+}
+
 // Find food in civilization, if there is really none, get it the wild way
 bool HumanStateAI::TryFindFood()
 {
 	// Go get food only if needed
-	int32 maxFood =  unitInfo().maxFoodTicks;
-	if (_food < maxFood * 3 / 4) 
+	if (_food < foodThreshold_Get())
 	{
 		int32 wantAmount = unitInfo().foodPerFetch;
 
 		int32 maxFloodDist = GameConstants::MaxFloodDistance_Human;
 
-		// Try market first
-		FoundResourceHolderInfos foundProviders = FindMarketResourceHolderInfo(ResourceEnum::Food, wantAmount, true, maxFloodDist);
+		//// Try market first
+		//FoundResourceHolderInfos foundProviders = FindMarketResourceHolderInfo(ResourceEnum::Food, wantAmount, true, maxFloodDist);
 
-		if (!foundProviders.hasInfos()) {
-			// Compare market provider to storage provider
-			foundProviders = resourceSystem().FindFoodHolder(ResourceFindType::AvailableForPickup, wantAmount, unitTile(), maxFloodDist);
+		//if (!foundProviders.hasInfos()) {
+		//	// Compare market provider to storage provider
+		//	foundProviders = resourceSystem().FindFoodHolder(ResourceFindType::AvailableForPickup, wantAmount, unitTile(), maxFloodDist);
 
-			FoundResourceHolderInfos foundProvidersMarket = foundProviders = FindMarketResourceHolderInfo(ResourceEnum::Food, wantAmount, false, maxFloodDist);
-			if (foundProvidersMarket.hasInfos()) {
-				FoundResourceHolderInfo bestProvider = foundProviders.best();
-				FoundResourceHolderInfo bestProviderMarket = foundProvidersMarket.best();
-				if (bestProviderMarket.amount > bestProvider.amount) {
-					foundProviders = foundProvidersMarket;
-				}
-				else if (bestProviderMarket.amount == bestProvider.amount) {
-					if (bestProviderMarket.distance < bestProvider.distance) {
-						foundProviders = foundProvidersMarket;
-					}
-				}
-			}
-			else {
-				foundProviders = foundProvidersMarket;
-			}
-		}
+		//	FoundResourceHolderInfos foundProvidersMarket = foundProviders = FindMarketResourceHolderInfo(ResourceEnum::Food, wantAmount, false, maxFloodDist);
+		//	if (foundProvidersMarket.hasInfos()) 
+		//	{
+		//		if (foundProviders.hasInfos()) {
+		//			FoundResourceHolderInfo bestProvider = foundProviders.best();
+		//			FoundResourceHolderInfo bestProviderMarket = foundProvidersMarket.best();
+		//			if (bestProviderMarket.amount > bestProvider.amount) {
+		//				foundProviders = foundProvidersMarket;
+		//			}
+		//			else if (bestProviderMarket.amount == bestProvider.amount) {
+		//				if (bestProviderMarket.distance < bestProvider.distance) {
+		//					foundProviders = foundProvidersMarket;
+		//				}
+		//			}
+		//		}
+		//		else {
+		//			foundProviders = foundProvidersMarket;
+		//		}
+		//	}
+		//}
 
+		FoundResourceHolderInfos foundProviders = FindNeedHelper(ResourceEnum::Food, wantAmount, maxFloodDist);
+		
 		if (foundProviders.hasInfos()) {
 			// Just go to the best provider (the first one)
 			FoundResourceHolderInfo bestProvider = foundProviders.best();
@@ -812,7 +853,7 @@ bool HumanStateAI::TryFindFood()
 			// If bestProvider doesn't provide full amount, don't go unless very hungry
 			bool shouldGoGetFood = true;
 			if (bestProvider.amount < wantAmount) {
-				shouldGoGetFood = (_food < maxFood * 1 / 3);
+				shouldGoGetFood = (_food < foodThreshold_Get2());
 			}
 
 			if (!shouldGoGetFood) {
@@ -953,17 +994,18 @@ bool HumanStateAI::TryToolup()
 
 		for (ResourceEnum resourceEnum : ToolsEnums)
 		{
-			// Look in market first
-			FoundResourceHolderInfos foundProviders = FindMarketResourceHolderInfo(resourceEnum, wantAmount, true, maxFloodDist);
+			//// Look in market first
+			//FoundResourceHolderInfos foundProviders = FindMarketResourceHolderInfo(resourceEnum, wantAmount, true, maxFloodDist);
 
-			if (!foundProviders.hasInfos()) {
-				foundProviders = resourceSystem.FindHolder(ResourceFindType::AvailableForPickup, resourceEnum, wantAmount, unitTile(), {}, maxFloodDist);
-			}
+			//if (!foundProviders.hasInfos()) {
+			//	foundProviders = resourceSystem.FindHolder(ResourceFindType::AvailableForPickup, resourceEnum, wantAmount, unitTile(), {}, maxFloodDist);
+			//}
 
-			if (!foundProviders.hasInfos()) {
-				foundProviders = FindMarketResourceHolderInfo(resourceEnum, wantAmount, false, maxFloodDist);
-			}
-			
+			//if (!foundProviders.hasInfos()) {
+			//	foundProviders = FindMarketResourceHolderInfo(resourceEnum, wantAmount, false, maxFloodDist);
+			//}
+
+			FoundResourceHolderInfos foundProviders = FindNeedHelper(resourceEnum, wantAmount, maxFloodDist);
 
 			if (resourceSystem.resourceCount(resourceEnum) > 0) {
 				hasToolsInStorage = true;
@@ -1016,17 +1058,18 @@ bool HumanStateAI::TryHealup()
 		{
 			wantAmount = (resourceEnum == ResourceEnum::Herb) ? 2 : 1;
 
-			// Look in market first
-			FoundResourceHolderInfos foundProviders = FindMarketResourceHolderInfo(resourceEnum, wantAmount, true, maxFloodDist);
+			//// Look in market first
+			//FoundResourceHolderInfos foundProviders = FindMarketResourceHolderInfo(resourceEnum, wantAmount, true, maxFloodDist);
 
-			if (!foundProviders.hasInfos()) {
-				foundProviders = resourceSystem.FindHolder(ResourceFindType::AvailableForPickup, resourceEnum, wantAmount, unitTile(), {}, maxFloodDist);
-			}
+			//if (!foundProviders.hasInfos()) {
+			//	foundProviders = resourceSystem.FindHolder(ResourceFindType::AvailableForPickup, resourceEnum, wantAmount, unitTile(), {}, maxFloodDist);
+			//}
 
-			if (!foundProviders.hasInfos()) {
-				foundProviders = FindMarketResourceHolderInfo(resourceEnum, wantAmount, false, maxFloodDist);
-			}
-			
+			//if (!foundProviders.hasInfos()) {
+			//	foundProviders = FindMarketResourceHolderInfo(resourceEnum, wantAmount, false, maxFloodDist);
+			//}
+
+			FoundResourceHolderInfos foundProviders = FindNeedHelper(resourceEnum, wantAmount, maxFloodDist);
 
 			if (foundProviders.hasInfos()) {
 				// Just go to the best provider (the first one)

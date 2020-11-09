@@ -214,6 +214,11 @@ private:
 	UPROPERTY(meta = (BindWidget)) UIconTextPairWidget* Science;
 
 
+	UPROPERTY(meta = (BindWidget)) UButton* LeftUIPopulationButton;
+	UPROPERTY(meta = (BindWidget)) UButton* LeftUIMoneyButton;
+	//UPROPERTY(meta = (BindWidget)) UButton* LeftUIInfluenceButton;
+	UPROPERTY(meta = (BindWidget)) UButton* LeftUIScienceButton;
+
 	UPROPERTY(meta = (BindWidget)) UTextBlock* AnimalsNeedingRanch;
 
 	//UPROPERTY(meta = (BindWidget)) UIconTextPairWidget* WoodCount;
@@ -574,4 +579,9 @@ private:
 			GetPunHUD()->OpenFoodFuelGraphUI();
 		}
 	}
+
+	UFUNCTION() void OnClickPopulationButton() { GetPunHUD()->ToggleGraphUI(2); }
+	UFUNCTION() void OnClickMoneyButton() { GetPunHUD()->ToggleGraphUI(3); }
+	UFUNCTION() void OnClickScienceButton() { GetPunHUD()->ToggleGraphUI(4); }
+	
 };

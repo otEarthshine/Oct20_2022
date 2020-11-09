@@ -26,7 +26,7 @@ void ULobbySettingsUI::SendMapSettings()
 	if (firstController->GetLocalRole() == ROLE_Authority) {
 		PunSerializedData blob(true);
 		serverMapSettings.Serialize(blob);
-		firstController->ExecuteAllControllers([&](AMainMenuPlayerController* controller) {
+		firstController->ExecuteAllMainMenuControllers([&](AMainMenuPlayerController* controller) {
 			controller->SetMapSettings(blob);
 		});
 	}

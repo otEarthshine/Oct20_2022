@@ -40,7 +40,7 @@ public:
 	/*
 	 * Delivery Arrow
 	 */
-	void ShowDeliveryArrow(FVector start, FVector end)
+	void ShowDeliveryArrow(FVector start, FVector end, bool isYellow)
 	{
 		if (_deliveryArrowIndex >= _deliveryArrowMeshes.Num()) {
 			auto mesh = PunUnrealUtils::CreateStaticMesh(_dataSource->componentToAttach());
@@ -62,7 +62,10 @@ public:
 
 		mesh->SetVisibility(true);
 		mesh->SetWorldTransform(FTransform(rotation, start, scale));
-		CastChecked<UMaterialInstanceDynamic>(mesh->GetMaterial(0))->SetScalarParameterValue("SectionCount", scaleScalar);
+
+		auto material = CastChecked<UMaterialInstanceDynamic>(mesh->GetMaterial(0));
+		material->SetScalarParameterValue("SectionCount", scaleScalar);
+		material->SetScalarParameterValue("IsYellow", isYellow);
 
 		_deliveryArrowIndex++;
 	}

@@ -2175,9 +2175,9 @@ WorldTile2 GetBuildingCenter(TileArea area, Direction faceDirection);
 static const BldInfo BuildingInfo[]
 {
 	// Note that size is (y, x) since y is horizontal and x is vertical in UE4
-	BldInfo(CardEnum::House,			"House",				WorldTile2(6, 6),	ResourceEnum::None, ResourceEnum::None,	ResourceEnum::None,		0, 0,	{20,0,0},	"Protect people from cold. Extra houses boost population growth."),
+	BldInfo(CardEnum::House,			"House",				WorldTile2(6, 6),	ResourceEnum::None, ResourceEnum::None,	ResourceEnum::None,		0, 0,	{20,0,0},	"Protects people from cold. Extra houses boost population growth."),
 	BldInfo(CardEnum::StoneHouse,	"Stone House",			WorldTile2(4, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,40,0},	""),
-	BldInfo(CardEnum::FruitGatherer,	"Fruit Gatherer",		WorldTile2(4, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 2,	{30,0,0},	"Gather fruits from trees and bushes."),
+	BldInfo(CardEnum::FruitGatherer,	"Fruit Gatherer",		WorldTile2(4, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 2,	{30,0,0},	"Gathers fruit from trees and bushes."),
 	BldInfo(CardEnum::Townhall,		"Townhall",				WorldTile2(12, 12),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,0,0},	"The administrative center of your town."),
 	BldInfo(CardEnum::StorageYard,	"Storage Yard",			WorldTile2(2, 2),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{10,0,0},	"Store resources."),
 
@@ -2296,7 +2296,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::Warehouse, "Warehouse", WorldTile2(6, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 70,70,0 }, "Advanced storage with 30 storage slots."),
 	BldInfo(CardEnum::Fort, "Fort", WorldTile2(9, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "+100% province's defense."),
 	BldInfo(CardEnum::Colony, "Colony", WorldTile2(10, 10), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "Extract resource from province."),
-	BldInfo(CardEnum::InventorsWorkshop, "Inventor's Workshop", WorldTile2(6, 6), ResourceEnum::Iron, ResourceEnum::None, ResourceEnum::None, 0, 2, { 50,50,0 }, "Generate science points. Use wood as input."),
+	BldInfo(CardEnum::InventorsWorkshop, "Inventor's Workshop", WorldTile2(6, 6), ResourceEnum::Iron, ResourceEnum::None, ResourceEnum::None, 0, 2, { 50,50,0 }, "Generate Science Points. Use Iron Bars as input."),
 	BldInfo(CardEnum::IntercityRoad, "Intercity Road", WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "Build Road to connect with other Cities. Same as Dirt Road, but buildable outside your territory."),
 
 	// August 16
@@ -2305,9 +2305,9 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::ChichenItza, "ChichenItza", WorldTile2(16, 16), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "..."),
 
 	// October 20
-	BldInfo(CardEnum::Market, "Market", WorldTile2(6, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 5, { 120, 120, 0 }, "Provide food/fuel/medicine/tools/luxury to houses. Bring resources in 50-units bulk."),
+	BldInfo(CardEnum::Market, "Market", WorldTile2(6, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 5, { 120, 120, 0 }, "Provide food/fuel/medicine/tools/luxury to houses within radius. Bring faraway resources in 50-units bulk."),
 	BldInfo(CardEnum::ShippingDepot, "Logistics Office", WorldTile2(4, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 1, { 20, 10, 0 }, "Haul specified resources from within the radius to its delivery target in 50-units bulk."),
-	BldInfo(CardEnum::IrrigationReservoir, "Irrigation Reservoir", WorldTile2(5, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0, 150, 0 }, "Raise the fertility within its radius to at least 95%."),
+	BldInfo(CardEnum::IrrigationReservoir, "Irrigation Reservoir", WorldTile2(5, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0, 150, 0 }, "Raises fertility within its radius to 100%."),
 	
 	// Decorations
 	BldInfo(CardEnum::FlowerBed, "Flower Bed", WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "Increase the surrounding appeal by 5 within 5 tiles radius."),
@@ -3003,13 +3003,17 @@ static bool IsRoad(CardEnum buildingEnum) {
 	}
 }
 
+static const std::vector<CardEnum> StorageEnums {
+	CardEnum::StorageYard,
+	CardEnum::Warehouse,
+};
 static bool IsStorage(CardEnum buildingEnum) {
-	switch (buildingEnum) {
-	case CardEnum::StorageYard:
-	case CardEnum::Warehouse:
-		return true;
-	default: return false;
+	for (CardEnum storageEnum : StorageEnums) {
+		if (storageEnum == buildingEnum) {
+			return true;
+		}
 	}
+	return false;
 }
 
 
@@ -4057,6 +4061,7 @@ enum class PlacementInstructionEnum
 	MountainMine,
 	Dock,
 	MustBeNearRiver,
+	LogisticsOffice,
 
 	Fort,
 	Colony,
@@ -7021,7 +7026,7 @@ enum class BoolEnum : uint8
 enum class HoverWarning : uint8 {
 	None,
 	Depleted,
-	StoragesFull,
+	StorageFull,
 	StorageTooFar,
 	HouseTooFar,
 
@@ -7035,12 +7040,15 @@ enum class HoverWarning : uint8 {
 
 	NeedSetup,
 	NeedDeliveryTarget,
+
+	DeliveryTargetTooFar,
+	OutputInventoryFull,
 };
 
 static const std::vector<std::string> HoverWarningString = {
 	"",
 	"Depleted",
-	"Storages Full",
+	"Storage Full",
 	"Storage Too Far",
 	"House Too Far",
 
@@ -7054,8 +7062,35 @@ static const std::vector<std::string> HoverWarningString = {
 
 	"Need Setup",
 	"Need\nDelivery Target",
+
+	"Delivery Target\nToo Far",
+	"Output Inventory\nFull",
 };
 static std::string GetHoverWarningString(HoverWarning hoverWarning) { return HoverWarningString[static_cast<int>(hoverWarning)]; }
+
+
+static const std::vector<std::string> HoverWarningDescription = {
+	"",
+	"Ores are Depleted in this Province.",
+	"All Storage are full. Build more Storage Yard or Warehouse.",
+	"This building is too far from Storage. Build a new Storage nearby to ensure this building runs efficiently.",
+	"This building is too far from Houses. Build a new House nearby to ensure this building runs efficiently.",
+
+	"Not enough Input Resource to keep this building running.",
+
+	"Building is Inaccessible.",
+
+	"",
+	"",
+	"",
+
+	"Choose Resource Types that will be carried by Logistics Workers.",
+	"Set the Delivery Target Storage where Logistics Worker will carry resources to.",
+
+	"Delivery Target is too far (maximum 150 tiles)", // TODO: For now only Logistics Office
+	"Output Resource Inventory is full causing the production to pause.",
+};
+static std::string GetHoverWarningDescription(HoverWarning hoverWarning) { return HoverWarningDescription[static_cast<int>(hoverWarning)]; }
 
 /*
  * Diplomacy
@@ -7129,7 +7164,7 @@ static const WorldTile2 Storage1ShiftTileVec(0, -InitialStorageShiftFromTownhall
 static const WorldTile2 InitialStorage2Shift(4, 0);
 
 static const int32 ClaypitRiverFractionPercentThreshold = 20;
-static const int32 IrrigationReservoirRiverFractionPercentThreshold = 10;
+static const int32 IrrigationReservoirRiverFractionPercentThreshold = 2;
 static int32 GetRiverFractionPercentThreshold(CardEnum buildingEnum) {
 	return buildingEnum == CardEnum::ClayPit ? ClaypitRiverFractionPercentThreshold : IrrigationReservoirRiverFractionPercentThreshold;
 }

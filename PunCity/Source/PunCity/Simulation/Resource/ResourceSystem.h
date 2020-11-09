@@ -857,11 +857,9 @@ public:
 	 */
 
 	void ResetHolderReservers(ResourceHolderInfo info) {
-		check(info.isValid());
-		holderGroup(info.resourceEnum).ResetHolderReservers(info.holderId, *this);
-		//ResourceHolder& holder = _enumToHolders[(int)info.resourceEnum].holderMutable(info.holderId);
-		//holder.ResetPopReservers(*_simulation);
-		//holder.ResetPushReservers(*_simulation);
+		if (info.isValid()) {
+			holderGroup(info.resourceEnum).ResetHolderReservers(info.holderId, *this);
+		}
 	}
 
 	//! Add/Remove resource global

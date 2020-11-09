@@ -74,9 +74,9 @@ public:
 	int32 DeathAgeTicks()
 	{
 		int32 result = Time::TicksPerYear * 8;
-		if (_simulation->TownhallCardCount(_playerId, CardEnum::ProlongLife) > 0) {
-			result += Time::TicksPerYear;
-		}
+		//if (_simulation->TownhallCardCount(_playerId, CardEnum::ProlongLife) > 0) {
+		//	result += Time::TicksPerYear;
+		//}
 		return result;
 	}
 

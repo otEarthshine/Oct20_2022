@@ -1626,10 +1626,10 @@ int32 PunTerrainGenerator::GetFertilityPercent(WorldTile2 tile)
 					if (
 						distance <= IrrigationReservoir::Radius + bandSize)
 					{
-						int32 fertilityIrrigated = 95;
+						int32 fertilityIrrigated = 100;
 						if (distance > IrrigationReservoir::Radius) {
 							int32 bandFraction100 = 100 - (distance - IrrigationReservoir::Radius) * 100 / bandSize;
-							fertilityIrrigated = bandFraction100 * 95 / 100;
+							fertilityIrrigated = bandFraction100 * 100 / 100;
 						}
 
 						fertility = max(fertility, fertilityIrrigated);

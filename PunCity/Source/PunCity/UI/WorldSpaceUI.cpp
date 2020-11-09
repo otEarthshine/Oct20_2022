@@ -86,6 +86,8 @@ void UWorldSpaceUI::SetupClasses(TSharedPtr<FSlateStyleSet> style, USceneCompone
 	_iconTextHoverIcons.Init();
 	_unitHoverIcons.Init();
 	_mapHoverIcons.Init();
+
+	check(HoverWarningString.size() == HoverWarningDescription.size());
 }
 
 FVector2D UWorldSpaceUI::buildingScreenLocation(int buildingId)
@@ -482,6 +484,7 @@ void UWorldSpaceUI::TickBuildings()
 			hoverIcon->SetText("", "+10%");
 			hoverIcon->SetTextColor(FLinearColor::White);
 		}
+
 
 		
 		
@@ -1146,6 +1149,12 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	{
 		punBox->AddRichText("<Red>Must be built near a river</>")->SetJustification(ETextJustify::Type::Center);
 	}
+	else if (needInstruction(PlacementInstructionEnum::LogisticsOffice))
+	{
+		punBox->AddRichText("Take resources from within radius")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
+		punBox->AddRichText("Ship them to faraway destination")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
+	}
+	
 	else if (needInstruction(PlacementInstructionEnum::FarmAndRanch)) {
 		punBox->AddRichText("<Red>Cannot be built on desert</>")->SetJustification(ETextJustify::Type::Center);
 	}

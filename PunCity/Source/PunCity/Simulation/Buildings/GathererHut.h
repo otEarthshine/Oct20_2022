@@ -1873,6 +1873,13 @@ public:
 			hoverWarning = HoverWarning::NeedDeliveryTarget;
 			return true;
 		}
+		
+		Building& building = _simulation->buildingChecked(deliveryTargetId());
+		if (WorldTile2::Distance(building.centerTile(), centerTile()) > 150) {
+			hoverWarning = HoverWarning::DeliveryTargetTooFar;
+			return true;
+		}
+		
 
 		hoverWarning = HoverWarning::None;
 		return true;
@@ -1924,7 +1931,8 @@ public:
 
 	int32 baseUpkeep() override {
 		int32 baseUpkeep = 80;
-		if (IsUpgraded(0)) {
+
+		if (IsUpgraded(0) && adjacentCount(CardEnum::Windmill) > 0) {
 			return baseUpkeep / 2;
 		}
 		return baseUpkeep;

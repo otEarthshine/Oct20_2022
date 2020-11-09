@@ -71,9 +71,18 @@ void UPunGameInstance::CreateMainMenuSound(USoundBase* sound)
 	// Main Menu Music
 	if (!AudioComponent) {
 		AudioComponent = UGameplayStatics::CreateSound2D(this, sound, 1, 1, 0, nullptr, true);
-		AudioComponent->bAutoDestroy = false;
-		AudioComponent->bAllowAnyoneToDestroyMe = false;
-		RegisterReferencedObject(AudioComponent);
+
+		if (AudioComponent) {
+			AudioComponent->bAutoDestroy = false;
+			AudioComponent->bAllowAnyoneToDestroyMe = false;
+			RegisterReferencedObject(AudioComponent);
+		}
+		else {
+			mainMenuPopup = "Failed to create audio components.\n"
+							"Please unplug any external audio devices, and disable any sound applications.\n"
+							"This will help Unreal Engine connects to the correct main audio device.\n"
+							"Once you are done, please restart the game.";
+		}
 	}
 }
 

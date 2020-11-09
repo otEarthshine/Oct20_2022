@@ -74,9 +74,8 @@ void PlayerOwnedManager::PlayerAddJobBuilding(Building& building, bool isConstru
 	if (!unlockSys->unlockedEmploymentBureau &&
 		jobBuildingCount() >= 7)
 	{
-		unlockSys->unlockedEmploymentBureau = true;
-
 		if (_simulation->TryAddCardToBoughtHand(_playerId, CardEnum::JobManagementBureau)) {
+			unlockSys->unlockedEmploymentBureau = true;
 			_simulation->AddPopup(_playerId, "Unlocked Employment Bureau. Once built, you gain the ability to manage the job priority (global).");
 		}
 	}

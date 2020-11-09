@@ -166,7 +166,7 @@ public:
 	bool RefreshHoverWarning() override
 	{
 		if (_simulation->isStorageAllFull(_playerId)) {
-			hoverWarning = HoverWarning::StoragesFull;
+			hoverWarning = HoverWarning::StorageFull;
 			return true;
 		}
 

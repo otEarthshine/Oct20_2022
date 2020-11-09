@@ -398,7 +398,8 @@ public:
 	}
 	void KeyPressed_F() final
 	{
-		if (GetPunHUD()->mainGameUI()->BuildMenuOverlay->GetVisibility() != ESlateVisibility::Collapsed)
+		if (GetPunHUD()->mainGameUI()->BuildMenuOverlay->GetVisibility() != ESlateVisibility::Collapsed &&
+			simulation().IsBuildingUnlocked(playerId(), CardEnum::Farm))
 		{
 			inputSystemInterface()->StartBuildingPlacement(CardEnum::Farm, 0, false);
 

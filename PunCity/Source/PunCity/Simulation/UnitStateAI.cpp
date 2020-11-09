@@ -1407,8 +1407,20 @@ void UnitStateAI::TrimFullBush()
 		Building& tileBuilding = _simulation->building(tileBuildingId);
 		if (tileBuilding.isConstructed(CardEnum::Farm))
 		{
-			if (_simulation->TryDoNonRepeatAction(tileBuilding.playerId(), NonRepeatActionEnum::AnimalsEatingCrop, Time::TicksPerSecond * 30)) {
-				_simulation->AddEventLogF(tileBuilding.playerId(), FString("Animals are eating your crop..."), true);
+			int32 tilePlayerId = tileBuilding.playerId();
+			if (_simulation->TryDoNonRepeatAction(tilePlayerId, NonRepeatActionEnum::AnimalsEatingCrop, Time::TicksPerSecond * 30)) {
+				_simulation->AddEventLogF(tilePlayerId, FString("Animals are eating your crop..."), true);
+
+				auto unlockSys = _simulation->unlockSystem(tilePlayerId);
+				if (!unlockSys->didFirstTimeAnimalRavage) {
+					unlockSys->didFirstTimeAnimalRavage = true;
+					_simulation->AddPopup(tilePlayerId,
+						"Animals are eating your crops."
+						"<space>"
+						"One way to deal with this is to build a Hunting Lodge near Farms."
+						"<space>"
+						"For faster animal killing, change Hunting Lodge's Workmode to \"Poison Arrow\".");
+				}
 			}
 		}
 	}

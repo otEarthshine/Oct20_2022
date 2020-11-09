@@ -271,7 +271,7 @@ int32 House::GetScience100(ScienceEnum scienceEnum)
 	switch (scienceEnum)
 	{
 	case ScienceEnum::Base:
-		return _roundFoodConsumption100 / 10;
+		return _roundFoodConsumption100 / 30;
 
 	case ScienceEnum::Luxury:
 		return _roundLuxuryConsumption100 * 4 / 10; // 40% lux goes to science
@@ -544,9 +544,11 @@ void Ranch::OnDeinit()
 	for (int i = 0; i < _animalOccupants.size(); i++) {
 		int32_t id = _animalOccupants[i];
 		auto& unit = _simulation->unitAI(id);
+		
+		_simulation->ResetUnitActions(id); // Must reset before SetPlayerId(-1) or CancelReservation will crash
+		
 		unit.SetHouseId(-1);
 		unit.SetPlayerId(-1);
-		_simulation->ResetUnitActions(id);
 	}
 	_animalOccupants.clear();
 }

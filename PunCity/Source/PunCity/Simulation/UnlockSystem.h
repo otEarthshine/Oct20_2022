@@ -1207,6 +1207,11 @@ public:
 
 	// Other states
 
+	// TODO: Need Serialize
+	bool didFirstTimeAnimalRavage = false;
+	bool didFirstTimeMedicineLowPopup = false;
+	bool didFirstTimeToolsLowPopup = false;
+
 private:
 	IGameSimulationCore* _simulation = nullptr;
 	int32 _playerId = -1;
@@ -1215,7 +1220,7 @@ private:
 	/*
 	 * Serialize
 	 */
-	std::vector<CardEnum> _unlockedBuildings;
+	std::vector<CardEnum> _unlockedBuildings; // Permanent Building Only
 
 	// Tech
 	std::vector<std::vector<TechEnum>> _eraToTechs; // Need shared_ptr because of polymorphism

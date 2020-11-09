@@ -577,6 +577,20 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			//descriptionBox->AddRichText(ss);
 			descriptionBox->AddLineSpacer(8);
 
+
+			// Show warning
+			if (building.hoverWarning != HoverWarning::None)
+			{
+				std::string description = GetHoverWarningDescription(building.hoverWarning);
+				if (description.size() > 0) {
+					FString descriptionText = ToFString(description);
+					descriptionText = descriptionText.Replace(TEXT("\n"), TEXT("</>\n<Red>"));
+					std::string descriptionStr = ToStdString(descriptionText);
+					descriptionBox->AddRichText("<Red>" + descriptionStr + "</>");
+				}
+			}
+			
+
 			// Show Description for some building
 			if (building.isEnum(CardEnum::Bank) ||
 				building.isEnum(CardEnum::ShippingDepot) || 
@@ -1587,7 +1601,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				}
 
 				// Forester
-				if (building.isEnum(CardEnum::Forester))
+				if (building.isEnum(CardEnum::Forester) &&
+					building.playerId() == playerId())
 				{
 					Forester& forester = building.subclass<Forester>();
 					
@@ -1942,6 +1957,19 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					Building& buildingScope = simulation.buildingChecked(deliveryTargetId);
 					FVector displayLocationScope = dataSource()->DisplayLocationTrueCenter(buildingScope);
 					dataSource()->ShowDeliveryArrow(displayLocation, displayLocationScope);
+				}
+
+				// Special case: Logistics Office
+				if (building.isEnum(CardEnum::ShippingDepot) &&
+					building.playerId() == playerId())
+				{
+					vector<int32> storageIds = simulation.GetBuildingsWithinRadiusMultiple(building.centerTile(), ShippingDepot::Radius, playerId(), StorageEnums);
+					for (int32 storageId : storageIds)
+					{
+						Building& buildingScope = simulation.buildingChecked(storageId);
+						FVector displayLocationScope = dataSource()->DisplayLocationTrueCenter(buildingScope);
+						dataSource()->ShowDeliveryArrow(displayLocationScope, displayLocation, true);
+					}
 				}
 				
 

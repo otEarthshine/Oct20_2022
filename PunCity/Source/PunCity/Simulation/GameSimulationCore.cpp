@@ -904,6 +904,37 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 
 
 						/*
+						 * Special
+						 */
+						auto unlockSys = unlockSystem(playerId);
+						if (!unlockSys->didFirstTimeMedicineLowPopup && GetResourceCount(playerId, MedicineEnums) < 10) {
+							unlockSys->didFirstTimeMedicineLowPopup = true;
+							AddPopup(playerId, 
+								"Your Medicine/Medicinal Herb count is low."
+								"<space>"
+								"If you run out of both Medicine and Medicinal Herb, sickness will spread killing your citizens."
+								"<space>"
+								"To produce medicinal herb:"
+								"<bullet>Unlock Medicinal Herb Seeds Technology</>"
+								"<bullet>Build Farms, and change its Workmode to Medicinal Herb</>"
+								"<space>"
+								"Alternatively, you can also import Medicine/Medicinal Herb from Trading Post/Port/Company."
+							);
+						}
+						if (!unlockSys->didFirstTimeToolsLowPopup && GetResourceCount(playerId, ToolsEnums) < 10) {
+							unlockSys->didFirstTimeToolsLowPopup = true;
+							AddPopup(playerId,
+								"Your Tools count is low."
+								"<space>"
+								"If you run out of Tools, your citizens' work efficiency will drop."
+								"<space>"
+								"The easiest way to acquire Tools is by importing Steel Tools from Trading Post/Port/Company."
+								"<space>"
+								"Steel Tools are produced from Blacksmith requiring Iron Bars and Wood."
+							);
+						}
+
+						/*
 						 * ClaimProgress
 						 */
 						// Conquer Province
@@ -2332,6 +2363,9 @@ void GameSimulationCore::SetAllowResource(FSetAllowResource command)
 		else {
 			if (storage.isConstructed()) {
 				storage.SetHolderTypeAndTarget(command.resourceEnum, command.allowed ? storage.defaultHolderType() : ResourceHolderType::Provider, 0);
+
+				// Refresh storage after setting allowed resource, so that citizens taking the resources to this storage will be reset.
+				resourceSystem(command.playerId).ResetHolderReservers(storage.holderInfo(command.resourceEnum));
 			}
 			else {
 				// Not yet constructed, queue the checkState to apply once construction finishes
@@ -2591,16 +2625,17 @@ void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
 			{
 				townhall.UpgradeTownhall();
 			}
-		} else {
-			if (townhall.wallLvl < townhall.townhallLvl &&
-				townhall.HasEnoughStoneToUpgradeWall()) 
-			{
-				townhall.UpgradeWall();
-				if (townhall.armyNode.defendGroups.size() > 0) 	{
-					townhall.armyNode.defendGroups[0].UpgradeWallLvl(townhall.wallLvl);
-				}
-			}
 		}
+		//else {
+		//	if (townhall.wallLvl < townhall.townhallLvl &&
+		//		townhall.HasEnoughStoneToUpgradeWall()) 
+		//	{
+		//		townhall.UpgradeWall();
+		//		if (townhall.armyNode.defendGroups.size() > 0) 	{
+		//			townhall.armyNode.defendGroups[0].UpgradeWallLvl(townhall.wallLvl);
+		//		}
+		//	}
+		//}
 	}
 	// Other buildings
 	else
@@ -2618,9 +2653,14 @@ void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
 				}
 			}
 
-			BuildingUpgrade upgrade = bld->upgrades()[command.upgradeType];
+			// Guard against bad upgrade
+			if (upgradedCount > 0 && 
+				0 <= command.upgradeType && command.upgradeType < bld->upgrades().size())
+			{
+				BuildingUpgrade upgrade = bld->upgrades()[command.upgradeType];
 
-			AddPopup(command.playerId, "Upgraded " + upgrade.name + " on " + to_string(upgradedCount) + " " + (bld->buildingInfo().name) + ".");
+				AddPopup(command.playerId, "Upgraded " + upgrade.name + " on " + to_string(upgradedCount) + " " + (bld->buildingInfo().name) + ".");
+			}
 		}
 	}
 }
@@ -3097,21 +3137,26 @@ void GameSimulationCore::UseCard(FUseCard command)
 	// Building Slot
 	if (IsBuildingSlotCard(command.cardEnum))
 	{
-		Building& bld = building(command.variable1);
-		if (bld.CanAddSlotCard()) 
+		// - Guard against isEnum() crash
+		if (isValidBuildingId(command.variable1))
 		{
-			// Don't allow slotting Mint with "SustainabilityBook"
-			if (command.cardEnum == CardEnum::SustainabilityBook &&
-				bld.isEnum(CardEnum::Mint))
+			Building& bld = building(command.variable1);
+			if (bld.CanAddSlotCard())
 			{
-				return;
-			}
-			
-			int32 soldPrice = cardSys.RemoveCards(command.cardEnum, 1);
-			if (soldPrice != -1) {
-				bld.AddSlotCard(command.GetCardStatus(_gameManager->GetDisplayWorldTime() * 100.0f));
+				// Don't allow slotting Mint with "SustainabilityBook"
+				if (command.cardEnum == CardEnum::SustainabilityBook &&
+					bld.isEnum(CardEnum::Mint))
+				{
+					return;
+				}
+
+				int32 soldPrice = cardSys.RemoveCards(command.cardEnum, 1);
+				if (soldPrice != -1) {
+					bld.AddSlotCard(command.GetCardStatus(_gameManager->GetDisplayWorldTime() * 100.0f));
+				}
 			}
 		}
+		
 		return;
 	}
 
@@ -3196,19 +3241,26 @@ void GameSimulationCore::UseCard(FUseCard command)
 	}
 	else if (command.cardEnum == CardEnum::BuyWood) 
 	{
-		int32 cost = GetResourceInfo(ResourceEnum::Wood).basePrice;
-		int32 amountToBuy = resourceSys.money() / 2 / cost;
+		if (resourceSys.money() > 0)
+		{
+			int32 cost = GetResourceInfo(ResourceEnum::Wood).basePrice;
+			int32 amountToBuy = resourceSys.money() / 2 / cost;
 
-		if (resourceSystem(command.playerId).CanAddResourceGlobal(ResourceEnum::Wood, amountToBuy)) {
-			resourceSys.AddResourceGlobal(ResourceEnum::Wood, amountToBuy, *this);
-			int32 moneyPaid = amountToBuy * cost;
-			resourceSys.ChangeMoney(-moneyPaid);
+			if (resourceSystem(command.playerId).CanAddResourceGlobal(ResourceEnum::Wood, amountToBuy)) {
+				resourceSys.AddResourceGlobal(ResourceEnum::Wood, amountToBuy, *this);
+				int32 moneyPaid = amountToBuy * cost;
+				resourceSys.ChangeMoney(-moneyPaid);
 
-			AddPopupToFront(command.playerId, "Bought " + to_string(amountToBuy) + " wood for " + "<img id=\"Coin\"/>" + to_string(moneyPaid) + ".");
+				AddPopupToFront(command.playerId, "Bought " + to_string(amountToBuy) + " wood for " + "<img id=\"Coin\"/>" + to_string(moneyPaid) + ".");
+			}
+			else {
+				succeedUsingCard = false;
+				AddPopupToFront(command.playerId, "Not enough storage space in our city.");
+			}
 		}
 		else {
 			succeedUsingCard = false;
-			AddPopup(command.playerId, "Not enough storage space in our city.");
+			AddPopupToFront(command.playerId, "Need more money to use the Buy Wood Card.");
 		}
 	}
 	else if (command.cardEnum == CardEnum::Immigration) {

@@ -784,16 +784,41 @@ bool HumanStateAI::TryFindFood()
 		FoundResourceHolderInfos foundProviders = FindMarketResourceHolderInfo(ResourceEnum::Food, wantAmount, true, maxFloodDist);
 
 		if (!foundProviders.hasInfos()) {
+			// Compare market provider to storage provider
 			foundProviders = resourceSystem().FindFoodHolder(ResourceFindType::AvailableForPickup, wantAmount, unitTile(), maxFloodDist);
-		}
 
-		if (!foundProviders.hasInfos()) {
-			foundProviders = FindMarketResourceHolderInfo(ResourceEnum::Food, wantAmount, false, maxFloodDist);
+			FoundResourceHolderInfos foundProvidersMarket = foundProviders = FindMarketResourceHolderInfo(ResourceEnum::Food, wantAmount, false, maxFloodDist);
+			if (foundProvidersMarket.hasInfos()) {
+				FoundResourceHolderInfo bestProvider = foundProviders.best();
+				FoundResourceHolderInfo bestProviderMarket = foundProvidersMarket.best();
+				if (bestProviderMarket.amount > bestProvider.amount) {
+					foundProviders = foundProvidersMarket;
+				}
+				else if (bestProviderMarket.amount == bestProvider.amount) {
+					if (bestProviderMarket.distance < bestProvider.distance) {
+						foundProviders = foundProvidersMarket;
+					}
+				}
+			}
+			else {
+				foundProviders = foundProvidersMarket;
+			}
 		}
 
 		if (foundProviders.hasInfos()) {
 			// Just go to the best provider (the first one)
 			FoundResourceHolderInfo bestProvider = foundProviders.best();
+
+			// If bestProvider doesn't provide full amount, don't go unless very hungry
+			bool shouldGoGetFood = true;
+			if (bestProvider.amount < wantAmount) {
+				shouldGoGetFood = (_food < maxFood * 1 / 3);
+			}
+
+			if (!shouldGoGetFood) {
+				AddDebugSpeech("(Failed)TryFindFood: no bestProvider with more than wantAmount (and food not lower that 1/3 full)");
+				return false;
+			}
 			
 			// Reserve
 			ReserveResource(ReservationType::Pop, bestProvider.info, bestProvider.amount);
@@ -1645,9 +1670,14 @@ bool HumanStateAI::TryClearFarmDrop(Farm& farm, int32 minDropCount)
 
 	// Try delivery target first
 	int32 deliveryTargetId = farm.deliveryTargetId();
-	if (deliveryTargetId != -1) {
+	if (_simulation->isValidBuildingId(deliveryTargetId))
+	{
 		Building& targetBuilding = _simulation->building(deliveryTargetId);
-		if (resourceSys.CanReceiveAmount(targetBuilding.holder(targetResourceEnum)) >= amount) {
+
+		ResourceHolderInfo holderInfo = targetBuilding.holderInfo(targetResourceEnum);
+		if (holderInfo.isValid() &&
+			resourceSys.CanReceiveAmount(targetBuilding.holder(targetResourceEnum)) >= amount) 
+		{
 			foundDropoffs.foundInfos.push_back(targetBuilding.GetHolderInfoFull(targetResourceEnum, amount));
 		}
 	}

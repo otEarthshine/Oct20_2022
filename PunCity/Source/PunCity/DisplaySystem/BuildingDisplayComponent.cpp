@@ -774,56 +774,6 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 			// Overlay
 			{
 				UpdateDisplayOverlay(building, overlayType);
-				//WorldAtom2 centerAtom = building.centerTile().worldAtom2();
-
-				//if (overlayType == OverlayType::Fish && building.isEnum(CardEnum::Fisher)) {
-				//	if (!building.IsUpgraded(0)) { // Skip whale
-				//		//PUN_LOG("BldDisp Fish Overlay: %s", *ToFString(building.debugStr()));
-				//		ShowRadius(Fisher::Radius, centerAtom, building);
-				//	}
-				//}
-				//else if (overlayType == OverlayType::Gatherer && building.isEnum(CardEnum::FruitGatherer)) {
-				//	//PUN_LOG("BldDisp Gatherer Overlay: %d", buildingId);
-				//	ShowRadius(GathererHut::Radius, centerAtom, building);
-				//}
-				//else if (overlayType == OverlayType::Hunter && building.isEnum(CardEnum::HuntingLodge)) {
-				//	ShowRadius(HuntingLodge::Radius, centerAtom, building);
-				//}
-				//else if (overlayType == OverlayType::Forester && building.isEnum(CardEnum::Forester)) {
-				//	ShowRadius(Forester::Radius, centerAtom, building);
-				//}
-				//else if (overlayType == OverlayType::Windmill && building.isEnum(CardEnum::Windmill)) {
-				//	ShowRadius(Windmill::Radius, centerAtom, building);
-				//}
-				//else if (overlayType == OverlayType::Beekeeper && building.isEnum(CardEnum::Beekeeper)) {
-				//	ShowRadius(Beekeeper::Radius, centerAtom, building);
-				//}
-				////else if (overlayType == OverlayType::ConstructionOffice && building.isEnum(BuildingEnum::ConstructionOffice)) {
-				////	ShowRadius(ConstructionOffice::Radius, centerAtom, building);
-				////}
-				//else if (overlayType == OverlayType::Industrialist && building.isEnum(CardEnum::IndustrialistsGuild)) {
-				//	ShowRadius(10, centerAtom, building);
-				//}
-				//else if (overlayType == OverlayType::Consulting && building.isEnum(CardEnum::ConsultingFirm)) {
-				//	ShowRadius(10, centerAtom, building);
-				//}
-
-				//else if (overlayType == OverlayType::Library && building.isEnum(CardEnum::Library)) {
-				//	ShowRadius(Library::Radius, centerAtom, building);
-				//}
-				//else if (overlayType == OverlayType::School && building.isEnum(CardEnum::School)) {
-				//	ShowRadius(School::Radius, centerAtom, building);
-				//}
-				//else if (overlayType == OverlayType::Bank && building.isEnum(CardEnum::Bank)) {
-				//	ShowRadius(Bank::Radius, centerAtom, building);
-				//}
-
-				//else if (overlayType == OverlayType::Theatre && building.isEnum(CardEnum::Theatre)) {
-				//	ShowRadius(Theatre::Radius, centerAtom, building);
-				//}
-				//else if (overlayType == OverlayType::Tavern && building.isEnum(CardEnum::Tavern)) {
-				//	ShowRadius(Tavern::Radius, centerAtom, building);
-				//}
 			}
 
 			// Light
@@ -1103,6 +1053,9 @@ void UBuildingDisplayComponent::UpdateDisplayOverlay(Building& building, Overlay
 	else if (overlayType == OverlayType::Tavern && building.isEnum(CardEnum::Tavern)) {
 		ShowRadius(Tavern::Radius, centerAtom, building);
 	}
+	
+#undef SHOW_RADIUS
+
 }
 
 void UBuildingDisplayComponent::UpdateDisplayLight(Building& building)

@@ -437,7 +437,9 @@ public:
 			auto addSeriesAll = [&](FString graphName, UTimeSeriesPlot* plot, PlotStatEnum plotEnum) {
 				std::vector<GraphSeries> series;
 				for (int32 i = 0; i < allHumanIds.size(); i++) {
-					series.push_back({ ToFString(simulation().playerName(allHumanIds[i])), plotEnum, PlayerColor1(allHumanIds[i]), allHumanIds[i] });
+					FLinearColor color = PlayerColor1(allHumanIds[i]);
+					color = FLinearColor::LerpUsingHSV(color, FLinearColor::White, 0.3); // Mix in some white to make the graph easier to read
+					series.push_back({ ToFString(simulation().playerName(allHumanIds[i])), plotEnum, color, allHumanIds[i] });
 				}
 				AddSeries(plot, series);
 			};

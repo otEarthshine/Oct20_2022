@@ -70,12 +70,15 @@ public:
 	
 
 	template<typename Func>
-	void ExecuteAllControllers(Func func) {
+	void ExecuteAllMainMenuControllers(Func func) {
 		TArray<AActor*> found;
 		UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerController::StaticClass(), found);
 
 		for (int i = 0; i < found.Num(); i++) {
-			func(CastChecked<AMainMenuPlayerController>(found[i]));
+			AMainMenuPlayerController* mainMenuController = Cast<AMainMenuPlayerController>(found[i]);
+			if (mainMenuController) {
+				func(mainMenuController);
+			}
 		}
 	}
 	

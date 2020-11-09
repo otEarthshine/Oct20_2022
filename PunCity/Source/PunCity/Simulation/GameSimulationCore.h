@@ -639,7 +639,20 @@ public:
 		}
 		return resultIds;
 	}
-
+	std::vector<int32> GetBuildingsWithinRadiusMultiple(WorldTile2 tileIn, int32 radius, int32 playerId, std::vector<CardEnum> buildingEnums) final
+	{
+		std::vector<int32> resultIds;
+		for (CardEnum buildingEnum : buildingEnums)
+		{
+			const std::vector<int32>& bldIds = buildingIds(playerId, buildingEnum);
+			for (int32 bldId : bldIds) {
+				if (building(bldId).DistanceTo(tileIn) <= radius) {
+					resultIds.push_back(bldId);
+				}
+			}
+		}
+		return resultIds;
+	}
 	
 	
 
@@ -1481,7 +1494,9 @@ public:
 	// Tech
 
 	bool IsResearched(int32 playerId, TechEnum techEnum) final {
-		PUN_CHECK(playerId >= 0);
+		if (!IsValidPlayer(playerId)) { // - Guard against IsResearched() crash in unlockedInfluence()
+			return false;
+		}
 		return unlockSystem(playerId)->IsResearched(techEnum);
 	}
 	bool HasTargetResearch(int32 playerId) final { return unlockSystem(playerId)->hasTargetResearch(); }

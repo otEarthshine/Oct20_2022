@@ -437,6 +437,7 @@ public:
 		}
 		return ResourceHolderInfo(resourceEnum, InvalidResourceHolderId);
 	}
+	
 	int32 resourceCount(ResourceEnum resourceEnum);
 	int32 tryResourceCount(ResourceEnum resourceEnum);
 
@@ -1304,6 +1305,20 @@ public:
 			{
 				hoverWarning = HoverWarning::StorageTooFar;
 				return true;
+			}
+		}
+
+		// OutputInventoryFull
+		{
+			std::vector<ResourceEnum> productEnums = products();
+			for (ResourceEnum productEnum : productEnums)
+			{
+				int32 outputInventory = resourceSystem().resourceCountWithPop(holderInfo(productEnum));
+				if (outputInventory >= GameConstants::WorkerEmptyBuildingInventoryAmount) 
+				{
+					hoverWarning = HoverWarning::OutputInventoryFull;
+					return true;
+				}
 			}
 		}
 		

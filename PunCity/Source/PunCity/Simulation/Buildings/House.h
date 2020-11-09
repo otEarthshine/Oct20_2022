@@ -189,7 +189,7 @@ public:
 
 		if (resourceEnum == ResourceEnum::Coal) {
 			if (_simulation->TownhallCardCount(_playerId, CardEnum::CoalTreatment)) {
-				ss << " +15% Coal Treatment\n";
+				ss << " +20% Coal Treatment\n";
 			}
 			ss << " x2 Coal Usage\n";
 		}

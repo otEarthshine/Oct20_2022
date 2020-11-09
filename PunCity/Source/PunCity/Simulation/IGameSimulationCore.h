@@ -182,7 +182,8 @@ public:
 
 	virtual bool HasBuildingWithinRadius(WorldTile2 tileIn, int32 radius, int32 playerId, CardEnum buildingEnum) = 0;
 	virtual std::vector<int32> GetBuildingsWithinRadius(WorldTile2 tileIn, int32 radius, int32 playerId, CardEnum buildingEnum) = 0;
-
+	virtual std::vector<int32> GetBuildingsWithinRadiusMultiple(WorldTile2 tileIn, int32 radius, int32 playerId, std::vector<CardEnum> buildingEnums) = 0;
+	
 	template<typename Func>
 	std::vector<int32> buildingIdsFiltered(int32 playerId, CardEnum cardEnum, Func shouldRemove) {
 		std::vector<int32> results = buildingIds(playerId, cardEnum);

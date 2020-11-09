@@ -392,8 +392,8 @@ public:
 		return PunUnrealUtils::ShowDecal(area.trueCenterAtom(), area.size(), decals, decalCount, componentToAttach(), material, this, useMaterialInstance);
 	}
 
-	void ShowDeliveryArrow(FVector start, FVector end) final {
-		_buildingMeshesList.ShowDeliveryArrow(start, end);
+	void ShowDeliveryArrow(FVector start, FVector end, bool isYellow = false) final {
+		_buildingMeshesList.ShowDeliveryArrow(start, end, isYellow);
 	}
 
 

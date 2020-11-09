@@ -217,7 +217,9 @@ void ResourceTypeHolders::CheckIntegrity_ResourceTypeHolder() {
 
 int32 ResourceSystem::CanReceiveAmount(const ResourceHolder& holder) const
 {
-	check(holder.type == ResourceHolderType::Storage);
+	if (holder.type != ResourceHolderType::Storage) {
+		return 0;
+	}
 
 	if (holder.objectId == -1) {
 		return 0;

@@ -1913,6 +1913,20 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
 			});
 		}
+		// Logistics Office
+		else if (_buildingEnum == CardEnum::ShippingDepot)
+		{
+			vector<int32> storageIds = simulation.GetBuildingsWithinRadiusMultiple(_mouseOnTile, ShippingDepot::Radius, playerId, StorageEnums);
+			for (int32 storageId : storageIds)
+			{
+				Building& buildingScope = simulation.buildingChecked(storageId);
+				FVector displayLocationScope = gameInterface->DisplayLocationTrueCenter(buildingScope);
+				gameInterface->ShowDeliveryArrow(displayLocationScope, meshLocation, true);
+			}
+
+			SetInstruction(PlacementInstructionEnum::LogisticsOffice, true);
+		}
+		
 		// Colony Grid
 		else if (_buildingEnum == CardEnum::Colony)
 		{

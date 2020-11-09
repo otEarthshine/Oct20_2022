@@ -269,7 +269,7 @@ void AMainMenuPlayerController::SendChat_ToServer_Implementation(const FString& 
 		return;
 	}
 
-	ExecuteAllControllers([&](AMainMenuPlayerController* controller) {
+	ExecuteAllMainMenuControllers([&](AMainMenuPlayerController* controller) {
 		controller->SendChat_ToClient(playerName, message);
 	});
 }

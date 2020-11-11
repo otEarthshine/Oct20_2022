@@ -933,6 +933,18 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 								"Steel Tools are produced from Blacksmith requiring Iron Bars and Wood."
 							);
 						}
+						if (!unlockSys->didFirstTimeLaborer0 && _playerOwnedManagers[playerId].laborerCount() == 0) {
+							unlockSys->didFirstTimeLaborer0 = true;
+							AddPopup(playerId,
+								"Your Laborer count is now 0."
+								"<space>"
+								"Every citizen is employed in a building. There is no free Laborer left to Haul and Gather Resources full-time."
+								"<space>"
+								"This can cause logistics issues resulting in production slow-down or resources not being picked up."
+								"<space>"
+								"To increase your Laborer count, either expel workers from buildings, or manually set the Laborer count from the Townhall or Employment Bureau."
+							);
+						}
 
 						/*
 						 * ClaimProgress
@@ -2139,6 +2151,13 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 					if (buildingEnum == CardEnum::Farm && bld.isConstructed()) 
 					{
 						bld.subclass<Farm>().ClearAllPlants();
+
+						// Change all drops
+						auto& resourceSys = resourceSystem(bld.playerId());
+						std::vector<DropInfo> drops = resourceSys.GetDropsFromArea_Pickable(bld.area(), true);
+						for (DropInfo drop : drops) {
+							resourceSys.SetHolderTypeAndTarget(drop.holderInfo, ResourceHolderType::Drop, 0);
+						}
 					}
 					
 

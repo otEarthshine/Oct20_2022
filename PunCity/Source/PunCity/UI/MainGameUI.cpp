@@ -1054,10 +1054,10 @@ void UMainGameUI::Tick()
 			}
 
 			std::stringstream tip;
+			tip << "Food Count: " << foodCount;
+			tip << "<space>";
 			tip << "Food Production (yearly): <FaintGreen>" << foodProduction << "</>\n";
 			tip << "Food Consumption (yearly): <FaintRed>" << foodConsumption << "</>";
-			tip << "<space>";
-			tip << "Food Count: " << foodCount;
 			
 			auto tooltip = AddToolTip(FoodCountText, tip);
 
@@ -1072,7 +1072,8 @@ void UMainGameUI::Tick()
 				shouldUpdateFuel = true;
 
 				punGraph->SetupGraph({
-					{ FString("Food"), PlotStatEnum::Food, FLinearColor::Green },
+					{ FString("Production (season)"), PlotStatEnum::FoodProduction, FLinearColor(0.3, 1, 0.3) },
+					{ FString("Consumption (season)"), PlotStatEnum::FoodConsumption, FLinearColor(1, 0.3, 0.3) },
 				});
 			}
 

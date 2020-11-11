@@ -40,7 +40,7 @@ public:
 	/*
 	 * Delivery Arrow
 	 */
-	void ShowDeliveryArrow(FVector start, FVector end, bool isYellow)
+	void ShowDeliveryArrow(FVector start, FVector end, bool isYellow, bool isSolid)
 	{
 		if (_deliveryArrowIndex >= _deliveryArrowMeshes.Num()) {
 			auto mesh = PunUnrealUtils::CreateStaticMesh(_dataSource->componentToAttach());
@@ -66,6 +66,7 @@ public:
 		auto material = CastChecked<UMaterialInstanceDynamic>(mesh->GetMaterial(0));
 		material->SetScalarParameterValue("SectionCount", scaleScalar);
 		material->SetScalarParameterValue("IsYellow", isYellow);
+		material->SetScalarParameterValue("IsSolid", isSolid);
 
 		_deliveryArrowIndex++;
 	}

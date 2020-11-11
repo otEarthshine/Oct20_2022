@@ -86,7 +86,10 @@ public:
 			// Import/Export have season as interval instead of 30 sec
 			if (plotStatEnum == PlotStatEnum::Import ||
 				plotStatEnum == PlotStatEnum::Export ||
-				plotStatEnum == PlotStatEnum::TradeBalance) 
+				plotStatEnum == PlotStatEnum::TradeBalance ||
+
+				plotStatEnum == PlotStatEnum::FoodProduction ||
+				plotStatEnum == PlotStatEnum::FoodConsumption)
 			{
 				timeIntervalYear = 0.25f;
 			}

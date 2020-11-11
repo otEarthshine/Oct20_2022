@@ -1959,19 +1959,36 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					dataSource()->ShowDeliveryArrow(displayLocation, displayLocationScope);
 				}
 
-				// Special case: Logistics Office
-				if (building.isEnum(CardEnum::ShippingDepot) &&
-					building.playerId() == playerId())
+				if (building.playerId() == playerId())
 				{
-					vector<int32> storageIds = simulation.GetBuildingsWithinRadiusMultiple(building.centerTile(), ShippingDepot::Radius, playerId(), StorageEnums);
-					for (int32 storageId : storageIds)
+					// Special case: Logistics Office
+					if (building.isEnum(CardEnum::ShippingDepot))
 					{
-						Building& buildingScope = simulation.buildingChecked(storageId);
-						FVector displayLocationScope = dataSource()->DisplayLocationTrueCenter(buildingScope);
-						dataSource()->ShowDeliveryArrow(displayLocationScope, displayLocation, true);
+						vector<int32> storageIds = simulation.GetBuildingsWithinRadiusMultiple(building.centerTile(), ShippingDepot::Radius, playerId(), StorageEnums);
+						for (int32 storageId : storageIds)
+						{
+							Building& buildingScope = simulation.buildingChecked(storageId);
+							FVector displayLocationScope = dataSource()->DisplayLocationTrueCenter(buildingScope);
+							dataSource()->ShowDeliveryArrow(displayLocationScope, displayLocation, true);
+						}
+					}
+
+					// Special case: House
+					if (building.isEnum(CardEnum::House))
+					{
+						// show arrows to every nearby houses
+						House& house = building.subclass<House>();
+						std::vector<int32>& occupantIds = house.occupants();
+						for (int32 occupantId : occupantIds)
+						{
+							Building* workplace = simulation.unitAI(occupantId).workplace();
+							if (workplace) {
+								FVector displayLocationScope = dataSource()->DisplayLocationTrueCenter(*workplace);
+								dataSource()->ShowDeliveryArrow(displayLocation, displayLocationScope, true, true);
+							}
+						}
 					}
 				}
-				
 
 				// Overlays
 				switch (building.buildingEnum())
@@ -2364,8 +2381,18 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			ss << "state: " << UnitStateString[static_cast<int>(unit.unitState())] << "\n";
 
 			if (unit.workplaceId() != -1) {
-				auto workplaceName = simulation.building(unit.workplaceId()).buildingInfo().name;
-				ss << "workplace: " << workplaceName << " (id: " << unit.workplaceId() << ")\n";
+				Building& workplace = simulation.building(unit.workplaceId());
+				auto workplaceName = workplace.buildingInfo().name;
+
+				if (workplace.isConstructed()) {
+					ss << "workplace: " << workplaceName;
+				} else {
+					ss << "workplace: Construction Site";
+				}
+				
+#if WITH_EDITOR 
+				ss << " (id: " << unit.workplaceId() << ")\n";
+#endif
 			} else {
 				ss << "workplace: none \n";
 			}

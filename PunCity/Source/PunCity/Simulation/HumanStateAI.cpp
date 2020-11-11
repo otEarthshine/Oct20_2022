@@ -558,7 +558,7 @@ bool HumanStateAI::TryMoveResourcesToDeliveryTarget(int32 deliverySourceId, Reso
 {
 	if (deliverySourceId != -1)
 	{
-		int32 deliveryTargetId = _simulation->building(deliverySourceId).deliveryTargetId();
+		int32 deliveryTargetId = _simulation->building(deliverySourceId).deliveryTargetIdAfterConstruction();
 		if (deliveryTargetId != -1)
 		{
 			if (TryMoveResourcesProviderToDropoff(deliverySourceId, deliveryTargetId, resourceEnum, amountAtLeast)) {
@@ -580,37 +580,41 @@ bool HumanStateAI::TryMoveResourcesToDeliveryTargetAll(int32 amountAtLeast)
 
 	for (int32 deliverySourceId : deliverySourceIds) {
 		Building& deliverySource = _simulation->building(deliverySourceId);
-		
-		std::vector<ResourceEnum> products = deliverySource.products();
-		
-		for (ResourceEnum resourceEnum : products)
-		{
-			ResourceHolderInfo holderInfo = deliverySource.holderInfo(resourceEnum);
 
-			if (resourceSys.resourceCountWithPop(holderInfo) >= amountAtLeast)
+		if (deliverySource.isConstructed())
+		{
+			std::vector<ResourceEnum> products = deliverySource.products();
+
+			for (ResourceEnum resourceEnum : products)
 			{
-				FoundResourceHolderInfo holderInfoFull(holderInfo, amountAtLeast, deliverySource.gateTile(), deliverySourceId, deliverySource.DistanceTo(uTile));
-				
-				// TODO: this can be a templated func???
-				// Ensure amount of 10 or more TrySortedAdd(vec, value, func, maxVecSize)
-				bool inserted = false;
-				for (int32 i = 0; i < closestDeliveryInfos.size(); i++)
+				ResourceHolderInfo holderInfo = deliverySource.holderInfo(resourceEnum);
+
+				if (resourceSys.resourceCountWithPop(holderInfo) >= amountAtLeast)
 				{
-					if (holderInfoFull.distance < closestDeliveryInfos[i].distance)
+					FoundResourceHolderInfo holderInfoFull(holderInfo, amountAtLeast, deliverySource.gateTile(), deliverySourceId, deliverySource.DistanceTo(uTile));
+
+					// TODO: this can be a templated func???
+					// Ensure amount of 10 or more TrySortedAdd(vec, value, func, maxVecSize)
+					bool inserted = false;
+					for (int32 i = 0; i < closestDeliveryInfos.size(); i++)
 					{
-						closestDeliveryInfos.insert(closestDeliveryInfos.begin() + i, holderInfoFull);
-						inserted = true;
-						break;
+						if (holderInfoFull.distance < closestDeliveryInfos[i].distance)
+						{
+							closestDeliveryInfos.insert(closestDeliveryInfos.begin() + i, holderInfoFull);
+							inserted = true;
+							break;
+						}
+					}
+					if (!inserted) {
+						closestDeliveryInfos.push_back(holderInfoFull);
+					}
+
+					if (closestDeliveryInfos.size() > 5) {
+						closestDeliveryInfos.pop_back();
 					}
 				}
-				if (!inserted) {
-					closestDeliveryInfos.push_back(holderInfoFull);
-				}
-
-				if (closestDeliveryInfos.size() > 5) {
-					closestDeliveryInfos.pop_back();
-				}
 			}
+
 		}
 	}
 
@@ -1712,7 +1716,7 @@ bool HumanStateAI::TryClearFarmDrop(Farm& farm, int32 minDropCount)
 	FoundResourceHolderInfos foundDropoffs;
 
 	// Try delivery target first
-	int32 deliveryTargetId = farm.deliveryTargetId();
+	int32 deliveryTargetId = farm.deliveryTargetIdAfterConstruction();
 	if (_simulation->isValidBuildingId(deliveryTargetId))
 	{
 		Building& targetBuilding = _simulation->building(deliveryTargetId);
@@ -1766,7 +1770,7 @@ bool HumanStateAI::TryClearFarmDrop(Farm& farm, int32 minDropCount)
 bool HumanStateAI::TryBulkHaul_ShippingDepot()
 {
 	auto& shipper = workplace()->subclass<ShippingDepot>(CardEnum::ShippingDepot);
-	int32 deliveryTargetId = shipper.deliveryTargetId();
+	int32 deliveryTargetId = shipper.deliveryTargetIdAfterConstruction();
 
 	if (deliveryTargetId != -1) {
 		auto& deliveryTarget = _simulation->building(deliveryTargetId).subclass<StorageYard>();
@@ -1854,6 +1858,52 @@ bool HumanStateAI::TryBulkHaul_Market()
 	if (!isFoodHighPriority && shouldAddFood) {
 		for (ResourceEnum foodEnum : FoodEnums) {
 			if (tryMoveResource(foodEnum)) {
+				return true;
+			}
+		}
+	}
+	
+	return false;
+}
+
+bool HumanStateAI::TryDistribute_Market()
+{
+	auto market = workplace()->subclass<Market>(CardEnum::Market);
+	
+	std::vector<int32> houseIds = _simulation->GetBuildingsWithinRadius(market.centerTile(), Market::Radius, _playerId, CardEnum::House);
+
+	int32 haulSize = 10;
+
+	auto& playerOwned = _simulation->playerOwned(_playerId);
+	bool coalAllowed = playerOwned.GetHouseResourceAllow(ResourceEnum::Coal);
+	bool woodAllowed = playerOwned.GetHouseResourceAllow(ResourceEnum::Wood);
+
+	bool hasCoal = resourceSystem().resourceCountWithPop(ResourceEnum::Coal) >= 10;
+	bool hasWood = resourceSystem().resourceCountWithPop(ResourceEnum::Wood) >= 10;
+
+	for (int32 houseId : houseIds)
+	{
+		Building& house = _simulation->building(houseId);
+		
+		// Can heat with either coal or wood
+		int32 fuelCount = house.GetResourceCountWithPush(ResourceEnum::Wood) + house.GetResourceCountWithPush(ResourceEnum::Coal);
+		if (fuelCount < 5)
+		{
+			// Try to fill with coal first since it is cheaper
+			if (coalAllowed && hasCoal) {
+				MoveResourceSequence({ market.GetHolderInfoFull(ResourceEnum::Coal, 10) },
+										{ house.GetHolderInfoFull(ResourceEnum::Coal, 10) });
+
+				AddDebugSpeech("(Succeed)TryDistribute_Market move coal");
+				return true;
+			}
+
+			// Otherwise fill with wood
+			if (woodAllowed && hasWood) {
+				MoveResourceSequence({ market.GetHolderInfoFull(ResourceEnum::Wood, 10) },
+										{ house.GetHolderInfoFull(ResourceEnum::Wood, 10) });
+				
+				AddDebugSpeech("(Succeed)TryDistribute_Market move firewood");
 				return true;
 			}
 		}

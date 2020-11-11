@@ -993,13 +993,26 @@ public:
 		//
 		//	return;
 		//}
-		
-		PUN_CHECK(command.jobPriorityList.Num() == DefaultJobPriorityListAllSeason.size());
 
 		_jobPriorityList.clear();
 		for (int32 i = 0; i < command.jobPriorityList.Num(); i++) {
 			_jobPriorityList.push_back(static_cast<CardEnum>(command.jobPriorityList[i]));
 		}
+
+		// TODO: This is to fix the jobPriority disappearing
+		if (_jobPriorityList.size() < DefaultJobPriorityListAllSeason.size())
+		{
+			// Find the missing jobPriority Row and add it to the end
+			for (size_t i = 0; i < DefaultJobPriorityListAllSeason.size(); i++) {
+				CardEnum cardEnum = DefaultJobPriorityListAllSeason[i];
+				
+				auto found = std::find(_jobPriorityList.begin(), _jobPriorityList.end(), cardEnum);
+				if (found == _jobPriorityList.end()) {
+					_jobPriorityList.push_back(cardEnum);
+				}
+			}
+		}
+		
 
 		RefreshJobDelayed();
 

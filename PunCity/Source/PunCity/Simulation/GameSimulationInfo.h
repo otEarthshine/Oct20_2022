@@ -15,18 +15,60 @@
 
 #define TRAILER_MODE 0
 
+// VERSION
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 2 // 3 digit
+#define MINOR_VERSION 3 // 3 digit
 
-#define VERSION_DAY 27
-#define VERSION_MONTH 10
+#define VERSION_DAY 11
+#define VERSION_MONTH 11
 #define VERSION_YEAR 20
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
 
 #define COMBINE_VERSION (MAJOR_VERSION * 1000000000) + (MINOR_VERSION * 1000000) + VERSION_DATE
 
-#define SAVE_VERSION COMBINE_VERSION
 #define GAME_VERSION COMBINE_VERSION
+
+static std::string GetGameVersionString()
+{
+	std::stringstream ss;
+	ss << MAJOR_VERSION << "." << MINOR_VERSION << " (" << VERSION_DAY << "/" << VERSION_MONTH << "/" << VERSION_YEAR << ")";
+	return ss.str();
+}
+
+static std::string GetGameVersionString(int32 version)
+{
+	std::stringstream ss;
+	ss << version / 1000000000 << ".";
+	version = version % 1000000000;
+	
+	ss << version / 1000000;
+	version = version % 1000000;
+
+	ss << " (";
+	ss << version / 10000;
+	version = version % 10000;
+
+	ss << "/";
+	ss << version / 100;
+	version = version % 100;
+
+	ss << "/";
+	ss << version;
+	ss << ")";
+	
+	return ss.str();
+}
+
+// VERSION
+#define MAJOR_SAVE_VERSION 0
+#define MINOR_SAVE_VERSION 2 // 3 digit
+
+#define VERSION_SAVE_DAY 27
+#define VERSION_SAVE_MONTH 10
+#define VERSION_SAVE_YEAR 20
+#define VERSION_SAVE_DATE (VERSION_SAVE_YEAR * 10000) + (VERSION_SAVE_MONTH * 100) + VERSION_SAVE_DAY
+
+#define SAVE_VERSION (MAJOR_SAVE_VERSION * 1000000000) + (MINOR_SAVE_VERSION * 1000000) + VERSION_SAVE_DATE
 
 //! Utils
 

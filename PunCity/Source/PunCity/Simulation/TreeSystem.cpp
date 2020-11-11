@@ -862,9 +862,22 @@ void TreeSystem::EmitSeed(int32 originId, TileObjInfo info)
 		if (info.type == ResourceTileType::Tree) {
 			if (!treeShade(tile.tileId()) &&
 				terrainGenerator.resourcePerlin(tile) < FD0_XX(59))
-				//perlinGenerator.noise01(tile.x * freq, tile.y * freq) < FD0_XX(59)) 
 			{
-				PlantTree(tile.x, tile.y, info.treeEnum);
+				// Check to ensure there is no nearby building
+				bool hasNoNearbyBuilding = true;
+				for (int32 y = -1; y <= 1; y++) {
+					for (int32 x = -1; x <= 1; x++) {
+						WorldTile2 curTile(tile.x + x, tile.y + y);
+						if (curTile.isValid() && _simulation->HasBuilding(curTile.tileId())) {
+							hasNoNearbyBuilding = false;
+							break;
+						}
+					}
+				}
+
+				if (hasNoNearbyBuilding) {
+					PlantTree(tile.x, tile.y, info.treeEnum);
+				}
 			}
 		}
 		else {

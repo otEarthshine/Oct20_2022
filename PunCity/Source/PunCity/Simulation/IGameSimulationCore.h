@@ -262,6 +262,8 @@ public:
 	virtual bool IsFrontBuildable(WorldTile2 tile) = 0;
 	virtual bool IsRoadOverlapBuildable(WorldTile2 tile) = 0;
 	virtual bool IsRoadTile(WorldTile2 tile) = 0;
+
+	virtual bool HasBuilding(int32 tileId) = 0;
 	
 	virtual bool IsBuildable(WorldTile2 tile) = 0;
 	virtual bool IsBuildable(WorldTile2 tile, int32_t playerId) = 0;

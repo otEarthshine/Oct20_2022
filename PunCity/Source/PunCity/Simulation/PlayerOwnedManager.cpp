@@ -237,6 +237,23 @@ void PlayerOwnedManager::RefreshJobs()
 		TryFillJobBuildings(_jobBuildingEnumToIds[static_cast<int>(CardEnum::Farm)], PriorityEnum::Priority, index);
 	}
 
+	auto shouldSkipBuilding = [&](CardEnum buildingEnum)
+	{
+		// Special case Winter
+		if (Time::IsWinter()) {
+			if (buildingEnum == CardEnum::FruitGatherer) {
+				return true;
+			}
+		}
+
+		// Fall season: Farm has earlier higher priority
+		if (buildingEnum == CardEnum::Farm && Time::FallSeason()) {
+			return true;
+		}
+		
+		return false;
+	};
+
 	// Try fill priority buildings
 	for (CardEnum buildingEnum : buildingEnumPriorityList) 
 	{
@@ -245,15 +262,7 @@ void PlayerOwnedManager::RefreshJobs()
 			continue;
 		}
 
-		// Special case Winter
-		if (Time::IsWinter()) {
-			if (buildingEnum == CardEnum::FruitGatherer) {
-				continue;
-			}
-		}
-
-		// Fall season: Farm has earlier higher priority
-		if (buildingEnum == CardEnum::Farm && Time::FallSeason()) {
+		if (shouldSkipBuilding(buildingEnum)) {
 			continue;
 		}
 		
@@ -309,7 +318,7 @@ void PlayerOwnedManager::RefreshJobs()
 			continue;
 		}
 
-		if (buildingEnum == CardEnum::Farm && Time::FallSeason()) {
+		if (shouldSkipBuilding(buildingEnum)) {
 			continue;
 		}
 		

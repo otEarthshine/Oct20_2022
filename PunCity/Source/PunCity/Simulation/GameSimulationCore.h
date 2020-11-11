@@ -400,6 +400,10 @@ public:
 		}
 		return _regionSystem->provinceOwner(provinceId);
 	}
+
+	bool HasBuilding(int32 tileId) final {
+		return _buildingSystem->HasBuilding(tileId);
+	}
 	
 	bool IsBuildable(WorldTile2 tile) final {
 		int32 tileId = tile.tileId();

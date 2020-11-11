@@ -10,7 +10,7 @@ void SubStatSystem::Tick(int32 playerId, IGameSimulationCore* simulation)
 		int32 seasonInt = Time::SeasonMod();
 		check(seasonInt < 4);
 
-		int32 lastSeasonInt = (Time::Seasons() - 1) % 4;
+		int32 lastSeasonInt = (Time::Seasons() + 4 - 1) % 4;
 
 		// Add to Graph just before resetting
 		if (playerId != -1)

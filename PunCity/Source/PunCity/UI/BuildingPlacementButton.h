@@ -69,13 +69,16 @@ public:
 		std::stringstream ss;
 		ss << "<CardName>" << info.name << "</>";
 		if (buildingEnum == CardEnum::House) {
-			ss << " <Orange>[H]</>";
+			ss << " <Orange>[B-H]</>";
 		}
 		else if(buildingEnum == CardEnum::Farm) {
-			ss << " <Orange>[F]</>";
+			ss << " <Orange>[B-F]</>";
 		}
 		else if (buildingEnum == CardEnum::StorageYard) {
-			ss << " <Orange>[Y]</>";
+			ss << " <Orange>[B-Y]</>";
+		}
+		else if (buildingEnum == CardEnum::DirtRoad) {
+			ss << " <Orange>[Z]</>";
 		}
 		SetText(BuildingNameRichText, ss.str());
 

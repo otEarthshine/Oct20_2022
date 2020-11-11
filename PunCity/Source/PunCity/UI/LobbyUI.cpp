@@ -164,7 +164,7 @@ void ULobbyUI::Tick()
 		SetText(MultiplayerLobbyTitle, "<Title>Load Multiplayer Game Lobby</>");
 		GenerateWorldOverlay->SetVisibility(ESlateVisibility::Collapsed);
 	} else {
-		if (serverMapSettings().isMultiplayer()) {
+		if (gameInst->isMultiplayer()) {
 			SetText(MultiplayerLobbyTitle, "<Title>Multiplayer Lobby</>");
 		} else {
 			SetText(MultiplayerLobbyTitle, "<Title>Single Player</>");

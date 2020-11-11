@@ -300,7 +300,7 @@ public:
 	virtual class UDecalComponent* ShowDecal(TileArea area, UMaterial* material) = 0; // TODO: remove?
 	virtual class UDecalComponent* ShowDecal(TileArea area, UMaterial* material, TArray<UDecalComponent*>& decals, int32& decalCount, bool useMaterialInstance = false) = 0;
 
-	virtual void ShowDeliveryArrow(FVector start, FVector end, bool isYellow = false) = 0;
+	virtual void ShowDeliveryArrow(FVector start, FVector end, bool isYellow = false, bool isSolid = false) = 0;
 
 	virtual bool IsInSampleRange(WorldTile2 tile) = 0;
 

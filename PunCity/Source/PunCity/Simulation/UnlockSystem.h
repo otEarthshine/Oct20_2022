@@ -1211,6 +1211,7 @@ public:
 	bool didFirstTimeAnimalRavage = false;
 	bool didFirstTimeMedicineLowPopup = false;
 	bool didFirstTimeToolsLowPopup = false;
+	bool didFirstTimeLaborer0 = false;
 
 private:
 	IGameSimulationCore* _simulation = nullptr;

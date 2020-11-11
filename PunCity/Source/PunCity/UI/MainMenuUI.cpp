@@ -80,6 +80,8 @@ void UMainMenuUI::Tick()
 {
 	gameInstance()->PunTick();
 
+	VersionIdText->SetText(ToFText(GetGameVersionString()));
+
 	// Not Connected to Steam, retry every 2 sec
 	if (LobbyConnectionWarning->GetVisibility() == ESlateVisibility::Visible &&
 		UGameplayStatics::GetTimeSeconds(this) - lastSteamConnectionRetry > 2.0f)
@@ -97,9 +99,7 @@ void UMainMenuUI::Tick()
 	
 	// Lobby List
 	if (MainMenuSwitcher->GetActiveWidget() == MultiplayerLobbyListCanvas)
-	{
-		VersionIdText->SetText(FText::FromString(FString("Version ID: ") + FString::FromInt(GAME_VERSION)));
-		
+	{	
 		auto sessionSearch = gameInstance()->sessionSearch;
 		
 		// Check if search result changed
@@ -380,9 +380,16 @@ void UMainMenuUI::JoinMultiplayerGame()
 	PUN_DEBUG2("Joining Server");
 
 	// Different Build
-	if (GetSessionValue(SESSION_GAME_VERSION, _chosenSession.Session.SessionSettings) != GAME_VERSION) 
+	int32 hostVersion = GetSessionValue(SESSION_GAME_VERSION, _chosenSession.Session.SessionSettings);
+	if (hostVersion != GAME_VERSION)
 	{
-		gameInstance()->mainMenuPopup = "Cannot join a game with different version.";
+		stringstream ss;
+		ss << "Cannot join a game with different version.\n";
+		ss << "Please try restarting Steam to get the latest version.\n";
+		ss << " your version: " << GetGameVersionString(GAME_VERSION) << "\n";
+		ss << " host version: " << GetGameVersionString(hostVersion);
+		
+		gameInstance()->mainMenuPopup = ToFString(ss.str());
 		Spawn2DSound("UI", "PopupCannot");
 		return;
 	}

@@ -716,7 +716,7 @@ private:
 
 			std::stringstream ss;
 			ss << "Would you like some guidance?";
-			PopupInfo popup(_playerId, ss.str(), { "Please guide me", "I already know what to do" }, PopupReceiverEnum::StartGame_AskAboutAdvice, true);
+			PopupInfo popup(_playerId, ss.str(), { "Yes, guide me", "No, I already know what to do" }, PopupReceiverEnum::StartGame_AskAboutAdvice, true);
 			_simulation->AddPopup(popup);
 		}
 		else if (_rareHandEnum == RareHandEnum::BuildingSlotCards)

@@ -58,6 +58,7 @@ public:
 
 	bool TryBulkHaul_ShippingDepot();
 	bool TryBulkHaul_Market();
+	bool TryDistribute_Market();
 	//bool TryConsumerWork();
 
 	bool TryGather(bool treeOnly);

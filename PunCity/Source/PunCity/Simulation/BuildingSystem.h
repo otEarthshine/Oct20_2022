@@ -39,6 +39,10 @@ public:
 	//CardEnum buildingEnumAtTile(WorldTile2 tile) { return _buildingEnumMap[tile.tileId()]; }
 	int32 buildingIdAtTile(WorldTile2 tile) { return _buildingIdMap[tile.tileId()]; }
 
+	bool HasBuilding(int32 tileId) {
+		return _buildingIdMap[tileId] != -1;
+	}
+	
 	bool HasNoBuildingOrFront(int32 tileId)
 	{
 		return _buildingIdMap[tileId] == -1 &&

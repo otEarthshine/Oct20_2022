@@ -879,7 +879,15 @@ public:
 
 
 	// Delivery
+	int32 deliveryTargetIdAfterConstruction() {  // deliveryTargetId returns -1 if the building under construction
+		if (isConstructed()) {
+			return _deliveryTargetId;
+		}
+		return -1;
+	}
+	
 	int32 deliveryTargetId() { return _deliveryTargetId; }
+	
 	const std::vector<int32>& deliverySourceIds() { return _deliverySourceIds; }
 	
 	void SetDeliveryTarget(int32 deliveryTargetId);

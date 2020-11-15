@@ -468,6 +468,9 @@ private:
 	// Logs
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* EventBox;
 
+	//
+	UPROPERTY(meta = (BindWidget)) USizeBox* QuickDebugBox;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* QuickDebugText;
 	
 private:
 	// Confirmation

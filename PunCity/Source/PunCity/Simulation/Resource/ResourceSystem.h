@@ -270,6 +270,17 @@ public:
 		return count;
 	}
 
+	int32 resourceCountDropOnly() const {
+		int count = 0;
+		for (int i = 0; i < _holders.size(); i++) {
+			if (_holders[i].type == ResourceHolderType::Drop)
+			{
+				count += _holders[i].current();
+			}
+		}
+		return count;
+	}
+
 	const ResourceHolder& holderConst(int holderId) const
 	{
 		PUN_CHECK(holderId < _holders.size());
@@ -450,6 +461,8 @@ private:
 				// Check if closer that last full candidate...
 				if (dist < foundFullInfoDist) {
 					foundFullInfo = filteredInfos[i];
+					foundFullInfo.distance = dist;
+					
 					foundFullInfoDist = dist;
 				}
 			}
@@ -483,6 +496,8 @@ private:
 					// Check if closer that the cached closest candidate...
 					if (dist < foundClosestInfoDist) {
 						foundClosestInfo = filteredInfos[i];
+						foundClosestInfo.distance = dist;
+						
 						foundClosestInfoDist = dist;
 						foundClosestIndex = i;
 					}
@@ -514,6 +529,8 @@ private:
 						// Check if closer that the cached closest candidate...
 						if (chainBackToCurrentDist < maxChainLinkDist && chainBackToCurrentDist < closestNextChainNodeDist) {
 							closestNextChainNodeInfo = filteredInfos[i];
+							closestNextChainNodeInfo.distance = chainBackToCurrentDist;
+							
 							closestNextChainNodeDist = chainBackToCurrentDist;
 							closestNextChainNodeIndex = i;
 						}
@@ -558,6 +575,7 @@ private:
 		}
 		
 
+		// Trim excess bestChain's foundInfos
 		std::vector<FoundResourceHolderInfo>& bestChainInfos = bestChain.foundInfos;
 
 		// Trim excess amount before returning.
@@ -775,6 +793,10 @@ public:
 	int32 resourceCountWithDrops(ResourceEnum resourceEnum) {
 		return _enumToHolders[static_cast<int>(resourceEnum)].resourceCountWithDrops();
 	}
+
+	int32 resourceCountDropOnly(ResourceEnum resourceEnum) {
+		return _enumToHolders[static_cast<int>(resourceEnum)].resourceCountDropOnly();
+	}
 	
 	int32 resourceCount(ResourceHolderInfo info) const {
 		check(info.isValid());
@@ -829,7 +851,7 @@ public:
 	}
 
 	bool HasAvailableFood() const {
-		for (ResourceEnum resourceEnum : FoodEnums) {
+		for (ResourceEnum resourceEnum : StaticData::FoodEnums) {
 			if (resourceCountWithPop(resourceEnum) > 0) {
 				return true;
 			}
@@ -876,7 +898,7 @@ public:
 	void RemoveResourceGlobal(ResourceEnum resourceEnum, int32 amount) {
 		if (resourceEnum == ResourceEnum::Food) {
 			int32 amountLeftToRemove = amount;
-			for (ResourceEnum foodEnum : FoodEnums) {
+			for (ResourceEnum foodEnum : StaticData::FoodEnums) {
 				int32 amountToRemove = std::min(amountLeftToRemove, resourceCount(foodEnum));
 				RemoveResourceGlobal(foodEnum, amountToRemove);
 				amountLeftToRemove -= amountToRemove;
@@ -959,15 +981,54 @@ public:
 										int32 maxFloodDist = GameConstants::MaxFloodDistance_Human)
 	{
 		// Eat less expensive food first...
-		
-		for (ResourceEnum resourceEnum : FoodEnums) {
-			FoundResourceHolderInfos foundInfos = _enumToHolders[static_cast<int>(resourceEnum)].FindHolder(findType, amount, origin, {}, maxFloodDist);
+		auto getBestChain = [&](const std::vector<ResourceEnum>& foodEnumsCategory)
+		{
+			FoundResourceHolderInfos bestFoundInfos;
+			for (ResourceEnum resourceEnum : foodEnumsCategory) {
+				FoundResourceHolderInfos foundInfos = _enumToHolders[static_cast<int>(resourceEnum)].FindHolder(findType, amount, origin, {}, maxFloodDist);
 
-			if (foundInfos.hasInfos()) {
-				return foundInfos;
+				if (!bestFoundInfos.hasInfos()) {
+					bestFoundInfos = foundInfos;
+				}
+				else if (foundInfos.hasInfos() && 
+						 foundInfos.IsBetterThan(bestFoundInfos, amount))
+				{
+					bestFoundInfos = foundInfos;
+				}
 			}
+			
+			return bestFoundInfos;
+		};
+
+		FoundResourceHolderInfos bestChain_HighPriority = getBestChain(FoodEnums_NonInput);
+		
+		FoundResourceHolderInfos bestChain_LowPriority = getBestChain(FoodEnums_Input);
+
+		if (!bestChain_HighPriority.hasInfos()) {
+			return bestChain_LowPriority;
 		}
-		return FoundResourceHolderInfos();
+		if (!bestChain_LowPriority.hasInfos()) {
+			return bestChain_HighPriority;
+		}
+
+		// Factors: distance, amount
+		int32 adjustedDistance_highPriority = bestChain_HighPriority.totalDistance() * amount / std::max(1, bestChain_HighPriority.amountCapped(amount));
+		int32 adjustedDistance_lowPriority = bestChain_LowPriority.totalDistance() * amount / std::max(1, bestChain_LowPriority.amountCapped(amount));
+
+		// high priority distance count as half
+		if (adjustedDistance_highPriority / 2 < adjustedDistance_lowPriority) {
+			return bestChain_HighPriority;
+		}
+		return bestChain_LowPriority;
+		
+		//for (ResourceEnum resourceEnum : FoodEnums_NonInput) {
+		//	FoundResourceHolderInfos foundInfos = _enumToHolders[static_cast<int>(resourceEnum)].FindHolder(findType, amount, origin, {}, maxFloodDist);
+
+		//	if (foundInfos.hasInfos()) {
+		//		return foundInfos;
+		//	}
+		//}
+		//return FoundResourceHolderInfos();
 	}
 
 	//! Reserve resource, positive = reserve for add, negative = reserve for remove

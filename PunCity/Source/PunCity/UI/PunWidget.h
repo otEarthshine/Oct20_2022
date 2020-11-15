@@ -249,7 +249,8 @@ public:
 
 	static const int32 ObjectFocusUIWrapSize = 280; // 330
 	std::string WrapString(std::string str, int32 wrapSize = ObjectFocusUIWrapSize, FSlateFontInfo* fontInfoPtr = nullptr);
-	
+
+	FString WrapStringF(FString fString, int32 wrapSize = ObjectFocusUIWrapSize, FSlateFontInfo* fontInfoPtr = nullptr);
 	
 	static void SetText(URichTextBlock* textBlock, std::string str) {
 		textBlock->SetText(FText::FromString(ToFString(str)));
@@ -319,11 +320,20 @@ public:
 
 	//! Mouse hovering away for 2 ticks counts as IsPointerOnUI false
 	static int32 kPointerOnUI;
-	static bool IsPointerOnUI() { return kPointerOnUI > 0; }
+	static TArray<FString> kPointerOnUINames;
+	static bool IsPointerOnUI()
+	{
+		if (PunSettings::IsOn("ForceClickthrough")) {
+			return false;
+		}
+		return kPointerOnUI > 0;
+	}
 	void CheckPointerOnUI() { CheckPointerOnUI(CastChecked<UWidget>(this)); }
 	void CheckPointerOnUI(UWidget* widget) {
 		if (widget->IsHovered()) {
 			kPointerOnUI = std::min(kPointerOnUI + 2, 2);
+
+			kPointerOnUINames.Add(widget->GetFullName());
 		}
 	}
 	static void TickIsHovered() {

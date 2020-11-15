@@ -36,6 +36,8 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 	GameRand::ResetStateToTickCount(_tickCount);
 	Time::ResetTicks();
 
+	StaticData::ResetFoodEnums();
+
 	_isLoadingFromFile = isLoadingFromFile;
 
 	{
@@ -857,8 +859,8 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 
 			}
 
-			// Check for events every 20 sec
-			if (_tickCount % (Time::TicksPerSecond * 20) == 0)
+			// Check for events every 60 sec
+			if (_tickCount % (Time::TicksPerSecond * 60) == 0)
 			{
 				// Event log check
 				ExecuteOnConnectedPlayers([&](int32 playerId)
@@ -875,21 +877,6 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 						}
 					}
 				});
-				//for (size_t j = 0; j < _playerCount; j++) {
-				//	if (_playerOwnedManagers[j].isInitialized())
-				//	{
-				//		if (isStorageAllFull(j)) {
-				//			_eventLogSystem.AddEventLog(j, FString("Need more storage space."), true);
-
-				//			_soundInterface->Spawn2DSound("UI", "NeedStorageBell", j);
-
-				//			// Trigger storage quest if not yet done...
-				//			TryAddQuest(j, std::make_shared<BuildStorageQuest>());
-				//		}
-
-				//		
-				//	}
-				//}
 			}
 
 			// Tick 1 sec
@@ -1433,6 +1420,11 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 	// Delivery Point
 	if (parameters.buildingIdToSetDelivery != -1)
 	{
+		// Guard: SetDeliveryTarget crash
+		if (!IsValidBuilding(parameters.buildingIdToSetDelivery)) {
+			return -1;
+		}
+		
 		Building& buildingToSetDelivery = buildingChecked(parameters.buildingIdToSetDelivery);
 
 		if (parameters.center == WorldTile2::Invalid) {
@@ -2390,7 +2382,7 @@ void GameSimulationCore::SetAllowResource(FSetAllowResource command)
 				// Not yet constructed, queue the checkState to apply once construction finishes
 				if (command.resourceEnum == ResourceEnum::Food)
 				{
-					for (ResourceEnum resourceEnumLocal : FoodEnums) {
+					for (ResourceEnum resourceEnumLocal : StaticData::FoodEnums) {
 						storage.queuedResourceAllowed[static_cast<int>(resourceEnumLocal)] = command.allowed;
 					}
 				}
@@ -3191,7 +3183,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 			cardSys.RemoveCards(command.cardEnum, 1);
 		}
 		else {
-			AddPopup(command.playerId, "Not enough storage space.");
+			AddPopup(command.playerId, "Not enough storage space.", "PopupCannot");
 		}
 		return;
 	}
@@ -3250,7 +3242,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 
 	else if (command.cardEnum == CardEnum::SellFood) {
 		int32 totalRemoved = 0;
-		for (ResourceEnum foodEnum : FoodEnums) {
+		for (ResourceEnum foodEnum : StaticData::FoodEnums) {
 			int32 amountToRemove = resourceSys.resourceCount(foodEnum) / 2;
 			resourceSys.RemoveResourceGlobal(foodEnum, amountToRemove);
 			resourceSys.ChangeMoney(amountToRemove * FoodCost);
@@ -3543,7 +3535,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 
 			// TODO: change below to RemoveResourceGlobal(ResourceEnum::Food, ..)
 			int32 amountLeftToRemove = neededFood;
-			for (ResourceEnum foodEnum : FoodEnums) {
+			for (ResourceEnum foodEnum : StaticData::FoodEnums) {
 				int32 amountToRemove = std::min(amountLeftToRemove, resourceSys.resourceCount(foodEnum));
 				resourceSys.RemoveResourceGlobal(foodEnum, amountToRemove);
 				amountLeftToRemove -= amountToRemove;
@@ -3937,7 +3929,7 @@ void GameSimulationCore::Cheat(FCheat command)
 		}
 		
 		case CheatEnum::Resources: {
-			for (ResourceEnum resourceEnum : FoodEnums) {
+			for (ResourceEnum resourceEnum : StaticData::FoodEnums) {
 				resourceSystem(command.playerId).AddResourceGlobal(resourceEnum, 50, *this);
 			}
 			for (ResourceEnum resourceEnum : ConstructionResources) {

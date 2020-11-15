@@ -54,6 +54,8 @@ enum class UnitState : uint8
 
 	MoveArmy,
 
+	GoToWorkplace,
+
 	Count,
 };
 
@@ -100,6 +102,8 @@ const char* const UnitStateString[] =
 	"Clear Drops (Farm)", // FarmClearDrops
 
 	"Move Army",
+
+	"Go to Workplace",
 };
 
 enum class UnitAIClassEnum : uint8
@@ -301,12 +305,14 @@ public:
 	void Add_PlantTree(WorldTile2 targetTile, TileObjEnum tileObjEnum);	void PlantTree();
 	void Add_NourishTree(WorldTile2 targetTile);						void NourishTree();
 
-	void Add_MoveTo(WorldTile2 end);								void MoveTo();  bool MoveTo(WorldTile2 end, int32 customFloodDistance = -1);
+	void Add_MoveTo(WorldTile2 end, int32 customFloodDistance = -1);	void MoveTo();  bool MoveTo(WorldTile2 end, int32 customFloodDistance = -1);
 	void Add_MoveToResource(ResourceHolderInfo holderInfo, int32 customFloodDistance = -1);			void MoveToResource(); bool MoveToResource(ResourceHolderInfo holderInfo, int32 customFloodDistance);
 	void Add_MoveInRange(WorldTile2 end, int32_t range);			void MoveInRange(); // TODO: REmove??
 	void Add_MoveToForceLongDistance(WorldTile2 end);				void MoveToForceLongDistance();
 	void Add_MoveToRobust(WorldTile2 end);							void MoveToRobust();	void MoveToRobust(WorldTile2 end);
 	void Add_MoveToward(WorldAtom2 end, int32 fraction100000);	void MoveToward();
+
+	void MoveTo_NoFail(WorldTile2 end, int32 customFloodDistance); // Try MoveTo, if failed, do MoveToRobust
 
 	void Add_Produce(int32 workManSec100, int32 waitTicks, int32 timesLeft, int32 workplaceId);		void Produce();
 	void Add_Construct(int32 workManSec100, int32 waitTicks, int32 timesLeft, int32 workplaceId);	void Construct();

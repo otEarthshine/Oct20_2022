@@ -847,20 +847,18 @@ bool UnitStateAI::TryGoNearbyHome()
 	if (isEnum(UnitEnum::Human))
 	{
 		// Trailer
-		if (PunSettings::TrailerSession)
-		{
+		if (PunSettings::TrailerSession) {
 			// Too far, in another city, don't walk there and walk randomly instead
 			if (WorldTile2::Distance(unitTile(), houseGate) > 80) {
 				MoveRandomly();
 				return true;
 			}
 		}
-		
-		if (!IsMoveValid(houseGate)) {
-			Add_MoveToRobust(houseGate);
-			AddDebugSpeech("(Succeed)TryGoNearbyHome: Force Go Home");
-			return true;
-		}
+
+
+		MoveTo_NoFail(houseGate, GameConstants::MaxFloodDistance_HumanLogistics);
+		AddDebugSpeech("(Succeed)TryGoNearbyHome:");
+		return true;
 	}
 	// In this case, animal will just abandon home
 	else if (IsWildAnimalWithHome(unitEnum())) 
@@ -1873,11 +1871,11 @@ void UnitStateAI::MoveRandomlyPerlin()
 }
 
 
-void UnitStateAI::Add_MoveTo(WorldTile2 end) {
-	_actions.push_back(Action(ActionEnum::MoveTo, end.tileId()));
+void UnitStateAI::Add_MoveTo(WorldTile2 end, int32 customFloodDistance) {
+	_actions.push_back(Action(ActionEnum::MoveTo, end.tileId(), customFloodDistance));
 }
 void UnitStateAI::MoveTo() {
-	MoveTo(WorldTile2(action().int32val1));
+	MoveTo(WorldTile2(action().int32val1), action().int32val2);
 }
 bool UnitStateAI::MoveTo(WorldTile2 end, int32 customFloodDistance)
 {
@@ -2068,6 +2066,18 @@ void UnitStateAI::MoveToRobust(WorldTile2 end)
 	// Convert waypoint to targetTile next tick.
 	_unitData->SetNextTickState(_id, TransformState::NeedTargetAtom, UnitUpdateCallerEnum::MoveToRobust_Done);
 	AddDebugSpeech("(Done)MoveToRobust:" + end.ToString());
+}
+
+void UnitStateAI::MoveTo_NoFail(WorldTile2 end, int32 customFloodDistance)
+{
+	if (IsMoveValid(end, customFloodDistance)) {
+		Add_MoveTo(end, customFloodDistance);
+		AddDebugSpeech("  MoveTo_NoFail: Normal");
+	}
+	else {
+		Add_MoveToRobust(end);
+		AddDebugSpeech("  MoveTo_NoFail: Force");
+	}
 }
 
 // Move toward some atom ignoring walkability

@@ -635,6 +635,13 @@ public:
 		blob << isSystemMessage;
 		blob << message;
 	}
+
+	static std::shared_ptr<FSendChat> SystemMessage(FString message) {
+		auto chat = std::make_shared<FSendChat>();
+		chat->isSystemMessage = true;
+		chat->message = message;
+		return chat;
+	}
 };
 
 class FTradeResource final : public FNetworkCommand

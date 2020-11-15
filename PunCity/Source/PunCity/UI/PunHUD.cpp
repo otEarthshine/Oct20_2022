@@ -237,6 +237,8 @@ void APunHUD::PunTick(bool isPhotoMode)
 	_armyMoveUI->TickUI();
 
 	// Raycast blocking
+	//PUN_LOG("--- Pointer Check");
+	UPunWidget::kPointerOnUINames.Empty();
 	_mainGameUI->CheckChildrenPointerOnUI();
 	_popupUI->CheckChildrenPointerOnUI();
 	_questUI->CheckChildrenPointerOnUI();

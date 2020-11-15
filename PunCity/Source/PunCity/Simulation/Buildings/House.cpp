@@ -489,7 +489,7 @@ void RanchBarn::FinishConstruction()
 	AddResourceHolder(ResourceEnum::Hay, ResourceHolderType::Requester, 20);
 }
 
-void RanchBarn::Tick1Sec()
+void RanchBarn::OnTick1Sec()
 {
 	if (!isConstructed()) {
 		return;
@@ -540,15 +540,17 @@ void Ranch::AddAnimalOccupant(UnitEnum animalEnum, int32_t age)
 
 void Ranch::OnDeinit()
 {
-	// Release animals into the wild
-	for (int i = 0; i < _animalOccupants.size(); i++) {
-		int32_t id = _animalOccupants[i];
+	// Kill all animals
+	for (int i = _animalOccupants.size(); i-- > 0;) {
+		int32 id = _animalOccupants[i];
 		auto& unit = _simulation->unitAI(id);
+
+		unit.Die();
 		
-		_simulation->ResetUnitActions(id); // Must reset before SetPlayerId(-1) or CancelReservation will crash
-		
-		unit.SetHouseId(-1);
-		unit.SetPlayerId(-1);
+		//_simulation->ResetUnitActions(id); // Must reset before SetPlayerId(-1) or CancelReservation will crash
+		//
+		//unit.SetHouseId(-1);
+		//unit.SetPlayerId(-1);
 	}
 	_animalOccupants.clear();
 }

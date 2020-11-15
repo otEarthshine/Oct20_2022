@@ -319,6 +319,9 @@ public:
 	void UpdateSession();
 	void ServerOnStartedGame();
 
+	FOnlineSessionSettings* GetSessionSettings() {
+		return sessionInterface->GetSessionSettings(PUN_SESSION_NAME);
+	}
 
 	/*
 	 * Create Game

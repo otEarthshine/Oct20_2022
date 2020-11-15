@@ -270,7 +270,7 @@ void Building::SetHolderTypeAndTarget(ResourceEnum resourceEnum, ResourceHolderT
 {
 	if (resourceEnum == ResourceEnum::Food)
 	{
-		for (ResourceEnum resourceEnumLocal : FoodEnums) {
+		for (ResourceEnum resourceEnumLocal : StaticData::FoodEnums) {
 			resourceSystem().SetHolderTypeAndTarget(holderInfo(resourceEnumLocal), type, target);
 		}
 		return;
@@ -516,7 +516,11 @@ bool Building::NeedWork()
 bool Building::NeedConstruct()
 {
 	PUN_CHECK(!isConstructed())
-	return MathUtils::SumVector(_workReserved) + _workDone100 < buildTime_ManSec100();
+
+	// TODO: Possible fix for construction site not finishing
+	int32 extraBuildTimeFactor = (buildingAge() > Time::TicksPerYear) ? 2 : 1;
+	
+	return MathUtils::SumVector(_workReserved) + _workDone100 < buildTime_ManSec100() * extraBuildTimeFactor;
 }
 
 
@@ -938,15 +942,17 @@ std::vector<BonusPair> Building::GetBonuses()
 		// Combo Upgrade bonuses
 		if (upgrade.isUpgraded && upgrade.comboEfficiencyBonus > 0) 
 		{
-			int32 finalComboEfficiencyBonus = 0;
 			int32 buildingCount = _simulation->buildingCount(_playerId, _buildingEnum);
+			int32 comboLevel = 0;
 			if (buildingCount >= 8) {
-				finalComboEfficiencyBonus = upgrade.comboEfficiencyBonus * 3;
+				comboLevel = 3;
 			} else if (buildingCount >= 4) {
-				finalComboEfficiencyBonus = upgrade.comboEfficiencyBonus * 2;
+				comboLevel = 2;
 			} else if (buildingCount >= 2) {
-				finalComboEfficiencyBonus = upgrade.comboEfficiencyBonus;
+				comboLevel = 1;
 			}
+
+			int32 finalComboEfficiencyBonus = upgrade.comboEfficiencyBonus * comboLevel;
 			bonuses.push_back({ upgrade.name, finalComboEfficiencyBonus });
 		}
 	}

@@ -303,7 +303,7 @@ public:
 
 	ResourceEnum product() override { return ResourceEnum::Pork; }
 
-	void Tick1Sec() override;
+	void OnTick1Sec() override;
 
 	int32 openAnimalSlots() { return maxAnimals - _animalOccupants.size(); }
 	const std::vector<int32>& animalOccupants() { return _animalOccupants; }

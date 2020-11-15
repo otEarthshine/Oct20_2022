@@ -289,6 +289,7 @@ void UPunGameInstance::ServerOnStartedGame()
 #endif
 }
 
+
 void UPunGameInstance::CreateGame_Phase1()
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_GameInstance);
@@ -337,6 +338,7 @@ void UPunGameInstance::CreateGame_Phase2()
 	PrintSessionSettings(ss, sessionSettings);
 	PUN_LOG("SessionSettings: %s", ToTChar(ss.str()));
 
+	// LAN match can be single player or Editor
 	if (sessionSettings.bIsLANMatch) 
 	{
 		// TODO: Single player ended up here, but might not need CreateSession
@@ -349,9 +351,9 @@ void UPunGameInstance::CreateGame_Phase2()
 		//bool canTravel = gameMode->CanServerTravel("/Game/Maps/Lobby?listen", false);
 		//PUN_LOG("canTravel %d", canTravel);
 
-		if (isSinglePlayer) {
+		//if (isSinglePlayer) {
 			GetWorld()->ServerTravel("/Game/Maps/Lobby");
-		}
+		//}
 		
 		PUN_DEBUG2("CreateSession: LAN");
 		bIsCreatingSession = true;

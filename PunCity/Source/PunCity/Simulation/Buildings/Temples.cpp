@@ -9,7 +9,7 @@ using namespace std;
 
 //! Blossom Shrine
 
-void BlossomShrine::Tick1Sec()
+void BlossomShrine::OnTick1Sec()
 {
 	// Grow nearby trees
 	TreeSystem& treeSystem = _simulation->treeSystem();

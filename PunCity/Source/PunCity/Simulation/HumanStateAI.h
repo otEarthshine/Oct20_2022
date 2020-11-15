@@ -75,6 +75,8 @@ public:
 	}
 	bool TryConstructRoad();
 	bool TryConstructHelper(int32 workplaceId);
+
+	bool TryGoNearWorkplace(int32 distanceThreshold);
 	
 	/*
 	 * Actions
@@ -109,7 +111,12 @@ public:
 	 * States
 	 */
 
-	int32 workEfficiency100(bool includeToolPenalty = true) {
+	int32 workEfficiency100(bool includeToolPenalty = true)
+	{
+		if (_playerId == -1) {
+			return 100;
+		}
+		
 		int32 foodPenalty = foodWorkPenalty100();
 		int32 heatPenalty = heatWorkPenalty100();
 		int32 toolPenalty = includeToolPenalty ? toolPenalty100() : 0;
@@ -183,6 +190,11 @@ public:
 
 	int32 GetHappinessModifier(HappinessModifierEnum modifierEnum)
 	{
+		// Guard
+		if (_playerId == -1) {
+			return 0;
+		}
+		
 		switch (modifierEnum)
 		{
 		case HappinessModifierEnum::Luxury: return luxuryHappinessModifier();

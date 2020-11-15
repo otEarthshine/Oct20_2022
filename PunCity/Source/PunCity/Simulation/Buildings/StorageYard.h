@@ -41,7 +41,7 @@ public:
 
 	int32 GetFoodCount() {
 		int count = 0;
-		for (ResourceEnum foodEnum : FoodEnums) {
+		for (ResourceEnum foodEnum : StaticData::FoodEnums) {
 			count += resourceCount(foodEnum);
 		}
 		return count;

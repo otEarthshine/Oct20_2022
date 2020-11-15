@@ -23,6 +23,10 @@ public:
 		bShouldRefreshMainMenuDisplay = true;
 	}
 
+	static void Toggle(const FString& name) {
+		Set(name, !Get("ForceClickthrough"));
+	}
+
 	static bool IsOn(std::string settingName) {
 		check(Settings.find(settingName) != Settings.end());
 		return Settings[settingName] > 0;

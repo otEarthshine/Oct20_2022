@@ -87,3 +87,8 @@ void Time::SetTickCount(int32 tickCount)
 	_Years = _Seasons / 4;
 
 }
+
+
+
+std::vector<ResourceEnum> StaticData::FoodEnums;
+int32 StaticData::FoodEnumCount = 0;

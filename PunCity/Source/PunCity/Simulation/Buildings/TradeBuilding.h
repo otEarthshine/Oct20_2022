@@ -95,7 +95,7 @@ public:
 
 	static void ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePercent, WorldTile2 tile, IGameSimulationCore* simulation, bool isInstantBuy, int32& exportMoney100, int32& importMoney100);
 
-	void Tick1Sec() override;
+	void OnTick1Sec() override;
 
 	
 	int32 exportMoney100() {
@@ -284,7 +284,7 @@ public:
 		return result;
 	}
 
-	void Tick1Sec() override;
+	void OnTick1Sec() override;
 
 	void Serialize(FArchive& Ar) override {
 		TradeBuilding::Serialize(Ar);

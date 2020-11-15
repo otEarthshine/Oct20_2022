@@ -526,7 +526,7 @@ void FenceGate::OnDeinit() {
 	_simulation->overlaySystem().RemoveRoad(_centerTile);
 }
 
-void Trap::Tick1Sec()
+void Trap::OnTick1Sec()
 {
 	//PUN_LOG("Trap Tick1Sec %d", buildingId());
 

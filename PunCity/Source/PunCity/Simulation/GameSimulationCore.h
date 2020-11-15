@@ -244,7 +244,7 @@ public:
 
 	int foodCount(int32 playerId) final {
 		int count = 0;
-		for (ResourceEnum foodEnum : FoodEnums) {
+		for (ResourceEnum foodEnum : StaticData::FoodEnums) {
 			count += _resourceSystems[playerId].resourceCount(foodEnum);
 		}
 		return count;

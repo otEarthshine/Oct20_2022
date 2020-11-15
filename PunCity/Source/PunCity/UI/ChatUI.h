@@ -356,6 +356,25 @@ public:
 		//{
 		//	WorkRevenueToCost_Base = std::stoi(commandAndParams[1]);
 		//}
+
+
+		// Debug
+		if (commandAndParams.size() >= 1)
+		{
+			auto addToggleCommand = [&](FString commandString) {
+				std::string commandStdstr = ToStdString(commandString);
+				if (commandAndParams[0] == commandStdstr)
+				{
+					PunSettings::Toggle(commandString);
+
+					networkInterface()->SendNetworkCommand(FSendChat::SystemMessage(commandString + " " + FString::FromInt(PunSettings::Get(commandString))));
+					return;
+				}
+			};
+
+			addToggleCommand("ForceClickthrough");
+			addToggleCommand("ShowDebugExtra");
+		}
 		
 		/*
 		 * No param commands
@@ -508,22 +527,22 @@ private:
 		}
 
 		
-		FString playerName = networkInterface()->playerNameF(message.playerId);
-		std::stringstream ss;
-		ss << TrimString_Dots(networkInterface()->playerName(message.playerId), 8) << ": ";
-		int32 namePartLength = ss.str().size();
+		FString playerNameF = networkInterface()->playerNameF(message.playerId);
 		
-		std::string messageStd = ToStdString(message.message);
-		ss << messageStd;
+		FString trimmedName = TrimStringF_Dots(playerNameF, 8);
+		trimmedName.Append(": ");
+		int32 namePartLength = trimmedName.Len();
 
-		std::string wrappedMessage = widget->WrapString(ss.str(), chatWrapSize, &fontInfo);
-		ss.str("");
+		trimmedName.Append(message.message);
+		FString wrappedMessage = widget->WrapStringF(trimmedName, chatWrapSize, &fontInfo);
 
-		std::stringstream finalSS;
-		finalSS << "<ChatName>" << wrappedMessage.substr(0, namePartLength) << "</>"; // Name
-		finalSS << wrappedMessage.substr(namePartLength, wrappedMessage.size()); // Message
+		FString finalMessage;
+		finalMessage.Append("<ChatName>")
+					.Append(wrappedMessage.Left(namePartLength))
+					.Append("</>"); // Name
+		finalMessage.Append(wrappedMessage.RightChop(namePartLength)); // Message
 
-		widget->SetRichText(ToFString(finalSS.str()));
+		widget->SetRichText(finalMessage);
 		
 		return widget;
 	};

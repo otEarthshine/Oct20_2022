@@ -292,7 +292,7 @@ public:
 		return !IsStage(FarmStage::Dormant);
 	}
 
-	void Tick1Sec() final
+	void OnTick1Sec() final
 	{
 		if (IsStage(FarmStage::Dormant))
 		{
@@ -310,7 +310,7 @@ public:
 
 				ResetWorkReservers(); // TODO: still worker crash???
 
-				ResetStageTo(FarmStage::Dormant);
+				//ResetStageTo(FarmStage::Dormant);
 			}
 		}
 	}
@@ -1464,7 +1464,7 @@ public:
 class Trap final : public Building
 {
 public:
-	void Tick1Sec() final;
+	void OnTick1Sec() final;
 };
 
 class Fence final : public Building
@@ -1790,7 +1790,7 @@ public:
 		InstantClearArea();
 	}
 	
-	void Tick1Sec() override {
+	void OnTick1Sec() override {
 		TickConstruction(100); // takes 100 secs to finish the constrution
 	}
 };

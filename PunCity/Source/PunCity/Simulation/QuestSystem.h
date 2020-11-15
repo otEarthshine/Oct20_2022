@@ -189,6 +189,42 @@ struct BuildHousesQuest final : Quest
 	int32 neededValue() override { return 5; }
 };
 
+struct TownhallUpgradeQuest final : Quest
+{
+	QuestEnum classEnum() override { return QuestEnum::TownhallUpgradeQuest; }
+
+	std::string questTitle() override { return "Upgrade the Townhall"; }
+	std::string questDescription() override
+	{
+		std::stringstream ss;
+		ss << "Upgrading the Townhall can help you unlock more gameplay elements.<space>";
+		ss << "To upgrade:";
+		ss << "<bullet>Click the Townhall to bring up its focus UI</>";
+		ss << "<bullet>Click the [Upgrade Townhall] button on the focus UI</>";
+
+		return ss.str();
+	}
+
+	bool ShouldSkipToNextQuest() override { return currentValue() >= neededValue(); }
+
+	void OnStartQuest() override { AddStartPopup(); }
+
+	void OnFinishQuest() override
+	{
+		PUN_CHECK(simulation);
+		auto unlockSys = simulation->unlockSystem(playerId);
+		unlockSys->townhallUpgradeUnlocked = true;
+
+		AddEndPopup("Great! Your townhall is now level 2."
+						"<space>"
+						"Upgrading the Townhall, Researching Technology, and Upgrading Houses are ways you progress through the game and unlock new gameplay elements.");
+
+	}
+
+	int32 currentValue() override { return (simulation->townLvl(playerId) >= 2); }
+	int32 neededValue() override { return 1; }
+};
+
 struct PopulationQuest : Quest
 {
 	QuestEnum classEnum() override { return QuestEnum::PopulationQuest; }
@@ -719,6 +755,8 @@ public:
 			CASE(PotteryQuest);
 			
 			CASE(TradeQuest);
+
+			CASE(TownhallUpgradeQuest);
 			
 		default:
 			UE_DEBUG_BREAK();
@@ -770,10 +808,16 @@ private:
 		}
 
 		case QuestEnum::BuildHousesQuest: {
+			AddQuest(std::make_shared<TownhallUpgradeQuest>());
+			return;
+		}
+
+		case QuestEnum::TownhallUpgradeQuest:
+		{
 			auto popQuest = std::make_shared<PopulationQuest>();
 			popQuest->townSizeTier = 1;
 			AddQuest(popQuest);
-			
+
 			AddQuest(std::make_shared<SurviveWinterQuest>());
 			return;
 		}

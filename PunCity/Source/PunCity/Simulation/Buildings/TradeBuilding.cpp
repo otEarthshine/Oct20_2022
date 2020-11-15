@@ -90,7 +90,7 @@ void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePe
 }
 
 
-void TradeBuilding::Tick1Sec()
+void TradeBuilding::OnTick1Sec()
 {
 	if (!isConstructed()) {
 		return;
@@ -160,9 +160,9 @@ void TradeBuilding::Tick1Sec()
 	}
 }
 
-void TradingCompany::Tick1Sec()
+void TradingCompany::OnTick1Sec()
 {
-	TradeBuilding::Tick1Sec();
+	TradeBuilding::OnTick1Sec();
 
 	if (!isConstructed()) {
 		return;

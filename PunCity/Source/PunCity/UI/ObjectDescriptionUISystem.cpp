@@ -38,9 +38,20 @@
 #include "PunCity/MapUtil.h"
 
 DECLARE_CYCLE_STAT(TEXT("PUN: [UI]All"), STAT_PunUIAll, STATGROUP_Game);
+
+DECLARE_CYCLE_STAT(TEXT("PUN: [UI]UpdateDescriptionUI"), STAT_PunUIUpdateDescriptionUI, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [UI]ProvinceFocusUI"), STAT_PunUIProvinceFocusUI, STATGROUP_Game);
+
 DECLARE_CYCLE_STAT(TEXT("PUN: [UI]Select_Start"), STAT_PunUISelect_Start, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: [UI]FindStartSpot"), STAT_PunUIFindStartSpot, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: [UI]AddClaimLandButton"), STAT_PunUI_AddClaimLandButton, STATGROUP_Game);
+
+DECLARE_CYCLE_STAT(TEXT("PUN: [UI]Province1"), STAT_PunUI_Province1, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [UI]ProvinceAddBiomeInfo"), STAT_PunUI_ProvinceAddBiomeInfo, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [UI]AddGeoresourceInfo"), STAT_PunUI_AddGeoresourceInfo, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: [UI]AddProvinceUpkeepInfo"), STAT_PunUI_AddProvinceUpkeepInfo, STATGROUP_Game);
+
+DECLARE_CYCLE_STAT(TEXT("PUN: [UI]ShowRegionSelectionDecal"), STAT_PunUI_ShowRegionSelectionDecal, STATGROUP_Game);
 
 using namespace std;
 
@@ -147,6 +158,8 @@ void UObjectDescriptionUISystem::CloseDescriptionUI() {
 
 void UObjectDescriptionUISystem::LeftMouseDown()
 {
+	PUN_LOG("!!! LeftMouseDown");
+	
 	if (InterfacesInvalid()) return;
 
 	FHitResult hitResult;
@@ -154,17 +167,22 @@ void UObjectDescriptionUISystem::LeftMouseDown()
 
 	// Don't hit if there is pointer on UI
 	if (IsPointerOnUI()) {
+		PUN_LOG("!!! LeftMouseDown: PointerOnUI");
 		didHit = false;
 	}
 
 	if (dataSource()->isPhotoMode()) {
 		dataSource()->simulation().SetDescriptionUIState(DescriptionUIState());
 		UpdateDescriptionUI();
+
+		PUN_LOG("!!! LeftMouseDown: isPhotoMode");
 		return;
 	}
 
 	if (didHit)
 	{
+		PUN_LOG("!!! LeftMouseDown: didHit");
+		
 		UPrimitiveComponent* hitComponent = hitResult.GetComponent();
 		int32 hitIndex = hitResult.Item;
 
@@ -175,6 +193,8 @@ void UObjectDescriptionUISystem::LeftMouseDown()
 		// Hit ground, create Surrounding colliders and redo the test..
 		if (hitComponent && hitComponent->ComponentTags.Num())
 		{
+			PUN_LOG("!!! LeftMouseDown: hitComponent");
+			
 			networkInterface()->ResetBottomMenuDisplay(); // Close the build menu/Gather etc if it was open...
 
 			
@@ -454,6 +474,9 @@ void UObjectDescriptionUISystem::LeftMouseDown()
 				}
 			}
 
+
+			PUN_LOG("!!! LeftMouseDown: SetDescriptionUIState type:%d id:%d", static_cast<int>(uiState.objectType), uiState.objectId);
+
 			simulation.SetDescriptionUIState(uiState);
 		}
 
@@ -461,12 +484,16 @@ void UObjectDescriptionUISystem::LeftMouseDown()
 		return;
 	}
 
+	PUN_LOG("!!! LeftMouseDown: did Not Hit");
+
 	UpdateDescriptionUI();
 }
 
 void UObjectDescriptionUISystem::UpdateDescriptionUI()
 {
 	if (InterfacesInvalid()) return;
+
+	SCOPE_CYCLE_COUNTER(STAT_PunUIUpdateDescriptionUI);
 
 	UPunBoxWidget* descriptionBox = _objectDescriptionUI->DescriptionPunBox;
 
@@ -1401,13 +1428,13 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					// Food
 					{
 						int32 foodAllowCount = 0;
-						for (ResourceEnum resourceEnum : FoodEnums) {
+						for (ResourceEnum resourceEnum : StaticData::FoodEnums) {
 							if (storage.ResourceAllowed(resourceEnum)) {
 								foodAllowCount++;
 							}
 						}
 						ECheckBoxState checkState;
-						if (foodAllowCount == _countof(FoodEnums)) {
+						if (foodAllowCount == StaticData::FoodEnumCount) {
 							checkState = ECheckBoxState::Checked;
 						}
 						else if (foodAllowCount > 0) {
@@ -1424,7 +1451,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						
 						auto element = manageStorageBox->AddManageStorageElement(ResourceEnum::Food, "Food", objectId, checkState, true, _justOpenedDescriptionUI, isMarket, target);
 						bool expanded = element->HasDelayOverride() ? element->expandedOverride : storage.expandedFood;
-						for (ResourceEnum resourceEnum : FoodEnums) {
+						for (ResourceEnum resourceEnum : StaticData::FoodEnums) {
 							tryAddManageStorageElement_UnderExpansion(resourceEnum, expanded, false);
 						}
 					}
@@ -2046,7 +2073,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 							bool showExclamation = simulation.parameters(playerId())->NeedTownhallUpgradeNoticed;
 
-							ss << "Upgrade townhall to lvl " << (townhall.townhallLvl + 1) << "\n";
+							ss << "Upgrade Townhall to lvl " << (townhall.townhallLvl + 1) << "\n";
 							ss << "<img id=\"Coin\"/>" << moneyText;
 							
 							UPunButton* button = descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::UpgradeBuilding, true, showExclamation, objectId, 0);
@@ -2661,6 +2688,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 		}
 		else if (uiState.objectType == ObjectTypeEnum::Map)
 		{
+			SCOPE_CYCLE_COUNTER(STAT_PunUIProvinceFocusUI);
+			
 			AddProvinceInfo(objectId, descriptionBox);
 
 			descriptionBox->AfterAdd();
@@ -2786,6 +2815,8 @@ void UObjectDescriptionUISystem::ShowTileSelectionDecal(FVector displayLocation,
 }
 void UObjectDescriptionUISystem::ShowRegionSelectionDecal(WorldTile2 tile, bool isHover)
 {
+	SCOPE_CYCLE_COUNTER(STAT_PunUI_ShowRegionSelectionDecal);
+	
 	if (dataSource()->zoomDistance() < 190 ||
 		PunSettings::TrailerMode()) 
 	{
@@ -3484,59 +3515,68 @@ void UObjectDescriptionUISystem::AddProvinceInfo(int32 provinceId, UPunBoxWidget
 	if (provinceId == -1) {
 		return;
 	}
-	
-	auto terrainGenerator = simulation().terrainGenerator();
+
+	auto& terrainGenerator = simulation().terrainGenerator();
 
 	stringstream ss;
-	
-	if (provinceId == OceanProvinceId)
-	{
-		ss << "<Header>Deep Ocean</>\n";
-		SetText(_objectDescriptionUI->DescriptionUITitle, ss);
-		ss << "Large body of water.";
-		descriptionBox->AddRichText(ss);
-		return;
-	}
 
-	if (provinceId == MountainProvinceId)
 	{
-		ss << "<Header>High Mountain</>\n";
-		SetText(_objectDescriptionUI->DescriptionUITitle, ss);
-		ss << "Impassable unclaimed mountain.";
-		descriptionBox->AddRichText(ss);
-		return;
-	}
+		SCOPE_CYCLE_COUNTER(STAT_PunUI_Province1);
+		
+		if (provinceId == OceanProvinceId)
+		{
+			ss << "<Header>Deep Ocean</>\n";
+			SetText(_objectDescriptionUI->DescriptionUITitle, ss);
+			ss << "Large body of water.";
+			descriptionBox->AddRichText(ss);
+			return;
+		}
 
-	if (provinceId == RiverProvinceId ||
-		provinceId == EmptyProvinceId)
-	{
-		ss << "<Header>Unusable Land</>\n";
-		SetText(_objectDescriptionUI->DescriptionUITitle, ss);
-		ss << "Land without any use that no one bothers with.";
-		descriptionBox->AddRichText(ss);
-		return;
+		if (provinceId == MountainProvinceId)
+		{
+			ss << "<Header>High Mountain</>\n";
+			SetText(_objectDescriptionUI->DescriptionUITitle, ss);
+			ss << "Impassable unclaimed mountain.";
+			descriptionBox->AddRichText(ss);
+			return;
+		}
+
+		if (provinceId == RiverProvinceId ||
+			provinceId == EmptyProvinceId)
+		{
+			ss << "<Header>Unusable Land</>\n";
+			SetText(_objectDescriptionUI->DescriptionUITitle, ss);
+			ss << "Land without any use that no one bothers with.";
+			descriptionBox->AddRichText(ss);
+			return;
+		}
 	}
 
 	provinceId = abs(provinceId);
 
 	WorldTile2 provinceCenter = simulation().provinceSystem().GetProvinceCenterTile(provinceId);
-	
-	ss << "<Header>" << terrainGenerator.GetBiomeName(provinceCenter) << " Province</>\n";
-	ss << "<Subheader>" <<  WorldRegion2(provinceId).ToString() << "</>\n";
-	SetText(_objectDescriptionUI->DescriptionUITitle, ss);
-	ss.str("");
-	descriptionBox->AddSpacer(12);
 
-	// Biome Description
-	ss << WrapString(terrainGenerator.GetBiomeInfoFromTile(provinceCenter).description);
-	descriptionBox->AddRichText(ss);
+	// Biome
+	{
+		SCOPE_CYCLE_COUNTER(STAT_PunUI_ProvinceAddBiomeInfo);
+		
+		ss << "<Header>" << terrainGenerator.GetBiomeName(provinceCenter) << " Province</>\n";
+		ss << "<Subheader>" << WorldRegion2(provinceId).ToString() << "</>\n";
+		SetText(_objectDescriptionUI->DescriptionUITitle, ss);
+		ss.str("");
+		descriptionBox->AddSpacer(12);
 
-	descriptionBox->AddSpacer(12);
+		// Biome Description
+		ss << WrapString(terrainGenerator.GetBiomeInfoFromTile(provinceCenter).description);
+		descriptionBox->AddRichText(ss);
 
-	// Biome number info
-	AddBiomeInfo(provinceCenter, descriptionBox);
-	
-	descriptionBox->AddSpacer();
+		descriptionBox->AddSpacer(12);
+
+		// Biome number info
+		AddBiomeInfo(provinceCenter, descriptionBox);
+
+		descriptionBox->AddSpacer();
+	}
 
 	// Georesource
 	AddGeoresourceInfo(provinceId, descriptionBox);
@@ -3554,6 +3594,8 @@ void UObjectDescriptionUISystem::AddProvinceInfo(int32 provinceId, UPunBoxWidget
 
 void UObjectDescriptionUISystem::AddProvinceUpkeepInfo(int32 provinceIdClean, UPunBoxWidget* descriptionBox)
 {
+	SCOPE_CYCLE_COUNTER(STAT_PunUI_AddProvinceUpkeepInfo);
+	
 	if (provinceIdClean == -1) {
 		return;
 	}
@@ -3618,6 +3660,8 @@ void UObjectDescriptionUISystem::AddProvinceUpkeepInfo(int32 provinceIdClean, UP
 
 void UObjectDescriptionUISystem::AddGeoresourceInfo(int32 provinceId, UPunBoxWidget* descriptionBox, bool showTopLine)
 {
+	SCOPE_CYCLE_COUNTER(STAT_PunUI_AddGeoresourceInfo);
+	
 	if (provinceId == -1) {
 		return;
 	}
@@ -3693,8 +3737,8 @@ void UObjectDescriptionUISystem::AddEfficiencyText(Building& building, UPunBoxWi
 
 	{
 		stringstream ss2;
-		if (building.adjacentEfficiency() > 0) ss2 << "\n  +" << building.adjacentEfficiency() << "% adjacency bonus";
-		if (building.levelEfficiency() > 0) ss2 << "\n  +" << building.levelEfficiency() << "% level";
+		if (building.adjacentEfficiency() > 0) ss2 << "\n  +" << building.adjacentEfficiency() << "% Adjacency Bonus";
+		if (building.levelEfficiency() > 0) ss2 << "\n  +" << building.levelEfficiency() << "% Combo Level " << building.level();
 
 		auto bonuses = building.GetBonuses();
 		for (BonusPair bonus : bonuses) {

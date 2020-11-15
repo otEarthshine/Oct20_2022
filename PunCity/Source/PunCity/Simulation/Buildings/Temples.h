@@ -42,7 +42,7 @@ public:
 class BlossomShrine final : public Building
 {
 public:
-	void Tick1Sec() final;
+	void OnTick1Sec() final;
 
 	static const int Radius = 12;
 };

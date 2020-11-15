@@ -197,7 +197,7 @@ public:
 	}
 
 	
-	void Tick1Sec() override;
+	void OnTick1Sec() override;
 
 	int32 maxTradeQuatity() override { return 80; }
 	

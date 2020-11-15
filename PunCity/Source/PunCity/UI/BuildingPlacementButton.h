@@ -109,7 +109,12 @@ public:
 		}
 
 		// 
-		if (IsUnboughtCard() || IsPermanentCard()) {
+		if (IsUnboughtCard() || 
+			IsPermanentCard() ||
+			buildingEnum == CardEnum::Townhall ||
+			buildingEnum == CardEnum::JobManagementBureau || 
+			buildingEnum == CardEnum::StatisticsBureau)
+		{
 			SetStars(0);
 			SellButton->SetVisibility(ESlateVisibility::Collapsed);
 		} else {

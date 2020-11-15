@@ -7,6 +7,34 @@
 #include "PunCity/PunPlayerController.h"
 #include "PunCity/MainMenuPlayerController.h"
 
+void APunGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
+{
+	if (_ConnectedControllers.Num() > 0)
+	{
+		// Already in game, give login error
+		auto punPlayer = Cast<APunPlayerController>(_ConnectedControllers[0]);
+		if (punPlayer) {
+			ErrorMessage = "Game Session already started.";
+		}
+		else
+		{
+			auto firstController = CastChecked<APunBasePlayerController>(_ConnectedControllers[0]);
+			auto gameInst = firstController->gameInstance();
+			FOnlineSessionSettings* sessionsSettings = gameInst->GetSessionSettings();
+
+			PUN_DEBUG2("PreLogin: players:%d", sessionsSettings->NumPublicConnections);
+
+			// Game already full
+			if (_ConnectedControllers.Num() >= sessionsSettings->NumPublicConnections)
+			{
+				ErrorMessage = "Game Session full.";
+			}
+		}
+	}
+
+	AGameModeBase::PreLogin(Options, Address, UniqueId, ErrorMessage);
+}
+
 APlayerController* APunGameMode::Login(UPlayer* NewPlayer, ENetRole InRemoteRole, const FString& Portal, const FString& Options, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
 {
 	APlayerController* newController = AGameModeBase::Login(NewPlayer, InRemoteRole, Portal, Options, UniqueId, ErrorMessage);

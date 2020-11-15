@@ -214,10 +214,15 @@ public:
 		return FoundResourceHolderInfo(holderInfo(resourceEnum), amount, gateTile(), _objectId, DistanceTo(originTile));
 	}
 
-	virtual void Tick1Sec() {
+	void Tick1Sec()
+	{
+		OnTick1Sec();
+	}
+	virtual void OnTick1Sec() {
 		//if (_playerId != -1) {
 		//	PUN_LOG("Building Tick1Sec %d", buildingId());
 		//}
+		// ResetActions if the construction is taking too long
 	}
 	virtual void TickRound() {}
 
@@ -262,7 +267,20 @@ public:
 	{
 		std::stringstream ss;
 		ss << "Gain +" << comboEfficiencyBonus << "/" << comboEfficiencyBonus * 2 << "/" << comboEfficiencyBonus * 3
-			<< " productivity if this city has 2/4/8 " << buildingInfo().name << "s";
+			<< " productivity if this city has 2/4/8 ";
+
+		if (buildingInfo().cardEnum == CardEnum::Bakery) {
+			ss << "Bakeries";
+		}
+		else if (buildingInfo().cardEnum == CardEnum::BeerBrewery) {
+			ss << "Breweries";
+		}
+		else if (buildingInfo().cardEnum == CardEnum::Winery) {
+			ss << "Wineries";
+		}
+		else {
+			ss << buildingInfo().name << "s";
+		}
 
 		BuildingUpgrade upgrade = MakeUpgrade(name, ss.str(), resourceEnum, percentOfTotalPrice);
 		upgrade.comboEfficiencyBonus = comboEfficiencyBonus;
@@ -1264,12 +1282,42 @@ public:
 
 	virtual bool RefreshHoverWarning()
 	{
+		if (_playerId == -1) {
+			hoverWarning = HoverWarning::None;
+			return true;
+		}
+		
 		// Check if inaccessible
 		// TODO: possible with second townhall and limit to how far you can conquer from townhall
 		//if (_simulation->HasTownhall(_playerId)) {
 		//	if (_simulation->IsConnected(gateTile(), houseGate, 2, true));
 		//	hoverWarning = HoverWarning::Inaccessible;
 		//}
+
+		// Inaccessible Warning
+		if (_simulation->HasTownhall(_playerId) &&
+			!_simulation->IsConnected(_simulation->townhallGateTile(_playerId), gateTile(), 7, true))
+		{
+			if (isConstructed()) {
+				hoverWarning = HoverWarning::Inaccessible;
+				return true;
+			}
+			
+			// Construction site check all tiles
+			bool isAccessible = area().ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 tile) {
+				return _simulation->IsConnected(_simulation->townhallGateTile(_playerId), tile, 7, true);
+			});
+			//	if (_simulation->IsConnected(_simulation->townhallGateTile(_playerId), gateTile(), 7, true)) {
+			//		isAccessible = true;
+			//		break;
+			//	}
+			//}
+
+			if (!isAccessible) {
+				hoverWarning = HoverWarning::Inaccessible;
+				return true;
+			}
+		}
 
 		// HouseTooFar Warning
 		if (_allowedOccupants > 0)
@@ -1281,6 +1329,7 @@ public:
 			}
 		}
 
+		
 		// Construction will only get above checks
 		if (!isConstructed())
 		{

@@ -235,6 +235,27 @@ void UMainGameUI::Tick()
 	if (!PunSettings::IsOn("UIMainGame")) {
 		return;
 	}
+
+
+	// TODO: Debug kPointerOnUI
+	if (PunSettings::IsOn("ShowDebugExtra"))
+	{
+		std::stringstream ss;
+		ss << "kPointerOnUI: " << kPointerOnUI << "\n";
+
+		for (int32 i = 0; i < UPunWidget::kPointerOnUINames.Num(); i++) {
+			ss << ToStdString(UPunWidget::kPointerOnUINames[i]);
+			ss << "\n";
+		}
+		
+		SetText(QuickDebugText, ss.str());
+		QuickDebugBox->SetVisibility(ESlateVisibility::Visible);
+	}
+	else {
+		QuickDebugBox->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	
 	
 	kTickCount++;
 
@@ -841,7 +862,7 @@ void UMainGameUI::Tick()
 				tip << "Population: " << population << "\n";
 				tip << "Housing space: " << simulation.HousingCapacity(playerId());
 				tip << "<space>";
-				for (int32 i = 1; i < House::GetMaxHouseLvl(); i++) {
+				for (int32 i = 1; i <= House::GetMaxHouseLvl(); i++) {
 					int32 houseLvlCount = simulation.GetHouseLvlCount(playerId(), i, false);
 					if (houseLvlCount > 0) {
 						tip << "<bullet>House lvl " << i << ": " << houseLvlCount << "</>";
@@ -1048,9 +1069,9 @@ void UMainGameUI::Tick()
 
 			int32 foodProduction = 0;
 			int32 foodConsumption = 0;
-			for (int i = 0; i < FoodEnumCount; i++) {
-				foodProduction += CppUtils::Sum(productionStats[static_cast<int>(FoodEnums[i])]);
-				foodConsumption += CppUtils::Sum(consumptionStats[static_cast<int>(FoodEnums[i])]);
+			for (int i = 0; i < StaticData::FoodEnumCount; i++) {
+				foodProduction += CppUtils::Sum(productionStats[static_cast<int>(StaticData::FoodEnums[i])]);
+				foodConsumption += CppUtils::Sum(consumptionStats[static_cast<int>(StaticData::FoodEnums[i])]);
 			}
 
 			std::stringstream tip;
@@ -1978,7 +1999,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 				inputSystemInterface()->StartBuildingPlacement(buildingEnum, cardButton->buildingLvl, true);
 			}
 
-			auto& resourceSystem = simulation().resourceSystem(playerId());
+			auto& resourceSys = simulation().resourceSystem(playerId());
 
 			/*
 			 * Use Global Slot Card
@@ -2026,6 +2047,11 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 				{
 					int32 buildingId = descriptionUIState.objectId;
 					Building& building = simulation().building(buildingId);
+
+					if (building.playerId() != playerId()) {
+						simulation().AddPopupToFront(playerId(), "Cannot insert a building-slot card. You don't own the Building.", ExclusiveUIEnum::None, "PopupCannot");
+						return;
+					}
 					
 					if (building.isEnum(CardEnum::Townhall)) {
 						simulation().AddPopupToFront(playerId(), "You cannot insert a building-slot card into the townhall. Townhall's card slot requires a global-slot card.", ExclusiveUIEnum::None, "PopupCannot");
@@ -2137,6 +2163,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 					networkInterface()->ShowConfirmationUI(str, command);
 				};
 
+				
 				if (buildingEnum == CardEnum::SellFood) {
 					sendCommandWithWarning("Are you sure you want to sell half of city's food?");
 				} 
@@ -2144,10 +2171,20 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 					int32 cost = GetResourceInfo(ResourceEnum::Wood).basePrice;
 					int32 amountToBuy = simulation().money(playerId()) / 2 / cost;
 
-					if (simulation().resourceSystem(playerId()).CanAddResourceGlobal(ResourceEnum::Wood, amountToBuy)) {
+					if (resourceSys.CanAddResourceGlobal(ResourceEnum::Wood, amountToBuy)) {
 						sendCommandWithWarning("Are you sure you want to spend half of city's money to buy wood?");
 					} else {
 						simulation().AddPopupToFront(playerId(), "Not enough storage space to fit " + to_string(amountToBuy) + " wood.", ExclusiveUIEnum::None, "PopupCannot");
+					}
+				}
+				else if (IsCrateCard(buildingEnum))
+				{
+					ResourcePair resourcePair = GetCrateResource(buildingEnum);
+					
+					if (resourceSys.CanAddResourceGlobal(resourcePair.resourceEnum, resourcePair.count)) {
+						sendCommand();
+					} else {
+						simulation().AddPopup(playerId(), "Not enough storage space.", "PopupCannot");
 					}
 				}
 				else {
@@ -2263,6 +2300,9 @@ void UMainGameUI::CallBack2(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 	{
 		if (index < JobPriorityRows.Num() - 1)
 		{
+			// TODO: fix weird job priority row gone bug
+			int32 rowCountBeforeRemove = JobPriorityRows.Num();
+			
 			JobPriorityRows.RemoveAt(index);
 
 			// Find next visible index to replace
@@ -2271,6 +2311,11 @@ void UMainGameUI::CallBack2(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 					JobPriorityRows.Insert(row, insertIndex);
 					break;
 				}
+			}
+
+			// Row disappeared, add it at the end...
+			if (JobPriorityRows.Num() < rowCountBeforeRemove) {
+				JobPriorityRows.Add(row);
 			}
 		}
 

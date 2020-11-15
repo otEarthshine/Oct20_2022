@@ -78,7 +78,7 @@ bool TownHall::HasEnoughUpgradeMoney()
 }
 
 void TownHall::UpgradeTownhall()
-{
+{	
 	if (townhallLvl >= GetMaxUpgradeLvl()) {
 		return;
 	}
@@ -175,7 +175,7 @@ void TownHall::UpgradeTownhall()
 		}
 	}
 
-
+	_simulation->QuestUpdateStatus(_playerId, QuestEnum::TownhallUpgradeQuest);
 
 	_simulation->RecalculateTaxDelayed(_playerId);
 
@@ -185,7 +185,7 @@ void TownHall::UpgradeTownhall()
 	//_simulation->soundInterface()->Spawn2DSoundAllPlayers("UI", "UpgradeTownhall", _centerTile);
 }
 
-void TownHall::Tick1Sec()
+void TownHall::OnTick1Sec()
 {
 	migrationType = 0;
 	

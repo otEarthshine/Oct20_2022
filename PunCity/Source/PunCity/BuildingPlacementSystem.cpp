@@ -1924,6 +1924,12 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				gameInterface->ShowDeliveryArrow(displayLocationScope, meshLocation, true);
 			}
 
+			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 location)
+			{
+				bool isGreen = IsPlayerBuildable(location) && !isAllRed;
+				_placementGrid.SpawnGrid(isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, location);
+			});
+
 			SetInstruction(PlacementInstructionEnum::LogisticsOffice, true);
 		}
 		

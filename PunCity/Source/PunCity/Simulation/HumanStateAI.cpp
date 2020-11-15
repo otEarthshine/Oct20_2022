@@ -184,13 +184,16 @@ void HumanStateAI::CalculateActions()
 		}
 	}
 
+	auto& resourceSys = resourceSystem();
+	bool deprioritizeGather = false;
+
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_GatherNDrop);
 
 		// Emergency gather trees
 		//  No heat (but have food)
-		if (!_simulation->resourceSystem(_playerId).HasAvailableHeat() &&
-			_simulation->resourceSystem(_playerId).HasAvailableFood())
+		if (!resourceSys.HasAvailableHeat() &&
+			resourceSys.HasAvailableFood())
 		{
 			SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_GatherNDrop_Emergency);
 			
@@ -239,9 +242,17 @@ void HumanStateAI::CalculateActions()
 			}
 		}
 
-		if (TryGather(false) || justReset()) {
-			DEBUG_AI_VAR(TryGatherNotTreeOnly_Succeed);
-			return;
+		// Deprioritize gather if there is too much drop
+		int32 woodStoneDropCount = resourceSys.resourceCountDropOnly(ResourceEnum::Wood);
+		woodStoneDropCount += resourceSys.resourceCountDropOnly(ResourceEnum::Stone);
+		deprioritizeGather = (woodStoneDropCount > 50);
+
+		if (!deprioritizeGather)
+		{
+			if (TryGather(false) || justReset()) {
+				DEBUG_AI_VAR(TryGatherNotTreeOnly_Succeed);
+				return;
+			}
 		}
 	}
 
@@ -283,6 +294,14 @@ void HumanStateAI::CalculateActions()
 
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_PostWorkPlc);
+
+		if (deprioritizeGather)
+		{
+			if (TryGather(false) || justReset()) {
+				DEBUG_AI_VAR(TryGatherNotTreeOnly_Succeed);
+				return;
+			}
+		}
 		
 		// Road
 		if (TryConstructRoad() || justReset()) {
@@ -634,12 +653,14 @@ bool HumanStateAI::TryStoreInventory()
 	std::vector<ResourcePair>& inventory = _inventory.resourcePairs();
 
 	// Put inventory in storage if there are more than 10
-	for (int i = 0; i < inventory.size(); i++) {
-		if (inventory[i].count < 10) {
-			// less than 10 inventroy count, skip putting this in storage (will just drop)
-			continue;
-		}
-		int32_t amount = min(inventory[i].count, 10);
+	for (int i = 0; i < inventory.size(); i++) 
+	{
+		// TODO: remove?? Causes ground drop??
+		//if (inventory[i].count < 10) {
+		//	// less than 10 inventroy count, skip putting this in storage (will just drop)
+		//	continue;
+		//}
+		int32 amount = min(inventory[i].count, 10);
 		FoundResourceHolderInfos foundDropoffs = resourceSystem.FindHolder(ResourceFindType::AvailableForDropoff,
 																	inventory[i].resourceEnum, amount, unitTile());
 		if (foundDropoffs.hasInfos()) {
@@ -1153,7 +1174,7 @@ FoundResourceHolderInfos HumanStateAI::FindMarketResourceHolderInfo(ResourceEnum
 	{
 		if (resourceEnum == ResourceEnum::Food)
 		{
-			for (ResourceEnum foodEnum : FoodEnums) {
+			for (ResourceEnum foodEnum : StaticData::FoodEnums) {
 				int32 resourceCount = building.GetResourceCountWithPop(foodEnum);
 				int32 actualAmount = std::min(wantAmount, resourceCount);
 				if (actualAmount > 0) {
@@ -1309,6 +1330,10 @@ bool HumanStateAI::TryFun()
 
 bool HumanStateAI::TryGatherFruit()
 {
+	if (TryGoNearWorkplace(100)) {
+		return true;
+	}
+	
 	PUN_UNIT_CHECK(workplace()->isEnum(CardEnum::FruitGatherer));
 	ResourceHolderInfo infoOrange = workplace()->holderInfo(ResourceEnum::Orange);
 	PUN_UNIT_CHECK(infoOrange.isValid());
@@ -1368,6 +1393,10 @@ bool HumanStateAI::TryGatherFruit()
 
 bool HumanStateAI::TryHunt()
 {
+	if (TryGoNearWorkplace(100)) {
+		return true;
+	}
+	
 	HuntingLodge& huntingLodge = workplace()->subclass<HuntingLodge>(CardEnum::HuntingLodge);
 	
 	ResourceHolderInfo info = huntingLodge.holderInfo(ResourceEnum::Pork);
@@ -1449,6 +1478,10 @@ bool HumanStateAI::TryHunt()
 
 bool HumanStateAI::TryRanch()
 {
+	if (TryGoNearWorkplace(100)) {
+		return true;
+	}
+	
 	Ranch& ranch = workplace()->subclass<Ranch>();
 
 	if (ranch.animalOccupants().size() == 0) {
@@ -1504,16 +1537,20 @@ bool HumanStateAI::TryRanch()
 
 bool HumanStateAI::TryFarm()
 {
+	if (TryGoNearWorkplace(100)) {
+		return true;
+	}
+	
 	Building& workplc = *workplace();
 	PUN_CHECK2(workplc.isEnum(CardEnum::Farm), debugStr());
 	Farm& farm = workplc.subclass<Farm>();
 
 	//workplc.workplaceNeedInput = false;
 
-	if (Time::IsSnowing()) {
-		AddDebugSpeech("(Failed)TryFarm: Snowing already");
-		return false;
-	}
+	//if (Time::IsSnowing()) {
+	//	AddDebugSpeech("(Failed)TryFarm: Snowing already");
+	//	return false;
+	//}
 
 	// seed until done ... then nourish until autumn, or until fruit (for fruit bearers)
 	if (farm.IsStage(FarmStage::Dormant))
@@ -1821,7 +1858,7 @@ bool HumanStateAI::TryBulkHaul_Market()
 	
 	bool isFoodHighPriority = foodCount <= 200;
 	if (isFoodHighPriority && shouldAddFood) {
-		for (ResourceEnum foodEnum : FoodEnums) {
+		for (ResourceEnum foodEnum : StaticData::FoodEnums) {
 			if (tryMoveResource(foodEnum)) {
 				return true;
 			}
@@ -1856,7 +1893,7 @@ bool HumanStateAI::TryBulkHaul_Market()
 
 	// Food low priority
 	if (!isFoodHighPriority && shouldAddFood) {
-		for (ResourceEnum foodEnum : FoodEnums) {
+		for (ResourceEnum foodEnum : StaticData::FoodEnums) {
 			if (tryMoveResource(foodEnum)) {
 				return true;
 			}
@@ -2147,6 +2184,10 @@ bool HumanStateAI::TryForestingPlant(TileObjEnum lastCutTileObjEnum, NonWalkable
 
 bool HumanStateAI::TryForesting()
 {
+	if (TryGoNearWorkplace(100)) {
+		return true;
+	}
+	
 	Forester& forester = workplace()->subclass<Forester>(CardEnum::Forester);
 	const std::string& workModeName = forester.workMode().name;
 	
@@ -2211,6 +2252,10 @@ bool HumanStateAI::TryFillWorkplace(ResourceEnum resourceEnum)
 
 bool HumanStateAI::TryProduce()
 {
+	if (TryGoNearWorkplace(100)) {
+		return true;
+	}
+	
 	Building& workplace = _simulation->building(_workplaceId);
 	PUN_UNIT_CHECK(IsProducer(workplace.buildingEnum()) ||
 					IsSpecialProducer(workplace.buildingEnum()));
@@ -2569,13 +2614,16 @@ bool HumanStateAI::TryConstructHelper(int32 workplaceId)
 			{
 				ResourceEnum resourceEnum = ConstructionResources[i];
 				int32 neededResource = constructionCosts[i] - workplace.GetResourceCountWithPush(resourceEnum);
-				if (neededResource > 0) {
+				if (neededResource > 0) 
+				{
+					int32 maxFloodDist = GameConstants::MaxFloodDistance_HumanLogistics;
+					
 					int32 amount = min(neededResource, 10);
-					FoundResourceHolderInfos foundProviders = resourceSystem.FindHolder(ResourceFindType::AvailableForPickup, resourceEnum, amount, unitTile());
+					FoundResourceHolderInfos foundProviders = resourceSystem.FindHolder(ResourceFindType::AvailableForPickup, resourceEnum, amount, unitTile(), {}, maxFloodDist);
 					hasNeededResourceWithPush = false;
 
 					if (foundProviders.hasInfos()) {
-						MoveResourceSequence(foundProviders.foundInfos, { FoundResourceHolderInfo(workplace.holderInfo(resourceEnum), foundProviders.amount(), adjacentTile) });
+						MoveResourceSequence(foundProviders.foundInfos, { FoundResourceHolderInfo(workplace.holderInfo(resourceEnum), foundProviders.amount(), adjacentTile) }, maxFloodDist);
 						_unitState = UnitState::MoveResourceConstruct;
 						AddDebugSpeech("(Succeed)TryConstruct: Move needed resource");
 						return true;
@@ -2621,6 +2669,20 @@ bool HumanStateAI::TryConstructHelper(int32 workplaceId)
 
 	AddDebugSpeech("(Succeed)TryConstruct: Succeed -- work actions");
 	return true;
+}
+
+
+bool HumanStateAI::TryGoNearWorkplace(int32 distanceThreshold)
+{
+	Building* workplc = workplace();
+	if (workplc->DistanceTo(unitTile()) > distanceThreshold)
+	{
+		MoveTo_NoFail(workplc->gateTile(), GameConstants::MaxFloodDistance_HumanLogistics);
+		AddDebugSpeech("(Succeed)TryGoNearbyHome:");
+		_unitState = UnitState::GoToWorkplace;
+		return true;
+	}
+	return false;
 }
 
 //void HumanStateAI::Add_DoConsumerWork(int32_t workManSec100) {

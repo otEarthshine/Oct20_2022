@@ -17,7 +17,7 @@ void SubStatSystem::Tick(int32 playerId, IGameSimulationCore* simulation)
 		{
 			int32 foodProduction = 0;
 			int32 foodConsumption = 0;
-			for (ResourceEnum foodEnum : FoodEnums) {
+			for (ResourceEnum foodEnum : StaticData::FoodEnums) {
 				foodProduction += GetCurrentResourceStat(ResourceSeasonStatEnum::Production, foodEnum, lastSeasonInt);
 				foodConsumption += GetCurrentResourceStat(ResourceSeasonStatEnum::Consumption, foodEnum, lastSeasonInt);
 			}

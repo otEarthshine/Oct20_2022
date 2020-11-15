@@ -197,9 +197,9 @@ int32 PlayerOwnedManager::TryFillJobBuildings(const std::vector<int32>& jobBuild
 	return localIndex;
 }
 
-void PlayerOwnedManager::RefreshJobs() 
+void PlayerOwnedManager::RefreshJobs()
 {
-	 PUN_LOG("RefreshJobs %d %dsec", _adultIds.size(), Time::Seconds());
+	PUN_LOG("RefreshJobs %d %dsec", _adultIds.size(), Time::Seconds());
 
 	// Promote child if possible
 	for (size_t i = _childIds.size(); i-- > 0;)
@@ -210,7 +210,7 @@ void PlayerOwnedManager::RefreshJobs()
 		}
 	}
 
-	
+
 	// Remove Building Job Occupants
 	for (const std::vector<int32_t>& buildingIds : _jobBuildingEnumToIds) {
 		RemoveJobsFromBuildings(buildingIds);

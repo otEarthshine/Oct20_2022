@@ -17,9 +17,9 @@
 
 // VERSION
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 3 // 3 digit
+#define MINOR_VERSION 6 // 3 digit
 
-#define VERSION_DAY 11
+#define VERSION_DAY 15
 #define VERSION_MONTH 11
 #define VERSION_YEAR 20
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
@@ -1067,7 +1067,7 @@ static std::vector<ResourceInfo> GetSortedNameResourceEnum()
 static const std::vector<ResourceInfo> SortedNameResourceInfo = GetSortedNameResourceEnum();
 
 
-static const ResourceEnum FoodEnums[] =
+static const std::vector<ResourceEnum> FoodEnums_NonInput
 {
 	// Arrange food from high to low grabbing priority
 	ResourceEnum::Bread,
@@ -1080,16 +1080,60 @@ static const ResourceEnum FoodEnums[] =
 	ResourceEnum::GameMeat,
 	ResourceEnum::Beef,
 	ResourceEnum::Lamb,
-	
+};
+
+static const std::vector<ResourceEnum> FoodEnums_Input
+{
 	ResourceEnum::Honey,
 	ResourceEnum::Orange,
 	ResourceEnum::Milk,
 	ResourceEnum::Mushroom,
 	ResourceEnum::Wheat,
-	
 	ResourceEnum::Grape,
 };
-static const int32 FoodEnumCount = _countof(FoodEnums);
+
+class StaticData
+{
+public:
+	static std::vector<ResourceEnum> FoodEnums;
+	static int32 FoodEnumCount;
+
+	static void ResetFoodEnums()
+	{
+		FoodEnums.clear();
+		FoodEnums.insert(FoodEnums.end(), FoodEnums_NonInput.begin(), FoodEnums_NonInput.end());
+		FoodEnums.insert(FoodEnums.end(), FoodEnums_Input.begin(), FoodEnums_Input.end());
+
+		FoodEnumCount = FoodEnums.size();
+	}
+};
+
+//static const ResourceEnum StaticData::FoodEnums[] =
+//{
+//	// Arrange food from high to low grabbing priority
+//	ResourceEnum::Bread,
+//	ResourceEnum::Cabbage,
+//	ResourceEnum::Papaya,
+//	ResourceEnum::Coconut,
+//	ResourceEnum::Fish,
+//
+//	ResourceEnum::Pork,
+//	ResourceEnum::GameMeat,
+//	ResourceEnum::Beef,
+//	ResourceEnum::Lamb,
+//
+//	// Before this, any food is fine..
+//	
+//	ResourceEnum::Honey,
+//	ResourceEnum::Orange,
+//	ResourceEnum::Milk,
+//	ResourceEnum::Mushroom,
+//	ResourceEnum::Wheat,
+//	
+//	ResourceEnum::Grape,
+//};
+//static const int32 StaticData::FoodEnumCount = _countof(StaticData::FoodEnums);
+
 
 static bool IsFoodEnum(ResourceEnum resourceEnum) {
 	if (resourceEnum == ResourceEnum::Clay) {
@@ -1570,8 +1614,8 @@ struct FoundResourceHolderInfos
 		return foundInfos.size() > 0;
 	}
 
-	int32 amount() {
-		int32_t total = 0;
+	int32 amount() const {
+		int32 total = 0;
 		for (FoundResourceHolderInfo foundInfo : foundInfos) {
 			total += foundInfo.amount;
 		}
@@ -1584,6 +1628,36 @@ struct FoundResourceHolderInfos
 		}
 		return total;
 	}
+
+	int32 amountCapped(int32 targetAmount) const {
+		return std::min(targetAmount, amount());
+	}
+
+	int32 totalDistance() const {
+		int32 total = 0;
+		for (FoundResourceHolderInfo foundInfo : foundInfos) {
+			total += foundInfo.distance;
+		}
+		if (total == 0) {
+			return INT_MAX;
+		}
+		return total;
+	}
+
+	bool IsBetterThan(const FoundResourceHolderInfos& a, int32 targetAmount) const
+	{
+		int32 thisAmount = std::min(targetAmount, amount());
+		int32 a_amount = std::min(targetAmount, a.amount());
+		if (thisAmount > a_amount) {
+			return true;
+		}
+		if (a_amount > thisAmount) {
+			return false;
+		}
+
+		return totalDistance() < a.totalDistance();
+	}
+	
 
 	void Trim(int32 targetAmount) 
 	{
@@ -3761,7 +3835,7 @@ static const int32 GrassToBushValue = 3;
  *
  * Note: Gather production tied into the HumanFoodCostPerYear through AssumedFoodProductionPerYear
  */
-static const int32 GatherUnitsPerYear = 4; // 6;  // GatherBaseYield 4 gives 60 fruits per year... So 15 estimated gather per year...
+static const int32 GatherUnitsPerYear = 5; // 6;  // GatherBaseYield 4 gives 60 fruits per year... So 15 estimated gather per year...
 static const int32 GatherBaseYield100 = AssumedFoodProduction100PerYear / GatherUnitsPerYear;
 static const int32 JungleGatherBaseYield100 = GatherBaseYield100 * 2;
 
@@ -4631,6 +4705,9 @@ enum class QuestEnum : uint8
 	PotteryQuest,
 	
 	TradeQuest,
+
+	//
+	TownhallUpgradeQuest,
 };
 
 static bool IsImportantQuest(QuestEnum questEnum)
@@ -4647,6 +4724,8 @@ static bool IsImportantQuest(QuestEnum questEnum)
 	case QuestEnum::PopulationQuest:
 
 	case QuestEnum::SurviveWinterQuest:
+
+	case QuestEnum::TownhallUpgradeQuest:
 
 		return true;
 	default:
@@ -5252,27 +5331,15 @@ static FLinearColor MakeColorHSV(float H, float S, float V)
 	return HSVColor.HSVToLinearRGB();
 }
 
-static FLinearColor PlayerColor(int32 playerId)
-{
-	switch (playerId)
-	{
-	case -1: return FLinearColor::Yellow;
-	case 0: return FLinearColor::Red;
-	case 1: return FLinearColor::Blue;
-	case 2: return FLinearColor::Green;
-	default: return FLinearColor::Black;
-	}
-}
-
 static FLinearColor PlayerColor1(int32 playerId)
 {
 	static const FLinearColor arr[] = {
-		FLinearColor(0.225, 0.00769, 0.972, 1),
-		FLinearColor(0, 0.00769, 0.972, 1),
-		FLinearColor(0, 0.00769, 0, 1),
-		FLinearColor(1, 0, 0, 1),
-		FLinearColor(.02, .09, 1, 1),
-		FLinearColor(1, .943, 0, 1),
+		FLinearColor(0.225, 0.00769, 0.972), // 1. Purple
+		FLinearColor(0.082688, 0.972, 0.842026), // 2. Cyan
+		FLinearColor(0.045003, 0.328125, 0.045003), // 3. Green
+		FLinearColor(1, 0, 0), // 4. Red
+		FLinearColor(.02, .09, 1), // 5. Blue
+		FLinearColor(1, .943, 0), // 6. Yellow
 		MakeColorHSV(0, 0.9, 0.7),
 	};
 	if (playerId >= _countof(arr)) {
@@ -5284,12 +5351,12 @@ static FLinearColor PlayerColor1(int32 playerId)
 static FLinearColor PlayerColor2(int32 playerId)
 {
 	static const FLinearColor arr[] = {
-		FLinearColor(0.972, 0.875, 0, 1),
-		FLinearColor(0.225, 0.00769, 0.972, 1),
-		FLinearColor(0.225, 0.00769, 0, 1),
-		FLinearColor(1, .9, 0, 1),
-		FLinearColor(.954, 1, 1, 1),
-		FLinearColor(0, 0.105, 1, 1),
+		FLinearColor(0.972, 0.875, 0), // 1. Yellow
+		FLinearColor(0.972, 0.495342, 0.059063), // 2. Light Orange
+		FLinearColor(0.225, 0.00769, 0), // 3. Dark Red
+		FLinearColor(1, .9, 0), // 4. Yellow
+		FLinearColor(.954, 1, 1), // 5. White
+		FLinearColor(0, 0.105, 1), // 6. Blue
 		MakeColorHSV(90, 0.8, 0.5),
 	};
 	if (playerId >= _countof(arr)) {
@@ -7120,7 +7187,7 @@ static const std::vector<std::string> HoverWarningDescription = {
 
 	"Not enough Input Resource to keep this building running.",
 
-	"Building is Inaccessible.",
+	"Building's gate tile cannot be reached by Citizens",
 
 	"",
 	"",

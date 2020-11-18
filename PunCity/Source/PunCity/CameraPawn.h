@@ -234,6 +234,10 @@ public:
 		_networkInterface->ResetGameUI();
 		buildingPlacementSystem->StartBridge();
 	}
+	void StartTunnelPlacement() final {
+		_networkInterface->ResetGameUI();
+		buildingPlacementSystem->StartTunnel();
+	}
 	void StartSetDeliveryTarget(int32 buildingId) final {
 		_networkInterface->ResetGameUI();
 		buildingPlacementSystem->StartSetDeliveryTarget(buildingId);

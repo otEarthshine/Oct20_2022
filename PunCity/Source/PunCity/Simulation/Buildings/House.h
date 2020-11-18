@@ -148,7 +148,7 @@ public:
 	}
 
 	void OnPickupResource(int32 objectId) override;
-	void OnDropoffResource(int32 objectId) override;
+	void OnDropoffResource(int32 objectId, ResourceHolderInfo holderInfo, int32 amount) override;
 
 	static const int32 houseTypesPerLevel = 3;
 	

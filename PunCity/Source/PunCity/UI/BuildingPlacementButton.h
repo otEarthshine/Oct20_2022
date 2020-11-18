@@ -178,23 +178,6 @@ public:
 				colorMaterial->SetScalarParameterValue("IsSpecial", 0.0f);
 			}
 			
-			//switch (buildingEnum) {
-			//case CardEnum::DirtRoad:
-			//case CardEnum::StoneRoad:
-			//case CardEnum::Fence:
-			//case CardEnum::FenceGate:
-			//case CardEnum::TrapSpike:
-			//case CardEnum::Bridge:
-			//	colorMaterial->SetScalarParameterValue("IsSpecial", 1.0f);
-			//	break;
-			//default:
-			//	colorMaterial->SetScalarParameterValue("IsSpecial", 0.0f);
-			//	break;
-			//}
-
-			//grayMaterial = UMaterialInstanceDynamic::Create(assetLoader->BuildingIconGrayMaterial, this);
-			//grayMaterial->SetTextureParameterValue("ColorTexture", assetLoader->GetBuildingIcon(buildingEnum));
-			//grayMaterial->SetTextureParameterValue("DepthTexture", assetLoader->GetBuildingIconAlpha(buildingEnum));
 		} else {
 			colorMaterial = UMaterialInstanceDynamic::Create(assetLoader->CardIconMaterial, this);
 			colorMaterial->SetTextureParameterValue("ColorTexture", assetLoader->GetCardIcon(buildingEnum));

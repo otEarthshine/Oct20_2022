@@ -172,6 +172,7 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		  CASE_BUILDING(CardEnum::Fence, Fence);
 		  CASE_BUILDING(CardEnum::FenceGate, FenceGate);
 		  CASE_BUILDING(CardEnum::Bridge, Bridge);
+		  CASE_BUILDING(CardEnum::Tunnel, Tunnel);
 
 		  CASE_BUILDING(CardEnum::Fisher, Fisher);
 		  CASE_BUILDING(CardEnum::Winery, Winery);
@@ -351,7 +352,8 @@ void BuildingSystem::PlaceBuildingOnMap(int32 buildingIdIn, bool isBuildingIniti
 	}
 
 	// Bridge special case
-	if (buildingEnum == CardEnum::Bridge)
+	if (buildingEnum == CardEnum::Bridge ||
+		buildingEnum == CardEnum::Tunnel)
 	{
 		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 			SetBuildingTile(tile, bldId);

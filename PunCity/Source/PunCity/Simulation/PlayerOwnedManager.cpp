@@ -42,7 +42,8 @@ void PlayerOwnedManager::PlayerAddJobBuilding(Building& building, bool isConstru
 
 	//_LOG(PunPlayerOwned, "PlayerAddJobBuilding: id:%d player:%d ,%llu %llu %llu", buildingId, _playerId, _roadConstructionIds.size(), _constructionIds.size(), _jobBuildingEnumToIds.size());
 
-	if (buildingEnum == CardEnum::Bridge) {
+	if (buildingEnum == CardEnum::Bridge ||
+		buildingEnum == CardEnum::Tunnel) {
 		return;
 	}
 	
@@ -89,7 +90,8 @@ void PlayerOwnedManager::PlayerRemoveJobBuilding(Building& building, bool isCons
 
 	//PUN_LOG("PlayerRemoveJobBuilding: %d", buildingId);
 
-	if (buildingEnum == CardEnum::Bridge) {
+	if (buildingEnum == CardEnum::Bridge ||
+		buildingEnum == CardEnum::Tunnel) {
 		return;
 	}
 	

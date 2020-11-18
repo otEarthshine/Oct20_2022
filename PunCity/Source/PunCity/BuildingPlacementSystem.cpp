@@ -543,6 +543,11 @@ void ABuildingPlacementSystem::StartBridge()
 	_placementType = PlacementType::Bridge;
 	StartDrag();
 }
+void ABuildingPlacementSystem::StartTunnel()
+{
+	_placementType = PlacementType::Tunnel;
+	StartDrag();
+}
 
 void ABuildingPlacementSystem::StartDrag()
 {	
@@ -572,7 +577,9 @@ void ABuildingPlacementSystem::TickLineDrag(WorldAtom2 cameraAtom, function<bool
 	}
 	else if (_dragState == DragState::Dragging) 
 	{
-		if (_placementType == PlacementType::Bridge) {
+		if (_placementType == PlacementType::Bridge ||
+			_placementType == PlacementType::Tunnel)
+		{
 			CalculateBridgeLineDrag();
 
 			// Invalid if 
@@ -581,13 +588,18 @@ void ABuildingPlacementSystem::TickLineDrag(WorldAtom2 cameraAtom, function<bool
 			int32 index = 0;
 			int32 lastIndex = std::max(_area.sizeX(), _area.sizeY()) - 1;
 
+			auto isSuitableTile = [&](WorldTile2 tile) {
+				return (_placementType == PlacementType::Bridge) ? simulation.IsWater(tile) : simulation.IsMountain(tile);
+			};
+			
+
 			if (lastIndex >= 2) { // bridge must be at least size 3
 				int32_t waterTileCount = 0;
 				
 				_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 					bool roadBuildable = isBuildableFunc(tile);
 					if (!roadBuildable) {
-						if (simulation.IsWater(tile)) {
+						if (isSuitableTile(tile)) {
 							waterTileCount++;
 						} else {
 							isValidBridgePlacement = false; // Not buildable, and not water, this is obstacle
@@ -613,12 +625,12 @@ void ABuildingPlacementSystem::TickLineDrag(WorldAtom2 cameraAtom, function<bool
 
 			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 				if (isValidBridgePlacement) {
-					PUN_CHECK(isBuildableFunc(tile) || simulation.IsWater(tile));
+					PUN_CHECK(isBuildableFunc(tile) || isSuitableTile(tile));
 					if (simulation.tileHasBuilding(tile) && !IsRoad(simulation.buildingEnumAtTile(tile))) {
 						_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
 					} else {
 						// Show gray on non water tiles
-						_placementGrid.SpawnGrid(simulation.IsWater(tile) ? PlacementGridEnum::Green : PlacementGridEnum::Gray, cameraAtom, tile);
+						_placementGrid.SpawnGrid(isSuitableTile(tile) ? PlacementGridEnum::Green : PlacementGridEnum::Gray, cameraAtom, tile);
 					}
 				} else {
 					_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
@@ -1520,12 +1532,6 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 	//	return;
 	//}
 
-	//if (_placementType == PlacementType::Bridge)
-	//{
-	//	TickLineDrag(cameraAtom, std::bind(&IGameManagerInterface::IsPlayerRoadBuildable, _gameInterface, _1));
-	//	return;
-	//}
-
 	/*
 	 * Delivery Point
 	 */
@@ -1816,7 +1822,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 						SetInstruction(PlacementInstructionEnum::Dock, true);
 					}
 					else {
-						if (simulation.tileHasBuilding(tile)) { // May be bridge
+						if (simulation.tileHasBuilding(tile)) { // Maybe bridge
 							_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
 						}
 						else {
@@ -2330,7 +2336,8 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 	/*
 	 * Bridge
 	 */
-	if (_placementType == PlacementType::Bridge) 
+	if (_placementType == PlacementType::Bridge ||
+		_placementType == PlacementType::Tunnel)
 	{
 		// Split into bridges and send separate commands
 		int32_t lastIndex = std::max(_area.sizeX(), _area.sizeY()) - 1;
@@ -2344,20 +2351,21 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 
 			auto& simulation = _gameInterface->simulation();
 			
-			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-				bool tileIsWater = simulation.IsWater(tile);
+			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) 
+			{
+				bool tileIsSuitable = (_placementType == PlacementType::Bridge) ? simulation.IsWater(tile) : simulation.IsMountain(tile);
 
-				if (!lastTileWasWater && tileIsWater) {
+				if (!lastTileWasWater && tileIsSuitable) {
 					PUN_CHECK(!firstBridgeWaterTile.isValid());
 					firstBridgeWaterTile = tile;
 				}
 
-				if (tileIsWater) {
+				if (tileIsSuitable) {
 					lastBridgeWaterTile = tile;
 				}
 				
 				// End of bridge issue PlaceBuilding command
-				if (lastTileWasWater && !tileIsWater) {
+				if (lastTileWasWater && !tileIsSuitable) {
 					PUN_CHECK(firstBridgeWaterTile.isValid());
 					
 					int32 minX = min(firstBridgeWaterTile.x, lastBridgeWaterTile.x);
@@ -2381,7 +2389,7 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 					firstBridgeWaterTile = WorldTile2::Invalid;
 				}
 
-				lastTileWasWater = tileIsWater;
+				lastTileWasWater = tileIsSuitable;
 			});
 		}
 

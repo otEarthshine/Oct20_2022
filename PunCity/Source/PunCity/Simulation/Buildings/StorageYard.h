@@ -281,7 +281,8 @@ public:
 		return _foodTarget;
 	}
 
-	ResourceHolderType defaultHolderType() override { return ResourceHolderType::Manual; }
+	//ResourceHolderType defaultHolderType() override { return ResourceHolderType::Manual; }
+	ResourceHolderType defaultHolderType() override { return ResourceHolderType::Storage; }
 	
 	void Serialize(FArchive& Ar) override {
 		StorageBase::Serialize(Ar);

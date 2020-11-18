@@ -1548,8 +1548,13 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					{
 						std::vector<ResourcePair> pairs = building.seasonalProductionPairs();
 
-						if (pairs.size() == 0) {
-							descriptionBox->AddRichText("Production(per season):", "None");
+						if (pairs.size() == 0) 
+						{
+							if (building.isEnum(CardEnum::Farm)) {
+								descriptionBox->AddRichText("Production(per year):", "None");
+							} else {
+								descriptionBox->AddRichText("Production(per season):", "None");
+							}
 						}
 						else if (pairs.size() == 1) 
 						{
@@ -2216,7 +2221,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			 * Selection Mesh (Self)
 			 */
 			FVector selectionMeshLocation = displayLocation + FVector(0, 0, 30);
-			if (building.isEnum(CardEnum::Bridge)) {
+			if (building.isEnum(CardEnum::Bridge) ||
+				building.isEnum(CardEnum::Tunnel)) 
+			{
 				// Average using atom to get exact middle
 				WorldAtom2 min = area.min().worldAtom2();
 				WorldAtom2 max = area.max().worldAtom2();

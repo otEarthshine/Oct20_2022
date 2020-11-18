@@ -359,6 +359,14 @@ void UMainGameUI::Tick()
 			CardStack5->SetVisibility(cardStackVisible);
 			CardRerollBox1->SetVisibility(static_cast<bool>(_lastIsCardStackBlank) ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
+			int32 queueCount = cardSystem.cardHandQueueCount();
+			if (queueCount > 1) {
+				SetText(CardHandCount, to_string(queueCount));
+				CardHandCount->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			} else {
+				CardHandCount->SetVisibility(ESlateVisibility::Collapsed);
+			}
+
 			TryPlayAnimation("CardStackFlash");
 		}
 
@@ -1883,6 +1891,9 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 		else if (buildingEnum == CardEnum::Bridge) {
 			inputSystemInterface()->StartBridgePlacement();
 			simulation().parameters(playerId())->BridgeNoticed = true;
+		}
+		else if (buildingEnum == CardEnum::Tunnel) {
+			inputSystemInterface()->StartTunnelPlacement();
 		}
 		else {
 			inputSystemInterface()->StartBuildingPlacement(buildingEnum, 0, false);

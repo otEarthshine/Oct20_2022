@@ -396,6 +396,9 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadModule("RampPlane", "Bridge/RampPlane", true);
 	LoadModule("RampPlane90", "Bridge/RampPlane90", true);
 
+	// Tunnel
+	LoadModule("Tunnel", "Tunnel/Tunnel");
+
 	// Storage
 	LoadModule("StorageTile", "StorageYard/StorageYardTile");
 	
@@ -463,27 +466,6 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 			case CardEnum::IntercityRoad: addBuildIcon(CardEnum::IntercityRoad, FString(TO_STR(DirtRoadIcon)), FString("SpecialIconAlpha"), true); break;
 			
-		//	case CardEnum::Farm:
-		//	addBuildIcon(FString("FarmIcon"), FString("SpecialIconAlpha"));
-		//	break;
-		//case CardEnum::DirtRoad: 
-		//	addBuildIcon(FString("DirtRoadIcon"), FString("SpecialIconAlpha"));
-		//	break;
-		//case CardEnum::StoneRoad:
-		//	addBuildIcon(FString("StoneRoadIcon"), FString("SpecialIconAlpha"));
-		//	break;
-		//case CardEnum::Fence: 
-		//	addBuildIcon(FString("FenceIcon"), FString("SpecialIconAlpha"));
-		//	break;
-		//case CardEnum::FenceGate: 
-		//	addBuildIcon(FString("FenceGateIcon"), FString("SpecialIconAlpha"));
-		//	break;
-		//case CardEnum::Bridge:
-		//	addBuildIcon(FString("BridgeIcon"), FString("SpecialIconAlpha"));
-		//	break;
-		//case CardEnum::TrapSpike:
-		//	addBuildIcon(FString("SpikeTrapIcon"), FString("SpecialIconAlpha"));
-		//	break;
 #undef CASE
 		default:
 			addBuildIcon(buildingEnum, FString("BuildingIcon") + FString::FromInt(i), FString("BuildingIconAlpha") + FString::FromInt(i), false);

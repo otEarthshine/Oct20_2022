@@ -455,22 +455,22 @@ bool HumanStateAI::TryMoveResourcesAnyProviderToDropoff(ResourceFindType provide
 	// Prioritize market is done twice
 	//  1) check just 1 nearby market
 	//  2) check all markets sorted by distance
-	if (prioritizeMarket) {
-		foundProviders = FindMarketResourceHolderInfo(dropoffInfo.info.resourceEnum, dropoffInfo.amount, true, maxFloodDist);
-	}
+	//if (prioritizeMarket) {
+	//	foundProviders = FindMarketResourceHolderInfo(dropoffInfo.info.resourceEnum, dropoffInfo.amount, true, maxFloodDist);
+	//}
 
-	if (!foundProviders.hasInfos()) {
+	//if (!foundProviders.hasInfos()) {
 		foundProviders = resourceSystem().FindHolder(providerType, dropoffInfo.info.resourceEnum, dropoffInfo.amount, unitTile(), {}, maxFloodDist);
-	}
+	//}
 
-	if (!foundProviders.hasInfos() && prioritizeMarket) {
-		foundProviders = FindMarketResourceHolderInfo(dropoffInfo.info.resourceEnum, dropoffInfo.amount, false, maxFloodDist);
-	}
+	//if (!foundProviders.hasInfos() && prioritizeMarket) {
+	//	foundProviders = FindMarketResourceHolderInfo(dropoffInfo.info.resourceEnum, dropoffInfo.amount, false, maxFloodDist);
+	//}
 	
 
-	if (!foundProviders.hasInfos() && checkMarketAfter) {
-		foundProviders = FindMarketResourceHolderInfo(dropoffInfo.info.resourceEnum, dropoffInfo.amount, true, maxFloodDist);
-	}
+	//if (!foundProviders.hasInfos() && checkMarketAfter) {
+	//	foundProviders = FindMarketResourceHolderInfo(dropoffInfo.info.resourceEnum, dropoffInfo.amount, true, maxFloodDist);
+	//}
 	
 	if (!foundProviders.hasInfos()) {
 		AddDebugSpeech("(Failed)TryMoveResourcesAnyProviderToDropoff: " + dropoffInfo.ToString() + " providerInfo invalid: " + ResourceFindTypeName[(int)providerType]);
@@ -797,9 +797,11 @@ bool HumanStateAI::TryClearLand(TileArea area)
 FoundResourceHolderInfos HumanStateAI::FindNeedHelper(ResourceEnum resourceEnum, int32 wantAmount, int32 maxFloodDist)
 {
 	// Try market first
-	FoundResourceHolderInfos foundProviders = FindMarketResourceHolderInfo(resourceEnum, wantAmount, true, maxFloodDist);
-	if (!foundProviders.hasInfos()) 
-	{
+	FoundResourceHolderInfos foundProviders;
+
+	//foundProviders = FindMarketResourceHolderInfo(resourceEnum, wantAmount, true, maxFloodDist);
+	//if (!foundProviders.hasInfos())
+	//{
 		// Compare market provider to storage provider
 		if (resourceEnum == ResourceEnum::Food) {
 			foundProviders = resourceSystem().FindFoodHolder(ResourceFindType::AvailableForPickup, wantAmount, unitTile(), maxFloodDist);
@@ -807,26 +809,26 @@ FoundResourceHolderInfos HumanStateAI::FindNeedHelper(ResourceEnum resourceEnum,
 			foundProviders = resourceSystem().FindHolder(ResourceFindType::AvailableForPickup, resourceEnum, wantAmount, unitTile(), {}, maxFloodDist);
 		}
 
-		FoundResourceHolderInfos foundProvidersMarket = FindMarketResourceHolderInfo(resourceEnum, wantAmount, false, maxFloodDist);
-		if (foundProvidersMarket.hasInfos())
-		{
-			if (foundProviders.hasInfos()) {
-				FoundResourceHolderInfo bestProvider = foundProviders.best();
-				FoundResourceHolderInfo bestProviderMarket = foundProvidersMarket.best();
-				if (bestProviderMarket.amount > bestProvider.amount) {
-					return foundProvidersMarket;
-				}
-				if (bestProviderMarket.amount == bestProvider.amount) {
-					if (bestProviderMarket.distance < bestProvider.distance) {
-						return foundProvidersMarket;
-					}
-				}
-			}
-			else {
-				return foundProvidersMarket;
-			}
-		}
-	}
+		//FoundResourceHolderInfos foundProvidersMarket = FindMarketResourceHolderInfo(resourceEnum, wantAmount, false, maxFloodDist);
+		//if (foundProvidersMarket.hasInfos())
+		//{
+		//	if (foundProviders.hasInfos()) {
+		//		FoundResourceHolderInfo bestProvider = foundProviders.best();
+		//		FoundResourceHolderInfo bestProviderMarket = foundProvidersMarket.best();
+		//		if (bestProviderMarket.amount > bestProvider.amount) {
+		//			return foundProvidersMarket;
+		//		}
+		//		if (bestProviderMarket.amount == bestProvider.amount) {
+		//			if (bestProviderMarket.distance < bestProvider.distance) {
+		//				return foundProvidersMarket;
+		//			}
+		//		}
+		//	}
+		//	else {
+		//		return foundProvidersMarket;
+		//	}
+		//}
+	//}
 	
 	return foundProviders;
 }
@@ -905,7 +907,7 @@ bool HumanStateAI::TryFindFood()
 		// Event Log
 		int32 foodNeededPerHalfMinute = _simulation->population(_playerId) * HumanFoodPerYear / Time::MinutesPerYear / 2;
 		if (_simulation->foodCount(_playerId) < foodNeededPerHalfMinute) {
-			if (_simulation->TryDoNonRepeatAction(_playerId, NonRepeatActionEnum::FoodReserveLowEvent, Time::TicksPerSecond * 30)) {
+			if (_simulation->TryDoNonRepeatAction(_playerId, NonRepeatActionEnum::FoodReserveLowEvent, Time::TicksPerSecond * 60)) {
 				_simulation->AddEventLog(_playerId, "Food reserve is low.", true);
 				_simulation->soundInterface()->Spawn2DSound("UI", "FoodLowBell", _playerId);
 			}

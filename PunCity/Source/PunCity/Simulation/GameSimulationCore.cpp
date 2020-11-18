@@ -1699,12 +1699,20 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 		return -1;
 	}
 
-	if (cardEnum == CardEnum::Bridge)
+	if (cardEnum == CardEnum::Bridge ||
+		cardEnum == CardEnum::Tunnel)
 	{
 		bool canPlace = true;
 		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-			if (!IsWater(tile)) {
-				canPlace = false;
+			if (cardEnum == CardEnum::Bridge) {
+				if (!IsWater(tile)) {
+					canPlace = false;
+				}
+			}
+			else { // Tunnel
+				if (!IsMountain(tile)) {
+					canPlace = false;
+				}
 			}
 		});
 
@@ -3093,8 +3101,12 @@ void GameSimulationCore::BuyCards(FBuyCard command)
 			}
 		}
 	}
+
+	cardSys.UseCardHandQueue();
+	if (cardSys.cardHandQueueCount() == 0) {
+		cardSys.SetCardStackBlank(true);
+	}
 	
-	cardSys.SetCardStackBlank(true);
 	cardSys.SetPendingCommand(false);
 }
 

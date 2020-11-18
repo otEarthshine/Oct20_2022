@@ -245,6 +245,25 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 				return;
 			}
 
+			// Special case Tunnel
+			if (buildingEnum == CardEnum::Tunnel)
+			{
+				TileArea area = building.area();
+
+				auto spawnEntrance = [&](WorldTile2 tile, int32 rotationInt) {
+					int32 instanceKey = tile.tileId();
+					FTransform transform(FRotator(0, rotationInt, 0), tile.localTile(region).localDisplayLocation());
+					_moduleMeshes[meshId]->Add(FString("Tunnel"), instanceKey, transform, 0, buildingId);
+				};
+
+				int32 rotationShift = (area.sizeX() > 1) ? 0 : 90;
+				
+				spawnEntrance(area.min(), rotationShift);
+				spawnEntrance(area.max(), rotationShift + 180);
+				
+				return;
+			}
+
 			// Building mesh
 			float buildingRotation;
 			int32 displayVariationIndex;

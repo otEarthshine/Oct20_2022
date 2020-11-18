@@ -472,7 +472,7 @@ public:
 	void RemoveResource(ResourceEnum resourceEnum, int amount);
 
 	virtual void OnPickupResource(int32 objectId) {}
-	virtual void OnDropoffResource(int32 objectId) {}
+	virtual void OnDropoffResource(int32 objectId, ResourceHolderInfo holderInfo, int32 amount) {}
 	
 	void FillInputs() {
 		_filledInputs = true;

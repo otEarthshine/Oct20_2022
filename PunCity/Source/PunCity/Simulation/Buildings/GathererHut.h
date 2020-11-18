@@ -1490,7 +1490,7 @@ public:
 	void OnDeinit() final;
 };
 
-class Bridge final : public Building
+class Bridge : public Building
 {
 public:
 	void OnInit() override {
@@ -1545,6 +1545,11 @@ public:
 	int32 maxCardSlots() override { return 0; }
 };
 
+class Tunnel final : public Bridge
+{
+public:
+	
+};
 
 
 //! ConsumerWorkplace

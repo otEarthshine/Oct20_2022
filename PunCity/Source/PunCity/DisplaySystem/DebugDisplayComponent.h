@@ -127,7 +127,9 @@ protected:
 						FLinearColor color = FLinearColor::Green;
 						TerrainTileType tileType = terrainGen.terrainTileType(curTile.tileId());
 
-						if (sim.buildingEnumAtTile(curTile) == CardEnum::Bridge) {
+						if (sim.buildingEnumAtTile(curTile) == CardEnum::Bridge ||
+							sim.buildingEnumAtTile(curTile) == CardEnum::Tunnel) 
+						{
 							color = FLinearColor(0.5f, .0f, .0f);
 						}
 						else if (tileType != TerrainTileType::None) {

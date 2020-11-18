@@ -159,6 +159,9 @@ struct ResourceHolder
 		Ar << _target;
 		Ar << _reservedPush;
 		Ar << _reservedPop;
+
+		// Load Saved Fix:
+		_current = std::max(_current, 0);
 	}
 
 private:
@@ -451,6 +454,13 @@ private:
 			return filteredInfosWrap;
 		}
 
+
+		// Debug:
+		for (const FoundResourceHolderInfo& filteredInfo : filteredInfos) {
+			PUN_CHECK(filteredInfo.amount <= amount);
+		}
+		
+
 		// One pickup satisfied all, just return it.
 		FoundResourceHolderInfo foundFullInfo = FoundResourceHolderInfo::Invalid();
 		int32 foundFullInfoDist = INT32_MAX;
@@ -627,6 +637,7 @@ private:
 				//PUN_LOG("Holder:%d isDrop:%d isAvoidId:%d info:%s isConnected:%d amountAtLeast:%d", holderId, _holders[holderId].isDrop(), isAvoidId, 
 				//				*ToFString(_holders[holderId].info.ToString()), sim->IsConnected(origin, holder.tile, maxFloodDist), amountAtLeast);
 
+				// TODO: IsConnected can be checked once in a while...
 				if (!isAvoidId && _simulation->IsConnected(origin, holder.tile, maxFloodDist, true))
 				{
 					check(availableAmount > 0);

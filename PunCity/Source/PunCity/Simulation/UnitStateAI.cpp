@@ -1664,10 +1664,13 @@ void UnitStateAI::UseMedicine()
 	PUN_CHECK(resourceEnum == ResourceEnum::Herb || resourceEnum == ResourceEnum::Medicine);
 
 	int32 amount = resourceEnum == ResourceEnum::Herb ? 2 : 1;
+	amount = min(_inventory.Amount(resourceEnum), amount);
+	
 	_isSick = false;
 	_hp100 = 10000;
 
 	statSystem().AddResourceStat(ResourceSeasonStatEnum::Consumption, resourceEnum, amount);
+	
 	_inventory.Remove(ResourcePair(resourceEnum, amount));
 
 	NextAction(UnitUpdateCallerEnum::Heal);
@@ -2129,10 +2132,13 @@ void UnitStateAI::PickupResource()
 
 	PUN_CHECK2(resourceSystem().resourceCount(info) >= 0, debugStr());
 
-	// OnDropoffResource
+	// OnPickupResource
 	int32 buildingId = _simulation->resourceSystem(_playerId).holder(info).objectId;
 	if (buildingId != -1) {
 		Building& building = _simulation->building(buildingId);
+
+		PUN_CHECK(building.holderInfo(info.resourceEnum) == info);
+		
 		building.OnPickupResource(_id);
 	}
 
@@ -2168,7 +2174,9 @@ void UnitStateAI::DropoffResource()
 		building.AddProductionStat(ResourcePair(info.resourceEnum, amount));
 	}
 
-	building.OnDropoffResource(_id);
+	PUN_CHECK(building.holderInfo(info.resourceEnum) == info);
+
+	building.OnDropoffResource(_id, info, amount);
 
 	_simulation->soundInterface()->SpawnResourceDropoffAudio(info.resourceEnum, unitAtom());
 

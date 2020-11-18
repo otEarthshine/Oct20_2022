@@ -45,6 +45,7 @@ public:
 
 	FoundResourceHolderInfos FindNeedHelper(ResourceEnum resourceEnum, int32 wantAmount, int32 maxFloodDist);
 
+	// TODO: might be removable..
 	FoundResourceHolderInfos FindMarketResourceHolderInfo(ResourceEnum resourceEnum, int32 wantAmount, bool checkOnlyOneMarket, int32 maxFloodDist);
 
 	bool TryFun();

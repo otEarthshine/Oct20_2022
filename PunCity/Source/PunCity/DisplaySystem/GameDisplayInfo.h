@@ -822,6 +822,10 @@ public:
 		{ // IrrigationReservoir
 			ModuleTransforms::CreateSet("IrrigationReservoir", {}, {})
 		},
+
+		{ // Tunnel
+			ModuleTransforms({ ModuleTransform("Tunnel", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
+		},
 		
 		/*
 		 * Decorations

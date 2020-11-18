@@ -100,6 +100,25 @@ public:
 		Show(Direction::S, modules, assetLoader, customDepthIndex);
 	}
 
+	void ShowTunnel(Building& building, UAssetLoaderComponent* assetLoader)
+	{
+		std::vector<ModuleTransform> modules;
+		
+		auto spawnEntrance = [&](WorldTile2 tile, int32 rotationInt) {
+			FVector displayLocation = (tile - building.centerTile()).displayLocation();
+			FTransform transform(FRotator(0, rotationInt, 0), displayLocation);
+			modules.push_back(ModuleTransform(FString("Tunnel"), transform));
+		};
+
+		TileArea area = building.area();
+		int32 rotationShift = (area.sizeX() > 1) ? 0 : 90;
+
+		spawnEntrance(area.min(), rotationShift);
+		spawnEntrance(area.max(), rotationShift + 180);
+		
+
+		Show(Direction::S, modules, assetLoader);
+	}
 
 	/*
 	 * Storage

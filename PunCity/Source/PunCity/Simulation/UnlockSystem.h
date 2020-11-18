@@ -1176,6 +1176,11 @@ public:
 		//SerializeVecLoop(Ar, _techQueue, [&](std::shared_ptr<ResearchInfo>& tech) {
 		//	serializeTechPtr(tech);
 		//});
+
+		Ar << didFirstTimeAnimalRavage;
+		Ar << didFirstTimeMedicineLowPopup;
+		Ar << didFirstTimeToolsLowPopup;
+		Ar << didFirstTimeLaborer0;
 	}
 
 	int32 techsCompleted() { return techsFinished; }
@@ -1207,7 +1212,6 @@ public:
 
 	// Other states
 
-	// TODO: Need Serialize
 	bool didFirstTimeAnimalRavage = false;
 	bool didFirstTimeMedicineLowPopup = false;
 	bool didFirstTimeToolsLowPopup = false;

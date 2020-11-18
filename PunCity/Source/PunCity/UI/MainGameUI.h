@@ -434,6 +434,7 @@ private:
 	UPROPERTY(meta = (BindWidget)) USizeBox* CardStack3;
 	UPROPERTY(meta = (BindWidget)) USizeBox* CardStack4;
 	UPROPERTY(meta = (BindWidget)) USizeBox* CardStack5;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* CardHandCount;
 	
 	UPROPERTY(meta = (BindWidget)) UButton* CardRerollButton;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* RerollPrice;

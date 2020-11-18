@@ -111,16 +111,20 @@ public:
 		return handSize;
 	}
 
-	void TickRound() {
-		_rerollCountThisRound = 0;
-		_alreadyBoughtCardThisRound = false;
-		
-		RollHand(handSize());
+	void TickRound()
+	{
+		_cardHandQueueCount++;
+		if (_cardHandQueueCount == 1) 
+		{
+			_rerollCountThisRound = 0;
+			_alreadyBoughtCardThisRound = false;
+			RollHand(handSize());
+		}
 
-		//if (Time::IsSpringStart() && Time::Years() > 0) {
-		//	RollRareHand();
-		//}
 	}
+
+	int32 cardHandQueueCount() { return _cardHandQueueCount; }
+	void UseCardHandQueue() { _cardHandQueueCount = std::max(0, _cardHandQueueCount - 1); }
 
 	void TryRefreshRareHand()
 	{
@@ -654,6 +658,8 @@ public:
 		Ar << _isCardStackBlank;
 		Ar << _isPendingCommand;
 
+		Ar << _cardHandQueueCount;
+
 		PUN_CHECK(_cardsRareHand.size() == _cardsRareHandReserved.size());
 	}
 
@@ -848,4 +854,6 @@ private:
 
 	bool _isCardStackBlank;
 	bool _isPendingCommand = false;
+
+	int32 _cardHandQueueCount = 0;
 };

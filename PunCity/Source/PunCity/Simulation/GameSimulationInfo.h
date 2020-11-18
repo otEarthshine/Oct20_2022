@@ -17,9 +17,9 @@
 
 // VERSION
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 6 // 3 digit
+#define MINOR_VERSION 7 // 3 digit
 
-#define VERSION_DAY 15
+#define VERSION_DAY 19
 #define VERSION_MONTH 11
 #define VERSION_YEAR 20
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
@@ -1817,6 +1817,9 @@ enum class CardEnum : uint16
 	Market,
 	ShippingDepot,
 	IrrigationReservoir,
+
+	// Nov 18
+	Tunnel,
 
 	// Decorations
 	FlowerBed,
@@ -4130,6 +4133,7 @@ enum class PlacementType
 	IntercityRoad,
 	Fence,
 	Bridge,
+	Tunnel,
 
 	DeliveryTarget,
 };

@@ -100,7 +100,8 @@ void Building::Init(IGameSimulationCore& simulation, int objectId, int32_t playe
 
 	// Special case Bridge,
 	// Note: Done for bridge Walkable issue
-	if (_buildingEnum == CardEnum::Bridge)
+	if (_buildingEnum == CardEnum::Bridge ||
+		_buildingEnum == CardEnum::Tunnel)
 	{
 		SetAreaWalkable();
 	}
@@ -406,19 +407,6 @@ void Building::TrailerAddResource()
 		}
 	}
 }
-
-//bool Building::NeedRoadConnection() {
-//	CardEnum bldEnum = buildingEnum();
-//	if (IsCritterBuildingEnum(bldEnum) ||
-//		bldEnum == CardEnum::Fence ||
-//		IsRoad(bldEnum) ||
-//		IsRoadOverlapBuilding(bldEnum) ||
-//		bldEnum == CardEnum::Farm ||
-//		bldEnum == CardEnum::Bridge) {
-//		return false;
-//	}
-//	return !area().GetFrontArea(_faceDirection).ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 tile) { return _simulation->overlaySystem().IsRoad(tile); });
-//}
 
 void Building::ChangeAllowedOccupants(int32 allowedOccupants)
 {

@@ -318,12 +318,15 @@ void House::OnPickupResource(int32 objectId)
 
 	CheckHouseLvl();
 }
-void House::OnDropoffResource(int32 objectId)
+void House::OnDropoffResource(int32 objectId, ResourceHolderInfo holderInfo, int32 amount)
 {
 	PUN_CHECK(_buildingEnum == CardEnum::House);
 	if (!_simulation->buildingIsAlive(_objectId) || isDisabled() || !isConstructed() || _playerId == -1) {
 		return;
 	}
+
+	// Stone drop weirdness..
+	PUN_CHECK(holderInfo.resourceEnum != ResourceEnum::Stone);
 	
 	CheckHouseLvl();
 }

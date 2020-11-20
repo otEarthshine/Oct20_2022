@@ -1844,14 +1844,25 @@ bool HumanStateAI::TryBulkHaul_ShippingDepot()
 }
 bool HumanStateAI::TryBulkHaul_Market()
 {
-	auto market = workplace()->subclass<Market>(CardEnum::Market);
+	Market& market = workplace()->subclass<Market>(CardEnum::Market);
 
 	std::vector<ResourceInfo> resourceInfos = SortedNameResourceInfo;
 
 	auto tryMoveResource = [&](ResourceEnum resourceEnum) {
-		return market.holder(resourceEnum).type != ResourceHolderType::Provider &&
-				market.GetResourceCountWithPush(resourceEnum) < market.GetMarketTarget(resourceEnum) &&
-				TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, market.GetHolderInfoFull(resourceEnum, 50), false, false, GameConstants::MaxFloodDistance_HumanLogistics);
+		if (market.holder(resourceEnum).type == ResourceHolderType::Provider) {
+			return false;
+		}
+
+		int32 resourceCount = market.GetResourceCountWithPush(resourceEnum);
+		int32 target = market.GetMarketTarget(resourceEnum);
+		if (resourceCount >= target) {
+			return false;
+		}
+		
+		int32 resourceToMove = std::min(50, target - resourceCount);
+		
+		return TryMoveResourcesAnyProviderToDropoff(ResourceFindType::MarketPickup, market.GetHolderInfoFull(resourceEnum, resourceToMove), 
+													false, false, GameConstants::MaxFloodDistance_HumanLogistics);
 	};
 
 	// Low food count, get food first
@@ -2330,6 +2341,37 @@ bool HumanStateAI::TryProduce()
 		
 		bool needInput1 = workplace.needInput1();
 		bool needInput2 = workplace.needInput2();
+
+		
+		// Don't fill input and start work if output already reached target
+		ResourceEnum product = workplace.product();
+		if (product != ResourceEnum::None)
+		{
+			int32 outputTarget = _simulation->playerOwned(_playerId).GetOutputTarget(product);
+			if (outputTarget != -1 &&
+				resourceSystem.resourceCountWithPop(product) >= outputTarget)
+			{
+				// Only continue if there is unfinished filling
+				bool shouldContinueFilling = false;
+
+				if (needInput1) {
+					if (resourceSystem.resourceCountWithPop(workplace.holderInfo(workplace.input1())) > 0) {
+						shouldContinueFilling = true;
+					}
+				}
+				if (needInput2) {
+					if (resourceSystem.resourceCountWithPop(workplace.holderInfo(workplace.input2())) > 0) {
+						shouldContinueFilling = true;
+					}
+				}
+
+				if (!shouldContinueFilling) {
+					AddDebugSpeech("(Failed)TryProduce: Already Reached Target");
+					return false;
+				}
+			}
+		}
+		
 		
 		if (needInput1 &&
 			TryFillWorkplace(workplace.input1()))

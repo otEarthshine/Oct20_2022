@@ -1391,7 +1391,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					/*
 					 * Fill ManageStorage
 					 */
-					StorageYard& storage = building.subclass<StorageYard>();
+					StorageBase& storage = building.subclass<StorageBase>();
 					UPunBoxWidget* manageStorageBox = _objectDescriptionUI->ManageStorageBox;
 
 					SetText(_objectDescriptionUI->ManageStorageTitle, buttonName);
@@ -1402,10 +1402,15 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					std::vector<int32> uiResourceTargetsToDisplay;
 					if (isMarket) {
 						Market& market = building.subclass<Market>();
+
+						PUN_CHECK(market.lastUIResourceTargets.size() < 1000);
+						
 						if (_justOpenedDescriptionUI) {
 							market.lastUIResourceTargets = market.GetMarketTargets();
 						}
 						uiResourceTargetsToDisplay = market.lastUIResourceTargets;
+
+						//uiResourceTargetsToDisplay = market.GetMarketTargets();
 					}
 					
 					auto tryAddManageStorageElement_UnderExpansion = [&](ResourceEnum resourceEnum, bool isShowing, bool isSection, bool shouldRemoveFromList = true)
@@ -1750,7 +1755,6 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								descriptionBox->AddRichText(ss);
 							}
 						}
-
 					}
 					else if (IsSpecialProducer(building.buildingEnum()))
 					{
@@ -1841,7 +1845,32 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				//	ss << workReservers[i] << "\n";
 				//}
 
-				// Resources
+				/*
+				 * Set Output Target
+				 */
+				ResourceEnum product = building.product();
+				if (building.playerId() == playerId() &&
+					product != ResourceEnum::None &&
+					!building.isEnum(CardEnum::Farm))
+				{
+					auto& playerOwned = simulation.playerOwned(playerId());
+					if (_justOpenedDescriptionUI) {
+						playerOwned.SetOutputTargetDisplay(product, playerOwned.GetOutputTarget(product));
+					}
+					int32 targetDisplay = playerOwned.GetOutputTargetDisplay(product);
+					bool isChecked = (targetDisplay != -1);
+
+					descriptionBox->AddLineSpacer();
+					auto numberBox = descriptionBox->AddEditableNumberBox(this, CallbackEnum::EditableNumberSetOutputTarget, building.buildingId(),
+																"set produce target", targetDisplay, "produce until ", isChecked, product);
+					numberBox->callbackVar1 = static_cast<int32>(product);
+				}
+
+
+				
+				/*
+				 * Inventory
+				 */
 				std::vector<ResourceHolderInfo>& holderInfos = building.holderInfos();
 				if (!building.isConstructed()) {
 					descriptionBox->AddLineSpacer();
@@ -2464,6 +2493,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			unit.inventory().ForEachResource([&](ResourcePair resource) {
 				descriptionBox->AddIconPair("", resource.resourceEnum, to_string(resource.count));
 			});
+			descriptionBox->AddLineSpacer();
 
 			// Selection Meshes
 			if (unit.houseId() != -1) {
@@ -3339,6 +3369,23 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 
 		// For UI
 		tradingCompany.lastTargetAmountSet = numberBox->amount;
+	}
+
+	else if (callbackEnum == CallbackEnum::EditableNumberSetOutputTarget)
+	{
+		auto editableBox = CastChecked<UPunEditableNumberBox>(punWidgetCaller);
+		
+		auto command = make_shared<FGenericCommand>();
+		command->callbackEnum = callbackEnum;
+		command->intVar1 = editableBox->callbackVar1;
+
+		int32 amount = editableBox->isEditableNumberActive ? editableBox->amount : -1;;
+		command->intVar2 = amount;
+
+		networkInterface()->SendNetworkCommand(command);
+
+		auto& playerOwned = simulation().playerOwned(playerId());
+		playerOwned.SetOutputTargetDisplay(static_cast<ResourceEnum>(editableBox->callbackVar1), amount);
 	}
 
 	else if (callbackEnum == CallbackEnum::OpenManageStorage)

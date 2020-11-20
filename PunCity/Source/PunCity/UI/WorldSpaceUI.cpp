@@ -139,7 +139,9 @@ void UWorldSpaceUI::TickWorldSpaceUI()
 		else if (IsHumanHouse(building.buildingEnum())) {
 			jobUIState = JobUIState::Home;
 		}
-		else if (IsStorage(building.buildingEnum())) {
+		else if (building.isEnum(CardEnum::StorageYard) ||
+				building.isEnum(CardEnum::Warehouse)) 
+		{
 			jobUIState = JobUIState::Storage;
 		}
 		else {

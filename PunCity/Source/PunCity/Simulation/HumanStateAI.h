@@ -25,8 +25,9 @@ public:
 		if (TryMoveResourcesAny(info.resourceEnum, ResourceFindType::AvailableForPickup, ResourceFindType::Requester, amountAtLeast) || justReset()) return true;
 		
 		if (TryMoveResourcesAny(info.resourceEnum, ResourceFindType::Provider, ResourceFindType::AvailableForDropoff, amountAtLeast) || justReset()) return true;
-		
-		if (TryMoveResourcesAny(info.resourceEnum, ResourceFindType::AvailableForPickup, ResourceFindType::AvailableForDropoff, amountAtLeast) || justReset()) return true;
+
+		// TODO: no need for this???
+		//if (TryMoveResourcesAny(info.resourceEnum, ResourceFindType::AvailableForPickup, ResourceFindType::AvailableForDropoff, amountAtLeast) || justReset()) return true;
 		
 		return false;
 	}

@@ -823,8 +823,14 @@ public:
 			ModuleTransforms::CreateSet("IrrigationReservoir", {}, {})
 		},
 
+		/*
+		 * Nov 18
+		 */
 		{ // Tunnel
 			ModuleTransforms({ ModuleTransform("Tunnel", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
+		},
+		{ // Garment Factory
+			ModuleTransforms::CreateSet("CottonMill")
 		},
 		
 		/*

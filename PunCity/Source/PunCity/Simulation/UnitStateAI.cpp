@@ -1551,7 +1551,7 @@ void UnitStateAI::Eat()
 
 		// Food consumption changes
 		if (isEnum(UnitEnum::Human)) {
-			int32 foodConsumptionModifier = _simulation->difficultyConsumptionAdjustment();
+			int32 foodConsumptionModifier = _simulation->difficultyConsumptionAdjustment(_playerId);
 
 			foodIncrement = foodIncrement * 100 / (100 + foodConsumptionModifier);
 		}
@@ -1629,7 +1629,7 @@ void UnitStateAI::Heat()
 				PUN_LOG("amount:%d heatToAdd:%d celsiusSec:%d", amount, heatToAdd, heatToAdd/Time::TicksPerSecond);
 			}
 
-			heatToAdd = heatToAdd * 100 / (100 + _simulation->difficultyConsumptionAdjustment());
+			heatToAdd = heatToAdd * 100 / (100 + _simulation->difficultyConsumptionAdjustment(_playerId));
 		
 			
 			if (_houseId != -1) {
@@ -1701,7 +1701,12 @@ void UnitStateAI::UseTools()
 	//}
 	//else 
 	if (resourceEnum == ResourceEnum::SteelTools) {
-		_nextToolNeedTick = Time::Ticks() + (Time::TicksPerYear * 2) + (GameRand::Rand() % Time::TicksPerYear * 2); // Steel tool 3 year
+		int32 ticksUntilNextToolNeed = (Time::TicksPerYear * 2) + (GameRand::Rand() % Time::TicksPerYear * 2); // Steel tool 3 year;
+
+		ticksUntilNextToolNeed = ticksUntilNextToolNeed * 100 / (100 + _simulation->difficultyConsumptionAdjustment(_playerId));
+		
+		_nextToolNeedTick = Time::Ticks() + ticksUntilNextToolNeed;
+		//_nextToolNeedTick = Time::Ticks() + (Time::TicksPerYear * 2) + (GameRand::Rand() % Time::TicksPerYear * 2); // Steel tool 3 year
 	}
 	else {
 		UE_DEBUG_BREAK();

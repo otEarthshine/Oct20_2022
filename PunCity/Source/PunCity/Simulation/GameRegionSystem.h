@@ -36,8 +36,10 @@ public:
 	void Init(IGameSimulationCore* simulation)
 	{
 		_simulation = simulation;
+
+		provinceToTreeCountCache.resize(GameMapConstants::TotalRegions, -1);
+		
 		_territoryOwnerMap.resize(GameMapConstants::TotalRegions, -1);
-		//_isDirectControl.resize(GameMapConstants::TotalRegions, false);
 		
 		_boarBurrowsToRegion.resize(GameMapConstants::TotalRegions);
 		_provinceToAnimalIds.resize(GameMapConstants::TotalRegions);
@@ -133,6 +135,8 @@ public:
 
 	void Serialize(FArchive &Ar)
 	{
+		SerializeVecValue(Ar, provinceToTreeCountCache);
+		
 		SerializeVecValue(Ar, _territoryOwnerMap);
 		SerializeVecVecValue(Ar, _boarBurrowsToRegion);
 		SerializeVecVecValue(Ar, _provinceToAnimalIds);
@@ -144,6 +148,9 @@ public:
 	int32 debugMaxAnimalCountProvinceId = -1;
 	int32 debugTotalProvinceAnimalCount = 0;
 #endif
+
+public:
+	std::vector<int32> provinceToTreeCountCache;
 
 private:
 	IGameSimulationCore* _simulation = nullptr;

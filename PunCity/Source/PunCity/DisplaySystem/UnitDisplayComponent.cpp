@@ -71,7 +71,10 @@ int32 UUnitDisplayComponent::GetUnitTransformAndVariation(int32 unitId, FTransfo
 
 	// Special case walk on bridge
 	WorldTile2 unitTile = pose.actualLocation.worldTile2();
-	if (sim.buildingEnumAtTile(unitTile) == CardEnum::Bridge) {
+	CardEnum buildingEnumAtTile = sim.buildingEnumAtTile(unitTile);
+	if (buildingEnumAtTile == CardEnum::Bridge ||
+		buildingEnumAtTile == CardEnum::Tunnel)
+	{
 		Building& bridge = *sim.buildingAtTile(unitTile); // simulation().building(GameMap::buildingId(unitTile));
 
 		TileArea area = bridge.area();
@@ -86,7 +89,7 @@ int32 UUnitDisplayComponent::GetUnitTransformAndVariation(int32 unitId, FTransfo
 		} else {
 			tileFraction = static_cast<float>(pose.actualLocation.y - unitTile.worldAtom2().y) / CoordinateConstants::AtomsPerTile + 0.5f;
 		}
-		
+
 		if (unitTile == start) {
 			// Looking N, E
 			displayLocation.Z = tileFraction * 6;
@@ -99,8 +102,14 @@ int32 UUnitDisplayComponent::GetUnitTransformAndVariation(int32 unitId, FTransfo
 			displayLocation.Z = 6;
 		}
 
+		// Tunnel goes underground instead
+		if (buildingEnumAtTile == CardEnum::Tunnel) {
+			displayLocation.Z = -displayLocation.Z;
+		}
+
 		//PUN_LOG("tileFraction %f, Z %f", tileFraction, displayLocation.Z);
 	}
+
 
 	transform = FTransform(rotator, displayLocation, FVector(scale, scale, scale));
 

@@ -727,18 +727,24 @@ enum class DifficultyLevel : uint8
 	Normal,
 	Hard,
 	Brutal,
+	King,
+	Emperor,
 };
 static const std::vector<FString> DifficultyLevelNames
 {
 	"Normal",
 	"Hard",
 	"Brutal",
+	"King",
+	"Emperor",
 };
 static const std::vector<int32> DifficultyConsumptionAdjustment
 {
 	0,
-	25,
-	50,
+	30,
+	60,
+	90,
+	120,
 };
 
 static DifficultyLevel GetDifficultyLevelFromString(const FString& str) {
@@ -862,8 +868,8 @@ struct ResourceInfo
 // BALANCE
 // human consume 100 food per year, 100 food is roughly 300 coins, 1 year is 20 mins or 1200 sec..
 //
-static const int32 HumanFoodPerYear = 45; // 35 // 70
-static const int32 FoodCost = 3;
+static const int32 HumanFoodPerYear = 27; // 45 (nov 19) // 35 // 70
+static const int32 FoodCost = 5; // 3 (nov 19)
 static const int32 BaseHumanFoodCost100PerYear = 100 * HumanFoodPerYear * FoodCost;
 
 /*
@@ -875,7 +881,7 @@ static const int32 BaseHumanFoodCost100PerYear = 100 * HumanFoodPerYear * FoodCo
 static const int32 FarmFoodMultiplier100 = 100;
 
 static const int32 WoodGatherYield_Base100 = 250;
-static const int32 FarmBaseYield100 = 250;
+static const int32 FarmBaseYield100 = 150; // 250 (nov 19)
 static const int32 StoneGatherYield_Base = 4;
 
 static const int32 CutTreeTicksBase = Time::TicksPerSecond * 10;
@@ -891,7 +897,7 @@ static const int32 WorkRevenue100PerYear_perMan_Base = BaseHumanFoodCost100PerYe
 // This is the same as WorkRevenuePerManSec100_Base
 static const int32 WorkRevenue100PerSec_perMan_Base = WorkRevenue100PerYear_perMan_Base / Time::SecondsPerYear;
 
-static const int32 AssumedFoodProduction100PerYear = WorkRevenue100PerYear_perMan_Base / 3; // Food has cost of 3...
+static const int32 AssumedFoodProduction100PerYear = WorkRevenue100PerYear_perMan_Base / FoodCost; // Food has cost of 3...
 
 // How much a person spend on each type of luxury per year. ... /4 comes from testing... it makes houselvl 2 gives x2 income compare to house lvl 1
 static const int32 HumanLuxuryCost100PerYear_ForEachType = BaseHumanFoodCost100PerYear / 8;
@@ -930,7 +936,7 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::Coal,		"Coal",		6, "Fuel used to heat houses or smelt ores. When heating houses, provides x2 heat vs. Wood"),
 	ResourceInfo(ResourceEnum::IronOre,		"Iron Ore",		5, "Valuable ore that can be smelted into Iron Bar"),
 	ResourceInfo(ResourceEnum::Iron,		"Iron Bar",		18, "Sturdy bar of metal used in construction and tool-making."),
-	ResourceInfo(ResourceEnum::Furniture,	"Furniture", 8,  "Luxury tier 1 used for housing upgrade. Make house a home."),
+	ResourceInfo(ResourceEnum::Furniture,	"Furniture", 10,  "Luxury tier 1 used for housing upgrade. Make house a home."),
 	ResourceInfo(ResourceEnum::Chocolate,	"Chocolate", 20,  "Luxury tier 2 used for housing upgrade. Everyone's favorite confectionary."),
 
 	//ResourceInfo(ResourceEnum::StoneTools,		"Stone Tools",		15,  "Lowest-grade tool made by Stone Tool Shop."),
@@ -956,12 +962,12 @@ static const ResourceInfo ResourceInfos[]
 
 	ResourceInfo(ResourceEnum::Wool,			"Wool", 7, "Fine, soft fiber used to make Clothes"),
 	ResourceInfo(ResourceEnum::Leather,		"Leather", 5, "Animal skin that can be used to make Clothes"),
-	ResourceInfo(ResourceEnum::Cloth,		"Clothes", 15, "Luxury tier 2 used for housing upgrade. Provide cover and comfort."),
+	ResourceInfo(ResourceEnum::Cloth,		"Clothes", 30, "Luxury tier 2 used for housing upgrade. Provide cover and comfort."),
 
 	ResourceInfo(ResourceEnum::GoldOre,		"Gold Ore", 10, "Precious ore that can be smelted into Gold Bar"),
 	ResourceInfo(ResourceEnum::GoldBar,		"Gold Bar", 25, "Precious metal that can be minted into money or crafted into Jewelry"),
 
-	ResourceInfo(ResourceEnum::Beer,			"Beer", 8, "Luxury tier 1 used for housing upgrade. The cause and solution to all life's problems."),
+	ResourceInfo(ResourceEnum::Beer,			"Beer", 10, "Luxury tier 1 used for housing upgrade. The cause and solution to all life's problems."),
 	//ResourceInfo(ResourceEnum::Barley,		"Barley", FoodCost, 100, "Edible grain, obtained from farming. Ideal for brewing Beer"),
 	//ResourceInfo(ResourceEnum::Oyster,		"Oyster", 7, IndustryTuneFactor + 50, "A delicacy from the Sea"),
 	ResourceInfo(ResourceEnum::Cannabis,		"Cannabis", 5, "Luxury tier 1 used for housing upgrade."),
@@ -971,17 +977,17 @@ static const ResourceInfo ResourceInfos[]
 
 	ResourceInfo(ResourceEnum::Pottery,		"Pottery", 8, "Luxury tier 1 used for housing upgrade. Versatile pieces of earthenware."),
 
-	ResourceInfo(ResourceEnum::Flour,		"Wheat Flour", 5, "Ingredient used to bake Bread"),
-	ResourceInfo(ResourceEnum::Bread,		"Bread", 3, "Delicious food baked from Wheat Flour"), // 3 bread from 1 flour
+	ResourceInfo(ResourceEnum::Flour,		"Wheat Flour", 9, "Ingredient used to bake Bread"),
+	ResourceInfo(ResourceEnum::Bread,		"Bread", FoodCost, "Delicious food baked from Wheat Flour"), // 3 bread from 1 flour
 	ResourceInfo(ResourceEnum::Gemstone,	"Gemstone", 20, "Precious stone that can be crafted into Jewelry"),
 	ResourceInfo(ResourceEnum::Jewelry,		"Jewelry", 70, "Luxury tier 3 used for housing upgrade. Expensive adornment of Gold and Gems."),
 
 	// June 9
 	
 	ResourceInfo(ResourceEnum::Cotton,				"Cotton", 7, "Raw material used to make Cotton Fabric."),
-	ResourceInfo(ResourceEnum::CottonFabric,		"Cotton Fabric", 7, "Fabric used by tailors to make Clothes."),
-	ResourceInfo(ResourceEnum::DyedCottonFabric,	"Dyed Cotton Fabric", 17, "Fancy fabric used by tailors to make Fashionable Clothes."),
-	ResourceInfo(ResourceEnum::LuxuriousClothes,	"Fashionable Clothes", 30, "Luxury tier 3 used for housing upgrade."),
+	ResourceInfo(ResourceEnum::CottonFabric,		"Cotton Fabric", 23, "Fabric used by tailors to make Clothes."),
+	ResourceInfo(ResourceEnum::DyedCottonFabric,	"Dyed Cotton Fabric", 43, "Fancy fabric used by tailors to make Fashionable Clothes."),
+	ResourceInfo(ResourceEnum::LuxuriousClothes,	"Fashionable Clothes", 50, "Luxury tier 3 used for housing upgrade."),
 	
 	ResourceInfo(ResourceEnum::Honey,		"Honey", FoodCost, "Delicious, viscous liquid produced by bees."),
 	ResourceInfo(ResourceEnum::Beeswax,		"Beeswax", 7, "Raw material used to make Candles."),
@@ -1485,7 +1491,7 @@ enum class ResourceHolderType : uint8
 	DropManual,
 	Dead,
 
-	
+	Market,
 };
 
 static const std::vector<std::string> ResourceHolderTypeName
@@ -1498,7 +1504,7 @@ static const std::vector<std::string> ResourceHolderTypeName
 	"DropManual",
 	"Dead",
 
-	
+	"Market",
 };
 
 static std::string GetResourceHolderTypeName(ResourceHolderType type) {
@@ -1820,6 +1826,7 @@ enum class CardEnum : uint16
 
 	// Nov 18
 	Tunnel,
+	GarmentFactory,
 
 	// Decorations
 	FlowerBed,
@@ -1964,56 +1971,6 @@ enum class CardHandEnum
 
 static const std::vector<std::pair<CardEnum, int32>> BuildingEnumToUpkeep =
 {
-	//{ CardEnum::FruitGatherer, 4 },
-	//{ CardEnum::HuntingLodge, 3 },
-	//{ CardEnum::MushroomFarm, 5 },
-	//{ CardEnum::Fisher, 5 },
-	//{ CardEnum::Farm, 3 },
-	//
-	//{ CardEnum::RanchBarn, 8 },
-	//{ CardEnum::RanchPig, 8 },
-	//{ CardEnum::RanchSheep, 12 },
-	//{ CardEnum::RanchCow, 15 },
-	
-	//{ CardEnum::GoldMine, 20 },
-	//{ CardEnum::Quarry, 10 },
-	//{ CardEnum::CoalMine, 10 },
-	//{ CardEnum::IronMine, 10 },
-	//{ CardEnum::Forester, 20 },
-	//
-	//{ CardEnum::Bank, 20 },
-	//{ CardEnum::IronSmelter, 50 },
-	//{ CardEnum::GoldSmelter, 50 },
-	//{ CardEnum::Mint, 20 },
-	//{ CardEnum::InventorsWorkshop, 10 },
-
-	//{ CardEnum::Blacksmith, 10 },
-	//{ CardEnum::MedicineMaker, 10 },
-
-	//{ CardEnum::IronSmelterGiant, 100},
-
-	//{ CardEnum::BeerBrewery, 12 },
-	//{ CardEnum::BeerBreweryFamous, 35 },
-	//
-	//{ CardEnum::ClayPit, 12 },
-	//{ CardEnum::Potter, 12 },
-	//{ CardEnum::FurnitureWorkshop, 12 },
-	//{ CardEnum::Tailor, 20 },
-	//{ CardEnum::Chocolatier, 150 },
-	//{ CardEnum::Winery, 100 },
-
-	//{ CardEnum::Windmill, 20 },
-	//{ CardEnum::Bakery, 20 },
-	//{ CardEnum::GemstoneMine, 30 },
-	//{ CardEnum::Jeweler, 30 },
-
-	//{ CardEnum::Beekeeper, 10 },
-	//{ CardEnum::Brickworks, 20 },
-	//{ CardEnum::CandleMaker, 20 },
-	//{ CardEnum::CottonMill, 30 },
-	//{ CardEnum::PrintingPress, 30 },
-
-
 	{ CardEnum::Garden, 5 },
 	
 	{ CardEnum::Library, 15 },
@@ -2349,7 +2306,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::Theatre,		"Theatre",				WorldTile2(7, 6),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{80,30,0},	"Increase visitor's Fun. Visitors must live in a level 2+ house. Service quality 120."),
 	BldInfo(CardEnum::Tavern,		"Tavern",				WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{50,30,0},	"Increase visitor's Fun. Service quality 90."),
 
-	BldInfo(CardEnum::Tailor,		"Tailor",				WorldTile2(5, 6),	ResourceEnum::Leather, ResourceEnum::None, ResourceEnum::Cloth,	 10, 5,	{120, 100, 30},	"Make Clothes from Leather or Wool."),
+	BldInfo(CardEnum::Tailor,		"Tailor",				WorldTile2(5, 6),	ResourceEnum::Leather, ResourceEnum::None, ResourceEnum::Cloth,	 10, 4,	{120, 100, 30},	"Make Clothes from Leather or Wool."),
 
 	BldInfo(CardEnum::CharcoalMaker,"Charcoal Burner",		WorldTile2(4, 5),	ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::Coal,		 10, 2,	{40,0,0},		"Burn Wood into Coal which provides x2 heat when heating houses."),
 	BldInfo(CardEnum::BeerBrewery,	"Beer Brewery",			WorldTile2(5, 5),	ResourceEnum::Wheat, ResourceEnum::None, ResourceEnum::Beer,		 10, 2,	{40,30,0},		"Brew Wheat into Beer."),
@@ -2408,7 +2365,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::Beekeeper, "Beekeeper", WorldTile2(6, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::Beeswax, 10, 2, { 50,50,0 }, "Produces Beeswax and Honey. Efficiency increases with more surrounding trees."),
 	BldInfo(CardEnum::Brickworks, "Brickworks", WorldTile2(6, 5), ResourceEnum::Clay, ResourceEnum::Coal, ResourceEnum::Brick, 20, 3, { 20,100,0 }, "Produces Brick from Clay and Coal."),
 	BldInfo(CardEnum::CandleMaker, "Candle Maker", WorldTile2(5, 6), ResourceEnum::Beeswax, ResourceEnum::Cotton, ResourceEnum::Candle, 20, 3, { 150, 100, 0 }, "Make Candles from Beeswax and Cotton wicks."),
-	BldInfo(CardEnum::CottonMill, "Cotton Mill", WorldTile2(7, 6), ResourceEnum::Cotton, ResourceEnum::None, ResourceEnum::CottonFabric, 20, 5, { 0, 100, 100 }, "Mass-produce Cotton into Cotton Fabric."),
+	BldInfo(CardEnum::CottonMill, "Cotton Mill", WorldTile2(7, 6), ResourceEnum::Cotton, ResourceEnum::None, ResourceEnum::CottonFabric, 10, 5, { 0, 100, 100 }, "Mass-produce Cotton into Cotton Fabric."),
 	BldInfo(CardEnum::PrintingPress, "Printing Press", WorldTile2(5, 6), ResourceEnum::Paper, ResourceEnum::Dye, ResourceEnum::Book, 20, 5, { 0, 150, 100 }, "Print Books."),
 
 	// June 25 addition
@@ -2427,6 +2384,11 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::Market, "Market", WorldTile2(6, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 5, { 120, 120, 0 }, "Provide food/fuel/medicine/tools/luxury to houses within radius. Bring faraway resources in 50-units bulk."),
 	BldInfo(CardEnum::ShippingDepot, "Logistics Office", WorldTile2(4, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 1, { 20, 10, 0 }, "Haul specified resources from within the radius to its delivery target in 50-units bulk."),
 	BldInfo(CardEnum::IrrigationReservoir, "Irrigation Reservoir", WorldTile2(5, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0, 150, 0 }, "Raises fertility within its radius to 100%."),
+
+	// November 18
+	BldInfo(CardEnum::Tunnel, "Tunnel", WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "Allow citizens to cross over water."),
+	BldInfo(CardEnum::GarmentFactory, "Garment Factory", WorldTile2(7, 6), ResourceEnum::DyedCottonFabric, ResourceEnum::None, ResourceEnum::LuxuriousClothes, 10, 5, { 0, 100, 100 }, "Mass-produce Clothes with Fabrics."),
+	
 	
 	// Decorations
 	BldInfo(CardEnum::FlowerBed, "Flower Bed", WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "Increase the surrounding appeal by 5 within 5 tiles radius."),
@@ -3125,6 +3087,7 @@ static bool IsRoad(CardEnum buildingEnum) {
 static const std::vector<CardEnum> StorageEnums {
 	CardEnum::StorageYard,
 	CardEnum::Warehouse,
+	CardEnum::Market,
 };
 static bool IsStorage(CardEnum buildingEnum) {
 	for (CardEnum storageEnum : StorageEnums) {
@@ -3842,9 +3805,10 @@ static const int32 GatherUnitsPerYear = 5; // 6;  // GatherBaseYield 4 gives 60 
 static const int32 GatherBaseYield100 = AssumedFoodProduction100PerYear / GatherUnitsPerYear;
 static const int32 JungleGatherBaseYield100 = GatherBaseYield100 * 2;
 
+static const int32 HayBaseYield = 50; // 50 is from tuning
 static const ResourcePair defaultWood100(ResourceEnum::Wood, WoodGatherYield_Base100);
-static const ResourcePair defaultHay100(ResourceEnum::Hay, FarmBaseYield100 / 5); //5 is from tuning
-static const ResourcePair defaultGrass100(ResourceEnum::Hay, FarmBaseYield100 / 5 / GrassToBushValue);
+static const ResourcePair defaultHay100(ResourceEnum::Hay, HayBaseYield);
+static const ResourcePair defaultGrass100(ResourceEnum::Hay, HayBaseYield / GrassToBushValue);
 
 
 static const TileObjInfo TreeInfos[] = {
@@ -3895,7 +3859,7 @@ static const TileObjInfo TreeInfos[] = {
 	TileObjInfo(TileObjEnum::WheatBush, "Wheat",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), "Grass that can be cultivated for its seed."),
 	TileObjInfo(TileObjEnum::BarleyBush, "Barley",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), "Grass that can be cultivated for its seed."),
 	TileObjInfo(TileObjEnum::Grapevines, "Grapevines",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Grape, FarmBaseYield100), "Produces delicious Grape that can be eaten fresh or make expensive wine."),
-	TileObjInfo(TileObjEnum::Cannabis, "Cannabis",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cannabis, FarmBaseYield100 / 2), "Plant whose parts can be smoked or added to food for recreational purposes."),
+	TileObjInfo(TileObjEnum::Cannabis, "Cannabis",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cannabis, FarmBaseYield100), "Plant whose parts can be smoked or added to food for recreational purposes."),
 
 	//TileObjInfo(TileObjEnum::PlumpCob, "Plump cob",	ResourceTileType::Bush,				1,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), "Produces large soft yellow tasty cob. Need 2 years before it is ready for harvest, but has 3x yield."),
 	//TileObjInfo(TileObjEnum::CreamPod, "Cream pod",	ResourceTileType::Bush,				1,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), "Produces round pods, which, when cut open, reveals thick sweet cream substance."),
@@ -3906,7 +3870,7 @@ static const TileObjInfo TreeInfos[] = {
 	TileObjInfo(TileObjEnum::Dye,		"Dye",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Dye, FarmBaseYield100), "Dye used to dye Cotton Fabric or print Book."),
 
 	
-	TileObjInfo(TileObjEnum::Herb,		"Medicinal Herb",		ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Herb, FarmBaseYield100 / 2), "Herb used to heal sickness or make medicine."),
+	TileObjInfo(TileObjEnum::Herb,		"Medicinal Herb",		ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Herb, FarmBaseYield100), "Herb used to heal sickness or make medicine."),
 	//TileObjInfo(TileObjEnum::BaconBush, "Bacon bush",	ResourceTileType::Bush,				1,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), "Plant with delicious leaves that tastes like bacon when grilled. Legend says, this plant was created by an ancient advanced civilization of giants."),
 
 	TileObjInfo(TileObjEnum::Stone, "Stone",	ResourceTileType::Deposit,	ResourcePair::Invalid(),								ResourcePair(ResourceEnum::Stone, 2) /*this is not used?*/, "Easily-accessible stone deposits."),
@@ -4602,6 +4566,8 @@ enum class TechEnum : uint8
 	Irrigation,
 	Market,
 	ImprovedLogistics,
+
+	Tunnel,
 
 
 	/*
@@ -6344,7 +6310,7 @@ struct GeoresourceNode
 	static GeoresourceNode Create(GeoresourceEnum georesourceEnum, int32 provinceId, WorldTile2 centerTile, TileArea georesourceArea = TileArea())
 	{
 		GeoresourceNode node = { georesourceEnum, provinceId, centerTile, georesourceArea };
-		node.stoneAmount = 7500 + GameRand::Rand(provinceId) % 5000;
+		node.stoneAmount = 15000 + GameRand::Rand(provinceId) % 10000;
 		return node;
 	}
 	
@@ -7017,6 +6983,8 @@ enum class CallbackEnum : uint8
 	EditNumberChooseResource,
 
 	OpenManageStorage,
+
+	EditableNumberSetOutputTarget,
 
 	SetDeliveryTarget,
 	RemoveDeliveryTarget,

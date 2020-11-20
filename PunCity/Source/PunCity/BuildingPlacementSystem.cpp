@@ -1401,7 +1401,8 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 	if (_placementType == PlacementType::DirtRoad ||
 		_placementType == PlacementType::StoneRoad ||
 		_placementType == PlacementType::Fence ||
-		_placementType == PlacementType::Bridge)
+		_placementType == PlacementType::Bridge ||
+		_placementType == PlacementType::Tunnel)
 	{
 		//TickLineDrag(cameraAtom, std::bind(&IGameManagerInterface::IsPlayerRoadBuildable, _gameInterface, _1));
 		TickLineDrag(cameraAtom, [&](WorldTile2 tile) {
@@ -2375,7 +2376,7 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 					TileArea bridgeArea(minX, minY, maxX, maxY);
 					
 					auto command = make_shared<FPlaceBuilding>();
-					command->buildingEnum = static_cast<uint8>(CardEnum::Bridge);
+					command->buildingEnum = static_cast<uint8>(_placementType == PlacementType::Bridge ? CardEnum::Bridge : CardEnum::Tunnel);
 					command->buildingLevel = _buildingLvl;
 					command->area = bridgeArea;
 					command->center = bridgeArea.min();

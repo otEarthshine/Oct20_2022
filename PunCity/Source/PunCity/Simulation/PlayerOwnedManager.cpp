@@ -783,7 +783,7 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 	}
 
 	if (_simulation->IsResearched(_playerId, TechEnum::Rationalism)) {
-		sciences100[static_cast<int>(ScienceEnum::Rationalism)] += sumFromHouses * 20 / 100;
+		sciences100[static_cast<int>(ScienceEnum::Rationalism)] += sumFromHouses * 30 / 100;
 	}
 
 	/*
@@ -1121,8 +1121,10 @@ void PlayerOwnedManager::Tick1Sec()
 
 		for (int32 humanId : _adultIds)
 		{
-			int32 sickPercent100PerYear = 10000; // 
-			int32 sickPercent100PerCheck = sickPercent100PerYear / 20;  // 20 checks per year
+			const int32 sickPercent100PerYear = 10000; // 
+			const int32 sickPercent100PerCheck_base = sickPercent100PerYear / 20;  // 20 checks per year (check every minute)
+			
+			int32 sickPercent100PerCheck = sickPercent100PerCheck_base * (100 + _simulation->difficultyConsumptionAdjustment(_playerId)) / 100;
 
 			if (Time::IsWinter()) {
 				sickPercent100PerCheck *= 3;

@@ -17,6 +17,8 @@ class UPunEditableNumberBox : public UPunWidget
 public:
 	void OnInit() override {
 		DescriptionText->SetVisibility(ESlateVisibility::Collapsed);
+
+		EnableCheckBox->OnCheckStateChanged.AddDynamic(this, &UPunEditableNumberBox::OnEnableCheckBox);
 		
 		BUTTON_ON_CLICK(ArrowDownButton, this, &UPunEditableNumberBox::ClickArrowDownButton);
 		BUTTON_ON_CLICK(ArrowUpButton, this, &UPunEditableNumberBox::ClickArrowUpButton);
@@ -29,7 +31,8 @@ public:
 		justInitialized = true;
 	}
 
-	void Set(UPunWidget* callbackTarget, CallbackEnum callbackEnum, int32 objectId = -1, std::string description = "")
+	void Set(UPunWidget* callbackTarget, CallbackEnum callbackEnum, int32 objectId = -1, std::string description = "", 
+			std::string checkBoxEnabledDescription = "", bool isChecked = false, ResourceEnum resourceEnum = ResourceEnum::None)
 	{
 		_callbackTarget = callbackTarget;
 		_callbackEnum = callbackEnum;
@@ -43,6 +46,30 @@ public:
 			DescriptionText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		}
 
+		ESlateVisibility editableNumberVisibility;
+		if (checkBoxEnabledDescription != "") {
+			EnableCheckBox->SetVisibility(ESlateVisibility::Visible);
+			EnableCheckBox->SetIsChecked(isChecked);
+			DescriptionText->SetText(FText::FromString(ToFString(isChecked ? checkBoxEnabledDescription : description)));
+
+			editableNumberVisibility = isChecked ? ESlateVisibility::Visible : ESlateVisibility::Collapsed;
+		} else {
+			EnableCheckBox->SetVisibility(ESlateVisibility::Collapsed);
+
+			editableNumberVisibility = ESlateVisibility::Visible;
+		}
+
+		EditableNumber->SetVisibility(editableNumberVisibility);
+		ArrowDownButton->SetVisibility(editableNumberVisibility);
+		ArrowUpButton->SetVisibility(editableNumberVisibility);
+
+		if (resourceEnum != ResourceEnum::None && isChecked) {
+			IconImage->SetVisibility(ESlateVisibility::Visible);
+			SetResourceImage(IconImage, resourceEnum, assetLoader());
+		} else {
+			IconImage->SetVisibility(ESlateVisibility::Collapsed);
+		}
+
 		justInitialized = false;
 
 		PUN_CHECK(ArrowDownButton->OnClicked.GetAllObjects().Num() > 0); // Ensure initialized
@@ -53,6 +80,9 @@ public:
 	}
 
 public:
+	UPROPERTY(meta = (BindWidget)) UCheckBox* EnableCheckBox;
+	UPROPERTY(meta = (BindWidget)) UImage* IconImage;
+	
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* DescriptionText;
 	UPROPERTY(meta = (BindWidget)) UPunEditableText* EditableNumber;
 	UPROPERTY(meta = (BindWidget)) UButton* ArrowDownButton;
@@ -67,12 +97,27 @@ public:
 	int32 minAmount = MIN_int32;
 	int32 maxAmount = MAX_int32;
 
+	bool isEditableNumberActive = true;
+	
 private:
 	UFUNCTION() void ClickArrowDownButton();
 	UFUNCTION() void ClickArrowUpButton();
 	UFUNCTION() void NumberChanged(const FText& Text, ETextCommit::Type CommitMethod);
 
 	void ClickArrow(bool isDown);
+
+	UFUNCTION() void OnEnableCheckBox(bool active)
+	{
+		if (active) {
+			amount = 1000;
+			UpdateText();
+		}
+		isEditableNumberActive = active;
+		
+		if (_callbackTarget) {
+			_callbackTarget->CallBack1(this, _callbackEnum);
+		}
+	}
 
 private:
 	UPROPERTY() UPunWidget* _callbackTarget = nullptr;

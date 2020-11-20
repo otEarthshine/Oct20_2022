@@ -559,6 +559,7 @@ public:
 	
 	enum class Type : uint8 {
 		SendGift,
+		SetProduceUntil,
 	} genericCommandType;
 
 	int32 intVar1 = -1;
@@ -1105,7 +1106,7 @@ public:
 	static FChooseInitialResources GetDefault()
 	{
 		FChooseInitialResources command;
-		command.foodAmount = 240;
+		command.foodAmount = 180;
 		command.woodAmount = 120;
 		command.stoneAmount = 120;
 		

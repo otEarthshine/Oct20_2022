@@ -47,6 +47,19 @@ static const std::vector<std::string> AIRegionPurposeName
 class AICityBlock
 {
 public:
+
+	//static bool TryPlaceBlockHelper(WorldTile2 centerTile, int32 aiPlayerId, IGameSimulationCore* simulation);
+
+	static AICityBlock MakeBlock(std::vector<CardEnum> topBuildingEnumsIn, std::vector<CardEnum> bottomBuildingEnumsIn = {})
+	{
+		AICityBlock block;
+		block.topBuildingEnums = topBuildingEnumsIn;
+		block.bottomBuildingEnums = bottomBuildingEnumsIn;
+		block.CalculateSize();
+		return block;
+	}
+	
+	
 	WorldTile2 minTile() { return _minTile; }
 	WorldTile2 size() { return _size; }
 
@@ -62,30 +75,41 @@ public:
 
 	int32 midRoadTileX() { return _minTile.x + bottomTileSizeX; }
 
-	void CalculateSize() {
+	void CalculateSize()
+	{
+		// Calculate the total size required to place this cluster
+
+		auto getSize = [&](CardEnum buildingEnum)
+		{
+			if (buildingEnum == CardEnum::StorageYard) {
+				return WorldTile2(4, 4);
+			}
+			return GetBuildingInfo(buildingEnum).size;
+		};
+		
 		topTileSizeX = 0;
 		int32 topTileSizeY = 0;
 		for (CardEnum buildingEnum : topBuildingEnums) {
-			WorldTile2 size = GetBuildingInfo(buildingEnum).size;
+			WorldTile2 size = getSize(buildingEnum);
 			topTileSizeX = std::max(topTileSizeX, static_cast<int32_t>(size.x));
 			topTileSizeY += size.y;
 		}
 		bottomTileSizeX = 0;
 		int32 bottomTileSizeY = 0;
 		for (CardEnum buildingEnum : bottomBuildingEnums) {
-			WorldTile2 size = GetBuildingInfo(buildingEnum).size;
+			WorldTile2 size = getSize(buildingEnum);
 			bottomTileSizeX = std::max(bottomTileSizeX, static_cast<int32_t>(size.x));
 			bottomTileSizeY += size.y;
 		}
 
 		int32 tileSizeX = topTileSizeX + bottomTileSizeX;
 		int32 tileSizeY = std::max(topTileSizeY, bottomTileSizeY);
-		const int32_t roadShift = 2;
+		const int32 roadShift = 2;
 
 		_size = WorldTile2(tileSizeX + roadShift, tileSizeY + roadShift);
 	}
 
-	// Forest block has road in the middle
+	// *** Forest block has road in the middle
 	bool CanPlaceForestBlock(WorldTile2 minTile, int32 playerId, IGameSimulationCore* simulation)
 	{
 		// Check block area for invalid tile
@@ -100,6 +124,8 @@ public:
 		return !hasInvalid;
 	}
 
+	// From some center tile
+	// - Look spirally around to find a suitable _minTile
 	void TryFindArea(WorldTile2 provinceCenter, int32 playerId, IGameSimulationCore* simulation, int32 maxLookup = 500)
 	{
 		SetMinTile(
@@ -108,12 +134,14 @@ public:
 			}, maxLookup)
 		);
 	}
+
+	// HasArea if TryFindArea() was successul with valid _minTile
 	bool HasArea() {
 		return minTile().isValid();
 	}
 
 
-	// City block has road around
+	// *** City block has road around
 	bool CanPlaceCityBlock(WorldTile2 minTile, int32_t playerId, IGameSimulationCore* simulation)
 	{
 		// outer rim is checked for FrontBuildable instead
@@ -149,9 +177,6 @@ public:
 		SerializeVecValue(Ar, topBuildingEnums);
 		SerializeVecValue(Ar, bottomBuildingEnums);
 
-		SerializeVecValue(Ar, topBuildingIds);
-		SerializeVecValue(Ar, bottomBuildingIds);
-
 		Ar << topTileSizeX;
 		Ar << bottomTileSizeX;
 
@@ -164,9 +189,6 @@ public:
 	// arranged from left to right
 	std::vector<CardEnum> topBuildingEnums;
 	std::vector<CardEnum> bottomBuildingEnums;
-
-	std::vector<int32> topBuildingIds;
-	std::vector<int32> bottomBuildingIds;
 
 	int32 topTileSizeX = 0;
 	int32 bottomTileSizeX = 0;

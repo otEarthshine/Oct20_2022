@@ -952,8 +952,12 @@ public:
 		SetupWorkMode({
 			{"Leather Clothes", ResourceEnum::Leather, ResourceEnum::None, 10},
 			{"Wool Clothes", ResourceEnum::Wool, ResourceEnum::None, 10},
-			{"Cotton Clothes", ResourceEnum::CottonFabric, ResourceEnum::None, 10},
-			{"Fashionable Clothes", ResourceEnum::DyedCottonFabric, ResourceEnum::None, 10, ResourceEnum::LuxuriousClothes },
+			
+			{"Cotton Clothes (Cotton)", ResourceEnum::Cotton, ResourceEnum::None, 10},
+			{"Cotton Clothes (Cotton Fabric)", ResourceEnum::CottonFabric, ResourceEnum::None, 10},
+			
+			{"Fashionable Clothes (Cotton & Dye)", ResourceEnum::Cotton, ResourceEnum::Dye, 10, ResourceEnum::LuxuriousClothes },
+			{"Fashionable Clothes (Dyed Fabric)", ResourceEnum::DyedCottonFabric, ResourceEnum::None, 10, ResourceEnum::LuxuriousClothes },
 		});
 	}
 	
@@ -969,10 +973,13 @@ public:
 		AddResourceHolder(ResourceEnum::DyedCottonFabric, ResourceHolderType::Requester, 0);
 		AddResourceHolder(ResourceEnum::LuxuriousClothes, ResourceHolderType::Provider, 0);
 
+		AddResourceHolder(ResourceEnum::Cotton, ResourceHolderType::Requester, 0);
+		AddResourceHolder(ResourceEnum::Dye, ResourceHolderType::Requester, 0);
+
 		ChangeWorkMode(_workMode);
 
 		_upgrades = {
-			MakeProductionUpgrade("Weaving Machine", ResourceEnum::Iron, 150, 100),
+			MakeProductionUpgrade("Weaving Machine", ResourceEnum::Iron, 70, 55),
 			MakeComboUpgrade("Tailor Town", ResourceEnum::Iron, 70, 25),
 		};
 	}
@@ -1202,8 +1209,40 @@ public:
 		AddResourceHolder(ResourceEnum::DyedCottonFabric, ResourceHolderType::Provider, 0);
 
 		_upgrades = {
-			MakeProductionUpgrade("Advanced Machinery", ResourceEnum::Iron, 250, 200),
+			MakeProductionUpgrade("Advanced Machinery", ResourceEnum::Iron, 500, 300),
 			MakeComboUpgrade("Cotton Mill Town", ResourceEnum::Iron, 80, 50),
+		};
+	}
+
+};
+
+// TODO: include this??
+class GarmentFactory final : public IndustrialBuilding
+{
+public:
+	void OnInit() override
+	{
+		SetupWorkMode({
+			{"Fashionable Clothes", ResourceEnum::DyedCottonFabric, ResourceEnum::None, 10, ResourceEnum::LuxuriousClothes },
+			{"Cotton Clothes", ResourceEnum::CottonFabric, ResourceEnum::None, 10},
+		});
+	}
+
+	void FinishConstruction() final
+	{
+		Building::FinishConstruction();
+
+		AddResourceHolder(ResourceEnum::CottonFabric, ResourceHolderType::Requester, 0);
+		AddResourceHolder(ResourceEnum::Cloth, ResourceHolderType::Provider, 0);
+
+		AddResourceHolder(ResourceEnum::DyedCottonFabric, ResourceHolderType::Requester, 0);
+		AddResourceHolder(ResourceEnum::LuxuriousClothes, ResourceHolderType::Provider, 0);
+
+		ChangeWorkMode(_workMode);
+
+		_upgrades = {
+			MakeProductionUpgrade("Advanced Machinery", ResourceEnum::Iron, 500, 200),
+			MakeComboUpgrade("Garment Factory Town", ResourceEnum::Iron, 80, 50),
 		};
 	}
 

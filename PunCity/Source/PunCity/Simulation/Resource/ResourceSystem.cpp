@@ -60,6 +60,7 @@ void ResourceTypeHolders::RefreshHolder(int32 holderId, ResourceSystem& resource
 		amount = holder.pickupBalance();
 		if (amount > 0) {
 			pushFindType(ResourceFindType::AvailableForPickup);
+			pushFindType(ResourceFindType::MarketPickup);
 		}
 		// Storage doesn't go to AvailableForDropoff but instead to StorageDropoff where it needs to be filtered for full storage
 		amount = 0;
@@ -68,6 +69,22 @@ void ResourceTypeHolders::RefreshHolder(int32 holderId, ResourceSystem& resource
 		// For storage, we must have it update the tilesOccupied
 		_simulation->RefreshStorageStatus(holder.objectId);
 			
+		return;
+	}
+	case ResourceHolderType::Market:
+	{
+		// Storage can available for both pickup/dropoff at the same time...
+		amount = holder.pickupBalance();
+		if (amount > 0) {
+			pushFindType(ResourceFindType::AvailableForPickup);
+		}
+		// Storage doesn't go to AvailableForDropoff but instead to StorageDropoff where it needs to be filtered for full storage
+		amount = 0;
+		pushFindType(ResourceFindType::StorageDropoff);
+
+		// For storage, we must have it update the tilesOccupied
+		_simulation->RefreshStorageStatus(holder.objectId);
+
 		return;
 	}
 	case ResourceHolderType::Requester:

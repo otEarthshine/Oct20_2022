@@ -462,6 +462,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 			CASE(Fence);
 			CASE(FenceGate);
 			CASE(Bridge);
+			CASE(Tunnel);
 			CASE(StorageYard);
 
 			case CardEnum::IntercityRoad: addBuildIcon(CardEnum::IntercityRoad, FString(TO_STR(DirtRoadIcon)), FString("SpecialIconAlpha"), true); break;

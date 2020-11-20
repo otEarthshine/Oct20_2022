@@ -114,7 +114,7 @@ public:
 	virtual std::vector<int32> connectedPlayerIds() = 0;
 
 	virtual MapSizeEnum mapSizeEnum() = 0;
-	virtual int32 difficultyConsumptionAdjustment() = 0;
+	virtual int32 difficultyConsumptionAdjustment(int32 playerId) = 0;
 	virtual FMapSettings mapSettings() = 0;
 
 	virtual bool AllPlayerHasTownhallAfterInitialTicks() = 0;

@@ -147,6 +147,7 @@ public:
 				{
 				case CardEnum::PrintingPress:
 				case CardEnum::CottonMill:
+				case CardEnum::GarmentFactory:
 					faceDirection = Direction::W;
 					break;
 				default:

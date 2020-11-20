@@ -175,7 +175,14 @@ public:
 		GameSaveInfo saveInfo;
 		if (_isSavingGame) {
 			// Show info for current save
-			saveInfo.name = TrimStringF_Dots( simulation().playerNameF(playerId()), 10);
+			std::string name;
+			if (simulation().HasTownhall(playerId())) {
+				name = simulation().townName(playerId());
+			} else {
+				name = simulation().playerName(playerId());
+			}
+			
+			saveInfo.name = TrimStringF_Dots(ToFString(name), 10);
 			saveInfo.dateTime = FDateTime::Now();
 			saveInfo.gameTicks = Time::Ticks();
 			saveInfo.population = simulation().population(playerId());
@@ -382,7 +389,7 @@ private:
 			GameSaveInfo saveInfo;
 			
 			// Show info for current save
-			saveInfo.name = TrimStringF_Dots(simulation().playerNameF(playerId()), 10);
+			saveInfo.name = TrimStringF_Dots(ToFString(simulation().townName(playerId())), 10); // TrimStringF_Dots(simulation().playerNameF(playerId()), 10);
 			saveInfo.dateTime = FDateTime::Now();
 			saveInfo.gameTicks = Time::Ticks();
 			saveInfo.population = simulation().population(playerId());

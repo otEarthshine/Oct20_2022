@@ -100,7 +100,7 @@ public:
 		Show(Direction::S, modules, assetLoader, customDepthIndex);
 	}
 
-	void ShowTunnel(Building& building, UAssetLoaderComponent* assetLoader)
+	void ShowTunnel(Building& building, UAssetLoaderComponent* assetLoader, int32 customDepthIndex = 0)
 	{
 		std::vector<ModuleTransform> modules;
 		
@@ -117,7 +117,7 @@ public:
 		spawnEntrance(area.max(), rotationShift + 180);
 		
 
-		Show(Direction::S, modules, assetLoader);
+		Show(Direction::S, modules, assetLoader, customDepthIndex);
 	}
 
 	/*

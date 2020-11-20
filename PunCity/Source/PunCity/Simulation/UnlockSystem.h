@@ -240,7 +240,7 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 	 */
 	{ TechEnum::Rationalism, {
 		"Rationalism",
-		"+20% Science Output",
+		"+30% Science Output",
 	}},
 
 	{ TechEnum::InfluencePoints, {
@@ -632,6 +632,8 @@ public:
 			AddTech_Building(era, TechEnum::RanchCow, { CardEnum::RanchCow });
 			AddTech_Bonus(era, TechEnum::QuarryImprovement);
 			AddTech_Bonus(era, TechEnum::ImprovedWoodCutting2);
+
+			AddTech_BuildingPermanent(era, TechEnum::Tunnel, {CardEnum::Tunnel});
 			
 			//AddPermanentBuildingResearch(3, TechEnum::Fence, { BuildingEnum::Fence, BuildingEnum::FenceGate });
 
@@ -733,12 +735,12 @@ public:
 			AddProsperityTech_Building(era, 4, TechEnum::Fort, CardEnum::Fort);
 			AddProsperityTech_Building(era, 4, TechEnum::Colony, CardEnum::Colony);
 			AddProsperityTech_Building(era, 4, TechEnum::CardMaker, CardEnum::CardMaker);
+			AddProsperityTech_Building(era, 10, TechEnum::CottonMilling, CardEnum::CottonMill);
 			AddProsperityTech_BuildingPermanent(era, 10, TechEnum::FlowerBed, { CardEnum::FlowerBed });
 			
 			era = 7;
 			AddProsperityTech_Bonus(era, 4, TechEnum::IndustrialAdjacency);
-			AddProsperityTech_Bonus(era, 4, TechEnum::Rationalism);
-			AddProsperityTech_Building(era, 10, TechEnum::CottonMilling, CardEnum::CottonMill);
+			AddProsperityTech_Bonus(era, 14, TechEnum::Rationalism);
 
 			AddProsperityTech_BuildingPermanent(era, 30, TechEnum::GardenCypress, { CardEnum::GardenCypress });
 		}

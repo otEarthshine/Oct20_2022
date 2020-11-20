@@ -279,14 +279,15 @@ public:
 		return widget;
 	}
 
-	UPunEditableNumberBox* AddEditableNumberBox(UPunWidget* callbackParent, CallbackEnum callbackEnum, int32 objectId, std::string description, int32 amount)
+	UPunEditableNumberBox* AddEditableNumberBox(UPunWidget* callbackParent, CallbackEnum callbackEnum, int32 objectId, std::string description, int32 amount, 
+													std::string checkBoxEnabledDescription = "", bool isChecked = false, ResourceEnum resourceEnum = ResourceEnum::None)
 	{
 		auto widget = GetChildElement<UPunEditableNumberBox>(UIEnum::PunEditableNumberBox);
 		if (widget->justInitialized) {
 			widget->amount = amount;
 			widget->UpdateText();
 		}
-		widget->Set(callbackParent, callbackEnum, objectId, description);
+		widget->Set(callbackParent, callbackEnum, objectId, description, checkBoxEnabledDescription, isChecked, resourceEnum);
 		return widget;
 	}
 

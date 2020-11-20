@@ -346,8 +346,13 @@ void UMainGameUI::Tick()
 		// Refresh card stack
 		// refresh the stack if its state changed...
 		// Clicking "Submit" closes the UI temporarily. While the command is being verified, we do not update this
+		int32 queueCount = cardSystem.cardHandQueueCount();
+		
 		if (!cardSystem.IsPendingCommand() && 
-			(_lastIsCardStackBlank == BoolEnum::NeedUpdate || _lastIsCardStackBlank != static_cast<BoolEnum>(cardSystem.IsCardStackBlank())))
+			(_lastIsCardStackBlank == BoolEnum::NeedUpdate || 
+			 _lastIsCardStackBlank != static_cast<BoolEnum>(cardSystem.IsCardStackBlank()) ||
+			 _lastQueueCount != queueCount)
+		   )
 		{
 			_lastIsCardStackBlank = static_cast<BoolEnum>(cardSystem.IsCardStackBlank());
 			ESlateVisibility cardStackVisible = static_cast<bool>(_lastIsCardStackBlank) ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible;
@@ -359,15 +364,16 @@ void UMainGameUI::Tick()
 			CardStack5->SetVisibility(cardStackVisible);
 			CardRerollBox1->SetVisibility(static_cast<bool>(_lastIsCardStackBlank) ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
-			int32 queueCount = cardSystem.cardHandQueueCount();
-			if (queueCount > 1) {
-				SetText(CardHandCount, to_string(queueCount));
-				CardHandCount->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-			} else {
-				CardHandCount->SetVisibility(ESlateVisibility::Collapsed);
-			}
-
 			TryPlayAnimation("CardStackFlash");
+		}
+
+		// Card Hand Queue Count
+		if (queueCount > 1) {
+			SetText(CardHandCount, to_string(queueCount));
+			CardHandCount->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		}
+		else {
+			CardHandCount->SetVisibility(ESlateVisibility::Collapsed);
 		}
 
 		// Reroll price

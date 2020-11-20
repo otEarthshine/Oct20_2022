@@ -243,6 +243,8 @@ public:
 		_upgrades = {
 			MakeUpgrade("More Workers", "+2 worker slots", 50),
 		};
+
+		//PUN_CHECK(lastUIResourceTargets.size() < 1000);
 	}
 
 	void OnUpgradeBuilding(int upgradeIndex) override {
@@ -252,6 +254,13 @@ public:
 			_simulation->playerOwned(_playerId).RefreshJobDelayed();
 		}
 	}
+
+	// TEST
+#if WITH_EDITOR
+	void OnTick1Sec() override {
+		PUN_CHECK(lastUIResourceTargets.size() < 1000);
+	}
+#endif
 
 	/*
 	 * Market Targets
@@ -270,19 +279,22 @@ public:
 	const std::vector<int32>& GetMarketTargets() { return _resourceTargets; }
 	
 	void SetMarketTarget(ResourceEnum resourceEnum, int32 amount) {
+		PUN_CHECK(IsResourceValid(resourceEnum));
 		if (resourceEnum == ResourceEnum::Food) {
 			_foodTarget = amount;
 			return;
 		}
 		_resourceTargets[static_cast<int>(resourceEnum)] = amount;
+
+		//PUN_CHECK(lastUIResourceTargets.size() < 1000);
 	}
 
 	int32 GetFoodTarget() {
 		return _foodTarget;
 	}
 
-	//ResourceHolderType defaultHolderType() override { return ResourceHolderType::Manual; }
-	ResourceHolderType defaultHolderType() override { return ResourceHolderType::Storage; }
+
+	ResourceHolderType defaultHolderType() override { return ResourceHolderType::Market; }
 	
 	void Serialize(FArchive& Ar) override {
 		StorageBase::Serialize(Ar);
@@ -291,8 +303,11 @@ public:
 	}
 	
 	// Non-Serialize
+	//std::vector<int32> lastUIResourceTargets;
+
+	
+	int32 lastUIFoodTarget = -1; // TODO: seems like something is writing into this part of memory...
 	std::vector<int32> lastUIResourceTargets;
-	int32 lastUIFoodTarget = -1;
 private:
 	std::vector<int32> _resourceTargets;
 	int32 _foodTarget = 0;

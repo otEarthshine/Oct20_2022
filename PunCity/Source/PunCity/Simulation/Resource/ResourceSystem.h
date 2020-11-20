@@ -183,6 +183,8 @@ enum class ResourceFindType
 	Drop,
 	StorageDropoff,
 
+	MarketPickup, // Market Pickup avoid markets (storage only)
+
 	Count,
 };
 
@@ -194,6 +196,8 @@ static const std::string ResourceFindTypeName[] =
 	"AvailableForDropoff",
 	"Drop",
 	"StorageDropoff",
+
+	"MarketPickup",
 };
 
 // Note: 
@@ -658,33 +662,6 @@ private:
 			int32 availableAmount = availableIds[i].amount;
 
 			tryAddToFoundInfos(availableAmount, holder);
-			
-			//int32 amountAtLeast = foundInfos.size() > 0 ? foundInfos.back().amount : 1; // amountAt least is 1 in the beginning... (no point to add holder with 0 amount)
-
-			//
-			//if (availableAmount >= amountAtLeast) // Don't get resource from node with less amount, unless necessary
-			//{
-			//	// Make sure this is not an id to avoid
-			//	bool isAvoidId = false;
-			//	for (int32 avoidId : avoidIds) {
-			//		if (avoidId == holder.objectId){
-			//			isAvoidId = true;
-			//			break;
-			//		}
-			//	}
-
-			//	//PUN_LOG("Holder:%d isDrop:%d isAvoidId:%d info:%s isConnected:%d amountAtLeast:%d", holderId, _holders[holderId].isDrop(), isAvoidId, 
-			//	//				*ToFString(_holders[holderId].info.ToString()), sim->IsConnected(origin, holder.tile, maxFloodDist), amountAtLeast);
-
-			//	if (!isAvoidId && _simulation->IsConnected(origin, holder.tile, maxFloodDist, true))
-			//	{
-			//		check(availableAmount > 0);
-			//		int32 amountToTake = std::min(targetAmount, availableAmount); // Don't put more than targetAmount into foundInfo
-			//		FoundResourceHolderInfo newFoundInfo(ResourceHolderInfo(_resourceEnum, holderId), amountToTake, holder.tile);
-
-			//		foundInfos.push_back(newFoundInfo);
-			//	}
-			//}
 		}
 
 		// Special case for AvailableForDropoff which will also go through StorageDropoff if there is no foundInfos at this point
@@ -702,32 +679,6 @@ private:
 				int32 availableAmount = _simulation->SpaceLeftFor(_resourceEnum, holder.objectId);
 
 				tryAddToFoundInfos(availableAmount, holder);
-
-				//int32 amountAtLeast = foundInfos.size() > 0 ? foundInfos.back().amount : 1; // amountAt least is 1 in the beginning... (no point to add holder with 0 amount)
-
-				//if (availableAmount >= amountAtLeast) // Don't get resource from node with less amount, unless necessary
-				//{
-				//	// Make sure this is not an id to avoid
-				//	bool isAvoidId = false;
-				//	for (int32 avoidId : avoidIds) {
-				//		if (avoidId == holder.objectId) {
-				//			isAvoidId = true;
-				//			break;
-				//		}
-				//	}
-
-				//	//PUN_LOG("Holder:%d isDrop:%d isAvoidId:%d info:%s isConnected:%d amountAtLeast:%d", holderId, _holders[holderId].isDrop(), isAvoidId, 
-				//	//				*ToFString(_holders[holderId].info.ToString()), sim->IsConnected(origin, holder.tile, maxFloodDist), amountAtLeast);
-
-				//	if (!isAvoidId && _simulation->IsConnected(origin, holder.tile, maxFloodDist, true))
-				//	{
-				//		check(availableAmount > 0);
-				//		int32 amountToTake = std::min(targetAmount, availableAmount); // Don't put more than targetAmount into foundInfo
-				//		FoundResourceHolderInfo newFoundInfo(ResourceHolderInfo(_resourceEnum, holderId), amountToTake, holder.tile);
-
-				//		foundInfos.push_back(newFoundInfo);
-				//	}
-				//}
 			}
 		}
 

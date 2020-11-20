@@ -120,6 +120,7 @@ static const std::vector<CardEnum> DefaultJobPriorityListAllSeason
 	CardEnum::Brickworks,
 	CardEnum::CandleMaker,
 	CardEnum::CottonMill,
+	CardEnum::GarmentFactory,
 	CardEnum::PrintingPress,
 
 	CardEnum::PaperMaker,
@@ -220,6 +221,9 @@ public:
 		_nextDiseaseCheckTick = 0;
 
 		_houseResourceAllowed.resize(static_cast<int>(ResourceEnumCount), true);
+
+		_resourceEnumToOutputTarget.resize(static_cast<int>(ResourceEnumCount), -1);
+		_resourceEnumToOutputTargetDisplay.resize(static_cast<int>(ResourceEnumCount), -1);
 
 		_jobPriorityList = DefaultJobPriorityListAllSeason;
 
@@ -1218,6 +1222,18 @@ public:
 	}
 	void SetHouseResourceAllow(ResourceEnum resourceEnum, bool resourceAllowed);
 
+	int32 GetOutputTarget(ResourceEnum resourceEnum) {
+		return _resourceEnumToOutputTarget[static_cast<int>(resourceEnum)];
+	}
+	void SetOutputTarget(ResourceEnum resourceEnum, int32 amount) {
+		_resourceEnumToOutputTarget[static_cast<int>(resourceEnum)] = amount;
+	}
+
+	int32 GetOutputTargetDisplay(ResourceEnum resourceEnum) { return _resourceEnumToOutputTargetDisplay[static_cast<int>(resourceEnum)]; }
+	void SetOutputTargetDisplay(ResourceEnum resourceEnum, int32 amount) {
+		_resourceEnumToOutputTargetDisplay[static_cast<int>(resourceEnum)] = amount;
+	}
+
 	/*
 	 * Migration
 	 */
@@ -1344,6 +1360,9 @@ public:
 		SerializeVecValue(Ar, _usedSkillTicks);
 
 		SerializeVecValue(Ar, _houseResourceAllowed);
+
+		SerializeVecValue(Ar, _resourceEnumToOutputTarget);
+		SerializeVecValue(Ar, _resourceEnumToOutputTargetDisplay);
 
 		Ar << _migrationPendingCount;
 
@@ -1504,6 +1523,9 @@ private:
 	int32 _nextDiseaseCheckTick;
 
 	std::vector<uint8> _houseResourceAllowed;
+
+	std::vector<int32> _resourceEnumToOutputTarget;
+	std::vector<int32> _resourceEnumToOutputTargetDisplay; // Display changes instantly
 
 	int32 _migrationPendingCount = 0;
 

@@ -2472,6 +2472,14 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 			return;
 		}
 
+		if (command.callbackEnum == CallbackEnum::EditableNumberSetOutputTarget)
+		{
+			if (command.intVar1 != -1) {
+				playerOwned(command.playerId).SetOutputTarget(static_cast<ResourceEnum>(command.intVar1), command.intVar2);
+			}
+			return;
+		}
+
 		return;
 	}
 
@@ -4282,17 +4290,6 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 				ChooseInitialResources(initResourceCommand);
 			}
 #endif
-			
-			//if (terrainGenerator().GetBiome(params.center) == BiomeEnum::Jungle) {
-			//	storage->AddResource(ResourceEnum::Papaya, playerOwned.initialResources.foodAmount);
-			//} else {
-			//	storage->AddResource(ResourceEnum::Orange, playerOwned.initialResources.foodAmount);
-			//}
-
-			//storage->AddResource(ResourceEnum::Wood, playerOwned.initialResources.woodAmount);
-			//storage->AddResource(ResourceEnum::Stone, playerOwned.initialResources.stoneAmount);
-			
-			//_LOG(PunResource, "(3)%s", ToTChar(resourceSystem(storage.playerId()).resourcedebugStr()));
 		}
 
 		// Storage 2
@@ -4301,13 +4298,6 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 
 			StorageYard* storage = makeStorage();
 			PUN_ENSURE(storage, return);
-
-			/*
-			 * Must have tools to last at least 3 years. avg pop 30 -> 30  tools?? .... 120 tools
-			 * Must have medicine to last as least 6 years. avg pop 30 -> 30*10*8 = 2400... 120 medicine...
-			 */
-			//storage->AddResource(ResourceEnum::Medicine, playerOwned.initialResources.medicineAmount);
-			//storage->AddResource(ResourceEnum::SteelTools, playerOwned.initialResources.toolsAmount);
 		}
 
 		// Storage 3 ...

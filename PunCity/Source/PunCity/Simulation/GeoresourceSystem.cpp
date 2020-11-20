@@ -106,25 +106,25 @@ void GeoresourceSystem::InitGeoresourceSystem(IGameSimulationCore* simulation, b
 				
 				if (desertPercent >= 80) {
 					if (GameRand::RandChance(3)) {
-						PlantResource(provinceId, GeoresourceEnum::GoldOre, 8000);
+						PlantResource(provinceId, GeoresourceEnum::GoldOre, 16000);
 					}
-					PlantResource(provinceId, GeoresourceEnum::Gemstone, 8000);
+					PlantResource(provinceId, GeoresourceEnum::Gemstone, 16000);
 					continue;
 				}
 				if (desertPercent >= 60) {
-					PlantResource(provinceId, GeoresourceEnum::GoldOre, 15000);
+					PlantResource(provinceId, GeoresourceEnum::GoldOre, 16000);
 					continue;
 				}
 				if (taigaTundraPercent >= 80) {
 					if (GameRand::RandChance(2)) {
-						PlantResource(provinceId, GeoresourceEnum::GoldOre, 15000);
+						PlantResource(provinceId, GeoresourceEnum::GoldOre, 16000);
 					}
 					continue;
 				}
 			}
 			
 			if (GameRand::RandChance(3)) {
-				PlantResource(provinceId, GeoresourceEnum::CoalOre, 8000);
+				PlantResource(provinceId, GeoresourceEnum::CoalOre, 16000);
 
 				const std::vector<ProvinceConnection>& connections = provinceSys.GetProvinceConnections(provinceId);
 				
@@ -133,7 +133,7 @@ void GeoresourceSystem::InitGeoresourceSystem(IGameSimulationCore* simulation, b
 				{
 					bool canPlantResource = provinceSys.CanPlantMountainGeoresource(connection.provinceId);
 					if (canPlantResource) {
-						PlantResource(connection.provinceId, GeoresourceEnum::IronOre, 12000);
+						PlantResource(connection.provinceId, GeoresourceEnum::IronOre, 24000);
 						break;
 					}
 				}
@@ -141,7 +141,7 @@ void GeoresourceSystem::InitGeoresourceSystem(IGameSimulationCore* simulation, b
 				continue;
 			}
 			if (GameRand::RandChance(15)) {
-				PlantResource(provinceId, GeoresourceEnum::CoalOre, 20000);
+				PlantResource(provinceId, GeoresourceEnum::CoalOre, 40000);
 				continue;
 			}
 			//if (GameRand::RandChance(15)) {

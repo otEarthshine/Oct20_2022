@@ -109,6 +109,8 @@ public:
 		command->target = CastChecked<UPunEditableNumberBox>(punWidgetCaller)->amount;
 
 		Market& market = simulation().building(buildingId).subclass<Market>(CardEnum::Market);
+
+		PUN_CHECK(IsResourceValid(uiResourceEnum));
 		market.lastUIResourceTargets[static_cast<int>(uiResourceEnum)] = command->target;
 
 		networkInterface()->SendNetworkCommand(command);

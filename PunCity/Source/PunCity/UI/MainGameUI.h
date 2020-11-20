@@ -387,6 +387,8 @@ private:
 
 	// Cards
 	BoolEnum _lastIsCardStackBlank = BoolEnum::NeedUpdate;
+	int32 _lastQueueCount = 0;
+	
 	//std::vector<BuildingEnum> _lastDisplayHand;
 	std::vector<bool> _lastHand1ReserveStatus;
 	std::vector<bool> _lastHand1NeedMoneyStatus;

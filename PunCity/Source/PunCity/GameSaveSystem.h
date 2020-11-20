@@ -62,7 +62,7 @@ struct GameSaveInfo
 		//ss << ToStdString(name);
 		//ss << " " << dateTime.GetMonth() << "/" << dateTime.GetDay();
 		//ss << std::setw(2) << std::setfill('0') << ", " << dateTime.GetHour() << ":" << dateTime.GetMinute() << ":" << dateTime.GetSecond();
-		return (isAutoSave ? "Autosave" : name) + " " + date + ", " + time;
+		return (isAutoSave ? ("Autosave " + name) : name) + " " + date + ", " + time;
 	}
 
 	FString GetLastPlayerName(int32 playerId) {

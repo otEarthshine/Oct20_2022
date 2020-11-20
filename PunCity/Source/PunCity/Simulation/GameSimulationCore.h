@@ -834,13 +834,20 @@ public:
 		return _provinceSystem.GetProvinceRectArea(provinceId);
 	}
 
-	int32 GetTreeCount(int32 provinceId) final {
-		int32 treeCount = 0;
-		_provinceSystem.ExecuteOnProvinceTiles(provinceId, [&](WorldTile2 tile) {
-			if (_treeSystem->tileInfo(tile.tileId()).type == ResourceTileType::Tree) {
-				treeCount++;
-			}
-		});
+	int32 GetTreeCount(int32 provinceId) final
+	{
+		int32 treeCount = _regionSystem->provinceToTreeCountCache[provinceId];
+		if (treeCount == -1) {
+			// !!! Very Expensive...
+			treeCount = 0;
+			_provinceSystem.ExecuteOnProvinceTiles(provinceId, [&](WorldTile2 tile) {
+				if (_treeSystem->tileInfo(tile.tileId()).type == ResourceTileType::Tree) {
+					treeCount++;
+				}
+			});
+			_regionSystem->provinceToTreeCountCache[provinceId] = treeCount;
+		}
+		
 		return treeCount;
 	}
 
@@ -1766,8 +1773,11 @@ public:
 	MapSizeEnum mapSizeEnum() final {
 		return _mapSettings.mapSizeEnum();
 	}
-	int32 difficultyConsumptionAdjustment() final {
-		return DifficultyConsumptionAdjustment[static_cast<int>(_mapSettings.difficultyLevel)];
+	int32 difficultyConsumptionAdjustment(int32 playerId) final {
+		if (GameConstants::IsHumanPlayer(playerId)) {
+			return DifficultyConsumptionAdjustment[static_cast<int>(_mapSettings.difficultyLevel)];
+		}
+		return 0;
 	}
 	
 	FMapSettings mapSettings() final {

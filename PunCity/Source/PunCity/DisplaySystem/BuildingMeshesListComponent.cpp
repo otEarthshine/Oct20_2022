@@ -32,7 +32,7 @@ UBuildingMeshesComponent* BuildingMeshesListComponent::ShowBuildingMesh(Building
 		buildingMeshes->ShowBridge(building, _dataSource->assetLoader(), customDepth);
 	}
 	if (building.isEnum(CardEnum::Tunnel)) {
-		buildingMeshes->ShowTunnel(building, _dataSource->assetLoader());
+		buildingMeshes->ShowTunnel(building, _dataSource->assetLoader(), customDepth);
 	}
 	else if (building.isEnum(CardEnum::StorageYard)) {
 		buildingMeshes->ShowStorageMesh(building, _dataSource->assetLoader(), customDepth);

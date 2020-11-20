@@ -207,6 +207,15 @@ public:
 
 		setServerVsClientUI(LobbyAICountDropdown, LobbyAICountText, FString::FromInt(mapSettings.aiCount));
 		setServerVsClientUI(LobbyDifficultyDropdown, LobbyDifficultyText, DifficultyLevelNames[static_cast<int>(mapSettings.difficultyLevel)]);
+
+		std::stringstream ss;
+		ss << "Difficulty Level:\n";
+		for (int32 i = 0; i < DifficultyLevelNames.size(); i++) {
+			std::string difficultyName = ToStdString(DifficultyLevelNames[i]);
+			ss << " - " << difficultyName << " (+" << DifficultyConsumptionAdjustment[i] << "% consumption)\n";
+		}
+		AddToolTip(LobbyDifficultyDropdown, ss.str());
+		AddToolTip(LobbyDifficultyText, ss.str());
 	}
 
 	

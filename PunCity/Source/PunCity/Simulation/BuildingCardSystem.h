@@ -114,17 +114,29 @@ public:
 	void TickRound()
 	{
 		_cardHandQueueCount++;
-		if (_cardHandQueueCount == 1) 
-		{
+
+		TryRefreshCardHand();
+	}
+
+	int32 cardHandQueueCount() { return _cardHandQueueCount; }
+	void UseCardHandQueue()
+	{
+		_cardHandQueueCount = std::max(0, _cardHandQueueCount - 1);
+
+		TryRefreshCardHand();
+	}
+
+	
+	void TryRefreshCardHand()
+	{
+		// Show hand if not already done so
+		if (_isCardStackBlank) {
 			_rerollCountThisRound = 0;
 			_alreadyBoughtCardThisRound = false;
 			RollHand(handSize());
 		}
-
 	}
-
-	int32 cardHandQueueCount() { return _cardHandQueueCount; }
-	void UseCardHandQueue() { _cardHandQueueCount = std::max(0, _cardHandQueueCount - 1); }
+	
 
 	void TryRefreshRareHand()
 	{

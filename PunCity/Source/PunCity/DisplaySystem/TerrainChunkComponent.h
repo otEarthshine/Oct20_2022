@@ -14,25 +14,16 @@
 struct WorldRegion2;
 class PunTerrainGenerator;
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class UTerrainChunkComponent : public UProceduralMeshComponent
+
+class TerrainChunkData
 {
-	GENERATED_BODY()
 public:
-#if TRAILER_MODE
-	static void ResetCache();
-#endif
-	
-	bool GetShadowIndirectOnly() const override {
-		return true;
-	}
+	void UpdateTerrainChunkMesh_Prepare(class GameSimulationCore& simulation, WorldRegion2 region, int tileDimX, int tileDimY,
+		bool createMesh, bool& containsWater);
 
-	void UpdateTerrainChunkMesh(class GameSimulationCore& simulation, WorldRegion2 region, int tileDimX, int tileDimY, 
-								bool createMesh, bool& containsWater);
-
-	UPROPERTY() TArray<float> meshHeightsSmooth;
-
-	UPROPERTY() TArray<FVector> vertices;
+	void UpdateTerrainChunkMesh_Prepare1();
+	void UpdateTerrainChunkMesh_Prepare2(class GameSimulationCore& simulation, WorldRegion2 region, bool& containsWater);
+	uint8 UpdateTerrainChunkMesh_Prepare3(WorldRegion2 region);
 
 	float GetTerrainDisplayHeight(LocalTile2 localTile) {
 		// 69 .. border size 2.. so 0,1,2,3 ... 3 is the first...
@@ -41,33 +32,24 @@ public:
 		return meshHeightsSmooth[outerX + outerY * tessOuterVertSize];
 	}
 
-	//UPROPERTY() UTexture2D* BeachSandTintTexture = nullptr;
-	
-	//UPROPERTY() TArray<UMaterialInstanceDynamic*> MaterialInstances;
+	std::vector<WorldTile2> holes;
 
-	UPROPERTY() UMaterialInstanceDynamic* MaterialInstance = nullptr;
+	TArray<float> meshHeightsNoTess;
+	TArray<FLinearColor> meshColorsNoTess;
 
-	void SetTerrainMaterial(UAssetLoaderComponent* assetLoader, bool isPlainMaterial = false)
-	{
-		LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayTerrain);
+	TArray<float> meshHeightsTess;
+	TArray<float> meshHeightsSmooth;
+	TArray<FLinearColor> meshColors;
+	TArray<FLinearColor> meshColorsSmooth;
 
-		bIsPlainMaterial = isPlainMaterial;
+	TArray<FVector> vertices;
+	TArray<FLinearColor> vertexColors;
+	TArray<FVector> normals;
+	TArray<FProcMeshTangent> tangents;
 
-		if (bIsPlainMaterial) {
-			SetMaterial(0, assetLoader->M_PlainMaterial);
-		}
-		else 
-		{
-			if (!MaterialInstance) {
-				MaterialInstance = UMaterialInstanceDynamic::Create(assetLoader->GetTerrainMaterial(), this);
-			}
-			SetMaterial(0, MaterialInstance);
-		}
-	}
+	TArray<FVector2D> UV0;
 
-	float updatedTime = 0;
-
-	bool bIsPlainMaterial = false;
+	TArray<int32> tris;
 
 private:
 	int _lastHoleCount = 0;
@@ -90,4 +72,51 @@ private:
 	const int tessTileTotal = tessTileSize * tessTileSize;
 	const int tessVertTotal = tessVertSize * tessVertSize;
 	const int tessOuterVertTotal = tessOuterVertSize * tessOuterVertSize;
+
+	// Vertices are placed shifted 0.5, out of tile center
+	const float vertStart = -0.5f;
+
+	const float flatHeight = FDToFloat(FlatLandHeight);
+	const float beachToWaterHeight = FDToFloat(BeachToWaterHeight);
+};
+
+
+UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+class UTerrainChunkComponent : public UProceduralMeshComponent
+{
+	GENERATED_BODY()
+public:
+#if TRAILER_MODE
+	static void ResetCache();
+#endif
+	
+	bool GetShadowIndirectOnly() const override {
+		return true;
+	}
+	
+	void UpdateTerrainChunkMesh_UpdateMesh(bool createMesh, TerrainChunkData& terrainChunkData);
+
+	UPROPERTY() UMaterialInstanceDynamic* MaterialInstance = nullptr;
+
+	void SetTerrainMaterial(UAssetLoaderComponent* assetLoader, bool isPlainMaterial = false)
+	{
+		LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayTerrain);
+
+		bIsPlainMaterial = isPlainMaterial;
+
+		if (bIsPlainMaterial) {
+			SetMaterial(0, assetLoader->M_PlainMaterial);
+		}
+		else 
+		{
+			if (!MaterialInstance) {
+				MaterialInstance = UMaterialInstanceDynamic::Create(assetLoader->GetTerrainMaterial(), this);
+			}
+			SetMaterial(0, MaterialInstance);
+		}
+	}
+
+	bool bIsPlainMaterial = false;
+
+	float updatedTime = 0;
 };

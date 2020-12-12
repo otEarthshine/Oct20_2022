@@ -30,6 +30,8 @@ int UTileObjectDisplayComponent::CreateNewDisplay(int32 objectId)
 #endif
 
 	_meshIdToMeshes.Add(NewObject<UStaticFastInstancedMeshesComp>(this));
+	_meshIdToMeshData.Add(FastInstancedMeshesData());
+	
 	//_meshIdToMeshes[meshId]->Init("TileObjects" + to_string(meshId) + "_", this, CoordinateConstants::TileIdsPerRegion / 16, "TileObjects", meshId, false);
 	_meshIdToMeshes[meshId]->Init("TileObjects" + to_string(meshId) + "_", this, CoordinateConstants::TileIdsPerRegion / 16, "", meshId, false);
 
@@ -61,9 +63,12 @@ int UTileObjectDisplayComponent::CreateNewDisplay(int32 objectId)
 		}
 	}
 
-	_meshIdToGatherMarks.Add(NewObject<UStaticFastInstancedMesh>(this, UStaticFastInstancedMesh::StaticClass()));
-	_meshIdToGatherMarks[meshId]->Init(this, CoordinateConstants::TileIdsPerRegion);
-	_meshIdToGatherMarks[meshId]->SetMeshState({ FString(("GatherMark" + to_string(meshId)).c_str()), _assetLoader->GatherMarkMeshMaterial, nullptr, false, false});
+	// Gather Mark
+	_meshIdToMeshes[meshId]->AddProtoMesh("GatherMark", _assetLoader->GatherMarkMeshMaterial, nullptr, false, false);
+	
+	//_meshIdToGatherMarks.Add(NewObject<UStaticFastInstancedMesh>(this, UStaticFastInstancedMesh::StaticClass()));
+	//_meshIdToGatherMarks[meshId]->Init(this, CoordinateConstants::TileIdsPerRegion);
+	//_meshIdToGatherMarks[meshId]->SetMeshState({ FString(("GatherMark" + to_string(meshId)).c_str()), _assetLoader->GatherMarkMeshMaterial, nullptr, false, false});
 
 	return meshId;
 }
@@ -117,7 +122,7 @@ void UTileObjectDisplayComponent::OnSpawnDisplay(int32 regionId, int32 meshId, W
 	
 #else
 	_meshIdToMeshes[meshId]->SetActive(true);
-	_meshIdToGatherMarks[meshId]->SetActive(true);
+	//_meshIdToGatherMarks[meshId]->SetActive(true);
 
 
 	// Refresh
@@ -125,18 +130,22 @@ void UTileObjectDisplayComponent::OnSpawnDisplay(int32 regionId, int32 meshId, W
 #endif
 }
 
-void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, WorldAtom2 cameraAtom)
+void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, WorldAtom2 cameraAtom, bool justSpawned, bool justCreated)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayTileObj);
-	
+
 	//SCOPE_TIMER_("Tick TileObj");
 
-	// Skip if this Tick already used too many microseconds
-	int32 nanoSecSinceTickStart = gameManager()->timeSinceTickStart();
-	if (nanoSecSinceTickStart > 1000 * 100) {
-		_noRegionSkipThisTickYet = false;
-		return;
-	}
+	// TODO: don't need this anymore?
+	//// Skip if this Tick already used too many microseconds
+	//int32 nanoSecSinceTickStart = gameManager()->timeSinceTickStart();
+	//if (nanoSecSinceTickStart > 1000 * 100) {
+	//	_noRegionSkipThisTickYet = false;
+	//	return;
+	//}
+
+
+	
 
 	auto& sim = simulation();
 	TreeSystem& treeSystem = sim.treeSystem();
@@ -153,20 +162,20 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 #else
 	UStaticFastInstancedMeshesComp* meshes = _meshIdToMeshes[meshId];
 #endif
-	
-	
+
+
 	// Set mesh parent's location
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunDisplayTreeTickMove);
 		//SCOPE_TIMER_("Tick TileObj Move inUse:%d total:%d", _meshIdToMeshes[meshId]->poolInUseNumber(), _meshIdToMeshes[meshId]->meshPool.Num());
-		
+
 		WorldAtom2 regionAtomLocation(region.x * CoordinateConstants::AtomsPerRegion,
 			region.y * CoordinateConstants::AtomsPerRegion);
 		FVector regionDisplayLocation = MapUtil::DisplayLocation(cameraAtom, regionAtomLocation) + FVector(5, 5, 0);
 
 		meshes->SetRelativeLocation(regionDisplayLocation);
 #if !TILE_OBJ_CACHE
-		_meshIdToGatherMarks[meshId]->SetRelativeLocation(regionDisplayLocation);
+		//_meshIdToGatherMarks[meshId]->SetRelativeLocation(regionDisplayLocation);
 #endif
 	}
 
@@ -181,7 +190,7 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 		meshes->SetCustomDepth(papayaMeshName, customDepth);
 		meshes->SetCustomDepth(cococutMeshName, customDepth);
 	}
-	
+
 
 	TileArea area(region);
 
@@ -206,12 +215,12 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 					line->DrawLine(start, start + FVector(0, 5, 10), FLinearColor::Gray, 100.0f, 1.0f, 10000);
 				}
 
-				if (treeSystem.tileObjEnum(worldTileId) != TileObjEnum::None) 
+				if (treeSystem.tileObjEnum(worldTileId) != TileObjEnum::None)
 				{
 					TileObjInfo tileObjInfo = treeSystem.tileInfo(worldTileId);
 					if (tileObjInfo.type == ResourceTileType::Tree) {
 						float height = treeSystem.growthPercent(worldTileId) / 100.0f * 15 + 5;
-						line->DrawLine(start, start + FVector(0, 0, height), FLinearColor(0, 0.5,0), 100.0f, 1.0f, 10000);
+						line->DrawLine(start, start + FVector(0, 0, height), FLinearColor(0, 0.5, 0), 100.0f, 1.0f, 10000);
 					}
 					// TODO: this is for debug
 					else if (tileObjInfo.treeEnum == TileObjEnum::WheatBush) {
@@ -253,11 +262,11 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 	 * Fallen Trees
 	 */
 
-	//PUN_LOG("Start loop regionId:%d Tick:%d", regionId, Time::Ticks());
+	 //PUN_LOG("Start loop regionId:%d Tick:%d", regionId, Time::Ticks());
 	if (_isFullDisplay)
 	{
 		//SCOPE_TIMER("Tick TileObj Fallen");
-		
+
 		unordered_map<int16_t, FallenTreeInfo>& localTileIdToFallenTree = treeSystem.localTileIdToFallenTree(regionId);
 		for (auto& it : localTileIdToFallenTree) {
 			int localTileId = it.first;
@@ -296,6 +305,7 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 		sim.SetNeedDisplayUpdate(DisplayClusterEnum::Trees, regionId, true);
 	}
 
+	
 	/*
 	 * Alive Trees
 	 */
@@ -308,313 +318,322 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 		if (PunSettings::IsOn("TrailerNoTreeRefresh")) {
 			return;
 		}
-		
-		//SCOPE_TIMER("Tick TileObj Alive");
+
+		_chunkInfosToUpdate.push_back({ meshId, regionId, false, justSpawned });
+	}
+	
+	_chunkInfosAll.push_back({ meshId, regionId, false, justSpawned });
+
+	//// Hide meshes without clearing instances
+	//meshes->SetVisibilityQuick(!_isHiddenDisplay);
+}
+
+void UTileObjectDisplayComponent::UpdateDisplay_PrepareReset(MeshChunkInfo& chunkInfo)
+{
+	//SCOPE_TIMER("Tick TileObj Alive");
 		//SCOPE_TIMER_("TileObj - Trees %d %d full:%d", region.x, region.y, _isFullDisplay);
-		
-		int32 playId = playerId();
 
-		//PUN_ALOG_ALL("FastMesh", "ExecuteTileRegionStart ticks:%d regionId:%d", TimeDisplay::Ticks(), regionId);
+	//PUN_LOG("Mesh Start TileObj Alive");
 
-		PunTerrainGenerator& terrainGenerator = sim.terrainGenerator();
-		const std::vector<int16_t>& heightMap = terrainGenerator.GetHeightMap();
-		const float flatHeight = FDToFloat(FlatLandHeight);
+	int32 regionId = chunkInfo.regionId;
+	int32 meshId = chunkInfo.meshId;
+	UStaticFastInstancedMeshesComp* meshes = _meshIdToMeshes[meshId];
+	//meshes->shouldBatchAdd = chunkInfo.justSpawned;
+	//meshes->BeforeAdd();
+	//FastInstancedMeshesData* meshes = &(_meshIdToMeshData[meshId]);
+	
+	auto& sim = simulation();
+	TreeSystem& treeSystem = sim.treeSystem();
+	
+	int32 playId = playerId();
 
-		GeoresourceNode georesourceNode = sim.georesourceSystem().georesourceNode(regionId);
+	//meshes->ClearAddQueue();
+	//_meshIdToGatherMarks[meshId]->ClearAddQueue();
 
-		bool isHidingTree = gameManager()->isHidingTree();
+	//PUN_ALOG_ALL("FastMesh", "ExecuteTileRegionStart ticks:%d regionId:%d", TimeDisplay::Ticks(), regionId);
 
-		auto showBush = [&](TileObjInfo info, int32 worldTileId, FTransform transform, LocalTile2 localTile, int32 ageState)
+	PunTerrainGenerator& terrainGenerator = sim.terrainGenerator();
+	const std::vector<int16_t>& heightMap = terrainGenerator.GetHeightMap();
+	const float flatHeight = FDToFloat(FlatLandHeight);
+
+	GeoresourceNode georesourceNode = sim.georesourceSystem().georesourceNode(regionId);
+
+	bool isHidingTree = gameManager()->isHidingTree();
+
+	auto showBush = [&](TileObjInfo info, int32 worldTileId, FTransform transform, LocalTile2 localTile, int32 ageState)
+	{
+		// Plant uses the mesh array for multiple meshes (for example flower + its leaves)
+		int32 submeshCount = _assetLoader->tileMeshAsset(info.treeEnum).assets.Num();
+		for (int32 i = 0; i < submeshCount; i++)
 		{
-			// Plant uses the mesh array for multiple meshes (for example flower + its leaves)
-			int32 submeshCount = _assetLoader->tileMeshAsset(info.treeEnum).assets.Num();
-			for (int32 i = 0; i < submeshCount; i++)
-			{
-				// Special case grape frame
-				// TODO: proper toggleInfo for this
-				if (info.treeEnum == TileObjEnum::Grapevines) {
-					if (i == 0) {
-						meshes->Add(ToFString(info.name) + FString::FromInt(i), worldTileId, FTransform(FRotator::ZeroRotator, localTile.localDisplayLocation()), ageState, worldTileId);
-					}
-					else {
-						FTransform grapeTransform = transform;
-						grapeTransform.SetLocation(localTile.localDisplayLocation());
-						grapeTransform.SetRotation(FQuat::Identity);
-						meshes->Add(ToFString(info.name) + FString::FromInt(i), worldTileId, grapeTransform, ageState, worldTileId);
-					}
-					continue;
+			// Special case grape frame
+			// TODO: proper toggleInfo for this
+			if (info.treeEnum == TileObjEnum::Grapevines) {
+				if (i == 0) {
+					meshes->Add(ToFString(info.name) + FString::FromInt(i), worldTileId, FTransform(FRotator::ZeroRotator, localTile.localDisplayLocation()), ageState, worldTileId);
 				}
-
-				bool castShadow = (info.treeEnum != TileObjEnum::GrassGreen);
-
-				meshes->Add(ToFString(info.name) + FString::FromInt(i), worldTileId, transform, ageState, worldTileId, castShadow);
+				else {
+					FTransform grapeTransform = transform;
+					grapeTransform.SetLocation(localTile.localDisplayLocation());
+					grapeTransform.SetRotation(FQuat::Identity);
+					meshes->Add(ToFString(info.name) + FString::FromInt(i), worldTileId, grapeTransform, ageState, worldTileId);
+				}
+				continue;
 			}
-		};
 
-		
+			bool castShadow = (info.treeEnum != TileObjEnum::GrassGreen);
 
-		area.ExecuteOnArea_Tile([&](int16_t x, int16_t y)
+			meshes->Add(ToFString(info.name) + FString::FromInt(i), worldTileId, transform, ageState, worldTileId, castShadow);
+		}
+	};
+
+	WorldRegion2 region(regionId);
+	TileArea area(region);
+	
+	area.ExecuteOnArea_Tile([&](int16_t x, int16_t y)
+	{
+		WorldTile2 worldTile(x, y);
+		int32 worldTileId = worldTile.tileId();
+		LocalTile2 localTile = worldTile.localTile();
+		int32 localTileId = localTile.tileId();
+		TileObjInfo info = treeSystem.tileInfo(worldTileId);
+
+		// Note: If hit here, Main Menu needs updating
+		PUN_CHECK(IsTileObjEnumValid(info.treeEnum) || info.treeEnum == TileObjEnum::Fish);
+
+		//PUN_LOG("ExecuteOnArea_Tile %d %d", x, y, localTileId);
+
+		/*
+		 * Show full farm
+		 */
+		Building* bld = sim.buildingAtTile(worldTile);
+		if (PunSettings::CheatFullFarmRoad() &&
+			bld && bld->isEnum(CardEnum::Farm))
 		{
-			WorldTile2 worldTile(x, y);
-			int32 worldTileId = worldTile.tileId();
-			LocalTile2 localTile = worldTile.localTile();
-			int32 localTileId = localTile.tileId();
-			TileObjInfo info = treeSystem.tileInfo(worldTileId);
+			Farm& farm = bld->subclass<Farm>(CardEnum::Farm);
+			info = GetTileObjInfo(farm.currentPlantEnum);
 
-			// Note: If hit here, Main Menu needs updating
-			PUN_CHECK(IsTileObjEnumValid(info.treeEnum) || info.treeEnum == TileObjEnum::Fish);
-			
-			//PUN_LOG("ExecuteOnArea_Tile %d %d", x, y, localTileId);
+			int32 ageTick = info.maxGrowthTick;
+			int32 ageState = ageTick / TileObjInfo::TicksPerCycle();
+			FTransform transform = GameDisplayUtils::GetBushTransform(localTile.localDisplayLocation(), 0, worldTileId, ageTick, info, terrainGenerator.GetBiome(worldTile));
 
-			/*
-			 * Show full farm
-			 */
-			Building* bld = sim.buildingAtTile(worldTile);
-			if (PunSettings::CheatFullFarmRoad() &&
-				bld && bld->isEnum(CardEnum::Farm))
-			{
-				Farm& farm = bld->subclass<Farm>(CardEnum::Farm);
-				info = GetTileObjInfo(farm.currentPlantEnum);
+			showBush(info, worldTileId, transform, localTile, ageState);
+		}
+		/*
+		 * Show growing farm in trailer mode
+		 */
+		else if (PunSettings::TrailerMode() &&
+			bld && bld->isEnum(CardEnum::Farm))
+		{
+			Farm& farm = bld->subclass<Farm>(CardEnum::Farm);
+			info = GetTileObjInfo(farm.currentPlantEnum);
 
-				int32 ageTick = info.maxGrowthTick;
-				int32 ageState = ageTick / TileObjInfo::TicksPerCycle();
-				FTransform transform = GameDisplayUtils::GetBushTransform(localTile.localDisplayLocation(), 0, worldTileId, ageTick, info, terrainGenerator.GetBiome(worldTile));
+			// Age according to buildingAge 
+			const int32 ticksToFullGrown = Time::TicksPerSecond * 10; // when buildingAge == ticksToFullGrown, 
+			int32 ageTick = info.maxGrowthTick * farm.buildingAge() / ticksToFullGrown;
+			int32 ageState = ageTick;
+			FTransform transform = GameDisplayUtils::GetBushTransform(localTile.localDisplayLocation(), 0, worldTileId, ageTick, info, terrainGenerator.GetBiome(worldTile), false);
 
-				showBush(info, worldTileId, transform, localTile, ageState);
-			}
-			/*
-			 * Show growing farm in trailer mode
-			 */
-			else if (PunSettings::TrailerMode() &&
-					bld && bld->isEnum(CardEnum::Farm))
-			{
-				Farm& farm = bld->subclass<Farm>(CardEnum::Farm);
-				info = GetTileObjInfo(farm.currentPlantEnum);
-
-				// Age according to buildingAge 
-				const int32 ticksToFullGrown = Time::TicksPerSecond * 10; // when buildingAge == ticksToFullGrown, 
-				int32 ageTick = info.maxGrowthTick * farm.buildingAge() / ticksToFullGrown; 
-				int32 ageState = ageTick;
-				FTransform transform = GameDisplayUtils::GetBushTransform(localTile.localDisplayLocation(), 0, worldTileId, ageTick, info, terrainGenerator.GetBiome(worldTile), false);
-
-				showBush(info, worldTileId, transform, localTile, ageState);
-			}
+			showBush(info, worldTileId, transform, localTile, ageState);
+		}
 #if !TILE_OBJ_CACHE
-			// Ores
-			else if (terrainGenerator.terrainTileType(worldTileId) == TerrainTileType::Mountain && _isFullDisplay)
+		// Ores
+		else if (terrainGenerator.terrainTileType(worldTileId) == TerrainTileType::Mountain && _isFullDisplay)
+		{
+			if (georesourceNode.HasResource() && georesourceNode.info().isMountainOre())
 			{
-				if (georesourceNode.HasResource() && georesourceNode.info().isMountainOre())
+				FloatDet heightFD = heightMap[worldTileId];
+				float height = FDToFloat(heightFD);
+
+				//float displayHeight = (height - flatHeight) / (1.0f - flatHeight) * CoordinateConstants::AboveFlatDisplayUnitHeight;
+				float displayHeight = gameManager()->GetTerrainDisplayHeight(worldTile);
+
+				if (displayHeight < 30.0f)
 				{
-					FloatDet heightFD = heightMap[worldTileId];
-					float height = FDToFloat(heightFD);
+					int32 rand = GameRand::DisplayRand(worldTileId);
+					rand = GameRand::DisplayRand(worldTileId); // first rand might not be random enough
 
-					//float displayHeight = (height - flatHeight) / (1.0f - flatHeight) * CoordinateConstants::AboveFlatDisplayUnitHeight;
-					float displayHeight = gameManager()->GetTerrainDisplayHeight(worldTile);
-
-					if (displayHeight < 30.0f)
+					if (rand % 100 > 50)
 					{
-						int32 rand = GameRand::DisplayRand(worldTileId);
-						rand = GameRand::DisplayRand(worldTileId); // first rand might not be random enough
+						rand = GameRand::DisplayRand(worldTileId);
+						float scale = 0.5f + 0.5f * static_cast<float>(rand % 100) / 100.0f;
 
-						if (rand % 100 > 50)
-						{
-							rand = GameRand::DisplayRand(worldTileId);
-							float scale = 0.5f + 0.5f * static_cast<float>(rand % 100) / 100.0f;
+						rand = GameRand::DisplayRand(rand);
+						FRotator rotator(0, static_cast<float>(rand % 360), 0);
 
-							rand = GameRand::DisplayRand(rand);
-							FRotator rotator(0, static_cast<float>(rand % 360), 0);
+						//float scale = 1.0f;
+						//FRotator rotator = FRotator::ZeroRotator;
 
-							//float scale = 1.0f;
-							//FRotator rotator = FRotator::ZeroRotator;
+						FVector displayLocation = localTile.localDisplayLocation();
+						displayLocation.Z += displayHeight;
 
-							FVector displayLocation = localTile.localDisplayLocation();
-							displayLocation.Z += displayHeight;
+						// Random pos
+						rand = GameRand::DisplayRand(rand);
+						displayLocation.X += rand % 5;
+						rand = GameRand::DisplayRand(rand);
+						displayLocation.Y += rand % 5;
 
-							// Random pos
-							rand = GameRand::DisplayRand(rand);
-							displayLocation.X += rand % 5;
-							rand = GameRand::DisplayRand(rand);
-							displayLocation.Y += rand % 5;
+						//
+						FString name = ToFString(GetTileObjInfo(georesourceNode.info().mountainOreEnum).name);
 
-							//
-							FString name = ToFString(GetTileObjInfo(georesourceNode.info().mountainOreEnum).name);
-
-							FTransform transform(rotator, displayLocation, FVector(scale, scale, scale));
-							meshes->Add(name + FString::FromInt(0), worldTileId, transform, 10, worldTileId);
-						}
+						FTransform transform(rotator, displayLocation, FVector(scale, scale, scale));
+						meshes->Add(name + FString::FromInt(0), worldTileId, transform, 10, worldTileId);
 					}
 				}
 			}
+		}
 #endif
 
-			// Tree
-			else if (info.type == ResourceTileType::Tree)
-			{	
-				// Don't show tree if marked
-				if (PunSettings::MarkedTreesNoDisplay &&
-					treeSystem.HasMark(playId, worldTileId)) {
-					return;
-				}
-				
-				//FVector displayLocation = FVector(localTile.x * 10, localTile.y * 10, 0);
-				int32 ageTick = treeSystem.tileObjAge(worldTileId);
-				int32 ageState = ageTick / TileObjInfo::TicksPerCycle();
+		// Tree
+		else if (info.type == ResourceTileType::Tree)
+		{
+			// Don't show tree if marked
+			if (PunSettings::MarkedTreesNoDisplay &&
+				treeSystem.HasMark(playId, worldTileId)) {
+				return;
+			}
 
-				FString tileObjectName = ToFString(info.name);
+			//FVector displayLocation = FVector(localTile.x * 10, localTile.y * 10, 0);
+			int32 ageTick = treeSystem.tileObjAge(worldTileId);
+			int32 ageState = ageTick / TileObjInfo::TicksPerCycle();
 
-				
-				FTransform transform = GameDisplayUtils::GetTreeTransform(localTile.localDisplayLocation(), 0, worldTileId, ageTick, info);
-
-				// Show only stump
-				if (isHidingTree) {
-					meshes->Add(tileObjectName + FString::FromInt(static_cast<int32>(TileSubmeshEnum::Stump)), worldTileId + 1 * GameMapConstants::TilesPerWorld, transform, ageState, worldTileId);
-					return;
-				}
+			FString tileObjectName = ToFString(info.name);
 
 
-				if (!_isFullDisplay && !PunSettings::TrailerSession) {
-					// Low Poly Leaf
-					meshes->Add(tileObjectName + FString::FromInt(static_cast<int32>(TileSubmeshEnum::LeafLowPoly)), worldTileId, transform, ageState, worldTileId, false, false);
-					meshes->Add(tileObjectName + FString::FromInt(static_cast<int32>(TileSubmeshEnum::LeafShadow)), worldTileId, transform, ageState, worldTileId, true, true);
-					
-					meshes->Add(tileObjectName + FString::FromInt(static_cast<int32>(TileSubmeshEnum::Trunk)), worldTileId + 1 * GameMapConstants::TilesPerWorld, transform, ageState, worldTileId);
-					return;
-				}
+			FTransform transform = GameDisplayUtils::GetTreeTransform(localTile.localDisplayLocation(), 0, worldTileId, ageTick, info);
 
-				// Trunk/Leaves
-				meshes->Add(tileObjectName + FString::FromInt(static_cast<int32>(TileSubmeshEnum::Leaf)), worldTileId, transform, ageState, worldTileId, false, false);
+			// Show only stump
+			if (isHidingTree) {
+				meshes->Add(tileObjectName + FString::FromInt(static_cast<int32>(TileSubmeshEnum::Stump)), worldTileId + 1 * GameMapConstants::TilesPerWorld, transform, ageState, worldTileId);
+				return;
+			}
+
+
+			if (!_isFullDisplay && !PunSettings::TrailerSession) {
+				// Low Poly Leaf
+				meshes->Add(tileObjectName + FString::FromInt(static_cast<int32>(TileSubmeshEnum::LeafLowPoly)), worldTileId, transform, ageState, worldTileId, false, false);
 				meshes->Add(tileObjectName + FString::FromInt(static_cast<int32>(TileSubmeshEnum::LeafShadow)), worldTileId, transform, ageState, worldTileId, true, true);
 
 				meshes->Add(tileObjectName + FString::FromInt(static_cast<int32>(TileSubmeshEnum::Trunk)), worldTileId + 1 * GameMapConstants::TilesPerWorld, transform, ageState, worldTileId);
-				
-
-				// Fruit
-				if (treeSystem.hasFruit(worldTileId)) {
-					//PUN_ALOG("FastMesh", worldTileId, "[%s]FruitAdd.Begin ticks:%d id:%d", ToTChar(TileSubmeshName[int(TileSubmeshEnum::Fruit)]), TimeDisplay::Ticks(), worldTileId);
-					meshes->Add(tileObjectName + FString::FromInt(static_cast<int32>(TileSubmeshEnum::Fruit)), worldTileId + 2 * GameMapConstants::TilesPerWorld, transform, ageState, worldTileId);
-				}
-
-#if !TILE_OBJ_CACHE
-				// See if it is marked for gather
-				//  Don't show mark if within building area
-				if (!isMainMenuDisplay &&
-					treeSystem.HasMark(playId, worldTileId) && 
-					!sim.tileHasBuilding(worldTile))
-				{
-					float hoverHeight = GameDisplayUtils::TileObjHoverMeshHeight(info, worldTileId, ageTick);
-					FVector translation = transform.GetTranslation();
-					translation.Z += hoverHeight;
-					transform.SetTranslation(translation);
-
-					_meshIdToGatherMarks[meshId]->Add(worldTileId, transform, ageState);
-				}
-#endif
+				return;
 			}
 
-			// Deposit
-			else if (info.type == ResourceTileType::Deposit)
+			// Trunk/Leaves
+			meshes->Add(tileObjectName + FString::FromInt(static_cast<int32>(TileSubmeshEnum::Leaf)), worldTileId, transform, ageState, worldTileId, false, false);
+			meshes->Add(tileObjectName + FString::FromInt(static_cast<int32>(TileSubmeshEnum::LeafShadow)), worldTileId, transform, ageState, worldTileId, true, true);
+
+			meshes->Add(tileObjectName + FString::FromInt(static_cast<int32>(TileSubmeshEnum::Trunk)), worldTileId + 1 * GameMapConstants::TilesPerWorld, transform, ageState, worldTileId);
+
+
+			// Fruit
+			if (treeSystem.hasFruit(worldTileId)) {
+				//PUN_ALOG("FastMesh", worldTileId, "[%s]FruitAdd.Begin ticks:%d id:%d", ToTChar(TileSubmeshName[int(TileSubmeshEnum::Fruit)]), TimeDisplay::Ticks(), worldTileId);
+				meshes->Add(tileObjectName + FString::FromInt(static_cast<int32>(TileSubmeshEnum::Fruit)), worldTileId + 2 * GameMapConstants::TilesPerWorld, transform, ageState, worldTileId);
+			}
+
+#if !TILE_OBJ_CACHE
+			// See if it is marked for gather
+			//  Don't show mark if within building area
+			if (!isMainMenuDisplay &&
+				treeSystem.HasMark(playId, worldTileId) &&
+				!sim.tileHasBuilding(worldTile))
 			{
-				FVector displayLocation = localTile.localDisplayLocation();
+				float hoverHeight = GameDisplayUtils::TileObjHoverMeshHeight(info, worldTileId, ageTick);
+				FVector translation = transform.GetTranslation();
+				translation.Z += hoverHeight;
+				transform.SetTranslation(translation);
 
-				//// Random position
-				//uint32_t rand = GameRand::DisplayRand(worldTileId);
-				////displayLocation.X += rand % 3;
-				////rand = GameRand::DisplayRand(rand);
-				////displayLocation.Y += rand % 3;
+				meshes->Add("GatherMark", worldTileId + 3 * GameMapConstants::TilesPerWorld, transform, ageState, worldTileId);
+				//_meshIdToGatherMarks[meshId]->QueueAdd(worldTileId, transform, ageState);
+			}
+#endif
+		}
 
-				//rand = GameRand::DisplayRand(rand);
-				//float scale = 1.0f + 0.4f * (float)(rand % 100) / 100.0f;
+		// Deposit
+		else if (info.type == ResourceTileType::Deposit)
+		{
+			FVector displayLocation = localTile.localDisplayLocation();
 
-				//rand = GameRand::DisplayRand(rand); // (do this after scale since second rand is less likely to have same value)
-				//FRotator rotator(0, (float)(rand % 360), 0);
+			int32 variationIndex;
+			int32 variationCount = _assetLoader->tileMeshAsset(info.treeEnum).assets.Num();
+			FTransform transform = GameDisplayUtils::GetDepositTransform(worldTileId, displayLocation, variationCount, variationIndex);
 
-				//FTransform transform(rotator, displayLocation, FVector(scale, scale, scale));
-
-				int32 variationIndex;
-				int32 variationCount = _assetLoader->tileMeshAsset(info.treeEnum).assets.Num();
-				FTransform transform = GameDisplayUtils::GetDepositTransform(worldTileId, displayLocation, variationCount, variationIndex);
-
-				//// Stone uses the mesh array for random variations..
-				//rand = GameRand::DisplayRand(rand);
-				//int32 variationIndex = rand % variationCount;
-				//
-				meshes->Add(ToFString(info.name) + FString::FromInt(variationIndex), worldTileId, transform, 0, worldTileId);
+			//// Stone uses the mesh array for random variations..
+			//rand = GameRand::DisplayRand(rand);
+			//int32 variationIndex = rand % variationCount;
+			//
+			meshes->Add(ToFString(info.name) + FString::FromInt(variationIndex), worldTileId, transform, 0, worldTileId);
 
 #if !TILE_OBJ_CACHE
-				// See if it is marked for gather
-				if (!isMainMenuDisplay && 
-					treeSystem.HasMark(playId, worldTileId))
-				{
-					float hoverHeight = GameDisplayUtils::TileObjHoverMeshHeight(info, worldTileId, 1);
-					FVector translation = transform.GetTranslation();
-					translation.Z += hoverHeight;
-					transform.SetTranslation(translation);
-
-					_meshIdToGatherMarks[meshId]->Add(worldTileId, transform, 0);
-				}
-#endif
-			}
-
-			// Bush
-			else if (info.type == ResourceTileType::Bush && 
-					_isFullDisplay)
+			// See if it is marked for gather
+			if (!isMainMenuDisplay &&
+				treeSystem.HasMark(playId, worldTileId))
 			{
-				if (isHidingTree && sim.buildingIdAtTile(worldTile) == -1) {
-					return;
-				}
-				
-				// Don't show grass on road construction
-				if (sim.isInitialized()  &&
-					sim.IsRoadTile(worldTile)) {
-					return;
-				}
-				
-				int32 ageTick = treeSystem.tileObjAge(worldTileId);
-				int32 ageState = ageTick / TileObjInfo::TicksPerCycle();
-				FTransform transform = GameDisplayUtils::GetBushTransform(localTile.localDisplayLocation(), 0, worldTileId, ageTick, info, terrainGenerator.GetBiome(worldTile));
+				float hoverHeight = GameDisplayUtils::TileObjHoverMeshHeight(info, worldTileId, 1);
+				FVector translation = transform.GetTranslation();
+				translation.Z += hoverHeight;
+				transform.SetTranslation(translation);
 
+				meshes->Add("GatherMark", worldTileId + 3 * GameMapConstants::TilesPerWorld, transform, 0, worldTileId);
+				//_meshIdToGatherMarks[meshId]->QueueAdd(worldTileId, transform, 0);
+			}
+#endif
+		}
 
-				showBush(info, worldTileId, transform, localTile, ageState);
-				
-				//// Plant uses the mesh array for multiple meshes (for example flower + its leaves)
-				//int32 submeshCount = _assetLoader->tileMeshAsset(info.treeEnum).assets.Num();
-				//for (int32 i = 0; i < submeshCount; i++) 
-				//{
-				//	// Special case grape frame
-				//	// TODO: proper toggleInfo for this
-				//	if (info.treeEnum == TileObjEnum::Grapevines) {
-				//		if (i == 0) {
-				//			meshes->Add(ToFString(info.name) + FString::FromInt(i), worldTileId, FTransform(FRotator::ZeroRotator, localTile.localDisplayLocation()), ageState, worldTileId);
-				//		} else {
-				//			FTransform grapeTransform = transform;
-				//			grapeTransform.SetLocation(localTile.localDisplayLocation());
-				//			grapeTransform.SetRotation(FQuat::Identity);
-				//			meshes->Add(ToFString(info.name) + FString::FromInt(i), worldTileId, grapeTransform, ageState, worldTileId);
-				//		}
-				//		continue;
-				//	}
-
-				//	bool castShadow = (info.treeEnum != TileObjEnum::GrassGreen);
-				//	
-				//	meshes->Add(ToFString(info.name) + FString::FromInt(i), worldTileId, transform, ageState, worldTileId, castShadow);
-				//}
+		// Bush
+		else if (info.type == ResourceTileType::Bush &&
+			_isFullDisplay)
+		{
+			if (isHidingTree && sim.buildingIdAtTile(worldTile) == -1) {
+				return;
 			}
 
-		});
+			// Don't show grass on road construction
+			if (sim.isInitialized() &&
+				sim.IsRoadTile(worldTile)) {
+				return;
+			}
 
-		//PUN_ALOG_ALL("FastMesh", "ExecuteTileRegionEnd ticks:%d regionId:%d", TimeDisplay::Ticks(), regionId);
+			int32 ageTick = treeSystem.tileObjAge(worldTileId);
+			int32 ageState = ageTick / TileObjInfo::TicksPerCycle();
+			FTransform transform = GameDisplayUtils::GetBushTransform(localTile.localDisplayLocation(), 0, worldTileId, ageTick, info, terrainGenerator.GetBiome(worldTile));
 
-		// After Add
-		meshes->AfterAdd();
-#if !TILE_OBJ_CACHE
-		_meshIdToGatherMarks[meshId]->AfterAdd();
-#endif
-		
-	}
+
+			showBush(info, worldTileId, transform, localTile, ageState);
+		}
+
+	});
+
+	//meshes->AfterAdd();
+	
+	//PUN_ALOG_ALL("FastMesh", "ExecuteTileRegionEnd ticks:%d regionId:%d", TimeDisplay::Ticks(), regionId);
+}
+
+void UTileObjectDisplayComponent::UpdateDisplay_UpdateMesh(MeshChunkInfo& chunkInfo)
+{
+	int32 meshId = chunkInfo.meshId;
+	UStaticFastInstancedMeshesComp* meshes = _meshIdToMeshes[meshId];
+
+	// Execute
+	//meshes->ExecuteAddQueue(_meshIdToMeshData[meshId].meshesToAdd);
+	
+	// After Add
+	meshes->AfterAdd();
+	
+//#if !TILE_OBJ_CACHE
+//	_meshIdToGatherMarks[meshId]->ExecuteAddQueue();
+//	_meshIdToGatherMarks[meshId]->AfterAdd();
+//#endif
+}
+
+void UTileObjectDisplayComponent::UpdateDisplay_FinishAll(MeshChunkInfo& chunkInfo)
+{
+	UStaticFastInstancedMeshesComp* meshes = _meshIdToMeshes[chunkInfo.meshId];
 
 	// Hide meshes without clearing instances
 	meshes->SetVisibilityQuick(!_isHiddenDisplay);
 }
+
 
 void UTileObjectDisplayComponent::HideDisplay(int32 meshId, int32 regionId)
 {
@@ -626,6 +645,6 @@ void UTileObjectDisplayComponent::HideDisplay(int32 meshId, int32 regionId)
 #else
 	
 	_meshIdToMeshes[meshId]->SetActive(false);
-	_meshIdToGatherMarks[meshId]->SetActive(false);
+	//_meshIdToGatherMarks[meshId]->SetActive(false);
 #endif
 }

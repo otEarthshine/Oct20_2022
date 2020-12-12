@@ -45,7 +45,7 @@ void UMiniBuildingDisplayComponent::OnSpawnDisplay(int regionId, int meshId, Wor
 	simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Building, WorldRegion2(regionId).regionId(), true);
 }
 
-void UMiniBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom)
+void UMiniBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom, bool justSpawned, bool justCreated)
 {
 	auto& buildingList = simulation().buildingSystem().buildingSubregionList();
 	BuildingSystem& buildingSystem = simulation().buildingSystem();

@@ -146,7 +146,7 @@ int32 UUnitDisplayComponent::GetUnitTransformAndVariation(int32 unitId, FTransfo
 	return 0;
 }
 
-void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom)
+void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom, bool justSpawned, bool justCreated)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayUnit);
 	

@@ -72,6 +72,7 @@ void TreeSystem::Init(int sizeX, int sizeY, IGameSimulationCore* simulation)
 	}
 }
 
+// Also used for planting stone
 void TreeSystem::PlantTree(int32 x, int32 y, TileObjEnum treeEnum, bool initial)
 {
 	PUN_CHECK(IsTileObjEnumValid(treeEnum));
@@ -79,19 +80,20 @@ void TreeSystem::PlantTree(int32 x, int32 y, TileObjEnum treeEnum, bool initial)
 	int32 i = x + y * _sizeX;
 
 	// give shade
-	if (treeEnum != TileObjEnum::Stone)
+	//if (treeEnum != TileObjEnum::Stone)
 	{
-		setTreeShade(i, true);
+		SetSurroundingShade(i);
+		//setTreeShade(i, true);
 
-		setTreeShade(i + 1, true);
-		setTreeShade(i - 1, true);
-		setTreeShade(i + _sizeX, true);
-		setTreeShade(i - _sizeX, true);
+		//setTreeShade(i + 1, true);
+		//setTreeShade(i - 1, true);
+		//setTreeShade(i + _sizeX, true);
+		//setTreeShade(i - _sizeX, true);
 
-		setTreeShade(i + 1 + _sizeX, true);
-		setTreeShade(i - 1 + _sizeX, true);
-		setTreeShade(i + 1 - _sizeX, true);
-		setTreeShade(i - 1 - _sizeX, true);
+		//setTreeShade(i + 1 + _sizeX, true);
+		//setTreeShade(i - 1 + _sizeX, true);
+		//setTreeShade(i + 1 - _sizeX, true);
+		//setTreeShade(i - 1 - _sizeX, true);
 	}
 
 	_tileObjAge[i] = 0;
@@ -108,27 +110,34 @@ void TreeSystem::PlantTree(int32 x, int32 y, TileObjEnum treeEnum, bool initial)
 	}
 }
 
-bool TreeSystem::HasNearbyTree(int x, int y)
+bool TreeSystem::HasNearbyShadeObject(int x, int y)
 {
 	int i = x + y * _sizeX;
 
 	int surround = i + 1;
-	if (0 <= surround && surround < _sizeXY && tileInfo(surround).type == ResourceTileType::Tree) return true;
+
+	// Doesn't need rim check because it was done in outer scope
+	auto isShadeObjectTile = [&]() {
+		ResourceTileType type = tileInfo(surround).type;
+		return type == ResourceTileType::Tree || type == ResourceTileType::Deposit;
+	};
+
+	if (isShadeObjectTile()) return true;
 	surround = i - 1;
-	if (0 <= surround && surround < _sizeXY && tileInfo(surround).type == ResourceTileType::Tree) return true;
+	if (isShadeObjectTile()) return true;
 	surround = i + _sizeX;
-	if (0 <= surround && surround < _sizeXY && tileInfo(surround).type == ResourceTileType::Tree) return true;
+	if (isShadeObjectTile()) return true;
 	surround = i - _sizeX;
-	if (0 <= surround && surround < _sizeXY && tileInfo(surround).type == ResourceTileType::Tree) return true;
+	if (isShadeObjectTile()) return true;
 
 	surround = i + 1 + _sizeX;
-	if (0 <= surround && surround < _sizeXY && tileInfo(surround).type == ResourceTileType::Tree) return true;
+	if (isShadeObjectTile()) return true;
 	surround = i - 1 + _sizeX;
-	if (0 <= surround && surround < _sizeXY && tileInfo(surround).type == ResourceTileType::Tree) return true;
+	if (isShadeObjectTile()) return true;
 	surround = i + 1 - _sizeX;
-	if (0 <= surround && surround < _sizeXY && tileInfo(surround).type == ResourceTileType::Tree) return true;
+	if (isShadeObjectTile()) return true;
 	surround = i - 1 - _sizeX;
-	if (0 <= surround && surround < _sizeXY && tileInfo(surround).type == ResourceTileType::Tree) return true;
+	if (isShadeObjectTile()) return true;
 
 	return false;
 }
@@ -244,6 +253,26 @@ ResourcePair TreeSystem::RemoveTileObj(WorldTile2 tile, bool animate)
 {
 	int32 id = tile.tileId();
 
+	auto removeSurroundingShade = [&]()
+	{
+		// Ensure outer area is valid
+		//  Disregard any rim (shouldn't have land anyway)
+		TileArea checkAreaOuter(tile, 2);
+		if (checkAreaOuter.isValid())
+		{
+			// Remove surrounding shades
+			TileArea checkArea(tile, 1);
+			for (int y = checkArea.minY; y <= checkArea.maxY; y++) {
+				for (int x = checkArea.minX; x <= checkArea.maxX; x++)
+				{
+					if (!HasNearbyShadeObject(x, y)) {
+						setTreeShade(x + y * _sizeX, false);
+					}
+				}
+			}
+		}
+	};
+
 	if (IsAliveTree(id))
 	{
 		// PUN_LOG("Cut Tree: id:%d, (%d,%d) Region: %d", id, tile.x, tile.y, tile.region().regionId())
@@ -275,17 +304,17 @@ ResourcePair TreeSystem::RemoveTileObj(WorldTile2 tile, bool animate)
 		_simulation->SetWalkable(tile, true);
 
 		// Remove surrounding shades
+		removeSurroundingShade();
 		TileArea checkArea(tile, 1);
-		checkArea.EnforceWorldLimit();
-		for (int y = checkArea.minY; y <= checkArea.maxY; y++) {
-			for (int x = checkArea.minX; x <= checkArea.maxX; x++)
-			{
-				if (!HasNearbyTree(x, y)) {
-					setTreeShade(x + y * _sizeX, false);
-					//_treeShade[x + y * _sizeX] = false;
-				}
-			}
-		}
+		//checkArea.EnforceWorldLimit();
+		//for (int y = checkArea.minY; y <= checkArea.maxY; y++) {
+		//	for (int x = checkArea.minX; x <= checkArea.maxX; x++)
+		//	{
+		//		if (!HasNearbyTree(x, y)) {
+		//			setTreeShade(x + y * _sizeX, false);
+		//		}
+		//	}
+		//}
 
 		// Update the HeightForestColor texture
 		if (Time::Ticks() > 0) {
@@ -309,6 +338,8 @@ ResourcePair TreeSystem::RemoveTileObj(WorldTile2 tile, bool animate)
 		_treeEnum[id] = TileObjEnum::None;
 
 		_simulation->SetWalkable(tile, true);
+
+		removeSurroundingShade();
 
 		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Trees, tile.regionId(), true);
 
@@ -466,6 +497,17 @@ NonWalkableTileAccessInfo TreeSystem::FindNearestUnreservedFruitTree(WorldTile2 
 	return nearestAccessInfo;
 }
 
+WorldTile2 TreeSystem::FindNearestUnreservedFullBush(WorldTile2 unitTile, const std::vector<WorldRegion2>& regions, int32 maxFloodDist, bool canPassGate)
+{
+	for (WorldRegion2 region : regions) {
+		WorldTile2 foundTile = FindNearestUnreservedFullBush(unitTile, region, maxFloodDist, canPassGate);
+		if (foundTile.isValid()) {
+			return foundTile;
+		}
+	}
+	return WorldTile2::Invalid;
+}
+
 WorldTile2 TreeSystem::FindNearestUnreservedFullBush(WorldTile2 unitTile, WorldRegion2 originRegion, int32 maxFloodDist, bool canPassGate)
 {
 	SCOPE_CYCLE_COUNTER(STAT_PunFindFullBush);
@@ -478,48 +520,49 @@ WorldTile2 TreeSystem::FindNearestUnreservedFullBush(WorldTile2 unitTile, WorldR
 	WorldTile2 nearestTile = WorldTile2::Invalid;
 	int32 nearestDist = GameMapConstants::TilesPerWorldX;
 
-	auto findNearest = [&](WorldRegion2 curRegion)
+	_regionToReadyBushes[originRegion.regionId()].Execute([&](WorldTile2 curTile)
 	{
-		_regionToReadyBushes[curRegion.regionId()].Execute([&](WorldTile2 curTile)
+		DEBUG_ISCONNECTED_VAR(FindNearestUnreservedFullBush);
+		
+		if (!_reservations.Contains(curTile.tileId()) &&
+			_simulation->IsConnected(unitTile, curTile, maxFloodDist, canPassGate)) //TODO: faster with precomputed floodInfo??
 		{
-			if (!_reservations.Contains(curTile.tileId()) &&
-				_simulation->IsConnected(unitTile, curTile, maxFloodDist, canPassGate)) //TODO: faster with precomputed floodInfo??
-			{
-				int dist = WorldTile2::ManDistance(curTile, unitTile);
-				if (dist < nearestDist) {
-					nearestDist = dist;
-					nearestTile = curTile;
-				}
-			}
-		});
-	};
-
-	// Try middle first, if already one just return..
-	findNearest(originRegion);
-	if (nearestTile.isValid()) {
-		return nearestTile;
-	}
-
-
-	for (int xx = originRegion.x - 1; xx <= originRegion.x + 1; xx++) {
-		for (int yy = originRegion.y - 1; yy <= originRegion.y + 1; yy++)
-		{
-			WorldRegion2 curRegion(xx, yy);
-			if (curRegion == originRegion) {
-				continue; // Skip mid
-			}
-			if (!curRegion.IsValid()) {
-				continue;
-			}
-
-			findNearest(curRegion);
-			if (nearestTile.isValid()) {
-				return nearestTile;
+			int dist = WorldTile2::ManDistance(curTile, unitTile);
+			if (dist < nearestDist) {
+				nearestDist = dist;
+				nearestTile = curTile;
 			}
 		}
-	}
+	});
 
 	return nearestTile;
+
+	//// Try middle first, if already one just return..
+	//findNearest(originRegion);
+	//if (nearestTile.isValid()) {
+	//	return nearestTile;
+	//}
+
+
+	//for (int xx = originRegion.x - 1; xx <= originRegion.x + 1; xx++) {
+	//	for (int yy = originRegion.y - 1; yy <= originRegion.y + 1; yy++)
+	//	{
+	//		WorldRegion2 curRegion(xx, yy);
+	//		if (curRegion == originRegion) {
+	//			continue; // Skip mid
+	//		}
+	//		if (!curRegion.IsValid()) {
+	//			continue;
+	//		}
+
+	//		findNearest(curRegion);
+	//		if (nearestTile.isValid()) {
+	//			return nearestTile;
+	//		}
+	//	}
+	//}
+
+	//return nearestTile;
 }
 
 
@@ -859,7 +902,8 @@ void TreeSystem::EmitSeed(int32 originId, TileObjInfo info)
 		//_simulation->dropSystem().GetDrops(tile).size() == 0
 		//) // Avoid drops
 	{
-		if (info.type == ResourceTileType::Tree) {
+		if (info.type == ResourceTileType::Tree) 
+		{
 			if (!treeShade(tile.tileId()) &&
 				terrainGenerator.resourcePerlin(tile) < FD0_XX(59))
 			{

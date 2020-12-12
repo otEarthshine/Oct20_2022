@@ -173,6 +173,9 @@ public:
 		auto checkNearest = [&](int16_t x, int16_t y) {
 			WorldTile2 curTile(x, y);
 			int32_t dist = WorldTile2::ManDistance(curTile, start);
+
+			DEBUG_ISCONNECTED_VAR(adjacentTileNearestTo);
+			
 			if (dist < nearestDist && _simulation->IsConnected(curTile, start, maxRegionDistance, true)) {
 				nearestDist = dist;
 				nearestTile = curTile;
@@ -338,6 +341,10 @@ public:
 
 	virtual bool ShouldAddWorker_ConstructedNonPriority()
 	{
+		if (_simulation->IsOutputTargetReached(_playerId, product())) {
+			return false;
+		}
+		
 		if (!_filledInputs) {
 			// TODO: replace with CanAddInput()
 			if (hasInput1() && hasInput2()) {
@@ -358,7 +365,8 @@ public:
 		}
 		return true;
 	}
-	
+
+	// For playerOwned only, uses targetOccupants
 	bool ShouldAddWorker(PriorityEnum priority)
 	{
 		//if (priority == PriorityEnum::NonPriority) 
@@ -384,8 +392,9 @@ public:
 				}
 			}
 		}
-		return _occupantIds.size() < _allowedOccupants && !isDisabled();
+		return targetOccupants < _allowedOccupants && !isDisabled();
 	}
+	
 
 	void AddOccupant(int id) {
 		_occupantIds.push_back(id);
@@ -703,13 +712,27 @@ public:
 		int32 bonus = 0;
 		for (int32 buildingId : buildingIds) {
 			Building& building = _simulation->building(buildingId);
-			PUN_CHECK(building.isEnum(buildingEnum))
+			PUN_CHECK(building.isEnum(buildingEnum));
 			
 			if (building.isConstructed() && building.DistanceTo(_centerTile) <= radius) {
 				bonus = getBonus(bonus, building);
 			}
 		}
 		return bonus;
+	}
+
+	template<typename Func>
+	void ExecuteInRadius(CardEnum buildingEnum, int32 radius, Func func)
+	{
+		const std::vector<int32>& buildingIds = _simulation->buildingIds(_playerId, buildingEnum);
+		for (int32 buildingId : buildingIds) {
+			Building& building = _simulation->building(buildingId);
+			PUN_CHECK(building.isEnum(buildingEnum));
+
+			if (building.isConstructed() && building.DistanceTo(_centerTile) <= radius) {
+				func(building);
+			}
+		}
 	}
 	
 
@@ -893,6 +916,15 @@ public:
 
 	bool IsUpgraded(int index) {
 		return _upgrades.size() > index ? _upgrades[index].isUpgraded : false;
+	}
+
+	void UpgradeInstantly(int32 index)
+	{
+		_upgrades[index].isUpgraded = true;
+
+		ResetDisplay();
+
+		OnUpgradeBuilding(index);
 	}
 
 
@@ -1276,9 +1308,17 @@ public:
 	// Public Non-serialized (Mostly UI)
 	HoverWarning hoverWarning;
 
+	int32 targetOccupants = 0; // Temporary variable used when Refreshing Jobs
 	
 
 	float lastHoverWarningCheckTime = 0.0f;
+
+	void TryRefreshHoverWarning(float time) {
+		if (time - lastHoverWarningCheckTime >= 1.0f) {
+			lastHoverWarningCheckTime = time;
+			RefreshHoverWarning();
+		}
+	}
 
 	virtual bool RefreshHoverWarning()
 	{
@@ -1296,7 +1336,8 @@ public:
 
 		// Inaccessible Warning
 		if (_simulation->HasTownhall(_playerId) &&
-			!_simulation->IsConnected(_simulation->townhallGateTile(_playerId), gateTile(), 7, true))
+			!_simulation->IsConnectedBuilding(buildingId(), _playerId) &&
+			maxOccupants() > 0)
 		{
 			if (isConstructed()) {
 				hoverWarning = HoverWarning::Inaccessible;
@@ -1305,6 +1346,7 @@ public:
 			
 			// Construction site check all tiles
 			bool isAccessible = area().ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 tile) {
+				DEBUG_ISCONNECTED_VAR(RefreshHoverWarning);
 				return _simulation->IsConnected(_simulation->townhallGateTile(_playerId), tile, 7, true);
 			});
 			//	if (_simulation->IsConnected(_simulation->townhallGateTile(_playerId), gateTile(), 7, true)) {

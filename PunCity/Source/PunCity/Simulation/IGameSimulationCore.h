@@ -272,6 +272,10 @@ public:
 
 	virtual bool IsConnected(WorldTile2 start, WorldTile2 end, int maxRegionDistance, bool canPassGate) = 0;
 
+	virtual bool IsConnectedBuilding(int32 buildingId, int32 playerId) = 0;
+
+	virtual void OnRefreshFloodGrid(WorldRegion2 region) = 0;
+	
 	/*
 	 * Province
 	 */
@@ -316,6 +320,7 @@ public:
 	virtual bool IsBorderProvince(int32 provinceId) = 0;
 
 	virtual const std::vector<ProvinceConnection>& GetProvinceConnections(int32 provinceId) = 0;
+	virtual void AddTunnelProvinceConnections(int32 provinceId1, int32 provinceId2) = 0;
 	
 	/*
 	 * 
@@ -391,7 +396,10 @@ public:
 	virtual int HousingCapacity(int32 playerId) = 0;
 	virtual int32 GetHouseLvlCount(int32 playerId, int32 houseLvl, bool includeHigherLvl = false) = 0;
 
+	virtual std::pair<int32, int32> GetStorageCapacity(int32 playerId, bool includeUnderConstruction = false) = 0;
+
 	virtual void RemoveJobsFrom(int32 buildingId, bool isRefreshJob) = 0;
+	
 	virtual void RemoveTenantFrom(int32 buildingId) = 0;
 
 	virtual int foodCount(int32 playerId) = 0;
@@ -415,6 +423,9 @@ public:
 	virtual int32 resourceCountWithDrops(int32 playerId, ResourceEnum resourceEnum) = 0;
 
 	virtual void AddResourceGlobal(int32 playerId, ResourceEnum resourceEnum, int32 amount) = 0;
+
+	virtual bool IsOutputTargetReached(int32 playerId, ResourceEnum resourceEnum) = 0;
+	
 
 	virtual void SetProvinceOwnerFull(int32 provinceId, int32 playerId) = 0;
 	virtual int32 provinceOwner(int32 provinceId) = 0;
@@ -471,7 +482,9 @@ public:
 
 	virtual int32 aiStartIndex() = 0;
 	virtual int32 aiEndIndex() = 0;
-	virtual bool IsAI(int32 playerId) = 0;
+	virtual bool IsAIPlayer(int32 playerId) = 0;
+
+	virtual TCHAR* AIPrintPrefix(int32 aiPlayerId) = 0;
 
 	virtual void ChangeRelationshipModifier(int32 aiPlayerId, int32 towardPlayerId, RelationshipModifierEnum modifierEnum, int32 amount) = 0;
 

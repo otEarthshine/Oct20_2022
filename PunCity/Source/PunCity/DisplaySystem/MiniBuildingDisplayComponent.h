@@ -22,7 +22,7 @@ public:
 protected:
 	int CreateNewDisplay(int regionId) override;
 	void OnSpawnDisplay(int regionId, int meshId, WorldAtom2 cameraAtom) override;
-	void UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom) override;
+	void UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom, bool justSpawned, bool justCreated) override;
 	void HideDisplay(int meshId, int32 regionId) override;
 
 	UPROPERTY() TArray<UStaticFastInstancedMeshesComp*> _moduleMeshes;

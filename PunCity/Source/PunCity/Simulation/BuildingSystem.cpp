@@ -291,6 +291,9 @@ int BuildingSystem::AddBuilding(FPlaceBuilding parameters)
 
 	_buildingSubregionList.Add(center, buildingId);
 
+	_isBuildingIdConnected.push_back(-1);
+	RefreshIsBuildingConnected(parameters.playerId, buildingId, center);
+
 	building->ResetDisplay();
 
 	PlaceBuildingOnMap(buildingId, true);
@@ -447,6 +450,7 @@ void BuildingSystem::RemoveBuilding(int buildingId)
 		}
 	}
 
+	_isBuildingIdConnected[buildingId] = -1;
 	
 	_buildings[buildingId]->Deinit();
 

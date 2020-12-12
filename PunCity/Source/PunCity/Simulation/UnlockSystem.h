@@ -336,7 +336,8 @@ public:
 		 * - 1250 cost ... (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) / 10 / 10
 		 * - at 125 sci production... it is 2.5 seasons
 		 */
-		return (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) / 10 / 10 / 10  /* Tech factor: */  * 12000 / 1000; // 5400 / 1000;
+		int32 sciNeeded = (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) / 10 / 10 / 10  /* Tech factor: */  * 12000 / 1000; // 5400 / 1000;
+		return std::min(sciNeeded, 100000);
 	}
 
 	float researchFraction(int32 researchesFinished, int32 science100XsecPerRound) {
@@ -758,7 +759,8 @@ public:
 			std::stringstream ss;
 			ss << "Unlocked: House Upgrade Unlocks Menu.";
 			ss << "<space>";
-			ss << "Houses can be upgraded by supplying them with Luxury Resources. ";
+			ss << "Houses can be upgraded by supplying them with Luxury Resources.";
+			ss << "<space>";
 			ss << "Achieving certain house level count will unlock new technologies.";
 			
 			PopupInfo popupInfo(_playerId, ss.str(), { "Show House Upgrade Unlocks", "Close" },
@@ -1078,6 +1080,17 @@ public:
 		}
 		return techsUnlocked;
 	}
+
+	int32 lastEra() { return _eraToTechs.size() - 1; }
+
+	bool shouldFlashTechToggler()
+	{
+		if (techsUnlockedInEra(lastEra()) == totalTechsInEra(lastEra())) {
+			return false;
+		}
+		return !hasTargetResearch();
+	}
+	
 
 	static const int32 percentTechToEraUnlock = 70;// 80;
 	int32 techsToUnlockedNextEra(int32 era) {

@@ -318,6 +318,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	TryLoadBuildingModuleSet("ConstructionOffice", "ConstructionOffice");
 	TryLoadBuildingModuleSet("Ministry", "Ministry");
+	TryLoadBuildingModuleSet("Bank", "Bank");
 
 	TryLoadBuildingModuleSet("BeerBreweryFamous", "BeerBreweryFamous");
 

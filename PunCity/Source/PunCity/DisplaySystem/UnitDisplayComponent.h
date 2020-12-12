@@ -50,11 +50,11 @@ public:
 		//_testAnimatedMesh = CreateDefaultSubobject<USkeletalMeshComponent>("_testAnimatedMesh");
 	}
 	
-	void Init(int size, TScriptInterface<IDisplaySystemDataSource> gameManager, UAssetLoaderComponent* assetLoader) override
+	void Init(int size, TScriptInterface<IDisplaySystemDataSource> gameManager, UAssetLoaderComponent* assetLoader, int32 initialPoolSize) override
 	{
 		LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayUnit);
 		
-		UDisplaySystemComponent::Init(size, gameManager, assetLoader);
+		UDisplaySystemComponent::Init(size, gameManager, assetLoader, initialPoolSize);
 
 		//_unitMeshes->Init("Unit", this, 100, "Unit", 0, true);
 		_unitMeshes->Init("Unit", this, 100, "", 0, true);
@@ -181,7 +181,7 @@ public:
 	}
 
 protected:
-	void UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom) override;
+	void UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom, bool justSpawned, bool justCreated) override;
 
 private:
 	static FString GetMeshName(const UnitInfo& info, int32 variationIndex)

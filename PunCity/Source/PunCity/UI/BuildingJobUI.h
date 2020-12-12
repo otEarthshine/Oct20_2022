@@ -215,14 +215,14 @@ public:
 	{
 		// Refresh Hover Warning
 		// Check every sec
-		float time = UGameplayStatics::GetTimeSeconds(this);
 		if (building.ownedBy(playerId()))
 		{
-			if (time - building.lastHoverWarningCheckTime >= 1.0f)
-			{
-				building.lastHoverWarningCheckTime = time;
-				building.RefreshHoverWarning();
-			}
+			building.TryRefreshHoverWarning(UGameplayStatics::GetTimeSeconds(this));
+			//if (time - building.lastHoverWarningCheckTime >= 1.0f)
+			//{
+			//	building.lastHoverWarningCheckTime = time;
+			//	building.RefreshHoverWarning();
+			//}
 		}
 		else {
 			building.hoverWarning = HoverWarning::None;

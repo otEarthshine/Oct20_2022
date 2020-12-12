@@ -434,11 +434,15 @@ public:
 		if (customFloodDistance == -1) {
 			customFloodDistance = unitMaxFloodDistance();
 		}
+		DEBUG_ISCONNECTED_VAR(IsMoveValid);
 		
 		return _simulation->IsConnected(unitTile(), tile, customFloodDistance, IsIntelligentUnit(unitEnum()));
 	}
 	bool IsResourceMoveValid(ResourceHolderInfo info) {
-		if (!info.isValid()) return false;
+		if (!info.isValid()) {
+			return false;
+		}
+		DEBUG_ISCONNECTED_VAR(ResourceMoveValid);
 		WorldTile2 tile = dropoffBuilding(info).gateTile();
 		return _simulation->IsConnected(unitTile(), tile, unitMaxFloodDistance(), IsIntelligentUnit(unitEnum()));
 	}
@@ -452,7 +456,7 @@ public:
 		if (isEnum(UnitEnum::Human)) {
 			return GameConstants::MaxFloodDistance_Human;
 		}
-		return GameConstants::MaxFloodDistance_Animal;
+		return GameConstants::GameConstants::MaxFloodDistance_AnimalFar;
 	}
 
 	//! Combat
@@ -678,11 +682,12 @@ protected:
 protected:
 	// Try
 	bool TryAvoidOthers(); // TODO: replaced by territorial instinct
-	bool TryFindWildFood(bool getFruit, int32 radius = 32);
+	bool TryFindWildFood();
 
 	bool TryGetBurrowFood();
 	bool TryStockBurrowFood();
 	bool TryStoreAnimalInventory();
+	bool TryGoHomeProvince();
 
 	bool TryCheckBadTile();
 	bool TryGoNearbyHome();

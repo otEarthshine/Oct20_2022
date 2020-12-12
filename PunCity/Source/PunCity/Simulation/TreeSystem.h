@@ -149,7 +149,7 @@ public:
 	}
 
 	void PlantTree(int32_t x, int32_t y, TileObjEnum treeEnum, bool initial = false);
-	bool HasNearbyTree(int x, int y);
+	bool HasNearbyShadeObject(int x, int y);
 	void PlantTileObj(int32_t id, TileObjEnum tileObjEnum)
 	{
 		PUN_CHECK(IsTileObjEnumValid(tileObjEnum));
@@ -185,6 +185,8 @@ public:
 	void ForceRemoveTileReservationArea(TileArea area);
 
 	NonWalkableTileAccessInfo FindNearestUnreservedFruitTree(WorldTile2 searchCenter, WorldTile2 unitTile, int32 radius, int32 maxFloodDist, bool canPassGate);
+
+	WorldTile2 FindNearestUnreservedFullBush(WorldTile2 unitTile, const std::vector<WorldRegion2>& regions, int32 maxFloodDist, bool canPassGate);
 	WorldTile2 FindNearestUnreservedFullBush(WorldTile2 unitTile, WorldRegion2 originRegion, int32 maxFloodDist, bool canPassGate);
 
 	int32 tileObjAge(int id) { return _tileObjAge[id]; }
@@ -641,6 +643,20 @@ private:
 				_treeShade[id >> 3] &= ~(1 << shift);
 			}
 		}
+	}
+	void SetSurroundingShade(int32 i)
+	{
+		setTreeShade(i, true);
+
+		setTreeShade(i + 1, true);
+		setTreeShade(i - 1, true);
+		setTreeShade(i + _sizeX, true);
+		setTreeShade(i - _sizeX, true);
+
+		setTreeShade(i + 1 + _sizeX, true);
+		setTreeShade(i - 1 + _sizeX, true);
+		setTreeShade(i + 1 - _sizeX, true);
+		setTreeShade(i - 1 - _sizeX, true);
 	}
 
 	void RemoveFruit(WorldTile2 tile) {

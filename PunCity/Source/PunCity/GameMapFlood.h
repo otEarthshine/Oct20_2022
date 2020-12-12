@@ -2,8 +2,7 @@
 
 #pragma once
 
-#include "UnrealEngine.h"
-#include "PunCity/Simulation/GameSimulationInfo.h"
+#include "PunCity/Simulation/IGameSimulationCore.h"
 #include "PunCity/Simulation/GameMapFloodShortDistance.h"
 #include "PunCity/DisplaySystem/PunTerrainGenerator.h"
 #include <array>
@@ -189,8 +188,9 @@ private:
 class GameMapFlood
 {
 public:
-	void Init(PunAStar128x256* pathAI, PunTerrainGenerator* terrainGenerator, bool isLoadingFromFile)
+	void Init(PunAStar128x256* pathAI, PunTerrainGenerator* terrainGenerator, IGameSimulationCore* simulation, bool isLoadingFromFile)
 	{
+		_simulation = simulation;
 		_terrainGenerator = terrainGenerator;
 		_pathAI = pathAI;
 
@@ -302,6 +302,7 @@ private:
 
 
 private:
+	IGameSimulationCore* _simulation = nullptr;
 	PunTerrainGenerator* _terrainGenerator = nullptr;
 	PunAStar128x256* _pathAI = nullptr;
 

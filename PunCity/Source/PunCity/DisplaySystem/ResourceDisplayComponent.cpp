@@ -28,7 +28,7 @@ int UResourceDisplayComponent::CreateNewDisplay(int objectId)
 
 static std::vector<bool> _tileIdToInUse;
 
-void UResourceDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom)
+void UResourceDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom, bool justSpawned, bool justCreated)
 {
 	auto& dropSystem = simulation().dropSystem();
 	auto& buildingSystem = simulation().buildingSystem();

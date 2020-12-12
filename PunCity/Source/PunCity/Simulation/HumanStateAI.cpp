@@ -1206,6 +1206,8 @@ FoundResourceHolderInfos HumanStateAI::FindMarketResourceHolderInfo(ResourceEnum
 	
 	for (int32 marketId : marketIds)
 	{
+		DEBUG_ISCONNECTED_VAR(FindMarketResourceHolderInfo);
+		
 		Building& market = _simulation->building(marketId);
 		if (market.isConstructed() &&
 			_simulation->IsConnected(market.centerTile(), houseTile, maxFloodDist, true))
@@ -1531,8 +1533,8 @@ bool HumanStateAI::TryRanch()
 	Add_MoveTo(_unitData->atomLocation(targetFullId.id).worldTile2());
 
 
-	auto& unitAI = _simulation->unitAI(targetFullId.id);;
-	PUN_LOG("Try Ranch on unit id:%d pid:%d houseId:%d unit:%s", targetFullId.id, unitAI.playerId(), unitAI.houseId(), ToTChar(unitAI.GetUnitName()));
+	//auto& unitAI = _simulation->unitAI(targetFullId.id);;
+	//PUN_LOG("Try Ranch on unit id:%d pid:%d houseId:%d unit:%s", targetFullId.id, unitAI.playerId(), unitAI.houseId(), ToTChar(unitAI.GetUnitName()));
 	
 	return false;
 }
@@ -1731,12 +1733,15 @@ bool HumanStateAI::TryClearFarmDrop(Farm& farm, int32 minDropCount)
 	std::vector<DropInfo> dropsToMove;
 	for (DropInfo drop : drops)
 	{
+		PUN_CHECK(drop.holderInfo.resourceEnum != ResourceEnum::None);
+		
 		if (targetResourceEnum == ResourceEnum::None) {
 			targetResourceEnum = drop.holderInfo.resourceEnum;
 		}
 
 		int32 dropResourceCount = resourceSys.resourceCountWithPop(drop.holderInfo);
-		if (drop.holderInfo.resourceEnum == targetResourceEnum &&
+		if (dropResourceCount > 0 &&
+			drop.holderInfo.resourceEnum == targetResourceEnum &&
 			amount + dropResourceCount <= targetAmount)
 		{
 			amount += dropResourceCount;
@@ -1747,7 +1752,12 @@ bool HumanStateAI::TryClearFarmDrop(Farm& farm, int32 minDropCount)
 		}
 	}
 
+	//PUN_CHECK(targetResourceEnum != ResourceEnum::None);
+	//PUN_CHECK(amount > 0);
 	if (targetResourceEnum == ResourceEnum::None) {
+		return false;
+	}
+	if (amount <= 0) {
 		return false;
 	}
 
@@ -1782,7 +1792,6 @@ bool HumanStateAI::TryClearFarmDrop(Farm& farm, int32 minDropCount)
 			// Set Actions
 			Add_DropoffResource(foundInfo.info, foundInfo.amount);
 			Add_MoveToResource(foundInfo.info);
-			//Add_MoveTo(foundInfo.tile);
 		}
 
 		for (DropInfo drop : dropsToMove) {
@@ -2043,6 +2052,21 @@ bool HumanStateAI::TryGather(bool treeOnly)
 bool HumanStateAI::TryForestingCut(bool cutAndPlant)
 {
 	Forester& workPlc = workplace()->subclass<Forester>(CardEnum::Forester);
+
+	// Reached output target? Don't cut
+	if (_simulation->IsOutputTargetReached(_playerId, ResourceEnum::Wood))
+	{
+		// Should switch jobs if this is not priority
+		if (workPlc.priority() == PriorityEnum::NonPriority) {
+			_simulation->playerOwned(_playerId).RefreshJobDelayed();
+		}
+		// TODO: also refresh upon dropping a lot below target
+		
+		AddDebugSpeech("(Failed)TryForestingCut: Already Reached Target");
+		return false;
+	}
+
+	
 
 	NonWalkableTileAccessInfo tileAccessInfo = treeSystem().FindCuttableTree(_playerId, workPlc.gateTile(), Forester::Radius, workPlc.cuttingEnum);
 
@@ -2347,28 +2371,36 @@ bool HumanStateAI::TryProduce()
 		ResourceEnum product = workplace.product();
 		if (product != ResourceEnum::None)
 		{
-			int32 outputTarget = _simulation->playerOwned(_playerId).GetOutputTarget(product);
-			if (outputTarget != -1 &&
-				resourceSystem.resourceCountWithPop(product) >= outputTarget)
+			if (_simulation->IsOutputTargetReached(_playerId, product))
 			{
-				// Only continue if there is unfinished filling
-				bool shouldContinueFilling = false;
+				//// Only continue if there is unfinished filling
+				//bool shouldContinueFilling = false;
 
-				if (needInput1) {
-					if (resourceSystem.resourceCountWithPop(workplace.holderInfo(workplace.input1())) > 0) {
-						shouldContinueFilling = true;
-					}
-				}
-				if (needInput2) {
-					if (resourceSystem.resourceCountWithPop(workplace.holderInfo(workplace.input2())) > 0) {
-						shouldContinueFilling = true;
-					}
-				}
+				//if (needInput1) {
+				//	if (resourceSystem.resourceCountWithPop(workplace.holderInfo(workplace.input1())) > 0) {
+				//		shouldContinueFilling = true;
+				//	}
+				//}
+				//if (needInput2) {
+				//	if (resourceSystem.resourceCountWithPop(workplace.holderInfo(workplace.input2())) > 0) {
+				//		shouldContinueFilling = true;
+				//	}
+				//}
 
-				if (!shouldContinueFilling) {
-					AddDebugSpeech("(Failed)TryProduce: Already Reached Target");
-					return false;
+				//if (!shouldContinueFilling) {
+				//	AddDebugSpeech("(Failed)TryProduce: Already Reached Target");
+				//	return false;
+				//}
+
+				// TODO: Need to think of when to refresh outputTargetReached etc... this may cause too much refresh?
+
+				// Should switch jobs if this is not priority
+				if (workplace.priority() == PriorityEnum::NonPriority) {
+					_simulation->playerOwned(_playerId).RefreshJobDelayed();
 				}
+				
+				AddDebugSpeech("(Failed)TryProduce: Already Reached Target");
+				return false;
 			}
 		}
 		
@@ -2430,7 +2462,7 @@ bool HumanStateAI::TryProduce()
 	int waitTicks = 60;
 	ReserveWork(workManSec100);
 
-	Add_Produce(workManSec100, waitTicks, 5, workplace.buildingId());
+	Add_Produce(workManSec100, waitTicks, 10, workplace.buildingId());
 	Add_MoveTo(workplace.gateTile());
 
 	_unitState = UnitState::WorkProduce;

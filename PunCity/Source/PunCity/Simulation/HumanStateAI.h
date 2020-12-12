@@ -154,7 +154,7 @@ public:
 	}
 	
 	int32 toolPenalty100() {
-		return needTools() ? -50 : 0;
+		return needTools() ? -75 : 0;
 	}
 	int32 sicknessPenalty100() {
 		if (_simulation->GetResourceCount(_playerId, MedicineEnums) > 0) {
@@ -200,7 +200,12 @@ public:
 		switch (modifierEnum)
 		{
 		case HappinessModifierEnum::Luxury: return luxuryHappinessModifier();
-		case HappinessModifierEnum::HappyBreadDay: return _simulation->resourceCount(_playerId, ResourceEnum::Bread) >= 1000 ? 5 : 0;
+		case HappinessModifierEnum::HappyBreadDay: {
+			if (_simulation->TownhallCardCount(_playerId, CardEnum::HappyBreadDay) == 0) {
+				return 0;
+			}
+			return _simulation->resourceCount(_playerId, ResourceEnum::Bread) >= 1000 ? 5 : 0;
+		}
 		case HappinessModifierEnum::BlingBling: {
 			if (_simulation->TownhallCardCount(_playerId, CardEnum::BlingBling) == 0) {
 				return 0;
@@ -278,6 +283,7 @@ public:
 		}
 		return isBelowWorkingAge() ? "little girl" : "woman";
 	}
+
 
 protected:
 	void MoveResourceSequence(std::vector<FoundResourceHolderInfo> providerInfos, std::vector<FoundResourceHolderInfo> dropoffInfos, int32 customFloodDistance = -1);

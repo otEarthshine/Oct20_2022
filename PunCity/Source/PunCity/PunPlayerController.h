@@ -700,7 +700,7 @@ public:
 		if (tile.isValid() && aiTile.isValid() )
 		{
 			int32 aiPlayerId = sim.tileOwner(aiTile);
-			if (sim.IsAI(aiPlayerId))
+			if (sim.IsAIPlayer(aiPlayerId))
 			{
 				int32 provinceId = sim.GetProvinceIdClean(tile);
 				auto command = make_shared<FClaimLand>();
@@ -736,9 +736,14 @@ public:
 		SendNetworkCommand(command);
 	}
 
+	UFUNCTION(Exec) void SpawnDrop(const FString& resourceName, int32 count, int32 tileX, int32 tileY)
+	{
+		std::string resourceNameStd = ToStdString(resourceName);
+		simulation().resourceSystem(playerId()).SpawnDrop(FindResourceEnumByName(resourceNameStd), count, WorldTile2(tileX, tileY));
+	}
 
 	/*
-	 * Test Print
+	 * Test Print Debug
 	 */
 	UFUNCTION(Exec) void PrintResourceSys()
 	{
@@ -773,6 +778,9 @@ public:
 		PUN_LLM_ONLY(PunScopeLLM::Print());
 	}
 
+	UFUNCTION(Exec) void PrintMeshPoolCount() {
+		gameManager->PrintMeshPoolCount();
+	}
 
 	// Photo taking
 	// !!! In-Game Only

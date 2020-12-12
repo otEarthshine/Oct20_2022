@@ -349,21 +349,26 @@ public:
 		}
 	}
 
-	static void PlaceCityBlock(AICityBlock& block, int32 playerId, std::vector<std::shared_ptr<FNetworkCommand>>& commands)
+	static void PlaceCityBlock(AICityBlock& block, int32 playerId, std::vector<std::shared_ptr<FNetworkCommand>>& commands, IGameSimulationCore* simulation)
 	{
 		TileArea blockArea = block.area();
 
 		// Build surrounding road...
 		{
 			TArray<int32> path;
-			for (int32_t x = blockArea.minX; x <= blockArea.maxX; x++) {
-				path.Add(WorldTile2(x, blockArea.minY).tileId());
-				path.Add(WorldTile2(x, blockArea.maxY).tileId());
-			}
-			for (int32_t y = blockArea.minY + 1; y <= blockArea.maxY - 1; y++) {
-				path.Add(WorldTile2(blockArea.minX, y).tileId());
-				path.Add(WorldTile2(blockArea.maxX, y).tileId());
-			}
+			auto tryAddPath = [&](WorldTile2 tile) {
+				if (simulation->buildingEnumAtTile(tile) == CardEnum::None &&
+					!simulation->IsRoadTile(tile))
+				{
+					PUN_LOG("PlaceCityBlock add path %d %d", tile.x, tile.y);
+					
+					path.Add(tile.tileId());
+				}
+			};
+
+			blockArea.ExecuteOnBorder_WorldTile2([&](WorldTile2 tile) {
+				tryAddPath(tile);
+			});
 
 			auto command = MakeCommand<FPlaceDrag>(playerId);
 			command->path = path;
@@ -386,19 +391,20 @@ public:
 		TileArea blockArea = block.area();
 		int32 roadTileX = block.midRoadTileX();
 
-		//PUN_LOG("PlaceForestBlock %s", *ToFString(blockArea.ToString()));
+		PUN_LOG("PlaceForestBlock[%d] %s", playerId, *ToFString(blockArea.ToString()));
 
 		// Face up row
 		PlaceBuildingRow(block.topBuildingEnums, WorldTile2(roadTileX, blockArea.maxY), false, playerId, commands);
 		PlaceBuildingRow(block.bottomBuildingEnums, WorldTile2(roadTileX, blockArea.minY), true, playerId, commands);
 	}
 
+	// For Trailer
 	static bool TryPlaceArea(AICityBlock& block, WorldTile2 provinceCenter, int32 playerId, IGameSimulationCore* simulation, int32 maxLookup)
 	{
-		block.TryFindArea(provinceCenter, playerId, simulation, maxLookup);
+		block.TryPlaceForestBlock(provinceCenter, playerId, simulation, maxLookup);
 		if (block.HasArea()) {
 			std::vector<std::shared_ptr<FNetworkCommand>> commands;
-			PlaceCityBlock(block, playerId, commands);
+			PlaceCityBlock(block, playerId, commands, simulation);
 			simulation->ExecuteNetworkCommands(commands);
 			return true;
 		}

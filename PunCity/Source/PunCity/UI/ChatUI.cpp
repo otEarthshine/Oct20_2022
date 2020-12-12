@@ -318,49 +318,69 @@ void UChatUI::TickDebugUI()
 		DEBUG_AI(ResetCountPerSec);
 		DEBUG_AI(FailedToFindPath);
 
-		DEBUG_AI(MoveRandomly);
+		//DEBUG_AI(MoveRandomly);
 
-		DEBUG_AI(TryGatherTreeOnly_Succeed);
-		DEBUG_AI(TryGatherNotTreeOnly_Succeed);
+		//DEBUG_AI(TryGatherTreeOnly_Succeed);
+		//DEBUG_AI(TryGatherNotTreeOnly_Succeed);
 
-		DEBUG_AI(CalculateActions);
-		DEBUG_AI(TryCheckBadTile);
-		DEBUG_AI(TryStoreInventory);
-		DEBUG_AI(TryFindFood);
-		DEBUG_AI(TryHeatup);
-		DEBUG_AI(TryToolup);
-		DEBUG_AI(TryHealup);
+		//DEBUG_AI(CalculateActions);
+		//DEBUG_AI(TryCheckBadTile);
+		//DEBUG_AI(TryStoreInventory);
+		//DEBUG_AI(TryFindFood);
+		//DEBUG_AI(TryHeatup);
+		//DEBUG_AI(TryToolup);
+		//DEBUG_AI(TryHealup);
 
-		DEBUG_AI(TryFillLuxuries);
-		DEBUG_AI(TryFun);
-		DEBUG_AI(TryConstructRoad_RoadMaker);
-		DEBUG_AI(TryConstruct_Constructor);
-		DEBUG_AI(TryGatherFruit);
-		DEBUG_AI(TryHunt);
-		DEBUG_AI(TryRanch);
-		DEBUG_AI(TryFarm);
-		DEBUG_AI(TryForesting);
+		//DEBUG_AI(TryFillLuxuries);
+		//DEBUG_AI(TryFun);
+		//DEBUG_AI(TryConstructRoad_RoadMaker);
+		//DEBUG_AI(TryConstruct_Constructor);
+		//DEBUG_AI(TryGatherFruit);
+		//DEBUG_AI(TryHunt);
+		//DEBUG_AI(TryRanch);
+		//DEBUG_AI(TryFarm);
+		//DEBUG_AI(TryForesting);
 
-		DEBUG_AI(TryProduce_Special);
-		DEBUG_AI(TryProduce_Mine);
-		DEBUG_AI(TryProduce_Others);
+		//DEBUG_AI(TryProduce_Special);
+		//DEBUG_AI(TryProduce_Mine);
+		//DEBUG_AI(TryProduce_Others);
 
-		DEBUG_AI(EmergencyTree10_TryMoveResourceAny);
-		DEBUG_AI(EmergencyTree0_TryMoveResourceAny);
-		DEBUG_AI(TryMoveResourcesAny_Drop);
-		DEBUG_AI(TryMoveResourcesAny_All10);
-		DEBUG_AI(TryMoveResourcesAny_All0);
+		//DEBUG_AI(EmergencyTree10_TryMoveResourceAny);
+		//DEBUG_AI(EmergencyTree0_TryMoveResourceAny);
+		//DEBUG_AI(TryMoveResourcesAny_Drop);
+		//DEBUG_AI(TryMoveResourcesAny_All10);
+		//DEBUG_AI(TryMoveResourcesAny_All0);
 
-		DEBUG_AI(TryConstructRoad);
-		DEBUG_AI(TryConstructRoad_NotWorkConstructState);
-		DEBUG_AI(TryConstructRoad_Queued);
-		DEBUG_AI(TryConstructRoad_MaxQueued);
+		//DEBUG_AI(TryConstructRoad);
+		//DEBUG_AI(TryConstructRoad_NotWorkConstructState);
+		//DEBUG_AI(TryConstructRoad_Queued);
+		//DEBUG_AI(TryConstructRoad_MaxQueued);
 
-		DEBUG_AI(TryGoNearbyHome);
+		//DEBUG_AI(TryGoNearbyHome);
 
-		DEBUG_AI(WorldSpaceUICreate);
-		DEBUG_AI(AddWidget)
-			DEBUG_AI(AddToolTip);
+		//DEBUG_AI(WorldSpaceUICreate);
+		//DEBUG_AI(AddWidget);
+		//DEBUG_AI(AddToolTip);
+
+		// IsConnected
+#define DEBUG_ISCONNECTED(VarName) DEBUG_AI(IsConnected_##VarName)
+		DEBUG_ISCONNECTED(ResourceMoveValid);
+		DEBUG_ISCONNECTED(IsMoveValid);
+		DEBUG_ISCONNECTED(MoveRandomlyPerlin);
+		DEBUG_ISCONNECTED(JustBruteIt);
+		DEBUG_ISCONNECTED(MoveRandomly);
+		DEBUG_ISCONNECTED(TryStockBurrowFood);
+		DEBUG_ISCONNECTED(TryGoNearbyHome);
+		DEBUG_ISCONNECTED(FindNearestUnreservedFullBush);
+		DEBUG_ISCONNECTED(GetProvinceRandomTile);
+		DEBUG_ISCONNECTED(FindMarketResourceHolderInfo);
+		DEBUG_ISCONNECTED(RefreshIsBuildingConnected);
+		DEBUG_ISCONNECTED(RefreshHoverWarning);
+		DEBUG_ISCONNECTED(adjacentTileNearestTo);
+		DEBUG_ISCONNECTED(DropResourceSystem);
+
+#undef DEBUG_ISCONNECTED
+		
 
 #undef DEBUG_AI
 #endif

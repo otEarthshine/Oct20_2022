@@ -22,7 +22,7 @@ public:
 
 	void InitMainMenuDisplayManager(MapSizeEnum mapSizeEnum);
 
-	void UpdateDisplay(WorldAtom2 cameraAtom, float zoomDistance, std::vector<int32> sampleRegionIds);
+	void UpdateDisplay(WorldAtom2 cameraAtom, float zoomDistance, std::vector<int32> sampleRegionIds, bool justSpawned, bool justCreated);
 
 	void UpdatePostProcessVolume() {
 		SetPostProcessVolume(_postProcessVolume, CastChecked<UPunGameInstance>(GetGameInstance()));

@@ -53,7 +53,7 @@ protected:
 	//void OnSpawnDisplay(int objectId, int meshId, WorldAtom2 cameraAtom) override {}	
 	//void HideDisplay(int meshId) override;
 	
-	void UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom) override
+	void UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom, bool justSpawned, bool justCreated) override
 	{
 		LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayTerrain);
 

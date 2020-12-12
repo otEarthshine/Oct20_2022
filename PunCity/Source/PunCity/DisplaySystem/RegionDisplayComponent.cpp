@@ -4,7 +4,6 @@
 #include "Components/TextRenderComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
-#include "TerrainChunkComponent.h"
 #include "PunTerrainGenerator.h"
 #include "PunCity/PunGameSettings.h"
 #include "PunCity/PunTimer.h"
@@ -29,7 +28,7 @@ float URegionDisplayComponent::GetTerrainDisplayHeight(WorldTile2 tile)
 	if (meshId == -1) {
 		return 0;
 	}
-	return _terrainChunks[meshId]->GetTerrainDisplayHeight(tile.localTile()); //_terrainChunks[meshId]->meshHeightsSmooth[/*(localTile.x * 2 + 1) +*/ (localTile.y * 2 + 1) * sizeX];
+	return _terrainChunkData[meshId].GetTerrainDisplayHeight(tile.localTile()); //_terrainChunks[meshId]->meshHeightsSmooth[/*(localTile.x * 2 + 1) +*/ (localTile.y * 2 + 1) * sizeX];
 }
 
 int URegionDisplayComponent::CreateNewDisplay(int objectId)
@@ -48,11 +47,16 @@ int URegionDisplayComponent::CreateNewDisplay(int objectId)
 	terrainComp->bAffectDistanceFieldLighting = false;
 	terrainComp->SetReceivesDecals(true);
 	terrainComp->RegisterComponent();
+	terrainComp->SetTerrainMaterial(_assetLoader); // One material for all...
+	
 	_terrainChunks.Add(terrainComp);
+	_terrainChunkData.Add(TerrainChunkData());
 
-	bool containsWater = false; // if there is no water tile, don't enable waterMesh's visibility
-	_terrainChunks[meshId]->UpdateTerrainChunkMesh(simulation(), region,
-							GameMapConstants::TilesPerWorldX, GameMapConstants::TilesPerWorldY, true, containsWater);
+	//bool containsWater = false; // if there is no water tile, don't enable waterMesh's visibility
+	//_terrainChunkData[meshId].UpdateTerrainChunkMesh_Prepare(simulation(), region,
+	//						GameMapConstants::TilesPerWorldX, GameMapConstants::TilesPerWorldY, true, containsWater);
+	//_terrainChunks[meshId]->UpdateTerrainChunkMesh_UpdateMesh(true, _terrainChunkData[meshId]);
+	chunkInfosToUpDate.push_back({ meshId, objectId, true });
 
 	UStaticMeshComponent* waterComp = CreateMeshComponent(terrainComp, "TerrainWater" + to_string(meshId));
 	waterComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -108,10 +112,14 @@ void URegionDisplayComponent::OnSpawnDisplay(int regionId, int meshId, WorldAtom
 	{
 		//SCOPE_TIMER("Region - Update Terrain Chunk");
 
-		_terrainChunks[meshId]->UpdateTerrainChunkMesh(simulation(), WorldRegion2(regionId),
-														GameMapConstants::TilesPerWorldX, GameMapConstants::TilesPerWorldY, false, 
-														containsWater);
-		_terrainChunks[meshId]->SetTerrainMaterial(_assetLoader); // One material for all...
+		//PUN_LOG("OnSpawnDisplay regionId:%d meshId:%d", regionId, meshId);
+		
+		//_terrainChunkData[meshId].UpdateTerrainChunkMesh_Prepare1();
+		//_terrainChunkData[meshId].UpdateTerrainChunkMesh_Prepare2(simulation(), region, containsWater);
+		//_terrainChunkData[meshId].UpdateTerrainChunkMesh_Prepare3(region);
+		//_terrainChunks[meshId]->UpdateTerrainChunkMesh_UpdateMesh(false, _terrainChunkData[meshId]);
+		
+		//_terrainChunks[meshId]->SetTerrainMaterial(_assetLoader); // One material for all...
 
 		_terrainChunks[meshId]->SetVisibility(true);
 	}
@@ -126,7 +134,7 @@ void URegionDisplayComponent::OnSpawnDisplay(int regionId, int meshId, WorldAtom
 		_groundColliderMeshes[meshId]->ComponentTags.Add(FName(*FString::FromInt(region.y)));
 
 		// Water
-		_waterMeshes[meshId]->SetVisibility(containsWater);
+		//_waterMeshes[meshId]->SetVisibility(containsWater);
 		_waterMaterials[meshId]->SetTextureParameterValue("HeightMap", _assetLoader->heightTexture);
 		_waterMaterials[meshId]->SetTextureParameterValue("BiomeMap", _assetLoader->biomeTexture);
 		//_waterMaterials[meshId]->SetTextureParameterValue(TEXT("RiverMap"), _assetLoader->riverTexture);
@@ -134,7 +142,7 @@ void URegionDisplayComponent::OnSpawnDisplay(int regionId, int meshId, WorldAtom
 	}
 }
 
-void URegionDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom)
+void URegionDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom, bool justSpawned, bool justCreated)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayTerrain);
 	
@@ -155,14 +163,12 @@ void URegionDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2
 	_groundColliderMeshes[meshId]->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 
 	// Update the terrain chunk if needed
-	if (simulation().NeedDisplayUpdate(DisplayClusterEnum::Terrain, regionId))
+	if (simulation().NeedDisplayUpdate(DisplayClusterEnum::Terrain, regionId) ||
+		justSpawned)
 	{
-		//SCOPE_TIMER("Tick Region Terrain");
-		
-		bool containsWater;
-		_terrainChunks[meshId]->UpdateTerrainChunkMesh(simulation(), region,
-			GameMapConstants::TilesPerWorldX, GameMapConstants::TilesPerWorldY, false,
-			containsWater);
+		if (!justCreated) {
+			chunkInfosToUpDate.push_back({ meshId, regionId, false });
+		}
 		
 		simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Terrain, regionId, false);
 	}
@@ -183,6 +189,67 @@ void URegionDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2
 		_waterMeshes[meshId]->SetVisibility(false);
 	}
 	
+}
+
+void URegionDisplayComponent::AfterAdd()
+{
+	SCOPE_TIMER_FILTER(5000, "Tick Region AfterDisplay");
+
+	// Execute all the needed
+	{
+		//SCOPE_TIMER_FILTER(1000, "Tick Region Test Prepare1");
+		for (MeshChunkInfo& chunkInfo : chunkInfosToUpDate) {
+			_terrainChunkData[chunkInfo.meshId].UpdateTerrainChunkMesh_Prepare1();
+		}
+	}
+
+	//{
+	//	SCOPE_TIMER_FILTER(1000, "Tick Region Test Prepare2");
+	//	for (MeshChunkInfo& chunkInfo : chunkInfosToUpDate)
+	//	{
+	//		bool containsWater;
+	//		_terrainChunkData[chunkInfo.meshId].UpdateTerrainChunkMesh_Prepare2(simulation(), chunkInfo.region(), containsWater);
+	//		_waterMeshes[chunkInfo.meshId]->SetVisibility(containsWater);
+	//	}
+	//}
+
+	{
+		SCOPE_TIMER_FILTER(5000, "Tick Region Test Prepare3");
+
+		//if (PunSettings::Get("TerrainThread") == 0)
+		//{
+		//	for (MeshChunkInfo& chunkInfo : chunkInfosToUpDate)
+		//	{
+		//		bool containsWater;
+		//		_terrainChunkData[chunkInfo.meshId].UpdateTerrainChunkMesh_Prepare2(simulation(), chunkInfo.region(), containsWater);
+		//		_waterMeshes[chunkInfo.meshId]->SetVisibility(containsWater);
+
+		//		_terrainChunkData[chunkInfo.meshId].UpdateTerrainChunkMesh_Prepare3(chunkInfo.region());
+		//	}
+		//}
+		//else
+		//{
+			ThreadedRun(chunkInfosToUpDate, 8, [&](MeshChunkInfo& chunkInfo)
+			{
+				bool containsWater;
+				_terrainChunkData[chunkInfo.meshId].UpdateTerrainChunkMesh_Prepare2(simulation(), chunkInfo.region(), containsWater);
+				_waterMeshes[chunkInfo.meshId]->SetVisibility(containsWater);
+
+				_terrainChunkData[chunkInfo.meshId].UpdateTerrainChunkMesh_Prepare3(chunkInfo.region());
+			});
+		//}
+	}
+
+
+	
+
+	{
+		//SCOPE_TIMER_FILTER(1000, "Tick Region AfterDisplay UpdateMesh");
+
+		for (MeshChunkInfo& chunkInfo : chunkInfosToUpDate) {
+			_terrainChunks[chunkInfo.meshId]->UpdateTerrainChunkMesh_UpdateMesh(chunkInfo.createMesh, _terrainChunkData[chunkInfo.meshId]);
+		}
+	}
 }
 
 void URegionDisplayComponent::HideDisplay(int meshId, int32 regionId)

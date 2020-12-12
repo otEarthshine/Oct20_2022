@@ -114,11 +114,12 @@ public:
 	{
 		// Check block area for invalid tile
 		TileArea area(minTile, _size);
+		if (!area.isValid()) {
+			return false;
+		}
+		
 		bool hasInvalid = area.ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 curTile) {
-			if (curTile.isValid() && simulation->IsBuildable(curTile, playerId)) {
-				return false;
-			}
-			return true;
+			return !simulation->IsBuildable(curTile, playerId);
 		});
 
 		return !hasInvalid;
@@ -126,39 +127,46 @@ public:
 
 	// From some center tile
 	// - Look spirally around to find a suitable _minTile
-	void TryFindArea(WorldTile2 provinceCenter, int32 playerId, IGameSimulationCore* simulation, int32 maxLookup = 500)
+	void TryPlaceForestBlock(WorldTile2 center, int32 playerId, IGameSimulationCore* simulation, int32 maxLookup = 500)
 	{
 		SetMinTile(
-			AlgorithmUtils::FindNearbyAvailableTile(provinceCenter, [&](const WorldTile2& tile) {
-				return CanPlaceForestBlock(tile, playerId, simulation); // TODO: CanPlaceCityBlock should be used when needed to solve x2 road shit
+			AlgorithmUtils::FindNearbyAvailableTile(center, [&](const WorldTile2& tile) {
+				return CanPlaceForestBlock(tile, playerId, simulation);
+			}, maxLookup)
+		);
+	}
+	void TryPlaceCityBlockSpiral(WorldTile2 center, int32 playerId, IGameSimulationCore* simulation, int32 maxLookup = 500)
+	{
+		SetMinTile(
+			AlgorithmUtils::FindNearbyAvailableTile(center, [&](const WorldTile2& tile) {
+				return CanPlaceCityBlock(tile, playerId, simulation);
 			}, maxLookup)
 		);
 	}
 
-	// HasArea if TryFindArea() was successul with valid _minTile
-	bool HasArea() {
-		return minTile().isValid();
-	}
 
-
+	// City Block has road around it.
 	// *** City block has road around
-	bool CanPlaceCityBlock(WorldTile2 minTile, int32_t playerId, IGameSimulationCore* simulation)
+	bool CanPlaceCityBlock(WorldTile2 minTile, int32 playerId, IGameSimulationCore* simulation)
 	{
 		// outer rim is checked for FrontBuildable instead
 		TileArea area(minTile, _size);
-		WorldTile2 maxTile = area.max();
+		if (!area.isValid()) {
+			return false;
+		}
 
-		auto isRimBuildable = [&](TileArea rimArea) {
-			bool hasInvalid = rimArea.ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 curTile) {
-				return !(curTile.isValid() && simulation->IsFrontBuildable(curTile));
-			});
-			return !hasInvalid;
-		};
-
-		if (!isRimBuildable(TileArea(WorldTile2(minTile.x, minTile.y), WorldTile2(_size.x, 1)))) return false;
-		if (!isRimBuildable(TileArea(WorldTile2(minTile.x, maxTile.y), WorldTile2(_size.x, 1)))) return false;
-		if (!isRimBuildable(TileArea(WorldTile2(minTile.x, minTile.y), WorldTile2(1, _size.y)))) return false;
-		if (!isRimBuildable(TileArea(WorldTile2(maxTile.x, minTile.y), WorldTile2(1, _size.y)))) return false;
+		bool hasInvalid = area.ExecuteOnBorderWithExit_WorldTile2([&](WorldTile2 curTile) {
+			if (simulation->IsFrontBuildable(curTile)) {
+				//PUN_LOG("CanPlaceCityBlock[%d] IsFrontBuildable %s", playerId, *curTile.To_FString());
+				return false;
+			}
+			//PUN_LOG("CanPlaceCityBlock[%d] Not IsFrontBuildable (Break) %s", playerId, *curTile.To_FString());
+			return true;
+		});
+		
+		if (hasInvalid) {
+			return false;
+		}
 
 		// Trim the area
 		area.minX++;
@@ -166,10 +174,56 @@ public:
 		area.minY++;
 		area.maxY--;
 
-		bool hasInvalid = area.ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 curTile) {
-			return !(curTile.isValid() && simulation->IsBuildable(curTile, playerId));
+		hasInvalid = area.ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 curTile) {
+			return !simulation->IsBuildable(curTile, playerId);
 		});
+		
 		return !hasInvalid;
+	}
+	void TryPlaceCityBlockAroundArea(TileArea area, int32 playerId, IGameSimulationCore* simulation)
+	{
+		TileArea largerArea(area.min() - _size, area.size() + _size);
+
+		// TODO: Why need this to fix weird block shift down???
+		largerArea.minX++;
+
+		WorldTile2 resultTile = WorldTile2::Invalid;
+		largerArea.ExecuteOnBorderWithExit_WorldTile2([&](const WorldTile2& tile) {
+			if (CanPlaceCityBlock(tile, playerId, simulation)) {
+				resultTile = tile;
+				return true;
+			}
+			return false;
+		});
+
+		SetMinTile(resultTile);
+	}
+
+	
+
+	// TODO: New better way ? ...
+	//  Not really?
+	void TryFindAreaFast(WorldTile2 startTile, int32 playerId, IGameSimulationCore* simulation, int32 maxLookup = 500)
+	{
+		WorldTile2 startMinTile = startTile - WorldTile2(-_size.x / 2, -_size.y / 2);
+		TileArea startArea(startMinTile, _size);
+		if (!startArea.isValid()) {
+			return;
+		}
+		
+		WorldTile2 validMinTile = AlgorithmUtils::FindNearbyAvailableArea(startArea, [&](const WorldTile2& tile) {
+			return simulation->IsBuildable(tile, playerId);
+		}, maxLookup);
+
+		
+		SetMinTile(validMinTile);
+	}
+
+	
+
+	// HasArea if TryFindArea() was successul with valid _minTile
+	bool HasArea() {
+		return minTile().isValid();
 	}
 
 	void operator>>(FArchive& Ar)

@@ -60,6 +60,14 @@ void UMainGameUI::PunInit()
 	CardHand1CancelButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickCardHand1CancelButton);
 	CardHand1CloseButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickCardHand1CancelButton);
 
+	{
+		std::stringstream ss;
+		ss << "Submit Card Selection to confirm purchase.";
+		ss << "<space>";
+		ss << "Submitting without selected Card will pass the current Card Hand for the next Card Hand.";
+		AddToolTip(CardHand1SubmitButton, ss.str());
+	}
+
 	CardHand2Box->ClearChildren();
 
 	RareCardHandOverlay->SetVisibility(ESlateVisibility::Collapsed);
@@ -354,6 +362,8 @@ void UMainGameUI::Tick()
 			 _lastQueueCount != queueCount)
 		   )
 		{
+			_lastQueueCount = queueCount;
+			
 			_lastIsCardStackBlank = static_cast<BoolEnum>(cardSystem.IsCardStackBlank());
 			ESlateVisibility cardStackVisible = static_cast<bool>(_lastIsCardStackBlank) ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible;
 
@@ -368,13 +378,23 @@ void UMainGameUI::Tick()
 		}
 
 		// Card Hand Queue Count
+		std::string submitStr = "Submit";
 		if (queueCount > 1) {
 			SetText(CardHandCount, to_string(queueCount));
 			CardHandCount->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			CardRerollButton->SetVisibility(ESlateVisibility::Collapsed); // Also hide reroll button when there is card queue to prevent confusion
+
+			// "Pass" instead of "Submit" when there is no card selected, and there are 2+ card hand queue
+			int32 reservedCount = CppUtils::Sum(_lastHand1ReserveStatus);
+			if (reservedCount == 0) {
+				submitStr = "Pass";
+			}
 		}
 		else {
 			CardHandCount->SetVisibility(ESlateVisibility::Collapsed);
+			CardRerollButton->SetVisibility(ESlateVisibility::Visible);
 		}
+		SetText(CardHand1SubmitButtonText, submitStr);
 
 		// Reroll price
 		int32 rerollPrice = cardSystem.GetRerollPrice();
@@ -484,6 +504,9 @@ void UMainGameUI::Tick()
 				TryStopAnimation("CardStackFlash");
 			}
 		}
+
+
+		
 		//else if (_lastHand1ReserveStatus != cardSystem.GetHand1ReserveStatus()) {
 		//	_lastHand1ReserveStatus = cardSystem.GetHand1ReserveStatus();
 		//	_lastHand1NeedMoneyStatus = hand1NeedMoney;
@@ -596,10 +619,12 @@ void UMainGameUI::Tick()
 				}
 				else
 				{
-					for (size_t i = 0; i < BuildingEnumCount; i++)
+					
+					
+					for (int32 i = 0; i < SortedNameBuildingEnum.size(); i++)
 					{
-						CardEnum buildingEnum = static_cast<CardEnum>(i);
-
+						CardEnum buildingEnum = SortedNameBuildingEnum[i];
+						
 						// Show wild card by type
 						if (wildCardEnum == CardEnum::WildCardFood && !IsAgricultureBuilding(buildingEnum)) {
 							continue;
@@ -857,19 +882,11 @@ void UMainGameUI::Tick()
 		{
 			HousingSpaceText->SetText(FText::FromString(FString::FromInt(population) + FString("/") + FString::FromInt(simulation.HousingCapacity(playerId()))));
 
-			std::vector<int32> storageIds = simulation.buildingIds(playerId(), CardEnum::StorageYard);
-			CppUtils::AppendVec(storageIds,  simulation.buildingIds(playerId(), CardEnum::Warehouse));
-			
-			int32 totalSlots = 0;
-			int32 usedSlots = 0;
-			for (int32 storageId : storageIds) {
-				Building& bld = simulation.building(storageId);
-				if (bld.isConstructed()) {
-					usedSlots += bld.subclass<StorageYard>().tilesOccupied();
-					totalSlots += bld.storageSlotCount();
-				}
-			}
-			StorageSpaceText->SetText(FText::FromString(FString::FromInt(usedSlots) + FString("/") + FString::FromInt(totalSlots)));
+
+			std::pair<int32, int32> slotsPair = simulation.GetStorageCapacity(playerId());
+			int32 usedSlots = slotsPair.first;
+			int32 totalSlots = slotsPair.second;
+			SetText(StorageSpaceText, to_string(usedSlots) + "/" + to_string(totalSlots));
 
 			{
 				std::stringstream tip;
@@ -1280,7 +1297,13 @@ void UMainGameUI::Tick()
 		// ResearchBarUI
 		// Flash ResearchBarUI if there is nothing being researched
 		FLinearColor researchBarDark = FLinearColor(.025f, .025f, .025f, 0.8f);
-		FLinearColor researchBarColor = !unlockSystem->hasTargetResearch() && (kTickCount % 60 < 30) ? FLinearColor(1.0f, 0.33333f, 0.0f, 0.8f) : researchBarDark;
+		FLinearColor researchBarColor = researchBarDark;
+		if (unlockSystem->shouldFlashTechToggler()) {
+			if (kTickCount % 60 < 30) {
+				researchBarColor = FLinearColor(1.0f, 0.33333f, 0.0f, 0.8f);
+			}
+		}
+		
 		ResearchBarUI->SetBackgroundColor(researchBarColor);
 		//PUN_LOG("ResearchBarUI %f, %f, %f", researchBarColor.R, researchBarColor.G, researchBarColor.B);
 
@@ -1889,6 +1912,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 			inputSystemInterface()->StartRoadPlacement(false, true);
 		}
 		else if (IsRoad(buildingEnum)) {
+			inputSystemInterface()->StartRoadPlacement(buildingEnum == CardEnum::StoneRoad);
 			inputSystemInterface()->StartRoadPlacement(buildingEnum == CardEnum::StoneRoad);
 		}
 		else if (buildingEnum == CardEnum::Fence) {

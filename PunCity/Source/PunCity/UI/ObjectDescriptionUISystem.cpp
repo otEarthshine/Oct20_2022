@@ -123,13 +123,18 @@ void UObjectDescriptionUISystem::Tick()
 
 			if (provinceId != -1) 
 			{
+				bool isPlayerControlled = simulation().provinceOwner(provinceId) == playerId();
+				
 				// Highlight Hover if the province isn't owned or if the camera is zoomed out
 				if (dataSource()->zoomDistance() > WorldZoomTransition_RegionToRegion4x4_Mid ||
-					simulation().provinceOwner(provinceId) == -1 ||
 					dataSource()->alwaysShowProvinceHover())
 				{
-					showHover = true;
-					ShowRegionSelectionDecal(hitTile, true);
+					if (!isPlayerControlled ||
+						inputSystemInterface()->PlacementBuildingInfo().buildingEnum == CardEnum::Farm) 
+					{
+						showHover = true;
+						ShowRegionSelectionDecal(hitTile, true);
+					}
 				}
 			}
 		}
@@ -237,10 +242,18 @@ void UObjectDescriptionUISystem::LeftMouseDown()
 				 */
 				if (!dataSource()->ZoomDistanceBelow(WorldZoomTransition_WorldSpaceUIHide))
 				{
-					if (TEXT("WorldMap") == typeName) {
-						uiState.objectType = ObjectTypeEnum::Map;
-						uiState.objectId = simulation.provinceSystem().GetProvinceIdRaw(worldTile);;
+					if (TEXT("WorldMap") == typeName) 
+					{
 
+						Building* bld = simulation.buildingAtTile(worldTile);
+						if (bld && dataSource()->ZoomDistanceBelow(WorldZoomTransition_Region4x4ToMap)) {
+							uiState.objectType = ObjectTypeEnum::Building;
+							uiState.objectId = bld->buildingId();;
+						}
+						else {
+							uiState.objectType = ObjectTypeEnum::Map;
+							uiState.objectId = worldTile.tileId();;
+						}
 						simulation.SetDescriptionUIState(uiState);
 						UpdateDescriptionUI();
 						return;
@@ -606,6 +619,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 
 			// Show warning
+			building.TryRefreshHoverWarning(UGameplayStatics::GetTimeSeconds(this));
 			if (building.hoverWarning != HoverWarning::None)
 			{
 				std::string description = GetHoverWarningDescription(building.hoverWarning);
@@ -1060,12 +1074,14 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					}
 					else if (IsStorage(building.buildingEnum()))
 					{
-						StorageYard& storage = building.subclass<StorageYard>();
-						ss << storage.tilesOccupied() << "/" << storage.storageSlotCount();
-						descriptionBox->AddRichText("Slots", ss);
+						if (!building.isEnum(CardEnum::Market))
+						{
+							StorageYard& storage = building.subclass<StorageYard>();
+							ss << storage.tilesOccupied() << "/" << storage.storageSlotCount();
+							descriptionBox->AddRichText("Slots", ss);
 
-						descriptionBox->AddSpacer(12);
-						
+							descriptionBox->AddSpacer(12);
+						}
 					}
 					else if (building.isEnum(CardEnum::Tavern) || 
 							building.isEnum(CardEnum::Theatre))
@@ -1850,8 +1866,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				 */
 				ResourceEnum product = building.product();
 				if (building.playerId() == playerId() &&
-					product != ResourceEnum::None &&
-					!building.isEnum(CardEnum::Farm))
+					product != ResourceEnum::None)
 				{
 					auto& playerOwned = simulation.playerOwned(playerId());
 					if (_justOpenedDescriptionUI) {
@@ -2043,7 +2058,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						for (int32 occupantId : occupantIds)
 						{
 							Building* workplace = simulation.unitAI(occupantId).workplace();
-							if (workplace) {
+							if (workplace && !workplace->isEnum(CardEnum::Townhall)) {
 								FVector displayLocationScope = dataSource()->DisplayLocationTrueCenter(*workplace);
 								dataSource()->ShowDeliveryArrow(displayLocation, displayLocationScope, true, true);
 							}
@@ -2726,8 +2741,13 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 		else if (uiState.objectType == ObjectTypeEnum::Map)
 		{
 			SCOPE_CYCLE_COUNTER(STAT_PunUIProvinceFocusUI);
-			
-			AddProvinceInfo(objectId, descriptionBox);
+
+			WorldTile2 tile(objectId);
+
+			if (tile.isValid()) {
+				int32 provinceId = simulation.GetProvinceIdClean(objectId);
+				AddProvinceInfo(provinceId, descriptionBox);
+			}
 
 			descriptionBox->AfterAdd();
 		}

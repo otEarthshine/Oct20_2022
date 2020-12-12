@@ -28,8 +28,9 @@ public:
 		tileSkip = tileSkipIn;
 		isNotWorldMap = isNotWorldMapIn;
 	}
+	
 
-	void UpdateTerrainChunkMesh(GameSimulationCore& simulation, WorldRegion2 region, bool createMesh)
+	void UpdateLargeTerrainChunkMesh_Prepare(GameSimulationCore& simulation, WorldRegion2 region, bool createMesh)
 	{
 		int innerVertSize = tileSize + 1;
 		int outerVertSize = tileSize + 3;
@@ -54,16 +55,6 @@ public:
 		const float beachToWaterHeight = FDToFloat(BeachToWaterHeight);
 
 
-		static TArray<float> meshHeights;
-		static TArray<FLinearColor> meshColors;
-		
-		//! Meshes Init
-		static TArray<FVector2D> UV0;
-		static TArray<FLinearColor> vertexColors;
-		static TArray<FVector> normals;
-		static TArray<FProcMeshTangent> tangents;
-		
-		static TArray<int32> tris;
 
 		if (meshHeights.Num() == 0)
 		{
@@ -288,17 +279,31 @@ public:
 		}
 		
 
-		{
-			if (createMesh) {
-				//SCOPE_TIMER("Terrain Large Chunk Creation");
-				CreateMeshSection_LinearColor(0, vertices, tris, normals, UV0, vertexColors, tangents, false);
-			}
-			else {
-				//SCOPE_TIMER("Terrain Large Chunk Update");
-				UpdateMeshSection_LinearColor(0, vertices, normals, UV0, vertexColors, tangents);
-			}
+		//{
+		//	if (createMesh) {
+		//		//SCOPE_TIMER("Terrain Large Chunk Creation");
+		//		CreateMeshSection_LinearColor(0, vertices, tris, normals, UV0, vertexColors, tangents, false);
+		//	}
+		//	else {
+		//		//SCOPE_TIMER("Terrain Large Chunk Update");
+		//		UpdateMeshSection_LinearColor(0, vertices, normals, UV0, vertexColors, tangents);
+		//	}
+		//}
+	}
+
+	void UpdateLargeTerrainChunkMesh_UpdateMesh(bool createMesh)
+	{
+		if (createMesh) {
+			//SCOPE_TIMER("Terrain Large Chunk Creation");
+			CreateMeshSection_LinearColor(0, vertices, tris, normals, UV0, vertexColors, tangents, false);
+		}
+		else {
+			//SCOPE_TIMER("Terrain Large Chunk Update");
+			UpdateMeshSection_LinearColor(0, vertices, normals, UV0, vertexColors, tangents);
 		}
 	}
+
+	
 
 	void SetTerrainMaterial(UAssetLoaderComponent* assetLoader, bool isPlainMaterial = false)
 	{
@@ -318,7 +323,21 @@ public:
 		}
 	}
 
-	UPROPERTY() TArray<FVector> vertices;
+	
+	TArray<float> meshHeights;
+	TArray<FLinearColor> meshColors;
+
+	//! Meshes Init
+	TArray<FVector> vertices;
+	TArray<FVector2D> UV0;
+	TArray<FLinearColor> vertexColors;
+	TArray<FVector> normals;
+	TArray<FProcMeshTangent> tangents;
+
+	TArray<int32> tris;
+
+
+	
 	UPROPERTY() UMaterialInstanceDynamic* MaterialInstance = nullptr;
 
 	bool bIsPlainMaterial = false;

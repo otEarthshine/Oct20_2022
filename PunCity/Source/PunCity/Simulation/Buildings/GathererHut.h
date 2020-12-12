@@ -297,7 +297,9 @@ public:
 		if (IsStage(FarmStage::Dormant))
 		{
 			// Farm can return to seeding spring to mid summer (round 1 summer)
-			if (Time::IsValidFarmBeginTime()) {
+			if (Time::IsValidFarmBeginTime() &&
+				!_simulation->IsOutputTargetReached(_playerId, product())) 
+			{
 				ResetStageTo(FarmStage::Seeding);
 			}
 		}
@@ -347,6 +349,10 @@ public:
 		return sumFertility / area.tileCount();
 	}
 	int32 fertility() { return _fertility; }
+
+	void RefreshFertility() {
+		_fertility = GetAverageFertility(area(), _simulation);
+	}
 
 private:
 	bool NoFarmerOnTileId(int32 farmTileId);
@@ -432,6 +438,9 @@ public:
 	}
 
 	bool ShouldAddWorker_ConstructedNonPriority() override {
+		if (_simulation->IsOutputTargetReached(_playerId, product())) {
+			return false;
+		}
 		return oreLeft() > 0;
 	}
 
@@ -1587,7 +1596,17 @@ public:
 class Tunnel final : public Bridge
 {
 public:
-	
+	void FinishConstruction() override {
+		Bridge::FinishConstruction();
+
+		int32 end1 = _simulation->GetProvinceIdClean(_area.min());
+		int32 end2 = _simulation->GetProvinceIdClean(_area.max());
+		
+		_simulation->AddTunnelProvinceConnections(end1, end2);
+
+
+		// TODO: demolish should remove connection
+	}
 };
 
 
@@ -1960,6 +1979,10 @@ public:
 		_upgrades = {
 			MakeUpgrade("Wind-powered Pump", "Halve the upkeep if adjacent to Windmill.", 20),
 		};
+
+		ExecuteInRadius(CardEnum::Farm, Radius + 20, [&](Building& building) {
+			building.subclass<Farm>().RefreshFertility();
+		}); // extra 20 just in case it is farm's rim
 	}
 
 	void OnDeinit() override {

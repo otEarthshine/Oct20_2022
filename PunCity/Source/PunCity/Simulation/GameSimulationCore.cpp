@@ -119,8 +119,8 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 
 	{
 		PUN_LLM(PunSimLLMTag::Flood);
-		_floodSystem.Init(_pathAI.get(), _terrainGenerator.get(), isLoadingFromFile);
-		_floodSystemHuman.Init(_pathAIHuman.get(), _terrainGenerator.get(), isLoadingFromFile);
+		_floodSystem.Init(_pathAI.get(), _terrainGenerator.get(), this, isLoadingFromFile);
+		_floodSystemHuman.Init(_pathAIHuman.get(), _terrainGenerator.get(), this, isLoadingFromFile);
 	}
 
 	//_floodSystem2.Init(_pathAI.get(), isLoadingFromFile);
@@ -812,6 +812,16 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 		_floodSystem.Tick();
 		_floodSystemHuman.Tick();
 
+
+		if (Time::Ticks() % 60 == 0)
+		{
+			//if (isConnectedNotCached || isConnectedCached) {
+			//	PUN_LOG("isConnected notCached:%d cached:%d", isConnectedNotCached, isConnectedCached);
+			//}
+			//isConnectedNotCached = 0;
+			//isConnectedCached = 0;
+		}
+		
 		//_floodSystem2.Tick();
 		//_floodSystem2Human.Tick();
 
@@ -889,6 +899,11 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 						//_playerOwnedManagers[playerId].RefreshHousing();
 						_playerOwnedManagers[playerId].Tick1Sec();
 
+						// Reset jobs once iin a while to bring citizens back to work if needed
+						if (Time::Seconds() % 20 == 0) {
+							_playerOwnedManagers[playerId].RefreshJobDelayed();
+						}
+						
 
 						/*
 						 * Special
@@ -1306,12 +1321,17 @@ int GameSimulationCore::AddUnit(UnitEnum unitEnum, int32_t playerId, WorldAtom2 
 void GameSimulationCore::RemoveUnit(int id)
 {
 	// PlayerOwned
-	int32 playerId = _unitSystem->unitStateAI(id).playerId();
+	UnitStateAI& unit = unitAI(id);
+	int32 playerId = unit.playerId();
 	if (_unitSystem->unitEnum(id) == UnitEnum::Human && playerId != GameInfo::PlayerIdNone) {
-		PUN_DEBUG_EXPR(unitAI(id).AddDebugSpeech("RemoveUnit Player"));
-		
-		unitAI(id).SetWorkplaceId(-1);
-		unitAI(id).SetHouseId(-1);
+		PUN_DEBUG_EXPR(unit.AddDebugSpeech("RemoveUnit Player"));
+
+		Building* workplace = unit.workplace();
+		if (workplace) {
+			workplace->RemoveOccupant(id);
+		}
+		unit.SetWorkplaceId(-1);
+		unit.SetHouseId(-1);
 		_playerOwnedManagers[playerId].PlayerRemoveHuman(id);
 	}
 
@@ -1994,6 +2014,18 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 			}
 		}
 
+		// AIPlayer auto upgrade
+		if (IsAIPlayer(parameters.playerId))
+		{
+			Building& bld = building(buildingId);
+			int32 upgradeCount = bld.upgrades().size();
+			for (int32 i = 0; i < upgradeCount; i++) {
+				if (!bld.IsUpgraded(i)) {
+					bld.UpgradeInstantly(i);
+				}
+			}
+		}
+
 #if TRAILER_MODE
 		if (playerId == 0) {
 			if (static_cast<CardEnum>(parameters.buildingEnum) == CardEnum::Windmill) {
@@ -2241,9 +2273,13 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 		}
 
 
-		auto tryBuild = [&](WorldTile2 tile) {
+		auto tryBuild = [&](WorldTile2 tile)
+		{
+			PUN_LOG("Road tryBuild: %s", *tile.To_FString());
+			
 			DemolishCritterBuildingsIncludingFronts(tile, parameters.playerId);
 			if (canBuild(tile)) {
+				PUN_LOG("Road AddTileBuilding: %s", *tile.To_FString());
 				_buildingSystem->AddTileBuilding(tile, buildingEnum, parameters.playerId);
 				//_dropSystem.ForceRemoveDrop(tile);
 			}
@@ -2272,7 +2308,8 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 				
 				for (int32 i = 0; i < path.Num(); i++) {
 					WorldTile2 tile(path[i]);
-					if (IsFrontBuildable(tile) && !_overlaySystem.IsRoad(tile)) {
+					
+					if (IsFrontBuildable(tile) && !IsRoadTile(tile)) {
 						_treeSystem->ForceRemoveTileObj(tile, false);
 						overlaySystem().AddRoad(tile, true, true);
 
@@ -2320,7 +2357,6 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 			// Dirt/Stone Road
 			for (int32 i = 0; i < path.Num(); i++) {
 				WorldTile2 tile(path[i]);
-				//_treeSystem->ForceRemoveTileObj(tile, false);
 				tryBuild(tile);
 
 				// For road, also refresh the grass since we want it to be more visible
@@ -2502,7 +2538,7 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 			AddPopup(giverPlayerId, "You gifted " + playerName(targetPlayerId) + " with <img id=\"Coin\"/>" + to_string(amount) + ".");
 
 			// To Gift Receiver
-			if (IsAI(giverPlayerId)) {
+			if (IsAIPlayer(giverPlayerId)) {
 				AddPopup(targetPlayerId, playerName(giverPlayerId) + " gifted you with <img id=\"Coin\"/>" + to_string(amount) + " for good relationship.");
 			}
 			else {
@@ -2887,7 +2923,7 @@ void GameSimulationCore::AbandonTown(int32 playerId)
 	_popupSystems[playerId] = PopupSystem(playerId, this);
 	_cardSystem[playerId] = BuildingCardSystem(playerId, this);
 
-	_aiPlayerSystem.push_back(AIPlayerSystem(playerId, this, this));
+	_aiPlayerSystem[playerId] = AIPlayerSystem(playerId, this, this);
 
 	_eventLogSystem.ResetPlayer(playerId);
 
@@ -3111,9 +3147,6 @@ void GameSimulationCore::BuyCards(FBuyCard command)
 	}
 
 	cardSys.UseCardHandQueue();
-	if (cardSys.cardHandQueueCount() == 0) {
-		cardSys.SetCardStackBlank(true);
-	}
 	
 	cardSys.SetPendingCommand(false);
 }
@@ -3626,7 +3659,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 			}
 
 			//TODO: special AI
-			if (IsAI(command.playerId)) {
+			if (IsAIPlayer(command.playerId)) {
 				resourceSystem(command.playerId).ChangeInfluence(conquerPrice * 2);
 			}
 			
@@ -3647,7 +3680,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 
 					AddPopup(command.playerId, "You started attacking " + playerName(provincePlayerId) + ".");
 
-					if (IsAI(provincePlayerId)) {
+					if (IsAIPlayer(provincePlayerId)) {
 						aiPlayerSystem(provincePlayerId).DeclareWar(command.playerId);
 					}
 				}
@@ -3667,7 +3700,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 						AddPopup(command.playerId, "You started attacking " + playerName(provincePlayerId) + ".");
 					}
 
-					if (IsAI(provincePlayerId)) {
+					if (IsAIPlayer(provincePlayerId)) {
 						aiPlayerSystem(provincePlayerId).DeclareWar(command.playerId);
 					}
 				}
@@ -3893,7 +3926,7 @@ void GameSimulationCore::ChooseLocation(FChooseLocation command)
 		resourceSystem(command.playerId).SetInfluence(0);
 
 		// EventLog inform all players someone selected a start
-		if (!IsAI(command.playerId))
+		if (!IsAIPlayer(command.playerId))
 		{
 			ExecuteOnConnectedPlayers([&](int32 playerId) {
 				AddEventLog(playerId, playerName(command.playerId) + " chose a starting location.", false);
@@ -4376,6 +4409,11 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 
 void GameSimulationCore::DemolishCritterBuildingsIncludingFronts(WorldTile2 tile, int32 playerId) 
 {
+	// TODO: Guard GetCritterBuildingsIncludeFronts Crash
+	if (!tile.isValid()) {
+		return;
+	}
+	
 	std::vector<int32> critterBuildings = GetCritterBuildingsIncludeFronts(tile);
 	for (int i = critterBuildings.size(); i-- > 0;) {
 		// TODO: later on, mark critter building for demolition, in which it gets attacked until destroyed (dropping items)

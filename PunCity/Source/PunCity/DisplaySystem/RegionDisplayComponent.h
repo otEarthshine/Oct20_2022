@@ -5,6 +5,7 @@
 #include "DisplaySystemComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "TerritoryMeshComponent.h"
+#include "TerrainChunkComponent.h"
 
 #include "RegionDisplayComponent.generated.h"
 
@@ -31,11 +32,17 @@ public:
 			displayedProvinceThisTick[i] = false;
 		}
 	}
+
+	void BeforeAdd() override {
+		chunkInfosToUpDate.clear();
+	}
+
+	void AfterAdd() override;
 		
 protected:
 	int CreateNewDisplay(int objectId) override;
 	void OnSpawnDisplay(int objectId, int meshId, WorldAtom2 cameraAtom) override;
-	void UpdateDisplay(int objectId, int meshId, WorldAtom2 cameraAtom) override;
+	void UpdateDisplay(int objectId, int meshId, WorldAtom2 cameraAtom, bool justSpawned, bool justCreated) override;
 	void HideDisplay(int meshId, int32 regionId) override;
 
 //private:
@@ -43,11 +50,14 @@ protected:
 
 private:
 	bool _isOverlapTerrain = false;
+
+	std::vector<MeshChunkInfo> chunkInfosToUpDate;
 	
 	UPROPERTY() TArray<class UStaticMeshComponent*> _waterMeshes;
 	UPROPERTY() TArray<UMaterialInstanceDynamic*> _waterMaterials;
 	UPROPERTY() TArray<class UStaticMeshComponent*> _waterDecalMeshes;
 
+	TArray<TerrainChunkData> _terrainChunkData;
 	UPROPERTY() TArray<class UTerrainChunkComponent*> _terrainChunks;
 	UPROPERTY() TArray<class UStaticMeshComponent*> _groundColliderMeshes;
 };

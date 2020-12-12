@@ -716,6 +716,11 @@ void Building::DoWork(int unitId, int workAmount100)
 			_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::FarmPlant, centerTile().regionId());
 		}
 
+
+		// TODO: check why you can have 168% no smelter... without finishing...
+		PUN_CHECK(workPercent() < 101);
+		PUN_CHECK(_workDone100 < workManSecPerBatch100());
+
 		return;
 	}
 	

@@ -13,6 +13,10 @@
 #include "PunCity/GameConstants.h"
 
 DECLARE_CYCLE_STAT(TEXT("PUN: Unit.CalcHuman.MoveResource.FindHolder [4.2.4.1]"), STAT_PunUnit_CalcHuman_MoveResource_FindHolder, STATGROUP_Game);
+
+DECLARE_CYCLE_STAT(TEXT("PUN: Unit.CalcHuman.MoveResource.FindHolder.Filter [4.2.4.1.1]"), STAT_PunUnit_CalcHuman_MoveResource_FindHolder_Filter, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: Unit.CalcHuman.MoveResource.FindHolder.Rest [4.2.4.1.2]"), STAT_PunUnit_CalcHuman_MoveResource_FindHolder_Rest, STATGROUP_Game);
+
 DECLARE_CYCLE_STAT(TEXT("PUN: ResourceCountTotal"), STAT_PunResourceCountTotal, STATGROUP_Game);
 
 // For single resource type
@@ -429,6 +433,10 @@ public:
 
 	int32 playerId() const { return _playerId; }
 
+#if WITH_EDITOR
+	//static int32;
+#endif
+
 private:
 	void RefreshHolder(int32 holderId, ResourceSystem& resourceSys);
 	
@@ -463,7 +471,8 @@ private:
 		for (const FoundResourceHolderInfo& filteredInfo : filteredInfos) {
 			PUN_CHECK(filteredInfo.amount <= amount);
 		}
-		
+
+		SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_MoveResource_FindHolder_Rest);
 
 		// One pickup satisfied all, just return it.
 		FoundResourceHolderInfo foundFullInfo = FoundResourceHolderInfo::Invalid();
@@ -614,6 +623,8 @@ private:
 
 	FoundResourceHolderInfos FilterHolders(ResourceFindType type, int32 amount, WorldTile2 origin, std::vector<int32> avoidIds, int32 maxFloodDist) const
 	{
+		SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_MoveResource_FindHolder_Filter);
+		
 		int32 targetAmount = amount;
 
 		// foundInfos are arrange from more amount to less, then from less dist to more dist
@@ -642,13 +653,25 @@ private:
 				//				*ToFString(_holders[holderId].info.ToString()), sim->IsConnected(origin, holder.tile, maxFloodDist), amountAtLeast);
 
 				// TODO: IsConnected can be checked once in a while...
-				if (!isAvoidId && _simulation->IsConnected(origin, holder.tile, maxFloodDist, true))
+				//if (!isAvoidId && _simulation->IsConnected(origin, holder.tile, maxFloodDist, true))
+				if (!isAvoidId)
 				{
-					check(availableAmount > 0);
-					int32 amountToTake = std::min(targetAmount, availableAmount); // Don't put more than targetAmount into foundInfo
-					FoundResourceHolderInfo newFoundInfo(holder.info, amountToTake, holder.tile);
+					bool isConnected;
+					if (holder.objectId != -1) {
+						isConnected = _simulation->IsConnectedBuilding(holder.objectId, _playerId);
+					} else {
+						DEBUG_ISCONNECTED_VAR(DropResourceSystem);
+						isConnected = _simulation->IsConnected(origin, holder.tile, maxFloodDist, true); // Drop case
+					}
 
-					foundInfos.push_back(newFoundInfo);
+					if (isConnected) 
+					{
+						check(availableAmount > 0);
+						int32 amountToTake = std::min(targetAmount, availableAmount); // Don't put more than targetAmount into foundInfo
+						FoundResourceHolderInfo newFoundInfo(holder.info, amountToTake, holder.tile);
+
+						foundInfos.push_back(newFoundInfo);
+					}
 				}
 			}
 		};
@@ -936,6 +959,7 @@ public:
 	FoundResourceHolderInfos FindHolder(ResourceFindType findType, ResourceEnum resourceEnum, int32 amount, WorldTile2 origin, std::vector<int> avoidIds = {},
 									int32 maxFloodDist = GameConstants::MaxFloodDistance_Human) const
 	{
+		// Counted in STAT_PunUnit_CalcHuman_MoveResource_FindHolder
 		return holderGroupConst(resourceEnum).FindHolder(findType, amount, origin, avoidIds, maxFloodDist);
 	}
 

@@ -501,6 +501,12 @@ public:
 			}
 		}
 
+
+		_totalFlatTiles = 0;
+		for (size_t i = 0; i < _provinceFlatTileCount.size(); i++) {
+			_totalFlatTiles += _provinceFlatTileCount[i];
+		}
+
 		/*
 		 * Set any leftover EmptyProvinceId tile to mountain so nothing uses it
 		 */
@@ -803,6 +809,23 @@ public:
 		return _provinceConnections[provinceId];
 	}
 
+	
+	void AddTunnelProvinceConnection(int32 provinceId1, int32 provinceId2, TerrainTileType tileType)
+	{
+		auto changeConnectionType = [&](int32 provinceId1In, int32 provinceId2In) {
+			std::vector<ProvinceConnection>& connections = _provinceConnections[provinceId1In];
+			for (ProvinceConnection& connection : connections) {
+				if (connection.provinceId == provinceId2In) {
+					connection.tileType = tileType;
+				}
+			}
+		};
+
+		changeConnectionType(provinceId1, provinceId2);
+		changeConnectionType(provinceId2, provinceId1);
+	}
+	
+
 	bool AreAdjacentProvinces(int32 provinceId1, int32 provinceId2) {
 		const std::vector<ProvinceConnection>& connections1 = _provinceConnections[provinceId1];
 		for (ProvinceConnection connection : connections1) {
@@ -922,8 +945,11 @@ public:
 		PUN_CHECK(IsProvinceValid(provinceId));
 		TileArea area = _provinceRectAreas[provinceId];
 
-		for (int32 i = 0; i < tries; i++) {
+		for (int32 i = 0; i < tries; i++) 
+		{
 			WorldTile2 tile = area.RandomTile();
+			DEBUG_ISCONNECTED_VAR(GetProvinceRandomTile);
+			
 			if (abs(GetProvinceIdRaw(tile)) == provinceId &&
 				_simulation->IsConnected(floodOrigin, tile, maxRegionDist, isIntelligent)) 
 			{
@@ -978,6 +1004,9 @@ public:
 															_provinceMountainTileCount[provinceId] + 
 															_provinceRiverTileCount[provinceId] + 
 															_provinceOceanTileCount[provinceId]; };
+
+	int32 totalFlatTiles() { return _totalFlatTiles; }
+	
 
 	bool provinceIsMountain(int32 provinceId) const { return provinceMountainTileCount(provinceId) > provinceTileCount(provinceId) / 3; }
 	bool provinceIsCoastal(int32 provinceId) const { return provinceOceanTileCount(provinceId) > 3; }
@@ -1416,6 +1445,8 @@ public:
 		SerializeVecValue(Ar, _provinceOceanTileCount);
 		SerializeVecValue(Ar, _provinceFlatTileCount);
 
+		Ar << _totalFlatTiles;
+
 		SerializeVecVecObj(Ar, _provinceConnections);
 		SerializeVecObj(Ar, _provinceRectAreas);
 		SerializeVecVecObj(Ar, _provinceToRegionsOverlap);
@@ -1441,6 +1472,8 @@ private:
 	std::vector<int16> _provinceRiverTileCount;
 	std::vector<int16> _provinceOceanTileCount;
 	std::vector<int16> _provinceFlatTileCount;
+
+	int32 _totalFlatTiles = 0;
 
 	std::vector<std::vector<ProvinceConnection>> _provinceConnections;
 	std::vector<TileArea> _provinceRectAreas;

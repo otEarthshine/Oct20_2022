@@ -1199,12 +1199,18 @@ public:
 	int32 maxSP() { return _maxSPTicks/ ticksPerSP(); }
 	CardEnum currentSkill() { return _currentSkill; }
 
-	void UseSkill(int32 buildingId) {
-		_spTicks = max(0, _spTicks - GetSkillManaCost(_currentSkill) * ticksPerSP());
+	void UseSkill(int32 buildingId)
+	{
+		int32 manaCost = GetSkillManaCost(_currentSkill);
+		int32 manaTicks = manaCost * ticksPerSP();
+		
+		if (_spTicks >= manaTicks) {
+			_spTicks = _spTicks - manaTicks;
 
-		_usedSkillEnums.push_back(_currentSkill);
-		_usedSkillBuildingIds.push_back(buildingId);
-		_usedSkillTicks.push_back(Time::Ticks());
+			_usedSkillEnums.push_back(_currentSkill);
+			_usedSkillBuildingIds.push_back(buildingId);
+			_usedSkillTicks.push_back(Time::Ticks());
+		}
 	}
 	bool HasSpeedBoost(int32 buildingId) {
 		for (size_t i = 0; i < _usedSkillEnums.size(); i++) {
@@ -1381,11 +1387,12 @@ public:
 	
 private:
 
-	void RemoveJobsFromBuildings(const std::vector<int32_t>& buildingIds) {
-		for (int32_t buildingId : buildingIds) {
-			_simulation->RemoveJobsFrom(buildingId, true);
-		}
-	}
+	// Check buildings
+	//void RefreshJobsFromBuildings(const std::vector<int32>& buildingIds, TSet<int32>& adultIdsToSkipJobRefresh) {
+	//	for (int32 buildingId : buildingIds) {
+	//		_simulation->RefreshJobsFrom(buildingId, adultIdsToSkipJobRefresh);
+	//	}
+	//}
 
 	int32 TryFillJobBuildings(const std::vector<int32>& jobBuildingIds, PriorityEnum priority, int& index, bool shouldDoDistanceSort = true, int32 maximumFill = INT32_MAX);
 

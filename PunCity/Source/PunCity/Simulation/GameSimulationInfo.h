@@ -2,6 +2,7 @@
 
 #include "PunCity/PunAStar128x256.h"
 #include "GameCoordinate.h"
+#include "PunCity/GameConstants.h"
 #include "Math/Color.h"
 
 #include <string>
@@ -17,10 +18,10 @@
 
 // VERSION
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 7 // 3 digit
+#define MINOR_VERSION 8 // 3 digit
 
-#define VERSION_DAY 19
-#define VERSION_MONTH 11
+#define VERSION_DAY 12
+#define VERSION_MONTH 12
 #define VERSION_YEAR 20
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
 
@@ -61,10 +62,10 @@ static std::string GetGameVersionString(int32 version)
 
 // VERSION
 #define MAJOR_SAVE_VERSION 0
-#define MINOR_SAVE_VERSION 2 // 3 digit
+#define MINOR_SAVE_VERSION 3 // 3 digit
 
-#define VERSION_SAVE_DAY 27
-#define VERSION_SAVE_MONTH 10
+#define VERSION_SAVE_DAY 12
+#define VERSION_SAVE_MONTH 12
 #define VERSION_SAVE_YEAR 20
 #define VERSION_SAVE_DATE (VERSION_SAVE_YEAR * 10000) + (VERSION_SAVE_MONTH * 100) + VERSION_SAVE_DAY
 
@@ -292,10 +293,32 @@ DECLARE_DEBUG_AI_VAR(WorldSpaceUICreate);
 DECLARE_DEBUG_AI_VAR(AddWidget);
 DECLARE_DEBUG_AI_VAR(AddToolTip);
 
+// IsConnected
+#define DEBUG_ISCONNECTED_VAR(VarName) DEBUG_AI_VAR(IsConnected_##VarName)
+#define DECLARE_DEBUG_ISCONNECTED_VAR(VarName) DECLARE_DEBUG_AI_VAR(IsConnected_##VarName)
+
+DECLARE_DEBUG_ISCONNECTED_VAR(ResourceMoveValid);
+DECLARE_DEBUG_ISCONNECTED_VAR(IsMoveValid);
+DECLARE_DEBUG_ISCONNECTED_VAR(MoveRandomlyPerlin);
+DECLARE_DEBUG_ISCONNECTED_VAR(JustBruteIt);
+DECLARE_DEBUG_ISCONNECTED_VAR(MoveRandomly);
+DECLARE_DEBUG_ISCONNECTED_VAR(TryStockBurrowFood);
+DECLARE_DEBUG_ISCONNECTED_VAR(TryGoNearbyHome);
+DECLARE_DEBUG_ISCONNECTED_VAR(FindNearestUnreservedFullBush);
+DECLARE_DEBUG_ISCONNECTED_VAR(GetProvinceRandomTile);
+DECLARE_DEBUG_ISCONNECTED_VAR(FindMarketResourceHolderInfo);
+DECLARE_DEBUG_ISCONNECTED_VAR(RefreshIsBuildingConnected);
+DECLARE_DEBUG_ISCONNECTED_VAR(RefreshHoverWarning);
+DECLARE_DEBUG_ISCONNECTED_VAR(adjacentTileNearestTo);
+DECLARE_DEBUG_ISCONNECTED_VAR(DropResourceSystem);
+
+#undef DECLARE_DEBUG_AI_VAR
+
 
 #else
 
 #define DEBUG_AI_VAR(VarName)
+#define DEBUG_ISCONNECTED_VAR(VarName)
 
 #endif
 
@@ -729,6 +752,8 @@ enum class DifficultyLevel : uint8
 	Brutal,
 	King,
 	Emperor,
+	Immortal,
+	Diety,
 };
 static const std::vector<FString> DifficultyLevelNames
 {
@@ -737,14 +762,18 @@ static const std::vector<FString> DifficultyLevelNames
 	"Brutal",
 	"King",
 	"Emperor",
+	"Immortal",
+	"Diety",
 };
 static const std::vector<int32> DifficultyConsumptionAdjustment
 {
 	0,
 	30,
-	60,
-	90,
-	120,
+	70,
+	110,
+	150,
+	200,
+	250,
 };
 
 static DifficultyLevel GetDifficultyLevelFromString(const FString& str) {
@@ -918,7 +947,7 @@ static const int32 MinGoodsPricePercent = 30;
 
 static const ResourceInfo ResourceInfos[]
 {
-	ResourceInfo(ResourceEnum::Wood,		"Wood",		5, "Construction material and fuel for house furnaces"),
+	ResourceInfo(ResourceEnum::Wood,		"Wood",		6, "Construction material and fuel for house furnaces"),
 	ResourceInfo(ResourceEnum::Stone,		"Stone",	7,  "Construction material mined from Quarry or Stone Outcrop"),
 	
 	ResourceInfo(ResourceEnum::Orange,		"Orange",	FoodCost, "Edible, tangy fruit obtained from Forest and Orchards"),
@@ -933,8 +962,8 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::Clay,		"Clay",		3, "Fine-grained earth used to make Pottery and Bricks"),
 	ResourceInfo(ResourceEnum::Brick,		"Brick",	12, "Sturdy, versatile construction material"),
 
-	ResourceInfo(ResourceEnum::Coal,		"Coal",		6, "Fuel used to heat houses or smelt ores. When heating houses, provides x2 heat vs. Wood"),
-	ResourceInfo(ResourceEnum::IronOre,		"Iron Ore",		5, "Valuable ore that can be smelted into Iron Bar"),
+	ResourceInfo(ResourceEnum::Coal,		"Coal",		7, "Fuel used to heat houses or smelt ores. When heating houses, provides x2 heat vs. Wood"),
+	ResourceInfo(ResourceEnum::IronOre,		"Iron Ore",		6, "Valuable ore that can be smelted into Iron Bar"),
 	ResourceInfo(ResourceEnum::Iron,		"Iron Bar",		18, "Sturdy bar of metal used in construction and tool-making."),
 	ResourceInfo(ResourceEnum::Furniture,	"Furniture", 10,  "Luxury tier 1 used for housing upgrade. Make house a home."),
 	ResourceInfo(ResourceEnum::Chocolate,	"Chocolate", 20,  "Luxury tier 2 used for housing upgrade. Everyone's favorite confectionary."),
@@ -942,8 +971,8 @@ static const ResourceInfo ResourceInfos[]
 	//ResourceInfo(ResourceEnum::StoneTools,		"Stone Tools",		15,  "Lowest-grade tool made by Stone Tool Shop."),
 	//ResourceInfo(ResourceEnum::CrudeIronTools,	"Crude Iron Tools",	15,  "Medium-grade tool made by Blacksmith using Iron Ore and Wood."),
 	ResourceInfo(ResourceEnum::SteelTools,		"Steel Tool",			27,  "High-grade tool made by Blacksmith from Iron Bars and Wood"),
-	ResourceInfo(ResourceEnum::Herb,				"Medicinal Herb",				5, 		"Medicinal plant used to heal sickness"),
-	ResourceInfo(ResourceEnum::Medicine,			"Medicine",			10,  "Potent Medicinal Herb extract used to cure sickness"),
+	ResourceInfo(ResourceEnum::Herb,				"Medicinal Herb",				6, 		"Medicinal plant used to heal sickness"),
+	ResourceInfo(ResourceEnum::Medicine,			"Medicine",			12,  "Potent Medicinal Herb extract used to cure sickness"),
 	
 	
 	//ResourceInfo(ResourceEnum::Tools,		"Tools", 25, 100, "Construction material"),
@@ -961,7 +990,7 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::Cocoa,		"Cocoa", 7, "Raw cocoa used in Chocolate-making"),
 
 	ResourceInfo(ResourceEnum::Wool,			"Wool", 7, "Fine, soft fiber used to make Clothes"),
-	ResourceInfo(ResourceEnum::Leather,		"Leather", 5, "Animal skin that can be used to make Clothes"),
+	ResourceInfo(ResourceEnum::Leather,		"Leather", 6, "Animal skin that can be used to make Clothes"),
 	ResourceInfo(ResourceEnum::Cloth,		"Clothes", 30, "Luxury tier 2 used for housing upgrade. Provide cover and comfort."),
 
 	ResourceInfo(ResourceEnum::GoldOre,		"Gold Ore", 10, "Precious ore that can be smelted into Gold Bar"),
@@ -970,7 +999,7 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::Beer,			"Beer", 10, "Luxury tier 1 used for housing upgrade. The cause and solution to all life's problems."),
 	//ResourceInfo(ResourceEnum::Barley,		"Barley", FoodCost, 100, "Edible grain, obtained from farming. Ideal for brewing Beer"),
 	//ResourceInfo(ResourceEnum::Oyster,		"Oyster", 7, IndustryTuneFactor + 50, "A delicacy from the Sea"),
-	ResourceInfo(ResourceEnum::Cannabis,		"Cannabis", 5, "Luxury tier 1 used for housing upgrade."),
+	ResourceInfo(ResourceEnum::Cannabis,		"Cannabis", 6, "Luxury tier 1 used for housing upgrade."),
 	//ResourceInfo(ResourceEnum::Truffle,		"Truffle", 7, IndustryTuneFactor + 50, "Construction material"),
 	//ResourceInfo(ResourceEnum::Coconut,		"Coconut", 7, IndustryTuneFactor + 50, "Hard shell fruit with sweet white meat and delicious juice"),
 	ResourceInfo(ResourceEnum::Cabbage,		"Cabbage", FoodCost, "Healthy green vegetable."),
@@ -1097,6 +1126,17 @@ static const std::vector<ResourceEnum> FoodEnums_Input
 	ResourceEnum::Wheat,
 	ResourceEnum::Grape,
 };
+
+static std::vector<ResourceEnum> GetFoodEnums()
+{
+	std::vector<ResourceEnum> result;
+	result.insert(result.end(), FoodEnums_NonInput.begin(), FoodEnums_NonInput.end());
+	result.insert(result.end(), FoodEnums_Input.begin(), FoodEnums_Input.end());
+	return result;
+}
+
+static const std::vector<ResourceEnum> FoodEnums = GetFoodEnums();
+static int32 FoodEnumCount = FoodEnums.size();
 
 class StaticData
 {
@@ -2386,7 +2426,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::IrrigationReservoir, "Irrigation Reservoir", WorldTile2(5, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0, 150, 0 }, "Raises fertility within its radius to 100%."),
 
 	// November 18
-	BldInfo(CardEnum::Tunnel, "Tunnel", WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "Allow citizens to cross over water."),
+	BldInfo(CardEnum::Tunnel, "Tunnel", WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "Allow citizens to walk through mountain."),
 	BldInfo(CardEnum::GarmentFactory, "Garment Factory", WorldTile2(7, 6), ResourceEnum::DyedCottonFabric, ResourceEnum::None, ResourceEnum::LuxuriousClothes, 10, 5, { 0, 100, 100 }, "Mass-produce Clothes with Fabrics."),
 	
 	
@@ -2470,7 +2510,7 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::DyeSeeds,				"Dye Seeds", 0, "Unlock Dye farming. Requires region suitable for Dye."),
 
 	BldInfo(CardEnum::ChimneyRestrictor,	"Chimney Restrictor", 250, "Wood/Coal gives 15% more heat"),
-	BldInfo(CardEnum::SellFood,			"Sell Food", 90, "Sell half of city's food for 3<img id=\"Coin\"/> each."),
+	BldInfo(CardEnum::SellFood,			"Sell Food", 90, "Sell half of city's food for 5<img id=\"Coin\"/> each."),
 	BldInfo(CardEnum::BuyWood,			"Buy Wood", 50, "Buy Wood with half of your treasury for 5<img id=\"Coin\"/> each."),
 	BldInfo(CardEnum::ChildMarriage,			"Child Marriage", 200, "Decrease the minimum age for having children."),
 	BldInfo(CardEnum::ProlongLife,			"Prolong Life", 200, "People live longer."),
@@ -2853,6 +2893,25 @@ inline CardEnum FindCardEnumByName(std::string nameIn)
 	return CardEnum::None;
 }
 
+static std::vector<CardEnum> GetSortedBuildingEnum()
+{
+	std::vector<std::string> cardNames;
+	for (int32 i = 0; i < BuildingEnumCount; i++) {
+		cardNames.push_back(GetBuildingInfo(static_cast<CardEnum>(i)).name);
+	}
+	std::sort(cardNames.begin(), cardNames.end());
+
+	std::vector<CardEnum> results;
+	for (const std::string& name : cardNames) {
+		CardEnum cardEnum = FindCardEnumByName(name);
+		PUN_CHECK(IsBuildingCard(cardEnum));
+		results.push_back(cardEnum);
+	}
+
+	return results;
+}
+static const std::vector<CardEnum> SortedNameBuildingEnum = GetSortedBuildingEnum();
+
 
 
 inline bool IsProducer(CardEnum buildingEnum) {
@@ -2990,6 +3049,7 @@ static bool IsServiceBuilding(CardEnum buildingEnum)
 		
 	case CardEnum::Library:
 	case CardEnum::School:
+	case CardEnum::Bank:
 		
 	case CardEnum::ImmigrationOffice:
 		
@@ -6754,13 +6814,19 @@ const float MinVolume = 0.0f;// 0.011f;
 const float NetworkInputDelayTime = 3.0f;
 
 
-static const FString AITownNames[] = {
+static const FString AITownNames[] = 
+{
+	"Rouen",
+	"Hastein",
+	"Borghild",
+	"Uppsala",
+	"Luna",
+	"Havre",
+	"Rohal",
 	"Stark",
+	"Rivendell",
 	"Lannister",
 	"Baratheon",
-	"Survivor",
-	"Zerg",
-	"Rivendell",
 	"Gotham",
 	"Baltia",
 	"Biarmaland",
@@ -6770,12 +6836,9 @@ static const FString AITownNames[] = {
 	"Irkalla",
 	"Nibiru",
 	"Jotunheim",
-	"Khmer",
-	"Bangkok",
 	"Talaki",
 	"Bujia",
 	"Barameria",
-	"London",
 	"Karaku",
 	"Zakan",
 	"Buroc",
@@ -6785,22 +6848,15 @@ static const FString AITownNames[] = {
 	"Bjorn",
 	"Munso",
 	"Malaren",
-	"Rouen",
-	"Hastein",
-	"Borghild",
-	"Uppsala",
-	"Luna",
-	"Havre",
-	"Rohal",
-	
 };
 
-static FString GetAITownName(int32_t playerId)
+static FString GetAITownName(int32 playerId)
 {
-	int count = _countof(AITownNames);
-	FString name = AITownNames[playerId % count];
-	if (playerId / count > 0) {
-		name += FString::FromInt(playerId / count);
+	int32 count = _countof(AITownNames);
+	int32 aiPlayerId = std::max(0, playerId - GameConstants::MaxPlayers);
+	FString name = AITownNames[aiPlayerId % count];
+	if (aiPlayerId / count > 0) {
+		name += FString::FromInt(aiPlayerId / count);
 	}
 	return name;
 }

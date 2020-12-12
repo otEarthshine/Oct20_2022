@@ -183,10 +183,14 @@ int32 PlayerOwnedManager::TryFillJobBuildings(const std::vector<int32>& jobBuild
 		{
 			LOOP_CHECK_END();
 			
-			int32 humanId = _adultIds[index];
+			//int32 humanId = _adultIds[index];
 
-			building.AddOccupant(humanId);
-			_simulation->unitAI(humanId).SetWorkplaceId(jobBuildingId);
+			//building.AddOccupant(humanId);
+			//_simulation->unitAI(humanId).SetWorkplaceId(jobBuildingId);
+
+			building.targetOccupants++;
+			PUN_CHECK(building.targetOccupants <= building.maxOccupants());
+			
 			index++;
 			localIndex++;
 		}
@@ -201,7 +205,7 @@ int32 PlayerOwnedManager::TryFillJobBuildings(const std::vector<int32>& jobBuild
 
 void PlayerOwnedManager::RefreshJobs()
 {
-	PUN_LOG("RefreshJobs %d %dsec", _adultIds.size(), Time::Seconds());
+	_LOG(PunRefreshJob, "RefreshJobs %d %dsec", _adultIds.size(), Time::Seconds());
 
 	// Promote child if possible
 	for (size_t i = _childIds.size(); i-- > 0;)
@@ -213,18 +217,44 @@ void PlayerOwnedManager::RefreshJobs()
 	}
 
 
-	// Remove Building Job Occupants
-	for (const std::vector<int32_t>& buildingIds : _jobBuildingEnumToIds) {
-		RemoveJobsFromBuildings(buildingIds);
+	
+	// Reset targetOccupants
+	int32 targetRoadMakerLocalFunc = 0;
+	
+	auto resetTargetOccupants = [&](const std::vector<int32>& buildingIds) {
+		for (int32 buildingId : buildingIds) {
+			_simulation->building(buildingId).targetOccupants = 0;
+		}
+	};
+	
+	for (const std::vector<int32>& buildingIds : _jobBuildingEnumToIds) {
+		resetTargetOccupants(buildingIds);
 	}
-	RemoveJobsFromBuildings(_constructionIds);
+	resetTargetOccupants(_constructionIds);
+	
 
-	// Remove roadBuilders
-	for (size_t i = _roadMakerIds.size(); i-- > 0;) {
-		_simulation->unitAI(_roadMakerIds[i]).SetWorkplaceId(-1);
-	}
-	_roadMakerIds.clear();
-	//RemoveJobsFromBuildings(_roadConstructBuildingIds);
+
+
+	
+
+	// TODO: old
+	//// Remove Building Job Occupants
+	//for (const std::vector<int32>& buildingIds : _jobBuildingEnumToIds) {
+	//	RefreshJobsFromBuildings(buildingIds);
+	//}
+	//RefreshJobsFromBuildings(_constructionIds);
+
+	//
+	//// Remove roadBuilders
+	//for (size_t i = _roadMakerIds.size(); i-- > 0;) {
+	//	_simulation->unitAI(_roadMakerIds[i]).SetWorkplaceId(-1);
+	//}
+	//_roadMakerIds.clear();
+
+
+	/*
+	 * Stage 1: Set targetOccupants
+	 */
 
 	// loop through give job to humans
 	int index = 0; // human index
@@ -292,14 +322,16 @@ void PlayerOwnedManager::RefreshJobs()
 	{
 		// Add road builders
 		LOOP_CHECK_START();
-		while (index < targetNonLaborerCount() && _roadMakerIds.size() < targetRoadMakerCount)
+		while (index < targetNonLaborerCount() && targetRoadMakerLocalFunc < targetRoadMakerCount)
 		{
 			LOOP_CHECK_END();
-			
-			int32 humanId = _adultIds[index];
-			_roadMakerIds.push_back(humanId);
-			_simulation->unitAI(humanId).SetWorkplaceId(townHallId); // roadBuilder just use townHall as workplace for easy query...
 			index++;
+			targetRoadMakerLocalFunc++;
+			
+			//int32 humanId = _adultIds[index];
+			//_roadMakerIds.push_back(humanId);
+			//_simulation->unitAI(humanId).SetWorkplaceId(townHallId); // roadBuilder just use townHall as workplace for easy query...
+			//index++;
 		}
 	}
 	
@@ -336,28 +368,209 @@ void PlayerOwnedManager::RefreshJobs()
 	//_builderCount += TryFillJobBuildings(_roadConstructBuildingIds, PriorityEnum::NonPriority, index);
 	////_roadBuilderCount += _builderCount;
 	
-	_employedCount = index;
+	_employedCount = index; // Employed are non-laborers
+
+
+	// Debug
+	PUN_CHECK(_jobBuildingEnumToIds[static_cast<int>(CardEnum::Townhall)].size() == 0);
+	
+
+	/*
+	 * Stage 2:
+	 *  - Determine people that can skip job refresh
+	 *  - Remove any unneeded occupants
+	 */
+
+	TSet<int32> adultIdsToSkipJobRefresh;
+
+#if WITH_EDITOR
+	_LOG(PunRefreshJob, "Start RefreshJob");
+	for (int32 adultId : _adultIds) {
+		_LOG(PunRefreshJob, " id:%d", adultId);;
+	}
+#endif
+
+	// Check for adultIds to skip
+	auto checkForRefreshSkip = [&](const std::vector<int32>& buildingIds)
+	{
+		for (int32 buildingId : buildingIds) 
+		{
+			Building& building = _simulation->building(buildingId);
+			const std::vector<int32>& occupants = building.occupants();
+
+			_LOG(PunRefreshJob, "Start RemoveOccupants buildingId:%d name:%s", building.buildingId(), ToTChar(building.buildingInfo().name));
+
+			// Leave some workers alone
+			int32 stableOccupantCount = std::min(static_cast<int32>(occupants.size()), building.targetOccupants);
+			for (int32 i = 0; i < stableOccupantCount; i++) {
+				adultIdsToSkipJobRefresh.Add(occupants[i]);
+				_LOG(PunRefreshJob, " adultIdsToSkipJobRefresh Add %d", occupants[i]);
+			}
+
+			// Kick people beyond targetOccupants out of the old job
+			//  occupants 4, target 2 .. should kick 2
+			//  loop1: 3 < 2
+			//  loop2: 2 < 2
+			for (int32 i = occupants.size(); i-- > 0;) {
+				if (i < building.targetOccupants) {
+					_LOG(PunRefreshJob, " -- break i:%d id:%d", i, occupants[i]);
+					break;
+				}
+
+				_LOG(PunRefreshJob, " RemoveOccupants i:%d id:%d", i, occupants[i]);
+
+				building.RemoveOccupant(occupants[i]);
+				_simulation->unitAI(occupants[i]).SetWorkplaceId(-1);
+			}
+
+			//// TEST: Refresh all
+			//for (int32 i = occupants.size(); i-- > 0;) {
+			//	building.RemoveOccupant(occupants[i]);
+			//	_simulation->unitAI(occupants[i]).SetWorkplaceId(-1);
+			//}
+		}
+	};
+	for (const std::vector<int32>& buildingIds : _jobBuildingEnumToIds) {
+		checkForRefreshSkip(buildingIds);
+	}
+	checkForRefreshSkip(_constructionIds);
+
+		
+	// Remove roadBuilders
+	for (size_t i = _roadMakerIds.size(); i-- > 0;) {
+		_LOG(PunRefreshJob, "Remove RoadBuilders i:%d id:%d", i, _roadMakerIds[i]);
+		_simulation->unitAI(_roadMakerIds[i]).SetWorkplaceId(-1);
+	}
+	_roadMakerIds.clear();
+
+
+	// TODO: temporary check that all occupants are removed properly
+	//for (int32 adultId : _adultIds) {
+	//	PUN_CHECK(_simulation->unitAI(adultId).workplaceId() == -1);
+	//}
+
+	_LOG(PunRefreshJob, " --- Done Remove: adultIdsToSkipJobRefresh:%d", adultIdsToSkipJobRefresh.Num());
+	
+
+	/*
+	 * Stage 3: Fill up to targetOccupants
+	 */
+	int32 adultIndex = 0;
+	int32 debugTotalJobCount = 0;
+
+	auto getNextHumanId = [&]() {
+		int32 humanId = -1;
+
+		LOOP_CHECK_START();
+		while (adultIndex < _adultIds.size()) {
+			LOOP_CHECK_END();
+
+			int32 localHumanId = _adultIds[adultIndex];
+			if (!adultIdsToSkipJobRefresh.Contains(localHumanId)) {
+				_LOG(PunRefreshJob, "getNextHumanId[succeed] adultIndex:%d localHumanId:%d", adultIndex, localHumanId);
+				
+				humanId = localHumanId;
+				adultIndex++;
+				break;
+			}
+			_LOG(PunRefreshJob, "getNextHumanId[failed] adultIndex:%d localHumanId:%d", adultIndex, localHumanId);
+			
+			adultIndex++;
+		}
+
+		return humanId;
+	};
+	
+	auto fillToTargetOccupants = [&](const std::vector<int32>& buildingIds)
+	{
+		for (int32 buildingId : buildingIds)
+		{
+			Building& building = _simulation->building(buildingId);
+
+			debugTotalJobCount += building.targetOccupants;
+
+			_LOG(PunRefreshJob, "Start AddOccupants buildingId:%d name:%s", buildingId, ToTChar(building.buildingInfo().name));
+			
+			for (int32 i = building.occupantCount(); i < building.targetOccupants; i++) 
+			{
+				int32 humanId = getNextHumanId();
+				PUN_CHECK(humanId != -1); // building.targetOccupants should already be calculated to ensure we do not exceed max adultIds
+				_LOG(PunRefreshJob, " - AddOccupants i:%d adultIndex:%d id:%d", i, adultIndex, humanId);
+				
+				building.AddOccupant(humanId);
+				_simulation->unitAI(humanId).SetWorkplaceId(buildingId);
+			}
+		}
+	};
+	
+	for (const std::vector<int32>& buildingIds : _jobBuildingEnumToIds) {
+		fillToTargetOccupants(buildingIds);
+	}
+	fillToTargetOccupants(_constructionIds);
+
+	PUN_CHECK(debugTotalJobCount + targetRoadMakerLocalFunc == index);
+	
+
+	// Add road builders
+	_LOG(PunRefreshJob, "Start _roadMakerIds:%d", _roadMakerIds.size());
+	LOOP_CHECK_START();
+	while (adultIndex < targetNonLaborerCount() && _roadMakerIds.size() < targetRoadMakerCount)
+	{
+		LOOP_CHECK_END();
+		int32 humanId = getNextHumanId();
+
+		if (humanId != -1) {
+			_LOG(PunRefreshJob, " - Add _roadMakerIds adultIndex:%d id:%d", adultIndex, humanId);
+			PUN_CHECK(_simulation->unitAI(humanId).workplaceId() == -1);
+
+			_roadMakerIds.push_back(humanId);
+			_simulation->unitAI(humanId).SetWorkplaceId(townHallId); // roadBuilder just use townHall as workplace for easy query...	
+		}
+	}
+
+	//
+	//// Remove roadBuilders
+	//for (size_t i = _roadMakerIds.size(); i-- > 0;) {
+	//	_simulation->unitAI(_roadMakerIds[i]).SetWorkplaceId(-1);
+	//}
+	//_roadMakerIds.clear();
+		
 }
 
 void PlayerOwnedManager::FillHouseSlots_FromWorkplace(std::vector<int32>& tempHumanIds)
 {
-	auto fillHouseFromJobBuildings = [&](const std::vector<int32_t>& jobBuildingIds)
+	_LOG(PunRefreshJob, "FillHouseSlots_FromWorkplace tempHumanIds:%d", tempHumanIds.size());
+	for (int32 tempHumanId : tempHumanIds) {
+		_LOG(PunRefreshJob, " - id:%d", tempHumanId);
+	}
+	
+#if WITH_EDITOR
+	// Debug look for any duplicates
+	TSet<int32> debugHumanIds;
+#endif
+	
+	auto fillHouseFromJobBuildings = [&](const std::vector<int32>& jobBuildingIds)
 	{
-		for (int32_t jobBuildingId : jobBuildingIds) {
+		for (int32 jobBuildingId : jobBuildingIds) {
 			Building& jobBuilding = _simulation->building(jobBuildingId);
 			const std::vector<int>& occupants = jobBuilding.occupants();
 
 			// fill each occupant near their job,
-			for (int32_t occupantId : occupants)
+			for (int32 occupantId : occupants)
 			{
+#if WITH_EDITOR
+				PUN_CHECK(!debugHumanIds.Contains(occupantId));
+				debugHumanIds.Add(occupantId);
+#endif
+				
 				// Find available house near this building
-				int32_t bestHouseId = -1;
-				int32_t bestDistance = numeric_limits<int32_t>::max();
-				for (int32_t houseId : _houseIds) {
+				int32 bestHouseId = -1;
+				int32 bestDistance = numeric_limits<int32_t>::max();
+				for (int32 houseId : _houseIds) {
 					Building& house = _simulation->building(houseId);
 					if (house.CanAddOccupant())
 					{
-						int32_t distance = WorldTile2::ManDistance(jobBuilding.gateTile(), house.gateTile());
+						int32 distance = WorldTile2::ManDistance(jobBuilding.gateTile(), house.gateTile());
 						if (distance < bestDistance) {
 							bestHouseId = houseId;
 							bestDistance = distance;
@@ -379,6 +592,7 @@ void PlayerOwnedManager::FillHouseSlots_FromWorkplace(std::vector<int32>& tempHu
 				bool removedFromList = false;
 				for (size_t i = tempHumanIds.size(); i-- > 0;) {
 					if (occupantId == tempHumanIds[i]) {
+						_LOG(PunRefreshJob, "- tempHumanIds:%d occupantId:%d bldName:%s", tempHumanIds.size(), occupantId, ToTChar(jobBuilding.buildingInfo().name));
 						tempHumanIds.erase(tempHumanIds.begin() + i);
 						removedFromList = true;
 						break;
@@ -417,7 +631,7 @@ void PlayerOwnedManager::FillHouseSlots_FromWorkplace(std::vector<int32>& tempHu
 		
 		const std::vector<int32>& jobBuildingIds = _jobBuildingEnumToIds[buildingEnumInt];// _simulation->buildingIds(_playerId, buildingEnum);
 		
-		
+		_LOG(PunRefreshJob, "-- fillHouseFromJobBuildings jobBuildingIds");
 		bool shouldExit = fillHouseFromJobBuildings(jobBuildingIds);
 
 		if (shouldExit) {
@@ -425,6 +639,7 @@ void PlayerOwnedManager::FillHouseSlots_FromWorkplace(std::vector<int32>& tempHu
 		}
 	}
 
+	_LOG(PunRefreshJob, "-- fillHouseFromJobBuildings _constructionIds");
 	fillHouseFromJobBuildings(_constructionIds);
 }
 
@@ -883,11 +1098,11 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 
 	// Influence beyond 1 year accumulation gets damped
 	// At 2 years worth accumulation. The influence income becomes 0;
-	int32 influenceIncomeBeforeCapDamp100 = totalInfluenceIncome100();
-	int32 maxInfluence100 = maxStoredInfluence100();
+	int64 influenceIncomeBeforeCapDamp100 = totalInfluenceIncome100();
+	int64 maxInfluence100 = maxStoredInfluence100();
 	if (influence100 > maxInfluence100 && influenceIncomeBeforeCapDamp100 > 0) {
 		// Fully damp to 0 influence income at x2 maxStoredInfluence
-		int32 influenceIncomeDamp100 = influenceIncomeBeforeCapDamp100 * (influence100 - maxInfluence100) / max(1, maxInfluence100); // More damp as influence stored is closer to fullYearInfluenceIncome100
+		int64 influenceIncomeDamp100 = influenceIncomeBeforeCapDamp100 * (influence100 - maxInfluence100) / max(static_cast<int64>(1), maxInfluence100); // More damp as influence stored is closer to fullYearInfluenceIncome100
 		influenceIncomeDamp100 = min(influenceIncomeDamp100, influenceIncomeBeforeCapDamp100); // Can't damp more than existing influence income
 		PUN_CHECK(influenceIncomeDamp100 >= 0);
 		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::TooMuchInfluencePoints)] = -influenceIncomeDamp100;

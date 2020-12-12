@@ -26,7 +26,7 @@ void TownHall::FinishConstruction()
 	}
 
 	// Townhall name
-	if (_simulation->IsAI(_playerId)) {
+	if (_simulation->IsAIPlayer(_playerId)) {
 		SetTownName(GetAITownName(_playerId));
 	} else {
 		SetTownName(_simulation->playerNameF(_playerId) + FString(" Town"));

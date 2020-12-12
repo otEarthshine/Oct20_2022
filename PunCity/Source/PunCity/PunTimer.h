@@ -79,7 +79,11 @@ struct ScopeTimer
 		// Normal
 		if (multiplier == 1) {
 			if (nanoseconds > nanoSecondsThreshold) {
-				UE_LOG(LogTimer, Log, TEXT("%d.%d ms, %s"), nanoseconds / 1000000, (nanoseconds / 1000) % 1000, *message);
+				if (nanoseconds > 1000) {
+					UE_LOG(LogTimer, Log, TEXT("%d.%d ms, %s"), nanoseconds / 1000000, (nanoseconds / 1000) % 1000, *message);
+				} else {
+					UE_LOG(LogTimer, Log, TEXT("%dns, %s"), nanoseconds % 1000, *message);
+				}
 			}
 		} 
 		else {

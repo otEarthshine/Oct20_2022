@@ -51,21 +51,21 @@ void AMainMenuDisplayManager::InitMainMenuDisplayManager(MapSizeEnum mapSizeEnum
 	_simulation = std::make_unique<GameSimulationCore>();
 	_simulation->MainMenuDisplayInit();
 	
-	_buildingDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader);
+	_buildingDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader, 0);
 	_buildingDisplaySystem->isMainMenuDisplay = true;
 	
-	_resourceDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader);
+	_resourceDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader, 0);
 	_resourceDisplaySystem->isMainMenuDisplay = true;
 	
-	_regionDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader);
+	_regionDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader, 0);
 	_regionDisplaySystem->isMainMenuDisplay = true;
 
 	_decalDisplaySystem->isMainMenuDisplay = true;
 
-	_decalDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader);
+	_decalDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader, 0);
 	_decalDisplaySystem->isMainMenuDisplay = true;
 	
-	_tileDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader);
+	_tileDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader, 0);
 	_tileDisplaySystem->isMainMenuDisplay = true;
 
 	TArray<AActor*> backgrounds = PunUnrealUtils::FindWorldActors(GetWorld(), "BlackBackground");
@@ -75,7 +75,7 @@ void AMainMenuDisplayManager::InitMainMenuDisplayManager(MapSizeEnum mapSizeEnum
 
 }
 
-void AMainMenuDisplayManager::UpdateDisplay(WorldAtom2 cameraAtom, float zoomDistance, std::vector<int32> sampleRegionIds)
+void AMainMenuDisplayManager::UpdateDisplay(WorldAtom2 cameraAtom, float zoomDistance, std::vector<int32> sampleRegionIds, bool justSpawned, bool justCreated)
 {
 #if !MAIN_MENU_DISPLAY
 	return;
@@ -122,7 +122,7 @@ void AMainMenuDisplayManager::UpdateDisplay(WorldAtom2 cameraAtom, float zoomDis
 		_tileDisplaySystem->RefreshDisplay(sampleRegionIds);
 		_tileDisplaySystem->BeforeDisplay(true, sampleRegionIds, false);
 		_tileDisplaySystem->Display(noSample);
-		_tileDisplaySystem->AfterDisplay();
+		//_tileDisplaySystem->AfterDisplay();
 	}
 	
 	_regionDisplaySystem->BeforeDisplay(false);
@@ -133,7 +133,7 @@ void AMainMenuDisplayManager::UpdateDisplay(WorldAtom2 cameraAtom, float zoomDis
 	_tileDisplaySystem->RefreshDisplay(sampleRegionIds);
 	_tileDisplaySystem->BeforeDisplay(PunSettings::IsOn("TileObjFull"), sampleRegionIds, false);
 	_tileDisplaySystem->Display(PunSettings::IsOn("DisplayTiles") ? sampleRegionIds : noSample);
-	_tileDisplaySystem->AfterDisplay();
+	//_tileDisplaySystem->AfterDisplay();
 
 	_buildingDisplaySystem->Display(PunSettings::IsOn("DisplayBuildings") ? sampleRegionIds : noSample);
 	_resourceDisplaySystem->Display(PunSettings::IsOn("DisplayResources") ? sampleRegionIds : noSample);

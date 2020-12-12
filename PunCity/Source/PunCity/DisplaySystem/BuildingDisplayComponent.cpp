@@ -182,7 +182,7 @@ void UBuildingDisplayComponent::OnSpawnDisplay(int objectId, int meshId, WorldAt
 	simulation().SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, WorldRegion2(objectId).regionId(), true);
 }
 
-void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom)
+void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom, bool justSpawned, bool justCreated)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayBuilding);
 	

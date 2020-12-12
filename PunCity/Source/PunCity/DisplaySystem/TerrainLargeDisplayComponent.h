@@ -17,11 +17,19 @@ class PROTOTYPECITY_API UTerrainLargeDisplayComponent : public UDisplaySystemCom
 public:
 
 protected:
+	void BeforeAdd() override {
+		chunkInfosToUpdate.clear();
+	}
+	
 	int CreateNewDisplay(int objectId) override;
 	void OnSpawnDisplay(int objectId, int meshId, WorldAtom2 cameraAtom) override;
-	void UpdateDisplay(int objectId, int meshId, WorldAtom2 cameraAtom) override;
+	void UpdateDisplay(int objectId, int meshId, WorldAtom2 cameraAtom, bool justSpawned, bool justCreated) override;
 	void HideDisplay(int meshId, int32 regionId) override;
 
+	void AfterAdd() override;
+	
 private:
-	UPROPERTY() TArray<class UTerrainLargeChunkComponent*> _terrainChunks;
+	std::vector<MeshChunkInfo> chunkInfosToUpdate;
+	
+	UPROPERTY() TArray<class UTerrainLargeChunkComponent*> _terrainLargeChunks;
 };

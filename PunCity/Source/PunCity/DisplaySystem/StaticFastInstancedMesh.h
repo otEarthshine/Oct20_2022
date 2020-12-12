@@ -9,6 +9,16 @@
 
 #include "StaticFastInstancedMesh.generated.h"
 
+//struct MeshInstanceInfoBase
+//{
+//	int32 key;
+//	FTransform transform;
+//	int32 state;
+//	int32 objectId = -1;
+//};
+
+
+
 USTRUCT(BlueprintType)
 struct FStaticFastInstancedMeshState
 {
@@ -33,14 +43,18 @@ class UStaticFastInstancedMesh : public UInstancedStaticMeshComponent
 public:
 	struct InstanceInfo
 	{
-		int16_t instanceIndex;
-		int8_t stateMod; // state modded to fit in int8_t .. modding is fine here since we just want to know if the state changed
+		int16 instanceIndex = -1;
+		int8 stateMod = -1; // state modded to fit in int8_t .. modding is fine here since we just want to know if the state changed
 	};
 
 	UStaticFastInstancedMesh() { PrimaryComponentTick.bCanEverTick = false; }
 
 	void Init(USceneComponent* parent, int maxTileId, bool forceUpdateTransform = false, bool hasCollision = false);
 
+	// BatchAdd used for spawning new region
+	void BeforeBatchAdd();
+	void BatchAdd(int32 key, FTransform transform, int32 state, int32 objectId = -1);
+	
 	// Add if necessary. 
 	// -tileId that was already added won't be touched
 	// -tileId that wasn't added for an update will get despawned automatically
@@ -82,10 +96,29 @@ public:
 		Rename(*meshState.name);
 	}
 
+
+	///*
+	// * Queue for threading
+	// */
+	//TArray<MeshInstanceInfoBase> meshesToAdd;
+
+	//void ClearAddQueue() { meshesToAdd.Empty(); }
+	//void QueueAdd(int32 key, FTransform transform, int32 state, int32 objectId = -1) {
+	//	meshesToAdd.Add({ key, transform, state, objectId });
+	//}
+	//void ExecuteAddQueue()
+	//{
+	//	for (MeshInstanceInfoBase& meshInfo : meshesToAdd) {
+	//		Add(meshInfo.key, meshInfo.transform, meshInfo.state, meshInfo.objectId);
+	//	}
+	//}
+
 public:
 	// For its parent
 	FString meshName;
 	int32 poolIndex = -1;
+
+	bool shouldBatchAdd = false;
 
 private:
 	void Despawn(int instanceIndex);
@@ -96,10 +129,12 @@ private:
 	CycleMap<InstanceInfo> _keyToInstanceInfo;
 	CycleMap<int32> _instanceIndexToObjectId;
 
-	std::vector<int32_t> _keysThisTick;
+	std::vector<int32> _keysThisTick;
 
 	bool _needUpdate; // We only need to update if we have some change in instanceMesh's transform
 	bool _forceUpdateTransform;
 	bool _hasCollision;
 	bool _noBasePass;
+
+	TArray<FTransform> _instancesToBatchAdd;
 };

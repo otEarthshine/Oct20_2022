@@ -447,7 +447,7 @@ public:
 		{ ModuleTransforms({ ModuleTransform("IronStatue")}) },
 
 		{ // Bank
-			ModuleTransforms::CreateSet("Ministry", {}, {})
+			ModuleTransforms::CreateSet("Bank", {}, {})
 		},
 
 		{ ModuleTransforms({ ModuleTransform("TempleGrograth")}) },

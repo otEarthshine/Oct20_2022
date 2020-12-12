@@ -409,6 +409,8 @@ private:
 	UPROPERTY(meta = (BindWidget)) UButton* CardHand1CancelButton;
 	UPROPERTY(meta = (BindWidget)) UButton* CardHand1CloseButton;
 
+	UPROPERTY(meta = (BindWidget)) UTextBlock* CardHand1SubmitButtonText;
+
 	//bool _needDrawHandDisplay = false;
 
 	// Rare Cards

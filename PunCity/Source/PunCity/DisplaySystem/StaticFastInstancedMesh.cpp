@@ -66,12 +66,49 @@ void UStaticFastInstancedMesh::Init(USceneComponent* parent, int tileIdCount, bo
 	PUN_DEBUG_EXPR(_keysThisTick.clear());
 }
 
+void UStaticFastInstancedMesh::BeforeBatchAdd()
+{
+	//PUN_LOG("BeforeBatchAdd %s", *meshName);
+
+	shouldBatchAdd = false;
+	//if (_keyToInstanceInfo.count() == 0 && GetInstanceCount() > 0) {
+	//	PUN_CHECK(_instancesToBatchAdd.Num() == 0);
+	//	PUN_CHECK(_keyToInstanceInfo.count() == 0);
+	//	PUN_CHECK(_instanceIndexToObjectId.count() == 0);
+	//	PUN_CHECK(_disabledInstanceIndices.Num() == 0);
+	//	shouldBatchAdd = true;
+	//}
+}
+void UStaticFastInstancedMesh::BatchAdd(int32 key, FTransform transform, int32 state, int32 objectId)
+{
+	PUN_LOG("Mesh BatchAdd key:%d transform:%s", key, *transform.ToString());
+	PUN_LOG("Mesh BatchAdd name:%s toAdd:%d instances:%d disabled:%d keyToInst:%d", *meshName, _instancesToBatchAdd.Num(), GetInstanceCount(), _disabledInstanceIndices.Num(), _keyToInstanceInfo.count());
+	
+	_instancesToBatchAdd.Add(transform);
+
+	// TODO: _keyToInstanceInfo, _instanceIndexToObjectId must be cleared before doing BatchAdd
+	InstanceInfo info;
+	info.stateMod = static_cast<int8_t>(state % 127);
+	info.instanceIndex = _instancesToBatchAdd.Num();
+	
+	_keyToInstanceInfo.Add(key, info);
+
+	if (_hasCollision) {
+		_instanceIndexToObjectId.Add(info.instanceIndex, objectId);
+	}
+}
 
 void UStaticFastInstancedMesh::Add(int32 key, FTransform transform, int32 state, int32 objectId)
 {
+	//PUN_LOG("Mesh Add name:%s key:%d transform:%s shouldBatchAdd:%d", *meshName, key, *transform.ToString(), shouldBatchAdd);
 	// x5 count:600 time:0.5ms
 	//SCOPE_CYCLE_COUNTER(STAT_PunDisplayFastAdd);
-
+	
+	//if (shouldBatchAdd)
+	//{
+	//	BatchAdd(key, transform, state, objectId);
+	//	return;
+	//}
 
 	PUN_CHECK(GetStaticMesh());
 	PUN_CHECK(key >= 0);
@@ -120,14 +157,17 @@ void UStaticFastInstancedMesh::Add(int32 key, FTransform transform, int32 state,
 			_instanceIndexToObjectId.Add(instanceIndex, objectId);
 			//UE_LOG(LogTemp, Error, TEXT("_instanceIndexToObjectId %s Add %d objId:%d"), *GetFName().ToString(), instanceIndex, objectId);
 		}
+
+		PUN_CHECK(GetInstanceCount() > info.instanceIndex);
+		//PUN_LOG("Mesh Add [key not found] instances:%d, index:%d", GetInstanceCount(), info.instanceIndex);
 	}
 	else {
 		//PUN_ALOG("FastMesh", key, ".FastMesh.add_ExistingCount id:%d tick%d", key, TimeDisplay::Ticks());
+		//PUN_LOG("Mesh Add [key found] instances:%d, index:%d", GetInstanceCount(), info.instanceIndex);
 	}
 
 	PUN_CHECK_EDITOR(NoBug2());
 	PUN_CHECK_EDITOR(NoBug());
-	PUN_CHECK(GetInstanceCount() > info.instanceIndex);
 
 	// If this tile's age is some threshold older than display age, we need to update the display's transform
 	if (_forceUpdateTransform || info.stateMod != stateMod) {
@@ -148,12 +188,45 @@ void UStaticFastInstancedMesh::Add(int32 key, FTransform transform, int32 state,
 
 void UStaticFastInstancedMesh::AfterAdd()
 {
+	//PUN_LOG("Mesh End UStaticFastInstancedMesh::AfterAdd name:%s toAdd:%d instances:%d disabled:%d keyToInst:%d", *meshName, _instancesToBatchAdd.Num(), GetInstanceCount(), _disabledInstanceIndices.Num(), _keyToInstanceInfo.count());
+	
 	SCOPE_CYCLE_COUNTER(STAT_PunDisplayFastMeshAfterAdd);
+
+	if (_instancesToBatchAdd.Num() > 0)
+	{
+		// Add any instances beyond current
+		int32 initialInstanceCount = GetInstanceCount();
+		for (int32 i = _instancesToBatchAdd.Num(); i-- > initialInstanceCount;) {
+			AddInstance(_instancesToBatchAdd[i]);
+			_instancesToBatchAdd.RemoveAt(i);
+			//PUN_LOG("Mesh End Loop:%d _instancesToBatchAdd:%d", i, _instancesToBatchAdd.Num(), GetInstanceCount());
+		}
+
+		// disable any instances not needed
+		for (int32 i = initialInstanceCount; i-- > _instancesToBatchAdd.Num();) {
+			_disabledInstanceIndices.Add(i);
+		}
+
+		// Batch Update any instances we already have
+		if (_instancesToBatchAdd.Num() > 0) {
+			BatchUpdateInstancesTransforms(0, _instancesToBatchAdd);
+		}
+
+		PUN_CHECK_EDITOR(NoBug());
+		PUN_CHECK_EDITOR(NoBug2());
+
+		_instancesToBatchAdd.Empty();
+		MarkRenderStateDirty();
+
+		_needUpdate = false;
+		return;
+	}
 
 	PUN_CHECK_EDITOR(NoBug());
 	PUN_CHECK_EDITOR(NoBug2());
 
 	//UE_LOG(LogTemp, Error, TEXT("_keysThisTick clear %d"), _keysThisTick.size());
+	
 
 	static std::vector<InstanceInfo> unusedList;
 	unusedList.clear();
@@ -223,8 +296,8 @@ void UStaticFastInstancedMesh::SetActive(bool bNewActive, bool bReset)
 {
 	SCOPE_CYCLE_COUNTER(STAT_PunDisplayFastMeshSetActive);
 
-	PUN_CHECK_EDITOR(NoBug2());
-	PUN_CHECK_EDITOR(NoBug());
+	//PUN_CHECK_EDITOR(NoBug2());
+	//PUN_CHECK_EDITOR(NoBug());
 
 	if (!_noBasePass) {
 		SetVisibility(bNewActive);
@@ -236,6 +309,7 @@ void UStaticFastInstancedMesh::SetActive(bool bNewActive, bool bReset)
 	if (!bNewActive) {
 		ClearInstances();
 		PUN_CHECK(GetInstanceCount() == 0);
+		
 		_disabledInstanceIndices.Empty();
 
 		_keyToInstanceInfo.Clear();
@@ -244,6 +318,6 @@ void UStaticFastInstancedMesh::SetActive(bool bNewActive, bool bReset)
 		PUN_DEBUG_EXPR(_keysThisTick.clear());
 	}
 
-	PUN_CHECK_EDITOR(NoBug());
-	PUN_CHECK_EDITOR(NoBug2());
+	//PUN_CHECK_EDITOR(NoBug());
+	//PUN_CHECK_EDITOR(NoBug2());
 }

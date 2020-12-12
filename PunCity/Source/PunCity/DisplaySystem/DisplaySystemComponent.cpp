@@ -20,78 +20,93 @@ void UDisplaySystemComponent::Display(std::vector<int>& sampleIds)
 	/**
 	 * Display Regions
 	 */
-	for (int i = 0; i < _isMeshesInUse.size(); i++) {
-		_isMeshesInUse[i] = false;
+	{
+		//SCOPE_TIMER_FILTER(1000, "Tick Display Sys 1");
+		for (int i = 0; i < _isMeshesInUse.size(); i++) {
+			_isMeshesInUse[i] = false;
+		}
 	}
 
-	const size_t sampleIdsSize = sampleIds.size();
-	for (size_t i = 0; i < sampleIdsSize; i++)
 	{
-		int objectId = sampleIds[i]; // objectId is mostly regionId
-
-		// Resize _meshIdByObjectId if necessary
-
-		PUN_CHECK(objectId >= 0);
-		for (int32 j = _meshIdByObjectId.size(); j <= objectId; j++) {
-			_meshIdByObjectId.push_back(-1);
-		}
+		//SCOPE_TIMER_FILTER(1000, "Tick Display Sys 2"); // Note: This part consumes the most ms
 		
-		//while (objectId >= _meshIdByObjectId.size()) {
-		//	_meshIdByObjectId.push_back(-1);
-		//}
-
-		int meshId = _meshIdByObjectId[objectId];
-
-		if (meshId == -1)
+		const size_t sampleIdsSize = sampleIds.size();
+		for (size_t i = 0; i < sampleIdsSize; i++)
 		{
-			// Find disabled mesh and use it if there is one
-			for (size_t j = 0; j < _objectIdByMeshId.size(); j++) {
-				if (_objectIdByMeshId[j] == -1) {
-					meshId = j;
-					break;
-				}
+			int objectId = sampleIds[i]; // objectId is mostly regionId
+
+			// Resize _meshIdByObjectId if necessary
+
+			PUN_CHECK(objectId >= 0);
+			for (int32 j = _meshIdByObjectId.size(); j <= objectId; j++) {
+				_meshIdByObjectId.push_back(-1);
 			}
 
-			// Display Skip for smoothness...
-			if (_spawnedThisTick >= _maxSpawnPerTick) { // && !displayJustSwitchedOn && !cameraMovedLargeDistance) {
-				continue;
-			}
-			_spawnedThisTick++;
+			//while (objectId >= _meshIdByObjectId.size()) {
+			//	_meshIdByObjectId.push_back(-1);
+			//}
 
-			// Make a new mesh if there no disabled mesh
+			int meshId = _meshIdByObjectId[objectId];
+
+			bool justSpawned = false;
+			bool justCreated = false;
 			if (meshId == -1)
 			{
-				meshId = CreateNewDisplay(objectId);
+				// Find disabled mesh and use it if there is one
+				for (size_t j = 0; j < _objectIdByMeshId.size(); j++) {
+					if (_objectIdByMeshId[j] == -1) {
+						meshId = j;
+						break;
+					}
+				}
 
-				_objectIdByMeshId.push_back(objectId);
-				_isMeshesInUse.push_back(true);
+				// Display Skip for smoothness...
+				if (_spawnedThisTick >= _maxSpawnPerTick) { // && !displayJustSwitchedOn && !cameraMovedLargeDistance) {
+					continue;
+				}
+				_spawnedThisTick++;
+
+				// Make a new mesh if there no disabled mesh
+				if (meshId == -1)
+				{
+					meshId = CreateNewDisplay(objectId);
+					justCreated = true;
+
+					_objectIdByMeshId.push_back(objectId);
+					_isMeshesInUse.push_back(true);
+				}
+
+				_objectIdByMeshId[meshId] = objectId;
+				_meshIdByObjectId[objectId] = meshId;
+
+				OnSpawnDisplay(objectId, meshId, cameraAtom);
+				justSpawned = true;
 			}
 
-			_objectIdByMeshId[meshId] = objectId;
-			_meshIdByObjectId[objectId] = meshId;
+			_isMeshesInUse[meshId] = true;
 
-			OnSpawnDisplay(objectId, meshId, cameraAtom);
+			UpdateDisplay(objectId, meshId, cameraAtom, justSpawned, justCreated);
 		}
-
-		_isMeshesInUse[meshId] = true;
-
-		UpdateDisplay(objectId, meshId, cameraAtom);
 	}
 
-	// Take unused mesh and disable them if necessary
-	for (int i = 0; i < _isMeshesInUse.size(); i++)
 	{
-		if (!_isMeshesInUse[i])
+		//SCOPE_TIMER_FILTER(1000, "Tick Display Sys 3");
+		
+		// Take unused mesh and disable them if necessary
+		for (int i = 0; i < _isMeshesInUse.size(); i++)
 		{
-			// Not in use anymore, disable it
-			int regionId = _objectIdByMeshId[i];
-			if (regionId != -1)
+			if (!_isMeshesInUse[i])
 			{
-				HideDisplay(i, regionId);
+				// Not in use anymore, disable it
+				int regionId = _objectIdByMeshId[i];
+				if (regionId != -1)
+				{
+					HideDisplay(i, regionId);
 
-				_meshIdByObjectId[regionId] = -1;
-				_objectIdByMeshId[i] = -1;
-				_isMeshesInUse[i] = false;
+					_meshIdByObjectId[regionId] = -1;
+					_objectIdByMeshId[i] = -1;
+					_isMeshesInUse[i] = false;
+				}
 			}
 		}
 	}
@@ -99,7 +114,7 @@ void UDisplaySystemComponent::Display(std::vector<int>& sampleIds)
 	AfterAdd();
 }
 
-void UDisplaySystemComponent::Init(int size, TScriptInterface<IDisplaySystemDataSource> gameManager, UAssetLoaderComponent * assetLoader)
+void UDisplaySystemComponent::Init(int size, TScriptInterface<IDisplaySystemDataSource> gameManager, UAssetLoaderComponent * assetLoader, int32 initialPoolSize)
 {
 	_gameManager = gameManager;
 	_assetLoader = assetLoader;
@@ -114,6 +129,19 @@ void UDisplaySystemComponent::Init(int size, TScriptInterface<IDisplaySystemData
 	//PUN_LOG("Init attaching to %s", *(GetAttachParent()->GetName()));
 
 	_meshId = 0;
+
+	// CreateNewDisplay during Init so it doesn't lag in the game
+	for (int32 i = 0; i < initialPoolSize; i++)
+	{
+		int32 meshId = CreateNewDisplay(0);
+		
+		_objectIdByMeshId.push_back(-1);
+		_isMeshesInUse.push_back(false);
+
+		OnSpawnDisplay(0, meshId, WorldAtom2(0, 0));
+		UpdateDisplay(0, meshId, WorldAtom2(0, 0), true, true);
+	}
+	AfterAdd();
 }
 
 UStaticMeshComponent* UDisplaySystemComponent::CreateMeshComponent(USceneComponent* parent, std::string name)

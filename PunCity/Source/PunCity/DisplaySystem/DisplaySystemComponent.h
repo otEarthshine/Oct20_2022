@@ -16,6 +16,16 @@
  *  Subclass/Implement the virtual functions to make this workd
  */
 
+struct MeshChunkInfo
+{
+	int32 meshId;
+	int32 regionId;
+	bool createMesh = false;
+	bool justSpawned = false;
+
+	WorldRegion2 region() { return WorldRegion2(regionId); }
+};
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UDisplaySystemComponent : public USceneComponent
 {
@@ -23,7 +33,7 @@ class UDisplaySystemComponent : public USceneComponent
 public:
 	UDisplaySystemComponent() { PrimaryComponentTick.bCanEverTick = false; }
 
-	virtual void Init(int size, TScriptInterface<IDisplaySystemDataSource> gameManager, UAssetLoaderComponent* assetLoader);
+	virtual void Init(int size, TScriptInterface<IDisplaySystemDataSource> gameManager, UAssetLoaderComponent* assetLoader, int32 initialPoolSize);
 
 	// Called to update vector size when simulation changed (like adding units/buildings)
 	void ResizeObjectIds(int newSize)
@@ -45,6 +55,8 @@ public:
 		return _meshIdByObjectId[objectId];
 	}
 
+	int32 meshPoolCount() { return _objectIdByMeshId.size(); }
+
 protected:
 	virtual int CreateNewDisplay(int objectId) { 
 		_meshId++;
@@ -53,7 +65,7 @@ protected:
 
 
 	virtual void OnSpawnDisplay(int32 objectId, int32 meshId, WorldAtom2 cameraAtom) {}
-	virtual void UpdateDisplay(int32 objectId, int32 meshId, WorldAtom2 cameraAtom) {}
+	virtual void UpdateDisplay(int32 objectId, int32 meshId, WorldAtom2 cameraAtom, bool justSpawned, bool justCreated) {}
 	
 	virtual void HideDisplay(int32 meshId, int32 regionId) {}
 	
@@ -70,6 +82,51 @@ protected:
 		PUN_CHECK(_gameManager);
 		return CastChecked<IDisplaySystemDataSource>(_gameManager.GetObject());
 	}
+
+	//
+	template <typename Func>
+	void ThreadedRun(std::vector<MeshChunkInfo>& chunkInfos, int32 threadCount, Func func)
+	{
+		if (threadCount == 0) {
+			threadCount = 8;
+		}
+		if (chunkInfos.size() >= threadCount)
+		{
+			PUN_LOG("Tick Region Test Prepare3: chunkInfos:%d", chunkInfos.size());
+
+			// Split into threads
+			TArray<TFuture<uint8>> futures;
+
+			for (int32 i = 0; i < threadCount; i++)
+			{
+				futures.Add(
+					Async(EAsyncExecution::Thread, [&, i]()
+					{
+						for (int32 j = i; j < chunkInfos.size(); j += threadCount) {
+							//PUN_LOG("Thread i:%d regionId:%d", i, chunkInfos[j].regionId);
+							func(chunkInfos[j]);
+						}
+						//PUN_LOG("DoneThread i:%d", i);
+						return static_cast<uint8>(1);
+					})
+				);
+			}
+
+			// Pause while all the thread works
+			for (int32 i = 0; i < futures.Num(); i++) {
+				futures[i].Wait();
+			}
+
+		}
+		else
+		{
+			// No thread
+			for (MeshChunkInfo& chunkInfo : chunkInfos) {
+				func(chunkInfo);
+			}
+		}
+	}
+	
 
 public:
 	bool isMainMenuDisplay = false;

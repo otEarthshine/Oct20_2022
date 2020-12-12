@@ -85,7 +85,7 @@ void AMainMenuPlayerController::Tick(float DeltaTime)
 	if (PunSettings::bShouldRefreshMainMenuDisplay) {
 		PunSettings::bShouldRefreshMainMenuDisplay = false;
 		
-		mainMenuDisplayManager->UpdateDisplay(cameraState.cameraAtom, cameraState.zoomDistance, cameraState.sampleRegionIds);
+		mainMenuDisplayManager->UpdateDisplay(cameraState.cameraAtom, cameraState.zoomDistance, cameraState.sampleRegionIds, true, false);
 	}
 
 	if (mainMenuDisplayManager) {
@@ -191,7 +191,8 @@ void AMainMenuPlayerController::SetupDisplayManager()
 				auto& simulation = mainMenuDisplayManager->simulation();
 				auto& treeSystem = simulation.treeSystem();
 				const auto& buildingSubregionList = simulation.buildingSubregionList();
-				for(int32 sampleId : cameraState.sampleRegionIds) {
+				for (int32 sampleId : cameraState.sampleRegionIds) 
+				{
 					buildingSubregionList.ExecuteRegion(WorldRegion2(sampleId), [&](int32 buildingId) {
 						Building& building = simulation.building(buildingId);
 						if (building.isEnum(CardEnum::Farm)) {
@@ -208,7 +209,7 @@ void AMainMenuPlayerController::SetupDisplayManager()
 				mainMenuDisplayManager->assetLoader()->SetMaterialCollectionParametersScalar("TotalRegionX", mapSize.x);
 				mainMenuDisplayManager->assetLoader()->SetMaterialCollectionParametersScalar("TotalRegionY", mapSize.y);
 
-				mainMenuDisplayManager->UpdateDisplay(cameraState.cameraAtom, cameraState.zoomDistance, cameraState.sampleRegionIds);
+				mainMenuDisplayManager->UpdateDisplay(cameraState.cameraAtom, cameraState.zoomDistance, cameraState.sampleRegionIds, true, true);
 			}
 			else {
 				mainMenuDisplayManager->failedToLoadMainMenuJson = true;

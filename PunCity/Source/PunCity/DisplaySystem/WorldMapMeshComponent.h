@@ -22,9 +22,9 @@ public:
 		_worldMapCollider = CreateDefaultSubobject<UStaticMeshComponent>("WorldMapMesh1");
 	}
 	
-	void Init(int size, TScriptInterface<IDisplaySystemDataSource> gameManager, UAssetLoaderComponent* assetLoader) override
+	void Init(int size, TScriptInterface<IDisplaySystemDataSource> gameManager, UAssetLoaderComponent* assetLoader, int32 initialPoolSize) override
 	{
-		UDisplaySystemComponent::Init(size, gameManager, assetLoader);
+		UDisplaySystemComponent::Init(size, gameManager, assetLoader, initialPoolSize);
 		LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayTerrain);
 
 		_worldMapCollider->AttachToComponent(_terrainChunkParent, FAttachmentTransformRules::KeepRelativeTransform);
@@ -87,7 +87,8 @@ public:
 				terrainComp->Init(tileSize, displayUnitPerTile, tileSkipInt, false);
 				terrainComp->SetRelativeLocation(FVector(x * chunkDisplaySize, y * chunkDisplaySize, 0));
 
-				terrainComp->UpdateTerrainChunkMesh(simulation(), WorldRegion2(x * chunkRegionSize, y *chunkRegionSize), true);
+				terrainComp->UpdateLargeTerrainChunkMesh_Prepare(simulation(), WorldRegion2(x * chunkRegionSize, y *chunkRegionSize), true);
+				terrainComp->UpdateLargeTerrainChunkMesh_UpdateMesh(true);
 				terrainComp->SetMaterial(0, _assetLoader->M_WorldMap);
 
 				terrainComp->SetCastShadow(false);

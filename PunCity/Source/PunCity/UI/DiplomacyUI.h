@@ -48,7 +48,7 @@ public:
 		
 		if (IsVisible() && 
 			aiPlayerId != -1 && 
-			sim.IsAI(aiPlayerId))
+			sim.IsAIPlayer(aiPlayerId))
 		{
 			// Name
 			SetText(PlayerNameText, sim.playerName(aiPlayerId));

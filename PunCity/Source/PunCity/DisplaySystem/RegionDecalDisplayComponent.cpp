@@ -116,7 +116,7 @@ void URegionDecalDisplayComponent::OnSpawnDisplay(int regionId, int meshId, Worl
 
 static int32_t updateCount = 0;
 
-void URegionDecalDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom)
+void URegionDecalDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom, bool justSpawned, bool justCreated)
 {
 	const float centerShift = CoordinateConstants::RegionCenterDisplayUnits + 5;
 	

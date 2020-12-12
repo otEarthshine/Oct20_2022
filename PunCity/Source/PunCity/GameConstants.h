@@ -27,8 +27,10 @@ public:
 	//static const int32_t BaseHappiness = 50;
 
 	static const int32 MaxFloodDistance_Human = 4;
-	static const int32 MaxFloodDistance_HumanIdle = 3;
+	//static const int32 MaxFloodDistance_HumanIdle = 3;
+	
 	static const int32 MaxFloodDistance_Animal = 3;
+	static const int32 MaxFloodDistance_AnimalFar = 3;
 
 	static const int32 MaxFloodDistance_HumanLogistics = 7;
 

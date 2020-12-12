@@ -19,9 +19,9 @@ public:
 		PrimaryComponentTick.bCanEverTick = false;
 	}
 
-	void Init(int size, TScriptInterface<IDisplaySystemDataSource> gameManager, UAssetLoaderComponent* assetLoader) override
+	void Init(int size, TScriptInterface<IDisplaySystemDataSource> gameManager, UAssetLoaderComponent* assetLoader, int32 initialPoolSize) override
 	{
-		UDisplaySystemComponent::Init(size, gameManager, assetLoader);
+		UDisplaySystemComponent::Init(size, gameManager, assetLoader, initialPoolSize);
 
 		_demolishParticlePool.SetNum(100);
 		_demolishInfos.resize(100);
@@ -70,7 +70,7 @@ public:
 protected:
 	int CreateNewDisplay(int objectId) override;
 	void OnSpawnDisplay(int objectId, int meshId, WorldAtom2 cameraAtom) override;
-	void UpdateDisplay(int objectId, int meshId, WorldAtom2 cameraAtom) override;
+	void UpdateDisplay(int objectId, int meshId, WorldAtom2 cameraAtom, bool justSpawned, bool justCreated) override;
 	void HideDisplay(int meshId, int32 regionId) override;
 
 private:

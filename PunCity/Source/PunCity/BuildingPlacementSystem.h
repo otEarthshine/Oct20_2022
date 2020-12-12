@@ -200,7 +200,7 @@ private:
 
 	void StartDrag();
 
-	void TickLineDrag(WorldAtom2 cameraAtom, std::function<bool(WorldTile2)> isBuildableFunc);
+	void TickLineDrag(WorldAtom2 cameraAtom, std::function<bool(WorldTile2)> isBuildableFunc, bool checkTerritory = false);
 	void TickAreaDrag(WorldAtom2 cameraAtom, std::function<PlacementGridEnum(WorldTile2)> getPlacementGridEnum);
 	void FinishDrag(IGameNetworkInterface* networkInterface);
 

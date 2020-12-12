@@ -126,6 +126,23 @@ public:
 		CppUtils::TryRemove(_buildingsOnFire, buildingId);
 	}
 
+	int8 IsConnectedBuilding(int32 buildingId) {
+		PUN_CHECK(buildingId < _isBuildingIdConnected.size());
+		return _isBuildingIdConnected[buildingId];
+	}
+	void OnRefreshFloodGrid(WorldRegion2 region)
+	{
+		_buildingSubregionList.ExecuteRegion(region, [&](int32 buildingId)
+		{
+			Building& bld = building(buildingId);
+			int32 playerId = bld.playerId();
+			if (playerId != -1) {
+				RefreshIsBuildingConnected(playerId, buildingId, bld.gateTile());
+			}
+		});
+	}
+	
+
 	int32 GetDebugHash() {
 		int32 hash = 0;
 		for (size_t i = _atomLocation.size(); i-- > 0;) {
@@ -200,6 +217,8 @@ public:
 			SerializeVecValue(Ar, _scheduleBuildingIds);
 			SerializeVecValue(Ar, _scheduleTicks);
 
+			SerializeVecValue(Ar, _isBuildingIdConnected);
+
 			// Check
 			for (size_t i = 0; i < _buildings.size(); i++) {
 				int32 id = _buildings[i]->buildingId();
@@ -247,6 +266,18 @@ private:
 
 	void PlaceBuildingOnMap(int32 buildingIdIn, bool isBuildingInitialAdd, bool isAdding = true);
 
+	void RefreshIsBuildingConnected(int32 playerId, int32 buildingId, WorldTile2 tile)
+	{
+		if (playerId != -1 && _simulation->HasTownhall(playerId)) 
+		{
+			PUN_CHECK(buildingId < _isBuildingIdConnected.size());
+			WorldTile2 townGate = _simulation->townhallGateTile(playerId);
+
+			DEBUG_ISCONNECTED_VAR(RefreshIsBuildingConnected);
+			_isBuildingIdConnected[buildingId] = _simulation->IsConnected(townGate, tile, GameConstants::MaxFloodDistance_HumanLogistics, true);
+		}
+	}
+
 private:
 	IGameSimulationCore* _simulation = nullptr;
 
@@ -268,7 +299,8 @@ private:
 
 	std::vector<int32> _scheduleBuildingIds;
 	std::vector<int32> _scheduleTicks;
-	
+
+	std::vector<int8> _isBuildingIdConnected;// IsConnected for buildings
 
 private:
 	/*

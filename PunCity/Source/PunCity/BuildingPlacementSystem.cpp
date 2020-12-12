@@ -280,14 +280,23 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 	else if (_dragState == DragState::NeedDragStart)
 	{
 		ClearInstructions();
-		
-		SetInstruction(PlacementInstructionEnum::DragGather, IsGatherPlacement(_placementType) && _dragGatherSuccessCount < 3);
 
+		// Gather instruction
+		if (_placementType == PlacementType::Gather ||
+			_placementType == PlacementType::GatherRemove) 
+		{
+			SetInstruction(PlacementInstructionEnum::DragGather, IsGatherPlacement(_placementType) && _dragGatherSuccessCount < 3);
+		}
+
+		// Road instruction
 		if (IsRoadPlacement(_placementType) && _dragRoadSuccessCount < 3) {
 			SetInstruction(PlacementInstructionEnum::DragRoad1, true);
 		}
-		
-		SetInstruction(PlacementInstructionEnum::DragDemolish, _placementType == PlacementType::Demolish && _dragDemolishSuccessCount < 3);
+
+		// Demolish instruction
+		if (_placementType == PlacementType::Demolish) {
+			SetInstruction(PlacementInstructionEnum::DragDemolish, _placementType == PlacementType::Demolish && _dragDemolishSuccessCount < 3);
+		}
 	}
 	else if (_dragState == DragState::Dragging)
 	{
@@ -563,17 +572,22 @@ void ABuildingPlacementSystem::StartDrag()
 	_placementGrid.SetActive(true);
 }
 
-void ABuildingPlacementSystem::TickLineDrag(WorldAtom2 cameraAtom, function<bool(WorldTile2)> isBuildableFunc)
+void ABuildingPlacementSystem::TickLineDrag(WorldAtom2 cameraAtom, function<bool(WorldTile2)> isBuildableFunc, bool checkTerritory)
 {
 	auto& simulation = _gameInterface->simulation();
 	
 	if (_dragState == DragState::NeedDragStart ||
 		_dragState == DragState::LeftMouseDown)
 	{
-		if (simulation.tileOwner(_mouseOnTile) != _gameInterface->playerId()) {
+		bool isInTerritory = simulation.tileOwner(_mouseOnTile) == _gameInterface->playerId();
+		if (!isInTerritory) {
 			SetInstruction(PlacementInstructionEnum::OutsideTerritory, true);
 		}
-		_placementGrid.SpawnGrid(isBuildableFunc(_mouseOnTile) ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, _mouseOnTile);
+		bool isBuildable = isBuildableFunc(_mouseOnTile);
+		if (checkTerritory) {
+			isBuildable = isBuildable && isInTerritory;
+		}
+		_placementGrid.SpawnGrid(isBuildable ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, _mouseOnTile);
 	}
 	else if (_dragState == DragState::Dragging) 
 	{
@@ -1404,7 +1418,14 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		_placementType == PlacementType::Bridge ||
 		_placementType == PlacementType::Tunnel)
 	{
-		//TickLineDrag(cameraAtom, std::bind(&IGameManagerInterface::IsPlayerRoadBuildable, _gameInterface, _1));
+
+		if (_placementType == PlacementType::Tunnel) {
+			TickLineDrag(cameraAtom, [&](WorldTile2 tile) {
+				return _gameInterface->IsPlayerTunnelBuildable(tile);
+			}, true);
+			return;
+		}
+		
 		TickLineDrag(cameraAtom, [&](WorldTile2 tile) {
 			return _gameInterface->IsPlayerRoadBuildable(tile);
 		});

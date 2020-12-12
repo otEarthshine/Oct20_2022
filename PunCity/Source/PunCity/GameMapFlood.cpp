@@ -165,6 +165,15 @@ void GameMapFlood::Tick()
 			RefreshRegionConnections(_regions64ToReset[i]);
 		}
 
+		for (int i = 0; i < _regions64ToReset.size(); i++) {
+			int32 region64Id = _regions64ToReset[i];
+			WorldRegion2 region00(Region64X(region64Id) * 2, Region64Y(region64Id) * 2);
+			_simulation->OnRefreshFloodGrid(region00);
+			_simulation->OnRefreshFloodGrid(WorldRegion2(region00.x + 1, region00.y));
+			_simulation->OnRefreshFloodGrid(WorldRegion2(region00.x, region00.y + 1));
+			_simulation->OnRefreshFloodGrid(WorldRegion2(region00.x + 1, region00.y + 1));
+		}
+
 		_regions64ToReset.clear();
 	}
 }

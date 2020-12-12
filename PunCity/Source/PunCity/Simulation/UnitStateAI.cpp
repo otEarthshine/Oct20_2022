@@ -186,6 +186,10 @@ void UnitStateAI::Update()
 				_simulation->AddEventLogF(_playerId, FString::Printf(TEXT("%s died from sickness"), ToTChar(GetUnitName())), true);
 				_simulation->statSystem(_playerId).AddStat(SeasonStatEnum::DeathSick);
 				_simulation->soundInterface()->Spawn2DSound("UI", "DeathBell", _playerId);
+
+				if (_simulation->IsAIPlayer(_playerId)) {
+					_LOG(PunAI, "%s Death Sickness", _simulation->AIPrintPrefix(_playerId));
+				}
 				
 				Die();
 				return;
@@ -228,6 +232,11 @@ void UnitStateAI::Update()
 				_simulation->AddEventLog(_playerId, GetUnitName() + " left your town (homeless).", true);
 
 				_simulation->soundInterface()->Spawn2DSound("UI", "DeathBell", _playerId);
+
+				if (_simulation->IsAIPlayer(_playerId)) {
+					_LOG(PunAI, "%s Left Homeless", _simulation->AIPrintPrefix(_playerId));
+				}
+				
 				Die();
 				return;
 			}
@@ -292,11 +301,19 @@ void UnitStateAI::Update()
 							_simulation->AddEventLogF(_playerId, FString::Printf(TEXT("%s died from starvation"), ToTChar(GetUnitName())), true);
 							_simulation->statSystem(_playerId).AddStat(SeasonStatEnum::DeathStarve);
 						}
+
+						if (_simulation->IsAIPlayer(_playerId)) {
+							_LOG(PunAI, "%s Died Starving", _simulation->AIPrintPrefix(_playerId));
+						}
 					}
 					else 
 					{
 						_simulation->AddEventLogF(_playerId, FString::Printf(TEXT("%s died from cold"), ToTChar(GetUnitName())), true);
 						_simulation->statSystem(_playerId).AddStat(SeasonStatEnum::DeathCold);
+
+						if (_simulation->IsAIPlayer(_playerId)) {
+							_LOG(PunAI, "%s Died Cold", _simulation->AIPrintPrefix(_playerId));
+						}
 					}
 					
 					_simulation->soundInterface()->Spawn2DSound("UI", "DeathBell", _playerId);
@@ -627,15 +644,14 @@ void UnitStateAI::CalculateActions()
 
 	if (TryStoreAnimalInventory()) return;
 
+	// Wild Animal: No Home
 	if (IsWildAnimalNoHome(unitEnum())) 
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUnitCalcWildNoHome);
 
-		// Find food only if already in home province
-		if (_simulation->GetProvinceIdClean(unitTile()) == _homeProvinceId)
-		{
-			if (TryFindWildFood(false)) return;
-		}
+		if (TryGoHomeProvince()) return;
+
+		if (TryFindWildFood()) return;
 
 		_unitState = UnitState::Idle;
 		int32 waitTicks = Time::TicksPerSecond * (GameRand::Rand() % 3 + 4);
@@ -647,9 +663,9 @@ void UnitStateAI::CalculateActions()
 	else if (IsDomesticatedAnimal(unitEnum()))
 	{
 		// Only find food within 16 radius since ranch is 16x16
-		if (TryFindWildFood(false, 16)) {
-			return;
-		}
+		//if (TryFindWildFood(false, 16)) {
+		//	return;
+		//}
 		
 		_unitState = UnitState::Idle;
 		int32 waitTicks = 60 * (GameRand::Rand() % 3 + 4);
@@ -664,6 +680,7 @@ void UnitStateAI::CalculateActions()
 
 		AddDebugSpeech("(Success)Idle MoveRandomly");
 	}
+	// Wild Animal: With Home
 	else if (IsAnimalWithHome(unitEnum()))
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUnitCalcWildHome);
@@ -682,7 +699,7 @@ void UnitStateAI::CalculateActions()
 			}
 		}
 
-		if (TryFindWildFood(false)) {
+		if (TryFindWildFood()) {
 			return;
 		}
 		
@@ -838,6 +855,7 @@ bool UnitStateAI::TryGoNearbyHome()
 
 	WorldTile2 houseGate = _simulation->gateTile(homeId);
 
+	DEBUG_ISCONNECTED_VAR(TryGoNearbyHome);
 	if (_simulation->IsConnected(unitTile(), houseGate, 0, IsIntelligentUnit(unitEnum()))) {
 		AddDebugSpeech("(Failed)TryGoNearbyHome: already same flood region as home");
 		return false;
@@ -956,39 +974,11 @@ bool UnitStateAI::TryStockBurrowFood()
 		return false;
 	}
 
-	//TreeSystem& treeSystem = _simulation->treeSystem();
-	//NonWalkableTileAccessInfo treeAccessInfo = treeSystem.FindNearestUnreservedFruitTree(unitTile(), 32, unitMaxFloodDistance(), IsIntelligentUnit(unitEnum()));
+	
 
-	//// TODO: animal TryStoreFood???
-
-	//if (treeAccessInfo.isValid()) {
-	//	ReserveTreeTile(treeAccessInfo.tile.tileId());
-
-	//	WorldTile2 gateTile = _simulation->building(_houseId).gateTile();
-
-	//	_actions.push_back(bind(&UnitStateAI::DropoffFoodAnimal, this));
-
-	//	// Need this since we only checked unit-tree, not burrow-tree
-	//	// MoveToHarder if IsConnected isn't true 
-	//	// TODO: resolve this without MoveToRobust...
-	//	if (_simulation->IsConnected(treeAccessInfo.nearbyTile, gateTile, unitMaxFloodDistance(), IsIntelligentUnit(unitEnum()))) {
-	//		_actions.push_back(bind(&UnitStateAI::MoveTo, this, gateTile));
-	//	}
-	//	else {
-	//		_actions.push_back(bind(&UnitStateAI::MoveToRobust, this, gateTile));
-	//	}
-
-	//	_actions.push_back(bind(&UnitStateAI::GatherFruit, this, treeAccessInfo.tile));
-	//	_actions.push_back(bind(&UnitStateAI::Wait, this, 120));
-	//	_actions.push_back(bind(&UnitStateAI::MoveToward, this, treeAccessInfo.tile.worldAtom2(), 4000)); // 4000 or 0.4 fraction so that the unit won't step into unwalkable tile
-	//	_actions.push_back(bind(&UnitStateAI::MoveTo, this, treeAccessInfo.nearbyTile));
-
-	//	_unitState = UnitState::Gather;
-	//	AddDebugSpeech("(Success)TryStockBurrowFood:");
-	//	return true;
-	//}
-
-	WorldTile2 fullBushTile = treeSystem().FindNearestUnreservedFullBush(unitTile(), boarBurrow.gateTile().region(), unitMaxFloodDistance(), false);
+	auto& provinceSys = _simulation->provinceSystem();
+	
+	WorldTile2 fullBushTile = treeSystem().FindNearestUnreservedFullBush(unitTile(), provinceSys.GetRegionOverlaps(_homeProvinceId), GameConstants::MaxFloodDistance_AnimalFar, false);
 	if (fullBushTile.isValid()) 
 	{
 		PUN_CHECK2(treeSystem().isBushReadyForHarvest(fullBushTile.tileId()), "readyForHarvest:" + to_string(treeSystem().isBushReadyForHarvest(fullBushTile.tileId())) + 
@@ -1003,7 +993,8 @@ bool UnitStateAI::TryStockBurrowFood()
 		// Need this since we only checked unit-tree, not burrow-tree
 		// MoveToHarder if IsConnected isn't true 
 		// TODO: resolve this without MoveToRobust...
-		if (_simulation->IsConnected(fullBushTile, gateTile, unitMaxFloodDistance(), IsIntelligentUnit(unitEnum()))) {
+		DEBUG_ISCONNECTED_VAR(TryStockBurrowFood);
+		if (_simulation->IsConnected(fullBushTile, gateTile, GameConstants::MaxFloodDistance_AnimalFar, IsIntelligentUnit(unitEnum()))) {
 			Add_MoveTo(gateTile);
 		} else {
 			Add_MoveToRobust(gateTile);
@@ -1034,16 +1025,17 @@ bool UnitStateAI::TryStockBurrowFood()
 
 bool UnitStateAI::TryStoreAnimalInventory()
 {
+	if (_houseId == -1) {
+		AddDebugSpeech("(Failed)TryStoreAnimalInventory: No Home");
+		return false;
+	}
+	
 	// Free inventory
 	if (!_inventory.hasResource()) {
 		AddDebugSpeech("(Failed)TryStoreAnimalInventory: No Inventory");
 		return false;
 	}
 
-	if (_houseId == -1) {
-		AddDebugSpeech("(Succeed)TryStoreAnimalInventory: No Home");
-		return false;
-	}
 	WorldTile2 houseTile = _simulation->building(_houseId).gateTile();
 
 	// May be home is no longer valid, in that case abandon it...
@@ -1064,6 +1056,35 @@ bool UnitStateAI::TryStoreAnimalInventory()
 	_simulation->soundInterface()->SpawnAnimalSound(unitEnum(), false, unitAtom());
 
 	AddDebugSpeech("(Success)TryStoreAnimalInventory:");
+	return true;
+}
+
+bool UnitStateAI::TryGoHomeProvince()
+{
+	if (_homeProvinceId == -1) {
+		AddDebugSpeech("(Failed)TryGoHomeProvince: No Home province");
+		return false;
+	}
+
+	// Find food only if already in home province
+	if (_simulation->GetProvinceIdClean(unitTile()) == _homeProvinceId)
+	{
+		AddDebugSpeech("(Failed)TryGoHomeProvince: Already at home province");
+		return false;
+	}
+
+	const int tries = 10;
+	WorldTile2 uTile = unitTile();
+	WorldTile2 end = _simulation->GetProvinceRandomTile(_homeProvinceId, uTile, GameConstants::MaxFloodDistance_AnimalFar, false, tries);
+
+	// Whatever, just wait a bit to try again..
+	if (end == WorldTile2::Invalid) {
+		AddDebugSpeech("(Failed)TryGoHomeProvince: Can't find walkable spot in 10 tiles");
+		return false;
+	}
+
+	AddDebugSpeech("(Success)TryGoHomeProvince: Transfer to MoveTo " + uTile.ToString() + end.ToString());
+	Add_MoveTo(end, GameConstants::MaxFloodDistance_AnimalFar);
 	return true;
 }
 
@@ -1155,7 +1176,7 @@ bool UnitStateAI::TryAvoidOthers()
 	return false;
 }
 
-bool UnitStateAI::TryFindWildFood(bool getFruit, int32 radius)
+bool UnitStateAI::TryFindWildFood()
 {
 	SCOPE_CYCLE_COUNTER(STAT_PunUnitCalcFindWildFood);
 	
@@ -1165,30 +1186,30 @@ bool UnitStateAI::TryFindWildFood(bool getFruit, int32 radius)
 		return false;
 	}
 
-	if (getFruit)
-	{
-		// Prefer fruit the most...
-		NonWalkableTileAccessInfo treeAccessInfo = treeSystem().FindNearestUnreservedFruitTree(unitTile(), unitTile(), radius, GameConstants::MaxFloodDistance_Animal, IsIntelligentUnit(unitEnum()));
-		if (treeAccessInfo.isValid()) {
-			WorldTile2 treeTile = treeAccessInfo.tile;
-			ReserveTreeTile(treeTile.tileId());
-			ResourceEnum fruitEnum = treeSystem().tileInfo(treeTile.tileId()).fruitResourceBase100.resourceEnum;
+	//if (getFruit)
+	//{
+	//	// Prefer fruit the most...
+	//	NonWalkableTileAccessInfo treeAccessInfo = treeSystem().FindNearestUnreservedFruitTree(unitTile(), unitTile(), radius, GameConstants::MaxFloodDistance_Animal, IsIntelligentUnit(unitEnum()));
+	//	if (treeAccessInfo.isValid()) {
+	//		WorldTile2 treeTile = treeAccessInfo.tile;
+	//		ReserveTreeTile(treeTile.tileId());
+	//		ResourceEnum fruitEnum = treeSystem().tileInfo(treeTile.tileId()).fruitResourceBase100.resourceEnum;
 
-			Add_Eat(fruitEnum);
-			Add_Wait(30);
-			Add_GatherFruit(treeAccessInfo.tile);
-			Add_Wait(120);
-			Add_MoveToward(treeAccessInfo.tile.worldAtom2(), 5000); //TODO: try 40000?
-			Add_MoveTo(treeAccessInfo.nearbyTile);
+	//		Add_Eat(fruitEnum);
+	//		Add_Wait(30);
+	//		Add_GatherFruit(treeAccessInfo.tile);
+	//		Add_Wait(120);
+	//		Add_MoveToward(treeAccessInfo.tile.worldAtom2(), 5000); //TODO: try 40000?
+	//		Add_MoveTo(treeAccessInfo.nearbyTile);
 
-			_unitState = UnitState::GetWildFood;
+	//		_unitState = UnitState::GetWildFood;
 
-			_simulation->soundInterface()->SpawnAnimalSound(unitEnum(), false, unitAtom());
+	//		_simulation->soundInterface()->SpawnAnimalSound(unitEnum(), false, unitAtom());
 
-			AddDebugSpeech("(Success)TryFindWildFood: Fruit");
-			return true;
-		}
-	}
+	//		AddDebugSpeech("(Success)TryFindWildFood: Fruit");
+	//		return true;
+	//	}
+	//}
 
 
 	// Search region..
@@ -1206,11 +1227,11 @@ bool UnitStateAI::TryFindWildFood(bool getFruit, int32 radius)
 	//}
 	//PUN_CHECK(WorldTile2::Distance(searchRegion.centerTile(), unitTile()) < 300);
 
-	WorldRegion2 searchRegion = unitTile().region();
+	auto& provinceSys = _simulation->provinceSystem();
 
-	
+	//WorldRegion2 searchRegion = unitTile().region();
 
-	WorldTile2 bushTile = treeSystem().FindNearestUnreservedFullBush(unitTile(), searchRegion, GameConstants::MaxFloodDistance_Animal, IsIntelligentUnit(unitEnum()));
+	WorldTile2 bushTile = treeSystem().FindNearestUnreservedFullBush(unitTile(), provinceSys.GetRegionOverlaps(_homeProvinceId), GameConstants::MaxFloodDistance_Animal, IsIntelligentUnit(unitEnum()));
 	if (bushTile.isValid()) 
 	{
 		ReserveTreeTile(bushTile.tileId());
@@ -1803,7 +1824,10 @@ void UnitStateAI::MoveRandomly()
 	const int tries = 10;
 	WorldTile2 end = WorldTile2::Invalid;
 	bool canWalk = false;
-	for (int i = 0; i < tries; i++) {
+	for (int i = 0; i < tries; i++) 
+	{
+		DEBUG_ISCONNECTED_VAR(MoveRandomly);
+		
 		end = area.RandomTile();
 		if (_simulation->IsConnected(tile, end, 1, IsIntelligentUnit(unitEnum()))) { // MoveRandomly is not critical, so give it just 1 flood range to make it less likely to overload PathAI
 			AddDebugSpeech("(-)MoveRandomly: Found on first loop" + tile.ToString() + end.ToString());
@@ -1818,6 +1842,8 @@ void UnitStateAI::MoveRandomly()
 			for (int16_t y = area.minY; y <= area.maxY; y++) { // Faster loop
 				for (int16_t x = area.minX; x <= area.maxX; x++)
 				{
+					DEBUG_ISCONNECTED_VAR(JustBruteIt);
+					
 					end = WorldTile2(x, y);
 					if (_simulation->IsConnected(tile, end, 1, IsIntelligentUnit(unitEnum()))) {
 						AddDebugSpeech("(-)MoveRandomly: Can't find walkable spot in 10 tiles" + tile.ToString() + end.ToString());
@@ -1863,6 +1889,9 @@ void UnitStateAI::MoveRandomlyPerlin()
 	bool canWalk = false;
 	for (int i = 0; i < tries; i++) {
 		end = area.RandomTile();
+
+		DEBUG_ISCONNECTED_VAR(MoveRandomlyPerlin);
+		
 		if (_simulation->IsConnected(tile, end, 1, IsIntelligentUnit(unitEnum()))) { // MoveRandomly is not critical, so give it just 1 flood range to make it less likely to overload PathAI
 			AddDebugSpeech("(-)MoveRandomlyPerlin: Found on first loop" + tile.ToString() + end.ToString());
 			canWalk = true;

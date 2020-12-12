@@ -115,7 +115,12 @@ public:
 	{
 		_cardHandQueueCount++;
 
-		TryRefreshCardHand();
+		// Show hand if not already done so
+		if (_isCardStackBlank) {
+			_rerollCountThisRound = 0;
+			_alreadyBoughtCardThisRound = false;
+			RollHand(handSize());
+		}
 	}
 
 	int32 cardHandQueueCount() { return _cardHandQueueCount; }
@@ -123,17 +128,14 @@ public:
 	{
 		_cardHandQueueCount = std::max(0, _cardHandQueueCount - 1);
 
-		TryRefreshCardHand();
-	}
-
-	
-	void TryRefreshCardHand()
-	{
-		// Show hand if not already done so
-		if (_isCardStackBlank) {
+		if (_cardHandQueueCount > 0) {
 			_rerollCountThisRound = 0;
 			_alreadyBoughtCardThisRound = false;
-			RollHand(handSize());
+			RollHand(handSize(), true);
+		}
+		
+		if (_cardHandQueueCount == 0) {
+			SetCardStackBlank(true);
 		}
 	}
 	

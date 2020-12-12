@@ -219,17 +219,20 @@ public:
 
 		for (int32 i = 0; i < _resourceTargets.size(); i++) 
 		{
-			queuedResourceAllowed[i] = true;
-			
 			ResourceEnum resourceEnum = static_cast<ResourceEnum>(i);
 			if (IsFoodEnum(resourceEnum) ||
 				IsFuelEnum(resourceEnum)) {
 				_resourceTargets[i] = 150;
+				queuedResourceAllowed[i] = true;
 			}
-			if (IsMedicineEnum(resourceEnum) ||
+			else if (IsMedicineEnum(resourceEnum) ||
 				IsToolsEnum(resourceEnum) ||
 				IsLuxuryEnum(resourceEnum)) {
 				_resourceTargets[i] = 70;
+				queuedResourceAllowed[i] = true;
+			}
+			else {
+				queuedResourceAllowed[i] = false;
 			}
 		}
 		

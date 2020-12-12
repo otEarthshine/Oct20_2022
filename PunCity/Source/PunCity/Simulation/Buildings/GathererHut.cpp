@@ -44,7 +44,24 @@ void Farm::OnInit()
 	// AI case, they don't buy seeds
 	else
 	{
-		currentPlantEnum = GameRand::Rand() % 2 == 0 ?  TileObjEnum::WheatBush : TileObjEnum::Cabbage;
+		currentPlantEnum = GameRand::Rand() % 2 == 0 ? TileObjEnum::WheatBush : TileObjEnum::Cabbage;
+		
+		// Medicine farm count
+		// 1 medicine farm per 50 ppl (2 herbs per year)
+		const int32 citizensPerMedicineFarm = 50;
+		const std::vector<int32>& farmIds = _simulation->buildingIds(_playerId, CardEnum::Farm);
+		if (farmIds.size() >= 4) // 5th farm is the medicine
+		{
+			int32 medicineFarmCount = 0;
+			for (int32 farmId : farmIds) {
+				if (_simulation->building<Farm>(farmId).currentPlantEnum == TileObjEnum::Herb) {
+					medicineFarmCount++;
+				}
+			}
+			if (citizensPerMedicineFarm * medicineFarmCount < _simulation->population(_playerId)) {
+				currentPlantEnum = TileObjEnum::Herb;
+			}
+		}
 	}
 }
 
@@ -59,7 +76,8 @@ void Farm::FinishConstruction()
 
 	_isTileWorked.resize(totalFarmTiles(), false);
 
-	_fertility = GetAverageFertility(area(), _simulation);
+	RefreshFertility();
+	//_fertility = GetAverageFertility(area(), _simulation);
 }
 
 bool Farm::NoFarmerOnTileId(int32_t farmTileId) {
@@ -170,11 +188,11 @@ void Farm::UnreserveFarmTile(int32_t unitId, WorldTile2 tile) {
 
 void Farm::DoFarmWork(int32_t unitId, WorldTile2 tile, FarmStage farmStage)
 {
-	// TODO: solve this properly...
-	if (farmStage != _farmStage) {
-		return;
-	}
-	PUN_CHECK2(farmStage == _farmStage, debugStr());
+	// TODO: solve this properly ???
+	//if (farmStage != _farmStage) {
+	//	return;
+	//}
+	//PUN_CHECK2(farmStage == _farmStage, debugStr());
 
 
 	auto& treeSystem = _simulation->treeSystem();
@@ -609,6 +627,8 @@ void Colony::TickRound()
 
 			if (resourceCount > 0) {
 				resourceSystem().AddResourceGlobal(resourceEnum, resourceCount, *_simulation);
+				AddProductionStat(ResourcePair(resourceEnum, resourceCount));
+				
 				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainResource, centerTile(), "+" + to_string(resourceCount), resourceEnum);
 			}
 		}

@@ -223,35 +223,35 @@ void AGameManager::InitPhase2()
 	 */
 
 #if DISPLAY_UNIT
-	_unitDisplaySystem->Init(unitSystem.unitCount(), this, _assetLoader);
+	_unitDisplaySystem->Init(unitSystem.unitCount(), this, _assetLoader, 0);
 #endif
 	
 #if DISPLAY_BUILDING
-	_buildingDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader);
+	_buildingDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader, 150);
 #endif
 
 #if DISPLAY_MINIBUILDING
-	_miniBuildingDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader);
+	_miniBuildingDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader, 206);
 #endif
 
 #if DISPLAY_TERRAIN
-	_regionDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader);
-	_terrainLargeDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader);
+	_regionDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader, 75);
+	_terrainLargeDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader, 22);
 #endif
 
-	_debugDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader);
+	_debugDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader, 390);
 	//_landmarkDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader);
 
 #if DISPLAY_REGIONDECAL
-	_decalDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader);
+	_decalDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader, 206);
 #endif
 
 #if DISPLAY_RESOURCE
-	_resourceDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader);
+	_resourceDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader, 150);
 #endif
 
 #if DISPLAY_TERRITORY
-	_territoryDisplaySystem->Init(0, this, _assetLoader);
+	_territoryDisplaySystem->Init(0, this, _assetLoader, 0);
 #endif
 
 	_snowParticles->SetTemplate(_assetLoader->snowParticles); // Trailer blizzard
@@ -265,11 +265,11 @@ void AGameManager::InitPhase2()
 												worldMapSizeX, worldMapSizeX * 2, GetMapSettings().mapSizeEnum(), _assetLoader);
 	_terrainMap->InitAnnotations();
 
-	_worldMap->Init(GameMapConstants::TotalRegions, this, _assetLoader);
+	_worldMap->Init(GameMapConstants::TotalRegions, this, _assetLoader, 0);
 #endif
 
 #if DISPLAY_TILEOBJ
-	_tileDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader);
+	_tileDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader, 206);
 #endif
 
 	_buildingMeshesList.Init(this);
@@ -785,7 +785,7 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 		{
 #if DISPLAY_UNIT
 			SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnit);
-			SCOPE_TIMER_FILTER(5000, "Tick Unit -");
+			SCOPE_TIMER_FILTER(5000, "** Tick Unit -");
 			
 			bool displayUnits = PunSettings::IsOn("DisplayUnits") && zoomDistance < WorldZoomTransition_Unit;
 			_unitDisplaySystem->Display(displayUnits ? _sampleRegionIds : noSample);
@@ -800,7 +800,7 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 #if DISPLAY_BUILDING
 			{
 				SCOPE_CYCLE_COUNTER(STAT_PunDisplayBuilding);
-				SCOPE_TIMER_FILTER(5000, "Tick Building -");
+				SCOPE_TIMER_FILTER(5000, "** Tick Building -");
 
 				_buildingDisplaySystem->Display(displayBuildings ? _sampleRegionIds : noSample);
 			}
@@ -816,7 +816,7 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 			
 			{
 				SCOPE_CYCLE_COUNTER(STAT_PunDisplayMiniBuilding);
-				SCOPE_TIMER_FILTER(5000, "Tick MiniBuilding -");
+				SCOPE_TIMER_FILTER(5000, "** Tick MiniBuilding -");
 				
 				_miniBuildingDisplaySystem->Display(displayMiniBuildings ? _sampleRegionIds : noSample);
 			}
@@ -828,13 +828,19 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 			if (PunSettings::IsOn("DisplayRegions"))
 			{
 				SCOPE_CYCLE_COUNTER(STAT_PunDisplayRegion);
-				SCOPE_TIMER_FILTER(5000, "Tick Region - zoom:%f trans:%f bouncing:%d", smoothZoomDistance, WorldZoomTransition_RegionToRegion4x4, isBounceZooming);
+				SCOPE_TIMER_FILTER(5000, "** Tick Region - zoom:%f trans:%f bouncing:%d", smoothZoomDistance, WorldZoomTransition_RegionToRegion4x4, isBounceZooming);
 				
 				if (smoothZoomDistance < WorldZoomTransition_RegionToRegion4x4_Mid ||
 					PunSettings::TrailerSession)
 				{
 					_regionDisplaySystem->BeforeDisplay(false);
-					_regionDisplaySystem->Display(_sampleRegionIds);
+
+					{
+						//SCOPE_TIMER_FILTER(1000, "Tick Region Display");
+						_regionDisplaySystem->Display(_sampleRegionIds);
+					}
+					
+					//_regionDisplaySystem->AfterDisplay();
 				}
 				else {
 					_regionDisplaySystem->Display(noSample);
@@ -848,10 +854,11 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 			if (PunSettings::IsOn("DisplayRegions4x4"))
 			{
 				SCOPE_CYCLE_COUNTER(STAT_PunDisplayRegion);
-				SCOPE_TIMER_FILTER(5000, "Tick Region4x4 - zoom:%f trans:%f bouncing:%d", smoothZoomDistance, WorldZoomTransition_RegionToRegion4x4, isBounceZooming);
+				SCOPE_TIMER_FILTER(5000, "** Tick Region4x4 - zoom:%f trans:%f bouncing:%d", smoothZoomDistance, WorldZoomTransition_RegionToRegion4x4, isBounceZooming);
 
 				// Terrain large is 4x4 regions
-				auto displayNormally = [&]() {
+				auto displayNormally = [&]()
+				{
 					std::vector<int32> sampleNearRegionIds4x4;
 					for (int32 regionId : _sampleRegionIds) {
 						WorldRegion2 region(regionId);
@@ -859,6 +866,8 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 					}
 
 					_terrainLargeDisplaySystem->Display(sampleNearRegionIds4x4);
+
+					
 				};
 				
 				if (PunSettings::TrailerSession) {
@@ -900,7 +909,7 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 		{
 #if DISPLAY_REGIONDECAL
 			SCOPE_CYCLE_COUNTER(STAT_PunDisplayLandmark);
-			SCOPE_TIMER_FILTER(5000, "Tick Decals -");
+			SCOPE_TIMER_FILTER(5000, "** Tick Decals -");
 			
 			bool displayRegionDecal = PunSettings::IsOn("DisplayDecals") && zoomDistance < WorldToMapZoomAmount;
 			if (PunSettings::TrailerMode()) {
@@ -913,7 +922,7 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 		{
 #if DISPLAY_TILEOBJ
 			SCOPE_CYCLE_COUNTER(STAT_PunDisplayTree);
-			SCOPE_TIMER_FILTER(5000, "Tick TileObj -");
+			SCOPE_TIMER_FILTER(5000, "** Tick TileObj -");
 
 			bool isOn = PunSettings::IsOn("DisplayTiles");
 			bool isZoomedAllTheWayOut = zoomDistance > WorldZoomTransition_Tree;
@@ -937,7 +946,7 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 				_tileDisplaySystem->Display(displayTileObj ? _sampleRegionIds : noSample);
 			}
 			
-			_tileDisplaySystem->AfterDisplay();
+			//_tileDisplaySystem->AfterDisplay();
 #endif
 		}
 

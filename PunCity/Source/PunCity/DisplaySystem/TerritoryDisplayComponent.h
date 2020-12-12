@@ -49,9 +49,9 @@ class UTerritoryDisplayComponent : public UDisplaySystemComponent
 {
 	GENERATED_BODY()
 public:
-	void Init(int size, TScriptInterface<IDisplaySystemDataSource> gameManager, UAssetLoaderComponent* assetLoader) final
+	void Init(int size, TScriptInterface<IDisplaySystemDataSource> gameManager, UAssetLoaderComponent* assetLoader, int32 initialPoolSize) final
 	{
-		UDisplaySystemComponent::Init(size, gameManager, assetLoader);
+		UDisplaySystemComponent::Init(size, gameManager, assetLoader, initialPoolSize);
 
 		// Make region border decal
 		//auto decal = NewObject<UDecalComponent>(this);

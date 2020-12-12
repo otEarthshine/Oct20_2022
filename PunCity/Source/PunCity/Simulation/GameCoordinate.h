@@ -649,6 +649,17 @@ struct TileArea
 	WorldTile2 corner01() const { return WorldTile2(minX, maxY); }
 	WorldTile2 corner10() const { return WorldTile2(maxX, minY); }
 	WorldTile2 corner11() const { return WorldTile2(maxX, maxY); }
+
+	WorldTile2 corner(int32 index)
+	{
+		switch(index)
+		{
+		case 0: return corner00();
+		case 1: return corner01();
+		case 2: return corner10();
+		default: return corner11();
+		}
+	}
 	
 	TileArea(WorldTile2 start, int16_t distanceAway);
 	
@@ -675,6 +686,10 @@ struct TileArea
 	bool HasTile(WorldTile2 tile) {
 		return minX <= tile.x && tile.x <= maxX &&
 				minY <= tile.y && tile.y <= maxY;
+	}
+
+	TileArea Move(int16 x, int16 y) {
+		return TileArea(minX + x, minY + y, maxX + x, maxY + y);
 	}
 
 	WorldAtom2 trueCenterAtom() {
@@ -731,6 +746,16 @@ struct TileArea
 		}
 	}
 
+	template<typename Functor>
+	void ExecuteOnAreaSkip4_WorldTile2(Functor functor) const {
+		for (int16 y = minY; y <= maxY; y += 4) { // Faster loop
+			for (int16 x = minX; x <= maxX; x += 4) {
+				functor(WorldTile2(x, y));
+			}
+		}
+	}
+	
+
 	template<class Functor>
 	bool ExecuteOnAreaWithExit_WorldTile2(Functor shouldExitFunctor) {
 		for (int16_t y = minY; y <= maxY; y++) { // Faster loop
@@ -762,6 +787,41 @@ struct TileArea
 		}
 		return false;
 	}
+
+	// Border
+	template<typename Functor>
+	bool ExecuteOnBorderWithExit_WorldTile2(Functor functor) const {
+		for (int16 y = minY + 1; y <= maxY - 1; y++) { // Faster loop
+			if (functor(WorldTile2(minX, y))) {
+				return true;
+			}
+			if (functor(WorldTile2(maxX, y))) {
+				return true;
+			}
+		}
+		for (int16 x = minX; x <= maxX; x++) {
+			if (functor(WorldTile2(x, minY))) {
+				return true;
+			}
+			if (functor(WorldTile2(x, maxY))) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	template<typename Functor>
+	void ExecuteOnBorder_WorldTile2(Functor functor) const {
+		for (int16 y = minY + 1; y <= maxY - 1; y++) { // Faster loop
+			functor(WorldTile2(minX, y));
+			functor(WorldTile2(maxX, y));
+		}
+		for (int16 x = minX; x <= maxX; x++) {
+			functor(WorldTile2(x, minY));
+			functor(WorldTile2(x, maxY));
+		}
+	}
+	
 
 	std::vector<WorldRegion2> GetOverlapRegions(bool isSmallArea) const {
 		return isSmallArea ? GetOverlapRegionsSmallArea() : GetOverlapRegions();

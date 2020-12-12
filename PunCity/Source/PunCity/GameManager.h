@@ -110,6 +110,20 @@ public:
 
 	class ADirectionalLight* directionalLight() { return _directionalLight; }
 
+	void PrintMeshPoolCount() {
+		PUN_LOG("PrintMeshPoolCount _buildingDisplaySystem:%d", _buildingDisplaySystem->meshPoolCount());
+		PUN_LOG("PrintMeshPoolCount _miniBuildingDisplaySystem:%d", _miniBuildingDisplaySystem->meshPoolCount());
+		PUN_LOG("PrintMeshPoolCount _regionDisplaySystem:%d", _regionDisplaySystem->meshPoolCount());
+		PUN_LOG("PrintMeshPoolCount _terrainLargeDisplaySystem:%d", _terrainLargeDisplaySystem->meshPoolCount());
+		PUN_LOG("PrintMeshPoolCount _buildingDisplaySystem:%d", _buildingDisplaySystem->meshPoolCount());
+
+		PUN_LOG("PrintMeshPoolCount _debugDisplaySystem:%d", _debugDisplaySystem->meshPoolCount());
+		PUN_LOG("PrintMeshPoolCount _decalDisplaySystem:%d", _decalDisplaySystem->meshPoolCount());
+		PUN_LOG("PrintMeshPoolCount _resourceDisplaySystem:%d", _resourceDisplaySystem->meshPoolCount());
+		PUN_LOG("PrintMeshPoolCount _worldMap:%d", _worldMap->meshPoolCount());
+		PUN_LOG("PrintMeshPoolCount _tileDisplaySystem:%d", _tileDisplaySystem->meshPoolCount());
+	}
+
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) USceneComponent* _root;
 
@@ -500,6 +514,18 @@ public:
 	bool IsIntercityRoadBuildable(WorldTile2 tile) const {
 		return GameMap::IsInGrid(tile) &&
 				_simulation->IsFrontBuildable(tile) ||
+				_simulation->IsCritterBuilding(tile);
+	}
+
+	bool IsPlayerTunnelBuildable(WorldTile2 tile) const final {
+		if (!GameMap::IsInGrid(tile)) {
+			return false;
+		}
+		int32 tileOwner = _simulation->tileOwner(tile);
+		if (tileOwner != -1 && tileOwner != _playerId) {
+			return false;
+		}
+		return  _simulation->IsFrontBuildable(tile) ||
 				_simulation->IsCritterBuilding(tile);
 	}
 	

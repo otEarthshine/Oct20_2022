@@ -42,6 +42,8 @@ public:
 	virtual bool IsPlayerFrontBuildable(WorldTile2 tile) const = 0;
 	virtual bool IsPlayerRoadBuildable(WorldTile2 tile) const = 0;
 
+	virtual bool IsPlayerTunnelBuildable(WorldTile2 tile) const = 0;
+
 	virtual GeoresourceNode RegionGeoresource(WorldRegion2 region) = 0;
 
 	virtual void ResizeDisplaySystemBuildingIds(int newSize) = 0;

@@ -202,16 +202,43 @@ public:
 	void AddResourceGlobal(int32 playerId, ResourceEnum resourceEnum, int32 amount) final {
 		resourceSystem(playerId).AddResourceGlobal(resourceEnum, amount, *this);
 	}
+
+	bool IsOutputTargetReached(int32 playerId, ResourceEnum resourceEnum) final {
+		if (resourceEnum == ResourceEnum::None) {
+			return false;
+		}
+		int32 outputTarget = playerOwned(playerId).GetOutputTarget(resourceEnum);
+		return outputTarget != -1 && resourceSystem(playerId).resourceCountWithPop(resourceEnum) >= outputTarget;
+	}
+	bool IsFarBelowOutputTarget(int32 playerId, ResourceEnum resourceEnum) {
+		if (resourceEnum == ResourceEnum::None) {
+			return false;
+		}
+		int32 outputTarget = playerOwned(playerId).GetOutputTarget(resourceEnum);
+		if (outputTarget == -1) {
+			return false;
+		}
+		int32 belowThreshold = std::min(outputTarget * 8 / 10, std::max(outputTarget - 20, 0));
+		return resourceSystem(playerId).resourceCountWithPop(resourceEnum) < belowThreshold;
+	}
 	
 
 	int32 aiStartIndex() final { return GameConstants::MaxPlayers; }
 	int32 aiEndIndex() final { return GameConstants::MaxPlayersAndAI - 1; }
-	bool IsAI(int32 playerId) final { return playerId >= GameConstants::MaxPlayers; }
+	bool IsAIPlayer(int32 playerId) final { return playerId >= GameConstants::MaxPlayers; }
 	//bool isAIPlayer(int32_t playerId) { return aiPlayerStartIndex() <= playerId && playerId <= aiPlayerEndIndex(); }
+
+	TCHAR* AIPrintPrefix(int32 aiPlayerId) final
+	{
+		std::stringstream ss;
+		ss << "[" << aiPlayerId << "_" << playerName(aiPlayerId) << "]";
+		return ToTChar(ss.str());
+	}
+	
 
 	void ChangeRelationshipModifier(int32 aiPlayerId, int32 towardPlayerId, RelationshipModifierEnum modifierEnum, int32 amount) final
 	{
-		if (IsAI(aiPlayerId)) {
+		if (IsAIPlayer(aiPlayerId)) {
 			aiPlayerSystem(aiPlayerId).ChangeRelationshipModifier(towardPlayerId, RelationshipModifierEnum::YouGaveUsGifts, amount / GoldToRelationship);
 		}
 	}
@@ -241,6 +268,30 @@ public:
 	int32 GetHouseLvlCount(int32 playerId, int32 houseLvl, bool includeHigherLvl) final {
 		return _buildingSystem->GetHouseLvlCount(playerId, houseLvl, includeHigherLvl);
 	}
+
+	std::pair<int32, int32> GetStorageCapacity(int32 playerId, bool includeUnderConstruction = false) final
+	{
+		std::vector<int32> storageIds = buildingIds(playerId, CardEnum::StorageYard);
+		CppUtils::AppendVec(storageIds, buildingIds(playerId, CardEnum::Warehouse));
+
+		int32 totalSlots = 0;
+		int32 usedSlots = 0;
+		for (int32 storageId : storageIds) {
+			Building& bld = building(storageId);
+			if (bld.isConstructed()) {
+				usedSlots += bld.subclass<StorageYard>().tilesOccupied();
+				totalSlots += bld.storageSlotCount();
+			}
+			else {
+				if (includeUnderConstruction) {
+					totalSlots += bld.storageSlotCount();
+				}
+			}
+		}
+		return std::pair<int32, int32>(usedSlots, totalSlots);
+	}
+
+	
 
 	int foodCount(int32 playerId) final {
 		int count = 0;
@@ -799,6 +850,32 @@ public:
 		return _floodSystem.IsConnected(start, end, maxRegionDistance);
 	}
 
+	// Cached Connected for human
+	bool IsConnectedBuilding(int32 buildingId, int32 playerId) final
+	{
+		PUN_CHECK(playerId != -1);
+		PUN_CHECK(buildingId != -1);
+
+		int8 isConnected = _buildingSystem->IsConnectedBuilding(buildingId);
+		PUN_CHECK(isConnected != -1);
+		return static_cast<bool>(isConnected);
+		
+		//if (buildingId >= _isBuildingIdConnected.size()) {
+		//	return false;
+		//}
+
+		//int8& isConnected = _isBuildingIdConnected[buildingId];
+		//if (isConnected == -1) {
+		//	isConnected = IsConnected(townhallGateTile(playerId), tile, GameConstants::MaxFloodDistance_HumanLogistics, true);
+		//}
+		//return static_cast<bool>(isConnected);
+	}
+
+	void OnRefreshFloodGrid(WorldRegion2 region) override {
+		_buildingSystem->OnRefreshFloodGrid(region);
+	}
+	
+
 	/*
 	 * Province
 	 */
@@ -979,7 +1056,7 @@ public:
 	//  - no battle at home
 	bool CanVassalizeOtherPlayers(int32 playerIdIn)
 	{
-		if (IsAI(playerIdIn)) { //TODO: this is for testing for now..
+		if (IsAIPlayer(playerIdIn)) { //TODO: this is for testing for now..
 			return true;
 		}
 		return IsResearched(playerIdIn, TechEnum::Vassalize) && 
@@ -987,7 +1064,7 @@ public:
 	}
 	bool CanConquerProvinceOtherPlayers(int32 playerIdIn)
 	{
-		if (IsAI(playerIdIn)) { //TODO: this is for testing for now..
+		if (IsAIPlayer(playerIdIn)) { //TODO: this is for testing for now..
 			return true;
 		}
 		return IsResearched(playerIdIn, TechEnum::Conquer) &&
@@ -1211,6 +1288,11 @@ public:
 	const std::vector<ProvinceConnection>& GetProvinceConnections(int32 provinceId) final {
 		return _provinceSystem.GetProvinceConnections(provinceId);
 	}
+
+	void AddTunnelProvinceConnections(int32 provinceId1, int32 provinceId2) final
+	{
+		_provinceSystem.AddTunnelProvinceConnection(provinceId1, provinceId2, TerrainTileType::None);
+	}
 	
 	/*
 	 * 
@@ -1282,6 +1364,7 @@ public:
 		}
 		bld.ClearOccupant();
 	}
+	
 	void RemoveTenantFrom(int32 buildingId) override
 	{
 		Building& bld = building(buildingId);
@@ -2112,6 +2195,9 @@ public:
 			Ar << _lastTickSnowAccumulation3;
 			Ar << _lastTickSnowAccumulation2;
 			Ar << _lastTickSnowAccumulation1;
+
+			// Others
+			
 
 			// Refresh Territory Display
 			for (size_t playerId = 0; playerId < _playerOwnedManagers.size(); playerId++) {

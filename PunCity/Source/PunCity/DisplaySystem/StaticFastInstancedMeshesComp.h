@@ -8,6 +8,28 @@
 
 #include "StaticFastInstancedMeshesComp.generated.h"
 
+struct MeshInstanceInfo
+{
+	FString meshName;
+	int32 key;
+	FTransform transform;
+	int32 state;
+	int32 objectId = -1;
+	bool castShadow = true;
+	bool isShadowOnly = false;
+};
+
+class FastInstancedMeshesData
+{
+public:
+	std::vector<MeshInstanceInfo> meshesToAdd;
+
+	void ClearAddQueue() { meshesToAdd.clear(); }
+	void Add(FString meshName, int32 key, FTransform transform, int32 state, int32 objectId = -1, bool castShadow = true, bool isShadowOnly = false) {
+		meshesToAdd.push_back({ meshName, key, transform, state, objectId, castShadow, isShadowOnly });
+	}
+};
+
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UStaticFastInstancedMeshesComp : public USceneComponent
@@ -22,6 +44,7 @@ public:
 	//  Contains all meshes, both active/inactive
 	//  Go through the pool searching for inactive to reuse meshes
 	UPROPERTY() TArray<UStaticFastInstancedMesh*> meshPool;
+	
 
 	UStaticFastInstancedMeshesComp() { PrimaryComponentTick.bCanEverTick = false; }
 
@@ -59,7 +82,22 @@ public:
 		//_castShadow = castShadow;
 	}
 
-	void Add(FString meshName, int32 key, FTransform transform, int32 state, int32 objectId = -1, bool castShadow = true, bool isShadowOnly = false) {
+	void BeforeAdd()
+	{
+		PUN_LOG("UStaticFastInstancedMeshesComp BeforeAdd %d", meshes.Num());
+		
+		for (auto& mesh : meshes) {
+			PUN_LOG(" Loop BeforeAdd %s value:%d", *mesh.Key, mesh.Value);
+			if (mesh.Value) {
+				PUN_LOG(" Loop BeforeAdd 2");
+				mesh.Value->BeforeBatchAdd();
+			}
+		}
+	}
+	void Add(FString meshName, int32 key, FTransform transform, int32 state, int32 objectId = -1, bool castShadow = true, bool isShadowOnly = false)
+	{
+		//return; // TODO: TEST TILEOBJ
+		
 		// PUN_LOG("FFastMesh.Add.Begin ticks:%d id:%d", TimeDisplay::Ticks(), key);
 		UStaticFastInstancedMesh* mesh = GetMesh(meshName);
 
@@ -74,8 +112,20 @@ public:
 		
 		//PUN_LOG("AddMesh: %s", *meshName);
 		mesh->Add(key, transform, state, objectId);
+		
 		// PUN_LOG("FFastMesh.Add.End ticks:%d id:%d", TimeDisplay::Ticks(), key);
 	}
+
+	// Pre-Add, then do the real addition later
+	void ExecuteAddQueue(const std::vector<MeshInstanceInfo>& meshesToAdd)
+	{
+		for (const MeshInstanceInfo& meshInfo : meshesToAdd) {
+			Add(meshInfo.meshName, meshInfo.key, meshInfo.transform, meshInfo.state, meshInfo.objectId, meshInfo.castShadow, meshInfo.isShadowOnly);
+		}
+	}
+	
+
+	
 
 	bool ContainsKey(FString meshName, int32 key) {
 		return GetMesh(meshName)->ContainsKey(key);

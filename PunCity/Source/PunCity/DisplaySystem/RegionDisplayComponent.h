@@ -41,9 +41,10 @@ public:
 		
 protected:
 	int CreateNewDisplay(int objectId) override;
+	
 	void OnSpawnDisplay(int objectId, int meshId, WorldAtom2 cameraAtom) override;
 	void UpdateDisplay(int objectId, int meshId, WorldAtom2 cameraAtom, bool justSpawned, bool justCreated) override;
-	void HideDisplay(int meshId, int32 regionId) override;
+	void HideDisplay(int32 meshId, int32 regionId) override;
 
 //private:
 //	void UpdateOverlayDisplay(int regionId, int meshId, OverlaySystem& overlaySystem);

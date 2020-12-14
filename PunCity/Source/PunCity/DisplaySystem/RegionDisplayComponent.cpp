@@ -252,14 +252,16 @@ void URegionDisplayComponent::AfterAdd()
 	}
 }
 
-void URegionDisplayComponent::HideDisplay(int meshId, int32 regionId)
+void URegionDisplayComponent::HideDisplay(int32 meshId, int32 regionId)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayTerrain);
 	
-	_waterMeshes[meshId]->SetVisibility(false);
+	_waterMeshes[meshId]->SetVisibility(false, true);
+	
 	_waterDecalMeshes[meshId]->SetVisibility(false);
 	
 	_terrainChunks[meshId]->SetVisibility(false);
+	_terrainChunks[meshId]->SetRelativeLocation(FVector(0, 0, -500)); // TODO: quickfix bug with pooling
 
 	_groundColliderMeshes[meshId]->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	_groundColliderMeshes[meshId]->ComponentTags.Empty();

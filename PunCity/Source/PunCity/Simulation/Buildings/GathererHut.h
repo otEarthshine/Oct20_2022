@@ -670,7 +670,7 @@ public:
 
 };
 
-class InventorsWorkshop final : public ConsumerIndustrialBuilding
+class InventorsWorkshop : public ConsumerIndustrialBuilding
 {
 public:
 	void FinishConstruction() final
@@ -696,6 +696,55 @@ public:
 
 		return bonuses;
 	}
+};
+
+class RegionShrine final : public ConsumerIndustrialBuilding
+{
+public:
+	void FinishConstruction() final
+	{
+		ConsumerIndustrialBuilding::FinishConstruction();
+
+		_upgrades = {
+
+		};
+	}
+
+	void PlayerTookOver(int32 playerId)
+	{
+		// Reset old workers
+		if (_playerId != -1) {
+			ResetWorkReservers();
+			_simulation->RemoveJobsFrom(buildingId(), false);
+			_simulation->PlayerRemoveJobBuilding(_playerId, *this, _isConstructed);
+		}
+
+		_playerId = playerId;
+		_simulation->PlayerAddJobBuilding(_playerId, *this, false);
+		SetJobBuilding(3);
+
+		OnInit();
+		InitStatistics();
+	}
+
+	std::vector<BonusPair> GetBonuses() override {
+		std::vector<BonusPair> bonuses = ConsumerIndustrialBuilding::GetBonuses();
+
+		return bonuses;
+	}
+
+	int32 productPerBatch() override {
+		return 5 * efficiency() / 100;
+	}
+
+	// Same amount of work required to acquire resources
+	int32 workManSecPerBatch100() final
+	{
+		const int32 value = 250; // 500 / 2
+		return value * 100 * 100 / WorkRevenue100PerSec_perMan_Base; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
+	}
+
+	int32 baseInputPerBatch() override { return 0; }
 };
 
 class Barrack final : public ConsumerIndustrialBuilding
@@ -1318,7 +1367,6 @@ public:
 	void OnUpgradeBuilding(int upgradeIndex) final {
 		if (upgradeIndex == 0) {
 			SetJobBuilding(3);
-			_simulation->playerOwned(_playerId).RefreshJobDelayed();
 		}
 	}
 };

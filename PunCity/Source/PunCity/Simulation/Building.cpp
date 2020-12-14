@@ -609,7 +609,8 @@ void Building::DoWork(int unitId, int workAmount100)
 				_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
 				return;
 			}
-			if (isEnum(CardEnum::InventorsWorkshop))
+			if (isEnum(CardEnum::InventorsWorkshop) ||
+				isEnum(CardEnum::RegionShrine))
 			{
 				_workDone100 = 0;
 				_filledInputs = false;
@@ -774,6 +775,10 @@ void Building::AddProductionStat(ResourcePair resource)
 		return;
 	}
 	if (isEnum(CardEnum::InventorsWorkshop)) {
+		_simulation->statSystem(_playerId).AddStat(SeasonStatEnum::Science, resource.count);
+		return;
+	}
+	if (isEnum(CardEnum::RegionShrine)) {
 		_simulation->statSystem(_playerId).AddStat(SeasonStatEnum::Science, resource.count);
 		return;
 	}

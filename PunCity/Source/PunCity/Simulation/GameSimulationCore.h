@@ -859,16 +859,6 @@ public:
 		int8 isConnected = _buildingSystem->IsConnectedBuilding(buildingId);
 		PUN_CHECK(isConnected != -1);
 		return static_cast<bool>(isConnected);
-		
-		//if (buildingId >= _isBuildingIdConnected.size()) {
-		//	return false;
-		//}
-
-		//int8& isConnected = _isBuildingIdConnected[buildingId];
-		//if (isConnected == -1) {
-		//	isConnected = IsConnected(townhallGateTile(playerId), tile, GameConstants::MaxFloodDistance_HumanLogistics, true);
-		//}
-		//return static_cast<bool>(isConnected);
 	}
 
 	void OnRefreshFloodGrid(WorldRegion2 region) override {

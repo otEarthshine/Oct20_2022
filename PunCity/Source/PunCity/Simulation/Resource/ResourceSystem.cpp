@@ -31,6 +31,8 @@ int32 ResourceTypeHolders::SpawnHolder(ResourceEnum resourceEnum, ResourceHolder
 
 void ResourceTypeHolders::RefreshHolder(int32 holderId, ResourceSystem& resourceSys)
 {
+	// Refresh Holder to the correct type on _findTypeToAvailableIdToAmount
+	
 	ResourceHolder& holder = _holders[holderId];
 
 	RemoveFromAvailableStacks(holderId);
@@ -152,7 +154,7 @@ FoundResourceHolderInfos ResourceTypeHolders::FindHolder(ResourceFindType type, 
 	return FindHolderHelper(type, amount, origin, avoidIds, maxFloodDist);
 }
 
-int32 ResourceTypeHolders::CanAddResourceGlobal(int32 amount, ResourceSystem& resourceSys)
+int32 ResourceTypeHolders::CanAddResourceGlobal(int32 amount, ResourceSystem& resourceSys) const
 {
 	PUN_LOG("CanAddResourceGlobal: %d", amount);
 	
@@ -274,7 +276,7 @@ int32 ResourceSystem::CanReceiveAmount(const ResourceHolder& holder) const
 
 // Modified CanReceiveAmount
 //  resourceCountWithPush -> resourceCount
-int32 ResourceSystem::CanReceiveAmountAfterReset(ResourceHolder& holder) const
+int32 ResourceSystem::CanReceiveAmountAfterReset(const ResourceHolder& holder) const
 {
 	check(holder.type == ResourceHolderType::Storage);
 

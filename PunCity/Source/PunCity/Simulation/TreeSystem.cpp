@@ -47,6 +47,8 @@ void TreeSystem::Init(int sizeX, int sizeY, IGameSimulationCore* simulation)
 	_regionToLocalTileIdToFallenTreeInfo.resize(GameMapConstants::TotalRegions);
 	_regionToReadyFruits.resize(GameMapConstants::TotalRegions);
 	_regionToReadyBushes.resize(GameMapConstants::TotalRegions);
+	_regionToLastReadyBushUpdate.resize(GameMapConstants::TotalRegions, 0);
+	
 	_regionToGrassCount.resize(GameMapConstants::TotalRegions, 0);
 
 	for (int i = 0; i < _regionToReadyBushes.size(); i++) {
@@ -1000,6 +1002,7 @@ void TreeSystem::TickTile(int32_t id)
 						int32 localTileId = tile.localTileId();
 						if (!readyBushes.Get(localTileId)) {
 							readyBushes.Set(localTileId, true);
+							_regionToLastReadyBushUpdate[tile.regionId()] = Time::Ticks();
 						}
 					}
 

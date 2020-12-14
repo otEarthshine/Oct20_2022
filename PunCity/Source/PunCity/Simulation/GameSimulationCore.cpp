@@ -3855,6 +3855,7 @@ void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 playerId)
 						}
 						else if (bld.isEnum(CardEnum::RegionShrine)) {
 							GenerateRareCardSelection(playerId, RareHandEnum::BuildingSlotCards, "The shrine bestows its wisdom upon us.");
+							bld.subclass<RegionShrine>().PlayerTookOver(playerId);
 						}
 
 					}
@@ -4077,6 +4078,18 @@ void GameSimulationCore::Cheat(FCheat command)
 		{
 			int32 addCount = command.var1;
 			townhall(command.playerId).AddImmigrants(addCount);
+			break;
+		}
+
+		case CheatEnum::AddAIImmigrants:
+		{
+			int32 addCount = command.var1;
+			ExecuteOnAI([&](int32 playerId) {
+				if (HasTownhall(playerId)) {
+					townhall(playerId).AddImmigrants(addCount);
+				}
+			});
+				
 			break;
 		}
 

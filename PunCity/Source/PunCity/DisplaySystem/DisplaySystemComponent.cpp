@@ -140,6 +140,7 @@ void UDisplaySystemComponent::Init(int size, TScriptInterface<IDisplaySystemData
 
 		OnSpawnDisplay(0, meshId, WorldAtom2(0, 0));
 		UpdateDisplay(0, meshId, WorldAtom2(0, 0), true, true);
+		HideDisplay(meshId, 0);
 	}
 	AfterAdd();
 }

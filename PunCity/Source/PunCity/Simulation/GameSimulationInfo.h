@@ -1620,7 +1620,7 @@ struct ResourceHolderInfo
 struct FoundResourceHolderInfo
 {
 	ResourceHolderInfo info;
-	int32 amount;
+	int32 amount; // amount available
 	WorldTile2 tile;
 	int32 objectId = -1;
 
@@ -3107,6 +3107,7 @@ static bool IsSpecialProducer(CardEnum buildingEnum)
 	case CardEnum::Mint:
 	case CardEnum::CardMaker:
 	case CardEnum::InventorsWorkshop:
+	case CardEnum::RegionShrine:
 	case CardEnum::ImmigrationOffice:
 
 	case CardEnum::BarrackArcher:
@@ -5450,6 +5451,8 @@ enum class CheatEnum : int32
 	TrailerBeatShiftBack,
 	TrailerTimePerBeat,
 	TrailerRoadPerTick,
+
+	AddAIImmigrants,
 };
 
 static const std::string CheatName[]
@@ -5506,6 +5509,8 @@ static const std::string CheatName[]
 	"TrailerBeatShiftBack",
 	"TrailerTimePerBeat",
 	"TrailerRoadPerTick",
+
+	"AddAIImmigrants",
 };
 static std::string GetCheatName(CheatEnum cheatEnum) {
 	return CheatName[static_cast<int>(cheatEnum)];

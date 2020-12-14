@@ -233,7 +233,7 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		  CASE_BUILDING(CardEnum::HumanitarianAidCamp, HumanitarianAidCamp);
 
 		  CASE_BUILDING(CardEnum::RegionTribalVillage, Building);
-		  CASE_BUILDING(CardEnum::RegionShrine, Building);
+		  CASE_BUILDING(CardEnum::RegionShrine, RegionShrine);
 		  CASE_BUILDING(CardEnum::RegionPort, Building);
 		  CASE_BUILDING(CardEnum::RegionCrates, Building);
 

@@ -133,6 +133,8 @@ static const std::vector<CardEnum> DefaultJobPriorityListAllSeason
 
 	CardEnum::BarrackSwordman,
 	CardEnum::BarrackArcher,
+
+	CardEnum::RegionShrine,
 };
 
 //static const std::vector<CardEnum> DefaultLaborerPriorityList

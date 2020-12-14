@@ -328,7 +328,7 @@ public:
 		RemoveFromAvailableStacks(holderId);
 	}
 
-	int32 CanAddResourceGlobal(int32 amount, ResourceSystem& resourceSys);
+	int32 CanAddResourceGlobal(int32 amount, ResourceSystem& resourceSys) const;
 	int32 AddResourceGlobal(int32 amount, ResourceSystem& resourceSys);
 	void RemoveResourceGlobal(int32 amount, ResourceSystem& resourceSys);
 
@@ -458,8 +458,25 @@ private:
 		SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_MoveResource_FindHolder);
 		
 		// Find by amount to get pickup candidates
-		FoundResourceHolderInfos filteredInfosWrap = FilterHolders(type, amount, origin, avoidIds, maxFloodDist);
+		FoundResourceHolderInfos filteredInfosWrap = FilterHolders(type, origin, maxFloodDist);
 		std::vector<FoundResourceHolderInfo>& filteredInfos = filteredInfosWrap.foundInfos;
+
+		/*
+		 * remove any avoidIds
+		 */
+		// Make sure this is not an id to avoid
+		for (size_t i = filteredInfos.size(); i-- > 0;)
+		{
+			FoundResourceHolderInfo& info = filteredInfos[i];
+			if (info.objectId != -1) {
+				for (int32 avoidId : avoidIds) {
+					if (avoidId == info.objectId) {
+						filteredInfos.erase(filteredInfos.begin() + i);
+						break;
+					}
+				}
+			}
+		}
 
 		// No info, just return blank
 		if (!filteredInfosWrap.hasInfos()) {
@@ -467,17 +484,21 @@ private:
 		}
 
 
-		// Debug:
-		for (const FoundResourceHolderInfo& filteredInfo : filteredInfos) {
+		// Trim amount...
+		for (FoundResourceHolderInfo& filteredInfo : filteredInfos) {
+			filteredInfo.amount = std::min(filteredInfo.amount, amount);
 			PUN_CHECK(filteredInfo.amount <= amount);
 		}
 
 		SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_MoveResource_FindHolder_Rest);
 
-		// One pickup satisfied all, just return it.
+		/*
+		 * One pickup satisfied all, just return it.
+		 */
 		FoundResourceHolderInfo foundFullInfo = FoundResourceHolderInfo::Invalid();
 		int32 foundFullInfoDist = INT32_MAX;
-		for (int i = 0; i < filteredInfos.size(); i++) {
+		for (int i = 0; i < filteredInfos.size(); i++) 
+		{
 			if (filteredInfos[i].amount >= amount) {
 
 				int32_t dist = WorldTile2::ManDistance(origin, filteredInfos[i].tile);
@@ -621,11 +642,9 @@ private:
 		return bestChain;
 	}
 
-	FoundResourceHolderInfos FilterHolders(ResourceFindType type, int32 amount, WorldTile2 origin, std::vector<int32> avoidIds, int32 maxFloodDist) const
+	FoundResourceHolderInfos FilterHolders(ResourceFindType type, WorldTile2 origin, int32 maxFloodDist) const
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_MoveResource_FindHolder_Filter);
-		
-		int32 targetAmount = amount;
 
 		// foundInfos are arrange from more amount to less, then from less dist to more dist
 		FoundResourceHolderInfos result;
@@ -640,38 +659,26 @@ private:
 
 			if (availableAmount >= amountAtLeast) // Don't get resource from node with less amount, unless necessary
 			{
-				// Make sure this is not an id to avoid
-				bool isAvoidId = false;
-				for (int32 avoidId : avoidIds) {
-					if (avoidId == holder.objectId) {
-						isAvoidId = true;
-						break;
-					}
-				}
-
 				//PUN_LOG("Holder:%d isDrop:%d isAvoidId:%d info:%s isConnected:%d amountAtLeast:%d", holderId, _holders[holderId].isDrop(), isAvoidId, 
 				//				*ToFString(_holders[holderId].info.ToString()), sim->IsConnected(origin, holder.tile, maxFloodDist), amountAtLeast);
 
 				// TODO: IsConnected can be checked once in a while...
 				//if (!isAvoidId && _simulation->IsConnected(origin, holder.tile, maxFloodDist, true))
-				if (!isAvoidId)
+
+				bool isConnected;
+				if (holder.objectId != -1) {
+					isConnected = _simulation->IsConnectedBuilding(holder.objectId, _playerId);
+				} else {
+					DEBUG_ISCONNECTED_VAR(DropResourceSystem);
+					isConnected = _simulation->IsConnected(origin, holder.tile, maxFloodDist, true); // Drop case
+				}
+
+				if (isConnected) 
 				{
-					bool isConnected;
-					if (holder.objectId != -1) {
-						isConnected = _simulation->IsConnectedBuilding(holder.objectId, _playerId);
-					} else {
-						DEBUG_ISCONNECTED_VAR(DropResourceSystem);
-						isConnected = _simulation->IsConnected(origin, holder.tile, maxFloodDist, true); // Drop case
-					}
+					check(availableAmount > 0);
+					FoundResourceHolderInfo newFoundInfo(holder.info, availableAmount, holder.tile);
 
-					if (isConnected) 
-					{
-						check(availableAmount > 0);
-						int32 amountToTake = std::min(targetAmount, availableAmount); // Don't put more than targetAmount into foundInfo
-						FoundResourceHolderInfo newFoundInfo(holder.info, amountToTake, holder.tile);
-
-						foundInfos.push_back(newFoundInfo);
-					}
+					foundInfos.push_back(newFoundInfo);
 				}
 			}
 		};
@@ -720,7 +727,7 @@ private:
 	// Resource Holders
 	std::vector<ResourceHolder> _holders;
 
-	std::vector<std::vector<HolderIdToAmount>> _findTypeToAvailableIdToAmount;
+	std::vector<std::vector<HolderIdToAmount>> _findTypeToAvailableIdToAmount; // availableIds for each holder Type
 };
 
 // TODO: revamp resource system to use gateTile based system?? makes more sense than objId??
@@ -908,7 +915,7 @@ public:
 
 	int32 CanReceiveAmount(const ResourceHolder& holder) const;
 
-	int32 CanReceiveAmountAfterReset(ResourceHolder& holder) const;
+	int32 CanReceiveAmountAfterReset(const ResourceHolder& holder) const;
 
 	//! Spawn/Despawn Holder buildings
 	int32 SpawnHolder(ResourceEnum resourceEnum, ResourceHolderType holderType, int32 objectId, WorldTile2 tile, int32 target) {

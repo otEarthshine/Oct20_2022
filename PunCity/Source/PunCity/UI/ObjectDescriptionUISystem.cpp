@@ -1067,6 +1067,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							ss << "<img id=\"Science\"/>" << building.seasonalProduction();
 							descriptionBox->AddRichText("Science(per season)", ss);
 						}
+						if (building.isEnum(CardEnum::RegionShrine)) {
+							ss << "<img id=\"Science\"/>" << building.seasonalProduction();
+							descriptionBox->AddRichText("Science(per season)", ss);
+						}
 						if (IsBarrack(building.buildingEnum())) {
 							ss << "<img id=\"Influence\"/>" << building.seasonalProduction();
 							descriptionBox->AddRichText("Influence(per season)", ss);
@@ -1787,6 +1791,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						case CardEnum::BarrackClubman:
 						case CardEnum::Mint:
 						case CardEnum::InventorsWorkshop:
+						case CardEnum::RegionShrine:
+							
 						case CardEnum::CardMaker:
 						case CardEnum::ImmigrationOffice: {
 							auto& consumerIndustry = building.subclass<ConsumerIndustrialBuilding>();
@@ -1815,6 +1821,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						{
 							case CardEnum::Mint: setProduct(assetLoader->CoinIcon, to_string(building.productPerBatch()));  break;
 							case CardEnum::InventorsWorkshop: setProduct(assetLoader->ScienceIcon, to_string(building.productPerBatch()));  break;
+							case CardEnum::RegionShrine: setProduct(assetLoader->ScienceIcon, to_string(building.productPerBatch()));  break;
 							
 							case CardEnum::BarrackArcher:
 							case CardEnum::BarrackSwordman:
@@ -2481,6 +2488,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			} else {
 				ss << "house: none \n";
 			}
+
+#if WITH_EDITOR
+			if (IsAnimal(unit.unitEnum())) {
+				ss << "home province" << unit.homeProvinceId();
+			}
+#endif
 
 			//! Debug
 #if WITH_EDITOR 

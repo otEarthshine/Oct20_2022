@@ -206,6 +206,10 @@ public:
 
 	int32 isBushReadyForHarvest(int32 id) { return tileInfo(id).isBushReadyForAnimalHarvest(tileObjAge(id)); }
 
+	int32 regionLastBushUpdateTick(WorldRegion2 region) {
+		return _regionToLastReadyBushUpdate[region.regionId()];
+	}
+
 	// Fish
 	int32 fish100Count(int32 id, int32 fisherCountChange = 0) {
 		if (tileObjEnum(id) == TileObjEnum::Fish) {
@@ -440,6 +444,8 @@ public:
 			SERIALIZE_TIMER("Tree - _regionTo", data, crcs, crcLabels);
 			SerializeVecObj(Ar, _regionToReadyFruits);
 			SerializeVecObj(Ar, _regionToReadyBushes);
+			SerializeVecValue(Ar, _regionToLastReadyBushUpdate);
+			
 			SerializeVecMapObj(Ar, _regionToLocalTileIdToFallenTreeInfo);
 			SerializeVecValue(Ar, _regionToGrassCount);
 		}
@@ -694,6 +700,8 @@ private:
 
 	std::vector<FastRegionBoolMap> _regionToReadyFruits;
 	std::vector<FastRegionBoolMap> _regionToReadyBushes;
+	std::vector<int32> _regionToLastReadyBushUpdate;
+	
 	std::vector<std::unordered_map<int16, FallenTreeInfo>> _regionToLocalTileIdToFallenTreeInfo; // the tick when tree fell for animation
 
 	// TODO: use 8x8??

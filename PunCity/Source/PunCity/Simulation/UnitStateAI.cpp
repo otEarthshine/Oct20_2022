@@ -72,6 +72,7 @@ void UnitStateAI::AddUnit(UnitEnum unitEnum, int32 playerId, UnitFullId fullId, 
 	_workplaceId = -1;
 	_houseId = -1;
 	_homeProvinceId = -1;
+	_lastFindWildFoodTick = 0;
 
 	_hp100 = 10000;
 	_isSick = false;
@@ -1186,80 +1187,62 @@ bool UnitStateAI::TryFindWildFood()
 		return false;
 	}
 
-	//if (getFruit)
-	//{
-	//	// Prefer fruit the most...
-	//	NonWalkableTileAccessInfo treeAccessInfo = treeSystem().FindNearestUnreservedFruitTree(unitTile(), unitTile(), radius, GameConstants::MaxFloodDistance_Animal, IsIntelligentUnit(unitEnum()));
-	//	if (treeAccessInfo.isValid()) {
-	//		WorldTile2 treeTile = treeAccessInfo.tile;
-	//		ReserveTreeTile(treeTile.tileId());
-	//		ResourceEnum fruitEnum = treeSystem().tileInfo(treeTile.tileId()).fruitResourceBase100.resourceEnum;
-
-	//		Add_Eat(fruitEnum);
-	//		Add_Wait(30);
-	//		Add_GatherFruit(treeAccessInfo.tile);
-	//		Add_Wait(120);
-	//		Add_MoveToward(treeAccessInfo.tile.worldAtom2(), 5000); //TODO: try 40000?
-	//		Add_MoveTo(treeAccessInfo.nearbyTile);
-
-	//		_unitState = UnitState::GetWildFood;
-
-	//		_simulation->soundInterface()->SpawnAnimalSound(unitEnum(), false, unitAtom());
-
-	//		AddDebugSpeech("(Success)TryFindWildFood: Fruit");
-	//		return true;
-	//	}
-	//}
-
-
-	// Search region..
-	//PUN_CHECK(_simulation->IsProvinceValid(_homeProvinceId));
-	//WorldRegion2 searchRegion = _simulation->GetProvinceCenterTile(_homeProvinceId).region();
-	//PUN_CHECK(searchRegion.IsValid());
-
-	//// Move the animal too far from home region.
-	//if (WorldTile2::Distance(searchRegion.centerTile(), unitTile()) < 200) {
-	//	_simulation->RemoveProvinceAnimals(_homeProvinceId, _id);
-
-	//	_homeProvinceId = _simulation->GetProvinceIdClean(unitTile());
-	//	_simulation->AddProvinceAnimals(_homeProvinceId, _id);
-	//	searchRegion = _simulation->GetProvinceCenterTile(_homeProvinceId).region();
-	//}
-	//PUN_CHECK(WorldTile2::Distance(searchRegion.centerTile(), unitTile()) < 300);
-
 	auto& provinceSys = _simulation->provinceSystem();
 
-	//WorldRegion2 searchRegion = unitTile().region();
-
-	WorldTile2 bushTile = treeSystem().FindNearestUnreservedFullBush(unitTile(), provinceSys.GetRegionOverlaps(_homeProvinceId), GameConstants::MaxFloodDistance_Animal, IsIntelligentUnit(unitEnum()));
-	if (bushTile.isValid()) 
+	/*
+	 * Find Wild Food
+	 */
+	if (_homeProvinceId != -1)
 	{
-		ReserveTreeTile(bushTile.tileId());
+		TreeSystem& treeSys = treeSystem();
+		const std::vector<WorldRegion2>& regions = provinceSys.GetRegionOverlaps(_homeProvinceId);
 
-		int32 trimWaitTicks = 360;
-		if (IsGrass(treeSystem().tileObjEnum(bushTile.tileId()))) {
-			trimWaitTicks /= GrassToBushValue;
+		bool shouldFindWildFoodAgain = false;
+		for (WorldRegion2 region : regions) {
+			if (treeSys.regionLastBushUpdateTick(region) > _lastFindWildFoodTick) {
+				shouldFindWildFoodAgain = true;
+				break;
+			}
 		}
 
-		Add_Eat(treeSystem().tileInfo(bushTile.tileId()).harvestResourceEnum());
-		Add_Wait(30);
-		Add_TrimFullBush(bushTile);
-		Add_Wait(trimWaitTicks);
-		Add_MoveToward(bushTile.worldAtom2(), 5000);
-		Add_MoveTo(bushTile);
+		if (shouldFindWildFoodAgain)
+		{
+			WorldTile2 bushTile = treeSys.FindNearestUnreservedFullBush(unitTile(), regions, GameConstants::MaxFloodDistance_Animal, IsIntelligentUnit(unitEnum()));
+			_lastFindWildFoodTick = Time::Ticks();
 
-		_unitState = UnitState::GetWildFood;
+			if (bushTile.isValid())
+			{
+				ReserveTreeTile(bushTile.tileId());
 
-		_simulation->soundInterface()->SpawnAnimalSound(unitEnum(), false, unitAtom());
+				int32 trimWaitTicks = 360;
+				if (IsGrass(treeSys.tileObjEnum(bushTile.tileId()))) {
+					trimWaitTicks /= GrassToBushValue;
+				}
 
-		AddDebugSpeech("(Success)TryFindWildFood: Bush");
-		debugFindFullBushSuccessCount++;
-		return true;
+				Add_Eat(treeSys.tileInfo(bushTile.tileId()).harvestResourceEnum());
+				Add_Wait(30);
+				Add_TrimFullBush(bushTile);
+				Add_Wait(trimWaitTicks);
+				Add_MoveToward(bushTile.worldAtom2(), 5000);
+				Add_MoveTo(bushTile);
+
+				_unitState = UnitState::GetWildFood;
+
+				_simulation->soundInterface()->SpawnAnimalSound(unitEnum(), false, unitAtom());
+
+				AddDebugSpeech("(Success)TryFindWildFood: Bush");
+				debugFindFullBushSuccessCount++;
+				return true;
+			}
+		}
 	}
 
-	
-	// Can't find food, look to migrate to the province with least animals
-	if (IsWildAnimalNoHome(_unitEnum))
+	/*
+	 * Migration
+	 * Can't find food and dying, look to migrate to the province with least animals
+	 */
+	if (_food >= maxFood() / 3 &&
+		IsWildAnimalNoHome(_unitEnum))
 	{
 		PUN_CHECK(_homeProvinceId != -1);
 		int32 leastAnimalProvinceId = -1;
@@ -1282,6 +1265,8 @@ bool UnitStateAI::TryFindWildFood()
 			_simulation->RemoveProvinceAnimals(_homeProvinceId, _id);
 			_homeProvinceId = leastAnimalProvinceId;
 			_simulation->AddProvinceAnimals(_homeProvinceId, _id);
+
+			_lastFindWildFoodTick = 0;
 		}
 	}
 

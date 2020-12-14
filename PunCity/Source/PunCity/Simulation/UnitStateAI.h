@@ -516,6 +516,8 @@ public:
 		_houseId = houseId; 
 	}
 
+	int32 homeProvinceId() { return _homeProvinceId; }
+
 	//! Needs
 	bool needHouse() { return _houseId == -1 && _simulation->population(_playerId) > _simulation->HousingCapacity(_playerId); }
 	bool showNeedFood() {
@@ -584,6 +586,9 @@ public:
 		Ar << _houseId;
 		Ar << _workplaceId;
 		Ar << _lastworkplaceId;
+
+		Ar << _homeProvinceId;
+		Ar << _lastFindWildFoodTick;
 
 		SerializeVecObj(Ar, reservations);
 
@@ -747,6 +752,7 @@ protected:
 	int32 _lastworkplaceId;
 
 	int32 _homeProvinceId = -1;
+	int32 _lastFindWildFoodTick = 0;
 
 	std::vector<UnitReservation> reservations;
 

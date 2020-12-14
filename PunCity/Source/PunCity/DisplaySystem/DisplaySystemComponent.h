@@ -63,7 +63,6 @@ protected:
 		return _meshId - 1;
 	}
 
-
 	virtual void OnSpawnDisplay(int32 objectId, int32 meshId, WorldAtom2 cameraAtom) {}
 	virtual void UpdateDisplay(int32 objectId, int32 meshId, WorldAtom2 cameraAtom, bool justSpawned, bool justCreated) {}
 	

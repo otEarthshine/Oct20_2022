@@ -29,7 +29,8 @@ DECLARE_CYCLE_STAT(TEXT("PUN: Unit.CalcHuman.TryGather.FindMark"), STAT_PunUnit_
 DECLARE_CYCLE_STAT(TEXT("PUN: Unit.CalcHuman.TryGather.GatherSequence"), STAT_PunUnit_CalcHuman_TryGather_GatherSequence, STATGROUP_Game);
 
 DECLARE_CYCLE_STAT(TEXT("PUN: Unit.CalcHuman.MoveResource [4.2.4]"), STAT_PunUnit_CalcHuman_MoveResource, STATGROUP_Game);
-DECLARE_CYCLE_STAT(TEXT("PUN: Unit.CalcHuman.PostWorkplc [4.2.5]"), STAT_PunUnit_CalcHuman_PostWorkPlc, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: Unit.CalcHuman.MoveResourceDeliveryTarget [4.2.5]"), STAT_PunUnit_CalcHuman_MoveResourceDeliveryTarget, STATGROUP_Game);
+DECLARE_CYCLE_STAT(TEXT("PUN: Unit.CalcHuman.PostWorkplc [4.2.6]"), STAT_PunUnit_CalcHuman_PostWorkPlc, STATGROUP_Game);
 
 void HumanStateAI::CalculateActions()
 {
@@ -257,12 +258,16 @@ void HumanStateAI::CalculateActions()
 	}
 
 	{
-		SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_MoveResource);
+		SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_MoveResourceDeliveryTarget);
 
 		if (TryMoveResourcesToDeliveryTargetAll(10) || justReset()) {
 			// DEBUG_AI_VAR
 			return;
 		}
+	}
+
+	{
+		SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_MoveResource); // Heavy...
 
 		// Proposal...
 		// First pass to move larger amount...

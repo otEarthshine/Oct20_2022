@@ -885,6 +885,8 @@ public:
 		}
 		return total + adjacentEfficiency() + levelEfficiency();
 	}
+
+	// TODO: use productPerBatch instead
 	virtual int32 productPerBatch() { return baseProductPerBatch() * efficiency() / 100; }
 
 

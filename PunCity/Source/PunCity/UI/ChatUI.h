@@ -336,6 +336,15 @@ public:
 			networkInterface()->SendNetworkCommand(command);
 		}
 
+		// AddAIImmigrants
+		if (commandAndParams.size() >= 2 && commandAndParams[0] == "AddAIImmigrants")
+		{
+			auto command = make_shared<FCheat>();
+			command->cheatEnum = GetCheatEnum("AddAIImmigrants");
+			command->var1 = FCString::Atoi(ToTChar(commandAndParams[1]));
+			networkInterface()->SendNetworkCommand(command);
+		}
+
 		// HouseLevel
 		if (commandAndParams.size() >= 2 && commandAndParams[0] == "HouseLevel")
 		{

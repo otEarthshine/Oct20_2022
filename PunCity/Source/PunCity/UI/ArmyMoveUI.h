@@ -95,9 +95,9 @@ public:
 			int32 rowIndex = 0;
 			for (int32 nodeId : armyNodeIds) {
 				if (nodeId != skipNode) {
-					auto row = GetBoxChild<UArmyChooseNodeButton>(ArmyChooseNodeBox, rowIndex, UIEnum::ArmyChooseNodeButton, true);
-					SetText(row->NodeText, simulation().townName(simulation().GetArmyNode(nodeId).originalPlayerId));
-					row->PunInit(this, nodeId);
+					//auto row = GetBoxChild<UArmyChooseNodeButton>(ArmyChooseNodeBox, rowIndex, UIEnum::ArmyChooseNodeButton, true);
+					//SetText(row->NodeText, simulation().townName(simulation().GetArmyNode(nodeId).originalPlayerId));
+					//row->PunInit(this, nodeId);
 				}
 			}
 			BoxAfterAdd(ArmyChooseNodeBox, rowIndex);
@@ -155,18 +155,18 @@ public:
 				int32 troopCount = fromGroup->TroopCount(i);
 				
 				if (troopCount > 0) {
-					UArmyMoveRow* row = GetBoxChild<UArmyMoveRow>(ArmyMoveRowBox, rowIndex, UIEnum::ArmyMoveRow, true);
-					row->armyEnumInt = i;
-					
-					row->ArmyUnitBackground->SetBrushTintColor(PlayerColor2(fromGroup->playerId));
-					row->ArmyUnitIcon->SetBrushTintColor(PlayerColor1(fromGroup->playerId));
-					row->ArmyUnitIcon->SetBrushFromTexture(assetLoader()->GetArmyIcon(static_cast<ArmyEnum>(i)));
+					//UArmyMoveRow* row = GetBoxChild<UArmyMoveRow>(ArmyMoveRowBox, rowIndex, UIEnum::ArmyMoveRow, true);
+					//row->armyEnumInt = i;
+					//
+					//row->ArmyUnitBackground->SetBrushTintColor(PlayerColor2(fromGroup->playerId));
+					//row->ArmyUnitIcon->SetBrushTintColor(PlayerColor1(fromGroup->playerId));
+					//row->ArmyUnitIcon->SetBrushFromTexture(assetLoader()->GetArmyIcon(static_cast<ArmyEnum>(i)));
 
-					SetText(row->FromText, std::to_string(troopCount));
+					//SetText(row->FromText, std::to_string(troopCount));
 
-					row->ArmyCount->Set(this, CallbackEnum::IncrementArmyCount);
-					row->ArmyCount->incrementMultiplier = 1;
-					row->ArmyCount->callbackVar1 = i;
+					//row->ArmyCount->Set(this, CallbackEnum::IncrementArmyCount);
+					//row->ArmyCount->incrementMultiplier = 1;
+					//row->ArmyCount->callbackVar1 = i;
 				}
 			}
 

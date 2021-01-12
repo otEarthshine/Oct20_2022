@@ -20,6 +20,15 @@ public:
 	// Sets default values for this component's properties
 	UTerrainMapComponent();
 
+	void Deinit()
+	{
+		if (_assetLoader) {
+			PunUnrealUtils::DestroyTexture2D(_assetLoader->heightTexture);
+			PunUnrealUtils::DestroyTexture2D(_assetLoader->biomeTexture);
+			PunUnrealUtils::DestroyTexture2D(_assetLoader->provinceTexture);
+		}
+	}
+
 	//UPROPERTY(EditAnywhere, BlueprintReadWrite) UStaticMeshComponent* terrainMesh;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) UStaticMeshComponent* terrainMeshWater;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) UStaticMeshComponent* terrainMeshWaterDecal;

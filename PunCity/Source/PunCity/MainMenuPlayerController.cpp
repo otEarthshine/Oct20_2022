@@ -18,6 +18,8 @@
 #include "PunCity/UI/PunLobbyHUD.h"
 #include "PunCity/PunGameMode.h"
 
+#define LOCTEXT_NAMESPACE "MainMenuPlayerController"
+
 AMainMenuPlayerController::AMainMenuPlayerController() : APunBasePlayerController()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -298,7 +300,7 @@ void AMainMenuPlayerController::Client_GotKicked_Implementation()
 	if (gameInst)
 	{
 		// Show message
-		gameInst->mainMenuPopup = FString("You were kicked from the game.");
+		gameInst->mainMenuPopup = LOCTEXT("KickedFromGame", "You were kicked from the game.");
 		
 		gameInstance()->isReturningToLobbyList = true;
 		gameInstance()->EnsureSessionDestroyed(false);
@@ -306,3 +308,6 @@ void AMainMenuPlayerController::Client_GotKicked_Implementation()
 	}
 }
 bool AMainMenuPlayerController::Client_GotKicked_Validate() { return true; }
+
+
+#undef LOCTEXT_NAMESPACE

@@ -41,7 +41,7 @@ public:
 		
 		_territoryOwnerMap.resize(GameMapConstants::TotalRegions, -1);
 		
-		_boarBurrowsToRegion.resize(GameMapConstants::TotalRegions);
+		_boarBurrowsToProvince.resize(GameMapConstants::TotalRegions);
 		_provinceToAnimalIds.resize(GameMapConstants::TotalRegions);
 	}
 
@@ -85,13 +85,13 @@ public:
 	 * Burrows
 	 */
 
-	const std::vector<int32>& boarBurrows(int32 regionId) {
-		return _boarBurrowsToRegion[regionId];
+	const std::vector<int32>& boarBurrows(int32 provinceId) {
+		return _boarBurrowsToProvince[provinceId];
 	}
-	void AddBoarBurrow(int32 regionId, int32 buildingId) {
-		_boarBurrowsToRegion[regionId].push_back(buildingId);
+	void AddBoarBurrow(int32 provinceId, int32 buildingId) {
+		_boarBurrowsToProvince[provinceId].push_back(buildingId);
 	}
-	void RemoveBoarBurrow(int32 regionId, int32 buildingId);
+	void RemoveBoarBurrow(int32 provinceId, int32 buildingId);
 
 
 	const std::vector<int32>& provinceAnimals(int32 provinceId) {
@@ -138,16 +138,15 @@ public:
 		SerializeVecValue(Ar, provinceToTreeCountCache);
 		
 		SerializeVecValue(Ar, _territoryOwnerMap);
-		SerializeVecVecValue(Ar, _boarBurrowsToRegion);
+		SerializeVecVecValue(Ar, _boarBurrowsToProvince);
 		SerializeVecVecValue(Ar, _provinceToAnimalIds);
 		SerializeVecObj(Ar, _animalColonies);
 	}
 
-#if !UE_BUILD_SHIPPING
+
 	int32 debugMaxAnimalCount = 0;
 	int32 debugMaxAnimalCountProvinceId = -1;
 	int32 debugTotalProvinceAnimalCount = 0;
-#endif
 
 public:
 	std::vector<int32> provinceToTreeCountCache;
@@ -158,7 +157,7 @@ private:
 	std::vector<int32> _territoryOwnerMap;
 	//std::vector<bool> _isDirectControl;
 	
-	std::vector<std::vector<int32>> _boarBurrowsToRegion;
+	std::vector<std::vector<int32>> _boarBurrowsToProvince;
 	std::vector<std::vector<int32>> _provinceToAnimalIds;
 	std::vector<AnimalColony> _animalColonies;
 };

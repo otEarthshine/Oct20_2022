@@ -21,6 +21,8 @@
 #include "JobPriorityRow.h"
 #include "GraphDataSource.h"
 
+#define LOCTEXT_NAMESPACE "ObjectDescriptionUISystem"
+
 using namespace std;
 
 static int32 kTickCount = 0; // local tick count. Can't use Time::Tick() since it may be paused
@@ -228,8 +230,8 @@ void UMainGameUI::PunInit()
 
 	//
 
-	TestMainMenuOverlay1->SetVisibility(ESlateVisibility::Collapsed);
-	TestMainMenuOverlay2->SetVisibility(ESlateVisibility::Collapsed);
+	//TestMainMenuOverlay1->SetVisibility(ESlateVisibility::Collapsed);
+	//TestMainMenuOverlay2->SetVisibility(ESlateVisibility::Collapsed);
 
 
 	DefaultFont = ResearchingText->Font;
@@ -590,8 +592,6 @@ void UMainGameUI::Tick()
 				std::vector<CardEnum> availableCards = cardSystem.GetAllPiles();
 				unordered_set<CardEnum> uniqueAvailableCards(availableCards.begin(), availableCards.end());
 
-				SetText(ConverterCardHandTitle, "CHOOSE A CARD\npay the price to build");
-
 				// Loop through BuildingEnumCount so that cards are arranged by BuildingEnumINt
 				CardEnum wildCardEnum = cardSystem.wildCardEnumUsed;
 
@@ -610,7 +610,7 @@ void UMainGameUI::Tick()
 							if (IsBuildingCard(buildingEnum)) {
 								auto cardButton = AddCard(CardHandEnum::ConverterHand, buildingEnum, ConverterCardHandBox, CallbackEnum::SelectCardRemoval, i);
 
-								// Converter Card requires 50% of price
+								SetText(ConverterCardHandTitle, "CHOOSE A CARD TO REMOVE");
 								SetText(cardButton->PriceText, to_string(cardSystem.GetCardPrice(buildingEnum)));
 								cardButton->PriceTextBox->SetVisibility(ESlateVisibility::HitTestInvisible);
 							}
@@ -645,7 +645,7 @@ void UMainGameUI::Tick()
 							if (IsBuildingCard(buildingEnum)) {
 								auto cardButton = AddCard(CardHandEnum::ConverterHand, buildingEnum, ConverterCardHandBox, CallbackEnum::SelectConverterCard, i);
 
-								// Converter Card requires 50% of price
+								SetText(ConverterCardHandTitle, "CHOOSE A CARD\npay the price to build");
 								SetText(cardButton->PriceText, to_string(cardSystem.GetCardPrice(buildingEnum)));
 								cardButton->PriceTextBox->SetVisibility(ESlateVisibility::HitTestInvisible);
 							}
@@ -987,21 +987,23 @@ void UMainGameUI::Tick()
 		// Science
 		if (simulation.unlockSystem(playerId())->researchEnabled) 
 		{
-			std::stringstream sciOutput;
-			sciOutput << fixed << setprecision(1);
-			sciOutput << "+" << playerOwned.science100PerRound() / 100.0f;
-			Science->SetText("", sciOutput.str());
+			// Science Text
+			TArray<FText> args;
+			ADDTEXT_(INVTEXT("+{0}"), TEXT_100(playerOwned.science100PerRound()));
+			Science->SetText(FText(), JOINTEXT(args));
 
-			std::stringstream scienceTip;
-			scienceTip << fixed << setprecision(1);
-			scienceTip << "Science is used for researching new technology.";
-			scienceTip << " Science per round: " << playerOwned.science100PerRound() / 100.0f << " <img id=\"Science\"/>\n";
+			// Science Tip
+			args.Empty();
+			ADDTEXT_(LOCTEXT("ScienceTip", 
+				"Science is used for researching new technology.\n"
+				" Science per round: {0} <img id=\"Science\"/>\n"
+			), TEXT_100(playerOwned.science100PerRound()));
 
 			for (size_t i = 0; i < ScienceEnumCount; i++)
 			{
 				int32 science100 = playerOwned.sciences100[i];
 				if (science100 != 0) {
-					scienceTip << "  " << science100 / 100.0f << " " << ScienceEnumName[i] << "\n";
+					ADDTEXT_(INVTEXT("  {0} {1}\n"), TEXT_100(science100), ScienceEnumName(i));
 				}
 			}
 			//scienceTip << "  " << playerOwned.houseBaseScience << " House Base\n";
@@ -1010,7 +1012,7 @@ void UMainGameUI::Tick()
 			//
 			//scienceTip << "  " << playerOwned.schoolScience << " School\n";
 			
-			AddToolTip(Science, scienceTip.str());
+			AddToolTip(Science, args);
 
 			Science->SetVisibility(ESlateVisibility::Visible);
 		} else {
@@ -1753,9 +1755,11 @@ void UMainGameUI::ClickCardHand1SubmitButton()
 	}
 	
 	// Check if not enough money, and put on a warning...
-	if (MoneyLeftAfterTentativeBuy() < 0) {
-		simulation().AddPopupToFront(playerId(), "Not enough money to purchase the card.", ExclusiveUIEnum::CardHand1, "PopupCannot");
-		return;
+	if (CardHand1SubmitButtonText->GetText().ToString() == FString("Submit")) {
+		if (MoneyLeftAfterTentativeBuy() < 0) {
+			simulation().AddPopupToFront(playerId(), "Not enough money to purchase the card.", ExclusiveUIEnum::CardHand1, "PopupCannot");
+			return;
+		}
 	}
 
 	// TODO:
@@ -2403,3 +2407,6 @@ int32 UMainGameUI::MoneyLeftAfterTentativeBuy()
 	}
 	return money;
 }
+
+
+#undef LOCTEXT_NAMESPACE

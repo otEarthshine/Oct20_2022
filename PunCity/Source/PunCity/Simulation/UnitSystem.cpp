@@ -272,7 +272,9 @@ void UnitSystem::UnitCheckIntegrity(bool full)
 		if (unitLean.alive() && unitLean.lastUpdateTick != -1) {
 			int32 ticks = Time::Ticks();
 			const UnitStateAI& unitAI = unitStateAI(i); // For debugger...
-			PUN_CHECK2(ticks - unitLean.lastUpdateTick < Time::TicksPerMinute, unitAI.debugStr());
+			
+			// TODO: check ppl walk super far
+			//PUN_CHECK2(ticks - unitLean.lastUpdateTick < Time::TicksPerMinute, unitAI.debugStr());
 
 			if (full) {
 				PUN_CHECK2(unitLean.nextUpdate.nextUpdateTick >= Time::Ticks(), unitAI.debugStr());

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "ResearchTypeButtonUI.h"
+//#include "ResearchTypeButtonUI.h"
 #include "PunWidget.h"
 #include "IconTextPairWidget.h"
 
@@ -20,7 +20,7 @@
  * 
  */
 UCLASS()
-class UMainGameUI : public UPunWidget, public UResearchTypeButtonUIParent
+class UMainGameUI : public UPunWidget //, public UResearchTypeButtonUIParent
 {
 	GENERATED_BODY()
 public:
@@ -153,8 +153,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) UOverlay* ConfirmationOverlay;
 
 
-	UPROPERTY(meta = (BindWidget)) UOverlay* TestMainMenuOverlay1;
-	UPROPERTY(meta = (BindWidget)) UOverlay* TestMainMenuOverlay2;
+	//UPROPERTY(meta = (BindWidget)) UOverlay* TestMainMenuOverlay1;
+	//UPROPERTY(meta = (BindWidget)) UOverlay* TestMainMenuOverlay2;
 	
 	FSlateFontInfo DefaultFont;
 

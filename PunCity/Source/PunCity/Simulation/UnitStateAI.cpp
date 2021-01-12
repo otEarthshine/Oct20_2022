@@ -180,7 +180,7 @@ void UnitStateAI::Update()
 		{
 			// 1-3 season to death (2 ave)
 			int32 ticksToDeath = Time::TicksPerSeason + GameRand::Rand() % (Time::TicksPerSeason * 2);
-			_hp100 -= (ticksPassed * 10000) / ticksToDeath;
+			_hp100 -= (ticksPassed * maxHP100()) / ticksToDeath;
 
 			if (_hp100 <= 0)
 			{
@@ -220,6 +220,13 @@ void UnitStateAI::Update()
 				if (isCoalAvailableForHeating || isWoodAvailableForHeating) {
 					_heat = minWarnHeat();
 				}
+			}
+
+
+			// Sickness cheat:
+			if (_isSick && _hp100 < maxHP100() / 3 && resourceSys.HasAvailableMedicine())
+			{
+				_hp100 = maxHP100() / 3;
 			}
 
 			// Homeless people could leave your town
@@ -360,9 +367,23 @@ void UnitStateAI::Update()
 									food() > minWarnFood() && 
 									_simulation->GetProvinceIdClean(unitTile()) != -1;
 
+
 				// Domesticated animal can't reproduce outside
 				if (IsDomesticatedAnimal(unitEnum())) {
 					if (houseId() == -1) {
+						canGiveBirth = false;
+					}
+				}
+				else
+				{
+					// Wild Animals does not reproduce beyond province's max
+					if (_homeProvinceId != -1) {
+						const int32 provinceMaxAnimal = 5;
+						if (_simulation->provinceAnimals(_homeProvinceId).size() >= provinceMaxAnimal) {
+							canGiveBirth = false;
+						}
+					}
+					else {
 						canGiveBirth = false;
 					}
 				}
@@ -686,11 +707,6 @@ void UnitStateAI::CalculateActions()
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUnitCalcWildHome);
 
-		// TODO: replace with territorial instinct
-		//if (TryAvoidOthers()) {
-		//	return;
-		//}
-
 		// Walk home if too far
 		if (_houseId != -1 &&
 			_simulation->building(_houseId).DistanceTo(unitTile()) > 50)
@@ -700,26 +716,30 @@ void UnitStateAI::CalculateActions()
 			}
 		}
 
+		// Find Food if needed
 		if (TryFindWildFood()) {
 			return;
 		}
 		
-		// Has burrow already?
+		// Has burrow already:
+		//  Try Get or Stock Food
 		if (_houseId != -1)
 		{
 			SCOPE_CYCLE_COUNTER(STAT_PunUnitCalcBoarHomeFood);
 
-			if (_food < maxFood() / 2 && TryGetBurrowFood()) return;
-			if (TryStockBurrowFood()) return;
+			if (_food < maxFood() / 2 && TryGetBurrowFood()) {
+				return;
+			}
+			if (TryStockBurrowFood()) {
+				return;
+			}
 		}
 		else
 		{
 			SCOPE_CYCLE_COUNTER(STAT_PunUnitCalcBoarGetHome);
 
 			// Get an existing burrow to live
-			WorldTile2 tile = unitTile();
-			const std::vector<int32>& burrowIds = _simulation->boarBurrows(tile.regionId());
-
+			const std::vector<int32>& burrowIds = _simulation->boarBurrows(_homeProvinceId);
 			for (int32 burrowId : burrowIds)
 			{
 				// If Burrow is accessible and isn't full. add this as an occupant
@@ -728,40 +748,36 @@ void UnitStateAI::CalculateActions()
 				{
 					static_cast<BoarBurrow*>(&burrow)->AddOccupant(_id);
 					_houseId = burrowId;
-					AddDebugSpeech("Add to Burrow " + to_string(burrowId));
-					break;
+					
+					_unitState = UnitState::Idle;
+					int32 waitTicks = 60 * (GameRand::Rand() % 3 + 4);
+					Add_Wait(waitTicks);
+					AddDebugSpeech("(Success)Idle Just Moved Home");
+					return;
 				}
 			}
 
-			// No existing burrow, add burrow??
-			if (_houseId == -1 && GameRand::Rand() % 5 == 0)
+			// No existing burrow:
+			if (burrowIds.size() >= 2)
 			{
+				// Too many burrows in homeProvince, move to a new province
+				if (TryChangeProvince_NoAction()) {
+					if (TryGoHomeProvince()) {
+						return;
+					}
+				}
+			}
+			else
+			{
+				// Try to build a burrow on homeProvince
+				const int tries = 10;
+				WorldTile2 uTile = unitTile();
+				WorldTile2 centerTile = _simulation->GetProvinceRandomTile(_homeProvinceId, uTile, GameConstants::MaxFloodDistance_AnimalFar, false, tries);
+
 				Direction faceDirection = Direction::S;
-				WorldTile2 centerTile(tile.x + 2, tile.y); // current unit's tile is gate tile.
 				TileArea area = BuildingArea(centerTile, BuildingInfo[(int)CardEnum::BoarBurrow].size, faceDirection);
 
-				bool canPlace = true;
-				if (area.isInMap()) {
-					area.ExecuteOnArea_WorldTile2([&](WorldTile2 areaTile) {
-						if (!_simulation->IsBuildable(areaTile)) canPlace = false;
-					});
-				}
-				else {
-					canPlace = false;
-				}
-
-				// Front Grid
-				TileArea frontArea = area.GetFrontArea(faceDirection);
-				if (frontArea.isInMap()) {
-					frontArea.ExecuteOnArea_WorldTile2([&](WorldTile2 areaTile) {
-						if (!_simulation->IsBuildable(areaTile)) canPlace = false;
-					});
-				}
-				else {
-					canPlace = false;
-				}
-
-				if (canPlace)
+				if (IsBurrowBuildable(area, faceDirection))
 				{
 					FPlaceBuilding parameters;
 					parameters.buildingEnum = static_cast<uint8>(CardEnum::BoarBurrow);
@@ -778,18 +794,46 @@ void UnitStateAI::CalculateActions()
 					_houseId = burrowId;
 				}
 			}
+
+		
 		}
 
 		if (TryGoNearbyHome()) {
 			return;
 		}
 
+		// Idle, nothing else to do
 		_unitState = UnitState::Idle;
 		int32 waitTicks = 60 * (GameRand::Rand() % 3 + 4);
 		Add_Wait(waitTicks);
 		Add_MoveRandomly();
 		AddDebugSpeech("(Success)Idle MoveRandomly");
 	}
+}
+
+bool UnitStateAI::IsBurrowBuildable(TileArea area, Direction faceDirection)
+{
+	bool canPlace = true;
+	if (area.isInMap()) {
+		area.ExecuteOnArea_WorldTile2([&](WorldTile2 areaTile) {
+			if (!_simulation->IsBuildable(areaTile)) canPlace = false;
+		});
+	}
+	else {
+		canPlace = false;
+	}
+
+	// Front Grid
+	TileArea frontArea = area.GetFrontArea(faceDirection);
+	if (frontArea.isInMap()) {
+		frontArea.ExecuteOnArea_WorldTile2([&](WorldTile2 areaTile) {
+			if (!_simulation->IsBuildable(areaTile)) canPlace = false;
+		});
+	}
+	else {
+		canPlace = false;
+	}
+	return canPlace;
 }
 
 bool UnitStateAI::TryCheckBadTile()
@@ -1067,7 +1111,6 @@ bool UnitStateAI::TryGoHomeProvince()
 		return false;
 	}
 
-	// Find food only if already in home province
 	if (_simulation->GetProvinceIdClean(unitTile()) == _homeProvinceId)
 	{
 		AddDebugSpeech("(Failed)TryGoHomeProvince: Already at home province");
@@ -1239,41 +1282,50 @@ bool UnitStateAI::TryFindWildFood()
 
 	/*
 	 * Migration
-	 * Can't find food and dying, look to migrate to the province with least animals
+	 * Can't find food, look to migrate to the province with least animals
 	 */
-	if (_food >= maxFood() / 3 &&
-		IsWildAnimalNoHome(_unitEnum))
-	{
-		PUN_CHECK(_homeProvinceId != -1);
-		int32 leastAnimalProvinceId = -1;
-		int32 leastAnimalCount = _simulation->provinceAnimals(_homeProvinceId).size();
-
-		const std::vector<ProvinceConnection>& connections = _simulation->GetProvinceConnections(_homeProvinceId);
-		for (ProvinceConnection connection : connections)
-		{
-			int32 animalCount = _simulation->provinceAnimals(connection.provinceId).size();
-			if (_simulation->IsProvinceValid(connection.provinceId) &&
-				animalCount < leastAnimalCount) 
-			{
-				leastAnimalCount = animalCount;
-				leastAnimalProvinceId = connection.provinceId;
-			}
-		}
-
-		if (leastAnimalProvinceId != -1) 
-		{	
-			_simulation->RemoveProvinceAnimals(_homeProvinceId, _id);
-			_homeProvinceId = leastAnimalProvinceId;
-			_simulation->AddProvinceAnimals(_homeProvinceId, _id);
-
-			_lastFindWildFoodTick = 0;
-		}
+	if (IsWildAnimalNoHome(_unitEnum)) {
+		TryChangeProvince_NoAction();
 	}
 
 	Add_Wait(Time::TicksPerSecond * 5);
 
 	AddDebugSpeech("(Failed)TryFindWildFood: nearestTree invalid");
 	debugFindFullBushFailCount++;
+	return false;
+}
+
+bool UnitStateAI::TryChangeProvince_NoAction()
+{
+	if (_homeProvinceId != -1)
+	{
+		int32 leastAnimalProvinceId = -1;
+		int32 leastAnimalCount = _simulation->provinceAnimals(_homeProvinceId).size();
+
+		const std::vector<ProvinceConnection>& connections = _simulation->GetProvinceConnections(_homeProvinceId);
+		for (ProvinceConnection connection : connections)
+		{
+			if (connection.tileType == TerrainTileType::None &&
+				_simulation->IsProvinceValid(connection.provinceId))
+			{
+				int32 animalCount = _simulation->provinceAnimals(connection.provinceId).size();
+				if (animalCount < leastAnimalCount) {
+					leastAnimalCount = animalCount;
+					leastAnimalProvinceId = connection.provinceId;
+				}
+			}
+		}
+
+		if (leastAnimalProvinceId != -1)
+		{
+			_simulation->RemoveProvinceAnimals(_homeProvinceId, _id);
+			_homeProvinceId = leastAnimalProvinceId;
+			_simulation->AddProvinceAnimals(_homeProvinceId, _id);
+
+			_lastFindWildFoodTick = 0;
+			return true;
+		}
+	}
 	return false;
 }
 
@@ -1560,6 +1612,12 @@ void UnitStateAI::Eat()
 			int32 foodConsumptionModifier = _simulation->difficultyConsumptionAdjustment(_playerId);
 
 			foodIncrement = foodIncrement * 100 / (100 + foodConsumptionModifier);
+
+			// Special case:
+			if (resourceEnum == ResourceEnum::Melon) {
+				_simulation->ChangeMoney(_playerId, 3);
+				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, unitTile(), "+3", resourceEnum);
+			}
 		}
 		else
 		{	
@@ -1934,11 +1992,12 @@ bool UnitStateAI::MoveTo(WorldTile2 end, int32 customFloodDistance)
 
 	bool isIntelligent = IsIntelligentUnit(unitEnum());
 
-	int32 customCalculationCount = 30000;
-	int32 distance = WorldTile2::Distance(tile, end);
-	//if (distance > 70) {
-	//	customCalculationCount = 200000;
-	//}
+	int64 customCalculationCount = 30000;
+	int64 distance = WorldTile2::Distance(tile, end);
+	const int64 baseDistance = 70;
+	if (distance > baseDistance) {
+		customCalculationCount = 30000 * distance * distance / (baseDistance * baseDistance);
+	}
 	
 	bool succeed = _simulation->pathAI(isIntelligent)->FindPath(tile.x, tile.y, end.x, end.y, rawWaypoint, isEnum(UnitEnum::Human), isIntelligent, customCalculationCount);
 

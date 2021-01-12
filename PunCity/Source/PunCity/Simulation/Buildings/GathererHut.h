@@ -171,16 +171,13 @@ public:
  * Production buildings
  */
 
-class MushroomHut final : public Building
+class MushroomFarm final : public Building
 {
 public:
-	void FinishConstruction() final
-	{
+	void FinishConstruction() final {
 		Building::FinishConstruction();
 
-		AddResourceHolder(ResourceEnum::Shroom, ResourceHolderType::Provider, 0);
 		_upgrades = {
-			//MakeUpgrade("Shroomery", "Produce psychedelic shroom (luxury) instead.", 200),
 			MakeUpgrade("Intensive care", "+30% production bonus when worker slots are full", ResourceEnum::Stone, 50),
 		};
 	}
@@ -196,6 +193,33 @@ public:
 
 	int32 baseInputPerBatch() final;
 };
+
+class ShroomFarm final : public Building
+{
+public:
+	void FinishConstruction() final {
+		Building::FinishConstruction();
+
+		_upgrades = {
+			MakeUpgrade("Intensive care", "+30% production bonus when worker slots are full", ResourceEnum::SteelTools, 100),
+			MakeProductionUpgrade("Substrate Treatment", ResourceEnum::SteelTools, 200, 50),
+		};
+	}
+
+	std::vector<BonusPair> GetBonuses() override {
+		std::vector<BonusPair> bonuses = Building::GetBonuses();
+		if (IsUpgraded(0) && isOccupantFull()) {
+			bonuses.push_back({ "Intensive care", 30 });
+		}
+		return bonuses;
+	}
+
+
+	int32 baseInputPerBatch() final {
+		return _simulation->unlockSystem(_playerId)->IsResearched(TechEnum::MushroomSubstrateSterilization) ? 4 : 8;
+	}
+};
+
 
 class Beekeeper final : public Building
 {
@@ -277,16 +301,7 @@ public:
 
 	bool IsStage(FarmStage farmStage) { return _farmStage == farmStage; }
 	
-	std::string farmStageName() {
-		switch (_farmStage) {
-		case FarmStage::Dormant: return "Dormant";
-		case FarmStage::Seeding: return "Seeding";
-		case FarmStage::Nourishing: return "Nourishing";
-		case FarmStage::Harvesting: return "Harvesting";
-		}
-		UE_DEBUG_BREAK();
-		return "";
-	}
+	FText farmStageName();
 
 	bool ShouldAddWorker_ConstructedNonPriority() override {
 		return !IsStage(FarmStage::Dormant);
@@ -698,54 +713,59 @@ public:
 	}
 };
 
-class RegionShrine final : public ConsumerIndustrialBuilding
+
+class RegionShrine final : public Building
 {
-public:
-	void FinishConstruction() final
-	{
-		ConsumerIndustrialBuilding::FinishConstruction();
 
-		_upgrades = {
-
-		};
-	}
-
-	void PlayerTookOver(int32 playerId)
-	{
-		// Reset old workers
-		if (_playerId != -1) {
-			ResetWorkReservers();
-			_simulation->RemoveJobsFrom(buildingId(), false);
-			_simulation->PlayerRemoveJobBuilding(_playerId, *this, _isConstructed);
-		}
-
-		_playerId = playerId;
-		_simulation->PlayerAddJobBuilding(_playerId, *this, false);
-		SetJobBuilding(3);
-
-		OnInit();
-		InitStatistics();
-	}
-
-	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = ConsumerIndustrialBuilding::GetBonuses();
-
-		return bonuses;
-	}
-
-	int32 productPerBatch() override {
-		return 5 * efficiency() / 100;
-	}
-
-	// Same amount of work required to acquire resources
-	int32 workManSecPerBatch100() final
-	{
-		const int32 value = 250; // 500 / 2
-		return value * 100 * 100 / WorkRevenue100PerSec_perMan_Base; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
-	}
-
-	int32 baseInputPerBatch() override { return 0; }
 };
+//class RegionShrine final : public ConsumerIndustrialBuilding
+//{
+//public:
+//	void FinishConstruction() final
+//	{
+//		ConsumerIndustrialBuilding::FinishConstruction();
+//
+//		_upgrades = {
+//
+//		};
+//	}
+//
+//	void PlayerTookOver(int32 playerId)
+//	{
+//		// Reset old workers
+//		if (_playerId != -1) {
+//			ResetWorkReservers();
+//			_simulation->RemoveJobsFrom(buildingId(), false);
+//			_simulation->PlayerRemoveJobBuilding(_playerId, *this, _isConstructed);
+//		}
+//
+//		_playerId = playerId;
+//		_simulation->PlayerAddJobBuilding(_playerId, *this, false);
+//		SetJobBuilding(3);
+//
+//		OnInit();
+//		InitStatistics();
+//	}
+//
+//	std::vector<BonusPair> GetBonuses() override {
+//		std::vector<BonusPair> bonuses = ConsumerIndustrialBuilding::GetBonuses();
+//
+//		return bonuses;
+//	}
+//
+//	int32 productPerBatch() override {
+//		return 5 * efficiency() / 100;
+//	}
+//
+//	// Same amount of work required to acquire resources
+//	int32 workManSecPerBatch100() final
+//	{
+//		const int32 value = 250; // 500 / 2
+//		return value * 100 * 100 / WorkRevenue100PerSec_perMan_Base; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
+//	}
+//
+//	int32 baseInputPerBatch() override { return 0; }
+//};
 
 class Barrack final : public ConsumerIndustrialBuilding
 {
@@ -988,7 +1008,7 @@ public:
 
 		_upgrades = {
 			MakeProductionUpgrade("Wine appreciation", 70, 50),
-			MakeComboUpgrade("Wine Town", ResourceEnum::Brick, 25, 25),
+			MakeComboUpgrade("Wine Town", ResourceEnum::Brick, 50, 50),
 		};
 	}
 
@@ -999,6 +1019,21 @@ public:
 		}
 
 		return bonuses;
+	}
+};
+
+class CoffeeRoaster final : public IndustrialBuilding
+{
+public:
+	void FinishConstruction() final
+	{
+		Building::FinishConstruction();
+
+		_upgrades = {
+			MakeProductionUpgrade("Coffee Appreciation", 70, 50),
+			MakeProductionUpgrade("Improved Roasting Stage", 70, 50),
+			MakeComboUpgrade("Coffee Town", ResourceEnum::Brick, 50, 50),
+		};
 	}
 };
 
@@ -1102,6 +1137,34 @@ public:
 		return bonuses;
 	}
 };
+
+class VodkaDistillery : public IndustrialBuilding
+{
+public:
+	void FinishConstruction() override {
+		Building::FinishConstruction();
+
+		_upgrades = {
+			MakeUpgrade("Improved Fermentation", "Consumes 30% less input.", ResourceEnum::Stone, 50),
+			MakeProductionUpgrade("Improved Filtration", ResourceEnum::Stone, 50, 30),
+			MakeComboUpgrade("Vodka Town", ResourceEnum::Stone, 30, 50),
+		};
+	}
+
+	int32 baseInputPerBatch() override {
+		return Building::baseInputPerBatch() * (IsUpgraded(0) ? 70 : 100) / 100;
+	}
+
+	std::vector<BonusPair> GetBonuses() override {
+		std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
+		if (_simulation->TownhallCardCount(_playerId, CardEnum::MasterBrewer) > 0) {
+			bonuses.push_back({ "Master brewer", 30 });
+		}
+
+		return bonuses;
+	}
+};
+
 
 class Windmill final : public IndustrialBuilding
 {

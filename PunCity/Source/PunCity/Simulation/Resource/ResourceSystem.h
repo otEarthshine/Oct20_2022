@@ -665,10 +665,13 @@ private:
 				// TODO: IsConnected can be checked once in a while...
 				//if (!isAvoidId && _simulation->IsConnected(origin, holder.tile, maxFloodDist, true))
 
-				bool isConnected;
+				bool isConnected = false;
 				if (holder.objectId != -1) {
 					isConnected = _simulation->IsConnectedBuilding(holder.objectId, _playerId);
-				} else {
+				}
+
+				if (!isConnected) {
+					// Drop (objectId == -1) or failed building IsConnected
 					DEBUG_ISCONNECTED_VAR(DropResourceSystem);
 					isConnected = _simulation->IsConnected(origin, holder.tile, maxFloodDist, true); // Drop case
 				}
@@ -853,6 +856,9 @@ public:
 	bool HasAvailableHeat() const {
 		// TODO: check AvailableToPickup list instead
 		return resourceCountWithPop(ResourceEnum::Coal) + resourceCountWithPop(ResourceEnum::Wood) > 0;
+	}
+	bool HasAvailableMedicine() const {
+		return resourceCountWithPop(ResourceEnum::Medicine) + resourceCountWithPop(ResourceEnum::Herb) > 0;
 	}
 	bool HasAvailableTools() const {
 		for (ResourceEnum resourceEnum : ToolsEnums) {

@@ -28,6 +28,10 @@ public:
 		PunRichText->SetText(ToFText(string));
 	}
 
+	void SetText(FText text) {
+		PunRichText->SetText(text);
+	}
+
 	UPunRichText* SetJustification(ETextJustify::Type justification) {
 		PunRichText->SetJustification(justification);
 		return this;

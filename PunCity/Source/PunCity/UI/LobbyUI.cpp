@@ -75,7 +75,7 @@ void ULobbyUI::Init()
 	LobbyReadyButton->OnClicked.AddDynamic(this, &ULobbyUI::OnClickReadyButton);
 
 	//NameInputBox->OnTextChanged.AddDynamic(this, &ULobbyUI::PlayerNameChanged);
-	InitialAnimalsInputBox->OnTextChanged.AddDynamic(this, &ULobbyUI::InputBoxChange_InitialAnimals);
+	//InitialAnimalsInputBox->OnTextChanged.AddDynamic(this, &ULobbyUI::InputBoxChange_InitialAnimals);
 
 	LobbyBackButton->OnClicked.AddDynamic(this, &ULobbyUI::ReturnToMainMenu);
 	LobbyStartGameButton->OnClicked.AddDynamic(this, &ULobbyUI::OnClickLobbyStartGameButton);
@@ -382,7 +382,7 @@ void ULobbyUI::Tick()
 
 	// mainMenuPopup shouldn't do anything for LobbyUI
 	// This is clean up popups from HandleNetworkFailure (For example, client joining error shouldn't popup after we exited created room)
-	gameInstance()->mainMenuPopup = "";
+	gameInstance()->mainMenuPopup = FText();
 
 	UpdateLobbyUI();
 
@@ -390,14 +390,14 @@ void ULobbyUI::Tick()
 }
 
 
-void ULobbyUI::InputBoxChange_InitialAnimals(const FText& text)
-{
-	int32 result = 0;
-	bool success = FDefaultValueHelper::ParseInt(text.ToString(), result);
-	if (success) {
-		PunSettings::Set("InitialAnimals", result);
-	}
-}
+//void ULobbyUI::InputBoxChange_InitialAnimals(const FText& text)
+//{
+//	int32 result = 0;
+//	bool success = FDefaultValueHelper::ParseInt(text.ToString(), result);
+//	if (success) {
+//		PunSettings::Set("InitialAnimals", result);
+//	}
+//}
 
 void ULobbyUI::ReturnToMainMenu()
 {

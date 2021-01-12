@@ -6,10 +6,10 @@
 #include "UnitStateAI.h"
 #include "SimUtils.h"
 
-void GameRegionSystem::RemoveBoarBurrow(int32_t regionId, int32_t buildingId)
+void GameRegionSystem::RemoveBoarBurrow(int32 provinceId, int32 buildingId)
 {
-	check(CppUtils::Contains(_boarBurrowsToRegion[regionId], buildingId));
-	CppUtils::Remove(_boarBurrowsToRegion[regionId], buildingId);
+	check(CppUtils::Contains(_boarBurrowsToProvince[provinceId], buildingId));
+	CppUtils::Remove(_boarBurrowsToProvince[provinceId], buildingId);
 }
 
 

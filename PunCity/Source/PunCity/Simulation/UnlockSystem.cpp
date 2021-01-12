@@ -29,10 +29,13 @@ void Building_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulation
 			cardCount = 1;
 		}
 
-		// Special case: herb
-		if (buildingEnum == CardEnum::HerbSeed) {
+		// Special case: Common Seeds (Herbs, Potato etc.)
+		if (IsCommonSeedCard(buildingEnum)) {
 			cardSystem.AddCardToHand2(buildingEnum);
-			_simulation->AddPopup(playerId, "You unlocked and received Medicinal Herb Seeds Card.");
+
+			std::stringstream ss;
+			ss << "You unlocked and received " << GetBuildingInfo(buildingEnum).name << " Card.";
+			_simulation->AddPopup(playerId, ss.str());
 			continue;
 		}
 		

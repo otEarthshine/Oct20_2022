@@ -3,6 +3,9 @@
 #include "Kismet/GameplayStatics.h"
 //#include "PunCity/PunUtils.h"
 
+
+#define LOCTEXT_NAMESPACE "GameSimulationInfo"
+
 int32 TimeDisplay::_Ticks = 0;
 
 float Time::kForcedFallSeason = 0.0f;
@@ -92,3 +95,88 @@ void Time::SetTickCount(int32 tickCount)
 
 std::vector<ResourceEnum> StaticData::FoodEnums;
 int32 StaticData::FoodEnumCount = 0;
+
+
+/*
+ * Science Enum
+ */
+static TArray<FText> ScienceEnumNameList
+{
+	LOCTEXT("HouseBase", "House Base"),
+	LOCTEXT("HouseLuxury", "House Luxury"),
+	LOCTEXT("Library", "Library"),
+	LOCTEXT("School", "School"),
+	LOCTEXT("HomeBrew", "Home Brew"),
+
+	LOCTEXT("Knowledgetransfer", "Knowledge transfer"),
+	LOCTEXT("LastEraTechnology", "Last Era Technology"),
+
+	LOCTEXT("Rationalism", "Rationalism"),
+};
+
+const FText& ScienceEnumName(int32 index) {
+	return ScienceEnumNameList[index];
+}
+
+
+/*
+ * Relationship
+ */
+static TArray<FText> RelationshipModifierName
+{
+	LOCTEXT("RelationGaveGifts", "You gave us gifts"),
+	LOCTEXT("RelationStrong", "You are strong"),
+	LOCTEXT("RelationBefriended", "You befriended us"),
+	LOCTEXT("RelationFamily", "We are family"),
+
+	LOCTEXT("RelationAdjacentBorders", "Adjacent borders spark tensions"),
+	LOCTEXT("RelationProximity", "Townhalls proximity spark tensions"),
+	LOCTEXT("RelationWeakling", "Weaklings don't deserve our respect"),
+	LOCTEXT("RelationStole", "You stole from us"),
+	LOCTEXT("RelationKidnapped", "You kidnapped our citizens"),
+	LOCTEXT("RelationAttacked", "You attacked us"),
+	LOCTEXT("RelationCannibals", "We fear cannibals"),
+};
+
+FText RelationshipModifierNameInt(int32 index) {
+	return RelationshipModifierName[index];
+}
+int32 RelationshipModifierCount() { return RelationshipModifierName.Num(); }
+
+
+/*
+ * Inventory
+ */
+FText UnitInventory::ToText() const {
+	TArray<FText> args;
+	FText inventoryText = LOCTEXT("Inventory:", "Inventory:");
+	ADDTEXT_(INVTEXT("\n{0}\n"), inventoryText);
+	for (const ResourcePair& pair : _resourcePairs) {
+		ADDTEXT_(INVTEXT(" {0} {1}\n"), ResourceNameT(pair.resourceEnum), TEXT_NUM(pair.count));
+	}
+	ADDTEXT_INV_("\n");
+	return JOINTEXT(args);
+}
+
+/*
+ * Claim
+ */
+
+void AppendClaimConnectionString(TArray<FText>& args, bool isConquering, ClaimConnectionEnum claimConnectionEnum)
+{
+	if (isConquering) {
+		ADDTEXT_LOCTEXT("ConquerProvince", "Conquer Province (Annex)");
+	} else {
+		ADDTEXT_LOCTEXT("ClaimProvince", "Claim Province");
+	}
+	
+	if (claimConnectionEnum == ClaimConnectionEnum::ShallowWater) {
+		ADDTEXT_LOCTEXT("shallow_water", " (shallow water)");
+	}
+	else if (claimConnectionEnum == ClaimConnectionEnum::Deepwater) {
+		ADDTEXT_LOCTEXT("oversea", " (oversea)");
+	}
+}
+
+
+#undef LOCTEXT_NAMESPACE

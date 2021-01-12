@@ -1502,14 +1502,15 @@ bool HumanStateAI::TryRanch()
 	
 
 	// Check if ranch is almost full, if so, start slaugthering animals...
-	if (ranch.workMode().name == "Kill when above full capacity")
+	std::string workModeName = ranch.workMode().name;
+	if (workModeName == "Kill when reached full capacity")
 	{
 		if (ranch.openAnimalSlots() > 1) { // Note > 1 (more balance)
 			AddDebugSpeech("(Failed)TryRanch: still growing animals");
 			return false;
 		}
 	}
-	else if (ranch.workMode().name == "Kill when above half capacity")
+	else if (workModeName == "Kill when above half capacity")
 	{
 		if (ranch.openAnimalSlots() > ranch.maxAnimals / 2) {
 			AddDebugSpeech("(Failed)TryRanch: still growing animals");
@@ -2669,7 +2670,8 @@ bool HumanStateAI::TryConstructHelper(int32 workplaceId)
 	//	return false;
 	//}
 
-	WorldTile2 adjacentTile = workplace.adjacentTileNearestTo(unitTile());
+	// TODO: maybe this cause some building not getting built?
+	WorldTile2 adjacentTile = workplace.adjacentTileNearestTo(unitTile(), unitMaxFloodDistance());
 
 	if (!adjacentTile.isValid()) {
 		AddDebugSpeech("(Failed)TryConstruct: adjacentTile invalid");

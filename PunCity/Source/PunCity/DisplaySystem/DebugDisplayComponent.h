@@ -199,7 +199,9 @@ protected:
 							if (IsValidRawProvinceId(provinceId))
 							{
 								provinceId = abs(provinceId);
-								if (!provinceSys.displayedProvinceThisTick[provinceId])
+
+								// For displaying only once element in the province
+								if (!provinceSys.displayedProvinceThisTick[provinceId]) 
 								{
 									provinceSys.displayedProvinceThisTick[provinceId] = true;
 
@@ -248,6 +250,13 @@ protected:
 										drawLine(tileVec + FVector(15, 15, 0), tileVec + FVector(15, 15, provinceSys.provinceRiverTileCount(provinceId)), FLinearColor(0.2, 0.2, 1));
 										drawLine(tileVec + FVector(20, 20, 0), tileVec + FVector(20, 20, provinceSys.provinceFlatTileCount(provinceId)), FLinearColor::Yellow);
 
+										// Animal count bar
+										int32 animalCount = simulation().provinceAnimals(provinceId).size();
+										for (int32 i = 0; i < animalCount; i++) {
+											FVector animalBarStart = tileVec + FVector(40, 40, i * 10);
+											drawLine(animalBarStart, animalBarStart + FVector(3, 0, 10), FLinearColor::Green);
+										}
+										
 										// Connections
 										const std::vector<ProvinceConnection>& connections = provinceSys.GetProvinceConnections(provinceId);
 										for (int32 c = 0; c < connections.size(); c++)

@@ -125,10 +125,31 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 		OuterImage->GetDynamicMaterial()->SetScalarParameterValue("ResearchFraction", 0);
 	}
 
-	//OuterImage->SetColorAndOpacity(outerImageColor);
-	//InnerImage->SetColorAndOpacity(outerImageColor);
+	// Required Resource
+	if (tech && tech->requiredResourceEnum != ResourceEnum::None)
+	{
+		int32 productionCount =  unlockSys->GetResourceProductionCount(tech->requiredResourceEnum);
 
-	//for (int32 i = 0; i < _lineImages.Num(); i++) {
-	//	_lineImages[i]->SetColorAndOpacity(lineColor);
-	//}
+		if (productionCount < tech->requiredResourceCount)
+		{
+			std::stringstream ss;
+			ss << "Required:\n" << productionCount << "/" << tech->requiredResourceCount << " " << ResourceName(tech->requiredResourceEnum);
+			SetText(TechRequirement, ss.str());
+		}
+		else {
+			std::stringstream ss;
+			ss << "Completed:\n" << tech->requiredResourceCount << " " << ResourceName(tech->requiredResourceEnum);
+			SetText(TechRequirement, ss.str());
+		}
+
+		//SetResourceImage(TechRequirementIcon, tech->requiredResourceEnum, assetLoader());
+		//TechRequirementIcon->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		TechRequirementIcon->SetVisibility(ESlateVisibility::Collapsed);
+		TechRequirement->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	}
+	else {
+		TechRequirement->SetVisibility(ESlateVisibility::Collapsed);
+		TechRequirementIcon->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	
 }

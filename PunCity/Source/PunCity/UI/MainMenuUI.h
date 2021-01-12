@@ -14,7 +14,6 @@
 #include "LobbySettingsUI.h"
 #include "LoadSaveUI.h"
 
-//#include <memory>
 
 #include "MainMenuUI.generated.h"
 /**
@@ -34,11 +33,6 @@ public:
 
 	void Tick();
 
-	UPROPERTY(meta = (BindWidget)) UOverlay* MultiplayerMenu;
-	UPROPERTY(meta = (BindWidget)) UButton* HostButton;
-	UPROPERTY(meta = (BindWidget)) UButton* JoinButton;
-	UPROPERTY(meta = (BindWidget)) UEditableTextBox* AddressInputBox;
-
 	/*
 	 * New UI
 	 */
@@ -53,10 +47,6 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* SinglePlayerMenuNewGameButton;
 	UPROPERTY(meta = (BindWidget)) UButton* SinglePlayerMenuLoadGameButton;
 	UPROPERTY(meta = (BindWidget)) UButton* SinglePlayerMenuBackButton;
-
-	//UPROPERTY(meta = (BindWidget)) UButton* MultiplayerMenuInternetButton; // Switch Index 4
-	//UPROPERTY(meta = (BindWidget)) UButton* MultiplayerMenuLANButton; // Switch Index 4
-	//UPROPERTY(meta = (BindWidget)) UButton* MultiplayerMenuBackButton;
 
 	UPROPERTY(meta = (BindWidget)) UButton* LobbyListBackButton;
 	UPROPERTY(meta = (BindWidget)) UButton* LobbyListRefreshButton;
@@ -78,7 +68,7 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) UCanvasPanel* MainMenuCanvas;
 	UPROPERTY(meta = (BindWidget)) UCanvasPanel* SinglePlayerMainMenuCanvas;
-	UPROPERTY(meta = (BindWidget)) UCanvasPanel* MultiplayerMainMenuCanvas;
+	//UPROPERTY(meta = (BindWidget)) UCanvasPanel* MultiplayerMainMenuCanvas;
 	UPROPERTY(meta = (BindWidget)) UGameSettingsUI* GameSettingsUI;
 	UPROPERTY(meta = (BindWidget)) UCanvasPanel* MultiplayerLobbyListCanvas;
 	UPROPERTY(meta = (BindWidget)) ULoadSaveUI* LoadSaveUI;
@@ -175,17 +165,7 @@ public:
 			PasswordEditableText->SetText(FText());
 		}
 	}
-	UFUNCTION() void OnClickJoinPasswordConfirm() {
-		PasswordPopupOverlay->SetVisibility(ESlateVisibility::Collapsed);
-		FString password = GetSessionValueString(SESSION_PASSWORD, _chosenSession.Session.SessionSettings);
-		FString passwordInput = PasswordEditableText->GetText().ToString();
-		
-		if (password == passwordInput) {
-			JoinMultiplayerGame();
-		} else {
-			gameInstance()->mainMenuPopup = "Invalid password.";
-		}
-	}
+	UFUNCTION() void OnClickJoinPasswordConfirm();
 	UFUNCTION() void OnClickJoinPasswordCancel() {
 		PasswordPopupOverlay->SetVisibility(ESlateVisibility::Collapsed);
 	}
@@ -236,15 +216,6 @@ public:
 	void KeyPressed_Escape() {
 		LoadSaveUI->KeyPressed_Escape();
 	}
-	
-private:
-	// Old
-	void RefreshUI(MenuState state);
-	
-private:
-	// Old
-	std::unique_ptr<PunTerrainGenerator> terrainGenerator;
-	FString _hostToJoin;
 
 private:
 	bool _needLobbyListUIRefresh = false;

@@ -125,6 +125,15 @@ public:
 	UToolTipWidgetBase* AddToolTip(UWidget* widget, std::string message);
 	UToolTipWidgetBase* AddToolTip(UWidget* widget, std::wstring message);
 
+
+	UToolTipWidgetBase* AddToolTip(UWidget* widget, FText message);
+	UToolTipWidgetBase* AddToolTip(UWidget* widget, TArray<FText>& args) {
+		auto tooltip = AddToolTip(widget, FText::Join(FText(), args));
+		args.Empty();
+		return tooltip;
+	}
+	
+
 	void AddSeries(class UTimeSeriesPlot* graph, std::vector<struct GraphSeries> seriesList);
 
 	
@@ -211,6 +220,10 @@ public:
 	static void SetTextF(UTextBlock* textBlock, const FString& str) {
 		textBlock->SetText(FText::FromString(str));
 	}
+
+	static void SetText(UTextBlock* textBlock, FText str) {
+		textBlock->SetText(str);
+	}
 	
 	static void SetTextNumber(UTextBlock* textBlock, float value, int32 precision) {
 		std::stringstream ss;
@@ -262,6 +275,14 @@ public:
 
 	static void SetText(URichTextBlock* textBlock, std::wstring str) {
 		textBlock->SetText(FText::FromString(ToFString(str)));
+	}
+
+	static void SetText(URichTextBlock* textBlock, FText text) {
+		textBlock->SetText(text);
+	}
+	static void SetText(URichTextBlock* textBlock, TArray<FText>& args) {
+		textBlock->SetText(JOINTEXT(args));
+		args.Empty();
 	}
 
 	template <class T>

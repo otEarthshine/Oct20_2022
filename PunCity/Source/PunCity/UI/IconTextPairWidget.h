@@ -25,6 +25,10 @@ public:
 		PrefixText->SetText(FText::FromString(prefix));
 		SuffixText->SetText(FText::FromString(suffix));
 	}
+	void SetText(const FText& prefix, const FText& suffix) {
+		PrefixText->SetText(prefix);
+		SuffixText->SetText(suffix);
+	}
 
 	void SetTextRed() {
 		SetTextColor(FLinearColor(1, 0, 0));

@@ -112,8 +112,16 @@ public:
 	}
 
 	void TickRound()
-	{
-		_cardHandQueueCount++;
+	{	
+		_cardHandQueueCount = std::min(_cardHandQueueCount + 1, 3);
+
+		if (allowMaxCardHandQueuePopup && _cardHandQueueCount >= 3) 
+		{
+			_simulation->AddPopupNonDuplicate(PopupInfo(_playerId,
+				"You have reached the maximum of 3 queued card hards. "
+				"Please buy cards or pass the existing hands.",
+				{"Close", "Do not show this again"}, PopupReceiverEnum::MaxCardHandQueuePopup));
+		}
 
 		// Show hand if not already done so
 		if (_isCardStackBlank) {
@@ -836,6 +844,11 @@ public:
 
 	ConverterCardUseState converterCardState = ConverterCardUseState::None;
 	CardEnum wildCardEnumUsed = CardEnum::None;
+
+	/*
+	 * Non-Serialize
+	 */
+	bool allowMaxCardHandQueuePopup = true;
 	
 private:
 	IGameSimulationCore* _simulation = nullptr;
@@ -870,4 +883,5 @@ private:
 	bool _isPendingCommand = false;
 
 	int32 _cardHandQueueCount = 0;
+
 };

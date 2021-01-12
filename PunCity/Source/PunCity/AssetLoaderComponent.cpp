@@ -362,6 +362,10 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	TryLoadBuildingModuleSet("PortVillage", "RegionPortVillage");
 	TryLoadBuildingModuleSet("RegionCratePile", "RegionCratePile");
 
+	// Dec 29
+	TryLoadBuildingModuleSet("ShroomHut", "ShroomHut");
+	TryLoadBuildingModuleSet("VodkaDistillery", "VodkaDistillery");
+	TryLoadBuildingModuleSet("CoffeeRoaster", "CoffeeRoaster");
 	
 
 	// Mint Modules
@@ -625,7 +629,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	//LoadResource(ResourceEnum::WhaleMeat, "WhaleMeat/ResourceWhaleMeat");
 	LoadResource2(ResourceEnum::Grape, "Grape/Grape");
 	LoadResource2(ResourceEnum::Wine, "Wine/Wine");
-	LoadResource2(ResourceEnum::Shroom, "Mushroom/Mushroom");
+	LoadResource2(ResourceEnum::Shroom, "Shroom/Shroom");
+	LoadResource2(ResourceEnum::Vodka, "Vodka/Vodka");
 
 	LoadResource2(ResourceEnum::Pork, "Meat/Meat");
 	LoadResource2(ResourceEnum::Beef, "Meat/Meat");
@@ -665,6 +670,15 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadResource2(ResourceEnum::Dye, "Dye/Dye");
 	LoadResource2(ResourceEnum::Book, "Book/Book");
 
+	// Dec 2020
+	LoadResource2(ResourceEnum::Blueberries, "Blueberries/Blueberries");
+	LoadResource2(ResourceEnum::Melon, "Melon/Melon");
+	LoadResource2(ResourceEnum::Potato, "Potato/Potato");
+	LoadResource2(ResourceEnum::Pumpkin, "Pumpkin/Pumpkin");
+
+	LoadResource2(ResourceEnum::RawCoffee, "CoffeeFruit/CoffeeFruit");
+	LoadResource2(ResourceEnum::Coffee, "Coffee/Coffee");
+	LoadResource2(ResourceEnum::Tulip, "Tulip/Tulip");
 
 	//LoadResource2(ResourceEnum::Oyster, "Pottery/Pottery");
 	//LoadResource2(ResourceEnum::Truffle, "Pottery/Pottery");
@@ -821,9 +835,30 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadTileObject(TileObjEnum::Herb, {
 		"Trees/HerbPlant/HerbPlant",
 	});
-	//LoadTileObject(TileObjEnum::BaconBush, {
-	//	"Trees/Grapevines/Grapeframes",
-	//});
+
+	// December 2020 new Crops
+	LoadTileObject(TileObjEnum::Potato, {
+		"Trees/Potato/PotatoPlant",
+	});
+	LoadTileObject(TileObjEnum::Pumpkin, {
+		"Trees/Pumpkin/PumpkinPlant",
+		"Trees/Pumpkin/PumpkinPlantFruit",
+	});
+	LoadTileObject(TileObjEnum::RawCoffee, {
+		"Trees/Coffee/CoffeePlantFruit",
+		"Trees/Coffee/CoffeeTrunk",
+	});
+	LoadTileObject(TileObjEnum::Tulip, {
+		"Trees/Tulip/TulipPlant",
+	});
+	LoadTileObject(TileObjEnum::Blueberry, {
+		"Trees/Blueberry/BlueberryPlant",
+		"Trees/Blueberry/BlueberryPlantFruit",
+	});
+	LoadTileObject(TileObjEnum::Melon, {
+		"Trees/Melon/MelonPlant",
+		"Trees/Melon/MelonPlantFruit",
+	});
 
 	/**
 	 * Placement

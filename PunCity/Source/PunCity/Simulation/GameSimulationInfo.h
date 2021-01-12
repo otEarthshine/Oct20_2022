@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "PunCity/PunAStar128x256.h"
 #include "GameCoordinate.h"
@@ -18,11 +18,11 @@
 
 // VERSION
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 8 // 3 digit
+#define MINOR_VERSION 9 // 3 digit
 
-#define VERSION_DAY 12
-#define VERSION_MONTH 12
-#define VERSION_YEAR 20
+#define VERSION_DAY 5
+#define VERSION_MONTH 1
+#define VERSION_YEAR 21
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
 
 #define COMBINE_VERSION (MAJOR_VERSION * 1000000000) + (MINOR_VERSION * 1000000) + VERSION_DATE
@@ -62,11 +62,11 @@ static std::string GetGameVersionString(int32 version)
 
 // VERSION
 #define MAJOR_SAVE_VERSION 0
-#define MINOR_SAVE_VERSION 3 // 3 digit
+#define MINOR_SAVE_VERSION 9 // 3 digit
 
-#define VERSION_SAVE_DAY 12
-#define VERSION_SAVE_MONTH 12
-#define VERSION_SAVE_YEAR 20
+#define VERSION_SAVE_DAY 5
+#define VERSION_SAVE_MONTH 1
+#define VERSION_SAVE_YEAR 21
 #define VERSION_SAVE_DATE (VERSION_SAVE_YEAR * 10000) + (VERSION_SAVE_MONTH * 100) + VERSION_SAVE_DAY
 
 #define SAVE_VERSION (MAJOR_SAVE_VERSION * 1000000000) + (MINOR_SAVE_VERSION * 1000000) + VERSION_SAVE_DATE
@@ -81,7 +81,11 @@ static std::string GetGameVersionString(int32 version)
 
 #define ToStdString(fString) (std::string(TCHAR_TO_UTF8(*(fString))));
 
+#define FTextToStd(fText) ToStdString(fText.ToString());
+
 #define FToUTF8(fString) (TCHAR_TO_UTF8(*(fString)));
+
+#define ToFText(stdString) (FText::FromString(FString((stdString).c_str())))
 
 #define DEBUG_BUILD WITH_EDITOR //!UE_BUILD_SHIPPING
 #define DEV_BUILD !UE_BUILD_SHIPPING
@@ -131,6 +135,41 @@ static std::string GetGameVersionString(int32 version)
 	#endif
 #endif
 
+class PunStringStream
+{
+public:
+	
+};
+
+#define FTEXT(textIn) (FText::FromString(FString(textIn)))
+#define TEXT_PERCENT(number) FText::Join(FText(), FText::AsNumber(number), INVTEXT("%"))
+#define TEXT_100(number) FText::Join(FText(), FText::AsNumber(number / 100), INVTEXT("."), FText::AsNumber((number % 100) / 10))
+#define TEXT_100SIGNED(number) FText::Join(FText(), (number > 0 ? INVTEXT("+") : INVTEXT("")), FText::AsNumber(number / 100), INVTEXT("."), FText::AsNumber((number % 100) / 10))
+#define TEXT_NUM(number) FText::AsNumber(number)
+#define TEXT_NUMSIGNED(number) FText::Join(FText(), (number > 0 ? INVTEXT("+") : INVTEXT("")), FText::AsNumber(number))
+
+#define TEXT_TAG(Tag, InText) FText::Format(INVTEXT("{0}{1}</>"), INVTEXT(Tag), InText)
+
+#define ADDTEXT(InArgs, InText, ...) InArgs.Add(FText::Format(InText, __VA_ARGS__));
+#define ADDTEXT_(InText, ...) args.Add(FText::Format(InText, __VA_ARGS__));
+#define ADDTEXT__(InText) args.Add(InText);
+
+#define ADDTEXT_JOIN_(...) args.Add(FText::Join(__VA_ARGS__));
+
+#define ADDTEXT_NUMBER(InArgs, number) InArgs.Add(FText::AsNumber(number));
+#define ADDTEXT_100(InArgs, number) InArgs.Add(FText::AsNumber(number / 100)); InArgs.Add(INVTEXT(".")); InArgs.Add(FText::AsNumber((number % 100) / 10));
+#define ADDTEXT_PERCENT(InArgs, number) InArgs.Add(FText::AsNumber(number)); InArgs.Add(INVTEXT("%"));
+
+#define ADDTEXT_TAG_(Tag, InText) ADDTEXT_(INVTEXT("{0}{1}</>"), INVTEXT(Tag), InText)
+
+#define ADDTEXT_100_(number) args.Add(FText::AsNumber(number / 100)); args.Add(INVTEXT(".")); args.Add(FText::AsNumber((number % 100) / 10));
+#define ADDTEXT_INV_(InText) args.Add(INVTEXT(InText));
+#define ADDTEXT_LOCTEXT(InKey, InText) args.Add(LOCTEXT(InKey, InText));
+
+#define JOINTEXT(args) FText::Join(FText(), args)
+
+//#define JOINTEXT(...) FText::Join(FText(), __VA_ARGS__);
+
 static float Clamp01(float value) {
 	return std::max(0.0f, std::min(1.0f, value));
 }
@@ -172,6 +211,14 @@ static std::string TextRed(std::string str, bool isRed)
 	}
 	return str;
 }
+static FText TextRed(FText str, bool isRed)
+{
+	if (isRed) {
+		return TEXT_TAG("<Red>", str);
+	}
+	return str;
+}
+
 static std::string TextRedOrange(std::string str, int32 value, int32 orangeThreshold, int32 redThreshold)
 {
 	if (value < redThreshold) {
@@ -308,6 +355,7 @@ DECLARE_DEBUG_ISCONNECTED_VAR(FindNearestUnreservedFullBush);
 DECLARE_DEBUG_ISCONNECTED_VAR(GetProvinceRandomTile);
 DECLARE_DEBUG_ISCONNECTED_VAR(FindMarketResourceHolderInfo);
 DECLARE_DEBUG_ISCONNECTED_VAR(RefreshIsBuildingConnected);
+DECLARE_DEBUG_ISCONNECTED_VAR(ClaimProvince);
 DECLARE_DEBUG_ISCONNECTED_VAR(RefreshHoverWarning);
 DECLARE_DEBUG_ISCONNECTED_VAR(adjacentTileNearestTo);
 DECLARE_DEBUG_ISCONNECTED_VAR(DropResourceSystem);
@@ -753,7 +801,7 @@ enum class DifficultyLevel : uint8
 	King,
 	Emperor,
 	Immortal,
-	Diety,
+	Deity,
 };
 static const std::vector<FString> DifficultyLevelNames
 {
@@ -763,7 +811,7 @@ static const std::vector<FString> DifficultyLevelNames
 	"King",
 	"Emperor",
 	"Immortal",
-	"Diety",
+	"Deity",
 };
 static const std::vector<int32> DifficultyConsumptionAdjustment
 {
@@ -771,9 +819,9 @@ static const std::vector<int32> DifficultyConsumptionAdjustment
 	30,
 	70,
 	110,
-	150,
-	200,
-	250,
+	160,
+	230,
+	300,
 };
 
 static DifficultyLevel GetDifficultyLevelFromString(const FString& str) {
@@ -869,6 +917,17 @@ enum class ResourceEnum : uint8
 	Book,
 
 	Coconut,
+
+	// Added Dec 26
+	Potato,
+	Blueberries,
+	Melon,
+	Pumpkin,
+	RawCoffee,
+	Tulip,
+
+	Coffee,
+	Vodka,
 
 	// --- End
 	None,
@@ -966,13 +1025,13 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::IronOre,		"Iron Ore",		6, "Valuable ore that can be smelted into Iron Bar"),
 	ResourceInfo(ResourceEnum::Iron,		"Iron Bar",		18, "Sturdy bar of metal used in construction and tool-making."),
 	ResourceInfo(ResourceEnum::Furniture,	"Furniture", 10,  "Luxury tier 1 used for housing upgrade. Make house a home."),
-	ResourceInfo(ResourceEnum::Chocolate,	"Chocolate", 20,  "Luxury tier 2 used for housing upgrade. Everyone's favorite confectionary."),
+	ResourceInfo(ResourceEnum::Chocolate,	"Chocolate", 20,  "Everyone's favorite confectionary. (Luxury tier 3)"),
 
 	//ResourceInfo(ResourceEnum::StoneTools,		"Stone Tools",		15,  "Lowest-grade tool made by Stone Tool Shop."),
 	//ResourceInfo(ResourceEnum::CrudeIronTools,	"Crude Iron Tools",	15,  "Medium-grade tool made by Blacksmith using Iron Ore and Wood."),
 	ResourceInfo(ResourceEnum::SteelTools,		"Steel Tool",			27,  "High-grade tool made by Blacksmith from Iron Bars and Wood"),
 	ResourceInfo(ResourceEnum::Herb,				"Medicinal Herb",				6, 		"Medicinal plant used to heal sickness"),
-	ResourceInfo(ResourceEnum::Medicine,			"Medicine",			12,  "Potent Medicinal Herb extract used to cure sickness"),
+	ResourceInfo(ResourceEnum::Medicine,			"Medicine",			12,  "Potent Medicinal Herb extract used to heal sickness"),
 	
 	
 	//ResourceInfo(ResourceEnum::Tools,		"Tools", 25, 100, "Construction material"),
@@ -981,7 +1040,7 @@ static const ResourceInfo ResourceInfos[]
 	//ResourceInfo(ResourceEnum::WhaleMeat, "WhaleMeat", 7, 100, "Luxury food obtained from Fishing Lodge"),
 	ResourceInfo(ResourceEnum::Grape,		"Grape", FoodCost, "Juicy, delicious fruit used in Wine-making."),
 	ResourceInfo(ResourceEnum::Wine,		"Wine", 30, "Luxury tier 2 used for housing upgrade. Alcoholic drink that makes everything tastes better."),
-	ResourceInfo(ResourceEnum::Shroom,		"Shroom", 15, "Psychedelic mushroom that can bring you on a hallucination trip. Luxury used in upgrading houses"),
+	ResourceInfo(ResourceEnum::Shroom,		"Shroom", 15, "Psychedelic mushroom that can bring you on a hallucination trip. (Luxury tier 2)"),
 
 	ResourceInfo(ResourceEnum::Pork,			"Pork", FoodCost, "Delicious meat from farmed Pigs"),
 	ResourceInfo(ResourceEnum::GameMeat,		"Game Meat", FoodCost, "Delicious meat from wild animals"),
@@ -1028,6 +1087,17 @@ static const ResourceInfo ResourceInfos[]
 	// Oct 26
 	ResourceInfo(ResourceEnum::Coconut,		"Coconut",	FoodCost, "Large delicious fruit with white meat and refreshing juice."),
 
+	// Dec 17
+	ResourceInfo(ResourceEnum::Potato,		"Potato",	FoodCost, "Common tuber. Can be consumed as Food or brewed into Vodka."),
+	ResourceInfo(ResourceEnum::Blueberries,	"Blueberries",	FoodCost, "Blue-skinned fruit with refreshing taste."),
+	ResourceInfo(ResourceEnum::Melon,		"Melon",	FoodCost + 3, "Sweet and refreshing fruit. +3<img id=\"Coin\"/> each unit when consumed."),
+	ResourceInfo(ResourceEnum::Pumpkin,		"Pumpkin",	FoodCost, "Fruit with delicate, mildly-flavored flesh."),
+	ResourceInfo(ResourceEnum::RawCoffee,	"Raw Coffee",	FoodCost + 1, "Fruit that can be roasted to make Coffee."),
+	ResourceInfo(ResourceEnum::Tulip,		"Tulip",	FoodCost * 2, "Beautiful decorative flower. (Luxury tier 1)"),
+
+	ResourceInfo(ResourceEnum::Coffee,		"Coffee",	17, "Keeps you awake. (Luxury tier 2)"), // +5<img id=\"Science\"/> each unit when consumed.
+	ResourceInfo(ResourceEnum::Vodka,		"Vodka",	15, "Clear alcoholic beverage made from Potato. (Luxury tier 2)"),
+	
 };
 
 static const int ResourceEnumCount = _countof(ResourceInfos);
@@ -1056,6 +1126,10 @@ inline ResourceInfo GetResourceInfoSafe(ResourceEnum resourceEnum) {
 inline std::string ResourceName(ResourceEnum resourceEnum) {
 	PUN_CHECK(resourceEnum != ResourceEnum::None);
 	return ResourceInfos[static_cast<int>(resourceEnum)].name;
+}
+inline FText ResourceNameT(ResourceEnum resourceEnum) {
+	PUN_CHECK(resourceEnum != ResourceEnum::None);
+	return ToFText(ResourceInfos[static_cast<int>(resourceEnum)].name);
 }
 
 inline std::string ResourceName_WithNone(ResourceEnum resourceEnum) {
@@ -1125,6 +1199,11 @@ static const std::vector<ResourceEnum> FoodEnums_Input
 	ResourceEnum::Mushroom,
 	ResourceEnum::Wheat,
 	ResourceEnum::Grape,
+
+	ResourceEnum::Blueberries,
+	ResourceEnum::Melon,
+	ResourceEnum::Pumpkin,
+	ResourceEnum::Potato,
 };
 
 static std::vector<ResourceEnum> GetFoodEnums()
@@ -1185,7 +1264,14 @@ static bool IsFoodEnum(ResourceEnum resourceEnum) {
 	if (resourceEnum == ResourceEnum::Clay) {
 		return false;
 	}
-	return GetResourceInfo(resourceEnum).basePrice == FoodCost; // !!! No other good's base cost should be the same as food
+	switch (resourceEnum)
+	{
+		// Food that cost more than FoodCost
+	case ResourceEnum::Melon:
+		return true;
+	default:
+		return GetResourceInfo(resourceEnum).basePrice == FoodCost; // !!! No other good's base cost should be the same as food
+	}
 }
 
 static bool IsMeatEnum(ResourceEnum resourceEnum) {
@@ -1224,15 +1310,9 @@ static bool IsMetalEnum(ResourceEnum resourceEnum) {
 }
 
 static bool IsTradeResource(ResourceEnum resourceEnum) {
-	switch (resourceEnum)
-	{
-	// Disable
-	case ResourceEnum::Shroom:
-		return false;
-	default:
-		return true;
-	}
-};
+	// Can put switch in, In case there is something that should be disabled from trade (unused resource etc.)
+	return true;
+}
 
 
 static const std::vector<ResourceEnum> FuelEnums
@@ -1299,9 +1379,9 @@ static const int32 ConstructionResourceCount = _countof(ConstructionResources);
 static const std::vector<std::vector<ResourceEnum>> TierToLuxuryEnums =
 {
 	{},
-	{ResourceEnum::Beer, ResourceEnum::Cannabis, ResourceEnum::Furniture, ResourceEnum::Pottery},
-	{ResourceEnum::Cloth, ResourceEnum::Wine, ResourceEnum::Chocolate, ResourceEnum::Candle},
-	{ResourceEnum::Book, ResourceEnum::LuxuriousClothes, ResourceEnum::Jewelry},
+	{ResourceEnum::Beer, ResourceEnum::Cannabis, ResourceEnum::Furniture, ResourceEnum::Pottery, ResourceEnum::Tulip },
+	{ResourceEnum::Cloth, ResourceEnum::Wine, ResourceEnum::Candle, ResourceEnum::Vodka, ResourceEnum::Shroom, ResourceEnum::Coffee},
+	{ResourceEnum::Book, ResourceEnum::LuxuriousClothes, ResourceEnum::Jewelry, ResourceEnum::Chocolate},
 };
 
 static const std::vector<ResourceEnum>& GetLuxuryResourcesByTier(int32 tier) {
@@ -1868,6 +1948,11 @@ enum class CardEnum : uint16
 	Tunnel,
 	GarmentFactory,
 
+	// Dec 29
+	ShroomFarm,
+	VodkaDistillery,
+	CoffeeRoaster,
+
 	// Decorations
 	FlowerBed,
 	GardenShrubbery1,
@@ -1925,12 +2010,18 @@ enum class CardEnum : uint16
 	WheatSeed,
 	CabbageSeed,
 	HerbSeed,
+	PotatoSeed,
+	BlueberrySeed,
+	MelonSeed,
+	PumpkinSeed,
 	
 	CannabisSeeds,
 	GrapeSeeds,
 	CocoaSeeds,
 	CottonSeeds,
 	DyeSeeds,
+	CoffeeSeeds,
+	TulipSeeds,
 
 	ChimneyRestrictor,
 	SellFood,
@@ -2049,6 +2140,7 @@ struct BldInfo
 	
 	// Need std::string since we need to copy when passing into FName (allows using name.c_str() instead of FName in some cases)
 	std::string name;
+	
 	WorldTile2 size;
 	ResourceEnum input1 = ResourceEnum::None;
 	ResourceEnum input2 = ResourceEnum::None;
@@ -2070,6 +2162,10 @@ struct BldInfo
 
 	int32 baseCardPrice = 0;
 	int32 baseUpkeep = 0;
+
+
+	FText GetName() { return FText::FromString(FString(name.c_str())); }
+	FText GetDescription() { return ToFText(description); }
 
 	bool hasInput1() { return input1 != ResourceEnum::None; }
 	bool hasInput2() { return input2 != ResourceEnum::None; }
@@ -2370,7 +2466,7 @@ static const BldInfo BuildingInfo[]
 
 	BldInfo(CardEnum::RanchPig,		"Pig Ranch",			WorldTile2(16, 16),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 1,	{30,10,0},	"Rear Pigs for food."),
 	BldInfo(CardEnum::RanchSheep,	"Sheep Ranch",			WorldTile2(16, 16),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 1,	{30,20,0},	"Rear Sheep for food and Wool."),
-	BldInfo(CardEnum::RanchCow,		"Cattle Ranch",			WorldTile2(16, 16),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,	0, 1,	{30,10,10},	"Rear Cows for Milk"),
+	BldInfo(CardEnum::RanchCow,		"Cattle Ranch",			WorldTile2(16, 16),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,	0, 1,	{30,10,10},	"Rear Dairy Cows for Milk"),
 
 	
 	BldInfo(CardEnum::GoldSmelter,	"Gold Smelter",			WorldTile2(5, 6),	ResourceEnum::Coal,ResourceEnum::GoldOre,ResourceEnum::GoldBar,	 10, 5,	{120,120,0},	"Smelt Gold Ores into Gold Bars."),
@@ -2421,14 +2517,18 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::ChichenItza, "ChichenItza", WorldTile2(16, 16), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "..."),
 
 	// October 20
-	BldInfo(CardEnum::Market, "Market", WorldTile2(6, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 5, { 120, 120, 0 }, "Provide food/fuel/medicine/tools/luxury to houses within radius. Bring faraway resources in 50-units bulk."),
+	BldInfo(CardEnum::Market, "Market", WorldTile2(6, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 5, { 120, 120, 0 }, "Supplies anything a household needs within its radius. Workers carry 50 units."),
 	BldInfo(CardEnum::ShippingDepot, "Logistics Office", WorldTile2(4, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 1, { 20, 10, 0 }, "Haul specified resources from within the radius to its delivery target in 50-units bulk."),
 	BldInfo(CardEnum::IrrigationReservoir, "Irrigation Reservoir", WorldTile2(5, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0, 150, 0 }, "Raises fertility within its radius to 100%."),
 
 	// November 18
 	BldInfo(CardEnum::Tunnel, "Tunnel", WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "Allow citizens to walk through mountain."),
 	BldInfo(CardEnum::GarmentFactory, "Garment Factory", WorldTile2(7, 6), ResourceEnum::DyedCottonFabric, ResourceEnum::None, ResourceEnum::LuxuriousClothes, 10, 5, { 0, 100, 100 }, "Mass-produce Clothes with Fabrics."),
-	
+
+	// December 29
+	BldInfo(CardEnum::ShroomFarm, "Shroom Farm", WorldTile2(8, 8), ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::Shroom, 20, 2, { 70,70,0 }, "Farm Shroom using wood."),
+	BldInfo(CardEnum::VodkaDistillery, "Vodka Distillery", WorldTile2(5, 5), ResourceEnum::Potato, ResourceEnum::None, ResourceEnum::Vodka, 10, 2, { 120,120,0 }, "Brew Potato into Vodka."),
+	BldInfo(CardEnum::CoffeeRoaster, "Coffee Roaster", WorldTile2(6, 6), ResourceEnum::RawCoffee, ResourceEnum::None, ResourceEnum::Coffee, 10, 2, { 150, 100, 0 }, "Roast Raw Coffee into Coffee."),
 	
 	// Decorations
 	BldInfo(CardEnum::FlowerBed, "Flower Bed", WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, "Increase the surrounding appeal by 5 within 5 tiles radius."),
@@ -2487,7 +2587,7 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::BeerTax,			"Beer Tax", 200, "Houses with Beer get +5<img id=\"Coin\"/>"),
 	BldInfo(CardEnum::HomeBrew,			"Home Brew", 200, "Houses with Pottery get +4<img id=\"Science\"/>"),
 
-	BldInfo(CardEnum::MasterBrewer,			"Master Brewer", 200, "Beer Breweries gain +30% efficiency"),
+	BldInfo(CardEnum::MasterBrewer,			"Master Brewer", 200, "Breweries/Distilleries gain +30% efficiency"),
 	BldInfo(CardEnum::MasterPotter,			"Master Potter", 200, "Potters gain +20% efficiency"),
 
 	BldInfo(CardEnum::CooperativeFishing,"Cooperative Fishing", 200, "+10% Fish production when there are 2 or more Fishing Lodges"),
@@ -2500,14 +2600,20 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::DesertPilgrim,		"Desert Pilgrim", 200, "Houses built on Desert get +5<img id=\"Coin\"/>."),
 
 	BldInfo(CardEnum::WheatSeed,			"Wheat Seeds", 300, "Unlock Wheat farming. Wheat can be eaten or brewed into Beer."),
-	BldInfo(CardEnum::CabbageSeed,			"Cabbage Seeds", 350, "Unlock Cabbage farming. Cabbage has high fertility sensitivity."),
+	BldInfo(CardEnum::CabbageSeed,		"Cabbage Seeds", 350, "Unlock Cabbage farming. Cabbage has high fertility sensitivity."),
 	BldInfo(CardEnum::HerbSeed,			"Medicinal Herb Seeds", 500, "Unlock Medicinal Herb farming. Medicinal Herb can be used to heal sickness."),
-
+	BldInfo(CardEnum::PotatoSeed,			"Potato Seeds", 300, "Unlock Potato farming. Potato can be eaten or brewed into Vodka."),
+	BldInfo(CardEnum::BlueberrySeed,			"Blueberry Seeds", 300, "Unlock Blueberry farming. Blueberries can be eaten."),
+	BldInfo(CardEnum::MelonSeed,			"Melon Seeds", 300, "Unlock Melon farming. Melon can be eaten."),
+	BldInfo(CardEnum::PumpkinSeed,			"Pumpkin Seeds", 300, "Unlock Pumpkin farming. Pumpkin can be eaten."),
+	
 	BldInfo(CardEnum::CannabisSeeds,			"Cannabis Seeds", 0, "Unlock Cannabis farming. Require region suitable for Cannabis."),
 	BldInfo(CardEnum::GrapeSeeds,			"Grape Seeds", 0, "Unlock Grape farming. Requires region suitable for Grape."),
 	BldInfo(CardEnum::CocoaSeeds,			"Cocoa Seeds", 0, "Unlock Cocoa farming. Requires region suitable for Cocoa."),
 	BldInfo(CardEnum::CottonSeeds,			"Cotton Seeds", 0, "Unlock Cotton farming. Requires region suitable for Cotton."),
 	BldInfo(CardEnum::DyeSeeds,				"Dye Seeds", 0, "Unlock Dye farming. Requires region suitable for Dye."),
+	BldInfo(CardEnum::CoffeeSeeds,			"Coffee Seeds", 0, "Unlock Coffee farming. Requires region suitable for Coffee."),
+	BldInfo(CardEnum::TulipSeeds,			"Tulip Seeds", 0, "Unlock Tulip farming. Requires region suitable for Tulip."),
 
 	BldInfo(CardEnum::ChimneyRestrictor,	"Chimney Restrictor", 250, "Wood/Coal gives 15% more heat"),
 	BldInfo(CardEnum::SellFood,			"Sell Food", 90, "Sell half of city's food for 5<img id=\"Coin\"/> each."),
@@ -2524,7 +2630,7 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::SmeltCombo,			"Iron Smelter Combo", 150, "+30% productivity to all Iron Smelter with adjacent Iron Smelter"),
 
 
-	BldInfo(CardEnum::Immigration,			"Immigration Advertisement", 500, "5 immigrants join upon use."),
+	BldInfo(CardEnum::Immigration,			"Immigrants", 500, "5 immigrants join upon use."),
 	BldInfo(CardEnum::DuplicateBuilding,			"Duplicate Building", 200, "Duplicate the chosen building into a card."),
 
 
@@ -2583,16 +2689,6 @@ static const std::vector<CardEnum> ActionCards
 	CardEnum::Immigration,
 	CardEnum::EmergencyRations,
 
-	CardEnum::WheatSeed,
-	CardEnum::CabbageSeed,
-	CardEnum::HerbSeed,
-
-	CardEnum::CannabisSeeds,
-	CardEnum::GrapeSeeds,
-	CardEnum::CocoaSeeds,
-	CardEnum::CottonSeeds,
-	CardEnum::DyeSeeds,
-
 	CardEnum::FireStarter,
 	CardEnum::Steal,
 	CardEnum::Snatch,
@@ -2617,13 +2713,8 @@ static const std::vector<CardEnum> ActionCards
 	CardEnum::CratePottery,
 	CardEnum::CrateJewelry,
 };
-static bool IsActionCard(CardEnum cardEnumIn)
-{
-	for (CardEnum cardEnum : ActionCards) {
-		if (cardEnumIn == cardEnum) return true;
-	}
-	return false;
-}
+
+// Note: IsActionCard is below
 
 static bool IsGlobalSlotCard(CardEnum cardEnum)
 {
@@ -3107,7 +3198,7 @@ static bool IsSpecialProducer(CardEnum buildingEnum)
 	case CardEnum::Mint:
 	case CardEnum::CardMaker:
 	case CardEnum::InventorsWorkshop:
-	case CardEnum::RegionShrine:
+	//case CardEnum::RegionShrine:
 	case CardEnum::ImmigrationOffice:
 
 	case CardEnum::BarrackArcher:
@@ -3328,7 +3419,6 @@ static bool CanGetSpeedBoosted(CardEnum buildingEnum, bool isConstructed)
 	//	(IsRanch(buildingEnum) && isConstructed) ||
 	//	IsRareCard(buildingEnum);
 }
-
 
 
 enum class PriorityEnum : uint8
@@ -3634,11 +3724,18 @@ enum class TileObjEnum : uint8
 	Cocoa,
 	Cotton,
 	Dye,
+
+	Potato,
+	Blueberry,
+	Melon,
+	Pumpkin,
+	RawCoffee,
+	Tulip,
 	
 	Herb,
 	//BaconBush,
 
-	//! Beyond stone are ores
+	//! Beyond stone are ores (Use stone to mark the end of plant)
 	Stone,
 	CoalMountainOre,
 	IronMountainOre,
@@ -3662,7 +3759,7 @@ enum class TileObjEnum : uint8
 	None,
 };
 
-const static int32 TreeEnumSize = 14; // TileObjEnum up to last tree...
+const static int32 TreeEnumSize = 14; // TileObjEnum up to last tree... TODO: change to last tree...
 const static int32 TileObjEnumSize = static_cast<int32>(TileObjEnum::Count);
 
 static bool IsTileObjEnumValid(TileObjEnum tileObjEnum) {
@@ -3929,6 +4026,14 @@ static const TileObjInfo TreeInfos[] = {
 	TileObjInfo(TileObjEnum::Cocoa,	"Cocoa",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cocoa, FarmBaseYield100), "Cocoa used to make delicious chocolate."),
 	TileObjInfo(TileObjEnum::Cotton,	"Cotton",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cotton, FarmBaseYield100), "Cotton used to make Cotton Fabric."),
 	TileObjInfo(TileObjEnum::Dye,		"Dye",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Dye, FarmBaseYield100), "Dye used to dye Cotton Fabric or print Book."),
+
+	// Dec 17
+	TileObjInfo(TileObjEnum::Potato,		"Potato",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Potato, FarmBaseYield100), "Common tuber."),
+	TileObjInfo(TileObjEnum::Blueberry,	"Blueberries",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Blueberries, FarmBaseYield100), "Blue-skinned fruit with refreshing taste."),
+	TileObjInfo(TileObjEnum::Melon,		"Melon",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Melon, FarmBaseYield100), "Sweet and refreshing fruit. +3<img id=\"Coin\"/> each unit when consumed."),
+	TileObjInfo(TileObjEnum::Pumpkin,		"Pumpkin",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Pumpkin, FarmBaseYield100), "Fruit with delicate, mildly-flavored flesh."),
+	TileObjInfo(TileObjEnum::RawCoffee,	"Raw Coffee",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::RawCoffee, FarmBaseYield100), "Fruit that can be roasted to make Coffee."),
+	TileObjInfo(TileObjEnum::Tulip,		"Tulip",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Tulip, FarmBaseYield100), "Beautiful decorative flower. (Luxury tier 1)"),
 
 	
 	TileObjInfo(TileObjEnum::Herb,		"Medicinal Herb",		ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Herb, FarmBaseYield100), "Herb used to heal sickness or make medicine."),
@@ -4469,6 +4574,10 @@ static std::vector<std::string> IncomeEnumName
 
 static int32 IncomeEnumCount = static_cast<int32>(IncomeEnum::Count);
 
+static FText GetIncomeEnumName(int32 incomeEnumInt) {
+	return ToFText(IncomeEnumName[static_cast<int>(incomeEnumInt)]);
+}
+
 
 inline bool IsHouseIncomeEnumInt(int32 incomeEnumInt) {
 	return incomeEnumInt < HouseIncomeEnumCount;
@@ -4495,19 +4604,7 @@ enum class ScienceEnum : uint8
 };
 static int32 ScienceEnumCount = static_cast<int32>(ScienceEnum::Count);
 
-static std::vector<std::string> ScienceEnumName
-{
-	"House Base",
-	"House Luxury",
-	"Library",
-	"School",
-	"Home Brew",
-
-	"Knowledge transfer",
-	"Last Era Technology",
-
-	"Rationalism",
-};
+const FText& ScienceEnumName(int32 index);
 
 static std::vector<ScienceEnum> HouseScienceEnums
 {
@@ -4563,6 +4660,11 @@ enum class TechEnum : uint8
 	Chocolatier,
 
 	HerbFarming,
+	PotatoFarming,
+	BlueberryFarming,
+	MelonFarming,
+	PumpkinFarming,
+	
 	Plantation,
 	
 	StoneTools,
@@ -4615,6 +4717,12 @@ enum class TechEnum : uint8
 	FarmImprovement,
 	Espionage,
 	SpyGuard,
+
+	//
+	ShroomFarm,
+	VodkaDistillery,
+	CoffeeRoaster,
+	
 
 	//Bridge,
 	HumanitarianAid,
@@ -4699,16 +4807,7 @@ enum class ClaimConnectionEnum : uint8
 	Deepwater,
 };
 
-static void AppendClaimConnectionString(std::stringstream& ss, ClaimConnectionEnum claimConnectionEnum)
-{
-	if (claimConnectionEnum == ClaimConnectionEnum::ShallowWater) {
-		ss << " (shallow water)";
-	}
-	else if (claimConnectionEnum == ClaimConnectionEnum::Deepwater) {
-		ss << " (oversea)";
-	}
-}
-
+void AppendClaimConnectionString(TArray<FText>& args, bool isConquering, ClaimConnectionEnum claimConnectionEnum);
 
 /*
  * Quest
@@ -4883,7 +4982,7 @@ static const BiomeInfo BiomeInfos[]
 		{ TileObjEnum::Papaya, TileObjEnum::Cyathea, TileObjEnum::ZamiaDrosi },
 		{ TileObjEnum::Fern, TileObjEnum::JungleThickLeaf },
 		{TileObjEnum::WhiteFlowerBush},
-		{UnitEnum::DarkDeer, UnitEnum::Boar},
+		{UnitEnum::DarkDeer, UnitEnum::Boar },
 		{ UnitEnum::BlackBear},
 		5
 	},
@@ -5453,6 +5552,7 @@ enum class CheatEnum : int32
 	TrailerRoadPerTick,
 
 	AddAIImmigrants,
+	AddAIMoney,
 };
 
 static const std::string CheatName[]
@@ -5511,6 +5611,7 @@ static const std::string CheatName[]
 	"TrailerRoadPerTick",
 
 	"AddAIImmigrants",
+	"AddAIMoney",
 };
 static std::string GetCheatName(CheatEnum cheatEnum) {
 	return CheatName[static_cast<int>(cheatEnum)];
@@ -5778,6 +5879,8 @@ enum class PopupReceiverEnum : uint8
 	StartGame_AskAboutAdvice,
 
 	ResetBuff,
+
+	MaxCardHandQueuePopup,
 };
 
 struct PopupInfo
@@ -6194,6 +6297,7 @@ public:
 		ss << "\n";
 		return ss.str();
 	}
+	FText ToText() const;
 
 	template <typename Func>
 	void ForEachResource(Func func) {
@@ -6283,6 +6387,9 @@ enum class GeoresourceEnum : uint8
 
 	CottonFarm,
 	DyeFarm,
+
+	CoffeeFarm,
+	TulipFarm,
 	
 	None,
 
@@ -6332,10 +6439,11 @@ static const std::vector<GeoresourceInfo> GeoresourceInfos
 	{ GeoresourceEnum::CannabisFarm,		"Cannabis" , TileObjEnum::None,TileObjEnum::None, TileObjEnum::Cannabis,  ResourceEnum::Cannabis,"Area suitable for growing Cannabis." },
 	{ GeoresourceEnum::CocoaFarm,			"Cocoa" , TileObjEnum::None,TileObjEnum::None, TileObjEnum::Cocoa,  ResourceEnum::Cocoa,"Area suitable for growing Cocoa." },
 	{ GeoresourceEnum::GrapeFarm,			"Grape" , TileObjEnum::None,TileObjEnum::None, TileObjEnum::Grapevines,  ResourceEnum::Grape,"Area suitable for growing Grape." },
-
 	{ GeoresourceEnum::CottonFarm,		"Cotton" , TileObjEnum::None,TileObjEnum::None, TileObjEnum::Cotton,  ResourceEnum::Cotton,"Area suitable for growing Cotton." },
 	{ GeoresourceEnum::DyeFarm,			"Dye" , TileObjEnum::None,TileObjEnum::None, TileObjEnum::Dye,  ResourceEnum::Dye,"Area suitable for growing Dye." },
 
+	{ GeoresourceEnum::CoffeeFarm,		"Coffee" , TileObjEnum::None,TileObjEnum::None, TileObjEnum::RawCoffee,  ResourceEnum::RawCoffee,"Area suitable for growing Coffee." },
+	{ GeoresourceEnum::TulipFarm,		"Tulip" , TileObjEnum::None,TileObjEnum::None, TileObjEnum::Tulip,  ResourceEnum::Tulip,"Area suitable for growing Tulip." },
 
 	// Diamond, Copper
 
@@ -6357,6 +6465,28 @@ static GeoresourceInfo GetGeoresourceInfo(int32 georesourceEnumInt) {
 	}
 	return GeoresourceInfos[georesourceEnumInt];
 };
+
+static const std::vector<GeoresourceEnum> FarmGeoresourceEnums
+{
+	GeoresourceEnum::CannabisFarm,
+	GeoresourceEnum::CocoaFarm,
+	GeoresourceEnum::GrapeFarm,
+	GeoresourceEnum::CottonFarm,
+	GeoresourceEnum::DyeFarm,
+	
+	GeoresourceEnum::CoffeeFarm,
+	GeoresourceEnum::TulipFarm,
+};
+static bool IsFarmGeoresource(GeoresourceEnum georesourceEnumIn)
+{
+	for (GeoresourceEnum georesourceEnum : FarmGeoresourceEnums) {
+		if (georesourceEnumIn == georesourceEnum) {
+			return true;
+		}
+	}
+	return false;
+}
+
 
 struct GeoresourceNode
 {
@@ -6425,6 +6555,11 @@ static const std::vector<SeedInfo> CommonSeedCards
 	{ CardEnum::WheatSeed, TileObjEnum::WheatBush },
 	{ CardEnum::CabbageSeed, TileObjEnum::Cabbage },
 	{ CardEnum::HerbSeed, TileObjEnum::Herb },
+
+	{ CardEnum::PotatoSeed, TileObjEnum::Potato },
+	{ CardEnum::BlueberrySeed, TileObjEnum::Blueberry },
+	{ CardEnum::PumpkinSeed, TileObjEnum::Pumpkin },
+	{ CardEnum::MelonSeed, TileObjEnum::Melon },
 };
 
 static const std::vector<SeedInfo> SpecialSeedCards
@@ -6434,7 +6569,24 @@ static const std::vector<SeedInfo> SpecialSeedCards
 	{ CardEnum::CocoaSeeds, TileObjEnum::Cocoa, GeoresourceEnum::CocoaFarm },
 	{ CardEnum::CottonSeeds, TileObjEnum::Cotton, GeoresourceEnum::CottonFarm },
 	{ CardEnum::DyeSeeds, TileObjEnum::Dye, GeoresourceEnum::DyeFarm },
+
+	{ CardEnum::CoffeeSeeds, TileObjEnum::RawCoffee, GeoresourceEnum::CoffeeFarm },
+	{ CardEnum::TulipSeeds, TileObjEnum::Tulip, GeoresourceEnum::TulipFarm },
 };
+
+static bool IsActionCard(CardEnum cardEnumIn)
+{
+	for (CardEnum cardEnum : ActionCards) {
+		if (cardEnumIn == cardEnum) return true;
+	}
+	for (const SeedInfo& seedInfo : CommonSeedCards) {
+		if (cardEnumIn == seedInfo.cardEnum) return true;
+	}
+	for (const SeedInfo& seedInfo : SpecialSeedCards) {
+		if (cardEnumIn == seedInfo.cardEnum) return true;
+	}
+	return false;
+}
 
 static std::vector<SeedInfo> GetSeedInfos()
 {
@@ -7104,7 +7256,7 @@ static std::string GameSpeedName(int32 gameSpeed)
 	case GameSpeedValue3: return "x2 speed";
 	case GameSpeedValue4: return "x5 speed";
 	}
-	return "";
+	return "paused";
 }
 
 /*
@@ -7234,6 +7386,12 @@ static const std::vector<std::string> HoverWarningDescription = {
 };
 static std::string GetHoverWarningDescription(HoverWarning hoverWarning) { return HoverWarningDescription[static_cast<int>(hoverWarning)]; }
 
+static FText GetHoverWarningDescriptionText(HoverWarning hoverWarning)
+{
+	return INVTEXT("Hover Warningเกมไทย");
+	//return ToFText(GetHoverWarningDescription(hoverWarning));
+}
+
 /*
  * Diplomacy
  */
@@ -7256,23 +7414,8 @@ enum class RelationshipModifierEnum : uint8
 	WeFearCannibals,
 };
 
-static std::vector<std::string> RelationshipModifierName
-{
-	"You gave us gifts",
-	"You are strong",
-	"You befriended us",
-	"We are family",
-
-	"Adjacent borders spark tensions",
-	"Townhalls proximity spark tensions",
-	"Weaklings don't deserve our respect",
-	"You stole from us",
-	"You kidnapped our citizens",
-	"You attacked us",
-	"We fear cannibals",
-};
-
-static int32 RelationshipModifierCount = RelationshipModifierName.size();
+FText RelationshipModifierNameInt(int32 index);
+int32 RelationshipModifierCount();
 
 enum class GameSaveChunkEnum : uint8
 {

@@ -17,6 +17,8 @@
 
 using namespace std;
 
+#define LOCTEXT_NAMESPACE "GathererHut"
+
 /*
  * Farm
  */
@@ -69,9 +71,9 @@ void Farm::FinishConstruction()
 {
 	Building::FinishConstruction();
 
-	std::vector<TileObjEnum> allFarmPlants = _simulation->unlockSystem(_playerId)->allFarmPlants();
-	for (int i = 0; i < allFarmPlants.size(); i++) {
-		AddResourceHolder(GetTileObjInfo(allFarmPlants[i]).harvestResourceEnum(), ResourceHolderType::Provider, 0);
+	std::vector<SeedInfo> seedInfos = GetSeedInfos();
+	for (int i = 0; i < seedInfos.size(); i++) {
+		AddResourceHolder(GetTileObjInfo(seedInfos[i].tileObjEnum).harvestResourceEnum(), ResourceHolderType::Provider, 0);
 	}
 
 	_isTileWorked.resize(totalFarmTiles(), false);
@@ -226,6 +228,22 @@ void Farm::DoFarmWork(int32_t unitId, WorldTile2 tile, FarmStage farmStage)
 			resourceSystem().SpawnDrop(resource.resourceEnum, dropCount, tile, ResourceHolderType::DropManual);
 
 			AddProductionStat(ResourcePair(resource.resourceEnum, dropCount));
+
+			_simulation->unlockSystem(_playerId)->UpdateResourceProductionCount(resource.resourceEnum, dropCount);
+//			// Quests
+//#define UPDATE_QUEST(enumName) else if (product() == ResourceEnum::##enumName) { \
+//				_simulation->QuestUpdateStatus(_playerId, QuestEnum::##enumName##Quest, dropCount); \
+//			}
+//			
+//			if (product() == ResourceEnum::Cabbage) {
+//				_simulation->QuestUpdateStatus(_playerId, QuestEnum::CabbageQuest, dropCount);
+//			}
+//			UPDATE_QUEST(Blueberries)
+//			UPDATE_QUEST(Wheat)
+//			UPDATE_QUEST(Pumpkin)
+//			UPDATE_QUEST(Potato)
+//			
+//#undef UPDATE_QUEST
 		}
 
 		// Play sound
@@ -245,9 +263,21 @@ void Farm::ClearAllPlants() {
 	_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Trees, _area, true);
 }
 
+FText Farm::farmStageName()
+{
+	switch (_farmStage) {
+	case FarmStage::Dormant: return LOCTEXT("Dormant", "Dormant");
+	case FarmStage::Seeding: return LOCTEXT("Seeding", "Seeding");
+	case FarmStage::Nourishing: return LOCTEXT("Nourishing", "Nourishing");
+	case FarmStage::Harvesting: return LOCTEXT("Harvesting", "Harvesting");
+	}
+	UE_DEBUG_BREAK();
+	return FText();
+}
+
 //! Mushroom
 
-int32 MushroomHut::baseInputPerBatch() {
+int32 MushroomFarm::baseInputPerBatch() {
 	return _simulation->unlockSystem(_playerId)->IsResearched(TechEnum::MushroomSubstrateSterilization) ? 4 : 8;
 }
 
@@ -634,3 +664,6 @@ void Colony::TickRound()
 		}
 	}
 }
+
+
+#undef LOCTEXT_NAMESPACE 

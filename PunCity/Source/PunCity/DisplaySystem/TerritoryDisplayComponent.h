@@ -38,6 +38,17 @@ struct FTerritoryDecals
 	UMaterialInstanceDynamic* GetDecalMaterial(int32_t playerId) { return decalMaterials[playerIdToDecalIndex[playerId]]; }
 	UTexture2D* adjacentTerritoriesTexture(int32_t playerId) { return _adjacentTerritoriesTextures[playerIdToDecalIndex[playerId]]; }
 	UTexture2D* adjacentTerritoriesTextures2(int32_t playerId) { return _adjacentTerritoriesTextures2[playerIdToDecalIndex[playerId]]; }
+
+	void Deinit() {
+		for (UTexture2D* texture : _adjacentTerritoriesTextures) {
+			PunUnrealUtils::DestroyTexture2D(texture);
+		}
+		for (UTexture2D* texture : _adjacentTerritoriesTextures2) {
+			PunUnrealUtils::DestroyTexture2D(texture);
+		}
+		_adjacentTerritoriesTextures.Empty();
+		_adjacentTerritoriesTextures2.Empty();
+	}
 	
 private:
 	UPROPERTY() TArray<UTexture2D*> _adjacentTerritoriesTextures;
@@ -49,22 +60,16 @@ class UTerritoryDisplayComponent : public UDisplaySystemComponent
 {
 	GENERATED_BODY()
 public:
-	void Init(int size, TScriptInterface<IDisplaySystemDataSource> gameManager, UAssetLoaderComponent* assetLoader, int32 initialPoolSize) final
-	{
-		UDisplaySystemComponent::Init(size, gameManager, assetLoader, initialPoolSize);
-
-		// Make region border decal
-		//auto decal = NewObject<UDecalComponent>(this);
-		//decal->AttachToComponent(this, FAttachmentTransformRules::KeepRelativeTransform, NAME_None);
-		//decal->RegisterComponent();
-		//_regionBorderDecalMaterial = UMaterialInstanceDynamic::Create(_assetLoader->RegionBorderMaterial, this);
-		//decal->SetMaterial(0, _regionBorderDecalMaterial);
-		//decal->DecalSize = FVector(512, 1024, 1024);
-		//decal->SetRelativeRotation(FVector(0, 0, -1).Rotation()); // Rotate to project the decal down
-		//_regionBorderDecal = decal;
-	}
+	//void Init(int size, TScriptInterface<IDisplaySystemDataSource> gameManager, UAssetLoaderComponent* assetLoader, int32 initialPoolSize) final
+	//{
+	//	UDisplaySystemComponent::Init(size, gameManager, assetLoader, initialPoolSize);
+	//}
 
 	void Display(std::vector<int>& sampleProvinceIds) override;
+
+	void Deinit() {
+		playerDecals.Deinit();
+	}
 
 private:
 	UTerritoryMeshComponent* CreateTerritoryMeshComponent(bool isProvince)
@@ -90,10 +95,6 @@ private:
 
 private:
 	UPROPERTY() FTerritoryDecals playerDecals;
-
-	//UPROPERTY() UDecalComponent* _regionBorderDecal;
-	//UPROPERTY() UMaterialInstanceDynamic* _regionBorderDecalMaterial;
-
 
 	UPROPERTY() TArray<UTerritoryMeshComponent*> _provinceMeshes;
 	UPROPERTY() TArray<UTerritoryMeshComponent*> _territoryMeshesInner;

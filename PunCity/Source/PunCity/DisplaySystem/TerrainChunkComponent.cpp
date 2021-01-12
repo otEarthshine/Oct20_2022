@@ -97,7 +97,7 @@ void TerrainChunkData::UpdateTerrainChunkMesh_Prepare1()
 	}
 }
 
-void TerrainChunkData::UpdateTerrainChunkMesh_Prepare2(class GameSimulationCore& simulation, WorldRegion2 region, bool& containsWater)
+void TerrainChunkData::UpdateTerrainChunkMesh_Prepare2(class GameSimulationCore& simulation, WorldRegion2 region)
 {
 	int tileDimX = GameMapConstants::TilesPerWorldX;
 	int tileDimY = GameMapConstants::TilesPerWorldY;
@@ -376,8 +376,7 @@ uint8 TerrainChunkData::UpdateTerrainChunkMesh_Prepare3(WorldRegion2 region)
 	return 1;
 }
 
-void TerrainChunkData::UpdateTerrainChunkMesh_Prepare(GameSimulationCore& simulation, WorldRegion2 region, int tileDimX, int tileDimY,
-													bool createMesh, bool& containsWater)
+void TerrainChunkData::UpdateTerrainChunkMesh_Prepare(GameSimulationCore& simulation, WorldRegion2 region, int tileDimX, int tileDimY, bool createMesh)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayTerrain);
 	
@@ -415,7 +414,7 @@ void TerrainChunkData::UpdateTerrainChunkMesh_Prepare(GameSimulationCore& simula
 		 * - for TRAILER_MODE, we need these #if statement
 		 * - for non TRAILER_MODE, UpdateTerrainChunkMesh_Prepare1/2/3 can be executed consecutively
 		 */
-		UpdateTerrainChunkMesh_Prepare2(simulation, region, containsWater);
+		UpdateTerrainChunkMesh_Prepare2(simulation, region);
 
 		UpdateTerrainChunkMesh_Prepare3(region);
 
@@ -457,6 +456,8 @@ void UTerrainChunkComponent::UpdateTerrainChunkMesh_UpdateMesh(bool createMesh, 
 	TArray<int32>& tris = terrainChunkData.tris;
 
 	updatedTime = UGameplayStatics::GetTimeSeconds(this);
+
+	containsWater = terrainChunkData.containsWater;
 
 	if (createMesh) {
 		CreateMeshSection_LinearColor(0, vertices, tris, normals, UV0, vertexColors, tangents, false);

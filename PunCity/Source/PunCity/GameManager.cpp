@@ -128,11 +128,6 @@ AGameManager::AGameManager()
 	//PUN_CHECK(assetLoader()->moduleNames().Num() == ModuleMeshCount);
 }
 
-AGameManager::~AGameManager()
-{
-}
-
-
 void AGameManager::Init(int32 playerId, bool isLoadingFromFile, IGameUIInterface* uiInterface, IGameNetworkInterface* networkInterface)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_GameManager);
@@ -294,6 +289,14 @@ void AGameManager::InitPhase2()
 
 	//PUN_CHECK(assetLoader()->moduleNames().Num() == ModuleMeshCount);
 }
+AGameManager::~AGameManager()
+{
+	// Deinit Textures
+	if (IsValid(_territoryDisplaySystem)) _territoryDisplaySystem->Deinit();
+	if (IsValid(_decalDisplaySystem)) _decalDisplaySystem->Deinit();
+	if (IsValid(_terrainMap)) _terrainMap->Deinit();
+}
+
 void AGameManager::InitPhase3()
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_GameManager);
@@ -1049,7 +1052,7 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 
 	{
 		//SCOPE_TIMER("Tick -- Misc");
-
+		
 		auto directionalLight = CastChecked<UDirectionalLightComponent>(_directionalLight->GetLightComponent());
 		auto skyLight = CastChecked<USkyLightComponent>(_skyLight->GetLightComponent());
 
@@ -1084,6 +1087,12 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 			}
 
 			directionalLight->SetDynamicShadowDistanceMovableLight(shadowDistance);
+
+			// Dim winter light
+			const float defaultLightIntensity = 2.5;
+			const float winterLightIntensity = 2.0;
+			float lightIntensity = defaultLightIntensity + (winterLightIntensity - defaultLightIntensity) * simulation().snowHeightForestStart();
+			directionalLight->SetIntensity(lightIntensity);
 
 			skyLight->SetIntensity(0.5);
 

@@ -38,6 +38,14 @@ public:
 	static class UTexture2D* CreateTexture2D(int32 dimX, int32 dimY);
 	static void SetTextureData(UTexture2D* texture, std::vector<uint32>& heightData);
 
+	static void DestroyTexture2D(UTexture2D* texture) {
+		// TODO: need IsValidLowLevel?
+		if (IsValid(texture) && texture->IsValidLowLevel()) {
+			texture->RemoveFromRoot();
+			texture->ConditionalBeginDestroy();
+		}
+	}
+
 	static void SetActive(USceneComponent* object, bool active) {
 		object->SetVisibility(active);
 		object->SetActive(active);
@@ -66,7 +74,22 @@ public:
 
 };
 
+// String Utils
+static std::string StringEnvelopImgTag(std::string str, std::string envelopTag)
+{
+	for (size_t i = str.size() - 3; i-- > 0;) {
+		if (str.substr(i, 3) == "<im") {
+			str.insert(i, "</>");
+		}
+		if (str.substr(i, 3) == "\"/>") {
+			str.insert(i + 3, envelopTag);
+		}
+	}
+	return str;
+}
 
+
+// Network Serializer
 static void FString_SerializeAndAppendToBlob(FString inStr, TArray<int32>& arr)
 {
 	arr.Add(inStr.Len());

@@ -832,6 +832,29 @@ public:
 		{ // Garment Factory
 			ModuleTransforms::CreateSet("CottonMill")
 		},
+
+		/*
+		 * Dec 29
+		 */
+		// Shroom Farm
+		{ ModuleTransforms({
+			ModuleTransforms::CreateSet("ShroomHut", {}, {},
+				{
+					ModuleTransform("ShroomHutWorkShaderAnimate", FTransform::Identity, 0.0f, ModuleTypeEnum::ShaderAnimate),
+				}
+			)
+		}) },
+		{ // Vodka Distillery
+			ModuleTransforms::CreateSet("VodkaDistillery", {},
+			{
+				{ParticleEnum::Smoke,  TransformFromPosition(13.37, -16.77, 23.05)},
+			}, {
+				ModuleTransform("VodkaDistilleryWorkShaderOnOff", FTransform::Identity, 0, ModuleTypeEnum::ShaderOnOff),
+			})
+		},
+		{ // Coffee Roaster
+			ModuleTransforms::CreateSet("CoffeeRoaster", {}, {{ParticleEnum::Smoke, TransformFromPosition(16.2, -16.6, 21.3)}})
+		},
 		
 		/*
 		 * Decorations

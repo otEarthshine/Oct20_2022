@@ -326,10 +326,14 @@ public:
 
 	FVector DisplayLocation(WorldAtom2 atom) final { return MapUtil::DisplayLocation(_cameraAtom, atom); }
 
-	FVector DisplayLocationTrueCenter(Building& building) final
+	FVector DisplayLocationTrueCenter(Building& building, bool withHeight = false) final
 	{
 		FVector displayLocationScope = DisplayLocation(building.centerTile().worldAtom2());
 		AlgorithmUtils::ShiftDisplayLocationToTrueCenter(displayLocationScope, building.area(), building.faceDirection());
+
+		if (withHeight) {
+			displayLocationScope.Z = building.GetBuildingSelectorHeight();
+		}
 		return displayLocationScope;
 	}
 

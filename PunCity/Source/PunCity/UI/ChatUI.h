@@ -344,6 +344,14 @@ public:
 			command->var1 = FCString::Atoi(ToTChar(commandAndParams[1]));
 			networkInterface()->SendNetworkCommand(command);
 		}
+		// AddAIMoney
+		if (commandAndParams.size() >= 2 && commandAndParams[0] == "AddAIMoney")
+		{
+			auto command = make_shared<FCheat>();
+			command->cheatEnum = GetCheatEnum("AddAIMoney");
+			command->var1 = FCString::Atoi(ToTChar(commandAndParams[1]));
+			networkInterface()->SendNetworkCommand(command);
+		}
 
 		// HouseLevel
 		if (commandAndParams.size() >= 2 && commandAndParams[0] == "HouseLevel")
@@ -354,7 +362,7 @@ public:
 			networkInterface()->SendNetworkCommand(command);
 		}
 
-		if (commandAndParams.size() >= 1 && commandAndParams[0] == "PleasePunCrash")
+		if (commandAndParams.size() >= 1 && commandAndParams[0] == "PleaseCrash")
 		{
 			UObject* nullObj = nullptr;
 			nullObj->BeginDestroy();

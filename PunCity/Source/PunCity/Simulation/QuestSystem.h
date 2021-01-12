@@ -165,26 +165,6 @@ struct BuildHousesQuest final : Quest
 		}
 	}
 
-	//void UpdateStatus(int32 value) override
-	//{
-	//	if (currentValue() >= neededValue()) {
-	//		PUN_CHECK(simulation);
-	//		auto unlockSys = simulation->unlockSystem(playerId);
-	//		unlockSys->townhallUpgradeUnlocked = true;
-
-	//		AddEndPopup(
-	//			"Quest completed! (" + questTitle() + ")\n");
-	//		
-
-	//		if (simulation->townLvl(playerId) == 1) {
-	//			simulation->parameters(playerId)->NeedTownhallUpgradeNoticed = true;
-	//		}
-	//		
-	//		EndQuest();
-	//	}
-	//}
-
-
 	int32 currentValue() override { return simulation->buildingFinishedCount(playerId, CardEnum::House); }
 	int32 neededValue() override { return 5; }
 };

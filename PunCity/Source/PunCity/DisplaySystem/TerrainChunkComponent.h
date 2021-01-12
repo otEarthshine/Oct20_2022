@@ -18,11 +18,11 @@ class PunTerrainGenerator;
 class TerrainChunkData
 {
 public:
-	void UpdateTerrainChunkMesh_Prepare(class GameSimulationCore& simulation, WorldRegion2 region, int tileDimX, int tileDimY,
-		bool createMesh, bool& containsWater);
+	// TODO: might not need this?
+	void UpdateTerrainChunkMesh_Prepare(class GameSimulationCore& simulation, WorldRegion2 region, int tileDimX, int tileDimY, bool createMesh);
 
 	void UpdateTerrainChunkMesh_Prepare1();
-	void UpdateTerrainChunkMesh_Prepare2(class GameSimulationCore& simulation, WorldRegion2 region, bool& containsWater);
+	void UpdateTerrainChunkMesh_Prepare2(class GameSimulationCore& simulation, WorldRegion2 region);
 	uint8 UpdateTerrainChunkMesh_Prepare3(WorldRegion2 region);
 
 	float GetTerrainDisplayHeight(LocalTile2 localTile) {
@@ -50,6 +50,8 @@ public:
 	TArray<FVector2D> UV0;
 
 	TArray<int32> tris;
+
+	bool containsWater = false;
 
 private:
 	int _lastHoleCount = 0;
@@ -119,4 +121,5 @@ public:
 	bool bIsPlainMaterial = false;
 
 	float updatedTime = 0;
+	bool containsWater = false;
 };

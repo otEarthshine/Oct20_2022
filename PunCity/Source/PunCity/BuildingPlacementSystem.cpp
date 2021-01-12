@@ -1753,18 +1753,19 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 								bool isConstructed = building.isConstructed();
 								CardEnum buildingEnum = building.buildingEnum();
 
-								//if (building.isEnum(CardEnum::Townhall) ||
-								//	building.isEnum(CardEnum::StorageYard) ||
-								//	building.isEnum(CardEnum::Farm) ||
-								//	IsDecorativeBuilding(buildingEnum) ||
-								//	(IsHouse(buildingEnum) && isConstructed) ||
-								//	(IsRanch(buildingEnum) && isConstructed))
+								
+								if (building.playerId() != playerId) {
+									_networkInterface->SetCursor("Slate/MouseCursorSkillInvalid");
+									SetInstruction(PlacementInstructionEnum::YourBuildingTarget, true);
+									_forceCannotPlace = true;
+									return;
+								}
+								
 								if (!CanGetSpeedBoosted(buildingEnum, isConstructed))
 								{
 									_networkInterface->SetCursor("Slate/MouseCursorSkillInvalid");
 									SetInstruction(PlacementInstructionEnum::NotThisBuildingTarget, true);
 									_forceCannotPlace = true;
-									//_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
 									return;
 								}
 

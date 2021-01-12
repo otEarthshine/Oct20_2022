@@ -35,13 +35,13 @@ public:
 
 	static void DeleteSaveThumbnail(UObject* WorldContextObject, const FString& SaveGameName);
 
-	void ExportIcon(const FString& iconPath, int32 index)
+	void ExportIcon(const FString& iconPath, int32 index, bool isResourceSnapshot = false)
 	{
 		FString iconDirectory = ContentGameDir(iconPath + FString::FromInt(index) + FString(".exr"));
-		ExportThumbnailHDR(GetWorld(), IconRenderTarget, iconDirectory);
+		ExportThumbnailHDR(GetWorld(), GetRenderTarget(isResourceSnapshot), iconDirectory);
 
 		FString iconDirectoryAlpha = ContentGameDir(iconPath + FString("Alpha") + FString::FromInt(index) + FString(".exr"));
-		ExportThumbnailHDR(GetWorld(), IconRenderTargetAlpha, iconDirectoryAlpha);
+		ExportThumbnailHDR(GetWorld(), GetRenderTargetAlpha(isResourceSnapshot), iconDirectoryAlpha);
 
 		PUN_LOG("ExportIcon %s index:%d", *iconPath, index);
 	}
@@ -70,7 +70,7 @@ public:
 		skyMesh->SetVisibility(true);
 	}
 
-	void BakeIcons(bool bakeBuilding)
+	void BakeIcons(bool isResourceIcon)
 	{
 		auto postProcessVolume = CastChecked<APostProcessVolume>(PunUnrealUtils::FindWorldActor(GetWorld(), FName("GlobalPostProcessVolume")));
 		PUN_CHECK(postProcessVolume);
@@ -94,12 +94,33 @@ public:
 		auto captureComponent = CastChecked<USceneCaptureComponent2D>(components[0]);
 		auto captureComponentAlpha = CastChecked<USceneCaptureComponent2D>(components[1]);
 
+		captureComponent->TextureTarget = GetRenderTarget(isResourceIcon);
+		captureComponentAlpha->TextureTarget = GetRenderTargetAlpha(isResourceIcon);
+
 		UAssetLoaderComponent* assetLoader = gameManager->assetLoader();
 		check(assetLoader);
 		const GameDisplayInfo& displayInfo = gameManager->displayInfo();
 
 		// Buildings
-		if (bakeBuilding)
+		if (isResourceIcon)
+		{
+			// Resources
+			const float resourceCaptureDistance = 45;
+
+			_resourceMesh->SetVisibility(true);
+			for (int i = 0; i < ResourceEnumCount; i++) {
+				ResourceEnum resourceEnum = static_cast<ResourceEnum>(i);
+				_resourceMesh->SetStaticMesh(assetLoader->resourceHandMesh(resourceEnum));
+				_resourceMesh->SetWorldLocation(captureComponent->GetComponentLocation() + captureComponent->GetForwardVector() * resourceCaptureDistance);
+
+				captureComponent->CaptureScene();
+				captureComponentAlpha->CaptureScene();
+
+				ExportIcon(FString("UI/ResourceIcons/ResourceIcon"), i, true);
+			}
+			_resourceMesh->SetVisibility(false);
+		}
+		else
 		{
 			const float baseHouseCaptureDistance = 215;
 
@@ -167,24 +188,6 @@ public:
 				_buildingMeshes->Hide();
 			}
 		}
-		else
-		{
-			// Resources
-			const float resourceCaptureDistance = 45;
-
-			_resourceMesh->SetVisibility(true);
-			for (int i = 0; i < ResourceEnumCount; i++) {
-				ResourceEnum resourceEnum = static_cast<ResourceEnum>(i);
-				_resourceMesh->SetStaticMesh(assetLoader->resourceHandMesh(resourceEnum));
-				_resourceMesh->SetWorldLocation(captureComponent->GetComponentLocation() + captureComponent->GetForwardVector() * resourceCaptureDistance);
-
-				captureComponent->CaptureScene();
-				captureComponentAlpha->CaptureScene();
-
-				ExportIcon(FString("UI/ResourceIcons/ResourceIcon"), i);
-			}
-			_resourceMesh->SetVisibility(false);
-		}
 
 		skyMesh->SetVisibility(true);
 	}
@@ -204,6 +207,14 @@ public:
 		return actor;
 	}
 
+	template<typename T>
+	T* Load(const char* path)
+	{
+		ConstructorHelpers::FObjectFinder<T> objectFinder(*FString(path));
+		check(objectFinder.Succeeded());
+		return objectFinder.Object;
+	}
+
 public:
 	UPROPERTY(EditAnywhere) bool SnapBuildingIcons;
 	UPROPERTY(EditAnywhere) bool SnapResourceIcons;
@@ -211,6 +222,14 @@ public:
 
 	UPROPERTY(EditAnywhere) UCanvasRenderTarget2D* IconRenderTarget;
 	UPROPERTY(EditAnywhere) UCanvasRenderTarget2D* IconRenderTargetAlpha;
+
+	// Resource Snapshots should be smaller
+	UPROPERTY(EditAnywhere) UCanvasRenderTarget2D* ResourceIconRenderTarget;
+	UPROPERTY(EditAnywhere) UCanvasRenderTarget2D* ResourceIconRenderTargetAlpha;
+
+	UCanvasRenderTarget2D* GetRenderTarget(bool isResourceIcon) { return isResourceIcon ? ResourceIconRenderTarget : IconRenderTarget; }
+	UCanvasRenderTarget2D* GetRenderTargetAlpha(bool isResourceIcon) { return isResourceIcon ? ResourceIconRenderTargetAlpha : IconRenderTargetAlpha; }
+	
 
 	UPROPERTY(EditAnywhere) UBuildingMeshesComponent* _buildingMeshes;
 	UPROPERTY(EditAnywhere) UStaticMeshComponent* _resourceMesh;
@@ -223,11 +242,11 @@ public:
 	void Tick(float DeltaSeconds) override {
 		//PUN_LOG("Tick AssetIconBaker");
 		if (SnapBuildingIcons) {
-			BakeIcons(true);
+			BakeIcons(false);
 			SnapBuildingIcons = false;
 		}
 		if (SnapResourceIcons) {
-			BakeIcons(false);
+			BakeIcons(true);
 			SnapResourceIcons = false;
 		}
 		if (SnapCustomIcon) {

@@ -19,7 +19,7 @@ APunHUD::APunHUD()
 
 	LoadClass(UIEnum::Chat, "ChatUIWidget");
 	LoadClass(UIEnum::TopLayerUI, "TopLayerUIWidget");
-	LoadClass(UIEnum::Policy, "PolicyMenuWidget");
+	//LoadClass(UIEnum::Policy, "PolicyMenuWidget");
 	LoadClass(UIEnum::Trade, "WorldTradeUIWidget");
 	LoadClass(UIEnum::TradeIntercity, "IntercityTradeUIWidget");
 	LoadClass(UIEnum::TargetConfirm, "TargetConfirmUI");
@@ -35,7 +35,7 @@ APunHUD::APunHUD()
 	LoadClass(UIEnum::BuildingPlacementButton, "BuildingPlacementButtonWidget");
 	LoadClass(UIEnum::CardMini, "CardMiniWidget");
 	LoadClass(UIEnum::CardSlot, "CardSlotWidget");
-	LoadClass(UIEnum::ResearchTypeButton, "ResearchTypeButtonWidget");
+	//LoadClass(UIEnum::ResearchTypeButton, "ResearchTypeButtonWidget");
 
 	LoadClass(UIEnum::ToolTip, "TooltipWidget");
 	LoadClass(UIEnum::TradeRow, "WorldTradeRowWidget");
@@ -47,8 +47,8 @@ APunHUD::APunHUD()
 	LoadClass(UIEnum::ResourceStatTableRow, "StatisticsUI/ResourceStatTableRow");
 	LoadClass(UIEnum::BuildingStatTableRow, "StatisticsUI/BuildingStatTableRow");
 
-	LoadClass(UIEnum::ArmyUI, "ArmyUI");
-	LoadClass(UIEnum::ArmyRow, "ArmyRow");
+	//LoadClass(UIEnum::ArmyUI, "ArmyUI");
+	//LoadClass(UIEnum::ArmyRow, "ArmyRow");
 
 	LoadClass(UIEnum::WorldSpaceUI, "WorldSpaceUI/WorldSpaceUIWidget");
 	LoadClass(UIEnum::HoverIcon, "WorldSpaceUI/HoverIconWidget");
@@ -122,14 +122,14 @@ APunHUD::APunHUD()
 
 	LoadClass(UIEnum::HiddenSettingsRow, "HiddenSettingsRow");
 
-	LoadClass(UIEnum::ArmyDeployButton, "WorldSpaceUI/ArmyDeployButton");
-	LoadClass(UIEnum::ArmyLinesUILeft, "WorldSpaceUI/ArmyLinesUILeft");
-	LoadClass(UIEnum::ArmyLinesUIRight, "WorldSpaceUI/ArmyLinesUIRight");
-	LoadClass(UIEnum::ArmyUnitLeft, "WorldSpaceUI/ArmyUnitLeft");
-	LoadClass(UIEnum::ArmyUnitRight, "WorldSpaceUI/ArmyUnitRight");
-	LoadClass(UIEnum::ArmyMoveRow, "ArmyMoveRow");
-	LoadClass(UIEnum::ArmyMoveUI, "ArmyMoveUI");
-	LoadClass(UIEnum::ArmyChooseNodeButton, "ArmyChooseNodeButton");
+	//LoadClass(UIEnum::ArmyDeployButton, "WorldSpaceUI/ArmyDeployButton");
+	//LoadClass(UIEnum::ArmyLinesUILeft, "WorldSpaceUI/ArmyLinesUILeft");
+	//LoadClass(UIEnum::ArmyLinesUIRight, "WorldSpaceUI/ArmyLinesUIRight");
+	//LoadClass(UIEnum::ArmyUnitLeft, "WorldSpaceUI/ArmyUnitLeft");
+	//LoadClass(UIEnum::ArmyUnitRight, "WorldSpaceUI/ArmyUnitRight");
+	//LoadClass(UIEnum::ArmyMoveRow, "ArmyMoveRow");
+	//LoadClass(UIEnum::ArmyMoveUI, "ArmyMoveUI");
+	//LoadClass(UIEnum::ArmyChooseNodeButton, "ArmyChooseNodeButton");
 	LoadClass(UIEnum::DamageFloatup, "WorldSpaceUI/DamageFloatup");
 
 	// Slate Style
@@ -234,7 +234,7 @@ void APunHUD::PunTick(bool isPhotoMode)
 	_prosperityUI->TickUI();
 	
 	_statisticsUI->TickUI();
-	_armyMoveUI->TickUI();
+	//_armyMoveUI->TickUI();
 
 	// Raycast blocking
 	//PUN_LOG("--- Pointer Check");
@@ -255,7 +255,7 @@ void APunHUD::PunTick(bool isPhotoMode)
 	_prosperityUI->CheckPointerOnUI();
 	
 	_escMenuUI->CheckPointerOnUI();
-	_armyMoveUI->CheckPointerOnUI();
+	//_armyMoveUI->CheckPointerOnUI();
 	UPunWidget::TickIsHovered();
 
 	UpdateExclusiveUIDisplay();
@@ -341,8 +341,8 @@ void APunHUD::Setup(IPunPlayerController* controller, USceneComponent* worldWidg
 	_prosperityUI = AddWidgetToHUDCast<UProsperityUI>(UIEnum::ProsperityUI);
 	_prosperityUI->PunInit();
 
-	_armyMoveUI = AddWidgetToHUDCast<UArmyMoveUI>(UIEnum::ArmyMoveUI);
-	_armyMoveUI->PunInit();
+	//_armyMoveUI = AddWidgetToHUDCast<UArmyMoveUI>(UIEnum::ArmyMoveUI);
+	//_armyMoveUI->PunInit();
 
 	// 
 	_popupUI = AddWidgetToHUDCast<UPopupUI>(UIEnum::Popup);
@@ -393,7 +393,7 @@ void APunHUD::KeyPressed_Escape()
 
 	_questUI->OnQuestDescriptionCloseButtonClick();
 
-	_armyMoveUI->CloseArmyMoveUI();
+	//_armyMoveUI->CloseArmyMoveUI();
 
 	_giftResourceUI->CloseUI();
 }

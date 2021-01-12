@@ -346,10 +346,10 @@ public:
 		return townhall(playerId).townName();
 	}
 	std::string townSuffix(int32 playerId) final {
-		return GetTownSizeSuffix(population(playerId));
+		return FTextToStd(playerOwned(playerId).GetTownSizeSuffix());
 	}
 	std::string townSizeName(int32 playerId) final {
-		return TownSizeNames[GetTownSizeTier(population(playerId))];
+		return FTextToStd(playerOwned(playerId).GetTownSizeName());
 	}
 	int32 townAgeTicks(int32 playerId) final {
 		return townhall(playerId).townAgeTicks();
@@ -465,6 +465,10 @@ public:
 
 	bool IsFrontBuildable(WorldTile2 tile) final
 	{
+		if (!tile.isValid()) {
+			return false;
+		}
+		
 		int32 tileId = tile.tileId();
 		if (terraintileType(tileId) != TerrainTileType::None) {
 			return false;
@@ -1325,12 +1329,12 @@ public:
 		_playerOwnedManagers[playerId].RecalculateTaxDelayed();
 	}
 
-	const std::vector<int32>& boarBurrows(int32 regionId) override { return _regionSystem->boarBurrows(regionId); }
-	void AddBoarBurrow(int32 regionId, int32 buildingId) override {
-		_regionSystem->AddBoarBurrow(regionId, buildingId);
+	const std::vector<int32>& boarBurrows(int32 provinceId) override { return _regionSystem->boarBurrows(provinceId); }
+	void AddBoarBurrow(int32 provinceId, int32 buildingId) override {
+		_regionSystem->AddBoarBurrow(provinceId, buildingId);
 	}
-	void RemoveBoarBurrow(int32 regionId, int32 buildingId) override {
-		_regionSystem->RemoveBoarBurrow(regionId, buildingId);
+	void RemoveBoarBurrow(int32 provinceId, int32 buildingId) override {
+		_regionSystem->RemoveBoarBurrow(provinceId, buildingId);
 	}
 
 	const std::vector<int32>& provinceAnimals(int32 regionId) override { return _regionSystem->provinceAnimals(regionId); }
@@ -1787,9 +1791,14 @@ public:
 	FString playerNameF(int32 playerId) final {
 		return _gameManager->playerNameF(playerId);
 	}
+	FText playerNameT(int32 playerId) final {
+		return FText::FromString(_gameManager->playerNameF(playerId));
+	}
 	std::string playerName(int32 playerId) final {
 		return ToStdString(_gameManager->playerNameF(playerId));
 	}
+
+	
 	std::vector<int32> allHumanPlayerIds() final {
 		return _gameManager->allHumanPlayerIds();
 	}
@@ -1938,7 +1947,7 @@ public:
 		//return 1.0f;
 		return FDToFloat(_snowAccumulation2);
 	}
-	float snowHeightForestStart() {
+	float snowHeightForestStart() { // 0 to 1
 		
 		return FDToFloat(_snowAccumulation1);
 	}
@@ -1998,6 +2007,8 @@ public:
 		checkGetSeed(CardEnum::CocoaSeeds, GeoresourceEnum::CocoaFarm);
 		checkGetSeed(CardEnum::CottonSeeds, GeoresourceEnum::CottonFarm);
 		checkGetSeed(CardEnum::DyeSeeds, GeoresourceEnum::DyeFarm);
+		checkGetSeed(CardEnum::CoffeeSeeds, GeoresourceEnum::CoffeeFarm);
+		checkGetSeed(CardEnum::TulipSeeds, GeoresourceEnum::TulipFarm);
 	}
 
 	void PopupInstantReply(int32 playerId, PopupReceiverEnum replyReceiver, int32 choiceIndex)

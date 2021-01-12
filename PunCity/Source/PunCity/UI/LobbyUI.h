@@ -19,10 +19,10 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) UOverlay* GameStartBlocker;
 
-	UPROPERTY(meta = (BindWidget)) UEditableTextBox* NameInputBox;
-	UPROPERTY(meta = (BindWidget)) UScrollBox* PlayersInfoBox;
+	//UPROPERTY(meta = (BindWidget)) UEditableTextBox* NameInputBox;
+	//UPROPERTY(meta = (BindWidget)) UScrollBox* PlayersInfoBox;
 
-	UPROPERTY(meta = (BindWidget)) UEditableTextBox* InitialAnimalsInputBox;
+	//UPROPERTY(meta = (BindWidget)) UEditableTextBox* InitialAnimalsInputBox;
 
 	/*
 	 * Lobby UI
@@ -161,7 +161,7 @@ public:
 	std::unique_ptr<PunTerrainGenerator> _terrainGenerator;
 	
 private:
-	UFUNCTION() void InputBoxChange_InitialAnimals(const FText& text);
+	//UFUNCTION() void InputBoxChange_InitialAnimals(const FText& text);
 
 	UFUNCTION() void ReturnToMainMenu();
 	UFUNCTION() void OnClickLobbyStartGameButton();

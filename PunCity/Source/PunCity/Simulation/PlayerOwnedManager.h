@@ -29,46 +29,6 @@ static const int32_t TownSizeMinPopulation[]
 };
 static int32 GetTownSizeMinPopulation(int32 tier) { return TownSizeMinPopulation[tier]; }
 
-static const std::string TownSizeNames[]
-{
-	"Village",
-	"Small Town",
-	"Large Town",
-	"Small City",
-	"Large City",
-	"Metropolis",
-};
-static int32_t TownSizeCount() { return _countof(TownSizeNames); }
-
-static const std::string TownSizeSuffix[]
-{
-	"village",
-	"town",
-	"town",
-	"city",
-	"city",
-	"metropolis",
-};
-
-static int32 GetTownSizeTier(int32 population)
-{
-	for (int32 i = 1; i < TownSizeCount(); i++) {
-		if (population < GetTownSizeMinPopulation(i)) {
-			return i - 1;
-		}
-	}
-	return TownSizeCount() - 1;
-}
-
-static std::string GetTownSizeSuffix(int32 population)
-{
-	for (int32 i = 1; i < TownSizeCount(); i++) {
-		if (population < GetTownSizeMinPopulation(i)) {
-			return TownSizeSuffix[i - 1];
-		}
-	}
-	return TownSizeSuffix[TownSizeCount() - 1];
-}
 
 // Priority list for what job need people living closer
 static const std::vector<CardEnum> DefaultJobPriorityListAllSeason
@@ -98,6 +58,10 @@ static const std::vector<CardEnum> DefaultJobPriorityListAllSeason
 	CardEnum::ClayPit,
 	CardEnum::Potter,
 	CardEnum::Tailor,
+
+	CardEnum::ShroomFarm,
+	CardEnum::VodkaDistillery,
+	CardEnum::CoffeeRoaster,
 
 	CardEnum::GoldMine,
 	CardEnum::Quarry,
@@ -239,16 +203,9 @@ public:
 
 	int32 adultPopulation() { return _adultIds.size(); }
 	int32 childPopulation() { return _childIds.size(); }
-	
-	std::string GetTownSizeName() {
-		for (int32_t i = TownSizeCount(); i-- > 0;) {
-			if (population() >= TownSizeMinPopulation[i]) {
-				return TownSizeNames[i];
-			}
-		}
-		UE_DEBUG_BREAK();
-		return "";
-	}
+
+	FText GetTownSizeSuffix();
+	FText GetTownSizeName();
 
 	void PlayerAddHuman(int32 objectId);
 	void PlayerRemoveHuman(int32 objectId) {
@@ -576,6 +533,7 @@ public:
 	void TryRemoveProvinceClaim(int32 provinceId, bool lightMode)
 	{
 		CppUtils::TryRemove(_provincesClaimed, provinceId);
+		//_claimedProvinceConnected.erase(provinceId);
 
 		if (!lightMode) {
 			RecalculateTax(false);
@@ -595,7 +553,14 @@ public:
 		//								std::max(_territoryBoxExtent.maxX, maxTile.x), std::max(_territoryBoxExtent.maxY, maxTile.y));
 		
 		_provincesClaimed.push_back(provinceId);
-		//_provincesInfluenced.push_back(provinceId);
+
+		//WorldTile2 townGate = _simulation->townhallGateTile(_playerId);
+		//WorldTile2 provinceCenter = _simulation->GetProvinceCenterTile(provinceId);
+		//WorldTile2 availableProvinceTile = AlgorithmUtils::FindNearbyAvailableTile(provinceCenter, [&](const WorldTile2& tile) {
+		//	return _simulation->pathAI(true)->isWalkable(tile.x, tile.y);
+		//}, 9);
+		//DEBUG_ISCONNECTED_VAR(ClaimProvince);
+		//_claimedProvinceConnected.emplace(provinceId, _simulation->IsConnected(townGate, availableProvinceTile, GameConstants::MaxFloodDistance_HumanLogistics, true));
 
 		// If this is autoClaiming region, remove it from autoclaim
 		if (_armyAutoClaimProgress.provinceId == provinceId) {
@@ -682,14 +647,6 @@ public:
 		return ProvinceAttackEnum::ConquerProvince;
 	}
 	
-	
-	
-	//void MarkAsOutpost(int32 provinceId) {
-	//	_provincesOutpost.push_back(provinceId);
-	//}
-	//bool TryRemoveOutpost(int32 provinceId) {
-	//	return CppUtils::TryRemove(_provincesOutpost, provinceId);
-	//}
 
 	int32 GetPlayerLandTileCount(bool includeMountain) {
 		int32 tileCount = 0;
@@ -703,19 +660,17 @@ public:
 		return tileCount;
 	}
 
-	//bool HasOutpostAt(int32 provinceId) {
-	//	return CppUtils::Contains(_provincesOutpost, provinceId);
-	//}
-
 	const std::vector<int32>& provincesClaimed() {
 		return _provincesClaimed;
 	}
-	//const std::vector<int32>& provincesInfluenced() {
-	//	return _provincesInfluenced;
+
+	//bool IsProvinceEasilyConnected(int32 provinceId) {
+	//	PUN_CHECK(_claimedProvinceConnected.find(provinceId) != _claimedProvinceConnected.end());
+	//	return _claimedProvinceConnected[provinceId];
 	//}
-	//const std::vector<int32>& provincesOutpost() {
-	//	return _provincesOutpost;
-	//}
+
+	
+
 
 	TileArea territoryBoxExtent() { return _territoryBoxExtent; }
 
@@ -1334,6 +1289,8 @@ public:
 		SerializeVecValue(Ar, _aveHappinessModifiers);
 
 		SerializeVecValue(Ar, _provincesClaimed);
+		//SerializeMapValue(Ar, _claimedProvinceConnected);
+		
 		_territoryBoxExtent >> Ar;
 		SerializeVecObj(Ar, _armyRegionClaimQueue);
 		SerializeVecObj(Ar, _armyRegionClaimCanceled);
@@ -1492,8 +1449,7 @@ private:
 	std::vector<int32> _aveHappinessModifiers;
 	
 	std::vector<int32> _provincesClaimed;
-	//std::vector<int32> _provincesInfluenced; // TODO: Serialize
-	//std::vector<int32> _provincesOutpost; // TODO: Serialize
+	//std::unordered_map<int32, int32> _claimedProvinceConnected; // Fast check if the province is too far from townhall
 	TileArea _territoryBoxExtent;
 	
 	std::vector<RegionClaimProgress> _armyRegionClaimQueue;

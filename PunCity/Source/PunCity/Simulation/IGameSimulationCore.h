@@ -109,6 +109,7 @@ public:
 	virtual int32 playerCount() = 0;
 
 	virtual FString playerNameF(int32 playerId) = 0;
+	virtual FText playerNameT(int32 playerId) = 0;
 	virtual std::string playerName(int32 playerId) = 0;
 	virtual std::vector<int32> allHumanPlayerIds() = 0;
 	virtual std::vector<int32> connectedPlayerIds() = 0;
@@ -382,9 +383,9 @@ public:
 
 	virtual void RecalculateTaxDelayed(int32 playerId) = 0;
 
-	virtual const std::vector<int32>& boarBurrows(int32 regionId) = 0;
-	virtual void AddBoarBurrow(int32 regionId, int32 buildingId) = 0;
-	virtual void RemoveBoarBurrow(int32 regionId, int32 buildingId) = 0;
+	virtual const std::vector<int32>& boarBurrows(int32 provinceId) = 0;
+	virtual void AddBoarBurrow(int32 provinceId, int32 buildingId) = 0;
+	virtual void RemoveBoarBurrow(int32 provinceId, int32 buildingId) = 0;
 
 	virtual const std::vector<int32>& provinceAnimals(int32 provinceId) = 0;
 	virtual void AddProvinceAnimals(int32 provinceId, int32 animalId) = 0;

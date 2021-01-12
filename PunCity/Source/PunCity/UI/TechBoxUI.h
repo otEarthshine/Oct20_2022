@@ -121,8 +121,8 @@ public:
 	void UpdateTooltip()
 	{
 		auto unlockSys = simulation().unlockSystem(playerId());
-		auto techInfo = unlockSys->GetTechInfo(techEnum);
-		std::vector<CardEnum> unlockCards = techInfo->GetUnlockNames();
+		auto tech = unlockSys->GetTechInfo(techEnum);
+		std::vector<CardEnum> unlockCards = tech->GetUnlockNames();
 
 		UPunBoxWidget* tooltipBox = UPunBoxWidget::AddToolTip(this, this)->TooltipPunBoxWidget;
 		if (tooltipBox)
@@ -130,7 +130,7 @@ public:
 			tooltipBox->AfterAdd();
 
 			// Header
-			tooltipBox->AddRichText("<TipHeader>" + techInfo->GetName() + "</>");
+			tooltipBox->AddRichText("<TipHeader>" + tech->GetName() + "</>");
 			tooltipBox->AddSpacer();
 
 			// Sci points
@@ -138,17 +138,31 @@ public:
 			//tooltipBox->AddSpacer();
 
 			std::stringstream ss;
-			ss << "Cost: " << techInfo->scienceNeeded(unlockSys->techsFinished) << "<img id=\"Science\"/>";
+			ss << "Cost: " << tech->scienceNeeded(unlockSys->techsFinished) << "<img id=\"Science\"/>";
 			tooltipBox->AddRichText(ss);
 			tooltipBox->AddSpacer();
 			//tooltipBox->AddLineSpacer(12);
 
-			// Bonus body
-			if (techInfo->HasBonus()) {
-				tooltipBox->AddRichText(techInfo->GetBonusDescription());
+			// Requirement
+			if (tech->requiredResourceEnum != ResourceEnum::None)
+			{
+				int32 productionCount = unlockSys->GetResourceProductionCount(tech->requiredResourceEnum);
+				if (productionCount < tech->requiredResourceCount) {
+					ss << "Requirement:\n - Produce " << productionCount << "/" << tech->requiredResourceCount << " " << ResourceName(tech->requiredResourceEnum);
+				} else {
+					ss << "Requirement:\n - Produce " << tech->requiredResourceCount << " " << ResourceName(tech->requiredResourceEnum) << " (Completed)";
+				}
+				tooltipBox->AddRichText(ss);
+				tooltipBox->AddSpacer(12);
 			}
 
-			if (techInfo->HasBonus() && unlockCards.size() > 0) {
+
+			// Bonus body
+			if (tech->HasBonus()) {
+				tooltipBox->AddRichText(tech->GetBonusDescription());
+			}
+
+			if (tech->HasBonus() && unlockCards.size() > 0) {
 				tooltipBox->AddLineSpacer(12);
 			}
 
@@ -190,6 +204,9 @@ public:
 	UPROPERTY(meta = (BindWidget)) UImage* RewardBonusIcon1;
 	UPROPERTY(meta = (BindWidget)) UImage* RewardBonusIcon2;
 
+	UPROPERTY(meta = (BindWidget)) UTextBlock* TechRequirement;
+	UPROPERTY(meta = (BindWidget)) UImage* TechRequirementIcon;
+	
 private:
 	void FindLineImages() {
 		UOverlay* parent = CastChecked<UOverlay>(GetParent());

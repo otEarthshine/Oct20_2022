@@ -18,6 +18,8 @@
 using namespace std;
 using namespace std::placeholders;
 
+#define LOCTEXT_NAMESPACE "House"
+
 
 //int32_t House::GetRadiusBonus(BuildingEnum buildingEnum, int32_t radius, const int32_t bonusByLvl[])
 //{
@@ -32,6 +34,51 @@ using namespace std::placeholders;
 //	}
 //	return bonus;
 //}
+
+void House::GetHeatingEfficiencyTip(TArray<FText>& args, ResourceEnum resourceEnum)
+{
+	ADDTEXT_(LOCTEXT("HeatingEfficiency", "{0} Heating Efficiency: {1}%"),
+		ResourceNameT(resourceEnum),
+		FText::AsNumber(GetHeatingEfficiency(resourceEnum))
+	);
+	ADDTEXT_INV_("<space>");
+
+	if (_simulation->TownhallCardCount(_playerId, CardEnum::ChimneyRestrictor)) {
+		ADDTEXT_LOCTEXT("ChimneyRestrictor", " +15% Chimney Restrictor\n");
+	}
+	if (IsUpgraded(0)) {
+		ADDTEXT_LOCTEXT("StoneInsulation", " +20% Stone Insulation\n");
+	}
+	if (IsUpgraded(1)) {
+		ADDTEXT_LOCTEXT("BrickInsulation", " +30% Brick Insulation\n");
+	}
+
+	if (resourceEnum == ResourceEnum::Coal) {
+		if (_simulation->TownhallCardCount(_playerId, CardEnum::CoalTreatment)) {
+			ADDTEXT_LOCTEXT("CoalTreatment", " +20% Coal Treatment\n");
+		}
+		ADDTEXT_LOCTEXT("CoalUsage", " x2 Coal Usage\n");
+	}
+
+	//ss << ResourceName(resourceEnum) << " Heating Efficiency: " << GetHeatingEfficiency(resourceEnum) << "%<space>";
+	//if (_simulation->TownhallCardCount(_playerId, CardEnum::ChimneyRestrictor)) {
+	//	ss << " +15% Chimney Restrictor\n";
+	//}
+	//if (IsUpgraded(0)) {
+	//	ss << " +20% Stone Insulation\n";
+	//}
+	//if (IsUpgraded(1)) {
+	//	ss << " +30% Brick Insulation\n";
+	//}
+
+	//if (resourceEnum == ResourceEnum::Coal) {
+	//	if (_simulation->TownhallCardCount(_playerId, CardEnum::CoalTreatment)) {
+	//		ss << " +20% Coal Treatment\n";
+	//	}
+	//	ss << " x2 Coal Usage\n";
+	//}
+}
+
 
 void House::OnDeinit()
 {
@@ -395,11 +442,11 @@ std::string House::HouseNeedDescription()
 	switch(_houseLvl)
 	{
 	case 1: return "Need 1 type of luxury tier 1";
-	case 2: return "Need 2 types of luxury tier 1";
+	case 2: return "Need 3 types of luxury tier 1";
 	case 3: return "Need 1 type of luxury tier 2";
-	case 4: return "Need 2 types of luxury tier 2";
+	case 4: return "Need 3 types of luxury tier 2";
 	case 5: return "Need 1 types of luxury tier 3";
-	case 6: return "Need 2 types of luxury tier 3";
+	case 6: return "Need 3 types of luxury tier 3";
 	default:
 		UE_DEBUG_BREAK();
 		return "";
@@ -442,24 +489,23 @@ int32 House::CalculateHouseLevel()
 {
 	switch(LuxuryTypeCount(1))
 	{
-	case 0: return 1;
-	case 1: return 2;
+	case 0:			return 1;
+	case 1: case 2: return 2;
 	default: break;
 	}
 
 	switch (LuxuryTypeCount(2))
 	{
-	case 0: return 3;
-	case 1: return 4;
-		
+	case 0:			return 3;
+	case 1: case 2: return 4;
 	default: break;
 	}
 
 	switch (LuxuryTypeCount(3))
 	{
-	case 0: return 5;
-	case 1: return 6;
-	case 2: return 7;
+	case 0:			return 5;
+	case 1: case 2: return 6;
+	case 3:			return 7;
 
 	default: return 7;
 	}
@@ -471,7 +517,7 @@ int32 House::CalculateHouseLevel()
 void BoarBurrow::FinishConstruction()
 {
 	Building::FinishConstruction();
-	_simulation->AddBoarBurrow(_centerTile.regionId(), _objectId);
+	_simulation->AddBoarBurrow(_simulation->GetProvinceIdClean(_centerTile), _objectId);
 
 	_allowedOccupants = 4;
 	_maxOccupants = 4;
@@ -482,7 +528,7 @@ void BoarBurrow::OnDeinit()
 	ResetOccupants();
 	
 	_simulation->RemoveTenantFrom(_objectId);
-	_simulation->RemoveBoarBurrow(_centerTile.regionId(), _objectId);
+	_simulation->RemoveBoarBurrow(_simulation->GetProvinceIdClean(_centerTile), _objectId);
 }
 
 void RanchBarn::FinishConstruction()

@@ -5,11 +5,14 @@
 #include "UnrealEngine.h"
 #include "PunCity/PunGameInstance.h"
 
+#define LOCTEXT_NAMESPACE "MainMenuUI"
+
 using namespace std;
 
 void UMainMenuUI::Init()
 {
-	RefreshUI(MenuState::HostJoin);
+	// TODO: fine right?
+	//RefreshUI(MenuState::HostJoin);
 
 	MainMenuSinglePlayerButton->OnClicked.AddDynamic(this, &UMainMenuUI::OnMainMenuSinglePlayerButtonClick);
 	MainMenuMultiplayerButton->OnClicked.AddDynamic(this, &UMainMenuUI::OnClickMainMenuMultiplayerButton);
@@ -80,8 +83,20 @@ void UMainMenuUI::Tick()
 {
 	gameInstance()->PunTick();
 
-	VersionIdText->SetText(ToFText(GetGameVersionString()));
+	// TODO: Test
+	//VersionIdText->SetText(ToFText(GetGameVersionString()));
 
+	//int32 testValue = 2221;
+	//FFormatNamedArguments Args;
+	//Args.Add(TEXT("testValue"), FText::AsNumber(testValue));
+	//VersionIdText->SetText(FText::Format(NSLOCTEXT("MainMenuUI", "testValue", "test value: {testValue}"), Args));
+
+	int32 testValue = 5555;
+	VersionIdText->SetText(FText::FormatNamed(
+		LOCTEXT("testValue2", "test value2: {testValue}"), 
+		"testValue2", FText::AsNumber(testValue)));
+
+	
 	// Not Connected to Steam, retry every 2 sec
 	if (LobbyConnectionWarning->GetVisibility() == ESlateVisibility::Visible &&
 		UGameplayStatics::GetTimeSeconds(this) - lastSteamConnectionRetry > 2.0f)
@@ -237,11 +252,11 @@ void UMainMenuUI::Tick()
 	// Create/Join Menu Block
 	if (gameInstance()->bIsCreatingSession) {
 		JoinGameDelayOverlay->SetVisibility(ESlateVisibility::Visible);
-		SetText(JoinGameDelayText, "Creating Game...");
+		SetText(JoinGameDelayText, LOCTEXT("CreatingGame", "Creating Game..."));
 	}
 	else if (gameInstance()->isJoiningGame) {
 		JoinGameDelayOverlay->SetVisibility(ESlateVisibility::Visible);
-		SetText(JoinGameDelayText, "Joining Game...");
+		SetText(JoinGameDelayText, LOCTEXT("JoiningGame", "Joining Game..."));
 	}
 	else {
 		JoinGameDelayOverlay->SetVisibility(ESlateVisibility::Collapsed);
@@ -271,26 +286,9 @@ void UMainMenuUI::Tick()
 		!gameInstance()->mainMenuPopup.IsEmpty())
 	{
 		MainMenuPopupOverlay->SetVisibility(ESlateVisibility::Visible);
-		MainMenuPopupText->SetText(FText::FromString(gameInstance()->mainMenuPopup));
-		gameInstance()->mainMenuPopup = FString();
+		MainMenuPopupText->SetText(gameInstance()->mainMenuPopup);
+		gameInstance()->mainMenuPopup = FText();
 	}
-}
-
-void UMainMenuUI::RefreshUI(MenuState state)
-{
-	//if (state == MenuState::TerrainGeneration)
-	//{
-	//	MultiplayerGameSetupMenu->SetVisibility(ESlateVisibility::Visible);
-	//	//UseExistingTerrainButton->SetVisibility(terrainGenerator->HasSavedMap() ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
-
-	//	MultiplayerMenu->SetVisibility(ESlateVisibility::Hidden);
-	//}
-	//else
-	//{
-	//	MultiplayerGameSetupMenu->SetVisibility(ESlateVisibility::Hidden);
-
-	//	MultiplayerMenu->SetVisibility(ESlateVisibility::Visible);
-	//}
 }
 
 void UMainMenuUI::RefreshLobbyList()
@@ -383,13 +381,25 @@ void UMainMenuUI::JoinMultiplayerGame()
 	int32 hostVersion = GetSessionValue(SESSION_GAME_VERSION, _chosenSession.Session.SessionSettings);
 	if (hostVersion != GAME_VERSION)
 	{
-		stringstream ss;
-		ss << "Cannot join a game with different version.\n";
-		ss << "Please try restarting Steam to get the latest version.\n";
-		ss << " your version: " << GetGameVersionString(GAME_VERSION) << "\n";
-		ss << " host version: " << GetGameVersionString(hostVersion);
+		//stringstream ss;
+		//ss << "Cannot join a game with different version.\n";
+		//ss << "Please try restarting Steam to get the latest version.\n";
+		//ss << " your version: " << GetGameVersionString(GAME_VERSION) << "\n";
+		//ss << " host version: " << GetGameVersionString(hostVersion);
 		
-		gameInstance()->mainMenuPopup = ToFString(ss.str());
+		//gameInstance()->mainMenuPopup = ToFString(ss.str());
+		gameInstance()->mainMenuPopup = FText::Format(
+			LOCTEXT("Joining Server",
+			"Cannot join a game with different version.\n"
+			"Please try restarting Steam to get the latest version.\n"
+			" your version: {0}}\n"
+			" host version: {1}\n"
+			),
+			ToFText(GetGameVersionString(GAME_VERSION)),
+			ToFText(GetGameVersionString(hostVersion))
+		);
+
+		
 		Spawn2DSound("UI", "PopupCannot");
 		return;
 	}
@@ -405,3 +415,19 @@ void UMainMenuUI::Spawn2DSound(std::string groupName, std::string soundName)
 {
 	gameInstance()->Spawn2DSound(groupName, soundName);
 }
+
+void UMainMenuUI::OnClickJoinPasswordConfirm()
+{
+	PasswordPopupOverlay->SetVisibility(ESlateVisibility::Collapsed);
+	FString password = GetSessionValueString(SESSION_PASSWORD, _chosenSession.Session.SessionSettings);
+	FString passwordInput = PasswordEditableText->GetText().ToString();
+
+	if (password == passwordInput) {
+		JoinMultiplayerGame();
+	}
+	else {
+		gameInstance()->mainMenuPopup = LOCTEXT("InvalidPassword", "Invalid password.");
+	}
+}
+
+#undef LOCTEXT_NAMESPACE

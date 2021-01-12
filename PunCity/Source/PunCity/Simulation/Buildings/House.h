@@ -78,11 +78,19 @@ public:
 		if (lvl > 1) {
 			switch (lvl)
 			{
-			case 7: AddResource(ResourceEnum::Jewelry, 10);
+			case 7:
+				AddResource(ResourceEnum::Jewelry, 10);
+				AddResource(ResourceEnum::Chocolate, 10);
 			case 6: AddResource(ResourceEnum::Book, 10);
-			case 5: AddResource(ResourceEnum::Chocolate, 10);
+				
+			case 5:
+				AddResource(ResourceEnum::Vodka, 10);
+				AddResource(ResourceEnum::Candle, 10);
 			case 4: AddResource(ResourceEnum::Wine, 10);
-			case 3: AddResource(ResourceEnum::Beer, 10);
+				
+			case 3:
+				AddResource(ResourceEnum::Tulip, 10);
+				AddResource(ResourceEnum::Beer, 10);
 			case 2: AddResource(ResourceEnum::Pottery, 10);
 				break;
 			default:
@@ -164,6 +172,22 @@ public:
 		return (_houseLvl - 1) * houseTypesPerLevel + localIndex;
 	}
 
+	int32 GetBuildingSelectorHeight() override
+	{
+		switch(_houseLvl) {
+		case 3:
+		case 4:
+		case 5:
+			return 45;
+		case 6:
+			return 50;
+		case 7:
+			return 60;
+		default:
+			return 35;
+		}
+	}
+	
 
 	static int32 GetLuxuryCountUpgradeRequirement(int32 houseLvl) {
 		return houseLvl - 1; // houseLvl 2 requires 1 lux
@@ -174,26 +198,7 @@ public:
 
 
 
-	void GetHeatingEfficiencyTip(std::stringstream& ss, ResourceEnum resourceEnum)
-	{
-		ss << ResourceName(resourceEnum) << " Heating Efficiency: " << GetHeatingEfficiency(resourceEnum) << "%<space>";
-		if (_simulation->TownhallCardCount(_playerId, CardEnum::ChimneyRestrictor)) {
-			ss << " +15% Chimney Restrictor\n";
-		}
-		if (IsUpgraded(0)) {
-			ss << " +20% Stone Insulation\n";
-		}
-		if (IsUpgraded(1)) {
-			ss << " +30% Brick Insulation\n";
-		}
-
-		if (resourceEnum == ResourceEnum::Coal) {
-			if (_simulation->TownhallCardCount(_playerId, CardEnum::CoalTreatment)) {
-				ss << " +20% Coal Treatment\n";
-			}
-			ss << " x2 Coal Usage\n";
-		}
-	}
+	void GetHeatingEfficiencyTip(TArray<FText>& args, ResourceEnum resourceEnum);
 
 	int32 GetHeatingEfficiency(ResourceEnum resourceEnum)
 	{
@@ -351,7 +356,7 @@ public:
 		AddResourceHolder(ResourceEnum::Milk, ResourceHolderType::Provider, 0);
 
 		workModes = {
-			{"Kill when above full capacity", ResourceEnum::None, ResourceEnum::None, 0},
+			{"Kill when reached full capacity", ResourceEnum::None, ResourceEnum::None, 0},
 			{"Kill when above half capacity", ResourceEnum::None, ResourceEnum::None, 0},
 			{"Kill all", ResourceEnum::None, ResourceEnum::None, 0},
 		};

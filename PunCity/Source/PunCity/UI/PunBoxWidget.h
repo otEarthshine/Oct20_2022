@@ -128,15 +128,16 @@ public:
 		ss.str(std::string());
 		return textWidget;
 	}
+	
 	UPunRichText* AddRichText(std::wstringstream& ss) {
 		auto textWidget = AddRichText(ss.str());
 		ss.str(std::wstring());
 		return textWidget;
 	}
 
-	UPunRichText* AddSpecialRichText(std::string prefix, std::stringstream& ss) {
-		auto textWidget = AddRichText(prefix + ss.str() + "</>");
-		ss.str(std::string());
+	UPunRichText* AddSpecialRichText(FText prefix, TArray<FText>& args) {
+		auto textWidget = AddRichText(FText::Format(INVTEXT("{0}{1}</>"), prefix, JOINTEXT(args)));
+		args.Empty();
 		return textWidget;
 	}
 	
@@ -151,6 +152,19 @@ public:
 		return textWidget;
 	}
 
+	// FString
+	UPunRichText* AddRichTextF(FString string) {
+		auto textWidget = GetChildElement<UPunRichText>(UIEnum::PunRichText, GetTypeHash(string));
+		textWidget->SetRichText(string);
+		return textWidget;
+	}
+	UPunRichText* AddRichText(FText text) {
+		auto textWidget = GetChildElement<UPunRichText>(UIEnum::PunRichText, GetTypeHash(text.ToString()));
+		textWidget->PunRichText->SetText(text);
+		return textWidget;
+	}
+
+	// std::string
 	UPunRichTextTwoSided* AddRichText(std::string leftText, std::string rightText, ResourceEnum resourceEnum = ResourceEnum::None, std::string expandedText = "") {
 		auto textWidget = GetChildElement<UPunRichTextTwoSided>(UIEnum::PunRichTextTwoSided);
 		textWidget->SetText(leftText, rightText, resourceEnum, expandedText);
@@ -161,6 +175,26 @@ public:
 		ss.str(std::string());
 		return textWidget;
 	}
+
+	// FText
+	UPunRichTextTwoSided* AddRichText(FText leftText, FText rightText, ResourceEnum resourceEnum = ResourceEnum::None, FText expandedText = FText()) {
+		auto textWidget = GetChildElement<UPunRichTextTwoSided>(UIEnum::PunRichTextTwoSided);
+		textWidget->SetText(leftText, rightText, resourceEnum, expandedText);
+		return textWidget;
+	}
+	UPunRichTextTwoSided* AddRichText(FText leftText, TArray<FText>& args) {
+		auto textWidget = AddRichText(leftText, FText::Join(FText(), args));
+		args.Empty();
+		return textWidget;
+	}
+	UPunRichText* AddRichText(TArray<FText>& args) {
+		auto textWidget = AddRichText(FText::Join(FText(), args));
+		args.Empty();
+		return textWidget;
+	}
+
+
+	
 
 	UPunRichText* AddRichTextCenter(std::string string) {
 		return AddRichText(string)->SetJustification(ETextJustify::Type::Center);
@@ -236,21 +270,21 @@ public:
 		return widget;
 	}
 
-	UPunButton* AddButton(std::string prefix, UTexture2D* texture, std::string suffix, UPunWidget* callbackParent, CallbackEnum callbackEnum,
+	UPunButton* AddButton(FText prefix, UTexture2D* texture, FText suffix, UPunWidget* callbackParent, CallbackEnum callbackEnum,
 							bool showEnabled = true, bool showExclamation = false, int32 callbackVar1In = -1, int32 callbackVar2In = -1)
 	{
-		return AddButtonBase("", prefix, texture, suffix, callbackParent, callbackEnum, showEnabled, showExclamation, callbackVar1In, callbackVar2In);
+		return AddButtonBase(FText(), prefix, texture, suffix, callbackParent, callbackEnum, showEnabled, showExclamation, callbackVar1In, callbackVar2In);
 	}
-	UPunButton* AddButton2Lines(std::string topString, UPunWidget* callbackParent, CallbackEnum callbackEnum,
+	UPunButton* AddButton2Lines(FText topString, UPunWidget* callbackParent, CallbackEnum callbackEnum,
 		bool showEnabled = true, bool showExclamation = false, int32 callbackVar1In = -1, int32 callbackVar2In = -1)
 	{
 		auto widget = GetChildElement<UPunButton>(UIEnum::PunButton);
-		widget->Set(topString, "", nullptr, "", callbackParent, callbackEnum, callbackVar1In, callbackVar2In);
+		widget->Set(topString, FText(), nullptr, FText(), callbackParent, callbackEnum, callbackVar1In, callbackVar2In);
 		SetButtonEnabled(widget->Button, showEnabled ? ButtonStateEnum::Enabled : ButtonStateEnum::Disabled);
 		widget->ExclamationIcon->SetShow(showExclamation);
 		return widget;
 	}
-	UPunButton* AddButtonBase(std::string topString, std::string prefix, UTexture2D* texture, std::string suffix, UPunWidget* callbackParent, CallbackEnum callbackEnum,
+	UPunButton* AddButtonBase(FText topString, FText prefix, UTexture2D* texture, FText suffix, UPunWidget* callbackParent, CallbackEnum callbackEnum,
 							bool showEnabled = true, bool showExclamation = false, int32 callbackVar1In = -1, int32 callbackVar2In = -1)
 	{
 		auto widget = GetChildElement<UPunButton>(UIEnum::PunButton);
@@ -260,7 +294,7 @@ public:
 		return widget;
 	}
 
-	UPunButton* AddButtonRed(std::string topString, std::string prefix, UTexture2D* texture, std::string suffix, UPunWidget* callbackParent, CallbackEnum callbackEnum, 
+	UPunButton* AddButtonRed(FText topString, FText prefix, UTexture2D* texture, FText suffix, UPunWidget* callbackParent, CallbackEnum callbackEnum,
 							int32 callbackVar1In = -1, int32 callbackVar2In = -1)
 	{
 		auto widget = GetChildElement<UPunButton>(UIEnum::PunButton);
@@ -318,12 +352,12 @@ public:
 		return widget;
 	}
 
-	UArmyRow* AddArmyRow(ArmyEnum armyEnum, std::string armyName, std::string armySize)
-	{
-		auto widget = GetChildElement<UArmyRow>(UIEnum::ArmyRow);
-		widget->PunInit(armyEnum, armyName, armySize);
-		return widget;
-	}
+	//UArmyRow* AddArmyRow(ArmyEnum armyEnum, std::string armyName, std::string armySize)
+	//{
+	//	auto widget = GetChildElement<UArmyRow>(UIEnum::ArmyRow);
+	//	widget->PunInit(armyEnum, armyName, armySize);
+	//	return widget;
+	//}
 
 	UPunGraph* AddGraph()
 	{

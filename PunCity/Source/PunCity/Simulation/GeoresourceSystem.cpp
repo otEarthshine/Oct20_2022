@@ -163,21 +163,34 @@ void GeoresourceSystem::InitGeoresourceSystem(IGameSimulationCore* simulation, b
 			if (biomeEnum == BiomeEnum::Jungle || 
 				biomeEnum == BiomeEnum::Forest) 
 			{
-				if (GameRand::RandChance(10)) {
+				if (GameRand::RandChance(12)) {
 					PlantResource(provinceId, GeoresourceEnum::CannabisFarm, 0);
 					continue;
 				}
-				if (GameRand::RandChance(10)) {
-					PlantResource(provinceId, GeoresourceEnum::GrapeFarm, 0);
-					continue;
-				}
 
-				if (GameRand::RandChance(10)) {
+				if (GameRand::RandChance(12)) {
 					PlantResource(provinceId, GeoresourceEnum::CottonFarm, 0);
 					continue;
 				}
-				if (GameRand::RandChance(10)) {
+				if (GameRand::RandChance(12)) {
 					PlantResource(provinceId, GeoresourceEnum::DyeFarm, 0);
+					continue;
+				}
+				
+				if (GameRand::RandChance(20)) {
+					PlantResource(provinceId, GeoresourceEnum::CoffeeFarm, 0);
+					continue;
+				}
+			}
+
+			if (biomeEnum == BiomeEnum::Forest)
+			{
+				if (GameRand::RandChance(12)) {
+					PlantResource(provinceId, GeoresourceEnum::GrapeFarm, 0);
+					continue;
+				}
+				if (GameRand::RandChance(20)) {
+					PlantResource(provinceId, GeoresourceEnum::TulipFarm, 0);
 					continue;
 				}
 			}

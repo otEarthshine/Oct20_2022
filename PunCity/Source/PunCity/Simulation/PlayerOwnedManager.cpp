@@ -17,6 +17,66 @@
 
 using namespace std;
 
+#define LOCTEXT_NAMESPACE "PlayerOwnedManager"
+
+/*
+ * Size Names
+ */
+
+static const TArray<FText> TownSizeNames
+{
+	LOCTEXT("Village", "Village"),
+	LOCTEXT("Small Town", "Small Town"),
+	LOCTEXT("Large Town", "Large Town"),
+	LOCTEXT("Small City", "Small City"),
+	LOCTEXT("Large City", "Large City"),
+	LOCTEXT("Metropolis", "Metropolis"),
+};
+static int32 TownSizeCount() { return TownSizeNames.Num(); }
+
+static const TArray<FText> TownSizeSuffix
+{
+	LOCTEXT("village", "village"),
+	LOCTEXT("town", "town"),
+	LOCTEXT("town", "town"),
+	LOCTEXT("city", "city"),
+	LOCTEXT("city", "city"),
+	LOCTEXT("metropolis", "metropolis"),
+};
+
+static int32 GetTownSizeTier(int32 population)
+{
+	for (int32 i = 1; i < TownSizeCount(); i++) {
+		if (population < GetTownSizeMinPopulation(i)) {
+			return i - 1;
+		}
+	}
+	return TownSizeCount() - 1;
+}
+
+FText PlayerOwnedManager::GetTownSizeSuffix()
+{
+	for (int32 i = 1; i < TownSizeCount(); i++) {
+		if (population() < GetTownSizeMinPopulation(i)) {
+			return TownSizeSuffix[i - 1];
+		}
+	}
+	return TownSizeSuffix[TownSizeCount() - 1];
+}
+
+FText PlayerOwnedManager::GetTownSizeName() {
+	for (int32_t i = TownSizeCount(); i-- > 0;) {
+		if (population() >= TownSizeMinPopulation[i]) {
+			return TownSizeNames[i];
+		}
+	}
+	UE_DEBUG_BREAK();
+	return FText();
+}
+
+/*
+ * 
+ */
 
 
 void PlayerOwnedManager::PlayerAddHuman(int32 objectId)

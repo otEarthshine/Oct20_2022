@@ -20,6 +20,11 @@ struct FPunDecal
 		: decal(decal), material(material), texture(texture)
 	{}
 	FPunDecal() {}
+
+	void Deinit() {
+		PunUnrealUtils::DestroyTexture2D(texture);
+		texture = nullptr;
+	}
 };
 
 
@@ -29,6 +34,16 @@ class URegionDecalDisplayComponent : public UDisplaySystemComponent
 	GENERATED_BODY()
 public:
 	URegionDecalDisplayComponent() { PrimaryComponentTick.bCanEverTick = false; }
+
+	void Deinit()
+	{
+		for (FPunDecal& decal : _roadDecals) {
+			decal.Deinit();
+		}
+		for (FPunDecal& decal : _overlayDecals) {
+			decal.Deinit();
+		}
+	}
 	
 	int CreateNewDisplay(int objectId) override;
 	void OnSpawnDisplay(int regionId, int meshId, WorldAtom2 cameraAtom) override;

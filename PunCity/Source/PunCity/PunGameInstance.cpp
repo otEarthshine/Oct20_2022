@@ -11,6 +11,12 @@
 #include "GameDelegates.h"
 #include "PunCity/PunPlayerController.h"
 
+#include "OnlineSubsystem.h"
+//#include "OnlineSubsystemSteam.h"
+//#include "OnlineSubsystemSteamTypes.h"
+//#include "Steam/steam_api.h"
+
+#define LOCTEXT_NAMESPACE "PunGameInstance"
 
 void UPunGameInstance::Init()
 {
@@ -78,10 +84,11 @@ void UPunGameInstance::CreateMainMenuSound(USoundBase* sound)
 			RegisterReferencedObject(AudioComponent);
 		}
 		else {
-			mainMenuPopup = "Failed to create audio components.\n"
+			mainMenuPopup = LOCTEXT("FailedAudioCreation",
+							"Failed to create audio components.\n"
 							"Please unplug any external audio devices, and disable any sound applications.\n"
 							"This will help Unreal Engine connects to the correct main audio device.\n"
-							"Once you are done, please restart the game.";
+							"Once you are done, please restart the game.");
 		}
 	}
 }
@@ -201,7 +208,7 @@ void UPunGameInstance::FindGame()
 	
 	if (!IsSessionInterfaceValid()) {
 		PUN_DEBUG2("[ERROR]FindGame: Not connected to Steam");
-		mainMenuPopup = "Failed to find games. Please connect to Steam.";
+		mainMenuPopup = LOCTEXT("FindGame_NotConnectedToSteam", "Failed to find games. Please connect to Steam.");
 		return;
 	}
 	
@@ -230,6 +237,14 @@ void UPunGameInstance::FindGame()
 
 	sessionInterfaceUsedToFindGame = sessionInterface;
 
+
+	// TODO: Testing hack code
+	if (!isLAN)
+	{
+		//FOnlineSubsystemSteam* SteamSubsystem = static_cast<FOnlineSubsystemSteam*>(IOnlineSubsystem::Get(STEAM_SUBSYSTEM));
+
+	}
+	
 }
 
 void UPunGameInstance::JoinGame(const FOnlineSessionSearchResult& searchResult)
@@ -238,14 +253,14 @@ void UPunGameInstance::JoinGame(const FOnlineSessionSearchResult& searchResult)
 	
 	if (!IsSessionInterfaceValid()) {
 		PUN_DEBUG2("[ERROR]JoinGame: Not connected to Steam");
-		mainMenuPopup = "Failed to join the game. Please connect to Steam.";
+		mainMenuPopup = LOCTEXT("JoinGame_NotConnectedToSteam", "Failed to join the game. Please connect to Steam.");
 		return;
 	}
 	
 	FNamedOnlineSession* Session = sessionInterface->GetNamedSession(PUN_SESSION_NAME);
 	if (Session) {
 		PUN_DEBUG2("[ERROR]JoinGame: failed, already as session");
-		mainMenuPopup = "Join game failed, try again in a moment.";
+		mainMenuPopup = LOCTEXT("JoinGame_AlreadyASession", "Join game failed, try again in a moment.");
 
 		sessionInterface->DestroySession(PUN_SESSION_NAME, DestroySessionThenDoesNothingCompleteDelegate);
 		return;
@@ -296,7 +311,7 @@ void UPunGameInstance::CreateGame_Phase1()
 	
 	if (!IsSessionInterfaceValid()) {
 		PUN_DEBUG2("[ERROR]Host: Not connected to Steam");
-		mainMenuPopup = "Failed to create a game. Please connect to Steam.";
+		mainMenuPopup = LOCTEXT("CreateGame_NotConnectedToSteam", "Failed to create a game. Please connect to Steam.");
 		return;
 	}
 
@@ -323,7 +338,7 @@ void UPunGameInstance::CreateGame_Phase2()
 
 	if (!IsSessionInterfaceValid()) {
 		PUN_DEBUG2("[ERROR]CreateMultiplayerGame: Not connected to Steam");
-		mainMenuPopup = "Failed to create a game. Please connect to Steam.";
+		mainMenuPopup = LOCTEXT("CreateGame_NotConnectedToSteam", "Failed to create a game. Please connect to Steam.");
 		bIsCreatingSession = false;
 		return;
 	}
@@ -459,7 +474,7 @@ void UPunGameInstance::OnJoinSessionComplete(FName sessionName, EOnJoinSessionCo
 	
 	if (!sessionInterface.IsValid()) {
 		PUN_DEBUG2("- [ERROR]SessionInvalid");
-		mainMenuPopup = "Failed to join the game. Please ensure your connection to Steam.";
+		mainMenuPopup = LOCTEXT("JoinSessionComplete_NotConnectedToSteam", "Failed to join the game. Please ensure your connection to Steam.");
 		isJoiningGame = false;
 		return;
 	}
@@ -500,46 +515,46 @@ void UPunGameInstance::OnJoinSessionComplete(FName sessionName, EOnJoinSessionCo
 			}
 			else {
 				PUN_DEBUG2("- [ERROR]GetResolvedConnectString Failed");
-				mainMenuPopup = "Failed to resolve connection";
+				mainMenuPopup = LOCTEXT("JoinSessionComplete_FailedToResolveConnection", "Failed to resolve connection");
 				isJoiningGame = false;
 			}
 		}
 		else {
 			PUN_DEBUG2("- [ERROR]No Controller");
-			mainMenuPopup = "Failed to join the game. No FirstPlayerController";
+			mainMenuPopup = LOCTEXT("JoinSessionComplete_NoFirstPlayerController", "Failed to join the game. No FirstPlayerController");
 			isJoiningGame = false;
 		}
 	}
 	else if (resultType == EOnJoinSessionCompleteResult::Type::SessionIsFull)
 	{
 		PUN_DEBUG2("- [ERROR]SessionIsFull");
-		mainMenuPopup = "Failed to join the game. The game is full";
+		mainMenuPopup = LOCTEXT("JoinSessionComplete_SessionFull", "Failed to join the game. The game is full");
 		isJoiningGame = false;
 	}
 	else if (resultType == EOnJoinSessionCompleteResult::Type::SessionDoesNotExist)
 	{
 		PUN_DEBUG2("- [ERROR]SessionDoesNotExist");
-		mainMenuPopup = "Failed to join the game. The game no longer exist";
+		mainMenuPopup = LOCTEXT("JoinSessionComplete_SessionNoLongerExist", "Failed to join the game. The game no longer exist");
 		isJoiningGame = false;
 	}
 	/** There was an error getting the session server's address */
 	else if (resultType == EOnJoinSessionCompleteResult::Type::CouldNotRetrieveAddress)
 	{
 		PUN_DEBUG2("- [ERROR]CouldNotRetrieveAddress");
-		mainMenuPopup = "Failed to join the game. Could not retrieve the address";
+		mainMenuPopup = LOCTEXT("JoinSessionComplete_CouldNotRetrieveTheAddress", "Failed to join the game. Could not retrieve the address");
 		isJoiningGame = false;
 	}
 	/** The user attempting to join is already a member of the session */
 	else if (resultType == EOnJoinSessionCompleteResult::Type::AlreadyInSession)
 	{
 		PUN_DEBUG2("- [ERROR]AlreadyInSession");
-		mainMenuPopup = "Failed to join the game. Already in the game";
+		mainMenuPopup = LOCTEXT("JoinSessionComplete_AlreadyInGame", "Failed to join the game. Already in the game");
 		isJoiningGame = false;
 	}
 	else if (resultType == EOnJoinSessionCompleteResult::Type::UnknownError)
 	{
 		PUN_DEBUG2("- [ERROR]UnknownError");
-		mainMenuPopup = "Failed to join the game. Unknown error joining";
+		mainMenuPopup = LOCTEXT("JoinSessionComplete_UnknownError", "Failed to join the game. Unknown error joining");
 		isJoiningGame = false;
 	}
 	
@@ -717,3 +732,26 @@ bool UPunGameInstance::IsInGame(const UObject* worldContextObject) {
 //		}
 //	}
 //}
+
+
+void UPunGameInstance::HandleNetworkFailure(UWorld * World, UNetDriver * NetDriver, ENetworkFailure::Type FailureType, const FString & ErrorString) {
+	PUN_DEBUG2("!!! NetworkFailure %s, %s", ENetworkFailure::ToString(FailureType), *ErrorString);
+	LOG_ERROR(LogNetworkInput, "!!! NetworkFailure %s, %s", ToString(FailureType), *ErrorString);
+
+	//mainMenuPopup = FText::FormatNamed(ErrorString + " (" + FString(ENetworkFailure::ToString(FailureType)) + ")");
+	mainMenuPopup = FText::Format(LOCTEXT("NetworkFailure", "{ErrorString} ({FailureType})"),
+		FText::FromString(ErrorString),
+		FText::FromString(ENetworkFailure::ToString(FailureType)));
+}
+void UPunGameInstance::HandleTravelFailure(UWorld* World, ETravelFailure::Type FailureType, const FString& ErrorString)
+{
+	PUN_DEBUG2("!!! TravelFailure %s, %s", ETravelFailure::ToString(FailureType), *ErrorString);
+	LOG_ERROR(LogNetworkInput, "!!! TravelFailure %s, %s", ToString(FailureType), *ErrorString);
+
+	//mainMenuPopup = FText(ErrorString + " (" + FString(ETravelFailure::ToString(FailureType)) + ")");
+	mainMenuPopup = FText::FormatNamed(LOCTEXT("TravelFailure", "{ErrorString} ({FailureType})"),
+		"ErrorString", FText::FromString(ErrorString),
+		"FailureType", FText::FromString(ETravelFailure::ToString(FailureType)));
+}
+
+#undef LOCTEXT_NAMESPACE

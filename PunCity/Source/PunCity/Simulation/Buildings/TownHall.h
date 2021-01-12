@@ -22,7 +22,7 @@ static const std::vector<std::string> TownhallLvlToUpgradeBonusText =
 	"<bullet>+10% mine/quarry production.</>"
 	"<space>"
 	"Unlocked Cards:"
-	"<bullet>Immigration Advertisement</>"
+	"<bullet>Immigrants</>"
 	"<bullet>Kidnap</>", // 3
 
 	"<space>"
@@ -70,6 +70,7 @@ public:
 	}
 
 	FString townFName() { return _townName; }
+	FText townTName() { return FText::FromString(_townName); }
 	std::string townName() { return ToStdString(_townName); }
 
 	void SetTownName(FString _townNameIn) {

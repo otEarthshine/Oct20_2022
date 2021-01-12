@@ -126,7 +126,7 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 
 	{TechEnum::Plantation, {
 		"Plantation",
-		"Unlocks farm crops cards: Cannabis Seeds, Grape Seeds, Cocoa Seeds, Cotton Seeds"
+		"Unlocks farm crops cards: Cannabis, Grape, Cocoa, Cotton, Coffee, Tulip Seeds"
 	}},
 	
 	{TechEnum::MushroomSubstrateSterilization, {
@@ -355,6 +355,9 @@ public:
 
 		SerializeVecValue(Ar, _buildingEnums);
 		SerializeVecValue(Ar, _permanentBuildingEnums);
+
+		Ar << requiredResourceEnum;
+		Ar << requiredResourceCount;
 	}
 	
 public:
@@ -366,6 +369,10 @@ public:
 	
 	std::vector<CardEnum> _buildingEnums;
 	std::vector<CardEnum> _permanentBuildingEnums;
+
+
+	ResourceEnum requiredResourceEnum = ResourceEnum::None;
+	int32 requiredResourceCount = 0;
 };
 
 class ResearchNone final : public ResearchInfo
@@ -430,7 +437,7 @@ public:
 	
 public:
 	IGameSimulationCore* _simulation;
-	int32_t _cardCount = -1;
+	int32 _cardCount = -1;
 };
 
 class MoreBuilding_Research final : public Building_Research
@@ -476,7 +483,7 @@ public:
 		_enumToTech[tech->techEnum] = std::static_pointer_cast<ResearchInfo>(tech);
 	}
 
-	void AddTech_Building(int32 era, TechEnum researchEnum, CardEnum buildingEnum, int32_t cardCount = 1) {
+	void AddTech_Building(int32 era, TechEnum researchEnum, CardEnum buildingEnum, int32 cardCount = 1) {
 		auto tech = std::make_shared<Building_Research>();
 		tech->Init(era, researchEnum);
 		tech->InitBuildingResearch({ buildingEnum }, {}, _simulation, cardCount);
@@ -486,6 +493,14 @@ public:
 		auto tech = std::make_shared<Building_Research>();
 		tech->Init(era, researchEnum);
 		tech->InitBuildingResearch(buildingEnums, {}, _simulation, cardCount);
+		AddTech(era, tech);
+	}
+	void AddTech_Building(int32 era, TechEnum researchEnum, CardEnum buildingEnum, ResourceEnum requiredResourceEnum, int32 requiredResourceCount) {
+		auto tech = std::make_shared<Building_Research>();
+		tech->Init(era, researchEnum);
+		tech->InitBuildingResearch({ buildingEnum }, {}, _simulation, 1);
+		tech->requiredResourceEnum = requiredResourceEnum;
+		tech->requiredResourceCount = requiredResourceCount;
 		AddTech(era, tech);
 	}
 
@@ -584,6 +599,8 @@ public:
 				UnlockAll();
 			}
 
+			_resourceEnumToProductionCount.resize(ResourceEnumCount, 0);
+
 			/*
 			 * Tech UI
 			 */
@@ -598,11 +615,13 @@ public:
 			 //
 			int32 era = 1;
 			AddTech_Bonus(era, TechEnum::ImprovedWoodCutting);
-			AddTech_Building(era, TechEnum::HerbFarming, { CardEnum::HerbSeed });
 			AddTech_Building(era, TechEnum::TradingPost, { CardEnum::TradingPost, CardEnum::TradingPort });
 			AddTech_Bonus(era, TechEnum::MushroomSubstrateSterilization);
 			AddTech_Bonus(era, TechEnum::BorealLandCost);
 			AddTech_Building(era, TechEnum::SpyGuard, { CardEnum::KidnapGuard, CardEnum::TreasuryGuard });
+
+			AddTech_Building(era, TechEnum::HerbFarming, { CardEnum::HerbSeed });
+			AddTech_Building(era, TechEnum::PotatoFarming, { CardEnum::PotatoSeed });
 			
 			//
 			era = 2;
@@ -610,31 +629,33 @@ public:
 			AddTech_Bonus(era, TechEnum::Plantation);
 			AddTech_Bonus(era, TechEnum::RerollCardsPlus1);
 			AddTech_Bonus(era, TechEnum::CheapReroll);
-			AddTech_Bonus(era, TechEnum::Sawmill);
 			AddTech_Building(era, TechEnum::IronRefining, { CardEnum::IronMine, CardEnum::IronSmelter });
 			AddTech_Building(era, TechEnum::Blacksmith, CardEnum::Blacksmith);
-			AddTech_Building(era, TechEnum::Espionage, { CardEnum::Steal });
+			AddTech_Bonus(era, TechEnum::Sawmill);
+			
+			AddTech_Building(era, TechEnum::VodkaDistillery, { CardEnum::VodkaDistillery }, ResourceEnum::Potato, 1000);
 			
 			//
 			era = 3;
 			AddTech_Building(era, TechEnum::TradingCompany, CardEnum::TradingCompany);
 			AddTech_Building(era, TechEnum::Market, { CardEnum::Market });
-			AddTech_Bonus(era, TechEnum::DesertTrade);
+			AddTech_Building(era, TechEnum::Espionage, { CardEnum::Steal });
 			
 			AddTech_Building(era, TechEnum::Medicine, CardEnum::MedicineMaker);
 			AddTech_Building(era, TechEnum::RanchSheep, { CardEnum::RanchSheep });
+
+			AddTech_Building(era, TechEnum::BlueberryFarming, { CardEnum::BlueberrySeed });
 			AddTech_Bonus(era, TechEnum::ShallowWaterEmbark);
 			
 			//
 			era = 4;
-			//AddTech_Building(era, TechEnum::Forester, CardEnum::Forester);
-			AddTech_Building(era, TechEnum::ImprovedLogistics, { CardEnum::ShippingDepot });
+			AddTech_Bonus(era, TechEnum::DesertTrade);
 			AddTech_Bonus(era, TechEnum::HouseAdjacency);
-			AddTech_Building(era, TechEnum::RanchCow, { CardEnum::RanchCow });
 			AddTech_Bonus(era, TechEnum::QuarryImprovement);
 			AddTech_Bonus(era, TechEnum::ImprovedWoodCutting2);
-
 			AddTech_BuildingPermanent(era, TechEnum::Tunnel, {CardEnum::Tunnel});
+
+			AddTech_Building(era, TechEnum::PumpkinFarming, { CardEnum::PumpkinSeed }, ResourceEnum::Blueberries, 1000);
 			
 			//AddPermanentBuildingResearch(3, TechEnum::Fence, { BuildingEnum::Fence, BuildingEnum::FenceGate });
 
@@ -642,22 +663,27 @@ public:
 			//
 			era = 5;
 			AddTech_Bonus(era, TechEnum::MoreGoldPerHouse);
-			AddTech_Building(era, TechEnum::BarrackKnight, CardEnum::BarrackSwordman);
-			AddTech_Building(era, TechEnum::Bank, { CardEnum::Bank });
-			AddTech_Building(era, TechEnum::Theatre, CardEnum::Theatre);
-			AddTech_Bonus(era, TechEnum::DeepWaterEmbark);
+			AddTech_Building(era, TechEnum::ImprovedLogistics, { CardEnum::ShippingDepot });
+			AddTech_Building(era, TechEnum::Irrigation, { CardEnum::IrrigationReservoir });
+
+			AddTech_Building(era, TechEnum::ShroomFarm, { CardEnum::ShroomFarm }, ResourceEnum::Mushroom, 3000);
+			AddTech_Building(era, TechEnum::CoffeeRoaster, { CardEnum::CoffeeRoaster });
 			
 			//
 			era = 6;
-			AddTech_Bonus(era, TechEnum::HouseLvl6Income);
-			AddTech_Bonus(era, TechEnum::TaxAdjustment);
-			AddTech_Building(era, TechEnum::Irrigation, { CardEnum::IrrigationReservoir });
-			//AddTech_Building(era, TechEnum::HumanitarianAid, { CardEnum::HumanitarianAidCamp });
-			AddTech_Building(era, TechEnum::Garden, CardEnum::Garden);
+			AddTech_Building(era, TechEnum::BarrackKnight, CardEnum::BarrackSwordman);
+			AddTech_Building(era, TechEnum::Bank, { CardEnum::Bank });
+			AddTech_Building(era, TechEnum::Theatre, CardEnum::Theatre);
+			AddTech_Building(era, TechEnum::RanchCow, { CardEnum::RanchCow });
+
+			AddTech_Building(era, TechEnum::MelonFarming, { CardEnum::MelonSeed }, ResourceEnum::Pumpkin, 3000);
+			AddTech_Bonus(era, TechEnum::DeepWaterEmbark);
 			
 			//
 			era = 7;
-			//AddTech_Bonus(6, TechEnum::CropStudy);
+			AddTech_Bonus(era, TechEnum::HouseLvl6Income);
+			AddTech_Bonus(era, TechEnum::TaxAdjustment);
+			AddTech_Building(era, TechEnum::Garden, CardEnum::Garden);
 			AddTech_Bonus(era, TechEnum::CheapLand);
 			AddTech_Bonus(era, TechEnum::WineryImprovement);
 			AddTech_Bonus(era, TechEnum::TraderDiscount);
@@ -818,6 +844,23 @@ public:
 		}
 	}
 
+	void UpdateResourceProductionCount(ResourceEnum resourceEnum, int32 count) {
+		_resourceEnumToProductionCount[static_cast<int32>(resourceEnum)] += count;
+		needTechDisplayUpdate = true;
+	}
+	int32 GetResourceProductionCount(ResourceEnum resourceEnum) {
+		return _resourceEnumToProductionCount[static_cast<int32>(resourceEnum)];
+	}
+	bool IsRequirementMetForTech(TechEnum techEnum)
+	{
+		ResourceEnum requiredResourceEnum = _enumToTech[techEnum]->requiredResourceEnum;
+		if (requiredResourceEnum == ResourceEnum::None) {
+			return true;
+		}
+		return GetResourceProductionCount(requiredResourceEnum) >= _enumToTech[techEnum]->requiredResourceCount;
+	}
+	
+	
 	void UnlockAll()
 	{
 		if (!isUnlocked(CardEnum::Farm)) {
@@ -1028,27 +1071,6 @@ public:
 		return _enumToTech[researchEnum];
 	}
 
-	// Others
-	std::vector<TileObjEnum> allFarmPlants()
-	{
-		return {
-			TileObjEnum::WheatBush,
-			TileObjEnum::BarleyBush,
-			TileObjEnum::Grapevines,
-			TileObjEnum::GrassGreen,
-			
-			//TileObjEnum::PlumpCob,
-			//TileObjEnum::CreamPod,
-			TileObjEnum::Cabbage,
-			TileObjEnum::Cocoa,
-			TileObjEnum::Cotton,
-			TileObjEnum::Dye,
-			
-			TileObjEnum::Herb,
-			//TileObjEnum::BaconBush,
-		};
-	}
-
 	int32 totalTechs() { return _enumToTech.size() - 1;  } // -1 for TechEnum::None tech
 	bool allTechsUnlocked() { return techsFinished == totalTechs(); }
 
@@ -1172,7 +1194,8 @@ public:
 		//		serializeTechPtr(tech);
 		//	});
 		//});
-		
+
+		// TODO: is this a problem??
 		SerializeMapLoop(Ar, _enumToTech, [&](std::shared_ptr<ResearchInfo>& tech) {
 			serializeTechPtr(tech);
 		});
@@ -1187,6 +1210,8 @@ public:
 		//	});
 		//});
 		SerializeVecVecValue(Ar, _houseLvlToUnlockCount);
+
+		SerializeVecValue(Ar, _resourceEnumToProductionCount);
 		
 		//SerializeVecLoop(Ar, _techQueue, [&](std::shared_ptr<ResearchInfo>& tech) {
 		//	serializeTechPtr(tech);
@@ -1250,4 +1275,7 @@ private:
 	// Prosperity
 	std::vector<std::vector<TechEnum>> _houseLvlToProsperityTechEnum;
 	std::vector<std::vector<int32>> _houseLvlToUnlockCount;
+
+	// Resource Required
+	std::vector<int32> _resourceEnumToProductionCount;
 };

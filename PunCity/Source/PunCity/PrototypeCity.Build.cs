@@ -24,7 +24,13 @@ public class PrototypeCity : ModuleRules
             //"KantanChartsSlate",
             "KantanChartsDatasource",
             "KantanChartsUMG",
+            "OnlineSubsystem",
+            "OnlineSubsystemUtils",
+            "Steamworks",
+            //"OnlineSubsystemSteam",
         });
+
+        DynamicallyLoadedModuleNames.Add("OnlineSubsystemSteam");
 
         AddEngineThirdPartyPrivateStaticDependencies(Target,
             "UEOgg",

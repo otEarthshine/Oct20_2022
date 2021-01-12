@@ -1093,9 +1093,9 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 						/*
 						 * Economic Victory
 						 */
-						const int32 thousandsToWarn1 = 300;
-						const int32 thousandsToWarn2 = 400;
-						const int32 thousandsToWin = 500;
+						const int32 thousandsToWarn1 = 500;
+						const int32 thousandsToWarn2 = 800;
+						const int32 thousandsToWin = 1000;
 						
 						if (_playerOwnedManagers[playerId].economicVictoryPhase == 0 && money(playerId) > (thousandsToWarn1 * 1000)) {
 							_playerOwnedManagers[playerId].economicVictoryPhase = 1;
@@ -1537,6 +1537,8 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 					else
 					{
 						int32 targetPlayerMoney = resourceSystem(targetPlayerId).money();
+						targetPlayerMoney = max(0, targetPlayerMoney); // Ensure no negative steal..
+						
 						int32 actualSteal = targetPlayerMoney * 30 / 100;
 						resourceSystem(targetPlayerId).ChangeMoney(-actualSteal);
 						resourceSystem(playerId).ChangeMoney(actualSteal);
@@ -1562,6 +1564,8 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 					else
 					{
 						int32 targetPlayerMoney = resourceSystem(targetPlayerId).money();
+						targetPlayerMoney = max(0, targetPlayerMoney); // Ensure no negative steal..
+						
 						int32 actualSteal = min(targetPlayerMoney, population(targetPlayerId));
 						resourceSystem(targetPlayerId).ChangeMoney(-actualSteal);
 						resourceSystem(playerId).ChangeMoney(actualSteal);
@@ -1743,6 +1747,17 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 
 		return -1;
 	}
+
+
+	// Special Case:
+	if (cardEnum == CardEnum::Mint &&
+		buildingCount(playerId, CardEnum::Mint) >= 8)
+	{
+		AddPopup(playerId, "You can only build the maximum of 8 Mints.");
+		return -1;
+	}
+	
+	
 	
 
 	// Trap
@@ -3075,6 +3090,12 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 			AddQuest(command.playerId, popQuest);
 		}
 	}
+	else if (replyReceiver == PopupReceiverEnum::MaxCardHandQueuePopup)
+	{
+		if (command.choiceIndex != 0) {
+			cardSystem(command.playerId).allowMaxCardHandQueuePopup = false;
+		}
+	}
 	else if (replyReceiver == PopupReceiverEnum::None)
 	{
 
@@ -3855,7 +3876,7 @@ void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 playerId)
 						}
 						else if (bld.isEnum(CardEnum::RegionShrine)) {
 							GenerateRareCardSelection(playerId, RareHandEnum::BuildingSlotCards, "The shrine bestows its wisdom upon us.");
-							bld.subclass<RegionShrine>().PlayerTookOver(playerId);
+							//bld.subclass<RegionShrine>().PlayerTookOver(playerId);
 						}
 
 					}
@@ -4090,6 +4111,14 @@ void GameSimulationCore::Cheat(FCheat command)
 				}
 			});
 				
+			break;
+		}
+		case CheatEnum::AddAIMoney:
+		{
+			int32 addCount = command.var1;
+			ExecuteOnAI([&](int32 playerId) {
+				ChangeMoney(playerId, addCount);
+			});
 			break;
 		}
 

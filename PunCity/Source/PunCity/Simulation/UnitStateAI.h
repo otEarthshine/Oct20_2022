@@ -381,6 +381,7 @@ public:
 	}
 
 	int32 hp() { return _hp100 / 100; }
+	int32 maxHP100() const { return 10000; }
 	bool isSick() { return _isSick; }
 
 	int32 age() { return Time::Ticks() - birthTicks(); }
@@ -435,8 +436,20 @@ public:
 			customFloodDistance = unitMaxFloodDistance();
 		}
 		DEBUG_ISCONNECTED_VAR(IsMoveValid);
+
+		bool isIntelligent = IsIntelligentUnit(unitEnum());
+		bool isMoveValid = _simulation->IsConnected(unitTile(), tile, customFloodDistance, isIntelligent);;
+
+		// For human, test the second time going to townhall first then going to target.
+		//  This allow for a lot longer travel check range.
+		//  (Otherwise, IsMoveValid fail could be because IsConnectedBuilding is only rough estimate from townhall)
+		if (!isMoveValid && isIntelligent && _playerId != -1) {
+			WorldTile2 gateTile = _simulation->townhallGateTile(_playerId);
+			isMoveValid = _simulation->IsConnected(gateTile, tile, customFloodDistance, isIntelligent) &&
+							_simulation->IsConnected(gateTile, unitTile(), customFloodDistance, isIntelligent);
+		}
 		
-		return _simulation->IsConnected(unitTile(), tile, customFloodDistance, IsIntelligentUnit(unitEnum()));
+		return isMoveValid;
 	}
 	bool IsResourceMoveValid(ResourceHolderInfo info) {
 		if (!info.isValid()) {
@@ -452,11 +465,12 @@ public:
 		return _simulation->building(dropoffObjectId);
 	}
 
+	// Used for final check before moving (not in Try())
 	int32 unitMaxFloodDistance() {
 		if (isEnum(UnitEnum::Human)) {
-			return GameConstants::MaxFloodDistance_Human;
+			return GameConstants::MaxFloodDistance_HumanLogistics;
 		}
-		return GameConstants::GameConstants::MaxFloodDistance_AnimalFar;
+		return GameConstants::MaxFloodDistance_AnimalFar;
 	}
 
 	//! Combat
@@ -541,7 +555,7 @@ public:
 	}
 	virtual std::string typeName() {
 		if (isChild()) {
-			return "little " + unitInfo().name;
+			return "Little " + unitInfo().name;
 		}
 		return unitInfo().name;
 	}
@@ -696,6 +710,9 @@ protected:
 
 	bool TryCheckBadTile();
 	bool TryGoNearbyHome();
+
+	bool TryChangeProvince_NoAction();
+	bool IsBurrowBuildable(TileArea area, Direction faceDirection);
 
 #if DEBUG_BUILD
 	void CheckIntegrity()

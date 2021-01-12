@@ -23,7 +23,7 @@ public:
 		ExclamationIcon->SetShow(false);
 	}
 
-	void Set(std::string topString, std::string prefix, UTexture2D* texture, std::string suffix, UPunWidget* callbackParent, CallbackEnum callbackEnum, int32 callbackVar1In = -1, int32 callbackVar2In = -1)
+	void Set(FText topString, FText prefix, UTexture2D* texture, FText suffix, UPunWidget* callbackParent, CallbackEnum callbackEnum, int32 callbackVar1In = -1, int32 callbackVar2In = -1)
 	{
 		_callbackParent = callbackParent;
 		_callbackEnum = callbackEnum;
@@ -31,15 +31,17 @@ public:
 		callbackVar2 = callbackVar2In;
 		PUN_CHECK(Button);
 
-		TopText->SetVisibility(topString == "" ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
+		//TopText->SetVisibility(topString == "" ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
+		TopText->SetVisibility(topString.IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
 		SetText(TopText, topString);
 
-		bool isShowingBottomRow = prefix != "" || texture != nullptr || suffix != "";
+		//bool isShowingBottomRow = prefix != "" || texture != nullptr || suffix != "";
+		bool isShowingBottomRow = !prefix.IsEmpty() || texture != nullptr || !suffix.IsEmpty();
 		BottomRow->SetVisibility(isShowingBottomRow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 
 		PrefixText->SetText(prefix);
 		SuffixText->SetText(suffix);
-		if (texture) {
+		if (IsValid(texture)) {
 			IconImage->SetBrushFromTexture(texture);
 			IconImage->SetVisibility(ESlateVisibility::Visible);
 		} else {

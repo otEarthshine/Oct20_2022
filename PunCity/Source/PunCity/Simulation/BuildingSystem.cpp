@@ -105,7 +105,7 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		CASE_BUILDING(CardEnum::IceAgeSpire, TempleGrograth);
 
 		CASE_BUILDING(CardEnum::Farm, Farm);
-		CASE_BUILDING(CardEnum::MushroomFarm, MushroomHut);
+		CASE_BUILDING(CardEnum::MushroomFarm, MushroomFarm);
 
 		CASE_BUILDING(CardEnum::CoalMine, CoalMine);
 		CASE_BUILDING(CardEnum::IronMine, IronMine);
@@ -162,6 +162,11 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 
 		// Nov 18
 		CASE_BUILDING(CardEnum::GarmentFactory, GarmentFactory);
+
+		// Dec 29
+		CASE_BUILDING(CardEnum::ShroomFarm, ShroomFarm);
+		CASE_BUILDING(CardEnum::VodkaDistillery, VodkaDistillery);
+		CASE_BUILDING(CardEnum::CoffeeRoaster, CoffeeRoaster);
 
 		CASE_BUILDING(CardEnum::BoarBurrow, BoarBurrow);
 

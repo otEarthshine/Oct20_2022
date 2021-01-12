@@ -667,8 +667,9 @@ void Building::DoWork(int unitId, int workAmount100)
 
 			_workDone100 = 0;
 			_filledInputs = false;
-			
-			ResourceHolderInfo info = holderInfo(product());
+
+			ResourceEnum productEnum = product();
+			ResourceHolderInfo info = holderInfo(productEnum);
 			PUN_CHECK2(info.isValid(), _simulation->unitdebugStr(unitId));
 			int productionAmount = productPerBatch();
 
@@ -694,18 +695,20 @@ void Building::DoWork(int unitId, int workAmount100)
 				
 				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainResource, centerTile(), "+" + to_string(productionAmount), info.resourceEnum);
 			}
+			
 
-			if (product() == ResourceEnum::Beer) {
+			// Quest and Update Requirements
+			if (productEnum == ResourceEnum::Beer) {
 				_simulation->QuestUpdateStatus(_playerId, QuestEnum::BeerQuest, productionAmount);
 			}
-			else if (product() == ResourceEnum::Pottery)
-			{
+			else if (productEnum == ResourceEnum::Pottery) {
 				_simulation->QuestUpdateStatus(_playerId, QuestEnum::PotteryQuest, productionAmount);
 			}
-			else if (product() == ResourceEnum::Fish)
-			{
+			else if (productEnum == ResourceEnum::Fish) {
 				_simulation->QuestUpdateStatus(_playerId, QuestEnum::CooperativeFishingQuest, productionAmount);
 			}
+
+			_simulation->unlockSystem(_playerId)->UpdateResourceProductionCount(productEnum, productionAmount);
 
 
 			OnProduce(productionAmount);

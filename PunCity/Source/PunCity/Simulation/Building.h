@@ -166,7 +166,8 @@ public:
 
 	// Go nearby the building (like to construct building)
 	// TODO: need testing???
-	WorldTile2 adjacentTileNearestTo(WorldTile2 start, int32_t maxRegionDistance = 2) {
+	WorldTile2 adjacentTileNearestTo(WorldTile2 start, int32 maxRegionDistance)
+	{
 		int32_t nearestDist = INT32_MAX;
 		WorldTile2 nearestTile = WorldTile2::Invalid;
 
@@ -270,19 +271,21 @@ public:
 	{
 		std::stringstream ss;
 		ss << "Gain +" << comboEfficiencyBonus << "/" << comboEfficiencyBonus * 2 << "/" << comboEfficiencyBonus * 3
-			<< " productivity if this city has 2/4/8 ";
+			<< "% productivity if this city has 2/4/8 ";
 
-		if (buildingInfo().cardEnum == CardEnum::Bakery) {
-			ss << "Bakeries";
-		}
-		else if (buildingInfo().cardEnum == CardEnum::BeerBrewery) {
-			ss << "Breweries";
-		}
-		else if (buildingInfo().cardEnum == CardEnum::Winery) {
-			ss << "Wineries";
-		}
-		else {
+		switch(buildingInfo().cardEnum)
+		{
+#define CASE(cardEnum, pluralName) case cardEnum: ss << pluralName; break;
+			CASE(CardEnum::Bakery, "Bakeries");
+			CASE(CardEnum::BeerBrewery, "Breweries");
+			CASE(CardEnum::Winery, "Wineries");
+			CASE(CardEnum::Brickworks, "Brickworks");
+			CASE(CardEnum::PrintingPress, "Printing Presses");
+			CASE(CardEnum::VodkaDistillery, "Distilleries");
+#undef CASE
+		default:
 			ss << buildingInfo().name << "s";
+			break;
 		}
 
 		BuildingUpgrade upgrade = MakeUpgrade(name, ss.str(), resourceEnum, percentOfTotalPrice);
@@ -1175,6 +1178,10 @@ public:
 	{
 		PUN_CHECK(!isEnum(CardEnum::Townhall));
 		_cardSlot1 = CardStatus();
+	}
+
+	virtual int32 GetBuildingSelectorHeight() {
+		return 30;
 	}
 	
 

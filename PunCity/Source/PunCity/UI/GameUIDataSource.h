@@ -44,7 +44,7 @@ enum class UIEnum
 	BuildingPlacementButton,
 	CardMini,
 	CardSlot,
-	ResearchTypeButton,
+	//ResearchTypeButton,
 
 	ToolTip,
 	TradeRow,
@@ -55,8 +55,8 @@ enum class UIEnum
 	ResourceStatTableRow,
 	BuildingStatTableRow,
 
-	ArmyUI,
-	ArmyRow,
+	//ArmyUI,
+	//ArmyRow,
 
 	WorldSpaceUI,
 	HoverIcon,
@@ -130,14 +130,14 @@ enum class UIEnum
 
 	HiddenSettingsRow,
 
-	ArmyDeployButton,
-	ArmyLinesUILeft,
-	ArmyLinesUIRight,
-	ArmyUnitLeft,
-	ArmyUnitRight,
-	ArmyMoveRow,
-	ArmyMoveUI,
-	ArmyChooseNodeButton,
+	//ArmyDeployButton,
+	//ArmyLinesUILeft,
+	//ArmyLinesUIRight,
+	//ArmyUnitLeft,
+	//ArmyUnitRight,
+	//ArmyMoveRow,
+	//ArmyMoveUI,
+	//ArmyChooseNodeButton,
 	DamageFloatup,
 
 	Count,
@@ -253,7 +253,7 @@ public:
 	virtual class UAssetLoaderComponent* assetLoader() = 0;
 
 	virtual FVector DisplayLocation(WorldAtom2 atom) = 0;
-	virtual FVector DisplayLocationTrueCenter(Building& building) = 0;
+	virtual FVector DisplayLocationTrueCenter(Building& building, bool withHeight = false) = 0;
 	//virtual FVector DisplayLocationMapMode(WorldAtom2 atom) = 0;
 
 	virtual void SetOverlayType(OverlayType overlayType, OverlaySetterType setterType) = 0;

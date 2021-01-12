@@ -76,7 +76,7 @@ public:
 
 		_relationshipModifiers.resize(GameConstants::MaxPlayersAndAI);
 		for (size_t i = 0; i < _relationshipModifiers.size(); i++) {
-			_relationshipModifiers[i].resize(RelationshipModifierCount);
+			_relationshipModifiers[i].resize(RelationshipModifierCount());
 		}
 	}
 
@@ -1157,17 +1157,7 @@ public:
 	 * UI Interface
 	 */
 
-	void GetAIRelationshipText(std::stringstream& ss, int32 playerId)
-	{
-		ss << "Overall: " << GetTotalRelationship(playerId) << "\n";
-		
-		const std::vector<int32>& modifiers = _relationshipModifiers[playerId];
-		for (int32 i = 0; i < modifiers.size(); i++) {
-			if (modifiers[i] != 0) {
-				ss << ToSignedNumber(modifiers[i]) << " " << RelationshipModifierName[i] << "\n";
-			}
-		}
-	}
+	void GetAIRelationshipText(TArray<FText>& args, int32 playerId);
 
 	int32 GetTotalRelationship(int32 towardPlayerId)
 	{

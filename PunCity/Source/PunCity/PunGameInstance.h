@@ -233,19 +233,26 @@ public:
 
 public:
 	// Network Error Check
-	void HandleNetworkFailure(UWorld * World, UNetDriver * NetDriver, ENetworkFailure::Type FailureType, const FString & ErrorString) {
-		PUN_DEBUG2("!!! NetworkFailure %s, %s", ENetworkFailure::ToString(FailureType), *ErrorString);
-		LOG_ERROR(LogNetworkInput, "!!! NetworkFailure %s, %s", ToString(FailureType), *ErrorString);
+	void HandleNetworkFailure(UWorld * World, UNetDriver * NetDriver, ENetworkFailure::Type FailureType, const FString & ErrorString);
+	//{
+	//	PUN_DEBUG2("!!! NetworkFailure %s, %s", ENetworkFailure::ToString(FailureType), *ErrorString);
+	//	LOG_ERROR(LogNetworkInput, "!!! NetworkFailure %s, %s", ToString(FailureType), *ErrorString);
 
-		mainMenuPopup = ErrorString + " (" + FString(ENetworkFailure::ToString(FailureType)) + ")";
-	}
-	void HandleTravelFailure(UWorld* World, ETravelFailure::Type FailureType, const FString& ErrorString)
-	{
-		PUN_DEBUG2("!!! TravelFailure %s, %s", ETravelFailure::ToString(FailureType), *ErrorString);
-		LOG_ERROR(LogNetworkInput, "!!! TravelFailure %s, %s", ToString(FailureType), *ErrorString);
+	//	//mainMenuPopup = FText::FormatNamed(ErrorString + " (" + FString(ENetworkFailure::ToString(FailureType)) + ")");
+	//	mainMenuPopup = FText::Format(LOCTEXT("NetworkFailure", "{ErrorString} ({FailureType})"), 
+	//		FText::FromString(ErrorString), 
+	//		FText(ENetworkFailure::ToString(FailureType)));
+	//}
+	void HandleTravelFailure(UWorld* World, ETravelFailure::Type FailureType, const FString& ErrorString);
+	//{
+	//	PUN_DEBUG2("!!! TravelFailure %s, %s", ETravelFailure::ToString(FailureType), *ErrorString);
+	//	LOG_ERROR(LogNetworkInput, "!!! TravelFailure %s, %s", ToString(FailureType), *ErrorString);
 
-		mainMenuPopup = ErrorString + " (" + FString(ETravelFailure::ToString(FailureType)) + ")";
-	}
+	//	//mainMenuPopup = FText(ErrorString + " (" + FString(ETravelFailure::ToString(FailureType)) + ")");
+	//	mainMenuPopup = FText::FormatNamed(FText("{ErrorString} ({FailureType})"),
+	//		"ErrorString", FText::FromString(ErrorString),
+	//		"FailureType", FText(ETravelFailure::ToString(FailureType)));
+	//}
 	void HandlePreClientTravel(const FString& PendingURL, ETravelType TravelType, bool bIsSeamlessTravel)
 	{
 		PUN_DEBUG2("!!! PreClientTravel %s type:%d seamless:%d", *PendingURL, TravelType, bIsSeamlessTravel);
@@ -254,7 +261,7 @@ public:
 	void OnGameExit();
 	void EnsureSessionDestroyed(bool gotoMainMenu);
 
-	FString mainMenuPopup;
+	FText mainMenuPopup;
 
 	
 	bool isJoiningGame = false;

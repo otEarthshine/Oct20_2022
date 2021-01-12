@@ -17,17 +17,12 @@ AAssetIconBaker::AAssetIconBaker()
 	PrimaryActorTick.bStartWithTickEnabled = true;
 	bReplicates = false;
 
-	{
-		ConstructorHelpers::FObjectFinder<UCanvasRenderTarget2D> objectFinder(TEXT("/Game/UI/GeneratedIcons/ThumbnailSnapshotTarget"));
-		check(objectFinder.Succeeded());
-		IconRenderTarget = objectFinder.Object;
-	}
+	IconRenderTarget = Load<UCanvasRenderTarget2D>("/Game/UI/GeneratedIcons/ThumbnailSnapshotTarget");
+	IconRenderTargetAlpha = Load<UCanvasRenderTarget2D>("/Game/UI/GeneratedIcons/ThumbnailSnapshotTargetAlpha");
 
-	{
-		ConstructorHelpers::FObjectFinder<UCanvasRenderTarget2D> objectFinder(TEXT("/Game/UI/GeneratedIcons/ThumbnailSnapshotTargetAlpha"));
-		check(objectFinder.Succeeded());
-		IconRenderTargetAlpha = objectFinder.Object;
-	}
+	ResourceIconRenderTarget = Load<UCanvasRenderTarget2D>("/Game/UI/ResourceIcons/ThumbnailSnapshotTarget");
+	ResourceIconRenderTargetAlpha = Load<UCanvasRenderTarget2D>("/Game/UI/ResourceIcons/ThumbnailSnapshotTargetAlpha");
+	
 	
 	_buildingMeshes = CreateDefaultSubobject<UBuildingMeshesComponent>("BuildingMeshesForIcon");
 	_resourceMesh = CreateDefaultSubobject<UStaticMeshComponent>("ResourceMeshForIcon");
@@ -123,6 +118,7 @@ void AAssetIconBaker::ExportThumbnailHDR(UObject* WorldContextObject, UTextureRe
 			FBufferArchive Buffer;
 
 			bool bSuccess = FImageUtils::ExportRenderTarget2DAsEXR(TextureRenderTarget, Buffer);
+			
 
 			PUN_LOG("Export png %d format: %d", bSuccess, TextureRenderTarget->GetFormat());
 			if (bSuccess) {

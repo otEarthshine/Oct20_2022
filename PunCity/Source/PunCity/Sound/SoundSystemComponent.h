@@ -2575,6 +2575,7 @@ private:
 		{
 		case CardEnum::CharcoalMaker: return "BuildingCharcoalMaker";
 		case CardEnum::BeerBrewery: return "BuildingBrewery";
+		case CardEnum::VodkaDistillery: return "BuildingBrewery";
 		case CardEnum::FurnitureWorkshop: return "BuildingFurnitureMaker";
 			
 		case CardEnum::IronSmelter:

@@ -112,7 +112,7 @@ void URegionDisplayComponent::OnSpawnDisplay(int regionId, int meshId, WorldAtom
 	{
 		//SCOPE_TIMER("Region - Update Terrain Chunk");
 
-		//PUN_LOG("OnSpawnDisplay regionId:%d meshId:%d", regionId, meshId);
+		//PUN_LOG("RegionDisplay OnSpawnDisplay regionId:%d meshId:%d", regionId, meshId);
 		
 		//_terrainChunkData[meshId].UpdateTerrainChunkMesh_Prepare1();
 		//_terrainChunkData[meshId].UpdateTerrainChunkMesh_Prepare2(simulation(), region, containsWater);
@@ -134,7 +134,7 @@ void URegionDisplayComponent::OnSpawnDisplay(int regionId, int meshId, WorldAtom
 		_groundColliderMeshes[meshId]->ComponentTags.Add(FName(*FString::FromInt(region.y)));
 
 		// Water
-		//_waterMeshes[meshId]->SetVisibility(containsWater);
+		_waterMeshes[meshId]->SetVisibility(false);
 		_waterMaterials[meshId]->SetTextureParameterValue("HeightMap", _assetLoader->heightTexture);
 		_waterMaterials[meshId]->SetTextureParameterValue("BiomeMap", _assetLoader->biomeTexture);
 		//_waterMaterials[meshId]->SetTextureParameterValue(TEXT("RiverMap"), _assetLoader->riverTexture);
@@ -157,6 +157,7 @@ void URegionDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2
 	// PUN_LOG("region %d, %d ... %s", region.x, region.y, *displayLocation.ToString());
 
 	_waterDecalMeshes[meshId]->SetVisibility(overlayType == OverlayType::Fish);
+	_waterMeshes[meshId]->SetVisibility(_terrainChunks[meshId]->containsWater);
 
 	_terrainChunks[meshId]->SetRelativeLocation(displayLocation);
 
@@ -195,6 +196,8 @@ void URegionDisplayComponent::AfterAdd()
 {
 	SCOPE_TIMER_FILTER(5000, "Tick Region AfterDisplay");
 
+	//PUN_LOG("RegionDisplay AfterAdd");
+
 	// Execute all the needed
 	{
 		//SCOPE_TIMER_FILTER(1000, "Tick Region Test Prepare1");
@@ -231,10 +234,7 @@ void URegionDisplayComponent::AfterAdd()
 		//{
 			ThreadedRun(chunkInfosToUpDate, 8, [&](MeshChunkInfo& chunkInfo)
 			{
-				bool containsWater;
-				_terrainChunkData[chunkInfo.meshId].UpdateTerrainChunkMesh_Prepare2(simulation(), chunkInfo.region(), containsWater);
-				_waterMeshes[chunkInfo.meshId]->SetVisibility(containsWater);
-
+				_terrainChunkData[chunkInfo.meshId].UpdateTerrainChunkMesh_Prepare2(simulation(), chunkInfo.region());
 				_terrainChunkData[chunkInfo.meshId].UpdateTerrainChunkMesh_Prepare3(chunkInfo.region());
 			});
 		//}
@@ -248,6 +248,8 @@ void URegionDisplayComponent::AfterAdd()
 
 		for (MeshChunkInfo& chunkInfo : chunkInfosToUpDate) {
 			_terrainChunks[chunkInfo.meshId]->UpdateTerrainChunkMesh_UpdateMesh(chunkInfo.createMesh, _terrainChunkData[chunkInfo.meshId]);
+			_waterMeshes[chunkInfo.meshId]->SetVisibility(_terrainChunkData[chunkInfo.meshId].containsWater);
+			//_waterMeshes[chunkInfo.meshId]->SetVisibility(false);
 		}
 	}
 }
@@ -261,7 +263,7 @@ void URegionDisplayComponent::HideDisplay(int32 meshId, int32 regionId)
 	_waterDecalMeshes[meshId]->SetVisibility(false);
 	
 	_terrainChunks[meshId]->SetVisibility(false);
-	_terrainChunks[meshId]->SetRelativeLocation(FVector(0, 0, -500)); // TODO: quickfix bug with pooling
+	_terrainChunks[meshId]->SetRelativeLocation(FVector(0, 0, 50000)); // TODO: quickfix bug with pooling, 50000 is to avoid seeing waterMesh
 
 	_groundColliderMeshes[meshId]->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	_groundColliderMeshes[meshId]->ComponentTags.Empty();

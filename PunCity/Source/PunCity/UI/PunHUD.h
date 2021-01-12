@@ -134,7 +134,7 @@ public:
 				_intercityTradeUI->IsHovered() ||
 				_mainGameUI->IsHoveredOnScrollUI() ||
 				_chatUI->IsHoveredOnScrollUI() ||
-				_armyMoveUI->IsHovered() ||
+				//_armyMoveUI->IsHovered() ||
 				_escMenuUI->IsHovered();
 	}
 	
@@ -279,10 +279,10 @@ public:
 	}
 
 	void OpenArmyMoveUI(std::shared_ptr<FAttack> armyCommand) final {
-		_armyMoveUI->OpenArmyMoveUI(armyCommand);
+		//_armyMoveUI->OpenArmyMoveUI(armyCommand);
 	}
 	void CloseArmyMoveUI() {
-		_armyMoveUI->CloseArmyMoveUI();
+		//_armyMoveUI->CloseArmyMoveUI();
 	}
 
 	void ResetGameUI()
@@ -345,7 +345,7 @@ public:
 		case ExclusiveUIEnum::QuestUI:			return _questUI->QuestDescriptionOverlay->GetVisibility() != ESlateVisibility::Collapsed;
 		case ExclusiveUIEnum::StatisticsUI:		return _statisticsUI->GetVisibility() != ESlateVisibility::Collapsed;
 		case ExclusiveUIEnum::PlayerOverviewUI:	return _questUI->PlayerDetailsOverlay->GetVisibility() != ESlateVisibility::Collapsed;
-		case ExclusiveUIEnum::ArmyMoveUI:		return _armyMoveUI->GetVisibility() != ESlateVisibility::Collapsed;
+		//case ExclusiveUIEnum::ArmyMoveUI:		return _armyMoveUI->GetVisibility() != ESlateVisibility::Collapsed;
 
 		case ExclusiveUIEnum::InitialResourceUI:return _initialResourceUI->InitialResourceUI->IsVisible();
 		case ExclusiveUIEnum::DiplomacyUI:		return _diplomacyUI->IsVisible();
@@ -550,7 +550,7 @@ protected:
 	UPROPERTY() UTechUI* _techUI;
 	UPROPERTY() UProsperityUI* _prosperityUI;
 
-	UPROPERTY() UArmyMoveUI* _armyMoveUI;
+	//UPROPERTY() UArmyMoveUI* _armyMoveUI;
 
 	TSharedPtr<FSlateGameResources> _style;
 

@@ -40,7 +40,7 @@ void UChatUI::RefreshHiddenSettingsUI()
 	for (size_t i = 0; i < _sortedGroupName.size(); i++)
 	{
 		auto button = AddWidget<UPunButton>(UIEnum::PunButton);
-		button->Set("", _sortedGroupName[i], nullptr, "", this, CallbackEnum::None, i);
+		button->Set(FText(), ToFText(_sortedGroupName[i]), nullptr, FText(), this, CallbackEnum::None, i);
 		HiddenSettingsGroupChooser->AddChild(button);
 	}
 	
@@ -375,6 +375,7 @@ void UChatUI::TickDebugUI()
 		DEBUG_ISCONNECTED(GetProvinceRandomTile);
 		DEBUG_ISCONNECTED(FindMarketResourceHolderInfo);
 		DEBUG_ISCONNECTED(RefreshIsBuildingConnected);
+		DEBUG_ISCONNECTED(ClaimProvince);
 		DEBUG_ISCONNECTED(RefreshHoverWarning);
 		DEBUG_ISCONNECTED(adjacentTileNearestTo);
 		DEBUG_ISCONNECTED(DropResourceSystem);

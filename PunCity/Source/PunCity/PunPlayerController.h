@@ -639,19 +639,19 @@ public:
 
 
 
-	UFUNCTION(Exec) void ToggleTestMainMenu()
-	{
-#if !UI_ALL
-		return;
-#endif
-		if (GetPunHUD()->mainGameUI()->TestMainMenuOverlay1->GetVisibility() == ESlateVisibility::Collapsed) {
-			GetPunHUD()->mainGameUI()->TestMainMenuOverlay1->SetVisibility(ESlateVisibility::Visible);
-			GetPunHUD()->mainGameUI()->TestMainMenuOverlay2->SetVisibility(ESlateVisibility::Visible);
-		} else {
-			GetPunHUD()->mainGameUI()->TestMainMenuOverlay1->SetVisibility(ESlateVisibility::Collapsed);
-			GetPunHUD()->mainGameUI()->TestMainMenuOverlay2->SetVisibility(ESlateVisibility::Collapsed);
-		}
-	}
+//	UFUNCTION(Exec) void ToggleTestMainMenu()
+//	{
+//#if !UI_ALL
+//		return;
+//#endif
+//		if (GetPunHUD()->mainGameUI()->TestMainMenuOverlay1->GetVisibility() == ESlateVisibility::Collapsed) {
+//			GetPunHUD()->mainGameUI()->TestMainMenuOverlay1->SetVisibility(ESlateVisibility::Visible);
+//			GetPunHUD()->mainGameUI()->TestMainMenuOverlay2->SetVisibility(ESlateVisibility::Visible);
+//		} else {
+//			GetPunHUD()->mainGameUI()->TestMainMenuOverlay1->SetVisibility(ESlateVisibility::Collapsed);
+//			GetPunHUD()->mainGameUI()->TestMainMenuOverlay2->SetVisibility(ESlateVisibility::Collapsed);
+//		}
+//	}
 	
 	UFUNCTION(Exec) void SavePlayerActions(int32 playerId, const FString& fileName);
 
@@ -740,6 +740,20 @@ public:
 	{
 		std::string resourceNameStd = ToStdString(resourceName);
 		simulation().resourceSystem(playerId()).SpawnDrop(FindResourceEnumByName(resourceNameStd), count, WorldTile2(tileX, tileY));
+	}
+
+	UFUNCTION(Exec) void GoToMaxAnimal()
+	{
+		int32 provinceId = simulation().regionSystem().debugMaxAnimalCountProvinceId;
+		if (provinceId == -1) {
+			return;
+		}
+
+		SetCameraAtom(simulation().GetProvinceCenterTile(provinceId).worldAtom2());
+
+		FRotator rotation = cameraPawn->GetActorRotation();
+		rotation.Yaw = 0;
+		cameraPawn->SetActorRotation(rotation);
 	}
 
 	/*

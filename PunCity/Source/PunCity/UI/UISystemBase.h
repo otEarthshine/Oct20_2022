@@ -9,7 +9,6 @@
 #include "GameUIInputSystemInterface.h"
 #include "PunCity/GameNetworkInterface.h"
 
-#define ToFText(stdString) (FText::FromString(FString((stdString).c_str())))
 
 class IPunPlayerController
 {

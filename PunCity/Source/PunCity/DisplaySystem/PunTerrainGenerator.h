@@ -163,6 +163,9 @@ public:
 		}
 		return GetBiomeInfoFromTile(tile).name;
 	}
+	FText GetBiomeNameT(WorldTile2 tile) {
+		return ToFText(GetBiomeName(tile));
+	}
 
 	//bool IsRegionWater(WorldRegion2 region) {
 	//	return regionWaterTileCount(region.regionId()) > CoordinateConstants::TileIdsPerRegion * 3 / 4;

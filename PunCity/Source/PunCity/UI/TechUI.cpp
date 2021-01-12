@@ -173,6 +173,15 @@ void UTechUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callBackEnum)
 		dataSource()->Spawn2DSound("UI", "UIIncrementalError");
 		return;
 	}
+
+	// Disallow clicking with requirements not met
+	if (!unlockSys->IsRequirementMetForTech(techBox->techEnum)) {
+		auto tech = unlockSys->GetTechInfo(techBox->techEnum);
+		std::stringstream ss;
+		ss << "Satisfy this Technology's Prerequisite by producing " << tech->requiredResourceCount << " " << GetResourceInfo(tech->requiredResourceEnum).name;
+		simulation().AddPopupToFront(playerId(), ss.str(), ExclusiveUIEnum::TechUI, "PopupCannot");
+		return;
+	}
 	
 
 	PUN_LOG("Chose Research: %d", (int)techBox->techEnum);

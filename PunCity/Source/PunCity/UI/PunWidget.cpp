@@ -62,6 +62,17 @@ UToolTipWidgetBase* UPunWidget::AddToolTip(UWidget* widget, std::wstring message
 	return tooltip;
 }
 
+UToolTipWidgetBase* UPunWidget::AddToolTip(UWidget* widget, FText message)
+{
+	UToolTipWidgetBase* tooltip = AddToolTip(widget);
+	if (tooltip) {
+		tooltip->TooltipPunBoxWidget->AfterAdd(); // Ensure reused tooltip gets its AfterAdd called
+		tooltip->TooltipPunBoxWidget->AddRichText(message);
+	}
+	return tooltip;
+}
+
+
 void UPunWidget::AddResourceTooltip(UWidget* widget, ResourceEnum resourceEnum, bool skipWidgetHoverCheck)
 {
 	if (IsSimulationInvalid()) return;
@@ -76,7 +87,7 @@ void UPunWidget::AddResourceTooltip(UWidget* widget, ResourceEnum resourceEnum, 
 	std::stringstream ss;
 	ss << "<Bold>" << GetResourceInfo(resourceEnum).name << "</>";
 	ss << "<space>";
-	ss << "<SlightGray>" << GetResourceInfo(resourceEnum).description << "</>";
+	ss << "<SlightGray>" << StringEnvelopImgTag(GetResourceInfo(resourceEnum).description, "<SlightGray>") << "</>";
 	ss << "<space>";
 
 	auto& statSys = simulation().playerStatSystem(playerId());

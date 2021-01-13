@@ -149,6 +149,7 @@ public:
 #define TEXT_NUMSIGNED(number) FText::Join(FText(), (number > 0 ? INVTEXT("+") : INVTEXT("")), FText::AsNumber(number))
 
 #define TEXT_TAG(Tag, InText) FText::Format(INVTEXT("{0}{1}</>"), INVTEXT(Tag), InText)
+//#define TEXT_JOIN(...) FText::Join(FText(), __VA_ARGS__)
 
 #define ADDTEXT(InArgs, InText, ...) InArgs.Add(FText::Format(InText, __VA_ARGS__));
 #define ADDTEXT_(InText, ...) args.Add(FText::Format(InText, __VA_ARGS__));
@@ -945,6 +946,9 @@ struct ResourceInfo
 	int32 basePrice;
 	std::string description;
 
+	FText GetName() const { return ToFText(name); }
+	FText GetDescription() const { return ToFText(description); }
+
 	ResourceInfo(ResourceEnum resourceEnum, std::string name, int32 cost, std::string description)
 		: resourceEnum(resourceEnum), name(name), basePrice(cost), description(description) {}
 
@@ -1132,11 +1136,11 @@ inline FText ResourceNameT(ResourceEnum resourceEnum) {
 	return ToFText(ResourceInfos[static_cast<int>(resourceEnum)].name);
 }
 
-inline std::string ResourceName_WithNone(ResourceEnum resourceEnum) {
+inline FText ResourceName_WithNone(ResourceEnum resourceEnum) {
 	if (resourceEnum == ResourceEnum::None) {
-		return "None";
+		return NSLOCTEXT("GameSimulationInfo", "None", "None");
 	}
-	return ResourceInfos[static_cast<int>(resourceEnum)].name;
+	return ResourceInfos[static_cast<int>(resourceEnum)].GetName();
 }
 
 inline FString ResourceNameF(ResourceEnum resourceEnum) {
@@ -3430,36 +3434,40 @@ enum class PriorityEnum : uint8
 
 struct BuildingUpgrade
 {
-	std::string name;
-	std::string description;
+	FText name;
+	FText description;
 	ResourcePair resourceNeeded;
 	int32 moneyNeeded;
 
 	int32 efficiencyBonus = 0;
 	int32 comboEfficiencyBonus = 0;
-
-	//int32 extraWorkerSlots = 0; // TODO: MakeWorkerSlotUPgrade
+	int32 workerSlotBonus = 0;
 
 	bool isUpgraded = false;
 
-	BuildingUpgrade() : name(""), description(""), resourceNeeded(ResourcePair()), moneyNeeded(-1) {}
+	BuildingUpgrade() : name(FText()), description(FText()), resourceNeeded(ResourcePair()), moneyNeeded(-1) {}
 	
-	BuildingUpgrade(std::string name, std::string description, ResourcePair resourceNeeded, int32 moneyNeeded = 0)
+	BuildingUpgrade(FText name, FText description, ResourcePair resourceNeeded, int32 moneyNeeded = 0)
 		: name(name), description(description), resourceNeeded(resourceNeeded), moneyNeeded(moneyNeeded) {}
 
-	BuildingUpgrade(std::string name, std::string description, int32 moneyNeeded)
+	BuildingUpgrade(FText name, FText description, int32 moneyNeeded)
 		: name(name), description(description), resourceNeeded(ResourcePair()), moneyNeeded(moneyNeeded) {}
 
-	BuildingUpgrade(std::string name, std::string description, ResourceEnum resourceEnum, int32 resourceCount)
+	BuildingUpgrade(FText name, FText description, ResourceEnum resourceEnum, int32 resourceCount)
 		: name(name), description(description), resourceNeeded(ResourcePair(resourceEnum, resourceCount)), moneyNeeded(0) {}
 
-	void operator>>(FArchive& Ar) {
-		SerializeStr(Ar, name);
-		SerializeStr(Ar, description);
+	void operator>>(FArchive& Ar)
+	{
+		//SerializeStr(Ar, name);
+		//SerializeStr(Ar, description);
+		Ar << name;
+		Ar << description;
 		resourceNeeded >> Ar;
 		Ar << moneyNeeded;
+		
 		Ar << efficiencyBonus;
 		Ar << comboEfficiencyBonus;
+		Ar << workerSlotBonus;
 
 		//Ar << extraWorkerSlots;
 
@@ -3469,7 +3477,7 @@ struct BuildingUpgrade
 
 struct BonusPair
 {
-	std::string name;
+	FText name;
 	int32 value;
 };
 

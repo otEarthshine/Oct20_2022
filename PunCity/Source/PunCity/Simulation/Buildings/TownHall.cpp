@@ -14,6 +14,45 @@
 
 using namespace std;
 
+#define LOCTEXT_NAMESPACE "TownHall"
+
+static const TArray<FText> TownhallLvlToUpgradeBonusText =
+{
+	FText(),
+	FText(),
+
+	LOCTEXT("TownhallLvl2UpgradeBonus", 
+		"Unlocked Cards:"
+		"<bullet>Wheat seeds</>"
+		"<bullet>Cabbage seeds</>"
+		"<bullet>Snatch</>"
+		"<bullet>Buy Wood</>"
+		"<bullet>Sell Food</>"
+	), // Lvl 2
+
+	LOCTEXT("TownhallLvl3UpgradeBonus",
+		"<bullet>+10% mine/quarry production.</>"
+		"<space>"
+		"Unlocked Cards:"
+		"<bullet>Immigrants</>"
+		"<bullet>Kidnap</>"
+	), // 3
+
+	LOCTEXT("TownhallLvl4UpgradeBonus",
+		"<space>"
+		"Unlocked Cards:"
+		"<bullet>Warehouse</>"
+		"<bullet>Sharing is caring</>"
+	), // 4
+
+	LOCTEXT("TownhallLvl5UpgradeBonus",
+		"<bullet>+10% industrial production.</>"
+	), // Lvl 5
+};
+const FText& GetTownhallLvlToUpgradeBonusText(int32 townhallLvl) {
+	return TownhallLvlToUpgradeBonusText[townhallLvl];
+}
+
 void TownHall::FinishConstruction()
 {
 	Building::FinishConstruction();
@@ -106,7 +145,7 @@ void TownHall::UpgradeTownhall()
 		ss << "<space>";
 		ss << "Your townhall is now lvl " << townhallLvl << ".";
 		ss << "<space>";
-		ss << TownhallLvlToUpgradeBonusText[townhallLvl];
+		ss << ToStdString(TownhallLvlToUpgradeBonusText[townhallLvl].ToString());
 
 		_simulation->AddPopup(_playerId, ss.str(), "UpgradeTownhall");
 		_simulation->AddPopupAll(PopupInfo(_playerId, townName() + " has been upgraded to level " + to_string(townhallLvl)), _playerId);
@@ -286,3 +325,6 @@ void TownHall::ImmigrationEvent(int32 exactAmount)
 		UE_DEBUG_BREAK();
 	}
 }
+
+
+#undef LOCTEXT_NAMESPACE

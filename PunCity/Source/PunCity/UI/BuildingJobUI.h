@@ -191,7 +191,7 @@ public:
 				}
 
 				for (ResourcePair& pair : maxResourcePairs) {
-					PunBox->AddIconPair("", pair.resourceEnum, std::to_string(pair.count), false, true);
+					PunBox->AddIconPair(FText(), pair.resourceEnum, TEXT_NUM(pair.count), false, true);
 				}
 				if (hasMore) {
 					auto textWidget = PunBox->AddText("...");

@@ -1384,7 +1384,7 @@ bool HumanStateAI::TryGatherFruit()
 	
 	gatherTicks = gatherTicks * 100 / workEfficiency100();
 
-	if (workplace()->workMode().name == "Meticulous") {
+	if (workplace()->workMode().name.EqualTo(MeticulousWorkModeText)) {
 		gatherTicks *= 2;
 	}
 
@@ -1472,7 +1472,7 @@ bool HumanStateAI::TryHunt()
 	int32 damage = 15;
 	damage = damage * workEfficiency100() / 100;
 
-	if (workplace()->workMode().name == "Poison Arrows") {
+	if (workplace()->workMode().name.EqualTo(PoisonArrowWorkModeText)) {
 		damage *= 4;
 	}
 	
@@ -1502,15 +1502,15 @@ bool HumanStateAI::TryRanch()
 	
 
 	// Check if ranch is almost full, if so, start slaugthering animals...
-	std::string workModeName = ranch.workMode().name;
-	if (workModeName == "Kill when reached full capacity")
+	FText workModeName = ranch.workMode().name;
+	if (workModeName.EqualTo(RanchWorkMode_FullCapacity))
 	{
 		if (ranch.openAnimalSlots() > 1) { // Note > 1 (more balance)
 			AddDebugSpeech("(Failed)TryRanch: still growing animals");
 			return false;
 		}
 	}
-	else if (workModeName == "Kill when above half capacity")
+	else if (workModeName.EqualTo(RanchWorkMode_HalfCapacity))
 	{
 		if (ranch.openAnimalSlots() > ranch.maxAnimals / 2) {
 			AddDebugSpeech("(Failed)TryRanch: still growing animals");
@@ -2232,9 +2232,9 @@ bool HumanStateAI::TryForesting()
 	}
 	
 	Forester& forester = workplace()->subclass<Forester>(CardEnum::Forester);
-	const std::string& workModeName = forester.workMode().name;
+	const FText& workModeName = forester.workMode().name;
 	
-	if (workModeName == "Cut and Plant") {
+	if (workModeName.EqualTo(CutAndPlantText)) {
 		if (TryForestingCut(true)) {
 			return true;
 		}
@@ -2244,7 +2244,7 @@ bool HumanStateAI::TryForesting()
 		return TryForestingNourish();
 	}
 	
-	if (workModeName == "Prioritize Planting")
+	if (workModeName.EqualTo(PrioritizePlantText))
 	{
 		if (TryForestingPlant(TileObjEnum::None)) {
 			return true;
@@ -2255,7 +2255,7 @@ bool HumanStateAI::TryForesting()
 		return TryForestingNourish();
 	}
 
-	if (workModeName == "Prioritize Cutting")
+	if (workModeName.EqualTo(PrioritizeCutText))
 	{
 		if (TryForestingCut(false)) {
 			return true;

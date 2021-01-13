@@ -2737,7 +2737,8 @@ void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
 			{
 				BuildingUpgrade upgrade = bld->upgrades()[command.upgradeType];
 
-				AddPopup(command.playerId, "Upgraded " + upgrade.name + " on " + to_string(upgradedCount) + " " + (bld->buildingInfo().name) + ".");
+				std::string upgradeName = FTextToStd(upgrade.name);
+				AddPopup(command.playerId, "Upgraded " + upgradeName + " on " + to_string(upgradedCount) + " " + (bld->buildingInfo().name) + ".");
 			}
 		}
 	}
@@ -2786,8 +2787,8 @@ void GameSimulationCore::ChangeWorkMode(FChangeWorkMode command)
 	else if (bld.hasWorkModes()) // BuildingHasDropdown(bld.buildingEnum()))
 	{
 		PUN_LOG("ChangeBld id:%d, from: %s, to: %s", command.buildingId,
-			*ToFString(bld.workMode().name),
-			*ToFString(bld.workModes[command.enumInt].name));
+				*bld.workMode().name.ToString(),
+				*bld.workModes[command.enumInt].name.ToString());
 
 		bld.ChangeWorkMode(bld.workModes[command.enumInt]);
 	}

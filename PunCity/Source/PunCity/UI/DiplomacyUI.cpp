@@ -3,7 +3,7 @@
 
 #include "DiplomacyUI.h"
 
-#define LOCTEXT_NAMESPACE "AIPlayerSystem"
+#define LOCTEXT_NAMESPACE "DiplomacyUI"
 
 void UDiplomacyUI::TickUI()
 {

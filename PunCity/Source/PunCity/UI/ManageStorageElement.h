@@ -29,7 +29,7 @@ public:
 		return FMath::IsNearlyEqual(ExpandArrow->GetRenderTransformAngle(), 90.0f);
 	}
 
-	void PunInit(ResourceEnum resourceEnumIn, std::string sectionNameIn, int32 buildingIdIn, ECheckBoxState checkBoxState, bool isSection)
+	void PunInit(ResourceEnum resourceEnumIn, FText sectionNameIn, int32 buildingIdIn, ECheckBoxState checkBoxState, bool isSection)
 	{
 		sectionName = sectionNameIn;
 		buildingId = buildingIdIn;
@@ -154,7 +154,7 @@ public:
 	int32 buildingId = -1;
 	ResourceEnum uiResourceEnum = ResourceEnum::None;
 
-	std::string sectionName;
+	FText sectionName;
 
 
 	float delayOverrideStartTime = 0.0f;

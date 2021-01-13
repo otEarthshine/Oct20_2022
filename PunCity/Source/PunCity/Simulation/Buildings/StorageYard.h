@@ -244,18 +244,10 @@ public:
 		StorageBase::FinishConstruction();
 
 		_upgrades = {
-			MakeUpgrade("More Workers", "+2 worker slots", 50),
+			MakeWorkerSlotUpgrade(50, 2),
 		};
 
 		//PUN_CHECK(lastUIResourceTargets.size() < 1000);
-	}
-
-	void OnUpgradeBuilding(int upgradeIndex) override {
-		if (upgradeIndex == 0) {
-			_maxOccupants += 2;
-			_allowedOccupants = _maxOccupants;
-			_simulation->playerOwned(_playerId).RefreshJobDelayed();
-		}
 	}
 
 	// TEST

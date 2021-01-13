@@ -165,9 +165,13 @@ void House::FinishConstruction()
 		_simulation->AddPopup(popupInfo);
 	}
 
-	_upgrades = {
-		BuildingUpgrade("Stone Insulation", "Wood/coal gives 20% more heat", ResourcePair(ResourceEnum::Stone, 20)),
-		BuildingUpgrade("Hearth Fireplace", "Wood/coal gives 30% more heat", ResourcePair(ResourceEnum::Brick, 30)),
+	auto woodCoalHeatText = [](int32 percent) {
+		return FText::Format(LOCTEXT("woodCoalHeatText", "Wood/coal gives {0}% more heat"), TEXT_NUM(percent));
+	};
+	
+	_upgrades = {		
+		BuildingUpgrade(LOCTEXT("Stone Insulation", "Stone Insulation"), woodCoalHeatText(20), ResourcePair(ResourceEnum::Stone, 20)),
+		BuildingUpgrade(LOCTEXT("Hearth Fireplace", "Hearth Fireplace"), woodCoalHeatText(30), ResourcePair(ResourceEnum::Brick, 30)),
 	};
 
 	
@@ -531,47 +535,79 @@ void BoarBurrow::OnDeinit()
 	_simulation->RemoveBoarBurrow(_simulation->GetProvinceIdClean(_centerTile), _objectId);
 }
 
-void RanchBarn::FinishConstruction()
+//void RanchBarn::FinishConstruction()
+//{
+//	Building::FinishConstruction();
+//
+//	AddResourceHolder(ResourceEnum::Hay, ResourceHolderType::Requester, 20);
+//}
+//
+//void RanchBarn::OnTick1Sec()
+//{
+//	if (!isConstructed()) {
+//		return;
+//	}
+//}
+//
+//void RanchBarn::AddAnimalOccupant(UnitEnum animalEnum, int32 age) 
+//{
+//	PUN_CHECK(_animalEnum == animalEnum);
+//	int32 newAnimalId = _simulation->AddUnit(animalEnum, _playerId, gateTile().worldAtom2(), age);
+//	PUN_CHECK(_animalOccupants.size() < maxAnimals);
+//	_animalOccupants.push_back(newAnimalId);
+//	_simulation->unitAI(newAnimalId).SetHouseId(buildingId());
+//}
+//
+//void RanchBarn::RemoveAnimalOccupant(int32 animalId)
+//{
+//	CppUtils::Remove(_animalOccupants, animalId);
+//}
+//
+//void RanchBarn::OnDeinit()
+//{
+//	// Release animals into the wild
+//	for (int i = 0; i < _animalOccupants.size(); i++) {
+//		int32_t id = _animalOccupants[i];
+//		auto& unit = _simulation->unitAI(id);
+//		unit.SetHouseId(-1);
+//		unit.SetPlayerId(-1);
+//		_simulation->ResetUnitActions(id);
+//	}
+//	_animalOccupants.clear();
+//}
+
+/*
+ * Ranch
+ */
+void Ranch::FinishConstruction()
 {
 	Building::FinishConstruction();
 
+	auto addInitialAnimals = [&](UnitEnum unitEnum) {
+		for (int32 i = 0; i < 3; i++) {
+			AddAnimalOccupant(unitEnum, GetUnitInfo(unitEnum).minBreedingAgeTicks);
+		}
+	};
+
+	switch (buildingEnum()) {
+	case CardEnum::RanchPig: addInitialAnimals(UnitEnum::Pig); break;
+	case CardEnum::RanchSheep: addInitialAnimals(UnitEnum::Sheep); break;
+	case CardEnum::RanchCow: addInitialAnimals(UnitEnum::Cow); break;
+	default:
+		UE_DEBUG_BREAK();
+		break;
+	}
+
 	AddResourceHolder(ResourceEnum::Hay, ResourceHolderType::Requester, 20);
-}
+	AddResourceHolder(ResourceEnum::Milk, ResourceHolderType::Provider, 0);
 
-void RanchBarn::OnTick1Sec()
-{
-	if (!isConstructed()) {
-		return;
-	}
+	workModes = {
+		{ LOCTEXT("Kill when reached full capacity", "Kill when reached full capacity"), ResourceEnum::None, ResourceEnum::None, 0},
+		{ LOCTEXT("Kill when above half capacity", "Kill when above half capacity"), ResourceEnum::None, ResourceEnum::None, 0},
+		{ LOCTEXT("Kill all", "Kill all"), ResourceEnum::None, ResourceEnum::None, 0},
+	};
+	_workMode = workModes[0];
 }
-
-void RanchBarn::AddAnimalOccupant(UnitEnum animalEnum, int32 age) 
-{
-	PUN_CHECK(_animalEnum == animalEnum);
-	int32 newAnimalId = _simulation->AddUnit(animalEnum, _playerId, gateTile().worldAtom2(), age);
-	PUN_CHECK(_animalOccupants.size() < maxAnimals);
-	_animalOccupants.push_back(newAnimalId);
-	_simulation->unitAI(newAnimalId).SetHouseId(buildingId());
-}
-
-void RanchBarn::RemoveAnimalOccupant(int32 animalId)
-{
-	CppUtils::Remove(_animalOccupants, animalId);
-}
-
-void RanchBarn::OnDeinit()
-{
-	// Release animals into the wild
-	for (int i = 0; i < _animalOccupants.size(); i++) {
-		int32_t id = _animalOccupants[i];
-		auto& unit = _simulation->unitAI(id);
-		unit.SetHouseId(-1);
-		unit.SetPlayerId(-1);
-		_simulation->ResetUnitActions(id);
-	}
-	_animalOccupants.clear();
-}
-
 
 void Ranch::AddAnimalOccupant(UnitEnum animalEnum, int32_t age)
 {
@@ -603,3 +639,6 @@ void Ranch::OnDeinit()
 	}
 	_animalOccupants.clear();
 }
+
+
+#undef LOCTEXT_NAMESPACE

@@ -59,6 +59,9 @@ public:
 	float CountdownSecondsDisplay() {
 		return actualTicksLeft() / Time::TicksPerSecond;
 	}
+	int32 CountdownSecondsDisplayInt() {
+		return actualTicksLeft() / Time::TicksPerSecond;
+	}
 	float barFraction() override {
 		if (_hasPendingTrade) {
 			return 1.0f - CountdownSecondsDisplay() / (totalTicks() / Time::TicksPerSecond);
@@ -144,23 +147,8 @@ protected:
 class TradingPost final : public TradeBuilding
 {
 public:
-	void FinishConstruction() final {
-		TradeBuilding::FinishConstruction();
-
-		for (ResourceInfo info : ResourceInfos) {
-			AddResourceHolder(info.resourceEnum, ResourceHolderType::Provider, 0);
-		}
-
-		_upgrades = {
-			BuildingUpgrade("Fee discount", "Decrease trading fee by 5%.", 250),
-			BuildingUpgrade("Fast delivery", "-30% the time it takes, for traders to arrive (+50% efficiency).", 300),
-			BuildingUpgrade("Increased load", "+120 goods quantity per trade.", 200),
-		};
-
-		_simulation->TryAddQuest(_playerId, std::make_shared<TradeQuest>());
-
-		TrailerAddResource();
-	}
+	void FinishConstruction() final;
+	std::vector<BonusPair> GetBonuses() final;
 
 	int32 maxTradeQuatity() override {
 		int32 quantity = 180;
@@ -169,41 +157,13 @@ public:
 		}
 		return quantity;
 	}
-
-	std::vector<BonusPair> GetBonuses() final {
-		std::vector<BonusPair> result;
-		if (IsUpgraded(1)) {
-			result.push_back({"Fast delivery", 50});
-		}
-		if (_simulation->playerOwned(_playerId).HasSpeedBoost(buildingId())) {
-			result.push_back({ "Speed Boost", 50 });
-		}
-		
-		return result;
-	}
-
 };
 
 class TradingPort final : public TradeBuilding
 {
 public:
-	void FinishConstruction() final {
-		TradeBuilding::FinishConstruction();
-
-		for (ResourceInfo info : ResourceInfos) {
-			AddResourceHolder(info.resourceEnum, ResourceHolderType::Provider, 0);
-		}
-
-		_upgrades = {
-			BuildingUpgrade("Fee discount", "Decrease trading fee by 5%.", 250),
-			BuildingUpgrade("Fast delivery", "Halve the time it takes, for traders to arrive (+100% efficiency).", 500),
-			BuildingUpgrade("Increased load", "+240 goods quantity per trade.", 300),
-		};
-
-		_simulation->TryAddQuest(_playerId, std::make_shared<TradeQuest>());
-
-		TrailerAddResource();
-	}
+	void FinishConstruction() final;
+	std::vector<BonusPair> GetBonuses() final;
 
 	int32 maxTradeQuatity() override {
 		int32 quantity = 240;
@@ -212,44 +172,13 @@ public:
 		}
 		return quantity;
 	}
-
-	std::vector<BonusPair> GetBonuses() final {
-		std::vector<BonusPair> result;
-		if (IsUpgraded(1)) {
-			result.push_back({"Fast delivery", 100});
-		}
-		if (_simulation->playerOwned(_playerId).HasSpeedBoost(buildingId())) {
-			result.push_back({ "Speed Boost", 50 });
-		}
-		
-		return result;
-	}
-
 };
 
 class TradingCompany final : public TradeBuilding
 {
 public:
-	void FinishConstruction() final
-	{
-		TradeBuilding::FinishConstruction();
-
-		for (ResourceInfo info : ResourceInfos) {
-			AddResourceHolder(info.resourceEnum, ResourceHolderType::Provider, 0);
-		}
-
-		_upgrades = {
-			BuildingUpgrade("Fee discount", "Decrease trading fee by 5%.", 250),
-			BuildingUpgrade("Efficient Hauling", "+60 goods quantity per trade.", 350),
-			BuildingUpgrade("Marine trade", "+60 goods quantity per trade, if adjacent to a trading port.", 200),
-		};
-
-		_simulation->TryAddQuest(_playerId, std::make_shared<TradeQuest>());
-
-		needTradingCompanySetup = true;
-
-		ResetTradeRetryTick();
-	}
+	void FinishConstruction() final;
+	std::vector<BonusPair> GetBonuses() final;
 
 	int32 tradeMaximumPerRound()
 	{
@@ -273,15 +202,6 @@ public:
 			return 1;
 		}
 		return Building::baseUpkeep();
-	}
-
-
-	std::vector<BonusPair> GetBonuses() final {
-		std::vector<BonusPair> result;
-		if (_simulation->playerOwned(_playerId).HasSpeedBoost(buildingId())) {
-			result.push_back({ "Speed Boost", 50 });
-		}
-		return result;
 	}
 
 	void OnTick1Sec() override;
@@ -344,14 +264,7 @@ class HumanitarianAidCamp final : public Building
 class OreSupplier final : public Building
 {
 public:
-	void FinishConstruction() override {
-		Building::FinishConstruction();
-
-		_upgrades = {
-			BuildingUpgrade("More Ore", "Buy 10 more ore each round", 200),
-			BuildingUpgrade("Even More Ore", "Buy 20 more ore each round", 500),
-		};
-	}
+	void FinishConstruction() override;
 
 	void TickRound() override;
 

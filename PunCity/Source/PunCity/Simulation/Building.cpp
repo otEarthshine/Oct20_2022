@@ -13,6 +13,8 @@
 
 using namespace std;
 
+#define LOCTEXT_NAMESPACE "Building"
+
 Building::~Building() {}
 
 void Building::Init(IGameSimulationCore& simulation, int objectId, int32_t playerId, uint8_t buildingEnum,
@@ -542,7 +544,7 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showDisplay)
 				_simulation->soundInterface()->Spawn2DSound("UI", "UpgradeBuilding", _playerId, _centerTile);
 			}
 
-			OnUpgradeBuilding(upgradeIndex);
+			OnUpgradeBuildingBase(upgradeIndex);
 			return true;
 		}
 
@@ -568,7 +570,7 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showDisplay)
 			_simulation->soundInterface()->Spawn2DSound("UI", "UpgradeBuilding", _playerId, _centerTile);
 		}
 
-		OnUpgradeBuilding(upgradeIndex);
+		OnUpgradeBuildingBase(upgradeIndex);
 		return true;
 	}
 
@@ -910,11 +912,11 @@ std::vector<BonusPair> Building::GetBonuses()
 	if (IsIndustrialBuilding(_buildingEnum))
 	{
 		if (_simulation->buildingFinishedCount(_playerId, CardEnum::EngineeringOffice)) {
-			bonuses.push_back({ "Engineering office", 10 });
+			bonuses.push_back({ LOCTEXT("Engineering office", "Engineering office"), 10 });
 		}
 
 		if (_simulation->IsResearched(_playerId, TechEnum::IndustryLastEra)) {
-			bonuses.push_back({ "Last era technology", 10 });
+			bonuses.push_back({ LOCTEXT("Last era technology", "Last era technology"), 10 });
 		}
 
 		// Industrialist
@@ -924,13 +926,13 @@ std::vector<BonusPair> Building::GetBonuses()
 				return std::max(bonus, 20);
 			});
 			if (radiusBonus > 0) {
-				bonuses.push_back({ "Industrialist", radiusBonus });
+				bonuses.push_back({ LOCTEXT("Industrialist", "Industrialist"), radiusBonus });
 			}
 		}
 	}
 
 	if (slotCardCount(CardEnum::ProductivityBook) > 0) {
-		bonuses.push_back({ "Productivity Book", slotCardCount(CardEnum::ProductivityBook) * 20 });
+		bonuses.push_back({ LOCTEXT("Productivity Book", "Productivity Book"), slotCardCount(CardEnum::ProductivityBook) * 20 });
 	}
 
 	// Upgrade bonuses
@@ -1023,3 +1025,122 @@ void Building::TryRemoveDeliveryTarget()
 		}
 	}
 }
+
+/*
+ * Bonus
+ */
+std::vector<BonusPair> Building::GetTradingFeeBonuses()
+{
+	std::vector<BonusPair> bonuses;
+
+	if (isEnum(CardEnum::TradingCompany)) {
+		bonuses.push_back({ LOCTEXT("Trading Company", "Trading Company"), -5 });
+
+		if (_simulation->TownhallCardCount(playerId(), CardEnum::CompaniesAct)) {
+			bonuses.push_back({ LOCTEXT("Companies Act", "Companies Act"), -10 });
+		}
+	}
+
+	if (_simulation->buildingFinishedCount(playerId(), CardEnum::MerchantGuild)) {
+		bonuses.push_back({ LOCTEXT("Merchant Guild", "Merchant Guild"), -5 });
+	}
+	if (IsUpgraded(0)) {
+		bonuses.push_back({ LOCTEXT("Fee Discount", "Fee Discount"), -5 });
+	}
+
+	if (_simulation->IsResearched(playerId(), TechEnum::TraderDiscount))
+	{
+		if (isEnum(CardEnum::TradingCompany)) {
+			if (adjacentCount(CardEnum::TradingPort) > 0) {
+				bonuses.push_back({ LOCTEXT("Trader Discount", "Trader Discount"), -5 });
+			}
+		}
+	}
+
+	if (_simulation->IsResearched(playerId(), TechEnum::DesertTrade) &&
+		_simulation->GetBiomeEnum(_centerTile) == BiomeEnum::Desert)
+	{
+		bonuses.push_back({ LOCTEXT("Silk Road", "Silk Road"), -10 });
+	}
+
+	return bonuses;
+}
+
+/*
+ * Make Upgrades
+ */
+
+BuildingUpgrade Building::MakeUpgrade(FText name, FText description, ResourceEnum resourceEnum, int32 percentOfTotalPrice)
+{
+	int32 totalCost = buildingInfo().constructionCostAsMoney();
+	int32 resourceCount = 1 + totalCost * percentOfTotalPrice / 100 / GetResourceInfo(resourceEnum).basePrice;
+	return BuildingUpgrade(name, description, resourceEnum, resourceCount);
+}
+BuildingUpgrade Building::MakeUpgrade(FText name, FText description, int32 percentOfTotalPrice)
+{
+	int32 totalCost = buildingInfo().constructionCostAsMoney();
+	int32 upgradeCost = totalCost * percentOfTotalPrice / 100;
+	return BuildingUpgrade(name, description, upgradeCost);
+}
+
+BuildingUpgrade Building::MakeProductionUpgrade(FText name, ResourceEnum resourceEnum, int32 percentOfTotalPrice, int32 efficiencyBonus)
+{
+	const FText bonusText = FText::Format(LOCTEXT("+{0}% productivity", "+{0}% productivity"), TEXT_NUM(efficiencyBonus));
+	BuildingUpgrade upgrade = MakeUpgrade(name, bonusText, resourceEnum, percentOfTotalPrice);
+	upgrade.efficiencyBonus = efficiencyBonus;
+	return upgrade;
+}
+BuildingUpgrade Building::MakeProductionUpgrade(FText name, int32 percentOfTotalPrice, int32 efficiencyBonus)
+{
+	const FText bonusText = FText::Format(LOCTEXT("+{0}% productivity", "+{0}% productivity"), TEXT_NUM(efficiencyBonus));
+	BuildingUpgrade upgrade = MakeUpgrade(name, bonusText, percentOfTotalPrice);
+	upgrade.efficiencyBonus = efficiencyBonus;
+	return upgrade;
+}
+
+BuildingUpgrade Building::MakeWorkerSlotUpgrade(int32 percentOfTotalPrice, int32 workerSlotBonus)
+{
+	// TODO: COME BACK
+	//const FText name = FText::Format(LOCTEXT("+{0} Worker Slots", "+{0} Worker {0}|plural(one=Slot,other=Slots)"), TEXT_NUM(workerSlotBonus));
+	const FText name = FText::Format(LOCTEXT("+{0} Worker Slots", "+{0} Worker"), TEXT_NUM(workerSlotBonus));
+	BuildingUpgrade upgrade = MakeUpgrade(name, name, percentOfTotalPrice);
+	upgrade.workerSlotBonus = workerSlotBonus;
+	return upgrade;
+}
+
+BuildingUpgrade Building::MakeComboUpgrade(FText name, ResourceEnum resourceEnum, int32 percentOfTotalPrice, int32 comboEfficiencyBonus)
+{
+	FText buildingNamePluralText;
+	
+	switch (buildingInfo().cardEnum)
+	{
+#define CASE(cardEnum, pluralName) case cardEnum: buildingNamePluralText = pluralName; break;
+		CASE(CardEnum::Bakery,			LOCTEXT("Bakeries", "Bakeries"));
+		CASE(CardEnum::BeerBrewery,		LOCTEXT("Breweries", "Breweries"));
+		CASE(CardEnum::Winery,			LOCTEXT("Wineries", "Wineries"));
+		CASE(CardEnum::Brickworks,		LOCTEXT("Brickworks", "Brickworks"));
+		CASE(CardEnum::PrintingPress,	LOCTEXT("Printing Presses", "Printing Presses"));
+		CASE(CardEnum::VodkaDistillery, LOCTEXT("Distilleries", "Distilleries"));
+#undef CASE
+	default:
+		buildingNamePluralText =  FText::Format(INVTEXT("{0}s"), buildingInfo().GetName());
+		break;
+	}
+
+	FText description = FText::Format(
+		LOCTEXT("Combo Upgrade Description",
+			"Gain +{0}/{1}/{2}% productivity if this city has 2/4/8 {3}"
+		),
+		TEXT_NUM(comboEfficiencyBonus),
+		TEXT_NUM(comboEfficiencyBonus * 2),
+		TEXT_NUM(comboEfficiencyBonus * 3),
+		buildingNamePluralText
+	);
+
+	BuildingUpgrade upgrade = MakeUpgrade(name, description, resourceEnum, percentOfTotalPrice);
+	upgrade.comboEfficiencyBonus = comboEfficiencyBonus;
+	return upgrade;
+}
+
+
+#undef LOCTEXT_NAMESPACE 

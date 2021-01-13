@@ -2256,20 +2256,20 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 				return;
 			}
 
-			auto warnOfBarnWorkMode = [&](UnitEnum unitEnum)
-			{
-				const std::vector<int32_t>& barns = simulation().buildingIds(playerId(), CardEnum::RanchBarn);
-				for (int32_t barnId : barns) {
-					if (simulation().building(barnId).subclass<RanchBarn>().animalEnum() == unitEnum) {
-						return;
-					}
-				}
-				simulation().AddPopupToFront(playerId(), "Need barn with work mode set to " + GetUnitInfo(unitEnum).name);
-			};
+			//auto warnOfBarnWorkMode = [&](UnitEnum unitEnum)
+			//{
+			//	const std::vector<int32_t>& barns = simulation().buildingIds(playerId(), CardEnum::RanchBarn);
+			//	for (int32_t barnId : barns) {
+			//		if (simulation().building(barnId).subclass<RanchBarn>().animalEnum() == unitEnum) {
+			//			return;
+			//		}
+			//	}
+			//	simulation().AddPopupToFront(playerId(), "Need barn with work mode set to " + GetUnitInfo(unitEnum).name);
+			//};
 			
 			if (IsAnimalCard(buildingEnum)) 
 			{
-				warnOfBarnWorkMode(GetAnimalEnumFromCardEnum(buildingEnum));
+				//warnOfBarnWorkMode(GetAnimalEnumFromCardEnum(buildingEnum));
 				cardButton->SetVisibility(ESlateVisibility::Hidden); // Temporily set so people can't click on this twice
 
 				auto command = make_shared<FUseCard>();

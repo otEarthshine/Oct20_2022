@@ -7,34 +7,7 @@
 
 //#include "Garrisons.h"
 
-static const std::vector<std::string> TownhallLvlToUpgradeBonusText =
-{
-	"",
-	"",
-
-	"Unlocked Cards:"
-	"<bullet>Wheat seeds</>"
-	"<bullet>Cabbage seeds</>"
-	"<bullet>Snatch</>"
-	"<bullet>Buy Wood</>"
-	"<bullet>Sell Food</>", // Lvl 2
-
-	"<bullet>+10% mine/quarry production.</>"
-	"<space>"
-	"Unlocked Cards:"
-	"<bullet>Immigrants</>"
-	"<bullet>Kidnap</>", // 3
-
-	"<space>"
-	"Unlocked Cards:"
-	"<bullet>Warehouse</>"
-	"<bullet>Sharing is caring</>",// 4
-
-	"<bullet>+10% industrial production.</>", // Lvl 5
-};
-static const std::string& GetTownhallLvlToUpgradeBonusText(int32 townhallLvl) {
-	return TownhallLvlToUpgradeBonusText[townhallLvl];
-}
+static const FText& GetTownhallLvlToUpgradeBonusText(int32 townhallLvl);
 
 class ArmyNodeBuilding : public Building
 {

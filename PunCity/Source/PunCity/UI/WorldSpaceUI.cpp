@@ -26,6 +26,8 @@
 
 using namespace std;
 
+#define LOCTEXT_NAMESPACE "PunBoxWidget"
+
 void UWorldSpaceUI::SetupClasses(TSharedPtr<FSlateStyleSet> style, USceneComponent* worldWidgetParent)
 {
 	_style = style;
@@ -1185,7 +1187,7 @@ void UWorldSpaceUI::TickPlacementInstructions()
 		ResourceEnum resourceEnum = simulation().georesource(provinceId).info().resourceEnum;
 		if (resourceEnum != ResourceEnum::None) {
 			int32 resourceCount = Colony::GetColonyResourceIncome(resourceEnum);
-			punBox->AddIconPair("+" + to_string(resourceCount), resourceEnum, " per round");
+			punBox->AddIconPair(TEXT_NUMSIGNED(resourceCount), resourceEnum, LOCTEXT(" per round", " per round"));
 		}
 	}
 	else if (needInstruction(PlacementInstructionEnum::Fort)) {
@@ -1298,10 +1300,13 @@ void UWorldSpaceUI::TickPlacementInstructions()
 				ResourceEnum resourceEnum = ConstructionResources[i];
 				int32 neededCount = constructionResources[i];
 				bool isRed = simulation().resourceCountWithDrops(playerId(), resourceEnum) < neededCount;
-				punBox->AddIconPair("", resourceEnum, to_string(neededCount), isRed);
+				punBox->AddIconPair(FText(), resourceEnum, TEXT_NUM(neededCount), isRed);
 			}
 		}
 	}
 
 	endInstruction();
 }
+
+
+#undef LOCTEXT_NAMESPACE

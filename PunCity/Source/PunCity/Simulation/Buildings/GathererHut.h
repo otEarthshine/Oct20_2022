@@ -11,56 +11,17 @@
 /*
  * Gather buildings
  */
+FText MeticulousWorkModeText = NSLOCTEXT("GathererHut", "Meticulous_WorkMode", "Meticulous");
+FText PoisonArrowWorkModeText = NSLOCTEXT("GathererHut", "PoisonArrow_WorkMode", "Poison Arrows");
 
 class GathererHut final : public Building
 {
 public:
-	void OnInit() override
-	{	
-		SetupWorkMode({
-			WorkMode::Create("Normal", ""),
-			WorkMode::Create("Meticulous", "Gathering action takes twice as long, but yield 30% more fruit."),
-		});
-	}
-	
-	void FinishConstruction() override
-	{
-		Building::FinishConstruction();
-
-		AddResourceHolder(ResourceEnum::Orange, ResourceHolderType::Provider, 0);
-		AddResourceHolder(ResourceEnum::Papaya, ResourceHolderType::Provider, 0);
-		AddResourceHolder(ResourceEnum::Coconut, ResourceHolderType::Provider, 0);
-
-		_upgrades = {
-			MakeUpgrade("Delicate gathering", "+20% efficiency.", ResourceEnum::SteelTools, 50),
-			MakeUpgrade("Pests traps", "+30% productivity if there is an adjacent hunter (does not stack).", ResourceEnum::Wood, 30),
-		};
-	}
-
 	ResourceEnum product() final { return ResourceEnum::Orange; }
-
-	std::vector<BonusPair> GetBonuses() override
-	{
-		std::vector<BonusPair> bonuses = Building::GetBonuses();
-
-		if (IsUpgraded(0)) {
-			bonuses.push_back({ "Delicate gathering upgrade", 20 });
-		}
-
-		if (IsUpgraded(1) && adjacentCount(CardEnum::HuntingLodge) > 0) {
-			bonuses.push_back({ "Pests traps", 30 });
-		}
-		
-		//std::vector<Building*> buildings = GetBuildingsInRegion(CardEnum::HuntingLodge);
-		//for (Building* building : buildings) {
-		//	if (building->IsUpgraded(1)) {
-		//		bonuses.push_back({ "Hunting lodge upgrade", 30 });
-		//		break;
-		//	}
-		//}
-		
-		return bonuses;
-	}
+	
+	void OnInit() override;
+	void FinishConstruction() override;
+	std::vector<BonusPair> GetBonuses() override;
 
 	static const int Radius = 24;
 };
@@ -70,90 +31,26 @@ class HuntingLodge final : public Building
 public:
 	ResourceEnum product() final { return ResourceEnum::Pork; }
 
-	void OnInit() override
-	{
-		SetupWorkMode({
-			WorkMode::Create("Normal", ""),
-			WorkMode::Create("Poison Arrows", "Kill animals x4 faster but get -50% drop"),
-		});
-	}
-
-	void FinishConstruction() final {
-		Building::FinishConstruction();
-
-		AddResourceHolder(ResourceEnum::Pork, ResourceHolderType::Provider, 0);
-
-		_upgrades = {
-			MakeUpgrade("Smoking chamber", "+30% efficiency.", ResourceEnum::Stone, 50),
-			MakeUpgrade("Fruit bait", "+30% efficiency if there is an adjacent Fruit Gatherer (does not stack).",ResourceEnum::Wood, 30),
-		};
-	}
-
-	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = Building::GetBonuses();
-
-		if (IsUpgraded(0)) {
-			bonuses.push_back({ "Smoking chamber", 30 });
-		}
-
-		if (IsUpgraded(1) && adjacentCount(CardEnum::FruitGatherer) > 0) {
-			bonuses.push_back({ "Fruit bait", 30 });
-		}
-		
-		//const std::vector<int32>& buildingIds = _simulation->buildingIds(_playerId, CardEnum::FruitGatherer);
-		//for (int32 buildingId : buildingIds) {
-		//	Building& building = _simulation->building(buildingId);
-		//	PUN_CHECK(building.isEnum(CardEnum::FruitGatherer));
-		//	if (building.centerTile().region() == centerTile().regionId() &&
-		//		building.IsUpgraded(1))
-		//	{
-		//		bonuses.push_back({ "Gatherer upgrade", 30 });
-		//	}
-		//}
-		return bonuses;
-	}
+	void OnInit() override;
+	void FinishConstruction() final;
+	std::vector<BonusPair> GetBonuses() override;
 
 	static const int Radius = 32;
 };
 
 
+FText CutAndPlantText = NSLOCTEXT("GathererHut", "Cut and Plant", "Cut and Plant");
+FText PrioritizePlantText = NSLOCTEXT("GathererHut", "Prioritize Planting", "Prioritize Planting");
+FText PrioritizeCutText = NSLOCTEXT("GathererHut", "Prioritize Cutting", "Prioritize Cutting");
+
 class Forester final : public Building
 {
 public:
-	void OnInit() override
-	{
-		SetupWorkMode({
-			{"Cut and Plant", ResourceEnum::None, ResourceEnum::None, 0},
-			{"Prioritize Planting", ResourceEnum::None, ResourceEnum::None, 0},
-			{"Prioritize Cutting", ResourceEnum::None, ResourceEnum::None, 0},
-		});
-	}
-	
-	void FinishConstruction() override
-	{
-		Building::FinishConstruction();
-
-		_upgrades = {
-			MakeUpgrade("Timber Management", "+30% efficiency.", ResourceEnum::Stone,50),
-			MakeUpgrade("Tree-felling Technique", "+50% efficiency.", ResourceEnum::Stone,80),
-			MakeComboUpgrade("Forest Town", ResourceEnum::Wood, 50, 20),
-		};
-	}
-
 	ResourceEnum product() override { return ResourceEnum::Wood; }
-
-	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = Building::GetBonuses();
-
-		if (IsUpgraded(0)) {
-			bonuses.push_back({ "Timber Management", 30 });
-		}
-		if (IsUpgraded(1)) {
-			bonuses.push_back({ "Tree-felling Technique", 50 });
-		}
-
-		return bonuses;
-	}
+	
+	void OnInit() override;
+	void FinishConstruction() override;
+	std::vector<BonusPair> GetBonuses() override;
 
 	void Serialize(FArchive& Ar) override {
 		Building::Serialize(Ar);
@@ -174,22 +71,8 @@ public:
 class MushroomFarm final : public Building
 {
 public:
-	void FinishConstruction() final {
-		Building::FinishConstruction();
-
-		_upgrades = {
-			MakeUpgrade("Intensive care", "+30% production bonus when worker slots are full", ResourceEnum::Stone, 50),
-		};
-	}
-
-	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = Building::GetBonuses();
-		if (IsUpgraded(0) && isOccupantFull()) {
-			bonuses.push_back({ "Intensive care", 30 });
-		}
-		return bonuses;
-	}
-	
+	void FinishConstruction() final;
+	std::vector<BonusPair> GetBonuses() override;
 
 	int32 baseInputPerBatch() final;
 };
@@ -197,23 +80,8 @@ public:
 class ShroomFarm final : public Building
 {
 public:
-	void FinishConstruction() final {
-		Building::FinishConstruction();
-
-		_upgrades = {
-			MakeUpgrade("Intensive care", "+30% production bonus when worker slots are full", ResourceEnum::SteelTools, 100),
-			MakeProductionUpgrade("Substrate Treatment", ResourceEnum::SteelTools, 200, 50),
-		};
-	}
-
-	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = Building::GetBonuses();
-		if (IsUpgraded(0) && isOccupantFull()) {
-			bonuses.push_back({ "Intensive care", 30 });
-		}
-		return bonuses;
-	}
-
+	void FinishConstruction() final;
+	std::vector<BonusPair> GetBonuses() override;
 
 	int32 baseInputPerBatch() final {
 		return _simulation->unlockSystem(_playerId)->IsResearched(TechEnum::MushroomSubstrateSterilization) ? 4 : 8;
@@ -224,26 +92,9 @@ public:
 class Beekeeper final : public Building
 {
 public:
-	void FinishConstruction() final
-	{
-		Building::FinishConstruction();
-
-		AddResourceHolder(ResourceEnum::Honey, ResourceHolderType::Provider, 0);
-
-		_upgrades = {
-			MakeUpgrade("Intensive Care", "+30% production bonus when worker slots are full", ResourceEnum::Brick, 50),
-			MakeComboUpgrade("Knowledge Sharing", ResourceEnum::Paper, 70, 50),
-		};
-	}
-
-	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = Building::GetBonuses();
-		if (IsUpgraded(0) && isOccupantFull()) {
-			bonuses.push_back({ "Intensive care", 30 });
-		}
-		return bonuses;
-	}
-
+	void FinishConstruction() final;
+	std::vector<BonusPair> GetBonuses() override;
+	
 	static int32 BeekeeperBaseEfficiency(int32 playerId, WorldTile2 centerTileIn, IGameSimulationCore* simulation);
 
 	int32 efficiencyBeforeBonus() override {
@@ -395,62 +246,10 @@ private:
 class Mine : public Building
 {
 public:
-	void OnInit() override
-	{
-		SetupWorkMode({
-			WorkMode::Create("Normal", ""),
-			WorkMode::Create("Conserve resource", "-30% productivity.\nDeposit depletes 30% slower for each mined resource unit."),
-			WorkMode::Create("Rapid mining", "+30% productivity.\nDeposit depletes 30% faster for each mined resource unit."),
-		});
-	}
+	void OnInit() override;
+	void FinishConstruction() override;
 	
-	void FinishConstruction() override
-	{
-		Building::FinishConstruction();
-
-		_upgrades = {
-			MakeUpgrade("More Workers", "+2 worker slots", 50),
-			MakeUpgrade("Improved shift", "Mine with full worker slots get 20% production bonus", 40),
-			MakeProductionUpgrade("Wide Shaft", ResourceEnum::Stone, 100, 50)
-		};
-
-	}
-
-	void OnUpgradeBuilding(int upgradeIndex) override {
-		if (upgradeIndex == 0) {
-			_maxOccupants = 5;
-			_allowedOccupants = _maxOccupants;
-			_simulation->playerOwned(_playerId).RefreshJobDelayed();
-		}
-	}
-	
-	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = Building::GetBonuses();
-		if (_simulation->townLvl(_playerId) >= 3) {
-			bonuses.push_back({ "Townhall lvl 3 upgrade", 10 });
-		}
-		if (IsUpgraded(1) && isOccupantFull()) {
-			bonuses.push_back({ "Improved shift", 20 });
-		}
-		if (_simulation->buildingCount(_playerId, CardEnum::EnvironmentalistGuild)) {
-			bonuses.push_back({ "Environmentalist", -30 });
-		}
-
-		if (_simulation->TownhallCardCount(_playerId, CardEnum::MiningEquipment) > 0) {
-			if (_simulation->buildingCount(_playerId, CardEnum::Blacksmith) >= 1) {
-				bonuses.push_back({ "Mining equipment", 30 });
-			}
-		}
-
-		if (_workMode.name == "Conserve resource") {
-			bonuses.push_back({ "Conserve resource", -30 });
-		}
-		else if (_workMode.name == "Rapid mining") {
-			bonuses.push_back({ "Rapid mining", 30 });
-		}
-		
-		return bonuses;
-	}
+	std::vector<BonusPair> GetBonuses() override;
 
 	bool ShouldAddWorker_ConstructedNonPriority() override {
 		if (_simulation->IsOutputTargetReached(_playerId, product())) {
@@ -479,13 +278,7 @@ public:
 class Quarry final : public Mine
 {
 public:
-	std::vector<BonusPair> GetBonuses() final {
-		std::vector<BonusPair> bonuses = Mine::GetBonuses();
-		if (_simulation->IsResearched(_playerId, TechEnum::QuarryImprovement)) {
-			bonuses.push_back({"Quarry improvement tech", 30});
-		}
-		return bonuses;
-	}
+	std::vector<BonusPair> GetBonuses() final;
 };
 
 class IronMine final : public Mine
@@ -503,13 +296,7 @@ public:
 class GoldMine final : public Mine
 {
 public:
-	std::vector<BonusPair> GetBonuses() final {
-		std::vector<BonusPair> bonuses = Mine::GetBonuses();
-		if (_simulation->TownhallCardCount(_playerId, CardEnum::GoldRush) > 0) {
-			bonuses.push_back({ "Gold Rush", 30 });
-		}
-		return bonuses;
-	}
+	std::vector<BonusPair> GetBonuses() final;
 };
 
 class GemstoneMine final : public Mine
@@ -525,35 +312,13 @@ public:
 class IndustrialBuilding : public Building
 {
 public:
-	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = Building::GetBonuses();
-		if (_simulation->townLvl(_playerId) >= 5) {
-			bonuses.push_back({ "Townhall lvl 5 upgrade", 10 });
-		}
-		return bonuses;
-	}
+	std::vector<BonusPair> GetBonuses() override;
 };
 
 class PaperMaker final : public IndustrialBuilding
 {
 public:
-	void FinishConstruction() final
-	{
-		_upgrades = {
-			MakeUpgrade("Better process", "Uses 50% less wood to produce paper.", ResourceEnum::Brick, 50),
-			MakeUpgrade("More workers", "+2 worker slots.", 20),
-		};
-
-		Building::FinishConstruction();
-	}
-
-	void OnUpgradeBuilding(int upgradeIndex) final {
-		if (upgradeIndex == 1) {
-			_maxOccupants = 5;
-			_allowedOccupants = _maxOccupants;
-			_simulation->playerOwned(_playerId).RefreshJobDelayed();
-		}
-	}
+	void FinishConstruction() final;
 
 	int32 baseInputPerBatch() final {
 		return IsUpgraded(0) ? 5 : 10;
@@ -563,35 +328,8 @@ public:
 class Smelter : public IndustrialBuilding
 {
 public:
-	void FinishConstruction() final
-	{
-		Building::FinishConstruction();
-
-		_upgrades = {
-			MakeUpgrade("Teamwork", "Smelter with full worker slots get 50% production bonus", ResourceEnum::Stone, 100),
-			MakeUpgrade("Efficient furnace", "Decrease input by 30%", ResourceEnum::Brick, 100),
-			MakeComboUpgrade( buildingInfo().name + " Guild", ResourceEnum::Paper, 70, 30),
-		};
-	}
-
-	std::vector<BonusPair> GetBonuses() override
-	{
-		std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
-		if (_simulation->buildingCount(_playerId, CardEnum::EnvironmentalistGuild)) {
-			bonuses.push_back({ "Environmentalist", -30 });
-		}
-		if (IsUpgraded(0) && isOccupantFull()) {
-			bonuses.push_back({ "Teamwork", 50 });
-		}
-
-		if (_simulation->TownhallCardCount(_playerId, CardEnum::CoalPipeline) > 0) {
-			if (_simulation->resourceCount(_playerId, ResourceEnum::Coal) >= 1000) {
-				bonuses.push_back({ "Coal pipeline", 30 });
-			}
-		}
-		
-		return bonuses;
-	}
+	void FinishConstruction() final;
+	std::vector<BonusPair> GetBonuses() override;
 
 	int32 baseInputPerBatch() override {
 		return Building::baseInputPerBatch() * (IsUpgraded(1) ? 70 : 100) / 100;
@@ -601,20 +339,7 @@ public:
 class IronSmelter : public Smelter
 {
 public:
-	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = Smelter::GetBonuses();
-
-		if (_simulation->TownhallCardCount(_playerId, CardEnum::SmeltCombo) > 0) {
-			//if (GetBuildingsInRegion(CardEnum::IronSmelter).size() >= 2) {
-			//	bonuses.push_back({ "Iron smelt combo", 30 });
-			//}
-			if (adjacentCount(CardEnum::IronSmelter) > 0) {
-				bonuses.push_back({ "Iron smelter combo", 30 });
-			}
-		}
-
-		return bonuses;
-	}
+	std::vector<BonusPair> GetBonuses() override;
 };
 class IronSmelterGiant final : public IronSmelter
 {
@@ -663,54 +388,16 @@ public:
 class Mint final : public ConsumerIndustrialBuilding
 {
 public:
-	void FinishConstruction() final
-	{
-		ConsumerIndustrialBuilding::FinishConstruction();
-
-		_upgrades = {
-			MakeUpgrade("Improved Production", "+30% production.", ResourceEnum::Brick, 50),
-			MakeComboUpgrade("Mint Town", ResourceEnum::Brick, 50, 10),
-		};
-	}
-
-	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = ConsumerIndustrialBuilding::GetBonuses();
-
-		if (IsUpgraded(0)) {
-			bonuses.push_back({ "Improved Production", 30 });
-		}
-
-		return bonuses;
-	}
+	void FinishConstruction() final;
+	std::vector<BonusPair> GetBonuses() override;
 
 };
 
 class InventorsWorkshop : public ConsumerIndustrialBuilding
 {
 public:
-	void FinishConstruction() final
-	{
-		ConsumerIndustrialBuilding::FinishConstruction();
-
-		_upgrades = {
-			MakeUpgrade("Better tools", "+50% production.", ResourceEnum::SteelTools, 100),
-			MakeUpgrade("Component Blueprints", "+50% production.", ResourceEnum::Paper, 100),
-			MakeComboUpgrade("Inventor Guild", ResourceEnum::Brick, 50, 25),
-		};
-	}
-
-	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = ConsumerIndustrialBuilding::GetBonuses();
-
-		if (IsUpgraded(0)) {
-			bonuses.push_back({ "Better tools", 50 });
-		}
-		if (IsUpgraded(1)) {
-			bonuses.push_back({ "Component Blueprints", 50 });
-		}
-
-		return bonuses;
-	}
+	void FinishConstruction() final;
+	std::vector<BonusPair> GetBonuses() override;
 };
 
 
@@ -778,49 +465,17 @@ public:
 		};
 	}
 
-	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = ConsumerIndustrialBuilding::GetBonuses();
-
-		if (_simulation->IsResearched(_playerId, TechEnum::MilitaryLastEra)) {
-			bonuses.push_back({ "Advanced Military", 100 });
-		}
-		
-		return bonuses;
-	}
+	std::vector<BonusPair> GetBonuses() override;
 };
 
 
 class CardMaker final : public ConsumerIndustrialBuilding
 {
 public:
-	void OnInit() override
-	{
-		SetupWorkMode({
-			WorkMode::Create("Productivity Book", "Create Productivity Book Card"),
-			WorkMode::Create("Sustainability Book", "Create Sustainability Book Card"),
-			WorkMode::Create("Frugality Book", "Create Frugality Book Card"),
-			WorkMode::Create("Wild Card", "Create Wild Card"),
-			WorkMode::Create("Card Removal Card", "Create Card Removal Card"),
-		});
-	}
+	void OnInit() override;
 	
-	void FinishConstruction() final
-	{
-		ConsumerIndustrialBuilding::FinishConstruction();
-
-		_upgrades = {
-			MakeUpgrade("Improved Production", "+30% production.", ResourceEnum::SteelTools, 50),
-		};
-	}
-
-	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = ConsumerIndustrialBuilding::GetBonuses();
-
-		if (IsUpgraded(0)) {
-			bonuses.push_back({ "Improved Production", 30 });
-		}
-		return bonuses;
-	}
+	void FinishConstruction() final;
+	std::vector<BonusPair> GetBonuses() override;
 
 	// Same amount of work required to acquire resources
 	int32 workManSecPerBatch100() final
@@ -856,23 +511,8 @@ public:
 class ImmigrationOffice final : public ConsumerIndustrialBuilding
 {
 public:
-	void FinishConstruction() final
-	{
-		ConsumerIndustrialBuilding::FinishConstruction();
-
-		_upgrades = {
-			MakeUpgrade("First Impression", "+30% efficiency.", ResourceEnum::Stone, 30),
-		};
-	}
-
-	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = ConsumerIndustrialBuilding::GetBonuses();
-
-		if (IsUpgraded(0)) {
-			bonuses.push_back({ "First Impression Upgrade", 30 });
-		}
-		return bonuses;
-	}
+	void FinishConstruction() final;
+	std::vector<BonusPair> GetBonuses() override;
 
 	// Same amount of work required to acquire resources
 	int32 workManSecPerBatch100() final
@@ -891,16 +531,7 @@ public:
 class Blacksmith : public IndustrialBuilding
 {
 public:
-	void FinishConstruction() final
-	{
-		IndustrialBuilding::FinishConstruction();
-
-		_upgrades = {
-			MakeProductionUpgrade("Improved Forge", ResourceEnum::Brick, 50, 30),
-			MakeProductionUpgrade("Alloy Recipe", ResourceEnum::Paper, 50, 30),
-			MakeComboUpgrade("Blacksmith Guild", ResourceEnum::Paper, 50, 25),
-		};
-	}
+	void FinishConstruction() final;
 
 };
 class Herbalist : public IndustrialBuilding
@@ -910,75 +541,27 @@ public:
 class MedicineMaker : public IndustrialBuilding
 {
 public:
-	void FinishConstruction() final
-	{
-		Building::FinishConstruction();
+	void FinishConstruction() final;
+	std::vector<BonusPair> GetBonuses() override;
 
-		_upgrades = {
-			MakeUpgrade("Catalyst", "+30% production.", 100),
-			MakeUpgrade("Improved Extraction", "+50% production.", 150),
-			MakeComboUpgrade("Pharmaceutical Guild", ResourceEnum::Paper, 50, 25),
-		};
-	}
-	
 	int32 baseInputPerBatch() override {
 		return 5;
-	}
-	
-	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
-
-		if (IsUpgraded(0)) {
-			bonuses.push_back({ "Catalyst", 30 });
-		}
-		if (IsUpgraded(1)) {
-			bonuses.push_back({ "Improved Extraction", 50 });
-		}
-
-		return bonuses;
 	}
 };
 
 class CharcoalMaker final : public IndustrialBuilding
 {
 public:
-	void FinishConstruction() final
-	{
-		Building::FinishConstruction();
-
-		_upgrades = {
-			MakeUpgrade("Charcoal Conversion", "Use 30% less wood input.", 20),
-			MakeProductionUpgrade("Improved Production", 50, 50),
-			MakeComboUpgrade("Charcoal Burner Guild", ResourceEnum::Wood, 30, 15),
-		};
-	}
-
 	int32 baseInputPerBatch() override { return IsUpgraded(0) ? 7 : 10; }
-
-	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
-		if (_simulation->buildingCount(_playerId, CardEnum::EnvironmentalistGuild)) {
-			bonuses.push_back({ "Environmentalist", -30 });
-		}
-		return bonuses;
-	}
+	
+	void FinishConstruction() final;
+	std::vector<BonusPair> GetBonuses() override;
 };
 
 class Chocolatier : public IndustrialBuilding
 {
 public:
-	void FinishConstruction() override
-	{
-		Building::FinishConstruction();
-
-
-		_upgrades = {
-			MakeUpgrade("Cocoa Processing", "Consumes 50% less input.", ResourceEnum::Iron, 50),
-			MakeProductionUpgrade("Improved Production", ResourceEnum::Iron, 50, 50),
-			MakeUpgrade("Reduce Upkeep", "Reduce upkeep by 50%", ResourceEnum::Brick, 20),
-			MakeComboUpgrade("Chocolate Town", ResourceEnum::Iron, 50, 25),
-		};
-	}
+	void FinishConstruction() override;
 
 	std::vector<BonusPair> GetBonuses() override {
 		std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
@@ -1002,191 +585,59 @@ public:
 class Winery final: public IndustrialBuilding
 {
 public:
-	void FinishConstruction() final
-	{
-		Building::FinishConstruction();
-
-		_upgrades = {
-			MakeProductionUpgrade("Wine appreciation", 70, 50),
-			MakeComboUpgrade("Wine Town", ResourceEnum::Brick, 50, 50),
-		};
-	}
-
-	std::vector<BonusPair> GetBonuses() final {
-		std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
-		if (_simulation->IsResearched(_playerId, TechEnum::WineryImprovement)) {
-			bonuses.push_back({"Winery Improvement Tech", 30});
-		}
-
-		return bonuses;
-	}
+	void FinishConstruction() final;
+	std::vector<BonusPair> GetBonuses() final;
 };
 
 class CoffeeRoaster final : public IndustrialBuilding
 {
 public:
-	void FinishConstruction() final
-	{
-		Building::FinishConstruction();
-
-		_upgrades = {
-			MakeProductionUpgrade("Coffee Appreciation", 70, 50),
-			MakeProductionUpgrade("Improved Roasting Stage", 70, 50),
-			MakeComboUpgrade("Coffee Town", ResourceEnum::Brick, 50, 50),
-		};
-	}
+	void FinishConstruction() final;
 };
 
 class Tailor final : public IndustrialBuilding
 {
 public:
-	void OnInit() override
-	{
-		SetupWorkMode({
-			{"Leather Clothes", ResourceEnum::Leather, ResourceEnum::None, 10},
-			{"Wool Clothes", ResourceEnum::Wool, ResourceEnum::None, 10},
-			
-			{"Cotton Clothes (Cotton)", ResourceEnum::Cotton, ResourceEnum::None, 10},
-			{"Cotton Clothes (Cotton Fabric)", ResourceEnum::CottonFabric, ResourceEnum::None, 10},
-			
-			{"Fashionable Clothes (Cotton & Dye)", ResourceEnum::Cotton, ResourceEnum::Dye, 10, ResourceEnum::LuxuriousClothes },
-			{"Fashionable Clothes (Dyed Fabric)", ResourceEnum::DyedCottonFabric, ResourceEnum::None, 10, ResourceEnum::LuxuriousClothes },
-		});
-	}
-	
-	void FinishConstruction() final
-	{
-		Building::FinishConstruction();
-
-		AddResourceHolder(ResourceEnum::Leather, ResourceHolderType::Requester, 0);
-		AddResourceHolder(ResourceEnum::Wool, ResourceHolderType::Requester, 0);
-		AddResourceHolder(ResourceEnum::CottonFabric, ResourceHolderType::Requester, 0);
-		AddResourceHolder(ResourceEnum::Cloth, ResourceHolderType::Provider, 0);
-
-		AddResourceHolder(ResourceEnum::DyedCottonFabric, ResourceHolderType::Requester, 0);
-		AddResourceHolder(ResourceEnum::LuxuriousClothes, ResourceHolderType::Provider, 0);
-
-		AddResourceHolder(ResourceEnum::Cotton, ResourceHolderType::Requester, 0);
-		AddResourceHolder(ResourceEnum::Dye, ResourceHolderType::Requester, 0);
-
-		ChangeWorkMode(_workMode);
-
-		_upgrades = {
-			MakeProductionUpgrade("Weaving Machine", ResourceEnum::Iron, 70, 55),
-			MakeComboUpgrade("Tailor Town", ResourceEnum::Iron, 70, 25),
-		};
-	}
-
+	void OnInit() override;
+	void FinishConstruction() final;
 };
 
 class BeerBrewery : public IndustrialBuilding
 {
 public:
-	void OnInit() override
-	{
-		SetupWorkMode({
-			{"Wheat Beer", ResourceEnum::Wheat, ResourceEnum::None, 10},
-			{"Orange Cider", ResourceEnum::Orange, ResourceEnum::None, 10},
-			{"Mushroom Beer", ResourceEnum::Mushroom, ResourceEnum::None, 10},
-		});
-	}
-	
-	void FinishConstruction() override
-	{
-		Building::FinishConstruction();
-
-		AddResourceHolder(ResourceEnum::Wheat, ResourceHolderType::Requester, 0);
-		AddResourceHolder(ResourceEnum::Orange, ResourceHolderType::Requester, 0);
-		AddResourceHolder(ResourceEnum::Mushroom, ResourceHolderType::Requester, 0);
-		AddResourceHolder(ResourceEnum::Beer, ResourceHolderType::Provider, 0);
-		
-		_upgrades = {
-			MakeUpgrade("Improved Malting", "Consumes 30% less input.", ResourceEnum::Stone, 50),
-			MakeProductionUpgrade("Fast Malting", ResourceEnum::Stone, 50, 30),
-			MakeComboUpgrade("Brewery Town", ResourceEnum::Stone, 30, 20),
-		};
-
-		_simulation->TryAddQuest(_playerId, std::make_shared<BeerQuest>());
-
-		ChangeWorkMode(_workMode); // Need this to setup resource target etc.
-	}
-
 	int32 baseInputPerBatch() override {
 		return _workMode.inputPerBatch * (IsUpgraded(0) ? 70 : 100) / 100;
 	}
-
-	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
-		if (_simulation->TownhallCardCount(_playerId, CardEnum::MasterBrewer) > 0) {
-			bonuses.push_back({ "Master brewer", 30 });
-		}
-
-		return bonuses;
-	}
-
-	//ResourceEnum input1() final { return _workMode.input1; }
-	//ResourceEnum input2() final { return _workMode.input2; }
+	
+	void OnInit() override;
+	
+	void FinishConstruction() override;
+	std::vector<BonusPair> GetBonuses() override;
 };
 
 class BeerBreweryFamous final : public BeerBrewery
 {
 public:
-	std::vector<BonusPair> GetBonuses() final {
-		std::vector<BonusPair> bonuses = BeerBrewery::GetBonuses();
-		bonuses.push_back({ "Famous Brewery", 20 });
-		return bonuses;
-	}
+	std::vector<BonusPair> GetBonuses() final;
 };
 
 class VodkaDistillery : public IndustrialBuilding
 {
 public:
-	void FinishConstruction() override {
-		Building::FinishConstruction();
-
-		_upgrades = {
-			MakeUpgrade("Improved Fermentation", "Consumes 30% less input.", ResourceEnum::Stone, 50),
-			MakeProductionUpgrade("Improved Filtration", ResourceEnum::Stone, 50, 30),
-			MakeComboUpgrade("Vodka Town", ResourceEnum::Stone, 30, 50),
-		};
-	}
-
 	int32 baseInputPerBatch() override {
 		return Building::baseInputPerBatch() * (IsUpgraded(0) ? 70 : 100) / 100;
 	}
-
-	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
-		if (_simulation->TownhallCardCount(_playerId, CardEnum::MasterBrewer) > 0) {
-			bonuses.push_back({ "Master brewer", 30 });
-		}
-
-		return bonuses;
-	}
+	
+	void FinishConstruction() override;
+	std::vector<BonusPair> GetBonuses() override;
 };
 
 
 class Windmill final : public IndustrialBuilding
 {
 public:
-	void FinishConstruction() final
-	{
-		Building::FinishConstruction();
-
-		_upgrades = {
-			MakeUpgrade("Improved Grinder", "+10% productivity", ResourceEnum::Stone, 30),
-		};
-	}
-
-	std::vector<BonusPair> GetBonuses() final {
-		std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
-
-		if (IsUpgraded(0)) {
-			bonuses.push_back({ "Improved Grinder", 10 });
-		}
-		
-		return bonuses;
-	}
+	void FinishConstruction() final;
+	std::vector<BonusPair> GetBonuses() final;
 
 	// Check other nearby windmill for efficiency
 	static int32 WindmillBaseEfficiency(int32 playerId, WorldTile2 centerTileIn, IGameSimulationCore* simulation)
@@ -1219,44 +670,9 @@ public:
 class Bakery final : public IndustrialBuilding
 {
 public:
-	void OnInit() override
-	{
-		SetupWorkMode({
-			{"Coal-fired", ResourceEnum::Flour, ResourceEnum::Coal, 5, ResourceEnum::None},
-			{"Wood-fired", ResourceEnum::Flour, ResourceEnum::Wood, 5, ResourceEnum::None, "Wood-fired oven cooks food faster locking in more nutrients. +30% productivity"},
-		});
-	}
-	
-	void FinishConstruction() final
-	{
-		Building::FinishConstruction();
-
-		AddResourceHolder(ResourceEnum::Flour, ResourceHolderType::Requester, 0);
-		AddResourceHolder(ResourceEnum::Coal, ResourceHolderType::Requester, 0);
-		AddResourceHolder(ResourceEnum::Wood, ResourceHolderType::Requester, 0);
-		AddResourceHolder(ResourceEnum::Bread, ResourceHolderType::Provider, 0);
-
-		_upgrades = {
-			MakeUpgrade("Improved Oven", "+10% productivity", ResourceEnum::Stone, 50),
-			MakeComboUpgrade("Baker Guild", ResourceEnum::Paper, 50, 15),
-		};
-
-		ChangeWorkMode(_workMode); // Need this to setup resource target etc.
-	}
-
-	std::vector<BonusPair> GetBonuses() final {
-		std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
-
-		if (IsUpgraded(0)) {
-			bonuses.push_back({ "Improved Oven", 10 });
-		}
-
-		if (workMode().name == "Wood-fired") {
-			bonuses.push_back({ "Wood-fired", 30 });
-		}
-		
-		return bonuses;
-	}
+	void OnInit() override;
+	void FinishConstruction() final;
+	std::vector<BonusPair> GetBonuses() final;
 
 	//int32 baseInputPerBatch() {
 	//	return 5;
@@ -1265,76 +681,27 @@ public:
 class Jeweler final : public IndustrialBuilding
 {
 public:
-	void FinishConstruction() final
-	{
-		Building::FinishConstruction();
-
-		_upgrades = {
-			MakeProductionUpgrade("Rigorous Training", ResourceEnum::Brick, 80, 50),
-			MakeProductionUpgrade("Specialized Tools", ResourceEnum::SteelTools, 80, 50),
-			MakeComboUpgrade("Jeweler's Guild", ResourceEnum::Brick, 50, 20),
-		};
-	}
-
+	void FinishConstruction() final;
 };
 
 
 class Brickworks final : public IndustrialBuilding
 {
 public:
-	void FinishConstruction() final
-	{
-		Building::FinishConstruction();
-
-		_upgrades = {
-			MakeProductionUpgrade("Specialized Tools", ResourceEnum::Stone, 50, 50),
-			MakeComboUpgrade("Brickworks Town", ResourceEnum::Brick, 50, 20),
-		};
-	}
-
+	void FinishConstruction() final;
 };
 
 class CandleMaker final : public IndustrialBuilding
 {
 public:
-	void FinishConstruction() final
-	{
-		Building::FinishConstruction();
-
-		_upgrades = {
-			MakeProductionUpgrade("Specialized Tools", ResourceEnum::SteelTools, 50, 50),
-			MakeComboUpgrade("Candle Maker Guild", ResourceEnum::Brick, 50, 20),
-		};
-	}
-
+	void FinishConstruction() final;
 };
 
 class CottonMill final : public IndustrialBuilding
 {
 public:
-	void OnInit() override
-	{
-		SetupWorkMode({
-			{"Cotton Fabric", ResourceEnum::Cotton, ResourceEnum::None, 10},
-			{"Dyed Cotton Fabric", ResourceEnum::Cotton, ResourceEnum::Dye, 10, ResourceEnum::DyedCottonFabric },
-		});
-	}
-	
-	void FinishConstruction() final
-	{
-		Building::FinishConstruction();
-
-		AddResourceHolder(ResourceEnum::Cotton, ResourceHolderType::Requester, 0);
-		AddResourceHolder(ResourceEnum::Dye, ResourceHolderType::Requester, 0);
-		AddResourceHolder(ResourceEnum::CottonFabric, ResourceHolderType::Requester, 0);
-		AddResourceHolder(ResourceEnum::DyedCottonFabric, ResourceHolderType::Provider, 0);
-
-		_upgrades = {
-			MakeProductionUpgrade("Advanced Machinery", ResourceEnum::Iron, 500, 300),
-			MakeComboUpgrade("Cotton Mill Town", ResourceEnum::Iron, 80, 50),
-		};
-	}
-
+	void OnInit() override;
+	void FinishConstruction() final;
 };
 
 // TODO: include this??
@@ -1343,10 +710,10 @@ class GarmentFactory final : public IndustrialBuilding
 public:
 	void OnInit() override
 	{
-		SetupWorkMode({
-			{"Fashionable Clothes", ResourceEnum::DyedCottonFabric, ResourceEnum::None, 10, ResourceEnum::LuxuriousClothes },
-			{"Cotton Clothes", ResourceEnum::CottonFabric, ResourceEnum::None, 10},
-		});
+		//SetupWorkMode({
+		//	{"Fashionable Clothes", ResourceEnum::DyedCottonFabric, ResourceEnum::None, 10, ResourceEnum::LuxuriousClothes },
+		//	{"Cotton Clothes", ResourceEnum::CottonFabric, ResourceEnum::None, 10},
+		//});
 	}
 
 	void FinishConstruction() final
@@ -1361,10 +728,10 @@ public:
 
 		ChangeWorkMode(_workMode);
 
-		_upgrades = {
-			MakeProductionUpgrade("Advanced Machinery", ResourceEnum::Iron, 500, 200),
-			MakeComboUpgrade("Garment Factory Town", ResourceEnum::Iron, 80, 50),
-		};
+		//_upgrades = {
+		//	MakeProductionUpgrade("Advanced Machinery", ResourceEnum::Iron, 500, 200),
+		//	MakeComboUpgrade("Garment Factory Town", ResourceEnum::Iron, 80, 50),
+		//};
 	}
 
 };
@@ -1372,19 +739,8 @@ public:
 class PrintingPress final : public IndustrialBuilding
 {
 public:
-	void FinishConstruction() final
-	{
-		Building::FinishConstruction();
-
-		_upgrades = {
-			MakeProductionUpgrade("Advanced Machinery", ResourceEnum::Iron, 500, 300),
-			MakeComboUpgrade("Printing Press Town", ResourceEnum::Iron, 80, 50),
-		};
-	}
-
+	void FinishConstruction() final;
 };
-
-
 
 class ClayPit final : public IndustrialBuilding
 {
@@ -1404,13 +760,7 @@ public:
 		});
 	}
 	
-	void FinishConstruction() override {
-		Building::FinishConstruction();
-
-		_upgrades = {
-			BuildingUpgrade("More workers", "+1 worker slots.", 80),
-		};
-	}
+	void FinishConstruction() override;
 
 	void OnDeinit() override {
 		TileArea digArea = _area;
@@ -1427,79 +777,24 @@ public:
 		});
 	}
 
-	void OnUpgradeBuilding(int upgradeIndex) final {
-		if (upgradeIndex == 0) {
-			SetJobBuilding(3);
-		}
-	}
 };
 
 class Potter final : public IndustrialBuilding
 {
 public:
-	void FinishConstruction() override {
-		Building::FinishConstruction();
-
-		_upgrades = {
-			MakeProductionUpgrade("Improved kiln", 50, 30),
-			BuildingUpgrade("More workers", "+1 workers.", 100),
-			MakeComboUpgrade("Potter Town", ResourceEnum::Stone, 50, 20),
-		};
-
-		_simulation->TryAddQuest(_playerId, std::make_shared<PotteryQuest>());
-	}
-
-	void OnUpgradeBuilding(int upgradeIndex) final {
-		if (upgradeIndex == 1) {
-			SetJobBuilding(3);
-			_simulation->playerOwned(_playerId).RefreshJobDelayed();
-		}
-	}
-
-	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
-		if (_simulation->TownhallCardCount(_playerId, CardEnum::MasterPotter) > 0) {
-			bonuses.push_back({ "Master potter", 20 });
-		}
-
-		return bonuses;
-	}
+	void FinishConstruction() override;
+	std::vector<BonusPair> GetBonuses() override;
 };
 
 class FurnitureWorkshop final : public IndustrialBuilding
 {
 public:
-	void FinishConstruction() final
-	{
-		Building::FinishConstruction();
-
-		_upgrades = {
-			BuildingUpgrade("More workers", "+1 worker slots.", 100),
-			BuildingUpgrade("Minimalism", "Consumes 30% less input.", 200),
-			MakeComboUpgrade("Furniture Town", ResourceEnum::Stone, 20, 20),
-		};
-	}
-
-	void OnUpgradeBuilding(int upgradeIndex) final {
-		if (upgradeIndex == 0) {
-			SetJobBuilding(3);
-			_simulation->playerOwned(_playerId).RefreshJobDelayed();
-		}
-	}
+	void FinishConstruction() final;
+	std::vector<BonusPair> GetBonuses() final;
 
 	int32 baseInputPerBatch() override {
 		return Building::baseInputPerBatch() * (IsUpgraded(1) ? 70 : 100) / 100;
 	}
-
-	std::vector<BonusPair> GetBonuses() final {
-		std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
-		if (_simulation->IsResearched(_playerId, TechEnum::Sawmill)) {
-			bonuses.push_back({ "Sawmill tech", 50 });
-		}
-		
-		return bonuses;
-	}
-
 };
 
 /*
@@ -1513,27 +808,8 @@ public:
 		ChangeFisherTilesInRadius(1);
 	}
 
-	void FinishConstruction() final
-	{
-		Building::FinishConstruction();
-
-		_resourceDisplayShift = FVector(-10, -10, 0);
-
-		//AddResourceHolder(ResourceEnum::WhaleMeat, ResourceHolderType::Provider, 0);
-
-		_upgrades = {
-			BuildingUpgrade("Juicier Bait", "Juicier bait that attracts more fish. +25% productivity.", 300),
-			MakeUpgrade("Improved Fishing Tools", "+50% productivity.", ResourceEnum::SteelTools, 140),
-			BuildingUpgrade("More Workers", "+1 worker slots", 100),
-			//BuildingUpgrade("Whaling", "Catch whale from deep sea instead.\n  Produces whale meat.\n  +2 worker slots.\n  No effect nearby fish population", 120)
-		};
-		// TODO: urchin harvester (luxury?)
-		// There are about 950 species of sea urchins that inhabit a wide range of depth zones in all climates across the world’s oceans. About 18 of them are edible.
-
-		PUN_LOG("FinishContruction Fisher %d", buildingId());
-
-		_simulation->TryAddQuest(_playerId, std::make_shared<CooperativeFishingQuest>());
-	}
+	void FinishConstruction() final;
+	std::vector<BonusPair> GetBonuses() final;
 
 	void OnDeinit() final {
 		ChangeFisherTilesInRadius(-1);
@@ -1552,35 +828,9 @@ public:
 		return Building::workManSecPerBatch100() * 100 / 130; // Fisher work faster
 	}
 
-	void OnUpgradeBuilding(int upgradeIndex) final {
-		//if (upgradeIndex == 1) {
-		//	_maxOccupants = 4;
-		//	_allowedOccupants = _maxOccupants;
-		//	ChangeFisherTilesInRadius(-1);
-		//}
-		if (upgradeIndex == 2) {
-			SetJobBuilding(3);
-			_simulation->playerOwned(_playerId).RefreshJobDelayed();
-		}
-	}
-
 	void ChangeFisherTilesInRadius(int32 valueChange);
 	static int32 FisherAreaEfficiency(WorldTile2 centerTile, bool alreadyPlaced, WorldTile2 extraFisherTile, IGameSimulationCore* simulation); // TODO: extraFisher tile for showing all fisher's effiency during placement...
-
-	std::vector<BonusPair> GetBonuses() final {
-		std::vector<BonusPair> bonuses = Building::GetBonuses();
-		int32 cardCount = _simulation->TownhallCardCount(_playerId, CardEnum::CooperativeFishing);
-		if (cardCount > 0) {
-			bonuses.push_back({ "Cooperative Fishing", cardCount * 10 });
-		}
-		if (IsUpgraded(0)) {
-			bonuses.push_back({ "Juicier Bait", 25 });
-		}
-		if (IsUpgraded(1)) {
-			bonuses.push_back({ "Improved Fishing Tools", 50 });
-		}
-		return bonuses;
-	}
+	
 	
 	int32 efficiencyBeforeBonus() override {
 		return FisherAreaEfficiency(_centerTile, true, WorldTile2::Invalid, _simulation);
@@ -2011,16 +1261,8 @@ public:
 		Building::FinishConstruction();
 
 		_upgrades = {
-			MakeUpgrade("More Workers", "+1 worker slots", 50),
+			MakeWorkerSlotUpgrade(50),
 		};
-	}
-
-	void OnUpgradeBuilding(int upgradeIndex) override {
-		if (upgradeIndex == 0) {
-			_maxOccupants = 2;
-			_allowedOccupants = _maxOccupants;
-			_simulation->playerOwned(_playerId).RefreshJobDelayed();
-		}
 	}
 
 	bool needSetup() {
@@ -2084,17 +1326,7 @@ public:
 		});
 	}
 
-	void FinishConstruction() override {
-		Building::FinishConstruction();
-
-		_upgrades = {
-			MakeUpgrade("Wind-powered Pump", "Halve the upkeep if adjacent to Windmill.", 20),
-		};
-
-		ExecuteInRadius(CardEnum::Farm, Radius + 20, [&](Building& building) {
-			building.subclass<Farm>().RefreshFertility();
-		}); // extra 20 just in case it is farm's rim
-	}
+	void FinishConstruction() override;
 
 	void OnDeinit() override {
 		TileArea digArea = _area;

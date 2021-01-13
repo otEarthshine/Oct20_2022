@@ -4,6 +4,8 @@
 #include "TradeBuilding.h"
 #include "../WorldTradeSystem.h"
 
+#define LOCTEXT_NAMESPACE "TradeBuilding"
+
 void TradeBuilding::UsedTrade(FTradeResource tradeCommand)
 {
 	_lastCheckTick = Time::Ticks();
@@ -160,6 +162,116 @@ void TradeBuilding::OnTick1Sec()
 	}
 }
 
+/*
+ * TradingPost/Port
+ */
+const FText FeeDiscountText = LOCTEXT("Fee Discount", "Fee Discount");
+const FText FastDeliveryText = LOCTEXT("Fast Delivery", "Fast Delivery");
+const FText IncreaseLoadText = LOCTEXT("Increased Load", "Increased Load");
+const FText SpeedBoostText = LOCTEXT("Speed Boost", "Speed Boost");
+
+void TradingPost::FinishConstruction() {
+	TradeBuilding::FinishConstruction();
+
+	for (ResourceInfo info : ResourceInfos) {
+		AddResourceHolder(info.resourceEnum, ResourceHolderType::Provider, 0);
+	}
+
+	_upgrades = {
+		BuildingUpgrade(FeeDiscountText, LOCTEXT("Fee Discount Desc1", "Decrease trading fee by 5%."), 250),
+		BuildingUpgrade(FastDeliveryText, LOCTEXT("Fast Delivery Desc1", "-30% the time it takes, for traders to arrive (+50% efficiency)."), 300),
+		BuildingUpgrade(IncreaseLoadText, LOCTEXT("Increased Load Desc1", "+120 goods quantity per trade."), 200),
+	};
+
+	_simulation->TryAddQuest(_playerId, std::make_shared<TradeQuest>());
+
+	TrailerAddResource();
+}
+
+std::vector<BonusPair> TradingPost::GetBonuses()
+{
+	std::vector<BonusPair> result;
+	if (IsUpgraded(1)) {
+		result.push_back({ FastDeliveryText, 50 });
+	}
+	if (_simulation->playerOwned(_playerId).HasSpeedBoost(buildingId())) {
+		result.push_back({ SpeedBoostText, 50 });
+	}
+
+	return result;
+}
+
+
+
+/*
+ * TradingPort
+ */
+void TradingPort::FinishConstruction() {
+	TradeBuilding::FinishConstruction();
+
+	for (ResourceInfo info : ResourceInfos) {
+		AddResourceHolder(info.resourceEnum, ResourceHolderType::Provider, 0);
+	}
+
+	_upgrades = {
+		BuildingUpgrade(FeeDiscountText, LOCTEXT("Fee Discount Desc2", "Decrease trading fee by 5%."), 250),
+		BuildingUpgrade(FastDeliveryText, LOCTEXT("Fast Delivery Desc2", "Halve the time it takes, for traders to arrive (+100% efficiency)."), 500),
+		BuildingUpgrade(IncreaseLoadText, LOCTEXT("Increased Load Desc2", "+240 goods quantity per trade."), 300),
+	};
+
+	_simulation->TryAddQuest(_playerId, std::make_shared<TradeQuest>());
+
+	TrailerAddResource();
+}
+
+std::vector<BonusPair> TradingPort::GetBonuses() 
+{
+	std::vector<BonusPair> result;
+	if (IsUpgraded(1)) {
+		result.push_back({ FastDeliveryText, 100 });
+	}
+	if (_simulation->playerOwned(_playerId).HasSpeedBoost(buildingId())) {
+		result.push_back({ SpeedBoostText, 50 });
+	}
+
+	return result;
+}
+
+
+
+
+/*
+ * TradingCompany
+ */
+void TradingCompany::FinishConstruction() {
+	TradeBuilding::FinishConstruction();
+
+	for (ResourceInfo info : ResourceInfos) {
+		AddResourceHolder(info.resourceEnum, ResourceHolderType::Provider, 0);
+	}
+
+	_upgrades = {
+		BuildingUpgrade(FeeDiscountText,								LOCTEXT("Fee Discount Desc3", "Decrease trading fee by 5%."), 250),
+		BuildingUpgrade(LOCTEXT("Efficient Hauling", "Efficient Hauling"), LOCTEXT("Efficient Hauling Desc3", "+60 goods quantity per trade."), 350),
+		BuildingUpgrade(LOCTEXT("Marine Trade", "Marine Trade"),		LOCTEXT("Marine Trade Desc3", "+60 goods quantity per trade, if adjacent to a trading port."), 200),
+	};
+
+	_simulation->TryAddQuest(_playerId, std::make_shared<TradeQuest>());
+
+	needTradingCompanySetup = true;
+
+	ResetTradeRetryTick();
+}
+
+std::vector<BonusPair> TradingCompany::GetBonuses()
+{
+	std::vector<BonusPair> result;
+	if (_simulation->playerOwned(_playerId).HasSpeedBoost(buildingId())) {
+		result.push_back({ SpeedBoostText, 50 });
+	}
+	return result;
+}
+
 void TradingCompany::OnTick1Sec()
 {
 	TradeBuilding::OnTick1Sec();
@@ -260,7 +372,21 @@ void TradingCompany::OnTick1Sec()
 	ResetTradeRetryTick();
 }
 
+/*
+ * OreSupplier
+ */
+void OreSupplier::FinishConstruction() {
+	Building::FinishConstruction();
+
+	_upgrades = {
+		BuildingUpgrade(INVTEXT("More Ore"), INVTEXT("Buy 10 more ore each round"), 200),
+		BuildingUpgrade(INVTEXT("Even More Ore"), INVTEXT("Buy 20 more ore each round"), 500),
+	};
+}
 void OreSupplier::TickRound()
 {
 
 }
+
+
+#undef LOCTEXT_NAMESPACE

@@ -25,7 +25,7 @@ public:
 		Dropdown->OnSelectionChanged.AddDynamic(this, &UPunDropdown::OnDropdownChanged);
 	}
 
-	void Set(int32 objectId, std::vector<std::string> options, std::string selectedOption, std::function<void(int32, FString, IGameUIDataSource*, IGameNetworkInterface*, int32)> onDropdownChanged)
+	void Set(int32 objectId, TArray<FText> options, FText selectedOption, std::function<void(int32, FString, IGameUIDataSource*, IGameNetworkInterface*, int32)> onDropdownChanged)
 	{
 		if (options != _lastOptions) {
 			_lastOptions = options;
@@ -34,9 +34,9 @@ public:
 			
 			Dropdown->ClearOptions();
 			for (const auto& option : options) {
-				Dropdown->AddOption(ToFString(option));
+				Dropdown->AddOption(option.ToString());
 			}
-			Dropdown->SetSelectedOption(ToFString(selectedOption));
+			Dropdown->SetSelectedOption(selectedOption.ToString());
 		}
 		
 		_onDropdownChanged = onDropdownChanged;
@@ -55,7 +55,7 @@ public:
 	}
 
 private:
-	std::vector<std::string> _lastOptions;
+	TArray<FText> _lastOptions;
 	
 	std::function<void(int32, FString, IGameUIDataSource*, IGameNetworkInterface*, int32)> _onDropdownChanged;
 };

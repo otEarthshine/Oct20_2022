@@ -241,7 +241,7 @@ public:
 		widget->SetResource(input1, input2, output, productTexture, productStr);
 	}
 
-	UIconTextPairWidget* AddIconPair(std::string prefix, ResourceEnum resourceEnum, std::string suffix, bool isRed = false, bool hasShadow = false) {
+	UIconTextPairWidget* AddIconPair(FText prefix, ResourceEnum resourceEnum, FText suffix, bool isRed = false, bool hasShadow = false) {
 		auto widget = GetChildElement<UIconTextPairWidget>(UIEnum::IconTextPair);
 		widget->SetText(prefix, suffix);
 		widget->SetImage(resourceEnum, dataSource()->assetLoader(), true);
@@ -253,13 +253,13 @@ public:
 		}
 		return widget;
 	}
-	UIconTextPairWidget* AddIconPair(std::string prefix, ResourceEnum resourceEnum, std::stringstream& ss, bool isRed = false, bool hasShadow = false) {
-		auto widget = AddIconPair(prefix, resourceEnum, ss.str(), isRed, hasShadow);
-		ss.str(std::string());
+	UIconTextPairWidget* AddIconPair(FText prefix, ResourceEnum resourceEnum, TArray<FText>& args, bool isRed = false, bool hasShadow = false) {
+		auto widget = AddIconPair(prefix, resourceEnum, JOINTEXT(args), isRed, hasShadow);
+		args.Empty();
 		return widget;
 	}
 
-	UIconTextPairWidget* AddIconPair(std::string prefix, UTexture2D* texture, std::string suffix, bool isRed = false)
+	UIconTextPairWidget* AddIconPair(FText prefix, UTexture2D* texture, FText suffix, bool isRed = false)
 	{
 		auto widget = GetChildElement<UIconTextPairWidget>(UIEnum::IconTextPair);
 		widget->SetText(prefix, suffix);
@@ -304,7 +304,7 @@ public:
 		return widget;
 	}
 
-	UPunDropdown* AddDropdown(int32 objectId, std::vector<std::string> options, std::string selectedOption, 
+	UPunDropdown* AddDropdown(int32 objectId, TArray<FText> options, FText selectedOption,
 								std::function<void(int32, FString, IGameUIDataSource*, IGameNetworkInterface*, int32)> onSelectOption, int32 dropdownIndex = 0)
 	{
 		auto widget = GetChildElement<UPunDropdown>(UIEnum::PunDropdown);
@@ -332,14 +332,14 @@ public:
 		return widget;
 	}
 	// Warning!!! AddChooseResourceElement and AddChooseResourceElement2 should not be used in the same box
-	UChooseResourceElement* AddChooseResourceElement2(ResourceEnum resourceEnumIn, std::string resourceStr, UPunWidget* callbackParent, CallbackEnum callbackEnum = CallbackEnum::None)
+	UChooseResourceElement* AddChooseResourceElement2(ResourceEnum resourceEnumIn, FText resourceStr, UPunWidget* callbackParent, CallbackEnum callbackEnum = CallbackEnum::None)
 	{
 		auto widget = GetChildElement<UChooseResourceElement>(UIEnum::ChooseResourceElement);
 		widget->PunInit2(resourceEnumIn, resourceStr, callbackParent, callbackEnum);
 		return widget;
 	}
 
-	UManageStorageElement* AddManageStorageElement(ResourceEnum resourceEnum, std::string sectionName, int32 buildingId, ECheckBoxState checkBoxState, bool isSection, bool justOpenedUI, bool showTarget, int32 target = -1)
+	UManageStorageElement* AddManageStorageElement(ResourceEnum resourceEnum, FText sectionName, int32 buildingId, ECheckBoxState checkBoxState, bool isSection, bool justOpenedUI, bool showTarget, int32 target = -1)
 	{
 		auto widget = GetChildElement<UManageStorageElement>(UIEnum::ManageStorageElement);
 		widget->PunInit(resourceEnum, sectionName, buildingId, checkBoxState, isSection);
@@ -471,106 +471,7 @@ public:
 		return tooltip;
 	}
 	
-	static void AddBuildingTooltip(UWidget* widget, CardEnum buildingEnum, UPunWidget* punWidgetSupport, bool isPermanent)
-	{
-		// TODO: why this not work?
-		//if (!widget->IsHovered()) {
-		//	punWidgetSupport->ResetTooltip(widget);
-		//	return;
-		//}
-		
-		BldInfo info = GetBuildingInfo(buildingEnum);
-
-		// Tooltip
-		UToolTipWidgetBase* tooltip = AddToolTip(widget, punWidgetSupport);
-
-		auto tooltipBox = tooltip->TooltipPunBoxWidget;
-		tooltipBox->AfterAdd();
-		
-		tooltipBox->AddRichText("<TipHeader>" + info.name + "</>");
-		if (buildingEnum == CardEnum::DirtRoad) {
-			tooltipBox->AddRichText("<Orange>[Z]</>");
-		}
-		
-		tooltipBox->AddSpacer();
-		tooltipBox->AddRichText(info.description);
-		tooltipBox->AddLineSpacer(12);
-
-		// Card type
-		if (IsIndustrialBuilding(buildingEnum)) {
-			tooltipBox->AddRichText("Type: Industry");
-		}
-		else if (IsAgricultureBuilding(buildingEnum)) {
-			tooltipBox->AddRichText("Type: Agriculture");
-		}
-		else if (IsMountainMine(buildingEnum)) {
-			tooltipBox->AddRichText("Type: Mine");
-		}
-		else if (IsServiceBuilding(buildingEnum)) {
-			tooltipBox->AddRichText("Type: Service");
-		}
-		else if (IsSpecialProducer(buildingEnum)) {
-			tooltipBox->AddRichText("Type: Special");
-		}
-		else if (IsGlobalSlotCard(buildingEnum)) {
-			tooltipBox->AddRichText("Type: Global-Slot");
-		}
-		else if (IsBuildingSlotCard(buildingEnum)) {
-			tooltipBox->AddRichText("Type: Building-Slot");
-		}
-		else if (IsActionCard(buildingEnum)) {
-			tooltipBox->AddRichText("Type: Action");
-		}
-		//else {
-		//	UE_DEBUG_BREAK();
-		//}
-
-		
-		int32 cardPrice = punWidgetSupport->dataSource()->simulation().cardSystem(punWidgetSupport->playerId()).GetCardPrice(buildingEnum);
-		if (cardPrice > 0) {
-			tooltipBox->AddRichText("Card price: <img id=\"Coin\"/>" + std::to_string(cardPrice));
-			//tooltipBox->AddIconPair("Card price: ", punWidgetSupport->assetLoader()->CoinIcon, std::to_string(cardPrice));
-		}
-		
-
-		if (IsBuildingCard(buildingEnum)) 
-		{
-			int32 upkeep = GetCardUpkeepBase(buildingEnum);
-			if (upkeep > 0) {
-				tooltipBox->AddRichText("Upkeep: <img id=\"Coin\"/>" + std::to_string(upkeep));
-				//tooltipBox->AddIconPair("Upkeep: ", punWidgetSupport->assetLoader()->CoinIcon, std::to_string(upkeep));
-			}
-
-			if (!isPermanent) {
-				tooltipBox->AddLineSpacer(12);
-			}
-			
-			tooltipBox->AddRichText("<Subheader>Required resources:</>");
-
-			if (buildingEnum == CardEnum::Farm)
-			{
-				tooltipBox->AddIconPair(" ", ResourceEnum::Wood, " 1/2 x Area");
-			}
-			else if (buildingEnum == CardEnum::StorageYard)
-			{
-				tooltipBox->AddIconPair(" ", ResourceEnum::Wood, " 5 x Storage Space");
-			}
-			else
-			{
-				auto resourcesNeeded = GetBuildingInfo(buildingEnum).constructionResources;
-				bool needResource = false;
-				for (int i = 0; i < resourcesNeeded.size(); i++) {
-					if (resourcesNeeded[i] > 0) {
-						tooltipBox->AddIconPair(" ", ConstructionResources[i], std::to_string(resourcesNeeded[i]));
-						needResource = true;
-					}
-				}
-				if (!needResource) {
-					tooltipBox->AddText(" none");
-				}
-			}
-		}
-	}
+	static void AddBuildingTooltip(UWidget* widget, CardEnum buildingEnum, UPunWidget* punWidgetSupport, bool isPermanent);
 
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* PunVerticalBox;
 	

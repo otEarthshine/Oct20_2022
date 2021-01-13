@@ -85,13 +85,13 @@ public:
 				if (offerEnum == IntercityTradeOfferEnum::BuyWhenBelow) {
 					int32 buyCount = targetInventory - resourceCount;
 					if (buyCount > 0) {
-						BuyDisplayBox->AddIconPair(to_string(buyCount), tradeRow->resourceEnum(), "");
+						BuyDisplayBox->AddIconPair(TEXT_NUM(buyCount), tradeRow->resourceEnum(), FText());
 					}
 				}
 				else if (offerEnum == IntercityTradeOfferEnum::SellWhenAbove) {
 					int32 sellCount = resourceCount - targetInventory;
 					if (sellCount > 0) {
-						SellDisplayBox->AddIconPair(to_string(sellCount), tradeRow->resourceEnum(), "");
+						SellDisplayBox->AddIconPair(TEXT_NUM(sellCount), tradeRow->resourceEnum(), FText());
 					}
 				}
 

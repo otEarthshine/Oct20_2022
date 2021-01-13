@@ -70,7 +70,7 @@ public:
 	}
 
 	// For Intercity Trade
-	void PunInit2(ResourceEnum resourceEnumIn, std::string resourceStr, UPunWidget* callbackParent, CallbackEnum callbackEnum = CallbackEnum::None)
+	void PunInit2(ResourceEnum resourceEnumIn, FText resourceStr, UPunWidget* callbackParent, CallbackEnum callbackEnum = CallbackEnum::None)
 	{
 		_callbackParent = callbackParent;
 		_callbackEnum = callbackEnum;
@@ -80,7 +80,7 @@ public:
 
 		ResourceButton->SetVisibility(callbackEnum != CallbackEnum::None ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 		
-		ResourceText->SetText(ToFText(resourceStr));
+		ResourceText->SetText(resourceStr);
 		ResourceIcon->GetDynamicMaterial()->SetTextureParameterValue("ColorTexture", assetLoader()->GetResourceIcon(resourceEnum));
 		ResourceIcon->GetDynamicMaterial()->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(resourceEnum));
 

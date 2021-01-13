@@ -129,12 +129,12 @@ public:
 			IconSizeBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
 			if (node.depositAmount > 0) {
-				PunBox->AddIconPair("", node.info().resourceEnum, to_string(node.depositAmount));
+				PunBox->AddIconPair(FText(), node.info().resourceEnum, TEXT_NUM(node.depositAmount));
 			}
 		}
 		
 		if (isMountain) {
-			PunBox->AddIconPair("", ResourceEnum::Stone, to_string(node.stoneAmount));
+			PunBox->AddIconPair(FText(), ResourceEnum::Stone, TEXT_NUM(node.stoneAmount));
 		}
 
 		PunBox->AfterAdd();

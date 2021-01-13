@@ -1462,3 +1462,6 @@ void PlayerOwnedManager::SetHouseResourceAllow(ResourceEnum resourceEnum, bool r
 		}
 	}
 }
+
+
+#undef LOCTEXT_NAMESPACE

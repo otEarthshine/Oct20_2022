@@ -228,11 +228,11 @@ public:
 				int32 inventory = simulation().resourceCount(townhall.playerId(), offer.resourceEnum);
 				if (offer.offerEnum == IntercityTradeOfferEnum::BuyWhenBelow) {
 					if (offer.targetInventory > inventory) {
-						BuyingBox->AddChooseResourceElement2(offer.resourceEnum, std::to_string(offer.targetInventory - inventory), this, callbackEnum);
+						BuyingBox->AddChooseResourceElement2(offer.resourceEnum, TEXT_NUM(offer.targetInventory - inventory), this, callbackEnum);
 					}
 				} else {
 					if (inventory > offer.targetInventory) {
-						SellingBox->AddChooseResourceElement2(offer.resourceEnum, std::to_string(inventory - offer.targetInventory), this, callbackEnum);
+						SellingBox->AddChooseResourceElement2(offer.resourceEnum, TEXT_NUM(inventory - offer.targetInventory), this, callbackEnum);
 					}
 				}
 			}

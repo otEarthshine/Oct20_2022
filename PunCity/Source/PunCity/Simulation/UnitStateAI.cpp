@@ -1411,7 +1411,7 @@ void UnitStateAI::GatherFruit()
 	{
 		resourcePair100.count = GameRand::Rand100RoundTo1(resourcePair100.count * workplace()->efficiency());
 
-		if (workplace()->workMode().name == "Meticulous") {
+		if (workplace()->workMode().name.EqualTo(MeticulousWorkModeText)) {
 			resourcePair100.count = GameRand::Rand100RoundTo1(resourcePair100.count * 130);
 		}
 	}

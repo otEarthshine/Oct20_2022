@@ -240,58 +240,22 @@ public:
 	bool UpgradeBuilding(int upgradeIndex, bool showDisplay = true);
 	
 	virtual void OnUpgradeBuilding(int upgradeIndex) {}
-
-	BuildingUpgrade MakeUpgrade(std::string name, std::string description, ResourceEnum resourceEnum, int32 percentOfTotalPrice)
-	{
-		int32 totalCost = buildingInfo().constructionCostAsMoney();
-		int32 resourceCount = 1 + totalCost * percentOfTotalPrice / 100 / GetResourceInfo(resourceEnum).basePrice;
-		return BuildingUpgrade(name, description, resourceEnum, resourceCount);
-	}
-	BuildingUpgrade MakeUpgrade(std::string name, std::string description, int32 percentOfTotalPrice)
-	{
-		int32 totalCost = buildingInfo().constructionCostAsMoney();
-		int32 upgradeCost = totalCost * percentOfTotalPrice / 100;
-		return BuildingUpgrade(name, description, upgradeCost);
-	}
-
-	BuildingUpgrade MakeProductionUpgrade(std::string name, ResourceEnum resourceEnum, int32 percentOfTotalPrice, int32 efficiencyBonus)
-	{
-		BuildingUpgrade upgrade = MakeUpgrade(name, "+" + std::to_string(efficiencyBonus) + "% productivity", resourceEnum, percentOfTotalPrice);
-		upgrade.efficiencyBonus = efficiencyBonus;
-		return upgrade;
-	}
-	BuildingUpgrade MakeProductionUpgrade(std::string name, int32 percentOfTotalPrice, int32 efficiencyBonus)
-	{
-		BuildingUpgrade upgrade = MakeUpgrade(name, "+" + std::to_string(efficiencyBonus) + "% productivity", percentOfTotalPrice);
-		upgrade.efficiencyBonus = efficiencyBonus;
-		return upgrade;
-	}
-
-	BuildingUpgrade MakeComboUpgrade(std::string name, ResourceEnum resourceEnum, int32 percentOfTotalPrice, int32 comboEfficiencyBonus)
-	{
-		std::stringstream ss;
-		ss << "Gain +" << comboEfficiencyBonus << "/" << comboEfficiencyBonus * 2 << "/" << comboEfficiencyBonus * 3
-			<< "% productivity if this city has 2/4/8 ";
-
-		switch(buildingInfo().cardEnum)
-		{
-#define CASE(cardEnum, pluralName) case cardEnum: ss << pluralName; break;
-			CASE(CardEnum::Bakery, "Bakeries");
-			CASE(CardEnum::BeerBrewery, "Breweries");
-			CASE(CardEnum::Winery, "Wineries");
-			CASE(CardEnum::Brickworks, "Brickworks");
-			CASE(CardEnum::PrintingPress, "Printing Presses");
-			CASE(CardEnum::VodkaDistillery, "Distilleries");
-#undef CASE
-		default:
-			ss << buildingInfo().name << "s";
-			break;
+	void OnUpgradeBuildingBase(int upgradeIndex) {
+		OnUpgradeBuilding(upgradeIndex);
+		if (upgradeIndex < _upgrades.size() && _upgrades[upgradeIndex].workerSlotBonus > 0) {
+			SetJobBuilding(maxOccupants() + _upgrades[upgradeIndex].workerSlotBonus);
 		}
-
-		BuildingUpgrade upgrade = MakeUpgrade(name, ss.str(), resourceEnum, percentOfTotalPrice);
-		upgrade.comboEfficiencyBonus = comboEfficiencyBonus;
-		return upgrade;
 	}
+
+	BuildingUpgrade MakeUpgrade(FText name, FText description, ResourceEnum resourceEnum, int32 percentOfTotalPrice);
+	BuildingUpgrade MakeUpgrade(FText name, FText description, int32 percentOfTotalPrice);
+
+	BuildingUpgrade MakeProductionUpgrade(FText name, ResourceEnum resourceEnum, int32 percentOfTotalPrice, int32 efficiencyBonus);
+	BuildingUpgrade MakeProductionUpgrade(FText name, int32 percentOfTotalPrice, int32 efficiencyBonus);
+
+	BuildingUpgrade MakeWorkerSlotUpgrade(int32 percentOfTotalPrice, int32 workerSlotBonus = 1);
+
+	BuildingUpgrade MakeComboUpgrade(FText name, ResourceEnum resourceEnum, int32 percentOfTotalPrice, int32 comboEfficiencyBonus);
 	
 
 	//! level from 0
@@ -929,7 +893,7 @@ public:
 
 		ResetDisplay();
 
-		OnUpgradeBuilding(index);
+		OnUpgradeBuildingBase(index);
 	}
 
 
@@ -986,9 +950,9 @@ public:
 	 * Work Mode
 	 */
 
-	int32_t workModeIntFromString(FString workModeName) {
+	int32 workModeIntFromString(FString workModeName) {
 		for (size_t i = 0; i < workModes.size(); i++) {
-			if (ToFString(workModes[i].name).Equals(workModeName)) {
+			if (workModes[i].name.ToString().Equals(workModeName)) {
 				return i;
 			}
 		}
@@ -1060,42 +1024,7 @@ public:
 	}
 	virtual int32 maxTradeQuatity() { return 0; }
 	
-	std::vector<BonusPair> GetTradingFeeBonuses()
-	{
-		std::vector<BonusPair> bonuses;
-
-		if (isEnum(CardEnum::TradingCompany)) {
-			bonuses.push_back({ "trading company", -5 });
-
-			if (_simulation->TownhallCardCount(playerId(), CardEnum::CompaniesAct)) {
-				bonuses.push_back({ "companies act", -10 });
-			}
-		}
-
-		if (_simulation->buildingFinishedCount(playerId(), CardEnum::MerchantGuild)) {
-			bonuses.push_back({ "merchant guild", -5 });
-		}
-		if (IsUpgraded(0)) {
-			bonuses.push_back({ "fee discount", -5 });
-		}
-
-		if (_simulation->IsResearched(playerId(), TechEnum::TraderDiscount))
-		{
-			if (isEnum(CardEnum::TradingCompany)) {
-				if (adjacentCount(CardEnum::TradingPort) > 0) {
-					bonuses.push_back({ "trader discount", -5 });
-				}
-			}
-		}
-		
-		if (_simulation->IsResearched(playerId(), TechEnum::DesertTrade) &&
-			_simulation->GetBiomeEnum(_centerTile) == BiomeEnum::Desert)
-		{
-			bonuses.push_back({ "silk road", -10 });
-		}
-
-		return bonuses;
-	}
+	std::vector<BonusPair> GetTradingFeeBonuses();
 
 	// 
 	void TickConstruction(int32 ticksToFinish)
@@ -1255,14 +1184,14 @@ public:
 public:
 	struct WorkMode
 	{
-		std::string name;
+		FText name;
 		ResourceEnum input1 = ResourceEnum::None;
 		ResourceEnum input2 = ResourceEnum::None;
 		int32 inputPerBatch = 0;
 		ResourceEnum product = ResourceEnum::None;
-		std::string description;
+		FText description;
 
-		static WorkMode Create(std::string name, std::string description) {
+		static WorkMode Create(FText name, FText description) {
 			WorkMode workMode;
 			workMode.name = name;
 			workMode.description = description;
@@ -1270,12 +1199,14 @@ public:
 		}
 
 		void operator>>(FArchive& Ar) {
-			SerializeStr(Ar, name);
+			//SerializeStr(Ar, name);
+			Ar << name;
 			Ar << input1;
 			Ar << input2;
 			Ar << inputPerBatch;
 			Ar << product;
-			SerializeStr(Ar, description);
+			//SerializeStr(Ar, description);
+			Ar << description;
 		}
 	};
 	
@@ -1291,10 +1222,10 @@ public:
 	
 	void ChangeWorkMode(const WorkMode& workMode);
 	virtual void OnChangeWorkMode(WorkMode newWorkMode) {}
-	std::vector<std::string> workModeNames() {
-		std::vector<std::string> result;
+	TArray<FText> workModeNames() {
+		TArray<FText> result;
 		for (const WorkMode& mode : workModes) {
-			result.push_back(mode.name);
+			result.Add(mode.name);
 		}
 		return result;
 	}

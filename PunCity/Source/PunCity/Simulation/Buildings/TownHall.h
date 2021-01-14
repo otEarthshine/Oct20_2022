@@ -7,7 +7,7 @@
 
 //#include "Garrisons.h"
 
-static const FText& GetTownhallLvlToUpgradeBonusText(int32 townhallLvl);
+const FText& GetTownhallLvlToUpgradeBonusText(int32 townhallLvl);
 
 class ArmyNodeBuilding : public Building
 {

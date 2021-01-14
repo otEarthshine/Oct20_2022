@@ -110,7 +110,7 @@ public:
 			}
 			
 			if (rowIndex == 0) {
-				simulation().AddPopupToFront(playerId(), "No available node.", ExclusiveUIEnum::ArmyMoveUI, "PopupCannot");
+				//simulation().AddPopupToFront(playerId(), "No available node.", ExclusiveUIEnum::ArmyMoveUI, "PopupCannot");
 				CloseArmyMoveUI();
 				return;
 			}
@@ -171,7 +171,7 @@ public:
 			}
 
 			if (rowIndex == 0) {
-				simulation().AddPopupToFront(playerId(), "No available army at " + simulation().armyNodeName(originNode.nodeId) + ".", ExclusiveUIEnum::ArmyMoveUI, "PopupCannot");
+				//simulation().AddPopupToFront(playerId(), "No available army at " + simulation().armyNodeName(originNode.nodeId) + ".", ExclusiveUIEnum::ArmyMoveUI, "PopupCannot");
 				CloseArmyMoveUI();
 				return;
 			}
@@ -329,7 +329,7 @@ public:
 		TArray<int32> armyCounts = GetArmyCountsAndClear();
 
 		if (CppUtils::Sum(armyCounts) == 0) {
-			simulation().AddPopupToFront(playerId(), "Please assign some units before confirming.", ExclusiveUIEnum::ArmyMoveUI, "PopupCannot");
+			//simulation().AddPopupToFront(playerId(), "Please assign some units before confirming.", ExclusiveUIEnum::ArmyMoveUI, "PopupCannot");
 			return;
 		}
 		

@@ -21,7 +21,7 @@
 #include "JobPriorityRow.h"
 #include "GraphDataSource.h"
 
-#define LOCTEXT_NAMESPACE "ObjectDescriptionUISystem"
+#define LOCTEXT_NAMESPACE "MainGameUI"
 
 using namespace std;
 

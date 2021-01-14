@@ -655,7 +655,7 @@ public:
 			
 			// Make sure there is army to rebel...
 			if (!rebelArmy) {
-				simulation().AddPopupToFront(playerId(), "Need an army to rebel.", ExclusiveUIEnum::ArmyMoveUI, "PopupCannot");
+				//simulation().AddPopupToFront(playerId(), "Need an army to rebel.", ExclusiveUIEnum::ArmyMoveUI, "PopupCannot");
 				return;
 			}
 
@@ -668,7 +668,7 @@ public:
 
 		// Capital not controlled by player, can't do any other actions
 		if (sim.townhall(playerId()).armyNode.originalPlayerId != playerId()) {
-			simulation().AddPopupToFront(playerId(), "Need to regain control of the capital before dispatching armies outside.", ExclusiveUIEnum::ArmyMoveUI, "PopupCannot");
+			//simulation().AddPopupToFront(playerId(), "Need to regain control of the capital before dispatching armies outside.", ExclusiveUIEnum::ArmyMoveUI, "PopupCannot");
 			return;
 		}
 
@@ -693,7 +693,7 @@ public:
 		{
 			if (callbackEnum == CallbackEnum::AllyRequest) {
 				if (UGameplayStatics::GetTimeSeconds(this) - _lastAllyRequestTick < 5.0f) {
-					simulation().AddPopupToFront(playerId(), "Please wait a bit for another player to reply.", ExclusiveUIEnum::ArmyMoveUI, "PopupCannot");
+					//simulation().AddPopupToFront(playerId(), "Please wait a bit for another player to reply.", ExclusiveUIEnum::ArmyMoveUI, "PopupCannot");
 					return;
 				}
 				_lastAllyRequestTick = UGameplayStatics::GetTimeSeconds(this);

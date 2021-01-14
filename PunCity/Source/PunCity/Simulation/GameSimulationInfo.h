@@ -169,6 +169,20 @@ public:
 
 #define JOINTEXT(args) FText::Join(FText(), args)
 
+
+static bool TextArrayEquals(const TArray<FText>& a, const TArray<FText>& b)
+{
+	if (a.Num() != b.Num()) {
+		return false;
+	}
+	for (int32 i = 0; i < a.Num(); i++) {
+		if (!a[i].EqualTo(b[i])) {
+			return false;
+		}
+	}
+	return true;
+}
+
 //#define JOINTEXT(...) FText::Join(FText(), __VA_ARGS__);
 
 static float Clamp01(float value) {
@@ -5826,7 +5840,7 @@ enum class ExclusiveUIEnum : uint8
 
 	StatisticsUI,
 	PlayerOverviewUI,
-	ArmyMoveUI,
+	//ArmyMoveUI,
 
 	InitialResourceUI,
 	DiplomacyUI,

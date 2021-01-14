@@ -27,7 +27,7 @@ public:
 
 	void Set(int32 objectId, TArray<FText> options, FText selectedOption, std::function<void(int32, FString, IGameUIDataSource*, IGameNetworkInterface*, int32)> onDropdownChanged)
 	{
-		if (options != _lastOptions) {
+		if (!TextArrayEquals(options, _lastOptions)) {
 			_lastOptions = options;
 
 			//Dropdown->OnGenerateWidgetEvent.BindUFunction(this, "OnGenerateWidget");

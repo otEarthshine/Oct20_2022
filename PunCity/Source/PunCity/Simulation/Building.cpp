@@ -1100,9 +1100,7 @@ BuildingUpgrade Building::MakeProductionUpgrade(FText name, int32 percentOfTotal
 
 BuildingUpgrade Building::MakeWorkerSlotUpgrade(int32 percentOfTotalPrice, int32 workerSlotBonus)
 {
-	// TODO: COME BACK
-	//const FText name = FText::Format(LOCTEXT("+{0} Worker Slots", "+{0} Worker {0}|plural(one=Slot,other=Slots)"), TEXT_NUM(workerSlotBonus));
-	const FText name = FText::Format(LOCTEXT("+{0} Worker Slots", "+{0} Worker"), TEXT_NUM(workerSlotBonus));
+	const FText name = FText::Format(LOCTEXT("+{0} Worker Slots", "+{0} Worker {0}|plural(one=Slot,other=Slots)"), TEXT_NUM(workerSlotBonus));
 	BuildingUpgrade upgrade = MakeUpgrade(name, name, percentOfTotalPrice);
 	upgrade.workerSlotBonus = workerSlotBonus;
 	return upgrade;

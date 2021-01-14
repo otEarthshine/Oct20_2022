@@ -11,8 +11,8 @@
 /*
  * Gather buildings
  */
-FText MeticulousWorkModeText = NSLOCTEXT("GathererHut", "Meticulous_WorkMode", "Meticulous");
-FText PoisonArrowWorkModeText = NSLOCTEXT("GathererHut", "PoisonArrow_WorkMode", "Poison Arrows");
+const FText MeticulousWorkModeText = NSLOCTEXT("GathererHut", "Meticulous_WorkMode", "Meticulous");
+const FText PoisonArrowWorkModeText = NSLOCTEXT("GathererHut", "PoisonArrow_WorkMode", "Poison Arrows");
 
 class GathererHut final : public Building
 {
@@ -39,9 +39,9 @@ public:
 };
 
 
-FText CutAndPlantText = NSLOCTEXT("GathererHut", "Cut and Plant", "Cut and Plant");
-FText PrioritizePlantText = NSLOCTEXT("GathererHut", "Prioritize Planting", "Prioritize Planting");
-FText PrioritizeCutText = NSLOCTEXT("GathererHut", "Prioritize Cutting", "Prioritize Cutting");
+const FText CutAndPlantText = NSLOCTEXT("GathererHut", "Cut and Plant", "Cut and Plant");
+const FText PrioritizePlantText = NSLOCTEXT("GathererHut", "Prioritize Planting", "Prioritize Planting");
+const FText PrioritizeCutText = NSLOCTEXT("GathererHut", "Prioritize Cutting", "Prioritize Cutting");
 
 class Forester final : public Building
 {

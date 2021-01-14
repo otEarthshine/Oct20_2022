@@ -862,6 +862,9 @@ public:
 
 		int8 isConnected = _buildingSystem->IsConnectedBuilding(buildingId);
 		PUN_CHECK(isConnected != -1);
+		if (isConnected == -1) {
+			return false;
+		}
 		return static_cast<bool>(isConnected);
 	}
 

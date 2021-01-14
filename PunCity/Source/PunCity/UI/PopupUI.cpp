@@ -60,9 +60,9 @@ void UPopupUI::Tick()
 		else if (shouldShowExclusive(ExclusiveUIEnum::RareCardHand)) {
 			shouldPopup = true;
 		}
-		else if (shouldShowExclusive(ExclusiveUIEnum::ArmyMoveUI)) {
-			shouldPopup = true;
-		}
+		//else if (shouldShowExclusive(ExclusiveUIEnum::ArmyMoveUI)) {
+		//	shouldPopup = true;
+		//}
 		else if (shouldShowExclusive(ExclusiveUIEnum::BuildMenu)) {
 			shouldPopup = true;
 		}

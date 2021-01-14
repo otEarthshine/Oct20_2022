@@ -38,6 +38,9 @@ DECLARE_CYCLE_STAT(TEXT("PUN: Unit.AddDebugSpeech [-]"), STAT_PunUnitAddDebugSpe
 
 using namespace std;
 
+#define LOCTEXT_NAMESPACE "UnitStateAI"
+
+
 static std::vector<uint32_t> rawWaypoint;
 
 int32 UnitStateAI::debugFindFullBushSuccessCount = 0;
@@ -2596,3 +2599,15 @@ void UnitStateAI::AddDebugSpeech(std::string message)
 	_debugSpeech << "\n";
 #endif
 }
+
+FText UnitStateAI::GetTypeName()
+{
+	if (isChild()) {
+		const FText littleText = LOCTEXT("Little", "Little");
+		return FText::Format(INVTEXT("{0} {1}"), littleText, ToFText(unitInfo().name));
+	}
+	return ToFText(unitInfo().name);
+}
+
+
+#undef LOCTEXT_NAMESPACE

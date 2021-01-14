@@ -200,9 +200,10 @@ public:
 		return AddRichText(string)->SetJustification(ETextJustify::Type::Center);
 	}
 
-	UPunRichText* AddRichTextBullet(std::string string, int32 sizeX) {
-		auto textWidget = GetChildElement<UPunRichText>(UIEnum::PunRichTextBullet, std::hash<std::string>{}(string));
-		textWidget->SetText(WrapString(string, sizeX));
+	UPunRichText* AddRichTextBullet(std::wstring string, int32 sizeX) {
+		auto textWidget = GetChildElement<UPunRichText>(UIEnum::PunRichTextBullet, std::hash<std::wstring>{}(string));
+
+		textWidget->SetText(FText::FromString(WrapStringF(ToFString(string), sizeX)));
 		//PUN_LOG("AddRichTextBullet PunVerticalBox:%s", *PunVerticalBox->GetDesiredSize().ToString());
 		//PUN_LOG("AddRichTextBullet textWidget:%s", *textWidget->GetDesiredSize().ToString());
 		//PUN_LOG("AddRichTextBullet PunRichText:%s", *textWidget->PunRichText->GetDesiredSize().ToString());
@@ -384,10 +385,15 @@ public:
 	 */
 	void AddRichTextParsed(std::string body)
 	{
-		std::string curBody;
+		std::wstring wBody(body.begin(), body.end());
+		AddRichTextParsed(wBody);
+	}
+	void AddRichTextParsed(std::wstring body)
+	{
+		std::wstring curBody;
 		bool isBulletText = false;
 
-		auto addNonEmptyRichText = [&](const std::string& str) {
+		auto addNonEmptyRichText = [&](const std::wstring& str) {
 			if (str.size() > 0) {
 				AddRichText(curBody);
 			}
@@ -396,16 +402,16 @@ public:
 		for (int32 i = 0; i < body.size(); i++)
 		{
 			if (isBulletText &&
-				body[i] == '<' &&
-				body.substr(i, 3) == "</>")
+				body[i] == L'<' &&
+				body.substr(i, 3) == L"</>")
 			{
 				AddRichTextBullet(curBody, 430);
 				curBody.clear();
 				isBulletText = false;
 				i += 2;
 			}
-			else if (body[i] == '<' &&
-				body.substr(i, 6) == "<link>")
+			else if (body[i] == L'<' &&
+				body.substr(i, 6) == L"<link>")
 			{
 				addNonEmptyRichText(curBody);
 				curBody.clear();
@@ -417,24 +423,24 @@ public:
 				i += 2;// Add increment 2 more indices since we are using 2 chars to determine linkEnum
 			}
 			
-			else if (body[i] == '<' &&
-				body.substr(i, 8) == "<bullet>")
+			else if (body[i] == L'<' &&
+				body.substr(i, 8) == L"<bullet>")
 			{
 				addNonEmptyRichText(curBody);
 				curBody.clear();
 				isBulletText = true;
 				i += 7;
 			}
-			else if (body[i] == '<' &&
-				body.substr(i, 7) == "<space>")
+			else if (body[i] == L'<' &&
+				body.substr(i, 7) == L"<space>")
 			{
 				addNonEmptyRichText(curBody);
 				curBody.clear();
 				AddSpacer(8);
 				i += 6;
 			}
-			else if (body[i] == '<' &&
-				body.substr(i, 6) == "<line>")
+			else if (body[i] == L'<' &&
+				body.substr(i, 6) == L"<line>")
 			{
 				addNonEmptyRichText(curBody);
 				curBody.clear();
@@ -450,6 +456,14 @@ public:
 	void AddRichTextParsed(std::stringstream& ss) {
 		AddRichTextParsed(ss.str());
 		ss.str("");
+	}
+	void AddRichTextParsed(TArray<FText>& args) {
+		FText text = JOINTEXT(args);
+		AddRichTextParsed(std::wstring(*(text.ToString())));
+		args.Empty();
+	}
+	void AddRichTextParsed(FText text) {
+		AddRichTextParsed(std::wstring(*(text.ToString())));
 	}
 
 	/*

@@ -16,6 +16,8 @@
 
 using namespace std;
 
+#define LOCTEXT_NAMESPACE "HumanStateAI"
+
 DECLARE_CYCLE_STAT(TEXT("PUN: Unit.CalcHuman [4.2]"), STAT_PunUnit_CalcHuman, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: Unit.CalcHuman.PreWorkplc [4.2.1]"), STAT_PunUnit_CalcHuman_PreWorkPlc, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: Unit.CalcHuman.Workplc [4.2.2]"), STAT_PunUnit_CalcHuman_WorkPlc, STATGROUP_Game);
@@ -2888,3 +2890,13 @@ int32 HumanStateAI::speedBoostEfficiency100() {
 	}
 	return 0;
 }
+
+FText HumanStateAI::GetTypeName() {
+	if (isMale()) {
+		return isBelowWorkingAge() ? LOCTEXT("little boy", "little boy") : LOCTEXT("man", "man");
+	}
+	return isBelowWorkingAge() ? LOCTEXT("little girl", "little girl") : LOCTEXT("woman", "woman");
+}
+
+
+#undef LOCTEXT_NAMESPACE 

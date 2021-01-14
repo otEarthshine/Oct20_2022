@@ -59,52 +59,57 @@ enum class UnitState : uint8
 	Count,
 };
 
-const char* const UnitStateString[] = 
+#define LOCTEXT_NAMESPACE "UnitStateName"
+
+const TArray<FText> UnitStateName 
 {
-	"Get Food",
-	"Get Heat",
-	"Get Fun",
-	"Get Tools",
-	"Get Medicine",
+	LOCTEXT("Get Food", "Get Food"),
+	LOCTEXT("Get Heat", "Get Heat"),
+	LOCTEXT("Get Fun", "Get Fun"),
+	LOCTEXT("Get Tools", "Get Tools"),
+	LOCTEXT("Get Medicine", "Get Medicine"),
 	
-	"Get Wild Food",
-	"Idle",
-	"Avoid Others",
-	"Go Nearby Home",
+	LOCTEXT("Get Wild Food", "Get Wild Food"),
+	LOCTEXT("Idle", "Idle"),
+	LOCTEXT("Avoid Others", "Avoid Others"),
+	LOCTEXT("Go Nearby Home", "Go Nearby Home"),
 
-	"Job",
-	"Gather Tree",
-	"Gather Stone",
+	LOCTEXT("Job", "Job"),
+	LOCTEXT("Gather Tree", "Gather Tree"),
+	LOCTEXT("Gather Stone", "Gather Stone"),
 	
-	"Clear Land (Cut Bush)",
-	"Clear Land (Cut Tree)",
-	"Clear Land (Cut Stone)",
+	LOCTEXT("Clear Land (Cut Bush)", "Clear Land (Cut Bush)"),
+	LOCTEXT("Clear Land (Cut Tree)", "Clear Land (Cut Tree)"),
+	LOCTEXT("Clear Land (Cut Stone)", "Clear Land (Cut Stone)"),
 	
-	"Clear Land (Remove Drop)",
-	"Foresting Cut",
-	"Foresting Plant",
-	"Foresting Nourish",
-	"Move Resource",
-	"Move Resource (Construct)",
-	"Store Inventory",
-	"Gather Berry",
-	"Gather Bush",
+	LOCTEXT("Clear Land (Remove Drop)", "Clear Land (Remove Drop)"),
+	LOCTEXT("Foresting Cut", "Foresting Cut"),
+	LOCTEXT("Foresting Plant", "Foresting Plant"),
+	LOCTEXT("Foresting Nourish", "Foresting Nourish"),
+	LOCTEXT("Move Resource", "Move Resource"),
+	LOCTEXT("Move Resource (Construct)", "Move Resource (Construct)"),
+	LOCTEXT("Store Inventory", "Store Inventory"),
+	LOCTEXT("Gather Berry", "Gather Berry"),
+	LOCTEXT("Gather Bush", "Gather Bush"),
 	
-	"Work (Consume)",
-	"Fill Input",
-	"Work (Produce)",
-	"Work (Construct)",
-	"Hunt",
+	LOCTEXT("Work (Consume)", "Work (Consume)"),
+	LOCTEXT("Fill Input", "Fill Input"),
+	LOCTEXT("Work (Produce)", "Work (Produce)"),
+	LOCTEXT("Work (Construct)", "Work (Construct)"),
+	LOCTEXT("Hunt", "Hunt"),
 	
-	"Seeding (Farm)", // FarmSeeding
-	"Nourishing (Farm)", // FarmNourishing
-	"Harvesting (Farm)", // FarmHarvesting
-	"Clear Drops (Farm)", // FarmClearDrops
+	LOCTEXT("Seeding (Farm)", "Seeding (Farm)"), // FarmSeeding
+	LOCTEXT("Nourishing (Farm)", "Nourishing (Farm)"), // FarmNourishing
+	LOCTEXT("Harvesting (Farm)", "Harvesting (Farm)"), // FarmHarvesting
+	LOCTEXT("Clear Drops (Farm)", "Clear Drops (Farm)"), // FarmClearDrops
 
-	"Move Army",
+	LOCTEXT("Move Army", "Move Army"),
 
-	"Go to Workplace",
+	LOCTEXT("Go to Workplace", "Go to Workplace"),
 };
+
+#undef LOCTEXT_NAMESPACE
+
 
 enum class UnitAIClassEnum : uint8
 {
@@ -553,16 +558,14 @@ public:
 	virtual bool isChild() {
 		return age() < unitInfo().miniAgeTicks();
 	}
-	virtual std::string typeName() {
-		if (isChild()) {
-			return "Little " + unitInfo().name;
-		}
-		return unitInfo().name;
-	}
+	virtual FText GetTypeName();
 
 	std::string GetUnitName() {
+		return ToStdString(GetUnitNameT().ToString());
+	}
+	FText GetUnitNameT() {
 		int32 rand = GameRand::Rand(_id + birthTicks());
-		return isMale() ? MaleNames[rand % MaleNames.size()] : FemaleNames[rand % FemaleNames.size()];
+		return isMale() ? MaleNames[rand % MaleNames.Num()] : FemaleNames[rand % FemaleNames.Num()];
 	}
 
 	UnitAnimationEnum animationEnum() { return _animationEnum; }

@@ -229,7 +229,7 @@ public:
 	
 	int32 modifiersHappiness() {
 		int32 result = 0;
-		for (int32 i = 0; i < HappinessModifierEnumCount; i++) {
+		for (int32 i = 0; i < HappinessModifierName.Num(); i++) {
 			result += GetHappinessModifier(static_cast<HappinessModifierEnum>(i));
 		}
 		return result;
@@ -277,12 +277,7 @@ public:
 	bool isChild() override {
 		return age() < PlayerParameters::BaseAdultTicks;
 	}
-	std::string typeName() override {
-		if (isMale()) {
-			return isBelowWorkingAge() ? "little boy" : "man";
-		}
-		return isBelowWorkingAge() ? "little girl" : "woman";
-	}
+	FText GetTypeName() override;
 
 
 protected:

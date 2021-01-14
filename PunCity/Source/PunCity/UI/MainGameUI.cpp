@@ -943,9 +943,12 @@ void UMainGameUI::Tick()
 		happinessTip << "<bullet>" << playerOwned.aveFunHappiness() << " fun</>";
 
 		happinessTip << "Modifiers: " << playerOwned.aveHappinessModifierSum();
-		for (size_t i = 0; i < HappinessModifierEnumCount; i++) {
+		for (size_t i = 0; i < HappinessModifierName.Num(); i++) {
 			int32 modifier = playerOwned.aveHappinessModifier(static_cast<HappinessModifierEnum>(i));
-			if (modifier != 0) happinessTip << "<bullet>" << modifier << " " << HappinessModifierName[i] << "</>";
+			if (modifier != 0) {
+				std::string str = ToStdString(HappinessModifierName[i].ToString());
+				happinessTip << "<bullet>" << modifier << " " << str << "</>";
+			}
 		}
 
 		AddToolTip(Happiness, happinessTip.str());

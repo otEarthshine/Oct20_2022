@@ -57,7 +57,7 @@ UToolTipWidgetBase* UPunWidget::AddToolTip(UWidget* widget, std::wstring message
 	UToolTipWidgetBase* tooltip = AddToolTip(widget);
 	if (tooltip) {
 		tooltip->TooltipPunBoxWidget->AfterAdd(); // Ensure reused tooltip gets its AfterAdd called
-		tooltip->TooltipPunBoxWidget->AddRichText(message);
+		tooltip->TooltipPunBoxWidget->AddRichTextParsed(message);
 	}
 	return tooltip;
 }
@@ -67,7 +67,7 @@ UToolTipWidgetBase* UPunWidget::AddToolTip(UWidget* widget, FText message)
 	UToolTipWidgetBase* tooltip = AddToolTip(widget);
 	if (tooltip) {
 		tooltip->TooltipPunBoxWidget->AfterAdd(); // Ensure reused tooltip gets its AfterAdd called
-		tooltip->TooltipPunBoxWidget->AddRichText(message);
+		tooltip->TooltipPunBoxWidget->AddRichTextParsed(message);
 	}
 	return tooltip;
 }

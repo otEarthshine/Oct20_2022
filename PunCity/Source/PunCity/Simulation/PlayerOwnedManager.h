@@ -169,7 +169,7 @@ public:
 		_simulation = simulation;
 		taxLevel = 2;
 
-		_aveHappinessModifiers.resize(HappinessModifierEnumCount);
+		_aveHappinessModifiers.resize(HappinessModifierName.Num());
 
 		incomes100.resize(IncomeEnumCount);
 		influenceIncomes100.resize(InfluenceIncomeEnumCount);

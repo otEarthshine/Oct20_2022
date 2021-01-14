@@ -2388,93 +2388,103 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			UnitStateAI& unit = dataSource()->GetUnitStateAI(objectId);
 
 			// Make sure we don't forget to put in string
-			check((int)unit.unitState() < sizeof(UnitStateString) / sizeof(UnitStateString[0]));
+			check((int)unit.unitState() < UnitStateName.Num());
 
-			stringstream ss;
+			TArray<FText> args;
 
 			if (unit.isEnum(UnitEnum::Human)) {
-				ss << "<Header>" << unit.GetUnitName() << "</>";
-				SetText(_objectDescriptionUI->DescriptionUITitle, ss);
+				SetText(_objectDescriptionUI->DescriptionUITitle, TEXT_TAG("<Header>", unit.GetUnitNameT()));
 
-				ss << "<Subheader>" << unit.typeName() << "</>";
+				ADDTEXT_TAG_("<Subheader>", unit.GetTypeName());
 			} else {
-				ss << "<Header>" << unit.typeName() << "</>";
-				SetText(_objectDescriptionUI->DescriptionUITitle, ss);
+				SetText(_objectDescriptionUI->DescriptionUITitle, TEXT_TAG("<Header>", unit.GetTypeName()));
 			}
 			
 #if WITH_EDITOR
-			ss << "[" << objectId << "]"; // ID
+			ADDTEXT_(INVTEXT("[{0}]"), TEXT_NUM(objectId)); // ID
 #endif
-			descriptionBox->AddRichText(ss);
+			descriptionBox->AddRichText(args);
 			descriptionBox->AddLineSpacer(8);
 
 			if (!unit.isEnum(UnitEnum::Human)) {
-				ss << "Gender: " << (unit.isMale() ? "male" : "female");
-				descriptionBox->AddRichText(ss);
+				ADDTEXT_(INVTEXT("{0}: {1}"), 
+					LOCTEXT("Gender", "Gender"),
+					unit.isMale() ? LOCTEXT("male", "male") : LOCTEXT("female", "female"));
+				
+				descriptionBox->AddRichText(args);
 			}
 
 			if (unit.playerId() != -1) {
-				ss << "Player: " << simulation.playerName(unit.playerId());
-				descriptionBox->AddRichText(ss);
+				const FText playerText = LOCTEXT("Player", "Player");
+				ADDTEXT_(INVTEXT("{0}: {1}"),
+					LOCTEXT("Player", "Player"), 
+					simulation.playerNameT(unit.playerId()));
+				descriptionBox->AddRichText(args);
 			}
 			
 #if WITH_EDITOR
-			ss << "-- Tile:(" << unit.unitTile().x << "," << unit.unitTile().y << ")";
-			descriptionBox->AddRichText(ss);
-			ss << "-- lastBirthTick:(" << unit.lastPregnantTick() << ")";
-			descriptionBox->AddRichText(ss);
-			ss << "animation: " << GetUnitAnimationName(unit.animationEnum());
-			descriptionBox->AddRichText(ss);
+			{
+				std::stringstream ss;
+				ss << "-- Tile:(" << unit.unitTile().x << "," << unit.unitTile().y << ")";
+				descriptionBox->AddRichText(ss);
+				ss << "-- lastBirthTick:(" << unit.lastPregnantTick() << ")";
+				descriptionBox->AddRichText(ss);
+				ss << "animation: " << GetUnitAnimationName(unit.animationEnum());
+				descriptionBox->AddRichText(ss);
+			}
 #endif
 
-			ss << "Age: " << unit.age() * PlayerParameters::PeopleAgeToGameYear / Time::TicksPerYear + 3 << " years"; // cheat 3 years older so no 0 years old ppl
-			descriptionBox->AddTextWithSpacer(ss);
+			int32 age = unit.age() * PlayerParameters::PeopleAgeToGameYear / Time::TicksPerYear + 3; // cheat 3 years older so no 0 years old ppl
+			ADDTEXT_(LOCTEXT("Age: {0} years", "Age: {0} years"), TEXT_NUM(age));
+			
+			descriptionBox->AddRichText(args);
+			descriptionBox->AddSpacer();
 
 			// Show Food/Heat as percent
-			ss << "<space>Food: " << (unit.foodActual() * 100 / unit.maxFood()) << "/100";
-			ss << "<space>Heat: " << (unit.heatActual() * 100 / unit.maxHeat()) << "/100";
-			ss << "<space>Health: " << unit.hp() << "/ 100";
+			ADDTEXT_(INVTEXT("<space>{0}: {1}/100"), LOCTEXT("Food", "Food"), TEXT_NUM(unit.foodActual() * 100 / unit.maxFood()));
+			ADDTEXT_(INVTEXT("<space>{0}: {1}/100"), LOCTEXT("Heat", "Heat"), TEXT_NUM(unit.heatActual() * 100 / unit.maxHeat()));
+			ADDTEXT_(INVTEXT("<space>{0}: {1}/100"), LOCTEXT("Health", "Health"), TEXT_NUM(unit.hp()));
 
 			if (unit.isEnum(UnitEnum::Human)) {
-				ss << "<space>Fun: " << unit.subclass<HumanStateAI>().funPercent() << " %";
+				ADDTEXT_(INVTEXT("<space>{0}: {1}%"), LOCTEXT("Fun", "Fun"), TEXT_NUM(unit.subclass<HumanStateAI>().funPercent()));
 #if WITH_EDITOR
-				ss << "<space> -- Fun Sec: " << (unit.subclass<HumanStateAI>().funTicksActual() / Time::TicksPerSecond) << "s";
+				ADDTEXT_(INVTEXT("<space> -- Fun Sec: {0}s"), TEXT_NUM(unit.subclass<HumanStateAI>().funTicksActual() / Time::TicksPerSecond));
 #endif
 			}
 
-			descriptionBox->AddRichTextParsed(ss);
+			descriptionBox->AddRichTextParsed(args);
 			descriptionBox->AddSpacer(8);
 
 			// Dying
-			auto dyingMessage = [&](std::string dyingDescription) {
-				ss << "<space><Red>" << dyingDescription << "</>";
-				descriptionBox->AddRichTextParsed(ss);
+			auto dyingMessage = [&](FText dyingDescription) {
+				ADDTEXT_(INVTEXT("<space><Red>{0}</>"), dyingDescription);
+				descriptionBox->AddRichTextParsed(args);
 				descriptionBox->AddSpacer();
 			};
 			if (unit.foodActual() <= 0) {
-				dyingMessage("Dying from starvation");
+				dyingMessage(LOCTEXT("Dying from starvation", "Dying from starvation"));
 			}
 			else if (unit.heatActual() <= 0) {
-				dyingMessage("Dying from the freezing cold");
+				dyingMessage(LOCTEXT("Dying from the freezing cold", "Dying from the freezing cold"));
 			}
 			else if (unit.hp() <= 0) {
-				dyingMessage("Dying from sickness");
+				dyingMessage(LOCTEXT("Dying from sickness", "Dying from sickness"));
 			}
 			else if (unit.foodActual() <= unit.minWarnFood()) {
-				dyingMessage("Starving");
+				dyingMessage(LOCTEXT("Starving", "Starving"));
 			}
 			else if (unit.heatActual() <= unit.minWarnHeat()) {
-				dyingMessage("Freezing");
+				dyingMessage(LOCTEXT("Freezing", "Freezing"));
 			}
 			else if (unit.isSick()) {
-				dyingMessage("Sick");
+				dyingMessage(LOCTEXT("Sick", "Sick"));
 			}
 			// Tools
 			else if (unit.isEnum(UnitEnum::Human)) 
 			{
 				auto& human = unit.subclass<HumanStateAI>();
 				if (human.needTools()) {
-					dyingMessage("Cannot work properly without tools");
+					dyingMessage(LOCTEXT("Cannot work no tools", "Cannot work properly without tools"));
 				}
 #if WITH_EDITOR
 				descriptionBox->AddRichText("-- Next tools sec", to_string((human.nextToolTick() - Time::Ticks()) / Time::TicksPerSecond));
@@ -2487,60 +2497,77 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				auto& human = unit.subclass<HumanStateAI>();
 
 				{
-					ss << human.workEfficiency100() << "%";
-					auto widget = descriptionBox->AddRichText("Work efficiency", ss);
+					auto widget = descriptionBox->AddRichText(LOCTEXT("Work efficiency", "Work efficiency"), TEXT_PERCENT(human.workEfficiency100()));
 
-					ss << "Work efficiency: " << human.workEfficiency100() << "%\n";
-					ss << " 100% base\n";
-					ss << " penalties:\n";
+					ADDTEXT_(LOCTEXT("Work efficiency tip",
+						"Work efficiency: {0}%\n"
+						" 100% base\n"
+						" penalties:\n"),
+						TEXT_NUM(human.workEfficiency100())
+					);
+
+					auto addRow = [&](FText typeName, int32 percent) {
+						ADDTEXT_(INVTEXT("  {0}% {1}\n"), TEXT_NUM(percent), typeName);
+					};
 					if (human.foodWorkPenalty100() < 0) {
-						ss << "  " << human.foodWorkPenalty100() << "% starvation\n";
+						addRow(LOCTEXT("starvation", "starvation"), human.foodWorkPenalty100());
 					}
 					if (human.heatWorkPenalty100() < 0) {
-						ss << "  " << human.heatWorkPenalty100() << "% cold\n";
+						addRow(LOCTEXT("cold", "cold"), human.heatWorkPenalty100());
 					}
 					if (human.toolPenalty100() < 0) {
-						ss << "  " << human.toolPenalty100() << "% no tools\n";
+						addRow(LOCTEXT("no tools", "no tools"), human.toolPenalty100());
 					}
 					if (human.sicknessPenalty100() < 0) {
-						ss << "  " << human.sicknessPenalty100() << "% sick\n";
+						addRow(LOCTEXT("sick", "sick"), human.sicknessPenalty100());
 					}
 					if (human.happinessPenalty100() < 0) {
-						ss << "  " << human.happinessPenalty100() << "% happiness\n";
+						addRow(LOCTEXT("happiness", "happiness"), human.happinessPenalty100());
 					}
 
-					ss << " adjustments:\n";
+					ADDTEXT_LOCTEXT(" adjustments:\n", " adjustments:\n");
 					if (human.speedBoostEfficiency100() != 0) {
-						ss << "  " << human.speedBoostEfficiency100() << "% leader speed boost\n";
+						addRow(LOCTEXT("leader speed boost", "leader speed boost"), human.speedBoostEfficiency100());
 					}
 					
-					AddToolTip(widget, ss);
+					AddToolTip(widget, args);
 				}
 				
 				descriptionBox->AddSpacer();
 
 				{
-					ss << human.happiness() << "<img id=\"Smile\"/>";
-					auto widget = descriptionBox->AddRichText("Happiness", ss);
+					ADDTEXT_(INVTEXT("{0}<img id=\"Smile\"/>"), TEXT_NUM(human.happiness()));
+					auto widget = descriptionBox->AddRichText(LOCTEXT("Happiness", "Happiness"), args);
 
-					ss << "Happiness: " << human.happiness() << "<img id=\"Smile\"/>\n";
-					ss << "  Needs: " << human.baseHappiness() << "\n";
-					ss << "   " << human.foodHappiness() << " food\n";
-					ss << "   " << human.heatHappiness() << " heating\n";
-					ss << "   " << human.housingHappiness() << " housing\n";
-					ss << "   " << human.funHappiness() << " fun\n";
-					ss << "  Modifiers: " << human.modifiersHappiness() << "\n";
+					ADDTEXT_(LOCTEXT("Happiness Tip",
+						"Happiness: {0}<img id=\"Smile\"/>\n"
+						"  Needs: {1}\n"), 
+						TEXT_NUM(human.happiness()), TEXT_NUM(human.baseHappiness())
+					);
 
-					for (size_t i = 0; i < HappinessModifierEnumCount; i++) {
+					auto addRow = [&](FText typeName, int32 value) {
+						ADDTEXT_(INVTEXT("   {0} {1}\n"), TEXT_NUM(value), typeName);
+					};
+					
+					addRow(LOCTEXT("food", "food"), human.foodHappiness());
+					addRow(LOCTEXT("heating", "heating"), human.heatHappiness());
+					addRow(LOCTEXT("housing", "housing"), human.housingHappiness());
+					addRow(LOCTEXT("fun", "fun"), human.funHappiness());
+					
+					ADDTEXT_(INVTEXT("  {0}: {1}\n"), LOCTEXT("Modifiers", "Modifiers"), TEXT_NUM(human.modifiersHappiness()));
+
+					for (size_t i = 0; i < HappinessModifierName.Num(); i++) {
 						int32 modifier = human.GetHappinessModifier(static_cast<HappinessModifierEnum>(i));
-						if (modifier != 0) ss << "   " << modifier << " " << HappinessModifierName[i] << "\n";
+						if (modifier != 0) {
+							addRow(HappinessModifierName[i], modifier);
+						}
 					}
 					
-					AddToolTip(widget, ss);
+					AddToolTip(widget, args);
 				}
 			}
 
-			ss << "state: " << UnitStateString[static_cast<int>(unit.unitState())] << "\n";
+			ADDTEXT_(INVTEXT("{0}: {1}\n"), LOCTEXT("state", "state"), UnitStateName[static_cast<int>(unit.unitState())]);
 
 			// Workplace (Human)
 			if (unit.isEnum(UnitEnum::Human))
@@ -2548,40 +2575,40 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				if (unit.workplaceId() != -1)
 				{
 					Building& workplace = simulation.building(unit.workplaceId());
-					auto workplaceName = workplace.buildingInfo().name;
 
 					if (workplace.isConstructed()) {
-						ss << "workplace: " << workplaceName;
+						ADDTEXT_(INVTEXT("{0}: {1}"), LOCTEXT("workplace", "workplace"), workplace.buildingInfo().GetName());
 					}
 					else {
-						ss << "workplace: Construction Site";
+						ADDTEXT_LOCTEXT("workplace: Construction Site", "workplace: Construction Site");
 					}
 
 #if WITH_EDITOR 
-					ss << " (id: " << unit.workplaceId() << ")\n";
+					ADDTEXT_(INVTEXT(" (id: {0})\n"), TEXT_NUM(unit.workplaceId()));
 #endif
 				}
 				else {
-					ss << "workplace: none \n";
+					ADDTEXT_LOCTEXT("workplace: none \n", "workplace: none \n");
 				}
 			}
 
 			if (unit.houseId() != -1) {
-				auto houseName = simulation.building(unit.houseId()).buildingInfo().name;
-				ss << "house: " << houseName << " (id: " << unit.houseId() << ")\n";
+				FText houseName = simulation.building(unit.houseId()).buildingInfo().GetName();
+				ADDTEXT_(LOCTEXT("house: (id: )", "house: {0} (id: {1})\n"), houseName, TEXT_NUM(unit.houseId()));
 			} else {
-				ss << "house: none \n";
+				ADDTEXT_LOCTEXT("house: none \n", "house: none \n");
 			}
 
 #if WITH_EDITOR
 			if (IsAnimal(unit.unitEnum())) {
-				ss << "home province" << unit.homeProvinceId();
+				ADDTEXT_(INVTEXT("home province {0}"), TEXT_NUM(unit.homeProvinceId()));
 			}
 #endif
 
 			//! Debug
 #if WITH_EDITOR 
 			if (PunSettings::IsOn("UIActions")) {
+				std::stringstream ss;
 				ss << "-- nextActiveTick:" << unit.nextActiveTick() << "\n";
 				ss << "speech:\n" << unit.debugSpeech(true);
 				auto punText = descriptionBox->AddText(ss);
@@ -2606,7 +2633,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			//	ss << "garrison:" << unit.subclass<ArmyStateAI>().garrisonBuildingId() << "\n";
 			//}
 
-			descriptionBox->AddRichText(ss);
+			descriptionBox->AddRichText(args);
 
 			// Inventory
 			descriptionBox->AddLineSpacer();
@@ -3132,7 +3159,7 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 
 				TArray<FText> args;
 				AppendClaimConnectionString(args, false, claimConnectionEnum);
-				ADDTEXT_(INVTEXT("\n<img id=\"Influence\"/>"), TextRed(FText::AsNumber(provincePrice), !canClaim));
+				ADDTEXT_(INVTEXT("\n<img id=\"Influence\"/>{0}"), TextRed(FText::AsNumber(provincePrice), !canClaim));
 
 				descriptionBox->AddSpacer();
 				descriptionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::ClaimLandInfluence, canClaim, false, provinceId);
@@ -3144,7 +3171,7 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 
 				TArray<FText> args;
 				AppendClaimConnectionString(args, false, claimConnectionEnum);
-				ADDTEXT_(INVTEXT("\n<img id=\"Coin\"/>"), TextRed(FText::AsNumber(provincePrice), !canClaim));
+				ADDTEXT_(INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(FText::AsNumber(provincePrice), !canClaim));
 
 				descriptionBox->AddSpacer();
 				descriptionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::ClaimLandMoney, canClaim, false, provinceId);

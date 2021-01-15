@@ -96,19 +96,19 @@ public:
 		// Small map for editor play for speed
 		//serverMapSettings.mapSizeEnumInt = static_cast<int32>(MapSizeEnum::Medium);
 		LobbyMapSizeDropdown->ClearOptions();
-		for (FString name : MapSizeNames) {
-			LobbyMapSizeDropdown->AddOption(name);
+		for (FText name : MapSizeNames) {
+			LobbyMapSizeDropdown->AddOption(name.ToString());
 		}
 		LobbyMapSizeDropdown->SetSelectedIndex(serverMapSettings.mapSizeEnumInt);
 
 		
 
 		{
-			auto setupDropdown = [&](UComboBoxString* LobbyDropdown, const std::vector<FString>& enumNames)
+			auto setupDropdown = [&](UComboBoxString* LobbyDropdown, const std::vector<FText>& enumNames)
 			{
 				LobbyDropdown->ClearOptions();
-				for (FString name : enumNames) {
-					LobbyDropdown->AddOption(name);
+				for (FText name : enumNames) {
+					LobbyDropdown->AddOption(name.ToString());
 				}
 			};
 
@@ -198,21 +198,20 @@ public:
 
 		FMapSettings mapSettings = gameInstance()->GetMapSettings();
 		setServerVsClientUI(LobbyMapSeedInputBox, LobbyMapSeedText, mapSettings.mapSeed);
-		setServerVsClientUI(LobbyMapSizeDropdown, LobbyMapSizeText, MapSizeNames[mapSettings.mapSizeEnumInt]);
-		setServerVsClientUI(LobbySeaLevelDropdown, LobbySeaLevelText, MapSettingsLevelNames[static_cast<int>(mapSettings.mapSeaLevel)]);
-		setServerVsClientUI(LobbyMoistureDropdown, LobbyMoistureText, MapMoistureNames[static_cast<int>(mapSettings.mapMoisture)]);
-		setServerVsClientUI(LobbyTemperatureDropdown, LobbyTemperatureText, MapSettingsLevelNames[static_cast<int>(mapSettings.mapTemperature)]);
-		setServerVsClientUI(LobbyMountainDensityDropdown, LobbyMountainDensityText, MapSettingsLevelNames[static_cast<int>(mapSettings.mapMountainDensity)]);
+		setServerVsClientUI(LobbyMapSizeDropdown, LobbyMapSizeText, MapSizeNames[mapSettings.mapSizeEnumInt].ToString());
+		setServerVsClientUI(LobbySeaLevelDropdown, LobbySeaLevelText, MapSettingsLevelNames[static_cast<int>(mapSettings.mapSeaLevel)].ToString());
+		setServerVsClientUI(LobbyMoistureDropdown, LobbyMoistureText, MapMoistureNames[static_cast<int>(mapSettings.mapMoisture)].ToString());
+		setServerVsClientUI(LobbyTemperatureDropdown, LobbyTemperatureText, MapSettingsLevelNames[static_cast<int>(mapSettings.mapTemperature)].ToString());
+		setServerVsClientUI(LobbyMountainDensityDropdown, LobbyMountainDensityText, MapSettingsLevelNames[static_cast<int>(mapSettings.mapMountainDensity)].ToString());
 
 
 		setServerVsClientUI(LobbyAICountDropdown, LobbyAICountText, FString::FromInt(mapSettings.aiCount));
-		setServerVsClientUI(LobbyDifficultyDropdown, LobbyDifficultyText, DifficultyLevelNames[static_cast<int>(mapSettings.difficultyLevel)]);
+		setServerVsClientUI(LobbyDifficultyDropdown, LobbyDifficultyText, DifficultyLevelNames[static_cast<int>(mapSettings.difficultyLevel)].ToString());
 
 		std::stringstream ss;
 		ss << "Difficulty Level:\n";
 		for (int32 i = 0; i < DifficultyLevelNames.size(); i++) {
-			std::string difficultyName = ToStdString(DifficultyLevelNames[i]);
-			ss << " - " << difficultyName << " (+" << DifficultyConsumptionAdjustment[i] << "% consumption)\n";
+			ss << " - " << FTextToStd(DifficultyLevelNames[i]) << " (+" << DifficultyConsumptionAdjustment[i] << "% consumption)\n";
 		}
 		AddToolTip(LobbyDifficultyDropdown, ss.str());
 		AddToolTip(LobbyDifficultyText, ss.str());

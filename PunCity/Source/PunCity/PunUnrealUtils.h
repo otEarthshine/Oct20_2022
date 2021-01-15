@@ -75,13 +75,13 @@ public:
 };
 
 // String Utils
-static std::string StringEnvelopImgTag(std::string str, std::string envelopTag)
+static std::wstring StringEnvelopImgTag(std::wstring str, std::wstring envelopTag)
 {
 	for (size_t i = str.size() - 3; i-- > 0;) {
-		if (str.substr(i, 3) == "<im") {
-			str.insert(i, "</>");
+		if (str.substr(i, 3) == TEXT("<im")) {
+			str.insert(i, TEXT("</>"));
 		}
-		if (str.substr(i, 3) == "\"/>") {
+		if (str.substr(i, 3) == TEXT("\"/>")) {
 			str.insert(i + 3, envelopTag);
 		}
 	}

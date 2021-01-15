@@ -441,40 +441,22 @@ void House::UpgradeHouse(int32 lvl)
 int32 House::GetMaxHouseLvl() {
 	return 7;
 }
-std::string House::HouseNeedDescription()
+FText House::HouseNeedDescription()
 {
 	switch(_houseLvl)
 	{
-	case 1: return "Need 1 type of luxury tier 1";
-	case 2: return "Need 3 types of luxury tier 1";
-	case 3: return "Need 1 type of luxury tier 2";
-	case 4: return "Need 3 types of luxury tier 2";
-	case 5: return "Need 1 types of luxury tier 3";
-	case 6: return "Need 3 types of luxury tier 3";
+	case 1: return LOCTEXT("HouseNeed1", "Need 1 type of luxury tier 1");
+	case 2: return LOCTEXT("HouseNeed2", "Need 3 types of luxury tier 1");
+	case 3: return LOCTEXT("HouseNeed3", "Need 1 type of luxury tier 2");
+	case 4: return LOCTEXT("HouseNeed4", "Need 3 types of luxury tier 2");
+	case 5: return LOCTEXT("HouseNeed5", "Need 1 types of luxury tier 3");
+	case 6: return LOCTEXT("HouseNeed6", "Need 3 types of luxury tier 3");
 	default:
 		UE_DEBUG_BREAK();
-		return "";
+		return FText();
 	}
-	
-	//const std::vector<ResourceEnum>& upgradeNeeds = HouseLvlToUpgradeNeeds[_houseLvl];
-	//if (upgradeNeeds.size() > 0) {
-	//	stringstream ss;
-	//	for (size_t i = 0; i < upgradeNeeds.size(); i++) {
-	//		if (i > 0) {
-	//			ss << " or ";
-	//		}
-	//		ss << ResourceName(upgradeNeeds[i]);
-	//	}
-
-	//	std::string result = ss.str();
-	//	transform(result.begin(), result.end(), result.begin(), ::tolower);
-	//	return result;
-	//}
-
-	//UE_DEBUG_BREAK();
-	//return "";
 }
-std::string House::HouseNeedTooltipDescription()
+FText House::HouseNeedTooltipDescription()
 {
 	switch (_houseLvl)
 	{
@@ -486,7 +468,7 @@ std::string House::HouseNeedTooltipDescription()
 	case 6: return LuxuryResourceTip(3);
 	default:
 		UE_DEBUG_BREAK();
-		return "";
+		return FText();
 	}
 }
 int32 House::CalculateHouseLevel()

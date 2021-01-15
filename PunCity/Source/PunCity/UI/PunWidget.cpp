@@ -72,6 +72,7 @@ UToolTipWidgetBase* UPunWidget::AddToolTip(UWidget* widget, FText message)
 	return tooltip;
 }
 
+#define LOCTEXT_NAMESPACE "ResourceTooltip"
 
 void UPunWidget::AddResourceTooltip(UWidget* widget, ResourceEnum resourceEnum, bool skipWidgetHoverCheck)
 {
@@ -84,24 +85,26 @@ void UPunWidget::AddResourceTooltip(UWidget* widget, ResourceEnum resourceEnum, 
 		return;
 	}
 
-	std::stringstream ss;
-	ss << "<Bold>" << GetResourceInfo(resourceEnum).name << "</>";
-	ss << "<space>";
-	ss << "<SlightGray>" << StringEnvelopImgTag(GetResourceInfo(resourceEnum).description, "<SlightGray>") << "</>";
-	ss << "<space>";
+	TArray<FText> args;
+	ADDTEXT_TAG_("<Bold>", GetResourceInfo(resourceEnum).name);
+	ADDTEXT_INV_("<space>");
+
+	std::wstring envelopString = StringEnvelopImgTag(FTextToW(GetResourceInfo(resourceEnum).description), TEXT("<SlightGray>"));
+	ADDTEXT_(INVTEXT("<SlightGray>{0}</>"), FText::FromString(FString(envelopString.c_str())));
+	ADDTEXT_INV_("<space>");
 
 	auto& statSys = simulation().playerStatSystem(playerId());
-	ss << "Production (yearly): <FaintGreen>" << statSys.GetYearlyResourceStat(ResourceSeasonStatEnum::Production, resourceEnum) << "</>\n";
-	ss << "Consumption (yearly): <FaintRed>" << statSys.GetYearlyResourceStat(ResourceSeasonStatEnum::Consumption, resourceEnum) << "</>\n";
-	ss << "<space>";
+	ADDTEXT_(LOCTEXT("ResourceTipProduction", "Production (yearly): <FaintGreen>{0}</>\n"), TEXT_NUM(statSys.GetYearlyResourceStat(ResourceSeasonStatEnum::Production, resourceEnum)));
+	ADDTEXT_(LOCTEXT("ResourceTipConsumption", "Consumption (yearly): <FaintRed>{0}</>\n"), TEXT_NUM(statSys.GetYearlyResourceStat(ResourceSeasonStatEnum::Consumption, resourceEnum)));
+	ADDTEXT_INV_("<space>");
 
 	int32 price100 = simulation().price100(resourceEnum);
 	int32 basePrice100 = GetResourceInfo(resourceEnum).basePrice100();
-	ss << "Price: " << (price100 / 100.0f) << "<img id=\"Coin\"/> <Gray>(base " << basePrice100 / 100 << ")</>";
-	ss << "<space>";
+	ADDTEXT_(LOCTEXT("ResourceTipPrice", "Price: {0}<img id=\"Coin\"/> <Gray>(base {1})</>"), TEXT_NUM(price100 / 100.0f), TEXT_NUM(basePrice100 / 100));
+	ADDTEXT_INV_("<space>");
 	
-	auto tooltip = AddToolTip(widget, ss.str());
-	ss.str("");
+	auto tooltip = AddToolTip(widget, args);
+	args.Empty();
 
 	auto punGraph = tooltip->TooltipPunBoxWidget->AddGraph();
 	
@@ -132,23 +135,26 @@ void UPunWidget::AddResourceTooltip(UWidget* widget, ResourceEnum resourceEnum, 
 
 	std::vector<std::pair<int32, int32>> mainImporters = simulation().worldTradeSystem().GetTwoMainTraders(resourceEnum, true);
 	if (mainImporters.size() > 0) {
-		ss << "major importers: " << simulation().playerName(mainImporters[0].first);
+		ADDTEXT_(LOCTEXT("major importers: {0}", "major importers: {0}"), simulation().playerNameT(mainImporters[0].first));
 		if (mainImporters.size() > 1) {
-			ss << ", " << simulation().playerName(mainImporters[1].first);
+			ADDTEXT_(INVTEXT(", {0}"), simulation().playerNameT(mainImporters[1].first));
 		}
-		ss << "<space>";
+		ADDTEXT_INV_("<space>");
 	}
 	std::vector<std::pair<int32, int32>> mainExporters = simulation().worldTradeSystem().GetTwoMainTraders(resourceEnum, false);
 	if (mainExporters.size() > 0) {
-		ss << "major exporters: " << simulation().playerName(mainExporters[0].first);
+		ADDTEXT_(LOCTEXT("major exporters: {0}", "major exporters: {0}"), simulation().playerNameT(mainExporters[0].first));
 		if (mainExporters.size() > 1) {
-			ss << ", " << simulation().playerName(mainExporters[1].first);
+			ADDTEXT_(INVTEXT(", {0}"), simulation().playerNameT(mainExporters[1].first));
 		}
-		ss << "<space>";
+		ADDTEXT_INV_("<space>");
 	}
 
-	tooltip->TooltipPunBoxWidget->AddRichTextParsed(ss.str());
+	tooltip->TooltipPunBoxWidget->AddRichTextParsed(args);
 }
+
+#undef LOCTEXT_NAMESPACE
+
 
 void UPunWidget::AddSeries(UTimeSeriesPlot* graph, std::vector<GraphSeries> seriesList)
 {

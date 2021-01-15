@@ -3254,7 +3254,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 		if (resourceSystem(command.playerId).CanAddResourceGlobal(resourcePair.resourceEnum, resourcePair.count))
 		{
 			resourceSystem(command.playerId).AddResourceGlobal(resourcePair.resourceEnum, resourcePair.count, *this);
-			AddPopupToFront(command.playerId, "Gained " + to_string(resourcePair.count) + " " + GetResourceInfo(resourcePair.resourceEnum).name + " from crates.");
+			AddPopupToFront(command.playerId, "Gained " + to_string(resourcePair.count) + " " + GetResourceInfo(resourcePair.resourceEnum).nameStd() + " from crates.");
 			cardSys.RemoveCards(command.cardEnum, 1);
 		}
 		else {
@@ -3275,7 +3275,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 	}
 	else if (command.cardEnum == CardEnum::EmergencyRations) {
 		resourceSystem(command.playerId).AddResourceGlobal(ResourceEnum::Wheat, 50, *this);
-		AddPopupToFront(command.playerId, "Gained " + to_string(50) + " " + GetResourceInfo(ResourceEnum::Wheat).name + " from emergency ration.");
+		AddPopupToFront(command.playerId, "Gained " + to_string(50) + " " + GetResourceInfo(ResourceEnum::Wheat).nameStd() + " from emergency ration.");
 	}
 	
 	else if (command.cardEnum == CardEnum::KidnapGuard ||

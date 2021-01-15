@@ -1379,7 +1379,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 							for (const ResourceInfo& info : SortedNameResourceInfo)
 							{
-								FString name = ToFString(info.name);
+								FString name = info.name.ToString();
 
 								if (IsTradeResource(info.resourceEnum))
 								{

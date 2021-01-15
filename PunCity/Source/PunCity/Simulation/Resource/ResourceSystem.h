@@ -40,7 +40,7 @@ struct ResourceHolder
 	int32 target() const { return _target; }
 
 	void resourcedebugStr(std::stringstream& ss, WorldTile2 townCenterTile, IGameSimulationCore* sim) const {
-		ss << "[" << GetResourceInfoSafe(info.resourceEnum).name << " " << GetResourceHolderTypeName(type)
+		ss << "[" << GetResourceInfoSafe(info.resourceEnum).nameStd() << " " << GetResourceHolderTypeName(type)
 			<< " - " + std::to_string(_current)
 			<< " push:" + std::to_string(_reservedPush)
 			<< " pop:" + std::to_string(_reservedPop)
@@ -412,7 +412,7 @@ public:
 	{
 		if (_holders.size() > 0)
 		{
-			std::string resourceName = GetResourceInfo(_resourceEnum).name;
+			std::string resourceName = GetResourceInfo(_resourceEnum).nameStd();
 			ss <<  resourceName << " Holders\n";
 			for (const ResourceHolder& holder : _holders) {
 				if (holder.type != ResourceHolderType::Dead) {

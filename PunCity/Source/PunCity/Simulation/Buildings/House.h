@@ -252,8 +252,8 @@ public:
 	/*
 	 * House Upgrade
 	 */
-	std::string HouseNeedDescription();
-	std::string HouseNeedTooltipDescription();
+	FText HouseNeedDescription();
+	FText HouseNeedTooltipDescription();
 private:
 	int32 CalculateHouseLevel();
 

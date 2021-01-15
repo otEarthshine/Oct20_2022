@@ -38,7 +38,7 @@ public:
 		GiftTypeDropdown->AddOption("Money");
 		
 		for (ResourceInfo info : SortedNameResourceInfo) {
-			GiftTypeDropdown->AddOption(ToFString(info.name));
+			GiftTypeDropdown->AddOption(info.name.ToString());
 		}
 
 		SetChildHUD(GiftTargetAmount);

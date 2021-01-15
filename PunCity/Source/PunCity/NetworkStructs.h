@@ -205,15 +205,15 @@ public:
 	{
 		std::stringstream ss;
 		ss << "[seed:" << ToStdString(mapSeed);
-		ss << ", size:" << ToStdString(MapSizeNames[mapSizeEnumInt]);
-		ss << ", seaLevel:" << ToStdString(MapSettingsLevelNames[static_cast<int>(mapSeaLevel)]);
-		ss << ", moisture:" << ToStdString(MapMoistureNames[static_cast<int>(mapMoisture)]);
-		ss << ", temperature:" << ToStdString(MapSettingsLevelNames[static_cast<int>(mapTemperature)]);
-		ss << ", mountain:" << ToStdString(MapSettingsLevelNames[static_cast<int>(mapMountainDensity)]);
+		ss << ", size:" << FTextToStd(MapSizeNames[mapSizeEnumInt]);
+		ss << ", seaLevel:" << FTextToStd(MapSettingsLevelNames[static_cast<int>(mapSeaLevel)]);
+		ss << ", moisture:" << FTextToStd(MapMoistureNames[static_cast<int>(mapMoisture)]);
+		ss << ", temperature:" << FTextToStd(MapSettingsLevelNames[static_cast<int>(mapTemperature)]);
+		ss << ", mountain:" << FTextToStd(MapSettingsLevelNames[static_cast<int>(mapMountainDensity)]);
 		
 		ss << ", playerCount:" << playerCount;
 		ss << ", ai:" << aiCount;
-		ss << ", mode:" << ToStdString(DifficultyLevelNames[static_cast<int>(difficultyLevel)]);
+		ss << ", mode:" << FTextToStd(DifficultyLevelNames[static_cast<int>(difficultyLevel)]);
 		ss << ", singlePlayer:" << isSinglePlayer;
 		ss << "]";
 		return ss.str();

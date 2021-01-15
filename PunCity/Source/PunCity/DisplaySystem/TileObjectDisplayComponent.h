@@ -35,7 +35,7 @@ public:
 
 			for (int j = 0; j < tileProtoMeshes.assets.Num(); j++) {
 				if (tileProtoMeshes.assets[j]) {
-					FString meshName = ToFString(TileSubmeshName[j] + info.name);
+					FString meshName = ToFString(TileSubmeshName[j]) + info.nameFStr(); // TODO: Can this cause problem with translation?
 					//PUN_LOG("Falling mesh: j=%d, %s", j, *meshName);
 					
 					_fallingMeshes->AddProtoMesh(meshName, tileProtoMeshes.assets[j]);

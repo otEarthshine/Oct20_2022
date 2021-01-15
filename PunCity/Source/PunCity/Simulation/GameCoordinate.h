@@ -245,6 +245,7 @@ struct WorldTile2
 
 	std::string ToString() { return "(" + std::to_string(x) + "," + std::to_string(y) + ")"; }
 	FString To_FString() { return  FString(ToString().c_str()); }
+	FText ToText() { return FText::FromString(FString(ToString().c_str())); }
 
 	int32_t tileId() const;
 	bool isValid() const { return x >= 0 && x < GameMapConstants::TilesPerWorldX &&

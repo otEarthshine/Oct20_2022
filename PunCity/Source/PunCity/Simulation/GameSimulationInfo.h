@@ -3803,7 +3803,6 @@ static bool IsCrop(TileObjEnum tileObjEnum) {
 	return static_cast<uint8>(TileObjEnum::WheatBush) <= static_cast<int32>(tileObjEnum) && static_cast<int32>(tileObjEnum) < static_cast<uint8>(TileObjEnum::Stone);
 }
 
-
 static const int32 WinterTrimGrowthPercent = 20;
 static const int32 HardyTreeChance = 100;
 
@@ -3811,7 +3810,7 @@ struct TileObjInfo
 {
 	// 6 minutes = 1 season = 20 ticks, 1 year = 80 ticks
 	TileObjEnum treeEnum;
-	std::string name;
+	FText name;
 	ResourceTileType type;
 
 	int32 deathChancePerCycle; // (1- 1/2000)^(80 * 10 years) = 0.67
@@ -3826,14 +3825,19 @@ struct TileObjInfo
 	ResourcePair fruitResourceBase100;
 	ResourcePair cutDownResourceBase100;
 
-	std::string description;
+	FText description;
 
+	std::string nameStr() const { return FTextToStd(name); }
+	FString nameFStr() const { return name.ToString(); } // For tracking back later incase FString conversion used in naming meshes causes problems. If there is problem, give FString in english only somehow...
+
+
+	
 	int32 treeEnumInt() { return static_cast<int32>(treeEnum); }
 	ResourceEnum harvestResourceEnum() { return cutDownResourceBase100.resourceEnum; }
 
 	TileObjInfo(
-		TileObjEnum treeEnumIn, std::string nameIn, ResourceTileType typeIn,
-		ResourcePair fruitResourceBase100In, ResourcePair cutDownResourceBase100In, std::string descriptionIn)
+		TileObjEnum treeEnumIn, FText nameIn, ResourceTileType typeIn,
+		ResourcePair fruitResourceBase100In, ResourcePair cutDownResourceBase100In, FText descriptionIn)
 	{
 		treeEnum = treeEnumIn;
 		name = nameIn;
@@ -3973,6 +3977,15 @@ public:
 
 	static int32 TicksPerCycle() { return UpdateChunkCount; }
 
+	// Texts
+#define LOCTEXT_NAMESPACE "TileObjInfo"
+	static FText commonFlowerDesc() { return LOCTEXT("Common Flower Desc", "Common flower. A nice food-source for grazing animals.");}
+	static FText wheatGrassDesc() { return LOCTEXT("Wheat Grass Desc", "Grass that can be cultivated for its seed."); }
+
+	static FText GetOreDescription(FText oreName) {
+		return FText::Format(LOCTEXT("OreDesc", "This region contains {0} that can be mined from mountain."), oreName);
+	}
+#undef LOCTEXT_NAMESPACE
 };
 
 static const int32 GrassToBushValue = 3;
@@ -3990,83 +4003,84 @@ static const ResourcePair defaultWood100(ResourceEnum::Wood, WoodGatherYield_Bas
 static const ResourcePair defaultHay100(ResourceEnum::Hay, HayBaseYield);
 static const ResourcePair defaultGrass100(ResourceEnum::Hay, HayBaseYield / GrassToBushValue);
 
+#define LOCTEXT_NAMESPACE "TileObjInfo"
 
 static const TileObjInfo TreeInfos[] = {
 	//TileObjEnum treeEnumIn, std::string nameIn, ResourceTileType typeIn,
 	//int32_t deathChancePerCycleIn, int32_t fruitChancePerCycleIn,  int32_t maxGrowthSeasons100,
 	//ResourcePair fruitResourceBaseIn, ResourcePair cutDownResourceBaseIn, std::string descriptionIn)
-	TileObjInfo(TileObjEnum::Birch,	"Birch",	ResourceTileType::Tree,	ResourcePair::Invalid(),									defaultWood100, "Fast-growing hardwood tree."),
-	TileObjInfo(TileObjEnum::Orange,	"Orange",	ResourceTileType::Tree,	ResourcePair(ResourceEnum::Orange, GatherBaseYield100), defaultWood100, "Orange trees bear delicious fruits during non-winter seasons."),
+	TileObjInfo(TileObjEnum::Birch,	LOCTEXT("Birch", "Birch"),	ResourceTileType::Tree,	ResourcePair::Invalid(),						defaultWood100, LOCTEXT("Birch Desc", "Fast-growing hardwood tree.")),
+	TileObjInfo(TileObjEnum::Orange,	LOCTEXT("Orange", "Orange"),	ResourceTileType::Tree,	ResourcePair(ResourceEnum::Orange, GatherBaseYield100), defaultWood100, LOCTEXT("Orange Desc", "Orange trees bear delicious fruits during non-winter seasons.")),
 
-	TileObjInfo(TileObjEnum::Apple,	"Apple",	ResourceTileType::Tree,	ResourcePair(ResourceEnum::Orange, GatherBaseYield100), defaultWood100, "Apple trees bear delicious fruits during non-winter seasons."),
-	TileObjInfo(TileObjEnum::Papaya,	"Papaya",	ResourceTileType::Tree,	ResourcePair(ResourceEnum::Papaya, JungleGatherBaseYield100), defaultWood100, "Papaya trees bear delicious fruits during non-winter seasons."),
-	TileObjInfo(TileObjEnum::Durian,	"Durian",	ResourceTileType::Tree,	ResourcePair(ResourceEnum::Orange, GatherBaseYield100), defaultWood100, "Durian trees bear delicious fruits during non-winter seasons."),
-	TileObjInfo(TileObjEnum::Pine1,	"Pine",	ResourceTileType::Tree,	ResourcePair::Invalid(),									defaultWood100, "Fast-growing hardwood tree."),
-	TileObjInfo(TileObjEnum::Pine2,	"Pine",	ResourceTileType::Tree,	ResourcePair::Invalid(),									defaultWood100, "Fast-growing hardwood tree."),
-	TileObjInfo(TileObjEnum::GiantMushroom,	"Giant Mushroom",	ResourceTileType::Tree,	ResourcePair::Invalid(),					ResourcePair(ResourceEnum::Mushroom, WoodGatherYield_Base100 * 2), "A very large mushroom..."),
+	TileObjInfo(TileObjEnum::Apple,	LOCTEXT("Apple", "Apple"),	ResourceTileType::Tree,	ResourcePair(ResourceEnum::Orange, GatherBaseYield100), defaultWood100, LOCTEXT("Apple Desc", "Apple trees bear delicious fruits during non-winter seasons.")),
+	TileObjInfo(TileObjEnum::Papaya,	LOCTEXT("Papaya", "Papaya"),	ResourceTileType::Tree,	ResourcePair(ResourceEnum::Papaya, JungleGatherBaseYield100), defaultWood100, LOCTEXT("Papaya Desc", "Papaya trees bear delicious fruits during non-winter seasons.")),
+	TileObjInfo(TileObjEnum::Durian,	LOCTEXT("Durian", "Durian"),	ResourceTileType::Tree,	ResourcePair(ResourceEnum::Orange, GatherBaseYield100), defaultWood100, LOCTEXT("Durian Desc", "Durian trees bear delicious fruits during non-winter seasons.")),
+	TileObjInfo(TileObjEnum::Pine1,	LOCTEXT("Pine", "Pine"),	ResourceTileType::Tree,	ResourcePair::Invalid(),									defaultWood100, LOCTEXT("Pine Desc", "Fast-growing hardwood tree.")),
+	TileObjInfo(TileObjEnum::Pine2,	LOCTEXT("Pine", "Pine"),	ResourceTileType::Tree,	ResourcePair::Invalid(),									defaultWood100, LOCTEXT("Pine Desc", "Fast-growing hardwood tree.")),
+	TileObjInfo(TileObjEnum::GiantMushroom,	LOCTEXT("Giant Mushroom", "Giant Mushroom"),	ResourceTileType::Tree,	ResourcePair::Invalid(),					ResourcePair(ResourceEnum::Mushroom, WoodGatherYield_Base100 * 2), LOCTEXT("Giant Mushroom Desc", "A very large mushroom...")),
 
-	TileObjInfo(TileObjEnum::Cherry,	"Cherry",	ResourceTileType::Tree,	ResourcePair(ResourceEnum::Orange, GatherBaseYield100), defaultWood100, "Cherry trees bear delicious fruit during non-winter seasons."),
-	TileObjInfo(TileObjEnum::Coconut,	"Coconut",	ResourceTileType::Tree,	ResourcePair(ResourceEnum::Coconut, GatherBaseYield100),								defaultWood100, "Coconut bears delicious fruit during non-winter seasons."),
-	TileObjInfo(TileObjEnum::Cyathea,	"Cyathea",	ResourceTileType::Tree,	ResourcePair::Invalid(),								defaultWood100, "Fern tree."),
-	TileObjInfo(TileObjEnum::ZamiaDrosi,	"Zamia Drosi",	ResourceTileType::Tree,	ResourcePair::Invalid(),						defaultWood100, "Giant leaf tropical tree."),
+	TileObjInfo(TileObjEnum::Cherry,	LOCTEXT("Cherry", "Cherry"),	ResourceTileType::Tree,	ResourcePair(ResourceEnum::Orange, GatherBaseYield100), defaultWood100, LOCTEXT("Cherry Desc", "Cherry trees bear delicious fruit during non-winter seasons.")),
+	TileObjInfo(TileObjEnum::Coconut,	LOCTEXT("Coconut", "Coconut"),	ResourceTileType::Tree,	ResourcePair(ResourceEnum::Coconut, GatherBaseYield100),								defaultWood100, LOCTEXT("Coconut Desc", "Coconut bears delicious fruit during non-winter seasons.")),
+	TileObjInfo(TileObjEnum::Cyathea,	LOCTEXT("Cyathea", "Cyathea"),	ResourceTileType::Tree,	ResourcePair::Invalid(),								defaultWood100, LOCTEXT("Cyathea Desc", "Fern tree.")),
+	TileObjInfo(TileObjEnum::ZamiaDrosi,	LOCTEXT("Zamia Drosi", "Zamia Drosi"),	ResourceTileType::Tree,	ResourcePair::Invalid(),						defaultWood100, LOCTEXT("Zamia Drosi Desc", "Giant leaf tropical tree.")),
 
-	TileObjInfo(TileObjEnum::Cactus1,	"Cactus",	ResourceTileType::Tree,	ResourcePair::Invalid(),						defaultWood100, "Desert plant with thick leafless stem covered in sharp spikes. Hurts to touch."),
-	TileObjInfo(TileObjEnum::SavannaTree1,	"Savanna Acacia",	ResourceTileType::Tree,	ResourcePair::Invalid(),						defaultWood100, "Myths say acacia trees descended from an ancient tree of life."),
+	TileObjInfo(TileObjEnum::Cactus1,	LOCTEXT("Cactus", "Cactus"),	ResourceTileType::Tree,	ResourcePair::Invalid(),						defaultWood100, LOCTEXT("Cactus Desc", "Desert plant with thick leafless stem covered in sharp spikes. Hurts to touch.")),
+	TileObjInfo(TileObjEnum::SavannaTree1,	LOCTEXT("Savanna Acacia", "Savanna Acacia"),	ResourceTileType::Tree,	ResourcePair::Invalid(),						defaultWood100, LOCTEXT("Savanna Acacia Desc", "Myths say acacia trees descended from an ancient tree of life.")),
 	
-	TileObjInfo(TileObjEnum::GrassGreen, "Grass",	ResourceTileType::Bush,	ResourcePair::Invalid(),		defaultGrass100, "Common grass. A nice food-source for grazing animals."),
+	TileObjInfo(TileObjEnum::GrassGreen, LOCTEXT("Grass", "Grass"),	ResourceTileType::Bush,	ResourcePair::Invalid(),		defaultGrass100, LOCTEXT("Grass Desc", "Common grass. A nice food-source for grazing animals.")),
 
-	TileObjInfo(TileObjEnum::OreganoBush, "Common Bush",	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, "Fluffy little bush. A nice food-source for grazing animals."),
-	TileObjInfo(TileObjEnum::CommonBush, "Common Bush", ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, "Fluffy little  bush. A nice food-source for grazing animals."),
+	TileObjInfo(TileObjEnum::OreganoBush, LOCTEXT("Common Bush", "Common Bush"),	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, LOCTEXT("Common Bush Desc", "Fluffy little bush. A nice food-source for grazing animals.")),
+	TileObjInfo(TileObjEnum::CommonBush, LOCTEXT("Common Bush", "Common Bush"), ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, LOCTEXT("Common Bush Desc", "Fluffy little  bush. A nice food-source for grazing animals.")),
 
-	TileObjInfo(TileObjEnum::Fern, "Fern",					ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, "Common plant. A nice food-source for grazing animals."),
-	TileObjInfo(TileObjEnum::SavannaGrass, "Savanna Grass",	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultGrass100, "Common plant. A nice food-source for grazing animals."),
-	TileObjInfo(TileObjEnum::JungleThickLeaf, "Jungle plant",	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, "Common plant. A nice food-source for grazing animals."),
+	TileObjInfo(TileObjEnum::Fern, LOCTEXT("Fern", "Fern"),				ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100,  LOCTEXT("Fern Desc", "Common plant. A nice food-source for grazing animals.")),
+	TileObjInfo(TileObjEnum::SavannaGrass, LOCTEXT("Savanna Grass", "Savanna Grass"),	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultGrass100, LOCTEXT("Savanna Grass Desc", "Common plant. A nice food-source for grazing animals.")),
+	TileObjInfo(TileObjEnum::JungleThickLeaf, LOCTEXT("Jungle Plant", "Jungle Plant"),	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, LOCTEXT("Jungle Plant Desc", "Common plant. A nice food-source for grazing animals.")),
 
 	
-	TileObjInfo(TileObjEnum::BlueFlowerBush, "Primula Flower",	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, "Common flower. A nice food-source for grazing animals."),
-	TileObjInfo(TileObjEnum::WhiteFlowerBush, "Daisy Flower",	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, "Common flower. A nice food-source for grazing animals."),
+	TileObjInfo(TileObjEnum::BlueFlowerBush, LOCTEXT("Primula Flower", "Primula Flower"),	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, TileObjInfo::commonFlowerDesc()),
+	TileObjInfo(TileObjEnum::WhiteFlowerBush, LOCTEXT("Daisy Flower", "Daisy Flower"),	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, TileObjInfo::commonFlowerDesc()),
 
-	TileObjInfo(TileObjEnum::RedPinkFlowerBush, "Porin Flower",	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, "Common flower. A nice food-source for grazing animals."),
+	TileObjInfo(TileObjEnum::RedPinkFlowerBush, LOCTEXT("Porin Flower", "Porin Flower"),	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, TileObjInfo::commonFlowerDesc()),
 
-	TileObjInfo(TileObjEnum::CommonBush2, "Common Bush", ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, "Fluffy little  bush. A nice food-source for grazing animals."),
+	TileObjInfo(TileObjEnum::CommonBush2, LOCTEXT("Common Bush", "Common Bush"), ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, LOCTEXT("Common Bush Desc", "Fluffy little  bush. A nice food-source for grazing animals.")),
 	//TileObjInfo(TileObjEnum::FieldFlowerPurple, "FieldFlowerPurple",	ResourceTileType::Bush,	0,	0,	ResourcePair::Invalid(), defaultHay100, "Common flower. A nice food-source for grazing animals."),
-	TileObjInfo(TileObjEnum::FieldFlowerYellow, "FieldFlowerYellow",	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, "Common flower. A nice food-source for grazing animals."),
+	TileObjInfo(TileObjEnum::FieldFlowerYellow, INVTEXT("FieldFlowerYellow"),	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, TileObjInfo::commonFlowerDesc()),
 
-	TileObjInfo(TileObjEnum::FieldFlowerHeart, "FieldFlowerHeart",	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, "Common flower. A nice food-source for grazing animals."),
-	TileObjInfo(TileObjEnum::FieldFlowerPic, "FieldFlowerPic",	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, "Common flower. A nice food-source for grazing animals."),
+	TileObjInfo(TileObjEnum::FieldFlowerHeart, INVTEXT("FieldFlowerHeart"),	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, TileObjInfo::commonFlowerDesc()),
+	TileObjInfo(TileObjEnum::FieldFlowerPic, INVTEXT("FieldFlowerPic"),	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, TileObjInfo::commonFlowerDesc()),
 
 	// Wheat to Stone are farm crops
-	TileObjInfo(TileObjEnum::WheatBush, "Wheat",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), "Grass that can be cultivated for its seed."),
-	TileObjInfo(TileObjEnum::BarleyBush, "Barley",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), "Grass that can be cultivated for its seed."),
-	TileObjInfo(TileObjEnum::Grapevines, "Grapevines",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Grape, FarmBaseYield100), "Produces delicious Grape that can be eaten fresh or make expensive wine."),
-	TileObjInfo(TileObjEnum::Cannabis, "Cannabis",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cannabis, FarmBaseYield100), "Plant whose parts can be smoked or added to food for recreational purposes."),
+	TileObjInfo(TileObjEnum::WheatBush, LOCTEXT("Wheat", "Wheat"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), TileObjInfo::wheatGrassDesc()),
+	TileObjInfo(TileObjEnum::BarleyBush, LOCTEXT("Barley", "Barley"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), TileObjInfo::wheatGrassDesc()),
+	TileObjInfo(TileObjEnum::Grapevines, LOCTEXT("Grapevines", "Grapevines"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Grape, FarmBaseYield100), LOCTEXT("Grapevines Desc", "Produces delicious Grape that can be eaten fresh or make expensive wine.")),
+	TileObjInfo(TileObjEnum::Cannabis, LOCTEXT("Cannabis", "Cannabis"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cannabis, FarmBaseYield100), LOCTEXT("Cannabis Desc", "Plant whose parts can be smoked or added to food for recreational purposes.")),
 
 	//TileObjInfo(TileObjEnum::PlumpCob, "Plump cob",	ResourceTileType::Bush,				1,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), "Produces large soft yellow tasty cob. Need 2 years before it is ready for harvest, but has 3x yield."),
 	//TileObjInfo(TileObjEnum::CreamPod, "Cream pod",	ResourceTileType::Bush,				1,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), "Produces round pods, which, when cut open, reveals thick sweet cream substance."),
-	TileObjInfo(TileObjEnum::Cabbage, "Cabbage",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cabbage, FarmBaseYield100 * 120 / 100), "Healthy vegetable great for making salad."),
+	TileObjInfo(TileObjEnum::Cabbage, LOCTEXT("Cabbage", "Cabbage"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cabbage, FarmBaseYield100 * 120 / 100), LOCTEXT("Cabbage Desc", "Healthy vegetable great for making salad.")),
 
-	TileObjInfo(TileObjEnum::Cocoa,	"Cocoa",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cocoa, FarmBaseYield100), "Cocoa used to make delicious chocolate."),
-	TileObjInfo(TileObjEnum::Cotton,	"Cotton",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cotton, FarmBaseYield100), "Cotton used to make Cotton Fabric."),
-	TileObjInfo(TileObjEnum::Dye,		"Dye",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Dye, FarmBaseYield100), "Dye used to dye Cotton Fabric or print Book."),
+	TileObjInfo(TileObjEnum::Cocoa,	LOCTEXT("Cocoa", "Cocoa"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cocoa, FarmBaseYield100), LOCTEXT("Cocoa Desc", "Cocoa used to make delicious chocolate.")),
+	TileObjInfo(TileObjEnum::Cotton,	LOCTEXT("Cotton", "Cotton"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cotton, FarmBaseYield100), LOCTEXT("Cotton Desc",  "Cotton used to make Cotton Fabric.")),
+	TileObjInfo(TileObjEnum::Dye,		LOCTEXT("Dye", "Dye"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Dye, FarmBaseYield100), LOCTEXT("Dye Desc", "Dye used to dye Cotton Fabric or print Book.")),
 
 	// Dec 17
-	TileObjInfo(TileObjEnum::Potato,		"Potato",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Potato, FarmBaseYield100), "Common tuber."),
-	TileObjInfo(TileObjEnum::Blueberry,	"Blueberries",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Blueberries, FarmBaseYield100), "Blue-skinned fruit with refreshing taste."),
-	TileObjInfo(TileObjEnum::Melon,		"Melon",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Melon, FarmBaseYield100), "Sweet and refreshing fruit. +3<img id=\"Coin\"/> each unit when consumed."),
-	TileObjInfo(TileObjEnum::Pumpkin,		"Pumpkin",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Pumpkin, FarmBaseYield100), "Fruit with delicate, mildly-flavored flesh."),
-	TileObjInfo(TileObjEnum::RawCoffee,	"Raw Coffee",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::RawCoffee, FarmBaseYield100), "Fruit that can be roasted to make Coffee."),
-	TileObjInfo(TileObjEnum::Tulip,		"Tulip",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Tulip, FarmBaseYield100), "Beautiful decorative flower. (Luxury tier 1)"),
+	TileObjInfo(TileObjEnum::Potato,	LOCTEXT("Potato", "Potato"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Potato, FarmBaseYield100), LOCTEXT("Potato Desc", "Common tuber.")),
+	TileObjInfo(TileObjEnum::Blueberry,	LOCTEXT("Blueberries", "Blueberries"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Blueberries, FarmBaseYield100), LOCTEXT("Blueberries Desc", "Blue-skinned fruit with refreshing taste.")),
+	TileObjInfo(TileObjEnum::Melon,		LOCTEXT("Melon", "Melon"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Melon, FarmBaseYield100), LOCTEXT("Melon Desc", "Sweet and refreshing fruit. +3<img id=\"Coin\"/> each unit when consumed.")),
+	TileObjInfo(TileObjEnum::Pumpkin,	LOCTEXT("Pumpkin", "Pumpkin"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Pumpkin, FarmBaseYield100), LOCTEXT("Pumpkin Desc", "Fruit with delicate, mildly-flavored flesh.")),
+	TileObjInfo(TileObjEnum::RawCoffee,	LOCTEXT("Raw Coffee", "Raw Coffee"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::RawCoffee, FarmBaseYield100), LOCTEXT("Raw Coffee Desc", "Fruit that can be roasted to make Coffee.")),
+	TileObjInfo(TileObjEnum::Tulip,		LOCTEXT("Tulip", "Tulip"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Tulip, FarmBaseYield100), LOCTEXT("Tulip Desc", "Beautiful decorative flower. (Luxury tier 1)")),
 
 	
-	TileObjInfo(TileObjEnum::Herb,		"Medicinal Herb",		ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Herb, FarmBaseYield100), "Herb used to heal sickness or make medicine."),
+	TileObjInfo(TileObjEnum::Herb,		LOCTEXT("Medicinal Herb", "Medicinal Herb"),		ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Herb, FarmBaseYield100), LOCTEXT("Medicinal Herb Desc", "Herb used to heal sickness or make medicine.")),
 	//TileObjInfo(TileObjEnum::BaconBush, "Bacon bush",	ResourceTileType::Bush,				1,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), "Plant with delicious leaves that tastes like bacon when grilled. Legend says, this plant was created by an ancient advanced civilization of giants."),
 
-	TileObjInfo(TileObjEnum::Stone, "Stone",	ResourceTileType::Deposit,	ResourcePair::Invalid(),								ResourcePair(ResourceEnum::Stone, 2) /*this is not used?*/, "Easily-accessible stone deposits."),
+	TileObjInfo(TileObjEnum::Stone, LOCTEXT("Stone", "Stone"),	ResourceTileType::Deposit,	ResourcePair::Invalid(),								ResourcePair(ResourceEnum::Stone, 2) /*this is not used?*/, LOCTEXT("Stone Desc", "Easily-accessible stone deposits.")),
 
-	TileObjInfo(TileObjEnum::CoalMountainOre, "Coal Ore",	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), "This region contains Coal Ore that can be mined from mountain."),
-	TileObjInfo(TileObjEnum::IronMountainOre, "Iron Ore",	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), "This region contains Iron Ore that can be mined from mountain."),
-	TileObjInfo(TileObjEnum::GoldMountainOre, "Gold Ore",	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), "This region contains Gold Ore that can be mined from mountain."),
-	TileObjInfo(TileObjEnum::GemstoneOre, "Gemstone",	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), "This region contains Gemstone that can be mined from mountain."),
+	TileObjInfo(TileObjEnum::CoalMountainOre, LOCTEXT("Coal Ore", "Coal Ore"),	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), TileObjInfo::GetOreDescription(LOCTEXT("Coal Ore", "Coal Ore"))),
+	TileObjInfo(TileObjEnum::IronMountainOre, LOCTEXT("Iron Ore", "Iron Ore"),	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), TileObjInfo::GetOreDescription(LOCTEXT("Iron Ore", "Iron Ore"))),
+	TileObjInfo(TileObjEnum::GoldMountainOre, LOCTEXT("Gold Ore", "Gold Ore"),	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), TileObjInfo::GetOreDescription(LOCTEXT("Gold Ore", "Gold Ore"))),
+	TileObjInfo(TileObjEnum::GemstoneOre, LOCTEXT("Gemstone", "Gemstone"),	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), TileObjInfo::GetOreDescription(LOCTEXT("Gemstone", "Gemstone"))),
 
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -4076,14 +4090,15 @@ static const TileObjInfo TreeInfos[] = {
 	//TileObjInfo(TileObjEnum::WheatBush, "Saguaro Cactus",	ResourceTileType::Bush,ResourceEnum::None,			1,	10,	2,	0, "Hardy cactus can be harvest wood."),
 
 
-	TileObjInfo(TileObjEnum::Count, "-----------",	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::None, 5), "-----------"),
+	TileObjInfo(TileObjEnum::Count, INVTEXT("-----------"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::None, 5), INVTEXT("-----------")),
 
-	TileObjInfo(TileObjEnum::Fish, "Fish",	ResourceTileType::Fish,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Fish, 5), "Fish..."),
+	TileObjInfo(TileObjEnum::Fish, LOCTEXT("Fish", "Fish"),	ResourceTileType::Fish,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Fish, 5), LOCTEXT("Fish", "Fish")),
 
 	//TileObjInfo(TileObjEnum::Avocado, "Avocado",	ResourceTileType::Tree,	10000,	80 * 3,	50,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::None, 5), "A tree that bears delicious and healthy fruits"),
 };
-static const int32_t TileObjEnumCount = _countof(TreeInfos);
+static const int32 TileObjEnumCount = _countof(TreeInfos);
 
+#undef LOCTEXT_NAMESPACE
 
 static void TileObjInfosIntegrityCheck()
 {
@@ -4094,7 +4109,8 @@ static void TileObjInfosIntegrityCheck()
 
 static TileObjInfo GetTileObjInfoInt(int32 tileObjEnumInt) {
 	if (tileObjEnumInt == static_cast<int32>(TileObjEnum::None)) {
-		static TileObjInfo noneTileInfo(TileObjEnum::None, "None", ResourceTileType::None, ResourcePair::Invalid(), ResourcePair::Invalid(), "None");
+		const FText noneText = NSLOCTEXT("TileObjInfo", "None", "None");
+		static TileObjInfo noneTileInfo(TileObjEnum::None, noneText, ResourceTileType::None, ResourcePair::Invalid(), ResourcePair::Invalid(), noneText);
 		return noneTileInfo;
 	}
 	PUN_CHECK(tileObjEnumInt < TileObjEnumCount);
@@ -4110,7 +4126,7 @@ static bool IsGrass(TileObjEnum tileObjEnum) {
 
 static int32_t TileObjEnumFromName(FString name) {
 	for (int i = 0; i < TileObjEnumSize; i++) {
-		if (name.Equals(ToFString(TreeInfos[i].name))) {
+		if (name.Equals(TreeInfos[i].name.ToString())) {
 			return i;
 		}
 	}
@@ -4122,6 +4138,8 @@ static int32_t TileObjEnumFromName(FString name) {
  * Map
  */
 
+#define LOCTEXT_NAMESPACE "TerrainTileTypeName"
+
 enum class TerrainTileType : uint8
 {
 	None = 0,
@@ -4130,15 +4148,18 @@ enum class TerrainTileType : uint8
 	Mountain,
 	ImpassableFlat,
 };
-static const std::vector<std::string> TerrainTileTypeName
+static const TArray<FText> TerrainTileTypeName
 {
-	"None",
-	"River",
-	"Ocean",
-	"Mountain",
-	"Impassable Terrain",
+	LOCTEXT("None", "None"),
+	LOCTEXT("River", "River"),
+	LOCTEXT("Ocean", "Ocean"),
+	LOCTEXT("Mountain", "Mountain"),
+	LOCTEXT("Impassable Terrain", "Impassable Terrain"),
 };
-static std::string GetTerrainTileTypeName(TerrainTileType type) {
+
+#undef LOCTEXT_NAMESPACE
+
+static FText GetTerrainTileTypeName(TerrainTileType type) {
 	return TerrainTileTypeName[static_cast<int>(type)];
 }
 
@@ -4163,85 +4184,6 @@ public:
 	static bool IsInGrid(WorldTile2 tile) {
 		return GameMapConstants::TilesPerWorldX > tile.x && tile.x >= 0 && GameMapConstants::TilesPerWorldY > tile.y && tile.y >= 0;
 	}
-
-	/** 
-	 * Building Map
-	 *
-	 * >= 0 means BuildingTileType
-	 * -1,-2,-3,-4 means that it is a reserved front tile
-	 * Other building can't build on reserved tile, but reserved tile can overlap
-	 *
-	 */
-
-	//static std::vector<TerrainTileType> kTerrainMap;
-	//static std::vector<int32> kBuildingIdMap;
-	//static std::vector<int32> kBuildingFrontIdMap; // x4 size of total tiles... 4 represents each facing directions of buildings using this tile..
-	//static std::vector<CardEnum> kBuildingEnumMap;
-	
-	//static int32 buildingId(int32_t x, int32_t y) { return kBuildingIdMap[WorldTile2(x, y).tileId()];  }
-	//static int32 buildingId(WorldTile2 tile) { return kBuildingIdMap[tile.tileId()]; }
-
-	//static bool hasBuilding(WorldTile2 tile) { return kBuildingIdMap[tile.tileId()] >= 0; }
-
-	//static TerrainTileType terrainTileType(int32 x, int32 y) { return kTerrainMap[WorldTile2(x, y).tileId()]; }
-	//static CardEnum buildingEnum(WorldTile2 tile) { return kBuildingEnumMap[tile.tileId()]; }
-
-
-	//static std::vector<int32> frontBuildingIds(WorldTile2 tile) {
-	//	int32 tileId = tile.tileId();
-	//	std::vector<int32> buildingIds;
-	//	if (kBuildingFrontIdMap[tileId * 4] != -1) buildingIds.push_back(kBuildingFrontIdMap[tileId * 4]);
-	//	if (kBuildingFrontIdMap[tileId * 4 + 1] != -1) buildingIds.push_back(kBuildingFrontIdMap[tileId * 4 + 1]);
-	//	if (kBuildingFrontIdMap[tileId * 4 + 2] != -1) buildingIds.push_back(kBuildingFrontIdMap[tileId * 4 + 2]);
-	//	if (kBuildingFrontIdMap[tileId * 4 + 3] != -1) buildingIds.push_back(kBuildingFrontIdMap[tileId * 4 + 3]);
-	//	return buildingIds;
-	//}
-
-	// This function doens't take road into account
-	//static bool IsFrontBuildable(WorldTile2 tile)
-	//{
-	//	int32 tileId = tile.tileId();
-	//	if (kTerrainMap[tileId] != TerrainTileType::None) {
-	//		return false;
-	//	}
-
-	//	CardEnum buildingEnum = kBuildingEnumMap[tileId];
-	//	return buildingEnum == CardEnum::None ||
-	//			IsRoad(buildingEnum) ||
-	//			IsRoadOverlapBuilding(buildingEnum);
-	//}
-	//static bool IsRoadOverlapBuildable(WorldTile2 tile) {
-	//	return IsFrontBuildable(tile) && !IsRoadOverlapBuilding(kBuildingEnumMap[tile.tileId()]);
-	//}
-	
-	//static void SetBuildingTile(WorldTile2 tile, int32 buildingId, CardEnum buildingEnum)
-	//{
-	//	//if (Time::Ticks() > 0) UE_LOG(LogTemp, Error, TEXT("SetBuildingTile %d %d"), x, y);
-
-	//	int32 tileId = tile.tileId();
-	//	//PUN_CHECK(kTerrainMap[tileId] >= 0) // Building on front tile is not usual
-
-	//	PUN_CHECK(static_cast<int>(buildingEnum) < 1000);
-
-	//	kBuildingIdMap[tileId] = buildingId;
-	//	kBuildingEnumMap[tileId] = buildingEnum;
-	//}
-
-	//static void AddFrontTile(WorldTile2 tile, Direction faceDirection, int32_t buildingId) { 
-	//	//PUN_CHECK(IsFrontBuildable(tile)); TODO: bring back
-	//	//if (Time::Ticks() > 0) UE_LOG(LogTemp, Error, TEXT("AddFrontTile %s"), *tile.To_FString());
-
-	//	int32 tileId = tile.tileId();
-	//	kBuildingFrontIdMap[tileId * 4 + static_cast<int32_t>(faceDirection)] = buildingId;
-	//}
-
-	//static void RemoveFrontTile(WorldTile2 tile, Direction faceDirection) { 
-	//	//PUN_CHECK(IsFrontBuildable(tile)); TODO: bring back
-	//	//if (Time::Ticks() > 0) UE_LOG(LogTemp, Error, TEXT("RemoveFrontTile %s"), *tile.To_FString());
-
-	//	int32 tileId = tile.tileId();
-	//	kBuildingFrontIdMap[tileId * 4 + static_cast<int32_t>(faceDirection)] = -1;
-	//}
 
 	//! Helpers
 	static int32 GetFacingStep(Direction faceDirection, TileArea area, WorldTile2 tile)

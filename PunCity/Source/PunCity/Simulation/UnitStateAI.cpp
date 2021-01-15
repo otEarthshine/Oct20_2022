@@ -1583,7 +1583,7 @@ void UnitStateAI::PlantTree()
 	}
 
 	NextAction(UnitUpdateCallerEnum::PlantTree);
-	AddDebugSpeech("(Done)PlantTree: enum:" + GetTileObjInfo(tileObjEnum).name);
+	AddDebugSpeech("(Done)PlantTree: enum:" + GetTileObjInfo(tileObjEnum).nameStr());
 }
 
 void UnitStateAI::Add_NourishTree(WorldTile2 targetTile) {

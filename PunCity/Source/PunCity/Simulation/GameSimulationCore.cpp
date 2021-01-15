@@ -1876,7 +1876,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 				if (canPlace) {
 					int32 tileId = tile.tileId();
 					TRAILER_LOG(" area tileOwner" + to_string(tileOwner(tile)) + " buildable:" + to_string(IsBuildable(tile)) +
-								" terrain:" + GetTerrainTileTypeName(terraintileType(tile.tileId())) +
+								" terrain:" + FTextToStd(GetTerrainTileTypeName(terraintileType(tile.tileId()))) +
 								" frontclear:" + to_string(_buildingSystem->HasNoBuildingOrFront(tileId)) +
 								" isRoad:" + to_string(overlaySystem().IsRoad(tile)));
 				}
@@ -2770,8 +2770,8 @@ void GameSimulationCore::ChangeWorkMode(FChangeWorkMode command)
 		//	*FString(PlantInfos[(int)farm->currentPlantEnum].name.c_str()),
 		//	*FString(PlantInfos[command.enumInt].name.c_str()));
 		PUN_LOG("ChangeWorkMode id:%d, from: %s, to: %s", command.buildingId,
-			*FString(TreeInfos[(int)farm.currentPlantEnum].name.c_str()),
-			*FString(TreeInfos[command.enumInt].name.c_str()));
+			*TreeInfos[(int)farm.currentPlantEnum].name.ToString(),
+			*TreeInfos[command.enumInt].name.ToString());
 
 		farm.currentPlantEnum = static_cast<TileObjEnum>(command.enumInt);
 	}
@@ -3287,7 +3287,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 	else if (IsSeedCard(command.cardEnum)) 
 	{
 		SeedInfo seedInfo = GetSeedInfo(command.cardEnum);
-		std::string plantName = GetTileObjInfo(seedInfo.tileObjEnum).name;
+		std::string plantName = GetTileObjInfo(seedInfo.tileObjEnum).nameStr();
 		
 		// Unlock farm if needed
 		if (!unlockSystem(command.playerId)->isUnlocked(CardEnum::Farm)) {

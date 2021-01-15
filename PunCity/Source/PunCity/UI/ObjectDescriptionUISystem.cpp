@@ -1103,7 +1103,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						ADDTEXT_(INVTEXT("(Editor)adjacents: +{0}\n"), TEXT_NUM(building.adjacentCount()));
 						descriptionBox->AddSpecialRichText(INVTEXT("<Yellow>"), args);
 #endif
-						descriptionBox->AddRichText("Current", GetTileObjInfo(farm.currentPlantEnum).name);
+						descriptionBox->AddRichText(LOCTEXT("Farm_CurrentPlant", "Current"), GetTileObjInfo(farm.currentPlantEnum).name);
 					}
 					//// TODO: delete this??
 					//else if (building.isEnum(CardEnum::RanchBarn))
@@ -2729,26 +2729,36 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 			int32 provinceId = simulation.GetProvinceIdClean(tile);
 
-			stringstream ss;
-			ss << "<Header>" << info.name << "</> " << tile.ToString();
-			SetText(_objectDescriptionUI->DescriptionUITitle, ss);
+			TArray<FText> args;
+			ADDTEXT_(INVTEXT("<Header>{0}</> {1}"), info.name, tile.ToText());
+			SetText(_objectDescriptionUI->DescriptionUITitle, args);
 			descriptionBox->AddSpacer(12);
 
-			ss << WrapString(info.description); // WrapString Help Prevent flash
-			descriptionBox->AddRichText(ss);
+			descriptionBox->AddRichText(FText::FromString(WrapStringF(info.description.ToString()))); // WrapString Help Prevent flash
 			
 			if (info.IsPlant()) {
 				descriptionBox->AddSpacer(12);
-				ss << "<Bold>Growth percentage:</> " << treeSystem.growthPercent(objectId) << "%\n";
-				ss << "<Bold>Lifespan percentage:</> " << treeSystem.lifeSpanPercent(objectId) << "%\n";
-				ss << "<Bold>Bonus yield:</> " << treeSystem.bonusYieldPercent(objectId) << "%";
-				descriptionBox->AddRichText(ss);
+				const FText growthPercentageText = LOCTEXT("Growth percentage", "Growth percentage");
+				const FText lifespanText = LOCTEXT("Lifespan percentage", "Lifespan percentage");
+				const FText bonusYieldText = LOCTEXT("Bonus yield", "Bonus yield");
+				
+				ADDTEXT_(INVTEXT(
+					"<Bold>{0}:</> {3}%\n"
+					"<Bold>{1}:</> {4}%\n"
+					"<Bold>{2}:</> {5}%"),
+					growthPercentageText, lifespanText, bonusYieldText,
+					TEXT_NUM(treeSystem.growthPercent(objectId)),
+					TEXT_NUM(treeSystem.lifeSpanPercent(objectId)),
+					TEXT_NUM(treeSystem.bonusYieldPercent(objectId))
+				);
+				
+				descriptionBox->AddRichText(args);
 			}
 
 			if (treeSystem.HasMark(playerId(), objectId))
 			{
-				ss << "Marked for gather.";
-				descriptionBox->AddTextWithSpacer(ss);
+				descriptionBox->AddRichText(LOCTEXT("Marked for gather.", "Marked for gather."));
+				descriptionBox->AddSpacer();
 			}
 
 			if (treeSystem.IsReserved(objectId))
@@ -2756,23 +2766,35 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				int32_t reserverId = treeSystem.Reservation(objectId).unitId;
 				UnitStateAI& unit = simulation.unitAI(reserverId);
 
-				ss << "Reserver: \n";
+				ADDTEXT_LOCTEXT("Reserver: \n", "Reserver: \n");
 				if (unit.isEnum(UnitEnum::Human)) {
-					ss << " " << unit.GetUnitName() << "\n";
+					ADDTEXT_(INVTEXT(" {0}\n"), unit.GetUnitNameT());
 				}
-				ss << " " << unit.unitInfo().nameStr() << " (id: " << objectId << ")";
-				
-				descriptionBox->AddTextWithSpacer(ss);
+				ADDTEXT_(INVTEXT(" {0} (id: {1})"), unit.unitInfo().name, TEXT_NUM(objectId));
 			}
 
-			descriptionBox->AddRichText(ss);
+			descriptionBox->AddRichText(args);
 			descriptionBox->AddSpacer(12);
 
-			ss << "<Bold>Biome:</> " << simulation.terrainGenerator().GetBiomeName(tile) << "\n";
-			ss << "<Bold>Fertility:</> " << simulation.terrainGenerator().GetFertilityPercent(tile) << "%\n";
-			ss << "<Bold>Province flat area:</> " << simulation.provinceSystem().provinceFlatTileCount(provinceId) << " tiles\n";
-			//ss << "<Bold>Region:</> (" << region.x << ", " << region.y << ")";
-			descriptionBox->AddRichText(ss);
+			{
+				const FText biomeText = LOCTEXT("Biome", "Biome");
+				const FText fertilityText = LOCTEXT("Fertility", "Fertility");
+				const FText provinceFlatAreaText = LOCTEXT("Province flat area", "Province flat area");
+
+				auto& terrainGen = simulation.terrainGenerator();
+
+				ADDTEXT_(INVTEXT(
+					"<Bold>{0}:</> {3}\n"
+					"<Bold>{1}:</> {4}%\n"
+					"<Bold>{2}:</> {5} tiles"),
+					biomeText, fertilityText, provinceFlatAreaText,
+					terrainGen.GetBiomeNameT(tile),
+					TEXT_NUM(terrainGen.GetFertilityPercent(tile)),
+					TEXT_NUM(simulation.provinceSystem().provinceFlatTileCount(provinceId))
+				);
+				
+				descriptionBox->AddRichText(args);
+			}
 
 			AddBiomeDebugInfo(tile, descriptionBox);
 

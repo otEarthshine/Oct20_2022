@@ -2173,7 +2173,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 						return false;
 					};
 
-					std::string plantName = GetTileObjInfo(GetSeedInfo(buildingEnum).tileObjEnum).name;
+					std::string plantName = GetTileObjInfo(GetSeedInfo(buildingEnum).tileObjEnum).nameStr();
 
 					// TODO: clean up
 					bool noSuitableArea = false;

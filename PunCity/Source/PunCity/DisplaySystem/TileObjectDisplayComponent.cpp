@@ -53,7 +53,7 @@ int UTileObjectDisplayComponent::CreateNewDisplay(int32 objectId)
 		PUN_CHECK(dynamicMaterials.Num() == meshAssets.Num());
 
 		for (int j = 0; j < meshAssets.Num(); j++) {
-			FString meshName = ToFString(info.name) + FString::FromInt(j);
+			FString meshName = info.nameFStr() + FString::FromInt(j);
 			
 			_meshIdToMeshes[meshId]->AddProtoMesh(meshName, meshAssets[j], dynamicMaterials[j], false, false);
 			//_meshIdToMeshes[meshId]->AddProtoMesh(meshName, meshAssets[j], dynamicMaterials[j], true, false, castShadow);
@@ -110,7 +110,7 @@ void UTileObjectDisplayComponent::OnSpawnDisplay(int32 regionId, int32 meshId, W
 				PUN_CHECK(dynamicMaterials.Num() == meshAssets.Num());
 
 				for (int j = 0; j < meshAssets.Num(); j++) {
-					FString meshName = ToFString(info.name) + FString::FromInt(j);
+					FString meshName = info.nameFStr() + FString::FromInt(j);
 					_objectIdToMeshes[regionId]->AddProtoMesh(meshName, meshAssets[j], dynamicMaterials[j], false, false);
 				}
 			}
@@ -183,9 +183,9 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 	{
 		OverlayType overlayType = gameManager()->GetOverlayType();
 		int32 customDepth = overlayType == OverlayType::Gatherer ? 1 : 0;
-		FString orangeMeshName = ToFString(GetTileObjInfo(TileObjEnum::Orange).name) + FString::FromInt(2);
-		FString papayaMeshName = ToFString(GetTileObjInfo(TileObjEnum::Papaya).name) + FString::FromInt(2);
-		FString cococutMeshName = ToFString(GetTileObjInfo(TileObjEnum::Coconut).name) + FString::FromInt(2);
+		FString orangeMeshName = GetTileObjInfo(TileObjEnum::Orange).nameFStr() + FString::FromInt(2);
+		FString papayaMeshName = GetTileObjInfo(TileObjEnum::Papaya).nameFStr() + FString::FromInt(2);
+		FString cococutMeshName = GetTileObjInfo(TileObjEnum::Coconut).nameFStr() + FString::FromInt(2);
 		meshes->SetCustomDepth(orangeMeshName, customDepth);
 		meshes->SetCustomDepth(papayaMeshName, customDepth);
 		meshes->SetCustomDepth(cococutMeshName, customDepth);
@@ -293,8 +293,8 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 			//	transform.GetTranslation().X, transform.GetTranslation().Y, transform.GetTranslation().Z);
 
 			// Note: Crash here might be forgetting to change TreeEnumSize
-			_fallingMeshes->Add(ToFString(TileSubmeshName[(int32)TileSubmeshEnum::Trunk] + info.name), worldTileId, transform, 0);
-			_fallingMeshes->Add(ToFString(TileSubmeshName[(int32)TileSubmeshEnum::Leaf] + info.name), worldTileId + 1 * GameMapConstants::TilesPerWorld, transform, 0);
+			_fallingMeshes->Add(ToFString(TileSubmeshName[(int32)TileSubmeshEnum::Trunk]) + info.nameFStr(), worldTileId, transform, 0);
+			_fallingMeshes->Add(ToFString(TileSubmeshName[(int32)TileSubmeshEnum::Leaf]) + info.nameFStr(), worldTileId + 1 * GameMapConstants::TilesPerWorld, transform, 0);
 		}
 	}
 
@@ -370,20 +370,20 @@ void UTileObjectDisplayComponent::UpdateDisplay_PrepareReset(MeshChunkInfo& chun
 			// TODO: proper toggleInfo for this
 			if (info.treeEnum == TileObjEnum::Grapevines) {
 				if (i == 0) {
-					meshes->Add(ToFString(info.name) + FString::FromInt(i), worldTileId, FTransform(FRotator::ZeroRotator, localTile.localDisplayLocation()), ageState, worldTileId);
+					meshes->Add(info.nameFStr() + FString::FromInt(i), worldTileId, FTransform(FRotator::ZeroRotator, localTile.localDisplayLocation()), ageState, worldTileId);
 				}
 				else {
 					FTransform grapeTransform = transform;
 					grapeTransform.SetLocation(localTile.localDisplayLocation());
 					grapeTransform.SetRotation(FQuat::Identity);
-					meshes->Add(ToFString(info.name) + FString::FromInt(i), worldTileId, grapeTransform, ageState, worldTileId);
+					meshes->Add(info.nameFStr() + FString::FromInt(i), worldTileId, grapeTransform, ageState, worldTileId);
 				}
 				continue;
 			}
 
 			bool castShadow = (info.treeEnum != TileObjEnum::GrassGreen);
 
-			meshes->Add(ToFString(info.name) + FString::FromInt(i), worldTileId, transform, ageState, worldTileId, castShadow);
+			meshes->Add(info.nameFStr() + FString::FromInt(i), worldTileId, transform, ageState, worldTileId, castShadow);
 		}
 	};
 
@@ -474,7 +474,7 @@ void UTileObjectDisplayComponent::UpdateDisplay_PrepareReset(MeshChunkInfo& chun
 						displayLocation.Y += rand % 5;
 
 						//
-						FString name = ToFString(GetTileObjInfo(georesourceNode.info().mountainOreEnum).name);
+						FString name = GetTileObjInfo(georesourceNode.info().mountainOreEnum).nameFStr();
 
 						FTransform transform(rotator, displayLocation, FVector(scale, scale, scale));
 						meshes->Add(name + FString::FromInt(0), worldTileId, transform, 10, worldTileId);
@@ -497,7 +497,7 @@ void UTileObjectDisplayComponent::UpdateDisplay_PrepareReset(MeshChunkInfo& chun
 			int32 ageTick = treeSystem.tileObjAge(worldTileId);
 			int32 ageState = ageTick / TileObjInfo::TicksPerCycle();
 
-			FString tileObjectName = ToFString(info.name);
+			FString tileObjectName = info.nameFStr();
 
 
 			FTransform transform = GameDisplayUtils::GetTreeTransform(localTile.localDisplayLocation(), 0, worldTileId, ageTick, info);
@@ -562,7 +562,7 @@ void UTileObjectDisplayComponent::UpdateDisplay_PrepareReset(MeshChunkInfo& chun
 			//rand = GameRand::DisplayRand(rand);
 			//int32 variationIndex = rand % variationCount;
 			//
-			meshes->Add(ToFString(info.name) + FString::FromInt(variationIndex), worldTileId, transform, 0, worldTileId);
+			meshes->Add(info.nameFStr() + FString::FromInt(variationIndex), worldTileId, transform, 0, worldTileId);
 
 #if !TILE_OBJ_CACHE
 			// See if it is marked for gather

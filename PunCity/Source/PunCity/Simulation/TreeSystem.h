@@ -262,7 +262,7 @@ public:
 		}
 		
 		int32 age = tileObjAge(id);
-		return "\n" + info.name + ", age:" + std::to_string(age) 
+		return "\n" + info.nameStr() + ", age:" + std::to_string(age) 
 				+ "\n growth:" + std::to_string(info.growthPercent(age)) 
 				+ "\n yield:" + std::to_string(info.tileYieldPercent(age))
 				+ "\n cutdown10:" + std::to_string(info.cutDownResource(age, 10).count)

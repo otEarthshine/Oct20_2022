@@ -383,7 +383,7 @@ void ABuildingPlacementSystem::StartBuildingPlacement(CardEnum buildingEnum, int
 
 	
 	
-	PUN_LOG("StartBuildingPlacement: %s lvl:%d", ToTChar(GetBuildingInfo(buildingEnum).name), buildingLvl);
+	PUN_LOG("StartBuildingPlacement: %s lvl:%d", *(GetBuildingInfo(buildingEnum).nameF()), buildingLvl);
 
 	_placementType = PlacementType::Building;
 	_buildingEnum = buildingEnum;

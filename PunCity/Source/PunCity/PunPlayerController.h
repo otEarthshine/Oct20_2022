@@ -716,7 +716,7 @@ public:
 
 	UFUNCTION(Exec) void PlaceBuilding(const FString& buildingName, int32 tileX, int32 tileY)
 	{
-		std::string name = ToStdString(buildingName);
+		std::wstring name = ToWString(buildingName);
 		CardEnum buildingEnum = FindCardEnumByName(name);
 
 		int32 tileOwner = simulation().tileOwner(WorldTile2(tileX, tileY));
@@ -738,7 +738,7 @@ public:
 
 	UFUNCTION(Exec) void SpawnDrop(const FString& resourceName, int32 count, int32 tileX, int32 tileY)
 	{
-		std::string resourceNameStd = ToStdString(resourceName);
+		std::wstring resourceNameStd = ToWString(resourceName);
 		simulation().resourceSystem(playerId()).SpawnDrop(FindResourceEnumByName(resourceNameStd), count, WorldTile2(tileX, tileY));
 	}
 
@@ -768,7 +768,7 @@ public:
 	}
 	UFUNCTION(Exec) void PrintResourceSysFor(const FString& resourceName)
 	{
-		std::string resourceNameStd = ToStdString(resourceName);
+		std::wstring resourceNameStd = ToWString(resourceName);
 		ResourceEnum resourceEnum = FindResourceEnumByName(resourceNameStd);
 		
 		std::stringstream ss;
@@ -1330,7 +1330,7 @@ public:
 				jsonObj->SetStringField("commandType", "PlaceBuilding");
 				
 				jsonObj->SetNumberField("buildingEnum", command->buildingEnum);
-				jsonObj->SetStringField("buildingName", ToFString(GetBuildingInfoInt(command->buildingEnum).name));
+				jsonObj->SetStringField("buildingName", GetBuildingInfoInt(command->buildingEnum).nameF());
 				
 				jsonObj->SetNumberField("buildingLevel", command->buildingLevel);
 

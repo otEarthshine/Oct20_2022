@@ -110,7 +110,7 @@ public:
 					
 					if (commands[j]->commandType() == NetworkCommandEnum::PlaceBuilding) {
 						auto placeCommand = std::static_pointer_cast<FPlaceBuilding>(commands[j]);
-						PUN_LOG("PlaceBuilding %s %s", *ToFString(GetBuildingInfoInt(placeCommand->buildingEnum).name), ToTChar(placeCommand->center.ToString()));
+						PUN_LOG("PlaceBuilding %s %s", *GetBuildingInfoInt(placeCommand->buildingEnum).nameF(), *(placeCommand->center.To_FString()));
 					}
 					
 					break;

@@ -34,7 +34,7 @@ void Building_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulation
 			cardSystem.AddCardToHand2(buildingEnum);
 
 			std::stringstream ss;
-			ss << "You unlocked and received " << GetBuildingInfo(buildingEnum).name << " Card.";
+			ss << "You unlocked and received " << GetBuildingInfo(buildingEnum).nameStd() << " Card.";
 			_simulation->AddPopup(playerId, ss.str());
 			continue;
 		}
@@ -47,8 +47,8 @@ void Building_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulation
 			int32 buildingEnumInt = static_cast<int32>(buildingEnum);
 			
 			std::stringstream ss;
-			ss << "Unlocked " << GetBuildingInfo(buildingEnum).name;
-			ss << "\nWould you like to buy a " << GetBuildingInfo(buildingEnum).name << " card for " << cardSystem.GetCardPrice(buildingEnum) << " <img id=\"Coin\"/>.";
+			ss << "Unlocked " << GetBuildingInfo(buildingEnum).nameStd();
+			ss << "\nWould you like to buy a " << GetBuildingInfo(buildingEnum).nameStd() << " card for " << cardSystem.GetCardPrice(buildingEnum) << " <img id=\"Coin\"/>.";
 			_simulation->AddPopup(
 				PopupInfo(playerId, ss.str(), { "buy", "refuse" }, PopupReceiverEnum::DoneResearchBuyCardEvent, false, "ResearchComplete", buildingEnumInt)
 			);

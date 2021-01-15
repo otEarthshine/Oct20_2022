@@ -405,9 +405,9 @@ public:
 			return ResearchInfo::GetName();
 		}
 		if (_buildingEnums.size() > 0) {
-			return GetBuildingInfo(_buildingEnums[0]).name;
+			return GetBuildingInfo(_buildingEnums[0]).nameStd();
 		}
-		return GetBuildingInfo(_permanentBuildingEnums[0]).name;
+		return GetBuildingInfo(_permanentBuildingEnums[0]).nameStd();
 	}
 
 	std::vector<CardEnum> GetUnlockNames() override {

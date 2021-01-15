@@ -979,7 +979,7 @@ public:
 
 #if WITH_EDITOR
 		for (int32 i = 0; i < _jobPriorityList.size(); i++) {
-			PUN_LOG("_jobPriorityList %s", ToTChar(GetBuildingInfo(_jobPriorityList[i]).name));
+			PUN_LOG("_jobPriorityList %s", *(GetBuildingInfo(_jobPriorityList[i]).name.ToString()));
 		}
 #endif
 	}
@@ -1128,7 +1128,7 @@ public:
 	void TryApplyBuff(CardEnum cardEnum)
 	{
 		if (HasBuff(cardEnum) && GetBuffTicksLeft(cardEnum) > Time::TicksPerMinute * 5) {
-			_simulation->AddPopupToFront(_playerId, GetBuildingInfo(cardEnum).name + " has already been applied.");
+			_simulation->AddPopupToFront(_playerId, GetBuildingInfo(cardEnum).nameStd() + " has already been applied.");
 			return;
 		}
 		

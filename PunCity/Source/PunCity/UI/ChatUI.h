@@ -179,6 +179,10 @@ public:
 		//}
 		return value;
 	}
+	int32 SafeStoi(std::wstring str) {
+		// TODO: make it safe eventually?
+		return std::stoi(str);
+	}
 
 	UFUNCTION() void ChatToggleMinimize() {
 		if (ChatSizeBox->HeightOverride > 299) {
@@ -232,9 +236,9 @@ public:
 		}
 
 		// Parse command
-		std::string message = ToStdString(Text.ToString());
-		std::vector<std::string> commandAndParams;
-		std::string currentString;
+		std::wstring message = ToWString(Text.ToString());
+		std::vector<std::wstring> commandAndParams;
+		std::wstring currentString;
 		bool isInQuotation = false;
 		for (size_t i = 0; i < message.size(); i++)
 		{
@@ -255,7 +259,7 @@ public:
 		}
 
 		// Cheat command
-		if (commandAndParams.size() >= 2 && commandAndParams[0] == "Cheat")
+		if (commandAndParams.size() >= 2 && commandAndParams[0] == TEXT("Cheat"))
 		{
 			for (int i = 0; i < _countof(CheatName); i++) {
 				if (ToFString(CheatName[i]).Equals(ToFString(commandAndParams[1]))) {
@@ -267,7 +271,7 @@ public:
 		}
 
 		// AddWildCards
-		if (commandAndParams.size() >= 1 && commandAndParams[0] == "AddWildCard") {
+		if (commandAndParams.size() >= 1 && commandAndParams[0] == TEXT("AddWildCard")) {
 			int32 addCount = commandAndParams.size() >= 2 ? SafeStoi(commandAndParams[1]) : 3;
 			for (int32 i = 0; i < addCount; i++) {
 				simulation().cardSystem(playerId()).AddCardToHand2(CardEnum::WildCard);
@@ -275,7 +279,7 @@ public:
 		}
 
 		// AddResource
-		if (commandAndParams.size() >= 3 && commandAndParams[0] == "AddResource")
+		if (commandAndParams.size() >= 3 && commandAndParams[0] == TEXT("AddResource"))
 		{
 			ResourceEnum resourceEnum = FindResourceEnumByName(commandAndParams[1]);
 			if (resourceEnum == ResourceEnum::None) {
@@ -290,7 +294,7 @@ public:
 		}
 
 		// AddMoney
-		if (commandAndParams.size() >= 2 && commandAndParams[0] == "AddMoney") 
+		if (commandAndParams.size() >= 2 && commandAndParams[0] == TEXT("AddMoney"))
 		{
 			auto command = make_shared<FCheat>();
 			command->cheatEnum = GetCheatEnum("AddMoney");
@@ -299,7 +303,7 @@ public:
 		}
 
 		// AddInfluence
-		if (commandAndParams.size() >= 2 && commandAndParams[0] == "AddInfluence")
+		if (commandAndParams.size() >= 2 && commandAndParams[0] == TEXT("AddInfluence"))
 		{
 			auto command = make_shared<FCheat>();
 			command->cheatEnum = GetCheatEnum("AddInfluence");
@@ -308,7 +312,7 @@ public:
 		}
 
 		// AddCard
-		if (commandAndParams.size() >= 2 && commandAndParams[0] == "AddCard") 
+		if (commandAndParams.size() >= 2 && commandAndParams[0] == TEXT("AddCard"))
 		{
 			CardEnum cardEnum = FindCardEnumByName(commandAndParams[1]);
 			if (cardEnum == CardEnum::None) {
@@ -328,7 +332,7 @@ public:
 		}
 
 		// AddImmigrants
-		if (commandAndParams.size() >= 2 && commandAndParams[0] == "AddImmigrants")
+		if (commandAndParams.size() >= 2 && commandAndParams[0] == TEXT("AddImmigrants"))
 		{
 			auto command = make_shared<FCheat>();
 			command->cheatEnum = GetCheatEnum("AddImmigrants");
@@ -337,7 +341,7 @@ public:
 		}
 
 		// AddAIImmigrants
-		if (commandAndParams.size() >= 2 && commandAndParams[0] == "AddAIImmigrants")
+		if (commandAndParams.size() >= 2 && commandAndParams[0] == TEXT("AddAIImmigrants"))
 		{
 			auto command = make_shared<FCheat>();
 			command->cheatEnum = GetCheatEnum("AddAIImmigrants");
@@ -345,7 +349,7 @@ public:
 			networkInterface()->SendNetworkCommand(command);
 		}
 		// AddAIMoney
-		if (commandAndParams.size() >= 2 && commandAndParams[0] == "AddAIMoney")
+		if (commandAndParams.size() >= 2 && commandAndParams[0] == TEXT("AddAIMoney"))
 		{
 			auto command = make_shared<FCheat>();
 			command->cheatEnum = GetCheatEnum("AddAIMoney");
@@ -354,7 +358,7 @@ public:
 		}
 
 		// HouseLevel
-		if (commandAndParams.size() >= 2 && commandAndParams[0] == "HouseLevel")
+		if (commandAndParams.size() >= 2 && commandAndParams[0] == TEXT("HouseLevel"))
 		{
 			auto command = make_shared<FCheat>();
 			command->cheatEnum = GetCheatEnum("HouseLevel");
@@ -362,7 +366,7 @@ public:
 			networkInterface()->SendNetworkCommand(command);
 		}
 
-		if (commandAndParams.size() >= 1 && commandAndParams[0] == "PleaseCrash")
+		if (commandAndParams.size() >= 1 && commandAndParams[0] == TEXT("PleaseCrash"))
 		{
 			UObject* nullObj = nullptr;
 			nullObj->BeginDestroy();
@@ -379,7 +383,7 @@ public:
 		if (commandAndParams.size() >= 1)
 		{
 			auto addToggleCommand = [&](FString commandString) {
-				std::string commandStdstr = ToStdString(commandString);
+				std::wstring commandStdstr = ToWString(commandString);
 				if (commandAndParams[0] == commandStdstr)
 				{
 					PunSettings::Toggle(commandString);

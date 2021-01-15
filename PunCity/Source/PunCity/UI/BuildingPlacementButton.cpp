@@ -3,6 +3,8 @@
 #include "BuildingPlacementButton.h"
 #include "../Simulation/GameSimulationCore.h"
 
+#define LOCTEXT_NAMESPACE "BuildingPlacementButton"
+
 FReply UBuildingPlacementButton::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
 	position = GetViewportPosition(InGeometry);
@@ -28,3 +30,116 @@ void UBuildingPlacementButton::OnSellButtonClicked()
 	PUN_CHECK(_callbackParent);
 	_callbackParent->CallBack1(this, CallbackEnum::SellCard);
 }
+
+
+void UBuildingPlacementButton::PunInit(CardEnum buildingEnumIn, int32 cardHandIndexIn, int32 buildingLvlIn, int32 stackSize, UPunWidget* callbackParent, CallbackEnum callbackEnum)
+{
+	buildingEnum = buildingEnumIn;
+	cardHandIndex = cardHandIndexIn;
+	buildingLvl = buildingLvlIn;
+	_callbackParent = callbackParent;
+	_callbackEnum = callbackEnum;
+
+	BldInfo info = GetBuildingInfo(buildingEnum);
+
+	TArray<FText> args;
+	ADDTEXT__(info.miniDescription);
+	if (IsGlobalSlotCard(buildingEnum)) {
+		ADDTEXT_(INVTEXT("\n<Gray>({0})</>"), LOCTEXT("global slot", "global slot"));
+	}
+	if (IsBuildingSlotCard(buildingEnum)) {
+		ADDTEXT_(INVTEXT("\n<Gray>({0})</>"), LOCTEXT("building slot", "building slot"));
+	}
+
+	SetText(DescriptionRichText, args);
+
+	ADDTEXT_TAG_("<CardName>", info.name);
+	if (buildingEnum == CardEnum::House) {
+		ADDTEXT_INV_(" <Orange>[B-H]</>");
+	}
+	else if (buildingEnum == CardEnum::Farm) {
+		ADDTEXT_INV_(" <Orange>[B-F]</>");
+	}
+	else if (buildingEnum == CardEnum::StorageYard) {
+		ADDTEXT_INV_(" <Orange>[B-Y]</>");
+	}
+	else if (buildingEnum == CardEnum::DirtRoad) {
+		ADDTEXT_INV_(" <Orange>[Z]</>");
+	}
+	SetText(BuildingNameRichText, args);
+
+	CardGlow->SetVisibility(ESlateVisibility::Hidden);
+
+	if (stackSize > 0) {
+		cardCount = stackSize;
+
+		Count->SetText(FText::FromString(FString::FromInt(stackSize)));
+
+		//// 1/2, 2/4, 3/4, 4/8
+		//if (stackSize >= CardCountForLvl[3]) {
+		//	Count->SetText(FText::FromString(FString::FromInt(stackSize)));
+		//}
+		//else if (stackSize >= CardCountForLvl[2]) {
+		//	Count->SetText(FText::FromString(FString::FromInt(stackSize) + "/8"));
+		//}
+		//else if (stackSize >= CardCountForLvl[1]) {
+		//	Count->SetText(FText::FromString(FString::FromInt(stackSize) + "/4"));
+		//}
+		//else if (stackSize >= CardCountForLvl[0]) {
+		//	Count->SetText(FText::FromString(FString::FromInt(stackSize) + "/2"));
+		//}
+
+		Count->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
+	else {
+		Count->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	// 
+	if (IsUnboughtCard() ||
+		IsPermanentCard() ||
+		buildingEnum == CardEnum::Townhall ||
+		buildingEnum == CardEnum::JobManagementBureau ||
+		buildingEnum == CardEnum::StatisticsBureau)
+	{
+		SetStars(0);
+		SellButton->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	else {
+		SetStars(buildingLvl);
+		SellButton->SetVisibility(ESlateVisibility::Visible);
+		SellButton->OnClicked.AddDynamic(this, &UBuildingPlacementButton::OnSellButtonClicked);
+	}
+
+	if (IsGlobalSlotCard(buildingEnum)) {
+		CardSlotUnderneath->GetDynamicMaterial()->SetTextureParameterValue("CardSlot", assetLoader()->CardSlotRound);
+		CardSlotUnderneath->GetDynamicMaterial()->SetScalarParameterValue("IsBuildingSlotCard", false);
+		CardSlotUnderneath->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
+	else if (IsBuildingSlotCard(buildingEnum)) {
+		CardSlotUnderneath->GetDynamicMaterial()->SetTextureParameterValue("CardSlot", assetLoader()->CardSlotBevel);
+		CardSlotUnderneath->GetDynamicMaterial()->SetScalarParameterValue("IsBuildingSlotCard", true);
+		CardSlotUnderneath->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
+	else {
+		CardSlotUnderneath->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	// Tooltip
+	UPunBoxWidget::AddBuildingTooltip(this, buildingEnum, this, IsPermanentCard());
+
+	// Close pricing/combi
+	PriceTextBox->SetVisibility(ESlateVisibility::Collapsed);
+
+	NeedResourcesText->SetVisibility(ESlateVisibility::Collapsed);
+
+	BuyText->SetVisibility(ESlateVisibility::Collapsed);
+
+	GetAnimations();
+	//ExclamationIcon->SetVisibility(ESlateVisibility::Collapsed);
+
+	initTime = 0;
+}
+
+
+#undef LOCTEXT_NAMESPACE

@@ -207,7 +207,7 @@ void TownHall::UpgradeTownhall()
 
 		{
 			std::stringstream ss;
-			ss << "Would you like to buy a " << GetBuildingInfo(CardEnum::Warehouse).name << " card for " << _simulation->cardSystem(_playerId).GetCardPrice(CardEnum::Warehouse) << " <img id=\"Coin\"/>.";
+			ss << "Would you like to buy a " << GetBuildingInfo(CardEnum::Warehouse).nameStd() << " card for " << _simulation->cardSystem(_playerId).GetCardPrice(CardEnum::Warehouse) << " <img id=\"Coin\"/>.";
 			_simulation->AddPopup(
 				PopupInfo(_playerId, ss.str(), { "buy", "refuse" }, PopupReceiverEnum::DoneResearchBuyCardEvent, false, "ResearchComplete", static_cast<int>(CardEnum::Warehouse))
 			);

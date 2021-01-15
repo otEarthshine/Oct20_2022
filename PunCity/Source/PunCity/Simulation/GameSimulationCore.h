@@ -1996,7 +1996,7 @@ public:
 					{
 						if (georesourceSystem().georesourceNode(provinceId).georesourceEnum == georesourceEnum)
 						{
-							AddPopup(playerId, "You found " + GetBuildingInfo(seedCardEnum).name + "!");
+							AddPopup(playerId, "You found " + GetBuildingInfo(seedCardEnum).nameStd() + "!");
 							cardSystem(playerId).AddCardToHand2(seedCardEnum);
 							break;
 						}

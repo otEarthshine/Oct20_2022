@@ -1036,15 +1036,16 @@ void UMainGameUI::Tick()
 			int32 skillMana = GetSkillManaCost(cardInfo.cardEnum);
 			int32 maxMana = playerOwned.maxSP();
 			
-			stringstream tip;
-			tip << "<Bold>" << cardInfo.name << "</>\n";
-			tip << "<SPColor>Leader Skill</>\n";
-			tip << "Hotkey: <Orange>[V]</>";
-			tip << "<line><space>";
-			tip << "SP cost: " << skillMana << "\n";
-			tip << cardInfo.description << "<space>";
-			tip << "<SPColor>SP: " << playerOwned.GetSP() << "/" << maxMana << "</>";
-			AddToolTip(LeaderSkillButton, tip.str());
+			TArray<FText> args;
+			ADDTEXT_(INVTEXT("<Bold>{0}</>\n"), cardInfo.name);
+			ADDTEXT_TAGN_("<SPColor>", LOCTEXT("Leader Skill", "Leader Skill"));
+			ADDTEXT_(INVTEXT("{0}: <Orange>[V]</>"), LOCTEXT("Hotkey", "Hotkey"));
+			ADDTEXT_INV_("<line><space>");
+			ADDTEXT_(LOCTEXT("SP cost: {0}\n", "SP cost: {0}\n"), skillMana);
+			ADDTEXT__(cardInfo.GetDescription())
+			ADDTEXT_INV_("<space>");
+			ADDTEXT_(INVTEXT("<SPColor>SP: {0}/{1}</>"), TEXT_NUM(playerOwned.GetSP()), TEXT_NUM(maxMana));
+			AddToolTip(LeaderSkillButton, args);
 			
 			LeaderManaBar->GetDynamicMaterial()->SetScalarParameterValue("Fraction", Clamp01(playerOwned.spFloat() / maxMana));
 			SetText(LeaderManaText, "SP " + to_string(playerOwned.GetSP()) + "/" + to_string(maxMana));
@@ -1418,7 +1419,7 @@ void UMainGameUI::Tick()
 			jobRow->Init(this, jobEnum);
 			JobPriorityScrollBox->AddChild(jobRow);
 			JobPriorityRows.Add(jobRow);
-			jobRow->Rename(ToTChar(GetBuildingInfo(jobEnum).name + "_job"));
+			jobRow->Rename(ToTChar(GetBuildingInfo(jobEnum).nameStd() + "_job"));
 		}
 	}
 
@@ -2030,7 +2031,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 	if (callbackEnum == CallbackEnum::SelectCardRemoval)
 	{
 		buildingEnumToRemove = buildingEnum;
-		SetText(ConverterCardHandConfirmUI->ConfirmText, "Are you sure you want to remove " + GetBuildingInfo(buildingEnum).name + " Card?");
+		SetText(ConverterCardHandConfirmUI->ConfirmText, "Are you sure you want to remove " + GetBuildingInfo(buildingEnum).nameStd() + " Card?");
 		ConverterCardHandConfirmUI->SetVisibility(ESlateVisibility::Visible);
 
 		return;
@@ -2041,7 +2042,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 		// Non-Building Cards
 		if (!IsBuildingCard(buildingEnum))
 		{
-			FString fName = ToFString(GetBuildingInfo(buildingEnum).name);
+			FString fName = GetBuildingInfo(buildingEnum).nameF();
 			PUN_LOG("Not Building Card %s", *fName);
 			if (IsAreaSpell(buildingEnum)) {
 				inputSystemInterface()->StartBuildingPlacement(buildingEnum, cardButton->buildingLvl, true);
@@ -2309,7 +2310,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 
 		int32 cardPrice = simulation().cardSystem(playerId()).GetCardPrice(command->buildingEnum);
 		stringstream ss;
-		ss << "Are you sure you want to sell " << GetBuildingInfo(command->buildingEnum).name;
+		ss << "Are you sure you want to sell " << GetBuildingInfo(command->buildingEnum).nameStd();
 		ss << " for <img id=\"Coin\"/>" << cardPrice << "?";
 		networkInterface()->ShowConfirmationUI(ss.str(), command);
 

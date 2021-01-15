@@ -230,7 +230,7 @@ public:
 
 		if (building.hoverWarning != HoverWarning::None)
 		{
-			PUN_LOG("Hover Warning %s warningId:%d", ToTChar(building.buildingInfo().name), static_cast<int>(building.hoverWarning));
+			PUN_LOG("Hover Warning %s warningId:%d", ToTChar(building.buildingInfo().nameStd()), static_cast<int>(building.hoverWarning));
 
 			DepletedText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 			SetText(DepletedText, GetHoverWarningString(building.hoverWarning));
@@ -318,7 +318,7 @@ public:
 		auto setWarningTradeBuildingFull = [&]()
 		{
 			auto textWidget = CastChecked<UPunTextWidget>(setWarningIcons(1));
-			SetText(textWidget->PunText, tradeBuilding.buildingInfo().name + "\nStorage Full");
+			SetText(textWidget->PunText, tradeBuilding.buildingInfo().nameStd() + "\nStorage Full");
 		};
 
 		bool hasTradeButton = false;

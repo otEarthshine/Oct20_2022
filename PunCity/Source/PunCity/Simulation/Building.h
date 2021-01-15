@@ -769,7 +769,7 @@ public:
 	}
 
 	// Debug
-	std::string debugStr() { return buildingInfo().name + "[" + std::to_string(_objectId) + "]"; }
+	std::string debugStr() { return buildingInfo().nameStd() + "[" + std::to_string(_objectId) + "]"; }
 
 
 	virtual ResourceEnum product()
@@ -1242,7 +1242,7 @@ public:
 	std::vector<int32_t> children;
 
 	// Debug...
-	PUN_DEBUG_EXPR(BldInfo buildingInfo_ = BldInfo(CardEnum::None, "none", -1, "none"));
+	PUN_DEBUG_EXPR(BldInfo buildingInfo_ = BldInfo(CardEnum::None, INVTEXT("none"), -1, INVTEXT("none")));
 
 
 	// Public Non-serialized (Mostly UI)

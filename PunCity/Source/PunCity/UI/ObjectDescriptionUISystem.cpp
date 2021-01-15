@@ -1421,7 +1421,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								auto command = make_shared<FChangeWorkMode>();
 								command->buildingId = objectId;
 								command->intVar1 = dropdownIndex;
-								std::string resourceName = ToStdString(sItem);
+								std::wstring resourceName = ToWString(sItem);
 								command->intVar2 = static_cast<int32>(FindResourceEnumByName(resourceName));
 								networkInterface->SendNetworkCommand(command);
 							}, index);

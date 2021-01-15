@@ -69,12 +69,12 @@ public:
 
 	UFUNCTION() void OnDropDownChanged(FString sItem, ESelectInfo::Type seltype)
 	{
-		std::string resourceName = ToStdString(GiftTypeDropdown->GetSelectedOption());
-		if (resourceName == "") {
+		std::wstring resourceName = ToWString(GiftTypeDropdown->GetSelectedOption());
+		if (resourceName == TEXT("")) {
 			return;
 		}
 		
-		if (resourceName == "Money") {
+		if (resourceName == TEXT("Money")) {
 			GiftIcon->SetBrushFromTexture(assetLoader()->CoinIcon);
 		}
 		else {
@@ -87,11 +87,11 @@ public:
 	{
 		if (targetPlayerId != -1)
 		{
-			std::string resourceName = ToStdString(GiftTypeDropdown->GetSelectedOption());
+			std::wstring resourceName = ToWString(GiftTypeDropdown->GetSelectedOption());
 			ResourceEnum resourceEnum;
 			int32 amount = GiftTargetAmount->amount;
 
-			if (resourceName == "Money") {
+			if (resourceName == TEXT("Money")) {
 				resourceEnum = ResourceEnum::Money;
 				if (amount > simulation().money(playerId())) {
 					simulation().AddPopupToFront(playerId(), "Not enough money to give.", ExclusiveUIEnum::GiftResourceUI, "PopupCannot");

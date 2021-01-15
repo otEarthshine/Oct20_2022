@@ -118,75 +118,7 @@ public:
 	void SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool isInTechQueue, std::shared_ptr<ResearchInfo> tech = nullptr);
 
 	
-	void UpdateTooltip()
-	{
-		auto unlockSys = simulation().unlockSystem(playerId());
-		auto tech = unlockSys->GetTechInfo(techEnum);
-		std::vector<CardEnum> unlockCards = tech->GetUnlockNames();
-
-		UPunBoxWidget* tooltipBox = UPunBoxWidget::AddToolTip(this, this)->TooltipPunBoxWidget;
-		if (tooltipBox)
-		{
-			tooltipBox->AfterAdd();
-
-			// Header
-			tooltipBox->AddRichText("<TipHeader>" + tech->GetName() + "</>");
-			tooltipBox->AddSpacer();
-
-			// Sci points
-			//std::stringstream ss;
-			//tooltipBox->AddSpacer();
-
-			std::stringstream ss;
-			ss << "Cost: " << tech->scienceNeeded(unlockSys->techsFinished) << "<img id=\"Science\"/>";
-			tooltipBox->AddRichText(ss);
-			tooltipBox->AddSpacer();
-			//tooltipBox->AddLineSpacer(12);
-
-			// Requirement
-			if (tech->requiredResourceEnum != ResourceEnum::None)
-			{
-				int32 productionCount = unlockSys->GetResourceProductionCount(tech->requiredResourceEnum);
-				if (productionCount < tech->requiredResourceCount) {
-					ss << "Requirement:\n - Produce " << productionCount << "/" << tech->requiredResourceCount << " " << ResourceName(tech->requiredResourceEnum);
-				} else {
-					ss << "Requirement:\n - Produce " << tech->requiredResourceCount << " " << ResourceName(tech->requiredResourceEnum) << " (Completed)";
-				}
-				tooltipBox->AddRichText(ss);
-				tooltipBox->AddSpacer(12);
-			}
-
-
-			// Bonus body
-			if (tech->HasBonus()) {
-				tooltipBox->AddRichText(tech->GetBonusDescription());
-			}
-
-			if (tech->HasBonus() && unlockCards.size() > 0) {
-				tooltipBox->AddLineSpacer(12);
-			}
-
-			// Unlock body
-			if (unlockCards.size() > 0) {
-				ss << "Unlocks:";
-				for (const CardEnum& cardEnum : unlockCards) {
-					if (IsBuildingCard(cardEnum)) {
-						ss << "\n - Building: " << GetBuildingInfo(cardEnum).name;
-					}
-					else if (IsActionCard(cardEnum)) {
-						ss << "\n - Action card: " << GetBuildingInfo(cardEnum).name;
-					}
-					else if (IsGlobalSlotCard(cardEnum)) {
-						ss << "\n - Slot card (Global): " << GetBuildingInfo(cardEnum).name;
-					}
-					else {
-						ss << "\n - Slot card (Building): " << GetBuildingInfo(cardEnum).name;
-					}
-				}
-				tooltipBox->AddRichText(ss);
-			}
-		}
-	}
+	void UpdateTooltip();
 	
 public:
 	TechEnum techEnum = TechEnum::None;

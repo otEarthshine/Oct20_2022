@@ -1423,7 +1423,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 	if (cardEnum != CardEnum::BoarBurrow &&
 		parameters.playerId != -1) 
 	{
-		_LOG(LogNetworkInput, "[pid:%d] PlaceBuilding %s %s", playerId, *ToFString(BuildingInfo[parameters.buildingEnum].name), *ToFString(parameters.area.ToString()));
+		_LOG(LogNetworkInput, "[pid:%d] PlaceBuilding %s %s", playerId, *BuildingInfo[parameters.buildingEnum].nameF(), *ToFString(parameters.area.ToString()));
 	}
 
 	// Don't allow building without bought card...
@@ -1716,7 +1716,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 			{
 				Building& bld = building(buildingId);
 				playerOwned(playerId).UseSkill(buildingId);
-				AddEventLog(playerId, "You boosted " + GetBuildingInfo(bld.buildingEnum()).name + "'s efficiency.", false);
+				AddEventLog(playerId, "You boosted " + GetBuildingInfo(bld.buildingEnum()).nameStd() + "'s efficiency.", false);
 			}
 		}
 		
@@ -1888,7 +1888,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 
 
 	if (playerId == 0 && !canPlace) {
-		PUN_LOG(" !!! Failed to place %s %s", ToTChar(GetBuildingInfoInt(parameters.buildingEnum).name), ToTChar(parameters.area.ToString()));
+		PUN_LOG(" !!! Failed to place %s %s", *GetBuildingInfoInt(parameters.buildingEnum).nameF(), ToTChar(parameters.area.ToString()));
 	}
 	
 
@@ -2691,7 +2691,7 @@ void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
 	Building* bld = &(building(command.buildingId));
 #endif
 
-	_LOG(LogNetworkInput, " UpgradeBuilding: pid:%d id:%d bldType:%s upgradeType:%d isShiftDown:%d", command.playerId, command.buildingId, ToTChar(bld->buildingInfo().name), command.upgradeType, command.isShiftDown);
+	_LOG(LogNetworkInput, " UpgradeBuilding: pid:%d id:%d bldType:%s upgradeType:%d isShiftDown:%d", command.playerId, command.buildingId, *bld->buildingInfo().nameF(), command.upgradeType, command.isShiftDown);
 
 	// Townhall special case
 	if (bld->isEnum(CardEnum::Townhall))
@@ -2738,7 +2738,7 @@ void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
 				BuildingUpgrade upgrade = bld->upgrades()[command.upgradeType];
 
 				std::string upgradeName = FTextToStd(upgrade.name);
-				AddPopup(command.playerId, "Upgraded " + upgradeName + " on " + to_string(upgradedCount) + " " + (bld->buildingInfo().name) + ".");
+				AddPopup(command.playerId, "Upgraded " + upgradeName + " on " + to_string(upgradedCount) + " " + (bld->buildingInfo().nameStd()) + ".");
 			}
 		}
 	}
@@ -2750,7 +2750,7 @@ void GameSimulationCore::ChangeWorkMode(FChangeWorkMode command)
 	
 	Building& bld = building(command.buildingId);
 
-	_LOG(LogNetworkInput, " ChangeWorkMode %d %s enumInt:%d", command.buildingId, ToTChar(bld.buildingInfo().name), command.enumInt);
+	_LOG(LogNetworkInput, " ChangeWorkMode %d %s enumInt:%d", command.buildingId, *(bld.buildingInfo().nameF()), command.enumInt);
 
 	// Special case: Forester
 	if (bld.isEnum(CardEnum::Forester) &&
@@ -3181,7 +3181,7 @@ void GameSimulationCore::SellCards(FSellCards command)
 	if (sellTotal != -1) {
 		resourceSystem(command.playerId).ChangeMoney(sellTotal);
 
-		AddEventLogF(command.playerId, FString::Printf(TEXT("Sold %s card for %d gold"), ToTChar(GetBuildingInfo(command.buildingEnum).name), sellTotal), true);
+		AddEventLogF(command.playerId, FString::Printf(TEXT("Sold %s card for %d gold"), *(GetBuildingInfo(command.buildingEnum).nameF()), sellTotal), true);
 	}
 }
 
@@ -3197,7 +3197,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 	{
 		if (cardSys.HasBoughtCard(CardEnum::CardRemoval))
 		{
-			std::string cardName = GetBuildingInfoInt(command.variable1).name;
+			std::string cardName = GetBuildingInfoInt(command.variable1).nameStd();
 			AddPopupToFront(command.playerId, "Removed " + cardName + " Card from your deck.<space>" + cardName + " is now only available from Wild Cards.");
 			
 			cardSys.RemoveCards(CardEnum::CardRemoval, 1);

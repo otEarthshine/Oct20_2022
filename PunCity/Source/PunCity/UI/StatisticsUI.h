@@ -144,7 +144,7 @@ public:
 	UFUNCTION() void OnMarketDropDownChanged(FString sItem, ESelectInfo::Type seltype) {
 		if (seltype == ESelectInfo::Type::Direct) return;
 
-		std::string resourceName = ToStdString(sItem);
+		std::wstring resourceName = ToWString(sItem);
 		ResourceEnum resourceEnum = FindResourceEnumByName(resourceName);
 		if (resourceEnum != ResourceEnum::None) {
 			simulation().worldTradeSystem().resourceEnumToShowStat = resourceEnum;

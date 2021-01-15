@@ -458,7 +458,7 @@ void PlayerOwnedManager::RefreshJobs()
 			Building& building = _simulation->building(buildingId);
 			const std::vector<int32>& occupants = building.occupants();
 
-			_LOG(PunRefreshJob, "Start RemoveOccupants buildingId:%d name:%s", building.buildingId(), ToTChar(building.buildingInfo().name));
+			_LOG(PunRefreshJob, "Start RemoveOccupants buildingId:%d name:%s", building.buildingId(), *(building.buildingInfo().nameF()));
 
 			// Leave some workers alone
 			int32 stableOccupantCount = std::min(static_cast<int32>(occupants.size()), building.targetOccupants);
@@ -549,7 +549,7 @@ void PlayerOwnedManager::RefreshJobs()
 
 			debugTotalJobCount += building.targetOccupants;
 
-			_LOG(PunRefreshJob, "Start AddOccupants buildingId:%d name:%s", buildingId, ToTChar(building.buildingInfo().name));
+			_LOG(PunRefreshJob, "Start AddOccupants buildingId:%d name:%s", buildingId, *(building.buildingInfo().nameF()));
 			
 			for (int32 i = building.occupantCount(); i < building.targetOccupants; i++) 
 			{
@@ -652,7 +652,7 @@ void PlayerOwnedManager::FillHouseSlots_FromWorkplace(std::vector<int32>& tempHu
 				bool removedFromList = false;
 				for (size_t i = tempHumanIds.size(); i-- > 0;) {
 					if (occupantId == tempHumanIds[i]) {
-						_LOG(PunRefreshJob, "- tempHumanIds:%d occupantId:%d bldName:%s", tempHumanIds.size(), occupantId, ToTChar(jobBuilding.buildingInfo().name));
+						_LOG(PunRefreshJob, "- tempHumanIds:%d occupantId:%d bldName:%s", tempHumanIds.size(), occupantId, *(jobBuilding.buildingInfo().nameF()));
 						tempHumanIds.erase(tempHumanIds.begin() + i);
 						removedFromList = true;
 						break;
@@ -1324,7 +1324,7 @@ void PlayerOwnedManager::Tick1Sec()
 			{
 				int32 cardEnumInt = i + BuildingEnumCount;
 				std::stringstream ss;
-				ss << "Your " << GetBuildingInfoInt(cardEnumInt).name << " Buff is running out.";
+				ss << "Your " << GetBuildingInfoInt(cardEnumInt).nameStd() << " Buff is running out.";
 				ss << "<space>";
 				ss << "Would you like to renew it with <img id=\"Coin\"/>xPopulation?";
 				_simulation->AddPopupNonDuplicate(PopupInfo(_playerId, ss.str(), { "Renew", "Close" }, PopupReceiverEnum::ResetBuff, false, "", cardEnumInt));

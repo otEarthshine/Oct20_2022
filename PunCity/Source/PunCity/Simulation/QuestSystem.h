@@ -466,7 +466,7 @@ struct ProductionQuest : Quest
 			std::stringstream ss;
 			ss << "Quest completed!\n";
 			ss << "Produced " << neededProductionCount() << " " << ResourceName(resourceEnum()) << ".\n";
-			ss << "Reward Card: " << GetBuildingInfo(rewardCardEnum()).name;
+			ss << "Reward Card: " << GetBuildingInfo(rewardCardEnum()).nameStd();
 			AddEndPopup(ss.str());
 
 			GetRewardCard();
@@ -536,7 +536,7 @@ struct TradeQuest : Quest
 			std::stringstream ss;
 			ss << "Quest completed!<space>";
 			ss << "Traded " << neededValue() << "<img id=\"Coin\"/>.<space>";
-			ss << "Reward Card: " << GetBuildingInfo(rewardCardEnum()).name;
+			ss << "Reward Card: " << GetBuildingInfo(rewardCardEnum()).nameStd();
 			AddEndPopup(ss.str());
 
 			GetRewardCard();

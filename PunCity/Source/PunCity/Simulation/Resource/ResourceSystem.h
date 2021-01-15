@@ -46,7 +46,7 @@ struct ResourceHolder
 			<< " pop:" + std::to_string(_reservedPop)
 			<< " target:" + std::to_string(_target)
 			<< " connected:" + std::to_string(sim->IsConnected(townCenterTile, tile, 3, true))
-			<< " owner:" + GetBuildingInfo(sim->buildingEnum(objectId)).name
+			<< " owner:" + GetBuildingInfo(sim->buildingEnum(objectId)).nameStd()
 			<< "]\n";
 	}
 

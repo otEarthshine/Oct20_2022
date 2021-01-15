@@ -446,7 +446,7 @@ public:
 	}
 
 	FString ToCompactString() override {
-		return ToFString(GetNetworkCommandName(commandType()) + "-" + GetBuildingInfoInt(buildingEnum).name);
+		return ToFString(GetNetworkCommandName(commandType())) + "-" + GetBuildingInfoInt(buildingEnum).nameF();
 	}
 };
 

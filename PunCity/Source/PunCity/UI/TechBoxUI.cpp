@@ -4,6 +4,8 @@
 #include "TechBoxUI.h"
 #include "Materials/MaterialInstanceDynamic.h"
 
+#define LOCTEXT_NAMESPACE "TechBoxUI"
+
 FReply UTechBoxUI::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
 	PUN_CHECK(_callbackParent);
@@ -153,3 +155,86 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 	}
 	
 }
+
+
+void UTechBoxUI::UpdateTooltip()
+{
+	auto unlockSys = simulation().unlockSystem(playerId());
+	auto tech = unlockSys->GetTechInfo(techEnum);
+	std::vector<CardEnum> unlockCards = tech->GetUnlockNames();
+
+	UPunBoxWidget* tooltipBox = UPunBoxWidget::AddToolTip(this, this)->TooltipPunBoxWidget;
+	if (tooltipBox)
+	{
+		tooltipBox->AfterAdd();
+
+		// Header
+		tooltipBox->AddRichText("<TipHeader>" + tech->GetName() + "</>");
+		tooltipBox->AddSpacer();
+
+		// Sci points
+		//std::stringstream ss;
+		//tooltipBox->AddSpacer();
+
+		const FText costText = LOCTEXT("Cost", "Cost");
+		const FText requirementText = LOCTEXT("Requirement", "Requirement");
+		const FText produceText = LOCTEXT("Produce", "Produce");
+
+		TArray<FText> args;
+		ADDTEXT_(INVTEXT("{0}: {1}<img id=\"Science\"/>"), costText, TEXT_NUM(tech->scienceNeeded(unlockSys->techsFinished)));
+		tooltipBox->AddRichText(args);
+		tooltipBox->AddSpacer();
+		//tooltipBox->AddLineSpacer(12);
+
+		// Requirement
+		if (tech->requiredResourceEnum != ResourceEnum::None)
+		{
+			int32 productionCount = unlockSys->GetResourceProductionCount(tech->requiredResourceEnum);
+			if (productionCount < tech->requiredResourceCount) {
+				ADDTEXT_(INVTEXT("{0}:\n - {1} {2}/{3} {4}"), requirementText, produceText, TEXT_NUM(productionCount), TEXT_NUM(tech->requiredResourceCount), ResourceNameT(tech->requiredResourceEnum));
+			}
+			else {
+				ADDTEXT_(INVTEXT("{0}:\n - {1} {2} {3} ({4})"), requirementText, produceText, TEXT_NUM(tech->requiredResourceCount), ResourceNameT(tech->requiredResourceEnum), LOCTEXT("Completed", "Completed"));
+			}
+			tooltipBox->AddRichText(args);
+			tooltipBox->AddSpacer(12);
+		}
+
+
+		// Bonus body
+		if (tech->HasBonus()) {
+			tooltipBox->AddRichText(tech->GetBonusDescription());
+		}
+
+		if (tech->HasBonus() && unlockCards.size() > 0) {
+			tooltipBox->AddLineSpacer(12);
+		}
+
+		// Unlock body
+		if (unlockCards.size() > 0)
+		{
+			ADDTEXT_LOCTEXT("Unlocks:", "Unlocks:");
+			for (const CardEnum& cardEnum : unlockCards) {
+				if (IsBuildingCard(cardEnum)) {
+					ADDTEXT_(LOCTEXT("Unlocked Building Tip", 
+						"\n - Building: {0}"), GetBuildingInfo(cardEnum).name);
+				}
+				else if (IsActionCard(cardEnum)) {
+					ADDTEXT_(LOCTEXT("Unlocked Action card Tip", 
+						"\n - Action card: {0}"), GetBuildingInfo(cardEnum).name);
+				}
+				else if (IsGlobalSlotCard(cardEnum)) {
+					ADDTEXT_(LOCTEXT("Unlocked Slot card (Global) Tip", 
+						"\n - Slot card (Global): {0}"), GetBuildingInfo(cardEnum).name);
+				}
+				else {
+					ADDTEXT_(LOCTEXT("Unlocked Slot card (Building) Tip", 
+						"\n - Slot card (Building): {0}"), GetBuildingInfo(cardEnum).name);
+				}
+			}
+			tooltipBox->AddRichText(args);
+		}
+	}
+}
+
+#undef LOCTEXT_NAMESPACE 

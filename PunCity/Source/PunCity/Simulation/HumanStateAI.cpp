@@ -2863,7 +2863,7 @@ void HumanStateAI::DoFarmWork()
 
 	farm.DoFarmWork(_id, tile, farmStage);
 
-	AddDebugSpeech("(Done)DoFarmWork: bld:" + building.buildingInfo().name + " reservation:" + ReservationsToString());
+	AddDebugSpeech("(Done)DoFarmWork: bld:" + building.buildingInfo().nameStd() + " reservation:" + ReservationsToString());
 	NextAction(UnitUpdateCallerEnum::DoFarmWork);
 }
 

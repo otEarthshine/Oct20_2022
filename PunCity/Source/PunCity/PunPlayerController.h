@@ -1078,7 +1078,7 @@ public:
 			cameraRecordJson->SetNumberField("rotatorYaw", rotator.Yaw);
 			cameraRecordJson->SetNumberField("rotatorRoll", rotator.Roll);
 
-			cameraRecordJson->SetStringField("Biome", ToFString(GetBiomeInfo(sim.GetBiomeEnum(cameraRecords[i].cameraAtom.worldTile2())).name));
+			cameraRecordJson->SetStringField("Biome", GetBiomeInfo(sim.GetBiomeEnum(cameraRecords[i].cameraAtom.worldTile2())).name.ToString());
 
 			cameraRecordJson->SetNumberField("unpause", static_cast<int>(cameraRecords[i].isCameraReplayUnpause));
 
@@ -1343,7 +1343,7 @@ public:
 				jsonObj->SetNumberField("faceDirection", command->faceDirection);
 				jsonObj->SetNumberField("prebuilt", command->area2.minX); // Area2.minX to keep prebuilt
 				
-				jsonObj->SetStringField("biome", ToFString(GetBiomeInfo(sim.GetBiomeEnum(command->center)).name));
+				jsonObj->SetStringField("biome", GetBiomeInfo(sim.GetBiomeEnum(command->center)).name.ToString());
 			}
 			else if (commands[i]->commandType() == NetworkCommandEnum::PlaceDrag)
 			{

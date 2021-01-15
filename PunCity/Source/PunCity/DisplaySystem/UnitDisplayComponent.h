@@ -64,7 +64,7 @@ public:
 			
 			int32 variationCount = assetLoader->unitMeshCount(unitEnum);
 			for (int32 j = 0; j < variationCount; j++) {
-				_unitMeshes->AddProtoMesh(ToFString(UnitInfos[i].name) + FString::FromInt(j), assetLoader->unitMesh(unitEnum, j), nullptr);
+				_unitMeshes->AddProtoMesh(UnitInfos[i].name.ToString() + FString::FromInt(j), assetLoader->unitMesh(unitEnum, j), nullptr);
 			}
 		}
 
@@ -186,7 +186,7 @@ protected:
 private:
 	static FString GetMeshName(const UnitInfo& info, int32 variationIndex)
 	{
-		FString unitMeshName = ToFString(info.name);
+		FString unitMeshName = info.name.ToString();
 		unitMeshName += FString::FromInt(variationIndex);
 		return unitMeshName;
 	}

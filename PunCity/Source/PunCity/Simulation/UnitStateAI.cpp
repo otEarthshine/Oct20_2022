@@ -2604,9 +2604,9 @@ FText UnitStateAI::GetTypeName()
 {
 	if (isChild()) {
 		const FText littleText = LOCTEXT("Little", "Little");
-		return FText::Format(INVTEXT("{0} {1}"), littleText, ToFText(unitInfo().name));
+		return FText::Format(INVTEXT("{0} {1}"), littleText, unitInfo().name);
 	}
-	return ToFText(unitInfo().name);
+	return unitInfo().name;
 }
 
 

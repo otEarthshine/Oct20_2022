@@ -534,6 +534,7 @@ struct WorldRegion2
 	}
 
 	std::string ToString() { return "(" + std::to_string(x) + "," + std::to_string(y) + ")"; }
+	FString ToFString() { return "(" + FString::FromInt(x) + "," + FString::FromInt(y) + ")"; }
 
 	bool operator==(const WorldRegion2& a) const {
 		return x == a.x && y == a.y;

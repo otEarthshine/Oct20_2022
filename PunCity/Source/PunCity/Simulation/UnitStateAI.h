@@ -495,7 +495,7 @@ public:
 	std::string debugStr() const {
 		std::stringstream ss;
 		ss << "\n\n\n\n\n";
-		ss << "[>>>>>>>>" << unitInfo().name << "<<<<<<<<] unitId:" << _id << ", transformState:" << TransformStateLabel(_unitData->transformState(_id))
+		ss << "[>>>>>>>>" << unitInfo().nameStr() << "<<<<<<<<] unitId:" << _id << ", transformState:" << TransformStateLabel(_unitData->transformState(_id))
 			<< ", workplace:" << workplaceId()
 			<< ", nextActiveTick:" << nextActiveTick() << ", Time:" << Time::Ticks()
 			<< _inventory.ToString()

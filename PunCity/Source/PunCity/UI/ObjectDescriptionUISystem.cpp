@@ -2760,7 +2760,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				if (unit.isEnum(UnitEnum::Human)) {
 					ss << " " << unit.GetUnitName() << "\n";
 				}
-				ss << " " << unit.unitInfo().name << " (id: " << objectId << ")";
+				ss << " " << unit.unitInfo().nameStr() << " (id: " << objectId << ")";
 				
 				descriptionBox->AddTextWithSpacer(ss);
 			}
@@ -3730,36 +3730,30 @@ void UObjectDescriptionUISystem::AddProvinceInfo(int32 provinceId, UPunBoxWidget
 
 	auto& terrainGenerator = simulation().terrainGenerator();
 
-	stringstream ss;
+	TArray<FText> args;
 
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUI_Province1);
 		
 		if (provinceId == OceanProvinceId)
 		{
-			ss << "<Header>Deep Ocean</>\n";
-			SetText(_objectDescriptionUI->DescriptionUITitle, ss);
-			ss << "Large body of water.";
-			descriptionBox->AddRichText(ss);
+			SetText(_objectDescriptionUI->DescriptionUITitle, TEXT_TAG("<Header>", LOCTEXT("Deep Ocean", "Deep Ocean")));
+			descriptionBox->AddRichText(LOCTEXT("Deep Ocean Desc", "Large body of water."));
 			return;
 		}
 
 		if (provinceId == MountainProvinceId)
 		{
-			ss << "<Header>High Mountain</>\n";
-			SetText(_objectDescriptionUI->DescriptionUITitle, ss);
-			ss << "Impassable unclaimed mountain.";
-			descriptionBox->AddRichText(ss);
+			SetText(_objectDescriptionUI->DescriptionUITitle, TEXT_TAG("<Header>", LOCTEXT("High Mountain", "High Mountain")));
+			descriptionBox->AddRichText(LOCTEXT("High Mountain Desc", "Impassable unclaimed mountain."));
 			return;
 		}
 
 		if (provinceId == RiverProvinceId ||
 			provinceId == EmptyProvinceId)
 		{
-			ss << "<Header>Unusable Land</>\n";
-			SetText(_objectDescriptionUI->DescriptionUITitle, ss);
-			ss << "Land without any use that no one bothers with.";
-			descriptionBox->AddRichText(ss);
+			SetText(_objectDescriptionUI->DescriptionUITitle, TEXT_TAG("<Header>", LOCTEXT("Unusable Land", "Unusable Land")));
+			descriptionBox->AddRichText(LOCTEXT("Unusable Land Desc", "Land without any use that no one bothers with."));
 			return;
 		}
 	}
@@ -3771,16 +3765,16 @@ void UObjectDescriptionUISystem::AddProvinceInfo(int32 provinceId, UPunBoxWidget
 	// Biome
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUI_ProvinceAddBiomeInfo);
-		
-		ss << "<Header>" << terrainGenerator.GetBiomeName(provinceCenter) << " Province</>\n";
-		ss << "<Subheader>" << WorldRegion2(provinceId).ToString() << "</>\n";
-		SetText(_objectDescriptionUI->DescriptionUITitle, ss);
-		ss.str("");
+
+		const FText provinceText = LOCTEXT("Province", "Province");
+
+		ADDTEXT_(INVTEXT("<Header>{0} {1}</>\n"), terrainGenerator.GetBiomeNameT(provinceCenter), provinceText);
+		SetText(_objectDescriptionUI->DescriptionUITitle, args);
 		descriptionBox->AddSpacer(12);
 
 		// Biome Description
-		ss << WrapString(terrainGenerator.GetBiomeInfoFromTile(provinceCenter).description);
-		descriptionBox->AddRichText(ss);
+		FString wrappedDescription = WrapStringF(terrainGenerator.GetBiomeInfoFromTile(provinceCenter).description.ToString());
+		descriptionBox->AddRichText(FText::FromString(wrappedDescription));
 
 		descriptionBox->AddSpacer(12);
 

@@ -53,7 +53,6 @@ void ACameraPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 	PlayerInputComponent->BindAction("KeyPressed_ToggleHideTree", IE_Pressed, this, &ACameraPawn::KeyPressed_ToggleHideTree);
 	
-	
 	PlayerInputComponent->BindAction("LeftMouseButton", IE_Pressed, this, &ACameraPawn::LeftMouseDown);
 	PlayerInputComponent->BindAction("LeftMouseButton", IE_Released, this, &ACameraPawn::LeftMouseUp);
 
@@ -567,9 +566,11 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 	 * Note: FrostPunk scroll zoom is disabled when the middle mouse is down
 	 */
 	if (!isMiddleMouseDown)
-	{	
-		int32 zoomStepSkip = static_cast<int32>(MinZoomSkipSteps + zoomSpeedFraction * (MaxZoomSkipSteps - MinZoomSkipSteps));
-		if (_cameraZoomInputAxis == -1.0f) 
+	{
+		float actualZoomSpeedFraction = zoomSpeedFraction * fabs(_cameraZoomInputAxis);
+		int32 zoomStepSkip = static_cast<int32>(MinZoomSkipSteps + actualZoomSpeedFraction * (MaxZoomSkipSteps - MinZoomSkipSteps));
+		
+		if (_cameraZoomInputAxis < 0.0f) // == -1.0f) 
 		{
 			int32 preferredZoomStep = min(MaxZoomStep, _cameraZoomStep + zoomStepSkip);
 			//_cameraZoomStep = min(MaxZoomStep, _cameraZoomStep + zoomStepSkip);
@@ -613,7 +614,7 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 
 			
 		}
-		if (_cameraZoomInputAxis == 1.0f) 
+		if (_cameraZoomInputAxis > 0.0f) // == 1.0f) 
 		{
 			int32 preferredZoomStep = max(MinZoomStep, _cameraZoomStep - zoomStepSkip);
 			//_cameraZoomStep = max(MinZoomStep, _cameraZoomStep - zoomStepSkip);

@@ -390,7 +390,7 @@ public:
 					ss << " House";
 				}
 
-				ss << " " << IncomeEnumName[i] <<"\n";
+				ss << " " << FTextToStd(IncomeEnumName[i]) << "\n";
 			}
 		}
 
@@ -408,13 +408,13 @@ public:
 		{
 			if (influenceIncomes100[i] != 0) {
 				ss << " " << ToSignedNumber(influenceIncomes100[i] / 100.0f);
-				ss << " " << InfluenceIncomeEnumName[i] << "\n";
+				ss << " " << FTextToStd(InfluenceIncomeEnumName[i]) << "\n";
 			}
 		}
 
 		auto addStoredInfluenceRow = [&](InfluenceIncomeEnum influenceEnum) {
 			ss << " " << (influenceIncomes100[static_cast<int>(influenceEnum)] * storedToInfluenceRevenue / 100)
-			   << " " << InfluenceIncomeEnumName[static_cast<int>(influenceEnum)] <<"\n";
+			   << " " << FTextToStd(InfluenceIncomeEnumName[static_cast<int>(influenceEnum)]) <<"\n";
 		};
 		
 		ss << "<space>";

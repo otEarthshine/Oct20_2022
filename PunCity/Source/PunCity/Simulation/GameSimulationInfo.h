@@ -79,9 +79,9 @@ static std::string GetGameVersionString(int32 version)
 
 #define ToTChar(stdString) UTF8_TO_TCHAR((stdString).c_str())
 
-#define ToStdString(fString) (std::string(TCHAR_TO_UTF8(*(fString))));
+#define ToStdString(fString) (std::string(TCHAR_TO_UTF8(*(fString))))
 
-#define FTextToStd(fText) ToStdString(fText.ToString());
+#define FTextToStd(fText) (std::string(TCHAR_TO_UTF8(*(fText.ToString()))))
 
 #define FToUTF8(fString) (TCHAR_TO_UTF8(*(fString)));
 
@@ -4454,29 +4454,6 @@ enum class OverlayType
 	BadAppeal,
 };
 
-static const std::string OverlayTypeName[] = {
-	"None",
-	"Appeal",
-	"Fish",
-	"Farm",
-	"Gatherer",
-	"Hunter",
-	"Forester",
-	//"ConstructionOffice",
-	"Industrialist",
-	"Consulting",
-	"Human",
-
-	"Library",
-	"School",
-	"Bank",
-	
-	"Theatre",
-	"Tavern",
-
-	"BadAppeal",
-};
-
 static bool IsGridOverlay(OverlayType overlayEnum)
 {
 	switch(overlayEnum)
@@ -4493,6 +4470,8 @@ static bool IsGridOverlay(OverlayType overlayEnum)
 static const int32 BattleInfluencePrice = 200;
 static const int32 BattleClaimTicks = Time::TicksPerSeason;
 
+#define LOCTEXT_NAMESPACE "InfluenceIncomeEnum"
+
 enum class InfluenceIncomeEnum : uint8
 {
 	Townhall,
@@ -4507,19 +4486,21 @@ enum class InfluenceIncomeEnum : uint8
 	
 	Count,
 };
-static std::vector<std::string> InfluenceIncomeEnumName
+static const TArray<FText> InfluenceIncomeEnumName
 {
-	"Townhall",
-	"Population",
-	"Luxury Consumption",
-	"Territory Upkeep",
-	"Flat-Land Border Province Upkeep",
-	"Too Much Stored Influence Points",
+	LOCTEXT("Townhall", "Townhall"),
+	LOCTEXT("Population", "Population"),
+	LOCTEXT("Luxury Consumption", "Luxury Consumption"),
+	LOCTEXT("Territory Upkeep", "Territory Upkeep"),
+	LOCTEXT("Flat-Land Border Province Upkeep", "Flat-Land Border Province Upkeep"),
+	LOCTEXT("Too Much Stored Influence Points", "Too Much Stored Influence Points"),
 
-	"Fort",
-	"Colony",
+	LOCTEXT("Fort", "Fort"),
+	LOCTEXT("Colony", "Colony"),
 };
 static int32 InfluenceIncomeEnumCount = static_cast<int32>(InfluenceIncomeEnum::Count);
+
+#undef LOCTEXT_NAMESPACE
 
 enum class IncomeEnum : uint8
 {
@@ -4561,43 +4542,47 @@ enum class IncomeEnum : uint8
 
 static const int32 HouseIncomeEnumCount = 9;
 
-static std::vector<std::string> IncomeEnumName
+#define LOCTEXT_NAMESPACE "IncomeEnumName"
+
+static const TArray<FText> IncomeEnumName
 {
-	"Base",
-	"Tech More Gold per House",
-	"Tech House Lvl 2 Income",
-	"Appeal",
-	"Luxury",
+	LOCTEXT("Base", "Base"),
+	LOCTEXT("Tech More Gold per House", "Tech More Gold per House"),
+	LOCTEXT("Tech House Lvl 2 Income", "Tech House Lvl 2 Income"),
+	LOCTEXT("Appeal", "Appeal"),
+	LOCTEXT("Luxury", "Luxury"),
 
-	"Adjacency",
-	"Card Middle Class Income",
-	"Card Beer Tax",
-	"Card Desert Pilgrim",
+	LOCTEXT("Adjacency", "Adjacency"),
+	LOCTEXT("Card Middle Class Income", "Card Middle Class Income"),
+	LOCTEXT("Card Beer Tax", "Card Beer Tax"),
+	LOCTEXT("Card Desert Pilgrim", "Card Desert Pilgrim"),
 
-	"Townhall Income",
-	"Bank Profit",
-	"Investment Profit",
-	"Conglomerate",
+	LOCTEXT("Townhall Income", "Townhall Income"),
+	LOCTEXT("Bank Profit", "Bank Profit"),
+	LOCTEXT("Investment Profit", "Investment Profit"),
+	LOCTEXT("Conglomerate", "Conglomerate"),
 	
-	"Tax from Vassal",
-	"Tax for Lord",
-	"Others",
-	"Building Upkeep",
-	"Military Upkeep",
+	LOCTEXT("Tax from Vassal", "Tax from Vassal"),
+	LOCTEXT("Tax for Lord", "Tax for Lord"),
+	LOCTEXT("Others", "Others"),
+	LOCTEXT("Building Upkeep", "Building Upkeep"),
+	LOCTEXT("Military Upkeep", "Military Upkeep"),
 	
-	"Territory Income",
-	"Territory Upkeep",
-	"Trade Route",
+	LOCTEXT("Territory Income", "Territory Income"),
+	LOCTEXT("Territory Upkeep", "Territory Upkeep"),
+	LOCTEXT("Trade Route", "Trade Route"),
 	
-	"Last Era Tech",
+	LOCTEXT("Last Era Tech", "Last Era Tech"),
 
-	"Count",
+	LOCTEXT("Count", "Count"),
 };
 
 static int32 IncomeEnumCount = static_cast<int32>(IncomeEnum::Count);
 
+#undef LOCTEXT_NAMESPACE
+
 static FText GetIncomeEnumName(int32 incomeEnumInt) {
-	return ToFText(IncomeEnumName[static_cast<int>(incomeEnumInt)]);
+	return IncomeEnumName[static_cast<int>(incomeEnumInt)];
 }
 
 
@@ -4939,8 +4924,8 @@ enum class UnitEnum : uint8
 
 struct BiomeInfo
 {
-	std::string name;
-	std::string description;
+	FText name;
+	FText description;
 	std::vector<TileObjEnum> trees;
 	std::vector<TileObjEnum> plants;
 	std::vector<TileObjEnum> rarePlants;
@@ -4962,27 +4947,33 @@ struct BiomeInfo
 		return rarePlants[GameRand::Rand() % rarePlants.size()];
 	}
 
+	std::string nameStr() const { return ToStdString(name.ToString()); }
+	
 	std::string GetNameWithoutSpace() const {
-		std::string result = name;
+		std::string result = nameStr();
 		result.erase(std::remove(result.begin(), result.end(), ' '), result.end());
 		return result;
 	}
 };
 
+#define LOCTEXT_NAMESPACE "BiomeInfo"
+
 static const BiomeInfo BiomeInfos[]
 {
-	{ "Forest",
-		"Serene broadleaf forest with moderate temperature. "
-					"Its friendly conditions make it an ideal starting area for new players.",
+	{ LOCTEXT("Forest", "Forest"),
+		LOCTEXT("Forest Desc", 
+					"Serene broadleaf forest with moderate temperature. "
+					"Its friendly conditions make it an ideal starting area for new players."),
 		{ TileObjEnum::Orange, TileObjEnum::Birch },
 		{TileObjEnum::OreganoBush, TileObjEnum::CommonBush, TileObjEnum::CommonBush2},
 		{TileObjEnum::WhiteFlowerBush},
 		{ UnitEnum::RedDeer, UnitEnum::Boar },
 		{ UnitEnum::BlackBear, UnitEnum::BrownBear }
 	},
-	{"Grassland",
-		"Biome filled with grasses, flowers and herbs. "
-					"Although erratic precipitation makes the land unsuitable for farming, the dense grass makes this biome ideal for ranching.",
+	{LOCTEXT("Grassland", "Grassland"),
+		LOCTEXT("Grassland Desc", 
+					"Biome filled with grasses, flowers and herbs. "
+					"Although erratic precipitation makes the land unsuitable for farming, the dense grass makes this biome ideal for ranching."),
 		{ TileObjEnum::Orange, TileObjEnum::Birch },
 		{TileObjEnum::GrassGreen},
 		{TileObjEnum::WhiteFlowerBush},
@@ -4990,8 +4981,9 @@ static const BiomeInfo BiomeInfos[]
 		{},
 		5
 	},
-	{ "Desert",
-		"Dry barren land with just sand and stone, but rich with mineral deposits",
+	{ LOCTEXT("Desert", "Desert"),
+		LOCTEXT("Desert Desc",
+					"Dry barren land with just sand and stone, but rich with mineral deposits."),
 		{ TileObjEnum::Cactus1  },
 		{ TileObjEnum::GrassGreen },
 		{TileObjEnum::WhiteFlowerBush},
@@ -4999,8 +4991,9 @@ static const BiomeInfo BiomeInfos[]
 		{}
 	},
 	
-	{"Jungle",
-		"Wet tropical jungle thick with trees and dense underbrush, teeming with life, and infested with disease. ",
+	{ LOCTEXT("Jungle", "Jungle"),
+		LOCTEXT("Jungle Desc",
+				"Wet tropical jungle thick with trees and dense underbrush, teeming with life, and infested with disease."),
 		{ TileObjEnum::Papaya, TileObjEnum::Cyathea, TileObjEnum::ZamiaDrosi },
 		{ TileObjEnum::Fern, TileObjEnum::JungleThickLeaf },
 		{TileObjEnum::WhiteFlowerBush},
@@ -5008,9 +5001,10 @@ static const BiomeInfo BiomeInfos[]
 		{ UnitEnum::BlackBear},
 		5
 	},
-	{ "Savanna",
-		"Tropical grassland scattered with shrubs and isolated trees. "
-					"The rich ecosystem supports a wide variety of wildlife.",
+	{ LOCTEXT("Savanna", "Savanna"),
+		LOCTEXT("Savanna Desc", 
+			"Tropical grassland scattered with shrubs and isolated trees. "
+					"The rich ecosystem supports a wide variety of wildlife."),
 		{ TileObjEnum::SavannaTree1  },
 		{ TileObjEnum::GrassGreen },
 		{},
@@ -5019,16 +5013,18 @@ static const BiomeInfo BiomeInfos[]
 		5
 	},
 	
-	{"Boreal Forest",
-		"Coniferous forest with long and punishing winters.",
+	{ LOCTEXT("Boreal Forest", "Boreal Forest"),
+		LOCTEXT("Boreal Forest Desc", 
+			"Coniferous forest with long and punishing winters."),
 		{ TileObjEnum::Pine1, TileObjEnum::Pine2 },
 		{ TileObjEnum::OreganoBush },
 		{ TileObjEnum::WhiteFlowerBush},
 		{ UnitEnum::RedDeer },
 		{ UnitEnum::BrownBear},
 	},
-	{ "Tundra",
-		"Extremely cold, frozen plain where almost nothing grows.",
+	{ LOCTEXT("Tundra", "Tundra"),
+		LOCTEXT("Tundra Desc", 
+			"Extremely cold, frozen plain where almost nothing grows."),
 		{ TileObjEnum::Pine1, TileObjEnum::Pine2 },
 		{ }, // TileObjEnum::OreganoBush
 		{TileObjEnum::WhiteFlowerBush},
@@ -5036,6 +5032,8 @@ static const BiomeInfo BiomeInfos[]
 		{}
 	},
 };
+
+#undef LOCTEXT_NAMESPACE
 
 // TODO: add plants
 //  plants like cactus that can grow in very low fertility area, but very sparse (limited number per region, limited density)
@@ -5100,11 +5098,13 @@ const int32 maxCelsiusDivider = 3;
  // Unit's constants
 static const int32_t UnitFoodFetchPerYear = 5;
 
+#define LOCTEXT_NAMESPACE "UnitInfoName"
+
 struct UnitInfo
 {
 	UnitEnum unitEnum;
 	// Need std::string since we need to copy when passing into FName (allows using name.c_str() instead of FName in some cases)
-	std::string name;
+	FText name;
 	//int32_t adultTicks;
 	int32 maxAgeTicks;
 	int32 minBreedingAgeTicks;
@@ -5123,12 +5123,14 @@ struct UnitInfo
 
 	int32 miniAgeTicks() { return maxAgeTicks / 8; }
 
+	std::string nameStr() { return ToStdString(name.ToString()); }
+
 	// 1 season = 3 minutes = 180 secs = 180 turns ... eating could take ~20% of the time ... 20 tiles to get to food = ~45 sec for food...
 
 	// year100 is year * 100
 	UnitInfo(
 		UnitEnum unitEnum,
-		std::string name,
+		FText name,
 		//int32_t adult_Years100,
 		int32 maxAge_Years100,
 		int32 minBreedingAge_Years100,
@@ -5155,7 +5157,7 @@ struct UnitInfo
 		int32 foodTicksPerFetch = Time::TicksPerYear / UnitFoodFetchPerYear;
 		foodPerFetch = foodResourcePerYear / UnitFoodFetchPerYear;
 
-		maxFoodTicks = foodTicksPerFetch * (name == "Human" ? 1 : 2); // Fragile humans
+		maxFoodTicks = foodTicksPerFetch * (name.EqualTo(LOCTEXT("Human","Human")) ? 1 : 2); // Fragile humans
 		
 		foodTicksPerResource = Time::TicksPerYear / foodResourcePerYear;
 
@@ -5195,33 +5197,35 @@ static const UnitInfo UnitInfos[]
 
 	//	adultYears100, maxAgeYears100, minBreedingAgeYears100,
 	//	gestationYears100, winterSurvivalLength_Years100, foodPerYear
-	UnitInfo(UnitEnum::Alpaca, "Feral Alpaca",	500,	100,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Pork, 2 * BaseUnitDrop100}}),
-	UnitInfo(UnitEnum::Human, "Human",	1000,	100,		025,	020,	HumanFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}}),
-	UnitInfo(UnitEnum::Boar,"Boar",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::Alpaca, LOCTEXT("Feral Alpaca", "Feral Alpaca"),	500,	100,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Pork, 2 * BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::Human,	LOCTEXT("Human", "Human"),	1000,	100,		025,	020,	HumanFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::Boar,	LOCTEXT("Boar", "Boar"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 
-	UnitInfo(UnitEnum::RedDeer,"Red Deer",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
-	UnitInfo(UnitEnum::YellowDeer,"Mule Deer",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
-	UnitInfo(UnitEnum::DarkDeer,"Sambar Deer",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::RedDeer,	LOCTEXT("Red Deer", "Red Deer"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::YellowDeer, LOCTEXT("Mule Deer", "Mule Deer"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::DarkDeer, LOCTEXT("Sambar Deer", "Sambar Deer"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 
-	UnitInfo(UnitEnum::BrownBear,"Brown Bear",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
-	UnitInfo(UnitEnum::BlackBear,"Black Bear",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
-	UnitInfo(UnitEnum::Panda,"Panda",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::BrownBear, LOCTEXT("Brown Bear", "Brown Bear"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::BlackBear, LOCTEXT("Black Bear", "Black Bear"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::Panda, LOCTEXT("Panda", "Panda"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 
-	UnitInfo(UnitEnum::WildMan, "WildMan",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
-	UnitInfo(UnitEnum::Hippo, "Hippo",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
-	UnitInfo(UnitEnum::Penguin, "Penguin",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::WildMan, LOCTEXT("WildMan", "WildMan"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::Hippo, LOCTEXT("Hippo", "Hippo"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::Penguin, LOCTEXT("Penguin", "Penguin"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 	
 	
-	UnitInfo(UnitEnum::Pig,"Pig",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Pork, BaseUnitDrop100 * 240 / 100}}),
-	UnitInfo(UnitEnum::Sheep,"Sheep",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Lamb, BaseUnitDrop100 * 120 / 100}, {ResourceEnum::Wool, BaseUnitDrop100 * 120 / 100}}),
-	UnitInfo(UnitEnum::Cow,"Cow",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Beef, BaseUnitDrop100 * 120 / 100}, {ResourceEnum::Leather,  BaseUnitDrop100 * 120 / 100}}),
+	UnitInfo(UnitEnum::Pig, LOCTEXT("Pig", "Pig"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Pork, BaseUnitDrop100 * 240 / 100}}),
+	UnitInfo(UnitEnum::Sheep, LOCTEXT("Sheep", "Sheep"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Lamb, BaseUnitDrop100 * 120 / 100}, {ResourceEnum::Wool, BaseUnitDrop100 * 120 / 100}}),
+	UnitInfo(UnitEnum::Cow, LOCTEXT("Cow", "Cow"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Beef, BaseUnitDrop100 * 120 / 100}, {ResourceEnum::Leather,  BaseUnitDrop100 * 120 / 100}}),
 
-	UnitInfo(UnitEnum::Infantry,"Infantry",	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
-	UnitInfo(UnitEnum::ProjectileArrow,"ProjectileArrow",	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
+	UnitInfo(UnitEnum::Infantry, LOCTEXT("Infantry", "Infantry"),	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
+	UnitInfo(UnitEnum::ProjectileArrow, LOCTEXT("ProjectileArrow", "ProjectileArrow"),	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
 
-	UnitInfo(UnitEnum::SmallShip, "SmallShip",	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
+	UnitInfo(UnitEnum::SmallShip, LOCTEXT("SmallShip", "SmallShip"),	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
 	//UnitInfo("Bear",	050,	500,	200,		010,	050,	5),
 };
+
+#undef LOCTEXT_NAMESPACE
 
 static const int32 UnitEnumCount = _countof(UnitInfos);
 
@@ -5264,7 +5268,7 @@ static UnitEnum GetAnimalEnumFromCardEnum(CardEnum buildingEnum)
 
 static int32_t UnitEnumIntFromName(FString name) {
 	for (int i = 0; i < UnitEnumCount; i++) {
-		if (name.Equals(ToFString(UnitInfos[i].name))) {
+		if (name.Equals(UnitInfos[i].name.ToString())) {
 			return i;
 		}
 	}

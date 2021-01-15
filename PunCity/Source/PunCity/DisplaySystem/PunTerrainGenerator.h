@@ -155,27 +155,19 @@ public:
 		return height;
 	}
 
-	std::string GetBiomeName(WorldTile2 tile)
-	{
-		int height = GetHeight(tile);
-		if (height < BeachToWaterHeight - FD0_XXX(010)) {
-			return "Water";
-		}
-		return GetBiomeInfoFromTile(tile).name;
+	std::string GetBiomeName(WorldTile2 tile) {
+		return ToStdString(GetBiomeNameT(tile).ToString());
 	}
 	FText GetBiomeNameT(WorldTile2 tile) {
-		return ToFText(GetBiomeName(tile));
+		int height = GetHeight(tile);
+		if (height < BeachToWaterHeight - FD0_XXX(010)) {
+			return NSLOCTEXT("BiomeInfoName", "Water", "Water");
+		}
+		return GetBiomeInfoFromTile(tile).name;
 	}
 
 	//bool IsRegionWater(WorldRegion2 region) {
 	//	return regionWaterTileCount(region.regionId()) > CoordinateConstants::TileIdsPerRegion * 3 / 4;
-	//}
-	//std::string GetBiomeName(WorldRegion2 region)
-	//{
-	//	if (IsRegionWater(region)) {
-	//		return "Water";
-	//	}
-	//	return GetBiomeInfoFromTile(region.centerTile()).name;
 	//}
 
 	int32 IsOceanCoast(WorldTile2 tile) const {

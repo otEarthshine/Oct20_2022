@@ -118,6 +118,12 @@ public:
 		ss.str(std::string());
 		return textWidget;
 	}
+	UPunTextWidget* AddText(FText text) {
+		auto textWidget = GetChildElement<UPunTextWidget>(UIEnum::PunTextWidget);
+		textWidget->PunText->SetText(text);
+		return textWidget;
+	}
+	
 
 	UPunRichText* AddRichText(std::stringstream& ss) {
 		std::string str = ss.str();

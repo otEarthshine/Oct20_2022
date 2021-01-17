@@ -535,11 +535,15 @@ void UnitStateAI::Die()
 		deathCount += _simulation->statSystem(_playerId).GetYearlyStat(SeasonStatEnum::DeathStarve);
 		if (deathCount > 5 && !_simulation->parameters(_playerId)->CannibalismOffered)
 		{
-			std::stringstream ss;
-			ss << "People are dying left and right. Suddenly, someone asked us to consider eating the corpses for survival. ";
-			ss << "Will you allow Cannibalism?";
-			
-			_simulation->AddPopup(PopupInfo(_playerId, ss.str(), { "Yes", "No" }, PopupReceiverEnum::Approve_Cannibalism, true, "PopupBad"));
+			_simulation->AddPopup(PopupInfo(_playerId, 
+				LOCTEXT("CannibalismAsk_Pop",
+					"People are dying left and right. Suddenly, someone asked us to consider eating the corpses for survival. "
+					"Will you allow Cannibalism?"
+				), 
+				{ LOCTEXT("Yes", "Yes"),
+					LOCTEXT("No", "No") },
+				PopupReceiverEnum::Approve_Cannibalism, true, "PopupBad"
+			));
 			
 			_simulation->parameters(_playerId)->CannibalismOffered = true;
 		}

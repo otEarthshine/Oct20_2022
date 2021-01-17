@@ -159,13 +159,14 @@ public:
 
 #define ADDTEXT_JOIN_(...) args.Add(FText::Join(__VA_ARGS__));
 
-#define ADDTEXT_NUMBER(InArgs, number) InArgs.Add(FText::AsNumber(number));
+#define ADDTEXT_NUM(InArgs, number) InArgs.Add(FText::AsNumber(number));
 #define ADDTEXT_100(InArgs, number) InArgs.Add(FText::AsNumber(number / 100)); InArgs.Add(INVTEXT(".")); InArgs.Add(FText::AsNumber((number % 100) / 10));
 #define ADDTEXT_PERCENT(InArgs, number) InArgs.Add(FText::AsNumber(number)); InArgs.Add(INVTEXT("%"));
 
 #define ADDTEXT_TAG_(Tag, InText) ADDTEXT_(INVTEXT("{0}{1}</>"), INVTEXT(Tag), InText)
 #define ADDTEXT_TAGN_(Tag, InText) ADDTEXT_(INVTEXT("{0}{1}</>"), INVTEXT(Tag), InText)
 
+#define ADDTEXT_NUM_(number) args.Add(FText::AsNumber(number));
 #define ADDTEXT_100_(number) args.Add(FText::AsNumber(number / 100)); args.Add(INVTEXT(".")); args.Add(FText::AsNumber((number % 100) / 10));
 #define ADDTEXT_INV_(InText) args.Add(INVTEXT(InText));
 #define ADDTEXT_LOCTEXT(InKey, InText) args.Add(LOCTEXT(InKey, InText));
@@ -179,6 +180,18 @@ static bool TextArrayEquals(const TArray<FText>& a, const TArray<FText>& b)
 		return false;
 	}
 	for (int32 i = 0; i < a.Num(); i++) {
+		if (!a[i].EqualTo(b[i])) {
+			return false;
+		}
+	}
+	return true;
+}
+static bool TextArrayEquals(const std::vector<FText>& a, const std::vector<FText>& b)
+{
+	if (a.size() != b.size()) {
+		return false;
+	}
+	for (int32 i = 0; i < a.size(); i++) {
 		if (!a[i].EqualTo(b[i])) {
 			return false;
 		}
@@ -5864,9 +5877,9 @@ enum class PopupReceiverEnum : uint8
 struct PopupInfo
 {
 	int32 playerId;
-	std::string body;
+	FText body;
 	
-	std::vector<std::string> choices;
+	std::vector<FText> choices;
 	
 	PopupReceiverEnum replyReceiver = PopupReceiverEnum::None;
 	std::string popupSound;
@@ -5880,13 +5893,27 @@ struct PopupInfo
 	int32 startDisplayTick = -1;
 
 	PopupInfo() : playerId(-1) {}
-	PopupInfo(int32 playerId, std::string body, std::string popupSound = "") : playerId(playerId), body(body), popupSound(popupSound) {
+	//PopupInfo(int32 playerId, std::string bodyIn, std::string popupSound = "") : playerId(playerId), popupSound(popupSound) {
+	//	body = ToFText(bodyIn);
+	//	startTick = Time::Ticks();
+	//}
+	PopupInfo(int32 playerId, FText body, std::string popupSound = "") : playerId(playerId), body(body), popupSound(popupSound) {
 		startTick = Time::Ticks();
 	}
 
-	PopupInfo(int32 playerId, std::string body, std::vector<std::string> choices, PopupReceiverEnum replyReceiver = PopupReceiverEnum::None, 
-				bool forcedNetworking = false, std::string popupSound = "", int32 replyVar1 = -1)
-			: playerId(playerId), body(body), choices(choices), replyReceiver(replyReceiver), popupSound(popupSound), replyVar1(replyVar1), forcedNetworking(forcedNetworking)
+	//PopupInfo(int32 playerId, std::string bodyIn, std::vector<std::string> choicesIn, PopupReceiverEnum replyReceiver = PopupReceiverEnum::None,
+	//			bool forcedNetworking = false, std::string popupSound = "", int32 replyVar1 = -1)
+	//		: playerId(playerId), replyReceiver(replyReceiver), popupSound(popupSound), replyVar1(replyVar1), forcedNetworking(forcedNetworking)
+	//{
+	//	body = ToFText(bodyIn);
+	//	for (std::string choiceIn : choicesIn) {
+	//		choices.push_back(ToFText(choiceIn));
+	//	}
+	//	startTick = Time::Ticks();
+	//}
+	PopupInfo(int32 playerId, FText body, std::vector<FText> choices, PopupReceiverEnum replyReceiver = PopupReceiverEnum::None,
+		bool forcedNetworking = false, std::string popupSound = "", int32 replyVar1 = -1)
+		: playerId(playerId), body(body), choices(choices), replyReceiver(replyReceiver), popupSound(popupSound), replyVar1(replyVar1), forcedNetworking(forcedNetworking)
 	{
 		startTick = Time::Ticks();
 	}
@@ -5907,10 +5934,10 @@ struct PopupInfo
 		Ar << playerId;
 		//SerializeStr(Ar, title);
 		
-		SerializeStr(Ar, body);
+		Ar << body;
 		
-		SerializeVecLoop(Ar, choices, [&](std::string& str) {
-			SerializeStr(Ar, str);
+		SerializeVecLoop(Ar, choices, [&](FText& text) {
+			Ar << text;
 		});
 		
 		Ar << replyReceiver;
@@ -5927,8 +5954,8 @@ struct PopupInfo
 	bool operator==(const PopupInfo& a) const
 	{
 		return playerId == a.playerId &&
-			body == a.body &&
-			choices == a.choices;
+			body.EqualTo(a.body) &&
+			TextArrayEquals(choices, a.choices);
 	}
 };
 
@@ -7105,7 +7132,7 @@ static const std::vector<FString> NameNoun
 	"mun",
 };
 
-static std::string GenerateTribeName(int32 seed)
+static FText GenerateTribeName(int32 seed)
 {
 	int32 firstNameIndex = GameRand::Rand(seed);
 	FString firstName = NameAdjectives[firstNameIndex % NameAdjectives.size()];
@@ -7122,7 +7149,7 @@ static std::string GenerateTribeName(int32 seed)
 		finalName = firstName + lastName;
 	}
 
-	return ToStdString(finalName);
+	return FText::FromString(finalName);
 }
 
 

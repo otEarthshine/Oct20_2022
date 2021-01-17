@@ -243,11 +243,12 @@ void UChatUI::TickDebugUI()
 	 * Debug
 	 *  !!! Must open SinglePlayerChat !!!
 	 */
-	stringstream ss;
 
 #if DEV_BUILD
 	if (PunSettings::IsOn("SoundDebugUI"))
 	{
+		std::stringstream ss;
+		
 		SetVisibility(ESlateVisibility::Collapsed);
 		DebugOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
@@ -278,6 +279,7 @@ void UChatUI::TickDebugUI()
 		auto& unitSystem = sim.unitSystem();
 		auto& statSystem = sim.statSystem();
 
+		std::stringstream ss;
 		ss << "World units: " << unitSystem.unitCount() << "\n";
 		ss << "deer units: " << unitSystem.unitCount(UnitEnum::DarkDeer) + unitSystem.unitCount(UnitEnum::YellowDeer) + unitSystem.unitCount(UnitEnum::RedDeer) << "\n";
 		ss << "boar units: " << unitSystem.unitCount(UnitEnum::Boar) << "\n";

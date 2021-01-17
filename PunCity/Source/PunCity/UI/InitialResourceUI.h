@@ -111,11 +111,11 @@ public:
 			PUN_CHECK(provincesClaimed.size() > 0);
 			if (simulation().GetBiomeProvince(provincesClaimed[0]) == BiomeEnum::Jungle) {
 				FoodIcon->SetBrushFromMaterial(assetLoader()->GetResourceIconMaterial(ResourceEnum::Papaya));
-				SetText(FoodText, "Papaya (food)");
+				SetText(FoodText, NSLOCTEXT("InitialResourceUI", "Papaya (food)", "Papaya (food)"));
 			}
 			else {
 				FoodIcon->SetBrushFromMaterial(assetLoader()->GetResourceIconMaterial(ResourceEnum::Orange));
-				SetText(FoodText, "Orange (food)");
+				SetText(FoodText, NSLOCTEXT("InitialResourceUI", "Orange (food)", "Orange (food)"));
 			}
 			SetText(InitialFoodPriceText, std::to_string(FoodCost));
 			SetText(FoodInventoryText, std::to_string(initialResources.foodAmount));
@@ -153,24 +153,7 @@ public:
 private:
 	int32 GetMoney() { return simulation().money(playerId()); }
 
-	bool CheckEnoughMoneyAndStorage()
-	{
-		int32 valueIncrease = initialResources.totalCost() - FChooseInitialResources::GetDefault().totalCost();
-		if (valueIncrease > GetMoney()) {
-			// Not enough money... revert the change
-			initialResources = lastInitialResources;
-			simulation().AddPopupToFront(playerId(), "Not enough money", ExclusiveUIEnum::InitialResourceUI, "PopupCannot");
-			return false;
-		}
-		auto resourceMap = initialResources.resourceMap();
-		if (StorageTilesOccupied(resourceMap) > InitialStorageSpace) {
-			// Not enough space
-			initialResources = lastInitialResources;
-			simulation().AddPopupToFront(playerId(), "Not enough storage space", ExclusiveUIEnum::InitialResourceUI, "PopupCannot");
-			return false;
-		}
-		return true;
-	}
+	bool CheckEnoughMoneyAndStorage();
 	
 private:
 	bool TryIncrement10(int32& amount) {

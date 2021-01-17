@@ -1125,28 +1125,7 @@ public:
 		return _buffTicksLeft[static_cast<int>(cardEnum) - BuildingEnumCount];
 	}
 
-	void TryApplyBuff(CardEnum cardEnum)
-	{
-		if (HasBuff(cardEnum) && GetBuffTicksLeft(cardEnum) > Time::TicksPerMinute * 5) {
-			_simulation->AddPopupToFront(_playerId, GetBuildingInfo(cardEnum).nameStd() + " has already been applied.");
-			return;
-		}
-		
-		int32 cost = _simulation->population(_playerId);
-		if (_simulation->money(_playerId) < cost) {
-			_simulation->AddPopupToFront(_playerId, "Require <img id=\"Coin\"/>xPopulation to activate the protection.");
-		}
-		else {
-			_simulation->ChangeMoney(_playerId, -cost);
-			AddBuff(cardEnum);
-
-			if (cardEnum == CardEnum::KidnapGuard) {
-				_simulation->AddPopupToFront(_playerId, "Applied Kidnap Guard. Protect your town against Kidnap for 1 year.");
-			} else {
-				_simulation->AddPopupToFront(_playerId, "Applied Treasury Guard. Protect your town against Snatch and Steal for 1 year.");
-			}
-		}
-	}
+	void TryApplyBuff(CardEnum cardEnum);
 
 	/*
 	 * SP Skill

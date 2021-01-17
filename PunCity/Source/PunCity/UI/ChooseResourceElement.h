@@ -35,17 +35,17 @@ public:
 		resourceEnum = resourceEnumIn;
 
 		if (resourceEnum == ResourceEnum::None) {
-			ResourceText->SetText(FText::FromString(FString("Choose resource")));
+			ResourceText->SetText(NSLOCTEXT("ChooseResource", "Choose Resource", "Choose Resource"));
 			ResourceIcon->GetDynamicMaterial()->SetTextureParameterValue("ColorTexture", assetLoader()->BlackIcon);
 			ResourceIcon->GetDynamicMaterial()->SetTextureParameterValue("DepthTexture", assetLoader()->BlackIcon);
 			
 			MoneyText->SetVisibility(ESlateVisibility::Collapsed);
 			MoneyIcon->SetVisibility(ESlateVisibility::Collapsed);
 
-			AddToolTip(ResourceButton, "Click to choose a resource.");
+			AddToolTip(ResourceButton, NSLOCTEXT("ChooseResource", "Click to choose a resource.", "Click to choose a resource."));
 		}
 		else {
-			ResourceText->SetText(ToFText(ResourceName(resourceEnum)));
+			ResourceText->SetText(ResourceNameT(resourceEnum));
 			ResourceIcon->GetDynamicMaterial()->SetTextureParameterValue("ColorTexture", assetLoader()->GetResourceIcon(resourceEnum));
 			ResourceIcon->GetDynamicMaterial()->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(resourceEnum));
 

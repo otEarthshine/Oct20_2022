@@ -7,6 +7,8 @@
 
 using namespace std;
 
+#define LOCTEXT_NAMESPACE "WorldTradeUI"
+
 void UWorldTradeUI::PunInit()
 {
 	TradeButton->OnClicked.AddDynamic(this, &UWorldTradeUI::ClickedTradeButton);
@@ -199,7 +201,10 @@ void UWorldTradeUI::ClickedTradeButton()
 	ResourceSystem& resourceSystem = dataSource()->simulation().resourceSystem(playerId());
 
 	if (_quantity == 0) {
-		simulation().AddPopupToFront(playerId(), "Need to specify resources and amount.", ExclusiveUIEnum::Trading, "PopupCannot");
+		simulation().AddPopupToFront(playerId(), 
+			LOCTEXT("Need to specify resources and amount.", "Need to specify resources and amount."),
+			ExclusiveUIEnum::Trading, "PopupCannot"
+		);
 		return;
 	}
 	
@@ -208,7 +213,10 @@ void UWorldTradeUI::ClickedTradeButton()
 	{
 		//PopupInfo popup(playerId(), "Not enough money for trade.");
 		//popup.warningForExclusiveUI = ExclusiveUIEnum::Trading;
-		simulation().AddPopupToFront(playerId(), "Not enough money for trade.", ExclusiveUIEnum::Trading, "PopupCannot");
+		simulation().AddPopupToFront(playerId(), 
+			LOCTEXT("Not enough money for trade.", "Not enough money for trade."),
+			ExclusiveUIEnum::Trading, "PopupCannot"
+		);
 		return;
 	}
 
@@ -217,7 +225,10 @@ void UWorldTradeUI::ClickedTradeButton()
 	if (_quantity > tradeBuilding.maxTradeQuatity()) {
 		//PopupInfo popup(playerId(), "Exceed trade quantity available for this trading post.");
 		//popup.warningForExclusiveUI = ExclusiveUIEnum::Trading;
-		simulation().AddPopupToFront(playerId(), "Exceed trade quantity available for this trading post.", ExclusiveUIEnum::Trading, "PopupCannot");
+		simulation().AddPopupToFront(playerId(), 
+			LOCTEXT("ExceedTradeQuantity", "Exceed trade quantity available for this trading post."),
+			ExclusiveUIEnum::Trading, "PopupCannot"
+		);
 		return;
 	}
 
@@ -237,7 +248,10 @@ void UWorldTradeUI::ClickedTradeButton()
 	{
 		for (int32 i = 0; i < tradeCommand->buyAmounts.Num(); i++) {
 			if (tradeCommand->buyAmounts[i] > 0) {
-				simulation().AddPopupToFront(playerId(), "Caravan doesn't have any goods to sell to you. You can only sell to them. Please adjust the trade accordingly.", ExclusiveUIEnum::Trading, "PopupCannot");
+				simulation().AddPopupToFront(playerId(), 
+					LOCTEXT("CaravanNoGoodsToSell_Pop", "Caravan doesn't have any goods to sell to you. You can only sell to them. Please adjust the trade accordingly."), 
+					ExclusiveUIEnum::Trading, "PopupCannot"
+				);
 				return;
 			}
 		}
@@ -256,3 +270,6 @@ void UWorldTradeUI::ClickedTradeButton()
 
 	dataSource()->Spawn2DSound("UI", "TradeAction");
 }
+
+
+#undef LOCTEXT_NAMESPACE

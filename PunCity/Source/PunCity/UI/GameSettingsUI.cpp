@@ -8,27 +8,29 @@
 #include "GenericPlatform/GenericPlatformSurvey.h"
 #include "SynthBenchmark.h"
 
-static const TArray<FString> GraphicsOptions =
+#define LOCTEXT_NAMESPACE "GameSettingsUI"
+
+static const TArray<FText> GraphicsOptions
 {
-	"Low",
-	"Medium",
-	"High",
-	"Ultra",
+	LOCTEXT("Low", "Low"),
+	LOCTEXT("Medium", "Medium"),
+	LOCTEXT("High", "High"),
+	LOCTEXT("Ultra", "Ultra"),
 };
 
-static const TArray<FString> GraphicsOptionsWithNone =
+static const TArray<FText> GraphicsOptionsWithNone
 {
-	"None",
-	"Low",
-	"Medium",
-	"High",
+	LOCTEXT("None", "None"),
+	LOCTEXT("Low", "Low"),
+	LOCTEXT("Medium", "Medium"),
+	LOCTEXT("High", "High"),
 };
 
 static int32 GetGraphicsOptionIndex(FString optionIn, bool useOptionsWithNone = false)
 {
-	const TArray<FString>& options = useOptionsWithNone ? GraphicsOptionsWithNone : GraphicsOptions;
+	const TArray<FText>& options = useOptionsWithNone ? GraphicsOptionsWithNone : GraphicsOptions;
 	for (int32 i = 0; i < options.Num(); i++) {
-		if (options[i] == optionIn) {
+		if (options[i].ToString() == optionIn) {
 			return i;
 		}
 	}
@@ -159,8 +161,8 @@ void UGameSettingsUI::PunInit(UPunWidget* callbackParent)
 	SetupResolutionDropdown();
 
 	WindowModeDropdown->ClearOptions();
-	WindowModeDropdown->AddOption("Fullscreen");
-	WindowModeDropdown->AddOption("Windowed");
+	WindowModeDropdown->AddOption(LOCTEXT("Fullscreen", "Fullscreen").ToString());
+	WindowModeDropdown->AddOption(LOCTEXT("Windowed", "Windowed").ToString());
 
 	
 	UIScalingDropdown->ClearOptions();
@@ -174,9 +176,9 @@ void UGameSettingsUI::PunInit(UPunWidget* callbackParent)
 
 	auto setupDropdown = [&](UComboBoxString* comboBox, bool hasNone = false) {
 		comboBox->ClearOptions();
-		const TArray<FString>& options = hasNone ? GraphicsOptionsWithNone : GraphicsOptions;
+		const TArray<FText>& options = hasNone ? GraphicsOptionsWithNone : GraphicsOptions;
 		for (int32 i = 0; i < options.Num(); i++) {
-			comboBox->AddOption(options[i]);
+			comboBox->AddOption(options[i].ToString());
 		}
 	};
 
@@ -606,6 +608,6 @@ void UGameSettingsUI::RefreshResolutionDropdown()
 		FIntPoint point = settings->GetDesktopResolution();
 		//ResolutionHiddenText->SetText(FText::FromString(FString::FromInt(point.X) + "x" + FString::FromInt(point.Y)));
 		//ResolutionHiddenText->SetText(FText::FromString(FString::FromInt(point.X) + "x" + FString::FromInt(point.Y) + "(Change to windowed "));
-		ResolutionHiddenText->SetText(FText::FromString(FString("To adjust, change to windowed mode")));
+		ResolutionHiddenText->SetText(LOCTEXT("ToAdjustChangeToWindow", "To adjust, change to windowed mode"));
 	}
 }

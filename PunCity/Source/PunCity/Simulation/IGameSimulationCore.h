@@ -335,8 +335,11 @@ public:
 	virtual void unitAddDebugSpeech(int32_t id, std::string message) = 0;
 
 	virtual void AddPopup(int32 playerId, std::string popupBody, std::string popupSound = "") = 0;
-	virtual void AddPopupToFront(int32 playerId, std::string popupBody) = 0;
-	virtual void AddPopupToFront(int32 playerId, std::string popupBody, ExclusiveUIEnum exclusiveEnum, std::string popupSound = "") = 0;
+
+	virtual void AddPopup(int32 playerId, FText popupBody, std::string popupSound = "") = 0;
+	
+	virtual void AddPopupToFront(int32 playerId, FText popupBody) = 0;
+	virtual void AddPopupToFront(int32 playerId, FText popupBody, ExclusiveUIEnum exclusiveEnum, std::string popupSound) = 0;
 	
 	virtual void AddPopup(PopupInfo popupInfo) = 0;
 	virtual void AddPopupToFront(PopupInfo popupInfo) = 0;
@@ -444,7 +447,7 @@ public:
 	
 	//! Immigration
 	virtual void AddMigrationPendingCount(int32 playerId, int32 migrationCount) = 0;
-	virtual void ImmigrationEvent(int32 playerId, int32 migrationCount, std::string message, PopupReceiverEnum receiverEnum) = 0;
+	virtual void ImmigrationEvent(int32 playerId, int32 migrationCount, FText message, PopupReceiverEnum receiverEnum) = 0;
 	
 	//! Card system
 	virtual int32 BoughtCardCount(int32 playerId, CardEnum buildingEnum) = 0;

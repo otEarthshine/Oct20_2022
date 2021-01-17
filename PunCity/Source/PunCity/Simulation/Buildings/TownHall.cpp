@@ -140,15 +140,21 @@ void TownHall::UpgradeTownhall()
 
 	// Unlock Popup
 	{
-		std::stringstream ss;
-		ss << "Congratulation!";
-		ss << "<space>";
-		ss << "Your townhall is now lvl " << townhallLvl << ".";
-		ss << "<space>";
-		ss << ToStdString(TownhallLvlToUpgradeBonusText[townhallLvl].ToString());
+		TArray<FText> args;
+		ADDTEXT_LOCTEXT("Congratulation!", "Congratulation!");
+		ADDTEXT_INV_("<space>");
+		ADDTEXT_(LOCTEXT("TownNowLvlX", "Your townhall is now lvl {0}."), TEXT_NUM(townhallLvl));
+		ADDTEXT_INV_("<space>");
+		ADDTEXT__(TownhallLvlToUpgradeBonusText[townhallLvl]);
 
-		_simulation->AddPopup(_playerId, ss.str(), "UpgradeTownhall");
-		_simulation->AddPopupAll(PopupInfo(_playerId, townName() + " has been upgraded to level " + to_string(townhallLvl)), _playerId);
+		_simulation->AddPopup(_playerId, 
+			JOINTEXT(args),
+			"UpgradeTownhall"
+		);
+
+		_simulation->AddPopupAll(PopupInfo(_playerId, 
+			FText::Format(LOCTEXT("TownhallUpgradeToLvl_Pop", "{0} has been upgraded to level {1}"), townTName(), TEXT_NUM(townhallLvl))
+		), _playerId);
 	}
 
 	auto& cardSys = _simulation->cardSystem(_playerId);
@@ -206,10 +212,18 @@ void TownHall::UpgradeTownhall()
 		}
 
 		{
-			std::stringstream ss;
-			ss << "Would you like to buy a " << GetBuildingInfo(CardEnum::Warehouse).nameStd() << " card for " << _simulation->cardSystem(_playerId).GetCardPrice(CardEnum::Warehouse) << " <img id=\"Coin\"/>.";
 			_simulation->AddPopup(
-				PopupInfo(_playerId, ss.str(), { "buy", "refuse" }, PopupReceiverEnum::DoneResearchBuyCardEvent, false, "ResearchComplete", static_cast<int>(CardEnum::Warehouse))
+				PopupInfo(_playerId, 
+					FText::Format(LOCTEXT("BuyCardTownhallUpgrade_Pop",
+						"Would you like to buy a {0} card for {1} <img id=\"Coin\"/>."
+						),
+						GetBuildingInfo(CardEnum::Warehouse).name,
+						TEXT_NUM(_simulation->cardSystem(_playerId).GetCardPrice(CardEnum::Warehouse))
+					), 
+					{ LOCTEXT("Buy", "Buy"),
+						LOCTEXT("Refuse", "Refuse") },
+					PopupReceiverEnum::DoneResearchBuyCardEvent, false, "ResearchComplete", static_cast<int>(CardEnum::Warehouse)
+				)
 			);
 		}
 	}
@@ -285,10 +299,24 @@ void TownHall::OnTick1Sec()
 	}
 }
 
-void TownHall::ImmigrationEvent(int32 exactAmount, std::string message, PopupReceiverEnum replyReceiver)
+std::vector<FText> TownHall::getImmigrationEventChoices() {
+	std::vector<FText> choices = {
+		LOCTEXT("Accept", "Accept"),
+		LOCTEXT("Refuse", "Refuse")
+	};
+	if (_simulation->TownhallCardCount(_playerId, CardEnum::Cannibalism)) {
+		choices.push_back(LOCTEXT("KillStealCanni", "kill, steal, and eat (Cannibalism)"));
+	}
+	return choices;
+}
+
+void TownHall::ImmigrationEvent(int32 exactAmount, FText message, PopupReceiverEnum replyReceiver)
 {
 	askedMigration = exactAmount;
-	_simulation->AddPopup(PopupInfo(_playerId, message, getImmigrationEventChoices(), replyReceiver));
+	_simulation->AddPopup(PopupInfo(_playerId, 
+		message, 
+		getImmigrationEventChoices(), replyReceiver
+	));
 }
 
 void TownHall::ImmigrationEvent(int32 exactAmount)
@@ -299,8 +327,10 @@ void TownHall::ImmigrationEvent(int32 exactAmount)
 	// force add
 	if (exactAmount != -1) {
 		askedMigration = exactAmount;
-		_simulation->AddPopup(PopupInfo(_playerId, to_string(askedMigration) + " immigrants asked to join your colony.",
-								getImmigrationEventChoices(), PopupReceiverEnum::ImmigrationEvent));
+		_simulation->AddPopup(PopupInfo(_playerId, 
+			FText::Format(LOCTEXT("ImmigrantsAskedToJoin_Pop", "{0} immigrants asked to join your colony."), TEXT_NUM(askedMigration)),
+			getImmigrationEventChoices(), PopupReceiverEnum::ImmigrationEvent
+		));
 		return;
 	}
 
@@ -310,16 +340,28 @@ void TownHall::ImmigrationEvent(int32 exactAmount)
 
 	if (migrationType == 1) {
 		// Low happiness... less immigration
-		ImmigrationEvent(askedMigration, to_string(askedMigration) + 
-			" desparate immigrants asked to join your colony. Low happiness lessen immigration.");
+		ImmigrationEvent(askedMigration,
+			FText::Format(LOCTEXT("ImmigrantsDesperateAskToJoin_Pop", 
+				"{0} desparate immigrants asked to join your colony. Low happiness lessen immigration."), 
+				TEXT_NUM(askedMigration)
+			)
+		);
 	}
 	else if (migrationType == 2) {
-		ImmigrationEvent(askedMigration, to_string(askedMigration) + 
-			" immigrants asked to join your colony. They heard that your town has plenty of available living space. Would you let them join your town?");
+		ImmigrationEvent(askedMigration,
+			FText::Format(LOCTEXT("ImmigrantsSpaceAskToJoin_Pop", 
+				"{0} immigrants asked to join your colony. They heard that your town has plenty of available living space. Would you let them join your town?"), 
+				TEXT_NUM(askedMigration)
+			)
+		);
 	}
 	else if (migrationType == 0) {
-		ImmigrationEvent(askedMigration, to_string(askedMigration) + 
-			" immigrants asked to join your colony. They came from faraway land, filled with hope, after hearing great rumors about your town. Would you let them join your town?");
+		ImmigrationEvent(askedMigration,
+			FText::Format(LOCTEXT("ImmigrantsGreatRumorsAskToJoin_Pop", 
+				"{0} immigrants asked to join your colony. They came from faraway land, filled with hope, after hearing great rumors about your town. Would you let them join your town?"),
+				TEXT_NUM(askedMigration)
+			)
+		);
 	}
 	else {
 		UE_DEBUG_BREAK();

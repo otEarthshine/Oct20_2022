@@ -113,7 +113,7 @@ public:
 		
 		NeedResourcesText->SetColorAndOpacity(FLinearColor(.2, 0, 0));
 		NeedResourcesText->SetVisibility(showNeedResourceUI ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
-		NeedResourcesText->SetText(FText::FromString("Need money"));
+		NeedResourcesText->SetText(NSLOCTEXT("BuildingPlacementButton", "Need Money", "Need Money"));
 
 		//
 		if (isGlobalSlotCard) {

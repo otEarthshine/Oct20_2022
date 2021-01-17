@@ -18,6 +18,8 @@ DEFINE_LOG_CATEGORY(LogNetworkInput);
 
 DECLARE_CYCLE_STAT(TEXT("PUN: [Sim]Total"), STAT_PunSimTotal, STATGROUP_Game);
 
+#define LOCTEXT_NAMESPACE "GameSimulationCore"
+
 void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInterface* soundInterface, IGameUIInterface* uiInterface, bool isLoadingFromFile)
 {
 	PUN_LLM_ONLY(PunScopeLLM::InitPunLLM());
@@ -972,7 +974,9 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 
 										LoseVassalHelper(oldLordPlayerId, playerId);
 
-										AddPopupAll(PopupInfo(playerId, playerName(playerId) + " declared independence from " + playerName(oldLordPlayerId) + "."), -1);
+										AddPopupAll(PopupInfo(playerId,
+											FText::Format(LOCTEXT("IndependenceAll_Pop", "{0} declared independence from {1}."), playerNameT(playerId), playerNameT(oldLordPlayerId))
+										), -1);
 									}
 									else
 									{
@@ -997,12 +1001,18 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 
 										_LOG(PunNetwork, "Vassalize [sim] pid:%d lordId:%d", playerId, _playerOwnedManagers[playerId].lordPlayerId());
 										
-										AddPopupAll(PopupInfo(lordId, playerName(lordId) + " has conquered " + playerName(playerId) + "."), -1);
-										AddPopup(playerId,
-											"<Bold>You became " + playerName(lordId) + "'s vassal.</>"
-													 "<space>"
-													 "<bullet>As a vassal, you pay your lord 5% <img id=\"Coin\"/> revenue as a tribute each round.</>"
-													 "<bullet>If your lord is ahead of you in science, you gain +20% <img id=\"Science\"/> from knowledge transfer.</>");
+										AddPopupAll(PopupInfo(lordId, 
+											FText::Format(LOCTEXT("XhasConqueredY", "{0} has conquered {1}."), playerNameT(lordId), playerNameT(playerId))
+										), -1);
+										AddPopup(playerId, 
+											FText::Format(LOCTEXT("NewLord_Pop",
+												"<Bold>You became {0}'s vassal.</>"
+												"<space>"
+												"<bullet>As a vassal, you pay your lord 5% <img id=\"Coin\"/> revenue as a tribute each round.</>"
+												"<bullet>If your lord is ahead of you in science, you gain +20% <img id=\"Science\"/> from knowledge transfer.</>"),
+												playerNameT(lordId)
+											)
+										);
 										
 										_playerOwnedManagers[lordId].RecalculateTaxDelayed();
 										_playerOwnedManagers[playerId].RecalculateTaxDelayed();
@@ -1027,13 +1037,13 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 								if (homeProvinceId(playerId) == claimProgress.provinceId)
 								{
 									// Home town, vassalize instead
-									AddPopupToFront(playerId, "You successfully defend your independence against " + playerName(claimProgress.attackerPlayerId));
-									AddPopupToFront(claimProgress.attackerPlayerId, "Your attempt to vassalize " + playerName(playerId) + " was not successful.");
+									AddPopupToFront(playerId, FText::Format(LOCTEXT("DefendSuccessfulMain", "You successfully defend your independence against {0}"), playerNameT(claimProgress.attackerPlayerId)));
+									AddPopupToFront(claimProgress.attackerPlayerId, FText::Format(LOCTEXT("VassalizeNotSuccessful", "Your attempt to vassalize {0} was not successful."), playerNameT(playerId)));
 								}
 								else
 								{
-									AddPopupToFront(playerId, "You successfully defended your Province against " + playerName(claimProgress.attackerPlayerId));
-									AddPopupToFront(claimProgress.attackerPlayerId, "Your attempt to conquer " + playerName(playerId) + "'s Province was not successful.");
+									AddPopupToFront(playerId, FText::Format(LOCTEXT("DefendSuccessfulProvince", "You successfully defended your Province against {0}"), playerNameT(claimProgress.attackerPlayerId)));
+									AddPopupToFront(claimProgress.attackerPlayerId, FText::Format(LOCTEXT("ConquerNotSuccessful", "Your attempt to conquer {0}'s Province was not successful."), playerNameT(playerId)));
 								}
 							}
 						}
@@ -1095,29 +1105,31 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 						 */
 						const int32 thousandsToWarn1 = 500;
 						const int32 thousandsToWarn2 = 800;
-						const int32 thousandsToWin = 1000;
+
+						auto warnEconVictoryPopup = [&](int32 thousandsToWarn)
+						{
+							AddPopup(playerId, FText::Format(LOCTEXT("WarnEcon_Pop", 
+								"You accumulated {0},000<img id=\"Coin\"/>!<space>You will achieve economic victory once you accumulate 1,000,000<img id=\"Coin\"/>."),
+								TEXT_NUM(thousandsToWarn)
+							));
+							AddPopupAll(PopupInfo(-1,
+								FText::Format(LOCTEXT("WarnEconAll_Pop",
+									"{0} accumulated {1},000<img id=\"Coin\"/>.<space>At 1,000,000<img id=\"Coin\"/> {0} will achieve the economic victory."),
+									playerNameT(playerId),
+									TEXT_NUM(thousandsToWarn)
+								)
+							), playerId);
+						};
 						
 						if (_playerOwnedManagers[playerId].economicVictoryPhase == 0 && money(playerId) > (thousandsToWarn1 * 1000)) {
 							_playerOwnedManagers[playerId].economicVictoryPhase = 1;
-							AddPopup(playerId, "You accumulated " + to_string(thousandsToWarn1) 
-								+ ",000<img id=\"Coin\"/>!<space>You will achieve economic victory once you accumulate " + to_string(thousandsToWin)
-								+ ",000<img id=\"Coin\"/>.");
-							AddPopupAll(PopupInfo(-1, playerName(playerId) + " accumulated " + to_string(thousandsToWarn1)
-								+ ",000<img id=\"Coin\"/>.<space>At " + to_string(thousandsToWin)
-								+ ",000<img id=\"Coin\"/> "
-								+ playerName(playerId) +" will achieve the economic victory."), playerId);
+							warnEconVictoryPopup(thousandsToWarn1);
 						}
 						else if (_playerOwnedManagers[playerId].economicVictoryPhase == 1 && money(playerId) > (thousandsToWarn2 * 1000)) {
 							_playerOwnedManagers[playerId].economicVictoryPhase = 2;
-							AddPopup(playerId, "You accumulated " + to_string(thousandsToWarn2) 
-								+ ",000<img id=\"Coin\"/>!<space>You will achieve economic victory once you accumulate " + to_string(thousandsToWin)
-								+ ",000<img id=\"Coin\"/>.");
-							AddPopupAll(PopupInfo(-1, playerName(playerId) + " accumulated " + to_string(thousandsToWarn2)
-								+ ",000<img id=\"Coin\"/>.<space>At " + to_string(thousandsToWin)
-								+ ",000<img id=\"Coin\"/> "
-								+ playerName(playerId) + " will achieve the economic victory."), playerId);
+							warnEconVictoryPopup(thousandsToWarn2);
 						}
-						else if (_playerOwnedManagers[playerId].economicVictoryPhase == 2 && money(playerId) > (thousandsToWin * 1000)) 	{
+						else if (_playerOwnedManagers[playerId].economicVictoryPhase == 2 && money(playerId) > (1000000)) 	{
 							_endStatus.victoriousPlayerId = playerId;
 							_endStatus.gameEndEnum = GameEndEnum::EconomicVictory;
 						}
@@ -1473,7 +1485,9 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 
 		int32 converterPrice = cardSystem(playerId).GetCardPrice(cardEnum);
 		if (money(playerId) < converterPrice) {
-			AddPopupToFront(playerId, "Need " + to_string(converterPrice) + "<img id=\"Coin\"/> to convert wild card to this building.", ExclusiveUIEnum::ConverterCardHand, "PopupCannot");
+			AddPopupToFront(playerId, 
+				FText::Format(LOCTEXT("NeedCoinToConvertWildCard", "Need {0}<img id=\"Coin\"/> to convert wild card to this building."), TEXT_NUM(converterPrice)), 
+				ExclusiveUIEnum::ConverterCardHand, "PopupCannot");
 			TRAILER_LOG("money(playerId) < converterPrice");
 			return -1;
 		}
@@ -2103,9 +2117,9 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 					if (bld.isOnFire()) {
 						// TODO: Just do normal front popup remove
 						PopupInfo* popupInfo = PopupToDisplay(parameters.playerId);
-						if (popupInfo == nullptr || PopupToDisplay(parameters.playerId)->body != "Cannot demolish a building on fire.") {
-							AddPopup(parameters.playerId, "Cannot demolish a building on fire.");
-						}
+						//if (popupInfo == nullptr || PopupToDisplay(parameters.playerId)->body != "Cannot demolish a building on fire.") {
+						//	AddPopup(parameters.playerId, "Cannot demolish a building on fire.");
+						//}
 						return;
 					}
 
@@ -2117,7 +2131,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 					if (bld.isEnum(CardEnum::Townhall))
 					{
 						if (!SimSettings::IsOn("CheatFastBuild")) {
-							AddPopupToFront(parameters.playerId, "Cannot demolish the Townhall.", ExclusiveUIEnum::None, "PopupCannot");
+							AddPopupToFront(parameters.playerId, LOCTEXT("CannotDemolishTownhall", "Cannot demolish the Townhall."), ExclusiveUIEnum::None, "PopupCannot");
 							return;
 						}
 						
@@ -2130,7 +2144,9 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 								cardSys.AddCardToHand2(slotCards[i].cardEnum);
 							}
 							else {
-								AddPopupToFront(parameters.playerId, "Card hand is full. Demolition failed.", ExclusiveUIEnum::None, "PopupCannot");
+								AddPopupToFront(parameters.playerId, 
+									LOCTEXT("CardFullDemolitionFailed", "Card hand is full. Demolition failed."), 
+									ExclusiveUIEnum::None, "PopupCannot");
 								return;
 							}
 						}
@@ -2145,7 +2161,9 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 								cardSys.AddCardToHand2(card.cardEnum);
 							}
 							else {
-								AddPopupToFront(parameters.playerId, "Card hand is full. Demolition failed.", ExclusiveUIEnum::None, "PopupCannot");
+								AddPopupToFront(parameters.playerId, 
+									LOCTEXT("CardFullDemolitionFailed", "Card hand is full. Demolition failed."), 
+									ExclusiveUIEnum::None, "PopupCannot");
 								return;
 							}
 						}
@@ -2166,7 +2184,9 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 						if (cardSys.CanAddCardToBoughtHand(buildingEnum, 1)) {
 							cardSys.AddCardToHand2(buildingEnum);
 						} else {
-							AddPopupToFront(parameters.playerId, "Card hand is full. Demolition failed.", ExclusiveUIEnum::None, "PopupCannot");
+							AddPopupToFront(parameters.playerId, 
+								LOCTEXT("CardFullDemolitionFailed", "Card hand is full. Demolition failed."), 
+								ExclusiveUIEnum::None, "PopupCannot");
 							return;
 						}
 					}
@@ -2544,7 +2564,9 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 		if (resourceEnum == ResourceEnum::Money)
 		{
 			if (money(giverPlayerId) < amount) {
-				AddPopupToFront(giverPlayerId, "Not enough <img id=\"Coin\"/> to give out.", ExclusiveUIEnum::GiftResourceUI, "PopupCannot");
+				AddPopupToFront(giverPlayerId, 
+					LOCTEXT("NotEnoughMoneyToGive", "Not enough <img id=\"Coin\"/> to give out."), 
+					ExclusiveUIEnum::GiftResourceUI, "PopupCannot");
 				return;
 			}
 
@@ -2565,7 +2587,9 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 		else
 		{
 			if (resourceCount(giverPlayerId, resourceEnum) < amount) {
-				AddPopupToFront(giverPlayerId, "Not enough resource to give out.", ExclusiveUIEnum::GiftResourceUI, "PopupCannot");
+				AddPopupToFront(giverPlayerId, 
+					LOCTEXT("NotEnoughResourceToGive", "Not enough resource to give out."), 
+					ExclusiveUIEnum::GiftResourceUI, "PopupCannot");
 				return;
 			}
 
@@ -2948,6 +2972,49 @@ void GameSimulationCore::AbandonTown(int32 playerId)
 	AddEventLogToAllExcept(playerId, playerName(playerId) + " abandoned the old town to start a new one.", false);
 }
 
+void GameSimulationCore::PopupInstantReply(int32 playerId, PopupReceiverEnum replyReceiver, int32 choiceIndex)
+{
+	if (replyReceiver == PopupReceiverEnum::StartGame_Story)
+	{
+		std::stringstream ss;
+		ss << "Tutorials can be opened using the top-left \"?\" button.";
+		ss << TutorialLinkString(TutorialLinkEnum::TutorialButton);
+
+		ss << "\n";
+		ss << "Camera control:";
+		ss << "<bullet>W, A, S, D keys to pan</>";
+		ss << "<bullet>Mouse wheel to zoom</>";
+		ss << "<bullet>Q, E keys to rotate</>";
+		ss << TutorialLinkString(TutorialLinkEnum::CameraControl);
+
+		AddPopup(playerId, ss.str());
+	}
+	else if (replyReceiver == PopupReceiverEnum::DoneResearchEvent_ShowTree)
+	{
+		if (choiceIndex == 0) {
+			unlockSystem(playerId)->shouldOpenTechUI = true;
+		}
+	}
+	else if (replyReceiver == PopupReceiverEnum::UnlockedHouseTree_ShowProsperityUI)
+	{
+		if (choiceIndex == 0) {
+			unlockSystem(playerId)->shouldOpenProsperityUI = true;
+		}
+	}
+	else if (replyReceiver == PopupReceiverEnum::Approve_AbandonTown1)
+	{
+		if (choiceIndex == 0) {
+			AddPopup(PopupInfo(playerId,
+				LOCTEXT("AskAbandonTown_Pop", "Are you sure you want to abandon this settlement? This settlement will be destroyed as a result."),
+				{
+					LOCTEXT("Yes", "Yes"),
+					LOCTEXT("No", "No")
+				}, PopupReceiverEnum::Approve_AbandonTown2, true, "PopupBad")
+			);
+		}
+	}
+}
+
 void GameSimulationCore::PopupDecision(FPopupDecision command) 
 {
 	UE_LOG(LogNetworkInput, Log, TEXT(" PopupDecision replyReceiver:%d choice:%d"), command.replyReceiverIndex, command.choiceIndex);
@@ -2961,20 +3028,24 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 	if (replyReceiver == PopupReceiverEnum::ImmigrationEvent) 
 	{
 		if (command.choiceIndex == 0) {
-			AddPopupToFront(command.playerId, "You can't help but notice the wide smile that spread across an immigrant child as she enters her promised land.");
+			AddPopupToFront(command.playerId, 
+				LOCTEXT("LetImmigrantsIn", "You can't help but notice the wide smile that spread across an immigrant child as she enters her promised land."));
 			town.AddRequestedImmigrants();
 		}
 		else if(command.choiceIndex == 1) {
 			//if (Time::Years() % 2 == 0) {
 				int32 sneakedIns = town.migrationPull() / 2;
-				AddPopupToFront(command.playerId, to_string(sneakedIns) + " immigrants decided to illegally sneaked in anyway...");
+				AddPopupToFront(command.playerId, 
+					FText::Format(LOCTEXT("ImmigrantsSneakedIn", "{0} immigrants decided to illegally sneaked in anyway..."), TEXT_NUM(sneakedIns)));
 				town.AddImmigrants(sneakedIns);
 			//} else {
 			//	AddPopupToFront(command.playerId, "Their earlier joyful smiles of hope turned into gloom as the immigrants leave the town.");
 			//}
 		}
 		else {
-			AddPopupToFront(command.playerId, "News of your horrifying atrocity spreads across the world. You stole 100 gold and gained 100 pork.");
+			AddPopupToFront(command.playerId, 
+				LOCTEXT("ImmigrantsCannibalized", "News of your horrifying atrocity spreads across the world. You stole 100 gold and gained 100 pork.")
+			);
 			resourceSystem(command.playerId).ChangeMoney(100);
 			resourceSystem(command.playerId).AddResourceGlobal(ResourceEnum::Pork, 100, *this);
 		}
@@ -2983,14 +3054,20 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 	else if (replyReceiver == PopupReceiverEnum::ImmigrationBetweenPlayersEvent)
 	{
 		if (command.choiceIndex == 0) {
-			AddPopupToFront(command.playerId, "You can't help but notice the wide smile that spread across an immigrant child as she enters her promised land.");
+			AddPopupToFront(command.playerId, 
+				LOCTEXT("ImmigrantsPromisedLand", "You can't help but notice the wide smile that spread across an immigrant child as she enters her promised land.")
+			);
 			town.AddRequestedImmigrants();
 		}
 		else if (command.choiceIndex == 1) {
-			AddPopupToFront(command.playerId, "Their earlier joyful smiles of hope turned into gloom as the immigrants left your town.");
+			AddPopupToFront(command.playerId, 
+				LOCTEXT("ImmigrantsGloom", "Their earlier joyful smiles of hope turned into gloom as the immigrants left your town.")
+			);
 		}
 		else {
-			AddPopupToFront(command.playerId, "News of your horrifying atrocity spreads across the world. You stole 100 gold.");
+			AddPopupToFront(command.playerId, 
+				LOCTEXT("ImmigrantsStoleGold", "News of your horrifying atrocity spreads across the world. You stole 100 gold.")
+			);
 			resourceSystem(command.playerId).ChangeMoney(100);
 		}
 	}
@@ -2998,15 +3075,21 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 	else if (replyReceiver == PopupReceiverEnum::TribalJoinEvent) 
 	{
 		if (command.choiceIndex == 0) {
-			AddPopupToFront(command.playerId, "Tribe people are now a part of our big family.");
+			AddPopupToFront(command.playerId, 
+				LOCTEXT("TribeConsumed", "Tribe people are now a part of our big family.")
+			);
 			town.AddRequestedImmigrants();
 			GenerateRareCardSelection(command.playerId, RareHandEnum::BuildingSlotCards, "A gift from the tribe.");
 		}
 		else if (command.choiceIndex == 1) {
-			AddPopupToFront(command.playerId, "Forced out of their home, the tribe left our land.");
+			AddPopupToFront(command.playerId, 
+				LOCTEXT("TribedForcedOut", "Forced out of their home, the tribe left our land.")
+			);
 		}
 		else {
-			AddPopupToFront(command.playerId, "News of your horrifying atrocity spreads across the world. You stole 100 gold.");
+			AddPopupToFront(command.playerId, 
+				LOCTEXT("TribeStoleGold", "News of your horrifying atrocity spreads across the world. You stole 100 gold.")
+			);
 			resourceSystem(command.playerId).ChangeMoney(100);
 		}
 	}
@@ -3123,7 +3206,9 @@ void GameSimulationCore::RerollCards(FRerollCards command)
 		cardSys.RollHand(cardSys.handSize(), true);
 		resourceSys.ChangeMoney(-rerollPrice);
 	} else {
-		AddPopupToFront(command.playerId, "Not enough money for reroll", ExclusiveUIEnum::CardHand1, "PopupCannot");
+		AddPopupToFront(command.playerId, 
+			LOCTEXT("NoRerollMoney", "Not enough money for reroll"), 
+			ExclusiveUIEnum::CardHand1, "PopupCannot");
 	}
 
 	cardSys.SetPendingCommand(false);
@@ -3197,8 +3282,9 @@ void GameSimulationCore::UseCard(FUseCard command)
 	{
 		if (cardSys.HasBoughtCard(CardEnum::CardRemoval))
 		{
-			std::string cardName = GetBuildingInfoInt(command.variable1).nameStd();
-			AddPopupToFront(command.playerId, "Removed " + cardName + " Card from your deck.<space>" + cardName + " is now only available from Wild Cards.");
+			FText cardName = GetBuildingInfoInt(command.variable1).name;
+			AddPopupToFront(command.playerId, 
+				FText::Format(LOCTEXT("CardRemovalDone", "Removed {0} Card from your deck.<space>{0} is now only available from Wild Cards."), GetBuildingInfoInt(command.variable1).name));
 			
 			cardSys.RemoveCards(CardEnum::CardRemoval, 1);
 			cardSys.RemoveDrawCards(static_cast<CardEnum>(command.variable1));
@@ -3215,7 +3301,8 @@ void GameSimulationCore::UseCard(FUseCard command)
 				cardSys.AddCardToTownhall(command.GetCardStatus(_gameManager->GetDisplayWorldTime() * 100.0f));
 			}
 		} else {
-			AddPopupToFront(command.playerId, "Townhall card slots full.");
+			AddPopupToFront(command.playerId, 
+				LOCTEXT("TownhallSlotsFull", "Townhall card slots full."));
 		}
 		return;
 	}
@@ -3254,11 +3341,15 @@ void GameSimulationCore::UseCard(FUseCard command)
 		if (resourceSystem(command.playerId).CanAddResourceGlobal(resourcePair.resourceEnum, resourcePair.count))
 		{
 			resourceSystem(command.playerId).AddResourceGlobal(resourcePair.resourceEnum, resourcePair.count, *this);
-			AddPopupToFront(command.playerId, "Gained " + to_string(resourcePair.count) + " " + GetResourceInfo(resourcePair.resourceEnum).nameStd() + " from crates.");
+			AddPopupToFront(command.playerId, 
+				FText::Format(LOCTEXT("GainedXResourceFromCrate", "Gained {0} {1} from crates."), TEXT_NUM(resourcePair.count), GetResourceInfo(resourcePair.resourceEnum).name)
+			);
 			cardSys.RemoveCards(command.cardEnum, 1);
 		}
 		else {
-			AddPopup(command.playerId, "Not enough storage space.", "PopupCannot");
+			AddPopup(command.playerId, 
+				LOCTEXT("NotEnoughStorageSpace", "Not enough storage space."), 
+				"PopupCannot");
 		}
 		return;
 	}
@@ -3271,11 +3362,15 @@ void GameSimulationCore::UseCard(FUseCard command)
 	
 	if (command.cardEnum == CardEnum::Treasure) {
 		resourceSystem(command.playerId).ChangeMoney(500);
-		AddPopupToFront(command.playerId, "Gained 500<img id=\"Coin\"/> from treasure.");
+		AddPopupToFront(command.playerId, 
+			LOCTEXT("GainedCoinFromTreasure", "Gained 500<img id=\"Coin\"/> from treasure.")
+		);
 	}
 	else if (command.cardEnum == CardEnum::EmergencyRations) {
 		resourceSystem(command.playerId).AddResourceGlobal(ResourceEnum::Wheat, 50, *this);
-		AddPopupToFront(command.playerId, "Gained " + to_string(50) + " " + GetResourceInfo(ResourceEnum::Wheat).nameStd() + " from emergency ration.");
+		AddPopupToFront(command.playerId, 
+			FText::Format(LOCTEXT("GainedEmergencyRation", "Gained {0} {1} from emergency ration."), TEXT_NUM(50), GetResourceInfo(ResourceEnum::Wheat).name)
+		);
 	}
 	
 	else if (command.cardEnum == CardEnum::KidnapGuard ||
@@ -3287,22 +3382,28 @@ void GameSimulationCore::UseCard(FUseCard command)
 	else if (IsSeedCard(command.cardEnum)) 
 	{
 		SeedInfo seedInfo = GetSeedInfo(command.cardEnum);
-		std::string plantName = GetTileObjInfo(seedInfo.tileObjEnum).nameStr();
+		FText plantName = GetTileObjInfo(seedInfo.tileObjEnum).name;
 		
 		// Unlock farm if needed
 		if (!unlockSystem(command.playerId)->isUnlocked(CardEnum::Farm)) {
 			unlockSystem(command.playerId)->UnlockBuilding(CardEnum::Farm);
-			AddPopupToFront(command.playerId, "Unlocked farm!");
+			AddPopupToFront(command.playerId, 
+				LOCTEXT("Unlocked farm!", "Unlocked farm!")
+			);
 		}
 		
 		resourceSystem(command.playerId).AddSeed(seedInfo);
 
 		if (IsCommonSeedCard(command.cardEnum)) {
-			AddPopupToFront(command.playerId, "Unlocked " + plantName +". Switch your farm's workmode to grow " + plantName + ".");
+			AddPopupToFront(command.playerId, 
+				FText::Format(LOCTEXT("UnlockedCropSwithToGrow", "Unlocked {0}. Switch your farm's workmode to grow {0}."), plantName)
+			);
 		} else {
 			PUN_CHECK(IsSpecialSeedCard(command.cardEnum));
 			
-			AddPopupToFront(command.playerId, "Unlocked " + plantName + ". " + plantName + " requires suitable regions marked on the map to be grown.");
+			AddPopupToFront(command.playerId, 
+				FText::Format(LOCTEXT("UnlockedCropRequireSuitableRegion", "Unlocked {0}. {1} requires suitable regions marked on the map to be grown."), plantName)
+			);
 		}
 	}
 	else if (command.cardEnum == CardEnum::Pig) {
@@ -3323,7 +3424,9 @@ void GameSimulationCore::UseCard(FUseCard command)
 			resourceSys.ChangeMoney(amountToRemove * FoodCost);
 			totalRemoved += amountToRemove;
 		}
-		AddPopupToFront(command.playerId, "Sold " + to_string(totalRemoved) + " food for " + "<img id=\"Coin\"/>" + to_string(totalRemoved * FoodCost) + ".");
+		AddPopupToFront(command.playerId, 
+			FText::Format(LOCTEXT("SoldFoodForCoin", "Sold {0} food for <img id=\"Coin\"/>{1}."), TEXT_NUM(totalRemoved), TEXT_NUM(totalRemoved * FoodCost))
+		);
 	}
 	else if (command.cardEnum == CardEnum::BuyWood) 
 	{
@@ -3337,21 +3440,29 @@ void GameSimulationCore::UseCard(FUseCard command)
 				int32 moneyPaid = amountToBuy * cost;
 				resourceSys.ChangeMoney(-moneyPaid);
 
-				AddPopupToFront(command.playerId, "Bought " + to_string(amountToBuy) + " wood for " + "<img id=\"Coin\"/>" + to_string(moneyPaid) + ".");
+				AddPopupToFront(command.playerId, 
+					FText::Format(LOCTEXT("BoughtWoodUseCoin", "Bought {0} wood for <img id=\"Coin\"/>{1}."), TEXT_NUM(amountToBuy), TEXT_NUM(moneyPaid))
+				);
 			}
 			else {
 				succeedUsingCard = false;
-				AddPopupToFront(command.playerId, "Not enough storage space in our city.");
+				AddPopupToFront(command.playerId, 
+					LOCTEXT("NotEnoughStorageInCity", "Not enough storage space in our city.")
+				);
 			}
 		}
 		else {
 			succeedUsingCard = false;
-			AddPopupToFront(command.playerId, "Need more money to use the Buy Wood Card.");
+			AddPopupToFront(command.playerId, 
+				LOCTEXT("NeedMoreMoneyForBuyWoodCard", "Need more money to use the Buy Wood Card.")
+			);
 		}
 	}
 	else if (command.cardEnum == CardEnum::Immigration) {
 		townhall(command.playerId).AddImmigrants(5);
-		AddPopupToFront(command.playerId, "5 immigrants joined after hearing the advertisement.");
+		AddPopupToFront(command.playerId, 
+			LOCTEXT("ImmigrantsJoinedFromAds", "5 immigrants joined after hearing the advertisement.")
+		);
 	}
 
 	else {
@@ -3388,41 +3499,6 @@ void GameSimulationCore::UnslotCard(FUnslotCard command)
 		}
 	}
 }
-
-// TODO: move this into barrack
-//bool GameSimulationCore::CanTrainUnit(int32 buildingId)
-//{
-//	Barrack& barrack = building(buildingId).subclass<Barrack>();
-//	int32 playerId = barrack.playerId();
-//	const ArmyInfo& info = barrack.armyInfo();
-//	
-//	if (!HasEnoughResource(playerId, info.resourceCost)) {
-//		AddPopupToFront(playerId, { "Not enough resource for training." }, ExclusiveUIEnum::None, "PopupCannot");
-//		return false;
-//	}
-//	if (money(playerId) < info.moneyCost) {
-//		AddPopupToFront(playerId, { "Not enough money for training." }, ExclusiveUIEnum::None, "PopupCannot");
-//		return false;
-//	}
-//	return true;
-//}
-//void GameSimulationCore::TrainUnit(FTrainUnit command)
-//{
-//	//PUN_ENSURE(IsValidBuilding(command.buildingId), return);
-//	//
-//	//_LOG(LogNetworkInput, " TrainUnit: cancel?%d", command.isCancel);
-//
-//	//if (command.isCancel)
-//	//{
-//	//	building(command.buildingId).subclass<Barrack>().TryCancelTrainingQueue();
-//	//}
-//	//else
-//	//{
-//	//	if (CanTrainUnit(command.buildingId)) {
-//	//		building(command.buildingId).subclass<Barrack>().QueueTrainUnit();
-//	//	}
-//	//}
-//}
 
 // Any army order, not just attack anymore...
 void GameSimulationCore::Attack(FAttack command)
@@ -3532,7 +3608,12 @@ void GameSimulationCore::Attack(FAttack command)
 		int32 requesterPlayerId = building(command.originNodeId).playerId();
 		int32 targetPlayerId = building(command.targetNodeId).playerId();
 		
-		PopupInfo info(targetPlayerId, playerName(requesterPlayerId) + " is requesting an alliance with you. Will you accept?", { "Yes", "No" }, PopupReceiverEnum::AllyRequest);
+		PopupInfo info(targetPlayerId, 
+			FText::Format(LOCTEXT("AskAlliance_Pop", "{0} is requesting an alliance with you. Will you accept?"), playerNameT(requesterPlayerId)),
+			{ LOCTEXT("Yes", "Yes"),
+				LOCTEXT("No", "No") },
+			PopupReceiverEnum::AllyRequest
+		);
 		info.replyVar1 = requesterPlayerId;
 		AddPopup(info);
 	}
@@ -3751,7 +3832,9 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 			}
 			else
 			{
-				AddPopupToFront(command.playerId, "Not enough <img id=\"Influence\"/> to attack.");
+				AddPopupToFront(command.playerId, 
+					LOCTEXT("NotEnoughInfluenceToAttack", "Not enough <img id=\"Influence\"/> to attack.")
+				);
 			}
 		}
 	}
@@ -3780,7 +3863,9 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 				provincePlayerOwner.ReinforceAttacker(command.provinceId, BattleInfluencePrice);
 			}
 			else {
-				AddPopupToFront(command.playerId, "Not enough <img id=\"Influence\"/> to reinforce.");
+				AddPopupToFront(command.playerId, 
+					LOCTEXT("NotEnoughInfluenceToReinforce", "Not enough <img id=\"Influence\"/> to reinforce.")
+				);
 			}
 		}
 	}
@@ -3831,7 +3916,10 @@ void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 playerId)
 			_provinceSystem.provinceOceanTileCount(provinceId) > 0)
 		{
 			if (!unlockSystem(playerId)->isUnlocked(CardEnum::Bridge)) {
-				AddPopupToFront(playerId, "Unlocked bridge!", ExclusiveUIEnum::None, "PopupNeutral");
+				AddPopupToFront(playerId, 
+					LOCTEXT("Unlocked bridge!", "Unlocked bridge!"),
+					ExclusiveUIEnum::None, "PopupNeutral"
+				);
 				unlockSystem(playerId)->UnlockBuilding(CardEnum::Bridge);
 			}
 		}
@@ -3867,7 +3955,10 @@ void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 playerId)
 						GetProvinceIdClean(bld.centerTile()) == provinceId)
 					{
 						if (bld.isEnum(CardEnum::RegionTribalVillage)) {
-							ImmigrationEvent(playerId, 5, GenerateTribeName(bld.buildingId()) + " wish to join your city.", PopupReceiverEnum::TribalJoinEvent);
+							ImmigrationEvent(playerId, 5, 
+								FText::Format(LOCTEXT("TribalImmigrantAsk_Pop", "{0} wish to join your city."), GenerateTribeName(bld.buildingId())),
+								PopupReceiverEnum::TribalJoinEvent
+							);
 							//townhall(playerId).ImmigrationEvent(5, GenerateTribeName(bld.buildingId()) + " wish to join your city.", PopupReceiverEnum::TribalJoinEvent);
 							ClearProvinceBuildings(bld.provinceId());
 						}
@@ -4125,7 +4216,12 @@ void GameSimulationCore::Cheat(FCheat command)
 
 		case CheatEnum::YearlyTrade:
 		{
-			AddPopup(PopupInfo(command.playerId, "A caravan has arrived. They wish to buy any goods you might have.", { "Trade", "Refuse" }, PopupReceiverEnum::CaravanBuyer));
+			AddPopup(PopupInfo(command.playerId, 
+				LOCTEXT("CaravanArrive_Pop", "A caravan has arrived. They wish to buy any goods you might have."), 
+				{ LOCTEXT("Trade", "Trade"),
+					LOCTEXT("Refuse", "Refuse") },
+				PopupReceiverEnum::CaravanBuyer)
+			);
 			break;
 		}
 
@@ -4475,3 +4571,6 @@ void GameSimulationCore::DemolishCritterBuildingsIncludingFronts(WorldTile2 tile
 		//});
 	}
 }
+
+
+#undef LOCTEXT_NAMESPACE

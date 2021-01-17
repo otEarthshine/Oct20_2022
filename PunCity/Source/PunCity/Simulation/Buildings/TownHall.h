@@ -70,15 +70,9 @@ public:
 	//std::string UpgradeButtonString();
 	//std::string UpgradeButtonTooltip();
 
-	std::vector<std::string> getImmigrationEventChoices() {
-		std::vector<std::string> choices = { "accept", "refuse" };
-		if (_simulation->TownhallCardCount(_playerId, CardEnum::Cannibalism)) {
-			choices.push_back("kill, steal, and eat (Cannibalism)");
-		}
-		return choices;
-	}
+	std::vector<FText> getImmigrationEventChoices();
 	void ImmigrationEvent(int32 exactAmount = -1);
-	void ImmigrationEvent(int32 exactAmount, std::string message, PopupReceiverEnum replyReceiver = PopupReceiverEnum::ImmigrationEvent);
+	void ImmigrationEvent(int32 exactAmount, FText message, PopupReceiverEnum replyReceiver = PopupReceiverEnum::ImmigrationEvent);
 	//void AnimalVendorEvent();
 
 	void AddImmigrants(int32 immigrantCount, WorldTile2 tile = WorldTile2::Invalid)

@@ -1447,7 +1447,7 @@ public:
 
 	//! Popup displays
 	void AddPopup(int32 playerId, std::string popupBody, std::string popupSound = "") final {
-		PopupInfo info(playerId, popupBody);
+		PopupInfo info(playerId, ToFText(popupBody));
 		info.popupSound = popupSound;
 		AddPopup(info);
 	}
@@ -1456,21 +1456,27 @@ public:
 		PUN_CHECK(popupInfo.playerId < _popupSystems.size());
 		_popupSystems[popupInfo.playerId].AddPopup(popupInfo);
 	}
-
-	void AddPopupToFront(int32 playerId, std::string popupBody) final {
-		AddPopupToFront(PopupInfo(playerId, popupBody));
+	void AddPopup(int32 playerId, FText popupBody, std::string popupSound = "") final {
+		PopupInfo info(playerId, popupBody);
+		info.popupSound = popupSound;
+		AddPopup(info);
 	}
+
+	
 	void AddPopupToFront(PopupInfo popupInfo) final {
 		_popupSystems[popupInfo.playerId].AddPopupToFront(popupInfo);
 	}
-	void AddPopupToFront(int32 playerId, std::string popupBody, ExclusiveUIEnum exclusiveEnum, std::string popupSound) final {
+	void AddPopupToFront(int32 playerId, FText popupBody) final {
+		AddPopupToFront(PopupInfo(playerId, popupBody));
+	}
+	void AddPopupToFront(int32 playerId, FText popupBody, ExclusiveUIEnum exclusiveEnum, std::string popupSound) final {
 		PopupInfo popup(playerId, { popupBody }, popupSound);
 		popup.warningForExclusiveUI = exclusiveEnum;
 		AddPopupToFront(popup);
 	}
 
 	void AddPopupAll(PopupInfo popupInfo, int32 playerToSkip) final {
-		PUN_LOG("AddPopupToDisplayAll %s", ToTChar(popupInfo.body));
+		PUN_LOG("AddPopupToDisplayAll %s", *(popupInfo.body.ToString()));
 		ExecuteOnConnectedPlayers([&](int32 playerId) {
 			if (playerId != playerToSkip) {
 				popupInfo.playerId = playerId;
@@ -1671,7 +1677,7 @@ public:
 		playerOwned(playerId).AddMigrationPendingCount(migrationCount);
 	}
 
-	void ImmigrationEvent(int32 playerId, int32 migrationCount, std::string message, PopupReceiverEnum receiverEnum) final
+	void ImmigrationEvent(int32 playerId, int32 migrationCount, FText message, PopupReceiverEnum receiverEnum) final
 	{
 		townhall(playerId).ImmigrationEvent(migrationCount, message, receiverEnum);
 	}
@@ -1685,12 +1691,18 @@ public:
 		// Not enough money
 		int32 money = resourceSystem(playerId).money();
 		if (money < cardSystem(playerId).GetCardPrice(buildingEnum)) {
-			AddPopupToFront(playerId, "Not enough money to purchase the card.", ExclusiveUIEnum::CardHand1, "PopupCannot");
+			AddPopupToFront(playerId, 
+				NSLOCTEXT("SimCore", "NotEnoughMoneyPurchaseCard", "Not enough money to purchase the card."), 
+				ExclusiveUIEnum::CardHand1, "PopupCannot"
+			);
 			return false;
 		}
 
 		if (!cardSystem(playerId).CanAddCardToBoughtHand(buildingEnum, 1)) {
-			AddPopupToFront(playerId, "Reached hand limit for bought cards.", ExclusiveUIEnum::CardHand1, "PopupCannot");
+			AddPopupToFront(playerId, 
+				NSLOCTEXT("SimCore", "ReachedHandLimit_Pop", "Reached hand limit for bought cards."),
+				ExclusiveUIEnum::CardHand1, "PopupCannot"
+			);
 			return false;
 		}
 		return true;
@@ -1887,8 +1899,15 @@ public:
 		}
 
 		if (capitalsOwned == playerAndAICount() - 1) {
-			AddPopup(playerIdToWin, "You have captured all but one capital. If you captured all capitals, you will achieve the domination victory.");
-			AddPopupAll(PopupInfo(-1, playerName(playerIdToWin) + " have captured all but one capital. You will be defeated if " + playerName(playerIdToWin) + " manages to capture all the capitals."), playerIdToWin);
+			AddPopup(playerIdToWin, 
+				NSLOCTEXT("SimCore", "WarnDominationVictory_Pop", "You have captured all but one capital. If you captured all capitals, you will achieve the domination victory.")
+			);
+			AddPopupAll(PopupInfo(-1,
+				FText::Format(NSLOCTEXT("SimCore", "WarnDominationVictoryAll_Pop",
+					"{0} have captured all but one capital. You will be defeated if {0} manages to capture all the capitals."),
+					playerNameT(playerIdToWin)
+				)
+			), playerIdToWin);
 		}
 		else if (capitalsOwned == playerAndAICount()) {
 			_endStatus.victoriousPlayerId = playerIdToWin;
@@ -2014,49 +2033,7 @@ public:
 		checkGetSeed(CardEnum::TulipSeeds, GeoresourceEnum::TulipFarm);
 	}
 
-	void PopupInstantReply(int32 playerId, PopupReceiverEnum replyReceiver, int32 choiceIndex)
-	{
-		if (replyReceiver == PopupReceiverEnum::StartGame_Story) 
-		{
-			std::stringstream ss;
-			ss << "Tutorials can be opened using the top-left \"?\" button.";
-			ss << TutorialLinkString(TutorialLinkEnum::TutorialButton);
-
-			ss << "\n";
-			ss << "Camera control:";
-			ss << "<bullet>W, A, S, D keys to pan</>";
-			ss << "<bullet>Mouse wheel to zoom</>";
-			ss << "<bullet>Q, E keys to rotate</>";
-			ss << TutorialLinkString(TutorialLinkEnum::CameraControl);
-			
-			AddPopup(playerId, ss.str());
-		}
-		else if (replyReceiver == PopupReceiverEnum::DoneResearchEvent_ShowTree)
-		{
-			if (choiceIndex == 0) {
-				unlockSystem(playerId)->shouldOpenTechUI = true;
-			}
-		}
-		else if (replyReceiver == PopupReceiverEnum::UnlockedHouseTree_ShowProsperityUI)
-		{
-			if (choiceIndex == 0) {
-				unlockSystem(playerId)->shouldOpenProsperityUI = true;
-			}
-		}
-		else if (replyReceiver == PopupReceiverEnum::Approve_AbandonTown1)
-		{
-			if (choiceIndex == 0) {
-				std::stringstream ss;
-				ss << "Are you sure you want to abandon this settlement? This settlement will be destroyed as a result.";
-				AddPopup(PopupInfo(playerId, ss.str(),
-					{
-						"Yes",
-						"No"
-					}, PopupReceiverEnum::Approve_AbandonTown2, true, "PopupBad")
-				);
-			}
-		}
-	}
+	void PopupInstantReply(int32 playerId, PopupReceiverEnum replyReceiver, int32 choiceIndex);
 
 
 	/*

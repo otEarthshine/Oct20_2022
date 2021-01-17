@@ -1717,7 +1717,10 @@ void UMainGameUI::ClickRerollButton()
 		networkInterface()->SendNetworkCommand(command);
 		cardSystem.SetPendingCommand(true);
 	} else {
-		simulation().AddPopupToFront(playerId(), "Not enough money for reroll", ExclusiveUIEnum::CardHand1, "PopupCannot");
+		simulation().AddPopupToFront(playerId(), 
+			LOCTEXT("Not enough money for reroll",  "Not enough money for reroll"),
+			ExclusiveUIEnum::CardHand1, "PopupCannot"
+		);
 	}
 	
 }
@@ -1761,7 +1764,10 @@ void UMainGameUI::ClickCardHand1SubmitButton()
 	// Check if not enough money, and put on a warning...
 	if (CardHand1SubmitButtonText->GetText().ToString() == FString("Submit")) {
 		if (MoneyLeftAfterTentativeBuy() < 0) {
-			simulation().AddPopupToFront(playerId(), "Not enough money to purchase the card.", ExclusiveUIEnum::CardHand1, "PopupCannot");
+			simulation().AddPopupToFront(playerId(), 
+				LOCTEXT("NotEnoughMoneyToBuyCard_Pop", "Not enough money to purchase the card."), 
+				ExclusiveUIEnum::CardHand1, "PopupCannot"
+			);
 			return;
 		}
 	}
@@ -1827,7 +1833,10 @@ void UMainGameUI::ClickRareCardHandSubmitButton()
 	}
 
 	if (command->cardEnum == CardEnum::None) {
-		simulation().AddPopupToFront(playerId(), "Please choose a card before submitting.", ExclusiveUIEnum::RareCardHand, "PopupCannot");
+		simulation().AddPopupToFront(playerId(), 
+			LOCTEXT("ChooseCardBeforeSubmit_Pop", "Please choose a card before submitting."), 
+			ExclusiveUIEnum::RareCardHand, "PopupCannot"
+		);
 		return;
 	}
 	
@@ -1838,23 +1847,7 @@ void UMainGameUI::ClickRareCardHandSubmitButton()
 	dataSource()->Spawn2DSound("UI", "CardDeal");
 }
 
-//void UMainGameUI::ClickConverterCardHandSubmitButton()
-//{
-//	if (_lastConverterChosenCard == CardEnum::None) {
-//		simulation().AddPopupToFront(playerId(), "Please choose a card before submitting.", ExclusiveUIEnum::ConverterCardHand, "PopupCannot");
-//		return;
-//	}
-//	
-//	auto command = make_shared<FUseCard>();
-//	command->cardEnum = CardEnum::ConverterCard;
-//	command->variable1 = static_cast<int32>(_lastConverterChosenCard);
-//	networkInterface()->SendNetworkCommand(command);
-//
-//	ConverterCardHandOverlay->SetVisibility(ESlateVisibility::Collapsed);
-//	simulation().cardSystem(playerId()).converterCardState = ConverterCardUseState::SubmittedUI;
-//
-//	dataSource()->Spawn2DSound("UI", "CardDeal");
-//}
+
 void UMainGameUI::ClickConverterCardHandCancelButton()
 {
 	if (ConverterCardHandOverlay->GetVisibility() != ESlateVisibility::Collapsed)
@@ -1871,7 +1864,10 @@ void UMainGameUI::OnClickLeaderSkillButton()
 	auto& playerOwned = simulation().playerOwned(playerId());
 	CardEnum skillEnum = playerOwned.currentSkill();
 	if (playerOwned.GetSP() < GetSkillManaCost(skillEnum)) {
-		simulation().AddPopupToFront(playerId(), "Not enough SP to use the leader skill.", ExclusiveUIEnum::None, "PopupCannot");
+		simulation().AddPopupToFront(playerId(), 
+			LOCTEXT("NoSPForSkill_Pop", "Not enough SP to use the leader skill."), 
+			ExclusiveUIEnum::None, "PopupCannot"
+		);
 		return;
 	}
 
@@ -1912,7 +1908,10 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 		int32 money = simulation().money(playerId());
 		int32 cardPrice = cardSystem.GetCardPrice(buildingEnum);
 		if (cardPrice > 0 && money < cardPrice) {
-			simulation().AddPopupToFront(playerId(), "Not enough money to buy the common card.", ExclusiveUIEnum::BuildMenu, "PopupCannot");
+			simulation().AddPopupToFront(playerId(), 
+				LOCTEXT("NoMoneyToBuyCommonCard_Pop", "Not enough money to buy the common card."), 
+				ExclusiveUIEnum::BuildMenu, "PopupCannot"
+			);
 			return;
 		}
 
@@ -1959,7 +1958,10 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 			// Check if there is enough money
 			int32 money = MoneyLeftAfterTentativeBuy();
 			if (cardHandIndex != -1 && money < cardSystem.GetCardPrice(buildingEnum)) {
-				simulation().AddPopupToFront(playerId(), "Not enough money to purchase the card.", ExclusiveUIEnum::CardHand1, "PopupCannot");
+				simulation().AddPopupToFront(playerId(), 
+					LOCTEXT("NoMoneyToBuyCard_Pop", "Not enough money to purchase the card."), 
+					ExclusiveUIEnum::CardHand1, "PopupCannot"
+				);
 				return;
 			}
 
@@ -1973,7 +1975,10 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 			//}
 			
 			if (!cardSystem.CanAddCardToBoughtHand(buildingEnum, 1, true)) {
-				simulation().AddPopupToFront(playerId(), "Reached hand limit for bought cards.", ExclusiveUIEnum::CardHand1, "PopupCannot");
+				simulation().AddPopupToFront(playerId(), 
+					LOCTEXT("ReachedHandLimit_Pop", "Reached hand limit for bought cards."),
+					ExclusiveUIEnum::CardHand1, "PopupCannot"
+				);
 				return;
 			}
 			
@@ -1999,10 +2004,10 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 			// Check if we reached hand limit
 			if (!simulation().cardSystem(playerId()).CanAddCardToBoughtHand(buildingEnum, 1)) 
 			{
-				simulation().AddPopupToFront(playerId(), 
+				simulation().AddPopupToFront(playerId(), LOCTEXT("ReachedHandLimitRare_Pop",
 											"Reached hand limit for bought cards."
 											"<space>"
-											"Please sell or use some cards on your hand, then choose a rare card prize again.",
+											"Please sell or use some cards on your hand, then choose a rare card prize again."),
 											ExclusiveUIEnum::RareCardHand, "PopupCannot");
 				return;
 			}
@@ -2016,7 +2021,10 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 	{
 		// Check if there is enough money...
 		if (simulation().money(playerId()) < cardSystem.GetCardPrice(buildingEnum) / 2) {
-			simulation().AddPopupToFront(playerId(), "Not enough money. Need to pay the building price to use wild card.", ExclusiveUIEnum::ConverterCardHand, "PopupCannot");
+			simulation().AddPopupToFront(playerId(), 
+				LOCTEXT("NotEnoughMoneyWildCard_Pop", "Not enough money. Need to pay the building price to use wild card."), 
+				ExclusiveUIEnum::ConverterCardHand, "PopupCannot"
+			);
 			return;
 		}
 
@@ -2076,12 +2084,18 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 						//cardButton->SetVisibility(ESlateVisibility::Hidden);
 					}
 					else {
-						simulation().AddPopupToFront(playerId(), "Not enough slot. Unslot a card in this building first.", ExclusiveUIEnum::None, "PopupCannot");
+						simulation().AddPopupToFront(playerId(), 
+							LOCTEXT("NotEnoughSlotUnslotFirst_Pop", "Not enough slot. Unslot a card in this building first."), 
+							ExclusiveUIEnum::None, "PopupCannot"
+						);
 					}
 				}
 				else
 				{
-					simulation().AddPopupToFront(playerId(), "Global-slot card must be slotted to the townhall. Click the townhall to open its panel before slotting the card.", ExclusiveUIEnum::None, "PopupCannot");
+					simulation().AddPopupToFront(playerId(), 
+						LOCTEXT("GlobalCardNeedsTownhall_Pop", "Global-slot card must be slotted to the townhall. Click the townhall to open its panel before slotting the card."),
+						ExclusiveUIEnum::None, "PopupCannot"
+					);
 				}
 				return;
 			}
@@ -2098,22 +2112,34 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 					Building& building = simulation().building(buildingId);
 
 					if (building.playerId() != playerId()) {
-						simulation().AddPopupToFront(playerId(), "Cannot insert a building-slot card. You don't own the Building.", ExclusiveUIEnum::None, "PopupCannot");
+						simulation().AddPopupToFront(playerId(), 
+							LOCTEXT("CannotInsertSlotNotBldOwner_Pop", "Cannot insert a building-slot card. You don't own the Building."), 
+							ExclusiveUIEnum::None, "PopupCannot"
+						);
 						return;
 					}
 					
 					if (building.isEnum(CardEnum::Townhall)) {
-						simulation().AddPopupToFront(playerId(), "You cannot insert a building-slot card into the townhall. Townhall's card slot requires a global-slot card.", ExclusiveUIEnum::None, "PopupCannot");
+						simulation().AddPopupToFront(playerId(), 
+							LOCTEXT("CannotInsertBldSlotToTownhall_Pop", "You cannot insert a building-slot card into the townhall. Townhall's card slot requires a global-slot card."),
+							ExclusiveUIEnum::None, "PopupCannot"
+						);
 						return;
 					}
 
 					if (building.maxCardSlots() == 0) {
-						simulation().AddPopupToFront(playerId(), "This building has no card slot.", ExclusiveUIEnum::None, "PopupCannot");
+						simulation().AddPopupToFront(playerId(), 
+							LOCTEXT("BldHasNoSlot_Pop", "This building has no card slot."),
+							ExclusiveUIEnum::None, "PopupCannot"
+						);
 						return;
 					}
 
 					if (building.slotCard() != CardEnum::None) {
-						simulation().AddPopupToFront(playerId(), "This building already has a slotted card. Remove it first by clicking on the slotted card.", ExclusiveUIEnum::None, "PopupCannot");
+						simulation().AddPopupToFront(playerId(), 
+							LOCTEXT("BldSlotAlreadyHasCard_Pop", "This building already has a slotted card. Remove it first by clicking on the slotted card."),
+							ExclusiveUIEnum::None, "PopupCannot"
+						);
 						return;
 					}
 					
@@ -2122,7 +2148,10 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 						if (buildingEnum == CardEnum::SustainabilityBook &&
 							building.isEnum(CardEnum::Mint))
 						{
-							simulation().AddPopupToFront(playerId(), "Sustainability Book does not work on Mint. The usage of Gold Bar is already meticulously conserved.", ExclusiveUIEnum::None, "PopupCannot");
+							simulation().AddPopupToFront(playerId(), 
+								LOCTEXT("SustainabilityCardNoMint_Pop", "Sustainability Book does not work on Mint. The usage of Gold Bar is already meticulously conserved."),
+								ExclusiveUIEnum::None, "PopupCannot"
+							);
 							return;
 						}
 						
@@ -2143,9 +2172,11 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 					}
 				}
 				else {
-					simulation().AddPopupToFront(playerId(), 
+					simulation().AddPopupToFront(playerId(), LOCTEXT("BldSlotCardNeedBldCardSlot_Pop",
 						"Building-slot card must be inserted into a building with card slots.<space>"
-						"Click a card-slottable building to open its panel, before slotting the card.", ExclusiveUIEnum::None, "PopupCannot");
+						"Click a card-slottable building to open its panel, before slotting the card."), 
+						ExclusiveUIEnum::None, "PopupCannot"
+					);
 				}
 				return;
 			}
@@ -2174,7 +2205,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 						return false;
 					};
 
-					std::string plantName = GetTileObjInfo(GetSeedInfo(buildingEnum).tileObjEnum).nameStr();
+					FText plantName = GetTileObjInfo(GetSeedInfo(buildingEnum).tileObjEnum).name;
 
 					// TODO: clean up
 					bool noSuitableArea = false;
@@ -2194,7 +2225,10 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 						noSuitableArea = true;
 					}
 					if (noSuitableArea) {
-						simulation().AddPopupToFront(playerId(), "None of your land is suitable for growing " + plantName, ExclusiveUIEnum::None, "PopupCannot");
+						simulation().AddPopupToFront(playerId(), 
+							FText::Format(LOCTEXT("NoLandSuitableForCrop_Pop", "None of your land is suitable for growing {0}"), plantName),
+							ExclusiveUIEnum::None, "PopupCannot"
+						);
 						return;
 					}
 				}
@@ -2223,7 +2257,10 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 					if (resourceSys.CanAddResourceGlobal(ResourceEnum::Wood, amountToBuy)) {
 						sendCommandWithWarning("Are you sure you want to spend half of city's money to buy wood?");
 					} else {
-						simulation().AddPopupToFront(playerId(), "Not enough storage space to fit " + to_string(amountToBuy) + " wood.", ExclusiveUIEnum::None, "PopupCannot");
+						simulation().AddPopupToFront(playerId(), 
+							FText::Format(LOCTEXT("BuyWoodNoStorageFit_Pop", "Not enough storage space to fit {0} wood."), TEXT_NUM(amountToBuy)),
+							ExclusiveUIEnum::None, "PopupCannot"
+						);
 					}
 				}
 				else if (IsCrateCard(buildingEnum))
@@ -2233,7 +2270,10 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 					if (resourceSys.CanAddResourceGlobal(resourcePair.resourceEnum, resourcePair.count)) {
 						sendCommand();
 					} else {
-						simulation().AddPopup(playerId(), "Not enough storage space.", "PopupCannot");
+						simulation().AddPopup(playerId(), 
+							LOCTEXT("Not enough storage space.", "Not enough storage space."),
+							"PopupCannot"
+						);
 					}
 				}
 				else {
@@ -2249,7 +2289,10 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 				if (cardButton->cardCount > 1 &&
 					!cardSystem.CanAddCardToBoughtHand(buildingEnum, 1))
 				{
-					simulation().AddPopupToFront(playerId(), "Reached hand limit for bought cards.", ExclusiveUIEnum::ConverterCardHand, "PopupCannot");
+					simulation().AddPopupToFront(playerId(), 
+						LOCTEXT("ReachedHandLimit_Pop", "Reached hand limit for bought cards."), 
+						ExclusiveUIEnum::ConverterCardHand, "PopupCannot"
+					);
 					return;
 				}
 				

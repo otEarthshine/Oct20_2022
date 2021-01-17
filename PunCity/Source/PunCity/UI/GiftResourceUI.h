@@ -35,7 +35,7 @@ public:
 		GiftTypeDropdown->OnSelectionChanged.Clear();
 		GiftTypeDropdown->OnSelectionChanged.AddDynamic(this, &UGiftResourceUI::OnDropDownChanged);
 		GiftTypeDropdown->ClearOptions();
-		GiftTypeDropdown->AddOption("Money");
+		GiftTypeDropdown->AddOption(NSLOCTEXT("GiftResourceUI", "Money", "Money").ToString());
 		
 		for (ResourceInfo info : SortedNameResourceInfo) {
 			GiftTypeDropdown->AddOption(info.name.ToString());
@@ -83,39 +83,7 @@ public:
 		}
 	}
 
-	UFUNCTION() void OnClickConfirmButton()
-	{
-		if (targetPlayerId != -1)
-		{
-			std::wstring resourceName = ToWString(GiftTypeDropdown->GetSelectedOption());
-			ResourceEnum resourceEnum;
-			int32 amount = GiftTargetAmount->amount;
-
-			if (resourceName == TEXT("Money")) {
-				resourceEnum = ResourceEnum::Money;
-				if (amount > simulation().money(playerId())) {
-					simulation().AddPopupToFront(playerId(), "Not enough money to give.", ExclusiveUIEnum::GiftResourceUI, "PopupCannot");
-					return;
-				}
-			} else {
-				resourceEnum = FindResourceEnumByName(resourceName);
-				if (amount > simulation().resourceCount(playerId(), resourceEnum)) {
-					simulation().AddPopupToFront(playerId(), "Not enough resource to give.", ExclusiveUIEnum::GiftResourceUI, "PopupCannot");
-					return;
-				}
-			}
-			
-			auto command = make_shared<FGenericCommand>();
-			command->genericCommandType = FGenericCommand::Type::SendGift;
-			command->intVar1 = static_cast<int>(targetPlayerId);
-			command->intVar2 = static_cast<int>(resourceEnum);
-			command->intVar3 = static_cast<int>(amount);
-
-			networkInterface()->SendNetworkCommand(command);
-		}
-		
-		SetVisibility(ESlateVisibility::Collapsed);
-	}
+	UFUNCTION() void OnClickConfirmButton();
 
 	UFUNCTION() void OnClickCloseButton() {
 		SetVisibility(ESlateVisibility::Collapsed);

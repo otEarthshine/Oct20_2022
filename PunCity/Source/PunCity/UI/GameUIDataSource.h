@@ -314,8 +314,8 @@ public:
 USTRUCT()
 struct FSaveThreadResults
 {
-	GENERATED_BODY()
-		UPROPERTY() int32 checksum = -1;
+	GENERATED_BODY();
+	UPROPERTY() int32 checksum = -1;
 	UPROPERTY() int32 compressedDataSize = -1;
 	UPROPERTY() bool succeed = false;
 };

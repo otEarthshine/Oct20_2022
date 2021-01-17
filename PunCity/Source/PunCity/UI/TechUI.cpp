@@ -6,6 +6,8 @@
 
 using namespace std;
 
+#define LOCTEXT_NAMESPACE "TechUI"
+
 void UTechUI::SetupTechBoxUIs()
 {
 	UnlockSystem* unlockSys = simulation().unlockSystem(playerId());
@@ -18,30 +20,33 @@ void UTechUI::SetupTechBoxUIs()
 		UTechEraUI* techEraUI = AddWidget<UTechEraUI>(UIEnum::TechEraUI);
 
 		{ // EraText
-			techEraUI->EraText->SetText(ToFText("Era " + eraNumberToText[i]));
+			techEraUI->EraText->SetText(FText::Format(LOCTEXT("EraX", "Era {0}"), eraNumberToText[i]));
 
-			std::stringstream ss;
-			ss << "Era " << eraNumberToText[i];
+			TArray<FText> args;
+			ADDTEXT_(LOCTEXT("EraX", "Era {0}"), eraNumberToText[i]);
 
 			if (i < eraToTechEnums.size() - 1)
 			{
-				ss << "<space>";
-				ss << "Unlock " << unlockSys->techsToUnlockedNextEra(i)
-					<< " Technologies in Era " << eraNumberToText[i]
-					<< " to unlock Era " << eraNumberToText[i + 1] << ".";
+				ADDTEXT_INV_("<space>");
+				ADDTEXT_(LOCTEXT("UnlockTechToUnlockEra",
+					"Unlock {0} Technologies in Era {1} to unlock Era {2}."),
+					unlockSys->techsToUnlockedNextEra(i),
+					eraNumberToText[i],
+					eraNumberToText[i + 1]
+				);
 
-				std::stringstream ss2;
-				UnlockSystem::EraUnlockedDescription(ss2, i + 1, true);
+				TArray<FText> args2;
+				UnlockSystem::EraUnlockedDescription(args2, i + 1, true);
 
-				if (ss2.str().size() > 0) {
-					ss << "<space>";
-					ss << "Rewards for Unlocking Era " << eraNumberToText[i + 1] << ":";
-					ss << "<space>";
-					ss << ss2.str();
+				if (args2.Num() > 0) {
+					ADDTEXT_INV_("<space>");
+					ADDTEXT_(LOCTEXT("RewardForUnlockEra", "Rewards for Unlocking Era {0}:"), eraNumberToText[i + 1]);
+					ADDTEXT_INV_("<space>");
+					ADDTEXT__(JOINTEXT(args2));
 				}
 			}
 
-			AddToolTip(techEraUI->EraText, ss);
+			AddToolTip(techEraUI->EraText, args);
 		}
 		
 		techEraUI->TechList->ClearChildren();
@@ -111,13 +116,16 @@ void UTechUI::TickUI()
 		auto techEraUI = CastChecked<UTechEraUI>(TechScrollBox->GetChildAt(i));
 		techEraUI->EraText->SetColorAndOpacity(era <= currentEra ? FLinearColor::White : FLinearColor(.2, .2, .2));
 
-		if (era == currentEra + 1) {
-			stringstream ss;
-			ss << "Unlock: "
-			<< unlockSys->techsUnlockedInEra(currentEra) << "/" << unlockSys->techsToUnlockedNextEra(currentEra)
-			<< " Era " << eraNumberToText[i] << " Techs";
-			techEraUI->EraUnlockText->SetText(ToFText(ss.str()));
-		} else {
+		if (era == currentEra + 1) 
+		{
+			techEraUI->EraUnlockText->SetText(
+				FText::Format(LOCTEXT("Unlock: X/Y Era Z Techs", "Unlock: {0}/{1} Era {2} Techs"),
+					TEXT_NUM(unlockSys->techsUnlockedInEra(currentEra)), 
+					TEXT_NUM(unlockSys->techsToUnlockedNextEra(currentEra)), 
+					eraNumberToText[i])
+			);
+		}
+		else {
 			techEraUI->EraUnlockText->SetText(FText());
 		}
 	}
@@ -177,9 +185,15 @@ void UTechUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callBackEnum)
 	// Disallow clicking with requirements not met
 	if (!unlockSys->IsRequirementMetForTech(techBox->techEnum)) {
 		auto tech = unlockSys->GetTechInfo(techBox->techEnum);
-		std::stringstream ss;
-		ss << "Satisfy this Technology's Prerequisite by producing " << tech->requiredResourceCount << " " << GetResourceInfo(tech->requiredResourceEnum).nameStd();
-		simulation().AddPopupToFront(playerId(), ss.str(), ExclusiveUIEnum::TechUI, "PopupCannot");
+		
+		simulation().AddPopupToFront(playerId(), 
+			FText::Format(LOCTEXT("NeedSatisfyTechPrereq_Pop", 
+				"Satisfy this Technology's Prerequisite by producing {0} {1}"), 
+				TEXT_NUM(tech->requiredResourceCount), 
+				GetResourceInfo(tech->requiredResourceEnum).name
+			),
+			ExclusiveUIEnum::TechUI, "PopupCannot"
+		);
 		return;
 	}
 	
@@ -193,3 +207,6 @@ void UTechUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callBackEnum)
 	// Play Sound
 	dataSource()->Spawn2DSound("UI", "ResearchInitiated");
 }
+
+
+#undef LOCTEXT_NAMESPACE

@@ -598,7 +598,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			 */
 			if (buildingEnum == CardEnum::RegionTribalVillage) {
 				//ss << "<Header>" << GenerateTribeName(objectId) << " tribe</>";
-				ADDTEXT_(LOCTEXT("TribeName", "<Header>{0} tribe</>"), ToFText(GenerateTribeName(objectId)));
+				ADDTEXT_(LOCTEXT("TribeName", "<Header>{0} tribe</>"), GenerateTribeName(objectId));
 			}
 			else if (buildingEnum == CardEnum::Townhall) {
 				//ss << "<Header>" << TrimString_Dots(simulation.townName(building.playerId()), 15) << "</>";
@@ -641,7 +641,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			// IsConnectedBuilding
 			if (playerId() != -1) {
 				//ss << simulation.IsConnectedBuilding(building.buildingId(), playerId());
-				ADDTEXT_NUMBER(args, simulation.IsConnectedBuilding(building.buildingId(), playerId()))
+				ADDTEXT_NUM(args, simulation.IsConnectedBuilding(building.buildingId(), playerId()))
 				descriptionBox->AddRichText(FTEXT("<Yellow>IsConnectedBld</>"), args);
 			}
 #endif
@@ -3390,7 +3390,10 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 
 		
 		if (!simulation().HasTownhall(playerId()) && hasProvinceBuilding) {
-			simulation().AddPopupToFront(playerId(), { "Please build the Townhall before claiming non-empty Province." }, ExclusiveUIEnum::None, "PopupCannot");
+			simulation().AddPopupToFront(playerId(), 
+				LOCTEXT("TownhallBeforeClaiming", "Please build the Townhall before claiming non-empty Province."), 
+				ExclusiveUIEnum::None, "PopupCannot"
+			);
 			return;
 		}
 
@@ -3437,13 +3440,19 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 		{
 			if (punWidgetCaller->callbackVar2 == 0) {
 				if (!bld.subclass<TownHall>().HasEnoughUpgradeMoney()) {
-					simulation().AddPopupToFront(playerId(), { "Not enough money for upgrade." }, ExclusiveUIEnum::None, "PopupCannot");
+					simulation().AddPopupToFront(playerId(), 
+						LOCTEXT("NoUpgradeMoney", "Not enough money for upgrade."), 
+						ExclusiveUIEnum::None, "PopupCannot"
+					);
 					return;
 				}
 			}
 			else {
 				if (!bld.subclass<TownHall>().HasEnoughStoneToUpgradeWall()) {
-					simulation().AddPopupToFront(playerId(), { "Not enough stone for upgrade." }, ExclusiveUIEnum::None, "PopupCannot");
+					simulation().AddPopupToFront(playerId(), 
+						LOCTEXT("NoUpgradeStone", "Not enough stone for upgrade."), 
+						ExclusiveUIEnum::None, "PopupCannot"
+					);
 					return;
 				}
 			}
@@ -3498,12 +3507,11 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 	}
 	else if (callbackEnum == CallbackEnum::AbandonTown)
 	{
-		std::stringstream ss;
-		ss << "Would you like to abandon this settlement to build a new one?";
-		PopupInfo popup(playerId(), ss.str(),
+		PopupInfo popup(playerId(), 
+			LOCTEXT("AskAbandonSettlement_Pop", "Would you like to abandon this settlement to build a new one?"),
 			{
-				"Yes, we will abandon this settlement",
-				"No"
+				LOCTEXT("YesAbandonSettlement", "Yes, we will abandon this settlement"),
+				LOCTEXT("No", "No")
 			}, PopupReceiverEnum::Approve_AbandonTown1, true, "PopupBad"
 		);
 		popup.forcedSkipNetworking = true;

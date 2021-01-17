@@ -6,6 +6,8 @@
 
 using namespace std;
 
+#define LOCTEXT_NAMESPACE "PopupUI"
+
 void UPopupUI::PunInit()
 {
 	PopupOverlay->SetVisibility(ESlateVisibility::Collapsed);
@@ -39,7 +41,7 @@ void UPopupUI::Tick()
 		if (shouldShowExclusive(ExclusiveUIEnum::TechUI))
 		{
 			shouldPopup = true;
-			popupToDisplay->choices = { "Close" };
+			popupToDisplay->choices = { LOCTEXT("Close", "Close") };
 			popupToDisplay->replyReceiver = PopupReceiverEnum::None;
 		}
 		if (shouldShowExclusive(ExclusiveUIEnum::ProsperityUI)) {
@@ -85,7 +87,7 @@ void UPopupUI::Tick()
 	if (popupToDisplay) 
 	{
 		// Popup changed, play sound...
-		if (currentPopup.body != popupToDisplay->body ||
+		if (currentPopup.body.EqualTo(popupToDisplay->body) ||
 			currentPopup.startTick != popupToDisplay->startTick ||
 			currentPopup.startDisplayTick != popupToDisplay->startDisplayTick)
 		{
@@ -102,30 +104,30 @@ void UPopupUI::Tick()
 
 		auto& choices = currentPopup.choices;
 		bool hasChoice1 = choices.size() >= 1;
-		PopupButton1Text->SetText(hasChoice1 ? ToFText(choices[0]) : FText::FromString("Close"));
+		PopupButton1Text->SetText(hasChoice1 ? choices[0] : LOCTEXT("Close", "Close"));
 
 		bool hasChoice2 = choices.size() >= 2;
 		PopupButton2->SetVisibility(hasChoice2 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 		if (hasChoice2) {
-			PopupButton2Text->SetText(ToFText(choices[1]));
+			PopupButton2Text->SetText(choices[1]);
 		}
 
 		bool hasChoice3 = choices.size() >= 3;
 		PopupButton3->SetVisibility(hasChoice3 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 		if (hasChoice3) {
-			PopupButton3Text->SetText(ToFText(choices[2]));
+			PopupButton3Text->SetText(choices[2]);
 		}
 
 		bool hasChoice4 = choices.size() >= 4;
 		PopupButton4->SetVisibility(hasChoice4 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 		if (hasChoice4) {
-			PopupButton4Text->SetText(ToFText(choices[3]));
+			PopupButton4Text->SetText(choices[3]);
 		}
 
 		bool hasChoice5 = choices.size() >= 5;
 		PopupButton5->SetVisibility(hasChoice5 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 		if (hasChoice5) {
-			PopupButton5Text->SetText(ToFText(choices[4]));
+			PopupButton5Text->SetText(choices[4]);
 		}
 	}
 }
@@ -174,3 +176,5 @@ void UPopupUI::ClickPopupButton(int32 choiceIndex)
 		dataSource()->simulation().CloseCurrentPopup(playerId());
 	}
 }
+
+#undef LOCTEXT_NAMESPACE

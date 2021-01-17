@@ -6,6 +6,8 @@
 #include "PunCity/PunTimer.h"
 #include "Building.h"
 
+#define LOCTEXT_NAMESPACE "WorldTradeSystem"
+
 void WorldTradeSystem::RefreshTradeClusters()
 {
 	//SCOPE_TIMER("RefreshTradeClusters");
@@ -122,7 +124,10 @@ void WorldTradeSystem::TryEstablishTradeRoute(FSetIntercityTrade command)
 
 	// Already established
 	if (CppUtils::Contains(_playerIdToTradePartners[playerId], targetPlayerId)) {
-		_simulation->AddPopupToFront(playerId, "Already establish the trade route.", ExclusiveUIEnum::None, "PopupCannot");
+		_simulation->AddPopupToFront(playerId, 
+			LOCTEXT("AlreadyHasTradeRoute","Already establish the trade route."), 
+			ExclusiveUIEnum::None, "PopupCannot"
+		);
 		return;
 	}
 
@@ -150,7 +155,10 @@ void WorldTradeSystem::TryEstablishTradeRoute(FSetIntercityTrade command)
 	if (!startTile.isValid() ||
 		!targetTile.isValid()) 
 	{
-		_simulation->AddPopupToFront(playerId, "Connect your Townhall to target Townhall with Intercity Road to establish a trade route.", ExclusiveUIEnum::None, "PopupCannot");
+		_simulation->AddPopupToFront(playerId, 
+			LOCTEXT("ConnectTownhallsToEstablishTradePop", "Connect your Townhall to target Townhall with Intercity Road to establish a trade route."), 
+			ExclusiveUIEnum::None, "PopupCannot"
+		);
 		return;
 	}
 
@@ -162,7 +170,10 @@ void WorldTradeSystem::TryEstablishTradeRoute(FSetIntercityTrade command)
 	for (int32 i = 0; i < 30000; i++)
 	{
 		if (tileQueue.empty()) {
-			_simulation->AddPopupToFront(playerId, "Need intercity road to establish a trade route. Connect your Townhall to target Townhall with Road.", ExclusiveUIEnum::None, "PopupCannot");
+			_simulation->AddPopupToFront(playerId, 
+				LOCTEXT("NeedIntercityToMakeTradeRoute", "Need intercity road to establish a trade route. Connect your Townhall to target Townhall with Road."), 
+				ExclusiveUIEnum::None, "PopupCannot"
+			);
 			PUN_LOG("RefreshTradeClusters Flood %d", i);
 			return;
 		}
@@ -239,3 +250,6 @@ void WorldTradeSystem::RemoveAllTradeRoutes(int32 playerId)
 	}
 	partners.clear();
 }
+
+
+#undef LOCTEXT_NAMESPACE

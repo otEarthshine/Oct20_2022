@@ -83,44 +83,7 @@ public:
 		HouseUpgradeCountdownBar->GetDynamicMaterial()->SetScalarParameterValue(FName("Fraction"), fraction);
 	}
 	
-	void SetConstructionResource(std::vector<int32> constructionResourcesCount, Building& building)
-	{
-		std::vector<int32> constructionCosts = building.GetConstructionResourceCost();
-
-		int index = 0;
-		for (size_t i = 0; i < constructionCosts.size(); i++)
-		{
-			if (constructionCosts[i] > 0)
-			{
-				auto completionIcon = GetBoxChild<UResourceCompletionIcon>(ResourceCompletionIconBox, index, UIEnum::ResourceCompletionIcon, true);
-				UMaterialInstanceDynamic* material = completionIcon->ResourceImage->GetDynamicMaterial();
-
-				ResourceEnum resourceEnum = ConstructionResources[i];
-				material->SetTextureParameterValue("ColorTexture", assetLoader()->GetResourceIcon(resourceEnum));
-				material->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(resourceEnum));
-
-				float fraction = static_cast<float>(constructionResourcesCount[i]) / constructionCosts[i];
-				material->SetScalarParameterValue("Fraction", fraction);
-				material->SetScalarParameterValue("IsInput", 1.0f);
-
-				material->SetScalarParameterValue("HasNoResource", fraction < 1.0f && simulation().resourceCount(building.playerId(), resourceEnum) == 0);
-
-				completionIcon->SetIsPaused(building.priority() == PriorityEnum::Disable);
-
-				std::stringstream ss;
-				ss << "Construction Input<space>";
-				ss << ResourceName(resourceEnum) << " " << constructionResourcesCount[i] << "/" << constructionCosts[i];
-				ss << "<space>Stored(city): " << simulation().resourceCount(playerId(), resourceEnum);
-				
-				auto tooltip = AddToolTip(completionIcon->ResourceImage, ss.str());
-				if (tooltip) {
-					tooltip->TipSizeBox->SetMinDesiredWidth(200);
-				}
-			}
-		}
-
-		BoxAfterAdd(ResourceCompletionIconBox, index);
-	}
+	void SetConstructionResource(std::vector<int32> constructionResourcesCount, Building& building);
 
 	void SetSpeedBoost(Building& building)
 	{
@@ -194,7 +157,7 @@ public:
 					PunBox->AddIconPair(FText(), pair.resourceEnum, TEXT_NUM(pair.count), false, true);
 				}
 				if (hasMore) {
-					auto textWidget = PunBox->AddText("...");
+					auto textWidget = PunBox->AddText(INVTEXT("..."));
 					textWidget->PunText->SetShadowOffset(FVector2D(1, 1));
 					textWidget->PunText->SetShadowColorAndOpacity(FLinearColor(0, 0, 0, 0.5));
 					CastChecked<UVerticalBoxSlot>(textWidget->Slot)->SetHorizontalAlignment(HAlign_Center);
@@ -241,130 +204,9 @@ public:
 	}
 	
 	
-	void SetTradeProgress(TradeBuilding& tradeBuilding, float fraction)
-	{
-		int32 index = 0;
-		
-		/*
-		 * Show completionIcon
-		 */
-		bool showClock = false;
-		if (tradeBuilding.HasPendingTrade())
-		{
+	void SetTradeProgress(TradeBuilding& tradeBuilding, float fraction);
 
-			std::vector<ResourcePair> tradePairs = tradeBuilding.tradeResourcePairs();
-			for (ResourcePair resourcePair : tradePairs)
-			{
-				if (resourcePair.count > 0)
-				{
-					auto completionIcon = GetBoxChild<UResourceCompletionIcon>(ResourceCompletionIconBox, index, UIEnum::ResourceCompletionIcon, true);
-					UMaterialInstanceDynamic* material = completionIcon->ResourceImage->GetDynamicMaterial();
-
-					ResourceEnum resourceEnum = resourcePair.resourceEnum;
-					material->SetTextureParameterValue("ColorTexture", assetLoader()->GetResourceIcon(resourceEnum));
-					material->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(resourceEnum));
-
-					material->SetScalarParameterValue("Fraction", fraction);
-					material->SetScalarParameterValue("IsInput", 0.0f);
-					material->SetScalarParameterValue("HasNoResource", 0.0f);
-
-					completionIcon->SetIsPaused(false);
-
-					std::stringstream ss;
-					ss << ResourceName(resourceEnum);
-					ss << "<space>";
-					ss << "Bought resources\n";
-					ss << "arriving in " << tradeBuilding.CountdownSecondsDisplay() << "s";
-					AddToolTip(completionIcon->ResourceImage, ss.str());
-				}
-			}
-
-			// Display clock
-			showClock = true;
-			ClockImage->GetDynamicMaterial()->SetScalarParameterValue("IsGray", 0.0f);
-			ClockImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", fraction);
-			ClockPauseImage->SetVisibility(ESlateVisibility::Collapsed);
-			ClockText->SetVisibility(ESlateVisibility::Collapsed);
-			
-			//auto completionIcon = GetBoxChild<UResourceCompletionIcon>(ResourceCompletionIconBox, index, UIEnum::ResourceCompletionIcon);
-			//UMaterialInstanceDynamic* material = completionIcon->ResourceImage->GetDynamicMaterial();
-
-			//material->SetTextureParameterValue("ColorTexture", assetLoader()->BlackIcon);
-			//material->SetTextureParameterValue("DepthTexture", assetLoader()->BlackIcon);
-
-			//material->SetScalarParameterValue("Fraction", fraction);
-			//material->SetScalarParameterValue("IsInput", 0.0f);
-			//material->SetScalarParameterValue("HasNoResource", 0.0f);
-		}
-
-		BoxAfterAdd(ResourceCompletionIconBox, index);
-
-		/*
-		 * Ready/NoStorage Icon
-		 */
-		if (OtherIconsBox->GetChildrenCount() == 0) {
-			OtherIconsBox->AddChild(AddWidget<UUserWidget>(UIEnum::BuildingReadyIcon));
-			OtherIconsBox->AddChild(AddWidget<UUserWidget>(UIEnum::BuildingNoStorageIcon));
-			OtherIconsBox->AddChild(AddWidget<UUserWidget>(UIEnum::BuildingNeedSetupIcon));
-		}
-
-		auto setWarningIcons = [&](int32 indexIn) -> UWidget* {
-			for (int32 i = 0; i < OtherIconsBox->GetChildrenCount(); i++) {
-				OtherIconsBox->GetChildAt(i)->SetVisibility(indexIn == i ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
-			}
-			return OtherIconsBox->GetChildAt(indexIn);
-		};
-		
-		auto setWarningTradeBuildingFull = [&]()
-		{
-			auto textWidget = CastChecked<UPunTextWidget>(setWarningIcons(1));
-			SetText(textWidget->PunText, tradeBuilding.buildingInfo().nameStd() + "\nStorage Full");
-		};
-
-		bool hasTradeButton = false;
-		
-		if (IsTradingPostLike(tradeBuilding.buildingEnum()))
-		{
-			if (tradeBuilding.CanTrade()) {
-				setWarningIcons(-1);
-				if (tradeBuilding.playerId() == playerId()) {
-					hasTradeButton = true;
-				}
-			}
-			else if (tradeBuilding.IsTradeBuildingFull()) {
-				setWarningTradeBuildingFull();
-			}
-			else {
-				setWarningIcons(-1);
-			}
-		}
-		else
-		{
-			if (tradeBuilding.subclass<TradingCompany>(CardEnum::TradingCompany).needTradingCompanySetup) {
-				setWarningIcons(2);
-			}
-			else if (tradeBuilding.IsTradeBuildingFull()) {
-				setWarningTradeBuildingFull();
-			}
-			else {
-				setWarningIcons(-1);
-
-				// Show Gray Clock
-				if (!showClock) {
-					showClock = true;
-					ClockImage->GetDynamicMaterial()->SetScalarParameterValue("IsGray", 1.0f);
-					ClockImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", fraction);
-					ClockPauseImage->SetVisibility(ESlateVisibility::Collapsed);
-					ClockText->SetVisibility(ESlateVisibility::Collapsed);
-				}
-			}
-		}
-
-		// Note TradeButton gets its visibility set to Collapsed when it gets init
-		TradeButton->SetVisibility(hasTradeButton? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-
-		ClockBox->SetVisibility(showClock ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
-	}
+	
 	void SetSpecialProducerProgress(float fraction, Building& building, int32 clockCount = 0)
 	{
 		int32 index = 0;
@@ -399,72 +241,7 @@ public:
 			SetResourceCompletion({ input }, {}, building);
 		}
 	}
-	void SetResourceCompletion(std::vector<ResourceEnum> inputs, std::vector<ResourceEnum> outputs, Building& building)
-	{
-		int32 index = 0;
-		for (size_t i = 0; i < inputs.size(); i++)
-		{
-			auto completionIcon = GetBoxChild<UResourceCompletionIcon>(ResourceCompletionIconBox, index, UIEnum::ResourceCompletionIcon, true);
-			UMaterialInstanceDynamic* material = completionIcon->ResourceImage->GetDynamicMaterial();
-
-			material->SetTextureParameterValue("ColorTexture", assetLoader()->GetResourceIcon(inputs[i]));
-			material->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(inputs[i]));
-
-			int32 hasCount = building.resourceCount(building.input1());
-			int32 needCount = building.inputPerBatch();
-
-			material->SetScalarParameterValue("Fraction", static_cast<float>(hasCount) / needCount);
-			material->SetScalarParameterValue("IsInput", 1.0f);
-			material->SetScalarParameterValue("HasNoResource", hasCount < needCount && simulation().resourceCount(playerId(), inputs[i]) == 0);
-
-			completionIcon->SetIsPaused(building.priority() == PriorityEnum::Disable);
-
-			std::stringstream ss;
-			ss << "Input<space>";
-			ss << ResourceName(inputs[i]) << " " << hasCount << "/" << needCount;
-			ss << "<space>Stored(city): " << simulation().resourceCount(playerId(), inputs[i]);
-			
-			auto tooltip = AddToolTip(completionIcon->ResourceImage, ss.str());
-			if (tooltip) {
-				tooltip->TipSizeBox->SetMinDesiredWidth(150);
-			}
-		}
-
-		for (size_t i = 0; i < outputs.size(); i++)
-		{
-			auto completionIcon = GetBoxChild<UResourceCompletionIcon>(ResourceCompletionIconBox, index, UIEnum::ResourceCompletionIcon, true);
-			UMaterialInstanceDynamic* material = completionIcon->ResourceImage->GetDynamicMaterial();
-
-			if (outputs[i] == ResourceEnum::None) {
-				// Show a blank completion when there is not output
-				material->SetTextureParameterValue("ColorTexture", assetLoader()->BlackIcon);
-				material->SetTextureParameterValue("DepthTexture", assetLoader()->BlackIcon);
-			} else {
-				material->SetTextureParameterValue("ColorTexture", assetLoader()->GetResourceIcon(outputs[i]));
-				material->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(outputs[i]));
-			}
-
-			float outputFraction = building.barFraction();
-			material->SetScalarParameterValue("Fraction", outputFraction);
-			material->SetScalarParameterValue("IsInput", 0.0f);
-			material->SetScalarParameterValue("HasNoResource", 0.0f);
-
-			completionIcon->SetIsPaused(building.priority() == PriorityEnum::Disable);
-
-			//index++;
-
-			std::stringstream ss;
-			ss << "Output<space>";
-			ss << ResourceName(outputs[i]) << " " << static_cast<int>(outputFraction * 100) << "%";
-			
-			auto tooltip = AddToolTip(completionIcon->ResourceImage, ss.str());
-			if (tooltip) {
-				tooltip->TipSizeBox->SetMinDesiredWidth(150);
-			}
-		}
-
-		BoxAfterAdd(ResourceCompletionIconBox, index);
-	}
+	void SetResourceCompletion(std::vector<ResourceEnum> inputs, std::vector<ResourceEnum> outputs, Building& building);
 	
 
 	void ClearResourceCompletionBox() {

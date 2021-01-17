@@ -30,14 +30,14 @@ public:
 		ProductionArrowBox->SetVisibility((hasInput1 || hasInput2) ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 
 		if (hasInput1) {
-			IconPair1->SetText("", std::to_string(input1.count));
+			IconPair1->SetText(FText(), TEXT_NUM(input1.count));
 			SetChildHUD(IconPair1);
 			IconPair1->SetImage(input1.resourceEnum, dataSource()->assetLoader(), true);
 		}
 		IconPair1->SetVisibility(hasInput1 ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 		
 		if (hasInput2) {
-			IconPair2->SetText("", std::to_string(input2.count));
+			IconPair2->SetText(FText(), TEXT_NUM(input2.count));
 			SetChildHUD(IconPair2);
 			IconPair2->SetImage(input2.resourceEnum, dataSource()->assetLoader(), true);
 		}
@@ -45,7 +45,7 @@ public:
 
 		if (output.resourceEnum != ResourceEnum::None)
 		{
-			IconPair3->SetText("", std::to_string(output.count));
+			IconPair3->SetText(FText(), TEXT_NUM(output.count));
 			SetChildHUD(IconPair3);
 			IconPair3->SetImage(output.resourceEnum, dataSource()->assetLoader(), true);
 

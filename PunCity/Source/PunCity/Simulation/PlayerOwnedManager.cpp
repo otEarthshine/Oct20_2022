@@ -795,7 +795,12 @@ void PlayerOwnedManager::TickRound()
 	PUN_LOG("MidAutumn TickRound: %d, %d, %d, %d", Time::Ticks(), (Time::Ticks() % Time::TicksPerSeason), (Time::Ticks() % Time::TicksPerSeason != 0), Time::IsAutumn());
 	if (Time::IsAutumn() && Time::Ticks() % Time::TicksPerSeason != 0)
 	{
-		_simulation->AddPopup(PopupInfo(_playerId, "A caravan has arrived. They wish to buy any goods you might have.", { "Trade", "Refuse" }, PopupReceiverEnum::CaravanBuyer));
+		_simulation->AddPopup(PopupInfo(_playerId, 
+			LOCTEXT("CaravanArrive_Pop", "A caravan has arrived. They wish to buy any goods you might have."), 
+			{ LOCTEXT("Trade", "Trade"),
+				LOCTEXT("Refuse", "Refuse") },
+			PopupReceiverEnum::CaravanBuyer
+		));
 	}
 
 	
@@ -823,8 +828,13 @@ void PlayerOwnedManager::TickRound()
 		{
 			int32 playerIdToGoTo = playerIdsAvailable[GameRand::Rand() % playerIdsAvailable.size()];
 			_simulation->ImmigrationEvent(playerIdToGoTo, _migrationPendingCount,
-				to_string(_migrationPendingCount) + " immigrants from " + _simulation->playerName(_playerId) + " want to join you. They think your city is a lot better place to make a living.",
-				PopupReceiverEnum::ImmigrationBetweenPlayersEvent);
+				 FText::Format(LOCTEXT("ImmigrantsHappyAsk",
+					 "{0} immigrants from {1} want to join you. They think your city is a lot better place to make a living."), 
+					 TEXT_NUM(_migrationPendingCount), 
+					 _simulation->playerNameT(_playerId)
+				 ),
+				PopupReceiverEnum::ImmigrationBetweenPlayersEvent
+			);
 		}
 
 		_migrationPendingCount = 0;
@@ -1290,23 +1300,28 @@ void PlayerOwnedManager::Tick1Sec()
 	 */
 	if (!_isInDarkAge && _simulation->population(_playerId) <= 15)
 	{
-		std::stringstream ss;
-		ss << "Dark Age begins.<line><space>";
-		ss << "You must survive this slump and pull your settlement back on track.<space>";
-		ss << "Crisis, such as this, tests your skill as a leader.<space>";
-		ss << "During Dark Age, Leader Skills are x2 more effective and SP recovers x2 faster.";
-		_simulation->AddPopup(PopupInfo(_playerId, ss.str(), { "We must survive!" }, PopupReceiverEnum::None, false, "PopupBad"));
+		_simulation->AddPopup(PopupInfo(_playerId, 
+			LOCTEXT("DarkAgeBegin_Pop",
+				"Dark Age begins.<line><space>"
+				"You must survive this slump and pull your settlement back on track.<space>"
+				"Crisis, such as this, tests your skill as a leader.<space>"
+				"During Dark Age, Leader Skills are x2 more effective and SP recovers x2 faster."
+			),
+			{ LOCTEXT("We must survive!", "We must survive!") }, 
+			PopupReceiverEnum::None, false, "PopupBad"
+		));
 
 		_isInDarkAge = true;
 	}
 	if (_isInDarkAge && _simulation->population(_playerId) >= 20)
 	{
-		std::stringstream ss;
-		ss << "Congratulation, you have survived the Dark Age.<line>";
-		ss << "What doesn't kill you makes you stronger.\n";
-		ss << "Our people are now crisis hardened, ready to march forward through any future obstacles.";
-		
-		_simulation->AddPopup(PopupInfo(_playerId, ss.str()));
+		_simulation->AddPopup(PopupInfo(_playerId, 
+			LOCTEXT("DarkAgeEnd_Pop",
+				"Congratulation, you have survived the Dark Age.<line>"
+				"What doesn't kill you makes you stronger.\n"
+				"Our people are now crisis hardened, ready to march forward through any future obstacles."
+			)
+		));
 
 		// TODO: Earn card?? may be x2 leader skill?
 
@@ -1323,11 +1338,18 @@ void PlayerOwnedManager::Tick1Sec()
 			if (_buffTicksLeft[i] < Time::TicksPerSecond * 30) 
 			{
 				int32 cardEnumInt = i + BuildingEnumCount;
-				std::stringstream ss;
-				ss << "Your " << GetBuildingInfoInt(cardEnumInt).nameStd() << " Buff is running out.";
-				ss << "<space>";
-				ss << "Would you like to renew it with <img id=\"Coin\"/>xPopulation?";
-				_simulation->AddPopupNonDuplicate(PopupInfo(_playerId, ss.str(), { "Renew", "Close" }, PopupReceiverEnum::ResetBuff, false, "", cardEnumInt));
+
+				_simulation->AddPopupNonDuplicate(PopupInfo(_playerId,
+					FText::Format(LOCTEXT("BuffRunningOut_Pop",
+						"Your {0} Buff is running out."
+						"<space>"
+						"Would you like to renew it with <img id=\"Coin\"/>xPopulation?"),
+						GetBuildingInfoInt(cardEnumInt).name
+					),
+					{ LOCTEXT("Renew", "Renew"),
+						LOCTEXT("Close", "Close") }, 
+					PopupReceiverEnum::ResetBuff, false, "", cardEnumInt)
+				);
 			}
 		}
 	}
@@ -1459,6 +1481,39 @@ void PlayerOwnedManager::SetHouseResourceAllow(ResourceEnum resourceEnum, bool r
 		Building& building = _simulation->building(houseId);
 		if (building.isEnum(CardEnum::House)) {
 			building.SetHolderTypeAndTarget(resourceEnum, type, target);
+		}
+	}
+}
+
+
+void PlayerOwnedManager::TryApplyBuff(CardEnum cardEnum)
+{
+	if (HasBuff(cardEnum) && GetBuffTicksLeft(cardEnum) > Time::TicksPerMinute * 5) {
+		_simulation->AddPopupToFront(_playerId,
+			FText::Format(LOCTEXT("BuffAlreadyApplied", "{0} has already been applied."), GetBuildingInfo(cardEnum).name)
+		);
+		return;
+	}
+
+	int32 cost = _simulation->population(_playerId);
+	if (_simulation->money(_playerId) < cost) {
+		_simulation->AddPopupToFront(_playerId, 
+			LOCTEXT("BuffNotEnoughCoin", "Require <img id=\"Coin\"/>xPopulation to activate the protection.")
+		);
+	}
+	else {
+		_simulation->ChangeMoney(_playerId, -cost);
+		AddBuff(cardEnum);
+
+		if (cardEnum == CardEnum::KidnapGuard) {
+			_simulation->AddPopupToFront(_playerId, 
+				LOCTEXT("AppliedKidnapGuard", "Applied Kidnap Guard. Protect your town against Kidnap for 1 year.")
+			);
+		}
+		else {
+			_simulation->AddPopupToFront(_playerId, 
+				LOCTEXT("AppliedTreasuryGuard", "Applied Treasury Guard. Protect your town against Snatch and Steal for 1 year.")
+			);
 		}
 	}
 }

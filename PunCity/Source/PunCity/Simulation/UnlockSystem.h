@@ -9,19 +9,19 @@
 #include "Buildings/House.h"
 
 
-const std::vector<std::string> eraNumberToText =
+const std::vector<FText> eraNumberToText =
 {
-	"",
-	"I",
-	"II",
-	"III",
-	"IV",
-	"V",
-	"VI",
-	"VII",
-	"VIII",
-	"IX",
-	"X",
+	INVTEXT(""),
+	INVTEXT("I"),
+	INVTEXT("II"),
+	INVTEXT("III"),
+	INVTEXT("IV"),
+	INVTEXT("V"),
+	INVTEXT("VI"),
+	INVTEXT("VII"),
+	INVTEXT("VIII"),
+	INVTEXT("IX"),
+	INVTEXT("X"),
 };
 
 struct TechBoxLocation
@@ -774,75 +774,7 @@ public:
 	}
 	//virtual ~UnlockSystem() = default;
 
-	void UpdateProsperityHouseCount()
-	{
-		// Prosperity unlock at 7 houses
-		if (!prosperityEnabled &&
-			_simulation->buildingFinishedCount(_playerId, CardEnum::House) >= 7)
-		{
-			prosperityEnabled = true;
-
-			std::stringstream ss;
-			ss << "Unlocked: House Upgrade Unlocks Menu.";
-			ss << "<space>";
-			ss << "Houses can be upgraded by supplying them with Luxury Resources.";
-			ss << "<space>";
-			ss << "Achieving certain house level count will unlock new technologies.";
-			
-			PopupInfo popupInfo(_playerId, ss.str(), { "Show House Upgrade Unlocks", "Close" },
-				PopupReceiverEnum::UnlockedHouseTree_ShowProsperityUI);
-			popupInfo.warningForExclusiveUI = ExclusiveUIEnum::ProsperityUI;
-			popupInfo.forcedSkipNetworking = true;
-			_simulation->AddPopupToFront(popupInfo);
-		}
-		
-		if (!prosperityEnabled) {
-			return;
-		}
-		
-		for (int32 i = 1; i <= House::GetMaxHouseLvl(); i++)
-		{
-			int32 houseCount = _simulation->GetHouseLvlCount(_playerId, i, true);
-			
-			std::vector<TechEnum>& prosperityTechEnums = _houseLvlToProsperityTechEnum[i];
-			for (size_t j = 0; j < prosperityTechEnums.size(); j++)
-			{
-				TechEnum properityTechEnum = prosperityTechEnums[j];
-				auto properityTech = GetTechInfo(properityTechEnum);
-				
-				if (properityTech->state != TechStateEnum::Researched)
-				{
-					if (houseCount >= _houseLvlToUnlockCount[i][j]) 
-					{
-						PUN_LOG("properityTech Researched %s", ToTChar(properityTech->GetName()));
-						
-						// Unlocked
-						// Take away the amount of science used 
-						properityTech->state = TechStateEnum::Researched;
-						properityTech->OnUnlock(_playerId, _simulation);
-
-						needProsperityDisplayUpdate = true;
-
-						//// popup
-						//{
-						//	std::stringstream ss;
-						//	ss << "Reached " << _houseLvlToUnlockCount[i][j] << " house lvl " << i << ".\n";
-						//	ss << "Unlocked " << properityTech->GetName() << ".";
-						//	PopupInfo popupInfo(_playerId, ss.str());
-						//	popupInfo.warningForExclusiveUI = ExclusiveUIEnum::ProsperityUI;
-						//	popupInfo.forcedSkipNetworking = true;
-						//	_simulation->AddPopupToFront(popupInfo);
-
-						//	_simulation->soundInterface()->Spawn2DSound("UI", "ResearchComplete", _playerId);
-						//}
-					}
-					else {
-						break;
-					}
-				}
-			}
-		}
-	}
+	void UpdateProsperityHouseCount();
 
 	void UpdateResourceProductionCount(ResourceEnum resourceEnum, int32 count) {
 		_resourceEnumToProductionCount[static_cast<int32>(resourceEnum)] += count;
@@ -939,120 +871,11 @@ public:
 	}
 
 	// Simulation
-	void Research(int32 science100PerRound, int32 updatesPerSec)
-	{
-		if (SimSettings::IsOn("CheatFastTech")) {
-			science100PerRound += 20000 * 100 * 20;
-		}
-		
-		// Multiple updates per second, so we divide accordingly science100PerRound/updatesPerSec
-		science100XsecPerRound += GameRand::RandRound(science100PerRound, updatesPerSec);
-		science100XsecPerRound = std::min(science100XsecPerRound, 1800000000); // 600m = 40,000 -> 1800m = 120,000
-		
-		if (!hasTargetResearch()) {
-			return;
-		}
-		
-		auto tech = currentResearch();
+	void Research(int32 science100PerRound, int32 updatesPerSec);
 
-		if (science100() >= science100Needed()) 
-		{
-			// Take away the amount of science used 
-			science100XsecPerRound -= science100Needed() * Time::SecondsPerRound;
-			
-			int32 lastEra = currentEra();
-			
-			tech->state = TechStateEnum::Researched;
-			_techQueue.pop_back();
-			
-			tech->OnUnlock(_playerId, _simulation);
+	static void EraUnlockedDescription(TArray<FText>& args, int32 era, bool isTip);
 
-			techsFinished++;
-			needTechDisplayUpdate = true;
-
-			std::vector<std::string> choices = { "Show tech tree", "Close" };
-			PopupReceiverEnum receiver = PopupReceiverEnum::DoneResearchEvent_ShowTree;
-
-			// Era popup
-			bool unlockedNewEra = currentEra() > lastEra;
-			if (unlockedNewEra)
-			{
-				std::stringstream ss;
-
-				OnEraUnlocked(ss);
-				
-				PopupInfo popupInfo(_playerId, ss.str(), choices, receiver, true);
-				popupInfo.warningForExclusiveUI = ExclusiveUIEnum::TechUI;
-				popupInfo.forcedSkipNetworking = true;
-				_simulation->AddPopupToFront(popupInfo);
-
-				_simulation->soundInterface()->Spawn2DSound("UI", "ResearchCompleteNewEra", _playerId);
-
-				_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::BuildingSlotCards, "New era!");
-			}
-			else
-			{
-				PopupInfo popupInfo(_playerId, "Research Completed.", choices, receiver, true);
-				popupInfo.warningForExclusiveUI = ExclusiveUIEnum::TechUI;
-				popupInfo.forcedSkipNetworking = true;
-				_simulation->AddPopupToFront(popupInfo);
-				
-				_simulation->soundInterface()->Spawn2DSound("UI", "ResearchComplete", _playerId);
-
-				/*
-				 * Science victory
-				 */
-				if (currentEra() >= 8) 
-				{
-					//std::vector<std::shared_ptr<ResearchInfo>> finalTechs = _eraToTechs[8];
-					//int32 finalEraTechsDone = 0;
-					//for (auto& finalTech : finalTechs) {
-					//	if (IsResearched(finalTech->techEnum)) {
-					//		finalEraTechsDone++;
-					//	}
-					//}
-
-					//if (finalEraTechsDone == 3) {
-					//	_simulation->AddPopupAll(PopupInfo(_playerId,
-					//		_simulation->playerName(_playerId) + " is only 2 technolgies away from the science victory."
-					//	), _playerId);
-					//	_simulation->AddPopup(_playerId, "You are only 2 technolgies away from the science victory.");
-					//}
-					//else if (finalEraTechsDone == 5) {
-					//	_simulation->ExecuteScienceVictory(_playerId);
-					//}
-				}
-			}
-
-			// Reply to show tech tree if needed..
-			//std::string replyReceiver = _simulation->HasTargetResearch(_playerId) ? "" : "DoneResearchEvent_ShowTree";
-
-			//auto researchCompletePopup = [&](std::string body)
-			//{
-			//	if (_simulation->HasTargetResearch(_playerId)) 
-			//	{
-			//		// TODO: more fancy research complete!
-			//		
-			//		PopupInfo popupInfo(_playerId, body, { "Close" }, "", true);
-			//		popupInfo.warningForExclusiveUI = ExclusiveUIEnum::TechUI;
-
-			//		_simulation->AddPopupToFront(popupInfo);
-			//	}
-			//	else {
-			//		PopupInfo popupInfo(_playerId, body, { "Show tech tree", "Close" }, "DoneResearchEvent_ShowTree", true);
-			//		popupInfo.warningForExclusiveUI = ExclusiveUIEnum::TechUI;
-
-			//		_simulation->AddPopupToFront(popupInfo);
-			//	}
-			//};
-
-			//researchCompletePopup("Research Completed.");
-		}
-	}
-
-	static void EraUnlockedDescription(std::stringstream& ss, int32 era, bool isTip);
-
-	void OnEraUnlocked(std::stringstream& ss);
+	void OnEraUnlocked(TArray<FText>& args);
 
 	void SetDisplaySciencePoint(std::stringstream& ss, bool hasIcon = true) {
 		ss << std::fixed << std::setprecision(1);

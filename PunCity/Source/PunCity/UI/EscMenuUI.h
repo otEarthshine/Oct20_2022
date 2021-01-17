@@ -217,12 +217,14 @@ public:
 		PlayIcon4->SetColorAndOpacity(play4Color);
 
 
-		AddToolTip(PauseButton, gameSpeedToDisplay == 0 ? "Resume game" : "Pause game<space>Hotkey: <Orange>[spacebar]</>");
+#define LOCTEXT_NAMESPACE "EscMenuUI"
+		AddToolTip(PauseButton, gameSpeedToDisplay == 0 ? LOCTEXT("Resume game", "Resume game") : LOCTEXT("Pause game desc", "Pause game<space>Hotkey: <Orange>[spacebar]</>"));
 		AddToolTip(PlayButton1, "Change to " + GameSpeedName(GameSpeedValue1) + "<space>(current: " + GameSpeedName(gameSpeedToDisplay) + ")<space>Hotkey: <Orange>[1]</>");
 		AddToolTip(PlayButton2, "Change to " + GameSpeedName(GameSpeedValue2) + "<space>(current: " + GameSpeedName(gameSpeedToDisplay) + ")<space>Hotkey: <Orange>[2]</>");
 		AddToolTip(PlayButton3, "Change to " + GameSpeedName(GameSpeedValue3) + "<space>(current: " + GameSpeedName(gameSpeedToDisplay) + ")<space>Hotkey: <Orange>[3]</>");
 		AddToolTip(PlayButton4, "Change to " + GameSpeedName(GameSpeedValue4) + "<space>(current: " + GameSpeedName(gameSpeedToDisplay) + ")<space>Hotkey: <Orange>[4]</>");
-		
+
+#undef LOCTEXT_NAMESPACE
 
 		// Close Flash animation
 		if (UGameplayStatics::GetTimeSeconds(this) - lastTutorialAttentionOpen > 9.9f &&

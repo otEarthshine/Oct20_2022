@@ -549,7 +549,7 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showDisplay)
 		}
 
 		if (showDisplay) {
-			_simulation->AddPopupToFront(_playerId, { "Not enough " + ResourceName(resourceNeeded.resourceEnum) + " for upgrade." },
+			_simulation->AddPopupToFront(_playerId, FText::Format(LOCTEXT("NotEnoughResourceForUpgrade", "Not enough {0} for upgrade."), ResourceNameT(resourceNeeded.resourceEnum)),
 											ExclusiveUIEnum::None, "PopupCannot");
 		}
 		
@@ -575,7 +575,7 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showDisplay)
 	}
 
 	if (showDisplay) {
-		_simulation->AddPopupToFront(_playerId, { "Not enough money for upgrade." }, ExclusiveUIEnum::None, "PopupCannot");
+		_simulation->AddPopupToFront(_playerId, LOCTEXT("NoUpgradeMoney", "Not enough money for upgrade."), ExclusiveUIEnum::None, "PopupCannot");
 	}
 	return false;
 }

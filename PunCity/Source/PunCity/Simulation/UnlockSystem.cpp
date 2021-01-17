@@ -5,6 +5,8 @@
 
 using namespace std;
 
+#define LOCTEXT_NAMESPACE "UnlockSystem"
+
 void Building_Research::InitBuildingResearch(std::vector<CardEnum> buildingEnums, std::vector<CardEnum> permanentBuildingEnums, IGameSimulationCore* simulation, int32_t cardCount)
 {
 	_buildingEnums = buildingEnums;
@@ -46,11 +48,16 @@ void Building_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulation
 		{
 			int32 buildingEnumInt = static_cast<int32>(buildingEnum);
 			
-			std::stringstream ss;
-			ss << "Unlocked " << GetBuildingInfo(buildingEnum).nameStd();
-			ss << "\nWould you like to buy a " << GetBuildingInfo(buildingEnum).nameStd() << " card for " << cardSystem.GetCardPrice(buildingEnum) << " <img id=\"Coin\"/>.";
 			_simulation->AddPopup(
-				PopupInfo(playerId, ss.str(), { "buy", "refuse" }, PopupReceiverEnum::DoneResearchBuyCardEvent, false, "ResearchComplete", buildingEnumInt)
+				PopupInfo(playerId, 
+					FText::Format(LOCTEXT("UnlockedBuilding_Pop",
+						"Unlocked {0}\nWould you like to buy a {0} card for {1}<img id=\"Coin\"/>."),
+						GetBuildingInfo(buildingEnum).name,
+						TEXT_NUM(cardSystem.GetCardPrice(buildingEnum))
+					),
+					{ LOCTEXT("Buy", "Buy"), LOCTEXT("Refuse", "Refuse") },
+					PopupReceiverEnum::DoneResearchBuyCardEvent, false, "ResearchComplete", buildingEnumInt
+				)
 			);
 		}
 	}
@@ -62,44 +69,164 @@ void Building_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulation
 	ResearchInfo::OnUnlock(playerId, simulation);
 }
 
-void UnlockSystem::EraUnlockedDescription(std::stringstream& ss, int32 era, bool isTip)
+void UnlockSystem::Research(int32 science100PerRound, int32 updatesPerSec)
 {
-	if (era == 2) {
-		if (isTip) {
-			ss << " Global Slot Cards:";
-		} else {
-			ss << " Unlocked Global Slot Cards:";
-		}
-		ss << "<bullet>Chimney Restrictor</>";
-		//ss << "<bullet>Child Marriage</>";
-		//ss << "<bullet>Prolong Life</>";
-		ss << "<bullet>Birth Control</>";
-		ss << "<bullet>Coal Treatment</>";
+	if (SimSettings::IsOn("CheatFastTech")) {
+		science100PerRound += 20000 * 100 * 20;
 	}
-	else if (era == 3) {
-		if (isTip) {
-			ss << " Cards:";
-		} else {
-			ss << " Unlocked Cards:";
+
+	// Multiple updates per second, so we divide accordingly science100PerRound/updatesPerSec
+	science100XsecPerRound += GameRand::RandRound(science100PerRound, updatesPerSec);
+	science100XsecPerRound = std::min(science100XsecPerRound, 1800000000); // 600m = 40,000 -> 1800m = 120,000
+
+	if (!hasTargetResearch()) {
+		return;
+	}
+
+	auto tech = currentResearch();
+
+	if (science100() >= science100Needed())
+	{
+		// Take away the amount of science used 
+		science100XsecPerRound -= science100Needed() * Time::SecondsPerRound;
+
+		int32 lastEra = currentEra();
+
+		tech->state = TechStateEnum::Researched;
+		_techQueue.pop_back();
+
+		tech->OnUnlock(_playerId, _simulation);
+
+		techsFinished++;
+		needTechDisplayUpdate = true;
+
+		std::vector<FText> choices = {
+			LOCTEXT("Show tech tree", "Show tech tree"),
+			LOCTEXT("Close", "Close")
+		};
+		PopupReceiverEnum receiver = PopupReceiverEnum::DoneResearchEvent_ShowTree;
+
+		// Era popup
+		bool unlockedNewEra = currentEra() > lastEra;
+		if (unlockedNewEra)
+		{
+			TArray<FText> args;
+
+			OnEraUnlocked(args);
+
+			PopupInfo popupInfo(_playerId, JOINTEXT(args), choices, receiver, true);
+			popupInfo.warningForExclusiveUI = ExclusiveUIEnum::TechUI;
+			popupInfo.forcedSkipNetworking = true;
+			_simulation->AddPopupToFront(popupInfo);
+
+			_simulation->soundInterface()->Spawn2DSound("UI", "ResearchCompleteNewEra", _playerId);
+
+			_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::BuildingSlotCards, "New era!");
 		}
-		ss << "<bullet>Wild Card</>";
-		ss << "<bullet>Agriculture Wild Card</>";
-		ss << "<bullet>Industry Wild Card</>";
-		ss << "<bullet>Mine Wild Card</>";
-		ss << "<bullet>Service Wild Card</>";
-		ss << "<bullet>Card Removal Card</>";
+		else
+		{
+			PopupInfo popupInfo(_playerId, 
+				LOCTEXT("Research Completed.", "Research Completed."), 
+				choices, receiver, true
+			);
+			popupInfo.warningForExclusiveUI = ExclusiveUIEnum::TechUI;
+			popupInfo.forcedSkipNetworking = true;
+			_simulation->AddPopupToFront(popupInfo);
+
+			_simulation->soundInterface()->Spawn2DSound("UI", "ResearchComplete", _playerId);
+
+			/*
+			 * Science victory
+			 */
+			if (currentEra() >= 8)
+			{
+				//std::vector<std::shared_ptr<ResearchInfo>> finalTechs = _eraToTechs[8];
+				//int32 finalEraTechsDone = 0;
+				//for (auto& finalTech : finalTechs) {
+				//	if (IsResearched(finalTech->techEnum)) {
+				//		finalEraTechsDone++;
+				//	}
+				//}
+
+				//if (finalEraTechsDone == 3) {
+				//	_simulation->AddPopupAll(PopupInfo(_playerId,
+				//		_simulation->playerName(_playerId) + " is only 2 technolgies away from the science victory."
+				//	), _playerId);
+				//	_simulation->AddPopup(_playerId, "You are only 2 technolgies away from the science victory.");
+				//}
+				//else if (finalEraTechsDone == 5) {
+				//	_simulation->ExecuteScienceVictory(_playerId);
+				//}
+			}
+		}
+
+		// Reply to show tech tree if needed..
+		//std::string replyReceiver = _simulation->HasTargetResearch(_playerId) ? "" : "DoneResearchEvent_ShowTree";
+
+		//auto researchCompletePopup = [&](std::string body)
+		//{
+		//	if (_simulation->HasTargetResearch(_playerId)) 
+		//	{
+		//		// TODO: more fancy research complete!
+		//		
+		//		PopupInfo popupInfo(_playerId, body, { "Close" }, "", true);
+		//		popupInfo.warningForExclusiveUI = ExclusiveUIEnum::TechUI;
+
+		//		_simulation->AddPopupToFront(popupInfo);
+		//	}
+		//	else {
+		//		PopupInfo popupInfo(_playerId, body, { "Show tech tree", "Close" }, "DoneResearchEvent_ShowTree", true);
+		//		popupInfo.warningForExclusiveUI = ExclusiveUIEnum::TechUI;
+
+		//		_simulation->AddPopupToFront(popupInfo);
+		//	}
+		//};
+
+		//researchCompletePopup("Research Completed.");
 	}
 }
 
-void UnlockSystem::OnEraUnlocked(std::stringstream& ss)
+void UnlockSystem::EraUnlockedDescription(TArray<FText>& args, int32 era, bool isTip)
+{
+	if (era == 2) {
+		if (isTip) {
+			ADDTEXT_(INVTEXT(" {0}:"), LOCTEXT("Global Slot Cards", "Global Slot Cards"));
+		} else {
+			ADDTEXT_(INVTEXT(" {0}:"), LOCTEXT("Unlocked Global Slot Cards", "Unlocked Global Slot Cards"));
+		}
+		ADDTEXT_TAG_("<bullet>", LOCTEXT("Chimney Restrictor", "Chimney Restrictor"));
+		//ss << "<bullet>Child Marriage</>";
+		//ss << "<bullet>Prolong Life</>";
+		ADDTEXT_TAG_("<bullet>", LOCTEXT("Birth Control", "Birth Control"));
+		ADDTEXT_TAG_("<bullet>", LOCTEXT("Coal Treatment", "Coal Treatment"));
+	}
+	else if (era == 3) {
+		if (isTip) {
+			ADDTEXT_(INVTEXT(" {0}:"), LOCTEXT("Cards", "Cards"));
+		} else {
+			ADDTEXT_(INVTEXT(" {0}:"), LOCTEXT("Unlocked Cards", "Unlocked Cards"));
+		}
+		ADDTEXT_TAG_("<bullet>", LOCTEXT("Wild Card", "Wild Card"));
+		ADDTEXT_TAG_("<bullet>", LOCTEXT("Agriculture Wild Card", "Agriculture Wild Card"));
+		ADDTEXT_TAG_("<bullet>", LOCTEXT("Industry Wild Card", "Industry Wild Card"));
+		ADDTEXT_TAG_("<bullet>", LOCTEXT("Mine Wild Card", "Mine Wild Card"));
+		ADDTEXT_TAG_("<bullet>", LOCTEXT("Service Wild Card", "Service Wild Card"));
+		ADDTEXT_TAG_("<bullet>", LOCTEXT("Card Removal Card", "Card Removal Card"));
+	}
+}
+
+void UnlockSystem::OnEraUnlocked(TArray<FText>& args)
 {
 	auto& cardSys = _simulation->cardSystem(_playerId);
 	
-	ss << "Congratulation!<space>";
-	ss << " Your town has advanced to Era " + eraNumberToText[currentEra()] + ".";
-	ss << "<space>";
+	ADDTEXT_(LOCTEXT("EraUnlockCongratsPop",
+		"Congratulation!<space>"
+		" Your town has advanced to Era {0}."
+		"<space>"),
+		eraNumberToText[currentEra()]
+	);
 
-	EraUnlockedDescription(ss, currentEra(), false);
+	EraUnlockedDescription(args, currentEra(), false);
 	
 	if (currentEra() == 2) {
 		cardSys.AddDrawCards(CardEnum::ChimneyRestrictor, 1);
@@ -117,16 +244,15 @@ void UnlockSystem::OnEraUnlocked(std::stringstream& ss)
 		cardSys.AddDrawCards(CardEnum::CardRemoval, 1);
 	}
 	else if (currentEra() == 8) {
-		ss << " You have reached the final era.";
-		ss << "<space>";
+		//ss << " You have reached the final era.";
+		//ss << "<space>";
 		//ss << " Once you researched all technologies in this era, you win the game.";
 
 
 		// Warn other players
-		std::stringstream warnSS;
-		warnSS << _simulation->playerName(_playerId) << " has reached the final era.<space>";
+		FText text = FText::Format(LOCTEXT("FinalEraPopAll", "{0} has reached the final era.<space>"), _simulation->playerNameT(_playerId));
 		//warnSS << "Once all final era technologies are researched, " << _simulation->playerName(_playerId) + " will be victorious.";
-		_simulation->AddPopupAll(PopupInfo(_playerId, warnSS.str()), _playerId);
+		_simulation->AddPopupAll(PopupInfo(_playerId, text), _playerId);
 	}
 }
 
@@ -141,26 +267,35 @@ void BonusToggle_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulat
 	if (techEnum == TechEnum::ShallowWaterEmbark)
 	{
 		if (!simulation->IsBuildingUnlocked(playerId, CardEnum::Bridge)) {
-			simulation->AddPopupToFront(playerId, "Unlocked bridge!", ExclusiveUIEnum::None, "PopupNeutral");
+			simulation->AddPopupToFront(playerId, 
+				LOCTEXT("Unlocked bridge!", "Unlocked bridge!"),
+				ExclusiveUIEnum::None, "PopupNeutral"
+			);
 			simulation->unlockSystem(playerId)->UnlockBuilding(CardEnum::Bridge);
 		}
 	}
 
 	if (techEnum == TechEnum::InfluencePoints) {
-		simulation->AddPopup(playerId, "Unlocked Influence Points <img id=\"Influence\"/> used to claim land.");
+		simulation->AddPopup(playerId, 
+			LOCTEXT("UnlockedInfluencePop", "Unlocked Influence Points <img id=\"Influence\"/> used to claim land.")
+		);
 	}
 	if (techEnum == TechEnum::Conquer) {
-		simulation->AddPopup(playerId, "Unlocked Province Conquering"
-												"<space>"
-												"You can now conquer opponent's provinces with Influence Points <img id=\"Influence\"/>.");
+		simulation->AddPopup(playerId, LOCTEXT("UnlockedProvinceConqueringPop",
+			"Unlocked Province Conquering"
+			"<space>"
+			"You can now conquer opponent's provinces with Influence Points <img id=\"Influence\"/>.")
+		);
 	}
 	if (techEnum == TechEnum::Vassalize) 
 	{
-		simulation->AddPopup(playerId, "Unlocked Vassalization"
+		simulation->AddPopup(playerId, LOCTEXT("UnlockedVassalizationPop",
+			"Unlocked Vassalization"
 			"<space>"
 			"You can now vassalize another city with Influence Points <img id=\"Influence\"/>.\n"
 			"To vassalize another city, click on the townhall "
-			"Your vassal city keep their control, but must pay vassal tax to you.");
+			"Your vassal city keep their control, but must pay vassal tax to you.")
+		);
 	}
 
 	if (techEnum == TechEnum::Combo)
@@ -172,11 +307,90 @@ void BonusToggle_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulat
 			}
 		}
 		
-		simulation->AddPopup(playerId, "Unlocked Building Combo"
+		simulation->AddPopup(playerId, LOCTEXT("UnlockedBuildingComboPop",
+			"Unlocked Building Combo"
 			"<space>"
 			"You can gain Building Combo by constructing multiple Buildings of the same type."
 			"<bullet>Combo Level 1: 2 same-type buildings (+5% productivity)</>"
 			"<bullet>Combo Level 2: 4 same-type buildings (+10% productivity)</>"
-			"<bullet>Combo Level 3: 8 same-type buildings (+15% productivity)</>");
+			"<bullet>Combo Level 3: 8 same-type buildings (+15% productivity)</>")
+		);
 	}
 }
+
+void UnlockSystem::UpdateProsperityHouseCount()
+{
+	// Prosperity unlock at 7 houses
+	if (!prosperityEnabled &&
+		_simulation->buildingFinishedCount(_playerId, CardEnum::House) >= 7)
+	{
+		prosperityEnabled = true;
+
+		TArray<FText> args;
+		ADDTEXT_LOCTEXT("UnlockedProsperityUIPop",
+			"Unlocked: House Upgrade Unlocks Menu."
+			"<space>"
+			"Houses can be upgraded by supplying them with Luxury Resources."
+			"<space>"
+			"Achieving certain house level count will unlock new technologies."
+		);
+
+		PopupInfo popupInfo(_playerId, JOINTEXT(args), {
+			LOCTEXT("Show House Upgrade Unlocks", "Show House Upgrade Unlocks"),
+			LOCTEXT("Close", "Close") },
+			PopupReceiverEnum::UnlockedHouseTree_ShowProsperityUI);
+		popupInfo.warningForExclusiveUI = ExclusiveUIEnum::ProsperityUI;
+		popupInfo.forcedSkipNetworking = true;
+		_simulation->AddPopupToFront(popupInfo);
+	}
+
+	if (!prosperityEnabled) {
+		return;
+	}
+
+	for (int32 i = 1; i <= House::GetMaxHouseLvl(); i++)
+	{
+		int32 houseCount = _simulation->GetHouseLvlCount(_playerId, i, true);
+
+		std::vector<TechEnum>& prosperityTechEnums = _houseLvlToProsperityTechEnum[i];
+		for (size_t j = 0; j < prosperityTechEnums.size(); j++)
+		{
+			TechEnum properityTechEnum = prosperityTechEnums[j];
+			auto properityTech = GetTechInfo(properityTechEnum);
+
+			if (properityTech->state != TechStateEnum::Researched)
+			{
+				if (houseCount >= _houseLvlToUnlockCount[i][j])
+				{
+					PUN_LOG("properityTech Researched %s", ToTChar(properityTech->GetName()));
+
+					// Unlocked
+					// Take away the amount of science used 
+					properityTech->state = TechStateEnum::Researched;
+					properityTech->OnUnlock(_playerId, _simulation);
+
+					needProsperityDisplayUpdate = true;
+
+					//// popup
+					//{
+					//	std::stringstream ss;
+					//	ss << "Reached " << _houseLvlToUnlockCount[i][j] << " house lvl " << i << ".\n";
+					//	ss << "Unlocked " << properityTech->GetName() << ".";
+					//	PopupInfo popupInfo(_playerId, ss.str());
+					//	popupInfo.warningForExclusiveUI = ExclusiveUIEnum::ProsperityUI;
+					//	popupInfo.forcedSkipNetworking = true;
+					//	_simulation->AddPopupToFront(popupInfo);
+
+					//	_simulation->soundInterface()->Spawn2DSound("UI", "ResearchComplete", _playerId);
+					//}
+				}
+				else {
+					break;
+				}
+			}
+		}
+	}
+}
+
+
+#undef LOCTEXT_NAMESPACE

@@ -391,9 +391,8 @@ void House::UpgradeHouse(int32 lvl)
 	int32& maxAchivedLevel = _simulation->parameters(_playerId)->MaxAchievedHouseLvl;
 	if (lvl > maxAchivedLevel) 
 	{
-		std::stringstream ss;
-		ss << "Well done! First house level " << lvl << ". ";
-		ss << "<space>";
+		TArray<FText> args;
+		ADDTEXT_(LOCTEXT("FirstHouseLevel_Pop", "Well done! First house level {0}. <space>"), TEXT_NUM(lvl));
 
 		auto unlockSys = _simulation->unlockSystem(_playerId);
 
@@ -420,7 +419,7 @@ void House::UpgradeHouse(int32 lvl)
 			//unlockSys->UnlockBuilding(CardEnum::GardenCypress);
 		}
 
-		_simulation->AddPopup(_playerId, ss.str());
+		_simulation->AddPopup(_playerId, JOINTEXT(args));
 
 
 		maxAchivedLevel = lvl;

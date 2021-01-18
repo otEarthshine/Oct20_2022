@@ -153,7 +153,7 @@ void TownHall::UpgradeTownhall()
 		);
 
 		_simulation->AddPopupAll(PopupInfo(_playerId, 
-			FText::Format(LOCTEXT("TownhallUpgradeToLvl_Pop", "{0} has been upgraded to level {1}"), townTName(), TEXT_NUM(townhallLvl))
+			FText::Format(LOCTEXT("TownhallUpgradeToLvl_Pop", "{0} has been upgraded to level {1}"), townNameT(), TEXT_NUM(townhallLvl))
 		), _playerId);
 	}
 
@@ -168,28 +168,26 @@ void TownHall::UpgradeTownhall()
 		cardSys.AddDrawCards(CardEnum::BuyWood, 1);
 		//cardSys.AddDrawCards(CardEnum::BarrackClubman, 1);
 
-		std::stringstream ss;
-		ss << "Unlocked Priority Button <img id=\"NonPriorityStar\"/>!";
-		ss << "<space>";
-		ss << "Click it to switch building's priority between 3 states:\n";
-		ss << "  <img id=\"NonPriorityStar\"/> Default worker allocation\n";
-		ss << "  <img id=\"PriorityStar\"/> Prioritize working here\n";
-		ss << "  <img id=\"PriorityStop\"/> Don't allow working here";
-		
-		_simulation->AddPopup(_playerId,  ss.str());
+		_simulation->AddPopup(_playerId, LOCTEXT("UnlockedPriorityButton_Pop",
+				"Unlocked Priority Button <img id=\"NonPriorityStar\"/>!"
+				"<space>"
+				"Click it to switch building's priority between 3 states:\n"
+				"  <img id=\"NonPriorityStar\"/> Default worker allocation\n"
+				"  <img id=\"PriorityStar\"/> Prioritize working here\n"
+				"  <img id=\"PriorityStop\"/> Don't allow working here"
+		));
 		unlockSys->unlockedPriorityStar = true;
 	}
 	else if (townhallLvl == 3) {
 		cardSys.AddDrawCards(CardEnum::Immigration, 1);
 		cardSys.AddDrawCards(CardEnum::Kidnap, 1);
 
-		std::stringstream ss;
-		ss << "Unlocked \"Set Trade Offer\" Button.";
-		ss << "<space>";
-		ss << "Use it to put up Trade Offers at the Townhall.\n";
-		ss << "Other players can examine your Trade Offers, and directly trade with you (0% Fee).";
-
-		_simulation->AddPopup(_playerId, ss.str());
+		_simulation->AddPopup(_playerId, LOCTEXT("UnlockedSetTradeOffer_Pop",
+			"Unlocked \"Set Trade Offer\" Button."
+			"<space>"
+			"Use it to put up Trade Offers at the Townhall.\n"
+			"Other players can examine your Trade Offers, and directly trade with you (0% Fee)."
+		));
 		unlockSys->unlockedSetTradeAmount = true;
 	}
 	else if (townhallLvl == 4) {
@@ -197,17 +195,16 @@ void TownHall::UpgradeTownhall()
 		cardSys.AddDrawCards(CardEnum::SharingIsCaring, 1);
 
 		{
-			std::stringstream ss;
-			ss << "Unlocked ability to Set Delivery Target!";
-			ss << "<space>";
-			ss << "You can set the storage/market where the building's output will be stored.";
-			ss << "<space>";
-			ss << "To set the delivery target:";
-			ss << "<bullet>Click on a production building to bring up its panel</>";
-			ss << "<bullet>Click the [Set Delivery Target] button</>";
-			ss << "<bullet>Select the target you wish to deliver to</>";
-
-			_simulation->AddPopup(_playerId, ss.str());
+			_simulation->AddPopup(_playerId, LOCTEXT("UnlockedSetDeliveryTarget_Pop",
+				"Unlocked ability to Set Delivery Target!"
+				"<space>"
+				"You can set the storage/market where the building's output will be stored."
+				"<space>"
+				"To set the delivery target:"
+				"<bullet>Click on a production building to bring up its panel</>"
+				"<bullet>Click the [Set Delivery Target] button</>"
+				"<bullet>Select the target you wish to deliver to</>"
+			));
 			unlockSys->unlockedSetDeliveryTarget = true;
 		}
 
@@ -236,6 +233,14 @@ void TownHall::UpgradeTownhall()
 	_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::TownhallUpgrade, _centerTile, "");
 
 	//_simulation->soundInterface()->Spawn2DSoundAllPlayers("UI", "UpgradeTownhall", _centerTile);
+}
+
+void TownHall::UpgradeWall() {
+	resourceSystem().RemoveResourceGlobal(ResourceEnum::Stone, GetUpgradeStones());
+	wallLvl++;
+	_simulation->AddPopup(_playerId,
+		FText::Format(LOCTEXT("WallUpgraded_Pop", "{0}'s wall has been upgraded to level {1}."), townNameT(), TEXT_NUM(wallLvl))
+	);
 }
 
 void TownHall::OnTick1Sec()
@@ -335,7 +340,9 @@ void TownHall::ImmigrationEvent(int32 exactAmount)
 	}
 
 	if (askedMigration == 0) {
-		_simulation->AddPopup(_playerId, "Not a single soul wants to join your town.");
+		_simulation->AddPopup(_playerId, 
+			LOCTEXT("NoOneWantsToJoin_Pop", "Not a single soul wants to join your town.")
+		);
 	}
 
 	if (migrationType == 1) {

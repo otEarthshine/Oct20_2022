@@ -520,7 +520,7 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showDisplay)
 	
 	if (IsUpgraded(upgradeIndex)) {
 		if (showDisplay) {
-			_simulation->AddPopup(_playerId, "Already upgraded");
+			_simulation->AddPopup(_playerId, LOCTEXT("Already upgraded", "Already upgraded"));
 		}
 		return false;
 	}
@@ -661,7 +661,10 @@ void Building::DoWork(int unitId, int workAmount100)
 				_filledInputs = false;
 
 				_simulation->AddImmigrants(_playerId, 1);
-				_simulation->AddEventLog(_playerId, "The immigration office brought in an immigrant.", false);
+				_simulation->AddEventLog(_playerId, 
+					LOCTEXT("ImmigrationOfficeBroughtIn_Event", "The immigration office brought in an immigrant."), 
+					false
+				);
 
 				_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
 				return;

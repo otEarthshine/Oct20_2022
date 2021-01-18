@@ -187,7 +187,10 @@ void UnitStateAI::Update()
 
 			if (_hp100 <= 0)
 			{
-				_simulation->AddEventLogF(_playerId, FString::Printf(TEXT("%s died from sickness"), ToTChar(GetUnitName())), true);
+				_simulation->AddEventLog(_playerId, 
+					FText::Format(LOCTEXT("DiedSick_Event", "{0} died from sickness"), GetUnitNameT()), 
+					true
+				);
 				_simulation->statSystem(_playerId).AddStat(SeasonStatEnum::DeathSick);
 				_simulation->soundInterface()->Spawn2DSound("UI", "DeathBell", _playerId);
 
@@ -240,7 +243,10 @@ void UnitStateAI::Update()
 				GameRand::Rand() % (Time::TicksPerRound * 2) < ticksPassed)
 			{
 				_simulation->AddMigrationPendingCount(_playerId, 1);
-				_simulation->AddEventLog(_playerId, GetUnitName() + " left your town (homeless).", true);
+				_simulation->AddEventLog(_playerId, 
+					FText::Format(LOCTEXT("XLeftTownHomeless_Event", "{0} left your town (homeless)."), GetUnitNameT()),
+					true
+				);
 
 				_simulation->soundInterface()->Spawn2DSound("UI", "DeathBell", _playerId);
 
@@ -305,11 +311,17 @@ void UnitStateAI::Update()
 							GameRand::Rand() % 3 == 0) 
 						{
 							_simulation->AddMigrationPendingCount(_playerId, 1);
-							_simulation->AddEventLog(_playerId, GetUnitName() + " left your town (starving).", true);
+							_simulation->AddEventLog(_playerId, 
+								FText::Format(LOCTEXT("XLeftTownStarve_Event", "{0} left your town (starving)."), GetUnitNameT()), 
+								true
+							);
 						}
 						else
 						{
-							_simulation->AddEventLogF(_playerId, FString::Printf(TEXT("%s died from starvation"), ToTChar(GetUnitName())), true);
+							_simulation->AddEventLog(_playerId, 
+								FText::Format(LOCTEXT("XDiedStarve_Event", "{0} died from starvation"), GetUnitNameT()),
+								true
+							);
 							_simulation->statSystem(_playerId).AddStat(SeasonStatEnum::DeathStarve);
 						}
 
@@ -319,7 +331,10 @@ void UnitStateAI::Update()
 					}
 					else 
 					{
-						_simulation->AddEventLogF(_playerId, FString::Printf(TEXT("%s died from cold"), ToTChar(GetUnitName())), true);
+						_simulation->AddEventLog(_playerId, 
+							FText::Format(LOCTEXT("XDiedCold_Event", "{0} died from cold"), GetUnitNameT()),
+							true
+						);
 						_simulation->statSystem(_playerId).AddStat(SeasonStatEnum::DeathCold);
 
 						if (_simulation->IsAIPlayer(_playerId)) {
@@ -447,11 +462,10 @@ void UnitStateAI::Update()
 					PUN_LOG("DeathAge: %d reservations:%d", _id, reservations.size());
 					PUN_LOG("DeathAge AddEventLogF:  %s", ToTChar(compactStr()));
 
-#if WITH_EDITOR
-					_simulation->AddEventLogF(_playerId, FString::Printf(TEXT("%s died of old age, playerId:%d"), ToTChar(GetUnitName()), _playerId), false);
-#else
-					_simulation->AddEventLogF(_playerId, FString::Printf(TEXT("%s died of old age"), ToTChar(GetUnitName())), false);
-#endif
+					_simulation->AddEventLog(_playerId,
+						FText::Format(LOCTEXT("DiedOld_Event", "{0} died of old age"), GetUnitNameT()),
+						false
+					);
 				}
 
 				_simulation->statSystem(_playerId).AddStat(SeasonStatEnum::DeathAge);
@@ -1472,17 +1486,21 @@ void UnitStateAI::TrimFullBush()
 		{
 			int32 tilePlayerId = tileBuilding.playerId();
 			if (_simulation->TryDoNonRepeatAction(tilePlayerId, NonRepeatActionEnum::AnimalsEatingCrop, Time::TicksPerSecond * 30)) {
-				_simulation->AddEventLogF(tilePlayerId, FString("Animals are eating your crop..."), true);
+				_simulation->AddEventLog(tilePlayerId, 
+					LOCTEXT("AnimalEatCrop_Event", "Animals are eating your crop..."), 
+					true
+				);
 
 				auto unlockSys = _simulation->unlockSystem(tilePlayerId);
 				if (!unlockSys->didFirstTimeAnimalRavage) {
 					unlockSys->didFirstTimeAnimalRavage = true;
-					_simulation->AddPopup(tilePlayerId,
+					_simulation->AddPopup(tilePlayerId, LOCTEXT("AnimalsEatCrop_Pop",
 						"Animals are eating your crops."
 						"<space>"
 						"One way to deal with this is to build a Hunting Lodge near Farms."
 						"<space>"
-						"For faster animal killing, change Hunting Lodge's Workmode to \"Poison Arrow\".");
+						"For faster animal killing, change Hunting Lodge's Workmode to \"Poison Arrow\"."
+					));
 				}
 			}
 		}

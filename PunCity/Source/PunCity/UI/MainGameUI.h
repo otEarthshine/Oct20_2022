@@ -86,10 +86,10 @@ public:
 			ResourceListScrollBox->IsHovered();
 	}
 
-	void ShowConfirmationUI(std::string confirmationStr, std::shared_ptr<FNetworkCommand> commandIn) {
+	void ShowConfirmationUI(FText confirmationStr, std::shared_ptr<FNetworkCommand> commandIn) {
 		confirmationString = confirmationStr;
 		onConfirmationYesCommand = commandIn;
-		ConfirmationText->SetText(ToFText(confirmationStr));
+		ConfirmationText->SetText(confirmationStr);
 
 		networkInterface()->ResetGameUI();
 		ConfirmationOverlay->SetVisibility(ESlateVisibility::Visible);
@@ -97,8 +97,8 @@ public:
 		//_onConfirmationNumUITask = GetPunHUD()->NumberOfUITasks();
 	}
 
-	bool IsShowingConfirmationUI(std::string confirmationStrIn) {
-		return confirmationStrIn == confirmationString;
+	bool IsShowingConfirmationUI(FText confirmationStrIn) {
+		return confirmationStrIn.EqualTo(confirmationString);
 	}
 
 	void ToggleDirtRoad()
@@ -464,7 +464,7 @@ private:
 	UPROPERTY(meta = (BindWidget)) UButton* ConfirmationNoButton;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* ConfirmationText;
 
-	std::string confirmationString;
+	FText confirmationString;
 	std::shared_ptr<FNetworkCommand> onConfirmationYesCommand = nullptr;
 	//int32 _onConfirmationNumUITask = 0; // Counts the UI Tasks so that Confirmation will still appear for RareCardUI
 
@@ -484,13 +484,13 @@ private:
 		networkInterface()->SendNetworkCommand(onConfirmationYesCommand);
 		ConfirmationOverlay->SetVisibility(ESlateVisibility::Collapsed);
 
-		confirmationString = "";
+		confirmationString = FText();
 		onConfirmationYesCommand = nullptr;
 	}
 	UFUNCTION() void OnClickConfirmationNo() {
 		ConfirmationOverlay->SetVisibility(ESlateVisibility::Collapsed);
 
-		confirmationString = "";
+		confirmationString = FText();
 		onConfirmationYesCommand = nullptr;
 	}
 

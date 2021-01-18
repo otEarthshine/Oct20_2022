@@ -8,6 +8,7 @@
 #include "PunCity/PunUtils.h"
 #include "Buildings/House.h"
 
+#define LOCTEXT_NAMESPACE "UnlockSys"
 
 const std::vector<FText> eraNumberToText =
 {
@@ -49,28 +50,28 @@ struct TechBoxLocation
  * - [1] is bonus description
  * Note: Just like Civ 6, all research can only contain one bonus.
  */
-static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName_BonusDescription =
+static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_BonusDescription =
 {
-	{TechEnum::DeepMining, { "Deep Mining" }},
-	
-	{TechEnum::IronRefining, { "Ironworks" }},
-	{TechEnum::GoldRefining, { "Goldworks" }},
+	{TechEnum::DeepMining, { LOCTEXT("Deep Mining", "Deep Mining") }},
 
-	{TechEnum::ImprovedLogistics, { "Improved Logistics" }},
+	{TechEnum::IronRefining, { LOCTEXT("Ironworks", "Ironworks") }},
+	{TechEnum::GoldRefining, { LOCTEXT("Goldworks", "Goldworks") }},
 
-	{TechEnum::JewelryCrafting, { "Jewelry Crafting" }},
-	{TechEnum::Baking, { "Baking" }},
-	
-	{TechEnum::Fence, { "Fence" }},
+	{TechEnum::ImprovedLogistics, { LOCTEXT("Improved Logistics", "Improved Logistics") }},
+
+	{TechEnum::JewelryCrafting, { LOCTEXT("Jewelry Crafting", "Jewelry Crafting") }},
+	{TechEnum::Baking, { LOCTEXT("Baking", "Baking") }},
+
+	{TechEnum::Fence, { LOCTEXT("Fence", "Fence") }},
 
 	{TechEnum::RerollCardsPlus1, {
-		"Ideation",
-		"+1 card each reroll."
+		LOCTEXT("Ideation", "Ideation"),
+		LOCTEXT("Ideation Desc", "+1 card each reroll.")
 	}},
 
 	{TechEnum::FarmImprovement, {
-		"Farm Improvements",
-		"+5% farm production."
+		LOCTEXT("Farm Improvements", "Farm Improvements"),
+		LOCTEXT("Farm Improvements Desc", "+5% farm production.")
 	}},
 
 	//{TechEnum::FarmImprovement, {
@@ -78,113 +79,113 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 	//	"Townhall level 2+ gain +20 culture per round."
 	//}},
 
-	{TechEnum::BeerBrewery, { "Beer Brewing" }},
-	{TechEnum::Pottery, { "Pottery" }},
+	{TechEnum::BeerBrewery, { LOCTEXT("Beer Brewing", "Beer Brewing") }},
+	{TechEnum::Pottery, { LOCTEXT("Pottery", "Pottery") }},
 
-	{TechEnum::FurnitureWorkshop, {"Wood Industry"}},
+	{TechEnum::FurnitureWorkshop, { LOCTEXT("Wood Industry", "Wood Industry") }},
 	
 	{TechEnum::HouseLvl6Income, {
-		"House Level 6 Income",
-		"House level 6+ gain +10 income."
+		LOCTEXT("House Level 6 Income", "House Level 6 Income"),
+		LOCTEXT("House Level 6 Income Desc", "House level 6+ gain +10 income.")
 	}},
 	{TechEnum::TaxAdjustment, {
-		"Tax Adjustment",
-		"Allows tax adjustment from townhall."
+		LOCTEXT("Tax Adjustment", "Tax Adjustment"),
+		LOCTEXT("Tax Adjustment Desc", "Allows tax adjustment from townhall.")
 	}},
 
 	{TechEnum::TradingPost, {
-		"Foreign Trade",
-		"Increases the number of immigrants by 20%."
+		LOCTEXT("Foreign Trade", "Foreign Trade"),
+		LOCTEXT("Foreign Trade Desc", "Increases the number of immigrants by 20%.")
 	}},
 	
 	{TechEnum::TraderDiscount, {
-		"Trader Discount",
-		"Trading company adjacent to trading port gain -5% trading fee.",
+		LOCTEXT("Trader Discount", "Trader Discount"),
+		LOCTEXT("Trader Discount Desc", "Trading company adjacent to trading port gain -5% trading fee."),
 	}},
 	// TODO: BuildingComboEnum?? Encourage ppl to build next building... holes to fill...
 
 	{TechEnum::Espionage, {
-		"Espionage",
+		LOCTEXT("Espionage", "Espionage")
 	}},
 	{TechEnum::SpyGuard, {
-		"Spy Guard",
+		LOCTEXT("Spy Guard", "Spy Guard")
 	}},
 
-	{TechEnum::ShrineRot, {
-		"Unlock Shrines.",
-	}},
+	//{TechEnum::ShrineRot, {
+	//	LOCTEXT("Unlock Shrines",
+	//}},
 
-	{TechEnum::CropStudy, {
-		"Crop Variety",
-		"aaaa",
-	}},
+	//{TechEnum::CropStudy, {
+	//	LOCTEXT("Crop Variety",
+	//	LOCTEXT("aaaa",
+	//}},
 
-	{TechEnum::CityToCityTrade, {
-		"City-to-city Trade",
-		"Allow player to set trade offers for other players to directly trade with.",
-	}},
+	//{TechEnum::CityToCityTrade, {
+	//	LOCTEXT("City-to-city Trade",
+	//	LOCTEXT("Allow player to set trade offers for other players to directly trade with.",
+	//}},
 
 	{TechEnum::Plantation, {
-		"Plantation",
-		"Unlocks farm crops cards: Cannabis, Grape, Cocoa, Cotton, Coffee, Tulip Seeds"
+		LOCTEXT("Plantation", "Plantation"),
+		LOCTEXT("Plantation Desc", "Unlocks farm crops cards: Cannabis, Grape, Cocoa, Cotton, Coffee, Tulip Seeds")
 	}},
 	
 	{TechEnum::MushroomSubstrateSterilization, {
-		"Mushroom Log Sterilization",
-		"Decreases mushroom farm's wood consumption by 50%."
+		LOCTEXT("Mushroom Log Sterilization", "Mushroom Log Sterilization"),
+		LOCTEXT("Mushroom Log Sterilization Desc", "Decreases mushroom farm's wood consumption by 50%.")
 	}},
 	
 	{TechEnum::QuarryImprovement, {
-		"Quarry Improvement",
-		"+30% production to quarries."
+		LOCTEXT("Quarry Improvement", "Quarry Improvement"),
+		LOCTEXT("Quarry Improvement Desc", "+30% production to quarries.")
 	}},
 
 	{TechEnum::WineryImprovement, {
-		"Wine Snob",
-		"+30% production to winery."
+		LOCTEXT("Wine Snob", "Wine Snob"),
+		LOCTEXT("Wine Snob Desc", "+30% production to winery.")
 	}},
 
 	{TechEnum::BorealLandCost, {
-		"Boreal and Tundra Expedition",
-		"Claiming Boreal Forest and Tundra Province costs half as usual."
+		LOCTEXT("Boreal and Tundra Expedition", "Boreal and Tundra Expedition"),
+		LOCTEXT("Boreal and Tundra Expedition Desc", "Claiming Boreal Forest and Tundra Province costs half as usual.")
 	}},
 	{TechEnum::DesertTrade, {
-		"Silk Road",
-		"Trading post and company built on desert gets -10% trade fee."
+		LOCTEXT("Silk Road", "Silk Road"),
+		LOCTEXT("Silk Road Desc", "Trading post and company built on desert gets -10% trade fee.")
 	}},
 	
 	{ TechEnum::ShallowWaterEmbark, {
-		"Shallow Water Embark",
-		"Allows claiming bordering provinces across a body of water. 100% cost penalty applied to claim/attack through shallow water."
+		LOCTEXT("Shallow Water Embark", "Shallow Water Embark"),
+		LOCTEXT("Shallow Water Embark Desc", "Allows claiming bordering provinces across a body of water. 100% cost penalty applied to claim/attack through shallow water.")
 	}},
 	{ TechEnum::DeepWaterEmbark, {
-		"Deepwater Embark",
-		"Allows claiming coastal provinces across the sea. 200% cost penalty applied to claim/attack through deep water.",
+		LOCTEXT("Deepwater Embark", "Deepwater Embark"),
+		LOCTEXT("Deepwater Embark Desc", "Allows claiming coastal provinces across the sea. 200% cost penalty applied to claim/attack through deep water.")
 	}},
 
 	{TechEnum::Sawmill, {
-		"Sawmill",
-		"+50% furniture workshop's efficiency."
+		LOCTEXT("Sawmill", "Sawmill"),
+		LOCTEXT("Sawmill", "+50% furniture workshop's efficiency.")
 	}},
 	{TechEnum::ImprovedWoodCutting, {
-		"Improved woodcutting Lvl 1",
-		"+20% wood harvesting yield."
+		LOCTEXT("Improved woodcutting Lvl 1", "Improved woodcutting Lvl 1"),
+		LOCTEXT("Improved woodcutting Lvl 1 Desc", "+20% wood harvesting yield."),
 	}},
 	{TechEnum::ImprovedWoodCutting2, {
-		"Improved woodcutting Lvl 2",
-		"+20% wood harvesting yield."
+		LOCTEXT("Improved woodcutting Lvl 2", "Improved woodcutting Lvl 2"),
+		LOCTEXT("Improved woodcutting Lvl 2 Desc", "+20% wood harvesting yield.")
 	}},
 	{TechEnum::FarmingBreakthrough, {
-		"Improved farming",
-		"+20% farm production."
+		LOCTEXT("Improved farming", "Improved farming"),
+		LOCTEXT("Improved farming Desc", "+20% farm production.")
 	}},
 	{TechEnum::CheapLand, {
-		"Cheap land",
-		"Claiming land costs 30% less."
+		LOCTEXT("Cheap Land", "Cheap Land"),
+		LOCTEXT("Cheap Land Desc", "Claiming land costs 30% less.")
 	}},
 	{TechEnum::CheapReroll, {
-		"Cheap reroll",
-		"Rerolls cost half as much."
+		LOCTEXT("Cheap Reroll", "Cheap Reroll"),
+		LOCTEXT("Cheap Reroll Desc", "Rerolls cost half as much.")
 	}},
 
 	//{TechEnum::ClaimLandByFood, {
@@ -194,83 +195,83 @@ static const std::unordered_map<TechEnum, std::vector<std::string>> ResearchName
 
 
 	{TechEnum::FireStarter, {
-		"Offensive fire"
+		LOCTEXT("Offensive Fire", "Offensive Fire")
 	}},
 	{TechEnum::MoreGoldPerHouse, {
-		"Extra house income",
-		"+<img id=\"Coin\"/>3 house income"
+		LOCTEXT("Extra House Income", "Extra House Income"),
+		LOCTEXT("Extra House Income Desc", "+<img id=\"Coin\"/>3 house income")
 	}},
 
 	{TechEnum::FarmAdjacency, {
-		"Farm adjacency",
-		"Farms get +5% efficiency for each nearby farm. (max at 15%)",
+		LOCTEXT("Farm Adjacency", "Farm Adjacency"),
+		LOCTEXT("Farm Adjacency Desc", "Farms get +5% efficiency for each nearby farm. (max at 15%)"),
 	}},
 	{TechEnum::HouseAdjacency, {
-		"House adjacency",
-		"Houses get +<img id=\"Coin\"/>1 for each nearby house. (max at +<img id=\"Coin\"/>3)",
+		LOCTEXT("House Adjacency", "House Adjacency"),
+		LOCTEXT("House Adjacency Desc", "Houses get +<img id=\"Coin\"/>1 for each nearby house. (max at +<img id=\"Coin\"/>3)"),
 	}},
 	{TechEnum::IndustrialAdjacency, {
-		"Industrial adjacency",
-		"Industrial buildings get +5% efficiency for each nearby industry of the same type. (max at 15%)",
+		LOCTEXT("Industrial Adjacency", "Industrial Adjacency"),
+		LOCTEXT("Industrial Adjacency Desc", "Industrial buildings get +5% efficiency for each nearby industry of the same type. (max at 15%)"),
 	}},
 
 	{ TechEnum::ScienceLastEra, {
-		"Thinking Machine",
-		"+20% science output",
+		LOCTEXT("Scientific Theories", "Scientific Theories"),
+		LOCTEXT("Scientific Theories Desc", "+20% science output"),
 	}},
 	{ TechEnum::MoneyLastEra, {
-		"Advanced Economics",
-		"+20% house income",
+		LOCTEXT("Economics Theories", "Economics Theories"),
+		LOCTEXT("Economics Theories", "+20% house income"),
 	}},
 	{ TechEnum::FarmLastEra, {
-		"Pesticides",
-		"+20% farm output",
+		LOCTEXT("Pesticides", "Pesticides"),
+		LOCTEXT("Pesticides Desc", "+20% farm output"),
 	}},
 	{ TechEnum::IndustryLastEra, {
-		"Machinery Mastery",
-		"+20% industry output",
+		LOCTEXT("Machinery Mastery", "Machinery Mastery"),
+		LOCTEXT("Machinery Mastery Desc", "+20% industry output"),
 	}},
 	{ TechEnum::MilitaryLastEra, {
-		"Advanced Military",
-		"+100% influence points from Barracks",
+		LOCTEXT("Advanced Military", "Advanced Military"),
+		LOCTEXT("Advanced Military Desc", "+100% influence points from Barracks"),
 	}},
 
 	/*
 	 * Prosperity Tech
 	 */
 	{ TechEnum::Rationalism, {
-		"Rationalism",
-		"+30% Science Output",
+		LOCTEXT("Rationalism", "Rationalism"),
+		LOCTEXT("Rationalism Desc", "+30% Science Output"),
 	}},
 
 	{ TechEnum::InfluencePoints, {
-		"Influence Points",
-		"Unlock Influence Points <img id=\"Influence\"/> used to claim land.",
+		LOCTEXT("Influence Points", "Influence Points"),
+		LOCTEXT("Influence Points Desc", "Unlock Influence Points <img id=\"Influence\"/> used to claim land."),
 	}},
 
 	{ TechEnum::Conquer, {
-		"Conquer Province",
-		"Unlock Province Conquering",
+		LOCTEXT("Conquer Province", "Conquer Province"),
+		LOCTEXT("Conquer Province Desc", "Unlock Province Conquering"),
 	}},
 
 	{ TechEnum::HomeLandDefense, {
-		"Homeland Defense",
-		"Provinces gain +10% defense bonus for each building on it.",
+		LOCTEXT("Homeland Defense", "Homeland Defense"),
+		LOCTEXT("Homeland Defense Desc", "Provinces gain +10% defense bonus for each building on it."),
 	}},
 
 	{ TechEnum::Vassalize, {
-		"Vassalize",
-		"Unlock Vassalization which allows you to turn other city into a vassal.",
+		LOCTEXT("Vassalize", "Vassalize"),
+		LOCTEXT("Vassalize", "Unlock Vassalization which allows you to turn other city into a vassal."),
 	}},
 
 	{ TechEnum::IntercityRoad, {
-		"Intercity Connection",
-		"Allow connecting Cities with Intercity Road to establish trade connections",
+		LOCTEXT("Intercity Connection", "Intercity Connection"),
+		LOCTEXT("Intercity Connection Desc", "Allow connecting Cities with Intercity Road to establish trade connections"),
 	}},
 
 	{ TechEnum::Combo, {
-		"Building Combo",
-		"Gain Combo level 1,2,3 by constructing 2,4,8 buildings of the same type.",
+		LOCTEXT("Building Combo", "Building Combo"),
+		LOCTEXT("Building Combo Desc", "Gain Combo level 1,2,3 by constructing 2,4,8 buildings of the same type."),
 	} },
 };
 
@@ -304,19 +305,19 @@ public:
 			found->second.size() >= 2;
 	}
 	
-	virtual std::string GetName() {
+	virtual FText GetName() {
 		auto found = ResearchName_BonusDescription.find(techEnum);
 		PUN_CHECK(found != ResearchName_BonusDescription.end());
 		return found->second[0];
 	}
 
-	virtual std::string GetBonusDescription() {
+	virtual FText GetBonusDescription() {
 		auto found = ResearchName_BonusDescription.find(techEnum);
 		PUN_CHECK(found != ResearchName_BonusDescription.end());
 		if (found->second.size() >= 2) {
 			return found->second[1];
 		}
-		return "";
+		return FText();
 	}
 
 	virtual std::vector<CardEnum> GetUnlockNames() {
@@ -378,12 +379,12 @@ public:
 class ResearchNone final : public ResearchInfo
 {
 public:
-	std::string GetName() override {
-		return  "Choose Research";
+	FText GetName() override {
+		return LOCTEXT("Choose Research", "Choose Research");
 	}
 
-	std::string GetBonusDescription() override {
-		return "Click here to choose a research task";
+	FText GetBonusDescription() override {
+		return LOCTEXT("ResearchNone_Desc", "Click here to choose a research task");
 	}
 	
 	void OnUnlock(int32 playerId, IGameSimulationCore* simulation) final {
@@ -400,14 +401,14 @@ public:
 
 	void InitBuildingResearch(std::vector<CardEnum> buildingEnums, std::vector<CardEnum> permanentBuildingEnums, IGameSimulationCore* simulation, int32_t cardCount = -1);
 
-	std::string GetName() override {
+	FText GetName() override {
 		if (HasCustomName()) {
 			return ResearchInfo::GetName();
 		}
 		if (_buildingEnums.size() > 0) {
-			return GetBuildingInfo(_buildingEnums[0]).nameStd();
+			return GetBuildingInfo(_buildingEnums[0]).name;
 		}
-		return GetBuildingInfo(_permanentBuildingEnums[0]).nameStd();
+		return GetBuildingInfo(_permanentBuildingEnums[0]).name;
 	}
 
 	std::vector<CardEnum> GetUnlockNames() override {
@@ -1102,3 +1103,6 @@ private:
 	// Resource Required
 	std::vector<int32> _resourceEnumToProductionCount;
 };
+
+
+#undef LOCTEXT_NAMESPACE

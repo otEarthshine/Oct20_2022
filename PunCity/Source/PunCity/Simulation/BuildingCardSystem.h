@@ -341,7 +341,7 @@ public:
 	/*
 	 * Rare cards prize
 	 */
-	void RollRareHand(RareHandEnum rareHandEnum, std::string rareHandMessage)
+	void RollRareHand(RareHandEnum rareHandEnum, FText rareHandMessage)
 	{
 		_rareHandsEnumQueued.push_back(rareHandEnum);
 		_rareHandsMessageQueued.push_back(rareHandMessage);
@@ -361,21 +361,10 @@ public:
 		_cardsRareHandReserved.clear();
 	}
 
-	std::string rareHandMessage() {
+	FText rareHandMessage() {
 		return _rareHandMessage;
 	}
-	std::string rareHandMessage2() {
-		if (_rareHandEnum == RareHandEnum::InitialCards1 ||
-			_rareHandEnum == RareHandEnum::InitialCards2) 
-		{
-			return "CHOOSE A CARD";
-		}
-		if (_rareHandEnum == RareHandEnum::BuildingSlotCards) {
-			return "CHOOSE YOUR PRIZE !";
-		}
-		return "CHOOSE YOUR RARE CARD PRIZE !";
-	}
-
+	FText rareHandMessage2();
 
 
 	bool IsCardStackBlank() { return _isCardStackBlank; }
@@ -649,10 +638,10 @@ public:
 		//}
 		
 		SerializeVecValue(Ar, _cardsRareHand);
-		SerializeStr(Ar, _rareHandMessage);
+		Ar << _rareHandMessage;
 		Ar << _rareHandEnum;
-		SerializeVecLoop(Ar, _rareHandsMessageQueued, [&](std::string& str) {
-			SerializeStr(Ar, str);
+		SerializeVecLoop(Ar, _rareHandsMessageQueued, [&](FText& text) {
+			Ar << text;
 		});
 		SerializeVecValue(Ar, _rareHandsEnumQueued);
 
@@ -724,9 +713,9 @@ private:
 	std::vector<CardStatus> _cardsInTownhall;
 
 	std::vector<CardEnum> _cardsRareHand;
-	std::string _rareHandMessage;
+	FText _rareHandMessage;
 	RareHandEnum _rareHandEnum;
-	std::vector<std::string> _rareHandsMessageQueued;
+	std::vector<FText> _rareHandsMessageQueued;
 	std::vector<RareHandEnum> _rareHandsEnumQueued;
 
 	int32 _rerollCountThisRound = 0;

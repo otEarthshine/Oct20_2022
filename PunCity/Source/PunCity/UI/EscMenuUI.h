@@ -218,11 +218,12 @@ public:
 
 
 #define LOCTEXT_NAMESPACE "EscMenuUI"
+		FText PlayButtonTipText = LOCTEXT("PlayButton_Tip", "Change to {0}<space>(current: {1})<space>Hotkey: <Orange>[{2}]</>");
 		AddToolTip(PauseButton, gameSpeedToDisplay == 0 ? LOCTEXT("Resume game", "Resume game") : LOCTEXT("Pause game desc", "Pause game<space>Hotkey: <Orange>[spacebar]</>"));
-		AddToolTip(PlayButton1, "Change to " + GameSpeedName(GameSpeedValue1) + "<space>(current: " + GameSpeedName(gameSpeedToDisplay) + ")<space>Hotkey: <Orange>[1]</>");
-		AddToolTip(PlayButton2, "Change to " + GameSpeedName(GameSpeedValue2) + "<space>(current: " + GameSpeedName(gameSpeedToDisplay) + ")<space>Hotkey: <Orange>[2]</>");
-		AddToolTip(PlayButton3, "Change to " + GameSpeedName(GameSpeedValue3) + "<space>(current: " + GameSpeedName(gameSpeedToDisplay) + ")<space>Hotkey: <Orange>[3]</>");
-		AddToolTip(PlayButton4, "Change to " + GameSpeedName(GameSpeedValue4) + "<space>(current: " + GameSpeedName(gameSpeedToDisplay) + ")<space>Hotkey: <Orange>[4]</>");
+		AddToolTip(PlayButton1, FText::Format(PlayButtonTipText, GameSpeedName(GameSpeedValue1), GameSpeedName(gameSpeedToDisplay), TEXT_NUM(1)));
+		AddToolTip(PlayButton2, FText::Format(PlayButtonTipText, GameSpeedName(GameSpeedValue2), GameSpeedName(gameSpeedToDisplay), TEXT_NUM(2)));
+		AddToolTip(PlayButton3, FText::Format(PlayButtonTipText, GameSpeedName(GameSpeedValue3), GameSpeedName(gameSpeedToDisplay), TEXT_NUM(3)));
+		AddToolTip(PlayButton4, FText::Format(PlayButtonTipText, GameSpeedName(GameSpeedValue4), GameSpeedName(gameSpeedToDisplay), TEXT_NUM(4)));
 
 #undef LOCTEXT_NAMESPACE
 

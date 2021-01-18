@@ -744,63 +744,6 @@ public:
 		);
 
 		
-		//// Employed
-		//auto& sim = simulation();
-		//int32 playerId = sim.building(_buildingId).subclass<TownHall>(CardEnum::Townhall).playerId();
-		//{
-		//	auto& playerOwned = sim.playerOwned(playerId);
-
-		//	int32 totalJobSlots = 0;
-		//	const std::vector<std::vector<int32>>& jobBuildingEnumToIds = playerOwned.jobBuildingEnumToIds();
-		//	for (const std::vector<int32>& buildingIds : jobBuildingEnumToIds) {
-		//		for (int32 buildingId : buildingIds) {
-		//			totalJobSlots += sim.building(buildingId).allowedOccupants();
-		//		}
-		//	}
-		//	
-		//	std::stringstream ss;
-		//	ss << playerOwned.employedCount_WithoutBuilder() << "/" << totalJobSlots;
-		//	SetText(Employed, ss.str());
-
-		//	AddToolTip(EmployedBox, "People assigned to buildings\n/ Total buildings' job slots");
-		//}
-		
-		
-		//// Laborer
-		//FString laborerString = FString::FromInt(_laborerCount);
-		//if (_townPriorityState.laborerPriority) {
-		//	laborerString += FString("/") + FString::FromInt(_townPriorityState.targetLaborerCount);
-		//}
-		//SetPriorityButtons(LaborerPriorityButton, LaborerNonPriorityButton, LaborerArrowOverlay, _townPriorityState.laborerPriority);
-
-		//if (_laborerCount == 0) {
-		//	LaborerRed->SetText(FText::FromString(laborerString));
-		//	LaborerRed->SetVisibility(ESlateVisibility::HitTestInvisible);
-		//	Laborer->SetVisibility(ESlateVisibility::Collapsed);
-
-		//	AddToolTip(LaborerRed, "People not assigned to buildings become laborers. Laborers haul goods.");
-		//}
-		//else {
-		//	Laborer->SetText(FText::FromString(laborerString));
-		//	Laborer->SetVisibility(ESlateVisibility::HitTestInvisible);
-		//	LaborerRed->SetVisibility(ESlateVisibility::Collapsed);
-
-		//	AddToolTip(LaborerBox, "People not assigned to buildings become laborers. Laborers haul goods.");
-		//}
-
-		//
-		//// Builder
-		//FString builderString = FString::FromInt(_builderCount);
-		//if (_townPriorityState.builderPriority) {
-		//	builderString += FString("/") + FString::FromInt(_townPriorityState.targetBuilderCount);
-		//}
-		//SetPriorityButtons(BuilderPriorityButton, BuilderNonPriorityButton, BuilderArrowOverlay, _townPriorityState.builderPriority);
-		//Builder->SetText(FText::FromString(builderString));
-
-		//AddToolTip(BuilderBox, "People assigned to buildings under construction.");
-
-
-		
 		// RoadMaker
 		// TODO: Remove?
 		FString roadMakerString = FString::FromInt(_laborerPriorityState.roadMakerCount);

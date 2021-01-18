@@ -890,7 +890,9 @@ public:
 		int amountLeft = holderGroup(resourceEnum).AddResourceGlobal(amount, *this);
 
 		if (amountLeft > 0) {
-			simulation.AddPopup(_playerId, "Storages full... Lost " + std::to_string(amountLeft) + " " + ResourceName(resourceEnum));
+			simulation.AddPopup(_playerId, 
+				FText::Format(NSLOCTEXT("ResourceSys", "StorageFullLost_Pop", "Storages full... Lost {0} {1}"), TEXT_NUM(amountLeft), ResourceNameT(resourceEnum))
+			);
 		}
 	}
 	void RemoveResourceGlobal(ResourceEnum resourceEnum, int32 amount) {

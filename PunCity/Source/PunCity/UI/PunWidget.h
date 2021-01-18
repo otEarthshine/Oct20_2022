@@ -117,15 +117,6 @@ public:
 	void ResetTooltip(UWidget* widget);
 
 	UToolTipWidgetBase* AddToolTip(UWidget* widget);
-	UToolTipWidgetBase* AddToolTip(UWidget* widget, std::stringstream& ss) {
-		auto tooltip = AddToolTip(widget, ss.str());
-		ss.str(std::string());
-		return tooltip;
-	}
-	UToolTipWidgetBase* AddToolTip(UWidget* widget, std::string message);
-	UToolTipWidgetBase* AddToolTip(UWidget* widget, std::wstring message);
-
-
 	UToolTipWidgetBase* AddToolTip(UWidget* widget, FText message);
 	UToolTipWidgetBase* AddToolTip(UWidget* widget, TArray<FText>& args) {
 		auto tooltip = AddToolTip(widget, FText::Join(FText(), args));
@@ -313,30 +304,7 @@ public:
 		image->GetDynamicMaterial()->SetTextureParameterValue("DepthTexture", assetLoader->GetResourceIconAlpha(resourceEnum));
 	}
 
-	static void SetGeoresourceImage(UImage* image, ResourceEnum resourceEnum, UAssetLoaderComponent* assetLoader, UPunWidget* punWidget)
-	{
-		auto material = image->GetDynamicMaterial();
-
-		if (IsOreEnum(resourceEnum)) {
-			stringstream ssTip;
-			ssTip << ResourceName(resourceEnum) << " Deposit in this region that can be mined.";
-			punWidget->AddToolTip(image, ssTip.str());
-		}
-		else {
-			stringstream ssTip;
-			ssTip << "This region is suitable for " << ResourceName(resourceEnum) << " Farming. ";
-			punWidget->AddToolTip(image, ssTip.str());
-		}
-
-		
-		switch (resourceEnum) {
-		case ResourceEnum::IronOre: resourceEnum = ResourceEnum::Iron; break;
-		case ResourceEnum::GoldOre: resourceEnum = ResourceEnum::GoldBar; break;
-		}
-
-		material->SetTextureParameterValue("ColorTexture", assetLoader->GetResourceIcon(resourceEnum));
-		material->SetTextureParameterValue("DepthTexture", assetLoader->GetResourceIconAlpha(resourceEnum));
-	};
+	static void SetGeoresourceImage(UImage* image, ResourceEnum resourceEnum, UAssetLoaderComponent* assetLoader, UPunWidget* punWidget);
 	
 
 	//! Mouse hovering away for 2 ticks counts as IsPointerOnUI false
@@ -523,7 +491,7 @@ public:
 	
 	
 		
-		AddToolTip(widget, ss.str());
+		//AddToolTip(widget, ss.str());
 	}
 
 public:

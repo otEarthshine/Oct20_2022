@@ -915,7 +915,10 @@ bool HumanStateAI::TryFindFood()
 		int32 foodNeededPerHalfMinute = _simulation->population(_playerId) * HumanFoodPerYear / Time::MinutesPerYear / 2;
 		if (_simulation->foodCount(_playerId) < foodNeededPerHalfMinute) {
 			if (_simulation->TryDoNonRepeatAction(_playerId, NonRepeatActionEnum::FoodReserveLowEvent, Time::TicksPerSecond * 60)) {
-				_simulation->AddEventLog(_playerId, "Food reserve is low.", true);
+				_simulation->AddEventLog(_playerId, 
+					LOCTEXT("LowFood_Event", "Food reserve is low."), 
+					true
+				);
 				_simulation->soundInterface()->Spawn2DSound("UI", "FoodLowBell", _playerId);
 			}
 			AddDebugSpeech("(Try)TryFindFood: providerInfo invalid  (Food reserve is low)");
@@ -1000,7 +1003,10 @@ bool HumanStateAI::TryHeatup()
 		_simulation->resourceSystem(_playerId).resourceCount(ResourceEnum::Coal) == 0)
 	{
 		if (_simulation->TryDoNonRepeatAction(_playerId, NonRepeatActionEnum::WoodReserveLowEvent, Time::TicksPerSecond * 30)) {
-			_simulation->AddEventLog(_playerId, "Fuel reserve is low.", true);
+			_simulation->AddEventLog(_playerId, 
+				LOCTEXT("FuelLow_Event", "Fuel reserve is low."), 
+				true
+			);
 		}
 
 		AddDebugSpeech("(Try)TryFindFood: providerInfo invalid  (no stored food)");
@@ -1068,7 +1074,10 @@ bool HumanStateAI::TryToolup()
 
 		if (!hasToolsInStorage) {
 			if (_simulation->TryDoNonRepeatAction(_playerId, NonRepeatActionEnum::NeedMoreToolsEvent, Time::TicksPerSecond * 30)) {
-				_simulation->AddEventLog(_playerId, "Need more tools.", true);
+				_simulation->AddEventLog(_playerId, 
+					LOCTEXT("NeedTools_Event", "Need more tools."), 
+					true
+				);
 				_simulation->soundInterface()->Spawn2DSound("UI", "NoToolsBell", _playerId);
 			}
 		}

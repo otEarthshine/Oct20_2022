@@ -195,11 +195,15 @@ void WorldTradeSystem::TryEstablishTradeRoute(FSetIntercityTrade command)
 			_simulation->RecalculateTaxDelayed(playerId);
 			_simulation->RecalculateTaxDelayed(targetPlayerId);
 
-			std::stringstream ss;
-			ss << "Trade Route was established between " << _simulation->townName(playerId) << " and " << _simulation->townName(targetPlayerId);
-			ss << "!\nTrade Route Income varies with the population of both cities.";
-			_simulation->AddPopup(playerId, ss.str());
-			_simulation->AddPopup(targetPlayerId, ss.str());
+			FText text = FText::Format(LOCTEXT("TradeRouteEstablish_Pop",
+				"Trade Route was established between {0} and {1}"
+				"!\nTrade Route Income varies with the population of both cities."
+				),
+				_simulation->townNameT(playerId),
+				_simulation->townNameT(targetPlayerId)
+			);
+			_simulation->AddPopup(playerId, text);
+			_simulation->AddPopup(targetPlayerId, text);
 
 			return;
 		}
@@ -236,10 +240,13 @@ void WorldTradeSystem::TryCancelTradeRoute(FSetIntercityTrade command)
 		_simulation->RecalculateTaxDelayed(playerId);
 		_simulation->RecalculateTaxDelayed(targetPlayerId);
 
-		std::stringstream ss;
-		ss << "Trade Route between " << _simulation->townName(playerId) << " and " << _simulation->townName(targetPlayerId) << " was removed.";
-		_simulation->AddPopup(playerId, ss.str());
-		_simulation->AddPopup(targetPlayerId, ss.str());
+		FText text = FText::Format(LOCTEXT("CancelTradeRoute_Pop", 
+			"Trade Route between {0} and {1} was removed."),
+			_simulation->townNameT(playerId),
+			_simulation->townNameT(targetPlayerId)
+		);
+		_simulation->AddPopup(playerId, text);
+		_simulation->AddPopup(targetPlayerId, text);
 	}
 }
 void WorldTradeSystem::RemoveAllTradeRoutes(int32 playerId)

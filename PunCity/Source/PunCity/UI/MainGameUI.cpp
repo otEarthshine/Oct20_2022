@@ -63,11 +63,11 @@ void UMainGameUI::PunInit()
 	CardHand1CloseButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickCardHand1CancelButton);
 
 	{
-		std::stringstream ss;
-		ss << "Submit Card Selection to confirm purchase.";
-		ss << "<space>";
-		ss << "Submitting without selected Card will pass the current Card Hand for the next Card Hand.";
-		AddToolTip(CardHand1SubmitButton, ss.str());
+		AddToolTip(CardHand1SubmitButton, LOCTEXT("CardHand1SubmitButton_Tip",
+			"Submit Card Selection to confirm purchase."
+			"<space>"
+			"Submitting without selected Card will pass the current Card Hand for the next Card Hand."
+		));
 	}
 
 	CardHand2Box->ClearChildren();
@@ -93,10 +93,14 @@ void UMainGameUI::PunInit()
 	//GlobalItemsHorizontalBox->ClearChildren();
 
 	ResearchBarUI->OnClicked.AddDynamic(this, &UMainGameUI::ToggleResearchMenu);
-	AddToolTip(ResearchBarUI, "Bring up Technology UI.\n<Orange>[T]</>");
+	AddToolTip(ResearchBarUI, LOCTEXT("ResearchBarUI_Tip", 
+		"Bring up Technology UI.\n<Orange>[T]</>"
+	));
 
 	ProsperityBarUI->OnClicked.AddDynamic(this, &UMainGameUI::ToggleProsperityUI);
-	AddToolTip(ProsperityBarUI, "Bring up House Upgrade Unlocks UI.");
+	AddToolTip(ProsperityBarUI, LOCTEXT("ProsperityBarUI_Tip",
+		"Bring up House Upgrade Unlocks UI."
+	));
 
 	GatherSettingsOverlay->SetVisibility(ESlateVisibility::Collapsed);
 
@@ -113,12 +117,12 @@ void UMainGameUI::PunInit()
 	//WorldMapRegionUI->SetVisibility(ESlateVisibility::Collapsed);
 
 	// Tooltips 
-	AddToolTip(BuildMenuTogglerButton, "Build houses, farms, and infrastructures\n<Orange>[B]</>");
-	AddToolTip(GatherButton, "Gather trees, stone etc\n<Orange>[G]</><space>Activate this button, then Click and Drag to Gather.");
-	AddToolTip(DemolishButton, "Demolish\n<Orange>[X]</>");
+	AddToolTip(BuildMenuTogglerButton, LOCTEXT("BuildMenuTogglerButton_Tip", "Build houses, farms, and infrastructures\n<Orange>[B]</>"));
+	AddToolTip(GatherButton, LOCTEXT("GatherButton_Tip", "Gather trees, stone etc\n<Orange>[G]</><space>Activate this button, then Click and Drag to Gather."));
+	AddToolTip(DemolishButton, LOCTEXT("DemolishButton_Tip", "Demolish\n<Orange>[X]</>"));
 
-	AddToolTip(CardStackButton, "Show drawn cards that can be bought.\n<Orange>[C]</>");
-	AddToolTip(RoundCountdownImage, "Round timer<space>You get a new card hand each round.<space>Each season contains 2 rounds.");
+	AddToolTip(CardStackButton, LOCTEXT("CardStackButton_Tip", "Show drawn cards that can be bought.\n<Orange>[C]</>"));
+	AddToolTip(RoundCountdownImage, LOCTEXT("RoundCountdownImage_Tip", "Round timer<space>You get a new card hand each round.<space>Each season contains 2 rounds."));
 
 	// Set Icon images
 	auto assetLoader = dataSource()->assetLoader();
@@ -760,15 +764,15 @@ void UMainGameUI::Tick()
 			{
 				auto widget = AddWidget<UPunRichText>(UIEnum::PunRichText);
 
-				FString richMessage = FString::Printf(TEXT("<EventLog>%s</>"), *events[i].message);
+				FText richMessage = TEXT_TAG("<EventLog>", events[i].message);
 				if (events[i].isImportant) {
-					richMessage = FString::Printf(TEXT("<EventLogRed>%s</>"), *events[i].message);
+					richMessage = TEXT_TAG("<EventLogRed>", events[i].message);
 				}
 				
-				widget->SetRichText(richMessage);
+				widget->SetText(richMessage);
 				EventBox->AddChild(widget);
 
-				PUN_LOG(" --- widget: %s", *events[i].message);
+				PUN_LOG(" --- widget: %s", *events[i].message.ToString());
 			}
 			
 			eventSystem.needRefreshEventLog[playerId()] = false;
@@ -854,7 +858,10 @@ void UMainGameUI::Tick()
 			float fraction = FDToFloat(celsius - Time::MinCelsiusBase()) / FDToFloat(Time::MaxCelsiusBase() - Time::MinCelsiusBase());
 			TemperatureImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", fraction);
 
-			AddToolTip(TemperatureTextBox, L"Below " + to_wstring(FDToInt(Time::ColdCelsius())) + L"°C, citizens will need wood/coal to heat themselves");
+			AddToolTip(TemperatureTextBox, FText::Format(LOCTEXT("TemperatureTextBox_Tip",
+				"Below {0}°C, citizens will need wood/coal to heat themselves"),
+				TEXT_NUM(FDToInt(Time::ColdCelsius()))
+			));
 
 			TemperatureTextBox->SetVisibility(ESlateVisibility::Visible);
 		}
@@ -875,7 +882,15 @@ void UMainGameUI::Tick()
 			populationTip << "<bullet>" << adultPopulation << " Adults</>";
 			populationTip << "<bullet>" << childPopulation << " Children</>";
 			
-			AddToolTip(PopulationBox, populationTip.str());
+			AddToolTip(PopulationBox, FText::Format(LOCTEXT("PopulationBox_Tip",
+				"Population: {0}"
+				"<bullet>{1} Adults</>"
+				"<bullet>{2} Children</>"
+				),
+				TEXT_NUM(population),
+				TEXT_NUM(adultPopulation),
+				TEXT_NUM(childPopulation)
+			));
 		}
 
 		if (shouldDisplayMainGameUI)
@@ -889,25 +904,34 @@ void UMainGameUI::Tick()
 			SetText(StorageSpaceText, to_string(usedSlots) + "/" + to_string(totalSlots));
 
 			{
-				std::stringstream tip;
-				tip << "Population: " << population << "\n";
-				tip << "Housing space: " << simulation.HousingCapacity(playerId());
-				tip << "<space>";
+				TArray<FText> args;
+				ADDTEXT_(LOCTEXT("HousingSpaceBox_Tip1",
+					"Population: {0}\n"
+					"Housing space: {1}"),
+					TEXT_NUM(population),
+					TEXT_NUM(simulation.HousingCapacity(playerId()))
+				);
+				ADDTEXT_INV_("<space>");
 				for (int32 i = 1; i <= House::GetMaxHouseLvl(); i++) {
 					int32 houseLvlCount = simulation.GetHouseLvlCount(playerId(), i, false);
 					if (houseLvlCount > 0) {
-						tip << "<bullet>House lvl " << i << ": " << houseLvlCount << "</>";
+						ADDTEXT_(LOCTEXT("HousingSpaceBox_Tip2", "<bullet>House lvl {0}: {1}</>"), TEXT_NUM(i), TEXT_NUM(houseLvlCount));
 					}
 				}
 				
-				AddToolTip(HousingSpaceBox, tip.str());
+				AddToolTip(HousingSpaceBox, JOINTEXT(args));
 			}
 			{
-				std::stringstream tip;
-				tip << "Storage space:\n";
-				tip << "Used slots: " << usedSlots << "\n";
-				tip << "Total slots: " << totalSlots;
-				AddToolTip(StorageSpaceBox, tip.str());
+				TArray<FText> args;
+
+				AddToolTip(StorageSpaceBox, FText::Format(LOCTEXT("StorageSpaceBox_Tip",
+					"Storage space:\n"
+					"Used slots: {0}\n"
+					"Total slots: {1}"
+					),
+					TEXT_NUM(usedSlots),
+					TEXT_NUM(totalSlots)
+				));
 			}
 			
 			//auto& townhall = simulation.townhall(playerId());
@@ -928,43 +952,57 @@ void UMainGameUI::Tick()
 			//migrationTip << "  bonuses: " << townhall.migrationPull_bonuses;
 			//AddToolTip(MigrationText, migrationTip.str());
 		}
+
+		auto& playerOwned = simulation.playerOwned(playerId());
 		
 		// Happiness
-		auto& playerOwned = simulation.playerOwned(playerId());
-		Happiness->SetText("", to_string(simulation.GetAverageHappiness(playerId())));
+		{
+			Happiness->SetText(FText(), TEXT_NUM(simulation.GetAverageHappiness(playerId())));
 
-		std::stringstream happinessTip;
-		happinessTip << "Happiness: " << playerOwned.aveHappiness() << "<img id=\"Smile\"/>";
-		happinessTip << "<space>";
-		happinessTip << "Base: " << playerOwned.aveNeedHappiness();
-		happinessTip << "<bullet>" << playerOwned.aveFoodHappiness() << " food</>";
-		happinessTip << "<bullet>" << playerOwned.aveHeatHappiness() << " heat</>";
-		happinessTip << "<bullet>" << playerOwned.aveHousingHappiness() << " housing</>";
-		happinessTip << "<bullet>" << playerOwned.aveFunHappiness() << " fun</>";
+			TArray<FText> args;
+			ADDTEXT_(LOCTEXT("Happiness_Tip1",
+				"Happiness: {0}<img id=\"Smile\"/>"
+				"<space>"
+				"Base: {1}"
+				"<bullet>{2} food</>"
+				"<bullet>{3} heat</>"
+				"<bullet>{4} housing</>"
+				"<bullet>{5} fun</>"
+				),
+				TEXT_NUM(playerOwned.aveHappiness()),
+				TEXT_NUM(playerOwned.aveNeedHappiness()),
+				TEXT_NUM(playerOwned.aveFoodHappiness()),
+				TEXT_NUM(playerOwned.aveHeatHappiness()),
+				TEXT_NUM(playerOwned.aveHousingHappiness()),
+				TEXT_NUM(playerOwned.aveFunHappiness())
+			);
 
-		happinessTip << "Modifiers: " << playerOwned.aveHappinessModifierSum();
-		for (size_t i = 0; i < HappinessModifierName.Num(); i++) {
-			int32 modifier = playerOwned.aveHappinessModifier(static_cast<HappinessModifierEnum>(i));
-			if (modifier != 0) {
-				std::string str = ToStdString(HappinessModifierName[i].ToString());
-				happinessTip << "<bullet>" << modifier << " " << str << "</>";
+			ADDTEXT_(LOCTEXT("Happiness_Tip2", "Modifiers: {0}"), TEXT_NUM(playerOwned.aveHappinessModifierSum()));
+			for (size_t i = 0; i < HappinessModifierName.Num(); i++) {
+				int32 modifier = playerOwned.aveHappinessModifier(static_cast<HappinessModifierEnum>(i));
+				if (modifier != 0) {
+					ADDTEXT_(INVTEXT("<bullet>{0} {1}</>"), TEXT_NUM(modifier), HappinessModifierName[i]);
+				}
 			}
+
+			AddToolTip(Happiness, JOINTEXT(args));
 		}
 
-		AddToolTip(Happiness, happinessTip.str());
-
 		// Money
-		Money->SetText("", to_string(resourceSystem.money()));
+		{
+			Money->SetText(FText(), TEXT_NUM(resourceSystem.money()));
 
-		int32 totalIncome100 = playerOwned.totalIncome100();
-		MoneyChangeText->SetText(ToFText(ToForcedSignedNumber(totalIncome100 / 100)));
+			int32 totalIncome100 = playerOwned.totalIncome100();
+			MoneyChangeText->SetText(TEXT_100SIGNED(totalIncome100 / 100));
 
-		std::stringstream moneyTip;
-		moneyTip << "Coins (Money) is used for purchasing buildings and goods. Coins come from tax and trade.\n\n";
-		playerOwned.AddTaxIncomeToString(moneyTip);
+			TArray<FText> args;
+			ADDTEXT_LOCTEXT("Money_TipTitle", "Coins (Money) is used for purchasing buildings and goods. Coins come from tax and trade.\n\n");
+			playerOwned.AddTaxIncomeToString(args);
 
-		AddToolTip(Money, moneyTip.str());
-		AddToolTip(MoneyChangeText, moneyTip.str());
+			FText moneyTipText = JOINTEXT(args);
+			AddToolTip(Money, moneyTipText);
+			AddToolTip(MoneyChangeText, moneyTipText);
+		}
 
 		// Influence
 		if (simulation.playerOwned(playerId()).hasChosenLocation() &&
@@ -973,12 +1011,13 @@ void UMainGameUI::Tick()
 			Influence->SetText("", to_string(resourceSystem.influence()));
 			InfluenceChangeText->SetText(ToFText(ToForcedSignedNumber(playerOwned.totalInfluenceIncome100() / 100)));
 
-			std::stringstream influenceTip;
-			influenceTip << "Influence points used for claiming land and vassalizing other towns.\n\n";
-			playerOwned.AddInfluenceIncomeToString(influenceTip);
+			TArray<FText> args;
+			ADDTEXT_LOCTEXT("Influence_Tip1", "Influence points used for claiming land and vassalizing other towns.\n\n");
+			playerOwned.AddInfluenceIncomeToString(args);
 
-			AddToolTip(Influence, influenceTip.str());
-			AddToolTip(InfluenceChangeText, influenceTip.str());
+			FText tipText = JOINTEXT(args);
+			AddToolTip(Influence, tipText);
+			AddToolTip(InfluenceChangeText, tipText);
 
 			Influence->SetVisibility(ESlateVisibility::Visible);
 			InfluenceChangeText->SetVisibility(ESlateVisibility::Visible);
@@ -1111,13 +1150,16 @@ void UMainGameUI::Tick()
 				foodConsumption += CppUtils::Sum(consumptionStats[static_cast<int>(StaticData::FoodEnums[i])]);
 			}
 
-			std::stringstream tip;
-			tip << "Food Count: " << foodCount;
-			tip << "<space>";
-			tip << "Food Production (yearly): <FaintGreen>" << foodProduction << "</>\n";
-			tip << "Food Consumption (yearly): <FaintRed>" << foodConsumption << "</>";
-			
-			auto tooltip = AddToolTip(FoodCountText, tip);
+			auto tooltip = AddToolTip(FoodCountText, FText::Format(LOCTEXT("FoodCountText_Tip",
+				"Food Count: {0}"
+				"<space>"
+				"Food Production (yearly): <FaintGreen>{1}</>\n"
+				"Food Consumption (yearly): <FaintRed>{2}</>"
+				),
+				TEXT_NUM(foodCount),
+				TEXT_NUM(foodProduction),
+				TEXT_NUM(foodConsumption)
+			));
 
 			auto punGraph = tooltip->TooltipPunBoxWidget->AddThinGraph();
 
@@ -1283,7 +1325,7 @@ void UMainGameUI::Tick()
 		{
 			std::shared_ptr<ResearchInfo> currentTech = unlockSys->currentResearch();
 
-			ResearchingText->SetText(ToFText(currentTech->GetName()));
+			ResearchingText->SetText(currentTech->GetName());
 			
 			std::stringstream ssSci;
 			unlockSys->SetDisplaySciencePoint(ssSci, false);
@@ -2242,20 +2284,20 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 					cardButton->SetVisibility(ESlateVisibility::Hidden);
 				};
 
-				auto sendCommandWithWarning = [&](std::string str) {
-					networkInterface()->ShowConfirmationUI(str, command);
+				auto sendCommandWithWarning = [&](FText text) {
+					networkInterface()->ShowConfirmationUI(text, command);
 				};
 
 				
 				if (buildingEnum == CardEnum::SellFood) {
-					sendCommandWithWarning("Are you sure you want to sell half of city's food?");
+					sendCommandWithWarning(LOCTEXT("SellFood_Ask", "Are you sure you want to sell half of city's food?"));
 				} 
 				else if (buildingEnum == CardEnum::BuyWood) {
 					int32 cost = GetResourceInfo(ResourceEnum::Wood).basePrice;
 					int32 amountToBuy = simulation().money(playerId()) / 2 / cost;
 
 					if (resourceSys.CanAddResourceGlobal(ResourceEnum::Wood, amountToBuy)) {
-						sendCommandWithWarning("Are you sure you want to spend half of city's money to buy wood?");
+						sendCommandWithWarning(LOCTEXT("BuyWood_Ask", "Are you sure you want to spend half of city's money to buy wood?"));
 					} else {
 						simulation().AddPopupToFront(playerId(), 
 							FText::Format(LOCTEXT("BuyWoodNoStorageFit_Pop", "Not enough storage space to fit {0} wood."), TEXT_NUM(amountToBuy)),
@@ -2352,10 +2394,15 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 		command->cardCount = cardButton->cardCount;
 
 		int32 cardPrice = simulation().cardSystem(playerId()).GetCardPrice(command->buildingEnum);
-		stringstream ss;
-		ss << "Are you sure you want to sell " << GetBuildingInfo(command->buildingEnum).nameStd();
-		ss << " for <img id=\"Coin\"/>" << cardPrice << "?";
-		networkInterface()->ShowConfirmationUI(ss.str(), command);
+
+		networkInterface()->ShowConfirmationUI(
+			FText::Format(LOCTEXT("SellCardSure_Pop",
+				"Are you sure you want to sell {0} for {1}<img id=\"Coin\"/>?"),
+				GetBuildingInfo(command->buildingEnum).name,
+				TEXT_NUM(cardPrice)
+			), 
+			command
+		);
 
 		return;
 	}

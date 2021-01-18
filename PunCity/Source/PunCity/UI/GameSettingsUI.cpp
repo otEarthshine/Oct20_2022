@@ -611,3 +611,5 @@ void UGameSettingsUI::RefreshResolutionDropdown()
 		ResolutionHiddenText->SetText(LOCTEXT("ToAdjustChangeToWindow", "To adjust, change to windowed mode"));
 	}
 }
+
+#undef LOCTEXT_NAMESPACE 

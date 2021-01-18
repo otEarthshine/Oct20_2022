@@ -42,7 +42,9 @@ void LaborerPriorityState::RefreshUI(
 		TArray<FText> args;
 
 		if (EmployedBox) {
-			widget->AddToolTip(EmployedBox, LOCTEXT("EmployedDesc", "People assigned to buildings\n/ Total buildings' job slots"));
+			widget->AddToolTip(EmployedBox, 
+				LOCTEXT("EmployedDesc", "People assigned to buildings\n/ Total buildings' job slots")
+			);
 			ADDTEXT_(INVTEXT("{0}/{1}"), TEXT_NUM(playerOwned.employedCount_WithoutBuilder()), TEXT_NUM(totalJobSlots));
 		} else {
 			ADDTEXT_(LOCTEXT("Employed: X/Y", "Employed: {0}/{1}"), TEXT_NUM(playerOwned.employedCount_WithoutBuilder()), TEXT_NUM(totalJobSlots));
@@ -67,14 +69,18 @@ void LaborerPriorityState::RefreshUI(
 			LaborerRed->SetVisibility(ESlateVisibility::HitTestInvisible);
 			Laborer->SetVisibility(ESlateVisibility::Collapsed);
 
-			widget->AddToolTip(LaborerRed, "People not assigned to buildings become laborers. Laborers haul goods and gather trees/stone.");
+			widget->AddToolTip(LaborerRed, 
+				LOCTEXT("LaborerPriorityButtonAt0_Tip", "People not assigned to buildings become laborers. Laborers haul goods and gather trees/stone.")
+			);
 		}
 		else {
 			Laborer->SetText(JOINTEXT(args));
 			Laborer->SetVisibility(ESlateVisibility::HitTestInvisible);
 			LaborerRed->SetVisibility(ESlateVisibility::Collapsed);
 
-			widget->AddToolTip(LaborerBox, "People not assigned to buildings become laborers. Laborers haul goods and gather trees/stone.");
+			widget->AddToolTip(LaborerBox, 
+				LOCTEXT("LaborerPriorityButton_Tip", "People not assigned to buildings become laborers. Laborers haul goods and gather trees/stone.")
+			);
 		}
 	}
 
@@ -90,7 +96,9 @@ void LaborerPriorityState::RefreshUI(
 		SetPriorityButtons(BuilderPriorityButton, BuilderNonPriorityButton, BuilderArrowOverlay, townPriorityState.builderPriority);
 		Builder->SetText(JOINTEXT(args));
 
-		widget->AddToolTip(BuilderBox, "People assigned to buildings under construction.");
+		widget->AddToolTip(BuilderBox, 
+			LOCTEXT("BuilderBox_Tip", "People assigned to buildings under construction.")
+		);
 	}
 }
 

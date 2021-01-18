@@ -208,13 +208,16 @@ public:
 		setServerVsClientUI(LobbyAICountDropdown, LobbyAICountText, FString::FromInt(mapSettings.aiCount));
 		setServerVsClientUI(LobbyDifficultyDropdown, LobbyDifficultyText, DifficultyLevelNames[static_cast<int>(mapSettings.difficultyLevel)].ToString());
 
-		std::stringstream ss;
-		ss << "Difficulty Level:\n";
+#define LOCTEXT_NAMESPACE "LobbySettingsUI"
+		TArray<FText> args;
+		ADDTEXT_LOCTEXT("DifficultyLevel_Tip", "Difficulty Level:\n");
 		for (int32 i = 0; i < DifficultyLevelNames.size(); i++) {
-			ss << " - " << FTextToStd(DifficultyLevelNames[i]) << " (+" << DifficultyConsumptionAdjustment[i] << "% consumption)\n";
+			ADDTEXT_(INVTEXT(" - {0} (+{1}% {2})\n"), DifficultyLevelNames[i], TEXT_NUM(DifficultyConsumptionAdjustment[i]), LOCTEXT("consumption", "consumption"));
 		}
-		AddToolTip(LobbyDifficultyDropdown, ss.str());
-		AddToolTip(LobbyDifficultyText, ss.str());
+		FText tipText = JOINTEXT(args);
+		AddToolTip(LobbyDifficultyDropdown, tipText);
+		AddToolTip(LobbyDifficultyText, tipText);
+#undef LOCTEXT_NAMESPACE
 	}
 
 	

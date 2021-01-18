@@ -36,6 +36,6 @@ void HellPortal::TickRound()
 void AdventurersGuild::TickRound()
 {
 	if (isConstructed() && Time::IsAutumnStart()) {
-		_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::RareCards, "A successful venture!");
+		_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::RareCards, NSLOCTEXT("SuccessfulVenture", "A successful venture!", "A successful venture!"));
 	}
 }

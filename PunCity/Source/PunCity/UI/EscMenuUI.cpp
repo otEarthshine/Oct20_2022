@@ -3,6 +3,8 @@
 
 #include "EscMenuUI.h"
 
+#define LOCTEXT_NAMESPACE "EscMenuUI"
+
 void UEscMenuUI::InitBeforeGameManager()
 {
 	BackBlur->SetVisibility(ESlateVisibility::Collapsed);
@@ -85,10 +87,10 @@ void UEscMenuUI::PunInit()
 	SetOverlayCheckBox(OverlayCheckBox_None);
 
 	// Overlay Tooltip
-	AddToolTip(OverlayOuterBox_None, "Check to turn off Overlay.");
-	AddToolTip(OverlayOuterBox_Appeal, "Houses built on high Appeal area give occupants more Happiness.");
-	AddToolTip(OverlayOuterBox_Fertility, "Farms built on high fertility area have higher productivity.");
-	AddToolTip(OverlayOuterBox_Animals, "Highlight animals.");
+	AddToolTip(OverlayOuterBox_None, LOCTEXT("OverlayCheckBox_None_Tip", "Check to turn off Overlay."));
+	AddToolTip(OverlayOuterBox_Appeal, LOCTEXT("OverlayCheckBox_Appeal_Tip", "Houses built on high Appeal area give occupants more Happiness."));
+	AddToolTip(OverlayOuterBox_Fertility, LOCTEXT("OverlayCheckBox_Fertility_Tip", "Farms built on high fertility area have higher productivity."));
+	AddToolTip(OverlayOuterBox_Animals, LOCTEXT("OverlayCheckBox_Animals_Tip", "Highlight animals."));
 
 
 	// others
@@ -96,9 +98,9 @@ void UEscMenuUI::PunInit()
 	VictoryScoreScreenButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickVictoryPopupScoreScreen);
 	VictoryReturnToGame->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickVictoryPopupReturnToGame);
 
-	AddToolTip(OverlayToggler, "Open the Overlay Menu.");
-	AddToolTip(EscMenuToggler, "Open the Game Menu.");
-	AddToolTip(TutorialToggler, "Open the tutorial.");
+	AddToolTip(OverlayToggler, LOCTEXT("OverlayToggler_Tip", "Open the Overlay Menu."));
+	AddToolTip(EscMenuToggler, LOCTEXT("EscMenuToggler_Tip", "Open the Game Menu."));
+	AddToolTip(TutorialToggler, LOCTEXT("TutorialToggler_Tip", "Open the tutorial."));
 
 	GetAnimations();
 }
@@ -217,3 +219,6 @@ void UEscMenuUI::SetOverlayCheckBox(UCheckBox* activeCheckBox)
 		checkBox->SetCheckedState(checkBox == activeCheckBox ? ECheckBoxState::Checked : ECheckBoxState::Unchecked);
 	}
 }
+
+
+#undef LOCTEXT_NAMESPACE

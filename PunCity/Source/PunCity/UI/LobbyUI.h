@@ -106,7 +106,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyPopupText;
 	UPROPERTY(meta = (BindWidget)) UButton* LobbyPopupCloseButton;
 
-	void AddPopup(std::string message) {
+	void AddPopup(FText message) {
 		LobbyPopupOverlay->SetVisibility(ESlateVisibility::Visible);
 		SetText(LobbyPopupText, message);
 	}

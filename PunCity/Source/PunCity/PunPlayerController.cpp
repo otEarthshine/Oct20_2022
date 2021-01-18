@@ -925,7 +925,7 @@ void APunPlayerController::OpenTradeUI()
 
 void APunPlayerController::OpenRareCardUI()
 {
-	gameManager->simulation().GenerateRareCardSelection(GetPunHUD()->playerId(), RareHandEnum::RareCards, "CMD");
+	gameManager->simulation().GenerateRareCardSelection(GetPunHUD()->playerId(), RareHandEnum::RareCards, INVTEXT("CMD"));
 }
 
 void APunPlayerController::SavePlayerActions(int32 playerId, const FString& fileName)

@@ -41,14 +41,14 @@ public:
 			ExclamationIcon->SetVisibility(ESlateVisibility::Collapsed);
 		}
 		
-		if (title != quest->questTitle() ||
-			numberDescription != quest->numberDescription()) 
+		if (title.EqualTo(quest->questTitle()) ||
+			numberDescription.EqualTo(quest->numberDescription()))
 		{
 			title = quest->questTitle();
 			numberDescription = quest->numberDescription();
 
-			QuestTitle->SetText(ToFText(title));
-			QuestNumberDescription->SetText(ToFText(numberDescription));
+			QuestTitle->SetText(title);
+			QuestNumberDescription->SetText(numberDescription);
 		}
 
 		if (fraction != quest->fraction())
@@ -90,8 +90,8 @@ public:
 	}
 
 	QuestEnum questEnum = QuestEnum::None;
-	std::string title;
-	std::string numberDescription;
+	FText title;
+	FText numberDescription;
 	float fraction = -1.0f;
 
 private:

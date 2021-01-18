@@ -65,7 +65,7 @@ void UTechUI::SetupTechBoxUIs()
 
 			techBox->Init(this, tech->techEnum);
 
-			techBox->TechName->SetText(ToFText(tech->GetName()));
+			techBox->TechName->SetText(tech->GetName());
 		}
 	}
 

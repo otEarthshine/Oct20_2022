@@ -106,10 +106,10 @@ public:
 				{
 					QuestDescriptionBox->AfterAdd();
 
-					QuestDescriptionBox->AddRichText("<Subheader>" + quest->questTitle() + "</>");
+					QuestDescriptionBox->AddRichText(TEXT_TAG("<Subheader>", quest->questTitle()));
 					QuestDescriptionBox->AddLineSpacer();
-					if (quest->numberDescription() != "") {
-						QuestDescriptionBox->AddRichText("Progress: " + quest->numberDescription());
+					if (!quest->numberDescription().IsEmpty()) {
+						QuestDescriptionBox->AddRichText(FText::Format(NSLOCTEXT("QuestUI", "Progress: X", "Progress: {0}"), quest->numberDescription()));
 						QuestDescriptionBox->AddSpacer(10);
 					}
 					QuestDescriptionBox->AddRichTextParsed(quest->questDescription());
@@ -153,15 +153,19 @@ public:
 						SetText(element->PopulationBoldText, std::to_string(pop));
 						setHomeTownIcon();
 
-						AddToolTip(element->PlayerZoomButton, "Click to travel home <Orange>[H]</>");
+						AddToolTip(element->PlayerZoomButton, NSLOCTEXT("QuestUI", "PlayerZoomButton_Tip1",
+							"Click to travel home <Orange>[H]</>"
+						));
 					}
 					else {
 						SetTextF(element->PlayerNameText, TrimStringF_Dots(name, 17));
 						SetText(element->PopulationText, std::to_string(pop));
 						setHomeTownIcon();
 
-						std::string nameStd = ToStdString(name);
-						AddToolTip(element->PlayerZoomButton, "Click to travel to " + nameStd);
+						AddToolTip(element->PlayerZoomButton, FText::Format(NSLOCTEXT("QuestUI", "PlayerZoomButton_Tip2",
+							"Click to travel to {0}"),
+							FText::FromString(name)
+						));
 					}
 					element->PlayerNameBoldText->SetVisibility(isPlayer ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 					element->PopulationBoldText->SetVisibility(isPlayer ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);

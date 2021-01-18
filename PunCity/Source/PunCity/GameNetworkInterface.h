@@ -75,8 +75,8 @@ public:
 	virtual void ResetBottomMenuDisplay() = 0;
 	virtual void ResetGameUI() = 0;
 
-	virtual void ShowConfirmationUI(std::string confirmationStr, std::shared_ptr<FNetworkCommand> commandIn) = 0;
-	virtual bool IsShowingConfirmationUI(std::string confirmationStr) = 0;
+	virtual void ShowConfirmationUI(FText confirmationStr, std::shared_ptr<FNetworkCommand> commandIn) = 0;
+	virtual bool IsShowingConfirmationUI(FText confirmationStr) = 0;
 
 	virtual void KeyPressed_H() = 0;
 	virtual void KeyPressed_F() = 0;

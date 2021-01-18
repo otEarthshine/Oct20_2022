@@ -349,9 +349,9 @@ void UPunGameInstance::CreateGame_Phase2()
 	FOnlineSessionSettings sessionSettings = GetPreferredSessionSettings();
 	//PUN_DEBUG2("CreateSession: subsystem:%s", *IOnlineSubsystem::Get()->GetSubsystemName().ToString());
 
-	std::stringstream ss;
-	PrintSessionSettings(ss, sessionSettings);
-	PUN_LOG("SessionSettings: %s", ToTChar(ss.str()));
+	TArray<FText> args;
+	PrintSessionSettings(args, sessionSettings);
+	PUN_LOG("SessionSettings: %s", *(JOINTEXT(args).ToString()));
 
 	// LAN match can be single player or Editor
 	if (sessionSettings.bIsLANMatch) 

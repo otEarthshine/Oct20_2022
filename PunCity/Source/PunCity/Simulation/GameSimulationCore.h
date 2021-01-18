@@ -345,11 +345,14 @@ public:
 	std::string townName(int32 playerId) final {
 		return townhall(playerId).townName();
 	}
+	FText townNameT(int32 playerId) final {
+		return townhall(playerId).townNameT();
+	}
 	std::string townSuffix(int32 playerId) final {
 		return FTextToStd(playerOwned(playerId).GetTownSizeSuffix());
 	}
-	std::string townSizeName(int32 playerId) final {
-		return FTextToStd(playerOwned(playerId).GetTownSizeName());
+	FText townSizeNameT(int32 playerId) final {
+		return playerOwned(playerId).GetTownSizeName();
 	}
 	int32 townAgeTicks(int32 playerId) final {
 		return townhall(playerId).townAgeTicks();
@@ -1042,9 +1045,9 @@ public:
 	{
 		return 100;
 	}
-	std::string GetProvinceVassalizeDefenseBonusTip(int32 provinceId)
+	FText GetProvinceVassalizeDefenseBonusTip(int32 provinceId)
 	{
-		return "Defense Bonus against Vassalize Military Campaign: %100";
+		return NSLOCTEXT("SimCore", "DefenseAgainstVassalizeBonus", "Defense Bonus against Vassalize Military Campaign: %100");
 	}
 
 	//  Vassalize/Liberation can only be done if
@@ -1135,16 +1138,20 @@ public:
 		}
 		return percent;
 	}
-	std::string GetProvinceDefenseBonusTip(int32 provinceId)
+	FText GetProvinceDefenseBonusTip(int32 provinceId)
 	{
-		std::stringstream ss;
-		ss << "Defense Bonus: " << GetProvinceAttackCostPercent(provinceId);
+		TArray<FText> args;
+		ADDTEXT_(NSLOCTEXT("SimCore", "DefenseBonus_TipTitle", 
+			"Defense Bonus: {0}"), 
+			TEXT_PERCENT(GetProvinceAttackCostPercent(provinceId))
+		);
 		int32 provinceOwnerId = provinceOwner(provinceId);
 		if (provinceOwnerId != -1) {
-			ss << "<bullet>fort " << GetFortDefenseBonus_Helper(provinceId, provinceOwnerId) << "%</>";
-			ss << "<bullet>buildings " << GetBuildingDefenseBonus_Helper(provinceId, provinceOwnerId) << "%</>";
+			const FText bulletText = INVTEXT("<bullet>{0} {1}%</>");
+			ADDTEXT_(bulletText, NSLOCTEXT("SimCore", "fort", "fort"), TEXT_NUM(GetFortDefenseBonus_Helper(provinceId, provinceOwnerId)));
+			ADDTEXT_(bulletText, NSLOCTEXT("SimCore", "buildings", "buildings"), TEXT_NUM(GetBuildingDefenseBonus_Helper(provinceId, provinceOwnerId)));
 		}
-		return ss.str();
+		return JOINTEXT(args);
 	}
 	
 	int32 GetFortDefenseBonus_Helper(int32 provinceId, int32 provinceOwnerId)
@@ -1393,35 +1400,7 @@ public:
 		});
 	}
 
-	void SetProvinceOwner(int32 provinceId, int32 playerId, bool lightMode = false)
-	{
-		// When transfering land if it is oversea, warn of 200% influence upkeep
-		if (playerId != -1 &&
-			GetProvinceClaimConnectionEnum(provinceId, playerId) == ClaimConnectionEnum::Deepwater) 
-		{
-			AddPopup(playerId, "You have claimed a Province oversea.<space>Oversea provinces have upkeep penalty of +200%");
-		}
-		
-		int32 oldPlayerId =  provinceOwner(provinceId);
-		if (oldPlayerId != -1) {
-			playerOwned(oldPlayerId).TryRemoveProvinceClaim(provinceId, lightMode); // TODO: Try moving this below???
-		}
-		
-		_regionSystem->SetProvinceOwner(provinceId, playerId, lightMode);
-		
-		if (playerId != -1) {
-			playerOwned(playerId).ClaimProvince(provinceId, lightMode);
-
-			if (!lightMode) {
-				RefreshTerritoryEdge(playerId);
-			}
-		}
-		if (oldPlayerId != -1) {
-			if (!lightMode) {
-				RefreshTerritoryEdge(oldPlayerId);
-			}
-		}
-	}
+	void SetProvinceOwner(int32 provinceId, int32 playerId, bool lightMode = false);
 	void SetProvinceOwnerFull(int32 provinceId, int32 playerId) final;
 
 	int32 provinceOwner(int32 provinceId) final { return _regionSystem->provinceOwner(provinceId); }
@@ -1446,11 +1425,6 @@ public:
 	}
 
 	//! Popup displays
-	void AddPopup(int32 playerId, std::string popupBody, std::string popupSound = "") final {
-		PopupInfo info(playerId, ToFText(popupBody));
-		info.popupSound = popupSound;
-		AddPopup(info);
-	}
 	void AddPopup(PopupInfo popupInfo) final {
 		PUN_CHECK(0 <= popupInfo.playerId);
 		PUN_CHECK(popupInfo.playerId < _popupSystems.size());
@@ -1518,13 +1492,10 @@ public:
 	
 
 	//
-	void AddEventLog(int32 playerId, std::string eventMessage, bool isImportant) final {
-		_eventLogSystem.AddEventLog(playerId, ToFString(eventMessage), isImportant);
-	}
-	void AddEventLogF(int32 playerId, FString eventMessage, bool isImportant) final {
+	void AddEventLog(int32 playerId, FText eventMessage, bool isImportant) final {
 		_eventLogSystem.AddEventLog(playerId, eventMessage, isImportant);
 	}
-	void AddEventLogToAllExcept(int32 playerIdException, std::string eventMessage, bool isImportant) final {
+	void AddEventLogToAllExcept(int32 playerIdException, FText eventMessage, bool isImportant) final {
 		ExecuteOnConnectedPlayers([&](int32 playerId) {
 			if (playerId != playerIdException) {
 				AddEventLog(playerId, eventMessage, isImportant);
@@ -1996,7 +1967,7 @@ public:
 		return true;
 	}
 
-	void GenerateRareCardSelection(int32 playerId, RareHandEnum rareHandEnum, std::string rareHandMessage) final
+	void GenerateRareCardSelection(int32 playerId, RareHandEnum rareHandEnum, FText rareHandMessage) final
 	{
 		return cardSystem(playerId).RollRareHand(rareHandEnum, rareHandMessage);
 	}
@@ -2015,7 +1986,9 @@ public:
 					{
 						if (georesourceSystem().georesourceNode(provinceId).georesourceEnum == georesourceEnum)
 						{
-							AddPopup(playerId, "You found " + GetBuildingInfo(seedCardEnum).nameStd() + "!");
+							AddPopup(playerId, 
+								FText::Format(NSLOCTEXT("SimCore", "Found Seed", "You found {0}!"), GetBuildingInfo(seedCardEnum).name)
+							);
 							cardSystem(playerId).AddCardToHand2(seedCardEnum);
 							break;
 						}

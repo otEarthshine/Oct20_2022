@@ -28,6 +28,18 @@ void BuildingCardSystem::TickRound()
 	}
 }
 
+FText BuildingCardSystem::rareHandMessage2()
+{
+	if (_rareHandEnum == RareHandEnum::InitialCards1 ||
+		_rareHandEnum == RareHandEnum::InitialCards2)
+	{
+		return LOCTEXT("ChooseACard", "CHOOSE A CARD");
+	}
+	if (_rareHandEnum == RareHandEnum::BuildingSlotCards) {
+		return LOCTEXT("ChoosePrize", "CHOOSE YOUR PRIZE !");
+	}
+	return LOCTEXT("ChooseRareCard", "CHOOSE YOUR RARE CARD PRIZE !");
+}
 
 void BuildingCardSystem::RollRareHandExecute()
 {
@@ -103,7 +115,7 @@ void BuildingCardSystem::RollRareHandExecute()
 	else if (_rareHandEnum == RareHandEnum::PopulationQuestCards)
 	{
 		int32 population = _simulation->population(_playerId);
-		_rareHandMessage = std::to_string(population) + " people now call your " + _simulation->townSizeName(_playerId) + " home!";
+		_rareHandMessage = FText::Format(LOCTEXT("PopulationMilestone_Pop", "{0} people now call your {1} home!"), TEXT_NUM(population), _simulation->townSizeNameT(_playerId));
 
 		std::vector<CardEnum> cardEnums
 		{

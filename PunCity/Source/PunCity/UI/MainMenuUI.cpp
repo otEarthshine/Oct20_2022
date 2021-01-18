@@ -199,31 +199,31 @@ void UMainMenuUI::Tick()
 
 					//searchResults[i].
 
-					std::stringstream ss;
+					TArray<FText> args;
 
-					ss << "OwningUserId: " << ToStdString(session.OwningUserId->ToDebugString());
-					ss << "\n";
-					ss << "OwningUserName: " << ToStdString(session.OwningUserName);
-					ss << "\n\n";
+					ADDTEXT_(INVTEXT("OwningUserId: {0}"), FText::FromString(session.OwningUserId->ToDebugString()));
+					ADDTEXT_INV_("\n");
+					ADDTEXT_(INVTEXT("OwningUserName: {0}"), FText::FromString(session.OwningUserName));
+					ADDTEXT_INV_("\n\n");
 
 					//FString value;
 					//sessionSettings.Get(SETTING_MAPNAME, value);
 					//ss << "SETTING_MAPNAME: " << ToStdString(value);
-					PrintSessionSettings(ss, sessionSettings);
+					PrintSessionSettings(args, sessionSettings);
 
-					ss << "\n";
-					ss << "SessionInfo:\n" << ToStdString(session.SessionInfo->ToDebugString());
+					ADDTEXT_INV_("\n");
+					ADDTEXT_(INVTEXT("SessionInfo:\n{0}"), FText::FromString(session.SessionInfo->ToDebugString()));
 
 					lobbyListElements[i]->buildUniqueId = sessionSettings.BuildUniqueId;
 					lobbyListElements[i]->DifferentVersionWarning->SetVisibility(
 						GetSessionValue(SESSION_GAME_VERSION, sessionSettings) == GAME_VERSION ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible
 					);
 					
-					AddToolTip(lobbyListElements[i], ss);
+					AddToolTip(lobbyListElements[i], JOINTEXT(args));
 				}
 				else {
 					PUN_DEBUG2(" Invalid session at index: %d", i);
-					AddToolTip(lobbyListElements[i], "Invalid Session");
+					AddToolTip(lobbyListElements[i], LOCTEXT("Invalid Session", "Invalid Session"));
 				}
 				
 				lobbyListElements[i]->SetVisibility(ESlateVisibility::Visible);

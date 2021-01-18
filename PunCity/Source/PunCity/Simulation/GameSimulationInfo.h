@@ -198,6 +198,14 @@ static bool TextArrayEquals(const std::vector<FText>& a, const std::vector<FText
 	}
 	return true;
 }
+static TArray<FString> TextArrayToStringArray(const TArray<FText>& texts)
+{
+	TArray<FString> results;
+	for (const FText& text : texts) {
+		results.Add(text.ToString());
+	}
+	return results;
+}
 
 //#define JOINTEXT(...) FText::Join(FText(), __VA_ARGS__);
 
@@ -5893,24 +5901,10 @@ struct PopupInfo
 	int32 startDisplayTick = -1;
 
 	PopupInfo() : playerId(-1) {}
-	//PopupInfo(int32 playerId, std::string bodyIn, std::string popupSound = "") : playerId(playerId), popupSound(popupSound) {
-	//	body = ToFText(bodyIn);
-	//	startTick = Time::Ticks();
-	//}
 	PopupInfo(int32 playerId, FText body, std::string popupSound = "") : playerId(playerId), body(body), popupSound(popupSound) {
 		startTick = Time::Ticks();
 	}
 
-	//PopupInfo(int32 playerId, std::string bodyIn, std::vector<std::string> choicesIn, PopupReceiverEnum replyReceiver = PopupReceiverEnum::None,
-	//			bool forcedNetworking = false, std::string popupSound = "", int32 replyVar1 = -1)
-	//		: playerId(playerId), replyReceiver(replyReceiver), popupSound(popupSound), replyVar1(replyVar1), forcedNetworking(forcedNetworking)
-	//{
-	//	body = ToFText(bodyIn);
-	//	for (std::string choiceIn : choicesIn) {
-	//		choices.push_back(ToFText(choiceIn));
-	//	}
-	//	startTick = Time::Ticks();
-	//}
 	PopupInfo(int32 playerId, FText body, std::vector<FText> choices, PopupReceiverEnum replyReceiver = PopupReceiverEnum::None,
 		bool forcedNetworking = false, std::string popupSound = "", int32 replyVar1 = -1)
 		: playerId(playerId), body(body), choices(choices), replyReceiver(replyReceiver), popupSound(popupSound), replyVar1(replyVar1), forcedNetworking(forcedNetworking)
@@ -6705,12 +6699,14 @@ static ItemInfo GetItemInfo(ItemEnum itemEnum) {
 
 static const int32_t ItemCount = _countof(ItemInfos);
 
-static const TArray<FString> TaxOptions = {
-	FString("Very low tax"), 
-	FString("Low tax"),
-	FString("Medium tax"), 
-	FString("High tax"),
-	FString("Very high tax"), 
+#define LOCTEXT_NAMESPACE "TaxOptions"
+
+static const TArray<FText> TaxOptions = {
+	LOCTEXT("Very low tax", "Very low tax"),
+	LOCTEXT("Low tax", "Low tax"),
+	LOCTEXT("Medium tax", "Medium tax"),
+	LOCTEXT("High tax", "High tax"),
+	LOCTEXT("Very high tax", "Very high tax"),
 };
 static const TArray<FString> VassalTaxOptions = {
 	FString("No vassal tax"), 
@@ -6719,6 +6715,8 @@ static const TArray<FString> VassalTaxOptions = {
 	FString("High vassal tax"),
 	FString("Very high vassal tax"), 
 };
+
+#undef LOCTEXT_NAMESPACE
 
 
 enum class AutosaveEnum : uint8
@@ -7266,17 +7264,21 @@ static const int32 GameSpeedValue2 = 1;
 static const int32 GameSpeedValue3 = 2;
 static const int32 GameSpeedValue4 = 5;
 
-static std::string GameSpeedName(int32 gameSpeed)
+#define LOCTEXT_NAMESPACE "GameSpeedName"
+
+static FText GameSpeedName(int32 gameSpeed)
 {
 	switch(gameSpeed)
 	{
-	case GameSpeedValue1: return "half speed";
-	case GameSpeedValue2: return "x1 speed";
-	case GameSpeedValue3: return "x2 speed";
-	case GameSpeedValue4: return "x5 speed";
+	case GameSpeedValue1: return LOCTEXT("half speed", "half speed");
+	case GameSpeedValue2: return LOCTEXT("x1 speed", "x1 speed");
+	case GameSpeedValue3: return LOCTEXT("x2 speed", "x2 speed");
+	case GameSpeedValue4: return LOCTEXT("x5 speed", "x5 speed");
 	}
-	return "paused";
+	return LOCTEXT("paused", "paused");
 }
+
+#undef LOCTEXT_NAMESPACE
 
 /*
  * Provinces

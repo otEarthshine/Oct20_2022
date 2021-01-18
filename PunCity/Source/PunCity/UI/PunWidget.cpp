@@ -43,25 +43,6 @@ UToolTipWidgetBase* UPunWidget::AddToolTip(UWidget* widget)
 	return tooltip;
 }
 
-UToolTipWidgetBase* UPunWidget::AddToolTip(UWidget* widget, std::string message)
-{
-	UToolTipWidgetBase* tooltip = AddToolTip(widget);
-	if (tooltip) {
-		tooltip->TooltipPunBoxWidget->AfterAdd(); // Ensure reused tooltip gets its AfterAdd called
-		tooltip->TooltipPunBoxWidget->AddRichTextParsed(message);
-	}
-	return tooltip;
-}
-UToolTipWidgetBase* UPunWidget::AddToolTip(UWidget* widget, std::wstring message)
-{
-	UToolTipWidgetBase* tooltip = AddToolTip(widget);
-	if (tooltip) {
-		tooltip->TooltipPunBoxWidget->AfterAdd(); // Ensure reused tooltip gets its AfterAdd called
-		tooltip->TooltipPunBoxWidget->AddRichTextParsed(message);
-	}
-	return tooltip;
-}
-
 UToolTipWidgetBase* UPunWidget::AddToolTip(UWidget* widget, FText message)
 {
 	UToolTipWidgetBase* tooltip = AddToolTip(widget);
@@ -323,3 +304,36 @@ FString UPunWidget::WrapStringF(FString fString, int32 wrapSize, FSlateFontInfo*
 
 	return fString;
 }
+
+
+#define LOCTEXT_NAMESPACE "SetGeoresourceImage"
+
+void UPunWidget::SetGeoresourceImage(UImage* image, ResourceEnum resourceEnum, UAssetLoaderComponent* assetLoader, UPunWidget* punWidget)
+{
+	auto material = image->GetDynamicMaterial();
+
+	if (IsOreEnum(resourceEnum)) {
+		punWidget->AddToolTip(image, FText::Format(LOCTEXT("MineGeoresourceImage_Tip",
+			"{0} Deposit in this region that can be mined."),
+			ResourceNameT(resourceEnum)
+		));
+	}
+	else {
+		punWidget->AddToolTip(image, FText::Format(LOCTEXT("FarmGeoresourceImage_Tip",
+			"This region is suitable for {0} Farming."),
+			ResourceNameT(resourceEnum)
+		));
+	}
+
+
+	switch (resourceEnum) {
+	case ResourceEnum::IronOre: resourceEnum = ResourceEnum::Iron; break;
+	case ResourceEnum::GoldOre: resourceEnum = ResourceEnum::GoldBar; break;
+	}
+
+	material->SetTextureParameterValue("ColorTexture", assetLoader->GetResourceIcon(resourceEnum));
+	material->SetTextureParameterValue("DepthTexture", assetLoader->GetResourceIconAlpha(resourceEnum));
+};
+
+
+#undef LOCTEXT_NAMESPACE

@@ -101,13 +101,13 @@ void UObjectDescriptionUI::SetDropDown(int id)
 		// Is owner ... show normal tax
 		if (townhall.playerId() == playerId())
 		{
-			ObjectDropDownBox->AddOption(TaxOptions[0]);
-			ObjectDropDownBox->AddOption(TaxOptions[1]);
-			ObjectDropDownBox->AddOption(TaxOptions[2]);
-			ObjectDropDownBox->AddOption(TaxOptions[3]);
-			ObjectDropDownBox->AddOption(TaxOptions[4]);
+			ObjectDropDownBox->AddOption(TaxOptions[0].ToString());
+			ObjectDropDownBox->AddOption(TaxOptions[1].ToString());
+			ObjectDropDownBox->AddOption(TaxOptions[2].ToString());
+			ObjectDropDownBox->AddOption(TaxOptions[3].ToString());
+			ObjectDropDownBox->AddOption(TaxOptions[4].ToString());
 
-			ObjectDropDownBox->SetSelectedOption(TaxOptions[townhallPlayerOwned.taxLevel]);
+			ObjectDropDownBox->SetSelectedOption(TaxOptions[townhallPlayerOwned.taxLevel].ToString());
 			ObjectDropDownBox->SetVisibility(ESlateVisibility::Visible);
 			return;
 		}
@@ -181,7 +181,7 @@ void UObjectDescriptionUI::OnDropDownChanged(FString sItem, ESelectInfo::Type se
 		if (townhall.playerId() == playerId()) {
 			auto command = make_shared<FChangeWorkMode>();
 			command->buildingId = state.objectId;
-			command->enumInt = modeIntFromString(TaxOptions, sItem);
+			command->enumInt = modeIntFromString(TextArrayToStringArray(TaxOptions), sItem);
 			networkInterface()->SendNetworkCommand(command);
 			return;
 		}

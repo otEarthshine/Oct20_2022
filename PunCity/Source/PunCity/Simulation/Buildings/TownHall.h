@@ -43,7 +43,7 @@ public:
 	}
 
 	FString townFName() { return _townName; }
-	FText townTName() { return FText::FromString(_townName); }
+	FText townNameT() { return FText::FromString(_townName); }
 	std::string townName() { return ToStdString(_townName); }
 
 	void SetTownName(FString _townNameIn) {
@@ -61,11 +61,7 @@ public:
 	bool HasEnoughStoneToUpgradeWall() 	{
 		return resourceSystem().resourceCount(ResourceEnum::Stone) >= GetUpgradeStones();
 	}
-	void UpgradeWall() {
-		resourceSystem().RemoveResourceGlobal(ResourceEnum::Stone, GetUpgradeStones());
-		wallLvl++;
-		_simulation->AddPopup(_playerId, townName() + "'s wall has been upgraded to level " + std::to_string(wallLvl) + ".");
-	}
+	void UpgradeWall();
 
 	//std::string UpgradeButtonString();
 	//std::string UpgradeButtonTooltip();

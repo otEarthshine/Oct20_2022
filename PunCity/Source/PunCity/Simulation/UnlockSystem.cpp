@@ -35,9 +35,9 @@ void Building_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulation
 		if (IsCommonSeedCard(buildingEnum)) {
 			cardSystem.AddCardToHand2(buildingEnum);
 
-			std::stringstream ss;
-			ss << "You unlocked and received " << GetBuildingInfo(buildingEnum).nameStd() << " Card.";
-			_simulation->AddPopup(playerId, ss.str());
+			_simulation->AddPopup(playerId, 
+				FText::Format(LOCTEXT("UnlockedSeed_Pop", "You unlocked and received {0} Card."), GetBuildingInfo(buildingEnum).name)
+			);
 			continue;
 		}
 		
@@ -121,7 +121,7 @@ void UnlockSystem::Research(int32 science100PerRound, int32 updatesPerSec)
 
 			_simulation->soundInterface()->Spawn2DSound("UI", "ResearchCompleteNewEra", _playerId);
 
-			_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::BuildingSlotCards, "New era!");
+			_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::BuildingSlotCards, LOCTEXT("New era!", "New era!"));
 		}
 		else
 		{
@@ -362,7 +362,7 @@ void UnlockSystem::UpdateProsperityHouseCount()
 			{
 				if (houseCount >= _houseLvlToUnlockCount[i][j])
 				{
-					PUN_LOG("properityTech Researched %s", ToTChar(properityTech->GetName()));
+					PUN_LOG("properityTech Researched %s", *(properityTech->GetName().ToString()));
 
 					// Unlocked
 					// Take away the amount of science used 

@@ -35,25 +35,25 @@ static FString GetSessionValueString(FName key, const FOnlineSessionSettings& se
 	return value;
 }
 
-static void PrintSessionSettings(std::stringstream& ss, const FOnlineSessionSettings& sessionSettings)
+static void PrintSessionSettings(TArray<FText>& args, const FOnlineSessionSettings& sessionSettings)
 {
-	ss << "ShouldAdvertise: " << sessionSettings.bShouldAdvertise << "\n";
-	ss << "IsLANMatch: " << sessionSettings.bIsLANMatch << "\n";
-	ss << "AllowJoin: " << sessionSettings.bAllowJoinInProgress << "\n";
+	ADDTEXT_(INVTEXT("ShouldAdvertise: {0}\n"), TEXT_NUM(sessionSettings.bShouldAdvertise));
+	ADDTEXT_(INVTEXT("IsLANMatch: {0}\n"), TEXT_NUM(sessionSettings.bIsLANMatch));
+	ADDTEXT_(INVTEXT("AllowJoin: {0}\n"), TEXT_NUM(sessionSettings.bAllowJoinInProgress));
 	//ss << "IsDedicated:" << sessionSettings.bIsDedicated << "\n";
 	//ss << "UsesStats:" << sessionSettings.bUsesStats << "\n";
-	ss << "AllowInvites: " << sessionSettings.bAllowInvites << "\n";
-	ss << "UsesPresence: " << sessionSettings.bUsesPresence << "\n";
-	ss << "AllowJoinViaPresence: " << sessionSettings.bAllowJoinViaPresence << "\n";
-	ss << "AllowJoinViaPresenceFriendsOnly: " << sessionSettings.bAllowJoinViaPresenceFriendsOnly << "\n";
+	ADDTEXT_(INVTEXT("AllowInvites: {0}\n"), TEXT_NUM(sessionSettings.bAllowInvites));
+	ADDTEXT_(INVTEXT("UsesPresence: {0}\n"), TEXT_NUM(sessionSettings.bUsesPresence));
+	ADDTEXT_(INVTEXT("AllowJoinViaPresence: {0}\n"), TEXT_NUM(sessionSettings.bAllowJoinViaPresence));
+	ADDTEXT_(INVTEXT("AllowJoinViaPresenceFriendsOnly: {0}\n"), TEXT_NUM(sessionSettings.bAllowJoinViaPresenceFriendsOnly));
 	//ss << "AntiCheatProtected:" << sessionSettings.bAntiCheatProtected << "\n";
-	ss << "BuildUniqueId: " << sessionSettings.BuildUniqueId << "\n";
-	ss << "\n";
+	ADDTEXT_(INVTEXT("BuildUniqueId: {0}\n"), TEXT_NUM(sessionSettings.BuildUniqueId));
+	ADDTEXT_INV_("\n");
 
 	
-	ss << "SessionTick: " << GetSessionValue(SESSION_TICK, sessionSettings) << "\n";
-	ss << "PlayerCount: " << GetSessionValue(SESSION_NUM_PLAYERS, sessionSettings) << "\n";
-	ss << "GameVersion: " << GetSessionValue(SESSION_GAME_VERSION, sessionSettings) << "\n";
+	ADDTEXT_(INVTEXT("SessionTick: {0}\n"), TEXT_NUM(GetSessionValue(SESSION_TICK, sessionSettings)));
+	ADDTEXT_(INVTEXT("PlayerCount: {0}\n"), TEXT_NUM(GetSessionValue(SESSION_NUM_PLAYERS, sessionSettings)));
+	ADDTEXT_(INVTEXT("GameVersion: {0}\n"), TEXT_NUM(GetSessionValue(SESSION_GAME_VERSION, sessionSettings)));
 
 	//FString value;
 	//sessionSettings.Get(SETTING_MAPNAME, value);
@@ -85,7 +85,9 @@ static void PrintSessionState(std::stringstream& ss, IOnlineSessionPtr& sessionP
 
 	FOnlineSessionSettings* sessionSettings = sessionPtr->GetSessionSettings(PUN_SESSION_NAME);
 	if (sessionSettings) {
-		PrintSessionSettings(ss, *sessionSettings);
+		TArray<FText> args;
+		PrintSessionSettings(args, *sessionSettings);
+		ss << FTextToStd(JOINTEXT(args));
 	} else {
 		ss << "No sessionSettings\n";
 	}

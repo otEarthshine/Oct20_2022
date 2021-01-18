@@ -14,6 +14,7 @@
 #include "PunCity/PunGameMode.h"
 #include "PunCity/MainMenuPlayerController.h"
 
+#define LOCTEXT_NAMESPACE "LobbyUI"
 
 void ULobbyUI::Init()
 {
@@ -265,7 +266,7 @@ void ULobbyUI::Tick()
 		if (_isGeneratingTerrain) {
 			_isCancelingWorldGeneration = true;
 			
-			AddPopup("Host changed map settings. Canceling the world generation in progress...");
+			AddPopup(LOCTEXT("HostChangedMapSettings_Pop", "Host changed map settings. Canceling the world generation in progress..."));
 			gameInstance()->Spawn2DSound("UI", "ButtonClickInvalid");
 		}
 		
@@ -516,7 +517,7 @@ void ULobbyUI::OnClickReadyButton()
 	auto& saveSys = gameInstance()->saveSystem();
 	if (saveSys.NeedSyncData())
 	{
-		AddPopup("Please wait for data sync to complete.");
+		AddPopup(LOCTEXT("WaitDataSync_Pop", "Please wait for data sync to complete."));
 		gameInstance()->Spawn2DSound("UI", "ButtonClickInvalid");
 		return;
 	}
@@ -528,7 +529,7 @@ void ULobbyUI::OnClickReadyButton()
 	if (_isMapReady) {
 		clientReadyState = !clientReadyState;
 	} else {
-		AddPopup("Please generate the world before clicking ready.");
+		AddPopup(LOCTEXT("NeedWorldGen_Pop", "Please generate the world before clicking ready."));
 		gameInstance()->Spawn2DSound("UI", "ButtonClickInvalid");
 		clientReadyState = false;
 	}
@@ -552,7 +553,7 @@ void ULobbyUI::OnClickLobbyStartGameButton()
 			GameStartBlocker->SetVisibility(ESlateVisibility::Visible);
 		}
 		else {
-			AddPopup("Please generate the world before clicking ready.");
+			AddPopup(LOCTEXT("NeedWorldGen_Pop", "Please generate the world before clicking ready."));
 			gameInstance()->Spawn2DSound("UI", "ButtonClickInvalid");
 		}
 		return;
@@ -571,7 +572,7 @@ void ULobbyUI::OnClickLobbyStartGameButton()
 	
 	// If not everyone is ready, do not allow the game to start
 	if (!gameInstance()->IsAllPlayersReady()) {
-		AddPopup("Not all players are ready. Failed to start the game.");
+		AddPopup(LOCTEXT("NeedPlayersReady_Pop", "Not all players are ready. Failed to start the game."));
 		gameInstance()->Spawn2DSound("UI", "ButtonClickInvalid");
 
 		// Allow players to join the server again
@@ -795,3 +796,6 @@ void ULobbyUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum)
 		GetFirstController()->TryChangePlayerId_ToServer(element->slotId);
 	}
 }
+
+
+#undef LOCTEXT_NAMESPACE 

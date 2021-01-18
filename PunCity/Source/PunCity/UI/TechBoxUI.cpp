@@ -169,7 +169,7 @@ void UTechBoxUI::UpdateTooltip()
 		tooltipBox->AfterAdd();
 
 		// Header
-		tooltipBox->AddRichText("<TipHeader>" + tech->GetName() + "</>");
+		tooltipBox->AddRichText(TEXT_TAG("<TipHeader>", tech->GetName()));
 		tooltipBox->AddSpacer();
 
 		// Sci points

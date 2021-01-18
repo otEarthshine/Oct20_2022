@@ -342,12 +342,12 @@ public:
 	//
 
 
-	void ShowConfirmationUI(std::string confirmationStr, std::shared_ptr<FNetworkCommand> commandIn) final {
+	void ShowConfirmationUI(FText confirmationStr, std::shared_ptr<FNetworkCommand> commandIn) final {
 #if UI_ALL
 		GetPunHUD()->mainGameUI()->ShowConfirmationUI(confirmationStr, commandIn);
 #endif
 	}
-	bool IsShowingConfirmationUI(std::string confirmationStr) final {
+	bool IsShowingConfirmationUI(FText confirmationStr) final {
 #if !UI_ALL
 		return false;
 #endif

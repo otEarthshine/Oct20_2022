@@ -8,7 +8,7 @@
 
 struct EventLog
 {
-	FString message;
+	FText message;
 	bool isImportant;
 	int32 startTick;
 
@@ -37,7 +37,7 @@ public:
 		needRefreshEventLog[playerId] = true;
 	}
 
-	void AddEventLog(int32 playerId, FString eventMessage, bool isImportant) {
+	void AddEventLog(int32 playerId, FText eventMessage, bool isImportant) {
 		if (playerId == -1) {
 			return;
 		}

@@ -19,6 +19,12 @@ DECLARE_CYCLE_STAT(TEXT("PUN: DragAfterAdd"), STAT_DragAfterAdd, STATGROUP_Game)
 using namespace std;
 using namespace std::placeholders;
 
+#define LOCTEXT_NAMESPACE "BuildingPlacementSys"
+
+static const FText SureDemolishFortText = LOCTEXT("SureDemolishFort_Pop", "Are you sure you want to demolish?\nFort and Colony Cards will not be recovered.");
+static const FText SureDemolishText = LOCTEXT("SureDemolish_Pop", "Are you sure you want to demolish?");
+
+
 void PlacementGrid::Init(UMaterialInterface* material, UStaticMesh* mesh, UInstancedStaticMeshComponent* instancedMesh)
 {
 	_placementMesh = instancedMesh;
@@ -1235,8 +1241,8 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 	// Highlight Demolish area
 	{
 		// Close down demolish highlight if no longer need it...
-		bool showingConfirmation = networkInterface->IsShowingConfirmationUI("Are you sure you want to demolish?") ||
-									networkInterface->IsShowingConfirmationUI("Are you sure you want to demolish?\nFort and Colony Cards will not be recovered.");
+		bool showingConfirmation = networkInterface->IsShowingConfirmationUI(SureDemolishText) ||
+									networkInterface->IsShowingConfirmationUI(SureDemolishFortText);
 		bool isDemolishing = _placementType == PlacementType::Demolish || showingConfirmation;
 		if (!isDemolishing) {
 			_demolishHighlightArea = TileArea();
@@ -2449,7 +2455,10 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 		}
 
 		if (goldNeeded > 0 && goldNeeded > _gameInterface->simulation().money(playerId)) {
-			_gameInterface->simulation().AddEventLog(playerId, "Not enough money.", true);
+			_gameInterface->simulation().AddEventLog(playerId, 
+				LOCTEXT("PlacementNoMoney", "Not enough money."), 
+				true
+			);
 			return;
 		}
 	}
@@ -2471,9 +2480,9 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 		});
 		
 		if (hasFortOrColony) {
-			_networkInterface->ShowConfirmationUI("Are you sure you want to demolish?\nFort and Colony Cards will not be recovered.", placeGatherCommand);
+			_networkInterface->ShowConfirmationUI(SureDemolishFortText, placeGatherCommand);
 		} else {
-			_networkInterface->ShowConfirmationUI("Are you sure you want to demolish?", placeGatherCommand);
+			_networkInterface->ShowConfirmationUI(SureDemolishText, placeGatherCommand);
 		}
 
 		CancelPlacement();
@@ -2615,3 +2624,5 @@ void ABuildingPlacementSystem::NetworkTryPlaceBuilding(IGameNetworkInterface* ne
 		}
 	}
 }
+
+#undef LOCTEXT_NAMESPACE 

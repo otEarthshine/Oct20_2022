@@ -129,7 +129,9 @@ void PlayerOwnedManager::PlayerAddJobBuilding(Building& building, bool isConstru
 		unlockSys->unlockedStatisticsBureau = true;
 		
 		if (_simulation->TryAddCardToBoughtHand(_playerId, CardEnum::StatisticsBureau)) {
-			_simulation->AddPopup(_playerId, "Unlocked Statistics Bureau. Once built, allow you to view Town Statistics.");
+			_simulation->AddPopup(_playerId, 
+				LOCTEXT("UnlockStatsBureau_Pop", "Unlocked Statistics Bureau. Once built, allow you to view Town Statistics.")
+			);
 		}
 	}
 	if (!unlockSys->unlockedEmploymentBureau &&
@@ -137,7 +139,9 @@ void PlayerOwnedManager::PlayerAddJobBuilding(Building& building, bool isConstru
 	{
 		if (_simulation->TryAddCardToBoughtHand(_playerId, CardEnum::JobManagementBureau)) {
 			unlockSys->unlockedEmploymentBureau = true;
-			_simulation->AddPopup(_playerId, "Unlocked Employment Bureau. Once built, you gain the ability to manage the job priority (global).");
+			_simulation->AddPopup(_playerId, 
+				LOCTEXT("UnlockEmploymentBureau_Pop", "Unlocked Employment Bureau. Once built, you gain the ability to manage the job priority (global).")
+			);
 		}
 	}
 }
@@ -1179,6 +1183,65 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 	}
 }
 
+void PlayerOwnedManager::AddTaxIncomeToString(TArray<FText>& args)
+{
+	ADDTEXT_(LOCTEXT("TaxIncome_TipTitle", "Income: {0}<img id=\"Coin\"/>\n"), TEXT_100(totalIncome100()));
+
+	for (int32 i = 0; i < IncomeEnumCount; i++)
+	{
+		IncomeEnum incomeEnum = static_cast<IncomeEnum>(i);
+
+		if (incomes100[i] != 0)
+		{
+			ADDTEXT_(INVTEXT(" {0}"), TEXT_100SIGNED(incomes100[i]));
+
+			if (IsHouseIncomeEnum(incomeEnum)) {
+				ADDTEXT_(INVTEXT(" {0}"), LOCTEXT("House", "House"));
+			}
+			ADDTEXT_(INVTEXT(" {0}\n"), IncomeEnumName[i]);
+		}
+	}
+
+
+	if (hasChosenLocation()) {
+		ADDTEXT_(INVTEXT("{0} ({1})"), TaxOptions[taxLevel], TEXT_PERCENT(taxPercent()));
+	}
+}
+
+void PlayerOwnedManager::AddInfluenceIncomeToString(TArray<FText>& args)
+{
+	ADDTEXT_(LOCTEXT("InfluenceIncome_Tip1", 
+		"Influence Per Round: {0}<img id=\"Influence\"/>\n"), TEXT_100(totalInfluenceIncome100())
+	);
+
+	for (int32 i = 0; i < InfluenceIncomeEnumCount; i++)
+	{
+		if (influenceIncomes100[i] != 0) {
+			ADDTEXT_(INVTEXT(" {0} {1}\n"), 
+				TEXT_100SIGNED(influenceIncomes100[i]), 
+				InfluenceIncomeEnumName[i]
+			);
+		}
+	}
+
+	auto addStoredInfluenceRow = [&](InfluenceIncomeEnum influenceEnum) {
+		ADDTEXT_(INVTEXT(" {0} {1}\n"),
+			TEXT_100(influenceIncomes100[static_cast<int>(influenceEnum)] * storedToInfluenceRevenue),
+			InfluenceIncomeEnumName[static_cast<int>(influenceEnum)]
+		);
+	};
+
+	ADDTEXT_INV_("<space>");
+	ADDTEXT_(LOCTEXT("MaxStoredInfluence_Tip", 
+		"Max Stored Influence: {0}<img id=\"Influence\"/>\n"), 
+		TEXT_100(maxStoredInfluence100())
+	);
+	
+	addStoredInfluenceRow(InfluenceIncomeEnum::Townhall);
+	addStoredInfluenceRow(InfluenceIncomeEnum::Population);
+	addStoredInfluenceRow(InfluenceIncomeEnum::Luxury);
+}
+
 
 void PlayerOwnedManager::CollectRoundIncome()
 {
@@ -1205,15 +1268,18 @@ void PlayerOwnedManager::CollectRoundIncome()
 	resourceSys.ChangeInfluence100(totalInfluenceIncome100());
 	if (resourceSys.influence100() < 0) 
 	{
-		std::string influenceStr = "</><img id=\"Influence\"/><EventLogRed>";
-		std::string coinStr = "</><img id=\"Coin\"/><EventLogRed>";
+		FText influenceStr = INVTEXT("</><img id=\"Influence\"/><EventLogRed>");
+		FText coinStr = INVTEXT("</><img id=\"Coin\"/><EventLogRed>");
 
-		std::stringstream ss;
-		ss << "You have " << influenceStr << "0. ";
-		ss << "-" << coinStr << abs(min(-1, resourceSys.influence() * 2));
-		ss << " penalty is applied from negative " << influenceStr << " (" << coinStr << "2 per " << influenceStr << "1).";
-		
-		_simulation->AddEventLog(_playerId, ss.str(), true);
+		_simulation->AddEventLog(_playerId, 
+			FText::Format(LOCTEXT("NegativeInfluence_Event",
+				"You have {0}0. -{1}{2} penalty is applied from negative {0} ({1}2 per {0}1)."),
+				influenceStr,
+				coinStr,
+				TEXT_NUM(abs(min(-1, resourceSys.influence() * 2)))
+			),
+			true
+		);
 		resourceSys.ChangeMoney100(resourceSys.influence100() * 3);
 		resourceSys.SetInfluence(0);
 	}

@@ -242,7 +242,10 @@ void UWorldSpaceUI::TickBuildings()
 					
 					// Player Logo
 					regionHoverUI->PlayerLogoLeft->GetDynamicMaterial()->SetVectorParameterValue("PlayerColor1", PlayerColor1(claimProgress.attackerPlayerId));
-					AddToolTip(regionHoverUI->PlayerLogoLeft, "Attacker: " + sim.playerName(claimProgress.attackerPlayerId));
+					AddToolTip(regionHoverUI->PlayerLogoLeft, FText::Format(LOCTEXT("AttackPlayerLogo_Tip",
+						"Attacker: {0}"),
+						sim.playerNameT(claimProgress.attackerPlayerId)
+					));
 
 					int32 defenderPlayerId = provinceOwnerId;
 					bool isDeclaringIndependence = (claimProgress.attackerPlayerId == provinceOwnerId);
@@ -250,7 +253,10 @@ void UWorldSpaceUI::TickBuildings()
 						defenderPlayerId = sim.playerOwned(provinceOwnerId).lordPlayerId(); // Declare Independence
 					} // TODO: Declare Independence should init attack from the Lord
 					regionHoverUI->PlayerLogoRight->GetDynamicMaterial()->SetVectorParameterValue("PlayerColor2", PlayerColor2(defenderPlayerId));
-					AddToolTip(regionHoverUI->PlayerLogoRight, "Defender: " + sim.playerName(defenderPlayerId));
+					AddToolTip(regionHoverUI->PlayerLogoRight, FText::Format(LOCTEXT("DefenderPlayerLogo_Tip",
+						"Defender: {0}"),
+						sim.playerNameT(defenderPlayerId)
+					));
 					
 
 					// 
@@ -258,7 +264,9 @@ void UWorldSpaceUI::TickBuildings()
 					SetText(regionHoverUI->BattleInfluenceRight, "<img id=\"Influence\"/><Shadowed>" + to_string(claimProgress.committedInfluencesDefender) + "</>");
 
 					SetText(regionHoverUI->DefenseBonusLeft, "<img id=\"Shield\"/><Shadowed>" + to_string(0) + "%</>");
-					AddToolTip(regionHoverUI->DefenseBonusLeft, "Attack Bonus: 0%");
+					AddToolTip(regionHoverUI->DefenseBonusLeft, 
+						LOCTEXT("Attack Bonus: 0%", "Attack Bonus: 0%")
+					);
 					
 					std::string defenderDefenseBonus = (isDeclaringIndependence ? to_string(0) : to_string(sim.GetProvinceAttackCostPercent(provinceId))) + "%</>";
 					SetText(regionHoverUI->DefenseBonusRight, "<img id=\"Shield\"/><Shadowed>" + defenderDefenseBonus);
@@ -842,7 +850,9 @@ void UWorldSpaceUI::TickTownhallInfo(int buildingId, bool isMini)
 				ui->CityNameText->SetText(FText::FromString(townhall->townFName()));
 				ui->CityNameText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 				//ui->CityNameEditableText->SetVisibility(ESlateVisibility::Collapsed);
-				AddToolTip(ui->Laborer, "Citizens without assigned workplaces become laborers. Laborers helps with hauling, gathering, and land clearing.");
+				AddToolTip(ui->Laborer, 
+					LOCTEXT("TownhallLaborerUI_Tip", "Citizens without assigned workplaces become laborers. Laborers helps with hauling, gathering, and land clearing.")
+				);
 				ui->PunInit(buildingId);
 			}
 		);

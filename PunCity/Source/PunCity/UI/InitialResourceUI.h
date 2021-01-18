@@ -72,20 +72,22 @@ public:
 
 		InitialResourceUI->SetVisibility(ESlateVisibility::Collapsed);
 
-		AddToolTip(FoodArrowUpButton, "<Orange>Shift-click</> to increment by 100.");
-		AddToolTip(FoodArrowDownButton, "<Orange>Shift-click</> to increment by 100.");
+		const FText shiftClick100Text = NSLOCTEXT("InitialResourceUI", "ShiftClickIncrement100", "<Orange>Shift-click</> to increment by 100.");
+		
+		AddToolTip(FoodArrowUpButton, shiftClick100Text);
+		AddToolTip(FoodArrowDownButton, shiftClick100Text);
 
-		AddToolTip(WoodArrowUpButton, "<Orange>Shift-click</> to increment by 100.");
-		AddToolTip(WoodArrowDownButton, "<Orange>Shift-click</> to increment by 100.");
+		AddToolTip(WoodArrowUpButton, shiftClick100Text);
+		AddToolTip(WoodArrowDownButton, shiftClick100Text);
 
-		AddToolTip(MedicineArrowUpButton, "<Orange>Shift-click</> to increment by 100.");
-		AddToolTip(MedicineArrowDownButton, "<Orange>Shift-click</> to increment by 100.");
+		AddToolTip(MedicineArrowUpButton, shiftClick100Text);
+		AddToolTip(MedicineArrowDownButton, shiftClick100Text);
 
-		AddToolTip(ToolsArrowUpButton, "<Orange>Shift-click</> to increment by 100.");
-		AddToolTip(ToolsArrowDownButton, "<Orange>Shift-click</> to increment by 100.");
+		AddToolTip(ToolsArrowUpButton, shiftClick100Text);
+		AddToolTip(ToolsArrowDownButton, shiftClick100Text);
 
-		AddToolTip(StoneArrowUpButton, "<Orange>Shift-click</> to increment by 100.");
-		AddToolTip(StoneArrowDownButton, "<Orange>Shift-click</> to increment by 100.");
+		AddToolTip(StoneArrowUpButton, shiftClick100Text);
+		AddToolTip(StoneArrowDownButton, shiftClick100Text);
 	}
 
 	void TickUI()

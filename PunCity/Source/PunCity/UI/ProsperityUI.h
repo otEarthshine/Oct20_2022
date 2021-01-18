@@ -100,15 +100,17 @@ private:
 			UProsperityColumnUI* prosperityColumnUI = AddWidget<UProsperityColumnUI>(UIEnum::ProsperityColumnUI);
 
 			prosperityColumnUI->HouseLevelText->SetText(ToFText("House Lvl " + std::to_string(i) + "+"));
-			{
-				std::stringstream tip;
-				tip << "Unlock technologies in this column by increasing the number of houses with lvl " << i << " and above.";
-				tip << "<space>";
-				
-				tip << "<bullet>Houses lvl " << i << ": " << simulation().GetHouseLvlCount(playerId(), i, false) << "</>";
-				tip << "<bullet>Houses lvl " << i << "+: " << simulation().GetHouseLvlCount(playerId(), i, true) << "</>";
-				
-				AddToolTip(prosperityColumnUI->HouseLevelText, tip);
+			{	
+				AddToolTip(prosperityColumnUI->HouseLevelText, FText::Format(NSLOCTEXT("ProsperityUI", "HouseLevelText_Tip",
+					"Unlock technologies in this column by increasing the number of houses with lvl {0} and above."
+					"<space>"
+					"<bullet>Houses lvl {0}: {1}</>"
+					"<bullet>Houses lvl {0}+: {2}</>"
+					),
+					TEXT_NUM(i),
+					TEXT_NUM(simulation().GetHouseLvlCount(playerId(), i, false)),
+					TEXT_NUM(simulation().GetHouseLvlCount(playerId(), i, true))
+				));
 			}
 			
 			prosperityColumnUI->ProsperityTechList->ClearChildren();
@@ -125,7 +127,7 @@ private:
 				PUN_CHECK(prosperityBox->uiTechEnum == TechEnum::None);
 
 				prosperityBox->Init(this, techEnums[j], i, houseLvlToUnlockCounts[i][j], j);
-				prosperityBox->TechName->SetText(ToFText(unlockSys->GetTechInfo(techEnums[j])->GetName()));
+				prosperityBox->TechName->SetText(unlockSys->GetTechInfo(techEnums[j])->GetName());
 			}
 		}
 

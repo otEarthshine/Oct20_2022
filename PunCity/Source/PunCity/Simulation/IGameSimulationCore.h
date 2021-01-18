@@ -135,8 +135,10 @@ public:
 	virtual int32 townLvl(int32 playerId) = 0;
 	virtual WorldTile2 townhallGateTile(int32 playerId) = 0;
 	virtual std::string townName(int32 playerId) = 0;
+	virtual FText townNameT(int32 playerId) = 0;
+	
 	virtual std::string townSuffix(int32 playerId) = 0;
-	virtual std::string townSizeName(int32 playerId) = 0;
+	virtual FText townSizeNameT(int32 playerId) = 0;
 	virtual int32 townAgeTicks(int32 playerId) = 0;
 
 	bool unlockedInfluence(int32 playerId) {
@@ -334,7 +336,6 @@ public:
 	virtual std::string unitdebugStr(int id) = 0;
 	virtual void unitAddDebugSpeech(int32_t id, std::string message) = 0;
 
-	virtual void AddPopup(int32 playerId, std::string popupBody, std::string popupSound = "") = 0;
 
 	virtual void AddPopup(int32 playerId, FText popupBody, std::string popupSound = "") = 0;
 	
@@ -351,9 +352,8 @@ public:
 	virtual void CloseCurrentPopup(int32 playerId) = 0;
 	virtual void TryRemovePopups(int32 playerId, PopupReceiverEnum receiverEnum) = 0;
 
-	virtual void AddEventLog(int32 playerId, std::string eventMessage, bool isImportant) = 0;
-	virtual void AddEventLogF(int32 playerId, FString eventMessage, bool isImportant) = 0;
-	virtual void AddEventLogToAllExcept(int32 playerId, std::string eventMessage, bool isImportant) = 0;
+	virtual void AddEventLog(int32 playerId, FText eventMessage, bool isImportant) = 0;
+	virtual void AddEventLogToAllExcept(int32 playerId, FText eventMessage, bool isImportant) = 0;
 
 	virtual bool HasQuest(int32 playerId, QuestEnum questEnum) = 0;
 	virtual bool WasQuestStarted(int32 playerId, QuestEnum questEnum) = 0;
@@ -459,7 +459,7 @@ public:
 
 	virtual bool TryAddCardToBoughtHand(int32 playerId, CardEnum cardEnum, int32 cardCount = 1) = 0;
 	
-	virtual void GenerateRareCardSelection(int32 playerId, RareHandEnum rareHandEnum, std::string rareHandMessage) = 0;
+	virtual void GenerateRareCardSelection(int32 playerId, RareHandEnum rareHandEnum, FText rareHandMessage) = 0;
 
 	virtual void CheckGetSeedCard(int32 playerId) = 0;
 

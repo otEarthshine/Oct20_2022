@@ -762,20 +762,14 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						// Heating
 						{
 							args.Empty();
-							
-							//auto widgetCoal = descriptionBox->AddRichText("Coal Heating Efficiency", to_string(house->GetHeatingEfficiency(ResourceEnum::Coal)) + "%");
-							//house->GetHeatingEfficiencyTip(ss, ResourceEnum::Coal);
-							//AddToolTip(widgetCoal, ss);
 
+							
 							auto widgetCoal = descriptionBox->AddRichText(
 								LOCTEXT("CoalHeatingEfficiency", "Coal Heating Efficiency"), TEXT_PERCENT(house->GetHeatingEfficiency(ResourceEnum::Coal))
 							);
 							house->GetHeatingEfficiencyTip(args, ResourceEnum::Coal);
 							AddToolTip(widgetCoal, args);
 							
-							//auto widgetWood = descriptionBox->AddRichText("Wood Heating Efficiency", to_string(house->GetHeatingEfficiency(ResourceEnum::Wood)) + "%");
-							//house->GetHeatingEfficiencyTip(args, ResourceEnum::Wood);
-							//AddToolTip(widgetWood, ss);
 
 							auto widgetWood = descriptionBox->AddRichText(
 								LOCTEXT("WoodHeatingEfficiency", "Wood Heating Efficiency"), TEXT_PERCENT(house->GetHeatingEfficiency(ResourceEnum::Wood))
@@ -789,18 +783,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 						// Happiness
 						{
-							//ss << house->housingHappiness() << "%";
 							auto widget = descriptionBox->AddRichText(
 								LOCTEXT("Housingquality", "Housing quality"), TEXT_PERCENT(house->housingHappiness())
 							);
 							descriptionBox->AddSpacer();
-
-							//ss << "Happiness: " << house->totalHappiness() << "<img id=\"Smile\"/>\n";
-							//ss << " +" << GameConstants::BaseHappiness << " New city optimism\n";
-							//ss << " +" << house->appealHappiness() << " Appeal\n";
-							//ss << " +" << house->luxuryHappiness() << " Luxury\n";
-							//ss << " +" << house->tavernHappiness() << " Tavern";
-							//AddToolTip(widget, ss);
 						}
 
 						descriptionBox->AddSpacer(5);
@@ -824,26 +810,6 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							}
 
 							AddToolTip(widget, args);
-
-
-							// TODO: OLD
-							//ss << fixed << setprecision(1);
-							//ss << house->totalHouseIncome100() / 100.0f << "<img id=\"Coin\"/>";
-							//auto widget = descriptionBox->AddRichText("Income", ss);
-							//descriptionBox->AddSpacer();
-
-							// Tooltip
-							// Single house tax...
-							//ss << "Income: " << house->totalHouseIncome100() / 100.0f << "<img id=\"Coin\"/>\n";
-
-							//for (int32 i = 0; i < HouseIncomeEnumCount; i++) {
-							//	int32 income100 = house->GetIncome100Int(i);
-							//	if (income100 != 0) {
-							//		ss << (income100 > 0 ? " +" : " ") << (income100 / 100.0f) << " " << IncomeEnumName[i] << "\n";
-							//	}
-							//}
-
-							//AddToolTip(widget, ss);
 						}
 
 						// Science
@@ -864,22 +830,6 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							}
 
 							AddToolTip(widget, args);
-							
-							//ss << fixed << setprecision(1);
-							//ss << house->science100PerRound() / 100.0f << "<img id=\"Science\"/>";
-							//auto widget = descriptionBox->AddRichText("Science", ss);
-							//descriptionBox->AddSpacer();
-
-							//ss << "Science output: " << house->science100PerRound() / 100.0f << "<img id=\"Science\"/>\n";
-
-							//for (int32 i = 0; i < HouseScienceEnums.size(); i++) {
-							//	int32 science100 = house->GetScience100(HouseScienceEnums[i]);
-							//	if (science100 != 0) {
-							//		ss << (science100 > 0 ? " +" : " ") << science100 / 100.0f << " " << ScienceEnumName[static_cast<int>(HouseScienceEnums[i])] << "\n";
-							//	}
-							//}
-							//
-							//AddToolTip(widget, ss);
 						}
 
 						if (house->ownedBy(playerId()))
@@ -1012,7 +962,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							}
 							
 							descriptionBox->AddRichText(LOCTEXT("Allies", "Allies"), 
-								simulation.townhall(allyPlayerIds[0]).townTName(), ResourceEnum::None, JOINTEXT(args)
+								simulation.townhall(allyPlayerIds[0]).townNameT(), ResourceEnum::None, JOINTEXT(args)
 							);
 							args.Empty();
 						} else {
@@ -1028,7 +978,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							{
 								Building& vassalBld = simulation.building(vassalBuildingId);
 								if (vassalBld.isEnum(CardEnum::Townhall)) {
-									return simulation.townhall(vassalBld.playerId()).townTName();
+									return simulation.townhall(vassalBld.playerId()).townNameT();
 								}
 								else {
 									return LOCTEXT("Non-player Vassal", "Non-player Vassal");
@@ -1247,15 +1197,6 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							{
 								descriptionBox->AddRichText("Maximum trade per round", to_string(tradingCompany.tradeMaximumPerRound()));
 
-								//auto feeText = descriptionBox->AddRichText("Trade fee:", to_string(tradingCompany.tradingFeePercent()) + "%");
-								//std::stringstream feeTip;
-								//feeTip << "Trading fee: " << tradingCompany.tradingFeePercent() << "%\n";
-								//feeTip << "base " << tradingCompany.baseTradingFeePercent() << "%\n";
-								//std::vector<BonusPair> bonuses = tradingCompany.GetTradingFeeBonuses();
-								//for (const auto& bonus : bonuses) {
-								//	feeTip << bonus.name << " " << bonus.value;
-								//}
-								//AddToolTip(feeText, feeTip);
 								AddTradeFeeText(building.subclass<TradeBuilding>(), descriptionBox);
 
 								AddEfficiencyText(building, descriptionBox);
@@ -2326,11 +2267,11 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					if ((building.product() != ResourceEnum::None && simulation.unlockSystem(playerId())->unlockedSetDeliveryTarget) ||
 						building.isEnum(CardEnum::ShippingDepot))
 					{
-						auto button = descriptionBox->AddButton(LOCTEXT("Set Delivery Target", "Set Delivery Target"), nullptr, FText(), this, CallbackEnum::SetDeliveryTarget, true, false, objectId);
-						AddToolTip(button, LOCTEXT("Set Delivery Target Tip", "Set the Target Storage/Market where output resources would be delivered"));
+						auto button = descriptionBox->AddButton(LOCTEXT("SetDeliveryTarget_Button", "Set Delivery Target"), nullptr, FText(), this, CallbackEnum::SetDeliveryTarget, true, false, objectId);
+						AddToolTip(button, LOCTEXT("SetDeliveryTarget_Tip", "Set the Target Storage/Market where output resources would be delivered"));
 						
 						if (building.deliveryTargetId() != -1) {
-							descriptionBox->AddButton(LOCTEXT("Remove Delivery Target", "Remove Delivery Target"), nullptr, FText(), this, CallbackEnum::RemoveDeliveryTarget, true, false, objectId);
+							descriptionBox->AddButton(LOCTEXT("RemoveDeliveryTarget_Button", "Remove Delivery Target"), nullptr, FText(), this, CallbackEnum::RemoveDeliveryTarget, true, false, objectId);
 						}
 					}
 				}
@@ -3842,52 +3783,68 @@ void UObjectDescriptionUISystem::AddProvinceUpkeepInfo(int32 provinceIdClean, UP
 	int32 provinceOwnerId = sim.provinceOwner(provinceIdClean);
 	bool unlockedInfluence = sim.unlockedInfluence(playerId());
 	
-	stringstream ss;
-	ss << fixed << setprecision(1);
-	ss << "<Subheader>Province Info:</>\n";
+	TArray<FText> args;
+	ADDTEXT_TAG_("<Subheader>", LOCTEXT("Province Info:", "Province Info:"));
+	ADDTEXT_INV_("\n");
 
-	// Already own this province, Showr real income/upkeep
+	// Already own this province, Show real income/upkeep
 	if (provinceOwnerId == playerId())
 	{
-		ss << "Income: <img id=\"Coin\"/>" << sim.GetProvinceIncome100(provinceIdClean) / 100.0f;
-		descriptionBox->AddRichText(ss);
+		descriptionBox->AddRichText(FText::Format(LOCTEXT("Income: CoinX", 
+			"Income: <img id=\"Coin\"/>{0}"), TEXT_100(sim.GetProvinceIncome100(provinceIdClean))
+		));
 		
 		if (unlockedInfluence) {
-			ss << "Upkeep: <img id=\"Influence\"/>" << sim.GetProvinceUpkeep100(provinceIdClean, provinceOwnerId) / 100.0f;
-			descriptionBox->AddRichText(ss);
+			descriptionBox->AddRichText(FText::Format(LOCTEXT("Upkeep: InfluenceX", 
+				"Upkeep: <img id=\"Influence\"/>{0}"), TEXT_100(sim.GetProvinceUpkeep100(provinceIdClean, provinceOwnerId))
+			));
 
 			if (sim.IsBorderProvince(provinceIdClean)) {
-				ss << "Border Upkeep: <img id=\"Influence\"/>5";
-				descriptionBox->AddRichText(ss);
+				descriptionBox->AddRichText(LOCTEXT("Border Upkeep: InfluenceX", 
+					"Border Upkeep: <img id=\"Influence\"/>5"
+				));
 			}
 		}
 		
-		ss << "Defense Bonus: " << sim.GetProvinceAttackCostPercent(provinceIdClean) << "%";
-		auto widget = descriptionBox->AddRichText(ss);
+		auto widget = descriptionBox->AddRichText(FText::Format(LOCTEXT("Defense Bonus: X",
+			"Defense Bonus: {0}"),
+			TEXT_PERCENT(sim.GetProvinceAttackCostPercent(provinceIdClean))
+		));
 		AddToolTip(widget, sim.GetProvinceDefenseBonusTip(provinceIdClean));
 	}
 	// Other player's Home Province
 	else if (provinceOwnerId != -1 && sim.homeProvinceId(provinceOwnerId) == provinceIdClean)
 	{
-		ss << "Home Province of " << sim.playerName(provinceOwnerId);
-		descriptionBox->AddRichText(ss);
+		descriptionBox->AddRichText(FText::Format(LOCTEXT("Home Province of X", 
+			"Home Province of {0}"),
+			sim.playerNameT(provinceOwnerId)
+		));
 		
-		ss << "Vassalize Defense Bonus: " << sim.GetProvinceVassalizeDefenseBonus(provinceIdClean) << "%";
-		auto widget = descriptionBox->AddRichText(ss);
+		auto widget = descriptionBox->AddRichText(FText::Format(LOCTEXT("VassalizeDefenseBonus:X", 
+			"Vassalize Defense Bonus: {0}"),
+			TEXT_PERCENT(sim.GetProvinceVassalizeDefenseBonus(provinceIdClean))
+		));
+		
 		AddToolTip(widget, sim.GetProvinceVassalizeDefenseBonusTip(provinceIdClean));
 	}
 	else 
 	{
-		ss << "Base Income: <img id=\"Coin\"/>" << sim.GetProvinceIncome100(provinceIdClean) / 100.0f;
-		descriptionBox->AddRichText(ss);
+		descriptionBox->AddRichText(FText::Format(LOCTEXT("BaseIncome:CoinX",
+			"Base Income: <img id=\"Coin\"/>{0}"),
+			TEXT_100(sim.GetProvinceIncome100(provinceIdClean))
+		));
 		
 		if (unlockedInfluence) {
-			ss << "Base Upkeep: <img id=\"Influence\"/>" << sim.GetProvinceBaseUpkeep100(provinceIdClean) / 100.0f;
-			descriptionBox->AddRichText(ss);
+			descriptionBox->AddRichText(FText::Format(LOCTEXT("BaseUpkeep:InfluenceX",
+				"Base Upkeep: <img id=\"Influence\"/>{0}"),
+				TEXT_100(sim.GetProvinceBaseUpkeep100(provinceIdClean))
+			));
 		}
 		
-		ss << "Defense Bonus: " << sim.GetProvinceAttackCostPercent(provinceIdClean) << "%";
-		auto widget = descriptionBox->AddRichText(ss);
+		auto widget = descriptionBox->AddRichText(FText::Format(LOCTEXT("DefenseBonus:X",
+			"Defense Bonus: {0}"),
+			TEXT_PERCENT(sim.GetProvinceAttackCostPercent(provinceIdClean))
+		));
 		AddToolTip(widget, sim.GetProvinceDefenseBonusTip(provinceIdClean));
 	}
 	

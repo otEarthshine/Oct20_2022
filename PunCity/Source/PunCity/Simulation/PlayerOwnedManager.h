@@ -374,55 +374,8 @@ public:
 	}
 	void RecalculateTax(bool showFloatup);
 
-	void AddTaxIncomeToString(std::stringstream& ss) {
-		ss << fixed << setprecision(1);
-		ss << "Income: " << totalIncome100() / 100.0f << "<img id=\"Coin\"/>\n";
-
-		for (int32 i = 0; i < IncomeEnumCount; i++)
-		{
-			IncomeEnum incomeEnum = static_cast<IncomeEnum>(i);
-
-			if (incomes100[i] != 0)
-			{
-				ss << " " << (incomes100[i] > 0 ? "+" : "") << (incomes100[i] / 100.0f);
-				
-				if (IsHouseIncomeEnum(incomeEnum)) {
-					ss << " House";
-				}
-
-				ss << " " << FTextToStd(IncomeEnumName[i]) << "\n";
-			}
-		}
-
-
-		if (hasChosenLocation()) {
-			ss << ToStdString(TaxOptions[taxLevel]);
-			ss << " (" << std::to_string(taxPercent()) << "%)";
-		}
-	}
-	void AddInfluenceIncomeToString(std::stringstream& ss) {
-		ss << fixed << setprecision(1);
-		ss << "Influence Per Round: " << totalInfluenceIncome100() / 100.0f << "<img id=\"Influence\"/>\n";
-
-		for (int32 i = 0; i < InfluenceIncomeEnumCount; i++)
-		{
-			if (influenceIncomes100[i] != 0) {
-				ss << " " << ToSignedNumber(influenceIncomes100[i] / 100.0f);
-				ss << " " << FTextToStd(InfluenceIncomeEnumName[i]) << "\n";
-			}
-		}
-
-		auto addStoredInfluenceRow = [&](InfluenceIncomeEnum influenceEnum) {
-			ss << " " << (influenceIncomes100[static_cast<int>(influenceEnum)] * storedToInfluenceRevenue / 100)
-			   << " " << FTextToStd(InfluenceIncomeEnumName[static_cast<int>(influenceEnum)]) <<"\n";
-		};
-		
-		ss << "<space>";
-		ss << "Max Stored Influence: " << maxStoredInfluence100() / 100 << "<img id=\"Influence\"/>\n";
-		addStoredInfluenceRow(InfluenceIncomeEnum::Townhall);
-		addStoredInfluenceRow(InfluenceIncomeEnum::Population);
-		addStoredInfluenceRow(InfluenceIncomeEnum::Luxury);
-	}
+	void AddTaxIncomeToString(TArray<FText>& args);
+	void AddInfluenceIncomeToString(TArray<FText>& args);
 
 	void ChangeIncome(int32 changeAmount, bool showFloatup, WorldTile2 floatupTile)
 	{

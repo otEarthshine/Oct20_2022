@@ -1558,7 +1558,7 @@ void Colony::TickRound()
 				resourceSystem().AddResourceGlobal(resourceEnum, resourceCount, *_simulation);
 				AddProductionStat(ResourcePair(resourceEnum, resourceCount));
 				
-				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainResource, centerTile(), "+" + to_string(resourceCount), resourceEnum);
+				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainResource, centerTile(), TEXT_NUMSIGNED(resourceCount), resourceEnum);
 			}
 		}
 	}

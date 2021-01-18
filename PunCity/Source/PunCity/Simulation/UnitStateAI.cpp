@@ -1444,7 +1444,7 @@ void UnitStateAI::GatherFruit()
 
 
 	if (resourcePair.isValid()) {
-		_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainResource, targetTile, "+" + to_string(resourcePair.count), resourcePair.resourceEnum);
+		_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainResource, targetTile, TEXT_NUMSIGNED(resourcePair.count), resourcePair.resourceEnum);
 	}
 
 	// AddStatistics done on drop-poff
@@ -1569,11 +1569,11 @@ void UnitStateAI::HarvestTileObj()
 			}
 		}
 
-		FloatupInfo floatupInfo(FloatupEnum::GainResource, Time::Ticks(), targetTile, "+" + to_string(resourcePair.count), resourcePair.resourceEnum);
+		FloatupInfo floatupInfo(FloatupEnum::GainResource, Time::Ticks(), targetTile, TEXT_NUMSIGNED(resourcePair.count), resourcePair.resourceEnum);
 
 		if (resourcePairFruit.isValid()) {
 			floatupInfo.resourceEnum2 = resourcePairFruit.resourceEnum;
-			floatupInfo.text2 = "+" + to_string(resourcePairFruit.count);
+			floatupInfo.text2 = TEXT_NUMSIGNED(resourcePairFruit.count);
 		}
 		
 		_simulation->uiInterface()->ShowFloatupInfo(floatupInfo);
@@ -1641,7 +1641,7 @@ void UnitStateAI::Eat()
 			// Special case:
 			if (resourceEnum == ResourceEnum::Melon) {
 				_simulation->ChangeMoney(_playerId, 3);
-				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, unitTile(), "+3", resourceEnum);
+				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, unitTile(), INVTEXT("+3"), resourceEnum);
 			}
 		}
 		else

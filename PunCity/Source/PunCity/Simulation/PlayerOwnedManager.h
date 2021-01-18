@@ -382,7 +382,7 @@ public:
 		incomes100[static_cast<int>(IncomeEnum::BuildingUpkeep)] += changeAmount * 100;
 
 		if (showFloatup) {
-			_simulation->uiInterface()->ShowFloatupInfo(FloatupInfo(FloatupEnum::GainMoney, Time::Ticks(), floatupTile, ToForcedSignedNumber(changeAmount)));
+			_simulation->uiInterface()->ShowFloatupInfo(FloatupInfo(FloatupEnum::GainMoney, Time::Ticks(), floatupTile, TEXT_NUMSIGNED(changeAmount)));
 		}
 	}
 

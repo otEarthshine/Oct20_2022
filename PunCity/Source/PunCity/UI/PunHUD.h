@@ -403,8 +403,8 @@ public:
 			_worldSpaceUI->AddFloatupInfo(floatupInfo);
 		}
 	}
-	void ShowFloatupInfo(FloatupEnum floatupEnum, WorldTile2 tile, std::string text, 
-						ResourceEnum resourceEnum = ResourceEnum::None, std::string text2 = "") override
+	void ShowFloatupInfo(FloatupEnum floatupEnum, WorldTile2 tile, FText text,
+						ResourceEnum resourceEnum = ResourceEnum::None, FText text2 = FText()) override
 	{
 #if !UI_ALL
 		return;

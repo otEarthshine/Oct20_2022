@@ -62,7 +62,7 @@ public:
 		}
 		else if (lvl < _houseLvl) 
 		{
-			_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::HouseDowngrade, _centerTile, "");
+			_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::HouseDowngrade, _centerTile, FText());
 			_houseLvl = lvl;
 			//_simulation->QuestUpdateStatus(_playerId, QuestEnum::HouseUpgradeQuest);
 

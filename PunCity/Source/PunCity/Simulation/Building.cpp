@@ -604,7 +604,7 @@ void Building::DoWork(int unitId, int workAmount100)
 				resourceSystem().ChangeMoney(moneyReceived);
 				_simulation->worldTradeSystem().ChangeSupply(_playerId, ResourceEnum::GoldBar, inputPerBatch());
 
-				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, centerTile(), "+" + to_string(moneyReceived));
+				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, centerTile(), TEXT_NUMSIGNED(moneyReceived));
 				AddProductionStat(moneyReceived);
 				AddConsumptionStats();
 				
@@ -620,7 +620,7 @@ void Building::DoWork(int unitId, int workAmount100)
 				int32 sciReceived = productPerBatch();
 				_simulation->unlockSystem(_playerId)->Research(sciReceived * 100 * Time::SecondsPerRound, 1);
 
-				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainScience, centerTile(), "+" + to_string(sciReceived));
+				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainScience, centerTile(), TEXT_NUMSIGNED(sciReceived));
 				AddProductionStat(sciReceived);
 				AddConsumptionStats();
 				
@@ -635,7 +635,7 @@ void Building::DoWork(int unitId, int workAmount100)
 				int32 influenceReceived = productPerBatch();
 				resourceSystem().ChangeInfluence(influenceReceived);
 
-				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainInfluence, centerTile(), "+" + to_string(influenceReceived));
+				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainInfluence, centerTile(), TEXT_NUMSIGNED(influenceReceived));
 				AddProductionStat(influenceReceived);
 				AddConsumptionStats();
 				
@@ -688,9 +688,9 @@ void Building::DoWork(int unitId, int workAmount100)
 				AddResource(ResourceEnum::Honey, productionAmount);
 				AddProductionStat(productionAmount);
 
-				FloatupInfo floatupInfo(FloatupEnum::GainResource, Time::Ticks(), centerTile(), "+" + to_string(productionAmount), ResourceEnum::Beeswax);
+				FloatupInfo floatupInfo(FloatupEnum::GainResource, Time::Ticks(), centerTile(), TEXT_NUMSIGNED(productionAmount), ResourceEnum::Beeswax);
 				floatupInfo.resourceEnum2 = ResourceEnum::Honey;
-				floatupInfo.text2 = "+" + to_string(productionAmount);
+				floatupInfo.text2 = TEXT_NUMSIGNED(productionAmount);
 
 				_simulation->uiInterface()->ShowFloatupInfo(floatupInfo);
 			}
@@ -698,7 +698,7 @@ void Building::DoWork(int unitId, int workAmount100)
 			{
 				// All other floatups
 				
-				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainResource, centerTile(), "+" + to_string(productionAmount), info.resourceEnum);
+				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainResource, centerTile(), TEXT_NUMSIGNED(productionAmount), info.resourceEnum);
 			}
 			
 
@@ -753,7 +753,7 @@ void Building::DoWork(int unitId, int workAmount100)
 		}
 
 		if (!IsRoad(_buildingEnum)) {
-			_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::BuildingComplete, _centerTile, "");
+			_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::BuildingComplete, _centerTile, FText());
 		}
 	}
 	else 
@@ -874,7 +874,9 @@ void Building::CheckCombo()
 				Building& building = _simulation->building(buildingId);
 				building._level = i;
 
-				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::ComboComplete, building.centerTile(), "Combo Lvl " + std::to_string(i));
+				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::ComboComplete, building.centerTile(), 
+					FText::Format(LOCTEXT("ComboLvl_Float", "Combo Lvl {0}"), TEXT_NUM(i))
+				);
 			}
 			_simulation->soundInterface()->Spawn2DSound("UI", "Combo", _playerId, centerTile());
 			break;

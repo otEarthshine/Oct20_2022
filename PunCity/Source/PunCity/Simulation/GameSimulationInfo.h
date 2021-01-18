@@ -5984,15 +5984,15 @@ struct FloatupInfo
 	int32_t startTick = -1;
 	WorldTile2 tile = WorldTile2::Invalid;
 
-	std::string text;
+	FText text;
 	ResourceEnum resourceEnum = ResourceEnum::None;
 
-	std::string text2;
+	FText text2;
 	ResourceEnum resourceEnum2 = ResourceEnum::None;
 
 	FloatupInfo() {}
-	FloatupInfo(FloatupEnum floatupEnum, int32_t startTick, WorldTile2 tile, std::string text = "",
-				ResourceEnum resourceEnum = ResourceEnum::None, std::string text2 = "")
+	FloatupInfo(FloatupEnum floatupEnum, int32_t startTick, WorldTile2 tile, FText text = FText(),
+				ResourceEnum resourceEnum = ResourceEnum::None, FText text2 = FText())
 			: floatupEnum(floatupEnum), startTick(startTick), tile(tile), text(text), resourceEnum(resourceEnum), text2(text2)
 	{}
 
@@ -6001,10 +6001,10 @@ struct FloatupInfo
 		Ar << floatupEnum;
 		Ar << startTick;
 
-		SerializeStr(Ar, text);
+		Ar << text;
 		Ar << resourceEnum;
 
-		SerializeStr(Ar, text2);
+		Ar << text2;
 		Ar << resourceEnum2;
 	}
 };

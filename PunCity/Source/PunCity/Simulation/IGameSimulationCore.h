@@ -33,7 +33,7 @@ class IGameUIInterface
 {
 public:
 	virtual void ShowFloatupInfo(FloatupInfo floatupInfo) = 0;
-	virtual void ShowFloatupInfo(FloatupEnum floatupEnum, WorldTile2 tile, std::string text, ResourceEnum resourceEnum = ResourceEnum::None, std::string text2 = "") = 0;
+	virtual void ShowFloatupInfo(FloatupEnum floatupEnum, WorldTile2 tile, FText text, ResourceEnum resourceEnum = ResourceEnum::None, FText text2 = FText()) = 0;
 	
 	virtual void PunLog(std::string text) = 0;
 

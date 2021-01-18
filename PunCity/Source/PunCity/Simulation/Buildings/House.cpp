@@ -425,7 +425,7 @@ void House::UpgradeHouse(int32 lvl)
 		maxAchivedLevel = lvl;
 	}
 
-	_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::HouseUpgrade, _centerTile, "");
+	_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::HouseUpgrade, _centerTile, FText());
 	_houseLvl = lvl;
 
 	//_simulation->QuestUpdateStatus(_playerId, QuestEnum::HouseUpgradeQuest);

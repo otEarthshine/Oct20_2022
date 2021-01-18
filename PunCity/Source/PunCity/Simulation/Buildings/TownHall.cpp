@@ -230,7 +230,7 @@ void TownHall::UpgradeTownhall()
 	_simulation->RecalculateTaxDelayed(_playerId);
 
 	
-	_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::TownhallUpgrade, _centerTile, "");
+	_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::TownhallUpgrade, _centerTile, FText());
 
 	//_simulation->soundInterface()->Spawn2DSoundAllPlayers("UI", "UpgradeTownhall", _centerTile);
 }

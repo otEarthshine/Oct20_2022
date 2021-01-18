@@ -570,8 +570,11 @@ void UWorldSpaceUI::TickBuildings()
 					auto assetLoader = dataSource()->assetLoader();
 					
 					UIconTextPair2Lines* iconTextPair3Lines = _floatupUIs.AddHoverUI<UIconTextPair2Lines>(UIEnum::HoverTextIconPair3Lines, worldAtom);
-					if (floatupInfo.text != "" && floatupInfo.text != "0" && floatupInfo.text != "+0") {
-						iconTextPair3Lines->IconPair1->SetText(floatupInfo.text, "");
+					if (!floatupInfo.text.IsEmpty() && 
+						floatupInfo.text.ToString() != TEXT("0") && 
+						floatupInfo.text.ToString() != TEXT("+0"))
+					{
+						iconTextPair3Lines->IconPair1->SetText(floatupInfo.text, FText());
 
 						if (floatupInfo.floatupEnum == FloatupEnum::GainMoney) {
 							iconTextPair3Lines->IconPair1->SetImage(assetLoader->CoinIcon);
@@ -587,8 +590,11 @@ void UWorldSpaceUI::TickBuildings()
 					else {
 						iconTextPair3Lines->IconPair1->SetVisibility(ESlateVisibility::Collapsed);
 					}
-					if (floatupInfo.text2 != "" && floatupInfo.text2 != "0" && floatupInfo.text != "+0") {
-						iconTextPair3Lines->IconPair2->SetText(floatupInfo.text2, "");
+					if (!floatupInfo.text2.IsEmpty() &&
+						floatupInfo.text2.ToString() != TEXT("0") &&
+						floatupInfo.text.ToString() != TEXT("+0"))
+					{
+						iconTextPair3Lines->IconPair2->SetText(floatupInfo.text2, FText());
 
 						if (floatupInfo.floatupEnum == FloatupEnum::GainMoney) {
 							iconTextPair3Lines->IconPair2->SetImage(assetLoader->InfluenceIcon); //TODO: this is not used?

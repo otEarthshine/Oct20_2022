@@ -910,7 +910,7 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 		incomes100[static_cast<int>(IncomeEnum::TownhallIncome)] += townhall.townhallIncome() * 100;
 		
 		if (showFloatup) {
-			_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, townhall.centerTile(), "+" + to_string(townhall.townhallIncome()));
+			_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, townhall.centerTile(), TEXT_NUMSIGNED(townhall.townhallIncome()));
 		}
 	}
 
@@ -937,7 +937,7 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 					incomes100[static_cast<int>(IncomeEnum::BankProfit)] += bank->lastRoundProfit * 100;
 
 					if (showFloatup) {
-						_simulation->uiInterface()->ShowFloatupInfo(FloatupInfo(FloatupEnum::GainMoney, Time::Ticks(), building.centerTile(), "+" + to_string(bank->lastRoundProfit)));
+						_simulation->uiInterface()->ShowFloatupInfo(FloatupInfo(FloatupEnum::GainMoney, Time::Ticks(), building.centerTile(), TEXT_NUMSIGNED(bank->lastRoundProfit)));
 					}
 				}
 				//// Bank
@@ -969,7 +969,7 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 			incomes100[static_cast<int>(IncomeEnum::BankProfit)] += bank.lastRoundProfit * 100;
 
 			if (showFloatup) {
-				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, bank.centerTile(), "+" + to_string(bank.lastRoundProfit));
+				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, bank.centerTile(), TEXT_NUMSIGNED(bank.lastRoundProfit));
 			}
 		}
 	}

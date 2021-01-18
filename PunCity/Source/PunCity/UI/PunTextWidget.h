@@ -22,4 +22,7 @@ public:
 	void SetText(std::wstring str) {
 		PunText->SetText(FText::FromString(ToFString(str)));
 	}
+	void SetText(FText text) {
+		PunText->SetText(text);
+	}
 };

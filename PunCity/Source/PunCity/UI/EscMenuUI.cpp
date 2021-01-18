@@ -123,7 +123,7 @@ void UEscMenuUI::OnClickEscMenuExitToMainMenuButton()
 {
 	ConfirmBlur->SetVisibility(ESlateVisibility::Visible);
 	ConfirmUI->SetVisibility(ESlateVisibility::Visible);
-	ConfirmText->SetText(FText::FromString("Are you sure you want to exit to main menu?"));
+	ConfirmText->SetText(LOCTEXT("AskExitMainMenu", "Are you sure you want to exit to main menu?"));
 	_confirmEnum = ExitToMainMenu;
 	
 	dataSource()->Spawn2DSound("UI", "UIWindowOpen");
@@ -132,7 +132,7 @@ void UEscMenuUI::OnClickEscMenuQuitButton()
 {
 	ConfirmBlur->SetVisibility(ESlateVisibility::Visible);
 	ConfirmUI->SetVisibility(ESlateVisibility::Visible);
-	ConfirmText->SetText(FText::FromString("Are you sure you want to exit to desktop?"));
+	ConfirmText->SetText(LOCTEXT("AskExitDesktop", "Are you sure you want to exit to desktop?"));
 	_confirmEnum = ExitGame;
 
 	dataSource()->Spawn2DSound("UI", "UIWindowOpen");
@@ -187,7 +187,7 @@ void UEscMenuUI::CallBack2(UPunWidget* punWidgetCaller, CallbackEnum callbackEnu
 	if (callbackEnum == CallbackEnum::SaveGameOverrideConfirm) {
 		ConfirmBlur->SetVisibility(ESlateVisibility::Visible);
 		ConfirmUI->SetVisibility(ESlateVisibility::Visible);
-		ConfirmText->SetText(FText::FromString("Are you sure you want to override this saved game?"));
+		ConfirmText->SetText(LOCTEXT("SaveGameOverrideConfirm", "Are you sure you want to override this saved game?"));
 		_confirmEnum = OverrideSave;
 	}
 }

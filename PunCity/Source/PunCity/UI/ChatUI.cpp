@@ -46,6 +46,7 @@ void UChatUI::RefreshHiddenSettingsUI()
 	
 
 	// Show Chosen Group
+	//  NOTE: 
 	{
 		std::string groupName = _chosenGroupName;
 		

@@ -86,7 +86,7 @@ public:
 		CardSlots->SetVisibility(ESlateVisibility::Collapsed);
 
 		NameEditTextBox->SetVisibility(ESlateVisibility::Collapsed);
-		NameEditButtonText->SetText(FText::FromString("Edit"));
+		NameEditButtonText->SetText(NSLOCTEXT("ObjDescUI", "Edit", "Edit"));
 	}
 
 	DescriptionUIState state;
@@ -136,7 +136,7 @@ private:
 	UFUNCTION() void OnClickNameEditButton()
 	{
 		if (NameEditTextBox->GetVisibility() == ESlateVisibility::Collapsed) {
-			NameEditTextBox->SetText(ToFText(simulation().townName(playerId())));
+			NameEditTextBox->SetText(simulation().townNameT(playerId()));
 			NameEditTextBox->SetVisibility(ESlateVisibility::Visible);
 			DescriptionUITitle->SetVisibility(ESlateVisibility::Collapsed);
 			NameEditButtonText->SetText(FText::FromString("Done"));

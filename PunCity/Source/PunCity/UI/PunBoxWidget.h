@@ -169,6 +169,12 @@ public:
 		textWidget->PunRichText->SetText(text);
 		return textWidget;
 	}
+	UPunRichText* AddRichTextCenter(FText text) {
+		auto textWidget = GetChildElement<UPunRichText>(UIEnum::PunRichText, GetTypeHash(text.ToString()));
+		textWidget->PunRichText->SetText(text);
+		textWidget->SetJustification(ETextJustify::Type::Center);
+		return textWidget;
+	}
 
 	// std::string
 	UPunRichTextTwoSided* AddRichText(std::string leftText, std::string rightText, ResourceEnum resourceEnum = ResourceEnum::None, std::string expandedText = "") {
@@ -320,8 +326,8 @@ public:
 		return widget;
 	}
 
-	UPunEditableNumberBox* AddEditableNumberBox(UPunWidget* callbackParent, CallbackEnum callbackEnum, int32 objectId, std::string description, int32 amount, 
-													std::string checkBoxEnabledDescription = "", bool isChecked = false, ResourceEnum resourceEnum = ResourceEnum::None)
+	UPunEditableNumberBox* AddEditableNumberBox(UPunWidget* callbackParent, CallbackEnum callbackEnum, int32 objectId, FText description, int32 amount, 
+												FText checkBoxEnabledDescription = FText(), bool isChecked = false, ResourceEnum resourceEnum = ResourceEnum::None)
 	{
 		auto widget = GetChildElement<UPunEditableNumberBox>(UIEnum::PunEditableNumberBox);
 		if (widget->justInitialized) {

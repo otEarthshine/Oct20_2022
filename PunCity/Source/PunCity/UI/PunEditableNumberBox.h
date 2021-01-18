@@ -31,26 +31,26 @@ public:
 		justInitialized = true;
 	}
 
-	void Set(UPunWidget* callbackTarget, CallbackEnum callbackEnum, int32 objectId = -1, std::string description = "", 
-			std::string checkBoxEnabledDescription = "", bool isChecked = false, ResourceEnum resourceEnum = ResourceEnum::None)
+	void Set(UPunWidget* callbackTarget, CallbackEnum callbackEnum, int32 objectId = -1, FText description = FText(),
+			FText checkBoxEnabledDescription = FText(), bool isChecked = false, ResourceEnum resourceEnum = ResourceEnum::None)
 	{
 		_callbackTarget = callbackTarget;
 		_callbackEnum = callbackEnum;
 
 		punId = objectId;
 
-		if (description == "") {
+		if (description.IsEmpty()) {
 			DescriptionText->SetVisibility(ESlateVisibility::Collapsed);
 		} else {
-			DescriptionText->SetText(FText::FromString(ToFString(description)));
+			DescriptionText->SetText(description);
 			DescriptionText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		}
 
 		ESlateVisibility editableNumberVisibility;
-		if (checkBoxEnabledDescription != "") {
+		if (!checkBoxEnabledDescription.IsEmpty()) {
 			EnableCheckBox->SetVisibility(ESlateVisibility::Visible);
 			EnableCheckBox->SetIsChecked(isChecked);
-			DescriptionText->SetText(FText::FromString(ToFString(isChecked ? checkBoxEnabledDescription : description)));
+			DescriptionText->SetText(isChecked ? checkBoxEnabledDescription : description);
 
 			editableNumberVisibility = isChecked ? ESlateVisibility::Visible : ESlateVisibility::Collapsed;
 		} else {

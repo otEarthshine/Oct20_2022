@@ -683,7 +683,7 @@ void UTerrainMapComponent::InitAnnotations()
 		GeoresourceInfo info = GetGeoresourceInfo(i);
 		TArray<UStaticMesh*> miniMeshes = _assetLoader->georesourceMesh(info.georesourceEnum).miniMeshes;
 		for (int32 j = 0; j < miniMeshes.Num(); j++) {
-			_georesourceEnumToMesh->AddProtoMesh(ToFString(info.name) + FString::FromInt(j), miniMeshes[j]);
+			_georesourceEnumToMesh->AddProtoMesh(info.name.ToString() + FString::FromInt(j), miniMeshes[j]);
 		}
 	}
 
@@ -843,7 +843,7 @@ void UTerrainMapComponent::RefreshAnnotations()
 					transform.SetScale3D(FVector::OneVector * 0.1f);
 				}
 				
-				_georesourceEnumToMesh->Add(ToFString(info.name) + FString::FromInt(j), centerTile.tileId(), transform, 0);
+				_georesourceEnumToMesh->Add(info.name.ToString() + FString::FromInt(j), centerTile.tileId(), transform, 0);
 			}
 			//_georesourceEnumToMesh2->Add(ToFString(info.name), centerTile.tileId(), transform, 0);
 		}

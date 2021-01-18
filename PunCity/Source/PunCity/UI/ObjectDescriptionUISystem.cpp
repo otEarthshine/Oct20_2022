@@ -658,7 +658,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				//	std::string descriptionStr = ToStdString(descriptionText);
 				//	descriptionBox->AddRichText("<Red>" + descriptionStr + "</>");
 				//}
-				FText description = GetHoverWarningDescriptionText(building.hoverWarning);
+				FText description = GetHoverWarningDescription(building.hoverWarning);
 				if (!description.IsEmpty()) {
 					FString descriptionStr = description.ToString().Replace(TEXT("\n"), TEXT("</>\n<Red>"));
 					descriptionBox->AddRichTextF("<Red>" + descriptionStr + "</>");
@@ -947,9 +947,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 						// Lord
 						if (townhallPlayerOwned.lordPlayerId() != -1) {
-							descriptionBox->AddRichText("Lord", simulation.playerName(townhallPlayerOwned.lordPlayerId()));
+							descriptionBox->AddRichText(LOCTEXT("Lord", "Lord"), simulation.playerNameT(townhallPlayerOwned.lordPlayerId()));
 						} else {
-							descriptionBox->AddRichText("Independent State"); // TODO: many vassal => empire
+							descriptionBox->AddRichText(LOCTEXT("Independent State", "Independent State")); // TODO: many vassal => empire
 						}
 
 						// Allies
@@ -1195,19 +1195,27 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							// Display status only if the trade type was chosen...
 							if (tradingCompany.activeResourceEnum != ResourceEnum::None)
 							{
-								descriptionBox->AddRichText("Maximum trade per round", to_string(tradingCompany.tradeMaximumPerRound()));
+								descriptionBox->AddRichText(
+									LOCTEXT("Maximum trade per round", "Maximum trade per round"), 
+									TEXT_NUM(tradingCompany.tradeMaximumPerRound())
+								);
 
 								AddTradeFeeText(building.subclass<TradeBuilding>(), descriptionBox);
 
 								AddEfficiencyText(building, descriptionBox);
 
-								descriptionBox->AddRichText("Profit", ToSignedNumber((tradingCompany.exportMoney100() - tradingCompany.importMoney100()) / 100) + "<img id=\"Coin\"/>");
+								descriptionBox->AddRichText(
+									LOCTEXT("Profit", "Profit"),
+									FText::Format(INVTEXT("{0}<img id=\"Coin\"/>"), TEXT_100SIGNED(tradingCompany.exportMoney100() - tradingCompany.importMoney100()))
+								);
 
 								descriptionBox->AddLineSpacer();
 							}
 
 							if (tradingCompany.activeResourceEnum == ResourceEnum::None) {
-								descriptionBox->AddRichText("<Red>Setup automatic trade below.</>");
+								descriptionBox->AddRichText(
+									TEXT_TAG("<Red>", LOCTEXT("Setup automatic trade below.", "Setup automatic trade below."))
+								);
 							}
 							else {
 								FText importExportText = tradingCompany.isImport ? LOCTEXT("Importing", "Importing") : LOCTEXT("Exporting", "Exporting");
@@ -1281,7 +1289,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							}
 							int32 targetAmount = tradingCompany.lastTargetAmountSet;
 							
-							descriptionBox->AddEditableNumberBox(this, CallbackEnum::EditNumberChooseResource, building.buildingId(), "Target: ", targetAmount);
+							descriptionBox->AddEditableNumberBox(this, CallbackEnum::EditNumberChooseResource, building.buildingId(), 
+								FText::Format(INVTEXT("{0}: "), LOCTEXT("Target", "Target")), targetAmount
+							);
 
 							descriptionBox->AddLineSpacer(12);
 							if (tradingCompany.HasPendingTrade()) {
@@ -1770,10 +1780,11 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						//}
 
 						descriptionBox->AddSpacer();
-						descriptionBox->AddRichText("<Subheader>Production batch:</>");
+						descriptionBox->AddRichText(TEXT_TAG("<Subheader>", LOCTEXT("Production batch:", "Production batch:")));
 						descriptionBox->AddProductionChain({ building.input1(), building.inputPerBatch() },
 							{ building.input2(), building.inputPerBatch() },
-							{ building.product(), building.productPerBatch() });
+							{ building.product(), building.productPerBatch() }
+						);
 
 						//if (building.hasInput1() || building.hasInput2()) {
 						//	descriptionBox->AddRichText("Input: ");
@@ -1871,10 +1882,11 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						if (productTexture)
 						{
 							descriptionBox->AddSpacer();
-							descriptionBox->AddRichText("<Subheader>Production batch:</>");
+							descriptionBox->AddRichText(TEXT_TAG("<Subheader>", LOCTEXT("Production batch:", "Production batch:")));
 							descriptionBox->AddProductionChain({ building.input1(), building.inputPerBatch() },
 								{ building.input2(), building.inputPerBatch() },
-								{}, productTexture, productStr);
+								{}, productTexture, productStr
+							);
 						}
 
 						//PUN_LOG("_workDone100:%d workManSecPerBatch100:%d batchProfit:%d baseInputPerBatch:%d efficiency:%d workRevenuePerSec100_perMan:%d", 
@@ -1916,7 +1928,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 					descriptionBox->AddLineSpacer();
 					auto numberBox = descriptionBox->AddEditableNumberBox(this, CallbackEnum::EditableNumberSetOutputTarget, building.buildingId(),
-																"set produce target", targetDisplay, "produce until ", isChecked, product);
+						LOCTEXT("set produce target", "set produce target"), targetDisplay, 
+						FText::Format(INVTEXT("{0} "), LOCTEXT("produce until", "produce until")),
+						isChecked, product
+					);
 					numberBox->callbackVar1 = static_cast<int32>(product);
 				}
 
@@ -1948,11 +1963,13 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				{
 					descriptionBox->AddLineSpacer();
 
+					const FText inventoryText = TEXT_TAG("<Subheader>", LOCTEXT("Inventory:", "Inventory:"));
+					
 					if (holderInfos.size() > 0) {
-						descriptionBox->AddRichText("<Subheader>Inventory:</>");
+						descriptionBox->AddRichText(inventoryText);
 					}
 					else {
-						descriptionBox->AddRichText("<Subheader>Inventory:</>", "None");
+						descriptionBox->AddRichText(inventoryText, LOCTEXT("None", "None"));
 					}
 
 					for (ResourceHolderInfo holderInfo : holderInfos)
@@ -2350,7 +2367,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			if (!unit.isEnum(UnitEnum::Human)) {
 				ADDTEXT_(INVTEXT("{0}: {1}"), 
 					LOCTEXT("Gender", "Gender"),
-					unit.isMale() ? LOCTEXT("male", "male") : LOCTEXT("female", "female"));
+					unit.isMale() ? LOCTEXT("male", "male") : LOCTEXT("female", "female")
+				);
 				
 				descriptionBox->AddRichText(args);
 			}
@@ -2359,7 +2377,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				const FText playerText = LOCTEXT("Player", "Player");
 				ADDTEXT_(INVTEXT("{0}: {1}"),
 					LOCTEXT("Player", "Player"), 
-					simulation.playerNameT(unit.playerId()));
+					simulation.playerNameT(unit.playerId())
+				);
 				descriptionBox->AddRichText(args);
 			}
 			
@@ -2578,7 +2597,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 			// Inventory
 			descriptionBox->AddLineSpacer();
-			descriptionBox->AddRichText("Inventory:");
+			descriptionBox->AddRichText(LOCTEXT("Inventory:", "Inventory:"));
 			unit.inventory().ForEachResource([&](ResourcePair resource) {
 				descriptionBox->AddIconPair(FText(), resource.resourceEnum, TEXT_NUM(resource.count));
 			});
@@ -2809,18 +2828,25 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			{
 				auto& resourceSystem = simulation.resourceSystem(drops[0].playerId);
 
-				stringstream ss;
-				ss << "<Header>" << "Dropped Resource " << tile.ToString() << "</>";
-				SetText(_objectDescriptionUI->DescriptionUITitle, ss);
+				//stringstream ss;
+				//ss << "<Header>Dropped Resource " << tile.ToString() << "</>";
+				SetText(_objectDescriptionUI->DescriptionUITitle, FText::Format(LOCTEXT("DroppedResourceObjUI",
+					"<Header>Dropped Resource {0}</>"),
+					tile.ToText()
+				));
 				_objectDescriptionUI->BuildingsStatOpener->SetVisibility(ESlateVisibility::Collapsed);
 				
 				descriptionBox->AddLineSpacer(8);
-				
+
+				TArray<FText> args;
 				for (int i = 0; i < drops.size(); i++) {
-					ss << resourceSystem.resourceCount(drops[i].holderInfo) << " " << ResourceName(drops[i].holderInfo.resourceEnum) << "\n";
+					ADDTEXT_(INVTEXT("{0} {1}\n"), 
+						TEXT_NUM(resourceSystem.resourceCount(drops[i].holderInfo)),
+						ResourceNameT(drops[i].holderInfo.resourceEnum)
+					);
 				}
 
-				descriptionBox->AddRichText(ss);
+				descriptionBox->AddRichText(args);
 
 				// Selection Mesh
 				SpawnSelectionMesh(assetLoader->SelectionMaterialGreen, dataSource()->DisplayLocation(tile.worldAtom2()) + FVector(0, 0, 20));
@@ -3055,12 +3081,12 @@ void UObjectDescriptionUISystem::AddSelectStartLocationButton(int32 provinceId, 
 		bool canClaim = true;
 
 		if (simulation().provinceOwner(provinceId) != -1) {
-			descriptionBox->AddRichText("<Red>Already has owner.</>");
+			descriptionBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Already has owner.", "Already has owner.")));
 			canClaim = false;
 		}
 		
 		if (!SimUtils::CanReserveSpot_NotTooCloseToAnother(provinceId, &simulation(), 2)) {
-			descriptionBox->AddRichText("<Red>Too close to another town</>");
+			descriptionBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Too close to another town", "Too close to another town")));
 			canClaim = false;
 		}
 
@@ -3071,7 +3097,7 @@ void UObjectDescriptionUISystem::AddSelectStartLocationButton(int32 provinceId, 
 		}
 		
 		if (!area.isValid()) {
-			descriptionBox->AddRichText("<Red>Not enough buildable space.</>");
+			descriptionBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Not enough buildable space.", "Not enough buildable space.")));
 			canClaim = false;
 		}
 
@@ -3112,7 +3138,9 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 			
 			if (simulation().GetBiomeProvince(provinceId) == BiomeEnum::Jungle) {
 				descriptionBox->AddSpacer();
-				descriptionBox->AddRichText(WrapString("The difficulty in clearing jungle makes expansion more costly."));
+				descriptionBox->AddRichText(
+					FText::FromString(WrapStringF(LOCTEXT("JungleDifficultToClear", "The difficulty in clearing jungle makes expansion more costly.").ToString()))
+				);
 			}
 
 			// Claim by influence
@@ -3164,7 +3192,9 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 		else if (sim.IsProvinceNextToPlayerIncludingNonFlatLand(provinceId, playerId()))
 		{
 			descriptionBox->AddSpacer();
-			descriptionBox->AddRichText("<Red>Cannot claim province through mountain and sea</>");
+			descriptionBox->AddRichText(
+				TEXT_TAG("<Red>", LOCTEXT("CannotClaimThroughMtnSea", "Cannot claim province through mountain and sea"))
+			);
 		}
 
 		descriptionBox->AddSpacer();
@@ -3244,7 +3274,9 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 				else if (sim.IsProvinceNextToPlayerIncludingNonFlatLand(provinceId, playerId()))
 				{
 					descriptionBox->AddSpacer();
-					descriptionBox->AddRichText("<Red>Cannot attack through mountain and sea</>");
+					descriptionBox->AddRichText(
+						TEXT_TAG("<Red>", LOCTEXT("NoAttackThroughMtnSea", "Cannot attack through mountain and sea"))
+					);
 				}
 			}
 		}
@@ -3554,45 +3586,55 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 
 void UObjectDescriptionUISystem::AddBiomeInfo(WorldTile2 tile, UPunBoxWidget* descriptionBox)
 {
-	std::wstringstream ss;
 	auto& sim = simulation();
 	auto& provinceSys = sim.provinceSystem();
 	auto& terrainGenerator = sim.terrainGenerator();
 
 	BiomeEnum biomeEnum = terrainGenerator.GetBiome(tile);
-	
-	ss << fixed << setprecision(0);
+
+	TArray<FText> args;
+	//ss << fixed << setprecision(0);
 
 	// Don't display Fertility on water
 	if (terrainGenerator.terrainTileType(tile) == TerrainTileType::ImpassableFlat) {
-		ss << "<Red>Impassable Terrain</>\n";
+		ADDTEXT_(INVTEXT("<Red>{0}</>\n"), LOCTEXT("Impassable Terrain", "Impassable Terrain"));
 	}
 	else if (IsWaterTileType(terrainGenerator.terrainTileType(tile))) {
 		
 	} else {
-		ss << "<Bold>Fertility:</> " << terrainGenerator.GetFertilityPercent(tile) << "%\n";
+		ADDTEXT_(LOCTEXT("BiomeInfoFertility", "<Bold>Fertility:</> {0}\n"), TEXT_PERCENT(terrainGenerator.GetFertilityPercent(tile)));
 
 		int32 provinceId = provinceSys.GetProvinceIdClean(tile);
 		if (provinceId != -1) {
-			ss << "<Bold>Province flat area:</> " << provinceSys.provinceFlatTileCount(provinceSys.GetProvinceIdClean(tile)) << " tiles\n";
+			ADDTEXT_(LOCTEXT("BiomeInfoProvinceFlatArea", "<Bold>Province flat area:</> {0} tiles\n"),
+				TEXT_NUM(provinceSys.provinceFlatTileCount(provinceSys.GetProvinceIdClean(tile)))
+			);
 			//ss << "Defense Bonus:" << (simulation().provinceSystem().provinceIsMountain(provinceId) ? "50%(Mountain)" : "0%");
-			ss << "\n";
+			ADDTEXT_INV_("\n");
 		}
 	}
 
 	FloatDet maxCelsius = sim.MaxCelsius(tile);
 	FloatDet minCelsius = sim.MinCelsius(tile);
-	ss << "<Bold>Temperature:</> " << FDToFloat(minCelsius) << "-" << FDToFloat(maxCelsius) << "°C ("
-		<< FDToFloat(CelsiusToFahrenheit(minCelsius)) << "-" << FDToFloat(CelsiusToFahrenheit(maxCelsius)) << "°F)\n";
-	//ss << "<Bold>Winter Temperature:</> " << FDToFloat(minCelsius) << "°C (" << FDToFloat(CelsiusToFahrenheit(minCelsius)) << "°F)\n";
+
+	ADDTEXT_(LOCTEXT("BiomeInfoTemperature",
+		"<Bold>Temperature:</> {0}-{1}°C ({2}-{3}°F)\n"
+		),
+		TEXT_NUMINT(FDToFloat(minCelsius)),
+		TEXT_NUMINT(FDToFloat(maxCelsius)),
+		TEXT_NUMINT(FDToFloat(CelsiusToFahrenheit(minCelsius))),
+		TEXT_NUMINT(FDToFloat(CelsiusToFahrenheit(maxCelsius)))
+	);
+	//ss << "<Bold>Temperature:</> " << FDToFloat(minCelsius) << "-" << FDToFloat(maxCelsius) << "°C ("
+	//	<< FDToFloat(CelsiusToFahrenheit(minCelsius)) << "-" << FDToFloat(CelsiusToFahrenheit(maxCelsius)) << "°F)\n";
 
 	if (biomeEnum == BiomeEnum::Jungle) {
-		ss << "<OrangeRed>Disease Frequency: 2.0 per year</>";
+		ADDTEXT_LOCTEXT("DiseaseFreqJungle", "<OrangeRed>Disease Frequency: 2.0 per year</>");
 	} else {
-		ss << "<Bold>Disease Frequency:</> 1.0 per year";
+		ADDTEXT_LOCTEXT("DiseaseFreq", "<Bold>Disease Frequency:</> 1.0 per year");
 	}
 	
-	descriptionBox->AddRichText(ss);
+	descriptionBox->AddRichText(args);
 	
 	descriptionBox->AddSpacer(5);
 	
@@ -3874,13 +3916,13 @@ void UObjectDescriptionUISystem::AddGeoresourceInfo(int32 provinceId, UPunBoxWid
 			descriptionBox->AddLineSpacer(15);
 		}
 		
-		stringstream ss;
-		ss << "<Header>" << node.info().name << "</>";
-		descriptionBox->AddRichText(ss);
+		//stringstream ss;
+		//ss << "<Header>" << node.info().name << "</>";
+		descriptionBox->AddRichText(TEXT_TAG("<Header>", node.info().name));
 		descriptionBox->AddSpacer(8);
 		
-		ss << node.info().description;
-		descriptionBox->AddRichText(ss);
+		//ss << node.info().description;
+		descriptionBox->AddRichText(node.info().description);
 		descriptionBox->AddSpacer();
 
 		if (node.depositAmount > 0 || isMountain) {

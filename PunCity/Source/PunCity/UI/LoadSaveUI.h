@@ -53,29 +53,9 @@ public:
 	UPROPERTY(meta = (BindWidget)) UOverlay* ConfirmBlur;
 	UPROPERTY(meta = (BindWidget)) UConfirmUI* ConfirmUI;
 	
-	void OpenSaveUI()
-	{
-		_isSavingGame = true;
-		SetVisibility(ESlateVisibility::Visible);
-		LoadSaveOverlay->SetVisibility(ESlateVisibility::Visible);
-		SetText(LoadGameTitleText, "SAVE GAME");
-		SetText(LoadGameButtonText, "Save Game");
-		
-		RefreshSaveSelectionList(SaveActiveIndex_Unselected);
-		SwapColumn(true);
-	}
+	void OpenSaveUI();
 
-	void OpenLoadUI()
-	{
-		_isSavingGame = false;
-		SetVisibility(ESlateVisibility::Visible);
-		LoadSaveOverlay->SetVisibility(ESlateVisibility::Visible);
-		SetText(LoadGameTitleText, gameInstance()->isMultiplayer() ? "LOAD MULTIPLAYER GAME" : "LOAD GAME");
-		SetText(LoadGameButtonText, "Load Game");
-
-		RefreshSaveSelectionList(SaveActiveIndex_SelectFirstAvailable);
-		SwapColumn(false);
-	}
+	void OpenLoadUI();
 
 	void Tick()
 	{
@@ -206,7 +186,7 @@ public:
 			FString time = FString::Printf(TEXT("%02d:%02d"), dateTime.GetHour(), dateTime.GetMinute());
 
 			int32 gameTicks = saveInfo.gameTicks;
-			FString gameSeason = FString::Printf(TEXT("%s %s"), ToTChar(Time::SeasonPrefix(gameTicks)), ToTChar(Time::SeasonName(Time::Seasons(gameTicks))));
+			FString gameSeason = FString::Printf(TEXT("%s %s"), *(Time::SeasonPrefix(gameTicks).ToString()), *(Time::SeasonName(Time::Seasons(gameTicks)).ToString()));
 
 			SelectedSavePlayerNameEditable->SetText(FText::FromString(saveInfo.DefaultSaveName()));
 			SelectedSavePlayerName->SetText(FText::FromString(saveInfo.name));
@@ -250,41 +230,8 @@ public:
 	bool isSavingGame() { return _isSavingGame; }
 	bool isAutosaving() { return _isAutosaving; }
 
-	void SaveGameDelayed(bool isAutoSaving = false)
-	{
-		_LOG(PunSaveLoad, "SaveConfirm");
-
-		SetVisibility(ESlateVisibility::Visible);
-		LoadSaveOverlay->SetVisibility(ESlateVisibility::Collapsed);
-
-		SavingBlurText->SetVisibility(ESlateVisibility::Visible);
-		SetText(SavingBlurText, isAutoSaving ? "Autosaving..." : "Saving...");
-		
-		_callbackParent->CallBack2(this, CallbackEnum::OpenBlur);
-
-		_isSavingGame = true;
-		_delayedActionCountDown = 10;
-		_isAutosaving = isAutoSaving;
-	}
-	void LoadGameDelayed()
-	{
-		_LOG(PunSaveLoad, "Load ServerTravel");
-		
-		LoadSaveOverlay->SetVisibility(ESlateVisibility::Collapsed);
-		_callbackParent->CallBack2(this, CallbackEnum::OpenBlur);
-
-		if (gameInstance()->isMultiplayer()) {
-			SavingBlurText->SetVisibility(ESlateVisibility::Collapsed);
-		}
-		else {
-			SavingBlurText->SetVisibility(ESlateVisibility::Visible);
-			SetText(SavingBlurText, "Loading...");
-		}
-
-		_isSavingGame = false;
-		_delayedActionCountDown = 10;
-		_isAutosaving = false;
-	}
+	void SaveGameDelayed(bool isAutoSaving = false);
+	void LoadGameDelayed();
 
 	bool KeyPressed_Escape()
 	{
@@ -300,27 +247,8 @@ private:
 	UFUNCTION() void OnClickBackButton();
 	UFUNCTION() void OnClickSaveLoadGameButton();
 	
-	UFUNCTION() void OnClickDeleteGameButton()
-	{
-		if (activeIndex != -1)
-		{
-			ConfirmUI->SetVisibility(ESlateVisibility::Visible);
-			ConfirmBlur->SetVisibility(ESlateVisibility::Visible);
-
-			const TArray<GameSaveInfo>& saveList = saveSystem().saveList();
-			PUN_CHECK(activeIndex < saveList.Num())
-			
-			std::stringstream ss;
-			ss << "<Subheader>Do you want to delete this saved game?</>\n\n";
-			ss << ToStdString(saveList[activeIndex].name);
-			SetText(ConfirmUI->ConfirmText, ss);
-
-			Spawn2DSound("UI", "UIWindowOpen");
-		}
-		else {
-			Spawn2DSound("UI", "ButtonClickInvalid");
-		}
-	}
+	UFUNCTION() void OnClickDeleteGameButton();
+	
 	UFUNCTION() void OnClickConfirmDeleteGameButton();
 	UFUNCTION() void OnClickCancelDeleteGameButton() {
 		ConfirmUI->SetVisibility(ESlateVisibility::Collapsed);

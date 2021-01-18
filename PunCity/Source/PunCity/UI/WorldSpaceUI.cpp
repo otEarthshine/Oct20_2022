@@ -1157,7 +1157,10 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	}
 	else if (needInstruction(PlacementInstructionEnum::NeedGeoresource)) {
 		GeoresourceEnum geoEnum = static_cast<GeoresourceEnum>(getInstruction(PlacementInstructionEnum::NeedGeoresource).intVar1);
-		punBox->AddRichText("<Red>Need region with " + GetGeoresourceInfo(geoEnum).name + "</>")->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichTextCenter(FText::Format(LOCTEXT("NeedRegionWithGeo",
+			"<Red>Need region with {0}</>"),
+			GetGeoresourceInfo(geoEnum).name
+		));
 	}
 	else if (needInstruction(PlacementInstructionEnum::MountainMine)) {
 		punBox->AddRichText("<Red>Mine's back must face mountain</>")->SetJustification(ETextJustify::Type::Center);

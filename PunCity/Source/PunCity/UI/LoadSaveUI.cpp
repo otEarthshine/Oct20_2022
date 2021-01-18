@@ -6,6 +6,8 @@
 #include "PunCity/PunGameInstance.h"
 #include "PunMainMenuHUD.h"
 
+#define LOCTEXT_NAMESPACE "LoadSaveUI"
+
 void ULoadSaveUI::PunInit(UPunWidget* parent)
 {
 	_callbackParent = parent;
@@ -25,6 +27,30 @@ void ULoadSaveUI::PunInit(UPunWidget* parent)
 	ConfirmUI->SetVisibility(ESlateVisibility::Collapsed);
 	ConfirmUI->ConfirmYesButton->OnClicked.AddDynamic(this, &ULoadSaveUI::OnClickConfirmDeleteGameButton);
 	ConfirmUI->ConfirmNoButton->OnClicked.AddDynamic(this, &ULoadSaveUI::OnClickCancelDeleteGameButton);
+}
+
+void ULoadSaveUI::OpenSaveUI()
+{
+	_isSavingGame = true;
+	SetVisibility(ESlateVisibility::Visible);
+	LoadSaveOverlay->SetVisibility(ESlateVisibility::Visible);
+	SetText(LoadGameTitleText, LOCTEXT("SAVE GAME", "SAVE GAME"));
+	SetText(LoadGameButtonText, LOCTEXT("Save Game", "Save Game"));
+
+	RefreshSaveSelectionList(SaveActiveIndex_Unselected);
+	SwapColumn(true);
+}
+
+void ULoadSaveUI::OpenLoadUI()
+{
+	_isSavingGame = false;
+	SetVisibility(ESlateVisibility::Visible);
+	LoadSaveOverlay->SetVisibility(ESlateVisibility::Visible);
+	SetText(LoadGameTitleText, gameInstance()->isMultiplayer() ? LOCTEXT("LOAD MULTIPLAYER GAME", "LOAD MULTIPLAYER GAME") : LOCTEXT("LOAD GAME", "LOAD GAME"));
+	SetText(LoadGameButtonText, LOCTEXT("Load Game", "Load Game"));
+
+	RefreshSaveSelectionList(SaveActiveIndex_SelectFirstAvailable);
+	SwapColumn(false);
 }
 
 void ULoadSaveUI::OnClickBackButton()
@@ -58,6 +84,29 @@ void ULoadSaveUI::OnClickSaveLoadGameButton()
 
 	Spawn2DSound("UI", "ButtonClick");
 }
+
+void ULoadSaveUI::OnClickDeleteGameButton()
+{
+	if (activeIndex != -1)
+	{
+		ConfirmUI->SetVisibility(ESlateVisibility::Visible);
+		ConfirmBlur->SetVisibility(ESlateVisibility::Visible);
+
+		const TArray<GameSaveInfo>& saveList = saveSystem().saveList();
+		PUN_CHECK(activeIndex < saveList.Num())
+
+		SetText(ConfirmUI->ConfirmText, FText::Format(LOCTEXT("AskDeleteSaveGame",
+			"<Subheader>Do you want to delete this saved game?</>\n\n{0}"),
+			FText::FromString(saveList[activeIndex].name)
+		));
+
+		Spawn2DSound("UI", "UIWindowOpen");
+	}
+	else {
+		Spawn2DSound("UI", "ButtonClickInvalid");
+	}
+}
+
 void ULoadSaveUI::OnClickConfirmDeleteGameButton()
 {
 	if (activeIndex != -1)
@@ -134,3 +183,43 @@ void ULoadSaveUI::LoadGame()
 		GetWorld()->ServerTravel("/Game/Maps/GameMap");
 	}
 }
+
+void ULoadSaveUI::SaveGameDelayed(bool isAutoSaving)
+{
+	_LOG(PunSaveLoad, "SaveConfirm");
+
+	SetVisibility(ESlateVisibility::Visible);
+	LoadSaveOverlay->SetVisibility(ESlateVisibility::Collapsed);
+
+	SavingBlurText->SetVisibility(ESlateVisibility::Visible);
+	SetText(SavingBlurText,
+		isAutoSaving ? LOCTEXT("Autosaving...", "Autosaving...") : LOCTEXT("Saving...", "Saving...")
+	);
+
+	_callbackParent->CallBack2(this, CallbackEnum::OpenBlur);
+
+	_isSavingGame = true;
+	_delayedActionCountDown = 10;
+	_isAutosaving = isAutoSaving;
+}
+void ULoadSaveUI::LoadGameDelayed()
+{
+	_LOG(PunSaveLoad, "Load ServerTravel");
+
+	LoadSaveOverlay->SetVisibility(ESlateVisibility::Collapsed);
+	_callbackParent->CallBack2(this, CallbackEnum::OpenBlur);
+
+	if (gameInstance()->isMultiplayer()) {
+		SavingBlurText->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	else {
+		SavingBlurText->SetVisibility(ESlateVisibility::Visible);
+		SetText(SavingBlurText, LOCTEXT("Loading...", "Loading..."));
+	}
+
+	_isSavingGame = false;
+	_delayedActionCountDown = 10;
+	_isAutosaving = false;
+}
+
+#undef LOCTEXT_NAMESPACE

@@ -149,6 +149,7 @@ public:
 #define TEXT_100SIGNED(number) FText::Join(FText(), (number > 0 ? INVTEXT("+") : INVTEXT("")), FText::AsNumber(number / 100), INVTEXT("."), FText::AsNumber((number % 100) / 10))
 #define TEXT_NUM(number) FText::AsNumber(number)
 #define TEXT_NUMSIGNED(number) FText::Join(FText(), (number > 0 ? INVTEXT("+") : INVTEXT("")), FText::AsNumber(number))
+#define TEXT_NUMINT(number) FText::AsNumber(static_cast<int>(number))
 
 #define TEXT_TAG(Tag, InText) FText::Format(INVTEXT("{0}{1}</>"), INVTEXT(Tag), InText)
 //#define TEXT_JOIN(...) FText::Join(FText(), __VA_ARGS__)
@@ -567,23 +568,31 @@ public:
 
 	//static bool IsAlmostWinter() { return Time::Ticks() % Time::TicksPerYear >= TicksPerSeason * 5 / 2; }
 
-	static std::string SeasonName(int32 season) {
+#define LOCTEXT_NAMESPACE "SeasonName"
+	static FText SeasonName(int32 season) {
 		switch (season % 4) {
-		case 0: return "Spring";
-		case 1: return "Summer";
-		case 2: return "Autumn";
-		case 3: return "Winter";
+		case 0: return LOCTEXT("Spring", "Spring");
+		case 1: return LOCTEXT("Summer", "Summer");
+		case 2: return LOCTEXT("Autumn", "Autumn");
+		case 3: return LOCTEXT("Winter", "Winter");
 		}
-		return "";
+		return FText();
 	}
 
-	static std::string SeasonPrefix(int32 ticks)
+	static FText SeasonPrefix(int32 ticks)
 	{
 		int32_t minutesIntoSeason = (ticks / TicksPerMinute) - Seasons(ticks) * MinutesPerSeason;
-		if (minutesIntoSeason >= 4) return "Late";
-		if (minutesIntoSeason >= 2) return "Mid ";
-		return "Early ";
+
+		auto formatSpace = [&](FText text) {
+			return FText::Format(INVTEXT("{0} "), text);
+		};
+		
+		if (minutesIntoSeason >= 4) return formatSpace(LOCTEXT("Late", "Late")); 
+		if (minutesIntoSeason >= 2) return formatSpace(LOCTEXT("Mid", "Mid"));
+		return formatSpace(LOCTEXT("Early", "Early"));
 	}
+#undef LOCTEXT_NAMESPACE
+	
 
 	static int32 GraphBeginSeason() {
 		return (Time::Seasons() + 1) % 4;
@@ -6414,7 +6423,7 @@ enum class GeoresourceEnum : uint8
 struct GeoresourceInfo
 {
 	GeoresourceEnum georesourceEnum = GeoresourceEnum::None;
-	std::string name;
+	FText name;
 
 	bool isLandmark() {
 		return !isMountainOre() && 
@@ -6429,40 +6438,43 @@ struct GeoresourceInfo
 
 	ResourceEnum resourceEnum = ResourceEnum::None;
 	
-	std::string description;
+	FText description;
 };
+
+#define LOCTEXT_NAMESPACE "GeoresourceInfos"
 
 static const std::vector<GeoresourceInfo> GeoresourceInfos
 {
-	{ GeoresourceEnum::Hotspring,			"Hot Spring" , TileObjEnum::None,TileObjEnum::None, TileObjEnum::None, ResourceEnum::None, "Grants happiness bonus to any house built in this region." },
-	{ GeoresourceEnum::GiantMushroom,  "Giant Mushroom" , TileObjEnum::None,TileObjEnum::GiantMushroom, TileObjEnum::None, ResourceEnum::None, "Strange giant mushrooms. Grants science bonus to any house built in this region." },
-	{ GeoresourceEnum::CherryBlossom,  "Cherry Blossom" , TileObjEnum::None,TileObjEnum::Cherry, TileObjEnum::None, ResourceEnum::None, "Area known for beautiful cherry blossoms. When they bloom, cherry blossoms give citizens bonus happiness." },
+	{ GeoresourceEnum::Hotspring,		LOCTEXT("Hot Spring", "Hot Spring") , TileObjEnum::None,TileObjEnum::None, TileObjEnum::None, ResourceEnum::None, LOCTEXT("Hot Spring Desc", "Grants happiness bonus to any house built in this region.") },
+	{ GeoresourceEnum::GiantMushroom,  LOCTEXT("Giant Mushroom", "Giant Mushroom") , TileObjEnum::None,TileObjEnum::GiantMushroom, TileObjEnum::None, ResourceEnum::None, LOCTEXT("Giant Mushroom Desc", "Strange giant mushrooms. Grants science bonus to any house built in this region.") },
+	{ GeoresourceEnum::CherryBlossom,  LOCTEXT("Cherry Blossom", "Cherry Blossom") , TileObjEnum::None,TileObjEnum::Cherry, TileObjEnum::None, ResourceEnum::None, LOCTEXT("Cherry Blossom Desc", "Area known for beautiful cherry blossoms. When they bloom, cherry blossoms give citizens bonus happiness.") },
 
 	//{ GeoresourceEnum::GiantTree,  "Giant tree" , TileObjEnum::None,TileObjEnum::None, TileObjEnum::None, "Grants happiness bonus to any house built in this region." },
-	{ GeoresourceEnum::Ruin,				"Ruin" , TileObjEnum::None,TileObjEnum::None,TileObjEnum::None,   ResourceEnum::None,"Remains of a mysterious ancient civilization." },
+	{ GeoresourceEnum::Ruin,			LOCTEXT("Ruin", "Ruin"), TileObjEnum::None,TileObjEnum::None,TileObjEnum::None,   ResourceEnum::None, LOCTEXT("Ruin Desc", "Remains of a mysterious ancient civilization.") },
 
-	{ GeoresourceEnum::IronOre,			"Iron ore",	TileObjEnum::IronMountainOre,TileObjEnum::None,TileObjEnum::None, ResourceEnum::IronOre, "Build Iron Mine over this Iron Deposit to mine Iron." },
-	{ GeoresourceEnum::CoalOre,			"Coal ore",	TileObjEnum::CoalMountainOre,TileObjEnum::None,TileObjEnum::None, ResourceEnum::Coal, "Build Coal Mine over this Coal Deposit to mine Coal." },
-	{ GeoresourceEnum::GoldOre,			"Gold ore",	TileObjEnum::GoldMountainOre,TileObjEnum::None,TileObjEnum::None, ResourceEnum::GoldOre, "Build Gold Mine over this Gold Deposit to mine Gold." },
-	{ GeoresourceEnum::Gemstone,			"Gemstone",	TileObjEnum::GemstoneOre,TileObjEnum::None,TileObjEnum::None, ResourceEnum::Gemstone, "Build Gemstone Mine over this Gemstone Deposit to mine Gemstone." },
+	{ GeoresourceEnum::IronOre,			LOCTEXT("Iron Ore", "Iron Ore"),	TileObjEnum::IronMountainOre,TileObjEnum::None,TileObjEnum::None, ResourceEnum::IronOre, LOCTEXT("Iron Ore Desc", "Build Iron Mine over this Iron Deposit to mine Iron.") },
+	{ GeoresourceEnum::CoalOre,			LOCTEXT("Coal Ore", "Coal Ore"),	TileObjEnum::CoalMountainOre,TileObjEnum::None,TileObjEnum::None, ResourceEnum::Coal, LOCTEXT("Coal Ore Desc", "Build Coal Mine over this Coal Deposit to mine Coal.") },
+	{ GeoresourceEnum::GoldOre,			LOCTEXT("Gold Ore", "Gold Ore"),	TileObjEnum::GoldMountainOre,TileObjEnum::None,TileObjEnum::None, ResourceEnum::GoldOre, LOCTEXT("Gold Ore Desc", "Build Gold Mine over this Gold Deposit to mine Gold.") },
+	{ GeoresourceEnum::Gemstone,		LOCTEXT("Gemstone", "Gemstone"),	TileObjEnum::GemstoneOre,TileObjEnum::None,TileObjEnum::None, ResourceEnum::Gemstone, LOCTEXT("Gemstone Desc", "Build Gemstone Mine over this Gemstone Deposit to mine Gemstone.") },
 
-	
-	{ GeoresourceEnum::CannabisFarm,		"Cannabis" , TileObjEnum::None,TileObjEnum::None, TileObjEnum::Cannabis,  ResourceEnum::Cannabis,"Area suitable for growing Cannabis." },
-	{ GeoresourceEnum::CocoaFarm,			"Cocoa" , TileObjEnum::None,TileObjEnum::None, TileObjEnum::Cocoa,  ResourceEnum::Cocoa,"Area suitable for growing Cocoa." },
-	{ GeoresourceEnum::GrapeFarm,			"Grape" , TileObjEnum::None,TileObjEnum::None, TileObjEnum::Grapevines,  ResourceEnum::Grape,"Area suitable for growing Grape." },
-	{ GeoresourceEnum::CottonFarm,		"Cotton" , TileObjEnum::None,TileObjEnum::None, TileObjEnum::Cotton,  ResourceEnum::Cotton,"Area suitable for growing Cotton." },
-	{ GeoresourceEnum::DyeFarm,			"Dye" , TileObjEnum::None,TileObjEnum::None, TileObjEnum::Dye,  ResourceEnum::Dye,"Area suitable for growing Dye." },
+	{ GeoresourceEnum::CannabisFarm,	LOCTEXT("Cannabis", "Cannabis"), TileObjEnum::None,TileObjEnum::None, TileObjEnum::Cannabis,  ResourceEnum::Cannabis, LOCTEXT("Cannabis Desc", "Area suitable for growing Cannabis.") },
+	{ GeoresourceEnum::CocoaFarm,		LOCTEXT("Cocoa", "Cocoa"), TileObjEnum::None,TileObjEnum::None, TileObjEnum::Cocoa,  ResourceEnum::Cocoa, LOCTEXT("Cocoa Desc", "Area suitable for growing Cocoa.") },
+	{ GeoresourceEnum::GrapeFarm,		LOCTEXT("Grape", "Grape"), TileObjEnum::None,TileObjEnum::None, TileObjEnum::Grapevines,  ResourceEnum::Grape, LOCTEXT("Grape Desc", "Area suitable for growing Grape.") },
+	{ GeoresourceEnum::CottonFarm,		LOCTEXT("Cotton", "Cotton"), TileObjEnum::None,TileObjEnum::None, TileObjEnum::Cotton,  ResourceEnum::Cotton, LOCTEXT("Cotton Desc", "Area suitable for growing Cotton.") },
+	{ GeoresourceEnum::DyeFarm,			LOCTEXT("Dye", "Dye"), TileObjEnum::None,TileObjEnum::None, TileObjEnum::Dye,  ResourceEnum::Dye, LOCTEXT("Dye Desc", "Area suitable for growing Dye.") },
 
-	{ GeoresourceEnum::CoffeeFarm,		"Coffee" , TileObjEnum::None,TileObjEnum::None, TileObjEnum::RawCoffee,  ResourceEnum::RawCoffee,"Area suitable for growing Coffee." },
-	{ GeoresourceEnum::TulipFarm,		"Tulip" , TileObjEnum::None,TileObjEnum::None, TileObjEnum::Tulip,  ResourceEnum::Tulip,"Area suitable for growing Tulip." },
+	{ GeoresourceEnum::CoffeeFarm,		LOCTEXT("Coffee", "Coffee"), TileObjEnum::None,TileObjEnum::None, TileObjEnum::RawCoffee,  ResourceEnum::RawCoffee, LOCTEXT("Coffee Desc", "Area suitable for growing Coffee.") },
+	{ GeoresourceEnum::TulipFarm,		LOCTEXT("Tulip", "Tulip"), TileObjEnum::None,TileObjEnum::None, TileObjEnum::Tulip,  ResourceEnum::Tulip, LOCTEXT("Tulip Desc", "Area suitable for growing Tulip.") },
 
 	// Diamond, Copper
 
 };
 
+#undef LOCTEXT_NAMESPACE 
+
 static const int32 GeoresourceEnumCount = GeoresourceInfos.size();
 
-static const GeoresourceInfo GeoresourceInfoNone = { GeoresourceEnum::None, "", TileObjEnum::None, TileObjEnum::None, TileObjEnum::None, ResourceEnum::None, "" };
+static const GeoresourceInfo GeoresourceInfoNone = { GeoresourceEnum::None, FText(), TileObjEnum::None, TileObjEnum::None, TileObjEnum::None, ResourceEnum::None, FText() };
 
 static GeoresourceInfo GetGeoresourceInfo(GeoresourceEnum georesourceEnum) {
 	if (georesourceEnum == GeoresourceEnum::None) {
@@ -7338,6 +7350,9 @@ enum class BoolEnum : uint8
 	NeedUpdate,
 };
 
+
+#define LOCTEXT_NAMESPACE "HoverWarning"
+
 enum class HoverWarning : uint8 {
 	None,
 	Depleted,
@@ -7360,58 +7375,55 @@ enum class HoverWarning : uint8 {
 	OutputInventoryFull,
 };
 
-static const std::vector<std::string> HoverWarningString = {
-	"",
-	"Depleted",
-	"Storage Full",
-	"Storage Too Far",
-	"House Too Far",
+static const std::vector<FText> HoverWarningString = {
+	FText(),
+	LOCTEXT("Depleted", "Depleted"),
+	LOCTEXT("Storage Full", "Storage Full"),
+	LOCTEXT("Storage Too Far", "Storage Too Far"),
+	LOCTEXT("House Too Far", "House Too Far"),
 
-	"Not Enough Input",
+	LOCTEXT("Not Enough Input", "Not Enough Input"),
 
-	"Inaccessible",
+	LOCTEXT("Inaccessible", "Inaccessible"),
 
-	"Not Enough Money",
-	"Import Target\nReached",
-	"Resources Below\nExport Target",
+	LOCTEXT("Not Enough Money", "Not Enough Money"),
+	LOCTEXT("Import Target\nReached", "Import Target\nReached"),
+	LOCTEXT("Resources Below\nExport Target", "Resources Below\nExport Target"),
 
-	"Need Setup",
-	"Need\nDelivery Target",
+	LOCTEXT("Need Setup", "Need Setup"),
+	LOCTEXT("Need\nDelivery Target", "Need\nDelivery Target"),
 
-	"Delivery Target\nToo Far",
-	"Output Inventory\nFull",
+	LOCTEXT("Delivery Target\nToo Far", "Delivery Target\nToo Far"),
+	LOCTEXT("Output Inventory\nFull", "Output Inventory\nFull"),
 };
-static std::string GetHoverWarningString(HoverWarning hoverWarning) { return HoverWarningString[static_cast<int>(hoverWarning)]; }
+static FText GetHoverWarningString(HoverWarning hoverWarning) { return HoverWarningString[static_cast<int>(hoverWarning)]; }
 
 
-static const std::vector<std::string> HoverWarningDescription = {
-	"",
-	"Ores are Depleted in this Province.",
-	"All Storage are full. Build more Storage Yard or Warehouse.",
-	"This building is too far from Storage. Build a new Storage nearby to ensure this building runs efficiently.",
-	"This building is too far from Houses. Build a new House nearby to ensure this building runs efficiently.",
+static const std::vector<FText> HoverWarningDescription = {
+	FText(),
+	LOCTEXT("Depleted Desc","Ores are Depleted in this Province."),
+	LOCTEXT("Storage Full Desc", "All Storage are full. Build more Storage Yard or Warehouse."),
+	LOCTEXT("Storage Too Far Desc", "This building is too far from Storage. Build a new Storage nearby to ensure this building runs efficiently."),
+	LOCTEXT("House Too Far Desc", "This building is too far from Houses. Build a new House nearby to ensure this building runs efficiently."),
 
-	"Not enough Input Resource to keep this building running.",
+	LOCTEXT("Not Enough Input Desc", "Not enough Input Resource to keep this building running."),
 
-	"Building's gate tile cannot be reached by Citizens",
+	LOCTEXT("Inaccessible Desc", "Building's gate tile cannot be reached by Citizens"),
 
-	"",
-	"",
-	"",
+	FText(),
+	FText(),
+	FText(),
 
-	"Choose Resource Types that will be carried by Logistics Workers.",
-	"Set the Delivery Target Storage where Logistics Worker will carry resources to.",
+	LOCTEXT("Need Setup Desc", "Choose Resource Types that will be carried by Logistics Workers."),
+	LOCTEXT("Need\nDelivery Target Desc", "Set the Delivery Target Storage where Logistics Worker will carry resources to."),
 
-	"Delivery Target is too far (maximum 150 tiles)", // TODO: For now only Logistics Office
-	"Output Resource Inventory is full causing the production to pause.",
+	LOCTEXT("Delivery Target\nToo Far Desc", "Delivery Target is too far (maximum 150 tiles)"), // TODO: For now only Logistics Office
+	LOCTEXT("Output Inventory\nFull Desc", "Output Resource Inventory is full causing the production to pause."),
 };
-static std::string GetHoverWarningDescription(HoverWarning hoverWarning) { return HoverWarningDescription[static_cast<int>(hoverWarning)]; }
+static FText GetHoverWarningDescription(HoverWarning hoverWarning) { return HoverWarningDescription[static_cast<int>(hoverWarning)]; }
 
-static FText GetHoverWarningDescriptionText(HoverWarning hoverWarning)
-{
-	return INVTEXT("Hover Warningเกมไทย");
-	//return ToFText(GetHoverWarningDescription(hoverWarning));
-}
+#undef LOCTEXT_NAMESPACE
+
 
 /*
  * Diplomacy

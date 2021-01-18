@@ -691,7 +691,10 @@ void ULobbyUI::UpdateLobbyUI()
 		{
 			//PUN_DEBUG2("playerConnectedStates true");
 			element->playerName = names[i];
-			element->PlayerName->SetText(FText::FromString(TrimStringF_Dots(names[i], 12) + (gameInst->hostPlayerId == i ? "(Host)" : "")));
+			element->PlayerName->SetText(FText::FromString(
+				TrimStringF_Dots(names[i], 12) + 
+				(gameInst->hostPlayerId == i ? LOCTEXT("(Host)", "(Host)").ToString() : "")
+			));
 			element->PlayerName->SetVisibility(ESlateVisibility::Visible);
 
 			// if this is the ui controlling player, allow clicking too ready from this button
@@ -745,7 +748,7 @@ void ULobbyUI::UpdateLobbyUI()
 
 					//int32 percentLoaded = gameInst->clientPacketsReceived[i] * 100 / gameInst->saveSystem().totalPackets();
 					element->SaveGameTransferBar->GetDynamicMaterial()->SetScalarParameterValue("Fraction", percentLoaded / 100.0f);
-					SetText(element->SaveGameTransferText, to_string(percentLoaded) + "%");
+					SetText(element->SaveGameTransferText, TEXT_PERCENT(percentLoaded));
 
 					element->ReadyParent->SetVisibility(ESlateVisibility::Collapsed);
 					element->PlayerReadyFill->SetVisibility(ESlateVisibility::Collapsed);

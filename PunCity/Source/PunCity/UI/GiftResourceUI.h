@@ -50,7 +50,10 @@ public:
 	void OpenUI(int32 targetPlayerIdIn)
 	{
 		targetPlayerId = targetPlayerIdIn;
-		SetText(GiftTitleText, "Gift to " + simulation().playerName(targetPlayerId));
+		SetText(GiftTitleText, FText::Format(NSLOCTEXT("GiftResourceUI", "GiftToX",
+			"Gift to {0}"),
+			simulation().playerNameT(targetPlayerId)
+		));
 
 		GiftTypeDropdown->SetSelectedOption("Money");
 		GiftIcon->SetBrushFromTexture(assetLoader()->CoinIcon);

@@ -384,7 +384,7 @@ void UMainGameUI::Tick()
 		}
 
 		// Card Hand Queue Count
-		std::string submitStr = "Submit";
+		FText submitStr = LOCTEXT("Submit", "Submit");
 		if (queueCount > 1) {
 			SetText(CardHandCount, to_string(queueCount));
 			CardHandCount->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
@@ -393,7 +393,7 @@ void UMainGameUI::Tick()
 			// "Pass" instead of "Submit" when there is no card selected, and there are 2+ card hand queue
 			int32 reservedCount = CppUtils::Sum(_lastHand1ReserveStatus);
 			if (reservedCount == 0) {
-				submitStr = "Pass";
+				submitStr = LOCTEXT("Pass", "Pass");
 			}
 		}
 		else {
@@ -406,13 +406,13 @@ void UMainGameUI::Tick()
 		int32 rerollPrice = cardSystem.GetRerollPrice();
 		RerollPrice->SetColorAndOpacity(resourceSystem.money() >= rerollPrice ? FLinearColor::White : FLinearColor(0.4, 0.4, 0.4));
 		if (rerollPrice == 0) {
-			RerollPrice->SetText(FText::FromString(FString("Free")));
-			RerollPrice1->SetText(FText::FromString(FString("Free")));
+			RerollPrice->SetText(LOCTEXT("Free", "Free"));
+			RerollPrice1->SetText(LOCTEXT("Free", "Free"));
 			RerollCoinIcon->SetVisibility(ESlateVisibility::Collapsed);
 			RerollCoinIcon1->SetVisibility(ESlateVisibility::Collapsed);
 		} else {
-			RerollPrice->SetText(FText::FromString(FString::FromInt(rerollPrice)));
-			RerollPrice1->SetText(FText::FromString(FString::FromInt(rerollPrice)));
+			RerollPrice->SetText(TEXT_NUM(rerollPrice));
+			RerollPrice1->SetText(TEXT_NUM(rerollPrice));
 			RerollCoinIcon->SetVisibility(ESlateVisibility::HitTestInvisible);
 			RerollCoinIcon1->SetVisibility(ESlateVisibility::HitTestInvisible);
 		}
@@ -614,8 +614,8 @@ void UMainGameUI::Tick()
 							if (IsBuildingCard(buildingEnum)) {
 								auto cardButton = AddCard(CardHandEnum::ConverterHand, buildingEnum, ConverterCardHandBox, CallbackEnum::SelectCardRemoval, i);
 
-								SetText(ConverterCardHandTitle, "CHOOSE A CARD TO REMOVE");
-								SetText(cardButton->PriceText, to_string(cardSystem.GetCardPrice(buildingEnum)));
+								SetText(ConverterCardHandTitle, LOCTEXT("CHOOSE A CARD TO REMOVE", "CHOOSE A CARD TO REMOVE"));
+								SetText(cardButton->PriceText, TEXT_NUM(cardSystem.GetCardPrice(buildingEnum)));
 								cardButton->PriceTextBox->SetVisibility(ESlateVisibility::HitTestInvisible);
 							}
 						}
@@ -649,8 +649,8 @@ void UMainGameUI::Tick()
 							if (IsBuildingCard(buildingEnum)) {
 								auto cardButton = AddCard(CardHandEnum::ConverterHand, buildingEnum, ConverterCardHandBox, CallbackEnum::SelectConverterCard, i);
 
-								SetText(ConverterCardHandTitle, "CHOOSE A CARD\npay the price to build");
-								SetText(cardButton->PriceText, to_string(cardSystem.GetCardPrice(buildingEnum)));
+								SetText(ConverterCardHandTitle, LOCTEXT("ConverterCardHandTitle", "CHOOSE A CARD\npay the price to build"));
+								SetText(cardButton->PriceText, TEXT_NUM(cardSystem.GetCardPrice(buildingEnum)));
 								cardButton->PriceTextBox->SetVisibility(ESlateVisibility::HitTestInvisible);
 							}
 						}
@@ -838,22 +838,21 @@ void UMainGameUI::Tick()
 
 		// Top left
 		{
-			std::stringstream ss;
-			//int32_t minutesIntoSeason = Time::Minutes() - Time::Seasons() * Time::MinutesPerSeason;
-			//if (minutesIntoSeason >= 4) ss << "Late ";
-			//else if (minutesIntoSeason >= 2) ss << "Mid ";
-			//else ss << "Early ";
-
-			ss << Time::SeasonPrefix(Time::Ticks()) << " ";
-
-			ss << Time::SeasonName(Time::Seasons()) << "\n";
-			ss << "Year " << std::to_string(Time::Years());
-			SetText(TimeText, ss.str());
+			SetText(TimeText, FText::Format(
+				INVTEXT("{0} {1}\nYear {2}"),
+				Time::SeasonPrefix(Time::Ticks()),
+				Time::SeasonName(Time::Seasons()),
+				TEXT_NUM(Time::Years())
+			));
 		}
 		
 		{
 			FloatDet celsius = simulation.Celsius(dataSource()->cameraAtom().worldTile2());
-			SetText(TemperatureText, to_wstring(FDToInt(celsius)) + L"°C (" + to_wstring(FDToInt(CelsiusToFahrenheit(celsius))) + L"°F)");
+			SetText(TemperatureText, FText::Format(
+				INVTEXT("{0}°C ({1}°F)"),
+				TEXT_NUM(FDToInt(celsius)),
+				TEXT_NUM(FDToInt(CelsiusToFahrenheit(celsius)))
+			));
 
 			float fraction = FDToFloat(celsius - Time::MinCelsiusBase()) / FDToFloat(Time::MaxCelsiusBase() - Time::MinCelsiusBase());
 			TemperatureImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", fraction);
@@ -877,11 +876,6 @@ void UMainGameUI::Tick()
 		AdultPopulationText->SetText(FText::FromString(FString::FromInt(adultPopulation)));
 		ChildPopulationText->SetText(FText::FromString(FString::FromInt(childPopulation)));
 		{
-			std::stringstream populationTip;
-			populationTip << "Population: " << population;
-			populationTip << "<bullet>" << adultPopulation << " Adults</>";
-			populationTip << "<bullet>" << childPopulation << " Children</>";
-			
 			AddToolTip(PopulationBox, FText::Format(LOCTEXT("PopulationBox_Tip",
 				"Population: {0}"
 				"<bullet>{1} Adults</>"
@@ -1128,10 +1122,8 @@ void UMainGameUI::Tick()
 
 
 		// Food
-		FString foodTextStr("Food: ");
 		int32 foodCount = simulation.foodCount(playerId());
-		foodTextStr.AppendInt(foodCount);
-		FoodCountText->SetText(FText::FromString(foodTextStr));
+		FoodCountText->SetText(FText::Format(LOCTEXT("Food: {0}", "Food: {0}"), TEXT_NUM(foodCount)));
 		FoodCountText->SetColorAndOpacity(foodCount > 0 ? FLinearColor::White : FLinearColor::Red);
 		PlayAnimationIf("FoodCountLowFlash", foodCount == 0);
 
@@ -1172,8 +1164,8 @@ void UMainGameUI::Tick()
 				shouldUpdateFuel = true;
 
 				punGraph->SetupGraph({
-					{ FString("Production (season)"), PlotStatEnum::FoodProduction, FLinearColor(0.3, 1, 0.3) },
-					{ FString("Consumption (season)"), PlotStatEnum::FoodConsumption, FLinearColor(1, 0.3, 0.3) },
+					{ LOCTEXT("Production (season)", "Production (season)").ToString(), PlotStatEnum::FoodProduction, FLinearColor(0.3, 1, 0.3) },
+					{ LOCTEXT("Consumption (season)", "Consumption (season)").ToString(), PlotStatEnum::FoodConsumption, FLinearColor(1, 0.3, 0.3) },
 				});
 			}
 
@@ -1410,10 +1402,15 @@ void UMainGameUI::Tick()
 
 			if (closestTech_HouseLvl != -1) 
 			{
-				std::stringstream ss;
 				int32 totalHouseCount = closestTech_CurrentHouseCount + closestTech_HouseNeeded;
-				ss << "House Lvl " << closestTech_HouseLvl << ": " << closestTech_CurrentHouseCount << "/" << totalHouseCount;
-				SetText(ProsperityAmountText, ss.str());
+
+				SetText(ProsperityAmountText, FText::Format(LOCTEXT("ProsperityAmountText",
+					"House Lvl {0}: {1}/{2}"
+					),
+					TEXT_NUM(closestTech_HouseLvl),
+					TEXT_NUM(closestTech_CurrentHouseCount),
+					TEXT_NUM(totalHouseCount)
+				));
 				ProsperityBar->SetWidthOverride(closestTech_CurrentHouseCount * 240.0f / totalHouseCount);
 			}
 			else {
@@ -1428,14 +1425,14 @@ void UMainGameUI::Tick()
 	{
 		PlacementInfo placementInfo = inputSystemInterface()->PlacementBuildingInfo();
 
-		auto setMidscreenText = [&](std::string str) {
+		auto setMidscreenText = [&](FText text) {
 			MidScreenMessage->SetVisibility(ESlateVisibility::Visible);
-			SetText(MidScreenMessageText, str);
+			SetText(MidScreenMessageText, text);
 		};
 
 		if (IsRoadPlacement(placementInfo.placementType)) 
 		{
-			setMidscreenText("Shift-click to repeat");
+			setMidscreenText(LOCTEXT("Shift-click to repeat", "Shift-click to repeat"));
 		}
 		else {
 			MidScreenMessage->SetVisibility(ESlateVisibility::Collapsed);
@@ -1461,7 +1458,7 @@ void UMainGameUI::Tick()
 			jobRow->Init(this, jobEnum);
 			JobPriorityScrollBox->AddChild(jobRow);
 			JobPriorityRows.Add(jobRow);
-			jobRow->Rename(ToTChar(GetBuildingInfo(jobEnum).nameStd() + "_job"));
+			jobRow->Rename(*(GetBuildingInfo(jobEnum).name.ToString() + "_job"));
 		}
 	}
 
@@ -1500,9 +1497,11 @@ void UMainGameUI::Tick()
 				allowedCount += building.allowedOccupants();
 			}
 
-			std::stringstream ss;
-			ss << occupantCount << "/" << allowedCount;
-			SetText(jobRow->JobCountText, ss.str());
+			//std::stringstream ss;
+			//ss << occupantCount << "/" << allowedCount;
+			SetText(jobRow->JobCountText, 
+				FText::Format(INVTEXT("{0}/{1}"), TEXT_NUM(occupantCount), TEXT_NUM(allowedCount))
+			);
 
 			jobRow->SetVisibility(ESlateVisibility::Visible);
 
@@ -2081,7 +2080,10 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 	if (callbackEnum == CallbackEnum::SelectCardRemoval)
 	{
 		buildingEnumToRemove = buildingEnum;
-		SetText(ConverterCardHandConfirmUI->ConfirmText, "Are you sure you want to remove " + GetBuildingInfo(buildingEnum).nameStd() + " Card?");
+		SetText(ConverterCardHandConfirmUI->ConfirmText, FText::Format(LOCTEXT("SureRemoveCard",
+			"Are you sure you want to remove {0} Card?"),
+			GetBuildingInfo(buildingEnum).name
+		));
 		ConverterCardHandConfirmUI->SetVisibility(ESlateVisibility::Visible);
 
 		return;

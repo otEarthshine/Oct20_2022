@@ -79,21 +79,25 @@ public:
 		BorderUpkeepBox->SetVisibility(ESlateVisibility::Collapsed);
 		
 		IconSizeBox->SetVisibility(ESlateVisibility::Collapsed);
+
+#define LOCTEXT_NAMESPACE "RegionHoverUI"
+		const FText incomeText = LOCTEXT("Income:", "Income:");
+		const FText upkeepText = LOCTEXT("Upkeep:", "Upkeep:");
 		
-		// Already own this province, Showr real income/upkeep
+		// Already own this province, Show real income/upkeep
 		if (provinceOwnerId == playerId())
 		{
-			SetText(IncomeText, "Income:");
+			SetText(IncomeText, incomeText);
 			SetTextNumber(IncomeCount, sim.GetProvinceIncome100(provinceIdIn) / 100.0f, 1);
 			
 			if (unlockedInfluence) {
-				SetText(UpkeepText, "Upkeep:");
+				SetText(UpkeepText, upkeepText);
 				SetTextNumber(UpkeepCount, sim.GetProvinceUpkeep100(provinceIdIn, provinceOwnerId) / 100.0f, 1);
 				UpkeepText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 				UpkeepBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
 				if (sim.IsBorderProvince(provinceIdIn)) {
-					SetText(BorderUpkeepText, "Border Upkeep:");
+					SetText(BorderUpkeepText, LOCTEXT("Border Upkeep:", "Border Upkeep:"));
 					SetTextNumber(BorderUpkeepCount, 5, 1);
 						
 					BorderUpkeepText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
@@ -103,16 +107,18 @@ public:
 		}
 		else
 		{
-			SetText(IncomeText, "Income:");
+			SetText(IncomeText, incomeText);
 			SetTextNumber(IncomeCount, sim.GetProvinceIncome100(provinceIdIn) / 100.0f, 1);
 
 			if (unlockedInfluence) {
-				SetText(UpkeepText, "Upkeep:");
+				SetText(UpkeepText, upkeepText);
 				SetTextNumber(UpkeepCount, sim.GetProvinceBaseUpkeep100(provinceIdIn) / 100.0f, 1);
 				UpkeepText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 				UpkeepBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 			}
 		}
+#undef LOCTEXT_NAMESPACE
+		
 
 		GeoresourceSystem& georesourceSys = sim.georesourceSystem();
 		GeoresourceNode node = georesourceSys.georesourceNode(provinceId);

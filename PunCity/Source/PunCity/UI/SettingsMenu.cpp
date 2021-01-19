@@ -17,5 +17,5 @@ bool USettingsMenu::Initialize()
 
 void USettingsMenu::Test()
 {
-	UE_LOG(LogTemp, Error, TEXT("Test this shit"));
+	UE_LOG(LogTemp, Error, TEXT("Test this"));
 }

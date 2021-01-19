@@ -226,9 +226,9 @@ void UWorldSpaceUI::TickBuildings()
 
 					bool isUIPlayerAttacker = claimProgress.attackerPlayerId == playerId();
 
-					std::stringstream ss;
-					std::string textType = (isUIPlayerAttacker ? "<Large>" : "<LargeRed>");
-					ss << textType << "Attacker: " << simulation().playerName(claimProgress.attackerPlayerId) << "</>\n";
+					//std::stringstream ss;
+					//std::string textType = (isUIPlayerAttacker ? "<Large>" : "<LargeRed>");
+					//ss << textType << "Attacker: " << simulation().playerName(claimProgress.attackerPlayerId) << "</>\n";
 					//ss << textType << claimProgress.committedInfluences << "</><img id=\"Influence\"/>";
 					//SetText(regionHoverUI->ClaimingText, ss.str());
 					//regionHoverUI->AutoChoseText->SetVisibility(ESlateVisibility::Collapsed);
@@ -260,10 +260,10 @@ void UWorldSpaceUI::TickBuildings()
 					
 
 					// 
-					SetText(regionHoverUI->BattleInfluenceLeft, "<img id=\"Influence\"/><Shadowed>" + to_string(claimProgress.committedInfluencesAttacker) + "</>");
-					SetText(regionHoverUI->BattleInfluenceRight, "<img id=\"Influence\"/><Shadowed>" + to_string(claimProgress.committedInfluencesDefender) + "</>");
+					SetText(regionHoverUI->BattleInfluenceLeft, FText::Format(INVTEXT("<img id=\"Influence\"/><Shadowed>{0}</>"), TEXT_NUM(claimProgress.committedInfluencesAttacker)));
+					SetText(regionHoverUI->BattleInfluenceRight, FText::Format(INVTEXT("<img id=\"Influence\"/><Shadowed>{0}</>"), TEXT_NUM(claimProgress.committedInfluencesDefender)));
+					SetText(regionHoverUI->DefenseBonusLeft, FText::Format(INVTEXT("<img id=\"Shield\"/><Shadowed>{0}</>"), TEXT_NUM(0)));
 
-					SetText(regionHoverUI->DefenseBonusLeft, "<img id=\"Shield\"/><Shadowed>" + to_string(0) + "%</>");
 					AddToolTip(regionHoverUI->DefenseBonusLeft, 
 						LOCTEXT("Attack Bonus: 0%", "Attack Bonus: 0%")
 					);
@@ -274,11 +274,12 @@ void UWorldSpaceUI::TickBuildings()
 
 					// Fight at home province = Vassalize
 					if (sim.homeProvinceId(provinceOwnerId) == provinceId) {
-						SetText(regionHoverUI->BattleText, "<Shadowed>Vassalize</>");
+						SetText(regionHoverUI->BattleText, TEXT_TAG("<Shadowed>", LOCTEXT("Vassalize", "Vassalize")));
 					}
 					else {
-						SetText(regionHoverUI->BattleText, "<Shadowed>Annex Province</>");
+						SetText(regionHoverUI->BattleText, TEXT_TAG("<Shadowed>", LOCTEXT("Annex Province", "Annex Province")));
 					}
+					
 
 					// UI-Player is Attacker
 					if (claimProgress.attackerPlayerId == playerId()) 
@@ -292,7 +293,9 @@ void UWorldSpaceUI::TickBuildings()
 						int32 reinforcePrice = (attackEnum == ProvinceAttackEnum::DeclareIndependence) ? BattleInfluencePrice : sim.GetProvinceAttackReinforcePrice(provinceId, claimConnectionEnum);
 						bool hasEnoughInfluence = sim.influence(playerId()) >= reinforcePrice;
 
-						SetText(regionHoverUI->ReinforceLeftButtonText, "Reinforce\n<img id=\"Influence\"/>" + TextRed(to_string(reinforcePrice), !hasEnoughInfluence));
+						SetText(regionHoverUI->ReinforceLeftButtonText, 
+							FText::Format(INVTEXT("{0}\n<img id=\"Influence\"/>{1}"), LOCTEXT("Reinforce", "Reinforce"), TextRed(TEXT_NUM(reinforcePrice), !hasEnoughInfluence))
+						);
 						regionHoverUI->ReinforceLeftButton->SetIsEnabled(hasEnoughInfluence);
 						
 						regionHoverUI->ReinforceLeftButtonText->SetVisibility(ESlateVisibility::Visible);
@@ -303,11 +306,15 @@ void UWorldSpaceUI::TickBuildings()
 					else if (provinceOwnerId == playerId())
 					{
 						int32 hasEnoughInfluence = sim.influence(playerId()) >= BattleInfluencePrice;
-						SetText(regionHoverUI->ReinforceRightButtonText, "Reinforce\n<img id=\"Influence\"/>" + TextRed(to_string(BattleInfluencePrice), !hasEnoughInfluence));
+						SetText(regionHoverUI->ReinforceRightButtonText, 
+							FText::Format(INVTEXT("{0}\n<img id=\"Influence\"/>{1}"), LOCTEXT("Reinforce", "Reinforce"), TextRed(TEXT_NUM(BattleInfluencePrice), !hasEnoughInfluence))
+						);
 						regionHoverUI->ReinforceRightButton->SetIsEnabled(hasEnoughInfluence);
 
 						int32 hasEnoughMoney = sim.money(playerId()) >= BattleInfluencePrice;
-						SetText(regionHoverUI->ReinforceMoneyRightButtonText, "Reinforce\n<img id=\"Coin\"/>" + TextRed(to_string(BattleInfluencePrice), !hasEnoughMoney));
+						SetText(regionHoverUI->ReinforceMoneyRightButtonText,
+							FText::Format(INVTEXT("{0}\n<img id=\"Coin\"/>{1}"), LOCTEXT("Reinforce", "Reinforce"), TextRed(TEXT_NUM(BattleInfluencePrice), !hasEnoughInfluence))
+						);
 						regionHoverUI->ReinforceMoneyRightButton->SetIsEnabled(hasEnoughMoney);
 						
 						regionHoverUI->ReinforceLeftButtonText->SetVisibility(ESlateVisibility::Collapsed);
@@ -370,7 +377,7 @@ void UWorldSpaceUI::TickBuildings()
 							WorldZoomTransition_WorldSpaceUIShrink, 2.0f);
 
 						hoverIcon->SetImage(assetLoader()->ExclamationIcon);
-						hoverIcon->SetText("", "");
+						hoverIcon->SetText(FText(), FText());
 					}
 				}
 			}
@@ -448,7 +455,7 @@ void UWorldSpaceUI::TickBuildings()
 				_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
 
 			hoverIcon->SetImage(assetLoader()->SmileIcon);
-			hoverIcon->SetText("", "");
+			hoverIcon->SetText(FText(), FText());
 		}
 		else if (isInOverlayRadiusHouse(OverlayType::Theatre, Theatre::MinHouseLvl, Theatre::Radius))
 		{
@@ -456,7 +463,7 @@ void UWorldSpaceUI::TickBuildings()
 				_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
 
 			hoverIcon->SetImage(assetLoader()->SmileIcon);
-			hoverIcon->SetText("", "");
+			hoverIcon->SetText(FText(), FText());
 		}
 
 		
@@ -469,7 +476,7 @@ void UWorldSpaceUI::TickBuildings()
 				_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
 
 			hoverIcon->SetImage(assetLoader()->CoinIcon);
-			hoverIcon->SetText("", "+" + to_string(Bank::ProfitPerHouse));
+			hoverIcon->SetText(FText(), TEXT_NUMSIGNED(Bank::ProfitPerHouse));
 		}
 		// Bad Appeal
 		else if (overlayType == OverlayType::BadAppeal && IsHumanHouse(building.buildingEnum()) && 
@@ -480,7 +487,7 @@ void UWorldSpaceUI::TickBuildings()
 			WorldZoomTransition_WorldSpaceUIShrink, 1.5);
 
 			hoverIcon->SetImage(assetLoader()->UnhappyIcon);
-			hoverIcon->SetText("", "");
+			hoverIcon->SetText(FText(), FText());
 		}
 
 		/*
@@ -493,7 +500,7 @@ void UWorldSpaceUI::TickBuildings()
 
 			//hoverIcon->SetImage(assetLoader()->ScienceIcon);
 			hoverIcon->IconImage->SetVisibility(ESlateVisibility::Collapsed);
-			hoverIcon->SetText("", "+10%");
+			hoverIcon->SetText(FText(), INVTEXT("+10%"));
 			hoverIcon->SetTextColor(FLinearColor::White);
 		}
 
@@ -1100,16 +1107,22 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	 * Single instruction...
 	 */
 	if (needInstruction(PlacementInstructionEnum::OutsideTerritory)) {
-		punBox->AddRichText("<Red>Must be inside our territory</>")->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichTextCenter(LOCTEXT("OutsideTerritory_Instruct",
+			"<Red>Must be inside our territory</>"
+		));
 	}
 	// Drag
 	else if (needInstruction(PlacementInstructionEnum::DragGather)) {
-		punBox->AddRichText("Click and drag cursor")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
-		punBox->AddRichText("to specify the area to harvest")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
+		punBox->AddRichTextCenter(LOCTEXT("DragGather1_Instruct", "Click and drag cursor"))->SetAutoWrapText(false);
+		punBox->AddRichTextCenter(LOCTEXT("DragGather2_Instruct", "to specify the area to harvest"))->SetAutoWrapText(false);
 	}
 	else if (needInstruction(PlacementInstructionEnum::DragRoad1)) {
-		punBox->AddRichText("Click and drag cursor")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
-		punBox->AddRichText("to build")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
+		punBox->AddRichTextCenter(LOCTEXT("DragRoad11_Instruct",
+			"Click and drag cursor"
+		))->SetAutoWrapText(false);
+		punBox->AddRichTextCenter(LOCTEXT("DragRoad12_Instruct",
+			"to build"
+		))->SetAutoWrapText(false);
 	}
 	//else if (needInstruction(PlacementInstructionEnum::DragRoad2)) { // Not used yet???
 	//	//punBox->AddRichText("Shift-click to repeat")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
@@ -1117,11 +1130,15 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	//}
 	else if (needInstruction(PlacementInstructionEnum::DragRoadStone)) {
 		int32 stoneNeeded = getInstruction(PlacementInstructionEnum::DragRoadStone).intVar1;
-		punBox->AddRichText(TextRed(to_string(stoneNeeded), simulation().resourceCount(playerId(), ResourceEnum::Stone) < stoneNeeded) + "<img id=\"Stone\"/>");
+		punBox->AddRichText(
+			TextRed(to_string(stoneNeeded), simulation().resourceCount(playerId(), ResourceEnum::Stone) < stoneNeeded) + "<img id=\"Stone\"/>"
+		);
 	}
 	else if (needInstruction(PlacementInstructionEnum::DragRoadIntercity)) {
 		int32 goldNeeded = getInstruction(PlacementInstructionEnum::DragRoadIntercity).intVar1;
-		punBox->AddRichText(TextRed(to_string(goldNeeded), simulation().money(playerId()) < goldNeeded) + "<img id=\"Coin\"/>");
+		punBox->AddRichText(
+			TextRed(to_string(goldNeeded), simulation().money(playerId()) < goldNeeded) + "<img id=\"Coin\"/>"
+		);
 	}
 	
 	else if (needInstruction(PlacementInstructionEnum::DragStorageYard)) {
@@ -1135,70 +1152,67 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	}
 	
 	else if (needInstruction(PlacementInstructionEnum::DragDemolish)) {
-		punBox->AddRichText("Click and drag cursor")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
-		punBox->AddRichText("to specify the area to demolish")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
+		punBox->AddRichTextCenter(LOCTEXT("DragDemolish1_Instruct", "Click and drag cursor"))->SetAutoWrapText(false);
+		punBox->AddRichTextCenter(LOCTEXT("DragDemolish2_Instruct", "to specify the area to demolish"))->SetAutoWrapText(false);
 	}
 
 	else if (needInstruction(PlacementInstructionEnum::DeliveryPointInstruction)) {
-		punBox->AddRichText("Choose storage/market")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
-		punBox->AddRichText("to set the delivery point.")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
+		punBox->AddRichTextCenter(LOCTEXT("DeliveryPointInstruction1_Instruct", "Choose storage/market"))->SetAutoWrapText(false);
+		punBox->AddRichTextCenter(LOCTEXT("DeliveryPointInstruction2_Instruct", "to set the delivery point."))->SetAutoWrapText(false);
 	}
 	else if (needInstruction(PlacementInstructionEnum::DeliveryPointMustBeStorage)) {
-		punBox->AddRichText("<Red>Delivery Point must be</>")->SetJustification(ETextJustify::Type::Center);
-		punBox->AddRichText("<Red>Storage Yard or Warehouse</>")->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichTextCenter(LOCTEXT("DeliveryPointMustBeStorage1_Instruct", "<Red>Delivery Point must be</>"));
+		punBox->AddRichTextCenter(LOCTEXT("DeliveryPointMustBeStorage2_Instruct", "<Red>Storage Yard or Warehouse</>"));
 	}
 	else if (needInstruction(PlacementInstructionEnum::ShipperDeliveryPointShouldBeOutOfRadius)) {
-		punBox->AddRichText("<Red>Delivery Point must be</>")->SetJustification(ETextJustify::Type::Center);
-		punBox->AddRichText("<Red>outside Shipping Depot's Radius</>")->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichTextCenter(LOCTEXT("DeliveryPointShouldBeOutOfRadius1_Instruct", "<Red>Delivery Point must be</>"));
+		punBox->AddRichTextCenter(LOCTEXT("DeliveryPointShouldBeOutOfRadius2_Instruct", "<Red>outside Shipping Depot's Radius</>"));
 	}
 	
 	else if (needInstruction(PlacementInstructionEnum::Dock)) {
-		punBox->AddRichText("<Red>Dock must face water</>")->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichTextCenter(LOCTEXT("Dock_Instruct", "<Red>Dock must face water</>"));
 	}
 	else if (needInstruction(PlacementInstructionEnum::NeedGeoresource)) {
 		GeoresourceEnum geoEnum = static_cast<GeoresourceEnum>(getInstruction(PlacementInstructionEnum::NeedGeoresource).intVar1);
-		punBox->AddRichTextCenter(FText::Format(LOCTEXT("NeedRegionWithGeo",
-			"<Red>Need region with {0}</>"),
-			GetGeoresourceInfo(geoEnum).name
-		));
+		punBox->AddRichTextCenter(FText::Format(LOCTEXT("NeedGeoresource_Instruct", "<Red>Need region with {0}</>"), GetGeoresourceInfo(geoEnum).name));
 	}
 	else if (needInstruction(PlacementInstructionEnum::MountainMine)) {
-		punBox->AddRichText("<Red>Mine's back must face mountain</>")->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichTextCenter(LOCTEXT("MountainMine_Instruct", "<Red>Mine's back must face mountain</>"));
 	}
 	else if (needInstruction(PlacementInstructionEnum::ForeignBuilding)) {
-		punBox->AddRichText("<Red>Must be placed in foreign land</>")->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichTextCenter(LOCTEXT("ForeignBuilding_Instruct", "<Red>Must be placed in foreign land</>"));
 	}
 	else if (needInstruction(PlacementInstructionEnum::MustBeNearRiver))
 	{
-		punBox->AddRichText("<Red>Must be built near a river</>")->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichTextCenter(LOCTEXT("MustBeNearRiver_Instruct", "<Red>Must be built near a river</>"));
 	}
 	else if (needInstruction(PlacementInstructionEnum::LogisticsOffice))
 	{
-		punBox->AddRichText("Take resources from within radius")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
-		punBox->AddRichText("Ship them to faraway destination")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
+		punBox->AddRichTextCenter(LOCTEXT("LogisticsOffice1_Instruct", "Take resources from within radius"))->SetAutoWrapText(false);
+		punBox->AddRichTextCenter(LOCTEXT("LogisticsOffice2_Instruct", "Ship them to faraway destination"))->SetAutoWrapText(false);
 	}
 	
 	else if (needInstruction(PlacementInstructionEnum::FarmAndRanch)) {
-		punBox->AddRichText("<Red>Cannot be built on desert</>")->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichTextCenter(LOCTEXT("FarmAndRanch_Instruct", "<Red>Cannot be built on desert</>"));
 	}
 	else if (needInstruction(PlacementInstructionEnum::FarmNoValidSeedForRegion)) {
-		punBox->AddRichText("<Red>None of your seeds can be planted in this region.</>")->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichTextCenter(LOCTEXT("FarmNoValidSeedForRegion_Instruct", "<Red>None of your seeds can be planted in this region.</>"));
 	}
 	else if (needInstruction(PlacementInstructionEnum::FireOnTownhall)) {
 		int32 razeInfluence = getInstruction(PlacementInstructionEnum::FireOnTownhall).intVar1;
-		punBox->AddRichText("Requires " + to_string(razeInfluence) + "<img id=\"Influence\"/> to set townhall on fire")->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichTextCenter(FText::Format(LOCTEXT("FireOnTownhall_Instruct", "Requires {0}<img id=\"Influence\"/> to set townhall on fire"), TEXT_NUM(razeInfluence)));
 	}
 	else if (needInstruction(PlacementInstructionEnum::TownhallTarget)) {
-		punBox->AddRichText("<Red>Must be used on target city's townhall</>")->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichTextCenter(LOCTEXT("TownhallTarget_Instruct", "<Red>Must be used on target city's townhall</>"));
 	}
 	else if (needInstruction(PlacementInstructionEnum::YourBuildingTarget)) {
-		punBox->AddRichText("<Red>Must be used on your building.</>")->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichTextCenter(LOCTEXT("YourBuildingTarget_Instruct", "<Red>Must be used on your building.</>"));
 	}
 	else if (needInstruction(PlacementInstructionEnum::NotThisBuildingTarget)) {
-		punBox->AddRichText("<Red>Cannot be used on this building.</>")->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichTextCenter(LOCTEXT("NotThisBuildingTarget_Instruct", "<Red>Cannot be used on this building.</>"));
 	}
 	else if (needInstruction(PlacementInstructionEnum::ColonyNoGeoresource)) {
-		punBox->AddRichText("<Red>Must be built on a province with georesource</>")->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichTextCenter(LOCTEXT("ColonyNoGeoresource_Instruct", "<Red>Must be built on a province with georesource</>"));
 	}
 	else if (needInstruction(PlacementInstructionEnum::Colony)) {
 		int32 provinceId = simulation().GetProvinceIdClean(placementInfo.mouseOnTile);
@@ -1206,11 +1220,11 @@ void UWorldSpaceUI::TickPlacementInstructions()
 		ResourceEnum resourceEnum = simulation().georesource(provinceId).info().resourceEnum;
 		if (resourceEnum != ResourceEnum::None) {
 			int32 resourceCount = Colony::GetColonyResourceIncome(resourceEnum);
-			punBox->AddIconPair(TEXT_NUMSIGNED(resourceCount), resourceEnum, LOCTEXT(" per round", " per round"));
+			punBox->AddIconPair(TEXT_NUMSIGNED(resourceCount), resourceEnum, FText::Format(INVTEXT(" {0}"), LOCTEXT("per round", "per round")));
 		}
 	}
 	else if (needInstruction(PlacementInstructionEnum::Fort)) {
-		punBox->AddRichText("Fort does not require citizens nearby to build.")->SetJustification(ETextJustify::Type::Center);
+		punBox->AddRichTextCenter(LOCTEXT("Fort_Instruct", "Fort does not require citizens nearby to build."));
 	}
 	
 
@@ -1235,17 +1249,15 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	if (!hasPrimaryInstruction && IsBuildingCard(placementInfo.buildingEnum)) 
 	{
 		if (needInstruction(PlacementInstructionEnum::Rotate)) {
-			punBox->AddRichText("Press R to rotate")
-				->SetJustification(ETextJustify::Type::Center)
-				->SetAutoWrapText(false);
+			punBox->AddRichTextCenter(LOCTEXT("Rotate_Instruct", "Press R to rotate"))->SetAutoWrapText(false);
 			punBox->AddSpacer(12);
 
 			showResource = false;
 		}
 		else if (needInstruction(PlacementInstructionEnum::Shift))
 		{
-			punBox->AddRichText("Shift-click for")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
-			punBox->AddRichText("multiple placement")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
+			punBox->AddRichTextCenter(LOCTEXT("Shift1_Instruct", "Shift-click for"))->SetAutoWrapText(false);
+			punBox->AddRichTextCenter(LOCTEXT("Shift2_Instruct", "multiple placement"))->SetAutoWrapText(false);
 			punBox->AddSpacer(12);
 
 			showResource = false;
@@ -1255,6 +1267,9 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	/*
 	 * Building info...
 	 */
+	auto addEfficiencyText = [&](int32 efficiency) {
+		punBox->AddRichTextCenter(TextRedOrange(FText::Format(LOCTEXT("PlaceInfo_Efficiency", "Efficiency: {0}%"), TEXT_NUM(efficiency)), efficiency, 80, 60));
+	};
 
 	if (IsHouse(placementInfo.buildingEnum) || 
 		IsDecorativeBuilding(placementInfo.buildingEnum))
@@ -1262,30 +1277,30 @@ void UWorldSpaceUI::TickPlacementInstructions()
 		//int appealPercent = simulation.overlaySystem().appealPercent(placementInfo.mouseOnTile);
 
 		int32 appealPercent = simulation().overlaySystem().GetAppealPercent(placementInfo.mouseOnTile);
-		ss << "Appeal: " << appealPercent << "%";
-		punBox->AddRichText(TextRedOrange(ss.str(), appealPercent, 80, 60))->SetJustification(ETextJustify::Type::Center);
+		//ss << "Appeal: " << appealPercent << "%";
+		punBox->AddRichTextCenter(TextRedOrange(FText::Format(LOCTEXT("PlaceInfo_Appeal", "Appeal: {0}%"), TEXT_NUM(appealPercent)), appealPercent, 80, 60));
 		punBox->AddSpacer(12);
 
 	}
 	else if (placementInfo.buildingEnum == CardEnum::Fisher)
 	{
 		int32 efficiency = Fisher::FisherAreaEfficiency(placementInfo.mouseOnTile, false, WorldTile2::Invalid, &simulation());
-		ss << "Efficiency: " << efficiency << "%";
-		punBox->AddRichText(TextRedOrange(ss.str(), efficiency, 80, 60))->SetJustification(ETextJustify::Type::Center);
+		//ss << "Efficiency: " << efficiency << "%";
+		addEfficiencyText(efficiency);
 		punBox->AddSpacer(12);
 	}
 	else if (placementInfo.buildingEnum == CardEnum::Windmill)
 	{
 		int32 efficiency = Windmill::WindmillBaseEfficiency(playerId(), placementInfo.mouseOnTile, &simulation());
-		ss << "Efficiency: " << efficiency << "%";
-		punBox->AddRichText(TextRedOrange(ss.str(), efficiency, 80, 60))->SetJustification(ETextJustify::Type::Center);
+		//ss << "Efficiency: " << efficiency << "%";
+		addEfficiencyText(efficiency);
 		punBox->AddSpacer(12);
 	}
 	else if (placementInfo.buildingEnum == CardEnum::Beekeeper)
 	{
 		int32 efficiency = Beekeeper::BeekeeperBaseEfficiency(playerId(), placementInfo.mouseOnTile, &simulation());
-		ss << "Efficiency: " << efficiency << "%";
-		punBox->AddRichText(TextRedOrange(ss.str(), efficiency, 80, 60))->SetJustification(ETextJustify::Type::Center);
+		//ss << "Efficiency: " << efficiency << "%";
+		addEfficiencyText(efficiency);
 		punBox->AddSpacer(12);
 	}
 	else if (placementInfo.buildingEnum == CardEnum::FruitGatherer)
@@ -1303,8 +1318,11 @@ void UWorldSpaceUI::TickPlacementInstructions()
 		});
 		// Less than 12 (=24*24 / 4 / 4 / 3), need to warn red there is too little fruit trees
 		// Less than 18, need to warn orange
-		ss << "Fruit Tree Count: " << fruitTreeCount;
-		punBox->AddRichText(TextRedOrange(ss.str(), fruitTreeCount, 30, 20))->SetJustification(ETextJustify::Type::Center);
+		//ss << "Fruit Tree Count: " << fruitTreeCount;
+		punBox->AddRichTextCenter(TextRedOrange(
+			FText::Format(LOCTEXT("PlaceInfo_Appeal", "Fruit Tree Count: {0}"), TEXT_NUM(fruitTreeCount)),
+			fruitTreeCount, 30, 20
+		));
 		punBox->AddSpacer(12);
 	}
 

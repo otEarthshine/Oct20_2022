@@ -46,28 +46,38 @@ public:
 		int32 townPlayerId = simulation().building(townhallId).playerId();
 		IntercityTradeOffer offer = simulation().worldTradeSystem().GetIntercityTradeOffer(townPlayerId, resourceEnum);
 
+#define LOCTEXT_NAMESPACE "TargetConfirmUI"
 		if (offer.offerEnum == IntercityTradeOfferEnum::BuyWhenBelow)
 		{
-			TitleIconPair->SetText(simulation().townName(townPlayerId) + " is buying ", ".");
+			TitleIconPair->SetText(
+				FText::Format(LOCTEXT("X is buying ", "{0} is buying "), simulation().townNameT(townPlayerId)),
+				LOCTEXT("FullStop", ".")
+			);
 			TitleIconPair->SetImage(resourceEnum, assetLoader());
 
 			int32 maxBuyAmount = offer.targetInventory - simulation().resourceCount(townPlayerId, resourceEnum);
-			SetText(TargetAmountMaxText, "/ " + std::to_string(maxBuyAmount));
+			SetText(TargetAmountMaxText, FText::Format(INVTEXT("/ {0}"), TEXT_NUM(maxBuyAmount)));
 			TargetAmount->maxAmount = maxBuyAmount;
 
-			BottomText->SetText("You receive: " + std::to_string(TargetAmount->amount * simulation().price(resourceEnum)) + "<img id=\"Coin\"/>");
+			int32 moneyReceived = TargetAmount->amount * simulation().price(resourceEnum);
+			BottomText->SetText(FText::Format(LOCTEXT("YouRecieveXCoin", "You receive: {0}<img id=\"Coin\"/>"), TEXT_NUM(moneyReceived)));
 		}
 		else if (offer.offerEnum == IntercityTradeOfferEnum::SellWhenAbove)
 		{
-			TitleIconPair->SetText(simulation().townName(townPlayerId) + " is selling ", ".");
+			TitleIconPair->SetText(
+				FText::Format(LOCTEXT("X is selling ", "{0} is selling "), simulation().townNameT(townPlayerId)),
+				LOCTEXT("FullStop", ".")
+			);
 			TitleIconPair->SetImage(resourceEnum, assetLoader());
 
 			int32 maxSellAmount = simulation().resourceCount(townPlayerId, resourceEnum) - offer.targetInventory;
-			SetText(TargetAmountMaxText, "/ " + std::to_string(maxSellAmount));
+			SetText(TargetAmountMaxText, FText::Format(INVTEXT("/ {0}"), TEXT_NUM(maxSellAmount)));
 			TargetAmount->maxAmount = maxSellAmount;
 
-			BottomText->SetText("You pay: " + std::to_string(TargetAmount->amount * simulation().price(resourceEnum)) + "<img id=\"Coin\"/>");
+			int32 moneyPaid = TargetAmount->amount * simulation().price(resourceEnum);
+			BottomText->SetText(FText::Format(LOCTEXT("YouPayXCoin", "You pay: {0}<img id=\"Coin\"/>"), TEXT_NUM(moneyPaid)));
 		}
+#undef LOCTEXT_NAMESPACE
 	}
 
 	void OpenUI(int32 townhallIdIn, ResourceEnum resourceEnumIn)

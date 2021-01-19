@@ -878,14 +878,13 @@ public:
 
 	void OnEraUnlocked(TArray<FText>& args);
 
-	void SetDisplaySciencePoint(std::stringstream& ss, bool hasIcon = true) {
-		ss << std::fixed << std::setprecision(1);
-		ss << (science100() / 100.0f) << "";
+	void SetDisplaySciencePoint(TArray<FText>& args, bool hasIcon = true)
+	{
 		if (hasTargetResearch()) {
-			ss << "/" << scienceNeeded();
+			ADDTEXT_(INVTEXT("{0}/{1}"), TEXT_100(science100()), scienceNeeded());
 		}
 		if (hasIcon) {
-			ss << "<img id=\"Science\"/>";
+			ADDTEXT_INV_("<img id=\"Science\"/>");
 		}
 	}
 	

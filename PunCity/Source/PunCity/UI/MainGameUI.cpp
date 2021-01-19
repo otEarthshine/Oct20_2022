@@ -1319,9 +1319,9 @@ void UMainGameUI::Tick()
 
 			ResearchingText->SetText(currentTech->GetName());
 			
-			std::stringstream ssSci;
-			unlockSys->SetDisplaySciencePoint(ssSci, false);
-			SetText(ResearchingAmountText, ssSci.str());
+			TArray<FText> args;
+			unlockSys->SetDisplaySciencePoint(args, false);
+			SetText(ResearchingAmountText, args);
 			
 			ResearchBar->SetWidthOverride(unlockSys->hasTargetResearch() ? (unlockSys->researchFraction() * 240) : 0);
 			ResearchBarUI->SetVisibility(ESlateVisibility::Visible);

@@ -37,31 +37,7 @@ public:
 		GoToMainMenuButton->OnClicked.AddDynamic(this, &UVictoryScreen::OnClickGoToMainMenuButton);
 	}
 
-	void Tick()
-	{
-		auto gameInstance = CastChecked<UPunGameInstance>(GetGameInstance());
-		FGameEndStatus endStatus = gameInstance->endStatus;
-		if (endStatus.playerId == endStatus.victoriousPlayerId) 
-		{
-			if (endStatus.gameEndEnum == GameEndEnum::DominationVictory) {
-				SetText(VictoryText, "Domination Victory");
-			}
-			else if (endStatus.gameEndEnum == GameEndEnum::EconomicVictory) {
-				SetText(VictoryText, "Economic Victory");
-			}
-			else if (endStatus.gameEndEnum == GameEndEnum::ScienceVictory) {
-				SetText(VictoryText, "Science Victory");
-			}
-			VictoryBackgroundColor->SetVisibility(ESlateVisibility::Visible);
-			DefeatBackgroundColor->SetVisibility(ESlateVisibility::Collapsed);
-		}
-		else
-		{
-			VictoryText->SetText(FText::FromString(gameInstance->playerNameF(endStatus.victoriousPlayerId) + " is Victorious"));
-			VictoryBackgroundColor->SetVisibility(ESlateVisibility::Collapsed);
-			DefeatBackgroundColor->SetVisibility(ESlateVisibility::Visible);
-		}
-	}
+	void Tick();
 
 
 	UFUNCTION() void OnClickGoToMainMenuButton() {

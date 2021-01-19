@@ -98,10 +98,10 @@ void UTechUI::TickUI()
 	int32 currentEra = unlockSys->currentEra();
 
 	{
-		std::stringstream ss;
-		unlockSys->SetDisplaySciencePoint(ss);
-		ss << " Science Points";
-		ScienceAmountText->SetText(ToFText(ss.str()));
+		TArray<FText> args;
+		unlockSys->SetDisplaySciencePoint(args);
+		ADDTEXT_(INVTEXT(" {0}"), LOCTEXT("Science Points", "Science Points"));
+		ScienceAmountText->SetText(JOINTEXT(args));
 	}
 
 	// Set next tech sci need

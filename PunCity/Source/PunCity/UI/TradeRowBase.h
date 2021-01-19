@@ -28,11 +28,7 @@ public:
 		int32 price100 = simulation().worldTradeSystem().price100(_resourceEnum);
 		PriceTextPair->SetImage(assetLoader()->CoinIcon);
 
-		std::stringstream ss;
-		ss << fixed << setprecision(2);
-		ss << price100 / 100.0f;
-		PriceTextPair->SetText("", ss.str());
-		ss.str("");
+		PriceTextPair->SetText(FText(), TEXT_100_2(price100));
 
 		SetPriceColor(PriceTextPair, price100, basePrice100);
 

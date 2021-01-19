@@ -5,6 +5,8 @@
 #include "ResourceStatTableRow.h"
 #include "BuildingStatTableRow.h"
 
+#define LOCTEXT_NAMESPACE "StatisticsUI"
+
 void UStatisticsUI::InitStatisticsUI()
 {
 	StatisticsCloseButton->OnClicked.AddDynamic(this, &UStatisticsUI::CloseStatisticsUI);
@@ -32,32 +34,33 @@ void UStatisticsUI::InitStatisticsUI()
 	BuildingsStatBox->ClearChildren();
 	ResourceStatisticsBox->ClearChildren();
 
+	
 	AddSeries(PopulationGraph, {
 		//{ FString("Adult population"), PlotStatEnum::AdultPopulation, FLinearColor::Yellow },
-		{ FString("Population"), PlotStatEnum::Population, FLinearColor(0.3, 1, 0.3) },
-		{ FString("Children"), PlotStatEnum::ChildPopulation, FLinearColor(0.3, 0.3, 1) },
+		{ LOCTEXT("Population", "Population").ToString(), PlotStatEnum::Population, FLinearColor(0.3, 1, 0.3) },
+		{ LOCTEXT("Children", "Children").ToString(), PlotStatEnum::ChildPopulation, FLinearColor(0.3, 0.3, 1) },
 	});
 
 	AddSeries(IncomeGraph, {
-		{FString("Income"), PlotStatEnum::Income, FLinearColor(0.3, 1, 0.3) },
-		{FString("Revenue"), PlotStatEnum::Revenue, FLinearColor(0.3, 0.3, 1) },
-		{FString("Expense"), PlotStatEnum::Expense, FLinearColor(1, 0.3, 0.3) },
+		{ LOCTEXT("Income", "Income").ToString(), PlotStatEnum::Income, FLinearColor(0.3, 1, 0.3) },
+		{ LOCTEXT("Revenue", "Revenue").ToString(), PlotStatEnum::Revenue, FLinearColor(0.3, 0.3, 1) },
+		{ LOCTEXT("Expense", "Expense").ToString(), PlotStatEnum::Expense, FLinearColor(1, 0.3, 0.3) },
 	});
 	AddSeries(ScienceGraph, { {FString("Science"), PlotStatEnum::Science, FLinearColor(0.3, 0.3, 1) } });
 
 	AddSeries(FoodFuelGraph, {
-		{FString("Food"), PlotStatEnum::Food, FLinearColor(0.3, 1, 0.3) },
-		{FString("Fuel"), PlotStatEnum::Fuel, FLinearColor(1, 1, 0.3) },
+		{ LOCTEXT("Food", "Food").ToString(), PlotStatEnum::Food, FLinearColor(0.3, 1, 0.3) },
+		{ LOCTEXT("Fuel", "Fuel").ToString(), PlotStatEnum::Fuel, FLinearColor(1, 1, 0.3) },
 	});
 	AddSeries(FoodUsageGraph, {
-		{FString("Food Production"), PlotStatEnum::FoodProduction, FLinearColor(0.3, 1, 0.3) },
-		{FString("Food Consumption"), PlotStatEnum::FoodConsumption, FLinearColor(1, 0.3, 0.3) },
+		{ LOCTEXT("Food Production", "Food Production").ToString(), PlotStatEnum::FoodProduction, FLinearColor(0.3, 1, 0.3) },
+		{ LOCTEXT("Food Consumption", "Food Consumption").ToString(), PlotStatEnum::FoodConsumption, FLinearColor(1, 0.3, 0.3) },
 	});
 	
 	AddSeries(ImportExportGraph, {
 		//{FString("Trade balance"), PlotStatEnum::TradeBalance, FLinearColor::Green },
-		{FString("Export"), PlotStatEnum::Export, FLinearColor(0.3, 0.3, 1) },
-		{FString("Import"), PlotStatEnum::Import, FLinearColor(1, 0.3, 0.3) },
+		{ LOCTEXT("Export", "Export").ToString(), PlotStatEnum::Export, FLinearColor(0.3, 0.3, 1) },
+		{ LOCTEXT("Import", "Import").ToString(), PlotStatEnum::Import, FLinearColor(1, 0.3, 0.3) },
 	});
 
 	MarketResourceDropdown->ClearOptions();
@@ -68,8 +71,9 @@ void UStatisticsUI::InitStatisticsUI()
 	MarketResourceDropdown->OnSelectionChanged.AddDynamic(this, &UStatisticsUI::OnMarketDropDownChanged);
 
 	AddSeries(MarketPriceGraph, {
-		{FString("Current Price"), PlotStatEnum::MarketPrice, FLinearColor(0.7, 1, 0.7) },
+		{ LOCTEXT("Current Price", "Current Price").ToString(), PlotStatEnum::MarketPrice, FLinearColor(0.7, 1, 0.7) },
 	});
+
 }
 
 void UStatisticsUI::TickUI()
@@ -188,13 +192,15 @@ void UStatisticsUI::TickUI()
 					//buildingsBox->AddChild(row);
 
 					SetText(row->BuildingName, GetBuildingInfo(cardEnum).name);
-					SetText(row->Upkeep, to_string(bld.upkeep()) + "<img id=\"Coin\"/>");
+					SetText(row->Upkeep, FText::Format(INVTEXT("{0}<img id=\"Coin\"/>"), TEXT_NUM(bld.upkeep())));
 
-					std::string allowedOccupants = to_string(bld.allowedOccupants());
+					FText allowedOccupants = TEXT_NUM(bld.allowedOccupants());
 					if (bld.allowedOccupants() < bld.maxOccupants()) {
-						allowedOccupants = "<Yellow>" + allowedOccupants + "</>";
+						allowedOccupants = TEXT_TAG("<Yellow>", allowedOccupants);
 					}
-					SetText(row->WorkForce, to_string(bld.occupantCount()) + "/" + allowedOccupants);
+					SetText(row->WorkForce, 
+						FText::Format(INVTEXT("{0}/{1}"), TEXT_NUM(bld.occupantCount()), allowedOccupants)
+					);
 
 
 					// Buildings without a fixed produce()
@@ -291,57 +297,61 @@ void UStatisticsUI::TickUI()
 		auto& worldTradeSystem = simulation().worldTradeSystem();
 		ResourceEnum resourceEnum = worldTradeSystem.resourceEnumToShowStat;
 		
-		std::stringstream ss;
-		ss << fixed << setprecision(2);
-		ss << simulation().price100(resourceEnum) / 100.0f;
-		SetText(MarketCurrentPrice, ss);
+		SetText(MarketCurrentPrice, TEXT_100(simulation().price100(resourceEnum)));
 
-		ss << GetResourceInfo(resourceEnum).basePrice100() / 100.0f;
-		SetText(MarketBasePrice, ss);
-		ss.str("");
+		SetText(MarketBasePrice, TEXT_100(GetResourceInfo(resourceEnum).basePrice100()));
 
 		int32 netSupplyChange = worldTradeSystem.GetNetPlayerSupplyChange(uiPlayerId, resourceEnum);
 		SetText(NetExportText, netSupplyChange >= 0 ? "Net export (yearly):" : "Net import (yearly):");
 		SetText(NetExportAmount, to_string(abs(netSupplyChange)));
 		SetResourceImage(NetExportImage, resourceEnum, assetLoader());
 
+		TArray<FText> args;
+
 		std::vector<std::pair<int32, int32>> mainImporters = worldTradeSystem.GetTwoMainTraders(resourceEnum, true);
-		ss << "Main importers: ";
+		ADDTEXT_LOCTEXT("Main importers", "Main importers");
+		ADDTEXT_INV_(": ");
 		for (size_t i = 0; i < mainImporters.size(); i++) {
-			ss << simulation().playerName(mainImporters[i].first);
-			if (i < mainImporters.size() - 1) ss << ", ";
+			ADDTEXT__(simulation().playerNameT(mainImporters[i].first));
+			if (i < mainImporters.size() - 1) {
+				ADDTEXT_INV_(", ");
+			}
 		}
-		SetText(MainImportersText, ss.str());
-		ss.str("");
+		SetText(MainImportersText, args);
 
 		std::vector<std::pair<int32, int32>> mainExporters = worldTradeSystem.GetTwoMainTraders(resourceEnum, false);
-		ss << "Main exporters: ";
+		ADDTEXT_LOCTEXT("Main exporters", "Main exporters");
+		ADDTEXT_INV_(": ");
 		for (size_t i = 0; i < mainExporters.size(); i++) {
-			ss << simulation().playerName(mainExporters[i].first);
-			if (i < mainExporters.size() - 1) ss << ", ";
+			ADDTEXT__(simulation().playerNameT(mainExporters[i].first));
+			if (i < mainExporters.size() - 1) {
+				ADDTEXT_INV_(", ");
+			}
 		}
-		SetText(MainExportersText, ss.str());
-		ss.str("");
+		SetText(MainExportersText, args);
+		
 
-		std::stringstream boughtLeftSS;
-		std::stringstream boughtRightSS;
-		std::stringstream soldLeftSS;
-		std::stringstream soldRightSS;
+		TArray<FText> boughtLeftArgs;
+		TArray<FText> boughtRightArgs;
+		TArray<FText> soldLeftArgs;
+		TArray<FText> soldRightArgs;
 		const std::vector<PlayerSupplyChange>& supplyChanges = worldTradeSystem.GetSupplyChanges(resourceEnum);
 		for (const PlayerSupplyChange& supplyChange : supplyChanges) {
 			if (supplyChange.amount > 0) {
-				soldLeftSS << simulation().playerName(supplyChange.playerId) << "\n";
-				soldRightSS << supplyChange.amount << "\n";
-			}
-			else {
-				boughtLeftSS << simulation().playerName(supplyChange.playerId) << "\n";
-				boughtRightSS << supplyChange.amount << "\n";
+				ADDTEXT(soldLeftArgs, INVTEXT("{0}\n"), simulation().playerNameT(supplyChange.playerId));
+				ADDTEXT(soldRightArgs, INVTEXT("{0}\n"), TEXT_NUM(supplyChange.amount));
+			} else {
+				ADDTEXT(boughtLeftArgs, INVTEXT("{0}\n"), simulation().playerNameT(supplyChange.playerId));
+				ADDTEXT(boughtRightArgs, INVTEXT("{0}\n"), TEXT_NUM(supplyChange.amount));
 			}
 		}
-		SetText(BoughtRecordLeftText, boughtLeftSS);
-		SetText(BoughtRecordRightText, boughtRightSS);
-		SetText(SoldRecordLeftText, soldLeftSS);
-		SetText(SoldRecordRightText, soldRightSS);
+		SetText(BoughtRecordLeftText, boughtLeftArgs);
+		SetText(BoughtRecordRightText, boughtRightArgs);
+		SetText(SoldRecordLeftText, soldLeftArgs);
+		SetText(SoldRecordRightText, soldRightArgs);
 	}
 	
 }
+
+
+#undef LOCTEXT_NAMESPACE

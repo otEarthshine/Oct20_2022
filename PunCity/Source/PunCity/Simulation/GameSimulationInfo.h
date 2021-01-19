@@ -146,10 +146,14 @@ public:
 #define FTEXT(textIn) (FText::FromString(FString(textIn)))
 #define TEXT_PERCENT(number) FText::Join(FText(), FText::AsNumber(number), INVTEXT("%"))
 #define TEXT_100(number) FText::Join(FText(), FText::AsNumber(number / 100), INVTEXT("."), FText::AsNumber((number % 100) / 10))
+#define TEXT_100_2(number) FText::Join(FText(), FText::AsNumber(number / 100), INVTEXT("."), FText::AsNumber(number % 100))
 #define TEXT_100SIGNED(number) FText::Join(FText(), (number > 0 ? INVTEXT("+") : INVTEXT("")), FText::AsNumber(number / 100), INVTEXT("."), FText::AsNumber((number % 100) / 10))
 #define TEXT_NUM(number) FText::AsNumber(number)
 #define TEXT_NUMSIGNED(number) FText::Join(FText(), (number > 0 ? INVTEXT("+") : INVTEXT("")), FText::AsNumber(number))
 #define TEXT_NUMINT(number) FText::AsNumber(static_cast<int>(number))
+
+#define TEXT_FLOAT1(number) FText::Join(FText(), FText::AsNumber(static_cast<int>(number)), INVTEXT("."), FText::AsNumber(static_cast<int>(number * 10) % 10)
+#define TEXT_FLOAT1_PERCENT(number) FText::Join(FText(), TEXT_FLOAT1(number), INVTEXT("%"))
 
 #define TEXT_TAG(Tag, InText) FText::Format(INVTEXT("{0}{1}</>"), INVTEXT(Tag), InText)
 //#define TEXT_JOIN(...) FText::Join(FText(), __VA_ARGS__)
@@ -262,15 +266,15 @@ static FText TextRed(FText str, bool isRed)
 	return str;
 }
 
-static std::string TextRedOrange(std::string str, int32 value, int32 orangeThreshold, int32 redThreshold)
+static FText TextRedOrange(FText text, int32 value, int32 orangeThreshold, int32 redThreshold)
 {
 	if (value < redThreshold) {
-		str = "<Red>" + str + "</>";
+		return TEXT_TAG("<Red>", text);
 	}
-	else if (value < orangeThreshold) {
-		str = "<Orange>" + str + "</>";
+	if (value < orangeThreshold) {
+		return TEXT_TAG("<Orange>", text);
 	}
-	return str;
+	return text;
 }
 
 static bool SearchBoxCompare(const std::string& searchString, const std::string& compare)
@@ -7387,14 +7391,14 @@ static const std::vector<FText> HoverWarningString = {
 	LOCTEXT("Inaccessible", "Inaccessible"),
 
 	LOCTEXT("Not Enough Money", "Not Enough Money"),
-	LOCTEXT("Import Target\nReached", "Import Target\nReached"),
-	LOCTEXT("Resources Below\nExport Target", "Resources Below\nExport Target"),
+	LOCTEXT("Import Target Reached", "Import Target\nReached"),
+	LOCTEXT("Resources Below Export Target", "Resources Below\nExport Target"),
 
 	LOCTEXT("Need Setup", "Need Setup"),
-	LOCTEXT("Need\nDelivery Target", "Need\nDelivery Target"),
+	LOCTEXT("Need Delivery Target", "Need\nDelivery Target"),
 
-	LOCTEXT("Delivery Target\nToo Far", "Delivery Target\nToo Far"),
-	LOCTEXT("Output Inventory\nFull", "Output Inventory\nFull"),
+	LOCTEXT("Delivery Target Too Far", "Delivery Target\nToo Far"),
+	LOCTEXT("Output Inventory Full", "Output Inventory\nFull"),
 };
 static FText GetHoverWarningString(HoverWarning hoverWarning) { return HoverWarningString[static_cast<int>(hoverWarning)]; }
 
@@ -7415,10 +7419,10 @@ static const std::vector<FText> HoverWarningDescription = {
 	FText(),
 
 	LOCTEXT("Need Setup Desc", "Choose Resource Types that will be carried by Logistics Workers."),
-	LOCTEXT("Need\nDelivery Target Desc", "Set the Delivery Target Storage where Logistics Worker will carry resources to."),
+	LOCTEXT("Need Delivery Target Desc", "Set the Delivery Target Storage where Logistics Worker will carry resources to."),
 
-	LOCTEXT("Delivery Target\nToo Far Desc", "Delivery Target is too far (maximum 150 tiles)"), // TODO: For now only Logistics Office
-	LOCTEXT("Output Inventory\nFull Desc", "Output Resource Inventory is full causing the production to pause."),
+	LOCTEXT("Delivery Target Too Far Desc", "Delivery Target is too far (maximum 150 tiles)"), // TODO: For now only Logistics Office
+	LOCTEXT("Output Inventory Full Desc", "Output Resource Inventory is full causing the production to pause."),
 };
 static FText GetHoverWarningDescription(HoverWarning hoverWarning) { return HoverWarningDescription[static_cast<int>(hoverWarning)]; }
 

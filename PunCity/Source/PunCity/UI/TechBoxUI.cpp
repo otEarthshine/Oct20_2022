@@ -95,27 +95,28 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 
 		float researchFraction = unlockSys->researchFraction();
 
-		stringstream ss;
-		ss << std::fixed << std::showpoint << std::setprecision(1);
-		ss << (researchFraction * 100) << "%";
-		SetText(PercentText, ss.str());
+		//stringstream ss;
+		//ss << std::fixed << std::showpoint << std::setprecision(1);
+		//ss << (researchFraction * 100) << "%";
+		SetText(PercentText, TEXT_FLOAT1_PERCENT(researchFraction * 100)));
 
-		ss.str("");
 		int32 science100XsecPerRound_Left = (100.0f * tech->scienceNeeded(unlockSys->techsFinished) * Time::SecondsPerRound) - unlockSys->science100XsecPerRound;
 		int32 science100Left = science100XsecPerRound_Left / Time::SecondsPerRound; // Redundant, but just make it easier to read
 
 		int32 science100PerRound = simulation().playerOwned(playerId()).science100PerRound();
 		if (science100PerRound > 0) {
 			int32 secRequired = (science100Left * Time::SecondsPerRound) / science100PerRound;
+
+			TArray<FText> args;
 			
 			int32 minuteRequired = secRequired / Time::SecondsPerMinute;
 			if (minuteRequired > 0) {
-				ss << minuteRequired << "m ";
+				ADDTEXT_(INVTEXT("{0}m "), TEXT_NUM(minuteRequired));
 			}
 			
 			int32 remainderSecRequired = secRequired % Time::SecondsPerMinute;
-			ss << remainderSecRequired << "s";
-			SetText(SecText, ss.str());
+			ADDTEXT_(INVTEXT("{0}s"), TEXT_NUM(remainderSecRequired));
+			SetText(SecText, args);
 		}
 
 		OuterImage->GetDynamicMaterial()->SetScalarParameterValue("ResearchFraction", unlockSys->researchFraction());
@@ -134,14 +135,23 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 
 		if (productionCount < tech->requiredResourceCount)
 		{
-			std::stringstream ss;
-			ss << "Required:\n" << productionCount << "/" << tech->requiredResourceCount << " " << ResourceName(tech->requiredResourceEnum);
-			SetText(TechRequirement, ss.str());
+			//std::stringstream ss;
+			//ss << "Required:\n" << productionCount << "/" << tech->requiredResourceCount << " " << ResourceName(tech->requiredResourceEnum);
+			SetText(TechRequirement, FText::Format(LOCTEXT("TechBoxRequired",
+				"Required:\n{0}/{1} {2}"),
+				TEXT_NUM(productionCount),
+				TEXT_NUM(tech->requiredResourceCount),
+				ResourceNameT(tech->requiredResourceEnum)
+			));
 		}
 		else {
-			std::stringstream ss;
-			ss << "Completed:\n" << tech->requiredResourceCount << " " << ResourceName(tech->requiredResourceEnum);
-			SetText(TechRequirement, ss.str());
+			//std::stringstream ss;
+			//ss << "Completed:\n" << tech->requiredResourceCount << " " << ResourceName(tech->requiredResourceEnum);
+			SetText(TechRequirement, FText::Format(LOCTEXT("TechBoxRequirementsCompleted",
+				"Completed:\n{0} {1}"),
+				TEXT_NUM(tech->requiredResourceCount),
+				ResourceNameT(tech->requiredResourceEnum)
+			));
 		}
 
 		//SetResourceImage(TechRequirementIcon, tech->requiredResourceEnum, assetLoader());

@@ -44,20 +44,20 @@ void House::GetHeatingEfficiencyTip(TArray<FText>& args, ResourceEnum resourceEn
 	ADDTEXT_INV_("<space>");
 
 	if (_simulation->TownhallCardCount(_playerId, CardEnum::ChimneyRestrictor)) {
-		ADDTEXT_LOCTEXT("ChimneyRestrictor", " +15% Chimney Restrictor\n");
+		ADDTEXT_LOCTEXT("ChimneyRestrictor Bonus", " +15% Chimney Restrictor\n");
 	}
 	if (IsUpgraded(0)) {
-		ADDTEXT_LOCTEXT("StoneInsulation", " +20% Stone Insulation\n");
+		ADDTEXT_LOCTEXT("StoneInsulation Bonus", " +20% Stone Insulation\n");
 	}
 	if (IsUpgraded(1)) {
-		ADDTEXT_LOCTEXT("BrickInsulation", " +30% Brick Insulation\n");
+		ADDTEXT_LOCTEXT("BrickInsulation Bonus", " +30% Brick Insulation\n");
 	}
 
 	if (resourceEnum == ResourceEnum::Coal) {
 		if (_simulation->TownhallCardCount(_playerId, CardEnum::CoalTreatment)) {
-			ADDTEXT_LOCTEXT("CoalTreatment", " +20% Coal Treatment\n");
+			ADDTEXT_LOCTEXT("CoalTreatment Bonus", " +20% Coal Treatment\n");
 		}
-		ADDTEXT_LOCTEXT("CoalUsage", " x2 Coal Usage\n");
+		ADDTEXT_LOCTEXT("CoalUsage Bonus", " x2 Coal Usage\n");
 	}
 
 	//ss << ResourceName(resourceEnum) << " Heating Efficiency: " << GetHeatingEfficiency(resourceEnum) << "%<space>";
@@ -170,7 +170,7 @@ void House::FinishConstruction()
 	}
 
 	auto woodCoalHeatText = [](int32 percent) {
-		return FText::Format(LOCTEXT("woodCoalHeatText", "Wood/coal gives {0}% more heat"), TEXT_NUM(percent));
+		return FText::Format(LOCTEXT("WoodCoalHeatText", "Wood/coal gives {0}% more heat"), TEXT_NUM(percent));
 	};
 	
 	_upgrades = {		

@@ -3105,7 +3105,8 @@ void UObjectDescriptionUISystem::AddSelectStartLocationButton(int32 provinceId, 
 		int32 provincePrice = simulation().GetProvinceClaimPrice(provinceId, playerId());
 
 		TArray<FText> args;
-		ADDTEXT_LOCTEXT("SelectStart", "Select Starting Location\n");
+		ADDTEXT_LOCTEXT("SelectStart", "Select Starting Location");
+		ADDTEXT_INV_("\n");
 		if (area.isValid()) {
 			ADDTEXT_(INVTEXT("<img id=\"Coin\"/>{0}"), TextRed(FText::AsNumber(provincePrice), !canClaim));
 		} else {

@@ -296,22 +296,22 @@ public:
 			auto& playerOwned = simulation().playerOwned(curId);
 
 			bool isUIPlayer = (curId == playerId());
-			auto setText = [&](URichTextBlock* textBlock, std::string message) {
+			auto setText = [&](URichTextBlock* textBlock, FText message) {
 				if (isUIPlayer) {
-					SetText(textBlock, "<Bold>" + message + "</>");
+					SetText(textBlock, TEXT_TAG("<Bold>", message));
 				} else {
-					SetText(textBlock, "<SlightGray>" + message + "</>");
+					SetText(textBlock, TEXT_TAG("<SlightGray>", message));
 				}
 			};
 
 			element->HighlightImage->SetVisibility(isUIPlayer ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 
-			setText(element->PlayerNameText, TrimString_Dots(simulation().playerName(curId), 14));
-			setText(element->PopulationText, std::to_string(simulation().population(curId)));
-			setText(element->TechnologyText, std::to_string(simulation().sciTechsCompleted(curId)));
-			setText(element->RevenueText, std::to_string(playerOwned.totalRevenue100() / 100));
-			setText(element->MilitarySizeText, std::to_string(simulation().influence(curId)));
-			setText(element->LandText, std::to_string(playerOwned.GetPlayerLandTileCount(true)));
+			setText(element->PlayerNameText, FText::FromString(TrimStringF_Dots(simulation().playerNameF(curId), 14)));
+			setText(element->PopulationText, TEXT_NUM(simulation().population(curId)));
+			setText(element->TechnologyText, TEXT_NUM(simulation().sciTechsCompleted(curId)));
+			setText(element->RevenueText, TEXT_NUM(playerOwned.totalRevenue100() / 100));
+			setText(element->MilitarySizeText, TEXT_NUM(simulation().influence(curId)));
+			setText(element->LandText, TEXT_NUM(playerOwned.GetPlayerLandTileCount(true)));
 
 			auto& statSystem = simulation().statSystem(curId);
 			const std::vector<std::vector<int32>>& productionStats = statSystem.GetResourceStat(ResourceSeasonStatEnum::Production);
@@ -372,27 +372,27 @@ public:
 				}
 			}
 
-			setText(element->GDPText, std::to_string(gdp100 / 100));
+			setText(element->GDPText, TEXT_100(gdp100));
 
 
-			auto addSS = [&](std::stringstream& ss, std::string message) {
+			auto addSS = [&](TArray<FText>& args, FText text) {
 				if (isUIPlayer) {
-					ss << "<Bold>" << message << "</>";
+					ADDTEXT_TAG_("<Bold>", text);
 				} else {
-					ss << "<SlightGray>" << message << "</>";
+					ADDTEXT_TAG_("<SlightGray>", text);
 				}
 			};
 			
 			{
-				std::stringstream ss;
+				TArray<FText> args;
 				if (mainProductions.size() > 0) {
-					addSS(ss, ResourceName(mainProductions[0].first));
+					addSS(args, ResourceNameT(mainProductions[0].first));
 				}
 				if (mainProductions.size() > 1) {
-					ss << "\n";
-					addSS(ss, ResourceName(mainProductions[1].first));
+					ADDTEXT_INV_("\n");
+					addSS(args, ResourceNameT(mainProductions[1].first));
 				}
-				SetText(element->MainProductionText, ss.str());
+				SetText(element->MainProductionText, JOINTEXT(args));
 			}
 
 			//// Allies and vassals

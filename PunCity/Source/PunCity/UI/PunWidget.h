@@ -211,6 +211,10 @@ public:
 	static void SetTextF(UTextBlock* textBlock, const FString& str) {
 		textBlock->SetText(FText::FromString(str));
 	}
+	static void SetText(UTextBlock* textBlock, TArray<FText>& texts) {
+		textBlock->SetText(JOINTEXT(texts));
+		texts.Empty();
+	}
 
 	static void SetText(UTextBlock* textBlock, FText str) {
 		textBlock->SetText(str);

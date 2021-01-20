@@ -5100,10 +5100,15 @@ const int32 maxCelsiusDivider = 3;
  // Unit's constants
 static const int32_t UnitFoodFetchPerYear = 5;
 
+#define LOCTEXT_NAMESPACE "UnitInfo"
+
+const FText HumanText = LOCTEXT("Human", "Human");
+
 struct UnitInfo
 {
 	UnitEnum unitEnum;
 	// Need std::string since we need to copy when passing into FName (allows using name.c_str() instead of FName in some cases)
+	FText nameT;
 	std::string name;
 	//int32_t adultTicks;
 	int32 maxAgeTicks;
@@ -5123,12 +5128,14 @@ struct UnitInfo
 
 	int32 miniAgeTicks() { return maxAgeTicks / 8; }
 
+	//std::string nameStr() { return ToStdString(name.ToString()); }
+
 	// 1 season = 3 minutes = 180 secs = 180 turns ... eating could take ~20% of the time ... 20 tiles to get to food = ~45 sec for food...
 
 	// year100 is year * 100
 	UnitInfo(
 		UnitEnum unitEnum,
-		std::string name,
+		FText nameT,
 		//int32_t adult_Years100,
 		int32 maxAge_Years100,
 		int32 minBreedingAge_Years100,
@@ -5137,9 +5144,11 @@ struct UnitInfo
 		int32 foodResourcePerYear,
 		std::vector<ResourcePair> resourceDrops100In
 	) :
-		unitEnum(unitEnum),
-		name(name)
+		unitEnum(unitEnum)
+		, nameT(nameT)
 	{
+		name = ToStdString(nameT.ToString());
+		
 		//adultTicks =			Time::TicksPerYear * adult_Years100 / 100;
 		maxAgeTicks = Time::TicksPerYear * maxAge_Years100 / 100;
 		minBreedingAgeTicks = Time::TicksPerYear * minBreedingAge_Years100 / 100;
@@ -5155,7 +5164,9 @@ struct UnitInfo
 		int32 foodTicksPerFetch = Time::TicksPerYear / UnitFoodFetchPerYear;
 		foodPerFetch = foodResourcePerYear / UnitFoodFetchPerYear;
 
-		maxFoodTicks = foodTicksPerFetch * (name == "Human" ? 1 : 2); // Fragile humans
+		//maxFoodTicks = foodTicksPerFetch * (nameT.EqualTo(NSLOCTEXT("UnitInfoTestTest", "Human", "Human")) ? 1 : 2); // Fragile humans
+		//nameT = HumanText;
+		maxFoodTicks = foodTicksPerFetch * (unitEnum == UnitEnum::Human ? 1 : 2); // Fragile humans
 		
 		foodTicksPerResource = Time::TicksPerYear / foodResourcePerYear;
 
@@ -5188,42 +5199,44 @@ static const int32 AnimalMinBreedingAge = 70;
 
 static const int32 AnimalGestation = 020;
 
-static const UnitInfo UnitInfos[]
+static const TArray<UnitInfo> UnitInfos
 {
 	// Human last half winter without heat...
 	// average winter temperature is -5
 
 	//	adultYears100, maxAgeYears100, minBreedingAgeYears100,
 	//	gestationYears100, winterSurvivalLength_Years100, foodPerYear
-	UnitInfo(UnitEnum::Alpaca, "Feral Alpaca",	500,	100,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Pork, 2 * BaseUnitDrop100}}),
-	UnitInfo(UnitEnum::Human, "Human",	1000,	100,		025,	020,	HumanFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}}),
-	UnitInfo(UnitEnum::Boar,"Boar",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::Alpaca, LOCTEXT("Feral Alpaca", "Feral Alpaca"),	500,	100,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Pork, 2 * BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::Human,	LOCTEXT("Human", "Human"),	1000,	100,		025,	020,	HumanFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::Boar,	LOCTEXT("Boar", "Boar"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 
-	UnitInfo(UnitEnum::RedDeer,"Red Deer",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
-	UnitInfo(UnitEnum::YellowDeer,"Mule Deer",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
-	UnitInfo(UnitEnum::DarkDeer,"Sambar Deer",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::RedDeer,	LOCTEXT("Red Deer", "Red Deer"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::YellowDeer, LOCTEXT("Mule Deer", "Mule Deer"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::DarkDeer, LOCTEXT("Sambar Deer", "Sambar Deer"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 
-	UnitInfo(UnitEnum::BrownBear,"Brown Bear",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
-	UnitInfo(UnitEnum::BlackBear,"Black Bear",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
-	UnitInfo(UnitEnum::Panda,"Panda",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::BrownBear, LOCTEXT("Brown Bear", "Brown Bear"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::BlackBear, LOCTEXT("Black Bear", "Black Bear"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::Panda, LOCTEXT("Panda", "Panda"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 
-	UnitInfo(UnitEnum::WildMan, "WildMan",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
-	UnitInfo(UnitEnum::Hippo, "Hippo",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
-	UnitInfo(UnitEnum::Penguin, "Penguin",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
-	
-	
-	UnitInfo(UnitEnum::Pig,"Pig",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Pork, BaseUnitDrop100 * 240 / 100}}),
-	UnitInfo(UnitEnum::Sheep,"Sheep",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Lamb, BaseUnitDrop100 * 120 / 100}, {ResourceEnum::Wool, BaseUnitDrop100 * 120 / 100}}),
-	UnitInfo(UnitEnum::Cow,"Cow",	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Beef, BaseUnitDrop100 * 120 / 100}, {ResourceEnum::Leather,  BaseUnitDrop100 * 120 / 100}}),
+	UnitInfo(UnitEnum::WildMan, LOCTEXT("WildMan", "WildMan"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::Hippo, LOCTEXT("Hippo", "Hippo"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::Penguin, LOCTEXT("Penguin", "Penguin"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 
-	UnitInfo(UnitEnum::Infantry,"Infantry",	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
-	UnitInfo(UnitEnum::ProjectileArrow,"ProjectileArrow",	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
 
-	UnitInfo(UnitEnum::SmallShip, "SmallShip",	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
+	UnitInfo(UnitEnum::Pig, LOCTEXT("Pig", "Pig"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Pork, BaseUnitDrop100 * 240 / 100}}),
+	UnitInfo(UnitEnum::Sheep, LOCTEXT("Sheep", "Sheep"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Lamb, BaseUnitDrop100 * 120 / 100}, {ResourceEnum::Wool, BaseUnitDrop100 * 120 / 100}}),
+	UnitInfo(UnitEnum::Cow, LOCTEXT("Cow", "Cow"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Beef, BaseUnitDrop100 * 120 / 100}, {ResourceEnum::Leather,  BaseUnitDrop100 * 120 / 100}}),
+
+	UnitInfo(UnitEnum::Infantry, LOCTEXT("Infantry", "Infantry"),	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
+	UnitInfo(UnitEnum::ProjectileArrow, LOCTEXT("ProjectileArrow", "ProjectileArrow"),	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
+
+	UnitInfo(UnitEnum::SmallShip, LOCTEXT("SmallShip", "SmallShip"),	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
 	//UnitInfo("Bear",	050,	500,	200,		010,	050,	5),
 };
 
-static const int32 UnitEnumCount = _countof(UnitInfos);
+#undef LOCTEXT_NAMESPACE
+
+static const int32 UnitEnumCount = UnitInfos.Num();
 
 static UnitInfo GetUnitInfo(UnitEnum unitEnum) {
 	return UnitInfos[static_cast<int>(unitEnum)];

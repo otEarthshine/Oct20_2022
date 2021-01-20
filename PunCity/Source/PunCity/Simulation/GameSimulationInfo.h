@@ -181,27 +181,31 @@ public:
 
 static bool TextArrayEquals(const TArray<FText>& a, const TArray<FText>& b)
 {
-	if (a.Num() != b.Num()) {
-		return false;
-	}
-	for (int32 i = 0; i < a.Num(); i++) {
-		if (!a[i].EqualTo(b[i])) {
-			return false;
-		}
-	}
-	return true;
+	return false;
+	
+	//if (a.Num() != b.Num()) {
+	//	return false;
+	//}
+	//for (int32 i = 0; i < a.Num(); i++) {
+	//	if (!a[i].EqualTo(b[i])) {
+	//		return false;
+	//	}
+	//}
+	//return true;
 }
 static bool TextArrayEquals(const std::vector<FText>& a, const std::vector<FText>& b)
 {
-	if (a.size() != b.size()) {
-		return false;
-	}
-	for (int32 i = 0; i < a.size(); i++) {
-		if (!a[i].EqualTo(b[i])) {
-			return false;
-		}
-	}
-	return true;
+	return false;
+	
+	//if (a.size() != b.size()) {
+	//	return false;
+	//}
+	//for (int32 i = 0; i < a.size(); i++) {
+	//	if (!a[i].EqualTo(b[i])) {
+	//		return false;
+	//	}
+	//}
+	//return true;
 }
 static TArray<FString> TextArrayToStringArray(const TArray<FText>& texts)
 {
@@ -5143,7 +5147,7 @@ struct UnitInfo
 		int32 foodTicksPerFetch = Time::TicksPerYear / UnitFoodFetchPerYear;
 		foodPerFetch = foodResourcePerYear / UnitFoodFetchPerYear;
 
-		maxFoodTicks = foodTicksPerFetch * (name.EqualTo(LOCTEXT("Human","Human")) ? 1 : 2); // Fragile humans
+		maxFoodTicks = foodTicksPerFetch * (unitEnum == UnitEnum::Human ? 1 : 2); // Fragile humans
 		
 		foodTicksPerResource = Time::TicksPerYear / foodResourcePerYear;
 
@@ -5960,9 +5964,10 @@ struct PopupInfo
 
 	bool operator==(const PopupInfo& a) const
 	{
-		return playerId == a.playerId &&
-			body.EqualTo(a.body) &&
-			TextArrayEquals(choices, a.choices);
+		return false;
+		//return playerId == a.playerId &&
+		//	body.EqualTo(a.body) &&
+		//	TextArrayEquals(choices, a.choices);
 	}
 };
 

@@ -1714,9 +1714,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							defaultOption,
 							[options](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex)
 						{
-							auto FindCutTreeEnumFromName = [&](FText name) {
+							auto FindCutTreeEnumFromName = [&](FString name) {
 								for (int32 i = 0; i < options.Num(); i++) {
-									if (name.EqualTo(options[i])) {
+									if (name == options[i].ToString()) {
 										return i;
 									}
 								}
@@ -1726,7 +1726,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							auto command = make_shared<FChangeWorkMode>();
 							command->buildingId = objectId;
 							command->intVar1 = dropdownIndex;
-							command->intVar2 = FindCutTreeEnumFromName(FText::FromString(sItem));
+							command->intVar2 = FindCutTreeEnumFromName(sItem);
 							networkInterface->SendNetworkCommand(command);
 						}, dropdownIndex);
 					};
@@ -1744,12 +1744,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 					FText workModeName = building.workMode().name;
 					
-					if (workModeName.EqualTo(CutAndPlantText) ||
-						workModeName.EqualTo(PrioritizePlantText)) {
+					if (workModeName.IdenticalTo(CutAndPlantText) ||
+						workModeName.IdenticalTo(PrioritizePlantText)) {
 						addDropdown(plantOptions, plantOptions[static_cast<int>(forester.plantingEnum)], 0);
 					}
-					if (workModeName.EqualTo(CutAndPlantText) ||
-						workModeName.EqualTo(PrioritizeCutText))  {
+					if (workModeName.IdenticalTo(CutAndPlantText) ||
+						workModeName.IdenticalTo(PrioritizeCutText))  {
 						addDropdown(cutOptions, cutOptions[static_cast<int>(forester.cuttingEnum)], 1);
 					}
 					descriptionBox->AddSpacer();

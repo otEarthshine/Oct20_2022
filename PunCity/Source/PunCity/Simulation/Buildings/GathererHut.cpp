@@ -509,19 +509,19 @@ CardEnum CardMaker::GetCardProduced()
 {
 	const FText& name = workMode().name;
 
-	if (name.EqualTo(productivityBookText)) {
+	if (name.IdenticalTo(productivityBookText)) {
 		return CardEnum::ProductivityBook;
 	}
-	if (name.EqualTo(sustainabilityBookText)) {
+	if (name.IdenticalTo(sustainabilityBookText)) {
 		return CardEnum::SustainabilityBook;
 	}
-	if (name.EqualTo(frugalityBookText)) {
+	if (name.IdenticalTo(frugalityBookText)) {
 		return CardEnum::FrugalityBook;
 	}
-	if (name.EqualTo(wildCardText)) {
+	if (name.IdenticalTo(wildCardText)) {
 		return CardEnum::WildCard;
 	}
-	if (name.EqualTo(cardRemovalCardText)) {
+	if (name.IdenticalTo(cardRemovalCardText)) {
 		return CardEnum::CardRemoval;
 	}
 
@@ -824,7 +824,7 @@ void Bakery::FinishConstruction() {
 std::vector<BonusPair> Bakery::GetBonuses() {
 	std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
 
-	if (workMode().name.EqualTo(woodFireText)) {
+	if (workMode().name.IdenticalTo(woodFireText)) {
 		bonuses.push_back({ LOCTEXT("Wood-fired", "Wood-fired"), 30 });
 	}
 
@@ -1139,10 +1139,10 @@ std::vector<BonusPair> Mine::GetBonuses()
 		}
 	}
 
-	if (_workMode.name.EqualTo(conserveResourceText)) {
+	if (_workMode.name.IdenticalTo(conserveResourceText)) {
 		bonuses.push_back({ LOCTEXT("Conserve Resource", "Conserve Resource"), -30 });
 	}
-	else if (_workMode.name.EqualTo(rapidMiningText)) {
+	else if (_workMode.name.IdenticalTo(rapidMiningText)) {
 		bonuses.push_back({ LOCTEXT("Rapid Mining", "Rapid Mining"), 30 });
 	}
 
@@ -1152,9 +1152,9 @@ std::vector<BonusPair> Mine::GetBonuses()
 void Mine::OnProduce(int32 productionAmount)
 {
 	int32 depletionMultiplier = 100;
-	if (_workMode.name.EqualTo(conserveResourceText)) {
+	if (_workMode.name.IdenticalTo(conserveResourceText)) {
 		depletionMultiplier -= 30;
-	} else if (_workMode.name.EqualTo(rapidMiningText)) {
+	} else if (_workMode.name.IdenticalTo(rapidMiningText)) {
 		depletionMultiplier += 30;
 	}
 	if (slotCardCount(CardEnum::SustainabilityBook) > 0) {

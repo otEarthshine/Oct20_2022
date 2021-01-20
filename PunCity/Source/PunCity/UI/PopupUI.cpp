@@ -87,7 +87,8 @@ void UPopupUI::Tick()
 	if (popupToDisplay) 
 	{
 		// Popup changed, play sound...
-		if (currentPopup.body.EqualTo(popupToDisplay->body) ||
+		//if (currentPopup.body.EqualTo(popupToDisplay->body) ||
+		if (currentPopup == (*popupToDisplay) ||
 			currentPopup.startTick != popupToDisplay->startTick ||
 			currentPopup.startDisplayTick != popupToDisplay->startDisplayTick)
 		{

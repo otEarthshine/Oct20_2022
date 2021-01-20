@@ -98,7 +98,8 @@ public:
 	}
 
 	bool IsShowingConfirmationUI(FText confirmationStrIn) {
-		return confirmationStrIn.EqualTo(confirmationString);
+		return false;
+		//return confirmationStrIn.EqualTo(confirmationString);
 	}
 
 	void ToggleDirtRoad()

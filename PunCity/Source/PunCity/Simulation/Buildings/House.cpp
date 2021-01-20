@@ -587,9 +587,9 @@ void Ranch::FinishConstruction()
 	AddResourceHolder(ResourceEnum::Milk, ResourceHolderType::Provider, 0);
 
 	workModes = {
-		{ LOCTEXT("Kill when reached full capacity", "Kill when reached full capacity"), ResourceEnum::None, ResourceEnum::None, 0},
-		{ LOCTEXT("Kill when above half capacity", "Kill when above half capacity"), ResourceEnum::None, ResourceEnum::None, 0},
-		{ LOCTEXT("Kill all", "Kill all"), ResourceEnum::None, ResourceEnum::None, 0},
+		{ RanchWorkMode_FullCapacity, ResourceEnum::None, ResourceEnum::None, 0},
+		{ RanchWorkMode_HalfCapacity, ResourceEnum::None, ResourceEnum::None, 0},
+		{ RanchWorkMode_KillAll, ResourceEnum::None, ResourceEnum::None, 0},
 	};
 	_workMode = workModes[0];
 }

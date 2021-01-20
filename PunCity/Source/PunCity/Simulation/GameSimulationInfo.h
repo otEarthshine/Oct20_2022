@@ -176,7 +176,7 @@ static bool TextArrayEquals(const TArray<FText>& a, const TArray<FText>& b)
 		return false;
 	}
 	for (int32 i = 0; i < a.Num(); i++) {
-		if (!a[i].EqualTo(b[i])) {
+		if (a[i].ToString() != b[i].ToString()) {
 			return false;
 		}
 	}
@@ -5157,7 +5157,7 @@ struct UnitInfo
 		int32 foodTicksPerFetch = Time::TicksPerYear / UnitFoodFetchPerYear;
 		foodPerFetch = foodResourcePerYear / UnitFoodFetchPerYear;
 
-		maxFoodTicks = foodTicksPerFetch * (name.EqualTo(LOCTEXT("Human","Human")) ? 1 : 2); // Fragile humans
+		maxFoodTicks = foodTicksPerFetch * (unitEnum == UnitEnum::Human ? 1 : 2); // Fragile humans
 		
 		foodTicksPerResource = Time::TicksPerYear / foodResourcePerYear;
 

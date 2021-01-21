@@ -1272,7 +1272,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								FText importExportText = tradingCompany.isImport ? LOCTEXT("Importing", "Importing") : LOCTEXT("Exporting", "Exporting");
 								ADDTEXT_(LOCTEXT("ImportUntil", "{0} until {1}"), importExportText, TEXT_NUM(tradingCompany.targetAmount));
 								
-								descriptionBox->AddIconPair(JOINTEXT(args), tradingCompany.activeResourceEnum, LOCTEXT("ImportTarget", " target"));
+								descriptionBox->AddIconPair(JOINTEXT(args), tradingCompany.activeResourceEnum, LOCTEXT("s_target", " target"));
 								args.Empty();
 
 								if (tradingCompany.activeResourceEnum != ResourceEnum::None)

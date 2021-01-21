@@ -35,6 +35,7 @@ static FText TownhallUpgradeBonusText(int32 level) {
  */
 static const FText delicateGatheringText = LOCTEXT("Delicate Gathering", "Delicate Gathering");
 static const FText pestTrapText = LOCTEXT("Pests Traps", "Pests Traps");
+static const FText PestTrapDesc = LOCTEXT("Pests Traps Desc", "+30% productivity if there is an adjacent hunter (does not stack).");
 
 void GathererHut::OnInit()
 {
@@ -54,7 +55,7 @@ void GathererHut::FinishConstruction()
 
 	_upgrades = {
 		MakeProductionUpgrade(delicateGatheringText, ResourceEnum::SteelTools, 50, 20),
-		MakeUpgrade(pestTrapText, LOCTEXT("Pests Traps Desc", "+30% productivity if there is an adjacent hunter (does not stack)."), ResourceEnum::Wood, 30),
+		MakeUpgrade(pestTrapText, PestTrapDesc, ResourceEnum::Wood, 30),
 	};
 }
 
@@ -92,7 +93,7 @@ void HuntingLodge::FinishConstruction()
 
 	_upgrades = {
 		MakeProductionUpgrade(smokingChamberText, ResourceEnum::Stone, 50, 30),
-		MakeUpgrade(fruitBaitText, LOCTEXT("Pests Traps Desc", "+30% productivity if there is an adjacent Fruit Gatherer (does not stack)."), ResourceEnum::Wood, 30),
+		MakeUpgrade(fruitBaitText, PestTrapDesc, ResourceEnum::Wood, 30),
 	};
 }
 

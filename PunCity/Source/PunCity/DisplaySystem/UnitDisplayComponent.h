@@ -64,14 +64,14 @@ public:
 			
 			int32 variationCount = assetLoader->unitMeshCount(unitEnum);
 			for (int32 j = 0; j < variationCount; j++) {
-				_unitMeshes->AddProtoMesh(UnitInfos[i].name.ToString() + FString::FromInt(j), assetLoader->unitMesh(unitEnum, j), nullptr);
+				_unitMeshes->AddProtoMesh(GetMeshName(unitEnum, j), assetLoader->unitMesh(unitEnum, j), nullptr);
 			}
 		}
 
 		_resourceMeshes->Init("UnitResource", this, 100, "", 0, true);
 		for (int i = 0; i < ResourceEnumCount; i++) {
 			ResourceEnum resourceEnum = static_cast<ResourceEnum>(i);
-			_resourceMeshes->AddProtoMesh(ToFString(ResourceName(resourceEnum)), assetLoader->resourceHandMesh(resourceEnum));
+			_resourceMeshes->AddProtoMesh(ResourceDisplayNameF(resourceEnum), assetLoader->resourceHandMesh(resourceEnum));
 		}
 
 		_animatingModuleMeshes->Init("BuildingAnim", this, 20, "", 0, true);
@@ -176,7 +176,7 @@ public:
 		
 		int32 variationCount = _assetLoader->unitMeshCount(unitEnum);
 		for (int32 i = 0; i < variationCount; i++) {
-			_unitMeshes->SetCustomDepth(GetMeshName(GetUnitInfo(unitEnum), i), customDepthIndex);
+			_unitMeshes->SetCustomDepth(GetMeshName(unitEnum, i), customDepthIndex);
 		}
 	}
 
@@ -184,11 +184,9 @@ protected:
 	void UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom, bool justSpawned, bool justCreated) override;
 
 private:
-	static FString GetMeshName(const UnitInfo& info, int32 variationIndex)
+	static FString GetMeshName(UnitEnum unitEnum, int32 variationIndex)
 	{
-		FString unitMeshName = info.name.ToString();
-		unitMeshName += FString::FromInt(variationIndex);
-		return unitMeshName;
+		return "Unit" + FString::FromInt(static_cast<int>(unitEnum)) + "_" + FString::FromInt(variationIndex);
 	}
 
 

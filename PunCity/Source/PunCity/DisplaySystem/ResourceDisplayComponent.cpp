@@ -19,8 +19,8 @@ int UResourceDisplayComponent::CreateNewDisplay(int objectId)
 
 	for (int i = 0; i < ResourceEnumCount; i++) {
 		ResourceEnum resourceEnum = static_cast<ResourceEnum>(i);
-		_meshes[meshId]->AddProtoMesh(ResourceNameF(resourceEnum), _assetLoader->resourceMesh(resourceEnum));
-		_meshes[meshId]->AddProtoMesh(ResourceNameF(resourceEnum) + FString("Hand"), _assetLoader->resourceHandMesh(resourceEnum));
+		_meshes[meshId]->AddProtoMesh(ResourceDisplayNameF(resourceEnum), _assetLoader->resourceMesh(resourceEnum));
+		_meshes[meshId]->AddProtoMesh(ResourceDisplayNameF(resourceEnum) + FString("Hand"), _assetLoader->resourceHandMesh(resourceEnum));
 	}
 
 	return meshId;
@@ -62,7 +62,7 @@ void UResourceDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 					if (!_tileIdToInUse[tileIdWithStack])
 					{
 						FTransform transform(FRotator::ZeroRotator, localTile.localDisplayLocation() + FVector(0, 0, 4 * k + 2), FVector(0.8f, 0.8f, 0.8f));
-						_meshes[meshId]->Add(ResourceNameF(dropInfo.holderInfo.resourceEnum) + FString("Hand"), tileIdWithStack, transform, 0);
+						_meshes[meshId]->Add(ResourceDisplayNameF(dropInfo.holderInfo.resourceEnum) + FString("Hand"), tileIdWithStack, transform, 0);
 						_tileIdToInUse[tileIdWithStack] = true;
 						break;
 					}
@@ -135,7 +135,7 @@ void UResourceDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 						PUN_CHECK(tileCount >= 0);
 						PUN_CHECK(tileCount <= building.storageSlotCount());
 
-						FString resourceName = ToFString(holderInfos[j].resourceName());
+						FString resourceName = ResourceDisplayNameF(holderInfos[j].resourceEnum);
 
 						const int stacksPerSide = building.stackPerSide();
 

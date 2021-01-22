@@ -1217,6 +1217,9 @@ inline FText ResourceName_WithNone(ResourceEnum resourceEnum) {
 inline FString ResourceNameF(ResourceEnum resourceEnum) {
 	return ResourceInfos[static_cast<int>(resourceEnum)].name.ToString();
 }
+inline FString ResourceDisplayNameF(ResourceEnum resourceEnum) {
+	return FString("Resource") + FString::FromInt(static_cast<int>(resourceEnum));
+}
 
 
 inline ResourceEnum FindResourceEnumByName(std::wstring name)

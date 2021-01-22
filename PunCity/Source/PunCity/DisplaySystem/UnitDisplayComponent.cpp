@@ -303,7 +303,7 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 
 		{
 			SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitAddInst);
-			_unitMeshes->Add(GetMeshName(unit.unitInfo(), variationIndex), unitId, transform, 0, unitId);
+			_unitMeshes->Add(GetMeshName(unitEnum, variationIndex), unitId, transform, 0, unitId);
 		}
 		
 
@@ -478,6 +478,6 @@ void UUnitDisplayComponent::UpdateResourceDisplay(int32 unitId, UnitStateAI& uni
 		resourceRotator.Yaw -= 90;
 		FTransform resourceTransform(resourceRotator, transform.GetTranslation(), transform.GetScale3D());
 
-		_resourceMeshes->Add(ResourceNameF(heldEnum), unitId, resourceTransform, 0, unitId);
+		_resourceMeshes->Add(ResourceDisplayNameF(heldEnum), unitId, resourceTransform, 0, unitId);
 	}
 }

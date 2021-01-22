@@ -3872,8 +3872,6 @@ struct TileObjInfo
 	FText description;
 
 	std::string nameStr() const { return FTextToStd(name); }
-	FString nameFStr() const { return name.ToString(); } // For tracking back later incase FString conversion used in naming meshes causes problems. If there is problem, give FString in english only somehow...
-
 
 	
 	int32 treeEnumInt() { return static_cast<int32>(treeEnum); }

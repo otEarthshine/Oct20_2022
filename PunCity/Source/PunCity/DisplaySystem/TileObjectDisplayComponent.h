@@ -35,7 +35,7 @@ public:
 
 			for (int j = 0; j < tileProtoMeshes.assets.Num(); j++) {
 				if (tileProtoMeshes.assets[j]) {
-					FString meshName = ToFString(TileSubmeshName[j]) + info.nameFStr(); // TODO: Can this cause problem with translation?
+					FString meshName = GetFallingMeshName(static_cast<TileSubmeshEnum>(j), info.treeEnum); // TODO: Can this cause problem with translation?
 					//PUN_LOG("Falling mesh: j=%d, %s", j, *meshName);
 					
 					_fallingMeshes->AddProtoMesh(meshName, tileProtoMeshes.assets[j]);
@@ -161,6 +161,14 @@ protected:
 	void UpdateDisplay(int32 regionId, int32 meshId, WorldAtom2 cameraAtom, bool justSpawned, bool justCreated) override;
 	void HideDisplay(int32 meshId, int32 regionId) override;
 
+private:
+	static FString GetMeshName(TileObjEnum tileObjEnum, int32 variationIndex) {
+		return "TileObj" + FString::FromInt(static_cast<int>(tileObjEnum)) + "_" + FString::FromInt(variationIndex);
+	}
+	static FString GetFallingMeshName(TileSubmeshEnum submeshEnum, TileObjEnum tileObjEnum) {
+		return ToFString(TileSubmeshName[static_cast<int>(TileSubmeshEnum::Trunk)]) + FString::FromInt(static_cast<int>(tileObjEnum));
+	}
+	
 private:
 	bool _isFullDisplay = true;
 	bool _isHiddenDisplay = false; // Hidden, but still being generated

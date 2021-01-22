@@ -82,10 +82,10 @@ void UObjectDescriptionUI::SetDropDown(int id)
 		}
 
 		for (int i = 0; i < seedsOwned.size(); i++) {
-			ObjectDropDownBox->AddOption(GetTileObjInfo(seedsOwned[i].tileObjEnum).nameFStr());
+			ObjectDropDownBox->AddOption(GetTileObjInfo(seedsOwned[i].tileObjEnum).name.ToString());
 		}
 		Farm* farm = static_cast<Farm*>(&bld);
-		ObjectDropDownBox->SetSelectedOption(TreeInfos[static_cast<int>(farm->currentPlantEnum)].nameFStr());
+		ObjectDropDownBox->SetSelectedOption(TreeInfos[static_cast<int>(farm->currentPlantEnum)].name.ToString());
 		ObjectDropDownBox->SetVisibility(ESlateVisibility::Visible);
 	}
 	else if (bld.isEnum(CardEnum::Townhall))

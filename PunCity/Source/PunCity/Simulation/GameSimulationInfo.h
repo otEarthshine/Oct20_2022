@@ -3982,9 +3982,9 @@ public:
 	static FText commonFlowerDesc() { return LOCTEXT("Common Flower Desc", "Common flower. A nice food-source for grazing animals.");}
 	static FText wheatGrassDesc() { return LOCTEXT("Wheat Grass Desc", "Grass that can be cultivated for its seed."); }
 
-	static FText GetOreDescription(FText oreName) {
-		return FText::Format(LOCTEXT("OreDesc", "This region contains {0} that can be mined from mountain."), oreName);
-	}
+	//static FText GetOreDescription(FText oreName) {
+	//	return FText::Format(LOCTEXT("OreDesc", "This region contains {0} that can be mined from mountain."), oreName);
+	//}
 #undef LOCTEXT_NAMESPACE
 };
 
@@ -4077,10 +4077,10 @@ static const TileObjInfo TreeInfos[] = {
 
 	TileObjInfo(TileObjEnum::Stone, LOCTEXT("Stone", "Stone"),	ResourceTileType::Deposit,	ResourcePair::Invalid(),								ResourcePair(ResourceEnum::Stone, 2) /*this is not used?*/, LOCTEXT("Stone Desc", "Easily-accessible stone deposits.")),
 
-	TileObjInfo(TileObjEnum::CoalMountainOre, LOCTEXT("Coal Ore", "Coal Ore"),	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), TileObjInfo::GetOreDescription(LOCTEXT("Coal Ore", "Coal Ore"))),
-	TileObjInfo(TileObjEnum::IronMountainOre, LOCTEXT("Iron Ore", "Iron Ore"),	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), TileObjInfo::GetOreDescription(LOCTEXT("Iron Ore", "Iron Ore"))),
-	TileObjInfo(TileObjEnum::GoldMountainOre, LOCTEXT("Gold Ore", "Gold Ore"),	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), TileObjInfo::GetOreDescription(LOCTEXT("Gold Ore", "Gold Ore"))),
-	TileObjInfo(TileObjEnum::GemstoneOre, LOCTEXT("Gemstone", "Gemstone"),	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), TileObjInfo::GetOreDescription(LOCTEXT("Gemstone", "Gemstone"))),
+	TileObjInfo(TileObjEnum::CoalMountainOre, LOCTEXT("Coal Ore", "Coal Ore"),	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), LOCTEXT("CoalOreDesc", "This region contains Coal Ore that can be mined from mountain.")),
+	TileObjInfo(TileObjEnum::IronMountainOre, LOCTEXT("Iron Ore", "Iron Ore"),	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), LOCTEXT("IronOreDesc", "This region contains Iron Ore that can be mined from mountain.")),
+	TileObjInfo(TileObjEnum::GoldMountainOre, LOCTEXT("Gold Ore", "Gold Ore"),	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), LOCTEXT("GoldOreDesc", "This region contains Gold Ore that can be mined from mountain.")),
+	TileObjInfo(TileObjEnum::GemstoneOre, LOCTEXT("Gemstone", "Gemstone"),	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), LOCTEXT("GemstoneDesc", "This region contains Gemstone that can be mined from mountain.")),
 
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -5099,7 +5099,7 @@ struct UnitInfo
 		int32 foodTicksPerFetch = Time::TicksPerYear / UnitFoodFetchPerYear;
 		foodPerFetch = foodResourcePerYear / UnitFoodFetchPerYear;
 
-		maxFoodTicks = foodTicksPerFetch * (name.EqualTo(LOCTEXT("Human","Human")) ? 1 : 2); // Fragile humans
+		maxFoodTicks = foodTicksPerFetch * (unitEnum == UnitEnum::Human ? 1 : 2); // Fragile humans
 		
 		foodTicksPerResource = Time::TicksPerYear / foodResourcePerYear;
 

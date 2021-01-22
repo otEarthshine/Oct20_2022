@@ -3985,9 +3985,9 @@ public:
 	static FText CommonFlowerDesc() { return LOCTEXT("Common Flower Desc", "Common flower. A nice food-source for grazing animals."); }
 	static FText WheatGrassDesc() { return LOCTEXT("Wheat Grass Desc", "Grass that can be cultivated for its seed."); }
 	
-	//static FText GetOreDescription(FText oreName) {
-	//	return FText::Format(LOCTEXT("OreDesc", "This region contains {0} that can be mined from mountain."), oreName);
-	//}
+	static FText GetOreDescription(FText oreName) {
+		return FText::Format(LOCTEXT("OreDesc", "This region contains {0} that can be mined from mountain."), oreName);
+	}
 #undef LOCTEXT_NAMESPACE
 
 };
@@ -4083,7 +4083,7 @@ static const TArray<TileObjInfo> TreeInfos
 
 	TileObjInfo(TileObjEnum::Stone, LOCTEXT("Stone", "Stone"),	ResourceTileType::Deposit,	ResourcePair::Invalid(),								ResourcePair(ResourceEnum::Stone, 2) /*this is not used?*/, LOCTEXT("Stone Desc", "Easily-accessible stone deposits.")),
 
-	TileObjInfo(TileObjEnum::CoalMountainOre, LOCTEXT("Coal Ore", "Coal Ore"),	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), LOCTEXT("Coal Ore", "Coal Ore")),
+	TileObjInfo(TileObjEnum::CoalMountainOre, LOCTEXT("Coal Ore", "Coal Ore"),	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), TileObjInfo::GetOreDescription(LOCTEXT("Coal Ore", "Coal Ore"))),
 	TileObjInfo(TileObjEnum::IronMountainOre, LOCTEXT("Iron Ore", "Iron Ore"),	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), LOCTEXT("Coal Ore 2", "Coal Ore2")),
 	TileObjInfo(TileObjEnum::GoldMountainOre, LOCTEXT("Gold Ore", "Gold Ore"),	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), LOCTEXT("Coal Ore 3", "Coal Ore3")),
 	TileObjInfo(TileObjEnum::GemstoneOre, LOCTEXT("Gemstone", "Gemstone"),	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), LOCTEXT("Coal Ore 4", "Coal Ore4")),

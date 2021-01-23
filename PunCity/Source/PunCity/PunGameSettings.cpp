@@ -124,6 +124,7 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "ToggleRain", 0 },
 
 	// Debug
+	{ "MultithreadedMeshGeneration", 1 },
 	{ "ForceClickthrough", 0 },
 	{ "ShowDebugExtra", 0 },
 

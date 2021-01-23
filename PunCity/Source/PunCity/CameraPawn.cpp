@@ -83,7 +83,7 @@ void ACameraPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 	PlayerInputComponent->BindAction("PhotoMode", IE_Pressed, this, &ACameraPawn::TogglePhotoMode);
 
-	PlayerInputComponent->BindAction("TestCrash", IE_Pressed, this, &ACameraPawn::TestCrash);
+	PlayerInputComponent->BindAction("PleaseCrash", IE_Pressed, this, &ACameraPawn::PleaseCrash);
 
 	PlayerInputComponent->BindAction("Build", IE_Pressed, this, &ACameraPawn::KeyPressed_Build);
 	PlayerInputComponent->BindAction("Gather", IE_Pressed, this, &ACameraPawn::KeyPressed_Gather);
@@ -148,9 +148,11 @@ void ACameraPawn::TogglePhotoMode() {
 	isPhotoMode = !isPhotoMode;
 }
 
-void ACameraPawn::TestCrash() {
+void ACameraPawn::PleaseCrash() {
 	FDebug::DumpStackTraceToLog();
 	checkNoEntry();
+	USceneComponent* test = nullptr;
+	test->DestroyComponent();
 }
 
 void ACameraPawn::KeyPressed_M()

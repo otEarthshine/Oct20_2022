@@ -165,7 +165,7 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 
 	{TechEnum::Sawmill, {
 		LOCTEXT("Sawmill", "Sawmill"),
-		LOCTEXT("Sawmill", "+50% furniture workshop's efficiency.")
+		LOCTEXT("Sawmill Desc", "+50% furniture workshop's efficiency.")
 	}},
 	{TechEnum::ImprovedWoodCutting, {
 		LOCTEXT("Improved woodcutting Lvl 1", "Improved woodcutting Lvl 1"),
@@ -221,7 +221,7 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 	}},
 	{ TechEnum::MoneyLastEra, {
 		LOCTEXT("Economics Theories", "Economics Theories"),
-		LOCTEXT("Economics Theories", "+20% house income"),
+		LOCTEXT("Economics Theories Desc", "+20% house income"),
 	}},
 	{ TechEnum::FarmLastEra, {
 		LOCTEXT("Pesticides", "Pesticides"),

@@ -89,7 +89,7 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 
 	_LOG(PunInit, "GAME_VERSION %s", *FString::FromInt(GAME_VERSION));
 
-	_uiInterface->SetLoadingText("Planting Trees...");
+	_uiInterface->SetLoadingText(NSLOCTEXT("PunPlayerController", "Loading_PlantingTrees", "Planting Trees..."));
 
 	_gameEventSystem.Init();
 	_overlaySystem.Init(this); // Needs to come first for road.
@@ -2811,7 +2811,7 @@ void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
 				BuildingUpgrade upgrade = bld->upgrades()[command.upgradeType];
 
 				AddPopup(command.playerId,
-					FText::Format(LOCTEXT("ShiftUpgrade_Pop", "Upgraded {0} on {1} {2}."), upgrade.name, TEXT_NUM(upgradedCount), bld->buildingInfo().name)
+					FText::Format(LOCTEXT("ShiftUpgrade_Pop", "Upgraded {UpgradeName} on {UpgradedBuildingCount} {BuildingName}."), upgrade.name, TEXT_NUM(upgradedCount), bld->buildingInfo().name)
 				);
 			}
 		}

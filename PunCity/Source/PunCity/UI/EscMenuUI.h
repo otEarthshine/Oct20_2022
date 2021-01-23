@@ -290,14 +290,14 @@ public:
 	float lastShaderCachePrint = 0.0f;
 
 	// This is before simulation exist
-	void SetLoadingText(FString string) {
+	void SetLoadingText(FText message) {
 #if !UI_ALL
 		return;
 #endif
 		LoadingScreen->LoadingTextBox->SetVisibility(ESlateVisibility::HitTestInvisible);
 		LoadingScreen->Logo->SetVisibility(ESlateVisibility::HitTestInvisible);
 		
-		LoadingScreen->LoadingText->SetText(FText::FromString(string));
+		LoadingScreen->LoadingText->SetText(message);
 	}
 	void HideLoadingScreen() {
 #if !UI_ALL

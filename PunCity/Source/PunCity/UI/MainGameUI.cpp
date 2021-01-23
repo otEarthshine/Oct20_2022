@@ -40,6 +40,7 @@ void UMainGameUI::PunInit()
 
 	// Gather Menu
 	GatherButton->OnClicked.AddDynamic(this, &UMainGameUI::ToggleGatherButton);
+	GatherSettingsCloseButton->OnClicked.AddDynamic(this, &UMainGameUI::CloseGatherUI);
 
 	DemolishButton->OnClicked.AddDynamic(this, &UMainGameUI::ToggleDemolishButton);
 
@@ -1679,7 +1680,7 @@ void UMainGameUI::ToggleGatherButton()
 
 	PUN_LOG("ToggleGatherButton");
 
-	bool wasActive = GatherImage->ColorAndOpacity.B == 0.0f;
+	bool wasActive = GatherImage->IsVisible();
 	ResetBottomMenuDisplay();
 
 	inputSystemInterface()->CancelPlacement();
@@ -1704,13 +1705,22 @@ void UMainGameUI::ToggleGatherButton()
 	SetButtonImage(GatherImage, !wasActive);
 	GatherSettingsOverlay->SetVisibility(wasActive ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
 }
+void UMainGameUI::CloseGatherUI()
+{
+	ResetBottomMenuDisplay();
+	inputSystemInterface()->CancelPlacement();
+	dataSource()->Spawn2DSound("UI", "CancelPlacement");
+	
+	SetButtonImage(GatherImage, false);
+	GatherSettingsOverlay->SetVisibility(ESlateVisibility::Collapsed);
+}
 
 void UMainGameUI::ToggleDemolishButton()
 {
 	PUN_LOG("ToggleDemolishButton");
 	if (InterfacesInvalid()) return;
 
-	bool wasActive = DemolishImage->ColorAndOpacity.B == 0.0f;
+	bool wasActive = DemolishImage->IsVisible();
 	ResetBottomMenuDisplay();
 
 	inputSystemInterface()->CancelPlacement();

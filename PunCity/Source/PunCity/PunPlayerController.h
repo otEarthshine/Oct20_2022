@@ -498,11 +498,17 @@ public:
 		return gameManager->soundSystem()->punAudios;
 	}
 	
-	UFUNCTION(Exec) void TestCrash() {
+	UFUNCTION(Exec) void PleaseCrash() {
 		checkNoEntry();
+		USceneComponent* test = nullptr;
+		test->DestroyComponent();
 	}
 	UFUNCTION(Exec) void TestAutosave() {
 		GetPunHUD()->AutosaveGame();
+	}
+
+	UFUNCTION(Exec) void RefreshCulture() {
+		gameInstance()->RefreshCulture();
 	}
 	
 	UFUNCTION(Exec) void SaveMainMenuDisplay()

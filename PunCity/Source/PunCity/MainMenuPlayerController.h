@@ -38,6 +38,14 @@ public:
 	bool IsMainMenuController() override { return true; }
 
 	bool IsLobbyUIOpened() override;
+
+public:
+	// Debug
+	UFUNCTION(Exec) void PleaseCrash() {
+		checkNoEntry();
+		USceneComponent* test = nullptr;
+		test->DestroyComponent();
+	}
 	
 public:
 	bool isStartingGame;

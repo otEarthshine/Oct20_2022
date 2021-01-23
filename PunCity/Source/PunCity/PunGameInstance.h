@@ -13,6 +13,7 @@
 #include "Sound/SoundAssets.h"
 
 #include <sstream>
+#include "Kismet/KismetInternationalizationLibrary.h"
 
 #include "PunGameInstance.generated.h"
 
@@ -798,6 +799,10 @@ public:
 	void SetSoundEffectsVolume(float soundEffectsVolume) { _soundEffectsVolume = soundEffectsVolume; }
 
 	AutosaveEnum autosaveEnum = AutosaveEnum::Year;
+	FString preferredCulture;
+	bool useMultithreadedMeshGeneration = true;
+	bool forceClickthrough = false;
+
 	
 public:
 	/*
@@ -825,6 +830,9 @@ public:
 
 	void RestoreDefaultsOthers() {
 		autosaveEnum = AutosaveEnum::Year;
+		preferredCulture = FString("en");
+		useMultithreadedMeshGeneration = true;
+		forceClickthrough = false;
 	}
 
 	void RestoreDefaultsAll()
@@ -835,7 +843,7 @@ public:
 		RestoreDefaultsOthers();
 	}
 
-	void SerializeSoundAndOtherSettings(FArchive& Ar)
+	void SerializeOtherSettings(FArchive& Ar)
 	{
 		LLM_SCOPE_(EPunSimLLMTag::PUN_GameInstance);
 
@@ -854,12 +862,17 @@ public:
 		Ar << _soundEffectsVolume;
 		Ar << _ambientVolume;
 
-		Ar << autosaveEnum;
-
 		Ar << mouseZoomSpeedFraction;
 		Ar << mouseRotateSpeedFraction;
 
 		Ar << _resolutionQuality;
+
+
+		Ar << autosaveEnum;
+		Ar << preferredCulture;
+		Ar << useMultithreadedMeshGeneration;
+		Ar << forceClickthrough;
+		
 	}
 
 	void RefreshSoundSettings()
@@ -872,6 +885,26 @@ public:
 			AudioComponent->SetVolumeMultiplier(_masterVolume * _musicVolume);
 		}
 	}
+
+	void RefreshOtherSettings()
+	{
+		PunSettings::Set("MultithreadedMeshGeneration", useMultithreadedMeshGeneration);
+		PunSettings::Set("ForceClickthrough", forceClickthrough);
+		PunSettings::Set("ShowDebugExtra", forceClickthrough);
+	}
+
+	void RefreshCulture()
+	{
+		FString currentCulture = UKismetInternationalizationLibrary::GetCurrentCulture();
+		
+		_LOG(PunDisplay, "RefreshCulture preferred:%s current:%s", *preferredCulture, *currentCulture);
+		// Refresh Culture only when game starts (GameInstance)
+		if (preferredCulture == "") {
+			preferredCulture = "en";
+		}
+		UKismetInternationalizationLibrary::SetCurrentCulture(preferredCulture, true);
+	}
+	
 
 	float resolutionQuality() { return _resolutionQuality; }
 	void SetResolutionQuality(float value) {
@@ -909,7 +942,7 @@ public:
 		SaveArchive.SetIsSaving(true);
 		SaveArchive.SetIsLoading(false);
 
-		SerializeSoundAndOtherSettings(SaveArchive);
+		SerializeOtherSettings(SaveArchive);
 
 		FString path = GetSettingsSavePath();
 		bool succeed = FFileHelper::SaveArrayToFile(SaveArchive, *path);
@@ -940,7 +973,7 @@ public:
 		LoadArchive.SetIsSaving(false);
 		LoadArchive.SetIsLoading(true);
 
-		SerializeSoundAndOtherSettings(LoadArchive);
+		SerializeOtherSettings(LoadArchive);
 
 		LoadArchive.FlushCache();
 		binary.Empty();

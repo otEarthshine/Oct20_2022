@@ -40,7 +40,7 @@ public:
 	virtual void OpenTradeUI(int32 objectId) = 0;
 	virtual void OpenIntercityTradeUI(int32 objectId) = 0;
 
-	virtual void SetLoadingText(FString message) = 0;
+	virtual void SetLoadingText(FText message) = 0;
 
 	virtual void AutosaveGame() = 0;
 };

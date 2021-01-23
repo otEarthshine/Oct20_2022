@@ -66,7 +66,7 @@ public:
 	void Setup(IPunPlayerController* controller, USceneComponent* worldWidgetParent);
 	void PunTick(bool isPhotoMode);
 
-	void SetLoadingText(FString message) final {
+	void SetLoadingText(FText message) final {
 #if UI_ALL
 		_escMenuUI->SetLoadingText(message);
 #endif

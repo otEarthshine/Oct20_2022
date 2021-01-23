@@ -98,7 +98,7 @@ public:
 	}
 
 	bool IsShowingConfirmationUI(FText confirmationStrIn) {
-		return confirmationStrIn.EqualTo(confirmationString);
+		return TextEquals(confirmationStrIn, confirmationString);
 	}
 
 	void ToggleDirtRoad()
@@ -117,6 +117,7 @@ public:
 	 */
 	UFUNCTION() void ToggleBuildingMenu();
 	UFUNCTION() void ToggleGatherButton();
+	UFUNCTION() void CloseGatherUI();
 	UFUNCTION() void ToggleDemolishButton();
 	
 	UFUNCTION() void ToggleResearchMenu();
@@ -175,6 +176,7 @@ private:
 	UPROPERTY(meta = (BindWidget)) UButton* GatherButton;
 	UPROPERTY(meta = (BindWidget)) UImage* GatherImage;
 	UPROPERTY(meta = (BindWidget)) UOverlay* GatherSettingsOverlay;
+	UPROPERTY(meta = (BindWidget)) UButton* GatherSettingsCloseButton;
 
 	UPROPERTY(meta = (BindWidget)) UOverlay* StatsButtonOverlay;
 	UPROPERTY(meta = (BindWidget)) UButton* StatsButton;

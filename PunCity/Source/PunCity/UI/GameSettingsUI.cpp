@@ -7,6 +7,7 @@
 
 #include "GenericPlatform/GenericPlatformSurvey.h"
 #include "SynthBenchmark.h"
+#include "Kismet/KismetInternationalizationLibrary.h"
 
 #define LOCTEXT_NAMESPACE "GameSettingsUI"
 
@@ -58,12 +59,12 @@ void UGameSettingsUI::PunInit(UPunWidget* callbackParent)
 	{
 		// Get Settings from benchmark
 		
-		Scalability::FQualityLevels qualityLevels = Scalability::BenchmarkQualityLevels();
-		
-		const float CPUPerfIndex = qualityLevels.CPUBenchmarkResults;
-		const float GPUPerfIndex = qualityLevels.GPUBenchmarkResults;
+		//Scalability::FQualityLevels qualityLevels = Scalability::BenchmarkQualityLevels();
+		//
+		//const float CPUPerfIndex = qualityLevels.CPUBenchmarkResults;
+		//const float GPUPerfIndex = qualityLevels.GPUBenchmarkResults;
 
-		PUN_LOG("Scalability CPUPerfIndex:%f GPUPerfIndex:%f", CPUPerfIndex, GPUPerfIndex);
+		//PUN_LOG("Scalability CPUPerfIndex:%f GPUPerfIndex:%f", CPUPerfIndex, GPUPerfIndex);
 
 		// Oh's Laptop CPU 166.5, 110.5 ... Savanna  
 		// Pun's Desktop CPU 161, GPU 250 .... 
@@ -199,12 +200,37 @@ void UGameSettingsUI::PunInit(UPunWidget* callbackParent)
 	setupDropdown(TexturesDropdown);
 	setupDropdown(EffectsDropdown);
 
-
+	/*
+	 * Other Settings
+	 */
 	AutosaveDropdown->OnSelectionChanged.AddDynamic(this, &UGameSettingsUI::OnAutosaveDropdownChanged);
 	AutosaveDropdown->ClearOptions();
 	for (size_t i = 0; i < AutosaveOptions.size(); i++) {
 		AutosaveDropdown->AddOption(AutosaveOptions[i]);
 	}
+
+	LanguageDropdown->OnSelectionChanged.AddDynamic(this, &UGameSettingsUI::OnLanguageDropdownChanged);
+	LanguageDropdown->ClearOptions();
+	TArray<FString> languageOptions = UKismetInternationalizationLibrary::GetLocalizedCultures(ELocalizationLoadFlags::Game);
+	for (size_t i = 0; i < languageOptions.Num(); i++) {
+		LanguageDropdown->AddOption(languageOptions[i]);
+	}
+
+	MultithreadedMeshGenerationCheckBox->OnCheckStateChanged.AddDynamic(this, &UGameSettingsUI::OnMultithreadedMeshGenerationCheckBoxChecked);
+	MultithreadedMeshGenerationCheckBox->SetIsChecked(PunSettings::Get("MultithreadedMeshGeneration"));
+	AddToolTip(MultithreadedMeshGenerationText, LOCTEXT("MultithreadedMeshGeneration_Tip", 
+		"Turn this off might help people experiencing random crashes (even if paused)."
+	));
+
+	ForceClickthroughCheckBox->OnCheckStateChanged.AddDynamic(this, &UGameSettingsUI::OnForceClickthroughCheckBoxChecked);
+	ForceClickthroughCheckBox->SetIsChecked(PunSettings::Get("ForceClickthrough"));
+	AddToolTip(ForceClickthroughText, LOCTEXT("ForceClickthrough_Tip",
+		"Turn this on if you cannot click objects in the world to show its description UI."
+	));
+
+
+
+	//
 
 	ResetTabSelection();
 }
@@ -301,8 +327,12 @@ void UGameSettingsUI::RefreshUI(bool resetTabs)
 	}
 
 	AutosaveDropdown->SetSelectedIndex(static_cast<int32>(gameInst->autosaveEnum));
+	LanguageDropdown->SetSelectedOption(gameInst->preferredCulture);
+	MultithreadedMeshGenerationCheckBox->SetIsChecked(gameInst->useMultithreadedMeshGeneration);
+	ForceClickthroughCheckBox->SetIsChecked(gameInst->forceClickthrough);
 
 	_isSettingsDirty = false;
+	_isLanguageSettingsDirty = false;
 	ConfirmOverlay->SetVisibility(ESlateVisibility::Collapsed);
 }
 
@@ -486,8 +516,34 @@ void UGameSettingsUI::OnAutosaveDropdownChanged(FString sItem, ESelectInfo::Type
 		Spawn2DSound("UI", "DropdownChange");
 	}
 }
+void UGameSettingsUI::OnLanguageDropdownChanged(FString sItem, ESelectInfo::Type seltype)
+{
+	if (seltype != ESelectInfo::Type::Direct) {
+		_isSettingsDirty = true;
+		_isLanguageSettingsDirty = true;
 
+		gameInstance()->preferredCulture = sItem;
+		gameInstance()->RefreshCulture();
 
+		Spawn2DSound("UI", "DropdownChange");
+	}
+}
+void UGameSettingsUI::OnMultithreadedMeshGenerationCheckBoxChecked(bool active)
+{
+	_isSettingsDirty = true;
+	gameInstance()->useMultithreadedMeshGeneration = active;
+	gameInstance()->RefreshOtherSettings();
+
+	Spawn2DSound("UI", "DropdownChange");
+}
+void UGameSettingsUI::OnForceClickthroughCheckBoxChecked(bool active)
+{
+	_isSettingsDirty = true;
+	gameInstance()->forceClickthrough = active;
+	gameInstance()->RefreshOtherSettings();
+
+	Spawn2DSound("UI", "DropdownChange");
+}
 
 void UGameSettingsUI::RestoreDefault()
 {
@@ -573,6 +629,7 @@ void UGameSettingsUI::UndoChanges()
 	settings->LoadSettings(true);
 	gameInstance()->LoadSoundAndOtherSettingsFromFile();
 	gameInstance()->RefreshSoundSettings();
+	gameInstance()->RefreshOtherSettings();
 
 	RefreshUI(false);
 }

@@ -34,7 +34,7 @@ AMainMenuPlayerController::AMainMenuPlayerController() : APunBasePlayerControlle
 
 	isStartingGame = false;
 	initStage = 1;
-
+	
 	//CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("GameCamera"));
 	//CameraComponent->SetupAttachment(RootComponent);
 }
@@ -48,6 +48,8 @@ void AMainMenuPlayerController::BeginPlay()
 
 	initStage = 2;
 
+	_LOG(PunInit, "MainMenuPlayerController Init RefreshCulture");
+	gameInstance()->RefreshCulture();
 }
 
 

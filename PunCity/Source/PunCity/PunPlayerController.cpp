@@ -129,6 +129,7 @@ APunPlayerController::APunPlayerController() : APunBasePlayerController()
 	// */
 	//TSharedPtr<FPunInputProcessor> inputPreProcessor = MakeShared<FPunInputProcessor>();
 	//FSlateApplication::Get().RegisterInputPreProcessor(inputPreProcessor);
+	//
 }
 
 void APunPlayerController::OnPostLogin()
@@ -169,6 +170,9 @@ void APunPlayerController::BeginPlay()
 	_hashSendTick = 0;
 
 	_proxyControllerTick = 0;
+
+	_LOG(PunInit, "PunPlayerController Init RefreshCulture");
+	gameInstance()->RefreshCulture();
 }
 
 void APunPlayerController::LoadController_Prepare()
@@ -183,7 +187,7 @@ void APunPlayerController::LoadController_Prepare()
 	if (punHUD) {
 		auto escMenuUI = punHUD->escMenuUI();
 		if (escMenuUI) {
-			escMenuUI->SetLoadingText("Preparing the World...");
+			escMenuUI->SetLoadingText(NSLOCTEXT("PunPlayerController", "Loading_PrepareWorld", "Preparing the World..."));
 		}
 	}
 
@@ -425,7 +429,7 @@ void APunPlayerController::Tick(float DeltaTime)
 			if (gameInstance->serverTick() == 0)
 			{
 				if (punHUD) {
-					punHUD->escMenuUI()->SetLoadingText("Weaving spacetime fabric...");
+					punHUD->escMenuUI()->SetLoadingText(NSLOCTEXT("PunPlayerController", "Loading_WeaveSpacetimeFabric", "Weaving spacetime fabric..."));
 				}
 			}
 

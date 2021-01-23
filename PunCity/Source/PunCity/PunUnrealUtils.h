@@ -14,6 +14,10 @@ class UMaterialInterface;
 class IDisplaySystemDataSource;
 class IGameUIDataSource;
 
+FORCEINLINE bool IsValidPun(const UObject *Test)
+{
+	return IsValid(Test) && Test->IsValidLowLevel();
+}
 
 class PunUnrealUtils
 {
@@ -40,7 +44,7 @@ public:
 
 	static void DestroyTexture2D(UTexture2D* texture) {
 		// TODO: need IsValidLowLevel?
-		if (IsValid(texture) && texture->IsValidLowLevel()) {
+		if (IsValidPun(texture)) {
 			texture->RemoveFromRoot();
 			texture->ConditionalBeginDestroy();
 		}
@@ -73,6 +77,7 @@ public:
 	}
 
 };
+
 
 // String Utils
 static std::wstring StringEnvelopImgTag(std::wstring str, std::wstring envelopTag)

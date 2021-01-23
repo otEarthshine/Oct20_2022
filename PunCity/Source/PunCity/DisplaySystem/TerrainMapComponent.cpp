@@ -683,7 +683,7 @@ void UTerrainMapComponent::InitAnnotations()
 		GeoresourceInfo info = GetGeoresourceInfo(i);
 		TArray<UStaticMesh*> miniMeshes = _assetLoader->georesourceMesh(info.georesourceEnum).miniMeshes;
 		for (int32 j = 0; j < miniMeshes.Num(); j++) {
-			_georesourceEnumToMesh->AddProtoMesh(info.name.ToString() + FString::FromInt(j), miniMeshes[j]);
+			_georesourceEnumToMesh->AddProtoMesh((*info.GetDisplayName()) + FString::FromInt(j), miniMeshes[j]);
 		}
 	}
 
@@ -843,7 +843,7 @@ void UTerrainMapComponent::RefreshAnnotations()
 					transform.SetScale3D(FVector::OneVector * 0.1f);
 				}
 				
-				_georesourceEnumToMesh->Add(info.name.ToString() + FString::FromInt(j), centerTile.tileId(), transform, 0);
+				_georesourceEnumToMesh->Add(*info.GetDisplayName() + FString::FromInt(j), centerTile.tileId(), transform, 0);
 			}
 			//_georesourceEnumToMesh2->Add(ToFString(info.name), centerTile.tileId(), transform, 0);
 		}
@@ -851,78 +851,4 @@ void UTerrainMapComponent::RefreshAnnotations()
 
 	_georesourceEnumToMesh->AfterAdd();
 
-	// Starting Spots
-	//std::unordered_map<int32, int32> playerIdToStartingRegion = georesourceSystem.playerIdToStartingRegion();
-
-	////UE_LOG(LogTemp, Error, TEXT("regionIdToStartingSpots %d"), regionIdToStartingSpots.size());
-	//for (auto& it : regionIdToStartingSpots) 
-	//{
-	//	WorldRegion2 region(it.first);
-	//	int regionId = region.regionId();
-	//	int32_t playerId = it.second;
-
-	//	// Flag Base
-	//	if (!_regionIdToStartingSpotMesh.Contains(regionId)) {
-	//		UStaticMeshComponent* meshComponent = NewObject<UStaticMeshComponent>(terrainMesh, UStaticMeshComponent::StaticClass());
-	//		meshComponent->Rename(*FString(("StartingSpot:" + to_string(regionId)).c_str()));
-	//		meshComponent->SetGenerateOverlapEvents(false);
-	//		meshComponent->AttachToComponent(terrainMesh, FAttachmentTransformRules::KeepRelativeTransform, NAME_None);
-	//		meshComponent->SetMobility(EComponentMobility::Movable);
-	//		meshComponent->SetStaticMesh(_assetLoader->WorldMapFlagBase);
-	//		meshComponent->RegisterComponent();
-
-	//		meshComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	//		meshComponent->ComponentTags.Add(TEXT("StartingSpot"));
-	//		meshComponent->ComponentTags.Add(*FString::FromInt(regionId));
-
-	//		WorldTile2 centerTile = region.centerTile();
-	//		FVector displayLocation(centerTile.x * _tileToWorldMapX, centerTile.y * _tileToWorldMapY, 0);
-	//		FVector size(_tileToWorldMapX, _tileToWorldMapY, _tileToWorldMapY);
-	//		meshComponent->SetRelativeTransform(FTransform(FRotator::ZeroRotator, displayLocation, size * sizeMultiplier * 20.0f));
-	//		_regionIdToStartingSpotMesh.Emplace(regionId, meshComponent);
-	//	}
-
-	//	// Flag Pole
-	//	if (playerId != -1)
-	//	{
-	//		PUN_DEBUG(FString("Need Flag"));
-	//		if (!_playerIdToFlagMesh.Contains(playerId))
-	//		{
-	//			PUN_DEBUG(FString("New Flag"));
-	//			UStaticMeshComponent* meshComponent = NewObject<UStaticMeshComponent>(terrainMesh, UStaticMeshComponent::StaticClass());
-	//			meshComponent->Rename(*FString(("StartingSpot:" + to_string(regionId)).c_str()));
-	//			meshComponent->SetGenerateOverlapEvents(false);
-	//			meshComponent->AttachToComponent(terrainMesh, FAttachmentTransformRules::KeepRelativeTransform, NAME_None);
-	//			meshComponent->SetMobility(EComponentMobility::Movable);
-	//			meshComponent->SetStaticMesh(_assetLoader->WorldMapFlag);
-	//			_playerIdToFlagMaterial.Emplace(playerId, UMaterialInstanceDynamic::Create(meshComponent->GetMaterial(0), terrainMesh));
-	//			_playerIdToFlagMaterial[playerId]->SetVectorParameterValue(TEXT("Color"), PlayerColor(playerId));
-	//			meshComponent->SetMaterial(0, _playerIdToFlagMaterial[playerId]);
-	//			meshComponent->RegisterComponent();
-	//			meshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	//			_playerIdToFlagMesh.Emplace(playerId, meshComponent);
-	//		}
-
-	//		WorldTile2 centerTile = region.centerTile();
-	//		FVector displayLocation(centerTile.x * _tileToWorldMapX, centerTile.y * _tileToWorldMapY, 0);
-	//		FVector size(_tileToWorldMapX, _tileToWorldMapY, _tileToWorldMapY);
-	//		_playerIdToFlagMesh[playerId]->SetRelativeTransform(FTransform(FRotator::ZeroRotator, displayLocation, size * sizeMultiplier * 20.0f));
-	//	}
-	//}
-
-	// Remove unused mesh
-	//for (auto it = _regionIdToStartingSpotMesh.CreateIterator(); it; ++it) {
-	//	if (regionIdToStartingSpots.find(it->Key) == regionIdToStartingSpots.end()) {
-	//		PUN_DEBUG(FString("Remove Starting Spot"));
-	//		it->Value->DestroyComponent();
-	//		it.RemoveCurrent();
-	//	}
-	//}
-	//for (auto it = _playerIdToFlagMesh.CreateIterator(); it; ++it) {
-	//	if (playerIdToStartingRegion.find(it->Key) == playerIdToStartingRegion.end()) {
-	//		PUN_DEBUG(FString("Remove Flag"));
-	//		it->Value->DestroyComponent();
-	//		it.RemoveCurrent();
-	//	}
-	//}
 }

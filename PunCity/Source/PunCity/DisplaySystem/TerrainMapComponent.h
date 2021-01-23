@@ -22,7 +22,7 @@ public:
 
 	void Deinit()
 	{
-		if (_assetLoader) {
+		if (IsValidPun(_assetLoader)) {
 			PunUnrealUtils::DestroyTexture2D(_assetLoader->heightTexture);
 			PunUnrealUtils::DestroyTexture2D(_assetLoader->biomeTexture);
 			PunUnrealUtils::DestroyTexture2D(_assetLoader->provinceTexture);

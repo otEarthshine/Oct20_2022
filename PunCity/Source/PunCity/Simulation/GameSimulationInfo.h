@@ -18,9 +18,9 @@
 
 // VERSION
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 9 // 3 digit
+#define MINOR_VERSION 10 // 3 digit
 
-#define VERSION_DAY 5
+#define VERSION_DAY 22
 #define VERSION_MONTH 1
 #define VERSION_YEAR 21
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
@@ -62,9 +62,9 @@ static std::string GetGameVersionString(int32 version)
 
 // VERSION
 #define MAJOR_SAVE_VERSION 0
-#define MINOR_SAVE_VERSION 9 // 3 digit
+#define MINOR_SAVE_VERSION 10 // 3 digit
 
-#define VERSION_SAVE_DAY 5
+#define VERSION_SAVE_DAY 22
 #define VERSION_SAVE_MONTH 1
 #define VERSION_SAVE_YEAR 21
 #define VERSION_SAVE_DATE (VERSION_SAVE_YEAR * 10000) + (VERSION_SAVE_MONTH * 100) + VERSION_SAVE_DAY
@@ -178,6 +178,10 @@ public:
 
 #define JOINTEXT(args) FText::Join(FText(), args)
 
+// !!!Note: there is a problem with .EqualTo() so this is used for now
+static bool TextEquals(const FText& a, const FText& b) {
+	return a.ToString() == b.ToString();
+}
 
 static bool TextArrayEquals(const TArray<FText>& a, const TArray<FText>& b)
 {
@@ -185,7 +189,7 @@ static bool TextArrayEquals(const TArray<FText>& a, const TArray<FText>& b)
 		return false;
 	}
 	for (int32 i = 0; i < a.Num(); i++) {
-		if (!a[i].EqualTo(b[i])) {
+		if (!TextEquals(a[i], b[i])) {
 			return false;
 		}
 	}
@@ -197,7 +201,7 @@ static bool TextArrayEquals(const std::vector<FText>& a, const std::vector<FText
 		return false;
 	}
 	for (int32 i = 0; i < a.size(); i++) {
-		if (!a[i].EqualTo(b[i])) {
+		if (!TextEquals(a[i], b[i])) {
 			return false;
 		}
 	}
@@ -4932,8 +4936,8 @@ struct BiomeInfo
 
 	std::string nameStr() const { return ToStdString(name.ToString()); }
 	
-	std::string GetNameWithoutSpace() const {
-		std::string result = nameStr();
+	std::string GetDisplayNameWithoutSpace() const {
+		std::string result = ToStdString(*FTextInspector::GetSourceString(name));
 		result.erase(std::remove(result.begin(), result.end(), ' '), result.end());
 		return result;
 	}
@@ -5958,7 +5962,7 @@ struct PopupInfo
 	bool operator==(const PopupInfo& a) const
 	{
 		return playerId == a.playerId &&
-			body.EqualTo(a.body) &&
+			TextEquals(body, a.body) &&
 			TextArrayEquals(choices, a.choices);
 	}
 };
@@ -6432,6 +6436,8 @@ struct GeoresourceInfo
 				geoBushEnum == TileObjEnum::None;
 	}
 	bool isMountainOre() { return mountainOreEnum != TileObjEnum::None; }
+
+	const FString* GetDisplayName() { return FTextInspector::GetSourceString(name); }
 	
 	TileObjEnum mountainOreEnum = TileObjEnum::None;
 	TileObjEnum geoTreeEnum;

@@ -83,20 +83,8 @@ void UMainMenuUI::Tick()
 {
 	gameInstance()->PunTick();
 
-	// TODO: Test
-	//VersionIdText->SetText(ToFText(GetGameVersionString()));
+	VersionIdText->SetText(ToFText(GetGameVersionString()));
 
-	//int32 testValue = 2221;
-	//FFormatNamedArguments Args;
-	//Args.Add(TEXT("testValue"), FText::AsNumber(testValue));
-	//VersionIdText->SetText(FText::Format(NSLOCTEXT("MainMenuUI", "testValue", "test value: {testValue}"), Args));
-
-	int32 testValue = 5555;
-	VersionIdText->SetText(FText::FormatNamed(
-		LOCTEXT("testValue2", "test value2: {testValue}"), 
-		"testValue2", FText::AsNumber(testValue)));
-
-	
 	// Not Connected to Steam, retry every 2 sec
 	if (LobbyConnectionWarning->GetVisibility() == ESlateVisibility::Visible &&
 		UGameplayStatics::GetTimeSeconds(this) - lastSteamConnectionRetry > 2.0f)

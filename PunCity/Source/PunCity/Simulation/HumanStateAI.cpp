@@ -1395,7 +1395,7 @@ bool HumanStateAI::TryGatherFruit()
 	
 	gatherTicks = gatherTicks * 100 / workEfficiency100();
 
-	if (workplace()->workMode().name.EqualTo(MeticulousWorkModeText)) {
+	if (workplace()->workMode().name.IdenticalTo(MeticulousWorkModeText)) {
 		gatherTicks *= 2;
 	}
 
@@ -1483,7 +1483,7 @@ bool HumanStateAI::TryHunt()
 	int32 damage = 15;
 	damage = damage * workEfficiency100() / 100;
 
-	if (workplace()->workMode().name.EqualTo(PoisonArrowWorkModeText)) {
+	if (workplace()->workMode().name.IdenticalTo(PoisonArrowWorkModeText)) {
 		damage *= 4;
 	}
 	
@@ -1514,14 +1514,14 @@ bool HumanStateAI::TryRanch()
 
 	// Check if ranch is almost full, if so, start slaugthering animals...
 	FText workModeName = ranch.workMode().name;
-	if (workModeName.EqualTo(RanchWorkMode_FullCapacity))
+	if (workModeName.IdenticalTo(RanchWorkMode_FullCapacity))
 	{
 		if (ranch.openAnimalSlots() > 1) { // Note > 1 (more balance)
 			AddDebugSpeech("(Failed)TryRanch: still growing animals");
 			return false;
 		}
 	}
-	else if (workModeName.EqualTo(RanchWorkMode_HalfCapacity))
+	else if (workModeName.IdenticalTo(RanchWorkMode_HalfCapacity))
 	{
 		if (ranch.openAnimalSlots() > ranch.maxAnimals / 2) {
 			AddDebugSpeech("(Failed)TryRanch: still growing animals");
@@ -2245,7 +2245,7 @@ bool HumanStateAI::TryForesting()
 	Forester& forester = workplace()->subclass<Forester>(CardEnum::Forester);
 	const FText& workModeName = forester.workMode().name;
 	
-	if (workModeName.EqualTo(CutAndPlantText)) {
+	if (workModeName.IdenticalTo(CutAndPlantText)) {
 		if (TryForestingCut(true)) {
 			return true;
 		}
@@ -2255,7 +2255,7 @@ bool HumanStateAI::TryForesting()
 		return TryForestingNourish();
 	}
 	
-	if (workModeName.EqualTo(PrioritizePlantText))
+	if (workModeName.IdenticalTo(PrioritizePlantText))
 	{
 		if (TryForestingPlant(TileObjEnum::None)) {
 			return true;
@@ -2266,7 +2266,7 @@ bool HumanStateAI::TryForesting()
 		return TryForestingNourish();
 	}
 
-	if (workModeName.EqualTo(PrioritizeCutText))
+	if (workModeName.IdenticalTo(PrioritizeCutText))
 	{
 		if (TryForestingCut(false)) {
 			return true;

@@ -41,8 +41,8 @@ public:
 			ExclamationIcon->SetVisibility(ESlateVisibility::Collapsed);
 		}
 		
-		if (title.EqualTo(quest->questTitle()) ||
-			numberDescription.EqualTo(quest->numberDescription()))
+		if (TextEquals(title, quest->questTitle()) ||
+			TextEquals(numberDescription, quest->numberDescription()))
 		{
 			title = quest->questTitle();
 			numberDescription = quest->numberDescription();

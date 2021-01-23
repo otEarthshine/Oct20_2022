@@ -127,7 +127,7 @@ public:
 
 	void TogglePhotoMode();
 
-	void TestCrash();
+	void PleaseCrash();
 
 	void KeyPressed_Escape();
 

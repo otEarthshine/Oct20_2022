@@ -26,6 +26,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* ConfirmChangesButton;
 	UPROPERTY(meta = (BindWidget)) UButton* DiscardChangesButton;
 	UPROPERTY(meta = (BindWidget)) UOverlay* ConfirmOverlay;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* ConfirmText;
 	
 	UPROPERTY(meta = (BindWidget)) UButton* BackButton;
 	UPROPERTY(meta = (BindWidget)) UButton* SettingsConfirmButton;
@@ -78,6 +79,14 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* OtherSettingsButton;
 	UPROPERTY(meta = (BindWidget)) UComboBoxString* AutosaveDropdown;
 
+	UPROPERTY(meta = (BindWidget)) UTextBlock* LanguageDropdownText;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* MultithreadedMeshGenerationText;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* ForceClickthroughText;
+
+	UPROPERTY(meta = (BindWidget)) UComboBoxString* LanguageDropdown;
+	UPROPERTY(meta = (BindWidget)) UCheckBox* MultithreadedMeshGenerationCheckBox;
+	UPROPERTY(meta = (BindWidget)) UCheckBox* ForceClickthroughCheckBox;
+	
 private:
 	void SetupResolutionDropdown() {
 		ResolutionDropdown->ClearOptions();
@@ -100,6 +109,8 @@ private:
 	void ExecuteAfterConfirmOrDiscard();
 
 	bool _isSettingsDirty = false;
+	bool _isLanguageSettingsDirty = false;
+	
 	int32 _tabIndexToChangeTo = -1; // -1 is for UI Close
 
 
@@ -138,6 +149,18 @@ private:
 	void TryOpenConfirmUI(int32 tabIndexToChangeTo) {
 		if (_isSettingsDirty) {
 			ConfirmOverlay->SetVisibility(ESlateVisibility::Visible);
+
+			if (_isLanguageSettingsDirty) {
+				ConfirmText->SetText(NSLOCTEXT("GameSettingsUI", "GameSettingsConfirmLanguage",
+					"Would you like to apply the changes?\n\n"
+					"Note: Language change will only apply upon restarting the game."
+				));
+			} else {
+				ConfirmText->SetText(NSLOCTEXT("GameSettingsUI", "GameSettingsConfirm",
+					"Would you like to apply the changes?"
+				));
+			}
+			
 			_tabIndexToChangeTo = tabIndexToChangeTo;
 		} else {
 			_tabIndexToChangeTo = tabIndexToChangeTo;
@@ -208,6 +231,9 @@ private:
 	UFUNCTION() void RestoreDefault();
 
 	UFUNCTION() void OnAutosaveDropdownChanged(FString sItem, ESelectInfo::Type seltype);
+	UFUNCTION() void OnLanguageDropdownChanged(FString sItem, ESelectInfo::Type seltype);
+	UFUNCTION() void OnMultithreadedMeshGenerationCheckBoxChecked(bool active);
+	UFUNCTION() void OnForceClickthroughCheckBoxChecked(bool active);
 	
 	void ResetTabSelection();
 

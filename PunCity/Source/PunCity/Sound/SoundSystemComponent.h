@@ -2226,7 +2226,7 @@ private:
 
 		for (const BiomeInfo& info : BiomeInfos)
 		{
-			string biomeName = info.GetNameWithoutSpace();
+			string biomeName = info.GetDisplayNameWithoutSpace();
 			Add2DSoundProperties(groupName, "WindSpring_" + biomeName);
 			Add2DSoundProperties(groupName, "WindSummer_" + biomeName);
 			Add2DSoundProperties(groupName, "WindAutumn_" + biomeName);
@@ -2238,7 +2238,7 @@ private:
 			//return "WindSpring_" + GetBiomeInfo(BiomeEnum::Forest).GetNameWithoutSpace();
 			
 			BiomeEnum biomeEnum = _dataSource->simulation().GetBiomeEnum(_dataSource->cameraAtom().worldTile2());
-			string biomeName = GetBiomeInfo(biomeEnum).GetNameWithoutSpace();
+			string biomeName = GetBiomeInfo(biomeEnum).GetDisplayNameWithoutSpace();
 			
 			if (Time::IsSpring()) return "WindSpring_" + biomeName;
 			if (Time::IsSummer()) return "WindSummer_" + biomeName;

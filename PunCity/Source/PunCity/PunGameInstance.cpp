@@ -43,6 +43,11 @@ void UPunGameInstance::Init()
 	GetEngine()->OnTravelFailure().AddUObject(this, &UPunGameInstance::HandleTravelFailure);
 	OnNotifyPreClientTravel().AddUObject(this, &UPunGameInstance::HandlePreClientTravel);
 	//OnRejoinFailure
+
+	// Only refresh culture when app starts
+	_LOG(PunInit, "PunGameInstance Init RefreshCulture");
+	LoadSoundAndOtherSettingsFromFile();
+	RefreshCulture();
 	
 	FGameDelegates::Get().GetExitCommandDelegate().AddUObject(this, &UPunGameInstance::OnGameExit);
 

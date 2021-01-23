@@ -89,7 +89,8 @@ protected:
 		if (threadCount == 0) {
 			threadCount = 8;
 		}
-		if (chunkInfos.size() >= threadCount)
+		if (chunkInfos.size() >= threadCount &&
+			PunSettings::IsOn("MultithreadedMeshGeneration"))
 		{
 			PUN_LOG("Tick Region Test Prepare3: chunkInfos:%d", chunkInfos.size());
 

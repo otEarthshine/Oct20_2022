@@ -33,7 +33,7 @@ void USoundSystemComponent::LoadRawSoundFolders()
 	//! Wind
 	for (const BiomeInfo& info : BiomeInfos)
 	{
-		string biomeName = info.GetNameWithoutSpace();
+		string biomeName = info.GetDisplayNameWithoutSpace();
 
 		LoadRawSoundFolder("WindSpring_" + biomeName, "Ambient/Wind/WindSpring_" + biomeName);
 		LoadRawSoundFolder("WindSummer_" + biomeName, "Ambient/Wind/WindSummer_" + biomeName);

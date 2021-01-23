@@ -190,7 +190,7 @@ void AGameManager::InitPhase1()
 	// Note!!! Don't try to move _simulation->Init to phase2 ... it will cause endless prblems
 
 	// Next Phase:
-	_uiInterface->SetLoadingText("Adding Life...");
+	_uiInterface->SetLoadingText(NSLOCTEXT("GameManager", "Loading_AddingLife", "Adding Life..."));
 
 	//PUN_CHECK(assetLoader()->moduleNames().Num() == ModuleMeshCount);
 }
@@ -285,16 +285,16 @@ void AGameManager::InitPhase2()
 	}
 
 	// Next Phase:
-	_uiInterface->SetLoadingText("Making sound...");
+	_uiInterface->SetLoadingText(NSLOCTEXT("GameManager", "Loading_MakingSound", "Making sound..."));
 
 	//PUN_CHECK(assetLoader()->moduleNames().Num() == ModuleMeshCount);
 }
 AGameManager::~AGameManager()
 {
 	// Deinit Textures
-	if (IsValid(_territoryDisplaySystem)) _territoryDisplaySystem->Deinit();
-	if (IsValid(_decalDisplaySystem)) _decalDisplaySystem->Deinit();
-	if (IsValid(_terrainMap)) _terrainMap->Deinit();
+	if (IsValidPun(_territoryDisplaySystem)) _territoryDisplaySystem->Deinit();
+	if (IsValidPun(_decalDisplaySystem)) _decalDisplaySystem->Deinit();
+	if (IsValidPun(_terrainMap)) _terrainMap->Deinit();
 }
 
 void AGameManager::InitPhase3()
@@ -359,8 +359,10 @@ void AGameManager::InitPhase3()
 	// Load the settings...
 	gameInstance->RefreshSoundSettings();
 
+	gameInstance->RefreshOtherSettings();
+
 	// Next Phase:
-	_uiInterface->SetLoadingText("Loading Completed...");
+	_uiInterface->SetLoadingText(NSLOCTEXT("GameManager", "Loading_Completed", "Loading Completed..."));
 
 	PUN_LOG("Module names %d", assetLoader()->moduleNames().Num());
 	//PUN_CHECK(assetLoader()->moduleNames().Num() == ModuleMeshCount);

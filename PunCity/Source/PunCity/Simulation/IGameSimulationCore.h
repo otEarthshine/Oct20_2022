@@ -338,6 +338,7 @@ public:
 
 
 	virtual void AddPopup(int32 playerId, FText popupBody, std::string popupSound = "") = 0;
+	virtual void AddPopup(int32 playerId, TArray<FText> popupBody, std::string popupSound = "") = 0;
 	
 	virtual void AddPopupToFront(int32 playerId, FText popupBody) = 0;
 	virtual void AddPopupToFront(int32 playerId, FText popupBody, ExclusiveUIEnum exclusiveEnum, std::string popupSound) = 0;

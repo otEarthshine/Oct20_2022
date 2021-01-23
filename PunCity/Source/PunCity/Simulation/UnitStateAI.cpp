@@ -550,10 +550,7 @@ void UnitStateAI::Die()
 		if (deathCount > 5 && !_simulation->parameters(_playerId)->CannibalismOffered)
 		{
 			_simulation->AddPopup(PopupInfo(_playerId, 
-				LOCTEXT("CannibalismAsk_Pop",
-					"People are dying left and right. Suddenly, someone asked us to consider eating the corpses for survival. "
-					"Will you allow Cannibalism?"
-				), 
+				LOCTEXT("CannibalismAsk_Pop", "People are dying left and right. Suddenly, someone asked us to consider eating the corpses for survival. Will you allow Cannibalism?"), 
 				{ LOCTEXT("Yes", "Yes"),
 					LOCTEXT("No", "No") },
 				PopupReceiverEnum::Approve_Cannibalism, true, "PopupBad"
@@ -1494,13 +1491,9 @@ void UnitStateAI::TrimFullBush()
 				auto unlockSys = _simulation->unlockSystem(tilePlayerId);
 				if (!unlockSys->didFirstTimeAnimalRavage) {
 					unlockSys->didFirstTimeAnimalRavage = true;
-					_simulation->AddPopup(tilePlayerId, LOCTEXT("AnimalsEatCrop_Pop",
-						"Animals are eating your crops."
-						"<space>"
-						"One way to deal with this is to build a Hunting Lodge near Farms."
-						"<space>"
-						"For faster animal killing, change Hunting Lodge's Workmode to \"Poison Arrow\"."
-					));
+					_simulation->AddPopup(tilePlayerId, 
+						LOCTEXT("AnimalsEatCrop_Pop", "Animals are eating your crops.<space>One way to deal with this is to build a Hunting Lodge near Farms.<space>For faster animal killing, change Hunting Lodge's Workmode to \"Poison Arrow\".")
+					);
 				}
 			}
 		}

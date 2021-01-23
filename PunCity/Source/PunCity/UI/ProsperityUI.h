@@ -99,17 +99,13 @@ private:
 		{
 			UProsperityColumnUI* prosperityColumnUI = AddWidget<UProsperityColumnUI>(UIEnum::ProsperityColumnUI);
 
-			prosperityColumnUI->HouseLevelText->SetText(FText::Format(NSLOCTEXT("ProsperityUI", "HouseLevelText",
-				"House Lvl {0}+"),
+			prosperityColumnUI->HouseLevelText->SetText(FText::Format(
+				NSLOCTEXT("ProsperityUI", "HouseLevelText", "House Lvl {0}+"),
 				TEXT_NUM(i)
 			));
 			{	
-				AddToolTip(prosperityColumnUI->HouseLevelText, FText::Format(NSLOCTEXT("ProsperityUI", "HouseLevelText_Tip",
-					"Unlock technologies in this column by increasing the number of houses with lvl {0} and above."
-					"<space>"
-					"<bullet>Houses lvl {0}: {1}</>"
-					"<bullet>Houses lvl {0}+: {2}</>"
-					),
+				AddToolTip(prosperityColumnUI->HouseLevelText, FText::Format(
+					NSLOCTEXT("ProsperityUI", "HouseLevelText_Tip", "Unlock technologies in this column by increasing the number of houses with lvl {0} and above.<space><bullet>Houses lvl {0}: {1}</><bullet>Houses lvl {0}+: {2}</>"),
 					TEXT_NUM(i),
 					TEXT_NUM(simulation().GetHouseLvlCount(playerId(), i, false)),
 					TEXT_NUM(simulation().GetHouseLvlCount(playerId(), i, true))

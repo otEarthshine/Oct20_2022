@@ -21,33 +21,13 @@ static const TArray<FText> TownhallLvlToUpgradeBonusText =
 	FText(),
 	FText(),
 
-	LOCTEXT("TownhallLvl2UpgradeBonus", 
-		"Unlocked Cards:"
-		"<bullet>Wheat seeds</>"
-		"<bullet>Cabbage seeds</>"
-		"<bullet>Snatch</>"
-		"<bullet>Buy Wood</>"
-		"<bullet>Sell Food</>"
-	), // Lvl 2
+	LOCTEXT("TownhallLvl2UpgradeBonus", "Unlocked Cards:<bullet>Wheat seeds</><bullet>Cabbage seeds</><bullet>Snatch</><bullet>Buy Wood</><bullet>Sell Food</>"), // Lvl 2
 
-	LOCTEXT("TownhallLvl3UpgradeBonus",
-		"<bullet>+10% mine/quarry production.</>"
-		"<space>"
-		"Unlocked Cards:"
-		"<bullet>Immigrants</>"
-		"<bullet>Kidnap</>"
-	), // 3
+	LOCTEXT("TownhallLvl3UpgradeBonus", "<bullet>+10% mine/quarry production.</><space>Unlocked Cards:<bullet>Immigrants</><bullet>Kidnap</>"), // 3
 
-	LOCTEXT("TownhallLvl4UpgradeBonus",
-		"<space>"
-		"Unlocked Cards:"
-		"<bullet>Warehouse</>"
-		"<bullet>Sharing is caring</>"
-	), // 4
+	LOCTEXT("TownhallLvl4UpgradeBonus", "<space>Unlocked Cards:<bullet>Warehouse</><bullet>Sharing is caring</>"), // 4
 
-	LOCTEXT("TownhallLvl5UpgradeBonus",
-		"<bullet>+10% industrial production.</>"
-	), // Lvl 5
+	LOCTEXT("TownhallLvl5UpgradeBonus", "<bullet>+10% industrial production.</>"), // Lvl 5
 };
 const FText& GetTownhallLvlToUpgradeBonusText(int32 townhallLvl) {
 	return TownhallLvlToUpgradeBonusText[townhallLvl];
@@ -168,26 +148,19 @@ void TownHall::UpgradeTownhall()
 		cardSys.AddDrawCards(CardEnum::BuyWood, 1);
 		//cardSys.AddDrawCards(CardEnum::BarrackClubman, 1);
 
-		_simulation->AddPopup(_playerId, LOCTEXT("UnlockedPriorityButton_Pop",
-				"Unlocked Priority Button <img id=\"NonPriorityStar\"/>!"
-				"<space>"
-				"Click it to switch building's priority between 3 states:\n"
-				"  <img id=\"NonPriorityStar\"/> Default worker allocation\n"
-				"  <img id=\"PriorityStar\"/> Prioritize working here\n"
-				"  <img id=\"PriorityStop\"/> Don't allow working here"
-		));
+		_simulation->AddPopup(_playerId, {
+			LOCTEXT("UnlockedPriorityButton1_Pop", "Unlocked Priority Button <img id=\"NonPriorityStar\"/>!"),
+			LOCTEXT("UnlockedPriorityButton2_Pop", "<space>Click it to switch building's priority between 3 states:\n  <img id=\"NonPriorityStar\"/> Default worker allocation\n  <img id=\"PriorityStar\"/> Prioritize working here\n  <img id=\"PriorityStop\"/> Don't allow working here"),
+		});
 		unlockSys->unlockedPriorityStar = true;
 	}
 	else if (townhallLvl == 3) {
 		cardSys.AddDrawCards(CardEnum::Immigration, 1);
 		cardSys.AddDrawCards(CardEnum::Kidnap, 1);
 
-		_simulation->AddPopup(_playerId, LOCTEXT("UnlockedSetTradeOffer_Pop",
-			"Unlocked \"Set Trade Offer\" Button."
-			"<space>"
-			"Use it to put up Trade Offers at the Townhall.\n"
-			"Other players can examine your Trade Offers, and directly trade with you (0% Fee)."
-		));
+		_simulation->AddPopup(_playerId, 
+			LOCTEXT("UnlockedSetTradeOffer_Pop", "Unlocked \"Set Trade Offer\" Button.<space>Use it to put up Trade Offers at the Townhall.\nOther players can examine your Trade Offers, and directly trade with you (0% Fee).")
+		);
 		unlockSys->unlockedSetTradeAmount = true;
 	}
 	else if (townhallLvl == 4) {
@@ -195,25 +168,17 @@ void TownHall::UpgradeTownhall()
 		cardSys.AddDrawCards(CardEnum::SharingIsCaring, 1);
 
 		{
-			_simulation->AddPopup(_playerId, LOCTEXT("UnlockedSetDeliveryTarget_Pop",
-				"Unlocked ability to Set Delivery Target!"
-				"<space>"
-				"You can set the storage/market where the building's output will be stored."
-				"<space>"
-				"To set the delivery target:"
-				"<bullet>Click on a production building to bring up its panel</>"
-				"<bullet>Click the [Set Delivery Target] button</>"
-				"<bullet>Select the target you wish to deliver to</>"
-			));
+			_simulation->AddPopup(_playerId, {
+				LOCTEXT("UnlockedSetDeliveryTarget1_Pop", "Unlocked ability to Set Delivery Target!<space>You can set the storage/market where the building's output will be stored.<space>"),
+				LOCTEXT("UnlockedSetDeliveryTarget2_Pop", "To set the delivery target:<bullet>Click on a production building to bring up its panel</><bullet>Click the [Set Delivery Target] button</><bullet>Select the target you wish to deliver to</>")
+			});
 			unlockSys->unlockedSetDeliveryTarget = true;
 		}
 
 		{
 			_simulation->AddPopup(
 				PopupInfo(_playerId, 
-					FText::Format(LOCTEXT("BuyCardTownhallUpgrade_Pop",
-						"Would you like to buy a {0} card for {1} <img id=\"Coin\"/>."
-						),
+					FText::Format(LOCTEXT("BuyCardTownhallUpgrade_Pop", "Would you like to buy a {0} card for {1} <img id=\"Coin\"/>."),
 						GetBuildingInfo(CardEnum::Warehouse).name,
 						TEXT_NUM(_simulation->cardSystem(_playerId).GetCardPrice(CardEnum::Warehouse))
 					), 
@@ -348,24 +313,21 @@ void TownHall::ImmigrationEvent(int32 exactAmount)
 	if (migrationType == 1) {
 		// Low happiness... less immigration
 		ImmigrationEvent(askedMigration,
-			FText::Format(LOCTEXT("ImmigrantsDesperateAskToJoin_Pop", 
-				"{0} desparate immigrants asked to join your colony. Low happiness lessen immigration."), 
+			FText::Format(LOCTEXT("ImmigrantsDesperateAskToJoin_Pop", "{0} desparate immigrants asked to join your colony. Low happiness lessen immigration."), 
 				TEXT_NUM(askedMigration)
 			)
 		);
 	}
 	else if (migrationType == 2) {
 		ImmigrationEvent(askedMigration,
-			FText::Format(LOCTEXT("ImmigrantsSpaceAskToJoin_Pop", 
-				"{0} immigrants asked to join your colony. They heard that your town has plenty of available living space. Would you let them join your town?"), 
+			FText::Format(LOCTEXT("ImmigrantsSpaceAskToJoin_Pop", "{0} immigrants asked to join your colony. They heard that your town has plenty of available living space. Would you let them join your town?"), 
 				TEXT_NUM(askedMigration)
 			)
 		);
 	}
 	else if (migrationType == 0) {
 		ImmigrationEvent(askedMigration,
-			FText::Format(LOCTEXT("ImmigrantsGreatRumorsAskToJoin_Pop", 
-				"{0} immigrants asked to join your colony. They came from faraway land, filled with hope, after hearing great rumors about your town. Would you let them join your town?"),
+			FText::Format(LOCTEXT("ImmigrantsGreatRumorsAskToJoin_Pop", "{0} immigrants asked to join your colony. They came from faraway land, filled with hope, after hearing great rumors about your town. Would you let them join your town?"),
 				TEXT_NUM(askedMigration)
 			)
 		);

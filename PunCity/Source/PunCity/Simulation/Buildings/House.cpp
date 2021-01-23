@@ -158,9 +158,7 @@ void House::FinishConstruction()
 		_simulation->unlockSystem(_playerId)->researchEnabled = true;
 
 		PopupInfo popupInfo(_playerId,
-			LOCTEXT("UnlockedResearchBegin_Pop",
-				"Unlocked research.\n"
-				"Acquire science points <img id=\"Science\"/> by increasing population, upgrading houses, or building libraries."),
+			LOCTEXT("UnlockedResearchBegin_Pop", "Unlocked research.\nAcquire science points <img id=\"Science\"/> by increasing population, upgrading houses, or building libraries."),
 			{ LOCTEXT("Show tech tree", "Show tech tree"),
 				LOCTEXT("Close", "Close") }, 
 			PopupReceiverEnum::DoneResearchEvent_ShowTree

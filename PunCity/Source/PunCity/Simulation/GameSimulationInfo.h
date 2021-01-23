@@ -161,6 +161,7 @@ public:
 #define ADDTEXT(InArgs, InText, ...) InArgs.Add(FText::Format(InText, __VA_ARGS__));
 #define ADDTEXT_(InText, ...) args.Add(FText::Format(InText, __VA_ARGS__));
 #define ADDTEXT__(InText) args.Add(InText);
+#define CLEARTEXT_() args.Empty();
 
 #define ADDTEXT_JOIN_(...) args.Add(FText::Join(__VA_ARGS__));
 
@@ -5922,6 +5923,13 @@ struct PopupInfo
 	PopupInfo(int32 playerId, FText body, std::vector<FText> choices, PopupReceiverEnum replyReceiver = PopupReceiverEnum::None,
 		bool forcedNetworking = false, std::string popupSound = "", int32 replyVar1 = -1)
 		: playerId(playerId), body(body), choices(choices), replyReceiver(replyReceiver), popupSound(popupSound), replyVar1(replyVar1), forcedNetworking(forcedNetworking)
+	{
+		startTick = Time::Ticks();
+	}
+
+	PopupInfo(int32 playerId, TArray<FText> bodyArray, std::vector<FText> choices, PopupReceiverEnum replyReceiver = PopupReceiverEnum::None,
+		bool forcedNetworking = false, std::string popupSound = "", int32 replyVar1 = -1)
+		: playerId(playerId), body(JOINTEXT(bodyArray)), choices(choices), replyReceiver(replyReceiver), popupSound(popupSound), replyVar1(replyVar1), forcedNetworking(forcedNetworking)
 	{
 		startTick = Time::Ticks();
 	}

@@ -916,41 +916,27 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 						auto unlockSys = unlockSystem(playerId);
 						if (!unlockSys->didFirstTimeMedicineLowPopup && GetResourceCount(playerId, MedicineEnums) < 10) {
 							unlockSys->didFirstTimeMedicineLowPopup = true;
-							AddPopup(playerId, LOCTEXT("MedicineFirstWarn_Pop",
-								"Your Medicine/Medicinal Herb count is low."
-								"<space>"
-								"If you run out of both Medicine and Medicinal Herb, sickness will spread killing your citizens."
-								"<space>"
-								"To produce medicinal herb:"
-								"<bullet>Unlock Medicinal Herb Seeds Technology</>"
-								"<bullet>Build Farms, and change its Workmode to Medicinal Herb</>"
-								"<space>"
-								"Alternatively, you can also import Medicine/Medicinal Herb from Trading Post/Port/Company."
-							));
+							AddPopup(playerId, {
+								LOCTEXT("MedicineFirstWarn1_Pop", "Your Medicine/Medicinal Herb count is low.<space>If you run out of both Medicine and Medicinal Herb, sickness will spread killing your citizens.<space>"),
+								LOCTEXT("MedicineFirstWarn2_Pop", "To produce medicinal herb:<bullet>Unlock Medicinal Herb Seeds Technology</><bullet>Build Farms, and change its Workmode to Medicinal Herb</><space>"),
+								LOCTEXT("MedicineFirstWarn3_Pop", "Alternatively, you can also import Medicine/Medicinal Herb from Trading Post/Port/Company.")
+							});
 						}
 						if (!unlockSys->didFirstTimeToolsLowPopup && GetResourceCount(playerId, ToolsEnums) < 10) {
 							unlockSys->didFirstTimeToolsLowPopup = true;
-							AddPopup(playerId, LOCTEXT("ToolsFirstWarn_Pop",
-								"Your Tools count is low."
-								"<space>"
-								"If you run out of Tools, your citizens' work efficiency will drop."
-								"<space>"
-								"The easiest way to acquire Tools is by importing Steel Tools from Trading Post/Port/Company."
-								"<space>"
-								"Steel Tools are produced from Blacksmith requiring Iron Bars and Wood."
-							));
+							AddPopup(playerId, {
+								LOCTEXT("ToolsFirstWarn1_Pop", "Your Tools count is low.<space>If you run out of Tools, your citizens' work efficiency will drop.<space>"),
+								LOCTEXT("ToolsFirstWarn2_Pop", "The easiest way to acquire Tools is by importing Steel Tools from Trading Post/Port/Company.<space>"),
+								LOCTEXT("ToolsFirstWarn3_Pop", "Steel Tools are produced from Blacksmith requiring Iron Bars and Wood.")
+							});
 						}
 						if (!unlockSys->didFirstTimeLaborer0 && _playerOwnedManagers[playerId].laborerCount() == 0) {
 							unlockSys->didFirstTimeLaborer0 = true;
-							AddPopup(playerId, LOCTEXT("Laborer0FirstWarn_Pop",
-								"Your Laborer count is now 0."
-								"<space>"
-								"Every citizen is employed in a building. There is no free Laborer left to Haul and Gather Resources full-time."
-								"<space>"
-								"This can cause logistics issues resulting in production slow-down or resources not being picked up."
-								"<space>"
-								"To increase your Laborer count, either expel workers from buildings, or manually set the Laborer count from the Townhall or Employment Bureau."
-							));
+							AddPopup(playerId, {
+								LOCTEXT("Laborer0FirstWarn1_Pop","Your Laborer count is now 0.<space>Every citizen is employed in a building. There is no free Laborer left to Haul and Gather Resources full-time.<space>"),
+								LOCTEXT("Laborer0FirstWarn2_Pop","This can cause logistics issues resulting in production slow-down or resources not being picked up.<space>"),
+								LOCTEXT("Laborer0FirstWarn3_Pop","To increase your Laborer count, either expel workers from buildings, or manually set the Laborer count from the Townhall or Employment Bureau."),
+							});
 						}
 
 						/*
@@ -1008,11 +994,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 											FText::Format(LOCTEXT("XhasConqueredY", "{0} has conquered {1}."), playerNameT(lordId), playerNameT(playerId))
 										), -1);
 										AddPopup(playerId, 
-											FText::Format(LOCTEXT("NewLord_Pop",
-												"<Bold>You became {0}'s vassal.</>"
-												"<space>"
-												"<bullet>As a vassal, you pay your lord 5% <img id=\"Coin\"/> revenue as a tribute each round.</>"
-												"<bullet>If your lord is ahead of you in science, you gain +20% <img id=\"Science\"/> from knowledge transfer.</>"),
+											FText::Format(LOCTEXT("NewLord_Pop", "<Bold>You became {0}'s vassal.</><space><bullet>As a vassal, you pay your lord 5% <img id=\"Coin\"/> revenue as a tribute each round.</><bullet>If your lord is ahead of you in science, you gain +20% <img id=\"Science\"/> from knowledge transfer.</>"),
 												playerNameT(lordId)
 											)
 										);
@@ -1111,13 +1093,13 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 
 						auto warnEconVictoryPopup = [&](int32 thousandsToWarn)
 						{
-							AddPopup(playerId, FText::Format(LOCTEXT("WarnEcon_Pop", 
-								"You accumulated {0},000<img id=\"Coin\"/>!<space>You will achieve economic victory once you accumulate 1,000,000<img id=\"Coin\"/>."),
+							AddPopup(playerId, FText::Format(
+								LOCTEXT("WarnEcon_Pop", "You accumulated {0},000<img id=\"Coin\"/>!<space>You will achieve economic victory once you accumulate 1,000,000<img id=\"Coin\"/>."),
 								TEXT_NUM(thousandsToWarn)
 							));
 							AddPopupAll(PopupInfo(-1,
-								FText::Format(LOCTEXT("WarnEconAll_Pop",
-									"{0} accumulated {1},000<img id=\"Coin\"/>.<space>At 1,000,000<img id=\"Coin\"/> {0} will achieve the economic victory."),
+								FText::Format(
+									LOCTEXT("WarnEconAll_Pop", "{0} accumulated {1},000<img id=\"Coin\"/>.<space>At 1,000,000<img id=\"Coin\"/> {0} will achieve the economic victory."),
 									playerNameT(playerId),
 									TEXT_NUM(thousandsToWarn)
 								)
@@ -3034,12 +3016,7 @@ void GameSimulationCore::PopupInstantReply(int32 playerId, PopupReceiverEnum rep
 		ADDTEXT__(ToFText(TutorialLinkString(TutorialLinkEnum::TutorialButton)));
 
 		ADDTEXT_INV_("\n");
-		ADDTEXT_LOCTEXT("StartGameCamControl",
-			"Camera control:"
-			"<bullet>W, A, S, D keys to pan</>"
-			"<bullet>Mouse wheel to zoom</>"
-			"<bullet>Q, E keys to rotate</>"
-		);
+		ADDTEXT_LOCTEXT("StartGameCamControl", "Camera control:<bullet>W, A, S, D keys to pan</><bullet>Mouse wheel to zoom</><bullet>Q, E keys to rotate</>");
 		ADDTEXT__(ToFText(TutorialLinkString(TutorialLinkEnum::CameraControl)));
 
 		AddPopup(playerId, JOINTEXT(args));
@@ -3848,10 +3825,10 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 				if (attackEnum == ProvinceAttackEnum::ConquerProvince) 
 				{
 					AddPopup(provincePlayerId, 
-						FText::Format(LOCTEXT("GotAttacked_Pop", 
-							"{0} is trying to take over your territory."
-							"<space>If you lose the province, all its buildings will be destroyed."
-						), playerNameT(command.playerId))
+						FText::Format(
+							LOCTEXT("GotAttacked_Pop", "{0} is trying to take over your territory.<space>If you lose the province, all its buildings will be destroyed."), 
+							playerNameT(command.playerId)
+						)
 					);
 
 					AddPopup(command.playerId, 
@@ -3867,25 +3844,24 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 					int32 oldLordPlayerId = provincePlayerOwner.lordPlayerId();
 					if (oldLordPlayerId != -1) { // Already a lord here, fight against old lord
 						AddPopup(oldLordPlayerId,
-							FText::Format(LOCTEXT("VassalGotAttack", 
-								"{0} started attacking on your vassal city, {1}, to gain control of the vassal."
-								"<space>If you lose this battle, you will lose control of the vassal."),
+							FText::Format(
+								LOCTEXT("VassalGotAttack", "{0} started attacking on your vassal city, {1}, to gain control of the vassal.<space>If you lose this battle, you will lose control of the vassal."),
 								playerNameT(command.playerId),
 								playerNameT(provincePlayerId)
 							)
 						);
 						
 						AddPopup(provincePlayerId, 
-							FText::Format(LOCTEXT("AttackYourCityReplaceOldLord_Pop",
-								"{0} started attacking on your city, to expel and replace your old lord, {1}."),
+							FText::Format(
+								LOCTEXT("AttackYourCityReplaceOldLord_Pop", "{0} started attacking on your city, to expel and replace your old lord, {1}."),
 								playerNameT(command.playerId),
 								playerNameT(oldLordPlayerId)
 							)
 						);
 						
 						AddPopup(command.playerId, 
-							FText::Format(LOCTEXT("YouStartedAttackingForVassal_Pop",
-								"You started attacking {0} to take {1} as your vassal."),
+							FText::Format(
+								LOCTEXT("YouStartedAttackingForVassal_Pop", "You started attacking {0} to take {1} as your vassal."),
 								playerNameT(oldLordPlayerId),
 								playerNameT(provincePlayerId)
 							)
@@ -3893,14 +3869,14 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 					}
 					else {
 						AddPopup(provincePlayerId,
-							FText::Format(LOCTEXT("XTryToVassalizeYou_Pop",
-								"{0} started attacking to vassalize you. If you lose this battle, you will become {0}'s vassal"),
+							FText::Format(
+								LOCTEXT("XTryToVassalizeYou_Pop", "{0} started attacking to vassalize you. If you lose this battle, you will become {0}'s vassal"),
 								playerNameT(command.playerId)
 							)
 						);
 						AddPopup(command.playerId,
-							FText::Format(LOCTEXT("YouStartVassalize_Pop",
-								"You started attacking {0}."),
+							FText::Format(
+								LOCTEXT("YouStartVassalize_Pop", "You started attacking {0}."),
 								playerNameT(provincePlayerId)
 							)
 						);
@@ -3917,25 +3893,24 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 					if (command.claimEnum == CallbackEnum::Liberate)
 					{
 						AddPopup(lordId,
-							FText::Format(LOCTEXT("LiberatePlayer_LordPop",
-								"{0} is trying to liberate {1} from you."
-								"<space>If you lose this battle, you will lose control of the vassal."),
+							FText::Format(
+								LOCTEXT("LiberatePlayer_LordPop", "{0} is trying to liberate {1} from you.<space>If you lose this battle, you will lose control of the vassal."),
 								playerNameT(command.playerId),
 								playerNameT(provincePlayerId)
 							)
 						);
 
 						AddPopup(command.playerId,
-							FText::Format(LOCTEXT("LiberatePlayer_SelfPop",
-								"You attempt to liberate {0} from {1}."),
+							FText::Format(
+								LOCTEXT("LiberatePlayer_SelfPop", "You attempt to liberate {0} from {1}."),
 								playerNameT(provincePlayerId),
 								playerNameT(lordId)
 							)
 						);
 
 						AddPopup(provincePlayerId,
-							FText::Format(LOCTEXT("LiberatePlayer_ProvincePlayerPop",
-								"{0} tries to liberate your city from {1}."),
+							FText::Format(
+								LOCTEXT("LiberatePlayer_ProvincePlayerPop", "{0} tries to liberate your city from {1}."),
 								playerNameT(command.playerId),
 								playerNameT(lordId)
 							)
@@ -3944,16 +3919,15 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 					else
 					{
 						AddPopup(lordId,
-							FText::Format(LOCTEXT("XTryToDeclareIndependenceFromYou_Pop",
-								"{0} is trying to declare independence from you."
-								"<space>If you lose this battle, you will lose control of the vassal."),
+							FText::Format(
+								LOCTEXT("XTryToDeclareIndependenceFromYou_Pop", "{0} is trying to declare independence from you.<space>If you lose this battle, you will lose control of the vassal."),
 								playerNameT(provincePlayerId)
 							)
 						);
 
 						AddPopup(provincePlayerId,
-							FText::Format(LOCTEXT("YouTryToDeclareIndependenceFromX_Pop",
-								"You attempt to declare independence from {0}."),
+							FText::Format(
+								LOCTEXT("YouTryToDeclareIndependenceFromX_Pop", "You attempt to declare independence from {0}."),
 								playerNameT(lordId)
 							)
 						);

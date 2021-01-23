@@ -171,8 +171,6 @@ void APunPlayerController::BeginPlay()
 
 	_proxyControllerTick = 0;
 
-	_LOG(PunInit, "PunPlayerController Init RefreshCulture");
-	gameInstance()->RefreshCulture();
 }
 
 void APunPlayerController::LoadController_Prepare()
@@ -359,6 +357,10 @@ void APunPlayerController::Tick(float DeltaTime)
 
 				_loadStep = LoadStepEnum::Completed;
 				PUN_DEBUG2("[InitSync] LoadStepEnum::Completed");
+
+				// Refresh Culture
+				_LOG(PunInit, "PunPlayerController Load Completed RefreshCulture");
+				gameInstance->RefreshCulture();
 
 				LoadedClientCallback_ToServer();
 			}

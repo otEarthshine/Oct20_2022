@@ -28,8 +28,8 @@ void UTechUI::SetupTechBoxUIs()
 			if (i < eraToTechEnums.size() - 1)
 			{
 				ADDTEXT_INV_("<space>");
-				ADDTEXT_(LOCTEXT("UnlockTechToUnlockEra",
-					"Unlock {0} Technologies in Era {1} to unlock Era {2}."),
+				ADDTEXT_(
+					LOCTEXT("UnlockTechToUnlockEra", "Unlock {0} Technologies in Era {1} to unlock Era {2}."),
 					unlockSys->techsToUnlockedNextEra(i),
 					eraNumberToText[i],
 					eraNumberToText[i + 1]
@@ -187,8 +187,8 @@ void UTechUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callBackEnum)
 		auto tech = unlockSys->GetTechInfo(techBox->techEnum);
 		
 		simulation().AddPopupToFront(playerId(), 
-			FText::Format(LOCTEXT("NeedSatisfyTechPrereq_Pop", 
-				"Satisfy this Technology's Prerequisite by producing {0} {1}"), 
+			FText::Format(
+				LOCTEXT("NeedSatisfyTechPrereq_Pop", "Satisfy this Technology's Prerequisite by producing {0} {1}"), 
 				TEXT_NUM(tech->requiredResourceCount), 
 				GetResourceInfo(tech->requiredResourceEnum).name
 			),

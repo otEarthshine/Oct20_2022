@@ -1131,9 +1131,7 @@ BuildingUpgrade Building::MakeComboUpgrade(FText name, ResourceEnum resourceEnum
 	}
 
 	FText description = FText::Format(
-		LOCTEXT("Combo Upgrade Description",
-			"Gain +{0}/{1}/{2}% productivity if this city has 2/4/8 {3}"
-		),
+		LOCTEXT("Combo Upgrade Description", "Gain +{0}/{1}/{2}% productivity if this city has 2/4/8 {3}"),
 		TEXT_NUM(comboEfficiencyBonus),
 		TEXT_NUM(comboEfficiencyBonus * 2),
 		TEXT_NUM(comboEfficiencyBonus * 3),

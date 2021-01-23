@@ -12,9 +12,7 @@ void BuildingCardSystem::TickRound()
 	if (allowMaxCardHandQueuePopup && _cardHandQueueCount >= 8)
 	{
 		_simulation->AddPopupNonDuplicate(PopupInfo(_playerId,
-			LOCTEXT("MaxCardsQueued",
-				"You have reached the maximum of 8 queued card hards. "
-				"Please buy cards or pass the existing hands."),
+			LOCTEXT("MaxCardsQueued", "You have reached the maximum of 8 queued card hards. Please buy cards or pass the existing hands."),
 			{ LOCTEXT("Close", "Close"), LOCTEXT("Do not show this again", "Do not show this again") },
 			PopupReceiverEnum::MaxCardHandQueuePopup)
 		);

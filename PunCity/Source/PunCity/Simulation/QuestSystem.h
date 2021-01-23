@@ -86,8 +86,8 @@ struct Quest
 	}
 
 	void AddStartPopup() {
-		simulation->AddPopup(playerId, FText::Format(LOCTEXT("Quest_Start",
-			"New Quest: {0}<line><space>{1}"),
+		simulation->AddPopup(playerId, FText::Format(
+			LOCTEXT("Quest_Start", "New Quest: {0}<line><space>{1}"),
 			questTitle(),
 			questDescription()
 		));
@@ -139,13 +139,7 @@ struct BuildHousesQuest final : Quest
 	FText questTitle() override { return LOCTEXT("BuildHouses_Title", "Build 5 houses"); }
 	FText questDescription() override
 	{
-		return LOCTEXT("BuildHouses_Desc",
-			"Citizens require cozy housing to survive.<space>"
-			"To build houses:"
-			"<bullet>Click the \"Build\" button on the bottom left menu</>"
-			"<bullet>Choose house</>"
-			"<bullet>Move your mouse to the desired location, then left-click to place the building</>"
-		);
+		return LOCTEXT("BuildHouses_Desc", "Citizens require cozy housing to survive.<space>To build houses:<bullet>Click the \"Build\" button on the bottom left menu</><bullet>Choose house</><bullet>Move your mouse to the desired location, then left-click to place the building</>");
 	}
 
 	bool ShouldSkipToNextQuest() override { return currentValue() >= neededValue(); }
@@ -162,11 +156,9 @@ struct BuildHousesQuest final : Quest
 		auto unlockSys = simulation->unlockSystem(playerId);
 		unlockSys->townhallUpgradeUnlocked = true;
 
-		AddEndPopup(LOCTEXT("BuildHouses_Finish",
-			"Well done! Your people are happy that they finally have houses to live in."
-			"<space>"
-			"Providing enough housing is important. Homeless people can migrate away, or die during winter. On the other hand, having extra houses can attract immigrants."
-		));
+		AddEndPopup(
+			LOCTEXT("BuildHouses_Finish", "Well done! Your people are happy that they finally have houses to live in.<space>Providing enough housing is important. Homeless people can migrate away, or die during winter. On the other hand, having extra houses can attract immigrants.")
+		);
 		
 		if (simulation->townLvl(playerId) == 1) {
 			simulation->parameters(playerId)->NeedTownhallUpgradeNoticed = true;
@@ -184,12 +176,7 @@ struct TownhallUpgradeQuest final : Quest
 	FText questTitle() override { return LOCTEXT("UpgradeTownhall_Title", "Upgrade the Townhall"); }
 	FText questDescription() override
 	{
-		return LOCTEXT("UpgradeTownhall_Desc",
-			"Upgrading the Townhall can help you unlock more gameplay elements.<space>"
-			"To upgrade:"
-			"<bullet>Click the Townhall to bring up its focus UI</>"
-			"<bullet>Click the [Upgrade Townhall] button on the focus UI</>"
-		);
+		return LOCTEXT("UpgradeTownhall_Desc", "Upgrading the Townhall can help you unlock more gameplay elements.<space>To upgrade:<bullet>Click the Townhall to bring up its focus UI</><bullet>Click the [Upgrade Townhall] button on the focus UI</>");
 	}
 
 	bool ShouldSkipToNextQuest() override { return currentValue() >= neededValue(); }
@@ -202,10 +189,8 @@ struct TownhallUpgradeQuest final : Quest
 		auto unlockSys = simulation->unlockSystem(playerId);
 		unlockSys->townhallUpgradeUnlocked = true;
 
-		AddEndPopup(LOCTEXT("UpgradeTownhall_Finish", 
-			"Great! Your townhall is now level 2."
-			"<space>"
-			"Upgrading the Townhall, Researching Technology, and Upgrading Houses are ways you progress through the game and unlock new gameplay elements."
+		AddEndPopup(
+			LOCTEXT("UpgradeTownhall_Finish", "Great! Your townhall is now level 2.<space>Upgrading the Townhall, Researching Technology, and Upgrading Houses are ways you progress through the game and unlock new gameplay elements."
 		));
 
 	}
@@ -227,11 +212,7 @@ struct PopulationQuest : Quest
 	FText questTitle() override { return LOCTEXT("GrowPopulation_Title", "Grow Population"); }
 	FText questDescription() override
 	{
-		return LOCTEXT("GrowPopulation_Desc",
-			"To grow your population:"
-			"<bullet>Add more houses. The more available housing spaces, the more children people will have.</>"
-			"<bullet>Keep your citizens happy</>"
-		);
+		return LOCTEXT("GrowPopulation_Desc", "To grow your population:<bullet>Add more houses. The more available housing spaces, the more children people will have.</><bullet>Keep your citizens happy</>");
 	}
 	FText numberDescription() override {
 		return FText::Format(INVTEXT("{0}/{1}"), TEXT_NUM(simulation->population(playerId)), TEXT_NUM(GetTownSizeMinPopulation(townSizeTier)));
@@ -264,14 +245,7 @@ struct GatherMarkQuest : Quest
 	}
 	FText questDescription() override
 	{
-		return LOCTEXT("GatherMark_Desc",
-			"Wood from trees can be used for construction or as fuel."
-			"<space>"
-			"To mark trees for citizens to gather:"
-			"<bullet>Click the \"Gather\" button on the bottom left menu</>"
-			"<bullet>Move your mouse to the desired location</>"
-			"<bullet>Left-click drag to mark the dragged area for citizens to gather</>"
-		);
+		return LOCTEXT("GatherMark_Desc", "Wood from trees can be used for construction or as fuel.<space>To mark trees for citizens to gather:<bullet>Click the \"Gather\" button on the bottom left menu</><bullet>Move your mouse to the desired location</><bullet>Left-click drag to mark the dragged area for citizens to gather</>");
 	}
 
 
@@ -309,13 +283,7 @@ struct FoodBuildingQuest : Quest
 	FText questTitle() override { return LOCTEXT("FoodBuilding_Title", "Build a food producer."); }
 	FText questDescription() override
 	{
-		return LOCTEXT("FoodBuilding_Desc",
-			"People require food to stay alive.<space>"
-			"To build a food producer:"
-			"<bullet>Click the card stack on the bottom right of the screen</>"
-			"<bullet>Choose a food producer building</>"
-			"<bullet>Move your mouse to the desired location, then left-click to place the building</>"
-		);
+		return LOCTEXT("FoodBuilding_Desc", "People require food to stay alive.<space>To build a food producer:<bullet>Click the card stack on the bottom right of the screen</><bullet>Choose a food producer building</><bullet>Move your mouse to the desired location, then left-click to place the building</>");
 	}
 
 	bool ShouldSkipToNextQuest() override { return currentValue() >= neededValue(); }
@@ -349,12 +317,7 @@ struct ClaimLandQuest : Quest
 	FText questTitle() override { return LOCTEXT("ClaimTerritory_Title", "Claim territory"); }
 	FText questDescription() override
 	{
-		return LOCTEXT("ClaimTerritory_Desc",
-			"Expand your territory by claiming regions.<space>"
-			"To claim a region:"
-			"<bullet>Click on any region/tile adjacent to your territory's border</>"
-			"<bullet>On the opened description UI, click the \"Claim Land\" button</>"
-		);
+		return LOCTEXT("ClaimTerritory_Desc", "Expand your territory by claiming regions.<space>To claim a region:<bullet>Click on any region/tile adjacent to your territory's border</><bullet>On the opened description UI, click the \"Claim Land\" button</>");
 	}
 
 	void OnStartQuest() override { AddStartPopup(); }
@@ -376,14 +339,7 @@ struct BuildStorageQuest : Quest
 	FText questTitle() override { return LOCTEXT("BuildStorage_Title", "Build a storage yard"); }
 	FText questDescription() override
 	{
-		return LOCTEXT("BuildStorage_Desc",
-			"Storage yards are required to store resources for later use."
-			"<space>"
-			"To build a storage yard:"
-			"<bullet>Click the \"Build\" button on the bottom left menu</>"
-			"<bullet>Choose storage yard</>"
-			"<bullet>Move your mouse to the desired location, then left-click to place the building</>"
-		);
+		return LOCTEXT("BuildStorage_Desc", "Storage yards are required to store resources for later use.<space>To build a storage yard:<bullet>Click the \"Build\" button on the bottom left menu</><bullet>Choose storage yard</><bullet>Move your mouse to the desired location, then left-click to place the building</>");
 	}
 
 	int32 currentValue() override {
@@ -405,15 +361,7 @@ struct SurviveWinterQuest : Quest
 	FText questTitle() override { return LOCTEXT("SurviveTheWinter_Title", "Survive the winter"); }
 	FText questDescription() override
 	{
-		return LOCTEXT("SurviveTheWinter_Desc",
-			"Winter is harsh, and requires your town to be well-prepared to face it."
-			"<space>"
-			"To survive the winter, we must have:"
-			"<bullet>houses for everyone</>"
-			"<bullet>enough stored food</>"
-			"<bullet>enough stored wood or coal for heating</>"
-			"<bullet>enough stored medicine, since disease frequency triples in winter</>"
-		);
+		return LOCTEXT("SurviveTheWinter_Desc", "Winter is harsh, and requires your town to be well-prepared to face it.<space>To survive the winter, we must have:<bullet>houses for everyone</><bullet>enough stored food</><bullet>enough stored wood or coal for heating</><bullet>enough stored medicine, since disease frequency triples in winter</>");
 	}
 
 	bool ShouldSkipToNextQuest() override { return currentValue() >= neededValue(); }
@@ -467,10 +415,8 @@ struct ProductionQuest : Quest
 		if (productionSoFar >= neededProductionCount() &&
 			CanGetRewardCard())
 		{
-			AddEndPopup(FText::Format(LOCTEXT("ProductionQuest_Desc",
-				"Quest completed!\n"
-				"Produced {0} {1}.\n"
-				"Reward Card: {2}"),
+			AddEndPopup(FText::Format(
+				LOCTEXT("ProductionQuest_Desc", "Quest completed!\nProduced {0} {1}.\nReward Card: {2}"),
 				TEXT_NUM(neededProductionCount()),
 				ResourceNameT(resourceEnum()),
 				GetBuildingInfo(rewardCardEnum()).name
@@ -541,11 +487,8 @@ struct TradeQuest : Quest
 
 		if (valueSoFar >= neededValue() && CanGetRewardCard())
 		{
-			AddEndPopup(FText::Format(LOCTEXT("TradeQuest_Finish",
-				"Quest completed!<space>"
-				"Traded {0}<img id=\"Coin\"/>.<space>"
-				"Reward Card: {1}"
-				),
+			AddEndPopup(FText::Format(
+				LOCTEXT("TradeQuest_Finish", "Quest completed!<space>Traded {0}<img id=\"Coin\"/>.<space>Reward Card: {1}"),
 				TEXT_NUM(neededValue()),
 				GetBuildingInfo(rewardCardEnum()).name
 			));
@@ -579,16 +522,16 @@ struct HouseUpgradeQuest : Quest
 
 	FText questTitle() override
 	{
-		return FText::Format(LOCTEXT("HouseUpgrade_Title",
-			"Acquire {0} house lvl {1}"),
+		return FText::Format(
+			LOCTEXT("HouseUpgrade_Title", "Acquire {0} house lvl {1}"),
 			TEXT_NUM(neededHouseCount()),
 			TEXT_NUM(neededHouseLvl())
 		);
 	}
 	FText questDescription() override
 	{
-		return FText::Format(LOCTEXT("HouseUpgrade_Desc",
-			"Upgrade {0} houses to lvl {1}"),
+		return FText::Format(
+			LOCTEXT("HouseUpgrade_Desc", "Upgrade {0} houses to lvl {1}"),
 			TEXT_NUM(neededHouseCount()),
 			TEXT_NUM(neededHouseLvl())
 		);

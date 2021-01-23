@@ -1141,8 +1141,8 @@ public:
 	FText GetProvinceDefenseBonusTip(int32 provinceId)
 	{
 		TArray<FText> args;
-		ADDTEXT_(NSLOCTEXT("SimCore", "DefenseBonus_TipTitle", 
-			"Defense Bonus: {0}"), 
+		ADDTEXT_(
+			NSLOCTEXT("SimCore", "DefenseBonus_TipTitle","Defense Bonus: {0}"), 
 			TEXT_PERCENT(GetProvinceAttackCostPercent(provinceId))
 		);
 		int32 provinceOwnerId = provinceOwner(provinceId);
@@ -1432,6 +1432,11 @@ public:
 	}
 	void AddPopup(int32 playerId, FText popupBody, std::string popupSound = "") final {
 		PopupInfo info(playerId, popupBody);
+		info.popupSound = popupSound;
+		AddPopup(info);
+	}
+	void AddPopup(int32 playerId, TArray<FText> popupBody, std::string popupSound = "") final {
+		PopupInfo info(playerId, JOINTEXT(popupBody));
 		info.popupSound = popupSound;
 		AddPopup(info);
 	}
@@ -1874,8 +1879,8 @@ public:
 				NSLOCTEXT("SimCore", "WarnDominationVictory_Pop", "You have captured all but one capital. If you captured all capitals, you will achieve the domination victory.")
 			);
 			AddPopupAll(PopupInfo(-1,
-				FText::Format(NSLOCTEXT("SimCore", "WarnDominationVictoryAll_Pop",
-					"{0} have captured all but one capital. You will be defeated if {0} manages to capture all the capitals."),
+				FText::Format(
+					NSLOCTEXT("SimCore", "WarnDominationVictoryAll_Pop", "{0} have captured all but one capital. You will be defeated if {0} manages to capture all the capitals."),
 					playerNameT(playerIdToWin)
 				)
 			), playerIdToWin);

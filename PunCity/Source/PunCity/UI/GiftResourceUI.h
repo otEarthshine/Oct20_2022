@@ -50,8 +50,8 @@ public:
 	void OpenUI(int32 targetPlayerIdIn)
 	{
 		targetPlayerId = targetPlayerIdIn;
-		SetText(GiftTitleText, FText::Format(NSLOCTEXT("GiftResourceUI", "GiftToX",
-			"Gift to {0}"),
+		SetText(GiftTitleText, FText::Format(
+			NSLOCTEXT("GiftResourceUI", "GiftToX", "Gift to {0}"),
 			simulation().playerNameT(targetPlayerId)
 		));
 

@@ -215,17 +215,20 @@ void UGameSettingsUI::PunInit(UPunWidget* callbackParent)
 	for (size_t i = 0; i < languageOptions.Num(); i++) {
 		LanguageDropdown->AddOption(languageOptions[i]);
 	}
+	AddToolTip(LanguageDropdownText,
+		LOCTEXT("LanguageDropdown_Tip", "!!!Language feature is still experimental. Use it at your own risk.!!!"
+	));
 
 	MultithreadedMeshGenerationCheckBox->OnCheckStateChanged.AddDynamic(this, &UGameSettingsUI::OnMultithreadedMeshGenerationCheckBoxChecked);
 	MultithreadedMeshGenerationCheckBox->SetIsChecked(PunSettings::Get("MultithreadedMeshGeneration"));
-	AddToolTip(MultithreadedMeshGenerationText, LOCTEXT("MultithreadedMeshGeneration_Tip", 
-		"Turn this off might help people experiencing random crashes (even if paused)."
+	AddToolTip(MultithreadedMeshGenerationText, 
+		LOCTEXT("MultithreadedMeshGeneration_Tip", "Turn this off might help people experiencing random crashes (even if paused)."
 	));
 
 	ForceClickthroughCheckBox->OnCheckStateChanged.AddDynamic(this, &UGameSettingsUI::OnForceClickthroughCheckBoxChecked);
 	ForceClickthroughCheckBox->SetIsChecked(PunSettings::Get("ForceClickthrough"));
-	AddToolTip(ForceClickthroughText, LOCTEXT("ForceClickthrough_Tip",
-		"Turn this on if you cannot click objects in the world to show its description UI."
+	AddToolTip(ForceClickthroughText, 
+		LOCTEXT("ForceClickthrough_Tip", "Turn this on if you cannot click objects in the world to show its description UI."
 	));
 
 
@@ -630,6 +633,7 @@ void UGameSettingsUI::UndoChanges()
 	gameInstance()->LoadSoundAndOtherSettingsFromFile();
 	gameInstance()->RefreshSoundSettings();
 	gameInstance()->RefreshOtherSettings();
+	gameInstance()->RefreshCulture();
 
 	RefreshUI(false);
 }

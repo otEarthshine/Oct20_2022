@@ -89,11 +89,7 @@ void UPunGameInstance::CreateMainMenuSound(USoundBase* sound)
 			RegisterReferencedObject(AudioComponent);
 		}
 		else {
-			mainMenuPopup = LOCTEXT("FailedAudioCreation",
-							"Failed to create audio components.\n"
-							"Please unplug any external audio devices, and disable any sound applications.\n"
-							"This will help Unreal Engine connects to the correct main audio device.\n"
-							"Once you are done, please restart the game.");
+			mainMenuPopup = LOCTEXT("FailedAudioCreation", "Failed to create audio components.\nPlease unplug any external audio devices, and disable any sound applications.\nThis will help Unreal Engine connects to the correct main audio device.\nOnce you are done, please restart the game.");
 		}
 	}
 }

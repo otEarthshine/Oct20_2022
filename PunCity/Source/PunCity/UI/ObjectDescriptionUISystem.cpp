@@ -2182,11 +2182,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							//ss << "Upgrade Townhall to lvl " << (townhall.townhallLvl + 1) << "\n";
 							//ss << "<img id=\"Coin\"/>" << moneyText;
 
+							CLEARTEXT_();
 							ADDTEXT_(
-								LOCTEXT("TownhallUpgradeButton",
-									"Upgrade Townhall to lvl {0}\n"
-									"<img id=\"Coin\"/>{1}"
-								),
+								LOCTEXT("TownhallUpgradeButton", "Upgrade Townhall to lvl {0}\n<img id=\"Coin\"/>{1}"),
 								FText::AsNumber(townhall.townhallLvl + 1),
 								moneyText
 							);
@@ -2208,6 +2206,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					//! Upgrade Button Others
 					else
 					{
+						CLEARTEXT_();
+						
 						auto setUpgradeButton = [&](BuildingUpgrade upgrade, int32 upgradeIndex)
 						{
 							ADDTEXT_(LOCTEXT("Upgrade {0}", "Upgrade {0}"), upgrade.name);
@@ -2459,10 +2459,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				{
 					auto widget = descriptionBox->AddRichText(LOCTEXT("Work efficiency", "Work efficiency"), TEXT_PERCENT(human.workEfficiency100()));
 
-					ADDTEXT_(LOCTEXT("Work efficiency tip",
-						"Work efficiency: {0}%\n"
-						" 100% base\n"
-						" penalties:\n"),
+					ADDTEXT_(
+						LOCTEXT("Work efficiency tip", "Work efficiency: {0}%\n 100% base\n penalties:\n"),
 						TEXT_NUM(human.workEfficiency100())
 					);
 
@@ -2499,9 +2497,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					ADDTEXT_(INVTEXT("{0}<img id=\"Smile\"/>"), TEXT_NUM(human.happiness()));
 					auto widget = descriptionBox->AddRichText(LOCTEXT("Happiness", "Happiness"), args);
 
-					ADDTEXT_(LOCTEXT("Happiness Tip",
-						"Happiness: {0}<img id=\"Smile\"/>\n"
-						"  Needs: {1}\n"), 
+					ADDTEXT_(
+						LOCTEXT("Happiness Tip", "Happiness: {0}<img id=\"Smile\"/>\n  Needs: {1}\n"), 
 						TEXT_NUM(human.happiness()), TEXT_NUM(human.baseHappiness())
 					);
 
@@ -2830,8 +2827,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 				//stringstream ss;
 				//ss << "<Header>Dropped Resource " << tile.ToString() << "</>";
-				SetText(_objectDescriptionUI->DescriptionUITitle, FText::Format(LOCTEXT("DroppedResourceObjUI",
-					"<Header>Dropped Resource {0}</>"),
+				SetText(_objectDescriptionUI->DescriptionUITitle, FText::Format(
+					LOCTEXT("DroppedResourceObjUI", "<Header>Dropped Resource {0}</>"),
 					tile.ToText()
 				));
 				_objectDescriptionUI->BuildingsStatOpener->SetVisibility(ESlateVisibility::Collapsed);
@@ -3618,9 +3615,8 @@ void UObjectDescriptionUISystem::AddBiomeInfo(WorldTile2 tile, UPunBoxWidget* de
 	FloatDet maxCelsius = sim.MaxCelsius(tile);
 	FloatDet minCelsius = sim.MinCelsius(tile);
 
-	ADDTEXT_(LOCTEXT("BiomeInfoTemperature",
-		"<Bold>Temperature:</> {0}-{1}°C ({2}-{3}°F)\n"
-		),
+	ADDTEXT_(
+		LOCTEXT("BiomeInfoTemperature", "<Bold>Temperature:</> {0}-{1}°C ({2}-{3}°F)\n"),
 		TEXT_NUMINT(FDToFloat(minCelsius)),
 		TEXT_NUMINT(FDToFloat(maxCelsius)),
 		TEXT_NUMINT(FDToFloat(CelsiusToFahrenheit(minCelsius))),
@@ -3833,24 +3829,26 @@ void UObjectDescriptionUISystem::AddProvinceUpkeepInfo(int32 provinceIdClean, UP
 	// Already own this province, Show real income/upkeep
 	if (provinceOwnerId == playerId())
 	{
-		descriptionBox->AddRichText(FText::Format(LOCTEXT("Income: CoinX", 
-			"Income: <img id=\"Coin\"/>{0}"), TEXT_100(sim.GetProvinceIncome100(provinceIdClean))
+		descriptionBox->AddRichText(FText::Format(
+			LOCTEXT("Income: CoinX", "Income: <img id=\"Coin\"/>{0}"), 
+			TEXT_100(sim.GetProvinceIncome100(provinceIdClean))
 		));
 		
 		if (unlockedInfluence) {
-			descriptionBox->AddRichText(FText::Format(LOCTEXT("Upkeep: InfluenceX", 
-				"Upkeep: <img id=\"Influence\"/>{0}"), TEXT_100(sim.GetProvinceUpkeep100(provinceIdClean, provinceOwnerId))
+			descriptionBox->AddRichText(FText::Format(
+				LOCTEXT("Upkeep: InfluenceX", "Upkeep: <img id=\"Influence\"/>{0}"), 
+				TEXT_100(sim.GetProvinceUpkeep100(provinceIdClean, provinceOwnerId))
 			));
 
 			if (sim.IsBorderProvince(provinceIdClean)) {
-				descriptionBox->AddRichText(LOCTEXT("Border Upkeep: InfluenceX", 
-					"Border Upkeep: <img id=\"Influence\"/>5"
-				));
+				descriptionBox->AddRichText(
+					LOCTEXT("Border Upkeep: InfluenceX", "Border Upkeep: <img id=\"Influence\"/>5")
+				);
 			}
 		}
 		
-		auto widget = descriptionBox->AddRichText(FText::Format(LOCTEXT("Defense Bonus: X",
-			"Defense Bonus: {0}"),
+		auto widget = descriptionBox->AddRichText(FText::Format(
+			LOCTEXT("Defense Bonus: X", "Defense Bonus: {0}"),
 			TEXT_PERCENT(sim.GetProvinceAttackCostPercent(provinceIdClean))
 		));
 		AddToolTip(widget, sim.GetProvinceDefenseBonusTip(provinceIdClean));
@@ -3863,8 +3861,8 @@ void UObjectDescriptionUISystem::AddProvinceUpkeepInfo(int32 provinceIdClean, UP
 			sim.playerNameT(provinceOwnerId)
 		));
 		
-		auto widget = descriptionBox->AddRichText(FText::Format(LOCTEXT("VassalizeDefenseBonus:X", 
-			"Vassalize Defense Bonus: {0}"),
+		auto widget = descriptionBox->AddRichText(FText::Format(
+			LOCTEXT("VassalizeDefenseBonus:X", "Vassalize Defense Bonus: {0}"),
 			TEXT_PERCENT(sim.GetProvinceVassalizeDefenseBonus(provinceIdClean))
 		));
 		
@@ -3872,20 +3870,20 @@ void UObjectDescriptionUISystem::AddProvinceUpkeepInfo(int32 provinceIdClean, UP
 	}
 	else 
 	{
-		descriptionBox->AddRichText(FText::Format(LOCTEXT("BaseIncome:CoinX",
-			"Base Income: <img id=\"Coin\"/>{0}"),
+		descriptionBox->AddRichText(FText::Format(
+			LOCTEXT("BaseIncome:CoinX", "Base Income: <img id=\"Coin\"/>{0}"),
 			TEXT_100(sim.GetProvinceIncome100(provinceIdClean))
 		));
 		
 		if (unlockedInfluence) {
-			descriptionBox->AddRichText(FText::Format(LOCTEXT("BaseUpkeep:InfluenceX",
-				"Base Upkeep: <img id=\"Influence\"/>{0}"),
+			descriptionBox->AddRichText(FText::Format(
+				LOCTEXT("BaseUpkeep:InfluenceX", "Base Upkeep: <img id=\"Influence\"/>{0}"),
 				TEXT_100(sim.GetProvinceBaseUpkeep100(provinceIdClean))
 			));
 		}
 		
-		auto widget = descriptionBox->AddRichText(FText::Format(LOCTEXT("DefenseBonus:X",
-			"Defense Bonus: {0}"),
+		auto widget = descriptionBox->AddRichText(FText::Format(
+			LOCTEXT("DefenseBonus:X", "Defense Bonus: {0}"),
 			TEXT_PERCENT(sim.GetProvinceAttackCostPercent(provinceIdClean))
 		));
 		AddToolTip(widget, sim.GetProvinceDefenseBonusTip(provinceIdClean));

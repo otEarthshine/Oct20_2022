@@ -242,8 +242,8 @@ void UWorldSpaceUI::TickBuildings()
 					
 					// Player Logo
 					regionHoverUI->PlayerLogoLeft->GetDynamicMaterial()->SetVectorParameterValue("PlayerColor1", PlayerColor1(claimProgress.attackerPlayerId));
-					AddToolTip(regionHoverUI->PlayerLogoLeft, FText::Format(LOCTEXT("AttackPlayerLogo_Tip",
-						"Attacker: {0}"),
+					AddToolTip(regionHoverUI->PlayerLogoLeft, FText::Format(
+						LOCTEXT("AttackPlayerLogo_Tip", "Attacker: {0}"),
 						sim.playerNameT(claimProgress.attackerPlayerId)
 					));
 
@@ -253,8 +253,8 @@ void UWorldSpaceUI::TickBuildings()
 						defenderPlayerId = sim.playerOwned(provinceOwnerId).lordPlayerId(); // Declare Independence
 					} // TODO: Declare Independence should init attack from the Lord
 					regionHoverUI->PlayerLogoRight->GetDynamicMaterial()->SetVectorParameterValue("PlayerColor2", PlayerColor2(defenderPlayerId));
-					AddToolTip(regionHoverUI->PlayerLogoRight, FText::Format(LOCTEXT("DefenderPlayerLogo_Tip",
-						"Defender: {0}"),
+					AddToolTip(regionHoverUI->PlayerLogoRight, FText::Format(
+						LOCTEXT("DefenderPlayerLogo_Tip", "Defender: {0}"),
 						sim.playerNameT(defenderPlayerId)
 					));
 					
@@ -1107,9 +1107,7 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	 * Single instruction...
 	 */
 	if (needInstruction(PlacementInstructionEnum::OutsideTerritory)) {
-		punBox->AddRichTextCenter(LOCTEXT("OutsideTerritory_Instruct",
-			"<Red>Must be inside our territory</>"
-		));
+		punBox->AddRichTextCenter(LOCTEXT("OutsideTerritory_Instruct", "<Red>Must be inside our territory</>"));
 	}
 	// Drag
 	else if (needInstruction(PlacementInstructionEnum::DragGather)) {
@@ -1117,12 +1115,8 @@ void UWorldSpaceUI::TickPlacementInstructions()
 		punBox->AddRichTextCenter(LOCTEXT("DragGather2_Instruct", "to specify the area to harvest"))->SetAutoWrapText(false);
 	}
 	else if (needInstruction(PlacementInstructionEnum::DragRoad1)) {
-		punBox->AddRichTextCenter(LOCTEXT("DragRoad11_Instruct",
-			"Click and drag cursor"
-		))->SetAutoWrapText(false);
-		punBox->AddRichTextCenter(LOCTEXT("DragRoad12_Instruct",
-			"to build"
-		))->SetAutoWrapText(false);
+		punBox->AddRichTextCenter(LOCTEXT("DragRoad11_Instruct", "Click and drag cursor"))->SetAutoWrapText(false);
+		punBox->AddRichTextCenter(LOCTEXT("DragRoad12_Instruct", "to build"))->SetAutoWrapText(false);
 	}
 	//else if (needInstruction(PlacementInstructionEnum::DragRoad2)) { // Not used yet???
 	//	//punBox->AddRichText("Shift-click to repeat")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);

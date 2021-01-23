@@ -137,8 +137,8 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 		{
 			//std::stringstream ss;
 			//ss << "Required:\n" << productionCount << "/" << tech->requiredResourceCount << " " << ResourceName(tech->requiredResourceEnum);
-			SetText(TechRequirement, FText::Format(LOCTEXT("TechBoxRequired",
-				"Required:\n{0}/{1} {2}"),
+			SetText(TechRequirement, FText::Format(
+				LOCTEXT("TechBoxRequired", "Required:\n{0}/{1} {2}"),
 				TEXT_NUM(productionCount),
 				TEXT_NUM(tech->requiredResourceCount),
 				ResourceNameT(tech->requiredResourceEnum)
@@ -147,8 +147,8 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 		else {
 			//std::stringstream ss;
 			//ss << "Completed:\n" << tech->requiredResourceCount << " " << ResourceName(tech->requiredResourceEnum);
-			SetText(TechRequirement, FText::Format(LOCTEXT("TechBoxRequirementsCompleted",
-				"Completed:\n{0} {1}"),
+			SetText(TechRequirement, FText::Format(
+				LOCTEXT("TechBoxRequirementsCompleted", "Completed:\n{0} {1}"),
 				TEXT_NUM(tech->requiredResourceCount),
 				ResourceNameT(tech->requiredResourceEnum)
 			));
@@ -226,20 +226,16 @@ void UTechBoxUI::UpdateTooltip()
 			ADDTEXT_LOCTEXT("Unlocks:", "Unlocks:");
 			for (const CardEnum& cardEnum : unlockCards) {
 				if (IsBuildingCard(cardEnum)) {
-					ADDTEXT_(LOCTEXT("Unlocked Building Tip", 
-						"\n - Building: {0}"), GetBuildingInfo(cardEnum).name);
+					ADDTEXT_(LOCTEXT("Unlocked Building Tip", "\n - Building: {0}"), GetBuildingInfo(cardEnum).name);
 				}
 				else if (IsActionCard(cardEnum)) {
-					ADDTEXT_(LOCTEXT("Unlocked Action card Tip", 
-						"\n - Action card: {0}"), GetBuildingInfo(cardEnum).name);
+					ADDTEXT_(LOCTEXT("Unlocked Action card Tip", "\n - Action card: {0}"), GetBuildingInfo(cardEnum).name);
 				}
 				else if (IsGlobalSlotCard(cardEnum)) {
-					ADDTEXT_(LOCTEXT("Unlocked Slot card (Global) Tip", 
-						"\n - Slot card (Global): {0}"), GetBuildingInfo(cardEnum).name);
+					ADDTEXT_(LOCTEXT("Unlocked Slot card (Global) Tip", "\n - Slot card (Global): {0}"), GetBuildingInfo(cardEnum).name);
 				}
 				else {
-					ADDTEXT_(LOCTEXT("Unlocked Slot card (Building) Tip", 
-						"\n - Slot card (Building): {0}"), GetBuildingInfo(cardEnum).name);
+					ADDTEXT_(LOCTEXT("Unlocked Slot card (Building) Tip", "\n - Slot card (Building): {0}"), GetBuildingInfo(cardEnum).name);
 				}
 			}
 			tooltipBox->AddRichText(args);

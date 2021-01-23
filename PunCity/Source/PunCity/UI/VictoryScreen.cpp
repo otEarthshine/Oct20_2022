@@ -25,8 +25,8 @@ void UVictoryScreen::Tick()
 	}
 	else
 	{
-		VictoryText->SetText(FText::Format(LOCTEXT("XisVictorious",
-			"{0} is Victorious"),
+		VictoryText->SetText(FText::Format(
+			LOCTEXT("XisVictorious", "{0} is Victorious"),
 			FText::FromString(gameInstance->playerNameF(endStatus.victoriousPlayerId))
 		));
 		VictoryBackgroundColor->SetVisibility(ESlateVisibility::Collapsed);

@@ -46,7 +46,7 @@ DECLARE_CYCLE_STAT(TEXT("PUN: [Display] Misc-Territory"), STAT_PunDisplayTerrito
 DECLARE_CYCLE_STAT(TEXT("PUN: [Display] Misc-Sample"), STAT_PunDisplaySample, STATGROUP_Game);
 
 
-
+#define LOCTEXT_NAMESPACE "GameManager"
 
 
 // Sets default values
@@ -190,7 +190,7 @@ void AGameManager::InitPhase1()
 	// Note!!! Don't try to move _simulation->Init to phase2 ... it will cause endless prblems
 
 	// Next Phase:
-	_uiInterface->SetLoadingText(NSLOCTEXT("GameManager", "Loading_AddingLife", "Adding Life..."));
+	_uiInterface->SetLoadingText(LOCTEXT("Loading_AddingLife", "Adding Life..."));
 
 	//PUN_CHECK(assetLoader()->moduleNames().Num() == ModuleMeshCount);
 }
@@ -285,7 +285,7 @@ void AGameManager::InitPhase2()
 	}
 
 	// Next Phase:
-	_uiInterface->SetLoadingText(NSLOCTEXT("GameManager", "Loading_MakingSound", "Making sound..."));
+	_uiInterface->SetLoadingText(LOCTEXT("Loading_MakingSound", "Making sound..."));
 
 	//PUN_CHECK(assetLoader()->moduleNames().Num() == ModuleMeshCount);
 }
@@ -314,15 +314,12 @@ void AGameManager::InitPhase3()
 		//ss << "<space>";
 		//ss << "The task is upon us, surviving few, to rebuild a flourishing civilization.";
 
-		PopupInfo popup(_playerId, 
-			NSLOCTEXT("GameBegin", "BeginGameFirstPopup",
-				"The Great Freeze left civilization in ruin, very few were strong enough to withstand the cold and plague that claimed the earth. "
-				"<space>"
-				"Decades have passed since the frost took our lands, and our courage and hope have returned with the melting of the ice. "
-				"<space>"
-				"It falls to us, we surviving few, to rebuild a flourishing civilization."
-			),
-			{ NSLOCTEXT("GameBegin", "CheersBeginning", "Cheers to the new beginning!") },
+		PopupInfo popup(_playerId, {
+				LOCTEXT("BeginGameFirstPopup1", "The Great Freeze left civilization in ruin, very few were strong enough to withstand the cold and plague that claimed the earth."),
+				LOCTEXT("BeginGameFirstPopup2", "<space>Decades have passed since the frost took our lands, and our courage and hope have returned with the melting of the ice. "),
+				LOCTEXT("BeginGameFirstPopup3", "<space>It falls to us, we surviving few, to rebuild a flourishing civilization."),
+			},
+			{ LOCTEXT("CheersBeginning", "Cheers to the new beginning!") },
 			PopupReceiverEnum::StartGame_Story, false, ""
 		);
 		_simulation->AddPopup(popup);
@@ -1148,3 +1145,6 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 	_displayTicks++;
 	TimeDisplay::SetTicks(_displayTicks);
 }
+
+
+#undef LOCTEXT_NAMESPACE

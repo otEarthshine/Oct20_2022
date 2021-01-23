@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "PunCity/PunUtils.h"
+#include "LocalizationTargetTypes.h"
 
 /**
  * 
@@ -75,7 +76,6 @@ public:
 		component->SetWorldLocation(displayLocation);
 		component->SetWorldScale3D(scale);
 	}
-
 };
 
 

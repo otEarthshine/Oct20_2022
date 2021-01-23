@@ -153,8 +153,8 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 				if (sim.CanVassalizeOtherPlayers(playerId()) &&
 					!townhallPlayerOwned.GetDefendingClaimProgress(townhall.provinceId()).isValid())
 				{
-					SetText(VassalizeButtonRichText, FText::Format(LOCTEXT("VassalizeButtonRichText_Text",
-						"Conquer (Vassalize)\n<img id=\"Influence\"/>{0}"),
+					SetText(VassalizeButtonRichText, FText::Format(
+						LOCTEXT("VassalizeButtonRichText_Text", "Conquer (Vassalize)\n<img id=\"Influence\"/>{0}"),
 						TEXT_NUM(sim.GetProvinceVassalizeStartPrice(townhall.provinceId()))
 					));
 					BUTTON_ON_CLICK(VassalizeButton, this, &UTownhallHoverInfo::OnClickVassalizeButton);
@@ -162,8 +162,8 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 
 					// Can also liberate if there is an existing conquerer
 					if (townhallPlayerOwned.lordPlayerId() != -1) {
-						SetText(LiberationButtonRichText, FText::Format(LOCTEXT("LiberationButtonRichText_Text",
-							"Liberation\n<img id=\"Influence\"/>{0}"),
+						SetText(LiberationButtonRichText, FText::Format(
+							LOCTEXT("LiberationButtonRichText_Text", "Liberation\n<img id=\"Influence\"/>{0}"),
 							TEXT_NUM(BattleInfluencePrice)
 						));
 						LiberationButton->SetVisibility(ESlateVisibility::Visible);

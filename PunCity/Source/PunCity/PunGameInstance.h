@@ -898,7 +898,6 @@ public:
 		FString currentCulture = UKismetInternationalizationLibrary::GetCurrentCulture();
 		
 		_LOG(PunDisplay, "RefreshCulture preferred:%s current:%s", *preferredCulture, *currentCulture);
-		// Refresh Culture only when game starts (GameInstance)
 		if (preferredCulture == "") {
 			preferredCulture = "en";
 		}

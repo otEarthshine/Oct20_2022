@@ -195,10 +195,8 @@ void WorldTradeSystem::TryEstablishTradeRoute(FSetIntercityTrade command)
 			_simulation->RecalculateTaxDelayed(playerId);
 			_simulation->RecalculateTaxDelayed(targetPlayerId);
 
-			FText text = FText::Format(LOCTEXT("TradeRouteEstablish_Pop",
-				"Trade Route was established between {0} and {1}"
-				"!\nTrade Route Income varies with the population of both cities."
-				),
+			FText text = FText::Format(
+				LOCTEXT("TradeRouteEstablish_Pop", "Trade Route was established between {0} and {1}!\nTrade Route Income varies with the population of both cities."),
 				_simulation->townNameT(playerId),
 				_simulation->townNameT(targetPlayerId)
 			);
@@ -240,8 +238,8 @@ void WorldTradeSystem::TryCancelTradeRoute(FSetIntercityTrade command)
 		_simulation->RecalculateTaxDelayed(playerId);
 		_simulation->RecalculateTaxDelayed(targetPlayerId);
 
-		FText text = FText::Format(LOCTEXT("CancelTradeRoute_Pop", 
-			"Trade Route between {0} and {1} was removed."),
+		FText text = FText::Format(
+			LOCTEXT("CancelTradeRoute_Pop", "Trade Route between {0} and {1} was removed."),
 			_simulation->townNameT(playerId),
 			_simulation->townNameT(targetPlayerId)
 		);

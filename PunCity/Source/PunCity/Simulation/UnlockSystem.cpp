@@ -50,8 +50,8 @@ void Building_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulation
 			
 			_simulation->AddPopup(
 				PopupInfo(playerId, 
-					FText::Format(LOCTEXT("UnlockedBuilding_Pop",
-						"Unlocked {0}\nWould you like to buy a {0} card for {1}<img id=\"Coin\"/>."),
+					FText::Format(
+						LOCTEXT("UnlockedBuilding_Pop", "Unlocked {0}\nWould you like to buy a {0} card for {1}<img id=\"Coin\"/>."),
 						GetBuildingInfo(buildingEnum).name,
 						TEXT_NUM(cardSystem.GetCardPrice(buildingEnum))
 					),
@@ -219,10 +219,8 @@ void UnlockSystem::OnEraUnlocked(TArray<FText>& args)
 {
 	auto& cardSys = _simulation->cardSystem(_playerId);
 	
-	ADDTEXT_(LOCTEXT("EraUnlockCongratsPop",
-		"Congratulation!<space>"
-		" Your town has advanced to Era {0}."
-		"<space>"),
+	ADDTEXT_(
+		LOCTEXT("EraUnlockCongratsPop", "Congratulation!<space> Your town has advanced to Era {0}.<space>"),
 		eraNumberToText[currentEra()]
 	);
 
@@ -281,20 +279,14 @@ void BonusToggle_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulat
 		);
 	}
 	if (techEnum == TechEnum::Conquer) {
-		simulation->AddPopup(playerId, LOCTEXT("UnlockedProvinceConqueringPop",
-			"Unlocked Province Conquering"
-			"<space>"
-			"You can now conquer opponent's provinces with Influence Points <img id=\"Influence\"/>.")
+		simulation->AddPopup(playerId, 
+			LOCTEXT("UnlockedProvinceConqueringPop", "Unlocked Province Conquering<space>You can now conquer opponent's provinces with Influence Points <img id=\"Influence\"/>.")
 		);
 	}
 	if (techEnum == TechEnum::Vassalize) 
 	{
-		simulation->AddPopup(playerId, LOCTEXT("UnlockedVassalizationPop",
-			"Unlocked Vassalization"
-			"<space>"
-			"You can now vassalize another city with Influence Points <img id=\"Influence\"/>.\n"
-			"To vassalize another city, click on the townhall "
-			"Your vassal city keep their control, but must pay vassal tax to you.")
+		simulation->AddPopup(playerId, 
+			LOCTEXT("UnlockedVassalizationPop", "Unlocked Vassalization<space>You can now vassalize another city with Influence Points <img id=\"Influence\"/>.\nTo vassalize another city, click vassalize on the target townhall.<space>Your vassal city keep their control, but must pay vassal tax to you.")
 		);
 	}
 
@@ -307,14 +299,12 @@ void BonusToggle_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulat
 			}
 		}
 		
-		simulation->AddPopup(playerId, LOCTEXT("UnlockedBuildingComboPop",
-			"Unlocked Building Combo"
-			"<space>"
-			"You can gain Building Combo by constructing multiple Buildings of the same type."
-			"<bullet>Combo Level 1: 2 same-type buildings (+5% productivity)</>"
-			"<bullet>Combo Level 2: 4 same-type buildings (+10% productivity)</>"
-			"<bullet>Combo Level 3: 8 same-type buildings (+15% productivity)</>")
-		);
+		simulation->AddPopup(playerId, {
+			LOCTEXT("UnlockedBuildingCombo_Pop", "Unlocked Building Combo<space>You can gain Building Combo by constructing multiple Buildings of the same type."),
+			LOCTEXT("UnlockedBuildingComboBullet1_Pop", "<bullet>Combo Level 1: 2 same-type buildings (+5% productivity)</>"),
+			LOCTEXT("UnlockedBuildingComboBullet2_Pop", "<bullet>Combo Level 2: 4 same-type buildings (+10% productivity)</>"),
+			LOCTEXT("UnlockedBuildingComboBullet3_Pop", "<bullet>Combo Level 3: 8 same-type buildings (+15% productivity)</>")
+		});
 	}
 }
 
@@ -327,13 +317,7 @@ void UnlockSystem::UpdateProsperityHouseCount()
 		prosperityEnabled = true;
 
 		TArray<FText> args;
-		ADDTEXT_LOCTEXT("UnlockedProsperityUIPop",
-			"Unlocked: House Upgrade Unlocks Menu."
-			"<space>"
-			"Houses can be upgraded by supplying them with Luxury Resources."
-			"<space>"
-			"Achieving certain house level count will unlock new technologies."
-		);
+		ADDTEXT_LOCTEXT("UnlockedProsperityUIPop", "Unlocked: House Upgrade Unlocks Menu.<space>Houses can be upgraded by supplying them with Luxury Resources.<space>Achieving certain house level count will unlock new technologies.");
 
 		PopupInfo popupInfo(_playerId, JOINTEXT(args), {
 			LOCTEXT("Show House Upgrade Unlocks", "Show House Upgrade Unlocks"),

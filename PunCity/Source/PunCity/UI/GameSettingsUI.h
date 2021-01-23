@@ -150,16 +150,16 @@ private:
 		if (_isSettingsDirty) {
 			ConfirmOverlay->SetVisibility(ESlateVisibility::Visible);
 
-			if (_isLanguageSettingsDirty) {
-				ConfirmText->SetText(NSLOCTEXT("GameSettingsUI", "GameSettingsConfirmLanguage",
-					"Would you like to apply the changes?\n\n"
-					"Note: Language change will only apply upon restarting the game."
-				));
-			} else {
-				ConfirmText->SetText(NSLOCTEXT("GameSettingsUI", "GameSettingsConfirm",
-					"Would you like to apply the changes?"
-				));
-			}
+			//if (_isLanguageSettingsDirty) {
+			//	ConfirmText->SetText(NSLOCTEXT("GameSettingsUI", "GameSettingsConfirmLanguage",
+			//		"Would you like to apply the changes?\n\n"
+			//		"Note: Language change will only apply upon restarting the game."
+			//	));
+			//} else {
+				ConfirmText->SetText(
+					NSLOCTEXT("GameSettingsUI", "GameSettingsConfirm", "Would you like to apply the changes?")
+				);
+			//}
 			
 			_tabIndexToChangeTo = tabIndexToChangeTo;
 		} else {

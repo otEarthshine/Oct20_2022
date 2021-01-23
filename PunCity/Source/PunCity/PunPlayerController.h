@@ -510,6 +510,9 @@ public:
 	UFUNCTION(Exec) void RefreshCulture() {
 		gameInstance()->RefreshCulture();
 	}
+	UFUNCTION(Exec) void GetCulture() {
+		PUN_LOG("Current Culture: %s", *UKismetInternationalizationLibrary::GetCurrentCulture());
+	}
 	
 	UFUNCTION(Exec) void SaveMainMenuDisplay()
 	{

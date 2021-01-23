@@ -313,14 +313,14 @@ void UPunWidget::SetGeoresourceImage(UImage* image, ResourceEnum resourceEnum, U
 	auto material = image->GetDynamicMaterial();
 
 	if (IsOreEnum(resourceEnum)) {
-		punWidget->AddToolTip(image, FText::Format(LOCTEXT("MineGeoresourceImage_Tip",
-			"{0} Deposit in this region that can be mined."),
+		punWidget->AddToolTip(image, FText::Format(
+			LOCTEXT("MineGeoresourceImage_Tip", "{0} Deposit in this region that can be mined."),
 			ResourceNameT(resourceEnum)
 		));
 	}
 	else {
-		punWidget->AddToolTip(image, FText::Format(LOCTEXT("FarmGeoresourceImage_Tip",
-			"This region is suitable for {0} Farming."),
+		punWidget->AddToolTip(image, FText::Format(
+			LOCTEXT("FarmGeoresourceImage_Tip", "This region is suitable for {0} Farming."),
 			ResourceNameT(resourceEnum)
 		));
 	}

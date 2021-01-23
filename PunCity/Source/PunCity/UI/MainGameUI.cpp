@@ -64,10 +64,8 @@ void UMainGameUI::PunInit()
 	CardHand1CloseButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickCardHand1CancelButton);
 
 	{
-		AddToolTip(CardHand1SubmitButton, LOCTEXT("CardHand1SubmitButton_Tip",
-			"Submit Card Selection to confirm purchase."
-			"<space>"
-			"Submitting without selected Card will pass the current Card Hand for the next Card Hand."
+		AddToolTip(CardHand1SubmitButton, 
+			LOCTEXT("CardHand1SubmitButton_Tip", "Submit Card Selection to confirm purchase.<space>Submitting without selected Card will pass the current Card Hand for the next Card Hand."
 		));
 	}
 
@@ -94,14 +92,14 @@ void UMainGameUI::PunInit()
 	//GlobalItemsHorizontalBox->ClearChildren();
 
 	ResearchBarUI->OnClicked.AddDynamic(this, &UMainGameUI::ToggleResearchMenu);
-	AddToolTip(ResearchBarUI, LOCTEXT("ResearchBarUI_Tip", 
-		"Bring up Technology UI.\n<Orange>[T]</>"
-	));
+	AddToolTip(ResearchBarUI, 
+		LOCTEXT("ResearchBarUI_Tip", "Bring up Technology UI.\n<Orange>[T]</>")
+	);
 
 	ProsperityBarUI->OnClicked.AddDynamic(this, &UMainGameUI::ToggleProsperityUI);
-	AddToolTip(ProsperityBarUI, LOCTEXT("ProsperityBarUI_Tip",
-		"Bring up House Upgrade Unlocks UI."
-	));
+	AddToolTip(ProsperityBarUI, 
+		LOCTEXT("ProsperityBarUI_Tip", "Bring up House Upgrade Unlocks UI.")
+	);
 
 	GatherSettingsOverlay->SetVisibility(ESlateVisibility::Collapsed);
 
@@ -858,8 +856,8 @@ void UMainGameUI::Tick()
 			float fraction = FDToFloat(celsius - Time::MinCelsiusBase()) / FDToFloat(Time::MaxCelsiusBase() - Time::MinCelsiusBase());
 			TemperatureImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", fraction);
 
-			AddToolTip(TemperatureTextBox, FText::Format(LOCTEXT("TemperatureTextBox_Tip",
-				"Below {0}°C, citizens will need wood/coal to heat themselves"),
+			AddToolTip(TemperatureTextBox, FText::Format(
+				LOCTEXT("TemperatureTextBox_Tip", "Below {0}°C, citizens will need wood/coal to heat themselves"),
 				TEXT_NUM(FDToInt(Time::ColdCelsius()))
 			));
 
@@ -877,11 +875,8 @@ void UMainGameUI::Tick()
 		AdultPopulationText->SetText(FText::FromString(FString::FromInt(adultPopulation)));
 		ChildPopulationText->SetText(FText::FromString(FString::FromInt(childPopulation)));
 		{
-			AddToolTip(PopulationBox, FText::Format(LOCTEXT("PopulationBox_Tip",
-				"Population: {0}"
-				"<bullet>{1} Adults</>"
-				"<bullet>{2} Children</>"
-				),
+			AddToolTip(PopulationBox, FText::Format(
+				LOCTEXT("PopulationBox_Tip", "Population: {0}<bullet>{1} Adults</><bullet>{2} Children</>"),
 				TEXT_NUM(population),
 				TEXT_NUM(adultPopulation),
 				TEXT_NUM(childPopulation)
@@ -900,9 +895,8 @@ void UMainGameUI::Tick()
 
 			{
 				TArray<FText> args;
-				ADDTEXT_(LOCTEXT("HousingSpaceBox_Tip1",
-					"Population: {0}\n"
-					"Housing space: {1}"),
+				ADDTEXT_(
+					LOCTEXT("HousingSpaceBox_Tip1", "Population: {0}\nHousing space: {1}"),
 					TEXT_NUM(population),
 					TEXT_NUM(simulation.HousingCapacity(playerId()))
 				);
@@ -955,15 +949,8 @@ void UMainGameUI::Tick()
 			Happiness->SetText(FText(), TEXT_NUM(simulation.GetAverageHappiness(playerId())));
 
 			TArray<FText> args;
-			ADDTEXT_(LOCTEXT("Happiness_Tip1",
-				"Happiness: {0}<img id=\"Smile\"/>"
-				"<space>"
-				"Base: {1}"
-				"<bullet>{2} food</>"
-				"<bullet>{3} heat</>"
-				"<bullet>{4} housing</>"
-				"<bullet>{5} fun</>"
-				),
+			ADDTEXT_(
+				LOCTEXT("Happiness_Tip1", "Happiness: {0}<img id=\"Smile\"/><space>Base: {1}<bullet>{2} food</><bullet>{3} heat</><bullet>{4} housing</><bullet>{5} fun</>"),
 				TEXT_NUM(playerOwned.aveHappiness()),
 				TEXT_NUM(playerOwned.aveNeedHappiness()),
 				TEXT_NUM(playerOwned.aveFoodHappiness()),
@@ -1031,10 +1018,7 @@ void UMainGameUI::Tick()
 
 			// Science Tip
 			args.Empty();
-			ADDTEXT_(LOCTEXT("ScienceTip", 
-				"Science is used for researching new technology.\n"
-				" Science per round: {0} <img id=\"Science\"/>\n"
-			), TEXT_100(playerOwned.science100PerRound()));
+			ADDTEXT_(LOCTEXT("ScienceTip", "Science is used for researching new technology.\n Science per round: {0} <img id=\"Science\"/>\n"), TEXT_100(playerOwned.science100PerRound()));
 
 			for (size_t i = 0; i < ScienceEnumCount; i++)
 			{
@@ -1143,12 +1127,8 @@ void UMainGameUI::Tick()
 				foodConsumption += CppUtils::Sum(consumptionStats[static_cast<int>(StaticData::FoodEnums[i])]);
 			}
 
-			auto tooltip = AddToolTip(FoodCountText, FText::Format(LOCTEXT("FoodCountText_Tip",
-				"Food Count: {0}"
-				"<space>"
-				"Food Production (yearly): <FaintGreen>{1}</>\n"
-				"Food Consumption (yearly): <FaintRed>{2}</>"
-				),
+			auto tooltip = AddToolTip(FoodCountText, FText::Format(
+				LOCTEXT("FoodCountText_Tip", "Food Count: {0}<space>Food Production (yearly): <FaintGreen>{1}</>\nFood Consumption (yearly): <FaintRed>{2}</>"),
 				TEXT_NUM(foodCount),
 				TEXT_NUM(foodProduction),
 				TEXT_NUM(foodConsumption)
@@ -1405,9 +1385,8 @@ void UMainGameUI::Tick()
 			{
 				int32 totalHouseCount = closestTech_CurrentHouseCount + closestTech_HouseNeeded;
 
-				SetText(ProsperityAmountText, FText::Format(LOCTEXT("ProsperityAmountText",
-					"House Lvl {0}: {1}/{2}"
-					),
+				SetText(ProsperityAmountText, FText::Format(
+					LOCTEXT("ProsperityAmountText", "House Lvl {0}: {1}/{2}"),
 					TEXT_NUM(closestTech_HouseLvl),
 					TEXT_NUM(closestTech_CurrentHouseCount),
 					TEXT_NUM(totalHouseCount)
@@ -2055,11 +2034,10 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 			// Check if we reached hand limit
 			if (!simulation().cardSystem(playerId()).CanAddCardToBoughtHand(buildingEnum, 1)) 
 			{
-				simulation().AddPopupToFront(playerId(), LOCTEXT("ReachedHandLimitRare_Pop",
-											"Reached hand limit for bought cards."
-											"<space>"
-											"Please sell or use some cards on your hand, then choose a rare card prize again."),
-											ExclusiveUIEnum::RareCardHand, "PopupCannot");
+				simulation().AddPopupToFront(playerId(), 
+					LOCTEXT("ReachedHandLimitRare_Pop", "Reached hand limit for bought cards.<space>Please sell or use some cards on your hand, then choose a rare card prize again."),
+					ExclusiveUIEnum::RareCardHand, "PopupCannot"
+				);
 				return;
 			}
 
@@ -2090,8 +2068,8 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 	if (callbackEnum == CallbackEnum::SelectCardRemoval)
 	{
 		buildingEnumToRemove = buildingEnum;
-		SetText(ConverterCardHandConfirmUI->ConfirmText, FText::Format(LOCTEXT("SureRemoveCard",
-			"Are you sure you want to remove {0} Card?"),
+		SetText(ConverterCardHandConfirmUI->ConfirmText, FText::Format(
+			LOCTEXT("SureRemoveCard", "Are you sure you want to remove {0} Card?"),
 			GetBuildingInfo(buildingEnum).name
 		));
 		ConverterCardHandConfirmUI->SetVisibility(ESlateVisibility::Visible);
@@ -2226,9 +2204,8 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 					}
 				}
 				else {
-					simulation().AddPopupToFront(playerId(), LOCTEXT("BldSlotCardNeedBldCardSlot_Pop",
-						"Building-slot card must be inserted into a building with card slots.<space>"
-						"Click a card-slottable building to open its panel, before slotting the card."), 
+					simulation().AddPopupToFront(playerId(), 
+						LOCTEXT("BldSlotCardNeedBldCardSlot_Pop", "Building-slot card must be inserted into a building with card slots.<space>Click a card-slottable building to open its panel, before slotting the card."), 
 						ExclusiveUIEnum::None, "PopupCannot"
 					);
 				}
@@ -2408,8 +2385,8 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 		int32 cardPrice = simulation().cardSystem(playerId()).GetCardPrice(command->buildingEnum);
 
 		networkInterface()->ShowConfirmationUI(
-			FText::Format(LOCTEXT("SellCardSure_Pop",
-				"Are you sure you want to sell {0} for {1}<img id=\"Coin\"/>?"),
+			FText::Format(
+				LOCTEXT("SellCardSure_Pop", "Are you sure you want to sell {0} for {1}<img id=\"Coin\"/>?"),
 				GetBuildingInfo(command->buildingEnum).name,
 				TEXT_NUM(cardPrice)
 			), 

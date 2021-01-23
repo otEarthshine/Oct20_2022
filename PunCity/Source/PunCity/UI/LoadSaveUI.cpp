@@ -95,8 +95,8 @@ void ULoadSaveUI::OnClickDeleteGameButton()
 		const TArray<GameSaveInfo>& saveList = saveSystem().saveList();
 		PUN_CHECK(activeIndex < saveList.Num())
 
-		SetText(ConfirmUI->ConfirmText, FText::Format(LOCTEXT("AskDeleteSaveGame",
-			"<Subheader>Do you want to delete this saved game?</>\n\n{0}"),
+		SetText(ConfirmUI->ConfirmText, FText::Format(
+			LOCTEXT("AskDeleteSaveGame", "<Subheader>Do you want to delete this saved game?</>\n\n{0}"),
 			FText::FromString(saveList[activeIndex].name)
 		));
 

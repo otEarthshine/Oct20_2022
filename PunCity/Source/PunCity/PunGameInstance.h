@@ -799,7 +799,7 @@ public:
 	void SetSoundEffectsVolume(float soundEffectsVolume) { _soundEffectsVolume = soundEffectsVolume; }
 
 	AutosaveEnum autosaveEnum = AutosaveEnum::Year;
-	FString preferredCulture;
+	FString preferredCultureTag;
 	bool useMultithreadedMeshGeneration = true;
 	bool forceClickthrough = false;
 
@@ -830,7 +830,7 @@ public:
 
 	void RestoreDefaultsOthers() {
 		autosaveEnum = AutosaveEnum::Year;
-		preferredCulture = FString("en");
+		preferredCultureTag = FString("en");
 		useMultithreadedMeshGeneration = true;
 		forceClickthrough = false;
 	}
@@ -869,10 +869,15 @@ public:
 
 
 		Ar << autosaveEnum;
-		Ar << preferredCulture;
+		Ar << preferredCultureTag;
 		Ar << useMultithreadedMeshGeneration;
 		Ar << forceClickthrough;
-		
+
+		// Ensure uncorrupted preferredCultureTag
+		TArray<FString> languageTags = UKismetInternationalizationLibrary::GetLocalizedCultures(ELocalizationLoadFlags::Game);
+		if (!languageTags.Contains(preferredCultureTag)) {
+			preferredCultureTag = "en"; // Invalid culture tag
+		}
 	}
 
 	void RefreshSoundSettings()
@@ -896,12 +901,10 @@ public:
 	void RefreshCulture()
 	{
 		FString currentCulture = UKismetInternationalizationLibrary::GetCurrentCulture();
-		
-		_LOG(PunDisplay, "RefreshCulture preferred:%s current:%s", *preferredCulture, *currentCulture);
-		if (preferredCulture == "") {
-			preferredCulture = "en";
-		}
-		UKismetInternationalizationLibrary::SetCurrentCulture(preferredCulture, true);
+	
+		bool succeed = UKismetInternationalizationLibrary::SetCurrentCulture(preferredCultureTag, true);
+
+		PUN_DEBUG2("RefreshCulture preferred:%s current:%s succeed:%d", *preferredCultureTag, *currentCulture, succeed);
 	}
 	
 

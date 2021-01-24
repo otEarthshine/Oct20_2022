@@ -18,7 +18,9 @@ class PROTOTYPECITY_API UGameSettingsUI : public UPunWidget
 public:
 	void PunInit(UPunWidget* callbackParent);
 
-	void RefreshUI(bool resetTabs = true);
+	void RefreshDropdowns(); // Refresh Dropdown when changing language
+
+	void RefreshUI(bool resetTabs, bool resetDropdown, bool settingsUndirty = true);
 	
 	UPROPERTY(meta = (BindWidget)) UWidgetSwitcher* SettingsMenu;
 
@@ -88,7 +90,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) UCheckBox* ForceClickthroughCheckBox;
 	
 private:
-	void SetupResolutionDropdown() {
+	void SetupResolutionDropdown()
+	{
 		ResolutionDropdown->ClearOptions();
 		resolutions.Empty();
 		UKismetSystemLibrary::GetSupportedFullscreenResolutions(resolutions);
@@ -109,7 +112,6 @@ private:
 	void ExecuteAfterConfirmOrDiscard();
 
 	bool _isSettingsDirty = false;
-	bool _isLanguageSettingsDirty = false;
 	
 	int32 _tabIndexToChangeTo = -1; // -1 is for UI Close
 
@@ -250,6 +252,42 @@ private:
 		return nullptr;
 	}
 
+	static FString GetLanguageOptionName(FString languageTag)
+	{
+		// Update this manually!
+		TMap<FString, int32> languageToPercent {
+			{ "zh-CN", 80 },
+			{ "zh-TW", 80 },
+			{ "de", 81 },
+			{ "fr", 80 },
+			{ "ja", 80 },
+			{ "ru", 80 },
+			{ "th", 73 },
+		};
+		
+		FString optionName = UKismetInternationalizationLibrary::GetCultureDisplayName(languageTag, false);
+		optionName += " (" + languageTag;
+		if (languageToPercent.Contains(languageTag)) {
+			optionName += ", " + FString::FromInt(languageToPercent[languageTag]) + "%";
+		}
+		optionName += ")";
+		
+		return optionName;
+	}
+
+	static FString GetLanguageTag(FString optionName)
+	{
+		TArray<FString> languageTags = UKismetInternationalizationLibrary::GetLocalizedCultures(ELocalizationLoadFlags::Game);
+		for (size_t i = 0; i < languageTags.Num(); i++)
+		{
+			if (GetLanguageOptionName(languageTags[i]) == optionName) {
+				return languageTags[i];
+			}
+		}
+		UE_DEBUG_BREAK();
+		return "en";
+	}
+	
 	
 private:
 	bool _videoModeChanged = false;

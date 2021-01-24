@@ -639,9 +639,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			
 #if WITH_EDITOR
 			// IsConnectedBuilding
-			if (playerId() != -1) {
+			if (building.playerId() != -1) {
 				//ss << simulation.IsConnectedBuilding(building.buildingId(), playerId());
-				ADDTEXT_NUM(args, simulation.IsConnectedBuilding(building.buildingId(), playerId()))
+				ADDTEXT_NUM(args, simulation.IsConnectedBuilding(building.buildingId(), building.playerId()))
 				descriptionBox->AddRichText(FTEXT("<Yellow>IsConnectedBld</>"), args);
 			}
 #endif

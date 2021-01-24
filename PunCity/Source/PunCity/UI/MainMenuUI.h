@@ -116,7 +116,7 @@ public:
 		Spawn2DSound("UI", "UIWindowOpen");
 	}
 	UFUNCTION() void OnMainMenuGameSettingsButtonClick() {
-		GameSettingsUI->RefreshUI();
+		GameSettingsUI->RefreshUI(true, true);
 		MainMenuSwitcher->SetActiveWidget(GameSettingsUI);
 
 		Spawn2DSound("UI", "UIWindowOpen");

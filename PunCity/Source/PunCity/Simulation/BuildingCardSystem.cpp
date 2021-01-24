@@ -7,15 +7,23 @@
 
 void BuildingCardSystem::TickRound()
 {
-	_cardHandQueueCount = std::min(_cardHandQueueCount + 1, 3);
+	const int32 maxQueueCount = 5;
 
-	if (allowMaxCardHandQueuePopup && _cardHandQueueCount >= 8)
+	_cardHandQueueCount++;
+
+	if (_cardHandQueueCount > maxQueueCount)
 	{
-		_simulation->AddPopupNonDuplicate(PopupInfo(_playerId,
-			LOCTEXT("MaxCardsQueued", "You have reached the maximum of 8 queued card hards. Please buy cards or pass the existing hands."),
-			{ LOCTEXT("Close", "Close"), LOCTEXT("Do not show this again", "Do not show this again") },
-			PopupReceiverEnum::MaxCardHandQueuePopup)
-		);
+		if (allowMaxCardHandQueuePopup)
+		{
+			_simulation->AddPopupNonDuplicate(PopupInfo(_playerId,
+				LOCTEXT("MaxCardsQueued", "You have reached the maximum of 5 queued card hards. 5 queued hands were converted to 1 wild card."),
+				{ LOCTEXT("Close", "Close"), LOCTEXT("Do not show this again", "Do not show this again") },
+				PopupReceiverEnum::MaxCardHandQueuePopup)
+			);
+		}
+
+		_cardHandQueueCount = 1; // Combine to create wild card
+		AddCardToHand2(CardEnum::WildCard);
 	}
 
 	// Show hand if not already done so

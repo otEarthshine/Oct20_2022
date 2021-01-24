@@ -115,7 +115,7 @@ void UEscMenuUI::OnClickEscMenuSettingsButton()
 {
 	EscMenu->SetVisibility(ESlateVisibility::Collapsed);
 	GameSettingsUI->SetVisibility(ESlateVisibility::Visible);
-	GameSettingsUI->RefreshUI();
+	GameSettingsUI->RefreshUI(true, true);
 
 	dataSource()->Spawn2DSound("UI", "UIWindowOpen");
 }

@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "PunCity/PunUtils.h"
-#include "LocalizationTargetTypes.h"
 
 /**
  * 

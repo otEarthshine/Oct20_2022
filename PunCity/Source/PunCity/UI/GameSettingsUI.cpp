@@ -158,30 +158,11 @@ void UGameSettingsUI::PunInit(UPunWidget* callbackParent)
 	
 	UIScalingDropdown->OnSelectionChanged.AddDynamic(this, &UGameSettingsUI::OnUIScalingDropdownChanged);
 	UIScalingDropdown->SetVisibility(ESlateVisibility::Collapsed);
-	
-	SetupResolutionDropdown();
 
-	WindowModeDropdown->ClearOptions();
-	WindowModeDropdown->AddOption(LOCTEXT("Fullscreen", "Fullscreen").ToString());
-	WindowModeDropdown->AddOption(LOCTEXT("Windowed", "Windowed").ToString());
-
-	
-	UIScalingDropdown->ClearOptions();
-	UIScalingDropdown->AddOption(FString("200%"));
-	UIScalingDropdown->AddOption(FString("150%"));
-	UIScalingDropdown->AddOption(FString("100%"));
 
 	/*
 	 * Non video settings
 	 */
-
-	auto setupDropdown = [&](UComboBoxString* comboBox, bool hasNone = false) {
-		comboBox->ClearOptions();
-		const TArray<FText>& options = hasNone ? GraphicsOptionsWithNone : GraphicsOptions;
-		for (int32 i = 0; i < options.Num(); i++) {
-			comboBox->AddOption(options[i].ToString());
-		}
-	};
 
 	ResolutionSlider->OnValueChanged.AddDynamic(this, &UGameSettingsUI::OnResolutionChanged);
 
@@ -194,27 +175,12 @@ void UGameSettingsUI::PunInit(UPunWidget* callbackParent)
 	MaxFrameRateDropdown->OnSelectionChanged.AddDynamic(this, &UGameSettingsUI::OnMaxFrameRateDropdownChanged);
 	VSyncCheckBox->OnCheckStateChanged.AddDynamic(this, &UGameSettingsUI::OnVSyncCheckBoxChecked);
 
-	setupDropdown(AntiAliasingDropdown);
-	//setupDropdown(PostProcessingDropdown);
-	setupDropdown(ShadowsDropdown, true);
-	setupDropdown(TexturesDropdown);
-	setupDropdown(EffectsDropdown);
-
 	/*
 	 * Other Settings
 	 */
 	AutosaveDropdown->OnSelectionChanged.AddDynamic(this, &UGameSettingsUI::OnAutosaveDropdownChanged);
-	AutosaveDropdown->ClearOptions();
-	for (size_t i = 0; i < AutosaveOptions.size(); i++) {
-		AutosaveDropdown->AddOption(AutosaveOptions[i]);
-	}
 
 	LanguageDropdown->OnSelectionChanged.AddDynamic(this, &UGameSettingsUI::OnLanguageDropdownChanged);
-	LanguageDropdown->ClearOptions();
-	TArray<FString> languageOptions = UKismetInternationalizationLibrary::GetLocalizedCultures(ELocalizationLoadFlags::Game);
-	for (size_t i = 0; i < languageOptions.Num(); i++) {
-		LanguageDropdown->AddOption(languageOptions[i]);
-	}
 	AddToolTip(LanguageDropdownText,
 		LOCTEXT("LanguageDropdown_Tip", "!!!Language feature is still experimental. Use it at your own risk.!!!"
 	));
@@ -232,14 +198,61 @@ void UGameSettingsUI::PunInit(UPunWidget* callbackParent)
 	));
 
 
+	//RefreshDropdowns();
+	//ResetTabSelection();
 
-	//
-
-	ResetTabSelection();
+	RefreshUI(true, true);
 }
 
-void UGameSettingsUI::RefreshUI(bool resetTabs)
+void UGameSettingsUI::RefreshDropdowns()
 {
+	//! Non video settings
+	SetupResolutionDropdown();
+
+	WindowModeDropdown->ClearOptions();
+	WindowModeDropdown->AddOption(LOCTEXT("Fullscreen", "Fullscreen").ToString());
+	WindowModeDropdown->AddOption(LOCTEXT("Windowed", "Windowed").ToString());
+
+	UIScalingDropdown->ClearOptions();
+	UIScalingDropdown->AddOption(FString("200%"));
+	UIScalingDropdown->AddOption(FString("150%"));
+	UIScalingDropdown->AddOption(FString("100%"));
+	
+	//! Non video settings
+	auto setupDropdown = [&](UComboBoxString* comboBox, bool hasNone = false) {
+		comboBox->ClearOptions();
+		const TArray<FText>& options = hasNone ? GraphicsOptionsWithNone : GraphicsOptions;
+		for (int32 i = 0; i < options.Num(); i++) {
+			comboBox->AddOption(options[i].ToString());
+		}
+	};
+
+
+	setupDropdown(AntiAliasingDropdown);
+	//setupDropdown(PostProcessingDropdown);
+	setupDropdown(ShadowsDropdown, true);
+	setupDropdown(TexturesDropdown);
+	setupDropdown(EffectsDropdown);
+
+	//! Other Settings
+	AutosaveDropdown->ClearOptions();
+	for (size_t i = 0; i < AutosaveOptions.size(); i++) {
+		AutosaveDropdown->AddOption(AutosaveOptions[i]);
+	}
+
+	LanguageDropdown->ClearOptions();
+	TArray<FString> languageTags = UKismetInternationalizationLibrary::GetLocalizedCultures(ELocalizationLoadFlags::Game);
+	for (size_t i = 0; i < languageTags.Num(); i++) {
+		LanguageDropdown->AddOption(GetLanguageOptionName(languageTags[i]));
+	}
+}
+
+void UGameSettingsUI::RefreshUI(bool resetTabs, bool resetDropdown, bool settingsUndirty)
+{
+	if (resetDropdown) {
+		RefreshDropdowns(); // Must be here before SetSelectIndex
+	}
+
 	// Refresh does SetSelectedIndex which makes sound, suppress it...
 	_lastOpened = UGameplayStatics::GetTimeSeconds(this);
 	
@@ -330,13 +343,20 @@ void UGameSettingsUI::RefreshUI(bool resetTabs)
 	}
 
 	AutosaveDropdown->SetSelectedIndex(static_cast<int32>(gameInst->autosaveEnum));
-	LanguageDropdown->SetSelectedOption(gameInst->preferredCulture);
+	FString languageOption = GetLanguageOptionName(gameInst->preferredCultureTag);
+	LanguageDropdown->SetSelectedOption(languageOption);
 	MultithreadedMeshGenerationCheckBox->SetIsChecked(gameInst->useMultithreadedMeshGeneration);
 	ForceClickthroughCheckBox->SetIsChecked(gameInst->forceClickthrough);
 
-	_isSettingsDirty = false;
-	_isLanguageSettingsDirty = false;
-	ConfirmOverlay->SetVisibility(ESlateVisibility::Collapsed);
+	if (settingsUndirty) {
+		_isSettingsDirty = false;
+		ConfirmOverlay->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	// Note: Culture bounced back to en after LanguageDropdown ClearOptions
+	// But if we put  RefreshCulture() before LanguageDropdown->SetSelectedOption(), that doesn't work either.
+	// Hence it is here.
+	gameInstance()->RefreshCulture();
 }
 
 void UGameSettingsUI::ResetTabSelection()
@@ -523,10 +543,10 @@ void UGameSettingsUI::OnLanguageDropdownChanged(FString sItem, ESelectInfo::Type
 {
 	if (seltype != ESelectInfo::Type::Direct) {
 		_isSettingsDirty = true;
-		_isLanguageSettingsDirty = true;
 
-		gameInstance()->preferredCulture = sItem;
-		gameInstance()->RefreshCulture();
+		gameInstance()->preferredCultureTag = GetLanguageTag(sItem);
+		// RefreshCulture is done in RefreshUI, since RefreshUI refreshed the culture back to en (from dropdown refresh)
+		RefreshUI(false, true, false);
 
 		Spawn2DSound("UI", "DropdownChange");
 	}
@@ -575,22 +595,22 @@ void UGameSettingsUI::RestoreDefault()
 
 		Spawn2DSound("UI", "ButtonClick");
 
-		RefreshUI(false);
+		RefreshUI(false, false);
 	}
 	else if (SettingsMenu->GetActiveWidgetIndex() == 1)
 	{
 		gameInstance()->RestoreDefaultsSound();
-		RefreshUI(false);
+		RefreshUI(false, false);
 	}
 	else if (SettingsMenu->GetActiveWidgetIndex() == 2)
 	{
 		gameInstance()->RestoreDefaultsInputs();
-		RefreshUI(false);
+		RefreshUI(false, false);
 	}
 	else if (SettingsMenu->GetActiveWidgetIndex() == 3)
 	{
 		gameInstance()->RestoreDefaultsOthers();
-		RefreshUI(false);
+		RefreshUI(false, false);
 	}
 	else {
 		PUN_NOENTRY();
@@ -616,7 +636,7 @@ void UGameSettingsUI::ApplyChanges()
 
 	PunSettings::bShouldRefreshMainMenuDisplay = true;
 
-	RefreshUI(false);
+	RefreshUI(false, false);
 
 	PUN_LOG("settings->IsVSyncDirty(): %d", settings->IsVSyncDirty());
 }
@@ -635,7 +655,7 @@ void UGameSettingsUI::UndoChanges()
 	gameInstance()->RefreshOtherSettings();
 	gameInstance()->RefreshCulture();
 
-	RefreshUI(false);
+	RefreshUI(false, false);
 }
 
 void UGameSettingsUI::ExecuteAfterConfirmOrDiscard()
@@ -646,7 +666,7 @@ void UGameSettingsUI::ExecuteAfterConfirmOrDiscard()
 	else {
 		ChangeTab(_tabIndexToChangeTo);
 	}
-	RefreshUI(false);
+	RefreshUI(false, false);
 }
 
 

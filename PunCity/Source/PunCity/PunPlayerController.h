@@ -497,21 +497,10 @@ public:
 	TArray<class UFireForgetAudioComponent*> GetPunAudios() final {
 		return gameManager->soundSystem()->punAudios;
 	}
+
 	
-	UFUNCTION(Exec) void PleaseCrash() {
-		checkNoEntry();
-		USceneComponent* test = nullptr;
-		test->DestroyComponent();
-	}
 	UFUNCTION(Exec) void TestAutosave() {
 		GetPunHUD()->AutosaveGame();
-	}
-
-	UFUNCTION(Exec) void RefreshCulture() {
-		gameInstance()->RefreshCulture();
-	}
-	UFUNCTION(Exec) void GetCulture() {
-		PUN_LOG("Current Culture: %s", *UKismetInternationalizationLibrary::GetCurrentCulture());
 	}
 	
 	UFUNCTION(Exec) void SaveMainMenuDisplay()

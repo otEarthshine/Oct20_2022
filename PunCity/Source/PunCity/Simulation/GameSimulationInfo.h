@@ -89,7 +89,7 @@ static std::string GetGameVersionString(int32 version)
 
 #define ToFText(stdString) (FText::FromString(FString((stdString).c_str())))
 
-#define DEBUG_BUILD WITH_EDITOR //!UE_BUILD_SHIPPING
+#define DEBUG_BUILD !UE_BUILD_SHIPPING // WITH_EDITOR
 #define DEV_BUILD !UE_BUILD_SHIPPING
 
 #if !defined(PUN_CHECK)

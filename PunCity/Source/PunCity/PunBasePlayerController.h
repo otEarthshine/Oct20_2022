@@ -104,6 +104,30 @@ public:
 		gameInstance()->replayFilesToLoad.Empty();
 	}
 
+	/*
+	 * Debug
+	 */
+
+	UFUNCTION(Exec) void PleaseCrash() {
+		checkNoEntry();
+		USceneComponent* test = nullptr;
+		test->DestroyComponent();
+	}
+	UFUNCTION(Exec) void RefreshCulture() {
+		gameInstance()->RefreshCulture();
+	}
+	UFUNCTION(Exec) void GetLanguages(uint8 localizedName) {
+		TArray<FString> languageOptions = UKismetInternationalizationLibrary::GetLocalizedCultures(ELocalizationLoadFlags::Game);
+		for (FString language : languageOptions) {
+			PUN_DEBUG2("Culture: %s", *UKismetInternationalizationLibrary::GetCultureDisplayName(language, localizedName));
+		}
+	}
+	UFUNCTION(Exec) void GetCulture() {
+		PUN_DEBUG2("Current Culture: %s", *UKismetInternationalizationLibrary::GetCurrentCulture());
+	}
+	UFUNCTION(Exec) void SetCulture(FString preferredCultureTag) {
+		UKismetInternationalizationLibrary::SetCurrentCulture(preferredCultureTag, true);
+	}
 
 	
 public:

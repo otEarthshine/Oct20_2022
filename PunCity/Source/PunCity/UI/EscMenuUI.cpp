@@ -34,7 +34,7 @@ void UEscMenuUI::PunInit()
 {
 	SetChildHUD(GameSettingsUI);
 	GameSettingsUI->PunInit(this);
-
+	
 	SetChildHUD(TutorialUI);
 	TutorialUI->PunInit();
 
@@ -44,6 +44,7 @@ void UEscMenuUI::PunInit()
 	EscMenuToggler->OnClicked.AddDynamic(this, &UEscMenuUI::ToggleEscMenu);
 	EscMenuResumeButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickEscMenuResumeButton);
 	EscMenuSettingsButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickEscMenuSettingsButton);
+	EscMenuRestartGameButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickEscMenuRestartGameButton);
 	EscMenuExitToMainMenuButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickEscMenuExitToMainMenuButton);
 	EscMenuQuitButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickEscMenuQuitButton);
 
@@ -119,6 +120,15 @@ void UEscMenuUI::OnClickEscMenuSettingsButton()
 
 	dataSource()->Spawn2DSound("UI", "UIWindowOpen");
 }
+void UEscMenuUI::OnClickEscMenuRestartGameButton()
+{
+	ConfirmBlur->SetVisibility(ESlateVisibility::Visible);
+	ConfirmUI->SetVisibility(ESlateVisibility::Visible);
+	ConfirmText->SetText(LOCTEXT("AskRestartGame", "Are you sure you want to restart the game?"));
+	_confirmEnum = RestartGame;
+
+	dataSource()->Spawn2DSound("UI", "UIWindowOpen");
+}
 void UEscMenuUI::OnClickEscMenuExitToMainMenuButton()
 {
 	ConfirmBlur->SetVisibility(ESlateVisibility::Visible);
@@ -141,8 +151,11 @@ void UEscMenuUI::OnClickEscMenuQuitButton()
 void UEscMenuUI::OnClickConfirmYesButton()
 {
 	dataSource()->Spawn2DSound("UI", "ButtonClick");
-	
-	if (_confirmEnum == ExitToMainMenu) {
+
+	if (_confirmEnum == RestartGame) {
+		networkInterface()->GoToSinglePlayerLobby();
+	}
+	else if (_confirmEnum == ExitToMainMenu) {
 		networkInterface()->GoToMainMenu();
 	}
 	else if (_confirmEnum == ExitGame) {
@@ -157,7 +170,9 @@ void UEscMenuUI::OnClickConfirmYesButton()
 void UEscMenuUI::OnClickConfirmNoButton()
 {
 	if (_confirmEnum == ExitGame||
-		_confirmEnum == ExitToMainMenu) {
+		_confirmEnum == ExitToMainMenu ||
+		_confirmEnum == RestartGame)
+	{
 		ConfirmBlur->SetVisibility(ESlateVisibility::Collapsed);
 		ConfirmUI->SetVisibility(ESlateVisibility::Collapsed);
 	}

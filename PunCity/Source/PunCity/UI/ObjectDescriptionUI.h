@@ -31,8 +31,12 @@ public:
 	UPROPERTY(meta = (BindWidget)) UEditableTextBox* NameEditTextBox;
 	UPROPERTY(meta = (BindWidget)) UButton* NameEditButton;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* NameEditButtonText;
-	
+
 	UPROPERTY(meta = (BindWidget)) UButton* CloseButton;
+
+	UPROPERTY(meta = (BindWidget)) USizeBox* BuildingSwapArrows;
+	UPROPERTY(meta = (BindWidget)) UButton* BuildingSwapArrowLeftButton;
+	UPROPERTY(meta = (BindWidget)) UButton* BuildingSwapArrowRightButton;
 
 	UPROPERTY(meta = (BindWidget)) UCheckBox* ToolCheckBox;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* ToolCheckBoxText;
@@ -56,6 +60,9 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* AllowAllButton;
 	UPROPERTY(meta = (BindWidget)) UButton* DisallowAllButton;
 
+	UPROPERTY(meta = (BindWidget)) USizeBox* DescriptionPunBoxScrollOuter;
+	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* DescriptionPunBoxScroll;
+	
 
 	UPROPERTY(meta = (BindWidget)) UWrapBox* CardSlots;
 	std::vector<CardStatus> lastCards;
@@ -87,6 +94,8 @@ public:
 
 		NameEditTextBox->SetVisibility(ESlateVisibility::Collapsed);
 		NameEditButtonText->SetText(NSLOCTEXT("ObjDescUI", "Edit", "Edit"));
+
+		BuildingSwapArrows->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
 	DescriptionUIState state;
@@ -160,6 +169,35 @@ private:
 		NameEditTextBox->SetVisibility(ESlateVisibility::Collapsed);
 		DescriptionUITitle->SetVisibility(ESlateVisibility::Visible);
 		NameEditButtonText->SetText(FText::FromString("Edit"));
+	}
+
+	UFUNCTION() void OnClickBuildingSwapArrowLeftButton() {
+		SwitchToNextBuilding(true);
+	}
+	UFUNCTION() void OnClickBuildingSwapArrowRightButton() {
+		SwitchToNextBuilding(false);
+	}
+	void SwitchToNextBuilding(bool isLeft)
+	{
+		if (state.objectType == ObjectTypeEnum::Building)
+		{
+			CardEnum buildingEnum = simulation().buildingEnum(state.objectId);
+			const std::vector<int32>& buildingIds = simulation().buildingIds(playerId(), buildingEnum);
+			if (buildingIds.size() > 1) {
+				// Find the index of the current building in the array and increment it by 1
+				int32 index = -1;
+				for (size_t i = 0; i < buildingIds.size(); i++) {
+					if (buildingIds[i] == state.objectId) {
+						index = i;
+						break;
+					}
+				}
+				if (index != -1) {
+					int32 nextIndex = (index + 1) % buildingIds.size();
+					simulation().SetDescriptionUIState({ ObjectTypeEnum::Building, buildingIds[nextIndex] });
+				}
+			}
+		}
 	}
 	
 	

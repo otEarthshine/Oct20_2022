@@ -1113,29 +1113,29 @@ BuildingUpgrade Building::MakeWorkerSlotUpgrade(int32 percentOfTotalPrice, int32
 
 BuildingUpgrade Building::MakeComboUpgrade(FText name, ResourceEnum resourceEnum, int32 percentOfTotalPrice, int32 comboEfficiencyBonus)
 {
-	FText buildingNamePluralText;
-	
-	switch (buildingInfo().cardEnum)
-	{
-#define CASE(cardEnum, pluralName) case cardEnum: buildingNamePluralText = pluralName; break;
-		CASE(CardEnum::Bakery,			LOCTEXT("Bakeries", "Bakeries"));
-		CASE(CardEnum::BeerBrewery,		LOCTEXT("Breweries", "Breweries"));
-		CASE(CardEnum::Winery,			LOCTEXT("Wineries", "Wineries"));
-		CASE(CardEnum::Brickworks,		LOCTEXT("Brickworks", "Brickworks"));
-		CASE(CardEnum::PrintingPress,	LOCTEXT("Printing Presses", "Printing Presses"));
-		CASE(CardEnum::VodkaDistillery, LOCTEXT("Distilleries", "Distilleries"));
-#undef CASE
-	default:
-		buildingNamePluralText =  FText::Format(INVTEXT("{0}s"), buildingInfo().GetName());
-		break;
-	}
+//	FText buildingNamePluralText;
+//	
+//	switch (buildingInfo().cardEnum)
+//	{
+//#define CASE(cardEnum, pluralName) case cardEnum: buildingNamePluralText = pluralName; break;
+//		CASE(CardEnum::Bakery,			LOCTEXT("Bakeries", "Bakeries"));
+//		CASE(CardEnum::BeerBrewery,		LOCTEXT("Breweries", "Breweries"));
+//		CASE(CardEnum::Winery,			LOCTEXT("Wineries", "Wineries"));
+//		CASE(CardEnum::Brickworks,		LOCTEXT("Brickworks", "Brickworks"));
+//		CASE(CardEnum::PrintingPress,	LOCTEXT("Printing Presses", "Printing Presses"));
+//		CASE(CardEnum::VodkaDistillery, LOCTEXT("Distilleries", "Distilleries"));
+//#undef CASE
+//	default:
+//		buildingNamePluralText =  FText::Format(INVTEXT("{0}s"), buildingInfo().GetName());
+//		break;
+//	}
 
 	FText description = FText::Format(
 		LOCTEXT("Combo Upgrade Description", "Gain +{0}/{1}/{2}% productivity if this city has 2/4/8 {3}"),
 		TEXT_NUM(comboEfficiencyBonus),
 		TEXT_NUM(comboEfficiencyBonus * 2),
 		TEXT_NUM(comboEfficiencyBonus * 3),
-		buildingNamePluralText
+		buildingInfo().namePlural
 	);
 
 	BuildingUpgrade upgrade = MakeUpgrade(name, description, resourceEnum, percentOfTotalPrice);

@@ -36,6 +36,7 @@ public:
 	virtual void Pause() = 0;
 	virtual void Resume() = 0;
 	virtual void GoToMainMenu() = 0;
+	virtual void GoToSinglePlayerLobby() = 0;
 	virtual void GoToVictoryScreen() = 0;
 
 	// TODO: shouldn't be here, move if there is better place for this ???

@@ -14,6 +14,7 @@
 
 #include <sstream>
 #include "Kismet/KismetInternationalizationLibrary.h"
+#include "PunFileUtils.h"
 
 #include "PunGameInstance.generated.h"
 
@@ -196,6 +197,33 @@ public:
 		return _mapSettings;
 	}
 
+	static bool HasSavedMapWithSettings(const FMapSettings& mapSettings) {
+		FString path = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()) + "terrainMetaData.dat";
+
+		if (!FPaths::FileExists(path)) {
+			return false;
+		}
+
+		FMapSettings tempMapSettings;
+		PunFileUtils::LoadFile(path, [&](FArchive& Ar) {
+			tempMapSettings.Serialize(Ar);
+		});
+
+		return tempMapSettings.MapEquals(mapSettings);
+	}
+	static bool GetSavedMap(FMapSettings& mapSettings) {
+		FString path = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()) + "terrainMetaData.dat";
+
+		if (!FPaths::FileExists(path)) {
+			return false;
+		}
+
+		PunFileUtils::LoadFile(path, [&](FArchive& Ar) {
+			mapSettings.Serialize(Ar);
+		});
+		return true;
+	}
+
 	/*
 	 * Game End
 	 */
@@ -262,7 +290,7 @@ public:
 	}
 	
 	void OnGameExit();
-	void EnsureSessionDestroyed(bool gotoMainMenu);
+	void EnsureSessionDestroyed(bool gotoMainMenu, bool gotoSinglePlayerLobby = false);
 
 	FText mainMenuPopup;
 

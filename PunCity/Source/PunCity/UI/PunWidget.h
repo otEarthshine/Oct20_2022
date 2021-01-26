@@ -328,7 +328,7 @@ public:
 			kPointerOnUI = std::min(kPointerOnUI + 2, 2);
 
 			kPointerOnUINames.Add(
-				widget->GetName() + ", " + widget->GetCategoryName() + "\n" + widget->GetPathName() + "\n"
+				widget->GetName() + "\n" + widget->GetPathName() + "\n"
 			);
 		}
 	}

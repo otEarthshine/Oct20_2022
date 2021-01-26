@@ -179,6 +179,10 @@ public:
 	void Pause() final;
 	void Resume() final;
 
+	void GoToSinglePlayerLobby() final {
+		gameInstance()->CreateSinglePlayerGame();
+		//EnsureSessionDestroyed(false, true);
+	}
 	void GoToMainMenu() final
 	{
 		LLM_SCOPE_(EPunSimLLMTag::PUN_Controller);

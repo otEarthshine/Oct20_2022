@@ -577,9 +577,27 @@ void UPunGameInstance::OnSessionUserInviteAccepted(bool bWasSuccessful, int32 Co
 	PUN_DEBUG2("OnSessionUserInviteAccepted success:%d", bWasSuccessful);
 	PUN_DEBUG2("UserId:%s, Session:%s", *UserId->ToDebugString(), *InviteResult.GetSessionIdStr());
 	
-	if (bWasSuccessful) {
-		if (InviteResult.IsValid()) {
-			JoinGame(InviteResult);
+	if (bWasSuccessful) 
+	{	
+		if (InviteResult.IsValid()) 
+		{
+			FString yourVersionStr = GetGameVersionString(GAME_VERSION, false);
+			
+			int32 hostVersionId = GetSessionValue(SESSION_GAME_VERSION, InviteResult.Session.SessionSettings);
+			FString hostVersionStr = GetGameVersionString(hostVersionId, false);
+			
+			PUN_DEBUG2("ourVersion:%s, hostVersion: %s", *yourVersionStr, *hostVersionStr);
+			
+			if (GAME_VERSION == hostVersionId) {
+				JoinGame(InviteResult);
+			}
+			else {
+				mainMenuPopup = FText::Format(
+					LOCTEXT("SessionInviteError_DifferentGameVersion", "Failed to join the session. Host and you are using different game versions.\nYour version: {0}\nHost version: {1}"),
+					FText::FromString(yourVersionStr),
+					FText::FromString(hostVersionStr)
+				);
+			}
 		}
 		else {
 			PUN_DEBUG2("- [ERROR]Invalid InviteSearchResult");
@@ -605,7 +623,7 @@ void UPunGameInstance::OnGameExit()
 	EnsureSessionDestroyed(false);
 }
 
-void UPunGameInstance::EnsureSessionDestroyed(bool gotoMainMenu)
+void UPunGameInstance::EnsureSessionDestroyed(bool gotoMainMenu, bool gotoSinglePlayerLobby)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_GameInstance);
 	
@@ -613,6 +631,12 @@ void UPunGameInstance::EnsureSessionDestroyed(bool gotoMainMenu)
 	
 	if (sessionInterface.IsValid())
 	{
+		if (gotoSinglePlayerLobby)
+		{
+			GetWorld()->ServerTravel("/Game/Maps/Lobby");
+			return;
+		}
+		
 		auto existingSession = sessionInterface->GetNamedSession(PUN_SESSION_NAME);
 		if (existingSession) {
 			PUN_DEBUG2("EnsureSessionDestroyed: Completed");

@@ -151,6 +151,9 @@ public:
 	UPROPERTY(meta = (BindWidget)) UOverlay* ConverterCardHandOverlay;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* ConverterCardHandTitle;
 
+	UPROPERTY(meta = (BindWidget)) UEditableTextBox* ConverterCardHandSearchBox;
+	FString lastSearchString;
+
 	UPROPERTY(meta = (BindWidget)) UOverlay* ConfirmationOverlay;
 
 

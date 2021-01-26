@@ -75,6 +75,9 @@ public:
 	void KeyPressed_ToggleHideTree() {
 		_gameInterface->ToggleOverlayHideTree();
 	}
+	void ToggleProvinceOverlay() {
+		_gameInterface->ToggleOverlayProvince();
+	}
 	
 	void LeftMouseDown();
 	void LeftMouseUp();

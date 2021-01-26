@@ -817,21 +817,6 @@ void PunTerrainGenerator::Load4x4Map(std::vector<uint8_t>& map4x4, const char* p
 	check(map4x4.size() > 0);
 }
 
-bool PunTerrainGenerator::HasSavedMap(const FMapSettings& mapSettings)
-{
-	FString path = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()) + "terrainMetaData.dat";
-
-	if (!FPaths::FileExists(path)) {
-		return false;
-	}
-
-	FMapSettings tempMapSettings;
-	PunFileUtils::LoadFile(path, [&](FArchive& Ar) {
-		tempMapSettings.Serialize(Ar);
-	});
-
-	return tempMapSettings.MapEquals(mapSettings);
-}
 
 bool PunTerrainGenerator::SaveOrLoad(bool isSaving)
 {

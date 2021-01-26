@@ -68,7 +68,7 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 			_terrainGenerator->CalculateWorldTerrain(_mapSettings);
 			_terrainGenerator->SetGameMap();
 #else
-			if (!_terrainGenerator->HasSavedMap(_mapSettings)) {
+			if (!gameManager->HasSavedMap(_mapSettings)) {
 				INIT_LOG("CalculateWorldTerrain %s", ToTChar(_mapSettings.ToString()));
 				_terrainGenerator->CalculateWorldTerrain(_mapSettings);
 				

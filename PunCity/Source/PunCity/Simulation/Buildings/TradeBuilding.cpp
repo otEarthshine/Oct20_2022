@@ -88,7 +88,10 @@ void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePe
 	exportMoney100 = totalExportMoney100 - exportFee100;
 	importMoney100 = totalImportMoney100 + importFee100;
 
-	simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, tile, TEXT_100SIGNED(exportMoney100 - importMoney100));
+	FText floatupNumber = TEXT_100SIGNED(exportMoney100 - importMoney100);
+	PUN_LOG("ShowFloatupInfo Trade: %s source:%d", *floatupNumber.ToString(), exportMoney100 - importMoney100);
+	
+	simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, tile, floatupNumber);
 }
 
 

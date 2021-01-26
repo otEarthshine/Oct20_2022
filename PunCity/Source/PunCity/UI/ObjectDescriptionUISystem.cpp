@@ -99,6 +99,7 @@ void UObjectDescriptionUISystem::Tick()
 	if (dataSource()->simulation().tickCount() == 0) {
 		_objectDescriptionUI->CloseAllSubUIs(true);
 		_objectDescriptionUI->DescriptionPunBox->ResetBeforeAdd();
+		_objectDescriptionUI->DescriptionPunBoxScroll->ResetBeforeAdd();
 		_objectDescriptionUI->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
@@ -512,6 +513,11 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 	SCOPE_CYCLE_COUNTER(STAT_PunUIUpdateDescriptionUI);
 
 	UPunBoxWidget* descriptionBox = _objectDescriptionUI->DescriptionPunBox;
+	UPunBoxWidget* descriptionBoxScrollable = _objectDescriptionUI->DescriptionPunBoxScroll;
+	
+	// DescriptionPunBoxScroll is used for House
+	_objectDescriptionUI->DescriptionPunBoxScrollOuter->SetVisibility(ESlateVisibility::Collapsed);
+
 
 	// Selection Meshes
 	meshIndex = 0;
@@ -534,6 +540,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 		}
 		_objectDescriptionUI->CloseAllSubUIs(uiState.shouldCloseStatUI);
 		descriptionBox->ResetBeforeAdd();
+		descriptionBoxScrollable->ResetBeforeAdd();
 	}
 
 	if (_tileSelectionDecal) {
@@ -590,6 +597,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			CardEnum buildingEnum = building.buildingEnum();
 			BldInfo buildingInfo = building.buildingInfo();
 			
+			
 			//stringstream ss;
 			TArray<FText> args;
 			
@@ -631,8 +639,19 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 			
 			
-			_objectDescriptionUI->BuildingsStatOpener->SetVisibility(building.maxOccupants() > 0 && !IsHouse(building.buildingEnum()) ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+			//_objectDescriptionUI->BuildingsStatOpener->SetVisibility(building.maxOccupants() > 0 && !IsHouse(building.buildingEnum()) ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+			_objectDescriptionUI->BuildingsStatOpener->SetVisibility(ESlateVisibility::Collapsed); // TODO: Don't use it anymore?
 			_objectDescriptionUI->NameEditButton->SetVisibility((building.isEnum(CardEnum::Townhall) && building.playerId() == playerId()) ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+
+			// Swap between same type of buildings
+			if (building.playerId() == playerId()) {
+				const std::vector<int32>& buildingIds = simulation.buildingIds(playerId(), buildingEnum);
+				_objectDescriptionUI->BuildingSwapArrows->SetVisibility(buildingIds.size() > 1 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+			} else {
+				_objectDescriptionUI->BuildingSwapArrows->SetVisibility(ESlateVisibility::Collapsed);
+			}
+
+			
 			
 			//descriptionBox->AddRichText(ss);
 			descriptionBox->AddLineSpacer(8);
@@ -852,7 +871,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							}
 							else {
 								//ss << "<Orange>" + house->HouseNeedDescription() + "</>\n<Orange>(to increase level)</>";
-								ADDTEXT_(INVTEXT("<Orange>{0}</>\n"), FText::AsNumber(appealNeeded));
+								ADDTEXT_(INVTEXT("<Orange>{0}</>\n"), house->HouseNeedDescription());
 								ADDTEXT_LOCTEXT("HouseToIncreaseLevel", "<Orange>(to increase level)</>");
 								auto widget = descriptionBox->AddRichText(args);
 								AddToolTip(widget, house->HouseNeedTooltipDescription());
@@ -860,20 +879,25 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 							descriptionBox->AddSpacer();
 
+							/*
+							 * House Resource Checkboxes
+							 */
+							_objectDescriptionUI->DescriptionPunBoxScrollOuter->SetVisibility(ESlateVisibility::Visible);
+							
 							auto addCheckBoxIconPair = [&](ResourceEnum resourceEnum) {
-								UIconTextPairWidget* widget = descriptionBox->AddIconPair(FText(), resourceEnum, TEXT_NUM(building.resourceCount(resourceEnum)));
+								UIconTextPairWidget* widget = descriptionBoxScrollable->AddIconPair(FText(), resourceEnum, TEXT_NUM(building.resourceCount(resourceEnum)));
 								widget->UpdateAllowCheckBox(resourceEnum);
 								widget->ObjectId = building.buildingId();
 							};
 
 							//ADDTEXT_(INVTEXT("<Bold>{0}</>"), LOCTEXT("Fuel_C", "Fuel:"))
 							ADDTEXT_TAG_("<Bold>", LOCTEXT("Fuel_C", "Fuel:"));
-							descriptionBox->AddRichText(args);
+							descriptionBoxScrollable->AddRichText(args);
 							addCheckBoxIconPair(ResourceEnum::Wood);
 							addCheckBoxIconPair(ResourceEnum::Coal);
 
 							ADDTEXT_TAG_("<Bold>", LOCTEXT("LuxuryTier1_C", "Luxury tier 1:"));
-							descriptionBox->AddRichText(args);
+							descriptionBoxScrollable->AddRichText(args);
 							const std::vector<ResourceEnum>& luxury1 = GetLuxuryResourcesByTier(1);
 							for (size_t i = 0; i < luxury1.size(); i++) {
 								addCheckBoxIconPair(luxury1[i]);
@@ -882,7 +906,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							if (houseLvl >= 3)
 							{
 								ADDTEXT_TAG_("<Bold>", LOCTEXT("LuxuryTier2_C", "Luxury tier 2:"));
-								descriptionBox->AddRichText(args);
+								descriptionBoxScrollable->AddRichText(args);
 								const std::vector<ResourceEnum>& luxury2 = GetLuxuryResourcesByTier(2);
 								for (size_t i = 0; i < luxury2.size(); i++) {
 									addCheckBoxIconPair(luxury2[i]);
@@ -891,12 +915,14 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							if (houseLvl >= 5)
 							{
 								ADDTEXT_TAG_("<Bold>", LOCTEXT("LuxuryTier3_C", "Luxury tier 3:"));
-								descriptionBox->AddRichText(args);
+								descriptionBoxScrollable->AddRichText(args);
 								const std::vector<ResourceEnum>& luxury = GetLuxuryResourcesByTier(3);
 								for (size_t i = 0; i < luxury.size(); i++) {
 									addCheckBoxIconPair(luxury[i]);
 								}
 							}
+
+							descriptionBoxScrollable->AfterAdd();
 						}
 					}
 					else if (building.isEnum(CardEnum::Townhall))

@@ -378,8 +378,8 @@ void UMainMenuUI::JoinMultiplayerGame()
 		//gameInstance()->mainMenuPopup = ToFString(ss.str());
 		gameInstance()->mainMenuPopup = FText::Format(
 			LOCTEXT("Joining Server", "Cannot join a game with different version.\nPlease try restarting Steam to get the latest version.\n your version: {0}}\n host version: {1}\n"),
-			ToFText(GetGameVersionString(GAME_VERSION)),
-			ToFText(GetGameVersionString(hostVersion))
+			FText::FromString(GetGameVersionString(GAME_VERSION)),
+			FText::FromString(GetGameVersionString(hostVersion))
 		);
 
 		

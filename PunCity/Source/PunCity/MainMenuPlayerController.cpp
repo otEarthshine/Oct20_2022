@@ -88,8 +88,10 @@ void AMainMenuPlayerController::Tick(float DeltaTime)
 	
 	if (PunSettings::bShouldRefreshMainMenuDisplay) {
 		PunSettings::bShouldRefreshMainMenuDisplay = false;
-		
-		mainMenuDisplayManager->UpdateDisplay(cameraState.cameraAtom, cameraState.zoomDistance, cameraState.sampleRegionIds, true, false);
+
+		if (mainMenuDisplayManager) {
+			mainMenuDisplayManager->UpdateDisplay(cameraState.cameraAtom, cameraState.zoomDistance, cameraState.sampleRegionIds, true, false);
+		}
 	}
 
 	if (mainMenuDisplayManager) {

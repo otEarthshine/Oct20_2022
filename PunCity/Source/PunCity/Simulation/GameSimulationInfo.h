@@ -18,9 +18,9 @@
 
 // VERSION
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 10 // 3 digit
+#define MINOR_VERSION 11 // 3 digit
 
-#define VERSION_DAY 22
+#define VERSION_DAY 26
 #define VERSION_MONTH 1
 #define VERSION_YEAR 21
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
@@ -36,28 +36,27 @@ static std::string GetGameVersionString()
 	return ss.str();
 }
 
-static std::string GetGameVersionString(int32 version)
+static FString GetGameVersionString(int32 version, bool includeDate = true)
 {
-	std::stringstream ss;
-	ss << version / 1000000000 << ".";
+	FString result;
+	result += FString::FromInt(version / 1000000000) + ".";
 	version = version % 1000000000;
 	
-	ss << version / 1000000;
+	result += FString::FromInt(version / 1000000);
 	version = version % 1000000;
 
-	ss << " (";
-	ss << version / 10000;
-	version = version % 10000;
+	if (includeDate)
+	{
+		result += " (" + FString::FromInt(version / 10000);
+		version = version % 10000;
 
-	ss << "/";
-	ss << version / 100;
-	version = version % 100;
+		result += "/" + FString::FromInt(version / 100);
+		version = version % 100;
 
-	ss << "/";
-	ss << version;
-	ss << ")";
+		result += "/" + FString::FromInt(version) + ")";
+	}
 	
-	return ss.str();
+	return result;
 }
 
 // VERSION
@@ -147,7 +146,7 @@ public:
 #define TEXT_PERCENT(number) FText::Join(FText(), FText::AsNumber(number), INVTEXT("%"))
 #define TEXT_100(number) FText::Join(FText(), FText::AsNumber(number / 100), INVTEXT("."), FText::AsNumber((number % 100) / 10))
 #define TEXT_100_2(number) FText::Join(FText(), FText::AsNumber(number / 100), INVTEXT("."), FText::AsNumber(number % 100))
-#define TEXT_100SIGNED(number) FText::Join(FText(), (number > 0 ? INVTEXT("+") : INVTEXT("")), FText::AsNumber(number / 100), INVTEXT("."), FText::AsNumber((number % 100) / 10))
+#define TEXT_100SIGNED(number) FText::Join(FText(), (number > 0 ? INVTEXT("+") : INVTEXT("")), FText::AsNumber(static_cast<int>(number) / 100), INVTEXT("."), FText::AsNumber((static_cast<int>(number) % 100) / 10))
 #define TEXT_NUM(number) FText::AsNumber(number)
 #define TEXT_NUMSIGNED(number) FText::Join(FText(), (number > 0 ? INVTEXT("+") : INVTEXT("")), FText::AsNumber(number))
 #define TEXT_NUMINT(number) FText::AsNumber(static_cast<int>(number))
@@ -2202,6 +2201,7 @@ struct BldInfo
 	
 	// Need std::string since we need to copy when passing into FName (allows using name.c_str() instead of FName in some cases)
 	FText name;
+	FText namePlural;
 	
 	WorldTile2 size;
 	ResourceEnum input1 = ResourceEnum::None;
@@ -2231,6 +2231,8 @@ struct BldInfo
 	FText GetName() { return name; }
 	FText GetDescription() { return description; }
 
+	FText GetName(int32 count) { return count > 1 ? namePlural : name; }
+
 	bool hasInput1() { return input1 != ResourceEnum::None; }
 	bool hasInput2() { return input2 != ResourceEnum::None; }
 
@@ -2245,6 +2247,7 @@ struct BldInfo
 
 	BldInfo(CardEnum buildingEnum,
 		FText name,
+		FText namePluralIn,
 		WorldTile2 size,
 		ResourceEnum input1,
 		ResourceEnum input2,
@@ -2271,6 +2274,8 @@ struct BldInfo
 		description(description),
 		miniDescription(miniDescriptionIn)
 	{
+		namePlural = namePluralIn.IsEmpty() ? name : namePluralIn;
+		
 		/*
 		 * Constraints for buildTime_ManSec100:
 		 *  - House should be 6000 stand for 60 sec build time
@@ -2453,184 +2458,184 @@ WorldTile2 GetBuildingCenter(TileArea area, Direction faceDirection);
 static const BldInfo BuildingInfo[]
 {
 	// Note that size is (y, x) since y is horizontal and x is vertical in UE4
-	BldInfo(CardEnum::House,		LOCTEXT("House", "House"),					WorldTile2(6, 6),	ResourceEnum::None, ResourceEnum::None,	ResourceEnum::None,		0, 0,	{20,0,0},	LOCTEXT("House Desc", "Protects people from cold. Extra houses boost population growth.")),
-	BldInfo(CardEnum::StoneHouse,	LOCTEXT("Stone House", "Stone House"),		WorldTile2(4, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,40,0},	FText()),
-	BldInfo(CardEnum::FruitGatherer,LOCTEXT("Fruit Gatherer", "Fruit Gatherer"),		WorldTile2(4, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 2,	{30,0,0},	LOCTEXT("Fruit Gatherer Desc", "Gathers fruit from trees and bushes.")),
-	BldInfo(CardEnum::Townhall,		LOCTEXT("Townhall",	"Townhall"),			WorldTile2(12, 12),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,0,0},	LOCTEXT("Townhall Desc",	"The administrative center of your town.")),
-	BldInfo(CardEnum::StorageYard,	LOCTEXT("Storage Yard",	"Storage Yard"),		WorldTile2(2, 2),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{10,0,0},	LOCTEXT("Storage Yard Desc",	"Store resources.")),
+	BldInfo(CardEnum::House,		LOCTEXT("House", "House"),					LOCTEXT("House (Plural)", "Houses"),					WorldTile2(6, 6),	ResourceEnum::None, ResourceEnum::None,	ResourceEnum::None,		0, 0,	{20,0,0},	LOCTEXT("House Desc", "Protects people from cold. Extra houses boost population growth.")),
+	BldInfo(CardEnum::StoneHouse,	LOCTEXT("Stone House", "Stone House"),		LOCTEXT("Stone House (Plural)", "Stone Houses"),		WorldTile2(4, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,40,0},	FText()),
+	BldInfo(CardEnum::FruitGatherer,LOCTEXT("Fruit Gatherer", "Fruit Gatherer"),	LOCTEXT("Fruit Gatherer (Plural)", "Fruit Gatherers"),		WorldTile2(4, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 2,	{30,0,0},	LOCTEXT("Fruit Gatherer Desc", "Gathers fruit from trees and bushes.")),
+	BldInfo(CardEnum::Townhall,		LOCTEXT("Townhall",	"Townhall"),			LOCTEXT("Townhall (Plural)", "Townhalls"),			WorldTile2(12, 12),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,0,0},	LOCTEXT("Townhall Desc",	"The administrative center of your town.")),
+	BldInfo(CardEnum::StorageYard,	LOCTEXT("Storage Yard",	"Storage Yard"),	LOCTEXT("Storage Yard (Plural)", "Storage Yards"),		WorldTile2(2, 2),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{10,0,0},	LOCTEXT("Storage Yard Desc",	"Store resources.")),
 
-	BldInfo(CardEnum::GoldMine,		LOCTEXT("Gold Mine", "Gold Mine"),		WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::GoldOre,	 10, 3,	{50,50,0},	LOCTEXT("Gold Mine Desc", "Mine Gold Ores from Gold Deposit.")),
-	BldInfo(CardEnum::Quarry,		LOCTEXT("Quarry", "Quarry"),				WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::Stone,	 10, 3,	{110,0,0},	LOCTEXT("Quarry Desc", "Mine Stone from mountain.")),
-	BldInfo(CardEnum::IronStatue,	LOCTEXT("Stone Statue",	"Stone Statue"),	WorldTile2(4, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,110,0},	FText()),
-	BldInfo(CardEnum::Bank,			LOCTEXT("Bank",	"Bank"),			WorldTile2(4, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{110,110,0},	LOCTEXT("Bank Desc", "+<img id=\"Coin\"/>10 for each surrounding level 2+ houses.")),
-	BldInfo(CardEnum::IceAgeSpire,	INVTEXT("Ice Age Spire"),	WorldTile2(8, 8),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,300,200},	INVTEXT("Spire for worshipping Groth, the god of destruction. Decrease global temperature by -10 C."), INVTEXT("Decrease global temperature by -10 C.")),
+	BldInfo(CardEnum::GoldMine,		LOCTEXT("Gold Mine", "Gold Mine"),			LOCTEXT("Gold Mine (Plural)", "Gold Mines"),		WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::GoldOre,	 10, 3,	{50,50,0},	LOCTEXT("Gold Mine Desc", "Mine Gold Ores from Gold Deposit.")),
+	BldInfo(CardEnum::Quarry,		LOCTEXT("Quarry", "Quarry"),				LOCTEXT("Quarry (Plural)", "Quarries"),				WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::Stone,	 10, 3,	{110,0,0},	LOCTEXT("Quarry Desc", "Mine Stone from mountain.")),
+	BldInfo(CardEnum::IronStatue,	LOCTEXT("Stone Statue",	"Stone Statue"),	LOCTEXT("Stone Statue (Plural)", "Stone Statues"),	WorldTile2(4, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,110,0},	FText()),
+	BldInfo(CardEnum::Bank,			LOCTEXT("Bank",	"Bank"),					LOCTEXT("Bank (Plural)", "Banks"),			WorldTile2(4, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{110,110,0},	LOCTEXT("Bank Desc", "+<img id=\"Coin\"/>10 for each surrounding level 2+ houses.")),
+	BldInfo(CardEnum::IceAgeSpire,	INVTEXT("Ice Age Spire"),					INVTEXT("Ice Age Spire"),	WorldTile2(8, 8),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,300,200},	INVTEXT("Spire for worshipping Groth, the god of destruction. Decrease global temperature by -10 C."), INVTEXT("Decrease global temperature by -10 C.")),
 
-	BldInfo(CardEnum::Farm,			LOCTEXT("Farm",	"Farm"),				WorldTile2(8, 8),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 10, 1,	{20,0,0},	LOCTEXT("Farm Desc",	"Grow food/raw materials. Harvest during autumn.")),
-	BldInfo(CardEnum::MushroomFarm,	LOCTEXT("Mushroom Farm", "Mushroom Farm"),	WorldTile2(8, 8),	ResourceEnum::Wood, ResourceEnum::None,	ResourceEnum::Mushroom,	20, 2,	{70,0,0},	LOCTEXT("Mushroom Farm Desc", "Farm Mushroom using wood.")),
-	BldInfo(CardEnum::Fence,			INVTEXT("Fence"),		WorldTile2(1, 1),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,0,0},	INVTEXT("Fence used to keep farm animals in ranches, or wild animals away from farm crops"), INVTEXT("Block units from walking on tile.")),
-	BldInfo(CardEnum::FenceGate,		INVTEXT("Fence Gate"),		WorldTile2(1, 1),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,0,0},	INVTEXT("Fence gate blocks animals from entering while letting people through."), INVTEXT("Block animals from walking on tile, while letting citizens through.")),
-	BldInfo(CardEnum::Bridge,		LOCTEXT("Bridge", "Bridge"),		WorldTile2(1, 1),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,0,0},	LOCTEXT("Bridge Desc", "Allow citizens to cross over water.")),
+	BldInfo(CardEnum::Farm,			LOCTEXT("Farm",	"Farm"),					LOCTEXT("Farm (Plural)",	"Farms"),				WorldTile2(8, 8),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 10, 1,	{20,0,0},	LOCTEXT("Farm Desc",	"Grow food/raw materials. Harvest during autumn.")),
+	BldInfo(CardEnum::MushroomFarm,	LOCTEXT("Mushroom Farm", "Mushroom Farm"), LOCTEXT("Mushroom Farm (Plural)", "Mushroom Farms"),	WorldTile2(8, 8),	ResourceEnum::Wood, ResourceEnum::None,	ResourceEnum::Mushroom,	20, 2,	{70,0,0},	LOCTEXT("Mushroom Farm Desc", "Farm Mushroom using wood.")),
+	BldInfo(CardEnum::Fence,			INVTEXT("Fence"),						FText(),		WorldTile2(1, 1),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,0,0},	INVTEXT("Fence used to keep farm animals in ranches, or wild animals away from farm crops"), INVTEXT("Block units from walking on tile.")),
+	BldInfo(CardEnum::FenceGate,		INVTEXT("Fence Gate"),					FText(),		WorldTile2(1, 1),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,0,0},	INVTEXT("Fence gate blocks animals from entering while letting people through."), INVTEXT("Block animals from walking on tile, while letting citizens through.")),
+	BldInfo(CardEnum::Bridge,		LOCTEXT("Bridge", "Bridge"),				LOCTEXT("Bridge (Plural)", "Bridges"),		WorldTile2(1, 1),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,0,0},	LOCTEXT("Bridge Desc", "Allow citizens to cross over water.")),
 	
-	BldInfo(CardEnum::Forester,		LOCTEXT("Forester", "Forester"),	WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 2,	{50,50,0},	LOCTEXT("Forester Desc", "Cut/plants trees within your territory.")),
+	BldInfo(CardEnum::Forester,		LOCTEXT("Forester", "Forester"),			LOCTEXT("Forester (Plural)", "Foresters"),	WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 2,	{50,50,0},	LOCTEXT("Forester Desc", "Cut/plants trees within your territory.")),
 
-	BldInfo(CardEnum::CoalMine,		LOCTEXT("Coal Mine", "Coal Mine"),	WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::Coal,		10, 3,	{50,30,0},	LOCTEXT("Coal Mine Desc", "Mine Coal from Coal Deposits.")),
-	BldInfo(CardEnum::IronMine,		LOCTEXT("Iron Mine", "Iron Mine"),	WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::IronOre,	 10, 3,	{50,30,0},	LOCTEXT("Iron Mine Desc", "Mine Iron Ores from Iron Deposits.")),
-	BldInfo(CardEnum::SmallMarket,	LOCTEXT("Small Market", "Small Market"),	WorldTile2(5, 8),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{80,0,0},	LOCTEXT("Small Market Desc", "Sell goods to people for <img id=\"Coin\"/>")),
-	BldInfo(CardEnum::PaperMaker,	LOCTEXT("Paper Maker", "Paper Maker"),	WorldTile2(6, 6),	ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::Paper,		 20, 3,	{80,0,0},	LOCTEXT("Paper Maker Desc", "Produce Paper.")),
-	BldInfo(CardEnum::IronSmelter,	LOCTEXT("Iron Smelter", "Iron Smelter"),	WorldTile2(5, 6),	ResourceEnum::Coal,ResourceEnum::IronOre,ResourceEnum::Iron,		 10, 5,	{120,120,0},	LOCTEXT("Iron Smelter Desc", "Smelt Iron Ores into Iron Bars.")),
+	BldInfo(CardEnum::CoalMine,		LOCTEXT("Coal Mine", "Coal Mine"),			LOCTEXT("Coal Mine (Plural)", "Coal Mines"),	WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::Coal,		10, 3,	{50,30,0},	LOCTEXT("Coal Mine Desc", "Mine Coal from Coal Deposits.")),
+	BldInfo(CardEnum::IronMine,		LOCTEXT("Iron Mine", "Iron Mine"),			LOCTEXT("Iron Mine (Plural)", "Iron Mines"),	WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::IronOre,	 10, 3,	{50,30,0},	LOCTEXT("Iron Mine Desc", "Mine Iron Ores from Iron Deposits.")),
+	BldInfo(CardEnum::SmallMarket,	LOCTEXT("Small Market", "Small Market"),	LOCTEXT("Small Market (Plural)", "Small Markets"),	WorldTile2(5, 8),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{80,0,0},	LOCTEXT("Small Market Desc", "Sell goods to people for <img id=\"Coin\"/>")),
+	BldInfo(CardEnum::PaperMaker,	LOCTEXT("Paper Maker", "Paper Maker"),		LOCTEXT("Paper Maker (Plural)", "Paper Makers"),	WorldTile2(6, 6),	ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::Paper,		 20, 3,	{80,0,0},	LOCTEXT("Paper Maker Desc", "Produce Paper.")),
+	BldInfo(CardEnum::IronSmelter,		LOCTEXT("Iron Smelter", "Iron Smelter"),				LOCTEXT("Iron Smelter (Plural)", "Iron Smelters"),	WorldTile2(5, 6),	ResourceEnum::Coal,ResourceEnum::IronOre,ResourceEnum::Iron,		 10, 5,	{120,120,0},	LOCTEXT("Iron Smelter Desc", "Smelt Iron Ores into Iron Bars.")),
 
 
-	BldInfo(CardEnum::StoneToolShop,	INVTEXT("Stone Tool Shop"),	WorldTile2(5, 8),	ResourceEnum::Stone, ResourceEnum::Wood, ResourceEnum::SteelTools,		 10, 2,	{50,20,0},	FText()),
-	BldInfo(CardEnum::Blacksmith,		LOCTEXT("Blacksmith", "Blacksmith"),	WorldTile2(5, 8),	ResourceEnum::Iron, ResourceEnum::Wood, ResourceEnum::SteelTools,		 10, 2,	{50,50,50},	LOCTEXT("Blacksmith Desc", "Forge Tools from Iron Bars and Wood.")),
-	BldInfo(CardEnum::Herbalist,		LOCTEXT("Herbalist", "Herbalist"),			WorldTile2(4, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 10, 2,	{50,30,0},	FText()),
-	BldInfo(CardEnum::MedicineMaker,	LOCTEXT("Medicine Maker", "Medicine Maker"),		WorldTile2(4, 4),	ResourceEnum::Herb, ResourceEnum::None, ResourceEnum::Medicine,		 10, 2,	{50,50,50},	LOCTEXT("Medicine Maker Desc", "Make Medicine from Medicinal Herb.")),
+	BldInfo(CardEnum::StoneToolShop,	INVTEXT("Stone Tool Shop"),					INVTEXT("Stone Tool Shop"),	WorldTile2(5, 8),	ResourceEnum::Stone, ResourceEnum::Wood, ResourceEnum::SteelTools,		 10, 2,	{50,20,0},	FText()),
+	BldInfo(CardEnum::Blacksmith,		LOCTEXT("Blacksmith", "Blacksmith"),	LOCTEXT("Blacksmith (Plural)", "Blacksmiths"),	WorldTile2(5, 8),	ResourceEnum::Iron, ResourceEnum::Wood, ResourceEnum::SteelTools,		 10, 2,	{50,50,50},	LOCTEXT("Blacksmith Desc", "Forge Tools from Iron Bars and Wood.")),
+	BldInfo(CardEnum::Herbalist,		LOCTEXT("Herbalist", "Herbalist"),			LOCTEXT("Herbalist (Plural)", "Herbalists"),			WorldTile2(4, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 10, 2,	{50,30,0},	FText()),
+	BldInfo(CardEnum::MedicineMaker,	LOCTEXT("Medicine Maker", "Medicine Maker"),LOCTEXT("Medicine Maker (Plural)", "Medicine Makers"),		WorldTile2(4, 4),	ResourceEnum::Herb, ResourceEnum::None, ResourceEnum::Medicine,		 10, 2,	{50,50,50},	LOCTEXT("Medicine Maker Desc", "Make Medicine from Medicinal Herb.")),
 
 	
-	BldInfo(CardEnum::FurnitureWorkshop,LOCTEXT("Furniture Workshop", "Furniture Workshop"),	WorldTile2(6, 7),	ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::Furniture,	 10, 2,	{50,20,0},	LOCTEXT("Furniture Workshop Desc", "Make Furniture from Wood.")),
-	BldInfo(CardEnum::Chocolatier,	LOCTEXT("Chocolatier", "Chocolatier"),			WorldTile2(6, 8),	ResourceEnum::Cocoa, ResourceEnum::Milk, ResourceEnum::Chocolate,	 10, 5,	{30, 30, 80},	LOCTEXT("Chocolatier Desc", "Make Chocolate from Milk and Cocoa.")),
+	BldInfo(CardEnum::FurnitureWorkshop,LOCTEXT("Furniture Workshop", "Furniture Workshop"),LOCTEXT("Furniture Workshop (Plural)", "Furniture Workshops"),	WorldTile2(6, 7),	ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::Furniture,	 10, 2,	{50,20,0},	LOCTEXT("Furniture Workshop Desc", "Make Furniture from Wood.")),
+	BldInfo(CardEnum::Chocolatier,	LOCTEXT("Chocolatier", "Chocolatier"),					LOCTEXT("Chocolatier (Plural)", "Chocolatiers"),			WorldTile2(6, 8),	ResourceEnum::Cocoa, ResourceEnum::Milk, ResourceEnum::Chocolate,	 10, 5,	{30, 30, 80},	LOCTEXT("Chocolatier Desc", "Make Chocolate from Milk and Cocoa.")),
 
 	// Decorations
-	BldInfo(CardEnum::Garden,		LOCTEXT("Garden", "Garden"),				WorldTile2(4, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{30,0,0},	LOCTEXT("Garden Desc", "Increase the surrounding appeal by 5 within 5 tiles radius.")),
+	BldInfo(CardEnum::Garden,		LOCTEXT("Garden", "Garden"),			LOCTEXT("Garden (Plural)", "Gardens"),				WorldTile2(4, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{30,0,0},	LOCTEXT("Garden Desc", "Increase the surrounding appeal by 5 within 5 tiles radius.")),
 	
-	BldInfo(CardEnum::BoarBurrow,	LOCTEXT("Boar Burrow", "Boar Burrow"),	WorldTile2(3, 3),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,0,0},	LOCTEXT("Boar Burrow Desc", "A cozy burrow occupied by a Boar family.")),
+	BldInfo(CardEnum::BoarBurrow,	LOCTEXT("Boar Burrow", "Boar Burrow"), LOCTEXT("Boar Burrow (Plural)", "Boar Burrows"),	WorldTile2(3, 3),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,0,0},	LOCTEXT("Boar Burrow Desc", "A cozy burrow occupied by a Boar family.")),
 
-	BldInfo(CardEnum::DirtRoad,		LOCTEXT("Dirt Road", "Dirt Road"),			WorldTile2(1, 1),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,0,0},	LOCTEXT("Dirt Road Desc", "A crude road.\n +20% movement speed.")),
-	BldInfo(CardEnum::StoneRoad,		LOCTEXT("Stone Road", "Stone Road"),			WorldTile2(1, 1),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,2,0},	LOCTEXT("Stone Road Desc", "A sturdy road.\n +30% movement speed.")),
-	BldInfo(CardEnum::TrapSpike,		INVTEXT("Spike Trap"),			WorldTile2(1, 1),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{10,0,0},	INVTEXT("Trap that can be used to hurt/disable animals or humans.")),
+	BldInfo(CardEnum::DirtRoad,		LOCTEXT("Dirt Road", "Dirt Road"),		LOCTEXT("Dirt Road (Plural)", "Dirt Road"),			WorldTile2(1, 1),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,0,0},	LOCTEXT("Dirt Road Desc", "A crude road.\n +20% movement speed.")),
+	BldInfo(CardEnum::StoneRoad,		LOCTEXT("Stone Road", "Stone Road"),	LOCTEXT("Stone Road (Plural)", "Stone Road"),			WorldTile2(1, 1),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,2,0},	LOCTEXT("Stone Road Desc", "A sturdy road.\n +30% movement speed.")),
+	BldInfo(CardEnum::TrapSpike,		INVTEXT("Spike Trap"),					FText(),			WorldTile2(1, 1),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{10,0,0},	INVTEXT("Trap that can be used to hurt/disable animals or humans.")),
 
-	BldInfo(CardEnum::Fisher,		LOCTEXT("Fishing Lodge", "Fishing Lodge"),		WorldTile2(6, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::Fish,		 10, 2,	{70,0,0},	LOCTEXT("Fishing Lodge Desc", "Catch Fish from seas, lakes or rivers.")),
-	BldInfo(CardEnum::BlossomShrine,	LOCTEXT("Blossom Shrine", "Blossom Shrine"),		WorldTile2(3, 3),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,10,0}, FText()),
-	BldInfo(CardEnum::Winery,		LOCTEXT("Winery", "Winery"),		WorldTile2(6, 6),	ResourceEnum::Grape, ResourceEnum::None, ResourceEnum::Wine,	10, 5,	{200,0,50},	LOCTEXT("Winery Desc", "Ferment Grapes into Wine.")),
+	BldInfo(CardEnum::Fisher,		LOCTEXT("Fishing Lodge", "Fishing Lodge"), LOCTEXT("Fishing Lodge (Plural)", "Fishing Lodges"),		WorldTile2(6, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::Fish,		 10, 2,	{70,0,0},	LOCTEXT("Fishing Lodge Desc", "Catch Fish from seas, lakes or rivers.")),
+	BldInfo(CardEnum::BlossomShrine,	LOCTEXT("Blossom Shrine", "Blossom Shrine"),			LOCTEXT("Blossom Shrine (Plural)", "Blossom Shrines"),		WorldTile2(3, 3),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,10,0}, FText()),
+	BldInfo(CardEnum::Winery,		LOCTEXT("Winery", "Winery"),	LOCTEXT("Winery (Plural)", "Wineries"),		WorldTile2(6, 6),	ResourceEnum::Grape, ResourceEnum::None, ResourceEnum::Wine,	10, 5,	{200,0,50},	LOCTEXT("Winery Desc", "Ferment Grapes into Wine.")),
 
-	BldInfo(CardEnum::Library,		LOCTEXT("Library", "Library"),				WorldTile2(4, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{80,20,0},	LOCTEXT("Library Desc", "+2 <img id=\"Science\"/> for surrounding level 2+ houses (effect doesn't stack).")),
-	BldInfo(CardEnum::School,		LOCTEXT("School", "School"),		WorldTile2(4, 7),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{80,50,10},	LOCTEXT("School Desc", "+3 <img id=\"Science\"/> for surrounding level 3+ houses (effect doesn't stack).")),
+	BldInfo(CardEnum::Library,		LOCTEXT("Library", "Library"),	LOCTEXT("Library (Plural)", "Libraries"),				WorldTile2(4, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{80,20,0},	LOCTEXT("Library Desc", "+2 <img id=\"Science\"/> for surrounding level 2+ houses (effect doesn't stack).")),
+	BldInfo(CardEnum::School,		LOCTEXT("School", "School"),	LOCTEXT("School (Plural)", "Schools"),		WorldTile2(4, 7),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{80,50,10},	LOCTEXT("School Desc", "+3 <img id=\"Science\"/> for surrounding level 3+ houses (effect doesn't stack).")),
 
-	BldInfo(CardEnum::Theatre,		LOCTEXT("Theatre", "Theatre"),				WorldTile2(7, 6),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{80,30,0},	LOCTEXT("Theatre Desc", "Increase visitor's Fun. Visitors must live in a level 2+ house. Service quality 120.")),
-	BldInfo(CardEnum::Tavern,		LOCTEXT("Tavern", "Tavern"),				WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{50,30,0},	LOCTEXT("Tavern Desc", "Increase visitor's Fun. Service quality 90.")),
+	BldInfo(CardEnum::Theatre,		LOCTEXT("Theatre", "Theatre"),	LOCTEXT("Theatre (Plural)", "Theatres"),				WorldTile2(7, 6),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{80,30,0},	LOCTEXT("Theatre Desc", "Increase visitor's Fun. Visitors must live in a level 2+ house. Service quality 120.")),
+	BldInfo(CardEnum::Tavern,		LOCTEXT("Tavern", "Tavern"),	LOCTEXT("Tavern (Plural)", "Taverns"),				WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{50,30,0},	LOCTEXT("Tavern Desc", "Increase visitor's Fun. Service quality 90.")),
 
-	BldInfo(CardEnum::Tailor,		LOCTEXT("Tailor", "Tailor"),				WorldTile2(5, 6),	ResourceEnum::Leather, ResourceEnum::None, ResourceEnum::Cloth,	 10, 4,	{120, 100, 30},	LOCTEXT("Tailor Desc", "Make Clothes from Leather or Wool.")),
+	BldInfo(CardEnum::Tailor,		LOCTEXT("Tailor", "Tailor"),	LOCTEXT("Tailor (Plural)", "Tailors"),				WorldTile2(5, 6),	ResourceEnum::Leather, ResourceEnum::None, ResourceEnum::Cloth,	 10, 4,	{120, 100, 30},	LOCTEXT("Tailor Desc", "Make Clothes from Leather or Wool.")),
 
-	BldInfo(CardEnum::CharcoalMaker,LOCTEXT("Charcoal Burner", "Charcoal Burner"),		WorldTile2(4, 5),	ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::Coal,		 10, 2,	{40,0,0},		LOCTEXT("Charcoal Burner Desc", "Burn Wood into Coal which provides x2 heat when heating houses.")),
-	BldInfo(CardEnum::BeerBrewery,	LOCTEXT("Beer Brewery", "Beer Brewery"),			WorldTile2(5, 5),	ResourceEnum::Wheat, ResourceEnum::None, ResourceEnum::Beer,		 10, 2,	{40,30,0},		LOCTEXT("Beer Brewery Desc", "Brew Wheat into Beer.")),
-	BldInfo(CardEnum::ClayPit,		LOCTEXT("Claypit", "Claypit"),				WorldTile2(6, 6),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::Clay,		 10, 2,	{20,20,0},		LOCTEXT("Claypit Desc", "Produce Clay, used to make Pottery or Brick. Must be built next to a river.")),
-	BldInfo(CardEnum::Potter,		LOCTEXT("Potter", "Potter"),				WorldTile2(5, 4),	ResourceEnum::Clay, ResourceEnum::None, ResourceEnum::Pottery,		 10, 2,	{20,40,0},		LOCTEXT("Potter Desc", "Make Pottery from Clay.")),
-	BldInfo(CardEnum::HolySlimeRanch,INVTEXT("Holy Slime Ranch"),		WorldTile2(10, 10),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 10, 0,	{30,0,0},		INVTEXT("Raise holy slime. Bonus from nearby slime ranches/pyramid")),
+	BldInfo(CardEnum::CharcoalMaker,LOCTEXT("Charcoal Burner", "Charcoal Burner"), LOCTEXT("Charcoal Burner (Plural)", "Charcoal Burners"),		WorldTile2(4, 5),	ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::Coal,		 10, 2,	{40,0,0},		LOCTEXT("Charcoal Burner Desc", "Burn Wood into Coal which provides x2 heat when heating houses.")),
+	BldInfo(CardEnum::BeerBrewery,	LOCTEXT("Beer Brewery", "Beer Brewery"),		LOCTEXT("Beer Brewery (Plural)", "Beer Breweries"),			WorldTile2(5, 5),	ResourceEnum::Wheat, ResourceEnum::None, ResourceEnum::Beer,		 10, 2,	{40,30,0},		LOCTEXT("Beer Brewery Desc", "Brew Wheat into Beer.")),
+	BldInfo(CardEnum::ClayPit,		LOCTEXT("Claypit", "Claypit"),					LOCTEXT("Claypit (Plural)", "Claypits"),				WorldTile2(6, 6),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::Clay,		 10, 2,	{20,20,0},		LOCTEXT("Claypit Desc", "Produce Clay, used to make Pottery or Brick. Must be built next to a river.")),
+	BldInfo(CardEnum::Potter,		LOCTEXT("Potter", "Potter"),					LOCTEXT("Potter (Plural)", "Potters"),				WorldTile2(5, 4),	ResourceEnum::Clay, ResourceEnum::None, ResourceEnum::Pottery,		 10, 2,	{20,40,0},		LOCTEXT("Potter Desc", "Make Pottery from Clay.")),
+	BldInfo(CardEnum::HolySlimeRanch,INVTEXT("Holy Slime Ranch"),					FText(),		WorldTile2(10, 10),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 10, 0,	{30,0,0},		INVTEXT("Raise holy slime. Bonus from nearby slime ranches/pyramid")),
 
-	BldInfo(CardEnum::TradingPost,	LOCTEXT("Trading Post", "Trading Post"),			WorldTile2(8, 8),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{50, 50, 0},	LOCTEXT("Trading Post Desc", "Trade resources with world market.")),
-	BldInfo(CardEnum::TradingCompany,LOCTEXT("Trading Company", "Trading Company"),		WorldTile2(6, 6),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{30, 30, 0},	LOCTEXT("Trading Company Desc", "Automatically trade resources with world market at lower fees.")),
-	BldInfo(CardEnum::TradingPort,	LOCTEXT("Trading Port", "Trading Port"),			WorldTile2(10, 9),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{50, 50, 0},	LOCTEXT("Trading Port Desc", "Trade resources with world market. Must be built on the coast.")),
-	BldInfo(CardEnum::CardMaker,		LOCTEXT("Scholars Office", "Scholars Office"),		WorldTile2(5, 5),	ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None,		 0, 2,	{50, 50, 50},	LOCTEXT("Scholars Office Desc", "Craft a Card from Paper.")),
-	BldInfo(CardEnum::ImmigrationOffice,	LOCTEXT("Immigration Office", "Immigration Office"), WorldTile2(5, 6),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 2,	{50, 0, 0},	LOCTEXT("Immigration Office Desc", "Attract new immigrants.")),
+	BldInfo(CardEnum::TradingPost,	LOCTEXT("Trading Post", "Trading Post"),		LOCTEXT("Trading Post (Plural)", "Trading Posts"),			WorldTile2(8, 8),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{50, 50, 0},	LOCTEXT("Trading Post Desc", "Trade resources with world market.")),
+	BldInfo(CardEnum::TradingCompany,LOCTEXT("Trading Company", "Trading Company"), LOCTEXT("Trading Company (Plural)", "Trading Companies"),		WorldTile2(6, 6),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{30, 30, 0},	LOCTEXT("Trading Company Desc", "Automatically trade resources with world market at lower fees.")),
+	BldInfo(CardEnum::TradingPort,	LOCTEXT("Trading Port", "Trading Port"),		LOCTEXT("Trading Port (Plural)", "Trading Ports"),			WorldTile2(10, 9),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{50, 50, 0},	LOCTEXT("Trading Port Desc", "Trade resources with world market. Must be built on the coast.")),
+	BldInfo(CardEnum::CardMaker,		LOCTEXT("Scholars Office", "Scholars Office"), LOCTEXT("Scholars Office (Plural)", "Scholars Offices"),		WorldTile2(5, 5),	ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None,		 0, 2,	{50, 50, 50},	LOCTEXT("Scholars Office Desc", "Craft a Card from Paper.")),
+	BldInfo(CardEnum::ImmigrationOffice,	LOCTEXT("Immigration Office", "Immigration Office"), LOCTEXT("Immigration Office (Plural)", "Immigration Offices"), WorldTile2(5, 6),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 2,	{50, 0, 0},	LOCTEXT("Immigration Office Desc", "Attract new immigrants.")),
 
-	BldInfo(CardEnum::ThiefGuild,	LOCTEXT("Thief Guild", "Thief Guild"),			WorldTile2(5, 7),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{50,0,0},	FText()),
-	BldInfo(CardEnum::SlimePyramid,	LOCTEXT("Pyramid", "Pyramid"),				WorldTile2(14, 14),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{50,0,0},	FText()),
+	BldInfo(CardEnum::ThiefGuild,	LOCTEXT("Thief Guild", "Thief Guild"),	LOCTEXT("Thief Guild (Plural)", "Thief Guilds"),			WorldTile2(5, 7),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{50,0,0},	FText()),
+	BldInfo(CardEnum::SlimePyramid,	LOCTEXT("Pyramid", "Pyramid"),			LOCTEXT("Pyramid (Plural)", "Pyramids"),				WorldTile2(14, 14),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{50,0,0},	FText()),
 
-	BldInfo(CardEnum::LovelyHeartStatue, INVTEXT("LovelyHeartStatue"), WorldTile2(4, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,0,0},	INVTEXT("Mysterious giant hearts.")),
+	BldInfo(CardEnum::LovelyHeartStatue, INVTEXT("LovelyHeartStatue"),		FText(), WorldTile2(4, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,0,0},	INVTEXT("Mysterious giant hearts.")),
 
-	BldInfo(CardEnum::HuntingLodge,	LOCTEXT("Hunting Lodge", "Hunting Lodge"),		WorldTile2(4, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 2,	{30,0,0},	LOCTEXT("Hunting Lodge Desc", "Hunt wild animals for food.")),
-	BldInfo(CardEnum::RanchBarn,	INVTEXT("Ranch Barn"),			WorldTile2(4, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 1,	{50,20,0},	FText()),
+	BldInfo(CardEnum::HuntingLodge,	LOCTEXT("Hunting Lodge", "Hunting Lodge"), LOCTEXT("Hunting Lodge (Plural)", "Hunting Lodges"),		WorldTile2(4, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 2,	{30,0,0},	LOCTEXT("Hunting Lodge Desc", "Hunt wild animals for food.")),
+	BldInfo(CardEnum::RanchBarn,	INVTEXT("Ranch Barn"),						FText(),			WorldTile2(4, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 1,	{50,20,0},	FText()),
 
-	BldInfo(CardEnum::RanchPig,		LOCTEXT("Pig Ranch", "Pig Ranch"),			WorldTile2(16, 16),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 1,	{30,10,0},	LOCTEXT("Pig Ranch Desc", "Rear Pigs for food.")),
-	BldInfo(CardEnum::RanchSheep,	LOCTEXT("Sheep Ranch", "Sheep Ranch"),			WorldTile2(16, 16),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 1,	{30,20,0},	LOCTEXT("Sheep Ranch Desc", "Rear Sheep for food and Wool.")),
-	BldInfo(CardEnum::RanchCow,		LOCTEXT("Cattle Ranch", "Cattle Ranch"),			WorldTile2(16, 16),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,	0, 1,	{30,10,10},	LOCTEXT("Cattle Ranch Desc", "Rear Dairy Cows for Milk")),
+	BldInfo(CardEnum::RanchPig,		LOCTEXT("Pig Ranch", "Pig Ranch"),		LOCTEXT("Pig Ranch (Plural)", "Pig Ranches"),			WorldTile2(16, 16),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 1,	{30,10,0},	LOCTEXT("Pig Ranch Desc", "Rear Pigs for food.")),
+	BldInfo(CardEnum::RanchSheep,	LOCTEXT("Sheep Ranch", "Sheep Ranch"),	LOCTEXT("Sheep Ranch (Plural)", "Sheep Ranches"),			WorldTile2(16, 16),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 1,	{30,20,0},	LOCTEXT("Sheep Ranch Desc", "Rear Sheep for food and Wool.")),
+	BldInfo(CardEnum::RanchCow,		LOCTEXT("Cattle Ranch", "Cattle Ranch"), LOCTEXT("Cattle Ranch (Plural)", "Cattle Ranches"),			WorldTile2(16, 16),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,	0, 1,	{30,10,10},	LOCTEXT("Cattle Ranch Desc", "Rear Dairy Cows for Milk")),
 
 	
-	BldInfo(CardEnum::GoldSmelter,	LOCTEXT("Gold Smelter", "Gold Smelter"),			WorldTile2(5, 6),	ResourceEnum::Coal,ResourceEnum::GoldOre,ResourceEnum::GoldBar,	 10, 5,	{120,120,0},	LOCTEXT("Gold Smelter Desc", "Smelt Gold Ores into Gold Bars.")),
-	BldInfo(CardEnum::Mint,			LOCTEXT("Mint", "Mint"),					WorldTile2(4, 6),	ResourceEnum::GoldBar,ResourceEnum::None,ResourceEnum::None,		 0, 2,	{120,120,0},	LOCTEXT("Mint Desc", "Mint Gold Bars into <img id=\"Coin\"/>.")),
+	BldInfo(CardEnum::GoldSmelter,	LOCTEXT("Gold Smelter", "Gold Smelter"), LOCTEXT("Gold Smelter (Plural)", "Gold Smelters"),			WorldTile2(5, 6),	ResourceEnum::Coal,ResourceEnum::GoldOre,ResourceEnum::GoldBar,	 10, 5,	{120,120,0},	LOCTEXT("Gold Smelter Desc", "Smelt Gold Ores into Gold Bars.")),
+	BldInfo(CardEnum::Mint,			LOCTEXT("Mint", "Mint"),				LOCTEXT("Mint (Plural)", "Mints"),					WorldTile2(4, 6),	ResourceEnum::GoldBar,ResourceEnum::None,ResourceEnum::None,		 0, 2,	{120,120,0},	LOCTEXT("Mint Desc", "Mint Gold Bars into <img id=\"Coin\"/>.")),
 
-	BldInfo(CardEnum::BarrackClubman,	LOCTEXT("Clubman Barracks", "Clubman Barracks"),	WorldTile2(7, 7),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 2,	{30,0,0},	LOCTEXT("Clubman Barracks Desc", "Train Clubmen.")),
-	BldInfo(CardEnum::BarrackSwordman,	LOCTEXT("Knight Barracks", "Knight Barracks"),	WorldTile2(7, 7),	ResourceEnum::Iron, ResourceEnum::None, ResourceEnum::None,		0, 4,	{80,30,30},	LOCTEXT("Knight Barracks Desc", "Consume Iron to increase <img id=\"Influence\"/>.")),
-	BldInfo(CardEnum::BarrackArcher,	LOCTEXT("Archer Barracks", "Archer Barracks"),	WorldTile2(7, 7),	ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::None,		0, 2,	{50,30,0},	LOCTEXT("Archer Barracks Desc", "Consume Wood to increase <img id=\"Influence\"/>.")),
+	BldInfo(CardEnum::BarrackClubman,	LOCTEXT("Clubman Barracks", "Clubman Barracks"), LOCTEXT("Clubman Barracks (Plural)", "Clubman Barracks"),	WorldTile2(7, 7),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 2,	{30,0,0},	LOCTEXT("Clubman Barracks Desc", "Train Clubmen.")),
+	BldInfo(CardEnum::BarrackSwordman,	LOCTEXT("Knight Barracks", "Knight Barracks"), LOCTEXT("Knight Barracks (Plural)", "Knight Barracks"),	WorldTile2(7, 7),	ResourceEnum::Iron, ResourceEnum::None, ResourceEnum::None,		0, 4,	{80,30,30},	LOCTEXT("Knight Barracks Desc", "Consume Iron to increase <img id=\"Influence\"/>.")),
+	BldInfo(CardEnum::BarrackArcher,	LOCTEXT("Archer Barracks", "Archer Barracks"), LOCTEXT("Archer Barracks (Plural)", "Archer Barracks"),	WorldTile2(7, 7),	ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::None,		0, 2,	{50,30,0},	LOCTEXT("Archer Barracks Desc", "Consume Wood to increase <img id=\"Influence\"/>.")),
 
-	BldInfo(CardEnum::ShrineWisdom,	LOCTEXT("Shrine of Wisdom", "Shrine of Wisdom"),		WorldTile2(4, 4),	ResourceEnum::None,ResourceEnum::None,ResourceEnum::None,	 0, 0,	{0, 50, 0},	INVTEXT("+1 Wild Card to the deck.")),
-	BldInfo(CardEnum::ShrineLove,	LOCTEXT("Shrine of Love", "Shrine of Love"),		WorldTile2(4, 4),	ResourceEnum::None,ResourceEnum::None,ResourceEnum::None,		 0, 0,	{0, 80, 10},	INVTEXT("+5<img id=\"Smile\"/> to surrounding houses.")),
-	BldInfo(CardEnum::ShrineGreed,	LOCTEXT("Shrine of Greed", "Shrine of Greed"),		WorldTile2(4, 4),	ResourceEnum::None,ResourceEnum::None,ResourceEnum::None,		 0, 0,	{0, 80, 10},	INVTEXT("+20<img id=\"Coin\"/> per round and -5<img id=\"Smile\"/> to surrounding houses.")),
+	BldInfo(CardEnum::ShrineWisdom,	LOCTEXT("Shrine of Wisdom", "Shrine of Wisdom"),	LOCTEXT("Shrine of Wisdom (Plural)", "Shrines of Wisdom"),		WorldTile2(4, 4),	ResourceEnum::None,ResourceEnum::None,ResourceEnum::None,	 0, 0,	{0, 50, 0},	INVTEXT("+1 Wild Card to the deck.")),
+	BldInfo(CardEnum::ShrineLove,	LOCTEXT("Shrine of Love", "Shrine of Love"),		LOCTEXT("Shrine of Love (Plural)", "Shrines of Love"),		WorldTile2(4, 4),	ResourceEnum::None,ResourceEnum::None,ResourceEnum::None,		 0, 0,	{0, 80, 10},	INVTEXT("+5<img id=\"Smile\"/> to surrounding houses.")),
+	BldInfo(CardEnum::ShrineGreed,	LOCTEXT("Shrine of Greed", "Shrine of Greed"),		LOCTEXT("Shrine of Greed (Plural)", "Shrines of Greed"),		WorldTile2(4, 4),	ResourceEnum::None,ResourceEnum::None,ResourceEnum::None,		 0, 0,	{0, 80, 10},	INVTEXT("+20<img id=\"Coin\"/> per round and -5<img id=\"Smile\"/> to surrounding houses.")),
 
 
-	BldInfo(CardEnum::HellPortal,	LOCTEXT("Hell Portal", "Hell Portal"),			WorldTile2(6, 6),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 0,	{100,100,50},	INVTEXT("Open a portal to hell to harvest its riches. Gain 200 <img id=\"Coin\"/> each round, but may explode letting demons through."), INVTEXT("Gain 200 <img id=\"Coin\"/> each round, but may explode letting demons through.")),
-	BldInfo(CardEnum::LaborerGuild,	LOCTEXT("Laborer's Guild", "Laborer's Guild"),	WorldTile2(4, 6),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 0,	{20, 0, 0},	LOCTEXT("Laborer's Guild Desc", "Dispatch laborers to haul resources and cut trees. Laborers from the guild has x2 inventory carry capacity.")),
+	BldInfo(CardEnum::HellPortal,	LOCTEXT("Hell Portal", "Hell Portal"),			LOCTEXT("Hell Portal (Plural)", "Hell Portals"),			WorldTile2(6, 6),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 0,	{100,100,50},	INVTEXT("Open a portal to hell to harvest its riches. Gain 200 <img id=\"Coin\"/> each round, but may explode letting demons through."), INVTEXT("Gain 200 <img id=\"Coin\"/> each round, but may explode letting demons through.")),
+	BldInfo(CardEnum::LaborerGuild,	LOCTEXT("Laborer's Guild", "Laborer's Guild"),				LOCTEXT("Laborer's Guild (Plural)", "Laborer's Guilds"),	WorldTile2(4, 6),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 0,	{20, 0, 0},	LOCTEXT("Laborer's Guild Desc", "Dispatch laborers to haul resources and cut trees. Laborers from the guild has x2 inventory carry capacity.")),
 
-	BldInfo(CardEnum::HumanitarianAidCamp,	LOCTEXT("Humanitarian Aid Camp", "Humanitarian Aid Camp"),	WorldTile2(4, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, {0, 0, 0}, LOCTEXT("Humanitarian Aid Camp Desc", "Supply your neighbor with 100 food.")),
+	BldInfo(CardEnum::HumanitarianAidCamp,	LOCTEXT("Humanitarian Aid Camp", "Humanitarian Aid Camp"),	LOCTEXT("Humanitarian Aid Camp (Plural)", "Humanitarian Aid Camps"),	WorldTile2(4, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, {0, 0, 0}, LOCTEXT("Humanitarian Aid Camp Desc", "Supply your neighbor with 100 food.")),
 
-	BldInfo(CardEnum::RegionTribalVillage, LOCTEXT("Tribal Village", "Tribal Village"), WorldTile2(9, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, {0, 0, 0}, LOCTEXT("Tribal Village Desc", "Tribal village that might want to join your city.")),
-	BldInfo(CardEnum::RegionShrine, LOCTEXT("Ancient Shrine", "Ancient Shrine"), WorldTile2(4, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, {0, 0, 0}, LOCTEXT("Ancient Shrine Desc", "Shrines built by the ancients that grants wisdom to those who seek it.")),
-	BldInfo(CardEnum::RegionPort,	LOCTEXT("Port Settlement", "Port Settlement"), WorldTile2(12, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, {0, 0, 0}, INVTEXT("Port settlement specialized in trading certain resources.")),
-	BldInfo(CardEnum::RegionCrates, LOCTEXT("Crates", "Crates"),			WorldTile2(4, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, {0, 0, 0}, LOCTEXT("Crates Desc", "Crates that may contain valuable resources.")),
+	BldInfo(CardEnum::RegionTribalVillage, LOCTEXT("Tribal Village", "Tribal Village"), LOCTEXT("Tribal Village (Plural)", "Tribal Villages"), WorldTile2(9, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, {0, 0, 0}, LOCTEXT("Tribal Village Desc", "Tribal village that might want to join your city.")),
+	BldInfo(CardEnum::RegionShrine, LOCTEXT("Ancient Shrine", "Ancient Shrine"),		LOCTEXT("Ancient Shrine (Plural)", "Ancient Shrines"), WorldTile2(4, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, {0, 0, 0}, LOCTEXT("Ancient Shrine Desc", "Shrines built by the ancients that grants wisdom to those who seek it.")),
+	BldInfo(CardEnum::RegionPort,	LOCTEXT("Port Settlement", "Port Settlement"),		LOCTEXT("Port Settlement (Plural)", "Port Settlements"), WorldTile2(12, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, {0, 0, 0}, INVTEXT("Port settlement specialized in trading certain resources.")),
+	BldInfo(CardEnum::RegionCrates, LOCTEXT("Crates", "Crates"),						LOCTEXT("Crates (Plural)", "Crates"), WorldTile2(4, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, {0, 0, 0}, LOCTEXT("Crates Desc", "Crates that may contain valuable resources.")),
 
 	// June 1 addition
-	BldInfo(CardEnum::Windmill, LOCTEXT("Windmill", "Windmill"), WorldTile2(5, 5), ResourceEnum::Wheat, ResourceEnum::None, ResourceEnum::Flour, 10, 2, { 150,0,0 }, LOCTEXT("Windmill Desc", "Grinds Wheat into Wheat Flour. +10% Productivity to surrounding Farms.")),
-	BldInfo(CardEnum::Bakery,	LOCTEXT("Bakery", "Bakery"), WorldTile2(5, 5), ResourceEnum::Flour, ResourceEnum::Coal, ResourceEnum::Bread, 30, 2, { 70,30,0 }, LOCTEXT("Bakery Desc", "Bakes Bread with Wheat Flour and heat.")),
-	BldInfo(CardEnum::GemstoneMine, LOCTEXT("Gemstone Mine", "Gemstone Mine"), WorldTile2(5, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::Gemstone, 10, 3, { 70,30,0 }, LOCTEXT("Gemstone Mine Desc", "Mine Gemstone from Gemstone Deposits.")),
-	BldInfo(CardEnum::Jeweler, LOCTEXT("Jeweler", "Jeweler"), WorldTile2(4, 7), ResourceEnum::Gemstone, ResourceEnum::GoldBar, ResourceEnum::Jewelry, 10, 3, { 150, 70, 70 }, LOCTEXT("Jeweler Desc", "Craft Gemstone and Gold Bar into Jewelry.")),
+	BldInfo(CardEnum::Windmill, LOCTEXT("Windmill", "Windmill"),				LOCTEXT("Windmill (Plural)", "Windmills"), WorldTile2(5, 5), ResourceEnum::Wheat, ResourceEnum::None, ResourceEnum::Flour, 10, 2, { 150,0,0 }, LOCTEXT("Windmill Desc", "Grinds Wheat into Wheat Flour. +10% Productivity to surrounding Farms.")),
+	BldInfo(CardEnum::Bakery,	LOCTEXT("Bakery", "Bakery"),					LOCTEXT("Bakery (Plural)", "Bakeries"), WorldTile2(5, 5), ResourceEnum::Flour, ResourceEnum::Coal, ResourceEnum::Bread, 30, 2, { 70,30,0 }, LOCTEXT("Bakery Desc", "Bakes Bread with Wheat Flour and heat.")),
+	BldInfo(CardEnum::GemstoneMine, LOCTEXT("Gemstone Mine", "Gemstone Mine"),	LOCTEXT("Gemstone Mine (Plural)", "Gemstone Mines"), WorldTile2(5, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::Gemstone, 10, 3, { 70,30,0 }, LOCTEXT("Gemstone Mine Desc", "Mine Gemstone from Gemstone Deposits.")),
+	BldInfo(CardEnum::Jeweler, LOCTEXT("Jeweler", "Jeweler"),					LOCTEXT("Jeweler (Plural)", "Jewelers"), WorldTile2(4, 7), ResourceEnum::Gemstone, ResourceEnum::GoldBar, ResourceEnum::Jewelry, 10, 3, { 150, 70, 70 }, LOCTEXT("Jeweler Desc", "Craft Gemstone and Gold Bar into Jewelry.")),
 
 	// June 9 addition
-	BldInfo(CardEnum::Beekeeper, LOCTEXT("Beekeeper", "Beekeeper"), WorldTile2(6, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::Beeswax, 10, 2, { 50,50,0 }, LOCTEXT("Beekeeper Desc", "Produces Beeswax and Honey. Efficiency increases with more surrounding trees.")),
-	BldInfo(CardEnum::Brickworks, LOCTEXT("Brickworks", "Brickworks"), WorldTile2(6, 5), ResourceEnum::Clay, ResourceEnum::Coal, ResourceEnum::Brick, 20, 3, { 20,100,0 }, LOCTEXT("Brickworks Desc", "Produces Brick from Clay and Coal.")),
-	BldInfo(CardEnum::CandleMaker, LOCTEXT("Candle Maker", "Candle Maker"), WorldTile2(5, 6), ResourceEnum::Beeswax, ResourceEnum::Cotton, ResourceEnum::Candle, 20, 3, { 150, 100, 0 }, LOCTEXT("Candle Maker Desc", "Make Candles from Beeswax and Cotton wicks.")),
-	BldInfo(CardEnum::CottonMill, LOCTEXT("Cotton Mill", "Cotton Mill"), WorldTile2(7, 6), ResourceEnum::Cotton, ResourceEnum::None, ResourceEnum::CottonFabric, 10, 5, { 0, 100, 100 }, LOCTEXT("Cotton Mill Desc", "Mass-produce Cotton into Cotton Fabric.")),
-	BldInfo(CardEnum::PrintingPress, LOCTEXT("Printing Press", "Printing Press"), WorldTile2(5, 6), ResourceEnum::Paper, ResourceEnum::Dye, ResourceEnum::Book, 20, 5, { 0, 150, 100 }, LOCTEXT("Printing Press Desc", "Print Books.")),
+	BldInfo(CardEnum::Beekeeper, LOCTEXT("Beekeeper", "Beekeeper"),				LOCTEXT("Beekeeper (Plural)", "Beekeepers"), WorldTile2(6, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::Beeswax, 10, 2, { 50,50,0 }, LOCTEXT("Beekeeper Desc", "Produces Beeswax and Honey. Efficiency increases with more surrounding trees.")),
+	BldInfo(CardEnum::Brickworks, LOCTEXT("Brickworks", "Brickworks"),			LOCTEXT("Brickworks (Plural)", "Brickworks"), WorldTile2(6, 5), ResourceEnum::Clay, ResourceEnum::Coal, ResourceEnum::Brick, 20, 3, { 20,100,0 }, LOCTEXT("Brickworks Desc", "Produces Brick from Clay and Coal.")),
+	BldInfo(CardEnum::CandleMaker, LOCTEXT("Candle Maker", "Candle Maker"),		LOCTEXT("Candle Maker (Plural)", "Candle Makers"), WorldTile2(5, 6), ResourceEnum::Beeswax, ResourceEnum::Cotton, ResourceEnum::Candle, 20, 3, { 150, 100, 0 }, LOCTEXT("Candle Maker Desc", "Make Candles from Beeswax and Cotton wicks.")),
+	BldInfo(CardEnum::CottonMill, LOCTEXT("Cotton Mill", "Cotton Mill"),		LOCTEXT("Cotton Mill (Plural)", "Cotton Mills"), WorldTile2(7, 6), ResourceEnum::Cotton, ResourceEnum::None, ResourceEnum::CottonFabric, 10, 5, { 0, 100, 100 }, LOCTEXT("Cotton Mill Desc", "Mass-produce Cotton into Cotton Fabric.")),
+	BldInfo(CardEnum::PrintingPress, LOCTEXT("Printing Press", "Printing Press"), LOCTEXT("Printing Press (Plural)", "Printing Presses"), WorldTile2(5, 6), ResourceEnum::Paper, ResourceEnum::Dye, ResourceEnum::Book, 20, 5, { 0, 150, 100 }, LOCTEXT("Printing Press Desc", "Print Books.")),
 
 	// June 25 addition
-	BldInfo(CardEnum::Warehouse, LOCTEXT("Warehouse", "Warehouse"), WorldTile2(6, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 70,70,0 }, LOCTEXT("Warehouse Desc", "Advanced storage with 30 storage slots.")),
-	BldInfo(CardEnum::Fort, LOCTEXT("Fort", "Fort"), WorldTile2(9, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Fort Desc", "+100% province's defense.")),
-	BldInfo(CardEnum::Colony, LOCTEXT("Colony", "Colony"), WorldTile2(10, 10), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Colony Desc", "Extract resource from province.")),
-	BldInfo(CardEnum::InventorsWorkshop, LOCTEXT("Inventor's Workshop", "Inventor's Workshop"), WorldTile2(6, 6), ResourceEnum::Iron, ResourceEnum::None, ResourceEnum::None, 0, 2, { 50,50,0 }, LOCTEXT("Inventor's Workshop Desc", "Generate Science Points. Use Iron Bars as input.")),
-	BldInfo(CardEnum::IntercityRoad, LOCTEXT("Intercity Road", "Intercity Road"), WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Intercity Road Desc", "Build Road to connect with other Cities. Same as Dirt Road, but buildable outside your territory.")),
+	BldInfo(CardEnum::Warehouse, LOCTEXT("Warehouse", "Warehouse"),	LOCTEXT("Warehouse (Plural)", "Warehouses"), WorldTile2(6, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 70,70,0 }, LOCTEXT("Warehouse Desc", "Advanced storage with 30 storage slots.")),
+	BldInfo(CardEnum::Fort, LOCTEXT("Fort", "Fort"),				LOCTEXT("Fort (Plural)", "Forts"), WorldTile2(9, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Fort Desc", "+100% province's defense.")),
+	BldInfo(CardEnum::Colony, LOCTEXT("Colony", "Colony"),							LOCTEXT("Colony (Plural)", "Colonies"), WorldTile2(10, 10), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Colony Desc", "Extract resource from province.")),
+	BldInfo(CardEnum::InventorsWorkshop, LOCTEXT("Inventor's Workshop", "Inventor's Workshop"), LOCTEXT("Inventor's Workshop (Plural)", "Inventor's Workshops"), WorldTile2(6, 6), ResourceEnum::Iron, ResourceEnum::None, ResourceEnum::None, 0, 2, { 50,50,0 }, LOCTEXT("Inventor's Workshop Desc", "Generate Science Points. Use Iron Bars as input.")),
+	BldInfo(CardEnum::IntercityRoad, LOCTEXT("Intercity Road", "Intercity Road"),				LOCTEXT("Intercity Road (Plural)", "Intercity Road"), WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Intercity Road Desc", "Build Road to connect with other Cities. Same as Dirt Road, but buildable outside your territory.")),
 
 	// August 16
-	BldInfo(CardEnum::FakeTownhall, INVTEXT("FakeTownhall"), WorldTile2(12, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, FText()),
-	BldInfo(CardEnum::FakeTribalVillage, INVTEXT("FakeTribalVillage"), WorldTile2(12, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, FText()),
-	BldInfo(CardEnum::ChichenItza, LOCTEXT("Chichen Itza", "Chichen Itza"), WorldTile2(16, 16), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, FText()),
+	BldInfo(CardEnum::FakeTownhall, INVTEXT("FakeTownhall"),			FText(), WorldTile2(12, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, FText()),
+	BldInfo(CardEnum::FakeTribalVillage, INVTEXT("FakeTribalVillage"),	FText(), WorldTile2(12, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, FText()),
+	BldInfo(CardEnum::ChichenItza, LOCTEXT("Chichen Itza", "Chichen Itza"), FText(), WorldTile2(16, 16), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, FText()),
 
 	// October 20
-	BldInfo(CardEnum::Market, LOCTEXT("Market", "Market"), WorldTile2(6, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 5, { 120, 120, 0 }, LOCTEXT("Market Desc", "Supplies anything a household needs within its radius. Workers carry 50 units.")),
-	BldInfo(CardEnum::ShippingDepot, LOCTEXT("Logistics Office", "Logistics Office"), WorldTile2(4, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 1, { 20, 10, 0 }, LOCTEXT("Logistics Office Desc", "Haul specified resources from within the radius to its delivery target in 50-units bulk.")),
-	BldInfo(CardEnum::IrrigationReservoir, LOCTEXT("Irrigation Reservoir", "Irrigation Reservoir"), WorldTile2(5, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0, 150, 0 }, LOCTEXT("Irrigation Reservoir Desc", "Raises fertility within its radius to 100%.")),
+	BldInfo(CardEnum::Market,				LOCTEXT("Market", "Market"),							LOCTEXT("Market (Plural)", "Markets"), WorldTile2(6, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 5, { 120, 120, 0 }, LOCTEXT("Market Desc", "Supplies anything a household needs within its radius. Workers carry 50 units.")),
+	BldInfo(CardEnum::ShippingDepot,		LOCTEXT("Logistics Office", "Logistics Office"),		LOCTEXT("Logistics Office (Plural)", "Logistics Offices"), WorldTile2(4, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 1, { 20, 10, 0 }, LOCTEXT("Logistics Office Desc", "Haul specified resources from within the radius to its delivery target in 50-units bulk.")),
+	BldInfo(CardEnum::IrrigationReservoir, LOCTEXT("Irrigation Reservoir", "Irrigation Reservoir"), LOCTEXT("Irrigation Reservoir (Plural)", "Irrigation Reservoirs"), WorldTile2(5, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0, 150, 0 }, LOCTEXT("Irrigation Reservoir Desc", "Raises fertility within its radius to 100%.")),
 
 	// November 18
-	BldInfo(CardEnum::Tunnel, LOCTEXT("Tunnel", "Tunnel"), WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Tunnel Desc", "Allow citizens to walk through mountain.")),
-	BldInfo(CardEnum::GarmentFactory, LOCTEXT("Garment Factory", "Garment Factory"), WorldTile2(7, 6), ResourceEnum::DyedCottonFabric, ResourceEnum::None, ResourceEnum::LuxuriousClothes, 10, 5, { 0, 100, 100 }, LOCTEXT("Garment Factory Desc", "Mass-produce Clothes with Fabrics.")),
+	BldInfo(CardEnum::Tunnel,		LOCTEXT("Tunnel", "Tunnel"),					LOCTEXT("Tunnel (Plural)", "Tunnels"), WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Tunnel Desc", "Allow citizens to walk through mountain.")),
+	BldInfo(CardEnum::GarmentFactory, LOCTEXT("Garment Factory", "Garment Factory"), LOCTEXT("Garment Factory (Plural)", "Garment Factories"), WorldTile2(7, 6), ResourceEnum::DyedCottonFabric, ResourceEnum::None, ResourceEnum::LuxuriousClothes, 10, 5, { 0, 100, 100 }, LOCTEXT("Garment Factory Desc", "Mass-produce Clothes with Fabrics.")),
 
 	// December 29
-	BldInfo(CardEnum::ShroomFarm, LOCTEXT("Shroom Farm", "Shroom Farm"), WorldTile2(8, 8), ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::Shroom, 20, 2, { 70,70,0 }, LOCTEXT("Shroom Farm Desc", "Farm Shroom using wood.")),
-	BldInfo(CardEnum::VodkaDistillery, LOCTEXT("Vodka Distillery", "Vodka Distillery"), WorldTile2(5, 5), ResourceEnum::Potato, ResourceEnum::None, ResourceEnum::Vodka, 10, 2, { 120,120,0 }, LOCTEXT("Vodka Distillery Desc", "Brew Potato into Vodka.")),
-	BldInfo(CardEnum::CoffeeRoaster, LOCTEXT("Coffee Roaster", "Coffee Roaster"), WorldTile2(6, 6), ResourceEnum::RawCoffee, ResourceEnum::None, ResourceEnum::Coffee, 10, 2, { 150, 100, 0 }, LOCTEXT("Coffee Roaster Desc", "Roast Raw Coffee into Coffee.")),
+	BldInfo(CardEnum::ShroomFarm,		LOCTEXT("Shroom Farm", "Shroom Farm"),			LOCTEXT("Shroom Farm (Plural)", "Shroom Farms"), WorldTile2(8, 8), ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::Shroom, 20, 2, { 70,70,0 }, LOCTEXT("Shroom Farm Desc", "Farm Shroom using wood.")),
+	BldInfo(CardEnum::VodkaDistillery, LOCTEXT("Vodka Distillery", "Vodka Distillery"), LOCTEXT("Vodka Distillery (Plural)", "Vodka Distilleries"), WorldTile2(5, 5), ResourceEnum::Potato, ResourceEnum::None, ResourceEnum::Vodka, 10, 2, { 120,120,0 }, LOCTEXT("Vodka Distillery Desc", "Brew Potato into Vodka.")),
+	BldInfo(CardEnum::CoffeeRoaster, LOCTEXT("Coffee Roaster", "Coffee Roaster"),		LOCTEXT("Coffee Roaster (Plural)", "Coffee Roasters"), WorldTile2(6, 6), ResourceEnum::RawCoffee, ResourceEnum::None, ResourceEnum::Coffee, 10, 2, { 150, 100, 0 }, LOCTEXT("Coffee Roaster Desc", "Roast Raw Coffee into Coffee.")),
 	
 	// Decorations
-	BldInfo(CardEnum::FlowerBed, LOCTEXT("Flower Bed", "Flower Bed"), WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Flower Bed Desc", "Increase the surrounding appeal by 5 within 5 tiles radius.")),
-	BldInfo(CardEnum::GardenShrubbery1, LOCTEXT("Shrubbery", "Shrubbery"), WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Shrubbery Desc", "Increase the surrounding appeal by 5 within 5 tiles radius.")),
-	BldInfo(CardEnum::GardenCypress, LOCTEXT("Garden Cypress", "Garden Cypress"), WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Garden Cypress Desc", "Increase the surrounding appeal by 8 within 5 tiles radius.")),
+	BldInfo(CardEnum::FlowerBed,		LOCTEXT("Flower Bed", "Flower Bed"),		LOCTEXT("Flower Bed (Plural)", "Flower Beds"), WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Flower Bed Desc", "Increase the surrounding appeal by 5 within 5 tiles radius.")),
+	BldInfo(CardEnum::GardenShrubbery1, LOCTEXT("Shrubbery", "Shrubbery"),			LOCTEXT("Shrubbery (Plural)", "Shrubberies"), WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Shrubbery Desc", "Increase the surrounding appeal by 5 within 5 tiles radius.")),
+	BldInfo(CardEnum::GardenCypress,	LOCTEXT("Garden Cypress", "Garden Cypress"), LOCTEXT("Garden Cypress (Plural)", "Garden Cypresses"), WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Garden Cypress Desc", "Increase the surrounding appeal by 8 within 5 tiles radius.")),
 
 	
 	
 	// Rare cards
 	//BldInfo("Sales Office",			WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0,	{20, 20, 0},	"Decrease the amount of trade fee by 50%."),
-	BldInfo(CardEnum::ArchitectStudio, LOCTEXT("Architect's Studio", "Architect's Studio"),	WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 0,	{30, 30, 0}, LOCTEXT("Architect's Studio Desc", "+5% housing appeal.")),
-	BldInfo(CardEnum::EngineeringOffice, LOCTEXT("Engineer's Office", "Engineer's Office"),	WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 0,	{30, 30, 0}, LOCTEXT("Engineer's Office Desc", "+10% industrial production.")),
-	BldInfo(CardEnum::DepartmentOfAgriculture, LOCTEXT("Ministry of Agriculture", "Ministry of Agriculture"), WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 0,	{30, 30, 0}, LOCTEXT("Ministry of Agriculture Desc", "+5% Farm production when there are 8 or more Farms.")),
+	BldInfo(CardEnum::ArchitectStudio,		LOCTEXT("Architect's Studio", "Architect's Studio"),		LOCTEXT("Architect's Studio (Plural)", "Architect's Studios"), WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 0,	{30, 30, 0}, LOCTEXT("Architect's Studio Desc", "+5% housing appeal.")),
+	BldInfo(CardEnum::EngineeringOffice,	LOCTEXT("Engineer's Office", "Engineer's Office"),			LOCTEXT("Engineer's Office (Plural)", "Engineer's Offices"), WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 0,	{30, 30, 0}, LOCTEXT("Engineer's Office Desc", "+10% industrial production.")),
+	BldInfo(CardEnum::DepartmentOfAgriculture, LOCTEXT("Ministry of Agriculture", "Ministry of Agriculture"), FText(), WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 0,	{30, 30, 0}, LOCTEXT("Ministry of Agriculture Desc", "+5% Farm production when there are 8 or more Farms.")),
 	//BldInfo("Isolationist Publisher", WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0,	{20, 20, 0},	"Double trade fees. -10% food consumption."),
 
-	BldInfo(CardEnum::StockMarket,			LOCTEXT("Stock Market", "Stock Market"),			WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 0,	{30, 30, 0}, LOCTEXT("Stock Market Desc", "Upkeep for Trading Companies reduced to 1<img id=\"Coin\"/>.")),
-	BldInfo(CardEnum::CensorshipInstitute, LOCTEXT("Censorship Institute", "Censorship Institute"),		WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 0,	{30, 30, 0}, LOCTEXT("Censorship Institute Desc", "-1 card from each hand roll. +7% Farm production.")),
-	BldInfo(CardEnum::EnvironmentalistGuild, LOCTEXT("Environmentalist Guild", "Environmentalist Guild"), WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 0,	{30, 30, 0}, LOCTEXT("Environmentalist Guild Desc", "+15% house appeal. -30% production for mines, smelters, and Charcoal Makers.")),
-	BldInfo(CardEnum::IndustrialistsGuild, LOCTEXT("Industrialist Guild", "Industrialist Guild"),		WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 0,	{50, 50, 0}, LOCTEXT("Industrialist Guild Desc", "+20% production to surrounding industries within 10 tiles radius.")),
-	BldInfo(CardEnum::Oracle,			LOCTEXT("Oracle", "Oracle"),					WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 0,	{50, 50, 0}, INVTEXT("Gain one additional choice when selecting Rare Cards.")),
-	BldInfo(CardEnum::AdventurersGuild, LOCTEXT("Adventurer's Guild", "Adventurer's Guild"),	WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 0,	{80, 50, 0}, INVTEXT("At the end of summer choose a Rare Card.")),
+	BldInfo(CardEnum::StockMarket,			LOCTEXT("Stock Market", "Stock Market"),					FText(), WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 0,	{30, 30, 0}, LOCTEXT("Stock Market Desc", "Upkeep for Trading Companies reduced to 1<img id=\"Coin\"/>.")),
+	BldInfo(CardEnum::CensorshipInstitute, LOCTEXT("Censorship Institute", "Censorship Institute"),		FText(), WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 0,	{30, 30, 0}, LOCTEXT("Censorship Institute Desc", "-1 card from each hand roll. +7% Farm production.")),
+	BldInfo(CardEnum::EnvironmentalistGuild, LOCTEXT("Environmentalist Guild", "Environmentalist Guild"), FText(), WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 0,	{30, 30, 0}, LOCTEXT("Environmentalist Guild Desc", "+15% house appeal. -30% production for mines, smelters, and Charcoal Makers.")),
+	BldInfo(CardEnum::IndustrialistsGuild, LOCTEXT("Industrialist Guild", "Industrialist Guild"),		FText(), WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 0,	{50, 50, 0}, LOCTEXT("Industrialist Guild Desc", "+20% production to surrounding industries within 10 tiles radius.")),
+	BldInfo(CardEnum::Oracle,			LOCTEXT("Oracle", "Oracle"),									FText(), WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 0,	{50, 50, 0}, INVTEXT("Gain one additional choice when selecting Rare Cards.")),
+	BldInfo(CardEnum::AdventurersGuild, LOCTEXT("Adventurer's Guild", "Adventurer's Guild"),			FText(), WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0, 0,	{80, 50, 0}, INVTEXT("At the end of summer choose a Rare Card.")),
 	
-	BldInfo(CardEnum::ConsultingFirm, INVTEXT("Consulting Firm"),			WorldTile2(4, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 30, 0, 0}, INVTEXT("+30% production to surrounding buildings. -30 <img id=\"Coin\"/> per round")),
-	BldInfo(CardEnum::ImmigrationPropagandaOffice, INVTEXT("Immigration Propaganda Office"), WorldTile2(4, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, {30, 0, 0}, INVTEXT("+30% immigration")),
-	BldInfo(CardEnum::MerchantGuild, INVTEXT("Merchant Guild"),			WorldTile2(4, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 30, 0, 0}, INVTEXT("-5% trade fee.")),
-	BldInfo(CardEnum::OreSupplier, INVTEXT("Ore Supplier Guild"),		WorldTile2(4, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 30, 0, 0}, INVTEXT("Buy selected ore each season with 0% trading fee.")),
-	BldInfo(CardEnum::BeerBreweryFamous, LOCTEXT("Famous Beer Brewery", "Famous Beer Brewery"),		WorldTile2(5, 7),	ResourceEnum::Wheat, ResourceEnum::None, ResourceEnum::Beer,		 10, 8, {150,90,0}, LOCTEXT("Famous Beer Brewery Desc", "Large brewery with improved productivity. Require 4 Beer Breweries to unlock.")),
-	BldInfo(CardEnum::IronSmelterGiant, LOCTEXT("Giant Iron Smelter", "Giant Iron Smelter"), WorldTile2(7, 8), ResourceEnum::IronOre, ResourceEnum::Coal, ResourceEnum::Iron, 10, 8, { 150,90,0 }, INVTEXT("Large smelter.")),
+	BldInfo(CardEnum::ConsultingFirm, INVTEXT("Consulting Firm"),							FText(), WorldTile2(4, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 30, 0, 0}, INVTEXT("+30% production to surrounding buildings. -30 <img id=\"Coin\"/> per round")),
+	BldInfo(CardEnum::ImmigrationPropagandaOffice, INVTEXT("Immigration Propaganda Office"), FText(), WorldTile2(4, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, {30, 0, 0}, INVTEXT("+30% immigration")),
+	BldInfo(CardEnum::MerchantGuild, INVTEXT("Merchant Guild"),								FText(), WorldTile2(4, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 30, 0, 0}, INVTEXT("-5% trade fee.")),
+	BldInfo(CardEnum::OreSupplier, INVTEXT("Ore Supplier Guild"),										FText(), WorldTile2(4, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 30, 0, 0}, INVTEXT("Buy selected ore each season with 0% trading fee.")),
+	BldInfo(CardEnum::BeerBreweryFamous, LOCTEXT("Famous Beer Brewery", "Famous Beer Brewery"),			LOCTEXT("Famous Beer Brewery (Plural)", "Famous Beer Breweries"), WorldTile2(5, 7),	ResourceEnum::Wheat, ResourceEnum::None, ResourceEnum::Beer,		 10, 8, {150,90,0}, LOCTEXT("Famous Beer Brewery Desc", "Large brewery with improved productivity. Require 4 Beer Breweries to unlock.")),
+	BldInfo(CardEnum::IronSmelterGiant, LOCTEXT("Giant Iron Smelter", "Giant Iron Smelter"),			LOCTEXT("Giant Iron Smelter (Plural)", "Giant Iron Smelters"), WorldTile2(7, 8), ResourceEnum::IronOre, ResourceEnum::Coal, ResourceEnum::Iron, 10, 8, { 150,90,0 }, INVTEXT("Large smelter.")),
 
 	
-	BldInfo(CardEnum::Cattery, LOCTEXT("Cattery", "Cattery"),		WorldTile2(4, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 30, 30, 0 }, INVTEXT("+15% housing appeal to surrounding houses.")),
-	BldInfo(CardEnum::InvestmentBank, LOCTEXT("Investment Bank", "Investment Bank"),	WorldTile2(4, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0, 70, 20 }, INVTEXT("Gain <img id=\"Coin\"/> equals to +10% of <img id=\"Coin\"/> every round.")),
+	BldInfo(CardEnum::Cattery,		LOCTEXT("Cattery", "Cattery"),					LOCTEXT("Cattery (Plural)", "Catteries"), WorldTile2(4, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 30, 30, 0 }, INVTEXT("+15% housing appeal to surrounding houses.")),
+	BldInfo(CardEnum::InvestmentBank, LOCTEXT("Investment Bank", "Investment Bank"), LOCTEXT("Investment Bank (Plural)", "Investment Banks"), WorldTile2(4, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0, 70, 20 }, INVTEXT("Gain <img id=\"Coin\"/> equals to +10% of <img id=\"Coin\"/> every round.")),
 
-	// Unique Cards
-	BldInfo(CardEnum::StatisticsBureau, LOCTEXT("Statistics Bureau", "Statistics Bureau"), WorldTile2(4, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 30, 0, 0 }, LOCTEXT("Statistics Bureau Desc", "Show Town Statistics.")),
-	BldInfo(CardEnum::JobManagementBureau, LOCTEXT("Employment Bureau", "Employment Bureau"), WorldTile2(4, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 30, 0, 0 }, LOCTEXT("Employment Bureau Desc", "Allow managing job priority (global)."))
+	// Unique Cards	
+	BldInfo(CardEnum::StatisticsBureau, LOCTEXT("Statistics Bureau", "Statistics Bureau"), FText(), WorldTile2(4, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 30, 0, 0 }, LOCTEXT("Statistics Bureau Desc", "Show Town Statistics.")),
+	BldInfo(CardEnum::JobManagementBureau, LOCTEXT("Employment Bureau", "Employment Bureau"), FText(), WorldTile2(4, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 30, 0, 0 }, LOCTEXT("Employment Bureau Desc", "Allow managing job priority (global)."))
 
 	
 	// Can no longer pickup cards

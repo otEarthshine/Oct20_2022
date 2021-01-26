@@ -676,6 +676,9 @@ public:
 	void SetOverlayProvince(bool showProvinceOverlay) final {
 		_showProvinceOverlay = showProvinceOverlay;
 	}
+	void ToggleOverlayProvince() final {
+		_showProvinceOverlay = !_showProvinceOverlay;
+	}
 	
 
 	bool isCtrlDown() final { return _isCtrlDown; }
@@ -723,6 +726,10 @@ public:
 	FMapSettings GetMapSettings() final {
 		return gameInstance()->GetMapSettings();
 	}
+	bool HasSavedMap(const FMapSettings& mapSettings) final {
+		return gameInstance()->HasSavedMapWithSettings(mapSettings);
+	}
+	
 
 	TArray<FString> GetReplayFileNames() final {
 		return gameInstance()->replayFilesToLoad;

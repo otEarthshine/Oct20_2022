@@ -44,7 +44,12 @@ void ULobbyUI::Init()
 	ChatOverlay->SetVisibility(multiplayerUIVisible);
 	LobbyReadyBox->SetVisibility(multiplayerUIVisible);
 
-	FMapSettings mapSettings = FMapSettings::GetDefault(true);
+
+	FMapSettings mapSettings;
+	bool hasSavedMap = UPunGameInstance::GetSavedMap(mapSettings);
+	if (!hasSavedMap) {
+		mapSettings = FMapSettings::GetDefault(true);
+	}
 	
 	/*
 	 * Loading Multiplayer Saves
@@ -507,7 +512,7 @@ void ULobbyUI::CheckMapReady()
 	if (gameInstance()->IsLoadingSavedGame()) {
 		_isMapReady = true;
 	} else {
-		_isMapReady = PunTerrainGenerator::HasSavedMap(mapSettings);
+		_isMapReady = UPunGameInstance::HasSavedMapWithSettings(mapSettings);
 	}
 }
 

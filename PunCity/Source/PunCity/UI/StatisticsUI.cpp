@@ -53,8 +53,8 @@ void UStatisticsUI::InitStatisticsUI()
 		{ LOCTEXT("Fuel", "Fuel").ToString(), PlotStatEnum::Fuel, FLinearColor(1, 1, 0.3) },
 	});
 	AddSeries(FoodUsageGraph, {
-		{ LOCTEXT("Food Production", "Food Production").ToString(), PlotStatEnum::FoodProduction, FLinearColor(0.3, 1, 0.3) },
-		{ LOCTEXT("Food Consumption", "Food Consumption").ToString(), PlotStatEnum::FoodConsumption, FLinearColor(1, 0.3, 0.3) },
+		{ LOCTEXT("Food Production (per season)", "Food Production (per season)").ToString(), PlotStatEnum::FoodProduction, FLinearColor(0.3, 1, 0.3) },
+		{ LOCTEXT("Food Consumption (per season)", "Food Consumption (per season)").ToString(), PlotStatEnum::FoodConsumption, FLinearColor(1, 0.3, 0.3) },
 	});
 	
 	AddSeries(ImportExportGraph, {

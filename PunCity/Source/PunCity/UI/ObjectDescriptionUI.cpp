@@ -22,6 +22,12 @@ void UObjectDescriptionUI::Setup()
 	
 	NameEditButton->OnClicked.AddDynamic(this, &UObjectDescriptionUI::OnClickNameEditButton);
 	NameEditTextBox->OnTextCommitted.AddDynamic(this, &UObjectDescriptionUI::NameEditCommitted);
+
+	BuildingSwapArrowLeftButton->OnClicked.AddDynamic(this, &UObjectDescriptionUI::OnClickBuildingSwapArrowLeftButton);
+	BuildingSwapArrowRightButton->OnClicked.AddDynamic(this, &UObjectDescriptionUI::OnClickBuildingSwapArrowRightButton);
+	const FText buildingSwapTip = NSLOCTEXT("ObjectDescriptionUI", "BuildingSwapArrow_Tip", "Click to switch between buildings of the same type");
+	AddToolTip(BuildingSwapArrowLeftButton, buildingSwapTip);
+	AddToolTip(BuildingSwapArrowRightButton, buildingSwapTip);
 	
 	ChooseResourceCloseButton->OnClicked.AddDynamic(this, &UObjectDescriptionUI::ClickedChooseResource);
 	SearchBox->SelectAllTextWhenFocused = true;
@@ -38,6 +44,8 @@ void UObjectDescriptionUI::Setup()
 	SetChildHUD(EditableNumberBox);
 
 	SetChildHUD(ManageStorageBox);
+
+	SetChildHUD(DescriptionPunBoxScroll);
 
 	CardSlots->ClearChildren();
 
@@ -143,6 +151,7 @@ void UObjectDescriptionUI::SetDropDown(int id)
 		//	}
 		//}
 	}
+
 }
 
 void UObjectDescriptionUI::SetEditableNumberBox(int32 id, UPunWidget* callbackParent, CallbackEnum callbackEnum)

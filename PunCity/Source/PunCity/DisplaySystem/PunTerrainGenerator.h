@@ -32,7 +32,7 @@ public:
 	uint8 Init4();
 	uint8 Init5();
 
-	static bool HasSavedMap(const FMapSettings& mapSettings);
+	
 	bool SaveOrLoad(bool isSaving);
 
 	void SetGameMap(bool isMapSetup = true);

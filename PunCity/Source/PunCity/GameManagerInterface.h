@@ -26,6 +26,7 @@ public:
 	virtual int32 playerId() = 0;
 	
 	virtual FMapSettings GetMapSettings() = 0;
+	virtual bool HasSavedMap(const FMapSettings& mapSettings) = 0;
 
 	virtual int32 playerCount() = 0;
 	virtual FString playerNameF(int32 playerId) = 0;
@@ -53,6 +54,7 @@ public:
 	virtual WorldTile2 GetOverlayTile() = 0;
 
 	virtual void ToggleOverlayHideTree() = 0;
+	virtual void ToggleOverlayProvince() = 0;
 
 	virtual class ULineBatchComponent* lineBatch() = 0;
 

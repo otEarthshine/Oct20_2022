@@ -586,9 +586,14 @@ void UMainGameUI::Tick()
 		 */
 		if (cardSystem.converterCardState == ConverterCardUseState::JustUsed)
 		{
+			FString searchString = ConverterCardHandOverlay->IsVisible() ? ConverterCardHandSearchBox->GetText().ToString() : "";
+			
 			// Open if not already done so
-			if (ConverterCardHandOverlay->GetVisibility() != ESlateVisibility::Visible)
+			if (!ConverterCardHandOverlay->IsVisible() ||
+				lastSearchString != searchString)
 			{
+				lastSearchString = searchString;
+				
 				ConverterCardHandBox->ClearChildren();
 				ConverterCardHandConfirmUI->SetVisibility(ESlateVisibility::Collapsed);
 				
@@ -610,12 +615,18 @@ void UMainGameUI::Tick()
 						if (uniqueUnremovedCards.find(buildingEnum) != uniqueUnremovedCards.end())
 						{
 							// Can only convert to building
-							if (IsBuildingCard(buildingEnum)) {
-								auto cardButton = AddCard(CardHandEnum::ConverterHand, buildingEnum, ConverterCardHandBox, CallbackEnum::SelectCardRemoval, i);
+							if (IsBuildingCard(buildingEnum)) 
+							{
+								// Only Cards filtered by Search Box
+								if (searchString.IsEmpty() ||
+									GetBuildingInfo(buildingEnum).nameF().Find(searchString, ESearchCase::Type::IgnoreCase, ESearchDir::FromStart) != INDEX_NONE)
+								{
+									auto cardButton = AddCard(CardHandEnum::ConverterHand, buildingEnum, ConverterCardHandBox, CallbackEnum::SelectCardRemoval, i);
 
-								SetText(ConverterCardHandTitle, LOCTEXT("CHOOSE A CARD TO REMOVE", "CHOOSE A CARD TO REMOVE"));
-								SetText(cardButton->PriceText, TEXT_NUM(cardSystem.GetCardPrice(buildingEnum)));
-								cardButton->PriceTextBox->SetVisibility(ESlateVisibility::HitTestInvisible);
+									SetText(ConverterCardHandTitle, LOCTEXT("CHOOSE A CARD TO REMOVE", "CHOOSE A CARD TO REMOVE"));
+									SetText(cardButton->PriceText, TEXT_NUM(cardSystem.GetCardPrice(buildingEnum)));
+									cardButton->PriceTextBox->SetVisibility(ESlateVisibility::HitTestInvisible);
+								}
 							}
 						}
 					}
@@ -645,12 +656,18 @@ void UMainGameUI::Tick()
 						if (uniqueAvailableCards.find(buildingEnum) != uniqueAvailableCards.end())
 						{
 							// Can only convert to building
-							if (IsBuildingCard(buildingEnum)) {
-								auto cardButton = AddCard(CardHandEnum::ConverterHand, buildingEnum, ConverterCardHandBox, CallbackEnum::SelectConverterCard, i);
+							if (IsBuildingCard(buildingEnum)) 
+							{
+								// Only Cards filtered by Search Box
+								if (searchString.IsEmpty() ||
+									GetBuildingInfo(buildingEnum).nameF().Find(searchString, ESearchCase::Type::IgnoreCase, ESearchDir::FromStart) != INDEX_NONE)
+								{
+									auto cardButton = AddCard(CardHandEnum::ConverterHand, buildingEnum, ConverterCardHandBox, CallbackEnum::SelectConverterCard, i);
 
-								SetText(ConverterCardHandTitle, LOCTEXT("ConverterCardHandTitle", "CHOOSE A CARD\npay the price to build"));
-								SetText(cardButton->PriceText, TEXT_NUM(cardSystem.GetCardPrice(buildingEnum)));
-								cardButton->PriceTextBox->SetVisibility(ESlateVisibility::HitTestInvisible);
+									SetText(ConverterCardHandTitle, LOCTEXT("ConverterCardHandTitle", "CHOOSE A CARD\npay the price to build"));
+									SetText(cardButton->PriceText, TEXT_NUM(cardSystem.GetCardPrice(buildingEnum)));
+									cardButton->PriceTextBox->SetVisibility(ESlateVisibility::HitTestInvisible);
+								}
 							}
 						}
 					}
@@ -671,6 +688,9 @@ void UMainGameUI::Tick()
 				bool shouldHighlight = cardButton->buildingEnum == _lastConverterChosenCard;
 				cardButton->SetCardStatus(CardHandEnum::ConverterHand, shouldHighlight, false, false, false);
 			}
+		}
+		else {
+			ConverterCardHandSearchBox->SetText(FText());
 		}
 
 		/*
@@ -837,11 +857,11 @@ void UMainGameUI::Tick()
 
 		// Top left
 		{
-			SetText(TimeText, FText::Format(
-				LOCTEXT("InGameTopLeft_SeasonYear", "{EarlyMidLate} {SeasonName}\nYear {2}"),
-				Time::SeasonPrefix(Time::Ticks()),
-				Time::SeasonName(Time::Seasons()),
-				TEXT_NUM(Time::Years())
+			SetText(TimeText, FText::FormatNamed(
+				LOCTEXT("InGameTopLeft_SeasonYear", "{EarlyMidLate} {SeasonName}\nYear {Years}"),
+				TEXT("EarlyMidLate"), Time::SeasonPrefix(Time::Ticks()),
+				TEXT("SeasonName"), Time::SeasonName(Time::Seasons()),
+				TEXT("Years"), TEXT_NUM(Time::Years())
 			));
 		}
 		

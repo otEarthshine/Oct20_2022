@@ -10,6 +10,8 @@
 #include "PunCity/GameSaveSystem.h"
 #include "Framework/Application/IInputProcessor.h"
 
+#include "OnlineStats.h"
+
 #include <unordered_map>
 #include <functional>
 #include "PunCity/Simulation/MainMenuDisplaySaveSystem.h"
@@ -754,6 +756,48 @@ public:
 		cameraPawn->SetActorRotation(rotation);
 	}
 
+	/*
+	 * Display Debug
+	 */
+	UFUNCTION(Exec) void RefreshTerrain(int32 regionId) {
+		gameManager->simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Terrain, regionId, true);
+	}
+
+	UFUNCTION(Exec) void ClearTerrain(int32 regionId) {
+		auto regionDisplaySys = gameManager->regionDisplaySystem();
+		int32 meshId = regionDisplaySys->GetMeshId(regionId);
+		regionDisplaySys->GetTerrainChunk(meshId)->ClearAllMeshSections();
+	}
+	UFUNCTION(Exec) void ClearLargeTerrain(int32 regionId) {
+		auto terrainLargeDisplaySys = gameManager->terrainLargeDisplaySystem();
+		int32 meshId = terrainLargeDisplaySys->GetMeshId(regionId);
+		if (meshId == -1) {
+			PUN_DEBUG2("Invalid meshId");
+			return;
+		}
+		terrainLargeDisplaySys->GetTerrainChunk(meshId)->ClearAllMeshSections();
+	}
+	UFUNCTION(Exec) void HideAllLargeTerrain() {
+		gameManager->terrainLargeDisplaySystem()->HideAllChunks();
+	}
+
+	UFUNCTION(Exec) void PrintTerrainChunkData(int32 x, int32 y)
+	{
+		WorldTile2 tile(x, y);
+		auto regionDisplaySys = gameManager->regionDisplaySystem();
+		int32 meshId = regionDisplaySys->GetMeshId(tile.regionId());
+		if (meshId == -1) {
+			PUN_DEBUG2("Invalid meshId");
+			return;
+		}
+		
+		TerrainChunkData data = regionDisplaySys->GetTerrainChunkData(meshId);
+		PUN_DEBUG2("DisplayHeight: %f", data.GetTerrainDisplayHeight(tile.localTile()));
+		PUN_DEBUG2("Vertice: %s", *data.GetVerticesAt(tile.localTile()).ToCompactString());
+	}
+
+
+	
 	/*
 	 * Test Print Debug
 	 */

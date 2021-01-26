@@ -38,6 +38,11 @@ public:
 	}
 
 	void AfterAdd() override;
+
+
+	// Debug:
+	TerrainChunkData GetTerrainChunkData(int32 meshId) { return _terrainChunkData[meshId]; }
+	UTerrainChunkComponent* GetTerrainChunk(int32 meshId) { return _terrainChunks[meshId]; }
 		
 protected:
 	int CreateNewDisplay(int objectId) override;

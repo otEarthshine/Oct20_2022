@@ -38,8 +38,8 @@ enum class UnitState : uint8
 	MoveResource,
 	MoveResourceConstruct,
 	StoreInventory,
-	GatherBerry,
-	GatherBush,
+	GatherFruit,
+	TrimBush,
 	
 	WorkConsume,
 	FillInput,
@@ -89,8 +89,8 @@ const TArray<FText> UnitStateName
 	LOCTEXT("Move Resource", "Move Resource"),
 	LOCTEXT("Move Resource (Construct)", "Move Resource (Construct)"),
 	LOCTEXT("Store Inventory", "Store Inventory"),
-	LOCTEXT("Gather Berry", "Gather Berry"),
-	LOCTEXT("Gather Bush", "Gather Bush"),
+	LOCTEXT("Gather Fruit", "Gather Fruit"),
+	LOCTEXT("Remove Bush", "Remove Bush"),
 	
 	LOCTEXT("Work (Consume)", "Work (Consume)"),
 	LOCTEXT("Fill Input", "Fill Input"),

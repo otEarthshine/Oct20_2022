@@ -73,7 +73,7 @@ public:
 		{
 			ResourceIcon->SetVisibility(ESlateVisibility::Visible);
 			SetResourceImage(ResourceIcon, resourceEnumIn, assetLoader());
-			SetText(ResourceText, ResourceName(resourceEnumIn));
+			SetText(ResourceText, ResourceNameT(resourceEnumIn));
 
 			ExpandArrow->SetVisibility(ESlateVisibility::Collapsed);
 		}

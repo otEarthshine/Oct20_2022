@@ -231,7 +231,7 @@ void AGameManager::InitPhase2()
 
 #if DISPLAY_TERRAIN
 	_regionDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader, 75);
-	_terrainLargeDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader, 22);
+	_terrainLargeDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader, 0); // 22
 #endif
 
 	_debugDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader, 390);

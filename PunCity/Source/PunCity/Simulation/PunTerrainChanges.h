@@ -50,6 +50,11 @@ public:
 	void Serialize(FArchive &Ar)
 	{
 		SerializeVecVecObj(Ar, _regionsToHoles);
+
+		//if (Ar.IsLoading()) {
+		//	// After loading, holes need to be refresh
+		//	simulation().NeedDisplayUpdate(DisplayClusterEnum::Terrain, regionId)
+		//}
 	}
 
 private:

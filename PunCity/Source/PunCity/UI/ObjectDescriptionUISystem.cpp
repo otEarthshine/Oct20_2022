@@ -603,7 +603,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			else if (buildingEnum == CardEnum::Townhall) {
 				//ss << "<Header>" << TrimString_Dots(simulation.townName(building.playerId()), 15) << "</>";
 				//ADDINVTEXT(args, "<Header>{0}</>", ToFText(TrimString_Dots(simulation.townName(building.playerId()), 15)));
-				ADDTEXT_(INVTEXT("<Header>{0}</>"), ToFText(TrimString_Dots(simulation.townName(building.playerId()), 15)));
+				FString townName = simulation.townNameT(building.playerId()).ToString();
+				ADDTEXT_(INVTEXT("<Header>{0}</>"), FText::FromString(TrimStringF_Dots(townName, 15)));
 			}
 			else if (buildingEnum == CardEnum::House) {
 				//ss << "<Header>House Level " << building.subclass<House>().houseLvl() << "</>";
@@ -673,7 +674,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				building.isEnum(CardEnum::TradingCompany))
 			{
 				//ss << WrapString(building.buildingInfo().description);
-				descriptionBox->AddRichTextF(WrapStringF(building.buildingInfo().GetDescription().ToString())); // WrapString helps prevent flash
+				//descriptionBox->AddRichTextF(WrapStringF(building.buildingInfo().GetDescription().ToString())); // WrapString helps prevent flash
+				descriptionBox->AddRichText(building.buildingInfo().GetDescription(), false); // Autowrap off prevent flash
 				descriptionBox->AddSpacer(8);
 			}
 
@@ -1085,9 +1087,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					}
 					// TODO: Boar should just use the normal inventory?
 					else if (building.isEnum(CardEnum::BoarBurrow)) {
-						ADDTEXT_(INVTEXT("{0}\n"), FText::FromString(WrapStringF(building.buildingInfo().GetDescription().ToString())));
+						ADDTEXT_(INVTEXT("{0}\n"), building.buildingInfo().GetDescription());
 						ADDTEXT__(building.subclass<BoarBurrow>().inventory.ToText());
-						descriptionBox->AddRichText(args);
+						descriptionBox->AddRichText(args, false);
 					}
 
 					else if (IsSpecialProducer(building.buildingEnum())) 
@@ -2219,19 +2221,19 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								ADDTEXT_LOCTEXT("Done", "Done");
 							}
 							else {
-								auto showResourceText = [&](FText resourceText)
+								auto showResourceText = [&](FString resourceTagString)
 								{
 									bool isRed = resourceSys.resourceCount(resourceEnum) < upgrade.resourceNeeded.count;
 									
-									ADDTEXT_(INVTEXT("\n<img id=\"{0}\"/>{1}"), resourceText, TextRed(TEXT_NUM(upgrade.resourceNeeded.count), isRed));
+									ADDTEXT_(INVTEXT("\n<img id=\"{0}\"/>{1}"), FText::FromString(resourceTagString), TextRed(TEXT_NUM(upgrade.resourceNeeded.count), isRed));
 								};
 								
-								if (resourceEnum == ResourceEnum::Stone) { showResourceText(LOCTEXT("Stone", "Stone")); }
-								else if (resourceEnum == ResourceEnum::Wood) { showResourceText(LOCTEXT("Wood", "Wood")); }
-								else if (resourceEnum == ResourceEnum::Iron) { showResourceText(LOCTEXT("IronBar", "IronBar")); }
-								else if (resourceEnum == ResourceEnum::SteelTools) { showResourceText(LOCTEXT("SteelTools", "SteelTools")); }
-								else if (resourceEnum == ResourceEnum::Brick) { showResourceText(LOCTEXT("Brick", "Brick")); }
-								else if (resourceEnum == ResourceEnum::Paper) { showResourceText(LOCTEXT("Paper", "Paper")); }
+								if (resourceEnum == ResourceEnum::Stone) { showResourceText("Stone"); }
+								else if (resourceEnum == ResourceEnum::Wood) { showResourceText("Wood"); }
+								else if (resourceEnum == ResourceEnum::Iron) { showResourceText("IronBar"); }
+								else if (resourceEnum == ResourceEnum::SteelTools) { showResourceText("SteelTools"); }
+								else if (resourceEnum == ResourceEnum::Brick) { showResourceText("Brick"); }
+								else if (resourceEnum == ResourceEnum::Paper) { showResourceText("Paper"); }
 								//else if (upgrade.resourceNeeded.isValid()) {
 								//	ss << " (" << upgrade.resourceNeeded.ToString() << ")";
 								//}
@@ -2691,7 +2693,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			SetText(_objectDescriptionUI->DescriptionUITitle, args);
 			descriptionBox->AddSpacer(12);
 
-			descriptionBox->AddRichText(FText::FromString(WrapStringF(info.description.ToString()))); // WrapString Help Prevent flash
+			//descriptionBox->AddRichText(FText::FromString(WrapStringF(info.description.ToString()))); // WrapString Help Prevent flash
+			descriptionBox->AddRichText(info.description); // WrapString Help Prevent flash
 			
 			if (info.IsPlant()) {
 				descriptionBox->AddSpacer(12);
@@ -3136,8 +3139,11 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 			
 			if (simulation().GetBiomeProvince(provinceId) == BiomeEnum::Jungle) {
 				descriptionBox->AddSpacer();
+				//descriptionBox->AddRichText(
+				//	FText::FromString(WrapStringF(LOCTEXT("JungleDifficultToClear", "The difficulty in clearing jungle makes expansion more costly.").ToString()))
+				//);
 				descriptionBox->AddRichText(
-					FText::FromString(WrapStringF(LOCTEXT("JungleDifficultToClear", "The difficulty in clearing jungle makes expansion more costly.").ToString()))
+					LOCTEXT("JungleDifficultToClear", "The difficulty in clearing jungle makes expansion more costly."), false
 				);
 			}
 
@@ -3659,6 +3665,10 @@ void UObjectDescriptionUISystem::AddTileInfo(WorldTile2 tile, UPunBoxWidget* des
 
 	TArray<FText> args;
 	ADDTEXT_(LOCTEXT("TileInfoHeader", "<Header>{0} Tile</>\n"), sim.terrainGenerator().GetBiomeNameT(tile));
+#if WITH_EDITOR
+	ADDTEXT_(INVTEXT("--Region({0}, {1})\n"), region.x, region.y);
+	ADDTEXT_(INVTEXT("--LocalTile({0}, {1})\n"), tile.localTile(region).x, tile.localTile(region).y)
+#endif
 	ADDTEXT_(INVTEXT("<Header>({0}, {1})</>"), tile.x, tile.y);
 	SetText(_objectDescriptionUI->DescriptionUITitle, args);
 	descriptionBox->AddSpacer(12);
@@ -3783,8 +3793,10 @@ void UObjectDescriptionUISystem::AddProvinceInfo(int32 provinceId, UPunBoxWidget
 		descriptionBox->AddSpacer(12);
 
 		// Biome Description
-		FString wrappedDescription = WrapStringF(terrainGenerator.GetBiomeInfoFromTile(provinceCenter).description.ToString());
-		descriptionBox->AddRichText(FText::FromString(wrappedDescription));
+		//FString wrappedDescription = WrapStringF(terrainGenerator.GetBiomeInfoFromTile(provinceCenter).description.ToString());
+		//descriptionBox->AddRichText(FText::FromString(wrappedDescription));
+
+		descriptionBox->AddRichText(terrainGenerator.GetBiomeInfoFromTile(provinceCenter).description, false);
 
 		descriptionBox->AddSpacer(12);
 
@@ -3925,7 +3937,7 @@ void UObjectDescriptionUISystem::AddGeoresourceInfo(int32 provinceId, UPunBoxWid
 		descriptionBox->AddSpacer();
 
 		if (node.depositAmount > 0 || isMountain) {
-			descriptionBox->AddRichText("Resource amount:");
+			descriptionBox->AddRichText(LOCTEXT("Resource amount:", "Resource amount:"));
 
 			if (node.depositAmount > 0) {
 				descriptionBox->AddIconPair(FText(), node.info().resourceEnum, TEXT_NUM(node.depositAmount));

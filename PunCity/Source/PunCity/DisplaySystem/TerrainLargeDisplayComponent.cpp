@@ -2,7 +2,6 @@
 
 
 #include "TerrainLargeDisplayComponent.h"
-#include "TerrainLargeChunkComponent.h"
 
 
 int UTerrainLargeDisplayComponent::CreateNewDisplay(int objectId)
@@ -27,6 +26,11 @@ int UTerrainLargeDisplayComponent::CreateNewDisplay(int objectId)
 	bool containsWater = false; // if there is no water tile, don't enable waterMesh's visibility
 	//_terrainLargeChunks[meshId]->UpdateLargeTerrainChunkMesh(simulation(), region, true);
 	chunkInfosToUpdate.push_back({ meshId, objectId, true });
+
+
+	_terrainLargeChunks[meshId]->SetVisibility(false);
+	_terrainLargeChunks[meshId]->alreadyUpdatedMesh = false;
+	//_terrainLargeChunks[meshId]->SetRelativeLocation(FVector(0, 0, 50000)); // TODO: quickfix bug with pooling, Mesh not hidden properly after load...
 
 	return meshId;
 }
@@ -69,7 +73,7 @@ void UTerrainLargeDisplayComponent::UpdateDisplay(int regionId, int meshId, Worl
 	{
 		//SCOPE_TIMER("Tick Region Terrain");
 
-		//_terrainLargeChunks[meshId]->UpdateLargeTerrainChunkMesh(simulation(), region, false);
+		// Note: Removing "justCreated" will crash
 		if (!justCreated) {
 			chunkInfosToUpdate.push_back({ meshId, regionId, false });
 		}
@@ -102,18 +106,9 @@ void UTerrainLargeDisplayComponent::AfterAdd()
 	{
 		SCOPE_TIMER_FILTER(1000, "Tick Region4x4 Test Prepare (%llu)", chunkInfosToUpdate.size());
 
-		//if (PunSettings::Get(FString("TerrainLargeThread")) == 0)
-		//{
-		//	for (MeshChunkInfo& chunkInfo : chunkInfosToUpdate) {
-		//		_terrainLargeChunks[chunkInfo.meshId]->UpdateLargeTerrainChunkMesh_Prepare(simulation(), chunkInfo.regionId, chunkInfo.createMesh);
-		//	}
-		//}
-		//else
-		//{
-			ThreadedRun(chunkInfosToUpdate, 8, [&](MeshChunkInfo& chunkInfo) {
-				_terrainLargeChunks[chunkInfo.meshId]->UpdateLargeTerrainChunkMesh_Prepare(simulation(), chunkInfo.regionId, chunkInfo.createMesh);
-			});
-		//}
+		ThreadedRun(chunkInfosToUpdate, 8, [&](MeshChunkInfo& chunkInfo) {
+			_terrainLargeChunks[chunkInfo.meshId]->UpdateLargeTerrainChunkMesh_Prepare(simulation(), chunkInfo.regionId, chunkInfo.createMesh);
+		});
 	}
 
 	// Update Mesh
@@ -121,6 +116,7 @@ void UTerrainLargeDisplayComponent::AfterAdd()
 		SCOPE_TIMER_FILTER(1000, "Tick Region4x4 Test UpdateMesh (%llu)", chunkInfosToUpdate.size());
 		for (MeshChunkInfo& chunkInfo : chunkInfosToUpdate) {
 			_terrainLargeChunks[chunkInfo.meshId]->UpdateLargeTerrainChunkMesh_UpdateMesh(chunkInfo.createMesh);
+			_terrainLargeChunks[chunkInfo.meshId]->lastRegionId = chunkInfo.regionId;
 		}
 	}
 }

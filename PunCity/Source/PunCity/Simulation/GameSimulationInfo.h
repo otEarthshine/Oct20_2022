@@ -1654,13 +1654,13 @@ static int32 SumResourceCost(const std::vector<ResourcePair>& resourcePairs)
 	return result;
 }
 
-static std::string MaybeRedText(std::string text, bool isRed)
-{
-	if (isRed) {
-		return "<Red>" + text + "</>";
-	}
-	return text;
-};
+//static std::string MaybeRedText(std::string text, bool isRed)
+//{
+//	if (isRed) {
+//		return "<Red>" + text + "</>";
+//	}
+//	return text;
+//};
 
 
 enum class ResourceHolderType : uint8
@@ -4119,14 +4119,13 @@ static const TileObjInfo TreeInfos[] = {
 
 	
 	TileObjInfo(TileObjEnum::Herb,		LOCTEXT("Medicinal Herb", "Medicinal Herb"),		ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Herb, FarmBaseYield100), LOCTEXT("Medicinal Herb Desc", "Herb used to heal sickness or make medicine.")),
-	//TileObjInfo(TileObjEnum::BaconBush, "Bacon bush",	ResourceTileType::Bush,				1,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), "Plant with delicious leaves that tastes like bacon when grilled. Legend says, this plant was created by an ancient advanced civilization of giants."),
 
-	TileObjInfo(TileObjEnum::Stone, LOCTEXT("Stone", "Stone"),	ResourceTileType::Deposit,	ResourcePair::Invalid(),								ResourcePair(ResourceEnum::Stone, 2) /*this is not used?*/, LOCTEXT("Stone Desc", "Easily-accessible stone deposits.")),
+	TileObjInfo(TileObjEnum::Stone, LOCTEXT("Stone", "Stone"),	ResourceTileType::Deposit,	ResourcePair::Invalid(),								ResourcePair(ResourceEnum::Stone, 2) /*this is not used?*/, LOCTEXT("Stone Desc", "Easily-access ible stone deposits.")),
 
-	TileObjInfo(TileObjEnum::CoalMountainOre, LOCTEXT("Coal Ore", "Coal Ore"),	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), LOCTEXT("CoalOreDesc", "This region contains {0} that can be mined from mountain.")),
-	TileObjInfo(TileObjEnum::IronMountainOre, LOCTEXT("Iron Ore", "Iron Ore"),	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), LOCTEXT("IronOreDesc", "This region contains {0} that can be mined from mountain.")),
-	TileObjInfo(TileObjEnum::GoldMountainOre, LOCTEXT("Gold Ore", "Gold Ore"),	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), LOCTEXT("GoldOreDesc", "This region contains {0} that can be mined from mountain.")),
-	TileObjInfo(TileObjEnum::GemstoneOre, LOCTEXT("Gemstone", "Gemstone"),	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), LOCTEXT("GemstoneDesc", "This region contains {0} that can be mined from mountain.")),
+	TileObjInfo(TileObjEnum::CoalMountainOre, LOCTEXT("Coal Ore", "Coal Ore"),	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), LOCTEXT("CoalOreDesc", "This region contains Coal that can be mined from mountain.")),
+	TileObjInfo(TileObjEnum::IronMountainOre, LOCTEXT("Iron Ore", "Iron Ore"),	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), LOCTEXT("IronOreDesc", "This region contains Iron Ore that can be mined from mountain.")),
+	TileObjInfo(TileObjEnum::GoldMountainOre, LOCTEXT("Gold Ore", "Gold Ore"),	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), LOCTEXT("GoldOreDesc", "This region contains Gold Ore that can be mined from mountain.")),
+	TileObjInfo(TileObjEnum::GemstoneOre, LOCTEXT("Gemstone", "Gemstone"),	ResourceTileType::Deposit,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Stone, 3), LOCTEXT("GemstoneDesc", "This region contains Gemstone that can be mined from mountain.")),
 
 
 	// ----------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -4353,7 +4352,7 @@ struct PlacementInstructionInfo
 	bool shouldShow = false;
 	int32 intVar1 = -1;
 	int32 intVar2 = -1;
-	std::string instruction;
+	FText instruction;
 };
 
 struct PlacementInfo
@@ -6753,12 +6752,14 @@ enum class AutosaveEnum : uint8
 	Year,
 	TwoYears,
 };
-static const std::vector<FString> AutosaveOptions = {
-	"Off",
-	"Every Half Year",
-	"Yearly",
-	"Every Two Years",
+#define LOCTEXT_NAMESPACE "AutosaveOptions"
+static const std::vector<FText> AutosaveOptions = {
+	LOCTEXT("Autosave_Off", "Off"),
+	LOCTEXT("Autosave_HalfYear", "Every Half Year"),
+	LOCTEXT("Autosave_Yearly", "Yearly"),
+	LOCTEXT("Autosave_TwoYears", "Every Two Years"),
 };
+#undef LOCTEXT_NAMESPACE
 
 /*
  * Stat

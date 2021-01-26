@@ -361,7 +361,7 @@ struct SurviveWinterQuest : Quest
 	FText questTitle() override { return LOCTEXT("SurviveTheWinter_Title", "Survive the winter"); }
 	FText questDescription() override
 	{
-		return LOCTEXT("SurviveTheWinter_Desc", "Winter is harsh, and requires your town to be well-prepared to face it.<space>To survive the winter, we must have:<bullet>houses for everyone</><bullet>enough stored food</><bullet>enough stored wood or coal for heating</><bullet>enough stored medicine, since disease frequency triples in winter</>");
+		return LOCTEXT("SurviveTheWinter_Desc", "Winter is harsh, and requires your town to be well-prepared to face it.<space>To survive the winter, we must have:<bullet>houses for everyone</><bullet>enough stored food</><bullet>enough stored wood or coal for heating</><bullet>enough stored medicine, since disease frequency increases in winter</>");
 	}
 
 	bool ShouldSkipToNextQuest() override { return currentValue() >= neededValue(); }

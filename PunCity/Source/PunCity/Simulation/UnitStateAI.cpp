@@ -1073,7 +1073,7 @@ bool UnitStateAI::TryStockBurrowFood()
 		Add_MoveToward(fullBushTile.worldAtom2(), 4000); // 40000 or 0.4 fraction so that the unit won't step into unwalkable tile TODO: check this as 40000?
 		Add_MoveTo(fullBushTile);
 
-		_unitState = UnitState::GatherBush;
+		_unitState = UnitState::TrimBush;
 		AddDebugSpeech("(Success)TryStockBurrowFood:");
 		debugFindFullBushSuccessCount++;
 		return true;

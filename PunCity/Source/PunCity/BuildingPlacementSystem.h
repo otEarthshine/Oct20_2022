@@ -177,9 +177,9 @@ public:
 		_placementInstructions[static_cast<int>(instructionEnum)].shouldShow = shouldShow;
 		_placementInstructions[static_cast<int>(instructionEnum)].intVar1 = intVar1;
 		_placementInstructions[static_cast<int>(instructionEnum)].intVar2 = intVar2;
-		_placementInstructions[static_cast<int>(instructionEnum)].instruction = "";
+		_placementInstructions[static_cast<int>(instructionEnum)].instruction = FText();
 	}
-	void SetInstruction(PlacementInstructionEnum instructionEnum, bool shouldShow, std::string instruction) {
+	void SetInstruction(PlacementInstructionEnum instructionEnum, bool shouldShow, FText instruction) {
 		_placementInstructions[static_cast<int>(instructionEnum)] = { shouldShow, -1, -1, instruction };
 	}
 

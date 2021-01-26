@@ -162,13 +162,13 @@ void ULobbyUI::Tick()
 
 	bool isLoading = gameInst->saveSystem().HasSyncData();
 	if (isLoading) {
-		SetText(MultiplayerLobbyTitle, "<Title>Load Multiplayer Game Lobby</>");
+		SetText(MultiplayerLobbyTitle, LOCTEXT("MultiplayerLobbyTitle_Load", "<Title>Load Multiplayer Game Lobby</>"));
 		GenerateWorldOverlay->SetVisibility(ESlateVisibility::Collapsed);
 	} else {
 		if (gameInst->isMultiplayer()) {
-			SetText(MultiplayerLobbyTitle, "<Title>Multiplayer Lobby</>");
+			SetText(MultiplayerLobbyTitle, LOCTEXT("MultiplayerLobbyTitle_Multiplayer", "<Title>Multiplayer Lobby</>"));
 		} else {
-			SetText(MultiplayerLobbyTitle, "<Title>Single Player</>");
+			SetText(MultiplayerLobbyTitle, LOCTEXT("MultiplayerLobbyTitle_SinglePlayer", "<Title>Single Player</>"));
 		}
 		GenerateWorldOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	}

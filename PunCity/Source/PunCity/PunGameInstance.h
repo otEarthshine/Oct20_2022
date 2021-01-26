@@ -875,7 +875,7 @@ public:
 
 		// Ensure uncorrupted preferredCultureTag
 		TArray<FString> languageTags = UKismetInternationalizationLibrary::GetLocalizedCultures(ELocalizationLoadFlags::Game);
-		if (!languageTags.Contains(preferredCultureTag)) {
+		if (!languageTags.Contains(preferredCultureTag)) { 
 			preferredCultureTag = "en"; // Invalid culture tag
 		}
 	}

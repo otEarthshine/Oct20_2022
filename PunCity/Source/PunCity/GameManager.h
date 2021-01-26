@@ -110,6 +110,10 @@ public:
 
 	class ADirectionalLight* directionalLight() { return _directionalLight; }
 
+
+	/*
+	 * Debug
+	 */
 	void PrintMeshPoolCount() {
 		PUN_LOG("PrintMeshPoolCount _buildingDisplaySystem:%d", _buildingDisplaySystem->meshPoolCount());
 		PUN_LOG("PrintMeshPoolCount _miniBuildingDisplaySystem:%d", _miniBuildingDisplaySystem->meshPoolCount());
@@ -123,6 +127,9 @@ public:
 		PUN_LOG("PrintMeshPoolCount _worldMap:%d", _worldMap->meshPoolCount());
 		PUN_LOG("PrintMeshPoolCount _tileDisplaySystem:%d", _tileDisplaySystem->meshPoolCount());
 	}
+
+	URegionDisplayComponent* regionDisplaySystem() { return _regionDisplaySystem;  }
+	UTerrainLargeDisplayComponent* terrainLargeDisplaySystem() { return _terrainLargeDisplaySystem; }
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) USceneComponent* _root;

@@ -141,8 +141,8 @@ public:
 		return textWidget;
 	}
 
-	UPunRichText* AddSpecialRichText(FText prefix, TArray<FText>& args) {
-		auto textWidget = AddRichText(FText::Format(INVTEXT("{0}{1}</>"), prefix, JOINTEXT(args)));
+	UPunRichText* AddSpecialRichText(FText prefix, TArray<FText>& args, bool isAutoWrap = true) {
+		auto textWidget = AddRichText(FText::Format(INVTEXT("{0}{1}</>"), prefix, JOINTEXT(args)), isAutoWrap);
 		args.Empty();
 		return textWidget;
 	}
@@ -150,40 +150,55 @@ public:
 	UPunRichText* AddRichText(std::string string) {
 		auto textWidget = GetChildElement<UPunRichText>(UIEnum::PunRichText, std::hash<std::string>{}(string));
 		textWidget->SetText(string);
+		textWidget->PunRichText->SetAutoWrapText(true);
 		return textWidget;
 	}
-	UPunRichText* AddRichText(std::wstring string) {
+	UPunRichText* AddRichText(std::wstring string, bool isAutoWrap = true) {
 		auto textWidget = GetChildElement<UPunRichText>(UIEnum::PunRichText, std::hash<std::wstring>{}(string));
+		textWidget->SetText(string);
+		textWidget->PunRichText->SetAutoWrapText(isAutoWrap); // Non-autowrap has 280 width
+		return textWidget;
+	}
+	UPunRichText* AddRichTextPopup(std::wstring string) {
+		auto textWidget = GetChildElement<UPunRichText>(UIEnum::PunRichText_Popup, std::hash<std::wstring>{}(string));
 		textWidget->SetText(string);
 		return textWidget;
 	}
 
 	// FString
-	UPunRichText* AddRichTextF(FString string) {
+	UPunRichText* AddRichTextF(FString string, bool isAutoWrap = true) {
 		auto textWidget = GetChildElement<UPunRichText>(UIEnum::PunRichText, GetTypeHash(string));
 		textWidget->SetRichText(string);
+		textWidget->PunRichText->SetAutoWrapText(isAutoWrap); // Non-autowrap has 280 width
 		return textWidget;
 	}
-	UPunRichText* AddRichText(FText text) {
+
+	// FText
+	UPunRichText* AddRichText(FText text, bool isAutoWrap = true) {
 		auto textWidget = GetChildElement<UPunRichText>(UIEnum::PunRichText, GetTypeHash(text.ToString()));
 		textWidget->PunRichText->SetText(text);
+		textWidget->PunRichText->SetAutoWrapText(isAutoWrap); // Non-autowrap has 280 width
 		return textWidget;
 	}
-	UPunRichText* AddRichTextCenter(FText text) {
+	UPunRichText* AddRichTextCenter(FText text, bool isAutoWrap = true) {
 		auto textWidget = GetChildElement<UPunRichText>(UIEnum::PunRichText, GetTypeHash(text.ToString()));
 		textWidget->PunRichText->SetText(text);
+		textWidget->PunRichText->SetAutoWrapText(isAutoWrap); // Non-autowrap has 280 width
 		textWidget->SetJustification(ETextJustify::Type::Center);
 		return textWidget;
 	}
 
-	// std::string
+
+	// Left Right
 	UPunRichTextTwoSided* AddRichText(std::string leftText, std::string rightText, ResourceEnum resourceEnum = ResourceEnum::None, std::string expandedText = "") {
 		auto textWidget = GetChildElement<UPunRichTextTwoSided>(UIEnum::PunRichTextTwoSided);
 		textWidget->SetText(leftText, rightText, resourceEnum, expandedText);
+		textWidget->PunRichText->SetAutoWrapText(true);
 		return textWidget;
 	}
 	UPunRichTextTwoSided* AddRichText(std::string leftText, std::stringstream& ss) {
 		auto textWidget = AddRichText(leftText, ss.str());
+		textWidget->PunRichText->SetAutoWrapText(true);
 		ss.str(std::string());
 		return textWidget;
 	}
@@ -192,15 +207,18 @@ public:
 	UPunRichTextTwoSided* AddRichText(FText leftText, FText rightText, ResourceEnum resourceEnum = ResourceEnum::None, FText expandedText = FText()) {
 		auto textWidget = GetChildElement<UPunRichTextTwoSided>(UIEnum::PunRichTextTwoSided);
 		textWidget->SetText(leftText, rightText, resourceEnum, expandedText);
+		textWidget->PunRichText->SetAutoWrapText(true);
 		return textWidget;
 	}
 	UPunRichTextTwoSided* AddRichText(FText leftText, TArray<FText>& args) {
 		auto textWidget = AddRichText(leftText, FText::Join(FText(), args));
+		textWidget->PunRichText->SetAutoWrapText(true);
 		args.Empty();
 		return textWidget;
 	}
-	UPunRichText* AddRichText(TArray<FText>& args) {
-		auto textWidget = AddRichText(FText::Join(FText(), args));
+	UPunRichText* AddRichText(TArray<FText>& args, bool isAutoWrap = true) {
+		auto textWidget = AddRichText(FText::Join(FText(), args), isAutoWrap);
+		textWidget->PunRichText->SetAutoWrapText(true);
 		args.Empty();
 		return textWidget;
 	}
@@ -208,14 +226,18 @@ public:
 
 	
 
-	UPunRichText* AddRichTextCenter(std::string string) {
-		return AddRichText(string)->SetJustification(ETextJustify::Type::Center);
-	}
+	//UPunRichText* AddRichTextCenter(std::string string) {
+	//	return AddRichText(string)->SetJustification(ETextJustify::Type::Center);
+	//}
 
-	UPunRichText* AddRichTextBullet(std::wstring string, int32 sizeX) {
+	UPunRichText* AddRichTextBullet(std::wstring string, int32 sizeX)
+	{
 		auto textWidget = GetChildElement<UPunRichText>(UIEnum::PunRichTextBullet, std::hash<std::wstring>{}(string));
 
-		textWidget->SetText(FText::FromString(WrapStringF(ToFString(string), sizeX)));
+		//textWidget->SetText(FText::FromString(WrapStringF(ToFString(string), sizeX)));
+		textWidget->SetText(FText::FromString(ToFString(string)));
+		textWidget->SetAutoWrapText(true); // width 430 for wrapTextAt PunRichTextBullet
+
 		//PUN_LOG("AddRichTextBullet PunVerticalBox:%s", *PunVerticalBox->GetDesiredSize().ToString());
 		//PUN_LOG("AddRichTextBullet textWidget:%s", *textWidget->GetDesiredSize().ToString());
 		//PUN_LOG("AddRichTextBullet PunRichText:%s", *textWidget->PunRichText->GetDesiredSize().ToString());
@@ -400,14 +422,18 @@ public:
 		std::wstring wBody(body.begin(), body.end());
 		AddRichTextParsed(wBody);
 	}
-	void AddRichTextParsed(std::wstring body)
+	void AddRichTextParsed(std::wstring body, bool isPopup = false)
 	{
 		std::wstring curBody;
 		bool isBulletText = false;
 
 		auto addNonEmptyRichText = [&](const std::wstring& str) {
 			if (str.size() > 0) {
-				AddRichText(curBody);
+				if (isPopup) {
+					AddRichTextPopup(curBody);
+				} else {
+					AddRichText(curBody);
+				}
 			}
 		};
 
@@ -474,8 +500,8 @@ public:
 		AddRichTextParsed(std::wstring(*(text.ToString())));
 		args.Empty();
 	}
-	void AddRichTextParsed(FText text) {
-		AddRichTextParsed(std::wstring(*(text.ToString())));
+	void AddRichTextParsed(FText text, bool isPopup = false) {
+		AddRichTextParsed(std::wstring(*(text.ToString())), isPopup);
 	}
 
 	/*

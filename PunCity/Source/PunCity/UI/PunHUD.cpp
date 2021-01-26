@@ -96,6 +96,7 @@ APunHUD::APunHUD()
 
 	LoadClass(UIEnum::PunRichText, "PunRichTextWidget");
 	LoadClass(UIEnum::PunRichText_Chat, "PunRichTextWidget_Chat");
+	LoadClass(UIEnum::PunRichText_Popup, "PunRichTextWidget_Popup");
 	LoadClass(UIEnum::PunRichTextTwoSided, "PunRichTextTwoSidedWidget");
 	LoadClass(UIEnum::PunRichTextBullet, "PunRichTextBulletWidget");
 	//LoadClass(UIEnum::PunEventText, "PunEventTextWidget");

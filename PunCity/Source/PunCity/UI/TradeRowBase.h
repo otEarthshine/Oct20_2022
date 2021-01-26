@@ -22,7 +22,7 @@ public:
 	void UpdateTextsBase()
 	{
 		ResourceTextPair->SetImage(_resourceEnum, assetLoader());
-		ResourceTextPair->SetFString("", FString(ResourceName(_resourceEnum).c_str()));
+		ResourceTextPair->SetText(FText(), ResourceNameT(_resourceEnum));
 
 		int32 basePrice100 = GetResourceInfo(_resourceEnum).basePrice100();
 		int32 price100 = simulation().worldTradeSystem().price100(_resourceEnum);

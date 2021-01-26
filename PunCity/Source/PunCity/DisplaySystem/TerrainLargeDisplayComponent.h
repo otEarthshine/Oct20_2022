@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "PunCity/DisplaySystem/DisplaySystemComponent.h"
+#include "TerrainLargeChunkComponent.h"
 
 #include "TerrainLargeDisplayComponent.generated.h"
 
@@ -16,6 +17,16 @@ class PROTOTYPECITY_API UTerrainLargeDisplayComponent : public UDisplaySystemCom
 	GENERATED_BODY()
 public:
 
+	/*
+	 * Debug
+	 */
+	UTerrainLargeChunkComponent* GetTerrainChunk(int32 meshId) { return _terrainLargeChunks[meshId]; }
+	void HideAllChunks() {
+		for (int32 i = 0; i < _terrainLargeChunks.Num(); i++) {
+			HideDisplay(i, _terrainLargeChunks[i]->lastRegionId);
+		}
+	}
+	
 protected:
 	void BeforeAdd() override {
 		chunkInfosToUpdate.clear();

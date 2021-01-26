@@ -343,7 +343,7 @@ public:
 	bool bIsPlainMaterial = false;
 
 	bool alreadyUpdatedMesh = false;
-
+	int32 lastRegionId = -1;
 	
 
 private:

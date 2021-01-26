@@ -302,7 +302,10 @@ void UStatisticsUI::TickUI()
 		SetText(MarketBasePrice, TEXT_100(GetResourceInfo(resourceEnum).basePrice100()));
 
 		int32 netSupplyChange = worldTradeSystem.GetNetPlayerSupplyChange(uiPlayerId, resourceEnum);
-		SetText(NetExportText, netSupplyChange >= 0 ? "Net export (yearly):" : "Net import (yearly):");
+		SetText(NetExportText, netSupplyChange >= 0 ? 
+			LOCTEXT("Net export (yearly):", "Net export (yearly):") :
+			LOCTEXT("Net import (yearly):", "Net import (yearly):")
+		);
 		SetText(NetExportAmount, to_string(abs(netSupplyChange)));
 		SetResourceImage(NetExportImage, resourceEnum, assetLoader());
 

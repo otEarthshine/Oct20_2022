@@ -242,10 +242,19 @@ FString UPunWidget::WrapStringF(FString fString, int32 wrapSize, FSlateFontInfo*
 
 	int32 CurrentX = 0;
 	TCHAR PreviousChar = 0;
-	int32 wordCharCount = 0; // Collect wordCharCount to add \n to the correct spot
+	int32 wordCharCount = 0; // Collect wordCharCount to add \n to the correct spot in front of word
+	int32 lastInsertSpot = 0;
+	
+	int32 initialLength = fString.Len();
 
 	for (size_t i = 0; i < fString.Len(); i++)
 	{
+		// Prevent freeze if the text is too long
+		if (fString.Len() > 2 * initialLength) {
+			UE_DEBUG_BREAK();
+			break;
+		}
+		
 		if (CurrentX == 0 && fString[i] == TEXT(' ')) {
 			fString.RemoveAt(i);
 		}
@@ -263,11 +272,17 @@ FString UPunWidget::WrapStringF(FString fString, int32 wrapSize, FSlateFontInfo*
 		{
 			int32 insertSpot = i - wordCharCount;
 
+			// TODO: If the whole line has no space, put the "\n" at the end of the line
+			if (insertSpot - lastInsertSpot == 0) {
+				insertSpot = i - 1;
+			}
+			
 			fString.InsertAt(insertSpot, TEXT("\n"));
 
 			//PUN_LOG("End line %d", insertSpot);
 
 			i = insertSpot;
+			lastInsertSpot = insertSpot;
 			//i++; // \n is 2 chars, loop already has 1 increment, hence only 1 extra needed
 			CurrentX = 0;
 			wordCharCount = 0;

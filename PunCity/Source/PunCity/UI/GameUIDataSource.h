@@ -104,6 +104,7 @@ enum class UIEnum
 
 	PunRichText,
 	PunRichText_Chat,
+	PunRichText_Popup,
 	PunRichTextTwoSided,
 	PunRichTextBullet,
 	//PunEventText,

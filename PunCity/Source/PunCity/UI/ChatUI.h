@@ -541,9 +541,11 @@ private:
 		// System message
 		if (message.isSystemMessage)
 		{
-			std::string messageStd = ToStdString(message.message);
-			std::string wrappedMessage = widget->WrapString(messageStd, chatWrapSize, &fontInfo);
-			widget->SetRichText(ToFString(wrappedMessage));
+			//std::string messageStd = ToStdString(message.message);
+			//std::string wrappedMessage = widget->WrapString(messageStd, chatWrapSize, &fontInfo);
+			//widget->SetRichText(ToFString(wrappedMessage));
+			widget->SetRichText(message.message);
+			widget->PunRichText->SetAutoWrapText(false);
 			return widget;
 		}
 
@@ -555,15 +557,16 @@ private:
 		int32 namePartLength = trimmedName.Len();
 
 		trimmedName.Append(message.message);
-		FString wrappedMessage = widget->WrapStringF(trimmedName, chatWrapSize, &fontInfo);
+		//FString wrappedMessage = widget->WrapStringF(trimmedName, chatWrapSize, &fontInfo);
 
 		FString finalMessage;
 		finalMessage.Append("<ChatName>")
-					.Append(wrappedMessage.Left(namePartLength))
+					.Append(trimmedName.Left(namePartLength))
 					.Append("</>"); // Name
-		finalMessage.Append(wrappedMessage.RightChop(namePartLength)); // Message
+		finalMessage.Append(trimmedName.RightChop(namePartLength)); // Message
 
 		widget->SetRichText(finalMessage);
+		widget->PunRichText->SetAutoWrapText(false);
 		
 		return widget;
 	};

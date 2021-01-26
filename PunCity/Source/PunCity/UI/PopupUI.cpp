@@ -95,7 +95,7 @@ void UPopupUI::Tick()
 			dataSource()->Spawn2DSound("UI", currentPopup.popupSound == "" ? "PopupNeutral" : currentPopup.popupSound);
 		}
 
-		PopupBox->AddRichTextParsed(popupToDisplay->body);
+		PopupBox->AddRichTextParsed(popupToDisplay->body, true);
 		PopupBox->AfterAdd();
 
 		

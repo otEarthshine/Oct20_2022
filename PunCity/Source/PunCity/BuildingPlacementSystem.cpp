@@ -168,72 +168,91 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 	{
 		ClearInstructions();
 
-		stringstream ss;
+		TArray<FText> args;
 		if (_placementType != PlacementType::BuildingDrag) {
-			ss << "Click and Drag Cursor";
-			ss << "\nto specify area";
+			ADDTEXT_LOCTEXT("StorageYard_BuildInstruction1", "Click and Drag Cursor\nto specify area");
 		}
 		else
 		{
 			int32 sizeX = _area.sizeX();
 			int32 sizeY = _area.sizeY();
 
-			ss << "Drag cursor to resize the storage";
+			ADDTEXT_LOCTEXT("StorageYard_BuildInstruction2", "Drag cursor to resize the storage");
 
 			if (sizeX > 1 || sizeY > 1) {
 				int32 storageSpace = ((sizeX / 2) * (sizeY / 2));
-				ss << "\n" << (sizeY / 2 * 2) << "x" << (sizeX / 2 * 2) << " (" << storageSpace << "<img id=\"Storage\"/>)";
+				//ss << "\n" << (sizeY / 2 * 2) << "x" << (sizeX / 2 * 2) << " (" << storageSpace << "<img id=\"Storage\"/>)";
+				ADDTEXT_(
+					INVTEXT("\n{0}x{1} ({2}<img id=\"Storage\"/>)"),
+					TEXT_NUM(sizeY / 2 * 2),
+					TEXT_NUM(sizeX / 2 * 2),
+					TEXT_NUM(storageSpace)
+				);
 
 				int32 woodNeeded = storageSpace * 5;
-				ss << "\n" << MaybeRedText(to_string(woodNeeded), sim.resourceCountWithDrops(playerId, ResourceEnum::Wood) < woodNeeded) << "<img id=\"Wood\"/>";
+				//ss << "\n" << MaybeRedText(to_string(woodNeeded), sim.resourceCountWithDrops(playerId, ResourceEnum::Wood) < woodNeeded) << "<img id=\"Wood\"/>";
+				ADDTEXT_(
+					INVTEXT("\n{0}<img id=\"Wood\"/>"),
+					TextRed(TEXT_NUM(woodNeeded), sim.resourceCountWithDrops(playerId, ResourceEnum::Wood) < woodNeeded)
+				);
 			}
 
 			if (IsStorageTooLarge(TileArea(WorldTile2(0, 0), WorldTile2(sizeX, sizeY)))) {
-				ss << "\n" << "<Red>Width and Height must be less than 8</>";
+				//ss << "\n" << "<Red>Width and Height must be less than 8</>";
+				ADDTEXT_LOCTEXT("StorageYard_BuildInstructionTooLarge", "\n<Red>Width and Height must be less than 8</>");
 			}
 		}
-		SetInstruction(PlacementInstructionEnum::DragStorageYard, true, ss.str());
+		SetInstruction(PlacementInstructionEnum::DragStorageYard, true, JOINTEXT(args));
 	}
 	else if (_buildingEnum == CardEnum::Farm)
 	{
 		PUN_CHECK(_placementType == PlacementType::BuildingDrag);
 		ClearInstructions();
 
-		stringstream ss;
+		TArray<FText> args;
 		int32 fertility = _dragState == DragState::Dragging ? Farm::GetAverageFertility(_area, &sim) : sim.GetFertilityPercent(_mouseOnTile);
-		ss << "Fertility: " << fertility << "%<space>";
+		ADDTEXT_(LOCTEXT("Farm_BuildInstruction1", "Fertility: {0}%<space>"), TEXT_NUM(fertility));
 		
 		if (_dragState == DragState::NeedDragStart)
 		{
-			ss << "Click and Drag Cursor";
-			ss << "\nto specify area";
+			ADDTEXT_LOCTEXT("Farm_BuildInstruction2", "Click and Drag Cursor\nto specify area");
 		}
 		else {
 			int32 sizeX = _area.sizeX();
 			int32 sizeY = _area.sizeY();
 
-			ss << "Drag cursor to resize the farm";
+			ADDTEXT_LOCTEXT("Farm_BuildInstruction3", "Drag cursor to resize the farm");
 
 			if (sizeX > 1 || sizeY > 1) {
 				int32 areaSize = (sizeY * sizeX);
-				ss << "\n" << sizeY << "x" << sizeX << " (Area:" << areaSize << ")";
+				//ss << "\n" << sizeY << "x" << sizeX << " (Area:" << areaSize << ")";
+				ADDTEXT_(
+					LOCTEXT("Farm_BuildInstructionArea", "\n{0}x{1} (Area:{2})"),
+					TEXT_NUM(sizeY),
+					TEXT_NUM(sizeX),
+					TEXT_NUM(areaSize)
+				);
 
 				int32 woodNeeded = areaSize / 2;
-				ss << "\n" << MaybeRedText(to_string(woodNeeded), sim.resourceCountWithDrops(playerId, ResourceEnum::Wood) < woodNeeded) << "<img id=\"Wood\"/>";
+				//ss << "\n" << MaybeRedText(to_string(woodNeeded), sim.resourceCountWithDrops(playerId, ResourceEnum::Wood) < woodNeeded) << "<img id=\"Wood\"/>";
+				ADDTEXT_(
+					INVTEXT("\n{0}<img id=\"Wood\"/>"),
+					TextRed(TEXT_NUM(woodNeeded), sim.resourceCountWithDrops(playerId, ResourceEnum::Wood) < woodNeeded)
+				);
 			}
 
 			TileArea area(WorldTile2(0, 0), WorldTile2(sizeX, sizeY));
 			if (IsFarmWidthTooHigh(area)) {
-				ss << "\n<Red>Width or Length too large</>\n<Red>(Max Width/Length: 16)</>";
+				ADDTEXT_LOCTEXT("Farm_BuildInvalid1", "\n<Red>Width or Length too large</>\n<Red>(Max Width/Length: 16)</>");
 			}
 			else if (IsFarmTooLarge(area)) {
-				ss << "\n<Red>Area is too large (Max Area: 64)</>";
+				ADDTEXT_LOCTEXT("Farm_BuildInvalid2", "\n<Red>Area is too large (Max Area: 64)</>");
 			}
 			else if (IsFarmTooSmall(area)) {
-				ss << "\n<Red>Area is too small (Min Area: 16)</>";
+				ADDTEXT_LOCTEXT("Farm_BuildInvalid3", "\n<Red>Area is too small (Min Area: 16)</>");
 			}
 		}
-		SetInstruction(PlacementInstructionEnum::DragFarm, true, ss.str());
+		SetInstruction(PlacementInstructionEnum::DragFarm, true, JOINTEXT(args));
 	}
 	else if (_placementType == PlacementType::StoneRoad)
 	{
@@ -275,10 +294,10 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 		{
 			ClearInstructions();
 			
-			stringstream ss;
+			TArray<FText> args;
 			//ss << "Spend " << 5 * sim.population(playerId) << "<img id=\"Coin\"/> to kidnap 3 people";
-			ss << "Kidnap 3 people\n" << "Use on opponent's Townhall.";
-			SetInstruction(PlacementInstructionEnum::Kidnap, true, ss.str());
+			ADDTEXT_LOCTEXT("Kidnap_PlaceInstruction", "Kidnap 3 people\nUse on opponent's Townhall.");
+			SetInstruction(PlacementInstructionEnum::Kidnap, true, JOINTEXT(args));
 		}
 	}
 

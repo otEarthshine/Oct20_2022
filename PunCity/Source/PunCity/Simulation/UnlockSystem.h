@@ -261,7 +261,7 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 
 	{ TechEnum::Vassalize, {
 		LOCTEXT("Vassalize", "Vassalize"),
-		LOCTEXT("Vassalize", "Unlock Vassalization which allows you to turn other city into a vassal."),
+		LOCTEXT("Vassalize Desc", "Unlock Vassalization which allows you to turn other city into a vassal."),
 	}},
 
 	{ TechEnum::IntercityRoad, {

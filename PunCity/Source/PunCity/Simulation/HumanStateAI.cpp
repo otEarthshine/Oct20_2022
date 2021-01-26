@@ -1406,7 +1406,7 @@ bool HumanStateAI::TryGatherFruit()
 	Add_MoveToward(treeAccessInfo.tile.worldAtom2(), 5000);
 	Add_MoveTo(treeAccessInfo.nearbyTile);
 
-	_unitState = UnitState::GatherBerry;
+	_unitState = UnitState::GatherFruit;
 	AddDebugSpeech("(Succeed)TryGatherBerry: pushed actions");
 	return true;
 }

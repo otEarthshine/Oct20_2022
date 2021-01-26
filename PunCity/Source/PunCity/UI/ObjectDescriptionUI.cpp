@@ -57,17 +57,31 @@ int32 modeIntFromString(const TArray<FString>& options, FString modeName) {
 
 void UObjectDescriptionUI::SetDropDown(int id)
 {
-	if (ObjectDropDownBox->GetVisibility() == ESlateVisibility::Visible) {
-		return;
-	}
-
-	ObjectDropDownBox->ClearOptions();
 	auto& simulation = dataSource()->simulation();
 	Building& bld = simulation.building(id);
 
-	if (bld.isEnum(CardEnum::Farm)) {
-		auto seedsOwned = simulation.resourceSystem(playerId()).seedsPlantOwned();
+	auto seedsOwned = simulation.resourceSystem(playerId()).seedsPlantOwned();
 
+	// Skip if dropdown is already visible
+	if (ObjectDropDownBox->GetVisibility() == ESlateVisibility::Visible) 
+	{
+		//  Special case farm where the Option Count can change
+		if (bld.isEnum(CardEnum::Farm)) 
+		{
+			// Refresh dropdown if this is farm and the number of seeds differ from before
+			if (seedsOwned.size() == ObjectDropDownBox->GetOptionCount()) {
+				return;
+			}
+		}
+		else {
+			return;
+		}
+	}
+
+	ObjectDropDownBox->ClearOptions();
+
+	if (bld.isEnum(CardEnum::Farm)) 
+	{
 		// Remove from drop down if georesourceEnum is invalid.
 		if (!SimSettings::IsOn("GeoresourceAnywhere")) 
 		{

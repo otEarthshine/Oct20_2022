@@ -1128,9 +1128,15 @@ int32 TreeSystem::MarkArea(int32 playerId, TileArea area, bool isRemoving, Resou
 		if (isValid && _simulation->tileOwner(tile) == playerId)
 		{
 			if (isRemoving) {
-				if (!_reservations.Contains(tileId)) {
-					RemoveMark(tileId);
+				// If there was reservation, reset those reservers
+				if (_reservations.Contains(tileId)) {
+					_simulation->ResetUnitActions(_reservations[tileId].unitId);
 				}
+				PUN_CHECK(!_reservations.Contains(tileId));
+				
+				//if (!_reservations.Contains(tileId)) {
+					RemoveMark(tileId);
+				//}
 			}
 			else {
 				_regionToMarkTileIds[tile.regionId()].Set(tile.localTileId(), true);

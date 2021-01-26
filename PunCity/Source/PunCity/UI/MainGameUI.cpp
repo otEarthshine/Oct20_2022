@@ -838,7 +838,7 @@ void UMainGameUI::Tick()
 		// Top left
 		{
 			SetText(TimeText, FText::Format(
-				INVTEXT("{0} {1}\nYear {2}"),
+				LOCTEXT("InGameTopLeft_SeasonYear", "{EarlyMidLate} {SeasonName}\nYear {2}"),
 				Time::SeasonPrefix(Time::Ticks()),
 				Time::SeasonName(Time::Seasons()),
 				TEXT_NUM(Time::Years())
@@ -975,7 +975,7 @@ void UMainGameUI::Tick()
 			Money->SetText(FText(), TEXT_NUM(resourceSystem.money()));
 
 			int32 totalIncome100 = playerOwned.totalIncome100();
-			MoneyChangeText->SetText(TEXT_100SIGNED(totalIncome100 / 100));
+			MoneyChangeText->SetText(TEXT_100SIGNED(totalIncome100));
 
 			TArray<FText> args;
 			ADDTEXT_LOCTEXT("Money_TipTitle", "Coins (Money) is used for purchasing buildings and goods. Coins come from tax and trade.\n\n");
@@ -991,7 +991,7 @@ void UMainGameUI::Tick()
 			simulation.unlockedInfluence(playerId()))
 		{
 			Influence->SetText("", to_string(resourceSystem.influence()));
-			InfluenceChangeText->SetText(ToFText(ToForcedSignedNumber(playerOwned.totalInfluenceIncome100() / 100)));
+			InfluenceChangeText->SetText(TEXT_100SIGNED(playerOwned.totalInfluenceIncome100()));
 
 			TArray<FText> args;
 			ADDTEXT_LOCTEXT("Influence_Tip1", "Influence points used for claiming land and vassalizing other towns.\n\n");
@@ -2082,8 +2082,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 		// Non-Building Cards
 		if (!IsBuildingCard(buildingEnum))
 		{
-			FString fName = GetBuildingInfo(buildingEnum).nameF();
-			PUN_LOG("Not Building Card %s", *fName);
+			PUN_LOG("Not Building Card %s", *GetBuildingInfo(buildingEnum).nameF());
 			if (IsAreaSpell(buildingEnum)) {
 				inputSystemInterface()->StartBuildingPlacement(buildingEnum, cardButton->buildingLvl, true);
 			}

@@ -237,7 +237,7 @@ void UGameSettingsUI::RefreshDropdowns()
 	//! Other Settings
 	AutosaveDropdown->ClearOptions();
 	for (size_t i = 0; i < AutosaveOptions.size(); i++) {
-		AutosaveDropdown->AddOption(AutosaveOptions[i]);
+		AutosaveDropdown->AddOption(AutosaveOptions[i].ToString());
 	}
 
 	LanguageDropdown->ClearOptions();
@@ -530,7 +530,7 @@ void UGameSettingsUI::OnAutosaveDropdownChanged(FString sItem, ESelectInfo::Type
 		_isSettingsDirty = true;
 
 		for (size_t i = 0; i < AutosaveOptions.size(); i++) {
-			if (AutosaveOptions[i] == sItem) {
+			if (AutosaveOptions[i].ToString() == sItem) {
 				gameInstance()->autosaveEnum = static_cast<AutosaveEnum>(i);
 				break;
 			}

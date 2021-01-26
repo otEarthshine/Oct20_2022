@@ -97,6 +97,8 @@ public:
 				_terrainChunks.Add(terrainComp);
 			}
 		}
+
+		needForceUpdate = true;
 	}
 
 	void InitProvinceMesh()
@@ -142,8 +144,9 @@ public:
 
 		//// PUN_LOG("region %d, %d ... %s", region.x, region.y, *displayLocation.ToString());
 
-		if (lastVisible != mapVisible) {
+		if (lastVisible != mapVisible || needForceUpdate) {
 			lastVisible = mapVisible;
+			needForceUpdate = false;
 			
 			_terrainChunkParent->SetVisibility(mapVisible);
 			for (auto chunk : _terrainChunks)
@@ -164,6 +167,7 @@ public:
 
 private:
 	bool lastVisible = false;
+	bool needForceUpdate = false;
 	
 	UPROPERTY() USceneComponent* _terrainChunkParent;
 	UPROPERTY() TArray<UTerrainLargeChunkComponent*> _terrainChunks;

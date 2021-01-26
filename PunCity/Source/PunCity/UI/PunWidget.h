@@ -258,6 +258,7 @@ public:
 	static const int32 ObjectFocusUIWrapSize = 280; // 330
 	std::string WrapString(std::string str, int32 wrapSize = ObjectFocusUIWrapSize, FSlateFontInfo* fontInfoPtr = nullptr);
 
+	// Bugged for localization
 	FString WrapStringF(FString fString, int32 wrapSize = ObjectFocusUIWrapSize, FSlateFontInfo* fontInfoPtr = nullptr);
 	
 	static void SetText(URichTextBlock* textBlock, std::string str) {
@@ -326,7 +327,9 @@ public:
 		if (widget->IsHovered()) {
 			kPointerOnUI = std::min(kPointerOnUI + 2, 2);
 
-			kPointerOnUINames.Add(widget->GetFullName());
+			kPointerOnUINames.Add(
+				widget->GetName() + ", " + widget->GetCategoryName() + "\n" + widget->GetPathName() + "\n"
+			);
 		}
 	}
 	static void TickIsHovered() {

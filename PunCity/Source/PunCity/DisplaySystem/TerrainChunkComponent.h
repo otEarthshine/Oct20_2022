@@ -53,6 +53,16 @@ public:
 
 	bool containsWater = false;
 
+	/*
+	 * Debug
+	 */
+	FVector GetVerticesAt(LocalTile2 localTile)
+	{
+		int32 tessTileX = localTile.x * tessMultiplier;
+		int32 tessTileY = localTile.y * tessMultiplier;
+		return vertices[tessTileX + tessTileY * tessVertSize];
+	}
+
 private:
 	int _lastHoleCount = 0;
 

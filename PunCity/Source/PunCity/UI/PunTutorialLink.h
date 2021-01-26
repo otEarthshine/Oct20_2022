@@ -27,13 +27,15 @@ public:
 		_linkEnum = linkEnum;
 		
 		switch (_linkEnum) {
+#define LOCTEXT_NAMESPACE "PunTutorialLink"
 #define CASE(LinkEnum, LinkString) case TutorialLinkEnum::LinkEnum: SetText(LinkText, LinkString); break;
 
-		CASE(TutorialButton, "(Show me the button..)");
-		CASE(CameraControl, "(Show me how..)");
+		CASE(TutorialButton, LOCTEXT("ShowButton_Link", "(Show me the button..)"));
+		CASE(CameraControl, LOCTEXT("ShowHow_Link)", "(Show me how..)"));
 
 
 #undef CASE
+#undef LOCTEXT_NAMESPACE
 		default:
 			break;
 		}

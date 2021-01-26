@@ -16,7 +16,7 @@ void BuildingCardSystem::TickRound()
 		if (allowMaxCardHandQueuePopup)
 		{
 			_simulation->AddPopupNonDuplicate(PopupInfo(_playerId,
-				LOCTEXT("MaxCardsQueued", "You have reached the maximum of 5 queued card hards. 5 queued hands were converted to 1 wild card."),
+				LOCTEXT("MaxCardsQueued", "You have reached the maximum of 5 queued card hands. 5 queued hands were converted to 1 wild card."),
 				{ LOCTEXT("Close", "Close"), LOCTEXT("Do not show this again", "Do not show this again") },
 				PopupReceiverEnum::MaxCardHandQueuePopup)
 			);

@@ -14,7 +14,6 @@
 #include <numeric>
 #include "ProvinceSystem.h"
 #include "GameRegionSystem.h"
-#include "ArmyNode.h"
 
 using namespace std;
 

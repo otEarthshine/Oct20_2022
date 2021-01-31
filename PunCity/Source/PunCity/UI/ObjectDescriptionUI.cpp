@@ -68,7 +68,7 @@ void UObjectDescriptionUI::SetDropDown(int id)
 	auto& simulation = dataSource()->simulation();
 	Building& bld = simulation.building(id);
 
-	auto seedsOwned = simulation.resourceSystem(playerId()).seedsPlantOwned();
+	auto seedsOwned = simulation.globalResourceSystem(playerId()).seedsPlantOwned();
 	// Remove from drop down if georesourceEnum is invalid.
 	if (!SimSettings::IsOn("GeoresourceAnywhere"))
 	{

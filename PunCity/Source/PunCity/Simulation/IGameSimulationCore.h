@@ -86,6 +86,8 @@ public:
 	virtual class PunTerrainChanges& terrainChanges() = 0;
 
 	virtual class ResourceSystem& resourceSystem(int32 playerId) = 0;
+
+	virtual class GlobalResourceSystem& globalResourceSystem(int32 playerId) = 0;
 	virtual class IQuestSystem* iquestSystem(int32 playerId) = 0;
 	virtual class QuestSystem* questSystem(int32 playerId) = 0;
 	virtual class UnlockSystem* unlockSystem(int32 playerId) = 0;
@@ -107,6 +109,7 @@ public:
 	//virtual class IUnitDataSource& unitDataSource() = 0;
 
 	virtual int32 playerCount() = 0;
+	virtual int32 townCount() = 0;
 
 	virtual FString playerNameF(int32 playerId) = 0;
 	virtual FText playerNameT(int32 playerId) = 0;
@@ -417,6 +420,7 @@ public:
 	
 	virtual int32 money(int32 playerId) = 0;
 	virtual void ChangeMoney(int32 playerId, int32 moneyChange) = 0;
+	virtual void ChangeMoney100(int32 playerId, int32 moneyChange100) = 0;
 
 	virtual int32 price100(ResourceEnum resourceEnum) = 0;
 	virtual int32 price(ResourceEnum resourceEnum) = 0;

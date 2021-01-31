@@ -30,6 +30,7 @@ void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePe
 	// Sold stuff executes on the way right away...
 	int32 playerId = tradeCommand.playerId;
 	ResourceSystem& resourceSys = simulation->resourceSystem(playerId);
+	GlobalResourceSystem& globalResourceSys = simulation->globalResourceSystem(playerId);
 
 	// This value is used in fee calculation
 	//int32 totalTradeMoney100 = 0;
@@ -54,7 +55,7 @@ void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePe
 			totalExportMoney100 += tradeMoney100;
 
 			resourceSys.RemoveResourceGlobal(resourceEnum, sellAmount);
-			resourceSys.ChangeMoney100(tradeMoney100);
+			globalResourceSys.ChangeMoney100(tradeMoney100);
 		}
 		else if (buyAmount > 0) // Buy (Import)
 		{
@@ -64,7 +65,7 @@ void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePe
 			if (isInstantBuy) {
 				resourceSys.AddResourceGlobal(resourceEnum, buyAmount, *simulation);
 			}
-			resourceSys.ChangeMoney100(-tradeMoney100);
+			globalResourceSys.ChangeMoney100(-tradeMoney100);
 		}
 		
 		simulation->worldTradeSystem().ChangeSupply(playerId, resourceEnum, -buyAmount); // Buying is decreasing world supply
@@ -79,7 +80,7 @@ void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePe
 	int32 importFee100 = totalImportMoney100 * tradingFeePercent / 100;
 	int32 fee100 = exportFee100 + importFee100;
 	//int32 fee100 = totalTradeMoney100 * tradingFeePercent / 100;
-	resourceSys.ChangeMoney100(-fee100);
+	globalResourceSys.ChangeMoney100(-fee100);
 	
 	simulation->QuestUpdateStatus(playerId, QuestEnum::TradeQuest, abs((totalExportMoney100 + totalImportMoney100 + fee100) / 100));
 
@@ -334,7 +335,7 @@ void TradingCompany::OnTick1Sec()
 	{
 		if (targetAmount > currentResourceCount) {
 			int32 buyAmountFromTarget = std::min(targetAmount - currentResourceCount, tradeMaximumPerRound());
-			int32 moneyLeftToBuyAfterFee = resourceSystem().money() * 100 / (100 + tradingFeePercent());
+			int32 moneyLeftToBuyAfterFee = globalResourceSystem().money() * 100 / (100 + tradingFeePercent());
 			moneyLeftToBuyAfterFee = std::max(0, moneyLeftToBuyAfterFee);
 			
 			int32 maxAmountMoneyCanBuy = moneyLeftToBuyAfterFee / GetResourceInfo(activeResourceEnum).basePrice;

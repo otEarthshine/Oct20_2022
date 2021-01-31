@@ -901,6 +901,7 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 	}
 
 	ResourceSystem& resourceSys = _simulation->resourceSystem(_playerId);
+	GlobalResourceSystem& globalResourceSys = _simulation->globalResourceSystem(_playerId);
 
 	/*
 	 * Townhall
@@ -931,8 +932,8 @@ void PlayerOwnedManager::RecalculateTax(bool showFloatup)
 				// TODO: InvestmentBank not yet used... Make sure it works as a percentage bank...
 				if (building.isEnum(CardEnum::InvestmentBank)) {
 					Bank* bank = static_cast<Bank*>(&building);
-					bank->lastRoundProfit = resourceSys.money() / 10;
-					PUN_LOG("InvestmentBankGain: %d", resourceSys.money());
+					bank->lastRoundProfit = globalResourceSys.money() / 10;
+					PUN_LOG("InvestmentBankGain: %d", globalResourceSys.money());
 
 					incomes100[static_cast<int>(IncomeEnum::BankProfit)] += bank->lastRoundProfit * 100;
 
@@ -1258,14 +1259,15 @@ void PlayerOwnedManager::CollectRoundIncome()
 	}
 
 	ResourceSystem& resourceSys = _simulation->resourceSystem(_playerId);
+	GlobalResourceSystem& globalResourceSys = _simulation->globalResourceSystem(_playerId);
 
 	// Change Income
 	int32 totalIncome100WithoutHouse = totalRevenue100WithoutHouse() - totalExpense100();
-	resourceSys.ChangeMoney100(totalIncome100WithoutHouse);
+	globalResourceSys.ChangeMoney100(totalIncome100WithoutHouse);
 
 	// Change Influence
-	resourceSys.ChangeInfluence100(totalInfluenceIncome100());
-	if (resourceSys.influence100() < 0) 
+	globalResourceSys.ChangeInfluence100(totalInfluenceIncome100());
+	if (globalResourceSys.influence100() < 0)
 	{
 		FText influenceStr = INVTEXT("</><img id=\"Influence\"/><EventLogRed>");
 		FText coinStr = INVTEXT("</><img id=\"Coin\"/><EventLogRed>");
@@ -1275,12 +1277,12 @@ void PlayerOwnedManager::CollectRoundIncome()
 				"You have {0}0. -{1}{2} penalty is applied from negative {0} ({1}2 per {0}1)."),
 				influenceStr,
 				coinStr,
-				TEXT_NUM(abs(min(-1, resourceSys.influence() * 2)))
+				TEXT_NUM(abs(min(-1, globalResourceSys.influence() * 2)))
 			),
 			true
 		);
-		resourceSys.ChangeMoney100(resourceSys.influence100() * 3);
-		resourceSys.SetInfluence(0);
+		globalResourceSys.ChangeMoney100(globalResourceSys.influence100() * 3);
+		globalResourceSys.SetInfluence(0);
 	}
 
 	//// Disband army if out of cash
@@ -1300,8 +1302,7 @@ void PlayerOwnedManager::CollectHouseIncome()
 	{
 		int32 revenue100Round = totalRevenue100HouseOnly();
 
-		ResourceSystem& resourceSys = _simulation->resourceSystem(_playerId);
-		resourceSys.ChangeMoney100(revenue100Round / (Time::SecondsPerRound / 3));
+		_simulation->ChangeMoney100(_playerId, revenue100Round / (Time::SecondsPerRound / 3));
 	}
 }
 

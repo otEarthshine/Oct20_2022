@@ -355,6 +355,7 @@ void UMainGameUI::Tick()
 		RoundCountdownImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", static_cast<float>(Time::Seconds() % Time::SecondsPerRound) / Time::SecondsPerRound);
 
 		ResourceSystem& resourceSystem = simulation.resourceSystem(playerId());
+		GlobalResourceSystem& globalResourceSys = simulation.globalResourceSystem(playerId());
 
 		// Refresh card stack
 		// refresh the stack if its state changed...
@@ -403,7 +404,7 @@ void UMainGameUI::Tick()
 
 		// Reroll price
 		int32 rerollPrice = cardSystem.GetRerollPrice();
-		RerollPrice->SetColorAndOpacity(resourceSystem.money() >= rerollPrice ? FLinearColor::White : FLinearColor(0.4, 0.4, 0.4));
+		RerollPrice->SetColorAndOpacity(globalResourceSys.money() >= rerollPrice ? FLinearColor::White : FLinearColor(0.4, 0.4, 0.4));
 		if (rerollPrice == 0) {
 			RerollPrice->SetText(LOCTEXT("Free", "Free"));
 			RerollPrice1->SetText(LOCTEXT("Free", "Free"));
@@ -853,7 +854,7 @@ void UMainGameUI::Tick()
 		//! Stats:
 		UnitSystem& unitSystem = simulation.unitSystem();
 		StatSystem& statSystem = simulation.statSystem();
-		ResourceSystem& resourceSystem = simulation.resourceSystem(playerId());
+		GlobalResourceSystem& globalResourceSys = simulation.globalResourceSystem(playerId());
 
 		// Top left
 		{
@@ -992,7 +993,7 @@ void UMainGameUI::Tick()
 
 		// Money
 		{
-			Money->SetText(FText(), TEXT_NUM(resourceSystem.money()));
+			Money->SetText(FText(), TEXT_NUM(globalResourceSys.money()));
 
 			int32 totalIncome100 = playerOwned.totalIncome100();
 			MoneyChangeText->SetText(TEXT_100SIGNED(totalIncome100));
@@ -1010,7 +1011,7 @@ void UMainGameUI::Tick()
 		if (simulation.playerOwned(playerId()).hasChosenLocation() &&
 			simulation.unlockedInfluence(playerId()))
 		{
-			Influence->SetText("", to_string(resourceSystem.influence()));
+			Influence->SetText("", to_string(globalResourceSys.influence()));
 			InfluenceChangeText->SetText(TEXT_100SIGNED(playerOwned.totalInfluenceIncome100()));
 
 			TArray<FText> args;
@@ -1760,7 +1761,7 @@ void UMainGameUI::ClickRerollButton()
 		return;
 	}
 	
-	int32 money = simulation().resourceSystem(playerId()).money();
+	int32 money = simulation().money(playerId());
 	int32 rerollPrice = cardSystem.GetRerollPrice();
 	if (money >= rerollPrice || rerollPrice == 0) {
 		auto command = make_shared<FRerollCards>();
@@ -2495,7 +2496,7 @@ void UMainGameUI::CallBack2(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 
 int32 UMainGameUI::MoneyLeftAfterTentativeBuy()
 {
-	int32 money = simulation().resourceSystem(playerId()).money();
+	int32 money = simulation().money(playerId());
 	auto& cardSystem = simulation().cardSystem(playerId());
 	std::vector<bool> reserveStatus = cardSystem.GetHand1ReserveStatus();
 	

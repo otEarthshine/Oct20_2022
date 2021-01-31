@@ -93,7 +93,7 @@ bool TownHall::HasEnoughUpgradeMoney()
 	PUN_CHECK(townhallLvl < GetMaxUpgradeLvl());
 
 	int32 upgradeMoney = GetUpgradeMoney(townhallLvl + 1);
-	return resourceSystem().money() >= upgradeMoney;
+	return globalResourceSystem().money() >= upgradeMoney;
 }
 
 void TownHall::UpgradeTownhall()
@@ -111,7 +111,7 @@ void TownHall::UpgradeTownhall()
 	//}
 	int32 upgradeMoney = GetUpgradeMoney(townhallLvl + 1);
 	if (upgradeMoney > 0) {
-		resourceSystem().ChangeMoney(-upgradeMoney);
+		globalResourceSystem().ChangeMoney(-upgradeMoney);
 	}
 
 	// Upgrade

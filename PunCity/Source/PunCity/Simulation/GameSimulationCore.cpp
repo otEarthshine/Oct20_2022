@@ -138,6 +138,7 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 
 	_replaySystem.Init(this);
 
+
 	// Just create all players' system even if there isn't that many
 	// TODO: don't create all?
 	//while (_resourceSystems.size() < GameConstants::MaxPlayersAndAI)
@@ -145,14 +146,23 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 	for (int32 i = 0; i < GameConstants::MaxPlayersAndAI; i++) 
 	{
 		int32 playerId = _resourceSystems.size();
+
+		// Add town
+		int32 townId = _resourceSystems.size();
 		_resourceSystems.push_back(ResourceSystem(playerId, this));
+		_playerOwnedManagers.push_back(PlayerOwnedManager(playerId, this));
+		_playerIdToTownIds.push_back({ townId });
+
+
+		_globalResourceSystems.push_back(GlobalResourceSystem());
 		_unlockSystems.push_back(UnlockSystem(playerId, this));
 		_questSystems.push_back(QuestSystem(playerId, this));
-		_playerOwnedManagers.push_back(PlayerOwnedManager(playerId, this));
 		_playerParameters.push_back(PlayerParameters(playerId, this));
-		_statSystem.AddPlayer(playerId);
+		_statSystem.AddPlayer(playerId); // TODO: make this per town?
 		_popupSystems.push_back(PopupSystem(playerId, this));
 		_cardSystem.push_back(BuildingCardSystem(playerId, this));
+
+		
 
 		_aiPlayerSystem.push_back(AIPlayerSystem(playerId, this, this));
 		
@@ -1539,12 +1549,12 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 					}
 					else
 					{
-						int32 targetPlayerMoney = resourceSystem(targetPlayerId).money();
+						int32 targetPlayerMoney = money(targetPlayerId);
 						targetPlayerMoney = max(0, targetPlayerMoney); // Ensure no negative steal..
 						
 						int32 actualSteal = targetPlayerMoney * 30 / 100;
-						resourceSystem(targetPlayerId).ChangeMoney(-actualSteal);
-						resourceSystem(playerId).ChangeMoney(actualSteal);
+						ChangeMoney(targetPlayerId, -actualSteal);
+						ChangeMoney(playerId, actualSteal);
 						AddPopup(targetPlayerId, 
 							FText::Format(LOCTEXT("XStoleCoinFromYou_Pop", "{0} stole {1}<img id=\"Coin\"/> from you"), playerNameT(playerId), TEXT_NUM(actualSteal))
 						);
@@ -1574,12 +1584,12 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 					}
 					else
 					{
-						int32 targetPlayerMoney = resourceSystem(targetPlayerId).money();
+						int32 targetPlayerMoney = money(targetPlayerId);
 						targetPlayerMoney = max(0, targetPlayerMoney); // Ensure no negative steal..
 						
 						int32 actualSteal = min(targetPlayerMoney, population(targetPlayerId));
-						resourceSystem(targetPlayerId).ChangeMoney(-actualSteal);
-						resourceSystem(playerId).ChangeMoney(actualSteal);
+						ChangeMoney(targetPlayerId, -actualSteal);
+						ChangeMoney(playerId, actualSteal);
 						AddPopup(targetPlayerId, 
 							FText::Format(LOCTEXT("Snatched_TargetPop", "{0} snatched {1}<img id=\"Coin\"/> from you"), townNameT(playerId), TEXT_NUM(actualSteal))
 						);
@@ -1676,7 +1686,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 			Building& bld = building(buildingId);
 			if (buildingId != -1 && !bld.isConstructed()) {
 				int32_t cost = bld.buildingInfo().constructionCostAsMoney() * 3;
-				resourceSystem(playerId).ChangeMoney(-cost);
+				ChangeMoney(playerId, -cost);
 				bld.FinishConstruction();
 			}
 		}
@@ -2018,7 +2028,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 
 		// Permanent card, pay its cost
 		if (playerId != -1 && IsPermanentBuilding(playerId, cardEnum)) {
-			resourceSystem(playerId).ChangeMoney(-_cardSystem[playerId].GetCardPrice(cardEnum));
+			ChangeMoney(playerId, -_cardSystem[playerId].GetCardPrice(cardEnum));
 		}
 
 		// Auto road placement
@@ -2365,7 +2375,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 						_treeSystem->ForceRemoveTileObj(tile, false);
 						overlaySystem().AddRoad(tile, true, true);
 
-						resourceSystem(parameters.playerId).ChangeMoney(-IntercityRoadTileCost);
+						ChangeMoney(parameters.playerId, -IntercityRoadTileCost);
 
 						// For road, also refresh the grass since we want it to be more visible
 						SetNeedDisplayUpdate(DisplayClusterEnum::Trees, tile.regionId(), true);
@@ -3082,7 +3092,7 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 			AddPopupToFront(command.playerId, 
 				LOCTEXT("ImmigrantsCannibalized", "News of your horrifying atrocity spreads across the world. You stole 100 gold and gained 100 pork.")
 			);
-			resourceSystem(command.playerId).ChangeMoney(100);
+			ChangeMoney(command.playerId, 100);
 			resourceSystem(command.playerId).AddResourceGlobal(ResourceEnum::Pork, 100, *this);
 		}
 	}
@@ -3104,7 +3114,7 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 			AddPopupToFront(command.playerId, 
 				LOCTEXT("ImmigrantsStoleGold", "News of your horrifying atrocity spreads across the world. You stole 100 gold.")
 			);
-			resourceSystem(command.playerId).ChangeMoney(100);
+			ChangeMoney(command.playerId, 100);
 		}
 	}
 	
@@ -3126,7 +3136,7 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 			AddPopupToFront(command.playerId, 
 				LOCTEXT("TribeStoleGold", "News of your horrifying atrocity spreads across the world. You stole 100 gold.")
 			);
-			resourceSystem(command.playerId).ChangeMoney(100);
+			ChangeMoney(command.playerId, 100);
 		}
 	}
 	
@@ -3150,7 +3160,7 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 			{
 				auto& cardSys = cardSystem(command.playerId);
 				cardSys.AddCardToHand2(unlockedEnum);
-				resourceSystem(command.playerId).ChangeMoney(-cardSys.GetCardPrice(unlockedEnum));
+				ChangeMoney(command.playerId, -cardSys.GetCardPrice(unlockedEnum));
 			}
 		}
 	}
@@ -3234,7 +3244,6 @@ void GameSimulationCore::RerollCards(FRerollCards command)
 {
 	UE_LOG(LogNetworkInput, Log, TEXT(" RerollCards"));
 	
-	auto& resourceSys = resourceSystem(command.playerId);
 	auto& cardSys = cardSystem(command.playerId);
 	
 	int32 rerollPrice = cardSys.GetRerollPrice();
@@ -3242,9 +3251,9 @@ void GameSimulationCore::RerollCards(FRerollCards command)
 	if (rerollPrice == 0) { // Free reroll
 		cardSys.RollHand(cardSys.handSize(), true);
 	}
-	else if (resourceSys.money() >= rerollPrice) {
+	else if (money(command.playerId) >= rerollPrice) {
 		cardSys.RollHand(cardSys.handSize(), true);
-		resourceSys.ChangeMoney(-rerollPrice);
+		ChangeMoney(command.playerId , -rerollPrice);
 	} else {
 		AddPopupToFront(command.playerId, 
 			LOCTEXT("NoRerollMoney", "Not enough money for reroll"), 
@@ -3278,7 +3287,7 @@ void GameSimulationCore::BuyCards(FBuyCard command)
 		CardEnum buildingEnum = cardSys.GetCardEnumFromHand(buyIndices[i]);
 
 		if (CanBuyCard(command.playerId, buildingEnum)) {
-			resourceSystem(command.playerId).ChangeMoney(-cardSys.GetCardPrice(buildingEnum)); // Must ChangeMoney before adding cards for cards with lvl...
+			ChangeMoney(command.playerId, -cardSys.GetCardPrice(buildingEnum)); // Must ChangeMoney before adding cards for cards with lvl...
 			cardSys.AddCardToHand2(buildingEnum, true);
 
 			// First time buying card for this quest? Introduce round timer properly
@@ -3305,7 +3314,7 @@ void GameSimulationCore::SellCards(FSellCards command)
 	
 	int32 sellTotal = cardSystem(command.playerId).RemoveCards(command.buildingEnum, 1);
 	if (sellTotal != -1) {
-		resourceSystem(command.playerId).ChangeMoney(sellTotal);
+		ChangeMoney(command.playerId, sellTotal);
 
 		AddEventLog(command.playerId, 
 			FText::Format(LOCTEXT("SoldCard_Event", "Sold {0} card for {1} gold"), GetBuildingInfo(command.buildingEnum).name, TEXT_NUM(sellTotal)), 
@@ -3320,6 +3329,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 	
 	auto& cardSys = cardSystem(command.playerId);
 	auto& resourceSys = resourceSystem(command.playerId);
+	auto& globalResourceSys = globalResourceSystem(command.playerId);
 
 	// CardRemoval
 	if (command.cardEnum == CardEnum::CardRemoval)
@@ -3406,7 +3416,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 	bool succeedUsingCard = true;
 	
 	if (command.cardEnum == CardEnum::Treasure) {
-		resourceSystem(command.playerId).ChangeMoney(500);
+		ChangeMoney(command.playerId, 500);
 		AddPopupToFront(command.playerId, 
 			LOCTEXT("GainedCoinFromTreasure", "Gained 500<img id=\"Coin\"/> from treasure.")
 		);
@@ -3437,7 +3447,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 			);
 		}
 		
-		resourceSystem(command.playerId).AddSeed(seedInfo);
+		globalResourceSystem(command.playerId).AddSeed(seedInfo);
 
 		if (IsCommonSeedCard(command.cardEnum)) {
 			AddPopupToFront(command.playerId, 
@@ -3467,7 +3477,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 		for (ResourceEnum foodEnum : StaticData::FoodEnums) {
 			int32 amountToRemove = resourceSys.resourceCount(foodEnum) / 2;
 			resourceSys.RemoveResourceGlobal(foodEnum, amountToRemove);
-			resourceSys.ChangeMoney(amountToRemove * FoodCost);
+			globalResourceSys.ChangeMoney(amountToRemove * FoodCost);
 			totalRemoved += amountToRemove;
 		}
 		AddPopupToFront(command.playerId, 
@@ -3476,15 +3486,15 @@ void GameSimulationCore::UseCard(FUseCard command)
 	}
 	else if (command.cardEnum == CardEnum::BuyWood) 
 	{
-		if (resourceSys.money() > 0)
+		if (globalResourceSys.money() > 0)
 		{
 			int32 cost = GetResourceInfo(ResourceEnum::Wood).basePrice;
-			int32 amountToBuy = resourceSys.money() / 2 / cost;
+			int32 amountToBuy = globalResourceSys.money() / 2 / cost;
 
 			if (resourceSystem(command.playerId).CanAddResourceGlobal(ResourceEnum::Wood, amountToBuy)) {
 				resourceSys.AddResourceGlobal(ResourceEnum::Wood, amountToBuy, *this);
 				int32 moneyPaid = amountToBuy * cost;
-				resourceSys.ChangeMoney(-moneyPaid);
+				globalResourceSys.ChangeMoney(-moneyPaid);
 
 				AddPopupToFront(command.playerId, 
 					FText::Format(LOCTEXT("BoughtWoodUseCoin", "Bought {0} wood for <img id=\"Coin\"/>{1}."), TEXT_NUM(amountToBuy), TEXT_NUM(moneyPaid))
@@ -3730,6 +3740,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	}
 
 	auto& resourceSys = resourceSystem(playerId);
+	auto& globalResourceSys = globalResourceSystem(playerId);
 
 	if (command.claimEnum == CallbackEnum::ClaimLandFood)
 	{
@@ -3755,22 +3766,22 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	{
 		int32 regionPriceMoney = GetProvinceClaimPrice(command.provinceId, playerId);
 		
-		if (resourceSys.money() >= regionPriceMoney &&
+		if (globalResourceSys.money() >= regionPriceMoney &&
 			provinceOwner(command.provinceId) == -1)
 		{
 			SetProvinceOwnerFull(command.provinceId, playerId);
-			resourceSys.ChangeMoney(-regionPriceMoney);
+			globalResourceSys.ChangeMoney(-regionPriceMoney);
 		}
 	}
 	else if (command.claimEnum == CallbackEnum::ClaimLandInfluence)
 	{
 		int32 regionPriceMoney = GetProvinceClaimPrice(command.provinceId, playerId);
 
-		if (resourceSys.influence() >= regionPriceMoney &&
+		if (globalResourceSys.influence() >= regionPriceMoney &&
 			provinceOwner(command.provinceId) == -1)
 		{
 			SetProvinceOwnerFull(command.provinceId, playerId);
-			resourceSys.ChangeInfluence(-regionPriceMoney);
+			globalResourceSys.ChangeInfluence(-regionPriceMoney);
 		}
 	}
 
@@ -3815,12 +3826,12 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 
 			//TODO: special AI
 			if (IsAIPlayer(command.playerId)) {
-				resourceSystem(command.playerId).ChangeInfluence(conquerPrice * 2);
+				globalResourceSys.ChangeInfluence(conquerPrice * 2);
 			}
 			
 			if (influence(command.playerId) >= conquerPrice) 
 			{
-				resourceSystem(command.playerId).ChangeInfluence(-conquerPrice);
+				globalResourceSys.ChangeInfluence(-conquerPrice);
 
 				int32 attackerPlayerId = (command.claimEnum == CallbackEnum::Liberate) ? provincePlayerId : command.playerId;
 				
@@ -3968,7 +3979,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 			
 			if (influence(command.playerId) >= price)
 			{
-				resourceSystem(command.playerId).ChangeInfluence(-price);
+				globalResourceSys.ChangeInfluence(-price);
 				provincePlayerOwner.ReinforceAttacker(command.provinceId, BattleInfluencePrice);
 			}
 			else {
@@ -3986,7 +3997,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 		if (provincePlayerOwner.GetDefendingClaimProgress(command.provinceId).isValid() &&
 			influence(command.playerId) >= BattleInfluencePrice)
 		{
-			resourceSystem(command.playerId).ChangeInfluence(-BattleInfluencePrice);
+			globalResourceSys.ChangeInfluence(-BattleInfluencePrice);
 			provincePlayerOwner.ReinforceDefender(command.provinceId, BattleInfluencePrice);
 		}
 	}
@@ -4180,8 +4191,8 @@ void GameSimulationCore::ChooseLocation(FChooseLocation command)
 
 
 		// Give money/seeds
-		resourceSystem(command.playerId).SetMoney(GameConstants::InitialMoney - provincePrice);
-		resourceSystem(command.playerId).SetInfluence(0);
+		globalResourceSystem(command.playerId).SetMoney(GameConstants::InitialMoney - provincePrice);
+		globalResourceSystem(command.playerId).SetInfluence(0);
 
 		// EventLog inform all players someone selected a start
 		if (!IsAIPlayer(command.playerId))
@@ -4203,7 +4214,7 @@ void GameSimulationCore::ChooseInitialResources(FChooseInitialResources command)
 		cardSystem(command.playerId).AddCardToHand2(CardEnum::Townhall);
 		
 		playerOwned(command.playerId).initialResources = command;
-		resourceSystem(command.playerId).ChangeMoney(-(command.totalCost() - FChooseInitialResources::GetDefault().totalCost()));
+		globalResourceSystem(command.playerId).ChangeMoney(-(command.totalCost() - FChooseInitialResources::GetDefault().totalCost()));
 	}
 }
 
@@ -4221,14 +4232,14 @@ void GameSimulationCore::Cheat(FCheat command)
 			_popupSystems[command.playerId].ClearPopups();
 			break;
 		}
-		case CheatEnum::Money: resourceSystem(command.playerId).ChangeMoney(30000); break;
-		case CheatEnum::Influence: resourceSystem(command.playerId).ChangeInfluence(10000); break;
+		case CheatEnum::Money: ChangeMoney(command.playerId, 30000); break;
+		case CheatEnum::Influence: ChangeMoney(command.playerId, 10000); break;
 		
 		case CheatEnum::FastBuild: SimSettings::Toggle("CheatFastBuild"); break;
 		
 		case CheatEnum::Cheat:
 			SimSettings::Set("CheatFastBuild", 1);
-			resourceSystem(command.playerId).ChangeMoney(100000);
+			ChangeMoney(command.playerId, 100000);
 		case CheatEnum::Army:
 		{
 			std::vector<int32> armyNodeIds = GetArmyNodeIds(command.playerId);
@@ -4316,11 +4327,11 @@ void GameSimulationCore::Cheat(FCheat command)
 			break;
 		}
 		case CheatEnum::AddMoney: {
-			resourceSystem(command.playerId).ChangeMoney(command.var1);
+			ChangeMoney(command.playerId, command.var1);
 			break;
 		}
 		case CheatEnum::AddInfluence: {
-			resourceSystem(command.playerId).ChangeInfluence(command.var1);
+			ChangeMoney(command.playerId, command.var1);
 			playerOwned(command.playerId).RecalculateTaxDelayed();
 			break;
 		}

@@ -559,6 +559,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 	OverlayType overlayType = OverlayType::None;
 
 	auto& resourceSys = simulation.resourceSystem(playerId());
+	auto& globalResourceSys = simulation.globalResourceSystem(playerId());
 	
 
 	if (uiState.objectType == ObjectTypeEnum::None) {
@@ -956,14 +957,14 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						// Show how much money he has..
 						if (townPlayerId != playerId())
 						{
-							ADDTEXT_(INVTEXT("<img id=\"Coin\"/>{0}"), FText::AsNumber(simulation.resourceSystem(townPlayerId).money()));
+							ADDTEXT_(INVTEXT("<img id=\"Coin\"/>{0}"), FText::AsNumber(simulation.globalResourceSystem(townPlayerId).money()));
 							descriptionBox->AddRichText(LOCTEXT("Money", "Money"), args);
 
 							ADDTEXT_(INVTEXT("<img id=\"Coin\"/>{0}"), TEXT_100(townhallPlayerOwned.totalIncome100()));
 							descriptionBox->AddRichText(LOCTEXT("Money Income", "Money Income"), args);
 							descriptionBox->AddSpacer();
 
-							ADDTEXT_(INVTEXT("<img id=\"Influence\"/>{0}"), FText::AsNumber(simulation.resourceSystem(townPlayerId).influence()));
+							ADDTEXT_(INVTEXT("<img id=\"Influence\"/>{0}"), FText::AsNumber(simulation.globalResourceSystem(townPlayerId).influence()));
 							descriptionBox->AddRichText(LOCTEXT("Influence", "Influence"), args);
 							ADDTEXT_(INVTEXT("<img id=\"Influence\"/>{0}"), TEXT_100(townhallPlayerOwned.totalInfluenceIncome100()));
 							descriptionBox->AddRichText(LOCTEXT("Influence Income", "Influence Income"), args);
@@ -2203,7 +2204,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						{
 							int32 upgradeMoney = townhall.GetUpgradeMoney();
 							FText moneyText = FText::AsNumber(upgradeMoney);
-							if (resourceSys.money() < upgradeMoney) {
+							if (globalResourceSys.money() < upgradeMoney) {
 								moneyText = TEXT_TAG("<Red>", moneyText);
 							}
 
@@ -2226,7 +2227,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							ADDTEXT_INV_("<line>");
 							ADDTEXT__(GetTownhallLvlToUpgradeBonusText(townhall.townhallLvl + 1));
 							
-							if (resourceSys.money() < upgradeMoney) {
+							if (globalResourceSys.money() < upgradeMoney) {
 								ADDTEXT_INV_("<space>");
 								ADDTEXT_TAG_("<Red>", LOCTEXT("Not enough money to upgrade.", "Not enough money to upgrade."));
 							}
@@ -2268,7 +2269,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								else {
 									PUN_CHECK(resourceEnum == ResourceEnum::None);
 									
-									FText moneyText = TextRed(TEXT_NUM(upgrade.moneyNeeded), resourceSys.money() < upgrade.moneyNeeded);
+									FText moneyText = TextRed(TEXT_NUM(upgrade.moneyNeeded), globalResourceSys.money() < upgrade.moneyNeeded);
 									
 									ADDTEXT_(INVTEXT("\n<img id=\"Coin\"/>{0}"), moneyText);
 								}

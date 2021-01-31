@@ -11,6 +11,7 @@
 #include <unordered_set>
 #include "PunCity/AlgorithmUtils.h"
 #include "Resource/ResourceSystem.h"
+#include "GlobalResourceSystem.h"
 
 class Building
 {
@@ -420,6 +421,11 @@ public:
 		ResourceSystem& resourceSys = _simulation->resourceSystem(_playerId);
 		resourceSys.CheckIntegrity_ResourceSys();
 		return resourceSys;
+	}
+	GlobalResourceSystem& globalResourceSystem() {
+		GlobalResourceSystem& globalResourceSy = _simulation->globalResourceSystem(_playerId);
+		//globalResourceSy.CheckIntegrity_ResourceSys();
+		return globalResourceSy;
 	}
 
 	//! Resources

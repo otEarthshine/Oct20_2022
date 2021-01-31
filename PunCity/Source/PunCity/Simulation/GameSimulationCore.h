@@ -13,7 +13,9 @@
 #include "../GameMapFlood.h"
 
 #include "Resource/ResourceSystem.h"
-#include "PolicySystem.h"
+#include "GlobalResourceSystem.h"
+
+//#include "PolicySystem.h"
 #include "QuestSystem.h"
 #include "UnlockSystem.h"
 #include "PlayerOwnedManager.h"
@@ -126,6 +128,8 @@ public:
 
 	PlayerOwnedManager& playerOwned(int32 playerId) final { return _playerOwnedManagers[playerId]; }
 	ResourceSystem& resourceSystem(int32 playerId) final { return _resourceSystems[playerId]; }
+
+	GlobalResourceSystem& globalResourceSystem(int32 playerId) final { return _globalResourceSystems[playerId]; }
 	QuestSystem* questSystem(int32 playerId) final { return playerId < _questSystems.size() ? &_questSystems[playerId] : nullptr; }
 	UnlockSystem* unlockSystem(int32 playerId) final { return playerId < _unlockSystems.size() ? &_unlockSystems[playerId] : nullptr; }
 	PlayerParameters* parameters(int32 playerId) final { return playerId < _unlockSystems.size() ? &_playerParameters[playerId] : nullptr; }
@@ -158,6 +162,10 @@ public:
 
 	int32 playerCount() final {
 		return _gameManager->playerCount();
+	}
+
+	int32 townCount() final {
+		return _resourceSystems.size();
 	}
 	
 	int32 population(int32 playerId) final {
@@ -308,21 +316,24 @@ public:
 		return result;
 	}
 	bool HasSeed(int32 playerId, CardEnum seedCardEnum) final {
-		return resourceSystem(playerId).HasSeed(seedCardEnum);
+		return globalResourceSystem(playerId).HasSeed(seedCardEnum);
 	}
 
 	int32 influence(int32 playerId) final {
-		return resourceSystem(playerId).influence();
+		return globalResourceSystem(playerId).influence();
 	}
 	int32 influence100(int32 playerId) final {
-		return resourceSystem(playerId).influence100();
+		return globalResourceSystem(playerId).influence100();
 	}
 	
 	int32 money(int32 playerId) final {
-		return resourceSystem(playerId).money();
+		return globalResourceSystem(playerId).money();
 	}
 	void ChangeMoney(int32 playerId, int32 moneyChange) final {
-		resourceSystem(playerId).ChangeMoney(moneyChange);
+		globalResourceSystem(playerId).ChangeMoney(moneyChange);
+	}
+	void ChangeMoney100(int32 playerId, int32 moneyChange100) final {
+		globalResourceSystem(playerId).ChangeMoney100(moneyChange100);
 	}
 
 	int32 price100(ResourceEnum resourceEnum) final {
@@ -1668,7 +1679,7 @@ public:
 	bool CanBuyCard(int32 playerId, CardEnum buildingEnum)
 	{
 		// Not enough money
-		int32 money = resourceSystem(playerId).money();
+		int32 money = globalResourceSystem(playerId).money();
 		if (money < cardSystem(playerId).GetCardPrice(buildingEnum)) {
 			AddPopupToFront(playerId, 
 				NSLOCTEXT("SimCore", "NotEnoughMoneyPurchaseCard", "Not enough money to purchase the card."), 
@@ -1984,7 +1995,7 @@ public:
 	{
 		auto checkGetSeed = [&](CardEnum seedCardEnum, GeoresourceEnum georesourceEnum)
 		{
-			if (!resourceSystem(playerId).HasSeed(seedCardEnum) &&
+			if (!globalResourceSystem(playerId).HasSeed(seedCardEnum) &&
 				!cardSystem(playerId).HasBoughtCard(seedCardEnum))
 			{
 				if (unlockSystem(playerId)->IsResearched(TechEnum::Plantation))
@@ -2128,15 +2139,24 @@ public:
 
 #define LOOP(sysName, func) {\
 								SERIALIZE_TIMER(sysName, data, crcs, crcLabels)\
-								for (size_t i = 0; i < GameConstants::MaxPlayersAndAI; i++) { func; }\
+								for (size_t i = 0; i < townCount(); i++) { func; }\
 							}
 
 				LOOP("Resource", _resourceSystems[i].Serialize(Ar));
+				LOOP("PlayerOwned", _playerOwnedManagers[i].Serialize(Ar));
+
+#undef LOOP
+				
+#define LOOP(sysName, func) {\
+								SERIALIZE_TIMER(sysName, data, crcs, crcLabels)\
+								for (size_t i = 0; i < GameConstants::MaxPlayersAndAI; i++) { func; }\
+							}
+
+				LOOP("GlobalResource", _globalResourceSystems[i].Serialize(Ar));
 				LOOP("Quest", _questSystems[i].Serialize(Ar));
 
 				LOOP("Unlock", _unlockSystems[i].Serialize(Ar));
 				LOOP("PlayerParam", _playerParameters[i].Serialize(Ar));
-				LOOP("PlayerOwned", _playerOwnedManagers[i].Serialize(Ar));
 				LOOP("Popup", _popupSystems[i].Serialize(Ar));
 				LOOP("Cards", _cardSystem[i].Serialize(Ar));
 
@@ -2285,7 +2305,7 @@ public:
 			}
 		}
 
-		resourceSystem(playerId()).ChangeMoney(1000000);
+		ChangeMoney(playerId(), 1000000);
 
 		// Claim Land
 		// TODO: bring back?
@@ -2419,11 +2439,16 @@ private:
 	ChatSystem _chatSystem;
 	EventLogSystem _eventLogSystem;
 
+	// Per Town
 	std::vector<ResourceSystem> _resourceSystems;
-	std::vector<QuestSystem> _questSystems;
-	std::vector<UnlockSystem> _unlockSystems;
-	std::vector<PlayerParameters> _playerParameters;
 	std::vector<PlayerOwnedManager> _playerOwnedManagers;
+
+	// Per Player
+	std::vector<std::vector<int32>> _playerIdToTownIds; // TODO: Serialize
+	std::vector<GlobalResourceSystem> _globalResourceSystems;
+	std::vector<UnlockSystem> _unlockSystems;
+	std::vector<QuestSystem> _questSystems;
+	std::vector<PlayerParameters> _playerParameters;
 	std::vector<PopupSystem> _popupSystems;
 	std::vector<BuildingCardSystem> _cardSystem;
 

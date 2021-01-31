@@ -213,7 +213,7 @@ std::vector<BonusPair> Beekeeper::GetBonuses()
 void Farm::OnInit()
 {
 	// Set initial seed
-	std::vector<SeedInfo> seeds = resourceSystem().seedsPlantOwned();
+	std::vector<SeedInfo> seeds = globalResourceSystem().seedsPlantOwned();
 
 	if (seeds.size() > 0)
 	{

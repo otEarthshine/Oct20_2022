@@ -28,7 +28,7 @@ void BlossomShrine::OnTick1Sec()
 
 void HellPortal::TickRound()
 {
-	resourceSystem().ChangeMoney(200);
+	globalResourceSystem().ChangeMoney(200);
 	_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, centerTile(), INVTEXT("+200"));
 }
 

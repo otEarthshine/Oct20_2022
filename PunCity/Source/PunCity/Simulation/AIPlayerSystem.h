@@ -7,6 +7,7 @@
 #include "GeoresourceSystem.h"
 #include "PunCity/NetworkStructs.h"
 #include "Resource/ResourceSystem.h"
+#include "GlobalResourceSystem.h"
 #include "PunCity/DisplaySystem/PunTerrainGenerator.h"
 #include "TreeSystem.h"
 #include "BuildingSystem.h"
@@ -105,6 +106,7 @@ public:
 		
 		auto& playerOwned = _simulation->playerOwned(_aiPlayerId);
 		auto& resourceSystem = _simulation->resourceSystem(_aiPlayerId);
+		auto& globalResourceSys = _simulation->globalResourceSystem(_aiPlayerId);
 		auto& terrainGenerator = _simulation->terrainGenerator();
 		auto& treeSystem = _simulation->treeSystem();
 		auto& buildingSystem = _simulation->buildingSystem();
@@ -1059,7 +1061,7 @@ public:
 		 */
 		//_LOG(PunAI, "%s CheckDefendLand(outer): sec:%d money:%d", AIPrintPrefix(), Time::Seconds(), resourceSystem.money());
 		if (Time::Seconds() % 10 == 0 && // Check every 10 sec
-			resourceSystem.money() > BattleInfluencePrice)
+			globalResourceSys.money() > BattleInfluencePrice)
 		{
 			//_LOG(PunAI, "%s CheckDefendLand", AIPrintPrefix());
 			
@@ -1140,10 +1142,10 @@ public:
 			{
 				int32 regionPrice = playerOwned.GetBaseProvinceClaimPrice(bestClaimProvinceId);
 				
-				if (resourceSystem.money() >= regionPrice) 
+				if (globalResourceSys.money() >= regionPrice)
 				{
 					// AI claim at half price...
-					resourceSystem.ChangeMoney(regionPrice / 2);
+					globalResourceSys.ChangeMoney(regionPrice / 2);
 					
 					auto command = MakeCommand<FClaimLand>();
 					command->provinceId = bestClaimProvinceId;

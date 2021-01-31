@@ -1487,7 +1487,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 					}
 
 					// Any seed that can be planted here?
-					std::vector<SeedInfo> seedsOwned = simulation.resourceSystem(_gameInterface->playerId()).seedsPlantOwned();
+					std::vector<SeedInfo> seedsOwned = simulation.globalResourceSystem(_gameInterface->playerId()).seedsPlantOwned();
 					GeoresourceEnum georesourceEnum = simulation.georesource(simulation.GetProvinceIdClean(tile)).georesourceEnum;
 					
 					bool hasValidSeed = false;

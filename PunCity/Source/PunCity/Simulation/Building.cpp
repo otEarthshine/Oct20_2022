@@ -559,9 +559,9 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showDisplay)
 	
 	// Money Upgrade
 	PUN_CHECK(moneyNeeded > 0);
-	if (resourceSystem().money() >= moneyNeeded)
+	if (globalResourceSystem().money() >= moneyNeeded)
 	{
-		resourceSystem().ChangeMoney(-moneyNeeded);
+		globalResourceSystem().ChangeMoney(-moneyNeeded);
 		_upgrades[upgradeIndex].isUpgraded = true;
 
 		ResetDisplay();
@@ -601,7 +601,7 @@ void Building::DoWork(int unitId, int workAmount100)
 				_filledInputs = false;
 				
 				int32 moneyReceived = productPerBatch();
-				resourceSystem().ChangeMoney(moneyReceived);
+				globalResourceSystem().ChangeMoney(moneyReceived);
 				_simulation->worldTradeSystem().ChangeSupply(_playerId, ResourceEnum::GoldBar, inputPerBatch());
 
 				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, centerTile(), TEXT_NUMSIGNED(moneyReceived));
@@ -633,7 +633,7 @@ void Building::DoWork(int unitId, int workAmount100)
 				_filledInputs = false;
 
 				int32 influenceReceived = productPerBatch();
-				resourceSystem().ChangeInfluence(influenceReceived);
+				globalResourceSystem().ChangeInfluence(influenceReceived);
 
 				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainInfluence, centerTile(), TEXT_NUMSIGNED(influenceReceived));
 				AddProductionStat(influenceReceived);

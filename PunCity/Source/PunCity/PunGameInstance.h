@@ -851,7 +851,6 @@ public:
 	bool useMultithreadedMeshGeneration = true;
 	bool forceClickthrough = false;
 
-	
 public:
 	/*
 	 * Settings

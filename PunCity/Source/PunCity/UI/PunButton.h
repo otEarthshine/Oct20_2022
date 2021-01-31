@@ -41,7 +41,7 @@ public:
 
 		PrefixText->SetText(prefix);
 		SuffixText->SetText(suffix);
-		if (IsValid(texture)) {
+		if (IsValidPun(texture)) {
 			IconImage->SetBrushFromTexture(texture);
 			IconImage->SetVisibility(ESlateVisibility::Visible);
 		} else {

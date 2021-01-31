@@ -16,7 +16,8 @@ class IGameUIDataSource;
 
 FORCEINLINE bool IsValidPun(const UObject *Test)
 {
-	return IsValid(Test) && Test->IsValidLowLevel();
+	return Test && Test->IsValidLowLevel() && !Test->IsPendingKill();
+	//return IsValid(Test) && Test->IsValidLowLevel();
 }
 
 class PunUnrealUtils

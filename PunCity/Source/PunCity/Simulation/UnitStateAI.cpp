@@ -1012,7 +1012,16 @@ bool UnitStateAI::TryGetBurrowFood()
 
 bool UnitStateAI::TryStockBurrowFood()
 {
-	if (_houseId == -1) {
+	if (!_simulation->isValidBuildingId(_houseId) ||
+		!_simulation->buildingIsAlive(_houseId))
+	{
+		AddDebugSpeech("(Failed)TryStockBurrowFood: No Home");
+		return false;
+	}
+
+	Building& bld = _simulation->building(_houseId);
+
+	if (!bld.isEnum(CardEnum::BoarBurrow)) {
 		AddDebugSpeech("(Failed)TryStockBurrowFood: No Home");
 		return false;
 	}

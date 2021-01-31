@@ -25,6 +25,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) UPunEditableNumberBox* GiftTargetAmount;
 
 	int32 targetPlayerId = -1;
+
+	const FText MoneyText = NSLOCTEXT("UGiftResourceUI", "Money", "Money");
 	
 	void PunInit()
 	{
@@ -34,12 +36,6 @@ public:
 
 		GiftTypeDropdown->OnSelectionChanged.Clear();
 		GiftTypeDropdown->OnSelectionChanged.AddDynamic(this, &UGiftResourceUI::OnDropDownChanged);
-		GiftTypeDropdown->ClearOptions();
-		GiftTypeDropdown->AddOption(NSLOCTEXT("GiftResourceUI", "Money", "Money").ToString());
-		
-		for (ResourceInfo info : SortedNameResourceInfo) {
-			GiftTypeDropdown->AddOption(info.name.ToString());
-		}
 
 		SetChildHUD(GiftTargetAmount);
 		GiftTargetAmount->minAmount = 0;
@@ -50,12 +46,21 @@ public:
 	void OpenUI(int32 targetPlayerIdIn)
 	{
 		targetPlayerId = targetPlayerIdIn;
+		
 		SetText(GiftTitleText, FText::Format(
 			NSLOCTEXT("GiftResourceUI", "GiftToX", "Gift to {0}"),
 			simulation().playerNameT(targetPlayerId)
 		));
 
-		GiftTypeDropdown->SetSelectedOption("Money");
+		// Gift Type Dropdown
+		GiftTypeDropdown->ClearOptions();
+		GiftTypeDropdown->AddOption(MoneyText.ToString());
+		for (ResourceInfo info : SortedNameResourceInfo) {
+			GiftTypeDropdown->AddOption(info.name.ToString());
+		}
+		GiftTypeDropdown->SetSelectedOption(MoneyText.ToString());
+
+		
 		GiftIcon->SetBrushFromTexture(assetLoader()->CoinIcon);
 		
 		SetVisibility(ESlateVisibility::SelfHitTestInvisible);
@@ -72,16 +77,16 @@ public:
 
 	UFUNCTION() void OnDropDownChanged(FString sItem, ESelectInfo::Type seltype)
 	{
-		std::wstring resourceName = ToWString(GiftTypeDropdown->GetSelectedOption());
-		if (resourceName == TEXT("")) {
+		FString resourceName = GiftTypeDropdown->GetSelectedOption();
+		if (resourceName.IsEmpty()) {
 			return;
 		}
 		
-		if (resourceName == TEXT("Money")) {
+		if (resourceName == MoneyText.ToString()) {
 			GiftIcon->SetBrushFromTexture(assetLoader()->CoinIcon);
 		}
 		else {
-			ResourceEnum resourceEnum = FindResourceEnumByName(resourceName);
+			ResourceEnum resourceEnum = FindResourceEnumByName(ToWString(resourceName));
 			GiftIcon->SetBrushFromMaterial(assetLoader()->GetResourceIconMaterial(resourceEnum));
 		}
 	}

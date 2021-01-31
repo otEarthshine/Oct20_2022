@@ -9,11 +9,11 @@ void UGiftResourceUI::OnClickConfirmButton()
 {
 	if (targetPlayerId != -1)
 	{
-		std::wstring resourceName = ToWString(GiftTypeDropdown->GetSelectedOption());
+		FString resourceName = GiftTypeDropdown->GetSelectedOption();
 		ResourceEnum resourceEnum;
 		int32 amount = GiftTargetAmount->amount;
 
-		if (resourceName == TEXT("Money")) {
+		if (resourceName == MoneyText.ToString()) {
 			resourceEnum = ResourceEnum::Money;
 			if (amount > simulation().money(playerId())) {
 				simulation().AddPopupToFront(playerId(),
@@ -24,7 +24,7 @@ void UGiftResourceUI::OnClickConfirmButton()
 			}
 		}
 		else {
-			resourceEnum = FindResourceEnumByName(resourceName);
+			resourceEnum = FindResourceEnumByName(ToWString(resourceName));
 			if (amount > simulation().resourceCount(playerId(), resourceEnum)) {
 				simulation().AddPopupToFront(playerId(), 
 					LOCTEXT("Not enough resource to give.", "Not enough resource to give."),

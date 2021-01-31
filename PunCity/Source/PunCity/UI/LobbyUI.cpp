@@ -479,8 +479,10 @@ void ULobbyUI::OnChatInputBoxTextCommitted(const FText& text, ETextCommit::Type 
 			}
 			// Send Chat To Server
 			else {
-				FString playerName = controller->PlayerState->GetPlayerName();
-				controller->SendChat_ToServer(playerName, text.ToString());
+				if (IsValidPun(controller->PlayerState)) { // PlayerState might need time to be filled on client
+					FString playerName = controller->PlayerState->GetPlayerName();
+					controller->SendChat_ToServer(playerName, text.ToString());
+				}
 				LobbyChatInputBox->SetText(FText());
 			}
 		}

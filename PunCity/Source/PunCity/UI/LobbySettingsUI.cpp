@@ -141,6 +141,10 @@ void ULobbySettingsUI::OnClickLobbyMapSeedRandomizeButton()
 
 void ULobbySettingsUI::OnLobbyMapSizeDropdownChanged(FString sItem, ESelectInfo::Type seltype)
 {
+	if (sItem.IsEmpty()) {
+		return;
+	}
+		
 	serverMapSettings.mapSizeEnumInt = static_cast<int32>(GetMapSizeEnumFromString(sItem));
 	RefreshAICountDropdown(LobbyAICountDropdown->GetSelectedIndex());
 
@@ -152,6 +156,10 @@ void ULobbySettingsUI::OnLobbyMapSizeDropdownChanged(FString sItem, ESelectInfo:
 }
 void ULobbySettingsUI::OnLobbySeaLevelDropdownChanged(FString sItem, ESelectInfo::Type seltype)
 {
+	if (sItem.IsEmpty()) {
+		return;
+	}
+	
 	serverMapSettings.mapSeaLevel = GetEnumFromName<MapSeaLevelEnum>(sItem, MapSettingsLevelNames);
 
 	SendMapSettings();
@@ -162,6 +170,10 @@ void ULobbySettingsUI::OnLobbySeaLevelDropdownChanged(FString sItem, ESelectInfo
 }
 void ULobbySettingsUI::OnLobbyMoistureDropdownChanged(FString sItem, ESelectInfo::Type seltype)
 {
+	if (sItem.IsEmpty()) {
+		return;
+	}
+	
 	serverMapSettings.mapMoisture = GetEnumFromName<MapMoistureEnum>(sItem, MapMoistureNames);
 
 	SendMapSettings();
@@ -172,6 +184,10 @@ void ULobbySettingsUI::OnLobbyMoistureDropdownChanged(FString sItem, ESelectInfo
 }
 void ULobbySettingsUI::OnLobbyTemperatureDropdownChanged(FString sItem, ESelectInfo::Type seltype)
 {
+	if (sItem.IsEmpty()) {
+		return;
+	}
+	
 	serverMapSettings.mapTemperature = GetEnumFromName<MapTemperatureEnum>(sItem, MapSettingsLevelNames);
 
 	SendMapSettings();
@@ -182,6 +198,10 @@ void ULobbySettingsUI::OnLobbyTemperatureDropdownChanged(FString sItem, ESelectI
 }
 void ULobbySettingsUI::OnLobbyMountainDensityDropdownChanged(FString sItem, ESelectInfo::Type seltype)
 {
+	if (sItem.IsEmpty()) {
+		return;
+	}
+	
 	serverMapSettings.mapMountainDensity = GetEnumFromName<MapMountainDensityEnum>(sItem, MapSettingsLevelNames);
 
 	SendMapSettings();
@@ -194,6 +214,10 @@ void ULobbySettingsUI::OnLobbyMountainDensityDropdownChanged(FString sItem, ESel
 
 void ULobbySettingsUI::OnLobbyAICountDropdownChanged(FString sItem, ESelectInfo::Type seltype)
 {
+	if (sItem.IsEmpty()) {
+		return;
+	}
+	
 	serverMapSettings.aiCount = FCString::Atoi(*sItem);
 	SendMapSettings();
 

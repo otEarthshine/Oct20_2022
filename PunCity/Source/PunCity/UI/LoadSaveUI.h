@@ -99,11 +99,7 @@ public:
 			SaveSelectionList->AddChild(selectButton);
 			selectButton->PunInit(this);
 
-			std::stringstream ss;
-			ss << ToStdString(saveList[i].name);
-			//ss << " " << saveList[i].dateTime.GetMonth() << "/" << saveList[i].dateTime.GetDay();
-			//ss << std::setw(2) << std::setfill('0') << ", " << saveList[i].dateTime.GetHour() << ":" << saveList[i].dateTime.GetMinute();
-			selectButton->Set(ss.str(), this, CallbackEnum::SelectSaveGame, i);
+			selectButton->Set(FText::FromString(saveList[i].name), this, CallbackEnum::SelectSaveGame, i);
 
 			// Show the saves in the correct category (single vs. multiplayer)
 			bool showSave = (saveList[i].mapSettings.isSinglePlayer == isSinglePlayer) && saveList[i].version == SAVE_VERSION;
@@ -186,14 +182,18 @@ public:
 			FString time = FString::Printf(TEXT("%02d:%02d"), dateTime.GetHour(), dateTime.GetMinute());
 
 			int32 gameTicks = saveInfo.gameTicks;
-			FString gameSeason = FString::Printf(TEXT("%s %s"), *(Time::SeasonPrefix(gameTicks).ToString()), *(Time::SeasonName(Time::Seasons(gameTicks)).ToString()));
+			FText gameSeasonText = FText::FormatNamed(
+				NSLOCTEXT("LoadSaveUI", "SaveInfo_SeasonText", "{EarlyMidLate} {SeasonName}"),
+				TEXT("EarlyMidLate"), Time::SeasonPrefix(gameTicks),
+				TEXT("SeasonName"), Time::SeasonName(Time::Seasons(gameTicks))
+			);
 
 			SelectedSavePlayerNameEditable->SetText(FText::FromString(saveInfo.DefaultSaveName()));
 			SelectedSavePlayerName->SetText(FText::FromString(saveInfo.name));
 			SelectedSaveDate->SetText(FText::FromString(date));
 			SelectedSaveTime->SetText(FText::FromString(time));
 			SelectedSaveMapSeed->SetText(FText::FromString(saveInfo.mapSettings.mapSeed));
-			SelectedSaveGameTime->SetText(FText::FromString(gameSeason));
+			SelectedSaveGameTime->SetText(gameSeasonText);
 			SelectedSaveGameYear->SetText(FText::FromString(FString::FromInt(Time::Years(gameTicks))));
 			SelectedSavePopulation->SetText(FText::FromString(FString::FromInt(saveInfo.population)));
 		}
@@ -317,7 +317,7 @@ private:
 			GameSaveInfo saveInfo;
 			
 			// Show info for current save
-			saveInfo.name = TrimStringF_Dots(ToFString(simulation().townName(playerId())), 10); // TrimStringF_Dots(simulation().playerNameF(playerId()), 10);
+			saveInfo.name = TrimStringF_Dots(simulation().townNameT(playerId()).ToString(), 10); // TrimStringF_Dots(simulation().playerNameF(playerId()), 10);
 			saveInfo.dateTime = FDateTime::Now();
 			saveInfo.gameTicks = Time::Ticks();
 			saveInfo.population = simulation().population(playerId());

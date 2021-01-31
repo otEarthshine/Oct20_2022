@@ -859,7 +859,9 @@ public:
 	float researchFraction() { return static_cast<float>(science100()) / science100Needed(); }
 
 	bool IsResearched(TechEnum techEnum) {
-		PUN_CHECK(_enumToTech.find(techEnum) != _enumToTech.end());
+		if (_enumToTech.find(techEnum) == _enumToTech.end()) {
+			return false;
+		}
 		return _enumToTech[techEnum]->state == TechStateEnum::Researched;
 	}
 

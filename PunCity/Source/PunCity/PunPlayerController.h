@@ -782,7 +782,7 @@ public:
 		terrainLargeDisplaySys->GetTerrainChunk(meshId)->ClearAllMeshSections();
 	}
 	UFUNCTION(Exec) void HideAllLargeTerrain() {
-		gameManager->terrainLargeDisplaySystem()->HideAllChunks();
+		gameManager->terrainLargeDisplaySystem()->TestAllChunks();
 	}
 
 	UFUNCTION(Exec) void PrintTerrainChunkData(int32 x, int32 y)
@@ -840,6 +840,13 @@ public:
 
 	UFUNCTION(Exec) void PrintMeshPoolCount() {
 		gameManager->PrintMeshPoolCount();
+	}
+
+	/*
+	 * Debug
+	 */
+	UFUNCTION(Exec) void TestAchievement(const FString& achievementId) override {
+		gameInstance()->UpdateAchievementProgress(achievementId, 100);
 	}
 
 	// Photo taking

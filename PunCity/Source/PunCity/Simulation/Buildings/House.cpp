@@ -277,7 +277,7 @@ int32 House::GetIncome100(IncomeEnum incomeEnum)
 		return occupancyFactor(_simulation->IsResearched(_playerId, TechEnum::MoreGoldPerHouse) ? 300 : 0);
 
 	case IncomeEnum::Tech_HouseLvl6Income:
-		return occupancyFactor(_simulation->IsResearched(_playerId, TechEnum::HouseLvl6Income) && (_houseLvl >= 6 ? 1000 : 0));
+		return occupancyFactor((_simulation->IsResearched(_playerId, TechEnum::HouseLvl6Income) && _houseLvl >= 6) ? 1000 : 0);
 
 	case IncomeEnum::Appeal: {
 		int32 percentIncomeIncrease = GetAppealPercent() / 5;

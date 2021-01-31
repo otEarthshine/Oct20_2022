@@ -1155,15 +1155,21 @@ void UnitStateAI::Add_DropoffFoodAnimal() {
 }
 void UnitStateAI::DropoffFoodAnimal()
 {
+	if (_houseId == -1) {
+		AddDebugSpeech("(Failed)DropoffFoodAnimal: Animal no longer  have house");
+		PUN_LOG("DropoffFoodAnimal: Animal no longer  have house...");
+		_simulation->ResetUnitActions(_id);
+		return;
+	}
+	
 	PUN_CHECK2(_inventory.hasResource(), debugStr());
 	BoarBurrow& boarBurrow = _simulation->building(_houseId).subclass<BoarBurrow>();
 
 	// TODO: resolve why Unit didn't get reset before this, when building dies
 	if (!_simulation->buildingIsAlive(_houseId)) {
 		AddDebugSpeech("(Failed)DropoffFoodAnimal: Building died somehow...");
-		_simulation->ResetUnitActions(_id);
-
 		PUN_LOG("DropoffFoodAnimal: Building died somehow...");
+		_simulation->ResetUnitActions(_id);
 		return;
 	}
 

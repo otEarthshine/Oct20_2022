@@ -1187,18 +1187,17 @@ void PlayerOwnedManager::AddTaxIncomeToString(TArray<FText>& args)
 {
 	ADDTEXT_(LOCTEXT("TaxIncome_TipTitle", "Income: {0}<img id=\"Coin\"/>\n"), TEXT_100(totalIncome100()));
 
+	ADDTEXT_LOCTEXT("TaxIncomeTip_SectionHouse", " House:\n");
+	
 	for (int32 i = 0; i < IncomeEnumCount; i++)
 	{
-		IncomeEnum incomeEnum = static_cast<IncomeEnum>(i);
-
-		if (incomes100[i] != 0)
-		{
-			ADDTEXT_(INVTEXT(" {0}"), TEXT_100SIGNED(incomes100[i]));
-
-			if (IsHouseIncomeEnum(incomeEnum)) {
-				ADDTEXT_(INVTEXT(" {0}"), LOCTEXT("House", "House"));
-			}
-			ADDTEXT_(INVTEXT(" {0}\n"), IncomeEnumName[i]);
+		// Start of new section
+		if (i == HouseIncomeEnumCount) {
+			ADDTEXT_LOCTEXT("TaxIncomeTip_SectionOthers", " Others:\n");
+		}
+		
+		if (incomes100[i] != 0) {
+			ADDTEXT_(INVTEXT("  {0} {1}\n"), TEXT_100SIGNED(incomes100[i]), IncomeEnumName[i]);
 		}
 	}
 
@@ -1406,10 +1405,7 @@ void PlayerOwnedManager::Tick1Sec()
 				int32 cardEnumInt = i + BuildingEnumCount;
 
 				_simulation->AddPopupNonDuplicate(PopupInfo(_playerId,
-					FText::Format(LOCTEXT("BuffRunningOut_Pop",
-						"Your {0} Buff is running out."
-						"<space>"
-						"Would you like to renew it with <img id=\"Coin\"/>xPopulation?"),
+					FText::Format(LOCTEXT("BuffRunningOut_Pop", "Your {0} Buff is running out.<space>Would you like to renew it with <img id=\"Coin\"/>xPopulation?"),
 						GetBuildingInfoInt(cardEnumInt).name
 					),
 					{ LOCTEXT("Renew", "Renew"),

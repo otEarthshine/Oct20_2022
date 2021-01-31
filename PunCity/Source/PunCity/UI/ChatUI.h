@@ -289,7 +289,7 @@ public:
 			auto command = make_shared<FCheat>();
 			command->cheatEnum = GetCheatEnum("AddResource");
 			command->var1 = static_cast<int32>(resourceEnum);
-			command->var2 = FCString::Atoi(ToTChar(commandAndParams[2]));
+			command->var2 = FCString::Atoi(commandAndParams[2].c_str());
 			networkInterface()->SendNetworkCommand(command);
 		}
 
@@ -298,7 +298,7 @@ public:
 		{
 			auto command = make_shared<FCheat>();
 			command->cheatEnum = GetCheatEnum("AddMoney");
-			command->var1 = FCString::Atoi(ToTChar(commandAndParams[1]));
+			command->var1 = FCString::Atoi(commandAndParams[1].c_str());
 			networkInterface()->SendNetworkCommand(command);
 		}
 
@@ -307,7 +307,7 @@ public:
 		{
 			auto command = make_shared<FCheat>();
 			command->cheatEnum = GetCheatEnum("AddInfluence");
-			command->var1 = FCString::Atoi(ToTChar(commandAndParams[1]));
+			command->var1 = FCString::Atoi(commandAndParams[1].c_str());
 			networkInterface()->SendNetworkCommand(command);
 		}
 
@@ -319,7 +319,7 @@ public:
 				return;
 			}
 			
-			int32 addCount = commandAndParams.size() >= 3 ? FCString::Atoi(ToTChar(commandAndParams[2])) : 1;
+			int32 addCount = commandAndParams.size() >= 3 ? FCString::Atoi(commandAndParams[2].c_str()) : 1;
 			if (addCount <= 0) {
 				return;
 			}
@@ -336,7 +336,7 @@ public:
 		{
 			auto command = make_shared<FCheat>();
 			command->cheatEnum = GetCheatEnum("AddImmigrants");
-			command->var1 = FCString::Atoi(ToTChar(commandAndParams[1]));
+			command->var1 = FCString::Atoi(commandAndParams[1].c_str());
 			networkInterface()->SendNetworkCommand(command);
 		}
 
@@ -345,7 +345,7 @@ public:
 		{
 			auto command = make_shared<FCheat>();
 			command->cheatEnum = GetCheatEnum("AddAIImmigrants");
-			command->var1 = FCString::Atoi(ToTChar(commandAndParams[1]));
+			command->var1 = FCString::Atoi(commandAndParams[1].c_str());
 			networkInterface()->SendNetworkCommand(command);
 		}
 		// AddAIMoney
@@ -353,7 +353,7 @@ public:
 		{
 			auto command = make_shared<FCheat>();
 			command->cheatEnum = GetCheatEnum("AddAIMoney");
-			command->var1 = FCString::Atoi(ToTChar(commandAndParams[1]));
+			command->var1 = FCString::Atoi(commandAndParams[1].c_str());
 			networkInterface()->SendNetworkCommand(command);
 		}
 
@@ -362,7 +362,7 @@ public:
 		{
 			auto command = make_shared<FCheat>();
 			command->cheatEnum = GetCheatEnum("HouseLevel");
-			command->var1 = FCString::Atoi(ToTChar(commandAndParams[1]));
+			command->var1 = FCString::Atoi(commandAndParams[1].c_str());
 			networkInterface()->SendNetworkCommand(command);
 		}
 
@@ -371,6 +371,14 @@ public:
 			UObject* nullObj = nullptr;
 			nullObj->BeginDestroy();
 			checkNoEntry();
+		}
+
+		// Test
+		if (commandAndParams.size() >= 3 && commandAndParams[0] == TEXT("TestAchievement"))
+		{
+			std::wstring achievementId = commandAndParams[1];
+			int32 percent = FCString::Atoi(commandAndParams[2].c_str());
+			gameInstance()->UpdateAchievementProgress(FString(achievementId.c_str()), percent);
 		}
 
 		//if (commandAndParams.size() >= 2 && commandAndParams[0] == "WorkToCost")

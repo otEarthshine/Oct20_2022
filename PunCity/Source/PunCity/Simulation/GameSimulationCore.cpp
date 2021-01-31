@@ -2793,7 +2793,11 @@ void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
 				BuildingUpgrade upgrade = bld->upgrades()[command.upgradeType];
 
 				AddPopup(command.playerId,
-					FText::Format(LOCTEXT("ShiftUpgrade_Pop", "Upgraded {UpgradeName} on {UpgradedBuildingCount} {BuildingName}."), upgrade.name, TEXT_NUM(upgradedCount), bld->buildingInfo().name)
+					FText::FormatNamed(
+						LOCTEXT("ShiftUpgrade_Pop", "Upgraded {UpgradeName} on {UpgradedBuildingCount} {BuildingName}."), 
+						TEXT("UpgradeName"), upgrade.name, 
+						TEXT("UpgradedBuildingCount"), TEXT_NUM(upgradedCount),
+						TEXT("BuildingName"), bld->buildingInfo().name)
 				);
 			}
 		}
@@ -3442,9 +3446,10 @@ void GameSimulationCore::UseCard(FUseCard command)
 		} else {
 			PUN_CHECK(IsSpecialSeedCard(command.cardEnum));
 			
-			AddPopupToFront(command.playerId, 
-				FText::Format(LOCTEXT("UnlockedCropRequireSuitableRegion", "Unlocked {0}. {1} requires suitable regions marked on the map to be grown."), plantName)
-			);
+			AddPopupToFront(command.playerId, FText::Format(
+				LOCTEXT("UnlockedCropRequireSuitableRegion", "Unlocked {0}. {0} requires suitable regions marked on the map to be grown."), 
+				plantName
+			));
 		}
 	}
 	else if (command.cardEnum == CardEnum::Pig) {

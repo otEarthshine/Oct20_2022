@@ -46,9 +46,8 @@ void ULobbyUI::Init()
 
 
 	FMapSettings mapSettings;
-	bool hasSavedMap = UPunGameInstance::GetSavedMap(mapSettings);
-	if (!hasSavedMap) {
-		mapSettings = FMapSettings::GetDefault(true);
+	if (gameInst->isSinglePlayer) {
+		mapSettings = UPunGameInstance::GetSavedMap(true);
 	}
 	
 	/*
@@ -71,6 +70,7 @@ void ULobbyUI::Init()
 		else
 		{
 			// Creating a Multiplayer Game
+			// GetMapSettings from gameInst since that is what was set by PreLobbySettings
 			mapSettings = gameInst->GetMapSettings();
 		}
 	}
@@ -92,7 +92,7 @@ void ULobbyUI::Init()
 	LobbyPlayerListBox->ClearChildren();
 
 	
-	LobbySettingsUI->Init(mapSettings);
+	LobbySettingsUI->InitLobbySettings(mapSettings);
 	
 	//// Only server can change settings
 	//if (GetFirstController()->GetLocalRole() == ROLE_Authority)

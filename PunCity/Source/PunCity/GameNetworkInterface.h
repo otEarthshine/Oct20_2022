@@ -95,4 +95,7 @@ public:
 	virtual void ExecuteInitialCloudFade() = 0;
 
 	virtual TArray<class UFireForgetAudioComponent*> GetPunAudios() = 0;
+
+	// Debug
+	virtual void TestAchievement(const FString& achievementId) = 0;
 };

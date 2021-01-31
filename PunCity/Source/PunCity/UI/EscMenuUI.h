@@ -28,7 +28,10 @@ public:
 	UPROPERTY(meta = (BindWidget)) UOverlay* EscMenu;
 	UPROPERTY(meta = (BindWidget)) UButton* EscMenuResumeButton;
 	UPROPERTY(meta = (BindWidget)) UButton* EscMenuSettingsButton;
+
+	UPROPERTY(meta = (BindWidget)) UOverlay*EscMenuRestartGameButtonOverlay;
 	UPROPERTY(meta = (BindWidget)) UButton* EscMenuRestartGameButton;
+	
 	UPROPERTY(meta = (BindWidget)) UButton* EscMenuExitToMainMenuButton;
 	UPROPERTY(meta = (BindWidget)) UButton* EscMenuQuitButton;
 
@@ -137,7 +140,7 @@ public:
 		EscMenuLoadButtonOverlay->SetVisibility(gameInstance()->isMultiplayer() ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 
 		// Only display "Restart Game" for single player
-		EscMenuRestartGameButton->SetVisibility(gameInstance()->isMultiplayer() ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+		EscMenuRestartGameButtonOverlay->SetVisibility(gameInstance()->isMultiplayer() ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 
 		if (ShouldPauseGameFromUI() && networkInterface()->hostGameSpeed() != 0) // hostGameSpeed() must be checked all the time since players should be able too unpause.
 		{

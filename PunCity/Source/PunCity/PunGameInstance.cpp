@@ -16,6 +16,12 @@
 //#include "OnlineSubsystemSteamTypes.h"
 //#include "Steam/steam_api.h"
 
+
+// Achievements
+#include "Interfaces/OnlineAchievementsInterface.h"
+#include "Interfaces/OnlineIdentityInterface.h"
+
+
 #define LOCTEXT_NAMESPACE "PunGameInstance"
 
 void UPunGameInstance::Init()
@@ -46,8 +52,12 @@ void UPunGameInstance::Init()
 
 	// Load Settings (especially for culture)
 	LoadSoundAndOtherSettingsFromFile();
-	
+
+	// Delegate to clean session when exiting game
 	FGameDelegates::Get().GetExitCommandDelegate().AddUObject(this, &UPunGameInstance::OnGameExit);
+
+	//Cache all the available achievements
+	QueryAchievements();
 
 #if !WITH_EDITOR
 	GEngine->bEnableOnScreenDebugMessages = false;
@@ -352,8 +362,9 @@ void UPunGameInstance::CreateGame_Phase2()
 	PrintSessionSettings(args, sessionSettings);
 	PUN_LOG("SessionSettings: %s", *(JOINTEXT(args).ToString()));
 
+
 	// LAN match can be single player or Editor
-	if (sessionSettings.bIsLANMatch) 
+	if (sessionSettings.bIsLANMatch)
 	{
 		// TODO: Single player ended up here, but might not need CreateSession
 		//if (!isSinglePlayer) {
@@ -756,7 +767,76 @@ bool UPunGameInstance::IsInGame(const UObject* worldContextObject) {
 //	}
 //}
 
+/*
+ * Achievements
+ */
+void UPunGameInstance::QueryAchievements()
+{
+	IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
+	if (OnlineSub)
+	{
+		IOnlineIdentityPtr Identity = OnlineSub->GetIdentityInterface();
+		if (Identity.IsValid())
+		{
+			TSharedPtr<const FUniqueNetId> UserId = Identity->GetUniquePlayerId(0);
+			IOnlineAchievementsPtr Achievements = OnlineSub->GetAchievementsInterface();
+			if (Achievements.IsValid())
+			{
+				Achievements->QueryAchievements(*UserId.Get(), FOnQueryAchievementsCompleteDelegate::CreateUObject(this, &UPunGameInstance::OnQueryAchievementsComplete));
+			}
+		}
+	}
+}
+void UPunGameInstance::OnQueryAchievementsComplete(const FUniqueNetId& PlayerId, const bool bWasSuccessful)
+{
+	PUN_LOG("OnQueryAchievementsComplete");
 
+	IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
+	IOnlineIdentityPtr Identity = OnlineSub->GetIdentityInterface();
+	IOnlineAchievementsPtr AchievementsInterface = OnlineSub->GetAchievementsInterface();
+
+	// Get the achievement data for LocalUserNum 0.
+	TArray<FOnlineAchievement> AchievementsData;
+	if (AchievementsInterface->GetCachedAchievements(*Identity->GetUniquePlayerId(0), AchievementsData) == EOnlineCachedResult::Success)
+	{
+		for (auto Data : AchievementsData)
+		{
+			PUN_LOG("AchievementData %s progress:%d", *Data.Id, Data.Progress);
+
+			FOnlineAchievementDesc AchievementDesc;
+			if (AchievementsInterface->GetCachedAchievementDescription(Data.Id, AchievementDesc) == EOnlineCachedResult::Success) {
+				PUN_LOG("AchievementDesc:%s", *AchievementDesc.Title.ToString());
+			}
+		}
+	}
+}
+
+void UPunGameInstance::UpdateAchievementProgress(const FString& Id, float Percent)
+{
+	IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
+	if (OnlineSub)
+	{
+		IOnlineIdentityPtr Identity = OnlineSub->GetIdentityInterface();
+		if (Identity.IsValid())
+		{
+			TSharedPtr<const FUniqueNetId> UserId = Identity->GetUniquePlayerId(0);
+			IOnlineAchievementsPtr Achievements = OnlineSub->GetAchievementsInterface();
+			if (Achievements.IsValid() && (!AchievementsWriteObjectPtr.IsValid() || !AchievementsWriteObjectPtr->WriteState != EOnlineAsyncTaskState::InProgress))
+			{
+				AchievementsWriteObjectPtr = MakeShareable(new FOnlineAchievementsWrite());
+				AchievementsWriteObjectPtr->SetFloatStat(*Id, Percent);
+
+				//Write the achievements progress
+				FOnlineAchievementsWriteRef AchievementsWriteObjectRef = AchievementsWriteObjectPtr.ToSharedRef();
+				Achievements->WriteAchievements(*UserId, AchievementsWriteObjectRef);
+			}
+		}
+	}
+}
+
+/*
+ * Handle Network Failure
+ */
 void UPunGameInstance::HandleNetworkFailure(UWorld * World, UNetDriver * NetDriver, ENetworkFailure::Type FailureType, const FString & ErrorString) {
 	PUN_DEBUG2("!!! NetworkFailure %s, %s", ENetworkFailure::ToString(FailureType), *ErrorString);
 	LOG_ERROR(LogNetworkInput, "!!! NetworkFailure %s, %s", ToString(FailureType), *ErrorString);

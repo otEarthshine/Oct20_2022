@@ -32,12 +32,16 @@ int UTerrainLargeDisplayComponent::CreateNewDisplay(int objectId)
 	_terrainLargeChunks[meshId]->alreadyUpdatedMesh = false;
 	//_terrainLargeChunks[meshId]->SetRelativeLocation(FVector(0, 0, 50000)); // TODO: quickfix bug with pooling, Mesh not hidden properly after load...
 
+	//PUN_LOG("UTerrainLargeDisplayComponent::CreateNewDisplay %s %d", ToTChar(WorldRegion2(objectId).ToString()), meshId);
+
 	return meshId;
 }
 
 void UTerrainLargeDisplayComponent::OnSpawnDisplay(int regionId, int meshId, WorldAtom2 cameraAtom)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayTerrain);
+
+	//PUN_LOG("UTerrainLargeDisplayComponent::OnSpawnDisplay %s %d", ToTChar(WorldRegion2(regionId).ToString()), meshId);
 
 	float centerShift = CoordinateConstants::RegionCenterDisplayUnits;
 
@@ -62,7 +66,7 @@ void UTerrainLargeDisplayComponent::UpdateDisplay(int regionId, int meshId, Worl
 	WorldAtom2 objectAtomLocation(region.x * CoordinateConstants::AtomsPerRegion,
 		region.y * CoordinateConstants::AtomsPerRegion);
 
-	FVector displayLocation = MapUtil::DisplayLocation(cameraAtom, objectAtomLocation);
+	FVector displayLocation = MapUtil::DisplayLocation(cameraAtom, objectAtomLocation, -5); // -5 to avoid zFighting
 
 	// PUN_LOG("region %d, %d ... %s", region.x, region.y, *displayLocation.ToString());
 
@@ -72,6 +76,8 @@ void UTerrainLargeDisplayComponent::UpdateDisplay(int regionId, int meshId, Worl
 	if (!_terrainLargeChunks[meshId]->alreadyUpdatedMesh)
 	{
 		//SCOPE_TIMER("Tick Region Terrain");
+
+		//PUN_LOG("UTerrainLargeDisplayComponent::alreadyUpdatedMesh %s %d", ToTChar(WorldRegion2(regionId).ToString()), meshId);
 
 		// Note: Removing "justCreated" will crash
 		if (!justCreated) {

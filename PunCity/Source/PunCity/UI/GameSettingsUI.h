@@ -256,13 +256,13 @@ private:
 	{
 		// Update this manually!
 		TMap<FString, int32> languageToPercent {
-			{ "zh-CN", 80 },
-			{ "zh-TW", 80 },
-			{ "de", 81 },
-			{ "fr", 80 },
-			{ "ja", 80 },
-			{ "ru", 80 },
-			{ "th", 73 },
+			//{ "zh-CN", 80 },
+			//{ "zh-TW", 80 },
+			//{ "de", 81 },
+			//{ "fr", 80 },
+			//{ "ja", 80 },
+			//{ "ru", 80 },
+			//{ "th", 73 },
 		};
 		
 		FString optionName = UKismetInternationalizationLibrary::GetCultureDisplayName(languageTag, false);

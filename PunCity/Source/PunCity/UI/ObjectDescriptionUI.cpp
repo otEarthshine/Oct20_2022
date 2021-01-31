@@ -69,6 +69,18 @@ void UObjectDescriptionUI::SetDropDown(int id)
 	Building& bld = simulation.building(id);
 
 	auto seedsOwned = simulation.resourceSystem(playerId()).seedsPlantOwned();
+	// Remove from drop down if georesourceEnum is invalid.
+	if (!SimSettings::IsOn("GeoresourceAnywhere"))
+	{
+		GeoresourceEnum georesourceEnum = simulation.georesource(bld.provinceId()).georesourceEnum;
+		for (size_t i = seedsOwned.size(); i-- > 0;) {
+			if (seedsOwned[i].georesourceEnum != GeoresourceEnum::None &&
+				seedsOwned[i].georesourceEnum != georesourceEnum)
+			{
+				seedsOwned.erase(seedsOwned.begin() + i);
+			}
+		}
+	}
 
 	// Skip if dropdown is already visible
 	if (ObjectDropDownBox->GetVisibility() == ESlateVisibility::Visible) 
@@ -90,19 +102,6 @@ void UObjectDescriptionUI::SetDropDown(int id)
 
 	if (bld.isEnum(CardEnum::Farm)) 
 	{
-		// Remove from drop down if georesourceEnum is invalid.
-		if (!SimSettings::IsOn("GeoresourceAnywhere")) 
-		{
-			GeoresourceEnum georesourceEnum = simulation.georesource(bld.provinceId()).georesourceEnum;
-			for (size_t i = seedsOwned.size(); i-- > 0;) {
-				if (seedsOwned[i].georesourceEnum != GeoresourceEnum::None &&
-					seedsOwned[i].georesourceEnum != georesourceEnum)
-				{
-					seedsOwned.erase(seedsOwned.begin() + i);
-				}
-			}
-		}
-
 		for (int i = 0; i < seedsOwned.size(); i++) {
 			ObjectDropDownBox->AddOption(GetTileObjInfo(seedsOwned[i].tileObjEnum).name.ToString());
 		}

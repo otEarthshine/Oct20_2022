@@ -41,15 +41,15 @@ public:
 			ExclamationIcon->SetVisibility(ESlateVisibility::Collapsed);
 		}
 		
-		if (TextEquals(title, quest->questTitle()) ||
-			TextEquals(numberDescription, quest->numberDescription()))
-		{
+		//if (TextEquals(title, quest->questTitle()) ||
+		//	TextEquals(numberDescription, quest->numberDescription()))
+		//{
 			title = quest->questTitle();
 			numberDescription = quest->numberDescription();
 
 			QuestTitle->SetText(title);
 			QuestNumberDescription->SetText(numberDescription);
-		}
+		//}
 
 		if (fraction != quest->fraction())
 		{

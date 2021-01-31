@@ -66,44 +66,61 @@ public:
 
 	void SendMapSettings();
 
-	void Init(FMapSettings mapSettingsIn)
+	void InitLobbySettings(FMapSettings mapSettingsIn)
 	{
 		serverMapSettings = mapSettingsIn;
 		
 		// Only server can change settings
 		if (isServer())
 		{
+			LobbyPasswordInputBox->OnTextCommitted.Clear();
 			LobbyPasswordInputBox->OnTextCommitted.AddDynamic(this, &ULobbySettingsUI::OnLobbyPasswordInputBoxTextCommitted);
 
+			LobbyMapSeedInputBox->OnTextCommitted.Clear();
 			LobbyMapSeedInputBox->OnTextCommitted.AddDynamic(this, &ULobbySettingsUI::OnLobbyMapSeedInputBoxTextCommitted);
+
+			LobbyMapSeedRandomizeButton->OnClicked.Clear();
 			LobbyMapSeedRandomizeButton->OnClicked.AddDynamic(this, &ULobbySettingsUI::OnClickLobbyMapSeedRandomizeButton);
 
+			LobbyMapSizeDropdown->OnSelectionChanged.Clear();
 			LobbyMapSizeDropdown->OnSelectionChanged.AddDynamic(this, &ULobbySettingsUI::OnLobbyMapSizeDropdownChanged);
 			// "Small" If adding another map size, also change the options on UI editor
 			// Note: Using UI Editor for this to prevent ::Direct selection issue
 
+			LobbySeaLevelDropdown->OnSelectionChanged.Clear();
 			LobbySeaLevelDropdown->OnSelectionChanged.AddDynamic(this, &ULobbySettingsUI::OnLobbySeaLevelDropdownChanged);
+
+			LobbyMoistureDropdown->OnSelectionChanged.Clear();
 			LobbyMoistureDropdown->OnSelectionChanged.AddDynamic(this, &ULobbySettingsUI::OnLobbyMoistureDropdownChanged);
+
+			LobbyTemperatureDropdown->OnSelectionChanged.Clear();
 			LobbyTemperatureDropdown->OnSelectionChanged.AddDynamic(this, &ULobbySettingsUI::OnLobbyTemperatureDropdownChanged);
+
+			LobbyMountainDensityDropdown->OnSelectionChanged.Clear();
 			LobbyMountainDensityDropdown->OnSelectionChanged.AddDynamic(this, &ULobbySettingsUI::OnLobbyMountainDensityDropdownChanged);
 
+			LobbyAICountDropdown->OnSelectionChanged.Clear();
 			LobbyAICountDropdown->OnSelectionChanged.AddDynamic(this, &ULobbySettingsUI::OnLobbyAICountDropdownChanged);
+
+			LobbyDifficultyDropdown->OnSelectionChanged.Clear();
 			LobbyDifficultyDropdown->OnSelectionChanged.AddDynamic(this, &ULobbySettingsUI::OnLobbyDifficultyDropdownChanged);
 		}
 
-
 		
-		// Small map for editor play for speed
-		//serverMapSettings.mapSizeEnumInt = static_cast<int32>(MapSizeEnum::Medium);
-		LobbyMapSizeDropdown->ClearOptions();
-		for (FText name : MapSizeNames) {
-			LobbyMapSizeDropdown->AddOption(name.ToString());
-		}
-		LobbyMapSizeDropdown->SetSelectedIndex(serverMapSettings.mapSizeEnumInt);
-
-		
-
+		// Set Dropdowns
 		{
+			LobbyMapSeedInputBox->SetText(FText::FromString(serverMapSettings.mapSeed));
+
+
+			// Small map for editor play for speed
+			//serverMapSettings.mapSizeEnumInt = static_cast<int32>(MapSizeEnum::Medium);
+			LobbyMapSizeDropdown->ClearOptions();
+			for (FText name : MapSizeNames) {
+				LobbyMapSizeDropdown->AddOption(name.ToString());
+			}
+			LobbyMapSizeDropdown->SetSelectedIndex(serverMapSettings.mapSizeEnumInt);
+
+			
 			auto setupDropdown = [&](UComboBoxString* LobbyDropdown, const std::vector<FText>& enumNames)
 			{
 				LobbyDropdown->ClearOptions();

@@ -50,7 +50,7 @@ void UMainMenuUI::Init()
 	LoadSaveUI->PunInit(this);
 
 	SetChildHUD(PreLobbySettingsUI);
-	PreLobbySettingsUI->Init(FMapSettings::GetDefault(false));
+	//PreLobbySettingsUI->InitLobbySettings(UPunGameInstance::GetSavedMap(false));
 	PreLobbySettingsUI->SetPreLobby(true);
 	PreLobbySettingsUI->SettingsBackgroundImage->SetVisibility(ESlateVisibility::Collapsed);
 	BUTTON_ON_CLICK(PreLobbySettingsBackButton, this, &UMainMenuUI::OnClickReturnToMainMenu);
@@ -84,6 +84,10 @@ void UMainMenuUI::Tick()
 	gameInstance()->PunTick();
 
 	VersionIdText->SetText(ToFText(GetGameVersionString()));
+
+	// TODO: Test
+	//VersionIdText->SetText(INVTEXT("Test Test: \u2713 AA\u200BA"));
+	
 
 	// Not Connected to Steam, retry every 2 sec
 	if (LobbyConnectionWarning->GetVisibility() == ESlateVisibility::Visible &&
@@ -168,6 +172,10 @@ void UMainMenuUI::Tick()
 					//sessions[i].Session.SessionSettings.Get(SETTING_MAPNAME, value);
 					//lobbyListElements[i]->SessionName->SetText(FText::FromString(value));
 					//lobbyListElements[i]->SessionName->SetText(FText::FromString(sessions[i].GetSessionIdStr()));
+
+					FString password = GetSessionValueString(SESSION_PASSWORD, sessionSettings);
+					lobbyListElements[i]->PasswordLockImage->SetVisibility(password == "" ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
+					
 
 					FString hostName = session.OwningUserName;
 					lobbyListElements[i]->SessionName->SetText(FText::FromString(hostName.Left(15)));
@@ -338,7 +346,10 @@ void UMainMenuUI::CreateSinglePlayerGame()
 
 void UMainMenuUI::OpenPreLobbySettings()
 {
+	gameInstance()->SetCreateMultiplayerGameState();
+	
 	MainMenuSwitcher->SetActiveWidget(PreLobbySettingsOverlay);
+	PreLobbySettingsUI->InitLobbySettings(UPunGameInstance::GetSavedMap(false));
 
 	if (gameInstance()->IsLoadingSavedGame()) {
 		BUTTON_ON_CLICK(PreLobbySettingsConfirmButton, this, &UMainMenuUI::LoadMultiplayerGame);

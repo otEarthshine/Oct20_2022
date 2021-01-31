@@ -21,7 +21,8 @@ public:
 	
 	UPROPERTY(meta = (BindWidget)) UImage* ElementActiveImage;
 	UPROPERTY(meta = (BindWidget)) UButton* ElementButton;
-	
+
+	UPROPERTY(meta = (BindWidget)) UImage* PasswordLockImage;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* SessionName;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* PlayerCount;
 	//UPROPERTY(meta = (BindWidget)) UTextBlock* Ping;

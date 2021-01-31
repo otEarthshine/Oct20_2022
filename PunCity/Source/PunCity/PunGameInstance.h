@@ -39,23 +39,23 @@ static FString GetSessionValueString(FName key, const FOnlineSessionSettings& se
 
 static void PrintSessionSettings(TArray<FText>& args, const FOnlineSessionSettings& sessionSettings)
 {
-	ADDTEXT_(INVTEXT("ShouldAdvertise: {0}\n"), TEXT_NUM(sessionSettings.bShouldAdvertise));
-	ADDTEXT_(INVTEXT("IsLANMatch: {0}\n"), TEXT_NUM(sessionSettings.bIsLANMatch));
-	ADDTEXT_(INVTEXT("AllowJoin: {0}\n"), TEXT_NUM(sessionSettings.bAllowJoinInProgress));
+	ADDTEXT_(INVTEXT("Should Advertise: {0}\n"), TEXT_NUM(sessionSettings.bShouldAdvertise));
+	ADDTEXT_(INVTEXT("Is LAN Match: {0}\n"), TEXT_NUM(sessionSettings.bIsLANMatch));
+	ADDTEXT_(INVTEXT("Allow Join: {0}\n"), TEXT_NUM(sessionSettings.bAllowJoinInProgress));
 	//ss << "IsDedicated:" << sessionSettings.bIsDedicated << "\n";
 	//ss << "UsesStats:" << sessionSettings.bUsesStats << "\n";
-	ADDTEXT_(INVTEXT("AllowInvites: {0}\n"), TEXT_NUM(sessionSettings.bAllowInvites));
-	ADDTEXT_(INVTEXT("UsesPresence: {0}\n"), TEXT_NUM(sessionSettings.bUsesPresence));
-	ADDTEXT_(INVTEXT("AllowJoinViaPresence: {0}\n"), TEXT_NUM(sessionSettings.bAllowJoinViaPresence));
-	ADDTEXT_(INVTEXT("AllowJoinViaPresenceFriendsOnly: {0}\n"), TEXT_NUM(sessionSettings.bAllowJoinViaPresenceFriendsOnly));
+	ADDTEXT_(INVTEXT("Allow Invites: {0}\n"), TEXT_NUM(sessionSettings.bAllowInvites));
+	ADDTEXT_(INVTEXT("Uses Presence: {0}\n"), TEXT_NUM(sessionSettings.bUsesPresence));
+	ADDTEXT_(INVTEXT("Allow Join Via Presence: {0}\n"), TEXT_NUM(sessionSettings.bAllowJoinViaPresence));
+	ADDTEXT_(INVTEXT("Allow Join Via Presence Friends-Only: {0}\n"), TEXT_NUM(sessionSettings.bAllowJoinViaPresenceFriendsOnly));
 	//ss << "AntiCheatProtected:" << sessionSettings.bAntiCheatProtected << "\n";
-	ADDTEXT_(INVTEXT("BuildUniqueId: {0}\n"), TEXT_NUM(sessionSettings.BuildUniqueId));
+	ADDTEXT_(INVTEXT("Build Unique Id: {0}\n"), TEXT_NUM(sessionSettings.BuildUniqueId));
 	ADDTEXT_INV_("\n");
-
 	
-	ADDTEXT_(INVTEXT("SessionTick: {0}\n"), TEXT_NUM(GetSessionValue(SESSION_TICK, sessionSettings)));
-	ADDTEXT_(INVTEXT("PlayerCount: {0}\n"), TEXT_NUM(GetSessionValue(SESSION_NUM_PLAYERS, sessionSettings)));
-	ADDTEXT_(INVTEXT("GameVersion: {0}\n"), TEXT_NUM(GetSessionValue(SESSION_GAME_VERSION, sessionSettings)));
+	ADDTEXT_(INVTEXT("Session Tick: {0}\n"), TEXT_NUM(GetSessionValue(SESSION_TICK, sessionSettings)));
+	ADDTEXT_(INVTEXT("Player Count: {0}\n"), TEXT_NUM(GetSessionValue(SESSION_NUM_PLAYERS, sessionSettings)));
+	FString gameVersion = GetGameVersionString(GetSessionValue(SESSION_GAME_VERSION, sessionSettings));
+	ADDTEXT_(INVTEXT("Game Version: {0}\n"), FText::FromString(gameVersion));
 
 	//FString value;
 	//sessionSettings.Get(SETTING_MAPNAME, value);
@@ -211,17 +211,19 @@ public:
 
 		return tempMapSettings.MapEquals(mapSettings);
 	}
-	static bool GetSavedMap(FMapSettings& mapSettings) {
+	static FMapSettings GetSavedMap(bool isSinglePlayerIn) {
 		FString path = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()) + "terrainMetaData.dat";
 
 		if (!FPaths::FileExists(path)) {
-			return false;
+			return FMapSettings::GetDefault(isSinglePlayerIn);
 		}
 
+		FMapSettings mapSettings;
 		PunFileUtils::LoadFile(path, [&](FArchive& Ar) {
 			mapSettings.Serialize(Ar);
 		});
-		return true;
+		mapSettings.isSinglePlayer = isSinglePlayerIn;
+		return mapSettings;
 	}
 
 	/*
@@ -373,14 +375,20 @@ public:
 		CreateGame_Phase1();
 	}
 	void CreateMultiplayerGame() {
-		isSinglePlayer = false;
-		bIsLoadingMultiplayerGame = false;
+		SetCreateMultiplayerGameState();
 		CreateGame_Phase1();
 	}
 	void LoadMultiplayerGame() {
 		isSinglePlayer = false;
 		bIsLoadingMultiplayerGame = true;
 		CreateGame_Phase1();
+	}
+
+
+	// Set state to prepare for creating MP game
+	void SetCreateMultiplayerGameState() {
+		isSinglePlayer = false;
+		bIsLoadingMultiplayerGame = false;
 	}
 
 private:
@@ -393,7 +401,7 @@ public:
 	{
 		FOnlineSessionSettings sessionSettings;
 
-		sessionSettings.bIsLANMatch = (IOnlineSubsystem::Get()->GetSubsystemName() == "NULL");
+		sessionSettings.bIsLANMatch = (IOnlineSubsystem::Get()->GetSubsystemName() == "NULL") || isSinglePlayer;
 
 		const int32 MaxPlayer = 6;
 		sessionSettings.NumPublicConnections = MaxPlayer;
@@ -794,6 +802,18 @@ public:
 	bool lobbyChatDirty = true;
 	TArray<FString> lobbyChatPlayerNames;
 	TArray<FString> lobbyChatMessages;
+
+	/*
+	 * Achievements
+	 */
+	void QueryAchievements();
+
+	void OnQueryAchievementsComplete(const FUniqueNetId& PlayerId, const bool bWasSuccessful);
+
+	void UpdateAchievementProgress(const FString& Id, float Percent);
+
+	FOnlineAchievementsWritePtr AchievementsWriteObjectPtr;
+	
 
 	/*
 	 * Others

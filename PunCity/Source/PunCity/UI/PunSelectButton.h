@@ -19,7 +19,7 @@ public:
 		Button->OnClicked.AddDynamic(this, &UPunSelectButton::OnButtonClicked);
 	}
 
-	void Set(std::string buttonText, UPunWidget* callbackParent, CallbackEnum callbackEnum, int32 callbackVar1In = -1, int32 callbackVar2In = -1) {
+	void Set(FText buttonText, UPunWidget* callbackParent, CallbackEnum callbackEnum, int32 callbackVar1In = -1, int32 callbackVar2In = -1) {
 		_callbackParent = callbackParent;
 		_callbackEnum = callbackEnum;
 		callbackVar1 = callbackVar1In;

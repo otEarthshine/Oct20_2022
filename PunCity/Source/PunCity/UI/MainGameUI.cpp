@@ -1458,7 +1458,7 @@ void UMainGameUI::Tick()
 			jobRow->Init(this, jobEnum);
 			JobPriorityScrollBox->AddChild(jobRow);
 			JobPriorityRows.Add(jobRow);
-			jobRow->Rename(*(GetBuildingInfo(jobEnum).name.ToString() + "_job"));
+			jobRow->Rename(*(FString("Job_") + FString::FromInt(static_cast<int>(jobEnum))));
 		}
 	}
 

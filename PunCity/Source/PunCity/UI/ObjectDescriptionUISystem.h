@@ -38,7 +38,8 @@ public:
 		}
 		
 		return _objectDescriptionUI->ChooseResourceOverlay->IsHovered() ||
-			_objectDescriptionUI->ManageStorageOverlay->IsHovered();
+			_objectDescriptionUI->ManageStorageOverlay->IsHovered() ||
+			_objectDescriptionUI->DescriptionPunBoxScrollOuter->IsHovered();
 	}
 
 	TArray<UWidget*> GetEmptyCardSlot() {

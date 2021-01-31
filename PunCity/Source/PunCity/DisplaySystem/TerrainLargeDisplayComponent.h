@@ -26,6 +26,13 @@ public:
 			HideDisplay(i, _terrainLargeChunks[i]->lastRegionId);
 		}
 	}
+	void TestAllChunks()
+	{
+		for (int32 i = 0; i < _terrainLargeChunks.Num(); i++) {
+			_terrainLargeChunks[i]->alreadyUpdatedMesh = false;
+			_terrainLargeChunks[i]->SetTerrainMaterial(_assetLoader);
+		}
+	}
 	
 protected:
 	void BeforeAdd() override {

@@ -217,7 +217,7 @@ void UBuildingJobUI::SetTradeProgress(TradeBuilding& tradeBuilding, float fracti
 	auto setWarningTradeBuildingFull = [&]()
 	{
 		auto textWidget = CastChecked<UPunTextWidget>(setWarningIcons(1));
-		SetText(textWidget->PunText, tradeBuilding.buildingInfo().nameStd() + "\nStorage Full");
+		SetText(textWidget->PunText, FText::Format(LOCTEXT("TradeBuildingHoverWarning", "{0}\nStorage Full"), tradeBuilding.buildingInfo().name));
 	};
 
 	bool hasTradeButton = false;

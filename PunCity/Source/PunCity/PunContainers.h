@@ -61,7 +61,7 @@ public:
 	void Add(WorldTile2 tile, T value) {
 		_subregionToValues[(tile.x / 16) + (tile.y / 16) * _subregionsPerWorldX].push_back(SubregionListPair(tile, value));
 
-		//UE_LOG(LogTemp, Error, TEXT("Subregion Add %s"), *tile.To_FString());
+		//UE_LOG(LogTemp, Error, TEXT("Subregion Add %s"), *tile.To_FString());q
 	}
 
 	void Remove(WorldTile2 tile, T value) {

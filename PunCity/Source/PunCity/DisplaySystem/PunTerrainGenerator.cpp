@@ -1506,13 +1506,13 @@ uint8 PunTerrainGenerator::Init5()
 	
 	// Clean
 	_initStage = 0;
-	continentPerlin1 = std::vector<int16>();
-	continentPerlin2 = std::vector<int16>();
+	continentPerlin1.clear(); continentPerlin1.shrink_to_fit();
+	continentPerlin2.clear(); continentPerlin2.shrink_to_fit();
 	
-	roughnessPerlin = std::vector<int16>();
+	roughnessPerlin.clear(); roughnessPerlin.shrink_to_fit();
 	//continentPerlinOctave = std::vector<int16>();
-	continentPerlinBeforeMirror = std::vector<int16>();
-	mirroredRoughness = std::vector<int16>();
+	continentPerlinBeforeMirror.clear(); continentPerlinBeforeMirror.shrink_to_fit();
+	mirroredRoughness.clear(); mirroredRoughness.shrink_to_fit();
 
 	return true;
 }

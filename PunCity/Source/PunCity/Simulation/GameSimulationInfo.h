@@ -143,13 +143,20 @@ public:
 };
 
 #define FTEXT(textIn) (FText::FromString(FString(textIn)))
+
+#define TEXT_INTEGER(number) FText::AsNumber(static_cast<int>(number) / 100)
+// Display decimal .X only if X is not 0
+#define TEXT_DECIMAL(number) (((static_cast<int>(number) % 100) / 10) == 0 ? FText() : FText::Format(INVTEXT(".{0}"), FText::AsNumber(abs(static_cast<int>(number) % 100) / 10)))
+
+
 #define TEXT_PERCENT(number) FText::Join(FText(), FText::AsNumber(number), INVTEXT("%"))
-#define TEXT_100(number) FText::Join(FText(), FText::AsNumber(number / 100), INVTEXT("."), FText::AsNumber((number % 100) / 10))
-#define TEXT_100_2(number) FText::Join(FText(), FText::AsNumber(number / 100), INVTEXT("."), FText::AsNumber(number % 100))
-#define TEXT_100SIGNED(number) FText::Join(FText(), (number > 0 ? INVTEXT("+") : INVTEXT("")), FText::AsNumber(static_cast<int>(number) / 100), INVTEXT("."), FText::AsNumber((static_cast<int>(number) % 100) / 10))
+#define TEXT_100(number) FText::Join(FText(), TEXT_INTEGER(number), TEXT_DECIMAL(number))
+#define TEXT_100_2(number) FText::Join(FText(), FText::AsNumber(number / 100), INVTEXT("."), FText::AsNumber(abs(static_cast<int>(number) % 100)))
+#define TEXT_100SIGNED(number) FText::Join(FText(), (number > 0 ? INVTEXT("+") : INVTEXT("")), TEXT_INTEGER(number), TEXT_DECIMAL(number))
 #define TEXT_NUM(number) FText::AsNumber(number)
 #define TEXT_NUMSIGNED(number) FText::Join(FText(), (number > 0 ? INVTEXT("+") : INVTEXT("")), FText::AsNumber(number))
 #define TEXT_NUMINT(number) FText::AsNumber(static_cast<int>(number))
+
 
 #define TEXT_FLOAT1(number) FText::Join(FText(), FText::AsNumber(static_cast<int>(number)), INVTEXT("."), FText::AsNumber(static_cast<int>(number * 10) % 10)
 #define TEXT_FLOAT1_PERCENT(number) FText::Join(FText(), TEXT_FLOAT1(number), INVTEXT("%"))
@@ -180,7 +187,9 @@ public:
 
 // !!!Note: there is a problem with .EqualTo() so this is used for now
 static bool TextEquals(const FText& a, const FText& b) {
-	return a.ToString() == b.ToString();
+	FString aStr = a.ToString();
+	FString bStr = b.ToString();
+	return aStr == bStr;
 }
 
 static bool TextArrayEquals(const TArray<FText>& a, const TArray<FText>& b)
@@ -763,7 +772,8 @@ static const TArray<FText> MapSizeNames
 {
 	LOCTEXT("Small", "Small"),
 	LOCTEXT("Medium", "Medium"),
-	LOCTEXT("Large", "Large"),
+	LOCTEXT("Large", "Large\u200B"),
+	//LOCTEXT("Large", "Large"),
 };
 
 static const std::vector<WorldRegion2> MapSizes
@@ -2233,6 +2243,8 @@ struct BldInfo
 
 	FText GetName(int32 count) { return count > 1 ? namePlural : name; }
 
+	const FString* GetDisplayName() { return FTextInspector::GetSourceString(name); }
+
 	bool hasInput1() { return input1 != ResourceEnum::None; }
 	bool hasInput2() { return input2 != ResourceEnum::None; }
 
@@ -2246,7 +2258,7 @@ struct BldInfo
 	
 
 	BldInfo(CardEnum buildingEnum,
-		FText name,
+		FText nameIn,
 		FText namePluralIn,
 		WorldTile2 size,
 		ResourceEnum input1,
@@ -2261,7 +2273,7 @@ struct BldInfo
 		FText miniDescriptionIn = FText()
 	) :
 		cardEnum(buildingEnum),
-		name(name),
+		//name(name),
 		size(size),
 		input1(input1),
 		input2(input2),
@@ -2274,6 +2286,7 @@ struct BldInfo
 		description(description),
 		miniDescription(miniDescriptionIn)
 	{
+		name = nameIn;
 		namePlural = namePluralIn.IsEmpty() ? name : namePluralIn;
 		
 		/*
@@ -4511,8 +4524,7 @@ enum class IncomeEnum : uint8
 	// HouseIncomeEnumCount!!!
 
 	// Other income
-
-	TownhallIncome,
+	TownhallIncome, // HouseIncomeEnumCount!!!
 	BankProfit,
 	InvestmentProfit,
 	ConglomerateIncome,
@@ -4532,7 +4544,7 @@ enum class IncomeEnum : uint8
 	Count,
 };
 
-static const int32 HouseIncomeEnumCount = 9;
+static const int32 HouseIncomeEnumCount = static_cast<int32>(IncomeEnum::TownhallIncome);
 
 #define LOCTEXT_NAMESPACE "IncomeEnumName"
 
@@ -4540,7 +4552,7 @@ static const TArray<FText> IncomeEnumName
 {
 	LOCTEXT("Base", "Base"),
 	LOCTEXT("Tech More Gold per House", "Tech More Gold per House"),
-	LOCTEXT("Tech House Lvl 2 Income", "Tech House Lvl 2 Income"),
+	LOCTEXT("Tech House Lvl 6 Income", "Tech House Lvl 6 Income"),
 	LOCTEXT("Appeal", "Appeal"),
 	LOCTEXT("Luxury", "Luxury"),
 
@@ -4953,9 +4965,7 @@ struct BiomeInfo
 static const BiomeInfo BiomeInfos[]
 {
 	{ LOCTEXT("Forest", "Forest"),
-		LOCTEXT("Forest Desc", 
-					"Serene broadleaf forest with moderate temperature. "
-					"Its friendly conditions make it an ideal starting area for new players."),
+		LOCTEXT("Forest Desc", "Serene broadleaf forest with moderate temperature. Its friendly conditions make it an ideal starting area for new players."),
 		{ TileObjEnum::Orange, TileObjEnum::Birch },
 		{TileObjEnum::OreganoBush, TileObjEnum::CommonBush, TileObjEnum::CommonBush2},
 		{TileObjEnum::WhiteFlowerBush},
@@ -4963,9 +4973,7 @@ static const BiomeInfo BiomeInfos[]
 		{ UnitEnum::BlackBear, UnitEnum::BrownBear }
 	},
 	{LOCTEXT("Grassland", "Grassland"),
-		LOCTEXT("Grassland Desc", 
-					"Biome filled with grasses, flowers and herbs. "
-					"Although erratic precipitation makes the land unsuitable for farming, the dense grass makes this biome ideal for ranching."),
+		LOCTEXT("Grassland Desc", "Biome filled with grasses, flowers and herbs. Although erratic precipitation makes the land unsuitable for farming, the dense grass makes this biome ideal for ranching."),
 		{ TileObjEnum::Orange, TileObjEnum::Birch },
 		{TileObjEnum::GrassGreen},
 		{TileObjEnum::WhiteFlowerBush},
@@ -4974,8 +4982,7 @@ static const BiomeInfo BiomeInfos[]
 		5
 	},
 	{ LOCTEXT("Desert", "Desert"),
-		LOCTEXT("Desert Desc",
-					"Dry barren land with just sand and stone, but rich with mineral deposits."),
+		LOCTEXT("Desert Desc", "Dry barren land with just sand and stone, but rich with mineral deposits."),
 		{ TileObjEnum::Cactus1  },
 		{ TileObjEnum::GrassGreen },
 		{TileObjEnum::WhiteFlowerBush},
@@ -4984,8 +4991,7 @@ static const BiomeInfo BiomeInfos[]
 	},
 	
 	{ LOCTEXT("Jungle", "Jungle"),
-		LOCTEXT("Jungle Desc",
-				"Wet tropical jungle thick with trees and dense underbrush, teeming with life, and infested with disease."),
+		LOCTEXT("Jungle Desc", "Wet tropical jungle thick with trees and dense underbrush, teeming with life, and infested with disease."),
 		{ TileObjEnum::Papaya, TileObjEnum::Cyathea, TileObjEnum::ZamiaDrosi },
 		{ TileObjEnum::Fern, TileObjEnum::JungleThickLeaf },
 		{TileObjEnum::WhiteFlowerBush},
@@ -4994,9 +5000,7 @@ static const BiomeInfo BiomeInfos[]
 		5
 	},
 	{ LOCTEXT("Savanna", "Savanna"),
-		LOCTEXT("Savanna Desc", 
-			"Tropical grassland scattered with shrubs and isolated trees. "
-					"The rich ecosystem supports a wide variety of wildlife."),
+		LOCTEXT("Savanna Desc", "Tropical grassland scattered with shrubs and isolated trees. The rich ecosystem supports a wide variety of wildlife."),
 		{ TileObjEnum::SavannaTree1  },
 		{ TileObjEnum::GrassGreen },
 		{},
@@ -5006,8 +5010,7 @@ static const BiomeInfo BiomeInfos[]
 	},
 	
 	{ LOCTEXT("Boreal Forest", "Boreal Forest"),
-		LOCTEXT("Boreal Forest Desc", 
-			"Coniferous forest with long and punishing winters."),
+		LOCTEXT("Boreal Forest Desc", "Coniferous forest with long and punishing winters."),
 		{ TileObjEnum::Pine1, TileObjEnum::Pine2 },
 		{ TileObjEnum::OreganoBush },
 		{ TileObjEnum::WhiteFlowerBush},
@@ -5015,8 +5018,7 @@ static const BiomeInfo BiomeInfos[]
 		{ UnitEnum::BrownBear},
 	},
 	{ LOCTEXT("Tundra", "Tundra"),
-		LOCTEXT("Tundra Desc", 
-			"Extremely cold, frozen plain where almost nothing grows."),
+		LOCTEXT("Tundra Desc", "Extremely cold, frozen plain where almost nothing grows."),
 		{ TileObjEnum::Pine1, TileObjEnum::Pine2 },
 		{ }, // TileObjEnum::OreganoBush
 		{TileObjEnum::WhiteFlowerBush},
@@ -7027,6 +7029,7 @@ static const FString AITownNames[] =
 	"Hastein",
 	"Borghild",
 	"Uppsala",
+	"Birka",
 	"Luna",
 	"Havre",
 	"Rohal",

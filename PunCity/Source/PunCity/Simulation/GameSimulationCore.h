@@ -488,6 +488,9 @@ public:
 	bool IsRoadTile(WorldTile2 tile) final {
 		return _pathAIHuman->isRoad(tile.x, tile.y);
 	}
+	//bool IsStoneRoadTile(WorldTile2 tile) final {
+	//	return _overlaySystem->;
+	//}
 	
 	
 	bool IsBuildable(WorldTile2 tile, int32 playerId) final {
@@ -864,7 +867,7 @@ public:
 		PUN_CHECK(buildingId != -1);
 
 		int8 isConnected = _buildingSystem->IsConnectedBuilding(buildingId);
-		PUN_CHECK(isConnected != -1);
+		//PUN_CHECK(isConnected != -1);
 		if (isConnected == -1) {
 			return false;
 		}

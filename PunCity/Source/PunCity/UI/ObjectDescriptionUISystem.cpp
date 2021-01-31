@@ -778,7 +778,6 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						descriptionBox->AddSpacer(10);
 
 						int32 houseLvl = house->houseLvl();
-						int32 appealNeeded = house->GetAppealUpgradeRequirement(houseLvl + 1);
 
 						// Heating
 						{
@@ -826,7 +825,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								int32 income100 = house->GetIncome100Int(i);
 								if (income100 != 0) {
 									//ss << (income100 > 0 ? INVTEXT(" +") : INVTEXT(" ")) << (income100 / 100.0f) << " " << IncomeEnumName[i] << "\n";
-									ADDTEXT_JOIN_(INVTEXT(" "), TEXT_100SIGNED(income100), INVTEXT(" "), GetIncomeEnumName(i), INVTEXT("\n"));
+									ADDTEXT_JOIN_(FText(), INVTEXT(" "), TEXT_100SIGNED(income100), INVTEXT(" "), GetIncomeEnumName(i), INVTEXT("\n"));
 								}
 							}
 
@@ -860,15 +859,18 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							//ss << "<Header>Level " << houseLvl << "</>";
 							//descriptionBox->AddRichText(ss);
 
+							// TODO: add appeal later?
+							//int32 appealNeeded = house->GetAppealUpgradeRequirement(houseLvl + 1);
+
 							if (houseLvl == house->GetMaxHouseLvl()) {
 								//ss << "Maximum lvl";
 								descriptionBox->AddRichText(LOCTEXT("Maximum lvl", "Maximum lvl"));
 							}
-							else if (house->GetAppealPercent() < appealNeeded) {
-								//ss << "<Orange>Need " + to_string(appealNeeded) + " appeal to increase lvl</>";
-								ADDTEXT_(LOCTEXT("HouseNeedAppeal", "<Orange>Need {0} appeal to increase lvl</>"), FText::AsNumber(appealNeeded));
-								descriptionBox->AddRichText(args);
-							}
+							// TODO: add appeal later?
+							//else if (house->GetAppealPercent() < appealNeeded) {
+							//	ADDTEXT_(LOCTEXT("HouseNeedAppeal", "<Orange>Need {0} appeal to increase lvl</>"), FText::AsNumber(appealNeeded));
+							//	descriptionBox->AddRichText(args);
+							//}
 							else {
 								//ss << "<Orange>" + house->HouseNeedDescription() + "</>\n<Orange>(to increase level)</>";
 								ADDTEXT_(INVTEXT("<Orange>{0}</>\n"), house->HouseNeedDescription());
@@ -3647,8 +3649,12 @@ void UObjectDescriptionUISystem::AddBiomeInfo(WorldTile2 tile, UPunBoxWidget* de
 	FloatDet maxCelsius = sim.MaxCelsius(tile);
 	FloatDet minCelsius = sim.MinCelsius(tile);
 
+	//const FText temperatureText = LOCTEXT("Temperature", "Temperature");
+	ADDTEXT_LOCTEXT("BiomeInfo_Temperature", "<Bold>Temperature</>");
+	
 	ADDTEXT_(
-		LOCTEXT("BiomeInfoTemperature", "<Bold>Temperature:</> {0}-{1}°C ({2}-{3}°F)\n"),
+		//LOCTEXT("BiomeInfoTemperature", "<Bold>Temperature:</> {0}-{1}°C ({2}-{3}°F)\n"),
+		INVTEXT(": {0}-{1}°C ({2}-{3}°F)\n"),
 		TEXT_NUMINT(FDToFloat(minCelsius)),
 		TEXT_NUMINT(FDToFloat(maxCelsius)),
 		TEXT_NUMINT(FDToFloat(CelsiusToFahrenheit(minCelsius))),
@@ -3814,7 +3820,7 @@ void UObjectDescriptionUISystem::AddProvinceInfo(int32 provinceId, UPunBoxWidget
 
 		const FText provinceText = LOCTEXT("Province", "Province");
 
-		ADDTEXT_(INVTEXT("<Header>{0} {1}</>\n"), terrainGenerator.GetBiomeNameT(provinceCenter), provinceText);
+		ADDTEXT_(INVTEXT("<Header>{0} {1}</>"), terrainGenerator.GetBiomeNameT(provinceCenter), provinceText);
 		SetText(_objectDescriptionUI->DescriptionUITitle, args);
 		descriptionBox->AddSpacer(12);
 

@@ -21,7 +21,7 @@ using namespace std::placeholders;
 
 #define LOCTEXT_NAMESPACE "BuildingPlacementSys"
 
-static const FText SureDemolishFortText = LOCTEXT("SureDemolishFort_Pop", "Are you sure you want to demolish?\nFort and Colony Cards will not be recovered.");
+static const FText SureDemolishFortText = LOCTEXT("SureDemolishFort_Pop", "Are you sure you want to demolish?\n<Orange>Fort and Colony Cards will not be recovered.</>");
 static const FText SureDemolishText = LOCTEXT("SureDemolish_Pop", "Are you sure you want to demolish?");
 
 
@@ -263,10 +263,13 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 			int32 stoneNeeded = 0;
 			for (int32 tileId : _roadPathTileIds) {
 				WorldTile2 tile(tileId);
-				if (sim.buildingEnumAtTile(tile) == CardEnum::None && 
-					!sim.IsRoadTile(tile)) 
+				CardEnum tileBldEnum = sim.buildingEnumAtTile(tile);
+				if (tileBldEnum == CardEnum::None) 
 				{
-					stoneNeeded += 2;
+					bool isStoneRoad = sim.IsRoadTile(tile) && !sim.overlaySystem().GetRoad(tile).isDirt;
+					if (!isStoneRoad) {
+						stoneNeeded += 2;
+					}
 				}
 			}
 			//int32 stoneNeeded = _roadPathTileIds.Num() * 2;

@@ -89,34 +89,35 @@ static std::vector<uint32> territoryAdjacencyEncoding2;
 
 void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 {
-	if (!PunSettings::IsOn("DisplayTerritory")) {
-		for (int i = 0; i < playerDecals.decalMaterials.Num(); i++) {
-			playerDecals.decals[i]->SetVisibility(false);
-		}
-		return;
-	}
-	
-	// Update
-	for (int i = 0; i < playerDecals.decalMaterials.Num(); i++) {
-		playerDecals.decals[i]->SetWorldScale3D(FVector::OneVector * MapUtil::GlobalDecalZoomFactor(gameManager()->zoomDistance()));
-	}
-	
-	//_regionBorderDecal->SetVisibility(gameManager()->ZoomDistanceBelow(WorldToMapZoomAmount));
+	// TODO: Remove This
+	//if (!PunSettings::IsOn("DisplayTerritory")) {
+	//	for (int i = 0; i < playerDecals.decalMaterials.Num(); i++) {
+	//		playerDecals.decals[i]->SetVisibility(false);
+	//	}
+	//	return;
+	//}
+	//
+	//// Update
+	//for (int i = 0; i < playerDecals.decalMaterials.Num(); i++) {
+	//	playerDecals.decals[i]->SetWorldScale3D(FVector::OneVector * MapUtil::GlobalDecalZoomFactor(gameManager()->zoomDistance()));
+	//}
+	//
+	////_regionBorderDecal->SetVisibility(gameManager()->ZoomDistanceBelow(WorldToMapZoomAmount));
 
-	// TODO: refactor... decal should be resized according to region extent?? May be not anymore??
+	//// TODO: refactor... decal should be resized according to region extent?? May be not anymore??
 
-	// Hide any decal that is not shown
-	TileArea sampleArea = gameManager()->sampleArea();
-	bool isMapMode = !gameManager()->ZoomDistanceBelow(WorldToMapZoomAmount);
-	//int decalCount = 0;
-	simulation().ExecuteOnPlayersAndAI([&](int32_t playerId) {
-		if (playerDecals.Contains(playerId)) {
-			bool shouldDisplay = isMapMode || sampleArea.HasOverlap(simulation().playerOwned(playerId).territoryBoxExtent());
-			playerDecals.GetDecal(playerId)->SetVisibility(shouldDisplay);
-			//decalCount += shouldDisplay;
-		}
-	});
-	//PUN_LOG("decalCount %d", decalCount);
+	//// Hide any decal that is not shown
+	//TileArea sampleArea = gameManager()->sampleArea();
+	//bool isMapMode = !gameManager()->ZoomDistanceBelow(WorldToMapZoomAmount);
+	////int decalCount = 0;
+	//simulation().ExecuteOnPlayersAndAI([&](int32 playerId) {
+	//	if (playerDecals.Contains(playerId)) {
+	//		bool shouldDisplay = isMapMode || sampleArea.HasOverlap(simulation().playerOwned(playerId).territoryBoxExtent());
+	//		playerDecals.GetDecal(playerId)->SetVisibility(shouldDisplay);
+	//		//decalCount += shouldDisplay;
+	//	}
+	//});
+	////PUN_LOG("decalCount %d", decalCount);
 
 
 
@@ -134,7 +135,7 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 	else {
 		// Show non-player's province only
 		for (int32 provinceId : sampleProvinceIds) {
-			if (simulation().provinceOwner(provinceId) == -1) {
+			if (simulation().provinceOwnerTown(provinceId) == -1) {
 				sampleProvinceIdsNonPlayer.push_back(provinceId);
 			}
 		}
@@ -206,7 +207,7 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 		auto material = _gameManager->ZoomDistanceBelow(WorldZoomTransition_GameToMap) ? comp->MaterialInstance : comp->MaterialInstance_Top;
 
 		// Fade when it is not near our territory
-		int32 owner = simulation().provinceOwner(comp->provinceId);
+		int32 owner = simulation().provinceOwnerTown(comp->provinceId);
 		material->SetScalarParameterValue("IsFade", (owner == -1) && !simulation().IsProvinceNextToPlayer(comp->provinceId, playerId()));
 
 		comp->SetMaterial(0, material);
@@ -218,48 +219,51 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 	 */
 	{
 		// Above WorldToMapZoom, where sampleIds are 0, we show all player territory
-		std::vector<int32> sampleTerritoryPlayerIds;
+		std::vector<int32> sampleTerritoryTownIds;
 		
 		if (_gameManager->ZoomDistanceBelow(WorldToMapZoomAmount))
 		{
 			for (int32 provinceId : sampleProvinceIds)
 			{
-				int32 playerId = simulation().provinceOwner(provinceId);
-				if (playerId != -1) {
-					CppUtils::TryAdd(sampleTerritoryPlayerIds, playerId);
+				int32 townId = simulation().provinceOwnerTown(provinceId);
+				if (townId != -1) {
+					CppUtils::TryAdd(sampleTerritoryTownIds, townId);
 				}
 			}
 		}
 		else
 		{
-			for (int32 i = 0; i < _playerIdToTerritoryMesh.Num(); i++) {
-				sampleTerritoryPlayerIds.push_back(i);
+			for (int32 i = 0; i < _townIdToTerritoryMesh.Num(); i++) {
+				sampleTerritoryTownIds.push_back(i);
 			}
 		}
 
 		/*
 		 * Show Sample Territory Mesh
 		 */
-		for (int32 playerId = 0; playerId < _playerIdToTerritoryMesh.Num(); playerId++)
+		for (int32 townId = 0; townId < _townIdToTerritoryMesh.Num(); townId++)
 		{
-			auto& playerOwned = simulation().playerOwned(playerId);
+			auto& sim = simulation();
+			auto& playerOwned = sim.playerOwnedFromTownId(townId);
+			auto& townManage = sim.townManager(townId);
+			
 			if (playerOwned.hasChosenLocation())
 			{
-				PUN_CHECK(playerOwned.provincesClaimed().size() > 0);
-				WorldTile2 centerTile = simulation().GetProvinceCenterTile(playerOwned.provincesClaimed()[0]);
+				PUN_CHECK(townManage.provincesClaimed().size() > 0);
+				WorldTile2 centerTile = simulation().GetProvinceCenterTile(townManage.provincesClaimed()[0]);
 				FVector displayLocation = MapUtil::DisplayLocation(cameraAtom, centerTile.worldAtom2());
 
-				TArray<UTerritoryMeshComponent*>& comps = _playerIdToTerritoryMesh[playerId].TerritoryMeshes;
+				TArray<UTerritoryMeshComponent*>& comps = _townIdToTerritoryMesh[townId].TerritoryMeshes;
 				for (auto& comp : comps)
 				{
 					if (!PunSettings::TrailerSession &&
-						CppUtils::Contains(sampleTerritoryPlayerIds, playerId)) 
+						CppUtils::Contains(sampleTerritoryTownIds, townId)) 
 					{
 						comp->SetVisibility(true);
 						comp->SetRelativeLocation(displayLocation);
 
 						// If there is a lord, use lord's color instead
-						int32 paintPlayerId = playerId;
+						int32 paintPlayerId = townManage.playerId();
 						if (playerOwned.lordPlayerId() != -1) {
 							paintPlayerId = playerOwned.lordPlayerId();
 						}
@@ -285,11 +289,11 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 		{
 			//PUN_LOG("Update TerritoryMesh playerId:%d", playerId);
 			
-			if (_playerIdToTerritoryMesh.Num() <= playerId) {
-				_playerIdToTerritoryMesh.SetNum(playerId + 1);
+			if (_townIdToTerritoryMesh.Num() <= playerId) {
+				_townIdToTerritoryMesh.SetNum(playerId + 1);
 			}
 
-			TArray<UTerritoryMeshComponent*>& territoryMeshes = _playerIdToTerritoryMesh[playerId].TerritoryMeshes;
+			TArray<UTerritoryMeshComponent*>& territoryMeshes = _townIdToTerritoryMesh[playerId].TerritoryMeshes;
 
 			if (simulation().playerOwned(playerId).hasChosenLocation())
 			{
@@ -321,210 +325,210 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 }
 
 // TODO: Remove this
-void UTerritoryDisplayComponent::DisplayPlayerId(int32 playerId, std::vector<int32>& territoryOwnerMap, FTerritoryDecals& decals)
-{
-	//PUN_LOG("DisplayPlayerId %d", playerId);
-	
-	if (!decals.Contains(playerId)) {
-		decals.AddNewDecal(playerId, this, _assetLoader);
-	}
-
-	for (int yy = 0; yy < GameMapConstants::RegionsPerWorldY; yy++)
-	{
-		for (int xx = 0; xx < GameMapConstants::RegionsPerWorldX; xx++)
-		{
-			int32_t xx_p = xx + 1;
-			int32_t xx_n = xx - 1;
-			int32_t yy_p = yy + 1;
-			int32_t yy_n = yy - 1;
-
-			WorldRegion2 region(xx, yy);
-			bool isPlayer = territoryOwnerMap[region.regionId()] == playerId;
-
-			WorldRegion2 regionN(xx + 1, yy);
-			WorldRegion2 regionS(xx - 1, yy);
-			WorldRegion2 regionE(xx, yy + 1);
-			WorldRegion2 regionW(xx, yy - 1);
-
-			WorldRegion2 regionNE(xx + 1, yy + 1);
-			WorldRegion2 regionNW(xx + 1, yy - 1);
-			WorldRegion2 regionSE(xx - 1, yy + 1);
-			WorldRegion2 regionSW(xx - 1, yy - 1);
-
-			bool isPlayer_N = regionN.IsValid() && territoryOwnerMap[regionN.regionId()] == playerId;
-			bool isPlayer_S = regionS.IsValid() && territoryOwnerMap[regionS.regionId()] == playerId;
-			bool isPlayer_E = regionE.IsValid() && territoryOwnerMap[regionE.regionId()] == playerId;
-			bool isPlayer_W = regionW.IsValid() && territoryOwnerMap[regionW.regionId()] == playerId;
-
-			bool isPlayer_NE = regionNE.IsValid() && territoryOwnerMap[regionNE.regionId()] == playerId;
-			bool isPlayer_NW = regionNW.IsValid() && territoryOwnerMap[regionNW.regionId()] == playerId;
-			bool isPlayer_SE = regionSE.IsValid() && territoryOwnerMap[regionSE.regionId()] == playerId;
-			bool isPlayer_SW = regionSW.IsValid() && territoryOwnerMap[regionSW.regionId()] == playerId;
-
-			// Fill in the corner types
-			TerritoryCornerEnum corner_NE = TerritoryCornerEnum::None;
-			if (isPlayer)
-			{
-				if (!isPlayer_N && !isPlayer_E) {
-					corner_NE = TerritoryCornerEnum::Convex;
-				}
-				if (isPlayer_N && isPlayer_NE && !isPlayer_E) {
-					corner_NE = TerritoryCornerEnum::BendoutVertical;
-				}
-				if (!isPlayer_N && isPlayer_NE && isPlayer_E) {
-					corner_NE = TerritoryCornerEnum::BendoutHorizontal;
-				}
-				if (isPlayer_N && !isPlayer_NE && !isPlayer_E) {
-					corner_NE = TerritoryCornerEnum::StraightVertical;
-				}
-				if (!isPlayer_N && !isPlayer_NE && isPlayer_E) {
-					corner_NE = TerritoryCornerEnum::StraightHorizontal;
-				}
-			}
-			else
-			{
-				if (isPlayer_N && isPlayer_NE && isPlayer_E) {
-					corner_NE = TerritoryCornerEnum::Concave;
-				}
-			}
-
-			TerritoryCornerEnum corner_NW = TerritoryCornerEnum::None;
-			if (isPlayer)
-			{
-				if (!isPlayer_N && !isPlayer_W) {
-					corner_NW = TerritoryCornerEnum::Convex;
-				}
-				if (isPlayer_N && isPlayer_NW && !isPlayer_W) {
-					corner_NW = TerritoryCornerEnum::BendoutVertical;
-				}
-				if (!isPlayer_N && isPlayer_NW && isPlayer_W) {
-					corner_NW = TerritoryCornerEnum::BendoutHorizontal;
-				}
-				if (isPlayer_N && !isPlayer_NW && !isPlayer_W) {
-					corner_NW = TerritoryCornerEnum::StraightVertical;
-				}
-				if (!isPlayer_N && !isPlayer_NW && isPlayer_W) {
-					corner_NW = TerritoryCornerEnum::StraightHorizontal;
-				}
-			}
-			else
-			{
-				if (isPlayer_N && isPlayer_NW && isPlayer_W) {
-					corner_NW = TerritoryCornerEnum::Concave;
-				}
-			}
-
-			TerritoryCornerEnum corner_SE = TerritoryCornerEnum::None;
-			if (isPlayer)
-			{
-				if (!isPlayer_S && !isPlayer_E) {
-					corner_SE = TerritoryCornerEnum::Convex;
-				}
-				if (isPlayer_S && isPlayer_SE && !isPlayer_E) {
-					corner_SE = TerritoryCornerEnum::BendoutVertical;
-				}
-				if (!isPlayer_S && isPlayer_SE && isPlayer_E) {
-					corner_SE = TerritoryCornerEnum::BendoutHorizontal;
-				}
-				if (isPlayer_S && !isPlayer_SE && !isPlayer_E) {
-					corner_SE = TerritoryCornerEnum::StraightVertical;
-				}
-				if (!isPlayer_S && !isPlayer_SE && isPlayer_E) {
-					corner_SE = TerritoryCornerEnum::StraightHorizontal;
-				}
-			}
-			else
-			{
-				if (isPlayer_S && isPlayer_SE && isPlayer_E) {
-					corner_SE = TerritoryCornerEnum::Concave;
-				}
-			}
-
-			TerritoryCornerEnum corner_SW = TerritoryCornerEnum::None;
-			if (isPlayer)
-			{
-				if (!isPlayer_S && !isPlayer_W) {
-					corner_SW = TerritoryCornerEnum::Convex;
-				}
-				if (isPlayer_S && isPlayer_SW && !isPlayer_W) {
-					corner_SW = TerritoryCornerEnum::BendoutVertical;
-				}
-				if (!isPlayer_S && isPlayer_SW && isPlayer_W) {
-					corner_SW = TerritoryCornerEnum::BendoutHorizontal;
-				}
-				if (isPlayer_S && !isPlayer_SW && !isPlayer_W) {
-					corner_SW = TerritoryCornerEnum::StraightVertical;
-				}
-				if (!isPlayer_S && !isPlayer_SW && isPlayer_W) {
-					corner_SW = TerritoryCornerEnum::StraightHorizontal;
-				}
-			}
-			else
-			{
-				if (isPlayer_S && isPlayer_SW && isPlayer_W) {
-					corner_SW = TerritoryCornerEnum::Concave;
-				}
-			}
-
-			bool hasEdge_N = isPlayer && !isPlayer_N;
-			bool hasEdge_S = isPlayer && !isPlayer_S;
-			bool hasEdge_E = isPlayer && !isPlayer_E;
-			bool hasEdge_W = isPlayer && !isPlayer_W;
-
-			float packedEdge_NS = (hasEdge_N ? 0.53f : 0.0f) + (hasEdge_S ? 0.253f : 0.0f);
-			float packedEdge_EW = (hasEdge_E ? 0.53f : 0.0f) + (hasEdge_W ? 0.253f : 0.0f);
-
-			FLinearColor color(TerritoryCornerEnumToFloat(corner_NE),
-				TerritoryCornerEnumToFloat(corner_NW),
-				packedEdge_NS,
-				0);
-
-			FLinearColor color2(TerritoryCornerEnumToFloat(corner_SE),
-				TerritoryCornerEnumToFloat(corner_SW),
-				packedEdge_EW,
-				0);
-
-			//FColor color(0, 255, 0, 255);
-			territoryAdjacencyEncoding[region.regionId()] = color.ToFColor(true).ToPackedARGB();
-			territoryAdjacencyEncoding2[region.regionId()] = color2.ToFColor(true).ToPackedARGB();
-		}
-	}
-
-	// Refresh _territoryTexture for shader
-	// Note: Only refreshes when territory changed
-	{
-		UTexture2D* texture = decals.adjacentTerritoriesTexture(playerId);
-		uint32* textureData = reinterpret_cast<uint32*>(texture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
-
-		const size_t Size = texture->GetSizeX() * texture->GetSizeY() * sizeof(uint32);
-		FMemory::Memcpy(textureData, territoryAdjacencyEncoding.data(), Size);
-
-		texture->PlatformData->Mips[0].BulkData.Unlock();
-		texture->UpdateResource();
-		decals.GetDecalMaterial(playerId)->SetTextureParameterValue(TEXT("TerritoryTexture"), texture);
-	}
-	{
-		UTexture2D* texture = decals.adjacentTerritoriesTextures2(playerId);
-		uint32* textureData = reinterpret_cast<uint32*>(texture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
-
-		const size_t Size = texture->GetSizeX() * texture->GetSizeY() * sizeof(uint32);
-		FMemory::Memcpy(textureData, territoryAdjacencyEncoding2.data(), Size);
-
-		texture->PlatformData->Mips[0].BulkData.Unlock();
-		texture->UpdateResource();
-		decals.GetDecalMaterial(playerId)->SetTextureParameterValue(TEXT("TerritoryTexture2"), texture);
-	}
-
-
-	{
-		// Reset color... Color may be changed if lord changed
-		if (simulation().playerChoseLocation(playerId))
-		{
-			int32 lordPlayerId = simulation().townhall(playerId).armyNode.lordPlayerId;
-
-			auto material = decals.GetDecalMaterial(playerId);
-			material->SetVectorParameterValue(TEXT("PlayerColor1"), PlayerColor1(lordPlayerId));
-			material->SetVectorParameterValue(TEXT("PlayerColor2"), PlayerColor2(lordPlayerId));
-		}
-	}
-}
+//void UTerritoryDisplayComponent::DisplayPlayerId(int32 playerId, std::vector<int32>& territoryOwnerMap, FTerritoryDecals& decals)
+//{
+//	//PUN_LOG("DisplayPlayerId %d", playerId);
+//	
+//	if (!decals.Contains(playerId)) {
+//		decals.AddNewDecal(playerId, this, _assetLoader);
+//	}
+//
+//	for (int yy = 0; yy < GameMapConstants::RegionsPerWorldY; yy++)
+//	{
+//		for (int xx = 0; xx < GameMapConstants::RegionsPerWorldX; xx++)
+//		{
+//			int32_t xx_p = xx + 1;
+//			int32_t xx_n = xx - 1;
+//			int32_t yy_p = yy + 1;
+//			int32_t yy_n = yy - 1;
+//
+//			WorldRegion2 region(xx, yy);
+//			bool isPlayer = territoryOwnerMap[region.regionId()] == playerId;
+//
+//			WorldRegion2 regionN(xx + 1, yy);
+//			WorldRegion2 regionS(xx - 1, yy);
+//			WorldRegion2 regionE(xx, yy + 1);
+//			WorldRegion2 regionW(xx, yy - 1);
+//
+//			WorldRegion2 regionNE(xx + 1, yy + 1);
+//			WorldRegion2 regionNW(xx + 1, yy - 1);
+//			WorldRegion2 regionSE(xx - 1, yy + 1);
+//			WorldRegion2 regionSW(xx - 1, yy - 1);
+//
+//			bool isPlayer_N = regionN.IsValid() && territoryOwnerMap[regionN.regionId()] == playerId;
+//			bool isPlayer_S = regionS.IsValid() && territoryOwnerMap[regionS.regionId()] == playerId;
+//			bool isPlayer_E = regionE.IsValid() && territoryOwnerMap[regionE.regionId()] == playerId;
+//			bool isPlayer_W = regionW.IsValid() && territoryOwnerMap[regionW.regionId()] == playerId;
+//
+//			bool isPlayer_NE = regionNE.IsValid() && territoryOwnerMap[regionNE.regionId()] == playerId;
+//			bool isPlayer_NW = regionNW.IsValid() && territoryOwnerMap[regionNW.regionId()] == playerId;
+//			bool isPlayer_SE = regionSE.IsValid() && territoryOwnerMap[regionSE.regionId()] == playerId;
+//			bool isPlayer_SW = regionSW.IsValid() && territoryOwnerMap[regionSW.regionId()] == playerId;
+//
+//			// Fill in the corner types
+//			TerritoryCornerEnum corner_NE = TerritoryCornerEnum::None;
+//			if (isPlayer)
+//			{
+//				if (!isPlayer_N && !isPlayer_E) {
+//					corner_NE = TerritoryCornerEnum::Convex;
+//				}
+//				if (isPlayer_N && isPlayer_NE && !isPlayer_E) {
+//					corner_NE = TerritoryCornerEnum::BendoutVertical;
+//				}
+//				if (!isPlayer_N && isPlayer_NE && isPlayer_E) {
+//					corner_NE = TerritoryCornerEnum::BendoutHorizontal;
+//				}
+//				if (isPlayer_N && !isPlayer_NE && !isPlayer_E) {
+//					corner_NE = TerritoryCornerEnum::StraightVertical;
+//				}
+//				if (!isPlayer_N && !isPlayer_NE && isPlayer_E) {
+//					corner_NE = TerritoryCornerEnum::StraightHorizontal;
+//				}
+//			}
+//			else
+//			{
+//				if (isPlayer_N && isPlayer_NE && isPlayer_E) {
+//					corner_NE = TerritoryCornerEnum::Concave;
+//				}
+//			}
+//
+//			TerritoryCornerEnum corner_NW = TerritoryCornerEnum::None;
+//			if (isPlayer)
+//			{
+//				if (!isPlayer_N && !isPlayer_W) {
+//					corner_NW = TerritoryCornerEnum::Convex;
+//				}
+//				if (isPlayer_N && isPlayer_NW && !isPlayer_W) {
+//					corner_NW = TerritoryCornerEnum::BendoutVertical;
+//				}
+//				if (!isPlayer_N && isPlayer_NW && isPlayer_W) {
+//					corner_NW = TerritoryCornerEnum::BendoutHorizontal;
+//				}
+//				if (isPlayer_N && !isPlayer_NW && !isPlayer_W) {
+//					corner_NW = TerritoryCornerEnum::StraightVertical;
+//				}
+//				if (!isPlayer_N && !isPlayer_NW && isPlayer_W) {
+//					corner_NW = TerritoryCornerEnum::StraightHorizontal;
+//				}
+//			}
+//			else
+//			{
+//				if (isPlayer_N && isPlayer_NW && isPlayer_W) {
+//					corner_NW = TerritoryCornerEnum::Concave;
+//				}
+//			}
+//
+//			TerritoryCornerEnum corner_SE = TerritoryCornerEnum::None;
+//			if (isPlayer)
+//			{
+//				if (!isPlayer_S && !isPlayer_E) {
+//					corner_SE = TerritoryCornerEnum::Convex;
+//				}
+//				if (isPlayer_S && isPlayer_SE && !isPlayer_E) {
+//					corner_SE = TerritoryCornerEnum::BendoutVertical;
+//				}
+//				if (!isPlayer_S && isPlayer_SE && isPlayer_E) {
+//					corner_SE = TerritoryCornerEnum::BendoutHorizontal;
+//				}
+//				if (isPlayer_S && !isPlayer_SE && !isPlayer_E) {
+//					corner_SE = TerritoryCornerEnum::StraightVertical;
+//				}
+//				if (!isPlayer_S && !isPlayer_SE && isPlayer_E) {
+//					corner_SE = TerritoryCornerEnum::StraightHorizontal;
+//				}
+//			}
+//			else
+//			{
+//				if (isPlayer_S && isPlayer_SE && isPlayer_E) {
+//					corner_SE = TerritoryCornerEnum::Concave;
+//				}
+//			}
+//
+//			TerritoryCornerEnum corner_SW = TerritoryCornerEnum::None;
+//			if (isPlayer)
+//			{
+//				if (!isPlayer_S && !isPlayer_W) {
+//					corner_SW = TerritoryCornerEnum::Convex;
+//				}
+//				if (isPlayer_S && isPlayer_SW && !isPlayer_W) {
+//					corner_SW = TerritoryCornerEnum::BendoutVertical;
+//				}
+//				if (!isPlayer_S && isPlayer_SW && isPlayer_W) {
+//					corner_SW = TerritoryCornerEnum::BendoutHorizontal;
+//				}
+//				if (isPlayer_S && !isPlayer_SW && !isPlayer_W) {
+//					corner_SW = TerritoryCornerEnum::StraightVertical;
+//				}
+//				if (!isPlayer_S && !isPlayer_SW && isPlayer_W) {
+//					corner_SW = TerritoryCornerEnum::StraightHorizontal;
+//				}
+//			}
+//			else
+//			{
+//				if (isPlayer_S && isPlayer_SW && isPlayer_W) {
+//					corner_SW = TerritoryCornerEnum::Concave;
+//				}
+//			}
+//
+//			bool hasEdge_N = isPlayer && !isPlayer_N;
+//			bool hasEdge_S = isPlayer && !isPlayer_S;
+//			bool hasEdge_E = isPlayer && !isPlayer_E;
+//			bool hasEdge_W = isPlayer && !isPlayer_W;
+//
+//			float packedEdge_NS = (hasEdge_N ? 0.53f : 0.0f) + (hasEdge_S ? 0.253f : 0.0f);
+//			float packedEdge_EW = (hasEdge_E ? 0.53f : 0.0f) + (hasEdge_W ? 0.253f : 0.0f);
+//
+//			FLinearColor color(TerritoryCornerEnumToFloat(corner_NE),
+//				TerritoryCornerEnumToFloat(corner_NW),
+//				packedEdge_NS,
+//				0);
+//
+//			FLinearColor color2(TerritoryCornerEnumToFloat(corner_SE),
+//				TerritoryCornerEnumToFloat(corner_SW),
+//				packedEdge_EW,
+//				0);
+//
+//			//FColor color(0, 255, 0, 255);
+//			territoryAdjacencyEncoding[region.regionId()] = color.ToFColor(true).ToPackedARGB();
+//			territoryAdjacencyEncoding2[region.regionId()] = color2.ToFColor(true).ToPackedARGB();
+//		}
+//	}
+//
+//	// Refresh _territoryTexture for shader
+//	// Note: Only refreshes when territory changed
+//	{
+//		UTexture2D* texture = decals.adjacentTerritoriesTexture(playerId);
+//		uint32* textureData = reinterpret_cast<uint32*>(texture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
+//
+//		const size_t Size = texture->GetSizeX() * texture->GetSizeY() * sizeof(uint32);
+//		FMemory::Memcpy(textureData, territoryAdjacencyEncoding.data(), Size);
+//
+//		texture->PlatformData->Mips[0].BulkData.Unlock();
+//		texture->UpdateResource();
+//		decals.GetDecalMaterial(playerId)->SetTextureParameterValue(TEXT("TerritoryTexture"), texture);
+//	}
+//	{
+//		UTexture2D* texture = decals.adjacentTerritoriesTextures2(playerId);
+//		uint32* textureData = reinterpret_cast<uint32*>(texture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
+//
+//		const size_t Size = texture->GetSizeX() * texture->GetSizeY() * sizeof(uint32);
+//		FMemory::Memcpy(textureData, territoryAdjacencyEncoding2.data(), Size);
+//
+//		texture->PlatformData->Mips[0].BulkData.Unlock();
+//		texture->UpdateResource();
+//		decals.GetDecalMaterial(playerId)->SetTextureParameterValue(TEXT("TerritoryTexture2"), texture);
+//	}
+//
+//
+//	{
+//		// Reset color... Color may be changed if lord changed
+//		if (simulation().HasChosenLocation(playerId))
+//		{
+//			int32 lordPlayerId = simulation().playerOwned(playerId).lordPlayerId();
+//
+//			auto material = decals.GetDecalMaterial(playerId);
+//			material->SetVectorParameterValue(TEXT("PlayerColor1"), PlayerColor1(lordPlayerId));
+//			material->SetVectorParameterValue(TEXT("PlayerColor2"), PlayerColor2(lordPlayerId));
+//		}
+//	}
+//}

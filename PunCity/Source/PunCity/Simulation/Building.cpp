@@ -17,17 +17,19 @@ using namespace std;
 
 Building::~Building() {}
 
-void Building::Init(IGameSimulationCore& simulation, int objectId, int32_t playerId, uint8_t buildingEnum,
+void Building::Init(IGameSimulationCore& simulation, int objectId, int32 townId, uint8_t buildingEnum,
 					TileArea area, WorldTile2 centerTile, Direction faceDirection)
 {
+	_simulation = &simulation;
 	_objectId = objectId;
-	_playerId = playerId;
+
+	_townId = townId;
+	_playerId = _simulation->townPlayerId(_townId);
+	
 	_buildingEnum = static_cast<CardEnum>(buildingEnum);
 	_centerTile = centerTile;
 	_faceDirection = faceDirection;
 	_area = area;
-
-	_simulation = &simulation;
 
 	_filledInputs = false;
 
@@ -59,10 +61,10 @@ void Building::Init(IGameSimulationCore& simulation, int objectId, int32_t playe
 
 	//PUN_LOG("Building start: %s", *FString(info.name.c_str()));
 		
-	simulation.PlayerAddJobBuilding(_playerId, *this, false);
+	simulation.PlayerAddJobBuilding(_townId, *this, false);
 
 	// Mark area for land clearing
-	simulation.treeSystem().MarkArea(_playerId, _area, false, ResourceEnum::None);
+	simulation.treeSystem().MarkArea(_townId, _area, false, ResourceEnum::None);
 	
 	// Set initial construction resource
 	vector<int32> constructionCosts = GetConstructionResourceCost();
@@ -111,8 +113,8 @@ void Building::Init(IGameSimulationCore& simulation, int objectId, int32_t playe
 	{
 		// If land is cleared, just SetWalkable without needing ppl to do this.
 		// This allows multiple roads to be queued without failing workplace.didSetWalkable()
-		if (_simulation->IsLandCleared_SmallOnly(_playerId, area) &&
-			_simulation->IsLandCleared_SmallOnly(_playerId, frontArea()))
+		if (_simulation->IsLandCleared_SmallOnly(_townId, area) &&
+			_simulation->IsLandCleared_SmallOnly(_townId, frontArea()))
 		{
 			SetAreaWalkable();
 		}
@@ -184,7 +186,7 @@ void Building::FinishConstruction()
 	}
 
 
-	if (_playerId == -1) {
+	if (_townId == -1) {
 		return; // Animal Controlled
 	}
 
@@ -199,7 +201,7 @@ void Building::FinishConstruction()
 	// Kick out all the constructors
 	ResetWorkReservers();
 	_simulation->RemoveJobsFrom(buildingId(), false);
-	_simulation->PlayerRemoveJobBuilding(_playerId, *this, false);
+	_simulation->PlayerRemoveJobBuilding(_townId, *this, false);
 
 	//// if this building is not an instant build, claim the area
 	//if (buildingInfo().buildManSecCost100 > 0) {
@@ -304,7 +306,7 @@ void Building::Deinit()
 {
 	//PUN_LOG("Deinit %d constructed:%d ticks:%d", _objectId, _isConstructed, Time::Ticks());
 	
-	if (_playerId == -1) {
+	if (_townId == -1) {
 		OnDeinit();
 		return; // Animal Controlled
 	}
@@ -333,7 +335,7 @@ void Building::Deinit()
 
 		ResetWorkReservers();
 		_simulation->RemoveJobsFrom(buildingId(), false);
-		_simulation->PlayerRemoveJobBuilding(_playerId, *this, _isConstructed);
+		_simulation->PlayerRemoveJobBuilding(_townId, *this, _isConstructed);
 	}
 
 	_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
@@ -660,7 +662,7 @@ void Building::DoWork(int unitId, int workAmount100)
 				_workDone100 = 0;
 				_filledInputs = false;
 
-				_simulation->AddImmigrants(_playerId, 1);
+				_simulation->AddImmigrants(_townId, 1);
 				_simulation->AddEventLog(_playerId, 
 					LOCTEXT("ImmigrationOfficeBroughtIn_Event", "The immigration office brought in an immigrant."), 
 					false
@@ -779,36 +781,36 @@ void Building::AddProductionStat(ResourcePair resource)
 
 	// Mint case, resource.count is money
 	if (isEnum(CardEnum::Mint)) {
-		_simulation->statSystem(_playerId).AddStat(SeasonStatEnum::Money, resource.count);
+		statSystem().AddStat(SeasonStatEnum::Money, resource.count);
 		return;
 	}
 	if (isEnum(CardEnum::InventorsWorkshop)) {
-		_simulation->statSystem(_playerId).AddStat(SeasonStatEnum::Science, resource.count);
+		statSystem().AddStat(SeasonStatEnum::Science, resource.count);
 		return;
 	}
 	if (isEnum(CardEnum::RegionShrine)) {
-		_simulation->statSystem(_playerId).AddStat(SeasonStatEnum::Science, resource.count);
+		statSystem().AddStat(SeasonStatEnum::Science, resource.count);
 		return;
 	}
 	if (IsBarrack(buildingEnum())) 
 	{
-		_simulation->statSystem(_playerId).AddStat(SeasonStatEnum::Influence, resource.count);
+		statSystem().AddStat(SeasonStatEnum::Influence, resource.count);
 		return;
 	}
 
 	if (resource.resourceEnum != ResourceEnum::None) {
-		_simulation->statSystem(_playerId).AddResourceStat(ResourceSeasonStatEnum::Production, resource.resourceEnum, resource.count);
+		statSystem().AddResourceStat(ResourceSeasonStatEnum::Production, resource.resourceEnum, resource.count);
 	}
 }
 void Building::AddConsumption1Stat(ResourcePair resource)
 {
 	_seasonalConsumption1[0] += resource.count;
-	_simulation->statSystem(_playerId).AddResourceStat(ResourceSeasonStatEnum::Consumption, resource.resourceEnum, resource.count);
+	statSystem().AddResourceStat(ResourceSeasonStatEnum::Consumption, resource.resourceEnum, resource.count);
 }
 void Building::AddConsumption2Stat(ResourcePair resource)
 {
 	_seasonalConsumption2[0] += resource.count;
-	_simulation->statSystem(_playerId).AddResourceStat(ResourceSeasonStatEnum::Consumption, resource.resourceEnum, resource.count);
+	statSystem().AddResourceStat(ResourceSeasonStatEnum::Consumption, resource.resourceEnum, resource.count);
 }
 void Building::AddDepletionStat(ResourcePair resource)
 {
@@ -827,7 +829,7 @@ int32 Building::oreLeft()
 
 void Building::CheckCombo()
 {
-	if (_playerId == -1) {
+	if (_townId == -1) {
 		return;
 	}
 	
@@ -864,7 +866,7 @@ void Building::CheckCombo()
 		return;
 	}
 	
-	std::vector<int32> buildingIds = _simulation->buildingIds(_playerId, _buildingEnum);
+	std::vector<int32> buildingIds = _simulation->buildingIds(_townId, _buildingEnum);
 	int32 numberOfSameType = buildingIds.size();
 
 	for (int32 i = CardLvlCount; i-- > 1;) {
@@ -916,7 +918,7 @@ std::vector<BonusPair> Building::GetBonuses()
 	std::vector<BonusPair> bonuses;
 	if (IsIndustrialBuilding(_buildingEnum))
 	{
-		if (_simulation->buildingFinishedCount(_playerId, CardEnum::EngineeringOffice)) {
+		if (_simulation->buildingFinishedCount(_townId, CardEnum::EngineeringOffice)) {
 			bonuses.push_back({ LOCTEXT("Engineering office", "Engineering office"), 10 });
 		}
 
@@ -950,7 +952,7 @@ std::vector<BonusPair> Building::GetBonuses()
 		// Combo Upgrade bonuses
 		if (upgrade.isUpgraded && upgrade.comboEfficiencyBonus > 0) 
 		{
-			int32 buildingCount = _simulation->buildingCount(_playerId, _buildingEnum);
+			int32 buildingCount = _simulation->buildingCount(_townId, _buildingEnum);
 			int32 comboLevel = 0;
 			if (buildingCount >= 8) {
 				comboLevel = 3;
@@ -998,7 +1000,7 @@ void Building::SetDeliveryTarget(int32 deliveryTargetId)
 	deliveryTarget._deliverySourceIds.push_back(_objectId);
 
 	if (!isEnum(CardEnum::ShippingDepot)) {
-		_simulation->playerOwned(_playerId).AddDeliverySource(_objectId);
+		townManager().AddDeliverySource(_objectId);
 	}
 
 	// Ensure all Providers are set back to Manual
@@ -1019,7 +1021,7 @@ void Building::TryRemoveDeliveryTarget()
 		_deliveryTargetId = -1;
 
 		if (!isEnum(CardEnum::ShippingDepot)) {
-			_simulation->playerOwned(_playerId).RemoveDeliverySource(_objectId);
+			townManager().RemoveDeliverySource(_objectId);
 		}
 
 		// Ensure all Manual are set back to Providers
@@ -1041,12 +1043,12 @@ std::vector<BonusPair> Building::GetTradingFeeBonuses()
 	if (isEnum(CardEnum::TradingCompany)) {
 		bonuses.push_back({ LOCTEXT("Trading Company", "Trading Company"), -5 });
 
-		if (_simulation->TownhallCardCount(playerId(), CardEnum::CompaniesAct)) {
+		if (_simulation->TownhallCardCountTown(_townId, CardEnum::CompaniesAct)) {
 			bonuses.push_back({ LOCTEXT("Companies Act", "Companies Act"), -10 });
 		}
 	}
 
-	if (_simulation->buildingFinishedCount(playerId(), CardEnum::MerchantGuild)) {
+	if (_simulation->buildingFinishedCount(_townId, CardEnum::MerchantGuild)) {
 		bonuses.push_back({ LOCTEXT("Merchant Guild", "Merchant Guild"), -5 });
 	}
 	if (IsUpgraded(0)) {

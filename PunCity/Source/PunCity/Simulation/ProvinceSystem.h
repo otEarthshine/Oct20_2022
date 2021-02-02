@@ -535,7 +535,7 @@ public:
 	/*
 	 * Territory
 	 */
-	void RefreshTerritoryEdge(int32 playerId, const std::vector<int32>& provinceIds)
+	void RefreshTerritoryEdge(int32 townId, const std::vector<int32>& provinceIds)
 	{
 		SCOPE_TIMER("RefreshTerritoryEdge");
 
@@ -543,13 +543,13 @@ public:
 			return;
 		}
 		
-		if (_territoryEdges1.size() <= playerId) {
-			_territoryEdges1.resize(playerId + 1);
-			_territoryEdges2.resize(playerId + 1);
-			_territoryClusterProvinceIds.resize(playerId + 1);
+		if (_territoryEdges1.size() <= townId) {
+			_territoryEdges1.resize(townId + 1);
+			_territoryEdges2.resize(townId + 1);
+			_territoryClusterProvinceIds.resize(townId + 1);
 		}
 
-		PUN_LOG("RefreshTerritoryEdge playerId:%d provinceIds:%d", playerId, provinceIds.size());
+		PUN_LOG("RefreshTerritoryEdge townId:%d provinceIds:%d", townId, provinceIds.size());
 
 
 		if (provinceIds.size() == 0) {
@@ -582,7 +582,7 @@ public:
 						for (const ProvinceConnection& connection : connections) 
 						{
 							// Flood into owned province
-							if (_simulation->provinceOwner(connection.provinceId) == playerId &&
+							if (_simulation->provinceOwnerTown(connection.provinceId) == townId &&
 								!floodedProvinceIds.Contains(connection.provinceId)) 
 							{
 								floodQueue.push_back(connection.provinceId);
@@ -598,22 +598,22 @@ public:
 		/*
 		 * Flood Territory Edge for each cluster
 		 */
-		_territoryEdges1[playerId].clear();
-		_territoryEdges2[playerId].clear();
-		_territoryClusterProvinceIds[playerId].clear();
+		_territoryEdges1[townId].clear();
+		_territoryEdges2[townId].clear();
+		_territoryClusterProvinceIds[townId].clear();
 		
 		for (const auto& it : parentProvinceIdToClusterProvinceIds)
 		{
 			const std::vector<int32>& clusterProvinceIds = it.second;
 
-			_territoryClusterProvinceIds[playerId].push_back(clusterProvinceIds);
+			_territoryClusterProvinceIds[townId].push_back(clusterProvinceIds);
 
 			TileArea combinedArea = TileArea::GetLoopMinMaxInitial();
 			for (int32 provinceId : clusterProvinceIds) {
 				combinedArea = TileArea::CombineAreas(combinedArea, _provinceRectAreas[provinceId]);
 			}
 
-			PUN_LOG("RefreshTerritoryEdge playerId:%d clusterId:%d provinceIds:%d combinedArea:%s", playerId, clusterProvinceIds[0], clusterProvinceIds.size(), ToTChar(combinedArea.ToString()));
+			PUN_LOG("RefreshTerritoryEdge townId:%d clusterId:%d provinceIds:%d combinedArea:%s", townId, clusterProvinceIds[0], clusterProvinceIds.size(), ToTChar(combinedArea.ToString()));
 
 			auto tryFloodTerritoryEdge = [&](WorldTile2x2 localTile2x2, const WorldTile2x2& localPrevTile2x2,
 				const int32& curProvinceId, std::vector<WorldTile2x2>& stack, std::vector<WorldTile2x2>& prevStack)
@@ -629,7 +629,7 @@ public:
 				localProvinceId = abs(localProvinceId);
 
 				// Instead of checking for same provinceId, we check for same player owner
-				if (_simulation->provinceOwner(localProvinceId) == playerId)
+				if (_simulation->provinceOwnerTown(localProvinceId) == townId)
 				{
 					auto isInvalidSide = [&](int16 x2, int16 y2)
 					{
@@ -638,7 +638,7 @@ public:
 							return true;
 						}
 						lambdaProvinceIdId = abs(lambdaProvinceIdId);
-						return _simulation->provinceOwner(lambdaProvinceIdId) != playerId;
+						return _simulation->provinceOwnerTown(lambdaProvinceIdId) != townId;
 					};
 
 					int32 invalidSides = isInvalidSide(localTile2x2.x + 1, localTile2x2.y) +
@@ -654,8 +654,8 @@ public:
 				}
 			};
 
-			_territoryEdges1[playerId].push_back({});
-			_territoryEdges2[playerId].push_back({});
+			_territoryEdges1[townId].push_back({});
+			_territoryEdges2[townId].push_back({});
 
 			// Loop through combinedArea to hit the start spot for edge, and generate it
 			combinedArea.ExecuteOnAreaWithExit_WorldTile2x2([&](int16 x2, int16 y2)
@@ -664,7 +664,7 @@ public:
 				size_t tile2x2Id = tile2x2.tile2x2Id();
 				int32 curProvinceId = _provinceId2x2[tile2x2Id];
 
-				//PUN_LOG("Loop %d %d curProvinceId:%d targetPlayerId:%d", x2, y2, curProvinceId, playerId);
+				//PUN_LOG("Loop %d %d curProvinceId:%d targetTownId:%d", x2, y2, curProvinceId, townId);
 
 				if (!IsValidRawProvinceId(curProvinceId)) {
 					return false;
@@ -677,18 +677,18 @@ public:
 				}
 
 				// Loop until we hit the territory edge
-				if (_simulation->provinceOwner(curProvinceId) == playerId)
+				if (_simulation->provinceOwnerTown(curProvinceId) == townId)
 				{
 					auto isInArea = [&](int32 provinceRawId) -> bool {
 						if (!IsValidRawProvinceId(provinceRawId)) {
 							return false;
 						}
-						return _simulation->provinceOwner(abs(provinceRawId)) == playerId;
+						return _simulation->provinceOwnerTown(abs(provinceRawId)) == townId;
 					};
 
 					GenerateEdge(tile2x2Id, curProvinceId, tile2x2, 
-								_territoryEdges1[playerId].back(), 
-								_territoryEdges2[playerId].back(),
+								_territoryEdges1[townId].back(),
+								_territoryEdges2[townId].back(),
 								isInArea, tryFloodTerritoryEdge, false);
 					return true;
 				}
@@ -696,19 +696,19 @@ public:
 			});
 		}
 
-		PUN_LOG("RefreshTerritoryEdge edge1:%d edge2:%d", GetTerritoryEdges1(playerId, 0).size(), GetTerritoryEdges2(playerId, 0).size());
+		PUN_LOG("RefreshTerritoryEdge edge1:%d edge2:%d", GetTerritoryEdges1(townId, 0).size(), GetTerritoryEdges2(townId, 0).size());
 	}
 
-	const std::vector<std::vector<int32>>& GetTerritoryClusters(int32 playerId)
+	const std::vector<std::vector<int32>>& GetTerritoryClusters(int32 townId)
 	{
-		return _territoryClusterProvinceIds[playerId];
+		return _territoryClusterProvinceIds[townId];
 	}
-	int32 GetTerritoryClusterId(int32 playerId, int32 provinceIdIn)
+	int32 GetTerritoryClusterId(int32 townId, int32 provinceIdIn)
 	{
-		if (playerId >= _territoryEdges1.size()) {
+		if (townId >= _territoryEdges1.size()) {
 			return -1;
 		}
-		const auto& clusters = GetTerritoryClusters(playerId);
+		const auto& clusters = GetTerritoryClusters(townId);
 		for (int32 i = 0; i < clusters.size(); i++)
 		{
 			const auto& cluster = clusters[i];
@@ -720,19 +720,19 @@ public:
 		}
 		return -1;
 	}
-	const std::vector<WorldTile2x2>& GetTerritoryEdges1(int32 playerId, int32 clusterId)
+	const std::vector<WorldTile2x2>& GetTerritoryEdges1(int32 townId, int32 clusterId)
 	{
-		//if (_territoryEdges1.size() <= playerId) {
-		//	_territoryEdges1.resize(playerId + 1);
-		//	_territoryEdges2.resize(playerId + 1);
-		//	_territoryClusterProvinceIds.resize(playerId + 1);
+		//if (_territoryEdges1.size() <= townId) {
+		//	_territoryEdges1.resize(townId + 1);
+		//	_territoryEdges2.resize(townId + 1);
+		//	_territoryClusterProvinceIds.resize(townId + 1);
 		//}
 		
-		return _territoryEdges1[playerId][clusterId];
+		return _territoryEdges1[townId][clusterId];
 	}
-	const std::vector<WorldTile2x2>& GetTerritoryEdges2(int32 playerId, int32 clusterId)
+	const std::vector<WorldTile2x2>& GetTerritoryEdges2(int32 townId, int32 clusterId)
 	{
-		return _territoryEdges2[playerId][clusterId];
+		return _territoryEdges2[townId][clusterId];
 	}
 
 	/*
@@ -1461,7 +1461,7 @@ private:
 	std::vector<std::vector<WorldTile2x2>> _provinceEdges1;
 	std::vector<std::vector<WorldTile2x2>> _provinceEdges2; // the pair of province edges used to get the mid point for building mesh
 
-	std::vector<std::vector<std::vector<WorldTile2x2>>> _territoryEdges1; // playerId->cluster->edges
+	std::vector<std::vector<std::vector<WorldTile2x2>>> _territoryEdges1; // townId->cluster->edges
 	std::vector<std::vector<std::vector<WorldTile2x2>>> _territoryEdges2;
 	std::vector<std::vector<std::vector<int32>>> _territoryClusterProvinceIds;
 

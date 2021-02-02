@@ -155,7 +155,6 @@ private:
 	IGameSimulationCore* _simulation = nullptr;
 	
 	std::vector<int32> _territoryOwnerMap;
-	//std::vector<bool> _isDirectControl;
 	
 	std::vector<std::vector<int32>> _boarBurrowsToProvince;
 	std::vector<std::vector<int32>> _provinceToAnimalIds;

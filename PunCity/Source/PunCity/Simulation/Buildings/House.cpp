@@ -43,7 +43,7 @@ void House::GetHeatingEfficiencyTip(TArray<FText>& args, ResourceEnum resourceEn
 	);
 	ADDTEXT_INV_("<space>");
 
-	if (_simulation->TownhallCardCount(_playerId, CardEnum::ChimneyRestrictor)) {
+	if (_simulation->TownhallCardCountTown(_townId, CardEnum::ChimneyRestrictor)) {
 		ADDTEXT_LOCTEXT("ChimneyRestrictor Bonus", " +15% Chimney Restrictor\n");
 	}
 	if (IsUpgraded(0)) {
@@ -54,7 +54,7 @@ void House::GetHeatingEfficiencyTip(TArray<FText>& args, ResourceEnum resourceEn
 	}
 
 	if (resourceEnum == ResourceEnum::Coal) {
-		if (_simulation->TownhallCardCount(_playerId, CardEnum::CoalTreatment)) {
+		if (_simulation->TownhallCardCountTown(_townId, CardEnum::CoalTreatment)) {
 			ADDTEXT_LOCTEXT("CoalTreatment Bonus", " +20% Coal Treatment\n");
 		}
 		ADDTEXT_LOCTEXT("CoalUsage Bonus", " x2 Coal Usage\n");
@@ -94,7 +94,7 @@ void House::OnDeinit()
 		
 		//UpdateSubscription();
 
-		_simulation->RecalculateTaxDelayed(_playerId); // Recalculate sci
+		_simulation->RecalculateTaxDelayedTown(_townId); // Recalculate sci
 	}
 }
 
@@ -105,12 +105,12 @@ void House::FinishConstruction()
 	_allowedOccupants = houseBaseOccupants;
 	_maxOccupants = houseMaxOccupants;
 
-	_simulation->PlayerAddHouse(_playerId, _objectId);
+	_simulation->PlayerAddHouse(_townId, _objectId);
 
-	auto& playerOwned = _simulation->playerOwned(_playerId);
+	auto& townManage = townManager();
 	auto addHolder = [&](ResourceEnum resourceEnum)
 	{
-		bool allowed = playerOwned.GetHouseResourceAllow(resourceEnum);
+		bool allowed = townManage.GetHouseResourceAllow(resourceEnum);
 		ResourceHolderType type = allowed ? ResourceHolderType::Manual : ResourceHolderType::Provider;
 		int32 target = allowed ? 10 : 0;
 		AddResourceHolder(resourceEnum, type, target);
@@ -125,7 +125,7 @@ void House::FinishConstruction()
 
 	if (PunSettings::TrailerMode()) {
 		// Add more population in trailer mode
-		_simulation->AddImmigrants(_playerId, 2, gateTile());
+		_simulation->AddImmigrants(_townId, 2, gateTile());
 	} else {
 		ForceSetHouseLevel(SimSettings::Get("CheatHouseLevel"));
 	}
@@ -160,7 +160,7 @@ void House::FinishConstruction()
 		PopupInfo popupInfo(_playerId,
 			LOCTEXT("UnlockedResearchBegin_Pop", "Unlocked research.\nAcquire science points <img id=\"Science\"/> by increasing population, upgrading houses, or building libraries."),
 			{ LOCTEXT("Show tech tree", "Show tech tree"),
-				LOCTEXT("Close", "Close") }, 
+						LOCTEXT("Close", "Close") }, 
 			PopupReceiverEnum::DoneResearchEvent_ShowTree
 		);
 		popupInfo.forcedSkipNetworking = true;
@@ -188,17 +188,17 @@ void House::FinishConstruction()
 
 	//UpdateSubscription();
 
-	_simulation->RecalculateTaxDelayed(_playerId); // Recalculate sci
+	_simulation->RecalculateTaxDelayedTown(_townId); // Recalculate sci
 
 
 }
 
 int32 House::GetAppealPercent() {
 	int32 appeal = _simulation->overlaySystem().GetAppealPercent(_centerTile);
-	if (_simulation->buildingFinishedCount(_playerId, CardEnum::ArchitectStudio)) {
+	if (_simulation->buildingFinishedCount(_townId, CardEnum::ArchitectStudio)) {
 		appeal += 5;
 	}
-	if (_simulation->buildingFinishedCount(_playerId, CardEnum::EnvironmentalistGuild)) {
+	if (_simulation->buildingFinishedCount(_townId, CardEnum::EnvironmentalistGuild)) {
 		appeal += 15;
 	}
 	return appeal;
@@ -250,7 +250,7 @@ void House::CalculateConsumptions(bool consumeLuxury)
 
 			if (consumeLuxury) {
 				RemoveResource(resourceEnum, actualConsumption);
-				_simulation->statSystem(_playerId).AddResourceStat(ResourceSeasonStatEnum::Consumption, resourceEnum, actualConsumption);
+				_simulation->statSystem(_townId).AddResourceStat(ResourceSeasonStatEnum::Consumption, resourceEnum, actualConsumption);
 			}
 
 			_roundLuxuryConsumption100 += luxuryConsumption100_perRound;
@@ -292,20 +292,20 @@ int32 House::GetIncome100(IncomeEnum incomeEnum)
 
 	case IncomeEnum::Card_MiddleClass:
 		if (_houseLvl >= 2) {
-			int32 cardCount = _simulation->TownhallCardCount(_playerId, CardEnum::MiddleClassTax);
+			int32 cardCount = _simulation->TownhallCardCountTown(_townId, CardEnum::MiddleClassTax);
 			return occupancyFactor(cardCount * 200);
 		}
 		return 0;
 
 	case IncomeEnum::Card_BeerTax: {
-		if (_simulation->TownhallCardCount(_playerId, CardEnum::BeerTax) > 0) {
+		if (_simulation->TownhallCardCountTown(_townId, CardEnum::BeerTax) > 0) {
 			return resourceCount(ResourceEnum::Beer) > 0 ? occupancyFactor(500) : 0;
 		}
 		return 0;
 	}
 
 	case IncomeEnum::Card_DesertPilgrim:
-		if (_simulation->TownhallCardCount(_playerId, CardEnum::DesertPilgrim) > 0 &&
+		if (_simulation->TownhallCardCountTown(_townId, CardEnum::DesertPilgrim) > 0 &&
 			_simulation->terrainGenerator().GetBiome(_centerTile) == BiomeEnum::Desert) 
 		{
 			return  occupancyFactor(500);
@@ -350,7 +350,7 @@ int32 House::GetScience100(ScienceEnum scienceEnum)
 	}
 
 	case ScienceEnum::HomeBrew: {
-		if (_simulation->TownhallCardCount(_playerId, CardEnum::HomeBrew) == 0) {
+		if (_simulation->TownhallCardCountTown(_townId, CardEnum::HomeBrew) == 0) {
 			return 0;
 		}
 		return resourceCount(ResourceEnum::Pottery) > 0 ? occupancyFactor(400) : 0;
@@ -365,7 +365,7 @@ int32 House::GetScience100(ScienceEnum scienceEnum)
 void House::OnPickupResource(int32 objectId)
 {
 	PUN_CHECK(_buildingEnum == CardEnum::House);
-	if (!_simulation->buildingIsAlive(_objectId) || isDisabled() || !isConstructed() || _playerId == -1) {
+	if (!_simulation->buildingIsAlive(_objectId) || isDisabled() || !isConstructed() || _townId == -1) {
 		return;
 	}
 
@@ -374,7 +374,7 @@ void House::OnPickupResource(int32 objectId)
 void House::OnDropoffResource(int32 objectId, ResourceHolderInfo holderInfo, int32 amount)
 {
 	PUN_CHECK(_buildingEnum == CardEnum::House);
-	if (!_simulation->buildingIsAlive(_objectId) || isDisabled() || !isConstructed() || _playerId == -1) {
+	if (!_simulation->buildingIsAlive(_objectId) || isDisabled() || !isConstructed() || _townId == -1) {
 		return;
 	}
 
@@ -435,7 +435,7 @@ void House::UpgradeHouse(int32 lvl)
 	_simulation->soundInterface()->Spawn2DSound("UI", "UpgradeHouse", -1, _centerTile);
 
 	_allowedOccupants = houseBaseOccupants + (lvl - 1) / 2;
-	_simulation->RecalculateTaxDelayed(_playerId); // Recalculate sci
+	_simulation->RecalculateTaxDelayedTown(_townId); // Recalculate sci
 	ResetDisplay();
 }
 
@@ -594,7 +594,7 @@ void Ranch::FinishConstruction()
 
 void Ranch::AddAnimalOccupant(UnitEnum animalEnum, int32_t age)
 {
-	int32 newAnimalId = _simulation->AddUnit(animalEnum, _playerId, centerTile().worldAtom2(), age);
+	int32 newAnimalId = _simulation->AddUnit(animalEnum, _townId, centerTile().worldAtom2(), age);
 	PUN_CHECK(_animalOccupants.size() < maxAnimals);
 	_animalOccupants.push_back(newAnimalId);
 

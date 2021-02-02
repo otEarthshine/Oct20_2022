@@ -33,26 +33,7 @@ public:
 		_enumToAccumulatedStat.resize(AccumulatedStatEnumCount, 0);
 	}
 
-	void Tick(int32 playerId, IGameSimulationCore* simulation);
-	//{
-	//	if (Time::IsSeasonStart()) 
-	//	{
-	//		int32_t seasonInt = Time::SeasonMod();
-	//		check(seasonInt < 4);
-	//		
-	//		// Reset Stat Entry
-	//		for (int i = 0; i < _enumToSeasonToStat.size(); i++) {
-	//			_enumToSeasonToStat[i][seasonInt] = 0;
-	//		}
-	//		for (int i = 0; i < _enumToResourceToSeasonToStat.size(); i++) {
-	//			auto& resourceToSeasonToStat = _enumToResourceToSeasonToStat[i];
-	//			for (int j = 0; j < resourceToSeasonToStat.size(); j++) {
-	//				resourceToSeasonToStat[j][seasonInt] = 0;
-	//			}
-	//		}
-
-	//	}
-	//}
+	void Tick(int32 townId, IGameSimulationCore* simulation);
 
 	/*
 	 * Accumulated stats
@@ -140,32 +121,32 @@ class StatSystem
 public:
 	void Init() {}
 
-	void AddPlayer(int32 playerId) {
-		PUN_CHECK(playerId == _playerIdToSubstatSystem.size());
-		_playerIdToSubstatSystem.push_back(SubStatSystem());
+	void AddTown(int32 townId) {
+		PUN_CHECK(townId == _townIdToSubstatSystem.size());
+		_townIdToSubstatSystem.push_back(SubStatSystem());
 	}
-	void ResetPlayer(int32 playerId) {
-		_playerIdToSubstatSystem[playerId] = SubStatSystem();
+	void ResetTown(int32 townId) {
+		_townIdToSubstatSystem[townId] = SubStatSystem();
 	}
 
 	void Tick(IGameSimulationCore* simulation) {
-		for (int i = 0; i < _playerIdToSubstatSystem.size(); i++) {
-			_playerIdToSubstatSystem[i].Tick(i, simulation);
+		for (int i = 0; i < _townIdToSubstatSystem.size(); i++) {
+			_townIdToSubstatSystem[i].Tick(i, simulation);
 		}
 		_globalSubstatSystem.Tick(-1, simulation);
 	}
 
-	SubStatSystem& playerStatSystem(int32 playerId) {
-		if (playerId == -1) {
+	SubStatSystem& townStatSystem(int32 townId) {
+		if (townId == -1) {
 			return _globalSubstatSystem;
 		}
-		return _playerIdToSubstatSystem[playerId]; 
+		return _townIdToSubstatSystem[townId];
 	}
 
 	std::vector<int32> GetStatAll(SeasonStatEnum statEnum) {
 		std::vector<int32> statAmountAll(4, 0);
-		for (int i = 0; i < _playerIdToSubstatSystem.size(); i++) {
-			CombineSeasonStats(statAmountAll, _playerIdToSubstatSystem[i].GetStat(statEnum));
+		for (int i = 0; i < _townIdToSubstatSystem.size(); i++) {
+			CombineSeasonStats(statAmountAll, _townIdToSubstatSystem[i].GetStat(statEnum));
 		}
 		CombineSeasonStats(statAmountAll, _globalSubstatSystem.GetStat(statEnum));
 		return statAmountAll;
@@ -181,12 +162,12 @@ public:
 
 	void Serialize(FArchive& Ar)
 	{
-		SerializeVecObj(Ar, _playerIdToSubstatSystem);
+		SerializeVecObj(Ar, _townIdToSubstatSystem);
 		_globalSubstatSystem >> Ar;
 	}
 
 private:
-	std::vector<SubStatSystem> _playerIdToSubstatSystem;
+	std::vector<SubStatSystem> _townIdToSubstatSystem;
 	SubStatSystem _globalSubstatSystem; // SubStatSystem for no player (player == -1)
 
 public:

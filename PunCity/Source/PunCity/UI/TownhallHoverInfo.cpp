@@ -197,7 +197,7 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 
 
 	// Update population
-	int population = townhallPlayerOwned.population();
+	int population = sim.populationTown(townhall.townId());
 	TownHoverPopulationText->SetText(FText::FromString(FString::FromInt(population)));
 
 	// Don't show Laborer info if it isMini or not owned by player
@@ -235,11 +235,11 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 	}
 
 	// Townhall name
-	FString displayedName = CityNameText->GetText().ToString();
-	FString newDisplayName = townhall.townFName();
+	FText displayedName = CityNameText->GetText();
+	FText newDisplayName = townhall.townNameT();
 
-	if (displayedName != newDisplayName) {
-		CityNameText->SetText(FText::FromString(newDisplayName));
+	if (!TextEquals(displayedName, newDisplayName)) {
+		CityNameText->SetText(newDisplayName);
 	}
 
 
@@ -257,7 +257,7 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 		CallbackEnum callbackEnum = (townhall.playerId() == playerId()) ? CallbackEnum::None : CallbackEnum::IntercityTrade;
 
 		for (const auto& offer : offers) {
-			int32 inventory = simulation().resourceCount(townhall.playerId(), offer.resourceEnum);
+			int32 inventory = simulation().resourceCountTown(townhall.townId(), offer.resourceEnum);
 			if (offer.offerEnum == IntercityTradeOfferEnum::BuyWhenBelow) {
 				if (offer.targetInventory > inventory) {
 					BuyingBox->AddChooseResourceElement2(offer.resourceEnum, TEXT_NUM(offer.targetInventory - inventory), this, callbackEnum);

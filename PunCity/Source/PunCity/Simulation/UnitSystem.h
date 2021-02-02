@@ -118,7 +118,7 @@ public:
 	int32 animalInitialCount(UnitEnum unitEnum) const { return _animalEnumToInitialCount[static_cast<int>(unitEnum)]; }
 
 	void AddAnimals(int animalCount);
-	int AddUnit(UnitEnum unitEnum, int32 playerId, WorldAtom2 location, int32 ageTicks);
+	int AddUnit(UnitEnum unitEnum, int32 townId, WorldAtom2 location, int32 ageTicks);
 	void RemoveUnit(int32 objectId);
 
 	void ResetUnitActionsInArea(TileArea area);

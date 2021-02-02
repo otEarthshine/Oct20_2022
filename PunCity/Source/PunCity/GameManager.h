@@ -277,13 +277,13 @@ public:
 
 	int32 playerId() override { return _playerId; }
 
-	int32 GetResourceCount(int32 playerId, ResourceEnum resourceEnum) final {
-		return _simulation->resourceCount(playerId, resourceEnum);  
+	int32 GetResourceCount(int32 townId, ResourceEnum resourceEnum) final {
+		return _simulation->resourceCountTown(townId, resourceEnum);
 	}
-	int32 GetResourceCount(int32 playerId, const std::vector<ResourceEnum>& resourceEnums) final {
+	int32 GetResourceCount(int32 townId, const std::vector<ResourceEnum>& resourceEnums) final {
 		int32 result = 0;
 		for (ResourceEnum resourceEnum : resourceEnums) {
-			result += _simulation->resourceCount(playerId, resourceEnum);
+			result += _simulation->resourceCountTown(townId, resourceEnum);
 		}
 		return result;
 	}
@@ -496,7 +496,7 @@ public:
 	bool IsPlayerBuildable(WorldTile2 tile) const final
 	{
 		if (!GameMap::IsInGrid(tile)) return false;
-		if (_simulation->tileOwner(tile) != _playerId) return false;
+		if (_simulation->tileOwnerTown(tile) != _playerId) return false;
 		
 		return _simulation->IsBuildable(tile) || _simulation->IsCritterBuildingIncludeFronts(tile);
 
@@ -508,7 +508,7 @@ public:
 	bool IsPlayerFrontBuildable(WorldTile2 tile) const final
 	{
 		if (!GameMap::IsInGrid(tile)) return false;
-		if (_simulation->tileOwner(tile) != _playerId) return false;
+		if (_simulation->tileOwnerTown(tile) != _playerId) return false;
 
 		return _simulation->IsFrontBuildable(tile) || _simulation->IsCritterBuilding(tile);
 		
@@ -532,7 +532,7 @@ public:
 		if (!GameMap::IsInGrid(tile)) {
 			return false;
 		}
-		int32 tileOwner = _simulation->tileOwner(tile);
+		int32 tileOwner = _simulation->tileOwnerTown(tile);
 		if (tileOwner != -1 && tileOwner != _playerId) {
 			return false;
 		}

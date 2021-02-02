@@ -535,32 +535,32 @@ public:
 		return groups;
 	}
 
-	int32 DistanceToPlayer(int32 playerId)
-	{
-		std::vector<int32> armyNodeIds = _simulation->GetArmyNodeIds(playerId);
-		WorldTile2 currentCenter = _simulation->buildingCenter(nodeId);
-		
-		int32 closestDist = INT_MAX;
-		for (int32 armyNodeId : armyNodeIds) {
-			int32 dist = WorldTile2::Distance(_simulation->buildingCenter(armyNodeId), currentCenter);
-			if (dist < closestDist) {
-				closestDist = dist;
-			}
-		}
-		PUN_CHECK(closestDist != INT_MAX);
-		return closestDist;
-	}
+	//int32 DistanceToPlayer(int32 playerId)
+	//{
+	//	std::vector<int32> armyNodeIds = _simulation->GetArmyNodeIds(playerId);
+	//	WorldTile2 currentCenter = _simulation->buildingCenter(nodeId);
+	//	
+	//	int32 closestDist = INT_MAX;
+	//	for (int32 armyNodeId : armyNodeIds) {
+	//		int32 dist = WorldTile2::Distance(_simulation->buildingCenter(armyNodeId), currentCenter);
+	//		if (dist < closestDist) {
+	//			closestDist = dist;
+	//		}
+	//	}
+	//	PUN_CHECK(closestDist != INT_MAX);
+	//	return closestDist;
+	//}
 
-	int32 PlayerAttackDelayPenaltyPercent(int32 playerId)
-	{
-		int32 distanceToBase = DistanceToPlayer(playerId);
-		int32 delayPenalty = 0;
-		if (distanceToBase > ArmyPenalty_MinDistance) {
-			delayPenalty = ArmyAttackDelayPenaltyPercent_AtMaxDistance * (distanceToBase - ArmyPenalty_MinDistance) / (ArmyPenalty_MaxDistance - ArmyPenalty_MinDistance);
-			delayPenalty = std::min(delayPenalty, ArmyAttackDelayPenaltyPercent_AtMaxDistance);
-		}
-		return delayPenalty;
-	}
+	//int32 PlayerAttackDelayPenaltyPercent(int32 playerId)
+	//{
+	//	int32 distanceToBase = DistanceToPlayer(playerId);
+	//	int32 delayPenalty = 0;
+	//	if (distanceToBase > ArmyPenalty_MinDistance) {
+	//		delayPenalty = ArmyAttackDelayPenaltyPercent_AtMaxDistance * (distanceToBase - ArmyPenalty_MinDistance) / (ArmyPenalty_MaxDistance - ArmyPenalty_MinDistance);
+	//		delayPenalty = std::min(delayPenalty, ArmyAttackDelayPenaltyPercent_AtMaxDistance);
+	//	}
+	//	return delayPenalty;
+	//}
 
 	void operator>>(FArchive& Ar)
 	{
@@ -640,7 +640,7 @@ private:
 			for (int32 i = 0; i < defendGroups.size(); i++) {
 				defendGroups[i].ResetUnitHP();
 			}
-			defendGroups[0].EnsureWall(originalPlayerId != -1 ? _simulation->townLvl(originalPlayerId) : 1);
+			//defendGroups[0].EnsureWall(originalPlayerId != -1 ? _simulation->townLvl(originalPlayerId) : 1);
 		}
 	}
 

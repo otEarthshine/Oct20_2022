@@ -8,24 +8,24 @@
 // TODO: remove struct constructor...
 struct DropInfo
 {
-	int32 playerId;
+	int32 townId;
 	WorldTile2 tile;
 	ResourceHolderInfo holderInfo;
 
-	DropInfo() : playerId(-1), tile(WorldTile2::Invalid), holderInfo(ResourceHolderInfo::Invalid()) {}
-	DropInfo(int32 playerId, WorldTile2 tile, ResourceHolderInfo holderInfo) : playerId(playerId), tile(tile), holderInfo(holderInfo) {}
+	DropInfo() : townId(-1), tile(WorldTile2::Invalid), holderInfo(ResourceHolderInfo::Invalid()) {}
+	DropInfo(int32 townId, WorldTile2 tile, ResourceHolderInfo holderInfo) : townId(townId), tile(tile), holderInfo(holderInfo) {}
 
 	static DropInfo Invalid() { return DropInfo(-1, WorldTile2::Invalid, ResourceHolderInfo::Invalid()); }
 
 	bool isValid() { return tile.isValid(); }
 
 	bool operator==(const DropInfo& a) const {
-		return a.playerId == playerId && a.holderInfo == holderInfo;
+		return a.townId == townId && a.holderInfo == holderInfo;
 	}
 
 	//! Serialize
 	FArchive& operator>>(FArchive &Ar) {
-		Ar << playerId;
+		Ar << townId;
 		tile >> Ar;
 		holderInfo >> Ar;
 		return Ar;
@@ -44,16 +44,16 @@ public:
 		_regionIdToDrops.resize(GameMapConstants::TotalRegions);
 	}
 
-	void AddDrop(int32 playerId, ResourceHolderInfo holderInfo, WorldTile2 tile)
+	void AddDrop(int32 townId, ResourceHolderInfo holderInfo, WorldTile2 tile)
 	{
 		int32 provinceId = _simulation->GetProvinceIdClean(tile);
 		PUN_CHECK(provinceId != -1);
-		int32 provinceOwnerId = _simulation->provinceOwner(provinceId);
-		PUN_CHECK(provinceOwnerId == playerId); // No dropping outside territory (SpawnDrop filtered this)
+		int32 provinceOwnerId = _simulation->provinceOwnerTown(provinceId);
+		PUN_CHECK(provinceOwnerId == townId); // No dropping outside territory (SpawnDrop filtered this)
 
-		//UE_LOG(LogTemp, Error, TEXT("AddDrop player:%d, %s, id:%d"), playerId, *ToFString(holderInfo.resourceName()), holderInfo.holderId);
+		//UE_LOG(LogTemp, Error, TEXT("AddDrop player:%d, %s, id:%d"), townId, *ToFString(holderInfo.resourceName()), holderInfo.holderId);
 
-		DropInfo dropInfo(playerId, tile, holderInfo);
+		DropInfo dropInfo(townId, tile, holderInfo);
 		_provinceIdToDrops[provinceId].push_back(dropInfo);
 		check(CppUtils::Contains(_provinceIdToDrops[provinceId], dropInfo));
 
@@ -62,18 +62,18 @@ public:
 #if WITH_EDITOR
 		// Check if player id is the same for all drops
 		for (DropInfo& info : _provinceIdToDrops[provinceId]) {
-			PUN_CHECK(info.playerId == playerId);
+			PUN_CHECK(info.townId == townId);
 		}
 #endif
 	}
-	void RemoveDrop(int32 playerId, ResourceHolderInfo holderInfo, WorldTile2 tile) // normal removal from resourceSystem
+	void RemoveDrop(int32 townId, ResourceHolderInfo holderInfo, WorldTile2 tile) // normal removal from resourceSystem
 	{
 		int32 provinceId = _simulation->GetProvinceIdClean(tile);
 		PUN_CHECK(provinceId != -1);
 
 		//UE_LOG(LogTemp, Error, TEXT("RemoveDrop player:%d, %s, id:%d"), playerId, *ToFString(holderInfo.resourceName()), holderInfo.holderId);
 
-		DropInfo dropInfo(playerId, tile, holderInfo);
+		DropInfo dropInfo(townId, tile, holderInfo);
 		check(CppUtils::Contains(_provinceIdToDrops[provinceId], dropInfo));
 
 		CppUtils::Remove(_regionIdToDrops[tile.regionId()], dropInfo);
@@ -102,8 +102,8 @@ public:
 	void ForceRemoveDrop(WorldTile2 tile) {
 		std::vector<DropInfo> drops = GetDrops(tile);
 		for (DropInfo& drop : drops) {
-			_simulation->DespawnResourceHolder(drop.holderInfo, drop.playerId);
-			RemoveDrop(drop.playerId, drop.holderInfo, tile);
+			_simulation->DespawnResourceHolder(drop.holderInfo, drop.townId);
+			RemoveDrop(drop.townId, drop.holderInfo, tile);
 		}
 	}
 

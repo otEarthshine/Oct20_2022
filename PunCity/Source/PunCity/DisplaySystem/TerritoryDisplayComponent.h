@@ -68,7 +68,8 @@ public:
 	void Display(std::vector<int>& sampleProvinceIds) override;
 
 	void Deinit() {
-		playerDecals.Deinit();
+		// TODO: Remove This
+		//playerDecals.Deinit();
 	}
 
 private:
@@ -91,16 +92,17 @@ private:
 		return comp;
 	}
 	
-	void DisplayPlayerId(int32 playerId, std::vector<int32>& territoryOwnerMap, FTerritoryDecals& decals);
+	//void DisplayPlayerId(int32 playerId, std::vector<int32>& territoryOwnerMap, FTerritoryDecals& decals);
 
 private:
-	UPROPERTY() FTerritoryDecals playerDecals;
+	// TODO: Remove This
+	//UPROPERTY() FTerritoryDecals playerDecals;
 
 	UPROPERTY() TArray<UTerritoryMeshComponent*> _provinceMeshes;
 	UPROPERTY() TArray<UTerritoryMeshComponent*> _territoryMeshesInner;
 	UPROPERTY() TArray<UTerritoryMeshComponent*> _provinceMeshesPool;
 
-	UPROPERTY() TArray<FTerritoryMeshes> _playerIdToTerritoryMesh;
+	UPROPERTY() TArray<FTerritoryMeshes> _townIdToTerritoryMesh;
 	
 	
 	int32 territoryNameCounter = 0;

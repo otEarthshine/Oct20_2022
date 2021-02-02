@@ -568,9 +568,9 @@ void UTerrainMapComponent::PaintProvinceTexture(ProvinceSystem& provinceSys, Gam
 	}
 	else if (IsValidNonEdgeProvinceId(provinceId))
 	{
-		int32 playerId = sim.provinceOwner(provinceId);
+		int32 townId = sim.provinceOwnerTown(provinceId);
 
-		if (playerId != -1)
+		if (townId != -1)
 		{
 			//FColor color = PlayerColor1(sim.provinceOwner(provinceId)).ToFColor(true);
 			//color.A = 130;

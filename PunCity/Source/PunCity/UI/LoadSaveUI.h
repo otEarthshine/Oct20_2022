@@ -151,17 +151,17 @@ public:
 		GameSaveInfo saveInfo;
 		if (_isSavingGame) {
 			// Show info for current save
-			std::string name;
+			FText name;
 			if (simulation().HasTownhall(playerId())) {
-				name = simulation().townName(playerId());
+				name = simulation().townNameT(playerId());
 			} else {
-				name = simulation().playerName(playerId());
+				name = simulation().playerNameT(playerId());
 			}
 			
-			saveInfo.name = TrimStringF_Dots(ToFString(name), 10);
+			saveInfo.name = TrimStringF_Dots(name.ToString(), 10);
 			saveInfo.dateTime = FDateTime::Now();
 			saveInfo.gameTicks = Time::Ticks();
-			saveInfo.population = simulation().population(playerId());
+			saveInfo.population = simulation().populationTown(playerId());
 			saveInfo.mapSettings = dataSource()->GetMapSettings();
 
 			if (activeIndex == SaveActiveIndex_Unselected) {
@@ -320,7 +320,7 @@ private:
 			saveInfo.name = TrimStringF_Dots(simulation().townNameT(playerId()).ToString(), 10); // TrimStringF_Dots(simulation().playerNameF(playerId()), 10);
 			saveInfo.dateTime = FDateTime::Now();
 			saveInfo.gameTicks = Time::Ticks();
-			saveInfo.population = simulation().population(playerId());
+			saveInfo.population = simulation().populationTown(playerId());
 			saveInfo.mapSettings = dataSource()->GetMapSettings();
 			
 			nameString = saveInfo.DefaultSaveName(true);

@@ -74,7 +74,7 @@ public:
 
 	int32 GetCardPrice(CardEnum buildingEnum) {
 		int32 cardPrice = GetBuildingInfo(buildingEnum).baseCardPrice;
-		if (TownhallCardCount(CardEnum::IndustrialRevolution) && 
+		if (_simulation->TownhallCardCountAll(_playerId, CardEnum::IndustrialRevolution) && 
 			IsIndustrialBuilding(buildingEnum)) 
 		{
 			cardPrice /= 2;
@@ -238,7 +238,7 @@ public:
 
 					// If it is not a bought unique card, discard it
 					if (IsGlobalSlotCard(cardEnum) &&
-						(HasBoughtCard(cardEnum) || TownhallCardCount(cardEnum) > 0))
+						(HasBoughtCard(cardEnum) || _simulation->TownhallCardCountAll(_playerId, cardEnum) > 0))
 					{
 						_cardsDiscardPile.push_back(cardEnum);
 					}
@@ -280,62 +280,6 @@ public:
 		needHand1Refresh = true;
 
 		_rerollCountThisRound++;
-	}
-
-	/*
-	 * Townhall cards
-	 */
-	
-	bool CanAddCardToTownhall() {
-		return _cardsInTownhall.size() < _simulation->townLvl(_playerId);
-	}
-
-	void AddCardToTownhall(CardStatus card) {
-		PUN_CHECK(!IsActionCard(card.cardEnum) && !IsBuildingCard(card.cardEnum));
-		_cardsInTownhall.push_back(card);
-
-		// Some cards may trigger refresh etc...
-		if (card.cardEnum == CardEnum::IndustrialRevolution) {
-			needHand1Refresh = true;
-		}
-	}
-
-	CardEnum RemoveCardFromTownhall(int32 slotIndex) {
-		if (slotIndex < _cardsInTownhall.size()) {
-			CardEnum cardEnum = _cardsInTownhall[slotIndex].cardEnum;
-			_cardsInTownhall.erase(_cardsInTownhall.begin() + slotIndex);
-			return cardEnum;
-		}
-		return CardEnum::None;
-	}
-
-	bool TownhallHasCard(CardEnum cardEnum)
-	{
-		for (size_t i = 0; i < _cardsInTownhall.size(); i++) {
-			if (_cardsInTownhall[i].cardEnum == cardEnum) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	std::vector<CardStatus> cardsInTownhall() {
-		return _cardsInTownhall;
-	}
-
-	int32 maxTownhallCards() {
-		return _simulation->townLvl(_playerId);
-	}
-
-	int32 TownhallCardCount(CardEnum cardEnum)
-	{
-		int32 count = 0;
-		for (size_t i = 0; i < _cardsInTownhall.size(); i++) {
-			if (_cardsInTownhall[i].cardEnum == cardEnum) {
-				count++;
-			}
-		}
-		return count;
 	}
 
 	/*
@@ -624,18 +568,7 @@ public:
 
 		SerializeVecObj(Ar, _cardsBought);
 
-		// Ensure cards are not animated
-		//if (Ar.IsSaving()) {
-		//	for (CardStatus& card : _cardsInTownhall) {
-		//		card.ResetAnimation();
-		//	}
-		//}
-		SerializeVecObj(Ar, _cardsInTownhall);
 
-		//PUN_LOG("_cardsInTownhall id:%d size:%d", _playerId, _cardsInTownhall.size());
-		//for (CardStatus& card : _cardsInTownhall) {
-		//	PUN_LOG(" -- card:%d anim:%d last:%d,%d", static_cast<int>(card.cardEnum), card.animationStartTime100, card.lastPositionX100, card.lastPositionY100);
-		//}
 		
 		SerializeVecValue(Ar, _cardsRareHand);
 		Ar << _rareHandMessage;
@@ -710,7 +643,6 @@ private:
 	std::vector<CardEnum> _cardsRemovedPile;
 
 	std::vector<BuildingCardStack> _cardsBought;
-	std::vector<CardStatus> _cardsInTownhall;
 
 	std::vector<CardEnum> _cardsRareHand;
 	FText _rareHandMessage;

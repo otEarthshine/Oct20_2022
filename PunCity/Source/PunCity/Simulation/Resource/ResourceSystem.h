@@ -231,13 +231,13 @@ class ResourceTypeHolders
 	};
 	
 public:
-	void Init(ResourceEnum resourceEnum, IGameSimulationCore* simulation, int32 playerId)
+	void Init(ResourceEnum resourceEnum, IGameSimulationCore* simulation, int32 townId)
 	{
 		//PUN_LOG("ResourceTypeHolders Init: %d, sim:%p, sys%p", static_cast<int>(resourceEnum), simulation, resourceSystem);
 		
 		_resourceEnum = resourceEnum;
 		_simulation = simulation;
-		_playerId = playerId;
+		_townId = townId;
 		
 		_findTypeToAvailableIdToAmount.resize(static_cast<int>(ResourceFindType::Count));
 	}
@@ -431,7 +431,7 @@ public:
 
 	void CheckIntegrity_ResourceTypeHolder();
 
-	int32 playerId() const { return _playerId; }
+	int32 townId() const { return _townId; }
 
 #if WITH_EDITOR
 	//static int32;
@@ -667,7 +667,7 @@ private:
 
 				bool isConnected = false;
 				if (holder.objectId != -1) {
-					isConnected = _simulation->IsConnectedBuilding(holder.objectId, _playerId);
+					isConnected = _simulation->IsConnectedBuilding(holder.objectId);
 				}
 
 				if (!isConnected) {
@@ -720,7 +720,7 @@ private:
 
 private:
 	IGameSimulationCore* _simulation = nullptr;
-	int32 _playerId = -1;
+	int32 _townId = -1;
 	
 	ResourceEnum _resourceEnum = ResourceEnum::None;
 
@@ -737,17 +737,17 @@ private:
 class ResourceSystem
 {
 public:
-	ResourceSystem(int32 playerId, IGameSimulationCore* simulation)
+	ResourceSystem(int32 townId, IGameSimulationCore* simulation)
 	{
 		//PUN_LOG("ResourceSystem Construct: player:%d, sim:%p", playerId, simulation);
 		
 		PUN_CHECK(simulation);
-		_playerId = playerId;
+		_townId = townId;
 		_simulation = simulation;
 		_enumToHolders.resize(ResourceEnumCount);
 
 		for (size_t i = 0; i < _enumToHolders.size(); i++) {
-			_enumToHolders[i].Init(static_cast<ResourceEnum>(i), _simulation, _playerId);
+			_enumToHolders[i].Init(static_cast<ResourceEnum>(i), _simulation, _townId);
 		}
 
 		for (size_t i = 0; i < _enumToHolders.size(); i++) {
@@ -756,8 +756,8 @@ public:
 	}
 
 	void CheckIntegrity_ResourceSys() const {
-		PUN_CHECK(_playerId >= 0);
-		PUN_CHECK(_playerId < 1000);
+		PUN_CHECK(_townId >= 0);
+		PUN_CHECK(_townId < 1000);
 		PUN_CHECK(_simulation);
 
 		PUN_CHECK(_enumToHolders.size() > 0);
@@ -869,7 +869,7 @@ public:
 		return false;
 	}
 
-	int32 playerId() const { return _playerId; }
+	int32 townId() const { return _townId; }
 	IGameSimulationCore* simulation() const { return _simulation; }
 
 	/*
@@ -890,7 +890,7 @@ public:
 		int amountLeft = holderGroup(resourceEnum).AddResourceGlobal(amount, *this);
 
 		if (amountLeft > 0) {
-			simulation.AddPopup(_playerId, 
+			simulation.AddPopup(_simulation->townPlayerId(_townId),
 				FText::Format(NSLOCTEXT("ResourceSys", "StorageFullLost_Pop", "Storages full... Lost {0} {1}"), TEXT_NUM(amountLeft), ResourceNameT(resourceEnum))
 			);
 		}
@@ -954,7 +954,7 @@ public:
 		// Don't spawn drop if not in player's territory
 		int32 provinceId = _simulation->GetProvinceIdClean(tile);
 		PUN_CHECK(provinceId != -1);
-		if (_simulation->provinceOwner(provinceId) != _playerId) {
+		if (_simulation->provinceOwnerTown(provinceId) != _townId) {
 			return -1;
 		}
 		
@@ -965,7 +965,7 @@ public:
 		ResourceHolderInfo info(resourceEnum, holderId);
 		UpdateResourceDisplay(holder(info));
 
-		_simulation->dropSystem().AddDrop(_playerId, info, tile);
+		_simulation->dropSystem().AddDrop(_townId, info, tile);
 		return holderId;
 	}
 
@@ -1147,7 +1147,7 @@ public:
 		{
 			//PUN_LOG("RemoveResource..Drop player:%d, %s, id:%d", _playerId, *ToFString(info.resourceName()), info.holderId);
 			if (holderLocal.current() == 0) {
-				_simulation->dropSystem().RemoveDrop(_playerId, info, holderLocal.tile);
+				_simulation->dropSystem().RemoveDrop(_townId, info, holderLocal.tile);
 				DespawnHolder(info);
 			}
 		}
@@ -1182,7 +1182,7 @@ public:
 	}
 	void resourcedebugStr(std::stringstream& ss) const
 	{
-		WorldTile2 townCenterTile = _simulation->townhallGateTile(_playerId);
+		WorldTile2 townCenterTile = _simulation->GetTownhallGateFast(_townId);
 		
 		ss << "\n--- RESOURCE SYS --- \n";
 		for (const ResourceTypeHolders& holders : _enumToHolders) {
@@ -1192,7 +1192,7 @@ public:
 	}
 	void resourcedebugStr(std::stringstream& ss, ResourceEnum resourceEnum) const
 	{
-		WorldTile2 townCenterTile = _simulation->townhallGateTile(_playerId);
+		WorldTile2 townCenterTile = _simulation->GetTownhallGateFast(_townId);
 
 		ss << "\n--- RESOURCE SYS --- \n";
 		holderGroupConst(resourceEnum).resourcedebugStr(ss, townCenterTile, _simulation);
@@ -1204,7 +1204,7 @@ private:
 	const ResourceTypeHolders& holderGroupConst(ResourceEnum resourceEnum) const { return _enumToHolders[static_cast<int>(resourceEnum)]; }
 	
 private:
-	int32 _playerId = -1;
+	int32 _townId = -1;
 	IGameSimulationCore* _simulation = nullptr;
 
 	/*

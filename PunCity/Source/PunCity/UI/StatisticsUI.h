@@ -78,11 +78,11 @@ public:
 
 	//UPROPERTY() TArray<UGraphDataSource*> dataSources;
 
-	int32 uiPlayerId = -1;
+	int32 uiTownId = -1;
 
 public:
 	void OpenStatisticsUI(int32 playerId) {
-		uiPlayerId = playerId;
+		uiTownId = playerId;
 		SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	}
 

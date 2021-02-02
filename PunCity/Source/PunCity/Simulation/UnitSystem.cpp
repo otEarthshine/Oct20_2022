@@ -134,7 +134,7 @@ void UnitSystem::AddAnimals(int animalCount)
 	//PUN_LOG("InitialUnitCount: %d", _unitLeans.size());
 }
 
-int UnitSystem::AddUnit(UnitEnum unitEnum, int32 playerId, WorldAtom2 location, int32 ageTicks)
+int UnitSystem::AddUnit(UnitEnum unitEnum, int32 townId, WorldAtom2 location, int32 ageTicks)
 {
 	int objectId = -1;
 
@@ -176,7 +176,7 @@ int UnitSystem::AddUnit(UnitEnum unitEnum, int32 playerId, WorldAtom2 location, 
 
 		_stateAI.push_back(move(unitAI));
 
-		_stateAI.back()->AddUnit(unitEnum, playerId, fullId, this, _simulation);
+		_stateAI.back()->AddUnit(unitEnum, townId, fullId, this, _simulation);
 
 		//if (location.worldTile2().x < 50 && location.worldTile2().y < 50) UE_LOG(LogTemp, Error, TEXT("NewHuman: Count: %d"), unitCount());
 	}
@@ -207,7 +207,7 @@ int UnitSystem::AddUnit(UnitEnum unitEnum, int32 playerId, WorldAtom2 location, 
 		//	_stateAI[objectId] = std::make_unique<UnitStateAI>();
 		//}
 		_stateAI[objectId] = move(unitAI);
-		_stateAI[objectId]->AddUnit(unitEnum, playerId, fullId, this, _simulation);
+		_stateAI[objectId]->AddUnit(unitEnum, townId, fullId, this, _simulation);
 
 		//if (location.worldTile2().x < 100 && location.worldTile2().y < 100) UE_LOG(LogTemp, Error, TEXT("ReuseHuman: Count: %d"), unitCount());
 	}

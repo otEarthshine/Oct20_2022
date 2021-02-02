@@ -32,7 +32,7 @@ public:
 
 	UFUNCTION() void OnClickPlayerZoomButton() {
 		if (simulation().HasTownhall(_playerId)) {
-			networkInterface()->SetCameraAtom(simulation().townhallGateTile(_playerId).worldAtom2());
+			networkInterface()->SetCameraAtom(simulation().GetTownhallGateCapital(_playerId).worldAtom2());
 		}
 	}
 

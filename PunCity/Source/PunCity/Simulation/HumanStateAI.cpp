@@ -219,7 +219,7 @@ void HumanStateAI::CalculateActions()
 
 		// Farm Drop pickup
 		{
-			const std::vector<int32>& farmIds = _simulation->buildingIds(_playerId, CardEnum::Farm);
+			const std::vector<int32>& farmIds = _simulation->buildingIds(_townId, CardEnum::Farm);
 			for (int32 farmId : farmIds) {
 				Farm& farm = _simulation->building<Farm>(farmId, CardEnum::Farm);
 				if (farm.IsStage(FarmStage::Harvesting)) {
@@ -599,7 +599,7 @@ bool HumanStateAI::TryMoveResourcesToDeliveryTarget(int32 deliverySourceId, Reso
 bool HumanStateAI::TryMoveResourcesToDeliveryTargetAll(int32 amountAtLeast)
 {
 	auto& resourceSys = resourceSystem();
-	const std::vector<int32>& deliverySourceIds = _simulation->playerOwned(_playerId).allDeliverySources();
+	const std::vector<int32>& deliverySourceIds = townManager().allDeliverySources();
 	WorldTile2 uTile = unitTile();
 
 	std::vector<FoundResourceHolderInfo> closestDeliveryInfos;
@@ -654,7 +654,7 @@ bool HumanStateAI::TryMoveResourcesToDeliveryTargetAll(int32 amountAtLeast)
 
 bool HumanStateAI::TryStoreInventory()
 {
-	auto& resourceSystem = _simulation->resourceSystem(_playerId);
+	auto& resourceSys = resourceSystem();
 
 	// Free inventory
 	std::vector<ResourcePair>& inventory = _inventory.resourcePairs();
@@ -668,7 +668,7 @@ bool HumanStateAI::TryStoreInventory()
 		//	continue;
 		//}
 		int32 amount = min(inventory[i].count, 10);
-		FoundResourceHolderInfos foundDropoffs = resourceSystem.FindHolder(ResourceFindType::AvailableForDropoff,
+		FoundResourceHolderInfos foundDropoffs = resourceSys.FindHolder(ResourceFindType::AvailableForDropoff,
 																	inventory[i].resourceEnum, amount, unitTile());
 		if (foundDropoffs.hasInfos()) {
 
@@ -696,7 +696,7 @@ bool HumanStateAI::TryStoreInventory()
 			WorldTile2 tile = _simulation->FindNearbyDroppableTile(unitTile(), TileArea(0,0,0,0));
 
 			if (inventory[i].count > 0) {
-				resourceSystem.SpawnDrop(inventory[i].resourceEnum, inventory[i].count, tile);
+				resourceSys.SpawnDrop(inventory[i].resourceEnum, inventory[i].count, tile);
 			}
 		}
 		inventory.clear();
@@ -912,8 +912,8 @@ bool HumanStateAI::TryFindFood()
 		}
 
 		// Event Log
-		int32 foodNeededPerHalfMinute = _simulation->population(_playerId) * HumanFoodPerYear / Time::MinutesPerYear / 2;
-		if (_simulation->foodCount(_playerId) < foodNeededPerHalfMinute) {
+		int32 foodNeededPerHalfMinute = _simulation->populationTown(_townId) * HumanFoodPerYear / Time::MinutesPerYear / 2;
+		if (_simulation->foodCount(_townId) < foodNeededPerHalfMinute) {
 			if (_simulation->TryDoNonRepeatAction(_playerId, NonRepeatActionEnum::FoodReserveLowEvent, Time::TicksPerSecond * 60)) {
 				_simulation->AddEventLog(_playerId, 
 					LOCTEXT("LowFood_Event", "Food reserve is low."), 
@@ -951,10 +951,10 @@ bool HumanStateAI::TryHeatup()
 	int32 fuelCount = house.GetResourceCountWithPush(ResourceEnum::Wood) + house.GetResourceCountWithPush(ResourceEnum::Coal);
 	if (fuelCount < 5) 
 	{
-		auto& playerOwned = _simulation->playerOwned(_playerId);
+		auto& townManage = townManager();
 		
 		// Try to fill with coal first since it is cheaper
-		if (playerOwned.GetHouseResourceAllow(ResourceEnum::Coal) &&
+		if (townManage.GetHouseResourceAllow(ResourceEnum::Coal) &&
 			TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, house.GetHolderInfoFull(ResourceEnum::Coal, 10), true)) 
 		{
 			AddDebugSpeech("(Succeed)TryHeatup move coal");
@@ -962,7 +962,7 @@ bool HumanStateAI::TryHeatup()
 		}
 
 		// Otherwise fill with wood
-		if (playerOwned.GetHouseResourceAllow(ResourceEnum::Wood) &&
+		if (townManage.GetHouseResourceAllow(ResourceEnum::Wood) &&
 			TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, house.GetHolderInfoFull(ResourceEnum::Wood, 10), true))
 		{
 			AddDebugSpeech("(Succeed)TryHeatup move firewood");
@@ -999,8 +999,8 @@ bool HumanStateAI::TryHeatup()
 	}
 
 	// Event Log
-	if (_simulation->resourceSystem(_playerId).resourceCount(ResourceEnum::Wood) == 0 &&
-		_simulation->resourceSystem(_playerId).resourceCount(ResourceEnum::Coal) == 0)
+	if (resourceSystem().resourceCount(ResourceEnum::Wood) == 0 &&
+		resourceSystem().resourceCount(ResourceEnum::Coal) == 0)
 	{
 		if (_simulation->TryDoNonRepeatAction(_playerId, NonRepeatActionEnum::WoodReserveLowEvent, Time::TicksPerSecond * 30)) {
 			_simulation->AddEventLog(_playerId, 
@@ -1027,7 +1027,7 @@ bool HumanStateAI::TryToolup()
 	if (Time::Ticks() > _nextToolNeedTick - Time::TicksPerRound)
 	{
 		int32 wantAmount = 1;
-		auto& resourceSystem = _simulation->resourceSystem(_playerId);
+		auto& resourceSys = resourceSystem();
 		bool hasToolsInStorage = false;
 
 		int32 maxFloodDist = GameConstants::MaxFloodDistance_Human;
@@ -1047,7 +1047,7 @@ bool HumanStateAI::TryToolup()
 
 			FoundResourceHolderInfos foundProviders = FindNeedHelper(resourceEnum, wantAmount, maxFloodDist);
 
-			if (resourceSystem.resourceCount(resourceEnum) > 0) {
+			if (resourceSys.resourceCount(resourceEnum) > 0) {
 				hasToolsInStorage = true;
 			}
 			
@@ -1093,7 +1093,6 @@ bool HumanStateAI::TryHealup()
 	if (_isSick)
 	{
 		int32 wantAmount = 1;
-		auto& resourceSystem = _simulation->resourceSystem(_playerId);
 
 		int32 maxFloodDist = GameConstants::MaxFloodDistance_Human;
 
@@ -1168,11 +1167,11 @@ bool HumanStateAI::TryFillLuxuries()
 		resourceEnums.insert(resourceEnums.end(), TierToLuxuryEnums[1].begin(), TierToLuxuryEnums[1].end());
 	}
 
-	auto& playerOwned = _simulation->playerOwned(_playerId);
+	auto& townManage = townManager();
 
 	for (ResourceEnum resourceEnum : resourceEnums)
 	{
-		if (playerOwned.GetHouseResourceAllow(resourceEnum) &&
+		if (townManage.GetHouseResourceAllow(resourceEnum) &&
 			house.GetResourceCountWithPush(resourceEnum) < 5 &&
 			TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, house.GetHolderInfoFull(resourceEnum, maxPickupAmount), true))
 		{
@@ -1211,7 +1210,7 @@ FoundResourceHolderInfos HumanStateAI::FindMarketResourceHolderInfo(ResourceEnum
 		return FoundResourceHolderInfos();
 	};
 	
-	std::vector<int32> marketIds = _simulation->buildingIds(_playerId, CardEnum::Market);
+	std::vector<int32> marketIds = _simulation->buildingIds(_townId, CardEnum::Market);
 
 	/*
 	 * Sort market by distance
@@ -1301,7 +1300,7 @@ bool HumanStateAI::TryFun()
 
 		auto findAvailableFunBuilding = [&](CardEnum funBuildingEnum, int32& nearestFunBuildingId)
 		{
-			std::vector<int32> funBuildingIds = _simulation->buildingIds(_playerId, funBuildingEnum);
+			std::vector<int32> funBuildingIds = _simulation->buildingIds(_townId, funBuildingEnum);
 			int32 nearestDist = numeric_limits<int32>::max();
 			for (int32 funBuildingId : funBuildingIds) {
 				FunBuilding& funBuilding = _simulation->building(funBuildingId).subclass<FunBuilding>(funBuildingEnum);
@@ -1721,7 +1720,7 @@ bool HumanStateAI::TryFarm()
 			farm.ResetStageTo(FarmStage::Dormant);
 
 			// Reset the jobs
-			_simulation->playerOwned(_playerId).RefreshJobDelayed();
+			townManager().RefreshJobDelayed();
 			
 			return false; // TODO: true here might have caused farm freeze?
 		}
@@ -1843,8 +1842,8 @@ bool HumanStateAI::TryBulkHaul_ShippingDepot()
 		
 		if (!deliveryTarget.subclass<StorageYard>().isFull())
 		{
-			std::vector<int32> storageIds = _simulation->GetBuildingsWithinRadius(shipper.centerTile(), ShippingDepot::Radius, _playerId, CardEnum::StorageYard);
-			CppUtils::AppendVec(storageIds, _simulation->GetBuildingsWithinRadius(shipper.centerTile(), ShippingDepot::Radius, _playerId, CardEnum::Warehouse));
+			std::vector<int32> storageIds = _simulation->GetBuildingsWithinRadius(shipper.centerTile(), ShippingDepot::Radius, _townId, CardEnum::StorageYard);
+			CppUtils::AppendVec(storageIds, _simulation->GetBuildingsWithinRadius(shipper.centerTile(), ShippingDepot::Radius, _townId, CardEnum::Warehouse));
 
 			for (ResourceEnum resourceEnum : shipper.resourceEnums) {
 				if (resourceEnum != ResourceEnum::None) {
@@ -1946,13 +1945,13 @@ bool HumanStateAI::TryDistribute_Market()
 {
 	auto market = workplace()->subclass<Market>(CardEnum::Market);
 	
-	std::vector<int32> houseIds = _simulation->GetBuildingsWithinRadius(market.centerTile(), Market::Radius, _playerId, CardEnum::House);
+	std::vector<int32> houseIds = _simulation->GetBuildingsWithinRadius(market.centerTile(), Market::Radius, _townId, CardEnum::House);
 
 	int32 haulSize = 10;
 
-	auto& playerOwned = _simulation->playerOwned(_playerId);
-	bool coalAllowed = playerOwned.GetHouseResourceAllow(ResourceEnum::Coal);
-	bool woodAllowed = playerOwned.GetHouseResourceAllow(ResourceEnum::Wood);
+	auto& townManager = _simulation->townManager(_townId);
+	bool coalAllowed = townManager.GetHouseResourceAllow(ResourceEnum::Coal);
+	bool woodAllowed = townManager.GetHouseResourceAllow(ResourceEnum::Wood);
 
 	bool hasCoal = resourceSystem().resourceCountWithPop(ResourceEnum::Coal) >= 10;
 	bool hasWood = resourceSystem().resourceCountWithPop(ResourceEnum::Wood) >= 10;
@@ -2071,11 +2070,11 @@ bool HumanStateAI::TryForestingCut(bool cutAndPlant)
 	Forester& workPlc = workplace()->subclass<Forester>(CardEnum::Forester);
 
 	// Reached output target? Don't cut
-	if (_simulation->IsOutputTargetReached(_playerId, ResourceEnum::Wood))
+	if (_simulation->IsOutputTargetReached(_townId, ResourceEnum::Wood))
 	{
 		// Should switch jobs if this is not priority
 		if (workPlc.priority() == PriorityEnum::NonPriority) {
-			_simulation->playerOwned(_playerId).RefreshJobDelayed();
+			_simulation->townManager(_townId).RefreshJobDelayed();
 		}
 		// TODO: also refresh upon dropping a lot below target
 		
@@ -2085,7 +2084,7 @@ bool HumanStateAI::TryForestingCut(bool cutAndPlant)
 
 	
 
-	NonWalkableTileAccessInfo tileAccessInfo = treeSystem().FindCuttableTree(_playerId, workPlc.gateTile(), Forester::Radius, workPlc.cuttingEnum);
+	NonWalkableTileAccessInfo tileAccessInfo = treeSystem().FindCuttableTree(_townId, workPlc.gateTile(), Forester::Radius, workPlc.cuttingEnum);
 
 	if (!tileAccessInfo.isValid()) {
 		AddDebugSpeech("(Failed)TryForestingCut: no valid tree");
@@ -2108,7 +2107,7 @@ bool HumanStateAI::TryForestingNourish()
 {
 	Forester& workPlc = workplace()->subclass<Forester>(CardEnum::Forester);
 	
-	NonWalkableTileAccessInfo tileAccessInfo = treeSystem().FindNourishableTree(_playerId, workPlc.gateTile(), Forester::Radius, workPlc.cuttingEnum);
+	NonWalkableTileAccessInfo tileAccessInfo = treeSystem().FindNourishableTree(_townId, workPlc.gateTile(), Forester::Radius, workPlc.cuttingEnum);
 
 	if (!tileAccessInfo.isValid()) {
 		AddDebugSpeech("(Failed)TryForestingNourish: no valid tree");
@@ -2153,7 +2152,7 @@ bool HumanStateAI::TryForestingPlant(TileObjEnum lastCutTileObjEnum, NonWalkable
 	
 	if (!accessInfo.isValid()) {
 		// Find a valid tile to plant tree...
-		accessInfo = treeSystem().FindTreePlantableSpot(_playerId, forester.gateTile(), Forester::Radius);
+		accessInfo = treeSystem().FindTreePlantableSpot(_townId, forester.gateTile(), Forester::Radius);
 		if (!accessInfo.isValid()) {
 			AddDebugSpeech("(Failed)TryForestingPlant: No TreePlantableSpot.");
 			return false;
@@ -2364,7 +2363,7 @@ bool HumanStateAI::TryProduce()
 	if (!workplace.filledInputs())
 	{
 		// If there is nothing at the workplace, we need to go out to grab the resource to fill it
-		ResourceSystem& resourceSystem = _simulation->resourceSystem(_playerId);
+		ResourceSystem& resourceSys = resourceSystem();
 
 		int32 inputPerBatch = workplace.inputPerBatch();
 
@@ -2388,7 +2387,7 @@ bool HumanStateAI::TryProduce()
 		ResourceEnum product = workplace.product();
 		if (product != ResourceEnum::None)
 		{
-			if (_simulation->IsOutputTargetReached(_playerId, product))
+			if (_simulation->IsOutputTargetReached(_townId, product))
 			{
 				//// Only continue if there is unfinished filling
 				//bool shouldContinueFilling = false;
@@ -2413,7 +2412,7 @@ bool HumanStateAI::TryProduce()
 
 				// Should switch jobs if this is not priority
 				if (workplace.priority() == PriorityEnum::NonPriority) {
-					_simulation->playerOwned(_playerId).RefreshJobDelayed();
+					_simulation->townManager(_townId).RefreshJobDelayed();
 				}
 				
 				AddDebugSpeech("(Failed)TryProduce: Already Reached Target");
@@ -2438,8 +2437,8 @@ bool HumanStateAI::TryProduce()
 		if (needInput1 || needInput2) 
 		{
 			// Check resourceCountWithPush, we would display needInput icon in the case where we need input and no one is trying to deliver them
-			bool needInput1_WithPush = workplace.hasInput1() && resourceSystem.resourceCountWithPush(workplace.holderInfo(workplace.input1())) < inputPerBatch;
-			bool needInput2_WithPush = workplace.hasInput2() && resourceSystem.resourceCountWithPush(workplace.holderInfo(workplace.input2())) < inputPerBatch;
+			bool needInput1_WithPush = workplace.hasInput1() && resourceSys.resourceCountWithPush(workplace.holderInfo(workplace.input1())) < inputPerBatch;
+			bool needInput2_WithPush = workplace.hasInput2() && resourceSys.resourceCountWithPush(workplace.holderInfo(workplace.input2())) < inputPerBatch;
 			if (needInput1_WithPush) {
 				workplace.workplaceInputNeeded = workplace.input1();
 			}
@@ -2489,7 +2488,7 @@ bool HumanStateAI::TryProduce()
 
 bool HumanStateAI::TryConstructRoad()
 {
-	const std::vector<int32>& roadConstructionIds = _simulation->playerOwned(_playerId).roadConstructionIds();
+	const std::vector<int32>& roadConstructionIds = _simulation->townManager(_townId).roadConstructionIds();
 
 	const int32 maxLoop = 1000;
 	int32 nearestRoadId = -1;
@@ -2649,7 +2648,7 @@ bool HumanStateAI::TryConstructHelper(int32 workplaceId)
 	workplace.workplaceInputNeeded = ResourceEnum::None;
 
 	// Clear area
-	if (!_simulation->IsLandCleared_SmallOnly(_playerId, workplace.area())) {
+	if (!_simulation->IsLandCleared_SmallOnly(_townId, workplace.area())) {
 		if (TryClearLand(workplace.area())) {
 			AddDebugSpeech("(Success)TryConstruct: Clearing land.");
 			return true;
@@ -2657,7 +2656,7 @@ bool HumanStateAI::TryConstructHelper(int32 workplaceId)
 		AddDebugSpeech("(Failed)TryConstruct: Failed to clear land.");
 		return false;
 	}
-	if (!_simulation->IsLandCleared_SmallOnly(_playerId, workplace.frontArea())) {
+	if (!_simulation->IsLandCleared_SmallOnly(_townId, workplace.frontArea())) {
 		if (TryClearLand(workplace.frontArea())) {
 			AddDebugSpeech("(Success)TryConstruct: Clearing land front.");
 			return true;
@@ -2698,7 +2697,7 @@ bool HumanStateAI::TryConstructHelper(int32 workplaceId)
 			return false;
 		}
 
-		auto& resourceSystem = _simulation->resourceSystem(_playerId);
+		auto& resourceSys = resourceSystem();
 		std::vector<int32> constructionCosts = workplace.GetConstructionResourceCost();
 		bool hasNeededResourceWithPush = true;
 
@@ -2713,7 +2712,7 @@ bool HumanStateAI::TryConstructHelper(int32 workplaceId)
 					int32 maxFloodDist = GameConstants::MaxFloodDistance_HumanLogistics;
 					
 					int32 amount = min(neededResource, 10);
-					FoundResourceHolderInfos foundProviders = resourceSystem.FindHolder(ResourceFindType::AvailableForPickup, resourceEnum, amount, unitTile(), {}, maxFloodDist);
+					FoundResourceHolderInfos foundProviders = resourceSys.FindHolder(ResourceFindType::AvailableForPickup, resourceEnum, amount, unitTile(), {}, maxFloodDist);
 					hasNeededResourceWithPush = false;
 
 					if (foundProviders.hasInfos()) {
@@ -2837,7 +2836,7 @@ void HumanStateAI::AttackOutgoing()
 		return;
 	}
 
-	int32 arrowId = _simulation->AddUnit(UnitEnum::ProjectileArrow, _playerId, _unitData->atomLocation(_id), 0);
+	int32 arrowId = _simulation->AddUnit(UnitEnum::ProjectileArrow, _townId, _unitData->atomLocation(_id), 0);
 	ProjectileArrow* arrow = static_cast<ProjectileArrow*>(&_simulation->unitAI(arrowId));
 	arrow->Launch(_fullId, workplaceReservation.reserveWorkplaceId, defender, damage);
 

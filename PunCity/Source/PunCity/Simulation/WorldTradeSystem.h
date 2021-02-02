@@ -147,11 +147,11 @@ public:
 	void RemoveAllTradeRoutes(int32 playerId);
 
 	// Intercity Trade
-	const std::vector<IntercityTradeOffer>& GetIntercityTradeOffers(int32 playerId) {
-		return _intercityTradeOffers[playerId];
+	const std::vector<IntercityTradeOffer>& GetIntercityTradeOffers(int32 townId) {
+		return _intercityTradeOffers[townId];
 	}
-	IntercityTradeOffer GetIntercityTradeOffer(int32 playerId, ResourceEnum resourceEnum) {
-		std::vector<IntercityTradeOffer>& offers = _intercityTradeOffers[playerId];
+	IntercityTradeOffer GetIntercityTradeOffer(int32 townId, ResourceEnum resourceEnum) {
+		std::vector<IntercityTradeOffer>& offers = _intercityTradeOffers[townId];
 		for (IntercityTradeOffer& offer : offers) {
 			if (offer.resourceEnum == resourceEnum) {
 				return offer;
@@ -161,9 +161,9 @@ public:
 	}
 	void SetIntercityTradeOffers(FSetIntercityTrade command)
 	{
-		_intercityTradeOffers[command.playerId].clear();
+		_intercityTradeOffers[command.townId].clear();
 		for (int32 i = 0; i < command.resourceEnums.Num(); i++) {
-			_intercityTradeOffers[command.playerId].push_back({ static_cast<ResourceEnum>(command.resourceEnums[i]),  static_cast<IntercityTradeOfferEnum>(command.intercityTradeOfferEnum[i]), command.targetInventories[i] });
+			_intercityTradeOffers[command.townId].push_back({ static_cast<ResourceEnum>(command.resourceEnums[i]),  static_cast<IntercityTradeOfferEnum>(command.intercityTradeOfferEnum[i]), command.targetInventories[i] });
 		}
 	}
 	
@@ -184,7 +184,7 @@ public:
 		SerializeVecVecObj(Ar, _intercityTradeOffers);
 	}
 
-	const std::vector<int32>& GetStatVec(ResourceEnum resourceEnum) const {
+	const std::vector<int32>& GetPlotStatVec(ResourceEnum resourceEnum) const {
 		return _resourceEnumToPrice100Vec[static_cast<int>(resourceEnum)];
 	}
 

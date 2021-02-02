@@ -18,7 +18,7 @@ GameSaveInfo GameSaveSystem::SaveDataToFile(FString saveName, bool isCachingForS
 	saveInfo.name = saveName;
 	saveInfo.dateTime = FDateTime::Now();
 	saveInfo.gameTicks = Time::Ticks();
-	saveInfo.population = simulation.population(playerId);
+	saveInfo.population = simulation.populationTown(playerId);
 	saveInfo.mapSettings = dataSource->GetMapSettings();
 
 	saveInfo.playerNames = _controller->networkInterface()->playerNamesF();

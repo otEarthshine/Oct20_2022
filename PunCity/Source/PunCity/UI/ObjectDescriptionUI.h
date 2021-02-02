@@ -163,7 +163,8 @@ private:
 	void EditName(const FText& Text) {
 		auto command = make_shared<FChangeName>();
 		command->name = TrimStringF(Text.ToString(), 30);
-		command->objectId = simulation().playerOwned(playerId()).townHallId;
+		PUN_CHECK(simulation().descriptionUIState().objectType == ObjectTypeEnum::Building);
+		command->objectId = simulation().descriptionUIState().objectId;
 		networkInterface()->SendNetworkCommand(command);
 
 		NameEditTextBox->SetVisibility(ESlateVisibility::Collapsed);

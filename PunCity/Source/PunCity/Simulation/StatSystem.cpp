@@ -3,7 +3,7 @@
 #include "StatSystem.h"
 #include "PlayerOwnedManager.h"
 
-void SubStatSystem::Tick(int32 playerId, IGameSimulationCore* simulation)
+void SubStatSystem::Tick(int32 townId, IGameSimulationCore* simulation)
 {
 	if (Time::IsSeasonStart())
 	{
@@ -13,7 +13,7 @@ void SubStatSystem::Tick(int32 playerId, IGameSimulationCore* simulation)
 		int32 lastSeasonInt = (Time::Seasons() + 4 - 1) % 4;
 
 		// Add to Graph just before resetting
-		if (playerId != -1)
+		if (townId != -1)
 		{
 			int32 foodProduction = 0;
 			int32 foodConsumption = 0;
@@ -21,9 +21,9 @@ void SubStatSystem::Tick(int32 playerId, IGameSimulationCore* simulation)
 				foodProduction += GetCurrentResourceStat(ResourceSeasonStatEnum::Production, foodEnum, lastSeasonInt);
 				foodConsumption += GetCurrentResourceStat(ResourceSeasonStatEnum::Consumption, foodEnum, lastSeasonInt);
 			}
-			auto& playerOwned = simulation->playerOwned(playerId);
-			playerOwned.AddDataPoint(PlotStatEnum::FoodProduction, foodProduction, Time::TicksPerSeason);
-			playerOwned.AddDataPoint(PlotStatEnum::FoodConsumption, foodConsumption, Time::TicksPerSeason);
+			auto& townManager = simulation->townManager(townId);
+			townManager.AddDataPoint(PlotStatEnum::FoodProduction, foodProduction, Time::TicksPerSeason);
+			townManager.AddDataPoint(PlotStatEnum::FoodConsumption, foodConsumption, Time::TicksPerSeason);
 		}
 
 

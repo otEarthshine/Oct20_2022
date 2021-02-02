@@ -295,7 +295,7 @@ private:
 		GetPunHUD()->OpenStatisticsUI(playerId());
 	}
 	UFUNCTION() void OnClickJobPriorityButton() {
-		GetPunHUD()->OpenJobPriorityUI();
+		GetPunHUD()->OpenJobPriorityUI(dataSource()->simulation().building(_buildingId).townId());
 	}
 
 	void SetPriorityButton(PriorityEnum priority)

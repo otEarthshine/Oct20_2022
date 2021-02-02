@@ -115,7 +115,7 @@ public:
 
 	int32 workEfficiency100(bool includeToolPenalty = true)
 	{
-		if (_playerId == -1) {
+		if (_townId == -1) {
 			return 100;
 		}
 		
@@ -157,7 +157,7 @@ public:
 		return needTools() ? -75 : 0;
 	}
 	int32 sicknessPenalty100() {
-		if (_simulation->GetResourceCount(_playerId, MedicineEnums) > 0) {
+		if (_simulation->GetResourceCount(_townId, MedicineEnums) > 0) {
 			return 0;
 		}
 		return isSick() ? -50 : 0;
@@ -193,7 +193,7 @@ public:
 	int32 GetHappinessModifier(HappinessModifierEnum modifierEnum)
 	{
 		// Guard
-		if (_playerId == -1) {
+		if (_townId == -1) {
 			return 0;
 		}
 		
@@ -201,13 +201,13 @@ public:
 		{
 		case HappinessModifierEnum::Luxury: return luxuryHappinessModifier();
 		case HappinessModifierEnum::HappyBreadDay: {
-			if (_simulation->TownhallCardCount(_playerId, CardEnum::HappyBreadDay) == 0) {
+			if (_simulation->TownhallCardCountTown(_townId, CardEnum::HappyBreadDay) == 0) {
 				return 0;
 			}
-			return _simulation->resourceCount(_playerId, ResourceEnum::Bread) >= 1000 ? 5 : 0;
+			return _simulation->resourceCountTown(_townId, ResourceEnum::Bread) >= 1000 ? 5 : 0;
 		}
 		case HappinessModifierEnum::BlingBling: {
-			if (_simulation->TownhallCardCount(_playerId, CardEnum::BlingBling) == 0) {
+			if (_simulation->TownhallCardCountTown(_townId, CardEnum::BlingBling) == 0) {
 				return 0;
 			}
 			if (_houseId == -1) {
@@ -216,10 +216,10 @@ public:
 			return _simulation->building(_houseId).tryResourceCount(ResourceEnum::Jewelry) > 0 ? 7 : 0;
 		}
 			
-		case HappinessModifierEnum::Tax: return _simulation->taxHappinessModifier(_playerId);
-		case HappinessModifierEnum::Cannibalism: return _simulation->cannibalismHappinessModifier(_playerId);
-		case HappinessModifierEnum::DeathStarve: return _simulation->citizenDeathHappinessModifier(_playerId, SeasonStatEnum::DeathStarve);
-		case HappinessModifierEnum::DeathCold: return _simulation->citizenDeathHappinessModifier(_playerId, SeasonStatEnum::DeathCold);
+		case HappinessModifierEnum::Tax: return _simulation->taxHappinessModifier(_townId);
+		case HappinessModifierEnum::Cannibalism: return _simulation->cannibalismHappinessModifier(_townId);
+		case HappinessModifierEnum::DeathStarve: return _simulation->citizenDeathHappinessModifier(_townId, SeasonStatEnum::DeathStarve);
+		case HappinessModifierEnum::DeathCold: return _simulation->citizenDeathHappinessModifier(_townId, SeasonStatEnum::DeathCold);
 		default:
 			UE_DEBUG_BREAK(); return -1;
 		}
@@ -256,7 +256,7 @@ public:
 		_isSick = true;
 	}
 	bool needHealthcare() {
-		if (_simulation->GetResourceCount(_playerId, MedicineEnums) > 0) {
+		if (_simulation->GetResourceCount(_townId, MedicineEnums) > 0) {
 			return false;
 		}
 		return _isSick && _hp100 < 5000;
@@ -266,7 +266,7 @@ public:
 	bool needTools() 	{
 		return !isBelowWorkingAge() &&
 				Time::Ticks() > _nextToolNeedTick && 
-				!_simulation->resourceSystem(_playerId).HasAvailableTools();
+				!resourceSystem().HasAvailableTools();
 	}
 
 	UnitAIClassEnum classEnum() override { return UnitAIClassEnum::HumanStateAI; }

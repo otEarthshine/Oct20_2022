@@ -12,7 +12,7 @@ void UTopLayerGameUI::Tick()
 	if (networkInterface()->IsHost()) {
 		gameSpeed = networkInterface()->hostGameSpeed();
 
-		if (!simulation().playerOwned(playerId()).hasChosenLocation()) {
+		if (!simulation().HasChosenLocation(playerId())) {
 			gameSpeed = 0;
 		}
 	}
@@ -26,7 +26,7 @@ void UTopLayerGameUI::Tick()
 			SetText(GamePauseText, LOCTEXT("Choose a starting location", "Choose a starting location"));
 			showPause = true;
 		}
-		else if (!playerOwned.hasTownhall()) {
+		else if (!playerOwned.hasCapitalTownhall()) {
 			if (playerOwned.initialResources.isValid()) {
 				SetText(GamePauseText, LOCTEXT("Place the townhall", "Place the townhall"));
 			}

@@ -202,7 +202,7 @@ void UWorldSpaceUI::TickBuildings()
 	{
 		for (int32 provinceId : sampleProvinceIds)
 		{
-			int32 provinceOwnerId = sim.provinceOwner(provinceId);
+			int32 provincePlayerId = sim.provinceOwnerPlayer(provinceId);
 			bool showingBattle = false;
 
 			auto getRegionHoverUI = [&]() {
@@ -217,9 +217,9 @@ void UWorldSpaceUI::TickBuildings()
 				);
 			};
 			
-			if (provinceOwnerId != -1)
+			if (provincePlayerId != -1)
 			{	
-				ProvinceClaimProgress claimProgress = sim.playerOwned(provinceOwnerId).GetDefendingClaimProgress(provinceId);
+				ProvinceClaimProgress claimProgress = sim.playerOwned(provincePlayerId).GetDefendingClaimProgress(provinceId);
 				if (claimProgress.isValid())
 				{
 					URegionHoverUI* regionHoverUI = getRegionHoverUI();
@@ -247,10 +247,10 @@ void UWorldSpaceUI::TickBuildings()
 						sim.playerNameT(claimProgress.attackerPlayerId)
 					));
 
-					int32 defenderPlayerId = provinceOwnerId;
-					bool isDeclaringIndependence = (claimProgress.attackerPlayerId == provinceOwnerId);
+					int32 defenderPlayerId = provincePlayerId;
+					bool isDeclaringIndependence = (claimProgress.attackerPlayerId == provincePlayerId);
 					if (isDeclaringIndependence) {
-						defenderPlayerId = sim.playerOwned(provinceOwnerId).lordPlayerId(); // Declare Independence
+						defenderPlayerId = sim.playerOwned(provincePlayerId).lordPlayerId(); // Declare Independence
 					} // TODO: Declare Independence should init attack from the Lord
 					regionHoverUI->PlayerLogoRight->GetDynamicMaterial()->SetVectorParameterValue("PlayerColor2", PlayerColor2(defenderPlayerId));
 					AddToolTip(regionHoverUI->PlayerLogoRight, FText::Format(
@@ -273,7 +273,7 @@ void UWorldSpaceUI::TickBuildings()
 					AddToolTip(regionHoverUI->DefenseBonusLeft, sim.GetProvinceDefenseBonusTip(provinceId));
 
 					// Fight at home province = Vassalize
-					if (sim.homeProvinceId(provinceOwnerId) == provinceId) {
+					if (sim.homeProvinceId(provincePlayerId) == provinceId) {
 						SetText(regionHoverUI->BattleText, TEXT_TAG("<Shadowed>", LOCTEXT("Vassalize", "Vassalize")));
 					}
 					else {
@@ -284,8 +284,8 @@ void UWorldSpaceUI::TickBuildings()
 					// UI-Player is Attacker
 					if (claimProgress.attackerPlayerId == playerId()) 
 					{
-						int32 provincePlayerId = sim.provinceOwner(claimProgress.provinceId);
-						auto& provincePlayerOwner = sim.playerOwned(provincePlayerId);
+						int32 provincePlayerIdTemp = sim.provinceOwnerPlayer(claimProgress.provinceId); //TODO: does it needs claimProgress.provinceId?
+						auto& provincePlayerOwner = sim.playerOwned(provincePlayerIdTemp);
 						
 						ClaimConnectionEnum claimConnectionEnum = sim.GetProvinceClaimConnectionEnum(provinceId, claimProgress.attackerPlayerId);
 						ProvinceAttackEnum attackEnum = provincePlayerOwner.GetProvinceAttackEnum(provinceId, claimProgress.attackerPlayerId);
@@ -303,7 +303,7 @@ void UWorldSpaceUI::TickBuildings()
 						regionHoverUI->ReinforceMoneyRightButtonText->SetVisibility(ESlateVisibility::Collapsed);
 					}
 					// UI-Player is Defender
-					else if (provinceOwnerId == playerId())
+					else if (provincePlayerId == playerId())
 					{
 						int32 hasEnoughInfluence = sim.influence(playerId()) >= BattleInfluencePrice;
 						SetText(regionHoverUI->ReinforceRightButtonText, 
@@ -860,7 +860,7 @@ void UWorldSpaceUI::TickTownhallInfo(int buildingId, bool isMini)
 
 		UTownhallHoverInfo* townhallInfo = _townhallHoverInfos.GetHoverUI<UTownhallHoverInfo>(buildingId, UIEnum::HoverTownhall, this, _worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), dataSource()->zoomDistance(),
 			[&](UTownhallHoverInfo* ui) {
-				ui->CityNameText->SetText(FText::FromString(townhall->townFName()));
+				ui->CityNameText->SetText(townhall->townNameT());
 				ui->CityNameText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 				//ui->CityNameEditableText->SetVisibility(ESlateVisibility::Collapsed);
 				AddToolTip(ui->Laborer, 
@@ -1041,16 +1041,22 @@ void UWorldSpaceUI::TickMap()
 		/*
 		 * Townhall
 		 */
-		simulation.ExecuteOnPlayersAndAI([&](int32 playerId) {
-			int32 townhallId = simulation.playerOwned(playerId).townHallId;
-			if (townhallId != -1)
-			{
-				Building& building = simulation.building(townhallId);
+		simulation.ExecuteOnPlayersAndAI([&](int32 playerId) 
+		{
+			const auto& townIds = simulation.playerOwned(playerId).townIds();
 
-				PUN_CHECK(building.isEnum(CardEnum::Townhall));
-				
-				if (townhallUIActive) {
-					TickTownhallInfo(townhallId, true);
+			for (int32 townId : townIds)
+			{
+				int32 townhallId = simulation.townManager(townId).townHallId;
+				if (townhallId != -1)
+				{
+					Building& building = simulation.building(townhallId);
+
+					PUN_CHECK(building.isEnum(CardEnum::Townhall));
+
+					if (townhallUIActive) {
+						TickTownhallInfo(townhallId, true);
+					}
 				}
 			}
 		});
@@ -1065,6 +1071,8 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	// Above Cursor Placement Text
 	PlacementInfo placementInfo = inputSystemInterface()->PlacementBuildingInfo();
 	FVector displayLocation = dataSource()->DisplayLocation(placementInfo.mouseOnTile.worldAtom2());
+
+	int32 townId = simulation().tileOwnerTown(placementInfo.mouseOnTile);
 
 	if (IsPointerOnUI() || 
 		placementInfo.placementType == PlacementType::None) 
@@ -1124,8 +1132,12 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	//}
 	else if (needInstruction(PlacementInstructionEnum::DragRoadStone)) {
 		int32 stoneNeeded = getInstruction(PlacementInstructionEnum::DragRoadStone).intVar1;
+		int32 resourceCount = 0;
+		if (townId != -1) {
+			resourceCount = simulation().resourceCountTown(townId, ResourceEnum::Stone);
+		}
 		punBox->AddRichText(
-			TextRed(to_string(stoneNeeded), simulation().resourceCount(playerId(), ResourceEnum::Stone) < stoneNeeded) + "<img id=\"Stone\"/>"
+			TextRed(to_string(stoneNeeded), resourceCount < stoneNeeded) + "<img id=\"Stone\"/>"
 		);
 	}
 	else if (needInstruction(PlacementInstructionEnum::DragRoadIntercity)) {
@@ -1285,14 +1297,14 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	}
 	else if (placementInfo.buildingEnum == CardEnum::Windmill)
 	{
-		int32 efficiency = Windmill::WindmillBaseEfficiency(playerId(), placementInfo.mouseOnTile, &simulation());
+		int32 efficiency = Windmill::WindmillBaseEfficiency(townId, placementInfo.mouseOnTile, &simulation());
 		//ss << "Efficiency: " << efficiency << "%";
 		addEfficiencyText(efficiency);
 		punBox->AddSpacer(12);
 	}
 	else if (placementInfo.buildingEnum == CardEnum::Beekeeper)
 	{
-		int32 efficiency = Beekeeper::BeekeeperBaseEfficiency(playerId(), placementInfo.mouseOnTile, &simulation());
+		int32 efficiency = Beekeeper::BeekeeperBaseEfficiency(townId, placementInfo.mouseOnTile, &simulation());
 		//ss << "Efficiency: " << efficiency << "%";
 		addEfficiencyText(efficiency);
 		punBox->AddSpacer(12);
@@ -1330,7 +1342,11 @@ void UWorldSpaceUI::TickPlacementInstructions()
 			if (constructionResources[i] > 0) {
 				ResourceEnum resourceEnum = ConstructionResources[i];
 				int32 neededCount = constructionResources[i];
-				bool isRed = simulation().resourceCountWithDrops(playerId(), resourceEnum) < neededCount;
+				
+				bool isRed = true;
+				if (townId != -1) {
+					isRed = simulation().resourceSystem(townId).resourceCountWithDrops(resourceEnum) < neededCount;
+				}
 				punBox->AddIconPair(FText(), resourceEnum, TEXT_NUM(neededCount), isRed);
 			}
 		}

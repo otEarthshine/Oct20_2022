@@ -20,7 +20,7 @@ bool GatherMarkQuest::ShouldSkipToNextQuest()
 	if (simulation->playerOwned(playerId).alreadyDidGatherMark) {
 		return true;
 	}
-	BiomeEnum biomeEnum = simulation->GetBiomeEnum(simulation->townhall(playerId).centerTile());
+	BiomeEnum biomeEnum = simulation->GetBiomeEnum(simulation->GetTownhall(playerId).centerTile());
 	bool isForestBiome = (biomeEnum == BiomeEnum::Forest) || 
 						(biomeEnum == BiomeEnum::BorealForest) || 
 						(biomeEnum == BiomeEnum::Jungle);

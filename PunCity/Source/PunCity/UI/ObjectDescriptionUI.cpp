@@ -128,7 +128,7 @@ void UObjectDescriptionUI::SetDropDown(int id)
 			ObjectDropDownBox->AddOption(TaxOptions[3].ToString());
 			ObjectDropDownBox->AddOption(TaxOptions[4].ToString());
 
-			ObjectDropDownBox->SetSelectedOption(TaxOptions[townhallPlayerOwned.taxLevel].ToString());
+			ObjectDropDownBox->SetSelectedOption(TaxOptions[bld.townManager().taxLevel].ToString());
 			ObjectDropDownBox->SetVisibility(ESlateVisibility::Visible);
 			return;
 		}

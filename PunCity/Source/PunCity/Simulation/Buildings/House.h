@@ -28,7 +28,7 @@ public:
 			}
 
 			_allowedOccupants = houseBaseOccupants + (_houseLvl - 1) / 2;
-			_simulation->RecalculateTaxDelayed(_playerId); // Recalculate sci
+			_simulation->RecalculateTaxDelayedTown(_townId); // Recalculate sci
 			ResetDisplay();
 
 			//PUN_LOG("TrailerHouseUpgrade houseLvl:%d trailerTargetHouseLvl:%d", _houseLvl, trailerTargetHouseLvl);
@@ -67,7 +67,7 @@ public:
 			//_simulation->QuestUpdateStatus(_playerId, QuestEnum::HouseUpgradeQuest);
 
 			_allowedOccupants = houseBaseOccupants + (lvl - 1) / 2;
-			_simulation->RecalculateTaxDelayed(_playerId); // Recalculate sci
+			_simulation->RecalculateTaxDelayedTown(_townId); // Recalculate sci
 			ResetDisplay();
 		}
 	}
@@ -203,7 +203,7 @@ public:
 	int32 GetHeatingEfficiency(ResourceEnum resourceEnum)
 	{
 		int32 heatEfficiency = 100;
-		if (_simulation->TownhallCardCount(_playerId, CardEnum::ChimneyRestrictor)) {
+		if (_simulation->TownhallCardCountTown(_townId, CardEnum::ChimneyRestrictor)) {
 			heatEfficiency += 15;
 		}
 
@@ -217,7 +217,7 @@ public:
 		
 		if (resourceEnum == ResourceEnum::Coal) 
 		{
-			if (_simulation->TownhallCardCount(_playerId, CardEnum::CoalTreatment)) {
+			if (_simulation->TownhallCardCountTown(_townId, CardEnum::CoalTreatment)) {
 				heatEfficiency += 20;
 			}
 			heatEfficiency *= 2;

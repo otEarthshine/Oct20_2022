@@ -24,8 +24,9 @@ void UGiftResourceUI::OnClickConfirmButton()
 			}
 		}
 		else {
+			// TODO: right now resources are given from the capital, later make it from any town
 			resourceEnum = FindResourceEnumByName(ToWString(resourceName));
-			if (amount > simulation().resourceCount(playerId(), resourceEnum)) {
+			if (amount > simulation().resourceCountTown(playerId(), resourceEnum)) {
 				simulation().AddPopupToFront(playerId(), 
 					LOCTEXT("Not enough resource to give.", "Not enough resource to give."),
 					ExclusiveUIEnum::GiftResourceUI, "PopupCannot"

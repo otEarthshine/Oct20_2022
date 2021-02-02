@@ -53,7 +53,8 @@ public:
 	{
 		UpdateTextsBase();
 
-		FString inventoryCount = FString::FromInt(simulation().resourceCount(playerId(), _resourceEnum));
+		// TODO: right now resources are given from the capital, later make it from any town
+		FString inventoryCount = FString::FromInt(simulation().resourceCountTown(playerId(), _resourceEnum));
 
 		SetFString(InventoryText, inventoryCount);
 	}

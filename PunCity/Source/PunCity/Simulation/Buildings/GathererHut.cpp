@@ -238,7 +238,7 @@ void Farm::OnInit()
 		// Medicine farm count
 		// 1 medicine farm per 50 ppl (2 herbs per year)
 		const int32 citizensPerMedicineFarm = 50;
-		const std::vector<int32>& farmIds = _simulation->buildingIds(_playerId, CardEnum::Farm);
+		const std::vector<int32>& farmIds = _simulation->buildingIds(_townId, CardEnum::Farm);
 		if (farmIds.size() >= 4) // 5th farm is the medicine
 		{
 			int32 medicineFarmCount = 0;
@@ -247,7 +247,7 @@ void Farm::OnInit()
 					medicineFarmCount++;
 				}
 			}
-			if (citizensPerMedicineFarm * medicineFarmCount < _simulation->population(_playerId)) {
+			if (citizensPerMedicineFarm * medicineFarmCount < _simulation->populationTown(_townId)) {
 				currentPlantEnum = TileObjEnum::Herb;
 			}
 		}
@@ -283,12 +283,12 @@ std::vector<BonusPair> Farm::GetBonuses()
 	if (_simulation->IsResearched(_playerId, TechEnum::FarmImprovement)) {
 		bonuses.push_back({ LOCTEXT("Farm Improvement Upgrade", "Farm Improvement Upgrade"), 5 });
 	}
-	if (_simulation->buildingFinishedCount(_playerId, CardEnum::DepartmentOfAgriculture) &&
-		_simulation->buildingCount(_playerId, CardEnum::Farm) >= 8)
+	if (_simulation->buildingFinishedCount(_townId, CardEnum::DepartmentOfAgriculture) &&
+		_simulation->buildingCount(_townId, CardEnum::Farm) >= 8)
 	{
 		bonuses.push_back({ LOCTEXT("Department of Agriculture", "Department of Agriculture"), 5 });
 	}
-	if (_simulation->buildingFinishedCount(_playerId, CardEnum::CensorshipInstitute)) {
+	if (_simulation->buildingFinishedCount(_townId, CardEnum::CensorshipInstitute)) {
 		bonuses.push_back({ LOCTEXT("Censorship", "Censorship"), 7 });
 	}
 
@@ -465,7 +465,7 @@ FText Farm::farmStageName()
 //! Mushroom
 
 int32 MushroomFarm::baseInputPerBatch() {
-	return _simulation->unlockSystem(_playerId)->IsResearched(TechEnum::MushroomSubstrateSterilization) ? 4 : 8;
+	return _simulation->IsResearched(_playerId, TechEnum::MushroomSubstrateSterilization) ? 4 : 8;
 }
 
 
@@ -597,7 +597,7 @@ void CharcoalMaker::FinishConstruction() {
 std::vector<BonusPair> CharcoalMaker::GetBonuses()
 {
 	std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
-	if (_simulation->buildingCount(_playerId, CardEnum::EnvironmentalistGuild)) {
+	if (_simulation->buildingCount(_townId, CardEnum::EnvironmentalistGuild)) {
 		bonuses.push_back({ LOCTEXT("Environmentalist", "Environmentalist"), -30 });
 	}
 	return bonuses;
@@ -730,7 +730,7 @@ void BeerBrewery::FinishConstruction() {
 std::vector<BonusPair> BeerBrewery::GetBonuses()
 {
 	std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
-	if (_simulation->TownhallCardCount(_playerId, CardEnum::MasterBrewer) > 0) {
+	if (_simulation->TownhallCardCountTown(_townId, CardEnum::MasterBrewer) > 0) {
 		bonuses.push_back({ LOCTEXT("Master brewer", "Master brewer"), 30 });
 	}
 
@@ -763,7 +763,7 @@ void VodkaDistillery::FinishConstruction() {
 std::vector<BonusPair> VodkaDistillery::GetBonuses() 
 {
 	std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
-	if (_simulation->TownhallCardCount(_playerId, CardEnum::MasterBrewer) > 0) {
+	if (_simulation->TownhallCardCountTown(_townId, CardEnum::MasterBrewer) > 0) {
 		bonuses.push_back({ LOCTEXT("Master Brewer", "Master Brewer"), 30 });
 	}
 
@@ -935,7 +935,7 @@ void Potter::FinishConstruction() {
 std::vector<BonusPair> Potter::GetBonuses()
 {
 	std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
-	if (_simulation->TownhallCardCount(_playerId, CardEnum::MasterPotter) > 0) {
+	if (_simulation->TownhallCardCountTown(_townId, CardEnum::MasterPotter) > 0) {
 		bonuses.push_back({ LOCTEXT("Master Potter", "Master Potter"), 20 });
 	}
 
@@ -993,7 +993,7 @@ void Fisher::FinishConstruction() {
 std::vector<BonusPair> Fisher::GetBonuses() 
 {
 	std::vector<BonusPair> bonuses = Building::GetBonuses();
-	int32 cardCount = _simulation->TownhallCardCount(_playerId, CardEnum::CooperativeFishing);
+	int32 cardCount = _simulation->TownhallCardCountTown(_townId, CardEnum::CooperativeFishing);
 	if (cardCount > 0) {
 		bonuses.push_back({ LOCTEXT("Cooperative Fishing", "Cooperative Fishing"), cardCount * 10 });
 	}
@@ -1053,9 +1053,9 @@ int32_t Fisher::FisherAreaEfficiency(WorldTile2 centerTile, bool alreadyPlaced, 
 }
 
 
-int32 Beekeeper::BeekeeperBaseEfficiency(int32 playerId, WorldTile2 centerTileIn, IGameSimulationCore* simulation)
+int32 Beekeeper::BeekeeperBaseEfficiency(int32 townId, WorldTile2 centerTileIn, IGameSimulationCore* simulation)
 {
-	const std::vector<int32>& buildings = simulation->buildingIds(playerId, CardEnum::Beekeeper);
+	const std::vector<int32>& buildings = simulation->buildingIds(townId, CardEnum::Beekeeper);
 
 	// Adjust efficiency by distance linearly
 	// efficiency from pairing with other windmill gets multiplied together for the final efficiency
@@ -1123,18 +1123,18 @@ void Mine::FinishConstruction() {
 std::vector<BonusPair> Mine::GetBonuses()
 {
 	std::vector<BonusPair> bonuses = Building::GetBonuses();
-	if (_simulation->townLvl(_playerId) >= 3) {
+	if (_simulation->GetTownLvl(_townId) >= 3) {
 		bonuses.push_back({ TownhallUpgradeBonusText(3), 10 });
 	}
 	if (IsUpgraded(1) && isOccupantFull()) {
 		bonuses.push_back({ LOCTEXT("Improved Shift", "Improved Shift"), 20 });
 	}
-	if (_simulation->buildingCount(_playerId, CardEnum::EnvironmentalistGuild)) {
+	if (_simulation->buildingCount(_townId, CardEnum::EnvironmentalistGuild)) {
 		bonuses.push_back({ LOCTEXT("Environmentalist", "Environmentalist"), -30 });
 	}
 
-	if (_simulation->TownhallCardCount(_playerId, CardEnum::MiningEquipment) > 0) {
-		if (_simulation->buildingCount(_playerId, CardEnum::Blacksmith) >= 1) {
+	if (_simulation->TownhallCardCountTown(_townId, CardEnum::MiningEquipment) > 0) {
+		if (_simulation->buildingCount(_townId, CardEnum::Blacksmith) >= 1) {
 			bonuses.push_back({ LOCTEXT("Mining Equipment", "Mining Equipment"), 30 });
 		}
 	}
@@ -1193,7 +1193,7 @@ std::vector<BonusPair> Quarry::GetBonuses()
 std::vector<BonusPair> GoldMine::GetBonuses()
 {
 	std::vector<BonusPair> bonuses = Mine::GetBonuses();
-	if (_simulation->TownhallCardCount(_playerId, CardEnum::GoldRush) > 0) {
+	if (_simulation->TownhallCardCountTown(_townId, CardEnum::GoldRush) > 0) {
 		bonuses.push_back({ LOCTEXT("Gold Rush", "Gold Rush"), 30 });
 	}
 	return bonuses;
@@ -1205,7 +1205,7 @@ std::vector<BonusPair> GoldMine::GetBonuses()
 std::vector<BonusPair> IndustrialBuilding::GetBonuses()
 {
 	std::vector<BonusPair> bonuses = Building::GetBonuses();
-	if (_simulation->townLvl(_playerId) >= 5) {
+	if (_simulation->GetTownLvl(_townId) >= 5) {
 		bonuses.push_back({ TownhallUpgradeBonusText(5), 10 });
 	}
 	return bonuses;
@@ -1244,15 +1244,15 @@ void Smelter::FinishConstruction() {
 std::vector<BonusPair> Smelter::GetBonuses()
 {
 	std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
-	if (_simulation->buildingCount(_playerId, CardEnum::EnvironmentalistGuild)) {
+	if (_simulation->buildingCount(_townId, CardEnum::EnvironmentalistGuild)) {
 		bonuses.push_back({ LOCTEXT("Environmentalist", "Environmentalist"), -30 });
 	}
 	if (IsUpgraded(0) && isOccupantFull()) {
 		bonuses.push_back({ teamworkText, 50 });
 	}
 
-	if (_simulation->TownhallCardCount(_playerId, CardEnum::CoalPipeline) > 0) {
-		if (_simulation->resourceCount(_playerId, ResourceEnum::Coal) >= 1000) {
+	if (_simulation->TownhallCardCountTown(_townId, CardEnum::CoalPipeline) > 0) {
+		if (_simulation->resourceCountTown(_townId, ResourceEnum::Coal) >= 1000) {
 			bonuses.push_back({ LOCTEXT("Coal Pipeline", "Coal Pipeline"), 30 });
 		}
 	}
@@ -1267,7 +1267,7 @@ std::vector<BonusPair> IronSmelter::GetBonuses()
 {
 	std::vector<BonusPair> bonuses = Smelter::GetBonuses();
 
-	if (_simulation->TownhallCardCount(_playerId, CardEnum::SmeltCombo) > 0) {
+	if (_simulation->TownhallCardCountTown(_townId, CardEnum::SmeltCombo) > 0) {
 		if (adjacentCount(CardEnum::IronSmelter) > 0) {
 			bonuses.push_back({ LOCTEXT("Iron Smelter Combo", "Iron Smelter Combo"), 30 });
 		}

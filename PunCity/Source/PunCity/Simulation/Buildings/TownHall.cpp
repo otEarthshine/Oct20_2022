@@ -40,7 +40,7 @@ void TownHall::FinishConstruction()
 	wallLvl = 1;
 
 	// Need this check because Cheat FastBuild may activate FinishConstruction two times
-	if (_simulation->population(_playerId) == 0) {
+	if (_simulation->populationTown(_townId) == 0) {
 		AddInitialImmigrants();
 	}
 
@@ -51,11 +51,9 @@ void TownHall::FinishConstruction()
 		SetTownName(_simulation->playerNameF(_playerId) + FString(" Town"));
 	}
 
-	//garrisons.Init(_simulation, _playerId);
+	_simulation->RecalculateTaxDelayedTown(_townId);
 
-	_simulation->RecalculateTaxDelayed(_playerId);
-
-	armyNode.Init(_playerId, buildingId(), _simulation);
+	//armyNode.Init(_playerId, buildingId(), _simulation);
 
 	_townStartTick = Time::Ticks();
 
@@ -192,7 +190,7 @@ void TownHall::UpgradeTownhall()
 
 	_simulation->QuestUpdateStatus(_playerId, QuestEnum::TownhallUpgradeQuest);
 
-	_simulation->RecalculateTaxDelayed(_playerId);
+	_simulation->RecalculateTaxDelayedTown(_townId);
 
 	
 	_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::TownhallUpgrade, _centerTile, FText());
@@ -213,12 +211,12 @@ void TownHall::OnTick1Sec()
 	migrationType = 0;
 	
 	// Update migrationPull
-	int32 happiness = _simulation->GetAverageHappiness(_playerId);
-	int32 population = _simulation->population(_playerId);
-	int32 housingCapacity = _simulation->HousingCapacity(_playerId);
+	int32 happiness = _simulation->GetAverageHappiness(_townId);
+	int32 population = _simulation->populationTown(_townId);
+	int32 housingCapacity = _simulation->HousingCapacity(_townId);
 
 	// Population Factor
-	migrationPull_populationSize = 5 + _simulation->population(_playerId) / 18; // 5 + X% of population
+	migrationPull_populationSize = 5 + _simulation->populationTown(_townId) / 18; // 5 + X% of population
 
 	
 	// Free living space factor
@@ -264,7 +262,7 @@ void TownHall::OnTick1Sec()
 		migrationPull_bonuses += migrationPullSoFar * 20 / 100; // 20% immigration increase from foreign trade...
 	}
 
-	if (_simulation->buildingFinishedCount(_playerId, CardEnum::ImmigrationPropagandaOffice)) {
+	if (_simulation->buildingFinishedCount(_townId, CardEnum::ImmigrationPropagandaOffice)) {
 		migrationPull_bonuses += migrationPullSoFar * 30 / 100; // 30% increase
 	}
 }
@@ -274,7 +272,7 @@ std::vector<FText> TownHall::getImmigrationEventChoices() {
 		LOCTEXT("Accept", "Accept"),
 		LOCTEXT("Refuse", "Refuse")
 	};
-	if (_simulation->TownhallCardCount(_playerId, CardEnum::Cannibalism)) {
+	if (_simulation->TownhallCardCountTown(_townId, CardEnum::Cannibalism)) {
 		choices.push_back(LOCTEXT("KillStealCanni", "kill, steal, and eat (Cannibalism)"));
 	}
 	return choices;

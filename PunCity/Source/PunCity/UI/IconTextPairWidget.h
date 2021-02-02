@@ -102,7 +102,7 @@ public:
 			if (FrontCheckBox->OnCheckStateChanged.GetAllObjects().Num() == 0) {
 				FrontCheckBox->OnCheckStateChanged.AddDynamic(this, &UIconTextPairWidget::OnCheckAllowResource);
 			}
-			bool allowed = simulation().playerOwned(playerId()).GetHouseResourceAllow(uiResourceEnum);
+			bool allowed = simulation().townManager(simulation().buildingTownId(ObjectId)).GetHouseResourceAllow(uiResourceEnum);
 			FrontCheckBox->SetCheckedState(allowed ? ECheckBoxState::Checked : ECheckBoxState::Unchecked);
 		}
 	}

@@ -132,7 +132,7 @@ public:
 					PlayerCompareBox->AddChild(AddWidget<UPlayerCompareElement>(UIEnum::PlayerCompareElement));
 				}
 
-				int32 pop = simulation().population(curId);
+				int32 pop = simulation().populationTown(curId);
 				FString name = dataSource()->playerNameF(curId);
 
 				auto element = CastChecked<UPlayerCompareElement>(PlayerCompareBox->GetChildAt(i));
@@ -307,7 +307,7 @@ public:
 			element->HighlightImage->SetVisibility(isUIPlayer ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 
 			setText(element->PlayerNameText, FText::FromString(TrimStringF_Dots(simulation().playerNameF(curId), 14)));
-			setText(element->PopulationText, TEXT_NUM(simulation().population(curId)));
+			setText(element->PopulationText, TEXT_NUM(simulation().populationTown(curId)));
 			setText(element->TechnologyText, TEXT_NUM(simulation().sciTechsCompleted(curId)));
 			setText(element->RevenueText, TEXT_NUM(playerOwned.totalRevenue100() / 100));
 			setText(element->MilitarySizeText, TEXT_NUM(simulation().influence(curId)));
@@ -460,7 +460,7 @@ public:
 		std::vector<int32> playerIds = simulation().allHumanPlayerIds();
 		
 		std::sort(playerIds.begin(), playerIds.end(), [&](int32 playerA, int32 playerB) {
-			return simulation().population(playerA) > simulation().population(playerB);
+			return simulation().populationTown(playerA) > simulation().populationTown(playerB);
 		});
 		return playerIds;
 	}

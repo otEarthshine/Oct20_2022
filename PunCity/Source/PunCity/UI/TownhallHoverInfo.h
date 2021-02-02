@@ -53,76 +53,76 @@ public:
 		}
 		
 		
-		auto command = std::make_shared<FAttack>();
-		command->armyOrderEnum = callbackEnum;
-		
-		// Recall or move
-		// - chosen node is the origin node
-		// - OpenArmyMoveUI to choose target node to recall/move to
-		if (callbackEnum == CallbackEnum::ArmyRecall ||
-			callbackEnum == CallbackEnum::ArmyMoveBetweenNode)
-		{
-			command->originNodeId = _buildingId;
-			GetPunHUD()->OpenArmyMoveUI(command);
-			return;
-		}
+		//auto command = std::make_shared<FAttack>();
+		//command->armyOrderEnum = callbackEnum;
+		//
+		//// Recall or move
+		//// - chosen node is the origin node
+		//// - OpenArmyMoveUI to choose target node to recall/move to
+		//if (callbackEnum == CallbackEnum::ArmyRecall ||
+		//	callbackEnum == CallbackEnum::ArmyMoveBetweenNode)
+		//{
+		//	command->originNodeId = _buildingId;
+		//	GetPunHUD()->OpenArmyMoveUI(command);
+		//	return;
+		//}
 
-		// Rebel uses army at the current node
-		if (callbackEnum == CallbackEnum::ArmyRebel) {
-			// Get rebel army in target node
-			ArmyGroup* rebelArmy = sim.GetArmyNode(buildingId()).GetRebelGroup(playerId());
-			
-			// Make sure there is army to rebel...
-			if (!rebelArmy) {
-				//simulation().AddPopupToFront(playerId(), "Need an army to rebel.", ExclusiveUIEnum::ArmyMoveUI, "PopupCannot");
-				return;
-			}
+		//// Rebel uses army at the current node
+		//if (callbackEnum == CallbackEnum::ArmyRebel) {
+		//	// Get rebel army in target node
+		//	ArmyGroup* rebelArmy = sim.GetArmyNode(buildingId()).GetRebelGroup(playerId());
+		//	
+		//	// Make sure there is army to rebel...
+		//	if (!rebelArmy) {
+		//		//simulation().AddPopupToFront(playerId(), "Need an army to rebel.", ExclusiveUIEnum::ArmyMoveUI, "PopupCannot");
+		//		return;
+		//	}
 
-			command->targetNodeId = _buildingId;
-			command->originNodeId = _buildingId;
-			command->armyCounts = CppUtils::VecToArray(rebelArmy->GetArmyCounts());
-			networkInterface()->SendNetworkCommand(command);
-			return;
-		}
+		//	command->targetNodeId = _buildingId;
+		//	command->originNodeId = _buildingId;
+		//	command->armyCounts = CppUtils::VecToArray(rebelArmy->GetArmyCounts());
+		//	networkInterface()->SendNetworkCommand(command);
+		//	return;
+		//}
 
-		// Capital not controlled by player, can't do any other actions
-		if (sim.townhall(playerId()).armyNode.originalPlayerId != playerId()) {
-			//simulation().AddPopupToFront(playerId(), "Need to regain control of the capital before dispatching armies outside.", ExclusiveUIEnum::ArmyMoveUI, "PopupCannot");
-			return;
-		}
+		//// Capital not controlled by player, can't do any other actions
+		//if (sim.townhall(playerId()).armyNode.originalPlayerId != playerId()) {
+		//	//simulation().AddPopupToFront(playerId(), "Need to regain control of the capital before dispatching armies outside.", ExclusiveUIEnum::ArmyMoveUI, "PopupCannot");
+		//	return;
+		//}
 
-		// Options that must take army from other cities
-		if (callbackEnum == CallbackEnum::ArmyConquer ||
-			callbackEnum == CallbackEnum::ArmyHelp ||
-			callbackEnum == CallbackEnum::ArmyReinforce ||
-			callbackEnum == CallbackEnum::ArmyLiberate)
-		{
-			if (callbackEnum == CallbackEnum::ArmyHelp) {
-				command->helpPlayerId = punWidgetCaller->callbackVar1;
-			}
-			
-			command->targetNodeId = _buildingId;
-			GetPunHUD()->OpenArmyMoveUI(command);
-			return;
-		}
+		//// Options that must take army from other cities
+		//if (callbackEnum == CallbackEnum::ArmyConquer ||
+		//	callbackEnum == CallbackEnum::ArmyHelp ||
+		//	callbackEnum == CallbackEnum::ArmyReinforce ||
+		//	callbackEnum == CallbackEnum::ArmyLiberate)
+		//{
+		//	if (callbackEnum == CallbackEnum::ArmyHelp) {
+		//		command->helpPlayerId = punWidgetCaller->callbackVar1;
+		//	}
+		//	
+		//	command->targetNodeId = _buildingId;
+		//	GetPunHUD()->OpenArmyMoveUI(command);
+		//	return;
+		//}
 
-		if (callbackEnum == CallbackEnum::AllyRequest ||
-			callbackEnum == CallbackEnum::AllyBetray ||
-			callbackEnum == CallbackEnum::ArmyRetreat)
-		{
-			if (callbackEnum == CallbackEnum::AllyRequest) {
-				if (UGameplayStatics::GetTimeSeconds(this) - _lastAllyRequestTick < 5.0f) {
-					//simulation().AddPopupToFront(playerId(), "Please wait a bit for another player to reply.", ExclusiveUIEnum::ArmyMoveUI, "PopupCannot");
-					return;
-				}
-				_lastAllyRequestTick = UGameplayStatics::GetTimeSeconds(this);
-			}
-			
-			command->originNodeId = simulation().townhall(playerId()).buildingId(); // Player's capital
-			command->targetNodeId = _buildingId; // Target's capital...
-			networkInterface()->SendNetworkCommand(command);
-			return;
-		}
+		//if (callbackEnum == CallbackEnum::AllyRequest ||
+		//	callbackEnum == CallbackEnum::AllyBetray ||
+		//	callbackEnum == CallbackEnum::ArmyRetreat)
+		//{
+		//	if (callbackEnum == CallbackEnum::AllyRequest) {
+		//		if (UGameplayStatics::GetTimeSeconds(this) - _lastAllyRequestTick < 5.0f) {
+		//			//simulation().AddPopupToFront(playerId(), "Please wait a bit for another player to reply.", ExclusiveUIEnum::ArmyMoveUI, "PopupCannot");
+		//			return;
+		//		}
+		//		_lastAllyRequestTick = UGameplayStatics::GetTimeSeconds(this);
+		//	}
+		//	
+		//	command->originNodeId = simulation().townhall(playerId()).buildingId(); // Player's capital
+		//	command->targetNodeId = _buildingId; // Target's capital...
+		//	networkInterface()->SendNetworkCommand(command);
+		//	return;
+		//}
 
 		UE_DEBUG_BREAK();
 	}
@@ -140,12 +140,12 @@ public:
 	
 	void RefreshUI()
 	{
-		int32 playerId = simulation().building(_buildingId).subclass<TownHall>(CardEnum::Townhall).playerId();
+		int32 townId = simulation().building(_buildingId).subclass<TownHall>(CardEnum::Townhall).townId();
 		
-		_laborerPriorityState.RefreshUI(
+		_laborerPriorityState.RefreshUILaborerPriority(
 			this,
 			&simulation(),
-			playerId,
+			townId,
 
 			EmployedBox,
 			Employed,

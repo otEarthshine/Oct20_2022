@@ -74,7 +74,7 @@ void UPunWidget::AddResourceTooltip(UWidget* widget, ResourceEnum resourceEnum, 
 	ADDTEXT_(INVTEXT("<SlightGray>{0}</>"), FText::FromString(FString(envelopString.c_str())));
 	ADDTEXT_INV_("<space>");
 
-	auto& statSys = simulation().playerStatSystem(playerId());
+	auto& statSys = simulation().statSystem(playerId());
 	ADDTEXT_(LOCTEXT("ResourceTipProduction", "Production (yearly): <FaintGreen>{0}</>\n"), TEXT_NUM(statSys.GetYearlyResourceStat(ResourceSeasonStatEnum::Production, resourceEnum)));
 	ADDTEXT_(LOCTEXT("ResourceTipConsumption", "Consumption (yearly): <FaintRed>{0}</>\n"), TEXT_NUM(statSys.GetYearlyResourceStat(ResourceSeasonStatEnum::Consumption, resourceEnum)));
 	ADDTEXT_INV_("<space>");

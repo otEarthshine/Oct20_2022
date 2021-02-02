@@ -135,9 +135,9 @@ public:
 		_buildingSubregionList.ExecuteRegion(region, [&](int32 buildingId)
 		{
 			Building& bld = building(buildingId);
-			int32 playerId = bld.playerId();
-			if (playerId != -1) {
-				RefreshIsBuildingConnected(playerId, buildingId, bld.gateTile());
+			int32 townId = bld.townId();
+			if (townId != -1) {
+				RefreshIsBuildingConnected(townId, buildingId, bld.gateTile());
 			}
 		});
 	}
@@ -266,16 +266,20 @@ private:
 
 	void PlaceBuildingOnMap(int32 buildingIdIn, bool isBuildingInitialAdd, bool isAdding = true);
 
-	void RefreshIsBuildingConnected(int32 playerId, int32 buildingId, WorldTile2 tile)
+	void RefreshIsBuildingConnected(int32 townId, int32 buildingId, WorldTile2 tile)
 	{
-		if (playerId != -1 && _simulation->HasTownhall(playerId)) 
+		if (townId != -1)
 		{
 			PUN_CHECK(buildingId < _isBuildingIdConnected.size());
-			WorldTile2 townGate = _simulation->townhallGateTile(playerId);
+			WorldTile2 townGate = _simulation->GetTownhallGate(townId);
 
-			DEBUG_ISCONNECTED_VAR(RefreshIsBuildingConnected);
-			_isBuildingIdConnected[buildingId] = _simulation->IsConnected(townGate, tile, GameConstants::MaxFloodDistance_HumanLogistics, true);
+			if (townGate.isValid()) {
+				DEBUG_ISCONNECTED_VAR(RefreshIsBuildingConnected);
+				_isBuildingIdConnected[buildingId] = _simulation->IsConnected(townGate, tile, GameConstants::MaxFloodDistance_HumanLogistics, true);
+				return;
+			}
 		}
+		_isBuildingIdConnected[buildingId] = false;
 	}
 
 private:

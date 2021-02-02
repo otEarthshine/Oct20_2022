@@ -147,18 +147,20 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 	{
 		int32 playerId = _resourceSystems.size();
 
+		_playerOwnedManagers.push_back(PlayerOwnedManager(playerId, this));
+
 		// Add town
 		int32 townId = _resourceSystems.size();
 		_resourceSystems.push_back(ResourceSystem(playerId, this));
-		_playerOwnedManagers.push_back(PlayerOwnedManager(playerId, this));
-		_playerIdToTownIds.push_back({ townId });
+		_statSystem.AddTown(townId);
+		_townManagers.push_back(make_unique<TownManager>(playerId, townId, this));
+		_playerOwnedManagers[playerId].AddTownId(townId);
 
-
+		
 		_globalResourceSystems.push_back(GlobalResourceSystem());
 		_unlockSystems.push_back(UnlockSystem(playerId, this));
 		_questSystems.push_back(QuestSystem(playerId, this));
 		_playerParameters.push_back(PlayerParameters(playerId, this));
-		_statSystem.AddPlayer(playerId); // TODO: make this per town?
 		_popupSystems.push_back(PopupSystem(playerId, this));
 		_cardSystem.push_back(BuildingCardSystem(playerId, this));
 
@@ -721,7 +723,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 
 		// Player not initialized, only allow choosing location
 		// This check prevent the case where commands arrived after abandoning town (such as commands from leftover popups etc.)
-		if (!playerChoseLocation(commands[i]->playerId))
+		if (!HasChosenLocation(commands[i]->playerId))
 		{
 			if (commands[i]->commandType() != NetworkCommandEnum::ChooseLocation &&
 				commands[i]->commandType() != NetworkCommandEnum::AddPlayer)
@@ -843,13 +845,19 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 
 		if (PunSettings::IsOn("TickPlayerOwned"))
 		{
-			// Per round
+			//! Tick Round
 			if (Time::Ticks() % Time::TicksPerRound == 0) 
 			{
 				ExecuteOnPlayersAndAI([&] (int32 playerId) 
 				{
 					if (_playerOwnedManagers[playerId].hasChosenLocation()) 
 					{
+						//! Tick Round Town
+						const std::vector<int32>& townIds = _playerOwnedManagers[playerId].townIds();
+						for (int32 townId : townIds) {
+							_townManagers[townId]->TickRound();
+						}
+						
 						_cardSystem[playerId].TickRound();
 						_playerOwnedManagers[playerId].TickRound();
 
@@ -887,7 +895,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 				// Event log check
 				ExecuteOnConnectedPlayers([&](int32 playerId)
 				{
-					if (_playerOwnedManagers[playerId].hasTownhall())
+					if (_playerOwnedManagers[playerId].hasCapitalTownhall())
 					{
 						if (isStorageAllFull(playerId)) {
 							_eventLogSystem.AddEventLog(playerId, 
@@ -909,14 +917,21 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 			{
 				ExecuteOnPlayersAndAI([&](int32 playerId)
 				{
-					if (_playerOwnedManagers[playerId].hasTownhall()) 
+					if (_playerOwnedManagers[playerId].hasCapitalTownhall()) 
 					{
+						const std::vector<int32>& townIds = _playerOwnedManagers[playerId].townIds();
+						for (int32 townId : townIds) {
+							_townManagers[townId]->Tick1Sec();
+						}
+						
 						//_playerOwnedManagers[playerId].RefreshHousing();
 						_playerOwnedManagers[playerId].Tick1Sec();
 
 						// Reset jobs once iin a while to bring citizens back to work if needed
 						if (Time::Seconds() % 20 == 0) {
-							_playerOwnedManagers[playerId].RefreshJobDelayed();
+							for (int32 townId : townIds) {
+								_townManagers[townId]->RefreshJobDelayed();
+							}
 						}
 						
 
@@ -940,13 +955,20 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 								LOCTEXT("ToolsFirstWarn3_Pop", "Steel Tools are produced from Blacksmith requiring Iron Bars and Wood.")
 							});
 						}
-						if (!unlockSys->didFirstTimeLaborer0 && _playerOwnedManagers[playerId].laborerCount() == 0) {
-							unlockSys->didFirstTimeLaborer0 = true;
-							AddPopup(playerId, {
-								LOCTEXT("Laborer0FirstWarn1_Pop","Your Laborer count is now 0.<space>Every citizen is employed in a building. There is no free Laborer left to Haul and Gather Resources full-time.<space>"),
-								LOCTEXT("Laborer0FirstWarn2_Pop","This can cause logistics issues resulting in production slow-down or resources not being picked up.<space>"),
-								LOCTEXT("Laborer0FirstWarn3_Pop","To increase your Laborer count, either expel workers from buildings, or manually set the Laborer count from the Townhall or Employment Bureau."),
-							});
+
+						for (int32 townId : townIds) 
+						{
+							if (!unlockSys->didFirstTimeLaborer0 && _townManagers[playerId]->laborerCount() == 0) {
+								unlockSys->didFirstTimeLaborer0 = true;
+								AddPopup(playerId, {
+									FText::Format(
+										LOCTEXT("Laborer0FirstWarn1_Pop", "Your Laborer count is now 0 at {0}.<space>Every citizen is employed in a building. There is no free Laborer left to Haul and Gather Resources full-time.<space>"),
+										townNameT(townId)
+									),
+									LOCTEXT("Laborer0FirstWarn2_Pop", "This can cause logistics issues resulting in production slow-down or resources not being picked up.<space>"),
+									LOCTEXT("Laborer0FirstWarn3_Pop", "To increase your Laborer count, either expel workers from buildings, or manually set the Laborer count from the Townhall or Employment Bureau."),
+									});
+							}
 						}
 
 						/*
@@ -995,7 +1017,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 
 										// Vassalize
 										int32 lordId = claimProgress.attackerPlayerId;
-										_playerOwnedManagers[lordId].GainVassal(townhall(playerId).buildingId());
+										_playerOwnedManagers[lordId].GainVassal(GetTownhallCapital(playerId).buildingId());
 										_playerOwnedManagers[playerId].SetLordPlayerId(lordId);
 
 										_LOG(PunNetwork, "Vassalize [sim] pid:%d lordId:%d", playerId, _playerOwnedManagers[playerId].lordPlayerId());
@@ -1008,9 +1030,19 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 												playerNameT(lordId)
 											)
 										);
+
+										// Recalculate Tax
+										const std::vector<int32>& lordTownIds = _playerOwnedManagers[lordId].townIds();
+										for (int32 townId : lordTownIds) {
+											_townManagers[townId]->RecalculateTaxDelayed();
+										}
 										
-										_playerOwnedManagers[lordId].RecalculateTaxDelayed();
-										_playerOwnedManagers[playerId].RecalculateTaxDelayed();
+										const std::vector<int32>& playerTownIds = _playerOwnedManagers[playerId].townIds();
+										for (int32 townId : playerTownIds) {
+											_townManagers[townId]->RecalculateTaxDelayed();
+										}
+										//_playerOwnedManagers[lordId].RecalculateTaxDelayed();
+										//_playerOwnedManagers[playerId].RecalculateTaxDelayed();
 
 										// CheckDominationVictory(lordPlayerId);
 									}
@@ -1051,7 +1083,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 
 
 						// Spawn rare hand after 1 sec... Delay so that the ChooseRareCard sound will appear in sync when menu after systemMoveCamera
-						auto& townhal = townhall(playerId);
+						auto& townhal = GetTownhallCapital(playerId);
 						if (!townhal.alreadyGotInitialCard && townhal.townAgeTicks() >= Time::TicksPerSecond) 
 						{
 							GenerateRareCardSelection(playerId, RareHandEnum::InitialCards1, LOCTEXT("A starting card.", "A starting card."));
@@ -1148,7 +1180,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 					 * Science
 					 */
 					if (_playerOwnedManagers[playerId].hasChosenLocation()) {
-						unlockSystem(playerId)->Research(_playerOwnedManagers[playerId].science100PerRound(), 4);
+						unlockSystem(playerId)->Research(GetScience100PerRound(playerId), 4);
 					}
 				});
 			}
@@ -1195,12 +1227,12 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 #endif
 
 			ExecuteOnPlayersAndAI([&](int32 playerId) {
-				if (_playerOwnedManagers[playerId].hasTownhall()) {
+				if (_playerOwnedManagers[playerId].hasCapitalTownhall()) {
 					_playerOwnedManagers[playerId].Tick();
 
 					questSystem(playerId)->Tick();
 
-					townhall(playerId).armyNode.Tick();
+					//townhall(playerId).armyNode.Tick();
 				}
 			});
 		}
@@ -1315,13 +1347,13 @@ void GameSimulationCore::ResetUnitActions(int id, int32 waitTicks)
 	_unitSystem->ResetActions_SystemPart(id, waitTicks);
 }
 
-int GameSimulationCore::AddUnit(UnitEnum unitEnum, int32_t playerId, WorldAtom2 location, int32_t ageTicks)
+int32 GameSimulationCore::AddUnit(UnitEnum unitEnum, int32 townId, WorldAtom2 location, int32 ageTicks)
 {
-	int objectId = _unitSystem->AddUnit(unitEnum, playerId, location, ageTicks);
+	int objectId = _unitSystem->AddUnit(unitEnum, townId, location, ageTicks);
 
 	//PlayerOwned
-	if (unitEnum == UnitEnum::Human && playerId != GameInfo::PlayerIdNone) {
-		_playerOwnedManagers[playerId].PlayerAddHuman(objectId);
+	if (unitEnum == UnitEnum::Human && townId != -1) {
+		_townManagers[townId]->PlayerAddHuman(objectId);
 	}
 	return objectId;
 }
@@ -1329,8 +1361,8 @@ void GameSimulationCore::RemoveUnit(int id)
 {
 	// PlayerOwned
 	UnitStateAI& unit = unitAI(id);
-	int32 playerId = unit.playerId();
-	if (_unitSystem->unitEnum(id) == UnitEnum::Human && playerId != GameInfo::PlayerIdNone) {
+	int32 townId = unit.townId();
+	if (_unitSystem->unitEnum(id) == UnitEnum::Human && townId != -1) {
 		PUN_DEBUG_EXPR(unit.AddDebugSpeech("RemoveUnit Player"));
 
 		Building* workplace = unit.workplace();
@@ -1339,7 +1371,7 @@ void GameSimulationCore::RemoveUnit(int id)
 		}
 		unit.SetWorkplaceId(-1);
 		unit.SetHouseId(-1);
-		_playerOwnedManagers[playerId].PlayerRemoveHuman(id);
+		_townManagers[townId]->PlayerRemoveHuman(id);
 	}
 
 	_unitSystem->RemoveUnit(id);
@@ -1495,7 +1527,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 	// Hand over Foreign building to another player
 	int32 foreignBuildingOwner = parameters.playerId;
 	if (cardEnum == CardEnum::HumanitarianAidCamp) {
-		parameters.playerId = tileOwner(parameters.center);
+		parameters.playerId = tileOwnerTown(parameters.center);
 	}
 
 	/*
@@ -1529,6 +1561,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 			if (buildingId != -1 && building(buildingId).isEnum(CardEnum::Townhall)) 
 			{
 				int32 targetPlayerId = building(buildingId).playerId();
+				int32 targetTownId = building(buildingId).townId();
 
 				if (cardEnum == CardEnum::Steal)
 				{
@@ -1587,7 +1620,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 						int32 targetPlayerMoney = money(targetPlayerId);
 						targetPlayerMoney = max(0, targetPlayerMoney); // Ensure no negative steal..
 						
-						int32 actualSteal = min(targetPlayerMoney, population(targetPlayerId));
+						int32 actualSteal = min(targetPlayerMoney, populationTown(targetPlayerId));
 						ChangeMoney(targetPlayerId, -actualSteal);
 						ChangeMoney(playerId, actualSteal);
 						AddPopup(targetPlayerId, 
@@ -1627,8 +1660,8 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 					else
 					{
 						int32 unitsStoleCount = 0;
-						std::vector<int32> humanIds = playerOwned(targetPlayerId).adultIds();
-						std::vector<int32> childIds = playerOwned(targetPlayerId).childIds();
+						std::vector<int32> humanIds = townManager(targetTownId).adultIds();
+						std::vector<int32> childIds = townManager(targetTownId).childIds();
 						humanIds.insert(humanIds.end(), childIds.begin(), childIds.end());
 
 						int32 kidnapCount = std::min(3, static_cast<int>(humanIds.size()));
@@ -1648,7 +1681,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 							FText::Format(LOCTEXT("Kidnapped_SelfPop", "You kidnapped {0} citizens from {1}."), TEXT_NUM(unitsStoleCount), townNameT(targetPlayerId))
 						);
 
-						townhall(playerId).AddImmigrants(unitsStoleCount);
+						GetTownhallCapital(playerId).AddImmigrants(unitsStoleCount);
 
 						ChangeRelationshipModifier(targetPlayerId, playerId, RelationshipModifierEnum::YouStealFromUs, -(unitsStoleCount * 300) / GoldToRelationship);
 					}
@@ -1978,6 +2011,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 		// Special case: Townhall
 		if (cardEnum == CardEnum::Townhall) {
 			PlaceInitialTownhallHelper(parameters, buildingId);
+			_buildingSystem->OnRefreshFloodGrid(building(buildingId).gateTile().region());
 		}
 
 		/*
@@ -2163,11 +2197,13 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 						}
 						
 						// Try adding all townhall's card to hand
-						std::vector<CardStatus> slotCards = cardSys.cardsInTownhall();
+						auto& townManage = townManager(bld.townId());
+						
+						std::vector<CardStatus> slotCards = townManage.cardsInTownhall();
 						for (size_t i = 0; i < slotCards.size(); i++)
 						{
 							if (cardSys.CanAddCardToBoughtHand(slotCards[i].cardEnum, 1)) {
-								cardSys.RemoveCardFromTownhall(i);
+								townManage.RemoveCardFromTownhall(i);
 								cardSys.AddCardToHand2(slotCards[i].cardEnum);
 							}
 							else {
@@ -2258,7 +2294,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 					/*
 					 * Keep storage demolition stat for quest
 					 */
-					playerStatSystem(bld.playerId()).AddStat(AccumulatedStatEnum::StoragesDestroyed);
+					statSystem(bld.townId()).AddStat(AccumulatedStatEnum::StoragesDestroyed);
 
 					// Stop any sound
 					soundInterface()->TryStopBuildingWorkSound(bld);
@@ -2271,7 +2307,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 				// Regional buildings (Shrines etc.)
 				//  Allow demolition for shrine in player's region.
 				else if (IsRegionalBuilding(bld.buildingEnum()) &&
-						tileOwner(bld.centerTile()) == parameters.playerId)
+						tileOwnerTown(bld.centerTile()) == parameters.playerId)
 				{
 					_buildingSystem->RemoveBuilding(buildingId);
 
@@ -2281,7 +2317,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 			}
 
 			// Can delete road/critter building within territory
-			if (tileOwner(tile) == parameters.playerId) 
+			if (tileOwnerTown(tile) == parameters.playerId) 
 			{
 				// Delete road (non-construction)
 				if (_overlaySystem.IsRoad(tile)) 
@@ -2380,7 +2416,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 						// For road, also refresh the grass since we want it to be more visible
 						SetNeedDisplayUpdate(DisplayClusterEnum::Trees, tile.regionId(), true);
 
-						int32 foreignPlayerId = tileOwner(tile);
+						int32 foreignPlayerId = tileOwnerTown(tile);
 						if (foreignPlayerId != -1 &&
 							foreignPlayerId != parameters.playerId) {
 							CppUtils::TryAdd(foreignPlayerIds, foreignPlayerId);
@@ -2465,7 +2501,7 @@ void GameSimulationCore::SetAllowResource(FSetAllowResource command)
 	
 	Building& bld = building(command.buildingId);
 	if (IsHouse(bld.buildingEnum())) {
-		playerOwned(command.playerId).SetHouseResourceAllow(command.resourceEnum, command.allowed);
+		townManager(bld.townId()).SetHouseResourceAllow(command.resourceEnum, command.allowed);
 	}
 	else if (IsStorage(bld.buildingEnum()) || bld.isEnum(CardEnum::Market)) 
 	{
@@ -2539,22 +2575,22 @@ void GameSimulationCore::SetTownPriority(FSetTownPriority command)
 {
 	_LOG(LogNetworkInput, " SetTownPriority");
 
-	auto& playerOwn = playerOwned(command.playerId);
-	playerOwn.targetLaborerHighPriority = command.laborerPriority;
-	playerOwn.targetBuilderHighPriority = command.builderPriority;
-	playerOwn.targetRoadMakerHighPriority = command.roadMakerPriority;
+	auto& town = townManager(command.townId);
+	town.targetLaborerHighPriority = command.laborerPriority;
+	town.targetBuilderHighPriority = command.builderPriority;
+	town.targetRoadMakerHighPriority = command.roadMakerPriority;
 	
-	playerOwn.targetLaborerCount = command.targetLaborerCount;
-	playerOwn.targetBuilderCount = command.targetBuilderCount;
-	playerOwn.targetRoadMakerCount = command.targetRoadMakerCount;
+	town.targetLaborerCount = command.targetLaborerCount;
+	town.targetBuilderCount = command.targetBuilderCount;
+	town.targetRoadMakerCount = command.targetRoadMakerCount;
 
-	playerOwn.RefreshJobDelayed();
+	town.RefreshJobDelayed();
 }
 
 void GameSimulationCore::SetGlobalJobPriority(FSetGlobalJobPriority command)
 {
 	_LOG(LogNetworkInput, " SetGlobalJobPriority");
-	playerOwned(command.playerId).SetGlobalJobPriority(command);
+	townManager(command.townId).SetGlobalJobPriority(command);
 }
 
 void GameSimulationCore::GenericCommand(FGenericCommand command)
@@ -2575,7 +2611,7 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 		if (command.callbackEnum == CallbackEnum::EditableNumberSetOutputTarget)
 		{
 			if (command.intVar1 != -1) {
-				playerOwned(command.playerId).SetOutputTarget(static_cast<ResourceEnum>(command.intVar1), command.intVar2);
+				townManager(command.townId).SetOutputTarget(static_cast<ResourceEnum>(command.intVar1), command.intVar2);
 			}
 			return;
 		}
@@ -2621,7 +2657,7 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 		}
 		else
 		{
-			if (resourceCount(giverPlayerId, resourceEnum) < amount) {
+			if (resourceCountTown(giverPlayerId, resourceEnum) < amount) {
 				AddPopupToFront(giverPlayerId, 
 					LOCTEXT("NotEnoughResourceToGive", "Not enough resource to give out."), 
 					ExclusiveUIEnum::GiftResourceUI, "PopupCannot");
@@ -2722,7 +2758,7 @@ void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
 		if (_replaySystem.replayPlayers[command.playerId].IsTrailerReplay())
 		{
 			ChangeMoney(command.playerId, 20000); // Ensure enough money
-			townhall(command.playerId).UpgradeTownhall();
+			GetTownhallCapital(command.playerId).UpgradeTownhall();
 			return;
 		}
 		
@@ -2863,13 +2899,12 @@ void GameSimulationCore::ChangeWorkMode(FChangeWorkMode command)
 		bld.ChangeWorkMode(bld.workModes[command.enumInt]);
 	}
 	else if (bld.isEnum(CardEnum::Townhall))
-	{
-		auto& playerOwn = playerOwned(bld.playerId());
-		
+	{	
 		// Is owner ... show normal tax
-		if (bld.playerId() == command.playerId) {
-			playerOwn.taxLevel = command.enumInt;
-			RecalculateTaxDelayed(command.playerId);
+		if (bld.townId() == command.playerId) 
+		{
+			townManager(bld.townId()).taxLevel = command.enumInt;
+			RecalculateTaxDelayedTown(command.townId);
 			return;
 		}
 
@@ -2918,15 +2953,20 @@ void GameSimulationCore::AbandonTown(int32 playerId)
 	}
 
 	
-	vector<int32> provinceIds = playerOwned(playerId).provincesClaimed();
+	vector<int32> provinceIds = GetProvincesPlayer(playerId);
 	const SubregionLists<int32>& buildingList = buildingSystem().buildingSubregionList();
 
 	// Kill all humans
-	std::vector<int32> citizenIds = playerOwned(playerId).adultIds();
-	std::vector<int32> childIds = playerOwned(playerId).childIds();
-	citizenIds.insert(citizenIds.end(), childIds.begin(), childIds.end());
-	for (int32 citizenId : citizenIds) {
-		unitSystem().unitStateAI(citizenId).Die();
+	std::vector<int32> townIds = playerOwned(playerId).townIds();
+	for (int32 townId : townIds)
+	{
+		std::vector<int32> citizenIds = townManager(townId).adultIds();
+		std::vector<int32> childIds = townManager(townId).childIds();
+		citizenIds.insert(citizenIds.end(), childIds.begin(), childIds.end());
+		
+		for (int32 citizenId : citizenIds) {
+			unitSystem().unitStateAI(citizenId).Die();
+		}
 	}
 
 	// End all Alliance...
@@ -2939,8 +2979,8 @@ void GameSimulationCore::AbandonTown(int32 playerId)
 	// End all Vassalage...
 	std::vector<int32> vassalBuildingIds = _playerOwnedManagers[playerId].vassalBuildingIds();
 	for (int32 vassalBuildingId : vassalBuildingIds) {
-		ArmyNode& armyNode = building(vassalBuildingId).subclass<ArmyNodeBuilding>().GetArmyNode();
-		armyNode.lordPlayerId = armyNode.originalPlayerId;
+		//ArmyNode& armyNode = building(vassalBuildingId).subclass<ArmyNodeBuilding>().GetArmyNode();
+		//armyNode.lordPlayerId = armyNode.originalPlayerId;
 
 		_playerOwnedManagers[playerId].LoseVassal(vassalBuildingId);
 	}
@@ -2948,7 +2988,7 @@ void GameSimulationCore::AbandonTown(int32 playerId)
 
 	// Detach from lord
 	{
-		int32 lordPlayerId = townhall(playerId).armyNode.lordPlayerId;
+		int32 lordPlayerId = _playerOwnedManagers[playerId].lordPlayerId();
 
 		PUN_DEBUG2("[BEFORE] Detach from lord %d, size:%llu", lordPlayerId, _playerOwnedManagers[lordPlayerId].vassalBuildingIds().size());
 		_playerOwnedManagers[lordPlayerId].LoseVassal(playerId);
@@ -3000,12 +3040,18 @@ void GameSimulationCore::AbandonTown(int32 playerId)
 	
 
 	// Reset all Systems
-	_resourceSystems[playerId] = ResourceSystem(playerId, this);
+	for (int32 townId : townIds) {
+		_resourceSystems[townId] = ResourceSystem(townId, this);
+		_townManagers[townId].reset();
+		_townManagers[townId] = make_unique<TownManager>(playerId, townId, this); // TODO: Proper reset of TownManager
+	}
+
+	
 	_unlockSystems[playerId] = UnlockSystem(playerId, this);
 	_questSystems[playerId] = QuestSystem(playerId, this);
 	_playerOwnedManagers[playerId] = PlayerOwnedManager(playerId, this);
 	_playerParameters[playerId] = PlayerParameters(playerId, this);
-	_statSystem.ResetPlayer(playerId);
+	_statSystem.ResetTown(playerId);
 	_popupSystems[playerId] = PopupSystem(playerId, this);
 	_cardSystem[playerId] = BuildingCardSystem(playerId, this);
 
@@ -3065,7 +3111,7 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 {
 	UE_LOG(LogNetworkInput, Log, TEXT(" PopupDecision replyReceiver:%d choice:%d"), command.replyReceiverIndex, command.choiceIndex);
 	
-	TownHall& town = townhall(command.playerId);
+	TownHall& town = GetTownhallCapital(command.playerId);
 
 	CloseCurrentPopup(command.playerId);
 
@@ -3349,10 +3395,12 @@ void GameSimulationCore::UseCard(FUseCard command)
 	// Global Slot
 	if (IsGlobalSlotCard(command.cardEnum))
 	{
-		if (cardSys.CanAddCardToTownhall()) {
+		auto& townManage = townManager(command.townId);
+		
+		if (townManage.CanAddCardToTownhall()) {
 			int32 soldPrice = cardSys.RemoveCards(command.cardEnum, 1);
 			if (soldPrice != -1) {
-				cardSys.AddCardToTownhall(command.GetCardStatus(_gameManager->GetDisplayWorldTime() * 100.0f));
+				townManage.AddCardToTownhall(command.GetCardStatus(_gameManager->GetDisplayWorldTime() * 100.0f));
 			}
 		} else {
 			AddPopupToFront(command.playerId, 
@@ -3515,7 +3563,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 		}
 	}
 	else if (command.cardEnum == CardEnum::Immigration) {
-		townhall(command.playerId).AddImmigrants(5);
+		GetTownhallCapital(command.playerId).AddImmigrants(5);
 		AddPopupToFront(command.playerId, 
 			LOCTEXT("ImmigrantsJoinedFromAds", "5 immigrants joined after hearing the advertisement.")
 		);
@@ -3542,7 +3590,8 @@ void GameSimulationCore::UnslotCard(FUnslotCard command)
 
 	if (bld.isEnum(CardEnum::Townhall))
 	{
-		CardEnum cardEnum = cardSys.RemoveCardFromTownhall(command.unslotIndex);
+		auto& townManage = townManager(bld.townId());
+		CardEnum cardEnum = townManage.RemoveCardFromTownhall(command.unslotIndex);
 		if (cardEnum != CardEnum::None) {
 			cardSys.AddCardToHand2(cardEnum);
 		}
@@ -3564,104 +3613,105 @@ void GameSimulationCore::Attack(FAttack command)
 	
 	_LOG(LogNetworkInput, " Attack");
 
-	ArmyNode& originNode = GetArmyNode(command.originNodeId);
-	ArmyNode& targetNode = GetArmyNode(command.targetNodeId);
+	//ArmyNode& originNode = GetArmyNode(command.originNodeId);
+	//ArmyNode& targetNode = GetArmyNode(command.targetNodeId);
 
 	// Marked targetNode as visited
-	playerOwned(command.playerId).TryAddArmyNodeVisited(targetNode.nodeId);
+	//playerOwned(command.playerId).TryAddArmyNodeVisited(targetNode.nodeId);
 
-	auto makeMarchGroup = [&](std::vector<int32>& armyCountsIn, int32 helpPlayerId) {
-		return ArmyGroup(command.playerId, command.targetNodeId, armyCountsIn, helpPlayerId);
-	};
+	//auto makeMarchGroup = [&](std::vector<int32>& armyCountsIn, int32 helpPlayerId) {
+	//	return ArmyGroup(command.playerId, command.targetNodeId, armyCountsIn, helpPlayerId);
+	//};
 
 	CallbackEnum orderEnum = command.armyOrderEnum;
 
-	if (orderEnum == CallbackEnum::ArmyRebel)
-	{
-		// Rebeling: switch ordering player's army to attacking army...
-		ArmyGroup* rebelGroup1 = originNode.GetRebelGroup(command.playerId);
-		if (rebelGroup1) {
-			ArmyGroup rebelGroup = CppUtils::RemoveOneIf(targetNode.rebelGroups, [&](const ArmyGroup& group) { return group.playerId == command.playerId; });
-			targetNode.attackGroups.push_back(rebelGroup);
-		}
-	}
-	else if (orderEnum == CallbackEnum::ArmyConquer)
-	{
-		ArmyGroup* group = originNode.GetArmyGroup(command.playerId);
-		if (group) {
-			std::vector<int32> armyCounts = group->RemoveArmyPartial(CppUtils::ArrayToVec(command.armyCounts));
-			GetArmyNode(command.targetNodeId).MarchStart(makeMarchGroup(armyCounts, -1), originNode);
+	//if (orderEnum == CallbackEnum::ArmyRebel)
+	//{
+	//	// Rebeling: switch ordering player's army to attacking army...
+	//	ArmyGroup* rebelGroup1 = originNode.GetRebelGroup(command.playerId);
+	//	if (rebelGroup1) {
+	//		ArmyGroup rebelGroup = CppUtils::RemoveOneIf(targetNode.rebelGroups, [&](const ArmyGroup& group) { return group.playerId == command.playerId; });
+	//		targetNode.attackGroups.push_back(rebelGroup);
+	//	}
+	//}
+	//else if (orderEnum == CallbackEnum::ArmyConquer)
+	//{
+	//	ArmyGroup* group = originNode.GetArmyGroup(command.playerId);
+	//	if (group) {
+	//		std::vector<int32> armyCounts = group->RemoveArmyPartial(CppUtils::ArrayToVec(command.armyCounts));
+	//		GetArmyNode(command.targetNodeId).MarchStart(makeMarchGroup(armyCounts, -1), originNode);
 
-			AddPopup(targetNode.originalPlayerId, 
-				FText::Format(LOCTEXT("ArmyConquer_TargetPop", "{0} had launched an attack against you. If you lose this battle, you will become {0}'s vassal"), playerNameT(command.playerId))
-			);
-		}
-	}
-	else if (orderEnum == CallbackEnum::ArmyRecall)
-	{
-		ArmyGroup* groupPtr = originNode.GetArmyGroup(command.playerId);
-		if (groupPtr) {
-			// existing army in attack/defense group depart to targetNode
-			std::vector<int32> armyCounts = groupPtr->GetArmyCounts();
-			groupPtr->ClearArmy();
-			GetArmyNode(command.targetNodeId).MarchStart(makeMarchGroup(armyCounts, command.playerId), originNode);
-		}
+	//		AddPopup(targetNode.originalPlayerId, 
+	//			FText::Format(LOCTEXT("ArmyConquer_TargetPop", "{0} had launched an attack against you. If you lose this battle, you will become {0}'s vassal"), playerNameT(command.playerId))
+	//		);
+	//	}
+	//}
+	//else if (orderEnum == CallbackEnum::ArmyRecall)
+	//{
+	//	ArmyGroup* groupPtr = originNode.GetArmyGroup(command.playerId);
+	//	if (groupPtr) {
+	//		// existing army in attack/defense group depart to targetNode
+	//		std::vector<int32> armyCounts = groupPtr->GetArmyCounts();
+	//		groupPtr->ClearArmy();
+	//		GetArmyNode(command.targetNodeId).MarchStart(makeMarchGroup(armyCounts, command.playerId), originNode);
+	//	}
 
-		// if there are arriving armies calculate the tile where it is, and go to targetNode
-		std::vector<ArmyGroup> playerArrivalGroups = originNode.RemoveArrivalArmyGroups(command.playerId);
-		for (ArmyGroup& arrGroup : playerArrivalGroups) {
-			std::vector<int32> armyCounts = arrGroup.GetArmyCounts();
-			GetArmyNode(command.targetNodeId).MarchStart(makeMarchGroup(armyCounts, command.playerId), originNode, ArmyUtils::GetArmyTile(arrGroup, this));
-		}
-	}
-	else if (orderEnum == CallbackEnum::ArmyReinforce)
-	{
-		ArmyGroup* group = originNode.GetArmyGroup(command.playerId);
-		if (group) 
-		{
-			ArmyGroup* targetGroup = targetNode.GetArmyGroup(command.playerId);
-			if (!targetGroup) {
-				targetGroup = targetNode.GetArrivingGroup(command.playerId); // Use arriving group as example instead of there is no army at destination
-			}
-			
-			if (targetGroup) {
-				std::vector<int32> armyCounts = group->RemoveArmyPartial(CppUtils::ArrayToVec(command.armyCounts));
+	//	// if there are arriving armies calculate the tile where it is, and go to targetNode
+	//	std::vector<ArmyGroup> playerArrivalGroups = originNode.RemoveArrivalArmyGroups(command.playerId);
+	//	for (ArmyGroup& arrGroup : playerArrivalGroups) {
+	//		std::vector<int32> armyCounts = arrGroup.GetArmyCounts();
+	//		GetArmyNode(command.targetNodeId).MarchStart(makeMarchGroup(armyCounts, command.playerId), originNode, ArmyUtils::GetArmyTile(arrGroup, this));
+	//	}
+	//}
+	//else if (orderEnum == CallbackEnum::ArmyReinforce)
+	//{
+	//	ArmyGroup* group = originNode.GetArmyGroup(command.playerId);
+	//	if (group) 
+	//	{
+	//		ArmyGroup* targetGroup = targetNode.GetArmyGroup(command.playerId);
+	//		if (!targetGroup) {
+	//			targetGroup = targetNode.GetArrivingGroup(command.playerId); // Use arriving group as example instead of there is no army at destination
+	//		}
+	//		
+	//		if (targetGroup) {
+	//			std::vector<int32> armyCounts = group->RemoveArmyPartial(CppUtils::ArrayToVec(command.armyCounts));
 
-				// when reinforcing, we keep the same intention as the army operating in the region (just in case that army is dead, this army can find the correct purpose)
-				GetArmyNode(command.targetNodeId).MarchStart(makeMarchGroup(armyCounts, targetGroup->helpPlayerId), originNode);
-			}
-		}
-	}
-	else if (orderEnum == CallbackEnum::ArmyHelp)
-	{
-		ArmyGroup* group = originNode.GetArmyGroup(command.playerId);
-		if (group)
-		{
-			std::vector<int32> armyCounts = group->RemoveArmyPartial(CppUtils::ArrayToVec(command.armyCounts));
+	//			// when reinforcing, we keep the same intention as the army operating in the region (just in case that army is dead, this army can find the correct purpose)
+	//			GetArmyNode(command.targetNodeId).MarchStart(makeMarchGroup(armyCounts, targetGroup->helpPlayerId), originNode);
+	//		}
+	//	}
+	//}
+	//else if (orderEnum == CallbackEnum::ArmyHelp)
+	//{
+	//	ArmyGroup* group = originNode.GetArmyGroup(command.playerId);
+	//	if (group)
+	//	{
+	//		std::vector<int32> armyCounts = group->RemoveArmyPartial(CppUtils::ArrayToVec(command.armyCounts));
 
-			// when reinforcing, we keep the same intention as the army operating in the region (just in case that army is dead, this army can find the correct purpose)
-			GetArmyNode(command.targetNodeId).MarchStart(makeMarchGroup(armyCounts, command.helpPlayerId), originNode);
-		}
-	}
-	else if (orderEnum == CallbackEnum::ArmyLiberate)
-	{
-		ArmyGroup* group = originNode.GetArmyGroup(command.playerId);
-		if (group) {
-			std::vector<int32> armyCounts = group->RemoveArmyPartial(CppUtils::ArrayToVec(command.armyCounts));
-			ArmyNode& node = GetArmyNode(command.targetNodeId);
-			node.MarchStart(makeMarchGroup(armyCounts, node.originalPlayerId), originNode);
-		}
-	}
-	else if (orderEnum == CallbackEnum::ArmyMoveBetweenNode)
-	{
-		ArmyGroup* group = originNode.GetArmyGroup(command.playerId);
-		if (group) {
-			std::vector<int32> armyCounts = group->RemoveArmyPartial(CppUtils::ArrayToVec(command.armyCounts));
-			GetArmyNode(command.targetNodeId).MarchStart(makeMarchGroup(armyCounts, command.playerId), originNode);
-		}
-	}
+	//		// when reinforcing, we keep the same intention as the army operating in the region (just in case that army is dead, this army can find the correct purpose)
+	//		GetArmyNode(command.targetNodeId).MarchStart(makeMarchGroup(armyCounts, command.helpPlayerId), originNode);
+	//	}
+	//}
+	//else if (orderEnum == CallbackEnum::ArmyLiberate)
+	//{
+	//	ArmyGroup* group = originNode.GetArmyGroup(command.playerId);
+	//	if (group) {
+	//		std::vector<int32> armyCounts = group->RemoveArmyPartial(CppUtils::ArrayToVec(command.armyCounts));
+	//		ArmyNode& node = GetArmyNode(command.targetNodeId);
+	//		node.MarchStart(makeMarchGroup(armyCounts, node.originalPlayerId), originNode);
+	//	}
+	//}
+	//else if (orderEnum == CallbackEnum::ArmyMoveBetweenNode)
+	//{
+	//	ArmyGroup* group = originNode.GetArmyGroup(command.playerId);
+	//	if (group) {
+	//		std::vector<int32> armyCounts = group->RemoveArmyPartial(CppUtils::ArrayToVec(command.armyCounts));
+	//		GetArmyNode(command.targetNodeId).MarchStart(makeMarchGroup(armyCounts, command.playerId), originNode);
+	//	}
+	//}
+	
 	// Ally
-	else if (orderEnum == CallbackEnum::AllyRequest)
+	if (orderEnum == CallbackEnum::AllyRequest)
 	{
 		int32 requesterPlayerId = building(command.originNodeId).playerId();
 		int32 targetPlayerId = building(command.targetNodeId).playerId();
@@ -3695,20 +3745,20 @@ void GameSimulationCore::Attack(FAttack command)
 
 		// If your army is marked as helping this ally directly in other nodes the state becomes helpPlayerId == -1 instead...
 	}
-	else if (orderEnum == CallbackEnum::ArmyRetreat)
-	{
-		// original owner retreat... 
-		ArmyGroup* retreatGroup = targetNode.GetArmyGroup(command.playerId);
-		if (retreatGroup) {
-			// The army goes into hiding...
-			std::vector<int32> armyCounts = retreatGroup->GetArmyCounts();
-			armyCounts[static_cast<int>(ArmyEnum::Tower)] = 0;
-			targetNode.rebelGroups.push_back(ArmyGroup(command.playerId, command.targetNodeId, armyCounts, -1));
+	//else if (orderEnum == CallbackEnum::ArmyRetreat)
+	//{
+	//	// original owner retreat... 
+	//	ArmyGroup* retreatGroup = targetNode.GetArmyGroup(command.playerId);
+	//	if (retreatGroup) {
+	//		// The army goes into hiding...
+	//		std::vector<int32> armyCounts = retreatGroup->GetArmyCounts();
+	//		armyCounts[static_cast<int>(ArmyEnum::Tower)] = 0;
+	//		targetNode.rebelGroups.push_back(ArmyGroup(command.playerId, command.targetNodeId, armyCounts, -1));
 
-			CppUtils::RemoveIf(targetNode.defendGroups, [&](const ArmyGroup& group) { return group.playerId == command.playerId; });
-			CppUtils::RemoveIf(targetNode.attackGroups, [&](const ArmyGroup& group) { return group.playerId == command.playerId; });
-		}
-	}
+	//		CppUtils::RemoveIf(targetNode.defendGroups, [&](const ArmyGroup& group) { return group.playerId == command.playerId; });
+	//		CppUtils::RemoveIf(targetNode.attackGroups, [&](const ArmyGroup& group) { return group.playerId == command.playerId; });
+	//	}
+	//}
 	else {
 		UE_DEBUG_BREAK();
 	}
@@ -3748,7 +3798,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 		int32 neededFood = baseRegionPrice / FoodCost;
 		
 		if (foodCount(playerId) >= neededFood &&
-			provinceOwner(command.provinceId) == -1)
+			provinceOwnerTown(command.provinceId) == -1)
 		{
 			SetProvinceOwnerFull(command.provinceId, playerId);
 
@@ -3767,7 +3817,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 		int32 regionPriceMoney = GetProvinceClaimPrice(command.provinceId, playerId);
 		
 		if (globalResourceSys.money() >= regionPriceMoney &&
-			provinceOwner(command.provinceId) == -1)
+			provinceOwnerTown(command.provinceId) == -1)
 		{
 			SetProvinceOwnerFull(command.provinceId, playerId);
 			globalResourceSys.ChangeMoney(-regionPriceMoney);
@@ -3778,7 +3828,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 		int32 regionPriceMoney = GetProvinceClaimPrice(command.provinceId, playerId);
 
 		if (globalResourceSys.influence() >= regionPriceMoney &&
-			provinceOwner(command.provinceId) == -1)
+			provinceOwnerTown(command.provinceId) == -1)
 		{
 			SetProvinceOwnerFull(command.provinceId, playerId);
 			globalResourceSys.ChangeInfluence(-regionPriceMoney);
@@ -3793,7 +3843,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	{
 		// Attack could be: Conquer Province, Vassalize, or Declare Independence
 		
-		int32 provincePlayerId = provinceOwner(command.provinceId);
+		int32 provincePlayerId = provinceOwnerPlayer(command.provinceId);
 		auto& provincePlayerOwner = playerOwned(provincePlayerId);
 
 		ProvinceAttackEnum attackEnum = ProvinceAttackEnum::DeclareIndependence;
@@ -3960,7 +4010,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	}
 	else if (command.claimEnum == CallbackEnum::ReinforceAttackProvince)
 	{
-		auto& provincePlayerOwner = playerOwned(provinceOwner(command.provinceId));
+		auto& provincePlayerOwner = playerOwned(provinceOwnerPlayer(command.provinceId));
 		ProvinceClaimProgress claimProgress = provincePlayerOwner.GetDefendingClaimProgress(command.provinceId);
 		
 		if (claimProgress.isValid())
@@ -3992,7 +4042,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	
 	else if (command.claimEnum == CallbackEnum::DefendProvinceInfluence)
 	{
-		auto& provincePlayerOwner = playerOwned(provinceOwner(command.provinceId));
+		auto& provincePlayerOwner = playerOwned(provinceOwnerPlayer(command.provinceId));
 
 		if (provincePlayerOwner.GetDefendingClaimProgress(command.provinceId).isValid() &&
 			influence(command.playerId) >= BattleInfluencePrice)
@@ -4003,7 +4053,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	}
 	else if (command.claimEnum == CallbackEnum::DefendProvinceMoney)
 	{
-		auto& provincePlayerOwner = playerOwned(provinceOwner(command.provinceId));
+		auto& provincePlayerOwner = playerOwned(provinceOwnerPlayer(command.provinceId));
 
 		if (provincePlayerOwner.GetDefendingClaimProgress(command.provinceId).isValid() &&
 			money(command.playerId) >= BattleInfluencePrice)
@@ -4018,8 +4068,10 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	}
 }
 
-void GameSimulationCore::SetProvinceOwner(int32 provinceId, int32 playerId, bool lightMode)
+void GameSimulationCore::SetProvinceOwner(int32 provinceId, int32 townId, bool lightMode)
 {
+	int32 playerId = townPlayerId(townId);
+	
 	// When transfering land if it is oversea, warn of 200% influence upkeep
 	if (playerId != -1 &&
 		GetProvinceClaimConnectionEnum(provinceId, playerId) == ClaimConnectionEnum::Deepwater)
@@ -4029,37 +4081,35 @@ void GameSimulationCore::SetProvinceOwner(int32 provinceId, int32 playerId, bool
 		);
 	}
 
-	int32 oldPlayerId = provinceOwner(provinceId);
-	if (oldPlayerId != -1) {
-		playerOwned(oldPlayerId).TryRemoveProvinceClaim(provinceId, lightMode); // TODO: Try moving this below???
+	int32 oldTownId = provinceOwnerTown(provinceId);
+	if (oldTownId != -1) {
+		townManager(oldTownId).TryRemoveProvinceClaim(provinceId, lightMode); // TODO: Try moving this below???
 	}
 
-	_regionSystem->SetProvinceOwner(provinceId, playerId, lightMode);
+	_regionSystem->SetProvinceOwner(provinceId, townId, lightMode);
 
-	if (playerId != -1) {
-		playerOwned(playerId).ClaimProvince(provinceId, lightMode);
+	if (townId != -1) {
+		townManager(townId).ClaimProvince(provinceId, lightMode);
 
 		if (!lightMode) {
-			RefreshTerritoryEdge(playerId);
+			RefreshTerritoryEdge(townId);
 		}
 	}
-	if (oldPlayerId != -1) {
+	if (oldTownId != -1) {
 		if (!lightMode) {
-			RefreshTerritoryEdge(oldPlayerId);
+			RefreshTerritoryEdge(oldTownId);
 		}
 	}
 }
 
-void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 playerId)
+void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 townId)
 {
 	PUN_CHECK(_provinceSystem.IsProvinceValid(provinceId));
-	PUN_CHECK(playerId != -1);
+	PUN_CHECK(townId != -1);
 
-	PlayerOwnedManager& playerOwn = playerOwned(playerId);
+	SetProvinceOwner(provinceId, townId);
 
-	int32 previousOwnerId = provinceOwner(provinceId);
-	
-	SetProvinceOwner(provinceId, playerId);
+	int32 playerId = townManager(townId).playerId();
 
 	// Succeed claiming land
 	{
@@ -4090,10 +4140,10 @@ void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 playerId)
 		CheckGetSeedCard(playerId);
 		
 		// Claim land hand
-		int32 regionsClaimed = playerOwn.provincesClaimed().size();
+		int32 claimCount = GetProvinceCountPlayer(playerId);
 
 		// Remove any existing regional building and give the according bonus...
-		if (regionsClaimed > 1)
+		if (claimCount > 1)
 		{
 			const std::vector<WorldRegion2>& regionOverlaps = _provinceSystem.GetRegionOverlaps(provinceId);
 
@@ -4107,7 +4157,7 @@ void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 playerId)
 						GetProvinceIdClean(bld.centerTile()) == provinceId)
 					{
 						if (bld.isEnum(CardEnum::RegionTribalVillage)) {
-							ImmigrationEvent(playerId, 5, 
+							ImmigrationEvent(townId, 5,
 								FText::Format(LOCTEXT("TribalImmigrantAsk_Pop", "{0} wish to join your city."), GenerateTribeName(bld.buildingId())),
 								PopupReceiverEnum::TribalJoinEvent
 							);
@@ -4128,20 +4178,6 @@ void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 playerId)
 			}
 		}
 
-		/*
-		 * Outpost
-		 * TODO: remove this??
-		 */
-		//// You own an outpost here dismantle it with money back.
-		//if (playerOwn.TryRemoveOutpost(provinceId))
-		//{
-		//	ChangeMoney(playerId, playerOwn.GetOutpostClaimPrice(provinceId));
-		//	AddPopupToFront(playerId, "You expanded your city into a province with an outpost. The outpost was dismantled with its build cost returned to you.");
-		//}
-		//// Other ppl own an outpost here dismantle it.
-		//if (previousOwnerId != -1) {
-		//	playerOwned(previousOwnerId).TryRemoveOutpost(provinceId);
-		//}
 	}
 }
 
@@ -4233,25 +4269,25 @@ void GameSimulationCore::Cheat(FCheat command)
 			break;
 		}
 		case CheatEnum::Money: ChangeMoney(command.playerId, 30000); break;
-		case CheatEnum::Influence: ChangeMoney(command.playerId, 10000); break;
+		case CheatEnum::Influence: ChangeInfluence(command.playerId, 10000); break;
 		
 		case CheatEnum::FastBuild: SimSettings::Toggle("CheatFastBuild"); break;
 		
 		case CheatEnum::Cheat:
 			SimSettings::Set("CheatFastBuild", 1);
 			ChangeMoney(command.playerId, 100000);
-		case CheatEnum::Army:
-		{
-			std::vector<int32> armyNodeIds = GetArmyNodeIds(command.playerId);
-			for (int32 armyNodeId : armyNodeIds) {
-				std::vector<int32> armyCounts(ArmyEnumCount, 0);
-				armyCounts[1] = 5;
-				armyCounts[2] = 5;
-				armyCounts[3] = 5;
-				GetArmyNode(armyNodeId).AddArmyToCapital(command.playerId, armyCounts);
-			}
-			break;
-		}
+		//case CheatEnum::Army:
+		//{
+		//	std::vector<int32> armyNodeIds = GetArmyNodeIds(command.playerId);
+		//	for (int32 armyNodeId : armyNodeIds) {
+		//		std::vector<int32> armyCounts(ArmyEnumCount, 0);
+		//		armyCounts[1] = 5;
+		//		armyCounts[2] = 5;
+		//		armyCounts[3] = 5;
+		//		GetArmyNode(armyNodeId).AddArmyToCapital(command.playerId, armyCounts);
+		//	}
+		//	break;
+		//}
 		
 		case CheatEnum::Resources: {
 			for (ResourceEnum resourceEnum : StaticData::FoodEnums) {
@@ -4272,7 +4308,7 @@ void GameSimulationCore::Cheat(FCheat command)
 			break;
 		}
 		case CheatEnum::Undead: SimSettings::Toggle("CheatUndead"); break;
-		case CheatEnum::Immigration: townhall(command.playerId).ImmigrationEvent(30); break;
+		case CheatEnum::Immigration: GetTownhallCapital(command.playerId).ImmigrationEvent(30); break;
 
 		case CheatEnum::FastTech: SimSettings::Toggle("CheatFastTech"); break;
 
@@ -4283,8 +4319,8 @@ void GameSimulationCore::Cheat(FCheat command)
 					unitAI(humanId).SetFunTicks(FunTicksAt100Percent * 50 / 100);
 				}
 			};
-			setFunDown(playerOwned(command.playerId).adultIds());
-			setFunDown(playerOwned(command.playerId).childIds());
+			setFunDown(townManager(command.playerId).adultIds());
+			setFunDown(townManager(command.playerId).childIds());
 			break;
 		}
 
@@ -4292,7 +4328,7 @@ void GameSimulationCore::Cheat(FCheat command)
 
 		case CheatEnum::ClearLand: {
 			// Clear trees/deposits from regions owned
-			const std::vector<int32>& provinceIds = playerOwned(command.playerId).provincesClaimed();
+			const std::vector<int32>& provinceIds = GetProvincesPlayer(command.playerId);
 			for (int32 provinceId : provinceIds) {
 				_provinceSystem.ExecuteOnProvinceTiles(provinceId, [&](WorldTile2 tile)
 				{
@@ -4321,7 +4357,7 @@ void GameSimulationCore::Cheat(FCheat command)
 			if (amount > 0) {
 				resourceSystem(command.playerId).AddResourceGlobal(resourceEnum, amount, *this);
 			} else if (amount < 0) {
-				amount = std::min(amount, resourceCount(command.playerId, resourceEnum));
+				amount = std::min(amount, resourceCountTown(command.playerId, resourceEnum));
 				resourceSystem(command.playerId).RemoveResourceGlobal(resourceEnum, amount);
 			}
 			break;
@@ -4331,8 +4367,8 @@ void GameSimulationCore::Cheat(FCheat command)
 			break;
 		}
 		case CheatEnum::AddInfluence: {
-			ChangeMoney(command.playerId, command.var1);
-			playerOwned(command.playerId).RecalculateTaxDelayed();
+			ChangeInfluence(command.playerId, command.var1);
+			RecalculateTaxDelayedPlayer(command.playerId);
 			break;
 		}
 		case CheatEnum::AddCard:
@@ -4348,7 +4384,7 @@ void GameSimulationCore::Cheat(FCheat command)
 		case CheatEnum::AddImmigrants:
 		{
 			int32 addCount = command.var1;
-			townhall(command.playerId).AddImmigrants(addCount);
+			GetTownhallCapital(command.playerId).AddImmigrants(addCount);
 			break;
 		}
 
@@ -4357,7 +4393,7 @@ void GameSimulationCore::Cheat(FCheat command)
 			int32 addCount = command.var1;
 			ExecuteOnAI([&](int32 playerId) {
 				if (HasTownhall(playerId)) {
-					townhall(playerId).AddImmigrants(addCount);
+					GetTownhallCapital(playerId).AddImmigrants(addCount);
 				}
 			});
 				
@@ -4567,9 +4603,14 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 		}
 
 		// PlayerOwnedManager
-		playerOwned.townHallId = townhallId;
+		playerOwned.capitalTownhallId = townhallId;
 		playerOwned.needChooseLocation = false;
-		playerOwned.TryAddArmyNodeVisited(townhallId);
+
+		// Townhall
+		PUN_LOG("Set TownManager pid:%d", command.playerId);
+		townManager(command.playerId).townHallId = townhallId;
+		
+		//playerOwned.TryAddArmyNodeVisited(townhallId);
 	}
 
 	// Build storage yard

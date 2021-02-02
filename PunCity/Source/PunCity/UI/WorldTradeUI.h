@@ -28,6 +28,9 @@ public:
 	
 	void TickUI();
 	void UpdateTotal();
+
+	int32 worldTradeUITownId() { return simulation().building(punId).townId(); }
+	
 	UFUNCTION() void ClickedTradeButton();
 	UFUNCTION() void ClickedDismissButton() {
 		CloseUI();

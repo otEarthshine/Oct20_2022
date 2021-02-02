@@ -7,10 +7,10 @@
 
 #define LOCTEXT_NAMESPACE "GameUIDataSource"
 
-void LaborerPriorityState::RefreshUI(
+void LaborerPriorityState::RefreshUILaborerPriority(
 	class UPunWidget* widget,
 	IGameSimulationCore* sim,
-	int32 playerId,
+	int32 townId,
 
 	UHorizontalBox* EmployedBox,
 	UTextBlock* Employed,
@@ -29,10 +29,10 @@ void LaborerPriorityState::RefreshUI(
 {
 	// Employed
 	{
-		auto& playerOwned = sim->playerOwned(playerId);
+		auto& townManager = sim->townManager(townId);
 
 		int32 totalJobSlots = 0;
-		const std::vector<std::vector<int32>>& jobBuildingEnumToIds = playerOwned.jobBuildingEnumToIds();
+		const std::vector<std::vector<int32>>& jobBuildingEnumToIds = townManager.jobBuildingEnumToIds();
 		for (const std::vector<int32>& buildingIds : jobBuildingEnumToIds) {
 			for (int32 buildingId : buildingIds) {
 				totalJobSlots += sim->building(buildingId).allowedOccupants();
@@ -45,9 +45,9 @@ void LaborerPriorityState::RefreshUI(
 			widget->AddToolTip(EmployedBox, 
 				LOCTEXT("EmployedDesc", "People assigned to buildings\n/ Total buildings' job slots")
 			);
-			ADDTEXT_(INVTEXT("{0}/{1}"), TEXT_NUM(playerOwned.employedCount_WithoutBuilder()), TEXT_NUM(totalJobSlots));
+			ADDTEXT_(INVTEXT("{0}/{1}"), TEXT_NUM(townManager.employedCount_WithoutBuilder()), TEXT_NUM(totalJobSlots));
 		} else {
-			ADDTEXT_(LOCTEXT("Employed: X/Y", "Employed: {0}/{1}"), TEXT_NUM(playerOwned.employedCount_WithoutBuilder()), TEXT_NUM(totalJobSlots));
+			ADDTEXT_(LOCTEXT("Employed: X/Y", "Employed: {0}/{1}"), TEXT_NUM(townManager.employedCount_WithoutBuilder()), TEXT_NUM(totalJobSlots));
 		}
 
 		Employed->SetText(JOINTEXT(args));

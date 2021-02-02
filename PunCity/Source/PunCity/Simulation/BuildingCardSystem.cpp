@@ -49,7 +49,7 @@ FText BuildingCardSystem::rareHandMessage2()
 
 void BuildingCardSystem::RollRareHandExecute()
 {
-	int drawCount = _simulation->buildingFinishedCount(_playerId, CardEnum::Oracle) > 0 ? 4 : 3;
+	int drawCount = 3;// _simulation->buildingFinishedCount(_playerId, CardEnum::Oracle) > 0 ? 4 : 3;
 
 	// Randomly draw new hand..
 	auto shouldDraw = [&](CardEnum cardEnum)
@@ -66,7 +66,7 @@ void BuildingCardSystem::RollRareHandExecute()
 			return false;
 		}
 
-		if (TownhallCardCount(cardEnum) > 0) {
+		if (_simulation->TownhallCardCountAll(_playerId, cardEnum) > 0) {
 			return false;
 		}
 
@@ -120,8 +120,8 @@ void BuildingCardSystem::RollRareHandExecute()
 	}
 	else if (_rareHandEnum == RareHandEnum::PopulationQuestCards)
 	{
-		int32 population = _simulation->population(_playerId);
-		_rareHandMessage = FText::Format(LOCTEXT("PopulationMilestone_Pop", "{0} people now call your {1} home!"), TEXT_NUM(population), _simulation->townSizeNameT(_playerId));
+		int32 population = _simulation->populationPlayer(_playerId);
+		_rareHandMessage = FText::Format(LOCTEXT("PopulationMilestone_Pop", "{0} people now call your {1} home!"), TEXT_NUM(population), _simulation->GetTownSizeNameT(_playerId));
 
 		std::vector<CardEnum> cardEnums
 		{
@@ -143,7 +143,7 @@ void BuildingCardSystem::RollRareHandExecute()
 
 		// Remove card if we already have it
 		for (size_t i = cardEnums.size(); i-- > 0;) {
-			if (TownhallCardCount(cardEnums[i]) > 0 || BoughtCardCount(cardEnums[i]) > 0) {
+			if (_simulation->TownhallCardCountAll(_playerId, cardEnums[i]) > 0 || BoughtCardCount(cardEnums[i]) > 0) {
 				cardEnums.erase(cardEnums.begin() + i);
 			}
 		}

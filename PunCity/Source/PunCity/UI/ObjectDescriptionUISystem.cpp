@@ -127,7 +127,7 @@ void UObjectDescriptionUISystem::Tick()
 
 			if (provinceId != -1) 
 			{
-				bool isPlayerControlled = simulation().provinceOwner(provinceId) == playerId();
+				bool isPlayerControlled = simulation().provinceOwnerPlayer(provinceId) == playerId();
 				
 				// Highlight Hover if the province isn't owned or if the camera is zoomed out
 				if (dataSource()->zoomDistance() > WorldZoomTransition_RegionToRegion4x4_Mid ||
@@ -558,7 +558,6 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 	OverlayType overlayType = OverlayType::None;
 
-	auto& resourceSys = simulation.resourceSystem(playerId());
 	auto& globalResourceSys = simulation.globalResourceSystem(playerId());
 	
 
@@ -597,7 +596,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			Building& building = dataSource()->GetBuilding(objectId);
 			CardEnum buildingEnum = building.buildingEnum();
 			BldInfo buildingInfo = building.buildingInfo();
-			
+
+			auto& resourceSys = simulation.resourceSystem(building.townId());
 			
 			//stringstream ss;
 			TArray<FText> args;
@@ -606,17 +606,13 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			 * Header
 			 */
 			if (buildingEnum == CardEnum::RegionTribalVillage) {
-				//ss << "<Header>" << GenerateTribeName(objectId) << " tribe</>";
 				ADDTEXT_(LOCTEXT("TribeName", "<Header>{0} tribe</>"), GenerateTribeName(objectId));
 			}
 			else if (buildingEnum == CardEnum::Townhall) {
-				//ss << "<Header>" << TrimString_Dots(simulation.townName(building.playerId()), 15) << "</>";
-				//ADDINVTEXT(args, "<Header>{0}</>", ToFText(TrimString_Dots(simulation.townName(building.playerId()), 15)));
-				FString townName = simulation.townNameT(building.playerId()).ToString();
+				FString townName = simulation.townNameT(building.townId()).ToString();
 				ADDTEXT_(INVTEXT("<Header>{0}</>"), FText::FromString(TrimStringF_Dots(townName, 15)));
 			}
 			else if (buildingEnum == CardEnum::House) {
-				//ss << "<Header>House Level " << building.subclass<House>().houseLvl() << "</>";
 				ADDTEXT_(LOCTEXT("HouseName", "<Header>House Level {0}</>"), FText::AsNumber(building.subclass<House>().houseLvl()));
 			}
 			else
@@ -627,10 +623,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			}
 			
 #if WITH_EDITOR || TRAILER_MODE
-			ADDTEXT_(INVTEXT("[{objectId}]"), FText::AsNumber(objectId));
-			ADDTEXT_(INVTEXT("\n{centerTile}"), FText::FromString(building.centerTile().To_FString()));
-			//ss << "[" << objectId << "]"; // ID
-			//ss << "\n" << building.centerTile().ToString();
+			ADDTEXT_(INVTEXT("[{0}]"), FText::AsNumber(objectId));
+			ADDTEXT_(INVTEXT("\n{0}"), FText::FromString(building.centerTile().To_FString()));
 #endif
 
 			
@@ -646,7 +640,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 			// Swap between same type of buildings
 			if (building.playerId() == playerId()) {
-				const std::vector<int32>& buildingIds = simulation.buildingIds(playerId(), buildingEnum);
+				const std::vector<int32>& buildingIds = simulation.buildingIds(building.townId(), buildingEnum);
 				_objectDescriptionUI->BuildingSwapArrows->SetVisibility(buildingIds.size() > 1 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 			} else {
 				_objectDescriptionUI->BuildingSwapArrows->SetVisibility(ESlateVisibility::Collapsed);
@@ -662,7 +656,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			// IsConnectedBuilding
 			if (building.playerId() != -1) {
 				//ss << simulation.IsConnectedBuilding(building.buildingId(), playerId());
-				ADDTEXT_NUM(args, simulation.IsConnectedBuilding(building.buildingId(), building.playerId()))
+				ADDTEXT_NUM(args, simulation.IsConnectedBuilding(building.buildingId()))
 				descriptionBox->AddRichText(FTEXT("<Yellow>IsConnectedBld</>"), args);
 			}
 #endif
@@ -932,17 +926,19 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					{
 						TownHall& townhall = building.subclass<TownHall>();
 						int32 townPlayerId = townhall.playerId();
+						auto& townManager = simulation.townManager(townhall.townId());
 						auto& townhallPlayerOwned = simulation.playerOwned(townPlayerId);
+						
 						int32 lvl = townhall.townhallLvl;
 
-						FString nameTrimmed = TrimStringF_Dots(simulation.playerNameF(townhall.playerId()), 12);
+						FString nameTrimmed = TrimStringF_Dots(simulation.playerNameF(townPlayerId), 12);
 						descriptionBox->AddRichText(LOCTEXT("Player", "Player"), FText::FromString(nameTrimmed));
 
 #if WITH_EDITOR
-						descriptionBox->AddRichText(TEXT_TAG("<Yellow>", INVTEXT("PlayerId")), FText::AsNumber(townhall.playerId()));
+						descriptionBox->AddRichText(TEXT_TAG("<Yellow>", INVTEXT("PlayerId")), FText::AsNumber(townPlayerId));
 #endif
 						
-						descriptionBox->AddRichText(LOCTEXT("Size", "Size"), townhallPlayerOwned.GetTownSizeName());
+						descriptionBox->AddRichText(LOCTEXT("Size", "Size"), townManager.GetTownSizeName());
 
 						descriptionBox->AddRichText(LOCTEXT("TownLevel", "Town Level"), FText::AsNumber(lvl));
 
@@ -960,17 +956,17 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							ADDTEXT_(INVTEXT("<img id=\"Coin\"/>{0}"), FText::AsNumber(simulation.globalResourceSystem(townPlayerId).money()));
 							descriptionBox->AddRichText(LOCTEXT("Money", "Money"), args);
 
-							ADDTEXT_(INVTEXT("<img id=\"Coin\"/>{0}"), TEXT_100(townhallPlayerOwned.totalIncome100()));
+							ADDTEXT_(INVTEXT("<img id=\"Coin\"/>{0}"), TEXT_100(townManager.totalIncome100()));
 							descriptionBox->AddRichText(LOCTEXT("Money Income", "Money Income"), args);
 							descriptionBox->AddSpacer();
 
 							ADDTEXT_(INVTEXT("<img id=\"Influence\"/>{0}"), FText::AsNumber(simulation.globalResourceSystem(townPlayerId).influence()));
 							descriptionBox->AddRichText(LOCTEXT("Influence", "Influence"), args);
-							ADDTEXT_(INVTEXT("<img id=\"Influence\"/>{0}"), TEXT_100(townhallPlayerOwned.totalInfluenceIncome100()));
+							ADDTEXT_(INVTEXT("<img id=\"Influence\"/>{0}"), TEXT_100(townManager.totalInfluenceIncome100()));
 							descriptionBox->AddRichText(LOCTEXT("Influence Income", "Influence Income"), args);
 							descriptionBox->AddSpacer();
 							
-							ADDTEXT_(INVTEXT("<img id=\"Smile\"/>{0}"), FText::AsNumber(simulation.GetAverageHappiness(townPlayerId)));
+							ADDTEXT_(INVTEXT("<img id=\"Smile\"/>{0}"), FText::AsNumber(simulation.GetAverageHappiness(townhall.townId())));
 							descriptionBox->AddRichText(LOCTEXT("Happiness", "Happiness"), args);
 						}
 
@@ -989,11 +985,11 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						{
 							// Expanded text part
 							for (int32 i = 1; i < allyPlayerIds.size(); i++) {
-								ADDTEXT_(INVTEXT("{0}\n"), FText::FromString(simulation.townhall(allyPlayerIds[i]).townFName()));
+								ADDTEXT_(INVTEXT("{0}\n"), simulation.GetTownhallCapital(allyPlayerIds[i]).townNameT());
 							}
 							
 							descriptionBox->AddRichText(LOCTEXT("Allies", "Allies"), 
-								simulation.townhall(allyPlayerIds[0]).townNameT(), ResourceEnum::None, JOINTEXT(args)
+								simulation.GetTownhallCapital(allyPlayerIds[0]).townNameT(), ResourceEnum::None, JOINTEXT(args)
 							);
 							args.Empty();
 						} else {
@@ -1009,7 +1005,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							{
 								Building& vassalBld = simulation.building(vassalBuildingId);
 								if (vassalBld.isEnum(CardEnum::Townhall)) {
-									return simulation.townhall(vassalBld.playerId()).townNameT();
+									return simulation.GetTownhallCapital(vassalBld.playerId()).townNameT();
 								}
 								else {
 									return LOCTEXT("Non-player Vassal", "Non-player Vassal");
@@ -1950,11 +1946,11 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				if (building.playerId() == playerId() &&
 					product != ResourceEnum::None)
 				{
-					auto& playerOwned = simulation.playerOwned(playerId());
+					auto& townManager = simulation.townManager(building.townId());
 					if (_justOpenedDescriptionUI) {
-						playerOwned.SetOutputTargetDisplay(product, playerOwned.GetOutputTarget(product));
+						townManager.SetOutputTargetDisplay(product, townManager.GetOutputTarget(product));
 					}
-					int32 targetDisplay = playerOwned.GetOutputTargetDisplay(product);
+					int32 targetDisplay = townManager.GetOutputTargetDisplay(product);
 					bool isChecked = (targetDisplay != -1);
 
 					descriptionBox->AddLineSpacer();
@@ -1964,6 +1960,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						isChecked, product
 					);
 					numberBox->callbackVar1 = static_cast<int32>(product);
+					numberBox->callbackVar2 = building.townId();
 				}
 
 
@@ -2078,8 +2075,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				if (building.playerId() == playerId())
 				{
 					if (building.isEnum(CardEnum::Townhall)) {
-						auto& cardSys = simulation.cardSystem(playerId());
-						updateCardSlotUI(cardSys.cardsInTownhall(), cardSys.maxTownhallCards(), true);
+						auto& townManage = simulation.townManager(building.townId());
+						updateCardSlotUI(townManage.cardsInTownhall(), townManage.maxTownhallCards(), true);
 					}
 					else {
 						updateCardSlotUI(building.slotCards(), building.maxCardSlots(), false);
@@ -2128,7 +2125,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					// Special case: Logistics Office
 					if (building.isEnum(CardEnum::ShippingDepot))
 					{
-						vector<int32> storageIds = simulation.GetBuildingsWithinRadiusMultiple(building.centerTile(), ShippingDepot::Radius, playerId(), StorageEnums);
+						vector<int32> storageIds = simulation.GetBuildingsWithinRadiusMultiple(building.centerTile(), ShippingDepot::Radius, building.townId(), StorageEnums);
 						for (int32 storageId : storageIds)
 						{
 							Building& buildingScope = simulation.buildingChecked(storageId);
@@ -2811,7 +2808,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			SpawnSelectionMesh(assetLoader->SelectionMaterialGreen, displayLocation + FVector(0, 0, selectionHeight));
 
 			ShowTileSelectionDecal(dataSource()->DisplayLocation(tile.worldAtom2()));
-			if (simulation.tileOwner(tile) == playerId()) {
+			if (simulation.tileOwnerPlayer(tile) == playerId()) {
 				ShowRegionSelectionDecal(tile, true);
 			} else {
 				ShowRegionSelectionDecal(tile);
@@ -2855,7 +2852,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 			if (drops.size() > 0)
 			{
-				auto& resourceSystem = simulation.resourceSystem(drops[0].playerId);
+				auto& resourceSystem = simulation.resourceSystem(drops[0].townId);
 
 				//stringstream ss;
 				//ss << "<Header>Dropped Resource " << tile.ToString() << "</>";
@@ -3103,13 +3100,13 @@ void UObjectDescriptionUISystem::AddSelectStartLocationButton(int32 provinceId, 
 	}
 	SCOPE_CYCLE_COUNTER(STAT_PunUISelect_Start);
 	
-	bool hasChosenLocation = simulation().playerOwned(playerId()).hasChosenLocation();
+	bool hasChosenLocation = simulation().HasChosenLocation(playerId());
 	// If player hasn't select starting location
 	if (!hasChosenLocation)
 	{	
 		bool canClaim = true;
 
-		if (simulation().provinceOwner(provinceId) != -1) {
+		if (simulation().provinceOwnerTown(provinceId) != -1) {
 			descriptionBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Already has owner.", "Already has owner.")));
 			canClaim = false;
 		}
@@ -3153,14 +3150,13 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 	SCOPE_CYCLE_COUNTER(STAT_PunUI_AddClaimLandButton);
 	
 	auto& sim = simulation();
-	auto& playerOwned = sim.playerOwned(playerId());
 
 	/*
 	 * Not owned by anyone
 	 */
-	int32 provinceOwnerId = sim.provinceOwner(provinceId);
+	int32 provincePlayerId = sim.provinceOwnerPlayer(provinceId);
 	
-	if (provinceOwnerId == -1)
+	if (provincePlayerId == -1)
 	{
 		auto addClaimButtons = [&](ClaimConnectionEnum claimConnectionEnum)
 		{
@@ -3258,18 +3254,18 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 	}
 	// Other player
 	// Conquer
-	else if (provinceOwnerId != playerId())
+	else if (provincePlayerId != playerId())
 	{
 		// Conquer
 		/*if (simulation().unlockedInfluence(playerId()))*/
-		if (sim.HasTownhall(provinceOwnerId) &&
-			simulation().townhall(provinceOwnerId).provinceId() != provinceId)
+		if (sim.HasTownhall(provincePlayerId) &&
+			simulation().GetTownhallCapital(provincePlayerId).provinceId() != provinceId)
 		{
 			if (simulation().IsResearched(playerId(), TechEnum::Conquer))
 			{
 				auto addAttackButtons = [&](ClaimConnectionEnum claimConnectionEnum)
 				{
-					ProvinceClaimProgress claimProgress = simulation().playerOwned(provinceOwnerId).GetDefendingClaimProgress(provinceId);
+					ProvinceClaimProgress claimProgress = simulation().playerOwned(provincePlayerId).GetDefendingClaimProgress(provinceId);
 
 					// Already a claim, reinforce
 					if (claimProgress.isValid())
@@ -3318,7 +3314,7 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 	// Self, check if this province is being conquered
 	else
 	{
-		ProvinceClaimProgress claimProgress = simulation().playerOwned(provinceOwnerId).GetDefendingClaimProgress(provinceId);
+		ProvinceClaimProgress claimProgress = simulation().playerOwned(provincePlayerId).GetDefendingClaimProgress(provinceId);
 
 		// Already a claimProgress, and isn't the attacking player, allow anyone to help defend
 		if (claimProgress.isValid() &&
@@ -3574,10 +3570,13 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 		int32 amount = editableBox->isEditableNumberActive ? editableBox->amount : -1;;
 		command->intVar2 = amount;
 
+		int32 townId = editableBox->callbackVar2;
+		command->townId = townId;
+
 		networkInterface()->SendNetworkCommand(command);
 
-		auto& playerOwned = simulation().playerOwned(playerId());
-		playerOwned.SetOutputTargetDisplay(static_cast<ResourceEnum>(editableBox->callbackVar1), amount);
+		auto& townManager = simulation().townManager(townId);
+		townManager.SetOutputTargetDisplay(static_cast<ResourceEnum>(editableBox->callbackVar1), amount);
 	}
 
 	else if (callbackEnum == CallbackEnum::OpenManageStorage)
@@ -3722,8 +3721,8 @@ void UObjectDescriptionUISystem::AddTileInfo(WorldTile2 tile, UPunBoxWidget* des
 	//descriptionBox->AddRichText(ss);
 
 	// Region Owner
-	int32 ownerId = sim.provinceOwner(provinceId);
-	ADDTEXT_(LOCTEXT("TileOwner", "Owner: {0}"), (ownerId == -1 ? INVTEXT("None") : sim.playerNameT(ownerId)));
+	int32 ownerPlayerId = sim.provinceOwnerPlayer(provinceId);
+	ADDTEXT_(LOCTEXT("TileOwner", "Owner: {0}"), (ownerPlayerId == -1 ? INVTEXT("None") : sim.playerNameT(ownerPlayerId)));
 	descriptionBox->AddRichText(args);
 
 
@@ -3737,7 +3736,7 @@ void UObjectDescriptionUISystem::AddTileInfo(WorldTile2 tile, UPunBoxWidget* des
 	AddProvinceUpkeepInfo(provinceId, descriptionBox);
 
 	// - Spacer: Georesource, Claim
-	if (ownerId == -1) {
+	if (ownerPlayerId == -1) {
 		descriptionBox->AddSpacer();
 		descriptionBox->AddLineSpacer(15);
 	}
@@ -3752,9 +3751,9 @@ void UObjectDescriptionUISystem::AddTileInfo(WorldTile2 tile, UPunBoxWidget* des
 	ADDTEXT_(INVTEXT("Display ({0},{1})"), displayLocation.X, displayLocation.Y);
 	descriptionBox->AddSpecialRichText(INVTEXT("<Yellow>"), args);
 
-	int32 provinceOwner = sim.provinceOwner(provinceId);
-	if (provinceOwner != -1) {
-		AIPlayerSystem& aiPlayer = sim.aiPlayerSystem(provinceOwner);
+	int32 provincePlayerId = sim.provinceOwnerPlayer(provinceId);
+	if (provincePlayerId != -1) {
+		AIPlayerSystem& aiPlayer = sim.aiPlayerSystem(provincePlayerId);
 
 		if (aiPlayer.active()) {
 			AIRegionStatus* regionStatus = aiPlayer.regionStatus(provinceId);
@@ -3770,7 +3769,7 @@ void UObjectDescriptionUISystem::AddTileInfo(WorldTile2 tile, UPunBoxWidget* des
 #endif
 
 	ShowTileSelectionDecal(dataSource()->DisplayLocation(tile.worldAtom2()));
-	if (sim.tileOwner(tile) != playerId()) {
+	if (sim.tileOwnerPlayer(tile) != playerId()) {
 		ShowRegionSelectionDecal(tile);
 	}
 }
@@ -3864,7 +3863,7 @@ void UObjectDescriptionUISystem::AddProvinceUpkeepInfo(int32 provinceIdClean, UP
 	descriptionBox->AddLineSpacer(15);
 
 	auto& sim = simulation();
-	int32 provinceOwnerId = sim.provinceOwner(provinceIdClean);
+	int32 provincePlayerId = sim.provinceOwnerPlayer(provinceIdClean);
 	bool unlockedInfluence = sim.unlockedInfluence(playerId());
 	
 	TArray<FText> args;
@@ -3872,7 +3871,7 @@ void UObjectDescriptionUISystem::AddProvinceUpkeepInfo(int32 provinceIdClean, UP
 	ADDTEXT_INV_("\n");
 
 	// Already own this province, Show real income/upkeep
-	if (provinceOwnerId == playerId())
+	if (provincePlayerId == playerId())
 	{
 		descriptionBox->AddRichText(FText::Format(
 			LOCTEXT("Income: CoinX", "Income: <img id=\"Coin\"/>{0}"), 
@@ -3882,7 +3881,7 @@ void UObjectDescriptionUISystem::AddProvinceUpkeepInfo(int32 provinceIdClean, UP
 		if (unlockedInfluence) {
 			descriptionBox->AddRichText(FText::Format(
 				LOCTEXT("Upkeep: InfluenceX", "Upkeep: <img id=\"Influence\"/>{0}"), 
-				TEXT_100(sim.GetProvinceUpkeep100(provinceIdClean, provinceOwnerId))
+				TEXT_100(sim.GetProvinceUpkeep100(provinceIdClean, provincePlayerId))
 			));
 
 			if (sim.IsBorderProvince(provinceIdClean)) {
@@ -3899,11 +3898,11 @@ void UObjectDescriptionUISystem::AddProvinceUpkeepInfo(int32 provinceIdClean, UP
 		AddToolTip(widget, sim.GetProvinceDefenseBonusTip(provinceIdClean));
 	}
 	// Other player's Home Province
-	else if (provinceOwnerId != -1 && sim.homeProvinceId(provinceOwnerId) == provinceIdClean)
+	else if (provincePlayerId != -1 && sim.homeProvinceId(provincePlayerId) == provinceIdClean)
 	{
 		descriptionBox->AddRichText(FText::Format(LOCTEXT("Home Province of X", 
 			"Home Province of {0}"),
-			sim.playerNameT(provinceOwnerId)
+			sim.playerNameT(provincePlayerId)
 		));
 		
 		auto widget = descriptionBox->AddRichText(FText::Format(

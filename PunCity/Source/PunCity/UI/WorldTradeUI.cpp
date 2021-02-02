@@ -21,7 +21,7 @@ void UWorldTradeUI::OpenUI(int32 objectId)
 {
 	WorldTradeRowBox->ClearChildren();
 
-	ResourceSystem& resourceSystem = simulation().resourceSystem(playerId());
+	ResourceSystem& resourceSystem = simulation().resourceSystem(worldTradeUITownId());
 
 	punId = objectId;
 
@@ -79,7 +79,7 @@ void UWorldTradeUI::TickUI()
 		return;
 	}
 
-	ResourceSystem& resourceSystem = dataSource()->simulation().resourceSystem(playerId());
+	ResourceSystem& resourceSys = dataSource()->simulation().resourceSystem(worldTradeUITownId());
 
 	bool isSellOnly = simulation().building(punId).isEnum(CardEnum::Townhall);
 
@@ -94,7 +94,7 @@ void UWorldTradeUI::TickUI()
 		for (int32 i = 0; i < tradeRows.Num(); i++)
 		{
 			auto tradeRow = CastChecked<UWorldTradeRow>(tradeRows[i]);
-			int32 resourceCount = resourceSystem.resourceCount(tradeRow->resourceEnum());
+			int32 resourceCount = resourceSys.resourceCount(tradeRow->resourceEnum());
 
 			// Can't sell more than resourceCount
 			if (tradeRow->buyAmount() < -resourceCount) {
@@ -211,8 +211,6 @@ void UWorldTradeUI::ClickedTradeButton()
 	if (_totalCoinGain < 0 &&
 		_totalCoinGain + globalResourceSys.money() < 0)
 	{
-		//PopupInfo popup(playerId(), "Not enough money for trade.");
-		//popup.warningForExclusiveUI = ExclusiveUIEnum::Trading;
 		simulation().AddPopupToFront(playerId(), 
 			LOCTEXT("Not enough money for trade.", "Not enough money for trade."),
 			ExclusiveUIEnum::Trading, "PopupCannot"
@@ -223,8 +221,6 @@ void UWorldTradeUI::ClickedTradeButton()
 	Building& tradeBuilding = simulation().building(punId);
 	
 	if (_quantity > tradeBuilding.maxTradeQuatity()) {
-		//PopupInfo popup(playerId(), "Exceed trade quantity available for this trading post.");
-		//popup.warningForExclusiveUI = ExclusiveUIEnum::Trading;
 		simulation().AddPopupToFront(playerId(), 
 			LOCTEXT("ExceedTradeQuantity", "Exceed trade quantity available for this trading post."),
 			ExclusiveUIEnum::Trading, "PopupCannot"

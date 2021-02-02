@@ -27,9 +27,13 @@ void TradeBuilding::UsedTrade(FTradeResource tradeCommand)
 
 void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePercent, WorldTile2 tile, IGameSimulationCore* simulation, bool isInstantBuy, int32& exportMoney100, int32& importMoney100)
 {
+	PUN_CHECK(tradeCommand.objectId >= 0);
+	
 	// Sold stuff executes on the way right away...
 	int32 playerId = tradeCommand.playerId;
-	ResourceSystem& resourceSys = simulation->resourceSystem(playerId);
+	int32 townId = simulation->building(tradeCommand.objectId).townId();
+	
+	ResourceSystem& resourceSys = simulation->resourceSystem(townId);
 	GlobalResourceSystem& globalResourceSys = simulation->globalResourceSystem(playerId);
 
 	// This value is used in fee calculation
@@ -309,7 +313,7 @@ void TradingCompany::OnTick1Sec()
 		return;
 	}
 
-	int32 currentResourceCount = _simulation->resourceCount(_playerId, activeResourceEnum);
+	int32 currentResourceCount = _simulation->resourceCountTown(_townId, activeResourceEnum);
 
 	auto issueTradeCommand = [&](int32 buyAmount)
 	{

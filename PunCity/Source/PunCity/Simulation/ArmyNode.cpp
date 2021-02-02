@@ -60,55 +60,55 @@ void ArmyNode::DealDamage(std::vector<ArmyGroup>& group_Attacker, std::vector<Ar
 		std::vector<pair<int32, int32>> groupIdToArmyEnum_Back_Receiver)
 	{
 		
-		// Check each damage dealer if it can attack...
-		for (int32 i = 0; i < groupIdToArmyEnum_Dealer.size(); i++)
-		{
-			auto pairDealer = groupIdToArmyEnum_Dealer[i];
-			ArmyGroup& dealerGroup = group_Dealer[pairDealer.first];
-			int32 dealerEnumInt = pairDealer.second;
+		//// Check each damage dealer if it can attack...
+		//for (int32 i = 0; i < groupIdToArmyEnum_Dealer.size(); i++)
+		//{
+		//	auto pairDealer = groupIdToArmyEnum_Dealer[i];
+		//	ArmyGroup& dealerGroup = group_Dealer[pairDealer.first];
+		//	int32 dealerEnumInt = pairDealer.second;
 
-			auto getAttackDelayPenalty = [&]() {
-				return PlayerAttackDelayPenaltyPercent(dealerGroup.playerId);
-			};
+		//	auto getAttackDelayPenalty = [&]() {
+		//		return PlayerAttackDelayPenaltyPercent(dealerGroup.playerId);
+		//	};
 
-			if (dealerGroup.IsReadyToHit(dealerEnumInt, getAttackDelayPenalty))
-			{
-				dealerGroup.lastAttackedTick[dealerEnumInt] = Time::Ticks();
-				
-				//int32 troopCount = dealerGroup.TroopCount(dealerEnumInt);
-				//int32 attack = troopCount * dealerInfo.attack * BaseDamagePerAttack;
+		//	if (dealerGroup.IsReadyToHit(dealerEnumInt, getAttackDelayPenalty))
+		//	{
+		//		dealerGroup.lastAttackedTick[dealerEnumInt] = Time::Ticks();
+		//		
+		//		//int32 troopCount = dealerGroup.TroopCount(dealerEnumInt);
+		//		//int32 attack = troopCount * dealerInfo.attack * BaseDamagePerAttack;
 
-				//// Randomize attack
-				//attack = attack * (GameRand::Rand() % 100 + 50) / 100;
+		//		//// Randomize attack
+		//		//attack = attack * (GameRand::Rand() % 100 + 50) / 100;
 
-				//if (SimSettings::IsOn("CheatFastBuild")) {
-				//	attack *= 10;
-				//}
-				
-				int32 attack = dealerGroup.AttackDamage(dealerEnumInt);
+		//		//if (SimSettings::IsOn("CheatFastBuild")) {
+		//		//	attack *= 10;
+		//		//}
+		//		
+		//		int32 attack = dealerGroup.AttackDamage(dealerEnumInt);
 
-				if (_simulation->IsResearched(dealerGroup.playerId, TechEnum::MilitaryLastEra)) 	{
-					attack = attack * 120 / 100;
-				}
+		//		if (_simulation->IsResearched(dealerGroup.playerId, TechEnum::MilitaryLastEra)) 	{
+		//			attack = attack * 120 / 100;
+		//		}
 
-				// Damage frontline first
-				pair<int32, int32> pairReceiver;
-				if (groupIdToArmyEnum_Front_Receiver.size() > 0) {
-					pairReceiver = groupIdToArmyEnum_Front_Receiver[GameRand::Rand() % groupIdToArmyEnum_Front_Receiver.size()];
-				} else if (groupIdToArmyEnum_Back_Receiver.size() > 0) {
-					pairReceiver = groupIdToArmyEnum_Back_Receiver[GameRand::Rand() % groupIdToArmyEnum_Back_Receiver.size()];
-				}
-				else {
-					break; // all dead...
-				}
-				
-				ArmyGroup& receiverGroup = group_Receiver[pairReceiver.first];
-				int32 receiverEnumInt = pairReceiver.second;
-				ArmyInfo receiverInfo = GetArmyInfoInt(receiverEnumInt);
+		//		// Damage frontline first
+		//		pair<int32, int32> pairReceiver;
+		//		if (groupIdToArmyEnum_Front_Receiver.size() > 0) {
+		//			pairReceiver = groupIdToArmyEnum_Front_Receiver[GameRand::Rand() % groupIdToArmyEnum_Front_Receiver.size()];
+		//		} else if (groupIdToArmyEnum_Back_Receiver.size() > 0) {
+		//			pairReceiver = groupIdToArmyEnum_Back_Receiver[GameRand::Rand() % groupIdToArmyEnum_Back_Receiver.size()];
+		//		}
+		//		else {
+		//			break; // all dead...
+		//		}
+		//		
+		//		ArmyGroup& receiverGroup = group_Receiver[pairReceiver.first];
+		//		int32 receiverEnumInt = pairReceiver.second;
+		//		ArmyInfo receiverInfo = GetArmyInfoInt(receiverEnumInt);
 
-				receiverGroup.TakeDamage(receiverEnumInt, attack);
-			}
-		}
+		//		receiverGroup.TakeDamage(receiverEnumInt, attack);
+		//	}
+		//}
 	};
 
 	// Defender deal damage first

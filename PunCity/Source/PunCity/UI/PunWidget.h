@@ -139,6 +139,8 @@ public:
 	GameSimulationCore& simulation() { return dataSource()->simulation(); }
 
 	int32 playerId() { return GetPunHUD()->playerId(); }
+	int32 currentTownId() { return playerId(); }
+	
 	UWorld* GetWorldPun() { return GetPunHUD()->GetWorldPun(); }
 
 	bool InterfacesInvalid() { return GetPunHUD()->IsInvalid(); }
@@ -456,45 +458,45 @@ public:
 			return;
 		}
 		
-		ArmyInfo info = GetArmyInfoInt(armyEnumInt);
+		//ArmyInfo info = GetArmyInfoInt(armyEnumInt);
 
-		std::stringstream ss;
-		ss << "<Bold>" << info.name << "</>";
-		ss << "<space>";
+		//std::stringstream ss;
+		//ss << "<Bold>" << info.name << "</>";
+		//ss << "<space>";
 
-		int32 hp = armyGroup.HPs[armyEnumInt];
-		int32 initialHP = armyGroup.initialHPs[armyEnumInt];
-		ss << "Total HP: ";
-		if (hp > initialHP * 2 / 3) {
-			ss << "<Green>";
-		} else if (hp > initialHP / 3) {
-			ss << "<Yellow>";
-		} else {
-			ss << "<Red>";
-		}
-		ss << hp << "/" << initialHP << "</>\n";
-		ss << "Count: " << armyGroup.TroopCount(armyEnumInt);
+		//int32 hp = armyGroup.HPs[armyEnumInt];
+		//int32 initialHP = armyGroup.initialHPs[armyEnumInt];
+		//ss << "Total HP: ";
+		//if (hp > initialHP * 2 / 3) {
+		//	ss << "<Green>";
+		//} else if (hp > initialHP / 3) {
+		//	ss << "<Yellow>";
+		//} else {
+		//	ss << "<Red>";
+		//}
+		//ss << hp << "/" << initialHP << "</>\n";
+		//ss << "Count: " << armyGroup.TroopCount(armyEnumInt);
 
-		ss << "<space>";
-		ss << "Upkeep: " << (info.upkeep100() / 100.0f) << "<img id=\"Coin\"/>";
-		ss << "<space>";
-		
-		ss << "Attack: "<< info.attack << "\n";
-		
-		ss << std::setprecision(2);
-		int32 attackDelayPenalty = node.PlayerAttackDelayPenaltyPercent(armyGroup.playerId);
-		int32 attackSpeedPenalty = 100 - 100 * 100 / (100 + attackDelayPenalty);
-		
-		int32 attackDelaySec100 = info.attackDelaySec100 * (100 + attackDelayPenalty) / 100;
-		if (attackDelayPenalty > 0) {
-			ss << "Attacks per sec: <Red>" << static_cast<float>(100) / attackDelaySec100 << "</> (<Red>-" << attackSpeedPenalty << "%</>)" << "\n";
-		} else {
-			ss << "Attacks per sec: " << static_cast<float>(100) / attackDelaySec100 << "\n";
-		}
+		//ss << "<space>";
+		//ss << "Upkeep: " << (info.upkeep100() / 100.0f) << "<img id=\"Coin\"/>";
+		//ss << "<space>";
+		//
+		//ss << "Attack: "<< info.attack << "\n";
+		//
+		//ss << std::setprecision(2);
+		//int32 attackDelayPenalty = node.PlayerAttackDelayPenaltyPercent(armyGroup.playerId);
+		//int32 attackSpeedPenalty = 100 - 100 * 100 / (100 + attackDelayPenalty);
+		//
+		//int32 attackDelaySec100 = info.attackDelaySec100 * (100 + attackDelayPenalty) / 100;
+		//if (attackDelayPenalty > 0) {
+		//	ss << "Attacks per sec: <Red>" << static_cast<float>(100) / attackDelaySec100 << "</> (<Red>-" << attackSpeedPenalty << "%</>)" << "\n";
+		//} else {
+		//	ss << "Attacks per sec: " << static_cast<float>(100) / attackDelaySec100 << "\n";
+		//}
 
-		
-		ss << "Defense: " << info.defense << "\n";
-		ss << "HP per unit: " << info.maxHp;
+		//
+		//ss << "Defense: " << info.defense << "\n";
+		//ss << "HP per unit: " << info.maxHp;
 	
 	
 		

@@ -152,9 +152,9 @@ public:
 		ResetGameUI();
 		_statisticsUI->OpenStatisticsUI(playerId);
 	}
-	void OpenJobPriorityUI() override {
+	void OpenJobPriorityUI(int32 townIdIn) override {
 		ResetGameUI();
-		_mainGameUI->ToggleJobPriorityUI();
+		_mainGameUI->ToggleJobPriorityUI(townIdIn);
 	}
 
 	

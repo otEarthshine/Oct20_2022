@@ -82,7 +82,7 @@ void UStatisticsUI::TickUI()
 		return;
 	}
 	
-	SubStatSystem& statSystem = simulation().statSystem().playerStatSystem(uiPlayerId);
+	SubStatSystem& statSystem = simulation().statSystem(uiTownId);
 
 	/*
 	 * Production VS Consumption
@@ -141,7 +141,7 @@ void UStatisticsUI::TickUI()
 			// If any season has this resource... display the graph
 			if (CppUtils::Sum(stat.productionStats) > 0 ||
 				CppUtils::Sum(stat.consumptionStats) > 0 ||
-				simulation().resourceCount(uiPlayerId, stat.resourceEnum) > 0)
+				simulation().resourceCountTown(uiTownId, stat.resourceEnum) > 0)
 			{
 				auto row = GetBoxChild<UResourceStatTableRow>(ResourceStatisticsBox, resourceStatIndex, UIEnum::ResourceStatTableRow, true);
 
@@ -170,7 +170,7 @@ void UStatisticsUI::TickUI()
 			lastRefreshBuildingStatBox = Time::Ticks();
 
 
-			const std::vector<std::vector<int32>>& jobBuildingEnumToIds = simulation().playerOwned(playerId()).jobBuildingEnumToIds();
+			const std::vector<std::vector<int32>>& jobBuildingEnumToIds = simulation().townManager(uiTownId).jobBuildingEnumToIds();
 
 			int32 buildingStatIndex = 0;
 
@@ -301,7 +301,7 @@ void UStatisticsUI::TickUI()
 
 		SetText(MarketBasePrice, TEXT_100(GetResourceInfo(resourceEnum).basePrice100()));
 
-		int32 netSupplyChange = worldTradeSystem.GetNetPlayerSupplyChange(uiPlayerId, resourceEnum);
+		int32 netSupplyChange = worldTradeSystem.GetNetPlayerSupplyChange(simulation().townPlayerId(uiTownId), resourceEnum);
 		SetText(NetExportText, netSupplyChange >= 0 ? 
 			LOCTEXT("Net export (yearly):", "Net export (yearly):") :
 			LOCTEXT("Net import (yearly):", "Net import (yearly):")

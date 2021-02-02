@@ -85,7 +85,8 @@ public:
 	virtual class WorldTradeSystem& worldTradeSystem() = 0;
 	virtual class PunTerrainChanges& terrainChanges() = 0;
 
-	virtual class ResourceSystem& resourceSystem(int32 playerId) = 0;
+	virtual class TownManager& townManager(int32 townId) = 0;
+	virtual class ResourceSystem& resourceSystem(int32 townId) = 0;
 
 	virtual class GlobalResourceSystem& globalResourceSystem(int32 playerId) = 0;
 	virtual class IQuestSystem* iquestSystem(int32 playerId) = 0;
@@ -93,7 +94,8 @@ public:
 	virtual class UnlockSystem* unlockSystem(int32 playerId) = 0;
 	virtual class PlayerParameters* parameters(int32 playerId) = 0;
 	virtual class PlayerOwnedManager& playerOwned(int32 playerId) = 0;
-	virtual class SubStatSystem& statSystem(int32 playerId) = 0;
+	virtual class PlayerOwnedManager& playerOwnedFromTownId(int32 townId) = 0;
+	virtual class SubStatSystem& statSystem(int32 townId) = 0;
 
 	virtual class DebugLineSystem& debugLineSystem() = 0;
 
@@ -110,6 +112,11 @@ public:
 
 	virtual int32 playerCount() = 0;
 	virtual int32 townCount() = 0;
+	virtual const std::vector<int32>& GetTownIds(int32 playerId) = 0;
+	virtual int32 townPlayerId(int32 townId) = 0;
+	virtual int32 buildingTownId(int32 buildingId) = 0;
+	
+	virtual bool IsTownOwnedByPlayer(int32 townIdIn, int32 playerId) = 0;
 
 	virtual FString playerNameF(int32 playerId) = 0;
 	virtual FText playerNameT(int32 playerId) = 0;
@@ -125,24 +132,30 @@ public:
 
 	// Unit
 	virtual void ResetUnitActions(int id, int32 waitTicks = 1) = 0;
-	virtual int AddUnit(UnitEnum unitEnum, int32 playerId, WorldAtom2 location, int32_t ageTicks) = 0;
+	virtual int32 AddUnit(UnitEnum unitEnum, int32 townId, WorldAtom2 location, int32_t ageTicks) = 0;
 	virtual void RemoveUnit(int id) = 0;
 	virtual void ResetUnitActionsInArea(TileArea area) = 0;
 	virtual int unitCount() = 0;
 	virtual bool unitAlive(UnitFullId fullId) = 0;
 
-	virtual void AddImmigrants(int32 playerId, int32 count, WorldTile2 tile = WorldTile2::Invalid) = 0;
+	// TODO: MinorTown
+	virtual void AddImmigrants(int32 townId, int32 count, WorldTile2 tile = WorldTile2::Invalid) = 0;
 
 	// Building
-	virtual class TownHall& townhall(int32 playerId) = 0;
-	virtual int32 townLvl(int32 playerId) = 0;
-	virtual WorldTile2 townhallGateTile(int32 playerId) = 0;
-	virtual std::string townName(int32 playerId) = 0;
-	virtual FText townNameT(int32 playerId) = 0;
+	virtual class TownHall& GetTownhallCapital(int32 playerId) = 0;
+	virtual class TownHall& GetTownhall(int32 townId) = 0;
+	virtual class TownHall* GetTownhallPtr(int32 townId) = 0;
 	
-	virtual std::string townSuffix(int32 playerId) = 0;
-	virtual FText townSizeNameT(int32 playerId) = 0;
-	virtual int32 townAgeTicks(int32 playerId) = 0;
+	virtual int32 GetTownLvl(int32 townId) = 0; // Needed because Townhall. might not be included all the time
+	virtual int32 GetTownLvlMax(int32 playerId) = 0;
+	
+	virtual WorldTile2 GetTownhallGateCapital(int32 playerId) = 0;
+	virtual WorldTile2 GetTownhallGateFast(int32 townId) = 0;
+	virtual WorldTile2 GetTownhallGate(int32 townId) = 0;
+	virtual FText townNameT(int32 townId) = 0;
+	
+	virtual FText GetTownSizeNameT(int32 playerId) = 0;
+	virtual int32 GetTownAgeTicks(int32 townId) = 0;
 
 	bool unlockedInfluence(int32 playerId) {
 		return IsResearched(playerId, TechEnum::InfluencePoints);
@@ -150,7 +163,7 @@ public:
 
 	virtual class Building& building(int32 id) = 0;
 	virtual class Building& buildingChecked(int32 id) = 0;
-	virtual class Building& building(ResourceHolderInfo holderInfo, int32 playerId) = 0;
+	virtual class Building& building(ResourceHolderInfo holderInfo, int32 townId) = 0;
 	virtual CardEnum buildingEnum(int32 id) = 0;
 	virtual bool isValidBuildingId(int32 id) = 0;
 
@@ -178,17 +191,17 @@ public:
 
 	virtual void RemoveBuilding(int32 buildingId) = 0;
 
-	virtual const std::vector<int32>& buildingIds(int32 playerId, CardEnum buildingEnum) = 0;
-	virtual int32 buildingCount(int32 playerId, CardEnum buildingEnum) = 0;
-	virtual int32 buildingFinishedCount(int32 playerId, CardEnum cardEnum) = 0;
+	virtual const std::vector<int32>& buildingIds(int32 townId, CardEnum buildingEnum) = 0;
+	virtual int32 buildingCount(int32 townId, CardEnum buildingEnum) = 0;
+	virtual int32 buildingFinishedCount(int32 townId, CardEnum cardEnum) = 0;
 
-	virtual int32 jobBuildingCount(int32 playerId) = 0;
+	virtual int32 jobBuildingCount(int32 townId) = 0;
 	
 	virtual const SubregionLists<int32>& buildingSubregionList() = 0;
 
-	virtual bool HasBuildingWithinRadius(WorldTile2 tileIn, int32 radius, int32 playerId, CardEnum buildingEnum) = 0;
-	virtual std::vector<int32> GetBuildingsWithinRadius(WorldTile2 tileIn, int32 radius, int32 playerId, CardEnum buildingEnum) = 0;
-	virtual std::vector<int32> GetBuildingsWithinRadiusMultiple(WorldTile2 tileIn, int32 radius, int32 playerId, std::vector<CardEnum> buildingEnums) = 0;
+	virtual bool HasBuildingWithinRadius(WorldTile2 tileIn, int32 radius, int32 townId, CardEnum buildingEnum) = 0;
+	virtual std::vector<int32> GetBuildingsWithinRadius(WorldTile2 tileIn, int32 radius, int32 townId, CardEnum buildingEnum) = 0;
+	virtual std::vector<int32> GetBuildingsWithinRadiusMultiple(WorldTile2 tileIn, int32 radius, int32 townId, std::vector<CardEnum> buildingEnums) = 0;
 	
 	template<typename Func>
 	std::vector<int32> buildingIdsFiltered(int32 playerId, CardEnum cardEnum, Func shouldRemove) {
@@ -221,15 +234,15 @@ public:
 
 	virtual std::vector<int32> GetConstructionResourceCost(CardEnum cardEnum, TileArea area) = 0;
 	
-	virtual bool IsLandCleared_SmallOnly(int32 playerId, TileArea area) = 0;
+	virtual bool IsLandCleared_SmallOnly(int32 townId, TileArea area) = 0;
 
 	// Military
 	virtual int32 lordPlayerId(int32 playerId) = 0;
-	virtual std::vector<int32> GetArmyNodeIds(int32 playerId) = 0;
-	virtual class ArmyNode& GetArmyNode(int32 buildingId) = 0;
+	//virtual std::vector<int32> GetArmyNodeIds(int32 playerId) = 0;
+	//virtual class ArmyNode& GetArmyNode(int32 buildingId) = 0;
 
-	virtual std::vector<int32> GetCapitalArmyCounts(int32 playerId, bool skipWall = false) = 0;
-	virtual std::vector<int32> GetTotalArmyCounts(int32 playerId, bool skipWall = false) = 0;
+	//virtual std::vector<int32> GetCapitalArmyCounts(int32 playerId, bool skipWall = false) = 0;
+	//virtual std::vector<int32> GetTotalArmyCounts(int32 playerId, bool skipWall = false) = 0;
 
 	// Display
 	virtual void SetNeedDisplayUpdate(DisplayClusterEnum displayEnum, int32 regionId, bool needUpdate = true) = 0;
@@ -263,7 +276,8 @@ public:
 	virtual FloatDet MinCelsius(WorldTile2 tile) = 0;
 	virtual FloatDet MaxCelsius(WorldTile2 tile) = 0;
 
-	virtual int32 tileOwner(WorldTile2 tile) = 0;
+	virtual int32 tileOwnerTown(WorldTile2 tile) = 0;
+	virtual int32 tileOwnerPlayer(WorldTile2 tile) = 0;
 
 	virtual bool IsFrontBuildable(WorldTile2 tile) = 0;
 	virtual bool IsRoadOverlapBuildable(WorldTile2 tile) = 0;
@@ -278,7 +292,7 @@ public:
 
 	virtual bool IsConnected(WorldTile2 start, WorldTile2 end, int maxRegionDistance, bool canPassGate) = 0;
 
-	virtual bool IsConnectedBuilding(int32 buildingId, int32 playerId) = 0;
+	virtual bool IsConnectedBuilding(int32 buildingId) = 0;
 
 	virtual void OnRefreshFloodGrid(WorldRegion2 region) = 0;
 	
@@ -312,10 +326,14 @@ public:
 
 	virtual int32 GetTreeCount(int32 provinceId) = 0;
 
+	virtual int32 GetProvinceCountPlayer(int32 playerId) = 0;
+	virtual std::vector<int32> GetProvincesPlayer(int32 playerId) = 0;
+	virtual const std::vector<int32>& GetProvincesTown(int32 townId) = 0;
+
 	virtual int32 GetProvinceIncome100(int32 provinceId) = 0;
 	virtual int32 GetProvinceUpkeep100(int32 provinceId, int32 playerId) = 0;
 	
-	//virtual int32 GetProvinceClaimPrice(int32 provinceId) = 0;
+	virtual int32 GetProvinceClaimPrice(int32 provinceId, int32 playerId) = 0;
 	
 	//virtual bool HasOutpostAt(int32 playerId, int32 provinceId) = 0;
 	virtual bool IsProvinceNextToPlayer(int32 provinceId, int32 playerId) = 0;
@@ -371,6 +389,7 @@ public:
 	virtual int32 gameSpeedMultiplier() = 0;
 
 	// Science
+	virtual int32 GetScience100PerRound(int32 playerId) = 0;
 	virtual bool IsResearched(int32 playerId, TechEnum techEnum) = 0;
 	virtual bool HasTargetResearch(int32 playerId) = 0;;
 	virtual int32 sciTechsCompleted(int32 playerId) = 0;
@@ -380,15 +399,16 @@ public:
 	virtual void UpdateProsperityHouseCount(int32 playerId) = 0;
 
 	// Buildings associated with Players
-	virtual void PlayerAddHouse(int32 playerId, int objectId) = 0;
-	virtual void PlayerRemoveHouse(int32 playerId, int objectId) = 0;
-	virtual void PlayerAddJobBuilding(int32 playerId, Building& building, bool isConstructed) = 0;
-	virtual void PlayerRemoveJobBuilding(int32 playerId, Building& building, bool isConstructed) = 0;
-	virtual void RefreshJobDelayed(int32 playerId) = 0;
+	virtual void PlayerAddHouse(int32 townId, int objectId) = 0;
+	virtual void PlayerRemoveHouse(int32 townId, int objectId) = 0;
+	virtual void PlayerAddJobBuilding(int32 townId, Building& building, bool isConstructed) = 0;
+	virtual void PlayerRemoveJobBuilding(int32 townId, Building& building, bool isConstructed) = 0;
+	virtual void RefreshJobDelayed(int32 townId) = 0;
 
 	virtual bool IsInDarkAge(int32 playerId) = 0;
 
-	virtual void RecalculateTaxDelayed(int32 playerId) = 0;
+	virtual void RecalculateTaxDelayedPlayer(int32 playerId) = 0;
+	virtual void RecalculateTaxDelayedTown(int32 townId) = 0;
 
 	virtual const std::vector<int32>& boarBurrows(int32 provinceId) = 0;
 	virtual void AddBoarBurrow(int32 provinceId, int32 buildingId) = 0;
@@ -398,10 +418,11 @@ public:
 	virtual void AddProvinceAnimals(int32 provinceId, int32 animalId) = 0;
 	virtual void RemoveProvinceAnimals(int32 provinceId, int32 animalId) = 0;
 
-	virtual int population(int32 playerId) = 0;
+	virtual int32 populationTown(int32 townId) = 0;
+	virtual int32 populationPlayer(int32 playerId) = 0;
 	virtual int32 worldPlayerPopulation() = 0;
 	
-	virtual int HousingCapacity(int32 playerId) = 0;
+	virtual int HousingCapacity(int32 townId) = 0;
 	virtual int32 GetHouseLvlCount(int32 playerId, int32 houseLvl, bool includeHigherLvl = false) = 0;
 
 	virtual std::pair<int32, int32> GetStorageCapacity(int32 playerId, bool includeUnderConstruction = false) = 0;
@@ -410,8 +431,8 @@ public:
 	
 	virtual void RemoveTenantFrom(int32 buildingId) = 0;
 
-	virtual int foodCount(int32 playerId) = 0;
-	virtual int32 GetResourceCount(int32 playerId, const std::vector<ResourceEnum>& resourceEnums) = 0;
+	virtual int foodCount(int32 townId) = 0;
+	virtual int32 GetResourceCount(int32 townId, const std::vector<ResourceEnum>& resourceEnums) = 0;
 	
 	virtual bool HasSeed(int32 playerId, CardEnum seedCardEnum) = 0;
 
@@ -421,42 +442,43 @@ public:
 	virtual int32 money(int32 playerId) = 0;
 	virtual void ChangeMoney(int32 playerId, int32 moneyChange) = 0;
 	virtual void ChangeMoney100(int32 playerId, int32 moneyChange100) = 0;
+	virtual void ChangeInfluence(int32 playerId, int32 influenceChange) = 0;
 
 	virtual int32 price100(ResourceEnum resourceEnum) = 0;
 	virtual int32 price(ResourceEnum resourceEnum) = 0;
 	
 	virtual void DespawnResourceHolder(ResourceHolderInfo info, int32 playerId) = 0;
 	
-	virtual int32 resourceCount(int32 playerId, ResourceEnum resourceEnum) = 0;
-	virtual int32 resourceCountWithPop(int32 playerId, ResourceEnum resourceEnum) = 0;
-	virtual int32 resourceCountWithDrops(int32 playerId, ResourceEnum resourceEnum) = 0;
+	virtual int32 resourceCountTown(int32 townId, ResourceEnum resourceEnum) = 0;
+	virtual int32 resourceCountPlayer(int32 playerId, ResourceEnum resourceEnum) = 0;
 
 	virtual void AddResourceGlobal(int32 playerId, ResourceEnum resourceEnum, int32 amount) = 0;
 
-	virtual bool IsOutputTargetReached(int32 playerId, ResourceEnum resourceEnum) = 0;
+	virtual bool IsOutputTargetReached(int32 townId, ResourceEnum resourceEnum) = 0;
 	
 
-	virtual void SetProvinceOwnerFull(int32 provinceId, int32 playerId) = 0;
-	virtual int32 provinceOwner(int32 provinceId) = 0;
-	
+	virtual void SetProvinceOwnerFull(int32 provinceId, int32 townId) = 0;
+	virtual int32 provinceOwnerTown(int32 provinceId) = 0;
+	virtual int32 provinceOwnerPlayer(int32 provinceId) = 0;
 
 	virtual int PlaceBuilding(class FPlaceBuilding parameters) = 0;
 
 	//virtual void SetLoadingText(std::string loadingText) = 0;
 
 	//! Happiness
-	virtual int32 GetAverageHappiness(int32 playerId) = 0;
-	virtual int32 taxHappinessModifier(int32 playerId) = 0;
+	virtual int32 GetAverageHappiness(int32 townId) = 0;
+	virtual int32 taxHappinessModifier(int32 townId) = 0;
 	virtual int32 cannibalismHappinessModifier(int32 playerId) = 0;
-	virtual int32 citizenDeathHappinessModifier(int32 playerId, SeasonStatEnum seasonStatEnum) = 0;
+	virtual int32 citizenDeathHappinessModifier(int32 townId, SeasonStatEnum seasonStatEnum) = 0;
 	
 	//! Immigration
-	virtual void AddMigrationPendingCount(int32 playerId, int32 migrationCount) = 0;
-	virtual void ImmigrationEvent(int32 playerId, int32 migrationCount, FText message, PopupReceiverEnum receiverEnum) = 0;
+	virtual void AddMigrationPendingCount(int32 townId, int32 migrationCount) = 0;
+	virtual void ImmigrationEvent(int32 townId, int32 migrationCount, FText message, PopupReceiverEnum receiverEnum) = 0;
 	
 	//! Card system
 	virtual int32 BoughtCardCount(int32 playerId, CardEnum buildingEnum) = 0;
-	virtual int32 TownhallCardCount(int32 playerId, CardEnum cardEnum) = 0;
+	virtual int32 TownhallCardCountTown(int32 playerId, CardEnum cardEnum) = 0;
+	virtual int32 TownhallCardCountAll(int32 playerId, CardEnum cardEnum) = 0;
 	
 	virtual bool HasCardInAnyPile(int32 playerId, CardEnum cardEnum) = 0;
 	
@@ -508,6 +530,7 @@ public:
 
 	//! Players
 	virtual bool HasTownhall(int32 playerId) = 0;
+	virtual bool HasChosenLocation(int32 playerId) = 0;
 
 	virtual int32 homeProvinceId(int32 playerId) = 0;
 

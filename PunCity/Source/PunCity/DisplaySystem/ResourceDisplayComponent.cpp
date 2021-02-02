@@ -91,7 +91,7 @@ void UResourceDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 				if (!localCenter.isValid()) {
 					return;
 				}
-				ResourceSystem& resourceSystem = simulation().resourceSystem(building.playerId());
+				ResourceSystem& resourceSystem = simulation().resourceSystem(building.townId());
 
 				const int resourcePerDisplay = 10;
 

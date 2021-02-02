@@ -7,9 +7,13 @@
 
 void UTargetConfirmUI::OnClickConfirmButton()
 {
-	IntercityTradeOffer offer = simulation().worldTradeSystem().GetIntercityTradeOffer(simulation().building(townhallId).playerId(), resourceEnum);
+	Building& townhall = simulation().building(townhallId);
+	int32 townId = townhall.townId();
+	int32 townPlayerId = townhall.playerId();
+	
+	IntercityTradeOffer offer = simulation().worldTradeSystem().GetIntercityTradeOffer(townId, resourceEnum);
 	if (offer.offerEnum == IntercityTradeOfferEnum::None) {
-		simulation().AddPopupToFront(playerId(),
+		simulation().AddPopupToFront(townPlayerId,
 			LOCTEXT("Offer no longer valid.", "Offer no longer valid."),
 			ExclusiveUIEnum::TargetConfirm, "PopupCannot"
 		);
@@ -19,7 +23,7 @@ void UTargetConfirmUI::OnClickConfirmButton()
 	int32 amount = TargetAmount->amount;
 
 	if (amount <= 0) {
-		simulation().AddPopupToFront(playerId(), 
+		simulation().AddPopupToFront(townPlayerId,
 			LOCTEXT("Invalid amount.", "Invalid amount."),
 			ExclusiveUIEnum::TargetConfirm, "PopupCannot"
 		);
@@ -28,8 +32,8 @@ void UTargetConfirmUI::OnClickConfirmButton()
 
 	if (offer.offerEnum == IntercityTradeOfferEnum::SellWhenAbove) {
 		// This town is selling to you, ensure you have enough money to buy
-		if (amount * simulation().price(resourceEnum) > simulation().money(playerId())) {
-			simulation().AddPopupToFront(playerId(), 
+		if (amount * simulation().price(resourceEnum) > simulation().money(townPlayerId)) {
+			simulation().AddPopupToFront(townPlayerId,
 				LOCTEXT("Not enough money for trade.", "Not enough money for trade."),
 				ExclusiveUIEnum::TargetConfirm, "PopupCannot"
 			);
@@ -38,8 +42,9 @@ void UTargetConfirmUI::OnClickConfirmButton()
 	}
 	if (offer.offerEnum == IntercityTradeOfferEnum::BuyWhenBelow) {
 		// This town is buying from you, ensure you have enough resource
-		if (amount > simulation().resourceCount(playerId(), resourceEnum)) {
-			simulation().AddPopupToFront(playerId(), 
+		// TODO: Trade resource only with the capital for now
+		if (amount > simulation().resourceCountTown(townId, resourceEnum)) {
+			simulation().AddPopupToFront(townPlayerId,
 				LOCTEXT("Not enough resource for trade.", "Not enough resource for trade."),
 				ExclusiveUIEnum::TargetConfirm, "PopupCannot"
 			);
@@ -60,7 +65,7 @@ void UTargetConfirmUI::OnClickConfirmButton()
 	networkInterface()->SendNetworkCommand(tradeCommand);
 
 	// Townhall Player Trade Command
-	tradeCommand->playerId = simulation().building(townhallId).playerId();
+	tradeCommand->playerId = townPlayerId;
 	tradeCommand->buyAmounts.Empty();
 	tradeCommand->buyAmounts.Add(-currentPlayerBuyAmount);
 	networkInterface()->SendNetworkCommand(tradeCommand);

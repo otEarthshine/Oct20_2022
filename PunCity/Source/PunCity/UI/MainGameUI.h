@@ -138,8 +138,9 @@ public:
 
 	UFUNCTION() void OnClickLeaderSkillButton();
 
-	void ToggleJobPriorityUI() {
+	void ToggleJobPriorityUI(int32 townIdIn) {
 		JobPriorityOverlay->SetVisibility(JobPriorityOverlay->GetVisibility() == ESlateVisibility::Collapsed ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+		jobPriorityTownId = townIdIn;
 	}
 
 public:
@@ -270,6 +271,7 @@ private:
 	UPROPERTY(meta = (BindWidget)) UButton* JobPriorityCloseButton;
 	UPROPERTY(meta = (BindWidget)) UButton* JobPriorityCloseButton2;
 	UPROPERTY() TArray<UJobPriorityRow*> JobPriorityRows;
+	int32 jobPriorityTownId = -1;
 
 	UPROPERTY(meta = (BindWidget)) UTextBlock* EmployedText;
 
@@ -304,10 +306,10 @@ private:
 
 	void RefreshLaborerUI()
 	{
-		_laborerPriorityState.RefreshUI(
+		_laborerPriorityState.RefreshUILaborerPriority(
 			this,
 			&simulation(),
-			playerId(),
+			jobPriorityTownId,
 
 			nullptr,
 			EmployedText,

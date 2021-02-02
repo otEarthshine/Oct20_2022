@@ -1705,14 +1705,18 @@ private:
 			//UpdateDecompressedMusicCache();
 
 			
-			std::vector<int32> citizenIds = simulation.playerOwned(playerId).adultIds();
+			const auto& townIds = simulation.playerOwned(playerId).townIds();
 
 			float freezingCount = 0;
 			float starvingCount = 0;
-			for (int32 id : citizenIds) {
-				UnitStateAI& unit = simulation.unitAI(id);
-				if (unit.showNeedFood()) starvingCount++;
-				if (unit.showNeedHeat()) freezingCount++;
+			for (int32 townId : townIds) {
+				const auto& adultIds = simulation.townManager(townId).adultIds();
+				
+				for (int32 id : adultIds) {
+					UnitStateAI& unit = simulation.unitAI(id);
+					if (unit.showNeedFood()) starvingCount++;
+					if (unit.showNeedHeat()) freezingCount++;
+				}
 			}
 			bool negative = starvingCount > 0 || freezingCount > 0;
 

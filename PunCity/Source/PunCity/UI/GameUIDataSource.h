@@ -166,26 +166,26 @@ public:
 	int32 builderCount = -1;
 	int32 roadMakerCount = -1;
 
-	void TrySyncToSimulation(IGameSimulationCore* sim, int32 playerId, UWidget* widget)
+	void TrySyncToSimulation(IGameSimulationCore* sim, int32 townId, UWidget* widget)
 	{
 		if (UGameplayStatics::GetTimeSeconds(widget) > lastPriorityInputTime + 3.0f) {
-			SyncState(sim, playerId);
+			SyncState(sim, townId);
 		}
 	}
 
-	void SyncState(IGameSimulationCore* sim, int32 playerId)
+	void SyncState(IGameSimulationCore* sim, int32 townId)
 	{
-		auto& playerOwned = sim->playerOwned(playerId);
-		townPriorityState = *(playerOwned.CreateTownPriorityCommand());
-		laborerCount = std::max(playerOwned.laborerCount(), 0); // Requires clamp since laborerCount() may be negative when someone died
-		builderCount = std::max(playerOwned.builderCount(), 0);
-		roadMakerCount = std::max(playerOwned.roadMakerCount(), 0);
+		auto& townManager = sim->townManager(townId);
+		townPriorityState = *(townManager.CreateTownPriorityCommand());
+		laborerCount = std::max(townManager.laborerCount(), 0); // Requires clamp since laborerCount() may be negative when someone died
+		builderCount = std::max(townManager.builderCount(), 0);
+		roadMakerCount = std::max(townManager.roadMakerCount(), 0);
 	}
 
-	void RefreshUI(
+	void RefreshUILaborerPriority(
 		class UPunWidget* widget,
 		IGameSimulationCore* sim,
-		int32 playerId,
+		int32 townId,
 
 		UHorizontalBox* EmployedBox,
 		UTextBlock* Employed,

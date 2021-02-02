@@ -38,7 +38,9 @@ void UWorldTradeRow::UpdateTexts()
 {
 	UpdateTextsBase();
 
-	FString inventoryCount = FString::FromInt(simulation().resourceCount(playerId(), _resourceEnum));
+	int32 townId = _worldTradeUI->worldTradeUITownId();
+	
+	FString inventoryCount = FString::FromInt(simulation().resourceCountTown(townId, _resourceEnum));
 
 	int32 tradeAmount = PunTradeAmount->amount;
 

@@ -149,7 +149,7 @@ void WorldTradeSystem::TryEstablishTradeRoute(FSetIntercityTrade command)
 		return result;
 	};
 
-	WorldTile2 startTile = findNearestRoadTile(_simulation->townhallGateTile(playerId));
+	WorldTile2 startTile = findNearestRoadTile(_simulation->GetTownhallGateCapital(playerId));
 	WorldTile2 targetTile = findNearestRoadTile(_simulation->building(command.buildingIdToEstablishTradeRoute).gateTile());
 	
 	if (!startTile.isValid() ||
@@ -192,8 +192,8 @@ void WorldTradeSystem::TryEstablishTradeRoute(FSetIntercityTrade command)
 			// Connect both players
 			_playerIdToTradePartners[playerId].push_back(targetPlayerId);
 			_playerIdToTradePartners[targetPlayerId].push_back(playerId);
-			_simulation->RecalculateTaxDelayed(playerId);
-			_simulation->RecalculateTaxDelayed(targetPlayerId);
+			_simulation->RecalculateTaxDelayedPlayer(playerId);
+			_simulation->RecalculateTaxDelayedPlayer(targetPlayerId);
 
 			FText text = FText::Format(
 				LOCTEXT("TradeRouteEstablish_Pop", "Trade Route was established between {0} and {1}!\nTrade Route Income varies with the population of both cities."),
@@ -235,8 +235,8 @@ void WorldTradeSystem::TryCancelTradeRoute(FSetIntercityTrade command)
 	if (succeed)
 	{
 		CppUtils::TryRemove(_playerIdToTradePartners[targetPlayerId], playerId);
-		_simulation->RecalculateTaxDelayed(playerId);
-		_simulation->RecalculateTaxDelayed(targetPlayerId);
+		_simulation->RecalculateTaxDelayedPlayer(playerId);
+		_simulation->RecalculateTaxDelayedPlayer(targetPlayerId);
 
 		FText text = FText::Format(
 			LOCTEXT("CancelTradeRoute_Pop", "Trade Route between {0} and {1} was removed."),

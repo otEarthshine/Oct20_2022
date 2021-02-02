@@ -46,7 +46,7 @@ static std::vector<uint32_t> rawWaypoint;
 int32 UnitStateAI::debugFindFullBushSuccessCount = 0;
 int32 UnitStateAI::debugFindFullBushFailCount = 0;
 
-void UnitStateAI::AddUnit(UnitEnum unitEnum, int32 playerId, UnitFullId fullId, IUnitDataSource* unitData, IGameSimulationCore* simulation)
+void UnitStateAI::AddUnit(UnitEnum unitEnum, int32 townId, UnitFullId fullId, IUnitDataSource* unitData, IGameSimulationCore* simulation)
 {
 	_unitData = unitData;
 	_simulation = simulation;
@@ -69,7 +69,8 @@ void UnitStateAI::AddUnit(UnitEnum unitEnum, int32 playerId, UnitFullId fullId, 
 
 	_nextPregnantTick = Time::TicksPerMinute + GameRand::Rand() % (Time::TicksPerYear / 2); // For those immigrants, they could be pregnant anytime now to +half year
 
-	_playerId = playerId;
+	_townId = townId;
+	_playerId = _simulation->townPlayerId(_townId);
 
 	_inventory = UnitInventory();
 	_workplaceId = -1;
@@ -114,7 +115,7 @@ int32 UnitStateAI::birthChance()
 		// At pop of 0, slow factor is 1
 		case UnitEnum::Human: {
 			cap = _simulation->HousingCapacity(_playerId);
-			population = _simulation->population(_playerId);
+			population = _simulation->populationTown(_playerId);
 			break;
 		} 
 		default: {
@@ -191,7 +192,7 @@ void UnitStateAI::Update()
 					FText::Format(LOCTEXT("DiedSick_Event", "{0} died from sickness"), GetUnitNameT()), 
 					true
 				);
-				_simulation->statSystem(_playerId).AddStat(SeasonStatEnum::DeathSick);
+				statSystem().AddStat(SeasonStatEnum::DeathSick);
 				_simulation->soundInterface()->Spawn2DSound("UI", "DeathBell", _playerId);
 
 				if (_simulation->IsAIPlayer(_playerId)) {
@@ -208,7 +209,7 @@ void UnitStateAI::Update()
 
 		if (isEnum(UnitEnum::Human))
 		{
-			auto& resourceSys = _simulation->resourceSystem(_playerId);
+			auto& resourceSys = _simulation->resourceSystem(_townId);
 			
 			// Food cheat: if there is food in storage, ppl won't go into starvation...
 			if (_food < minWarnFood() + 1 && resourceSys.HasAvailableFood()) {
@@ -219,9 +220,9 @@ void UnitStateAI::Update()
 			//  Need to take into account GetAllowedResource
 			//  Anything ppl check anything off don't check it for cheat
 			if (_heat < minWarnHeat()) {
-				auto& playerOwned = _simulation->playerOwned(_playerId);
-				bool isCoalAvailableForHeating = playerOwned.GetHouseResourceAllow(ResourceEnum::Coal) && resourceSys.resourceCountWithPop(ResourceEnum::Coal);
-				bool isWoodAvailableForHeating = playerOwned.GetHouseResourceAllow(ResourceEnum::Wood) && resourceSys.resourceCountWithPop(ResourceEnum::Wood);
+				auto& townManage = townManager();
+				bool isCoalAvailableForHeating = townManage.GetHouseResourceAllow(ResourceEnum::Coal) && resourceSys.resourceCountWithPop(ResourceEnum::Coal);
+				bool isWoodAvailableForHeating = townManage.GetHouseResourceAllow(ResourceEnum::Wood) && resourceSys.resourceCountWithPop(ResourceEnum::Wood);
 
 				if (isCoalAvailableForHeating || isWoodAvailableForHeating) {
 					_heat = minWarnHeat();
@@ -238,12 +239,12 @@ void UnitStateAI::Update()
 			// Homeless people could leave your town
 			// This only happens beyond 20 population
 			// Random chance to leave within 1 season
-			if (_houseId == -1 && _playerId != -1 &&
-				_simulation->population(_playerId) > 30 &&
+			if (_houseId == -1 && _townId != -1 &&
+				_simulation->populationPlayer(_playerId) > 30 &&
 				GameRand::Rand() % (Time::TicksPerRound * 2) < ticksPassed)
 			{
-				_simulation->AddMigrationPendingCount(_playerId, 1);
-				_simulation->AddEventLog(_playerId, 
+				_simulation->AddMigrationPendingCount(_townId, 1);
+				_simulation->AddEventLog(_townId, 
 					FText::Format(LOCTEXT("XLeftTownHomeless_Event", "{0} left your town (homeless)."), GetUnitNameT()),
 					true
 				);
@@ -322,7 +323,7 @@ void UnitStateAI::Update()
 								FText::Format(LOCTEXT("XDiedStarve_Event", "{0} died from starvation"), GetUnitNameT()),
 								true
 							);
-							_simulation->statSystem(_playerId).AddStat(SeasonStatEnum::DeathStarve);
+							statSystem().AddStat(SeasonStatEnum::DeathStarve);
 						}
 
 						if (_simulation->IsAIPlayer(_playerId)) {
@@ -335,7 +336,7 @@ void UnitStateAI::Update()
 							FText::Format(LOCTEXT("XDiedCold_Event", "{0} died from cold"), GetUnitNameT()),
 							true
 						);
-						_simulation->statSystem(_playerId).AddStat(SeasonStatEnum::DeathCold);
+						statSystem().AddStat(SeasonStatEnum::DeathCold);
 
 						if (_simulation->IsAIPlayer(_playerId)) {
 							_LOG(PunAI, "%s Died Cold", _simulation->AIPrintPrefix(_playerId));
@@ -367,11 +368,11 @@ void UnitStateAI::Update()
 				//	_simulation->soundInterface()->Spawn2DSound("UI", "BabyBornBell", _playerId);
 				//}
 
-				bool isBirthControlActivated = _simulation->TownhallCardCount(_playerId, CardEnum::BirthControl) > 0 &&
-												_simulation->population(_playerId) >= _simulation->HousingCapacity(_playerId);
+				bool isBirthControlActivated = _simulation->TownhallCardCountTown(_townId, CardEnum::BirthControl) > 0 &&
+												_simulation->populationTown(_townId) >= _simulation->HousingCapacity(_townId);
 
 				if (!isBirthControlActivated) {
-					_simulation->AddUnit(unitEnum(), _playerId, _unitData->atomLocation(_id), 0);
+					_simulation->AddUnit(unitEnum(), _townId, _unitData->atomLocation(_id), 0);
 				}
 
 				_nextPregnantTick = Time::Ticks() + parameters->TicksBetweenPregnancy() - GameRand::Rand() % parameters->TicksBetweenPregnancyRange();
@@ -414,7 +415,7 @@ void UnitStateAI::Update()
 					if (chance > 0 && GameRand::Rand() % chance == 0)
 					{
 						// if farm animal... live in the same farm...
-						if (_playerId != -1 && 
+						if (_townId != -1 &&
 							IsAnimal(unitEnum()) && 
 							houseId() != -1) 
 						{
@@ -432,7 +433,7 @@ void UnitStateAI::Update()
 						}
 						else
 						{
-							int32 newUnitId = _simulation->AddUnit(unitEnum(), _playerId, _unitData->atomLocation(_id), 0);
+							int32 newUnitId = _simulation->AddUnit(unitEnum(), _townId, _unitData->atomLocation(_id), 0);
 
 							if (IsDomesticatedAnimal(unitEnum())) {
 								PUN_LOG("NonRanch Stray Animal %s", ToTChar(compactStr()));
@@ -440,7 +441,7 @@ void UnitStateAI::Update()
 							}
 						}
 
-						_simulation->statSystem(_playerId).AddStat(SeasonStatEnum::Birth);
+						statSystem().AddStat(SeasonStatEnum::Birth);
 					}
 					_lastPregnant = -1;
 				}
@@ -458,7 +459,7 @@ void UnitStateAI::Update()
 			if (!SimSettings::IsOn("CheatUndead") &&
 				!IsWildAnimalWithColony(unitEnum()))
 			{
-				if (_playerId != GameInfo::PlayerIdNone) {
+				if (_townId != -1) {
 					PUN_LOG("DeathAge: %d reservations:%d", _id, reservations.size());
 					PUN_LOG("DeathAge AddEventLogF:  %s", ToTChar(compactStr()));
 
@@ -468,7 +469,7 @@ void UnitStateAI::Update()
 					);
 				}
 
-				_simulation->statSystem(_playerId).AddStat(SeasonStatEnum::DeathAge);
+				statSystem().AddStat(SeasonStatEnum::DeathAge);
 				
 				Die();
 				return;
@@ -521,7 +522,7 @@ void UnitStateAI::Die()
 		_houseId = -1;
 	}
 	// Has owner
-	if (IsAnimal(unitEnum()) && _playerId != -1) 
+	if (IsAnimal(unitEnum()) && _townId != -1) 
 	{
 		// TODO: why is building sometimes BoarBurrow when it should always be RanchBarn
 		//PUN_CHECK2(_houseId != -1, debugStr());
@@ -540,13 +541,13 @@ void UnitStateAI::Die()
 	//! Human
 	if (unitEnum() == UnitEnum::Human)
 	{
-		if (_simulation->TownhallCardCount(_playerId, CardEnum::Cannibalism) > 0) {
-			_simulation->resourceSystem(_playerId).SpawnDrop(ResourceEnum::Pork, 20, unitTile());
+		if (_simulation->TownhallCardCountTown(_townId, CardEnum::Cannibalism) > 0) {
+			_simulation->resourceSystem(_townId).SpawnDrop(ResourceEnum::Pork, 20, unitTile());
 		}
 
 		// Cannibalism discovery
-		int32 deathCount = _simulation->statSystem(_playerId).GetYearlyStat(SeasonStatEnum::DeathCold);
-		deathCount += _simulation->statSystem(_playerId).GetYearlyStat(SeasonStatEnum::DeathStarve);
+		int32 deathCount = statSystem().GetYearlyStat(SeasonStatEnum::DeathCold);
+		deathCount += statSystem().GetYearlyStat(SeasonStatEnum::DeathStarve);
 		if (deathCount > 5 && !_simulation->parameters(_playerId)->CannibalismOffered)
 		{
 			_simulation->AddPopup(PopupInfo(_playerId, 
@@ -606,7 +607,7 @@ void UnitStateAI::AttackIncoming(UnitFullId attacker, int32 ownerWorkplaceId, in
 
 	if (_hp100 <= 0)
 	{
-		_simulation->statSystem(_playerId).AddStat(SeasonStatEnum::DeathKilled);
+		statSystem().AddStat(SeasonStatEnum::DeathKilled);
 
 		_simulation->soundInterface()->SpawnAnimalSound(unitEnum(), true, unitAtom());
 
@@ -908,7 +909,7 @@ bool UnitStateAI::TryGoNearbyHome()
 	if (homeId == -1) {
 		// Human has townhall as backup
 		if (isEnum(UnitEnum::Human)) {
-			homeId = _simulation->townhall(_playerId).buildingId();
+			homeId = _simulation->GetTownhall(_townId).buildingId();
 		}
 		else {
 			AddDebugSpeech("(Failed)TryGoNearbyHome: No Home");
@@ -1570,10 +1571,10 @@ void UnitStateAI::HarvestTileObj()
 			workplace()->subclass<Forester>().AddProductionStat(resourcePair.count);
 		}
 		else {
-			_simulation->statSystem(_playerId).AddResourceStat(ResourceSeasonStatEnum::Production, resourcePair.resourceEnum, resourcePair.count);
+			statSystem().AddResourceStat(ResourceSeasonStatEnum::Production, resourcePair.resourceEnum, resourcePair.count);
 
 			if (resourcePairFruit.isValid()) {
-				_simulation->statSystem(_playerId).AddResourceStat(ResourceSeasonStatEnum::Production, resourcePairFruit.resourceEnum, resourcePairFruit.count);
+				statSystem().AddResourceStat(ResourceSeasonStatEnum::Production, resourcePairFruit.resourceEnum, resourcePairFruit.count);
 			}
 		}
 
@@ -1693,7 +1694,7 @@ void UnitStateAI::Eat()
 		
 		_food += foodIncrement;
 		
-		_simulation->statSystem(_playerId).AddResourceStat(ResourceSeasonStatEnum::Consumption, resourceEnum, amount);
+		statSystem().AddResourceStat(ResourceSeasonStatEnum::Consumption, resourceEnum, amount);
 		_inventory.Remove(ResourcePair(resourceEnum, amount));
 
 		NextAction(UnitUpdateCallerEnum::Eat_Done);
@@ -1722,7 +1723,7 @@ void UnitStateAI::Heat()
 			_inventory.Remove(ResourcePair(resourceEnum, amount));
 			
 			int32 heatToAdd = amount * HeatPerResource_CelsiusTicks();
-			if (_playerId == 0) {
+			if (_townId == 0) {
 				PUN_LOG("amount:%d heatToAdd:%d celsiusSec:%d", amount, heatToAdd, heatToAdd/Time::TicksPerSecond);
 			}
 
@@ -2244,7 +2245,7 @@ void UnitStateAI::PickupResource()
 	PUN_CHECK2(resourceSystem().resourceCount(info) >= 0, debugStr());
 
 	// OnPickupResource
-	int32 buildingId = _simulation->resourceSystem(_playerId).holder(info).objectId;
+	int32 buildingId = resourceSystem().holder(info).objectId;
 	if (buildingId != -1) {
 		Building& building = _simulation->building(buildingId);
 
@@ -2280,7 +2281,7 @@ void UnitStateAI::DropoffResource()
 	
 	// Statistics
 	PUN_CHECK2(_simulation->buildingIsAlive(resourceSystem().holder(info).objectId), debugStr());
-	Building& building = _simulation->building(info, _playerId);
+	Building& building = _simulation->building(info, _townId);
 	if (building.buildingEnum() == CardEnum::FruitGatherer && building.isConstructed()) {
 		building.AddProductionStat(ResourcePair(info.resourceEnum, amount));
 	}
@@ -2429,7 +2430,7 @@ void UnitStateAI::ReserveResource(ReservationType type, ResourceHolderInfo info,
 	AddDebugSpeech("(Start)ReserveResource:" + ReservationTypeName(type) + ", " + info.ToString() + ", amount:" + to_string(amount));
 	PUN_UNIT_CHECK(info.isValid());
 
-	_simulation->resourceSystem(_playerId).AddReservation(type, info, _id, amount);
+	resourceSystem().AddReservation(type, info, _id, amount);
 
 	UnitReservation reservation;
 	reservation.unitId = _id;
@@ -2458,7 +2459,6 @@ void UnitStateAI::FillInputs()
 	}
 	
 	BldInfo info = workplace.buildingInfo();
-	ResourceSystem& resourceSystem = _simulation->resourceSystem(_playerId);
 
 	PUN_UNIT_CHECK(reservations.size() <= 2); // Production building has max 2 inputs.
 
@@ -2589,7 +2589,7 @@ UnitReservation UnitStateAI::PopReservation(int index)
 		}
 		case ReservationType::Pop: 
 		case ReservationType::Push: {
-			int32_t amount = _simulation->resourceSystem(_playerId).RemoveReservation(reservation.reservationType, reservation.reserveHolder, _id);
+			int32 amount = _simulation->resourceSystem(_townId).RemoveReservation(reservation.reservationType, reservation.reserveHolder, _id);
 			PUN_UNIT_CHECK(reservation.amount == amount);
 			break;
 		}

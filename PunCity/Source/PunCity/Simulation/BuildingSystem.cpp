@@ -288,16 +288,17 @@ int BuildingSystem::AddBuilding(FPlaceBuilding parameters)
 	Building* building = _buildings.back().get();
 	int32 buildingId = _buildings.size() - 1;
 	TileArea area = parameters.area;
+	int32 townId = _simulation->tileOwnerTown(center);
 
 	_playerIdPlus1ToEnumToBuildingIds[parameters.playerId + 1][static_cast<int>(buildingEnum)].push_back(buildingId);
 
-	building->Init(*_simulation, buildingId, parameters.playerId, parameters.buildingEnum,
+	building->Init(*_simulation, buildingId, townId, parameters.buildingEnum,
 							area, center, static_cast<Direction>(parameters.faceDirection));
 
 	_buildingSubregionList.Add(center, buildingId);
 
 	_isBuildingIdConnected.push_back(-1);
-	RefreshIsBuildingConnected(parameters.playerId, buildingId, center);
+	RefreshIsBuildingConnected(townId, buildingId, building->gateTile());
 
 	building->ResetDisplay();
 

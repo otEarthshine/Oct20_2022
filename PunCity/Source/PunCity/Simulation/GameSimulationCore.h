@@ -126,14 +126,20 @@ public:
 	ResourceDropSystem& dropSystem() final { return _dropSystem; }
 	//GameEventSource& eventSource(EventSourceEnum eventEnum) final { return _gameEventSystem.source(eventEnum); }
 
-	PlayerOwnedManager& playerOwned(int32 playerId) final { return _playerOwnedManagers[playerId]; }
-	ResourceSystem& resourceSystem(int32 playerId) final { return _resourceSystems[playerId]; }
+	TownManager& townManager(int32 townId) final {
+		check(_townManagers[townId]);
+		return *_townManagers[townId];
+	}
+	ResourceSystem& resourceSystem(int32 townId) final { return _resourceSystems[townId]; }
 
+	PlayerOwnedManager& playerOwned(int32 playerId) final { return _playerOwnedManagers[playerId]; }
+	PlayerOwnedManager& playerOwnedFromTownId(int32 townId) final { return _playerOwnedManagers[townManager(townId).playerId()]; }
+	
 	GlobalResourceSystem& globalResourceSystem(int32 playerId) final { return _globalResourceSystems[playerId]; }
 	QuestSystem* questSystem(int32 playerId) final { return playerId < _questSystems.size() ? &_questSystems[playerId] : nullptr; }
 	UnlockSystem* unlockSystem(int32 playerId) final { return playerId < _unlockSystems.size() ? &_unlockSystems[playerId] : nullptr; }
 	PlayerParameters* parameters(int32 playerId) final { return playerId < _unlockSystems.size() ? &_playerParameters[playerId] : nullptr; }
-	SubStatSystem& statSystem(int32 playerId) final { return _statSystem.playerStatSystem(playerId); }
+	SubStatSystem& statSystem(int32 townId) final { return _statSystem.townStatSystem(townId); }
 
 	BuildingCardSystem& cardSystem(int32 playerId) final { return _cardSystem[playerId]; }
 
@@ -145,10 +151,6 @@ public:
 	ReplaySystem& replaySystem() { return _replaySystem; }
 
 	PunTerrainChanges& terrainChanges() final { return _terrainChanges; }
-
-	SubStatSystem& playerStatSystem(int32 playerId) {
-		return statSystem().playerStatSystem(playerId);
-	}
 
 	//inline IUnitDataSource& unitDataSource() final { return *static_cast<IUnitDataSource*>(_unitSystem.get()); }
 
@@ -167,39 +169,75 @@ public:
 	int32 townCount() final {
 		return _resourceSystems.size();
 	}
+	const std::vector<int32>& GetTownIds(int32 playerId) final {
+		return _playerOwnedManagers[playerId].townIds();
+	}
+	int32 townPlayerId(int32 townId) final {
+		if (townId == -1) {
+			return -1;
+		}
+		return townManager(townId).playerId();
+	}
+	int32 buildingTownId(int32 buildingId) final {
+		if (buildingId == -1) {
+			return -1;
+		}
+		return building(buildingId).townId();
+	}
 	
-	int32 population(int32 playerId) final {
-		return _playerOwnedManagers[playerId].population();
+	bool IsTownOwnedByPlayer(int32 townIdIn, int32 playerId) final {
+		const auto& townIds = _playerOwnedManagers[playerId].townIds();
+		for (int32 townId : townIds) {
+			if (townIdIn == townId) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	
+	int32 populationTown(int32 townId) final {
+		return _townManagers[townId]->population();
+	}
+	int32 populationPlayer(int32 playerId) final {
+		const auto& townIds = _playerOwnedManagers[playerId].townIds();
+		int32 population = 0;
+		for (int32 townId : townIds) {
+			population += _townManagers[townId]->population();
+		}
+		return population;
 	}
 	int32 worldPlayerPopulation() final
 	{
 		int32 result = 0;
 		ExecuteOnPlayersAndAI([&](int32 playerId) {
-			result += population(playerId);
+			result += populationTown(playerId);
 		});
 		return result;
 	}
 	
-	int32 resourceCount(int32 playerId, ResourceEnum resourceEnum) final {
-		return _resourceSystems[playerId].resourceCount(resourceEnum);
+	int32 resourceCountTown(int32 townId, ResourceEnum resourceEnum) final {
+		return _resourceSystems[townId].resourceCount(resourceEnum);
 	}
-	int32 resourceCountWithPop(int32 playerId, ResourceEnum resourceEnum) final {
-		return _resourceSystems[playerId].resourceCountWithPop(resourceEnum);
-	}
-	int32 resourceCountWithDrops(int32 playerId, ResourceEnum resourceEnum) final {
-		return _resourceSystems[playerId].resourceCountWithDrops(resourceEnum);
+	int32 resourceCountPlayer(int32 playerId, ResourceEnum resourceEnum) final {
+		const auto& townIds = GetTownIds(playerId);
+		int32 count = 0;
+		for (int32 townId : townIds) {
+			count += _resourceSystems[townId].resourceCount(resourceEnum);
+		}
+		return count;
 	}
 
-	bool HasEnoughResource(int32 playerId, const std::vector<ResourcePair> pairs) {
+	bool HasEnoughResource(int32 townId, const std::vector<ResourcePair> pairs) {
 		for (const ResourcePair& pair : pairs) 
 		{
 			if (pair.resourceEnum == ResourceEnum::Food) {
-				if (foodCount(playerId) < pair.count) {
+				if (foodCount(townId) < pair.count) {
 					return false;
 				}
 			}
 			else {
-				if (resourceCount(playerId, pair.resourceEnum) < pair.count) {
+				if (resourceCountTown(townId, pair.resourceEnum) < pair.count) {
 					return false;
 				}
 			}
@@ -211,23 +249,23 @@ public:
 		resourceSystem(playerId).AddResourceGlobal(resourceEnum, amount, *this);
 	}
 
-	bool IsOutputTargetReached(int32 playerId, ResourceEnum resourceEnum) final {
+	bool IsOutputTargetReached(int32 townId, ResourceEnum resourceEnum) final {
 		if (resourceEnum == ResourceEnum::None) {
 			return false;
 		}
-		int32 outputTarget = playerOwned(playerId).GetOutputTarget(resourceEnum);
-		return outputTarget != -1 && resourceSystem(playerId).resourceCountWithPop(resourceEnum) >= outputTarget;
+		int32 outputTarget = townManager(townId).GetOutputTarget(resourceEnum);
+		return outputTarget != -1 && resourceSystem(townId).resourceCountWithPop(resourceEnum) >= outputTarget;
 	}
-	bool IsFarBelowOutputTarget(int32 playerId, ResourceEnum resourceEnum) {
+	bool IsFarBelowOutputTarget(int32 townId, ResourceEnum resourceEnum) {
 		if (resourceEnum == ResourceEnum::None) {
 			return false;
 		}
-		int32 outputTarget = playerOwned(playerId).GetOutputTarget(resourceEnum);
+		int32 outputTarget = townManager(townId).GetOutputTarget(resourceEnum);
 		if (outputTarget == -1) {
 			return false;
 		}
 		int32 belowThreshold = std::min(outputTarget * 8 / 10, std::max(outputTarget - 20, 0));
-		return resourceSystem(playerId).resourceCountWithPop(resourceEnum) < belowThreshold;
+		return resourceSystem(townId).resourceCountWithPop(resourceEnum) < belowThreshold;
 	}
 	
 
@@ -301,17 +339,17 @@ public:
 
 	
 
-	int foodCount(int32 playerId) final {
+	int foodCount(int32 townId) final {
 		int count = 0;
 		for (ResourceEnum foodEnum : StaticData::FoodEnums) {
-			count += _resourceSystems[playerId].resourceCount(foodEnum);
+			count += _resourceSystems[townId].resourceCount(foodEnum);
 		}
 		return count;
 	}
-	int32 GetResourceCount(int32 playerId, const std::vector<ResourceEnum>& resourceEnums) final {
+	int32 GetResourceCount(int32 townId, const std::vector<ResourceEnum>& resourceEnums) final {
 		int32 result = 0;
 		for (ResourceEnum resourceEnum : resourceEnums) {
-			result += resourceCount(playerId, resourceEnum);
+			result += resourceCountTown(townId, resourceEnum);
 		}
 		return result;
 	}
@@ -336,6 +374,10 @@ public:
 		globalResourceSystem(playerId).ChangeMoney100(moneyChange100);
 	}
 
+	void ChangeInfluence(int32 playerId, int32 influenceChange) final {
+		globalResourceSystem(playerId).ChangeInfluence(influenceChange);
+	}
+
 	int32 price100(ResourceEnum resourceEnum) final {
 		return _worldTradeSystem.price100(resourceEnum);
 	}
@@ -343,36 +385,61 @@ public:
 		return _worldTradeSystem.price100(resourceEnum) / 100;
 	}
 
-	TownHall& townhall(int32 playerId) final {
-		return building(playerOwned(playerId).townHallId).subclass<TownHall>(CardEnum::Townhall);
+	TownHall& GetTownhallCapital(int32 playerId) final {
+		check(playerId != -1);
+		int32 townhallId = playerOwned(playerId).capitalTownhallId;
+		check(townhallId != -1);
+		return building(townhallId).subclass<TownHall>(CardEnum::Townhall);
 	}
-	int32 townLvl(int32 playerId) final {
-		return townhall(playerId).townhallLvl;
+	TownHall& GetTownhall(int32 townId) final {
+		return building(townManager(townId).townHallId).subclass<TownHall>(CardEnum::Townhall);
+	}
+	TownHall* GetTownhallPtr(int32 townId) final {
+		if (townId == -1) return nullptr;
+		int32 townHallId = townManager(townId).townHallId;
+		if (townHallId == -1) return nullptr;
+		return &(building(townHallId).subclass<TownHall>(CardEnum::Townhall));
+	}
+
+	int32 GetTownLvl(int32 townId) final {
+		return GetTownhall(townId).townhallLvl;
+	}
+	int32 GetTownLvlMax(int32 playerId) final {
+		const auto& townIds = playerOwned(playerId).townIds();
+		int32 maxLvl = 1;
+		for (int32 townId : townIds) {
+			maxLvl = std::max(maxLvl, GetTownLvl(townId));
+		}
+		return maxLvl;
 	}
 	
-	WorldTile2 townhallGateTile(int32 playerId) final {
-		return townhall(playerId).gateTile();
+	WorldTile2 GetTownhallGateCapital(int32 playerId) final {
+		return GetTownhallCapital(playerId).gateTile();
 	}
-	std::string townName(int32 playerId) final {
-		return townhall(playerId).townName();
+	WorldTile2 GetTownhallGateFast(int32 townId) final {
+		return GetTownhall(townId).gateTile();
 	}
-	FText townNameT(int32 playerId) final {
-		return townhall(playerId).townNameT();
+	WorldTile2 GetTownhallGate(int32 townId) final {
+		if (townId == -1) return WorldTile2::Invalid;
+		int32 townhallId = townManager(townId).townHallId;
+		if (townhallId == -1) return WorldTile2::Invalid;
+		return building(townhallId).gateTile();
 	}
-	std::string townSuffix(int32 playerId) final {
-		return FTextToStd(playerOwned(playerId).GetTownSizeSuffix());
+	FText townNameT(int32 townId) final {
+		return GetTownhall(townId).townNameT();
 	}
-	FText townSizeNameT(int32 playerId) final {
-		return playerOwned(playerId).GetTownSizeName();
+	
+	FText GetTownSizeNameT(int32 playerId) final {
+		return townManager(playerId).GetTownSizeName();
 	}
-	int32 townAgeTicks(int32 playerId) final {
-		return townhall(playerId).townAgeTicks();
+	int32 GetTownAgeTicks(int32 townId) final {
+		return GetTownhall(townId).townAgeTicks();
 	}
 
 
-	void AddImmigrants(int32 playerId, int32 count, WorldTile2 tile) final {
-		if (playerOwned(playerId).hasTownhall()) {
-			townhall(playerId).AddImmigrants(count, tile);
+	void AddImmigrants(int32 townId, int32 count, WorldTile2 tile) final {
+		if (townId != -1) {
+			GetTownhall(townId).AddImmigrants(count, tile);
 		}
 	}
 
@@ -380,18 +447,18 @@ public:
 		return playerOwned(playerId).lordPlayerId();
 	}
 
-	ArmyNode& GetArmyNode(int32 buildingId) final {
-		return building(buildingId).subclass<ArmyNodeBuilding>().GetArmyNode();
-	}
-	std::vector<int32> GetArmyNodeIds(int32 playerId) final {
-		std::vector<int32> nodes = playerOwned(playerId).vassalBuildingIds();
-		nodes.push_back(townhall(playerId).armyNode.nodeId);
-		return nodes;
-	}
+	//ArmyNode& GetArmyNode(int32 buildingId) final {
+	//	return building(buildingId).subclass<ArmyNodeBuilding>().GetArmyNode();
+	//}
+	//std::vector<int32> GetArmyNodeIds(int32 playerId) final {
+	//	std::vector<int32> nodes = playerOwned(playerId).vassalBuildingIds();
+	//	nodes.push_back(townhall(playerId).armyNode.nodeId);
+	//	return nodes;
+	//}
 
 	WorldAtom2 homeAtom(int32 playerId) final {
 		if (playerOwned(playerId).hasChosenLocation()) {
-			return GetProvinceCenterTile(playerOwned(playerId).provincesClaimed().front()).worldAtom2();
+			return GetProvinceCenterTile(townManager(playerId).provincesClaimed().front()).worldAtom2();
 		}
 		return WorldAtom2::Zero;
 	}
@@ -457,13 +524,20 @@ public:
 	
 	
 
-	int32 tileOwner(WorldTile2 tile) final
+	int32 tileOwnerTown(WorldTile2 tile) final
 	{
 		int32 provinceId = _provinceSystem.GetProvinceIdClean(tile);
 		if (provinceId == -1) {
 			return -1;
 		}
 		return _regionSystem->provinceOwner(provinceId);
+	}
+	int32 tileOwnerPlayer(WorldTile2 tile) final {
+		int32 townId = tileOwnerTown(tile);
+		if (townId == -1) {
+			return -1;
+		}
+		return townManager(townId).playerId();
 	}
 
 	bool HasBuilding(int32 tileId) final {
@@ -506,18 +580,18 @@ public:
 	
 	bool IsBuildable(WorldTile2 tile, int32 playerId) final {
 		return IsBuildable(tile) &&
-			(playerId == -1 || playerId == tileOwner(tile));
+			(playerId == -1 || playerId == tileOwnerTown(tile));
 	}
 	bool IsFrontBuildable(WorldTile2 tile, int32 playerId) {
 		return IsFrontBuildable(tile) &&
-			(playerId == -1 || playerId == tileOwner(tile));
+			(playerId == -1 || playerId == tileOwnerTown(tile));
 	}
 
 	// Doesn't check for IsBuildable etc.
 	bool IsTileBuildableForPlayer(WorldTile2 tile, int32 playerId)
 	{
 		if (playerId == -1) return true;
-		return tileOwner(tile) == playerId;
+		return tileOwnerPlayer(tile) == playerId;
 	}
 
 	/*
@@ -570,7 +644,7 @@ public:
 	int32 playerId() final { return _gameManager->playerId(); }
 
 	void ResetUnitActions(int id, int32 waitTicks = 1) final;
-	int AddUnit(UnitEnum unitEnum, int32_t playerId, WorldAtom2 location, int32_t ageTicks) final;
+	int32 AddUnit(UnitEnum unitEnum, int32 townId, WorldAtom2 location, int32 ageTicks) final;
 	void RemoveUnit(int id) final;
 	void ResetUnitActionsInArea(TileArea area) final {
 		_unitSystem->ResetUnitActionsInArea(area);
@@ -616,8 +690,8 @@ public:
 		return building(id).centerTile();
 	}
 	
-	Building& building(ResourceHolderInfo holderInfo, int32_t playerId) final {
-		int32_t id = resourceSystem(playerId).holder(holderInfo).objectId;
+	Building& building(ResourceHolderInfo holderInfo, int32 townId) final {
+		int32_t id = resourceSystem(townId).holder(holderInfo).objectId;
 		PUN_CHECK(_buildingSystem->alive(id));
 		return building(id);
 	}
@@ -644,14 +718,14 @@ public:
 		return _buildingSystem->frontBuildingIds(tile);
 	}
 
-	const std::vector<int32>& buildingIds(int32 playerId, CardEnum buildingEnum) final {
-		return _buildingSystem->buildingIds(playerId, buildingEnum);
+	const std::vector<int32>& buildingIds(int32 townId, CardEnum buildingEnum) final {
+		return _buildingSystem->buildingIds(townId, buildingEnum);
 	}
-	int32 buildingCount(int32 playerId, CardEnum buildingEnum) final {
-		return _buildingSystem->buildingIds(playerId, buildingEnum).size();
+	int32 buildingCount(int32 townId, CardEnum buildingEnum) final {
+		return _buildingSystem->buildingIds(townId, buildingEnum).size();
 	}
-	int32 buildingFinishedCount(int32 playerId, CardEnum cardEnum) final {
-		const std::vector<int32>& bldIds = buildingIds(playerId, cardEnum);
+	int32 buildingFinishedCount(int32 townId, CardEnum cardEnum) final {
+		const std::vector<int32>& bldIds = buildingIds(townId, cardEnum);
 		int32 finishedCount = 0;
 		for (int32 buildingId : bldIds) {
 			if (building(buildingId).isConstructed()) {
@@ -685,8 +759,8 @@ public:
 
 	
 
-	int32 jobBuildingCount(int32 playerId) final {
-		return playerOwned(playerId).jobBuildingCount();
+	int32 jobBuildingCount(int32 townId) final {
+		return townManager(townId).jobBuildingCount();
 	}
 	
 	const SubregionLists<int32>& buildingSubregionList() final {
@@ -694,9 +768,9 @@ public:
 	}
 
 	// TODO: Optimize to use provinces?
-	bool HasBuildingWithinRadius(WorldTile2 tileIn, int32 radius, int32 playerId, CardEnum buildingEnum) final
+	bool HasBuildingWithinRadius(WorldTile2 tileIn, int32 radius, int32 townId, CardEnum buildingEnum) final
 	{
-		const std::vector<int32>& bldIds = buildingIds(playerId, buildingEnum);
+		const std::vector<int32>& bldIds = buildingIds(townId, buildingEnum);
 		for (int32 bldId : bldIds) {
 			if (building(bldId).DistanceTo(tileIn) <= radius) {
 				return true;
@@ -704,9 +778,9 @@ public:
 		}
 		return false;
 	}
-	std::vector<int32> GetBuildingsWithinRadius(WorldTile2 tileIn, int32 radius, int32 playerId, CardEnum buildingEnum) final
+	std::vector<int32> GetBuildingsWithinRadius(WorldTile2 tileIn, int32 radius, int32 townId, CardEnum buildingEnum) final
 	{
-		const std::vector<int32>& bldIds = buildingIds(playerId, buildingEnum);
+		const std::vector<int32>& bldIds = buildingIds(townId, buildingEnum);
 		std::vector<int32> resultIds;
 		for (int32 bldId : bldIds) {
 			if (building(bldId).DistanceTo(tileIn) <= radius) {
@@ -715,12 +789,12 @@ public:
 		}
 		return resultIds;
 	}
-	std::vector<int32> GetBuildingsWithinRadiusMultiple(WorldTile2 tileIn, int32 radius, int32 playerId, std::vector<CardEnum> buildingEnums) final
+	std::vector<int32> GetBuildingsWithinRadiusMultiple(WorldTile2 tileIn, int32 radius, int32 townId, std::vector<CardEnum> buildingEnums) final
 	{
 		std::vector<int32> resultIds;
 		for (CardEnum buildingEnum : buildingEnums)
 		{
-			const std::vector<int32>& bldIds = buildingIds(playerId, buildingEnum);
+			const std::vector<int32>& bldIds = buildingIds(townId, buildingEnum);
 			for (int32 bldId : bldIds) {
 				if (building(bldId).DistanceTo(tileIn) <= radius) {
 					resultIds.push_back(bldId);
@@ -764,7 +838,7 @@ public:
 	/*
 	 * Only valid for area smaller than a region
 	 */
-	bool IsLandCleared_SmallOnly(int32 playerId, TileArea area) final
+	bool IsLandCleared_SmallOnly(int32 townId, TileArea area) final
 	{
 		// TileObj
 		auto& tileObjSys = treeSystem();
@@ -776,7 +850,7 @@ public:
 		}
 
 		// Drops
-		if (resourceSystem(playerId).GetDropFromSmallArea_Any(area).isValid()) {
+		if (resourceSystem(townId).GetDropFromSmallArea_Any(area).isValid()) {
 			return false;
 		}
 
@@ -872,9 +946,8 @@ public:
 	}
 
 	// Cached Connected for human
-	bool IsConnectedBuilding(int32 buildingId, int32 playerId) final
+	bool IsConnectedBuilding(int32 buildingId) final
 	{
-		PUN_CHECK(playerId != -1);
 		PUN_CHECK(buildingId != -1);
 
 		int8 isConnected = _buildingSystem->IsConnectedBuilding(buildingId);
@@ -942,6 +1015,25 @@ public:
 		return treeCount;
 	}
 
+	int32 GetProvinceCountPlayer(int32 playerId) final {
+		return GetProvincesPlayer(playerId).size();
+	}
+	std::vector<int32> GetProvincesPlayer(int32 playerId) final
+	{
+		const auto& townIds = playerOwned(playerId).townIds();
+		std::vector<int32> provinces;
+		for (int32 townId : townIds) {
+			const auto& provincesClaimed = townManager(townId).provincesClaimed();
+			for (int32 provinceId : provincesClaimed) {
+				provinces.push_back(provinceId);
+			}
+		}
+		return provinces;
+	}
+	const std::vector<int32>& GetProvincesTown(int32 townId) final {
+		return townManager(townId).provincesClaimed();
+	}
+
 
 	/*
 	 * Province Income/Upkeep/Costs
@@ -990,7 +1082,7 @@ public:
 		return (baseClaimPrice100 / 100);
 	}
 
-	int32 GetProvinceClaimPrice(int32 provinceId, int32 playerId) {
+	int32 GetProvinceClaimPrice(int32 provinceId, int32 playerId) final {
 		return GetProvinceClaimPrice(provinceId, playerId, GetProvinceClaimConnectionEnum(provinceId, playerId));
 	}
 	int32 GetProvinceClaimPrice(int32 provinceId, int32 playerId, ClaimConnectionEnum claimConnectionEnum)
@@ -1024,10 +1116,10 @@ public:
 	// - oversea: double reinforce price
 	int32 GetProvinceVassalizeStartPrice(int32 provinceId)
 	{
-		int32 provincePlayerId = provinceOwner(provinceId);
-		PUN_CHECK(homeProvinceId(provincePlayerId) == provinceId);
+		int32 townId = provinceOwnerTown(provinceId);
+		PUN_CHECK(homeProvinceId(townId) == provinceId);
 		
-		return BattleInfluencePrice + population(provincePlayerId) * 10; // 100 pop = 1k influence to take over
+		return BattleInfluencePrice + populationTown(townId) * 10; // 100 pop = 1k influence to take over
 	}
 	int32 GetProvinceVassalizeReinforcePrice(int32 provinceId)
 	{
@@ -1094,13 +1186,13 @@ public:
 		if (!HasTownhall(formerVassalPlayerId)) {
 			return;
 		}
-		int32 formerVassalBuildingId = townhall(formerVassalPlayerId).buildingId();
+		int32 formerVassalBuildingId = GetTownhallCapital(formerVassalPlayerId).buildingId();
 		
 		_playerOwnedManagers[oldLordPlayerId].LoseVassal(formerVassalBuildingId);
 		_playerOwnedManagers[formerVassalPlayerId].SetLordPlayerId(-1);
 
-		_playerOwnedManagers[oldLordPlayerId].RecalculateTaxDelayed();
-		_playerOwnedManagers[formerVassalPlayerId].RecalculateTaxDelayed();
+		RecalculateTaxDelayedPlayer(oldLordPlayerId);
+		RecalculateTaxDelayedPlayer(formerVassalPlayerId);
 	}
 
 	
@@ -1141,14 +1233,14 @@ public:
 	{
 		int32 percent = 0;
 		
-		int32 provinceOwnerId = provinceOwner(provinceId);
-		if (provinceOwnerId != -1) 
+		int32 townId = provinceOwnerTown(provinceId);
+		if (townId != -1)
 		{
 			// Fort
-			percent += GetFortDefenseBonus_Helper(provinceId, provinceOwnerId);
+			percent += GetFortDefenseBonus_Helper(provinceId, townId);
 
 			// Buildings
-			percent += GetBuildingDefenseBonus_Helper(provinceId, provinceOwnerId);
+			percent += GetBuildingDefenseBonus_Helper(provinceId, townId);
 		}
 		return percent;
 	}
@@ -1159,18 +1251,18 @@ public:
 			NSLOCTEXT("SimCore", "DefenseBonus_TipTitle","Defense Bonus: {0}"), 
 			TEXT_PERCENT(GetProvinceAttackCostPercent(provinceId))
 		);
-		int32 provinceOwnerId = provinceOwner(provinceId);
-		if (provinceOwnerId != -1) {
+		int32 townId = provinceOwnerTown(provinceId);
+		if (townId != -1) {
 			const FText bulletText = INVTEXT("<bullet>{0} {1}%</>");
-			ADDTEXT_(bulletText, NSLOCTEXT("SimCore", "fort", "fort"), TEXT_NUM(GetFortDefenseBonus_Helper(provinceId, provinceOwnerId)));
-			ADDTEXT_(bulletText, NSLOCTEXT("SimCore", "buildings", "buildings"), TEXT_NUM(GetBuildingDefenseBonus_Helper(provinceId, provinceOwnerId)));
+			ADDTEXT_(bulletText, NSLOCTEXT("SimCore", "fort", "fort"), TEXT_NUM(GetFortDefenseBonus_Helper(provinceId, townId)));
+			ADDTEXT_(bulletText, NSLOCTEXT("SimCore", "buildings", "buildings"), TEXT_NUM(GetBuildingDefenseBonus_Helper(provinceId, townId)));
 		}
 		return JOINTEXT(args);
 	}
 	
-	int32 GetFortDefenseBonus_Helper(int32 provinceId, int32 provinceOwnerId)
+	int32 GetFortDefenseBonus_Helper(int32 provinceId, int32 townId)
 	{
-		const std::vector<int32>& fortIds = buildingIds(provinceOwnerId, CardEnum::Fort);
+		const std::vector<int32>& fortIds = buildingIds(townId, CardEnum::Fort);
 		for (int32 fortId : fortIds) {
 			if (building(fortId).provinceId() == provinceId) {
 				return 100;
@@ -1178,9 +1270,9 @@ public:
 		}
 		return 0;
 	}
-	int32 GetBuildingDefenseBonus_Helper(int32 provinceId, int32 provinceOwnerId)
+	int32 GetBuildingDefenseBonus_Helper(int32 provinceId, int32 townId)
 	{
-		return 10 * buildingFinishedCount(provinceOwnerId, provinceId);
+		return 10 * buildingFinishedCount(townId, provinceId);
 	}
 	
 
@@ -1195,7 +1287,7 @@ public:
 											connection.tileType == TerrainTileType::River;
 
 			return isValidConnectionType && 
-					provinceOwner(connection.provinceId) == playerId;
+					provinceOwnerPlayer(connection.provinceId) == playerId;
 		});
 	}
 	bool IsProvinceNextToPlayerByShallowWater(int32 provinceId, int32 playerId) final {
@@ -1207,7 +1299,7 @@ public:
 			bool isValidConnectionType = (connection.tileType == TerrainTileType::Ocean);
 
 			return isValidConnectionType &&
-				provinceOwner(connection.provinceId) == playerId;
+				provinceOwnerPlayer(connection.provinceId) == playerId;
 		});
 	}
 	bool IsProvinceOverseaClaimableByPlayer(int32 provinceId, int32 playerId)
@@ -1238,7 +1330,7 @@ public:
 			return false;
 		}
 		
-		int32 townhallProvinceId = townhall(playerId).provinceId();
+		int32 townhallProvinceId = GetTownhallCapital(playerId).provinceId();
 		bool isConnectedToTownhall = FloodProvinces(provinceIdIn, [&](int32 provinceId)
 		{
 			return townhallProvinceId == provinceId;
@@ -1278,24 +1370,24 @@ public:
 	
 	bool IsProvinceNextToPlayerIncludingNonFlatLand(int32 provinceId, int32 playerId) {
 		return _provinceSystem.ExecuteAdjacentProvincesWithExitTrue(provinceId, [&](ProvinceConnection connection) {
-			return provinceOwner(connection.provinceId) == playerId;
+			return provinceOwnerPlayer(connection.provinceId) == playerId;
 		});
 	}
 	
 
-	void RefreshTerritoryEdge(int32 playerId) final {
-		return _provinceSystem.RefreshTerritoryEdge(playerId, playerOwned(playerId).provincesClaimed());
+	void RefreshTerritoryEdge(int32 townId) final {
+		return _provinceSystem.RefreshTerritoryEdge(townId, GetProvincesTown(townId));
 	}
 
 	bool IsBorderProvince(int32 provinceId) final
 	{
-		int32 playerId = provinceOwner(provinceId);
+		int32 playerId = provinceOwnerPlayer(provinceId);
 		check(playerId != -1);
 		const std::vector<ProvinceConnection>& connections = _provinceSystem.GetProvinceConnections(provinceId);
 		for (const ProvinceConnection& connection : connections)
 		{
 			if (connection.tileType == TerrainTileType::None) {
-				if (provinceOwner(connection.provinceId) != playerId) {
+				if (provinceOwnerPlayer(connection.provinceId) != playerId) {
 					return true;
 				}
 			}
@@ -1339,18 +1431,24 @@ public:
 		});
 	}
 
-	void PlayerAddHouse(int32 playerId, int objectId) override { _playerOwnedManagers[playerId].PlayerAddHouse(objectId); }
-	void PlayerRemoveHouse(int32 playerId, int objectId) override { _playerOwnedManagers[playerId].PlayerRemoveHouse(objectId); }
-	void PlayerAddJobBuilding(int32 playerId, Building& building, bool isConstructed) override { _playerOwnedManagers[playerId].PlayerAddJobBuilding(building, isConstructed); }
-	void PlayerRemoveJobBuilding(int32 playerId, Building& building, bool isConstructed) override { _playerOwnedManagers[playerId].PlayerRemoveJobBuilding(building, isConstructed); }
-	void RefreshJobDelayed(int32 playerId) override {
-		_playerOwnedManagers[playerId].RefreshJobDelayed();
+	void PlayerAddHouse(int32 townId, int objectId) override { _townManagers[townId]->PlayerAddHouse(objectId); }
+	void PlayerRemoveHouse(int32 townId, int objectId) override { _townManagers[townId]->PlayerRemoveHouse(objectId); }
+	void PlayerAddJobBuilding(int32 townId, Building& building, bool isConstructed) override { _townManagers[townId]->PlayerAddJobBuilding(building, isConstructed); }
+	void PlayerRemoveJobBuilding(int32 townId, Building& building, bool isConstructed) override { _townManagers[townId]->PlayerRemoveJobBuilding(building, isConstructed); }
+	void RefreshJobDelayed(int32 townId) override {
+		_townManagers[townId]->RefreshJobDelayed();
 	}
 	
 	bool IsInDarkAge(int32 playerId) final { return _playerOwnedManagers[playerId].IsInDarkAge(); }
 	
-	void RecalculateTaxDelayed(int32 playerId) override {
-		_playerOwnedManagers[playerId].RecalculateTaxDelayed();
+	void RecalculateTaxDelayedPlayer(int32 playerId) override {
+		const auto& townIds = _playerOwnedManagers[playerId].townIds();
+		for (int32 townId : townIds) {
+			_townManagers[townId]->RecalculateTaxDelayed();
+		}
+	}
+	void RecalculateTaxDelayedTown(int32 townId) override {
+		_townManagers[townId]->RecalculateTaxDelayed();
 	}
 
 	const std::vector<int32>& boarBurrows(int32 provinceId) override { return _regionSystem->boarBurrows(provinceId); }
@@ -1369,7 +1467,7 @@ public:
 		_regionSystem->RemoveProvinceAnimals(provinceId, animalId);
 	}
 
-	int HousingCapacity(int32 playerId) override { return _playerOwnedManagers[playerId].housingCapacity(); }
+	int32 HousingCapacity(int32 playerId) override { return _townManagers[playerId]->housingCapacity(); }
 
 	void RemoveJobsFrom(int32 buildingId, bool isRefreshJob) override
 	{
@@ -1414,11 +1512,17 @@ public:
 		});
 	}
 
-	void SetProvinceOwner(int32 provinceId, int32 playerId, bool lightMode = false);
-	void SetProvinceOwnerFull(int32 provinceId, int32 playerId) final;
+	void SetProvinceOwner(int32 provinceId, int32 townId, bool lightMode = false);
+	void SetProvinceOwnerFull(int32 provinceId, int32 townId) final;
 
-	int32 provinceOwner(int32 provinceId) final { return _regionSystem->provinceOwner(provinceId); }
-
+	int32 provinceOwnerTown(int32 provinceId) final { return _regionSystem->provinceOwner(provinceId); }
+	int32 provinceOwnerPlayer(int32 provinceId) final {
+		int32 townId = provinceOwnerTown(provinceId);
+		if (townId == -1) {
+			return -1;
+		}
+		return townManager(townId).playerId();
+	}
 
 	/*
 	 * Terran Gen
@@ -1579,6 +1683,14 @@ public:
 	}
 
 	// Tech
+	int32 GetScience100PerRound(int32 playerId) final {
+		const auto& townIds = playerOwned(playerId).townIds();
+		int32 result = 0;
+		for (int32 townId : townIds) {
+			result += townManager(townId).science100PerRound();
+		}
+		return result;
+	}
 
 	bool IsResearched(int32 playerId, TechEnum techEnum) final {
 		if (!IsValidPlayer(playerId)) { // - Guard against IsResearched() crash in unlockedInfluence()
@@ -1644,32 +1756,32 @@ public:
 	}
 
 	// If half pop dies from starve/cold, happiness would -100
-	int32 GetAverageHappiness(int32 playerId) final {
-		return playerOwned(playerId).aveHappiness();
+	int32 GetAverageHappiness(int32 townId) final {
+		return townManager(townId).aveHappiness();
 	}
-	int32 taxHappinessModifier(int32 playerId) final { return playerOwned(playerId).taxHappinessModifier(); }
+	int32 taxHappinessModifier(int32 townId) final { return townManager(townId).taxHappinessModifier(); }
 	int32 cannibalismHappinessModifier(int32 playerId) final {
-		return TownhallCardCount(playerId, CardEnum::Cannibalism) > 0 ? -10 : 0;
+		return TownhallCardCountAll(playerId, CardEnum::Cannibalism) > 0 ? -10 : 0;
 	}
-	int32 citizenDeathHappinessModifier(int32 playerId, SeasonStatEnum statEnum) final {
-		SubStatSystem& statSystem = _statSystem.playerStatSystem(playerId);
+	int32 citizenDeathHappinessModifier(int32 townId, SeasonStatEnum statEnum) final {
+		SubStatSystem& statSystem = _statSystem.townStatSystem(townId);
 		int32 deaths = statSystem.GetYearlyStat(statEnum);
 		// unhappiness from deaths depends on the ratio (death):(pop+death)
 		// unhappiness from death cap at 50, where (death):(pop+death) is 1:1
-		int32 happinessModifier = -51 * deaths / (deaths + population(playerId) + 1);
+		int32 happinessModifier = -51 * deaths / (deaths + populationTown(townId) + 1);
 
 		PUN_CHECK(happinessModifier < 1000 && happinessModifier > -1000);
 		return happinessModifier;
 	}
 
-	void AddMigrationPendingCount(int32 playerId, int32 migrationCount) final
+	void AddMigrationPendingCount(int32 townId, int32 migrationCount) final
 	{
-		playerOwned(playerId).AddMigrationPendingCount(migrationCount);
+		townManager(townId).AddMigrationPendingCount(migrationCount);
 	}
 
-	void ImmigrationEvent(int32 playerId, int32 migrationCount, FText message, PopupReceiverEnum receiverEnum) final
+	void ImmigrationEvent(int32 townId, int32 migrationCount, FText message, PopupReceiverEnum receiverEnum) final
 	{
-		townhall(playerId).ImmigrationEvent(migrationCount, message, receiverEnum);
+		GetTownhall(townId).ImmigrationEvent(migrationCount, message, receiverEnum);
 	}
 	
 	/*
@@ -1700,8 +1812,16 @@ public:
 	int32 BoughtCardCount(int32 playerId, CardEnum buildingEnum) final {
 		return cardSystem(playerId).BoughtCardCount(buildingEnum);
 	}
-	int32 TownhallCardCount(int32 playerId, CardEnum cardEnum) final {
-		return cardSystem(playerId).TownhallCardCount(cardEnum);
+	int32 TownhallCardCountTown(int32 townId, CardEnum cardEnum) final {
+		return townManager(townId).TownhallCardCount(cardEnum);
+	}
+	int32 TownhallCardCountAll(int32 playerId, CardEnum cardEnum) final {
+		const auto& townIds = GetTownIds(playerId);
+		int32 count = 0;
+		for (int32 townId : townIds) {
+			count += townManager(townId).TownhallCardCount(cardEnum);
+		}
+		return count;
 	}
 	bool HasCardInAnyPile(int32 playerId, CardEnum cardEnum) final {
 		return cardSystem(playerId).HasCardInAnyPile(cardEnum);
@@ -1816,32 +1936,32 @@ public:
 		return playerName(building(nodeId).playerId());
 	}
 
-	std::vector<int32> GetCapitalArmyCounts(int32 playerId, bool skipWall = false) final
-	{
-		ArmyGroup* group = townhall(playerId).armyNode.GetArmyGroup(playerId);
-		if (group) {
-			return group->GetArmyCounts(skipWall);
-		}
-		return std::vector<int32>(ArmyEnumCount, 0);
-	}
+	//std::vector<int32> GetCapitalArmyCounts(int32 playerId, bool skipWall = false) final
+	//{
+	//	ArmyGroup* group = townhall(playerId).armyNode.GetArmyGroup(playerId);
+	//	if (group) {
+	//		return group->GetArmyCounts(skipWall);
+	//	}
+	//	return std::vector<int32>(ArmyEnumCount, 0);
+	//}
 
-	std::vector<int32> GetTotalArmyCounts(int32 playerId, bool skipWall = false) final
-	{
-		std::vector<int32> nodeIdsVisited = playerOwned(playerId).nodeIdsVisited();
-		std::vector<int32> armyCounts(ArmyEnumCount, 0);
-		
-		for (int32 nodeId : nodeIdsVisited) {
-			CardEnum nodeEnum = building(nodeId).buildingEnum();
-			if (nodeEnum == CardEnum::Townhall) {
-				building<TownHall>(nodeId).armyNode.ExecuteOnAllGroups([&](const ArmyGroup& group) 	{
-					if (group.playerId == playerId) {
-						group.AddArmyToGivenArray(armyCounts, skipWall);
-					}
-				}, true);
-			}
-		}
-		return armyCounts;
-	}
+	//std::vector<int32> GetTotalArmyCounts(int32 playerId, bool skipWall = false) final
+	//{
+	//	std::vector<int32> nodeIdsVisited = playerOwned(playerId).nodeIdsVisited();
+	//	std::vector<int32> armyCounts(ArmyEnumCount, 0);
+	//	
+	//	for (int32 nodeId : nodeIdsVisited) {
+	//		CardEnum nodeEnum = building(nodeId).buildingEnum();
+	//		if (nodeEnum == CardEnum::Townhall) {
+	//			building<TownHall>(nodeId).armyNode.ExecuteOnAllGroups([&](const ArmyGroup& group) 	{
+	//				if (group.playerId == playerId) {
+	//					group.AddArmyToGivenArray(armyCounts, skipWall);
+	//				}
+	//			}, true);
+	//		}
+	//	}
+	//	return armyCounts;
+	//}
 
 	void GainAlly(int32 playerId1, int32 playerId2)
 	{
@@ -1910,21 +2030,25 @@ public:
 	}
 
 	bool HasTownhall(int32 playerId) final {
-		return playerOwned(playerId).hasTownhall();
+		return playerOwned(playerId).hasCapitalTownhall();
 	}
+	bool HasChosenLocation(int32 playerId) final {
+		return playerOwned(playerId).hasChosenLocation();
+	}
+	
 	int32 homeProvinceId(int32 playerId) final
 	{
 		if (!HasTownhall(playerId)) {
 			return -1;
 		}
-		return townhall(playerId).provinceId();
+		return GetTownhallCapital(playerId).provinceId();
 	}
 
 	int32 TownAge(int32 playerId) {
 		if (!HasTownhall(playerId)) {
 			return 0;
 		}
-		return townhall(playerId).buildingAge();
+		return GetTownhallCapital(playerId).buildingAge();
 	}
 	
 
@@ -1965,8 +2089,6 @@ public:
 	}
 	
 
-	bool playerChoseLocation(int32 playerId) { return playerOwned(playerId).hasChosenLocation(); }
-
 	// Used to pause the game until the last player chose location
 	bool AllPlayerHasTownhallAfterInitialTicks() final
 	{
@@ -1977,7 +2099,7 @@ public:
 
 		std::vector<int32> connectedPlayerIds = _gameManager->connectedPlayerIds(false);
 		for (int32 playerId : connectedPlayerIds) {
-			if (!playerOwned(playerId).hasTownhall() &&
+			if (!playerOwned(playerId).hasCapitalTownhall() &&
 				!IsReplayPlayer(playerId))  // ReplayPlayer shouldn't pause the game
 			{
 				return false;
@@ -2000,7 +2122,7 @@ public:
 			{
 				if (unlockSystem(playerId)->IsResearched(TechEnum::Plantation))
 				{
-					auto& provincesClaimed = playerOwned(playerId).provincesClaimed();
+					std::vector<int32> provincesClaimed = GetProvincesPlayer(playerId);
 					for (int32 provinceId : provincesClaimed)
 					{
 						if (georesourceSystem().georesourceNode(provinceId).georesourceEnum == georesourceEnum)
@@ -2143,8 +2265,7 @@ public:
 							}
 
 				LOOP("Resource", _resourceSystems[i].Serialize(Ar));
-				LOOP("PlayerOwned", _playerOwnedManagers[i].Serialize(Ar));
-
+				LOOP("TownManager", _townManagers[i]->Serialize(Ar));
 #undef LOOP
 				
 #define LOOP(sysName, func) {\
@@ -2152,6 +2273,7 @@ public:
 								for (size_t i = 0; i < GameConstants::MaxPlayersAndAI; i++) { func; }\
 							}
 
+				LOOP("PlayerOwned", _playerOwnedManagers[i].Serialize(Ar));
 				LOOP("GlobalResource", _globalResourceSystems[i].Serialize(Ar));
 				LOOP("Quest", _questSystems[i].Serialize(Ar));
 
@@ -2297,7 +2419,7 @@ public:
 				});
 
 				// PlayerOwnedManager
-				_playerOwnedManagers[playerId()].townHallId = townhallId;
+				_playerOwnedManagers[playerId()].capitalTownhallId = townhallId;
 				_playerOwnedManagers[playerId()].justChoseLocation = true;
 				_playerOwnedManagers[playerId()].needChooseLocation = false;
 
@@ -2441,10 +2563,10 @@ private:
 
 	// Per Town
 	std::vector<ResourceSystem> _resourceSystems;
-	std::vector<PlayerOwnedManager> _playerOwnedManagers;
+	std::vector<std::unique_ptr<TownManager>> _townManagers;
 
 	// Per Player
-	std::vector<std::vector<int32>> _playerIdToTownIds; // TODO: Serialize
+	std::vector<PlayerOwnedManager> _playerOwnedManagers;
 	std::vector<GlobalResourceSystem> _globalResourceSystems;
 	std::vector<UnlockSystem> _unlockSystems;
 	std::vector<QuestSystem> _questSystems;

@@ -366,6 +366,7 @@ public:
 	virtual ~FNetworkCommand() {}
 
 	int32 playerId = -1; // Note!!! This is filled after being sent on network
+	int32 townId = -1;
 
 	virtual NetworkCommandEnum commandType() { return NetworkCommandEnum::None; }
 
@@ -377,6 +378,7 @@ public:
 		
 		Ar << commandInt;
 		Ar << playerId;
+		Ar << townId;  // TODO: Minor FSetGlobalJobPriority, FSetTownPriority
 	}
 
 	static NetworkCommandEnum GetCommandTypeFromBlob(PunSerializedData& blob) {
@@ -594,6 +596,7 @@ public:
 	void Serialize(PunSerializedData& blob) override
 	{
 		FNetworkCommand::Serialize(blob);
+		
 		blob << laborerPriority;
 		blob << builderPriority;
 		blob << roadMakerPriority;

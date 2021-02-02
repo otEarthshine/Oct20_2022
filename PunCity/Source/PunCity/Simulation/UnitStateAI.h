@@ -124,7 +124,7 @@ public:
 	UnitStateAI() = default;
 	virtual ~UnitStateAI() = default;
 
-	virtual void AddUnit(UnitEnum unitEnum, int32 playerId, UnitFullId fullId, IUnitDataSource* unitData, IGameSimulationCore* simulation);
+	virtual void AddUnit(UnitEnum unitEnum, int32 townId, UnitFullId fullId, IUnitDataSource* unitData, IGameSimulationCore* simulation);
 
 	void Update();
 	virtual void CalculateActions();
@@ -398,7 +398,9 @@ public:
 		return unitInfo().maxAgeTicks;
 	}
 
+	int32 townId() { return _townId; }
 	int32 playerId() { return _playerId; }
+	
 	UnitState unitState() { return _unitState; }
 
 	UnitInventory& inventory() { return _inventory; }
@@ -412,7 +414,7 @@ public:
 
 	int32 birthChance();
 
-	void SetPlayerId(int32_t playerId) { _playerId = playerId; }
+	//void SetPlayerId(int32_t playerId) { _playerId = playerId; }
 
 	//! Helpers
 	UnitEnum unitEnum() { return _unitEnum; }
@@ -448,8 +450,8 @@ public:
 		// For human, test the second time going to townhall first then going to target.
 		//  This allow for a lot longer travel check range.
 		//  (Otherwise, IsMoveValid fail could be because IsConnectedBuilding is only rough estimate from townhall)
-		if (!isMoveValid && isIntelligent && _playerId != -1) {
-			WorldTile2 gateTile = _simulation->townhallGateTile(_playerId);
+		if (!isMoveValid && isIntelligent && _townId != -1) {
+			WorldTile2 gateTile = _simulation->GetTownhallGateFast(_townId);
 			isMoveValid = _simulation->IsConnected(gateTile, tile, customFloodDistance, isIntelligent) &&
 							_simulation->IsConnected(gateTile, unitTile(), customFloodDistance, isIntelligent);
 		}
@@ -506,7 +508,7 @@ public:
 	std::string compactStr()
 	{
 		std::stringstream ss;
-		ss << "[Animal fid:" << fullId().ToString() << " pid:" << _playerId << " birth:" << birthTicks() << " house:" << _houseId << " name: "
+		ss << "[Animal fid:" << fullId().ToString() << " tid:" << _townId << " birth:" << birthTicks() << " house:" << _houseId << " name: "
 			<< GetUnitName() << " alive:" << _simulation->unitAlive(fullId()) << " ticks:" << Time::Ticks() << "]";
 		return ss.str();
 	}
@@ -538,7 +540,7 @@ public:
 	int32 homeProvinceId() { return _homeProvinceId; }
 
 	//! Needs
-	bool needHouse() { return _houseId == -1 && _simulation->population(_playerId) > _simulation->HousingCapacity(_playerId); }
+	bool needHouse() { return _houseId == -1 && _simulation->populationTown(_townId) > _simulation->HousingCapacity(_townId); }
 	bool showNeedFood() {
 		return _food < minWarnFood();
 	}
@@ -579,6 +581,7 @@ public:
 		Ar << _id;
 		_fullId >> Ar;
 		
+		Ar << _townId;
 		Ar << _playerId;
 		Ar << _unitEnum;
 		Ar << _unitState;
@@ -682,15 +685,19 @@ protected:
 	//! Helpers
 	TreeSystem& treeSystem() { return _simulation->treeSystem(); }
 	class ResourceSystem& resourceSystem() {
-		return _simulation->resourceSystem(_playerId);
+		return _simulation->resourceSystem(_townId);
 	}
+	class TownManager& townManager() {
+		return _simulation->townManager(_townId);
+	}
+	
 	PlayerParameters& playerParameters() {
 		PlayerParameters* playerParams = _simulation->parameters(_playerId);
 		PUN_CHECK(playerParams);
 		return *playerParams;
 	}
 	class SubStatSystem& statSystem() {
-		return _simulation->statSystem(_playerId);
+		return _simulation->statSystem(_townId);
 	}
 
 	void PushLastDebugSpeech() {
@@ -746,7 +753,9 @@ protected:
 	int32 _id;
 	UnitFullId _fullId;
 	
+	int32 _townId;
 	int32 _playerId;
+	
 	UnitEnum _unitEnum;
 	UnitState _unitState;
 	

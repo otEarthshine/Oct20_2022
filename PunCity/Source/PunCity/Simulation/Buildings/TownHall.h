@@ -5,17 +5,15 @@
 #include "TradeBuilding.h"
 #include "PunCity/Simulation/ArmyNode.h"
 
-//#include "Garrisons.h"
-
 const FText& GetTownhallLvlToUpgradeBonusText(int32 townhallLvl);
 
-class ArmyNodeBuilding : public Building
-{
-public:
-	virtual ArmyNode& GetArmyNode() = 0;
-};
+//class ArmyNodeBuilding : public Building
+//{
+//public:
+//	virtual ArmyNode& GetArmyNode() = 0;
+//};
 
-class TownHall : public ArmyNodeBuilding
+class TownHall : public Building
 {
 public:
 	void FinishConstruction() override;
@@ -42,9 +40,8 @@ public:
 		}
 	}
 
-	FString townFName() { return _townName; }
+	FString townNameF() { return _townName; }
 	FText townNameT() { return FText::FromString(_townName); }
-	std::string townName() { return ToStdString(_townName); }
 
 	void SetTownName(FString _townNameIn) {
 		_townName = _townNameIn;
@@ -79,7 +76,7 @@ public:
 
 		for (int i = 0; i < immigrantCount; i++) {
 			int32 ageTicks = GameRand::Rand() % _simulation->parameters(_playerId)->DeathAgeTicks();
-			_simulation->AddUnit(UnitEnum::Human, _playerId, tile.worldAtom2(), ageTicks);
+			_simulation->AddUnit(UnitEnum::Human, _townId, tile.worldAtom2(), ageTicks);
 		}
 	}
 	void AddInitialImmigrants()
@@ -104,13 +101,13 @@ public:
 		
 		for (int i = 0; i < adultCount; i++) {
 			int32 ageTicks = beginAdultTick + i * Time::TicksPerYear / 3;
-			_simulation->AddUnit(UnitEnum::Human, _playerId, getRandomTile().worldAtom2(), ageTicks);
+			_simulation->AddUnit(UnitEnum::Human, _townId, getRandomTile().worldAtom2(), ageTicks);
 		}
 
 		// 2 years max for children
 		for (int i = 0; i < childrenCount; i++) {
 			int32 ageTicks = i * beginAdultTick / childrenCount;
-			_simulation->AddUnit(UnitEnum::Human, _playerId, getRandomTile().worldAtom2(), ageTicks);
+			_simulation->AddUnit(UnitEnum::Human, _townId, getRandomTile().worldAtom2(), ageTicks);
 		}
 	}
 
@@ -129,7 +126,7 @@ public:
 	}
 	static int32 GetUpgradeMoney(int32 lvl);
 
-	ArmyNode& GetArmyNode() final { return armyNode; }
+	//ArmyNode& GetArmyNode() final { return armyNode; }
 
 	void Serialize(FArchive& Ar) override
 	{
@@ -154,10 +151,10 @@ public:
 			Ar << pair.second;
 		});
 
-		armyNode >> Ar;
-		if (Ar.IsLoading()) {
-			armyNode.InitAfterLoad(_simulation);
-		}
+		//armyNode >> Ar;
+		//if (Ar.IsLoading()) {
+		//	armyNode.InitAfterLoad(_simulation);
+		//}
 	}
 
 	
@@ -186,7 +183,7 @@ public:
 	
 	int32 askedMigration = 0;
 
-	ArmyNode armyNode;
+	//ArmyNode armyNode;
 	
 	// Town lvl
 	int32 townhallLvl = 0;

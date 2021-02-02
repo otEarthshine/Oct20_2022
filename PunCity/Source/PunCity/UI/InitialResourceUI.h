@@ -100,7 +100,7 @@ public:
 		auto& playerOwned = simulation().playerOwned(playerId());
 		if (playerOwned.hasChosenLocation() &&
 			!playerOwned.hasChosenInitialResources() &&
-			!playerOwned.hasTownhall())
+			!playerOwned.hasCapitalTownhall())
 		{
 			// Opening UI
 			if (InitialResourceUI->GetVisibility() == ESlateVisibility::Collapsed) {
@@ -109,7 +109,7 @@ public:
 			InitialResourceUI->SetVisibility(ESlateVisibility::Visible);
 
 			// Food
-			std::vector<int32> provincesClaimed = playerOwned.provincesClaimed();
+			std::vector<int32> provincesClaimed = simulation().GetProvincesPlayer(playerId());
 			PUN_CHECK(provincesClaimed.size() > 0);
 			if (simulation().GetBiomeProvince(provincesClaimed[0]) == BiomeEnum::Jungle) {
 				FoodIcon->SetBrushFromMaterial(assetLoader()->GetResourceIconMaterial(ResourceEnum::Papaya));

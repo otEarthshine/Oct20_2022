@@ -205,15 +205,15 @@ protected:
 								{
 									provinceSys.displayedProvinceThisTick[provinceId] = true;
 
-									int32 playerId = sim.provinceOwner(provinceId);
+									int32 townId = sim.provinceOwnerTown(provinceId);
 
 									int32 clusterId = -1;
-									if (playerId != -1) {
-										clusterId = provinceSys.GetTerritoryClusterId(playerId, provinceId);
+									if (townId != -1) {
+										clusterId = provinceSys.GetTerritoryClusterId(townId, provinceId);
 									}
 
-									const std::vector<WorldTile2x2>& edges1 = clusterId != -1 ? provinceSys.GetTerritoryEdges1(playerId, clusterId) : provinceSys.GetProvinceEdges1(provinceId);
-									const std::vector<WorldTile2x2>& edges2 = clusterId != -1 ? provinceSys.GetTerritoryEdges2(playerId, clusterId) : provinceSys.GetProvinceEdges2(provinceId);
+									const std::vector<WorldTile2x2>& edges1 = clusterId != -1 ? provinceSys.GetTerritoryEdges1(townId, clusterId) : provinceSys.GetProvinceEdges1(provinceId);
+									const std::vector<WorldTile2x2>& edges2 = clusterId != -1 ? provinceSys.GetTerritoryEdges2(townId, clusterId) : provinceSys.GetProvinceEdges2(provinceId);
 									
 									/*
 									 * Edges

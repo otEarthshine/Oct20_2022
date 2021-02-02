@@ -68,16 +68,16 @@ public:
 					graphResourceEnum = resourceEnum;
 				}
 
-				statVec = worldTradeSys.GetStatVec(graphResourceEnum);
+				statVec = worldTradeSys.GetPlotStatVec(graphResourceEnum);
 				
 				statVec.push_back(worldTradeSys.price100(graphResourceEnum));
 				
 			}
 			else if (_seriesList[SeriesIdx].customPlayerId != -1) {
-				statVec = _dataSource->simulation().playerOwned(_seriesList[SeriesIdx].customPlayerId).GetStatVec(plotStatEnum);
+				statVec = _dataSource->simulation().playerOwned(_seriesList[SeriesIdx].customPlayerId).GetPlotStatVec(plotStatEnum);
 			}
 			else {
-				statVec = _dataSource->simulation().playerOwned(_playerId).GetStatVec(plotStatEnum);
+				statVec = _dataSource->simulation().playerOwned(_playerId).GetPlotStatVec(plotStatEnum);
 			}
 
 			float timeIntervalYear = 0.025f;

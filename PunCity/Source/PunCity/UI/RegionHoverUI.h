@@ -70,7 +70,7 @@ public:
 		provinceId = provinceIdIn;
 		
 		auto& sim = simulation();
-		int32 provinceOwnerId = sim.provinceOwner(provinceIdIn);
+		int32 provincePlayerId = sim.provinceOwnerPlayer(provinceIdIn);
 		bool unlockedInfluence = sim.unlockedInfluence(playerId());
 
 		UpkeepText->SetVisibility(ESlateVisibility::Collapsed);
@@ -85,14 +85,14 @@ public:
 		const FText upkeepText = LOCTEXT("Upkeep:", "Upkeep:");
 		
 		// Already own this province, Show real income/upkeep
-		if (provinceOwnerId == playerId())
+		if (provincePlayerId == playerId())
 		{
 			SetText(IncomeText, incomeText);
 			SetTextNumber(IncomeCount, sim.GetProvinceIncome100(provinceIdIn) / 100.0f, 1);
 			
 			if (unlockedInfluence) {
 				SetText(UpkeepText, upkeepText);
-				SetTextNumber(UpkeepCount, sim.GetProvinceUpkeep100(provinceIdIn, provinceOwnerId) / 100.0f, 1);
+				SetTextNumber(UpkeepCount, sim.GetProvinceUpkeep100(provinceIdIn, provincePlayerId) / 100.0f, 1);
 				UpkeepText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 				UpkeepBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 

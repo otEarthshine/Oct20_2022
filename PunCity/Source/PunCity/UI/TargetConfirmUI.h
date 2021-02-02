@@ -42,20 +42,21 @@ public:
 		if (townhallId == -1) {
 			return;
 		}
-		
-		int32 townPlayerId = simulation().building(townhallId).playerId();
-		IntercityTradeOffer offer = simulation().worldTradeSystem().GetIntercityTradeOffer(townPlayerId, resourceEnum);
+
+		Building& townhall = simulation().building(townhallId);
+		int32 townId = townhall.playerId();
+		IntercityTradeOffer offer = simulation().worldTradeSystem().GetIntercityTradeOffer(townId, resourceEnum);
 
 #define LOCTEXT_NAMESPACE "TargetConfirmUI"
 		if (offer.offerEnum == IntercityTradeOfferEnum::BuyWhenBelow)
 		{
 			TitleIconPair->SetText(
-				FText::Format(LOCTEXT("X is buying ", "{0} is buying "), simulation().townNameT(townPlayerId)),
+				FText::Format(LOCTEXT("X is buying ", "{0} is buying "), simulation().townNameT(townId)),
 				LOCTEXT("FullStop", ".")
 			);
 			TitleIconPair->SetImage(resourceEnum, assetLoader());
 
-			int32 maxBuyAmount = offer.targetInventory - simulation().resourceCount(townPlayerId, resourceEnum);
+			int32 maxBuyAmount = offer.targetInventory - simulation().resourceCountTown(townId, resourceEnum);
 			SetText(TargetAmountMaxText, FText::Format(INVTEXT("/ {0}"), TEXT_NUM(maxBuyAmount)));
 			TargetAmount->maxAmount = maxBuyAmount;
 
@@ -65,12 +66,12 @@ public:
 		else if (offer.offerEnum == IntercityTradeOfferEnum::SellWhenAbove)
 		{
 			TitleIconPair->SetText(
-				FText::Format(LOCTEXT("X is selling ", "{0} is selling "), simulation().townNameT(townPlayerId)),
+				FText::Format(LOCTEXT("X is selling ", "{0} is selling "), simulation().townNameT(townId)),
 				LOCTEXT("FullStop", ".")
 			);
 			TitleIconPair->SetImage(resourceEnum, assetLoader());
 
-			int32 maxSellAmount = simulation().resourceCount(townPlayerId, resourceEnum) - offer.targetInventory;
+			int32 maxSellAmount = simulation().resourceCountTown(townId, resourceEnum) - offer.targetInventory;
 			SetText(TargetAmountMaxText, FText::Format(INVTEXT("/ {0}"), TEXT_NUM(maxSellAmount)));
 			TargetAmount->maxAmount = maxSellAmount;
 

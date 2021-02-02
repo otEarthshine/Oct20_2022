@@ -160,7 +160,7 @@ struct BuildHousesQuest final : Quest
 			LOCTEXT("BuildHouses_Finish", "Well done! Your people are happy that they finally have houses to live in.<space>Providing enough housing is important. Homeless people can migrate away, or die during winter. On the other hand, having extra houses can attract immigrants.")
 		);
 		
-		if (simulation->townLvl(playerId) == 1) {
+		if (simulation->GetTownLvl(playerId) == 1) {
 			simulation->parameters(playerId)->NeedTownhallUpgradeNoticed = true;
 		}
 	}
@@ -195,7 +195,7 @@ struct TownhallUpgradeQuest final : Quest
 
 	}
 
-	int32 currentValue() override { return (simulation->townLvl(playerId) >= 2); }
+	int32 currentValue() override { return (simulation->GetTownLvl(playerId) >= 2); }
 	int32 neededValue() override { return 1; }
 };
 
@@ -215,14 +215,14 @@ struct PopulationQuest : Quest
 		return LOCTEXT("GrowPopulation_Desc", "To grow your population:<bullet>Add more houses. The more available housing spaces, the more children people will have.</><bullet>Keep your citizens happy</>");
 	}
 	FText numberDescription() override {
-		return FText::Format(INVTEXT("{0}/{1}"), TEXT_NUM(simulation->population(playerId)), TEXT_NUM(GetTownSizeMinPopulation(townSizeTier)));
+		return FText::Format(INVTEXT("{0}/{1}"), TEXT_NUM(simulation->populationTown(playerId)), TEXT_NUM(GetTownSizeMinPopulation(townSizeTier)));
 	}
 
-	float fraction() override { return static_cast<float>(simulation->population(playerId)) / GetTownSizeMinPopulation(townSizeTier); }
+	float fraction() override { return static_cast<float>(simulation->populationTown(playerId)) / GetTownSizeMinPopulation(townSizeTier); }
 
 	void UpdateStatus(int32 value) override
 	{
-		int32 population = simulation->population(playerId);
+		int32 population = simulation->populationTown(playerId);
 		
 		if (population >= GetTownSizeMinPopulation(townSizeTier))
 		{
@@ -324,7 +324,7 @@ struct ClaimLandQuest : Quest
 
 	bool ShouldSkipToNextQuest() override { return currentValue() >= neededValue(); }
 
-	int32 currentValue() override { return simulation->playerOwned(playerId).provincesClaimed().size() - 1; }
+	int32 currentValue() override { return simulation->GetProvincesPlayer(playerId).size() - 1; }
 	int32 neededValue() override { return 1; }
 	void OnFinishQuest() override
 	{

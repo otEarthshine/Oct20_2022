@@ -106,13 +106,14 @@ public:
 		
 		auto& playerOwned = _simulation->playerOwned(_aiPlayerId);
 		auto& resourceSystem = _simulation->resourceSystem(_aiPlayerId);
+		
 		auto& globalResourceSys = _simulation->globalResourceSystem(_aiPlayerId);
 		auto& terrainGenerator = _simulation->terrainGenerator();
 		auto& treeSystem = _simulation->treeSystem();
 		auto& buildingSystem = _simulation->buildingSystem();
 		auto& provinceSys = _simulation->provinceSystem();
 		
-		const std::vector<int32>& provincesClaimed = playerOwned.provincesClaimed();
+		const std::vector<int32>& provincesClaimed = _simulation->GetProvincesPlayer(_aiPlayerId);
 
 		// Sync _regionStatuses
 		{
@@ -221,12 +222,12 @@ public:
 		/*
 		 * Build townhall (Initialize)
 		 */
-		if (!playerOwned.hasTownhall())
+		if (!playerOwned.hasCapitalTownhall())
 		{
 			_LOG(PunAI, "%s Try Build Townhall", AIPrintPrefix());
 			
-			PUN_CHECK(playerOwned.provincesClaimed().size() == 1);
-			int32 provinceId = playerOwned.provincesClaimed()[0];
+			PUN_CHECK(provincesClaimed.size() == 1);
+			int32 provinceId = provincesClaimed[0];
 			TileArea provinceRectArea = provinceSys.GetProvinceRectArea(provinceId);
 
 			WorldTile2 townhallSize = GetBuildingInfo(CardEnum::Townhall).size;
@@ -329,12 +330,12 @@ public:
 						MODIFIER(YouAreStrong) = Clamp((counterPartyStrength - aiStrength) / 50, 0, 20);
 						MODIFIER(YouAreWeak) = Clamp((aiStrength - counterPartyStrength) / 50, 0, 20);
 
-						const std::vector<int32>& provinceIds = _simulation->playerOwned(_aiPlayerId).provincesClaimed();
+						const std::vector<int32>& provinceIds = _simulation->GetProvincesPlayer(_aiPlayerId);
 						int32 borderCount = 0;
 						for (int32 provinceId : provinceIds) {
 							const std::vector<ProvinceConnection>& connections = _simulation->GetProvinceConnections(provinceId);
 							for (const ProvinceConnection& connection : connections) {
-								if (_simulation->provinceOwner(connection.provinceId) == playerId) {
+								if (_simulation->provinceOwnerPlayer(connection.provinceId) == playerId) {
 									borderCount++;
 								}
 							}
@@ -342,7 +343,7 @@ public:
 						MODIFIER(AdjacentBordersSparkTensions) = std::max(-borderCount * 5, -20);
 
 						// townhall nearer 500 tiles will cause tensions
-						int32 townhallDistance = WorldTile2::Distance(_simulation->townhallGateTile(_aiPlayerId), _simulation->townhallGateTile(playerId));
+						int32 townhallDistance = WorldTile2::Distance(_simulation->GetTownhallGateCapital(_aiPlayerId), _simulation->GetTownhallGateCapital(playerId));
 						if (townhallDistance <= 500) {
 							MODIFIER(TownhallProximitySparkTensions) = -20 * (500 - townhallDistance) / 500;
 						}
@@ -441,7 +442,8 @@ public:
 		/*
 		 * Prepare stats
 		 */
-		TownHall& townhall = _simulation->townhall(_aiPlayerId);
+		TownHall& townhall = _simulation->GetTownhallCapital(_aiPlayerId);
+		TownManager& townManage = _simulation->townManager(_aiPlayerId);
 
 		// Make sure townhall is marked as a city block...
 		int32 townhallProvinceId = townhall.provinceId();
@@ -454,8 +456,8 @@ public:
 			}
 		}
 
-		int32 population = playerOwned.population();
-		const std::vector<std::vector<int32>>& jobBuildingEnumToIds = playerOwned.jobBuildingEnumToIds();
+		int32 population = townManage.population();
+		const std::vector<std::vector<int32>>& jobBuildingEnumToIds = townManage.jobBuildingEnumToIds();
 
 		int32 jobSlots = 0;
 		for (const std::vector<int32>& jobBuildingIds : jobBuildingEnumToIds) {
@@ -467,7 +469,7 @@ public:
 		}
 
 
-		const std::vector<int32> constructionIds = playerOwned.constructionIds();
+		const std::vector<int32> constructionIds = townManage.constructionIds();
 		int32 housesUnderConstruction = 0;
 		for (int32 constructionId : constructionIds) {
 			if (_simulation->buildingEnum(constructionId) == CardEnum::House) {
@@ -550,7 +552,7 @@ public:
 				if (Time::Ticks() > Time::TicksPerSeason * 3 / 2)
 				{
 					// Furniture Workshop
-					if (_simulation->resourceCount(_aiPlayerId, ResourceEnum::Wood) > 200 &&
+					if (_simulation->resourceCountTown(_aiPlayerId, ResourceEnum::Wood) > 200 &&
 						_simulation->buildingCount(_aiPlayerId, CardEnum::FurnitureWorkshop) == 0)
 					{
 						block = AICityBlock::MakeBlock(
@@ -559,7 +561,7 @@ public:
 						);
 					}
 					// Beer Brewery
-					else if (_simulation->resourceCount(_aiPlayerId, ResourceEnum::Wheat) > 100 &&
+					else if (_simulation->resourceCountTown(_aiPlayerId, ResourceEnum::Wheat) > 100 &&
 						_simulation->buildingCount(_aiPlayerId, CardEnum::BeerBrewery) == 0)
 					{
 						block = AICityBlock::MakeBlock(
@@ -896,13 +898,13 @@ public:
 		{
 			SCOPE_CYCLE_COUNTER(STAT_PunAIUpgradeTownhall);
 			
-			int32 townLvl = _simulation->townLvl(_aiPlayerId);
+			int32 townLvl = _simulation->GetTownLvlMax(_aiPlayerId);
 			
 			auto tryUpgrade = [&](int32 targetPopulation, int32 townhallLvl) {
 				if (townLvl == townhallLvl &&
 					population > targetPopulation) 
 				{
-					TownHall& townhal = _simulation->townhall(_aiPlayerId);
+					TownHall& townhal = _simulation->GetTownhallCapital(_aiPlayerId);
 					int32 upgradeMoney = townhal.GetUpgradeMoney(townhallLvl + 1);
 					_simulation->ChangeMoney(_aiPlayerId, upgradeMoney);
 
@@ -938,7 +940,7 @@ public:
 				{
 					if (currentAmount < maxAmount)
 					{
-						int32 resourceCount = _simulation->resourceCount(_aiPlayerId, resourceEnum);
+						int32 resourceCount = _simulation->resourceCountTown(_aiPlayerId, resourceEnum);
 						const int32 amountPreferred = population * supplyPerPop;
 						int32 resourceWanted = std::max(0, resourceCount - amountPreferred);
 						if (resourceWanted > 0) {
@@ -959,7 +961,7 @@ public:
 				{
 					if (currentAmount < maxAmount)
 					{
-						int32 amountWanted = std::max(0, target - _simulation->resourceCount(_aiPlayerId, resourceEnum));
+						int32 amountWanted = std::max(0, target - _simulation->resourceCountTown(_aiPlayerId, resourceEnum));
 						if (amountWanted > 0) {
 							tradeCommand->buyEnums.Add(static_cast<uint8>(resourceEnum));
 							tradeCommand->buyAmounts.Add(amountWanted);
@@ -970,8 +972,8 @@ public:
 
 
 				// Emergency buy medicine
-				int32 medicineCount = _simulation->resourceCount(_aiPlayerId, ResourceEnum::Medicine) +
-										_simulation->resourceCount(_aiPlayerId, ResourceEnum::Herb) / 2;
+				int32 medicineCount = _simulation->resourceCountTown(_aiPlayerId, ResourceEnum::Medicine) +
+										_simulation->resourceCountTown(_aiPlayerId, ResourceEnum::Herb) / 2;
 				if (medicineCount < population / 4) {
 					buyUntil(ResourceEnum::Medicine, population);
 				}
@@ -1065,7 +1067,7 @@ public:
 		{
 			//_LOG(PunAI, "%s CheckDefendLand", AIPrintPrefix());
 			
-			const std::vector<int32>& provinceIds = playerOwned.provincesClaimed();
+			const std::vector<int32>& provinceIds = _simulation->GetProvincesPlayer(_aiPlayerId);
 			for (int32 provinceId : provinceIds)
 			{
 				//_LOG(PunAI, "%s CheckDefendLand provinceId:%d", AIPrintPrefix(), provinceId);
@@ -1106,7 +1108,7 @@ public:
 			{
 				if (connection.tileType == TerrainTileType::None &&
 					_simulation->IsProvinceValid(connection.provinceId) && 
-					_simulation->provinceOwner(connection.provinceId) == -1)
+					_simulation->provinceOwnerTown(connection.provinceId) == -1)
 				{
 					// best place to claim is the one with resource or flat land
 					int32 flatLandPoints = provinceSys.provinceFlatTileCount(connection.provinceId) / 2;
@@ -1140,7 +1142,7 @@ public:
 
 			if (bestClaimProvinceId != -1)
 			{
-				int32 regionPrice = playerOwned.GetBaseProvinceClaimPrice(bestClaimProvinceId);
+				int32 regionPrice = _simulation->GetProvinceClaimPrice(bestClaimProvinceId, _aiPlayerId);
 				
 				if (globalResourceSys.money() >= regionPrice)
 				{

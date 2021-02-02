@@ -420,7 +420,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 						//  So we just need to make sure that the color of ConstructionBaseHighlight is as similar as possible to the decal
 						//  Note also that if we always leave this on, the construction frame will always have weird outlines
 						if (building.playerId() != -1 &&
-							!simulation().IsLandCleared_SmallOnly(building.playerId(), building.area())) 
+							!simulation().IsLandCleared_SmallOnly(building.townId(), building.area())) 
 						{
 							modules.insert(modules.begin(), ModuleTransform("ConstructionBaseHighlight", siteMarkTransform, 0.0f, ModuleTypeEnum::ConstructionBaseHighlight));
 						}

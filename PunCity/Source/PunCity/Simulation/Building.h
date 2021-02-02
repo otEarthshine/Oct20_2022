@@ -18,8 +18,9 @@ class Building
 public:
 	virtual ~Building();
 
-	void Init(IGameSimulationCore& simulation, int objectId, int32 playerId, uint8_t buildingEnum, 
+	void Init(IGameSimulationCore& simulation, int objectId, int32 townId, uint8_t buildingEnum, 
 						TileArea area, WorldTile2 centerTile, Direction faceDirection);
+	
 	void LoadInit(IGameSimulationCore* simulation) {
 		_simulation = simulation;
 	}
@@ -77,6 +78,8 @@ public:
 	}
 
 	int32 playerId() const { return _playerId; }
+	int32 townId() const { return _townId; }
+	
 	int32 buildingId() const { return _objectId; }
 	uint8 buildingEnumInt() const { return static_cast<uint8_t>(_buildingEnum); }
 	CardEnum buildingEnum() const { return _buildingEnum; }
@@ -274,12 +277,12 @@ public:
 	void AddJobBuilding(int maxOccupant) {
 		_maxOccupants = maxOccupant;
 		_allowedOccupants = _maxOccupants;
-		_simulation->PlayerAddJobBuilding(_playerId, *this, true);
+		_simulation->PlayerAddJobBuilding(_townId, *this, true);
 	}
 	void SetJobBuilding(int maxOccupant) {
 		_maxOccupants = maxOccupant;
 		_allowedOccupants = _maxOccupants;
-		_simulation->RefreshJobDelayed(_playerId);
+		_simulation->RefreshJobDelayed(_townId);
 	}
 
 	void ChangeAllowedOccupants(int32 allowedOccupants);
@@ -309,7 +312,7 @@ public:
 
 	virtual bool ShouldAddWorker_ConstructedNonPriority()
 	{
-		if (_simulation->IsOutputTargetReached(_playerId, product())) {
+		if (_simulation->IsOutputTargetReached(_townId, product())) {
 			return false;
 		}
 		
@@ -353,7 +356,7 @@ public:
 					if (constructionCosts[i] > 0) {
 						ResourceEnum resourceEnum = ConstructionResources[i];
 						int32 neededResource = constructionCosts[i] - GetResourceCountWithPush(resourceEnum);
-						if (neededResource > _simulation->resourceCount(_playerId, resourceEnum)) {
+						if (neededResource > _simulation->resourceCountTown(_townId, resourceEnum)) {
 							return false;
 						}
 					}
@@ -369,7 +372,7 @@ public:
 		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
 
 		if (isEnum(CardEnum::House)) {
-			_simulation->RecalculateTaxDelayed(_playerId);
+			_simulation->RecalculateTaxDelayedTown(_townId);
 		}
 	}
 	void RemoveOccupant(int id) {
@@ -377,7 +380,7 @@ public:
 		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
 
 		if (isEnum(CardEnum::House)) {
-			_simulation->RecalculateTaxDelayed(_playerId);
+			_simulation->RecalculateTaxDelayedTown(_townId);
 		}
 	}
 	std::vector<int>& occupants() { return _occupantIds; }
@@ -386,7 +389,7 @@ public:
 		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
 
 		if (isEnum(CardEnum::House)) {
-			_simulation->RecalculateTaxDelayed(_playerId);
+			_simulation->RecalculateTaxDelayedTown(_townId);
 		}
 	}
 
@@ -418,14 +421,21 @@ public:
 	//! Helper
 	class OverlaySystem& overlaySystem() { return _simulation->overlaySystem(); }
 	ResourceSystem& resourceSystem() {
-		ResourceSystem& resourceSys = _simulation->resourceSystem(_playerId);
+		ResourceSystem& resourceSys = _simulation->resourceSystem(townId());
 		resourceSys.CheckIntegrity_ResourceSys();
 		return resourceSys;
 	}
 	GlobalResourceSystem& globalResourceSystem() {
-		GlobalResourceSystem& globalResourceSy = _simulation->globalResourceSystem(_playerId);
+		GlobalResourceSystem& globalResourceSys = _simulation->globalResourceSystem(_playerId);
 		//globalResourceSy.CheckIntegrity_ResourceSys();
-		return globalResourceSy;
+		return globalResourceSys;
+	}
+
+	TownManager& townManager() {
+		return _simulation->townManager(_townId);
+	}
+	SubStatSystem& statSystem() {
+		return _simulation->statSystem(_townId);
 	}
 
 	//! Resources
@@ -823,10 +833,10 @@ public:
 	bool hasInput2() { return input2() != ResourceEnum::None; }
 
 	bool hasInput1Available() {
-		return _simulation->resourceCount(_playerId, input1()) > 0 || resourceCount(input1()) >= inputPerBatch();
+		return _simulation->resourceCountTown(_townId, input1()) > 0 || resourceCount(input1()) >= inputPerBatch();
 	}
 	bool hasInput2Available() {
-		return _simulation->resourceCount(_playerId, input2()) > 0 || resourceCount(input2()) >= inputPerBatch();
+		return _simulation->resourceCountTown(_townId, input2()) > 0 || resourceCount(input2()) >= inputPerBatch();
 	}
 
 	bool needInput1()
@@ -1138,6 +1148,7 @@ public:
 		Ar << _allowedOccupants;
 		Ar << _maxOccupants;
 
+		Ar << _townId;
 		Ar << _playerId;
 		Ar << _buildingEnum;
 		Ar << _level;
@@ -1282,18 +1293,18 @@ public:
 
 		// Inaccessible Warning
 		if (_simulation->HasTownhall(_playerId) &&
-			!_simulation->IsConnectedBuilding(buildingId(), _playerId) &&
+			!_simulation->IsConnectedBuilding(buildingId()) &&
 			maxOccupants() > 0)
 		{
 			if (isConstructed()) {
 				hoverWarning = HoverWarning::Inaccessible;
 				return true;
 			}
-			
+
 			// Construction site check all tiles
 			bool isAccessible = area().ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 tile) {
 				DEBUG_ISCONNECTED_VAR(RefreshHoverWarning);
-				return _simulation->IsConnected(_simulation->townhallGateTile(_playerId), tile, 7, true);
+				return _simulation->IsConnected(_simulation->GetTownhallGateFast(_townId), tile, 7, true);
 			});
 			//	if (_simulation->IsConnected(_simulation->townhallGateTile(_playerId), gateTile(), 7, true)) {
 			//		isAccessible = true;
@@ -1310,7 +1321,7 @@ public:
 		// HouseTooFar Warning
 		if (_allowedOccupants > 0)
 		{
-			if (!_simulation->HasBuildingWithinRadius(_centerTile, 55, _playerId, CardEnum::House))
+			if (!_simulation->HasBuildingWithinRadius(_centerTile, 55, _townId, CardEnum::House))
 			{
 				hoverWarning = HoverWarning::HouseTooFar;
 				return true;
@@ -1345,8 +1356,8 @@ public:
 		if (hasInput1() || hasInput2() || product() != ResourceEnum::None ||
 			IsAgricultureBuilding(_buildingEnum))
 		{
-			if (!_simulation->HasBuildingWithinRadius(_centerTile, 40, _playerId, CardEnum::StorageYard) &&
-				!_simulation->HasBuildingWithinRadius(_centerTile, 40, _playerId, CardEnum::Warehouse)) 
+			if (!_simulation->HasBuildingWithinRadius(_centerTile, 40, _townId, CardEnum::StorageYard) &&
+				!_simulation->HasBuildingWithinRadius(_centerTile, 40, _townId, CardEnum::Warehouse))
 			{
 				hoverWarning = HoverWarning::StorageTooFar;
 				return true;
@@ -1386,7 +1397,9 @@ protected:
 	int32 _allowedOccupants = 0;
 	int32 _maxOccupants = 0;
 
+	int32 _townId = -1;
 	int32 _playerId = -1;
+	
 	CardEnum _buildingEnum = CardEnum::None;
 	int32 _level = 0;
 

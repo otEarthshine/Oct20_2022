@@ -90,16 +90,16 @@ public:
 				skipNode = armyCommand->originNodeId;
 			}
 
-			std::vector<int32> armyNodeIds = simulation().GetArmyNodeIds(playerId());
+			//std::vector<int32> armyNodeIds = simulation().GetArmyNodeIds(playerId());
 
 			int32 rowIndex = 0;
-			for (int32 nodeId : armyNodeIds) {
-				if (nodeId != skipNode) {
-					//auto row = GetBoxChild<UArmyChooseNodeButton>(ArmyChooseNodeBox, rowIndex, UIEnum::ArmyChooseNodeButton, true);
-					//SetText(row->NodeText, simulation().townName(simulation().GetArmyNode(nodeId).originalPlayerId));
-					//row->PunInit(this, nodeId);
-				}
-			}
+			//for (int32 nodeId : armyNodeIds) {
+			//	if (nodeId != skipNode) {
+			//		//auto row = GetBoxChild<UArmyChooseNodeButton>(ArmyChooseNodeBox, rowIndex, UIEnum::ArmyChooseNodeButton, true);
+			//		//SetText(row->NodeText, simulation().townName(simulation().GetArmyNode(nodeId).originalPlayerId));
+			//		//row->PunInit(this, nodeId);
+			//	}
+			//}
 			BoxAfterAdd(ArmyChooseNodeBox, rowIndex);
 
 			// Only one choice, just choose right away
@@ -122,61 +122,61 @@ public:
 		
 		if (showArmyCountUI)
 		{
-			ArmyNode& originNode = simulation().GetArmyNode(armyCommand->originNodeId);
-			ArmyNode& targetNode = simulation().GetArmyNode(armyCommand->targetNodeId);
-			ArmyGroup* fromGroup = originNode.GetArmyGroup(playerId());
-			ArmyGroup* toGroup = targetNode.GetArmyGroup(playerId());
+			//ArmyNode& originNode = simulation().GetArmyNode(armyCommand->originNodeId);
+			//ArmyNode& targetNode = simulation().GetArmyNode(armyCommand->targetNodeId);
+			//ArmyGroup* fromGroup = originNode.GetArmyGroup(playerId());
+			//ArmyGroup* toGroup = targetNode.GetArmyGroup(playerId());
 
-			auto getTitle = [&]() -> std::string
-			{
-				switch (armyCommand->armyOrderEnum)
-				{
-				case CallbackEnum::ArmyConquer: return "Conquering " + simulation().armyNodeName(targetNode.nodeId);
-				case CallbackEnum::ArmyLiberate: return "Liberating " + simulation().armyNodeName(targetNode.nodeId);
-				case CallbackEnum::ArmyHelp: return "Reinforce " + simulation().playerName(armyCommand->helpPlayerId);
-				case CallbackEnum::ArmyReinforce: return "Reinforce";
-				case CallbackEnum::ArmyMoveBetweenNode: return "Moving army to " + simulation().armyNodeName(targetNode.nodeId);
-				default:
-					UE_DEBUG_BREAK();
-					return "";
-				}
-			};
-			SetText(ArmyMoveTitle, getTitle());
+			//auto getTitle = [&]() -> std::string
+			//{
+			//	switch (armyCommand->armyOrderEnum)
+			//	{
+			//	case CallbackEnum::ArmyConquer: return "Conquering " + simulation().armyNodeName(targetNode.nodeId);
+			//	case CallbackEnum::ArmyLiberate: return "Liberating " + simulation().armyNodeName(targetNode.nodeId);
+			//	case CallbackEnum::ArmyHelp: return "Reinforce " + simulation().playerName(armyCommand->helpPlayerId);
+			//	case CallbackEnum::ArmyReinforce: return "Reinforce";
+			//	case CallbackEnum::ArmyMoveBetweenNode: return "Moving army to " + simulation().armyNodeName(targetNode.nodeId);
+			//	default:
+			//		UE_DEBUG_BREAK();
+			//		return "";
+			//	}
+			//};
+			//SetText(ArmyMoveTitle, getTitle());
 
-			SetText(ArmyMoveTitle2, "Dispatching from " + simulation().armyNodeName(originNode.nodeId) + " to " + simulation().armyNodeName(targetNode.nodeId));
+			//SetText(ArmyMoveTitle2, "Dispatching from " + simulation().armyNodeName(originNode.nodeId) + " to " + simulation().armyNodeName(targetNode.nodeId));
 
-			SetTextShorten(FromText, "Available Army");
+			//SetTextShorten(FromText, "Available Army");
 
-			// Show ArmyMoveRows
-			int32 rowIndex = 0;
-			for (int32 i = TowerArmyEnumCount; i < ArmyEnumCount; i++)
-			{
-				PUN_CHECK(fromGroup);
-				int32 troopCount = fromGroup->TroopCount(i);
-				
-				if (troopCount > 0) {
-					//UArmyMoveRow* row = GetBoxChild<UArmyMoveRow>(ArmyMoveRowBox, rowIndex, UIEnum::ArmyMoveRow, true);
-					//row->armyEnumInt = i;
-					//
-					//row->ArmyUnitBackground->SetBrushTintColor(PlayerColor2(fromGroup->playerId));
-					//row->ArmyUnitIcon->SetBrushTintColor(PlayerColor1(fromGroup->playerId));
-					//row->ArmyUnitIcon->SetBrushFromTexture(assetLoader()->GetArmyIcon(static_cast<ArmyEnum>(i)));
+			//// Show ArmyMoveRows
+			//int32 rowIndex = 0;
+			//for (int32 i = TowerArmyEnumCount; i < ArmyEnumCount; i++)
+			//{
+			//	PUN_CHECK(fromGroup);
+			//	int32 troopCount = fromGroup->TroopCount(i);
+			//	
+			//	if (troopCount > 0) {
+			//		//UArmyMoveRow* row = GetBoxChild<UArmyMoveRow>(ArmyMoveRowBox, rowIndex, UIEnum::ArmyMoveRow, true);
+			//		//row->armyEnumInt = i;
+			//		//
+			//		//row->ArmyUnitBackground->SetBrushTintColor(PlayerColor2(fromGroup->playerId));
+			//		//row->ArmyUnitIcon->SetBrushTintColor(PlayerColor1(fromGroup->playerId));
+			//		//row->ArmyUnitIcon->SetBrushFromTexture(assetLoader()->GetArmyIcon(static_cast<ArmyEnum>(i)));
 
-					//SetText(row->FromText, std::to_string(troopCount));
+			//		//SetText(row->FromText, std::to_string(troopCount));
 
-					//row->ArmyCount->Set(this, CallbackEnum::IncrementArmyCount);
-					//row->ArmyCount->incrementMultiplier = 1;
-					//row->ArmyCount->callbackVar1 = i;
-				}
-			}
+			//		//row->ArmyCount->Set(this, CallbackEnum::IncrementArmyCount);
+			//		//row->ArmyCount->incrementMultiplier = 1;
+			//		//row->ArmyCount->callbackVar1 = i;
+			//	}
+			//}
 
-			if (rowIndex == 0) {
-				//simulation().AddPopupToFront(playerId(), "No available army at " + simulation().armyNodeName(originNode.nodeId) + ".", ExclusiveUIEnum::ArmyMoveUI, "PopupCannot");
-				CloseArmyMoveUI();
-				return;
-			}
-			
-			BoxAfterAdd(ArmyMoveRowBox, rowIndex);
+			//if (rowIndex == 0) {
+			//	//simulation().AddPopupToFront(playerId(), "No available army at " + simulation().armyNodeName(originNode.nodeId) + ".", ExclusiveUIEnum::ArmyMoveUI, "PopupCannot");
+			//	CloseArmyMoveUI();
+			//	return;
+			//}
+			//
+			//BoxAfterAdd(ArmyMoveRowBox, rowIndex);
 
 			ArmyMoveOverlay->SetVisibility(ESlateVisibility::Visible);
 		}
@@ -193,15 +193,15 @@ public:
 	{
 		if (callbackEnum == CallbackEnum::IncrementArmyCount)
 		{
-			ArmyNode& originNode = simulation().GetArmyNode(armyCommand->originNodeId);
-			ArmyGroup* fromGroup = originNode.GetArmyGroup(playerId());
+			//ArmyNode& originNode = simulation().GetArmyNode(armyCommand->originNodeId);
+			//ArmyGroup* fromGroup = originNode.GetArmyGroup(playerId());
 
-			auto numberBox = CastChecked<UPunEditableNumberBox>(punWidgetCaller);
-			
-			// Limit the amount 
-			int32 armyEnumInt = punWidgetCaller->callbackVar1;
-			numberBox->amount = std::min(std::max(numberBox->amount, 0), fromGroup->TroopCount(armyEnumInt));
-			numberBox->UpdateText();
+			//auto numberBox = CastChecked<UPunEditableNumberBox>(punWidgetCaller);
+			//
+			//// Limit the amount 
+			//int32 armyEnumInt = punWidgetCaller->callbackVar1;
+			//numberBox->amount = std::min(std::max(numberBox->amount, 0), fromGroup->TroopCount(armyEnumInt));
+			//numberBox->UpdateText();
 		}
 	}
 
@@ -277,20 +277,20 @@ public:
 				orderEnum == CallbackEnum::ArmyHelp ||
 				orderEnum == CallbackEnum::ArmyLiberate)
 			{
-				ArmyNode& targetNode = simulation().GetArmyNode(armyCommand->targetNodeId);
-				int32 attackDelayPenalty = targetNode.PlayerAttackDelayPenaltyPercent(playerId());
+				//ArmyNode& targetNode = simulation().GetArmyNode(armyCommand->targetNodeId);
+				//int32 attackDelayPenalty = targetNode.PlayerAttackDelayPenaltyPercent(playerId());
 
-				if (attackDelayPenalty > 0)
-				{
-					ConfirmUI->SetVisibility(ESlateVisibility::Visible);
-					int32 attackSpeedPenalty = 100 - 100 * 100 / (100 + attackDelayPenalty);
-					SetText(ConfirmText,  simulation().armyNodeName(targetNode.nodeId) + 
-						" is very far from cities and colonies you own. As a result, your army will incur an attack speed penalty of " + std::to_string(attackSpeedPenalty) + "%. "+
-						"Will you still execute the move?");
+				//if (attackDelayPenalty > 0)
+				//{
+				//	ConfirmUI->SetVisibility(ESlateVisibility::Visible);
+				//	int32 attackSpeedPenalty = 100 - 100 * 100 / (100 + attackDelayPenalty);
+				//	SetText(ConfirmText,  simulation().armyNodeName(targetNode.nodeId) + 
+				//		" is very far from cities and colonies you own. As a result, your army will incur an attack speed penalty of " + std::to_string(attackSpeedPenalty) + "%. "+
+				//		"Will you still execute the move?");
 
-					SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-					return;
-				}
+				//	SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+				//	return;
+				//}
 			}
 			
 			showArmyChooseNode = true;

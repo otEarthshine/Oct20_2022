@@ -56,7 +56,7 @@ public:
 	 */
 	int32 BeginBreedingAgeTicks() {
 		int32 result = BaseAdultTicks; // 1.5 year
-		if (_simulation->TownhallCardCount(_playerId, CardEnum::ChildMarriage) > 0) {
+		if (_simulation->TownhallCardCountAll(_playerId, CardEnum::ChildMarriage) > 0) {
 			result -= Time::TicksPerYear / 2;
 		}
 		return result;
@@ -87,7 +87,7 @@ public:
 	{
 		int32 result = Time::TicksPerYear * 5 / 4;
 
-		int32 population = _simulation->population(_playerId);
+		int32 population = _simulation->populationTown(_playerId);
 		int32 housingCapacity = _simulation->HousingCapacity(_playerId);
 
 		if (population > housingCapacity - 5) {

@@ -120,7 +120,7 @@ void UBuildingJobUI::SetConstructionResource(std::vector<int32> constructionReso
 			material->SetScalarParameterValue("Fraction", fraction);
 			material->SetScalarParameterValue("IsInput", 1.0f);
 
-			material->SetScalarParameterValue("HasNoResource", fraction < 1.0f && simulation().resourceCount(building.playerId(), resourceEnum) == 0);
+			material->SetScalarParameterValue("HasNoResource", fraction < 1.0f && simulation().resourceCountTown(building.townId(), resourceEnum) == 0);
 
 			completionIcon->SetIsPaused(building.priority() == PriorityEnum::Disable);
 
@@ -129,7 +129,7 @@ void UBuildingJobUI::SetConstructionResource(std::vector<int32> constructionReso
 			ADDTEXT_INV_("<space>");
 			ADDTEXT_(INVTEXT("{0} {1}/{2}"), ResourceNameT(resourceEnum), TEXT_NUM(constructionResourcesCount[i]), constructionCosts[i]);
 			ADDTEXT_INV_("<space>");
-			ADDTEXT_(LOCTEXT("Stored(city): {0}", "Stored(city): {0}"), TEXT_NUM(simulation().resourceCount(playerId(), resourceEnum)));
+			ADDTEXT_(LOCTEXT("Stored(city): {0}", "Stored(city): {0}"), TEXT_NUM(simulation().resourceCountTown(building.townId(), resourceEnum)));
 
 			auto tooltip = AddToolTip(completionIcon->ResourceImage, args);
 			if (tooltip) {
@@ -282,7 +282,7 @@ void UBuildingJobUI::SetResourceCompletion(std::vector<ResourceEnum> inputs, std
 
 		material->SetScalarParameterValue("Fraction", static_cast<float>(hasCount) / needCount);
 		material->SetScalarParameterValue("IsInput", 1.0f);
-		material->SetScalarParameterValue("HasNoResource", hasCount < needCount && simulation().resourceCount(playerId(), inputs[i]) == 0);
+		material->SetScalarParameterValue("HasNoResource", hasCount < needCount && simulation().resourceCountTown(building.townId(), inputs[i]) == 0);
 
 		completionIcon->SetIsPaused(building.priority() == PriorityEnum::Disable);
 
@@ -291,7 +291,7 @@ void UBuildingJobUI::SetResourceCompletion(std::vector<ResourceEnum> inputs, std
 		ADDTEXT_INV_("<space>");
 		ADDTEXT_(INVTEXT("{0} {1}/{2}"), ResourceNameT(inputs[i]), TEXT_NUM(hasCount), TEXT_NUM(needCount));
 		ADDTEXT_INV_("<space>");
-		ADDTEXT_(LOCTEXT("Stored(city): {0}", "Stored(city): {0}"), TEXT_NUM(simulation().resourceCount(playerId(), inputs[i])));
+		ADDTEXT_(LOCTEXT("Stored(city): {0}", "Stored(city): {0}"), TEXT_NUM(simulation().resourceCountTown(building.townId(), inputs[i])));
 
 		auto tooltip = AddToolTip(completionIcon->ResourceImage, args);
 		if (tooltip) {

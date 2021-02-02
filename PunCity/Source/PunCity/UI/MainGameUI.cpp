@@ -275,13 +275,13 @@ void UMainGameUI::Tick()
 	if (InterfacesInvalid()) return;
 
 	
-	GameSimulationCore& simulation = dataSource()->simulation();
+	GameSimulationCore& sim = dataSource()->simulation();
 
 
 
 	//! Set visibility
 	bool shouldDisplayMainGameUI = dataSource()->ZoomDistanceBelow(WorldZoomAmountStage3) &&
-									simulation.playerOwned(playerId()).hasChosenLocation() &&
+									sim.HasChosenLocation(playerId()) &&
 									!inputSystemInterface()->isSystemMovingCamera();
 
 	if (shouldDisplayMainGameUI && GetVisibility() == ESlateVisibility::Collapsed) {
@@ -295,7 +295,7 @@ void UMainGameUI::Tick()
 	/*
 	 * Initial hide before building a townhall
 	 */
-	if (simulation.HasTownhall(playerId()))
+	if (sim.HasTownhall(playerId()))
 	{
 		BuildGatherMenu->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		CardStackSizeBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
@@ -328,7 +328,7 @@ void UMainGameUI::Tick()
 	
 	{
 		// Cards
-		auto& cardSystem = simulation.cardSystem(playerId());
+		auto& cardSystem = sim.cardSystem(playerId());
 		int32 rollCountdown = Time::SecondsPerRound - Time::Seconds() % Time::SecondsPerRound;
 		
 		if (_lastRoundCountdown != rollCountdown) {
@@ -354,8 +354,8 @@ void UMainGameUI::Tick()
 		SetText(RoundCountdownText, to_string(rollCountdown) + "s");
 		RoundCountdownImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", static_cast<float>(Time::Seconds() % Time::SecondsPerRound) / Time::SecondsPerRound);
 
-		ResourceSystem& resourceSystem = simulation.resourceSystem(playerId());
-		GlobalResourceSystem& globalResourceSys = simulation.globalResourceSystem(playerId());
+		ResourceSystem& resourceSystem = sim.resourceSystem(playerId());
+		GlobalResourceSystem& globalResourceSys = sim.globalResourceSystem(playerId());
 
 		// Refresh card stack
 		// refresh the stack if its state changed...
@@ -476,8 +476,8 @@ void UMainGameUI::Tick()
 
 		//bool handChanged = _lastDisplayHand != cardSystem.GetHand();
 		bool questChanged = false;
-		if (_lastQuests != simulation.questSystem(playerId())->quests()) {
-			_lastQuests = simulation.questSystem(playerId())->quests();
+		if (_lastQuests != sim.questSystem(playerId())->quests()) {
+			_lastQuests = sim.questSystem(playerId())->quests();
 			questChanged = true;
 		}
 
@@ -763,7 +763,7 @@ void UMainGameUI::Tick()
 	}
 
 	// No Townhall Don't show UI other than Townhall Card
-	if (!simulation.HasTownhall(playerId())) {
+	if (!sim.HasTownhall(playerId())) {
 		ResearchBarUI->SetVisibility(ESlateVisibility::Collapsed);
 		ProsperityBarUI->SetVisibility(ESlateVisibility::Collapsed);
 		return;
@@ -771,7 +771,7 @@ void UMainGameUI::Tick()
 
 	{
 		// Events
-		auto& eventSystem = simulation.eventLogSystem();
+		auto& eventSystem = sim.eventLogSystem();
 
 		if (eventSystem.needRefreshEventLog[playerId()])
 		{
@@ -805,7 +805,7 @@ void UMainGameUI::Tick()
 		 * Exclamation
 		 */
 		// Gather
-		auto questSys = simulation.questSystem(playerId());
+		auto questSys = sim.questSystem(playerId());
 		PlacementType placementType = inputSystemInterface()->placementState();
 		ExclamationIcon_Gather->SetShow(questSys->GetQuest(QuestEnum::GatherMarkQuest) 
 											&& placementType != PlacementType::Gather 
@@ -820,7 +820,7 @@ void UMainGameUI::Tick()
 			{
 				needExclamation = true;
 				
-				auto cardsBought = simulation.cardSystem(playerId()).GetCardsBought();
+				auto cardsBought = sim.cardSystem(playerId()).GetCardsBought();
 				for (const auto& cardStack : cardsBought) {
 					if (IsAgricultureBuilding(cardStack.buildingEnum)) {
 						needExclamation = false; // Food card alreay bought, don't need too buy more...
@@ -841,7 +841,7 @@ void UMainGameUI::Tick()
 			if (!isBuilding)
 			{
 				if (questSys->GetQuest(QuestEnum::BuildStorageQuest) ||
-					simulation.NeedQuestExclamation(playerId(), QuestEnum::BuildHousesQuest)) {
+					sim.NeedQuestExclamation(playerId(), QuestEnum::BuildHousesQuest)) {
 					needExclamation = true;
 				}
 			}
@@ -852,9 +852,9 @@ void UMainGameUI::Tick()
 
 	{
 		//! Stats:
-		UnitSystem& unitSystem = simulation.unitSystem();
-		StatSystem& statSystem = simulation.statSystem();
-		GlobalResourceSystem& globalResourceSys = simulation.globalResourceSystem(playerId());
+		UnitSystem& unitSystem = sim.unitSystem();
+		StatSystem& statSystem = sim.statSystem();
+		GlobalResourceSystem& globalResourceSys = sim.globalResourceSystem(playerId());
 
 		// Top left
 		{
@@ -867,7 +867,7 @@ void UMainGameUI::Tick()
 		}
 		
 		{
-			FloatDet celsius = simulation.Celsius(dataSource()->cameraAtom().worldTile2());
+			FloatDet celsius = sim.Celsius(dataSource()->cameraAtom().worldTile2());
 			SetText(TemperatureText, FText::Format(
 				INVTEXT("{0}°C ({1}°F)"),
 				TEXT_NUM(FDToInt(celsius)),
@@ -889,8 +889,8 @@ void UMainGameUI::Tick()
 		//TopLeftText->SetText(FText::FromString(FString(ss.str().c_str())));
 		//ss("");
 
-		int32 population = simulation.population(playerId());
-		int32 childPopulation = simulation.playerOwned(playerId()).childPopulation();
+		int32 population = sim.populationTown(currentTownId());
+		int32 childPopulation = sim.townManager(currentTownId()).childPopulation();
 		int32 adultPopulation = population - childPopulation;
 
 		AdultPopulationText->SetText(FText::FromString(FString::FromInt(adultPopulation)));
@@ -906,10 +906,10 @@ void UMainGameUI::Tick()
 
 		if (shouldDisplayMainGameUI)
 		{
-			HousingSpaceText->SetText(FText::FromString(FString::FromInt(population) + FString("/") + FString::FromInt(simulation.HousingCapacity(playerId()))));
+			HousingSpaceText->SetText(FText::FromString(FString::FromInt(population) + FString("/") + FString::FromInt(sim.HousingCapacity(playerId()))));
 
 
-			std::pair<int32, int32> slotsPair = simulation.GetStorageCapacity(playerId());
+			std::pair<int32, int32> slotsPair = sim.GetStorageCapacity(playerId());
 			int32 usedSlots = slotsPair.first;
 			int32 totalSlots = slotsPair.second;
 			SetText(StorageSpaceText, to_string(usedSlots) + "/" + to_string(totalSlots));
@@ -919,11 +919,11 @@ void UMainGameUI::Tick()
 				ADDTEXT_(
 					LOCTEXT("HousingSpaceBox_Tip1", "Population: {0}\nHousing space: {1}"),
 					TEXT_NUM(population),
-					TEXT_NUM(simulation.HousingCapacity(playerId()))
+					TEXT_NUM(sim.HousingCapacity(playerId()))
 				);
 				ADDTEXT_INV_("<space>");
 				for (int32 i = 1; i <= House::GetMaxHouseLvl(); i++) {
-					int32 houseLvlCount = simulation.GetHouseLvlCount(playerId(), i, false);
+					int32 houseLvlCount = sim.GetHouseLvlCount(playerId(), i, false);
 					if (houseLvlCount > 0) {
 						ADDTEXT_(LOCTEXT("HousingSpaceBox_Tip2", "<bullet>House lvl {0}: {1}</>"), TEXT_NUM(i), TEXT_NUM(houseLvlCount));
 					}
@@ -963,26 +963,27 @@ void UMainGameUI::Tick()
 			//AddToolTip(MigrationText, migrationTip.str());
 		}
 
-		auto& playerOwned = simulation.playerOwned(playerId());
+		auto& playerOwned = sim.playerOwned(playerId());
+		auto& townManager = sim.townManager(currentTownId());
 		
-		// Happiness
+		// Happiness (Town)
 		{
-			Happiness->SetText(FText(), TEXT_NUM(simulation.GetAverageHappiness(playerId())));
+			Happiness->SetText(FText(), TEXT_NUM(sim.GetAverageHappiness(playerId())));
 
 			TArray<FText> args;
 			ADDTEXT_(
 				LOCTEXT("Happiness_Tip1", "Happiness: {0}<img id=\"Smile\"/><space>Base: {1}<bullet>{2} food</><bullet>{3} heat</><bullet>{4} housing</><bullet>{5} fun</>"),
-				TEXT_NUM(playerOwned.aveHappiness()),
-				TEXT_NUM(playerOwned.aveNeedHappiness()),
-				TEXT_NUM(playerOwned.aveFoodHappiness()),
-				TEXT_NUM(playerOwned.aveHeatHappiness()),
-				TEXT_NUM(playerOwned.aveHousingHappiness()),
-				TEXT_NUM(playerOwned.aveFunHappiness())
+				TEXT_NUM(townManager.aveHappiness()),
+				TEXT_NUM(townManager.aveNeedHappiness()),
+				TEXT_NUM(townManager.aveFoodHappiness()),
+				TEXT_NUM(townManager.aveHeatHappiness()),
+				TEXT_NUM(townManager.aveHousingHappiness()),
+				TEXT_NUM(townManager.aveFunHappiness())
 			);
 
-			ADDTEXT_(LOCTEXT("Happiness_Tip2", "Modifiers: {0}"), TEXT_NUM(playerOwned.aveHappinessModifierSum()));
+			ADDTEXT_(LOCTEXT("Happiness_Tip2", "Modifiers: {0}"), TEXT_NUM(townManager.aveHappinessModifierSum()));
 			for (size_t i = 0; i < HappinessModifierName.Num(); i++) {
-				int32 modifier = playerOwned.aveHappinessModifier(static_cast<HappinessModifierEnum>(i));
+				int32 modifier = townManager.aveHappinessModifier(static_cast<HappinessModifierEnum>(i));
 				if (modifier != 0) {
 					ADDTEXT_(INVTEXT("<bullet>{0} {1}</>"), TEXT_NUM(modifier), HappinessModifierName[i]);
 				}
@@ -991,7 +992,7 @@ void UMainGameUI::Tick()
 			AddToolTip(Happiness, JOINTEXT(args));
 		}
 
-		// Money
+		// Money (Player)
 		{
 			Money->SetText(FText(), TEXT_NUM(globalResourceSys.money()));
 
@@ -1007,9 +1008,9 @@ void UMainGameUI::Tick()
 			AddToolTip(MoneyChangeText, moneyTipText);
 		}
 
-		// Influence
-		if (simulation.playerOwned(playerId()).hasChosenLocation() &&
-			simulation.unlockedInfluence(playerId()))
+		// Influence (Player)
+		if (sim.HasChosenLocation(playerId()) &&
+			sim.unlockedInfluence(playerId()))
 		{
 			Influence->SetText("", to_string(globalResourceSys.influence()));
 			InfluenceChangeText->SetText(TEXT_100SIGNED(playerOwned.totalInfluenceIncome100()));
@@ -1029,8 +1030,8 @@ void UMainGameUI::Tick()
 			InfluenceChangeText->SetVisibility(ESlateVisibility::Collapsed);
 		}
 
-		// Science
-		if (simulation.unlockSystem(playerId())->researchEnabled) 
+		// Science (Player)
+		if (sim.unlockSystem(playerId())->researchEnabled) 
 		{
 			// Science Text
 			TArray<FText> args;
@@ -1043,7 +1044,11 @@ void UMainGameUI::Tick()
 
 			for (size_t i = 0; i < ScienceEnumCount; i++)
 			{
-				int32 science100 = playerOwned.sciences100[i];
+				int32 science100 = 0;
+				const auto& townIds = playerOwned.townIds();
+				for (int32 townId : townIds) {
+					science100 += sim.townManager(townId).sciences100[i];
+				}
 				if (science100 != 0) {
 					ADDTEXT_(INVTEXT("  {0} {1}\n"), TEXT_100(science100), ScienceEnumName(i));
 				}
@@ -1112,7 +1117,7 @@ void UMainGameUI::Tick()
 		// This will set IconTextPair to red text when amount is zero
 		auto SetResourceIconPair = [&](UIconTextPairWidget* iconTextPair, ResourceEnum resourceEnum)
 		{
-			int32 resourceCount = simulation.resourceCount(playerId(), resourceEnum);
+			int32 resourceCount = sim.resourceCountTown(currentTownId(), resourceEnum);
 			iconTextPair->SetFString(FString(), FString::FromInt(resourceCount));
 			iconTextPair->SetTextColor(resourceCount == 0 ? FLinearColor::Red : FLinearColor::White);
 
@@ -1128,7 +1133,7 @@ void UMainGameUI::Tick()
 
 
 		// Food
-		int32 foodCount = simulation.foodCount(playerId());
+		int32 foodCount = sim.foodCount(playerId());
 		FoodCountText->SetText(FText::Format(LOCTEXT("Food: {0}", "Food: {0}"), TEXT_NUM(foodCount)));
 		FoodCountText->SetColorAndOpacity(foodCount > 0 ? FLinearColor::White : FLinearColor::Red);
 		PlayAnimationIf("FoodCountLowFlash", foodCount == 0);
@@ -1136,7 +1141,7 @@ void UMainGameUI::Tick()
 		BUTTON_ON_CLICK(FoodCountButton, this, &UMainGameUI::OnClickFoodCountButton);
 
 		{
-			auto& statSys = simulation.statSystem().playerStatSystem(playerId());
+			auto& statSys = sim.statSystem(currentTownId());
 			
 			const std::vector<std::vector<int32>>& productionStats = statSys.GetResourceStat(ResourceSeasonStatEnum::Production);
 			const std::vector<std::vector<int32>>& consumptionStats = statSys.GetResourceStat(ResourceSeasonStatEnum::Consumption);
@@ -1333,7 +1338,7 @@ void UMainGameUI::Tick()
 		}
 	}
 
-	UnlockSystem* unlockSystem = simulation.unlockSystem(playerId());
+	UnlockSystem* unlockSystem = sim.unlockSystem(playerId());
 	if (unlockSystem) 
 	{
 		// ResearchBarUI
@@ -1369,7 +1374,7 @@ void UMainGameUI::Tick()
 			const std::vector<std::vector<int32>>& houseLvlToUnlockCount = unlockSystem->houseLvlToUnlockCounts();
 			for (size_t lvl = 1; lvl < houseLvlToUnlockCount.size(); lvl++) 
 			{
-				int32 houseLvlCount = simulation.GetHouseLvlCount(playerId(), lvl, true);
+				int32 houseLvlCount = sim.GetHouseLvlCount(playerId(), lvl, true);
 				for (size_t i = 0; i < houseLvlToUnlockCount[lvl].size(); i++) 
 				{
 					// skip i == 0 for the tech with zero left?
@@ -1380,7 +1385,7 @@ void UMainGameUI::Tick()
 						//if (houseLvlCountToLeft < houseLvlToUnlockCount[lvl - 1][0]) {
 						//	continue;
 						//}
-						int32 houseLvlCountToLeft = simulation.GetHouseLvlCount(playerId(), lvl - 1, true);
+						int32 houseLvlCountToLeft = sim.GetHouseLvlCount(playerId(), lvl - 1, true);
 						if (houseLvlCountToLeft == 0) {
 							continue;
 						}
@@ -1443,86 +1448,88 @@ void UMainGameUI::Tick()
 	/*
 	 * Job Priority Tick
 	 */
-	auto& playerOwned = simulation.playerOwned(playerId());
-
-	// lazy init
-	if (JobPriorityRows.Num() == 0)
+	if (jobPriorityTownId != -1)
 	{
-		const std::vector<CardEnum>& jobPriorityList = playerOwned.GetJobPriorityList();
-		
-		JobPriorityScrollBox->ClearChildren();
-		for (int32 i = 0; i < jobPriorityList.size(); i++)
+		auto& townManager = sim.townManager(jobPriorityTownId);
+
+		// lazy init
+		if (JobPriorityRows.Num() == 0)
 		{
-			CardEnum jobEnum = jobPriorityList[i];
+			const std::vector<CardEnum>& jobPriorityList = townManager.GetJobPriorityList();
 
-			UJobPriorityRow* jobRow = AddWidget<UJobPriorityRow>(UIEnum::JobPriorityRow);
-			jobRow->Init(this, jobEnum);
-			JobPriorityScrollBox->AddChild(jobRow);
-			JobPriorityRows.Add(jobRow);
-			jobRow->Rename(*(FString("Job_") + FString::FromInt(static_cast<int>(jobEnum))));
-		}
-	}
-
-	if (JobPriorityOverlay->GetVisibility() != ESlateVisibility::Collapsed)
-	{
-		CardEnum firstCardEnum = CardEnum::None;
-		CardEnum lastCardEnum = CardEnum::None;
-		for (int32 i = 0; i < JobPriorityRows.Num(); i++) {
-			CardEnum cardEnum = JobPriorityRows[i]->cardEnum;;
-			if (playerOwned.jobBuildingEnumToIds()[static_cast<int>(cardEnum)].size() > 0) {
-				if (firstCardEnum == CardEnum::None) {
-					firstCardEnum = cardEnum;
-				}
-				lastCardEnum = cardEnum;
-			}
-		}
-
-		int32 visibleIndex = 0;
-		for (int32 i = 0; i < JobPriorityRows.Num(); i++)
-		{
-			auto jobRow = JobPriorityRows[i];
-			CardEnum cardEnum = jobRow->cardEnum;
-			
-			const std::vector<int32>& buildingIds = playerOwned.jobBuildingEnumToIds()[static_cast<int>(cardEnum)];
-			if (buildingIds.size() == 0) {
-				jobRow->SetVisibility(ESlateVisibility::Collapsed);
-				continue;
-			}
-
-			int32 occupantCount = 0;
-			int32 allowedCount = 0;
-			for (int32 buildingId : buildingIds)
+			JobPriorityScrollBox->ClearChildren();
+			for (int32 i = 0; i < jobPriorityList.size(); i++)
 			{
-				auto& building = simulation.building(buildingId);
-				occupantCount += building.occupantCount();
-				allowedCount += building.allowedOccupants();
+				CardEnum jobEnum = jobPriorityList[i];
+
+				UJobPriorityRow* jobRow = AddWidget<UJobPriorityRow>(UIEnum::JobPriorityRow);
+				jobRow->Init(this, jobEnum);
+				JobPriorityScrollBox->AddChild(jobRow);
+				JobPriorityRows.Add(jobRow);
+				jobRow->Rename(*(FString("Job_") + FString::FromInt(static_cast<int>(jobEnum))));
 			}
-
-			//std::stringstream ss;
-			//ss << occupantCount << "/" << allowedCount;
-			SetText(jobRow->JobCountText, 
-				FText::Format(INVTEXT("{0}/{1}"), TEXT_NUM(occupantCount), TEXT_NUM(allowedCount))
-			);
-
-			jobRow->SetVisibility(ESlateVisibility::Visible);
-
-			bool hideArrowUp = (cardEnum == firstCardEnum);
-			jobRow->ArrowUpButton->SetVisibility(hideArrowUp ? ESlateVisibility::Hidden : ESlateVisibility::Visible);
-			jobRow->ArrowFastUpButton->SetVisibility(hideArrowUp ? ESlateVisibility::Hidden : ESlateVisibility::Visible);
-
-			bool hideArrowDown = (cardEnum == lastCardEnum);
-			jobRow->ArrowDownButton->SetVisibility(hideArrowDown ? ESlateVisibility::Hidden : ESlateVisibility::Visible);
-			jobRow->ArrowFastDownButton->SetVisibility(hideArrowDown ? ESlateVisibility::Hidden : ESlateVisibility::Visible);
-
-			jobRow->index = i;
-			jobRow->visibleIndex = visibleIndex;
-			visibleIndex++;
 		}
 
-		_laborerPriorityState.TrySyncToSimulation(&simulation, playerId(), this);
-		RefreshLaborerUI();
+		if (JobPriorityOverlay->GetVisibility() != ESlateVisibility::Collapsed)
+		{
+			CardEnum firstCardEnum = CardEnum::None;
+			CardEnum lastCardEnum = CardEnum::None;
+			for (int32 i = 0; i < JobPriorityRows.Num(); i++) {
+				CardEnum cardEnum = JobPriorityRows[i]->cardEnum;;
+				if (townManager.jobBuildingEnumToIds()[static_cast<int>(cardEnum)].size() > 0) {
+					if (firstCardEnum == CardEnum::None) {
+						firstCardEnum = cardEnum;
+					}
+					lastCardEnum = cardEnum;
+				}
+			}
+
+			int32 visibleIndex = 0;
+			for (int32 i = 0; i < JobPriorityRows.Num(); i++)
+			{
+				auto jobRow = JobPriorityRows[i];
+				CardEnum cardEnum = jobRow->cardEnum;
+
+				const std::vector<int32>& buildingIds = townManager.jobBuildingEnumToIds()[static_cast<int>(cardEnum)];
+				if (buildingIds.size() == 0) {
+					jobRow->SetVisibility(ESlateVisibility::Collapsed);
+					continue;
+				}
+
+				int32 occupantCount = 0;
+				int32 allowedCount = 0;
+				for (int32 buildingId : buildingIds)
+				{
+					auto& building = sim.building(buildingId);
+					occupantCount += building.occupantCount();
+					allowedCount += building.allowedOccupants();
+				}
+
+				//std::stringstream ss;
+				//ss << occupantCount << "/" << allowedCount;
+				SetText(jobRow->JobCountText,
+					FText::Format(INVTEXT("{0}/{1}"), TEXT_NUM(occupantCount), TEXT_NUM(allowedCount))
+				);
+
+				jobRow->SetVisibility(ESlateVisibility::Visible);
+
+				bool hideArrowUp = (cardEnum == firstCardEnum);
+				jobRow->ArrowUpButton->SetVisibility(hideArrowUp ? ESlateVisibility::Hidden : ESlateVisibility::Visible);
+				jobRow->ArrowFastUpButton->SetVisibility(hideArrowUp ? ESlateVisibility::Hidden : ESlateVisibility::Visible);
+
+				bool hideArrowDown = (cardEnum == lastCardEnum);
+				jobRow->ArrowDownButton->SetVisibility(hideArrowDown ? ESlateVisibility::Hidden : ESlateVisibility::Visible);
+				jobRow->ArrowFastDownButton->SetVisibility(hideArrowDown ? ESlateVisibility::Hidden : ESlateVisibility::Visible);
+
+				jobRow->index = i;
+				jobRow->visibleIndex = visibleIndex;
+				visibleIndex++;
+			}
+
+			_laborerPriorityState.TrySyncToSimulation(&sim, jobPriorityTownId, this);
+			RefreshLaborerUI();
+		}
 	}
-	
 
 	/*
 	 * Card animation, the beginning part
@@ -2116,30 +2123,33 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 			if (IsGlobalSlotCard(buildingEnum)) 
 			{
 				DescriptionUIState uiState = simulation().descriptionUIState();
-				if (uiState.objectType == ObjectTypeEnum::Building &&
-					uiState.objectId == simulation().townhall(playerId()).buildingId())
+				if (uiState.objectType == ObjectTypeEnum::Building)
 				{
-					if (simulation().cardSystem(playerId()).CanAddCardToTownhall())
+					Building& bld = simulation().building(uiState.objectId);
+					if (bld.isEnum(CardEnum::Townhall))
 					{
-						FVector2D initialPosition = GetViewportPosition(cardButton->GetCachedGeometry());
-						
-						auto command = make_shared<FUseCard>();
-						command->cardEnum = buildingEnum;
-						command->SetPosition(initialPosition);
-						networkInterface()->SendNetworkCommand(command);
+						if (simulation().townManager(bld.townId()).CanAddCardToTownhall())
+						{
+							FVector2D initialPosition = GetViewportPosition(cardButton->GetCachedGeometry());
 
-						// Card initial animation
-						//auto animationCard = AddAnimationCard(buildingEnum);
-						//animationCard->StartAnimation(initialPosition, transitionPosition, CardAnimationEnum::ToGlobalSlot, Time::TicksPerSecond / 10);
-						//AnimatedCardOverlay->AddChild(animationCard);
+							auto command = make_shared<FUseCard>();
+							command->cardEnum = buildingEnum;
+							command->SetPosition(initialPosition);
+							networkInterface()->SendNetworkCommand(command);
 
-						//cardButton->SetVisibility(ESlateVisibility::Hidden);
-					}
-					else {
-						simulation().AddPopupToFront(playerId(), 
-							LOCTEXT("NotEnoughSlotUnslotFirst_Pop", "Not enough slot. Unslot a card in this building first."), 
-							ExclusiveUIEnum::None, "PopupCannot"
-						);
+							// Card initial animation
+							//auto animationCard = AddAnimationCard(buildingEnum);
+							//animationCard->StartAnimation(initialPosition, transitionPosition, CardAnimationEnum::ToGlobalSlot, Time::TicksPerSecond / 10);
+							//AnimatedCardOverlay->AddChild(animationCard);
+
+							//cardButton->SetVisibility(ESlateVisibility::Hidden);
+						}
+						else {
+							simulation().AddPopupToFront(playerId(),
+								LOCTEXT("NotEnoughSlotUnslotFirst_Pop", "Not enough slot. Unslot a card in this building first."),
+								ExclusiveUIEnum::None, "PopupCannot"
+							);
+						}
 					}
 				}
 				else
@@ -2247,7 +2257,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 					// Special Card, ensure there is a valid georesourceEnum
 					auto hasGeoresource = [&](GeoresourceEnum georesourceEnum)
 					{
-						const std::vector<int32>& provinceIds = simulation().playerOwned(playerId()).provincesClaimed();
+						const std::vector<int32>& provinceIds = simulation().GetProvincesPlayer(playerId());
 						for (int32 provinceId : provinceIds) {
 							if (simulation().georesource(provinceId).georesourceEnum == georesourceEnum) {
 								return true;

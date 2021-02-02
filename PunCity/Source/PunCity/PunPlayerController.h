@@ -703,7 +703,7 @@ public:
 		WorldTile2 aiTile(aiTileX, aiTileY);
 		if (tile.isValid() && aiTile.isValid() )
 		{
-			int32 aiPlayerId = sim.tileOwner(aiTile);
+			int32 aiPlayerId = sim.tileOwnerTown(aiTile);
 			if (sim.IsAIPlayer(aiPlayerId))
 			{
 				int32 provinceId = sim.GetProvinceIdClean(tile);
@@ -723,7 +723,7 @@ public:
 		std::wstring name = ToWString(buildingName);
 		CardEnum buildingEnum = FindCardEnumByName(name);
 
-		int32 tileOwner = simulation().tileOwner(WorldTile2(tileX, tileY));
+		int32 tileOwner = simulation().tileOwnerTown(WorldTile2(tileX, tileY));
 		if (tileOwner == -1) {
 			PUN_LOG("Invalid tileOwner");
 			return;
@@ -895,7 +895,7 @@ public:
 				block.topBuildingEnums = { CardEnum::House, CardEnum::House };
 				block.bottomBuildingEnums = { CardEnum::House, CardEnum::House };
 				block.CalculateSize();
-				SimUtils::TryPlaceArea(block, simulation().townhallGateTile(playerId()), playerId(), &(simulation()), 20000);
+				SimUtils::TryPlaceArea(block, simulation().GetTownhallGateCapital(playerId()), playerId(), &(simulation()), 20000);
 			}
 		}
 	}
@@ -910,7 +910,7 @@ public:
 				block.topBuildingEnums = { CardEnum::Farm, CardEnum::Farm , CardEnum::StorageYard };
 				block.bottomBuildingEnums = { CardEnum::Farm, CardEnum::Farm, CardEnum::StorageYard };
 				block.CalculateSize();
-				SimUtils::TryPlaceArea(block, simulation().townhallGateTile(playerId()), playerId(), &(simulation()), 20000);
+				SimUtils::TryPlaceArea(block, simulation().GetTownhallGateCapital(playerId()), playerId(), &(simulation()), 20000);
 			}
 		}
 	}
@@ -927,12 +927,12 @@ public:
 		while (landClaimed < landClaimTarget)
 		{
 			int32 claimedThisRound = 0;
-			std::vector<int32> provincesClaimed = sim.playerOwned(playerId()).provincesClaimed();
+			std::vector<int32> provincesClaimed = sim.GetProvincesPlayer(playerId());
 			for (int32 provinceId : provincesClaimed) {
 				provinceSys.ExecuteAdjacentProvinces(provinceId, [&](ProvinceConnection connection) 
 				{
 					if (sim.IsProvinceValid(connection.provinceId) &&
-						sim.provinceOwner(connection.provinceId) == -1)
+						sim.provinceOwnerTown(connection.provinceId) == -1)
 					{
 						auto command = SimUtils::MakeCommand<FClaimLand>(playerId());
 						command->provinceId = connection.provinceId;

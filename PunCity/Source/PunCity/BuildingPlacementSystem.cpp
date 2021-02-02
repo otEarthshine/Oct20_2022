@@ -159,7 +159,8 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 	if (!_gameInterface) return PlacementInfo();
 	
 	auto& sim = _gameInterface->simulation();
-	int32 playerId = _gameInterface->playerId();
+	//int32 playerId = _gameInterface->playerId();
+	int32 townId = sim.tileOwnerTown(_mouseOnTile);
 	
 	/*
 	 * Instructions
@@ -190,10 +191,15 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 				);
 
 				int32 woodNeeded = storageSpace * 5;
+				
+				bool isRed = true;
+				if (townId != -1) {
+					isRed = sim.resourceSystem(townId).resourceCountWithDrops(ResourceEnum::Wood) < woodNeeded;
+				}
 				//ss << "\n" << MaybeRedText(to_string(woodNeeded), sim.resourceCountWithDrops(playerId, ResourceEnum::Wood) < woodNeeded) << "<img id=\"Wood\"/>";
 				ADDTEXT_(
 					INVTEXT("\n{0}<img id=\"Wood\"/>"),
-					TextRed(TEXT_NUM(woodNeeded), sim.resourceCountWithDrops(playerId, ResourceEnum::Wood) < woodNeeded)
+					TextRed(TEXT_NUM(woodNeeded), isRed)
 				);
 			}
 
@@ -234,10 +240,15 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 				);
 
 				int32 woodNeeded = areaSize / 2;
+				bool isRed = true;
+				if (townId != -1) {
+					isRed = sim.resourceSystem(townId).resourceCountWithDrops(ResourceEnum::Wood) < woodNeeded;
+				}
+				
 				//ss << "\n" << MaybeRedText(to_string(woodNeeded), sim.resourceCountWithDrops(playerId, ResourceEnum::Wood) < woodNeeded) << "<img id=\"Wood\"/>";
 				ADDTEXT_(
 					INVTEXT("\n{0}<img id=\"Wood\"/>"),
-					TextRed(TEXT_NUM(woodNeeded), sim.resourceCountWithDrops(playerId, ResourceEnum::Wood) < woodNeeded)
+					TextRed(TEXT_NUM(woodNeeded), isRed)
 				);
 			}
 
@@ -298,7 +309,6 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 			ClearInstructions();
 			
 			TArray<FText> args;
-			//ss << "Spend " << 5 * sim.population(playerId) << "<img id=\"Coin\"/> to kidnap 3 people";
 			ADDTEXT_LOCTEXT("Kidnap_PlaceInstruction", "Kidnap 3 people\nUse on opponent's Townhall.");
 			SetInstruction(PlacementInstructionEnum::Kidnap, true, JOINTEXT(args));
 		}
@@ -607,7 +617,7 @@ void ABuildingPlacementSystem::TickLineDrag(WorldAtom2 cameraAtom, function<bool
 	if (_dragState == DragState::NeedDragStart ||
 		_dragState == DragState::LeftMouseDown)
 	{
-		bool isInTerritory = simulation.tileOwner(_mouseOnTile) == _gameInterface->playerId();
+		bool isInTerritory = simulation.tileOwnerTown(_mouseOnTile) == _gameInterface->playerId();
 		if (!isInTerritory) {
 			SetInstruction(PlacementInstructionEnum::OutsideTerritory, true);
 		}
@@ -1291,8 +1301,10 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 	}
 	
 	_mouseOnTile = MapUtil::AtomLocation(cameraAtom, mouseInfo.mouseHitLocation()).worldTile2();
-	int32 playerId = networkInterface->playerId();
 	GameSimulationCore& simulation = _gameInterface->simulation();
+
+	int32 playerId = networkInterface->playerId();
+	int32 townId = simulation.tileOwnerTown(_mouseOnTile);
 
 	// TODO: might not need this anymore??
 	//// Don't recalculate if there is no state change
@@ -1357,7 +1369,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		{
 			SCOPE_CYCLE_COUNTER(STAT_DragSpawnPlacement);
 			//if (!regionSystem.IsOwnedByPlayer(tile.regionId(), playerId)) {
-			if (simulation.tileOwner(tile) != playerId) {
+			if (simulation.tileOwnerPlayer(tile) != playerId) {
 				SetInstruction(PlacementInstructionEnum::OutsideTerritory, true);
 				return PlacementGridEnum::Red;
 			}
@@ -1973,7 +1985,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		// Logistics Office
 		else if (_buildingEnum == CardEnum::ShippingDepot)
 		{
-			vector<int32> storageIds = simulation.GetBuildingsWithinRadiusMultiple(_mouseOnTile, ShippingDepot::Radius, playerId, StorageEnums);
+			vector<int32> storageIds = simulation.GetBuildingsWithinRadiusMultiple(_mouseOnTile, ShippingDepot::Radius, townId, StorageEnums);
 			for (int32 storageId : storageIds)
 			{
 				Building& buildingScope = simulation.buildingChecked(storageId);
@@ -2028,7 +2040,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 
 				_placementGrid.SpawnGrid(gridEnum, cameraAtom, tile, direction);
 
-				if (simulation.tileOwner(tile) != playerId) {
+				if (simulation.tileOwnerPlayer(tile) != playerId) {
 					SetInstruction(PlacementInstructionEnum::OutsideTerritory, true);
 				}
 			};
@@ -2152,7 +2164,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		{
 			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile)
 			{
-				bool isForeign = simulation.tileOwner(tile) != playerId;
+				bool isForeign = simulation.tileOwnerPlayer(tile) != playerId;
 				if (!isForeign) {
 					SetInstruction(PlacementInstructionEnum::ForeignBuilding, true);
 				}
@@ -2214,7 +2226,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				_placementGrid.SpawnGrid(gridEnum, cameraAtom, tile, _faceDirection);
 
 				//if (!regionSystem.IsOwnedByPlayer(tile.region(), playerId)) {
-				if (simulation.tileOwner(tile) != playerId) {
+				if (simulation.tileOwnerPlayer(tile) != playerId) {
 					SetInstruction(PlacementInstructionEnum::OutsideTerritory, true);
 				}
 			});
@@ -2232,7 +2244,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 	if (!_canPlace) {
 		_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 			//if (!regionSystem.IsOwnedByPlayer(tile.region(), playerId)) {
-			if (simulation.tileOwner(tile) != playerId) {
+			if (simulation.tileOwnerPlayer(tile) != playerId) {
 				SetInstruction(PlacementInstructionEnum::OutsideTerritory, true);
 			}
 		});

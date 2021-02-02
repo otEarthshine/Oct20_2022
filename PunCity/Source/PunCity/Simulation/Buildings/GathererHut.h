@@ -84,7 +84,7 @@ public:
 	std::vector<BonusPair> GetBonuses() override;
 
 	int32 baseInputPerBatch() final {
-		return _simulation->unlockSystem(_playerId)->IsResearched(TechEnum::MushroomSubstrateSterilization) ? 4 : 8;
+		return _simulation->IsResearched(_playerId, TechEnum::MushroomSubstrateSterilization) ? 4 : 8;
 	}
 };
 
@@ -95,10 +95,10 @@ public:
 	void FinishConstruction() final;
 	std::vector<BonusPair> GetBonuses() override;
 	
-	static int32 BeekeeperBaseEfficiency(int32 playerId, WorldTile2 centerTileIn, IGameSimulationCore* simulation);
+	static int32 BeekeeperBaseEfficiency(int32 townId, WorldTile2 centerTileIn, IGameSimulationCore* simulation);
 
 	int32 efficiencyBeforeBonus() override {
-		return BeekeeperBaseEfficiency(_playerId, centerTile(), _simulation);
+		return BeekeeperBaseEfficiency(_townId, centerTile(), _simulation);
 	}
 	
 	static const int Radius = 18;
@@ -164,7 +164,7 @@ public:
 		{
 			// Farm can return to seeding spring to mid summer (round 1 summer)
 			if (Time::IsValidFarmBeginTime() &&
-				!_simulation->IsOutputTargetReached(_playerId, product())) 
+				!_simulation->IsOutputTargetReached(_townId, product())) 
 			{
 				ResetStageTo(FarmStage::Seeding);
 			}
@@ -252,7 +252,7 @@ public:
 	std::vector<BonusPair> GetBonuses() override;
 
 	bool ShouldAddWorker_ConstructedNonPriority() override {
-		if (_simulation->IsOutputTargetReached(_playerId, product())) {
+		if (_simulation->IsOutputTargetReached(_townId, product())) {
 			return false;
 		}
 		return oreLeft() > 0;
@@ -640,9 +640,9 @@ public:
 	std::vector<BonusPair> GetBonuses() final;
 
 	// Check other nearby windmill for efficiency
-	static int32 WindmillBaseEfficiency(int32 playerId, WorldTile2 centerTileIn, IGameSimulationCore* simulation)
+	static int32 WindmillBaseEfficiency(int32 townId, WorldTile2 centerTileIn, IGameSimulationCore* simulation)
 	{
-		const std::vector<int32>& windmills = simulation->buildingIds(playerId, CardEnum::Windmill);
+		const std::vector<int32>& windmills = simulation->buildingIds(townId, CardEnum::Windmill);
 
 		// Adjust efficiency by distance linearly
 		// efficiency from pairing with other windmill gets multiplied together for the final efficiency
@@ -662,7 +662,7 @@ public:
 	}
 	
 	int32 efficiencyBeforeBonus() override {
-		return WindmillBaseEfficiency(_playerId, centerTile(), _simulation);
+		return WindmillBaseEfficiency(_townId, centerTile(), _simulation);
 	}
 
 	static const int32 Radius = 16;
@@ -999,7 +999,7 @@ public:
 
 	void FinishConstruction() final {
 		Building::FinishConstruction();
-		_simulation->RecalculateTaxDelayed(_playerId);
+		_simulation->RecalculateTaxDelayedTown(_townId);
 	}
 };
 class School final : public Building
@@ -1012,7 +1012,7 @@ public:
 
 	void FinishConstruction() final {
 		Building::FinishConstruction();
-		_simulation->RecalculateTaxDelayed(_playerId);
+		_simulation->RecalculateTaxDelayedTown(_townId);
 	}
 };
 

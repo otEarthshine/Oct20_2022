@@ -191,7 +191,8 @@ void UnlockSystem::EraUnlockedDescription(TArray<FText>& args, int32 era, bool i
 	if (era == 2) {
 		if (isTip) {
 			ADDTEXT_(INVTEXT(" {0}:"), LOCTEXT("Global Slot Cards", "Global Slot Cards"));
-		} else {
+		}
+		else {
 			ADDTEXT_(INVTEXT(" {0}:"), LOCTEXT("Unlocked Global Slot Cards", "Unlocked Global Slot Cards"));
 		}
 		ADDTEXT_TAG_("<bullet>", LOCTEXT("Chimney Restrictor", "Chimney Restrictor"));
@@ -225,7 +226,7 @@ void UnlockSystem::OnEraUnlocked(TArray<FText>& args)
 	);
 
 	EraUnlockedDescription(args, currentEra(), false);
-	
+
 	if (currentEra() == 2) {
 		cardSys.AddDrawCards(CardEnum::ChimneyRestrictor, 1);
 		//cardSys.AddDrawCards(CardEnum::ChildMarriage, 1);

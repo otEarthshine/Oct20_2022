@@ -780,7 +780,7 @@ public:
 		{ // Fort
 			ModuleTransforms::CreateSet("Outpost")
 		},
-		{ // Colony
+		{ // Resource Outpost
 			ModuleTransforms::CreateSet("Colony")
 		},
 		{ // InventorsWorkshop
@@ -854,6 +854,22 @@ public:
 		},
 		{ // Coffee Roaster
 			ModuleTransforms::CreateSet("CoffeeRoaster", {}, {{ParticleEnum::Smoke, TransformFromPosition(16.2, -16.6, 21.3)}})
+		},
+
+		/*
+		 * Feb 2
+		 */
+		{ // Colony
+			ModuleTransforms::CreateSet("Townhall0")
+		},
+		{ // PortColony
+			ModuleTransforms::CreateSet("Townhall0")
+		},
+		{ // Intercity Logistics Hub
+			ModuleTransforms::CreateSet("ShippingDepot", {}, {})
+		},
+		{ // Intercity Logistics Port
+			ModuleTransforms::CreateSet("ShippingDepot", {}, {})
 		},
 		
 		/*
@@ -932,7 +948,7 @@ public:
 		},
 
 		{ // Cattery
-			ModuleTransforms::CreateSet("Ministry", {}, {})
+			ModuleTransforms::CreateSet("Library", {}, {})
 		},
 		{ // InvestmentBank
 			ModuleTransforms::CreateSet("Ministry", {}, {})

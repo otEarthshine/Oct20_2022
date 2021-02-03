@@ -75,12 +75,13 @@ public:
 		}
 		auto& roads = _regionToRoad[tile.regionId()];
 		auto found = std::find_if(roads.begin(), roads.end(), [&](const RoadTile& roadTile) { return roadTile.tile == tile; });
-		check(found == roads.end());
-		roads.push_back(RoadTile(tile, isDirtRoad, isConstructed, buildingId));
+		if (found == roads.end()) {
+			roads.push_back(RoadTile(tile, isDirtRoad, isConstructed, buildingId));
 
-		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Road, tile.regionId(), true);
+			_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Road, tile.regionId(), true);
 
-		_simulation->SetRoadWorldTexture(tile, isConstructed, isDirtRoad);
+			_simulation->SetRoadWorldTexture(tile, isConstructed, isDirtRoad);
+		}
 	}
 
 	bool RemoveRoad(WorldTile2 tile) {

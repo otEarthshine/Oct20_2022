@@ -148,7 +148,7 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 
 		CASE_BUILDING(CardEnum::Warehouse, Warehouse);
 		CASE_BUILDING(CardEnum::Fort, Fort);
-		CASE_BUILDING(CardEnum::Colony, Colony);
+		CASE_BUILDING(CardEnum::ResourceOutpost, ResourceOutpost);
 
 		// August 16
 		CASE_BUILDING(CardEnum::FakeTownhall, Building);
@@ -167,6 +167,12 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		CASE_BUILDING(CardEnum::ShroomFarm, ShroomFarm);
 		CASE_BUILDING(CardEnum::VodkaDistillery, VodkaDistillery);
 		CASE_BUILDING(CardEnum::CoffeeRoaster, CoffeeRoaster);
+
+		// Feb 2
+		CASE_BUILDING(CardEnum::Colony, Building);
+		CASE_BUILDING(CardEnum::PortColony, Building);
+		CASE_BUILDING(CardEnum::IntercityLogisticsHub, Building);
+		CASE_BUILDING(CardEnum::IntercityLogisticsPort, Building);
 
 		CASE_BUILDING(CardEnum::BoarBurrow, BoarBurrow);
 
@@ -264,6 +270,11 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 
 int BuildingSystem::AddBuilding(FPlaceBuilding parameters)
 {
+	// Special case: Colony turn into townhall
+	if (IsTownPlacement(static_cast<CardEnum>(parameters.buildingEnum))) {
+		parameters.buildingEnum = static_cast<uint8>(CardEnum::Townhall);
+	}
+	
 	WorldTile2 center = parameters.center;
 	CardEnum buildingEnum = static_cast<CardEnum>(parameters.buildingEnum);
 
@@ -290,7 +301,7 @@ int BuildingSystem::AddBuilding(FPlaceBuilding parameters)
 	TileArea area = parameters.area;
 	int32 townId = _simulation->tileOwnerTown(center);
 
-	_playerIdPlus1ToEnumToBuildingIds[parameters.playerId + 1][static_cast<int>(buildingEnum)].push_back(buildingId);
+	_townIdPlus1ToEnumToBuildingIds[parameters.playerId + 1][static_cast<int>(buildingEnum)].push_back(buildingId);
 
 	building->Init(*_simulation, buildingId, townId, parameters.buildingEnum,
 							area, center, static_cast<Direction>(parameters.faceDirection));
@@ -439,7 +450,7 @@ void BuildingSystem::RemoveBuilding(int buildingId)
 	//RemoveBuildingFromBuildingSystem(buildingId);
 	// Remove from system
 	_buildingSubregionList.Remove(centerTile, buildingId);
-	CppUtils::Remove(_playerIdPlus1ToEnumToBuildingIds[playerId + 1][static_cast<int>(buildingEnum)], buildingId);
+	CppUtils::Remove(_townIdPlus1ToEnumToBuildingIds[playerId + 1][static_cast<int>(buildingEnum)], buildingId);
 	_alive[buildingId] = false;
 
 	// Reset display/UI

@@ -125,34 +125,34 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 	//	LOCTEXT("Allow player to set trade offers for other players to directly trade with.",
 	//}},
 
-	{TechEnum::Plantation, {
+	{ TechEnum::Plantation, {
 		LOCTEXT("Plantation", "Plantation"),
 		LOCTEXT("Plantation Desc", "Unlocks farm crops cards: Cannabis, Grape, Cocoa, Cotton, Coffee, Tulip Seeds")
 	}},
 	
-	{TechEnum::MushroomSubstrateSterilization, {
+	{ TechEnum::MushroomSubstrateSterilization, {
 		LOCTEXT("Mushroom Log Sterilization", "Mushroom Log Sterilization"),
 		LOCTEXT("Mushroom Log Sterilization Desc", "Decreases mushroom farm's wood consumption by 50%.")
 	}},
 	
-	{TechEnum::QuarryImprovement, {
+	{ TechEnum::QuarryImprovement, {
 		LOCTEXT("Quarry Improvement", "Quarry Improvement"),
 		LOCTEXT("Quarry Improvement Desc", "+30% production to quarries.")
 	}},
 
-	{TechEnum::WineryImprovement, {
+	{ TechEnum::WineryImprovement, {
 		LOCTEXT("Wine Snob", "Wine Snob"),
 		LOCTEXT("Wine Snob Desc", "+30% production to winery.")
 	}},
 
-	{TechEnum::BorealLandCost, {
+	{ TechEnum::BorealLandCost, {
 		LOCTEXT("Boreal and Tundra Expedition", "Boreal and Tundra Expedition"),
 		LOCTEXT("Boreal and Tundra Expedition Desc", "Claiming Boreal Forest and Tundra Province costs half as usual.")
-	}},
-	{TechEnum::DesertTrade, {
+	} },
+	{ TechEnum::DesertTrade, {
 		LOCTEXT("Silk Road", "Silk Road"),
 		LOCTEXT("Silk Road Desc", "Trading post and company built on desert gets -10% trade fee.")
-	}},
+	} },
 	
 	{ TechEnum::ShallowWaterEmbark, {
 		LOCTEXT("Shallow Water Embark", "Shallow Water Embark"),
@@ -163,15 +163,15 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 		LOCTEXT("Deepwater Embark Desc", "Allows claiming coastal provinces across the sea. 200% cost penalty applied to claim/attack through deep water.")
 	}},
 
-	{TechEnum::Sawmill, {
+	{ TechEnum::Sawmill, {
 		LOCTEXT("Sawmill", "Sawmill"),
 		LOCTEXT("Sawmill Desc", "+50% furniture workshop's efficiency.")
 	}},
-	{TechEnum::ImprovedWoodCutting, {
+	{ TechEnum::ImprovedWoodCutting, {
 		LOCTEXT("Improved woodcutting Lvl 1", "Improved woodcutting Lvl 1"),
 		LOCTEXT("Improved woodcutting Lvl 1 Desc", "+20% wood harvesting yield."),
 	}},
-	{TechEnum::ImprovedWoodCutting2, {
+	{ TechEnum::ImprovedWoodCutting2, {
 		LOCTEXT("Improved woodcutting Lvl 2", "Improved woodcutting Lvl 2"),
 		LOCTEXT("Improved woodcutting Lvl 2 Desc", "+20% wood harvesting yield.")
 	}},
@@ -612,8 +612,21 @@ public:
 			// TODO: May be separate era into:
 			// - 3 major unlocks
 			// - 4 bonuses where 2 can be chosen?
+			//
+			//To change:
+			// BorealLandCost
+			// RerollCardsPlus1
+			// SpyGuard??
+			// CheapReroll
+			// Sawmill, ImprovedWoodCutting
+			// HouseAdjacency
+			//
+			//Can add bonus
+			// Market
+			// Steal
+			// 
 			
-			 //
+			//
 			int32 era = 1;
 			AddTech_Bonus(era, TechEnum::ImprovedWoodCutting);
 			AddTech_Building(era, TechEnum::TradingPost, { CardEnum::TradingPost, CardEnum::TradingPort });
@@ -628,8 +641,10 @@ public:
 			era = 2;
 			//AddTech_Building(era, TechEnum::DeepMining, { CardEnum::GemstoneMine });
 			AddTech_Bonus(era, TechEnum::Plantation);
-			AddTech_Bonus(era, TechEnum::RerollCardsPlus1);
-			AddTech_Bonus(era, TechEnum::CheapReroll);
+			//AddTech_Bonus(era, TechEnum::RerollCardsPlus1); // TODO: bring back
+			//AddTech_Bonus(era, TechEnum::CheapReroll); // TODO: bring back
+			AddTech_BuildingPermanent(era, TechEnum::Colony, { CardEnum::Colony, CardEnum::IntercityLogisticsHub });
+			AddTech_BuildingPermanent(era, TechEnum::PortColony, { CardEnum::PortColony, CardEnum::IntercityLogisticsPort });
 			AddTech_Building(era, TechEnum::IronRefining, { CardEnum::IronMine, CardEnum::IronSmelter });
 			AddTech_Building(era, TechEnum::Blacksmith, CardEnum::Blacksmith);
 			AddTech_Bonus(era, TechEnum::Sawmill);
@@ -761,7 +776,7 @@ public:
 			
 			era = 6;
 			AddProsperityTech_Building(era, 4, TechEnum::Fort, CardEnum::Fort);
-			AddProsperityTech_Building(era, 4, TechEnum::Colony, CardEnum::Colony);
+			AddProsperityTech_Building(era, 4, TechEnum::ResourceOutpost, CardEnum::ResourceOutpost);
 			AddProsperityTech_Building(era, 4, TechEnum::CardMaker, CardEnum::CardMaker);
 			AddProsperityTech_Building(era, 10, TechEnum::CottonMilling, CardEnum::CottonMill);
 			AddProsperityTech_BuildingPermanent(era, 10, TechEnum::FlowerBed, { CardEnum::FlowerBed });

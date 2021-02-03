@@ -119,7 +119,7 @@ public:
 		}
 		
 		bool hasInvalid = area.ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 curTile) {
-			return !simulation->IsBuildable(curTile, playerId);
+			return !simulation->IsBuildableForPlayer(curTile, playerId);
 		});
 
 		return !hasInvalid;
@@ -175,7 +175,7 @@ public:
 		area.maxY--;
 
 		hasInvalid = area.ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 curTile) {
-			return !simulation->IsBuildable(curTile, playerId);
+			return !simulation->IsBuildableForPlayer(curTile, playerId);
 		});
 		
 		return !hasInvalid;
@@ -212,7 +212,7 @@ public:
 		}
 		
 		WorldTile2 validMinTile = AlgorithmUtils::FindNearbyAvailableArea(startArea, [&](const WorldTile2& tile) {
-			return simulation->IsBuildable(tile, playerId);
+			return simulation->IsBuildableForPlayer(tile, playerId);
 		}, maxLookup);
 
 		

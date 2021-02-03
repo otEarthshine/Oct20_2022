@@ -151,7 +151,7 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 
 		// Add town
 		int32 townId = _resourceSystems.size();
-		_resourceSystems.push_back(ResourceSystem(playerId, this));
+		_resourceSystems.push_back(ResourceSystem(townId, this));
 		_statSystem.AddTown(townId);
 		_townManagers.push_back(make_unique<TownManager>(playerId, townId, this));
 		_playerOwnedManagers[playerId].AddTownId(townId);
@@ -1859,7 +1859,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 			{
 				int steps = GameMap::GetFacingStep(faceDirection, area, tile);
 				if (steps <= 1) { // 0,1
-					if (!IsBuildable(tile, playerId)) {
+					if (!IsBuildableForPlayer(tile, playerId)) {
 						canPlace = false; // Entrance not buildable
 					}
 				} else { // 2,3,4
@@ -1887,7 +1887,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 			{
 				int steps = GameMap::GetFacingStep(faceDirection, area, tile);
 				if (steps <= indexLandEnd) { // 0,1
-					if (!IsBuildable(tile, playerId)) {
+					if (!IsBuildableForPlayer(tile, playerId)) {
 						canPlace = false; // Entrance not buildable
 					}
 				}
@@ -1924,7 +1924,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 		});
 	}
 	// Townhall doesn't need to check for land ownership
-	else if (cardEnum == CardEnum::Townhall) 
+	else if (IsTownPlacement(cardEnum))
 	{	
 		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 			if (!IsBuildable(tile)) {
@@ -1946,7 +1946,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 	// All other buildings
 	else {
 		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-			if (!IsBuildable(tile, playerId)) {
+			if (!IsBuildableForPlayer(tile, playerId)) {
 				if (canPlace) {
 					int32 tileId = tile.tileId();
 					TRAILER_LOG(" area tileOwner" + to_string(tileOwner(tile)) + " buildable:" + to_string(IsBuildable(tile)) +
@@ -1981,7 +1981,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 			}
 		});
 
-		if (cardEnum == CardEnum::Townhall) {
+		if (IsTownPlacement(cardEnum)) {
 			_LOG(PunBuilding, "Try Building Townhall frontArea pid:%d canPlace:%d", parameters.playerId, canPlace);
 		}
 	}
@@ -2005,18 +2005,67 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 			//PUN_LOG("parameters.area before %s", *ToFString(parameters.area.ToString()));
 		}
 
+		// Special case: Colony Prepare
+		if (IsTownPlacement(cardEnum)) 
+		{
+			PUN_LOG("Town Placement %s", ToTChar(parameters.area.ToString()));
+			
+			if (cardEnum != CardEnum::Townhall)
+			{
+				std::vector<int32> provinceIds;
+				bool isInvalid = parameters.area.ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 tile)
+				{
+					int32 provinceId = GetProvinceIdClean(tile);
+					if (provinceId == -1) return true;
+					if (provinceOwnerTown(provinceId) != -1) return true;
+					CppUtils::TryAdd(provinceIds, provinceId);
+					return false;
+				});
+
+				if (!isInvalid)
+				{
+					// Check if we have enough money
+					int32 totalProvincePrice = 0;
+					for (int32 provinceId : provinceIds) {
+						totalProvincePrice += GetProvinceClaimPrice(provinceId, playerId);
+					}
+					if (money(playerId) >= totalProvincePrice)
+					{
+						// Add town
+						int32 townId = _resourceSystems.size();
+						_resourceSystems.push_back(ResourceSystem(townId, this));
+						_statSystem.AddTown(townId);
+						_buildingSystem->AddTown(townId);
+						_townManagers.push_back(make_unique<TownManager>(playerId, townId, this));
+						_playerOwnedManagers[playerId].AddTownId(townId);
+
+						// Conquer Land
+						for (int32 provinceId : provinceIds) {
+							SetProvinceOwnerFull(provinceId, townId);
+						}
+						ChangeMoney(playerId, -totalProvincePrice);
+					}
+					else {
+						AddPopupToFront(playerId, LOCTEXT("Not enough money to buy province", "Cannot place the Colony. Not enough money to buy the province."));
+						return -1;
+					}
+				}
+			}
+		}
+		
+
 		// Place Building ***
 		int32 buildingId = _buildingSystem->AddBuilding(parameters);
 
 		// Special case: Townhall
-		if (cardEnum == CardEnum::Townhall) {
+		if (IsTownPlacement(cardEnum)) 
+		{
 			PlaceInitialTownhallHelper(parameters, buildingId);
 			_buildingSystem->OnRefreshFloodGrid(building(buildingId).gateTile().region());
 		}
 
-		/*
-		 * Trailer
-		 */
+		
+#if TRAILER_MODE
 		if (PunSettings::TrailerMode())
 		{
 			// Trailer House Level
@@ -2045,6 +2094,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 			expandedArea.ExpandArea(1);
 			treeSystem().ForceRemoveTileObjArea(expandedArea);
 		}
+#endif
 		
 
 		// Use bought card, remove the card
@@ -2082,7 +2132,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 			else {
 				// Finish road construction right away for provincial buildings and TrailerMode
 				if (cardEnum == CardEnum::Fort ||
-					cardEnum == CardEnum::Colony ||
+					cardEnum == CardEnum::ResourceOutpost ||
 					PunSettings::TrailerSession) 
 				{
 					frontArea.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
@@ -2242,7 +2292,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 					CardEnum buildingEnum = bld.buildingEnum();
 					if (!IsPermanentBuilding(parameters.playerId, buildingEnum) &&
 						buildingEnum != CardEnum::Fort && 
-						buildingEnum != CardEnum::Colony)
+						buildingEnum != CardEnum::ResourceOutpost)
 					{
 						if (cardSys.CanAddCardToBoughtHand(buildingEnum, 1)) {
 							cardSys.AddCardToHand2(buildingEnum);
@@ -2363,7 +2413,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 		}
 		case PlacementType::Fence: {
 			buildingEnum = CardEnum::Fence;
-			canBuild = [&](WorldTile2 tile) { return IsBuildable(tile, parameters.playerId); };
+			canBuild = [&](WorldTile2 tile) { return IsBuildableForPlayer(tile, parameters.playerId); };
 			break;
 		}
 		default:
@@ -2416,7 +2466,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 						// For road, also refresh the grass since we want it to be more visible
 						SetNeedDisplayUpdate(DisplayClusterEnum::Trees, tile.regionId(), true);
 
-						int32 foreignPlayerId = tileOwnerTown(tile);
+						int32 foreignPlayerId = tileOwnerPlayer(tile);
 						if (foreignPlayerId != -1 &&
 							foreignPlayerId != parameters.playerId) {
 							CppUtils::TryAdd(foreignPlayerIds, foreignPlayerId);
@@ -3776,8 +3826,19 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	UE_LOG(LogNetworkInput, Log, TEXT(" ClaimLand"));
 	
 	int32 playerId = command.playerId;
-	PlayerOwnedManager& playerOwn = playerOwned(playerId);
 	int32 provinceId = command.provinceId;
+
+	// Get closest townId
+	const auto& townIds = GetTownIds(playerId);
+	int32 townId = playerId;
+	int32 minDistance = 99999;
+	for (int32 townIdTemp : townIds) {
+		int32 distance = WorldTile2::Distance(GetProvinceCenterTile(provinceId), GetTownhallGateFast(townId));
+		if (distance < minDistance) {
+			minDistance = distance;
+			townId = townIdTemp;
+		}
+	}
 
 	// Special case for claim ruin
 	if (command.claimEnum == CallbackEnum::ClaimRuin)
@@ -3789,7 +3850,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 		return;
 	}
 
-	auto& resourceSys = resourceSystem(playerId);
+	auto& resourceSys = resourceSystem(townId);
 	auto& globalResourceSys = globalResourceSystem(playerId);
 
 	if (command.claimEnum == CallbackEnum::ClaimLandFood)
@@ -3797,10 +3858,10 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 		int32 baseRegionPrice = GetProvinceClaimPrice(command.provinceId, playerId);
 		int32 neededFood = baseRegionPrice / FoodCost;
 		
-		if (foodCount(playerId) >= neededFood &&
+		if (foodCount(townId) >= neededFood &&
 			provinceOwnerTown(command.provinceId) == -1)
 		{
-			SetProvinceOwnerFull(command.provinceId, playerId);
+			SetProvinceOwnerFull(command.provinceId, townId);
 
 			// TODO: change below to RemoveResourceGlobal(ResourceEnum::Food, ..)
 			int32 amountLeftToRemove = neededFood;
@@ -3819,7 +3880,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 		if (globalResourceSys.money() >= regionPriceMoney &&
 			provinceOwnerTown(command.provinceId) == -1)
 		{
-			SetProvinceOwnerFull(command.provinceId, playerId);
+			SetProvinceOwnerFull(command.provinceId, townId);
 			globalResourceSys.ChangeMoney(-regionPriceMoney);
 		}
 	}
@@ -3830,7 +3891,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 		if (globalResourceSys.influence() >= regionPriceMoney &&
 			provinceOwnerTown(command.provinceId) == -1)
 		{
-			SetProvinceOwnerFull(command.provinceId, playerId);
+			SetProvinceOwnerFull(command.provinceId, townId);
 			globalResourceSys.ChangeInfluence(-regionPriceMoney);
 		}
 	}
@@ -3868,7 +3929,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 			int32 conquerPrice = 0;
 			switch(attackEnum)
 			{
-			case ProvinceAttackEnum::ConquerProvince: conquerPrice = GetProvinceAttackStartPrice(provinceId, GetProvinceClaimConnectionEnum(command.provinceId, command.playerId)); break;
+			case ProvinceAttackEnum::ConquerProvince: conquerPrice = GetProvinceAttackStartPrice(provinceId, GetProvinceClaimConnectionEnumPlayer(command.provinceId, command.playerId)); break;
 			case ProvinceAttackEnum::Vassalize: conquerPrice = GetProvinceVassalizeStartPrice(provinceId); break;
 			case ProvinceAttackEnum::DeclareIndependence: conquerPrice = BattleInfluencePrice; break; // Declare Independence has no defense/attack advantage...
 			default: break;
@@ -4020,7 +4081,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 			int32 price = 0;
 			switch (attackEnum)
 			{
-			case ProvinceAttackEnum::ConquerProvince: price = GetProvinceAttackReinforcePrice(provinceId, GetProvinceClaimConnectionEnum(command.provinceId, command.playerId)); break;
+			case ProvinceAttackEnum::ConquerProvince: price = GetProvinceAttackReinforcePrice(provinceId, GetProvinceClaimConnectionEnumPlayer(command.provinceId, command.playerId)); break;
 			case ProvinceAttackEnum::Vassalize: price = GetProvinceVassalizeReinforcePrice(provinceId); break;
 			case ProvinceAttackEnum::DeclareIndependence: price = BattleInfluencePrice; break;
 			case ProvinceAttackEnum::VassalCompetition: price = GetProvinceVassalizeReinforcePrice(provinceId); break;
@@ -4074,7 +4135,7 @@ void GameSimulationCore::SetProvinceOwner(int32 provinceId, int32 townId, bool l
 	
 	// When transfering land if it is oversea, warn of 200% influence upkeep
 	if (playerId != -1 &&
-		GetProvinceClaimConnectionEnum(provinceId, playerId) == ClaimConnectionEnum::Deepwater)
+		GetProvinceClaimConnectionEnumPlayer(provinceId, playerId) == ClaimConnectionEnum::Deepwater)
 	{
 		AddPopup(playerId,
 			LOCTEXT("OverseaPenalty_Pop", "You have claimed a Province oversea.<space>Oversea provinces have upkeep penalty of +200%")
@@ -4561,27 +4622,21 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 	
 	auto& playerOwned = _playerOwnedManagers[command.playerId];
 	
+	CardEnum buildingEnum = static_cast<CardEnum>(command.buildingEnum);
+	Building& townhallBld = building(townhallId);
+	
+	int32 townId = townhallBld.townId();
+
 	/*
 	 * Build Townhall
 	 */
 	{
 		FPlaceBuilding params = command;
-		//params.buildingEnum = static_cast<uint8>(CardEnum::Townhall);
-		//params.faceDirection = static_cast<uint8>(Direction::S);
-		//params.center = townhallCenter;
 		WorldTile2 size = GetBuildingInfo(CardEnum::Townhall).size;
-		//params.area = BuildingArea(params.center, size, static_cast<Direction>(params.faceDirection));
-		//params.playerId = command.playerId;
-		
-		//int32 townhallId = PlaceBuilding(params);
-		//PUN_CHECK(townhallId != -1);
-		//if (townhallId == -1) {
-		//	return;
-		//}
 
-		building(townhallId).InstantClearArea();
-		building(townhallId).SetAreaWalkable();
-		building(townhallId).FinishConstruction();
+		townhallBld.InstantClearArea();
+		townhallBld.SetAreaWalkable();
+		townhallBld.FinishConstruction();
 
 		// Place road around townhall
 		WorldTile2 roadMin(params.area.minX - 1, params.area.minY - 1);
@@ -4603,12 +4658,14 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 		}
 
 		// PlayerOwnedManager
-		playerOwned.capitalTownhallId = townhallId;
-		playerOwned.needChooseLocation = false;
-
+		if (buildingEnum == CardEnum::Townhall) {
+			playerOwned.capitalTownhallId = townhallId;
+			playerOwned.needChooseLocation = false;
+		}
+		
 		// Townhall
 		PUN_LOG("Set TownManager pid:%d", command.playerId);
-		townManager(command.playerId).townHallId = townhallId;
+		townManager(townId).townHallId = townhallId;
 		
 		//playerOwned.TryAddArmyNodeVisited(townhallId);
 	}

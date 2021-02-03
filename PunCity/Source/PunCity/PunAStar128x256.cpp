@@ -3,6 +3,7 @@
 #include "UnrealEngine.h"
 #include "PunCity/GameRand.h"
 #include "PunCity/PunSTLContainerOverride.h"
+#include "PunGameSettings.h"
 
 DECLARE_CYCLE_STAT(TEXT("PUN: PathAI"), STAT_PunPathAI, STATGROUP_Game);
 
@@ -382,7 +383,9 @@ bool PunAStar128x256::FindPath(int startX, int startY, int endX, int endY, std::
 	}
 	else {
 		calculationTooLongCount++;
-		UE_LOG(LogTemp, Error, TEXT("calcTooLong(count:%d): from:%d,%d to:%d,%d len:%d isAccurate:%d  aveIter:%d"), calculationTooLongCount, startX, startY, endX, endY, len, isAccurate, aveIter);
+		if (PunSettings::IsOn("ShowFullDebugLog")) {
+			UE_LOG(LogTemp, Error, TEXT("calcTooLong(count:%d): from:%d,%d to:%d,%d len:%d isAccurate:%d  aveIter:%d"), calculationTooLongCount, startX, startY, endX, endY, len, isAccurate, aveIter);
+		}
 	}
 
 	CleanGrid();
@@ -434,6 +437,255 @@ int PunAStar128x256::GetHeuristic(uint32_t start, uint32_t end) const
 
 	// First take the Manhattan distance, then replaces part of it with diagonal
 	return (dx + dz) * COST_ONE + COST_SQRT2_MINUS_2ONE * (dx < dz ? dx : dz);
+}
+
+/*
+ * Find Path Road-Only
+ */
+void PunAStar128x256::GetSuccessorsRoadOnly(uint32_t locInt, uint32_t* successors, int& nonDiagArraySize, int& arraySize)
+{
+	/**
+	 * Location Integer:
+	 *	8 bits to represent regionIdX
+	 *	y bits
+	 *  5 bits to represent regionPosX(uint32_t)
+	 */
+
+	uint32_t xRegion = locInt >> shiftToXRegion; // 8 bits
+	uint32_t y = (locInt >> 5) & bitsY; // y bits
+	uint32_t xBits = locInt & bits5; // 5 bits
+
+	uint32_t x = (xRegion << 5) | xBits; // 13 bits
+
+	nonDiagArraySize = 0;
+
+	uint32_t xRegionAndY; // 20 bits
+	uint32_t newXBits;
+	uint32_t xp, yp;
+
+	yp = y + 1;
+	if (yp < _yDim)
+	{
+		xRegionAndY = (xRegion << shiftAcrossBitsY) | yp;
+
+		if ((_isRoadGrid[xRegionAndY] >> xBits) & 1) {
+			successors[nonDiagArraySize] = (xRegionAndY << 5) | xBits;
+			++nonDiagArraySize;
+		}
+	}
+
+	yp = y - 1;
+	if (y > 0)
+	{
+		xRegionAndY = (xRegion << shiftAcrossBitsY) | yp;
+
+		if ((_isRoadGrid[xRegionAndY] >> xBits) & 1) {
+			successors[nonDiagArraySize] = (xRegionAndY << 5) | xBits;
+			++nonDiagArraySize;
+		}
+	}
+
+	xp = x + 1;
+	if (xp < _xDim)
+	{
+		xRegionAndY = ((xp >> 5) << shiftAcrossBitsY) | y;
+		newXBits = xp & bits5;
+
+		if ((_isRoadGrid[xRegionAndY] >> newXBits) & 1) {
+			successors[nonDiagArraySize] = (xRegionAndY << 5) | newXBits;
+			++nonDiagArraySize;
+		}
+	}
+
+	xp = x - 1;
+	if (x > 0)
+	{
+		xRegionAndY = ((xp >> 5) << shiftAcrossBitsY) | y;
+		newXBits = xp & bits5;
+
+		if ((_isRoadGrid[xRegionAndY] >> newXBits) & 1) {
+			successors[nonDiagArraySize] = (xRegionAndY << 5) | newXBits;
+			++nonDiagArraySize;
+		}
+	}
+
+	arraySize = nonDiagArraySize;
+
+	xp = x + 1;
+	yp = y + 1;
+	if (xp < _xDim && yp < _yDim)
+	{
+		xRegionAndY = ((xp >> 5) << shiftAcrossBitsY) | yp;
+		newXBits = xp & bits5;
+
+		if ((_isRoadGrid[xRegionAndY] >> newXBits) & 1) {
+			successors[arraySize] = (xRegionAndY << 5) | newXBits;
+			++arraySize;
+		}
+	}
+
+	xp = x - 1;
+	yp = y + 1;
+	if (x > 0 && yp < _yDim)
+	{
+		xRegionAndY = ((xp >> 5) << shiftAcrossBitsY) | yp;
+		newXBits = xp & bits5;
+
+		if ((_isRoadGrid[xRegionAndY] >> newXBits) & 1) {
+			successors[arraySize] = (xRegionAndY << 5) | newXBits;
+			++arraySize;
+		}
+	}
+
+	xp = x + 1;
+	yp = y - 1;
+	if (xp < _xDim && y > 0)
+	{
+		xRegionAndY = ((xp >> 5) << shiftAcrossBitsY) | yp;
+		newXBits = xp & bits5;
+
+		if ((_isRoadGrid[xRegionAndY] >> newXBits) & 1) {
+			successors[arraySize] = (xRegionAndY << 5) | newXBits;
+			++arraySize;
+		}
+	}
+
+	xp = x - 1;
+	yp = y - 1;
+	if (x > 0 && y > 0)
+	{
+		xRegionAndY = ((xp >> 5) << shiftAcrossBitsY) | yp;
+		newXBits = xp & bits5;
+
+		if ((_isRoadGrid[xRegionAndY] >> newXBits) & 1) {
+			successors[arraySize] = (xRegionAndY << 5) | newXBits;
+			++arraySize;
+		}
+	}
+}
+
+bool PunAStar128x256::FindPathRoadOnly(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path)
+{
+	SCOPE_CYCLE_COUNTER(STAT_PunPathAI);
+
+	if (0 > startX || startX >= (int)_xDim ||
+		0 > startY || startY >= (int)_yDim ||
+		0 > endX || endX >= (int)_xDim ||
+		0 > endY || endY >= (int)_yDim)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BadFindPath: start: %d, %d"), startX, startY);
+		UE_LOG(LogTemp, Error, TEXT("		      end: %d, %d"), endX, endY);
+		UE_DEBUG_BREAK();
+		badPathCount++;
+		path.clear();
+		return false;
+	}
+
+	// If start or end is not road, return false
+	if (!(isRoad(startX, startY) && isRoad(endX, endY))) {
+		return false;
+	}
+
+	uint32_t start = GetUIntId(startX, startY);
+	uint32_t end = GetUIntId(endX, endY);
+
+	_openList.Clear();
+	check(_openList.heapCurrentSize() == 0)
+		check(_openList.maxSize() > 0)
+		_openList.Insert(start, 0);
+
+	uint32_t successors[8];
+
+	uint16_t calculationCount = 0;
+	//uint16_t maxCalculationCount = isLongDistance ? 200000 : 30000;
+
+	uint16_t maxCalculationCount = 30000;
+
+	while (!_openList.isEmpty() && calculationCount < maxCalculationCount)
+	{
+		uint32_t nodeLocInt = _openList.RemoveMin();
+		check(nodeLocInt >= 0);
+
+		LeanAStarNode node = _nodes[nodeLocInt];
+
+		if (nodeLocInt == end)
+		{
+			pathCount++;
+			iterationCount += calculationCount;
+
+			// Successfully found path
+			ConstructPath(start, end, path);
+			CleanGrid();
+			return true;
+		}
+
+		int nonDiagArraySize, arraySize;
+		GetSuccessorsRoadOnly(nodeLocInt, successors, nonDiagArraySize, arraySize);
+
+		for (int i = 0; i < arraySize; i++)
+		{
+			LeanAStarNode& loopNode = _nodes[successors[i]];
+
+			uint32_t locInt = loopNode.locInt;
+			uint32_t yWithXRegion = locInt >> 5; // 20 bits
+			uint32_t xBits = locInt & bits5; // 5 bits
+
+			// Only road is traversable
+			bool isRoad = (_isRoadGrid[yWithXRegion] >> xBits) & 1;
+			int costUpToLoopNode = node.cost + (i < nonDiagArraySize ? (isRoad ? COST_ONE : 0) : (isRoad ? COST_SQRT2 : 0));
+
+			bool calculated = (_calculatedNodes[yWithXRegion] >> xBits) & 1;
+
+			if (!calculated || costUpToLoopNode < loopNode.cost)
+			{
+				uint32_t curY = yWithXRegion & bitsY; // y bits
+				uint32_t curX = ((locInt >> shiftToXRegion) << 5) | xBits; // 13 bits
+
+				// For road, GetHeuristic should have less cost, since there might be more road going towards destination.
+				// This helps with making people go along road kink
+				int heuristic = GetHeuristicFast(curX, curY, endX, endY);
+				int priorityCost = costUpToLoopNode + heuristic;
+
+
+				// Put this in the node grid
+				loopNode.cameFromLocInt = nodeLocInt;
+				loopNode.cost = costUpToLoopNode;
+
+				_calculatedNodes[yWithXRegion] |= (1 << xBits);
+
+				// Cache for clearing later
+				//_nodesToRenew[_nodesToRenewLength] = locInt;
+				//_nodesToRenewLength++;
+				_nodesToRenew.push_back(locInt);
+
+				_openList.Insert(locInt, priorityCost);
+			}
+		}
+
+		calculationCount++;
+	}
+
+	pathCount++;
+	iterationCount += calculationCount;
+
+	// Cannot find path, either we are out of tile, or it took too long (exceed maxCalculationCount)
+	int len = abs(startX - endX) + abs(startY - endY);
+	int aveIter = iterationCount / pathCount;
+	if (_openList.isEmpty()) {
+		openListEmpty++;
+		UE_LOG(LogTemp, Error, TEXT("openListEmpty(count:%d): from:%d,%d to:%d,%d len:%d aveIter:%d"), openListEmpty, startX, startY, endX, endY, len, aveIter);
+	}
+	else {
+		calculationTooLongCount++;
+		if (PunSettings::IsOn("ShowFullDebugLog")) {
+			UE_LOG(LogTemp, Error, TEXT("calcTooLong(count:%d): from:%d,%d to:%d,%d len:%d aveIter:%d"), calculationTooLongCount, startX, startY, endX, endY, len, aveIter);
+		}
+	}
+
+	CleanGrid();
+	path.clear();
+
+	return false;
 }
 
 /**
@@ -530,6 +782,7 @@ void PunAStar128x256::GetSuccessorsRobust(uint32_t locInt, uint32_t* successors,
 		++arraySize;
 	}
 }
+
 
 // Robust algorithm can ignores terrain
 bool PunAStar128x256::FindPathRobust(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path)

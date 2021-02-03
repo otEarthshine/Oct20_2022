@@ -244,7 +244,7 @@ void UnitStateAI::Update()
 				GameRand::Rand() % (Time::TicksPerRound * 2) < ticksPassed)
 			{
 				_simulation->AddMigrationPendingCount(_townId, 1);
-				_simulation->AddEventLog(_townId, 
+				_simulation->AddEventLog(_playerId,
 					FText::Format(LOCTEXT("XLeftTownHomeless_Event", "{0} left your town (homeless)."), GetUnitNameT()),
 					true
 				);

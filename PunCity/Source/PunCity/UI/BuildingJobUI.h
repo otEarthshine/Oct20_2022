@@ -193,7 +193,7 @@ public:
 
 		if (building.hoverWarning != HoverWarning::None)
 		{
-			PUN_LOG("Hover Warning %s warningId:%d", ToTChar(building.buildingInfo().nameStd()), static_cast<int>(building.hoverWarning));
+			//PUN_LOG("Hover Warning %s warningId:%d", ToTChar(building.buildingInfo().nameStd()), static_cast<int>(building.hoverWarning));
 
 			DepletedText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 			SetText(DepletedText, GetHoverWarningString(building.hoverWarning));

@@ -331,9 +331,11 @@ static bool SearchBoxCompare(const std::string& searchString, const std::string&
 #define UI_MAINGAME 1
 
 /*
- * 
+ * Debug Counter
+ * Use: "PunTog DebugUI"
+ * TIP: Test using AddAIImmigrants 500 (Chat Cheat) and full speed Ctrl-5
+ * "PunSet ShowFullDebugLog 0" to ensure less logging
  */
-
 
 #if DEBUG_BUILD
 
@@ -419,6 +421,8 @@ DECLARE_DEBUG_ISCONNECTED_VAR(ClaimProvince);
 DECLARE_DEBUG_ISCONNECTED_VAR(RefreshHoverWarning);
 DECLARE_DEBUG_ISCONNECTED_VAR(adjacentTileNearestTo);
 DECLARE_DEBUG_ISCONNECTED_VAR(DropResourceSystem);
+
+DECLARE_DEBUG_ISCONNECTED_VAR(IsConnectedBuildingResource);
 
 #undef DECLARE_DEBUG_AI_VAR
 
@@ -2001,7 +2005,7 @@ enum class CardEnum : uint16
 	// June 25
 	Warehouse,
 	Fort,
-	Colony,
+	ResourceOutpost,
 	InventorsWorkshop,
 	IntercityRoad,
 
@@ -2023,6 +2027,12 @@ enum class CardEnum : uint16
 	ShroomFarm,
 	VodkaDistillery,
 	CoffeeRoaster,
+
+	// Feb 2
+	Colony,
+	PortColony,
+	IntercityLogisticsHub,
+	IntercityLogisticsPort,
 
 	// Decorations
 	FlowerBed,
@@ -2335,7 +2345,7 @@ struct BldInfo
 			maxBuilderCount = 2;
 		}
 		else if (buildingEnum == CardEnum::Fort ||
-				buildingEnum == CardEnum::Colony) 
+				buildingEnum == CardEnum::ResourceOutpost) 
 		{
 			maxBuilderCount = 0;
 		}
@@ -2378,7 +2388,7 @@ struct BldInfo
 			CASE(GardenCypress, 200);
 
 			CASE(Fort, 500);
-			CASE(Colony, 2000);
+			CASE(ResourceOutpost, 2000);
 #undef CASE
 		default:
 			break;
@@ -2591,7 +2601,7 @@ static const BldInfo BuildingInfo[]
 	// June 25 addition
 	BldInfo(CardEnum::Warehouse, LOCTEXT("Warehouse", "Warehouse"),	LOCTEXT("Warehouse (Plural)", "Warehouses"), WorldTile2(6, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 70,70,0 }, LOCTEXT("Warehouse Desc", "Advanced storage with 30 storage slots.")),
 	BldInfo(CardEnum::Fort, LOCTEXT("Fort", "Fort"),				LOCTEXT("Fort (Plural)", "Forts"), WorldTile2(9, 9), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Fort Desc", "+100% province's defense.")),
-	BldInfo(CardEnum::Colony, LOCTEXT("Colony", "Colony"),							LOCTEXT("Colony (Plural)", "Colonies"), WorldTile2(10, 10), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Colony Desc", "Extract resource from province.")),
+	BldInfo(CardEnum::ResourceOutpost, LOCTEXT("Resource Outpost", "Resource Outpost"),	LOCTEXT("Resource Outpost (Plural)", "Resource Outposts"), WorldTile2(10, 10), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Resource Outpost Desc", "Extract resource from province.")),
 	BldInfo(CardEnum::InventorsWorkshop, LOCTEXT("Inventor's Workshop", "Inventor's Workshop"), LOCTEXT("Inventor's Workshop (Plural)", "Inventor's Workshops"), WorldTile2(6, 6), ResourceEnum::Iron, ResourceEnum::None, ResourceEnum::None, 0, 2, { 50,50,0 }, LOCTEXT("Inventor's Workshop Desc", "Generate Science Points. Use Iron Bars as input.")),
 	BldInfo(CardEnum::IntercityRoad, LOCTEXT("Intercity Road", "Intercity Road"),				LOCTEXT("Intercity Road (Plural)", "Intercity Road"), WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Intercity Road Desc", "Build Road to connect with other Cities. Same as Dirt Road, but buildable outside your territory.")),
 
@@ -2613,13 +2623,17 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::ShroomFarm,		LOCTEXT("Shroom Farm", "Shroom Farm"),			LOCTEXT("Shroom Farm (Plural)", "Shroom Farms"), WorldTile2(8, 8), ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::Shroom, 20, 2, { 70,70,0 }, LOCTEXT("Shroom Farm Desc", "Farm Shroom using wood.")),
 	BldInfo(CardEnum::VodkaDistillery, LOCTEXT("Vodka Distillery", "Vodka Distillery"), LOCTEXT("Vodka Distillery (Plural)", "Vodka Distilleries"), WorldTile2(5, 5), ResourceEnum::Potato, ResourceEnum::None, ResourceEnum::Vodka, 10, 2, { 120,120,0 }, LOCTEXT("Vodka Distillery Desc", "Brew Potato into Vodka.")),
 	BldInfo(CardEnum::CoffeeRoaster, LOCTEXT("Coffee Roaster", "Coffee Roaster"),		LOCTEXT("Coffee Roaster (Plural)", "Coffee Roasters"), WorldTile2(6, 6), ResourceEnum::RawCoffee, ResourceEnum::None, ResourceEnum::Coffee, 10, 2, { 150, 100, 0 }, LOCTEXT("Coffee Roaster Desc", "Roast Raw Coffee into Coffee.")),
+
+	// February 2
+	BldInfo(CardEnum::Colony, LOCTEXT("Colony", "Colony"), LOCTEXT("Colony (Plural)", "Colonies"), WorldTile2(12, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Colony Desc", "Build a new city.")),
+	BldInfo(CardEnum::PortColony, LOCTEXT("Port Colony", "Port Colony"), LOCTEXT("Port Colony (Plural)", "Port Colonies"), WorldTile2(12, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Port Colony Desc", "Build a new port city.")),
+	BldInfo(CardEnum::IntercityLogisticsHub, LOCTEXT("Intercity Logistics Hub", "Intercity Logistics Hub"), LOCTEXT("Intercity Logistics Hub (Plural)", "Intercity Logistics Hubs"), WorldTile2(4, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Intercity Logistics Hub Desc", "Request resources from another city.")),
+	BldInfo(CardEnum::IntercityLogisticsPort, LOCTEXT("Intercity Logistics Port", "Intercity Logistics Port"), LOCTEXT("Intercity Logistics Port (Plural)", "Intercity Logistics Ports"), WorldTile2(4, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Intercity Logistics Port Desc", "Request resources from another city.")),
 	
 	// Decorations
 	BldInfo(CardEnum::FlowerBed,		LOCTEXT("Flower Bed", "Flower Bed"),		LOCTEXT("Flower Bed (Plural)", "Flower Beds"), WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Flower Bed Desc", "Increase the surrounding appeal by 5 within 5 tiles radius.")),
 	BldInfo(CardEnum::GardenShrubbery1, LOCTEXT("Shrubbery", "Shrubbery"),			LOCTEXT("Shrubbery (Plural)", "Shrubberies"), WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Shrubbery Desc", "Increase the surrounding appeal by 5 within 5 tiles radius.")),
-	BldInfo(CardEnum::GardenCypress,	LOCTEXT("Garden Cypress", "Garden Cypress"), LOCTEXT("Garden Cypress (Plural)", "Garden Cypresses"), WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Garden Cypress Desc", "Increase the surrounding appeal by 8 within 5 tiles radius.")),
-
-	
+	BldInfo(CardEnum::GardenCypress,	LOCTEXT("Garden Cypress", "Garden Cypress"), LOCTEXT("Garden Cypress (Plural)", "Garden Cypresses"), WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Garden Cypress Desc", "Increase the surrounding appeal by 8 within 5 tiles radius.")),	
 	
 	// Rare cards
 	//BldInfo("Sales Office",			WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0,	{20, 20, 0},	"Decrease the amount of trade fee by 50%."),
@@ -3312,6 +3326,17 @@ static bool IsHouse(CardEnum buildingEnum) {
 		case CardEnum::BoarBurrow:
 			return true;
 		default: return false;
+	}
+}
+
+static bool IsTownPlacement(CardEnum buildingEnum)
+{
+	switch (buildingEnum) {
+	case CardEnum::Townhall:
+	case CardEnum::Colony:
+	case CardEnum::PortColony:
+		return true;
+	default: return false;
 	}
 }
 
@@ -4344,6 +4369,10 @@ enum class PlacementInstructionEnum
 	Colony,
 	ColonyNoGeoresource,
 	
+	ColonyNeedsEmptyProvinces,
+	ColonyNextToIntercityRoad,
+	ColonyClaimCost,
+	
 	FarmAndRanch,
 	FarmNoValidSeedForRegion,
 	NeedGeoresource,
@@ -4748,7 +4777,8 @@ enum class TechEnum : uint8
 	ImprovedLogistics,
 
 	Tunnel,
-
+	Colony,
+	PortColony,
 
 	/*
 	 * Bonuses
@@ -4792,7 +4822,7 @@ enum class TechEnum : uint8
 	Rationalism,
 
 	Fort,
-	Colony,
+	ResourceOutpost,
 	InventorsWorkshop,
 	IntercityRoad,
 

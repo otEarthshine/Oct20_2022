@@ -113,6 +113,9 @@ public:
 		USceneComponent* test = nullptr;
 		test->DestroyComponent();
 	}
+	UFUNCTION(Exec) void PleaseCrashCheck() {
+		checkNoEntry();
+	}
 	UFUNCTION(Exec) void RefreshCulture() {
 		gameInstance()->RefreshCulture();
 	}

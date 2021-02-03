@@ -619,7 +619,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			{
 				//ss << "<Header>" << building.buildingInfo().name << "</>";
 				//ADDINVTEXT(args, "<Header>{buildingName}</>", building.buildingInfo().GetName());
-				ADDTEXT_(INVTEXT("<Header>{buildingName}</>"), building.buildingInfo().GetName());
+				ADDTEXT_(INVTEXT("<Header>{0}</>"), building.buildingInfo().GetName());
 			}
 			
 #if WITH_EDITOR || TRAILER_MODE
@@ -1422,9 +1422,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					{
 						descriptionBox->AddRichText(building.buildingInfo().description);
 					}
-					else if (building.isEnum(CardEnum::Colony))
+					else if (building.isEnum(CardEnum::ResourceOutpost))
 					{
-						auto& colony = building.subclass<Colony>();
+						auto& colony = building.subclass<ResourceOutpost>();
 						descriptionBox->AddRichText(LOCTEXT("Upkeep: ", "Upkeep: "), FText::Format(INVTEXT("{0}<img id=\"Influence\"/>"), TEXT_NUM(colony.GetColonyUpkeep())));
 
 						descriptionBox->AddSpacer();
@@ -3214,7 +3214,7 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 
 		
 
-		ClaimConnectionEnum claimConnectionEnum = sim.GetProvinceClaimConnectionEnum(provinceId, playerId());
+		ClaimConnectionEnum claimConnectionEnum = sim.GetProvinceClaimConnectionEnumPlayer(provinceId, playerId());
 		if (claimConnectionEnum != ClaimConnectionEnum::None) {
 			addClaimButtons(claimConnectionEnum);
 		}
@@ -3296,7 +3296,7 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 					}
 				};
 
-				ClaimConnectionEnum claimConnectionEnum = sim.GetProvinceClaimConnectionEnum(provinceId, playerId());
+				ClaimConnectionEnum claimConnectionEnum = sim.GetProvinceClaimConnectionEnumPlayer(provinceId, playerId());
 				if (claimConnectionEnum != ClaimConnectionEnum::None) {
 					addAttackButtons(claimConnectionEnum);
 				}
@@ -3411,17 +3411,17 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 
 		CloseDescriptionUI();
 	}
-	else if (callbackEnum == CallbackEnum::ClaimRuin)
-	{
-		PUN_LOG("Claim Ruin");
-		auto command = make_shared<FClaimLand>();
-		command->provinceId = punWidgetCaller->callbackVar1;
-		command->claimEnum = callbackEnum;
-		PUN_CHECK(command->provinceId != -1);
-		networkInterface()->SendNetworkCommand(command);
+	//else if (callbackEnum == CallbackEnum::ClaimRuin)
+	//{
+	//	PUN_LOG("Claim Ruin");
+	//	auto command = make_shared<FClaimLand>();
+	//	command->provinceId = punWidgetCaller->callbackVar1;
+	//	command->claimEnum = callbackEnum;
+	//	PUN_CHECK(command->provinceId != -1);
+	//	networkInterface()->SendNetworkCommand(command);
 
-		CloseDescriptionUI();
-	}
+	//	CloseDescriptionUI();
+	//}
 	else if (callbackEnum == CallbackEnum::SelectStartingLocation)
 	{
 		auto command = make_shared<FChooseLocation>();

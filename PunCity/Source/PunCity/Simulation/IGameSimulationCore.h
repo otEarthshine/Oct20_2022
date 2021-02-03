@@ -286,7 +286,7 @@ public:
 	virtual bool HasBuilding(int32 tileId) = 0;
 	
 	virtual bool IsBuildable(WorldTile2 tile) = 0;
-	virtual bool IsBuildable(WorldTile2 tile, int32_t playerId) = 0;
+	virtual bool IsBuildableForPlayer(WorldTile2 tile, int32 playerId) = 0;
 
 	virtual bool IsCritterBuildingIncludeFronts(WorldTile2 tile) = 0;
 
@@ -336,8 +336,8 @@ public:
 	virtual int32 GetProvinceClaimPrice(int32 provinceId, int32 playerId) = 0;
 	
 	//virtual bool HasOutpostAt(int32 playerId, int32 provinceId) = 0;
-	virtual bool IsProvinceNextToPlayer(int32 provinceId, int32 playerId) = 0;
-	virtual bool IsProvinceNextToPlayerByShallowWater(int32 provinceId, int32 playerId) = 0;
+	virtual bool IsProvinceNextToTown(int32 provinceId, int32 townId) = 0;
+	virtual bool IsProvinceNextToTownByShallowWater(int32 provinceId, int32 townId) = 0;
 
 	virtual void RefreshTerritoryEdge(int32 playerId) = 0;
 

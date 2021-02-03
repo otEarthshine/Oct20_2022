@@ -47,6 +47,7 @@ public:
 	~PunAStar128x256();
 
 	bool FindPath(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path, bool isAccurate, bool isRoadable, int32 customCalculationCount = -1);
+	bool FindPathRoadOnly(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path);
 	bool FindPathRobust(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path);
 
 	void CleanGrid();
@@ -125,6 +126,8 @@ private:
 	void ConstructPath(uint32_t start, uint32_t end, std::vector<uint32_t>& path);
 
 	void GetSuccessorsRobust(uint32_t locInt, uint32_t* successors, int& nonDiagArraySize, int& arraySize);
+
+	void GetSuccessorsRoadOnly(uint32_t locInt, uint32_t* successors, int& nonDiagArraySize, int& arraySize);
 
 	void PrintUInt32(uint32_t locInt);
 

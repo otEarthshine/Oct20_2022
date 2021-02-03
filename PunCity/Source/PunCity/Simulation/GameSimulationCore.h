@@ -392,7 +392,9 @@ public:
 		return building(townhallId).subclass<TownHall>(CardEnum::Townhall);
 	}
 	TownHall& GetTownhall(int32 townId) final {
-		return building(townManager(townId).townHallId).subclass<TownHall>(CardEnum::Townhall);
+		int32 townhallId = townManager(townId).townHallId;
+		check(townhallId != -1);
+		return building(townhallId).subclass<TownHall>(CardEnum::Townhall);
 	}
 	TownHall* GetTownhallPtr(int32 townId) final {
 		if (townId == -1) return nullptr;
@@ -578,13 +580,13 @@ public:
 	//}
 	
 	
-	bool IsBuildable(WorldTile2 tile, int32 playerId) final {
+	bool IsBuildableForPlayer(WorldTile2 tile, int32 playerId) final {
 		return IsBuildable(tile) &&
-			(playerId == -1 || playerId == tileOwnerTown(tile));
+			(playerId == -1 || playerId == tileOwnerPlayer(tile));
 	}
-	bool IsFrontBuildable(WorldTile2 tile, int32 playerId) {
+	bool IsFrontBuildableForPlayer(WorldTile2 tile, int32 playerId) {
 		return IsFrontBuildable(tile) &&
-			(playerId == -1 || playerId == tileOwnerTown(tile));
+			(playerId == -1 || playerId == tileOwnerPlayer(tile));
 	}
 
 	// Doesn't check for IsBuildable etc.
@@ -1083,7 +1085,7 @@ public:
 	}
 
 	int32 GetProvinceClaimPrice(int32 provinceId, int32 playerId) final {
-		return GetProvinceClaimPrice(provinceId, playerId, GetProvinceClaimConnectionEnum(provinceId, playerId));
+		return GetProvinceClaimPrice(provinceId, playerId, GetProvinceClaimConnectionEnumPlayer(provinceId, playerId));
 	}
 	int32 GetProvinceClaimPrice(int32 provinceId, int32 playerId, ClaimConnectionEnum claimConnectionEnum)
 	{
@@ -1279,7 +1281,7 @@ public:
 	//bool HasOutpostAt(int32 playerId, int32 provinceId) final {
 	//	return playerOwned(playerId).HasOutpostAt(provinceId);
 	//}
-	bool IsProvinceNextToPlayer(int32 provinceId, int32 playerId) final
+	bool IsProvinceNextToTown(int32 provinceId, int32 townId) final
 	{
 		return _provinceSystem.ExecuteAdjacentProvincesWithExitTrue(provinceId, [&](ProvinceConnection connection) 
 		{
@@ -1287,11 +1289,11 @@ public:
 											connection.tileType == TerrainTileType::River;
 
 			return isValidConnectionType && 
-					provinceOwnerPlayer(connection.provinceId) == playerId;
+					provinceOwnerTown(connection.provinceId) == townId;
 		});
 	}
-	bool IsProvinceNextToPlayerByShallowWater(int32 provinceId, int32 playerId) final {
-		if (!unlockSystem(playerId)->IsResearched(TechEnum::ShallowWaterEmbark)) {
+	bool IsProvinceNextToTownByShallowWater(int32 provinceId, int32 townId) final {
+		if (!unlockSystem(townPlayerId(townId))->IsResearched(TechEnum::ShallowWaterEmbark)) {
 			return false;
 		}
 		return _provinceSystem.ExecuteAdjacentProvincesWithExitTrue(provinceId, [&](ProvinceConnection connection)
@@ -1299,31 +1301,45 @@ public:
 			bool isValidConnectionType = (connection.tileType == TerrainTileType::Ocean);
 
 			return isValidConnectionType &&
-				provinceOwnerPlayer(connection.provinceId) == playerId;
+				provinceOwnerTown(connection.provinceId) == townId;
 		});
 	}
-	bool IsProvinceOverseaClaimableByPlayer(int32 provinceId, int32 playerId)
+	//bool IsProvinceOverseaClaimableByPlayer(int32 provinceId, int32 playerId, int32 townId)
+	//{
+	//	// TODO: have military harbor that do flood check..
+	//	return unlockSystem(playerId)->IsResearched(TechEnum::DeepWaterEmbark) &&
+	//		_provinceSystem.provinceIsCoastal(provinceId);
+	//}
+	ClaimConnectionEnum GetProvinceClaimConnectionEnumPlayer(int32 provinceId, int32 playerId)
 	{
-		// TODO: have military harbor that do flood check..
-		return unlockSystem(playerId)->IsResearched(TechEnum::DeepWaterEmbark) &&
-			_provinceSystem.provinceIsCoastal(provinceId);
+		const auto& townIds = GetTownIds(playerId);
+		for (int32 townId : townIds) {
+			if (IsProvinceNextToTown(provinceId, townId)) {
+				return ClaimConnectionEnum::Flat;
+			}
+		}
+		for (int32 townId : townIds) {
+			if (IsProvinceNextToTownByShallowWater(provinceId, townId)) {
+				return ClaimConnectionEnum::ShallowWater;
+			}
+		}
+		//if (IsProvinceOverseaClaimableByPlayer(provinceId, playerId, -1)) {
+		//	return ClaimConnectionEnum::Deepwater;
+		//}
+		return ClaimConnectionEnum::None;
 	}
-	ClaimConnectionEnum GetProvinceClaimConnectionEnum(int32 provinceId, int32 playerId)
+	// TODO: IS this needed?
+	ClaimConnectionEnum GetProvinceClaimConnectionEnumTown(int32 provinceId, int32 townId)
 	{
-		if (IsProvinceNextToPlayer(provinceId, playerId))
-		{
+		if (IsProvinceNextToTown(provinceId, townId)) {
 			return ClaimConnectionEnum::Flat;
 		}
-		if (IsProvinceNextToPlayerByShallowWater(provinceId, playerId))
-		{
+		if (IsProvinceNextToTownByShallowWater(provinceId, townId)) {
 			return ClaimConnectionEnum::ShallowWater;
-		}
-		if (IsProvinceOverseaClaimableByPlayer(provinceId, playerId))
-		{
-			return ClaimConnectionEnum::Deepwater;
 		}
 		return ClaimConnectionEnum::None;
 	}
+	
 	bool IsOverseaProvince(int32 provinceIdIn, int32 playerId)
 	{
 		if (!HasTownhall(playerId)) {

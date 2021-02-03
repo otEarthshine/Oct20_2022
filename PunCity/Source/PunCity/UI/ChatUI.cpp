@@ -383,6 +383,8 @@ void UChatUI::TickDebugUI()
 		DEBUG_ISCONNECTED(adjacentTileNearestTo);
 		DEBUG_ISCONNECTED(DropResourceSystem);
 
+		DEBUG_ISCONNECTED(IsConnectedBuildingResource);
+		
 #undef DEBUG_ISCONNECTED
 		
 

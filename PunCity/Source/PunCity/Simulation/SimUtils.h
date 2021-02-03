@@ -270,6 +270,10 @@ public:
 	}
 
 
+
+	
+
+
 	template<typename Func>
 	static void PerlinRadius_ExecuteOnArea_WorldTile2(WorldTile2 center, int32 radius, IGameSimulationCore* simulation, Func func)
 	{

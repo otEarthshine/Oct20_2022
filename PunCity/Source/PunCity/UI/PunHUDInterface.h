@@ -95,4 +95,4 @@ public:
 
 #define BUTTON_ON_CLICK(button, UserObject, FuncName) \
 			button->OnClicked.Clear();\
-			button->OnClicked.AddDynamic(UserObject, FuncName);
+			button->OnClicked.AddUniqueDynamic(UserObject, FuncName);

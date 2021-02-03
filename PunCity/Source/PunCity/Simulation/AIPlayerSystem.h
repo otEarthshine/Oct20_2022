@@ -675,7 +675,7 @@ public:
 				largerArea.ExecuteOnBorder_WorldTile2([&](const WorldTile2& tile) {
 					TileArea curArea(tile, size);
 					bool hasInvalidTile = curArea.ExecuteOnAreaWithExit_WorldTile2([&](const WorldTile2& curTile) {
-						return !_simulation->IsBuildable(curTile, _aiPlayerId);
+						return !_simulation->IsBuildableForPlayer(curTile, _aiPlayerId);
 					});
 					if (!hasInvalidTile) {
 						int32 fertility = averageFertility(curArea);
@@ -724,7 +724,7 @@ public:
 					{
 						TileArea curArea(tile, size);
 						bool hasInvalidTile = curArea.ExecuteOnAreaWithExit_WorldTile2([&](const WorldTile2& curTile) {
-							return !_simulation->IsBuildable(curTile, _aiPlayerId);
+							return !_simulation->IsBuildableForPlayer(curTile, _aiPlayerId);
 						});
 
 						return !hasInvalidTile;

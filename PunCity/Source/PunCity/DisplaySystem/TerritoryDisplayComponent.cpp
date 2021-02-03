@@ -207,8 +207,24 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 		auto material = _gameManager->ZoomDistanceBelow(WorldZoomTransition_GameToMap) ? comp->MaterialInstance : comp->MaterialInstance_Top;
 
 		// Fade when it is not near our territory
-		int32 owner = simulation().provinceOwnerTown(comp->provinceId);
-		material->SetScalarParameterValue("IsFade", (owner == -1) && !simulation().IsProvinceNextToPlayer(comp->provinceId, playerId()));
+		int32 provinceTownId = simulation().provinceOwnerTown(comp->provinceId);
+		bool isFade = false; // Fade when province has no owner, and province is not next to player
+		if (provinceTownId == -1) {
+			// Is Province next to player???
+			const auto& townIds = simulation().GetTownIds(playerId());
+			bool isNextToPlayer = false;
+			for (int32 townId : townIds) {
+				if (simulation().IsProvinceNextToTown(comp->provinceId, townId)) {
+					isNextToPlayer = true;
+					break;
+				}
+			}
+			if (!isNextToPlayer) {
+				isFade = true;
+			}
+		}
+		material->SetScalarParameterValue("IsFade", isFade);
+		//material->SetScalarParameterValue("IsFade", (owner == -1) && !simulation().IsProvinceNextToPlayer(comp->provinceId, playerId()));
 
 		comp->SetMaterial(0, material);
 	}
@@ -284,27 +300,27 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 		/*
 		 * Update territory meshes
 		 */
-		std::vector<int32> playerIds = simulation().GetNeedDisplayUpdateIds(DisplayGlobalEnum::Territory);
-		for (int32 playerId : playerIds) 
+		std::vector<int32> townIds = simulation().GetNeedDisplayUpdateIds(DisplayGlobalEnum::Territory);
+		for (int32 townId : townIds)
 		{
 			//PUN_LOG("Update TerritoryMesh playerId:%d", playerId);
 			
-			if (_townIdToTerritoryMesh.Num() <= playerId) {
-				_townIdToTerritoryMesh.SetNum(playerId + 1);
+			if (_townIdToTerritoryMesh.Num() <= townId) {
+				_townIdToTerritoryMesh.SetNum(townId + 1);
 			}
 
-			TArray<UTerritoryMeshComponent*>& territoryMeshes = _townIdToTerritoryMesh[playerId].TerritoryMeshes;
+			TArray<UTerritoryMeshComponent*>& territoryMeshes = _townIdToTerritoryMesh[townId].TerritoryMeshes;
 
-			if (simulation().playerOwned(playerId).hasChosenLocation())
+			if (simulation().HasChosenLocation(simulation().townPlayerId(townId)))
 			{
-				const auto& clusters = simulation().provinceSystem().GetTerritoryClusters(playerId);
+				const auto& clusters = simulation().provinceSystem().GetTerritoryClusters(townId);
 				for (int32 i = 0; i < clusters.size(); i++)
 				{
 					if (territoryMeshes.Num() < clusters.size()) {
 						territoryMeshes.Add(CreateTerritoryMeshComponent(false));
 					}
 
-					territoryMeshes[i]->UpdateMesh(true, -1, playerId, i, false, &simulation(), 50);
+					territoryMeshes[i]->UpdateMesh(true, -1, townId, i, false, &simulation(), 50);
 					territoryMeshes[i]->SetVisibility(false); // Hide initially until the colors get updated.
 				}
 

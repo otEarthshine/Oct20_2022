@@ -19,7 +19,7 @@ class PROTOTYPECITY_API UTerritoryMeshComponent : public UProceduralMeshComponen
 	GENERATED_BODY()
 public:
 
-	void UpdateMesh(bool createMesh, int32 provinceIdIn, int32 playerIdIn, int32 territoryClusterIdIn, bool isInnerMeshIn, 
+	void UpdateMesh(bool createMesh, int32 provinceIdIn, int32 townIdIn, int32 territoryClusterIdIn, bool isInnerMeshIn, 
 					IGameSimulationCore* sim, int32 innerBorderWidth = 10)
 	{
 		ProvinceSystem& provinceSys = sim->provinceSystem();
@@ -52,14 +52,14 @@ public:
 		tris.Empty();
 
 		provinceId = provinceIdIn;
-		playerId = playerIdIn;
+		townId = townIdIn;
 		
 		isInnerMesh = isInnerMeshIn;
 		WorldTile2 centerTile;
 		if (provinceIdIn != -1) {
 			centerTile = provinceSys.GetProvinceCenter(provinceId).worldTile2();
 		} else {
-			std::vector<int32> provincesClaimed = sim->GetProvincesPlayer(playerId);
+			std::vector<int32> provincesClaimed = sim->GetProvincesTown(townId);
 			PUN_CHECK(provincesClaimed.size() > 0);
 			centerTile = sim->GetProvinceCenterTile(provincesClaimed[0]);
 			//PUN_LOG("Update TerritoryMesh2 %d", playerId);
@@ -67,8 +67,8 @@ public:
 		
 		
 		//const std::vector<WorldTile2>& edgeTiles = provinceSys.GetProvinceEdges(provinceId);
-		const std::vector<WorldTile2x2>& edges1 = provinceIdIn != -1 ? provinceSys.GetProvinceEdges1(provinceId) : provinceSys.GetTerritoryEdges1(playerId, territoryClusterIdIn);
-		const std::vector<WorldTile2x2>& edges2 = provinceIdIn != -1 ? provinceSys.GetProvinceEdges2(provinceId) : provinceSys.GetTerritoryEdges2(playerId, territoryClusterIdIn);
+		const std::vector<WorldTile2x2>& edges1 = provinceIdIn != -1 ? provinceSys.GetProvinceEdges1(provinceId) : provinceSys.GetTerritoryEdges1(townId, territoryClusterIdIn);
+		const std::vector<WorldTile2x2>& edges2 = provinceIdIn != -1 ? provinceSys.GetProvinceEdges2(provinceId) : provinceSys.GetTerritoryEdges2(townId, territoryClusterIdIn);
 
 		//PUN_LOG("TerritoryMesh playerId:%d province:%d edges1:%d edges2:%d", playerIdIn, provinceIdIn, edges1.size(), edges2.size());
 		
@@ -289,6 +289,6 @@ public:
 	UPROPERTY() UMaterialInstanceDynamic* MaterialInstance_Top = nullptr;
 	
 	int32 provinceId = -1;
-	int32 playerId = -1; // Used for territory mesh
+	int32 townId = -1; // Used for territory mesh
 	int32 isInnerMesh = false;
 };

@@ -86,6 +86,7 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "DebugTemp3", 0 },
 	{ "DebugTemp4", 0 },
 	{ "DebugTemp5", 0 },
+	{ "ShowFullDebugLog", 1 },
 
 	//! TickUI
 	{ "UIWorldSpace", 1 },

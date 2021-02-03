@@ -18,7 +18,7 @@ public:
 		_simulation = simulation;
 		_buildingSubregionList.Init();
 
-		_playerIdPlus1ToEnumToBuildingIds.resize(GameConstants::MaxPlayersAndAI + 1, std::vector<std::vector<int32>>(BuildingEnumCount));
+		_townIdPlus1ToEnumToBuildingIds.resize(GameConstants::MaxPlayersAndAI + 1, std::vector<std::vector<int32>>(BuildingEnumCount));
 
 		_buildingIdMap.resize(GameMapConstants::TilesPerWorld, -1);
 		_buildingFrontIdMap.resize(GameMapConstants::TilesPerWorld * 4, -1);
@@ -107,11 +107,15 @@ public:
 
 	const SubregionLists<int32>& buildingSubregionList() { return _buildingSubregionList; }
 
-	const std::vector<int32>& buildingIds(int32 playerId, CardEnum buildingEnum) {
-		return _playerIdPlus1ToEnumToBuildingIds[playerId + 1][static_cast<int>(buildingEnum)];
+	const std::vector<int32>& buildingIds(int32 townId, CardEnum buildingEnum) {
+		return _townIdPlus1ToEnumToBuildingIds[townId + 1][static_cast<int>(buildingEnum)];
 	}
-	size_t GetBuildingCount(int32 playerId, CardEnum buildingEnum) {
-		return buildingIds(playerId, buildingEnum).size();
+	size_t GetBuildingCount(int32 townId, CardEnum buildingEnum) {
+		return buildingIds(townId, buildingEnum).size();
+	}
+	void AddTown(int32 townId) {
+		_townIdPlus1ToEnumToBuildingIds.push_back(std::vector<std::vector<int32>>(BuildingEnumCount));
+		check(_townIdPlus1ToEnumToBuildingIds.size() == townId + 2);
 	}
 
 	int32 GetHouseLvlCount(int32 playerId, int32 houseLvl, bool includeHigherLvl);
@@ -207,7 +211,7 @@ public:
 		{
 			SERIALIZE_TIMER("Building - AfterLoop", data, crcs, crcLabels);
 			
-			SerializeVecLoop(Ar, _playerIdPlus1ToEnumToBuildingIds, [&](std::vector<std::vector<int32>>& vecVecValue) {
+			SerializeVecLoop(Ar, _townIdPlus1ToEnumToBuildingIds, [&](std::vector<std::vector<int32>>& vecVecValue) {
 				SerializeVecVecValue(Ar, vecVecValue);
 			});
 
@@ -295,7 +299,7 @@ private:
 	std::vector<bool> _alive;
 	std::vector<std::unique_ptr<Building>> _buildings;
 
-	std::vector<std::vector<std::vector<int32>>> _playerIdPlus1ToEnumToBuildingIds;
+	std::vector<std::vector<std::vector<int32>>> _townIdPlus1ToEnumToBuildingIds;
 
 	//
 	std::vector<int32> _buildingsToTick;

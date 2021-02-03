@@ -1537,7 +1537,7 @@ void Bank::CalculateRoundProfit()
 //	TryStartTraining(); // Try to start next training
 //}
 
-void Colony::TickRound()
+void ResourceOutpost::TickRound()
 {
 	if (isConstructed())
 	{

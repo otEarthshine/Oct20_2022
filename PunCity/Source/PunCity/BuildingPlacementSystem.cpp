@@ -346,7 +346,7 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 		//	SetInstruction(PlacementInstructionEnum::DragRoadStone, true, stoneNeeded);
 		//}
 	}
-	else if (_buildingEnum == CardEnum::Colony) {
+	else if (_buildingEnum == CardEnum::ResourceOutpost) {
 		SetInstruction(PlacementInstructionEnum::Colony, true);
 	}
 	else if (_buildingEnum == CardEnum::Fort) {
@@ -547,7 +547,7 @@ void ABuildingPlacementSystem::StartBuildingPlacement(CardEnum buildingEnum, int
 	}
 
 	// Province Buildings always show province hover
-	_gameInterface->SetAlwaysShowProvinceHover(buildingEnum == CardEnum::Fort || buildingEnum == CardEnum::Colony);
+	_gameInterface->SetAlwaysShowProvinceHover(buildingEnum == CardEnum::Fort || buildingEnum == CardEnum::ResourceOutpost);
 }
 
 void ABuildingPlacementSystem::StartSetDeliveryTarget(int32 buildingId)
@@ -2003,7 +2003,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		}
 		
 		// Colony Grid
-		else if (_buildingEnum == CardEnum::Colony)
+		else if (_buildingEnum == CardEnum::ResourceOutpost)
 		{
 			auto& sim = _gameInterface->simulation();
 			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
@@ -2020,29 +2020,64 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			});
 		}
 		// Townhall Initial
-		else if (_buildingEnum == CardEnum::Townhall)
+		else if (IsTownPlacement(_buildingEnum))
 		{
+			vector<int32> provinceIds;
+			auto tryAddProvinceId = [&](WorldTile2 tile) {
+				int32 provinceId = simulation.GetProvinceIdClean(tile);
+				if (provinceId != -1) {
+					CppUtils::TryAdd(provinceIds, provinceId);
+				}
+			};
+			
 			auto tryPlaceBuilding = [&](WorldTile2 tile)
 			{
-				bool isGreen = IsPlayerBuildable(tile) && !isAllRed;
+				bool isGreen = false; // IsPlayerBuildable(tile) && !isAllRed;
+				if (!isAllRed) {
+					isGreen = (_buildingEnum == CardEnum::Townhall) ? IsPlayerBuildable(tile) : _gameInterface->IsPlayerColonyBuildable(tile);
+				}
+				
 				_placementGrid.SpawnGrid(isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, tile);
+				
+				tryAddProvinceId(tile);
 			};
 
 			auto tryPlaceRoad = [&](WorldTile2 tile, PlacementGridEnum redEnum, PlacementGridEnum greenEnum, PlacementGridEnum yellowEnum, Direction direction)
 			{
 				PlacementGridEnum gridEnum = redEnum;
-				if (simulation.overlaySystem().IsRoad(tile)) {
-					gridEnum = greenEnum;
+
+				if (_buildingEnum == CardEnum::Townhall)
+				{
+					// Townhall
+					if (simulation.overlaySystem().IsRoad(tile)) {
+						gridEnum = greenEnum;
+					}
+					else if (gameInterface->IsPlayerFrontBuildable(tile)) {
+						gridEnum = yellowEnum;
+					}
+
+					if (simulation.tileOwnerPlayer(tile) != playerId) {
+						SetInstruction(PlacementInstructionEnum::OutsideTerritory, true);
+					}
 				}
-				else if (gameInterface->IsPlayerFrontBuildable(tile)) {
-					gridEnum = yellowEnum;
+				else
+				{
+					// Colony
+					if (simulation.overlaySystem().IsRoad(tile)) {
+						gridEnum = greenEnum;
+					}
+					else if (gameInterface->IsPlayerColonyFrontBuildable(tile)) {
+						gridEnum = yellowEnum;
+					}
+
+					if (simulation.tileOwnerPlayer(tile) != -1) {
+						SetInstruction(PlacementInstructionEnum::ColonyNeedsEmptyProvinces, true);
+					}
 				}
 
 				_placementGrid.SpawnGrid(gridEnum, cameraAtom, tile, direction);
 
-				if (simulation.tileOwnerPlayer(tile) != playerId) {
-					SetInstruction(PlacementInstructionEnum::OutsideTerritory, true);
-				}
+				tryAddProvinceId(tile);
 			};
 
 			// Borders
@@ -2093,6 +2128,12 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			storageArea3.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 				tryPlaceBuilding(tile);
 			});
+
+			int32 provincesPrice = 0;
+			for (int32 provinceId : provinceIds) {
+				provincesPrice += simulation.GetProvinceClaimPrice(provinceId, playerId);
+			}
+			SetInstruction(PlacementInstructionEnum::ColonyClaimCost, true, provincesPrice);
 		}
 		// Road Overlap Building
 		else if (IsRoadOverlapBuilding(_buildingEnum))
@@ -2207,7 +2248,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			//_buildingEnum != BuildingEnum::Fence &&
 			//_buildingEnum != BuildingEnum::Bridge &&
 			!IsRoadOverlapBuilding(_buildingEnum) &&
-			_buildingEnum != CardEnum::Townhall &&
+			!IsTownPlacement(_buildingEnum) &&
 			_buildingEnum != CardEnum::Farm &&
 			_buildingEnum != CardEnum::StorageYard &&
 			!IsDecorativeBuilding(_buildingEnum))
@@ -2241,13 +2282,16 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				_placementGrid.IsDisplayCountZero(PlacementGridEnum::ArrowRed);
 
 	// If cannot place, check if this is caused by being outside territory.
-	if (!_canPlace) {
-		_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-			//if (!regionSystem.IsOwnedByPlayer(tile.region(), playerId)) {
-			if (simulation.tileOwnerPlayer(tile) != playerId) {
-				SetInstruction(PlacementInstructionEnum::OutsideTerritory, true);
-			}
-		});
+	if (!_canPlace) 
+	{
+		if (!IsTownPlacement(_buildingEnum))
+		{
+			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+				if (simulation.tileOwnerPlayer(tile) != playerId) {
+					SetInstruction(PlacementInstructionEnum::OutsideTerritory, true);
+				}
+			});
+		}
 	}
 
 
@@ -2505,7 +2549,7 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 		_area.ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 tile) {
 			CardEnum buildingEnum = sim.buildingEnumAtTile(tile);
 			if (buildingEnum == CardEnum::Fort ||
-				buildingEnum == CardEnum::Colony) 
+				buildingEnum == CardEnum::ResourceOutpost) 
 			{
 				hasFortOrColony = true;
 				return true;

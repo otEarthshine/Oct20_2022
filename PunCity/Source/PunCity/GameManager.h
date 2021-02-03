@@ -517,9 +517,22 @@ public:
 		//		_simulation->IsCritterBuilding(tile);
 	}
 
+	bool IsPlayerColonyBuildable(WorldTile2 tile) const {
+		if (!GameMap::IsInGrid(tile)) return false;
+		if (_simulation->tileOwnerTown(tile) != -1) return false; // Colony must be built on empty territory
+
+		return _simulation->IsBuildable(tile) || _simulation->IsCritterBuildingIncludeFronts(tile);
+	}
+	bool IsPlayerColonyFrontBuildable(WorldTile2 tile) const {
+		if (!GameMap::IsInGrid(tile)) return false;
+		if (_simulation->tileOwnerTown(tile) != -1) return false;
+
+		return _simulation->IsFrontBuildable(tile) || _simulation->IsCritterBuilding(tile);
+	}
+
 	bool IsPlayerRoadBuildable(WorldTile2 tile) const final {
 		return GameMap::IsInGrid(tile) &&
-				_simulation->IsFrontBuildable(tile, _playerId) ||
+				_simulation->IsFrontBuildableForPlayer(tile, _playerId) ||
 				_simulation->IsCritterBuilding(tile);
 	}
 	bool IsIntercityRoadBuildable(WorldTile2 tile) const {

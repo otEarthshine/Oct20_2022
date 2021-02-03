@@ -287,7 +287,7 @@ void UWorldSpaceUI::TickBuildings()
 						int32 provincePlayerIdTemp = sim.provinceOwnerPlayer(claimProgress.provinceId); //TODO: does it needs claimProgress.provinceId?
 						auto& provincePlayerOwner = sim.playerOwned(provincePlayerIdTemp);
 						
-						ClaimConnectionEnum claimConnectionEnum = sim.GetProvinceClaimConnectionEnum(provinceId, claimProgress.attackerPlayerId);
+						ClaimConnectionEnum claimConnectionEnum = sim.GetProvinceClaimConnectionEnumPlayer(provinceId, claimProgress.attackerPlayerId);
 						ProvinceAttackEnum attackEnum = provincePlayerOwner.GetProvinceAttackEnum(provinceId, claimProgress.attackerPlayerId);
 						
 						int32 reinforcePrice = (attackEnum == ProvinceAttackEnum::DeclareIndependence) ? BattleInfluencePrice : sim.GetProvinceAttackReinforcePrice(provinceId, claimConnectionEnum);
@@ -1225,12 +1225,27 @@ void UWorldSpaceUI::TickPlacementInstructions()
 		PUN_CHECK(provinceId != -1);
 		ResourceEnum resourceEnum = simulation().georesource(provinceId).info().resourceEnum;
 		if (resourceEnum != ResourceEnum::None) {
-			int32 resourceCount = Colony::GetColonyResourceIncome(resourceEnum);
+			int32 resourceCount = ResourceOutpost::GetColonyResourceIncome(resourceEnum);
 			punBox->AddIconPair(TEXT_NUMSIGNED(resourceCount), resourceEnum, FText::Format(INVTEXT(" {0}"), LOCTEXT("per round", "per round")));
 		}
 	}
 	else if (needInstruction(PlacementInstructionEnum::Fort)) {
 		punBox->AddRichTextCenter(LOCTEXT("Fort_Instruct", "Fort does not require citizens nearby to build."));
+	}
+// Colony
+	else if (needInstruction(PlacementInstructionEnum::ColonyNeedsEmptyProvinces)) {
+		punBox->AddRichTextCenter(LOCTEXT("NeedEmptyProvinces_Instruct", "Must be placed on unowned provinces."));
+	}
+	else if (needInstruction(PlacementInstructionEnum::ColonyNextToIntercityRoad)) {
+		punBox->AddRichTextCenter(LOCTEXT("MustBeNextToIntercityRoad_Instruct", "Must be placed next to intercity road connected to the Townhall."));
+	}
+	else if (needInstruction(PlacementInstructionEnum::ColonyClaimCost)) {
+		int32 claimCost = getInstruction(PlacementInstructionEnum::ColonyClaimCost).intVar1;
+		int32 money = simulation().money(playerId());
+		punBox->AddRichTextCenter(FText::Format(
+			LOCTEXT("ClaimProvincesCost_Instruct", "Provinces Claim Cost <img id=\"Coin\"/>{0}"),
+			TextRed(TEXT_NUM(claimCost), money < claimCost)
+		));
 	}
 	
 

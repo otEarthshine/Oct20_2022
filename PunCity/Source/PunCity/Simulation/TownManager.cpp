@@ -1374,7 +1374,7 @@ void TownManager::RecalculateTax(bool showFloatup)
 
 		// Fort/Colony
 		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Fort)] -= _simulation->buildingCount(_playerId, CardEnum::Fort) * 10 * 100;
-		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Colony)] -= _simulation->buildingCount(_playerId, CardEnum::Colony) * Colony::GetColonyUpkeep() * 100;
+		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Colony)] -= _simulation->buildingCount(_playerId, CardEnum::ResourceOutpost) * ResourceOutpost::GetColonyUpkeep() * 100;
 	}
 	else
 	{

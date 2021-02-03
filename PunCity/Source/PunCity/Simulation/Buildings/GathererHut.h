@@ -1225,10 +1225,10 @@ class Fort final : public ProvinceBuilding
 public:
 };
 
-class Colony final : public ProvinceBuilding
+class ResourceOutpost final : public ProvinceBuilding
 {
 public:
-	static int32 GetColonyIncomeValue() { return GetBuildingInfo(CardEnum::Colony).baseCardPrice / 16; } // 16 rounds or 2 year to recoup the 
+	static int32 GetColonyIncomeValue() { return GetBuildingInfo(CardEnum::ResourceOutpost).baseCardPrice / 16; } // 16 rounds or 2 year to recoup the 
 	static int32 GetColonyUpkeep() { return (GetColonyIncomeValue() / 3) / 10 * 10; }
 
 	static int32 GetColonyResourceIncome(ResourceEnum resourceEnum) {

@@ -543,7 +543,7 @@ public:
 			return baseBuildTime * GetConstructionResourceCost()[0] / info.constructionResources[0];
 		}
 		if (isEnum(CardEnum::Fort) ||
-			isEnum(CardEnum::Colony))
+			isEnum(CardEnum::ResourceOutpost))
 		{
 			return 10000;
 		}

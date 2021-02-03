@@ -138,6 +138,7 @@ void Building::SetAreaWalkable() {
 
 	// Gate
 	_simulation->SetWalkable(gateTile(), true);
+	_simulation->SetRoadPathAI(gateTile(), true); // Set gate to road for fast pathfinding...
 
 	_simulation->ResetUnitActionsInArea(_area);
 
@@ -338,9 +339,12 @@ void Building::Deinit()
 		_simulation->PlayerRemoveJobBuilding(_townId, *this, _isConstructed);
 	}
 
+	// SetWalkable
 	_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 		_simulation->SetWalkable(tile, true);
 	});
+	_simulation->SetRoadPathAI(gateTile(), false);
+	
 
 	TryRemoveDeliveryTarget();
 	ClearDeliverySources();

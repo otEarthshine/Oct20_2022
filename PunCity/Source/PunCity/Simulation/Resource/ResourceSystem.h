@@ -667,6 +667,7 @@ private:
 
 				bool isConnected = false;
 				if (holder.objectId != -1) {
+					DEBUG_ISCONNECTED_VAR(IsConnectedBuildingResource);
 					isConnected = _simulation->IsConnectedBuilding(holder.objectId);
 				}
 

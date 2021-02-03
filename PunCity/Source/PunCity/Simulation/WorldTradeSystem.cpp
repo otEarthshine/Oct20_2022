@@ -151,7 +151,7 @@ void WorldTradeSystem::TryEstablishTradeRoute(FSetIntercityTrade command)
 
 	WorldTile2 startTile = findNearestRoadTile(_simulation->GetTownhallGateCapital(playerId));
 	WorldTile2 targetTile = findNearestRoadTile(_simulation->building(command.buildingIdToEstablishTradeRoute).gateTile());
-	
+
 	if (!startTile.isValid() ||
 		!targetTile.isValid()) 
 	{
@@ -161,6 +161,35 @@ void WorldTradeSystem::TryEstablishTradeRoute(FSetIntercityTrade command)
 		);
 		return;
 	}
+
+	std::vector<uint32_t> path;
+	bool succeed = _simulation->pathAI(true)->FindPathRoadOnly(startTile.x, startTile.y, targetTile.x, targetTile.y, path);
+
+	if (succeed)
+	{
+		// Connect both players
+		_playerIdToTradePartners[playerId].push_back(targetPlayerId);
+		_playerIdToTradePartners[targetPlayerId].push_back(playerId);
+		_simulation->RecalculateTaxDelayedPlayer(playerId);
+		_simulation->RecalculateTaxDelayedPlayer(targetPlayerId);
+
+		FText text = FText::Format(
+			LOCTEXT("TradeRouteEstablish_Pop", "Trade Route was established between {0} and {1}!\nTrade Route Income varies with the population of both cities."),
+			_simulation->townNameT(playerId),
+			_simulation->townNameT(targetPlayerId)
+		);
+		_simulation->AddPopup(playerId, text);
+		_simulation->AddPopup(targetPlayerId, text);
+	}
+	else {
+		_simulation->AddPopupToFront(playerId,
+			LOCTEXT("NeedIntercityToMakeTradeRoute", "Need intercity road to establish a trade route. Connect your Townhall to target Townhall with Road."),
+			ExclusiveUIEnum::None, "PopupCannot"
+		);
+	}
+	
+	return;
+	// TODO: OLD
 
 	std::vector<WorldTile2> tileQueue;
 	std::vector<bool> visitedTiles(GameMapConstants::TilesPerWorld, false);

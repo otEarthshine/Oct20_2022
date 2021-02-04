@@ -1378,15 +1378,6 @@ void UnitStateAI::ResetActions_UnitPart(int32 waitTicks)
 {
 	// Last reset ticks debug
 	DEBUG_AI_VAR(ResetCountPerSec);
-	//static int32 _lastSec_AA = 0;
-	//static int32 _lastSecCount_AA = 0;
-	//if (Time::Seconds() > _lastSec_AA) {
-	//	_lastSec_AA = Time::Seconds();
-	//	Debug_ResetCountPerSec = _lastSecCount_AA;
-	//	_lastSecCount_AA = 0;
-	//}
-	//_lastSecCount_AA++;
-	
 
 	// Reset
 	CancelReservations();
@@ -1395,8 +1386,9 @@ void UnitStateAI::ResetActions_UnitPart(int32 waitTicks)
 	// TODO: note setting waitTicks for nextTickState break the game..
 	_unitData->SetNextTickState(_id, TransformState::NeedActionUpdate, UnitUpdateCallerEnum::ResetActions, 1, true);
 
-	
-	Add_Wait(waitTicks);
+	if (waitTicks > 0) {
+		Add_Wait(waitTicks);
+	}
 
 	_justDidResetActions = true;
 	
@@ -2249,7 +2241,7 @@ bool UnitStateAI::MoveToCaravan()
 	}
 
 	MapUtil::UnpackAStarPath(rawWaypoint, _unitData->waypoint(_id));
-	_unitData->SetForceMove(_id, false);
+	_unitData->SetForceMove(_id, true);
 
 	// Convert waypoint to targetTile next tick.
 	_unitData->SetNextTickState(_id, TransformState::NeedTargetAtom, UnitUpdateCallerEnum::MoveTo_Done);

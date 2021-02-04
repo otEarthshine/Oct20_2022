@@ -11,6 +11,7 @@
 #include "../QuestSystem.h"
 #include "../BuildingCardSystem.h"
 #include "../UnlockSystem.h"
+#include "../UnitStateAI.h"
 
 using namespace std;
 
@@ -336,6 +337,59 @@ void TownHall::ImmigrationEvent(int32 exactAmount)
 	}
 	else {
 		UE_DEBUG_BREAK();
+	}
+}
+
+void TownHall::AddInitialImmigrants()
+{
+	int32 beginAdultTick = _simulation->parameters(_playerId)->BeginBreedingAgeTicks();
+
+#if TRAILER_MODE
+	int32 adultCount = 3;
+	int32 childrenCount = 2;
+#else
+	int32 adultCount = 14;
+	int32 childrenCount = 4;
+	if (!isCapital()) {
+		const int32 targetImmigrantCount = 10;
+		auto& townManager = _simulation->townManager(_playerId);
+		adultCount = targetImmigrantCount * townManager.adultIds().size() / townManager.population();
+		childrenCount = targetImmigrantCount - adultCount;
+
+		const auto& adultIds = townManager.adultIds();
+		const auto& childIds = townManager.childIds();
+
+		adultCount = std::min(adultCount, static_cast<int32>(adultIds.size()));
+		childrenCount = std::min(childrenCount, static_cast<int32>(childIds.size()));
+
+		// Remove citizens from the old town
+		for (int32 i = 0; i < adultCount; i++) {
+			_simulation->unitAI(adultIds[i]).Die();
+		}
+		for (int32 i = 0; i < childrenCount; i++) {
+			_simulation->unitAI(childIds[i]).Die();
+		}
+	}
+#endif
+
+	auto getRandomTile = [&]() -> WorldTile2 {
+		if (GameRand::Rand() % 2 == 0) {
+			return WorldTile2(GameRand::Rand() % 2 == 0 ? _area.minX - 1 : _area.maxX + 1, (GameRand::Rand() % _area.sizeY()) + _area.minY);
+		}
+		else {
+			return WorldTile2((GameRand::Rand() % _area.sizeX()) + _area.minX, GameRand::Rand() % 2 == 0 ? _area.minY - 1 : _area.maxY + 1);
+		}
+	};
+
+	for (int i = 0; i < adultCount; i++) {
+		int32 ageTicks = beginAdultTick + i * Time::TicksPerYear / 3;
+		_simulation->AddUnit(UnitEnum::Human, _townId, getRandomTile().worldAtom2(), ageTicks);
+	}
+
+	// 2 years max for children
+	for (int i = 0; i < childrenCount; i++) {
+		int32 ageTicks = i * beginAdultTick / childrenCount;
+		_simulation->AddUnit(UnitEnum::Human, _townId, getRandomTile().worldAtom2(), ageTicks);
 	}
 }
 

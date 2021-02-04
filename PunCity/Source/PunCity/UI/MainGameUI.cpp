@@ -123,6 +123,9 @@ void UMainGameUI::PunInit()
 	AddToolTip(CardStackButton, LOCTEXT("CardStackButton_Tip", "Show drawn cards that can be bought.\n<Orange>[C]</>"));
 	AddToolTip(RoundCountdownImage, LOCTEXT("RoundCountdownImage_Tip", "Round timer<space>You get a new card hand each round.<space>Each season contains 2 rounds."));
 
+	BUTTON_ON_CLICK(LeftUITownSwapArrowLeftButton, this, &UMainGameUI::OnClickLeftUITownSwapArrowLeftButton);
+	BUTTON_ON_CLICK(LeftUITownSwapArrowRightButton, this, &UMainGameUI::OnClickLeftUITownSwapArrowRightButton);
+
 	// Set Icon images
 	auto assetLoader = dataSource()->assetLoader();
 	Happiness->SetImage(assetLoader->SmileIcon);
@@ -1065,6 +1068,11 @@ void UMainGameUI::Tick()
 		} else {
 			Science->SetVisibility(ESlateVisibility::Collapsed);
 		}
+
+		/*
+		 * 
+		 */
+		LeftUITownName->SetText(sim.townNameT(currentTownId()));
 
 		/*
 		 * 

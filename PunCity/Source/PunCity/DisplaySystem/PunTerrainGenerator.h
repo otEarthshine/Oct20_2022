@@ -188,6 +188,9 @@ public:
 
 	TerrainTileType terrainTileType(WorldTile2 tile) const { return _terrainMap[tile.tileId()]; }
 
+	const std::vector<TerrainTileType>& terrainMap() { return _terrainMap; }
+	
+
 	void Serialize(FArchive &Ar, bool withSimulation = true)
 	{
 		SerializeVecValue(Ar, heightMap);

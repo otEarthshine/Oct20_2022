@@ -34,8 +34,9 @@ enum class UIEnum
 	TradeIntercity,
 	TargetConfirm,
 	InitialResourceUI,
+
+	SendImmigrantsUI,
 	DiplomacyUI,
-	
 	GiftResourceUI,
 	
 	DragCardSlot,

@@ -144,6 +144,8 @@ public:
 	virtual class TownHall& GetTownhallCapital(int32 playerId) = 0;
 	virtual class TownHall& GetTownhall(int32 townId) = 0;
 	virtual class TownHall* GetTownhallPtr(int32 townId) = 0;
+	virtual int32 GetTownhallId(int32 townId) = 0;
+	virtual bool IsValidTown(int32 townId) = 0;
 	
 	virtual int32 GetTownLvl(int32 townId) = 0; // Needed because Townhall. might not be included all the time
 	virtual int32 GetTownLvlMax(int32 playerId) = 0;

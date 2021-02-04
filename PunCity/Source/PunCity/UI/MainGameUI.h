@@ -603,5 +603,12 @@ private:
 	UFUNCTION() void OnClickPopulationButton() { GetPunHUD()->ToggleGraphUI(2); }
 	UFUNCTION() void OnClickMoneyButton() { GetPunHUD()->ToggleGraphUI(3); }
 	UFUNCTION() void OnClickScienceButton() { GetPunHUD()->ToggleGraphUI(4); }
+
+	UFUNCTION() void OnClickLeftUITownSwapArrowLeftButton() {
+		networkInterface()->CameraSwapTown(true);
+	}
+	UFUNCTION() void OnClickLeftUITownSwapArrowRightButton() {
+		networkInterface()->CameraSwapTown(false);
+	}
 	
 };

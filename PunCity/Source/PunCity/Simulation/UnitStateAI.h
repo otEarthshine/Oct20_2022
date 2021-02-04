@@ -52,6 +52,9 @@ enum class UnitState : uint8
 	FarmHarvesting,
 	FarmClearDrops,
 
+	IntercityDelivery,
+	ImmigrateToNewCity,
+
 	MoveArmy,
 
 	GoToWorkplace,
@@ -61,14 +64,14 @@ enum class UnitState : uint8
 
 #define LOCTEXT_NAMESPACE "UnitStateName"
 
-const TArray<FText> UnitStateName 
+const TArray<FText> UnitStateName
 {
 	LOCTEXT("Get Food", "Get Food"),
 	LOCTEXT("Get Heat", "Get Heat"),
 	LOCTEXT("Get Fun", "Get Fun"),
 	LOCTEXT("Get Tools", "Get Tools"),
 	LOCTEXT("Get Medicine", "Get Medicine"),
-	
+
 	LOCTEXT("Get Wild Food", "Get Wild Food"),
 	LOCTEXT("Idle", "Idle"),
 	LOCTEXT("Avoid Others", "Avoid Others"),
@@ -77,11 +80,11 @@ const TArray<FText> UnitStateName
 	LOCTEXT("Job", "Job"),
 	LOCTEXT("Gather Tree", "Gather Tree"),
 	LOCTEXT("Gather Stone", "Gather Stone"),
-	
+
 	LOCTEXT("Clear Land (Cut Bush)", "Clear Land (Cut Bush)"),
 	LOCTEXT("Clear Land (Cut Tree)", "Clear Land (Cut Tree)"),
 	LOCTEXT("Clear Land (Cut Stone)", "Clear Land (Cut Stone)"),
-	
+
 	LOCTEXT("Clear Land (Remove Drop)", "Clear Land (Remove Drop)"),
 	LOCTEXT("Foresting Cut", "Foresting Cut"),
 	LOCTEXT("Foresting Plant", "Foresting Plant"),
@@ -91,17 +94,20 @@ const TArray<FText> UnitStateName
 	LOCTEXT("Store Inventory", "Store Inventory"),
 	LOCTEXT("Gather Fruit", "Gather Fruit"),
 	LOCTEXT("Remove Bush", "Remove Bush"),
-	
+
 	LOCTEXT("Work (Consume)", "Work (Consume)"),
 	LOCTEXT("Fill Input", "Fill Input"),
 	LOCTEXT("Work (Produce)", "Work (Produce)"),
 	LOCTEXT("Work (Construct)", "Work (Construct)"),
 	LOCTEXT("Hunt", "Hunt"),
-	
+
 	LOCTEXT("Seeding (Farm)", "Seeding (Farm)"), // FarmSeeding
 	LOCTEXT("Nourishing (Farm)", "Nourishing (Farm)"), // FarmNourishing
 	LOCTEXT("Harvesting (Farm)", "Harvesting (Farm)"), // FarmHarvesting
 	LOCTEXT("Clear Drops (Farm)", "Clear Drops (Farm)"), // FarmClearDrops
+
+	LOCTEXT("Intercity Delivery", "Intercity Delivery"),
+	LOCTEXT("Immigrate", "Immigrate"),
 
 	LOCTEXT("Move Army", "Move Army"),
 

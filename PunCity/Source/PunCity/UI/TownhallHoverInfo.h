@@ -271,7 +271,8 @@ private:
 	}
 
 	UFUNCTION() void OnClickSendImmigrantsButton() {
-		
+		int32 townId = simulation().building(_buildingId).townId();
+		GetPunHUD()->OpenSendImmigrantsUI(townId);
 	}
 	UFUNCTION() void OnClickGiftButton() {
 		int32 targetPlayerId = simulation().building(_buildingId).playerId();

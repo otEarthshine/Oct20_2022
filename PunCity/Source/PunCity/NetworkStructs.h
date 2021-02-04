@@ -562,11 +562,14 @@ public:
 	enum class Type : uint8 {
 		SendGift,
 		SetProduceUntil,
+		SendImmigrants,
 	} genericCommandType;
 
 	int32 intVar1 = -1;
 	int32 intVar2 = -1;
 	int32 intVar3 = -1;
+	int32 intVar4 = -1;
+	int32 intVar5 = -1;
 
 	void Serialize(PunSerializedData& blob) override
 	{
@@ -576,6 +579,8 @@ public:
 		blob << intVar1;
 		blob << intVar2;
 		blob << intVar3;
+		blob << intVar4;
+		blob << intVar5;
 	}
 };
 

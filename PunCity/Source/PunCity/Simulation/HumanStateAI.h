@@ -254,7 +254,7 @@ public:
 	}
 
 	/*
-	 * Medicine
+	 * Medicine/Tools
 	 */
 	void GetSick() {
 		_isSick = true;
@@ -273,6 +273,9 @@ public:
 				!resourceSystem().HasAvailableTools();
 	}
 
+	/*
+	 * Others
+	 */
 	UnitAIClassEnum classEnum() override { return UnitAIClassEnum::HumanStateAI; }
 
 	bool isBelowWorkingAge() override {
@@ -283,6 +286,19 @@ public:
 	}
 	FText GetTypeName() override;
 
+	void SendToTown(int32 lastTownId, int32 newTownId)
+	{
+		WorldTile2 lastTownGate = _simulation->GetTownhallGate(lastTownId);
+		WorldTile2 newTownGate = _simulation->GetTownhallGate(newTownId);
+
+		_simulation->ResetUnitActions(_id, 0);
+
+		_townId = newTownId;
+		_playerId = _simulation->townPlayerId(newTownId);
+
+		Add_MoveToCaravan(newTownGate, UnitAnimationEnum::Walk);
+		Add_MoveTo(lastTownGate);
+	}
 
 protected:
 	void MoveResourceSequence(std::vector<FoundResourceHolderInfo> providerInfos, std::vector<FoundResourceHolderInfo> dropoffInfos, int32 customFloodDistance = -1);

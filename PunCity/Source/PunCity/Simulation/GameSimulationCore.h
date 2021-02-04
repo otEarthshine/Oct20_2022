@@ -397,10 +397,30 @@ public:
 		return building(townhallId).subclass<TownHall>(CardEnum::Townhall);
 	}
 	TownHall* GetTownhallPtr(int32 townId) final {
-		if (townId == -1) return nullptr;
-		int32 townHallId = townManager(townId).townHallId;
+		int32 townHallId = GetTownhallId(townId);
 		if (townHallId == -1) return nullptr;
 		return &(building(townHallId).subclass<TownHall>(CardEnum::Townhall));
+	}
+	int32 GetTownhallId(int32 townId) {
+		if (townId == -1) return -1;
+		if (townId >= _townManagers.size()) return -1;
+		return townManager(townId).townHallId;
+	}
+
+	bool IsValidTown(int32 townId) {
+		if (townId == -1) return false;
+		if (townId >= _townManagers.size()) return false;
+		return townManager(townId).townHallId != -1;
+	}
+	int32 FindTownNameFromId(int32 playerId, FString townName)
+	{
+		const auto& townIds = GetTownIds(playerId);
+		for (int32 townId : townIds) {
+			if (townName == townNameT(townId).ToString()) {
+				return townId;
+			}
+		}
+		return -1;
 	}
 
 	int32 GetTownLvl(int32 townId) final {
@@ -437,6 +457,8 @@ public:
 	int32 GetTownAgeTicks(int32 townId) final {
 		return GetTownhall(townId).townAgeTicks();
 	}
+
+	
 
 
 	void AddImmigrants(int32 townId, int32 count, WorldTile2 tile) final {

@@ -23,6 +23,8 @@ class IGameNetworkInterface
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
 	virtual int32 playerId() = 0;
+	virtual int32 currentTownId() = 0;
+	
 	virtual const TArray<FString>& playerNamesF() = 0;
 	virtual bool IsPlayerConnected(int32 playerId) = 0;
 
@@ -83,6 +85,9 @@ public:
 	virtual void KeyPressed_H() = 0;
 	virtual void KeyPressed_F() = 0;
 	virtual void KeyPressed_Y() = 0;
+
+	virtual void CameraSwapTown(bool forward) = 0;
+	virtual void SetCameraToTown(int32 townId) = 0;
 
 	virtual TileArea GetDemolishHighlightArea() = 0;
 

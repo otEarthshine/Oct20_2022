@@ -33,6 +33,7 @@
 #include "ProsperityUI.h"
 #include "GiftResourceUI.h"
 #include "DiplomacyUI.h"
+#include "SendImmigrantsUI.h"
 
 #include "PunHUD.generated.h"
 
@@ -128,6 +129,7 @@ public:
 				_statisticsUI->IsHovered() ||
 				_worldTradeUI->IsHovered() ||
 
+				_sendImmigrantsUI->IsHovered() ||
 				_giftResourceUI->IsHovered() ||
 				_diplomacyUI->IsHovered() ||
 
@@ -243,6 +245,9 @@ public:
 	}
 	void CloseTargetConfirmUI() { _targetConfirmUI->CloseUI(); }
 
+	void OpenSendImmigrantsUI(int32 townIdIn) override {
+		_sendImmigrantsUI->OpenUI(townIdIn);
+	}
 	void OpenGiftUI(int32 targetPlayerId) override {
 		_giftResourceUI->OpenUI(targetPlayerId);
 	}
@@ -301,6 +306,7 @@ public:
 		CloseStatisticsUI();
 		ClosePlayerOverview();
 
+		_sendImmigrantsUI->CloseUI();
 		_diplomacyUI->CloseUI();
 		_giftResourceUI->CloseUI();
 
@@ -348,6 +354,8 @@ public:
 		//case ExclusiveUIEnum::ArmyMoveUI:		return _armyMoveUI->GetVisibility() != ESlateVisibility::Collapsed;
 
 		case ExclusiveUIEnum::InitialResourceUI:return _initialResourceUI->InitialResourceUI->IsVisible();
+
+		case ExclusiveUIEnum::SendImmigrantsUI:	return _sendImmigrantsUI->IsVisible();
 		case ExclusiveUIEnum::DiplomacyUI:		return _diplomacyUI->IsVisible();
 		case ExclusiveUIEnum::GiftResourceUI:	return _giftResourceUI->IsVisible();
 		default:
@@ -457,6 +465,8 @@ public:
 	}
 
 	int32 playerId() final { return _controllerInterface->networkInterface()->playerId(); }
+	int32 currentTownId() final { return _controllerInterface->networkInterface()->currentTownId(); }
+	
 	IGameUIDataSource* dataSource() final {  return _controllerInterface ? _controllerInterface->dataSource() : nullptr; }
 	IGameUIInputSystemInterface* inputSystemInterface() final {  return _controllerInterface->inputSystemInterface(); }
 	IGameNetworkInterface* networkInterface() final { return _controllerInterface->networkInterface(); }
@@ -535,6 +545,8 @@ protected:
 	UPROPERTY() UIntercityTradeUI* _intercityTradeUI;
 	UPROPERTY() UTargetConfirmUI* _targetConfirmUI;
 	UPROPERTY() UInitialResourceUI* _initialResourceUI;
+
+	UPROPERTY() USendImmigrantsUI* _sendImmigrantsUI;
 	UPROPERTY() UDiplomacyUI* _diplomacyUI;
 	UPROPERTY() UGiftResourceUI* _giftResourceUI;
 

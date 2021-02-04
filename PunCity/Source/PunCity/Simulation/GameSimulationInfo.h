@@ -5876,7 +5876,8 @@ enum class ExclusiveUIEnum : uint8
 
 	InitialResourceUI,
 	DiplomacyUI,
-	
+
+	SendImmigrantsUI,
 	GiftResourceUI,
 	ProsperityUI,
 

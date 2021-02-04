@@ -161,6 +161,10 @@ public:
 	 */
 public:
 	int32 playerId() final { return controllerPlayerId(); }
+	int32 currentTownId() final {
+		int32 townId = simulation().tileOwnerTown(cameraAtom().worldTile2());
+		return (townId != -1) ? townId : playerId();
+	}
 
 	const TArray<FString>& playerNamesF() final {
 		return gameManager->playerNamesF();
@@ -384,22 +388,20 @@ public:
 	 */
 	void KeyPressed_H() final
 	{
-		if (GetPunHUD()->mainGameUI()->BuildMenuOverlay->GetVisibility() != ESlateVisibility::Collapsed)
-		{
+		if (GetPunHUD()->mainGameUI()->BuildMenuOverlay->GetVisibility() != ESlateVisibility::Collapsed) {
 			inputSystemInterface()->StartBuildingPlacement(CardEnum::House, 0, false);
 		}
-		else
-		{
-			WorldAtom2 lookAtAtom = simulation().homeAtom(playerId());
-			if (lookAtAtom == WorldAtom2::Zero) {
-				return;
+		else {
+			// If camera is already pointed to a town, shift it to the next town
+			const auto& townIds = simulation().GetTownIds(playerId());
+			for (int32 i = 0; i < townIds.size(); i++) {
+				int32 cameraToTownDist = WorldAtom2::Distance(simulation().homeAtom(townIds[i]), cameraAtom());
+				if (cameraToTownDist < CoordinateConstants::AtomsPerTile) {
+					SetCameraToTown(townIds[(i + 1) % townIds.size()]);
+					return;
+				}
 			}
-
-			SetCameraAtom(lookAtAtom);
-
-			FRotator rotation = cameraPawn->GetActorRotation();
-			rotation.Yaw = 0;
-			cameraPawn->SetActorRotation(rotation);
+			SetCameraToTown(playerId());
 		}
 	}
 	void KeyPressed_F() final
@@ -421,6 +423,32 @@ public:
 		}
 	}
 
+	void CameraSwapTown(bool forward) final
+	{
+		int32 shift = forward ? 1 : -1;
+		int32 oldTownId = currentTownId();
+		const auto& townIds = simulation().GetTownIds(playerId());
+		for (int32 i = 0; i < townIds.size(); i++) {
+			if (oldTownId == townIds[i]) {
+				SetCameraToTown(townIds[(i + shift + townIds.size()) % townIds.size()]);
+				return;
+			}
+		}
+		UE_DEBUG_BREAK();
+	}
+	void SetCameraToTown(int32 townId) final
+	{
+		WorldAtom2 lookAtAtom = simulation().homeAtom(townId);
+		if (lookAtAtom == WorldAtom2::Zero) {
+			return;
+		}
+
+		SetCameraAtom(lookAtAtom);
+
+		FRotator rotation = cameraPawn->GetActorRotation();
+		rotation.Yaw = 0;
+		cameraPawn->SetActorRotation(rotation);
+	}
 
 	/*
 	 * Helpers
@@ -439,6 +467,18 @@ public:
 
 	int32 serverTick() final { return gameInstance()->serverTick(); }
 
+
+	// Test ship move
+	UFUNCTION(Exec) void FindShipPath(int32 startX, int32 startY, int32 endX, int32 endY)
+	{
+		WorldTile2 start(startX, startY);
+		WorldTile2 end(endX, endY);
+		const std::vector<TerrainTileType>& map = simulation().terrainGenerator().terrainMap();
+
+		//map[start.tileId()];
+
+		simulation().DrawLine(start.worldAtom2(), FVector::ZeroVector, end.worldAtom2(), FVector(0, 10, 0), FLinearColor::Green, 1.0f, 10000);
+	}
 
 public:
 	/**

@@ -81,37 +81,7 @@ public:
 			_simulation->AddUnit(UnitEnum::Human, _townId, tile.worldAtom2(), ageTicks);
 		}
 	}
-	void AddInitialImmigrants()
-	{
-		int32 beginAdultTick = _simulation->parameters(_playerId)->BeginBreedingAgeTicks();
-
-#if TRAILER_MODE
-		int32 adultCount = 3;
-		int32 childrenCount = 2;
-#else
-		int32 adultCount = 14;
-		int32 childrenCount = 4;
-#endif
-
-		auto getRandomTile = [&]() -> WorldTile2 {
-			if (GameRand::Rand() % 2 == 0) {
-				return WorldTile2(GameRand::Rand() % 2 == 0 ? _area.minX - 1 : _area.maxX + 1, (GameRand::Rand() % _area.sizeY()) + _area.minY);
-			} else {
-				return WorldTile2((GameRand::Rand() % _area.sizeX()) + _area.minX, GameRand::Rand() % 2 == 0 ? _area.minY - 1 : _area.maxY + 1);
-			}
-		};
-		
-		for (int i = 0; i < adultCount; i++) {
-			int32 ageTicks = beginAdultTick + i * Time::TicksPerYear / 3;
-			_simulation->AddUnit(UnitEnum::Human, _townId, getRandomTile().worldAtom2(), ageTicks);
-		}
-
-		// 2 years max for children
-		for (int i = 0; i < childrenCount; i++) {
-			int32 ageTicks = i * beginAdultTick / childrenCount;
-			_simulation->AddUnit(UnitEnum::Human, _townId, getRandomTile().worldAtom2(), ageTicks);
-		}
-	}
+	void AddInitialImmigrants();
 
 	void AddRequestedImmigrants() {
 		AddImmigrants(askedMigration);

@@ -139,7 +139,7 @@ public:
 	GameSimulationCore& simulation() { return dataSource()->simulation(); }
 
 	int32 playerId() { return GetPunHUD()->playerId(); }
-	int32 currentTownId() { return playerId(); }
+	int32 currentTownId() { return GetPunHUD()->currentTownId(); }
 	
 	UWorld* GetWorldPun() { return GetPunHUD()->GetWorldPun(); }
 

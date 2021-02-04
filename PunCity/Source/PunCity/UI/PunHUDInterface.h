@@ -40,6 +40,8 @@ public:
 	virtual IGameNetworkInterface* networkInterface() = 0;
 
 	virtual int32 playerId() = 0;
+	virtual int32 currentTownId() = 0;
+	
 	virtual UWorld* GetWorldPun() = 0;
 
 	virtual bool ShouldPauseGameFromUI() = 0;
@@ -47,6 +49,8 @@ public:
 	virtual void OpenTradeUI(int32 objectId) = 0;
 	virtual void OpenIntercityTradeUI(int32 objectId) = 0;
 	virtual void OpenTargetConfirmUI_IntercityTrade(int32 townhallId, ResourceEnum resourceEnum) = 0;
+
+	virtual void OpenSendImmigrantsUI(int32 townIdIn) = 0;
 	virtual void OpenGiftUI(int32 targetPlayerId) = 0;
 	virtual void OpenDiplomacyUI(int32 targetPlayerId) = 0;
 

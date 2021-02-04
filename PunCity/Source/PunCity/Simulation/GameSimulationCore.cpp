@@ -2735,6 +2735,48 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 		return;
 	}
 
+	if (command.genericCommandType == FGenericCommand::Type::SendImmigrants)
+	{
+		int32 fromTownId = command.intVar1;
+		int32 toTownId = command.intVar2;
+		int32 adultsTargetCount = command.intVar3;
+		int32 childrenTargetCount = command.intVar3;
+
+		WorldTile2 lastTownGate = GetTownhallGate(fromTownId);
+		WorldTile2 newTownGate = GetTownhallGate(toTownId);
+
+		std::vector<uint32_t> path;
+		bool succeed = pathAI(true)->FindPathRoadOnly(lastTownGate.x, lastTownGate.y, newTownGate.x, newTownGate.y, path);
+		if (!succeed) {
+			return;
+		}
+
+		auto replaceAndSendUnitToNewTown = [&](int32 unitId)
+		{
+			auto& unit = unitAI(unitId);
+			WorldAtom2 atom = unit.unitAtom();
+			int32 ageTicks = unit.age();
+			unit.Die();
+
+			int32 newUnitId = AddUnit(UnitEnum::Human, toTownId, atom, ageTicks);
+			auto& newUnit = unitAI(newUnitId).subclass<HumanStateAI>(UnitEnum::Human);
+			newUnit.SendToTown(fromTownId, toTownId);
+		};
+
+		const auto& adultIds = townManager(fromTownId).adultIds();
+		const auto& childIds = townManager(fromTownId).childIds();
+		int32 adultsToSend = std::min(adultsTargetCount, static_cast<int32>(adultIds.size()));
+		int32 childrenToSend = std::min(childrenTargetCount, static_cast<int32>(childIds.size()));
+		
+		for (int32 i = 0; i < adultsToSend; i++) {
+			replaceAndSendUnitToNewTown(adultIds[i]);
+		}
+		for (int32 i = 0; i < childrenToSend; i++) {
+			replaceAndSendUnitToNewTown(childIds[i]);
+		}
+		
+		return;
+	}
 }
 
 void GameSimulationCore::ChangeName(FChangeName command)

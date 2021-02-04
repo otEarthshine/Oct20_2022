@@ -334,7 +334,7 @@ public:
 		return nearestAcessInfo;
 	}
 
-	int32 MarkArea(int32 townId, TileArea area, bool isRemoving, ResourceEnum resourceEnum);
+	int32 MarkArea(int32 playerId, TileArea area, bool isRemoving, ResourceEnum resourceEnum);
 
 
 	/*

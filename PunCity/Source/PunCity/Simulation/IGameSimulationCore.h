@@ -138,7 +138,6 @@ public:
 	virtual int unitCount() = 0;
 	virtual bool unitAlive(UnitFullId fullId) = 0;
 
-	// TODO: MinorTown
 	virtual void AddImmigrants(int32 townId, int32 count, WorldTile2 tile = WorldTile2::Invalid) = 0;
 
 	// Building

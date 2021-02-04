@@ -359,6 +359,20 @@ public:
 		widget->Set(callbackParent, callbackEnum, objectId, description, checkBoxEnabledDescription, isChecked, resourceEnum);
 		return widget;
 	}
+	UPunEditableNumberBox* AddEditableNumberBox(int32 objectId, int32 uiIndex, FText description, int32 amount,
+										std::function<void(int32, int32, int32, IGameNetworkInterface*)> onEditNumber,
+										FText checkBoxEnabledDescription = FText(), bool isChecked = false, ResourceEnum resourceEnum = ResourceEnum::None)
+	{
+		auto widget = GetChildElement<UPunEditableNumberBox>(UIEnum::PunEditableNumberBox);
+		if (widget->justInitialized) {
+			widget->amount = amount;
+			widget->UpdateText();
+		}
+		widget->Set(nullptr, CallbackEnum::None, objectId, description, checkBoxEnabledDescription, isChecked, resourceEnum);
+		widget->uiIndex = uiIndex;
+		widget->onEditNumber = onEditNumber;
+		return widget;
+	}
 
 	UChooseResourceElement* AddChooseResourceElement(ResourceEnum resourceEnum, UPunWidget* callbackParent, CallbackEnum callbackEnum)
 	{

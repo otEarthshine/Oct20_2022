@@ -189,6 +189,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* BuyingBox;
 	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* SellingBox;
 
+	UPROPERTY(meta = (BindWidget)) UButton* SendImmigrantsButton;
 	UPROPERTY(meta = (BindWidget)) UButton* GiftButton;
 	UPROPERTY(meta = (BindWidget)) UButton* DiplomacyButton;
 	
@@ -269,6 +270,9 @@ private:
 		networkInterface()->SendNetworkCommand(command);
 	}
 
+	UFUNCTION() void OnClickSendImmigrantsButton() {
+		
+	}
 	UFUNCTION() void OnClickGiftButton() {
 		int32 targetPlayerId = simulation().building(_buildingId).playerId();
 		GetPunHUD()->OpenGiftUI(targetPlayerId);

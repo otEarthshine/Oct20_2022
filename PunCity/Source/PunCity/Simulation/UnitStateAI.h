@@ -168,6 +168,7 @@ public:
 		MoveToForceLongDistance,
 		MoveToRobust,
 		MoveToward,
+		MoveToCaravan,
 
 		Produce,
 		Construct,
@@ -268,6 +269,7 @@ public:
 			CASE(MoveToForceLongDistance);
 			CASE(MoveToRobust);
 			CASE(MoveToward);
+			CASE(MoveToCaravan);
 
 			CASE(Produce);
 			CASE(Construct);
@@ -316,6 +318,7 @@ public:
 	void Add_MoveToForceLongDistance(WorldTile2 end);				void MoveToForceLongDistance();
 	void Add_MoveToRobust(WorldTile2 end);							void MoveToRobust();	void MoveToRobust(WorldTile2 end);
 	void Add_MoveToward(WorldAtom2 end, int32 fraction100000);	void MoveToward();
+	void Add_MoveToCaravan(WorldTile2 end, UnitAnimationEnum animationEnum); bool MoveToCaravan();
 
 	void MoveTo_NoFail(WorldTile2 end, int32 customFloodDistance); // Try MoveTo, if failed, do MoveToRobust
 

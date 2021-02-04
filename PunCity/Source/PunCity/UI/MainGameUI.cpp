@@ -1107,7 +1107,7 @@ void UMainGameUI::Tick()
 		//	AnimalsNeedingRanch->SetText(FText::FromString(animalsText));
 		//	AnimalsNeedingRanch->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		//} else {
-			AnimalsNeedingRanch->SetVisibility(ESlateVisibility::Collapsed);
+			//AnimalsNeedingRanch->SetVisibility(ESlateVisibility::Collapsed);
 		//}
 
 		/*

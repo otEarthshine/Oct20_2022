@@ -496,25 +496,17 @@ public:
 	bool IsPlayerBuildable(WorldTile2 tile) const final
 	{
 		if (!GameMap::IsInGrid(tile)) return false;
-		if (_simulation->tileOwnerTown(tile) != _playerId) return false;
+		if (_simulation->tileOwnerPlayer(tile) != _playerId) return false;
 		
 		return _simulation->IsBuildable(tile) || _simulation->IsCritterBuildingIncludeFronts(tile);
-
-		//return GameMap::IsInGrid(tile)
-		//		&& (_simulation->IsBuildable(tile, _playerId)
-		//		|| _simulation->IsCritterBuildingIncludeFronts(tile));
 	}
 
 	bool IsPlayerFrontBuildable(WorldTile2 tile) const final
 	{
 		if (!GameMap::IsInGrid(tile)) return false;
-		if (_simulation->tileOwnerTown(tile) != _playerId) return false;
+		if (_simulation->tileOwnerPlayer(tile) != _playerId) return false;
 
 		return _simulation->IsFrontBuildable(tile) || _simulation->IsCritterBuilding(tile);
-		
-		//return GameMap::IsInGrid(tile) &&
-		//		_simulation->IsFrontBuildable(tile, _playerId) ||
-		//		_simulation->IsCritterBuilding(tile);
 	}
 
 	bool IsPlayerColonyBuildable(WorldTile2 tile) const {

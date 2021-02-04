@@ -1095,7 +1095,7 @@ void TreeSystem::Tick()
 	}
 }
 
-int32 TreeSystem::MarkArea(int32 townId, TileArea area, bool isRemoving, ResourceEnum resourceEnum)
+int32 TreeSystem::MarkArea(int32 playerId, TileArea area, bool isRemoving, ResourceEnum resourceEnum)
 {
 	//PUN_DEBUG(FString::Printf(TEXT("MarkArea playerId: %d size:%lu"), playerId, _playerIdToRegionToMarkedTileIds.size()));
 	area.EnforceWorldLimit();
@@ -1125,7 +1125,7 @@ int32 TreeSystem::MarkArea(int32 townId, TileArea area, bool isRemoving, Resourc
 		}
 
 		// Ensure regionOwner is playerId
-		if (isValid && _simulation->tileOwnerTown(tile) == townId)
+		if (isValid && _simulation->tileOwnerPlayer(tile) == playerId)
 		{
 			if (isRemoving) {
 				// If there was reservation, reset those reservers

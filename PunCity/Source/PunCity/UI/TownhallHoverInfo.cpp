@@ -66,6 +66,9 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 	 */
 	if (sim.HasTownhall(playerId())) // Need to have townhall, otherwise don't show anything
 	{
+		/*
+		 * Our Town
+		 */
 		if (townhall.ownedBy(playerId()))
 		{
 			// Intercity Trade / Trade Route
@@ -78,6 +81,15 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 				TradeButton->SetVisibility(ESlateVisibility::Collapsed);
 			}
 
+			// SendImmigrants
+			const auto& townIds = sim.GetTownIds(playerId());
+			if (townIds.size() > 1) {
+				SendImmigrantsButton->SetVisibility(ESlateVisibility::Visible);
+				BUTTON_ON_CLICK(SendImmigrantsButton, this, &UTownhallHoverInfo::OnClickSendImmigrantsButton);
+			}
+			else {
+				SendImmigrantsButton->SetVisibility(ESlateVisibility::Collapsed);
+			}
 
 			// Gift
 			GiftButton->SetVisibility(ESlateVisibility::Collapsed);
@@ -115,6 +127,9 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 				BuffRow->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 			}
 		}
+		/*
+		 * Foreign Town
+		 */
 		else
 		{
 			// Intercity Trade / Trade Route
@@ -137,6 +152,8 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 				TradeButton->SetVisibility(ESlateVisibility::Collapsed);
 			}
 
+			// SendImmigrants
+			SendImmigrantsButton->SetVisibility(ESlateVisibility::Collapsed);
 
 			// Gift
 			GiftButton->SetVisibility(ESlateVisibility::Visible);
@@ -184,6 +201,7 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 		}
 	}
 	else {
+		SendImmigrantsButton->SetVisibility(ESlateVisibility::Collapsed);
 		GiftButton->SetVisibility(ESlateVisibility::Collapsed);
 		DiplomacyButton->SetVisibility(ESlateVisibility::Collapsed);
 

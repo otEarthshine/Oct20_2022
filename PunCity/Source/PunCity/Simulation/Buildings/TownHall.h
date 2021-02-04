@@ -43,6 +43,8 @@ public:
 	FString townNameF() { return _townName; }
 	FText townNameT() { return FText::FromString(_townName); }
 
+	bool isCapital() { return _simulation->townManager(_townId).isCapital(); }
+
 	void SetTownName(FString _townNameIn) {
 		_townName = _townNameIn;
 	}

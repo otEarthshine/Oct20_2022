@@ -19,6 +19,8 @@ void UPunEditableNumberBox::ClickArrow(bool isDown)
 
 	if (_callbackTarget) {
 		_callbackTarget->CallBack1(this, _callbackEnum);
+	} else {
+		onEditNumber(punId, uiIndex, amount, networkInterface());
 	}
 
 	dataSource()->Spawn2DSound("UI", "UIIncrementalChange");

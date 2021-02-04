@@ -489,7 +489,12 @@ public:
 		int32 temperatureFraction10000 = _terrainGenerator->GetTemperatureFraction10000(tile.x, _terrainGenerator->GetRainfall100(tile));
 		return ModifyCelsiusByBiome(temperatureFraction10000, Time::MinCelsiusBase());
 	}
-	FloatDet MaxCelsius(WorldTile2 tile) final {
+	FloatDet MaxCelsius(WorldTile2 tile) final
+	{
+		// Guard Crash
+		if (_terrainGenerator == nullptr) {
+			return Time::MaxCelsiusBase();
+		}
 		int32 temperatureFraction10000 = _terrainGenerator->GetTemperatureFraction10000(tile.x, _terrainGenerator->GetRainfall100(tile));
 		return ModifyCelsiusByBiome(temperatureFraction10000, Time::MaxCelsiusBase(), maxCelsiusDivider); // Max celsius in general change less drastically than MinCelsius (maxCelsiusDivider)
 	}

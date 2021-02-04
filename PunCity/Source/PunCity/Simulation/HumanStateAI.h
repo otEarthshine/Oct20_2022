@@ -6,6 +6,7 @@
 #include "UnitStateAI.h"
 #include "Resource/ResourceSystem.h"
 
+
 class HumanStateAI : public UnitStateAI
 {
 public:
@@ -59,6 +60,7 @@ public:
 	bool TryClearFarmDrop(class Farm& farm, int32 minDropCount);
 
 	bool TryBulkHaul_ShippingDepot();
+	bool TryBulkHaul_Intercity();
 	bool TryBulkHaul_Market();
 	bool TryDistribute_Market();
 	//bool TryConsumerWork();
@@ -90,6 +92,8 @@ public:
 	void Add_DoFarmWork(WorldTile2 tile, FarmStage farmStage);		void DoFarmWork();
 
 	void Add_TryForestingPlantAction(TileObjEnum tileObjEnum, NonWalkableTileAccessInfo accessInfo);		void TryForestingPlantAction();
+
+	
 
 	void ExecuteAction() override {
 #define CASE(Action) case ActionEnum::Action: Action(); break;

@@ -307,3 +307,53 @@ private:
 	std::vector<int32> _resourceTargets;
 	int32 _foodTarget = 0;
 };
+
+
+
+class IntercityLogisticsHub final : public Building
+{
+public:
+	void OnInit() override {
+		resourcePairs.resize(4, { ResourceEnum::None, 0 });
+	}
+
+	bool needSetup() {
+		for (const ResourcePair& pair : resourcePairs) {
+			if (pair.resourceEnum != ResourceEnum::None) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	bool RefreshHoverWarning() override
+	{
+		if (Building::RefreshHoverWarning()) {
+			return true;
+		}
+
+		if (targetTownId == -1) {
+			hoverWarning = HoverWarning::IntercityLogisticsNeedTargetTown;
+			return true;
+		}
+		if (needSetup()) {
+			hoverWarning = HoverWarning::IntercityLogisticsNeedTargetResource;
+			return true;
+		}
+
+		hoverWarning = HoverWarning::None;
+		return true;
+	}
+
+	void Serialize(FArchive& Ar) override {
+		Building::Serialize(Ar);
+		SerializeVecObj(Ar, resourcePairs);
+	}
+
+	int32 targetTownId = -1;
+	std::vector<ResourcePair> resourcePairs;
+
+	// Display
+	int32 lastTargetTownId = -1;
+	std::vector<ResourcePair> lastResourcePairs;
+};

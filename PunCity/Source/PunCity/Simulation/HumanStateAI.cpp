@@ -153,6 +153,11 @@ void HumanStateAI::CalculateActions()
 				return;
 			}
 		}
+		else if (workplc->isEnum(CardEnum::IntercityLogisticsHub)) {
+			if (TryBulkHaul_Intercity() || justReset()) {
+				return;
+			}
+		}
 		else if (workplc->isEnum(CardEnum::Forester)) {
 			if (TryForesting() || justReset()) {
 				DEBUG_AI_VAR(TryForesting);
@@ -1867,6 +1872,34 @@ bool HumanStateAI::TryBulkHaul_ShippingDepot()
 	}
 	return false;
 }
+
+bool HumanStateAI::TryBulkHaul_Intercity()
+{
+	IntercityLogisticsHub& hub = workplace()->subclass<IntercityLogisticsHub>(CardEnum::Market);
+	
+	if (hub.targetTownId == -1) {
+		return false;
+	}
+	if (hub.needSetup()) {
+		return false;
+	}
+
+	WorldTile2 startTile = hub.gateTile();
+	WorldTile2 targetTile = _simulation->GetTownhallGate(hub.targetTownId);
+	
+	std::vector<uint32_t> path;
+	bool succeed = _simulation->pathAI(true)->FindPathRoadOnly(startTile.x, startTile.y, targetTile.x, targetTile.y, path);
+	if (!succeed) {
+		return false;
+	}
+
+	Add_MoveToCaravan(startTile, UnitAnimationEnum::Caravan);
+	Add_MoveToCaravan(targetTile, UnitAnimationEnum::Caravan);
+	Add_MoveTo(startTile);
+
+	return true;
+}
+
 bool HumanStateAI::TryBulkHaul_Market()
 {
 	Market& market = workplace()->subclass<Market>(CardEnum::Market);

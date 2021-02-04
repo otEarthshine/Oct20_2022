@@ -2627,8 +2627,8 @@ static const BldInfo BuildingInfo[]
 	// February 2
 	BldInfo(CardEnum::Colony, LOCTEXT("Colony", "Colony"), LOCTEXT("Colony (Plural)", "Colonies"), WorldTile2(12, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Colony Desc", "Build a new city.")),
 	BldInfo(CardEnum::PortColony, LOCTEXT("Port Colony", "Port Colony"), LOCTEXT("Port Colony (Plural)", "Port Colonies"), WorldTile2(12, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Port Colony Desc", "Build a new port city.")),
-	BldInfo(CardEnum::IntercityLogisticsHub, LOCTEXT("Intercity Logistics Hub", "Intercity Logistics Hub"), LOCTEXT("Intercity Logistics Hub (Plural)", "Intercity Logistics Hubs"), WorldTile2(4, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Intercity Logistics Hub Desc", "Request resources from another city.")),
-	BldInfo(CardEnum::IntercityLogisticsPort, LOCTEXT("Intercity Logistics Port", "Intercity Logistics Port"), LOCTEXT("Intercity Logistics Port (Plural)", "Intercity Logistics Ports"), WorldTile2(4, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Intercity Logistics Port Desc", "Request resources from another city.")),
+	BldInfo(CardEnum::IntercityLogisticsHub, LOCTEXT("Intercity Logistics Hub", "Intercity Logistics Hub"), LOCTEXT("Intercity Logistics Hub (Plural)", "Intercity Logistics Hubs"), WorldTile2(4, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 1, { 0,0,0 }, LOCTEXT("Intercity Logistics Hub Desc", "Request resources from another city.")),
+	BldInfo(CardEnum::IntercityLogisticsPort, LOCTEXT("Intercity Logistics Port", "Intercity Logistics Port"), LOCTEXT("Intercity Logistics Port (Plural)", "Intercity Logistics Ports"), WorldTile2(4, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 1, { 0,0,0 }, LOCTEXT("Intercity Logistics Port Desc", "Request resources from another city.")),
 	
 	// Decorations
 	BldInfo(CardEnum::FlowerBed,		LOCTEXT("Flower Bed", "Flower Bed"),		LOCTEXT("Flower Bed (Plural)", "Flower Beds"), WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Flower Bed Desc", "Increase the surrounding appeal by 5 within 5 tiles radius.")),
@@ -5444,6 +5444,8 @@ enum class UnitAnimationEnum : uint8
 	StoneMining,
 	FarmPlanting,
 
+	Caravan,
+
 	Rest,
 };
 static const std::vector<std::string> UnitAnimationNames =
@@ -5456,6 +5458,8 @@ static const std::vector<std::string> UnitAnimationNames =
 	"ChopWood",
 	"StoneMining",
 	"FarmPlanting",
+
+	"Caravan",
 
 	"Rest",
 };
@@ -7422,6 +7426,9 @@ enum class HoverWarning : uint8 {
 	AlreadyReachedTarget,
 	ResourcesBelowTarget,
 
+	IntercityLogisticsNeedTargetTown,
+	IntercityLogisticsNeedTargetResource,
+
 	NeedSetup,
 	NeedDeliveryTarget,
 
@@ -7443,6 +7450,9 @@ static const std::vector<FText> HoverWarningString = {
 	LOCTEXT("Not Enough Money", "Not Enough Money"),
 	LOCTEXT("Import Target Reached", "Import Target\nReached"),
 	LOCTEXT("Resources Below Export Target", "Resources Below\nExport Target"),
+
+	LOCTEXT("IntercityLogisticsNeedTargetTown", "Need Target\nCity"),
+	LOCTEXT("IntercityLogisticsNeedTargetResource", "Need Target\nResource"),
 
 	LOCTEXT("Need Setup", "Need Setup"),
 	LOCTEXT("Need Delivery Target", "Need\nDelivery Target"),
@@ -7467,6 +7477,9 @@ static const std::vector<FText> HoverWarningDescription = {
 	FText(),
 	FText(),
 	FText(),
+
+	LOCTEXT("IntercityLogisticsNeedTargetTown Desc", "Set target City where resources will be taken from."),
+	LOCTEXT("IntercityLogisticsNeedTargetResource Desc", "Set storage targets of resources to be delivered."),
 
 	LOCTEXT("Need Setup Desc", "Choose Resource Types that will be carried by Logistics Workers."),
 	LOCTEXT("Need Delivery Target Desc", "Set the Delivery Target Storage where Logistics Worker will carry resources to."),

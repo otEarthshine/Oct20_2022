@@ -2931,15 +2931,6 @@ void GameSimulationCore::ChangeWorkMode(FChangeWorkMode command)
 
 		farm.currentPlantEnum = static_cast<TileObjEnum>(command.enumInt);
 	}
-	//else if (bld.isEnum(CardEnum::RanchBarn))
-	//{
-	//	RanchBarn& barn = bld.subclass<RanchBarn>();
-	//	PUN_LOG("ChangeBarn id:%d, from: %s, to: %s", command.buildingId,
-	//		*ToFString(GetUnitInfo(barn.animalEnum()).name),
-	//		*ToFString(GetUnitInfo(command.enumInt).name));
-
-	//	barn.SetAnimalEnum(static_cast<UnitEnum>(command.enumInt));
-	//}
 	else if (bld.hasWorkModes()) // BuildingHasDropdown(bld.buildingEnum()))
 	{
 		PUN_LOG("ChangeBld id:%d, from: %s, to: %s", command.buildingId,
@@ -2987,6 +2978,20 @@ void GameSimulationCore::ChangeWorkMode(FChangeWorkMode command)
 		// Update trading company values
 		auto& shippingDepot = bld.subclass<ShippingDepot>();
 		shippingDepot.resourceEnums[command.intVar1] = static_cast<ResourceEnum>(command.intVar2);
+	}
+	else if (bld.isEnum(CardEnum::IntercityLogisticsHub))
+	{
+		// Update trading company values
+		auto& hub = bld.subclass<IntercityLogisticsHub>(CardEnum::IntercityLogisticsHub);
+
+		// Dropdowns
+		if (command.intVar1 < hub.resourcePairs.size()) {
+			hub.resourcePairs[command.intVar1].resourceEnum = static_cast<ResourceEnum>(command.intVar2);
+		}
+		// NumberBoxes
+		else {
+			hub.resourcePairs[command.intVar1].count = command.intVar2;
+		}
 	}
 	else {
 		UE_DEBUG_BREAK();
@@ -3833,7 +3838,8 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	int32 townId = playerId;
 	int32 minDistance = 99999;
 	for (int32 townIdTemp : townIds) {
-		int32 distance = WorldTile2::Distance(GetProvinceCenterTile(provinceId), GetTownhallGateFast(townId));
+		WorldTile2 gate = GetTownhallGateFast(townId);
+		int32 distance = WorldTile2::Distance(GetProvinceCenterTile(provinceId), gate);
 		if (distance < minDistance) {
 			minDistance = distance;
 			townId = townIdTemp;
@@ -4678,11 +4684,11 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 		WorldTile2 storageCenter3 = storageCenter1 - WorldTile2::RotateTileVector(InitialStorage2Shift, townhallFaceDirection);
 		
 		FPlaceBuilding params;
-		params.buildingEnum = static_cast<uint8>(CardEnum::StorageYard);
 		params.faceDirection = static_cast<uint8>(Direction::E);
 
-		auto makeStorage = [&]() -> StorageYard*
+		auto makeBuilding = [&](CardEnum buildingEnum) -> Building*
 		{
+			params.buildingEnum = static_cast<uint8>(buildingEnum);
 			params.area = BuildingArea(params.center, InitialStorageTileSize, RotateDirection(Direction::E, townhallFaceDirection)); //
 			params.playerId = command.playerId;
 
@@ -4693,7 +4699,7 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 				return nullptr;
 			}
 
-			StorageYard& storage = building(storageId).subclass<StorageYard>(CardEnum::StorageYard);
+			Building& storage = building(storageId);
 			storage.InstantClearArea();
 			storage.SetAreaWalkable();
 			storage.FinishConstruction();
@@ -4705,7 +4711,7 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 			//params.center = command.center + WorldTile2(0, -InitialStorageShiftFromTownhall); // Old 8x8 WorldTile2(-2, -shiftFromTownhall);
 			params.center = storageCenter1;
 
-			StorageYard* storage = makeStorage();
+			Building* storage = makeBuilding(CardEnum::StorageYard);
 			PUN_ENSURE(storage, return);
 
 			/*
@@ -4724,16 +4730,22 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 		{
 			params.center = storageCenter2;
 
-			StorageYard* storage = makeStorage();
+			Building* storage = makeBuilding(CardEnum::StorageYard);
 			PUN_ENSURE(storage, return);
 		}
 
-		// Storage 3 ...
-		{
+		// Building 3 ...
+		if (buildingEnum == CardEnum::Townhall) {
 			params.center = storageCenter3;
 
-			StorageYard* storage = makeStorage();
+			Building* storage = makeBuilding(CardEnum::StorageYard);
 			PUN_ENSURE(storage, return);
+		}
+		else {
+			params.center = storageCenter3;
+
+			Building* hub = makeBuilding(CardEnum::IntercityLogisticsHub);
+			PUN_ENSURE(hub, return);
 		}
 
 		// Add resources

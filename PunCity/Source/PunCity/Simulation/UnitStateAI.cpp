@@ -969,10 +969,17 @@ bool UnitStateAI::TryGoNearbyHome()
 
 bool UnitStateAI::TryGetBurrowFood()
 {
-	PUN_CHECK(_houseId != -1);
-
-	// TODO: Central system to manage all house-occupant relationship...
-	BoarBurrow& boarBurrow = _simulation->building(_houseId).subclass<BoarBurrow>();
+	// Guard Crash
+	if (!_simulation->IsValidBuilding(_houseId)) {
+		return false;
+	}
+	
+	Building& bld = _simulation->building(_houseId);
+	if (!bld.isEnum(CardEnum::BoarBurrow)) {
+		return false;
+	}
+	
+	BoarBurrow& boarBurrow = bld.subclass<BoarBurrow>(CardEnum::BoarBurrow);
 
 	ResourceEnum availableFoodEnum = ResourceEnum::None;
 
@@ -2221,6 +2228,34 @@ void UnitStateAI::MoveToward()
 	// Be in the moving state until we arrived at destination.
 	_unitData->SetNextTickState(_id, TransformState::Moving, UnitUpdateCallerEnum::MoveTowards_Done, ticksNeeded);
 	AddDebugSpeech("(Done)MoveToward: " + end.ToString());
+}
+
+void UnitStateAI::Add_MoveToCaravan(WorldTile2 end, UnitAnimationEnum animationEnum) {
+	_actions.push_back(Action(ActionEnum::MoveToward, end.x, end.y, static_cast<int32>(animationEnum)));
+}
+bool UnitStateAI::MoveToCaravan()
+{
+	WorldAtom2 end(action().int32val1, action().int32val2);
+	WorldTile2 start = unitTile();
+
+	_animationEnum = static_cast<UnitAnimationEnum>(action().int32val3);
+
+	bool succeed = _simulation->pathAI(true)->FindPathRoadOnly(start.x, start.y, end.x, end.y, rawWaypoint);
+	if (!succeed) {
+		DEBUG_AI_VAR(FailedToFindPath);
+		_simulation->ResetUnitActions(_id, 60);
+		AddDebugSpeech("(Bad)MoveToCaravan: " + start.ToString() + end.ToString());
+		return false;
+	}
+
+	MapUtil::UnpackAStarPath(rawWaypoint, _unitData->waypoint(_id));
+	_unitData->SetForceMove(_id, false);
+
+	// Convert waypoint to targetTile next tick.
+	_unitData->SetNextTickState(_id, TransformState::NeedTargetAtom, UnitUpdateCallerEnum::MoveTo_Done);
+	PUN_CHECK2(nextActiveTick() > Time::Ticks(), debugStr());
+	AddDebugSpeech("---DONE]MoveToCaravan:" + end.ToString());
+	return true;
 }
 
 

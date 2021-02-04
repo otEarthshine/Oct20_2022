@@ -95,7 +95,12 @@ public:
 	}
 
 	int32 GetRainfall100(WorldTile2 tile) const {
-		int32 rainfall255 = _rainfall4x4Map[(tile.x / 4) + (tile.y / 4) * _tile4x4DimX];
+		// Guard Crash
+		int32 index = (tile.x / 4) + (tile.y / 4) * _tile4x4DimX;
+		if (index < 0) return 100;
+		if (index >= _rainfall4x4Map.size()) return 100;
+		
+		int32 rainfall255 = _rainfall4x4Map[index];
 		return rainfall255 * 100 / 255;
 	}
 

@@ -32,12 +32,13 @@ public:
 	}
 
 	void Set(UPunWidget* callbackTarget, CallbackEnum callbackEnum, int32 objectId = -1, FText description = FText(),
-			FText checkBoxEnabledDescription = FText(), bool isChecked = false, ResourceEnum resourceEnum = ResourceEnum::None)
+			FText checkBoxEnabledDescription = FText(), bool isChecked = false, ResourceEnum resourceEnumIn = ResourceEnum::None)
 	{
 		_callbackTarget = callbackTarget;
 		_callbackEnum = callbackEnum;
 
 		punId = objectId;
+		uiIndex = -1;
 
 		if (description.IsEmpty()) {
 			DescriptionText->SetVisibility(ESlateVisibility::Collapsed);
@@ -63,6 +64,7 @@ public:
 		ArrowDownButton->SetVisibility(editableNumberVisibility);
 		ArrowUpButton->SetVisibility(editableNumberVisibility);
 
+		resourceEnum = resourceEnumIn;
 		if (resourceEnum != ResourceEnum::None && isChecked) {
 			IconImage->SetVisibility(ESlateVisibility::Visible);
 			SetResourceImage(IconImage, resourceEnum, assetLoader());
@@ -89,6 +91,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* ArrowUpButton;
 
 	int32 amount;
+	ResourceEnum resourceEnum = ResourceEnum::None;
 
 	bool justInitialized = false;
 
@@ -98,6 +101,9 @@ public:
 	int32 maxAmount = MAX_int32;
 
 	bool isEditableNumberActive = true;
+
+	int32 uiIndex = -1;
+	std::function<void(int32, int32, int32, IGameNetworkInterface*)> onEditNumber;
 	
 private:
 	UFUNCTION() void ClickArrowDownButton();

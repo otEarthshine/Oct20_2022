@@ -54,6 +54,7 @@ public:
 	virtual void SetCameraAtom(WorldAtom2 lookAtAtom) = 0;
 	
 	virtual class APunHUD* GetPunHUD() = 0;
+	virtual class IGameUIDataSource* dataSource() = 0;
 
 	virtual FString playerNameF(int32 playerId) = 0;
 	virtual std::string playerName(int32 playerId) = 0;

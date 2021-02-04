@@ -211,21 +211,26 @@ private:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* StorageSpaceText;
 	//UPROPERTY(meta = (BindWidget)) UTextBlock* Food;
 
+	// Town Swap
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* LeftUITownName;
+	UPROPERTY(meta = (BindWidget)) UButton* LeftUITownSwapArrowLeftButton;
+	UPROPERTY(meta = (BindWidget)) UButton* LeftUITownSwapArrowRightButton;
+
 	// Main Info
-	UPROPERTY(meta = (BindWidget)) UIconTextPairWidget* Happiness;
 	UPROPERTY(meta = (BindWidget)) UIconTextPairWidget* Money;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* MoneyChangeText;
 	UPROPERTY(meta = (BindWidget)) UIconTextPairWidget* Influence;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* InfluenceChangeText;
 	UPROPERTY(meta = (BindWidget)) UIconTextPairWidget* Science;
-
+	
+	UPROPERTY(meta = (BindWidget)) UIconTextPairWidget* Happiness;
 
 	UPROPERTY(meta = (BindWidget)) UButton* LeftUIPopulationButton;
 	UPROPERTY(meta = (BindWidget)) UButton* LeftUIMoneyButton;
 	//UPROPERTY(meta = (BindWidget)) UButton* LeftUIInfluenceButton;
 	UPROPERTY(meta = (BindWidget)) UButton* LeftUIScienceButton;
 
-	UPROPERTY(meta = (BindWidget)) UTextBlock* AnimalsNeedingRanch;
+	//UPROPERTY(meta = (BindWidget)) UTextBlock* AnimalsNeedingRanch;
 
 	//UPROPERTY(meta = (BindWidget)) UIconTextPairWidget* WoodCount;
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* FuelList;

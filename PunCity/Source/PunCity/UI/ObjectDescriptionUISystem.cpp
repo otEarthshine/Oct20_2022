@@ -1409,6 +1409,81 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						addDropDown(1);
 						addDropDown(2);
 					}
+					else if (building.isEnum(CardEnum::IntercityLogisticsHub))
+					{
+						descriptionBox->AddRichText(LOCTEXT("IntercityLogisticsHub_ChooseResources", "Choose 4 resources to haul to delivery target"));
+						descriptionBox->AddSpacer(12);
+
+						auto& hub = building.subclass<IntercityLogisticsHub>();
+						
+						// targetAmount
+						// - just opened UI, get it from targetAmount (actual value)
+						// - after opened, we keep value in lastTargetAmountSet
+						if (_justOpenedDescriptionUI) {
+							hub.lastResourcePairs = hub.resourcePairs;
+						}
+						vector<ResourcePair> pairs = hub.lastResourcePairs;
+
+						TArray<FText> options;
+						options.Add(LOCTEXT("None", "None"));
+						for (ResourceInfo info : SortedNameResourceInfo) {
+							options.Add(info.GetName());
+						}
+
+						auto addDropDown = [&](int32 index)
+						{
+							ResourcePair pair = pairs[index];
+
+							descriptionBox->AddDropdown(
+								building.buildingId(),
+								options,
+								ResourceName_WithNone(pair.resourceEnum),
+								[](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex)
+								{
+									std::wstring resourceName = ToWString(sItem);
+								
+									auto command = make_shared<FChangeWorkMode>();
+									command->buildingId = objectId;
+									command->intVar1 = dropdownIndex;
+									command->intVar2 = static_cast<int32>(FindResourceEnumByName(resourceName));
+									networkInterface->SendNetworkCommand(command);
+								}, 
+								index
+							);
+
+							int32 numberBoxStartIndex = pairs.size();
+
+							descriptionBox->AddEditableNumberBox(
+								building.buildingId(), 
+								index + numberBoxStartIndex, FText::Format(INVTEXT("{0}: "), LOCTEXT("Target", "Target")),
+								pair.count,
+								[numberBoxStartIndex](int32 objectId, int32 uiIndex, int32 amount, IGameNetworkInterface* networkInterface)
+								{
+									auto command = make_shared<FChangeWorkMode>();
+									command->buildingId = objectId;
+									command->intVar1 = uiIndex;
+									command->intVar2 = amount;
+									networkInterface->SendNetworkCommand(command);
+
+									// Update Display
+									auto& sim = networkInterface->dataSource()->simulation();
+									if (sim.IsValidBuilding(objectId)) {
+										Building& bld = sim.building(objectId);
+										if (bld.isEnum(CardEnum::IntercityLogisticsHub)) {
+											bld.subclass<IntercityLogisticsHub>().lastResourcePairs[uiIndex - numberBoxStartIndex].count = amount;
+										}
+									}
+								}, 
+								FText(), false, pair.resourceEnum
+							);
+
+							descriptionBox->AddSpacer(12);
+						};
+
+						for (int32 i = 0; i < pairs.size(); i++) {
+							addDropDown(i);
+						}
+					}
 					else if (IsMountainMine(building.buildingEnum()))
 					{
 						int32 oreLeft = building.subclass<Mine>().oreLeft();
@@ -2223,8 +2298,13 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							ADDTEXT_LOCTEXT("Upgrade Rewards", "Upgrade Rewards");
 							ADDTEXT_INV_("<line>");
 							ADDTEXT__(GetTownhallLvlToUpgradeBonusText(townhall.townhallLvl + 1));
-							
-							if (globalResourceSys.money() < upgradeMoney) {
+
+							int32 capitalLvl = simulation.GetTownLvl(townhall.playerId());
+							if (townhall.townhallLvl >= capitalLvl) {
+								ADDTEXT_INV_("<space>");
+								ADDTEXT_TAG_("<Red>", LOCTEXT("TownhallUpgrade_NeedCapitalUpgrade", "Require higher Capital's Townhall Level."));
+							}
+							else if (globalResourceSys.money() < upgradeMoney) {
 								ADDTEXT_INV_("<space>");
 								ADDTEXT_TAG_("<Red>", LOCTEXT("Not enough money to upgrade.", "Not enough money to upgrade."));
 							}
@@ -3440,8 +3520,19 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 		Building& bld = simulation().building(punWidgetCaller->callbackVar1);
 		if (bld.isEnum(CardEnum::Townhall))
 		{
+			TownHall& townhall = bld.subclass<TownHall>();
+			if (!townhall.isCapital() &&
+				townhall.townhallLvl >= simulation().GetTownLvl(bld.playerId())) 
+			{
+				simulation().AddPopupToFront(playerId(),
+					LOCTEXT("RequireHigherCapitalTownhallLvl", "Upgrade failed. Require higher Capital's Townhall Level"),
+					ExclusiveUIEnum::None, "PopupCannot"
+				);
+				return;
+			}
+			
 			if (punWidgetCaller->callbackVar2 == 0) {
-				if (!bld.subclass<TownHall>().HasEnoughUpgradeMoney()) {
+				if (!townhall.HasEnoughUpgradeMoney()) {
 					simulation().AddPopupToFront(playerId(), 
 						LOCTEXT("NoUpgradeMoney", "Not enough money for upgrade."), 
 						ExclusiveUIEnum::None, "PopupCannot"
@@ -3450,7 +3541,7 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 				}
 			}
 			else {
-				if (!bld.subclass<TownHall>().HasEnoughStoneToUpgradeWall()) {
+				if (!townhall.HasEnoughStoneToUpgradeWall()) {
 					simulation().AddPopupToFront(playerId(), 
 						LOCTEXT("NoUpgradeStone", "Not enough stone for upgrade."), 
 						ExclusiveUIEnum::None, "PopupCannot"
@@ -3558,7 +3649,6 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 		// For UI
 		tradingCompany.lastTargetAmountSet = numberBox->amount;
 	}
-
 	else if (callbackEnum == CallbackEnum::EditableNumberSetOutputTarget)
 	{
 		auto editableBox = CastChecked<UPunEditableNumberBox>(punWidgetCaller);

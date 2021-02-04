@@ -65,6 +65,15 @@ public:
 	const std::vector<int32>& townIds() { return _townIds; }
 	void AddTownId(int32 townId) { _townIds.push_back(townId); }
 
+	int32 playerTownNumber(int32 townId) {
+		for (int32 i = 0; i < _townIds.size(); i++) {
+			if (townId == _townIds[i]) {
+				return i;
+			}
+		}
+		return 0;
+	}
+
 	/*
 	 * Variables
 	 */

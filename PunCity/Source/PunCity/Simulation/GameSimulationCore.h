@@ -480,9 +480,15 @@ public:
 	//	return nodes;
 	//}
 
-	WorldAtom2 homeAtom(int32 playerId) final {
-		if (playerOwned(playerId).hasChosenLocation()) {
-			return GetProvinceCenterTile(townManager(playerId).provincesClaimed().front()).worldAtom2();
+	WorldAtom2 homeAtom(int32 townId) final
+	{
+		// Go to townhall center if there is townhall
+		if (HasTownhall(townPlayerId(townId))) {
+			return GetTownhall(townId).centerTile().worldAtom2();
+		}
+		// No townhall case, use province center
+		if (townManager(townId).provincesClaimed().size() > 0) {
+			return GetProvinceCenterTile(townManager(townId).provincesClaimed().front()).worldAtom2();
 		}
 		return WorldAtom2::Zero;
 	}

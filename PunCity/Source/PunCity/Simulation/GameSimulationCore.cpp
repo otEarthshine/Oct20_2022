@@ -85,6 +85,15 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 			}
 #endif
 		}
+
+		// Water for pathAI
+		const std::vector<TerrainTileType>& terrainMap = _terrainGenerator->terrainMap();
+		for (int32 yy = 0; yy < GameMapConstants::Tiles4x4PerWorldY; yy++) {
+			for (int32 xx = 0; xx < GameMapConstants::Tiles4x4PerWorldX; xx++) {
+				TerrainTileType tileType = terrainMap[WorldTile2(xx * 4, yy * 4).tileId()];
+				PunAStar128x256::SetWater(xx, yy, tileType == TerrainTileType::Ocean || tileType == TerrainTileType::River);
+			}
+		}
 	}
 
 	_LOG(PunInit, "GAME_VERSION %s", *FString::FromInt(GAME_VERSION));
@@ -95,7 +104,6 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 	_overlaySystem.Init(this); // Needs to come first for road.
 
 	_provinceSystem.InitProvince(this);
-	//_terrainGenerator->SetProvinceMap(_provinceSystem.GetProvinceId2x2Vec());
 
 	_unitSystem = make_unique<UnitSystem>();
 	_unitSystem->Init(this);
@@ -3875,18 +3883,25 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	int32 playerId = command.playerId;
 	int32 provinceId = command.provinceId;
 
-	// Get closest townId
+	// Get town with adjacent province
+	const auto& connections = GetProvinceConnections(provinceId);
+	vector<int32> adjacentTowns;
+	for (const ProvinceConnection& connection : connections) {
+		int32 owner = provinceOwnerTown(connection.provinceId);
+		if (owner != -1) {
+			CppUtils::TryAdd(adjacentTowns, owner);
+		}
+	}
+
+	// Town built first will get first claim
+	int32 townId = -1;
 	const auto& townIds = GetTownIds(playerId);
-	int32 townId = playerId;
-	int32 minDistance = 99999;
 	for (int32 townIdTemp : townIds) {
-		WorldTile2 gate = GetTownhallGateFast(townId);
-		int32 distance = WorldTile2::Distance(GetProvinceCenterTile(provinceId), gate);
-		if (distance < minDistance) {
-			minDistance = distance;
+		if (CppUtils::Contains(adjacentTowns, townIdTemp)) {
 			townId = townIdTemp;
 		}
 	}
+	check(townId != -1);
 
 	// Special case for claim ruin
 	if (command.claimEnum == CallbackEnum::ClaimRuin)
@@ -3905,20 +3920,46 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	{
 		int32 baseRegionPrice = GetProvinceClaimPrice(command.provinceId, playerId);
 		int32 neededFood = baseRegionPrice / FoodCost;
-		
-		if (foodCount(townId) >= neededFood &&
-			provinceOwnerTown(command.provinceId) == -1)
-		{
-			SetProvinceOwnerFull(command.provinceId, townId);
 
-			// TODO: change below to RemoveResourceGlobal(ResourceEnum::Food, ..)
-			int32 amountLeftToRemove = neededFood;
-			for (ResourceEnum foodEnum : StaticData::FoodEnums) {
-				int32 amountToRemove = std::min(amountLeftToRemove, resourceSys.resourceCount(foodEnum));
-				resourceSys.RemoveResourceGlobal(foodEnum, amountToRemove);
-				amountLeftToRemove -= amountToRemove;
+		if (provinceOwnerTown(command.provinceId) == -1)
+		{
+			// Try to use food only from the claimer town first
+			if (foodCount(townId) >= neededFood)
+			{
+				SetProvinceOwnerFull(command.provinceId, townId);
+
+				// TODO: change below to RemoveResourceGlobal(ResourceEnum::Food, ..)
+				int32 amountLeftToRemove = neededFood;
+				for (ResourceEnum foodEnum : StaticData::FoodEnums) {
+					int32 amountToRemove = std::min(amountLeftToRemove, resourceSys.resourceCount(foodEnum));
+					resourceSys.RemoveResourceGlobal(foodEnum, amountToRemove);
+					amountLeftToRemove -= amountToRemove;
+				}
+				PUN_CHECK(amountLeftToRemove == 0);
+				return;
 			}
-			PUN_CHECK(amountLeftToRemove == 0);
+
+			// Use all food from adjacent towns
+			int32 adjacentFoodCount = 0;
+			for (int32 adjacentTownId : adjacentTowns) {
+				adjacentFoodCount += foodCount(adjacentTownId);
+			}
+			if (adjacentFoodCount >= neededFood)
+			{
+				SetProvinceOwnerFull(command.provinceId, townId);
+
+				int32 amountLeftToRemove = neededFood;
+				for (int32 adjacentTownId : adjacentTowns) {
+					int32 amountToRemove = std::min(amountLeftToRemove, foodCount(adjacentTownId));
+					resourceSystem(adjacentTownId).RemoveResourceGlobal(ResourceEnum::Food, amountToRemove);
+					amountLeftToRemove -= amountToRemove;
+					if (amountLeftToRemove == 0) {
+						break;
+					}
+				}
+				PUN_CHECK(amountLeftToRemove == 0);
+				return;
+			}
 		}
 	}
 	else if (command.claimEnum == CallbackEnum::ClaimLandMoney)

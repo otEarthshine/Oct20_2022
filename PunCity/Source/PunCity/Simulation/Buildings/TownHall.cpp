@@ -50,10 +50,10 @@ void TownHall::FinishConstruction()
 		SetTownName(GetAITownName(_playerId));
 	} else {
 		FString suffix = FString(" Town");
-		if (isCapital()) {
+		if (!isCapital()) {
 			suffix = FString(" Colony ") + FString::FromInt(_simulation->playerOwned(_playerId).playerTownNumber(_townId));
 		}
-		SetTownName(_simulation->playerNameF(_playerId) + FString(" Town"));
+		SetTownName(_simulation->playerNameF(_playerId) + suffix);
 	}
 
 	_simulation->RecalculateTaxDelayedTown(_townId);

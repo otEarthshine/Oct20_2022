@@ -37,34 +37,34 @@ static const std::string& PunSimLLMTagName(PunSimLLMTag tag) {
 
 #if PUN_LLM_ON
 
-//class PunScopeLLM
-//{
-//public:
-//	static size_t memoryTotal;
-//	static std::vector<size_t> memoryTotals;
-//	static std::vector<bool> memoryTagOn;
-//
-//	static void InitPunLLM()
-//	{
-//		memoryTotal = 0;
-//		memoryTotals.resize(PunSimLLMTagCount);
-//		memoryTagOn.resize(PunSimLLMTagCount);
-//		UE_LOG(LogTemp, Error, TEXT("InitPunLLM"));
-//	}
-//
-//	PunScopeLLM(PunSimLLMTag tag);
-//	~PunScopeLLM();
-//
-//	static void Print();
-//
-//
-//	PunSimLLMTag tag = PunSimLLMTag::Simulation;
-//
-//	static void PunTrackAlloc(const void* ptr, size_t byteSize);
-//	static void PunTrackFree(const void* ptr, size_t byteSize);
-//};
-//
-//#define PUN_LLM(tag) PunScopeLLM PREPROCESSOR_JOIN(PunScopeLLMObj, __LINE__)(tag);
+class PunScopeLLM
+{
+public:
+	static size_t memoryTotal;
+	static std::vector<size_t> memoryTotals;
+	static std::vector<bool> memoryTagOn;
+
+	static void InitPunLLM()
+	{
+		memoryTotal = 0;
+		memoryTotals.resize(PunSimLLMTagCount);
+		memoryTagOn.resize(PunSimLLMTagCount);
+		UE_LOG(LogTemp, Error, TEXT("InitPunLLM"));
+	}
+
+	PunScopeLLM(PunSimLLMTag tag);
+	~PunScopeLLM();
+
+	static void Print();
+
+
+	PunSimLLMTag tag = PunSimLLMTag::Simulation;
+
+	static void PunTrackAlloc(const void* ptr, size_t byteSize);
+	static void PunTrackFree(const void* ptr, size_t byteSize);
+};
+
+#define PUN_LLM(tag) PunScopeLLM PREPROCESSOR_JOIN(PunScopeLLMObj, __LINE__)(tag);
 
 #define PUN_LLM_ONLY(statement) statement
 

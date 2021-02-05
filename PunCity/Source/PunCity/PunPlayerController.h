@@ -469,15 +469,31 @@ public:
 
 
 	// Test ship move
-	UFUNCTION(Exec) void FindShipPath(int32 startX, int32 startY, int32 endX, int32 endY)
+	UFUNCTION(Exec) void FindPathShip(int32 heuristicsFactor, uint16 customCalcCount, int32 startX, int32 startY, int32 endX, int32 endY)
 	{
 		WorldTile2 start(startX, startY);
 		WorldTile2 end(endX, endY);
-		const std::vector<TerrainTileType>& map = simulation().terrainGenerator().terrainMap();
 
-		//map[start.tileId()];
+		std::vector<WorldTile2> path;
+		{
+			SCOPE_TIMER("FindPathShip");
+			std::vector<uint32_t> rawPath;
+			simulation().pathAI(true)->FindPathWater(start.x / 4, start.y / 4, end.x / 4, end.y / 4, rawPath, heuristicsFactor, customCalcCount);
 
-		simulation().DrawLine(start.worldAtom2(), FVector::ZeroVector, end.worldAtom2(), FVector(0, 10, 0), FLinearColor::Green, 1.0f, 10000);
+			MapUtil::UnpackAStarPath_4x4(rawPath, path);
+		}
+
+		for (int32 i = path.size(); i-- > 1;) {
+			WorldTile2 tile1 = path[i - 1];
+			WorldTile2 tile2 = path[i];
+			simulation().DrawLine(tile1.worldAtom2(), FVector::ZeroVector, tile2.worldAtom2(), FVector(0, 0, 3), FLinearColor::Green, 1.0f, 10000);
+		}
+
+		PUN_LOG("FindPathShip %d", path.size() * 2);
+
+		FLinearColor color = (path.size() > 0) ? FLinearColor::Green : FLinearColor::Red;
+		simulation().DrawLine(start.worldAtom2(), FVector::ZeroVector, start.worldAtom2(), FVector(0, 5, 10), color, 1.0f, 10000);
+		simulation().DrawLine(end.worldAtom2(), FVector::ZeroVector, end.worldAtom2(), FVector(0, 5, 10), color, 1.0f, 10000);
 	}
 
 public:

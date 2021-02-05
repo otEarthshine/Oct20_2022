@@ -1875,7 +1875,7 @@ bool HumanStateAI::TryBulkHaul_ShippingDepot()
 
 bool HumanStateAI::TryBulkHaul_Intercity()
 {
-	IntercityLogisticsHub& hub = workplace()->subclass<IntercityLogisticsHub>(CardEnum::Market);
+	IntercityLogisticsHub& hub = workplace()->subclass<IntercityLogisticsHub>(CardEnum::IntercityLogisticsHub);
 	
 	if (hub.targetTownId == -1) {
 		return false;

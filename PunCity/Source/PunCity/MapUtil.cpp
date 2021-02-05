@@ -25,6 +25,27 @@ void MapUtil::UnpackAStarPath(std::vector<uint32>& rawWaypoint, std::vector<Worl
 	}
 }
 
+
+WorldTile2 MapUtil::UnpackAStarInt_4x4(uint32 locInt)
+{
+	uint32 xRegion = locInt >> PunAStar128x256::shiftToXRegion_4x4;
+	uint32 y = (locInt >> 5) & PunAStar128x256::bitsY_4x4;
+	uint32 xBits = locInt & 0b11111; // 5 bits
+
+	uint32 x = (xRegion << 5) | xBits;
+
+	return WorldTile2(x * 4, y * 4);
+}
+
+void MapUtil::UnpackAStarPath_4x4(std::vector<uint32>& rawWaypoint, std::vector<WorldTile2>& transformWaypoint)
+{
+	transformWaypoint.resize(rawWaypoint.size());
+	const int waypointSize = transformWaypoint.size();
+	for (int i = 0; i < waypointSize; i++) {
+		transformWaypoint[i] = MapUtil::UnpackAStarInt_4x4(rawWaypoint[i]);
+	}
+}
+
 //WorldTile2 MapUtil::RandomTile(TileArea area)
 //{
 //	area.EnforceWorldLimit();

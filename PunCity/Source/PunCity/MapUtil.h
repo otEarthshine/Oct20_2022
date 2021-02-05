@@ -9,6 +9,9 @@ public:
 	static WorldTile2 UnpackAStarInt(uint32 locInt);
 	static void UnpackAStarPath(std::vector<uint32>& rawWaypoint, std::vector<WorldTile2>& transformWaypoint);
 
+	static WorldTile2 UnpackAStarInt_4x4(uint32 locInt);
+	static void UnpackAStarPath_4x4(std::vector<uint32>& rawWaypoint, std::vector<WorldTile2>& transformWaypoint);
+
 	//static WorldTile2 RandomTile(TileArea area);
 
 	static FVector DisplayLocation(WorldAtom2 cameraAtom, WorldAtom2 objectAtom, float height = 0.0f);

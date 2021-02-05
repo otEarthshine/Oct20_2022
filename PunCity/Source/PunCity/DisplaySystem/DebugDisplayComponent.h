@@ -71,6 +71,7 @@ protected:
 		 * Debug
 		 */
 		if (PunSettings::Settings["WalkableGrid"] ||
+			PunSettings::Settings["ShippingGrid"] ||
 			PunSettings::Settings["BuildingGrid"] ||
 			PunSettings::Settings["BuildingId"] ||
 			PunSettings::Settings["FloodId"] ||
@@ -120,6 +121,17 @@ protected:
 						}
 
 						line->DrawLine(start, start + FVector(0, 5, 10), color, 100.0f, 1.0f, 10000);
+					}
+
+					if (PunSettings::Settings["ShippingGrid"])
+					{
+						if (x % 4 == 0 && y % 4 == 0) 
+						{
+							// AStar Debug
+							if (pathAI->isWater(x / 4, y / 4)) {
+								line->DrawLine(start, start + FVector(0, 5, 10), FLinearColor::Blue, 100.0f, 1.0f, 10000);
+							}
+						}
 					}
 
 					if (PunSettings::Settings["BuildingGrid"])

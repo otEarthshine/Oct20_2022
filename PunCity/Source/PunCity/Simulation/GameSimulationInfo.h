@@ -436,6 +436,8 @@ DECLARE_DEBUG_ISCONNECTED_VAR(IsConnectedBuildingResource);
 
 /*
  * LLM
+ *
+ * !!! turn on PUN_LLM_ON to get pun's stuff
  */
 #include "HAL/LowLevelMemStats.h"
 #include "HAL/LowLevelMemTracker.h"

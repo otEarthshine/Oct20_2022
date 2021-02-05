@@ -4,8 +4,6 @@
 #include <memory>
 #include "PunBinaryHeap.h"
 
-#include "CoreMinimal.h"
-
 // Cost without road
 const int COST_ONE = 100;
 const int COST_SQRT2 = 142;
@@ -43,11 +41,16 @@ public:
 	static const uint32_t shiftAcrossBitsY = 13;
 	static const uint32_t shiftToXRegion = 18;
 
+	static const uint32_t bitsY_4x4 = 0b11111111111; // 11
+	static const uint32_t shiftAcrossBitsY_4x4 = 11;
+	static const uint32_t shiftToXRegion_4x4 = 16;
+
 	PunAStar128x256();
 	~PunAStar128x256();
 
 	bool FindPath(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path, bool isAccurate, bool isRoadable, int32 customCalculationCount = -1);
 	bool FindPathRoadOnly(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path);
+	bool FindPathWater(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path, int32 heuristicsFactor, uint16_t customCalculationCount = -1);
 	bool FindPathRobust(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path);
 
 	void CleanGrid();
@@ -113,6 +116,40 @@ public:
 		return (grid[xRegionAndY] >> xBits) & 1;
 	}
 
+	//! Water
+	static void SetWater(int x, int y, bool isWater) { SetTileWater(x, y, isWater, _isWaterGrid); }
+	static bool isWater(int x, int y) { return isTileWater(x, y, _isWaterGrid); }
+
+	static void SetTileWater(int x, int y, bool isXX, uint32_t* grid)
+	{
+		uint32_t locInt = GetUIntId_4x4(x, y);
+		uint32_t xBits = locInt & 0b11111; // 5 bits
+		uint32_t xRegionAndY = locInt >> 5;
+
+		if (isXX) {
+			grid[xRegionAndY] |= (1 << xBits);
+		} else {
+			grid[xRegionAndY] &= ~(1 << xBits);
+		}
+	}
+
+	static bool isTileWater(int x, int y, uint32_t* grid)
+	{
+		uint32_t locInt = GetUIntId_4x4(x, y);
+		uint32_t xBits = locInt & 0b11111; // 5 bits
+		uint32_t xRegionAndY = locInt >> 5;
+		return (grid[xRegionAndY] >> xBits) & 1;
+	}
+
+	static uint32_t GetUIntId_4x4(int x, int y)
+	{
+		uint32_t xBits = x & 0b11111; // 5 bits
+		uint32_t xRegion = (x >> 5); // bitsXRegion
+
+		return (xRegion << shiftToXRegion_4x4) | (y << 5) | xBits;
+	}
+	
+	//! Others
 	static bool isTile(uint32_t locInt, uint32_t* grid)
 	{
 		uint32_t xBits = locInt & 0b11111; // 5 bits
@@ -128,6 +165,7 @@ private:
 	void GetSuccessorsRobust(uint32_t locInt, uint32_t* successors, int& nonDiagArraySize, int& arraySize);
 
 	void GetSuccessorsRoadOnly(uint32_t locInt, uint32_t* successors, int& nonDiagArraySize, int& arraySize);
+	void GetSuccessorsWaterOnly(uint32_t locInt, uint32_t* successors, int& nonDiagArraySize, int& arraySize);
 
 	void PrintUInt32(uint32_t locInt);
 
@@ -164,6 +202,9 @@ public:
 
 		Ar.Serialize(_isWalkableGrid, _walkableGridSize * 4);
 		Ar.Serialize(_isRoadGrid, _walkableGridSize * 4);
+
+		// TODO: Fill with terrainMap? But that means no multithreading for this on load
+		Ar.Serialize(_isWaterGrid, _walkableGridSize4x4 * 4);
 	}
 	
 private:
@@ -171,6 +212,10 @@ private:
 	const uint32_t _yDim = 256 * 32;
 	const uint32_t _xyLength = _xDim * _yDim;
 	const uint32_t _walkableGridSize = _xyLength / 32; // Size in 32bit unit
+	
+	const uint32_t _walkableGridSize4x4 = _walkableGridSize / 16;
+	const uint32_t _xDim_4x4 = _xDim / 4;
+	const uint32_t _yDim_4x4 = _yDim / 4;
 	
 	bool _isInitialized = false;
 
@@ -182,11 +227,8 @@ private:
 	uint32_t* _isWalkableGrid;
 
 	static uint32_t* _isRoadGrid;
-	
 
-	//int _target;
-	//int _nodesExpanded;
-	//int _nodesVisited;
+	static uint32_t* _isWaterGrid;
 	
 
 	static PunBinaryHeap _openList;

@@ -49,6 +49,9 @@ public:
 	static int TilesPerWorldY;
 	static int TilesPerWorld;
 
+	static int Tiles2x2PerWorldX;
+	static int Tiles2x2PerWorldY;
+
 	static int Tiles4x4PerWorldX;
 	static int Tiles4x4PerWorldY;
 

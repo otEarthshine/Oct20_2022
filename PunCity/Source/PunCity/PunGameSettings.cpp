@@ -32,6 +32,7 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "DropLines", 0},
 
 	{ "BuildingGrid", 0 },
+	{ "ShippingGrid", 0 },
 	{ "BuildingId", 0 },
 	{ "FloodId", 0},
 	{ "FloodIdHuman", 0},

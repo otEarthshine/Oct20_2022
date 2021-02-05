@@ -520,7 +520,7 @@ public:
 
 	virtual void ChangeRelationshipModifier(int32 aiPlayerId, int32 towardPlayerId, RelationshipModifierEnum modifierEnum, int32 amount) = 0;
 
-	virtual WorldAtom2 homeAtom(int32 playerId) = 0;
+	virtual WorldAtom2 homeAtom(int32 townId) = 0;
 
 	//! Snow
 

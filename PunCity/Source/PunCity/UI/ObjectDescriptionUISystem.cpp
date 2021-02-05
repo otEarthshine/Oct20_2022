@@ -3281,7 +3281,14 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 			//if (simulation().IsResearched(playerId(), TechEnum::ClaimLandByFood))
 			{
 				int32 foodNeeded = provincePrice / FoodCost;
-				bool canClaim = sim.foodCount(playerId()) >= foodNeeded;
+
+				int32 foodCount = 0;
+				const auto& townIds = sim.GetTownIds(playerId());
+				for (int32 townId : townIds) {
+					foodCount += sim.foodCount(townId);
+				}
+				
+				bool canClaim = foodCount >= foodNeeded;
 
 				TArray<FText> args;
 				AppendClaimConnectionString(args, false, claimConnectionEnum);
@@ -3521,15 +3528,15 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 		if (bld.isEnum(CardEnum::Townhall))
 		{
 			TownHall& townhall = bld.subclass<TownHall>();
-			if (!townhall.isCapital() &&
-				townhall.townhallLvl >= simulation().GetTownLvl(bld.playerId())) 
-			{
-				simulation().AddPopupToFront(playerId(),
-					LOCTEXT("RequireHigherCapitalTownhallLvl", "Upgrade failed. Require higher Capital's Townhall Level"),
-					ExclusiveUIEnum::None, "PopupCannot"
-				);
-				return;
-			}
+			//if (!townhall.isCapital() &&
+			//	townhall.townhallLvl >= simulation().GetTownLvl(bld.playerId())) 
+			//{
+			//	simulation().AddPopupToFront(playerId(),
+			//		LOCTEXT("RequireHigherCapitalTownhallLvl", "Upgrade failed. Require higher Capital's Townhall Level"),
+			//		ExclusiveUIEnum::None, "PopupCannot"
+			//	);
+			//	return;
+			//}
 			
 			if (punWidgetCaller->callbackVar2 == 0) {
 				if (!townhall.HasEnoughUpgradeMoney()) {

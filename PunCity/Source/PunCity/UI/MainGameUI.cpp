@@ -2141,6 +2141,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 							FVector2D initialPosition = GetViewportPosition(cardButton->GetCachedGeometry());
 
 							auto command = make_shared<FUseCard>();
+							command->townId = bld.subclass<TownHall>().townId();
 							command->cardEnum = buildingEnum;
 							command->SetPosition(initialPosition);
 							networkInterface()->SendNetworkCommand(command);

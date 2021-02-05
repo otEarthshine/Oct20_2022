@@ -8,6 +8,8 @@ int GameMapConstants::TotalRegions = 0;
 int GameMapConstants::TilesPerWorldX = 0;
 int GameMapConstants::TilesPerWorldY = 0;
 int GameMapConstants::TilesPerWorld = 0;
+int GameMapConstants::Tiles2x2PerWorldX = 0;
+int GameMapConstants::Tiles2x2PerWorldY = 0;
 int GameMapConstants::Tiles4x4PerWorldX = 0;
 int GameMapConstants::Tiles4x4PerWorldY = 0;
 
@@ -36,6 +38,8 @@ void GameMapConstants::SetRegionsPerWorld(int regionPerWorldX, int regionPerWorl
 	TilesPerWorldY = RegionsPerWorldY * CoordinateConstants::TilesPerRegion;
 	TilesPerWorld = TilesPerWorldX * TilesPerWorldY;
 
+	Tiles2x2PerWorldX = TilesPerWorldX / 2;
+	Tiles2x2PerWorldY = TilesPerWorldY / 2;
 	Tiles4x4PerWorldX = TilesPerWorldX / 4;
 	Tiles4x4PerWorldY = TilesPerWorldY / 4;
 

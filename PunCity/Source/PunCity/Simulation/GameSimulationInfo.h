@@ -2627,8 +2627,8 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::CoffeeRoaster, LOCTEXT("Coffee Roaster", "Coffee Roaster"),		LOCTEXT("Coffee Roaster (Plural)", "Coffee Roasters"), WorldTile2(6, 6), ResourceEnum::RawCoffee, ResourceEnum::None, ResourceEnum::Coffee, 10, 2, { 150, 100, 0 }, LOCTEXT("Coffee Roaster Desc", "Roast Raw Coffee into Coffee.")),
 
 	// February 2
-	BldInfo(CardEnum::Colony, LOCTEXT("Colony", "Colony"), LOCTEXT("Colony (Plural)", "Colonies"), WorldTile2(12, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Colony Desc", "Build a new city.")),
-	BldInfo(CardEnum::PortColony, LOCTEXT("Port Colony", "Port Colony"), LOCTEXT("Port Colony (Plural)", "Port Colonies"), WorldTile2(12, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Port Colony Desc", "Build a new port city.")),
+	BldInfo(CardEnum::Colony, LOCTEXT("Colony", "Colony"), LOCTEXT("Colony (Plural)", "Colonies"), WorldTile2(12, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Colony Desc", "Build a new city with 10 citizens from your capital.")),
+	BldInfo(CardEnum::PortColony, LOCTEXT("Port Colony", "Port Colony"), LOCTEXT("Port Colony (Plural)", "Port Colonies"), WorldTile2(12, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Port Colony Desc", "Build a new port city with 10 citizens from your capital.")),
 	BldInfo(CardEnum::IntercityLogisticsHub, LOCTEXT("Intercity Logistics Hub", "Intercity Logistics Hub"), LOCTEXT("Intercity Logistics Hub (Plural)", "Intercity Logistics Hubs"), WorldTile2(4, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 1, { 0,0,0 }, LOCTEXT("Intercity Logistics Hub Desc", "Request resources from another city.")),
 	BldInfo(CardEnum::IntercityLogisticsPort, LOCTEXT("Intercity Logistics Port", "Intercity Logistics Port"), LOCTEXT("Intercity Logistics Port (Plural)", "Intercity Logistics Ports"), WorldTile2(4, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 1, { 0,0,0 }, LOCTEXT("Intercity Logistics Port Desc", "Request resources from another city.")),
 	
@@ -4372,6 +4372,7 @@ enum class PlacementInstructionEnum
 	ColonyNoGeoresource,
 	
 	ColonyNeedsEmptyProvinces,
+	ColonyNeedsPopulation,
 	ColonyNextToIntercityRoad,
 	ColonyClaimCost,
 	

@@ -23,6 +23,9 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* CloseButton1;
 	UPROPERTY(meta = (BindWidget)) UButton* CloseButton2;
 
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* AdultAvailableText;
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* ChildrenAvailableText;
+
 	int32 toTownId = -1;
 
 	void PunInit()
@@ -68,7 +71,18 @@ public:
 
 	void TickUI()
 	{
-		
+		if (IsVisible())
+		{
+			int32 fromTownId = simulation().FindTownIdFromName(playerId(), ImmigrantsFromTownDropdown->GetSelectedOption());
+			auto& townManager = simulation().townManager(fromTownId);
+			
+			AdultAvailableText->SetText(FText::Format(
+				INVTEXT("/{0}"), TEXT_NUM(townManager.adultPopulation())
+			));
+			ChildrenAvailableText->SetText(FText::Format(
+				INVTEXT("/{0}"), TEXT_NUM(townManager.childPopulation())
+			));
+		}
 	}
 	
 	//UFUNCTION() void OnDropDownChanged(FString sItem, ESelectInfo::Type seltype)
@@ -92,14 +106,14 @@ public:
 		if (sim.IsValidTown(toTownId))
 		{
 			FString fromTownName = ImmigrantsFromTownDropdown->GetSelectedOption();
-			int32 fromTownId = simulation().FindTownNameFromId(playerId(), fromTownName);
+			int32 fromTownId = simulation().FindTownIdFromName(playerId(), fromTownName);
 
 			auto command = make_shared<FGenericCommand>();
 			command->genericCommandType = FGenericCommand::Type::SendImmigrants;
 			command->intVar1 = static_cast<int>(fromTownId);
 			command->intVar2 = static_cast<int>(toTownId);
 			command->intVar3 = static_cast<int>(ImmigrantsTargetAmountAdults->amount);
-			command->intVar3 = static_cast<int>(ImmigrantsTargetAmountChildren->amount);
+			command->intVar4 = static_cast<int>(ImmigrantsTargetAmountChildren->amount);
 
 			networkInterface()->SendNetworkCommand(command);
 		}

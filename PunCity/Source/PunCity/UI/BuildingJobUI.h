@@ -122,7 +122,7 @@ public:
 		{
 			// Show items above warehouse
 			if (jobUIState == JobUIState::Storage &&
-				building.isEnum(CardEnum::Warehouse)) 
+				(building.isEnum(CardEnum::Warehouse) || building.isEnum(CardEnum::IntercityLogisticsHub)))
 			{
 				PunBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 				const std::vector<ResourceHolderInfo>& holderInfos = building.subclass<StorageYard>().holderInfos();

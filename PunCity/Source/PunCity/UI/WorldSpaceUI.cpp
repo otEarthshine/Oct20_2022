@@ -1234,10 +1234,13 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	}
 // Colony
 	else if (needInstruction(PlacementInstructionEnum::ColonyNeedsEmptyProvinces)) {
-		punBox->AddRichTextCenter(LOCTEXT("NeedEmptyProvinces_Instruct", "Must be placed on unowned provinces."));
+		punBox->AddRichTextCenter(LOCTEXT("NeedEmptyProvinces_Instruct", "<Red>Must be placed on unowned provinces.</>"));
+	}
+	else if (needInstruction(PlacementInstructionEnum::ColonyNeedsPopulation)) {
+		punBox->AddRichTextCenter(LOCTEXT("ColonyNeedsPopulation_Instruct", "<Red>Require population of at least 50 in the capital.</>"));
 	}
 	else if (needInstruction(PlacementInstructionEnum::ColonyNextToIntercityRoad)) {
-		punBox->AddRichTextCenter(LOCTEXT("MustBeNextToIntercityRoad_Instruct", "Must be placed next to intercity road connected to the Townhall."));
+		punBox->AddRichTextCenter(LOCTEXT("MustBeNextToIntercityRoad_Instruct", "<Red>Must be placed next to intercity road connected to our Townhall.</>"));
 	}
 	else if (needInstruction(PlacementInstructionEnum::ColonyClaimCost)) {
 		int32 claimCost = getInstruction(PlacementInstructionEnum::ColonyClaimCost).intVar1;

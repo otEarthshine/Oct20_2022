@@ -2042,6 +2042,9 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				tryAddProvinceId(tile);
 			};
 
+			
+			std::vector<WorldTile2> connectedRoadTiles;
+
 			auto tryPlaceRoad = [&](WorldTile2 tile, PlacementGridEnum redEnum, PlacementGridEnum greenEnum, PlacementGridEnum yellowEnum, Direction direction)
 			{
 				PlacementGridEnum gridEnum = redEnum;
@@ -2072,6 +2075,16 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 
 					if (simulation.tileOwnerPlayer(tile) != -1) {
 						SetInstruction(PlacementInstructionEnum::ColonyNeedsEmptyProvinces, true);
+					}
+
+					// Check hasConnectedIntercityRoad
+					for (int32 y = tile.y - 1; y <= tile.y + 1; y++) {
+						for (int32 x = tile.x - 1; x <= tile.x + 1; x++) {
+							WorldTile2 curTile(x, y);
+							if (simulation.IsRoadTile(curTile)) {
+								CppUtils::TryAdd(connectedRoadTiles, curTile);
+							}
+						}
 					}
 				}
 
@@ -2104,6 +2117,41 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			tryPlaceRoad(WorldTile2(_area.maxX + 1, _area.minY - 1), PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, _faceDirection);
 			tryPlaceRoad(WorldTile2(_area.maxX + 1, _area.maxY + 1), PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, _faceDirection);
 
+
+			// Colony is connected to intercity road
+			if (_buildingEnum != CardEnum::Townhall) 
+			{
+				// Colony needs more than 50 ppl in your capital
+				if (simulation.populationTown(playerId) < 50) {
+					SetInstruction(PlacementInstructionEnum::ColonyNeedsPopulation, true);
+					_forceCannotPlace = true;
+				}
+				
+				// Colony is connected to intercity road
+				if (!_forceCannotPlace)
+				{
+					std::vector<uint32_t> path;
+
+					_forceCannotPlace = true;
+					for (WorldTile2 roadTile : connectedRoadTiles)
+					{
+						const auto& townIds = simulation.GetTownIds(playerId);
+						for (int32 townIdTemp : townIds) {
+							WorldTile2 gateTile = simulation.GetTownhallGate(townIdTemp);
+							if (gateTile.isValid() &&
+								simulation.pathAI(true)->FindPathRoadOnly(roadTile.x, roadTile.y, gateTile.x, gateTile.y, path))
+							{
+								_forceCannotPlace = false;
+								break;
+							}
+						}
+					}
+					if (_forceCannotPlace) {
+						SetInstruction(PlacementInstructionEnum::ColonyNextToIntercityRoad, true);
+					}
+				}
+			}
+			
 
 			// Townhall
 			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
@@ -2280,6 +2328,11 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 
 	_canPlace = _placementGrid.IsDisplayCountZero(PlacementGridEnum::Red) && 
 				_placementGrid.IsDisplayCountZero(PlacementGridEnum::ArrowRed);
+
+	if (_forceCannotPlace) {
+		_forceCannotPlace = false;
+		_canPlace = false;
+	}
 
 	// If cannot place, check if this is caused by being outside territory.
 	if (!_canPlace) 

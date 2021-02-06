@@ -314,7 +314,11 @@ class IntercityLogisticsHub final : public Building
 {
 public:
 	void OnInit() override {
+		targetTownId = -1;
 		resourcePairs.resize(4, { ResourceEnum::None, 0 });
+
+		lastTargetTownId = -1;
+		lastResourcePairs.resize(4, { ResourceEnum::None, 0 });
 	}
 
 	bool needSetup() {
@@ -347,13 +351,14 @@ public:
 
 	void Serialize(FArchive& Ar) override {
 		Building::Serialize(Ar);
+		Ar << targetTownId;
 		SerializeVecObj(Ar, resourcePairs);
 	}
 
-	int32 targetTownId = -1;
+	int32 targetTownId;
 	std::vector<ResourcePair> resourcePairs;
 
 	// Display
-	int32 lastTargetTownId = -1;
+	int32 lastTargetTownId;
 	std::vector<ResourcePair> lastResourcePairs;
 };

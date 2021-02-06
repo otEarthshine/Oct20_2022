@@ -412,7 +412,7 @@ public:
 		if (townId >= _townManagers.size()) return false;
 		return townManager(townId).townHallId != -1;
 	}
-	int32 FindTownNameFromId(int32 playerId, FString townName)
+	int32 FindTownIdFromName(int32 playerId, FString townName)
 	{
 		const auto& townIds = GetTownIds(playerId);
 		for (int32 townId : townIds) {

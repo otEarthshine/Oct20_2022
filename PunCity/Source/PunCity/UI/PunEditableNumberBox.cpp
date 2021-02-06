@@ -19,7 +19,8 @@ void UPunEditableNumberBox::ClickArrow(bool isDown)
 
 	if (_callbackTarget) {
 		_callbackTarget->CallBack1(this, _callbackEnum);
-	} else {
+	}
+	else if (onEditNumber) {
 		onEditNumber(punId, uiIndex, amount, networkInterface());
 	}
 

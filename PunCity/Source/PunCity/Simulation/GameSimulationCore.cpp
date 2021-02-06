@@ -2748,7 +2748,7 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 		int32 fromTownId = command.intVar1;
 		int32 toTownId = command.intVar2;
 		int32 adultsTargetCount = command.intVar3;
-		int32 childrenTargetCount = command.intVar3;
+		int32 childrenTargetCount = command.intVar4;
 
 		WorldTile2 lastTownGate = GetTownhallGate(fromTownId);
 		WorldTile2 newTownGate = GetTownhallGate(toTownId);
@@ -2756,8 +2756,18 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 		std::vector<uint32_t> path;
 		bool succeed = pathAI(true)->FindPathRoadOnly(lastTownGate.x, lastTownGate.y, newTownGate.x, newTownGate.y, path);
 		if (!succeed) {
+			AddPopupToFront(command.playerId,
+				LOCTEXT("SendImmigrants_RequireConnection", "Require road connection between towns to send immigrants.")
+			);
 			return;
 		}
+
+		AddPopupToFront(command.playerId, FText::Format(
+			LOCTEXT("SendImmigrants_TargetPop", "Sent {0} adults and {1} children to {2}."),
+			TEXT_NUM(adultsTargetCount),
+			TEXT_NUM(childrenTargetCount),
+			GetTownhall(toTownId).townNameT())
+		);
 
 		auto replaceAndSendUnitToNewTown = [&](int32 unitId)
 		{

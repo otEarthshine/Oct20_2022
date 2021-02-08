@@ -1023,6 +1023,7 @@ enum class ResourceEnum : uint8
 	Money,
 	Food,
 	Luxury,
+	Fuel,
 };
 
 struct ResourceInfo
@@ -1231,6 +1232,12 @@ inline FText ResourceName_WithNone(ResourceEnum resourceEnum) {
 	if (resourceEnum == ResourceEnum::None) {
 		return NSLOCTEXT("GameSimulationInfo", "None", "None");
 	}
+	if (resourceEnum == ResourceEnum::Food) {
+		return NSLOCTEXT("GameSimulationInfo", "Food", "Food");
+	}
+	if (resourceEnum == ResourceEnum::Fuel) {
+		return NSLOCTEXT("GameSimulationInfo", "Fuel", "Fuel");
+	}
 	return ResourceInfos[static_cast<int>(resourceEnum)].GetName();
 }
 
@@ -1249,6 +1256,12 @@ inline ResourceEnum FindResourceEnumByName(std::wstring name)
 		if (ResourceNameW(resourceEnum) == name) {
 			return resourceEnum;
 		}
+	}
+	if (name == TEXT("Food")) {
+		return ResourceEnum::Food;
+	}
+	if (name == TEXT("Fuel")) {
+		return ResourceEnum::Fuel;
 	}
 	return ResourceEnum::None;
 }
@@ -3341,6 +3354,15 @@ static bool IsTownPlacement(CardEnum buildingEnum)
 	default: return false;
 	}
 }
+static bool IsColonyPlacement(CardEnum buildingEnum)
+{
+	switch (buildingEnum) {
+	case CardEnum::Colony:
+	case CardEnum::PortColony:
+		return true;
+	default: return false;
+	}
+}
 
 static bool IsRoad(CardEnum buildingEnum) {
 	switch (buildingEnum) {
@@ -4334,6 +4356,23 @@ static bool IsGatherPlacement(PlacementType placementType) {
 
 static const int32 IntercityRoadTileCost = 20;
 
+enum class PlacementGridEnum : uint8
+{
+	Green,
+	Red,
+	Gray,
+	ArrowGreen,
+	ArrowYellow,
+	ArrowRed,
+};
+
+struct PlacementGridInfo
+{
+	PlacementGridEnum gridEnum;
+	WorldTile2 location;
+	Direction direction = Direction::S;
+};
+
 // Drag can start by leftClick down/up on the same tile. This drag will end with another leftClickDown
 // Or leftClick down, mouse move to new tile. This drag ends on mouse release.
 enum class DragState
@@ -4956,6 +4995,7 @@ enum class UnitEnum : uint8
 	Infantry,
 	ProjectileArrow,
 
+	Horse,
 	SmallShip,
 };
 
@@ -5248,6 +5288,7 @@ static const UnitInfo UnitInfos[]
 	UnitInfo(UnitEnum::Infantry, LOCTEXT("Infantry", "Infantry"),	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
 	UnitInfo(UnitEnum::ProjectileArrow, LOCTEXT("ProjectileArrow", "ProjectileArrow"),	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
 
+	UnitInfo(UnitEnum::Horse, LOCTEXT("Horse", "Horse"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 	UnitInfo(UnitEnum::SmallShip, LOCTEXT("SmallShip", "SmallShip"),	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
 	//UnitInfo("Bear",	050,	500,	200,		010,	050,	5),
 };
@@ -5470,16 +5511,29 @@ static const std::string& GetUnitAnimationName(UnitAnimationEnum animationEnum) 
 	return UnitAnimationNames[static_cast<int>(animationEnum)];
 }
 
+struct UnitDisplayState
+{
+	UnitEnum unitEnum = UnitEnum::Alpaca;
+	UnitAnimationEnum animationEnum = UnitAnimationEnum::None;
+	int32 variationIndex = -1;
+
+	bool isValid() { return variationIndex != -1; }
+};
+
 enum class HumanVariationEnum : uint8
 {
 	AdultMale,
 	AdultFemale,
 	ChildMale,
 	ChildFemale,
+	Caravan,
 };
 
-static HumanVariationEnum GetHumanVariationEnum(bool isChild, bool isMale)
+static HumanVariationEnum GetHumanVariationEnum(bool isChild, bool isMale, UnitAnimationEnum animationEnum)
 {
+	if (animationEnum == UnitAnimationEnum::Caravan) {
+		return HumanVariationEnum::Caravan;
+	}
 	if (isChild) {
 		return isMale ? HumanVariationEnum::ChildMale : HumanVariationEnum::ChildFemale;
 	}
@@ -7388,6 +7442,11 @@ struct ProvinceConnection
 	int32 provinceId;
 	TerrainTileType tileType;
 	int32 connectedTiles;
+
+	bool isConnectedTileType() const {
+		return tileType == TerrainTileType::None ||
+				tileType == TerrainTileType::River;
+	}
 
 	ProvinceConnection() : provinceId(-1), tileType(TerrainTileType::None), connectedTiles(0) {}
 

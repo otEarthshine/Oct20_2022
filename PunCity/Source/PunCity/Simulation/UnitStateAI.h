@@ -192,6 +192,9 @@ public:
 		StoreGatheredAtWorkplace,
 		FillInputs,
 
+		IntercityHaulPickup,
+		IntercityHaulDropoff,
+
 		PickupFoodAnimal,
 		DropoffFoodAnimal,
 
@@ -293,6 +296,9 @@ public:
 			CASE(StoreGatheredAtWorkplace);
 			CASE(FillInputs);
 
+			CASE(IntercityHaulPickup);
+			CASE(IntercityHaulDropoff);
+
 			CASE(PickupFoodAnimal);
 			CASE(DropoffFoodAnimal);
 
@@ -343,7 +349,10 @@ public:
 	void Add_DropoffResource(ResourceHolderInfo info, int amount);		void DropoffResource();
 	void Add_DropInventoryAction();										void DropInventoryAction();
 	void Add_StoreGatheredAtWorkplace();								void StoreGatheredAtWorkplace();
-	void Add_FillInputs(int32 workplaceId);												void FillInputs();
+	void Add_FillInputs(int32 workplaceId);								void FillInputs();
+
+	void Add_IntercityHaulPickup(int32 workplaceId, int32 townId);		void IntercityHaulPickup();
+	void Add_IntercityHaulDropoff(int32 workplaceId);					void IntercityHaulDropoff();
 
 	void Add_PickupFoodAnimal();		void PickupFoodAnimal();
 	void Add_DropoffFoodAnimal();		void DropoffFoodAnimal();
@@ -433,6 +442,7 @@ public:
 
 	WorldTile2 unitTile() { return _unitData->atomLocation(_id).worldTile2(); }
 	WorldAtom2 unitAtom() { return _unitData->atomLocation(_id); }
+	
 
 	template<class T>
 	T& subclass(UnitEnum unitEnumIn) { 

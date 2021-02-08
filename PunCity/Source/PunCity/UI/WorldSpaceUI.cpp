@@ -1240,7 +1240,7 @@ void UWorldSpaceUI::TickPlacementInstructions()
 		punBox->AddRichTextCenter(LOCTEXT("ColonyNeedsPopulation_Instruct", "<Red>Require population of at least 50 in the capital.</>"));
 	}
 	else if (needInstruction(PlacementInstructionEnum::ColonyNextToIntercityRoad)) {
-		punBox->AddRichTextCenter(LOCTEXT("MustBeNextToIntercityRoad_Instruct", "<Red>Must be placed next to intercity road connected to our Townhall.</>"));
+		punBox->AddRichTextCenter(LOCTEXT("MustBeNextToIntercityRoad_Instruct", "<Red>Colony's Townhall must be connected to Capital's Townhall through Intercity Road.</>"));
 	}
 	else if (needInstruction(PlacementInstructionEnum::ColonyClaimCost)) {
 		int32 claimCost = getInstruction(PlacementInstructionEnum::ColonyClaimCost).intVar1;

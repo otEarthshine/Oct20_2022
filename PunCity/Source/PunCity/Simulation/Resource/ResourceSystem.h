@@ -768,6 +768,14 @@ public:
 	 * Get
 	 */
 
+	int32 foodCount() {
+		int count = 0;
+		for (ResourceEnum foodEnum : StaticData::FoodEnums) {
+			count += resourceCount(foodEnum);
+		}
+		return count;
+	}
+
 	int32 resourceCount(ResourceEnum resourceEnum) const
 	{
 		// At x5, 700 count, 0.35ms

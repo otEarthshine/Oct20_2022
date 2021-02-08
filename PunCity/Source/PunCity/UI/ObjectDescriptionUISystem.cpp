@@ -383,7 +383,7 @@ void UObjectDescriptionUISystem::LeftMouseDown()
 							}
 
 							FTransform transform;
-							int32 variationIndex = dataSource()->GetUnitTransformAndVariation(unitId, transform);
+							UnitDisplayState displayState = dataSource()->GetUnitTransformAndVariation(unit, transform);
 							transform.SetScale3D(FVector::OneVector);
 
 
@@ -398,7 +398,7 @@ void UObjectDescriptionUISystem::LeftMouseDown()
 							}
 							else
 							{
-								if (TryMouseCollision(assetLoader()->unitMesh(unit.unitEnum(), variationIndex), transform, shortestHit)) {
+								if (TryMouseCollision(assetLoader()->unitMesh(displayState.unitEnum, displayState.variationIndex), transform, shortestHit)) {
 									uiState.objectType = ObjectTypeEnum::Unit;
 									uiState.objectId = unitId;
 								}
@@ -931,8 +931,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						
 						int32 lvl = townhall.townhallLvl;
 
-						FString nameTrimmed = TrimStringF_Dots(simulation.playerNameF(townPlayerId), 12);
-						descriptionBox->AddRichText(LOCTEXT("Player", "Player"), FText::FromString(nameTrimmed));
+						FString playerNameTrimmed = TrimStringF_Dots(simulation.playerNameF(townPlayerId), 12);
+						descriptionBox->AddRichText(LOCTEXT("Player", "Player"), FText::FromString(playerNameTrimmed));
 
 #if WITH_EDITOR
 						descriptionBox->AddRichText(TEXT_TAG("<Yellow>", INVTEXT("PlayerId")), FText::AsNumber(townPlayerId));
@@ -1421,10 +1421,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						// - after opened, we keep value in lastTargetAmountSet
 						if (_justOpenedDescriptionUI) {
 							hub.lastTargetTownId = hub.targetTownId;
-							hub.lastResourcePairs = hub.resourcePairs;
+							hub.lastResourceEnums = hub.resourceEnums;
+							hub.lastResourceCounts = hub.resourceCounts;
 						}
 						int32 targetTownId = hub.lastTargetTownId;
-						vector<ResourcePair> pairs = hub.lastResourcePairs;
+						vector<ResourceEnum> resourceEnums = hub.lastResourceEnums;
+						vector<int32> resourceCounts = hub.lastResourceCounts;
 
 						// Target Town Dropdown
 						{
@@ -1447,7 +1449,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 									command->intVar2 = dataSource->simulation().FindTownIdFromName(networkInterface->playerId(), sItem);
 									networkInterface->SendNetworkCommand(command);
 								},
-								pairs.size() // Last Index
+								resourceEnums.size() // Last Index
 							);
 						}
 						
@@ -1456,18 +1458,20 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						{
 							TArray<FText> options;
 							options.Add(LOCTEXT("None", "None"));
+							options.Add(LOCTEXT("Food", "Food"));
+							//options.Add(LOCTEXT("Fuel", "Fuel"));
 							for (ResourceInfo info : SortedNameResourceInfo) {
 								options.Add(info.GetName());
 							}
 
 							auto addDropDown = [&](int32 index)
 							{
-								ResourcePair pair = pairs[index];
+								ResourceEnum resourceEnum = resourceEnums[index];
 
 								descriptionBox->AddDropdown(
 									building.buildingId(),
 									options,
-									ResourceName_WithNone(pair.resourceEnum),
+									ResourceName_WithNone(resourceEnum),
 									[](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex)
 									{
 										std::wstring resourceName = ToWString(sItem);
@@ -1481,12 +1485,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 									index
 								);
 
-								int32 numberBoxStartIndex = pairs.size();
+								int32 numberBoxStartIndex = resourceEnums.size();
 
 								descriptionBox->AddEditableNumberBox(
 									building.buildingId(),
 									index + numberBoxStartIndex, FText::Format(INVTEXT("{0}: "), LOCTEXT("Target", "Target")),
-									pair.count,
+									resourceCounts[index],
 									[numberBoxStartIndex](int32 objectId, int32 uiIndex, int32 amount, IGameNetworkInterface* networkInterface)
 									{
 										auto command = make_shared<FChangeWorkMode>();
@@ -1500,17 +1504,17 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 										if (sim.IsValidBuilding(objectId)) {
 											Building& bld = sim.building(objectId);
 											if (bld.isEnum(CardEnum::IntercityLogisticsHub)) {
-												bld.subclass<IntercityLogisticsHub>().lastResourcePairs[uiIndex - numberBoxStartIndex].count = amount;
+												bld.subclass<IntercityLogisticsHub>().lastResourceCounts[uiIndex - numberBoxStartIndex] = amount;
 											}
 										}
 									},
-									FText(), false, pair.resourceEnum
+									FText(), false, resourceEnums[index]
 								);
 
 								descriptionBox->AddSpacer(12);
 							};
 
-							for (int32 i = 0; i < pairs.size(); i++) {
+							for (int32 i = 0; i < resourceEnums.size(); i++) {
 								addDropDown(i);
 							}
 						}
@@ -2512,13 +2516,13 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				descriptionBox->AddRichText(args);
 			}
 
-			if (unit.playerId() != -1) {
-				const FText playerText = LOCTEXT("Player", "Player");
-				ADDTEXT_(INVTEXT("{0}: {1}"),
-					LOCTEXT("Player", "Player"), 
-					simulation.playerNameT(unit.playerId())
-				);
+			if (unit.townId() != -1) {
+				ADDTEXT_(INVTEXT("{0}: {1}"), LOCTEXT("Player", "Player"), simulation.playerNameT(unit.playerId()));
+				ADDTEXT_INV_("\n");
+				ADDTEXT_(LOCTEXT("UnitDescriptionUI_City", "City: {0}"), simulation.townNameT(unit.townId()));
+				
 				descriptionBox->AddRichText(args);
+				descriptionBox->AddSpacer(12);
 			}
 			
 #if WITH_EDITOR
@@ -2767,8 +2771,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			if (unit.unitEnum() != UnitEnum::Human)
 			{
 				FTransform transform;
-				int32 variationIndex = dataSource()->GetUnitTransformAndVariation(objectId, transform);
-				UStaticMesh* unitMesh = assetLoader->unitMesh(unit.unitEnum(), variationIndex);
+				UnitDisplayState displayState = dataSource()->GetUnitTransformAndVariation(unit, transform);
+				UStaticMesh* unitMesh = assetLoader->unitMesh(displayState.unitEnum, displayState.variationIndex);
 				SpawnMesh(unitMesh, unitMesh->GetMaterial(0), transform, false, 2);
 			}
 
@@ -3268,9 +3272,9 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 	int32 provincePlayerId = sim.provinceOwnerPlayer(provinceId);
 	
 	if (provincePlayerId == -1)
-	{
-		auto addClaimButtons = [&](ClaimConnectionEnum claimConnectionEnum)
-		{
+	{	
+		auto addClaimButtons = [&](ClaimConnectionEnum claimConnectionEnum, bool isTooFarForClaim)
+		{	
 			int32 provincePrice = sim.GetProvinceClaimPrice(provinceId, playerId(), claimConnectionEnum);
 			
 			if (simulation().GetBiomeProvince(provinceId) == BiomeEnum::Jungle) {
@@ -3283,6 +3287,8 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 				);
 			}
 
+			const FText tooFarText = LOCTEXT("TooFarFromTownhallText", "Too far from Townhall (exceeded 7 provinces)");
+
 			// Claim by influence
 			if (simulation().unlockedInfluence(playerId()))
 			{
@@ -3290,7 +3296,13 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 
 				TArray<FText> args;
 				AppendClaimConnectionString(args, false, claimConnectionEnum);
-				ADDTEXT_(INVTEXT("\n<img id=\"Influence\"/>{0}"), TextRed(FText::AsNumber(provincePrice), !canClaim));
+				if (isTooFarForClaim) {
+					ADDTEXT_TAG_("<Red>", tooFarText);
+					canClaim = false;
+				}
+				else {
+					ADDTEXT_(INVTEXT("\n<img id=\"Influence\"/>{0}"), TextRed(FText::AsNumber(provincePrice), !canClaim));
+				}
 
 				descriptionBox->AddSpacer();
 				descriptionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::ClaimLandInfluence, canClaim, false, provinceId);
@@ -3302,7 +3314,13 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 
 				TArray<FText> args;
 				AppendClaimConnectionString(args, false, claimConnectionEnum);
-				ADDTEXT_(INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(FText::AsNumber(provincePrice), !canClaim));
+				if (isTooFarForClaim) {
+					ADDTEXT_TAG_("<Red>", tooFarText);
+					canClaim = false;
+				}
+				else {
+					ADDTEXT_(INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(FText::AsNumber(provincePrice), !canClaim));
+				}
 
 				descriptionBox->AddSpacer();
 				descriptionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::ClaimLandMoney, canClaim, false, provinceId);
@@ -3323,7 +3341,13 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 
 				TArray<FText> args;
 				AppendClaimConnectionString(args, false, claimConnectionEnum);
-				ADDTEXT_(LOCTEXT("ClaimFood", "\n{0} food"), TextRed(FText::AsNumber(foodNeeded), !canClaim));
+				if (isTooFarForClaim) {
+					ADDTEXT_TAG_("<Red>", tooFarText);
+					canClaim = false;
+				}
+				else {
+					ADDTEXT_(LOCTEXT("ClaimFood", "\n{0} food"), TextRed(FText::AsNumber(foodNeeded), !canClaim));
+				}
 
 				descriptionBox->AddSpacer();
 				descriptionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::ClaimLandFood, canClaim, false, provinceId);
@@ -3333,8 +3357,10 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 		
 
 		ClaimConnectionEnum claimConnectionEnum = sim.GetProvinceClaimConnectionEnumPlayer(provinceId, playerId());
-		if (claimConnectionEnum != ClaimConnectionEnum::None) {
-			addClaimButtons(claimConnectionEnum);
+		if (claimConnectionEnum != ClaimConnectionEnum::None) 
+		{
+			bool isProvinceTooFarToClaim = sim.IsProvinceTooFarToClaim(provinceId, playerId());
+			addClaimButtons(claimConnectionEnum, isProvinceTooFarToClaim);
 		}
 		else if (sim.IsProvinceNextToPlayerIncludingNonFlatLand(provinceId, playerId()))
 		{

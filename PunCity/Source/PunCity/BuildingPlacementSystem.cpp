@@ -870,7 +870,9 @@ void ABuildingPlacementSystem::CancelPlacement()
 
 	//_buildingMeshes->Hide();
 
-	if (IsRoadPlacement(_placementType)) {
+	if (IsRoadPlacement(_placementType) ||
+		IsColonyPlacement(_buildingEnum))
+	{
 		// Ensure TileObj Refresh to hide trees
 		_gameInterface->simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Trees, _gameInterface->sampleRegionIds());
 	}
@@ -1851,50 +1853,62 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		if (_buildingEnum == CardEnum::Fisher ||
 			_buildingEnum == CardEnum::TradingPort)
 		{
-			auto extraInfoPair = DockPlacementExtraInfo(_buildingEnum);
-			int32 indexLandEnd = extraInfoPair.first;
-			int32 minWaterCount = extraInfoPair.second;
+			bool setDockInstruct = false;
+			std::vector<PlacementGridInfo> grids;
+			simulation.CheckPortArea(_area, _faceDirection, _buildingEnum, playerId, grids, setDockInstruct);
+
+			for (PlacementGridInfo& gridInfo : grids) {
+				_placementGrid.SpawnGrid(gridInfo.gridEnum, cameraAtom, gridInfo.location, gridInfo.direction);
+			}
 			
-			// Need to face water with overlapping at least 5 water tiles 
-			int32 waterCount = 0;
+			if (setDockInstruct) {
+				SetInstruction(PlacementInstructionEnum::Dock, true);
+			}
+			
+			//auto extraInfoPair = DockPlacementExtraInfo(_buildingEnum);
+			//int32 indexLandEnd = extraInfoPair.first;
+			//int32 minWaterCount = extraInfoPair.second;
+			//
+			//// Need to face water with overlapping at least 5 water tiles 
+			//int32 waterCount = 0;
 
-			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-				if (GameMap::IsInGrid(tile.x, tile.y) && simulation.IsTileBuildableForPlayer(tile, playerId))
-				{
-					int steps = GameMap::GetFacingStep(_faceDirection, _area, tile);
-					if (steps <= indexLandEnd) { // 0,1
-						bool isGreen = IsPlayerBuildable(tile);
-						_placementGrid.SpawnGrid(isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, tile);
-					}
-					else {
-						if (simulation.IsWater(tile)) {
-							waterCount++;
-						}
-					}
-				}
-			});
+			//_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+			//	if (GameMap::IsInGrid(tile.x, tile.y) && simulation.IsTileBuildableForPlayer(tile, playerId))
+			//	{
+			//		int steps = GameMap::GetFacingStep(_faceDirection, _area, tile);
+			//		if (steps <= indexLandEnd) { // 0,1
+			//			bool isGreen = IsPlayerBuildable(tile);
+			//			_placementGrid.SpawnGrid(isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, tile);
+			//		}
+			//		else {
+			//			if (simulation.IsWater(tile)) {
+			//				waterCount++;
+			//			}
+			//		}
+			//	}
+			//});
 
-			// When there isn't enough water tiles, make the part facing water red...
-			// Otherwise make it green on water, and gray on non-water
-			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-				int steps = GameMap::GetFacingStep(_faceDirection, _area, tile);
-				if (steps > indexLandEnd) {
-					if (waterCount < minWaterCount) {
-						_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
+			//// When there isn't enough water tiles, make the part facing water red...
+			//// Otherwise make it green on water, and gray on non-water
+			//_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+			//	int steps = GameMap::GetFacingStep(_faceDirection, _area, tile);
+			//	if (steps > indexLandEnd) {
+			//		if (waterCount < minWaterCount) {
+			//			_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
 
-						SetInstruction(PlacementInstructionEnum::Dock, true);
-					}
-					else {
-						if (simulation.tileHasBuilding(tile)) { // Maybe bridge
-							_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
-						}
-						else {
-							bool isGreen = simulation.IsWater(tile);
-							_placementGrid.SpawnGrid(isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Gray, cameraAtom, tile);
-						}
-					}
-				}
-			});
+			//			SetInstruction(PlacementInstructionEnum::Dock, true);
+			//		}
+			//		else {
+			//			if (simulation.tileHasBuilding(tile)) { // Maybe bridge
+			//				_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
+			//			}
+			//			else {
+			//				bool isGreen = simulation.IsWater(tile);
+			//				_placementGrid.SpawnGrid(isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Gray, cameraAtom, tile);
+			//			}
+			//		}
+			//	}
+			//});
 		}
 		// Mine grid
 		else if (IsMountainMine(_buildingEnum))
@@ -2029,6 +2043,8 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 					CppUtils::TryAdd(provinceIds, provinceId);
 				}
 			};
+
+			_area2 = _area;
 			
 			auto tryPlaceBuilding = [&](WorldTile2 tile)
 			{
@@ -2040,6 +2056,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				_placementGrid.SpawnGrid(isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, tile);
 				
 				tryAddProvinceId(tile);
+				_area2.EnsureTileInsideArea(tile);
 			};
 
 			
@@ -2091,6 +2108,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				_placementGrid.SpawnGrid(gridEnum, cameraAtom, tile, direction);
 
 				tryAddProvinceId(tile);
+				_area2.EnsureTileInsideArea(tile);
 			};
 
 			// Borders
@@ -2130,20 +2148,14 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				// Colony is connected to intercity road
 				if (!_forceCannotPlace)
 				{
-					std::vector<uint32_t> path;
+					std::vector<uint32> path;
 
 					_forceCannotPlace = true;
 					for (WorldTile2 roadTile : connectedRoadTiles)
 					{
-						const auto& townIds = simulation.GetTownIds(playerId);
-						for (int32 townIdTemp : townIds) {
-							WorldTile2 gateTile = simulation.GetTownhallGate(townIdTemp);
-							if (gateTile.isValid() &&
-								simulation.pathAI(true)->FindPathRoadOnly(roadTile.x, roadTile.y, gateTile.x, gateTile.y, path))
-							{
-								_forceCannotPlace = false;
-								break;
-							}
+						if (simulation.IsConnectedToTowns(roadTile, playerId, path)) {
+							_forceCannotPlace = false;
+							break;
 						}
 					}
 					if (_forceCannotPlace) {
@@ -2669,6 +2681,7 @@ void ABuildingPlacementSystem::NetworkTryPlaceBuilding(IGameNetworkInterface* ne
 			command->buildingEnum = buildingEnumInt();
 			command->buildingLevel = _buildingLvl;
 			command->area = _area;
+			command->area2 = _area2;
 			command->center = _mouseOnTile;
 			command->faceDirection = static_cast<uint8_t>(_faceDirection);
 			command->useBoughtCard = _useBoughtCard;

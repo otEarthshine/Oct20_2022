@@ -86,7 +86,7 @@ public:
 		//_testAnimatedMesh->SetSkeletalMesh(assetLoader->unitSkelMesh(UnitEnum::Human));
 	}
 
-	int32 GetUnitTransformAndVariation(int32 unitId, FTransform& transform);
+	UnitDisplayState GetUnitTransformAndVariation(UnitStateAI& unitAI, FTransform& transform);
 
 	void BeforeAdd() override {
 		LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayUnit);
@@ -180,6 +180,19 @@ public:
 		}
 	}
 
+	/*
+	 * Debug
+	 */
+	void RefreshSkelMeshes()
+	{
+		// Despawn all unused meshes
+		for (auto unitSkelMesh : _unitSkelMeshes) {
+			unitSkelMesh->SetVisibility(false);
+		}
+		_lastUnitKeyToSkelMeshIndex.Empty();
+		_unitKeyToSkelMeshIndex.Empty();
+	}
+
 protected:
 	void UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom, bool justSpawned, bool justCreated) override;
 
@@ -195,20 +208,24 @@ private:
 	 * Skel Mesh
 	 */
 
-	void AddSkelMesh(int32 unitId, UnitStateAI& unit, FTransform& transform) {
-		int32 variationIndex = GetUnitTransformAndVariation(unitId, transform);
-		AddSkelMesh(unitId, unit.unitEnum(), unit.animationEnum(), unit.isChild(), transform, variationIndex);
+	void AddSkelMesh(UnitStateAI& unit, FTransform& transform) {
+		UnitDisplayState displayState = GetUnitTransformAndVariation(unit, transform);
+
+		AddSkelMesh(unit.id(), displayState.unitEnum, displayState.animationEnum, unit.isChild(), transform, displayState.variationIndex, unit.birthTicks());
 	}
 	
-	void AddSkelMesh(int32 unitId, UnitEnum unitEnum, UnitAnimationEnum animationEnum, bool isChild, FTransform& transform, int32 variationIndex)
+	void AddSkelMesh(int32 unitId, UnitEnum unitEnum, UnitAnimationEnum animationEnum, bool isChild, FTransform& transform, int32 variationIndex, int32 birthTicks)
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitSkel);
+
+		// Key is needed just in case unitEnum changed
+		int64 unitKey = static_cast<int64>(unitId) + static_cast<int64>(unitEnum) * 1000000 + static_cast<int64>(birthTicks) * 1000000000;
 		
 		int32 index = -1;
 		// Use the existing unit already displayed
-		if (_lastUnitIdToSkelMeshIndex.Contains(unitId)) {
-			index = _lastUnitIdToSkelMeshIndex[unitId];
-			_lastUnitIdToSkelMeshIndex.Remove(unitId);
+		if (_lastUnitKeyToSkelMeshIndex.Contains(unitKey)) {
+			index = _lastUnitKeyToSkelMeshIndex[unitKey];
+			_lastUnitKeyToSkelMeshIndex.Remove(unitKey);
 		}
 		else 
 		{
@@ -251,10 +268,10 @@ private:
 			}
 
 			FSkeletonAsset asset = _assetLoader->unitSkelAsset(unitEnum, variationIndex);
-			_unitSkelMeshes[index]->SetSkeletalMesh(asset.skeletalMesh);
+			_unitSkelMeshes[index]->SetSkeletalMesh(asset.skeletalMesh, false);
 			
 		}
-		_unitIdToSkelMeshIndex.Add(unitId, index);
+		_unitKeyToSkelMeshIndex.Add(unitKey, index);
 
 		// Setup the mesh
 		USkeletalMeshComponent* skelMesh = _unitSkelMeshes[index];
@@ -303,11 +320,11 @@ private:
 	void SkelMeshAfterAdd()
 	{
 		// Despawn all unused meshes
-		for (auto it : _lastUnitIdToSkelMeshIndex) {
+		for (auto it : _lastUnitKeyToSkelMeshIndex) {
 			_unitSkelMeshes[it.Value]->SetVisibility(false);
 		}
-		_lastUnitIdToSkelMeshIndex = _unitIdToSkelMeshIndex;
-		_unitIdToSkelMeshIndex.Empty(); // _unitIdToSkelMeshIndex.Num());
+		_lastUnitKeyToSkelMeshIndex = _unitKeyToSkelMeshIndex;
+		_unitKeyToSkelMeshIndex.Empty(); // _unitIdToSkelMeshIndex.Num());
 	}
 
 	void UpdateResourceDisplay(int32 unitId, UnitStateAI& unit, FTransform& transform);
@@ -329,8 +346,8 @@ private:
 	UPROPERTY() TArray<USkeletalMeshComponent*> _unitSkelMeshes;
 	UPROPERTY() TArray<UStaticMeshComponent*> _unitWeaponMeshes;
 	std::vector<UnitSkelMeshState> _unitSkelState;
-	TMap<int32, int32> _unitIdToSkelMeshIndex;
-	TMap<int32, int32> _lastUnitIdToSkelMeshIndex;
+	TMap<int64, int32> _unitKeyToSkelMeshIndex;
+	TMap<int64, int32> _lastUnitKeyToSkelMeshIndex;
 
 
 	// Trailer special

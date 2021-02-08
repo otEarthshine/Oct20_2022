@@ -1893,7 +1893,9 @@ bool HumanStateAI::TryBulkHaul_Intercity()
 		return false;
 	}
 
+	Add_IntercityHaulDropoff(hub.buildingId());
 	Add_MoveToCaravan(startTile, UnitAnimationEnum::Caravan);
+	Add_IntercityHaulPickup(hub.buildingId(), hub.targetTownId);
 	Add_MoveToCaravan(targetTile, UnitAnimationEnum::Caravan);
 	Add_MoveTo(startTile);
 

@@ -1884,31 +1884,44 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 	else if (cardEnum == CardEnum::Fisher ||
 			cardEnum == CardEnum::TradingPort)
 	{
-		auto extraInfoPair = DockPlacementExtraInfo(cardEnum);
-		int32 indexLandEnd = extraInfoPair.first;
-		int32 minWaterCount = extraInfoPair.second;
-		
-		int32 waterCount = 0;
-		
-		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-			if (GameMap::IsInGrid(tile.x, tile.y) && IsTileBuildableForPlayer(tile, playerId))
-			{
-				int steps = GameMap::GetFacingStep(faceDirection, area, tile);
-				if (steps <= indexLandEnd) { // 0,1
-					if (!IsBuildableForPlayer(tile, playerId)) {
-						canPlace = false; // Entrance not buildable
-					}
-				}
-				else {
-					if (IsWater(tile)) {
-						waterCount++;
-					}
-				}
+		bool setDockInstruct = false;
+		std::vector<PlacementGridInfo> grids;
+		CheckPortArea(area, faceDirection, cardEnum, playerId, grids, setDockInstruct);
+
+		canPlace = true;
+		for (PlacementGridInfo& gridInfo : grids) {
+			if (gridInfo.gridEnum == PlacementGridEnum::Red) {
+				canPlace = false;
+				break;
 			}
-		});
-		if (waterCount < minWaterCount) {
-			canPlace = false; // Not enough mountain tiles
 		}
+		
+		//auto extraInfoPair = DockPlacementExtraInfo(cardEnum);
+		//int32 indexLandEnd = extraInfoPair.first;
+		//int32 minWaterCount = extraInfoPair.second;
+		//
+		//int32 waterCount = 0;
+		//
+		//area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+		//	if (GameMap::IsInGrid(tile.x, tile.y) && IsTileBuildableForPlayer(tile, playerId))
+		//	{
+		//		int steps = GameMap::GetFacingStep(faceDirection, area, tile);
+		//		if (steps <= indexLandEnd) { // 0,1
+		//			if (!IsBuildableForPlayer(tile, playerId)) {
+		//				canPlace = false; // Entrance not buildable
+		//			}
+		//		}
+		//		else {
+		//			if (IsWater(tile)) {
+		//				waterCount++;
+		//			}
+		//		}
+		//	}
+		//});
+		//if (waterCount < minWaterCount) {
+		//	canPlace = false; // Not enough mountain tiles
+		//}
+
 		
 	}
 	// Clay pit
@@ -2021,7 +2034,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 			if (cardEnum != CardEnum::Townhall)
 			{
 				std::vector<int32> provinceIds;
-				bool isInvalid = parameters.area.ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 tile)
+				bool isInvalid = parameters.area2.ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 tile)
 				{
 					int32 provinceId = GetProvinceIdClean(tile);
 					if (provinceId == -1) return true;
@@ -2374,26 +2387,27 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 				}
 			}
 
-			// Can delete road/critter building within territory
-			if (tileOwnerTown(tile) == parameters.playerId) 
+			// Can delete critter building within territory
+			int32 tileOwner = tileOwnerPlayer(tile);
+			if (tileOwner == parameters.playerId)
+			{
+				// Critter building demolition
+				DemolishCritterBuildingsIncludingFronts(tile, parameters.playerId);
+			}
+
+			// Can delete intercity road
+			if (tileOwner == parameters.playerId ||
+				tileOwner == -1)
 			{
 				// Delete road (non-construction)
-				if (_overlaySystem.IsRoad(tile)) 
+				if (_overlaySystem.IsRoad(tile))
 				{
 					RoadTile roadTile = _overlaySystem.GetRoad(tile);
 					_overlaySystem.RemoveRoad(tile);
-					//GameMap::RemoveFrontRoadTile(area.min());
 					PUN_CHECK(IsFrontBuildable(tile));
 
-					
 					AddDemolishDisplayInfo(tile, { roadTile.isDirt ? CardEnum::DirtRoad : CardEnum::StoneRoad, TileArea(tile, WorldTile2(1, 1)), Time::Ticks() });
-					
-					//_regionToDemolishDisplayInfos[tile.regionId()].push_back({CardEnum::DirtRoad, TileArea(tile, WorldTile2(1, 1)), Time::Ticks() });
-					//_regionToDemolishDisplayInfos[tile.regionId()].push_back({ CardEnum::StoneRoad, TileArea(tile, WorldTile2(1, 1)), Time::Ticks() });
 				}
-
-				// Critter building demolition
-				DemolishCritterBuildingsIncludingFronts(tile, parameters.playerId);
 			}
 		});
 
@@ -2744,11 +2758,16 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 	}
 
 	if (command.genericCommandType == FGenericCommand::Type::SendImmigrants)
-	{
+	{	
 		int32 fromTownId = command.intVar1;
 		int32 toTownId = command.intVar2;
-		int32 adultsTargetCount = command.intVar3;
-		int32 childrenTargetCount = command.intVar4;
+
+		auto& townManage = townManager(fromTownId);
+		const auto& adultIds = townManage.adultIds();
+		const auto& childIds = townManage.childIds();
+		
+		int32 adultsTargetCount = std::min(command.intVar3, static_cast<int32>(adultIds.size()));
+		int32 childrenTargetCount = std::min(command.intVar4, static_cast<int32>(childIds.size()));
 
 		WorldTile2 lastTownGate = GetTownhallGate(fromTownId);
 		WorldTile2 newTownGate = GetTownhallGate(toTownId);
@@ -2780,16 +2799,11 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 			auto& newUnit = unitAI(newUnitId).subclass<HumanStateAI>(UnitEnum::Human);
 			newUnit.SendToTown(fromTownId, toTownId);
 		};
-
-		const auto& adultIds = townManager(fromTownId).adultIds();
-		const auto& childIds = townManager(fromTownId).childIds();
-		int32 adultsToSend = std::min(adultsTargetCount, static_cast<int32>(adultIds.size()));
-		int32 childrenToSend = std::min(childrenTargetCount, static_cast<int32>(childIds.size()));
 		
-		for (int32 i = 0; i < adultsToSend; i++) {
+		for (int32 i = 0; i < adultsTargetCount; i++) {
 			replaceAndSendUnitToNewTown(adultIds[i]);
 		}
-		for (int32 i = 0; i < childrenToSend; i++) {
+		for (int32 i = 0; i < childrenTargetCount; i++) {
 			replaceAndSendUnitToNewTown(childIds[i]);
 		}
 		
@@ -3045,12 +3059,12 @@ void GameSimulationCore::ChangeWorkMode(FChangeWorkMode command)
 		auto& hub = bld.subclass<IntercityLogisticsHub>(CardEnum::IntercityLogisticsHub);
 
 		// Dropdowns
-		if (command.intVar1 < hub.resourcePairs.size()) {
-			hub.resourcePairs[command.intVar1].resourceEnum = static_cast<ResourceEnum>(command.intVar2);
+		if (command.intVar1 < hub.resourceEnums.size()) {
+			hub.resourceEnums[command.intVar1] = static_cast<ResourceEnum>(command.intVar2);
 		}
 		// NumberBoxes
 		else {
-			hub.resourcePairs[command.intVar1].count = command.intVar2;
+			hub.resourceCounts[command.intVar1] = command.intVar2;
 		}
 	}
 	else {
@@ -4777,7 +4791,7 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 		WorldTile2 storageCenter3 = storageCenter1 - WorldTile2::RotateTileVector(InitialStorage2Shift, townhallFaceDirection);
 		
 		FPlaceBuilding params;
-		params.faceDirection = static_cast<uint8>(Direction::E);
+		params.faceDirection = static_cast<uint8>(RotateDirection(Direction::E, townhallFaceDirection)); // static_cast<uint8>(Direction::E);
 
 		auto makeBuilding = [&](CardEnum buildingEnum) -> Building*
 		{
@@ -4828,6 +4842,12 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 		}
 
 		// Building 3 ...
+		FChooseInitialResources initialResources = playerOwned.initialResources;
+		if (IsColonyPlacement(buildingEnum)) {
+			initialResources.medicineAmount /= 2;
+			initialResources.toolsAmount /= 4;
+		}
+		
 		if (buildingEnum == CardEnum::Townhall) {
 			params.center = storageCenter3;
 
@@ -4837,23 +4857,37 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 		else {
 			params.center = storageCenter3;
 
-			Building* hub = makeBuilding(CardEnum::IntercityLogisticsHub);
-			PUN_ENSURE(hub, return);
+			Building* bld = makeBuilding(CardEnum::IntercityLogisticsHub);
+			PUN_ENSURE(bld, return);
+
+			auto& hub = bld->subclass<IntercityLogisticsHub>();
+			hub.resourceEnums = {
+				ResourceEnum::Food,
+				ResourceEnum::Coal,
+				ResourceEnum::Medicine,
+				ResourceEnum::SteelTools,
+			};
+			hub.resourceCounts = {
+				initialResources.foodAmount,
+				initialResources.woodAmount,
+				initialResources.medicineAmount,
+				initialResources.toolsAmount,
+			};
 		}
 
 		// Add resources
 		if (terrainGenerator().GetBiome(params.center) == BiomeEnum::Jungle) {
-			AddResourceGlobal(command.playerId, ResourceEnum::Papaya, playerOwned.initialResources.foodAmount);
+			AddResourceGlobal(townId, ResourceEnum::Papaya, initialResources.foodAmount);
 		}
 		else {
-			AddResourceGlobal(command.playerId, ResourceEnum::Orange, playerOwned.initialResources.foodAmount);
+			AddResourceGlobal(townId, ResourceEnum::Orange, initialResources.foodAmount);
 		}
 
-		AddResourceGlobal(command.playerId, ResourceEnum::Wood, playerOwned.initialResources.woodAmount);
-		AddResourceGlobal(command.playerId, ResourceEnum::Stone, playerOwned.initialResources.stoneAmount);
+		AddResourceGlobal(townId, ResourceEnum::Wood, initialResources.woodAmount);
+		AddResourceGlobal(townId, ResourceEnum::Stone,initialResources.stoneAmount);
 
-		AddResourceGlobal(command.playerId, ResourceEnum::Medicine, playerOwned.initialResources.medicineAmount);
-		AddResourceGlobal(command.playerId, ResourceEnum::SteelTools, playerOwned.initialResources.toolsAmount);
+		AddResourceGlobal(townId, ResourceEnum::Medicine, initialResources.medicineAmount);
+		AddResourceGlobal(townId, ResourceEnum::SteelTools, initialResources.toolsAmount);
 	}
 
 	/*

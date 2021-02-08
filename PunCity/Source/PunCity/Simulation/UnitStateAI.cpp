@@ -14,6 +14,7 @@
 #include "StatSystem.h"
 
 #include "UnlockSystem.h"
+#include "Buildings/StorageYard.h"
 
 
 DECLARE_CYCLE_STAT(TEXT("PUN: Unit.FoodAgeAI [3]"), STAT_PunUnitFoodAgeAI, STATGROUP_Game);
@@ -1897,6 +1898,11 @@ void UnitStateAI::MoveRandomly()
 		area.EnforceWorldLimit();
 	}
 
+	auto isValidEndTile = [&](WorldTile2 end) {
+		return _simulation->IsConnected(tile, end, 1, IsIntelligentUnit(unitEnum())) &&
+			_simulation->tileOwnerTown(end) == _townId;
+	};
+
 	const int tries = 10;
 	WorldTile2 end = WorldTile2::Invalid;
 	bool canWalk = false;
@@ -1905,7 +1911,7 @@ void UnitStateAI::MoveRandomly()
 		DEBUG_ISCONNECTED_VAR(MoveRandomly);
 		
 		end = area.RandomTile();
-		if (_simulation->IsConnected(tile, end, 1, IsIntelligentUnit(unitEnum()))) { // MoveRandomly is not critical, so give it just 1 flood range to make it less likely to overload PathAI
+		if (isValidEndTile(end)) { // MoveRandomly is not critical, so give it just 1 flood range to make it less likely to overload PathAI
 			AddDebugSpeech("(-)MoveRandomly: Found on first loop" + tile.ToString() + end.ToString());
 			canWalk = true;
 			break;
@@ -1921,7 +1927,7 @@ void UnitStateAI::MoveRandomly()
 					DEBUG_ISCONNECTED_VAR(JustBruteIt);
 					
 					end = WorldTile2(x, y);
-					if (_simulation->IsConnected(tile, end, 1, IsIntelligentUnit(unitEnum()))) {
+					if (isValidEndTile(end)) {
 						AddDebugSpeech("(-)MoveRandomly: Can't find walkable spot in 10 tiles" + tile.ToString() + end.ToString());
 						canWalk = true;
 						return;
@@ -2223,7 +2229,7 @@ void UnitStateAI::MoveToward()
 }
 
 void UnitStateAI::Add_MoveToCaravan(WorldTile2 end, UnitAnimationEnum animationEnum) {
-	_actions.push_back(Action(ActionEnum::MoveToward, end.x, end.y, static_cast<int32>(animationEnum)));
+	_actions.push_back(Action(ActionEnum::MoveToCaravan, end.x, end.y, static_cast<int32>(animationEnum)));
 }
 bool UnitStateAI::MoveToCaravan()
 {
@@ -2515,6 +2521,82 @@ void UnitStateAI::FillInputs()
 	NextAction(UnitUpdateCallerEnum::FillInputs_Done);
 	AddDebugSpeech("(Done)FillInputs:" + ReservationsToString());
 }
+
+void UnitStateAI::Add_IntercityHaulPickup(int32 workplaceId, int32 townId) {
+	AddAction(ActionEnum::IntercityHaulPickup, workplaceId, townId);
+}
+void UnitStateAI::IntercityHaulPickup()
+{
+	int32 workplaceId = action().int32val1;
+	int32 townId = action().int32val2;
+
+	AddDebugSpeech("IntercityHaulPickup");
+
+	Building& workplace = _simulation->building(workplaceId);
+	if (!workplace.isEnum(CardEnum::IntercityLogisticsHub)) {
+		_simulation->ResetUnitActions(_id);
+		return;
+	}
+
+	IntercityLogisticsHub& hub = workplace.subclass<IntercityLogisticsHub>();
+	auto& hubResourceSys = hub.resourceSystem();
+	auto& resourceSys = _simulation->resourceSystem(townId);
+
+	_inventory.Clear();
+
+	const std::vector<ResourceEnum>& resourceEnums = hub.resourceEnums;
+	for (int32 i = 0; i < resourceEnums.size(); i++) 
+	{
+		ResourceEnum resourceEnum = resourceEnums[i];
+		int32 hubResourceCount;
+		int32 targetTownResourceCount;
+		if (resourceEnum == ResourceEnum::Food) {
+			hubResourceCount = hubResourceSys.foodCount();
+			targetTownResourceCount = resourceSys.foodCount();
+		}
+		else {
+			hubResourceCount = hubResourceSys.resourceCount(resourceEnum);
+			targetTownResourceCount = resourceSys.resourceCount(resourceEnum);
+		}
+		
+		int32 targetPickup = hub.resourceCounts[i] - hubResourceCount;
+		if (targetPickup > 0) {
+			int32 actualPickup = std::min(targetPickup, targetTownResourceCount);
+			resourceSys.RemoveResourceGlobal(resourceEnum, actualPickup);
+			_inventory.Add({ resourceEnum, actualPickup });
+		}
+	}
+	
+	_simulation->soundInterface()->Spawn3DSound("ResourceDropoffPickup", "Pickup", unitAtom());
+	NextAction(UnitUpdateCallerEnum::IntercityPickup);
+}
+void UnitStateAI::Add_IntercityHaulDropoff(int32 workplaceId) {
+	AddAction(ActionEnum::IntercityHaulDropoff, workplaceId);
+}
+void UnitStateAI::IntercityHaulDropoff()
+{
+	int32 workplaceId = action().int32val1;
+
+	AddDebugSpeech("IntercityHaulDropoff");
+
+	Building& workplace = _simulation->building(workplaceId);
+	if (!workplace.isEnum(CardEnum::IntercityLogisticsHub)) {
+		_simulation->ResetUnitActions(_id);
+		return;
+	}
+	
+	const auto& pairs = _inventory.resourcePairs();
+	for (const ResourcePair& pair : pairs) {
+		workplace.AddResource(pair.resourceEnum, pair.count);
+		PUN_CHECK2(_inventory.Has(pair.resourceEnum), debugStr());
+	}
+	_inventory.Clear();
+
+	_simulation->soundInterface()->Spawn3DSound("ResourceDropoffPickup", "Pickup", unitAtom());
+	NextAction(UnitUpdateCallerEnum::IntercityDropoff);
+}
+
+
 
 //! Work reservations
 void UnitStateAI::ReserveWork(int32 amount, int32 workplaceId)

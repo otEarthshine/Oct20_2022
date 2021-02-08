@@ -1986,7 +1986,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 		}
 		else if (IsRoad(buildingEnum)) {
 			inputSystemInterface()->StartRoadPlacement(buildingEnum == CardEnum::StoneRoad);
-			inputSystemInterface()->StartRoadPlacement(buildingEnum == CardEnum::StoneRoad);
+			//inputSystemInterface()->StartRoadPlacement(buildingEnum == CardEnum::StoneRoad);
 		}
 		else if (buildingEnum == CardEnum::Fence) {
 			inputSystemInterface()->StartFencePlacement();

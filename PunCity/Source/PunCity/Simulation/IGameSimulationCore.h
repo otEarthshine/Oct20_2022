@@ -158,6 +158,8 @@ public:
 	virtual FText GetTownSizeNameT(int32 playerId) = 0;
 	virtual int32 GetTownAgeTicks(int32 townId) = 0;
 
+	virtual bool IsConnectedToTowns(WorldTile2 tile, int32 playerId, std::vector<uint32>& path) = 0;
+
 	bool unlockedInfluence(int32 playerId) {
 		return IsResearched(playerId, TechEnum::InfluencePoints);
 	}
@@ -287,6 +289,8 @@ public:
 	virtual bool HasBuilding(int32 tileId) = 0;
 	
 	virtual bool IsBuildable(WorldTile2 tile) = 0;
+
+	virtual bool IsPlayerBuildable(WorldTile2 tile, int32 playerId) = 0;
 	virtual bool IsBuildableForPlayer(WorldTile2 tile, int32 playerId) = 0;
 
 	virtual bool IsCritterBuildingIncludeFronts(WorldTile2 tile) = 0;
@@ -453,7 +457,7 @@ public:
 	virtual int32 resourceCountTown(int32 townId, ResourceEnum resourceEnum) = 0;
 	virtual int32 resourceCountPlayer(int32 playerId, ResourceEnum resourceEnum) = 0;
 
-	virtual void AddResourceGlobal(int32 playerId, ResourceEnum resourceEnum, int32 amount) = 0;
+	virtual void AddResourceGlobal(int32 townId, ResourceEnum resourceEnum, int32 amount) = 0;
 
 	virtual bool IsOutputTargetReached(int32 townId, ResourceEnum resourceEnum) = 0;
 	

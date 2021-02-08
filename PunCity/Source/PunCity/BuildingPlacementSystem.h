@@ -52,16 +52,6 @@ private:
 	UInstancedStaticMeshComponent* _placementMesh = nullptr;
 };
 
-enum class PlacementGridEnum : uint8
-{
-	Green,
-	Red,
-	Gray,
-	ArrowGreen,
-	ArrowYellow,
-	ArrowRed,
-};
-
 class PlacementGrids
 {
 public:
@@ -140,6 +130,7 @@ public:
 	PlacementInfo GetPlacementInfo();
 
 	PlacementType placementState() { return _placementType; }
+	CardEnum placementBuildingEnum() { return _buildingEnum; }
 
 	//int32_t GetCardHandIndexBeingPlaced() {
 	//	// After building is placed, info needs to travel in network before coming back to update cardIndexInUse
@@ -214,7 +205,7 @@ private:
 	
 
 	bool IsPlayerBuildable(WorldTile2 tile) {
-		if (!_gameInterface->IsPlayerBuildable(tile)) {
+		if (!_gameInterface->simulation().IsPlayerBuildable(tile, _gameInterface->playerId())) {
 			return false;
 		}
 		if (justPlacedBuilding() && _delayFillerArea.HasTile(tile)) {

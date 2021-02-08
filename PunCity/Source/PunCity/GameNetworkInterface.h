@@ -73,6 +73,7 @@ public:
 	virtual bool IsHoveredOnScrollUI() = 0;
 
 	virtual PlacementType placementType() = 0;
+	virtual CardEnum placementBuildingEnum() = 0;
 	virtual void OnCancelPlacement() = 0;
 
 	//virtual void SetMainGameUIActive(bool active) = 0;

@@ -39,7 +39,7 @@ public:
 	virtual AutosaveEnum autosaveEnum() = 0;
 	
 	
-	virtual bool IsPlayerBuildable(WorldTile2 tile) const = 0;
+	//virtual bool IsPlayerBuildable(WorldTile2 tile) const = 0;
 	virtual bool IsPlayerFrontBuildable(WorldTile2 tile) const = 0;
 	virtual bool IsPlayerRoadBuildable(WorldTile2 tile) const = 0;
 

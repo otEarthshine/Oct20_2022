@@ -125,7 +125,7 @@ void Forester::FinishConstruction()
 
 	_upgrades = {
 		MakeProductionUpgrade(LOCTEXT("Timber Management", "Timber Management"), ResourceEnum::Stone, 50, 30),
-		MakeProductionUpgrade(LOCTEXT("Tree-felling Technique", "Tree-felling Technique"), ResourceEnum::Stone, 80, 50),
+		MakeProductionUpgrade(LOCTEXT("Tree-cutting Techniques", "Tree-cutting Techniques"), ResourceEnum::Stone, 80, 50),
 		MakeComboUpgrade(LOCTEXT("Forest Town", "Forest Town"), ResourceEnum::Wood, 50, 20),
 	};
 }

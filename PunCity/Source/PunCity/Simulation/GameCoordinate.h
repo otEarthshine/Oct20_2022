@@ -905,6 +905,13 @@ struct TileArea
 		maxX += tiles;
 		maxY += tiles;
 	}
+	void EnsureTileInsideArea(WorldTile2 tile)
+	{
+		if (tile.x < minX) { minX = tile.x; }
+		if (tile.y < minY) { minY = tile.y; }
+		if (tile.x > maxX) { maxX = tile.x; }
+		if (tile.y > maxY) { maxY = tile.y; }
+	}
 
 	static TileArea CombineAreas(const TileArea& a, const TileArea& b)
 	{

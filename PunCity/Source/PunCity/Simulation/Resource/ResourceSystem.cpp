@@ -206,7 +206,7 @@ void ResourceTypeHolders::RemoveResourceGlobal(int32 amount, ResourceSystem& res
 {
 	PUN_LOG("RemoveResource: %d", amount);
 
-	for (int i = 0; i < _holders.size(); i++) 
+	for (int i = 0; i < _holders.size(); i++)
 	{
 		// Remove from storage/provider only
 		if (_holders[i].type == ResourceHolderType::Storage ||

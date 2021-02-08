@@ -582,6 +582,13 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadUnitSkel(UnitEnum::Penguin, "Penguin/", "Penguin", {
 		{ UnitAnimationEnum::Wait, "Penguin_Wait"},
 	});
+
+	
+	// Horse
+	LoadUnitSkel(UnitEnum::Horse, "Horse/", "HorseSmall", {
+		{ UnitAnimationEnum::Walk, "Anim_Horse_Trot_F_IP"},
+	});
+
 	
 	
 	LoadUnitWeapon(UnitAnimationEnum::Build, "Human/CitizenMale/CitizenMaleHammer");

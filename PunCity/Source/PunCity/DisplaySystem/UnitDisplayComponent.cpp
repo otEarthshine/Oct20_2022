@@ -17,12 +17,14 @@ struct UnitPoseInfo {
 
 using namespace std;
 
-int32 UUnitDisplayComponent::GetUnitTransformAndVariation(int32 unitId, FTransform& transform)
+UnitDisplayState UUnitDisplayComponent::GetUnitTransformAndVariation(UnitStateAI& unitAI, FTransform& transform)
 {
 	SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitTransform);
 	
 	LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayUnit);
-	
+
+	int32 unitId = unitAI.id();
+	UnitEnum unitEnum = unitAI.unitEnum();
 	WorldAtom2 cameraAtom = gameManager()->cameraAtom();
 
 	auto& sim = simulation();
@@ -41,7 +43,7 @@ int32 UUnitDisplayComponent::GetUnitTransformAndVariation(int32 unitId, FTransfo
 	if (_gameManager->zoomDistance() > WorldZoomTransition_UnitAnimate)
 	{
 		transform = FTransform(FRotator::ZeroRotator, displayLocation, FVector::OneVector);
-		return 0;
+		return UnitDisplayState();
 	}
 	
 
@@ -117,7 +119,7 @@ int32 UUnitDisplayComponent::GetUnitTransformAndVariation(int32 unitId, FTransfo
 	//if (IsAnimal(unit.unitEnum())) {
 		// Don't exceed the scale of 300 to prevent stuttering animation from inaccurate float
 
-	if (!IsUsingSkeletalMesh(unit.unitEnum())) {
+	if (!IsUsingSkeletalMesh(unitEnum)) {
 		float gameSpeed = sim.gameSpeedFloat();
 		scale = std::fmodf(lastAnimationTime + (unitSystem.isMoving(unitId) ? (GetWorld()->GetDeltaSeconds() * 2.0f * gameSpeed) : 0.0f), 2.0f);
 	}
@@ -132,18 +134,28 @@ int32 UUnitDisplayComponent::GetUnitTransformAndVariation(int32 unitId, FTransfo
 	transform.SetScale3D(FVector(scale, scale, scale)); // Need same scale x,y,z to make lighting work properly...
 	//}}
 
+	//! Display State
+	UnitAnimationEnum animationEnum = unit.animationEnum();
+	
 	// Human
-	if (unit.unitEnum() == UnitEnum::Human) {
-		return static_cast<int>(GetHumanVariationEnum(unit.isChild(), unit.isMale()));
-	}
-	if (IsUsingSkeletalMesh(unit.unitEnum())) {
-		return 0;
+	if (unitEnum == UnitEnum::Human) 
+	{	
+		// Special case: Horse for caravan
+		if (animationEnum == UnitAnimationEnum::Caravan) {
+			return  { UnitEnum::Horse, UnitAnimationEnum::Walk, 0 };
+		}
+		return  { unitEnum, animationEnum, static_cast<int>(GetHumanVariationEnum(unit.isChild(), unit.isMale(), unit.animationEnum())) };
 	}
 	
-	if (_assetLoader->unitMeshCount(unit.unitEnum()) >= 2) {
-		return unit.isChild() ? 1 : 0;
+	if (IsUsingSkeletalMesh(unitEnum)) {
+		return { unitEnum, animationEnum, 0 };
 	}
-	return 0;
+	
+	if (_assetLoader->unitMeshCount(unitEnum) >= 2) {
+		return { unitEnum, animationEnum, unit.isChild() ? 1 : 0 };
+	}
+	
+	return { unitEnum, animationEnum, 0 };
 }
 
 void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom, bool justSpawned, bool justCreated)
@@ -228,7 +240,7 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 #endif
 			{
 				FTransform transform;
-				AddSkelMesh(unitId, unit, transform);
+				AddSkelMesh(unit, transform);
 				UpdateResourceDisplay(unitId, unit, transform);
 				return;
 			}
@@ -244,7 +256,7 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 		 */
 
 		FTransform transform;
-		int32 variationIndex = 0;
+		UnitDisplayState displayState = { unitEnum, unit.animationEnum(), 0 };
 		
 		//PUN_LOG("UnitAddStart ticks:%d id:%d regionId:%d", TimeDisplay::Ticks(), unitId, regionId);
 
@@ -295,7 +307,7 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 		}
 		else
 		{
-			variationIndex = GetUnitTransformAndVariation(unitId, transform);
+			displayState = GetUnitTransformAndVariation(unit, transform);
 		}
 
 
@@ -303,7 +315,7 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 
 		{
 			SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitAddInst);
-			_unitMeshes->Add(GetMeshName(unitEnum, variationIndex), unitId, transform, 0, unitId);
+			_unitMeshes->Add(GetMeshName(displayState.unitEnum, displayState.variationIndex), unitId, transform, 0, unitId);
 		}
 		
 

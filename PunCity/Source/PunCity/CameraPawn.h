@@ -213,6 +213,11 @@ public:
 	void StartBuildingPlacement(CardEnum buildingEnum, int32_t buildingLvl, bool useBoughtCard, CardEnum useWildCard) final {
 		_networkInterface->ResetGameUI();
 		buildingPlacementSystem->StartBuildingPlacement(buildingEnum, buildingLvl, useBoughtCard, useWildCard);
+
+		// Ensure TileObj Refresh to hide trees
+		if (IsColonyPlacement(buildingEnum)) {
+			_gameInterface->simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Trees, _gameInterface->sampleRegionIds());
+		}
 	}
 	void StartHarvestPlacement(bool isRemoving, ResourceEnum resourceEnum) final {
 		_networkInterface->ResetGameUI();

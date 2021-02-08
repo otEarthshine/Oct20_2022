@@ -221,7 +221,7 @@ public:
 		}
 			
 		case HappinessModifierEnum::Tax: return _simulation->taxHappinessModifier(_townId);
-		case HappinessModifierEnum::Cannibalism: return _simulation->cannibalismHappinessModifier(_townId);
+		case HappinessModifierEnum::Cannibalism: return _simulation->cannibalismHappinessModifier(_playerId);
 		case HappinessModifierEnum::DeathStarve: return _simulation->citizenDeathHappinessModifier(_townId, SeasonStatEnum::DeathStarve);
 		case HappinessModifierEnum::DeathCold: return _simulation->citizenDeathHappinessModifier(_townId, SeasonStatEnum::DeathCold);
 		default:
@@ -296,7 +296,7 @@ public:
 		_townId = newTownId;
 		_playerId = _simulation->townPlayerId(newTownId);
 
-		Add_MoveToCaravan(newTownGate, UnitAnimationEnum::Walk);
+		Add_MoveToCaravan(newTownGate, UnitAnimationEnum::Caravan);
 		Add_MoveTo(lastTownGate);
 	}
 

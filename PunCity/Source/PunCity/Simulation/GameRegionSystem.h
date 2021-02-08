@@ -2,10 +2,7 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "GameCoordinate.h"
 #include "GameSimulationConstants.h"
-#include "../GameConstants.h"
 #include "IGameSimulationCore.h"
 #include "ProvinceSystem.h"
 
@@ -39,23 +36,24 @@ public:
 
 		provinceToTreeCountCache.resize(GameMapConstants::TotalRegions, -1);
 		
-		_territoryOwnerMap.resize(GameMapConstants::TotalRegions, -1);
+		_provinceOwnerMap.resize(GameMapConstants::TotalRegions, -1);
+		_provinceDistanceMap.resize(GameMapConstants::TotalRegions, -1);
 		
 		_boarBurrowsToProvince.resize(GameMapConstants::TotalRegions);
 		_provinceToAnimalIds.resize(GameMapConstants::TotalRegions);
 	}
 
-	std::vector<int32>& territoryOwnerMap() { return _territoryOwnerMap; }
+	std::vector<int32>& territoryOwnerMap() { return _provinceOwnerMap; }
 
 	void SetProvinceOwner(int32 provinceId, int32 playerId, bool lightMode = false)
 	{
 		// Also update last owned player
-		int32 lastPlayerId = _territoryOwnerMap[provinceId];
+		int32 lastPlayerId = _provinceOwnerMap[provinceId];
 		if (lastPlayerId != -1) {
 			_simulation->AddNeedDisplayUpdateId(DisplayGlobalEnum::Territory, lastPlayerId);
 		}
 		
-		_territoryOwnerMap[provinceId] = playerId;
+		_provinceOwnerMap[provinceId] = playerId;
 		//_isDirectControl[provinceId] = isDirectControl;
 
 		if (PunSettings::TrailerMode()) {
@@ -74,9 +72,13 @@ public:
 		}
 	}
 	
-	int32 provinceOwner(int32 provinceId) { return _territoryOwnerMap[provinceId]; }
-	//bool isDirectControl(int32 provinceId) { return _isDirectControl[provinceId]; }
-
+	int32 provinceOwner(int32 provinceId) { return _provinceOwnerMap[provinceId]; }
+	
+	int32 provinceDistance(int32 provinceId) { return _provinceDistanceMap[provinceId]; }
+	void SetProvinceDistance(int32 provinceId, int32 provinceDistance) {
+		_provinceDistanceMap[provinceId] = provinceDistance;
+	}
+	
 	//bool IsOwnedByPlayer(WorldRegion2 region, int32 playerId) {
 	//	return region.IsValid() && _territoryOwnerMap[region.regionId()] == playerId;
 	//}
@@ -137,7 +139,9 @@ public:
 	{
 		SerializeVecValue(Ar, provinceToTreeCountCache);
 		
-		SerializeVecValue(Ar, _territoryOwnerMap);
+		SerializeVecValue(Ar, _provinceOwnerMap);
+		SerializeVecValue(Ar, _provinceDistanceMap);
+		
 		SerializeVecVecValue(Ar, _boarBurrowsToProvince);
 		SerializeVecVecValue(Ar, _provinceToAnimalIds);
 		SerializeVecObj(Ar, _animalColonies);
@@ -154,7 +158,8 @@ public:
 private:
 	IGameSimulationCore* _simulation = nullptr;
 	
-	std::vector<int32> _territoryOwnerMap;
+	std::vector<int32> _provinceOwnerMap;
+	std::vector<int32> _provinceDistanceMap;
 	
 	std::vector<std::vector<int32>> _boarBurrowsToProvince;
 	std::vector<std::vector<int32>> _provinceToAnimalIds;

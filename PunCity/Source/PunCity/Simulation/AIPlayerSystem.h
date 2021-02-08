@@ -1108,8 +1108,11 @@ public:
 			{
 				if (connection.tileType == TerrainTileType::None &&
 					_simulation->IsProvinceValid(connection.provinceId) && 
-					_simulation->provinceOwnerTown(connection.provinceId) == -1)
+					_simulation->provinceOwnerTown(connection.provinceId) == -1
+					)
 				{
+					
+					
 					// best place to claim is the one with resource or flat land
 					int32 flatLandPoints = provinceSys.provinceFlatTileCount(connection.provinceId) / 2;
 					int32 treePoints = _simulation->GetTreeCount(connection.provinceId) * 2;

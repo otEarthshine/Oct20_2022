@@ -313,17 +313,29 @@ private:
 class IntercityLogisticsHub final : public Building
 {
 public:
-	void OnInit() override {
-		targetTownId = -1;
-		resourcePairs.resize(4, { ResourceEnum::None, 0 });
+	void FinishConstruction() override {
+		Building::FinishConstruction();
+		resourceEnums.resize(4, ResourceEnum::None);
+		resourceCounts.resize(4, 0);
 
+		lastResourceEnums.resize(4, ResourceEnum::None);
+		lastResourceCounts.resize(4, 0);
+
+		// Grab any existing town as townID
+		targetTownId = -1;
+		const auto& townIds = _simulation->GetTownIds(_playerId);
+		for (int32 townId : townIds) {
+			if (townId != _townId) {
+				targetTownId = townId;
+				break;
+			}
+		}
 		lastTargetTownId = -1;
-		lastResourcePairs.resize(4, { ResourceEnum::None, 0 });
 	}
 
 	bool needSetup() {
-		for (const ResourcePair& pair : resourcePairs) {
-			if (pair.resourceEnum != ResourceEnum::None) {
+		for (ResourceEnum resourceEnum : resourceEnums) {
+			if (resourceEnum != ResourceEnum::None) {
 				return false;
 			}
 		}
@@ -332,10 +344,6 @@ public:
 
 	bool RefreshHoverWarning() override
 	{
-		if (Building::RefreshHoverWarning()) {
-			return true;
-		}
-
 		if (targetTownId == -1) {
 			hoverWarning = HoverWarning::IntercityLogisticsNeedTargetTown;
 			return true;
@@ -345,20 +353,22 @@ public:
 			return true;
 		}
 
-		hoverWarning = HoverWarning::None;
-		return true;
+		return Building::RefreshHoverWarning();
 	}
 
 	void Serialize(FArchive& Ar) override {
 		Building::Serialize(Ar);
 		Ar << targetTownId;
-		SerializeVecObj(Ar, resourcePairs);
+		SerializeVecValue(Ar, resourceEnums);
+		SerializeVecValue(Ar, resourceCounts);
 	}
 
 	int32 targetTownId;
-	std::vector<ResourcePair> resourcePairs;
+	std::vector<ResourceEnum> resourceEnums;
+	std::vector<int32> resourceCounts;
 
 	// Display
 	int32 lastTargetTownId;
-	std::vector<ResourcePair> lastResourcePairs;
+	std::vector<ResourceEnum> lastResourceEnums;
+	std::vector<int32> lastResourceCounts;
 };

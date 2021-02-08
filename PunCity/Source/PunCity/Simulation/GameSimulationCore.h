@@ -245,8 +245,8 @@ public:
 		return true;
 	}
 
-	void AddResourceGlobal(int32 playerId, ResourceEnum resourceEnum, int32 amount) final {
-		resourceSystem(playerId).AddResourceGlobal(resourceEnum, amount, *this);
+	void AddResourceGlobal(int32 townId, ResourceEnum resourceEnum, int32 amount) final {
+		resourceSystem(townId).AddResourceGlobal(resourceEnum, amount, *this);
 	}
 
 	bool IsOutputTargetReached(int32 townId, ResourceEnum resourceEnum) final {
@@ -339,7 +339,7 @@ public:
 
 	
 
-	int foodCount(int32 townId) final {
+	int32 foodCount(int32 townId) final {
 		int count = 0;
 		for (ResourceEnum foodEnum : StaticData::FoodEnums) {
 			count += _resourceSystems[townId].resourceCount(foodEnum);
@@ -458,7 +458,20 @@ public:
 		return GetTownhall(townId).townAgeTicks();
 	}
 
-	
+	bool IsConnectedToTowns(WorldTile2 tile, int32 playerId, std::vector<uint32>& path) final
+	{
+		const auto& townIds = GetTownIds(playerId);
+		for (int32 townIdTemp : townIds) {
+			WorldTile2 gateTile = GetTownhallGate(townIdTemp);
+			if (gateTile.isValid() &&
+				pathAI(true)->FindPathRoadOnly(tile.x, tile.y, gateTile.x, gateTile.y, path))
+			{
+				return true;
+				break;
+			}
+		}
+		return false;
+	}
 
 
 	void AddImmigrants(int32 townId, int32 count, WorldTile2 tile) final {
@@ -611,8 +624,16 @@ public:
 	//bool IsStoneRoadTile(WorldTile2 tile) final {
 	//	return _overlaySystem->;
 	//}
-	
-	
+
+	bool IsPlayerBuildable(WorldTile2 tile, int32 playerId) final
+	{
+		if (!GameMap::IsInGrid(tile)) return false;
+		if (tileOwnerPlayer(tile) != playerId) return false;
+
+		return IsBuildable(tile) || IsCritterBuildingIncludeFronts(tile);
+	}
+
+	// TODO: merge with IsPlayerBuildable??
 	bool IsBuildableForPlayer(WorldTile2 tile, int32 playerId) final {
 		return IsBuildable(tile) &&
 			(playerId == -1 || playerId == tileOwnerPlayer(tile));
@@ -1318,10 +1339,7 @@ public:
 	{
 		return _provinceSystem.ExecuteAdjacentProvincesWithExitTrue(provinceId, [&](ProvinceConnection connection) 
 		{
-			bool isValidConnectionType = connection.tileType == TerrainTileType::None || 
-											connection.tileType == TerrainTileType::River;
-
-			return isValidConnectionType && 
+			return connection.isConnectedTileType() &&
 					provinceOwnerTown(connection.provinceId) == townId;
 		});
 	}
@@ -1343,9 +1361,25 @@ public:
 	//	return unlockSystem(playerId)->IsResearched(TechEnum::DeepWaterEmbark) &&
 	//		_provinceSystem.provinceIsCoastal(provinceId);
 	//}
+	bool IsProvinceTooFarToClaim(int32 provinceId, int32 playerId)
+	{
+		auto& regionSys = regionSystem();
+		const std::vector<ProvinceConnection>& connections = GetProvinceConnections(provinceId);
+		for (const ProvinceConnection& connection : connections) {
+			if (connection.isConnectedTileType() &&
+				provinceOwnerPlayer(connection.provinceId) == playerId &&
+				regionSys.provinceDistance(connection.provinceId) < 7)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
 	ClaimConnectionEnum GetProvinceClaimConnectionEnumPlayer(int32 provinceId, int32 playerId)
 	{
 		const auto& townIds = GetTownIds(playerId);
+		
 		for (int32 townId : townIds) {
 			if (IsProvinceNextToTown(provinceId, townId)) {
 				return ClaimConnectionEnum::Flat;
@@ -2561,6 +2595,55 @@ public:
 
 	void Cheat(FCheat command) final;
 
+	// NetworkCommand Helper
+	void CheckPortArea(TileArea area, Direction faceDirection, CardEnum buildingEnum, int32 playerId, std::vector<PlacementGridInfo>& grids, bool& setDockInstruction)
+	{
+		auto extraInfoPair = DockPlacementExtraInfo(buildingEnum);
+		int32 indexLandEnd = extraInfoPair.first;
+		int32 minWaterCount = extraInfoPair.second;
+
+		// Need to face water with overlapping at least 5 water tiles 
+		int32 waterCount = 0;
+
+		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+			if (GameMap::IsInGrid(tile.x, tile.y) && IsTileBuildableForPlayer(tile, playerId))
+			{
+				int steps = GameMap::GetFacingStep(faceDirection, area, tile);
+				if (steps <= indexLandEnd) { // 0,1
+					bool isGreen = IsPlayerBuildable(tile, playerId);
+					grids.push_back({ isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Red, tile });
+				}
+				else {
+					if (IsWater(tile)) {
+						waterCount++;
+					}
+				}
+			}
+		});
+
+		// When there isn't enough water tiles, make the part facing water red...
+		// Otherwise make it green on water, and gray on non-water
+		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+			int steps = GameMap::GetFacingStep(faceDirection, area, tile);
+			if (steps > indexLandEnd) {
+				if (waterCount < minWaterCount) {
+					grids.push_back({ PlacementGridEnum::Red, tile });
+
+					setDockInstruction = true;
+					//SetInstruction(PlacementInstructionEnum::Dock, true);
+				}
+				else {
+					if (tileHasBuilding(tile)) { // Maybe bridge
+						grids.push_back({ PlacementGridEnum::Red, tile });
+					}
+					else {
+						bool isGreen = IsWater(tile);
+						grids.push_back({ isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Gray, tile });
+					}
+				}
+			}
+		});
+	}
 
 private:
 	void PlaceInitialTownhallHelper(FPlaceBuilding command, int32 townhallId);

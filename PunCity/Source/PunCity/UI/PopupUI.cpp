@@ -77,6 +77,9 @@ void UPopupUI::Tick()
 		else if (shouldShowExclusive(ExclusiveUIEnum::GiftResourceUI)) {
 			shouldPopup = true;
 		}
+		else if (shouldShowExclusive(ExclusiveUIEnum::SendImmigrantsUI)) {
+			shouldPopup = true;
+		}
 	}
 	
 	if (!shouldPopup) {

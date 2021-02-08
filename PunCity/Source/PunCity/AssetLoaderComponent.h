@@ -59,7 +59,12 @@ struct FSkeletonAsset
 	UPROPERTY() USkeletalMesh* skeletalMesh = nullptr;
 	UPROPERTY() TMap<UnitAnimationEnum, UAnimSequence*> animationEnumToSequence;
 
+	// Static part is used when the meshes should be faraway (or if there is only staticMesh for this unit like ship)
+	//  Also for collider??
 	UPROPERTY() UStaticMesh* staticMesh = nullptr;
+
+	UPROPERTY() UStaticMesh* staticMesh2 = nullptr; // Auxiliary static mesh like wagon on donkey
+	FVector staticMesh2Shift = FVector::ZeroVector;
 };
 
 

@@ -247,7 +247,7 @@ public:
 	virtual class IUnitDataSource& unitDataSource() = 0;
 
 	virtual const class GameDisplayInfo& displayInfo() = 0;
-	virtual int32 GetUnitTransformAndVariation(int32 unitId, FTransform& transform) = 0;
+	virtual UnitDisplayState GetUnitTransformAndVariation(UnitStateAI& unit, FTransform& transform) = 0;
 
 	// For making mesh UI
 	virtual AActor* actorToAttach() = 0;

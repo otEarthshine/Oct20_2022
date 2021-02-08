@@ -411,11 +411,21 @@ void UnitSystem::Tick()
 						}
 					}
 
-					int32 workEfficiency100 = unitStateAI(id).subclass<HumanStateAI>().workEfficiency100(false);
-					if (workEfficiency100 < 50) {
-						workEfficiency100 = 50; // Min movespeed of 50%
+					UnitStateAI& stateAI = unitStateAI(id);
+					HumanStateAI& humanAI = stateAI.subclass<HumanStateAI>();
+
+					if (stateAI.animationEnum() == UnitAnimationEnum::Caravan) {
+						moveSpeed = moveSpeed * 3;
 					}
-					moveSpeed = moveSpeed * workEfficiency100 / 100;
+					else
+					{
+						// TODO: maybe putting this in UnitStateAI might help with less pointer cache miss?
+						int32 workEfficiency100 = humanAI.workEfficiency100(false);
+						if (workEfficiency100 < 50) {
+							workEfficiency100 = 50; // Min movespeed of 50%
+						}
+						moveSpeed = moveSpeed * workEfficiency100 / 100;
+					}
 				}
 
 				{

@@ -337,6 +337,8 @@ public:
 	}
 
 	PlacementType placementType() final { return cameraPawn->buildingPlacementSystem->placementState(); }
+	CardEnum placementBuildingEnum() final { return cameraPawn->buildingPlacementSystem->placementBuildingEnum(); }
+	
 	void OnCancelPlacement() final {
 #if !UI_ALL
 		return;
@@ -839,6 +841,12 @@ public:
 	}
 	UFUNCTION(Exec) void HideAllLargeTerrain() {
 		gameManager->terrainLargeDisplaySystem()->TestAllChunks();
+	}
+
+	UFUNCTION(Exec) void RefreshSkelMeshes()
+	{
+		UUnitDisplayComponent* unitDisplaySys = gameManager->unitDisplaySystem();
+		unitDisplaySys->RefreshSkelMeshes();
 	}
 
 	UFUNCTION(Exec) void PrintTerrainChunkData(int32 x, int32 y)

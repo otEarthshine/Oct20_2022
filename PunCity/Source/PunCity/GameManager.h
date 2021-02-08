@@ -130,6 +130,7 @@ public:
 
 	URegionDisplayComponent* regionDisplaySystem() { return _regionDisplaySystem;  }
 	UTerrainLargeDisplayComponent* terrainLargeDisplaySystem() { return _terrainLargeDisplaySystem; }
+	UUnitDisplayComponent* unitDisplaySystem() { return _unitDisplaySystem; }
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) USceneComponent* _root;
@@ -323,11 +324,11 @@ public:
 	
 	IUnitDataSource& unitDataSource() final { return _simulation->unitSystem(); }
 
-	int32 GetUnitTransformAndVariation(int32 unitId, FTransform& transform) final {
+	UnitDisplayState GetUnitTransformAndVariation(UnitStateAI& unit, FTransform& transform) final {
 #if !DISPLAY_UNIT
-		return 0;
+		return { unit.unitEnum(), unit.animationEnum(), 0};
 #endif
-		return _unitDisplaySystem->GetUnitTransformAndVariation(unitId, transform);
+		return _unitDisplaySystem->GetUnitTransformAndVariation(unit, transform);
 	}
 	
 
@@ -493,13 +494,13 @@ public:
 	
 
 	// TODO: IsPlayerBuildable, IsPlayerFrontBuildable are relics that should go to simCore
-	bool IsPlayerBuildable(WorldTile2 tile) const final
-	{
-		if (!GameMap::IsInGrid(tile)) return false;
-		if (_simulation->tileOwnerPlayer(tile) != _playerId) return false;
-		
-		return _simulation->IsBuildable(tile) || _simulation->IsCritterBuildingIncludeFronts(tile);
-	}
+	//bool IsPlayerBuildable(WorldTile2 tile) const final
+	//{
+	//	if (!GameMap::IsInGrid(tile)) return false;
+	//	if (_simulation->tileOwnerPlayer(tile) != _playerId) return false;
+	//	
+	//	return _simulation->IsBuildable(tile) || _simulation->IsCritterBuildingIncludeFronts(tile);
+	//}
 
 	bool IsPlayerFrontBuildable(WorldTile2 tile) const final
 	{
@@ -666,7 +667,15 @@ public:
 	}
 
 	bool isHidingTree() final {
-		return _isHidingTrees || IsRoadPlacement(networkInterface()->placementType());
+		if (_isHidingTrees) {
+			return true;
+		}
+		PlacementType placementType = networkInterface()->placementType();
+		if (IsRoadPlacement(placementType)) {
+			return true;
+		}
+		return placementType == PlacementType::Building && 
+				IsColonyPlacement(networkInterface()->placementBuildingEnum());
 	}
 	void SetOverlayHideTree(bool isHiding) final {
 		_isHidingTrees = isHiding;

@@ -66,6 +66,9 @@ enum class UnitUpdateCallerEnum : uint8
 	Produce_Done,
 	Construct_Done,
 	FillInputs_Done,
+
+	IntercityPickup,
+	IntercityDropoff,
 };
 
 class IUnitDataSource

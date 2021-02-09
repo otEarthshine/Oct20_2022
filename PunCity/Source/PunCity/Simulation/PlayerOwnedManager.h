@@ -201,6 +201,7 @@ public:
 		CppUtils::Remove(_attackingProvinceIds, provinceId);
 	}
 
+	// provinceId and attackerPlayerId is needed because this maybe called before the attack started
 	ProvinceAttackEnum GetProvinceAttackEnum(int32 provinceId, int32 attackerPlayerId)
 	{
 		int32 provincePlayerId = _simulation->provinceOwnerPlayer(provinceId);
@@ -217,6 +218,15 @@ public:
 			}
 			return ProvinceAttackEnum::Vassalize;
 		}
+
+		// Town Conquer
+		int32 townId = _simulation->provinceOwnerTown(provinceId);
+		if (townId != -1 &&
+			_simulation->townManager(townId).provincesClaimed()[0] == provinceId) 
+		{
+			return ProvinceAttackEnum::ConquerColony;
+		}
+		
 		return ProvinceAttackEnum::ConquerProvince;
 	}
 	

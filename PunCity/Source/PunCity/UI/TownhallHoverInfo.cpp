@@ -101,15 +101,15 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 			// (Declare Independence)
 			if (townhallPlayerOwned.lordPlayerId() != -1)
 			{
-				SetText(VassalizeButtonRichText, LOCTEXT("Declare Independence", "Declare Independence"));
-				BUTTON_ON_CLICK(VassalizeButton, this, &UTownhallHoverInfo::OnClickDeclareIndependenceButton);
+				SetText(AttackButton1RichText, LOCTEXT("Declare Independence", "Declare Independence"));
+				BUTTON_ON_CLICK(AttackButton1, this, &UTownhallHoverInfo::OnClickDeclareIndependenceButton);
 
-				VassalizeButton->SetVisibility(ESlateVisibility::Visible);
+				AttackButton1->SetVisibility(ESlateVisibility::Visible);
 			}
 			else {
-				VassalizeButton->SetVisibility(ESlateVisibility::Collapsed);
+				AttackButton1->SetVisibility(ESlateVisibility::Collapsed);
 			}
-			LiberationButton->SetVisibility(ESlateVisibility::Collapsed);
+			AttackButton2->SetVisibility(ESlateVisibility::Collapsed);
 
 
 			// Buffs
@@ -163,37 +163,54 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 			DiplomacyButton->SetVisibility(ESlateVisibility::Visible);
 			BUTTON_ON_CLICK(DiplomacyButton, this, &UTownhallHoverInfo::OnClickDiplomacyButton);
 
-			// Not already a vassal?
-			if (!sim.playerOwned(playerId()).IsVassal(townhall.buildingId()))
+			if (townhall.isCapital())
 			{
-				// Vassalize
-				if (sim.CanVassalizeOtherPlayers(playerId()) &&
-					!townhallPlayerOwned.GetDefendingClaimProgress(townhall.provinceId()).isValid())
+				// Not already a vassal?
+				if (!sim.playerOwned(playerId()).IsVassal(townhall.buildingId()))
 				{
-					SetText(VassalizeButtonRichText, FText::Format(
-						LOCTEXT("VassalizeButtonRichText_Text", "Conquer (Vassalize)\n<img id=\"Influence\"/>{0}"),
-						TEXT_NUM(sim.GetProvinceVassalizeStartPrice(townhall.provinceId()))
-					));
-					BUTTON_ON_CLICK(VassalizeButton, this, &UTownhallHoverInfo::OnClickVassalizeButton);
-					VassalizeButton->SetVisibility(ESlateVisibility::Visible);
-
-					// Can also liberate if there is an existing conquerer
-					if (townhallPlayerOwned.lordPlayerId() != -1) {
-						SetText(LiberationButtonRichText, FText::Format(
-							LOCTEXT("LiberationButtonRichText_Text", "Liberation\n<img id=\"Influence\"/>{0}"),
-							TEXT_NUM(BattleInfluencePrice)
+					// Vassalize
+					if (sim.CanVassalizeOtherPlayers(playerId()) &&
+						!townhallPlayerOwned.GetDefendingClaimProgress(townhall.provinceId()).isValid())
+					{
+						// Vassalize (AttackButton1)
+						SetText(AttackButton1RichText, FText::Format(
+							LOCTEXT("VassalizeButtonRichText_Text", "Conquer (Vassalize)\n<img id=\"Influence\"/>{0}"),
+							TEXT_NUM(sim.GetProvinceVassalizeStartPrice(townhall.provinceId()))
 						));
-						LiberationButton->SetVisibility(ESlateVisibility::Visible);
-						BUTTON_ON_CLICK(LiberationButton, this, &UTownhallHoverInfo::OnClickLiberateButton);
+						BUTTON_ON_CLICK(AttackButton1, this, &UTownhallHoverInfo::OnClickVassalizeButton);
+						AttackButton1->SetVisibility(ESlateVisibility::Visible);
+
+						// Can also liberate if there is an existing conquerer
+						if (townhallPlayerOwned.lordPlayerId() != -1) {
+							SetText(AttackButton2RichText, FText::Format(
+								LOCTEXT("LiberationButtonRichText_Text", "Liberation\n<img id=\"Influence\"/>{0}"),
+								TEXT_NUM(BattleInfluencePrice)
+							));
+							AttackButton2->SetVisibility(ESlateVisibility::Visible);
+							BUTTON_ON_CLICK(AttackButton2, this, &UTownhallHoverInfo::OnClickLiberateButton);
+						}
+						else {
+							AttackButton2->SetVisibility(ESlateVisibility::Collapsed);
+						}
 					}
 					else {
-						LiberationButton->SetVisibility(ESlateVisibility::Collapsed);
+						AttackButton1->SetVisibility(ESlateVisibility::Collapsed);
+						AttackButton2->SetVisibility(ESlateVisibility::Collapsed);
 					}
 				}
-				else {
-					VassalizeButton->SetVisibility(ESlateVisibility::Collapsed);
-					LiberationButton->SetVisibility(ESlateVisibility::Collapsed);
-				}
+			}
+			// Not capital
+			else
+			{
+				// Vassalize (AttackButton1)
+				SetText(AttackButton1RichText, FText::Format(
+					LOCTEXT("ConquerColonyButtonRichText_Text", "Conquer (Annex)\n<img id=\"Influence\"/>{0}"),
+					TEXT_NUM(sim.GetProvinceConquerColonyStartPrice(townhall.provinceId()))
+				));
+				BUTTON_ON_CLICK(AttackButton1, this, &UTownhallHoverInfo::OnClickVassalizeButton);
+				AttackButton1->SetVisibility(ESlateVisibility::Visible);
+
+				AttackButton2->SetVisibility(ESlateVisibility::Collapsed);
 			}
 
 			// Buffs
@@ -207,8 +224,8 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 
 		TradeButton->SetVisibility(ESlateVisibility::Collapsed);
 
-		VassalizeButton->SetVisibility(ESlateVisibility::Collapsed);
-		LiberationButton->SetVisibility(ESlateVisibility::Collapsed);
+		AttackButton1->SetVisibility(ESlateVisibility::Collapsed);
+		AttackButton2->SetVisibility(ESlateVisibility::Collapsed);
 
 		BuffRow->SetVisibility(ESlateVisibility::Collapsed);
 	}

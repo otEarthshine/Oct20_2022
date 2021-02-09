@@ -172,7 +172,7 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		CASE_BUILDING(CardEnum::Colony, Building);
 		CASE_BUILDING(CardEnum::PortColony, Building);
 		CASE_BUILDING(CardEnum::IntercityLogisticsHub, IntercityLogisticsHub);
-		CASE_BUILDING(CardEnum::IntercityLogisticsPort, IntercityLogisticsHub);
+		CASE_BUILDING(CardEnum::IntercityLogisticsPort, IntercityLogisticsPort);
 
 		CASE_BUILDING(CardEnum::BoarBurrow, BoarBurrow);
 

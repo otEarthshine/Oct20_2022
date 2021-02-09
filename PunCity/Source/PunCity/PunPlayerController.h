@@ -776,6 +776,15 @@ public:
 		}
 	}
 
+	UFUNCTION(Exec) void WarpUnit(int32 unitId, int32 tileX, int32 tileY)
+	{
+		auto& sim = gameManager->simulation();
+		sim.ResetUnitActions(unitId);
+		
+		WorldTile2 tile(tileX, tileY);
+		sim.unitSystem().MoveUnitInstantly(unitId, tile.worldAtom2());
+	}
+
 	UFUNCTION(Exec) void PlaceBuilding(const FString& buildingName, int32 tileX, int32 tileY)
 	{
 		std::wstring name = ToWString(buildingName);

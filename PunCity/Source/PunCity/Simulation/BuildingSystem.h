@@ -118,6 +118,18 @@ public:
 		check(_townIdPlus1ToEnumToBuildingIds.size() == townId + 2);
 	}
 
+	// Change all _playerId in buildings
+	void ChangeTownOwningPlayer(int32 townId, int32 newPlayerId)
+	{
+		std::vector<std::vector<int32>>& enumToBuildingIds = _townIdPlus1ToEnumToBuildingIds[townId + 1];
+		for (std::vector<int32>& bldIds : enumToBuildingIds) {
+			for (int32 bldId : bldIds) {
+				building(bldId).ChangeTownOwningPlayer(newPlayerId);
+			}
+		}
+	}
+	
+
 	int32 GetHouseLvlCount(int32 playerId, int32 houseLvl, bool includeHigherLvl);
 	
 

@@ -193,10 +193,10 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* GiftButton;
 	UPROPERTY(meta = (BindWidget)) UButton* DiplomacyButton;
 	
-	UPROPERTY(meta = (BindWidget)) UButton* VassalizeButton;
-	UPROPERTY(meta = (BindWidget)) URichTextBlock* VassalizeButtonRichText;
-	UPROPERTY(meta = (BindWidget)) UButton* LiberationButton;
-	UPROPERTY(meta = (BindWidget)) URichTextBlock* LiberationButtonRichText;
+	UPROPERTY(meta = (BindWidget)) UButton* AttackButton1;
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* AttackButton1RichText;
+	UPROPERTY(meta = (BindWidget)) UButton* AttackButton2;
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* AttackButton2RichText;
 
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* BuffRow;
 	
@@ -292,6 +292,8 @@ private:
 
 		networkInterface()->SendNetworkCommand(command);
 	}
+	// Note: vassalize/independence/conquerColony are all CallbackEnum::StartAttackProvince for now
+	// later on, there will be
 	UFUNCTION() void OnClickVassalizeButton()
 	{
 		check(playerId() != GetTownhall().playerId());
@@ -305,6 +307,12 @@ private:
 	}
 	
 	UFUNCTION() void OnClickDeclareIndependenceButton()
+	{
+		check(playerId() == GetTownhall().playerId());
+		AttackDefenseHelper(CallbackEnum::StartAttackProvince);
+	}
+
+	UFUNCTION() void OnClickConquerColonyButton()
 	{
 		check(playerId() == GetTownhall().playerId());
 		AttackDefenseHelper(CallbackEnum::StartAttackProvince);

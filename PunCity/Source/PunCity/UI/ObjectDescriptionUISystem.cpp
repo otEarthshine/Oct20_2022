@@ -390,7 +390,7 @@ void UObjectDescriptionUISystem::LeftMouseDown()
 							if (unit.unitEnum() == UnitEnum::Human)
 							{
 								// VariationIndex 0 for human.. TODO: proper code here?
-								if (TryMouseCollision(assetLoader()->unitMesh(unit.unitEnum(), 0), transform, shortestHit)) {
+								if (TryMouseCollision(assetLoader()->unitAsset(unit.unitEnum(), 0).staticMesh, transform, shortestHit)) {
 									// Human uses USkeletonAsset, should just mark in sim for UnitDisplayComponent to adjust customDepth
 									uiState.objectType = ObjectTypeEnum::Unit;
 									uiState.objectId = unitId;
@@ -398,7 +398,7 @@ void UObjectDescriptionUISystem::LeftMouseDown()
 							}
 							else
 							{
-								if (TryMouseCollision(assetLoader()->unitMesh(displayState.unitEnum, displayState.variationIndex), transform, shortestHit)) {
+								if (TryMouseCollision(assetLoader()->unitAsset(displayState.unitEnum, displayState.variationIndex).staticMesh, transform, shortestHit)) {
 									uiState.objectType = ObjectTypeEnum::Unit;
 									uiState.objectId = unitId;
 								}
@@ -1428,9 +1428,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						vector<ResourceEnum> resourceEnums = hub.lastResourceEnums;
 						vector<int32> resourceCounts = hub.lastResourceCounts;
 
+						const FText noneText = LOCTEXT("None", "None");
+
 						// Target Town Dropdown
 						{
 							TArray<FText> options;
+							options.Add(noneText);
 							const auto& townIds = simulation.GetTownIds(playerId());
 							for (int32 townId : townIds) {
 								if (townId != building.townId()) {
@@ -1457,7 +1460,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						// Resource Dropdown/Target Amount
 						{
 							TArray<FText> options;
-							options.Add(LOCTEXT("None", "None"));
+							options.Add(noneText);
 							options.Add(LOCTEXT("Food", "Food"));
 							//options.Add(LOCTEXT("Fuel", "Fuel"));
 							for (ResourceInfo info : SortedNameResourceInfo) {
@@ -2772,7 +2775,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			{
 				FTransform transform;
 				UnitDisplayState displayState = dataSource()->GetUnitTransformAndVariation(unit, transform);
-				UStaticMesh* unitMesh = assetLoader->unitMesh(displayState.unitEnum, displayState.variationIndex);
+				UStaticMesh* unitMesh = assetLoader->unitAsset(displayState.unitEnum, displayState.variationIndex).staticMesh;
 				SpawnMesh(unitMesh, unitMesh->GetMaterial(0), transform, false, 2);
 			}
 
@@ -2878,21 +2881,21 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			descriptionBox->AddSpacer(12);
 
 			{
-				const FText biomeText = LOCTEXT("Biome", "Biome");
-				const FText fertilityText = LOCTEXT("Fertility", "Fertility");
-				const FText provinceFlatAreaText = LOCTEXT("Province flat area", "Province flat area");
-
 				auto& terrainGen = simulation.terrainGenerator();
 
-				ADDTEXT_(INVTEXT(
-					"<Bold>{0}:</> {3}\n"
-					"<Bold>{1}:</> {4}%\n"
-					"<Bold>{2}:</> {5} tiles"),
-					biomeText, fertilityText, provinceFlatAreaText,
+				ADDTEXT_(LOCTEXT("TileDescription_BiomeFertilityArea", "<Bold>Biome:</> {0}\n<Bold>Fertility:</> {1}%\n<Bold>Province flat area:</> {2} tiles"),
 					terrainGen.GetBiomeNameT(tile),
 					TEXT_NUM(terrainGen.GetFertilityPercent(tile)),
 					TEXT_NUM(simulation.provinceSystem().provinceFlatTileCount(provinceId))
 				);
+
+				int32 provinceDistance = simulation.regionSystem().provinceDistanceToPlayer(provinceId, playerId());
+				if (provinceDistance != MAX_int32)
+				{
+					ADDTEXT_(LOCTEXT("TileDescription_Distance", "\n<Bold>Distance from Townhall:</> {3} provinces"),
+						TEXT_NUM(provinceDistance)
+					);
+				}
 				
 				descriptionBox->AddRichText(args);
 			}
@@ -3273,7 +3276,7 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 	
 	if (provincePlayerId == -1)
 	{	
-		auto addClaimButtons = [&](ClaimConnectionEnum claimConnectionEnum, bool isTooFarForClaim)
+		auto addClaimButtons = [&](ClaimConnectionEnum claimConnectionEnum)
 		{	
 			int32 provincePrice = sim.GetProvinceClaimPrice(provinceId, playerId(), claimConnectionEnum);
 			
@@ -3287,8 +3290,6 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 				);
 			}
 
-			const FText tooFarText = LOCTEXT("TooFarFromTownhallText", "Too far from Townhall (exceeded 7 provinces)");
-
 			// Claim by influence
 			if (simulation().unlockedInfluence(playerId()))
 			{
@@ -3296,13 +3297,7 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 
 				TArray<FText> args;
 				AppendClaimConnectionString(args, false, claimConnectionEnum);
-				if (isTooFarForClaim) {
-					ADDTEXT_TAG_("<Red>", tooFarText);
-					canClaim = false;
-				}
-				else {
-					ADDTEXT_(INVTEXT("\n<img id=\"Influence\"/>{0}"), TextRed(FText::AsNumber(provincePrice), !canClaim));
-				}
+				ADDTEXT_(INVTEXT("\n<img id=\"Influence\"/>{0}"), TextRed(FText::AsNumber(provincePrice), !canClaim));
 
 				descriptionBox->AddSpacer();
 				descriptionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::ClaimLandInfluence, canClaim, false, provinceId);
@@ -3314,13 +3309,7 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 
 				TArray<FText> args;
 				AppendClaimConnectionString(args, false, claimConnectionEnum);
-				if (isTooFarForClaim) {
-					ADDTEXT_TAG_("<Red>", tooFarText);
-					canClaim = false;
-				}
-				else {
-					ADDTEXT_(INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(FText::AsNumber(provincePrice), !canClaim));
-				}
+				ADDTEXT_(INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(FText::AsNumber(provincePrice), !canClaim));
 
 				descriptionBox->AddSpacer();
 				descriptionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::ClaimLandMoney, canClaim, false, provinceId);
@@ -3341,13 +3330,7 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 
 				TArray<FText> args;
 				AppendClaimConnectionString(args, false, claimConnectionEnum);
-				if (isTooFarForClaim) {
-					ADDTEXT_TAG_("<Red>", tooFarText);
-					canClaim = false;
-				}
-				else {
-					ADDTEXT_(LOCTEXT("ClaimFood", "\n{0} food"), TextRed(FText::AsNumber(foodNeeded), !canClaim));
-				}
+				ADDTEXT_(LOCTEXT("ClaimFood", "\n{0} food"), TextRed(FText::AsNumber(foodNeeded), !canClaim));
 
 				descriptionBox->AddSpacer();
 				descriptionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::ClaimLandFood, canClaim, false, provinceId);
@@ -3357,10 +3340,17 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 		
 
 		ClaimConnectionEnum claimConnectionEnum = sim.GetProvinceClaimConnectionEnumPlayer(provinceId, playerId());
-		if (claimConnectionEnum != ClaimConnectionEnum::None) 
+		if (claimConnectionEnum != ClaimConnectionEnum::None)
 		{
-			bool isProvinceTooFarToClaim = sim.IsProvinceTooFarToClaim(provinceId, playerId());
-			addClaimButtons(claimConnectionEnum, isProvinceTooFarToClaim);
+			if (sim.regionSystem().provinceDistanceToPlayer(provinceId, playerId()) > 7) {
+				descriptionBox->AddSpacer();
+				descriptionBox->AddRichText(
+					TEXT_TAG("<Red>", LOCTEXT("TooFarFromTownhallText", "Cannot claim a province more than 7 provinces from the Townhall"))
+				);
+			}
+			else {
+				addClaimButtons(claimConnectionEnum);
+			}
 		}
 		else if (sim.IsProvinceNextToPlayerIncludingNonFlatLand(provinceId, playerId()))
 		{
@@ -3402,54 +3392,68 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 	{
 		// Conquer
 		/*if (simulation().unlockedInfluence(playerId()))*/
-		if (sim.HasTownhall(provincePlayerId) &&
-			simulation().GetTownhallCapital(provincePlayerId).provinceId() != provinceId)
+		if (sim.HasTownhall(provincePlayerId))
 		{
-			if (simulation().IsResearched(playerId(), TechEnum::Conquer))
-			{
-				auto addAttackButtons = [&](ClaimConnectionEnum claimConnectionEnum)
-				{
-					ProvinceClaimProgress claimProgress = simulation().playerOwned(provincePlayerId).GetDefendingClaimProgress(provinceId);
-
-					// Already a claim, reinforce
-					if (claimProgress.isValid())
-					{
-						// TODO: don't need buttons since there is already a battle UI?
-						//int32 attackReinforcePrice = simulation().GetProvinceAttackReinforcePrice(provinceId, claimConnectionEnum);
-						//bool canClaim = simulation().influence(playerId()) >= attackReinforcePrice;
-
-						//stringstream ss;
-						//ss << "Reinforce (Annex)\n";
-						//ss << TextRed(to_string(attackReinforcePrice), !canClaim) << "<img id=\"Influence\"/>";
-
-						//descriptionBox->AddSpacer();
-						//descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::ReinforceAttackProvince, canClaim, false, provinceId);
-					}
-					// Start a new claim
-					else
-					{
-						int32 startAttackPrice = simulation().GetProvinceAttackStartPrice(provinceId, claimConnectionEnum);
-						bool canClaim = simulation().influence(playerId()) >= startAttackPrice;
-
-						TArray<FText> args;
-						AppendClaimConnectionString(args, true, claimConnectionEnum);
-						ADDTEXT_(INVTEXT("\n{0}<img id=\"Influence\"/>"), TextRed(FText::AsNumber(startAttackPrice), !canClaim));
-
-						descriptionBox->AddSpacer();
-						descriptionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::StartAttackProvince, canClaim, false, provinceId);
-					}
-				};
-
-				ClaimConnectionEnum claimConnectionEnum = sim.GetProvinceClaimConnectionEnumPlayer(provinceId, playerId());
-				if (claimConnectionEnum != ClaimConnectionEnum::None) {
-					addAttackButtons(claimConnectionEnum);
+			// Not province that overlap with capital
+			TileArea townhallArea = simulation().GetTownhallCapital(provincePlayerId).area();
+			vector<int32> townhallOverlapProvinceIds = sim.provinceSystem().GetProvinceIdsFromArea(townhallArea, true);
+			bool isTownhallOverlapProvince = false;
+			for (int32 townhallOverlapProvinceId : townhallOverlapProvinceIds) {
+				if (townhallOverlapProvinceId == provinceId) {
+					isTownhallOverlapProvince = true;
+					break;
 				}
-				else if (sim.IsProvinceNextToPlayerIncludingNonFlatLand(provinceId, playerId()))
+			}
+			
+			if (!isTownhallOverlapProvince)
+			{
+				if (simulation().IsResearched(playerId(), TechEnum::Conquer))
 				{
-					descriptionBox->AddSpacer();
-					descriptionBox->AddRichText(
-						TEXT_TAG("<Red>", LOCTEXT("NoAttackThroughMtnSea", "Cannot attack through mountain and sea"))
-					);
+					auto addAttackButtons = [&](ClaimConnectionEnum claimConnectionEnum)
+					{
+						ProvinceClaimProgress claimProgress = simulation().playerOwned(provincePlayerId).GetDefendingClaimProgress(provinceId);
+
+						// Already a claim, reinforce
+						if (claimProgress.isValid())
+						{
+							// TODO: don't need buttons since there is already a battle UI?
+							//int32 attackReinforcePrice = simulation().GetProvinceAttackReinforcePrice(provinceId, claimConnectionEnum);
+							//bool canClaim = simulation().influence(playerId()) >= attackReinforcePrice;
+
+							//stringstream ss;
+							//ss << "Reinforce (Annex)\n";
+							//ss << TextRed(to_string(attackReinforcePrice), !canClaim) << "<img id=\"Influence\"/>";
+
+							//descriptionBox->AddSpacer();
+							//descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::ReinforceAttackProvince, canClaim, false, provinceId);
+						}
+						// Start a new claim (Claim or Conquer Province)
+						else
+						{
+							int32 startAttackPrice = simulation().GetProvinceAttackStartPrice(provinceId, claimConnectionEnum);
+							bool canClaim = simulation().influence(playerId()) >= startAttackPrice;
+
+							TArray<FText> args;
+							AppendClaimConnectionString(args, true, claimConnectionEnum);
+							ADDTEXT_(INVTEXT("\n{0}<img id=\"Influence\"/>"), TextRed(FText::AsNumber(startAttackPrice), !canClaim));
+
+							descriptionBox->AddSpacer();
+							descriptionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::StartAttackProvince, canClaim, false, provinceId);
+						}
+					};
+
+					ClaimConnectionEnum claimConnectionEnum = sim.GetProvinceClaimConnectionEnumPlayer(provinceId, playerId());
+					if (claimConnectionEnum != ClaimConnectionEnum::None)
+					{
+						addAttackButtons(claimConnectionEnum);
+					}
+					else if (sim.IsProvinceNextToPlayerIncludingNonFlatLand(provinceId, playerId()))
+					{
+						descriptionBox->AddSpacer();
+						descriptionBox->AddRichText(
+							TEXT_TAG("<Red>", LOCTEXT("NoAttackThroughMtnSea", "Cannot attack through mountain and sea"))
+						);
+					}
 				}
 			}
 		}
@@ -3796,6 +3800,15 @@ void UObjectDescriptionUISystem::AddBiomeInfo(WorldTile2 tile, UPunBoxWidget* de
 				TEXT_NUM(provinceSys.provinceFlatTileCount(provinceSys.GetProvinceIdClean(tile)))
 			);
 			//ss << "Defense Bonus:" << (simulation().provinceSystem().provinceIsMountain(provinceId) ? "50%(Mountain)" : "0%");
+			ADDTEXT_INV_("\n");
+		}
+
+		int32 provinceDistance = sim.regionSystem().provinceDistanceToPlayer(provinceId, playerId());
+		if (provinceDistance != MAX_int32)
+		{
+			ADDTEXT_(LOCTEXT("BiomeInfoDescription_Distance", "\n<Bold>Distance from Townhall:</> {3} provinces"),
+				TEXT_NUM(provinceDistance)
+			);
 			ADDTEXT_INV_("\n");
 		}
 	}

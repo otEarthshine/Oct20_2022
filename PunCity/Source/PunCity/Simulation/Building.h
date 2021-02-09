@@ -79,6 +79,10 @@ public:
 
 	int32 playerId() const { return _playerId; }
 	int32 townId() const { return _townId; }
+
+	virtual void ChangeTownOwningPlayer(int32 playerId) {
+		_playerId = playerId;
+	}
 	
 	int32 buildingId() const { return _objectId; }
 	uint8 buildingEnumInt() const { return static_cast<uint8_t>(_buildingEnum); }

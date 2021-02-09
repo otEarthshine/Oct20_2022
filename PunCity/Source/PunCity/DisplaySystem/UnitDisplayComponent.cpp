@@ -256,7 +256,7 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 		 */
 
 		FTransform transform;
-		UnitDisplayState displayState = { unitEnum, unit.animationEnum(), 0 };
+		_currentDisplayState = { unitEnum, unit.animationEnum(), 0 };
 		
 		//PUN_LOG("UnitAddStart ticks:%d id:%d regionId:%d", TimeDisplay::Ticks(), unitId, regionId);
 
@@ -307,7 +307,7 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 		}
 		else
 		{
-			displayState = GetUnitTransformAndVariation(unit, transform);
+			_currentDisplayState = GetUnitTransformAndVariation(unit, transform);
 		}
 
 
@@ -315,7 +315,7 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 
 		{
 			SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitAddInst);
-			_unitMeshes->Add(GetMeshName(displayState.unitEnum, displayState.variationIndex), unitId, transform, 0, unitId);
+			_unitMeshes->Add(GetMeshName(_currentDisplayState.unitEnum, _currentDisplayState.variationIndex), unitId, transform, 0, unitId);
 		}
 		
 
@@ -461,14 +461,16 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 }
 
 
-void UUnitDisplayComponent::UpdateResourceDisplay(int32 unitId, UnitStateAI& unit, FTransform& transform)
+void UUnitDisplayComponent::UpdateResourceDisplay(int32 unitId, UnitStateAI& unit, FTransform& transformIn)
 {
 	SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitResource);
 	
-	// Resource display
+	//! Resource display
 	ResourceEnum heldEnum = unit.inventory().Display();
 	if (heldEnum != ResourceEnum::None)
 	{
+		FTransform transform = transformIn;
+		
 		//! TODO: !!! hack around vertex animate laziness
 		//if (IsAnimal(unit.unitEnum())) {
 		FRotator rotator = transform.Rotator();
@@ -491,5 +493,13 @@ void UUnitDisplayComponent::UpdateResourceDisplay(int32 unitId, UnitStateAI& uni
 		FTransform resourceTransform(resourceRotator, transform.GetTranslation(), transform.GetScale3D());
 
 		_resourceMeshes->Add(ResourceDisplayNameF(heldEnum), unitId, resourceTransform, 0, unitId);
+	}
+
+	/*
+	 * Unit aux display
+	 */
+	if (_currentDisplayState.unitEnum == UnitEnum::Horse)
+	{
+		_auxMeshes->Add(GetMeshName(_currentDisplayState.unitEnum, _currentDisplayState.variationIndex), unitId, transformIn, 0);
 	}
 }

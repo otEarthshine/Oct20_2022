@@ -100,6 +100,8 @@ public:
 	virtual void SetTargetLocation(int id, WorldAtom2& targetLocation) = 0;
 	virtual void SetAtomLocation(int id, WorldAtom2& atomLocation) = 0;
 
+	virtual void MoveUnitInstantly(int32 id, WorldAtom2 targetAtom) = 0;
+
 	virtual WorldAtom2 actualAtomLocation(int id) const = 0;
 
 	virtual void CheckIntegrity(int id) = 0;

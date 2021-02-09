@@ -1408,5 +1408,18 @@ void TownManager::AddCardToTownhall(CardStatus card)
 	}
 }
 
+void TownManager::ChangeTownOwningPlayer(int32 newPlayerId)
+{
+	_playerId = newPlayerId;
+
+	for (int32 childId : _childIds) {
+		_simulation->unitAI(childId).ChangeTownOwningPlayer(newPlayerId);
+	}
+
+	for (int32 adultId : _adultIds) {
+		_simulation->unitAI(adultId).ChangeTownOwningPlayer(newPlayerId);
+	}
+}
+
 
 #undef LOCTEXT_NAMESPACE

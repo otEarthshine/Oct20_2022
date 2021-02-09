@@ -591,6 +591,18 @@ public:
 
 	UnitAnimationEnum animationEnum() { return _animationEnum; }
 
+	void ChangeTownOwningPlayer(int32 playerId) {
+		_playerId = playerId;
+		_simulation->ResetUnitActions(_id);
+
+		// If outside territory, warp them back
+		if (_simulation->tileOwnerTown(unitTile()) != _townId) {
+			WorldTile2 townGate = _simulation->GetTownhallGate(_townId);
+			if (townGate.isValid()) {
+				_unitData->MoveUnitInstantly(_id, townGate.worldAtom2());
+			}
+		}
+	}
 	
 public:
 	//! Serialize

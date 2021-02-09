@@ -126,6 +126,7 @@ struct ProvinceClaimProgress
 		}
 	}
 
+
 	//! Serialize
 	FArchive& operator>>(FArchive &Ar) {
 		Ar << provinceId;
@@ -174,6 +175,9 @@ public:
 
 		_jobBuildingEnumToIds.resize(BuildingEnumCount);
 	}
+
+	
+	void ChangeTownOwningPlayer(int32 newPlayerId);
 
 	/*
 	 * Tick
@@ -593,13 +597,13 @@ public:
 		auto& regionSys = _simulation->regionSystem();
 		
 		for (int32 provinceId : _provincesClaimed) {
-			regionSys.SetProvinceDistance(provinceId, -1);
+			regionSys.SetProvinceDistanceMap(provinceId, MAX_int32);
 		}
 
 		int32 level = 0;
 		std::vector<int32> curProvinceIds;
 		curProvinceIds.push_back(_provincesClaimed[0]);
-		regionSys.SetProvinceDistance(_provincesClaimed[0], level);
+		regionSys.SetProvinceDistanceMap(_provincesClaimed[0], level);
 		
 		while (level < 7) 
 		{
@@ -618,9 +622,9 @@ public:
 							// Set the provincesFromTownhall if needed
 							for (int32 i = 0; i < _provincesClaimed.size(); i++) {
 								if (connection.provinceId == _provincesClaimed[i] &&
-									regionSys.provinceDistance(connection.provinceId) == -1)
+									regionSys.provinceDistanceMap(connection.provinceId) == -1)
 								{
-									regionSys.SetProvinceDistance(connection.provinceId, level);
+									regionSys.SetProvinceDistanceMap(connection.provinceId, level);
 									nextProvinceIds.push_back(connection.provinceId);
 								}
 							}

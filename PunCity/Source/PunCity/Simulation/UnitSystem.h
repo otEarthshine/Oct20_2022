@@ -98,8 +98,16 @@ public:
 		return _unitLeans[id].nextUpdate.state;
 	}
 
-	void SetTargetLocation(int id, WorldAtom2& targetLocation) override final { _unitLeans[id].targetLocation = targetLocation; }
+	void SetTargetLocation(int id, WorldAtom2& targetLocation) override { _unitLeans[id].targetLocation = targetLocation; }
 	void SetAtomLocation(int id, WorldAtom2& atomLocation) override { _unitLeans[id].atomLocation = atomLocation; }
+
+	void MoveUnitInstantly(int32 id, WorldAtom2 targetAtom) override {
+		auto& unitLean = _unitLeans[id];
+		WorldAtom2 previousAtom = unitLean.atomLocation;
+		unitLean.targetLocation = targetAtom;
+		unitLean.atomLocation = targetAtom;
+		_unitSubregionLists.TryMove(previousAtom.worldTile2(), targetAtom.worldTile2(), id);
+	}
 
 	void UnitCheckIntegrity(bool full = false);
 	

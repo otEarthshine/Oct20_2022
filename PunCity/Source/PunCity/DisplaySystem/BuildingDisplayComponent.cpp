@@ -402,8 +402,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 				{
 
 					// make the site marking 1 tile, centered... so the shift can be done correctly...
-					if (!building.isEnum(CardEnum::Fisher) &&
-						!building.isEnum(CardEnum::TradingPort) &&
+					if (!IsPortBuilding(building.buildingEnum()) &&
 						!building.isEnum(CardEnum::ClayPit) &&
 						!building.isEnum(CardEnum::IrrigationReservoir) &&
 						!building.isEnum(CardEnum::Farm) &&

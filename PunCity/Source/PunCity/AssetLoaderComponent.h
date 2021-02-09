@@ -52,7 +52,7 @@ enum class ParticleEnum
 };
 
 USTRUCT()
-struct FSkeletonAsset
+struct FUnitAsset
 {
 	GENERATED_BODY();
 	
@@ -61,10 +61,9 @@ struct FSkeletonAsset
 
 	// Static part is used when the meshes should be faraway (or if there is only staticMesh for this unit like ship)
 	//  Also for collider??
-	UPROPERTY() UStaticMesh* staticMesh = nullptr;
+	UPROPERTY() UStaticMesh* staticMesh = nullptr; // default mesh (except for skeletalMesh usage when zoomed in)
 
-	UPROPERTY() UStaticMesh* staticMesh2 = nullptr; // Auxiliary static mesh like wagon on donkey
-	FVector staticMesh2Shift = FVector::ZeroVector;
+	UPROPERTY() UStaticMesh* auxMesh = nullptr; // Auxiliary static mesh like wagon on donkey
 };
 
 
@@ -117,16 +116,17 @@ public:
 	TArray<FString>& animModuleNames() { return _animModuleNames; }
 	TArray<FString>& togglableModuleNames() { return _togglableModuleNames; }
 
-	UStaticMesh* unitMesh(UnitEnum unitEnum, int32 variationIndex = 0);
-	int32 unitMeshCount(UnitEnum unitEnum)
-	{
-		if (unitEnum == UnitEnum::Human) {
-			return _unitEnumToSkelAsset[static_cast<int>(unitEnum)].size();
-		}
-		return _unitToMeshes[unitEnum].size();
+	//UStaticMesh* unitMesh(UnitEnum unitEnum, int32 variationIndex = 0);
+	int32 unitMeshCount(UnitEnum unitEnum) {
+		return _unitEnumToAsset[static_cast<int>(unitEnum)].size();
+		
+		//if (unitEnum == UnitEnum::Human) {
+		//	return _unitEnumToAsset[static_cast<int>(unitEnum)].size();
+		//}
+		//return _unitToMeshes[unitEnum].size();
 	}
 
-	FSkeletonAsset unitSkelAsset(UnitEnum unitEnum, int32 variationIndex = 0);
+	FUnitAsset unitAsset(UnitEnum unitEnum, int32 variationIndex = 0);
 	
 	UStaticMesh* unitWeaponMesh(UnitAnimationEnum animationEnum) {
 		auto found = _animationEnumToWeaponMesh.find(animationEnum);
@@ -384,7 +384,7 @@ private:
 	}
 
 	void LoadUnit(UnitEnum unitEnum, std::string meshFile);
-	void LoadUnitSkel(UnitEnum unitEnum, std::string folderPath, std::string skelFileName, std::unordered_map<UnitAnimationEnum, std::string> animationFileNames, std::string staticFileName = "");
+	void LoadUnitFull(UnitEnum unitEnum, std::string folderPath, std::string skelFileName, std::unordered_map<UnitAnimationEnum, std::string> animationFileNames, std::string staticFileName, std::string auxFileName = "");
 	//void LoadUnitAnimation(UnitEnum unitEnum, int32 variationIndex, UnitAnimationEnum unitAnimation, std::string file);
 	void LoadUnitWeapon(UnitAnimationEnum unitAnimation, std::string file);
 	
@@ -413,13 +413,14 @@ private:
 	UPROPERTY() TArray<FString> _animModuleNames;
 	UPROPERTY() TArray<FString> _togglableModuleNames;
 	
-	std::unordered_map<UnitEnum, std::vector<UStaticMesh*>> _unitToMeshes;
+	//std::unordered_map<UnitEnum, std::vector<UStaticMesh*>> _unitToMeshes;
 
-	std::vector<std::vector<FSkeletonAsset>> _unitEnumToSkelAsset;
+	std::vector<std::vector<FUnitAsset>> _unitEnumToAsset;
 	//std::unordered_map<UnitEnum, std::vector<USkeletalMesh*>> _unitToSkeletalMesh;
 	//std::unordered_map<UnitEnum, std::vector<std::unordered_map<UnitAnimationEnum, UAnimSequence*>>> _animationEnumToSequence;
 	
 	std::unordered_map<UnitAnimationEnum, UStaticMesh*> _animationEnumToWeaponMesh;
+
 	
 	std::unordered_map<ResourceEnum, UStaticMesh*> _resourceToMesh;
 	std::unordered_map<ResourceEnum, UStaticMesh*> _resourceToHandMesh;

@@ -310,7 +310,7 @@ private:
 
 
 
-class IntercityLogisticsHub final : public Building
+class IntercityLogisticsHub : public Building
 {
 public:
 	void FinishConstruction() override {
@@ -356,6 +356,14 @@ public:
 		return Building::RefreshHoverWarning();
 	}
 
+	void ChangeTownOwningPlayer(int32 playerId) override
+	{
+		Building::ChangeTownOwningPlayer(playerId);
+
+		targetTownId = -1;
+		lastTargetTownId = -1;
+	}
+
 	void Serialize(FArchive& Ar) override {
 		Building::Serialize(Ar);
 		Ar << targetTownId;
@@ -371,4 +379,11 @@ public:
 	int32 lastTargetTownId;
 	std::vector<ResourceEnum> lastResourceEnums;
 	std::vector<int32> lastResourceCounts;
+};
+
+class IntercityLogisticsPort final : public IntercityLogisticsHub
+{
+public:
+
+
 };

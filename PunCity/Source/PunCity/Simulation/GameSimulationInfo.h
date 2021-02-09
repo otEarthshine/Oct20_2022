@@ -2403,7 +2403,10 @@ struct BldInfo
 			CASE(GardenCypress, 200);
 
 			CASE(Fort, 500);
-			CASE(ResourceOutpost, 2000);
+			CASE(ResourceOutpost, 5000);
+
+			CASE(Colony, 15000);
+			CASE(PortColony, 20000);
 #undef CASE
 		default:
 			break;
@@ -2642,8 +2645,8 @@ static const BldInfo BuildingInfo[]
 	// February 2
 	BldInfo(CardEnum::Colony, LOCTEXT("Colony", "Colony"), LOCTEXT("Colony (Plural)", "Colonies"), WorldTile2(12, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Colony Desc", "Build a new city with 10 citizens from your capital.")),
 	BldInfo(CardEnum::PortColony, LOCTEXT("Port Colony", "Port Colony"), LOCTEXT("Port Colony (Plural)", "Port Colonies"), WorldTile2(12, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Port Colony Desc", "Build a new port city with 10 citizens from your capital.")),
-	BldInfo(CardEnum::IntercityLogisticsHub, LOCTEXT("Intercity Logistics Hub", "Intercity Logistics Hub"), LOCTEXT("Intercity Logistics Hub (Plural)", "Intercity Logistics Hubs"), WorldTile2(4, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 1, { 0,0,0 }, LOCTEXT("Intercity Logistics Hub Desc", "Request resources from another city.")),
-	BldInfo(CardEnum::IntercityLogisticsPort, LOCTEXT("Intercity Logistics Port", "Intercity Logistics Port"), LOCTEXT("Intercity Logistics Port (Plural)", "Intercity Logistics Ports"), WorldTile2(4, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 1, { 0,0,0 }, LOCTEXT("Intercity Logistics Port Desc", "Request resources from another city.")),
+	BldInfo(CardEnum::IntercityLogisticsHub, LOCTEXT("Intercity Logistics Hub", "Intercity Logistics Hub"), LOCTEXT("Intercity Logistics Hub (Plural)", "Intercity Logistics Hubs"), WorldTile2(6, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 1, { 0,0,0 }, LOCTEXT("Intercity Logistics Hub Desc", "Request resources from another city.")),
+	BldInfo(CardEnum::IntercityLogisticsPort, LOCTEXT("Intercity Logistics Port", "Intercity Logistics Port"), LOCTEXT("Intercity Logistics Port (Plural)", "Intercity Logistics Ports"), WorldTile2(12, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 1, { 0,0,0 }, LOCTEXT("Intercity Logistics Port Desc", "Request resources from another city.")),
 	
 	// Decorations
 	BldInfo(CardEnum::FlowerBed,		LOCTEXT("Flower Bed", "Flower Bed"),		LOCTEXT("Flower Bed (Plural)", "Flower Beds"), WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Flower Bed Desc", "Increase the surrounding appeal by 5 within 5 tiles radius.")),
@@ -3267,6 +3270,9 @@ static bool IsServiceBuilding(CardEnum buildingEnum)
 
 	case CardEnum::Market:
 	case CardEnum::ShippingDepot:
+
+	case CardEnum::IntercityLogisticsHub:
+	case CardEnum::IntercityLogisticsPort:
 		return true;
 	default:
 		return false;
@@ -3433,16 +3439,32 @@ static bool IsRegionalBuilding(CardEnum buildingEnum) {
 	return false;
 }
 
+static bool IsPortBuilding(CardEnum buildingEnum)
+{
+	switch (buildingEnum) {
+	case CardEnum::Fisher:
+	case CardEnum::TradingPort:
+	case CardEnum::IntercityLogisticsPort:
+		return true;
+	default: return false;
+	}
+}
+
 
 static std::pair<int32, int32> DockPlacementExtraInfo(CardEnum cardEnum)
 {
 	int32 indexLandEnd = 1;
 	int32 minWaterCount = 5;
 
-	if (cardEnum == CardEnum::TradingPort) {
-		indexLandEnd = 3;
+	if (cardEnum == CardEnum::TradingPort) { // 10 x 8
+		indexLandEnd = 3; // Note: this is 4 tiles (0,1,2,3)
 		minWaterCount = 25; // 8 * 5 = 40 full??
 	}
+	if (cardEnum == CardEnum::IntercityLogisticsPort) { // 12 x 6
+		indexLandEnd = 5; 
+		minWaterCount = 16; 
+	}
+	
 	return std::make_pair(indexLandEnd, minWaterCount);
 }
 
@@ -3620,11 +3642,14 @@ struct BonusPair
  */
 enum class ProvinceAttackEnum : uint8
 {
+	None,
+	
 	ConquerProvince,
 	Vassalize,
 	DeclareIndependence,
 
 	VassalCompetition,
+	ConquerColony,
 };
 
 
@@ -4821,6 +4846,7 @@ enum class TechEnum : uint8
 	Tunnel,
 	Colony,
 	PortColony,
+	IntercityLogistics,
 
 	/*
 	 * Bonuses
@@ -7610,6 +7636,15 @@ static const WorldTile2 InitialStorageTileSize(4, 4);
 static const int32 InitialStorageShiftFromTownhall = GetBuildingInfo(CardEnum::Townhall).size.y / 2 + InitialStorageSize / 2;
 static const WorldTile2 Storage1ShiftTileVec(0, -InitialStorageShiftFromTownhall);
 static const WorldTile2 InitialStorage2Shift(4, 0);
+
+static const int32 ColonyInitialStorageSize = 6;
+static const WorldTile2 ColonyInitialStorageTileSize(ColonyInitialStorageSize, ColonyInitialStorageSize);
+static const int32 ColonyInitialStorageShiftFromTownhall = GetBuildingInfo(CardEnum::Townhall).size.y / 2 + ColonyInitialStorageSize / 2;
+static const WorldTile2 ColonyStorage1ShiftTileVec(0, -ColonyInitialStorageShiftFromTownhall);
+static const WorldTile2 ColonyInitialStorage2Shift(6, 0);
+
+static const WorldTile2 PortColony_Storage1ShiftTileVec(-ColonyInitialStorageShiftFromTownhall, 0);
+static const WorldTile2 PortColony_InitialStorage2Shift(0, 6);
 
 static const int32 ClaypitRiverFractionPercentThreshold = 20;
 static const int32 IrrigationReservoirRiverFractionPercentThreshold = 2;

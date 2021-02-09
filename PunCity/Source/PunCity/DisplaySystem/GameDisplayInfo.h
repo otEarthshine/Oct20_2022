@@ -869,7 +869,7 @@ public:
 			ModuleTransforms::CreateSet("ShippingDepot", {}, {})
 		},
 		{ // Intercity Logistics Port
-			ModuleTransforms::CreateSet("ShippingDepot", {}, {})
+			ModuleTransforms::CreateSet("IntercityLogisticsPort", {}, {})
 		},
 		
 		/*

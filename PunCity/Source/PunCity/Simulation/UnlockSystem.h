@@ -643,8 +643,8 @@ public:
 			AddTech_Bonus(era, TechEnum::Plantation);
 			//AddTech_Bonus(era, TechEnum::RerollCardsPlus1); // TODO: bring back
 			//AddTech_Bonus(era, TechEnum::CheapReroll); // TODO: bring back
-			AddTech_BuildingPermanent(era, TechEnum::Colony, { CardEnum::Colony, CardEnum::IntercityLogisticsHub });
-			AddTech_BuildingPermanent(era, TechEnum::PortColony, { CardEnum::PortColony, CardEnum::IntercityLogisticsPort });
+			AddTech_BuildingPermanent(era, TechEnum::Colony, { CardEnum::Colony, CardEnum::PortColony });
+			AddTech_Building(era, TechEnum::IntercityLogistics, { CardEnum::IntercityLogisticsHub, CardEnum::IntercityLogisticsPort });
 			AddTech_Building(era, TechEnum::IronRefining, { CardEnum::IronMine, CardEnum::IronSmelter });
 			AddTech_Building(era, TechEnum::Blacksmith, CardEnum::Blacksmith);
 			AddTech_Bonus(era, TechEnum::Sawmill);

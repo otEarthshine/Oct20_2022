@@ -45,6 +45,7 @@ public:
 		
 		_unitMeshes = CreateDefaultSubobject<UStaticFastInstancedMeshesComp>("_unitMeshes");
 		_resourceMeshes = CreateDefaultSubobject<UStaticFastInstancedMeshesComp>("_resourceMeshes");
+		_auxMeshes = CreateDefaultSubobject<UStaticFastInstancedMeshesComp>("_auxMeshes");
 		_animatingModuleMeshes = CreateDefaultSubobject<UStaticFastInstancedMeshesComp>("_animatingModuleMeshes");
 
 		//_testAnimatedMesh = CreateDefaultSubobject<USkeletalMeshComponent>("_testAnimatedMesh");
@@ -58,13 +59,18 @@ public:
 
 		//_unitMeshes->Init("Unit", this, 100, "Unit", 0, true);
 		_unitMeshes->Init("Unit", this, 100, "", 0, true);
+		_auxMeshes->Init("UnitAux", this, 20, "", 0, true);
 		for (int i = 0; i < UnitEnumCount; i++) 
 		{
 			UnitEnum unitEnum = static_cast<UnitEnum>(i);
 			
 			int32 variationCount = assetLoader->unitMeshCount(unitEnum);
 			for (int32 j = 0; j < variationCount; j++) {
-				_unitMeshes->AddProtoMesh(GetMeshName(unitEnum, j), assetLoader->unitMesh(unitEnum, j), nullptr);
+				FUnitAsset unitAsset = assetLoader->unitAsset(unitEnum, j);
+				_unitMeshes->AddProtoMesh(GetMeshName(unitEnum, j), unitAsset.staticMesh, nullptr);
+				if (unitAsset.auxMesh) {
+					_auxMeshes->AddProtoMesh(GetMeshName(unitEnum, j), unitAsset.auxMesh);
+				}
 			}
 		}
 
@@ -102,6 +108,7 @@ public:
 		
 		_unitMeshes->AfterAdd();
 		_resourceMeshes->AfterAdd();
+		_auxMeshes->AfterAdd();
 		_animatingModuleMeshes->AfterAdd();
 
 		// Clean up last rotator transforms that are out of sight
@@ -166,6 +173,7 @@ public:
 		bool shouldDisplay = sampleIds.size() != 0;
 		_unitMeshes->SetActive(shouldDisplay);
 		_resourceMeshes->SetActive(shouldDisplay);
+		_auxMeshes->SetActive(shouldDisplay);
 		_animatingModuleMeshes->SetActive(shouldDisplay);
 		UDisplaySystemComponent::Display(sampleIds);
 	}
@@ -209,9 +217,9 @@ private:
 	 */
 
 	void AddSkelMesh(UnitStateAI& unit, FTransform& transform) {
-		UnitDisplayState displayState = GetUnitTransformAndVariation(unit, transform);
+		_currentDisplayState = GetUnitTransformAndVariation(unit, transform);
 
-		AddSkelMesh(unit.id(), displayState.unitEnum, displayState.animationEnum, unit.isChild(), transform, displayState.variationIndex, unit.birthTicks());
+		AddSkelMesh(unit.id(), _currentDisplayState.unitEnum, _currentDisplayState.animationEnum, unit.isChild(), transform, _currentDisplayState.variationIndex, unit.birthTicks());
 	}
 	
 	void AddSkelMesh(int32 unitId, UnitEnum unitEnum, UnitAnimationEnum animationEnum, bool isChild, FTransform& transform, int32 variationIndex, int32 birthTicks)
@@ -249,7 +257,7 @@ private:
 				skelMesh->SetReceivesDecals(false);
 				_unitSkelMeshes.Add(skelMesh);
 
-				FSkeletonAsset asset = _assetLoader->unitSkelAsset(unitEnum, variationIndex);
+				FUnitAsset asset = _assetLoader->unitAsset(unitEnum, variationIndex);
 				_unitSkelMeshes[index]->SetSkeletalMesh(asset.skeletalMesh);
 
 				FAttachmentTransformRules attachmentRules(EAttachmentRule::SnapToTarget, false);
@@ -267,7 +275,7 @@ private:
 				_unitSkelState.push_back(UnitSkelMeshState());
 			}
 
-			FSkeletonAsset asset = _assetLoader->unitSkelAsset(unitEnum, variationIndex);
+			FUnitAsset asset = _assetLoader->unitAsset(unitEnum, variationIndex);
 			_unitSkelMeshes[index]->SetSkeletalMesh(asset.skeletalMesh, false);
 			
 		}
@@ -288,7 +296,7 @@ private:
 		{
 			SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitSkel1);
 			
-			FSkeletonAsset skelAsset = _assetLoader->unitSkelAsset(unitEnum, variationIndex);
+			FUnitAsset skelAsset = _assetLoader->unitAsset(unitEnum, variationIndex);
 
 			skelMesh->PlayAnimation(skelAsset.animationEnumToSequence[animationEnum], true);
 			skelMesh->SetPlayRate(playRate);
@@ -332,6 +340,7 @@ private:
 private:
 	UPROPERTY() UStaticFastInstancedMeshesComp* _unitMeshes;
 	UPROPERTY() UStaticFastInstancedMeshesComp* _resourceMeshes;
+	UPROPERTY() UStaticFastInstancedMeshesComp* _auxMeshes;
 
 	TMap<int32, FTransform> _lastTransforms;
 	TMap<int32, FTransform> _thisTransform;
@@ -349,6 +358,7 @@ private:
 	TMap<int64, int32> _unitKeyToSkelMeshIndex;
 	TMap<int64, int32> _lastUnitKeyToSkelMeshIndex;
 
+	UnitDisplayState _currentDisplayState;
 
 	// Trailer special
 	UPROPERTY() UStaticMeshComponent* _smallShip = nullptr;

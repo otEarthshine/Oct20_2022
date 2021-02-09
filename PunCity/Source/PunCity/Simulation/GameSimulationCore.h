@@ -448,6 +448,9 @@ public:
 		return building(townhallId).gateTile();
 	}
 	FText townNameT(int32 townId) final {
+		if (townId == -1) {
+			return NSLOCTEXT("GameSimulationCore", "None", "None");
+		}
 		return GetTownhall(townId).townNameT();
 	}
 	
@@ -1174,8 +1177,16 @@ public:
 	{
 		int32 townId = provinceOwnerTown(provinceId);
 		PUN_CHECK(homeProvinceId(townId) == provinceId);
+		int32 provincePlayerId = provinceOwnerPlayer(provinceId);
 		
-		return BattleInfluencePrice + populationTown(townId) * 10; // 100 pop = 1k influence to take over
+		return BattleInfluencePrice + populationPlayer(provincePlayerId) * 10; // 100 pop = 1k influence to take over
+	}
+	int32 GetProvinceConquerColonyStartPrice(int32 provinceId)
+	{
+		int32 townId = provinceOwnerTown(provinceId);
+		PUN_CHECK(homeProvinceId(townId) == provinceId);
+
+		return BattleInfluencePrice + populationTown(townId) * 30; // 100 pop = 1k influence to take over
 	}
 	int32 GetProvinceVassalizeReinforcePrice(int32 provinceId)
 	{
@@ -1235,6 +1246,15 @@ public:
 	bool CanConquerOtherPlayers_Base(int32 playerIdIn) {
 		return lordPlayerId(playerIdIn) == -1 &&
 				!playerOwned(playerIdIn).GetDefendingClaimProgress(homeProvinceId(playerIdIn)).isValid();
+	}
+
+	bool CanConquerColony(int32 townId, int32 conquererPlayerId)
+	{
+		if (IsAIPlayer(townId)) { //TODO: this is for testing for now..
+			return true;
+		}
+		return IsResearched(conquererPlayerId, TechEnum::Vassalize) &&
+			CanConquerOtherPlayers_Base(conquererPlayerId);
 	}
 
 	void LoseVassalHelper(int32 oldLordPlayerId, int32 formerVassalPlayerId)
@@ -1330,7 +1350,24 @@ public:
 	{
 		return 10 * buildingFinishedCount(townId, provinceId);
 	}
-	
+
+	void ChangeTownOwningPlayer(int32 townId, int32 newPlayerId)
+	{
+		_buildingSystem->ChangeTownOwningPlayer(townId, newPlayerId);
+		_townManagers[townId]->ChangeTownOwningPlayer(newPlayerId);
+	}
+
+	// NOT NEEDED YET
+	//ProvinceAttackEnum GetProvinceAttackEnum(int32 provinceId)
+	//{
+	//	auto& provincePlayerOwner = playerOwned(provinceOwnerPlayer(provinceId));
+	//	ProvinceClaimProgress claimProgress = provincePlayerOwner.GetDefendingClaimProgress(provinceId);
+	//	if (claimProgress.isValid()) {
+	//		return provincePlayerOwner.GetProvinceAttackEnum(provinceId, claimProgress.attackerPlayerId);
+	//	}
+	//	return ProvinceAttackEnum::None;
+	//}
+	//
 
 	//bool HasOutpostAt(int32 playerId, int32 provinceId) final {
 	//	return playerOwned(playerId).HasOutpostAt(provinceId);
@@ -1361,20 +1398,6 @@ public:
 	//	return unlockSystem(playerId)->IsResearched(TechEnum::DeepWaterEmbark) &&
 	//		_provinceSystem.provinceIsCoastal(provinceId);
 	//}
-	bool IsProvinceTooFarToClaim(int32 provinceId, int32 playerId)
-	{
-		auto& regionSys = regionSystem();
-		const std::vector<ProvinceConnection>& connections = GetProvinceConnections(provinceId);
-		for (const ProvinceConnection& connection : connections) {
-			if (connection.isConnectedTileType() &&
-				provinceOwnerPlayer(connection.provinceId) == playerId &&
-				regionSys.provinceDistance(connection.provinceId) < 7)
-			{
-				return false;
-			}
-		}
-		return true;
-	}
 
 	ClaimConnectionEnum GetProvinceClaimConnectionEnumPlayer(int32 provinceId, int32 playerId)
 	{

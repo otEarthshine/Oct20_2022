@@ -195,6 +195,9 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	TryLoadBuildingModuleSet("FlowerBed", "FlowerBed");
 	TryLoadBuildingModuleSet("GardenCypress", "GardenCypress");
 	TryLoadBuildingModuleSet("GardenShrubbery1", "GardenShrubbery1");
+
+
+	TryLoadBuildingModuleSet("IntercityLogisticsPort", "IntercityLogisticsPort");
 	
 	//TryLoadBuildingModuleSet("Farm", "Farm");
 
@@ -510,9 +513,10 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	/**
 	 * Unit
 	 */
-
-	LoadUnit(UnitEnum::Human, "Human/Man/Man1");
-	LoadUnit(UnitEnum::Human, "Human/Man/Boy1");
+	_unitEnumToAsset.resize(UnitEnumCount);
+	
+	//LoadUnit(UnitEnum::Human, "Human/Man/Man1");
+	//LoadUnit(UnitEnum::Human, "Human/Man/Boy1");
 	
 	LoadUnit(UnitEnum::Alpaca, "Alpaca/Alpaca");
 	
@@ -543,9 +547,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 
 	/*
-	 * SkeletalMesh
+	 * Unit Full (SkeletalMesh)
 	 */
-	_unitEnumToSkelAsset.resize(UnitEnumCount);
 	
 	std::unordered_map<UnitAnimationEnum, std::string> animationFileNames = {
 		{ UnitAnimationEnum::Walk, "MOB1_Walk_F_IPC" },
@@ -557,38 +560,37 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	};
 
 	// Adult Male
-	LoadUnitSkel(UnitEnum::Human, "Human/CitizenMale/", "CitizenMale", animationFileNames, "Human/CitizenMale/CitizenMaleStatic");
+	LoadUnitFull(UnitEnum::Human, "Human/CitizenMale/", "CitizenMale", animationFileNames, "Human/CitizenMale/CitizenMaleStatic");
 
 	// Adult Female
-	LoadUnitSkel(UnitEnum::Human, "Human/CitizenFemale/", "CitizenFemale", animationFileNames, "Human/CitizenFemale/CitizenFemaleStatic");
+	LoadUnitFull(UnitEnum::Human, "Human/CitizenFemale/", "CitizenFemale", animationFileNames, "Human/CitizenFemale/CitizenFemaleStatic");
 
 	// Child Male
-	LoadUnitSkel(UnitEnum::Human, "Human/CitizenChildMale/", "CitizenChildMale", animationFileNames, "Human/CitizenChildMale/CitizenChildMaleStatic");
+	LoadUnitFull(UnitEnum::Human, "Human/CitizenChildMale/", "CitizenChildMale", animationFileNames, "Human/CitizenChildMale/CitizenChildMaleStatic");
 
 	// Child Female
-	LoadUnitSkel(UnitEnum::Human, "Human/CitizenChildFemale/", "CitizenChildFemale", animationFileNames, "Human/CitizenChildFemale/CitizenChildFemaleStatic");
+	LoadUnitFull(UnitEnum::Human, "Human/CitizenChildFemale/", "CitizenChildFemale", animationFileNames, "Human/CitizenChildFemale/CitizenChildFemaleStatic");
 
 
 	// Wild Man
-	LoadUnitSkel(UnitEnum::WildMan, "Human/WildMan/", "WildMan", animationFileNames, "Human/CitizenMale/CitizenMaleStatic");
+	LoadUnitFull(UnitEnum::WildMan, "Human/WildMan/", "WildMan", animationFileNames, "Human/CitizenMale/CitizenMaleStatic");
 
 	// Hippo
-	LoadUnitSkel(UnitEnum::Hippo, "Hippo/", "HippoSmall", {
+	LoadUnitFull(UnitEnum::Hippo, "Hippo/", "HippoSmall", {
 		{ UnitAnimationEnum::Walk, "Hippo_Walk"},
 		{ UnitAnimationEnum::Wait, "Hippo_LookAround"},
-	});
+	}, "Horse/HorseSmallStatic");
 	
 	// Penguin
-	LoadUnitSkel(UnitEnum::Penguin, "Penguin/", "Penguin", {
+	LoadUnitFull(UnitEnum::Penguin, "Penguin/", "Penguin", {
 		{ UnitAnimationEnum::Wait, "Penguin_Wait"},
-	});
+	}, "Horse/HorseSmallStatic");
 
 	
 	// Horse
-	LoadUnitSkel(UnitEnum::Horse, "Horse/", "HorseSmall", {
+	LoadUnitFull(UnitEnum::Horse, "Horse/", "HorseSmall", {
 		{ UnitAnimationEnum::Walk, "Anim_Horse_Trot_F_IP"},
-	});
-
+	}, "Horse/HorseSmallStatic", "Horse/CaravanWagon_Game");
 	
 	
 	LoadUnitWeapon(UnitAnimationEnum::Build, "Human/CitizenMale/CitizenMaleHammer");
@@ -1160,54 +1162,56 @@ void UAssetLoaderComponent::LoadModuleWithConstruction(FString moduleName, FStri
  * Units
  */
 
-UStaticMesh* UAssetLoaderComponent::unitMesh(UnitEnum unitEnum, int32 variationIndex)
-{
-	if (unitEnum == UnitEnum::Human) {
-		auto skelAsset = unitSkelAsset(unitEnum, variationIndex);
-		PUN_CHECK(skelAsset.staticMesh);
-		return skelAsset.staticMesh;
-	}
-	
-	auto got = _unitToMeshes.find(unitEnum);
-	if (got != _unitToMeshes.end()) {
-		return _unitToMeshes[unitEnum][variationIndex];
-	}
-	_LOG(PunAsset, "No Unit Mesh For %d", static_cast<int>(unitEnum));
-	return nullptr;
-}
-FSkeletonAsset UAssetLoaderComponent::unitSkelAsset(UnitEnum unitEnum, int32 variationIndex)
+//UStaticMesh* UAssetLoaderComponent::unitMesh(UnitEnum unitEnum, int32 variationIndex)
+//{
+//	if (unitEnum == UnitEnum::Human) {
+//		auto skelAsset = unitSkelAsset(unitEnum, variationIndex);
+//		PUN_CHECK(skelAsset.staticMesh);
+//		return skelAsset.staticMesh;
+//	}
+//	
+//	auto got = _unitToMeshes.find(unitEnum);
+//	if (got != _unitToMeshes.end()) {
+//		return _unitToMeshes[unitEnum][variationIndex];
+//	}
+//	_LOG(PunAsset, "No Unit Mesh For %d", static_cast<int>(unitEnum));
+//	return nullptr;
+//}
+FUnitAsset UAssetLoaderComponent::unitAsset(UnitEnum unitEnum, int32 variationIndex)
 {
 	PUN_CHECK(static_cast<int>(unitEnum) < UnitEnumCount);
-	const FSkeletonAsset& asset = _unitEnumToSkelAsset[static_cast<int>(unitEnum)][variationIndex];
-	PUN_CHECK(asset.skeletalMesh);
+	const FUnitAsset& asset = _unitEnumToAsset[static_cast<int>(unitEnum)][variationIndex];
+	PUN_CHECK(asset.staticMesh);
 	return asset;
-	
-	//auto got = _unitToSkelAsset.find(unitEnum);
-	//if (got != _unitToSkelAsset.end()) {
-	//	return _unitToSkelAsset[unitEnum][variationIndex];
-	//}
-	//_LOG(PunAsset, "No Unit SkelMesh For %d", static_cast<int>(unitEnum));
-	//return FSkeletonAsset();
 }
 
 const std::string unitsPath = "/Game/Models/Units/";
 void UAssetLoaderComponent::LoadUnit(UnitEnum unitEnum, std::string meshFile)
 {
-	_unitToMeshes[unitEnum].push_back(Load<UStaticMesh>((unitsPath + meshFile).c_str()));
+	FUnitAsset asset;
+	asset.staticMesh = Load<UStaticMesh>((unitsPath + meshFile).c_str());
+	_unitEnumToAsset[static_cast<int>(unitEnum)].push_back(asset);
 }
-void UAssetLoaderComponent::LoadUnitSkel(UnitEnum unitEnum, std::string folderPath, std::string skelFileName, std::unordered_map<UnitAnimationEnum, std::string> animationFileNames, std::string staticFileName)
+
+// SkelMesh will still need 
+void UAssetLoaderComponent::LoadUnitFull(UnitEnum unitEnum, std::string folderPath, std::string skelFileName, 
+	std::unordered_map<UnitAnimationEnum, std::string> animationFileNames, std::string staticFileName, std::string auxFileName)
 {
-	FSkeletonAsset asset;
+	FUnitAsset asset;
 	asset.skeletalMesh = Load<USkeletalMesh>((unitsPath + folderPath + skelFileName).c_str());
 	for (const auto it : animationFileNames) {
 		asset.animationEnumToSequence.Add(it.first, Load<UAnimSequence>((unitsPath + folderPath + it.second).c_str()));
 	}
 	if (staticFileName != "") {
-		//PUN_LOG("LoadUnitSkel staticFileName %s static:%s", ToTChar(skelFileName), ToTChar(staticFileName));
+		//PUN_LOG("LoadUnitFull staticFileName %s static:%s", ToTChar(skelFileName), ToTChar(staticFileName));
 		asset.staticMesh = Load<UStaticMesh>((unitsPath + staticFileName).c_str());
 	}
+	if (auxFileName != "") {
+		PUN_LOG("LoadUnitFull auxFileName %s", ToTChar(auxFileName));
+		asset.auxMesh = Load<UStaticMesh>((unitsPath + auxFileName).c_str());
+	}
 	
-	_unitEnumToSkelAsset[static_cast<int>(unitEnum)].push_back(asset);
+	_unitEnumToAsset[static_cast<int>(unitEnum)].push_back(asset);
 }
 void UAssetLoaderComponent::LoadUnitWeapon(UnitAnimationEnum unitAnimation, std::string file)
 {
@@ -1250,6 +1254,7 @@ void UAssetLoaderComponent::LoadResource2(ResourceEnum resourceEnum, std::string
 	_resourceToMesh[resourceEnum] = Load<UStaticMesh>((path + meshFilePrefix + "_Stack").c_str());
 	_resourceToHandMesh[resourceEnum] = Load<UStaticMesh>((path + meshFilePrefix + "_Hand").c_str());
 }
+
 
 FGeoresourceMeshAssets UAssetLoaderComponent::georesourceMesh(GeoresourceEnum georesourceEnum)
 {

@@ -1108,7 +1108,8 @@ public:
 			{
 				if (connection.tileType == TerrainTileType::None &&
 					_simulation->IsProvinceValid(connection.provinceId) && 
-					_simulation->provinceOwnerTown(connection.provinceId) == -1
+					_simulation->provinceOwnerTown(connection.provinceId) == -1 &&
+					_simulation->regionSystem().provinceDistanceToPlayer(connection.provinceId, _aiPlayerId) < 7
 					)
 				{
 					

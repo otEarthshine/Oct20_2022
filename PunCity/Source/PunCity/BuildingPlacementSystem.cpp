@@ -1850,8 +1850,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		//meshLocation = MapUtil::DisplayLocation(cameraAtom, _mouseOnTile.worldAtom2());
 
 		// Dock Grid
-		if (_buildingEnum == CardEnum::Fisher ||
-			_buildingEnum == CardEnum::TradingPort)
+		if (IsPortBuilding(_buildingEnum))
 		{
 			bool setDockInstruct = false;
 			std::vector<PlacementGridInfo> grids;
@@ -1865,50 +1864,6 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				SetInstruction(PlacementInstructionEnum::Dock, true);
 			}
 			
-			//auto extraInfoPair = DockPlacementExtraInfo(_buildingEnum);
-			//int32 indexLandEnd = extraInfoPair.first;
-			//int32 minWaterCount = extraInfoPair.second;
-			//
-			//// Need to face water with overlapping at least 5 water tiles 
-			//int32 waterCount = 0;
-
-			//_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-			//	if (GameMap::IsInGrid(tile.x, tile.y) && simulation.IsTileBuildableForPlayer(tile, playerId))
-			//	{
-			//		int steps = GameMap::GetFacingStep(_faceDirection, _area, tile);
-			//		if (steps <= indexLandEnd) { // 0,1
-			//			bool isGreen = IsPlayerBuildable(tile);
-			//			_placementGrid.SpawnGrid(isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, tile);
-			//		}
-			//		else {
-			//			if (simulation.IsWater(tile)) {
-			//				waterCount++;
-			//			}
-			//		}
-			//	}
-			//});
-
-			//// When there isn't enough water tiles, make the part facing water red...
-			//// Otherwise make it green on water, and gray on non-water
-			//_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-			//	int steps = GameMap::GetFacingStep(_faceDirection, _area, tile);
-			//	if (steps > indexLandEnd) {
-			//		if (waterCount < minWaterCount) {
-			//			_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
-
-			//			SetInstruction(PlacementInstructionEnum::Dock, true);
-			//		}
-			//		else {
-			//			if (simulation.tileHasBuilding(tile)) { // Maybe bridge
-			//				_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
-			//			}
-			//			else {
-			//				bool isGreen = simulation.IsWater(tile);
-			//				_placementGrid.SpawnGrid(isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Gray, cameraAtom, tile);
-			//			}
-			//		}
-			//	}
-			//});
 		}
 		// Mine grid
 		else if (IsMountainMine(_buildingEnum))
@@ -2169,25 +2124,59 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 				tryPlaceBuilding(tile);
 			});
-			
-			// Storage
-			WorldTile2 storageCenter1 = WorldTile2::EvenSizeRotationCenterShift(_area.centerTile(), _faceDirection) + WorldTile2::RotateTileVector(Storage1ShiftTileVec, _faceDirection);
-			WorldTile2 storageCenter2 = storageCenter1 + WorldTile2::RotateTileVector(InitialStorage2Shift, _faceDirection);
-			WorldTile2 storageCenter3 = storageCenter1 - WorldTile2::RotateTileVector(InitialStorage2Shift, _faceDirection);
 
-			TileArea storageArea1 = BuildingArea(storageCenter1, InitialStorageTileSize, RotateDirection(Direction::E, _faceDirection));
-			TileArea storageArea2 = BuildingArea(storageCenter2, InitialStorageTileSize, RotateDirection(Direction::E, _faceDirection));
-			TileArea storageArea3 = BuildingArea(storageCenter3, InitialStorageTileSize, RotateDirection(Direction::E, _faceDirection));
+			// Side Buildings
+			if (_buildingEnum == CardEnum::Townhall)
+			{
+				// Storage
+				WorldTile2 storageCenter1 = WorldTile2::EvenSizeRotationCenterShift(_area.centerTile(), _faceDirection) + WorldTile2::RotateTileVector(Storage1ShiftTileVec, _faceDirection);
+				WorldTile2 storageCenter2 = storageCenter1 + WorldTile2::RotateTileVector(InitialStorage2Shift, _faceDirection);
+				WorldTile2 storageCenter3 = storageCenter1 - WorldTile2::RotateTileVector(InitialStorage2Shift, _faceDirection);
 
-			storageArea1.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-				tryPlaceBuilding(tile);
-			});
-			storageArea2.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-				tryPlaceBuilding(tile);
-			});
-			storageArea3.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-				tryPlaceBuilding(tile);
-			});
+				TileArea storageArea1 = BuildingArea(storageCenter1, InitialStorageTileSize, RotateDirection(Direction::E, _faceDirection));
+				TileArea storageArea2 = BuildingArea(storageCenter2, InitialStorageTileSize, RotateDirection(Direction::E, _faceDirection));
+				TileArea storageArea3 = BuildingArea(storageCenter3, InitialStorageTileSize, RotateDirection(Direction::E, _faceDirection));
+
+				storageArea1.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+					tryPlaceBuilding(tile);
+				});
+				storageArea2.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+					tryPlaceBuilding(tile);
+				});
+				storageArea3.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+					tryPlaceBuilding(tile);
+				});
+			}
+			else if (_buildingEnum == CardEnum::Colony)
+			{
+				WorldTile2 storageCenter1 = WorldTile2::EvenSizeRotationCenterShift(_area.centerTile(), _faceDirection) + WorldTile2::RotateTileVector(ColonyStorage1ShiftTileVec, _faceDirection);
+				WorldTile2 storageCenter2 = storageCenter1 + WorldTile2::RotateTileVector(ColonyInitialStorage2Shift, _faceDirection);
+
+				TileArea storageArea1 = BuildingArea(storageCenter1, ColonyInitialStorageTileSize, RotateDirection(Direction::E, _faceDirection));
+				TileArea storageArea2 = BuildingArea(storageCenter2, ColonyInitialStorageTileSize, RotateDirection(Direction::E, _faceDirection));
+
+				storageArea1.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+					tryPlaceBuilding(tile);
+				});
+				storageArea2.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+					tryPlaceBuilding(tile);
+				});
+			}
+			else if (_buildingEnum == CardEnum::PortColony)
+			{
+				WorldTile2 storageCenter1 = WorldTile2::EvenSizeRotationCenterShift(_area.centerTile(), _faceDirection) + WorldTile2::RotateTileVector(PortColony_Storage1ShiftTileVec, _faceDirection);
+				WorldTile2 storageCenter2 = storageCenter1 + WorldTile2::RotateTileVector(PortColony_InitialStorage2Shift, _faceDirection);
+
+				TileArea storageArea1 = BuildingArea(storageCenter1, ColonyInitialStorageTileSize, RotateDirection(Direction::N, _faceDirection));
+				TileArea storageArea2 = BuildingArea(storageCenter2, ColonyInitialStorageTileSize, RotateDirection(Direction::N, _faceDirection));
+
+				storageArea1.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+					tryPlaceBuilding(tile);
+				});
+				storageArea2.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+					tryPlaceBuilding(tile);
+				});
+			}
 
 			int32 provincesPrice = 0;
 			for (int32 provinceId : provinceIds) {
@@ -2206,17 +2195,17 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		}
 		else if (IsRanch(_buildingEnum))
 		{
-		_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-			if (IsPlayerBuildable(tile)) {
-				if (simulation.GetBiomeEnum(tile) == BiomeEnum::Desert) {
-					SetInstruction(PlacementInstructionEnum::FarmAndRanch, true);
-					_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
+			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+				if (IsPlayerBuildable(tile)) {
+					if (simulation.GetBiomeEnum(tile) == BiomeEnum::Desert) {
+						SetInstruction(PlacementInstructionEnum::FarmAndRanch, true);
+						_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
+						return;
+					}
+					_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, tile);
 					return;
 				}
-				_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, tile);
-				return;
-			}
-			_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
+				_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
 		});
 		}
 		//else if (_buildingEnum == CardEnum::Farm)

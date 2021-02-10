@@ -560,7 +560,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	};
 
 	// Adult Male
-	LoadUnitFull(UnitEnum::Human, "Human/CitizenMale/", "CitizenMale", animationFileNames, "Human/CitizenMale/CitizenMaleStatic");
+	LoadUnitFull(UnitEnum::Human, "Human/CitizenMale/", "CitizenMale", animationFileNames, "Human/CitizenMale/CitizenMaleStatic", "Human/CitizenMale/ImmigrationCart");
 
 	// Adult Female
 	LoadUnitFull(UnitEnum::Human, "Human/CitizenFemale/", "CitizenFemale", animationFileNames, "Human/CitizenFemale/CitizenFemaleStatic");

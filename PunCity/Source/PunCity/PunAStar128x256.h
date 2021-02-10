@@ -50,7 +50,7 @@ public:
 
 	bool FindPath(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path, bool isAccurate, bool isRoadable, int32 customCalculationCount = -1);
 	bool FindPathRoadOnly(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path);
-	bool FindPathWater(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path, int32 heuristicsFactor, uint16_t customCalculationCount = -1);
+	bool FindPathWater(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path, int32 heuristicsFactor, int32 customCalculationCount = -1);
 	bool FindPathRobust(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path);
 
 	void CleanGrid();

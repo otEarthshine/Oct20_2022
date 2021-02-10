@@ -1854,7 +1854,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		{
 			bool setDockInstruct = false;
 			std::vector<PlacementGridInfo> grids;
-			simulation.CheckPortArea(_area, _faceDirection, _buildingEnum, playerId, grids, setDockInstruct);
+			simulation.CheckPortArea(_area, _faceDirection, _buildingEnum, grids, setDockInstruct, playerId);
 
 			for (PlacementGridInfo& gridInfo : grids) {
 				_placementGrid.SpawnGrid(gridInfo.gridEnum, cameraAtom, gridInfo.location, gridInfo.direction);
@@ -2066,41 +2066,57 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				_area2.EnsureTileInsideArea(tile);
 			};
 
-			// Borders
-			TileArea topRoad(_area.maxX + 1, _area.minY, _area.maxX + 1, _area.maxY);
-			topRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-				tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, Direction::S);
-			});
-			TileArea bottomRoad(_area.minX - 1, _area.minY, _area.minX - 1, _area.maxY);
-			bottomRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-				tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, Direction::S);
-			});
-			TileArea leftRoad(_area.minX, _area.minY - 1, _area.maxX, _area.minY - 1);
-			leftRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-				tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, Direction::E);
-			});
-			TileArea rightRoad(_area.minX, _area.maxY + 1, _area.maxX, _area.maxY + 1);
-			rightRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-				tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, Direction::E);
-			});
+			//! Borders
+			{
+				TileArea topRoad(_area.maxX + 1, _area.minY, _area.maxX + 1, _area.maxY);
+				topRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+					tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, Direction::S);
+				});
+				TileArea bottomRoad(_area.minX - 1, _area.minY, _area.minX - 1, _area.maxY);
+				bottomRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+					tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, Direction::S);
+				});
+				TileArea leftRoad(_area.minX, _area.minY - 1, _area.maxX, _area.minY - 1);
+				leftRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+					tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, Direction::E);
+				});
+				TileArea rightRoad(_area.minX, _area.maxY + 1, _area.maxX, _area.maxY + 1);
+				rightRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+					tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, Direction::E);
+				});
 
-			// Corners
-			tryPlaceRoad(WorldTile2(_area.minX - 1, _area.minY - 1), PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, _faceDirection);
-			tryPlaceRoad(WorldTile2(_area.minX - 1, _area.maxY + 1), PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, _faceDirection);
-			tryPlaceRoad(WorldTile2(_area.maxX + 1, _area.minY - 1), PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, _faceDirection);
-			tryPlaceRoad(WorldTile2(_area.maxX + 1, _area.maxY + 1), PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, _faceDirection);
+				// Corners
+				tryPlaceRoad(WorldTile2(_area.minX - 1, _area.minY - 1), PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, _faceDirection);
+				tryPlaceRoad(WorldTile2(_area.minX - 1, _area.maxY + 1), PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, _faceDirection);
+				tryPlaceRoad(WorldTile2(_area.maxX + 1, _area.minY - 1), PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, _faceDirection);
+				tryPlaceRoad(WorldTile2(_area.maxX + 1, _area.maxY + 1), PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, _faceDirection);
+			}
 
 
-			// Colony is connected to intercity road
+			//! Colony needs more than 50 ppl in your capital
 			if (_buildingEnum != CardEnum::Townhall) 
 			{
-				// Colony needs more than 50 ppl in your capital
 				if (simulation.populationTown(playerId) < 50) {
 					SetInstruction(PlacementInstructionEnum::ColonyNeedsPopulation, true);
 					_forceCannotPlace = true;
 				}
+			}
+
+			//! Colony is connected to intercity road, or too far
+			if (_buildingEnum == CardEnum::Colony)
+			{
+				// ColonyTooFar
+				if (!_forceCannotPlace)
+				{
+					WorldTile2 gateTile = Building::CalculateGateTile(_faceDirection, _mouseOnTile, GetBuildingInfo(CardEnum::Townhall).size);
+					std::vector<int32> townIds = IntercityLogisticsHub::GetTradableTownIds(gateTile, playerId, CardEnum::IntercityLogisticsHub, -1, &simulation);
+					if (townIds.size() == 0) {
+						_forceCannotPlace = true;
+						SetInstruction(PlacementInstructionEnum::ColonyTooFar, true);
+					}
+				}
 				
-				// Colony is connected to intercity road
+				// ColonyNextToIntercityRoad
 				if (!_forceCannotPlace)
 				{
 					std::vector<uint32> path;
@@ -2118,18 +2134,53 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 					}
 				}
 			}
+
+			//! Port Colony is too far
+			if (_buildingEnum == CardEnum::PortColony)
+			{
+				// PortColonyTooFar
+				if (!_forceCannotPlace)
+				{
+					WorldTile2 portCenterTile = WorldTile2::EvenSizeRotationCenterShift(_area.centerTile(), _faceDirection)
+						+ WorldTile2::RotateTileVector(PortColony_Storage1ShiftTileVec, _faceDirection)
+						+ WorldTile2::RotateTileVector(PortColony_PortExtraShiftTileVec, _faceDirection);
+
+					std::vector<int32> townIds = IntercityLogisticsHub::GetTradableTownIds(portCenterTile, playerId, CardEnum::IntercityLogisticsPort, -1, &simulation);
+					if (townIds.size() == 0) {
+						_forceCannotPlace = true;
+						SetInstruction(PlacementInstructionEnum::PortColonyTooFar, true);
+					}
+				}
+				
+				// PortColonyNeedsPort
+				if (!_forceCannotPlace)
+				{
+					_forceCannotPlace = true;
+					std::vector<int32> townIds = simulation.GetTownIds(playerId);
+					for (int32 curTownId : townIds)  {
+						if (simulation.buildingCount(curTownId, CardEnum::TradingPort) > 0) {
+							_forceCannotPlace = false;
+							break;
+						}
+					}
+					if (_forceCannotPlace) {
+						SetInstruction(PlacementInstructionEnum::PortColonyNeedsPort, true);
+					}
+				}
+			}
 			
 
-			// Townhall
+			//! Townhall
 			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 				tryPlaceBuilding(tile);
 			});
+			WorldTile2 townhallCenter = _area.centerTile(_faceDirection);
 
-			// Side Buildings
+			//! Side Buildings
 			if (_buildingEnum == CardEnum::Townhall)
 			{
 				// Storage
-				WorldTile2 storageCenter1 = WorldTile2::EvenSizeRotationCenterShift(_area.centerTile(), _faceDirection) + WorldTile2::RotateTileVector(Storage1ShiftTileVec, _faceDirection);
+				WorldTile2 storageCenter1 = townhallCenter + WorldTile2::RotateTileVector(Storage1ShiftTileVec, _faceDirection);
 				WorldTile2 storageCenter2 = storageCenter1 + WorldTile2::RotateTileVector(InitialStorage2Shift, _faceDirection);
 				WorldTile2 storageCenter3 = storageCenter1 - WorldTile2::RotateTileVector(InitialStorage2Shift, _faceDirection);
 
@@ -2147,35 +2198,72 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 					tryPlaceBuilding(tile);
 				});
 			}
-			else if (_buildingEnum == CardEnum::Colony)
+			else if (_buildingEnum == CardEnum::Colony ||
+					_buildingEnum == CardEnum::PortColony)
 			{
-				WorldTile2 storageCenter1 = WorldTile2::EvenSizeRotationCenterShift(_area.centerTile(), _faceDirection) + WorldTile2::RotateTileVector(ColonyStorage1ShiftTileVec, _faceDirection);
-				WorldTile2 storageCenter2 = storageCenter1 + WorldTile2::RotateTileVector(ColonyInitialStorage2Shift, _faceDirection);
+				WorldTile2 buildingCenter1 = townhallCenter + WorldTile2::RotateTileVector(PortColony_Storage1ShiftTileVec, _faceDirection);
+				WorldTile2 buildingCenter2 = buildingCenter1 + WorldTile2::RotateTileVector(PortColony_InitialStorage2Shift, _faceDirection);
 
-				TileArea storageArea1 = BuildingArea(storageCenter1, ColonyInitialStorageTileSize, RotateDirection(Direction::E, _faceDirection));
-				TileArea storageArea2 = BuildingArea(storageCenter2, ColonyInitialStorageTileSize, RotateDirection(Direction::E, _faceDirection));
+				Direction auxFaceDirection = RotateDirection(Direction::N, _faceDirection);
 
-				storageArea1.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-					tryPlaceBuilding(tile);
-				});
-				storageArea2.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-					tryPlaceBuilding(tile);
-				});
-			}
-			else if (_buildingEnum == CardEnum::PortColony)
-			{
-				WorldTile2 storageCenter1 = WorldTile2::EvenSizeRotationCenterShift(_area.centerTile(), _faceDirection) + WorldTile2::RotateTileVector(PortColony_Storage1ShiftTileVec, _faceDirection);
-				WorldTile2 storageCenter2 = storageCenter1 + WorldTile2::RotateTileVector(PortColony_InitialStorage2Shift, _faceDirection);
+				TileArea buildingArea2 = BuildingArea(buildingCenter2, Colony_InitialStorageTileSize, auxFaceDirection);
 
-				TileArea storageArea1 = BuildingArea(storageCenter1, ColonyInitialStorageTileSize, RotateDirection(Direction::N, _faceDirection));
-				TileArea storageArea2 = BuildingArea(storageCenter2, ColonyInitialStorageTileSize, RotateDirection(Direction::N, _faceDirection));
+				if (_buildingEnum == CardEnum::Colony)
+				{
+					// Intercity Logistics Hub
+					TileArea buildingArea1 = BuildingArea(buildingCenter1, Colony_InitialStorageTileSize, auxFaceDirection);
+					buildingArea1.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+						tryPlaceBuilding(tile);
+					});
+					// Storage
+					buildingArea2.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+						tryPlaceBuilding(tile);
+					});
 
-				storageArea1.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-					tryPlaceBuilding(tile);
-				});
-				storageArea2.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-					tryPlaceBuilding(tile);
-				});
+					// Extra road surrounding Logistics Hub and Storage
+					TileArea auxArea = BuildingArea(townhallCenter + PortColony_Storage1ShiftTileVec, Colony_InitialStorageTileSize, Direction::N);
+					auxArea.maxY += 6;
+
+					
+					TileArea bottomRoad(auxArea.minX - 1, auxArea.minY - 1, auxArea.minX - 1, auxArea.maxY + 1);
+					bottomRoad = bottomRoad.RotateArea(townhallCenter, _faceDirection);
+					bottomRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+						tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, RotateDirection(Direction::S, _faceDirection));
+					});
+					TileArea leftRoad(auxArea.minX, auxArea.minY - 1, auxArea.maxX, auxArea.minY - 1);
+					leftRoad = leftRoad.RotateArea(townhallCenter, _faceDirection);
+					leftRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+						tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, RotateDirection(Direction::E, _faceDirection));
+					});
+					TileArea rightRoad(auxArea.minX, auxArea.maxY + 1, auxArea.maxX, auxArea.maxY + 1);
+					rightRoad = rightRoad.RotateArea(townhallCenter, _faceDirection);
+					rightRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+						tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, RotateDirection(Direction::E, _faceDirection));
+					});
+				}
+				else
+				{
+					// Storage
+					buildingArea2.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+						tryPlaceBuilding(tile);
+					});
+
+					// Port
+					WorldTile2 portCenter = buildingCenter1 + WorldTile2::RotateTileVector(PortColony_PortExtraShiftTileVec, _faceDirection);
+					TileArea portArea = BuildingArea(portCenter, GetBuildingInfo(CardEnum::IntercityLogisticsPort).size, auxFaceDirection);
+					
+					bool setDockInstruct = false;
+					std::vector<PlacementGridInfo> grids;
+					simulation.CheckPortArea(portArea, auxFaceDirection, CardEnum::IntercityLogisticsPort, grids, setDockInstruct);
+
+					for (PlacementGridInfo& gridInfo : grids) {
+						_placementGrid.SpawnGrid(gridInfo.gridEnum, cameraAtom, gridInfo.location, gridInfo.direction);
+					}
+
+					if (setDockInstruct) {
+						SetInstruction(PlacementInstructionEnum::Dock, true);
+					}
+				}
 			}
 
 			int32 provincesPrice = 0;

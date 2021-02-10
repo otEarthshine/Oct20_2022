@@ -4346,7 +4346,7 @@ public:
 class HumanGlobalInfo
 {
 public:
-	static const int64_t MoveAtomsPerTick = CoordinateConstants::AtomsPerTile / Time::TicksPerSecond * 3;
+	static const int64_t MoveAtomsPerTick = CoordinateConstants::AtomsPerTile / Time::TicksPerSecond * 2;// *3;
 };
 
 enum class PlacementType
@@ -4438,6 +4438,9 @@ enum class PlacementInstructionEnum
 	ColonyNeedsEmptyProvinces,
 	ColonyNeedsPopulation,
 	ColonyNextToIntercityRoad,
+	PortColonyNeedsPort,
+	ColonyTooFar,
+	PortColonyTooFar,
 	ColonyClaimCost,
 	
 	FarmAndRanch,
@@ -5515,6 +5518,8 @@ enum class UnitAnimationEnum : uint8
 	FarmPlanting,
 
 	Caravan,
+	Ship,
+	Immigration,
 
 	Rest,
 };
@@ -5530,6 +5535,8 @@ static const std::vector<std::string> UnitAnimationNames =
 	"FarmPlanting",
 
 	"Caravan",
+	"Ship",
+	"Immigration",
 
 	"Rest",
 };
@@ -7637,14 +7644,12 @@ static const int32 InitialStorageShiftFromTownhall = GetBuildingInfo(CardEnum::T
 static const WorldTile2 Storage1ShiftTileVec(0, -InitialStorageShiftFromTownhall);
 static const WorldTile2 InitialStorage2Shift(4, 0);
 
-static const int32 ColonyInitialStorageSize = 6;
-static const WorldTile2 ColonyInitialStorageTileSize(ColonyInitialStorageSize, ColonyInitialStorageSize);
-static const int32 ColonyInitialStorageShiftFromTownhall = GetBuildingInfo(CardEnum::Townhall).size.y / 2 + ColonyInitialStorageSize / 2;
-static const WorldTile2 ColonyStorage1ShiftTileVec(0, -ColonyInitialStorageShiftFromTownhall);
-static const WorldTile2 ColonyInitialStorage2Shift(6, 0);
-
-static const WorldTile2 PortColony_Storage1ShiftTileVec(-ColonyInitialStorageShiftFromTownhall, 0);
+static const int32 Colony_InitialStorageSize = 6;
+static const WorldTile2 Colony_InitialStorageTileSize(Colony_InitialStorageSize, Colony_InitialStorageSize);
+static const int32 Colony_InitialStorageShiftFromTownhall = GetBuildingInfo(CardEnum::Townhall).size.y / 2 + Colony_InitialStorageSize / 2;
+static const WorldTile2 PortColony_Storage1ShiftTileVec(-Colony_InitialStorageShiftFromTownhall, -2);
 static const WorldTile2 PortColony_InitialStorage2Shift(0, 6);
+static const WorldTile2 PortColony_PortExtraShiftTileVec(-3, 0);
 
 static const int32 ClaypitRiverFractionPercentThreshold = 20;
 static const int32 IrrigationReservoirRiverFractionPercentThreshold = 2;

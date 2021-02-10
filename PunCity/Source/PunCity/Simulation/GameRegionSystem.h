@@ -81,6 +81,11 @@ public:
 
 	int32 provinceDistanceToPlayer(int32 provinceId, int32 playerId)
 	{
+		int32 cachedDist = provinceDistanceMap(provinceId);
+		if (cachedDist != MAX_int32) {
+			return cachedDist;
+		}
+		
 		int32 minProvinceDistance = MAX_int32;
 		const std::vector<ProvinceConnection>& connections = _simulation->GetProvinceConnections(provinceId);
 		for (const ProvinceConnection& connection : connections) {

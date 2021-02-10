@@ -286,19 +286,43 @@ public:
 	}
 	FText GetTypeName() override;
 
-	void SendToTown(int32 lastTownId, int32 newTownId)
+	void SendToTownLand(int32 lastTownId, int32 newTownId)
 	{
+		_simulation->ResetUnitActions(_id, 0);
+		
 		WorldTile2 lastTownGate = _simulation->GetTownhallGate(lastTownId);
 		WorldTile2 newTownGate = _simulation->GetTownhallGate(newTownId);
-
-		_simulation->ResetUnitActions(_id, 0);
 
 		_townId = newTownId;
 		_playerId = _simulation->townPlayerId(newTownId);
 
-		Add_MoveToCaravan(newTownGate, UnitAnimationEnum::Caravan);
+		Add_MoveToCaravan(newTownGate, UnitAnimationEnum::Immigration);
 		Add_MoveTo(lastTownGate);
 	}
+
+
+	void SendToTownWater(int32 lastTownId, int32 newTownId, int32 startPortId, int32 endPortId)
+	{
+		_simulation->ResetUnitActions(_id, 0);
+
+		// Go to old townhall, go to startPort, go to endPort, go to new townhall
+		WorldTile2 lastTownGate = _simulation->GetTownhallGate(lastTownId);
+		WorldTile2 newTownGate = _simulation->GetTownhallGate(newTownId);
+
+		WorldTile2 startPortGate = _simulation->building(startPortId).gateTile();
+		WorldTile2 endPortGate = _simulation->building(endPortId).gateTile();
+
+		_townId = newTownId;
+		_playerId = _simulation->townPlayerId(newTownId);
+
+		Add_MoveTo(newTownGate, -1, UnitAnimationEnum::Immigration);
+		Add_MoveToRobust(endPortGate);
+		Add_MoveToShip(startPortId, endPortId, UnitAnimationEnum::Ship);
+		// Add_Wait();// Wait for the next 10 sec
+		Add_MoveTo(startPortGate, -1, UnitAnimationEnum::Immigration);
+		Add_MoveTo(lastTownGate);
+	}
+
 
 protected:
 	void MoveResourceSequence(std::vector<FoundResourceHolderInfo> providerInfos, std::vector<FoundResourceHolderInfo> dropoffInfos, int32 customFloodDistance = -1);

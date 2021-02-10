@@ -1920,7 +1920,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 	{
 		bool setDockInstruct = false;
 		std::vector<PlacementGridInfo> grids;
-		CheckPortArea(area, faceDirection, cardEnum, playerId, grids, setDockInstruct);
+		CheckPortArea(area, faceDirection, cardEnum, grids, setDockInstruct, playerId);
 
 		canPlace = true;
 		for (PlacementGridInfo& gridInfo : grids) {
@@ -2766,34 +2766,49 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 
 	if (command.genericCommandType == FGenericCommand::Type::SendImmigrants)
 	{	
-		int32 fromTownId = command.intVar1;
-		int32 toTownId = command.intVar2;
+		int32 startTownId = command.intVar1;
+		int32 endTownId = command.intVar2;
 
-		auto& townManage = townManager(fromTownId);
+		auto& townManage = townManager(startTownId);
 		const auto& adultIds = townManage.adultIds();
 		const auto& childIds = townManage.childIds();
 		
 		int32 adultsTargetCount = std::min(command.intVar3, static_cast<int32>(adultIds.size()));
 		int32 childrenTargetCount = std::min(command.intVar4, static_cast<int32>(childIds.size()));
 
-		WorldTile2 lastTownGate = GetTownhallGate(fromTownId);
-		WorldTile2 newTownGate = GetTownhallGate(toTownId);
+		WorldTile2 startTownGate = GetTownhallGate(startTownId);
+		WorldTile2 endTownGate = GetTownhallGate(endTownId);
+
+		bool sendByLand = false;
 
 		std::vector<uint32_t> path;
-		bool succeed = pathAI(true)->FindPathRoadOnly(lastTownGate.x, lastTownGate.y, newTownGate.x, newTownGate.y, path);
-		if (!succeed) {
-			AddPopupToFront(command.playerId,
-				LOCTEXT("SendImmigrants_RequireConnection", "Require road connection between towns to send immigrants.")
-			);
-			return;
+		bool succeed = pathAI(true)->FindPathRoadOnly(startTownGate.x, startTownGate.y, endTownGate.x, endTownGate.y, path);
+		if (succeed) {
+			sendByLand = true;
 		}
 
-		
+
+		int32 startPortId = -1;
+		int32 endPortId = -1;
+
+		if (!sendByLand)
+		{
+			FindBestPathWater(startTownId, endTownId, startTownGate, startPortId, endPortId);
+
+			if (startPortId == -1) 
+			{
+				AddPopupToFront(command.playerId,
+					LOCTEXT("SendImmigrants_RequireConnection", "Failed to send immigrants.<space>Require road or port connection between towns.")
+				);
+				return;
+			}
+		}
+
 		AddPopupToFront(command.playerId, FText::Format(
 			LOCTEXT("SendImmigrants_TargetPop", "Sent immigrants to {2}.<bullet>Adults: {0}</><bullet>Children: {1}</>"),
 			TEXT_NUM(adultsTargetCount),
 			TEXT_NUM(childrenTargetCount),
-			GetTownhall(toTownId).townNameT())
+			GetTownhall(endTownId).townNameT())
 		);
 
 		auto replaceAndSendUnitToNewTown = [&](int32 unitId)
@@ -2803,9 +2818,14 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 			int32 ageTicks = unit.age();
 			unit.Die();
 
-			int32 newUnitId = AddUnit(UnitEnum::Human, toTownId, atom, ageTicks);
+			int32 newUnitId = AddUnit(UnitEnum::Human, endTownId, atom, ageTicks);
 			auto& newUnit = unitAI(newUnitId).subclass<HumanStateAI>(UnitEnum::Human);
-			newUnit.SendToTown(fromTownId, toTownId);
+
+			if (sendByLand) {
+				newUnit.SendToTownLand(startTownId, endTownId);
+			} else {
+				newUnit.SendToTownWater(startTownId, endTownId, startPortId, endPortId);
+			}
 		};
 		
 		for (int32 i = 0; i < adultsTargetCount; i++) {
@@ -3064,15 +3084,19 @@ void GameSimulationCore::ChangeWorkMode(FChangeWorkMode command)
 	else if (bld.isEnum(CardEnum::IntercityLogisticsHub))
 	{
 		// Update trading company values
-		auto& hub = bld.subclass<IntercityLogisticsHub>(CardEnum::IntercityLogisticsHub);
+		auto& hub = bld.subclass<IntercityLogisticsHub>();
 
 		// Dropdowns
 		if (command.intVar1 < hub.resourceEnums.size()) {
 			hub.resourceEnums[command.intVar1] = static_cast<ResourceEnum>(command.intVar2);
 		}
 		// NumberBoxes
-		else {
+		else if (command.intVar1 < hub.resourceEnums.size() * 2) {
 			hub.resourceCounts[command.intVar1] = command.intVar2;
+		}
+		// Target Town
+		else {
+			hub.SetTargetTownId(command.intVar2);
 		}
 	}
 	else {
@@ -4492,6 +4516,12 @@ void GameSimulationCore::Cheat(FCheat command)
 		case CheatEnum::Cheat:
 			SimSettings::Set("CheatFastBuild", 1);
 			ChangeMoney(command.playerId, 100000);
+
+			unlockSystem(command.playerId)->researchEnabled = true;
+			unlockSystem(command.playerId)->UnlockAll();
+			_popupSystems[command.playerId].ClearPopups();
+
+			GetTownhallCapital(command.playerId).AddImmigrants(50);
 		//case CheatEnum::Army:
 		//{
 		//	std::vector<int32> armyNodeIds = GetArmyNodeIds(command.playerId);
@@ -4803,6 +4833,13 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 		roadAreas.push_back(TileArea(WorldTile2(roadMin.x, roadMin.y + 1), WorldTile2(1, size.y)));
 		roadAreas.push_back(TileArea(WorldTile2(roadMax.x, roadMin.y + 1), WorldTile2(1, size.y)));
 
+		// Extra colony road
+		if (buildingEnum == CardEnum::Colony) {
+			roadAreas.push_back(TileArea(WorldTile2(roadMin.x - 7, roadMin.y), WorldTile2(1, size.y + 2)));
+			roadAreas.push_back(TileArea(WorldTile2(roadMin.x - 6, roadMin.y), WorldTile2(6, 1)));
+			roadAreas.push_back(TileArea(WorldTile2(roadMin.x - 6, roadMax.y), WorldTile2(6, 1)));
+		}
+
 		for (size_t i = 0; i < roadAreas.size(); i++) {
 			_treeSystem->ForceRemoveTileObjArea(roadAreas[i]);
 			roadAreas[i].ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
@@ -4825,82 +4862,97 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 		//playerOwned.TryAddArmyNodeVisited(townhallId);
 	}
 
-	// Build storage yard
+	// Build Aux Buildings
 	{
 		Direction townhallFaceDirection = static_cast<Direction>(command.faceDirection);
-		WorldTile2 storageCenter1 = command.center + WorldTile2::RotateTileVector(Storage1ShiftTileVec, townhallFaceDirection);
-		WorldTile2 storageCenter2 = storageCenter1 + WorldTile2::RotateTileVector(InitialStorage2Shift, townhallFaceDirection);
-		WorldTile2 storageCenter3 = storageCenter1 - WorldTile2::RotateTileVector(InitialStorage2Shift, townhallFaceDirection);
 		
 		FPlaceBuilding params;
-		params.faceDirection = static_cast<uint8>(RotateDirection(Direction::E, townhallFaceDirection)); // static_cast<uint8>(Direction::E);
 
-		auto makeBuilding = [&](CardEnum buildingEnum) -> Building*
-		{
-			params.buildingEnum = static_cast<uint8>(buildingEnum);
-			params.area = BuildingArea(params.center, InitialStorageTileSize, RotateDirection(Direction::E, townhallFaceDirection)); //
-			params.playerId = command.playerId;
-
-			PUN_LOG("Place storage area: %d, %d, %d ,%d", params.area.minX, params.area.minY, params.area.maxX, params.area.maxY);
-
-			int32 storageId = PlaceBuilding(params);
-			if (storageId == -1) {
-				return nullptr;
-			}
-
-			Building& storage = building(storageId);
-			storage.InstantClearArea();
-			storage.SetAreaWalkable();
-			storage.FinishConstruction();
-
-			return &storage;
-		};
-
-		{
-			//params.center = command.center + WorldTile2(0, -InitialStorageShiftFromTownhall); // Old 8x8 WorldTile2(-2, -shiftFromTownhall);
-			params.center = storageCenter1;
-
-			Building* storage = makeBuilding(CardEnum::StorageYard);
-			PUN_ENSURE(storage, return);
-
-			/*
-			 * Initial Resources
-			 */
-#if TRAILER_MODE
-			if (!playerOwned.initialResources.isValid()) {
-				FChooseInitialResources initResourceCommand = FChooseInitialResources::GetDefault();
-				initResourceCommand.playerId = playerOwned.initialResources.isValid();
-				ChooseInitialResources(initResourceCommand);
-			}
-#endif
-		}
-
-		// Storage 2
-		{
-			params.center = storageCenter2;
-
-			Building* storage = makeBuilding(CardEnum::StorageYard);
-			PUN_ENSURE(storage, return);
-		}
-
-		// Building 3 ...
 		FChooseInitialResources initialResources = playerOwned.initialResources;
 		if (IsColonyPlacement(buildingEnum)) {
 			initialResources.medicineAmount /= 2;
 			initialResources.toolsAmount /= 4;
 		}
-		
-		if (buildingEnum == CardEnum::Townhall) {
-			params.center = storageCenter3;
 
-			Building* storage = makeBuilding(CardEnum::StorageYard);
-			PUN_ENSURE(storage, return);
+		auto makeBuilding = [&](CardEnum buildingEnum, WorldTile2 buildingSize, Direction faceDirection) -> Building*
+		{
+			params.buildingEnum = static_cast<uint8>(buildingEnum);
+			params.faceDirection = static_cast<uint8>(RotateDirection(faceDirection, townhallFaceDirection));
+			params.area = BuildingArea(params.center, buildingSize, static_cast<Direction>(params.faceDirection));
+			params.playerId = command.playerId;
+
+			PUN_LOG("Place %s area: %d, %d, %d ,%d", *GetBuildingInfo(buildingEnum).nameF(), params.area.minX, params.area.minY, params.area.maxX, params.area.maxY);
+
+			int32 bldId = PlaceBuilding(params);
+			if (bldId == -1) {
+				return nullptr;
+			}
+
+			Building& bld = building(bldId);
+			bld.InstantClearArea();
+			bld.SetAreaWalkable();
+			bld.FinishConstruction();
+
+			return &bld;
+		};
+
+		if (buildingEnum == CardEnum::Townhall)
+		{
+			WorldTile2 storageCenter1 = command.center + WorldTile2::RotateTileVector(Storage1ShiftTileVec, townhallFaceDirection);
+			WorldTile2 storageCenter2 = storageCenter1 + WorldTile2::RotateTileVector(InitialStorage2Shift, townhallFaceDirection);
+			WorldTile2 storageCenter3 = storageCenter1 - WorldTile2::RotateTileVector(InitialStorage2Shift, townhallFaceDirection);
+			
+			// Storage 1
+			{
+				params.center = storageCenter1;
+
+				Building* storage = makeBuilding(CardEnum::StorageYard, InitialStorageTileSize, Direction::E);
+				PUN_ENSURE(storage, return);
+			}
+
+			// Storage 2
+			{
+				params.center = storageCenter2;
+
+				Building* storage = makeBuilding(CardEnum::StorageYard, InitialStorageTileSize, Direction::E);
+				PUN_ENSURE(storage, return);
+			}
+
+			// Storage 3 ...
+			{
+				params.center = storageCenter3;
+
+				Building* storage = makeBuilding(CardEnum::StorageYard, InitialStorageTileSize, Direction::E);
+				PUN_ENSURE(storage, return);
+			}
 		}
-		else {
-			params.center = storageCenter3;
+		else if (buildingEnum == CardEnum::Colony ||
+				buildingEnum == CardEnum::PortColony)
+		{
+			WorldTile2 buildingCenter1 = townhallBld.centerTile() + WorldTile2::RotateTileVector(PortColony_Storage1ShiftTileVec, townhallFaceDirection);
+			WorldTile2 buildingCenter2 = buildingCenter1 + WorldTile2::RotateTileVector(PortColony_InitialStorage2Shift, townhallFaceDirection);
 
-			Building* bld = makeBuilding(CardEnum::IntercityLogisticsHub);
-			PUN_ENSURE(bld, return);
+			// Storage
+			params.center = buildingCenter2;
+
+			Building* storage = makeBuilding(CardEnum::StorageYard, InitialStorageTileSize, Direction::N);
+			PUN_ENSURE(storage, return);
+
+			// Intercity LogisticsHub/Port
+			Building* bld = nullptr;
+			
+			if (buildingEnum == CardEnum::Colony) 
+			{
+				params.center = buildingCenter1;
+				bld = makeBuilding(CardEnum::IntercityLogisticsHub, GetBuildingInfo(CardEnum::IntercityLogisticsHub).size, Direction::N);
+				PUN_ENSURE(bld, return);
+			}
+			else
+			{
+				params.center = buildingCenter1 + WorldTile2::RotateTileVector(PortColony_PortExtraShiftTileVec, townhallFaceDirection);
+				bld = makeBuilding(CardEnum::IntercityLogisticsPort, GetBuildingInfo(CardEnum::IntercityLogisticsPort).size, Direction::N);
+				PUN_ENSURE(bld, return);
+			}
 
 			auto& hub = bld->subclass<IntercityLogisticsHub>();
 			hub.resourceEnums = {

@@ -175,6 +175,7 @@ public:
 		MoveToRobust,
 		MoveToward,
 		MoveToCaravan,
+		MoveToShip,
 
 		Produce,
 		Construct,
@@ -279,6 +280,7 @@ public:
 			CASE(MoveToRobust);
 			CASE(MoveToward);
 			CASE(MoveToCaravan);
+			CASE(MoveToShip);
 
 			CASE(Produce);
 			CASE(Construct);
@@ -324,13 +326,17 @@ public:
 	void Add_PlantTree(WorldTile2 targetTile, TileObjEnum tileObjEnum);	void PlantTree();
 	void Add_NourishTree(WorldTile2 targetTile);						void NourishTree();
 
-	void Add_MoveTo(WorldTile2 end, int32 customFloodDistance = -1);	void MoveTo();  bool MoveTo(WorldTile2 end, int32 customFloodDistance = -1);
+	void Add_MoveTo(WorldTile2 end, int32 customFloodDistance = -1, UnitAnimationEnum animationEnum = UnitAnimationEnum::Walk);
+	void MoveTo();
+	bool MoveTo(WorldTile2 end, int32 customFloodDistance = -1, UnitAnimationEnum animationEnum = UnitAnimationEnum::Walk);
+
 	void Add_MoveToResource(ResourceHolderInfo holderInfo, int32 customFloodDistance = -1);			void MoveToResource(); bool MoveToResource(ResourceHolderInfo holderInfo, int32 customFloodDistance);
 	void Add_MoveInRange(WorldTile2 end, int32_t range);			void MoveInRange(); // TODO: REmove??
 	void Add_MoveToForceLongDistance(WorldTile2 end);				void MoveToForceLongDistance();
 	void Add_MoveToRobust(WorldTile2 end);							void MoveToRobust();	void MoveToRobust(WorldTile2 end);
 	void Add_MoveToward(WorldAtom2 end, int32 fraction100000);	void MoveToward();
 	void Add_MoveToCaravan(WorldTile2 end, UnitAnimationEnum animationEnum); bool MoveToCaravan();
+	void Add_MoveToShip(int32 startPortId, int32 endPortId, UnitAnimationEnum animationEnum); bool MoveToShip();
 
 	void MoveTo_NoFail(WorldTile2 end, int32 customFloodDistance); // Try MoveTo, if failed, do MoveToRobust
 

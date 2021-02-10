@@ -20,10 +20,9 @@ void UWorldTradeUI::PunInit()
 void UWorldTradeUI::OpenUI(int32 objectId)
 {
 	WorldTradeRowBox->ClearChildren();
-
-	ResourceSystem& resourceSystem = simulation().resourceSystem(worldTradeUITownId());
-
 	punId = objectId;
+	
+	ResourceSystem& resourceSystem = simulation().resourceSystem(worldTradeUITownId());
 
 	bool isSellOnly = simulation().building(objectId).isEnum(CardEnum::Townhall);
 

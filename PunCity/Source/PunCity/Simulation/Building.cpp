@@ -48,6 +48,9 @@ void Building::Init(IGameSimulationCore& simulation, int objectId, int32 townId,
 	_priority = PriorityEnum::NonPriority;
 	_cardSlot1 = CardStatus();
 
+	_cachedWaterDestinationPortIds.clear();
+	_cachedWaterRoutes.clear();
+
 	BldInfo info = BuildingInfo[buildingEnumInt()];
 	// Construction
 	_maxOccupants = info.maxBuilderCount;

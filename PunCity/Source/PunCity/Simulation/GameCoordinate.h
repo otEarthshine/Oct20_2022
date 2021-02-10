@@ -701,6 +701,10 @@ struct TileArea
 	WorldTile2 centerTile() {
 		return (min() + max()) / 2;
 	}
+
+	WorldTile2 centerTile(Direction faceDirection) {
+		return WorldTile2::EvenSizeRotationCenterShift(centerTile(), faceDirection);
+	}
 	
 	
 	std::string ToString() {
@@ -870,6 +874,38 @@ struct TileArea
 	}
 
 	TileArea tileArea2x2() { return TileArea(minX / 2, minY / 2, maxX / 2, maxY / 2); }
+
+
+	TileArea RotateArea(WorldTile2 centerTile, Direction direction) // S as no rotation
+	{
+		WorldTile2 tile1(minX, minY);
+		WorldTile2 tile2(minX, maxY);
+		WorldTile2 tile3(maxX, minY);
+		WorldTile2 tile4(maxX, maxY);
+
+		WorldTile2 tileShift1 = tile1 - centerTile;
+		WorldTile2 tileShift2 = tile2 - centerTile;
+		WorldTile2 tileShift3 = tile3 - centerTile;
+		WorldTile2 tileShift4 = tile4 - centerTile;
+		
+		WorldTile2 rotatedTileShift1 = WorldTile2::RotateTileVector(tileShift1, direction);
+		WorldTile2 rotatedTileShift2 = WorldTile2::RotateTileVector(tileShift2, direction);
+		WorldTile2 rotatedTileShift3 = WorldTile2::RotateTileVector(tileShift3, direction);
+		WorldTile2 rotatedTileShift4 = WorldTile2::RotateTileVector(tileShift4, direction);
+
+		WorldTile2 rotatedTile1 = rotatedTileShift1 + centerTile;
+		WorldTile2 rotatedTile2 = rotatedTileShift2 + centerTile;
+		WorldTile2 rotatedTile3 = rotatedTileShift3 + centerTile;
+		WorldTile2 rotatedTile4 = rotatedTileShift4 + centerTile;
+
+		TileArea area;
+		area.minX = std::min(std::min(rotatedTile1.x, rotatedTile2.x), std::min(rotatedTile3.x, rotatedTile4.x));
+		area.maxX = std::max(std::max(rotatedTile1.x, rotatedTile2.x), std::max(rotatedTile3.x, rotatedTile4.x));
+		area.minY = std::min(std::min(rotatedTile1.y, rotatedTile2.y), std::min(rotatedTile3.y, rotatedTile4.y));
+		area.maxY = std::max(std::max(rotatedTile1.y, rotatedTile2.y), std::max(rotatedTile3.y, rotatedTile4.y));
+		
+		return area;
+	}
 
 	////! Append onto the network blob
 	//void SerializeAndAppendToBlob(TArray<int32>& blob) {

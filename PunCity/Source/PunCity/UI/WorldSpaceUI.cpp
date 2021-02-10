@@ -1242,6 +1242,15 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	else if (needInstruction(PlacementInstructionEnum::ColonyNextToIntercityRoad)) {
 		punBox->AddRichTextCenter(LOCTEXT("MustBeNextToIntercityRoad_Instruct", "<Red>Colony's Townhall must be connected to Capital's Townhall through Intercity Road.</>"));
 	}
+	else if (needInstruction(PlacementInstructionEnum::PortColonyNeedsPort)) {
+		punBox->AddRichTextCenter(LOCTEXT("PortColonyNeedsPort_Instruct", "<Red>Port Colony requires a Trading Port in the Capital.</>"));
+	}
+	else if (needInstruction(PlacementInstructionEnum::ColonyTooFar)) {
+		punBox->AddRichTextCenter(LOCTEXT("ColonyTooFar_Instruct", "<Red>Too far from Townhall</>\n<Red>(max 500 tiles)</>"));
+	}
+	else if (needInstruction(PlacementInstructionEnum::PortColonyTooFar)) {
+		punBox->AddRichTextCenter(LOCTEXT("ColonyTooFar_Instruct", "<Red>Too far from Trading Port</>\n<Red>(max 1000 tiles)</>"));
+	}
 	else if (needInstruction(PlacementInstructionEnum::ColonyClaimCost)) {
 		int32 claimCost = getInstruction(PlacementInstructionEnum::ColonyClaimCost).intVar1;
 		int32 money = simulation().money(playerId());

@@ -283,10 +283,10 @@ bool PunAStar128x256::FindPath(int startX, int startY, int endX, int endY, std::
 
 	uint32_t successors[8];
 
-	uint16_t calculationCount = 0;
+	int32 calculationCount = 0;
 	//uint16_t maxCalculationCount = isLongDistance ? 200000 : 30000;
 
-	uint16_t maxCalculationCount = (customCalculationCount == -1) ? 30000 : customCalculationCount;
+	int32 maxCalculationCount = (customCalculationCount == -1) ? 30000 : customCalculationCount;
 
 	while (!_openList.isEmpty() && calculationCount < maxCalculationCount)
 	{
@@ -588,10 +588,10 @@ bool PunAStar128x256::FindPathRoadOnly(int startX, int startY, int endX, int end
 
 	uint32_t successors[8];
 
-	uint16_t calculationCount = 0;
+	int32 calculationCount = 0;
 	//uint16_t maxCalculationCount = isLongDistance ? 200000 : 30000;
 
-	uint16_t maxCalculationCount = 30000;
+	int32 maxCalculationCount = 30000;
 
 	while (!_openList.isEmpty() && calculationCount < maxCalculationCount)
 	{
@@ -806,7 +806,7 @@ void PunAStar128x256::GetSuccessorsWaterOnly(uint32_t locInt, uint32_t* successo
 	}
 }
 
-bool PunAStar128x256::FindPathWater(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path, int32 heuristicsFactor, uint16_t customCalculationCount)
+bool PunAStar128x256::FindPathWater(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path, int32 heuristicsFactor, int32 customCalculationCount)
 {
 	SCOPE_CYCLE_COUNTER(STAT_PunPathAI);
 
@@ -838,9 +838,9 @@ bool PunAStar128x256::FindPathWater(int startX, int startY, int endX, int endY, 
 
 	uint32_t successors[8];
 
-	uint16_t calculationCount = 0;
+	int32 calculationCount = 0;
 
-	uint16_t maxCalculationCount = 60000;
+	int32 maxCalculationCount = 60000;
 	if (customCalculationCount != -1) {
 		maxCalculationCount = customCalculationCount;
 	}

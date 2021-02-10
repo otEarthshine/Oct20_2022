@@ -26,6 +26,9 @@ public:
 	const UnitEnum& unitEnum(int id) const final { return _unitLeans[id].unitEnum; }
 	std::vector<WorldTile2>& waypoint(int id) final { return _unitLeans[id].waypointStack; }
 
+	void SetWaypoint(int32 id, std::vector<WorldTile2>& waypoint) final {
+		_unitLeans[id].waypointStack = waypoint;
+	}
 
 	// Trim waypoint for placing resources on storage's nearest point
 	void TrimWaypoint(int storageIdToTrim, int32 unitId) final

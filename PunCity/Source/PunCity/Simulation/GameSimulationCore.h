@@ -1020,7 +1020,130 @@ public:
 	void OnRefreshFloodGrid(WorldRegion2 region) override {
 		_buildingSystem->OnRefreshFloodGrid(region);
 	}
-	
+
+	int32 FindNearestBuildingId(WorldTile2 tile, CardEnum buildingEnum, int32 townId, int32& minBuildingDist) override
+	{
+		minBuildingDist = MAX_int32;
+		int32 nearestBuildingId = -1;
+
+		const std::vector<int32>& bldIds = buildingIds(townId, buildingEnum);
+		for (int32 bldId : bldIds) {
+			int32 dist = WorldTile2::Distance(gateTile(bldId), tile);
+			if (dist < minBuildingDist) {
+				minBuildingDist = dist;
+				nearestBuildingId = bldId;
+			}
+		}
+		return nearestBuildingId;
+	}
+	bool FindPathWater(int32 startPortId, int32 endPortId, std::vector<WorldTile2>& resultPath) override
+	{	
+		Building& startPort = building(startPortId);
+		Building& endPort = building(endPortId);
+
+		// Look in the cache first
+		const std::vector<int32>& cachedPortIds = startPort.cachedWaterDestinationPortIds();
+		for (int32 i = 0; i < cachedPortIds.size(); i++) {
+			if (cachedPortIds[i] == endPortId) {
+				resultPath = startPort.cachedWaterRoute(i);
+				return resultPath.size() > 0;
+			}
+		}
+		
+		WorldTile2 start = startPort.centerTile() + WorldTile2::RotateTileVector(WorldTile2(3, 0), startPort.faceDirection()); // port tile
+		WorldTile2 end = endPort.centerTile() + WorldTile2::RotateTileVector(WorldTile2(3, 0), endPort.faceDirection()); // port tile
+
+		resultPath.clear();
+		
+		int32 nearestDistance = MAX_int32;
+		WorldTile2 nearestWaterTile;
+		
+		auto checkTile = [&](WorldTile2 tile)
+		{
+			int32 dist = WorldTile2::Distance(start, tile) + WorldTile2::Distance(tile, end);
+			if (dist < nearestDistance) {
+				nearestDistance = dist;
+				nearestWaterTile = tile;
+			}
+		};
+		auto checkSurroundingTiles = [&](WorldTile2 tile)
+		{
+			WorldTile2 localMin((tile.x / 4) * 4, (tile.y / 4) * 4);
+			checkTile(localMin);
+			checkTile(localMin + WorldTile2(1, 0));
+			checkTile(localMin + WorldTile2(0, 1));
+			checkTile(localMin + WorldTile2(1, 1));
+		};
+
+		// Find start
+		nearestDistance = MAX_int32;
+		checkSurroundingTiles(start);
+		WorldTile2 waterStart = nearestWaterTile;
+
+		// Find end
+		nearestDistance = MAX_int32;
+		checkSurroundingTiles(start);
+		WorldTile2 waterEnd = nearestWaterTile;
+
+		{
+			SCOPE_TIMER("FindPathShip");
+			std::vector<uint32_t> rawPath;
+			bool succeed = pathAI(true)->FindPathWater(waterStart.x / 4, waterStart.y / 4, waterEnd.x / 4, waterEnd.y / 4, rawPath, 1, 200000);
+			if (succeed) {
+				MapUtil::UnpackAStarPath_4x4(rawPath, resultPath);
+
+				// Cache
+				startPort.AddWaterRoute(endPortId, resultPath);
+				return true;
+			}
+		}
+		return false;
+	}
+	std::vector<int32> GetPortIds(int32 townId)
+	{
+		std::vector<int32> portIds = buildingIds(townId, CardEnum::TradingPort);
+		const std::vector<int32>& portIds2 = buildingIds(townId, CardEnum::IntercityLogisticsPort);
+		portIds.insert(portIds.end(), portIds2.begin(), portIds2.end());
+		
+		return portIds;
+	}
+	bool FindBestPathWater(int32 startTownId, int32 endTownId, WorldTile2 startLand, int32& startPortId, int32& endPortId)
+	{
+		startPortId = -1;
+		endPortId = -1;
+
+		WorldTile2 startTownGate = GetTownhallGate(startTownId);
+		if (!startTownGate.isValid()) { return false; }
+
+		// Rank port by how close it is to origin
+		std::vector<int32> startPortIds = GetPortIds(startTownId);
+		std::sort(startPortIds.begin(), startPortIds.end(), [&](int32 a, int32 b) {
+			int32 distA = WorldTile2::Distance(building(a).centerTile(), startLand);
+			int32 distB = WorldTile2::Distance(building(b).centerTile(), startLand);
+			return distA < distB;
+		});
+		// Rank port by how close it is to another town
+		std::vector<int32> endPortIds = GetPortIds(endTownId);
+		std::sort(endPortIds.begin(), endPortIds.end(), [&](int32 a, int32 b) {
+			int32 distA = WorldTile2::Distance(building(a).centerTile(), startTownGate);
+			int32 distB = WorldTile2::Distance(building(b).centerTile(), startTownGate);
+			return distA < distB;
+		});
+
+		std::vector<WorldTile2> resultPath;
+		for (int32 curEndPortId : endPortIds) { // End first since 
+			for (int32 curStartPortId : startPortIds)
+			{
+				if (FindPathWater(curStartPortId, curEndPortId, resultPath)) {
+					startPortId = curStartPortId;
+					endPortId = curEndPortId;
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
 
 	/*
 	 * Province
@@ -1827,6 +1950,16 @@ public:
 		_debugLineSystem.DrawLine(atom, startShift, endAtom, endShift, Color, Thickness, LifeTime);
 #endif
 	}
+	// NOTE!!! Y is up
+	void DrawLine(WorldTile2 tile, FVector startShift, WorldTile2 endTile, FVector endShift, FLinearColor Color,
+					float Thickness = 1.0f, float LifeTime = 10000) final
+	{
+		_debugLineSystem.DrawLine(tile.worldAtom2(), startShift, endTile.worldAtom2(), endShift, Color, Thickness, LifeTime);
+	}
+	void DrawLine(WorldTile2 tile, FLinearColor Color, float Thickness = 1.0f, float LifeTime = 10000) final
+	{
+		DrawLine(tile, FVector::ZeroVector, tile, FVector(0, 10, 10), Color, Thickness, LifeTime);
+	}
 
 	void DrawArea(TileArea area, FLinearColor color, float tilt) final
 	{
@@ -2619,7 +2752,8 @@ public:
 	void Cheat(FCheat command) final;
 
 	// NetworkCommand Helper
-	void CheckPortArea(TileArea area, Direction faceDirection, CardEnum buildingEnum, int32 playerId, std::vector<PlacementGridInfo>& grids, bool& setDockInstruction)
+	void CheckPortArea(TileArea area, Direction faceDirection, CardEnum buildingEnum, std::vector<PlacementGridInfo>& grids, 
+						bool& setDockInstruction, int32 playerId = -1) // player == -1 means no player check
 	{
 		auto extraInfoPair = DockPlacementExtraInfo(buildingEnum);
 		int32 indexLandEnd = extraInfoPair.first;

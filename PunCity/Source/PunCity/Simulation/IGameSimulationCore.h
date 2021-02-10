@@ -270,6 +270,9 @@ public:
 
 	virtual void SetRoadPathAI(WorldTile2 tile, bool isRoad) = 0;
 
+	virtual int32 FindNearestBuildingId(WorldTile2 tile, CardEnum buildingEnum, int32 townId, int32& minBuildingDist) = 0;
+	virtual bool FindPathWater(int32 startPortId, int32 endPortId, std::vector<WorldTile2>& resultPath) = 0;
+	
 	virtual TerrainTileType terraintileType(int32 tileId) = 0;
 	virtual bool IsWater(WorldTile2 tile) = 0;
 	virtual bool IsMountain(WorldTile2 tile) = 0;
@@ -503,6 +506,9 @@ public:
 
 	virtual void DrawLine(WorldAtom2 atom, FVector startShift, WorldAtom2 endAtom, FVector endShift, FLinearColor Color,
 							float Thickness = 1.0f, float LifeTime = 10000) = 0;
+	virtual void DrawLine(WorldTile2 tile, FVector startShift, WorldTile2 endTile , FVector endShift, FLinearColor Color,
+							float Thickness = 1.0f, float LifeTime = 10000) = 0;
+	virtual void DrawLine(WorldTile2 tile, FLinearColor Color, float Thickness = 1.0f, float LifeTime = 10000) = 0;
 	virtual void DrawArea(TileArea area, FLinearColor color = FLinearColor::Yellow, float tilt = 0) = 0;
 
 	//! Terrain

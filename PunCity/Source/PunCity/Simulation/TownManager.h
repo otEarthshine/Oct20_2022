@@ -32,6 +32,7 @@ static int32 GetTownSizeMinPopulation(int32 tier) { return TownSizeMinPopulation
 static const std::vector<CardEnum> DefaultJobPriorityListAllSeason
 {
 	CardEnum::IntercityLogisticsHub,
+	//CardEnum::IntercityLogisticsPort,
 	
 	CardEnum::FruitGatherer,
 	CardEnum::Farm,
@@ -622,7 +623,7 @@ public:
 							// Set the provincesFromTownhall if needed
 							for (int32 i = 0; i < _provincesClaimed.size(); i++) {
 								if (connection.provinceId == _provincesClaimed[i] &&
-									regionSys.provinceDistanceMap(connection.provinceId) == -1)
+									regionSys.provinceDistanceMap(connection.provinceId) == MAX_int32)
 								{
 									regionSys.SetProvinceDistanceMap(connection.provinceId, level);
 									nextProvinceIds.push_back(connection.provinceId);
@@ -636,10 +637,10 @@ public:
 			curProvinceIds = nextProvinceIds;
 		}
 
-		//// DEBUG
-		//for (int32 i = 0; i < _provincesClaimed.size(); i++) {
-		//	PUN_LOG("Refresh province:%d distance:%d", _provincesClaimed[i], _provincesFromTownhall[i]);
-		//}
+		// DEBUG
+		for (int32 i = 0; i < _provincesClaimed.size(); i++) {
+			PUN_LOG("Refresh province:%d distance:%d", _provincesClaimed[i], regionSys.provinceDistanceMap(_provincesClaimed[i]));
+		}
 		
 		if (lightMode) {
 			return;

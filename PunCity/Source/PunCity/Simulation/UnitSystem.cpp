@@ -344,17 +344,6 @@ void UnitSystem::Tick()
 		{
 			SCOPE_CYCLE_COUNTER(STAT_PunUnitMoving);
 
-			// TODO: What is this for???
-//#if WITH_EDITOR
-//			int32 tick = Time::Ticks();
-//			if (unitLean.nextUpdate.caller == UnitUpdateCallerEnum::TransformState_NeedTargetAtom1) {
-//				//PUN_CHECK(unitLean.ticksNeeded + unitLean.lastMoveTick == tick);
-//				if (unitLean.ticksNeeded + unitLean.lastMoveTick != tick) {
-//					continue; // This is a dupe leftover unmatched call... skip
-//				}
-//			}
-//#endif
-
 			// Move Unit to new region if needed
 			_unitSubregionLists.TryMove(unitLean.atomLocation.worldTile2(), unitLean.targetLocation.worldTile2(), id);
 
@@ -414,8 +403,12 @@ void UnitSystem::Tick()
 					UnitStateAI& stateAI = unitStateAI(id);
 					HumanStateAI& humanAI = stateAI.subclass<HumanStateAI>();
 
-					if (stateAI.animationEnum() == UnitAnimationEnum::Caravan) {
+					UnitAnimationEnum animationEnum = stateAI.animationEnum();
+					if (animationEnum == UnitAnimationEnum::Caravan) {
 						moveSpeed = moveSpeed * 3;
+					}
+					else if (animationEnum == UnitAnimationEnum::Ship) {
+						moveSpeed = moveSpeed * 5;
 					}
 					else
 					{

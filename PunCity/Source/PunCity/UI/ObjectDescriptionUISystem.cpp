@@ -1034,9 +1034,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							//descriptionBox->AddLineSpacer(10);
 
 							// Abandon town
-							auto button = descriptionBox->AddButtonRed(FText(), LOCTEXT("AbandonTown", "Abandon Town"), nullptr, FText(), this, CallbackEnum::AbandonTown);
-							AddToolTip(button, LOCTEXT("AbandonTownTooltip", "Abandon this town to build a new one. (Destroy this town)"));
-							descriptionBox->AddLineSpacer(10);
+							//auto button = descriptionBox->AddButtonRed(FText(), LOCTEXT("AbandonTown", "Abandon Town"), nullptr, FText(), this, CallbackEnum::AbandonTown);
+							//AddToolTip(button, LOCTEXT("AbandonTownTooltip", "Abandon this town to build a new one. (Destroy this town)"));
+							//descriptionBox->AddLineSpacer(10);
 						}
 						else
 						{
@@ -1409,7 +1409,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						addDropDown(1);
 						addDropDown(2);
 					}
-					else if (building.isEnum(CardEnum::IntercityLogisticsHub))
+					else if (building.isEnum(CardEnum::IntercityLogisticsHub) ||
+								building.isEnum(CardEnum::IntercityLogisticsPort))
 					{
 						descriptionBox->AddRichText(LOCTEXT("IntercityLogisticsHub_ChooseResources", "Choose 4 resources to haul to delivery target"));
 						descriptionBox->AddSpacer(12);
@@ -1430,16 +1431,20 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 						const FText noneText = LOCTEXT("None", "None");
 
+						int32 numberBoxStartIndex = resourceEnums.size();
+						int32 targetTownDropdownIndex = resourceEnums.size() * 2; // Last Index
+
 						// Target Town Dropdown
 						{
 							TArray<FText> options;
 							options.Add(noneText);
-							const auto& townIds = simulation.GetTownIds(playerId());
+							const auto& townIds = hub.GetTradableTownIds();
 							for (int32 townId : townIds) {
 								if (townId != building.townId()) {
 									options.Add(simulation.townNameT(townId));
 								}
 							}
+							
 							descriptionBox->AddDropdown(
 								building.buildingId(),
 								options,
@@ -1452,7 +1457,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 									command->intVar2 = dataSource->simulation().FindTownIdFromName(networkInterface->playerId(), sItem);
 									networkInterface->SendNetworkCommand(command);
 								},
-								resourceEnums.size() // Last Index
+								targetTownDropdownIndex
 							);
 						}
 						
@@ -1487,8 +1492,6 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 									},
 									index
 								);
-
-								int32 numberBoxStartIndex = resourceEnums.size();
 
 								descriptionBox->AddEditableNumberBox(
 									building.buildingId(),
@@ -2892,7 +2895,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				int32 provinceDistance = simulation.regionSystem().provinceDistanceToPlayer(provinceId, playerId());
 				if (provinceDistance != MAX_int32)
 				{
-					ADDTEXT_(LOCTEXT("TileDescription_Distance", "\n<Bold>Distance from Townhall:</> {3} provinces"),
+					ADDTEXT_(LOCTEXT("TileDescription_Distance", "\n<Bold>Distance from Townhall:</> {0} provinces"),
 						TEXT_NUM(provinceDistance)
 					);
 				}
@@ -3795,20 +3798,21 @@ void UObjectDescriptionUISystem::AddBiomeInfo(WorldTile2 tile, UPunBoxWidget* de
 		ADDTEXT_(LOCTEXT("BiomeInfoFertility", "<Bold>Fertility:</> {0}\n"), TEXT_PERCENT(terrainGenerator.GetFertilityPercent(tile)));
 
 		int32 provinceId = provinceSys.GetProvinceIdClean(tile);
-		if (provinceId != -1) {
+		if (provinceId != -1) 
+		{
+			// Province flat area
 			ADDTEXT_(LOCTEXT("BiomeInfoProvinceFlatArea", "<Bold>Province flat area:</> {0} tiles\n"),
 				TEXT_NUM(provinceSys.provinceFlatTileCount(provinceSys.GetProvinceIdClean(tile)))
 			);
-			//ss << "Defense Bonus:" << (simulation().provinceSystem().provinceIsMountain(provinceId) ? "50%(Mountain)" : "0%");
-			ADDTEXT_INV_("\n");
-		}
 
-		int32 provinceDistance = sim.regionSystem().provinceDistanceToPlayer(provinceId, playerId());
-		if (provinceDistance != MAX_int32)
-		{
-			ADDTEXT_(LOCTEXT("BiomeInfoDescription_Distance", "\n<Bold>Distance from Townhall:</> {3} provinces"),
-				TEXT_NUM(provinceDistance)
-			);
+			// Distance from Townhall
+			int32 provinceDistance = sim.regionSystem().provinceDistanceToPlayer(provinceId, playerId());
+			if (provinceDistance != MAX_int32) {
+				ADDTEXT_(LOCTEXT("BiomeInfoDescription_Distance", "<Bold>Distance from Townhall:</> {0} provinces\n"),
+					TEXT_NUM(provinceDistance)
+				);
+			}
+			//ss << "Defense Bonus:" << (simulation().provinceSystem().provinceIsMountain(provinceId) ? "50%(Mountain)" : "0%");
 			ADDTEXT_INV_("\n");
 		}
 	}

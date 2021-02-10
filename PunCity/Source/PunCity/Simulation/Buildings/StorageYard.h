@@ -5,6 +5,7 @@
 #include "../Building.h"
 #include "../Resource/ResourceSystem.h"
 #include "../PlayerOwnedManager.h"
+#include "PunCity/MapUtil.h"
 
 class StorageBase : public Building
 {
@@ -323,7 +324,7 @@ public:
 
 		// Grab any existing town as townID
 		targetTownId = -1;
-		const auto& townIds = _simulation->GetTownIds(_playerId);
+		const auto& townIds = GetTradableTownIds();
 		for (int32 townId : townIds) {
 			if (townId != _townId) {
 				targetTownId = townId;
@@ -331,6 +332,35 @@ public:
 			}
 		}
 		lastTargetTownId = -1;
+
+		// Holders
+		for (ResourceInfo info : ResourceInfos) {
+			AddResourceHolder(info.resourceEnum, ResourceHolderType::Provider, 0);
+		}
+	}
+
+	std::vector<int32> GetTradableTownIds() {
+		return GetTradableTownIds(gateTile(), _playerId, buildingEnum(), _townId, _simulation);
+	}
+
+	static std::vector<int32> GetTradableTownIds(WorldTile2 originTile, int32 playerId, CardEnum buildingEnum, int32 townToOmit, IGameSimulationCore* sim)
+	{
+		int32 maxTownDistance = (buildingEnum == CardEnum::IntercityLogisticsHub) ? MaxLogisticsHubDistance : MaxLogisticsPortDistance;
+
+		std::vector<int32> tradableTownIds;
+
+		const auto& townIds = sim->GetTownIds(playerId);
+		for (int32 townId : townIds) {
+			if (townId != townToOmit)
+			{
+				// Ensure the town isn't too far
+				WorldTile2 townGateTile = sim->GetTownhallGate(townId);
+				if (townGateTile.isValid() && WorldTile2::Distance(townGateTile, originTile) <= maxTownDistance) {
+					tradableTownIds.push_back(townId);
+				}
+			}
+		}
+		return tradableTownIds;
 	}
 
 	bool needSetup() {
@@ -356,6 +386,10 @@ public:
 		return Building::RefreshHoverWarning();
 	}
 
+	virtual void SetTargetTownId(int32 targetTownIdIn) {
+		targetTownId = targetTownIdIn;
+	}
+
 	void ChangeTownOwningPlayer(int32 playerId) override
 	{
 		Building::ChangeTownOwningPlayer(playerId);
@@ -371,6 +405,10 @@ public:
 		SerializeVecValue(Ar, resourceCounts);
 	}
 
+	static const int32 MaxLogisticsHubDistance = 500;
+	static const int32 MaxLogisticsPortDistance = 1000;
+
+public:
 	int32 targetTownId;
 	std::vector<ResourceEnum> resourceEnums;
 	std::vector<int32> resourceCounts;
@@ -384,6 +422,24 @@ public:
 class IntercityLogisticsPort final : public IntercityLogisticsHub
 {
 public:
+	void SetTargetTownId(int32 targetTownIdIn) override {
+		IntercityLogisticsHub::SetTargetTownId(targetTownIdIn);
 
+		//// Try cache the trade route
+		//if (targetTownIdIn != -1)
+		//{
+		//	int32 minPortDist = MAX_int32;
+		//	int32 nearestPortId = _simulation->FindNearestBuildingId(gateTile(), CardEnum::TradingPort, targetTownIdIn, minPortDist);
 
+		//	if (nearestPortId != -1 && minPortDist < MaxLogisticsPortDistance)
+		//	{
+		//		std::vector<WorldTile2> resultPath;
+		//		_simulation->FindPathWater(buildingId(), nearestPortId, resultPath);
+		//	}
+		//}
+	}
+
+public:
+	// Const
+	static const int32 MaxLogisticsDistance = 1500;
 };

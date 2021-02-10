@@ -1990,13 +1990,13 @@ void UnitStateAI::MoveRandomlyPerlin()
 }
 
 
-void UnitStateAI::Add_MoveTo(WorldTile2 end, int32 customFloodDistance) {
-	_actions.push_back(Action(ActionEnum::MoveTo, end.tileId(), customFloodDistance));
+void UnitStateAI::Add_MoveTo(WorldTile2 end, int32 customFloodDistance, UnitAnimationEnum animationEnum) {
+	_actions.push_back(Action(ActionEnum::MoveTo, end.tileId(), customFloodDistance, static_cast<int32>(animationEnum)));
 }
 void UnitStateAI::MoveTo() {
-	MoveTo(WorldTile2(action().int32val1), action().int32val2);
+	MoveTo(WorldTile2(action().int32val1), action().int32val2, static_cast<UnitAnimationEnum>(action().int32val3));
 }
-bool UnitStateAI::MoveTo(WorldTile2 end, int32 customFloodDistance)
+bool UnitStateAI::MoveTo(WorldTile2 end, int32 customFloodDistance, UnitAnimationEnum animationEnum)
 {
 	SCOPE_CYCLE_COUNTER(STAT_PunUnitDoMoveTo);
 	WorldTile2 tile = unitTile();
@@ -2057,7 +2057,7 @@ bool UnitStateAI::MoveTo(WorldTile2 end, int32 customFloodDistance)
 
 	//PUN_LOG("MoveTo() UnitAnimationEnum::Walk id:%d", _id);
 
-	_animationEnum = UnitAnimationEnum::Walk;
+	_animationEnum = animationEnum;
 
 	MapUtil::UnpackAStarPath(rawWaypoint, _unitData->waypoint(_id));
 	_unitData->SetForceMove(_id, false);
@@ -2250,9 +2250,33 @@ bool UnitStateAI::MoveToCaravan()
 	_unitData->SetForceMove(_id, true);
 
 	// Convert waypoint to targetTile next tick.
-	_unitData->SetNextTickState(_id, TransformState::NeedTargetAtom, UnitUpdateCallerEnum::MoveTo_Done);
+	_unitData->SetNextTickState(_id, TransformState::NeedTargetAtom, UnitUpdateCallerEnum::MoveToCaravan_Done);
 	PUN_CHECK2(nextActiveTick() > Time::Ticks(), debugStr());
 	AddDebugSpeech("---DONE]MoveToCaravan:" + end.ToString());
+	return true;
+}
+
+void UnitStateAI::Add_MoveToShip(int32 startPortId, int32 endPortId, UnitAnimationEnum animationEnum) {
+	_actions.push_back(Action(ActionEnum::MoveToShip, startPortId, endPortId, static_cast<int32>(animationEnum)));
+}
+bool UnitStateAI::MoveToShip()
+{
+	int32 startPortId = action().int32val1;
+	int32 endPortId = action().int32val2;
+
+	std::vector<WorldTile2> path;
+	if (!_simulation->FindPathWater(startPortId, endPortId, path)) {
+		AddDebugSpeech("(Bad)MoveToShip:");
+		return false;
+	}
+
+	_unitData->SetWaypoint(_id, path);
+	_unitData->SetForceMove(_id, true);
+
+	// Convert waypoint to targetTile next tick.
+	_unitData->SetNextTickState(_id, TransformState::NeedTargetAtom, UnitUpdateCallerEnum::MoveToShip_Done);
+	AddDebugSpeech("(Done)MoveToShip:");
+	
 	return true;
 }
 
@@ -2553,17 +2577,34 @@ void UnitStateAI::IntercityHaulPickup()
 		if (resourceEnum == ResourceEnum::Food) {
 			hubResourceCount = hubResourceSys.foodCount();
 			targetTownResourceCount = resourceSys.foodCount();
+
+			int32 targetPickup = hub.resourceCounts[i] - hubResourceCount;
+			if (targetPickup > 0) {
+				int32 actualPickup = std::min(targetPickup, targetTownResourceCount);
+
+				int32 amountLeftToRemove = actualPickup;
+				for (ResourceEnum foodEnum : StaticData::FoodEnums) {
+					int32 amountToRemove = std::min(amountLeftToRemove, resourceSys.resourceCount(foodEnum));
+					resourceSys.RemoveResourceGlobal(foodEnum, amountToRemove);
+					if (amountToRemove > 0) {
+						_inventory.Add({ foodEnum, amountToRemove });
+						amountLeftToRemove -= amountToRemove;
+					}
+				}
+			}
 		}
 		else {
 			hubResourceCount = hubResourceSys.resourceCount(resourceEnum);
 			targetTownResourceCount = resourceSys.resourceCount(resourceEnum);
-		}
-		
-		int32 targetPickup = hub.resourceCounts[i] - hubResourceCount;
-		if (targetPickup > 0) {
-			int32 actualPickup = std::min(targetPickup, targetTownResourceCount);
-			resourceSys.RemoveResourceGlobal(resourceEnum, actualPickup);
-			_inventory.Add({ resourceEnum, actualPickup });
+
+			int32 targetPickup = hub.resourceCounts[i] - hubResourceCount;
+			if (targetPickup > 0) {
+				int32 actualPickup = std::min(targetPickup, targetTownResourceCount);
+				resourceSys.RemoveResourceGlobal(resourceEnum, actualPickup);
+				if (actualPickup > 0) {
+					_inventory.Add({ resourceEnum, actualPickup });
+				}
+			}
 		}
 	}
 	

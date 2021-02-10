@@ -91,7 +91,12 @@ public:
 	WorldTile2 centerTile() const { return _centerTile; }
 	Direction faceDirection() const { return _faceDirection; }
 	TileArea area() const { return _area; }
-	TileArea frontArea() const { return _area.GetFrontArea(_faceDirection);; }
+	TileArea frontArea() const { return _area.GetFrontArea(_faceDirection); }
+
+	static WorldTile2 GetPortTile(WorldTile2 centerTile, Direction faceDirection) {
+		return centerTile + WorldTile2::RotateTileVector(WorldTile2(3, 0), faceDirection);
+	}
+	
 
 	bool ownedBy(int32 playerId) const { return _playerId == playerId; }
 
@@ -165,10 +170,15 @@ public:
 	}
 	
 
-	WorldTile2 gateTileFromDirection(Direction faceDirection)
+	WorldTile2 gateTileFromDirection(Direction faceDirection) {
+		//int32 centerToGate = (buildingSize().x - 1) / 2;
+		//return _centerTile + WorldTile2::DirectionTile(faceDirection) * centerToGate;
+		return CalculateGateTile(faceDirection, _centerTile, buildingSize());
+	}
+	static WorldTile2 CalculateGateTile(Direction faceDirection, WorldTile2 centerTile, WorldTile2 size)
 	{
-		int32 centerToGate = (buildingSize().x - 1) / 2;
-		return _centerTile + WorldTile2::DirectionTile(faceDirection) * centerToGate;
+		int32 centerToGate = (size.x - 1) / 2;
+		return centerTile + WorldTile2::DirectionTile(faceDirection) * centerToGate;
 	}
 	virtual WorldTile2 gateTile() { return gateTileFromDirection(_faceDirection); }
 
@@ -939,7 +949,13 @@ public:
 		}
 		check(_deliverySourceIds.size() == 0);
 	}
-	
+
+	const std::vector<int32>& cachedWaterDestinationPortIds() { return _cachedWaterDestinationPortIds; }
+	const std::vector<WorldTile2>& cachedWaterRoute(int32 index) { return _cachedWaterRoutes[index]; }
+	void AddWaterRoute(int32 portId, const std::vector<WorldTile2>& waterRoute) {
+		_cachedWaterDestinationPortIds.push_back(portId);
+		_cachedWaterRoutes.push_back(waterRoute);
+	}
 
 	//bool HasCombo() {
 	//	return _simulation->buildingIds(_playerId, _buildingEnum).size() >= 3;
@@ -1199,6 +1215,10 @@ public:
 		Ar << _deliveryTargetId;
 		SerializeVecValue(Ar, _deliverySourceIds);
 
+		// Water Path
+		SerializeVecValue(Ar, _cachedWaterDestinationPortIds);
+		SerializeVecVecObj(Ar, _cachedWaterRoutes);
+
 		Ar << hoverWarning;
 	}
 
@@ -1448,6 +1468,11 @@ protected:
 
 	int32 _deliveryTargetId = -1;
 	std::vector<int32> _deliverySourceIds;
+
+	// Water Path Cache
+	// TODO: Cached PortId should be BuildingFullId!!! Need BuildingFullId???
+	std::vector<int32> _cachedWaterDestinationPortIds;
+	std::vector<std::vector<WorldTile2>> _cachedWaterRoutes;
 
 	/*
 	 * No Serialize

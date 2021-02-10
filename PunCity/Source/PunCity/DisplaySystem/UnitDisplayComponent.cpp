@@ -144,6 +144,9 @@ UnitDisplayState UUnitDisplayComponent::GetUnitTransformAndVariation(UnitStateAI
 		if (animationEnum == UnitAnimationEnum::Caravan) {
 			return  { UnitEnum::Horse, UnitAnimationEnum::Walk, 0 };
 		}
+		if (animationEnum == UnitAnimationEnum::Ship) {
+			return  { UnitEnum::SmallShip, UnitAnimationEnum::Walk, 0 };
+		}
 		return  { unitEnum, animationEnum, static_cast<int>(GetHumanVariationEnum(unit.isChild(), unit.isMale(), unit.animationEnum())) };
 	}
 	
@@ -498,8 +501,20 @@ void UUnitDisplayComponent::UpdateResourceDisplay(int32 unitId, UnitStateAI& uni
 	/*
 	 * Unit aux display
 	 */
-	if (_currentDisplayState.unitEnum == UnitEnum::Horse)
+	auto getAuxTransform = [&]() {
+		FRotator rotator = transformIn.Rotator();
+		rotator.Yaw -= 90;
+		FTransform transform(rotator, transformIn.GetTranslation(), transformIn.GetScale3D());
+		return transform;
+	};
+	
+	if (_currentDisplayState.unitEnum == UnitEnum::Horse) {
+		_auxMeshes->Add(GetMeshName(_currentDisplayState.unitEnum, 0), unitId, getAuxTransform(), 0);
+	}
+	if (_currentDisplayState.unitEnum == UnitEnum::Human)
 	{
-		_auxMeshes->Add(GetMeshName(_currentDisplayState.unitEnum, _currentDisplayState.variationIndex), unitId, transformIn, 0);
+		if (unit.animationEnum() == UnitAnimationEnum::Immigration) {
+			_auxMeshes->Add(GetMeshName(UnitEnum::Human, 0), unitId, getAuxTransform(), 0);
+		}
 	}
 }

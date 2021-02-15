@@ -227,7 +227,8 @@ private:
 		SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitSkel);
 
 		// Key is needed just in case unitEnum changed
-		int64 unitKey = static_cast<int64>(unitId) + static_cast<int64>(unitEnum) * 1000000 + static_cast<int64>(birthTicks) * 1000000000;
+		int32 oneK = 1000;
+		int64 unitKey = static_cast<int64>(unitId) + static_cast<int64>(unitEnum) * (oneK * oneK) + variationIndex * (oneK * oneK * oneK) + static_cast<int64>(birthTicks) * (oneK * oneK * oneK * oneK); // 1m Ticks are roughly
 		
 		int32 index = -1;
 		// Use the existing unit already displayed
@@ -286,9 +287,13 @@ private:
 		skelMesh->SetWorldTransform(transform);
 
 		//
-		float playRate = GetUnitAnimationPlayRate(animationEnum) * simulation().gameSpeedFloat();
-		if (isChild) {
-			playRate /= 0.8f;
+		float playRate = 0.7f; // animal
+		if (unitEnum == UnitEnum::Human)
+		{
+			playRate = GetUnitAnimationPlayRate(animationEnum) * simulation().gameSpeedFloat();
+			if (isChild) {
+				playRate /= 0.8f;
+			}
 		}
 		
 		if (_unitSkelState[index].animationEnum != animationEnum ||

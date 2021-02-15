@@ -242,11 +242,7 @@ public:
 	{
 		LobbyAICountDropdown->ClearOptions();
 
-		int maxAICount = GameConstants::MaxAIs;
-		switch (serverMapSettings.mapSizeEnum()) {
-		case MapSizeEnum::Medium: maxAICount = 8; break;
-		case MapSizeEnum::Small: maxAICount = 3; break;
-		}
+		int maxAICount = GetMaxAICount(serverMapSettings.mapSizeEnum());
 
 		for (int32 i = 0; i <= maxAICount; i++) {
 			LobbyAICountDropdown->AddOption(FString::FromInt(i));

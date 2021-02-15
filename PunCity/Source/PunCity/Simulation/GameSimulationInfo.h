@@ -17,11 +17,12 @@
 #define TRAILER_MODE 0
 
 // VERSION
+// !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 11 // 3 digit
+#define MINOR_VERSION 13 // 3 digit
 
-#define VERSION_DAY 26
-#define VERSION_MONTH 1
+#define VERSION_DAY 14
+#define VERSION_MONTH 2
 #define VERSION_YEAR 21
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
 
@@ -61,10 +62,10 @@ static FString GetGameVersionString(int32 version, bool includeDate = true)
 
 // VERSION
 #define MAJOR_SAVE_VERSION 0
-#define MINOR_SAVE_VERSION 10 // 3 digit
+#define MINOR_SAVE_VERSION 13 // 3 digit
 
-#define VERSION_SAVE_DAY 22
-#define VERSION_SAVE_MONTH 1
+#define VERSION_SAVE_DAY 14
+#define VERSION_SAVE_MONTH 2
 #define VERSION_SAVE_YEAR 21
 #define VERSION_SAVE_DATE (VERSION_SAVE_YEAR * 10000) + (VERSION_SAVE_MONTH * 100) + VERSION_SAVE_DAY
 
@@ -166,6 +167,7 @@ public:
 
 #define ADDTEXT(InArgs, InText, ...) InArgs.Add(FText::Format(InText, __VA_ARGS__));
 #define ADDTEXT_(InText, ...) args.Add(FText::Format(InText, __VA_ARGS__));
+#define ADDTEXT_NAMED_(InText, ...) args.Add(FText::FormatNamed(InText, __VA_ARGS__));
 #define ADDTEXT__(InText) args.Add(InText);
 #define CLEARTEXT_() args.Empty();
 
@@ -2048,6 +2050,7 @@ enum class CardEnum : uint16
 	PortColony,
 	IntercityLogisticsHub,
 	IntercityLogisticsPort,
+	IntercityBridge,
 
 	// Decorations
 	FlowerBed,
@@ -2395,6 +2398,10 @@ struct BldInfo
 			CASE(DirtRoad, 0);
 			CASE(StoneRoad, 0);
 			CASE(Farm, 0);
+
+			CASE(Tunnel, 3000);
+			CASE(Bridge, 300);
+			CASE(IntercityBridge, 1000);
 			
 			CASE(HumanitarianAidCamp, 500);
 			
@@ -2645,8 +2652,9 @@ static const BldInfo BuildingInfo[]
 	// February 2
 	BldInfo(CardEnum::Colony, LOCTEXT("Colony", "Colony"), LOCTEXT("Colony (Plural)", "Colonies"), WorldTile2(12, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Colony Desc", "Build a new city with 10 citizens from your capital.")),
 	BldInfo(CardEnum::PortColony, LOCTEXT("Port Colony", "Port Colony"), LOCTEXT("Port Colony (Plural)", "Port Colonies"), WorldTile2(12, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Port Colony Desc", "Build a new port city with 10 citizens from your capital.")),
-	BldInfo(CardEnum::IntercityLogisticsHub, LOCTEXT("Intercity Logistics Hub", "Intercity Logistics Hub"), LOCTEXT("Intercity Logistics Hub (Plural)", "Intercity Logistics Hubs"), WorldTile2(6, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 1, { 0,0,0 }, LOCTEXT("Intercity Logistics Hub Desc", "Request resources from another city.")),
-	BldInfo(CardEnum::IntercityLogisticsPort, LOCTEXT("Intercity Logistics Port", "Intercity Logistics Port"), LOCTEXT("Intercity Logistics Port (Plural)", "Intercity Logistics Ports"), WorldTile2(12, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 1, { 0,0,0 }, LOCTEXT("Intercity Logistics Port Desc", "Request resources from another city.")),
+	BldInfo(CardEnum::IntercityLogisticsHub, LOCTEXT("Intercity Logistics Hub", "Intercity Logistics Hub"), LOCTEXT("Intercity Logistics Hub (Plural)", "Intercity Logistics Hubs"), WorldTile2(6, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 1, { 50,20,0 }, LOCTEXT("Intercity Logistics Hub Desc", "Bring resources from another city (land).")),
+	BldInfo(CardEnum::IntercityLogisticsPort, LOCTEXT("Intercity Logistics Port", "Intercity Logistics Port"), LOCTEXT("Intercity Logistics Port (Plural)", "Intercity Logistics Ports"), WorldTile2(12, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 1, { 80,20,0 }, LOCTEXT("Intercity Logistics Port Desc", "Bring resources from another city (water).")),
+	BldInfo(CardEnum::IntercityBridge, LOCTEXT("Intercity Bridge", "Intercity Bridge"), LOCTEXT("Intercity Bridge (Plural)", "Intercity Bridges"), WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Intercity Bridge Desc", "Bridge that can be built outside your territory to connect Cities.")),
 	
 	// Decorations
 	BldInfo(CardEnum::FlowerBed,		LOCTEXT("Flower Bed", "Flower Bed"),		LOCTEXT("Flower Bed (Plural)", "Flower Beds"), WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Flower Bed Desc", "Increase the surrounding appeal by 5 within 5 tiles radius.")),
@@ -3437,6 +3445,13 @@ static bool IsRegionalBuilding(CardEnum buildingEnum) {
 		}
 	}
 	return false;
+}
+
+static bool IsBridgeOrTunnel(CardEnum buildingEnum)
+{
+	return buildingEnum == CardEnum::Bridge ||
+		buildingEnum == CardEnum::IntercityBridge ||
+		buildingEnum == CardEnum::Tunnel;
 }
 
 static bool IsPortBuilding(CardEnum buildingEnum)
@@ -4364,6 +4379,7 @@ enum class PlacementType
 	IntercityRoad,
 	Fence,
 	Bridge,
+	IntercityBridge,
 	Tunnel,
 
 	DeliveryTarget,
@@ -4377,6 +4393,12 @@ static bool IsRoadPlacement(PlacementType placementType) {
 static bool IsGatherPlacement(PlacementType placementType) {
 	return placementType == PlacementType::Gather ||
 		placementType == PlacementType::GatherRemove;
+}
+
+static bool IsBridgePlacement(PlacementType placementType)
+{
+	return placementType == PlacementType::Bridge ||
+		placementType == PlacementType::IntercityBridge;
 }
 
 static const int32 IntercityRoadTileCost = 20;
@@ -5449,21 +5471,6 @@ static bool IsWildAnimalWithColony(UnitEnum unitEnum) {
 	return false;
 }
 
-static const UnitEnum SkelMeshUnits[] = {
-	UnitEnum::Human,
-	UnitEnum::WildMan,
-	UnitEnum::Hippo,
-	UnitEnum::Penguin,
-};
-static bool IsUsingSkeletalMesh(UnitEnum unitEnumIn) {
-	for (UnitEnum unitEnum : SkelMeshUnits) {
-		if (unitEnum == unitEnumIn) {
-			return true;
-		}
-	}
-	return false;
-}
-
 static bool IsDomesticatedAnimal(UnitEnum unitEnum)
 {
 	switch (unitEnum) {
@@ -5579,19 +5586,51 @@ static const std::vector<float> UnitAnimationPlayRate =
 	1.0f,
 	2.5f, // Walk
 
-#if TRAILER_MODE
-	1.479f, // Build 1.183 for 0.5s
-	2.0833, // ChopWood 1.6666
-#else
+//#if TRAILER_MODE
+//	1.479f, // Build 1.183 for 0.5s
+//	2.0833, // ChopWood 1.6666
+//#else
 	1.0f, // Build
 	2.0f, // ChopWood
-#endif
-	
+//#endif
+
 	3.0f, // StoneMining
+	1.0f, // FarmPlanting
+
+	3.0f, // Caravan
+	4.0f, // Ship
+	1.0f, // Immigration
+
 	1.0f,
 };
 static float GetUnitAnimationPlayRate(UnitAnimationEnum animationEnum) {
 	return UnitAnimationPlayRate[static_cast<int>(animationEnum)];
+}
+
+static const UnitEnum SkelMeshUnits[] = {
+	UnitEnum::Human,
+	UnitEnum::WildMan,
+	UnitEnum::Hippo,
+	UnitEnum::Penguin,
+};
+static bool IsUsingSkeletalMesh(UnitEnum unitEnumIn, UnitAnimationEnum animationEnum) {
+	if (animationEnum == UnitAnimationEnum::Ship) {
+		return false;
+	}
+	for (UnitEnum unitEnum : SkelMeshUnits) {
+		if (unitEnum == unitEnumIn) {
+			return true;
+		}
+	}
+	return false;
+}
+static bool IsUsingVertexAnimation(UnitEnum unitEnumIn) {
+	for (UnitEnum unitEnum : SkelMeshUnits) {
+		if (unitEnum == unitEnumIn) {
+			return false;
+		}
+	}
+	return true;
 }
 
 /*
@@ -5697,6 +5736,7 @@ enum class CheatEnum : int32
 
 	AddAIImmigrants,
 	AddAIMoney,
+	AddAIInfluence,
 };
 
 static const std::string CheatName[]
@@ -5756,6 +5796,7 @@ static const std::string CheatName[]
 
 	"AddAIImmigrants",
 	"AddAIMoney",
+	"AddAIInfluence",
 };
 static std::string GetCheatName(CheatEnum cheatEnum) {
 	return CheatName[static_cast<int>(cheatEnum)];
@@ -6896,7 +6937,7 @@ static const std::vector<FText> AutosaveOptions = {
 /*
  * Stat
  */
-enum class SeasonStatEnum
+enum class SeasonStatEnum : uint8
 {
 	Birth,
 	DeathAge,
@@ -7335,7 +7376,7 @@ enum class CallbackEnum : uint8
 	None,
 	ClaimLandMoney,
 	ClaimLandInfluence,
-	ClaimLandFood,
+	//ClaimLandFood,
 
 	StartAttackProvince,
 	ReinforceAttackProvince,
@@ -7618,7 +7659,7 @@ enum class GameSaveChunkEnum : uint8
 	Terrain,
 	Trees,
 	Flood1,
-	Flood2,
+	//Flood2,
 	Others,
 
 	Count,
@@ -7655,4 +7696,24 @@ static const int32 ClaypitRiverFractionPercentThreshold = 20;
 static const int32 IrrigationReservoirRiverFractionPercentThreshold = 2;
 static int32 GetRiverFractionPercentThreshold(CardEnum buildingEnum) {
 	return buildingEnum == CardEnum::ClayPit ? ClaypitRiverFractionPercentThreshold : IrrigationReservoirRiverFractionPercentThreshold;
+}
+
+
+static int32 GetMaxAICount(MapSizeEnum mapSizeEnum)
+{
+	switch (mapSizeEnum) {
+	case MapSizeEnum::Large: return GameConstants::MaxAIs;
+	case MapSizeEnum::Medium: return 8;
+	case MapSizeEnum::Small: return 3;
+	default: return 0;
+	}
+}
+static int32 GetDefaultAICount(MapSizeEnum mapSizeEnum)
+{
+	switch (mapSizeEnum) {
+	case MapSizeEnum::Large: return 7;
+	case MapSizeEnum::Medium: return 3;
+	case MapSizeEnum::Small: return 1;
+	default: return 0;
+	}
 }

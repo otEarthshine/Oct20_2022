@@ -93,8 +93,11 @@ public:
 	TileArea area() const { return _area; }
 	TileArea frontArea() const { return _area.GetFrontArea(_faceDirection); }
 
-	static WorldTile2 GetPortTile(WorldTile2 centerTile, Direction faceDirection) {
-		return centerTile + WorldTile2::RotateTileVector(WorldTile2(3, 0), faceDirection);
+	static WorldTile2 GetPortTile(WorldTile2 gateTile, Direction faceDirection, CardEnum buildingEnum) {
+		return gateTile + WorldTile2::RotateTileVector(WorldTile2(GetBuildingInfo(buildingEnum).size.x - 1, 0), faceDirection);
+	}
+	WorldTile2 GetPortTile() {
+		return GetPortTile(gateTile(), _faceDirection, _buildingEnum);
 	}
 	
 
@@ -171,8 +174,6 @@ public:
 	
 
 	WorldTile2 gateTileFromDirection(Direction faceDirection) {
-		//int32 centerToGate = (buildingSize().x - 1) / 2;
-		//return _centerTile + WorldTile2::DirectionTile(faceDirection) * centerToGate;
 		return CalculateGateTile(faceDirection, _centerTile, buildingSize());
 	}
 	static WorldTile2 CalculateGateTile(Direction faceDirection, WorldTile2 centerTile, WorldTile2 size)
@@ -255,7 +256,7 @@ public:
 
 	//! Upgrades
 	const std::vector<BuildingUpgrade>& upgrades() { return _upgrades; }
-	bool UpgradeBuilding(int upgradeIndex, bool showDisplay = true);
+	bool UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& needResourceEnumOut);
 	
 	virtual void OnUpgradeBuilding(int upgradeIndex) {}
 	void OnUpgradeBuildingBase(int upgradeIndex) {
@@ -428,6 +429,15 @@ public:
 	void SetLocalWalkable_WithDirection(WorldTile2 localTile, bool isWalkable) {
 		WorldTile2 rotatedTile = WorldTile2::RotateTileVector(localTile, _faceDirection);
 		SetLocalWalkable(rotatedTile, isWalkable);
+	}
+
+	void TryInstantFinishConstruction()
+	{
+		InstantClearArea();
+		SetAreaWalkable();
+		if (!_isConstructed) {
+			FinishConstruction();
+		}
 	}
 	
 	virtual void InstantClearArea();
@@ -1000,7 +1010,7 @@ public:
 
 	bool isUsable() { return isConstructed() && !isFireDisabled(); }
 
-
+	int32 buildingPlacedTick() { return _buildingPlacedTick; }
 	
 	/*
 	 * Fire
@@ -1345,7 +1355,8 @@ public:
 		// HouseTooFar Warning
 		if (_allowedOccupants > 0)
 		{
-			if (!_simulation->HasBuildingWithinRadius(_centerTile, 55, _townId, CardEnum::House))
+			if (_simulation->buildingIds(_townId, CardEnum::House).size() > 0 &&
+				!_simulation->HasBuildingWithinRadius(_centerTile, 55, _townId, CardEnum::House))
 			{
 				hoverWarning = HoverWarning::HouseTooFar;
 				return true;

@@ -27,7 +27,7 @@ public:
 	virtual void StartDemolish() = 0;
 	virtual void StartRoadPlacement(bool isStoneRoad, bool isIntercity = false) = 0;
 	virtual void StartFencePlacement() = 0;
-	virtual void StartBridgePlacement() = 0;
+	virtual void StartBridgePlacement(bool isIntercity) = 0;
 	virtual void StartTunnelPlacement() = 0;
 	
 	virtual void StartSetDeliveryTarget(int32 buildingId) = 0;

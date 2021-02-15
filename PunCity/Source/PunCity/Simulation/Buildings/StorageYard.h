@@ -166,7 +166,7 @@ public:
 
 	bool RefreshHoverWarning() override
 	{
-		if (_simulation->isStorageAllFull(_playerId)) {
+		if (_simulation->isStorageAllFull(_townId)) {
 			hoverWarning = HoverWarning::StorageFull;
 			return true;
 		}
@@ -314,7 +314,8 @@ private:
 class IntercityLogisticsHub : public Building
 {
 public:
-	void FinishConstruction() override {
+	void FinishConstruction() override
+	{
 		Building::FinishConstruction();
 		resourceEnums.resize(4, ResourceEnum::None);
 		resourceCounts.resize(4, 0);
@@ -324,7 +325,7 @@ public:
 
 		// Grab any existing town as townID
 		targetTownId = -1;
-		const auto& townIds = GetTradableTownIds();
+		std::vector<int32> townIds = isEnum(CardEnum::IntercityLogisticsHub) ? GetTradableTownIdsLand() : GetTradableTownIdsWater();
 		for (int32 townId : townIds) {
 			if (townId != _townId) {
 				targetTownId = townId;
@@ -339,11 +340,62 @@ public:
 		}
 	}
 
-	std::vector<int32> GetTradableTownIds() {
-		return GetTradableTownIds(gateTile(), _playerId, buildingEnum(), _townId, _simulation);
+	//!
+	std::vector<int32> GetTradableTownIdsLand()
+	{
+		cachedLandConnectedTownIds.clear();
+
+		WorldTile2 startTile = gateTile();
+
+		const auto& tradableTownIds = GetApproximateTradableTownIdsByDistance(gateTile(), _playerId, _buildingEnum, _townId, _simulation);
+		for (int32 tradableTownId : tradableTownIds) {
+			// Ensure the town can be connected by land
+			WorldTile2 targetTile = _simulation->GetTownhallGate(tradableTownId);
+			if (targetTile.isValid()) {
+				//std::vector<uint32_t> path;
+				//bool succeed = _simulation->pathAI(true)->FindPathRoadOnly(hubGate.x, hubGate.y, townGateTile.x, townGateTile.y, path);
+				//if (succeed) {
+				//	cachedLandConnectedTownIds.push_back(townId);
+				//}
+
+				std::vector<uint32_t> path;
+				bool succeed = _simulation->pathAI()->FindPathRoadOnly(startTile.x, startTile.y, targetTile.x, targetTile.y, path);
+				if (!succeed) {
+					// Try to go to townhall first
+					if (!_simulation->IsConnectedBuilding(buildingId())) {
+						continue;
+					}
+
+					// Might be able to use townhall as startTile instead
+					startTile = _simulation->GetTownhallGate(townId());
+					succeed = _simulation->pathAI()->FindPathRoadOnly(startTile.x, startTile.y, targetTile.x, targetTile.y, path);
+					if (!succeed) {
+						continue;
+					}
+				}
+
+				cachedLandConnectedTownIds.push_back(tradableTownId);
+			}
+		}
+		
+		return cachedLandConnectedTownIds;
+	}
+	std::vector<int32> GetTradableTownIdsWater()
+	{
+		std::vector<int32> tradableTownIds;
+
+		const auto& townIds = GetApproximateTradableTownIdsByDistance(centerTile(), _playerId, _buildingEnum, _townId, _simulation);
+		for (int32 townId : townIds) {
+			// Ensure the town has port
+			if (_simulation->GetPortIds(townId).size() > 0) {
+				tradableTownIds.push_back(townId);
+			}
+		}
+		return tradableTownIds;
 	}
 
-	static std::vector<int32> GetTradableTownIds(WorldTile2 originTile, int32 playerId, CardEnum buildingEnum, int32 townToOmit, IGameSimulationCore* sim)
+	//!
+	static std::vector<int32> GetApproximateTradableTownIdsByDistance(WorldTile2 originTile, int32 playerId, CardEnum buildingEnum, int32 townToOmit, IGameSimulationCore* sim)
 	{
 		int32 maxTownDistance = (buildingEnum == CardEnum::IntercityLogisticsHub) ? MaxLogisticsHubDistance : MaxLogisticsPortDistance;
 
@@ -362,6 +414,7 @@ public:
 		}
 		return tradableTownIds;
 	}
+	
 
 	bool needSetup() {
 		for (ResourceEnum resourceEnum : resourceEnums) {
@@ -374,13 +427,16 @@ public:
 
 	bool RefreshHoverWarning() override
 	{
-		if (targetTownId == -1) {
-			hoverWarning = HoverWarning::IntercityLogisticsNeedTargetTown;
-			return true;
-		}
-		if (needSetup()) {
-			hoverWarning = HoverWarning::IntercityLogisticsNeedTargetResource;
-			return true;
+		if (isConstructed())
+		{
+			if (targetTownId == -1) {
+				hoverWarning = HoverWarning::IntercityLogisticsNeedTargetTown;
+				return true;
+			}
+			if (needSetup()) {
+				hoverWarning = HoverWarning::IntercityLogisticsNeedTargetResource;
+				return true;
+			}
 		}
 
 		return Building::RefreshHoverWarning();
@@ -417,6 +473,8 @@ public:
 	int32 lastTargetTownId;
 	std::vector<ResourceEnum> lastResourceEnums;
 	std::vector<int32> lastResourceCounts;
+
+	std::vector<int32> cachedLandConnectedTownIds;
 };
 
 class IntercityLogisticsPort final : public IntercityLogisticsHub

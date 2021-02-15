@@ -173,6 +173,7 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		CASE_BUILDING(CardEnum::PortColony, Building);
 		CASE_BUILDING(CardEnum::IntercityLogisticsHub, IntercityLogisticsHub);
 		CASE_BUILDING(CardEnum::IntercityLogisticsPort, IntercityLogisticsPort);
+		CASE_BUILDING(CardEnum::IntercityBridge, Bridge);
 
 		CASE_BUILDING(CardEnum::BoarBurrow, BoarBurrow);
 
@@ -301,15 +302,19 @@ int BuildingSystem::AddBuilding(FPlaceBuilding parameters)
 	TileArea area = parameters.area;
 	int32 townId = _simulation->tileOwnerTown(center);
 
-	_townIdPlus1ToEnumToBuildingIds[parameters.playerId + 1][static_cast<int>(buildingEnum)].push_back(buildingId);
+	_townIdPlus1ToEnumToBuildingIds[townId + 1][static_cast<int>(buildingEnum)].push_back(buildingId);
+	_isBuildingIdConnected.push_back(-1);
+	WorldTile2 assumedGateTile = Building::CalculateGateTile(static_cast<Direction>(parameters.faceDirection), center, GetBuildingInfo(buildingEnum).size);
+	RefreshIsBuildingConnected(townId, buildingId, assumedGateTile); // Some building needs IsConnected during Init()
 
 	building->Init(*_simulation, buildingId, townId, parameters.buildingEnum,
 							area, center, static_cast<Direction>(parameters.faceDirection));
 
-	_buildingSubregionList.Add(center, buildingId);
+	if (assumedGateTile != building->gateTile()) {
+		RefreshIsBuildingConnected(townId, buildingId, building->gateTile());
+	}
 
-	_isBuildingIdConnected.push_back(-1);
-	RefreshIsBuildingConnected(townId, buildingId, building->gateTile());
+	_buildingSubregionList.Add(center, buildingId);
 
 	building->ResetDisplay();
 
@@ -374,8 +379,7 @@ void BuildingSystem::PlaceBuildingOnMap(int32 buildingIdIn, bool isBuildingIniti
 	}
 
 	// Bridge special case
-	if (buildingEnum == CardEnum::Bridge ||
-		buildingEnum == CardEnum::Tunnel)
+	if (IsBridgeOrTunnel(buildingEnum))
 	{
 		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 			SetBuildingTile(tile, bldId);
@@ -435,7 +439,7 @@ void BuildingSystem::RemoveBuilding(int buildingId)
 	WorldTile2 centerTile = _buildings[buildingId]->centerTile();
 	Direction faceDirection = _buildings[buildingId]->faceDirection();
 	TileArea frontArea = area.GetFrontArea(faceDirection);
-	int32 playerId = _buildings[buildingId]->playerId();
+	int32 townId = _buildings[buildingId]->townId();
 	bool isConstructed = _buildings[buildingId]->isConstructed();
 
 #if TRAILER_MODE
@@ -450,7 +454,7 @@ void BuildingSystem::RemoveBuilding(int buildingId)
 	//RemoveBuildingFromBuildingSystem(buildingId);
 	// Remove from system
 	_buildingSubregionList.Remove(centerTile, buildingId);
-	CppUtils::Remove(_townIdPlus1ToEnumToBuildingIds[playerId + 1][static_cast<int>(buildingEnum)], buildingId);
+	CppUtils::Remove(_townIdPlus1ToEnumToBuildingIds[townId + 1][static_cast<int>(buildingEnum)], buildingId);
 	_alive[buildingId] = false;
 
 	// Reset display/UI

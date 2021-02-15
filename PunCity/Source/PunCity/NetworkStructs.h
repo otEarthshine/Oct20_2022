@@ -378,7 +378,7 @@ public:
 		
 		Ar << commandInt;
 		Ar << playerId;
-		Ar << townId;  // TODO: Minor FSetGlobalJobPriority, FSetTownPriority
+		Ar << townId;
 	}
 
 	static NetworkCommandEnum GetCommandTypeFromBlob(PunSerializedData& blob) {

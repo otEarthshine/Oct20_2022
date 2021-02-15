@@ -7,6 +7,8 @@
 
 #define LOCTEXT_NAMESPACE "StatisticsUI"
 
+using namespace std;
+
 void UStatisticsUI::InitStatisticsUI()
 {
 	StatisticsCloseButton->OnClicked.AddDynamic(this, &UStatisticsUI::CloseStatisticsUI);
@@ -34,34 +36,10 @@ void UStatisticsUI::InitStatisticsUI()
 	BuildingsStatBox->ClearChildren();
 	ResourceStatisticsBox->ClearChildren();
 
-	
-	AddSeries(PopulationGraph, {
-		//{ FString("Adult population"), PlotStatEnum::AdultPopulation, FLinearColor::Yellow },
-		{ LOCTEXT("Population", "Population").ToString(), PlotStatEnum::Population, FLinearColor(0.3, 1, 0.3) },
-		{ LOCTEXT("Children", "Children").ToString(), PlotStatEnum::ChildPopulation, FLinearColor(0.3, 0.3, 1) },
-	});
+	BUTTON_ON_CLICK(TownSwapArrowLeftButton, this, &UStatisticsUI::OnClickTownSwapArrowLeftButton);
+	BUTTON_ON_CLICK(TownSwapArrowRightButton, this, &UStatisticsUI::OnClickTownSwapArrowRightButton);
 
-	AddSeries(IncomeGraph, {
-		{ LOCTEXT("Income", "Income").ToString(), PlotStatEnum::Income, FLinearColor(0.3, 1, 0.3) },
-		{ LOCTEXT("Revenue", "Revenue").ToString(), PlotStatEnum::Revenue, FLinearColor(0.3, 0.3, 1) },
-		{ LOCTEXT("Expense", "Expense").ToString(), PlotStatEnum::Expense, FLinearColor(1, 0.3, 0.3) },
-	});
-	AddSeries(ScienceGraph, { {FString("Science"), PlotStatEnum::Science, FLinearColor(0.3, 0.3, 1) } });
-
-	AddSeries(FoodFuelGraph, {
-		{ LOCTEXT("Food", "Food").ToString(), PlotStatEnum::Food, FLinearColor(0.3, 1, 0.3) },
-		{ LOCTEXT("Fuel", "Fuel").ToString(), PlotStatEnum::Fuel, FLinearColor(1, 1, 0.3) },
-	});
-	AddSeries(FoodUsageGraph, {
-		{ LOCTEXT("Food Production (per season)", "Food Production (per season)").ToString(), PlotStatEnum::FoodProduction, FLinearColor(0.3, 1, 0.3) },
-		{ LOCTEXT("Food Consumption (per season)", "Food Consumption (per season)").ToString(), PlotStatEnum::FoodConsumption, FLinearColor(1, 0.3, 0.3) },
-	});
-	
-	AddSeries(ImportExportGraph, {
-		//{FString("Trade balance"), PlotStatEnum::TradeBalance, FLinearColor::Green },
-		{ LOCTEXT("Export", "Export").ToString(), PlotStatEnum::Export, FLinearColor(0.3, 0.3, 1) },
-		{ LOCTEXT("Import", "Import").ToString(), PlotStatEnum::Import, FLinearColor(1, 0.3, 0.3) },
-	});
+	SetGraphSeries();
 
 	MarketResourceDropdown->ClearOptions();
 	for (int32 i = 0; i < ResourceEnumCount; i++) {
@@ -69,11 +47,54 @@ void UStatisticsUI::InitStatisticsUI()
 	}
 	MarketResourceDropdown->SetSelectedOption(ResourceNameF(ResourceEnum::Wood));
 	MarketResourceDropdown->OnSelectionChanged.AddDynamic(this, &UStatisticsUI::OnMarketDropDownChanged);
+}
 
-	AddSeries(MarketPriceGraph, {
-		{ LOCTEXT("Current Price", "Current Price").ToString(), PlotStatEnum::MarketPrice, FLinearColor(0.7, 1, 0.7) },
+void UStatisticsUI::SetGraphSeries()
+{
+	int32 playId = -1;
+	int32 townId = -1;
+	if (showCombinedStatistics) {
+		playId = playerId();
+	} else {
+		townId = uiTownId;
+	}
+	
+	SetSeries(PopulationGraph, {
+		//{ FString("Adult population"), PlotStatEnum::AdultPopulation, FLinearColor::Yellow },
+		{ LOCTEXT("Population", "Population").ToString(), PlotStatEnum::Population, FLinearColor(0.3, 1, 0.3), playId, townId },
+		{ LOCTEXT("Children", "Children").ToString(), PlotStatEnum::ChildPopulation, FLinearColor(0.3, 0.3, 1), playId, townId },
 	});
 
+	SetSeries(FoodFuelGraph, {
+		{ LOCTEXT("Food", "Food").ToString(), PlotStatEnum::Food, FLinearColor(0.3, 1, 0.3), playId, townId },
+		{ LOCTEXT("Fuel", "Fuel").ToString(), PlotStatEnum::Fuel, FLinearColor(1, 1, 0.3), playId, townId },
+	});
+	SetSeries(FoodUsageGraph, {
+		{ LOCTEXT("Food Production (per season)", "Food Production (per season)").ToString(), PlotStatEnum::FoodProduction, FLinearColor(0.3, 1, 0.3), playId, townId },
+		{ LOCTEXT("Food Consumption (per season)", "Food Consumption (per season)").ToString(), PlotStatEnum::FoodConsumption, FLinearColor(1, 0.3, 0.3), playId, townId },
+	});
+
+	SetSeries(ImportExportGraph, {
+		//{FString("Trade balance"), PlotStatEnum::TradeBalance, FLinearColor::Green },
+		{ LOCTEXT("Export", "Export").ToString(), PlotStatEnum::Export, FLinearColor(0.3, 0.3, 1), playId, townId },
+		{ LOCTEXT("Import", "Import").ToString(), PlotStatEnum::Import, FLinearColor(1, 0.3, 0.3), playId, townId },
+	});
+
+	/*
+	 * Global
+	 */
+	SetSeries(IncomeGraph, {
+		{ LOCTEXT("Income", "Income").ToString(), PlotStatEnum::Income, FLinearColor(0.3, 1, 0.3), playerId(), -1 },
+		{ LOCTEXT("Revenue", "Revenue").ToString(), PlotStatEnum::Revenue, FLinearColor(0.3, 0.3, 1), playerId(), -1 },
+		{ LOCTEXT("Expense", "Expense").ToString(), PlotStatEnum::Expense, FLinearColor(1, 0.3, 0.3), playerId(), -1 },
+		});
+	SetSeries(ScienceGraph, {
+		{FString("Science"), PlotStatEnum::Science, FLinearColor(0.3, 0.3, 1), playerId(), -1 }
+	});
+	
+	SetSeries(MarketPriceGraph, {
+		{ LOCTEXT("Current Price", "Current Price").ToString(), PlotStatEnum::MarketPrice, FLinearColor(0.7, 1, 0.7), playerId(), -1 },
+	});
 }
 
 void UStatisticsUI::TickUI()
@@ -81,25 +102,58 @@ void UStatisticsUI::TickUI()
 	if (GetVisibility() == ESlateVisibility::Collapsed) {
 		return;
 	}
-	
-	SubStatSystem& statSystem = simulation().statSystem(uiTownId);
+
+	auto& sim = simulation();
 
 	/*
 	 * Production VS Consumption
 	 */
 	 //ResourceStatTableRow
 	{
-		const std::vector<std::vector<int32>>& productionStats = statSystem.GetResourceStat(ResourceSeasonStatEnum::Production);
-		const std::vector<std::vector<int32>>& consumptionStats = statSystem.GetResourceStat(ResourceSeasonStatEnum::Consumption);
-		PUN_CHECK(productionStats.size() == ResourceEnumCount);
-		PUN_CHECK(consumptionStats.size() == ResourceEnumCount);
-
 		// Set the season text
 		SetText(ResourceSeasonText0, Time::SeasonName((Time::Seasons() + 4 - 3) % 4));
 		SetText(ResourceSeasonText1, Time::SeasonName((Time::Seasons() + 4 - 2) % 4));
 		SetText(ResourceSeasonText2, Time::SeasonName((Time::Seasons() + 4 - 1) % 4));
 		SetText(ResourceSeasonText3, Time::SeasonName((Time::Seasons() + 4 - 0) % 4));
 
+
+		vector<int32> townIds;
+		if (showCombinedStatistics) {
+			townIds = sim.GetTownIds(playerId());
+		} else {
+			townIds.push_back(uiTownId);
+		}
+		
+		// Accumulate production/consumption stats
+		std::vector<std::vector<int32>> productionStats(ResourceEnumCount, vector<int32>());
+		std::vector<std::vector<int32>> consumptionStats(ResourceEnumCount, vector<int32>());
+
+		for (int32 townId : townIds) {
+			SubStatSystem& statSystem = sim.statSystem(townId);
+
+			const std::vector<std::vector<int32>>& productionStatsTown = statSystem.GetResourceStat(ResourceSeasonStatEnum::Production);
+			const std::vector<std::vector<int32>>& consumptionStatsTown = statSystem.GetResourceStat(ResourceSeasonStatEnum::Consumption);
+			PUN_CHECK(productionStatsTown.size() == ResourceEnumCount);
+			PUN_CHECK(consumptionStatsTown.size() == ResourceEnumCount);
+
+			for (int i = 0; i < ResourceEnumCount; i++) 
+			{
+				vector<int32>& curProductionStats = productionStats[i];
+				vector<int32>& curConsumptionStats = consumptionStats[i];
+				const vector<int32>& curProductionStatsTown = productionStatsTown[i];
+				const vector<int32>& curConsumptionStatsTown = consumptionStatsTown[i];
+				
+				if (curProductionStats.size() == 0) {
+					curProductionStats.resize(curProductionStatsTown.size(), 0);
+					curConsumptionStats.resize(curConsumptionStatsTown.size(), 0);
+				}
+				for (int j = 0; j < productionStatsTown[i].size(); j++) {
+					curProductionStats[j] += curProductionStatsTown[j];
+					curConsumptionStats[j] += curConsumptionStatsTown[j];
+				}
+			}
+		}
+		
 		// Sort by max of either production or consumption
 		struct SortStruct
 		{
@@ -163,136 +217,162 @@ void UStatisticsUI::TickUI()
 		}
 
 		BoxAfterAdd(ResourceStatisticsBox, resourceStatIndex);
-
-		// Need refresh every 3 sec for Goto click to work...
-		if (Time::Ticks() > lastRefreshBuildingStatBox + Time::TicksPerSecond * 3)
-		{
-			lastRefreshBuildingStatBox = Time::Ticks();
-
-
-			const std::vector<std::vector<int32>>& jobBuildingEnumToIds = simulation().townManager(uiTownId).jobBuildingEnumToIds();
-
-			int32 buildingStatIndex = 0;
-
-			auto addRows = [&](CardEnum cardEnum)
-			{
-				// Doesn't have the building...
-				if (jobBuildingEnumToIds.size() <= static_cast<int>(cardEnum)) {
-					return;
-				}
-
-				std::vector<int32> buildingIds = jobBuildingEnumToIds[static_cast<int>(cardEnum)];
-
-				for (int32 buildingId : buildingIds)
-				{
-					Building& bld = simulation().building(buildingId);
-
-					auto row = GetBoxChild<UBuildingStatTableRow>(BuildingsStatBox, buildingStatIndex, UIEnum::BuildingStatTableRow, true);
-					//UBuildingStatTableRow* row = AddWidget<UBuildingStatTableRow>(UIEnum::BuildingStatTableRow);
-					//buildingsBox->AddChild(row);
-
-					SetText(row->BuildingName, GetBuildingInfo(cardEnum).name);
-					SetText(row->Upkeep, FText::Format(INVTEXT("{0}<img id=\"Coin\"/>"), TEXT_NUM(bld.upkeep())));
-
-					FText allowedOccupants = TEXT_NUM(bld.allowedOccupants());
-					if (bld.allowedOccupants() < bld.maxOccupants()) {
-						allowedOccupants = TEXT_TAG("<Yellow>", allowedOccupants);
-					}
-					SetText(row->WorkForce, 
-						FText::Format(INVTEXT("{0}/{1}"), TEXT_NUM(bld.occupantCount()), allowedOccupants)
-					);
-
-
-					// Buildings without a fixed produce()
-					if (IsRanch(bld.buildingEnum()) ||
-						bld.buildingEnum() == CardEnum::Farm ||
-						bld.buildingEnum() == CardEnum::HuntingLodge ||
-						bld.buildingEnum() == CardEnum::FruitGatherer)
-					{
-						std::vector<ResourcePair> pairs = bld.seasonalProductionPairs();
-
-						// Need to show farm with 0 production so ppl won't be confused
-						if (pairs.size() == 0) {
-							if (bld.isEnum(CardEnum::Farm)) {
-								pairs.push_back({ bld.product(), 0 });
-							}
-						}
-
-						if (pairs.size() > 0) {
-							row->Production1->SetImage(pairs[0].resourceEnum, assetLoader());
-							row->Production1->SetText(to_string(pairs[0].count), "");
-							row->Production1->SetVisibility(ESlateVisibility::HitTestInvisible);
-						}
-						else {
-							row->Production1->SetVisibility(ESlateVisibility::Collapsed);
-						}
-						if (pairs.size() > 1) {
-							row->Production2->SetImage(pairs[1].resourceEnum, assetLoader());
-							row->Production2->SetText(to_string(pairs[1].count), "");
-							row->Production2->SetVisibility(ESlateVisibility::HitTestInvisible);
-						}
-						else {
-							row->Production2->SetVisibility(ESlateVisibility::Collapsed);
-						}
-					}
-					else
-					{
-						if (bld.product() != ResourceEnum::None)
-						{
-							row->Production1->SetImage(bld.product(), assetLoader());
-							row->Production1->SetText(to_string(bld.seasonalProduction()), "");
-							row->Production1->SetVisibility(ESlateVisibility::HitTestInvisible);
-						}
-						else {
-							row->Production1->SetVisibility(ESlateVisibility::Collapsed);
-						}
-
-						row->Production2->SetVisibility(ESlateVisibility::Collapsed);
-					}
-
-					{
-						if (bld.hasInput1()) {
-							row->Consumption1->SetImage(bld.input1(), assetLoader());
-							row->Consumption1->SetText(to_string(bld.seasonalConsumption1()), "");
-							row->Consumption1->SetVisibility(ESlateVisibility::HitTestInvisible);
-						}
-						else {
-							row->Consumption1->SetVisibility(ESlateVisibility::Collapsed);
-						}
-						if (bld.hasInput2()) {
-							row->Consumption2->SetImage(bld.input2(), assetLoader());
-							row->Consumption2->SetText(to_string(bld.seasonalConsumption2()), "");
-							row->Consumption2->SetVisibility(ESlateVisibility::HitTestInvisible);
-						}
-						else {
-							row->Consumption2->SetVisibility(ESlateVisibility::Collapsed);
-						}
-					}
-
-					row->SetBuildingId(buildingId);
-				}
-			};
-
-			// Put the food buildings first.
-			for (CardEnum foodBuilding : FoodBuildings) {
-				addRows(foodBuilding);
-			}
-
-			// Then show the rest.
-			for (int32 i = 0; i < BuildingEnumCount; i++)
-			{
-				CardEnum cardEnum = static_cast<CardEnum>(i);
-				if (!IsAgricultureBuilding(cardEnum)) {
-					addRows(cardEnum);
-				}
-			}
-
-			BoxAfterAdd(BuildingsStatBox, buildingStatIndex);
-		}
-
+		
 	}
 
-	// MarketPrice
+	/*
+	 * Building List
+	 */
+	// Need refresh every 3 sec for Goto click to work...
+	if (Time::Ticks() > lastRefreshBuildingStatBox + Time::TicksPerSecond * 3)
+	{
+		lastRefreshBuildingStatBox = Time::Ticks();
+
+
+		vector<vector<int32>> jobBuildingEnumToIds;
+		
+		if (showCombinedStatistics) {
+			const auto& townIds = sim.GetTownIds(uiTownId);
+			for (int32 townId : townIds) {
+				const vector<vector<int32>>& jobBuildingEnumToIds_Town = simulation().townManager(townId).jobBuildingEnumToIds();
+				
+				if (jobBuildingEnumToIds.size() == 0) {
+					jobBuildingEnumToIds.resize(jobBuildingEnumToIds_Town.size(), vector<int32>());
+				}
+				for (int32 jobEnumInt = 0; jobEnumInt < jobBuildingEnumToIds_Town.size(); jobEnumInt++)
+				{
+					const vector<int32>& jobBuildingIds_Town = jobBuildingEnumToIds_Town[jobEnumInt];
+					vector<int32>& jobBuildingIds = jobBuildingEnumToIds[jobEnumInt];
+					jobBuildingIds.insert(jobBuildingIds.end(), jobBuildingIds_Town.begin(), jobBuildingIds_Town.end());
+				}
+			}
+		}
+		else {
+			jobBuildingEnumToIds = simulation().townManager(uiTownId).jobBuildingEnumToIds();
+		}
+
+		
+		int32 buildingStatIndex = 0;
+
+		auto addRows = [&](CardEnum cardEnum)
+		{
+			// Doesn't have the building...
+			if (jobBuildingEnumToIds.size() <= static_cast<int>(cardEnum)) {
+				return;
+			}
+
+			std::vector<int32> buildingIds = jobBuildingEnumToIds[static_cast<int>(cardEnum)];
+
+			for (int32 buildingId : buildingIds)
+			{
+				Building& bld = simulation().building(buildingId);
+
+				auto row = GetBoxChild<UBuildingStatTableRow>(BuildingsStatBox, buildingStatIndex, UIEnum::BuildingStatTableRow, true);
+				//UBuildingStatTableRow* row = AddWidget<UBuildingStatTableRow>(UIEnum::BuildingStatTableRow);
+				//buildingsBox->AddChild(row);
+
+				SetText(row->BuildingName, GetBuildingInfo(cardEnum).name);
+				SetText(row->Upkeep, FText::Format(INVTEXT("{0}<img id=\"Coin\"/>"), TEXT_NUM(bld.upkeep())));
+
+				FText allowedOccupants = TEXT_NUM(bld.allowedOccupants());
+				if (bld.allowedOccupants() < bld.maxOccupants()) {
+					allowedOccupants = TEXT_TAG("<Yellow>", allowedOccupants);
+				}
+				SetText(row->WorkForce, 
+					FText::Format(INVTEXT("{0}/{1}"), TEXT_NUM(bld.occupantCount()), allowedOccupants)
+				);
+
+
+				// Buildings without a fixed produce()
+				if (IsRanch(bld.buildingEnum()) ||
+					bld.buildingEnum() == CardEnum::Farm ||
+					bld.buildingEnum() == CardEnum::HuntingLodge ||
+					bld.buildingEnum() == CardEnum::FruitGatherer)
+				{
+					std::vector<ResourcePair> pairs = bld.seasonalProductionPairs();
+
+					// Need to show farm with 0 production so ppl won't be confused
+					if (pairs.size() == 0) {
+						if (bld.isEnum(CardEnum::Farm)) {
+							pairs.push_back({ bld.product(), 0 });
+						}
+					}
+
+					if (pairs.size() > 0) {
+						row->Production1->SetImage(pairs[0].resourceEnum, assetLoader());
+						row->Production1->SetText(to_string(pairs[0].count), "");
+						row->Production1->SetVisibility(ESlateVisibility::HitTestInvisible);
+					}
+					else {
+						row->Production1->SetVisibility(ESlateVisibility::Collapsed);
+					}
+					if (pairs.size() > 1) {
+						row->Production2->SetImage(pairs[1].resourceEnum, assetLoader());
+						row->Production2->SetText(to_string(pairs[1].count), "");
+						row->Production2->SetVisibility(ESlateVisibility::HitTestInvisible);
+					}
+					else {
+						row->Production2->SetVisibility(ESlateVisibility::Collapsed);
+					}
+				}
+				else
+				{
+					if (bld.product() != ResourceEnum::None)
+					{
+						row->Production1->SetImage(bld.product(), assetLoader());
+						row->Production1->SetText(to_string(bld.seasonalProduction()), "");
+						row->Production1->SetVisibility(ESlateVisibility::HitTestInvisible);
+					}
+					else {
+						row->Production1->SetVisibility(ESlateVisibility::Collapsed);
+					}
+
+					row->Production2->SetVisibility(ESlateVisibility::Collapsed);
+				}
+
+				{
+					if (bld.hasInput1()) {
+						row->Consumption1->SetImage(bld.input1(), assetLoader());
+						row->Consumption1->SetText(to_string(bld.seasonalConsumption1()), "");
+						row->Consumption1->SetVisibility(ESlateVisibility::HitTestInvisible);
+					}
+					else {
+						row->Consumption1->SetVisibility(ESlateVisibility::Collapsed);
+					}
+					if (bld.hasInput2()) {
+						row->Consumption2->SetImage(bld.input2(), assetLoader());
+						row->Consumption2->SetText(to_string(bld.seasonalConsumption2()), "");
+						row->Consumption2->SetVisibility(ESlateVisibility::HitTestInvisible);
+					}
+					else {
+						row->Consumption2->SetVisibility(ESlateVisibility::Collapsed);
+					}
+				}
+
+				row->SetBuildingId(buildingId);
+			}
+		};
+
+		// Put the food buildings first.
+		for (CardEnum foodBuilding : FoodBuildings) {
+			addRows(foodBuilding);
+		}
+
+		// Then show the rest.
+		for (int32 i = 0; i < BuildingEnumCount; i++)
+		{
+			CardEnum cardEnum = static_cast<CardEnum>(i);
+			if (!IsAgricultureBuilding(cardEnum)) {
+				addRows(cardEnum);
+			}
+		}
+
+		BoxAfterAdd(BuildingsStatBox, buildingStatIndex);
+	}
+
+	/*
+	 * MarketPrice
+	 */
 	{
 		auto& worldTradeSystem = simulation().worldTradeSystem();
 		ResourceEnum resourceEnum = worldTradeSystem.resourceEnumToShowStat;
@@ -353,7 +433,22 @@ void UStatisticsUI::TickUI()
 		SetText(SoldRecordLeftText, soldLeftArgs);
 		SetText(SoldRecordRightText, soldRightArgs);
 	}
-	
+
+
+	/*
+	 * Town Swap
+	 */
+	PunUIUtils::SetTownSwapText(uiTownId, &sim, TownSwapText, TownSwapHorizontalBox);
+	if (showCombinedStatistics) {
+		TownSwapText->SetText(LOCTEXT("TownSwapText_Combined", "Combine All Cities"));
+	}
+	//if (uiTownId != -1) {
+	//	TownSwapText->SetText(sim.townNameT(uiTownId));
+	//	TownSwapHorizontalBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	//}
+	//else {
+	//	TownSwapHorizontalBox->SetVisibility(ESlateVisibility::Collapsed);
+	//}
 }
 
 

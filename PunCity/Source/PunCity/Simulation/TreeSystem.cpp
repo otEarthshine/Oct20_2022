@@ -583,7 +583,7 @@ void TreeSystem::PlantInitial()
 	// Run initial simulation to stabilize
 	auto t1 = high_resolution_clock::now();
 
-	PunAStar128x256* pathAI = _simulation->pathAI(false);
+	PunAStar128x256* pathAI = _simulation->pathAI();
 
 	auto& terrainGenerator = _simulation->terrainGenerator();
 

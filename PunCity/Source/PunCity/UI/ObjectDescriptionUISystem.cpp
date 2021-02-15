@@ -883,8 +883,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							
 							auto addCheckBoxIconPair = [&](ResourceEnum resourceEnum) {
 								UIconTextPairWidget* widget = descriptionBoxScrollable->AddIconPair(FText(), resourceEnum, TEXT_NUM(building.resourceCount(resourceEnum)));
-								widget->UpdateAllowCheckBox(resourceEnum);
 								widget->ObjectId = building.buildingId();
+								widget->UpdateAllowCheckBox(resourceEnum);
 							};
 
 							//ADDTEXT_(INVTEXT("<Bold>{0}</>"), LOCTEXT("Fuel_C", "Fuel:"))
@@ -1438,8 +1438,20 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						{
 							TArray<FText> options;
 							options.Add(noneText);
-							const auto& townIds = hub.GetTradableTownIds();
-							for (int32 townId : townIds) {
+
+							std::vector<int32> tradableTownIds;
+							if (building.isEnum(CardEnum::IntercityLogisticsHub)) {
+								if (_justOpenedDescriptionUI) {
+									tradableTownIds = hub.GetTradableTownIdsLand();
+								} else {
+									tradableTownIds = hub.cachedLandConnectedTownIds;
+								}
+							}
+							else {
+								tradableTownIds = hub.GetTradableTownIdsWater();
+							}
+							
+							for (int32 townId : tradableTownIds) {
 								if (townId != building.townId()) {
 									options.Add(simulation.townNameT(townId));
 								}
@@ -2454,8 +2466,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			 * Selection Mesh (Self)
 			 */
 			FVector selectionMeshLocation = displayLocation + FVector(0, 0, building.GetBuildingSelectorHeight());
-			if (building.isEnum(CardEnum::Bridge) ||
-				building.isEnum(CardEnum::Tunnel)) 
+			if (IsBridgeOrTunnel(building.buildingEnum()))
 			{
 				// Average using atom to get exact middle
 				WorldAtom2 min = area.min().worldAtom2();
@@ -2779,7 +2790,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				FTransform transform;
 				UnitDisplayState displayState = dataSource()->GetUnitTransformAndVariation(unit, transform);
 				UStaticMesh* unitMesh = assetLoader->unitAsset(displayState.unitEnum, displayState.variationIndex).staticMesh;
-				SpawnMesh(unitMesh, unitMesh->GetMaterial(0), transform, false, 2);
+				if (unitMesh) {
+					SpawnMesh(unitMesh, unitMesh->GetMaterial(0), transform, false, 2);
+				}
 			}
 
 			descriptionBox->AfterAdd();
@@ -2950,7 +2963,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				// Plant uses the mesh array for multiple meshes (for example flower + its leaves)
 				TArray<UStaticMesh*> assets = assetLoader->tileMeshAsset(info.treeEnum).assets;
 				for (int32 i = 0; i < assets.Num(); i++) {
-					SpawnMesh(assets[i], assets[i]->GetMaterial(0), transform, false, 2, info.treeEnum != TileObjEnum::GrassGreen);
+					UStaticMesh* mesh = assets[i];
+					if (mesh) {
+						SpawnMesh(mesh, mesh->GetMaterial(0), transform, false, 2, info.treeEnum != TileObjEnum::GrassGreen);
+					}
 				}
 			}
 			else if (info.type == ResourceTileType::Tree)
@@ -2959,7 +2975,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 				TArray<UStaticMesh*> assets = assetLoader->tileMeshAsset(info.treeEnum).assets;
 				for (int32 i = 0; i < 2; i++) {
-					SpawnMesh(assets[i], assets[i]->GetMaterial(0), transform, false, 2);
+					UStaticMesh* mesh = assets[i];
+					if (mesh) {
+						SpawnMesh(mesh, mesh->GetMaterial(0), transform, false, 2);
+					}
 				}
 			}
 
@@ -3319,25 +3338,24 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 			}
 
 			// Claim by food
-			//if (simulation().IsResearched(playerId(), TechEnum::ClaimLandByFood))
-			{
-				int32 foodNeeded = provincePrice / FoodCost;
+			//{
+			//	int32 foodNeeded = provincePrice / FoodCost;
 
-				int32 foodCount = 0;
-				const auto& townIds = sim.GetTownIds(playerId());
-				for (int32 townId : townIds) {
-					foodCount += sim.foodCount(townId);
-				}
-				
-				bool canClaim = foodCount >= foodNeeded;
+			//	int32 foodCount = 0;
+			//	const auto& townIds = sim.GetTownIds(playerId());
+			//	for (int32 townId : townIds) {
+			//		foodCount += sim.foodCount(townId);
+			//	}
+			//	
+			//	bool canClaim = foodCount >= foodNeeded;
 
-				TArray<FText> args;
-				AppendClaimConnectionString(args, false, claimConnectionEnum);
-				ADDTEXT_(LOCTEXT("ClaimFood", "\n{0} food"), TextRed(FText::AsNumber(foodNeeded), !canClaim));
+			//	TArray<FText> args;
+			//	AppendClaimConnectionString(args, false, claimConnectionEnum);
+			//	ADDTEXT_(LOCTEXT("ClaimFood", "\n{0} food"), TextRed(FText::AsNumber(foodNeeded), !canClaim));
 
-				descriptionBox->AddSpacer();
-				descriptionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::ClaimLandFood, canClaim, false, provinceId);
-			}
+			//	descriptionBox->AddSpacer();
+			//	descriptionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::ClaimLandFood, canClaim, false, provinceId);
+			//}
 		};
 
 		
@@ -3345,14 +3363,18 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 		ClaimConnectionEnum claimConnectionEnum = sim.GetProvinceClaimConnectionEnumPlayer(provinceId, playerId());
 		if (claimConnectionEnum != ClaimConnectionEnum::None)
 		{
-			if (sim.regionSystem().provinceDistanceToPlayer(provinceId, playerId()) > 7) {
-				descriptionBox->AddSpacer();
-				descriptionBox->AddRichText(
-					TEXT_TAG("<Red>", LOCTEXT("TooFarFromTownhallText", "Cannot claim a province more than 7 provinces from the Townhall"))
-				);
-			}
-			else {
-				addClaimButtons(claimConnectionEnum);
+			int32 provinceDistance = sim.regionSystem().provinceDistanceToPlayer(provinceId, playerId());\
+			if (provinceDistance != MAX_int32) 
+			{
+				if (provinceDistance > 7) {
+					descriptionBox->AddSpacer();
+					descriptionBox->AddRichText(
+						TEXT_TAG("<Red>", LOCTEXT("TooFarFromTownhallText", "Cannot claim a province more than 7 provinces from the Townhall (on land)"))
+					);
+				}
+				else {
+					addClaimButtons(claimConnectionEnum);
+				}
 			}
 		}
 		else if (sim.IsProvinceNextToPlayerIncludingNonFlatLand(provinceId, playerId()))
@@ -3389,26 +3411,18 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 		//	}
 		//}
 	}
-	// Other player
-	// Conquer
+	/*
+	 * Other player
+	 * Conquer
+	 */
 	else if (provincePlayerId != playerId())
 	{
 		// Conquer
 		/*if (simulation().unlockedInfluence(playerId()))*/
 		if (sim.HasTownhall(provincePlayerId))
 		{
-			// Not province that overlap with capital
-			TileArea townhallArea = simulation().GetTownhallCapital(provincePlayerId).area();
-			vector<int32> townhallOverlapProvinceIds = sim.provinceSystem().GetProvinceIdsFromArea(townhallArea, true);
-			bool isTownhallOverlapProvince = false;
-			for (int32 townhallOverlapProvinceId : townhallOverlapProvinceIds) {
-				if (townhallOverlapProvinceId == provinceId) {
-					isTownhallOverlapProvince = true;
-					break;
-				}
-			}
-			
-			if (!isTownhallOverlapProvince)
+			// Not province that overlap with some townhall
+			if (!sim.IsTownhallOverlapProvince(provinceId, provincePlayerId))
 			{
 				if (simulation().IsResearched(playerId(), TechEnum::Conquer))
 				{
@@ -3446,8 +3460,7 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 					};
 
 					ClaimConnectionEnum claimConnectionEnum = sim.GetProvinceClaimConnectionEnumPlayer(provinceId, playerId());
-					if (claimConnectionEnum != ClaimConnectionEnum::None)
-					{
+					if (claimConnectionEnum != ClaimConnectionEnum::None) {
 						addAttackButtons(claimConnectionEnum);
 					}
 					else if (sim.IsProvinceNextToPlayerIncludingNonFlatLand(provinceId, playerId()))
@@ -3509,7 +3522,7 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 	 */
 	if (callbackEnum == CallbackEnum::ClaimLandMoney ||
 		callbackEnum == CallbackEnum::ClaimLandInfluence ||
-		callbackEnum == CallbackEnum::ClaimLandFood ||
+		//callbackEnum == CallbackEnum::ClaimLandFood ||
 
 		callbackEnum == CallbackEnum::StartAttackProvince ||
 		callbackEnum == CallbackEnum::ReinforceAttackProvince ||

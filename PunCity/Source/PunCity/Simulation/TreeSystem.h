@@ -285,7 +285,7 @@ public:
 
 	//! This is for human only
 	// regionDistance is the farthest distance we will look for gather marks
-	NonWalkableTileAccessInfo FindNearestMark(int32 playerId, WorldTile2 originTile, bool treeOnly, int32_t regionDistance = 2)
+	NonWalkableTileAccessInfo FindNearestMark(int32 townId, WorldTile2 originTile, bool treeOnly, int32_t regionDistance = 2)
 	{
 		WorldRegion2 originRegion = originTile.region();
 		int32 nearestDist = GameMapConstants::TilesPerWorldX;
@@ -313,7 +313,7 @@ public:
 							}
 
 							// Ensure tile is owned by player..
-							if (_simulation->tileOwnerTown(tile) != playerId) {
+							if (_simulation->tileOwnerTown(tile) != townId) {
 								return;
 							}
 

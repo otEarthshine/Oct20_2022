@@ -125,6 +125,12 @@ void UMainGameUI::PunInit()
 
 	BUTTON_ON_CLICK(LeftUITownSwapArrowLeftButton, this, &UMainGameUI::OnClickLeftUITownSwapArrowLeftButton);
 	BUTTON_ON_CLICK(LeftUITownSwapArrowRightButton, this, &UMainGameUI::OnClickLeftUITownSwapArrowRightButton);
+	const FText townSwapHotkeyTipText = LOCTEXT("TownSwapHotkey_Tip", "Press <Orange>[Ctrl-Q]</> and <Orange>[Ctrl-E]</> to switch between towns.");
+	AddToolTip(LeftUITownSwapArrowLeftButton, townSwapHotkeyTipText);
+	AddToolTip(LeftUITownSwapArrowRightButton, townSwapHotkeyTipText);
+
+	BUTTON_ON_CLICK(TownSwapArrowLeftButton, this, &UMainGameUI::OnClickJobTownSwapArrowLeftButton);
+	BUTTON_ON_CLICK(TownSwapArrowRightButton, this, &UMainGameUI::OnClickJobTownSwapArrowRightButton);
 
 	// Set Icon images
 	auto assetLoader = dataSource()->assetLoader();
@@ -909,10 +915,11 @@ void UMainGameUI::Tick()
 
 		if (shouldDisplayMainGameUI)
 		{
-			HousingSpaceText->SetText(FText::FromString(FString::FromInt(population) + FString("/") + FString::FromInt(sim.HousingCapacity(playerId()))));
+			int32 housingCapacity = sim.HousingCapacity(currentTownId());
+			HousingSpaceText->SetText(FText::FromString(FString::FromInt(population) + FString("/") + FString::FromInt(housingCapacity)));
 
 
-			std::pair<int32, int32> slotsPair = sim.GetStorageCapacity(playerId());
+			std::pair<int32, int32> slotsPair = sim.GetStorageCapacity(currentTownId());
 			int32 usedSlots = slotsPair.first;
 			int32 totalSlots = slotsPair.second;
 			SetText(StorageSpaceText, to_string(usedSlots) + "/" + to_string(totalSlots));
@@ -922,11 +929,11 @@ void UMainGameUI::Tick()
 				ADDTEXT_(
 					LOCTEXT("HousingSpaceBox_Tip1", "Population: {0}\nHousing space: {1}"),
 					TEXT_NUM(population),
-					TEXT_NUM(sim.HousingCapacity(playerId()))
+					TEXT_NUM(housingCapacity)
 				);
 				ADDTEXT_INV_("<space>");
 				for (int32 i = 1; i <= House::GetMaxHouseLvl(); i++) {
-					int32 houseLvlCount = sim.GetHouseLvlCount(playerId(), i, false);
+					int32 houseLvlCount = sim.GetHouseLvlCount(currentTownId(), i, false);
 					if (houseLvlCount > 0) {
 						ADDTEXT_(LOCTEXT("HousingSpaceBox_Tip2", "<bullet>House lvl {0}: {1}</>"), TEXT_NUM(i), TEXT_NUM(houseLvlCount));
 					}
@@ -1070,9 +1077,31 @@ void UMainGameUI::Tick()
 		}
 
 		/*
-		 * 
+		 * Town Swap Texts
 		 */
-		LeftUITownName->SetText(sim.townNameT(currentTownId()));
+		{
+			//int32 townId = currentTownId();
+			//if (townId != -1) {
+			//	LeftUITownName->SetText(sim.townNameT(townId));
+			//	LeftUITownSwapHorizontalBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			//} else {
+			//	LeftUITownSwapHorizontalBox->SetVisibility(ESlateVisibility::Collapsed);
+			//}
+			PunUIUtils::SetTownSwapText(currentTownId(), &sim, LeftUITownSwapText, LeftUITownSwapHorizontalBox);
+			PunUIUtils::SetTownSwapText(jobPriorityTownId, &sim, TownSwapText, TownSwapHorizontalBox);
+			//if (jobPriorityTownId != -1) {
+			//	int32 townPlayerId = sim.townPlayerId(jobPriorityTownId);
+			//	if (sim.GetTownIds(townPlayerId).size() > 1) {
+			//		TownSwapText->SetText(sim.townNameT(jobPriorityTownId));
+			//		TownSwapHorizontalBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			//	}
+			//	else {
+			//		TownSwapHorizontalBox->SetVisibility(ESlateVisibility::Collapsed);
+			//	}
+			//} else {
+			//	TownSwapHorizontalBox->SetVisibility(ESlateVisibility::Collapsed);
+			//}
+		}
 
 		/*
 		 * 
@@ -1992,8 +2021,11 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 			inputSystemInterface()->StartFencePlacement();
 		}
 		else if (buildingEnum == CardEnum::Bridge) {
-			inputSystemInterface()->StartBridgePlacement();
+			inputSystemInterface()->StartBridgePlacement(false);
 			simulation().parameters(playerId())->BridgeNoticed = true;
+		}
+		else if (buildingEnum == CardEnum::IntercityBridge) {
+			inputSystemInterface()->StartBridgePlacement(true);
 		}
 		else if (buildingEnum == CardEnum::Tunnel) {
 			inputSystemInterface()->StartTunnelPlacement();
@@ -2501,15 +2533,19 @@ void UMainGameUI::CallBack2(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 
 	// Put JobPriorityRows into JobPriorityScrollBox
 	// Construct command
-	auto command = make_shared<FSetGlobalJobPriority>();
-	
-	JobPriorityScrollBox->ClearChildren();
-	for (int32 i = 0; i < JobPriorityRows.Num(); i++) {
-		JobPriorityScrollBox->AddChild(JobPriorityRows[i]);
-		command->jobPriorityList.Add(static_cast<int32>(JobPriorityRows[i]->cardEnum));
-	}
+	if (jobPriorityTownId != -1)
+	{
+		auto command = make_shared<FSetGlobalJobPriority>();
+		command->townId = jobPriorityTownId;
 
-	networkInterface()->SendNetworkCommand(command);
+		JobPriorityScrollBox->ClearChildren();
+		for (int32 i = 0; i < JobPriorityRows.Num(); i++) {
+			JobPriorityScrollBox->AddChild(JobPriorityRows[i]);
+			command->jobPriorityList.Add(static_cast<int32>(JobPriorityRows[i]->cardEnum));
+		}
+
+		networkInterface()->SendNetworkCommand(command);
+	}
 }
 
 

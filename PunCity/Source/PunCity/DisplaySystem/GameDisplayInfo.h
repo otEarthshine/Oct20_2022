@@ -866,10 +866,13 @@ public:
 			ModuleTransforms::CreateSet("Townhall0")
 		},
 		{ // Intercity Logistics Hub
-			ModuleTransforms::CreateSet("ShippingDepot", {}, {})
+			ModuleTransforms::CreateSet("IntercityLogisticsHub", {}, {})
 		},
 		{ // Intercity Logistics Port
 			ModuleTransforms::CreateSet("IntercityLogisticsPort", {}, {})
+		},
+		{ // Intercity Bridge
+			ModuleTransforms({ ModuleTransform("Bridge1", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
 		},
 		
 		/*

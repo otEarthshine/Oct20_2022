@@ -125,10 +125,12 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "ForceNoSnow", 0 },
 	{ "ToggleRain", 0 },
 
-	// Debug
+	// Debug Toggle
 	{ "MultithreadedMeshGeneration", 1 },
 	{ "ForceClickthrough", 0 },
 	{ "ShowDebugExtra", 0 },
+
+	{ "CacheWaterRoutes", 1 },
 
 	// Trailer
 	

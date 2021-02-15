@@ -44,7 +44,7 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 
 	{
 		PUN_LLM(PunSimLLMTag::PathAI);
-		_pathAIHuman = make_unique<PunAStar128x256>();
+		//_pathAIHuman = make_unique<PunAStar128x256>();
 		_pathAI = make_unique<PunAStar128x256>();
 	}
 
@@ -130,7 +130,7 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 	{
 		PUN_LLM(PunSimLLMTag::Flood);
 		_floodSystem.Init(_pathAI.get(), _terrainGenerator.get(), this, isLoadingFromFile);
-		_floodSystemHuman.Init(_pathAIHuman.get(), _terrainGenerator.get(), this, isLoadingFromFile);
+		//_floodSystemHuman.Init(_pathAI.get(), _terrainGenerator.get(), this, isLoadingFromFile); // TODO: Remove once save is ok
 	}
 
 	//_floodSystem2.Init(_pathAI.get(), isLoadingFromFile);
@@ -161,6 +161,7 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 		int32 townId = _resourceSystems.size();
 		_resourceSystems.push_back(ResourceSystem(townId, this));
 		_statSystem.AddTown(townId);
+		_worldTradeSystem.AddTown(townId);
 		_townManagers.push_back(make_unique<TownManager>(playerId, townId, this));
 		_playerOwnedManagers[playerId].AddTownId(townId);
 
@@ -344,8 +345,8 @@ void GameSimulationCore::InitRegionalBuildings()
 
 					int32 buildingId = PlaceBuilding(parameters);
 					Building& bld = building(buildingId);
-					bld.InstantClearArea();
-					bld.FinishConstruction();
+					
+					bld.TryInstantFinishConstruction();
 
 					// Clear the trees
 					const int32 radiusToClearTrees = 7;
@@ -832,7 +833,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 		Time::SetTickCount(_tickCount);
 
 		_floodSystem.Tick();
-		_floodSystemHuman.Tick();
+		//_floodSystemHuman.Tick();
 
 
 		if (Time::Ticks() % 60 == 0)
@@ -1069,7 +1070,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 										FText::Format(LOCTEXT("ConquerColonyAll_Pop", "{0} has taken control of {1} from {2}."), playerNameT(claimProgress.attackerPlayerId), townNameT(provinceOwnerTownId), playerNameT(playerId))
 									), -1);
 
-									// If this is owned by AI player, set the AI inactive
+									// If this is AI player's capital, set the AI inactive
 									if (IsAIPlayer(playerId)) {
 										_aiPlayerSystem[playerId].SetActive(false);
 
@@ -1084,7 +1085,8 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 									// Attacker now owns the province
 									// Destroy any leftover building owned by player
 									ClearProvinceBuildings(claimProgress.provinceId);
-									SetProvinceOwner(claimProgress.provinceId, claimProgress.attackerPlayerId);
+									int32 attackerTownId = GetProvinceAttackerTownId(claimProgress.attackerPlayerId, claimProgress.provinceId);
+									SetProvinceOwner(claimProgress.provinceId, attackerTownId);
 								}
 							}
 							// Failed to conquer
@@ -1836,24 +1838,29 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 		return -1;
 	}
 
-	if (cardEnum == CardEnum::Bridge ||
-		cardEnum == CardEnum::Tunnel)
+	if (IsBridgeOrTunnel(cardEnum))
 	{
 		bool canPlace = true;
 		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-			if (cardEnum == CardEnum::Bridge) {
-				if (!IsWater(tile)) {
+			if (cardEnum == CardEnum::Tunnel) { // Tunnel
+				if (!IsMountain(tile)) {
 					canPlace = false;
 				}
 			}
-			else { // Tunnel
-				if (!IsMountain(tile)) {
+			else {
+				if (!IsWater(tile)) {
 					canPlace = false;
 				}
 			}
 		});
 
-		if (canPlace) {
+		if (canPlace) 
+		{
+			// Permanent card, pay its cost
+			if (playerId != -1 && IsPermanentBuilding(playerId, cardEnum)) {
+				ChangeMoney(playerId, -_cardSystem[playerId].GetCardPrice(cardEnum));
+			}
+			
 			int32 buildingId = _buildingSystem->AddBuilding(parameters);
 			return buildingId;
 		}
@@ -1914,9 +1921,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 			canPlace = false; // Not enough mountain tiles
 		}
 	}
-	else if (cardEnum == CardEnum::Fisher ||
-			cardEnum == CardEnum::TradingPort ||
-			cardEnum == CardEnum::IntercityLogisticsPort)
+	else if (IsPortBuilding(cardEnum))
 	{
 		bool setDockInstruct = false;
 		std::vector<PlacementGridInfo> grids;
@@ -2483,10 +2488,14 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 			{
 				vector<int32> foreignPlayerIds;
 				
-				for (int32 i = 0; i < path.Num(); i++) {
+				for (int32 i = 0; i < path.Num(); i++) 
+				{
 					WorldTile2 tile(path[i]);
+
+					DemolishCritterBuildingsIncludingFronts(tile, parameters.playerId);
 					
-					if (IsFrontBuildable(tile) && !IsRoadTile(tile)) {
+					if (IsFrontBuildable(tile) && !IsRoadTile(tile)) 
+					{
 						_treeSystem->ForceRemoveTileObj(tile, false);
 						overlaySystem().AddRoad(tile, true, true);
 
@@ -2668,6 +2677,8 @@ void GameSimulationCore::SetTownPriority(FSetTownPriority command)
 
 void GameSimulationCore::SetGlobalJobPriority(FSetGlobalJobPriority command)
 {
+	check(command.townId != -1);
+	
 	_LOG(LogNetworkInput, " SetGlobalJobPriority");
 	townManager(command.townId).SetGlobalJobPriority(command);
 }
@@ -2782,7 +2793,7 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 		bool sendByLand = false;
 
 		std::vector<uint32_t> path;
-		bool succeed = pathAI(true)->FindPathRoadOnly(startTownGate.x, startTownGate.y, endTownGate.x, endTownGate.y, path);
+		bool succeed = pathAI()->FindPathRoadOnly(startTownGate.x, startTownGate.y, endTownGate.x, endTownGate.y, path);
 		if (succeed) {
 			sendByLand = true;
 		}
@@ -2915,6 +2926,8 @@ void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
 		}
 		
 		// Check all the buildings and upgrade as necessary
+		ResourceEnum neededResource = ResourceEnum::None;
+		
 		for (int32 i = 0; i < BuildingEnumCount; i++) {
 			const auto& bldIds = buildingIds(command.playerId, static_cast<CardEnum>(i));
 			for (int32 bldId : bldIds) {
@@ -2922,7 +2935,7 @@ void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
 				std::vector<BuildingUpgrade> upgrades = bld.upgrades();
 				for (size_t j = 0; j < upgrades.size(); j++) {
 					if (!upgrades[j].isUpgraded) {
-						bld.UpgradeBuilding(j);
+						bld.UpgradeBuilding(j, true, neededResource);
 					}
 				}
 			}
@@ -2971,33 +2984,67 @@ void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
 	// Other buildings
 	else
 	{
-		bool upgraded = bld->UpgradeBuilding(command.upgradeType);
-		
-		if (command.isShiftDown)
+		ResourceEnum neededResource = ResourceEnum::None;
+		int32 upgradedCount = 0;
+
+		// Guard against bad upgrade
+		if (0 <= command.upgradeType && command.upgradeType < bld->upgrades().size())
 		{
-			// Try to upgrade as many buildings as possible when using shift
-			int32 upgradedCount = upgraded ? 1 : 0;
-			const std::vector<int32>& bldIds = buildingIds(command.playerId, bld->buildingEnum());
-			for (int32 bldId : bldIds) {
-				if (building(bldId).UpgradeBuilding(command.upgradeType, false)) {
+			// Shift Upgrade
+			if (command.isShiftDown)
+			{
+				// Upgrade the clicked building first to ensure it gets upgraded
+				if (bld->UpgradeBuilding(command.upgradeType, false, neededResource)) {
 					upgradedCount++;
 				}
-			}
 
-			// Guard against bad upgrade
-			if (upgradedCount > 0 && 
-				0 <= command.upgradeType && command.upgradeType < bld->upgrades().size())
-			{
-				BuildingUpgrade upgrade = bld->upgrades()[command.upgradeType];
+				// Try to upgrade as many buildings in the town as possible when using shift
+				const std::vector<int32>& bldIds = buildingIds(bld->townId(), bld->buildingEnum());
+				for (int32 bldId : bldIds) {
+					if (building(bldId).UpgradeBuilding(command.upgradeType, false, neededResource)) {
+						upgradedCount++;
+					}
+				}
 
-				AddPopup(command.playerId,
-					FText::FormatNamed(
-						LOCTEXT("ShiftUpgrade_Pop", "Upgraded {UpgradeName} on {UpgradedBuildingCount} {BuildingName}."), 
-						TEXT("UpgradeName"), upgrade.name, 
+				if (upgradedCount > 0)
+				{
+					BuildingUpgrade upgrade = bld->upgrades()[command.upgradeType];
+
+					TArray<FText> args;
+					ADDTEXT_NAMED_(LOCTEXT("ShiftUpgrade_Pop", "Upgraded {UpgradeName} on {UpgradedBuildingCount} {BuildingName}."),
+						TEXT("UpgradeName"), upgrade.name,
 						TEXT("UpgradedBuildingCount"), TEXT_NUM(upgradedCount),
-						TEXT("BuildingName"), bld->buildingInfo().name)
-				);
+						TEXT("BuildingName"), bld->buildingInfo().name
+					);
+
+					if (neededResource == ResourceEnum::Money) {
+						ADDTEXT_NAMED_(LOCTEXT("ShiftUpgradeWarnMoney_Pop", "<space>Note: Not enough Money to upgrade all {BuildingName}."),
+							TEXT("BuildingName"), bld->buildingInfo().name
+						);
+					}
+					else if (neededResource != ResourceEnum::None) {
+						ADDTEXT_NAMED_(LOCTEXT("ShiftUpgradeWarnResource_Pop", "<space>Note: Not enough {ResourceName} to upgrade all {BuildingName}."),
+							TEXT("ResourceName"), ResourceNameT(neededResource),
+							TEXT("BuildingName"), bld->buildingInfo().name
+						);
+					}
+
+					soundInterface()->Spawn2DSound("UI", "UpgradeBuilding", command.playerId, bld->centerTile());
+
+					AddPopup(command.playerId, JOINTEXT(args));
+				}
+				else {
+					// Invalid Shift-Upgrade, call single upgrade to show the Popup why the Upgrade won't go through
+					bld->UpgradeBuilding(command.upgradeType, true, neededResource);
+				}
 			}
+			// Single Upgrade
+			else
+			{
+				// Note: If single UpgradeBuilding succeed, we only need sound (no popup)
+				bld->UpgradeBuilding(command.upgradeType, true, neededResource);
+			}
+
 		}
 	}
 }
@@ -3081,7 +3128,8 @@ void GameSimulationCore::ChangeWorkMode(FChangeWorkMode command)
 		auto& shippingDepot = bld.subclass<ShippingDepot>();
 		shippingDepot.resourceEnums[command.intVar1] = static_cast<ResourceEnum>(command.intVar2);
 	}
-	else if (bld.isEnum(CardEnum::IntercityLogisticsHub))
+	else if (bld.isEnum(CardEnum::IntercityLogisticsHub) ||
+			bld.isEnum(CardEnum::IntercityLogisticsPort))
 	{
 		// Update trading company values
 		auto& hub = bld.subclass<IntercityLogisticsHub>();
@@ -3092,7 +3140,7 @@ void GameSimulationCore::ChangeWorkMode(FChangeWorkMode command)
 		}
 		// NumberBoxes
 		else if (command.intVar1 < hub.resourceEnums.size() * 2) {
-			hub.resourceCounts[command.intVar1] = command.intVar2;
+			hub.resourceCounts[command.intVar1 - hub.resourceEnums.size()] = command.intVar2;
 		}
 		// Target Town
 		else {
@@ -3936,111 +3984,62 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 {
 	UE_LOG(LogNetworkInput, Log, TEXT(" ClaimLand"));
 	
-	int32 playerId = command.playerId;
+	int32 attackerPlayerId = command.playerId;
 	int32 provinceId = command.provinceId;
 
-	// Get town with adjacent province
-	const auto& connections = GetProvinceConnections(provinceId);
-	vector<int32> adjacentTowns;
-	for (const ProvinceConnection& connection : connections) {
-		int32 owner = provinceOwnerTown(connection.provinceId);
-		if (owner != -1) {
-			CppUtils::TryAdd(adjacentTowns, owner);
-		}
-	}
+	//// Get town with adjacent province
+	//const auto& connections = GetProvinceConnections(provinceId);
+	//vector<int32> adjacentTowns;
+	//for (const ProvinceConnection& connection : connections) {
+	//	int32 owner = provinceOwnerTown(connection.provinceId);
+	//	if (owner != -1) {
+	//		CppUtils::TryAdd(adjacentTowns, owner);
+	//	}
+	//}
 
-	// Town built first will get first claim
-	int32 townId = -1;
-	const auto& townIds = GetTownIds(playerId);
-	for (int32 townIdTemp : townIds) {
-		if (CppUtils::Contains(adjacentTowns, townIdTemp)) {
-			townId = townIdTemp;
-		}
-	}
-	check(townId != -1);
+	//// Get the town to attack with (claim/conquer province)
+	//int32 attackerTownId = -1;
+	//const auto& attackerTownIds = GetTownIds(attackerPlayerId);
+	//for (int32 townIdTemp : attackerTownIds) {
+	//	if (CppUtils::Contains(adjacentTowns, townIdTemp)) {
+	//		attackerTownId = townIdTemp;
+	//		break; // Town built first will get first claim
+	//	}
+	//}
 
-	// Special case for claim ruin
-	if (command.claimEnum == CallbackEnum::ClaimRuin)
+	auto& globalResourceSys = globalResourceSystem(attackerPlayerId);
+
+	/*
+	 * No Battle
+	 */
+	if (command.claimEnum == CallbackEnum::ClaimLandMoney)
 	{
-		PUN_LOG("Investigate Ruin");
-		//if (georesourceSystem().CanClaimRuin(playerId, command.regionId)) {
-		//	georesourceSystem().ClaimRuin(playerId, command.regionId);
-		//}
-		return;
-	}
-
-	auto& resourceSys = resourceSystem(townId);
-	auto& globalResourceSys = globalResourceSystem(playerId);
-
-	if (command.claimEnum == CallbackEnum::ClaimLandFood)
-	{
-		int32 baseRegionPrice = GetProvinceClaimPrice(command.provinceId, playerId);
-		int32 neededFood = baseRegionPrice / FoodCost;
-
-		if (provinceOwnerTown(command.provinceId) == -1)
-		{
-			// Try to use food only from the claimer town first
-			if (foodCount(townId) >= neededFood)
-			{
-				SetProvinceOwnerFull(command.provinceId, townId);
-
-				// TODO: change below to RemoveResourceGlobal(ResourceEnum::Food, ..)
-				int32 amountLeftToRemove = neededFood;
-				for (ResourceEnum foodEnum : StaticData::FoodEnums) {
-					int32 amountToRemove = std::min(amountLeftToRemove, resourceSys.resourceCount(foodEnum));
-					resourceSys.RemoveResourceGlobal(foodEnum, amountToRemove);
-					amountLeftToRemove -= amountToRemove;
-				}
-				PUN_CHECK(amountLeftToRemove == 0);
-				return;
-			}
-
-			// Use all food from adjacent towns
-			int32 adjacentFoodCount = 0;
-			for (int32 adjacentTownId : adjacentTowns) {
-				adjacentFoodCount += foodCount(adjacentTownId);
-			}
-			if (adjacentFoodCount >= neededFood)
-			{
-				SetProvinceOwnerFull(command.provinceId, townId);
-
-				int32 amountLeftToRemove = neededFood;
-				for (int32 adjacentTownId : adjacentTowns) {
-					int32 amountToRemove = std::min(amountLeftToRemove, foodCount(adjacentTownId));
-					resourceSystem(adjacentTownId).RemoveResourceGlobal(ResourceEnum::Food, amountToRemove);
-					amountLeftToRemove -= amountToRemove;
-					if (amountLeftToRemove == 0) {
-						break;
-					}
-				}
-				PUN_CHECK(amountLeftToRemove == 0);
-				return;
-			}
-		}
-	}
-	else if (command.claimEnum == CallbackEnum::ClaimLandMoney)
-	{
-		int32 regionPriceMoney = GetProvinceClaimPrice(command.provinceId, playerId);
+		int32 attackerTownId = GetProvinceAttackerTownId(attackerPlayerId, provinceId);
+		check(attackerTownId != -1);
 		
-		if (globalResourceSys.money() >= regionPriceMoney &&
-			provinceOwnerTown(command.provinceId) == -1)
+		if (command.claimEnum == CallbackEnum::ClaimLandMoney)
 		{
-			SetProvinceOwnerFull(command.provinceId, townId);
-			globalResourceSys.ChangeMoney(-regionPriceMoney);
+			int32 regionPriceMoney = GetProvinceClaimPrice(command.provinceId, attackerPlayerId);
+
+			if (globalResourceSys.money() >= regionPriceMoney &&
+				provinceOwnerTown(command.provinceId) == -1)
+			{
+				SetProvinceOwnerFull(command.provinceId, attackerTownId);
+				globalResourceSys.ChangeMoney(-regionPriceMoney);
+			}
+		}
+		else if (command.claimEnum == CallbackEnum::ClaimLandInfluence)
+		{
+			int32 regionPriceMoney = GetProvinceClaimPrice(command.provinceId, attackerPlayerId);
+
+			if (globalResourceSys.influence() >= regionPriceMoney &&
+				provinceOwnerTown(command.provinceId) == -1)
+			{
+				SetProvinceOwnerFull(command.provinceId, attackerTownId);
+				globalResourceSys.ChangeInfluence(-regionPriceMoney);
+			}
 		}
 	}
-	else if (command.claimEnum == CallbackEnum::ClaimLandInfluence)
-	{
-		int32 regionPriceMoney = GetProvinceClaimPrice(command.provinceId, playerId);
-
-		if (globalResourceSys.influence() >= regionPriceMoney &&
-			provinceOwnerTown(command.provinceId) == -1)
-		{
-			SetProvinceOwnerFull(command.provinceId, townId);
-			globalResourceSys.ChangeInfluence(-regionPriceMoney);
-		}
-	}
-
 	/*
 	 * Battle
 	 */
@@ -4049,8 +4048,9 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	{
 		// Attack could be: Conquer Province, Vassalize, or Declare Independence
 
-		int32 provinceTownId = provinceOwnerTown(command.townId);
+		int32 provinceTownId = provinceOwnerTown(command.provinceId);
 		int32 provincePlayerId = provinceOwnerPlayer(command.provinceId);
+		check(provincePlayerId != -1);
 		auto& provincePlayerOwner = playerOwned(provincePlayerId);
 
 		ProvinceAttackEnum attackEnum = ProvinceAttackEnum::DeclareIndependence;
@@ -4094,7 +4094,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 			{
 				globalResourceSys.ChangeInfluence(-conquerPrice);
 
-				int32 attackerPlayerId = (command.claimEnum == CallbackEnum::Liberate) ? provincePlayerId : command.playerId;
+				attackerPlayerId = (command.claimEnum == CallbackEnum::Liberate) ? provincePlayerId : command.playerId;
 
 				/*
 				 * Conquer Part!!!
@@ -4517,11 +4517,15 @@ void GameSimulationCore::Cheat(FCheat command)
 			SimSettings::Set("CheatFastBuild", 1);
 			ChangeMoney(command.playerId, 100000);
 
+			GetTownhallCapital(command.playerId).AddImmigrants(50);
+
 			unlockSystem(command.playerId)->researchEnabled = true;
 			unlockSystem(command.playerId)->UnlockAll();
+		
+			cardSys.ClearBoughtCards();
+			cardSys.ClearRareHands();
 			_popupSystems[command.playerId].ClearPopups();
-
-			GetTownhallCapital(command.playerId).AddImmigrants(50);
+		
 		//case CheatEnum::Army:
 		//{
 		//	std::vector<int32> armyNodeIds = GetArmyNodeIds(command.playerId);
@@ -4650,6 +4654,14 @@ void GameSimulationCore::Cheat(FCheat command)
 			int32 addCount = command.var1;
 			ExecuteOnAI([&](int32 playerId) {
 				ChangeMoney(playerId, addCount);
+			});
+			break;
+		}
+		case CheatEnum::AddAIInfluence:
+		{
+			int32 addCount = command.var1;
+			ExecuteOnAI([&](int32 playerId) {
+				ChangeInfluence(playerId, addCount);
 			});
 			break;
 		}
@@ -4807,7 +4819,7 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 	
 	auto& playerOwned = _playerOwnedManagers[command.playerId];
 	
-	CardEnum buildingEnum = static_cast<CardEnum>(command.buildingEnum);
+	CardEnum commandBuildingEnum = static_cast<CardEnum>(command.buildingEnum);
 	Building& townhallBld = building(townhallId);
 	
 	int32 townId = townhallBld.townId();
@@ -4819,9 +4831,10 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 		FPlaceBuilding params = command;
 		WorldTile2 size = GetBuildingInfo(CardEnum::Townhall).size;
 
-		townhallBld.InstantClearArea();
-		townhallBld.SetAreaWalkable();
-		townhallBld.FinishConstruction();
+		//townhallBld.InstantClearArea();
+		//townhallBld.SetAreaWalkable();
+		//townhallBld.FinishConstruction();
+		townhallBld.TryInstantFinishConstruction();
 
 		// Place road around townhall
 		WorldTile2 roadMin(params.area.minX - 1, params.area.minY - 1);
@@ -4833,24 +4846,30 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 		roadAreas.push_back(TileArea(WorldTile2(roadMin.x, roadMin.y + 1), WorldTile2(1, size.y)));
 		roadAreas.push_back(TileArea(WorldTile2(roadMax.x, roadMin.y + 1), WorldTile2(1, size.y)));
 
-		// Extra colony road
-		if (buildingEnum == CardEnum::Colony) {
-			roadAreas.push_back(TileArea(WorldTile2(roadMin.x - 7, roadMin.y), WorldTile2(1, size.y + 2)));
-			roadAreas.push_back(TileArea(WorldTile2(roadMin.x - 6, roadMin.y), WorldTile2(6, 1)));
-			roadAreas.push_back(TileArea(WorldTile2(roadMin.x - 6, roadMax.y), WorldTile2(6, 1)));
-		}
+		auto tryAddRoad = [&](WorldTile2 tile) {
+			if (IsFrontBuildable(tile) && !_overlaySystem.IsRoad(tile)) {
+				_treeSystem->ForceRemoveTileObj(tile, false);
+				overlaySystem().AddRoad(tile, true, true);
+			}
+		};
 
 		for (size_t i = 0; i < roadAreas.size(); i++) {
 			_treeSystem->ForceRemoveTileObjArea(roadAreas[i]);
 			roadAreas[i].ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-				if (IsFrontBuildable(tile) && !_overlaySystem.IsRoad(tile)) {
-					overlaySystem().AddRoad(tile, true, true);
-				}
+				tryAddRoad(tile);
+			});
+		}
+
+		// Extra colony road
+		if (commandBuildingEnum == CardEnum::Colony)
+		{
+			SimUtils::PlaceColonyAuxRoad(townhallBld.centerTile(), townhallBld.faceDirection(), [&](WorldTile2 tile, Direction faceDirection) {
+				tryAddRoad(tile);
 			});
 		}
 
 		// PlayerOwnedManager
-		if (buildingEnum == CardEnum::Townhall) {
+		if (commandBuildingEnum == CardEnum::Townhall) {
 			playerOwned.capitalTownhallId = townhallId;
 			playerOwned.needChooseLocation = false;
 		}
@@ -4864,20 +4883,21 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 
 	// Build Aux Buildings
 	{
-		Direction townhallFaceDirection = static_cast<Direction>(command.faceDirection);
+		Direction townhallFaceDirection = townhallBld.faceDirection();
 		
 		FPlaceBuilding params;
 
 		FChooseInitialResources initialResources = playerOwned.initialResources;
-		if (IsColonyPlacement(buildingEnum)) {
+		if (IsColonyPlacement(commandBuildingEnum)) {
 			initialResources.medicineAmount /= 2;
 			initialResources.toolsAmount /= 4;
 		}
 
-		auto makeBuilding = [&](CardEnum buildingEnum, WorldTile2 buildingSize, Direction faceDirection) -> Building*
+		auto makeBuilding = [&](CardEnum buildingEnum, WorldTile2 buildingSize, WorldTile2 center, Direction initialFaceDirection) -> Building*
 		{
+			params.center = center;
 			params.buildingEnum = static_cast<uint8>(buildingEnum);
-			params.faceDirection = static_cast<uint8>(RotateDirection(faceDirection, townhallFaceDirection));
+			params.faceDirection = static_cast<uint8>(RotateDirection(initialFaceDirection, townhallFaceDirection));
 			params.area = BuildingArea(params.center, buildingSize, static_cast<Direction>(params.faceDirection));
 			params.playerId = command.playerId;
 
@@ -4889,14 +4909,15 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 			}
 
 			Building& bld = building(bldId);
-			bld.InstantClearArea();
-			bld.SetAreaWalkable();
-			bld.FinishConstruction();
-
+			//bld.InstantClearArea();
+			//bld.SetAreaWalkable();
+			//bld.FinishConstruction();
+			bld.TryInstantFinishConstruction();
+			
 			return &bld;
 		};
 
-		if (buildingEnum == CardEnum::Townhall)
+		if (commandBuildingEnum == CardEnum::Townhall)
 		{
 			WorldTile2 storageCenter1 = command.center + WorldTile2::RotateTileVector(Storage1ShiftTileVec, townhallFaceDirection);
 			WorldTile2 storageCenter2 = storageCenter1 + WorldTile2::RotateTileVector(InitialStorage2Shift, townhallFaceDirection);
@@ -4904,53 +4925,45 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 			
 			// Storage 1
 			{
-				params.center = storageCenter1;
-
-				Building* storage = makeBuilding(CardEnum::StorageYard, InitialStorageTileSize, Direction::E);
+				Building* storage = makeBuilding(CardEnum::StorageYard, InitialStorageTileSize, storageCenter1, Direction::E);
 				PUN_ENSURE(storage, return);
 			}
 
 			// Storage 2
 			{
-				params.center = storageCenter2;
-
-				Building* storage = makeBuilding(CardEnum::StorageYard, InitialStorageTileSize, Direction::E);
+				Building* storage = makeBuilding(CardEnum::StorageYard, InitialStorageTileSize, storageCenter2, Direction::E);
 				PUN_ENSURE(storage, return);
 			}
 
 			// Storage 3 ...
 			{
-				params.center = storageCenter3;
-
-				Building* storage = makeBuilding(CardEnum::StorageYard, InitialStorageTileSize, Direction::E);
+				Building* storage = makeBuilding(CardEnum::StorageYard, InitialStorageTileSize, storageCenter3, Direction::E);
 				PUN_ENSURE(storage, return);
 			}
 		}
-		else if (buildingEnum == CardEnum::Colony ||
-				buildingEnum == CardEnum::PortColony)
+		else if (commandBuildingEnum == CardEnum::Colony ||
+				commandBuildingEnum == CardEnum::PortColony)
 		{
 			WorldTile2 buildingCenter1 = townhallBld.centerTile() + WorldTile2::RotateTileVector(PortColony_Storage1ShiftTileVec, townhallFaceDirection);
 			WorldTile2 buildingCenter2 = buildingCenter1 + WorldTile2::RotateTileVector(PortColony_InitialStorage2Shift, townhallFaceDirection);
 
+			//Direction auxFaceDirection = RotateDirection(Direction::N, townhallFaceDirection);
+			
 			// Storage
-			params.center = buildingCenter2;
-
-			Building* storage = makeBuilding(CardEnum::StorageYard, InitialStorageTileSize, Direction::N);
+			Building* storage = makeBuilding(CardEnum::StorageYard, Colony_InitialStorageTileSize, buildingCenter2, Direction::N);
 			PUN_ENSURE(storage, return);
 
 			// Intercity LogisticsHub/Port
 			Building* bld = nullptr;
 			
-			if (buildingEnum == CardEnum::Colony) 
+			if (commandBuildingEnum == CardEnum::Colony)
 			{
-				params.center = buildingCenter1;
-				bld = makeBuilding(CardEnum::IntercityLogisticsHub, GetBuildingInfo(CardEnum::IntercityLogisticsHub).size, Direction::N);
+				bld = makeBuilding(CardEnum::IntercityLogisticsHub, GetBuildingInfo(CardEnum::IntercityLogisticsHub).size, buildingCenter1, Direction::N);
 				PUN_ENSURE(bld, return);
 			}
-			else
-			{
-				params.center = buildingCenter1 + WorldTile2::RotateTileVector(PortColony_PortExtraShiftTileVec, townhallFaceDirection);
-				bld = makeBuilding(CardEnum::IntercityLogisticsPort, GetBuildingInfo(CardEnum::IntercityLogisticsPort).size, Direction::N);
+			else {
+				WorldTile2 center = buildingCenter1 + WorldTile2::RotateTileVector(PortColony_PortExtraShiftTileVec, townhallFaceDirection);
+				bld = makeBuilding(CardEnum::IntercityLogisticsPort, GetBuildingInfo(CardEnum::IntercityLogisticsPort).size, center, Direction::N);
 				PUN_ENSURE(bld, return);
 			}
 
@@ -5016,9 +5029,10 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 					placeCommand->playerId = command.playerId;
 					int32 buildingId = PlaceBuilding(*placeCommand);
 					if (buildingId != -1) {
-						building(buildingId).InstantClearArea();
-						building(buildingId).SetAreaWalkable();
-						building(buildingId).FinishConstruction();
+						//building(buildingId).InstantClearArea();
+						//building(buildingId).SetAreaWalkable();
+						//building(buildingId).FinishConstruction();
+						building(buildingId).TryInstantFinishConstruction();
 					}
 				}
 			}

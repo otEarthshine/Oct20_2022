@@ -101,6 +101,10 @@ public:
 		// PUN_LOG("FFastMesh.Add.Begin ticks:%d id:%d", TimeDisplay::Ticks(), key);
 		UStaticFastInstancedMesh* mesh = GetMesh(meshName);
 
+		if (mesh == nullptr) {
+			return;
+		}
+
 		mesh->SetCastShadow(castShadow);
 
 		//if (isShadowOnly) {
@@ -183,6 +187,12 @@ public:
 		check(meshes.Contains(meshName));
 		// If hit here, forgot to change TreeEnumSize???
 		// Or forgot to add building???
+		
+#if UE_BUILD_SHIPPING // Prevent Steam build crash
+		if (!meshes.Contains(meshName)) {
+			return nullptr;
+		}
+#endif
 
 		if (!meshes[meshName]) {
 			return SpawnMeshFromPool(meshName);

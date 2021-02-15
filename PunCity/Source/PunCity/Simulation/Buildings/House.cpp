@@ -90,7 +90,7 @@ void House::OnDeinit()
 		//_simulation->RemoveTenantFrom(_objectId);
 		ResetOccupants(); // Reset occupant's actions that may tie with the house
 		_simulation->RemoveTenantFrom(_objectId); // Remove occupants so that new action associated with this house won't be queued
-		_simulation->PlayerRemoveHouse(playerId(), _objectId); // Remove from house list so that new tenants won't be assigned to this house
+		_simulation->PlayerRemoveHouse(_townId, _objectId); // Remove from house list so that new tenants won't be assigned to this house
 		
 		//UpdateSubscription();
 

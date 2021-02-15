@@ -73,8 +73,7 @@ void UMiniBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, Worl
 			}
 
 			// Special case bridge
-			if (buildingEnum == CardEnum::Bridge ||
-				buildingEnum == CardEnum::Tunnel) 
+			if (IsBridgeOrTunnel(buildingEnum)) 
 			{
 				return;
 			}

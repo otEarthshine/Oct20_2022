@@ -17,7 +17,8 @@ struct GraphSeries
 	PlotStatEnum plotStatEnum;
 	FLinearColor color;
 
-	int32 customPlayerId = -1;
+	int32 playerId; // Set either playerId or townId
+	int32 townId;
 };
 
 /**
@@ -38,7 +39,7 @@ public:
 	//	_seriesFillDataFunc.push_back(fillDataFunc);
 	//}
 
-	void AddSeries(std::vector<GraphSeries> seriesList) {
+	void SetSeries(std::vector<GraphSeries> seriesList) {
 		_seriesList = seriesList;
 	}
 	const std::vector<GraphSeries>& GetSeries() {
@@ -73,8 +74,11 @@ public:
 				statVec.push_back(worldTradeSys.price100(graphResourceEnum));
 				
 			}
-			else if (_seriesList[SeriesIdx].customPlayerId != -1) {
-				statVec = _dataSource->simulation().playerOwned(_seriesList[SeriesIdx].customPlayerId).GetPlotStatVec(plotStatEnum);
+			else if (_seriesList[SeriesIdx].playerId != -1) {
+				statVec = _dataSource->simulation().playerOwned(_seriesList[SeriesIdx].playerId).GetPlotStatVec(plotStatEnum);
+			}
+			else if (_seriesList[SeriesIdx].townId != -1) {
+				statVec = _dataSource->simulation().townManager(_seriesList[SeriesIdx].townId).GetPlotStatVec(plotStatEnum);
 			}
 			else {
 				statVec = _dataSource->simulation().playerOwned(_playerId).GetPlotStatVec(plotStatEnum);

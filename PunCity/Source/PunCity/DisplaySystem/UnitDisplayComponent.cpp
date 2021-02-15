@@ -74,8 +74,7 @@ UnitDisplayState UUnitDisplayComponent::GetUnitTransformAndVariation(UnitStateAI
 	// Special case walk on bridge
 	WorldTile2 unitTile = pose.actualLocation.worldTile2();
 	CardEnum buildingEnumAtTile = sim.buildingEnumAtTile(unitTile);
-	if (buildingEnumAtTile == CardEnum::Bridge ||
-		buildingEnumAtTile == CardEnum::Tunnel)
+	if (IsBridgeOrTunnel(buildingEnumAtTile))
 	{
 		Building& bridge = *sim.buildingAtTile(unitTile); // simulation().building(GameMap::buildingId(unitTile));
 
@@ -119,7 +118,7 @@ UnitDisplayState UUnitDisplayComponent::GetUnitTransformAndVariation(UnitStateAI
 	//if (IsAnimal(unit.unitEnum())) {
 		// Don't exceed the scale of 300 to prevent stuttering animation from inaccurate float
 
-	if (!IsUsingSkeletalMesh(unitEnum)) {
+	if (IsUsingVertexAnimation(unitEnum)) {
 		float gameSpeed = sim.gameSpeedFloat();
 		scale = std::fmodf(lastAnimationTime + (unitSystem.isMoving(unitId) ? (GetWorld()->GetDeltaSeconds() * 2.0f * gameSpeed) : 0.0f), 2.0f);
 	}
@@ -147,10 +146,15 @@ UnitDisplayState UUnitDisplayComponent::GetUnitTransformAndVariation(UnitStateAI
 		if (animationEnum == UnitAnimationEnum::Ship) {
 			return  { UnitEnum::SmallShip, UnitAnimationEnum::Walk, 0 };
 		}
-		return  { unitEnum, animationEnum, static_cast<int>(GetHumanVariationEnum(unit.isChild(), unit.isMale(), unit.animationEnum())) };
+
+		int32 humanVariation = static_cast<int>(GetHumanVariationEnum(unit.isChild(), unit.isMale(), unit.animationEnum()));
+		if (animationEnum == UnitAnimationEnum::Immigration) {
+			return  { UnitEnum::Human, UnitAnimationEnum::Walk, humanVariation };
+		}
+		return  { unitEnum, animationEnum, humanVariation };
 	}
 	
-	if (IsUsingSkeletalMesh(unitEnum)) {
+	if (IsUsingSkeletalMesh(unitEnum, animationEnum)) {
 		return { unitEnum, animationEnum, 0 };
 	}
 	
@@ -233,7 +237,7 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 			return;
 		}
 
-		if (IsUsingSkeletalMesh(unitEnum))
+		if (IsUsingSkeletalMesh(unitEnum, unit.animationEnum()))
 		{
 #if !TRAILER_MODE
 			// Zoomed out human should use instancedStaticMesh
@@ -467,36 +471,6 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 void UUnitDisplayComponent::UpdateResourceDisplay(int32 unitId, UnitStateAI& unit, FTransform& transformIn)
 {
 	SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitResource);
-	
-	//! Resource display
-	ResourceEnum heldEnum = unit.inventory().Display();
-	if (heldEnum != ResourceEnum::None)
-	{
-		FTransform transform = transformIn;
-		
-		//! TODO: !!! hack around vertex animate laziness
-		//if (IsAnimal(unit.unitEnum())) {
-		FRotator rotator = transform.Rotator();
-		transform.SetScale3D(FVector(1, 1, 1));
-		rotator.Yaw += 90;
-		//}
-
-		
-		// Display smaller resource on units
-		transform.SetScale3D(FVector(0.7, 0.7, 0.7));
-
-		float inventoryShift = unit.isEnum(UnitEnum::Human) ? 4 : 8;
-
-		FVector horizontalShift = rotator.RotateVector(FVector(inventoryShift, 0, 0));
-		transform.SetTranslation(transform.GetTranslation() + horizontalShift + FVector(0, 0, 10));
-
-		// Zeros the rotation
-		FRotator resourceRotator = transform.Rotator();
-		resourceRotator.Yaw -= 90;
-		FTransform resourceTransform(resourceRotator, transform.GetTranslation(), transform.GetScale3D());
-
-		_resourceMeshes->Add(ResourceDisplayNameF(heldEnum), unitId, resourceTransform, 0, unitId);
-	}
 
 	/*
 	 * Unit aux display
@@ -511,10 +485,42 @@ void UUnitDisplayComponent::UpdateResourceDisplay(int32 unitId, UnitStateAI& uni
 	if (_currentDisplayState.unitEnum == UnitEnum::Horse) {
 		_auxMeshes->Add(GetMeshName(_currentDisplayState.unitEnum, 0), unitId, getAuxTransform(), 0);
 	}
-	if (_currentDisplayState.unitEnum == UnitEnum::Human)
+	else if (_currentDisplayState.unitEnum == UnitEnum::Human)
 	{
 		if (unit.animationEnum() == UnitAnimationEnum::Immigration) {
 			_auxMeshes->Add(GetMeshName(UnitEnum::Human, 0), unitId, getAuxTransform(), 0);
+		}
+	}
+	else
+	{
+		//! Resource display
+		ResourceEnum heldEnum = unit.inventory().Display();
+		if (heldEnum != ResourceEnum::None)
+		{
+			FTransform transform = transformIn;
+
+			//! TODO: !!! hack around vertex animate laziness
+			//if (IsAnimal(unit.unitEnum())) {
+			FRotator rotator = transform.Rotator();
+			transform.SetScale3D(FVector(1, 1, 1));
+			rotator.Yaw += 90;
+			//}
+
+
+			// Display smaller resource on units
+			transform.SetScale3D(FVector(0.7, 0.7, 0.7));
+
+			float inventoryShift = unit.isEnum(UnitEnum::Human) ? 4 : 8;
+
+			FVector horizontalShift = rotator.RotateVector(FVector(inventoryShift, 0, 0));
+			transform.SetTranslation(transform.GetTranslation() + horizontalShift + FVector(0, 0, 10));
+
+			// Zeros the rotation
+			FRotator resourceRotator = transform.Rotator();
+			resourceRotator.Yaw -= 90;
+			FTransform resourceTransform(resourceRotator, transform.GetTranslation(), transform.GetScale3D());
+
+			_resourceMeshes->Add(ResourceDisplayNameF(heldEnum), unitId, resourceTransform, 0, unitId);
 		}
 	}
 }

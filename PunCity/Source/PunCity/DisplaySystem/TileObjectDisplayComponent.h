@@ -36,7 +36,7 @@ public:
 			for (int j = 0; j < tileProtoMeshes.assets.Num(); j++) {
 				if (tileProtoMeshes.assets[j]) {
 					FString meshName = GetFallingMeshName(static_cast<TileSubmeshEnum>(j), info.treeEnum); // TODO: Can this cause problem with translation?
-					//PUN_LOG("Falling mesh: j=%d, %s", j, *meshName);
+					//PUN_LOG("FALLING mesh: j=%d, %s", j, *meshName);
 					
 					_fallingMeshes->AddProtoMesh(meshName, tileProtoMeshes.assets[j]);
 					//_fallingMeshes->GetMesh(meshName)->SetRenderCustomDepth(false);
@@ -166,7 +166,7 @@ private:
 		return "TileObj" + FString::FromInt(static_cast<int>(tileObjEnum)) + "_" + FString::FromInt(variationIndex);
 	}
 	static FString GetFallingMeshName(TileSubmeshEnum submeshEnum, TileObjEnum tileObjEnum) {
-		return ToFString(TileSubmeshName[static_cast<int>(TileSubmeshEnum::Trunk)]) + FString::FromInt(static_cast<int>(tileObjEnum));
+		return ToFString(TileSubmeshName[static_cast<int>(submeshEnum)]) + FString::FromInt(static_cast<int>(tileObjEnum));
 	}
 	
 private:

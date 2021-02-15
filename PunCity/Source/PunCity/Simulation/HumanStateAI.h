@@ -61,6 +61,7 @@ public:
 
 	bool TryBulkHaul_ShippingDepot();
 	bool TryBulkHaul_Intercity();
+	bool TryBulkHaul_IntercityWater();
 	bool TryBulkHaul_Market();
 	bool TryDistribute_Market();
 	//bool TryConsumerWork();
@@ -316,7 +317,7 @@ public:
 		_playerId = _simulation->townPlayerId(newTownId);
 
 		Add_MoveTo(newTownGate, -1, UnitAnimationEnum::Immigration);
-		Add_MoveToRobust(endPortGate);
+		Add_MoveToward(endPortGate.worldAtom2(), 100000); // TODO: Have Forced Move To Later?
 		Add_MoveToShip(startPortId, endPortId, UnitAnimationEnum::Ship);
 		// Add_Wait();// Wait for the next 10 sec
 		Add_MoveTo(startPortGate, -1, UnitAnimationEnum::Immigration);

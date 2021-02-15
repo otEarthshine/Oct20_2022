@@ -670,12 +670,17 @@ private:
 					DEBUG_ISCONNECTED_VAR(IsConnectedBuildingResource);
 					isConnected = _simulation->IsConnectedBuilding(holder.objectId);
 				}
-
-				if (!isConnected) {
-					// Drop (objectId == -1) or failed building IsConnected
+				else {
 					DEBUG_ISCONNECTED_VAR(DropResourceSystem);
 					isConnected = _simulation->IsConnected(origin, holder.tile, maxFloodDist, true); // Drop case
 				}
+
+				// OLD this is slow???
+				//if (!isConnected) {
+				//	// Drop (objectId == -1) or failed building IsConnected
+				//	DEBUG_ISCONNECTED_VAR(DropResourceSystem);
+				//	isConnected = _simulation->IsConnected(origin, holder.tile, maxFloodDist, true); // Drop case
+				//}
 
 				if (isConnected) 
 				{

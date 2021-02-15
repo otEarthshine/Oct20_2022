@@ -125,7 +125,7 @@ public:
 	}
 	
 
-	void AddSeries(class UTimeSeriesPlot* graph, std::vector<struct GraphSeries> seriesList);
+	void SetSeries(class UTimeSeriesPlot* graph, std::vector<struct GraphSeries> seriesList);
 
 	
 

@@ -152,8 +152,19 @@ void UnitStateAI::Update()
 			adjustedTicksPassed /= 2; // AI cheat
 		}
 
+		// Caravan/Immigrants/Ship doesn't deduct food
+		bool shouldDeductFood = true;
+		if (_animationEnum == UnitAnimationEnum::Caravan ||
+			_animationEnum == UnitAnimationEnum::Ship || 
+			_animationEnum == UnitAnimationEnum::Immigration) 
+		{
+			shouldDeductFood = false;
+		}
 		
-		_food -= adjustedTicksPassed;
+
+		if (shouldDeductFood) {
+			_food -= adjustedTicksPassed;
+		}
 
 		_heat += adjustedTicksPassed * _lastTickCelsiusRate; // use TickCelsius rate from last update. This so that the changes between updates are constant and predictable. (and can be displayed in UI)
 		int32 tickCelsiusRate = FDToInt(_simulation->Celsius(unitTile())) - FDToInt(Time::ColdCelsius()); // from 5 Celsius down, it is considered cold...???
@@ -232,9 +243,9 @@ void UnitStateAI::Update()
 
 
 			// Sickness cheat:
-			if (_isSick && _hp100 < maxHP100() / 3 && resourceSys.HasAvailableMedicine())
+			if (_isSick && _hp100 < maxHP100() / 2 && resourceSys.HasAvailableMedicine())
 			{
-				_hp100 = maxHP100() / 3;
+				_hp100 = maxHP100() / 2;
 			}
 
 			// Homeless people could leave your town
@@ -808,7 +819,9 @@ void UnitStateAI::CalculateActions()
 
 					int32_t burrowId = _simulation->PlaceBuilding(parameters);
 					Building& burrow = _simulation->building(burrowId);
-					burrow.FinishConstruction();
+					if (!burrow.isConstructed()) { // 
+						burrow.FinishConstruction();
+					}
 
 					static_cast<BoarBurrow*>(&burrow)->AddOccupant(_id);
 					_houseId = burrowId;
@@ -859,7 +872,7 @@ bool UnitStateAI::IsBurrowBuildable(TileArea area, Direction faceDirection)
 bool UnitStateAI::TryCheckBadTile()
 {
 	WorldTile2 tile = unitTile();
-	PunAStar128x256* pathAI = _simulation->pathAI(IsIntelligentUnit(unitEnum()));
+	PunAStar128x256* pathAI = _simulation->pathAI();
 
 	// Force move in case the unit is on bad tile
 	if (!pathAI->isWalkable(tile.x, tile.y))
@@ -2038,7 +2051,7 @@ bool UnitStateAI::MoveTo(WorldTile2 end, int32 customFloodDistance, UnitAnimatio
 		customCalculationCount = 30000 * distance * distance / (baseDistance * baseDistance);
 	}
 	
-	bool succeed = _simulation->pathAI(isIntelligent)->FindPath(tile.x, tile.y, end.x, end.y, rawWaypoint, isEnum(UnitEnum::Human), isIntelligent, customCalculationCount);
+	bool succeed = _simulation->pathAI()->FindPath(tile.x, tile.y, end.x, end.y, rawWaypoint, isEnum(UnitEnum::Human), isIntelligent, customCalculationCount);
 
 	if (!succeed) 
 	{
@@ -2105,7 +2118,7 @@ void UnitStateAI::MoveToForceLongDistance()
 	bool isIntelligent = IsIntelligentUnit(unitEnum());
 	
 	const int32 customCalculationCount = 200000;
-	bool succeed = _simulation->pathAI(isIntelligent)->FindPath(tile.x, tile.y, end.x, end.y, rawWaypoint, true, isIntelligent, customCalculationCount);
+	bool succeed = _simulation->pathAI()->FindPath(tile.x, tile.y, end.x, end.y, rawWaypoint, true, isIntelligent, customCalculationCount);
 
 	if (!succeed) 
 	{
@@ -2177,7 +2190,7 @@ void UnitStateAI::MoveToRobust(WorldTile2 end)
 	WorldTile2 tile = unitTile();
 	check(tile.isValid());
 
-	bool succeed = _simulation->pathAI(true)->FindPathRobust(tile.x, tile.y, end.x, end.y, rawWaypoint);
+	bool succeed = _simulation->pathAI()->FindPathRobust(tile.x, tile.y, end.x, end.y, rawWaypoint);
 	check(succeed);
 
 	MapUtil::UnpackAStarPath(rawWaypoint, _unitData->waypoint(_id));
@@ -2236,15 +2249,15 @@ bool UnitStateAI::MoveToCaravan()
 	WorldAtom2 end(action().int32val1, action().int32val2);
 	WorldTile2 start = unitTile();
 
-	_animationEnum = static_cast<UnitAnimationEnum>(action().int32val3);
-
-	bool succeed = _simulation->pathAI(true)->FindPathRoadOnly(start.x, start.y, end.x, end.y, rawWaypoint);
+	bool succeed = _simulation->pathAI()->FindPathRoadOnly(start.x, start.y, end.x, end.y, rawWaypoint);
 	if (!succeed) {
 		DEBUG_AI_VAR(FailedToFindPath);
 		_simulation->ResetUnitActions(_id, 60);
 		AddDebugSpeech("(Bad)MoveToCaravan: " + start.ToString() + end.ToString());
 		return false;
 	}
+
+	_animationEnum = static_cast<UnitAnimationEnum>(action().int32val3);
 
 	MapUtil::UnpackAStarPath(rawWaypoint, _unitData->waypoint(_id));
 	_unitData->SetForceMove(_id, true);
@@ -2264,11 +2277,18 @@ bool UnitStateAI::MoveToShip()
 	int32 startPortId = action().int32val1;
 	int32 endPortId = action().int32val2;
 
+	check(startPortId != -1);
+	check(endPortId != -1);
+
 	std::vector<WorldTile2> path;
 	if (!_simulation->FindPathWater(startPortId, endPortId, path)) {
+		//DEBUG_AI_VAR(FailedToFindPath);
+		_simulation->ResetUnitActions(_id, 60);
 		AddDebugSpeech("(Bad)MoveToShip:");
 		return false;
 	}
+
+	_animationEnum = static_cast<UnitAnimationEnum>(action().int32val3);
 
 	_unitData->SetWaypoint(_id, path);
 	_unitData->SetForceMove(_id, true);
@@ -2556,8 +2576,11 @@ void UnitStateAI::IntercityHaulPickup()
 
 	AddDebugSpeech("IntercityHaulPickup");
 
+	check(_simulation->buildingIsAlive(workplaceId));
+
 	Building& workplace = _simulation->building(workplaceId);
-	if (!workplace.isEnum(CardEnum::IntercityLogisticsHub)) {
+	if (!workplace.isEnum(CardEnum::IntercityLogisticsHub) &&
+		!workplace.isEnum(CardEnum::IntercityLogisticsPort)) {
 		_simulation->ResetUnitActions(_id);
 		return;
 	}
@@ -2572,6 +2595,10 @@ void UnitStateAI::IntercityHaulPickup()
 	for (int32 i = 0; i < resourceEnums.size(); i++) 
 	{
 		ResourceEnum resourceEnum = resourceEnums[i];
+		if (resourceEnum == ResourceEnum::None) {
+			continue;
+		}
+		
 		int32 hubResourceCount;
 		int32 targetTownResourceCount;
 		if (resourceEnum == ResourceEnum::Food) {
@@ -2620,8 +2647,11 @@ void UnitStateAI::IntercityHaulDropoff()
 
 	AddDebugSpeech("IntercityHaulDropoff");
 
+	check(_simulation->buildingIsAlive(workplaceId));
+
 	Building& workplace = _simulation->building(workplaceId);
-	if (!workplace.isEnum(CardEnum::IntercityLogisticsHub)) {
+	if (!workplace.isEnum(CardEnum::IntercityLogisticsHub) &&
+		!workplace.isEnum(CardEnum::IntercityLogisticsPort)) {
 		_simulation->ResetUnitActions(_id);
 		return;
 	}

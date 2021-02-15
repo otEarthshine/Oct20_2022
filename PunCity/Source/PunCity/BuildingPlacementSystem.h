@@ -115,7 +115,7 @@ public:
 	void StartDemolish();
 	void StartRoad(bool isStoneRoad, bool isIntercity);
 	void StartFence();
-	void StartBridge();
+	void StartBridge(bool isIntercity);
 	void StartTunnel();
 
 	void LeftClickDown(IGameNetworkInterface* networkInterface);

@@ -14,7 +14,7 @@ public:
 	static bool IsAI(int32 playerId) { return playerId >= MaxPlayers; }
 
 	static bool IsHumanPlayer(int32 playerId) { return 0 <= playerId && playerId < MaxPlayers; }
-
+	
 	//static const int InitialTownhallUnits = 8;
 
 #if WITH_EDITOR

@@ -51,101 +51,18 @@ public:
 			GetPunHUD()->OpenTargetConfirmUI_IntercityTrade(_buildingId, resourceEnum);
 			return;
 		}
-		
-		
-		//auto command = std::make_shared<FAttack>();
-		//command->armyOrderEnum = callbackEnum;
-		//
-		//// Recall or move
-		//// - chosen node is the origin node
-		//// - OpenArmyMoveUI to choose target node to recall/move to
-		//if (callbackEnum == CallbackEnum::ArmyRecall ||
-		//	callbackEnum == CallbackEnum::ArmyMoveBetweenNode)
-		//{
-		//	command->originNodeId = _buildingId;
-		//	GetPunHUD()->OpenArmyMoveUI(command);
-		//	return;
-		//}
-
-		//// Rebel uses army at the current node
-		//if (callbackEnum == CallbackEnum::ArmyRebel) {
-		//	// Get rebel army in target node
-		//	ArmyGroup* rebelArmy = sim.GetArmyNode(buildingId()).GetRebelGroup(playerId());
-		//	
-		//	// Make sure there is army to rebel...
-		//	if (!rebelArmy) {
-		//		//simulation().AddPopupToFront(playerId(), "Need an army to rebel.", ExclusiveUIEnum::ArmyMoveUI, "PopupCannot");
-		//		return;
-		//	}
-
-		//	command->targetNodeId = _buildingId;
-		//	command->originNodeId = _buildingId;
-		//	command->armyCounts = CppUtils::VecToArray(rebelArmy->GetArmyCounts());
-		//	networkInterface()->SendNetworkCommand(command);
-		//	return;
-		//}
-
-		//// Capital not controlled by player, can't do any other actions
-		//if (sim.townhall(playerId()).armyNode.originalPlayerId != playerId()) {
-		//	//simulation().AddPopupToFront(playerId(), "Need to regain control of the capital before dispatching armies outside.", ExclusiveUIEnum::ArmyMoveUI, "PopupCannot");
-		//	return;
-		//}
-
-		//// Options that must take army from other cities
-		//if (callbackEnum == CallbackEnum::ArmyConquer ||
-		//	callbackEnum == CallbackEnum::ArmyHelp ||
-		//	callbackEnum == CallbackEnum::ArmyReinforce ||
-		//	callbackEnum == CallbackEnum::ArmyLiberate)
-		//{
-		//	if (callbackEnum == CallbackEnum::ArmyHelp) {
-		//		command->helpPlayerId = punWidgetCaller->callbackVar1;
-		//	}
-		//	
-		//	command->targetNodeId = _buildingId;
-		//	GetPunHUD()->OpenArmyMoveUI(command);
-		//	return;
-		//}
-
-		//if (callbackEnum == CallbackEnum::AllyRequest ||
-		//	callbackEnum == CallbackEnum::AllyBetray ||
-		//	callbackEnum == CallbackEnum::ArmyRetreat)
-		//{
-		//	if (callbackEnum == CallbackEnum::AllyRequest) {
-		//		if (UGameplayStatics::GetTimeSeconds(this) - _lastAllyRequestTick < 5.0f) {
-		//			//simulation().AddPopupToFront(playerId(), "Please wait a bit for another player to reply.", ExclusiveUIEnum::ArmyMoveUI, "PopupCannot");
-		//			return;
-		//		}
-		//		_lastAllyRequestTick = UGameplayStatics::GetTimeSeconds(this);
-		//	}
-		//	
-		//	command->originNodeId = simulation().townhall(playerId()).buildingId(); // Player's capital
-		//	command->targetNodeId = _buildingId; // Target's capital...
-		//	networkInterface()->SendNetworkCommand(command);
-		//	return;
-		//}
 
 		UE_DEBUG_BREAK();
 	}
 	
-
-	//void SyncState()
-	//{
-	//	int32 playerId = simulation().building(_buildingId).subclass<TownHall>(CardEnum::Townhall).playerId();
-	//	auto& playerOwned = simulation().playerOwned(playerId);
-	//	_townPriorityState = *(playerOwned.CreateTownPriorityCommand());
-	//	_laborerCount = std::max(playerOwned.laborerCount(), 0); // Requires clamp since laborerCount() may be negative when someone died
-	//	_builderCount = std::max(playerOwned.builderCount(), 0);
-	//	_roadMakerCount = std::max(playerOwned.roadMakerCount(), 0);
-	//}
-	
 	void RefreshUI()
 	{
-		int32 townId = simulation().building(_buildingId).subclass<TownHall>(CardEnum::Townhall).townId();
+		//int32 townId = simulation().building(_buildingId).subclass<TownHall>(CardEnum::Townhall).townId();
 		
 		_laborerPriorityState.RefreshUILaborerPriority(
 			this,
 			&simulation(),
-			townId,
+			townId(),
 
 			EmployedBox,
 			Employed,
@@ -240,17 +157,11 @@ private:
 	{
 		auto command = std::make_shared<FSetTownPriority>();
 		*command = townPriorityState();
+		command->townId = townId();
 		networkInterface()->SendNetworkCommand(command);
 
 		_laborerPriorityState.lastPriorityInputTime = UGameplayStatics::GetTimeSeconds(this);
 	}
-
-	//static void SetPriorityButtons(UButton* PriorityButton, UButton* NonPriorityButton, USizeBox* ArrowOverlay, bool priority)
-	//{
-	//	PriorityButton->SetVisibility(priority ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-	//	NonPriorityButton->SetVisibility(priority ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
-	//	ArrowOverlay->SetVisibility(priority ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-	//}
 
 
 	UFUNCTION() void OnClickSetTradeOfferButton() {
@@ -259,15 +170,21 @@ private:
 	UFUNCTION() void OnClickEstablishTradeRouteButton()
 	{
 		auto command = make_shared<FSetIntercityTrade>();
-		command->buildingIdToEstablishTradeRoute = _buildingId;
-		networkInterface()->SendNetworkCommand(command);
+		command->townId = townId();
+		if (command->townId != -1) {
+			command->buildingIdToEstablishTradeRoute = _buildingId;
+			networkInterface()->SendNetworkCommand(command);
+		}
 	}
 	UFUNCTION() void OnClickCancelTradeRouteButton()
 	{
 		auto command = make_shared<FSetIntercityTrade>();
-		command->buildingIdToEstablishTradeRoute = _buildingId;
-		command->isCancelingTradeRoute = 1;
-		networkInterface()->SendNetworkCommand(command);
+		command->townId = townId();
+		if (command->townId != -1) {
+			command->buildingIdToEstablishTradeRoute = _buildingId;
+			command->isCancelingTradeRoute = 1;
+			networkInterface()->SendNetworkCommand(command);
+		}
 	}
 
 	UFUNCTION() void OnClickSendImmigrantsButton() {
@@ -450,6 +367,11 @@ private:
 	//int32 _builderCount = -1;
 	//int32 _roadMakerCount = -1;
 
+
+	int32 townId() {
+		return simulation().building(_buildingId).subclass<TownHall>(CardEnum::Townhall).townId();
+	}
+	
 private:
-	int _buildingId;
+	int _buildingId; // Townhall Id
 };

@@ -102,7 +102,7 @@ void UPunWidget::AddResourceTooltip(UWidget* widget, ResourceEnum resourceEnum, 
 		graphDataSource->Init(playerId(), dataSource());
 		graphDataSource->resourceEnum = resourceEnum;
 		
-		graphDataSource->AddSeries(seriesList);
+		graphDataSource->SetSeries(seriesList);
 
 		for (int32 i = 0; i < seriesList.size(); i++)
 		{
@@ -137,7 +137,7 @@ void UPunWidget::AddResourceTooltip(UWidget* widget, ResourceEnum resourceEnum, 
 #undef LOCTEXT_NAMESPACE
 
 
-void UPunWidget::AddSeries(UTimeSeriesPlot* graph, std::vector<GraphSeries> seriesList)
+void UPunWidget::SetSeries(UTimeSeriesPlot* graph, std::vector<GraphSeries> seriesList)
 {
 	// Set the legend
 	GetFellowChild<UKantanChartLegend>(graph)->SetChart(graph);
@@ -145,7 +145,7 @@ void UPunWidget::AddSeries(UTimeSeriesPlot* graph, std::vector<GraphSeries> seri
 	UGraphDataSource* graphDataSource = NewObject<UGraphDataSource>(this);
 	//dataSources.Add(graphDataSource);
 	graphDataSource->Init(playerId(), dataSource());
-	graphDataSource->AddSeries(seriesList);
+	graphDataSource->SetSeries(seriesList);
 
 	for (int32 i = 0; i < seriesList.size(); i++)
 	{

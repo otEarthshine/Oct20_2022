@@ -54,6 +54,11 @@ public:
 	}
 
 	void AddStat(SeasonStatEnum statEnum, int32 amount = 1) {
+//#if UE_BUILD_SHIPPING
+		if (static_cast<int32>(statEnum) >= _enumToSeasonToStat.size()) {
+			return;
+		}
+//#endif
 		_enumToSeasonToStat[(int32)statEnum][Time::SeasonMod()] += amount;
 	}
 

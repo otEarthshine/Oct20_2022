@@ -65,7 +65,7 @@ public:
 	virtual void CloseDescriptionUI() = 0;
 
 	virtual bool IsStatisticsUIOpened() = 0;
-	virtual void OpenStatisticsUI(int32 playerId) = 0;
+	virtual void OpenStatisticsUI(int32 townIdIn) = 0;
 	virtual void OpenJobPriorityUI(int32 townIdIn) = 0;
 	
 	virtual bool IsResourcePriceUIOpened(ResourceEnum resourceEnum) = 0;

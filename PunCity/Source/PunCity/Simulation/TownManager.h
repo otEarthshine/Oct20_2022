@@ -32,7 +32,7 @@ static int32 GetTownSizeMinPopulation(int32 tier) { return TownSizeMinPopulation
 static const std::vector<CardEnum> DefaultJobPriorityListAllSeason
 {
 	CardEnum::IntercityLogisticsHub,
-	//CardEnum::IntercityLogisticsPort,
+	CardEnum::IntercityLogisticsPort,
 	
 	CardEnum::FruitGatherer,
 	CardEnum::Farm,

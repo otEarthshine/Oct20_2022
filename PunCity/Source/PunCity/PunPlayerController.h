@@ -162,7 +162,14 @@ public:
 public:
 	int32 playerId() final { return controllerPlayerId(); }
 	int32 currentTownId() final {
-		int32 townId = simulation().tileOwnerTown(cameraAtom().worldTile2());
+		WorldTile2 cameraTile = cameraAtom().worldTile2();
+		if (!cameraTile.isValid()) {
+			return playerId();
+		}
+		int32 townId = simulation().tileOwnerTown(cameraTile);
+		if (simulation().townPlayerId(townId) != playerId()) {
+			return playerId();
+		}
 		return (townId != -1) ? townId : playerId();
 	}
 
@@ -427,16 +434,19 @@ public:
 
 	void CameraSwapTown(bool forward) final
 	{
-		int32 shift = forward ? 1 : -1;
-		int32 oldTownId = currentTownId();
-		const auto& townIds = simulation().GetTownIds(playerId());
-		for (int32 i = 0; i < townIds.size(); i++) {
-			if (oldTownId == townIds[i]) {
-				SetCameraToTown(townIds[(i + shift + townIds.size()) % townIds.size()]);
-				return;
-			}
-		}
-		UE_DEBUG_BREAK();
+		int32 nextTownId = simulation().GetNextTown(forward, currentTownId(), playerId());
+		SetCameraToTown(nextTownId);
+
+		//int32 shift = forward ? 1 : -1;
+		//int32 oldTownId = currentTownId();
+		//const auto& townIds = simulation().GetTownIds(playerId());
+		//for (int32 i = 0; i < townIds.size(); i++) {
+		//	if (oldTownId == townIds[i]) {
+		//		SetCameraToTown(townIds[(i + shift + townIds.size()) % townIds.size()]);
+		//		return;
+		//	}
+		//}
+		//UE_DEBUG_BREAK();
 	}
 	void SetCameraToTown(int32 townId) final
 	{
@@ -480,7 +490,7 @@ public:
 		{
 			SCOPE_TIMER("FindPathShip");
 			std::vector<uint32_t> rawPath;
-			simulation().pathAI(true)->FindPathWater(start.x / 4, start.y / 4, end.x / 4, end.y / 4, rawPath, heuristicsFactor, customCalcCount);
+			simulation().pathAI()->FindPathWater(start.x / 4, start.y / 4, end.x / 4, end.y / 4, rawPath, heuristicsFactor, customCalcCount);
 
 			MapUtil::UnpackAStarPath_4x4(rawPath, path);
 		}
@@ -493,9 +503,9 @@ public:
 
 		PUN_LOG("FindPathShip %d", path.size() * 2);
 
-		FLinearColor color = (path.size() > 0) ? FLinearColor::Green : FLinearColor::Red;
-		simulation().DrawLine(start.worldAtom2(), FVector::ZeroVector, start.worldAtom2(), FVector(0, 5, 10), color, 1.0f, 10000);
-		simulation().DrawLine(end.worldAtom2(), FVector::ZeroVector, end.worldAtom2(), FVector(0, 5, 10), color, 1.0f, 10000);
+		//FLinearColor color = (path.size() > 0) ? FLinearColor::Green : FLinearColor::Red;
+		//simulation().DrawLine(start.worldAtom2(), FVector::ZeroVector, start.worldAtom2(), FVector(0, 5, 10), color, 1.0f, 10000);
+		//simulation().DrawLine(end.worldAtom2(), FVector::ZeroVector, end.worldAtom2(), FVector(0, 5, 10), color, 1.0f, 10000);
 	}
 
 public:
@@ -753,9 +763,9 @@ public:
 	UFUNCTION(Exec) void OrderAI(int32 claimEnum, int32 aiTileX, int32 aiTileY, int32 tileX, int32 tileY)
 	{
 		// claimEnum:
-		// CallbackEnum::StartAttackProvince = 4
-		// CallbackEnum::ReinforceAttackProvince = 5
-		// CallbackEnum::Liberate = 8
+		// CallbackEnum::StartAttackProvince = 3
+		// CallbackEnum::ReinforceAttackProvince = 4
+		// CallbackEnum::Liberate = 7
 		auto& sim = gameManager->simulation();
 		WorldTile2 tile(tileX, tileY);
 		WorldTile2 aiTile(aiTileX, aiTileY);
@@ -873,6 +883,24 @@ public:
 		PUN_DEBUG2("Vertice: %s", *data.GetVerticesAt(tile.localTile()).ToCompactString());
 	}
 
+	UFUNCTION(Exec) void ShowBuildingTiles(int32 buildingX, int32 buildingY)
+	{
+		WorldTile2 tile(buildingX, buildingY);
+		if (!tile.isValid()) {
+			return;
+		}
+
+		Building* building = simulation().buildingAtTile(tile);
+		if (building == nullptr) {
+			return;
+		}
+
+		simulation().DrawLine(building->gateTile(), FLinearColor::Green);
+
+		if (IsPortBuilding(building->buildingEnum())) {
+			simulation().DrawLine(building->GetPortTile(), FLinearColor::Blue);
+		}
+	}
 
 	
 	/*

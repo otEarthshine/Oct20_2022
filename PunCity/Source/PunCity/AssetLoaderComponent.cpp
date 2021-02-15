@@ -196,7 +196,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	TryLoadBuildingModuleSet("GardenCypress", "GardenCypress");
 	TryLoadBuildingModuleSet("GardenShrubbery1", "GardenShrubbery1");
 
-
+	TryLoadBuildingModuleSet("IntercityLogisticsHub", "IntercityLogisticsHub");
 	TryLoadBuildingModuleSet("IntercityLogisticsPort", "IntercityLogisticsPort");
 	
 	//TryLoadBuildingModuleSet("Farm", "Farm");
@@ -474,7 +474,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 			CASE(StorageYard);
 
 			case CardEnum::IntercityRoad: addBuildIcon(CardEnum::IntercityRoad, FString(TO_STR(DirtRoadIcon)), FString("SpecialIconAlpha"), true); break;
-			
+			case CardEnum::IntercityBridge: addBuildIcon(CardEnum::IntercityBridge, FString(TO_STR(BridgeIcon)), FString("SpecialIconAlpha"), true); break;
 #undef CASE
 		default:
 			addBuildIcon(buildingEnum, FString("BuildingIcon") + FString::FromInt(i), FString("BuildingIconAlpha") + FString::FromInt(i), false);
@@ -560,7 +560,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	};
 
 	// Adult Male
-	LoadUnitFull(UnitEnum::Human, "Human/CitizenMale/", "CitizenMale", animationFileNames, "Human/CitizenMale/CitizenMaleStatic", "Human/CitizenMale/ImmigrationCart");
+	LoadUnitFull(UnitEnum::Human, "Human/CitizenMale/", "CitizenMale", animationFileNames, "Human/CitizenMale/CitizenMaleStatic", "Human/Cart/Cart");
 
 	// Adult Female
 	LoadUnitFull(UnitEnum::Human, "Human/CitizenFemale/", "CitizenFemale", animationFileNames, "Human/CitizenFemale/CitizenFemaleStatic");
@@ -1207,7 +1207,7 @@ void UAssetLoaderComponent::LoadUnitFull(UnitEnum unitEnum, std::string folderPa
 		asset.staticMesh = Load<UStaticMesh>((unitsPath + staticFileName).c_str());
 	}
 	if (auxFileName != "") {
-		PUN_LOG("LoadUnitFull auxFileName %s", ToTChar(auxFileName));
+		//PUN_LOG("LoadUnitFull auxFileName %s", ToTChar(auxFileName));LoadUnitFull
 		asset.auxMesh = Load<UStaticMesh>((unitsPath + auxFileName).c_str());
 	}
 	

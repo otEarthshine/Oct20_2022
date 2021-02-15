@@ -402,6 +402,32 @@ public:
 		PlaceBuildingRow(block.bottomBuildingEnums, WorldTile2(roadTileX, blockArea.minY), true, playerId, commands);
 	}
 
+	template <typename Func>
+	static void PlaceColonyAuxRoad(WorldTile2 townhallCenter, Direction faceDirection, Func func)
+	{
+		// Extra road surrounding Logistics Hub and Storage
+		TileArea auxArea = BuildingArea(townhallCenter + PortColony_Storage1ShiftTileVec, Colony_InitialStorageTileSize, Direction::N);
+		auxArea.maxY += 6;
+
+		TileArea bottomRoad(auxArea.minX - 1, auxArea.minY - 1, auxArea.minX - 1, auxArea.maxY + 1);
+		bottomRoad = bottomRoad.RotateArea(townhallCenter, faceDirection);
+		bottomRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+			func(tile, RotateDirection(Direction::S, faceDirection));
+		});
+		TileArea leftRoad(auxArea.minX, auxArea.minY - 1, auxArea.maxX, auxArea.minY - 1);
+		leftRoad = leftRoad.RotateArea(townhallCenter, faceDirection);
+		leftRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+			func(tile, RotateDirection(Direction::E, faceDirection));
+		});
+		TileArea rightRoad(auxArea.minX, auxArea.maxY + 1, auxArea.maxX, auxArea.maxY + 1);
+		rightRoad = rightRoad.RotateArea(townhallCenter, faceDirection);
+		rightRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+			func(tile, RotateDirection(Direction::E, faceDirection));
+		});
+	}
+
+	
+
 	// For Trailer
 	static bool TryPlaceArea(AICityBlock& block, WorldTile2 provinceCenter, int32 playerId, IGameSimulationCore* simulation, int32 maxLookup)
 	{
@@ -414,4 +440,5 @@ public:
 		}
 		return false;
 	}
+	
 };

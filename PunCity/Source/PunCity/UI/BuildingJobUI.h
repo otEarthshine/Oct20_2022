@@ -292,10 +292,10 @@ private:
 	}
 
 	UFUNCTION() void OnClickStatisticsButton() {
-		GetPunHUD()->OpenStatisticsUI(playerId());
+		GetPunHUD()->OpenStatisticsUI(playerId()); // Open capital statistics UI first
 	}
 	UFUNCTION() void OnClickJobPriorityButton() {
-		GetPunHUD()->OpenJobPriorityUI(dataSource()->simulation().building(_buildingId).townId());
+		GetPunHUD()->OpenJobPriorityUI(playerId()); // Open capital statistics UI first
 	}
 
 	void SetPriorityButton(PriorityEnum priority)

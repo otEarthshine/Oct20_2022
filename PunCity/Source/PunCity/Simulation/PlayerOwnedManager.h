@@ -44,10 +44,7 @@ public:
 
 	void Tick1Sec();
 
-	void TickRound()
-	{
-		
-	}
+	void TickRound();
 
 	/*
 	 * Initial Stages
@@ -222,7 +219,7 @@ public:
 		// Town Conquer
 		int32 townId = _simulation->provinceOwnerTown(provinceId);
 		if (townId != -1 &&
-			_simulation->townManager(townId).provincesClaimed()[0] == provinceId) 
+			_simulation->IsTownhallOverlapProvince(provinceId, provincePlayerId))
 		{
 			return ProvinceAttackEnum::ConquerColony;
 		}

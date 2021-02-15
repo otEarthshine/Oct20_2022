@@ -313,6 +313,7 @@ public:
 	virtual void Spawn2DSound(std::string groupName, std::string soundName) = 0;
 };
 
+
 USTRUCT()
 struct FSaveThreadResults
 {
@@ -320,4 +321,26 @@ struct FSaveThreadResults
 	UPROPERTY() int32 checksum = -1;
 	UPROPERTY() int32 compressedDataSize = -1;
 	UPROPERTY() bool succeed = false;
+};
+
+
+class PunUIUtils
+{
+public:
+	static void SetTownSwapText(int32 townId, IGameSimulationCore* sim, UTextBlock* TownSwapText, UHorizontalBox* TownSwapHorizontalBox)
+	{
+		if (townId != -1) {
+			int32 townPlayerId = sim->townPlayerId(townId);
+			if (sim->GetTownIds(townPlayerId).size() > 1) {
+				TownSwapText->SetText(sim->townNameT(townId));
+				TownSwapHorizontalBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			}
+			else {
+				TownSwapHorizontalBox->SetVisibility(ESlateVisibility::Collapsed);
+			}
+		}
+		else {
+			TownSwapHorizontalBox->SetVisibility(ESlateVisibility::Collapsed);
+		}
+	}
 };

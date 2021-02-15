@@ -58,7 +58,10 @@ void Building::Init(IGameSimulationCore& simulation, int objectId, int32 townId,
 	_isConstructed = false;
 	_didSetWalkable = false;
 
-	if (_playerId == -1) {
+
+	if (_playerId == -1 && 
+		!IsBridgeOrTunnel(_buildingEnum))
+	{
 		return;  // Animal Controlled
 	}
 
@@ -107,8 +110,7 @@ void Building::Init(IGameSimulationCore& simulation, int objectId, int32 townId,
 
 	// Special case Bridge,
 	// Note: Done for bridge Walkable issue
-	if (_buildingEnum == CardEnum::Bridge ||
-		_buildingEnum == CardEnum::Tunnel)
+	if (IsBridgeOrTunnel(_buildingEnum))
 	{
 		SetAreaWalkable();
 	}
@@ -173,6 +175,7 @@ void Building::InstantClearArea()
 void Building::FinishConstruction()
 {
 	//PUN_LOG("FinishConstruction %d constructed:%d", _objectId, _isConstructed);
+	PUN_CHECK(!_isConstructed);
 	
 	_maxOccupants = 0;
 	_allowedOccupants = 0;
@@ -353,6 +356,9 @@ void Building::Deinit()
 	ClearDeliverySources();
 
 	OnDeinit();
+
+	//! Clear Variables so they are not misused ???
+	//  Not supposed to be needed since ResetActions should trigger when workplace is Deinit
 }
 
 void Building::ResetWorkReservers()
@@ -523,12 +529,14 @@ bool Building::NeedConstruct()
 }
 
 
-bool Building::UpgradeBuilding(int upgradeIndex, bool showDisplay)
+bool Building::UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& needResourceEnumOut)
 {
 	PUN_ENSURE(upgradeIndex < _upgrades.size(), return false; );
+
+	needResourceEnumOut = ResourceEnum::None;
 	
 	if (IsUpgraded(upgradeIndex)) {
-		if (showDisplay) {
+		if (showPopups) {
 			_simulation->AddPopup(_playerId, LOCTEXT("Already upgraded", "Already upgraded"));
 		}
 		return false;
@@ -549,7 +557,7 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showDisplay)
 
 			ResetDisplay();
 
-			if (showDisplay) {
+			if (showPopups) {
 				_simulation->soundInterface()->Spawn2DSound("UI", "UpgradeBuilding", _playerId, _centerTile);
 			}
 
@@ -557,11 +565,11 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showDisplay)
 			return true;
 		}
 
-		if (showDisplay) {
+		if (showPopups) {
 			_simulation->AddPopupToFront(_playerId, FText::Format(LOCTEXT("NotEnoughResourceForUpgrade", "Not enough {0} for upgrade."), ResourceNameT(resourceNeeded.resourceEnum)),
 											ExclusiveUIEnum::None, "PopupCannot");
 		}
-		
+		needResourceEnumOut = resourceNeeded.resourceEnum;
 		return false;
 	}
 	
@@ -575,7 +583,7 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showDisplay)
 
 		ResetDisplay();
 
-		if (showDisplay) {
+		if (showPopups) {
 			_simulation->soundInterface()->Spawn2DSound("UI", "UpgradeBuilding", _playerId, _centerTile);
 		}
 
@@ -583,9 +591,10 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showDisplay)
 		return true;
 	}
 
-	if (showDisplay) {
+	if (showPopups) {
 		_simulation->AddPopupToFront(_playerId, LOCTEXT("NoUpgradeMoney", "Not enough money for upgrade."), ExclusiveUIEnum::None, "PopupCannot");
 	}
+	needResourceEnumOut = ResourceEnum::Money;
 	return false;
 }
 
@@ -853,6 +862,7 @@ void Building::CheckCombo()
 	case CardEnum::Fence:
 	case CardEnum::FenceGate:
 	case CardEnum::Bridge:
+	case CardEnum::IntercityBridge:
 	case CardEnum::TrapSpike:
 	case CardEnum::None:
 	case CardEnum::BoarBurrow:

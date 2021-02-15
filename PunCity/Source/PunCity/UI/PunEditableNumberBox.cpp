@@ -47,5 +47,8 @@ void UPunEditableNumberBox::NumberChanged(const FText& Text, ETextCommit::Type C
 		if (_callbackTarget) {
 			_callbackTarget->CallBack1(this, _callbackEnum);
 		}
+		else if (onEditNumber) {
+			onEditNumber(punId, uiIndex, amount, networkInterface());
+		}
 	}
 }

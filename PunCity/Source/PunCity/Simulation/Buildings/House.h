@@ -299,36 +299,6 @@ public:
 
 class RanchBarn final : public BoarBurrow
 {
-//public:
-//	void FinishConstruction() override;
-//	void OnDeinit() override;
-//
-//	void AddAnimalOccupant(UnitEnum animalEnum, int32_t age);
-//	void RemoveAnimalOccupant(int32_t animalId);
-//
-//	ResourceEnum product() override { return ResourceEnum::Pork; }
-//
-//	void OnTick1Sec() override;
-//
-//	int32 openAnimalSlots() { return maxAnimals - _animalOccupants.size(); }
-//	const std::vector<int32>& animalOccupants() { return _animalOccupants; }
-//	
-//	UnitEnum animalEnum() { return _animalEnum; }
-//	void SetAnimalEnum(UnitEnum animalEnum) { _animalEnum = animalEnum; }
-//
-//	void Serialize(FArchive& Ar) override {
-//		Building::Serialize(Ar);
-//		Ar << _animalEnum;
-//		SerializeVecValue(Ar, _animalOccupants);
-//	}
-//
-//public:
-//	//10 animals ... 5 slaugther per season.. 100 per season... (half year adult growth... )
-//	const int32_t maxAnimals = 15;
-//
-//private:
-//	UnitEnum _animalEnum = UnitEnum::Pig;
-//	std::vector<int32> _animalOccupants;
 };
 
 const FText RanchWorkMode_FullCapacity = NSLOCTEXT("Ranch", "Kill when reached full capacity", "Kill when reached full capacity");
@@ -365,7 +335,7 @@ public:
 		}
 
 		// Prevent non-human units from going into barn
-		_simulation->SetWalkableNonIntelligent(gateTile(), false);
+		//_simulation->SetWalkableNonIntelligent(gateTile(), false);
 
 		_simulation->ResetUnitActionsInArea(_area);
 

@@ -78,7 +78,7 @@ protected:
 			PunSettings::Settings["FloodIdHuman"] ||
 			PunSettings::Settings["Province"])
 		{
-			auto pathAI = sim.pathAI(false);
+			auto pathAI = sim.pathAI();
 			ULineBatchComponent* line = lineBatch();
 			auto& buildingSys = sim.buildingSystem();
 
@@ -139,9 +139,8 @@ protected:
 						FLinearColor color = FLinearColor::Green;
 						TerrainTileType tileType = terrainGen.terrainTileType(curTile.tileId());
 
-						if (sim.buildingEnumAtTile(curTile) == CardEnum::Bridge ||
-							sim.buildingEnumAtTile(curTile) == CardEnum::Tunnel) 
-						{
+						CardEnum buildingEnumAtTile = sim.buildingEnumAtTile(curTile);
+						if (IsBridgeOrTunnel(buildingEnumAtTile)) {
 							color = FLinearColor(0.5f, .0f, .0f);
 						}
 						else if (tileType != TerrainTileType::None) {
@@ -181,11 +180,11 @@ protected:
 						int16 floodId = sim.floodSystem().GetFloodId(curTile);
 						line->DrawLine(start, start + FVector(2, 0, 2), GetFloodColor(floodId), 100.0f, 1.0f, 10000);
 					}
-					if (PunSettings::Settings["FloodIdHuman"])
-					{
-						int16 floodId = sim.floodSystemHuman().GetFloodId(curTile);
-						line->DrawLine(start, start + FVector(2, 0, 2), GetFloodColor(floodId), 100.0f, 1.0f, 10000);
-					}
+					//if (PunSettings::Settings["FloodIdHuman"])
+					//{
+					//	int16 floodId = sim.floodSystemHuman().GetFloodId(curTile);
+					//	line->DrawLine(start, start + FVector(2, 0, 2), GetFloodColor(floodId), 100.0f, 1.0f, 10000);
+					//}
 					if (PunSettings::Settings["Province"])
 					{
 						if (curTile.x % 2 == 0 && curTile.y % 2 == 0)
@@ -308,7 +307,8 @@ protected:
 		{
 			int16_t region64Id = TileToRegion64Id(region.centerTile());
 
-			GameMapFlood* floodSystem = PunSettings::Settings["FloodId"] ? &(simulation().floodSystem()) : &(simulation().floodSystemHuman());
+			//GameMapFlood* floodSystem = PunSettings::Settings["FloodId"] ? &(simulation().floodSystem()) : &(simulation().floodSystemHuman());
+			GameMapFlood* floodSystem = &(simulation().floodSystem());
 			//GameMapFlood* floodSystem = &(simulation()->floodSystem());
 
 			RegionFloodConnections& region64Connections = floodSystem->region64ToConnections()[region64Id];

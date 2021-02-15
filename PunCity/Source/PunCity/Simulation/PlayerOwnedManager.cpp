@@ -88,6 +88,23 @@ void PlayerOwnedManager::Tick1Sec()
 	}
 }
 
+void PlayerOwnedManager::TickRound()
+{
+	/*
+	 * Mid autumn buyer arrival
+	 */
+	PUN_LOG("MidAutumn TickRound: %d, %d, %d, %d", Time::Ticks(), (Time::Ticks() % Time::TicksPerSeason), (Time::Ticks() % Time::TicksPerSeason != 0), Time::IsAutumn());
+	if (Time::IsAutumn() && Time::Ticks() % Time::TicksPerSeason != 0)
+	{
+		_simulation->AddPopup(PopupInfo(_playerId,
+			LOCTEXT("CaravanArrive_Pop", "A caravan has arrived. They wish to buy any goods you might have."),
+			{ LOCTEXT("Trade", "Trade"),
+				LOCTEXT("Refuse", "Refuse") },
+			PopupReceiverEnum::CaravanBuyer
+		));
+	}
+}
+
 
 void PlayerOwnedManager::TryApplyBuff(CardEnum cardEnum)
 {

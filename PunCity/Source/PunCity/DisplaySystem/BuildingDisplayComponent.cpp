@@ -232,7 +232,8 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 			}
 
 			// Special case bridge
-			if (buildingEnum == CardEnum::Bridge)
+			if (buildingEnum == CardEnum::Bridge ||
+				buildingEnum == CardEnum::IntercityBridge)
 			{
 				std::vector<GameDisplayUtils::BridgeModule> bridgeModules = GameDisplayUtils::GetBridgeModules(building.area());
 

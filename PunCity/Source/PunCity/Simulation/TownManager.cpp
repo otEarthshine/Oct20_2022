@@ -95,8 +95,7 @@ void TownManager::PlayerAddJobBuilding(Building& building, bool isConstructed)
 
 	//_LOG(PunPlayerOwned, "PlayerAddJobBuilding: id:%d player:%d ,%llu %llu %llu", buildingId, _playerId, _roadConstructionIds.size(), _constructionIds.size(), _jobBuildingEnumToIds.size());
 
-	if (buildingEnum == CardEnum::Bridge ||
-		buildingEnum == CardEnum::Tunnel) {
+	if (IsBridgeOrTunnel(buildingEnum)) {
 		return;
 	}
 
@@ -119,9 +118,9 @@ void TownManager::PlayerAddJobBuilding(Building& building, bool isConstructed)
 	if (!unlockSys->unlockedStatisticsBureau &&
 		jobBuildingCount() >= 3)
 	{
-		unlockSys->unlockedStatisticsBureau = true;
-
-		if (_simulation->TryAddCardToBoughtHand(_playerId, CardEnum::StatisticsBureau)) {
+		if (_simulation->TryAddCardToBoughtHand(_playerId, CardEnum::StatisticsBureau)) 
+		{
+			unlockSys->unlockedStatisticsBureau = true;
 			_simulation->AddPopup(_playerId,
 				LOCTEXT("UnlockStatsBureau_Pop", "Unlocked Statistics Bureau. Once built, allow you to view Town Statistics.")
 			);
@@ -130,7 +129,8 @@ void TownManager::PlayerAddJobBuilding(Building& building, bool isConstructed)
 	if (!unlockSys->unlockedEmploymentBureau &&
 		jobBuildingCount() >= 7)
 	{
-		if (_simulation->TryAddCardToBoughtHand(_playerId, CardEnum::JobManagementBureau)) {
+		if (_simulation->TryAddCardToBoughtHand(_playerId, CardEnum::JobManagementBureau)) 
+		{
 			unlockSys->unlockedEmploymentBureau = true;
 			_simulation->AddPopup(_playerId,
 				LOCTEXT("UnlockEmploymentBureau_Pop", "Unlocked Employment Bureau. Once built, you gain the ability to manage the job priority (global).")
@@ -147,8 +147,7 @@ void TownManager::PlayerRemoveJobBuilding(Building& building, bool isConstructed
 
 	//PUN_LOG("PlayerRemoveJobBuilding: %d", buildingId);
 
-	if (buildingEnum == CardEnum::Bridge ||
-		buildingEnum == CardEnum::Tunnel) {
+	if (IsBridgeOrTunnel(buildingEnum)) {
 		return;
 	}
 
@@ -1006,20 +1005,6 @@ void TownManager::TickRound()
 		AddDataPoint(PlotStatEnum::Export, exportMoney100 / 100, Time::TicksPerSeason);
 		AddDataPoint(PlotStatEnum::Import, importMoney100 / 100, Time::TicksPerSeason);
 		//AddDataPoint(PlotStatEnum::TradeBalance, (exportMoney100 - importMoney100) / 100, Time::TicksPerSeason);
-	}
-
-	/*
-	 * Mid autumn buyer arrival
-	 */
-	PUN_LOG("MidAutumn TickRound: %d, %d, %d, %d", Time::Ticks(), (Time::Ticks() % Time::TicksPerSeason), (Time::Ticks() % Time::TicksPerSeason != 0), Time::IsAutumn());
-	if (Time::IsAutumn() && Time::Ticks() % Time::TicksPerSeason != 0)
-	{
-		_simulation->AddPopup(PopupInfo(_playerId,
-			LOCTEXT("CaravanArrive_Pop", "A caravan has arrived. They wish to buy any goods you might have."),
-			{ LOCTEXT("Trade", "Trade"),
-				LOCTEXT("Refuse", "Refuse") },
-			PopupReceiverEnum::CaravanBuyer
-		));
 	}
 
 

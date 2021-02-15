@@ -31,8 +31,13 @@ public:
 		_resourceEnumToPrice100Vec.resize(ResourceEnumCount);
 		_resourceEnumToPlayerSupplyChanges.resize(ResourceEnumCount);
 
-		_intercityTradeOffers.resize(maxPlayers);
 		_playerIdToTradePartners.resize(maxPlayers);
+	}
+
+	void AddTown(int32 townId)
+	{
+		PUN_CHECK(townId == _intercityTradeOffers.size());
+		_intercityTradeOffers.push_back(std::vector<IntercityTradeOffer>());
 	}
 
 	void Tick1Sec()
@@ -161,9 +166,12 @@ public:
 	}
 	void SetIntercityTradeOffers(FSetIntercityTrade command)
 	{
-		_intercityTradeOffers[command.townId].clear();
-		for (int32 i = 0; i < command.resourceEnums.Num(); i++) {
-			_intercityTradeOffers[command.townId].push_back({ static_cast<ResourceEnum>(command.resourceEnums[i]),  static_cast<IntercityTradeOfferEnum>(command.intercityTradeOfferEnum[i]), command.targetInventories[i] });
+		if (command.townId != -1 && command.townId < _intercityTradeOffers.size())
+		{
+			_intercityTradeOffers[command.townId].clear();
+			for (int32 i = 0; i < command.resourceEnums.Num(); i++) {
+				_intercityTradeOffers[command.townId].push_back({ static_cast<ResourceEnum>(command.resourceEnums[i]),  static_cast<IntercityTradeOfferEnum>(command.intercityTradeOfferEnum[i]), command.targetInventories[i] });
+			}
 		}
 	}
 	

@@ -132,7 +132,7 @@ public:
 					PlayerCompareBox->AddChild(AddWidget<UPlayerCompareElement>(UIEnum::PlayerCompareElement));
 				}
 
-				int32 pop = simulation().populationTown(curId);
+				int32 pop = simulation().populationPlayer(curId);
 				FString name = dataSource()->playerNameF(curId);
 
 				auto element = CastChecked<UPlayerCompareElement>(PlayerCompareBox->GetChildAt(i));
@@ -307,83 +307,93 @@ public:
 			element->HighlightImage->SetVisibility(isUIPlayer ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 
 			setText(element->PlayerNameText, FText::FromString(TrimStringF_Dots(simulation().playerNameF(curId), 14)));
-			setText(element->PopulationText, TEXT_NUM(simulation().populationTown(curId)));
+			setText(element->PopulationText, TEXT_NUM(simulation().populationPlayer(curId)));
 			setText(element->TechnologyText, TEXT_NUM(simulation().sciTechsCompleted(curId)));
 			setText(element->RevenueText, TEXT_NUM(playerOwned.totalRevenue100() / 100));
 			setText(element->MilitarySizeText, TEXT_NUM(simulation().influence(curId)));
 			setText(element->LandText, TEXT_NUM(playerOwned.GetPlayerLandTileCount(true)));
 
-			auto& statSystem = simulation().statSystem(curId);
-			const std::vector<std::vector<int32>>& productionStats = statSystem.GetResourceStat(ResourceSeasonStatEnum::Production);
-			const std::vector<std::vector<int32>>& consumptionStats = statSystem.GetResourceStat(ResourceSeasonStatEnum::Consumption);
-			
 
 			int32 gdp100 = 0;
 			std::vector<int32> productionValue100s;
-			for (int enumInt = 0; enumInt < ResourceEnumCount; enumInt++)
+
+			const auto& townIds = simulation().GetTownIds(curId);
+			for (int32 townId : townIds)
 			{
-				check(productionStats[enumInt].size() == 4);
-				int32 productionCount = productionStats[enumInt][0] +
-												productionStats[enumInt][1] +
-												productionStats[enumInt][2] +
-												productionStats[enumInt][3];
-				int32 productionValue100 = productionCount * simulation().price100(static_cast<ResourceEnum>(enumInt));
-				
-				productionValue100s.push_back(productionValue100);
+				auto& statSystem = simulation().statSystem(townId);
+				const std::vector<std::vector<int32>>& productionStats = statSystem.GetResourceStat(ResourceSeasonStatEnum::Production);
+				const std::vector<std::vector<int32>>& consumptionStats = statSystem.GetResourceStat(ResourceSeasonStatEnum::Consumption);
 
-				check(consumptionStats[enumInt].size() == 4);
-				int32 consumptionCount = consumptionStats[enumInt][0] +
-										consumptionStats[enumInt][1] +
-										consumptionStats[enumInt][2] +
-										consumptionStats[enumInt][3];
-				int32 consumptionValue100 = consumptionCount * simulation().price100(static_cast<ResourceEnum>(enumInt));
-				
-				gdp100 += productionValue100 - consumptionValue100;
-			}
-
-			// Mint included in GDP
-			{
-				gdp100 += 100 * statSystem.GetYearlyStat(SeasonStatEnum::Money);
-			}
-
-			
-
-			// Calculate main production
-			std::vector<std::pair<ResourceEnum, int32>> mainProductions;
-			for (size_t i = 0; i < ResourceEnumCount; i++) 
-			{
-				if (productionValue100s[i] > 0)
+				for (int enumInt = 0; enumInt < ResourceEnumCount; enumInt++)
 				{
-					bool added = false;
-					for (size_t j = 0; j < mainProductions.size(); j++)
-					{
-						if (productionValue100s[i] > mainProductions[j].second) {
-							mainProductions.insert(mainProductions.begin() + j, std::make_pair(static_cast<ResourceEnum>(i), productionValue100s[i]));
-							added = true;
-							break;
-						}
+					check(productionStats[enumInt].size() == 4);
+					int32 productionCount = productionStats[enumInt][0] +
+						productionStats[enumInt][1] +
+						productionStats[enumInt][2] +
+						productionStats[enumInt][3];
+					int32 productionValue100 = productionCount * simulation().price100(static_cast<ResourceEnum>(enumInt));
+
+					if (enumInt < productionValue100s.size()) {
+						productionValue100s[enumInt] += productionValue100;
+					} else {
+						productionValue100s.push_back(productionValue100);
 					}
-					if (!added) {
-						mainProductions.push_back(std::make_pair(static_cast<ResourceEnum>(i), productionValue100s[i]));
-					}
-					if (mainProductions.size() > 2) {
-						mainProductions.pop_back();
-					}
+
+					check(consumptionStats[enumInt].size() == 4);
+					int32 consumptionCount = consumptionStats[enumInt][0] +
+						consumptionStats[enumInt][1] +
+						consumptionStats[enumInt][2] +
+						consumptionStats[enumInt][3];
+					int32 consumptionValue100 = consumptionCount * simulation().price100(static_cast<ResourceEnum>(enumInt));
+
+					gdp100 += productionValue100 - consumptionValue100;
+				}
+
+				// Mint included in GDP
+				{
+					gdp100 += 100 * statSystem.GetYearlyStat(SeasonStatEnum::Money);
 				}
 			}
 
+			//! Set GDP Text
 			setText(element->GDPText, TEXT_100(gdp100));
 
 
-			auto addSS = [&](TArray<FText>& args, FText text) {
-				if (isUIPlayer) {
-					ADDTEXT_TAG_("<Bold>", text);
-				} else {
-					ADDTEXT_TAG_("<SlightGray>", text);
-				}
-			};
-			
+			//! Main Production Text
 			{
+				// Calculate main production
+				std::vector<std::pair<ResourceEnum, int32>> mainProductions;
+				for (size_t i = 0; i < ResourceEnumCount; i++)
+				{
+					if (productionValue100s[i] > 0)
+					{
+						bool added = false;
+						for (size_t j = 0; j < mainProductions.size(); j++)
+						{
+							if (productionValue100s[i] > mainProductions[j].second) {
+								mainProductions.insert(mainProductions.begin() + j, std::make_pair(static_cast<ResourceEnum>(i), productionValue100s[i]));
+								added = true;
+								break;
+							}
+						}
+						if (!added) {
+							mainProductions.push_back(std::make_pair(static_cast<ResourceEnum>(i), productionValue100s[i]));
+						}
+						if (mainProductions.size() > 2) {
+							mainProductions.pop_back();
+						}
+					}
+				}
+
+				//! Set MainProductionText
+				auto addSS = [&](TArray<FText>& args, FText text) {
+					if (isUIPlayer) {
+						ADDTEXT_TAG_("<Bold>", text);
+					} else {
+						ADDTEXT_TAG_("<SlightGray>", text);
+					}
+				};
+
 				TArray<FText> args;
 				if (mainProductions.size() > 0) {
 					addSS(args, ResourceNameT(mainProductions[0].first));
@@ -394,6 +404,8 @@ public:
 				}
 				SetText(element->MainProductionText, JOINTEXT(args));
 			}
+
+			
 
 			//// Allies and vassals
 			//{
@@ -445,7 +457,7 @@ public:
 					//color = FLinearColor::LerpUsingHSV(color, FLinearColor::White, 0.3); // Mix in some white to make the graph easier to read
 					series.push_back({ ToFString(simulation().playerName(allHumanIds[i])), plotEnum, color, allHumanIds[i] });
 				}
-				AddSeries(plot, series);
+				SetSeries(plot, series);
 			};
 
 			addSeriesAll("Population", PlayersPopulationGraph, PlotStatEnum::Population);

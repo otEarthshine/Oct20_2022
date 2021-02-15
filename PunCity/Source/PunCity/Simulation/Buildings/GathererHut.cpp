@@ -1360,7 +1360,7 @@ void LovelyHeartStatue::Tick() {
 	int32_t round5Begin = round4End + 180;
 	int32_t round5End = round5Begin + shockwaveFinalRadius / defaultSpeed * 7 / 8;
 
-	auto pathAI = _simulation->pathAI(false);
+	auto pathAI = _simulation->pathAI();
 
 	if (tickCount < firstRoundEnd) {
 		int32_t destroyAtomRadius = tickCount * firstWaveSpeed;
@@ -1455,7 +1455,7 @@ void RoadConstruction::FinishConstruction()
 void FenceGate::FinishConstruction() 
 {
 	Building::FinishConstruction();
-	_simulation->SetWalkableNonIntelligent(_centerTile, false);
+	//_simulation->SetWalkableNonIntelligent(_centerTile, false);
 
 	// Add road if there isn't one..
 	if (!overlaySystem().IsRoad(_centerTile)) {

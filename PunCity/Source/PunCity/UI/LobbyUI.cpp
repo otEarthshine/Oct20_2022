@@ -49,6 +49,9 @@ void ULobbyUI::Init()
 	if (gameInst->isSinglePlayer) {
 		mapSettings = UPunGameInstance::GetSavedMap(true);
 	}
+	// Set default AI count
+	mapSettings.aiCount = GetDefaultAICount(static_cast<MapSizeEnum>(mapSettings.mapSizeEnumInt));
+	
 	
 	/*
 	 * Loading Multiplayer Saves

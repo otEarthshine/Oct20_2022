@@ -313,7 +313,7 @@ void UWorldSpaceUI::TickBuildings()
 
 						int32 hasEnoughMoney = sim.money(playerId()) >= BattleInfluencePrice;
 						SetText(regionHoverUI->ReinforceMoneyRightButtonText,
-							FText::Format(INVTEXT("{0}\n<img id=\"Coin\"/>{1}"), LOCTEXT("Reinforce", "Reinforce"), TextRed(TEXT_NUM(BattleInfluencePrice), !hasEnoughInfluence))
+							FText::Format(INVTEXT("{0}\n<img id=\"Coin\"/>{1}"), LOCTEXT("Reinforce", "Reinforce"), TextRed(TEXT_NUM(BattleInfluencePrice), !hasEnoughMoney))
 						);
 						regionHoverUI->ReinforceMoneyRightButton->SetIsEnabled(hasEnoughMoney);
 						
@@ -786,6 +786,8 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 						building.isEnum(CardEnum::HuntingLodge) ||
 						building.isEnum(CardEnum::FruitGatherer) ||
 						building.isEnum(CardEnum::ShippingDepot) ||
+						building.isEnum(CardEnum::IntercityLogisticsHub) ||
+						building.isEnum(CardEnum::IntercityLogisticsPort) ||
 						IsStorage(building.buildingEnum()) || // TODO: may be this is for all buildings??
 
 						building.isEnum(CardEnum::JobManagementBureau) ||

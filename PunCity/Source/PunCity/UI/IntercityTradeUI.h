@@ -29,6 +29,10 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* ConfirmButton;
 	UPROPERTY(meta = (BindWidget)) UButton* DismissButton;
 
+	int32 townId() {
+		return simulation().building(punId).subclass<TownHall>(CardEnum::Townhall).townId();
+	}
+
 	void PunInit()
 	{
 		ConfirmButton->OnClicked.AddDynamic(this, &UIntercityTradeUI::ClickedConfirmButton);
@@ -168,28 +172,31 @@ public:
 		// Take UI Info and input them into sim
 
 		auto command = make_shared<FSetIntercityTrade>();
-
-		TArray<UWidget*> tradeRows = TradeRowBox->GetAllChildren();
-		for (int32 i = 0; i < tradeRows.Num(); i++)
+		command->townId = townId();
+		if (command->townId != -1)
 		{
-			auto tradeRow = CastChecked<UIntercityTradeRow>(tradeRows[i]);
-
-			IntercityTradeOfferEnum offerEnum = tradeRow->GetOfferEnum();
-			int32 targetInventory = tradeRow->TargetInventory->amount;
-			
-			if ((offerEnum == IntercityTradeOfferEnum::BuyWhenBelow && targetInventory > 0) ||
-				(offerEnum == IntercityTradeOfferEnum::SellWhenAbove && targetInventory >= 0))
+			TArray<UWidget*> tradeRows = TradeRowBox->GetAllChildren();
+			for (int32 i = 0; i < tradeRows.Num(); i++)
 			{
-				command->resourceEnums.Add(static_cast<uint8>(tradeRow->resourceEnum()));
-				command->intercityTradeOfferEnum.Add(static_cast<uint8>(offerEnum));
-				command->targetInventories.Add(targetInventory);
+				auto tradeRow = CastChecked<UIntercityTradeRow>(tradeRows[i]);
+
+				IntercityTradeOfferEnum offerEnum = tradeRow->GetOfferEnum();
+				int32 targetInventory = tradeRow->TargetInventory->amount;
+				
+				if ((offerEnum == IntercityTradeOfferEnum::BuyWhenBelow && targetInventory > 0) ||
+					(offerEnum == IntercityTradeOfferEnum::SellWhenAbove && targetInventory >= 0))
+				{
+					command->resourceEnums.Add(static_cast<uint8>(tradeRow->resourceEnum()));
+					command->intercityTradeOfferEnum.Add(static_cast<uint8>(offerEnum));
+					command->targetInventories.Add(targetInventory);
+				}
 			}
+
+			networkInterface()->SendNetworkCommand(command);
+
+			dataSource()->Spawn2DSound("UI", "TradeAction");
+			SetVisibility(ESlateVisibility::Collapsed);
 		}
-
-		networkInterface()->SendNetworkCommand(command);
-
-		dataSource()->Spawn2DSound("UI", "TradeAction");
-		SetVisibility(ESlateVisibility::Collapsed);
 	}
 	UFUNCTION() void ClickedDismissButton() {
 		CloseUI();

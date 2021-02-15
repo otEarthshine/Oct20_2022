@@ -158,6 +158,11 @@ void HumanStateAI::CalculateActions()
 				return;
 			}
 		}
+		else if (workplc->isEnum(CardEnum::IntercityLogisticsPort)) {
+			if (TryBulkHaul_IntercityWater() || justReset()) {
+				return;
+			}
+		}
 		else if (workplc->isEnum(CardEnum::Forester)) {
 			if (TryForesting() || justReset()) {
 				DEBUG_AI_VAR(TryForesting);
@@ -1888,9 +1893,19 @@ bool HumanStateAI::TryBulkHaul_Intercity()
 	WorldTile2 targetTile = _simulation->GetTownhallGate(hub.targetTownId);
 	
 	std::vector<uint32_t> path;
-	bool succeed = _simulation->pathAI(true)->FindPathRoadOnly(startTile.x, startTile.y, targetTile.x, targetTile.y, path);
+	bool succeed = _simulation->pathAI()->FindPathRoadOnly(startTile.x, startTile.y, targetTile.x, targetTile.y, path);
 	if (!succeed) {
-		return false;
+		// Try to go to townhall first
+		if (!_simulation->IsConnectedBuilding(hub.buildingId())) {
+			return false;
+		}
+
+		// Might be able to use townhall as startTile instead
+		startTile = _simulation->GetTownhallGate(hub.townId());
+		succeed = _simulation->pathAI()->FindPathRoadOnly(startTile.x, startTile.y, targetTile.x, targetTile.y, path);
+		if (!succeed) {
+			return false;
+		}
 	}
 
 	Add_IntercityHaulDropoff(hub.buildingId());
@@ -1900,6 +1915,35 @@ bool HumanStateAI::TryBulkHaul_Intercity()
 	//Add_Wait(180, UnitAnimationEnum::Caravan);
 	Add_MoveToCaravan(targetTile, UnitAnimationEnum::Caravan);
 	Add_MoveTo(startTile);
+
+	return true;
+}
+bool HumanStateAI::TryBulkHaul_IntercityWater()
+{
+	IntercityLogisticsPort& startPort = workplace()->subclass<IntercityLogisticsPort>(CardEnum::IntercityLogisticsPort);
+
+	if (startPort.targetTownId == -1) {
+		return false;
+	}
+	if (startPort.needSetup()) {
+		return false;
+	}
+
+	int32 endPortId = -1;
+	if (!_simulation->FindBestPathWater(startPort.buildingId(), startPort.targetTownId, endPortId)) {
+		return false;
+	}
+
+	int32 startPortId = startPort.buildingId();
+	Building& endPort = _simulation->building(endPortId);
+	check(endPort.townId() != -1);
+
+	Add_MoveToward(startPort.gateTile().worldAtom2(), 100000); // TODO: Have Forced Move To Later?
+	Add_IntercityHaulDropoff(startPort.buildingId());
+	Add_MoveToShip(endPortId, startPortId, UnitAnimationEnum::Ship);
+	Add_IntercityHaulPickup(startPort.buildingId(), endPort.townId());
+	Add_MoveToShip(startPortId, endPortId, UnitAnimationEnum::Ship);
+	Add_MoveTo(startPort.gateTile());
 
 	return true;
 }
@@ -2083,7 +2127,7 @@ bool HumanStateAI::TryGather(bool treeOnly)
 	NonWalkableTileAccessInfo tileAccessInfo;
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_TryGather_FindMark);
-		tileAccessInfo = treeSystem().FindNearestMark(playerId(), unitTile(), treeOnly);
+		tileAccessInfo = treeSystem().FindNearestMark(_townId, unitTile(), treeOnly);
 	}
 
 	if (!tileAccessInfo.isValid()) {

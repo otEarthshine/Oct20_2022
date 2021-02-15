@@ -119,7 +119,7 @@ public:
 	StatSystem& statSystem() final { return _statSystem; }
 	PunTerrainGenerator& terrainGenerator() final { return *_terrainGenerator; }
 	GameMapFlood& floodSystem() final { return _floodSystem; }
-	GameMapFlood& floodSystemHuman() final { return _floodSystemHuman; }
+	//GameMapFlood& floodSystemHuman() final { return _floodSystemHuman; }
 	ProvinceSystem& provinceSystem() final { return _provinceSystem; }
 	GameRegionSystem& regionSystem() final { return *_regionSystem; }
 	
@@ -184,6 +184,25 @@ public:
 		}
 		return building(buildingId).townId();
 	}
+
+	int32 GetNextTown(bool forward, int32 currentTownId, int32 playerId) final
+	{
+		if (currentTownId == -1) {
+			return -1;
+		}
+		int32 shift = forward ? 1 : -1;
+		int32 oldTownId = currentTownId;
+		const auto& townIds = GetTownIds(playerId);
+		for (int32 i = 0; i < townIds.size(); i++) {
+			if (oldTownId == townIds[i]) {
+				return townIds[(i + shift + townIds.size()) % townIds.size()];
+			}
+		}
+		UE_DEBUG_BREAK();
+		return playerId;
+	}
+
+	
 	
 	bool IsTownOwnedByPlayer(int32 townIdIn, int32 playerId) final {
 		const auto& townIds = _playerOwnedManagers[playerId].townIds();
@@ -194,7 +213,22 @@ public:
 		}
 		return false;
 	}
-	
+
+	bool IsTownhallOverlapProvince(int32 provinceId, int32 provincePlayerId) final
+	{
+		const auto& townIds = GetTownIds(provincePlayerId);
+		for (int32 townId : townIds)
+		{
+			TileArea townhallArea = GetTownhall(townId).area();
+			vector<int32> townhallOverlapProvinceIds = provinceSystem().GetProvinceIdsFromArea(townhallArea, true);
+			for (int32 townhallOverlapProvinceId : townhallOverlapProvinceIds) {
+				if (townhallOverlapProvinceId == provinceId) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 	
 	int32 populationTown(int32 townId) final {
 		return _townManagers[townId]->population();
@@ -315,10 +349,10 @@ public:
 		return _buildingSystem->GetHouseLvlCount(playerId, houseLvl, includeHigherLvl);
 	}
 
-	std::pair<int32, int32> GetStorageCapacity(int32 playerId, bool includeUnderConstruction = false) final
+	std::pair<int32, int32> GetStorageCapacity(int32 townId, bool includeUnderConstruction = false) final
 	{
-		std::vector<int32> storageIds = buildingIds(playerId, CardEnum::StorageYard);
-		CppUtils::AppendVec(storageIds, buildingIds(playerId, CardEnum::Warehouse));
+		std::vector<int32> storageIds = buildingIds(townId, CardEnum::StorageYard);
+		CppUtils::AppendVec(storageIds, buildingIds(townId, CardEnum::Warehouse));
 
 		int32 totalSlots = 0;
 		int32 usedSlots = 0;
@@ -451,7 +485,12 @@ public:
 		if (townId == -1) {
 			return NSLOCTEXT("GameSimulationCore", "None", "None");
 		}
-		return GetTownhall(townId).townNameT();
+		int32 townhallId = townManager(townId).townHallId;
+		if (townhallId == -1) {
+			return NSLOCTEXT("GameSimulationCore", "None", "None");
+		}
+		return building(townhallId).subclass<TownHall>(CardEnum::Townhall).townNameT();
+		//return GetTownhall(townId).townNameT();
 	}
 	
 	FText GetTownSizeNameT(int32 playerId) final {
@@ -467,10 +506,9 @@ public:
 		for (int32 townIdTemp : townIds) {
 			WorldTile2 gateTile = GetTownhallGate(townIdTemp);
 			if (gateTile.isValid() &&
-				pathAI(true)->FindPathRoadOnly(tile.x, tile.y, gateTile.x, gateTile.y, path))
+				pathAI()->FindPathRoadOnly(tile.x, tile.y, gateTile.x, gateTile.y, path))
 			{
 				return true;
-				break;
 			}
 		}
 		return false;
@@ -622,7 +660,7 @@ public:
 		return IsFrontBuildable(tile) && !IsRoadOverlapBuilding(buildingEnumAtTile(tile));
 	}
 	bool IsRoadTile(WorldTile2 tile) final {
-		return _pathAIHuman->isRoad(tile.x, tile.y);
+		return _pathAI->isRoad(tile.x, tile.y);
 	}
 	//bool IsStoneRoadTile(WorldTile2 tile) final {
 	//	return _overlaySystem->;
@@ -973,21 +1011,21 @@ public:
 
 	void SetWalkableSkipFlood(WorldTile2 tile, bool isWalkable) final {
 		_pathAI->SetWalkable(tile.x, tile.y, isWalkable);
-		_pathAIHuman->SetWalkable(tile.x, tile.y, isWalkable);
+		//_pathAIHuman->SetWalkable(tile.x, tile.y, isWalkable);
 	}
 	void SetWalkable(WorldTile2 tile, bool isWalkable) final {
 		_pathAI->SetWalkable(tile.x, tile.y, isWalkable);
-		_pathAIHuman->SetWalkable(tile.x, tile.y, isWalkable);
+		//_pathAIHuman->SetWalkable(tile.x, tile.y, isWalkable);
 
 		_floodSystem.ResetRegionFloodDelayed(TileToRegion64Id(tile));
-		_floodSystemHuman.ResetRegionFloodDelayed(TileToRegion64Id(tile));
+		//_floodSystemHuman.ResetRegionFloodDelayed(TileToRegion64Id(tile));
 	}
-	void SetWalkableNonIntelligent(WorldTile2 tile, bool isWalkable) final {
-		_pathAI->SetWalkable(tile.x, tile.y, isWalkable);
-		_floodSystem.ResetRegionFloodDelayed(TileToRegion64Id(tile));
-	}
-	PunAStar128x256* pathAI(bool canPassGate) final {
-		return canPassGate ? _pathAIHuman.get() : _pathAI.get();
+	//void SetWalkableNonIntelligent(WorldTile2 tile, bool isWalkable) final {
+	//	_pathAI->SetWalkable(tile.x, tile.y, isWalkable);
+	//	_floodSystem.ResetRegionFloodDelayed(TileToRegion64Id(tile));
+	//}
+	PunAStar128x256* pathAI() final {
+		return _pathAI.get();
 	}
 
 	void SetRoadPathAI(WorldTile2 tile, bool isRoad) final {
@@ -998,9 +1036,9 @@ public:
 
 	int16 GetFloodId(WorldTile2 tile) final { return _floodSystem.GetFloodId(tile); }
 	bool IsConnected(WorldTile2 start, WorldTile2 end, int maxRegionDistance, bool canPassGate) final {
-		if (canPassGate) {
-			return _floodSystemHuman.IsConnected(start, end, maxRegionDistance);
-		}
+		//if (canPassGate) {
+		//	return _floodSystemHuman.IsConnected(start, end, maxRegionDistance);
+		//}
 		return _floodSystem.IsConnected(start, end, maxRegionDistance);
 	}
 
@@ -1050,8 +1088,8 @@ public:
 			}
 		}
 		
-		WorldTile2 start = startPort.centerTile() + WorldTile2::RotateTileVector(WorldTile2(3, 0), startPort.faceDirection()); // port tile
-		WorldTile2 end = endPort.centerTile() + WorldTile2::RotateTileVector(WorldTile2(3, 0), endPort.faceDirection()); // port tile
+		WorldTile2 start = startPort.GetPortTile(); // port tile
+		WorldTile2 end = endPort.GetPortTile(); // port tile
 
 		resultPath.clear();
 		
@@ -1060,19 +1098,22 @@ public:
 		
 		auto checkTile = [&](WorldTile2 tile)
 		{
-			int32 dist = WorldTile2::Distance(start, tile) + WorldTile2::Distance(tile, end);
-			if (dist < nearestDistance) {
-				nearestDistance = dist;
-				nearestWaterTile = tile;
+			if (pathAI()->isWater(tile.x / 4, tile.y / 4))
+			{
+				int32 dist = WorldTile2::Distance(start, tile) + WorldTile2::Distance(tile, end);
+				if (dist < nearestDistance) {
+					nearestDistance = dist;
+					nearestWaterTile = tile;
+				}
 			}
 		};
 		auto checkSurroundingTiles = [&](WorldTile2 tile)
 		{
 			WorldTile2 localMin((tile.x / 4) * 4, (tile.y / 4) * 4);
 			checkTile(localMin);
-			checkTile(localMin + WorldTile2(1, 0));
-			checkTile(localMin + WorldTile2(0, 1));
-			checkTile(localMin + WorldTile2(1, 1));
+			checkTile(localMin + WorldTile2(4, 0));
+			checkTile(localMin + WorldTile2(0, 4));
+			checkTile(localMin + WorldTile2(4, 4));
 		};
 
 		// Find start
@@ -1082,24 +1123,34 @@ public:
 
 		// Find end
 		nearestDistance = MAX_int32;
-		checkSurroundingTiles(start);
+		checkSurroundingTiles(end);
 		WorldTile2 waterEnd = nearestWaterTile;
 
+		// Debug
+		//DrawLinePath(waterStart, waterEnd, FLinearColor::Black, 1, 1000);
+		
 		{
 			SCOPE_TIMER("FindPathShip");
 			std::vector<uint32_t> rawPath;
-			bool succeed = pathAI(true)->FindPathWater(waterStart.x / 4, waterStart.y / 4, waterEnd.x / 4, waterEnd.y / 4, rawPath, 1, 200000);
+			bool succeed = pathAI()->FindPathWater(waterStart.x / 4, waterStart.y / 4, waterEnd.x / 4, waterEnd.y / 4, rawPath, 1, 200000);
 			if (succeed) {
 				MapUtil::UnpackAStarPath_4x4(rawPath, resultPath);
 
+				// Add beginning and end of path (since rawPath is the rounded path)
+				resultPath.insert(resultPath.begin(), end);
+				resultPath.push_back(start);
+				//resultPath.push_back(end);
+
 				// Cache
-				startPort.AddWaterRoute(endPortId, resultPath);
+				if (PunSettings::IsOn("CacheWaterRoutes")) {
+					startPort.AddWaterRoute(endPortId, resultPath);
+				}
 				return true;
 			}
 		}
 		return false;
 	}
-	std::vector<int32> GetPortIds(int32 townId)
+	std::vector<int32> GetPortIds(int32 townId) final
 	{
 		std::vector<int32> portIds = buildingIds(townId, CardEnum::TradingPort);
 		const std::vector<int32>& portIds2 = buildingIds(townId, CardEnum::IntercityLogisticsPort);
@@ -1139,6 +1190,30 @@ public:
 					endPortId = curEndPortId;
 					return true;
 				}
+			}
+		}
+
+		return false;
+	}
+	bool FindBestPathWater(int32 startPortId, int32 endTownId, int32& endPortId) final
+	{
+		endPortId = -1;
+
+		WorldTile2 startPortGate = building(startPortId).gateTile();
+		
+		// Rank port by how close it is to another town
+		std::vector<int32> endPortIds = GetPortIds(endTownId);
+		std::sort(endPortIds.begin(), endPortIds.end(), [&](int32 a, int32 b) {
+			int32 distA = WorldTile2::Distance(building(a).centerTile(), startPortGate);
+			int32 distB = WorldTile2::Distance(building(b).centerTile(), startPortGate);
+			return distA < distB;
+		});
+
+		std::vector<WorldTile2> resultPath;
+		for (int32 curEndPortId : endPortIds) { // End first since 
+			if (FindPathWater(startPortId, curEndPortId, resultPath)) {
+				endPortId = curEndPortId;
+				return true;
 			}
 		}
 
@@ -1298,18 +1373,15 @@ public:
 	// - oversea: double reinforce price
 	int32 GetProvinceVassalizeStartPrice(int32 provinceId)
 	{
-		int32 townId = provinceOwnerTown(provinceId);
-		PUN_CHECK(homeProvinceId(townId) == provinceId);
 		int32 provincePlayerId = provinceOwnerPlayer(provinceId);
 		
-		return BattleInfluencePrice + populationPlayer(provincePlayerId) * 10; // 100 pop = 1k influence to take over
+		return BattleInfluencePrice + populationPlayer(provincePlayerId) * 30; // 33 pop = 1k influence to take over
 	}
 	int32 GetProvinceConquerColonyStartPrice(int32 provinceId)
 	{
 		int32 townId = provinceOwnerTown(provinceId);
-		PUN_CHECK(homeProvinceId(townId) == provinceId);
 
-		return BattleInfluencePrice + populationTown(townId) * 30; // 100 pop = 1k influence to take over
+		return BattleInfluencePrice + populationTown(townId) * 100; // 33 pop = 3.3k influence to take over
 	}
 	int32 GetProvinceVassalizeReinforcePrice(int32 provinceId)
 	{
@@ -1476,6 +1548,11 @@ public:
 
 	void ChangeTownOwningPlayer(int32 townId, int32 newPlayerId)
 	{
+		const std::vector<int32>& provinceIds = _townManagers[townId]->provincesClaimed();
+		for (int32 provinceId : provinceIds) {
+			SetProvinceOwner(provinceId, townId);
+		}
+		
 		_buildingSystem->ChangeTownOwningPlayer(townId, newPlayerId);
 		_townManagers[townId]->ChangeTownOwningPlayer(newPlayerId);
 	}
@@ -1638,9 +1715,9 @@ public:
 	 */
 
 	NonWalkableTileAccessInfo TryAccessNonWalkableTile(WorldTile2 start, WorldTile2 nonwalkableTile, int maxRegionDistance, bool canPassGate) final {
-		if (canPassGate) {
-			return _floodSystemHuman.TryAccessNonWalkableTile(start, nonwalkableTile, maxRegionDistance);
-		}
+		//if (canPassGate) {
+		//	return _floodSystemHuman.TryAccessNonWalkableTile(start, nonwalkableTile, maxRegionDistance);
+		//}
 		return _floodSystem.TryAccessNonWalkableTile(start, nonwalkableTile, maxRegionDistance);
 	}
 
@@ -1952,13 +2029,18 @@ public:
 	}
 	// NOTE!!! Y is up
 	void DrawLine(WorldTile2 tile, FVector startShift, WorldTile2 endTile, FVector endShift, FLinearColor Color,
-					float Thickness = 1.0f, float LifeTime = 10000) final
-	{
-		_debugLineSystem.DrawLine(tile.worldAtom2(), startShift, endTile.worldAtom2(), endShift, Color, Thickness, LifeTime);
+					float Thickness = 1.0f, float LifeTime = 10000) final {
+		DrawLine(tile.worldAtom2(), startShift, endTile.worldAtom2(), endShift, Color, Thickness, LifeTime);
 	}
 	void DrawLine(WorldTile2 tile, FLinearColor Color, float Thickness = 1.0f, float LifeTime = 10000) final
 	{
 		DrawLine(tile, FVector::ZeroVector, tile, FVector(0, 10, 10), Color, Thickness, LifeTime);
+	}
+	void DrawLinePath(WorldTile2 start, WorldTile2 end, FLinearColor Color, float Thickness = 1.0f, float LifeTime = 10000) final
+	{
+		DrawLine(start, FVector::ZeroVector, start, FVector(0, 0, 10), FLinearColor::Green, Thickness, LifeTime);
+		DrawLine(start, FVector(0, 0, 10), end, FVector(0, 0, 10), Color, Thickness, LifeTime);
+		DrawLine(end, FVector::ZeroVector, end, FVector(0, 0, 10), FLinearColor::Red, Thickness, LifeTime);
 	}
 
 	void DrawArea(TileArea area, FLinearColor color, float tilt) final
@@ -2020,7 +2102,10 @@ public:
 
 	void ImmigrationEvent(int32 townId, int32 migrationCount, FText message, PopupReceiverEnum receiverEnum) final
 	{
-		GetTownhall(townId).ImmigrationEvent(migrationCount, message, receiverEnum);
+		TownHall* townhall = GetTownhallPtr(townId);
+		if (townhall) {
+			townhall->ImmigrationEvent(migrationCount, message, receiverEnum);
+		}
 	}
 	
 	/*
@@ -2079,16 +2164,16 @@ public:
 	 * Storage
 	 */
 
-	bool isStorageAllFull(int32 playerId) final
+	bool isStorageAllFull(int32 townId) final
 	{
-		std::vector<int32> storageIds = buildingIds(playerId, CardEnum::StorageYard);
+		std::vector<int32> storageIds = buildingIds(townId, CardEnum::StorageYard);
 
 		// Add warehouses
-		std::vector<int32> warehouseIds = buildingIds(playerId, CardEnum::Warehouse);
+		std::vector<int32> warehouseIds = buildingIds(townId, CardEnum::Warehouse);
 		storageIds.insert(storageIds.end(), warehouseIds.begin(), warehouseIds.end());
 
 		// Add markets
-		std::vector<int32> marketIds = buildingIds(playerId, CardEnum::Market);
+		std::vector<int32> marketIds = buildingIds(townId, CardEnum::Market);
 		storageIds.insert(storageIds.end(), marketIds.begin(), marketIds.end());
 		
 		for (int32 storageId : storageIds) {
@@ -2437,11 +2522,11 @@ public:
 			_floodSystem.Serialize(Ar);
 		}
 		
-		if (checkChunkEnum(GameSaveChunkEnum::Flood2))
-		{
-			SERIALIZE_TIMER("Flood2", data, crcs, crcLabels);
-			_floodSystemHuman.Serialize(Ar);
-		}
+		//if (checkChunkEnum(GameSaveChunkEnum::Flood2))
+		//{
+		//	SERIALIZE_TIMER("Flood2", data, crcs, crcLabels);
+		//	_floodSystemHuman.Serialize(Ar);
+		//}
 
 		
 		if (checkChunkEnum(GameSaveChunkEnum::Others))
@@ -2468,10 +2553,10 @@ public:
 				//	}
 				//}
 			}
-			{
-				SERIALIZE_TIMER("PathAI2", data, crcs, crcLabels);
-				_pathAIHuman->Serialize(Ar);
-			}
+			//{
+			//	SERIALIZE_TIMER("PathAI2", data, crcs, crcLabels);
+			//	_pathAIHuman->Serialize(Ar);
+			//}
 
 			{
 				SERIALIZE_TIMER("Unit", data, crcs, crcLabels);
@@ -2752,6 +2837,28 @@ public:
 	void Cheat(FCheat command) final;
 
 	// NetworkCommand Helper
+	int32 GetProvinceAttackerTownId(int32 attackerPlayerId, int32 provinceId)
+	{
+		// Get town with adjacent province
+		const auto& connections = GetProvinceConnections(provinceId);
+		vector<int32> adjacentTowns;
+		for (const ProvinceConnection& connection : connections) {
+			int32 owner = provinceOwnerTown(connection.provinceId);
+			if (owner != -1) {
+				CppUtils::TryAdd(adjacentTowns, owner);
+			}
+		}
+
+		// Get the town to attack with (claim/conquer province)
+		const auto& attackerTownIds = GetTownIds(attackerPlayerId);
+		for (int32 townIdTemp : attackerTownIds) {
+			if (CppUtils::Contains(adjacentTowns, townIdTemp)) {
+				return townIdTemp; // Town built first will get first claim
+			}
+		}
+		return -1;
+	}
+	
 	void CheckPortArea(TileArea area, Direction faceDirection, CardEnum buildingEnum, std::vector<PlacementGridInfo>& grids, 
 						bool& setDockInstruction, int32 playerId = -1) // player == -1 means no player check
 	{
@@ -2829,13 +2936,13 @@ private:
 	PunTerrainChanges _terrainChanges;
 
 	GameMapFlood _floodSystem;
-	GameMapFlood _floodSystemHuman;
+	//GameMapFlood _floodSystemHuman;  // TODO: Remove once save is ok
 	ProvinceSystem _provinceSystem;
 	//GameMapFloodShortDistance _floodSystem2;
 	//GameMapFloodShortDistance _floodSystem2Human;
 	
 	std::unique_ptr<PunAStar128x256> _pathAI;
-	std::unique_ptr<PunAStar128x256> _pathAIHuman;
+	//std::unique_ptr<PunAStar128x256> _pathAIHuman;
 	GameEventSystem _gameEventSystem;
 	
 	std::unique_ptr<UnitSystem> _unitSystem;

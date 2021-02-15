@@ -98,19 +98,27 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 		LOCTEXT("Foreign Trade Desc", "Increases the number of immigrants by 20%.")
 	}},
 	
-	{TechEnum::TraderDiscount, {
+	{ TechEnum::TraderDiscount, {
 		LOCTEXT("Trader Discount", "Trader Discount"),
 		LOCTEXT("Trader Discount Desc", "Trading company adjacent to trading port gain -5% trading fee."),
 	}},
 	// TODO: BuildingComboEnum?? Encourage ppl to build next building... holes to fill...
 
-	{TechEnum::Espionage, {
+	{ TechEnum::Espionage, {
 		LOCTEXT("Espionage", "Espionage")
 	}},
-	{TechEnum::SpyGuard, {
+	{ TechEnum::SpyGuard, {
 		LOCTEXT("Spy Guard", "Spy Guard")
 	}},
 
+	{ TechEnum::Colony, {
+		LOCTEXT("New Colony", "New Colony"),
+		LOCTEXT("New Colony Desc", "Unlock the ability to build new Cities."),
+	}},
+	{ TechEnum::IntercityLogistics, {
+		LOCTEXT("Intercity Logistics", "Intercity Logistics"),
+	}},
+	
 	//{TechEnum::ShrineRot, {
 	//	LOCTEXT("Unlock Shrines",
 	//}},
@@ -758,7 +766,7 @@ public:
 			
 			era = 4;
 			AddProsperityTech_Building(era, 10, TechEnum::Winery, CardEnum::Winery);
-			AddProsperityTech_BuildingPermanent(era, 4, TechEnum::IntercityRoad, { CardEnum::IntercityRoad });
+			AddProsperityTech_BuildingPermanent(era, 4, TechEnum::IntercityRoad, { CardEnum::IntercityRoad, CardEnum::IntercityBridge });
 			
 			AddProsperityTech_Building(era, 10, TechEnum::School, CardEnum::School);
 			AddProsperityTech_Building(era, 10, TechEnum::PaperMaker, CardEnum::PaperMaker);

@@ -90,7 +90,7 @@ void UnitSystem::AddAnimals(int animalCount)
 			int16 randY = GameRand::Rand() % GameMapConstants::TilesPerWorldY;
 			WorldTile2 tile(randX, randY);
 
-			if (_simulation->pathAI(false)->isWalkable(randX, randY) &&
+			if (_simulation->pathAI()->isWalkable(randX, randY) &&
 				_simulation->GetProvinceIdClean(tile) != -1)
 			{
 				BiomeEnum biomeEnum = _simulation->GetBiomeEnum(tile);
@@ -379,39 +379,40 @@ void UnitSystem::Tick()
 				if (unitLean.unitEnum == UnitEnum::Human) 
 				{
 					SCOPE_CYCLE_COUNTER(STAT_PunUnitNeedTargetAtomRoad);
-					
-					RoadTile road = _simulation->overlaySystem().GetRoad(unitLean.targetLocation.worldTile2());
-					//bool isRoad = _simulation->IsRoadTile(tile); // Not using this because we need RoadTile
-
-					// 
-					// Hauling cases to deal with
-					// - notHauling, no road ... 0
-					// - hauling, no road ... -33
-					// - notHauling, dirt road ... 0
-					// - hauling, dirt road ... 0
-					// - notHauling, stone road ... 20
-					// - hauling, stone road ... 20 (this is actually 80% from the hauling no-road)
-					// numbers chosen to make PathAI use less variable
-					if (road.isValid() && road.isConstructed) {
-						if (road.isDirt) {
-							moveSpeed = moveSpeed * 120 / 100;
-						} else {
-							moveSpeed = moveSpeed * 130 / 100;
-						}
-					}
 
 					UnitStateAI& stateAI = unitStateAI(id);
 					HumanStateAI& humanAI = stateAI.subclass<HumanStateAI>();
 
 					UnitAnimationEnum animationEnum = stateAI.animationEnum();
 					if (animationEnum == UnitAnimationEnum::Caravan) {
-						moveSpeed = moveSpeed * 3;
+						moveSpeed = moveSpeed * 2;
 					}
 					else if (animationEnum == UnitAnimationEnum::Ship) {
-						moveSpeed = moveSpeed * 5;
+						moveSpeed = moveSpeed * 4;
 					}
 					else
 					{
+						RoadTile road = _simulation->overlaySystem().GetRoad(unitLean.targetLocation.worldTile2());
+						//bool isRoad = _simulation->IsRoadTile(tile); // Not using this because we need RoadTile
+
+						// 
+						// Hauling cases to deal with
+						// - notHauling, no road ... 0
+						// - hauling, no road ... -33
+						// - notHauling, dirt road ... 0
+						// - hauling, dirt road ... 0
+						// - notHauling, stone road ... 20
+						// - hauling, stone road ... 20 (this is actually 80% from the hauling no-road)
+						// numbers chosen to make PathAI use less variable
+						if (road.isValid() && road.isConstructed) {
+							if (road.isDirt) {
+								moveSpeed = moveSpeed * 120 / 100;
+							}
+							else {
+								moveSpeed = moveSpeed * 130 / 100;
+							}
+						}
+						
 						// TODO: maybe putting this in UnitStateAI might help with less pointer cache miss?
 						int32 workEfficiency100 = humanAI.workEfficiency100(false);
 						if (workEfficiency100 < 50) {
@@ -420,13 +421,17 @@ void UnitSystem::Tick()
 						moveSpeed = moveSpeed * workEfficiency100 / 100;
 					}
 				}
+				// Slow down animals
+				else {
+					moveSpeed = moveSpeed * 2 / 3;
+				}
 
 				{
 					// count:537 time:0.13ms
 					//SCOPE_CYCLE_COUNTER(STAT_PunUnitNeedTargetAtomSetNextTick);
 					
 					PUN_CHECK(moveSpeed > 0);
-					PUN_CHECK(moveSpeed < HumanGlobalInfo::MoveAtomsPerTick * 5);
+					PUN_CHECK(moveSpeed < HumanGlobalInfo::MoveAtomsPerTick * 7);
 					// TODO: Hack to prevent crash...
 					if (moveSpeed <= 0) {
 						moveSpeed = HumanGlobalInfo::MoveAtomsPerTick;
@@ -458,7 +463,7 @@ void UnitSystem::Tick()
 					// count:200 time:0.06ms
 					//SCOPE_CYCLE_COUNTER(STAT_PunUnitNeedTargetAtomForce);
 					
-					auto pathAI = _simulation->pathAI(IsIntelligentUnit(unitLean.unitEnum));
+					auto pathAI = _simulation->pathAI();
 					if (!pathAI->isWalkable(tile.x, tile.y)) {
 						waypoint.clear();
 						_simulation->ResetUnitActions(id);

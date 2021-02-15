@@ -268,7 +268,8 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 		//SCOPE_TIMER("Tick TileObj Fallen");
 
 		unordered_map<int16_t, FallenTreeInfo>& localTileIdToFallenTree = treeSystem.localTileIdToFallenTree(regionId);
-		for (auto& it : localTileIdToFallenTree) {
+		for (auto& it : localTileIdToFallenTree)
+		{
 			int localTileId = it.first;
 			int worldTileId = region.worldTile2(LocalTile2(localTileId)).tileId();
 
@@ -288,13 +289,16 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 			FTransform transform = GameDisplayUtils::GetTreeTransform(displayLocation, xRotation, worldTileId, ageTick, info);
 			//PUN_LOG("regionId:%d tileId:%d fellTickElapsed %d", regionId, localTileId, fellTickElapsed);
 
-			//PUN_LOG("localTileIdToFellTicks scale: %f, %f, %f, pos:%f,%f,%f", 
+			//PUN_LOG("FALLING localTileIdToFellTicks scale: %f, %f, %f, pos:%f,%f,%f", 
 			//	transform.GetScale3D().X, transform.GetScale3D().Y, transform.GetScale3D().Z,
 			//	transform.GetTranslation().X, transform.GetTranslation().Y, transform.GetTranslation().Z);
 
-			// Note: Crash here might be forgetting to change TreeEnumSize
-			_fallingMeshes->Add(GetFallingMeshName(TileSubmeshEnum::Trunk, info.treeEnum), worldTileId, transform, 0);
-			_fallingMeshes->Add(GetFallingMeshName(TileSubmeshEnum::Leaf, info.treeEnum), worldTileId + 1 * GameMapConstants::TilesPerWorld, transform, 0);
+			FString fallingTrunkMeshName = GetFallingMeshName(TileSubmeshEnum::Trunk, info.treeEnum);
+			FString fallingLeafMeshName = GetFallingMeshName(TileSubmeshEnum::Leaf, info.treeEnum);
+
+			// Note: If Crash here might be forgetting to change TreeEnumSize
+			_fallingMeshes->Add(fallingTrunkMeshName, worldTileId, transform, 0);
+			_fallingMeshes->Add(fallingLeafMeshName, worldTileId + 1 * GameMapConstants::TilesPerWorld, transform, 0);
 		}
 	}
 

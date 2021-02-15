@@ -75,7 +75,7 @@ public:
 	virtual class StatSystem& statSystem() = 0;
 	virtual class PunTerrainGenerator& terrainGenerator() = 0;
 	virtual class GameMapFlood& floodSystem() = 0;
-	virtual class GameMapFlood& floodSystemHuman() = 0;
+	//virtual class GameMapFlood& floodSystemHuman() = 0;
 	virtual class ProvinceSystem& provinceSystem() = 0;
 	virtual class GameRegionSystem& regionSystem() = 0;
 	
@@ -115,8 +115,10 @@ public:
 	virtual const std::vector<int32>& GetTownIds(int32 playerId) = 0;
 	virtual int32 townPlayerId(int32 townId) = 0;
 	virtual int32 buildingTownId(int32 buildingId) = 0;
+	virtual int32 GetNextTown(bool forward, int32 currentTownId, int32 playerId) = 0;
 	
 	virtual bool IsTownOwnedByPlayer(int32 townIdIn, int32 playerId) = 0;
+	virtual bool IsTownhallOverlapProvince(int32 provinceId, int32 provincePlayerId) = 0;
 
 	virtual FString playerNameF(int32 playerId) = 0;
 	virtual FText playerNameT(int32 playerId) = 0;
@@ -265,13 +267,15 @@ public:
 	virtual int16_t GetFloodId(WorldTile2 tile) = 0;
 	virtual void SetWalkable(WorldTile2 tile, bool isWalkable) = 0;
 	virtual void SetWalkableSkipFlood(WorldTile2 tile, bool isWalkable) = 0;
-	virtual void SetWalkableNonIntelligent(WorldTile2 tile, bool isWalkable) = 0;
-	virtual class PunAStar128x256* pathAI(bool canPassGate) = 0;
+	//virtual void SetWalkableNonIntelligent(WorldTile2 tile, bool isWalkable) = 0;
+	virtual class PunAStar128x256* pathAI() = 0;
 
 	virtual void SetRoadPathAI(WorldTile2 tile, bool isRoad) = 0;
 
 	virtual int32 FindNearestBuildingId(WorldTile2 tile, CardEnum buildingEnum, int32 townId, int32& minBuildingDist) = 0;
 	virtual bool FindPathWater(int32 startPortId, int32 endPortId, std::vector<WorldTile2>& resultPath) = 0;
+	virtual std::vector<int32> GetPortIds(int32 townId) = 0;
+	virtual bool FindBestPathWater(int32 startPortId, int32 endTownId, int32& endPortId) = 0;
 	
 	virtual TerrainTileType terraintileType(int32 tileId) = 0;
 	virtual bool IsWater(WorldTile2 tile) = 0;
@@ -433,7 +437,7 @@ public:
 	virtual int HousingCapacity(int32 townId) = 0;
 	virtual int32 GetHouseLvlCount(int32 playerId, int32 houseLvl, bool includeHigherLvl = false) = 0;
 
-	virtual std::pair<int32, int32> GetStorageCapacity(int32 playerId, bool includeUnderConstruction = false) = 0;
+	virtual std::pair<int32, int32> GetStorageCapacity(int32 townId, bool includeUnderConstruction = false) = 0;
 
 	virtual void RemoveJobsFrom(int32 buildingId, bool isRefreshJob) = 0;
 	
@@ -498,7 +502,7 @@ public:
 
 	virtual void CheckGetSeedCard(int32 playerId) = 0;
 
-	virtual bool isStorageAllFull(int32 playerId) = 0;
+	virtual bool isStorageAllFull(int32 townId) = 0;
 	virtual int32 SpaceLeftFor(ResourceEnum resourceEnum, int32 storageId) = 0;
 	virtual void RefreshStorageStatus(int32 storageId) = 0;
 	
@@ -509,6 +513,7 @@ public:
 	virtual void DrawLine(WorldTile2 tile, FVector startShift, WorldTile2 endTile , FVector endShift, FLinearColor Color,
 							float Thickness = 1.0f, float LifeTime = 10000) = 0;
 	virtual void DrawLine(WorldTile2 tile, FLinearColor Color, float Thickness = 1.0f, float LifeTime = 10000) = 0;
+	virtual void DrawLinePath(WorldTile2 start, WorldTile2 end, FLinearColor Color, float Thickness = 1.0f, float LifeTime = 10000) = 0;
 	virtual void DrawArea(TileArea area, FLinearColor color = FLinearColor::Yellow, float tilt = 0) = 0;
 
 	//! Terrain

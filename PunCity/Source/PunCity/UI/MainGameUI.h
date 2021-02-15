@@ -212,9 +212,11 @@ private:
 	//UPROPERTY(meta = (BindWidget)) UTextBlock* Food;
 
 	// Town Swap
-	UPROPERTY(meta = (BindWidget)) URichTextBlock* LeftUITownName;
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* LeftUITownSwapHorizontalBox;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* LeftUITownSwapText;
 	UPROPERTY(meta = (BindWidget)) UButton* LeftUITownSwapArrowLeftButton;
 	UPROPERTY(meta = (BindWidget)) UButton* LeftUITownSwapArrowRightButton;
+	
 
 	// Main Info
 	UPROPERTY(meta = (BindWidget)) UIconTextPairWidget* Money;
@@ -269,7 +271,7 @@ private:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* ResearchingAmountText;
 	UPROPERTY(meta = (BindWidget)) USizeBox* ResearchBar;
 
-	// Job Priority
+	//! Job Priority
 
 	UPROPERTY(meta = (BindWidget)) UOverlay* JobPriorityOverlay;
 	UPROPERTY(meta = (BindWidget)) UScrollBox* JobPriorityScrollBox;
@@ -277,6 +279,12 @@ private:
 	UPROPERTY(meta = (BindWidget)) UButton* JobPriorityCloseButton2;
 	UPROPERTY() TArray<UJobPriorityRow*> JobPriorityRows;
 	int32 jobPriorityTownId = -1;
+
+	// Town Swap (Job)
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* TownSwapHorizontalBox;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* TownSwapText;
+	UPROPERTY(meta = (BindWidget)) UButton* TownSwapArrowLeftButton;
+	UPROPERTY(meta = (BindWidget)) UButton* TownSwapArrowRightButton;
 
 	UPROPERTY(meta = (BindWidget)) UTextBlock* EmployedText;
 
@@ -302,11 +310,15 @@ private:
 
 	void SendNetworkPriority()
 	{
-		auto command = std::make_shared<FSetTownPriority>();
-		*command = townPriorityState();
-		networkInterface()->SendNetworkCommand(command);
+		if (jobPriorityTownId != -1)
+		{
+			auto command = std::make_shared<FSetTownPriority>();
+			*command = townPriorityState();
+			command->townId = jobPriorityTownId;
+			networkInterface()->SendNetworkCommand(command);
 
-		_laborerPriorityState.lastPriorityInputTime = UGameplayStatics::GetTimeSeconds(this);
+			_laborerPriorityState.lastPriorityInputTime = UGameplayStatics::GetTimeSeconds(this);
+		}
 	}
 
 	void RefreshLaborerUI()
@@ -605,10 +617,16 @@ private:
 	UFUNCTION() void OnClickScienceButton() { GetPunHUD()->ToggleGraphUI(4); }
 
 	UFUNCTION() void OnClickLeftUITownSwapArrowLeftButton() {
-		networkInterface()->CameraSwapTown(true);
-	}
-	UFUNCTION() void OnClickLeftUITownSwapArrowRightButton() {
 		networkInterface()->CameraSwapTown(false);
 	}
-	
+	UFUNCTION() void OnClickLeftUITownSwapArrowRightButton() {
+		networkInterface()->CameraSwapTown(true);
+	}
+
+	UFUNCTION() void OnClickJobTownSwapArrowLeftButton() {
+		jobPriorityTownId = simulation().GetNextTown(false, jobPriorityTownId, playerId());
+	}
+	UFUNCTION() void OnClickJobTownSwapArrowRightButton() {
+		jobPriorityTownId = simulation().GetNextTown(true, jobPriorityTownId, playerId());
+	}
 };

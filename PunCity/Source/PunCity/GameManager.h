@@ -538,8 +538,8 @@ public:
 		if (!GameMap::IsInGrid(tile)) {
 			return false;
 		}
-		int32 tileOwner = _simulation->tileOwnerTown(tile);
-		if (tileOwner != -1 && tileOwner != _playerId) {
+		int32 tileOwnerPlayer = _simulation->tileOwnerPlayer(tile);
+		if (tileOwnerPlayer != -1 && tileOwnerPlayer != _playerId) {
 			return false;
 		}
 		return  _simulation->IsFrontBuildable(tile) ||

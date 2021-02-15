@@ -117,7 +117,7 @@ void WorldTradeSystem::TryEstablishTradeRoute(FSetIntercityTrade command)
 {
 	SCOPE_TIMER("TryEstablishTradeRoute");
 	
-	auto pathAI = _simulation->pathAI(true);
+	auto pathAI = _simulation->pathAI();
 	
 	int32 playerId = command.playerId;
 	int32 targetPlayerId = _simulation->building(command.buildingIdToEstablishTradeRoute).playerId();
@@ -163,7 +163,7 @@ void WorldTradeSystem::TryEstablishTradeRoute(FSetIntercityTrade command)
 	}
 
 	std::vector<uint32_t> path;
-	bool succeed = _simulation->pathAI(true)->FindPathRoadOnly(startTile.x, startTile.y, targetTile.x, targetTile.y, path);
+	bool succeed = _simulation->pathAI()->FindPathRoadOnly(startTile.x, startTile.y, targetTile.x, targetTile.y, path);
 
 	if (succeed)
 	{

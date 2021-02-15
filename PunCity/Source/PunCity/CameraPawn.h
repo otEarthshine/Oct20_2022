@@ -72,6 +72,9 @@ public:
 	void KeyPressed_F() { _networkInterface->KeyPressed_F(); }
 	void KeyPressed_Y() { _networkInterface->KeyPressed_Y(); }
 
+	void KeyPressed_SwapTownForward() { _networkInterface->CameraSwapTown(true); }
+	void KeyPressed_SwapTownBack() { _networkInterface->CameraSwapTown(false); }
+
 	void KeyPressed_ToggleHideTree() {
 		_gameInterface->ToggleOverlayHideTree();
 	}
@@ -113,6 +116,7 @@ public:
 		ExecuteUsingMainGameUI([&](auto ui) { ui->OnClickLeaderSkillButton();  });
 		//_networkInterface->GetPunHUD()->mainGameUI()->OnClickLeaderSkillButton();
 	}
+	
 
 	template<typename Func>
 	void ExecuteUsingHUD(Func func) {
@@ -238,9 +242,9 @@ public:
 		_networkInterface->ResetGameUI();
 		buildingPlacementSystem->StartFence();
 	}
-	void StartBridgePlacement() final {
+	void StartBridgePlacement(bool isIntercity) final {
 		_networkInterface->ResetGameUI();
-		buildingPlacementSystem->StartBridge();
+		buildingPlacementSystem->StartBridge(isIntercity);
 	}
 	void StartTunnelPlacement() final {
 		_networkInterface->ResetGameUI();

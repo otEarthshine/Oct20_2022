@@ -51,6 +51,9 @@ void ACameraPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("KeyPressed_F", IE_Pressed, this, &ACameraPawn::KeyPressed_F);
 	PlayerInputComponent->BindAction("KeyPressed_Y", IE_Pressed, this, &ACameraPawn::KeyPressed_Y);
 
+	PlayerInputComponent->BindAction("KeyPressed_SwapTownForward", IE_Pressed, this, &ACameraPawn::KeyPressed_SwapTownForward);
+	PlayerInputComponent->BindAction("KeyPressed_SwapTownBack", IE_Pressed, this, &ACameraPawn::KeyPressed_SwapTownBack);
+
 	PlayerInputComponent->BindAction("KeyPressed_ToggleHideTree", IE_Pressed, this, &ACameraPawn::KeyPressed_ToggleHideTree);
 	PlayerInputComponent->BindAction("ToggleProvinceOverlay", IE_Pressed, this, &ACameraPawn::ToggleProvinceOverlay);
 	
@@ -115,6 +118,10 @@ void ACameraPawn::PitchCamera(float axisValue)
 
 void ACameraPawn::YawCamera(float axisValue)
 {
+	if (_gameInterface->isCtrlDown()) {
+		return;
+	}
+	
 	_cameraRotateInput.X = FMath::Clamp<float>(axisValue, -1.0f, 1.0f);
 }
 
@@ -742,6 +749,11 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 	auto moveCamera = [&](FVector2D movementInput)
 	{
 		float moveSpeed = moveSpeedAtMinZoomAmount * lastZoomAmount / MinZoomAmount;
+
+		// Shift Move
+		if (gameInterface->isShiftDown()) {
+			moveSpeed *= 3.0f;
+		}
 		
 		FVector actorHorizontalForward = GetActorForwardVector();
 		actorHorizontalForward.Z = 0.0f;

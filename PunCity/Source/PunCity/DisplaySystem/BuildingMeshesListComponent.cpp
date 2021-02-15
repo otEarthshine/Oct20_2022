@@ -28,7 +28,9 @@ UBuildingMeshesComponent* BuildingMeshesListComponent::ShowBuildingMesh(Building
 
 	auto& modules = _dataSource->displayInfo().GetDisplayModules(building.buildingEnum(), building.displayVariationIndex()).transforms;
 
-	if (building.isEnum(CardEnum::Bridge)) {
+	if (building.isEnum(CardEnum::Bridge) ||
+		building.isEnum(CardEnum::IntercityBridge))
+	{
 		buildingMeshes->ShowBridge(building, _dataSource->assetLoader(), customDepth);
 	}
 	else if (building.isEnum(CardEnum::Tunnel)) {

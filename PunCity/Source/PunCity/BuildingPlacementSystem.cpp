@@ -585,9 +585,9 @@ void ABuildingPlacementSystem::StartFence()
 	StartDrag();
 }
 
-void ABuildingPlacementSystem::StartBridge()
+void ABuildingPlacementSystem::StartBridge(bool isIntercity)
 {
-	_placementType = PlacementType::Bridge;
+	_placementType = isIntercity ? PlacementType::IntercityBridge : PlacementType::Bridge;
 	StartDrag();
 }
 void ABuildingPlacementSystem::StartTunnel()
@@ -617,7 +617,7 @@ void ABuildingPlacementSystem::TickLineDrag(WorldAtom2 cameraAtom, function<bool
 	if (_dragState == DragState::NeedDragStart ||
 		_dragState == DragState::LeftMouseDown)
 	{
-		bool isInTerritory = simulation.tileOwnerTown(_mouseOnTile) == _gameInterface->playerId();
+		bool isInTerritory = simulation.tileOwnerPlayer(_mouseOnTile) == _gameInterface->playerId();
 		if (!isInTerritory) {
 			SetInstruction(PlacementInstructionEnum::OutsideTerritory, true);
 		}
@@ -629,7 +629,7 @@ void ABuildingPlacementSystem::TickLineDrag(WorldAtom2 cameraAtom, function<bool
 	}
 	else if (_dragState == DragState::Dragging) 
 	{
-		if (_placementType == PlacementType::Bridge ||
+		if (IsBridgePlacement(_placementType) ||
 			_placementType == PlacementType::Tunnel)
 		{
 			CalculateBridgeLineDrag();
@@ -641,7 +641,7 @@ void ABuildingPlacementSystem::TickLineDrag(WorldAtom2 cameraAtom, function<bool
 			int32 lastIndex = std::max(_area.sizeX(), _area.sizeY()) - 1;
 
 			auto isSuitableTile = [&](WorldTile2 tile) {
-				return (_placementType == PlacementType::Bridge) ? simulation.IsWater(tile) : simulation.IsMountain(tile);
+				return IsBridgePlacement(_placementType) ? simulation.IsWater(tile) : simulation.IsMountain(tile);
 			};
 			
 
@@ -1457,23 +1457,24 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 	if (_placementType == PlacementType::DirtRoad ||
 		_placementType == PlacementType::StoneRoad ||
 		_placementType == PlacementType::Fence ||
-		_placementType == PlacementType::Bridge ||
-		_placementType == PlacementType::Tunnel)
+		_placementType == PlacementType::Bridge)
 	{
-
-		if (_placementType == PlacementType::Tunnel) {
-			TickLineDrag(cameraAtom, [&](WorldTile2 tile) {
-				return _gameInterface->IsPlayerTunnelBuildable(tile);
-			}, true);
-			return;
-		}
 		
 		TickLineDrag(cameraAtom, [&](WorldTile2 tile) {
 			return _gameInterface->IsPlayerRoadBuildable(tile);
 		});
 		return;
 	}
-	if (_placementType == PlacementType::IntercityRoad) 
+	
+	if (_placementType == PlacementType::Tunnel) {
+		TickLineDrag(cameraAtom, [&](WorldTile2 tile) {
+			return _gameInterface->IsPlayerTunnelBuildable(tile);
+		}, true);
+		return;
+	}
+	
+	if (_placementType == PlacementType::IntercityRoad ||
+		_placementType == PlacementType::IntercityBridge)
 	{
 		TickLineDrag(cameraAtom, [&](WorldTile2 tile) {
 			return _gameInterface->IsIntercityRoadBuildable(tile);
@@ -2017,18 +2018,18 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			
 			std::vector<WorldTile2> connectedRoadTiles;
 
-			auto tryPlaceRoad = [&](WorldTile2 tile, PlacementGridEnum redEnum, PlacementGridEnum greenEnum, PlacementGridEnum yellowEnum, Direction direction)
+			auto tryPlaceRoad = [&](WorldTile2 tile, Direction direction)
 			{
-				PlacementGridEnum gridEnum = redEnum;
+				PlacementGridEnum gridEnum = PlacementGridEnum::ArrowRed;
 
 				if (_buildingEnum == CardEnum::Townhall)
 				{
 					// Townhall
 					if (simulation.overlaySystem().IsRoad(tile)) {
-						gridEnum = greenEnum;
+						gridEnum = PlacementGridEnum::ArrowGreen;
 					}
 					else if (gameInterface->IsPlayerFrontBuildable(tile)) {
-						gridEnum = yellowEnum;
+						gridEnum = PlacementGridEnum::ArrowYellow;
 					}
 
 					if (simulation.tileOwnerPlayer(tile) != playerId) {
@@ -2039,10 +2040,10 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				{
 					// Colony
 					if (simulation.overlaySystem().IsRoad(tile)) {
-						gridEnum = greenEnum;
+						gridEnum = PlacementGridEnum::ArrowGreen;
 					}
 					else if (gameInterface->IsPlayerColonyFrontBuildable(tile)) {
-						gridEnum = yellowEnum;
+						gridEnum = PlacementGridEnum::ArrowYellow;
 					}
 
 					if (simulation.tileOwnerPlayer(tile) != -1) {
@@ -2050,6 +2051,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 					}
 
 					// Check hasConnectedIntercityRoad
+					//  Check in 3x3 to 
 					for (int32 y = tile.y - 1; y <= tile.y + 1; y++) {
 						for (int32 x = tile.x - 1; x <= tile.x + 1; x++) {
 							WorldTile2 curTile(x, y);
@@ -2070,26 +2072,26 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			{
 				TileArea topRoad(_area.maxX + 1, _area.minY, _area.maxX + 1, _area.maxY);
 				topRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-					tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, Direction::S);
+					tryPlaceRoad(tile, Direction::S);
 				});
 				TileArea bottomRoad(_area.minX - 1, _area.minY, _area.minX - 1, _area.maxY);
 				bottomRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-					tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, Direction::S);
+					tryPlaceRoad(tile, Direction::S);
 				});
 				TileArea leftRoad(_area.minX, _area.minY - 1, _area.maxX, _area.minY - 1);
 				leftRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-					tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, Direction::E);
+					tryPlaceRoad(tile, Direction::E);
 				});
 				TileArea rightRoad(_area.minX, _area.maxY + 1, _area.maxX, _area.maxY + 1);
 				rightRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-					tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, Direction::E);
+					tryPlaceRoad(tile, Direction::E);
 				});
 
 				// Corners
-				tryPlaceRoad(WorldTile2(_area.minX - 1, _area.minY - 1), PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, _faceDirection);
-				tryPlaceRoad(WorldTile2(_area.minX - 1, _area.maxY + 1), PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, _faceDirection);
-				tryPlaceRoad(WorldTile2(_area.maxX + 1, _area.minY - 1), PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, _faceDirection);
-				tryPlaceRoad(WorldTile2(_area.maxX + 1, _area.maxY + 1), PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, _faceDirection);
+				tryPlaceRoad(WorldTile2(_area.minX - 1, _area.minY - 1), _faceDirection);
+				tryPlaceRoad(WorldTile2(_area.minX - 1, _area.maxY + 1), _faceDirection);
+				tryPlaceRoad(WorldTile2(_area.maxX + 1, _area.minY - 1), _faceDirection);
+				tryPlaceRoad(WorldTile2(_area.maxX + 1, _area.maxY + 1), _faceDirection);
 			}
 
 
@@ -2102,35 +2104,17 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				}
 			}
 
-			//! Colony is connected to intercity road, or too far
+			//! Colony 
 			if (_buildingEnum == CardEnum::Colony)
 			{
 				// ColonyTooFar
 				if (!_forceCannotPlace)
 				{
 					WorldTile2 gateTile = Building::CalculateGateTile(_faceDirection, _mouseOnTile, GetBuildingInfo(CardEnum::Townhall).size);
-					std::vector<int32> townIds = IntercityLogisticsHub::GetTradableTownIds(gateTile, playerId, CardEnum::IntercityLogisticsHub, -1, &simulation);
+					std::vector<int32> townIds = IntercityLogisticsHub::GetApproximateTradableTownIdsByDistance(gateTile, playerId, CardEnum::IntercityLogisticsHub, -1, &simulation);
 					if (townIds.size() == 0) {
 						_forceCannotPlace = true;
 						SetInstruction(PlacementInstructionEnum::ColonyTooFar, true);
-					}
-				}
-				
-				// ColonyNextToIntercityRoad
-				if (!_forceCannotPlace)
-				{
-					std::vector<uint32> path;
-
-					_forceCannotPlace = true;
-					for (WorldTile2 roadTile : connectedRoadTiles)
-					{
-						if (simulation.IsConnectedToTowns(roadTile, playerId, path)) {
-							_forceCannotPlace = false;
-							break;
-						}
-					}
-					if (_forceCannotPlace) {
-						SetInstruction(PlacementInstructionEnum::ColonyNextToIntercityRoad, true);
 					}
 				}
 			}
@@ -2145,7 +2129,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 						+ WorldTile2::RotateTileVector(PortColony_Storage1ShiftTileVec, _faceDirection)
 						+ WorldTile2::RotateTileVector(PortColony_PortExtraShiftTileVec, _faceDirection);
 
-					std::vector<int32> townIds = IntercityLogisticsHub::GetTradableTownIds(portCenterTile, playerId, CardEnum::IntercityLogisticsPort, -1, &simulation);
+					std::vector<int32> townIds = IntercityLogisticsHub::GetApproximateTradableTownIdsByDistance(portCenterTile, playerId, CardEnum::IntercityLogisticsPort, -1, &simulation);
 					if (townIds.size() == 0) {
 						_forceCannotPlace = true;
 						SetInstruction(PlacementInstructionEnum::PortColonyTooFar, true);
@@ -2158,7 +2142,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 					_forceCannotPlace = true;
 					std::vector<int32> townIds = simulation.GetTownIds(playerId);
 					for (int32 curTownId : townIds)  {
-						if (simulation.buildingCount(curTownId, CardEnum::TradingPort) > 0) {
+						if (simulation.GetPortIds(curTownId).size() > 0) {
 							_forceCannotPlace = false;
 							break;
 						}
@@ -2220,26 +2204,29 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 						tryPlaceBuilding(tile);
 					});
 
-					// Extra road surrounding Logistics Hub and Storage
-					TileArea auxArea = BuildingArea(townhallCenter + PortColony_Storage1ShiftTileVec, Colony_InitialStorageTileSize, Direction::N);
-					auxArea.maxY += 6;
+					// Place colony's extra road
+					SimUtils::PlaceColonyAuxRoad(townhallCenter, _faceDirection, [&](WorldTile2 tile, Direction faceDirection) {
+						tryPlaceRoad(tile, faceDirection);
+					});
 
-					
-					TileArea bottomRoad(auxArea.minX - 1, auxArea.minY - 1, auxArea.minX - 1, auxArea.maxY + 1);
-					bottomRoad = bottomRoad.RotateArea(townhallCenter, _faceDirection);
-					bottomRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-						tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, RotateDirection(Direction::S, _faceDirection));
-					});
-					TileArea leftRoad(auxArea.minX, auxArea.minY - 1, auxArea.maxX, auxArea.minY - 1);
-					leftRoad = leftRoad.RotateArea(townhallCenter, _faceDirection);
-					leftRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-						tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, RotateDirection(Direction::E, _faceDirection));
-					});
-					TileArea rightRoad(auxArea.minX, auxArea.maxY + 1, auxArea.maxX, auxArea.maxY + 1);
-					rightRoad = rightRoad.RotateArea(townhallCenter, _faceDirection);
-					rightRoad.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-						tryPlaceRoad(tile, PlacementGridEnum::ArrowRed, PlacementGridEnum::ArrowGreen, PlacementGridEnum::ArrowYellow, RotateDirection(Direction::E, _faceDirection));
-					});
+
+					// ColonyNextToIntercityRoad
+					if (!_forceCannotPlace)
+					{
+						std::vector<uint32> path;
+
+						_forceCannotPlace = true;
+						for (WorldTile2 roadTile : connectedRoadTiles)
+						{
+							if (simulation.IsConnectedToTowns(roadTile, playerId, path)) {
+								_forceCannotPlace = false;
+								break;
+							}
+						}
+						if (_forceCannotPlace) {
+							SetInstruction(PlacementInstructionEnum::ColonyNextToIntercityRoad, true);
+						}
+					}
 				}
 				else
 				{
@@ -2395,10 +2382,15 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			frontArea.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) 
 			{
 				PlacementGridEnum gridEnum = PlacementGridEnum::ArrowRed;
-				if (simulation.overlaySystem().IsRoad(tile)) {
-					gridEnum = PlacementGridEnum::ArrowGreen;
-				} else if (gameInterface->IsPlayerFrontBuildable(tile)) {
-					gridEnum = PlacementGridEnum::ArrowYellow;
+
+				if (tile.isValid())
+				{
+					if (simulation.overlaySystem().IsRoad(tile)) {
+						gridEnum = PlacementGridEnum::ArrowGreen;
+					}
+					else if (gameInterface->IsPlayerFrontBuildable(tile)) {
+						gridEnum = PlacementGridEnum::ArrowYellow;
+					}
 				}
 				
 				_placementGrid.SpawnGrid(gridEnum, cameraAtom, tile, _faceDirection);
@@ -2585,14 +2577,14 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 	/*
 	 * Bridge
 	 */
-	if (_placementType == PlacementType::Bridge ||
+	if (IsBridgePlacement(_placementType) ||
 		_placementType == PlacementType::Tunnel)
 	{
 		// Split into bridges and send separate commands
 		int32_t lastIndex = std::max(_area.sizeX(), _area.sizeY()) - 1;
 
 		// bridge must be at least size 3
-		if (lastIndex >= 2) 
+		if (lastIndex >= 2)
 		{
 			bool lastTileWasWater = false;
 			WorldTile2 firstBridgeWaterTile = WorldTile2::Invalid;
@@ -2602,7 +2594,7 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 			
 			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) 
 			{
-				bool tileIsSuitable = (_placementType == PlacementType::Bridge) ? simulation.IsWater(tile) : simulation.IsMountain(tile);
+				bool tileIsSuitable = IsBridgePlacement(_placementType) ? simulation.IsWater(tile) : simulation.IsMountain(tile);
 
 				if (!lastTileWasWater && tileIsSuitable) {
 					PUN_CHECK(!firstBridgeWaterTile.isValid());
@@ -2624,7 +2616,13 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 					TileArea bridgeArea(minX, minY, maxX, maxY);
 					
 					auto command = make_shared<FPlaceBuilding>();
-					command->buildingEnum = static_cast<uint8>(_placementType == PlacementType::Bridge ? CardEnum::Bridge : CardEnum::Tunnel);
+					switch (_placementType) {
+					case PlacementType::Bridge:			command->buildingEnum = static_cast<uint8>(CardEnum::Bridge); break;
+					case PlacementType::IntercityBridge: command->buildingEnum = static_cast<uint8>(CardEnum::IntercityBridge); break;
+					case PlacementType::Tunnel:			command->buildingEnum = static_cast<uint8>(CardEnum::Tunnel); break;
+					default: break;
+					}
+					//command->buildingEnum = static_cast<uint8>(_placementType == PlacementType::Bridge ? CardEnum::Bridge : CardEnum::Tunnel);
 					command->buildingLevel = _buildingLvl;
 					command->area = bridgeArea;
 					command->center = bridgeArea.min();

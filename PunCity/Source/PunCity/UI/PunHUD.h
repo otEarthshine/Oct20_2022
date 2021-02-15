@@ -150,9 +150,9 @@ public:
 	bool IsStatisticsUIOpened() override {
 		return _statisticsUI->GetVisibility() != ESlateVisibility::Collapsed;
 	}
-	void OpenStatisticsUI(int32 playerId) override {
+	void OpenStatisticsUI(int32 townIdIn) override {
 		ResetGameUI();
-		_statisticsUI->OpenStatisticsUI(playerId);
+		_statisticsUI->OpenStatisticsUI(townIdIn);
 	}
 	void OpenJobPriorityUI(int32 townIdIn) override {
 		ResetGameUI();
@@ -191,7 +191,8 @@ public:
 			_statisticsUI->StatSwitcher->GetActiveWidgetIndex() == widgetIndex) 
 		{
 			CloseStatisticsUI();
-		} else {
+		}
+		else {
 			ResetGameUI();
 			_statisticsUI->OpenStatisticsUI(playerId());
 			_statisticsUI->SetTabSelection(_statisticsUI->GetButtonFromWidgetIndex(widgetIndex));

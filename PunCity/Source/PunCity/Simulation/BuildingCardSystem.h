@@ -513,6 +513,11 @@ public:
 	void ClearBoughtCards() {
 		_cardsBought.clear();
 	}
+	void ClearRareHands() {
+		_rareHandsEnumQueued.clear();
+		_rareHandsMessageQueued.clear();
+		TryRefreshRareHand();
+	}
 
 	void AddDrawCards(CardEnum buildingEnum, int cardCount = 1) {
 		PUN_CHECK(cardCount > 0);

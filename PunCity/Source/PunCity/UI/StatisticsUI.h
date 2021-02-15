@@ -27,6 +27,12 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* StatisticsCloseButton;
 	UPROPERTY(meta = (BindWidget)) UButton* StatisticsXButton;
 
+	// Town Swap (Stats)
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* TownSwapHorizontalBox;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* TownSwapText;
+	UPROPERTY(meta = (BindWidget)) UButton* TownSwapArrowLeftButton;
+	UPROPERTY(meta = (BindWidget)) UButton* TownSwapArrowRightButton;
+
 	UPROPERTY(meta = (BindWidget)) UButton* OverviewStatButton;
 	UPROPERTY(meta = (BindWidget)) UButton* BuildingsStatButton;
 	UPROPERTY(meta = (BindWidget)) UButton* PopulationStatButton;
@@ -79,10 +85,12 @@ public:
 	//UPROPERTY() TArray<UGraphDataSource*> dataSources;
 
 	int32 uiTownId = -1;
+	bool showCombinedStatistics = false;
 
 public:
-	void OpenStatisticsUI(int32 playerId) {
-		uiTownId = playerId;
+	void OpenStatisticsUI(int32 playerIdIn) {
+		uiTownId = playerIdIn;
+		showCombinedStatistics = true;
 		SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	}
 
@@ -125,6 +133,10 @@ public:
 		}
 	}
 
+private:
+	/*
+	 * Buttons
+	 */
 	void OnStatButtonClick(int32 widgetIndex) {
 		SetTabSelection(GetButtonFromWidgetIndex(widgetIndex));
 		StatSwitcher->SetActiveWidgetIndex(widgetIndex);
@@ -151,4 +163,33 @@ public:
 		}
 	}
 
+	UFUNCTION() void OnClickTownSwapArrowLeftButton() {
+		if (!showCombinedStatistics && uiTownId == playerId()) {
+			showCombinedStatistics = true;
+		}
+		else if (showCombinedStatistics) {
+			showCombinedStatistics = false;
+			uiTownId = simulation().GetNextTown(false, uiTownId, playerId());
+		}
+		else {
+			uiTownId = simulation().GetNextTown(false, uiTownId, playerId());
+		}
+		SetGraphSeries();
+		lastRefreshBuildingStatBox = 0;
+	}
+	UFUNCTION() void OnClickTownSwapArrowRightButton() {
+		if (showCombinedStatistics) {
+			showCombinedStatistics = false;
+		} else {
+			uiTownId = simulation().GetNextTown(true, uiTownId, playerId());
+			if (uiTownId == playerId()) {
+				showCombinedStatistics = true;
+			}
+		}
+		SetGraphSeries();
+		lastRefreshBuildingStatBox = 0;
+	}
+
+private:
+	void SetGraphSeries();
 };

@@ -37,7 +37,7 @@ public:
 	{
 		UGraphDataSource* graphDataSource = NewObject<UGraphDataSource>(this);
 		graphDataSource->Init(playerId(), dataSource());
-		graphDataSource->AddSeries(series);
+		graphDataSource->SetSeries(series);
 
 		SetDataSource(graphDataSource);
 	}

@@ -146,7 +146,7 @@ void ULobbySettingsUI::OnLobbyMapSizeDropdownChanged(FString sItem, ESelectInfo:
 	}
 		
 	serverMapSettings.mapSizeEnumInt = static_cast<int32>(GetMapSizeEnumFromString(sItem));
-	RefreshAICountDropdown(LobbyAICountDropdown->GetSelectedIndex());
+	RefreshAICountDropdown(GetDefaultAICount(static_cast<MapSizeEnum>(serverMapSettings.mapSizeEnumInt)));
 
 	SendMapSettings();
 

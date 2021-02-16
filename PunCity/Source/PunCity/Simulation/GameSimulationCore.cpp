@@ -2058,11 +2058,11 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 				if (!isInvalid)
 				{
 					// Check if we have enough money
-					int32 totalProvincePrice = 0;
+					int32 totalProvincePriceMoney = 0;
 					for (int32 provinceId : provinceIds) {
-						totalProvincePrice += GetProvinceClaimPrice(provinceId, playerId);
+						totalProvincePriceMoney += GetProvinceClaimPrice(provinceId, playerId) * GameConstants::ClaimProvinceByMoneyMultiplier;
 					}
-					if (money(playerId) >= totalProvincePrice)
+					if (money(playerId) >= totalProvincePriceMoney)
 					{
 						// Add town
 						int32 townId = _resourceSystems.size();
@@ -2076,7 +2076,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 						for (int32 provinceId : provinceIds) {
 							SetProvinceOwnerFull(provinceId, townId);
 						}
-						ChangeMoney(playerId, -totalProvincePrice);
+						ChangeMoney(playerId, -totalProvincePriceMoney);
 					}
 					else {
 						AddPopupToFront(playerId, LOCTEXT("Not enough money to buy province", "Cannot place the Colony. Not enough money to buy the province."));
@@ -2677,7 +2677,7 @@ void GameSimulationCore::SetTownPriority(FSetTownPriority command)
 
 void GameSimulationCore::SetGlobalJobPriority(FSetGlobalJobPriority command)
 {
-	check(command.townId != -1);
+	PUN_ENSURE(command.townId != -1, return);
 	
 	_LOG(LogNetworkInput, " SetGlobalJobPriority");
 	townManager(command.townId).SetGlobalJobPriority(command);
@@ -3086,6 +3086,8 @@ void GameSimulationCore::ChangeWorkMode(FChangeWorkMode command)
 				*bld.workMode().name.ToString(),
 				*bld.workModes[command.enumInt].name.ToString());
 
+		PUN_ENSURE(command.enumInt < bld.workModes.size(), return);
+		
 		bld.ChangeWorkMode(bld.workModes[command.enumInt]);
 	}
 	else if (bld.isEnum(CardEnum::Townhall))
@@ -4012,31 +4014,32 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	/*
 	 * No Battle
 	 */
-	if (command.claimEnum == CallbackEnum::ClaimLandMoney)
+	if (command.claimEnum == CallbackEnum::ClaimLandMoney ||
+		command.claimEnum == CallbackEnum::ClaimLandInfluence)
 	{
 		int32 attackerTownId = GetProvinceAttackerTownId(attackerPlayerId, provinceId);
 		check(attackerTownId != -1);
+
+		int32 provincePrice = GetProvinceClaimPrice(command.provinceId, attackerPlayerId);
 		
 		if (command.claimEnum == CallbackEnum::ClaimLandMoney)
 		{
-			int32 regionPriceMoney = GetProvinceClaimPrice(command.provinceId, attackerPlayerId);
+			int32 provincePriceMoney = provincePrice * GameConstants::ClaimProvinceByMoneyMultiplier;
 
-			if (globalResourceSys.money() >= regionPriceMoney &&
+			if (globalResourceSys.money() >= provincePriceMoney &&
 				provinceOwnerTown(command.provinceId) == -1)
 			{
 				SetProvinceOwnerFull(command.provinceId, attackerTownId);
-				globalResourceSys.ChangeMoney(-regionPriceMoney);
+				globalResourceSys.ChangeMoney(-provincePriceMoney);
 			}
 		}
 		else if (command.claimEnum == CallbackEnum::ClaimLandInfluence)
 		{
-			int32 regionPriceMoney = GetProvinceClaimPrice(command.provinceId, attackerPlayerId);
-
-			if (globalResourceSys.influence() >= regionPriceMoney &&
+			if (globalResourceSys.influence() >= provincePrice &&
 				provinceOwnerTown(command.provinceId) == -1)
 			{
 				SetProvinceOwnerFull(command.provinceId, attackerTownId);
-				globalResourceSys.ChangeInfluence(-regionPriceMoney);
+				globalResourceSys.ChangeInfluence(-provincePrice);
 			}
 		}
 	}
@@ -4439,8 +4442,8 @@ void GameSimulationCore::ChooseLocation(FChooseLocation command)
 			return;
 		}
 
-		// Ensure province price is less than 1000
-		int32 provincePrice = GetProvinceClaimPrice(command.provinceId, command.playerId, ClaimConnectionEnum::Flat);
+		// Ensure province price is less than Initial Money
+		int32 provincePrice = GetProvinceClaimPrice(command.provinceId, command.playerId, ClaimConnectionEnum::Flat) * GameConstants::ClaimProvinceByMoneyMultiplier;
 		if (provincePrice > GameConstants::InitialMoney) {
 			AddPopup(command.playerId, 
 				LOCTEXT("NoMoneyToBuyInitialProvince", "Not enough initial money to buy the province."), 
@@ -4574,7 +4577,7 @@ void GameSimulationCore::Cheat(FCheat command)
 			break;
 		}
 
-		case CheatEnum::Kill: _unitSystem->KillHalf(); break;
+		case CheatEnum::Kill: _unitSystem->KillAll(); break;
 
 		case CheatEnum::ClearLand: {
 			// Clear trees/deposits from regions owned
@@ -4663,6 +4666,89 @@ void GameSimulationCore::Cheat(FCheat command)
 			ExecuteOnAI([&](int32 playerId) {
 				ChangeInfluence(playerId, addCount);
 			});
+			break;
+		}
+
+		case CheatEnum::TestCity:
+		{
+			SimSettings::Set("CheatFastBuild", 1);
+				
+			//SimSettings::Set("CheatHouseLevel", command.var1);
+			WorldTile2 curTile = GetTownhallGate(playerId());
+			if (curTile.isValid())
+			{
+				int32 addCount = command.var1;
+				addCount = std::max(0, std::min(1000, addCount));
+
+				auto tryAddRoad = [&](WorldTile2 tile) {
+					if (IsFrontBuildable(tile) && !_overlaySystem.IsRoad(tile)) {
+						_treeSystem->ForceRemoveTileObj(tile, false);
+						overlaySystem().AddRoad(tile, true, true);
+					}
+				};
+
+				auto placeCluster = [&](CardEnum buildingEnum)
+				{
+					TileArea startArea(curTile, WorldTile2(14, 14));
+
+					TileArea endArea = SimUtils::SpiralFindAvailableBuildArea(startArea,
+						[&](WorldTile2 tile) {
+						return IsPlayerBuildable(tile, playerId());
+					},
+						[&](WorldTile2 tile) {
+						return WorldTile2::ManDistance(curTile, tile) > 200;
+					}
+					);
+
+					auto makeBuilding = [&](WorldTile2 shift, CardEnum cardEnum, Direction faceDirection)
+					{
+						FPlaceBuilding params;
+						params.center = endArea.min() + shift;
+						params.buildingEnum = static_cast<uint8>(cardEnum);
+						params.faceDirection = static_cast<uint8>(faceDirection);
+						params.area = BuildingArea(params.center, WorldTile2(6, 6), static_cast<Direction>(params.faceDirection));
+						params.playerId = command.playerId;
+						PlaceBuilding(params);
+					};
+
+					makeBuilding(WorldTile2(3, 3), buildingEnum, Direction::S);
+					makeBuilding(WorldTile2(3, 9), buildingEnum, Direction::S);
+					makeBuilding(WorldTile2(10, 4), buildingEnum, Direction::N);
+					makeBuilding(WorldTile2(10, 10), buildingEnum, Direction::N);
+
+					endArea.ExecuteOnBorder_WorldTile2([&](WorldTile2 tile) {
+						tryAddRoad(tile);
+					});
+
+					curTile = endArea.min();
+				};
+
+				int32 houseClustersNeeded = addCount / (4 * 4) + 1;
+				int32 wineryClustersNeeded = addCount / (4 * 6) * 2 / 3;
+				int32 warehouseClustersNeeded = houseClustersNeeded / 3;
+
+				int32 maxClusterCount = max(houseClustersNeeded, max(wineryClustersNeeded, warehouseClustersNeeded));
+				
+				for (int32 i = 0; i < maxClusterCount; i++)
+				{
+					if (i < houseClustersNeeded) {
+						placeCluster(CardEnum::House);
+					}
+					if (i < wineryClustersNeeded) {
+						placeCluster(CardEnum::Winery);
+					}
+					if (i < warehouseClustersNeeded) {
+						placeCluster(CardEnum::Warehouse);
+					}
+				}
+			}
+				
+			break;
+		}
+
+		case CheatEnum::DebugUI:
+		{
+			PunSettings::Toggle("DebugUI");
 			break;
 		}
 

@@ -435,7 +435,8 @@ void APunPlayerController::Tick(float DeltaTime)
 				}
 			}
 
-			if (NoPlayerClogged()) 
+			if (!gameInstance->shouldDelayInput() ||
+				NoPlayerClogged()) 
 			{
 				const float serverTickDeltaTime = 1.0f / 60.0f;
 				//if (DeltaTime / serverTickDeltaTime >= 2.0f) {
@@ -446,30 +447,42 @@ void APunPlayerController::Tick(float DeltaTime)
 
 				// DeltaTime is too slow... accumulate the leftover time to double tick later
 				// This is to keep roughly 1/60 sec pace
-				if (DeltaTime > serverTickDeltaTime) {
-					float combinedDeltaTime = DeltaTime + _leftOverDeltaTime;
-					numberOfServerTick = static_cast<int>(combinedDeltaTime / serverTickDeltaTime);
-					_leftOverDeltaTime = fmod(combinedDeltaTime, serverTickDeltaTime);
+				if (PunSettings::IsOn("FixedDeltaTime")) {
+					if (DeltaTime > serverTickDeltaTime) {
+						float combinedDeltaTime = DeltaTime + _leftOverDeltaTime;
+						numberOfServerTick = static_cast<int>(combinedDeltaTime / serverTickDeltaTime);
+						_leftOverDeltaTime = fmod(combinedDeltaTime, serverTickDeltaTime);
+					}
 				}
 
 				for (int i = 0; i < numberOfServerTick; i++)
 				{
-					// serverTick runs at 60fps when there is no lag.
-					// serverTick == _gameTick
-					// networkTicks link between serverTick and gameTick
-					// 
-					if (gameInstance->serverTick() % GameTicksPerNetworkTicks == 0) // 0, 15, 30 ...
+					if (gameInstance->shouldDelayInput())
 					{
-						// Send tickInfo to each client
-						//   serverTick isn't  used beyond this point, each controller count its own ticks
-						//   beyond this, _proxyControllerTick keep track of ticks
+						// serverTick runs at 60fps when there is no lag.
+						// serverTick == _gameTick
+						// networkTicks link between serverTick and gameTick
+						// 
+						if (gameInstance->serverTick() % GameTicksPerNetworkTicks == 0) // 0, 15, 30 ...
+						{
+							// Send tickInfo to each client
+							//   serverTick isn't  used beyond this point, each controller count its own ticks
+							//   beyond this, _proxyControllerTick keep track of ticks
 
-						const TArray<APunBasePlayerController*>& controllers = gameMode->ConnectedControllers();
-						for (APunBasePlayerController* controller : controllers) {
-							CastChecked<APunPlayerController>(controller)->SendTickToClient();
+							const TArray<APunBasePlayerController*>& controllers = gameMode->ConnectedControllers();
+							for (APunBasePlayerController* controller : controllers) {
+								CastChecked<APunPlayerController>(controller)->SendTickToClient();
+							}
+							kCommandQueue.clear();
 						}
+					}
+					else
+					{
+						// Send each tick without the GameTicksPerNetworkTicks delay
+						SendTickToClient();
 						kCommandQueue.clear();
 					}
+					
 					gameInstance->IncrementServerTick();
 				}
 			}
@@ -664,7 +677,11 @@ void APunPlayerController::SendTickToClient()
 
 
 	// TickSimulations
-	TickLocalSimulation_ToClients(networkTickInfoBlob);
+	if (gameInstance()->shouldDelayInput()) {
+		TickLocalSimulation_ToClients(networkTickInfoBlob);
+	} else {
+		TickLocalSimulation_Base(networkTickInfoBlob);
+	}
 }
 
 /**
@@ -687,7 +704,11 @@ void APunPlayerController::SendNetworkCommand(std::shared_ptr<FNetworkCommand> n
 
 	//PUN_DEBUG(FString::Printf(TEXT("serializedCommand init: %d"), blob.Num()));
 
-	ServerSendNetworkCommand(blob);
+	if (gameInstance()->shouldDelayInput()) {
+		ServerSendNetworkCommand_ToServer(blob);
+	} else {
+		ServerSendNetworkCommand_Base(blob);
+	}
 }
 
 void APunPlayerController::SetGameSpeed(int32 gameSpeed)
@@ -776,7 +797,7 @@ void APunPlayerController::SendHash_ToClient_Implementation(int32 insertIndex, c
 
 
 //! Tick Everyone
-void APunPlayerController::TickLocalSimulation_ToClients_Implementation(const TArray<int32>& networkTickInfoBlob)
+void APunPlayerController::TickLocalSimulation_Base(const TArray<int32>& networkTickInfoBlob)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_Controller);
 	
@@ -784,6 +805,8 @@ void APunPlayerController::TickLocalSimulation_ToClients_Implementation(const TA
 	{
 		NetworkTickInfo tickInfo;
 		tickInfo.DeserializeFromBlob(networkTickInfoBlob);
+
+		//PUN_LOG("Tick: controller->TickLocalSimulation_Base() tickCount:%d gameSpeed:%d tickCountSim:%d", tickInfo.tickCount, tickInfo.gameSpeed, tickInfo.tickCountSim);
 
 		if (tickInfo.hasCommand()) { // Check if this is comand tick
 			PUN_LOG("ClientTickLocalSimulation..TickInfo: size:%d tickCount: %d, commandSize:%d", networkTickInfoBlob.Num(), tickInfo.tickCount, tickInfo.commands.size());
@@ -803,27 +826,34 @@ void APunPlayerController::TickLocalSimulation_ToClients_Implementation(const TA
 		// Add tick-1 info with input commands
 		gameManager->AddGameTick(tickInfo);
 
-		// Add (GameTicksPerNetworkTicks - 1) more empty ticks
-		int tickCount = tickInfo.tickCount;
-		const int32 moreTicksToAdd = GameTicksPerNetworkTicks - 1;
-		
-		for (int i = 0; i < moreTicksToAdd; i++) {
-			NetworkTickInfo tickInfoNoCommand;
-			tickInfoNoCommand.tickCount = ++tickCount; // since game ticks at 30fps the tickCount sent is serverTick / 2
-			//tickInfoNoCommand.playerCount = tickInfo.playerCount;
-			tickInfoNoCommand.gameSpeed = tickInfo.gameSpeed;
-			gameManager->AddGameTick(tickInfoNoCommand);
+		if (gameInstance()->shouldDelayInput()) // Multiplayer does multiple ticks at once (GameTicksPerNetworkTicks)
+		{
+			// Add (GameTicksPerNetworkTicks - 1) more empty ticks
+			int tickCount = tickInfo.tickCount;
+			const int32 moreTicksToAdd = GameTicksPerNetworkTicks - 1;
+
+			for (int i = 0; i < moreTicksToAdd; i++) {
+				NetworkTickInfo tickInfoNoCommand;
+				tickInfoNoCommand.tickCount = ++tickCount; // since game ticks at 30fps the tickCount sent is serverTick / 2
+				//tickInfoNoCommand.playerCount = tickInfo.playerCount;
+				tickInfoNoCommand.gameSpeed = tickInfo.gameSpeed;
+				gameManager->AddGameTick(tickInfoNoCommand);
+			}
 		}
 	}
+}
+void APunPlayerController::TickLocalSimulation_ToClients_Implementation(const TArray<int32>& networkTickInfoBlob)
+{
+	TickLocalSimulation_Base(networkTickInfoBlob);
 }
 bool APunPlayerController::TickLocalSimulation_ToClients_Validate(const TArray<int32>& networkTickInfoBlob) { return true; }
 
 
 //! Send NetworkCommand to server to be added to a tick
-void APunPlayerController::ServerSendNetworkCommand_Implementation(const TArray<int32>& serializedCommand)
+void APunPlayerController::ServerSendNetworkCommand_Base(const TArray<int32>& serializedCommand)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_Controller);
-	
+
 	PunSerializedData punBlob(false, serializedCommand);
 	shared_ptr<FNetworkCommand> command = NetworkHelper::DeserializeFromBlob(punBlob);
 
@@ -831,7 +861,11 @@ void APunPlayerController::ServerSendNetworkCommand_Implementation(const TArray<
 
 	kCommandQueue.push_back(command);
 }
-bool APunPlayerController::ServerSendNetworkCommand_Validate(const TArray<int32>& serializedCommand) { return true; }
+void APunPlayerController::ServerSendNetworkCommand_ToServer_Implementation(const TArray<int32>& serializedCommand)
+{
+	ServerSendNetworkCommand_Base(serializedCommand);
+}
+bool APunPlayerController::ServerSendNetworkCommand_ToServer_Validate(const TArray<int32>& serializedCommand) { return true; }
 
 
 //! Send NetworkCommand to server to be added to a tick

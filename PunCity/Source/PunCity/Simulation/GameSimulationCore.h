@@ -1139,7 +1139,6 @@ public:
 				// Add beginning and end of path (since rawPath is the rounded path)
 				resultPath.insert(resultPath.begin(), end);
 				resultPath.push_back(start);
-				//resultPath.push_back(end);
 
 				// Cache
 				if (PunSettings::IsOn("CacheWaterRoutes")) {
@@ -1754,6 +1753,8 @@ public:
 		}
 	}
 	void RecalculateTaxDelayedTown(int32 townId) override {
+		PUN_ENSURE(townId >= 0, return);
+		PUN_ENSURE(townId < _townManagers.size(), return);
 		_townManagers[townId]->RecalculateTaxDelayed();
 	}
 

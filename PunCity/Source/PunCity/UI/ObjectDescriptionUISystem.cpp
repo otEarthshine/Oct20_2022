@@ -3268,13 +3268,13 @@ void UObjectDescriptionUISystem::AddSelectStartLocationButton(int32 provinceId, 
 		}
 
 
-		int32 provincePrice = simulation().GetProvinceClaimPrice(provinceId, playerId());
+		int32 provincePriceMoney = simulation().GetProvinceClaimPrice(provinceId, playerId()) * GameConstants::ClaimProvinceByMoneyMultiplier;
 
 		TArray<FText> args;
 		ADDTEXT_LOCTEXT("SelectStart", "Select Starting Location");
 		ADDTEXT_INV_("\n");
 		if (area.isValid()) {
-			ADDTEXT_(INVTEXT("<img id=\"Coin\"/>{0}"), TextRed(FText::AsNumber(provincePrice), !canClaim));
+			ADDTEXT_(INVTEXT("<img id=\"Coin\"/>{0}"), TextRed(FText::AsNumber(provincePriceMoney), !canClaim));
 		} else {
 			ADDTEXT_TAG_("<Red>", LOCTEXT("NotEnoughBuildingSpace", "Not enough buildable space."));
 		}
@@ -3327,11 +3327,12 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 
 			// Claim by money
 			{
-				bool canClaim = simulation().money(playerId()) >= provincePrice;
+				int32 provincePriceMoney = provincePrice * GameConstants::ClaimProvinceByMoneyMultiplier;
+				bool canClaim = simulation().money(playerId()) >= provincePriceMoney;
 
 				TArray<FText> args;
 				AppendClaimConnectionString(args, false, claimConnectionEnum);
-				ADDTEXT_(INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(FText::AsNumber(provincePrice), !canClaim));
+				ADDTEXT_(INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(FText::AsNumber(provincePriceMoney), !canClaim));
 
 				descriptionBox->AddSpacer();
 				descriptionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::ClaimLandMoney, canClaim, false, provinceId);

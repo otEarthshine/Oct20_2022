@@ -41,7 +41,9 @@ public:
 	static const int32 StorageCountPerTile = 120;
 	static const int32 StorageSlotCount = 4;
 
-	static const int32 InitialMoney = 2000;
+	static const int32 InitialMoney = 3000;
+
+	static const int32 ClaimProvinceByMoneyMultiplier = 2;
 };
 
 static const int32 ModuleMeshCount = 416; // 407

@@ -57,7 +57,12 @@ void UnitStateAI::AddUnit(UnitEnum unitEnum, int32 townId, UnitFullId fullId, IU
 	_unitEnum = unitEnum;
 	_unitState = UnitState::Idle;
 
-	_food = maxFood() / 2;
+	if (unitEnum == UnitEnum::Human) {
+		_food = maxFood() / 2;
+	} else {
+		_food = maxFood();
+	}
+	
 	_health = 0;
 	_heat = unitInfo().maxHeatCelsiusTicks;
 	_lastTickCelsiusRate = 0;
@@ -120,8 +125,11 @@ int32 UnitStateAI::birthChance()
 			break;
 		} 
 		default: {
-			cap = GameConstants::IdealWorldPop;
-			population = _simulation->unitCount();
+			int32 animalCountPercent = _simulation->unitEnumCount(_unitEnum) * 100 / max(1, _simulation->animalInitialCount(_unitEnum));
+			cap = 100;
+			population = animalCountPercent;
+			//cap = GameConstants::IdealWorldPop;
+			//population = _simulation->unitCount();
 
 			// Ranch's animal reproduce at max..
 			if (_playerId != -1 && IsAnimal(_unitData->unitEnum(_id))) {
@@ -147,26 +155,28 @@ void UnitStateAI::Update()
 		// Check status
 		int ticksPassed = Time::Ticks() - _lastUpdateTick;
 
-		int32 adjustedTicksPassed = ticksPassed;
-		if (GameConstants::IsAI(_playerId)) {
-			adjustedTicksPassed /= 2; // AI cheat
-		}
-
 		// Caravan/Immigrants/Ship doesn't deduct food
-		bool shouldDeductFood = true;
 		if (_animationEnum == UnitAnimationEnum::Caravan ||
 			_animationEnum == UnitAnimationEnum::Ship || 
 			_animationEnum == UnitAnimationEnum::Immigration) 
 		{
-			shouldDeductFood = false;
+			
 		}
-		
-
-		if (shouldDeductFood) {
+		else if (IsWildAnimal(unitEnum())) {
+			_food -= 0;
+			_heat += ticksPassed * _lastTickCelsiusRate;
+		}
+		else {
+			int32 adjustedTicksPassed = ticksPassed;
+			if (GameConstants::IsAI(_playerId)) {
+				adjustedTicksPassed /= 2; // AI cheat
+			}
+			
 			_food -= adjustedTicksPassed;
+			_heat += adjustedTicksPassed * _lastTickCelsiusRate; // use TickCelsius rate from last update. This so that the changes between updates are constant and predictable. (and can be displayed in UI)
 		}
 
-		_heat += adjustedTicksPassed * _lastTickCelsiusRate; // use TickCelsius rate from last update. This so that the changes between updates are constant and predictable. (and can be displayed in UI)
+		
 		int32 tickCelsiusRate = FDToInt(_simulation->Celsius(unitTile())) - FDToInt(Time::ColdCelsius()); // from 5 Celsius down, it is considered cold...???
 		if (tickCelsiusRate >= 0) 
 		{
@@ -707,7 +717,7 @@ void UnitStateAI::CalculateActions()
 		if (TryFindWildFood()) return;
 
 		_unitState = UnitState::Idle;
-		int32 waitTicks = Time::TicksPerSecond * (GameRand::Rand() % 3 + 4);
+		int32 waitTicks = Time::TicksPerSecond * (GameRand::Rand() % 5 + 5);
 		Add_Wait(waitTicks);
 		Add_MoveRandomlyAnimal(); // This will bring the animal to home province...
 		
@@ -1034,6 +1044,8 @@ bool UnitStateAI::TryGetBurrowFood()
 
 bool UnitStateAI::TryStockBurrowFood()
 {
+	return false;
+	
 	if (!_simulation->isValidBuildingId(_houseId) ||
 		!_simulation->buildingIsAlive(_houseId))
 	{
@@ -1110,11 +1122,11 @@ bool UnitStateAI::TryStockBurrowFood()
 		return true;
 	}
 
-	Add_Wait(Time::TicksPerSecond * 5);
+	Add_Wait(Time::TicksPerSecond * 10);
 	
-	AddDebugSpeech("(Failed)TryStockBurrowFood: nearestTree invalid");
+	AddDebugSpeech("(Failed Wait)TryStockBurrowFood: nearestTree invalid");
 	debugFindFullBushFailCount++;
-	return false;
+	return true;
 }
 
 bool UnitStateAI::TryStoreAnimalInventory()
@@ -1177,6 +1189,7 @@ bool UnitStateAI::TryGoHomeProvince()
 	}
 
 	AddDebugSpeech("(Success)TryGoHomeProvince: Transfer to MoveTo " + uTile.ToString() + end.ToString());
+	Add_Wait(Time::TicksPerSecond * (GameRand::Rand() % 5 + 5));
 	Add_MoveTo(end, GameConstants::MaxFloodDistance_AnimalFar);
 	return true;
 }
@@ -1317,6 +1330,7 @@ bool UnitStateAI::TryFindWildFood()
 					trimWaitTicks /= GrassToBushValue;
 				}
 
+				Add_Wait(Time::TicksPerSecond * (GameRand::Rand() % 5 + 5)); // Animals too chill
 				Add_Eat(treeSys.tileInfo(bushTile.tileId()).harvestResourceEnum());
 				Add_Wait(30);
 				Add_TrimFullBush(bushTile);
@@ -1343,11 +1357,11 @@ bool UnitStateAI::TryFindWildFood()
 		TryChangeProvince_NoAction();
 	}
 
-	Add_Wait(Time::TicksPerSecond * 5);
+	Add_Wait(Time::TicksPerSecond * 10);
 
-	AddDebugSpeech("(Failed)TryFindWildFood: nearestTree invalid");
+	AddDebugSpeech("(Failed Wait)TryFindWildFood: nearestTree invalid");
 	debugFindFullBushFailCount++;
-	return false;
+	return true;
 }
 
 bool UnitStateAI::TryChangeProvince_NoAction()
@@ -2042,22 +2056,36 @@ bool UnitStateAI::MoveTo(WorldTile2 end, int32 customFloodDistance, UnitAnimatio
 
 	//int32 
 
-	bool isIntelligent = IsIntelligentUnit(unitEnum());
-
-	int64 customCalculationCount = 30000;
-	int64 distance = WorldTile2::Distance(tile, end);
-	const int64 baseDistance = 70;
-	if (distance > baseDistance) {
-		customCalculationCount = 30000 * distance * distance / (baseDistance * baseDistance);
-	}
+	//bool isIntelligent = IsIntelligentUnit(unitEnum());
 	
-	bool succeed = _simulation->pathAI()->FindPath(tile.x, tile.y, end.x, end.y, rawWaypoint, isEnum(UnitEnum::Human), isIntelligent, customCalculationCount);
+	bool succeed;
+	if (unitEnum() == UnitEnum::Human) 
+	{
+		int64 customCalculationCount = 30000;
+		int64 distance = WorldTile2::Distance(tile, end);
+		const int64 baseDistance = 70;
+		if (distance > baseDistance) {
+			customCalculationCount = 30000 * distance * distance / (baseDistance * baseDistance);
+		}
 
+		int32 roadCostDownFactor = 1;
+		if (_simulation->IsRoadTile(tile) && _simulation->IsRoadTile(end)) {
+			roadCostDownFactor = 2;
+		}
+		
+		succeed = _simulation->pathAI()->FindPath(tile.x, tile.y, end.x, end.y, rawWaypoint, true, roadCostDownFactor, customCalculationCount); // ppl like road
+	}
+	else {
+		succeed = _simulation->pathAI()->FindPathAnimal(tile.x, tile.y, end.x, end.y, rawWaypoint, 1, 30000);
+	}
+
+
+	
 	if (!succeed) 
 	{
 		DEBUG_AI_VAR(FailedToFindPath);
 		
-		_simulation->ResetUnitActions(_id, 60);
+		_simulation->ResetUnitActions(_id, Time::TicksPerSecond * 5);
 		AddDebugSpeech("(Bad)MoveTo: " + tile.ToString() + end.ToString());
 
 		//PUN_LOG("MoveTo FindPath failed %s", *ToFString(debugStr()));
@@ -2214,13 +2242,15 @@ void UnitStateAI::MoveTo_NoFail(WorldTile2 end, int32 customFloodDistance)
 }
 
 // Move toward some atom ignoring walkability
-void UnitStateAI::Add_MoveToward(WorldAtom2 end, int32 fraction100000) {
-	_actions.push_back(Action(ActionEnum::MoveToward, end.x, end.y, fraction100000));
+void UnitStateAI::Add_MoveToward(WorldAtom2 end, int32 fraction100000, UnitAnimationEnum animationEnum) {
+	_actions.push_back(Action(ActionEnum::MoveToward, end.x, end.y, fraction100000, static_cast<int32>(animationEnum)));
 }
 void UnitStateAI::MoveToward()
 {
 	WorldAtom2 end(action().int32val1, action().int32val2);
 	int64 fraction100000 = action().int32val3;
+	
+	_animationEnum = static_cast<UnitAnimationEnum>(max(0, min(UnitAnimationCount, action().int32val4)));
 	
 	WorldAtom2 targetLocation = WorldAtom2::Lerp(_unitData->atomLocation(_id), end, fraction100000);
 	_unitData->SetTargetLocation(_id, targetLocation);
@@ -2234,12 +2264,20 @@ void UnitStateAI::MoveToward()
 
 	//PUN_LOG("MoveToward() UnitAnimationEnum::Walk id:%d", _id);
 
-	_animationEnum = UnitAnimationEnum::Walk;
+	//_animationEnum = UnitAnimationEnum::Walk;
 
 	// Be in the moving state until we arrived at destination.
 	_unitData->SetNextTickState(_id, TransformState::Moving, UnitUpdateCallerEnum::MoveTowards_Done, ticksNeeded);
 	AddDebugSpeech("(Done)MoveToward: " + end.ToString());
 }
+
+//void UnitStateAI::Add_MoveToStraight(WorldAtom2 end) {
+//	
+//}
+//void UnitStateAI::MoveToStraight()
+//{
+//	
+//}
 
 void UnitStateAI::Add_MoveToCaravan(WorldTile2 end, UnitAnimationEnum animationEnum) {
 	_actions.push_back(Action(ActionEnum::MoveToCaravan, end.x, end.y, static_cast<int32>(animationEnum)));

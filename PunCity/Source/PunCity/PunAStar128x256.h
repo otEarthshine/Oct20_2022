@@ -48,7 +48,10 @@ public:
 	PunAStar128x256();
 	~PunAStar128x256();
 
-	bool FindPath(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path, bool isAccurate, bool isRoadable, int32 customCalculationCount = -1);
+	bool FindPath(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path, bool isAccurate, int32 roadCostDownFactor, int32 customCalculationCount = -1);
+	//bool FindPathHuman(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path, int32 roadCostDownFactor, bool isAccurate, int32 customCalculationCount = -1);
+	bool FindPathAnimal(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path, int32 heuristicsFactor = 2, int32 customCalculationCount = 10000);
+	
 	bool FindPathRoadOnly(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path);
 	bool FindPathWater(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path, int32 heuristicsFactor, int32 customCalculationCount = -1);
 	bool FindPathRobust(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path);

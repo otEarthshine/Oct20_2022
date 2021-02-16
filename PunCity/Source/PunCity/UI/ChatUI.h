@@ -265,6 +265,11 @@ public:
 				if (ToFString(CheatName[i]).Equals(ToFString(commandAndParams[1]))) {
 					auto command = std::make_shared<FCheat>();
 					command->cheatEnum = static_cast<CheatEnum>(i);
+
+					if (commandAndParams.size() >= 3) {
+						command->var1 = stoi(commandAndParams[2].c_str());
+					}
+					
 					networkInterface()->SendNetworkCommand(command);
 				}
 			}

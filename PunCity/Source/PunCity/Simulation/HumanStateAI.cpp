@@ -1938,7 +1938,7 @@ bool HumanStateAI::TryBulkHaul_IntercityWater()
 	Building& endPort = _simulation->building(endPortId);
 	check(endPort.townId() != -1);
 
-	Add_MoveToward(startPort.gateTile().worldAtom2(), 100000); // TODO: Have Forced Move To Later?
+	Add_MoveToward(startPort.gateTile().worldAtom2(), 100000, UnitAnimationEnum::Ship); // TODO: Have Forced Move To Later?
 	Add_IntercityHaulDropoff(startPort.buildingId());
 	Add_MoveToShip(endPortId, startPortId, UnitAnimationEnum::Ship);
 	Add_IntercityHaulPickup(startPort.buildingId(), endPort.townId());

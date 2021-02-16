@@ -485,15 +485,17 @@ void UUnitDisplayComponent::UpdateResourceDisplay(int32 unitId, UnitStateAI& uni
 	if (_currentDisplayState.unitEnum == UnitEnum::Horse) {
 		_auxMeshes->Add(GetMeshName(_currentDisplayState.unitEnum, 0), unitId, getAuxTransform(), 0);
 	}
-	else if (_currentDisplayState.unitEnum == UnitEnum::Human)
-	{
-		if (unit.animationEnum() == UnitAnimationEnum::Immigration) {
-			_auxMeshes->Add(GetMeshName(UnitEnum::Human, 0), unitId, getAuxTransform(), 0);
-		}
-	}
 	else
 	{
-		//! Resource display
+		//! Cart Display
+		if (_currentDisplayState.unitEnum == UnitEnum::Human &&
+			unit.animationEnum() == UnitAnimationEnum::Immigration) 
+		{
+			_auxMeshes->Add(GetMeshName(UnitEnum::Human, 0), unitId, getAuxTransform(), 0);
+		}
+
+		
+		//! Resource Display
 		ResourceEnum heldEnum = unit.inventory().Display();
 		if (heldEnum != ResourceEnum::None)
 		{

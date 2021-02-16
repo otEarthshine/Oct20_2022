@@ -334,7 +334,8 @@ public:
 	void Add_MoveInRange(WorldTile2 end, int32_t range);			void MoveInRange(); // TODO: REmove??
 	void Add_MoveToForceLongDistance(WorldTile2 end);				void MoveToForceLongDistance();
 	void Add_MoveToRobust(WorldTile2 end);							void MoveToRobust();	void MoveToRobust(WorldTile2 end);
-	void Add_MoveToward(WorldAtom2 end, int32 fraction100000);	void MoveToward();
+	void Add_MoveToward(WorldAtom2 end, int32 fraction100000, UnitAnimationEnum animationEnum = UnitAnimationEnum::Walk);	void MoveToward();
+	//void Add_MoveToStraight(WorldAtom2 end);	void MoveToStraight(); // TODO: need save break
 	void Add_MoveToCaravan(WorldTile2 end, UnitAnimationEnum animationEnum); bool MoveToCaravan();
 	void Add_MoveToShip(int32 startPortId, int32 endPortId, UnitAnimationEnum animationEnum); bool MoveToShip();
 

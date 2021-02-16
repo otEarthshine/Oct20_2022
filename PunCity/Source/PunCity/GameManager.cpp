@@ -401,10 +401,22 @@ void AGameManager::TickNetworking()
 		_initPhase++;
 		return;
 	}
+
 	
-	//if (!isDisplayPracticeDone()) {
-	//	return;
-	//}
+	/*
+	 * Single Player Does not need any built-in delay
+	 */
+	if (!gameInstance()->shouldDelayInput()) {
+		//PUN_LOG("TICK: gameManager->TickNetworking()");
+		_ue4TickCount++;
+
+		for (int32 i = 0; i < _gameTickQueue.size(); i++) {
+			//PUN_LOG("TICK: _simulation->Tick()");
+			_simulation->Tick(_gameTickQueue.size(), _gameTickQueue[i]);
+		}
+		_gameTickQueue.clear();
+		return;
+	}
 
 	
 	// Latency adjustment
@@ -426,8 +438,7 @@ void AGameManager::TickNetworking()
 		gameTickHalf = 4;
 		gameTickNormal = 20;
 		gameTickDouble = 40;
-	}
-	
+	}	
 	
 	// Network design notes:
 	// Game tick is already optimized by only waking up unit when needed, 60 fps for game tick will do just fine + make things simpler
@@ -444,7 +455,7 @@ void AGameManager::TickNetworking()
 		if (_ue4TickCount % 60 == 0) {
 			GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::White, FString::Printf(TEXT("No Tick:%d"), _gameTickQueue.size()));
 		}
-	} 
+	}
 	else if (_gameTickQueue.size() < gameTickQuarter) {
 		// Tick at 1/4 the speed
 		if (_ue4TickCount % 4 == 0) {

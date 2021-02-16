@@ -2253,11 +2253,11 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				}
 			}
 
-			int32 provincesPrice = 0;
+			int32 provincesPriceMoney = 0;
 			for (int32 provinceId : provinceIds) {
-				provincesPrice += simulation.GetProvinceClaimPrice(provinceId, playerId);
+				provincesPriceMoney += simulation.GetProvinceClaimPrice(provinceId, playerId) * GameConstants::ClaimProvinceByMoneyMultiplier;
 			}
-			SetInstruction(PlacementInstructionEnum::ColonyClaimCost, true, provincesPrice);
+			SetInstruction(PlacementInstructionEnum::ColonyClaimCost, true, provincesPriceMoney);
 		}
 		// Road Overlap Building
 		else if (IsRoadOverlapBuilding(_buildingEnum))

@@ -106,7 +106,7 @@ static FString GetGameVersionString(int32 version, bool includeDate = true)
 	#if DEBUG_BUILD
 		#define PUN_ENSURE(condition, backupStatement) if (!(condition)) { FDebug::DumpStackTraceToLog(); UE_DEBUG_BREAK(); backupStatement; }
 	#else
-		#define PUN_ENSURE(condition, backupStatement) if (!(condition)) { FDebug::DumpStackTraceToLog(); UE_LOG(LogTemp, Error, TEXT("PUN_ERROR_ENSURE")); backupStatement; }
+		#define PUN_ENSURE(condition, backupStatement) if (!(condition)) { /*FDebug::DumpStackTraceToLog(); UE_LOG(LogTemp, Error, TEXT("PUN_ERROR_ENSURE"));*/ backupStatement; }
 	#endif
 #endif
 
@@ -5275,7 +5275,7 @@ struct UnitInfo
 		int32 foodTicksPerFetch = Time::TicksPerYear / UnitFoodFetchPerYear;
 		foodPerFetch = foodResourcePerYear / UnitFoodFetchPerYear;
 
-		maxFoodTicks = foodTicksPerFetch * (unitEnum == UnitEnum::Human ? 1 : 2); // Fragile humans
+		maxFoodTicks = foodTicksPerFetch * (unitEnum == UnitEnum::Human ? 1 : 5); // Fragile humans ... Animals has loads of maxFoodTicks
 		
 		foodTicksPerResource = Time::TicksPerYear / foodResourcePerYear;
 
@@ -5550,6 +5550,7 @@ static const std::vector<std::string> UnitAnimationNames =
 static const std::string& GetUnitAnimationName(UnitAnimationEnum animationEnum) {
 	return UnitAnimationNames[static_cast<int>(animationEnum)];
 }
+static const int32 UnitAnimationCount = UnitAnimationNames.size();
 
 struct UnitDisplayState
 {
@@ -5737,6 +5738,9 @@ enum class CheatEnum : int32
 	AddAIImmigrants,
 	AddAIMoney,
 	AddAIInfluence,
+
+	TestCity,
+	DebugUI,
 };
 
 static const std::string CheatName[]
@@ -5797,6 +5801,9 @@ static const std::string CheatName[]
 	"AddAIImmigrants",
 	"AddAIMoney",
 	"AddAIInfluence",
+
+	"TestCity",
+	"DebugUI",
 };
 static std::string GetCheatName(CheatEnum cheatEnum) {
 	return CheatName[static_cast<int>(cheatEnum)];

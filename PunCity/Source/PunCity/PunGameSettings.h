@@ -24,7 +24,7 @@ public:
 	}
 
 	static void Toggle(const FString& name) {
-		Set(name, !Get("ForceClickthrough"));
+		Set(name, !Get(name));
 	}
 
 	static bool IsOn(std::string settingName) {

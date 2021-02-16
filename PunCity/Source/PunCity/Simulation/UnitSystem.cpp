@@ -572,12 +572,10 @@ void UnitSystem::SetNextTickState(int32 id, TransformState state, UnitUpdateCall
 #endif
 }
 
-void UnitSystem::KillHalf()
+void UnitSystem::KillAll()
 {
 	for (int32_t i = 0; i < _unitLeans.size(); i++) {
-		if (GameRand::RandChance(2)) {
-			unitStateAI(i).Die();
-		}
+		unitStateAI(i).Die();
 	}
 }
 

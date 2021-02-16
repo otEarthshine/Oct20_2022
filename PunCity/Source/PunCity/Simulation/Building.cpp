@@ -175,7 +175,7 @@ void Building::InstantClearArea()
 void Building::FinishConstruction()
 {
 	//PUN_LOG("FinishConstruction %d constructed:%d", _objectId, _isConstructed);
-	PUN_CHECK(!_isConstructed);
+	//PUN_CHECK(!_isConstructed);
 	
 	_maxOccupants = 0;
 	_allowedOccupants = 0;

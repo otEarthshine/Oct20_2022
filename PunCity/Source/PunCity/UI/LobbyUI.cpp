@@ -423,11 +423,12 @@ void ULobbyUI::ReturnToMainMenu()
 	else {
 
 		if (gameInstance()->isSinglePlayer) {
+			gameInstance()->isReturningToLobbyList = false;
 			GetFirstController()->ClientTravel("/Game/Maps/MainMenu", TRAVEL_Absolute);
 			gameInstance()->EnsureSessionDestroyed(false);
 		}
 		else {
-			gameInstance()->isReturningToLobbyList = gameInstance()->isMultiplayer(); // return to lobby list if it is a multiplayer game
+			gameInstance()->isReturningToLobbyList = true; // return to lobby list if it is a multiplayer game
 			gameInstance()->EnsureSessionDestroyed(true);
 		}
 	}

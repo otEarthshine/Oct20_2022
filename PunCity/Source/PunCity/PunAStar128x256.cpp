@@ -251,7 +251,7 @@ void PunAStar128x256::PrintUInt32(uint32_t locInt)
 	UE_LOG(LogTemp, Error, TEXT("PrintUInt32: %d, %d"), x, y);
 }
 
-bool PunAStar128x256::FindPath(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path, bool isAccurate, bool isRoadable, int32 customCalculationCount)
+bool PunAStar128x256::FindPath(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path, bool isAccurate, int32 roadCostDownFactor, int32 customCalculationCount)
 {
 	SCOPE_CYCLE_COUNTER(STAT_PunPathAI);
 
@@ -288,6 +288,9 @@ bool PunAStar128x256::FindPath(int startX, int startY, int endX, int endY, std::
 
 	int32 maxCalculationCount = (customCalculationCount == -1) ? 30000 : customCalculationCount;
 
+	int32 roadCost = COST_ROAD / roadCostDownFactor;
+	int32 roadSqrtCost = COST_ROAD_SQRT2 / roadCostDownFactor;
+
 	while (!_openList.isEmpty() && calculationCount < maxCalculationCount)
 	{
 		uint32_t nodeLocInt = _openList.RemoveMin();
@@ -303,6 +306,8 @@ bool PunAStar128x256::FindPath(int startX, int startY, int endX, int endY, std::
 			// Successfully found path
 			ConstructPath(start, end, path);
 			CleanGrid();
+
+			//UE_LOG(LogTemp, Error, TEXT("PunAStar::FindPath calculationCount %d"), calculationCount);
 			return true;
 		}
 
@@ -319,17 +324,8 @@ bool PunAStar128x256::FindPath(int startX, int startY, int endX, int endY, std::
 
 
 			// People's speed isn't effected by road if they are not carrying anything. This is done to cap ppl's speed and allow +50% road effectiveness
-			int costUpToLoopNode;
-			if (isRoadable) {
-				bool isRoad = (_isRoadGrid[yWithXRegion] >> xBits) & 1;
-				costUpToLoopNode = node.cost + (i < nonDiagArraySize ? (isRoad ? COST_ROAD : COST_ONE) : (isRoad ? COST_ROAD_SQRT2 : COST_SQRT2));
-			}
-			else {
-				// Not Hauling.. Speed is the same in or out of road...
-				costUpToLoopNode = node.cost + (i < nonDiagArraySize ? COST_ONE : COST_SQRT2);
-				//bool isRoad = (_isRoadGrid[yWithXRegion] >> xBits) & 1;
-				//costUpToLoopNode = node.cost + (i < nonDiagArraySize ? (isRoad ? COST_ROAD : COST_ONE) : (isRoad ? COST_ROAD_SQRT2 : COST_SQRT2));
-			}
+			bool isRoad = (_isRoadGrid[yWithXRegion] >> xBits) & 1;
+			int costUpToLoopNode = node.cost + (i < nonDiagArraySize ? (isRoad ? roadCost : COST_ONE) : (isRoad ? roadSqrtCost : COST_SQRT2));
 
 
 			bool calculated = (_calculatedNodes[yWithXRegion] >> xBits) & 1;
@@ -385,7 +381,7 @@ bool PunAStar128x256::FindPath(int startX, int startY, int endX, int endY, std::
 
 	// If isAccurate was previously turned on, turn it off and try again...
 	if (isAccurate) {
-		return FindPath(startX, startY, endX, endY, path, false, isRoadable);
+		return FindPath(startX, startY, endX, endY, path, false, roadCostDownFactor);
 	}
 
 	return false;
@@ -429,6 +425,268 @@ int PunAStar128x256::GetHeuristic(uint32_t start, uint32_t end) const
 
 	// First take the Manhattan distance, then replaces part of it with diagonal
 	return (dx + dz) * COST_ONE + COST_SQRT2_MINUS_2ONE * (dx < dz ? dx : dz);
+}
+
+/*
+ * Find Path Human
+ */
+//bool PunAStar128x256::FindPathHuman(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path, int32 roadCostDownFactor, bool isAccurate, int32 customCalculationCount)
+//{
+//	SCOPE_CYCLE_COUNTER(STAT_PunPathAI);
+//
+//	if (0 > startX || startX >= (int)_xDim ||
+//		0 > startY || startY >= (int)_yDim ||
+//		0 > endX || endX >= (int)_xDim ||
+//		0 > endY || endY >= (int)_yDim)
+//	{
+//		UE_LOG(LogTemp, Error, TEXT("BadFindPath: start: %d, %d"), startX, startY);
+//		UE_LOG(LogTemp, Error, TEXT("		      end: %d, %d"), endX, endY);
+//		UE_DEBUG_BREAK();
+//		badPathCount++;
+//		path.clear();
+//		return false;
+//	}
+//
+//	// TODO: remove... If start or end is not walkable, use robust algorithm instead
+//	if (!(isWalkable(startX, startY) && isWalkable(endX, endY))) {
+//		return FindPathRobust(startX, startY, endX, endY, path);
+//	}
+//
+//	uint32_t start = GetUIntId(startX, startY);
+//	uint32_t end = GetUIntId(endX, endY);
+//
+//	_openList.Clear();
+//	check(_openList.heapCurrentSize() == 0)
+//		check(_openList.maxSize() > 0)
+//		_openList.Insert(start, 0);
+//
+//	uint32_t successors[8];
+//
+//	int32 calculationCount = 0;
+//	//uint16_t maxCalculationCount = isLongDistance ? 200000 : 30000;
+//
+//	int32 maxCalculationCount = (customCalculationCount == -1) ? 30000 : customCalculationCount;
+//
+//	while (!_openList.isEmpty() && calculationCount < maxCalculationCount)
+//	{
+//		uint32_t nodeLocInt = _openList.RemoveMin();
+//		check(nodeLocInt >= 0);
+//
+//		LeanAStarNode node = _nodes[nodeLocInt];
+//
+//		if (nodeLocInt == end)
+//		{
+//			pathCount++;
+//			iterationCount += calculationCount;
+//
+//			// Successfully found path
+//			ConstructPath(start, end, path);
+//			CleanGrid();
+//
+//			UE_LOG(LogTemp, Error, TEXT("PunAStar::FindPathHuman calculationCount %d"), calculationCount);
+//			return true;
+//		}
+//
+//		int nonDiagArraySize, arraySize;
+//		GetSuccessors(nodeLocInt, successors, nonDiagArraySize, arraySize);
+//
+//		for (int i = 0; i < arraySize; i++)
+//		{
+//			LeanAStarNode& loopNode = _nodes[successors[i]];
+//
+//			uint32_t locInt = loopNode.locInt;
+//			uint32_t yWithXRegion = locInt >> 5; // 20 bits
+//			uint32_t xBits = locInt & bits5; // 5 bits
+//
+//
+//			// People's speed isn't effected by road if they are not carrying anything. This is done to cap ppl's speed and allow +50% road effectiveness
+//			bool isRoad = (_isRoadGrid[yWithXRegion] >> xBits) & 1;
+//			int costUpToLoopNode = node.cost + (i < nonDiagArraySize ? (isRoad ? (COST_ROAD / roadCostDownFactor) : COST_ONE) : (isRoad ? (COST_ROAD_SQRT2 / roadCostDownFactor) : COST_SQRT2));
+//
+//
+//
+//			bool calculated = (_calculatedNodes[yWithXRegion] >> xBits) & 1;
+//
+//			if (!calculated || costUpToLoopNode < loopNode.cost)
+//			{
+//				uint32_t curY = yWithXRegion & bitsY; // y bits
+//				uint32_t curX = ((locInt >> shiftToXRegion) << 5) | xBits; // 13 bits
+//
+//				// For road, GetHeuristic should have less cost, since there might be more road going towards destination.
+//				// This helps with making people go along road kink
+//				int heuristic = GetHeuristicFast(curX, curY, endX, endY);
+//				int priorityCost = costUpToLoopNode + (isAccurate ? (heuristic >> 2) : heuristic); // isAccurate means using less heuristics
+//
+//
+//				// Put this in the node grid
+//				loopNode.cameFromLocInt = nodeLocInt;
+//				loopNode.cost = costUpToLoopNode;
+//
+//				_calculatedNodes[yWithXRegion] |= (1 << xBits);
+//
+//				// Cache for clearing later
+//				//_nodesToRenew[_nodesToRenewLength] = locInt;
+//				//_nodesToRenewLength++;
+//				_nodesToRenew.push_back(locInt);
+//
+//				_openList.Insert(locInt, priorityCost);
+//			}
+//		}
+//
+//		calculationCount++;
+//	}
+//
+//	pathCount++;
+//	iterationCount += calculationCount;
+//
+//	// Cannot find path, either we are out of tile, or it took too long (exceed maxCalculationCount)
+//	int len = abs(startX - endX) + abs(startY - endY);
+//	int aveIter = iterationCount / pathCount;
+//	if (_openList.isEmpty()) {
+//		openListEmpty++;
+//		UE_LOG(LogTemp, Error, TEXT("openListEmpty(count:%d): from:%d,%d to:%d,%d len:%d isAccurate:%d aveIter:%d"), openListEmpty, startX, startY, endX, endY, len, isAccurate, aveIter);
+//	}
+//	else {
+//		calculationTooLongCount++;
+//		if (PunSettings::IsOn("ShowFullDebugLog")) {
+//			UE_LOG(LogTemp, Error, TEXT("calcTooLong(count:%d): from:%d,%d to:%d,%d len:%d isAccurate:%d  aveIter:%d"), calculationTooLongCount, startX, startY, endX, endY, len, isAccurate, aveIter);
+//		}
+//	}
+//
+//	CleanGrid();
+//	path.clear();
+//
+//	// If isAccurate was previously turned on, turn it off and try again...
+//	if (isAccurate) {
+//		return FindPathHuman(startX, startY, endX, endY, path, roadCostDownFactor, false, customCalculationCount);
+//	}
+//
+//	return false;
+//}
+
+/*
+ * Find Path Animals
+ */
+bool PunAStar128x256::FindPathAnimal(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path, int32 heuristicsFactor, int32 customCalculationCount)
+{
+	SCOPE_CYCLE_COUNTER(STAT_PunPathAI);
+
+	if (0 > startX || startX >= (int)_xDim ||
+		0 > startY || startY >= (int)_yDim ||
+		0 > endX || endX >= (int)_xDim ||
+		0 > endY || endY >= (int)_yDim)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BadFindPath: start: %d, %d"), startX, startY);
+		UE_LOG(LogTemp, Error, TEXT("		      end: %d, %d"), endX, endY);
+		UE_DEBUG_BREAK();
+		badPathCount++;
+		path.clear();
+		return false;
+	}
+
+	// TODO: remove... If start or end is not walkable, use robust algorithm instead
+	if (!(isWalkable(startX, startY) && isWalkable(endX, endY))) {
+		return FindPathRobust(startX, startY, endX, endY, path);
+	}
+
+	uint32_t start = GetUIntId(startX, startY);
+	uint32_t end = GetUIntId(endX, endY);
+
+	_openList.Clear();
+	check(_openList.heapCurrentSize() == 0);
+	check(_openList.maxSize() > 0);
+	_openList.Insert(start, 0);
+
+	uint32_t successors[8];
+
+	int32 calculationCount = 0;
+
+	int32 maxCalculationCount = customCalculationCount;
+
+	while (!_openList.isEmpty() && calculationCount < maxCalculationCount)
+	{
+		uint32_t nodeLocInt = _openList.RemoveMin();
+		check(nodeLocInt >= 0);
+
+		LeanAStarNode node = _nodes[nodeLocInt];
+
+		if (nodeLocInt == end)
+		{
+			pathCount++;
+			iterationCount += calculationCount;
+
+			// Successfully found path
+			ConstructPath(start, end, path);
+			CleanGrid();
+
+			//UE_LOG(LogTemp, Error, TEXT("PunAStar::FindPath calculationCount %d"), calculationCount);
+			return true;
+		}
+
+		int nonDiagArraySize, arraySize;
+		GetSuccessors(nodeLocInt, successors, nonDiagArraySize, arraySize);
+
+		for (int i = 0; i < arraySize; i++)
+		{
+			LeanAStarNode& loopNode = _nodes[successors[i]];
+
+			uint32_t locInt = loopNode.locInt;
+			uint32_t yWithXRegion = locInt >> 5; // 20 bits
+			uint32_t xBits = locInt & bits5; // 5 bits
+
+			int costUpToLoopNode = node.cost + (i < nonDiagArraySize ? COST_ONE : COST_SQRT2);
+
+
+			bool calculated = (_calculatedNodes[yWithXRegion] >> xBits) & 1;
+
+			if (!calculated || costUpToLoopNode < loopNode.cost)
+			{
+				uint32_t curY = yWithXRegion & bitsY; // y bits
+				uint32_t curX = ((locInt >> shiftToXRegion) << 5) | xBits; // 13 bits
+
+				// For road, GetHeuristic should have less cost, since there might be more road going towards destination.
+				// This helps with making people go along road kink
+				int heuristic = GetHeuristicFast(curX, curY, endX, endY);
+				int priorityCost = costUpToLoopNode + heuristic * heuristicsFactor; // isAccurate means using less heuristics
+
+
+				// Put this in the node grid
+				loopNode.cameFromLocInt = nodeLocInt;
+				loopNode.cost = costUpToLoopNode;
+
+				_calculatedNodes[yWithXRegion] |= (1 << xBits);
+
+				// Cache for clearing later
+				_nodesToRenew.push_back(locInt);
+
+				_openList.Insert(locInt, priorityCost);
+			}
+		}
+
+		calculationCount++;
+	}
+
+	pathCount++;
+	iterationCount += calculationCount;
+
+	// Cannot find path, either we are out of tile, or it took too long (exceed maxCalculationCount)
+	int len = abs(startX - endX) + abs(startY - endY);
+	int aveIter = iterationCount / pathCount;
+	if (_openList.isEmpty()) {
+		openListEmpty++;
+		UE_LOG(LogTemp, Error, TEXT("openListEmpty(count:%d): from:%d,%d to:%d,%d len:%d aveIter:%d"), openListEmpty, startX, startY, endX, endY, len, aveIter);
+	}
+	else {
+		calculationTooLongCount++;
+		if (PunSettings::IsOn("ShowFullDebugLog")) {
+			UE_LOG(LogTemp, Error, TEXT("calcTooLong(count:%d): from:%d,%d to:%d,%d len:%d  aveIter:%d"), calculationTooLongCount, startX, startY, endX, endY, len, aveIter);
+		}
+	}
+
+	CleanGrid();
+	path.clear();
+
+	return false;
 }
 
 /*

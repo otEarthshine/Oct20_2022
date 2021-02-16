@@ -132,6 +132,10 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 
 	{ "CacheWaterRoutes", 1 },
 
+	// Debug Network
+	{ "ForceDelayInput", 0 },
+	{ "FixedDeltaTime", 1 },
+
 	// Trailer
 	
 	{ "TrailerTundraMinSnowPercent", 0 },

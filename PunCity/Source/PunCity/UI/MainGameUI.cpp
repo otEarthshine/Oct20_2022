@@ -1170,7 +1170,7 @@ void UMainGameUI::Tick()
 
 
 		// Food
-		int32 foodCount = sim.foodCount(playerId());
+		int32 foodCount = sim.foodCount(currentTownId());
 		FoodCountText->SetText(FText::Format(LOCTEXT("Food: {0}", "Food: {0}"), TEXT_NUM(foodCount)));
 		FoodCountText->SetColorAndOpacity(foodCount > 0 ? FLinearColor::White : FLinearColor::Red);
 		PlayAnimationIf("FoodCountLowFlash", foodCount == 0);
@@ -1221,7 +1221,7 @@ void UMainGameUI::Tick()
 			//tip << "<space>";
 			//tip << "Fuel Production (yearly): <FaintGreen>" << fuelProduction << "</>\n";
 			//tip << "Fuel Consumption (yearly): <FaintRed>" << fuelConsumption << "</>\n";
-			//tip << "Fuel Count: " << simulation.resourceCount(playerId(), ResourceEnum::Wood) + simulation.resourceCount(playerId(), ResourceEnum::Coal);
+			//tip << "Fuel Count: " << simulation.resourceCount(currentTownId(), ResourceEnum::Wood) + simulation.resourceCount(currentTownId(), ResourceEnum::Coal);
 			//
 			//tooltip->TooltipPunBoxWidget->AddRichTextParsed(tip);
 
@@ -1243,7 +1243,7 @@ void UMainGameUI::Tick()
 		for (int i = 0; i < ResourceEnumCount; i++)
 		{
 			ResourceEnum resourceEnum = static_cast<ResourceEnum>(i);
-			int amount = dataSource()->GetResourceCount(playerId(), resourceEnum);
+			int amount = dataSource()->GetResourceCount(currentTownId(), resourceEnum);
 
 			UVerticalBox* listToAdd = MainResourceList;
 			if (IsFuelEnum(resourceEnum)) {
@@ -1287,7 +1287,7 @@ void UMainGameUI::Tick()
 					
 					//if (IsFuelEnum(resourceEnum))
 					//{
-					//	int32 fuelCount = dataSource()->GetResourceCount(playerId(), FuelEnums);
+					//	int32 fuelCount = dataSource()->GetResourceCount(currentTownId(), FuelEnums);
 					//	if (fuelCount > 0) {
 					//		displayNormally();
 					//	}
@@ -1310,7 +1310,7 @@ void UMainGameUI::Tick()
 					}
 					else if (IsMedicineEnum(resourceEnum)) 
 					{
-						int32 medicineCount = dataSource()->GetResourceCount(playerId(), MedicineEnums);
+						int32 medicineCount = dataSource()->GetResourceCount(currentTownId(), MedicineEnums);
 						if (medicineCount > 0) {
 							displayNormally();
 						} else {
@@ -1325,7 +1325,7 @@ void UMainGameUI::Tick()
 					}
 					else if (IsToolsEnum(resourceEnum)) 
 					{
-						int32 toolsCount = dataSource()->GetResourceCount(playerId(), ToolsEnums);
+						int32 toolsCount = dataSource()->GetResourceCount(currentTownId(), ToolsEnums);
 						if (toolsCount > 0) {
 							displayNormally();
 						} else {

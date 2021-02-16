@@ -507,7 +507,65 @@ public:
 		//simulation().DrawLine(start.worldAtom2(), FVector::ZeroVector, start.worldAtom2(), FVector(0, 5, 10), color, 1.0f, 10000);
 		//simulation().DrawLine(end.worldAtom2(), FVector::ZeroVector, end.worldAtom2(), FVector(0, 5, 10), color, 1.0f, 10000);
 	}
+	void PrintPath_Helper(const std::vector<WorldTile2>& path)
+	{
+		for (int32 i = path.size(); i-- > 1;) {
+			WorldTile2 tile1 = path[i - 1];
+			WorldTile2 tile2 = path[i];
+			simulation().DrawLine(tile1.worldAtom2(), FVector::ZeroVector, tile2.worldAtom2(), FVector(0, 0, 3), FLinearColor::Green, 1.0f, 10000);
+		}
 
+		PUN_LOG("FindPathTest %d", path.size());
+	}
+	UFUNCTION(Exec) void FindPathTest(bool isAccurate, int32 roadCostDownFactor, uint16 customCalcCount, int32 startX, int32 startY, int32 endX, int32 endY)
+	{
+		WorldTile2 start(startX, startY);
+		WorldTile2 end(endX, endY);
+
+		std::vector<WorldTile2> path;
+		{
+			SCOPE_TIMER("FindPathTest");
+			std::vector<uint32_t> rawPath;
+			simulation().pathAI()->FindPath(start.x, start.y, end.x, end.y, rawPath, isAccurate, roadCostDownFactor, customCalcCount);
+
+			MapUtil::UnpackAStarPath(rawPath, path);
+		}
+		
+		PrintPath_Helper(path);
+	}
+	//UFUNCTION(Exec) void FindPathHumanTest(int32 roadCostDownFactor, uint16 customCalcCount, int32 startX, int32 startY, int32 endX, int32 endY)
+	//{
+	//	WorldTile2 start(startX, startY);
+	//	WorldTile2 end(endX, endY);
+
+	//	std::vector<WorldTile2> path;
+	//	{
+	//		SCOPE_TIMER("FindPathHumanTest");
+	//		std::vector<uint32_t> rawPath;
+	//		simulation().pathAI()->FindPathHuman(start.x, start.y, end.x, end.y, rawPath, roadCostDownFactor, true, customCalcCount);
+
+	//		MapUtil::UnpackAStarPath(rawPath, path);
+	//	}
+
+	//	PrintPath_Helper(path);
+	//}
+	UFUNCTION(Exec) void FindPathAnimalTest(int32 heuristicsFactor, uint16 customCalcCount, int32 startX, int32 startY, int32 endX, int32 endY)
+	{
+		WorldTile2 start(startX, startY);
+		WorldTile2 end(endX, endY);
+
+		std::vector<WorldTile2> path;
+		{
+			SCOPE_TIMER("FindPathAnimalTest");
+			std::vector<uint32_t> rawPath;
+			simulation().pathAI()->FindPathAnimal(start.x, start.y, end.x, end.y, rawPath, heuristicsFactor, customCalcCount);
+
+			MapUtil::UnpackAStarPath(rawPath, path);
+		}
+
+		PrintPath_Helper(path);
+	}
+	
 public:
 	/**
 	 * Networking
@@ -519,11 +577,13 @@ public:
 	UFUNCTION(Reliable, Server) void SendServerCloggedStatus(int32 playerId, bool clogStatus);
 	UFUNCTION(Reliable, Client) void SendHash_ToClient(int32 insertIndex, const TArray<int32>& tickToHashes);
 
+	void TickLocalSimulation_Base(const TArray<int32>& networkTickInfoBlob);
 	UFUNCTION(Reliable, Client, WithValidation) void TickLocalSimulation_ToClients(const TArray<int32>& networkTickInfoBlob);
 	
 
 	//! Send Command to server
-	UFUNCTION(Reliable, Server, WithValidation) void ServerSendNetworkCommand(const TArray<int32>& serializedCommand);
+	void ServerSendNetworkCommand_Base(const TArray<int32>& serializedCommand);
+	UFUNCTION(Reliable, Server, WithValidation) void ServerSendNetworkCommand_ToServer(const TArray<int32>& serializedCommand);
 
 
 	// Victory

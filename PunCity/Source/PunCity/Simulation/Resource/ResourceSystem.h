@@ -502,6 +502,13 @@ private:
 			if (filteredInfos[i].amount >= amount) {
 
 				int32_t dist = WorldTile2::ManDistance(origin, filteredInfos[i].tile);
+
+				// Try to put things into nearby storage with more than 1 resource
+				//  (prevent evenly distributed resources taking up space.
+				//if (filteredInfos[i].amount > 0) {
+				//	dist -= 50;
+				//}
+				
 				// Check if closer that last full candidate...
 				if (dist < foundFullInfoDist) {
 					foundFullInfo = filteredInfos[i];

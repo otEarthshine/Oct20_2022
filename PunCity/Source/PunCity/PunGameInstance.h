@@ -307,6 +307,13 @@ public:
 	// Single player?
 	bool isSinglePlayer = false;
 	bool isMultiplayer() { return !isSinglePlayer; }
+
+	bool shouldDelayInput() {
+		if (PunSettings::IsOn("ForceDelayInput")) {
+			return true;
+		}
+		return !isSinglePlayer;
+	}
 	
 public:
 	void InitOnline(FName subsystemName);

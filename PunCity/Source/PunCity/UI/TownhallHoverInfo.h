@@ -170,21 +170,21 @@ private:
 	UFUNCTION() void OnClickEstablishTradeRouteButton()
 	{
 		auto command = make_shared<FSetIntercityTrade>();
-		command->townId = townId();
-		if (command->townId != -1) {
+		//command->townId = townId();
+		//if (command->townId != -1) {
 			command->buildingIdToEstablishTradeRoute = _buildingId;
 			networkInterface()->SendNetworkCommand(command);
-		}
+		//}
 	}
 	UFUNCTION() void OnClickCancelTradeRouteButton()
 	{
 		auto command = make_shared<FSetIntercityTrade>();
-		command->townId = townId();
-		if (command->townId != -1) {
+		//command->townId = townId();
+		//if (command->townId != -1) {
 			command->buildingIdToEstablishTradeRoute = _buildingId;
 			command->isCancelingTradeRoute = 1;
 			networkInterface()->SendNetworkCommand(command);
-		}
+		//}
 	}
 
 	UFUNCTION() void OnClickSendImmigrantsButton() {

@@ -435,14 +435,14 @@ public:
 		if (townHallId == -1) return nullptr;
 		return &(building(townHallId).subclass<TownHall>(CardEnum::Townhall));
 	}
-	int32 GetTownhallId(int32 townId) {
+	int32 GetTownhallId(int32 townId) override {
 		if (townId == -1) return -1;
 		if (townId >= _townManagers.size()) return -1;
 		return townManager(townId).townHallId;
 	}
 
-	bool IsValidTown(int32 townId) {
-		if (townId == -1) return false;
+	bool IsValidTown(int32 townId) override {
+		if (townId < 0) return false;
 		if (townId >= _townManagers.size()) return false;
 		return townManager(townId).townHallId != -1;
 	}
@@ -1005,6 +1005,11 @@ public:
 
 	int32 animalInitialCount(UnitEnum unitEnum) final { return _unitSystem->animalInitialCount(unitEnum); }
 	int32 unitEnumCount(UnitEnum unitEnum) final { return _unitSystem->unitCount(unitEnum); }
+
+	void MoveUnitInstantly(int32 unitId, WorldAtom2 atom) final {
+		_unitSystem->MoveUnitInstantly(unitId, atom);
+	}
+	
 	
 	std::string unitdebugStr(int id) final;
 	void unitAddDebugSpeech(int32 id, std::string message) final;
@@ -1157,7 +1162,7 @@ public:
 		
 		return portIds;
 	}
-	bool FindBestPathWater(int32 startTownId, int32 endTownId, WorldTile2 startLand, int32& startPortId, int32& endPortId)
+	bool FindBestPathWater(int32 startTownId, int32 endTownId, WorldTile2 startLand, int32& startPortId, int32& endPortId) final
 	{
 		startPortId = -1;
 		endPortId = -1;

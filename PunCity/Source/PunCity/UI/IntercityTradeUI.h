@@ -50,7 +50,7 @@ public:
 			return;
 		}
 
-		ResourceSystem& resourceSystem = dataSource()->simulation().resourceSystem(playerId());
+		ResourceSystem& resourceSystem = dataSource()->simulation().resourceSystem(townId());
 
 		FString searchString = SearchBox->GetText().ToString();
 
@@ -109,13 +109,12 @@ public:
 		SellDisplayBox->AfterAdd();
 	}
 
-	void OpenUI(int32 objectId)
+	void OpenUI(int32 townhallId)
 	{
+		punId = townhallId;
 		TradeRowBox->ClearChildren();
 
-		ResourceSystem& resourceSystem = simulation().resourceSystem(playerId());
-
-		punId = objectId;
+		ResourceSystem& resourceSystem = simulation().resourceSystem(townId());
 
 		// First loop, only the resources we have for selling, sorted by amount...
 		std::vector<ResourcePair> availableForSellingPairs;

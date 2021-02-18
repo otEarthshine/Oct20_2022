@@ -300,7 +300,10 @@ int BuildingSystem::AddBuilding(FPlaceBuilding parameters)
 	Building* building = _buildings.back().get();
 	int32 buildingId = _buildings.size() - 1;
 	TileArea area = parameters.area;
-	int32 townId = _simulation->tileOwnerTown(center);
+	int32 townId = -1;
+	if (parameters.playerId != -1) {
+		townId = _simulation->tileOwnerTown(center);
+	}
 
 	_townIdPlus1ToEnumToBuildingIds[townId + 1][static_cast<int>(buildingEnum)].push_back(buildingId);
 	_isBuildingIdConnected.push_back(-1);

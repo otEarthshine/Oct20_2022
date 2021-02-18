@@ -572,13 +572,6 @@ void UnitSystem::SetNextTickState(int32 id, TransformState state, UnitUpdateCall
 #endif
 }
 
-void UnitSystem::KillAll()
-{
-	for (int32_t i = 0; i < _unitLeans.size(); i++) {
-		unitStateAI(i).Die();
-	}
-}
-
 void UnitSystem::Serialize(FArchive& Ar)
 {
 	_unitSubregionLists.Serialize(Ar);

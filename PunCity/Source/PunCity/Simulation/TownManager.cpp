@@ -765,7 +765,10 @@ void TownManager::CollectHouseIncome()
 
 void TownManager::SetHouseResourceAllow(ResourceEnum resourceEnum, bool resourceAllowed)
 {
-	_houseResourceAllowed[static_cast<int>(resourceEnum)] = resourceAllowed;
+	int32 resourceEnumInt = static_cast<int>(resourceEnum);
+	PUN_ENSURE(resourceEnumInt >= 0, return);
+	PUN_ENSURE(resourceEnumInt < _houseResourceAllowed.size(), return);
+	_houseResourceAllowed[resourceEnumInt] = resourceAllowed;
 
 	ResourceHolderType type = resourceAllowed ? ResourceHolderType::Manual : ResourceHolderType::Provider;
 	int32 target = resourceAllowed ? 10 : 0;
@@ -1321,7 +1324,7 @@ void TownManager::RecalculateTax(bool showFloatup)
 	int32 tradeClusterTotalPopulation = 0;
 	if (tradePartners.size() > 0) { // 1 trade parter means self only, no trade route income
 		for (int32 playerId : tradePartners) {
-			tradeClusterTotalPopulation += _simulation->populationTown(playerId);
+			tradeClusterTotalPopulation += _simulation->populationPlayer(playerId);
 		}
 	}
 	incomes100[static_cast<int>(IncomeEnum::TradeRoute)] += 100 * tradeClusterTotalPopulation / 2;

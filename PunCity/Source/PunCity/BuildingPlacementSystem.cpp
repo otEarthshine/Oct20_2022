@@ -275,9 +275,12 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 			for (int32 tileId : _roadPathTileIds) {
 				WorldTile2 tile(tileId);
 				CardEnum tileBldEnum = sim.buildingEnumAtTile(tile);
-				if (tileBldEnum == CardEnum::None) 
+				if (tileBldEnum == CardEnum::None ||
+					IsRoad(tileBldEnum))
 				{
-					bool isStoneRoad = sim.IsRoadTile(tile) && !sim.overlaySystem().GetRoad(tile).isDirt;
+					RoadTile roadTile = sim.overlaySystem().GetRoad(tile);
+					bool isStoneRoad = roadTile.isValid() && !roadTile.isDirt;
+					
 					if (!isStoneRoad) {
 						stoneNeeded += 2;
 					}

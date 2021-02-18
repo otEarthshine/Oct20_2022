@@ -230,6 +230,31 @@ void ResourceTypeHolders::RemoveResourceGlobal(int32 amount, ResourceSystem& res
 	UE_DEBUG_BREAK();
 }
 
+void ResourceTypeHolders::RemoveResourceGlobal_Unreserved(int32 amount, ResourceSystem& resourceSys)
+{
+	PUN_LOG("RemoveResourceGlobal_Unreserved: %d", amount);
+
+	for (int i = 0; i < _holders.size(); i++)
+	{
+		// Remove from storage/provider only
+		ResourceHolder& holder = _holders[i];
+		if (holder.type == ResourceHolderType::Storage ||
+			holder.type == ResourceHolderType::Provider)
+		{
+			resourceSys.UpdateResourceDisplay(_holders[i]);
+			
+			int32 removableCount = holder.current() - holder.reservedPop();
+			if (removableCount >= amount) {
+				RemoveResource(i, amount, resourceSys);
+				return;
+			}
+			amount -= removableCount;
+			RemoveResource(i, removableCount, resourceSys);
+		}
+	}
+	UE_DEBUG_BREAK();
+}
+
 void ResourceTypeHolders::CheckIntegrity_ResourceTypeHolder() {
 	PUN_CHECK(_simulation);
 }

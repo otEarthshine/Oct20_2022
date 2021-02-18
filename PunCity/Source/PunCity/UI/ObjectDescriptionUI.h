@@ -41,9 +41,6 @@ public:
 	UPROPERTY(meta = (BindWidget)) UCheckBox* ToolCheckBox;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* ToolCheckBoxText;
 
-	UPROPERTY(meta = (BindWidget)) UButton* TradeButton;
-	UPROPERTY(meta = (BindWidget)) UTextBlock* TradeButtonText;
-
 	UPROPERTY(meta = (BindWidget)) UComboBoxString* ObjectDropDownBox;
 	UPROPERTY(meta = (BindWidget)) UPunEditableNumberBox* EditableNumberBox;
 	
@@ -81,11 +78,6 @@ public:
 
 		ObjectDropDownBox->SetVisibility(ESlateVisibility::Collapsed);
 		EditableNumberBox->SetVisibility(ESlateVisibility::Collapsed);
-		
-		TradeButton->SetVisibility(ESlateVisibility::Collapsed);
-
-
-		TradeButton->SetBackgroundColor(PunUIGreen2);
 
 		ChooseResourceOverlay->SetVisibility(ESlateVisibility::Collapsed);
 		ManageStorageOverlay->SetVisibility(ESlateVisibility::Collapsed);
@@ -105,7 +97,6 @@ private:
 
 	UFUNCTION() void ToolCheckBoxChanged(bool active);
 
-	UFUNCTION() void ClickedTradeButton();
 	UFUNCTION() void ClickedChooseResource() {
 		ChooseResourceOverlay->SetVisibility(ESlateVisibility::Collapsed);
 	}

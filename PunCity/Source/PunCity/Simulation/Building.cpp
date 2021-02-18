@@ -17,7 +17,7 @@ using namespace std;
 
 Building::~Building() {}
 
-void Building::Init(IGameSimulationCore& simulation, int objectId, int32 townId, uint8_t buildingEnum,
+void Building::Init(IGameSimulationCore& simulation, int32 objectId, int32 townId, uint8_t buildingEnum,
 					TileArea area, WorldTile2 centerTile, Direction faceDirection)
 {
 	_simulation = &simulation;

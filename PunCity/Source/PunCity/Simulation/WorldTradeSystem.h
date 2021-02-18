@@ -186,7 +186,6 @@ public:
 
 		SerializeVecVecObj(Ar, _resourceEnumToPlayerSupplyChanges);
 		
-		//SerializeVecVecValue(Ar, _tradeClusterToPlayerIds);
 		SerializeVecVecValue(Ar, _playerIdToTradePartners);
 
 		SerializeVecVecObj(Ar, _intercityTradeOffers);
@@ -262,7 +261,6 @@ private:
 
 
 	// TradeRoute Clusters
-	//std::vector<std::vector<int32>> _tradeClusterToPlayerIds;
 	std::vector<std::vector<int32>> _playerIdToTradePartners;
 
 	// Intercity Trade Offer

@@ -332,6 +332,8 @@ public:
 	int32 AddResourceGlobal(int32 amount, ResourceSystem& resourceSys);
 	void RemoveResourceGlobal(int32 amount, ResourceSystem& resourceSys);
 
+	void RemoveResourceGlobal_Unreserved(int32 amount, ResourceSystem& resourceSys);
+
 	void ResetHolderReservers(int32 holderId, ResourceSystem& resourceSys) {
 		ResourceHolder& holder = _holders[holderId]; // _enumToHolders[(int)info.resourceEnum].holderMutable(info.holderId);
 		holder.ResetPopReservers(*_simulation);
@@ -929,6 +931,21 @@ public:
 		}
 		
 		holderGroup(resourceEnum).RemoveResourceGlobal(amount, *this);
+	}
+	void RemoveResourceGlobal_Unreserved(ResourceEnum resourceEnum, int32 amount)
+	{
+		//if (resourceEnum == ResourceEnum::Food) {
+		//	int32 amountLeftToRemove = amount;
+		//	for (ResourceEnum foodEnum : StaticData::FoodEnums) {
+		//		int32 amountToRemove = std::min(amountLeftToRemove, resourceCountWithPop(foodEnum));
+		//		RemoveResourceGlobal_Unreserved(foodEnum, amountToRemove);
+		//		amountLeftToRemove -= amountToRemove;
+		//	}
+		//	PUN_CHECK(amountLeftToRemove == 0);
+		//	return;
+		//}
+
+		holderGroup(resourceEnum).RemoveResourceGlobal_Unreserved(amount, *this);
 	}
 
 	void SetResourceTarget(ResourceHolderInfo info, int32 target) {

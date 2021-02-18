@@ -58,7 +58,7 @@ void HumanStateAI::CalculateActions()
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_PreWorkPlc);
 		
-		if (TryCheckBadTile() || justReset()) {
+		if (TryCheckBadTile_Human() || justReset()) {
 			DEBUG_AI_VAR(TryCheckBadTile);
 			return;
 		}
@@ -2856,6 +2856,74 @@ bool HumanStateAI::TryGoNearWorkplace(int32 distanceThreshold)
 		_unitState = UnitState::GoToWorkplace;
 		return true;
 	}
+	return false;
+}
+
+bool HumanStateAI::TryCheckBadTile_Human()
+{
+	WorldTile2 tile = unitTile();
+
+	PunAStar128x256* pathAI = _simulation->pathAI();
+	if (!pathAI->isWalkable(tile.x, tile.y))
+	{
+		// Not on tile owned by player
+		// Just warp to the townhall
+		_simulation->ResetUnitActions(_id);
+
+		WorldTile2 endTownGate = _simulation->GetTownhallGate(_townId);
+		_simulation->MoveUnitInstantly(_id, endTownGate.worldAtom2());
+
+		AddDebugSpeech("(Succeed)TryCheckBadTile_Human: !isWalkable Warp");
+		return true;
+	}
+
+	// Is not in town?
+	int32 tileTownId = _simulation->tileOwnerTown(tile);
+	if (tileTownId != _townId)
+	{
+		if (_simulation->tileOwnerPlayer(tile) == _playerId)
+		{
+			// In another town try to get to correct town
+			int32 startTownId = tileTownId;
+			int32 endTownId = _townId;
+			
+			WorldTile2 startTownGate = _simulation->GetTownhallGate(startTownId);
+			WorldTile2 endTownGate = _simulation->GetTownhallGate(endTownId);
+
+			std::vector<uint32_t> path;
+			bool succeed = _simulation->pathAI()->FindPathRoadOnly(startTownGate.x, startTownGate.y, endTownGate.x, endTownGate.y, path);
+			if (succeed) {
+				SendToTownLand(startTownId, endTownId);
+				
+				AddDebugSpeech("(Succeed)TryCheckBadTile_Human: SendToTownLand");
+				return true;
+			}
+
+			int32 startPortId = -1;
+			int32 endPortId = -1;
+
+			_simulation->FindBestPathWater(startTownId, endTownId, startTownGate, startPortId, endPortId);
+
+			if (startPortId != -1) {
+				SendToTownWater(startTownId, endTownId, startPortId, endPortId);
+
+				AddDebugSpeech("(Succeed)TryCheckBadTile_Human: SendToTownWater");
+				return true;
+			}
+		}
+
+		// Not on tile owned by player
+		// Just warp to the townhall
+		_simulation->ResetUnitActions(_id);
+
+		WorldTile2 endTownGate = _simulation->GetTownhallGate(_townId);
+		_simulation->MoveUnitInstantly(_id, endTownGate.worldAtom2());
+
+		AddDebugSpeech("(Succeed)TryCheckBadTile_Human:");
+		return true;
+	}
+
+	AddDebugSpeech("(Failed)TryCheckBadTile_Human:");
 	return false;
 }
 

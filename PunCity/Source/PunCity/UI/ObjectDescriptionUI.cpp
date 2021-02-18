@@ -14,7 +14,6 @@ using namespace std;
 void UObjectDescriptionUI::Setup() 
 {
 	ToolCheckBox->OnCheckStateChanged.AddDynamic(this, &UObjectDescriptionUI::ToolCheckBoxChanged);
-	TradeButton->OnClicked.AddDynamic(this, &UObjectDescriptionUI::ClickedTradeButton);
 
 	ObjectDropDownBox->OnSelectionChanged.AddDynamic(this, &UObjectDescriptionUI::OnDropDownChanged);
 
@@ -227,16 +226,4 @@ void UObjectDescriptionUI::ToolCheckBoxChanged(bool active)
 
 	//PUN_DEBUG(FString(("ToolCheckBoxChanged: " + to_string(active)).c_str()));
 	//UE_LOG(LogTemp, Error, TEXT("ToolCheckBoxChanged: "));
-}
-
-void UObjectDescriptionUI::ClickedTradeButton()
-{
-	if (InterfacesInvalid()) return;
-
-	Building& building = dataSource()->simulation().building(state.objectId);
-	PUN_CHECK(IsTradingPostLike(building.buildingEnum()));
-	
-	if (static_cast<TradingPost*>(&building)->CanTrade()) {
-		GetPunHUD()->OpenTradeUI(state.objectId);
-	}
 }

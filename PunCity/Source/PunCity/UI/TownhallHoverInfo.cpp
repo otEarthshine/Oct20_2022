@@ -133,7 +133,8 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 		else
 		{
 			// Intercity Trade / Trade Route
-			if (sim.IsResearched(playerId(), TechEnum::IntercityRoad))
+			if (sim.IsResearched(playerId(), TechEnum::IntercityRoad) &&
+				townhall.isCapital())
 			{
 				// Other ppl's town, show trade route button instead
 				std::vector<int32> tradePartners = simulation().worldTradeSystem().GetTradePartners(playerId());
@@ -299,7 +300,7 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 	 * Update TradeInfoOverlay
 	 */
 	{
-		const std::vector<IntercityTradeOffer>& offers = simulation().worldTradeSystem().GetIntercityTradeOffers(townhall.playerId());
+		const std::vector<IntercityTradeOffer>& offers = simulation().worldTradeSystem().GetIntercityTradeOffers(townId());
 		TradeInfoOverlay->SetVisibility(offers.size() > 0 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 		CallbackEnum callbackEnum = (townhall.playerId() == playerId()) ? CallbackEnum::None : CallbackEnum::IntercityTrade;
 

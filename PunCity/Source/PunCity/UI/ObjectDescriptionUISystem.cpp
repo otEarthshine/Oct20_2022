@@ -1187,28 +1187,21 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							auto tradingPost = static_cast<TradingPost*>(&building);
 							int32 countdown = tradingPost->CountdownSecondsDisplay();
 
-							//descriptionBox->AddRichText("Trade fee:", to_string(tradingPost->tradingFeePercent()) + "%");
-
 							AddTradeFeeText(building.subclass<TradeBuilding>(), descriptionBox);
 							AddEfficiencyText(building, descriptionBox);
 
-#if WITH_EDITOR 
-							ADDTEXT_(INVTEXT("-- Ticks from last check: {0} ticks"), TEXT_NUM(tradingPost->ticksFromLastCheck()));
-							descriptionBox->AddRichText(args);
-							ADDTEXT_(INVTEXT("-- lastCheckTick: {0} secs"), TEXT_NUM(tradingPost->lastCheckTick()));
-							descriptionBox->AddRichText(args);
-#endif
+//#if WITH_EDITOR 
+//							ADDTEXT_(INVTEXT("-- Ticks from last check: {0} ticks"), TEXT_NUM(tradingPost->ticksFromLastCheck()));
+//							descriptionBox->AddRichText(args);
+//							ADDTEXT_(INVTEXT("-- lastCheckTick: {0} secs"), TEXT_NUM(tradingPost->lastCheckTick()));
+//							descriptionBox->AddRichText(args);
+//#endif
 							ADDTEXT_(LOCTEXT("{0} secs", "{0} secs"), TEXT_NUM(countdown));
 							descriptionBox->AddRichText(LOCTEXT("Trade complete in", "Trade complete in"), args);
 
-							ButtonStateEnum buttonState = ButtonStateEnum::Enabled;
-							if (building.playerId() != playerId()) {
-								buttonState = ButtonStateEnum::Hidden;
-							}
-							else if (!tradingPost->CanTrade()) {
-								buttonState = ButtonStateEnum::Disabled;
-							}
-							SetButtonEnabled(_objectDescriptionUI->TradeButton, buttonState);
+							bool showEnabled = (tradingPost->playerId() == playerId()) && tradingPost->CanTrade();
+							descriptionBox->AddButton(LOCTEXT("Trade", "Trade"), nullptr, FText(), this, CallbackEnum::TradingPostTrade, showEnabled, false, objectId);
+							
 						}
 					}
 					else if (building.isEnum(CardEnum::TradingCompany))
@@ -2344,7 +2337,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								FText::AsNumber(townhall.townhallLvl + 1),
 								moneyText
 							);
-							
+
+							descriptionBox->AddLineSpacer(8);
 							UPunButton* button = descriptionBox->AddButton2Lines(FText::Join(FText(), args), this, CallbackEnum::UpgradeBuilding, true, showExclamation, objectId, 0);
 							args.Empty();
 
@@ -2432,6 +2426,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							AddToolTip(button, args);
 						};
 
+
+						descriptionBox->AddLineSpacer(8);
+						
 						const std::vector<BuildingUpgrade>& upgrades = building.upgrades();
 						for (size_t i = 0; i < upgrades.size(); i++) {
 							setUpgradeButton(upgrades[i], i);
@@ -3671,6 +3668,17 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 		command->center = WorldTile2::Invalid;
 
 		networkInterface()->SendNetworkCommand(command);
+	}
+
+	else if (callbackEnum == CallbackEnum::TradingPostTrade)
+	{
+		int32 buildingId = punWidgetCaller->callbackVar1;
+		Building& building = dataSource()->simulation().building(buildingId);
+		PUN_CHECK(IsTradingPostLike(building.buildingEnum()));
+
+		if (static_cast<TradingPost*>(&building)->CanTrade()) {
+			GetPunHUD()->OpenTradeUI(buildingId);
+		}
 	}
 	
 	else if (callbackEnum == CallbackEnum::OpenStatistics)

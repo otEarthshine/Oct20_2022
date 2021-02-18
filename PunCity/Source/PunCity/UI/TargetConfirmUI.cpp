@@ -12,8 +12,9 @@ void UTargetConfirmUI::OnClickConfirmButton()
 	int32 townPlayerId = townhall.playerId();
 	
 	IntercityTradeOffer offer = simulation().worldTradeSystem().GetIntercityTradeOffer(townId, resourceEnum);
-	if (offer.offerEnum == IntercityTradeOfferEnum::None) {
-		simulation().AddPopupToFront(townPlayerId,
+	if (offer.offerEnum == IntercityTradeOfferEnum::None) 
+	{
+		simulation().AddPopupToFront(playerId(),
 			LOCTEXT("Offer no longer valid.", "Offer no longer valid."),
 			ExclusiveUIEnum::TargetConfirm, "PopupCannot"
 		);
@@ -23,7 +24,7 @@ void UTargetConfirmUI::OnClickConfirmButton()
 	int32 amount = TargetAmount->amount;
 
 	if (amount <= 0) {
-		simulation().AddPopupToFront(townPlayerId,
+		simulation().AddPopupToFront(playerId(),
 			LOCTEXT("Invalid amount.", "Invalid amount."),
 			ExclusiveUIEnum::TargetConfirm, "PopupCannot"
 		);
@@ -32,8 +33,9 @@ void UTargetConfirmUI::OnClickConfirmButton()
 
 	if (offer.offerEnum == IntercityTradeOfferEnum::SellWhenAbove) {
 		// This town is selling to you, ensure you have enough money to buy
-		if (amount * simulation().price(resourceEnum) > simulation().money(townPlayerId)) {
-			simulation().AddPopupToFront(townPlayerId,
+		if (amount * simulation().price(resourceEnum) > simulation().money(playerId()))
+		{
+			simulation().AddPopupToFront(playerId(),
 				LOCTEXT("Not enough money for trade.", "Not enough money for trade."),
 				ExclusiveUIEnum::TargetConfirm, "PopupCannot"
 			);
@@ -43,8 +45,9 @@ void UTargetConfirmUI::OnClickConfirmButton()
 	if (offer.offerEnum == IntercityTradeOfferEnum::BuyWhenBelow) {
 		// This town is buying from you, ensure you have enough resource
 		// TODO: Trade resource only with the capital for now
-		if (amount > simulation().resourceCountTown(townId, resourceEnum)) {
-			simulation().AddPopupToFront(townPlayerId,
+		if (amount > simulation().resourceCountPlayer(playerId(), resourceEnum)) 
+		{
+			simulation().AddPopupToFront(playerId(),
 				LOCTEXT("Not enough resource for trade.", "Not enough resource for trade."),
 				ExclusiveUIEnum::TargetConfirm, "PopupCannot"
 			);

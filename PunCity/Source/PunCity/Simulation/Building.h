@@ -18,7 +18,7 @@ class Building
 public:
 	virtual ~Building();
 
-	void Init(IGameSimulationCore& simulation, int objectId, int32 townId, uint8_t buildingEnum, 
+	void Init(IGameSimulationCore& simulation, int32 objectId, int32 townId, uint8_t buildingEnum, 
 						TileArea area, WorldTile2 centerTile, Direction faceDirection);
 	
 	void LoadInit(IGameSimulationCore* simulation) {

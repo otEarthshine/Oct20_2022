@@ -846,6 +846,33 @@ public:
 		}
 	}
 
+	UFUNCTION(Exec) void SetTradeOffer(int32 townX, int32 townY, const FString& resourceName, int32 offerEnumInt, int32 targetInventory)
+	{
+		ResourceEnum resourceEnum = FindResourceEnumByName(ToWString(resourceName));
+		if (resourceEnum == ResourceEnum::None) {
+			return;
+		}
+		int32 townId = simulation().tileOwnerTown(WorldTile2(townX, townY));
+		if (townId == -1) {
+			return;
+		}
+		
+		IntercityTradeOfferEnum offerEnum = static_cast<IntercityTradeOfferEnum>(offerEnumInt);
+
+		if ((offerEnum == IntercityTradeOfferEnum::BuyWhenBelow && targetInventory > 0) ||
+			(offerEnum == IntercityTradeOfferEnum::SellWhenAbove && targetInventory >= 0))
+		{
+			auto command = make_shared<FSetIntercityTrade>();
+			command->townId = townId;
+			command->resourceEnums.Add(static_cast<uint8>(resourceEnum));
+			command->intercityTradeOfferEnum.Add(static_cast<uint8>(offerEnum));
+			command->targetInventories.Add(targetInventory);
+
+			networkInterface()->SendNetworkCommand(command);
+		}
+	}
+
+	
 	UFUNCTION(Exec) void WarpUnit(int32 unitId, int32 tileX, int32 tileY)
 	{
 		auto& sim = gameManager->simulation();

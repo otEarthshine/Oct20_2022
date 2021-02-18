@@ -82,6 +82,8 @@ public:
 	bool TryConstructHelper(int32 workplaceId);
 
 	bool TryGoNearWorkplace(int32 distanceThreshold);
+
+	bool TryCheckBadTile_Human();
 	
 	/*
 	 * Actions

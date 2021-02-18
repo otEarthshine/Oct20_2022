@@ -7448,6 +7448,8 @@ enum class CallbackEnum : uint8
 
 	SetMarketTarget,
 
+	TradingPostTrade,
+
 	// Military
 	ArmyConquer,
 	ArmyLiberate,

@@ -2068,6 +2068,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 						int32 townId = _resourceSystems.size();
 						_resourceSystems.push_back(ResourceSystem(townId, this));
 						_statSystem.AddTown(townId);
+						_worldTradeSystem.AddTown(townId);
 						_buildingSystem->AddTown(townId);
 						_townManagers.push_back(make_unique<TownManager>(playerId, townId, this));
 						_playerOwnedManagers[playerId].AddTownId(townId);
@@ -2589,9 +2590,12 @@ void GameSimulationCore::SetAllowResource(FSetAllowResource command)
 	
 	Building& bld = building(command.buildingId);
 	if (IsHouse(bld.buildingEnum())) {
-		townManager(bld.townId()).SetHouseResourceAllow(command.resourceEnum, command.allowed);
+		int32 townId = bld.townId();
+		if (IsValidTown(townId)) {
+			townManager(bld.townId()).SetHouseResourceAllow(command.resourceEnum, command.allowed);
+		}
 	}
-	else if (IsStorage(bld.buildingEnum()) || bld.isEnum(CardEnum::Market)) 
+	else if (IsStorage(bld.buildingEnum()) || bld.isEnum(CardEnum::Market))
 	{
 		StorageBase& storage = bld.subclass<StorageBase>();
 		if (command.isExpansionCommand) 
@@ -4577,7 +4581,22 @@ void GameSimulationCore::Cheat(FCheat command)
 			break;
 		}
 
-		case CheatEnum::Kill: _unitSystem->KillAll(); break;
+		case CheatEnum::Kill: {
+			const std::vector<int32>& humanIds = townManager(playerId()).humanIds();
+			for (int32 i = humanIds.size(); i-- > 0;) {
+				UnitStateAI& unit = unitAI(humanIds[i]);
+				PUN_LOG("Kill %d %d", humanIds[i], unit.id());
+				check(humanIds[i] == unit.id());
+				unit.Die();
+			}
+			//townManager(playerId()).ExecuteOnPopulation([&](int32 humanId) {
+			//	UnitStateAI& unit = unitAI(humanId);
+			//	PUN_LOG("Kill %d %d", humanId, unit.id());
+			//	unit.Die();
+			//	
+			//});
+			break;
+		}
 
 		case CheatEnum::ClearLand: {
 			// Clear trees/deposits from regions owned

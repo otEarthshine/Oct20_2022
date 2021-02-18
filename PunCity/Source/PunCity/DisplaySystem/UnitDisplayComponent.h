@@ -303,8 +303,14 @@ private:
 			
 			FUnitAsset skelAsset = _assetLoader->unitAsset(unitEnum, variationIndex);
 
-			skelMesh->PlayAnimation(skelAsset.animationEnumToSequence[animationEnum], true);
-			skelMesh->SetPlayRate(playRate);
+			if (skelAsset.animationEnumToSequence.Contains(animationEnum)) {
+				skelMesh->PlayAnimation(skelAsset.animationEnumToSequence[animationEnum], true);
+				skelMesh->SetPlayRate(playRate);
+			}
+			else {
+				UE_DEBUG_BREAK();
+			}
+
 			_unitSkelState[index].animationEnum = animationEnum;
 			_unitSkelState[index].animationPlayRate = playRate;
 

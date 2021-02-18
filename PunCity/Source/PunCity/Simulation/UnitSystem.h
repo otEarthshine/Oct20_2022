@@ -91,8 +91,6 @@ public:
 
 	std::string debugStr(int id);
 
-	void KillAll();
-
 public:
 	//! Unit Data Setters
 

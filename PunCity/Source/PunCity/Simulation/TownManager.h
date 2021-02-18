@@ -230,6 +230,14 @@ public:
 	const std::vector<int32>& adultIds() { return _adultIds; }
 	const std::vector<int32>& childIds() { return _childIds; }
 
+	std::vector<int32> humanIds()
+	{
+		std::vector<int32> humanIds = _adultIds;
+		humanIds.insert(humanIds.end(), _childIds.begin(), _childIds.end());
+		return humanIds;
+	}
+	
+
 	int32 totalRevenue100() {
 		int32 revenue100 = 0;
 		for (size_t i = 0; i < incomes100.size(); i++) {

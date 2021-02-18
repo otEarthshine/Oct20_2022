@@ -761,6 +761,8 @@ void UnitStateAI::CalculateActions()
 		if (TryFindWildFood()) {
 			return;
 		}
+
+		PUN_CHECK(_playerId == -1);
 		
 		// Has burrow already:
 		//  Try Get or Stock Food
@@ -808,7 +810,8 @@ void UnitStateAI::CalculateActions()
 					}
 				}
 			}
-			else
+			// Only 1/10 chance to make burrow
+			else if (GameRand::Rand() % 10 == 0)
 			{
 				// Try to build a burrow on homeProvince
 				const int tries = 10;
@@ -838,7 +841,6 @@ void UnitStateAI::CalculateActions()
 				}
 			}
 
-		
 		}
 
 		if (TryGoNearbyHome()) {
@@ -847,7 +849,7 @@ void UnitStateAI::CalculateActions()
 
 		// Idle, nothing else to do
 		_unitState = UnitState::Idle;
-		int32 waitTicks = 60 * (GameRand::Rand() % 3 + 4);
+		int32 waitTicks = Time::TicksPerSecond * (GameRand::Rand() % 5 + 4);
 		Add_Wait(waitTicks);
 		Add_MoveRandomly();
 		AddDebugSpeech("(Success)Idle MoveRandomly");
@@ -882,9 +884,9 @@ bool UnitStateAI::IsBurrowBuildable(TileArea area, Direction faceDirection)
 bool UnitStateAI::TryCheckBadTile()
 {
 	WorldTile2 tile = unitTile();
-	PunAStar128x256* pathAI = _simulation->pathAI();
 
 	// Force move in case the unit is on bad tile
+	PunAStar128x256* pathAI = _simulation->pathAI();
 	if (!pathAI->isWalkable(tile.x, tile.y))
 	{
 		// Just spiral out trying to find isWalkable tile...
@@ -2614,12 +2616,17 @@ void UnitStateAI::IntercityHaulPickup()
 
 	AddDebugSpeech("IntercityHaulPickup");
 
-	check(_simulation->buildingIsAlive(workplaceId));
+	if (!_simulation->buildingIsAlive(workplaceId)) {
+		_simulation->ResetUnitActions(_id);
+		AddDebugSpeech("(Quitted)IntercityHaulPickup: 1");
+		return;
+	}
 
 	Building& workplace = _simulation->building(workplaceId);
 	if (!workplace.isEnum(CardEnum::IntercityLogisticsHub) &&
 		!workplace.isEnum(CardEnum::IntercityLogisticsPort)) {
 		_simulation->ResetUnitActions(_id);
+		AddDebugSpeech("(Quitted)IntercityHaulPickup: 2");
 		return;
 	}
 
@@ -2637,36 +2644,35 @@ void UnitStateAI::IntercityHaulPickup()
 			continue;
 		}
 		
-		int32 hubResourceCount;
-		int32 targetTownResourceCount;
-		if (resourceEnum == ResourceEnum::Food) {
-			hubResourceCount = hubResourceSys.foodCount();
-			targetTownResourceCount = resourceSys.foodCount();
-
-			int32 targetPickup = hub.resourceCounts[i] - hubResourceCount;
-			if (targetPickup > 0) {
-				int32 actualPickup = std::min(targetPickup, targetTownResourceCount);
-
-				int32 amountLeftToRemove = actualPickup;
-				for (ResourceEnum foodEnum : StaticData::FoodEnums) {
-					int32 amountToRemove = std::min(amountLeftToRemove, resourceSys.resourceCount(foodEnum));
-					resourceSys.RemoveResourceGlobal(foodEnum, amountToRemove);
-					if (amountToRemove > 0) {
-						_inventory.Add({ foodEnum, amountToRemove });
-						amountLeftToRemove -= amountToRemove;
+		if (resourceEnum == ResourceEnum::Food) 
+		{
+			int32 amountToPickupAll = hub.resourceCounts[i] - hubResourceSys.foodCount();
+			if (amountToPickupAll > 0) {
+				for (ResourceEnum foodEnum : StaticData::FoodEnums) 
+				{
+					int32 amountToPickup = min(amountToPickupAll, resourceSys.resourceCountWithPop(foodEnum));
+					if (amountToPickup > 0) 
+					{
+						resourceSys.RemoveResourceGlobal_Unreserved(foodEnum, amountToPickup);
+						_inventory.Add({ foodEnum, amountToPickup });
+						amountToPickupAll -= amountToPickup;
+						
+						check(amountToPickupAll >= 0);
+						if (amountToPickupAll == 0) {
+							break;
+						}
 					}
 				}
 			}
 		}
-		else {
-			hubResourceCount = hubResourceSys.resourceCount(resourceEnum);
-			targetTownResourceCount = resourceSys.resourceCount(resourceEnum);
-
-			int32 targetPickup = hub.resourceCounts[i] - hubResourceCount;
-			if (targetPickup > 0) {
-				int32 actualPickup = std::min(targetPickup, targetTownResourceCount);
-				resourceSys.RemoveResourceGlobal(resourceEnum, actualPickup);
-				if (actualPickup > 0) {
+		else 
+		{
+			int32 amountToPickup = hub.resourceCounts[i] - hubResourceSys.resourceCount(resourceEnum);
+			if (amountToPickup > 0) {
+				int32 actualPickup = min(amountToPickup, resourceSys.resourceCountWithPop(resourceEnum));
+				if (actualPickup > 0) 
+				{
+					resourceSys.RemoveResourceGlobal_Unreserved(resourceEnum, actualPickup);
 					_inventory.Add({ resourceEnum, actualPickup });
 				}
 			}

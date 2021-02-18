@@ -264,6 +264,9 @@ public:
 	virtual int32 animalInitialCount(UnitEnum unitEnum) = 0;
 	virtual int32 unitEnumCount(UnitEnum unitEnum) = 0;
 
+	virtual void MoveUnitInstantly(int32 unitId, WorldAtom2 atom) = 0;
+	
+
 	virtual int16_t GetFloodId(WorldTile2 tile) = 0;
 	virtual void SetWalkable(WorldTile2 tile, bool isWalkable) = 0;
 	virtual void SetWalkableSkipFlood(WorldTile2 tile, bool isWalkable) = 0;
@@ -275,6 +278,7 @@ public:
 	virtual int32 FindNearestBuildingId(WorldTile2 tile, CardEnum buildingEnum, int32 townId, int32& minBuildingDist) = 0;
 	virtual bool FindPathWater(int32 startPortId, int32 endPortId, std::vector<WorldTile2>& resultPath) = 0;
 	virtual std::vector<int32> GetPortIds(int32 townId) = 0;
+	virtual bool FindBestPathWater(int32 startTownId, int32 endTownId, WorldTile2 startLand, int32& startPortId, int32& endPortId) = 0;
 	virtual bool FindBestPathWater(int32 startPortId, int32 endTownId, int32& endPortId) = 0;
 	
 	virtual TerrainTileType terraintileType(int32 tileId) = 0;

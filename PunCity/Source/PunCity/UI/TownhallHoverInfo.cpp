@@ -254,12 +254,7 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 	}
 	else
 	{
-		//// Sync to simulation only 3 sec after input (prevent fight)
-		//if (UGameplayStatics::GetTimeSeconds(this) > _lastPriorityInputTime + 3.0f) {
-		//	SyncState();
-		//}
-		int32 playerId = simulation().building(_buildingId).playerId();
-		_laborerPriorityState.TrySyncToSimulation(&simulation(), playerId, this);
+		_laborerPriorityState.TrySyncToSimulation(&simulation(), townId(), this);
 		RefreshUI();
 		LaborerBuilderBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	}

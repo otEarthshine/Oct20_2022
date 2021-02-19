@@ -4629,8 +4629,8 @@ void GameSimulationCore::Cheat(FCheat command)
 			if (amount > 0) {
 				resourceSystem(command.playerId).AddResourceGlobal(resourceEnum, amount, *this);
 			} else if (amount < 0) {
-				amount = std::min(amount, resourceCountTown(command.playerId, resourceEnum));
-				resourceSystem(command.playerId).RemoveResourceGlobal(resourceEnum, amount);
+				int32 amountToRemove = std::min(abs(amount), resourceCountTown(command.playerId, resourceEnum));
+				resourceSystem(command.playerId).RemoveResourceGlobal(resourceEnum, amountToRemove);
 			}
 			break;
 		}
@@ -4770,6 +4770,13 @@ void GameSimulationCore::Cheat(FCheat command)
 			PunSettings::Toggle("DebugUI");
 			break;
 		}
+
+		// TODO: requires save break !!!
+		//case CheatEnum::Tog:
+		//{
+		//	PunSettings::Toggle("DebugUI");
+		//	break;
+		//}
 
 		case CheatEnum::YearlyTrade:
 		{

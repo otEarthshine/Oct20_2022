@@ -44,7 +44,7 @@ public:
 		}
 
 		Building& townhall = simulation().building(townhallId);
-		int32 townId = townhall.playerId();
+		int32 townId = townhall.townId();
 		IntercityTradeOffer offer = simulation().worldTradeSystem().GetIntercityTradeOffer(townId, resourceEnum);
 
 #define LOCTEXT_NAMESPACE "TargetConfirmUI"

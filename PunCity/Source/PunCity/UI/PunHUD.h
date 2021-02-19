@@ -79,6 +79,17 @@ public:
 	void LeftMouseDown() {
 #if UI_ALL
 		_descriptionUISystem->LeftMouseDown();
+		_techUI->LeftMouseDown();
+#endif
+	}
+	void LeftMouseUp() {
+#if UI_ALL
+		_techUI->LeftMouseUp();
+#endif
+	}
+	void RightMouseDown() {
+#if UI_ALL
+		_techUI->RightMouseDown();
 #endif
 	}
 	void RightMouseUp() {
@@ -86,6 +97,7 @@ public:
 		_descriptionUISystem->CloseDescriptionUI();
 		_mainGameUI->RightMouseUp();
 		_escMenuUI->RightMouseUp();
+		_techUI->RightMouseUp();
 #endif
 	}
 	virtual void KeyPressed_Escape();

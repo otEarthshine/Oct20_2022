@@ -5741,6 +5741,7 @@ enum class CheatEnum : int32
 
 	TestCity,
 	DebugUI,
+	Tog,
 };
 
 static const std::string CheatName[]
@@ -5804,6 +5805,7 @@ static const std::string CheatName[]
 
 	"TestCity",
 	"DebugUI",
+	"Tog",
 };
 static std::string GetCheatName(CheatEnum cheatEnum) {
 	return CheatName[static_cast<int>(cheatEnum)];

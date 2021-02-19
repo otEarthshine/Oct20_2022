@@ -60,14 +60,16 @@ void UTargetConfirmUI::OnClickConfirmButton()
 
 	auto tradeCommand = make_shared<FTradeResource>();
 	tradeCommand->buyEnums.Add(static_cast<uint8>(resourceEnum));
-	tradeCommand->objectId = townhallId;
 	tradeCommand->isIntercityTrade = 1;
 
 	// Current Player Trade Command
+	tradeCommand->objectId = simulation().GetTownhallId(playerId());
+	tradeCommand->playerId = playerId();
 	tradeCommand->buyAmounts.Add(currentPlayerBuyAmount);
 	networkInterface()->SendNetworkCommand(tradeCommand);
 
 	// Townhall Player Trade Command
+	tradeCommand->objectId = townhallId;
 	tradeCommand->playerId = townPlayerId;
 	tradeCommand->buyAmounts.Empty();
 	tradeCommand->buyAmounts.Add(-currentPlayerBuyAmount);

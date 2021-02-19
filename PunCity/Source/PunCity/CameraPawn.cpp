@@ -183,6 +183,9 @@ void ACameraPawn::KeyPressed_M()
 void ACameraPawn::LeftMouseDown()
 {
 	PUN_LOG("LeftMouseDown");
+
+	_isLeftMouseDown = true;
+	
 	// Don't accept click before game actually start
 	if (Time::Ticks() < Time::TicksPerSecond) { // 1.5 sec is when HideLoadingScreen triggers
 		return;
@@ -206,18 +209,20 @@ void ACameraPawn::LeftMouseUp()
 {
 	PUN_LOG("LeftMouseUp");
 
+	_isLeftMouseDown = false;
+
 #if !UI_ALL
 	return;
 #endif
 
 	if (_networkInterface) 
 	{
-		//bool isNotPlacingBuilding = buildingPlacementSystem->placementState() == PlacementType::None;
+		bool isNotPlacingBuilding = buildingPlacementSystem->placementState() == PlacementType::None;
 		buildingPlacementSystem->LeftClickUp(_networkInterface);
 
-		//if (isNotPlacingBuilding) {
-		//	_networkInterface->GetPunHUD()->LeftMouseUp();
-		//}
+		if (isNotPlacingBuilding) {
+			_networkInterface->GetPunHUD()->LeftMouseUp();
+		}
 	}
 }
 
@@ -234,7 +239,7 @@ void ACameraPawn::RightMouseDown()
 	//	_networkInterface->GetPunHUD()->RightMouseUp();
 	//}
 
-	isRightMouseDown = true;
+	_isRightMouseDown = true;
 	rightMouseDragStartAtom = _networkInterface->GetMouseGroundAtom();
 	rightMouseDragCamStartAtom = cameraAtom();
 }
@@ -260,13 +265,13 @@ void ACameraPawn::RightMouseUp()
 	}
 
 	
-	isRightMouseDown = false;
+	_isRightMouseDown = false;
 }
 
 void ACameraPawn::MiddleMouseDown()
 {
 	// FrostPunk: if right mouse down, don't activate middle mouse when clicked
-	if (!isRightMouseDown)
+	if (!_isRightMouseDown)
 	{
 		isMiddleMouseDown = true;
 		middleDragStartMousePosition = _networkInterface->GetMousePositionPun();
@@ -826,7 +831,7 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 	 */
 	FVector2D currentMousePosition = _networkInterface->GetMousePositionPun();
 	
-	if (isRightMouseDown &&
+	if (_isRightMouseDown &&
 		!isKeyboardMoving && !isKeyboardRotating)
 	{
 		WorldAtom2 currentGroundAtom = _networkInterface->GetMouseGroundAtom();
@@ -876,7 +881,7 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 	/*
 	 * Input Mouse edge pan
 	 */
-	if (!isRightMouseDown && !isMiddleMouseDown && 
+	if (!_isRightMouseDown && !isMiddleMouseDown && 
 		!isKeyboardMoving && !isKeyboardRotating)
 	{
 		FVector2D mouseLocation = _networkInterface->GetMousePositionPun();

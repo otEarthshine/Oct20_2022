@@ -280,6 +280,9 @@ public:
 		return _isBounceZooming;
 	}
 
+	bool isLeftMouseDown() { return _isLeftMouseDown; }
+	bool isRightMouseDown() { return _isRightMouseDown; }
+
 	//FVector GetMapCameraLocation() {
 	//	// camera always remains at (0,0,0) spot
 	//	// Switching from world to map is actually changing the cameraShiftLocation.
@@ -372,9 +375,10 @@ private:
 	int32 _zoomSnapThresholdCount = 0;
 	int32 _lastTryZoomSnapTick = 0;
 
+	bool _isLeftMouseDown = false;
 
 	// Right mouse drag pan
-	bool isRightMouseDown = false;
+	bool _isRightMouseDown = false;
 	WorldAtom2 rightMouseDragStartAtom = WorldAtom2::Invalid;
 	WorldAtom2 rightMouseDragCamStartAtom = WorldAtom2::Invalid;
 	WorldAtom2 rightMouseDrag_LastWorkingAtom = WorldAtom2::Invalid;

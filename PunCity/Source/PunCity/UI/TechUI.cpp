@@ -94,6 +94,32 @@ void UTechUI::TickUI()
 		}
 	}
 
+	/*
+	 * 
+	 */
+	
+	if (_isMouseDownScrolling)
+	{
+		//PUN_LOG("||||||||");
+		FVector2D mouseOffset;
+		GetWorld()->GetGameViewport()->GetMousePosition(mouseOffset);
+		//PUN_LOG("GetMousePosition %f %f", mouseOffset.X, mouseOffset.Y);
+		mouseOffset -= _initialMousePosition;
+		//PUN_LOG("NativeOnMouseMove1 _initialMousePosition:%f mouseOffset:%f", _initialMousePosition.X, mouseOffset.X);
+
+		float scrollOffset = _initialScrollOffset - mouseOffset.X;
+		//PUN_LOG("NativeOnMouseMove2 _initialScrollOffset:%f -> scrollOffset:%f", _initialScrollOffset, scrollOffset);
+		scrollOffset = FMath::Clamp(scrollOffset, 0.0f, TechScrollBox->GetScrollOffsetOfEnd());
+		//PUN_LOG("NativeOnMouseMove3 %f mouseOffset:%f _initialScrollOffset:%f", scrollOffset, mouseOffset.X, _initialScrollOffset);
+		//PUN_LOG("NativeOnMouseMove FINAL:%f", scrollOffset);
+
+		TechScrollBox->SetScrollOffset(scrollOffset);
+	}
+
+	
+	/*
+	 * 
+	 */
 
 	int32 currentEra = unlockSys->currentEra();
 

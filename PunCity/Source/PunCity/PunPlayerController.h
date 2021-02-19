@@ -262,6 +262,14 @@ public:
 		return MapUtil::AtomLocation(cameraAtom(), groundPoint);
 	}
 
+	bool isLeftMouseDown() final {
+		return cameraPawn->isLeftMouseDown();
+	}
+	bool isRightMouseDown() final {
+		return  cameraPawn->isRightMouseDown();
+	}
+	
+
 	void SetMouseLocationPun(FVector2D mousePositionIn) final {
 		SetMouseLocation(FMath::RoundToInt(mousePositionIn.X), FMath::RoundToInt(mousePositionIn.Y));
 	}

@@ -1405,56 +1405,59 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					else if (building.isEnum(CardEnum::IntercityLogisticsHub) ||
 								building.isEnum(CardEnum::IntercityLogisticsPort))
 					{
-						descriptionBox->AddRichText(LOCTEXT("IntercityLogisticsHub_ChooseResources", "Choose 4 resources to haul to delivery target"));
-						descriptionBox->AddSpacer(12);
-
-						auto& hub = building.subclass<IntercityLogisticsHub>();
-						
-						// targetAmount
-						// - just opened UI, get it from targetAmount (actual value)
-						// - after opened, we keep value in lastTargetAmountSet
-						if (_justOpenedDescriptionUI) {
-							hub.lastTargetTownId = hub.targetTownId;
-							hub.lastResourceEnums = hub.resourceEnums;
-							hub.lastResourceCounts = hub.resourceCounts;
-						}
-						int32 targetTownId = hub.lastTargetTownId;
-						vector<ResourceEnum> resourceEnums = hub.lastResourceEnums;
-						vector<int32> resourceCounts = hub.lastResourceCounts;
-
-						const FText noneText = LOCTEXT("None", "None");
-
-						int32 numberBoxStartIndex = resourceEnums.size();
-						int32 targetTownDropdownIndex = resourceEnums.size() * 2; // Last Index
-
-						// Target Town Dropdown
+						if (building.playerId() == playerId())
 						{
-							TArray<FText> options;
-							options.Add(noneText);
+							descriptionBox->AddRichText(LOCTEXT("IntercityLogisticsHub_ChooseResources", "Choose 4 resources to haul to delivery target"));
+							descriptionBox->AddSpacer(12);
 
-							std::vector<int32> tradableTownIds;
-							if (building.isEnum(CardEnum::IntercityLogisticsHub)) {
-								if (_justOpenedDescriptionUI) {
-									tradableTownIds = hub.GetTradableTownIdsLand();
-								} else {
-									tradableTownIds = hub.cachedLandConnectedTownIds;
+							auto& hub = building.subclass<IntercityLogisticsHub>();
+
+							// targetAmount
+							// - just opened UI, get it from targetAmount (actual value)
+							// - after opened, we keep value in lastTargetAmountSet
+							if (_justOpenedDescriptionUI) {
+								hub.lastTargetTownId = hub.targetTownId;
+								hub.lastResourceEnums = hub.resourceEnums;
+								hub.lastResourceCounts = hub.resourceCounts;
+							}
+							int32 targetTownId = hub.lastTargetTownId;
+							vector<ResourceEnum> resourceEnums = hub.lastResourceEnums;
+							vector<int32> resourceCounts = hub.lastResourceCounts;
+
+							const FText noneText = LOCTEXT("None", "None");
+
+							int32 numberBoxStartIndex = resourceEnums.size();
+							int32 targetTownDropdownIndex = resourceEnums.size() * 2; // Last Index
+
+							// Target Town Dropdown
+							{
+								TArray<FText> options;
+								options.Add(noneText);
+
+								std::vector<int32> tradableTownIds;
+								if (building.isEnum(CardEnum::IntercityLogisticsHub)) {
+									if (_justOpenedDescriptionUI) {
+										tradableTownIds = hub.GetTradableTownIdsLand();
+									}
+									else {
+										tradableTownIds = hub.cachedLandConnectedTownIds;
+									}
 								}
-							}
-							else {
-								tradableTownIds = hub.GetTradableTownIdsWater();
-							}
-							
-							for (int32 townId : tradableTownIds) {
-								if (townId != building.townId()) {
-									options.Add(simulation.townNameT(townId));
+								else {
+									tradableTownIds = hub.GetTradableTownIdsWater();
 								}
-							}
-							
-							descriptionBox->AddDropdown(
-								building.buildingId(),
-								options,
-								simulation.townNameT(targetTownId),
-								[](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex)
+
+								for (int32 townId : tradableTownIds) {
+									if (townId != building.townId()) {
+										options.Add(simulation.townNameT(townId));
+									}
+								}
+
+								descriptionBox->AddDropdown(
+									building.buildingId(),
+									options,
+									simulation.townNameT(targetTownId),
+									[](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex)
 								{
 									auto command = make_shared<FChangeWorkMode>();
 									command->buildingId = objectId;
@@ -1462,30 +1465,30 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 									command->intVar2 = dataSource->simulation().FindTownIdFromName(networkInterface->playerId(), sItem);
 									networkInterface->SendNetworkCommand(command);
 								},
-								targetTownDropdownIndex
-							);
-						}
-						
-
-						// Resource Dropdown/Target Amount
-						{
-							TArray<FText> options;
-							options.Add(noneText);
-							options.Add(LOCTEXT("Food", "Food"));
-							//options.Add(LOCTEXT("Fuel", "Fuel"));
-							for (ResourceInfo info : SortedNameResourceInfo) {
-								options.Add(info.GetName());
+									targetTownDropdownIndex
+									);
 							}
 
-							auto addDropDown = [&](int32 index)
-							{
-								ResourceEnum resourceEnum = resourceEnums[index];
 
-								descriptionBox->AddDropdown(
-									building.buildingId(),
-									options,
-									ResourceName_WithNone(resourceEnum),
-									[](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex)
+							// Resource Dropdown/Target Amount
+							{
+								TArray<FText> options;
+								options.Add(noneText);
+								options.Add(LOCTEXT("Food", "Food"));
+								//options.Add(LOCTEXT("Fuel", "Fuel"));
+								for (ResourceInfo info : SortedNameResourceInfo) {
+									options.Add(info.GetName());
+								}
+
+								auto addDropDown = [&](int32 index)
+								{
+									ResourceEnum resourceEnum = resourceEnums[index];
+
+									descriptionBox->AddDropdown(
+										building.buildingId(),
+										options,
+										ResourceName_WithNone(resourceEnum),
+										[](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex)
 									{
 										std::wstring resourceName = ToWString(sItem);
 
@@ -1495,14 +1498,14 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 										command->intVar2 = static_cast<int32>(FindResourceEnumByName(resourceName));
 										networkInterface->SendNetworkCommand(command);
 									},
-									index
-								);
+										index
+										);
 
-								descriptionBox->AddEditableNumberBox(
-									building.buildingId(),
-									index + numberBoxStartIndex, FText::Format(INVTEXT("{0}: "), LOCTEXT("Target", "Target")),
-									resourceCounts[index],
-									[numberBoxStartIndex](int32 objectId, int32 uiIndex, int32 amount, IGameNetworkInterface* networkInterface)
+									descriptionBox->AddEditableNumberBox(
+										building.buildingId(),
+										index + numberBoxStartIndex, FText::Format(INVTEXT("{0}: "), LOCTEXT("Target", "Target")),
+										resourceCounts[index],
+										[numberBoxStartIndex](int32 objectId, int32 uiIndex, int32 amount, IGameNetworkInterface* networkInterface)
 									{
 										auto command = make_shared<FChangeWorkMode>();
 										command->buildingId = objectId;
@@ -1519,14 +1522,15 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 											}
 										}
 									},
-									FText(), false, resourceEnums[index]
-								);
+										FText(), false, resourceEnums[index]
+										);
 
-								descriptionBox->AddSpacer(12);
-							};
+									descriptionBox->AddSpacer(12);
+								};
 
-							for (int32 i = 0; i < resourceEnums.size(); i++) {
-								addDropDown(i);
+								for (int32 i = 0; i < resourceEnums.size(); i++) {
+									addDropDown(i);
+								}
 							}
 						}
 					}

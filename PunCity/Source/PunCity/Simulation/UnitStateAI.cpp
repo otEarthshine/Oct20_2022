@@ -163,7 +163,7 @@ void UnitStateAI::Update()
 			
 		}
 		else if (IsWildAnimal(unitEnum())) {
-			_food -= 0;
+			_food -= ticksPassed / 10;
 			_heat += ticksPassed * _lastTickCelsiusRate;
 		}
 		else {
@@ -259,10 +259,10 @@ void UnitStateAI::Update()
 			}
 
 			// Homeless people could leave your town
-			// This only happens beyond 20 population
+			// This only happens beyond 30 population
 			// Random chance to leave within 1 season
 			if (_houseId == -1 && _townId != -1 &&
-				_simulation->populationPlayer(_playerId) > 30 &&
+				_simulation->populationTown(_playerId) > 30 &&
 				GameRand::Rand() % (Time::TicksPerRound * 2) < ticksPassed)
 			{
 				_simulation->AddMigrationPendingCount(_townId, 1);
@@ -716,6 +716,9 @@ void UnitStateAI::CalculateActions()
 
 		if (TryFindWildFood()) return;
 
+		// Try Migrate once in a long while
+		if (GameRand::Rand() % 50 == 0 && TryChangeProvince_NoAction()) return;
+
 		_unitState = UnitState::Idle;
 		int32 waitTicks = Time::TicksPerSecond * (GameRand::Rand() % 5 + 5);
 		Add_Wait(waitTicks);
@@ -851,7 +854,7 @@ void UnitStateAI::CalculateActions()
 		_unitState = UnitState::Idle;
 		int32 waitTicks = Time::TicksPerSecond * (GameRand::Rand() % 5 + 4);
 		Add_Wait(waitTicks);
-		Add_MoveRandomly();
+		Add_MoveRandomlyAnimal();
 		AddDebugSpeech("(Success)Idle MoveRandomly");
 	}
 }
@@ -1394,6 +1397,8 @@ bool UnitStateAI::TryChangeProvince_NoAction()
 			_simulation->AddProvinceAnimals(_homeProvinceId, _id);
 
 			_lastFindWildFoodTick = 0;
+
+			_simulation->ResetUnitActions(_id);
 			return true;
 		}
 	}
@@ -1875,7 +1880,7 @@ void UnitStateAI::HaveFun()
 }
 
 void UnitStateAI::Add_MoveRandomlyAnimal() {
-	_actions.push_back(Action(ActionEnum::MoveRandomly));
+	_actions.push_back(Action(ActionEnum::MoveRandomlyAnimal));
 }
 void UnitStateAI::MoveRandomlyAnimal()
 {
@@ -1974,7 +1979,7 @@ void UnitStateAI::MoveRandomly()
 		return;
 	}
 
-	check(_simulation->IsConnected(tile, end, 1, IsIntelligentUnit(unitEnum())));
+	check(_simulation->IsConnected(tile, end, 1, true));
 
 	AddDebugSpeech("(Transfer)MoveRandomly: Transfer to MoveTo " + tile.ToString() + end.ToString());
 	MoveTo(end);

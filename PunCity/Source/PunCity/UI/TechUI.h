@@ -26,6 +26,36 @@ public:
 
 	bool isInitialized = false;
 
+	void LeftMouseDown()
+	{
+		
+	}
+	void LeftMouseUp() {
+		_isMouseDownScrolling = false;
+	}
+	void RightMouseDown() {
+
+	}
+	void RightMouseUp() {
+		_isMouseDownScrolling = false;
+	}
+
+	FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override
+	{
+		//PUN_LOG("- NativeOnMouseButtonDown");
+		GetWorld()->GetGameViewport()->GetMousePosition(_initialMousePosition);
+		_initialScrollOffset = TechScrollBox->GetScrollOffset();
+		_isMouseDownScrolling = true;
+		return FReply::Handled();
+	}
+
+	FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override
+	{
+		//PUN_LOG("- NativeOnMouseButtonUp");
+		_isMouseDownScrolling = false;
+		return FReply::Handled();
+	}
+
 public:
 	void PunInit()
 	{
@@ -70,4 +100,9 @@ private:
 
 private:
 	std::vector<TechEnum> _lastTechQueue;
+
+	bool _isMouseDownScrolling = false;
+	
+	FVector2D _initialMousePosition;
+	float _initialScrollOffset;
 };

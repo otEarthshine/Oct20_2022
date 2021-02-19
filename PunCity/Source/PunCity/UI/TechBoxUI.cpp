@@ -12,14 +12,14 @@ FReply UTechBoxUI::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FP
 	if (InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton) {
 		_callbackParent->CallBack1(this, CallbackEnum::None);
 	}
-	return FReply::Handled();
+	return FReply::Unhandled();
 }
 FReply UTechBoxUI::NativeOnMouseButtonDoubleClick(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
 	if (InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton) {
 		_callbackParent->CallBack1(this, CallbackEnum::None);
 	}
-	return FReply::Handled();
+	return FReply::Unhandled();
 }
 
 //void UTechBoxUI::SetHighlight(bool active)

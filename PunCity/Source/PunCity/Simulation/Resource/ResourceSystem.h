@@ -178,7 +178,7 @@ private:
 // Scenarios:
 // - Find requester/provider to fulfill
 // - Find availability for pickup/dropoff
-enum class ResourceFindType
+enum class ResourceFindType : uint8
 {
 	Requester, // Check requesters for one with unfulfilled target
 	Provider, // Check providers for one with unfulfilled target
@@ -499,24 +499,40 @@ private:
 		 */
 		FoundResourceHolderInfo foundFullInfo = FoundResourceHolderInfo::Invalid();
 		int32 foundFullInfoDist = INT32_MAX;
-		for (int i = 0; i < filteredInfos.size(); i++) 
+
+		if (type == ResourceFindType::AvailableForDropoff)
 		{
-			if (filteredInfos[i].amount >= amount) {
+			// Also try to fill one storage first if possible
+			for (int i = 0; i < filteredInfos.size(); i++)
+			{
+				if (filteredInfos[i].amount >= amount) {
+					// filteredInfos[i].distance is decreased if the amount is more than 0
+					int32 dist = filteredInfos[i].distance + WorldTile2::ManDistance(origin, filteredInfos[i].tile);
 
-				int32_t dist = WorldTile2::ManDistance(origin, filteredInfos[i].tile);
+					// Check if closer that last full candidate...
+					if (dist < foundFullInfoDist) {
+						foundFullInfo = filteredInfos[i];
+						foundFullInfo.distance = dist;
 
-				// Try to put things into nearby storage with more than 1 resource
-				//  (prevent evenly distributed resources taking up space.
-				//if (filteredInfos[i].amount > 0) {
-				//	dist -= 50;
-				//}
-				
-				// Check if closer that last full candidate...
-				if (dist < foundFullInfoDist) {
-					foundFullInfo = filteredInfos[i];
-					foundFullInfo.distance = dist;
-					
-					foundFullInfoDist = dist;
+						foundFullInfoDist = dist;
+					}
+				}
+			}
+		}
+		else
+		{
+			for (int i = 0; i < filteredInfos.size(); i++)
+			{
+				if (filteredInfos[i].amount >= amount) {
+					int32 dist = WorldTile2::ManDistance(origin, filteredInfos[i].tile);
+
+					// Check if closer that last full candidate...
+					if (dist < foundFullInfoDist) {
+						foundFullInfo = filteredInfos[i];
+						foundFullInfo.distance = dist;
+
+						foundFullInfoDist = dist;
+					}
 				}
 			}
 		}
@@ -661,20 +677,23 @@ private:
 
 		auto tryAddToFoundInfos = [&](int32 availableAmount, const ResourceHolder& holder)
 		{
-			int32 amountAtLeast = foundInfos.size() > 0 ? foundInfos.back().amount : 1; // amountAt least is 1 in the beginning... (no point to add holder with 0 amount)
+			int32 amountAtLeast;
+			if (type == ResourceFindType::AvailableForDropoff) {
+				amountAtLeast = 1;
+			} else {
+				// TODO: Figure this out?? amountAtLeast is foundInfos.back().amount because we shouldn't try to get
+				amountAtLeast = foundInfos.size() > 0 ? foundInfos.back().amount : 1; // amountAt least is 1 in the beginning... (no point to add holder with 0 amount)
 
-			// amountAtLeast can still be 0 if foundInfos.back().amount is 0
-			amountAtLeast = std::max(1, amountAtLeast);
+				// amountAtLeast can still be 0 if foundInfos.back().amount is 0
+				amountAtLeast = std::max(1, amountAtLeast);
+			}
 
 			if (availableAmount >= amountAtLeast) // Don't get resource from node with less amount, unless necessary
 			{
 				//PUN_LOG("Holder:%d isDrop:%d isAvoidId:%d info:%s isConnected:%d amountAtLeast:%d", holderId, _holders[holderId].isDrop(), isAvoidId, 
 				//				*ToFString(_holders[holderId].info.ToString()), sim->IsConnected(origin, holder.tile, maxFloodDist), amountAtLeast);
 
-				// TODO: IsConnected can be checked once in a while...
-				//if (!isAvoidId && _simulation->IsConnected(origin, holder.tile, maxFloodDist, true))
-
-				bool isConnected = false;
+				bool isConnected;
 				if (holder.objectId != -1) {
 					DEBUG_ISCONNECTED_VAR(IsConnectedBuildingResource);
 					isConnected = _simulation->IsConnectedBuilding(holder.objectId);
@@ -694,9 +713,12 @@ private:
 				if (isConnected) 
 				{
 					check(availableAmount > 0);
-					FoundResourceHolderInfo newFoundInfo(holder.info, availableAmount, holder.tile);
-
-					foundInfos.push_back(newFoundInfo);
+					if (type == ResourceFindType::AvailableForDropoff) {
+						int32 distanceShift = (holder.current() + holder.reservedPush()) > 0 ? -20 : 0; // Try store dropoff in the storage that already has an item
+						foundInfos.push_back(FoundResourceHolderInfo(holder.info, availableAmount, holder.tile, -1, distanceShift));
+					} else {
+						foundInfos.push_back(FoundResourceHolderInfo(holder.info, availableAmount, holder.tile));
+					}
 				}
 			}
 		};

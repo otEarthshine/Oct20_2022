@@ -51,6 +51,9 @@ public:
 
 	virtual WorldAtom2 GetMouseGroundAtom() const = 0;
 	virtual void SetMouseLocationPun(FVector2D mousePositionIn) = 0;
+
+	virtual bool isLeftMouseDown() = 0;
+	virtual bool isRightMouseDown() = 0;
 	
 	virtual WorldAtom2 cameraAtom() const = 0;
 	virtual void SetCameraAtom(WorldAtom2 lookAtAtom) = 0;

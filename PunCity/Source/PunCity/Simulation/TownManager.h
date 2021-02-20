@@ -781,10 +781,11 @@ public:
 	void Serialize(FArchive& Ar)
 	{
 		//! Public
+		Ar << _playerId;
+		Ar << _townId;
 		Ar << townHallId;
 
 		SerializeVecValue(Ar, _provincesClaimed);
-		//SerializeVecValue(Ar, _provincesFromTownhall);
 
 		SerializeVecValue(Ar, incomes100);
 		SerializeVecValue(Ar, sciences100);
@@ -830,8 +831,6 @@ public:
 
 		SerializeVecValue(Ar, _aveHappinessModifiers);
 
-		//SerializeMapValue(Ar, _claimedProvinceConnected);
-
 		_territoryBoxExtent >> Ar;
 
 		// Stats
@@ -850,10 +849,11 @@ public:
 	}
 
 public:
+	int32 _playerId = -1;
+	int32 _townId = -1;
 	int32 townHallId = -1;
 
 	std::vector<int32> _provincesClaimed;
-	//std::vector<int32> _provincesFromTownhall; // 
 
 	std::vector<int32> incomes100;
 	std::vector<int32> sciences100;
@@ -930,6 +930,4 @@ private:
 	 * Non-Serialize
 	 */
 	IGameSimulationCore* _simulation;
-	int32 _playerId;
-	int32 _townId;
 };

@@ -19,9 +19,9 @@
 // VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 13 // 3 digit
+#define MINOR_VERSION 14 // 3 digit
 
-#define VERSION_DAY 14
+#define VERSION_DAY 20
 #define VERSION_MONTH 2
 #define VERSION_YEAR 21
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
@@ -62,9 +62,9 @@ static FString GetGameVersionString(int32 version, bool includeDate = true)
 
 // VERSION
 #define MAJOR_SAVE_VERSION 0
-#define MINOR_SAVE_VERSION 13 // 3 digit
+#define MINOR_SAVE_VERSION 14 // 3 digit
 
-#define VERSION_SAVE_DAY 14
+#define VERSION_SAVE_DAY 20
 #define VERSION_SAVE_MONTH 2
 #define VERSION_SAVE_YEAR 21
 #define VERSION_SAVE_DATE (VERSION_SAVE_YEAR * 10000) + (VERSION_SAVE_MONTH * 100) + VERSION_SAVE_DAY
@@ -7670,7 +7670,8 @@ enum class GameSaveChunkEnum : uint8
 	Terrain,
 	Trees,
 	Flood1,
-	//Flood2,
+	//Debug,
+	//Debug2,
 	Others,
 
 	Count,

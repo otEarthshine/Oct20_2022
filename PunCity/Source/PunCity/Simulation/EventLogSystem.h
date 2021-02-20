@@ -8,9 +8,11 @@
 
 struct EventLog
 {
-	FText message;
+	FString message;
 	bool isImportant;
 	int32 startTick;
+
+	FText messageT() const { return FText::FromString(message); }
 
 	//! Serialize
 	FArchive& operator>>(FArchive &Ar) {
@@ -28,22 +30,25 @@ class EventLogSystem
 {
 public:
 	void AddPlayer() {
+		//PUN_LOG("EventLogSystem AddPlayer:%d", _playerIdToEvents.size());
 		_playerIdToEvents.push_back(std::vector<EventLog>());
 		needRefreshEventLog.push_back(true);
 	}
 
 	void ResetPlayer(int32 playerId) {
+		//PUN_LOG("EventLogSystem ResetPlayer:%d", playerId);
 		_playerIdToEvents[playerId] = std::vector<EventLog>();
 		needRefreshEventLog[playerId] = true;
 	}
 
-	void AddEventLog(int32 playerId, FText eventMessage, bool isImportant) {
+	void AddEventLog(int32 playerId, FText eventMessage, bool isImportant)
+	{
 		if (playerId == -1) {
 			return;
 		}
 
 		std::vector<EventLog>& events = _playerIdToEvents[playerId];
-		events.push_back({ eventMessage, isImportant, Time::Ticks() });
+		events.push_back({ eventMessage.ToString(), isImportant, Time::Ticks() });
 		if (events.size() > 5) {
 			events.erase(events.begin());
 		}
@@ -70,6 +75,29 @@ public:
 
 	void Serialize(FArchive& Ar)
 	{
+		//PUN_LOG("---------------");
+		//PUN_LOG("_playerIdToEvents: %d", _playerIdToEvents.size());
+		//for (std::vector<EventLog>& eventLogs : _playerIdToEvents) {
+		//	PUN_LOG("- eventLogs: %d", eventLogs.size());
+		//	for (EventLog& log : eventLogs) {
+		//		PUN_LOG("-- EventLog: %s %d %d", *log.message, log.isImportant, log.startTick);
+		//	}
+		//}
+
+		//if (Ar.IsSaving()) {
+		//	FBufferArchive SaveArchive;
+		//	SaveArchive.SetIsSaving(true);
+		//	SaveArchive.SetIsLoading(false);
+		//	
+		//	int32 checksum = FCrc::MemCrc32(SaveArchive.GetData(), SaveArchive.Num());
+		//	PUN_LOG("-- checksum_BEFORE size:%d check:%d", SaveArchive.Num(), checksum);
+
+		//	SerializeVecVecObj(SaveArchive, _playerIdToEvents);
+		//	checksum = FCrc::MemCrc32(SaveArchive.GetData(), SaveArchive.Num());
+		//	PUN_LOG("-- checksum_AFTER size:%d check:%d", SaveArchive.Num(), checksum);
+		//	
+		//}
+
 		SerializeVecVecObj(Ar, _playerIdToEvents);
 
 		// Event log must be refresh after load. Serialize is just to resize...

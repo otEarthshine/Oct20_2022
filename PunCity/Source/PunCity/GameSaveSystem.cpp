@@ -140,6 +140,8 @@ FSaveThreadResults GameSaveSystem::SaveDataToFile_ThreadHelper(bool isCachingFor
 		{
 			SCOPE_TIMER_("Save Checksum %d", static_cast<int>(saveChunkEnum));
 			results.checksum = FCrc::MemCrc32(SaveArchive.GetData(), SaveArchive.Num());
+
+			_LOG(PunSaveLoad, " -- Save Checksum ArSize:%d checksum:%d", SaveArchive.Num(), results.checksum);
 		}
 		
 		_LOG(PunSaveLoad, "Save GameData Uncompressed size:%d checksum:%d", SaveArchive.Num(), results.checksum);

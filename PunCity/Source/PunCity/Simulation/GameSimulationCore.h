@@ -2527,13 +2527,12 @@ public:
 			SERIALIZE_TIMER("Flood", data, crcs, crcLabels);
 			_floodSystem.Serialize(Ar);
 		}
-		
-		//if (checkChunkEnum(GameSaveChunkEnum::Flood2))
-		//{
-		//	SERIALIZE_TIMER("Flood2", data, crcs, crcLabels);
-		//	_floodSystemHuman.Serialize(Ar);
-		//}
 
+		//if (checkChunkEnum(GameSaveChunkEnum::Debug))
+		//{}
+
+		//if (checkChunkEnum(GameSaveChunkEnum::Debug2))
+		//{}
 		
 		if (checkChunkEnum(GameSaveChunkEnum::Others))
 		{
@@ -2559,10 +2558,6 @@ public:
 				//	}
 				//}
 			}
-			//{
-			//	SERIALIZE_TIMER("PathAI2", data, crcs, crcLabels);
-			//	_pathAIHuman->Serialize(Ar);
-			//}
 
 			{
 				SERIALIZE_TIMER("Unit", data, crcs, crcLabels);
@@ -2577,8 +2572,8 @@ public:
 			{
 				SERIALIZE_TIMER("GlobalSys", data, crcs, crcLabels);
 				_overlaySystem.Serialize(Ar);
-
 				_statSystem.Serialize(Ar);
+
 				_dropSystem.Serialize(Ar);
 				_worldTradeSystem.Serialize(Ar);
 
@@ -2586,18 +2581,37 @@ public:
 				_eventLogSystem.Serialize(Ar);
 			}
 
+			// Per Town
 			{
 				//SERIALIZE_TIMER("PlayerSys", data, crcs, crcLabels);
 
+				int32 townCountAr;
+				if (Ar.IsSaving()) {
+					townCountAr = townCount();
+				}
+				Ar << townCountAr;
+
+				if (Ar.IsLoading()) {
+					// Ensure same town count as before
+					for (int32 townId = _resourceSystems.size(); townId < townCountAr; townId++) {
+						_resourceSystems.push_back(ResourceSystem(townId, this));
+						_townManagers.push_back(make_unique<TownManager>(-1, townId, this));
+					}
+				}
+
 #define LOOP(sysName, func) {\
 								SERIALIZE_TIMER(sysName, data, crcs, crcLabels)\
-								for (size_t i = 0; i < townCount(); i++) { func; }\
+								for (size_t i = 0; i < townCountAr; i++) { func; }\
 							}
 
 				LOOP("Resource", _resourceSystems[i].Serialize(Ar));
 				LOOP("TownManager", _townManagers[i]->Serialize(Ar));
 #undef LOOP
-				
+			}
+
+
+			//! Per Player
+			{
 #define LOOP(sysName, func) {\
 								SERIALIZE_TIMER(sysName, data, crcs, crcLabels)\
 								for (size_t i = 0; i < GameConstants::MaxPlayersAndAI; i++) { func; }\

@@ -68,6 +68,11 @@ void SerializeVecValue(FArchive& Ar, std::vector<TValue>& v)
 	}
 	Ar << size;
 	Ar << elementSize;
+
+	check(size >= 0);
+	check(size < 32000000 * 4);
+	check(elementSize >= 0);
+	check(elementSize <= 64);
 	
 	if (Ar.IsLoading()) {
 		v.resize(size);

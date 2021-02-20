@@ -793,15 +793,15 @@ void UMainGameUI::Tick()
 			{
 				auto widget = AddWidget<UPunRichText>(UIEnum::PunRichText);
 
-				FText richMessage = TEXT_TAG("<EventLog>", events[i].message);
+				FText richMessage = TEXT_TAG("<EventLog>", events[i].messageT());
 				if (events[i].isImportant) {
-					richMessage = TEXT_TAG("<EventLogRed>", events[i].message);
+					richMessage = TEXT_TAG("<EventLogRed>", events[i].messageT());
 				}
 				
 				widget->SetText(richMessage);
 				EventBox->AddChild(widget);
 
-				PUN_LOG(" --- widget: %s", *events[i].message.ToString());
+				PUN_LOG(" --- widget: %s", *events[i].message);
 			}
 			
 			eventSystem.needRefreshEventLog[playerId()] = false;

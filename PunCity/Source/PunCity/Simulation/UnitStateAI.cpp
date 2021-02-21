@@ -262,7 +262,7 @@ void UnitStateAI::Update()
 			// This only happens beyond 30 population
 			// Random chance to leave within 1 season
 			if (_houseId == -1 && _townId != -1 &&
-				_simulation->populationTown(_playerId) > 30 &&
+				_simulation->populationTown(_townId) > 30 &&
 				GameRand::Rand() % (Time::TicksPerRound * 2) < ticksPassed)
 			{
 				_simulation->AddMigrationPendingCount(_townId, 1);

@@ -885,12 +885,12 @@ void UWorldSpaceUI::TickUnits()
 	if (InterfacesInvalid()) return;
 
 	IGameUIDataSource* data = dataSource();
-
+	auto& sim = data->simulation();
 
 	std::vector<int> unitIdsToDisplay;
 	const std::vector<int32>& sampleRegionIds = data->sampleRegionIds();
 
-	auto& unitLists = data->simulation().unitSystem().unitSubregionLists();
+	auto& unitLists = sim.unitSystem().unitSubregionLists();
 
 	// TODO: don't do accumulation and use ExecuteRegion directly??
 	for (int32_t sampleRegionId : sampleRegionIds) {
@@ -899,8 +899,11 @@ void UWorldSpaceUI::TickUnits()
 		});
 	}
 
-	for (int unitId : unitIdsToDisplay) {
-		if (unitId == -1) continue;
+	for (int unitId : unitIdsToDisplay) 
+	{
+		if (!data->IsUnitValid(unitId)) {
+			continue;
+		}
 
 		UnitStateAI& unitAI = data->GetUnitStateAI(unitId);
 

@@ -5275,7 +5275,7 @@ struct UnitInfo
 		int32 foodTicksPerFetch = Time::TicksPerYear / UnitFoodFetchPerYear;
 		foodPerFetch = foodResourcePerYear / UnitFoodFetchPerYear;
 
-		maxFoodTicks = foodTicksPerFetch * (unitEnum == UnitEnum::Human ? 2 : 5); // Fragile humans ... Animals has loads of maxFoodTicks
+		maxFoodTicks = foodTicksPerFetch * (unitEnum == UnitEnum::Human ? 1 : 5); // Fragile humans ... Animals has loads of maxFoodTicks
 		
 		foodTicksPerResource = Time::TicksPerYear / foodResourcePerYear;
 
@@ -6076,8 +6076,6 @@ enum class PopupReceiverEnum : uint8
 	ResetBuff,
 
 	MaxCardHandQueuePopup,
-
-	ChooseTownToClaimWith,
 };
 
 struct PopupInfo
@@ -6090,8 +6088,6 @@ struct PopupInfo
 	PopupReceiverEnum replyReceiver = PopupReceiverEnum::None;
 	std::string popupSound;
 	int32 replyVar1;
-	int32 replyVar2;
-	int32 replyVar3;
 
 	bool forcedNetworking = false;
 	bool forcedSkipNetworking = false;
@@ -6106,11 +6102,8 @@ struct PopupInfo
 	}
 
 	PopupInfo(int32 playerId, FText body, std::vector<FText> choices, PopupReceiverEnum replyReceiver = PopupReceiverEnum::None,
-		bool forcedNetworking = false, std::string popupSound = "", 
-		int32 replyVar1 = -1, int32 replyVar2 = -1, int32 replyVar3 = -1
-	)
-		: playerId(playerId), body(body), choices(choices), replyReceiver(replyReceiver), popupSound(popupSound),
-		replyVar1(replyVar1), replyVar2(replyVar2), replyVar3(replyVar3), forcedNetworking(forcedNetworking)
+		bool forcedNetworking = false, std::string popupSound = "", int32 replyVar1 = -1)
+		: playerId(playerId), body(body), choices(choices), replyReceiver(replyReceiver), popupSound(popupSound), replyVar1(replyVar1), forcedNetworking(forcedNetworking)
 	{
 		startTick = Time::Ticks();
 	}
@@ -6146,10 +6139,7 @@ struct PopupInfo
 		
 		Ar << replyReceiver;
 		SerializeStr(Ar, popupSound);
-		
 		Ar << replyVar1;
-		Ar << replyVar2;
-		Ar << replyVar3;
 
 		Ar << forcedNetworking;
 		Ar << warningForExclusiveUI;

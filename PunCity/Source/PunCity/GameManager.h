@@ -311,8 +311,11 @@ public:
 		return MapUtil::DisplayLocation(cameraAtom, actualLocation);
 	}
 
-	UnitStateAI& GetUnitStateAI(int unitId) final {
+	UnitStateAI& GetUnitStateAI(int32 unitId) final {
 		return _simulation->unitSystem().unitStateAI(unitId);
+	}
+	bool IsUnitValid(int32 unitId) final {
+		return _simulation->unitSystem().IsUnitValid(unitId);
 	}
 
 	GameSimulationCore& simulation() final {

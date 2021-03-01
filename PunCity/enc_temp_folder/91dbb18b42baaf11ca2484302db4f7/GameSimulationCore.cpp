@@ -1085,10 +1085,8 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 									// Attacker now owns the province
 									// Destroy any leftover building owned by player
 									ClearProvinceBuildings(claimProgress.provinceId);
-
-									SetProvinceOwner_Popup(claimProgress.provinceId, claimProgress.attackerPlayerId, false);
-									
-									//SetProvinceOwner(claimProgress.provinceId, attackerTownId);
+									int32 attackerTownId = GetProvinceAttackerTownId(claimProgress.attackerPlayerId, claimProgress.provinceId);
+									SetProvinceOwner(claimProgress.provinceId, attackerTownId);
 								}
 							}
 							// Failed to conquer
@@ -3493,20 +3491,6 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 			cardSystem(command.playerId).allowMaxCardHandQueuePopup = false;
 		}
 	}
-	else if (replyReceiver == PopupReceiverEnum::ChooseTownToClaimWith)
-	{
-		int32 provinceId = command.replyVar1;
-		vector<int32> attackerTownIds = GetProvinceAttackerTownIds(command.playerId, provinceId);
-		if (command.choiceIndex < attackerTownIds.size()) {
-			int32 townId = attackerTownIds[command.choiceIndex];
-			bool isFull = command.replyVar2;
-			if (isFull) { // Full ProvinceClaim
-				SetProvinceOwnerFull(provinceId, townId);
-			} else {
-				SetProvinceOwner(provinceId, townId);
-			}
-		}
-	}
 	else if (replyReceiver == PopupReceiverEnum::None)
 	{
 
@@ -3588,22 +3572,13 @@ void GameSimulationCore::BuyCards(FBuyCard command)
 void GameSimulationCore::SellCards(FSellCards command)
 {
 	UE_LOG(LogNetworkInput, Log, TEXT(" SellCards"));
-
-	auto& cardSys = cardSystem(command.playerId);
-	int32 sellCount = command.isShiftDown ? cardSys.BoughtCardCount(command.buildingEnum) : 1;
 	
-	int32 sellTotal = cardSys.RemoveCards(command.buildingEnum, sellCount);
-	if (sellTotal != -1) 
-	{
+	int32 sellTotal = cardSystem(command.playerId).RemoveCards(command.buildingEnum, 1);
+	if (sellTotal != -1) {
 		ChangeMoney(command.playerId, sellTotal);
 
-		AddEventLog(command.playerId,
-			FText::Format(
-				LOCTEXT("SoldCard_Event", "Sold {1} {0} {1}|plural(one=card,other=cards) for {2}<img id=\"Coin\"/>"),
-				GetBuildingInfo(command.buildingEnum).name,
-				TEXT_NUM(sellCount),
-				TEXT_NUM(sellTotal)
-			), 
+		AddEventLog(command.playerId, 
+			FText::Format(LOCTEXT("SoldCard_Event", "Sold {0} card for {1} gold"), GetBuildingInfo(command.buildingEnum).name, TEXT_NUM(sellTotal)), 
 			true
 		);
 	}
@@ -4046,8 +4021,8 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	if (command.claimEnum == CallbackEnum::ClaimLandMoney ||
 		command.claimEnum == CallbackEnum::ClaimLandInfluence)
 	{
-		//int32 attackerTownId = GetProvinceAttackerTownId(attackerPlayerId, provinceId);
-		//check(attackerTownId != -1);
+		int32 attackerTownId = GetProvinceAttackerTownId(attackerPlayerId, provinceId);
+		check(attackerTownId != -1);
 
 		int32 provincePrice = GetProvinceClaimPrice(command.provinceId, attackerPlayerId);
 		
@@ -4058,9 +4033,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 			if (globalResourceSys.money() >= provincePriceMoney &&
 				provinceOwnerTown(command.provinceId) == -1)
 			{
-				SetProvinceOwner_Popup(command.provinceId, attackerPlayerId, true);
-				//SetProvinceOwnerFull(command.provinceId, attackerTownId);
-				
+				SetProvinceOwnerFull(command.provinceId, attackerTownId);
 				globalResourceSys.ChangeMoney(-provincePriceMoney);
 			}
 		}
@@ -4069,9 +4042,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 			if (globalResourceSys.influence() >= provincePrice &&
 				provinceOwnerTown(command.provinceId) == -1)
 			{
-				SetProvinceOwner_Popup(command.provinceId, attackerPlayerId, true);
-				//SetProvinceOwnerFull(command.provinceId, attackerTownId);
-				
+				SetProvinceOwnerFull(command.provinceId, attackerTownId);
 				globalResourceSys.ChangeInfluence(-provincePrice);
 			}
 		}
@@ -4456,34 +4427,6 @@ void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 townId)
 
 	}
 }
-
-void GameSimulationCore::SetProvinceOwner_Popup(int32 provinceId, int32 attackerPlayerId, bool isFull)
-{
-	vector<int32> attackerTownIds = GetProvinceAttackerTownIds(attackerPlayerId, provinceId);
-	
-	if (attackerTownIds.size() > 1)
-	{	
-		vector<FText> attackerTownNames;
-		for (int32 attackerTownId : attackerTownIds) {
-			attackerTownNames.push_back(townNameT(attackerTownId));
-		}
-
-		AddPopup(PopupInfo(attackerPlayerId,
-			LOCTEXT("ChooseTownToClaimWith_Popup", "Which town should claim the province?"),
-			attackerTownNames,
-			PopupReceiverEnum::ChooseTownToClaimWith, true, "",
-			provinceId, isFull
-		));
-	}
-	else if (attackerTownIds.size() == 1) {
-		if (isFull) {
-			SetProvinceOwnerFull(provinceId, attackerTownIds[0]);
-		} else {
-			SetProvinceOwner(provinceId, attackerTownIds[0]);
-		}
-	}
-}
-
 
 void GameSimulationCore::ChooseLocation(FChooseLocation command)
 {

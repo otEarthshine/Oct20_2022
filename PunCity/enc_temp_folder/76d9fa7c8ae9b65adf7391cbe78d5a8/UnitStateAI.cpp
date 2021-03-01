@@ -195,6 +195,11 @@ void UnitStateAI::Update()
 		
 		//int32_t heatChangeThisTick = ticksPassed * (tickCelsiusFromX > 0 ? tickCelsiusFromX * 3 : tickCelsiusFromX); // Heat recover 3 times faster once above critical temperature
 
+		//// Frostbite fate
+		//if (_playerId != -1) {
+		//	heatChangeThisTick = GameRand::Rand100RoundTo1(heatChangeThisTick * (100 + _simulation->fateLinkSystem().GetFateEffectFor(_playerId, FateEnum::Frostbite)));
+		//}
+
 		// Sickness decreases health
 		// Ppl with sickness will die in 2 seasons without medicine...
 		if (_isSick)
@@ -408,11 +413,6 @@ void UnitStateAI::Update()
 				if (IsDomesticatedAnimal(unitEnum())) {
 					if (houseId() == -1) {
 						canGiveBirth = false;
-					}
-
-					// Domesticated animal should give birth less
-					if (canGiveBirth) {
-						canGiveBirth = (GameRand::Rand() % 3 == 0);
 					}
 				}
 				else

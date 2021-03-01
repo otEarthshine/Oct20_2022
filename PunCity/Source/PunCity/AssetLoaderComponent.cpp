@@ -1179,8 +1179,11 @@ void UAssetLoaderComponent::LoadModuleWithConstruction(FString moduleName, FStri
 //}
 FUnitAsset UAssetLoaderComponent::unitAsset(UnitEnum unitEnum, int32 variationIndex)
 {
-	PUN_CHECK(static_cast<int>(unitEnum) < UnitEnumCount);
-	const FUnitAsset& asset = _unitEnumToAsset[static_cast<int>(unitEnum)][variationIndex];
+	int32 unitEnumInt = static_cast<int>(unitEnum);
+	PUN_ENSURE(unitEnumInt >= 0, return FUnitAsset());
+	PUN_ENSURE(unitEnumInt < UnitEnumCount, return FUnitAsset());
+	
+	const FUnitAsset& asset = _unitEnumToAsset[unitEnumInt][variationIndex];
 	PUN_CHECK(asset.staticMesh);
 	return asset;
 }

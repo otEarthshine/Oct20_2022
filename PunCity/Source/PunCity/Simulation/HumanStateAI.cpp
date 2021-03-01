@@ -351,7 +351,7 @@ void HumanStateAI::MoveResourceSequence(std::vector<FoundResourceHolderInfo> pro
 		// if this is a building... turn off needInput icon
 		// NeedInput is switched on by building's worker.. and switched off by workers and haulers (code below)
 		int32 dropoffBuildingId = resourceSystem().holder(dropoffInfos[i].info).objectId;
-		if (dropoffBuildingId != -1) {
+		if (_simulation->IsValidBuilding(dropoffBuildingId)) {
 			_simulation->building(dropoffBuildingId).workplaceInputNeeded = ResourceEnum::None;
 		}
 

@@ -168,6 +168,8 @@ void UPopupUI::ClickPopupButton(int32 choiceIndex)
 		popupDecision->replyReceiverIndex = static_cast<int32>(currentPopup.replyReceiver);
 		popupDecision->choiceIndex = choiceIndex;
 		popupDecision->replyVar1 = currentPopup.replyVar1;
+		popupDecision->replyVar2 = currentPopup.replyVar2;
+		popupDecision->replyVar3 = currentPopup.replyVar3;
 		networkInterface()->SendNetworkCommand(popupDecision);
 	}
 	else {

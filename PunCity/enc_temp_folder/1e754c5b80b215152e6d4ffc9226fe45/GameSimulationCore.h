@@ -1827,8 +1827,6 @@ public:
 	void SetProvinceOwner(int32 provinceId, int32 townId, bool lightMode = false);
 	void SetProvinceOwnerFull(int32 provinceId, int32 townId) final;
 
-	void SetProvinceOwner_Popup(int32 provinceId, int32 attackerPlayerId, bool isFull);
-
 	int32 provinceOwnerTown(int32 provinceId) final { return _regionSystem->provinceOwner(provinceId); }
 	int32 provinceOwnerPlayer(int32 provinceId) final {
 		int32 townId = provinceOwnerTown(provinceId);
@@ -2859,28 +2857,26 @@ public:
 	void Cheat(FCheat command) final;
 
 	// NetworkCommand Helper
-	std::vector<int32> GetProvinceAttackerTownIds(int32 attackerPlayerId, int32 provinceId)
+	int32 GetProvinceAttackerTownId(int32 attackerPlayerId, int32 provinceId)
 	{
 		// Get town with adjacent province
 		const auto& connections = GetProvinceConnections(provinceId);
-
-		// Get the town to attack with (claim/conquer province)
-		const auto& attackerTownIds = GetTownIds(attackerPlayerId);
-		
-		std::vector<int32> adjacentAttackerTownIds;
+		vector<int32> adjacentTowns;
 		for (const ProvinceConnection& connection : connections) {
-			int32 adjacentOwnerTownId = provinceOwnerTown(connection.provinceId);
-			
-			if (adjacentOwnerTownId != -1 && 
-				CppUtils::Contains(attackerTownIds, adjacentOwnerTownId)) 
-			{
-				CppUtils::TryAdd(adjacentAttackerTownIds, adjacentOwnerTownId);
+			int32 owner = provinceOwnerTown(connection.provinceId);
+			if (owner != -1) {
+				CppUtils::TryAdd(adjacentTowns, owner);
 			}
 		}
 
-		adjacentAttackerTownIds.resize(3);
-
-		return adjacentAttackerTownIds;
+		// Get the town to attack with (claim/conquer province)
+		const auto& attackerTownIds = GetTownIds(attackerPlayerId);
+		for (int32 townIdTemp : attackerTownIds) {
+			if (CppUtils::Contains(adjacentTowns, townIdTemp)) {
+				return townIdTemp; // Town built first will get first claim
+			}
+		}
+		return -1;
 	}
 	
 	void CheckPortArea(TileArea area, Direction faceDirection, CardEnum buildingEnum, std::vector<PlacementGridInfo>& grids, 

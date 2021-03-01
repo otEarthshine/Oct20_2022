@@ -390,6 +390,18 @@ public:
 					resultAccessInfo = accessInfo;
 					return true;
 				}
+				
+				//if (!treeShade(tileId) &&
+				//	CanPlantTreeOrBushInGrid(tile) &&
+				//	WorldTile2::Distance(originTile, tile) <= radius) 
+				//{
+				//	// Ensure that this tree is accessible
+				//	NonWalkableTileAccessInfo accessInfo = _simulation->TryAccessNonWalkableTile(originTile, tile, regionDistance, true);
+				//	if (accessInfo.isValid()) {
+				//		resultAccessInfo = accessInfo;
+				//		return true;
+				//	}
+				//}
 			}
 
 			return false;

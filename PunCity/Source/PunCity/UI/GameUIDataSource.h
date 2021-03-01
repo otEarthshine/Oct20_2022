@@ -238,7 +238,8 @@ public:
 	virtual const std::vector<int32>& sampleNearRegionIds() = 0;
 
 	virtual FVector GetUnitDisplayLocation(int objectId, WorldAtom2 cameraAtom) = 0;
-	virtual class UnitStateAI& GetUnitStateAI(int unitId) = 0;
+	virtual class UnitStateAI& GetUnitStateAI(int32 unitId) = 0;
+	virtual bool IsUnitValid(int32 unitId) = 0;
 
 	virtual class GameSimulationCore& simulation() = 0;
 	virtual class GameSimulationCore* simulationPtr() = 0;

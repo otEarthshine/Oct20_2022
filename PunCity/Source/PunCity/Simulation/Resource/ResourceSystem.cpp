@@ -348,9 +348,10 @@ std::string ResourceSystem::debugStr(ResourceHolderInfo info)  const
 	return _simulation->building(objectId(info)).debugStr();
 }
 
-void ResourceSystem::UpdateResourceDisplay(const ResourceHolder& holder) const {
-	if (holder.objectId != -1) {
-		int32_t regionId = _simulation->building(holder.objectId).centerTile().regionId();
+void ResourceSystem::UpdateResourceDisplay(const ResourceHolder& holder) const
+{
+	if (_simulation->IsValidBuilding(holder.objectId)) {
+		int32 regionId = _simulation->building(holder.objectId).centerTile().regionId();
 		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Resource, regionId, true);
 	}
 	// Not a building resource.. it must be dropped resource

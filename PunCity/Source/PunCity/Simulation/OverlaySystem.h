@@ -52,9 +52,10 @@ public:
 	//std::vector<uint8_t>& appeal() { return _manmadeAppeal; }
 	int32 GetAppealPercent(WorldTile2 tile);
 
-	// TODO: move Road/Fence out???
-	// TODO: IsRoad might be better sampled from pathAI?
-	bool IsRoad(WorldTile2 tile) const {
+	bool IsRoad(WorldTile2 tile) const
+	{
+		PUN_ENSURE(tile.isValid(), return false);
+		
 		auto &roads = _regionToRoad[tile.regionId()];
 		auto found = std::find_if(roads.begin(), roads.end(), [&](const RoadTile& roadTile) { return roadTile.tile == tile; });
 		return found != roads.end();

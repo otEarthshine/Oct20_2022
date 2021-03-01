@@ -783,26 +783,6 @@ public:
 		blob << intVar2;
 		blob << intVar3;
 	}
-	
-	//void SerializeAndAppendToBlob(TArray<int32>& blob) override
-	//{
-	//	FBuildingCommand::SerializeAndAppendToBlob(blob);
-	//	blob.Add(enumInt);
-	//	
-	//	blob.Add(intVar1);
-	//	blob.Add(intVar2);
-	//	blob.Add(intVar3);
-	//}
-
-	//void DeserializeFromBlob(const TArray<int32>& blob, int32& index) override
-	//{
-	//	FBuildingCommand::DeserializeFromBlob(blob, index);
-	//	enumInt = blob[index++];
-	//	
-	//	intVar1 = blob[index++];
-	//	intVar2 = blob[index++];
-	//	intVar3 = blob[index++];
-	//}
 };
 
 class FPopupDecision final : public FNetworkCommand
@@ -814,30 +794,19 @@ public:
 	int32 replyReceiverIndex;
 	int8 choiceIndex;
 	int32 replyVar1;
+	int32 replyVar2;
+	int32 replyVar3;
 
 	void Serialize(PunSerializedData& blob) final
 	{
 		FNetworkCommand::Serialize(blob);
 		blob << replyReceiverIndex;
 		blob << choiceIndex;
+		
 		blob << replyVar1;
+		blob << replyVar2;
+		blob << replyVar3;
 	}
-	
-	//void SerializeAndAppendToBlob(TArray<int32>& blob) final
-	//{
-	//	FNetworkCommand::SerializeAndAppendToBlob(blob);
-	//	blob.Add(replyReceiverIndex);
-	//	blob.Add(choiceIndex);
-	//	blob.Add(replyVar1);
-	//}
-
-	//void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final
-	//{
-	//	FNetworkCommand::DeserializeFromBlob(blob, index);
-	//	replyReceiverIndex = blob[index++];
-	//	choiceIndex = blob[index++];
-	//	replyVar1 = blob[index++];
-	//}
 };
 
 class FRerollCards final : public FNetworkCommand
@@ -860,16 +829,6 @@ public:
 		FNetworkCommand::Serialize(blob);
 		blob << cardEnum;
 	}
-	
-	//void SerializeAndAppendToBlob(TArray<int32>& blob) override {
-	//	FNetworkCommand::SerializeAndAppendToBlob(blob);
-	//	blob.Add(static_cast<int32>(cardEnum));
-	//}
-
-	//void DeserializeFromBlob(const TArray<int32>& blob, int32& index) override {
-	//	FNetworkCommand::DeserializeFromBlob(blob, index);
-	//	cardEnum = static_cast<CardEnum>(blob[index++]);
-	//}
 };
 
 class FBuyCard final : public FNetworkCommand
@@ -884,15 +843,6 @@ public:
 		FNetworkCommand::Serialize(blob);
 		blob << cardHandBuyIndices;
 	}
-	//void SerializeAndAppendToBlob(TArray<int32>& blob) override {
-	//	FNetworkCommand::SerializeAndAppendToBlob(blob);
-	//	SerializeArray(blob, cardHandBuyIndices);
-	//}
-
-	//void DeserializeFromBlob(const TArray<int32>& blob, int32& index) override {
-	//	FNetworkCommand::DeserializeFromBlob(blob, index);
-	//	cardHandBuyIndices = DeserializeArray(blob, index);
-	//}
 };
 
 class FSellCards final : public FNetworkCommand
@@ -903,24 +853,14 @@ public:
 
 	CardEnum buildingEnum = CardEnum::None;
 	int32 cardCount = 0;
+	int32 isShiftDown = false;
 
 	void Serialize(PunSerializedData& blob) final {
 		FNetworkCommand::Serialize(blob);
 		blob << buildingEnum;
 		blob << cardCount;
+		blob << isShiftDown;
 	}
-
-	//void SerializeAndAppendToBlob(TArray<int32>& blob) final {
-	//	FNetworkCommand::SerializeAndAppendToBlob(blob);
-	//	blob.Add(static_cast<int32>(buildingEnum));
-	//	blob.Add(cardCount);
-	//}
-
-	//void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final {
-	//	FNetworkCommand::DeserializeFromBlob(blob, index);
-	//	buildingEnum = static_cast<CardEnum>(blob[index++]);
-	//	cardCount = blob[index++];
-	//}
 };
 
 class FUseCard final : public FNetworkCommand

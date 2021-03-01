@@ -60,6 +60,11 @@ public:
 		return *_stateAI[id];
 	}
 
+	bool IsUnitValid(int32 unitId) {
+		return 0 <= unitId && unitId < _stateAI.size();
+	}
+	
+
 	int16 food(int id);
 	int age(int id);
 

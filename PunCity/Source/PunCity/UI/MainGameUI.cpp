@@ -2452,18 +2452,33 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 		auto command = make_shared<FSellCards>();
 		command->buildingEnum = cardButton->buildingEnum;
 		command->cardCount = cardButton->cardCount;
+		command->isShiftDown = dataSource()->isShiftDown();
 
 		int32 cardPrice = simulation().cardSystem(playerId()).GetCardPrice(command->buildingEnum);
 
-		networkInterface()->ShowConfirmationUI(
-			FText::Format(
-				LOCTEXT("SellCardSure_Pop", "Are you sure you want to sell {0} for {1}<img id=\"Coin\"/>?"),
-				GetBuildingInfo(command->buildingEnum).name,
-				TEXT_NUM(cardPrice)
-			), 
-			command
-		);
-
+		if (command->isShiftDown)
+		{
+			networkInterface()->ShowConfirmationUI(
+				FText::Format(
+					LOCTEXT("SellCardSure_Pop", "Are you sure you want to sell {0} {1} {0}|plural(one=Card,other=Cards) for {2}<img id=\"Coin\"/>?"),
+					command->cardCount,
+					GetBuildingInfo(command->buildingEnum).name,
+					TEXT_NUM(cardPrice * command->cardCount)
+				),
+				command
+			);
+		}
+		else {
+			networkInterface()->ShowConfirmationUI(
+				FText::Format(
+					LOCTEXT("SellCardSure_Pop", "Are you sure you want to sell {0} for {1}<img id=\"Coin\"/>?"),
+					GetBuildingInfo(command->buildingEnum).name,
+					TEXT_NUM(cardPrice)
+				),
+				command
+			);
+		}
+		
 		return;
 	}
 }

@@ -1327,8 +1327,8 @@ public:
 
 		// Inaccessible Warning
 		if (_simulation->HasTownhall(_playerId) &&
-			!_simulation->IsConnectedBuilding(buildingId()) &&
-			maxOccupants() > 0)
+			maxOccupants() > 0 &&
+			!_simulation->IsConnectedBuilding(buildingId()))
 		{
 			if (isConstructed()) {
 				hoverWarning = HoverWarning::Inaccessible;

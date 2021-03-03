@@ -1253,7 +1253,7 @@ std::vector<BonusPair> Smelter::GetBonuses()
 
 	if (_simulation->TownhallCardCountTown(_townId, CardEnum::CoalPipeline) > 0) {
 		if (_simulation->resourceCountTown(_townId, ResourceEnum::Coal) >= 1000) {
-			bonuses.push_back({ LOCTEXT("Coal Pipeline", "Coal Pipeline"), 30 });
+			bonuses.push_back({ LOCTEXT("Coal Pipeline", "Coal Pipeline"), 50 });
 		}
 	}
 

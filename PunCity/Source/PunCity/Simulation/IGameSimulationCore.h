@@ -156,8 +156,7 @@ public:
 	virtual WorldTile2 GetTownhallGateFast(int32 townId) = 0;
 	virtual WorldTile2 GetTownhallGate(int32 townId) = 0;
 	virtual FText townNameT(int32 townId) = 0;
-	
-	virtual FText GetTownSizeNameT(int32 playerId) = 0;
+
 	virtual int32 GetTownAgeTicks(int32 townId) = 0;
 
 	virtual bool IsConnectedToTowns(WorldTile2 tile, int32 playerId, std::vector<uint32>& path) = 0;
@@ -484,7 +483,6 @@ public:
 	//! Happiness
 	virtual int32 GetAverageHappiness(int32 townId) = 0;
 	virtual int32 taxHappinessModifier(int32 townId) = 0;
-	virtual int32 cannibalismHappinessModifier(int32 playerId) = 0;
 	virtual int32 citizenDeathHappinessModifier(int32 townId, SeasonStatEnum seasonStatEnum) = 0;
 	
 	//! Immigration

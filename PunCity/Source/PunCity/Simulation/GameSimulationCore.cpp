@@ -965,19 +965,29 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 							});
 						}
 
-						for (int32 townId : townIds) 
-						{
-							if (!unlockSys->didFirstTimeLaborer0 && _townManagers[playerId]->laborerCount() == 0) {
-								unlockSys->didFirstTimeLaborer0 = true;
-								AddPopup(playerId, {
-									FText::Format(
-										LOCTEXT("Laborer0FirstWarn1_Pop", "Your Laborer count is now 0 at {0}.<space>Every citizen is employed in a building. There is no free Laborer left to Haul and Gather Resources full-time.<space>"),
-										townNameT(townId)
-									),
-									LOCTEXT("Laborer0FirstWarn2_Pop", "This can cause logistics issues resulting in production slow-down or resources not being picked up.<space>"),
-									LOCTEXT("Laborer0FirstWarn3_Pop", "To increase your Laborer count, either expel workers from buildings, or manually set the Laborer count from the Townhall or Employment Bureau."),
-									});
-							}
+						if (!unlockSys->didFirstTimeLaborer0 && _townManagers[playerId]->laborerCount() == 0) {
+							unlockSys->didFirstTimeLaborer0 = true;
+							AddPopup(playerId, {
+								FText::Format(
+									LOCTEXT("Laborer0FirstWarn1_Pop", "Your Laborer count is now 0 at {0}.<space>Every citizen is employed in a building. There is no free Laborer left to Haul and Gather Resources full-time.<space>"),
+									townNameT(playerId)
+								),
+								LOCTEXT("Laborer0FirstWarn2_Pop", "This can cause logistics issues resulting in production slow-down or resources not being picked up.<space>"),
+								LOCTEXT("Laborer0FirstWarn3_Pop", "To increase your Laborer count, either expel workers from buildings, or manually set the Laborer count from the Townhall or Employment Bureau."),
+								}
+							);
+						}
+
+						if (!unlockSys->didFirstTimeLowHappiness && _townManagers[playerId]->aveOverallHappiness() < 65) {
+							unlockSys->didFirstTimeLowHappiness = true;
+
+							AddPopup(playerId, 
+								{
+									LOCTEXT("LowHappinessWarn1_Pop", "Your happiness is low.<space>Below 70% Happiness, Citizen's work efficiency will decrease.<space>"),
+									LOCTEXT("LowHappinessWarn2_Pop", "Below 50% Happiness, Citizens will start leaving your City.<space>"),
+									ToFText(TutorialLinkString(TutorialLinkEnum::Happiness))
+								}
+							);
 						}
 
 						/*
@@ -1227,6 +1237,41 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 					if (_playerOwnedManagers[playerId].hasChosenLocation()) {
 						unlockSystem(playerId)->Research(GetScience100PerRound(playerId), 4);
 					}
+				});
+			}
+
+
+			// Show happiness message in the middle of the round, twice a year
+			int32 tickModYear = _tickCount % Time::TicksPerYear;
+			if (tickModYear == (Time::TicksPerYear / 4) ||
+				tickModYear == (Time::TicksPerYear * 3 / 4))
+			{
+				ExecuteOnPlayersAndAI([&](int32 playerId)
+				{
+					int32 happiness = townManager(playerId).aveOverallHappiness();
+					
+					FText eventText;
+
+					if (happiness >= 95) {
+						eventText = LOCTEXT("HappinessIdolize_Event", "People idolize you as god.");
+					}
+					else if (happiness >= 85) {
+						eventText = LOCTEXT("HappinessLove_Event", "People love you.");
+					}
+					else if (happiness >= 70) {
+						eventText = LOCTEXT("HappinessLove_Event", "People think you are ok.");
+					}
+					else if (happiness >= 55) {
+						eventText = LOCTEXT("HappinessHate_Event", "People hate you.");
+					}
+					else {
+						eventText = LOCTEXT("HappinessFurious_Event", "People are furious at you.");
+					}
+					
+					_eventLogSystem.AddEventLog(playerId,
+						eventText,
+						false
+					);
 				});
 			}
 
@@ -3483,7 +3528,7 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 		else  {
 			// Doesn't need advices, population quest right away
 			auto popQuest = std::make_shared<PopulationQuest>();
-			popQuest->townSizeTier = 1;
+			popQuest->populationSizeTier = 1;
 			AddQuest(command.playerId, popQuest);
 		}
 	}
@@ -3604,7 +3649,7 @@ void GameSimulationCore::SellCards(FSellCards command)
 				TEXT_NUM(sellCount),
 				TEXT_NUM(sellTotal)
 			), 
-			true
+			false
 		);
 	}
 }

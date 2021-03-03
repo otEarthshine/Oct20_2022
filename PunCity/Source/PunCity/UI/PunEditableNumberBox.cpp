@@ -8,10 +8,18 @@ using namespace std;
 void UPunEditableNumberBox::ClickArrow(bool isDown)
 {
 	int32 changeAmount = isDown ? -1 : 1;
-	if (dataSource()->isCtrlDown() || dataSource()->isShiftDown()) {
-		changeAmount *= 10;
+
+	if (dataSource()->isCtrlDown()) {
+		changeAmount *= isDown ? ctrlClickDecrementAmount : ctrlClickIncrementAmount;
 	}
-	amount += changeAmount * incrementMultiplier;
+	else if (dataSource()->isShiftDown()) {
+		changeAmount *= shiftIncrementMultiplier;
+	}
+	else {
+		changeAmount *= incrementMultiplier;
+	}
+	
+	amount += changeAmount;
 
 	amount = min(maxAmount, max(minAmount, amount));
 
@@ -36,7 +44,8 @@ void UPunEditableNumberBox::ClickArrowUpButton() {
 
 void UPunEditableNumberBox::NumberChanged(const FText& Text, ETextCommit::Type CommitMethod)
 {
-	if (CommitMethod == ETextCommit::OnEnter || CommitMethod == ETextCommit::OnUserMovedFocus) {
+	if (CommitMethod == ETextCommit::OnEnter || CommitMethod == ETextCommit::OnUserMovedFocus) 
+	{
 		//PUN_DEBUG(FString("TradeAmountTextChanged Inside"));
 		FString tradeAmountString = Text.ToString();
 		amount = tradeAmountString.IsNumeric() ? FCString::Atoi(*tradeAmountString) : 0;

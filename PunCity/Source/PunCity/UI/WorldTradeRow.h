@@ -47,7 +47,7 @@ public:
 	// Callback for PunEditableNumberBox
 	void CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callBackEnum) final;
 
-private:
+public:
 	UPROPERTY(meta = (BindWidget)) UPunEditableNumberBox* PunTradeAmount;
 
 private:

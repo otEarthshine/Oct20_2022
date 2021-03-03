@@ -193,16 +193,6 @@ void House::FinishConstruction()
 
 }
 
-int32 House::GetAppealPercent() {
-	int32 appeal = _simulation->overlaySystem().GetAppealPercent(_centerTile);
-	if (_simulation->buildingFinishedCount(_townId, CardEnum::ArchitectStudio)) {
-		appeal += 5;
-	}
-	if (_simulation->buildingFinishedCount(_townId, CardEnum::EnvironmentalistGuild)) {
-		appeal += 15;
-	}
-	return appeal;
-}
 int32 House::housingHappiness() {
 	int32 happiness = GetAppealPercent();
 	return happiness;
@@ -244,11 +234,11 @@ void House::CalculateConsumptions(bool consumeLuxury)
 			// Target tax taking into account Science/Culture benefit of lux resources
 			int32 luxuryConsumption100_perRound = HumanLuxuryCost100PerRound_ForEachType * occupantCount();
 
-			int32 actualConsumption = GameRand::RandRound(luxuryConsumption100_perRound, price100, Time::Rounds());
-			//actualConsumption = max(1, actualConsumption);
-			actualConsumption = min(resourceCount(resourceEnum), actualConsumption); // Can't be more than available resource
-
-			if (consumeLuxury) {
+			if (consumeLuxury) 
+			{
+				int32 actualConsumption = GameRand::RandRound(luxuryConsumption100_perRound, price100, Time::Rounds());
+				actualConsumption = min(resourceCount(resourceEnum), actualConsumption); // Can't be more than available resource
+				
 				RemoveResource(resourceEnum, actualConsumption);
 				_simulation->statSystem(_townId).AddResourceStat(ResourceSeasonStatEnum::Consumption, resourceEnum, actualConsumption);
 			}
@@ -327,7 +317,7 @@ int32 House::GetScience100(ScienceEnum scienceEnum)
 		return _roundFoodConsumption100 / 30;
 
 	case ScienceEnum::Luxury:
-		return _roundLuxuryConsumption100 * 4 / 10; // 40% lux goes to science
+		return _roundLuxuryConsumption100 * 4 / 10; // 10% lux goes to science ... 30% could be gained from having Library
 		
 	case ScienceEnum::Library: {
 		if (_houseLvl < Library::MinHouseLvl) {

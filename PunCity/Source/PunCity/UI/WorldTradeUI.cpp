@@ -78,9 +78,13 @@ void UWorldTradeUI::TickUI()
 		return;
 	}
 
-	ResourceSystem& resourceSys = dataSource()->simulation().resourceSystem(worldTradeUITownId());
+	auto& sim = simulation();
+	ResourceSystem& resourceSys = sim.resourceSystem(worldTradeUITownId());
 
-	bool isSellOnly = simulation().building(punId).isEnum(CardEnum::Townhall);
+	Building& tradeBuilding = sim.building(punId);
+	bool isSellOnly = tradeBuilding.isEnum(CardEnum::Townhall);
+
+	int32 maxTradeQuantity = tradeBuilding.maxTradeQuatity() - _quantity;
 
 	{
 		FString searchString = SearchBox->GetText().ToString();
@@ -102,11 +106,14 @@ void UWorldTradeUI::TickUI()
 			}
 
 			// update text if inventory changed
-			//if (resourceCount != tradeRow->inventory) {
-				tradeRow->inventory = resourceCount;
-				tradeRow->UpdateTexts(); // Always updating tooltip
-			//}
+			tradeRow->inventory = resourceCount;
+			tradeRow->UpdateTexts(); // Always updating tooltip
 
+
+			tradeRow->PunTradeAmount->ctrlClickIncrementAmount = maxTradeQuantity;
+			tradeRow->PunTradeAmount->ctrlClickDecrementAmount = maxTradeQuantity;
+			
+			
 			// If this is a sellonly don't show left Arrow if the amount is 0 or more
 			tradeRow->RefreshSellOnlyState(isSellOnly);
 

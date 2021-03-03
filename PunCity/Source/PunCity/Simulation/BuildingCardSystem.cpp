@@ -76,6 +76,8 @@ void BuildingCardSystem::RollRareHandExecute()
 	// Clear old hand
 	_cardsRareHand.clear();
 
+	uint8 rareHandEnumInt = static_cast<uint8>(_rareHandEnum);
+
 	if (_rareHandEnum == RareHandEnum::InitialCards1)
 	{
 		std::vector<CardEnum> cardEnums
@@ -118,28 +120,65 @@ void BuildingCardSystem::RollRareHandExecute()
 	{
 		RandomInsertToRareHand(CrateCards);
 	}
-	else if (_rareHandEnum == RareHandEnum::PopulationQuestCards)
+	//! Population Quests
+	else if (static_cast<uint8>(RareHandEnum::PopulationQuestCards1) <= rareHandEnumInt && rareHandEnumInt <= static_cast<uint8>(RareHandEnum::PopulationQuestCards7))
 	{
 		int32 population = _simulation->populationPlayer(_playerId);
-		_rareHandMessage = FText::Format(LOCTEXT("PopulationMilestone_Pop", "{0} people now call your {1} home!"), TEXT_NUM(population), _simulation->GetTownSizeNameT(_playerId));
+		_rareHandMessage = FText::Format(LOCTEXT("PopulationMilestone_Pop", "{0} people now call your city home!"), TEXT_NUM(population));
 
-		std::vector<CardEnum> cardEnums
-		{
-			CardEnum::CoalPipeline,
-			CardEnum::MiningEquipment,
-			CardEnum::Conglomerate,
-			CardEnum::BeerTax,
-			CardEnum::ProductivityBook,
-			CardEnum::SustainabilityBook,
-			CardEnum::FrugalityBook,
-			CardEnum::GoldRush,
-		};
-
-		if (_simulation->GetHouseLvlCount(_playerId, 2, true) > 0) {
-			cardEnums.push_back(CardEnum::HomeBrew);
-			cardEnums.push_back(CardEnum::HappyBreadDay);
-			cardEnums.push_back(CardEnum::BlingBling);
+		std::vector<CardEnum> cardEnums;
+		if (_rareHandEnum == RareHandEnum::PopulationQuestCards1) {
+			cardEnums = {
+				CardEnum::ProductivityBook,
+				CardEnum::SustainabilityBook,
+				CardEnum::FrugalityBook,
+			};
 		}
+		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards2) {
+			cardEnums = {
+				CardEnum::BeerTax,
+				CardEnum::ChimneyRestrictor,
+				CardEnum::CoalTreatment,
+			};
+		}
+		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards3) {
+			cardEnums = {
+				CardEnum::CoalPipeline,
+				CardEnum::HomeBrew,
+				CardEnum::BirthControl,
+			};
+		}
+		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards4) {
+			cardEnums = {
+
+			};
+		}
+		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards5) {
+			cardEnums = {
+
+			};
+		}
+		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards6) {
+			cardEnums = {
+
+			};
+		}
+		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards7) {
+			cardEnums = {
+
+			};
+		}
+
+		//{
+		//	CardEnum::MiningEquipment,
+		//	CardEnum::Conglomerate,
+		//	CardEnum::GoldRush,
+		//};
+
+		//if (_simulation->GetHouseLvlCount(_playerId, 2, true) > 0) {
+		//	cardEnums.push_back(CardEnum::HappyBreadDay);
+		//	cardEnums.push_back(CardEnum::BlingBling);
+		//}
 
 		// Remove card if we already have it
 		for (size_t i = cardEnums.size(); i-- > 0;) {

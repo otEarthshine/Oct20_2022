@@ -306,6 +306,13 @@ private:
 			if (skelAsset.animationEnumToSequence.Contains(animationEnum)) {
 				skelMesh->PlayAnimation(skelAsset.animationEnumToSequence[animationEnum], true);
 				skelMesh->SetPlayRate(playRate);
+
+				// DEBUG TEST
+				int32 debugTemp = std::max(1, PunSettings::Get("DebugTemp"));
+				//skelMesh->EnableExternalTickRateControl(true);
+				//skelMesh->SetExternalTickRate(PunSettings::Get("DebugTemp"));
+				skelMesh->bEnableUpdateRateOptimizations = true;
+				skelMesh->AnimUpdateRateParams->UpdateRate = debugTemp;
 			}
 			else {
 				UE_DEBUG_BREAK();

@@ -402,13 +402,15 @@ public:
 		}
 		return std::max(0, currentHeat);
 	}
-	int32 funTicksActual() {
-		return std::max(0, _funTicks - ticksSinceLastUpdate());
-	}
 
 	void SetFunTicks(int32 funTicks) {
-		_funTicks = funTicks;
+		for (int32 i = 0; i < _serviceToFunTicks.size(); i++) {
+			_serviceToFunTicks[i] = funTicks;
+		}
 	}
+
+	virtual int32 happinessOverall() { return 100; }
+	
 
 	int32 hp() { return _hp100 / 100; }
 	int32 maxHP100() const { return 10000; }
@@ -633,7 +635,11 @@ public:
 		Ar << _heat;
 		Ar << _lastTickCelsiusRate;
 
-		Ar << _funTicks;
+		//Ar << _funTicks;
+		SerializeVecValue(Ar, _serviceToFunTicks);
+
+		SerializeVecValue(Ar, _happiness);
+		
 
 		Ar << _lastUpdateTick;
 		Ar << _lastPregnant;
@@ -806,7 +812,11 @@ protected:
 	int32 _heat;
 	int32 _lastTickCelsiusRate;
 
-	int32 _funTicks;
+	//int32 _funTicks;
+	std::vector<int32> _serviceToFunTicks;
+
+	std::vector<int32> _happiness;
+	
 	
 	int32 _lastUpdateTick; // This is for UnitAI's Update. There is another one for UnitLean
 	int32 _lastPregnant;

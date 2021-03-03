@@ -2567,10 +2567,24 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			ADDTEXT_(INVTEXT("<space>{0}: {1}/100"), LOCTEXT("Health", "Health"), TEXT_NUM(unit.hp()));
 
 			if (unit.isEnum(UnitEnum::Human)) {
-				ADDTEXT_(INVTEXT("<space>{0}: {1}%"), LOCTEXT("Fun", "Fun"), TEXT_NUM(unit.subclass<HumanStateAI>().funPercent()));
-#if WITH_EDITOR
-				ADDTEXT_(INVTEXT("<space> -- Fun Sec: {0}s"), TEXT_NUM(unit.subclass<HumanStateAI>().funTicksActual() / Time::TicksPerSecond));
-#endif
+				//ADDTEXT_(INVTEXT("<space>{0}: {1}%"), LOCTEXT("Fun", "Fun"), TEXT_NUM(unit.subclass<HumanStateAI>().funPercent()));
+
+				HumanStateAI& humanAI = unit.subclass<HumanStateAI>();
+
+				int32 happinessOverall = humanAI.happinessOverall();
+				descriptionBox->AddSpacer();
+				ADDTEXT_(LOCTEXT("HappinessCitizenUI", "Happiness: {0}{1}%"),
+					GetHappinessFace(happinessOverall),
+					TEXT_NUM(happinessOverall)
+				);
+				for (size_t i = 0; i < HappinessEnumCount; i++) {
+					int32 happiness = humanAI.GetHappinessByType(static_cast<HappinessEnum>(i));
+					ADDTEXT_(INVTEXT("<bullet>{0}% {1}</>"),
+						ColorHappinessText(happiness, FText::Format(INVTEXT("{0}%"), TEXT_NUM(happiness))),
+						HappinessEnumName[i]
+					);
+				}
+				
 			}
 
 			descriptionBox->AddRichTextParsed(args);
@@ -2655,31 +2669,41 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				descriptionBox->AddSpacer();
 
 				{
-					ADDTEXT_(INVTEXT("{0}<img id=\"Smile\"/>"), TEXT_NUM(human.happiness()));
+					ADDTEXT_(INVTEXT("{0}<img id=\"Smile\"/>"), TEXT_NUM(human.happinessOverall()));
 					auto widget = descriptionBox->AddRichText(LOCTEXT("Happiness", "Happiness"), args);
 
+					int32 happinessOverall = human.happinessOverall();
 					ADDTEXT_(
-						LOCTEXT("Happiness Tip", "Happiness: {0}<img id=\"Smile\"/>\n  Needs: {1}\n"), 
-						TEXT_NUM(human.happiness()), TEXT_NUM(human.baseHappiness())
+						LOCTEXT("Happiness Tip", "Happiness: {0}{1}\n"), 
+						TEXT_NUM(happinessOverall),
+						GetHappinessFace(happinessOverall)
 					);
 
-					auto addRow = [&](FText typeName, int32 value) {
-						ADDTEXT_(INVTEXT("   {0} {1}\n"), TEXT_NUM(value), typeName);
-					};
-					
-					addRow(LOCTEXT("food", "food"), human.foodHappiness());
-					addRow(LOCTEXT("heating", "heating"), human.heatHappiness());
-					addRow(LOCTEXT("housing", "housing"), human.housingHappiness());
-					addRow(LOCTEXT("fun", "fun"), human.funHappiness());
-					
-					ADDTEXT_(INVTEXT("  {0}: {1}\n"), LOCTEXT("Modifiers", "Modifiers"), TEXT_NUM(human.modifiersHappiness()));
-
-					for (size_t i = 0; i < HappinessModifierName.Num(); i++) {
-						int32 modifier = human.GetHappinessModifier(static_cast<HappinessModifierEnum>(i));
-						if (modifier != 0) {
-							addRow(HappinessModifierName[i], modifier);
-						}
+					for (size_t i = 0; i < HappinessEnumCount; i++) {
+						int32 happiness = human.GetHappinessByType(static_cast<HappinessEnum>(i));
+						ADDTEXT_(INVTEXT("   {0} {1}\n"), 
+							HappinessEnumName[i], 
+							ColorHappinessText(happiness, FText::Format(INVTEXT("{0}%"), TEXT_NUM(happiness)))
+						);
 					}
+
+					//auto addRow = [&](FText typeName, int32 value) {
+					//	ADDTEXT_(INVTEXT("   {0} {1}\n"), TEXT_NUM(value), typeName);
+					//};
+					//
+					//addRow(LOCTEXT("food", "food"), human.foodHappiness());
+					//addRow(LOCTEXT("heating", "heating"), human.heatHappiness());
+					//addRow(LOCTEXT("housing", "housing"), human.housingHappiness());
+					//addRow(LOCTEXT("fun", "fun"), human.funHappiness());
+					
+					//ADDTEXT_(INVTEXT("  {0}: {1}\n"), LOCTEXT("Modifiers", "Modifiers"), TEXT_NUM(human.modifiersHappiness()));
+
+					//for (size_t i = 0; i < HappinessModifierName.Num(); i++) {
+					//	int32 modifier = human.GetHappinessModifier(static_cast<HappinessModifierEnum>(i));
+					//	if (modifier != 0) {
+					//		addRow(HappinessModifierName[i], modifier);
+					//	}
+					//}
 					
 					AddToolTip(widget, args);
 				}

@@ -228,11 +228,9 @@ void UnlockSystem::OnEraUnlocked(TArray<FText>& args)
 	EraUnlockedDescription(args, currentEra(), false);
 
 	if (currentEra() == 2) {
-		cardSys.AddDrawCards(CardEnum::ChimneyRestrictor, 1);
 		//cardSys.AddDrawCards(CardEnum::ChildMarriage, 1);
 		//cardSys.AddDrawCards(CardEnum::ProlongLife, 1);
-		cardSys.AddDrawCards(CardEnum::BirthControl, 1);
-		cardSys.AddDrawCards(CardEnum::CoalTreatment, 1); // Encourage coal usage...
+
 	}
 	else if (currentEra() == 3) {
 		cardSys.AddDrawCards(CardEnum::WildCard, 1);

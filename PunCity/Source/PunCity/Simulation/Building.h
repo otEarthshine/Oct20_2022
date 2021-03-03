@@ -992,6 +992,12 @@ public:
 
 	virtual std::vector<BonusPair> GetBonuses();
 
+	int32 GetAppealPercent();
+
+	virtual int32 GetJobHappiness() {
+		return 70;
+	}
+
 	/*
 	 * Work Mode
 	 */

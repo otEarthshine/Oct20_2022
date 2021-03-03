@@ -273,6 +273,10 @@ public:
 		hoverWarning = HoverWarning::None;
 		return false;
 	}
+
+	int32 GetJobHappiness() override {
+		return 50;
+	}
 };
 
 class Quarry final : public Mine
@@ -333,6 +337,10 @@ public:
 
 	int32 baseInputPerBatch() override {
 		return Building::baseInputPerBatch() * (IsUpgraded(1) ? 70 : 100) / 100;
+	}
+
+	int32 GetJobHappiness() override {
+		return 60;
 	}
 };
 
@@ -556,6 +564,8 @@ public:
 	
 	void FinishConstruction() final;
 	std::vector<BonusPair> GetBonuses() override;
+
+	int32 GetJobHappiness() override { return 60; }
 };
 
 class Chocolatier : public IndustrialBuilding
@@ -1042,7 +1052,10 @@ public:
 class FunBuilding : public Building
 {
 public:
-	virtual int32 serviceQuality() { return 90; }
+	int32 serviceQuality() {
+		return baseServiceQuality() + GetAppealPercent() / 2;
+	}
+	virtual int32 baseServiceQuality() { return 50; }
 
 	// System:
 	//  - 1 Tavern serves ~40 people (10 per season)
@@ -1081,7 +1094,7 @@ public:
 
 	static const int32 MinHouseLvl = 2;
 	
-	int32 serviceQuality() override { return 110; }
+	int32 baseServiceQuality() override { return 70; }
 };
 
 
@@ -1089,7 +1102,6 @@ class Tavern final : public FunBuilding
 {
 public:
 	static const int32 Radius = 30;
-	int32 serviceQuality() override { return 90; }
 };
 
 

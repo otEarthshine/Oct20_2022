@@ -1303,57 +1303,65 @@ bool HumanStateAI::TryFun()
 	}
 
 	const int32 funPercentToGoToTavern = 70;
-	if (_funTicks < FunTicksAt100Percent * funPercentToGoToTavern / 100)
-	{
-		House& house = _simulation->building<House>(_houseId, CardEnum::House);
-		WorldTile2 houseCenter = house.centerTile();
 
-		auto findAvailableFunBuilding = [&](CardEnum funBuildingEnum, int32& nearestFunBuildingId)
+	for (int32 i = 0; i < FunServiceEnumCount; i++)
+	{
+		if (funPercent(i) < funPercentToGoToTavern)
 		{
-			std::vector<int32> funBuildingIds = _simulation->buildingIds(_townId, funBuildingEnum);
-			int32 nearestDist = numeric_limits<int32>::max();
-			for (int32 funBuildingId : funBuildingIds) {
-				FunBuilding& funBuilding = _simulation->building(funBuildingId).subclass<FunBuilding>(funBuildingEnum);
-				if (funBuilding.isUsable()) {
-					// Get service nearest to house
-					int32 dist = WorldTile2::Distance(houseCenter, funBuilding.centerTile());
-					if (dist < nearestDist) {
-						nearestDist = dist;
-						nearestFunBuildingId = funBuildingId;
+			House& house = _simulation->building<House>(_houseId, CardEnum::House);
+			WorldTile2 houseCenter = house.centerTile();
+
+			auto findAvailableFunBuilding = [&](CardEnum funBuildingEnum, int32& nearestFunBuildingId)
+			{
+				std::vector<int32> funBuildingIds = _simulation->buildingIds(_townId, funBuildingEnum);
+				int32 nearestDist = numeric_limits<int32>::max();
+				for (int32 funBuildingId : funBuildingIds) {
+					FunBuilding& funBuilding = _simulation->building(funBuildingId).subclass<FunBuilding>(funBuildingEnum);
+					if (funBuilding.isUsable()) {
+						// Get service nearest to house
+						int32 dist = WorldTile2::Distance(houseCenter, funBuilding.centerTile());
+						if (dist < nearestDist) {
+							nearestDist = dist;
+							nearestFunBuildingId = funBuildingId;
+						}
 					}
 				}
+			};
+
+			// Find available fun building in range of home
+			int32 nearestFunBuildingId = -1;
+
+			CardEnum funBuildingEnum = FunServiceToBuildingEnum(static_cast<FunServiceEnum>(i));
+
+			findAvailableFunBuilding(funBuildingEnum, nearestFunBuildingId);
+			
+			//// if House is lvl 3+, try to find theatre first;
+			//if (house.houseLvl() >= 3) {
+			//	findAvailableFunBuilding(CardEnum::Theatre, nearestFunBuildingId);
+			//}
+
+			//// if theatre isn't available, try tavern...
+			//if (nearestFunBuildingId == -1) {
+			//	findAvailableFunBuilding(CardEnum::Tavern, nearestFunBuildingId);
+			//}
+
+			if (nearestFunBuildingId != -1)
+			{
+				Building& funBuilding = _simulation->building(nearestFunBuildingId);
+
+				Add_HaveFun(nearestFunBuildingId);
+				Add_Wait(Time::TicksPerSecond * 8);
+				Add_MoveTo(funBuilding.gateTile());
+
+				_unitState = UnitState::GetFun;
+
+				AddDebugSpeech("(Succeed)TryFun theatre");
+				return true;
 			}
-		};
-
-		// Find available fun building in range of home
-		int32 nearestFunBuildingId = -1;
-		
-		// if House is lvl 3+, try to find theatre first;
-		if (house.houseLvl() >= 3) {
-			findAvailableFunBuilding(CardEnum::Theatre, nearestFunBuildingId);
-		}
-
-		// if theatre isn't available, try tavern...
-		if (nearestFunBuildingId == -1) {
-			findAvailableFunBuilding(CardEnum::Tavern, nearestFunBuildingId);
-		}
-
-		if (nearestFunBuildingId != -1) 
-		{
-			Building& funBuilding = _simulation->building(nearestFunBuildingId);
-			
-			Add_HaveFun(nearestFunBuildingId);
-			Add_Wait(Time::TicksPerSecond * 8);
-			Add_MoveTo(funBuilding.gateTile());
-			
-			_unitState = UnitState::GetFun;
-
-			AddDebugSpeech("(Succeed)TryFun theatre");
-			return true;
 		}
 	}
 
-	AddDebugSpeech("(Failed)TryFun ... Fun not low " + to_string(funPercent()));
+	AddDebugSpeech("(Failed)TryFun ... Fun not low ");
 	return false;
 }
 
@@ -1555,7 +1563,7 @@ bool HumanStateAI::TryRanch()
 
 	ReserveWork(0);
 
-	Add_AttackOutgoing(targetFullId, 100);
+	Add_AttackOutgoing(targetFullId, 1000);
 	Add_MoveTo(_unitData->atomLocation(targetFullId.id).worldTile2());
 
 
@@ -3032,6 +3040,88 @@ int32 HumanStateAI::housingHappiness()
 	}
 	return 0;
 }
+
+void HumanStateAI::UpdateHappiness()
+{
+	// For some stats like food variety, better if it moves slowly
+	auto moveTowardsTargetHappiness = [&](int32 lastHappiness, int32 targetHappiness, int32 decrementAmount100 = 100, int32 incrementAmount100 = 100) {
+		if (targetHappiness > lastHappiness) return lastHappiness + GameRand::Rand100RoundTo1(incrementAmount100);
+		if (targetHappiness < lastHappiness) return lastHappiness - GameRand::Rand100RoundTo1(decrementAmount100);
+		return lastHappiness;
+	};
+
+	// Food
+	{
+		int32 targetFoodVarietyHappiness = 70 + _simulation->townManager(_townId).townFoodVariety() * 3;
+
+		int32 happiness = moveTowardsTargetHappiness(GetHappinessByType(HappinessEnum::Food), targetFoodVarietyHappiness, 30);
+
+		int32 foodNeedHappiness = std::max(0, std::min(70, _food * 70 / minWarnFood()));
+		
+		SetHappiness(HappinessEnum::Food, min(foodNeedHappiness, happiness));
+	}
+
+	// Heat??
+	// std::min(100, _heat * 100 / minWarnHeat()))
+
+	// Housing
+	{
+		int32 targetHousingHappiness = 0;
+		if (_houseId != -1) {
+			targetHousingHappiness = _simulation->building<House>(_houseId, CardEnum::House).housingHappiness();
+		}
+		int32 happiness = moveTowardsTargetHappiness(GetHappinessByType(HappinessEnum::Housing), targetHousingHappiness, 30);
+		SetHappiness(HappinessEnum::Housing, happiness);
+	}
+
+	// Luxury
+	{
+		int32 targetLuxuryHappiness = 0;
+		if (_houseId != -1) {
+			targetLuxuryHappiness = _simulation->building<House>(_houseId, CardEnum::House).luxuryHappiness();
+		}
+		int32 happiness = moveTowardsTargetHappiness(GetHappinessByType(HappinessEnum::Luxury), targetLuxuryHappiness, 30);
+		SetHappiness(HappinessEnum::Luxury, happiness);
+	}
+
+	// Entertainment
+	{
+		// Highest fun has the most weight, each consequent fun service has 50% weight
+		vector<int32> serviceToFunTicks = _serviceToFunTicks;
+		std::sort(serviceToFunTicks.begin(), serviceToFunTicks.end());
+
+		int32 funTicks = 0;
+		int32 denominator = 1;
+		for (int32 i = serviceToFunTicks.size(); i-- > 0;) {
+			funTicks += serviceToFunTicks[i] / denominator;
+			denominator *= 2;
+		}
+		
+		SetHappiness(HappinessEnum::Entertainment, FunTickToPercent(funTicks));
+	}
+
+	// Job
+	{
+		Building* workplc = workplace();
+		
+		int32 targetHappiness = workplc ? workplc->GetJobHappiness() : 70;
+		
+		int32 happiness = moveTowardsTargetHappiness(GetHappinessByType(HappinessEnum::Job), targetHappiness, 500, 500);
+		SetHappiness(HappinessEnum::Job, happiness);
+	}
+
+
+	// City Attractiveness
+	{
+		int32 targetHappiness = 100;
+		targetHappiness += _simulation->TownhallCardCountAll(_townId, CardEnum::Cannibalism) > 0 ? -50 : 0;
+
+		int32 happiness = moveTowardsTargetHappiness(GetHappinessByType(HappinessEnum::CityAttractiveness), targetHappiness, 200, 50);
+		SetHappiness(HappinessEnum::CityAttractiveness, happiness);
+	}
+}
+
+
 int32 HumanStateAI::luxuryHappinessModifier()
 {
 	if (_houseId != -1) {

@@ -67,7 +67,13 @@ void UnitStateAI::AddUnit(UnitEnum unitEnum, int32 townId, UnitFullId fullId, IU
 	_heat = unitInfo().maxHeatCelsiusTicks;
 	_lastTickCelsiusRate = 0;
 
-	_funTicks = FunTicksAt100Percent * 80 / 100;
+	//_funTicks = FunTicksAt100Percent * 80 / 100;
+	_serviceToFunTicks.clear();
+	_serviceToFunTicks.resize(FunServiceEnumCount, FunTicksAt100Percent * 80 / 100);
+
+	_happiness.clear();
+	_happiness.resize(HappinessEnumCount, 90);
+	
 
 	//_birthTick = Time::Ticks() - ageTicks;
 	_lastUpdateTick = Time::Ticks();
@@ -191,7 +197,10 @@ void UnitStateAI::Update()
 		}
 		_lastTickCelsiusRate = tickCelsiusRate;
 
-		_funTicks = std::max(0, _funTicks - ticksPassed);
+		//_funTicks = std::max(0, _funTicks - ticksPassed);
+		for (int32 i = 0; i < FunServiceEnumCount; i++) {
+			_serviceToFunTicks[i] = std::max(0, _serviceToFunTicks[i] - ticksPassed);
+		}
 		
 		//int32_t heatChangeThisTick = ticksPassed * (tickCelsiusFromX > 0 ? tickCelsiusFromX * 3 : tickCelsiusFromX); // Heat recover 3 times faster once above critical temperature
 
@@ -253,27 +262,46 @@ void UnitStateAI::Update()
 				_hp100 = maxHP100() / 2;
 			}
 
-			// Homeless people could leave your town
-			// This only happens beyond 30 population
+
 			// Random chance to leave within 1 season
-			if (_houseId == -1 && _townId != -1 &&
-				_simulation->populationTown(_townId) > 30 &&
+			if (_townId != -1 &&
 				GameRand::Rand() % (Time::TicksPerRound * 2) < ticksPassed)
 			{
-				_simulation->AddMigrationPendingCount(_townId, 1);
-				_simulation->AddEventLog(_playerId,
-					FText::Format(LOCTEXT("XLeftTownHomeless_Event", "{0} left your town (homeless)."), GetUnitNameT()),
-					true
-				);
+				// Homeless people could leave your town
+				// This only happens beyond 30 population
+				if (_houseId == -1 &&
+					_simulation->populationTown(_townId) > 30)
+				{
+					_simulation->AddMigrationPendingCount(_townId, 1);
+					_simulation->AddEventLog(_playerId,
+						FText::Format(LOCTEXT("XLeftTownHomeless_Event", "{0} left your town (homeless)."), GetUnitNameT()),
+						true
+					);
 
-				_simulation->soundInterface()->Spawn2DSound("UI", "DeathBell", _playerId);
+					_simulation->soundInterface()->Spawn2DSound("UI", "DeathBell", _playerId);
 
-				if (_simulation->IsAIPlayer(_playerId)) {
-					_LOG(PunAI, "%s Left Homeless", _simulation->AIPrintPrefix(_playerId));
+					if (_simulation->IsAIPlayer(_playerId)) {
+						_LOG(PunAI, "%s Left Homeless", _simulation->AIPrintPrefix(_playerId));
+					}
+
+					Die();
+					return;
 				}
-				
-				Die();
-				return;
+
+				// Low Happiness people could also leave your town
+				if (happinessOverall() < 50)
+				{
+					_simulation->AddMigrationPendingCount(_townId, 1);
+					_simulation->AddEventLog(_playerId,
+						FText::Format(LOCTEXT("XLeftTownUnhappy_Event", "{0} left your town (unhappy)."), GetUnitNameT()),
+						true
+					);
+
+					_simulation->soundInterface()->Spawn2DSound("UI", "DeathBell", _playerId);
+
+					Die();
+					return;
+				}
 			}
 		}
 
@@ -602,16 +630,6 @@ void UnitStateAI::AttackIncoming(UnitFullId attacker, int32 ownerWorkplaceId, in
 {
 	//PUN_LOG("Unit AttackIncoming id:%d defenderAlive:%d", _id, _unitData->unitLean(_id).alive());
 	//PUN_CHECK2(_unitData->unitLean(_id).alive(), debugStr());
-
-	// Unit might already died before arrow arrive...
-	// In that case ignorethis...
-	//const UnitLean& unitLean = _unitData->unitLean(_id);
-	//if (!unitLean.alive()) {
-	//	return;
-	//}
-	//if (defenderId.isValid() && defenderId.birthTicks != unitLean.birthTicks()) {
-	//	return;
-	//}
 
 	// Unit might already died before arrow arrive...
 	if (!_unitData->alive(defenderId)) {
@@ -1866,7 +1884,10 @@ void UnitStateAI::HaveFun()
 	{
 		FunBuilding& funBuilding = building.subclass<FunBuilding>();
 		funBuilding.UseService();
-		_funTicks = funBuilding.serviceQuality() * FunTicksAt100Percent / 100;
+		
+		//_funTicks = funBuilding.serviceQuality() * FunTicksAt100Percent / 100;
+		int32 entertainmentIndex = static_cast<int32>(BuildingEnumToFunService(building.buildingEnum()));
+		_serviceToFunTicks[entertainmentIndex] = funBuilding.serviceQuality() * FunTicksAt100Percent / 100;
 		
 		AddDebugSpeech("(Done)HaveFun ... Theatre or Tavern");
 	}

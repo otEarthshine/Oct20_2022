@@ -38,6 +38,8 @@ public:
 		INIT_TAB(Research);
 		INIT_TAB(AssigningJobs);
 		INIT_TAB(LeaderSkill);
+
+		INIT_TAB(Happiness);
 		
 #undef INIT_TAB
 		TutorialCloseButton->OnClicked.AddDynamic(this, &UTutorialUI::OnClickCloseButton);
@@ -61,9 +63,8 @@ public:
 	void ShowTutorialUI(TutorialLinkEnum linkEnum) {
 		switch (linkEnum)
 		{
-
 		case TutorialLinkEnum::CameraControl: OnClickCameraControl(); break;
-
+		case TutorialLinkEnum::Happiness: OnClickHappiness(); break;
 		default:
 			break;
 		}
@@ -94,6 +95,8 @@ private:
 	UPROPERTY(meta = (BindWidget)) UButton* AssigningJobsSwitch; //
 	UPROPERTY(meta = (BindWidget)) UButton* LeaderSkillSwitch;
 
+	UPROPERTY(meta = (BindWidget)) UButton* HappinessSwitch;
+
 	/*
 	 * Pages
 	 */
@@ -114,6 +117,8 @@ private:
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* Research;
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* AssigningJobs;
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* LeaderSkill;
+
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* Happiness;
 
 	//
 	UPROPERTY(meta = (BindWidget)) UButton* MoreHousingButton;
@@ -144,6 +149,8 @@ private:
 	UFUNCTION() void OnClickResearch() { OnClickSwitchButton(ResearchSwitch, Research); PlayMedia_Research();  }
 	UFUNCTION() void OnClickAssigningJobs() { OnClickSwitchButton(AssigningJobsSwitch, AssigningJobs); PlayMedia_AssigningJobs(); }
 	UFUNCTION() void OnClickLeaderSkill() { OnClickSwitchButton(LeaderSkillSwitch, LeaderSkill); PlayMedia_LeaderSkill(); }
+
+	UFUNCTION() void OnClickHappiness() { OnClickSwitchButton(HappinessSwitch, Happiness); }
 
 public:
 	UFUNCTION(BlueprintImplementableEvent) void PlayMedia_CameraControl();

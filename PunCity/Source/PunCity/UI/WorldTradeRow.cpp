@@ -5,6 +5,8 @@
 #include "../Simulation/GameSimulationCore.h"
 #include "WorldTradeUI.h"
 
+#define LOCTEXT_NAMESPACE "WorldTradeRow"
+
 using namespace std;
 
 void UWorldTradeRow::Init(UWorldTradeUI* worldTradeUI, ResourceEnum resourceEnumIn)
@@ -30,6 +32,8 @@ void UWorldTradeRow::Init(UWorldTradeUI* worldTradeUI, ResourceEnum resourceEnum
 	//PunTradeAmount->amount = 0;
 	//PunTradeAmount->UpdateText();
 
+	AddToolTip(PunTradeAmount->ArrowUpButton, LOCTEXT("TradeArrowUp_Tip", "<Orange>Shift-click</> to increment by 10<space><Orange>Ctrl-click</> to increment to max buy amount."));
+	AddToolTip(PunTradeAmount->ArrowUpButton, LOCTEXT("TradeArrowDown_Tip", "<Orange>Shift-click</> to decrement by 10<space><Orange>Ctrl-click</> to decrement to max sell amount."));
 	
 	UpdateTexts();
 }
@@ -58,3 +62,6 @@ void UWorldTradeRow::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callBac
 {
 	_worldTradeUI->UpdateTotal();
 }
+
+
+#undef LOCTEXT_NAMESPACE

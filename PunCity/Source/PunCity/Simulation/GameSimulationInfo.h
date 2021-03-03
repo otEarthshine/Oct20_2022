@@ -2205,7 +2205,7 @@ static const std::vector<std::pair<CardEnum, int32>> BuildingEnumToUpkeep =
 	
 	{ CardEnum::Library, 15 },
 	{ CardEnum::School, 18 },
-	{ CardEnum::Theatre, 25 },
+	{ CardEnum::Theatre, 50 },
 	{ CardEnum::Tavern, 15 },
 
 	{ CardEnum::TradingPost, 20 },
@@ -2558,8 +2558,8 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::Library,		LOCTEXT("Library", "Library"),	LOCTEXT("Library (Plural)", "Libraries"),				WorldTile2(4, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{80,20,0},	LOCTEXT("Library Desc", "+2 <img id=\"Science\"/> for surrounding level 2+ houses (effect doesn't stack).")),
 	BldInfo(CardEnum::School,		LOCTEXT("School", "School"),	LOCTEXT("School (Plural)", "Schools"),		WorldTile2(4, 7),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{80,50,10},	LOCTEXT("School Desc", "+3 <img id=\"Science\"/> for surrounding level 3+ houses (effect doesn't stack).")),
 
-	BldInfo(CardEnum::Theatre,		LOCTEXT("Theatre", "Theatre"),	LOCTEXT("Theatre (Plural)", "Theatres"),				WorldTile2(7, 6),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{80,30,0},	LOCTEXT("Theatre Desc", "Increase visitor's Fun. Visitors must live in a level 2+ house. Service quality 120.")),
-	BldInfo(CardEnum::Tavern,		LOCTEXT("Tavern", "Tavern"),	LOCTEXT("Tavern (Plural)", "Taverns"),				WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{50,30,0},	LOCTEXT("Tavern Desc", "Increase visitor's Fun. Service quality 90.")),
+	BldInfo(CardEnum::Theatre,		LOCTEXT("Theatre", "Theatre"),	LOCTEXT("Theatre (Plural)", "Theatres"),				WorldTile2(7, 6),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{80,50,20},	LOCTEXT("Theatre Desc", "Increase visitor's Fun. Base Service quality 70.")),
+	BldInfo(CardEnum::Tavern,		LOCTEXT("Tavern", "Tavern"),	LOCTEXT("Tavern (Plural)", "Taverns"),				WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{50,30,0},	LOCTEXT("Tavern Desc", "Increase visitor's Fun. Base Service quality 50.")),
 
 	BldInfo(CardEnum::Tailor,		LOCTEXT("Tailor", "Tailor"),	LOCTEXT("Tailor (Plural)", "Tailors"),				WorldTile2(5, 6),	ResourceEnum::Leather, ResourceEnum::None, ResourceEnum::Cloth,	 10, 4,	{120, 100, 30},	LOCTEXT("Tailor Desc", "Make Clothes from Leather or Wool.")),
 
@@ -2748,7 +2748,7 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::CoalTreatment,		LOCTEXT("Coal Treatment", "Coal Treatment"), 250, LOCTEXT("Coal Treatment Desc", "Coal gives 20% more heat")),
 
 
-	BldInfo(CardEnum::CoalPipeline,			LOCTEXT("Coal Pipeline", "Coal Pipeline"), 150, LOCTEXT("Coal Pipeline Desc", "+30% productivity for smelters if the town has more than 1,000 Coal")),
+	BldInfo(CardEnum::CoalPipeline,			LOCTEXT("Coal Pipeline", "Coal Pipeline"), 150, LOCTEXT("Coal Pipeline Desc", "+50% productivity for smelters if the town has more than 1,000 Coal")),
 	BldInfo(CardEnum::MiningEquipment,		LOCTEXT("Mining Equipment", "Mining Equipment"), 150, LOCTEXT("Mining Equipment Desc", "+30% productivity for mines if you have a Blacksmith")),
 	BldInfo(CardEnum::Conglomerate,			LOCTEXT("Conglomerate", "Conglomerate"), 150, LOCTEXT("Conglomerate Desc", "+50<img id=\"Coin\"/> income if there are 2+ Trading Companies")),
 	BldInfo(CardEnum::SmeltCombo,			LOCTEXT("Iron Smelter Combo", "Iron Smelter Combo"), 150, LOCTEXT("Iron Smelter Combo Desc", "+30% productivity to all Iron Smelter with adjacent Iron Smelter")),
@@ -2772,7 +2772,7 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::TreasuryGuard,	LOCTEXT("Treasury Guard", "Treasury Guard"), 20, LOCTEXT("Treasury Guard Desc", "Guard your city against Steal and Snatch for two years. Require <img id=\"Coin\"/>xPopulation to activate.")),
 
 	
-	BldInfo(CardEnum::Cannibalism,		LOCTEXT("Cannibalism", "Cannibalism"), 0, LOCTEXT("Cannibalism Desc", "On death, people drop Meat. -10 <img id=\"Smile\"/> to all citizens.")),
+	BldInfo(CardEnum::Cannibalism,		LOCTEXT("Cannibalism", "Cannibalism"), 0, LOCTEXT("Cannibalism Desc", "On death, people drop Meat. -50% City Attractiveness Happiness.")),
 
 	BldInfo(CardEnum::WildCard,		LOCTEXT("Wild Card", "Wild Card"), 15, LOCTEXT("Wild Card Desc", "Build an unlocked building of your choice.")),
 
@@ -6035,6 +6035,7 @@ enum class TutorialLinkEnum : uint8
 	TutorialButton,
 	Overview,
 	CameraControl,
+	Happiness,
 };
 
 static std::string TutorialLinkString(TutorialLinkEnum linkEnum)
@@ -6172,9 +6173,30 @@ enum class RareHandEnum : uint8
 	InitialCards2,
 	RareCards,
 	BuildingSlotCards,
-	PopulationQuestCards, // PopulationQuest cards drive people to upgrade their houses
 	CratesCards, // Crates gives resource cards
+
+	PopulationQuestCards1, // PopulationQuest cards drive people to upgrade their houses
+	PopulationQuestCards2,
+	PopulationQuestCards3,
+	PopulationQuestCards4,
+	PopulationQuestCards5,
+	PopulationQuestCards6,
+	PopulationQuestCards7,
 };
+
+static const int32 PopulationQuestTierThreshold[]
+{
+	0,
+	25,
+	50,
+	100,
+	150,
+	200,
+	300,
+	500,
+};
+static int32 GetPopulationQuestTierThreshold(int32 tier) { return PopulationQuestTierThreshold[tier]; }
+
 
 enum class FloatupEnum : uint8
 {
@@ -7042,6 +7064,108 @@ enum class PlotStatEnum
 
 	Count,
 };
+
+/*
+ * Happiness
+ */
+enum class HappinessEnum
+{
+	Food,
+	//Heat,
+	//Healthcare,
+	Housing,
+	Luxury,
+	Entertainment,
+	Job,
+	CityAttractiveness, // New Colonists, Cannibalism, Tax etc.
+};
+
+#define LOCTEXT_NAMESPACE "HappinessName"
+static const TArray<FText> HappinessEnumName
+{
+	LOCTEXT("Food", "Food"),
+	//LOCTEXT("Heat", "Heat"),
+	//LOCTEXT("Healthcare", "Healthcare"),
+	LOCTEXT("Housing", "Housing"),
+	LOCTEXT("Luxury", "Luxury"),
+	LOCTEXT("Job", "Job"),
+	LOCTEXT("Entertainment", "Entertainment"),
+	LOCTEXT("City Attractiveness", "City Attractiveness"),
+};
+#undef LOCTEXT_NAMESPACE
+static const int32 HappinessEnumCount = HappinessEnumName.Num();
+
+static int32 GetHappinessColorLevel(int32 value)
+{
+	if (value < 50) return 0; // Red
+	if (value < 70) return 1; // Orange
+	if (value < 85) return 2; // Yellow
+	return 3; // Green
+}
+static FText ColorHappinessText(int32 value, FText textIn)
+{
+	int32 level = GetHappinessColorLevel(value);
+	switch (level)
+	{
+	case 0: return TEXT_TAG("<Red>", textIn);
+	case 1: return TEXT_TAG("<Orange>", textIn);
+	case 2: return TEXT_TAG("<Yellow>", textIn);
+	case 3: return TEXT_TAG("<Green>", textIn);
+	default:
+		UE_DEBUG_BREAK();
+		return textIn;
+	}
+}
+static FText GetHappinessFace(int32 value)
+{
+	int32 level = GetHappinessColorLevel(value);
+	switch (level)
+	{
+	case 0: return INVTEXT("<img id=\"HappinessRed\"/>");
+	case 1: return INVTEXT("<img id=\"HappinessOrange\"/>");
+	case 2: return INVTEXT("<img id=\"HappinessYellow\"/>");
+	case 3: return INVTEXT("<img id=\"HappinessGreen\"/>");
+	default:
+		UE_DEBUG_BREAK();
+		return INVTEXT("<Red>");
+	}
+}
+
+enum class FunServiceEnum
+{
+	Theatre,
+	Tavern,
+	
+	Count,
+};
+static const int32 FunServiceEnumCount = static_cast<int32>(FunServiceEnum::Count);
+
+const std::vector<std::pair<FunServiceEnum, CardEnum>> FunServiceToCardEnum
+{
+	{FunServiceEnum::Theatre, CardEnum::Theatre},
+	{FunServiceEnum::Tavern, CardEnum::Tavern},
+};
+
+static FunServiceEnum BuildingEnumToFunService(CardEnum buildingEnum)
+{
+	for (const auto& pair : FunServiceToCardEnum) {
+		if (pair.second == buildingEnum) {
+			return pair.first;
+		}
+	}
+	UE_DEBUG_BREAK();
+	return FunServiceEnum::Tavern;
+}
+static CardEnum FunServiceToBuildingEnum(FunServiceEnum funEnum)
+{
+	for (const auto& pair : FunServiceToCardEnum) {
+		if (pair.first == funEnum) {
+			return pair.second;
+		}
+	}
+	UE_DEBUG_BREAK();
+	return CardEnum::Tavern;
+}
 
 
 enum class HappinessModifierEnum

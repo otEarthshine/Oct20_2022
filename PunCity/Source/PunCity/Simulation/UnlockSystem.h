@@ -1069,6 +1069,7 @@ public:
 		Ar << didFirstTimeMedicineLowPopup;
 		Ar << didFirstTimeToolsLowPopup;
 		Ar << didFirstTimeLaborer0;
+		Ar << didFirstTimeLowHappiness;
 	}
 
 	int32 techsCompleted() { return techsFinished; }
@@ -1104,6 +1105,7 @@ public:
 	bool didFirstTimeMedicineLowPopup = false;
 	bool didFirstTimeToolsLowPopup = false;
 	bool didFirstTimeLaborer0 = false;
+	bool didFirstTimeLowHappiness = false;
 
 private:
 	IGameSimulationCore* _simulation = nullptr;

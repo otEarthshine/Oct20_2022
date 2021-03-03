@@ -103,11 +103,11 @@ public:
 	
 	
 	static int32 GetMaxHouseLvl();
-
-	int32 GetAppealPercent();
 	
 	int32 housingHappiness();
-	int32 luxuryHappiness() { return luxuryCount() * 5; }
+	int32 luxuryHappiness() {
+		return 30 + luxuryCount() * 5;
+	} // ~16 types
 
 
 	int32 luxuryCount();

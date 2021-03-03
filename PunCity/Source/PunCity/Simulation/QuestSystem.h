@@ -203,10 +203,10 @@ struct PopulationQuest : Quest
 {
 	QuestEnum classEnum() override { return QuestEnum::PopulationQuest; }
 	
-	int32 townSizeTier = -1;
+	int32 populationSizeTier = -1;
 	void Serialize(FArchive& Ar) override {
 		Quest::Serialize(Ar);
-		Ar << townSizeTier;
+		Ar << populationSizeTier;
 	}
 
 	FText questTitle() override { return LOCTEXT("GrowPopulation_Title", "Grow Population"); }
@@ -215,18 +215,18 @@ struct PopulationQuest : Quest
 		return LOCTEXT("GrowPopulation_Desc", "To grow your population:<bullet>Add more houses. The more available housing spaces, the more children people will have.</><bullet>Keep your citizens happy</>");
 	}
 	FText numberDescription() override {
-		return FText::Format(INVTEXT("{0}/{1}"), TEXT_NUM(simulation->populationTown(playerId)), TEXT_NUM(GetTownSizeMinPopulation(townSizeTier)));
+		return FText::Format(INVTEXT("{0}/{1}"), TEXT_NUM(simulation->populationTown(playerId)), TEXT_NUM(GetTownSizeMinPopulation(populationSizeTier)));
 	}
 
-	float fraction() override { return static_cast<float>(simulation->populationTown(playerId)) / GetTownSizeMinPopulation(townSizeTier); }
+	float fraction() override { return static_cast<float>(simulation->populationTown(playerId)) / GetTownSizeMinPopulation(populationSizeTier); }
 
 	void UpdateStatus(int32 value) override
 	{
-		int32 population = simulation->populationTown(playerId);
-		
-		if (population >= GetTownSizeMinPopulation(townSizeTier))
+		int32 population = simulation->populationPlayer(playerId);
+		if (population >= GetPopulationQuestTierThreshold(populationSizeTier))
 		{
-			simulation->GenerateRareCardSelection(playerId, RareHandEnum::PopulationQuestCards, NSLOCTEXT("QuestSys", "PopulationQuest", "PopulationQuest"));
+			RareHandEnum rareHandEnum = static_cast<RareHandEnum>(static_cast<uint8>(RareHandEnum::PopulationQuestCards1) + populationSizeTier - 1);
+			simulation->GenerateRareCardSelection(playerId, rareHandEnum, NSLOCTEXT("QuestSys", "PopulationQuest", "PopulationQuest"));
 
 			EndQuest();
 		}
@@ -748,7 +748,7 @@ private:
 		case QuestEnum::TownhallUpgradeQuest:
 		{
 			auto popQuest = std::make_shared<PopulationQuest>();
-			popQuest->townSizeTier = 1;
+			popQuest->populationSizeTier = 1;
 			AddQuest(popQuest);
 
 			AddQuest(std::make_shared<SurviveWinterQuest>());
@@ -756,17 +756,11 @@ private:
 		}
 
 		case QuestEnum::PopulationQuest: {
-			int32 nextTier = std::static_pointer_cast<PopulationQuest>(quest)->townSizeTier + 1;
+			int32 nextTier = std::static_pointer_cast<PopulationQuest>(quest)->populationSizeTier + 1;
 			if (nextTier <= 5) {
 				auto popQuest = std::make_shared<PopulationQuest>();
-				popQuest->townSizeTier = std::static_pointer_cast<PopulationQuest>(quest)->townSizeTier + 1;
+				popQuest->populationSizeTier = std::static_pointer_cast<PopulationQuest>(quest)->populationSizeTier + 1;
 				AddQuest(popQuest);
-			}
-			// House upgrade tree after first pop quest
-			if (nextTier == 2) {
-				//auto newQuest = std::make_shared<HouseUpgradeQuest>();
-				//newQuest->upgradeQuestLvl = 1;
-				//AddQuest(newQuest);
 			}
 			return;
 		}

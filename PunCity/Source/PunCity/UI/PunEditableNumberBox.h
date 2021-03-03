@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "PunCity/UI/PunWidget.h"
 #include "PunEditableText.h"
 #include "PunEditableNumberBox.generated.h"
@@ -22,7 +21,7 @@ public:
 		
 		BUTTON_ON_CLICK(ArrowDownButton, this, &UPunEditableNumberBox::ClickArrowDownButton);
 		BUTTON_ON_CLICK(ArrowUpButton, this, &UPunEditableNumberBox::ClickArrowUpButton);
-
+		
 		EditableNumber->PunEditableTextBox->OnTextCommitted.Clear();
 		EditableNumber->PunEditableTextBox->OnTextCommitted.AddDynamic(this, &UPunEditableNumberBox::NumberChanged);
 		amount = 0;
@@ -96,9 +95,13 @@ public:
 	bool justInitialized = false;
 
 	int32 incrementMultiplier = 10;
+	int32 shiftIncrementMultiplier = 100;
 
 	int32 minAmount = MIN_int32;
 	int32 maxAmount = MAX_int32;
+
+	int32 ctrlClickIncrementAmount = 10;
+	int32 ctrlClickDecrementAmount = 10;
 
 	bool isEditableNumberActive = true;
 

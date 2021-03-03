@@ -16,7 +16,7 @@
 
 using namespace std;
 
-static const int32_t TownSizeMinPopulation[]
+static const int32 TownSizeMinPopulation[]
 {
 	0,
 	25,
@@ -155,7 +155,9 @@ public:
 		_simulation = simulation;
 		taxLevel = 2;
 
-		_aveHappinessModifiers.resize(HappinessModifierName.Num());
+		_aveHappiness.resize(HappinessEnumName.Num());
+		//_aveHappinessModifiers.resize(HappinessModifierName.Num());
+		_townFoodVariety = 1;
 
 		incomes100.resize(IncomeEnumCount);
 		influenceIncomes100.resize(InfluenceIncomeEnumCount);
@@ -206,25 +208,34 @@ public:
 	
 	const std::vector<int32>& provincesClaimed() { return _provincesClaimed; }
 	
-	
-	int32 aveFoodHappiness() { return _aveFoodHappiness; }
-	int32 aveHeatHappiness() { return _aveHeatHappiness; }
-	int32 aveHousingHappiness() { return _aveHousingHappiness; }
-	int32 aveFunHappiness() { return _aveFunHappiness; }
-	int32 aveNeedHappiness() { return (_aveFoodHappiness + _aveHeatHappiness + _aveHousingHappiness + _aveFunHappiness) / 4; }
 
-	int32 aveHappinessModifier(HappinessModifierEnum modifierEnum) {
-		return _aveHappinessModifiers[static_cast<int>(modifierEnum)];
+	int32 aveHappinessByType(HappinessEnum happinessEnum) {
+		return _aveHappiness[static_cast<int>(happinessEnum)];
 	}
-	int32 aveHappinessModifierSum() {
+	int32 aveOverallHappiness()
+	{
 		int32 sum = 0;
-		for (size_t i = 0; i < _aveHappinessModifiers.size(); i++) {
-			sum += _aveHappinessModifiers[i];
+		for (size_t i = 0; i < _aveHappiness.size(); i++) {
+			sum += _aveHappiness[i];
 		}
 		return sum;
 	}
 
-	int32 aveHappiness() { return aveNeedHappiness() + aveHappinessModifierSum(); }
+	int32 townFoodVariety() {
+		return _townFoodVariety;
+	}
+
+	
+	//int32 aveHappinessModifier(HappinessModifierEnum modifierEnum) {
+	//	return _aveHappinessModifiers[static_cast<int>(modifierEnum)];
+	//}
+	//int32 aveHappinessModifierSum() {
+	//	int32 sum = 0;
+	//	for (size_t i = 0; i < _aveHappinessModifiers.size(); i++) {
+	//		sum += _aveHappinessModifiers[i];
+	//	}
+	//	return sum;
+	//}
 
 
 	const std::vector<int32>& adultIds() { return _adultIds; }
@@ -302,7 +313,7 @@ public:
 	/*
 	 * Population
 	 */
-	 //! Population
+	//! Population
 	int32 population() { return adultPopulation() + childPopulation(); }
 
 	int32 adultPopulation() { return _adultIds.size(); }
@@ -824,12 +835,10 @@ public:
 		Ar << _builderCount;
 		SerializeVecValue(Ar, _roadMakerIds);
 
-		Ar << _aveFoodHappiness;
-		Ar << _aveHeatHappiness;
-		Ar << _aveHousingHappiness;
-		Ar << _aveFunHappiness;
 
-		SerializeVecValue(Ar, _aveHappinessModifiers);
+		SerializeVecValue(Ar, _aveHappiness);
+		Ar << _townFoodVariety;
+		//SerializeVecValue(Ar, _aveHappinessModifiers);
 
 		_territoryBoxExtent >> Ar;
 
@@ -901,12 +910,15 @@ private:
 	int32 _builderCount = 0;
 	std::vector<int32> _roadMakerIds;
 
-	int32 _aveFoodHappiness = 0;
-	int32 _aveHeatHappiness = 0;
-	int32 _aveHousingHappiness = 0;
-	int32 _aveFunHappiness = 0;
+	//int32 _aveFoodHappiness = 0;
+	//int32 _aveHeatHappiness = 0;
+	//int32 _aveHousingHappiness = 0;
+	//int32 _aveFunHappiness = 0;
+	//std::vector<int32> _aveHappinessModifiers;
 
-	std::vector<int32> _aveHappinessModifiers;
+	std::vector<int32> _aveHappiness;
+
+	int32 _townFoodVariety = 1;
 
 	//std::unordered_map<int32, int32> _claimedProvinceConnected; // Fast check if the province is too far from townhall
 	TileArea _territoryBoxExtent;

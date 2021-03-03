@@ -1002,6 +1002,19 @@ std::vector<BonusPair> Building::GetBonuses()
 }
 
 
+int32 Building::GetAppealPercent()
+{
+	int32 appeal = _simulation->overlaySystem().GetAppealPercent(_centerTile);
+	if (_simulation->buildingFinishedCount(_townId, CardEnum::ArchitectStudio)) {
+		appeal += 5;
+	}
+	if (_simulation->buildingFinishedCount(_townId, CardEnum::EnvironmentalistGuild)) {
+		appeal += 15;
+	}
+	return appeal;
+}
+
+
 void Building::SetDeliveryTarget(int32 deliveryTargetId)
 {
 	check(deliveryTargetId != -1);

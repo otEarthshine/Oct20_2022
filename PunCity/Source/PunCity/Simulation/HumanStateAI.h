@@ -171,7 +171,7 @@ public:
 	}
 
 	int32 happinessPenalty100() {
-		int32 happ = happiness();
+		int32 happ = happinessOverall();
 		if (happ < minWarnHappiness()) {
 			int32 result = 90 * (minWarnHappiness() - happ) / minWarnHappiness();
 			PUN_CHECK(result >= 0);
@@ -185,18 +185,42 @@ public:
 	/*
 	 * Happiness
 	 */
-	// Core: Food, Heat, Housing, Entertainment
-	int32 foodHappiness() { return std::max(0, std::min(70, _food * 70 / minWarnFood())); }
+	// Food
+	int32 foodHappiness() {
+		// Having 10 food types in storage lead to max happiness
+		
+		return std::max(0, std::min(70, _food * 70 / minWarnFood()));
+	}
+	// Heat
 	int32 heatHappiness() { return std::min(100, _heat * 100 / minWarnHeat()); }
+
+	// Housing
 	int32 housingHappiness();
-	int32 funHappiness() {
-		return funPercent();
+
+	int32 GetHappinessByType(HappinessEnum happinessEnum) {
+		int32 happinessEnumInt = static_cast<int32>(happinessEnum);
+		if (happinessEnumInt < _happiness.size()) {
+			return _happiness[happinessEnumInt];
+		}
+		return 0;
 	}
 
-	int32 baseHappiness() {
-		return (foodHappiness() + heatHappiness() + housingHappiness() + funHappiness()) / 4;
+	void SetHappiness(HappinessEnum happinessEnum, int32 value) {
+		int32 happinessEnumInt = static_cast<int32>(happinessEnum);
+		if (happinessEnumInt < _happiness.size()) {
+			_happiness[static_cast<int>(happinessEnum)] = value;
+		}
 	}
 
+	void UpdateHappiness();
+
+	
+
+	//int32 baseHappiness() {
+	//	return (foodHappiness() + heatHappiness() + housingHappiness() + funHappiness()) / 4;
+	//}
+
+	// TODO: remove?
 	int32 GetHappinessModifier(HappinessModifierEnum modifierEnum)
 	{
 		// Guard
@@ -224,7 +248,7 @@ public:
 		}
 			
 		case HappinessModifierEnum::Tax: return _simulation->taxHappinessModifier(_townId);
-		case HappinessModifierEnum::Cannibalism: return _simulation->cannibalismHappinessModifier(_playerId);
+		//case HappinessModifierEnum::Cannibalism: return _simulation->cannibalismHappinessModifier(_playerId);
 		case HappinessModifierEnum::DeathStarve: return _simulation->citizenDeathHappinessModifier(_townId, SeasonStatEnum::DeathStarve);
 		case HappinessModifierEnum::DeathCold: return _simulation->citizenDeathHappinessModifier(_townId, SeasonStatEnum::DeathCold);
 		default:
@@ -242,18 +266,25 @@ public:
 		return result;
 	}
 	
-	int32 happiness() { 
-		return baseHappiness() + modifiersHappiness();
+	int32 happinessOverall() override { 
+		int32 result = 0;
+		for (int32 i = 0; i < HappinessEnumCount; i++) {
+			result += GetHappinessByType(static_cast<HappinessEnum>(i));
+		}
+		return result / HappinessEnumCount;
 	}
 
 	int32 minWarnHappiness() { return 50; }
-	bool needHappiness() { return happiness() < minWarnHappiness(); }
+	bool needHappiness() { return happinessOverall() < minWarnHappiness(); }
 
-	int32 funPercent() {
-		return _funTicks * 100 / FunTicksAt100Percent;
+	static int32 FunTickToPercent(int32 funTicks) {
+		return funTicks * 100 / FunTicksAt100Percent;
 	}
-	int32 funTicks() {
-		return _funTicks;
+	int32 funPercent(int32 funServiceEnumInt) {
+		return FunTickToPercent(_serviceToFunTicks[funServiceEnumInt]);
+	}
+	int32 funTicks(int32 funServiceEnumInt) {
+		return _serviceToFunTicks[funServiceEnumInt];
 	}
 
 	/*

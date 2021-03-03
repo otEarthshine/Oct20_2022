@@ -32,7 +32,7 @@ public:
 
 		CASE(TutorialButton, LOCTEXT("ShowButton_Link", "(Show me the button..)"));
 		CASE(CameraControl, LOCTEXT("ShowHow_Link)", "(Show me how..)"));
-
+		CASE(Happiness, LOCTEXT("HappinessInfo_Link", "(more detail on Happiness..)"));
 
 #undef CASE
 #undef LOCTEXT_NAMESPACE

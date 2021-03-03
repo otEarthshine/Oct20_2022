@@ -492,10 +492,7 @@ public:
 		return building(townhallId).subclass<TownHall>(CardEnum::Townhall).townNameT();
 		//return GetTownhall(townId).townNameT();
 	}
-	
-	FText GetTownSizeNameT(int32 playerId) final {
-		return townManager(playerId).GetTownSizeName();
-	}
+
 	int32 GetTownAgeTicks(int32 townId) final {
 		return GetTownhall(townId).townAgeTicks();
 	}
@@ -2086,12 +2083,9 @@ public:
 
 	// If half pop dies from starve/cold, happiness would -100
 	int32 GetAverageHappiness(int32 townId) final {
-		return townManager(townId).aveHappiness();
+		return townManager(townId).aveOverallHappiness();
 	}
 	int32 taxHappinessModifier(int32 townId) final { return townManager(townId).taxHappinessModifier(); }
-	int32 cannibalismHappinessModifier(int32 playerId) final {
-		return TownhallCardCountAll(playerId, CardEnum::Cannibalism) > 0 ? -10 : 0;
-	}
 	int32 citizenDeathHappinessModifier(int32 townId, SeasonStatEnum statEnum) final {
 		SubStatSystem& statSystem = _statSystem.townStatSystem(townId);
 		int32 deaths = statSystem.GetYearlyStat(statEnum);
@@ -2878,7 +2872,9 @@ public:
 			}
 		}
 
-		adjacentAttackerTownIds.resize(3);
+		if (adjacentAttackerTownIds.size() > 3) {
+			adjacentAttackerTownIds.resize(3);
+		}
 
 		return adjacentAttackerTownIds;
 	}

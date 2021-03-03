@@ -981,23 +981,31 @@ void UMainGameUI::Tick()
 			Happiness->SetText(FText(), TEXT_NUM(sim.GetAverageHappiness(playerId())));
 
 			TArray<FText> args;
-			ADDTEXT_(
-				LOCTEXT("Happiness_Tip1", "Happiness: {0}<img id=\"Smile\"/><space>Base: {1}<bullet>{2} food</><bullet>{3} heat</><bullet>{4} housing</><bullet>{5} fun</>"),
-				TEXT_NUM(townManager.aveHappiness()),
-				TEXT_NUM(townManager.aveNeedHappiness()),
-				TEXT_NUM(townManager.aveFoodHappiness()),
-				TEXT_NUM(townManager.aveHeatHappiness()),
-				TEXT_NUM(townManager.aveHousingHappiness()),
-				TEXT_NUM(townManager.aveFunHappiness())
-			);
+			//ADDTEXT_(
+			//	LOCTEXT("Happiness_Tip1", "Happiness: {0}<img id=\"Smile\"/><space><bullet>{2} food</><bullet>{3} heat</><bullet>{4} housing</><bullet>{5} fun</>"),
+			//	TEXT_NUM(townManager.aveHappiness()),
+			//	TEXT_NUM(townManager.aveFoodHappiness()),
+			//	TEXT_NUM(townManager.aveHeatHappiness()),
+			//	TEXT_NUM(townManager.aveHousingHappiness()),
+			//	TEXT_NUM(townManager.aveFunHappiness())
+			//);
 
-			ADDTEXT_(LOCTEXT("Happiness_Tip2", "Modifiers: {0}"), TEXT_NUM(townManager.aveHappinessModifierSum()));
-			for (size_t i = 0; i < HappinessModifierName.Num(); i++) {
-				int32 modifier = townManager.aveHappinessModifier(static_cast<HappinessModifierEnum>(i));
-				if (modifier != 0) {
-					ADDTEXT_(INVTEXT("<bullet>{0} {1}</>"), TEXT_NUM(modifier), HappinessModifierName[i]);
-				}
+			ADDTEXT_(LOCTEXT("Happiness_Tip1", "Happiness: {0}%"), TEXT_NUM(townManager.aveOverallHappiness()));
+			for (size_t i = 0; i < HappinessEnumCount; i++) {
+				int32 aveHappiness = townManager.aveHappinessByType(static_cast<HappinessEnum>(i));
+				ADDTEXT_(INVTEXT("<bullet>{0}% {1}</>"), 
+					ColorHappinessText(aveHappiness, FText::Format(INVTEXT("{0}%"), TEXT_NUM(aveHappiness))),
+					HappinessEnumName[i]
+				);
 			}
+
+			//ADDTEXT_(LOCTEXT("Happiness_Tip2", "Modifiers: {0}"), TEXT_NUM(townManager.aveHappinessModifierSum()));
+			//for (size_t i = 0; i < HappinessModifierName.Num(); i++) {
+			//	int32 modifier = townManager.aveHappinessModifier(static_cast<HappinessModifierEnum>(i));
+			//	if (modifier != 0) {
+			//		ADDTEXT_(INVTEXT("<bullet>{0} {1}</>"), TEXT_NUM(modifier), HappinessModifierName[i]);
+			//	}
+			//}
 
 			AddToolTip(Happiness, JOINTEXT(args));
 		}

@@ -67,6 +67,8 @@ FText TownManager::GetTownSizeName() {
 	return FText();
 }
 
+
+
 /*
  * Job
  */
@@ -877,38 +879,47 @@ void TownManager::Tick1Sec()
 	/*
 	 * Happiness update...
 	 */
-	_aveFoodHappiness = 0;
-	_aveHeatHappiness = 0;
-	_aveHousingHappiness = 0;
-	_aveFunHappiness = 0;
+	//std::fill(_aveHappinessModifiers.begin(), _aveHappinessModifiers.end(), 0);
 
-	std::fill(_aveHappinessModifiers.begin(), _aveHappinessModifiers.end(), 0);
-
+	// Update Food Variety
+	_townFoodVariety = 0;
+	for (ResourceEnum foodEnum : FoodEnums) {
+		if (_simulation->resourceCountTown(_townId, foodEnum) > 0) {
+			_townFoodVariety++;
+		}
+	}
+	
+	std::fill(_aveHappiness.begin(), _aveHappiness.end(), 0);
+	
 	int32 adultPopulation = _adultIds.size();
-	if (adultPopulation > 0) {
+	if (adultPopulation > 0) 
+	{
+		// Sum up
 		for (auto humanId : _adultIds)
 		{
 			HumanStateAI& human = _simulation->unitAI(humanId).subclass<HumanStateAI>(UnitEnum::Human);
 
-			_aveFoodHappiness += human.foodHappiness();
-			_aveHeatHappiness += human.heatHappiness();
-			_aveHousingHappiness += human.housingHappiness();
-			_aveFunHappiness += human.funHappiness();
+			//for (size_t i = 0; i < _aveHappinessModifiers.size(); i++) {
+			//	_aveHappinessModifiers[i] += human.GetHappinessModifier(static_cast<HappinessModifierEnum>(i));
+			//}
 
-			for (size_t i = 0; i < _aveHappinessModifiers.size(); i++) {
-				_aveHappinessModifiers[i] += human.GetHappinessModifier(static_cast<HappinessModifierEnum>(i));
+			for (size_t i = 0; i < _aveHappiness.size(); i++) {
+				_aveHappiness[i] += human.GetHappinessByType(static_cast<HappinessEnum>(i));
 			}
 		}
-		_aveFoodHappiness /= adultPopulation;
-		_aveHeatHappiness /= adultPopulation;
-		_aveHousingHappiness /= adultPopulation;
-		_aveFunHappiness /= adultPopulation;
 
-		for (size_t i = 0; i < _aveHappinessModifiers.size(); i++) {
-			int32 sumHappiness = _aveHappinessModifiers[i];
-			_aveHappinessModifiers[i] = sumHappiness / adultPopulation;
-			PUN_CHECK(_aveHappinessModifiers[i] < 1000 && _aveHappinessModifiers[i] > -1000);
+		// Take average
+		for (size_t i = 0; i < _aveHappiness.size(); i++) {
+			int32 sumHappiness = _aveHappiness[i];
+			_aveHappiness[i] = sumHappiness / adultPopulation;
+			PUN_CHECK(_aveHappiness[i] < 1000 && _aveHappiness[i] > -1000);
 		}
+
+		//for (size_t i = 0; i < _aveHappinessModifiers.size(); i++) {
+		//	int32 sumHappiness = _aveHappinessModifiers[i];
+		//	_aveHappinessModifiers[i] = sumHappiness / adultPopulation;
+		//	PUN_CHECK(_aveHappinessModifiers[i] < 1000 && _aveHappinessModifiers[i] > -1000);
+		//}
 	}
 
 	//if (Time::IsSummer() || Time::IsAutumn())

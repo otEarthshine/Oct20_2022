@@ -141,7 +141,13 @@ UnitDisplayState UUnitDisplayComponent::GetUnitTransformAndVariation(UnitStateAI
 	{	
 		// Special case: Horse for caravan
 		if (animationEnum == UnitAnimationEnum::Caravan) {
-			return  { UnitEnum::Horse, UnitAnimationEnum::Walk, 0 };
+			return  { UnitEnum::HorseCaravan, UnitAnimationEnum::Walk, 0 };
+		}
+		if (animationEnum == UnitAnimationEnum::HorseMarket) {
+			return  { UnitEnum::HorseMarket, UnitAnimationEnum::Walk, 0 };
+		}
+		if (animationEnum == UnitAnimationEnum::HorseLogistics) {
+			return  { UnitEnum::HorseLogistics, UnitAnimationEnum::Walk, 0 };
 		}
 		if (animationEnum == UnitAnimationEnum::Ship) {
 			return  { UnitEnum::SmallShip, UnitAnimationEnum::Walk, 0 };
@@ -481,20 +487,9 @@ void UUnitDisplayComponent::UpdateResourceDisplay(int32 unitId, UnitStateAI& uni
 		FTransform transform(rotator, transformIn.GetTranslation(), transformIn.GetScale3D());
 		return transform;
 	};
-	
-	if (_currentDisplayState.unitEnum == UnitEnum::Horse) {
-		_auxMeshes->Add(GetMeshName(_currentDisplayState.unitEnum, 0), unitId, getAuxTransform(), 0);
-	}
-	else
-	{
-		//! Cart Display
-		if (_currentDisplayState.unitEnum == UnitEnum::Human &&
-			unit.animationEnum() == UnitAnimationEnum::Immigration) 
-		{
-			_auxMeshes->Add(GetMeshName(UnitEnum::Human, 0), unitId, getAuxTransform(), 0);
-		}
 
-		
+	auto displayResource = [&](float inventoryShift, float inventoryHeight = 0.0f)
+	{
 		//! Resource Display
 		ResourceEnum heldEnum = unit.inventory().Display();
 		if (heldEnum != ResourceEnum::None)
@@ -512,9 +507,7 @@ void UUnitDisplayComponent::UpdateResourceDisplay(int32 unitId, UnitStateAI& uni
 			// Display smaller resource on units
 			transform.SetScale3D(FVector(0.7, 0.7, 0.7));
 
-			float inventoryShift = unit.isEnum(UnitEnum::Human) ? 4 : 8;
-
-			FVector horizontalShift = rotator.RotateVector(FVector(inventoryShift, 0, 0));
+			FVector horizontalShift = rotator.RotateVector(FVector(inventoryShift, 0, inventoryHeight));
 			transform.SetTranslation(transform.GetTranslation() + horizontalShift + FVector(0, 0, 10));
 
 			// Zeros the rotation
@@ -524,5 +517,58 @@ void UUnitDisplayComponent::UpdateResourceDisplay(int32 unitId, UnitStateAI& uni
 
 			_resourceMeshes->Add(ResourceDisplayNameF(heldEnum), unitId, resourceTransform, 0, unitId);
 		}
+	};
+	
+	if (_currentDisplayState.unitEnum == UnitEnum::HorseCaravan) 
+	{
+		_auxMeshes->Add(GetMeshName(_currentDisplayState.unitEnum, 0), unitId, getAuxTransform(), 0);
+	}
+	else if (_currentDisplayState.unitEnum == UnitEnum::HorseLogistics ||
+			_currentDisplayState.unitEnum == UnitEnum::HorseMarket)
+	{
+		_auxMeshes->Add(GetMeshName(_currentDisplayState.unitEnum, 0), unitId, getAuxTransform(), 0);
+
+		displayResource(-15, 5);
+	}
+	else
+	{
+		//! Cart Display
+		if (_currentDisplayState.unitEnum == UnitEnum::Human &&
+			unit.animationEnum() == UnitAnimationEnum::Immigration) 
+		{
+			_auxMeshes->Add(GetMeshName(UnitEnum::Human, 0), unitId, getAuxTransform(), 0);
+		}
+
+		displayResource(unit.isEnum(UnitEnum::Human) ? 4 : 8);
+		
+		////! Resource Display
+		//ResourceEnum heldEnum = unit.inventory().Display();
+		//if (heldEnum != ResourceEnum::None)
+		//{
+		//	FTransform transform = transformIn;
+
+		//	//! TODO: !!! hack around vertex animate laziness
+		//	//if (IsAnimal(unit.unitEnum())) {
+		//	FRotator rotator = transform.Rotator();
+		//	transform.SetScale3D(FVector(1, 1, 1));
+		//	rotator.Yaw += 90;
+		//	//}
+
+
+		//	// Display smaller resource on units
+		//	transform.SetScale3D(FVector(0.7, 0.7, 0.7));
+
+		//	float inventoryShift = unit.isEnum(UnitEnum::Human) ? 4 : 8;
+
+		//	FVector horizontalShift = rotator.RotateVector(FVector(inventoryShift, 0, 0));
+		//	transform.SetTranslation(transform.GetTranslation() + horizontalShift + FVector(0, 0, 10));
+
+		//	// Zeros the rotation
+		//	FRotator resourceRotator = transform.Rotator();
+		//	resourceRotator.Yaw -= 90;
+		//	FTransform resourceTransform(resourceRotator, transform.GetTranslation(), transform.GetScale3D());
+
+		//	_resourceMeshes->Add(ResourceDisplayNameF(heldEnum), unitId, resourceTransform, 0, unitId);
+		//}
 	}
 }

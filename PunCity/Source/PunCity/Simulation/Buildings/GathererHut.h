@@ -1002,7 +1002,7 @@ public:
 class Library final : public Building
 {
 public:
-	static const int32_t Radius = 20;
+	static const int32_t Radius = 30;
 	static const int32_t SciencePerHouse = 2;
 
 	static const int32 MinHouseLvl = 2;
@@ -1015,7 +1015,7 @@ public:
 class School final : public Building
 {
 public:
-	static const int32_t Radius = 20;
+	static const int32_t Radius = 30;
 	static const int32_t SciencePerHouse = 3;
 
 	static const int32 MinHouseLvl = 3;
@@ -1029,7 +1029,7 @@ public:
 class Bank final : public Building
 {
 public:
-	static const int32 Radius = 20;
+	static const int32 Radius = 30;
 	static const int32 ProfitPerHouse = 10;
 
 	static const int32 MinHouseLvl = 2;
@@ -1049,13 +1049,22 @@ public:
 	int32 lastRoundProfit;
 };
 
+
+static const std::vector<int32> BaseServiceQuality
+{
+	50,
+	70,
+};
+
 class FunBuilding : public Building
 {
 public:
 	int32 serviceQuality() {
-		return baseServiceQuality() + GetAppealPercent() / 2;
+		return ServiceQuality(buildingEnum(), GetAppealPercent());
 	}
-	virtual int32 baseServiceQuality() { return 50; }
+	static int32 ServiceQuality(CardEnum buildingEnum, int32 appealPercent) {
+		return BuildingEnumToBaseServiceQuality(buildingEnum) + appealPercent / 2;
+	}
 
 	// System:
 	//  - 1 Tavern serves ~40 people (10 per season)
@@ -1093,8 +1102,7 @@ public:
 	static const int32 Radius = 30;
 
 	static const int32 MinHouseLvl = 2;
-	
-	int32 baseServiceQuality() override { return 70; }
+
 };
 
 

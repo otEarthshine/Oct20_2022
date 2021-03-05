@@ -16,6 +16,7 @@
 #include "PunGraph.h"
 #include "PunTutorialLink.h"
 #include "ManageStorageElement.h"
+#include "PunBudgetAdjuster.h"
 
 
 #include "PunBoxWidget.generated.h"
@@ -348,6 +349,12 @@ public:
 		return widget;
 	}
 
+	UPunBudgetAdjuster* AddBudgetAdjuster(int32 objectId)
+	{
+		auto widget = GetChildElement<UPunBudgetAdjuster>(UIEnum::PunBudgetAdjuster);
+		return widget;
+	}
+
 	UPunEditableNumberBox* AddEditableNumberBox(UPunWidget* callbackParent, CallbackEnum callbackEnum, int32 objectId, FText description, int32 amount, 
 												FText checkBoxEnabledDescription = FText(), bool isChecked = false, ResourceEnum resourceEnum = ResourceEnum::None)
 	{
@@ -469,7 +476,10 @@ public:
 				curBody.clear();
 				i += 5;
 
-				int32 linkEnumInt = FCString::Atoi(ToTChar(body.substr(i + 1, 2))); // i + 1 because i+=5 took into account i++
+				// TODO: support multiple digits
+				std::wstring linkEnumStdStr = body.substr(i + 2, 1);
+				auto linkEnumStr = ToTChar(linkEnumStdStr);
+				int32 linkEnumInt = FCString::Atoi(linkEnumStr); // i + 1 because i+=5 took into account i++
 				AddTutorialLink(static_cast<TutorialLinkEnum>(linkEnumInt));
 				
 				i += 2;// Add increment 2 more indices since we are using 2 chars to determine linkEnum

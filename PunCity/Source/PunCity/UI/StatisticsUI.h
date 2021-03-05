@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "PunCity/UI/PunWidget.h"
+#include "PunCity/UI/PunBoxWidget.h"
 #include "Components/WidgetSwitcher.h"
 #include "TimeSeriesPlot.h"
 #include "GraphDataSource.h"
@@ -40,6 +40,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* ScienceStatButton;
 	UPROPERTY(meta = (BindWidget)) UButton* FoodFuelStatButton;
 	UPROPERTY(meta = (BindWidget)) UButton* FoodUsageStatButton;
+	UPROPERTY(meta = (BindWidget)) UButton* HappinessStatButton;
 	UPROPERTY(meta = (BindWidget)) UButton* ImportExportStatButton;
 	UPROPERTY(meta = (BindWidget)) UButton* MarketStatButton;
 
@@ -59,6 +60,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UTimeSeriesPlot* ScienceGraph;
 	UPROPERTY(meta = (BindWidget)) UTimeSeriesPlot* FoodFuelGraph;
 	UPROPERTY(meta = (BindWidget)) UTimeSeriesPlot* FoodUsageGraph;
+	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* HappinessStatisticsBox;
 	UPROPERTY(meta = (BindWidget)) UTimeSeriesPlot* ImportExportGraph;
 
 	/*
@@ -112,6 +114,7 @@ public:
 
 		setHighlight(FoodFuelStatButton);
 		setHighlight(FoodUsageStatButton);
+		setHighlight(HappinessStatButton);
 		setHighlight(ImportExportStatButton);
 		setHighlight(MarketStatButton);
 	}
@@ -127,7 +130,8 @@ public:
 		case 4: return ScienceStatButton;
 		case 5: return FoodFuelStatButton;
 		case 6: return FoodUsageStatButton;
-		case 7: return ImportExportStatButton;
+		case 7: return HappinessStatButton;
+		case 8: return ImportExportStatButton;
 		default:
 			return MarketStatButton;
 		}
@@ -150,8 +154,9 @@ private:
 	UFUNCTION() void OnScienceStatButtonClick() { OnStatButtonClick(4); }
 	UFUNCTION() void OnFoodFuelStatButtonClick() { OnStatButtonClick(5); }
 	UFUNCTION() void OnFoodUsageStatButtonClick() { OnStatButtonClick(6); }
-	UFUNCTION() void OnImportExportStatButtonClick() { OnStatButtonClick(7); }
-	UFUNCTION() void OnMarketStatButtonClick() { OnStatButtonClick(8); }
+	UFUNCTION() void OnHappinessStatButtonClick() { OnStatButtonClick(7); }
+	UFUNCTION() void OnImportExportStatButtonClick() { OnStatButtonClick(8); }
+	UFUNCTION() void OnMarketStatButtonClick() { OnStatButtonClick(9); }
 
 	UFUNCTION() void OnMarketDropDownChanged(FString sItem, ESelectInfo::Type seltype) {
 		if (seltype == ESelectInfo::Type::Direct) return;

@@ -2047,11 +2047,21 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						descriptionBox->AddRichText(LOCTEXT("Work done", "Work done"), TEXT_PERCENT(building.workPercent()));
 					}
 				}
-				else
+				else if (building.shouldDisplayConstructionUI())
 				{		
 					//resourceAndWorkSS << "constructReserved: " << (int)(100.0f * building.workReserved() / workCost) << "%\n";
 
 					descriptionBox->AddRichText(LOCTEXT("Construct", "Construct"), TEXT_PERCENT(building.constructionPercent()));
+
+					int32 quickBuildCost = building.GetQuickBuildCost();
+					bool canQuickBuild = simulation.money(playerId()) >= quickBuildCost;
+
+					TArray<FText> argsLocal;
+					argsLocal.Add(LOCTEXT("Quick Build", "Quick Build"));
+					ADDTEXT(argsLocal, INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(FText::AsNumber(quickBuildCost), !canQuickBuild));
+
+					descriptionBox->AddSpacer();
+					descriptionBox->AddButton2Lines(JOINTEXT(argsLocal), this, CallbackEnum::QuickBuild, true, false, objectId);
 					
 #if WITH_EDITOR
 					descriptionBox->AddRichText("-- buildManSecCost100", to_string(building.buildTime_ManSec100()));
@@ -2094,7 +2104,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				 * Inventory
 				 */
 				std::vector<ResourceHolderInfo>& holderInfos = building.holderInfos();
-				if (!building.isConstructed()) 
+				if (building.shouldDisplayConstructionUI())
 				{
 					descriptionBox->AddLineSpacer();
 					descriptionBox->AddRichText(TEXT_TAG("<Subheader>", LOCTEXT("Resources needed:", "Resources needed:")));
@@ -2569,21 +2579,21 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			if (unit.isEnum(UnitEnum::Human)) {
 				//ADDTEXT_(INVTEXT("<space>{0}: {1}%"), LOCTEXT("Fun", "Fun"), TEXT_NUM(unit.subclass<HumanStateAI>().funPercent()));
 
-				HumanStateAI& humanAI = unit.subclass<HumanStateAI>();
+				//HumanStateAI& humanAI = unit.subclass<HumanStateAI>();
 
-				int32 happinessOverall = humanAI.happinessOverall();
-				descriptionBox->AddSpacer();
-				ADDTEXT_(LOCTEXT("HappinessCitizenUI", "Happiness: {0}{1}%"),
-					GetHappinessFace(happinessOverall),
-					TEXT_NUM(happinessOverall)
-				);
-				for (size_t i = 0; i < HappinessEnumCount; i++) {
-					int32 happiness = humanAI.GetHappinessByType(static_cast<HappinessEnum>(i));
-					ADDTEXT_(INVTEXT("<bullet>{0}% {1}</>"),
-						ColorHappinessText(happiness, FText::Format(INVTEXT("{0}%"), TEXT_NUM(happiness))),
-						HappinessEnumName[i]
-					);
-				}
+				//int32 happinessOverall = humanAI.happinessOverall();
+				//descriptionBox->AddSpacer();
+				//ADDTEXT_(LOCTEXT("HappinessCitizenUI", "<space>Happiness: {0}{1}%"),
+				//	GetHappinessFace(happinessOverall),
+				//	TEXT_NUM(happinessOverall)
+				//);
+				//for (size_t i = 0; i < HappinessEnumCount; i++) {
+				//	int32 happiness = humanAI.GetHappinessByType(static_cast<HappinessEnum>(i));
+				//	ADDTEXT_(INVTEXT("<bullet>{0}% {1}</>"),
+				//		ColorHappinessText(happiness, FText::Format(INVTEXT("{0}%"), TEXT_NUM(happiness))),
+				//		HappinessEnumName[i]
+				//	);
+				//}
 				
 			}
 
@@ -2669,10 +2679,13 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				descriptionBox->AddSpacer();
 
 				{
-					ADDTEXT_(INVTEXT("{0}<img id=\"Smile\"/>"), TEXT_NUM(human.happinessOverall()));
+					/*
+					 * Happiness
+					 */
+					int32 happinessOverall = human.happinessOverall();
+					ADDTEXT_(INVTEXT("{0}{1}"), TEXT_NUM(happinessOverall), GetHappinessFace(happinessOverall));
 					auto widget = descriptionBox->AddRichText(LOCTEXT("Happiness", "Happiness"), args);
 
-					int32 happinessOverall = human.happinessOverall();
 					ADDTEXT_(
 						LOCTEXT("Happiness Tip", "Happiness: {0}{1}\n"), 
 						TEXT_NUM(happinessOverall),
@@ -2681,29 +2694,11 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 					for (size_t i = 0; i < HappinessEnumCount; i++) {
 						int32 happiness = human.GetHappinessByType(static_cast<HappinessEnum>(i));
-						ADDTEXT_(INVTEXT("   {0} {1}\n"), 
+						ADDTEXT_(INVTEXT("  {1} {0}\n"), 
 							HappinessEnumName[i], 
 							ColorHappinessText(happiness, FText::Format(INVTEXT("{0}%"), TEXT_NUM(happiness)))
 						);
 					}
-
-					//auto addRow = [&](FText typeName, int32 value) {
-					//	ADDTEXT_(INVTEXT("   {0} {1}\n"), TEXT_NUM(value), typeName);
-					//};
-					//
-					//addRow(LOCTEXT("food", "food"), human.foodHappiness());
-					//addRow(LOCTEXT("heating", "heating"), human.heatHappiness());
-					//addRow(LOCTEXT("housing", "housing"), human.housingHappiness());
-					//addRow(LOCTEXT("fun", "fun"), human.funHappiness());
-					
-					//ADDTEXT_(INVTEXT("  {0}: {1}\n"), LOCTEXT("Modifiers", "Modifiers"), TEXT_NUM(human.modifiersHappiness()));
-
-					//for (size_t i = 0; i < HappinessModifierName.Num(); i++) {
-					//	int32 modifier = human.GetHappinessModifier(static_cast<HappinessModifierEnum>(i));
-					//	if (modifier != 0) {
-					//		addRow(HappinessModifierName[i], modifier);
-					//	}
-					//}
 					
 					AddToolTip(widget, args);
 				}
@@ -3803,6 +3798,14 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 		auto command = make_shared<FUnslotCard>();
 		command->buildingId = cardMini->callbackVar1;
 		command->unslotIndex = cardMini->cardHandIndex;
+		networkInterface()->SendNetworkCommand(command);
+	}
+	else if (callbackEnum == CallbackEnum::QuickBuild)
+	{
+		auto command = make_shared<FGenericCommand>();
+		command->callbackEnum = callbackEnum;
+		command->intVar1 = punWidgetCaller->callbackVar1;
+
 		networkInterface()->SendNetworkCommand(command);
 	}
 	//else if (callbackEnum == CallbackEnum::TrainUnit)

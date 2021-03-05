@@ -142,7 +142,9 @@ void UWorldSpaceUI::TickWorldSpaceUI()
 			jobUIState = JobUIState::Home;
 		}
 		else if (building.isEnum(CardEnum::StorageYard) ||
-				building.isEnum(CardEnum::Warehouse)) 
+				building.isEnum(CardEnum::Warehouse) ||
+			building.isEnum(CardEnum::IntercityLogisticsHub)||
+			building.isEnum(CardEnum::IntercityLogisticsPort))
 		{
 			jobUIState = JobUIState::Storage;
 		}
@@ -692,45 +694,51 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 	// Under construction
 	if (!building.isConstructed())
 	{
-		auto showAlwaysOnPart = [&]()
+		if (building.shouldDisplayConstructionUI())
 		{
-			buildingJobUI->SetShowBar(true);
-			buildingJobUI->SetBarFraction(building.constructionFraction());
+			auto showAlwaysOnPart = [&]()
+			{
+				buildingJobUI->SetShowBar(true);
+				buildingJobUI->SetBarFraction(building.constructionFraction());
 
-			std::vector<int32> constructionResourceCounts;
-			std::vector<int32> constructionResourceRequired = building.GetConstructionResourceCost();
-			
-			for (size_t i = 0; i < constructionResourceRequired.size(); i++) {
-				constructionResourceCounts.push_back(0);
-				if (constructionResourceRequired[i] > 0) {
-					constructionResourceCounts[i] = building.resourceCount(ConstructionResources[i]);
+				std::vector<int32> constructionResourceCounts;
+				std::vector<int32> constructionResourceRequired = building.GetConstructionResourceCost();
+
+				for (size_t i = 0; i < constructionResourceRequired.size(); i++) {
+					constructionResourceCounts.push_back(0);
+					if (constructionResourceRequired[i] > 0) {
+						constructionResourceCounts[i] = building.resourceCount(ConstructionResources[i]);
+					}
 				}
-			}
-			buildingJobUI->SetConstructionResource(constructionResourceCounts, building);
+				buildingJobUI->SetConstructionResource(constructionResourceCounts, building);
 
-			buildingJobUI->SetHoverWarning(building);
-		};
-		
-		// Full UI
-		if (jobUIState == JobUIState::Job)
-		{
-			bool canManipulateOccupant = playerId() == building.playerId();
-			buildingJobUI->SetShowHumanSlots(true, canManipulateOccupant);
-			buildingJobUI->SetSlots(building.occupantCount(), building.allowedOccupants(), building.maxOccupants(), brown);
+				buildingJobUI->SetHoverWarning(building);
+			};
+
+			// Full UI
+			if (jobUIState == JobUIState::Job)
+			{
+				bool canManipulateOccupant = playerId() == building.playerId();
+				buildingJobUI->SetShowHumanSlots(true, canManipulateOccupant);
+				buildingJobUI->SetSlots(building.occupantCount(), building.allowedOccupants(), building.maxOccupants(), brown);
+
+				showAlwaysOnPart();
+				return;
+			}
+			// Only progress bar and star
+			buildingJobUI->SetShowHumanSlots(false, false);
+			buildingJobUI->SetSlots(0, 0, 0, brown);
 
 			showAlwaysOnPart();
-			return;
+
+			buildingJobUI->SetSpeedBoost(building);
 		}
-		// Only progress bar and star
-		buildingJobUI->SetShowHumanSlots(false, false);
-		buildingJobUI->SetSlots(0, 0, 0, brown);
-
-		showAlwaysOnPart();
-
-		buildingJobUI->SetSpeedBoost(building);
-
+		else {
+			buildingJobUI->SetVisibility(ESlateVisibility::Collapsed);
+		}
 		return;
 	}
+	
 	// After construction is done, shouldn't be any ResourceCompletion circle left
 	buildingJobUI->ClearResourceCompletionBox();
 
@@ -1161,6 +1169,9 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	else if (needInstruction(PlacementInstructionEnum::Kidnap)) {
 		punBox->AddRichTextParsed(getInstruction(PlacementInstructionEnum::Kidnap).instruction);
 	}
+	else if (needInstruction(PlacementInstructionEnum::Generic)) {
+		punBox->AddRichTextParsed(getInstruction(PlacementInstructionEnum::Generic).instruction);
+	}
 	
 	else if (needInstruction(PlacementInstructionEnum::DragDemolish)) {
 		punBox->AddRichTextCenter(LOCTEXT("DragDemolish1_Instruct", "Click and drag cursor"))->SetAutoWrapText(false);
@@ -1361,6 +1372,15 @@ void UWorldSpaceUI::TickPlacementInstructions()
 			FText::Format(LOCTEXT("PlaceInfo_Appeal", "Fruit Tree Count: {0}"), TEXT_NUM(fruitTreeCount)),
 			fruitTreeCount, 30, 20
 		));
+		punBox->AddSpacer(12);
+	}
+	// Building with Instructions
+	else if (placementInfo.buildingEnum == CardEnum::Tavern ||
+		placementInfo.buildingEnum == CardEnum::Theatre)
+	{
+		int32 appealPercent = simulation().overlaySystem().GetAppealPercent(placementInfo.mouseOnTile);
+		int32 serviceQuality = FunBuilding::ServiceQuality(placementInfo.buildingEnum, appealPercent);
+		punBox->AddRichTextCenter(TextRedOrange(FText::Format(LOCTEXT("PlaceInfo_ServiceQuality", "Service Quality: {0}%"), TEXT_NUM(serviceQuality)), appealPercent, 80, 60));
 		punBox->AddSpacer(12);
 	}
 

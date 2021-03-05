@@ -150,27 +150,27 @@ void BuildingCardSystem::RollRareHandExecute()
 		}
 		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards4) {
 			cardEnums = {
-
+				CardEnum::ProductivityBook,
 			};
 		}
 		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards5) {
 			cardEnums = {
-
+				CardEnum::ProductivityBook,
 			};
 		}
 		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards6) {
 			cardEnums = {
-
+				CardEnum::ProductivityBook,
 			};
 		}
 		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards7) {
 			cardEnums = {
-
+				CardEnum::ProductivityBook,
 			};
 		}
 
 		//{
-		//	CardEnum::MiningEquipment,
+		//	CardEnum::MiningEquipment, Bad...
 		//	CardEnum::Conglomerate,
 		//	CardEnum::GoldRush,
 		//};
@@ -181,11 +181,11 @@ void BuildingCardSystem::RollRareHandExecute()
 		//}
 
 		// Remove card if we already have it
-		for (size_t i = cardEnums.size(); i-- > 0;) {
-			if (_simulation->TownhallCardCountAll(_playerId, cardEnums[i]) > 0 || BoughtCardCount(cardEnums[i]) > 0) {
-				cardEnums.erase(cardEnums.begin() + i);
-			}
-		}
+		//for (size_t i = cardEnums.size(); i-- > 0;) {
+		//	if (_simulation->TownhallCardCountAll(_playerId, cardEnums[i]) > 0 || BoughtCardCount(cardEnums[i]) > 0) {
+		//		cardEnums.erase(cardEnums.begin() + i);
+		//	}
+		//}
 
 
 		RandomInsertToRareHand(cardEnums, 3);

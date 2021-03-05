@@ -384,7 +384,10 @@ void UnitSystem::Tick()
 					HumanStateAI& humanAI = stateAI.subclass<HumanStateAI>();
 
 					UnitAnimationEnum animationEnum = stateAI.animationEnum();
-					if (animationEnum == UnitAnimationEnum::Caravan) {
+					if (animationEnum == UnitAnimationEnum::Caravan ||
+						animationEnum == UnitAnimationEnum::HorseMarket ||
+						animationEnum == UnitAnimationEnum::HorseLogistics)
+					{
 						moveSpeed = moveSpeed * 2;
 					}
 					else if (animationEnum == UnitAnimationEnum::Ship) {

@@ -33,7 +33,7 @@ void UWorldTradeRow::Init(UWorldTradeUI* worldTradeUI, ResourceEnum resourceEnum
 	//PunTradeAmount->UpdateText();
 
 	AddToolTip(PunTradeAmount->ArrowUpButton, LOCTEXT("TradeArrowUp_Tip", "<Orange>Shift-click</> to increment by 10<space><Orange>Ctrl-click</> to increment to max buy amount."));
-	AddToolTip(PunTradeAmount->ArrowUpButton, LOCTEXT("TradeArrowDown_Tip", "<Orange>Shift-click</> to decrement by 10<space><Orange>Ctrl-click</> to decrement to max sell amount."));
+	AddToolTip(PunTradeAmount->ArrowDownButton, LOCTEXT("TradeArrowDown_Tip", "<Orange>Shift-click</> to decrement by 10<space><Orange>Ctrl-click</> to decrement to max sell amount."));
 	
 	UpdateTexts();
 }

@@ -376,7 +376,7 @@ void UChatUI::TickDebugUI()
 		DEBUG_ISCONNECTED(TryGoNearbyHome);
 		DEBUG_ISCONNECTED(FindNearestUnreservedFullBush);
 		DEBUG_ISCONNECTED(GetProvinceRandomTile);
-		DEBUG_ISCONNECTED(FindMarketResourceHolderInfo);
+		//DEBUG_ISCONNECTED(FindMarketResourceHolderInfo);
 		DEBUG_ISCONNECTED(RefreshIsBuildingConnected);
 		DEBUG_ISCONNECTED(ClaimProvince);
 		DEBUG_ISCONNECTED(RefreshHoverWarning);

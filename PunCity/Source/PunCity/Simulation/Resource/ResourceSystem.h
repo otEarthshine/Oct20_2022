@@ -312,7 +312,7 @@ public:
 		return resourceCountWithPush(holderId) < _holders[holderId].target();
 	}
 
-	FoundResourceHolderInfos FindHolder(ResourceFindType type, int32 amount, WorldTile2 origin, std::vector<int32> avoidIds, int32 maxFloodDist) const;
+	FoundResourceHolderInfos FindHolder(ResourceFindType type, int32 amount, WorldTile2 origin, std::vector<int32> avoidIds) const;
 
 	/*
 	 * Change
@@ -455,12 +455,12 @@ private:
 		}
 	}
 
-	FoundResourceHolderInfos FindHolderHelper(ResourceFindType type, int32 amount, WorldTile2 origin, std::vector<int32> avoidIds, int32 maxFloodDist) const
+	FoundResourceHolderInfos FindHolderHelper(ResourceFindType type, int32 amount, WorldTile2 origin, std::vector<int32> avoidIds) const
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_MoveResource_FindHolder);
 		
 		// Find by amount to get pickup candidates
-		FoundResourceHolderInfos filteredInfosWrap = FilterHolders(type, origin, maxFloodDist);
+		FoundResourceHolderInfos filteredInfosWrap = FilterHolders(type, origin);
 		std::vector<FoundResourceHolderInfo>& filteredInfos = filteredInfosWrap.foundInfos;
 
 		/*
@@ -667,7 +667,7 @@ private:
 		return bestChain;
 	}
 
-	FoundResourceHolderInfos FilterHolders(ResourceFindType type, WorldTile2 origin, int32 maxFloodDist) const
+	FoundResourceHolderInfos FilterHolders(ResourceFindType type, WorldTile2 origin) const
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_MoveResource_FindHolder_Filter);
 
@@ -700,15 +700,8 @@ private:
 				}
 				else {
 					DEBUG_ISCONNECTED_VAR(DropResourceSystem);
-					isConnected = _simulation->IsConnected(origin, holder.tile, maxFloodDist, true); // Drop case
+					isConnected = _simulation->IsConnected(origin, holder.tile, GameConstants::MaxFloodDistance_HumanDropFetch, true); // Drop case
 				}
-
-				// OLD this is slow???
-				//if (!isConnected) {
-				//	// Drop (objectId == -1) or failed building IsConnected
-				//	DEBUG_ISCONNECTED_VAR(DropResourceSystem);
-				//	isConnected = _simulation->IsConnected(origin, holder.tile, maxFloodDist, true); // Drop case
-				//}
 
 				if (isConnected) 
 				{
@@ -1031,22 +1024,20 @@ public:
 
 
 	//! Find holder
-	FoundResourceHolderInfos FindHolder(ResourceFindType findType, ResourceEnum resourceEnum, int32 amount, WorldTile2 origin, std::vector<int> avoidIds = {},
-									int32 maxFloodDist = GameConstants::MaxFloodDistance_Human) const
+	FoundResourceHolderInfos FindHolder(ResourceFindType findType, ResourceEnum resourceEnum, int32 amount, WorldTile2 origin, std::vector<int> avoidIds = {}) const
 	{
 		// Counted in STAT_PunUnit_CalcHuman_MoveResource_FindHolder
-		return holderGroupConst(resourceEnum).FindHolder(findType, amount, origin, avoidIds, maxFloodDist);
+		return holderGroupConst(resourceEnum).FindHolder(findType, amount, origin, avoidIds);
 	}
 
-	FoundResourceHolderInfos FindFoodHolder(ResourceFindType findType, int32 amount, WorldTile2 origin,
-										int32 maxFloodDist = GameConstants::MaxFloodDistance_Human)
+	FoundResourceHolderInfos FindFoodHolder(ResourceFindType findType, int32 amount, WorldTile2 origin)
 	{
 		// Eat less expensive food first...
 		auto getBestChain = [&](const std::vector<ResourceEnum>& foodEnumsCategory)
 		{
 			FoundResourceHolderInfos bestFoundInfos;
 			for (ResourceEnum resourceEnum : foodEnumsCategory) {
-				FoundResourceHolderInfos foundInfos = _enumToHolders[static_cast<int>(resourceEnum)].FindHolder(findType, amount, origin, {}, maxFloodDist);
+				FoundResourceHolderInfos foundInfos = _enumToHolders[static_cast<int>(resourceEnum)].FindHolder(findType, amount, origin, {});
 
 				if (!bestFoundInfos.hasInfos()) {
 					bestFoundInfos = foundInfos;

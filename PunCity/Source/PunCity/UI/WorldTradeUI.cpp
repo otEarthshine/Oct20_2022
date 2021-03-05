@@ -109,7 +109,7 @@ void UWorldTradeUI::TickUI()
 			tradeRow->inventory = resourceCount;
 			tradeRow->UpdateTexts(); // Always updating tooltip
 
-
+			tradeRow->PunTradeAmount->isUsingSpecialControl = true;
 			tradeRow->PunTradeAmount->ctrlClickIncrementAmount = maxTradeQuantity;
 			tradeRow->PunTradeAmount->ctrlClickDecrementAmount = maxTradeQuantity;
 			

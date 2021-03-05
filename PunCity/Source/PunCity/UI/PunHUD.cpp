@@ -79,6 +79,7 @@ APunHUD::APunHUD()
 	LoadClass(UIEnum::PunScrollBoxWidget, "PunScrollBoxWidget");
 	LoadClass(UIEnum::PunButton, "PunButtonWidget");
 	LoadClass(UIEnum::PunDropdown, "PunDropdownWidget");
+	LoadClass(UIEnum::PunBudgetAdjuster, "PunBudgetAdjusterWidget");
 	LoadClass(UIEnum::PunEditableNumberBox, "PunEditableNumberBoxWidget");
 	LoadClass(UIEnum::PunEditableNumberBoxHorizontal, "PunEditableNumberBoxHorizontalWidget");
 	LoadClass(UIEnum::PunGraph, "PunGraphWidget");

@@ -218,7 +218,7 @@ public:
 		for (size_t i = 0; i < _aveHappiness.size(); i++) {
 			sum += _aveHappiness[i];
 		}
-		return sum;
+		return sum / _aveHappiness.size();
 	}
 
 	int32 townFoodVariety() {

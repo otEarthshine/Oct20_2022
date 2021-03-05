@@ -918,6 +918,11 @@ public:
 		_buildingSystem->RemoveScheduleTickBuilding(buildingId);
 	}
 
+	bool IsQuickBuild(int32 buildingId) final {
+		return _buildingSystem->IsQuickBuild(buildingId);
+	}
+	
+
 	std::vector<int32> GetConstructionResourceCost(CardEnum cardEnum, TileArea area) final
 	{
 		if (cardEnum == CardEnum::Farm) {

@@ -236,6 +236,8 @@ public:
 	virtual void ScheduleTickBuilding(int32 buildingId, int32 scheduleTick) = 0;
 	virtual void RemoveScheduleTickBuilding(int32 buildingId) = 0;
 
+	virtual bool IsQuickBuild(int32 buildingId) = 0;
+
 	virtual std::vector<int32> GetConstructionResourceCost(CardEnum cardEnum, TileArea area) = 0;
 	
 	virtual bool IsLandCleared_SmallOnly(int32 townId, TileArea area) = 0;

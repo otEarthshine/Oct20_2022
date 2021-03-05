@@ -2757,6 +2757,23 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 			return;
 		}
 
+
+		if (command.callbackEnum == CallbackEnum::QuickBuild)
+		{
+			if (command.intVar1 != -1) 
+			{
+				Building& bld = building(command.intVar1);
+				if (!bld.isConstructed() && money(command.playerId) >= bld.GetQuickBuildCost())
+				{
+					ChangeMoney(command.playerId, bld.GetQuickBuildCost());
+					_buildingSystem->AddQuickBuild(command.intVar1);
+
+					bld.InstantClearArea();
+					bld.FinishConstructionResourceAndWorkerReset();
+				}
+			}
+		}
+		
 		return;
 	}
 
@@ -4680,6 +4697,17 @@ void GameSimulationCore::Cheat(FCheat command)
 			};
 			setFunDown(townManager(command.playerId).adultIds());
 			setFunDown(townManager(command.playerId).childIds());
+			break;
+		}
+		case CheatEnum::ForceFoodDown:
+		{
+			auto setFoodDown = [&](const std::vector<int32>& humanIds) {
+				for (int32 humanId : humanIds) {
+					unitAI(humanId).SetFood(unitAI(humanId).foodThreshold_Get2());
+				}
+			};
+			setFoodDown(townManager(command.playerId).adultIds());
+			setFoodDown(townManager(command.playerId).childIds());
 			break;
 		}
 

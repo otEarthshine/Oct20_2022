@@ -262,6 +262,29 @@ void UnitStateAI::Update()
 				_hp100 = maxHP100() / 2;
 			}
 
+			// Immortal Builder
+			// Help with construction issues (if time exceed X, make worker's food/heat/hp never go down...)
+			if (Building* workplc = workplace()) 
+			{
+				if (!workplc->isConstructed() && 
+					workplc->buildingTooLongToConstruct())
+				{
+					// Food
+					if (_food < foodThreshold_Get() + 1) {
+						_food = foodThreshold_Get() + 1;
+					}
+
+					// Heat
+					if (_heat < heatGetThreshold()) {
+						_heat = heatGetThreshold() + 1;
+					}
+					
+					// Health
+					if (_hp100 < maxHP100() * 3 / 4) {
+						_hp100 = maxHP100() * 3 / 4;
+					}
+				}
+			}
 
 			// Random chance to leave within 1 season
 			if (_townId != -1 &&
@@ -2067,10 +2090,14 @@ bool UnitStateAI::MoveTo(WorldTile2 end, int32 customFloodDistance, UnitAnimatio
 		}
 	}
 
+	
+	bool succeed;
+
 	// Possibly something got in the way before this was called...
 	// This should also guard against unit's tile becoming invalid (construction built on top)
 	if (!IsMoveValid(end, customFloodDistance)) 
 	{
+#if WITH_EDITOR
 		_simulation->ResetUnitActions(_id, 60);
 		AddDebugSpeech("(Bad)MoveTo: IsConnected " + tile.ToString() + end.ToString());
 
@@ -2079,40 +2106,42 @@ bool UnitStateAI::MoveTo(WorldTile2 end, int32 customFloodDistance, UnitAnimatio
 		_simulation->DrawLine(tile.worldAtom2(), FVector(0, 0, 0), tile.worldAtom2(), FVector(0, 0, 20), FLinearColor(1, 0.9, 0.9));
 		_simulation->DrawLine(tile.worldAtom2(), FVector(0, 0, 20), end.worldAtom2(), FVector(0, 0, 20), FLinearColor(1, 0, 1));
 		_simulation->DrawLine(end.worldAtom2(), FVector(0, 0, 0), end.worldAtom2(), FVector(0, 0, 20), FLinearColor(1, 0, 1));
-		return false;
+#endif
+		// Invalid move, use force move
+		succeed = _simulation->pathAI()->FindPathRobust(tile.x, tile.y, end.x, end.y, rawWaypoint);
+		animationEnum = UnitAnimationEnum::Invisible;
 	}
-
-	//int32 
-
-	//bool isIntelligent = IsIntelligentUnit(unitEnum());
-	
-	bool succeed;
-	if (unitEnum() == UnitEnum::Human) 
+	else
 	{
-		int64 customCalculationCount = 30000;
-		int64 distance = WorldTile2::Distance(tile, end);
-		const int64 baseDistance = 70;
-		if (distance > baseDistance) {
-			customCalculationCount = 30000 * distance * distance / (baseDistance * baseDistance);
+		//int32 
+
+		//bool isIntelligent = IsIntelligentUnit(unitEnum());
+
+		if (unitEnum() == UnitEnum::Human)
+		{
+			int64 customCalculationCount = 30000;
+			int64 distance = WorldTile2::Distance(tile, end);
+			const int64 baseDistance = 70;
+			if (distance > baseDistance) {
+				customCalculationCount = 30000 * distance * distance / (baseDistance * baseDistance);
+			}
+
+			int32 roadCostDownFactor = 1;
+			if (_simulation->IsRoadTile(tile) && _simulation->IsRoadTile(end)) {
+				roadCostDownFactor = 2;
+			}
+
+			succeed = _simulation->pathAI()->FindPath(tile.x, tile.y, end.x, end.y, rawWaypoint, true, roadCostDownFactor, customCalculationCount); // ppl like road
 		}
-
-		int32 roadCostDownFactor = 1;
-		if (_simulation->IsRoadTile(tile) && _simulation->IsRoadTile(end)) {
-			roadCostDownFactor = 2;
+		else {
+			succeed = _simulation->pathAI()->FindPathAnimal(tile.x, tile.y, end.x, end.y, rawWaypoint, 1, 30000);
 		}
-		
-		succeed = _simulation->pathAI()->FindPath(tile.x, tile.y, end.x, end.y, rawWaypoint, true, roadCostDownFactor, customCalculationCount); // ppl like road
-	}
-	else {
-		succeed = _simulation->pathAI()->FindPathAnimal(tile.x, tile.y, end.x, end.y, rawWaypoint, 1, 30000);
 	}
 
-
-	
-	if (!succeed) 
+	if (!succeed)
 	{
 		DEBUG_AI_VAR(FailedToFindPath);
-		
+
 		_simulation->ResetUnitActions(_id, Time::TicksPerSecond * 5);
 		AddDebugSpeech("(Bad)MoveTo: " + tile.ToString() + end.ToString());
 
@@ -2138,16 +2167,16 @@ bool UnitStateAI::MoveTo(WorldTile2 end, int32 customFloodDistance, UnitAnimatio
 	return true;
 }
 
-void UnitStateAI::Add_MoveToResource(ResourceHolderInfo holderInfo, int32 customFloodDistance) {
-	_actions.push_back(Action(ActionEnum::MoveToResource, static_cast<int32>(holderInfo.resourceEnum), holderInfo.holderId, customFloodDistance));
+void UnitStateAI::Add_MoveToResource(ResourceHolderInfo holderInfo, int32 customFloodDistance, UnitAnimationEnum animationEnum) {
+	_actions.push_back(Action(ActionEnum::MoveToResource, static_cast<int32>(holderInfo.resourceEnum), holderInfo.holderId, customFloodDistance, static_cast<int32>(animationEnum)));
 }
 void UnitStateAI::MoveToResource() {
-	MoveToResource(ResourceHolderInfo(static_cast<ResourceEnum>(action().int32val1), action().int32val2), action().int32val3);
+	MoveToResource(ResourceHolderInfo(static_cast<ResourceEnum>(action().int32val1), action().int32val2), action().int32val3, static_cast<UnitAnimationEnum>(action().int32val4));
 }
-bool UnitStateAI::MoveToResource(ResourceHolderInfo holderInfo, int32 customFloodDistance) {
+bool UnitStateAI::MoveToResource(ResourceHolderInfo holderInfo, int32 customFloodDistance, UnitAnimationEnum animationEnum) {
 	const ResourceHolder& holder = resourceSystem().holder(holderInfo);
 	
-	bool succeed = MoveTo(holder.tile, customFloodDistance);
+	bool succeed = MoveTo(holder.tile, customFloodDistance, animationEnum);
 
 	// For Storages, trim off excess waypoint
 	if (succeed && 

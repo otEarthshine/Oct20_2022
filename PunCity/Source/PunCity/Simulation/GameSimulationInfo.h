@@ -417,7 +417,7 @@ DECLARE_DEBUG_ISCONNECTED_VAR(TryStockBurrowFood);
 DECLARE_DEBUG_ISCONNECTED_VAR(TryGoNearbyHome);
 DECLARE_DEBUG_ISCONNECTED_VAR(FindNearestUnreservedFullBush);
 DECLARE_DEBUG_ISCONNECTED_VAR(GetProvinceRandomTile);
-DECLARE_DEBUG_ISCONNECTED_VAR(FindMarketResourceHolderInfo);
+//DECLARE_DEBUG_ISCONNECTED_VAR(FindMarketResourceHolderInfo);
 DECLARE_DEBUG_ISCONNECTED_VAR(RefreshIsBuildingConnected);
 DECLARE_DEBUG_ISCONNECTED_VAR(ClaimProvince);
 DECLARE_DEBUG_ISCONNECTED_VAR(RefreshHoverWarning);
@@ -2636,7 +2636,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::ChichenItza, LOCTEXT("Chichen Itza", "Chichen Itza"), FText(), WorldTile2(16, 16), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, FText()),
 
 	// October 20
-	BldInfo(CardEnum::Market,				LOCTEXT("Market", "Market"),							LOCTEXT("Market (Plural)", "Markets"), WorldTile2(6, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 5, { 120, 120, 0 }, LOCTEXT("Market Desc", "Supplies anything a household needs within its radius. Workers carry 50 units.")),
+	BldInfo(CardEnum::Market,				LOCTEXT("Market", "Market"),							LOCTEXT("Market (Plural)", "Markets"), WorldTile2(6, 12), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 3, { 120, 120, 0 }, LOCTEXT("Market Desc", "Supplies anything a household needs within its radius. Workers carry 50 units.")),
 	BldInfo(CardEnum::ShippingDepot,		LOCTEXT("Logistics Office", "Logistics Office"),		LOCTEXT("Logistics Office (Plural)", "Logistics Offices"), WorldTile2(4, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 1, { 20, 10, 0 }, LOCTEXT("Logistics Office Desc", "Haul specified resources from within the radius to its delivery target in 50-units bulk.")),
 	BldInfo(CardEnum::IrrigationReservoir, LOCTEXT("Irrigation Reservoir", "Irrigation Reservoir"), LOCTEXT("Irrigation Reservoir (Plural)", "Irrigation Reservoirs"), WorldTile2(5, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0, 150, 0 }, LOCTEXT("Irrigation Reservoir Desc", "Raises fertility within its radius to 100%.")),
 
@@ -4479,6 +4479,8 @@ enum class PlacementInstructionEnum
 
 	Kidnap,
 
+	Generic,
+
 	// Secondary instructions...
 	Rotate,
 	Shift,
@@ -5046,9 +5048,19 @@ enum class UnitEnum : uint8
 	Infantry,
 	ProjectileArrow,
 
-	Horse,
+	HorseCaravan,
+	HorseMarket,
+	HorseLogistics,
 	SmallShip,
 };
+
+static bool IsHumanDisplay(UnitEnum unitEnum)
+{
+	return unitEnum == UnitEnum::Human ||
+		unitEnum == UnitEnum::HorseCaravan ||
+		unitEnum == UnitEnum::HorseMarket ||
+		unitEnum == UnitEnum::HorseLogistics;
+}
 
 struct BiomeInfo
 {
@@ -5339,7 +5351,10 @@ static const UnitInfo UnitInfos[]
 	UnitInfo(UnitEnum::Infantry, LOCTEXT("Infantry", "Infantry"),	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
 	UnitInfo(UnitEnum::ProjectileArrow, LOCTEXT("ProjectileArrow", "ProjectileArrow"),	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
 
-	UnitInfo(UnitEnum::Horse, LOCTEXT("Horse", "Horse"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::HorseCaravan, LOCTEXT("Horse", "Horse"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::HorseMarket, LOCTEXT("Horse", "Horse"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::HorseLogistics, LOCTEXT("Horse", "Horse"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+
 	UnitInfo(UnitEnum::SmallShip, LOCTEXT("SmallShip", "SmallShip"),	0,	1,		1,	1,	1, {{ResourceEnum::Pork, 15}}),
 	//UnitInfo("Bear",	050,	500,	200,		010,	050,	5),
 };
@@ -5528,7 +5543,11 @@ enum class UnitAnimationEnum : uint8
 	Ship,
 	Immigration,
 
+	HorseMarket,
+	HorseLogistics,
+
 	Rest,
+	Invisible,
 };
 static const std::vector<std::string> UnitAnimationNames =
 {
@@ -5545,12 +5564,49 @@ static const std::vector<std::string> UnitAnimationNames =
 	"Ship",
 	"Immigration",
 
+	"HorseMarket",
+	"HorseLogistics",
+
 	"Rest",
+	"Invisible",
 };
 static const std::string& GetUnitAnimationName(UnitAnimationEnum animationEnum) {
 	return UnitAnimationNames[static_cast<int>(animationEnum)];
 }
 static const int32 UnitAnimationCount = UnitAnimationNames.size();
+
+static const std::vector<float> UnitAnimationPlayRate =
+{
+	1.0f,
+	1.0f,
+	2.5f, // Walk
+
+//#if TRAILER_MODE
+//	1.479f, // Build 1.183 for 0.5s
+//	2.0833, // ChopWood 1.6666
+//#else
+	1.0f, // Build
+	2.0f, // ChopWood
+//#endif
+
+	3.0f, // StoneMining
+	1.0f, // FarmPlanting
+
+	7.0f, // Caravan
+	4.0f, // Ship
+	1.0f, // Immigration
+
+	7.0f, // HorseMarket
+	7.0f, // HorseLogistics
+
+	1.0f,
+	1.0f, // Invisible
+};
+static float GetUnitAnimationPlayRate(UnitAnimationEnum animationEnum) {
+	return UnitAnimationPlayRate[static_cast<int>(animationEnum)];
+}
+
+
 
 struct UnitDisplayState
 {
@@ -5579,33 +5635,6 @@ static HumanVariationEnum GetHumanVariationEnum(bool isChild, bool isMale, UnitA
 		return isMale ? HumanVariationEnum::ChildMale : HumanVariationEnum::ChildFemale;
 	}
 	return isMale ? HumanVariationEnum::AdultMale : HumanVariationEnum::AdultFemale;
-}
-
-static const std::vector<float> UnitAnimationPlayRate =
-{
-	1.0f,
-	1.0f,
-	2.5f, // Walk
-
-//#if TRAILER_MODE
-//	1.479f, // Build 1.183 for 0.5s
-//	2.0833, // ChopWood 1.6666
-//#else
-	1.0f, // Build
-	2.0f, // ChopWood
-//#endif
-
-	3.0f, // StoneMining
-	1.0f, // FarmPlanting
-
-	3.0f, // Caravan
-	4.0f, // Ship
-	1.0f, // Immigration
-
-	1.0f,
-};
-static float GetUnitAnimationPlayRate(UnitAnimationEnum animationEnum) {
-	return UnitAnimationPlayRate[static_cast<int>(animationEnum)];
 }
 
 static const UnitEnum SkelMeshUnits[] = {
@@ -5692,6 +5721,7 @@ enum class CheatEnum : int32
 
 	FastTech,
 	ForceFunDown,
+	ForceFoodDown,
 	Kill,
 	ClearLand,
 	Unhappy,
@@ -5756,6 +5786,7 @@ static const std::string CheatName[]
 
 	"FastTech",
 	"ForceFunDown",
+	"ForceFoodDown",
 	"Kill",
 	"ClearLand",
 	"Unhappy",
@@ -7107,13 +7138,27 @@ static FText ColorHappinessText(int32 value, FText textIn)
 	int32 level = GetHappinessColorLevel(value);
 	switch (level)
 	{
-	case 0: return TEXT_TAG("<Red>", textIn);
-	case 1: return TEXT_TAG("<Orange>", textIn);
-	case 2: return TEXT_TAG("<Yellow>", textIn);
-	case 3: return TEXT_TAG("<Green>", textIn);
+	case 0: return TEXT_TAG("<FaintRed12>", textIn);
+	case 1: return TEXT_TAG("<FaintOrange12>", textIn);
+	case 2: return TEXT_TAG("<FaintYellow12>", textIn);
+	case 3: return TEXT_TAG("<FaintGreen12>", textIn);
 	default:
 		UE_DEBUG_BREAK();
 		return textIn;
+	}
+}
+static FLinearColor GetHappinessColor(int32 value)
+{
+	int32 level = GetHappinessColorLevel(value);
+	switch (level)
+	{
+	case 0: return FLinearColor(1, 0.3, 0.3);
+	case 1: return FLinearColor(1, 0.6, 0.3);
+	case 2: return FLinearColor(1, 1, 0.3);
+	case 3: return FLinearColor(0.3, 1, 0.3);
+	default:
+		UE_DEBUG_BREAK();
+		return FLinearColor(1, 0, 0);
 	}
 }
 static FText GetHappinessFace(int32 value)
@@ -7131,7 +7176,7 @@ static FText GetHappinessFace(int32 value)
 	}
 }
 
-enum class FunServiceEnum
+enum class FunServiceEnum : uint8
 {
 	Theatre,
 	Tavern,
@@ -7140,27 +7185,44 @@ enum class FunServiceEnum
 };
 static const int32 FunServiceEnumCount = static_cast<int32>(FunServiceEnum::Count);
 
-const std::vector<std::pair<FunServiceEnum, CardEnum>> FunServiceToCardEnum
+struct FunServiceInfo
 {
-	{FunServiceEnum::Theatre, CardEnum::Theatre},
-	{FunServiceEnum::Tavern, CardEnum::Tavern},
+	FunServiceEnum funServiceEnum = FunServiceEnum::Theatre;
+	CardEnum buildingEnum = CardEnum::None;
+	int32 baseServiceQuality = -1;
+};
+
+const std::vector<FunServiceInfo> FunServiceToCardEnum
+{
+	{FunServiceEnum::Theatre, CardEnum::Theatre, 70 },
+	{FunServiceEnum::Tavern, CardEnum::Tavern, 50},
 };
 
 static FunServiceEnum BuildingEnumToFunService(CardEnum buildingEnum)
 {
 	for (const auto& pair : FunServiceToCardEnum) {
-		if (pair.second == buildingEnum) {
-			return pair.first;
+		if (pair.buildingEnum == buildingEnum) {
+			return pair.funServiceEnum;
 		}
 	}
 	UE_DEBUG_BREAK();
 	return FunServiceEnum::Tavern;
 }
+static int32 BuildingEnumToBaseServiceQuality(CardEnum buildingEnum) // Find a better way to do this???
+{
+	for (const auto& pair : FunServiceToCardEnum) {
+		if (pair.buildingEnum == buildingEnum) {
+			return pair.baseServiceQuality;
+		}
+	}
+	UE_DEBUG_BREAK();
+	return 0;
+}
 static CardEnum FunServiceToBuildingEnum(FunServiceEnum funEnum)
 {
 	for (const auto& pair : FunServiceToCardEnum) {
-		if (pair.first == funEnum) {
-			return pair.second;
+		if (pair.funServiceEnum == funEnum) {
+			return pair.buildingEnum;
 		}
 	}
 	UE_DEBUG_BREAK();
@@ -7585,6 +7647,8 @@ enum class CallbackEnum : uint8
 	SetMarketTarget,
 
 	TradingPostTrade,
+
+	QuickBuild,
 
 	// Military
 	ArmyConquer,

@@ -9,8 +9,31 @@ void UPunEditableNumberBox::ClickArrow(bool isDown)
 {
 	int32 changeAmount = isDown ? -1 : 1;
 
-	if (dataSource()->isCtrlDown()) {
-		changeAmount *= isDown ? ctrlClickDecrementAmount : ctrlClickIncrementAmount;
+	if (dataSource()->isCtrlDown()) 
+	{
+		if (isUsingSpecialControl)
+		{
+			if (isDown) {
+				if (amount > 0) {
+					changeAmount = -amount; // Go to 0 first if the amount is more than 0
+				}
+				else {
+					changeAmount *= ctrlClickDecrementAmount;
+				}
+			}
+			else {
+				if (amount < 0) {
+					changeAmount = -amount; // Go to 0 first if the amount is less than 0
+				}
+				else {
+					changeAmount *= ctrlClickIncrementAmount;
+				}
+			}
+		}
+		else
+		{
+			changeAmount *= isDown ? ctrlClickDecrementAmount : ctrlClickIncrementAmount;
+		}
 	}
 	else if (dataSource()->isShiftDown()) {
 		changeAmount *= shiftIncrementMultiplier;

@@ -46,6 +46,7 @@ enum class UnitState : uint8
 	WorkProduce,
 	WorkConstruct,
 	Hunt,
+	Ranch,
 	
 	FarmSeeding,
 	FarmNourishing,
@@ -100,6 +101,7 @@ const TArray<FText> UnitStateName
 	LOCTEXT("Work (Produce)", "Work (Produce)"),
 	LOCTEXT("Work (Construct)", "Work (Construct)"),
 	LOCTEXT("Hunt", "Hunt"),
+	LOCTEXT("Ranch", "Ranch"),
 
 	LOCTEXT("Seeding (Farm)", "Seeding (Farm)"), // FarmSeeding
 	LOCTEXT("Nourishing (Farm)", "Nourishing (Farm)"), // FarmNourishing
@@ -245,6 +247,11 @@ public:
 		_actions.push_back(Action(actionEnum, int32val1, int32val2, int32val3, int32val4, fullId1));
 	}
 
+	// Note: Front action is the last one to execute
+	void AddActionFront(ActionEnum actionEnum, int32 int32val1 = -1, int32 int32val2 = -1, int32 int32val3 = -1, int32 int32val4 = -1, UnitFullId fullId1 = UnitFullId()) {
+		_actions.insert(_actions.begin(), Action(actionEnum, int32val1, int32val2, int32val3, int32val4, fullId1));
+	}
+
 	//const std::vector<std::string> UnitActionEnumString = {
 	//	"Wait",
 	//	"MoveRandomly",
@@ -330,7 +337,10 @@ public:
 	void MoveTo();
 	bool MoveTo(WorldTile2 end, int32 customFloodDistance = -1, UnitAnimationEnum animationEnum = UnitAnimationEnum::Walk);
 
-	void Add_MoveToResource(ResourceHolderInfo holderInfo, int32 customFloodDistance = -1);			void MoveToResource(); bool MoveToResource(ResourceHolderInfo holderInfo, int32 customFloodDistance);
+	void Add_MoveToResource(ResourceHolderInfo holderInfo, int32 customFloodDistance = -1, UnitAnimationEnum animationEnum = UnitAnimationEnum::Walk);
+	void MoveToResource();
+	bool MoveToResource(ResourceHolderInfo holderInfo, int32 customFloodDistance, UnitAnimationEnum animationEnum);
+
 	void Add_MoveInRange(WorldTile2 end, int32_t range);			void MoveInRange(); // TODO: REmove??
 	void Add_MoveToForceLongDistance(WorldTile2 end);				void MoveToForceLongDistance();
 	void Add_MoveToRobust(WorldTile2 end);							void MoveToRobust();	void MoveToRobust(WorldTile2 end);
@@ -386,19 +396,39 @@ public:
 	int32 foodThreshold_Get() {
 		return maxFood() * 3 / 4;
 	}
+	void SetFood(int32 food) {
+		_food = food;
+	}
+	
 
 	int32 heat() { return _heat; }
 	int32 maxHeat() { return unitInfo().maxHeatCelsiusTicks; }
+	int32 heatGetThreshold() { return maxHeat() * 3 / 4; }
 	int32 minWarnHeat() { return maxHeat() / 2; }
 
 	int32 ticksSinceLastUpdate() { return Time::Ticks() - _lastUpdateTick; }
-	int32 foodActual() {
+	int32 foodActual()
+	{
+		// Help construction issue
+		if (Building* workplc = workplace()) {
+			if (!workplc->isConstructed() && workplc->buildingTooLongToConstruct()) {
+				return std::max(foodThreshold_Get() + 1, _food - ticksSinceLastUpdate());
+			}
+		}
 		return std::max(0, _food - ticksSinceLastUpdate());
 	}
-	int32 heatActual() {
+	int32 heatActual()
+	{
 		int32 currentHeat = _heat + ticksSinceLastUpdate() * _lastTickCelsiusRate;
 		if (currentHeat > maxHeat()) {
 			return maxHeat();
+		}
+		
+		// Help construction issue
+		if (Building* workplc = workplace()) {
+			if (!workplc->isConstructed() && workplc->buildingTooLongToConstruct()) {
+				return std::max(heatGetThreshold() + 1, currentHeat);
+			}
 		}
 		return std::max(0, currentHeat);
 	}

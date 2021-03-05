@@ -520,11 +520,11 @@ void ABuildingPlacementSystem::StartBuildingPlacement(CardEnum buildingEnum, int
 	
 	else if (buildingEnum == CardEnum::Theatre) {
 		ShowRadius(Theatre::Radius, OverlayType::Theatre);
-		//_gameInterface->SetOverlayType(OverlayType::Theatre, OverlaySetterType::BuildingPlacement);
+		_gameInterface->SetOverlayType(OverlayType::Appeal, OverlaySetterType::BuildingPlacement);
 	}
 	else if (buildingEnum == CardEnum::Tavern) {
 		ShowRadius(Tavern::Radius, OverlayType::Tavern);
-		//_gameInterface->SetOverlayType(OverlayType::Tavern, OverlaySetterType::BuildingPlacement);
+		_gameInterface->SetOverlayType(OverlayType::Appeal, OverlaySetterType::BuildingPlacement);
 	}
 	// Shrine
 	else if (buildingEnum == CardEnum::BlossomShrine) {

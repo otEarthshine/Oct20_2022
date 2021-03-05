@@ -134,7 +134,6 @@ void UMainGameUI::PunInit()
 
 	// Set Icon images
 	auto assetLoader = dataSource()->assetLoader();
-	Happiness->SetImage(assetLoader->SmileIcon);
 	
 	Money->SetImage(assetLoader->CoinIcon);
 	Money->SetTextColorCoin();
@@ -978,34 +977,21 @@ void UMainGameUI::Tick()
 		
 		// Happiness (Town)
 		{
-			Happiness->SetText(FText(), TEXT_NUM(sim.GetAverageHappiness(playerId())));
-
+			int32 overallHappiness = townManager.aveOverallHappiness();
+			Happiness->SetImage(assetLoader()->GetHappinessFace(overallHappiness));
+			Happiness->SetText(FText(), TEXT_NUM(overallHappiness));
+			Happiness->SetTextColor(GetHappinessColor(overallHappiness));
+			
 			TArray<FText> args;
-			//ADDTEXT_(
-			//	LOCTEXT("Happiness_Tip1", "Happiness: {0}<img id=\"Smile\"/><space><bullet>{2} food</><bullet>{3} heat</><bullet>{4} housing</><bullet>{5} fun</>"),
-			//	TEXT_NUM(townManager.aveHappiness()),
-			//	TEXT_NUM(townManager.aveFoodHappiness()),
-			//	TEXT_NUM(townManager.aveHeatHappiness()),
-			//	TEXT_NUM(townManager.aveHousingHappiness()),
-			//	TEXT_NUM(townManager.aveFunHappiness())
-			//);
 
-			ADDTEXT_(LOCTEXT("Happiness_Tip1", "Happiness: {0}%"), TEXT_NUM(townManager.aveOverallHappiness()));
+			ADDTEXT_(LOCTEXT("Happiness_Tip1", "Happiness: {0}%\n"), TEXT_NUM(overallHappiness));
 			for (size_t i = 0; i < HappinessEnumCount; i++) {
 				int32 aveHappiness = townManager.aveHappinessByType(static_cast<HappinessEnum>(i));
-				ADDTEXT_(INVTEXT("<bullet>{0}% {1}</>"), 
+				ADDTEXT_(INVTEXT("  {0} {1}\n"), 
 					ColorHappinessText(aveHappiness, FText::Format(INVTEXT("{0}%"), TEXT_NUM(aveHappiness))),
 					HappinessEnumName[i]
 				);
 			}
-
-			//ADDTEXT_(LOCTEXT("Happiness_Tip2", "Modifiers: {0}"), TEXT_NUM(townManager.aveHappinessModifierSum()));
-			//for (size_t i = 0; i < HappinessModifierName.Num(); i++) {
-			//	int32 modifier = townManager.aveHappinessModifier(static_cast<HappinessModifierEnum>(i));
-			//	if (modifier != 0) {
-			//		ADDTEXT_(INVTEXT("<bullet>{0} {1}</>"), TEXT_NUM(modifier), HappinessModifierName[i]);
-			//	}
-			//}
 
 			AddToolTip(Happiness, JOINTEXT(args));
 		}

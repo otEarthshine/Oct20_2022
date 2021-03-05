@@ -275,14 +275,12 @@ public:
 	const std::vector<int32>& GetMarketTargets() { return _resourceTargets; }
 	
 	void SetMarketTarget(ResourceEnum resourceEnum, int32 amount) {
-		PUN_CHECK(IsResourceValid(resourceEnum));
 		if (resourceEnum == ResourceEnum::Food) {
 			_foodTarget = amount;
 			return;
 		}
+		PUN_CHECK(IsResourceValid(resourceEnum));
 		_resourceTargets[static_cast<int>(resourceEnum)] = amount;
-
-		//PUN_CHECK(lastUIResourceTargets.size() < 1000);
 	}
 
 	int32 GetFoodTarget() {

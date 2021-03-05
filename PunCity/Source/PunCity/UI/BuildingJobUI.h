@@ -117,12 +117,19 @@ public:
 			}
 		}
 		else if (IsStorage(building.buildingEnum()) ||
+			building.isEnum(CardEnum::IntercityLogisticsHub) ||
+			building.isEnum(CardEnum::IntercityLogisticsPort) ||
 			building.isEnum(CardEnum::FruitGatherer) ||
 			building.isEnum(CardEnum::HuntingLodge)) 
 		{
 			// Show items above warehouse
 			if (jobUIState == JobUIState::Storage &&
-				(building.isEnum(CardEnum::Warehouse) || building.isEnum(CardEnum::IntercityLogisticsHub)))
+					(
+						building.isEnum(CardEnum::Warehouse) || 
+						building.isEnum(CardEnum::IntercityLogisticsHub) ||
+						building.isEnum(CardEnum::IntercityLogisticsPort)
+					)
+				)
 			{
 				PunBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 				const std::vector<ResourceHolderInfo>& holderInfos = building.subclass<StorageYard>().holderInfos();

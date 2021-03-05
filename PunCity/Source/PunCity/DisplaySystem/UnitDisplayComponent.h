@@ -236,14 +236,24 @@ private:
 			index = _lastUnitKeyToSkelMeshIndex[unitKey];
 			_lastUnitKeyToSkelMeshIndex.Remove(unitKey);
 		}
-		else 
+		else
 		{
+			auto setupSkelMesh = [&](USkeletalMeshComponent* skelMesh)
+			{
+				skelMesh->SetVisibility(true);
+				skelMesh->SetCollisionEnabled(PunSettings::Get("DebugTemp2") ? ECollisionEnabled::NoCollision : ECollisionEnabled::QueryAndPhysics);
+				skelMesh->bSkipBoundsUpdateWhenInterpolating = PunSettings::Get("DebugTemp3");
+				skelMesh->bComponentUseFixedSkelBounds = PunSettings::Get("DebugTemp4");
+			};
+			
 			// Try to spawn new unit from despawn pool
 			for (int32 i = 0; i < _unitSkelMeshes.Num(); i++) {
 				if (!_unitSkelMeshes[i]->IsVisible()) {
 					index = i;
 					
-					_unitSkelMeshes[index]->SetVisibility(true);
+					//_unitSkelMeshes[index]->SetVisibility(true);
+					setupSkelMesh(_unitSkelMeshes[index]);
+
 					_unitWeaponMeshes[index]->SetVisibility(false);
 					_unitSkelState[index] = UnitSkelMeshState();
 					break;
@@ -255,6 +265,7 @@ private:
 				auto skelMesh = NewObject<USkeletalMeshComponent>(this);
 				skelMesh->AttachToComponent(this, FAttachmentTransformRules::KeepRelativeTransform);
 				skelMesh->RegisterComponent();
+				setupSkelMesh(skelMesh);
 				skelMesh->SetReceivesDecals(false);
 				_unitSkelMeshes.Add(skelMesh);
 
@@ -267,11 +278,8 @@ private:
 				weaponMesh->RegisterComponent();
 				weaponMesh->SetReceivesDecals(false);
 				weaponMesh->SetVisibility(false);
+				weaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 				_unitWeaponMeshes.Add(weaponMesh);
-
-				//skelMesh->EnableExternalTickRateControl(true);
-				//skelMesh->bEnableUpdateRateOptimizations = true;
-				//skelMesh->bDisplayDebugUpdateRateOptimizations = true;
 
 				_unitSkelState.push_back(UnitSkelMeshState());
 			}
@@ -288,13 +296,14 @@ private:
 
 		//
 		float playRate = 0.7f; // animal
-		if (unitEnum == UnitEnum::Human)
+		if (IsHumanDisplay(unitEnum))
 		{
 			playRate = GetUnitAnimationPlayRate(animationEnum) * simulation().gameSpeedFloat();
 			if (isChild) {
 				playRate /= 0.8f;
 			}
 		}
+		
 		
 		if (_unitSkelState[index].animationEnum != animationEnum ||
 			_unitSkelState[index].animationPlayRate != playRate)
@@ -308,11 +317,11 @@ private:
 				skelMesh->SetPlayRate(playRate);
 
 				// DEBUG TEST
-				int32 debugTemp = std::max(1, PunSettings::Get("DebugTemp"));
 				//skelMesh->EnableExternalTickRateControl(true);
 				//skelMesh->SetExternalTickRate(PunSettings::Get("DebugTemp"));
-				skelMesh->bEnableUpdateRateOptimizations = true;
-				skelMesh->AnimUpdateRateParams->UpdateRate = debugTemp;
+				skelMesh->bEnableUpdateRateOptimizations = PunSettings::Get("DebugTemp");
+				skelMesh->bDisplayDebugUpdateRateOptimizations = PunSettings::Get("DebugTemp1");
+				//skelMesh->AnimUpdateRateParams->UpdateRate = debugTemp; Not working???
 			}
 			else {
 				UE_DEBUG_BREAK();

@@ -87,6 +87,7 @@ enum class UIEnum
 	PunScrollBoxWidget,
 	PunButton,
 	PunDropdown,
+	PunBudgetAdjuster,
 	PunEditableNumberBox,
 	PunEditableNumberBoxHorizontal,
 	PunGraph,

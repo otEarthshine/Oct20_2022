@@ -132,6 +132,31 @@ public:
 	bool didSetWalkable() { return _didSetWalkable; }
 	bool noWorker() { return !IsHouse(_buildingEnum) && _maxOccupants > 0 && occupantCount() == 0; }
 
+	// Not constructed and Not QuickBuild
+	bool shouldDisplayConstructionUI() {
+		return !isConstructed() && !_simulation->IsQuickBuild(buildingId());
+	}
+
+	int32 GetQuickBuildCost()
+	{
+		if (isConstructed()) {
+			return 0;
+		}
+
+		int32 quickBuildCost = 0;
+		std::vector<int32> constructionCosts = GetConstructionResourceCost();
+		for (size_t i = 0; i < ConstructionResourceCount; i++) {
+			if (constructionCosts[i] > 0) {
+				int32 resourceCount = GetResourceCount(ConstructionResources[i]);
+				quickBuildCost += std::max(0, (constructionCosts[i] - resourceCount) * GetResourceInfo(ConstructionResources[i]).basePrice);
+			}
+		}
+
+		const int32 quickBuildMultiplier = 5;
+		return quickBuildCost * quickBuildMultiplier;
+	}
+	
+
 	PriorityEnum priority() { return _priority; }
 
 	std::vector<int32> GetConstructionResourceCost() {
@@ -577,8 +602,11 @@ public:
 	float constructionFraction() { return _workDone100 / static_cast<float>(buildTime_ManSec100()); }
 	int32 constructionPercent() { return _workDone100 * 100 / buildTime_ManSec100(); }
 
-	void SetConstructionPercent(int32 percent) {
+	void SetConstructionPercent(int32 percent) { // Note: Be careful of round off issues
 		_workDone100 = buildTime_ManSec100() * percent / 100;
+	}
+	void ChangeConstructionPercent(int32 percent) {
+		_workDone100 += buildTime_ManSec100() * percent / 100;
 	}
 
 	virtual float barFraction() { return workFraction(); }
@@ -1014,6 +1042,8 @@ public:
 
 	int32 buildingAge() { return Time::Ticks() - _buildingPlacedTick; }
 
+	bool buildingTooLongToConstruct() { return buildingAge() > Time::TicksPerSeason * 3 / 2; }
+
 	bool isUsable() { return isConstructed() && !isFireDisabled(); }
 
 	int32 buildingPlacedTick() { return _buildingPlacedTick; }
@@ -1416,6 +1446,20 @@ public:
 		
 		hoverWarning = HoverWarning::None;
 		return false;
+	}
+
+	void FinishConstructionResourceAndWorkerReset()
+	{
+		// Remove Construction Resource Holders
+		std::vector<int32> constructionCosts = GetConstructionResourceCost();
+		for (int i = constructionCosts.size(); i-- > 0;) {
+			RemoveResourceHolder(ConstructionResources[i]);
+		}
+
+		// Kick out all the constructors
+		ResetWorkReservers();
+		_simulation->RemoveJobsFrom(buildingId(), false);
+		_simulation->PlayerRemoveJobBuilding(_townId, *this, false);
 	}
 
 protected:

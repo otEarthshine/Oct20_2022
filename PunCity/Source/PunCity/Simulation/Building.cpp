@@ -197,23 +197,22 @@ void Building::FinishConstruction()
 		return; // Animal Controlled
 	}
 
-	// Remove Construction Resource Holders
-	vector<int32> constructionCosts = GetConstructionResourceCost();
-	for (int i = constructionCosts.size(); i-- > 0;) {
-		RemoveResourceHolder(ConstructionResources[i]);
-	}
+	//// Remove Construction Resource Holders
+	//vector<int32> constructionCosts = GetConstructionResourceCost();
+	//for (int i = constructionCosts.size(); i-- > 0;) {
+	//	RemoveResourceHolder(ConstructionResources[i]);
+	//}
+
+	//// Kick out all the constructors
+	//ResetWorkReservers();
+	//_simulation->RemoveJobsFrom(buildingId(), false);
+	//_simulation->PlayerRemoveJobBuilding(_townId, *this, false);
+
+	FinishConstructionResourceAndWorkerReset();
+
 
 	ResetDisplay();
 
-	// Kick out all the constructors
-	ResetWorkReservers();
-	_simulation->RemoveJobsFrom(buildingId(), false);
-	_simulation->PlayerRemoveJobBuilding(_townId, *this, false);
-
-	//// if this building is not an instant build, claim the area
-	//if (buildingInfo().buildManSecCost100 > 0) {
-	//	_simulation->SetRegionOwner(_centerTile.region().regionId(), _playerId);
-	//}
 
 	// Auto-add inputs/outputs accordingly
 	if (hasInput1()) AddResourceHolder(input1(), ResourceHolderType::Requester, baseInputPerBatch() + 10);

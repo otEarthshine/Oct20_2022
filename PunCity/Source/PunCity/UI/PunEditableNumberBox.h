@@ -100,6 +100,7 @@ public:
 	int32 minAmount = MIN_int32;
 	int32 maxAmount = MAX_int32;
 
+	bool isUsingSpecialControl = false;
 	int32 ctrlClickIncrementAmount = 10;
 	int32 ctrlClickDecrementAmount = 10;
 

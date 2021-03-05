@@ -236,6 +236,25 @@ public:
 	UPROPERTY(EditAnywhere) UTexture2D* InfluenceIcon;
 	UPROPERTY(EditAnywhere) UTexture2D* ScienceIcon;
 
+	UPROPERTY(EditAnywhere) UTexture2D* HappinessGreenIcon;
+	UPROPERTY(EditAnywhere) UTexture2D* HappinessYellowIcon;
+	UPROPERTY(EditAnywhere) UTexture2D* HappinessOrangeIcon;
+	UPROPERTY(EditAnywhere) UTexture2D* HappinessRedIcon;
+	UTexture2D* GetHappinessFace(int32 value)
+	{
+		int32 level = GetHappinessColorLevel(value);
+		switch (level)
+		{
+		case 0: return HappinessRedIcon;
+		case 1: return HappinessOrangeIcon;
+		case 2: return HappinessYellowIcon;
+		case 3: return HappinessGreenIcon;
+		default:
+			UE_DEBUG_BREAK();
+			return HappinessRedIcon;
+		}
+	}
+
 	UPROPERTY(EditAnywhere) UTexture2D* AdultIcon;
 	UPROPERTY(EditAnywhere) UTexture2D* AdultIconSquare;
 	UPROPERTY(EditAnywhere) UTexture2D* ChildIcon;

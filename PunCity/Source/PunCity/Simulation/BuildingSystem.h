@@ -103,6 +103,22 @@ public:
 		UE_DEBUG_BREAK();
 	}
 
+	void AddQuickBuild(int32 buildingId) {
+		_quickBuildList.push_back(buildingId);
+	}
+	void RemoveQuickBuild(int32 buildingId) {
+		CppUtils::TryRemove(_quickBuildList, buildingId);
+	}
+	bool IsQuickBuild(int32 buildingId) {
+		for (int32 quickBuildId : _quickBuildList) {
+			if (quickBuildId == buildingId) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+
 	bool alive(int id) { return _alive[id]; }
 
 	const SubregionLists<int32>& buildingSubregionList() { return _buildingSubregionList; }
@@ -170,6 +186,7 @@ public:
 
 		hash += _buildingsToTick.size();
 		hash += _buildingsOnFire.size();
+		hash += _quickBuildList.size();
 		hash += _scheduleBuildingIds.size();
 		hash += _scheduleTicks.size();
 		return hash;
@@ -229,6 +246,7 @@ public:
 
 			SerializeVecValue(Ar, _buildingsToTick);
 			SerializeVecValue(Ar, _buildingsOnFire);
+			SerializeVecValue(Ar, _quickBuildList);
 
 			SerializeVecValue(Ar, _scheduleBuildingIds);
 			SerializeVecValue(Ar, _scheduleTicks);
@@ -316,11 +334,13 @@ private:
 	//
 	std::vector<int32> _buildingsToTick;
 	std::vector<int32> _buildingsOnFire;
+	std::vector<int32> _quickBuildList;
 
 	std::vector<int32> _scheduleBuildingIds;
 	std::vector<int32> _scheduleTicks;
 
 	std::vector<int8> _isBuildingIdConnected;// IsConnected for buildings
+
 
 private:
 	/*

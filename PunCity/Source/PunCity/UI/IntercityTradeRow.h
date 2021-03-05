@@ -47,6 +47,8 @@ public:
 		TargetInventory->UpdateText();
 
 		UpdateTexts();
+
+		TargetInventory->isUsingSpecialControl = false;
 	}
 
 	void UpdateTexts()

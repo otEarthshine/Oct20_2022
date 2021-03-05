@@ -28,6 +28,7 @@ void UStatisticsUI::InitStatisticsUI()
 	
 	FoodFuelStatButton->OnClicked.AddDynamic(this, &UStatisticsUI::OnFoodFuelStatButtonClick);
 	FoodUsageStatButton->OnClicked.AddDynamic(this, &UStatisticsUI::OnFoodUsageStatButtonClick);
+	HappinessStatButton->OnClicked.AddDynamic(this, &UStatisticsUI::OnHappinessStatButtonClick);
 	ImportExportStatButton->OnClicked.AddDynamic(this, &UStatisticsUI::OnImportExportStatButtonClick);
 	MarketStatButton->OnClicked.AddDynamic(this, &UStatisticsUI::OnMarketStatButtonClick);
 
@@ -47,6 +48,9 @@ void UStatisticsUI::InitStatisticsUI()
 	}
 	MarketResourceDropdown->SetSelectedOption(ResourceNameF(ResourceEnum::Wood));
 	MarketResourceDropdown->OnSelectionChanged.AddDynamic(this, &UStatisticsUI::OnMarketDropDownChanged);
+
+
+	SetChildHUD(HappinessStatisticsBox);
 }
 
 void UStatisticsUI::SetGraphSeries()
@@ -232,7 +236,7 @@ void UStatisticsUI::TickUI()
 		vector<vector<int32>> jobBuildingEnumToIds;
 		
 		if (showCombinedStatistics) {
-			const auto& townIds = sim.GetTownIds(uiTownId);
+			const auto& townIds = sim.GetTownIds(uiTownId); // TODO: this doesn't make sense?
 			for (int32 townId : townIds) {
 				const vector<vector<int32>>& jobBuildingEnumToIds_Town = simulation().townManager(townId).jobBuildingEnumToIds();
 				
@@ -368,6 +372,28 @@ void UStatisticsUI::TickUI()
 		}
 
 		BoxAfterAdd(BuildingsStatBox, buildingStatIndex);
+	}
+
+	/*
+	 * Happiness
+	 */
+	{
+		TArray<FText> args;
+
+		auto& townManager = simulation().townManager(uiTownId);
+
+		ADDTEXT_(LOCTEXT("Happiness_Statistics", "Overall Happiness: {0}%"), TEXT_NUM(townManager.aveOverallHappiness()));
+		for (size_t i = 0; i < HappinessEnumCount; i++) {
+			int32 aveHappiness = townManager.aveHappinessByType(static_cast<HappinessEnum>(i));
+			ADDTEXT_(INVTEXT("<bullet>{0}% {1}</>"),
+				ColorHappinessText(aveHappiness, FText::Format(INVTEXT("{0}%"), TEXT_NUM(aveHappiness))),
+				HappinessEnumName[i]
+			);
+		}
+
+		// Add tooltip later?
+		HappinessStatisticsBox->AddRichTextParsed(args);
+		HappinessStatisticsBox->AfterAdd();
 	}
 
 	/*

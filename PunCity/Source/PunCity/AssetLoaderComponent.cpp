@@ -98,6 +98,11 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	InfluenceIcon = Load<UTexture2D>("/Game/UI/MiscIcons/InfluencePNG");
 	ScienceIcon = Load<UTexture2D>("/Game/UI/MiscIcons/SciencePNG");
 
+	HappinessGreenIcon = Load<UTexture2D>("/Game/UI/MiscIcons/HappinessGreenPNG");
+	HappinessYellowIcon = Load<UTexture2D>("/Game/UI/MiscIcons/HappinessYellowPNG");
+	HappinessOrangeIcon = Load<UTexture2D>("/Game/UI/MiscIcons/HappinessOrangePNG");
+	HappinessRedIcon = Load<UTexture2D>("/Game/UI/MiscIcons/HappinessRedPNG");
+
 	ExclamationIcon = Load<UTexture2D>("/Game/UI/Images/ExclamationIconPNG");
 
 	AdultIcon = Load<UTexture2D>("/Game/UI/Images/HumanIcon");
@@ -587,10 +592,20 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	}, "Horse/HorseSmallStatic");
 
 	
-	// Horse
-	LoadUnitFull(UnitEnum::Horse, "Horse/", "HorseSmall", {
+	// Horse Caravan
+	LoadUnitFull(UnitEnum::HorseCaravan, "Horse/", "HorseSmall", {
 		{ UnitAnimationEnum::Walk, "Anim_Horse_Trot_F_IP"},
 	}, "Horse/HorseSmallStatic", "Horse/CaravanWagon_Game");
+
+	// Horse Market
+	LoadUnitFull(UnitEnum::HorseMarket, "Horse/", "HorseSmall", {
+		{ UnitAnimationEnum::Walk, "Anim_Horse_Trot_F_IP"},
+	}, "Horse/HorseSmallStatic", "Horse/MarketWagon");
+
+	// Horse Logistics
+	LoadUnitFull(UnitEnum::HorseLogistics, "Horse/", "HorseSmall", {
+		{ UnitAnimationEnum::Walk, "Anim_Horse_Trot_F_IP"},
+	}, "Horse/HorseSmallStatic", "Horse/LogisticsWagon");
 	
 	
 	LoadUnitWeapon(UnitAnimationEnum::Build, "Human/CitizenMale/CitizenMaleHammer");

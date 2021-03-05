@@ -70,6 +70,37 @@ void BuildingSystem::Tick()
 			_buildingsOnFire.erase(_buildingsOnFire.begin() + i);
 		}
 	}
+
+	// Quick build construct
+	for (int32 i = _quickBuildList.size(); i-- > 0;)
+	{
+		Building& bld = building(_quickBuildList[i]);;
+
+		if (bld.isConstructed()) {
+			_quickBuildList.erase(_quickBuildList.begin() + i);
+		}
+		else {
+			if (bld.isEnum(CardEnum::StorageYard)) {
+				bld.ChangeConstructionPercent(100);
+			} else {
+				bld.ChangeConstructionPercent(1);
+			}
+
+			int32 newPercent = bld.constructionPercent();
+			if (newPercent % 3 == 0) {
+				_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Building, bld.centerTile().regionId());
+			}
+			
+			if (newPercent >= 100)
+			{
+				bld.FinishConstruction();
+
+				// Play sound
+				_simulation->soundInterface()->Spawn3DSound("CitizenAction", "ConstructionComplete", bld.centerTile().worldAtom2());
+				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::BuildingComplete, bld.centerTile(), FText());
+			}
+		}
+	}
 }
 
 int BuildingSystem::AddTileBuilding(WorldTile2 tile, CardEnum buildingEnum, int32 playerId)
@@ -480,6 +511,8 @@ void BuildingSystem::RemoveBuilding(int buildingId)
 
 	// Note: should check after PlaceBuildingOnMap
 	_buildings[buildingId]->CheckAdjacency(true, true);
+
+	RemoveQuickBuild(buildingId);
 }
 
 int32 BuildingSystem::GetHouseLvlCount(int32 playerId, int32 houseLvl, bool includeHigherLvl) {

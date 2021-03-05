@@ -372,6 +372,8 @@ void House::OnDropoffResource(int32 objectId, ResourceHolderInfo holderInfo, int
 	PUN_CHECK(holderInfo.resourceEnum != ResourceEnum::Stone);
 	
 	CheckHouseLvl();
+
+	CalculateConsumptions(false);
 }
 
 void House::UpgradeHouse(int32 lvl)

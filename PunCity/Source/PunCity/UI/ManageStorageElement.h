@@ -110,8 +110,12 @@ public:
 
 		Market& market = simulation().building(buildingId).subclass<Market>(CardEnum::Market);
 
-		PUN_CHECK(IsResourceValid(uiResourceEnum));
-		market.lastUIResourceTargets[static_cast<int>(uiResourceEnum)] = command->target;
+		if (uiResourceEnum == ResourceEnum::Food) {
+			market.lastUIFoodTarget = command->target;
+		} else {
+			PUN_CHECK(IsResourceValid(uiResourceEnum));
+			market.lastUIResourceTargets[static_cast<int>(uiResourceEnum)] = command->target;
+		}
 
 		networkInterface()->SendNetworkCommand(command);
 	}

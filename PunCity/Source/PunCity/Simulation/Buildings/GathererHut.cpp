@@ -475,6 +475,9 @@ int32 MushroomFarm::baseInputPerBatch() {
 static const FText productivityBookText =	LOCTEXT("Productivity Book", "Productivity Book");
 static const FText sustainabilityBookText = LOCTEXT("Sustainability Book", "Sustainability Book");
 static const FText frugalityBookText =		LOCTEXT("Frugality Book", "Frugality Book");
+static const FText motivationBookText = LOCTEXT("Motivation", "Motivation");
+static const FText passionBookText = LOCTEXT("Passion", "Passion");
+
 static const FText wildCardText =			LOCTEXT("Wild Card", "Wild Card");
 static const FText cardRemovalCardText =	LOCTEXT("Card Removal Card", "Card Removal Card");
 
@@ -484,6 +487,9 @@ void CardMaker::OnInit()
 		WorkMode::Create(productivityBookText,		LOCTEXT("Productivity Book WorkDesc", "Create Productivity Book Card")),
 		WorkMode::Create(sustainabilityBookText,	LOCTEXT("Sustainability Book WorkDesc", "Create Sustainability Book Card")),
 		WorkMode::Create(frugalityBookText,			LOCTEXT("Frugality Book WorkDesc", "Create Frugality Book Card")),
+		WorkMode::Create(motivationBookText,			LOCTEXT("Motivation WorkDesc", "Create Motivation Card")),
+		WorkMode::Create(passionBookText,			LOCTEXT("Passion WorkDesc", "Create Passion Card")),
+		
 		WorkMode::Create(wildCardText,				LOCTEXT("Wild Card WorkDesc", "Create Wild Card")),
 		WorkMode::Create(cardRemovalCardText,		LOCTEXT("Card Removal Card WorkDesc", "Create Card Removal Card")),
 	});
@@ -518,6 +524,13 @@ CardEnum CardMaker::GetCardProduced()
 	if (name.IdenticalTo(frugalityBookText)) {
 		return CardEnum::FrugalityBook;
 	}
+	if (name.IdenticalTo(motivationBookText)) {
+		return CardEnum::Motivation;
+	}
+	if (name.IdenticalTo(passionBookText)) {
+		return CardEnum::Passion;
+	}
+	
 	if (name.IdenticalTo(wildCardText)) {
 		return CardEnum::WildCard;
 	}

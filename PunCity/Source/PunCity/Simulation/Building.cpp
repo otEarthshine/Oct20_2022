@@ -43,6 +43,12 @@ void Building::Init(IGameSimulationCore& simulation, int32 objectId, int32 townI
 
 	_upgrades.clear();
 
+	_budgetLevel = 3;
+	_workTimeLevel = 3;
+
+	lastBudgetLevel = 3;
+	lastWorkTimeLevel = 3;
+
 	_deliveryTargetId = -1;
 
 	_priority = PriorityEnum::NonPriority;
@@ -932,6 +938,21 @@ void Building::ChangeWorkMode(const WorkMode& workMode)
 std::vector<BonusPair> Building::GetBonuses()
 {
 	std::vector<BonusPair> bonuses;
+
+	// Budget
+	int32 budgetBonus = (_budgetLevel - 3) * 20;
+	if (budgetBonus != 0) {
+		bonuses.push_back({ FText::Format(LOCTEXT("BudgetLvlX", "Budget Lvl {0}"), TEXT_NUM(_budgetLevel)), budgetBonus });
+	}
+
+	// WorkTime
+	int32 workTimeBonus = (_workTimeLevel - 3) * 20;
+	if (workTimeBonus != 0) {
+		bonuses.push_back({ FText::Format(LOCTEXT("WorkHourLvlX", "Work Hours Lvl {0}"), TEXT_NUM(_workTimeLevel)), workTimeBonus });
+	}
+
+	
+	// Industrial
 	if (IsIndustrialBuilding(_buildingEnum))
 	{
 		if (_simulation->buildingFinishedCount(_townId, CardEnum::EngineeringOffice)) {
@@ -956,6 +977,12 @@ std::vector<BonusPair> Building::GetBonuses()
 
 	if (slotCardCount(CardEnum::ProductivityBook) > 0) {
 		bonuses.push_back({ LOCTEXT("Productivity Book", "Productivity Book"), slotCardCount(CardEnum::ProductivityBook) * 20 });
+	}
+	if (slotCardCount(CardEnum::Passion) > 0) {
+		bonuses.push_back({ LOCTEXT("Passion", "Passion"), 15 });
+	}
+	if (slotCardCount(CardEnum::Motivation) > 0) {
+		bonuses.push_back({ LOCTEXT("Motivation", "Motivation"), max(0, _simulation->GetAverageHappiness(_townId) - 70) });
 	}
 
 	// Upgrade bonuses

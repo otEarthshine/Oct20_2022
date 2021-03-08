@@ -1256,9 +1256,9 @@ void TownManager::RecalculateTax(bool showFloatup)
 	incomes100[static_cast<int>(IncomeEnum::InvestmentProfit)] = 100 * 30 * _simulation->TownhallCardCountTown(_townId, CardEnum::Investment);
 
 
-	bool conglomerateComplete = _simulation->TownhallCardCountTown(_townId, CardEnum::Conglomerate) > 0 &&
-		_simulation->buildingCount(_playerId, CardEnum::TradingCompany) >= 2;
-	incomes100[static_cast<int>(IncomeEnum::ConglomerateIncome)] = 100 * (conglomerateComplete ? 50 : 0);
+	if ( _simulation->TownhallCardCountTown(_townId, CardEnum::SocialWelfare) > 0) {
+		incomes100[static_cast<int>(IncomeEnum::SocialWelfare)] = -100 * 10 * population();
+	}
 
 	/*
 	 * Science
@@ -1267,8 +1267,15 @@ void TownManager::RecalculateTax(bool showFloatup)
 	for (auto houseId : _houseIds) {
 		House& house = _simulation->building(houseId).subclass<House>(CardEnum::House);
 
-		for (size_t i = 0; i < HouseScienceEnums.size(); i++) {
-			sciences100[static_cast<int>(HouseScienceEnums[i])] += house.GetScience100(HouseScienceEnums[i]);
+		int32 cumulative100 = 0;
+		for (size_t i = 0; i < HouseScienceEnums.size(); i++) 
+		{
+			int32 houseScience100 = house.GetScience100(HouseScienceEnums[i], cumulative100);
+			sciences100[static_cast<int>(HouseScienceEnums[i])] += houseScience100;
+			
+			if (!IsScienceModifierEnum(HouseScienceEnums[i])) {
+				cumulative100 += houseScience100;
+			}
 		}
 	}
 

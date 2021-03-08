@@ -2742,24 +2742,16 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 	{
 		if (command.callbackEnum == CallbackEnum::DeclareFriendship) {
 			aiPlayerSystem(command.intVar1).DeclareFriendship(command.playerId);
-			return;
 		}
-		if (command.callbackEnum == CallbackEnum::MarryOut) {
+		else if (command.callbackEnum == CallbackEnum::MarryOut) {
 			aiPlayerSystem(command.intVar1).MarryOut(command.playerId);
-			return;
 		}
-
-		if (command.callbackEnum == CallbackEnum::EditableNumberSetOutputTarget)
-		{
+		else if (command.callbackEnum == CallbackEnum::EditableNumberSetOutputTarget) {
 			if (command.intVar1 != -1) {
 				townManager(command.townId).SetOutputTarget(static_cast<ResourceEnum>(command.intVar1), command.intVar2);
 			}
-			return;
 		}
-
-
-		if (command.callbackEnum == CallbackEnum::QuickBuild)
-		{
+		else if (command.callbackEnum == CallbackEnum::QuickBuild) {
 			if (command.intVar1 != -1) 
 			{
 				Building& bld = building(command.intVar1);
@@ -2770,6 +2762,36 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 
 					bld.InstantClearArea();
 					bld.FinishConstructionResourceAndWorkerReset();
+					bld.SetAreaWalkable();
+				}
+			}
+		}
+		else if (command.callbackEnum == CallbackEnum::AddAnimalRanch) {
+			if (command.intVar1 != -1)
+			{
+				Building& bld = building(command.intVar1);
+				if (IsRanch(bld.buildingEnum()))
+				{
+					Ranch& ranch = bld.subclass<Ranch>();
+					if (ranch.openAnimalSlots() > 0) {
+						UnitEnum animalEnum = ranch.GetAnimalEnum();
+						ranch.AddAnimalOccupant(animalEnum, GetUnitInfo(animalEnum).minBreedingAgeTicks);
+					}
+				}
+			}
+		}
+		else if (command.callbackEnum == CallbackEnum::BudgetAdjust)
+		{
+			int32 buildingId = command.intVar1;
+			bool isBudgetOrTime = command.intVar2;
+			int32 level = command.intVar3;
+
+			if (Building* building = buildingPtr(buildingId))
+			{
+				if (isBudgetOrTime) {
+					building->SetBudgetLevel(level);
+				} else {
+					building->SetWorkTimeLevel(level);
 				}
 			}
 		}

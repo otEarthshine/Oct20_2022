@@ -55,7 +55,7 @@ void UnitStateAI::AddUnit(UnitEnum unitEnum, int32 townId, UnitFullId fullId, IU
 	_fullId = fullId;
 
 	_unitEnum = unitEnum;
-	_unitState = UnitState::Idle;
+	SetActivity(UnitState::Idle);
 
 	if (unitEnum == UnitEnum::Human) {
 		_food = maxFood() / 2;
@@ -69,7 +69,8 @@ void UnitStateAI::AddUnit(UnitEnum unitEnum, int32 townId, UnitFullId fullId, IU
 
 	//_funTicks = FunTicksAt100Percent * 80 / 100;
 	_serviceToFunTicks.clear();
-	_serviceToFunTicks.resize(FunServiceEnumCount, FunTicksAt100Percent * 80 / 100);
+	_serviceToFunTicks.resize(FunServiceEnumCount, 0);
+	_serviceToFunTicks[static_cast<int>(FunServiceEnum::Tavern)] = FunTicksAt100Percent;
 
 	_happiness.clear();
 	_happiness.resize(HappinessEnumCount, 90);
@@ -157,6 +158,8 @@ void UnitStateAI::Update()
 	if (uInfo.IsAgingUnit())
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUnitFoodAgeAI);
+
+		OnUnitUpdate();
 
 		// Check status
 		int ticksPassed = Time::Ticks() - _lastUpdateTick;
@@ -283,6 +286,8 @@ void UnitStateAI::Update()
 					if (_hp100 < maxHP100() * 3 / 4) {
 						_hp100 = maxHP100() * 3 / 4;
 					}
+
+					_isSick = false;
 				}
 			}
 
@@ -293,7 +298,8 @@ void UnitStateAI::Update()
 				// Homeless people could leave your town
 				// This only happens beyond 30 population
 				if (_houseId == -1 &&
-					_simulation->populationTown(_townId) > 30)
+					_simulation->populationTown(_townId) > 30 &&
+					_simulation->TownhallCardCountTown(_townId, CardEnum::Lockdown) == 0)
 				{
 					_simulation->AddMigrationPendingCount(_townId, 1);
 					_simulation->AddEventLog(_playerId,
@@ -312,7 +318,8 @@ void UnitStateAI::Update()
 				}
 
 				// Low Happiness people could also leave your town
-				if (happinessOverall() < 50)
+				if (happinessOverall() < 50 && 
+					_simulation->TownhallCardCountTown(_townId, CardEnum::Lockdown) == 0)
 				{
 					_simulation->AddMigrationPendingCount(_townId, 1);
 					_simulation->AddEventLog(_playerId,
@@ -463,7 +470,8 @@ void UnitStateAI::Update()
 
 					// Domesticated animal should give birth less
 					if (canGiveBirth) {
-						canGiveBirth = (GameRand::Rand() % 3 == 0);
+						canGiveBirth = (GameRand::Rand() % 30 == 0);
+						_lastPregnant = Time::Ticks(); // Reset birth even if the unit didn't give birth
 					}
 				}
 				else
@@ -516,7 +524,8 @@ void UnitStateAI::Update()
 
 						statSystem().AddStat(SeasonStatEnum::Birth);
 					}
-					_lastPregnant = -1;
+					
+					_lastPregnant = Time::Ticks(); // even if birth failed, wait until the next pregnancy
 				}
 			}
 			// -- Give Birth?
@@ -651,7 +660,7 @@ void UnitStateAI::Die()
 
 void UnitStateAI::AttackIncoming(UnitFullId attacker, int32 ownerWorkplaceId, int32 damage, int32 attackPlayerId, UnitFullId defenderId)
 {
-	//PUN_LOG("Unit AttackIncoming id:%d defenderAlive:%d", _id, _unitData->unitLean(_id).alive());
+	PUN_LOG("Ranch Unit AttackIncoming id:%d defenderAlive:%d", _id, _unitData->unitLean(_id).alive());
 	//PUN_CHECK2(_unitData->unitLean(_id).alive(), debugStr());
 
 	// Unit might already died before arrow arrive...
@@ -700,6 +709,8 @@ void UnitStateAI::AttackIncoming(UnitFullId attacker, int32 ownerWorkplaceId, in
 			if (ownerWorkplaceId != -1 && _simulation->buildingIsAlive(ownerWorkplaceId)) {
 				for (ResourcePair& drop : drops) {
 					_simulation->building(ownerWorkplaceId).AddProductionStat(drop);
+					
+					PUN_LOG("Ranch Unit AttackIncoming id:%d AddStat:%d", _id, ownerWorkplaceId);
 				}
 			}
 		}
@@ -735,7 +746,8 @@ void UnitStateAI::CalculateActions()
 	// Special case:
 	if (IsWildAnimalWithColony(unitEnum()))
 	{
-		_unitState = UnitState::Idle;
+		SetActivity(UnitState::Idle);
+		
 		int32 waitTicks = 60 * (GameRand::Rand() % 3 + 4);
 		Add_Wait(waitTicks);
 		//Add_MoveRandomlyPerlin();
@@ -760,7 +772,7 @@ void UnitStateAI::CalculateActions()
 		// Try Migrate once in a long while
 		if (GameRand::Rand() % 50 == 0 && TryChangeProvince_NoAction()) return;
 
-		_unitState = UnitState::Idle;
+		SetActivity(UnitState::Idle);
 		int32 waitTicks = Time::TicksPerSecond * (GameRand::Rand() % 5 + 5);
 		Add_Wait(waitTicks);
 		Add_MoveRandomlyAnimal(); // This will bring the animal to home province...
@@ -774,8 +786,8 @@ void UnitStateAI::CalculateActions()
 		//	return;
 		//}
 		
-		_unitState = UnitState::Idle;
-		int32 waitTicks = 60 * (GameRand::Rand() % 3 + 4);
+		SetActivity(UnitState::Idle);
+		int32 waitTicks = 60 * (GameRand::Rand() % 3 + 8);
 		Add_Wait(waitTicks);
 
 		if (_houseId != -1) {
@@ -836,7 +848,7 @@ void UnitStateAI::CalculateActions()
 					static_cast<BoarBurrow*>(&burrow)->AddOccupant(_id);
 					_houseId = burrowId;
 					
-					_unitState = UnitState::Idle;
+					SetActivity(UnitState::Idle);
 					int32 waitTicks = 60 * (GameRand::Rand() % 3 + 4);
 					Add_Wait(waitTicks);
 					AddDebugSpeech("(Success)Idle Just Moved Home");
@@ -892,7 +904,7 @@ void UnitStateAI::CalculateActions()
 		}
 
 		// Idle, nothing else to do
-		_unitState = UnitState::Idle;
+		SetActivity(UnitState::Idle);
 		int32 waitTicks = Time::TicksPerSecond * (GameRand::Rand() % 5 + 4);
 		Add_Wait(waitTicks);
 		Add_MoveRandomlyAnimal();
@@ -967,6 +979,8 @@ bool UnitStateAI::TryCheckBadTile()
 		// move there ignoring obstacles
 		Add_MoveToRobust(end);
 		AddDebugSpeech("(Succeed)TryCheckBadTile:");
+
+		SetActivity(UnitState::Other);
 		return true;
 	}
 	AddDebugSpeech("(Failed)TryCheckBadTile:");
@@ -999,17 +1013,19 @@ bool UnitStateAI::TryGoNearbyHome()
 	if (isEnum(UnitEnum::Human))
 	{
 		// Trailer
-		if (PunSettings::TrailerSession) {
-			// Too far, in another city, don't walk there and walk randomly instead
-			if (WorldTile2::Distance(unitTile(), houseGate) > 80) {
-				MoveRandomly();
-				return true;
-			}
-		}
+		//if (PunSettings::TrailerSession) {
+		//	// Too far, in another city, don't walk there and walk randomly instead
+		//	if (WorldTile2::Distance(unitTile(), houseGate) > 80) {
+		//		MoveRandomly();
+		//		return true;
+		//	}
+		//}
 
 
 		MoveTo_NoFail(houseGate, GameConstants::MaxFloodDistance_HumanLogistics);
 		AddDebugSpeech("(Succeed)TryGoNearbyHome:");
+
+		SetActivity(UnitState::GoNearbyHome);
 		return true;
 	}
 	// In this case, animal will just abandon home
@@ -1034,6 +1050,8 @@ bool UnitStateAI::TryGoNearbyHome()
 
 	Add_MoveTo(houseGate);
 	AddDebugSpeech("(Succeed)TryGoNearbyHome:");
+
+	SetActivity(UnitState::GoNearbyHome);
 	return true;
 }
 
@@ -1082,7 +1100,7 @@ bool UnitStateAI::TryGetBurrowFood()
 	Add_Wait(60);
 	Add_PickupFoodAnimal();
 	Add_MoveTo(boarBurrow.gateTile());
-	_unitState = UnitState::GetFood;
+	SetActivity(UnitState::GetFood);
 
 	AddDebugSpeech("(Succeed)TryGetBurrowFood:");
 	return true;
@@ -1208,6 +1226,8 @@ bool UnitStateAI::TryStoreAnimalInventory()
 	_simulation->soundInterface()->SpawnAnimalSound(unitEnum(), false, unitAtom());
 
 	AddDebugSpeech("(Success)TryStoreAnimalInventory:");
+
+	SetActivity(UnitState::StoreInventory);
 	return true;
 }
 
@@ -1237,6 +1257,8 @@ bool UnitStateAI::TryGoHomeProvince()
 	AddDebugSpeech("(Success)TryGoHomeProvince: Transfer to MoveTo " + uTile.ToString() + end.ToString());
 	Add_Wait(Time::TicksPerSecond * (GameRand::Rand() % 5 + 5));
 	Add_MoveTo(end, GameConstants::MaxFloodDistance_AnimalFar);
+
+	SetActivity(UnitState::Other);
 	return true;
 }
 
@@ -1326,9 +1348,10 @@ bool UnitStateAI::TryAvoidOthers()
 	int32 subregionUnitCount = _unitData->unitSubregionLists().SubregionCount(unitTile());
 	if (subregionUnitCount >= unitCountToAvoid) 
 	{
-		_unitState = UnitState::AvoidOthers;
 		Add_MoveRandomly();
 		AddDebugSpeech("(Success)AvoidOthers MoveRandomly");
+
+		SetActivity(UnitState::AvoidOthers);
 		return true;
 	}
 	return false;
@@ -1384,12 +1407,12 @@ bool UnitStateAI::TryFindWildFood()
 				Add_MoveToward(bushTile.worldAtom2(), 5000);
 				Add_MoveTo(bushTile);
 
-				_unitState = UnitState::GetWildFood;
-
 				_simulation->soundInterface()->SpawnAnimalSound(unitEnum(), false, unitAtom());
 
 				AddDebugSpeech("(Success)TryFindWildFood: Bush");
 				debugFindFullBushSuccessCount++;
+
+				SetActivity(UnitState::GetWildFood);
 				return true;
 			}
 		}
@@ -1407,6 +1430,8 @@ bool UnitStateAI::TryFindWildFood()
 
 	AddDebugSpeech("(Failed Wait)TryFindWildFood: nearestTree invalid");
 	debugFindFullBushFailCount++;
+
+	SetActivity(UnitState::Other);
 	return true;
 }
 
@@ -1721,6 +1746,10 @@ void UnitStateAI::Eat()
 			int32 foodConsumptionModifier = _simulation->difficultyConsumptionAdjustment(_playerId);
 
 			foodIncrement = foodIncrement * 100 / (100 + foodConsumptionModifier);
+
+			if (_simulation->TownhallCardCountTown(_townId, CardEnum::AllYouCanEat) > 0) {
+				foodIncrement = foodIncrement * 100 / 150;
+			}
 
 			// Special case:
 			if (resourceEnum == ResourceEnum::Melon) {
@@ -2280,6 +2309,8 @@ void UnitStateAI::MoveToRobust(WorldTile2 end)
 
 	MapUtil::UnpackAStarPath(rawWaypoint, _unitData->waypoint(_id));
 	_unitData->SetForceMove(_id, true);
+
+	_animationEnum = UnitAnimationEnum::Invisible;
 
 	// Convert waypoint to targetTile next tick.
 	_unitData->SetNextTickState(_id, TransformState::NeedTargetAtom, UnitUpdateCallerEnum::MoveToRobust_Done);

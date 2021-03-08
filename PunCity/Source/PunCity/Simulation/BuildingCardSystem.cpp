@@ -129,56 +129,53 @@ void BuildingCardSystem::RollRareHandExecute()
 		std::vector<CardEnum> cardEnums;
 		if (_rareHandEnum == RareHandEnum::PopulationQuestCards1) {
 			cardEnums = {
-				CardEnum::ProductivityBook,
-				CardEnum::SustainabilityBook,
-				CardEnum::FrugalityBook,
+				CardEnum::BeerTax,
+				CardEnum::ChimneyRestrictor,
+				CardEnum::GoldRush,
 			};
 		}
 		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards2) {
 			cardEnums = {
-				CardEnum::BeerTax,
-				CardEnum::ChimneyRestrictor,
+				CardEnum::MiningEquipment,
+				CardEnum::HomeBrew,
 				CardEnum::CoalTreatment,
 			};
 		}
 		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards3) {
 			cardEnums = {
 				CardEnum::CoalPipeline,
-				CardEnum::HomeBrew,
+				CardEnum::HappyBreadDay,
 				CardEnum::BirthControl,
 			};
 		}
 		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards4) {
 			cardEnums = {
-				CardEnum::ProductivityBook,
+				CardEnum::BlingBling,
+				CardEnum::SmeltCombo,
+				CardEnum::Lockdown,
 			};
 		}
 		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards5) {
 			cardEnums = {
-				CardEnum::ProductivityBook,
+				CardEnum::AllYouCanEat,
+				CardEnum::SlaveLabor,
+				CardEnum::Conglomerate,
 			};
 		}
 		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards6) {
 			cardEnums = {
-				CardEnum::ProductivityBook,
+				CardEnum::ArchitectStudio,
+				CardEnum::EngineeringOffice,
+				CardEnum::DepartmentOfAgriculture,
 			};
 		}
 		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards7) {
 			cardEnums = {
-				CardEnum::ProductivityBook,
+				CardEnum::SocialWelfare,
+				CardEnum::Motivation,
+				CardEnum::Passion,
 			};
 		}
-
-		//{
-		//	CardEnum::MiningEquipment, Bad...
-		//	CardEnum::Conglomerate,
-		//	CardEnum::GoldRush,
-		//};
-
-		//if (_simulation->GetHouseLvlCount(_playerId, 2, true) > 0) {
-		//	cardEnums.push_back(CardEnum::HappyBreadDay);
-		//	cardEnums.push_back(CardEnum::BlingBling);
-		//}
 
 		// Remove card if we already have it
 		//for (size_t i = cardEnums.size(); i-- > 0;) {
@@ -192,24 +189,33 @@ void BuildingCardSystem::RollRareHandExecute()
 	}
 	else
 	{
+		std::vector<CardEnum> cardEnums = {
+			CardEnum::ProductivityBook,
+			CardEnum::SustainabilityBook,
+			CardEnum::FrugalityBook,
+			CardEnum::Motivation,
+			CardEnum::Passion,
+		};
 
-		std::vector<CardEnum> drawableCards;
-		for (int32_t i = 0; i < RareCardsCount; i++) {
-			if (shouldDraw(RareCards[i])) {
-				drawableCards.push_back(RareCards[i]);
-			}
-		}
+		RandomInsertToRareHand(cardEnums, 3);
 
-		for (int i = 0; i < drawCount; i++)
-		{
-			int32_t rareCardIndex = GameRand::Rand() % drawableCards.size();
-			_cardsRareHand.push_back(drawableCards[rareCardIndex]);
-			drawableCards.erase(drawableCards.begin() + rareCardIndex);
+		//std::vector<CardEnum> drawableCards;
+		//for (int32_t i = 0; i < RareCardsCount; i++) {
+		//	if (shouldDraw(RareCards[i])) {
+		//		drawableCards.push_back(RareCards[i]);
+		//	}
+		//}
 
-			if (drawableCards.size() == 0) {
-				break;
-			}
-		}
+		//for (int i = 0; i < drawCount; i++)
+		//{
+		//	int32_t rareCardIndex = GameRand::Rand() % drawableCards.size();
+		//	_cardsRareHand.push_back(drawableCards[rareCardIndex]);
+		//	drawableCards.erase(drawableCards.begin() + rareCardIndex);
+
+		//	if (drawableCards.size() == 0) {
+		//		break;
+		//	}
+		//}
 
 		PUN_CHECK(_cardsRareHand.size() <= drawCount);
 	}

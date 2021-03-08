@@ -223,6 +223,19 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 		LOCTEXT("Industrial Adjacency Desc", "Industrial buildings get +5% efficiency for each nearby industry of the same type. (max at 15%)"),
 	}},
 
+	{ TechEnum::HaulingCapacity, {
+		LOCTEXT("HaulingCapacity", "Hauling Capacity"),
+		LOCTEXT("HaulingCapacity Desc", "Allows Citizens to carry +10 more goods."),
+	} },
+	{ TechEnum::BudgetAdjustment, {
+		LOCTEXT("BudgetAdjustment", "Budget Adjustment"),
+		LOCTEXT("BudgetAdjustment Desc", "Unlocks the ability to adjust Workplace's Budget Level.\n\nIncreasing the Budget Level lead to higher Effectiveness and Job Happiness, but also increases the Building Upkeep."),
+	} },
+	{ TechEnum::WorkSchedule, {
+		LOCTEXT("WorkSchedule", "Work Schedule"),
+		LOCTEXT("WorkSchedule Desc", "Unlocks the ability to adjust Workplace's Work Hours Level.\n\nIncreasing the Work Hours Level lead to higher Effectiveness, but lower Job Happiness."),
+	} },
+
 	{ TechEnum::ScienceLastEra, {
 		LOCTEXT("Scientific Theories", "Scientific Theories"),
 		LOCTEXT("Scientific Theories Desc", "+20% science output"),
@@ -695,6 +708,7 @@ public:
 			
 			//
 			era = 6;
+			AddTech_Bonus(era, TechEnum::BudgetAdjustment);
 			AddTech_Building(era, TechEnum::BarrackKnight, CardEnum::BarrackSwordman);
 			AddTech_Building(era, TechEnum::Bank, { CardEnum::Bank });
 			AddTech_Building(era, TechEnum::Theatre, CardEnum::Theatre);
@@ -705,10 +719,11 @@ public:
 			
 			//
 			era = 7;
-			AddTech_Bonus(era, TechEnum::HouseLvl6Income);
+			AddTech_Bonus(era, TechEnum::HaulingCapacity);
+			AddTech_Bonus(era, TechEnum::WorkSchedule);
 			AddTech_Bonus(era, TechEnum::TaxAdjustment);
 			AddTech_Building(era, TechEnum::Garden, CardEnum::Garden);
-			AddTech_Bonus(era, TechEnum::CheapLand);
+
 			AddTech_Bonus(era, TechEnum::WineryImprovement);
 			AddTech_Bonus(era, TechEnum::TraderDiscount);
 			//AddTech_Building(era, TechEnum::ShrineRot, { CardEnum::ShrineGreedPiece });

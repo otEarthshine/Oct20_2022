@@ -104,9 +104,16 @@ public:
 	
 	static int32 GetMaxHouseLvl();
 	
-	int32 housingHappiness();
+	int32 housingQuality();
 	int32 luxuryHappiness() {
-		return 30 + luxuryCount() * 5;
+		int32 happiness = 30 + luxuryCount() * 5;
+		if (_simulation->TownhallCardCountTown(_townId, CardEnum::BlingBling) > 0 &&
+			resourceCount(ResourceEnum::Jewelry)) 
+		{
+			happiness += 20;
+		}
+		
+		return happiness;
 	} // ~16 types
 
 
@@ -144,13 +151,19 @@ public:
 	}
 
 	// Science
-	int32 GetScience100(ScienceEnum scienceEnum);
+	int32 GetScience100(ScienceEnum scienceEnum, int32 cumulative100);
 	
 	int32 science100PerRound()
 	{
 		int32 result = 0;
+		int32 cumulative100 = 0;
+		
 		for (int32 i = 0; i < HouseScienceEnums.size(); i++) {
-			result += GetScience100(HouseScienceEnums[i]);
+			result += GetScience100(HouseScienceEnums[i], cumulative100);
+			
+			if (!IsScienceModifierEnum(HouseScienceEnums[i])) {
+				cumulative100 = result;
+			}
 		}
 		return result;
 	}
@@ -371,6 +384,22 @@ public:
 		}
 	}
 
+	UnitEnum GetAnimalEnum()
+	{
+		switch (buildingEnum()) {
+		case CardEnum::RanchPig: return UnitEnum::Pig;
+		case CardEnum::RanchSheep:return UnitEnum::Sheep;
+		case CardEnum::RanchCow:return UnitEnum::Cow;
+		default:
+			UE_DEBUG_BREAK();
+			return UnitEnum::Pig;
+		}
+	}
+
+	int32 animalCost() {
+		return buildingInfo().constructionCostAsMoney() / 3;
+	}
+	
 public:
 	//10 animals ... 5 slaugther per season.. 100 per season... (half year adult growth... )
 	const int32 maxAnimals = 15;

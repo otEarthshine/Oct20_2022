@@ -247,7 +247,7 @@ void HumanStateAI::CalculateActions()
 			SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_GatherNDrop_DropPickup);
 			
 			for (ResourceInfo info : ResourceInfos) {
-				int32 amountAtLeast = 10; // Need at least 
+				int32 amountAtLeast = haulCapacity(); // Need at least 
 				if (TryMoveResourcesAny(info.resourceEnum, ResourceFindType::Drop, ResourceFindType::AvailableForDropoff, amountAtLeast) || justReset()) {
 					DEBUG_AI_VAR(TryMoveResourcesAny_Drop);
 					return;
@@ -272,7 +272,7 @@ void HumanStateAI::CalculateActions()
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_MoveResourceDeliveryTarget);
 
-		if (TryMoveResourcesToDeliveryTargetAll(10) || justReset()) {
+		if (TryMoveResourcesToDeliveryTargetAll(haulCapacity()) || justReset()) {
 			// DEBUG_AI_VAR
 			return;
 		}
@@ -289,7 +289,7 @@ void HumanStateAI::CalculateActions()
 
 		// First pass to move larger amount...
 		for (ResourceInfo info : ResourceInfos) {
-			if (TryMoveResourceAny(info, 10) || justReset()) {
+			if (TryMoveResourceAny(info, haulCapacity()) || justReset()) {
 				DEBUG_AI_VAR(TryMoveResourcesAny_All10);
 				return;
 			}
@@ -336,7 +336,7 @@ void HumanStateAI::CalculateActions()
 		Add_MoveRandomly();
 	}
 
-	_unitState = UnitState::Idle;
+	SetActivity(UnitState::Idle);
 }
 
 void HumanStateAI::MoveResourceSequence(std::vector<FoundResourceHolderInfo> providerInfos, std::vector<FoundResourceHolderInfo> dropoffInfos, int32 customFloodDistance, UnitAnimationEnum animationEnum)
@@ -374,7 +374,7 @@ void HumanStateAI::MoveResourceSequence(std::vector<FoundResourceHolderInfo> pro
 		//Add_MoveTo(resourceSystem().GetTile(providerInfos[i].info));
 	}
 
-	_unitState = UnitState::MoveResource;
+	SetActivity(UnitState::MoveResource);
 }
 
 void HumanStateAI::GatherSequence(NonWalkableTileAccessInfo accessInfo)
@@ -533,7 +533,7 @@ bool HumanStateAI::TryMoveResourcesProviderToAnyDropoff(FoundResourceHolderInfo 
 
 bool HumanStateAI::TryMoveResourcesAny(ResourceEnum resourceEnum, ResourceFindType providerType, ResourceFindType dropoffType, int32_t amountAtLeast)
 {
-	int wantAmount = 10;
+	int wantAmount = haulCapacity();
 	FoundResourceHolderInfos foundProviders = resourceSystem().FindHolder(providerType, resourceEnum, wantAmount, unitTile());
 	if (!foundProviders.hasInfos()) {
 		//if (resourceEnum == ResourceEnum::Wood) {
@@ -691,7 +691,7 @@ bool HumanStateAI::TryStoreInventory()
 				Add_MoveToResource(foundInfo.info);
 				//Add_MoveTo(foundInfo.tile);
 
-				_unitState = UnitState::StoreInventory;
+				SetActivity(UnitState::StoreInventory);
 			}
 
 			AddDebugSpeech("(Succeed)TryStoreInventory");
@@ -743,11 +743,11 @@ bool HumanStateAI::TryClearLand(TileArea area)
 
 		ResourceTileType tileType = treeSystem().tileInfo(cutTileAccessInfo.tile.tileId()).type;
 		if (tileType == ResourceTileType::Tree) {
-			_unitState = UnitState::ClearLandCutTree;
+			SetActivity(UnitState::ClearLandCutTree);
 		} else if (tileType == ResourceTileType::Deposit) {
-			_unitState = UnitState::ClearLandCutStone;
+			SetActivity(UnitState::ClearLandCutStone);
 		} else {
-			_unitState = UnitState::ClearLandCutBush;
+			SetActivity(UnitState::ClearLandCutBush);
 		}
 		
 		AddDebugSpeech("(Succeed)TryClearLand: CutTree");
@@ -781,7 +781,7 @@ bool HumanStateAI::TryClearLand(TileArea area)
 
 			Add_PickupResource(holderInfo, amount);
 			Add_MoveToResource(holderInfo);
-			_unitState = UnitState::ClearLandRemoveDrop;
+			SetActivity(UnitState::ClearLandRemoveDrop);
 
 			AddDebugSpeech("(Succeed)TryClearLand: RemoveDrop proper dropoff");
 			return true;
@@ -801,7 +801,7 @@ bool HumanStateAI::TryClearLand(TileArea area)
 			Add_MoveToResource(holderInfo);
 			//Add_MoveTo(resourceSystem().GetTile(holderInfo));
 
-			_unitState = UnitState::ClearLandRemoveDrop;
+			SetActivity(UnitState::ClearLandRemoveDrop);
 			AddDebugSpeech("(Succeed)TryClearLand: RemoveDrop place nearby");
 			return true;
 		}
@@ -913,7 +913,7 @@ bool HumanStateAI::TryFindFood()
 			Add_MoveToResource(bestProvider.info);
 			//Add_MoveTo(bestProvider.tile);
 			
-			_unitState = UnitState::GetFood;
+			SetActivity(UnitState::GetFood);
 
 			AddDebugSpeech("(Success)TryFindFood: pushed actions");
 			return true;
@@ -1000,7 +1000,7 @@ bool HumanStateAI::TryHeatup()
 		Add_MoveToResource(holderInfo);
 		//Add_MoveTo(house.gateTile());
 		
-		_unitState = UnitState::GetHeat;
+		SetActivity(UnitState::GetHeat);
 
 		AddDebugSpeech("(Succeed)TryHeatup use firewood");
 		return true;
@@ -1071,7 +1071,7 @@ bool HumanStateAI::TryToolup()
 				Add_MoveToResource(bestProvider.info);
 				//Add_MoveTo(bestProvider.tile);
 
-				_unitState = UnitState::GetTools;
+				SetActivity(UnitState::GetTools);
 
 				AddDebugSpeech("(Success)TryToolup: pushed actions");
 				return true;
@@ -1130,7 +1130,7 @@ bool HumanStateAI::TryHealup()
 				Add_PickupResource(bestProvider.info, bestProvider.amount);
 				Add_MoveToResource(bestProvider.info);
 
-				_unitState = UnitState::GetMedicine;
+				SetActivity(UnitState::GetMedicine);
 
 				AddDebugSpeech("(Success)TryHealup: pushed actions");
 				return true;
@@ -1347,7 +1347,7 @@ bool HumanStateAI::TryFun()
 				Add_Wait(Time::TicksPerSecond * 8);
 				Add_MoveTo(funBuilding.gateTile());
 
-				_unitState = UnitState::GetFun;
+				SetActivity(UnitState::GetFun);
 
 				AddDebugSpeech("(Succeed)TryFun theatre");
 				return true;
@@ -1417,7 +1417,7 @@ bool HumanStateAI::TryGatherFruit()
 	Add_MoveToward(treeAccessInfo.tile.worldAtom2(), 5000);
 	Add_MoveTo(treeAccessInfo.nearbyTile);
 
-	_unitState = UnitState::GatherFruit;
+	SetActivity(UnitState::GatherFruit);
 	AddDebugSpeech("(Succeed)TryGatherBerry: pushed actions");
 	return true;
 }
@@ -1502,7 +1502,7 @@ bool HumanStateAI::TryHunt()
 	Add_MoveTo(huntingLodge.gateTile() + WorldTile2::DirectionTile(huntingLodge.faceDirection()));
 	//Add_MoveInRange(nearestTile, damage);
 
-	_unitState = UnitState::Hunt;
+	SetActivity(UnitState::Hunt);
 	AddDebugSpeech("(Succeed)TryHunt: pushed actions");
 	return true;
 }
@@ -1560,10 +1560,10 @@ bool HumanStateAI::TryRanch()
 	Add_AttackOutgoing(targetFullId, 1000);
 	Add_MoveTo(_unitData->atomLocation(targetFullId.id).worldTile2());
 
-	_unitState = UnitState::Ranch;
+	SetActivity(UnitState::Ranch);
 
 	//auto& unitAI = _simulation->unitAI(targetFullId.id);;
-	//PUN_LOG("Try Ranch on unit id:%d pid:%d houseId:%d unit:%s", targetFullId.id, unitAI.playerId(), unitAI.houseId(), ToTChar(unitAI.GetUnitName()));
+	PUN_LOG("TryRanch MoveTo:%s", *_unitData->atomLocation(targetFullId.id).worldTile2().To_FString());
 	
 	return false;
 }
@@ -1625,7 +1625,7 @@ bool HumanStateAI::TryFarm()
 			Add_Wait(waitTicks, UnitAnimationEnum::FarmPlanting);
 			Add_MoveTo(seedTile);
 
-			_unitState = UnitState::FarmSeeding;
+			SetActivity(UnitState::FarmSeeding);
 			AddDebugSpeech("(Succeed)TryFarm: Seeding");
 			return true;
 		}
@@ -1662,8 +1662,9 @@ bool HumanStateAI::TryFarm()
 				Add_Wait(waitTicks);
 				Add_MoveTo(nourishTile);
 
-				_unitState = UnitState::FarmNourishing;
 				AddDebugSpeech("(Succeed)TryFarm: Nourishing");
+
+				SetActivity(UnitState::FarmNourishing);
 				return true;
 			}
 			else {
@@ -1709,8 +1710,8 @@ bool HumanStateAI::TryFarm()
 			Add_Wait(waitTicks);
 			Add_MoveTo(harvestTile);
 
-			_unitState = UnitState::FarmHarvesting;
-			AddDebugSpeech("(Succeed)TryFarm: Nourishing");
+			AddDebugSpeech("(Succeed)TryFarm: FarmHarvesting");
+			SetActivity(UnitState::FarmHarvesting);
 			return true;
 		}
 
@@ -1834,9 +1835,8 @@ bool HumanStateAI::TryClearFarmDrop(Farm& farm, int32 minDropCount)
 			Add_MoveToResource(drop.holderInfo);
 		}
 
-		_unitState = UnitState::FarmClearDrops;
-
 		AddDebugSpeech("(Succeed)TryFarm: RemoveDrop from farm");
+		SetActivity(UnitState::FarmClearDrops);
 		return true;
 	}
 
@@ -1861,7 +1861,7 @@ bool HumanStateAI::TryBulkHaul_ShippingDepot()
 			for (ResourceEnum resourceEnum : shipper.resourceEnums) {
 				if (resourceEnum != ResourceEnum::None) {
 					for (int32 storageId : storageIds) {
-						if (TryMoveResourcesProviderToDropoff(storageId, deliveryTargetId, resourceEnum, 50)) {
+						if (TryMoveResourcesProviderToDropoff(storageId, deliveryTargetId, resourceEnum, bulkHaulCapacity())) {
 							return true;
 						}
 					}
@@ -1968,7 +1968,7 @@ bool HumanStateAI::TryBulkHaul_Market()
 			return false;
 		}
 		
-		int32 resourceToMove = std::min(50, target - resourceCount);
+		int32 resourceToMove = std::min(bulkHaulCapacity(), target - resourceCount);
 		
 		if (TryMoveResourcesAnyProviderToDropoff(ResourceFindType::MarketPickup, market.GetHolderInfoFull(resourceEnum, resourceToMove), 
 													false, false, UnitAnimationEnum::HorseMarket))
@@ -2056,8 +2056,8 @@ bool HumanStateAI::TryDistribute_Market()
 		{
 			// Try to fill with coal first since it is cheaper
 			if (coalAllowed && hasCoal) {
-				MoveResourceSequence({ market.GetHolderInfoFull(ResourceEnum::Coal, 10) },
-										{ house.GetHolderInfoFull(ResourceEnum::Coal, 10) });
+				MoveResourceSequence({ market.GetHolderInfoFull(ResourceEnum::Coal, haulCapacity()) },
+										{ house.GetHolderInfoFull(ResourceEnum::Coal, haulCapacity()) });
 
 				AddDebugSpeech("(Succeed)TryDistribute_Market move coal");
 				return true;
@@ -2065,8 +2065,8 @@ bool HumanStateAI::TryDistribute_Market()
 
 			// Otherwise fill with wood
 			if (woodAllowed && hasWood) {
-				MoveResourceSequence({ market.GetHolderInfoFull(ResourceEnum::Wood, 10) },
-										{ house.GetHolderInfoFull(ResourceEnum::Wood, 10) });
+				MoveResourceSequence({ market.GetHolderInfoFull(ResourceEnum::Wood, haulCapacity()) },
+										{ house.GetHolderInfoFull(ResourceEnum::Wood, haulCapacity()) });
 				
 				AddDebugSpeech("(Succeed)TryDistribute_Market move firewood");
 				return true;
@@ -2077,52 +2077,6 @@ bool HumanStateAI::TryDistribute_Market()
 	return false;
 }
 
-//bool HumanStateAI::TryConsumerWork()
-//{
-//	Building& workplc = *workplace();
-//	//BldInfo info = workplc.buildingInfo();
-//
-//	if (!workplc.NeedWork()) {
-//		AddDebugSpeech("(Failed)TryConsumerWork: !NeedWork " + workplc.buildingInfo().name);
-//		return false;
-//	}
-//
-//	workplc.workplaceInputNeeded = ResourceEnum::None;
-//
-//	// TODO: 2 inputs too??
-//	PUN_UNIT_CHECK(workplc.hasInput1());
-//	ResourceHolderInfo holderInfo = workplc.holderInfo(workplc.input1());
-//	PUN_UNIT_CHECK(resourceSystem().resourceCountWithPop(holderInfo) >= 0);
-//	bool needInput1 = resourceSystem().resourceCountWithPop(holderInfo) == 0;
-//	if (needInput1) {
-//		if (TryFillWorkplace(workplc.input1())) {
-//			AddDebugSpeech("(Success)TryConsumerWork: filling inputs");
-//			return true;
-//		}
-//		workplc.workplaceInputNeeded = workplc.input1();
-//		AddDebugSpeech("(Failed)TryConsumerWork: no inputs, can't find inputs");
-//		return false;
-//	}
-//	PUN_UNIT_CHECK(resourceSystem().resourceCountWithPop(holderInfo) > 0);
-//
-//	int32 workManSec100 = 100;
-//	int32 waitTicks = 60;
-//	int32 resourceAmount = (workplc.subclass<ConsumerWorkplace>().resourceConsumptionAmount100(workManSec100) + 99) / 100; // round up resourceConsumptionAmount100, reserve more than needed...
-//	ReserveWork(workManSec100);
-//	ReserveResource(ReservationType::Pop, holderInfo, resourceAmount);
-//
-//
-//	PUN_LOG("TryConsumerWork reserveWork: %d withPush:%d , withPop:%d", workplc.resourceCount(workplc.input1()),
-//		workplc.GetResourceCountWithPush(workplc.input1()), workplc.GetResourceCountWithPop(workplc.input1()));
-//
-//	Add_DoConsumerWork(workManSec100);
-//	Add_Wait(waitTicks);
-//	Add_MoveTo(workplc.gateTile());
-//
-//	_unitState = UnitState::WorkConsume;
-//	AddDebugSpeech("(Success)TryConsumerWork: researching");
-//	return true;
-//}
 
 bool HumanStateAI::TryGather(bool treeOnly)
 {
@@ -2147,11 +2101,11 @@ bool HumanStateAI::TryGather(bool treeOnly)
 	SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_TryGather_GatherSequence);
 	
 	GatherSequence(tileAccessInfo);
-
-	bool isTreeTile = treeSystem().tileInfo(tileAccessInfo.tile.tileId()).type == ResourceTileType::Tree;
-	_unitState = isTreeTile ? UnitState::GatherTree : UnitState::GatherStone;
 	
 	AddDebugSpeech("(Succeed)TryGather: pushed actions");
+
+	bool isTreeTile = treeSystem().tileInfo(tileAccessInfo.tile.tileId()).type == ResourceTileType::Tree;
+	SetActivity(isTreeTile ? UnitState::GatherTree : UnitState::GatherStone);
 	return true;
 }
 
@@ -2189,8 +2143,9 @@ bool HumanStateAI::TryForestingCut(bool cutAndPlant)
 	}
 	GatherSequence(tileAccessInfo);
 
-	_unitState = UnitState::ForestingCut;
+
 	AddDebugSpeech("(Success)TryForestingCut:");
+	SetActivity(UnitState::ForestingCut);
 	return true;
 }
 bool HumanStateAI::TryForestingNourish()
@@ -2211,8 +2166,9 @@ bool HumanStateAI::TryForestingNourish()
 	Add_MoveToward(tileAccessInfo.tile.worldAtom2(), 5000);
 	Add_MoveTo(tileAccessInfo.nearbyTile);
 
-	_unitState = UnitState::ForestingCut;
+
 	AddDebugSpeech("(Success)TryForestingNourish:");
+	SetActivity(UnitState::ForestingCut);
 	return true;
 }
 
@@ -2321,7 +2277,7 @@ bool HumanStateAI::TryForestingPlant(TileObjEnum lastCutTileObjEnum, NonWalkable
 	Add_MoveToward(tile.worldAtom2(), 5000);
 	Add_MoveTo(accessInfo.nearbyTile);
 
-	_unitState = UnitState::ForestingPlant;
+	SetActivity(UnitState::ForestingPlant);
 	return true;
 }
 
@@ -2555,8 +2511,10 @@ bool HumanStateAI::TryProduce()
 		Add_FillInputs(workplace.buildingId());
 		Add_MoveTo(workplace.gateTile());
 
-		_unitState = UnitState::FillInput;
+
 		AddDebugSpeech("TryProduce: Succeed -- fillInputs actions");
+
+		SetActivity(UnitState::FillInput);
 		return true; // No action available to satisfy inputs
 	}
 
@@ -2571,8 +2529,9 @@ bool HumanStateAI::TryProduce()
 	Add_Produce(workManSec100, waitTicks, 10, workplace.buildingId());
 	Add_MoveTo(workplace.gateTile());
 
-	_unitState = UnitState::WorkProduce;
+
 	AddDebugSpeech("TryProduce(Done): -- work actions");
+	SetActivity(UnitState::WorkProduce);
 	return true;
 }
 
@@ -2805,8 +2764,10 @@ bool HumanStateAI::TryConstructHelper(int32 workplaceId)
 
 					if (foundProviders.hasInfos()) {
 						MoveResourceSequence(foundProviders.foundInfos, { FoundResourceHolderInfo(workplace.holderInfo(resourceEnum), foundProviders.amount(), adjacentTile) });
-						_unitState = UnitState::MoveResourceConstruct;
+
 						AddDebugSpeech("(Succeed)TryConstruct: Move needed resource");
+
+						SetActivity(UnitState::MoveResourceConstruct);
 						return true;
 					}
 					else {
@@ -2843,12 +2804,12 @@ bool HumanStateAI::TryConstructHelper(int32 workplaceId)
 	ReserveWork(workManSec100, workplaceId);
 	
 
-	_unitState = UnitState::WorkConstruct;
 	Add_Construct(workManSec100, waitTicks, ConstructTimesPerBatch, workplaceId);
 	Add_MoveToward(workplace.centerTile().worldAtom2(), 12000);
 	Add_MoveTo(workplace.gateTile());
 
 	AddDebugSpeech("(Succeed)TryConstruct: Succeed -- work actions");
+	SetActivity(UnitState::WorkConstruct);
 	return true;
 }
 
@@ -2859,8 +2820,9 @@ bool HumanStateAI::TryGoNearWorkplace(int32 distanceThreshold)
 	if (workplc->DistanceTo(unitTile()) > distanceThreshold)
 	{
 		MoveTo_NoFail(workplc->gateTile(), GameConstants::MaxFloodDistance_HumanLogistics);
+		
 		AddDebugSpeech("(Succeed)TryGoNearbyHome:");
-		_unitState = UnitState::GoToWorkplace;
+		SetActivity(UnitState::GoToWorkplace);
 		return true;
 	}
 	return false;
@@ -2996,6 +2958,8 @@ void HumanStateAI::AttackOutgoing()
 	ProjectileArrow* arrow = static_cast<ProjectileArrow*>(&_simulation->unitAI(arrowId));
 	arrow->Launch(_fullId, workplaceReservation.reserveWorkplaceId, defender, damage);
 
+	PUN_LOG("AttackOutgoing");
+
 	_simulation->soundInterface()->Spawn3DSound("CitizenAction", "BowShoot", unitAtom());
 
 	int32 waitTicks = arrow->nextActiveTick() - Time::Ticks() + 90; // extra wait time
@@ -3035,7 +2999,7 @@ void HumanStateAI::DoFarmWork()
 int32 HumanStateAI::housingHappiness()
 {
 	if (_houseId != -1) {
-		return _simulation->building(_houseId).subclass<House>(CardEnum::House).housingHappiness();
+		return _simulation->building(_houseId).subclass<House>(CardEnum::House).housingQuality();
 	}
 	return 0;
 }
@@ -3053,11 +3017,19 @@ void HumanStateAI::UpdateHappiness()
 	{
 		int32 targetFoodVarietyHappiness = 70 + _simulation->townManager(_townId).townFoodVariety() * 3;
 
+		if (_simulation->TownhallCardCountTown(_townId, CardEnum::HappyBreadDay) > 0 &&
+			_simulation->resourceCountTown(_townId, ResourceEnum::Bread) >= 1000) {
+			targetFoodVarietyHappiness += 20;
+		}
+		if (_simulation->TownhallCardCountTown(_townId, CardEnum::AllYouCanEat) > 0) {
+			targetFoodVarietyHappiness += 30;
+		}
+
 		int32 happiness = moveTowardsTargetHappiness(GetHappinessByType(HappinessEnum::Food), targetFoodVarietyHappiness, 30);
 
-		int32 foodNeedHappiness = std::max(0, std::min(70, _food * 70 / minWarnFood()));
+		int32 foodNeedHappinessPercent = std::max(0, std::min(100, _food * 100 / minWarnFood()));
 		
-		SetHappiness(HappinessEnum::Food, min(foodNeedHappiness, happiness));
+		SetHappiness(HappinessEnum::Food, happiness * foodNeedHappinessPercent / 100);
 	}
 
 	// Heat??
@@ -3067,9 +3039,9 @@ void HumanStateAI::UpdateHappiness()
 	{
 		int32 targetHousingHappiness = 0;
 		if (_houseId != -1) {
-			targetHousingHappiness = _simulation->building<House>(_houseId, CardEnum::House).housingHappiness();
+			targetHousingHappiness = _simulation->building<House>(_houseId, CardEnum::House).housingQuality();
 		}
-		int32 happiness = moveTowardsTargetHappiness(GetHappinessByType(HappinessEnum::Housing), targetHousingHappiness, 30);
+		int32 happiness = moveTowardsTargetHappiness(GetHappinessByType(HappinessEnum::Housing), targetHousingHappiness, 30); // Decrease slowly for the early game
 		SetHappiness(HappinessEnum::Housing, happiness);
 	}
 
@@ -3079,7 +3051,7 @@ void HumanStateAI::UpdateHappiness()
 		if (_houseId != -1) {
 			targetLuxuryHappiness = _simulation->building<House>(_houseId, CardEnum::House).luxuryHappiness();
 		}
-		int32 happiness = moveTowardsTargetHappiness(GetHappinessByType(HappinessEnum::Luxury), targetLuxuryHappiness, 30);
+		int32 happiness = moveTowardsTargetHappiness(GetHappinessByType(HappinessEnum::Luxury), targetLuxuryHappiness, 30); // Decrease slowly for the early game
 		SetHappiness(HappinessEnum::Luxury, happiness);
 	}
 
@@ -3104,16 +3076,19 @@ void HumanStateAI::UpdateHappiness()
 		Building* workplc = workplace();
 		
 		int32 targetHappiness = workplc ? workplc->GetJobHappiness() : 70;
-		
-		int32 happiness = moveTowardsTargetHappiness(GetHappinessByType(HappinessEnum::Job), targetHappiness, 500, 500);
+
+		int32 lastHappiness = GetHappinessByType(HappinessEnum::Job);
+		int32 happiness = moveTowardsTargetHappiness(lastHappiness, targetHappiness, 500, 500);
 		SetHappiness(HappinessEnum::Job, happiness);
+
+		PUN_LOG("Job Happiness[%d]: lastHappiness:%d targetHappiness:%d happiness:%d", _id, lastHappiness, targetHappiness, happiness);
 	}
 
 
 	// City Attractiveness
 	{
 		int32 targetHappiness = 100;
-		targetHappiness += _simulation->TownhallCardCountAll(_townId, CardEnum::Cannibalism) > 0 ? -50 : 0;
+		targetHappiness += _simulation->TownhallCardCountAll(_simulation->townPlayerId(_townId), CardEnum::Cannibalism) > 0 ? -50 : 0;
 
 		int32 happiness = moveTowardsTargetHappiness(GetHappinessByType(HappinessEnum::CityAttractiveness), targetHappiness, 200, 50);
 		SetHappiness(HappinessEnum::CityAttractiveness, happiness);

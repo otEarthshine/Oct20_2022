@@ -103,6 +103,11 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	HappinessOrangeIcon = Load<UTexture2D>("/Game/UI/MiscIcons/HappinessOrangePNG");
 	HappinessRedIcon = Load<UTexture2D>("/Game/UI/MiscIcons/HappinessRedPNG");
 
+	CoinGrayIcon = Load<UTexture2D>("/Game/UI/MiscIcons/CoinGrayPNG");
+	ClockIcon = Load<UTexture2D>("/Game/UI/MiscIcons/ClockPNG");
+	ClockGrayIcon = Load<UTexture2D>("/Game/UI/MiscIcons/ClockGrayPNG");
+	
+
 	ExclamationIcon = Load<UTexture2D>("/Game/UI/Images/ExclamationIconPNG");
 
 	AdultIcon = Load<UTexture2D>("/Game/UI/Images/HumanIcon");
@@ -505,6 +510,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	addCardIcon(CardEnum::ProductivityBook, "CardBook");
 	addCardIcon(CardEnum::FrugalityBook, "CardBook");
 	addCardIcon(CardEnum::SustainabilityBook, "CardBook");
+	addCardIcon(CardEnum::Motivation, "CardBook");
+	addCardIcon(CardEnum::Passion, "CardBook");
 
 	// Army Icons
 	auto addArmyIcon = [&](std::string iconName) {

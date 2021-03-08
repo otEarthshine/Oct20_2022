@@ -255,6 +255,10 @@ public:
 		}
 	}
 
+	UPROPERTY(EditAnywhere) UTexture2D* CoinGrayIcon;
+	UPROPERTY(EditAnywhere) UTexture2D* ClockIcon;
+	UPROPERTY(EditAnywhere) UTexture2D* ClockGrayIcon;
+
 	UPROPERTY(EditAnywhere) UTexture2D* AdultIcon;
 	UPROPERTY(EditAnywhere) UTexture2D* AdultIconSquare;
 	UPROPERTY(EditAnywhere) UTexture2D* ChildIcon;

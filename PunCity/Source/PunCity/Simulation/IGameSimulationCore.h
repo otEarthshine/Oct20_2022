@@ -166,6 +166,8 @@ public:
 	}
 
 	virtual class Building& building(int32 id) = 0;
+	virtual class Building* buildingPtr(int32 id) = 0;
+	
 	virtual class Building& buildingChecked(int32 id) = 0;
 	virtual class Building& building(ResourceHolderInfo holderInfo, int32 townId) = 0;
 	virtual CardEnum buildingEnum(int32 id) = 0;
@@ -484,6 +486,7 @@ public:
 
 	//! Happiness
 	virtual int32 GetAverageHappiness(int32 townId) = 0;
+	virtual int32 GetAverageHappinessByType(int32 townId, HappinessEnum happinessEnum) = 0;
 	virtual int32 taxHappinessModifier(int32 townId) = 0;
 	virtual int32 citizenDeathHappinessModifier(int32 townId, SeasonStatEnum seasonStatEnum) = 0;
 	
@@ -493,7 +496,7 @@ public:
 	
 	//! Card system
 	virtual int32 BoughtCardCount(int32 playerId, CardEnum buildingEnum) = 0;
-	virtual int32 TownhallCardCountTown(int32 playerId, CardEnum cardEnum) = 0;
+	virtual int32 TownhallCardCountTown(int32 townId, CardEnum cardEnum) = 0;
 	virtual int32 TownhallCardCountAll(int32 playerId, CardEnum cardEnum) = 0;
 	
 	virtual bool HasCardInAnyPile(int32 playerId, CardEnum cardEnum) = 0;

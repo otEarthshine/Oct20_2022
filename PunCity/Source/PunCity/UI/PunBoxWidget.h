@@ -349,9 +349,10 @@ public:
 		return widget;
 	}
 
-	UPunBudgetAdjuster* AddBudgetAdjuster(int32 objectId)
+	UPunBudgetAdjuster* AddBudgetAdjuster(UPunWidget* callbackParent, int32 buildingIdIn, bool isBudgetOrTimeIn, int32 levelIn)
 	{
 		auto widget = GetChildElement<UPunBudgetAdjuster>(UIEnum::PunBudgetAdjuster);
+		widget->Set(callbackParent, buildingIdIn, isBudgetOrTimeIn, levelIn);
 		return widget;
 	}
 

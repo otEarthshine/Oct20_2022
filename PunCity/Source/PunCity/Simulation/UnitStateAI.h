@@ -36,6 +36,7 @@ enum class UnitState : uint8
 	ForestingPlant,
 	ForestingNourish,
 	MoveResource,
+	
 	MoveResourceConstruct,
 	StoreInventory,
 	GatherFruit,
@@ -59,6 +60,8 @@ enum class UnitState : uint8
 	MoveArmy,
 
 	GoToWorkplace,
+
+	Other,
 
 	Count,
 };
@@ -91,6 +94,7 @@ const TArray<FText> UnitStateName
 	LOCTEXT("Foresting Plant", "Foresting Plant"),
 	LOCTEXT("Foresting Nourish", "Foresting Nourish"),
 	LOCTEXT("Move Resource", "Move Resource"),
+
 	LOCTEXT("Move Resource (Construct)", "Move Resource (Construct)"),
 	LOCTEXT("Store Inventory", "Store Inventory"),
 	LOCTEXT("Gather Fruit", "Gather Fruit"),
@@ -114,6 +118,8 @@ const TArray<FText> UnitStateName
 	LOCTEXT("Move Army", "Move Army"),
 
 	LOCTEXT("Go to Workplace", "Go to Workplace"),
+
+	LOCTEXT("Other", "Other"),
 };
 
 #undef LOCTEXT_NAMESPACE
@@ -136,6 +142,8 @@ public:
 
 	void Update();
 	virtual void CalculateActions();
+
+	virtual void OnUnitUpdate() {}
 
 	// Don't call this directly... Call sim's reset actions
 	void ResetActions_UnitPart(int32 waitTicks);
@@ -322,7 +330,7 @@ public:
 	//void Add_PlayAnimation(UnitAnimationEnum animationEnum);	void PlayAnimation();
 	//void Add_StopAnimation();									void StopAnimation();
 	
-	void Add_MoveRandomly(TileArea area = TileArea::Invalid);	void MoveRandomly();
+	void Add_MoveRandomly(TileArea area = TileArea::Invalid);	void MoveRandomly(); // Use MoveTo()
 	void Add_MoveRandomlyAnimal();	void MoveRandomlyAnimal();
 	void Add_MoveRandomlyPerlin(TileArea area);	void MoveRandomlyPerlin();
 	
@@ -337,7 +345,7 @@ public:
 	void MoveTo();
 	bool MoveTo(WorldTile2 end, int32 customFloodDistance = -1, UnitAnimationEnum animationEnum = UnitAnimationEnum::Walk);
 
-	void Add_MoveToResource(ResourceHolderInfo holderInfo, int32 customFloodDistance = -1, UnitAnimationEnum animationEnum = UnitAnimationEnum::Walk);
+	void Add_MoveToResource(ResourceHolderInfo holderInfo, int32 customFloodDistance = -1, UnitAnimationEnum animationEnum = UnitAnimationEnum::Walk); // Use MoveTo()
 	void MoveToResource();
 	bool MoveToResource(ResourceHolderInfo holderInfo, int32 customFloodDistance, UnitAnimationEnum animationEnum);
 
@@ -459,6 +467,9 @@ public:
 	int32 playerId() { return _playerId; }
 	
 	UnitState unitState() { return _unitState; }
+	bool SetActivity(UnitState unitState) {
+		_unitState = unitState;
+	}
 
 	UnitInventory& inventory() { return _inventory; }
 

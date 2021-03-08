@@ -750,6 +750,12 @@ public:
 	Building& building(int32 id) final {
 		return _buildingSystem->building(id); 
 	}
+	Building* buildingPtr(int32 id) final {
+		if (IsValidBuilding(id)) {
+			return &(_buildingSystem->building(id));
+		}
+		return nullptr;
+	}
 	bool IsValidBuilding(int32 id) final {
 		bool isValid = (0 <= id && id < _buildingSystem->buildingCount()) && _buildingSystem->alive(id);
 		if (!isValid) {
@@ -2089,6 +2095,9 @@ public:
 	// If half pop dies from starve/cold, happiness would -100
 	int32 GetAverageHappiness(int32 townId) final {
 		return townManager(townId).aveOverallHappiness();
+	}
+	int32 GetAverageHappinessByType(int32 townId, HappinessEnum happinessEnum) final {
+		return townManager(townId).aveHappinessByType(happinessEnum);
 	}
 	int32 taxHappinessModifier(int32 townId) final { return townManager(townId).taxHappinessModifier(); }
 	int32 citizenDeathHappinessModifier(int32 townId, SeasonStatEnum statEnum) final {

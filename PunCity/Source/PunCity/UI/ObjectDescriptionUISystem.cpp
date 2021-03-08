@@ -750,13 +750,48 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				}
 
 				// Upkeep
-				int32 upkeep = building.upkeep();
-				if (building.isConstructed() && upkeep > 0)
+				int32 baseUpkeep = building.baseUpkeep();
+				if (building.isConstructed() && baseUpkeep > 0)
 				{
-					//ss << "<img id=\"Coin\"/>" << upkeep;
-					descriptionBox->AddRichText(
-						LOCTEXT("Upkeep_C", "Upkeep: "), FText::Join(FText(), INVTEXT("<img id=\"Coin\"/>"), FText::AsNumber(upkeep))
-					);
+					int32 upkeep = building.upkeep();
+
+					if (building.playerId() == playerId() &&
+						IsProducer(building.buildingEnum()) &&
+						simulation.IsResearched(playerId(), TechEnum::BudgetAdjustment))
+					{
+						if (_justOpenedDescriptionUI) {
+							building.lastBudgetLevel = building.budgetLevel();
+						}
+
+						descriptionBox->AddSpacer();
+						descriptionBox->AddRichText(
+							LOCTEXT("Budget_C", "Budget: "), FText::Join(FText(), INVTEXT("<img id=\"Coin\"/>"), FText::AsNumber(upkeep))
+						);
+						auto widget = descriptionBox->AddBudgetAdjuster(this, building.buildingId(), true, building.lastBudgetLevel);
+						AddToolTip(widget, LOCTEXT("Budget_Tip", "Increasing the Budget Level lead to higher Effectiveness and Job Happiness, but also increases the Building Upkeep."));
+						descriptionBox->AddSpacer();
+					}
+					else {
+						descriptionBox->AddRichText(
+							LOCTEXT("Upkeep_C", "Upkeep: "), FText::Join(FText(), INVTEXT("<img id=\"Coin\"/>"), FText::AsNumber(upkeep))
+						);
+					}
+				}
+
+				// Work Hour
+				if (building.playerId() == playerId() &&
+					IsProducer(building.buildingEnum()) &&
+					simulation.IsResearched(playerId(), TechEnum::WorkSchedule))
+				{
+					if (_justOpenedDescriptionUI) {
+						building.lastWorkTimeLevel = building.workTimeLevel();
+					}
+
+					descriptionBox->AddSpacer();
+					descriptionBox->AddRichText(LOCTEXT("WorkHour_C", "Work Hours: "));
+					auto widget = descriptionBox->AddBudgetAdjuster(this, building.buildingId(), false, building.lastWorkTimeLevel);
+					AddToolTip(widget, LOCTEXT("Budget_Tip", "Increasing the Work Hours Level lead to higher Effectiveness, but lower Job Happiness."));
+					descriptionBox->AddSpacer(8);
 				}
 
 				
@@ -799,7 +834,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						// Happiness
 						{
 							auto widget = descriptionBox->AddRichText(
-								LOCTEXT("Housingquality", "Housing quality"), TEXT_PERCENT(house->housingHappiness())
+								LOCTEXT("Housingquality", "Housing quality"), TEXT_PERCENT(house->housingQuality())
 							);
 							descriptionBox->AddSpacer();
 						}
@@ -836,11 +871,17 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							// Tooltip
 							ADDTEXT_(LOCTEXT("ScienceOutput_C", "Science output: {0}<img id=\"Science\"/>\n"), TEXT_100(house->science100PerRound()));
 
-							for (int32 i = 0; i < HouseScienceEnums.size(); i++) {
-								int32 science100 = house->GetScience100(HouseScienceEnums[i]);
+							int32 cumulative100 = 0;
+							for (int32 i = 0; i < HouseScienceEnums.size(); i++) 
+							{
+								int32 science100 = house->GetScience100(HouseScienceEnums[i], cumulative100);
 								if (science100 != 0) {
 									//ss << (science100 > 0 ? " +" : " ") << science100 / 100.0f << " " << ScienceEnumName[static_cast<int>(HouseScienceEnums[i])] << "\n";
 									ADDTEXT_JOIN_(INVTEXT(" "), TEXT_100SIGNED(science100), INVTEXT(" "), ScienceEnumName(static_cast<int>(HouseScienceEnums[i])), INVTEXT("\n"));
+								}
+
+								if (!IsScienceModifierEnum(HouseScienceEnums[i])) {
+									cumulative100 += science100;
 								}
 							}
 
@@ -1082,26 +1123,25 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 #endif
 						descriptionBox->AddRichText(LOCTEXT("Farm_CurrentPlant", "Current"), GetTileObjInfo(farm.currentPlantEnum).name);
 					}
-					//// TODO: delete this??
-					//else if (building.isEnum(CardEnum::RanchBarn))
-					//{
-					//	RanchBarn& barn = building.subclass<RanchBarn>();
-					//	ss << "\n" << barn.inventory.ToString();
-					//	ss << "\nAnimals: " << barn.animalOccupants().size() << "/" << barn.maxAnimals << "\n";
-					//	descriptionBox->AddRichText(ss);
-
-					//	// Selection Meshes
-					//	const std::vector<int32_t>& occupants = barn.animalOccupants();
-					//	for (int occupantId : occupants) {
-					//		WorldAtom2 atom = dataSource()->unitDataSource().actualAtomLocation(occupantId);
-					//		SpawnSelectionMesh(assetLoader->SelectionMaterialYellow, dataSource()->DisplayLocation(atom) + FVector(0, 0, 30));
-					//	}
-					//}
 					else if (IsRanch(building.buildingEnum()))
 					{
 						Ranch& ranch = building.subclass<Ranch>();
 						ADDTEXT_(INVTEXT("{0}/{1}"), TEXT_NUM(ranch.animalOccupants().size()), TEXT_NUM(ranch.maxAnimals));
 						descriptionBox->AddRichText(LOCTEXT("Animals:", "Animals:"), args);
+
+						// Add Animal Button
+						{
+							int32 animalCost = ranch.animalCost();
+							bool showEnabled = ranch.openAnimalSlots() > 0;
+							
+							TArray<FText> argsLocal;
+							argsLocal.Add(LOCTEXT("Buy Animal", "Buy Animal"));
+							ADDTEXT(argsLocal, INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(FText::AsNumber(animalCost), animalCost > simulation.money(playerId())));
+
+							descriptionBox->AddSpacer();
+							descriptionBox->AddButton2Lines(JOINTEXT(argsLocal), this, CallbackEnum::AddAnimalRanch, showEnabled, false, objectId);
+							descriptionBox->AddSpacer(8);
+						}
 
 						// Selection Meshes
 						const std::vector<int32_t>& occupants = ranch.animalOccupants();
@@ -2569,36 +2609,46 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			ADDTEXT_(LOCTEXT("Age: {0} years", "Age: {0} years"), TEXT_NUM(age));
 			
 			descriptionBox->AddRichText(args);
-			descriptionBox->AddSpacer();
+			descriptionBox->AddLineSpacer();
 
 			// Show Food/Heat as percent
-			ADDTEXT_(INVTEXT("<space>{0}: {1}/100"), LOCTEXT("Food", "Food"), TEXT_NUM(unit.foodActual() * 100 / unit.maxFood()));
-			ADDTEXT_(INVTEXT("<space>{0}: {1}/100"), LOCTEXT("Heat", "Heat"), TEXT_NUM(unit.heatActual() * 100 / unit.maxHeat()));
-			ADDTEXT_(INVTEXT("<space>{0}: {1}/100"), LOCTEXT("Health", "Health"), TEXT_NUM(unit.hp()));
+			ADDTEXT_(INVTEXT("<space>{0}: {1}%"), LOCTEXT("Food", "Food"), TEXT_NUM(unit.foodActual() * 100 / unit.maxFood()));
+			ADDTEXT_(INVTEXT("<space>{0}: {1}%"), LOCTEXT("Heat", "Heat"), TEXT_NUM(unit.heatActual() * 100 / unit.maxHeat()));
+			ADDTEXT_(INVTEXT("<space>{0}: {1}%"), LOCTEXT("Health", "Health"), TEXT_NUM(unit.hp()));
 
-			if (unit.isEnum(UnitEnum::Human)) {
-				//ADDTEXT_(INVTEXT("<space>{0}: {1}%"), LOCTEXT("Fun", "Fun"), TEXT_NUM(unit.subclass<HumanStateAI>().funPercent()));
+			/*
+			 * Happiness
+			 */
+			if (unit.isEnum(UnitEnum::Human)) 
+			{
+				auto& human = unit.subclass<HumanStateAI>();
 
-				//HumanStateAI& humanAI = unit.subclass<HumanStateAI>();
+				descriptionBox->AddRichTextParsed(args);
+				descriptionBox->AddLineSpacer(8);
+			
+				int32 happinessOverall = human.happinessOverall();
+				ADDTEXT_(INVTEXT("{0}{1}"), TEXT_NUM(happinessOverall), GetHappinessFace(happinessOverall));
+				auto widget = descriptionBox->AddRichText(LOCTEXT("Happiness", "Happiness"), args);
 
-				//int32 happinessOverall = humanAI.happinessOverall();
-				//descriptionBox->AddSpacer();
-				//ADDTEXT_(LOCTEXT("HappinessCitizenUI", "<space>Happiness: {0}{1}%"),
-				//	GetHappinessFace(happinessOverall),
-				//	TEXT_NUM(happinessOverall)
-				//);
-				//for (size_t i = 0; i < HappinessEnumCount; i++) {
-				//	int32 happiness = humanAI.GetHappinessByType(static_cast<HappinessEnum>(i));
-				//	ADDTEXT_(INVTEXT("<bullet>{0}% {1}</>"),
-				//		ColorHappinessText(happiness, FText::Format(INVTEXT("{0}%"), TEXT_NUM(happiness))),
-				//		HappinessEnumName[i]
-				//	);
-				//}
-				
+				ADDTEXT_(
+					LOCTEXT("Happiness Tip", "Happiness: {0}{1}\n"),
+					TEXT_NUM(happinessOverall),
+					GetHappinessFace(happinessOverall)
+				);
+
+				for (size_t i = 0; i < HappinessEnumCount; i++) {
+					int32 happiness = human.GetHappinessByType(static_cast<HappinessEnum>(i));
+					ADDTEXT_(INVTEXT("  {1} {0}\n"),
+						HappinessEnumName[i],
+						ColorHappinessText(happiness, FText::Format(INVTEXT("{0}%"), TEXT_NUM(happiness)))
+					);
+				}
+
+				AddToolTip(widget, args);
 			}
 
 			descriptionBox->AddRichTextParsed(args);
-			descriptionBox->AddSpacer(8);
+			descriptionBox->AddLineSpacer(8);
 
 			// Dying
 			auto dyingMessage = [&](FText dyingDescription) {
@@ -2677,31 +2727,6 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				}
 				
 				descriptionBox->AddSpacer();
-
-				{
-					/*
-					 * Happiness
-					 */
-					int32 happinessOverall = human.happinessOverall();
-					ADDTEXT_(INVTEXT("{0}{1}"), TEXT_NUM(happinessOverall), GetHappinessFace(happinessOverall));
-					auto widget = descriptionBox->AddRichText(LOCTEXT("Happiness", "Happiness"), args);
-
-					ADDTEXT_(
-						LOCTEXT("Happiness Tip", "Happiness: {0}{1}\n"), 
-						TEXT_NUM(happinessOverall),
-						GetHappinessFace(happinessOverall)
-					);
-
-					for (size_t i = 0; i < HappinessEnumCount; i++) {
-						int32 happiness = human.GetHappinessByType(static_cast<HappinessEnum>(i));
-						ADDTEXT_(INVTEXT("  {1} {0}\n"), 
-							HappinessEnumName[i], 
-							ColorHappinessText(happiness, FText::Format(INVTEXT("{0}%"), TEXT_NUM(happiness)))
-						);
-					}
-					
-					AddToolTip(widget, args);
-				}
 			}
 
 			ADDTEXT_(INVTEXT("{0}: {1}\n"), LOCTEXT("state", "state"), UnitStateName[static_cast<int>(unit.unitState())]);
@@ -3808,26 +3833,36 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 
 		networkInterface()->SendNetworkCommand(command);
 	}
-	//else if (callbackEnum == CallbackEnum::TrainUnit)
-	//{
-	//	if (simulation().CanTrainUnit(punWidgetCaller->callbackVar1))
-	//	{
-	//		auto command = make_shared<FTrainUnit>();
-	//		command->buildingId = punWidgetCaller->callbackVar1;
-	//		networkInterface()->SendNetworkCommand(command);
-	//	}
-	//}
-	//else if (callbackEnum == CallbackEnum::CancelTrainUnit)
-	//{
-	//	int32 buildingId = punWidgetCaller->callbackVar1;
-	//	if (simulation().building(buildingId).subclass<Barrack>().queueCount() > 0)
-	//	{
-	//		auto command = make_shared<FTrainUnit>();
-	//		command->buildingId = buildingId;
-	//		command->isCancel = true;
-	//		networkInterface()->SendNetworkCommand(command);
-	//	}
-	//}
+	else if (callbackEnum == CallbackEnum::AddAnimalRanch)
+	{
+		auto command = make_shared<FGenericCommand>();
+		command->callbackEnum = callbackEnum;
+		command->intVar1 = punWidgetCaller->callbackVar1;
+
+		networkInterface()->SendNetworkCommand(command);
+	}
+	else if (callbackEnum == CallbackEnum::BudgetAdjust)
+	{
+		auto adjuster = CastChecked<UPunBudgetAdjuster>(punWidgetCaller);
+
+		if (Building* bld = simulation().buildingPtr(adjuster->buildingId))
+		{
+			if (adjuster->isBudgetOrTime) {
+				bld->lastBudgetLevel = adjuster->level;
+			} else {
+				bld->lastWorkTimeLevel = adjuster->level;
+			}
+			
+			auto command = make_shared<FGenericCommand>();
+			command->callbackEnum = CallbackEnum::BudgetAdjust;
+			command->intVar1 = adjuster->buildingId;
+			command->intVar2 = adjuster->isBudgetOrTime;
+			command->intVar3 = adjuster->level;
+
+			networkInterface()->SendNetworkCommand(command);
+		}
+	}
+
 }
 
 void UObjectDescriptionUISystem::AddBiomeInfo(WorldTile2 tile, UPunBoxWidget* descriptionBox)
@@ -4263,6 +4298,13 @@ void UObjectDescriptionUISystem::AddEfficiencyText(Building& building, UPunBoxWi
 	}
 	
 	AddToolTip(widget, args);
+
+
+	// Job Happiness
+	if (building.maxOccupants() > 0) {
+		int32 jobHappiness = building.GetJobHappiness();
+		descriptionBox->AddRichText(LOCTEXT("Job Happiness", "Job Happiness"), ColorHappinessText(jobHappiness, TEXT_PERCENT(jobHappiness)));
+	}
 }
 
 void UObjectDescriptionUISystem::AddTradeFeeText(TradeBuilding& building, UPunBoxWidget* descriptionBox)

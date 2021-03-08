@@ -312,7 +312,11 @@ private:
 			
 			FUnitAsset skelAsset = _assetLoader->unitAsset(unitEnum, variationIndex);
 
-			if (skelAsset.animationEnumToSequence.Contains(animationEnum)) {
+			if (animationEnum == UnitAnimationEnum::Invisible) {
+				skelMesh->SetVisibility(false);
+			}
+			else if (skelAsset.animationEnumToSequence.Contains(animationEnum))
+			{
 				skelMesh->PlayAnimation(skelAsset.animationEnumToSequence[animationEnum], true);
 				skelMesh->SetPlayRate(playRate);
 
@@ -322,6 +326,8 @@ private:
 				skelMesh->bEnableUpdateRateOptimizations = PunSettings::Get("DebugTemp");
 				skelMesh->bDisplayDebugUpdateRateOptimizations = PunSettings::Get("DebugTemp1");
 				//skelMesh->AnimUpdateRateParams->UpdateRate = debugTemp; Not working???
+
+				skelMesh->SetVisibility(true);
 			}
 			else {
 				UE_DEBUG_BREAK();

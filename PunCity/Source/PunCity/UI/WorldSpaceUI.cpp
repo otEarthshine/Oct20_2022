@@ -422,19 +422,14 @@ void UWorldSpaceUI::TickBuildings()
 			hoverIcon->SetImage(assetLoader()->ScienceIcon);
 
 			bool alreadyHasLibrary = false; ;
-			if (building.subclass<House>().GetScience100(ScienceEnum::Library) > 0) {
+			int32 radiusBonus = building.GetRadiusBonus(CardEnum::Library, Library::Radius, [&](int32 bonus, Building& buildingScope) {
+				return max(bonus, 1);
+			});
+			if (radiusBonus > 0) {
 				alreadyHasLibrary = true;
 			}
-			else if (building.occupantCount() == 0) {
-				int32 radiusBonus = building.GetRadiusBonus(CardEnum::Library, Library::Radius, [&](int32 bonus, Building& buildingScope) {
-					return max(bonus, Library::SciencePerHouse);
-				});
-				if (radiusBonus > 0) {
-					alreadyHasLibrary = true;
-				}
-			}
 			
-			hoverIcon->SetText("", "+" + to_string(alreadyHasLibrary ? 0 : Library::SciencePerHouse));
+			hoverIcon->SetText("+", "");
 			hoverIcon->SetTextColor(alreadyHasLibrary ? FLinearColor(0.38, 0.38, 0.38, 0.5) : FLinearColor::White);
 		}
 		else if (isInOverlayRadiusHouse(OverlayType::School, School::MinHouseLvl, School::Radius))
@@ -443,9 +438,16 @@ void UWorldSpaceUI::TickBuildings()
 																								_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
 
 			hoverIcon->SetImage(assetLoader()->ScienceIcon);
-			hoverIcon->SetText("", "+" + to_string(School::SciencePerHouse));
 
-			bool alreadyHasSchool = building.subclass<House>().GetScience100(ScienceEnum::School) > 0;
+			bool alreadyHasSchool = false; ;
+			int32 radiusBonus = building.GetRadiusBonus(CardEnum::School, School::Radius, [&](int32 bonus, Building& buildingScope) {
+				return max(bonus, 1);
+			});
+			if (radiusBonus > 0) {
+				alreadyHasSchool = true;
+			}
+
+			hoverIcon->SetText("+", "");
 			hoverIcon->SetTextColor(alreadyHasSchool ? FLinearColor(0.38, 0.38, 0.38) : FLinearColor::White);
 		}
 		/*

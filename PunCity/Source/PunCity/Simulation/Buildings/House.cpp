@@ -193,7 +193,7 @@ void House::FinishConstruction()
 
 }
 
-int32 House::housingHappiness() {
+int32 House::housingQuality() {
 	int32 happiness = GetAppealPercent();
 	return happiness;
 }
@@ -280,13 +280,6 @@ int32 House::GetIncome100(IncomeEnum incomeEnum)
 	case IncomeEnum::Luxury:
 		return _roundLuxuryConsumption100 * 4 / 10; // 40% of lux goes to income
 
-	case IncomeEnum::Card_MiddleClass:
-		if (_houseLvl >= 2) {
-			int32 cardCount = _simulation->TownhallCardCountTown(_townId, CardEnum::MiddleClassTax);
-			return occupancyFactor(cardCount * 200);
-		}
-		return 0;
-
 	case IncomeEnum::Card_BeerTax: {
 		if (_simulation->TownhallCardCountTown(_townId, CardEnum::BeerTax) > 0) {
 			return resourceCount(ResourceEnum::Beer) > 0 ? occupancyFactor(500) : 0;
@@ -309,7 +302,7 @@ int32 House::GetIncome100(IncomeEnum incomeEnum)
 	};
 }
 
-int32 House::GetScience100(ScienceEnum scienceEnum)
+int32 House::GetScience100(ScienceEnum scienceEnum, int32 cumulative100)
 {
 	switch (scienceEnum)
 	{
@@ -317,16 +310,25 @@ int32 House::GetScience100(ScienceEnum scienceEnum)
 		return _roundFoodConsumption100 / 30;
 
 	case ScienceEnum::Luxury:
-		return _roundLuxuryConsumption100 * 4 / 10; // 10% lux goes to science ... 30% could be gained from having Library
+		return _roundLuxuryConsumption100 * 2 / 10; // 20% lux goes to science ... 20% could be gained from having Library
 		
+
+	case ScienceEnum::HomeBrew: {
+		if (_simulation->TownhallCardCountTown(_townId, CardEnum::HomeBrew) == 0) {
+			return 0;
+		}
+		return resourceCount(ResourceEnum::Pottery) > 0 ? occupancyFactor(400) : 0;
+	}
+
+	// Modifier
 	case ScienceEnum::Library: {
 		if (_houseLvl < Library::MinHouseLvl) {
 			return 0;
 		}
 		int32 radiusBonus = GetRadiusBonus(CardEnum::Library, Library::Radius, [&](int32 bonus, Building& building) {
-			return max(bonus, Library::SciencePerHouse);
+			return max(bonus, 1);
 		});
-		return occupancyFactor(radiusBonus * 100);
+		return radiusBonus > 0 ? occupancyFactor(cumulative100) : 0; // +100%
 	}
 
 	case ScienceEnum::School: {
@@ -334,16 +336,9 @@ int32 House::GetScience100(ScienceEnum scienceEnum)
 			return 0;
 		}
 		int32 radiusBonus = GetRadiusBonus(CardEnum::School, Library::Radius, [&](int32 bonus, Building& building) {
-			return max(bonus, School::SciencePerHouse);
+			return max(bonus, 1);
 		});
-		return occupancyFactor(radiusBonus * 100);
-	}
-
-	case ScienceEnum::HomeBrew: {
-		if (_simulation->TownhallCardCountTown(_townId, CardEnum::HomeBrew) == 0) {
-			return 0;
-		}
-		return resourceCount(ResourceEnum::Pottery) > 0 ? occupancyFactor(400) : 0;
+		return radiusBonus > 0 ? occupancyFactor(cumulative100 * 120 / 100) : 0; // +120%
 	}
 
 	default:
@@ -558,19 +553,9 @@ void Ranch::FinishConstruction()
 {
 	Building::FinishConstruction();
 
-	auto addInitialAnimals = [&](UnitEnum unitEnum) {
-		for (int32 i = 0; i < 3; i++) {
-			AddAnimalOccupant(unitEnum, GetUnitInfo(unitEnum).minBreedingAgeTicks);
-		}
-	};
-
-	switch (buildingEnum()) {
-	case CardEnum::RanchPig: addInitialAnimals(UnitEnum::Pig); break;
-	case CardEnum::RanchSheep: addInitialAnimals(UnitEnum::Sheep); break;
-	case CardEnum::RanchCow: addInitialAnimals(UnitEnum::Cow); break;
-	default:
-		UE_DEBUG_BREAK();
-		break;
+	UnitEnum unitEnum = GetAnimalEnum();
+	for (int32 i = 0; i < 3; i++) {
+		AddAnimalOccupant(unitEnum, GetUnitInfo(unitEnum).minBreedingAgeTicks);
 	}
 
 	AddResourceHolder(ResourceEnum::Hay, ResourceHolderType::Requester, 20);

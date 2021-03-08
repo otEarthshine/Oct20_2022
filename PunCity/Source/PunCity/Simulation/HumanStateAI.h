@@ -122,7 +122,7 @@ public:
 	 * States
 	 */
 
-	int32 workEfficiency100(bool includeToolPenalty = true)
+	int32 workEfficiency100(bool isMoveSpeedPenalty = false)
 	{
 		if (_townId == -1) {
 			return 100;
@@ -130,9 +130,9 @@ public:
 		
 		int32 foodPenalty = foodWorkPenalty100();
 		int32 heatPenalty = heatWorkPenalty100();
-		int32 toolPenalty = includeToolPenalty ? toolPenalty100() : 0;
+		int32 toolPenalty = isMoveSpeedPenalty ? 0 : toolPenalty100();
 		int32 sicknessPenalty = sicknessPenalty100();
-		int32 happinessPenalty = happinessPenalty100();
+		int32 happinessPenalty = isMoveSpeedPenalty ? 0 : happinessPenalty100();
 		
 		int32 result = 100 + std::min(foodPenalty, 
 						std::min(heatPenalty, 
@@ -175,8 +175,15 @@ public:
 	int32 happinessPenalty100() {
 		int32 happ = happinessOverall();
 		if (happ < minWarnHappiness()) {
-			int32 result = 90 * (minWarnHappiness() - happ) / minWarnHappiness();
-			PUN_CHECK(result >= 0);
+			// at minWarnHappiness, penalty is 0
+			// at 0, penalty is -50
+			int32 result = -50 * (minWarnHappiness() - happ) / minWarnHappiness();
+
+			if (_simulation->TownhallCardCountTown(_playerId, CardEnum::SlaveLabor)) {
+				result = std::max(-30, result);
+			}
+			
+			PUN_CHECK(result <= 0);
 			return result;
 		}
 		return 0;
@@ -187,15 +194,6 @@ public:
 	/*
 	 * Happiness
 	 */
-	// Food
-	int32 foodHappiness() {
-		// Having 10 food types in storage lead to max happiness
-		
-		return std::max(0, std::min(70, _food * 70 / minWarnFood()));
-	}
-	// Heat
-	int32 heatHappiness() { return std::min(100, _heat * 100 / minWarnHeat()); }
-
 	// Housing
 	int32 housingHappiness();
 
@@ -216,57 +214,59 @@ public:
 
 	void UpdateHappiness();
 
-	
+	void OnUnitUpdate() override {
+		UpdateHappiness();
+	}
 
 	//int32 baseHappiness() {
 	//	return (foodHappiness() + heatHappiness() + housingHappiness() + funHappiness()) / 4;
 	//}
 
 	// TODO: remove?
-	int32 GetHappinessModifier(HappinessModifierEnum modifierEnum)
-	{
-		// Guard
-		if (_townId == -1) {
-			return 0;
-		}
-		
-		switch (modifierEnum)
-		{
-		case HappinessModifierEnum::Luxury: return luxuryHappinessModifier();
-		case HappinessModifierEnum::HappyBreadDay: {
-			if (_simulation->TownhallCardCountTown(_townId, CardEnum::HappyBreadDay) == 0) {
-				return 0;
-			}
-			return _simulation->resourceCountTown(_townId, ResourceEnum::Bread) >= 1000 ? 5 : 0;
-		}
-		case HappinessModifierEnum::BlingBling: {
-			if (_simulation->TownhallCardCountTown(_townId, CardEnum::BlingBling) == 0) {
-				return 0;
-			}
-			if (_houseId == -1) {
-				return 0;
-			}
-			return _simulation->building(_houseId).tryResourceCount(ResourceEnum::Jewelry) > 0 ? 7 : 0;
-		}
-			
-		case HappinessModifierEnum::Tax: return _simulation->taxHappinessModifier(_townId);
-		//case HappinessModifierEnum::Cannibalism: return _simulation->cannibalismHappinessModifier(_playerId);
-		case HappinessModifierEnum::DeathStarve: return _simulation->citizenDeathHappinessModifier(_townId, SeasonStatEnum::DeathStarve);
-		case HappinessModifierEnum::DeathCold: return _simulation->citizenDeathHappinessModifier(_townId, SeasonStatEnum::DeathCold);
-		default:
-			UE_DEBUG_BREAK(); return -1;
-		}
-	}
+	//int32 GetHappinessModifier(HappinessModifierEnum modifierEnum)
+	//{
+	//	// Guard
+	//	if (_townId == -1) {
+	//		return 0;
+	//	}
+	//	
+	//	switch (modifierEnum)
+	//	{
+	//	//case HappinessModifierEnum::Luxury: return luxuryHappinessModifier();
+	//	//case HappinessModifierEnum::HappyBreadDay: {
+	//	//	if (_simulation->TownhallCardCountTown(_townId, CardEnum::HappyBreadDay) == 0) {
+	//	//		return 0;
+	//	//	}
+	//	//	return _simulation->resourceCountTown(_townId, ResourceEnum::Bread) >= 1000 ? 5 : 0;
+	//	//}
+	//	//case HappinessModifierEnum::BlingBling: {
+	//	//	if (_simulation->TownhallCardCountTown(_townId, CardEnum::BlingBling) == 0) {
+	//	//		return 0;
+	//	//	}
+	//	//	if (_houseId == -1) {
+	//	//		return 0;
+	//	//	}
+	//	//	return _simulation->building(_houseId).tryResourceCount(ResourceEnum::Jewelry) > 0 ? 7 : 0;
+	//	//}
+	//	//	
+	//	//case HappinessModifierEnum::Tax: return _simulation->taxHappinessModifier(_townId);
+	//	////case HappinessModifierEnum::Cannibalism: return _simulation->cannibalismHappinessModifier(_playerId);
+	//	//case HappinessModifierEnum::DeathStarve: return _simulation->citizenDeathHappinessModifier(_townId, SeasonStatEnum::DeathStarve);
+	//	//case HappinessModifierEnum::DeathCold: return _simulation->citizenDeathHappinessModifier(_townId, SeasonStatEnum::DeathCold);
+	//	default:
+	//		UE_DEBUG_BREAK(); return -1;
+	//	}
+	//}
 	
 	int32 luxuryHappinessModifier();
 	
-	int32 modifiersHappiness() {
-		int32 result = 0;
-		for (int32 i = 0; i < HappinessModifierName.Num(); i++) {
-			result += GetHappinessModifier(static_cast<HappinessModifierEnum>(i));
-		}
-		return result;
-	}
+	//int32 modifiersHappiness() {
+	//	int32 result = 0;
+	//	for (int32 i = 0; i < HappinessModifierName.Num(); i++) {
+	//		result += GetHappinessModifier(static_cast<HappinessModifierEnum>(i));
+	//	}
+	//	return result;
+	//}
 	
 	int32 happinessOverall() override { 
 		int32 result = 0;
@@ -365,4 +365,19 @@ protected:
 
 	void GatherSequence(NonWalkableTileAccessInfo accessInfo);
 
+private:
+	int32 haulCapacity() {
+		int32 haulCapacity = 10;
+		if (_simulation->IsResearched(_playerId, TechEnum::HaulingCapacity)) {
+			haulCapacity += 10;
+		}
+		return haulCapacity;
+	}
+	int32 bulkHaulCapacity() {
+		int32 haulCapacity = 50;
+		if (_simulation->IsResearched(_playerId, TechEnum::HaulingCapacity)) {
+			haulCapacity += 10;
+		}
+		return haulCapacity;
+	}
 };

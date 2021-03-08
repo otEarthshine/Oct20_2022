@@ -143,17 +143,24 @@ public:
 			return 0;
 		}
 
-		int32 quickBuildCost = 0;
+		const int32 quickBuildMultiplier_Resource = 3;
+		const int32 quickBuildMultiplier_Base = 2;
+
+		int32 quickBuildCost_Resource = 0;
+		int32 quickBuildCost_Base = 0;
 		std::vector<int32> constructionCosts = GetConstructionResourceCost();
-		for (size_t i = 0; i < ConstructionResourceCount; i++) {
+		for (size_t i = 0; i < ConstructionResourceCount; i++) 
+		{
+			int32 basePrice = GetResourceInfo(ConstructionResources[i]).basePrice;
+			
 			if (constructionCosts[i] > 0) {
 				int32 resourceCount = GetResourceCount(ConstructionResources[i]);
-				quickBuildCost += std::max(0, (constructionCosts[i] - resourceCount) * GetResourceInfo(ConstructionResources[i]).basePrice);
+				quickBuildCost_Resource += std::max(0, (constructionCosts[i] - resourceCount) * basePrice);
 			}
+			quickBuildCost_Base += constructionCosts[i] * basePrice;
 		}
 
-		const int32 quickBuildMultiplier = 5;
-		return quickBuildCost * quickBuildMultiplier;
+		return (quickBuildCost_Resource * quickBuildMultiplier_Resource) + (quickBuildCost_Base * quickBuildMultiplier_Base);
 	}
 	
 
@@ -300,7 +307,20 @@ public:
 	BuildingUpgrade MakeWorkerSlotUpgrade(int32 percentOfTotalPrice, int32 workerSlotBonus = 1);
 
 	BuildingUpgrade MakeComboUpgrade(FText name, ResourceEnum resourceEnum, int32 percentOfTotalPrice, int32 comboEfficiencyBonus);
-	
+
+
+	//! Budget
+	int32 lastBudgetLevel;
+	int32 lastWorkTimeLevel;
+	int32 budgetLevel() { return _budgetLevel; }
+	int32 workTimeLevel() { return _workTimeLevel; }
+
+	void SetBudgetLevel(int32 budgetLevel) {
+		_budgetLevel = budgetLevel;
+	}
+	void SetWorkTimeLevel(int32 workTimeLevel) {
+		_workTimeLevel = workTimeLevel;
+	}
 
 	//! level from 0
 	int32 level() { return _level; }
@@ -313,6 +333,10 @@ public:
 	}
 	int maxOccupants() { return _maxOccupants; }
 	bool isOccupantFull() { return occupantCount() >= maxOccupants();  }
+
+	bool isJobBuilding() {
+		return !IsHouse(_buildingEnum) && maxOccupants() > 0;
+	}
 
 	void AddJobBuilding(int maxOccupant) {
 		_maxOccupants = maxOccupant;
@@ -665,6 +689,17 @@ public:
 
 		// Frugality
 		upkeep = std::max(0, upkeep - upkeep * slotCardCount(CardEnum::FrugalityBook) * 50 / 100);
+
+		// Budget Upkeep
+		switch (_budgetLevel)
+		{
+		case 5: upkeep = upkeep * 220 / 100; break; // More budget increase needed to get better efficiency
+		case 4: upkeep = upkeep * 150 / 100; break;
+		case 2: upkeep = upkeep * 50 / 100; break;
+		case 1: upkeep = upkeep * 25 / 100; break; // The more we are trying to cut, the less we can cut to trade for less Effectiveness
+		default:
+			break;
+		}
 		
 		// No worker, half upkeep
 		if (maxOccupants() > 0 && occupantCount() == 0) {
@@ -1022,8 +1057,35 @@ public:
 
 	int32 GetAppealPercent();
 
-	virtual int32 GetJobHappiness() {
-		return 70;
+	virtual int32 GetJobHappiness()
+	{
+		int32 jobHappiness = 70;
+
+		// Budget
+		jobHappiness += (_budgetLevel - 3) * 10;
+		
+		// Work Time Level
+		switch (_workTimeLevel)
+		{
+		case 5: jobHappiness -= 60; break; // More happiness decrease needed to get better efficiency
+		case 4: jobHappiness -= 20; break;
+		case 2: jobHappiness += 20; break;
+		case 1: jobHappiness += 30; break; // The more we are trying to increase happiness, the less we can to trade for less Effectiveness
+		default:
+			break;
+		}
+
+		if (_simulation->TownhallCardCountTown(_playerId, CardEnum::SocialWelfare)) {
+			jobHappiness += 20;
+		}
+		if (slotCardCount(CardEnum::Passion) > 0) {
+			jobHappiness += 20;
+		}
+		
+
+		jobHappiness = std::max(0, jobHappiness);
+		
+		return jobHappiness;
 	}
 
 	/*
@@ -1256,6 +1318,9 @@ public:
 
 		// Upgrade
 		SerializeVecObj(Ar, _upgrades);
+
+		Ar << _budgetLevel;
+		Ar << _workTimeLevel;
 
 		// Delivery
 		Ar << _deliveryTargetId;
@@ -1519,6 +1584,9 @@ protected:
 
 	// Upgrade
 	std::vector<BuildingUpgrade> _upgrades;
+
+	int32 _budgetLevel = -1; // Increase Effectiveness, Increase Job Happiness, Decrease Money
+	int32 _workTimeLevel = -1; // Increase Effectiveness, Decrease Job Happiness
 
 	WorkMode _workMode;
 

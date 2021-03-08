@@ -97,26 +97,6 @@ std::vector<ResourceEnum> StaticData::FoodEnums;
 int32 StaticData::FoodEnumCount = 0;
 
 
-/*
- * Science Enum
- */
-static TArray<FText> ScienceEnumNameList
-{
-	LOCTEXT("HouseBase", "House Base"),
-	LOCTEXT("HouseLuxury", "House Luxury"),
-	LOCTEXT("Library", "Library"),
-	LOCTEXT("School", "School"),
-	LOCTEXT("HomeBrew", "Home Brew"),
-
-	LOCTEXT("Knowledgetransfer", "Knowledge transfer"),
-	LOCTEXT("LastEraTechnology", "Last Era Technology"),
-
-	LOCTEXT("Rationalism", "Rationalism"),
-};
-
-const FText& ScienceEnumName(int32 index) {
-	return ScienceEnumNameList[index];
-}
 
 
 /*

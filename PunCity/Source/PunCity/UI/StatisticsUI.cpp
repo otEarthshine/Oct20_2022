@@ -382,13 +382,20 @@ void UStatisticsUI::TickUI()
 
 		auto& townManager = simulation().townManager(uiTownId);
 
-		ADDTEXT_(LOCTEXT("Happiness_Statistics", "Overall Happiness: {0}%"), TEXT_NUM(townManager.aveOverallHappiness()));
-		for (size_t i = 0; i < HappinessEnumCount; i++) {
+		ADDTEXT_(LOCTEXT("Happiness_Statistics", "Overall Happiness: {0}%<space>"), TEXT_NUM(townManager.aveOverallHappiness()));
+		HappinessStatisticsBox->AddRichTextParsed(args);
+		
+		for (size_t i = 0; i < HappinessEnumCount; i++) 
+		{
 			int32 aveHappiness = townManager.aveHappinessByType(static_cast<HappinessEnum>(i));
-			ADDTEXT_(INVTEXT("<bullet>{0}% {1}</>"),
+			ADDTEXT_(INVTEXT("  {0} {1}"),
 				ColorHappinessText(aveHappiness, FText::Format(INVTEXT("{0}%"), TEXT_NUM(aveHappiness))),
 				HappinessEnumName[i]
 			);
+			auto widget = HappinessStatisticsBox->AddRichText(args);
+			HappinessStatisticsBox->AddSpacer();
+
+			AddToolTip(widget, GetHappinessEnumTip(static_cast<HappinessEnum>(i)));
 		}
 
 		// Add tooltip later?

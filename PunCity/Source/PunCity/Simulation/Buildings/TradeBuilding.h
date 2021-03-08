@@ -201,6 +201,9 @@ public:
 		if (_simulation->buildingFinishedCount(_playerId, CardEnum::StockMarket)) {
 			return 1;
 		}
+		if (_simulation->TownhallCardCountTown(_playerId, CardEnum::Conglomerate)) {
+			return 1;
+		}
 		return Building::baseUpkeep();
 	}
 

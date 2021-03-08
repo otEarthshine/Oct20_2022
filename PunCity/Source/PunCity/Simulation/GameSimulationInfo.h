@@ -2103,6 +2103,8 @@ enum class CardEnum : uint16
 	ProductivityBook,
 	SustainabilityBook,
 	FrugalityBook,
+	Motivation,
+	Passion,
 	
 	DesertPilgrim,
 
@@ -2160,13 +2162,17 @@ enum class CardEnum : uint16
 	WildCardMine,
 	WildCardService,
 	CardRemoval,
-	
+
+	//! Rare
 	HappyBreadDay,
 	BlingBling,
 	GoldRush,
 
-	//! Rare
-	MiddleClassTax,
+	AllYouCanEat,
+	SlaveLabor,
+	Lockdown,
+	SocialWelfare,
+	
 	Treasure,
 	IndustrialRevolution,
 	EmergencyRations, // TODO: move this
@@ -2555,8 +2561,8 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::BlossomShrine,	LOCTEXT("Blossom Shrine", "Blossom Shrine"),			LOCTEXT("Blossom Shrine (Plural)", "Blossom Shrines"),		WorldTile2(3, 3),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,10,0}, FText()),
 	BldInfo(CardEnum::Winery,		LOCTEXT("Winery", "Winery"),	LOCTEXT("Winery (Plural)", "Wineries"),		WorldTile2(6, 6),	ResourceEnum::Grape, ResourceEnum::None, ResourceEnum::Wine,	10, 5,	{200,0,50},	LOCTEXT("Winery Desc", "Ferment Grapes into Wine.")),
 
-	BldInfo(CardEnum::Library,		LOCTEXT("Library", "Library"),	LOCTEXT("Library (Plural)", "Libraries"),				WorldTile2(4, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{80,20,0},	LOCTEXT("Library Desc", "+2 <img id=\"Science\"/> for surrounding level 2+ houses (effect doesn't stack).")),
-	BldInfo(CardEnum::School,		LOCTEXT("School", "School"),	LOCTEXT("School (Plural)", "Schools"),		WorldTile2(4, 7),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{80,50,10},	LOCTEXT("School Desc", "+3 <img id=\"Science\"/> for surrounding level 3+ houses (effect doesn't stack).")),
+	BldInfo(CardEnum::Library,		LOCTEXT("Library", "Library"),	LOCTEXT("Library (Plural)", "Libraries"),				WorldTile2(4, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{80,20,0},	LOCTEXT("Library Desc", "+100%<img id=\"Science\"/> for surrounding Houses (effect doesn't stack)")),
+	BldInfo(CardEnum::School,		LOCTEXT("School", "School"),	LOCTEXT("School (Plural)", "Schools"),		WorldTile2(4, 7),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{80,50,10},	LOCTEXT("School Desc", "+120%<img id=\"Science\"/> for surrounding Houses (effect doesn't stack)")),
 
 	BldInfo(CardEnum::Theatre,		LOCTEXT("Theatre", "Theatre"),	LOCTEXT("Theatre (Plural)", "Theatres"),				WorldTile2(7, 6),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{80,50,20},	LOCTEXT("Theatre Desc", "Increase visitor's Fun. Base Service quality 70.")),
 	BldInfo(CardEnum::Tavern,		LOCTEXT("Tavern", "Tavern"),	LOCTEXT("Tavern (Plural)", "Taverns"),				WorldTile2(5, 5),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{50,30,0},	LOCTEXT("Tavern Desc", "Increase visitor's Fun. Base Service quality 50.")),
@@ -2720,7 +2726,10 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::ProductivityBook,	LOCTEXT("Productivity Book", "Productivity Book"), 100, LOCTEXT("Productivity Book Desc", "+20% productivity")),
 	BldInfo(CardEnum::SustainabilityBook,LOCTEXT("Sustainability Book", "Sustainability Book"), 100, LOCTEXT("Sustainability Book Desc","Consume 40% less input")),
 	BldInfo(CardEnum::FrugalityBook,		LOCTEXT("Frugality Book", "Frugality Book"), 100, LOCTEXT("Frugality Book Desc",  "Decrease upkeep by 50%.")),
+	BldInfo(CardEnum::Motivation,	LOCTEXT("Motivation", "Motivation"), 100, LOCTEXT("Motivation Desc", "Every 1% Happiness above 70%, gives +2% productivity")),
+	BldInfo(CardEnum::Passion,		LOCTEXT("Passion", "Passion"), 100, LOCTEXT("Passion Desc", "+20% Job Happiness, +15% Productivity")),
 
+	
 	BldInfo(CardEnum::DesertPilgrim,		LOCTEXT("Desert Pilgrim", "Desert Pilgrim"), 200, LOCTEXT("Desert Pilgrim Desc", "Houses built on Desert get +5<img id=\"Coin\"/>.")),
 
 	BldInfo(CardEnum::WheatSeed,			LOCTEXT("Wheat Seeds", "Wheat Seeds"), 300, LOCTEXT("Wheat Seeds Desc", "Unlock Wheat farming. Wheat can be eaten or brewed into Beer.")),
@@ -2750,7 +2759,7 @@ static const BldInfo CardInfos[]
 
 	BldInfo(CardEnum::CoalPipeline,			LOCTEXT("Coal Pipeline", "Coal Pipeline"), 150, LOCTEXT("Coal Pipeline Desc", "+50% productivity for smelters if the town has more than 1,000 Coal")),
 	BldInfo(CardEnum::MiningEquipment,		LOCTEXT("Mining Equipment", "Mining Equipment"), 150, LOCTEXT("Mining Equipment Desc", "+30% productivity for mines if you have a Blacksmith")),
-	BldInfo(CardEnum::Conglomerate,			LOCTEXT("Conglomerate", "Conglomerate"), 150, LOCTEXT("Conglomerate Desc", "+50<img id=\"Coin\"/> income if there are 2+ Trading Companies")),
+	BldInfo(CardEnum::Conglomerate,			LOCTEXT("Conglomerate", "Conglomerate"), 150, LOCTEXT("Conglomerate Desc", "Upkeep for Trading Companies are reduced to 1")),
 	BldInfo(CardEnum::SmeltCombo,			LOCTEXT("Iron Smelter Combo", "Iron Smelter Combo"), 150, LOCTEXT("Iron Smelter Combo Desc", "+30% productivity to all Iron Smelter with adjacent Iron Smelter")),
 
 
@@ -2782,13 +2791,18 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::WildCardMine,		LOCTEXT("Mine Wild Card", "Mine Wild Card"), 10, LOCTEXT("Mine Wild Card Desc", "Build an unlocked mine of your choice.")),
 	BldInfo(CardEnum::WildCardService,		LOCTEXT("Service Wild Card", "Service Wild Card"), 10, LOCTEXT("Service Wild Card Desc", "Build an unlocked service building of your choice.")),
 	BldInfo(CardEnum::CardRemoval,			LOCTEXT("Card Removal", "Card Removal"), 30, LOCTEXT("Card Removal Desc", "Remove a card from the draw deck.")),
-	
-	BldInfo(CardEnum::HappyBreadDay,		LOCTEXT("Happy Bread Day", "Happy Bread Day"), 150, LOCTEXT("Happy Bread Day Desc", "+5<img id=\"Smile\"/> to everyone if the town has more than 1,000 Bread")),
-	BldInfo(CardEnum::BlingBling,		LOCTEXT("Bling Bling", "Bling Bling"), 150, LOCTEXT("Bling Bling Desc", "Houses with Jewelry get +7<img id=\"Smile\"/>")),
-	BldInfo(CardEnum::GoldRush,			LOCTEXT("Gold Rush", "Gold Rush"), 150, LOCTEXT("Gold Rush Desc", "+30% productivity from Gold Mine.")),
 
 	// Rare cards
-	BldInfo(CardEnum::MiddleClassTax,	LOCTEXT("Middle Class Tax", "Middle Class Tax"), 200, LOCTEXT("Middle Class Tax Desc", "+2 <img id=\"Coin\"/> income from each level 2+ house")),
+	BldInfo(CardEnum::HappyBreadDay,		LOCTEXT("Happy Bread Day", "Happy Bread Day"), 150, LOCTEXT("Happy Bread Day Desc", "+20% Food Happiness to Citizens, if the Town has more than 1,000 Bread")),
+	BldInfo(CardEnum::BlingBling,		LOCTEXT("Bling Bling", "Bling Bling"), 150, LOCTEXT("Bling Bling Desc", "+20% Luxury Happiness from Jewelry")),
+	BldInfo(CardEnum::GoldRush,			LOCTEXT("Gold Rush", "Gold Rush"), 150, LOCTEXT("Gold Rush Desc", "+30% productivity from Gold Mine.")),
+
+	BldInfo(CardEnum::AllYouCanEat,		LOCTEXT("All You Can Eat", "All You Can Eat"), 200, LOCTEXT("All You Can Eat Desc", "+30% Food Happiness. +50% food consumption")),
+	BldInfo(CardEnum::SlaveLabor,		LOCTEXT("Slave Labor", "Slave Labor"), 200,		LOCTEXT("Slave Labor Desc", "Work Efficiency Penalty from low Happiness will not exceed 30%")),
+	BldInfo(CardEnum::Lockdown,			LOCTEXT("Lockdown", "Lockdown"), 200,				LOCTEXT("Lockdown Desc", "Citizens cannot immigrate out of town without permission.")),
+	BldInfo(CardEnum::SocialWelfare,		LOCTEXT("Social Welfare", "Social Welfare"), 200, LOCTEXT("Social Welfare Desc", "+20% Job Happiness, +15% Productivity")),
+
+	
 	BldInfo(CardEnum::Treasure,			LOCTEXT("Treasure", "Treasure"), 100, LOCTEXT("Treasure Desc", "Instantly gain 500 <img id=\"Coin\"/>")),
 	BldInfo(CardEnum::IndustrialRevolution,LOCTEXT("Industrial Revolution", "Industrial Revolution"), 200, LOCTEXT("Industrial Revolution Desc", "-50% cost of industrial building cards")),
 	BldInfo(CardEnum::EmergencyRations,	LOCTEXT("Emergency Rations", "Emergency Rations"), 250, LOCTEXT("Emergency Rations Desc", "Instantly gain 50 Wheat.")),
@@ -2871,7 +2885,11 @@ static bool IsGlobalSlotCard(CardEnum cardEnum)
 		
 	case CardEnum::Cannibalism:
 
-	case CardEnum::MiddleClassTax:
+	case CardEnum::AllYouCanEat:
+	case CardEnum::SlaveLabor:
+	case CardEnum::Lockdown:
+	case CardEnum::SocialWelfare:
+		
 	case CardEnum::IndustrialRevolution:
 
 	case CardEnum::CompaniesAct:
@@ -2927,6 +2945,8 @@ static const std::vector<CardEnum> BuildingSlotCards
 	CardEnum::ProductivityBook,
 	CardEnum::SustainabilityBook,
 	CardEnum::FrugalityBook,
+	CardEnum::Motivation,
+	CardEnum::Passion,
 };
 
 static bool IsBuildingSlotCard(CardEnum cardEnum)
@@ -2943,7 +2963,7 @@ static const CardEnum RareCards[]
 {
 	// Building
 	//BuildingEnum::HellPortal,
-	CardEnum::MiddleClassTax,
+	//CardEnum::AllYouCanEat,
 	
 	CardEnum::ArchitectStudio,
 	CardEnum::EngineeringOffice,
@@ -2965,13 +2985,13 @@ static const CardEnum RareCards[]
 	////BuildingEnum::Cattery,
 	//BuildingEnum::InvestmentBank,
 
-	CardEnum::CoalPipeline,
-	CardEnum::MiningEquipment,
-	CardEnum::Conglomerate,
-	CardEnum::SmeltCombo,
+	//CardEnum::CoalPipeline,
+	//CardEnum::MiningEquipment,
+	//CardEnum::Conglomerate,
+	//CardEnum::SmeltCombo,
 
-	CardEnum::HomeBrew,
-	CardEnum::BeerTax,
+	//CardEnum::HomeBrew,
+	//CardEnum::BeerTax,
 
 	// Non-Building
 	CardEnum::Treasure,
@@ -4640,7 +4660,7 @@ enum class IncomeEnum : uint8
 	Luxury,
 
 	Adjacency,
-	Card_MiddleClass,
+	//Card_MiddleClass,
 	Card_BeerTax,
 	Card_DesertPilgrim,
 
@@ -4650,7 +4670,7 @@ enum class IncomeEnum : uint8
 	TownhallIncome, // HouseIncomeEnumCount!!!
 	BankProfit,
 	InvestmentProfit,
-	ConglomerateIncome,
+	SocialWelfare,
 
 	FromVassalTax,
 	ToLordTax,
@@ -4725,8 +4745,6 @@ enum class ScienceEnum : uint8
 {
 	Base,
 	Luxury,
-	Library,
-	School,
 	HomeBrew,
 
 	KnowledgeTransfer,
@@ -4734,19 +4752,46 @@ enum class ScienceEnum : uint8
 
 	Rationalism,
 
+	Library,
+	School,
+
 	Count,
 };
+#define LOCTEXT_NAMESPACE "ScienceEnumName"
+static TArray<FText> ScienceEnumNameList
+{
+	LOCTEXT("HouseBase", "House Base"),
+	LOCTEXT("HouseLuxury", "House Luxury"),
+	LOCTEXT("HomeBrew", "Home Brew"),
+
+	LOCTEXT("Knowledgetransfer", "Knowledge transfer"),
+	LOCTEXT("LastEraTechnology", "Last Era Technology"),
+
+	LOCTEXT("Rationalism", "Rationalism"),
+
+	LOCTEXT("Library", "Library"),
+	LOCTEXT("School", "School"),
+};
+#undef LOCTEXT_NAMESPACE
+
+static const FText& ScienceEnumName(int32 index) {
+	return ScienceEnumNameList[index];
+}
 static int32 ScienceEnumCount = static_cast<int32>(ScienceEnum::Count);
 
-const FText& ScienceEnumName(int32 index);
+static int32 ScienceModifierStartEnumInt = static_cast<int32>(ScienceEnum::Library);
+
+static bool IsScienceModifierEnum(ScienceEnum scienceEnum) {
+	return static_cast<int32>(scienceEnum) >= ScienceModifierStartEnumInt;
+}
 
 static std::vector<ScienceEnum> HouseScienceEnums
 {
 	ScienceEnum::Base,
 	ScienceEnum::Luxury,
+	ScienceEnum::HomeBrew,
 	ScienceEnum::Library,
 	ScienceEnum::School,
-	ScienceEnum::HomeBrew,
 };
 
 
@@ -4900,6 +4945,10 @@ enum class TechEnum : uint8
 	HouseAdjacency,
 	FarmAdjacency,
 	IndustrialAdjacency,
+
+	HaulingCapacity,
+	BudgetAdjustment,
+	WorkSchedule,
 
 	ScienceLastEra,
 	MoneyLastEra,
@@ -5285,9 +5334,10 @@ struct UnitInfo
 		// Food
 		// ppl must eat 5 times a year (slightly less than a season so they can winter starve)... maxFood = 2 * one consumption
 		int32 foodTicksPerFetch = Time::TicksPerYear / UnitFoodFetchPerYear;
-		foodPerFetch = foodResourcePerYear / UnitFoodFetchPerYear;
+		
+		foodPerFetch = foodResourcePerYear / UnitFoodFetchPerYear * 2; // How much food do human take at once
 
-		maxFoodTicks = foodTicksPerFetch * (unitEnum == UnitEnum::Human ? 2 : 5); // Fragile humans ... Animals has loads of maxFoodTicks
+		maxFoodTicks = foodTicksPerFetch * (unitEnum == UnitEnum::Human ? 3 : 5); // Fragile humans ... Animals has loads of maxFoodTicks
 		
 		foodTicksPerResource = Time::TicksPerYear / foodResourcePerYear;
 
@@ -7119,10 +7169,22 @@ static const TArray<FText> HappinessEnumName
 	//LOCTEXT("Healthcare", "Healthcare"),
 	LOCTEXT("Housing", "Housing"),
 	LOCTEXT("Luxury", "Luxury"),
-	LOCTEXT("Job", "Job"),
 	LOCTEXT("Entertainment", "Entertainment"),
+	LOCTEXT("Job", "Job"),
 	LOCTEXT("City Attractiveness", "City Attractiveness"),
 };
+static const TArray<FText> HappinessEnumTip
+{
+	LOCTEXT("FoodHappiness_Tip", "To Increase Food Happiness:<bullet>Have enough food for Citizens</><bullet>Have Food Variety</>"),
+	//LOCTEXT("Heat", "Heat"),
+	//LOCTEXT("Healthcare", "Healthcare"),
+	LOCTEXT("HousingHappiness_Tip", "To Increase Housing Happiness:<bullet>Have enough housing for Citizens</><bullet>Have high Housing Appeal</>"),
+	LOCTEXT("LuxuryHappiness_Tip", "To Increase Luxury Happiness, provide your Citizens with Luxury Resources"),
+	LOCTEXT("EntertainmentHappiness_Tip", "To Increase Entertain Happiness, provide your Citizens with access to Entertainment Services (Tavern, Theatre etc.)."),
+	LOCTEXT("JobHappiness_Tip", "Job Happiness is affected by:<bullet>Job type of your Citizens</><bullet>Building's Budget and Work Hours</>"),
+	LOCTEXT("CityAttractivenessHappiness_Tip", "City Attractiveness is affected by Tax and Card Bonuses."),
+};
+static FText GetHappinessEnumTip(HappinessEnum happinessEnum) { return HappinessEnumTip[static_cast<int>(happinessEnum)]; }
 #undef LOCTEXT_NAMESPACE
 static const int32 HappinessEnumCount = HappinessEnumName.Num();
 
@@ -7649,6 +7711,9 @@ enum class CallbackEnum : uint8
 	TradingPostTrade,
 
 	QuickBuild,
+	AddAnimalRanch,
+
+	BudgetAdjust,
 
 	// Military
 	ArmyConquer,

@@ -384,7 +384,8 @@ void UnitStateAI::Update()
 						 *  half chance to migrate given good place
 						 */
 						if (isEnum(UnitEnum::Human) && _playerId != -1 &&
-							GameRand::Rand() % 3 == 0) 
+							GameRand::Rand() % 3 == 0 &&
+							_simulation->TownhallCardCountTown(_townId, CardEnum::Lockdown) == 0)
 						{
 							_simulation->AddMigrationPendingCount(_playerId, 1);
 							_simulation->AddEventLog(_playerId, 
@@ -467,11 +468,16 @@ void UnitStateAI::Update()
 					if (houseId() == -1) {
 						canGiveBirth = false;
 					}
-
-					// Domesticated animal should give birth less
-					if (canGiveBirth) {
-						canGiveBirth = (GameRand::Rand() % 30 == 0);
-						_lastPregnant = Time::Ticks(); // Reset birth even if the unit didn't give birth
+					else
+					{
+						// Domesticated animal should give birth less nearing full capacity
+						if (canGiveBirth) {
+							Building& bld = _simulation->building(houseId());
+							if (IsRanch(bld.buildingEnum())) {
+								canGiveBirth = (GameRand::Rand() % (3 + bld.subclass<Ranch>().occupantCount()) == 0);
+								_lastPregnant = Time::Ticks(); // Reset birth even if the unit didn't give birth
+							}
+						}
 					}
 				}
 				else

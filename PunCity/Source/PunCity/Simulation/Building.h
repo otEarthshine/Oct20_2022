@@ -522,6 +522,7 @@ public:
 	}
 	
 	int32 resourceCount(ResourceEnum resourceEnum);
+	int32 resourceCountWithPop(ResourceEnum resourceEnum);
 	int32 tryResourceCount(ResourceEnum resourceEnum);
 
 	const ResourceHolder& holder(ResourceEnum resourceEnum) {

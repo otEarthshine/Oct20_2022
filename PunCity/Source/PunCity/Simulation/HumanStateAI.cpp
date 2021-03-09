@@ -858,33 +858,7 @@ bool HumanStateAI::TryFindFood()
 	{
 		int32 wantAmount = unitInfo().foodPerFetch;
 
-		//// Try market first
-		//FoundResourceHolderInfos foundProviders = FindMarketResourceHolderInfo(ResourceEnum::Food, wantAmount, true, maxFloodDist);
-
-		//if (!foundProviders.hasInfos()) {
-		//	// Compare market provider to storage provider
-		//	foundProviders = resourceSystem().FindFoodHolder(ResourceFindType::AvailableForPickup, wantAmount, unitTile(), maxFloodDist);
-
-		//	FoundResourceHolderInfos foundProvidersMarket = foundProviders = FindMarketResourceHolderInfo(ResourceEnum::Food, wantAmount, false, maxFloodDist);
-		//	if (foundProvidersMarket.hasInfos()) 
-		//	{
-		//		if (foundProviders.hasInfos()) {
-		//			FoundResourceHolderInfo bestProvider = foundProviders.best();
-		//			FoundResourceHolderInfo bestProviderMarket = foundProvidersMarket.best();
-		//			if (bestProviderMarket.amount > bestProvider.amount) {
-		//				foundProviders = foundProvidersMarket;
-		//			}
-		//			else if (bestProviderMarket.amount == bestProvider.amount) {
-		//				if (bestProviderMarket.distance < bestProvider.distance) {
-		//					foundProviders = foundProvidersMarket;
-		//				}
-		//			}
-		//		}
-		//		else {
-		//			foundProviders = foundProvidersMarket;
-		//		}
-		//	}
-		//}
+		//PUN_LOG("TryFindFood ------- %s -- %s", *GetUnitNameT().ToString(), *unitTile().To_FString());
 
 		FoundResourceHolderInfos foundProviders = FindNeedHelper(ResourceEnum::Food, wantAmount);
 		
@@ -914,6 +888,8 @@ bool HumanStateAI::TryFindFood()
 			//Add_MoveTo(bestProvider.tile);
 			
 			SetActivity(UnitState::GetFood);
+
+			//PrintFoundResourceHolderInfo(bestProvider, "TryFindFood ------- !!!!!END!!!!! ------ !!!!! ", _simulation);
 
 			AddDebugSpeech("(Success)TryFindFood: pushed actions");
 			return true;
@@ -1098,22 +1074,13 @@ bool HumanStateAI::TryHealup()
 {
 	if (_isSick)
 	{
+		//PUN_LOG("TryHealup ------- %s -- %s", *GetUnitNameT().ToString(), *unitTile().To_FString());
+		
 		int32 wantAmount = 1;
 
 		for (ResourceEnum resourceEnum : MedicineEnums)
 		{
 			wantAmount = (resourceEnum == ResourceEnum::Herb) ? 2 : 1;
-
-			//// Look in market first
-			//FoundResourceHolderInfos foundProviders = FindMarketResourceHolderInfo(resourceEnum, wantAmount, true, maxFloodDist);
-
-			//if (!foundProviders.hasInfos()) {
-			//	foundProviders = resourceSystem.FindHolder(ResourceFindType::AvailableForPickup, resourceEnum, wantAmount, unitTile(), {}, maxFloodDist);
-			//}
-
-			//if (!foundProviders.hasInfos()) {
-			//	foundProviders = FindMarketResourceHolderInfo(resourceEnum, wantAmount, false, maxFloodDist);
-			//}
 
 			FoundResourceHolderInfos foundProviders = FindNeedHelper(resourceEnum, wantAmount);
 
@@ -1130,9 +1097,10 @@ bool HumanStateAI::TryHealup()
 				Add_PickupResource(bestProvider.info, bestProvider.amount);
 				Add_MoveToResource(bestProvider.info);
 
-				SetActivity(UnitState::GetMedicine);
+				//PrintFoundResourceHolderInfo(bestProvider, "TryHealup ------- !!!!!END!!!!! ------ !!!!! ", _simulation);
 
 				AddDebugSpeech("(Success)TryHealup: pushed actions");
+				SetActivity(UnitState::GetMedicine);
 				return true;
 			}
 		}
@@ -1180,6 +1148,8 @@ bool HumanStateAI::TryFillLuxuries()
 			TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, house.GetHolderInfoFull(resourceEnum, maxPickupAmount), true))
 		{
 			AddDebugSpeech("(Succeed)TryFillLuxuries: " + house.GetHolderInfoFull(resourceEnum, maxPickupAmount).ToString());
+
+			SetActivity(UnitState::GetLuxury);
 			return true;
 		}
 	}
@@ -3067,21 +3037,29 @@ void HumanStateAI::UpdateHappiness()
 			funTicks += serviceToFunTicks[i] / denominator;
 			denominator *= 2;
 		}
+		funTicks = funTicks * 3 / 4; // Tested as 160% which should less...
 		
 		SetHappiness(HappinessEnum::Entertainment, FunTickToPercent(funTicks));
 	}
 
 	// Job
 	{
-		Building* workplc = workplace();
-		
-		int32 targetHappiness = workplc ? workplc->GetJobHappiness() : 70;
+		int32 targetHappiness;
+		if (Building* workplc = workplace()) {
+			targetHappiness = workplc->GetJobHappiness();
+		}
+		else {
+			targetHappiness = 70;
+			if (_simulation->TownhallCardCountTown(_playerId, CardEnum::SocialWelfare)) {
+				targetHappiness += 20;
+			}
+		}
 
 		int32 lastHappiness = GetHappinessByType(HappinessEnum::Job);
 		int32 happiness = moveTowardsTargetHappiness(lastHappiness, targetHappiness, 500, 500);
 		SetHappiness(HappinessEnum::Job, happiness);
 
-		PUN_LOG("Job Happiness[%d]: lastHappiness:%d targetHappiness:%d happiness:%d", _id, lastHappiness, targetHappiness, happiness);
+		//PUN_LOG("Job Happiness[%d]: lastHappiness:%d targetHappiness:%d happiness:%d", _id, lastHappiness, targetHappiness, happiness);
 	}
 
 

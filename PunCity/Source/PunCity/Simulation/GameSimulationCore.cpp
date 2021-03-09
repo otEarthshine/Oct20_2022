@@ -978,12 +978,12 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 							);
 						}
 
-						if (!unlockSys->didFirstTimeLowHappiness && _townManagers[playerId]->aveOverallHappiness() < 65) {
+						if (!unlockSys->didFirstTimeLowHappiness && _townManagers[playerId]->aveOverallHappiness() < HumanStateAI::minWarnHappiness()) {
 							unlockSys->didFirstTimeLowHappiness = true;
 
 							AddPopup(playerId, 
 								{
-									LOCTEXT("LowHappinessWarn1_Pop", "Your happiness is low.<space>Below 70% Happiness, Citizen's work efficiency will decrease.<space>"),
+									LOCTEXT("LowHappinessWarn1_Pop", "Your happiness is low.<space>Below 65% Happiness, Citizen's work efficiency will decrease.<space>"),
 									LOCTEXT("LowHappinessWarn2_Pop", "Below 50% Happiness, Citizens will start leaving your City.<space>"),
 									ToFText(TutorialLinkString(TutorialLinkEnum::Happiness))
 								}
@@ -3725,6 +3725,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 			int32 soldPrice = cardSys.RemoveCards(command.cardEnum, 1);
 			if (soldPrice != -1) {
 				townManage.AddCardToTownhall(command.GetCardStatus(_gameManager->GetDisplayWorldTime() * 100.0f));
+				townManage.RecalculateTaxDelayed();
 			}
 		} else {
 			AddPopupToFront(command.playerId, 
@@ -3918,6 +3919,7 @@ void GameSimulationCore::UnslotCard(FUnslotCard command)
 		CardEnum cardEnum = townManage.RemoveCardFromTownhall(command.unslotIndex);
 		if (cardEnum != CardEnum::None) {
 			cardSys.AddCardToHand2(cardEnum);
+			townManage.RecalculateTaxDelayed();
 		}
 	}
 	else
@@ -4714,7 +4716,7 @@ void GameSimulationCore::Cheat(FCheat command)
 		{
 			auto setFunDown = [&](const std::vector<int32>& humanIds) {
 				for (int32 humanId : humanIds) {
-					unitAI(humanId).SetFunTicks(FunTicksAt100Percent * 50 / 100);
+					unitAI(humanId).SetFunTicks(FunTicksAt100Percent * 20 / 100);
 				}
 			};
 			setFunDown(townManager(command.playerId).adultIds());
@@ -4730,6 +4732,17 @@ void GameSimulationCore::Cheat(FCheat command)
 			};
 			setFoodDown(townManager(command.playerId).adultIds());
 			setFoodDown(townManager(command.playerId).childIds());
+			break;
+		}
+		case CheatEnum::ForceSick:
+		{
+			auto set = [&](const std::vector<int32>& humanIds) {
+				for (int32 humanId : humanIds) {
+					unitAI(humanId).SetSick(true);
+				}
+			};
+			set(townManager(command.playerId).adultIds());
+			set(townManager(command.playerId).childIds());
 			break;
 		}
 
@@ -4840,6 +4853,9 @@ void GameSimulationCore::Cheat(FCheat command)
 			break;
 		}
 
+		/*
+		 * Test Large City
+		 */
 		case CheatEnum::TestCity:
 		{
 			SimSettings::Set("CheatFastBuild", 1);
@@ -4850,6 +4866,14 @@ void GameSimulationCore::Cheat(FCheat command)
 			{
 				int32 addCount = command.var1;
 				addCount = std::max(0, std::min(1000, addCount));
+
+
+				// 20 ppl per province...
+				for (int32 i = addCount / 20; i-- > 0;)
+				{
+					
+				}
+				
 
 				auto tryAddRoad = [&](WorldTile2 tile) {
 					if (IsFrontBuildable(tile) && !_overlaySystem.IsRoad(tile)) {
@@ -5075,6 +5099,11 @@ std::string GameSimulationCore::unitdebugStr(int id)
 void GameSimulationCore::unitAddDebugSpeech(int32 id, std::string message)
 {
 	return _unitSystem->unitStateAI(id).AddDebugSpeech(message);
+}
+
+FString GameSimulationCore::GetTileBuildingDescription(WorldTile2 tile)
+{
+	return "[" + GetBuildingInfo(buildingEnumAtTile(tile)).nameF() + ", " + tile.To_FString();
 }
 
 void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int32 townhallId)

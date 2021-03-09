@@ -249,8 +249,10 @@ public:
 	int32 resourceCount() const {
 		int count = 0;
 		for (int i = 0; i < _holders.size(); i++) {
-			if (_holders[i].type == ResourceHolderType::Storage ||
-				_holders[i].type == ResourceHolderType::Provider) {
+			ResourceHolderType type = _holders[i].type;
+			if (type == ResourceHolderType::Storage ||
+				type == ResourceHolderType::Provider ||
+				type == ResourceHolderType::Market) {
 				count += _holders[i].current();
 			}
 		}
@@ -259,8 +261,10 @@ public:
 	int32 resourceCountWithPop() const {
 		int count = 0;
 		for (int i = 0; i < _holders.size(); i++) {
-			if (_holders[i].type == ResourceHolderType::Storage ||
-				_holders[i].type == ResourceHolderType::Provider) {
+			ResourceHolderType type = _holders[i].type;
+			if (type == ResourceHolderType::Storage ||
+				type == ResourceHolderType::Provider ||
+				type == ResourceHolderType::Market) {
 				count += _holders[i].current();
 				count -= _holders[i].reservedPop();
 			}
@@ -270,10 +274,12 @@ public:
 	int32 resourceCountWithDrops() const {
 		int count = 0;
 		for (int i = 0; i < _holders.size(); i++) {
-			if (_holders[i].type == ResourceHolderType::Storage ||
-				_holders[i].type == ResourceHolderType::Provider ||
-				_holders[i].type == ResourceHolderType::Drop ||
-				_holders[i].type == ResourceHolderType::DropManual)
+			ResourceHolderType type = _holders[i].type;
+			if (type == ResourceHolderType::Storage ||
+				type == ResourceHolderType::Provider ||
+				type == ResourceHolderType::Market ||
+				type == ResourceHolderType::Drop ||
+				type == ResourceHolderType::DropManual)
 			{
 				count += _holders[i].current();
 			}
@@ -455,13 +461,20 @@ private:
 		}
 	}
 
-	FoundResourceHolderInfos FindHolderHelper(ResourceFindType type, int32 amount, WorldTile2 origin, std::vector<int32> avoidIds) const
+	FoundResourceHolderInfos FindHolderHelper(ResourceFindType type, int32 wantAmount, WorldTile2 origin, std::vector<int32> avoidIds) const
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_MoveResource_FindHolder);
 		
 		// Find by amount to get pickup candidates
-		FoundResourceHolderInfos filteredInfosWrap = FilterHolders(type, origin);
+		FoundResourceHolderInfos filteredInfosWrap = FilterHolders(type, origin, wantAmount);
 		std::vector<FoundResourceHolderInfo>& filteredInfos = filteredInfosWrap.foundInfos;
+
+		//if (type == ResourceFindType::AvailableForPickup && _resourceEnum == ResourceEnum::Orange) {
+		//	PrintFoundResourceHolderInfos(filteredInfos, "TryFindFood", _simulation);
+		//}
+		//if (type == ResourceFindType::AvailableForPickup && _resourceEnum == ResourceEnum::Medicine) {
+		//	PrintFoundResourceHolderInfos(filteredInfos, "TryHealup", _simulation);
+		//}
 
 		/*
 		 * remove any avoidIds
@@ -488,8 +501,8 @@ private:
 
 		// Trim amount...
 		for (FoundResourceHolderInfo& filteredInfo : filteredInfos) {
-			filteredInfo.amount = std::min(filteredInfo.amount, amount);
-			PUN_CHECK(filteredInfo.amount <= amount);
+			//filteredInfo.amount = std::min(filteredInfo.amount, wantAmount);
+			PUN_CHECK(filteredInfo.amount <= wantAmount);
 		}
 
 		SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_MoveResource_FindHolder_Rest);
@@ -505,7 +518,7 @@ private:
 			// Also try to fill one storage first if possible
 			for (int i = 0; i < filteredInfos.size(); i++)
 			{
-				if (filteredInfos[i].amount >= amount) {
+				if (filteredInfos[i].amount >= wantAmount) {
 					// filteredInfos[i].distance is decreased if the amount is more than 0
 					int32 dist = filteredInfos[i].distance + WorldTile2::ManDistance(origin, filteredInfos[i].tile);
 
@@ -521,10 +534,19 @@ private:
 		}
 		else
 		{
+			//if (type == ResourceFindType::AvailableForPickup && _resourceEnum == ResourceEnum::Orange) {
+			//	PUN_LOG("TryFindFood FindFull filteredInfos:%d", filteredInfos.size());
+			//}
+			
 			for (int i = 0; i < filteredInfos.size(); i++)
 			{
-				if (filteredInfos[i].amount >= amount) {
+				if (filteredInfos[i].amount >= wantAmount) {
 					int32 dist = WorldTile2::ManDistance(origin, filteredInfos[i].tile);
+
+					//if (type == ResourceFindType::AvailableForPickup && _resourceEnum == ResourceEnum::Orange) {
+					//	auto info = filteredInfos[i];
+					//	PUN_LOG(" - TryFindFood info:%s %s amount:%d dist:%d", *GetBuildingInfo(_simulation->buildingEnumAtTile(info.tile)).nameF(), *info.tile.To_FString(), info.amount, dist);
+					//}
 
 					// Check if closer that last full candidate...
 					if (dist < foundFullInfoDist) {
@@ -538,7 +560,7 @@ private:
 		}
 		if (foundFullInfo.isValid()) {
 			// Trim and return
-			foundFullInfo.amount = amount;
+			foundFullInfo.amount = wantAmount;
 			return FoundResourceHolderInfos({ foundFullInfo });
 		}
 
@@ -583,7 +605,7 @@ private:
 
 			// Link more piles into the chain until we achieve the target amount
 			LOOP_CHECK_START();
-			while (newChain.amount() < amount)
+			while (newChain.amount() < wantAmount)
 			{
 				LOOP_CHECK_END();
 				
@@ -617,8 +639,8 @@ private:
 			if (bestChain.hasInfos()) 
 			{
 				// Compete by amount first
-				int32 newChainAmount = std::min(newChain.amount(), amount);
-				int32 bestChainAmount = std::min(bestChain.amount(), amount);
+				int32 newChainAmount = std::min(newChain.amount(), wantAmount);
+				int32 bestChainAmount = std::min(bestChain.amount(), wantAmount);
 				if (newChainAmount > bestChainAmount) {
 					bestChain = newChain;
 				}
@@ -651,13 +673,13 @@ private:
 		int32 amountSatisfied = 0;
 		int32 newSize = 0;
 		for (size_t i = 0; i < bestChainInfos.size(); i++) {
-			if (amountSatisfied >= amount) {
+			if (amountSatisfied >= wantAmount) {
 				break;
 			}
 			amountSatisfied += bestChainInfos[i].amount;
 			newSize++;
-			if (amountSatisfied > amount) { // just got satisfied, make sure the whole bestChainInfos sum to amountSatisfied
-				bestChainInfos[i].amount -= amountSatisfied - amount;
+			if (amountSatisfied > wantAmount) { // just got satisfied, make sure the whole bestChainInfos sum to amountSatisfied
+				bestChainInfos[i].amount -= amountSatisfied - wantAmount;
 				check(bestChainInfos[i].amount > 0);
 			}
 		}
@@ -667,7 +689,7 @@ private:
 		return bestChain;
 	}
 
-	FoundResourceHolderInfos FilterHolders(ResourceFindType type, WorldTile2 origin) const
+	FoundResourceHolderInfos FilterHolders(ResourceFindType type, WorldTile2 origin, int32 wantAmount) const
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_MoveResource_FindHolder_Filter);
 
@@ -681,12 +703,22 @@ private:
 			if (type == ResourceFindType::AvailableForDropoff) {
 				amountAtLeast = 1;
 			} else {
-				// TODO: Figure this out?? amountAtLeast is foundInfos.back().amount because we shouldn't try to get
-				amountAtLeast = foundInfos.size() > 0 ? foundInfos.back().amount : 1; // amountAt least is 1 in the beginning... (no point to add holder with 0 amount)
+				{
+					//// TODO: doing an amount check like this causes issues???
+					//// TODO: Figure this out?? amountAtLeast is foundInfos.back().amount because we shouldn't try to get
+					//amountAtLeast = foundInfos.size() > 0 ? foundInfos.back().amount : 1; // amountAt least is 1 in the beginning... (no point to add holder with 0 amount)
 
-				// amountAtLeast can still be 0 if foundInfos.back().amount is 0
-				amountAtLeast = std::max(1, amountAtLeast);
+					//// amountAtLeast can still be 0 if foundInfos.back().amount is 0
+					//amountAtLeast = std::max(1, amountAtLeast);
+				}
+
+				amountAtLeast = 1;
 			}
+
+			// DEBUG
+			//if (type == ResourceFindType::AvailableForPickup && _resourceEnum == ResourceEnum::Medicine) {
+			//	PUN_LOG(" > TryHealup tryAddToFoundInfos availableAmount:%d amountAtLeast:%d  tile:%s", availableAmount, amountAtLeast, *_simulation->GetTileBuildingDescription(holder.tile));
+			//}
 
 			if (availableAmount >= amountAtLeast) // Don't get resource from node with less amount, unless necessary
 			{
@@ -703,14 +735,22 @@ private:
 					isConnected = _simulation->IsConnected(origin, holder.tile, GameConstants::MaxFloodDistance_HumanDropFetch, true); // Drop case
 				}
 
+				//PUN_LOG(" > TryHealup tryAddToFoundInfos isConnected:%d", isConnected);
+
 				if (isConnected) 
 				{
 					check(availableAmount > 0);
+
+					// Don't take more than wantAmount
+					int32 amountToTake = std::min(availableAmount, wantAmount);
+					
 					if (type == ResourceFindType::AvailableForDropoff) {
 						int32 distanceShift = (holder.current() + holder.reservedPush()) > 0 ? -20 : 0; // Try store dropoff in the storage that already has an item
-						foundInfos.push_back(FoundResourceHolderInfo(holder.info, availableAmount, holder.tile, -1, distanceShift));
+						foundInfos.push_back(FoundResourceHolderInfo(holder.info, amountToTake, holder.tile, -1, distanceShift));
 					} else {
-						foundInfos.push_back(FoundResourceHolderInfo(holder.info, availableAmount, holder.tile));
+						foundInfos.push_back(FoundResourceHolderInfo(holder.info, amountToTake, holder.tile));
+
+						//PUN_LOG(" > TryHealup tryAddToFoundInfos ADDED");
 					}
 				}
 			}

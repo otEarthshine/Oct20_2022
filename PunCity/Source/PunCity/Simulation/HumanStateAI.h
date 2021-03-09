@@ -177,7 +177,7 @@ public:
 		if (happ < minWarnHappiness()) {
 			// at minWarnHappiness, penalty is 0
 			// at 0, penalty is -50
-			int32 result = -50 * (minWarnHappiness() - happ) / minWarnHappiness();
+			int32 result = -90 * (minWarnHappiness() - happ) / minWarnHappiness();
 
 			if (_simulation->TownhallCardCountTown(_playerId, CardEnum::SlaveLabor)) {
 				result = std::max(-30, result);
@@ -276,7 +276,8 @@ public:
 		return result / HappinessEnumCount;
 	}
 
-	int32 minWarnHappiness() { return 50; }
+	static int32 minWarnHappiness() { return 65; }
+	static int32 happinessLeaveTownThreshold() { return 50; }
 	bool needHappiness() { return happinessOverall() < minWarnHappiness(); }
 
 	static int32 FunTickToPercent(int32 funTicks) {

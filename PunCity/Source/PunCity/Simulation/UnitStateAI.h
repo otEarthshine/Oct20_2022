@@ -17,6 +17,7 @@ enum class UnitState : uint8
 	GetFun,
 	GetTools,
 	GetMedicine,
+	GetLuxury,
 	
 	GetWildFood,
 	Idle,
@@ -65,9 +66,7 @@ enum class UnitState : uint8
 
 	Count,
 };
-
 #define LOCTEXT_NAMESPACE "UnitStateName"
-
 const TArray<FText> UnitStateName
 {
 	LOCTEXT("Get Food", "Get Food"),
@@ -75,6 +74,7 @@ const TArray<FText> UnitStateName
 	LOCTEXT("Get Fun", "Get Fun"),
 	LOCTEXT("Get Tools", "Get Tools"),
 	LOCTEXT("Get Medicine", "Get Medicine"),
+	LOCTEXT("Get Luxury", "Get Luxury"),
 
 	LOCTEXT("Get Wild Food", "Get Wild Food"),
 	LOCTEXT("Idle", "Idle"),
@@ -404,6 +404,11 @@ public:
 	int32 foodThreshold_Get() {
 		return maxFood() * 3 / 4;
 	}
+
+	static int32 minWarnFoodPercent() { return 25; }
+	static int32 foodThreshold_Get2Percent() { return 50; }
+	
+	
 	void SetFood(int32 food) {
 		_food = food;
 	}
@@ -413,6 +418,9 @@ public:
 	int32 maxHeat() { return unitInfo().maxHeatCelsiusTicks; }
 	int32 heatGetThreshold() { return maxHeat() * 3 / 4; }
 	int32 minWarnHeat() { return maxHeat() / 2; }
+
+	static int32 heatGetThresholdPercent() { return 75; }
+	static int32 minWarnHeatPercent() { return 50; }
 
 	int32 ticksSinceLastUpdate() { return Time::Ticks() - _lastUpdateTick; }
 	int32 foodActual()
@@ -452,8 +460,10 @@ public:
 
 	int32 hp() { return _hp100 / 100; }
 	int32 maxHP100() const { return 10000; }
+	
 	bool isSick() { return _isSick; }
-
+	void SetSick(bool isSick) { _isSick = isSick; }
+	
 	int32 age() { return Time::Ticks() - birthTicks(); }
 	int32 maxAge()
 	{
@@ -467,7 +477,7 @@ public:
 	int32 playerId() { return _playerId; }
 	
 	UnitState unitState() { return _unitState; }
-	bool SetActivity(UnitState unitState) {
+	void SetActivity(UnitState unitState) {
 		_unitState = unitState;
 	}
 

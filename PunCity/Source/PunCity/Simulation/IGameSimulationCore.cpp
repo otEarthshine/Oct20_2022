@@ -1,6 +1,9 @@
 #include "IGameSimulationCore.h"
 
+
 using namespace std;
+
+
 
 //bool CanReserveSpot_Buildable(WorldRegion2 region, IGameSimulationCore* simulation)
 //{

@@ -1021,6 +1021,8 @@ public:
 	
 	std::string unitdebugStr(int id) final;
 	void unitAddDebugSpeech(int32 id, std::string message) final;
+	
+	FString GetTileBuildingDescription(WorldTile2 tile) final;
 
 	void SetWalkableSkipFlood(WorldTile2 tile, bool isWalkable) final {
 		_pathAI->SetWalkable(tile.x, tile.y, isWalkable);

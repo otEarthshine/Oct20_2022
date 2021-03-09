@@ -376,6 +376,8 @@ public:
 	virtual std::string unitdebugStr(int id) = 0;
 	virtual void unitAddDebugSpeech(int32_t id, std::string message) = 0;
 
+	virtual FString GetTileBuildingDescription(WorldTile2 tile) = 0;
+
 
 	virtual void AddPopup(int32 playerId, FText popupBody, std::string popupSound = "") = 0;
 	virtual void AddPopup(int32 playerId, TArray<FText> popupBody, std::string popupSound = "") = 0;
@@ -614,6 +616,24 @@ public:
 		return false;
 	}
 };
+
+/*
+ * Print
+ */
+static void PrintFoundResourceHolderInfo(FoundResourceHolderInfo info, FString message, IGameSimulationCore* simulation)
+{
+	PUN_LOG("%s info:%s %s amount:%d", *message, *GetBuildingInfo(simulation->buildingEnumAtTile(info.tile)).nameF(), *info.tile.To_FString(), info.amount);
+}
+static void PrintFoundResourceHolderInfos(FoundResourceHolderInfos infos, FString message, IGameSimulationCore* simulation)
+{
+	std::vector<FoundResourceHolderInfo>& foundInfos = infos.foundInfos;
+	PUN_LOG("%s foundInfos:%d", *message, foundInfos.size());
+	for (FoundResourceHolderInfo& info : foundInfos) {
+		PrintFoundResourceHolderInfo(info, " -- " + message, simulation);
+	}
+}
+
+
 
 class IPlayerSimulationInterface
 {

@@ -292,6 +292,18 @@ static FText TextRedOrange(FText text, int32 value, int32 orangeThreshold, int32
 	return text;
 }
 
+static FText TextNumberColor(FText text, int32 value, int32 orangeThreshold, int32 redThreshold)
+{
+	if (value < redThreshold) {
+		return TEXT_TAG("<FaintRed12>", text);
+	}
+	if (value < orangeThreshold) {
+		return TEXT_TAG("<FaintOrange12>", text);
+	}
+	return TEXT_TAG("<FaintGreen12>", text);
+}
+
+
 static bool SearchBoxCompare(const std::string& searchString, const std::string& compare)
 {
 	for (int32 i = 0; i < searchString.size(); i++) {
@@ -883,20 +895,22 @@ enum class MapMountainDensityEnum : uint8
 
 enum class DifficultyLevel : uint8
 {
+	Easy,
 	Normal,
 	Hard,
 	Brutal,
-	King,
+	//King,
 	Emperor,
 	Immortal,
 	Deity,
 };
 static const std::vector<FText> DifficultyLevelNames
 {
+	LOCTEXT("Easy", "Easy"),
 	LOCTEXT("Normal", "Normal"),
 	LOCTEXT("Hard", "Hard"),
 	LOCTEXT("Brutal", "Brutal"),
-	LOCTEXT("King", "King"),
+	//LOCTEXT("King", "King"),
 	LOCTEXT("Emperor", "Emperor"),
 	LOCTEXT("Immortal", "Immortal"),
 	LOCTEXT("Deity", "Deity"),
@@ -2800,7 +2814,7 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::AllYouCanEat,		LOCTEXT("All You Can Eat", "All You Can Eat"), 200, LOCTEXT("All You Can Eat Desc", "+30% Food Happiness. +50% food consumption")),
 	BldInfo(CardEnum::SlaveLabor,		LOCTEXT("Slave Labor", "Slave Labor"), 200,		LOCTEXT("Slave Labor Desc", "Work Efficiency Penalty from low Happiness will not exceed 30%")),
 	BldInfo(CardEnum::Lockdown,			LOCTEXT("Lockdown", "Lockdown"), 200,				LOCTEXT("Lockdown Desc", "Citizens cannot immigrate out of town without permission.")),
-	BldInfo(CardEnum::SocialWelfare,		LOCTEXT("Social Welfare", "Social Welfare"), 200, LOCTEXT("Social Welfare Desc", "+20% Job Happiness, +15% Productivity")),
+	BldInfo(CardEnum::SocialWelfare,		LOCTEXT("Social Welfare", "Social Welfare"), 200, LOCTEXT("Social Welfare Desc", "+20% Job Happiness, -10 gold for each citizen")),
 
 	
 	BldInfo(CardEnum::Treasure,			LOCTEXT("Treasure", "Treasure"), 100, LOCTEXT("Treasure Desc", "Instantly gain 500 <img id=\"Coin\"/>")),
@@ -4686,11 +4700,7 @@ enum class IncomeEnum : uint8
 
 	Count,
 };
-
-static const int32 HouseIncomeEnumCount = static_cast<int32>(IncomeEnum::TownhallIncome);
-
 #define LOCTEXT_NAMESPACE "IncomeEnumName"
-
 static const TArray<FText> IncomeEnumName
 {
 	LOCTEXT("Base", "Base"),
@@ -4700,14 +4710,14 @@ static const TArray<FText> IncomeEnumName
 	LOCTEXT("Luxury", "Luxury"),
 
 	LOCTEXT("Adjacency", "Adjacency"),
-	LOCTEXT("Card Middle Class Income", "Card Middle Class Income"),
+	//LOCTEXT("Card Middle Class Income", "Card Middle Class Income"),
 	LOCTEXT("Card Beer Tax", "Card Beer Tax"),
 	LOCTEXT("Card Desert Pilgrim", "Card Desert Pilgrim"),
 
 	LOCTEXT("Townhall Income", "Townhall Income"),
 	LOCTEXT("Bank Profit", "Bank Profit"),
 	LOCTEXT("Investment Profit", "Investment Profit"),
-	LOCTEXT("Conglomerate", "Conglomerate"),
+	LOCTEXT("Social Welfare", "Social Welfare"),
 	
 	LOCTEXT("Tax from Vassal", "Tax from Vassal"),
 	LOCTEXT("Tax for Lord", "Tax for Lord"),
@@ -4723,10 +4733,12 @@ static const TArray<FText> IncomeEnumName
 
 	LOCTEXT("Count", "Count"),
 };
+#undef LOCTEXT_NAMESPACE
+
+static const int32 HouseIncomeEnumCount = static_cast<int32>(IncomeEnum::TownhallIncome);
 
 static int32 IncomeEnumCount = static_cast<int32>(IncomeEnum::Count);
 
-#undef LOCTEXT_NAMESPACE
 
 static FText GetIncomeEnumName(int32 incomeEnumInt) {
 	return IncomeEnumName[static_cast<int>(incomeEnumInt)];
@@ -5772,6 +5784,7 @@ enum class CheatEnum : int32
 	FastTech,
 	ForceFunDown,
 	ForceFoodDown,
+	ForceSick,
 	Kill,
 	ClearLand,
 	Unhappy,
@@ -5837,6 +5850,7 @@ static const std::string CheatName[]
 	"FastTech",
 	"ForceFunDown",
 	"ForceFoodDown",
+	"ForceSick",
 	"Kill",
 	"ClearLand",
 	"Unhappy",

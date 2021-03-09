@@ -237,7 +237,8 @@ void House::CalculateConsumptions(bool consumeLuxury)
 			if (consumeLuxury) 
 			{
 				int32 actualConsumption = GameRand::RandRound(luxuryConsumption100_perRound, price100, Time::Rounds());
-				actualConsumption = min(resourceCount(resourceEnum), actualConsumption); // Can't be more than available resource
+				actualConsumption = min(resourceCountWithPop(resourceEnum), actualConsumption); // Can't be more than available resource
+
 				
 				RemoveResource(resourceEnum, actualConsumption);
 				_simulation->statSystem(_townId).AddResourceStat(ResourceSeasonStatEnum::Consumption, resourceEnum, actualConsumption);

@@ -17,10 +17,12 @@ public:
 	void OnInit() override {
 		DescriptionText->SetVisibility(ESlateVisibility::Collapsed);
 
-		EnableCheckBox->OnCheckStateChanged.AddDynamic(this, &UPunEditableNumberBox::OnEnableCheckBox);
-		
-		BUTTON_ON_CLICK(ArrowDownButton, this, &UPunEditableNumberBox::ClickArrowDownButton);
-		BUTTON_ON_CLICK(ArrowUpButton, this, &UPunEditableNumberBox::ClickArrowUpButton);
+		EnableCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UPunEditableNumberBox::OnEnableCheckBox);
+
+		ArrowDownButton->OnClicked.Clear();
+		ArrowUpButton->OnClicked.Clear();
+		ArrowDownButton->OnClicked.AddUniqueDynamic(this, &UPunEditableNumberBox::ClickArrowDownButton);
+		ArrowUpButton->OnClicked.AddUniqueDynamic(this, &UPunEditableNumberBox::ClickArrowUpButton);
 		
 		EditableNumber->PunEditableTextBox->OnTextCommitted.Clear();
 		EditableNumber->PunEditableTextBox->OnTextCommitted.AddDynamic(this, &UPunEditableNumberBox::NumberChanged);

@@ -2610,12 +2610,15 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			
 			descriptionBox->AddRichText(args);
 			descriptionBox->AddLineSpacer();
+			descriptionBox->AddSpacer(8);
 
 			// Show Food/Heat as percent
-			ADDTEXT_(INVTEXT("<space>{0}: {1}%"), LOCTEXT("Food", "Food"), TEXT_NUM(unit.foodActual() * 100 / unit.maxFood()));
-			ADDTEXT_(INVTEXT("<space>{0}: {1}%"), LOCTEXT("Heat", "Heat"), TEXT_NUM(unit.heatActual() * 100 / unit.maxHeat()));
-			ADDTEXT_(INVTEXT("<space>{0}: {1}%"), LOCTEXT("Health", "Health"), TEXT_NUM(unit.hp()));
-
+			int32 foodPercent = unit.foodActual() * 100 / unit.maxFood();
+			int32 heatPercent = unit.heatActual() * 100 / unit.maxHeat();
+			ADDTEXT_(INVTEXT("{0}: {1}"), LOCTEXT("Food", "Food"), TextNumberColor(TEXT_PERCENT(foodPercent), foodPercent, unit.foodThreshold_Get2Percent(), unit.minWarnFoodPercent()));
+			ADDTEXT_(INVTEXT("<space>{0}: {1}"), LOCTEXT("Heat", "Heat"), TextNumberColor(TEXT_PERCENT(heatPercent), heatPercent, unit.heatGetThresholdPercent(), unit.minWarnHeatPercent()));
+			ADDTEXT_(INVTEXT("<space>{0}: {1}"), LOCTEXT("Health", "Health"), TextNumberColor(TEXT_PERCENT(unit.hp()), unit.hp(), 60, 40));
+			
 			/*
 			 * Happiness
 			 */
@@ -2624,31 +2627,32 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				auto& human = unit.subclass<HumanStateAI>();
 
 				descriptionBox->AddRichTextParsed(args);
-				descriptionBox->AddLineSpacer(8);
+				descriptionBox->AddSpacer(8);
+				descriptionBox->AddLineSpacer();
+				descriptionBox->AddSpacer(8);
 			
 				int32 happinessOverall = human.happinessOverall();
-				ADDTEXT_(INVTEXT("{0}{1}"), TEXT_NUM(happinessOverall), GetHappinessFace(happinessOverall));
-				auto widget = descriptionBox->AddRichText(LOCTEXT("Happiness", "Happiness"), args);
+				ADDTEXT_(INVTEXT("{0}: {1}{2}"), LOCTEXT("Happiness", "Happiness"), ColorHappinessText(happinessOverall, TEXT_PERCENT(happinessOverall)), GetHappinessFace(happinessOverall));
+				descriptionBox->AddRichText(args);
+				descriptionBox->AddSpacer();
 
-				ADDTEXT_(
-					LOCTEXT("Happiness Tip", "Happiness: {0}{1}\n"),
-					TEXT_NUM(happinessOverall),
-					GetHappinessFace(happinessOverall)
-				);
-
-				for (size_t i = 0; i < HappinessEnumCount; i++) {
+				for (size_t i = 0; i < HappinessEnumCount; i++) 
+				{
 					int32 happiness = human.GetHappinessByType(static_cast<HappinessEnum>(i));
-					ADDTEXT_(INVTEXT("  {1} {0}\n"),
-						HappinessEnumName[i],
-						ColorHappinessText(happiness, FText::Format(INVTEXT("{0}%"), TEXT_NUM(happiness)))
+					ADDTEXT_(INVTEXT("  {0} {1}"),
+						ColorHappinessText(happiness, FText::Format(INVTEXT("{0}%"), TEXT_NUM(happiness))),
+						HappinessEnumName[i]
 					);
-				}
+					auto widget = descriptionBox->AddRichText(args);
 
-				AddToolTip(widget, args);
+					AddToolTip(widget, GetHappinessEnumTip(static_cast<HappinessEnum>(i)));
+				}
 			}
 
 			descriptionBox->AddRichTextParsed(args);
-			descriptionBox->AddLineSpacer(8);
+			descriptionBox->AddSpacer(8);
+			descriptionBox->AddLineSpacer();
+			descriptionBox->AddSpacer(8);
 
 			// Dying
 			auto dyingMessage = [&](FText dyingDescription) {

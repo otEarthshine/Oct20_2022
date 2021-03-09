@@ -244,6 +244,12 @@ int32 Building::resourceCount(ResourceEnum resourceEnum)
 	PUN_CHECK(info.isValid());
 	return resourceSystem().resourceCount(info);
 }
+int32 Building::resourceCountWithPop(ResourceEnum resourceEnum)
+{
+	ResourceHolderInfo info = holderInfo(resourceEnum);
+	PUN_CHECK(info.isValid());
+	return resourceSystem().resourceCountWithPop(info);
+}
 int32 Building::tryResourceCount(ResourceEnum resourceEnum)
 {
 	ResourceHolderInfo info = holderInfo(resourceEnum);

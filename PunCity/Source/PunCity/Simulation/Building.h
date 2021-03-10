@@ -1058,9 +1058,14 @@ public:
 
 	int32 GetAppealPercent();
 
+
+	virtual int32 GetBaseJobHappiness() {
+		return 70;
+	}
+
 	virtual int32 GetJobHappiness()
 	{
-		int32 jobHappiness = 70;
+		int32 jobHappiness = GetBaseJobHappiness();
 
 		// Budget
 		jobHappiness += (_budgetLevel - 3) * 10;
@@ -1344,10 +1349,21 @@ public:
 		ResourceEnum product = ResourceEnum::None;
 		FText description;
 
-		static WorkMode Create(FText name, FText description) {
+		static WorkMode Create(FText name, FText description, 
+			ResourceEnum input1 = ResourceEnum::None, 
+			ResourceEnum input2 = ResourceEnum::None,
+			int32 inputPerBatch = 0,
+			ResourceEnum product = ResourceEnum::None)
+		{
 			WorkMode workMode;
 			workMode.name = name;
 			workMode.description = description;
+
+			workMode.input1 = input1;
+			workMode.input2 = input2;
+			workMode.inputPerBatch = inputPerBatch;
+			workMode.product = product;
+			
 			return workMode;
 		}
 

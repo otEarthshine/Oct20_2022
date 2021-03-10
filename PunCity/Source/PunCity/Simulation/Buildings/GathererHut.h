@@ -35,7 +35,7 @@ public:
 	void FinishConstruction() final;
 	std::vector<BonusPair> GetBonuses() override;
 
-	static const int Radius = 32;
+	static const int Radius = 40;
 };
 
 
@@ -274,7 +274,7 @@ public:
 		return false;
 	}
 
-	int32 GetJobHappiness() override {
+	int32 GetBaseJobHappiness() override {
 		return 50;
 	}
 };
@@ -339,7 +339,7 @@ public:
 		return Building::baseInputPerBatch() * (IsUpgraded(1) ? 70 : 100) / 100;
 	}
 
-	int32 GetJobHappiness() override {
+	int32 GetBaseJobHappiness() override {
 		return 60;
 	}
 };
@@ -489,31 +489,32 @@ public:
 	int32 workManSecPerBatch100() final
 	{
 		// Assume card 800 price for SlotCards
-		CardEnum cardEnum = GetCardProduced();
-		int32 cardPrice = GetBuildingInfo(cardEnum).baseCardPrice;
+		//CardEnum cardEnum = GetCardProduced();
+		//int32 cardPrice = GetBuildingInfo(cardEnum).baseCardPrice;
 
-		if (IsBuildingSlotCard(cardEnum)) {
-			cardPrice = 500;
-		}
-		// ensure Wild Card and Card Removal cards are not negative
-		cardPrice = max(cardPrice, 120);
-		
-		int32 result = (cardPrice - batchCost()) * 100 * 100 / buildingInfo().workRevenuePerSec100_perMan; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
+		//if (IsBuildingSlotCard(cardEnum)) {
+		//	cardPrice = 500;
+		//}
+		//// ensure Wild Card and Card Removal cards are not negative
+		//cardPrice = max(cardPrice, 120);
+
+		const int32 costFactor = 200;
+		int32 result = batchCost() * 100 * 100 / buildingInfo().workRevenuePerSec100_perMan * costFactor / 100; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
 
 		return result * 100 / efficiency();
 	}
 
 	CardEnum GetCardProduced();
 	
-	int32 baseInputPerBatch() override
-	{
-		return 10;
-		//CardEnum cardEnum = GetCardProduced();
-		//if (IsBuildingSlotCard(cardEnum)) {
-		//	return 10;
-		//}
-		//return 5;
-	}
+	//int32 baseInputPerBatch() override
+	//{
+	//	return 10;
+	//	//CardEnum cardEnum = GetCardProduced();
+	//	//if (IsBuildingSlotCard(cardEnum)) {
+	//	//	return 10;
+	//	//}
+	//	//return 5;
+	//}
 };
 
 class ImmigrationOffice final : public ConsumerIndustrialBuilding
@@ -565,7 +566,7 @@ public:
 	void FinishConstruction() final;
 	std::vector<BonusPair> GetBonuses() override;
 
-	int32 GetJobHappiness() override { return 60; }
+	int32 GetBaseJobHappiness() override { return 60; }
 };
 
 class Chocolatier : public IndustrialBuilding
@@ -876,6 +877,7 @@ class RoadConstruction final : public Building
 public:
 	void OnInit() final;
 	void FinishConstruction() final;
+	void OnDeinit() override;
 
 	bool isDirt() { return isEnum(CardEnum::DirtRoad); }
 };

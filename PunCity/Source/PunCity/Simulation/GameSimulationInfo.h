@@ -19,10 +19,10 @@
 // VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 14 // 3 digit
+#define MINOR_VERSION 15 // 3 digit
 
-#define VERSION_DAY 20
-#define VERSION_MONTH 2
+#define VERSION_DAY 10
+#define VERSION_MONTH 3
 #define VERSION_YEAR 21
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
 
@@ -62,10 +62,10 @@ static FString GetGameVersionString(int32 version, bool includeDate = true)
 
 // VERSION
 #define MAJOR_SAVE_VERSION 0
-#define MINOR_SAVE_VERSION 14 // 3 digit
+#define MINOR_SAVE_VERSION 15 // 3 digit
 
-#define VERSION_SAVE_DAY 20
-#define VERSION_SAVE_MONTH 2
+#define VERSION_SAVE_DAY 10
+#define VERSION_SAVE_MONTH 3
 #define VERSION_SAVE_YEAR 21
 #define VERSION_SAVE_DATE (VERSION_SAVE_YEAR * 10000) + (VERSION_SAVE_MONTH * 100) + VERSION_SAVE_DAY
 
@@ -1123,7 +1123,7 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::Mushroom,	LOCTEXT("Mushroom", "Mushroom"),	FoodCost, LOCTEXT("Mushroom Desc", "Delicious, earthy tasting fungus")),
 	ResourceInfo(ResourceEnum::Hay,			LOCTEXT("Hay", "Hay"),		1, LOCTEXT("Hay Desc", "Dried grass that can be used as animal feed")),
 
-	ResourceInfo(ResourceEnum::Paper,		LOCTEXT("Paper", "Paper"),	8, LOCTEXT("Paper Desc", "Used for research and book making")),
+	ResourceInfo(ResourceEnum::Paper,		LOCTEXT("Paper", "Paper"),	15, LOCTEXT("Paper Desc", "Used for research and book making")),
 	ResourceInfo(ResourceEnum::Clay,		LOCTEXT("Clay", "Clay"),		3, LOCTEXT("Clay Desc", "Fine-grained earth used to make Pottery and Bricks")),
 	ResourceInfo(ResourceEnum::Brick,		LOCTEXT("Brick", "Brick"),	12, LOCTEXT("Brick Desc", "Sturdy, versatile construction material")),
 
@@ -2592,7 +2592,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::TradingPost,	LOCTEXT("Trading Post", "Trading Post"),		LOCTEXT("Trading Post (Plural)", "Trading Posts"),			WorldTile2(8, 8),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{50, 50, 0},	LOCTEXT("Trading Post Desc", "Trade resources with world market.")),
 	BldInfo(CardEnum::TradingCompany,LOCTEXT("Trading Company", "Trading Company"), LOCTEXT("Trading Company (Plural)", "Trading Companies"),		WorldTile2(6, 6),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{30, 30, 0},	LOCTEXT("Trading Company Desc", "Automatically trade resources with world market at lower fees.")),
 	BldInfo(CardEnum::TradingPort,	LOCTEXT("Trading Port", "Trading Port"),		LOCTEXT("Trading Port (Plural)", "Trading Ports"),			WorldTile2(10, 9),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{50, 50, 0},	LOCTEXT("Trading Port Desc", "Trade resources with world market. Must be built on the coast.")),
-	BldInfo(CardEnum::CardMaker,		LOCTEXT("Scholars Office", "Scholars Office"), LOCTEXT("Scholars Office (Plural)", "Scholars Offices"),		WorldTile2(5, 5),	ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None,		 0, 2,	{50, 50, 50},	LOCTEXT("Scholars Office Desc", "Craft a Card from Paper.")),
+	BldInfo(CardEnum::CardMaker,		LOCTEXT("Scholars Office", "Scholars Office"), LOCTEXT("Scholars Office (Plural)", "Scholars Offices"),		WorldTile2(5, 5),	ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None,		 0, 2,	{ 100, 100, 100 },	LOCTEXT("Scholars Office Desc", "Craft a Card from Paper.")),
 	BldInfo(CardEnum::ImmigrationOffice,	LOCTEXT("Immigration Office", "Immigration Office"), LOCTEXT("Immigration Office (Plural)", "Immigration Offices"), WorldTile2(5, 6),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 2,	{50, 0, 0},	LOCTEXT("Immigration Office Desc", "Attract new immigrants.")),
 
 	BldInfo(CardEnum::ThiefGuild,	LOCTEXT("Thief Guild", "Thief Guild"),	LOCTEXT("Thief Guild (Plural)", "Thief Guilds"),			WorldTile2(5, 7),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{50,0,0},	FText()),
@@ -5280,7 +5280,7 @@ const int32 borealTemperatureStart10000 = borealTemperatureStart100 * 100;
 const int32 forestTemperatureStart10000 = forestTemperatureStart100 * 100;
 
 
-const int32 maxCelsiusDivider = 3;
+const int32 maxCelsiusDivider = 2;
 
 /*
  * Units
@@ -5632,11 +5632,6 @@ static const std::vector<std::string> UnitAnimationNames =
 	"Rest",
 	"Invisible",
 };
-static const std::string& GetUnitAnimationName(UnitAnimationEnum animationEnum) {
-	return UnitAnimationNames[static_cast<int>(animationEnum)];
-}
-static const int32 UnitAnimationCount = UnitAnimationNames.size();
-
 static const std::vector<float> UnitAnimationPlayRate =
 {
 	1.0f,
@@ -5664,6 +5659,19 @@ static const std::vector<float> UnitAnimationPlayRate =
 	1.0f,
 	1.0f, // Invisible
 };
+
+static const std::string& GetUnitAnimationName(UnitAnimationEnum animationEnum) {
+	return UnitAnimationNames[static_cast<int>(animationEnum)];
+}
+static const int32 UnitAnimationCount = UnitAnimationNames.size();
+
+static bool IsHorseAnimation(UnitAnimationEnum animationEnum)
+{
+	return animationEnum == UnitAnimationEnum::Caravan ||
+		animationEnum == UnitAnimationEnum::HorseMarket ||
+		animationEnum == UnitAnimationEnum::HorseLogistics;
+}
+
 static float GetUnitAnimationPlayRate(UnitAnimationEnum animationEnum) {
 	return UnitAnimationPlayRate[static_cast<int>(animationEnum)];
 }
@@ -7196,7 +7204,7 @@ static const TArray<FText> HappinessEnumTip
 	LOCTEXT("LuxuryHappiness_Tip", "To Increase Luxury Happiness, provide your Citizens with Luxury Resources"),
 	LOCTEXT("EntertainmentHappiness_Tip", "To Increase Entertain Happiness, provide your Citizens with access to Entertainment Services (Tavern, Theatre etc.)."),
 	LOCTEXT("JobHappiness_Tip", "Job Happiness is affected by:<bullet>Job type of your Citizens</><bullet>Building's Budget and Work Hours</>"),
-	LOCTEXT("CityAttractivenessHappiness_Tip", "City Attractiveness is affected by Tax and Card Bonuses."),
+	LOCTEXT("CityAttractivenessHappiness_Tip", "City Attractiveness is affected by Tax and Card Bonuses. City Attractivenss starts off high with hopes and dreams of initial settlers, but decay over time."),
 };
 static FText GetHappinessEnumTip(HappinessEnum happinessEnum) { return HappinessEnumTip[static_cast<int>(happinessEnum)]; }
 #undef LOCTEXT_NAMESPACE

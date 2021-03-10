@@ -267,7 +267,11 @@ public:
 					command->cheatEnum = static_cast<CheatEnum>(i);
 
 					if (commandAndParams.size() >= 3) {
-						command->var1 = stoi(commandAndParams[2].c_str());
+						if (command->cheatEnum == CheatEnum::Tog) {
+							command->stringVar1 = FString(commandAndParams[2].c_str());
+						} else {
+							command->var1 = stoi(commandAndParams[2].c_str());
+						}
 					}
 					
 					networkInterface()->SendNetworkCommand(command);

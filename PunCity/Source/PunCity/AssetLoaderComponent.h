@@ -198,7 +198,6 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Mesh Import") UStaticMesh* WorldMapMeshWater;
 	UPROPERTY(EditAnywhere, Category = "Mesh Import") UStaticMesh* WorldMapMeshWaterOutside;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_HiddenInMainPass;
-	//UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_WorldMap;
 	
 	UPROPERTY(EditAnywhere, Category = "Mesh Import") UStaticMesh* WorldMapCityBlock;
 	UPROPERTY(EditAnywhere, Category = "Mesh Import") UStaticMesh* WorldMapFlag;

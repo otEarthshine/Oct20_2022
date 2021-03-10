@@ -266,14 +266,7 @@ void UTerrainMapComponent::SetupWorldMapMesh(IDisplaySystemDataSource* dataSourc
 	if (!_assetLoader->M_WorldMap) {
 		auto worldMapMaterialProto = Cast<UMaterial>(StaticLoadObject(UMaterial::StaticClass(), NULL, *FString("/Game/Models/WorldMap/M_WorldMap")));
 		_assetLoader->M_WorldMap = UMaterialInstanceDynamic::Create(worldMapMaterialProto, this);
-		//terrainMesh->SetMaterial(0, M_worldMap);
 	}
-
-	//if (!M_worldMapLayer2) {
-	//	auto worldMapMaterialProto = Cast<UMaterial>(StaticLoadObject(UMaterial::StaticClass(), NULL, *FString("/Game/Models/WorldMap/M_WorldMapLayer2")));
-	//	M_worldMapLayer2 = UMaterialInstanceDynamic::Create(worldMapMaterialProto, terrainMeshLayer2);
-	//	terrainMeshLayer2->SetMaterial(0, M_worldMapLayer2);
-	//}
 
 	if (!M_MapWater) {
 		M_MapWater = UMaterialInstanceDynamic::Create(assetLoader->WorldMapMeshWater->GetMaterial(0), terrainMeshWater);

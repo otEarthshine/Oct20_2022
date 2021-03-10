@@ -81,21 +81,15 @@ void TreeSystem::PlantTree(int32 x, int32 y, TileObjEnum treeEnum, bool initial)
 	
 	int32 i = x + y * _sizeX;
 
-	// give shade
-	//if (treeEnum != TileObjEnum::Stone)
+	// Shade
+	//  Forest/Jungle/BorealForest need shade (shade on others just lead to green spots on world map)
+	WorldTile2 tile(x, y);
+	BiomeEnum biomeEnum = _simulation->GetBiomeEnum(tile);
+	if (biomeEnum == BiomeEnum::Forest ||
+		biomeEnum == BiomeEnum::Jungle || 
+		biomeEnum == BiomeEnum::BorealForest)
 	{
 		SetSurroundingShade(i);
-		//setTreeShade(i, true);
-
-		//setTreeShade(i + 1, true);
-		//setTreeShade(i - 1, true);
-		//setTreeShade(i + _sizeX, true);
-		//setTreeShade(i - _sizeX, true);
-
-		//setTreeShade(i + 1 + _sizeX, true);
-		//setTreeShade(i - 1 + _sizeX, true);
-		//setTreeShade(i + 1 - _sizeX, true);
-		//setTreeShade(i - 1 - _sizeX, true);
 	}
 
 	_tileObjAge[i] = 0;
@@ -105,10 +99,10 @@ void TreeSystem::PlantTree(int32 x, int32 y, TileObjEnum treeEnum, bool initial)
 	else _treeCount++;
 
 	if (initial) {
-		_simulation->SetWalkableSkipFlood(WorldTile2(x, y), false);
+		_simulation->SetWalkableSkipFlood(tile, false);
 	} else {
-		_simulation->SetWalkable(WorldTile2(x, y), false);
-		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Trees, WorldTile2(x, y).regionId(), true);
+		_simulation->SetWalkable(tile, false);
+		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Trees, tile.regionId(), true);
 	}
 }
 

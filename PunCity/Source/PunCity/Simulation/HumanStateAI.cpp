@@ -1425,8 +1425,8 @@ bool HumanStateAI::TryHunt()
 	};
 
 	//PUN_LOG("ExecuteRegionStart ticks:%d regionId:%d", TimeDisplay::Ticks(), regionId)
-	for (int y = middleRegion.y - 1; y <= middleRegion.y + 1; y++) {
-		for (int x = middleRegion.x - 1; x <= middleRegion.x + 1; x++) {
+	for (int y = middleRegion.y - 2; y <= middleRegion.y + 2; y++) {
+		for (int x = middleRegion.x - 2; x <= middleRegion.x + 2; x++) {
 			WorldRegion2 curRegion(x, y);
 			if (curRegion.IsValid()) {
 				unitList.ExecuteRegion(curRegion, [&](int32 unitId)
@@ -3067,6 +3067,9 @@ void HumanStateAI::UpdateHappiness()
 	{
 		int32 targetHappiness = 100;
 		targetHappiness += _simulation->TownhallCardCountAll(_simulation->townPlayerId(_townId), CardEnum::Cannibalism) > 0 ? -50 : 0;
+
+		// Attractiveness decays by 30% over 5 years
+		targetHappiness -= 30 * _simulation->building(_simulation->GetTownhallId(_townId)).buildingAge() / (Time::TicksPerYear * 5);
 
 		int32 happiness = moveTowardsTargetHappiness(GetHappinessByType(HappinessEnum::CityAttractiveness), targetHappiness, 200, 50);
 		SetHappiness(HappinessEnum::CityAttractiveness, happiness);

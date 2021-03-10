@@ -48,8 +48,8 @@ public:
 	{
 		int32 provinceId = _simulation->GetProvinceIdClean(tile);
 		PUN_CHECK(provinceId != -1);
-		int32 provinceOwnerId = _simulation->provinceOwnerTown(provinceId);
-		PUN_CHECK(provinceOwnerId == townId); // No dropping outside territory (SpawnDrop filtered this)
+		//int32 provinceOwnerId = _simulation->provinceOwnerTown(provinceId);
+		//PUN_CHECK(provinceOwnerId == townId); // OLD: No dropping outside territory (SpawnDrop filtered this)
 
 		//UE_LOG(LogTemp, Error, TEXT("AddDrop player:%d, %s, id:%d"), townId, *ToFString(holderInfo.resourceName()), holderInfo.holderId);
 

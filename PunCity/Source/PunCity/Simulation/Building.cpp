@@ -988,7 +988,7 @@ std::vector<BonusPair> Building::GetBonuses()
 		bonuses.push_back({ LOCTEXT("Passion", "Passion"), 15 });
 	}
 	if (slotCardCount(CardEnum::Motivation) > 0) {
-		bonuses.push_back({ LOCTEXT("Motivation", "Motivation"), max(0, _simulation->GetAverageHappiness(_townId) - 70) });
+		bonuses.push_back({ LOCTEXT("Motivation", "Motivation"), max(0, (_simulation->GetAverageHappiness(_townId) - 70) * 2) });
 	}
 
 	// Upgrade bonuses

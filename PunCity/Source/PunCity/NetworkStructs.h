@@ -1090,6 +1090,7 @@ public:
 	CheatEnum cheatEnum;
 	int32 var1;
 	int32 var2;
+	FString stringVar1;
 
 	NetworkCommandEnum commandType() override { return NetworkCommandEnum::Cheat; }
 
@@ -1099,6 +1100,8 @@ public:
 		blob << cheatEnum;
 		blob << var1;
 		blob << var2;
+
+		blob << stringVar1;
 	}
 };
 

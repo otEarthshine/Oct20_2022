@@ -328,6 +328,7 @@ public:
 	
 	virtual WorldTile2 GetProvinceCenterTile(int32 provinceId) = 0;
 	virtual WorldTile2 GetProvinceRandomTile(int32 provinceId, WorldTile2 floodOrigin, int32 maxRegionDist = 1, bool isIntelligent = false, int32 tries = 100) = 0;
+	virtual WorldTile2 GetProvinceRandomTile_NoFlood(int32 provinceId, int32 tries = 10) = 0;
 	
 	virtual TileArea GetProvinceRectArea(int32 provinceId) = 0;
 

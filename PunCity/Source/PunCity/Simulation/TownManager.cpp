@@ -957,11 +957,11 @@ void TownManager::Tick1Sec()
 				sickPercent100PerCheck *= 3;
 			}
 			if (_simulation->GetBiomeEnum(_simulation->unitAtom(humanId).worldTile2()) == BiomeEnum::Jungle) {
-				sickPercent100PerCheck *= 2;
+				sickPercent100PerCheck *= 3;
 			}
 
 			if (GameRand::Rand() % 10000 < sickPercent100PerCheck) {
-				_simulation->unitAI(humanId).subclass<HumanStateAI>(UnitEnum::Human).GetSick();
+				_simulation->unitAI(humanId).subclass<HumanStateAI>(UnitEnum::Human).SetSick(true);
 			}
 		}
 	}

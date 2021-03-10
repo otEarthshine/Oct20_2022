@@ -302,11 +302,16 @@ private:
 			if (isChild) {
 				playRate /= 0.8f;
 			}
+
+			if (unitEnum == UnitEnum::Human) {
+				int32 workEfficiency100 = simulation().unitAI(unitId).subclass<HumanStateAI>().workEfficiency100(true);
+				playRate = playRate * workEfficiency100 / 100.0f;
+			}
 		}
 		
 		
 		if (_unitSkelState[index].animationEnum != animationEnum ||
-			_unitSkelState[index].animationPlayRate != playRate)
+			fabs(_unitSkelState[index].animationPlayRate - playRate) > 0.01f)
 		{
 			SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitSkel1);
 			
@@ -323,8 +328,8 @@ private:
 				// DEBUG TEST
 				//skelMesh->EnableExternalTickRateControl(true);
 				//skelMesh->SetExternalTickRate(PunSettings::Get("DebugTemp"));
-				skelMesh->bEnableUpdateRateOptimizations = PunSettings::Get("DebugTemp");
-				skelMesh->bDisplayDebugUpdateRateOptimizations = PunSettings::Get("DebugTemp1");
+				skelMesh->bEnableUpdateRateOptimizations = PunSettings::Get("URO");
+				skelMesh->bDisplayDebugUpdateRateOptimizations = PunSettings::Get("URODebug");
 				//skelMesh->AnimUpdateRateParams->UpdateRate = debugTemp; Not working???
 
 				skelMesh->SetVisibility(true);

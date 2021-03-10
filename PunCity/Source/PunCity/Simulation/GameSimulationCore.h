@@ -575,26 +575,26 @@ public:
 			return Time::MaxCelsiusBase();
 		}
 		int32 temperatureFraction10000 = _terrainGenerator->GetTemperatureFraction10000(tile.x, _terrainGenerator->GetRainfall100(tile));
-		return ModifyCelsiusByBiome(temperatureFraction10000, Time::MaxCelsiusBase(), maxCelsiusDivider); // Max celsius in general change less drastically than MinCelsius (maxCelsiusDivider)
+		return ModifyCelsiusByBiome(temperatureFraction10000, Time::MaxCelsiusBase(), maxCelsiusDivider); // maxCelsiusDivider: Max celsius in general change less drastically than MinCelsius (maxCelsiusDivider)
 	}
 
 	FloatDet ModifyCelsiusByBiome(int32 temperatureFraction10000, FloatDet celsius, int32 divider = 1)
 	{
 		const FloatDet tundraModifierMax = FDOne * 10; // Tundra has no divider, summer temperature is still low
-		const FloatDet borealModifierMax = FDOne * 5 / divider;
-		const FloatDet jungleModifierMax = FDOne * 3 / divider; // This increases the temperature
+		const FloatDet borealModifierMax = FDOne * 15 / divider;
+		const FloatDet jungleModifierMax = FDOne * 5 / divider; // This increases the temperature
 
 		// Tundra
 		if (temperatureFraction10000 > tundraTemperatureStart10000) {
 			FloatDet modifier = tundraModifierMax * (temperatureFraction10000 - tundraTemperatureStart10000) / (10000 - tundraTemperatureStart10000);
-			modifier *= 3; // reach modifierMax 3 times faster
+			modifier *= 3; // reach modifierMax 3 times faster (1/3 of band is the increment)
 			
 			return celsius - borealModifierMax - std::min(modifier, tundraModifierMax);
 		}
 		// Boreal
 		if (temperatureFraction10000 > borealTemperatureStart10000) {
 			FloatDet modifier = borealModifierMax * (temperatureFraction10000 - borealTemperatureStart10000) / (tundraTemperatureStart10000 - borealTemperatureStart10000);
-			modifier *= 3; // reach modifierMax 3 times faster
+			modifier *= 3; // reach modifierMax 3 times faster (1/3 of band is the increment)
 			
 			return celsius - std::min(modifier, borealModifierMax);
 		}
@@ -1263,6 +1263,9 @@ public:
 	}
 	WorldTile2 GetProvinceRandomTile(int32 provinceId, WorldTile2 floodOrigin, int32 maxRegionDist = 1, bool isIntelligent = false, int32 tries = 100) final {
 		return _provinceSystem.GetProvinceRandomTile(provinceId, floodOrigin, maxRegionDist, isIntelligent, tries);
+	}
+	WorldTile2 GetProvinceRandomTile_NoFlood(int32 provinceId, int32 tries) final {
+		return _provinceSystem.GetProvinceRandomTile_NoFlood(provinceId, tries);
 	}
 
 	TileArea GetProvinceRectArea(int32 provinceId) final {

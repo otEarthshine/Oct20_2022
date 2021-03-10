@@ -520,7 +520,44 @@ void UnitStateAI::Update()
 						}
 						else
 						{
-							int32 newUnitId = _simulation->AddUnit(unitEnum(), _townId, _unitData->atomLocation(_id), 0);
+							// Beyond province's max, baby spawn else away from its mother
+							WorldAtom2 spawnAtom = _unitData->atomLocation(_id);
+							if (_homeProvinceId != -1) 
+							{
+								const int32 provinceMaxAnimal = 3;
+								if (_simulation->provinceAnimals(_homeProvinceId).size() >= provinceMaxAnimal)
+								{
+									int32 maxProvincesDist = 5;
+									WorldRegion2 middleRegion = spawnAtom.worldTile2().region();
+									
+									auto tryGetNewSpawnPoint = [&]()
+									{
+										for (int y = middleRegion.y - maxProvincesDist; y <= middleRegion.y + maxProvincesDist; y++) {
+											for (int x = middleRegion.x - maxProvincesDist; x <= middleRegion.x + maxProvincesDist; x++)
+											{
+												WorldRegion2 curRegion(x, y);
+												int32 curProvinceId = curRegion.regionId();
+												if (_simulation->IsProvinceValid(curProvinceId))
+												{
+													int32 curProvinceAnimals = _simulation->provinceAnimals(curProvinceId).size();
+													if (curProvinceAnimals < provinceMaxAnimal) {
+														WorldTile2 provinceCenter = _simulation->GetProvinceRandomTile_NoFlood(curProvinceId, 10);
+														if (provinceCenter.isValid()) {
+															check(_simulation->GetProvinceIdClean(provinceCenter) != -1);
+															spawnAtom = provinceCenter.worldAtom2();
+															return;
+														}
+													}
+												}
+											}
+										}
+									};
+
+									tryGetNewSpawnPoint();
+								}
+							}
+							
+							int32 newUnitId = _simulation->AddUnit(unitEnum(), _townId, spawnAtom, 0);
 
 							if (IsDomesticatedAnimal(unitEnum())) {
 								PUN_LOG("NonRanch Stray Animal %s", ToTChar(compactStr()));
@@ -708,7 +745,7 @@ void UnitStateAI::AttackIncoming(UnitFullId attacker, int32 ownerWorkplaceId, in
 			}
 			
 			for (ResourcePair& drop : drops)  {
-				_simulation->resourceSystem(unitAI.playerId()).SpawnDrop(drop.resourceEnum, drop.count, unitTile());
+				_simulation->resourceSystem(unitAI.townId()).SpawnDrop(drop.resourceEnum, drop.count, unitTile());
 			}
 
 			// Workplace stat

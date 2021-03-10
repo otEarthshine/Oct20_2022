@@ -1044,12 +1044,13 @@ public:
 			return -1;
 		}
 
-		// Don't spawn drop if not in player's territory
 		int32 provinceId = _simulation->GetProvinceIdClean(tile);
-		PUN_CHECK(provinceId != -1);
-		if (_simulation->provinceOwnerTown(provinceId) != _townId) {
-			return -1;
-		}
+		PUN_ENSURE(provinceId != -1, return -1);
+
+		// Don't spawn drop if not in player's territory
+		//if (_simulation->provinceOwnerTown(provinceId) != _townId) {
+		//	return -1;
+		//}
 		
 		int32 holderId = holderGroup(resourceEnum).SpawnHolder(resourceEnum, type, -1, tile, 0, *this);
 		//ResourceHolder& holder = holders(resourceEnum).holderMutable(holderId);

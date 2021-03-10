@@ -293,9 +293,6 @@ public:
 	/*
 	 * Medicine/Tools
 	 */
-	void GetSick() {
-		_isSick = true;
-	}
 	bool needHealthcare() {
 		if (_simulation->GetResourceCount(_townId, MedicineEnums) > 0) {
 			return false;

@@ -2757,7 +2757,7 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 				Building& bld = building(command.intVar1);
 				if (!bld.isConstructed() && money(command.playerId) >= bld.GetQuickBuildCost())
 				{
-					ChangeMoney(command.playerId, bld.GetQuickBuildCost());
+					ChangeMoney(command.playerId, -bld.GetQuickBuildCost());
 					_buildingSystem->AddQuickBuild(command.intVar1);
 
 					bld.InstantClearArea();
@@ -3765,7 +3765,8 @@ void GameSimulationCore::UseCard(FUseCard command)
 	{
 		ResourcePair resourcePair = GetCrateResource(command.cardEnum);
 
-		if (resourceSystem(command.playerId).CanAddResourceGlobal(resourcePair.resourceEnum, resourcePair.count))
+		if (resourceSystem(command.playerId).CanAddResourceGlobal(resourcePair.resourceEnum, resourcePair.count) &&
+			cardSys.HasBoughtCard(command.cardEnum))
 		{
 			resourceSystem(command.playerId).AddResourceGlobal(resourcePair.resourceEnum, resourcePair.count, *this);
 			AddPopupToFront(command.playerId, 
@@ -4861,17 +4862,38 @@ void GameSimulationCore::Cheat(FCheat command)
 			SimSettings::Set("CheatFastBuild", 1);
 				
 			//SimSettings::Set("CheatHouseLevel", command.var1);
-			WorldTile2 curTile = GetTownhallGate(playerId());
+			WorldTile2 curTile = GetTownhallGate(command.playerId);
 			if (curTile.isValid())
 			{
 				int32 addCount = command.var1;
 				addCount = std::max(0, std::min(1000, addCount));
 
 
-				// 20 ppl per province...
-				for (int32 i = addCount / 20; i-- > 0;)
+				// X ppl per province...
+				int32 provinceAddCount = 0;
+				while (true)
 				{
+					int32 lastProvinceAddCount = provinceAddCount;
 					
+					// Claim one out level at a time
+					std::vector<int32> provinceIds = townManager(command.playerId).provincesClaimed();
+					for (int32 i = 0; i < provinceIds.size(); i++) {
+						std::vector<ProvinceConnection> connections = GetProvinceConnections(provinceIds[i]);
+						for (ProvinceConnection connection : connections) {
+							if (IsProvinceValid(connection.provinceId) &&
+								provinceOwnerTown(connection.provinceId) == -1)
+							{
+								SetProvinceOwnerFull(connection.provinceId, command.playerId);
+								provinceAddCount++;
+							}
+						}
+					}
+
+					if (lastProvinceAddCount == provinceAddCount ||
+						provinceAddCount > addCount / 15) 
+					{
+						break;
+					}
 				}
 				
 
@@ -4942,17 +4964,16 @@ void GameSimulationCore::Cheat(FCheat command)
 		}
 
 		case CheatEnum::DebugUI:
-		{
+		{	
 			PunSettings::Toggle("DebugUI");
 			break;
 		}
 
-		// TODO: requires save break !!!
-		//case CheatEnum::Tog:
-		//{
-		//	PunSettings::Toggle("DebugUI");
-		//	break;
-		//}
+		case CheatEnum::Tog:
+		{
+			PunSettings::Toggle(command.stringVar1);
+			break;
+		}
 
 		case CheatEnum::YearlyTrade:
 		{

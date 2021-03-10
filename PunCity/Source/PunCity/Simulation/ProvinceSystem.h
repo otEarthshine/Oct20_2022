@@ -959,7 +959,27 @@ public:
 
 		return WorldTile2::Invalid;
 	}
-	WorldTile2 GetProvinceAnyTile(int32 provinceId, bool)
+	WorldTile2 GetProvinceRandomTile_NoFlood(int32 provinceId, int32 tries)
+	{
+		PUN_CHECK(IsProvinceValid(provinceId));
+		TileArea area = _provinceRectAreas[provinceId];
+
+		if (area.isValid())
+		{
+			for (int32 i = 0; i < tries; i++)
+			{
+				WorldTile2 tile = area.RandomTile();
+				DEBUG_ISCONNECTED_VAR(GetProvinceRandomTile);
+
+				if (abs(GetProvinceIdRaw(tile)) == provinceId) {
+					return tile;
+				}
+			}
+		}
+
+		return WorldTile2::Invalid;
+	}
+	WorldTile2 GetProvinceAnyTile(int32 provinceId)
 	{
 		PUN_CHECK(IsProvinceValid(provinceId));
 		TileArea area = _provinceRectAreas[provinceId];

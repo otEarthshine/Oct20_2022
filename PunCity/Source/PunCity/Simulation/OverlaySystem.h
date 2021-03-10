@@ -71,7 +71,7 @@ public:
 
 	// This is for initial roads (like that around townhall)
 	void AddRoad(WorldTile2 tile, bool isDirtRoad, bool isConstructed, int32 buildingId = -1) {
-		if (isConstructed) {
+		if (isConstructed || !isDirtRoad) {
 			_simulation->SetRoadPathAI(tile, true);
 		}
 		auto& roads = _regionToRoad[tile.regionId()];

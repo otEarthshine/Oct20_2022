@@ -53,7 +53,6 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	WorldMapMeshWater = Load<UStaticMesh>("/Game/Models/WorldMap/WorldMapWater");
 	WorldMapMeshWaterOutside = Load<UStaticMesh>("/Game/Models/WorldMap/WorldMapWaterOutside");
 
-	//M_WorldMap = Load<UMaterial>("/Game/Models/WorldMap/M_WorldMap");
 	M_HiddenInMainPass = Load<UMaterial>("/Game/Models/WorldMap/M_HiddenInMainPass");
 	
 	WorldMapCityBlock = Load<UStaticMesh>("/Game/Models/WorldMap/WorldMapCityBlock");

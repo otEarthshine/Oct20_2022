@@ -389,11 +389,22 @@ void UObjectDescriptionUISystem::LeftMouseDown()
 
 							if (unit.unitEnum() == UnitEnum::Human)
 							{
-								// VariationIndex 0 for human.. TODO: proper code here?
-								if (TryMouseCollision(assetLoader()->unitAsset(unit.unitEnum(), 0).staticMesh, transform, shortestHit)) {
-									// Human uses USkeletonAsset, should just mark in sim for UnitDisplayComponent to adjust customDepth
-									uiState.objectType = ObjectTypeEnum::Unit;
-									uiState.objectId = unitId;
+								if (IsHorseAnimation(unit.animationEnum()))
+								{
+									if (TryMouseCollision(assetLoader()->unitAsset(UnitEnum::HorseMarket, 0).staticMesh, transform, shortestHit)) {
+										// Human uses USkeletonAsset, should just mark in sim for UnitDisplayComponent to adjust customDepth
+										uiState.objectType = ObjectTypeEnum::Unit;
+										uiState.objectId = unitId;
+									}
+								}
+								else
+								{
+									// VariationIndex 0 for human.. Rough size is enough
+									if (TryMouseCollision(assetLoader()->unitAsset(unit.unitEnum(), 0).staticMesh, transform, shortestHit)) {
+										// Human uses USkeletonAsset, should just mark in sim for UnitDisplayComponent to adjust customDepth
+										uiState.objectType = ObjectTypeEnum::Unit;
+										uiState.objectId = unitId;
+									}
 								}
 							}
 							else
@@ -3914,26 +3925,30 @@ void UObjectDescriptionUISystem::AddBiomeInfo(WorldTile2 tile, UPunBoxWidget* de
 
 	//const FText temperatureText = LOCTEXT("Temperature", "Temperature");
 	ADDTEXT_LOCTEXT("BiomeInfo_Temperature", "<Bold>Temperature</>");
+	ADDTEXT_(INVTEXT("<Bold>{0}</>\n"), LOCTEXT("Temperature", "Temperature"));
 	
-	ADDTEXT_(
-		//LOCTEXT("BiomeInfoTemperature", "<Bold>Temperature:</> {0}-{1}°C ({2}-{3}°F)\n"),
-		INVTEXT(": {0}-{1}°C ({2}-{3}°F)\n"),
-		TEXT_NUMINT(FDToFloat(minCelsius)),
-		TEXT_NUMINT(FDToFloat(maxCelsius)),
-		TEXT_NUMINT(FDToFloat(CelsiusToFahrenheit(minCelsius))),
-		TEXT_NUMINT(FDToFloat(CelsiusToFahrenheit(maxCelsius)))
-	);
-	//ss << "<Bold>Temperature:</> " << FDToFloat(minCelsius) << "-" << FDToFloat(maxCelsius) << "°C ("
-	//	<< FDToFloat(CelsiusToFahrenheit(minCelsius)) << "-" << FDToFloat(CelsiusToFahrenheit(maxCelsius)) << "°F)\n";
+	ADDTEXT_(INVTEXT("  Summer: {0}°C ({1}°F)"), TEXT_NUMINT(FDToFloat(maxCelsius)), TEXT_NUMINT(FDToFloat(CelsiusToFahrenheit(maxCelsius))));
+	ADDTEXT_(INVTEXT("  Winter: {0}°C ({1}°F)"), TEXT_NUMINT(FDToFloat(minCelsius)), TEXT_NUMINT(FDToFloat(CelsiusToFahrenheit(minCelsius))));
+	
+	//ADDTEXT_(
+	//	//LOCTEXT("BiomeInfoTemperature", "<Bold>Temperature:</> {0}-{1}°C ({2}-{3}°F)\n"),
+	//	INVTEXT(": {0} to {1}°C ({2} to {3}°F)\n"),
+	//	TEXT_NUMINT(FDToFloat(minCelsius)),
+	//	TEXT_NUMINT(FDToFloat(maxCelsius)),
+	//	TEXT_NUMINT(FDToFloat(CelsiusToFahrenheit(minCelsius))),
+	//	TEXT_NUMINT(FDToFloat(CelsiusToFahrenheit(maxCelsius)))
+	//);
+	descriptionBox->AddRichText(args);
+	descriptionBox->AddSpacer(5);
 
 	if (biomeEnum == BiomeEnum::Jungle) {
-		ADDTEXT_LOCTEXT("DiseaseFreqJungle", "<OrangeRed>Disease Frequency: 2.0 per year</>");
+		const int32 jungleDiseaseFactor = 3;
+		ADDTEXT_(LOCTEXT("DiseaseFreqJungle", "<OrangeRed>Disease Frequency: {0} per year</>"), TEXT_NUM(jungleDiseaseFactor));
 	} else {
 		ADDTEXT_LOCTEXT("DiseaseFreq", "<Bold>Disease Frequency:</> 1.0 per year");
 	}
 	
 	descriptionBox->AddRichText(args);
-	
 	descriptionBox->AddSpacer(5);
 	
 	AddBiomeDebugInfo(tile, descriptionBox);

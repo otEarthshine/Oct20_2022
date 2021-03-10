@@ -939,38 +939,38 @@ void UWorldSpaceUI::TickUnits()
 			needTools ||
 			idling)
 		{
-			FVector displayLocation = data->GetUnitDisplayLocation(unitId, inputSystemInterface()->cameraAtom());
-			displayLocation += FVector(0, 0, 25);
+			if (!PunSettings::IsOn("SuppressHoverIcon"))
+			{
+				FVector displayLocation = data->GetUnitDisplayLocation(unitId, inputSystemInterface()->cameraAtom());
+				displayLocation += FVector(0, 0, 25);
 
-			UHoverIconWidgetBase* hoverIcon = _unitHoverIcons.GetHoverUI<UHoverIconWidgetBase>(unitId, UIEnum::HoverIcon, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(), 
-																								[&](UHoverIconWidgetBase* ui) {}, WorldZoomTransition_WorldSpaceUIShrink, 1.25f);
-			hoverIcon->IconImage->SetBrushFromMaterial(assetLoader()->M_HoverWarning);
-			
-			// Set the right image
-			if (needHousing) {
-				hoverIcon->IconImage->GetDynamicMaterial()->SetTextureParameterValue("IconImage", assetLoader()->WarningHouse);
-				//hoverIcon->IconImage->SetBrush(*_brushes["HouseIcon_diffuse"]);
-			}
-			else if (needFood) {
-				hoverIcon->IconImage->GetDynamicMaterial()->SetTextureParameterValue("IconImage", assetLoader()->WarningStarving);
-				//hoverIcon->IconImage->SetBrush(*_brushes["StarvingIcon_diffuse"]);
-			}
-			else if (needHeat) {
-				hoverIcon->IconImage->GetDynamicMaterial()->SetTextureParameterValue("IconImage", assetLoader()->WarningSnow);
-				//hoverIcon->IconImage->SetBrush(*_brushes["SnowIcon_diffuse"]);
-			}
-			else if (needHealthcare) {
-				hoverIcon->IconImage->GetDynamicMaterial()->SetTextureParameterValue("IconImage", assetLoader()->WarningHealthcare);
-			}
-			else if (needTools) {
-				hoverIcon->IconImage->GetDynamicMaterial()->SetTextureParameterValue("IconImage", assetLoader()->WarningTools);
-			}
-			else if (needHappiness) {
-				hoverIcon->IconImage->GetDynamicMaterial()->SetTextureParameterValue("IconImage", assetLoader()->UnhappyHoverIcon);
-			}
-			else if (idling) {
-				//PUN_LOG("PUN: idling Style");
-				hoverIcon->IconImage->SetBrush(*_brushes["Idling"]);
+				UHoverIconWidgetBase* hoverIcon = _unitHoverIcons.GetHoverUI<UHoverIconWidgetBase>(unitId, UIEnum::HoverIcon, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
+					[&](UHoverIconWidgetBase* ui) {}, WorldZoomTransition_WorldSpaceUIShrink, 1.25f);
+				hoverIcon->IconImage->SetBrushFromMaterial(assetLoader()->M_HoverWarning);
+
+				// Set the right image
+				if (needHousing) {
+					hoverIcon->IconImage->GetDynamicMaterial()->SetTextureParameterValue("IconImage", assetLoader()->WarningHouse);
+				}
+				else if (needFood) {
+					hoverIcon->IconImage->GetDynamicMaterial()->SetTextureParameterValue("IconImage", assetLoader()->WarningStarving);
+				}
+				else if (needHeat) {
+					hoverIcon->IconImage->GetDynamicMaterial()->SetTextureParameterValue("IconImage", assetLoader()->WarningSnow);
+				}
+				else if (needHealthcare) {
+					hoverIcon->IconImage->GetDynamicMaterial()->SetTextureParameterValue("IconImage", assetLoader()->WarningHealthcare);
+				}
+				else if (needTools) {
+					hoverIcon->IconImage->GetDynamicMaterial()->SetTextureParameterValue("IconImage", assetLoader()->WarningTools);
+				}
+				else if (needHappiness) {
+					hoverIcon->IconImage->GetDynamicMaterial()->SetTextureParameterValue("IconImage", assetLoader()->UnhappyHoverIcon);
+				}
+				else if (idling) {
+					//PUN_LOG("PUN: idling Style");
+					hoverIcon->IconImage->SetBrush(*_brushes["Idling"]);
+				}
 			}
 		}
 	}

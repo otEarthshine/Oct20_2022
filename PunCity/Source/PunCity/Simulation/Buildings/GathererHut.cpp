@@ -484,14 +484,14 @@ static const FText cardRemovalCardText =	LOCTEXT("Card Removal Card", "Card Remo
 void CardMaker::OnInit()
 {
 	SetupWorkMode({
-		WorkMode::Create(productivityBookText,		LOCTEXT("Productivity Book WorkDesc", "Create Productivity Book Card")),
-		WorkMode::Create(sustainabilityBookText,	LOCTEXT("Sustainability Book WorkDesc", "Create Sustainability Book Card")),
-		WorkMode::Create(frugalityBookText,			LOCTEXT("Frugality Book WorkDesc", "Create Frugality Book Card")),
-		WorkMode::Create(motivationBookText,			LOCTEXT("Motivation WorkDesc", "Create Motivation Card")),
-		WorkMode::Create(passionBookText,			LOCTEXT("Passion WorkDesc", "Create Passion Card")),
+		WorkMode::Create(productivityBookText,		LOCTEXT("Productivity Book WorkDesc", "Create Productivity Book Card\n(50 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 50),
+		WorkMode::Create(sustainabilityBookText,	LOCTEXT("Sustainability Book WorkDesc", "Create Sustainability Book Card\n(50 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 50),
+		WorkMode::Create(frugalityBookText,			LOCTEXT("Frugality Book WorkDesc", "Create Frugality Book Card\n(50 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 50),
+		WorkMode::Create(motivationBookText,			LOCTEXT("Motivation WorkDesc", "Create Motivation Card\n(100 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 100),
+		WorkMode::Create(passionBookText,			LOCTEXT("Passion WorkDesc", "Create Passion Card\n(100 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 100),
 		
-		WorkMode::Create(wildCardText,				LOCTEXT("Wild Card WorkDesc", "Create Wild Card")),
-		WorkMode::Create(cardRemovalCardText,		LOCTEXT("Card Removal Card WorkDesc", "Create Card Removal Card")),
+		WorkMode::Create(wildCardText,				LOCTEXT("Wild Card WorkDesc", "Create Wild Card\n(10 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 10),
+		WorkMode::Create(cardRemovalCardText,		LOCTEXT("Card Removal Card WorkDesc", "Create Card Removal Card\n(10 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 10),
 	});
 }
 
@@ -1451,19 +1451,20 @@ void RoadConstruction::FinishConstruction()
 	Building::FinishConstruction();
 
 	// Remove the construction.
-	_simulation->RemoveBuilding(_objectId);
+	_simulation->RemoveBuilding(_objectId); // Deinit is in here...
 
+	// Leaving behind just plain road...
+	overlaySystem().AddRoad(_centerTile, isDirt(), true);
+}
+void RoadConstruction::OnDeinit()
+{
 	// Remove road
 	if (overlaySystem().IsRoad(_centerTile)) {
 		overlaySystem().RemoveRoad(_centerTile);
 		//GameMap::RemoveFrontRoadTile(area.min());
 		check(_simulation->IsFrontBuildable(_centerTile));
 	}
-
-	// Leaving behind just plain road...
-	overlaySystem().AddRoad(_centerTile, isDirt(), true);
 }
-
 
 void FenceGate::FinishConstruction() 
 {

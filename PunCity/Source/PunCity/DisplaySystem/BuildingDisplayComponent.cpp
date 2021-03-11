@@ -38,16 +38,25 @@ void UBuildingDisplayComponent::ShowRadius(int32 radius, WorldAtom2 centerAtom, 
 	_radiusCount++;
 	//PUN_LOG("BldDisp ShowRadius %d", radius);
 
-	for (int32 i = _radiusDecals.Num(); i < _radiusCount; i++) {
-		_radiusDecals.Add(PunUnrealUtils::CreateDecal(this, _assetLoader->RadiusMaterial));
+	//for (int32 i = _radiusDecals.Num(); i < _radiusCount; i++) {
+	//	_radiusDecals.Add(PunUnrealUtils::CreateDecal(this, _assetLoader->RadiusMaterial));
+	//}
+	for (int32 i = _radiusMeshes.Num(); i < _radiusCount; i++) {
+		UStaticMeshComponent* meshComp = PunUnrealUtils::CreateStaticMesh(this);
+		meshComp->SetStaticMesh(_assetLoader->RadiusMesh);
+		_radiusMeshes.Add(meshComp);
 	}
 	
 	FVector displayLocation = gameManager()->DisplayLocation(centerAtom); //MapUtil::DisplayLocation(_cameraAtom, centerAtom);
 	//PUN_LOG("displayLocation %s", *displayLocation.ToString());
 
-	PunUnrealUtils::SetActive(_radiusDecals[currentIndex], true);
-	_radiusDecals[currentIndex]->SetWorldLocation(displayLocation);
-	_radiusDecals[currentIndex]->SetWorldScale3D(FVector(1, 2 * radius, 2 * radius));
+	//PunUnrealUtils::SetActive(_radiusDecals[currentIndex], true);
+	//_radiusDecals[currentIndex]->SetWorldLocation(displayLocation);
+	//_radiusDecals[currentIndex]->SetWorldScale3D(FVector(1, 2 * radius, 2 * radius));
+
+	PunUnrealUtils::SetActive(_radiusMeshes[currentIndex], true);
+	_radiusMeshes[currentIndex]->SetWorldLocation(displayLocation);
+	_radiusMeshes[currentIndex]->SetWorldScale3D(FVector::OneVector * radius);
 	
 	_radiusCount++;
 }
@@ -56,7 +65,8 @@ void UBuildingDisplayComponent::AfterAdd()
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayBuilding);
 	
-	PunUnrealUtils::UpdateDecals(_radiusDecals, _radiusCount);
+	PunUnrealUtils::UpdateMeshes(_radiusMeshes, _radiusCount);
+	
 	PunUnrealUtils::UpdateDecals(_farmDecals, _farmCount);
 	PunUnrealUtils::UpdateDecals(_constructionBaseDecals, _constructionBaseCount);
 

@@ -463,7 +463,7 @@ void PunTerrainGenerator::GenerateMoisture()
 					rainfall100 = stablePart + FDSafeMul(rainfall100 - stablePart, perlin_fd); // Forest
 				}
 				rainfall = rainfall100 * 255 / 100;
-				rainfall = rainfall * 90 / 100; // non-river fertility caps at 90%
+				//rainfall = rainfall * 90 / 100; // non-river fertility caps at 90%
 
 				// - Can get pushed down or up, but never to less than TreePerlinMaxCutoff to prevent tree baldness
 				//   (Only for area with rainFertility initially suitable for trees)

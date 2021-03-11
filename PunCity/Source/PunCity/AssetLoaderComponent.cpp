@@ -120,6 +120,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	//! Hover warning
 	M_HoverWarning = Load<UMaterial>("/Game/UI/Images/M_HoverWarning");
+	M_HoverWarningHappiness = Load<UMaterial>("/Game/UI/Images/M_HoverWarningHappiness");
 	WarningHouse = Load<UTexture2D>("/Game/UI/Images/HouseIcon_diffuse");
 	WarningStarving = Load<UTexture2D>("/Game/UI/Images/StarvingIcon");
 	WarningSnow = Load<UTexture2D>("/Game/UI/Images/SnowIcon_diffuse");
@@ -919,6 +920,10 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	RegionBorderMaterial = Load<UMaterial>("/Game/Models/Decals/RegionBorderMaterial");
 	OverlayMaterial = Load<UMaterial>("/Game/Models/Decals/OverlayMaterial");
 	GridGuideMaterial = Load<UMaterial>("/Game/Models/Decals/GridGuideMaterial");
+
+	RadiusMesh = Load<UStaticMesh>("/Game/Models/SelectionMesh/RadiusMesh");
+	M_Radius = Load<UMaterial>("/Game/Models/SelectionMesh/M_Radius");
+	MI_RadiusRed = Load<UMaterialInstance>("/Game/Models/SelectionMesh/MI_RadiusRed");
 	
 	RadiusMaterial = Load<UMaterial>("/Game/Models/Decals/RadiusMaterial");
 	MI_RedRadius = Load<UMaterialInstance>("/Game/Models/Decals/MI_RedRadius");

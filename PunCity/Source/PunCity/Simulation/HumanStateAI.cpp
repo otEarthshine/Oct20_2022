@@ -1266,7 +1266,7 @@ bool HumanStateAI::TryFun()
 		return false;
 	}
 
-	const int32 funPercentToGoToTavern = 70;
+	const int32 funPercentToGoToTavern = 80;
 
 	for (int32 i = 0; i < FunServiceEnumCount; i++)
 	{
@@ -3021,13 +3021,13 @@ void HumanStateAI::UpdateHappiness()
 		if (_houseId != -1) {
 			targetLuxuryHappiness = _simulation->building<House>(_houseId, CardEnum::House).luxuryHappiness();
 		}
-		int32 happiness = moveTowardsTargetHappiness(GetHappinessByType(HappinessEnum::Luxury), targetLuxuryHappiness, 30); // Decrease slowly for the early game
+		int32 happiness = moveTowardsTargetHappiness(GetHappinessByType(HappinessEnum::Luxury), targetLuxuryHappiness, 10); // Decrease slowly for the early game
 		SetHappiness(HappinessEnum::Luxury, happiness);
 	}
 
 	// Entertainment
 	{
-		// Highest fun has the most weight, each consequent fun service has 50% weight
+		// Highest fun has the most weight, each consequent fun service has 25%,12.5% weight etc.
 		vector<int32> serviceToFunTicks = _serviceToFunTicks;
 		std::sort(serviceToFunTicks.begin(), serviceToFunTicks.end());
 
@@ -3035,9 +3035,14 @@ void HumanStateAI::UpdateHappiness()
 		int32 denominator = 1;
 		for (int32 i = serviceToFunTicks.size(); i-- > 0;) {
 			funTicks += serviceToFunTicks[i] / denominator;
-			denominator *= 2;
+
+			if (i == serviceToFunTicks.size() - 1) {
+				denominator *= 4;
+			} else {
+				denominator *= 2;
+			}
 		}
-		funTicks = funTicks * 3 / 4; // Tested as 160% which should less...
+		funTicks = funTicks; // Tested as 160% which should less...
 		
 		SetHappiness(HappinessEnum::Entertainment, FunTickToPercent(funTicks));
 	}
@@ -3069,7 +3074,9 @@ void HumanStateAI::UpdateHappiness()
 		targetHappiness += _simulation->TownhallCardCountAll(_simulation->townPlayerId(_townId), CardEnum::Cannibalism) > 0 ? -50 : 0;
 
 		// Attractiveness decays by 30% over 5 years
-		targetHappiness -= 30 * _simulation->building(_simulation->GetTownhallId(_townId)).buildingAge() / (Time::TicksPerYear * 5);
+		int32 attractivenessDecay = 30 * _simulation->building(_simulation->GetTownhallId(_townId)).buildingAge() / (Time::TicksPerYear * 5);
+		attractivenessDecay = std::min(30, attractivenessDecay);
+		targetHappiness -= attractivenessDecay;
 
 		int32 happiness = moveTowardsTargetHappiness(GetHappinessByType(HappinessEnum::CityAttractiveness), targetHappiness, 200, 50);
 		SetHappiness(HappinessEnum::CityAttractiveness, happiness);
@@ -3077,13 +3084,13 @@ void HumanStateAI::UpdateHappiness()
 }
 
 
-int32 HumanStateAI::luxuryHappinessModifier()
-{
-	if (_houseId != -1) {
-		return _simulation->building(_houseId).subclass<House>(CardEnum::House).luxuryHappiness();
-	}
-	return 0;
-}
+//int32 HumanStateAI::luxuryHappinessModifier()
+//{
+//	if (_houseId != -1) {
+//		return _simulation->building(_houseId).subclass<House>(CardEnum::House).luxuryHappiness();
+//	}
+//	return 0;
+//}
 
 int32 HumanStateAI::speedBoostEfficiency100() {
 	auto& playerOwned = _simulation->playerOwned(_playerId);

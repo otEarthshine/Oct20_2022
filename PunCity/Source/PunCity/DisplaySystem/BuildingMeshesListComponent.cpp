@@ -22,7 +22,7 @@ UBuildingMeshesComponent* BuildingMeshesListComponent::GetBuildingMeshes()
  * For UI showing buildings
  *  Note: Bridge uses this..
  */
-UBuildingMeshesComponent* BuildingMeshesListComponent::ShowBuildingMesh(Building& building, int customDepth)
+UBuildingMeshesComponent* BuildingMeshesListComponent::ShowBuildingMesh(Building& building, int customDepth, bool receiveDecal)
 {
 	UBuildingMeshesComponent* buildingMeshes = GetBuildingMeshes();
 
@@ -40,7 +40,7 @@ UBuildingMeshesComponent* BuildingMeshesListComponent::ShowBuildingMesh(Building
 		buildingMeshes->ShowStorageMesh(building, _dataSource->assetLoader(), customDepth);
 	}
 	else {
-		buildingMeshes->Show(building.faceDirection(), modules, _dataSource->assetLoader(), customDepth);
+		buildingMeshes->Show(building.faceDirection(), modules, _dataSource->assetLoader(), customDepth, receiveDecal);
 	}
 
 	buildingMeshes->SetWorldLocation(_dataSource->DisplayLocation(building.centerTile().worldAtom2()));
@@ -48,11 +48,11 @@ UBuildingMeshesComponent* BuildingMeshesListComponent::ShowBuildingMesh(Building
 	return buildingMeshes;
 }
 
-UBuildingMeshesComponent* BuildingMeshesListComponent::ShowBuildingMesh(WorldTile2 tile, Direction faceDirection, const std::vector<ModuleTransform>& modules, int32 customDepthIndex)
+UBuildingMeshesComponent* BuildingMeshesListComponent::ShowBuildingMesh(WorldTile2 tile, Direction faceDirection, const std::vector<ModuleTransform>& modules, int32 customDepthIndex, bool receiveDecal)
 {
 	UBuildingMeshesComponent* buildingMeshes = GetBuildingMeshes();
 	
-	buildingMeshes->Show(faceDirection, modules, _dataSource->assetLoader(), customDepthIndex);
+	buildingMeshes->Show(faceDirection, modules, _dataSource->assetLoader(), customDepthIndex, receiveDecal);
 	buildingMeshes->SetWorldLocation(_dataSource->DisplayLocation(tile.worldAtom2()));
 
 	return buildingMeshes;

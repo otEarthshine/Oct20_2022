@@ -676,7 +676,7 @@ public:
 		return WindmillBaseEfficiency(_townId, centerTile(), _simulation);
 	}
 
-	static const int32 Radius = 16;
+	static const int32 Radius = 24;
 };
 class Bakery final : public IndustrialBuilding
 {
@@ -1062,7 +1062,12 @@ class FunBuilding : public Building
 {
 public:
 	int32 serviceQuality() {
-		return ServiceQuality(buildingEnum(), GetAppealPercent());
+		std::vector<BonusPair> bonuses = GetBonuses();
+		int32 quality = ServiceQuality(buildingEnum(), GetAppealPercent());
+		for (BonusPair bonus : bonuses) {
+			quality += bonus.value;
+		}
+		return quality;
 	}
 	static int32 ServiceQuality(CardEnum buildingEnum, int32 appealPercent) {
 		return BuildingEnumToBaseServiceQuality(buildingEnum) + appealPercent / 2;

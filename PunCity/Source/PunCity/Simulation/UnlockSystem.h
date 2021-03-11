@@ -923,6 +923,10 @@ public:
 		if (hasTargetResearch()) {
 			ADDTEXT_(INVTEXT("{0}/{1}"), TEXT_100(science100()), scienceNeeded());
 		}
+		else {
+			ADDTEXT_(INVTEXT("{0}"), TEXT_100(science100()));
+		}
+		
 		if (hasIcon) {
 			ADDTEXT_INV_("<img id=\"Science\"/>");
 		}

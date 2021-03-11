@@ -395,17 +395,17 @@ public:
 	/*
 	 * SpawnBuildingMesh must be called every tick to show it
 	 */
-	void ShowBuildingMesh(Building& building, int customDepth = 0) final {
+	void ShowBuildingMesh(Building& building, int customDepth = 0, bool receiveDecal = true) final {
 		if (_isPhotoMode) {
 			return;
 		}
-		_buildingMeshesList.ShowBuildingMesh(building, customDepth);
+		_buildingMeshesList.ShowBuildingMesh(building, customDepth, receiveDecal);
 	}
-	void ShowBuildingMesh(WorldTile2 tile, Direction faceDirection, const std::vector<ModuleTransform>& modules, int32 customDepthIndex) final {
+	void ShowBuildingMesh(WorldTile2 tile, Direction faceDirection, const std::vector<ModuleTransform>& modules, int32 customDepthIndex, bool receiveDecal = true) final {
 		if (_isPhotoMode) {
 			return;
 		}
-		_buildingMeshesList.ShowBuildingMesh(tile, faceDirection, modules, customDepthIndex);
+		_buildingMeshesList.ShowBuildingMesh(tile, faceDirection, modules, customDepthIndex, receiveDecal);
 	}
 	void ShowStorageMesh(TileArea area, WorldTile2 centerTile, int customDepth = 0) final {
 		if (_isPhotoMode) {
@@ -673,12 +673,20 @@ public:
 		if (_isHidingTrees) {
 			return true;
 		}
+		// Note: Add here, don't forget to add SetNeedDisplay to BuildingPlacementSystem too
 		PlacementType placementType = networkInterface()->placementType();
 		if (IsRoadPlacement(placementType)) {
 			return true;
 		}
-		return placementType == PlacementType::Building && 
-				IsColonyPlacement(networkInterface()->placementBuildingEnum());
+		if (placementType == PlacementType::Building ||
+			placementType == PlacementType::BuildingDrag) 
+		{
+			CardEnum buildingEnum = networkInterface()->placementBuildingEnum();
+			if (IsPlacementHidingTree(buildingEnum)) {
+				return true;
+			}
+		}
+		return false;
 	}
 	void SetOverlayHideTree(bool isHiding) final {
 		_isHidingTrees = isHiding;

@@ -29,7 +29,7 @@ public:
 		PunTerrainGenerator& terrainGen = sim->terrainGenerator();
 		
 		int32 outerBorderWidth = 0;
-		TranslucencySortPriority = 99999;
+		TranslucencySortPriority = 99995;
 		
 		if (isInnerMeshIn) {
 			TranslucencySortPriority++;

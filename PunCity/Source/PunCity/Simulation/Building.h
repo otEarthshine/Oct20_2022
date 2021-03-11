@@ -144,10 +144,10 @@ public:
 		}
 
 		const int32 quickBuildMultiplier_Resource = 3;
-		const int32 quickBuildMultiplier_Base = 2;
+		const int32 quickBuildMultiplier_Work = 2;
 
 		int32 quickBuildCost_Resource = 0;
-		int32 quickBuildCost_Base = 0;
+		int32 quickBuildCost_Work = 0;
 		std::vector<int32> constructionCosts = GetConstructionResourceCost();
 		for (size_t i = 0; i < ConstructionResourceCount; i++) 
 		{
@@ -157,10 +157,13 @@ public:
 				int32 resourceCount = GetResourceCount(ConstructionResources[i]);
 				quickBuildCost_Resource += std::max(0, (constructionCosts[i] - resourceCount) * basePrice);
 			}
-			quickBuildCost_Base += constructionCosts[i] * basePrice;
+			quickBuildCost_Work += constructionCosts[i] * basePrice;
 		}
 
-		return (quickBuildCost_Resource * quickBuildMultiplier_Resource) + (quickBuildCost_Base * quickBuildMultiplier_Base);
+		// base 
+		quickBuildCost_Work = quickBuildCost_Work * (110 - constructionPercent()) / 100;
+
+		return (quickBuildCost_Resource * quickBuildMultiplier_Resource) + (quickBuildCost_Work * quickBuildMultiplier_Work);
 	}
 	
 

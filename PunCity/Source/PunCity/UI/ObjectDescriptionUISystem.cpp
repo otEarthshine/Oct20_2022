@@ -1141,6 +1141,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						descriptionBox->AddRichText(LOCTEXT("Animals:", "Animals:"), args);
 
 						// Add Animal Button
+						if (building.playerId() == playerId())
 						{
 							int32 animalCost = ranch.animalCost();
 							bool showEnabled = ranch.openAnimalSlots() > 0;
@@ -2104,15 +2105,19 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 					descriptionBox->AddRichText(LOCTEXT("Construct", "Construct"), TEXT_PERCENT(building.constructionPercent()));
 
-					int32 quickBuildCost = building.GetQuickBuildCost();
-					bool canQuickBuild = simulation.money(playerId()) >= quickBuildCost;
+					// Quick Build
+					if (building.playerId() == playerId())
+					{
+						int32 quickBuildCost = building.GetQuickBuildCost();
+						bool canQuickBuild = simulation.money(playerId()) >= quickBuildCost;
 
-					TArray<FText> argsLocal;
-					argsLocal.Add(LOCTEXT("Quick Build", "Quick Build"));
-					ADDTEXT(argsLocal, INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(FText::AsNumber(quickBuildCost), !canQuickBuild));
+						TArray<FText> argsLocal;
+						argsLocal.Add(LOCTEXT("Quick Build", "Quick Build"));
+						ADDTEXT(argsLocal, INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(FText::AsNumber(quickBuildCost), !canQuickBuild));
 
-					descriptionBox->AddSpacer();
-					descriptionBox->AddButton2Lines(JOINTEXT(argsLocal), this, CallbackEnum::QuickBuild, true, false, objectId);
+						descriptionBox->AddSpacer();
+						descriptionBox->AddButton2Lines(JOINTEXT(argsLocal), this, CallbackEnum::QuickBuild, true, false, objectId);
+					}
 					
 #if WITH_EDITOR
 					descriptionBox->AddRichText("-- buildManSecCost100", to_string(building.buildTime_ManSec100()));

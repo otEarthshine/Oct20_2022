@@ -258,7 +258,7 @@ public:
 	//	}
 	//}
 	
-	int32 luxuryHappinessModifier();
+	//int32 luxuryHappinessModifier();
 	
 	//int32 modifiersHappiness() {
 	//	int32 result = 0;

@@ -18,8 +18,8 @@ public:
 		_dataSource = dataSource;
 	}
 	
-	UBuildingMeshesComponent* ShowBuildingMesh(Building& building, int customDepth = 0);
-	UBuildingMeshesComponent* ShowBuildingMesh(WorldTile2 tile, Direction faceDirection, const std::vector<ModuleTransform>& modules, int32 customDepthIndex = 0);
+	UBuildingMeshesComponent* ShowBuildingMesh(Building& building, int customDepth = 0, bool receiveDecal = true);
+	UBuildingMeshesComponent* ShowBuildingMesh(WorldTile2 tile, Direction faceDirection, const std::vector<ModuleTransform>& modules, int32 customDepthIndex = 0, bool receiveDecal = true);
 
 	void ShowStorageMesh(TileArea area, WorldTile2 centerTile, int customDepth = 0) {
 		auto buildingMeshes = GetBuildingMeshes();

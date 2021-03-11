@@ -792,10 +792,12 @@ void UMainGameUI::Tick()
 			{
 				auto widget = AddWidget<UPunRichText>(UIEnum::PunRichText);
 
-				FText richMessage = TEXT_TAG("<EventLog>", events[i].messageT());
+				FText richMessage = TEXT_TAG_IGNORE_OTHER_TAGS("<EventLog>", events[i].messageT());
 				if (events[i].isImportant) {
-					richMessage = TEXT_TAG("<EventLogRed>", events[i].messageT());
+					richMessage = TEXT_TAG_IGNORE_OTHER_TAGS("<EventLogRed>", events[i].messageT());
 				}
+
+				
 				
 				widget->SetText(richMessage);
 				EventBox->AddChild(widget);
@@ -1057,11 +1059,6 @@ void UMainGameUI::Tick()
 					ADDTEXT_(INVTEXT("  {0} {1}\n"), TEXT_100(science100), ScienceEnumName(i));
 				}
 			}
-			//scienceTip << "  " << playerOwned.houseBaseScience << " House Base\n";
-			//
-			//scienceTip << "  " << playerOwned.libraryScience << " Library\n";
-			//
-			//scienceTip << "  " << playerOwned.schoolScience << " School\n";
 			
 			AddToolTip(Science, args);
 

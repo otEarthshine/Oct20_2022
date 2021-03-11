@@ -475,8 +475,8 @@ int32 MushroomFarm::baseInputPerBatch() {
 static const FText productivityBookText =	LOCTEXT("Productivity Book", "Productivity Book");
 static const FText sustainabilityBookText = LOCTEXT("Sustainability Book", "Sustainability Book");
 static const FText frugalityBookText =		LOCTEXT("Frugality Book", "Frugality Book");
-static const FText motivationBookText = LOCTEXT("Motivation", "Motivation");
-static const FText passionBookText = LOCTEXT("Passion", "Passion");
+static const FText motivationBookText =		LOCTEXT("Motivation", "Motivation");
+static const FText passionBookText =		LOCTEXT("Passion", "Passion");
 
 static const FText wildCardText =			LOCTEXT("Wild Card", "Wild Card");
 static const FText cardRemovalCardText =	LOCTEXT("Card Removal Card", "Card Removal Card");
@@ -487,7 +487,7 @@ void CardMaker::OnInit()
 		WorkMode::Create(productivityBookText,		LOCTEXT("Productivity Book WorkDesc", "Create Productivity Book Card\n(50 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 50),
 		WorkMode::Create(sustainabilityBookText,	LOCTEXT("Sustainability Book WorkDesc", "Create Sustainability Book Card\n(50 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 50),
 		WorkMode::Create(frugalityBookText,			LOCTEXT("Frugality Book WorkDesc", "Create Frugality Book Card\n(50 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 50),
-		WorkMode::Create(motivationBookText,			LOCTEXT("Motivation WorkDesc", "Create Motivation Card\n(100 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 100),
+		WorkMode::Create(motivationBookText,		LOCTEXT("Motivation WorkDesc", "Create Motivation Card\n(100 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 100),
 		WorkMode::Create(passionBookText,			LOCTEXT("Passion WorkDesc", "Create Passion Card\n(100 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 100),
 		
 		WorkMode::Create(wildCardText,				LOCTEXT("Wild Card WorkDesc", "Create Wild Card\n(10 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 10),
@@ -1008,7 +1008,7 @@ std::vector<BonusPair> Fisher::GetBonuses()
 	std::vector<BonusPair> bonuses = Building::GetBonuses();
 	int32 cardCount = _simulation->TownhallCardCountTown(_townId, CardEnum::CooperativeFishing);
 	if (cardCount > 0) {
-		bonuses.push_back({ LOCTEXT("Cooperative Fishing", "Cooperative Fishing"), cardCount * 10 });
+		bonuses.push_back({ LOCTEXT("Cooperative Fishing", "Cooperative Fishing"), max(0, _simulation->GetAverageHappiness(_townId) - 60) });
 	}
 	return bonuses;
 }

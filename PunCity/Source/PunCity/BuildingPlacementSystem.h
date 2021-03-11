@@ -232,7 +232,8 @@ private:
 	bool justPlacedBuilding() { return _lastNetworkPlacementTime >= 0; }
 	
 	class UDecalComponent* _gridGuide;
-	class UDecalComponent* _radiusDecal;
+	//class UDecalComponent* _radiusDecal;
+	UPROPERTY() UStaticMeshComponent* _radiusMesh;
 
 	// Demolish confirmation show...
 	TileArea _demolishHighlightArea;

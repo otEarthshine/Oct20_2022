@@ -95,8 +95,9 @@ private:
 	
 	//UPROPERTY() TArray<UParticleSystemComponent*> _oneShotParticles;
 
-	//! Decals
-	UPROPERTY() TArray<class UDecalComponent*> _radiusDecals;
+	//! Radius
+	//UPROPERTY() TArray<class UDecalComponent*> _radiusDecals;
+	UPROPERTY() TArray<UStaticMeshComponent*> _radiusMeshes;
 	int32 _radiusCount = 0;
 	
 	UPROPERTY() TArray<class UDecalComponent*> _farmDecals;

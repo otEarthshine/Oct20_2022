@@ -297,8 +297,8 @@ public:
 
 	//virtual void SetObjectFocusSound(bool active, USoundCue* soundCue = nullptr, FVector location = FVector::ZeroVector) = 0;
 
-	virtual void ShowBuildingMesh(Building& building, int customDepth = 0) = 0;
-	virtual void ShowBuildingMesh(WorldTile2 tile, Direction faceDirection, const std::vector<ModuleTransform>& modules, int32 customDepthIndex) = 0;
+	virtual void ShowBuildingMesh(Building& building, int customDepth = 0, bool receiveDecal = true) = 0;
+	virtual void ShowBuildingMesh(WorldTile2 tile, Direction faceDirection, const std::vector<ModuleTransform>& modules, int32 customDepthIndex, bool receiveDecal = true) = 0;
 	virtual void ShowStorageMesh(TileArea area, WorldTile2 centerTile, int customDepth = 0) = 0;
 	
 	virtual class UDecalComponent* ShowDecal(TileArea area, UMaterial* material) = 0; // TODO: remove?

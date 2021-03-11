@@ -810,8 +810,8 @@ void TownManager::CollectRoundIncome()
 	globalResourceSys.ChangeInfluence100(totalInfluenceIncome100());
 	if (globalResourceSys.influence100() < 0)
 	{
-		FText influenceStr = INVTEXT("</><img id=\"Influence\"/><EventLogRed>");
-		FText coinStr = INVTEXT("</><img id=\"Coin\"/><EventLogRed>");
+		FText influenceStr = INVTEXT("<img id=\"Influence\"/>");
+		FText coinStr = INVTEXT("<img id=\"Coin\"/>");
 
 		_simulation->AddEventLog(_playerId,
 			FText::Format(LOCTEXT("NegativeInfluence_Event",

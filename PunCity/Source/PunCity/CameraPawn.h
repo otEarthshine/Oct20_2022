@@ -219,7 +219,7 @@ public:
 		buildingPlacementSystem->StartBuildingPlacement(buildingEnum, buildingLvl, useBoughtCard, useWildCard);
 
 		// Ensure TileObj Refresh to hide trees
-		if (IsColonyPlacement(buildingEnum)) {
+		if (IsPlacementHidingTree(buildingEnum)) {
 			_gameInterface->simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Trees, _gameInterface->sampleRegionIds());
 		}
 	}

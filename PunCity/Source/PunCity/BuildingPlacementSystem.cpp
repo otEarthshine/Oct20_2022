@@ -95,11 +95,15 @@ ABuildingPlacementSystem::ABuildingPlacementSystem()
 	_gridGuide->SetActive(false);
 	_gridGuide->SetVisibility(false);
 
-	_radiusDecal = CreateDefaultSubobject<UDecalComponent>("RadiusDecal");
-	_radiusDecal->SetRelativeRotation(FVector(0, 0, -1).Rotation()); // Rotate to project the decal down
-	_radiusDecal->DecalSize = FVector(100, 160, 160);
-	_radiusDecal->SetActive(false);
-	_radiusDecal->SetVisibility(false);
+	//_radiusDecal = CreateDefaultSubobject<UDecalComponent>("RadiusDecal");
+	//_radiusDecal->SetRelativeRotation(FVector(0, 0, -1).Rotation()); // Rotate to project the decal down
+	//_radiusDecal->DecalSize = FVector(100, 160, 160);
+	//_radiusDecal->SetActive(false);
+	//_radiusDecal->SetVisibility(false);
+
+	_radiusMesh = CreateDefaultSubobject<UStaticMeshComponent>("RadiusDecal");
+	_radiusMesh->SetActive(false);
+	_radiusMesh->SetVisibility(false);
 
 	//_buildingMeshes = CreateDefaultSubobject<UBuildingMeshesComponent>("BuildingMeshes");
 	//_delayFillerMeshes = CreateDefaultSubobject<UBuildingMeshesComponent>("DelayFillerMeshes");
@@ -389,15 +393,19 @@ void ABuildingPlacementSystem::ShowRadius(int radius, OverlayType overlayType, b
 {
 	_gameInterface->SetOverlayType(overlayType, OverlaySetterType::BuildingPlacement);
 	
-	//if (!_assetLoader->RadiusMaterialInstance) {
-	//	_assetLoader->RadiusMaterialInstance = UMaterialInstanceDynamic::Create(_assetLoader->RadiusMaterial, this);
-	//}
-	//_assetLoader->MI_RedRadius->SetScalarParameterValue("IsRed", isRed);
+	//_radiusDecal->SetMaterial(0, isRed ? CastChecked<UMaterialInterface>(_assetLoader->MI_RedRadius) : CastChecked<UMaterialInterface>(_assetLoader->RadiusMaterial));
+	//_radiusDecal->SetVisibility(true);
+	//_radiusDecal->SetActive(true);
+	//_radiusDecal->DecalSize = FVector(100, 160, 160) * radius * 2 / 32;
 
-	_radiusDecal->SetMaterial(0, isRed ? CastChecked<UMaterialInterface>(_assetLoader->MI_RedRadius) : CastChecked<UMaterialInterface>(_assetLoader->RadiusMaterial));
-	_radiusDecal->SetVisibility(true);
-	_radiusDecal->SetActive(true);
-	_radiusDecal->DecalSize = FVector(100, 160, 160) * radius * 2 / 32;
+	_radiusMesh->SetStaticMesh(_assetLoader->RadiusMesh);
+	_radiusMesh->SetMaterial(0, isRed ? CastChecked<UMaterialInterface>(_assetLoader->MI_RadiusRed) : CastChecked<UMaterialInterface>(_assetLoader->M_Radius));
+	_radiusMesh->SetVisibility(true);
+	_radiusMesh->TranslucencySortPriority = 99999;
+	
+	FTransform transform = _radiusMesh->GetComponentTransform();
+	transform.SetScale3D(FVector::OneVector * radius);
+	_radiusMesh->SetWorldTransform(transform);
 }
 
 void ABuildingPlacementSystem::StartBuildingPlacement(CardEnum buildingEnum, int32 buildingLvl, bool useBoughtCard, CardEnum useWildCard)
@@ -874,7 +882,7 @@ void ABuildingPlacementSystem::CancelPlacement()
 	//_buildingMeshes->Hide();
 
 	if (IsRoadPlacement(_placementType) ||
-		IsColonyPlacement(_buildingEnum))
+		IsPlacementHidingTree(_buildingEnum))
 	{
 		// Ensure TileObj Refresh to hide trees
 		_gameInterface->simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Trees, _gameInterface->sampleRegionIds());
@@ -901,8 +909,10 @@ void ABuildingPlacementSystem::CancelPlacement()
 	_gridGuide->SetVisibility(false);
 	_gridGuide->SetActive(false);
 
-	_radiusDecal->SetVisibility(false);
-	_radiusDecal->SetActive(false);
+	//_radiusDecal->SetVisibility(false);
+	//_radiusDecal->SetActive(false);
+
+	_radiusMesh->SetVisibility(false);
 
 	if (_useWildCard != CardEnum::None) {
 		_useWildCard = CardEnum::None;
@@ -1675,7 +1685,9 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 	FVector meshLocation = MapUtil::DisplayLocation(cameraAtom, _mouseOnTile.worldAtom2());
 
 	_gridGuide->SetWorldLocation(meshLocation);
-	_radiusDecal->SetWorldLocation(meshLocation);
+	//_radiusDecal->SetWorldLocation(meshLocation);
+	_radiusMesh->SetWorldLocation(meshLocation);
+	
 	_gameInterface->SetOverlayTile(_mouseOnTile);
 
 
@@ -1692,7 +1704,8 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				break;
 			}
 		}
-		_radiusDecal->SetVisibility(hasHouseAffectedByBadAppeal);
+		//_radiusDecal->SetVisibility(hasHouseAffectedByBadAppeal);
+		_radiusMesh->SetVisibility(hasHouseAffectedByBadAppeal);
 	}
 
 	/*
@@ -2449,7 +2462,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		}
 
 		std::vector<ModuleTransform> modules = _gameInterface->displayInfo().GetDisplayModules(_buildingEnum, 0).transforms;
-		_gameInterface->ShowBuildingMesh(_mouseOnTile, _faceDirection, modules, 0);
+		_gameInterface->ShowBuildingMesh(_mouseOnTile, _faceDirection, modules, 0, false);
 	}
 }
 

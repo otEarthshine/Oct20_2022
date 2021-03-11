@@ -187,6 +187,32 @@ public:
 
 #define JOINTEXT(args) FText::Join(FText(), args)
 
+
+static FText TextTag_IgnoreOtherTags(FText tag, FText baseText)
+{
+	FString baseString = baseText.ToString();
+	for (int32 i = baseString.Len(); i-- > 0;) 
+	{
+		if (baseString[i] == L'>') {
+			if (i + 1 < baseString.Len()) {
+				baseString.InsertAt(i + 1, tag.ToString());
+			} else {
+				baseString.Append(tag.ToString());
+			}
+		}
+		else if (baseString[i] == L'<') {
+			if (i < baseString.Len()) {
+				baseString.InsertAt(i, FString("</>"));
+			} else {
+				baseString.Append(FString("</>"));
+			}
+		}
+	}
+	return FText::FromString(baseString);
+}
+#define TEXT_TAG_IGNORE_OTHER_TAGS(Tag, InText) FText::Format(INVTEXT("{0}{1}</>"), INVTEXT(Tag), TextTag_IgnoreOtherTags(INVTEXT(Tag), InText))
+
+
 // !!!Note: there is a problem with .EqualTo() so this is used for now
 static bool TextEquals(const FText& a, const FText& b) {
 	FString aStr = a.ToString();
@@ -2734,7 +2760,7 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::MasterBrewer,			LOCTEXT("Master Brewer", "Master Brewer"), 200, LOCTEXT("Master Brewer Desc", "Breweries/Distilleries gain +30% efficiency")),
 	BldInfo(CardEnum::MasterPotter,			LOCTEXT("Master Potter", "Master Potter"), 200, LOCTEXT("Master Potter Desc", "Potters gain +20% efficiency")),
 
-	BldInfo(CardEnum::CooperativeFishing,	LOCTEXT("Cooperative Fishing", "Cooperative Fishing"), 200, LOCTEXT("Cooperative Fishing Desc","+10% Fish production when there are 2 or more Fishing Lodges")),
+	BldInfo(CardEnum::CooperativeFishing,	LOCTEXT("Cooperative Fishing", "Cooperative Fishing"), 200, LOCTEXT("Cooperative Fishing Desc","Every 1% Happiness above 60%, gives +1% productivity to Fishing Lodge")),
 	BldInfo(CardEnum::CompaniesAct,			LOCTEXT("Companies Act", "Companies Act"), 200, LOCTEXT("Companies Act Desc", "-10% trade fees for Trading Companies.")),
 
 	BldInfo(CardEnum::ProductivityBook,	LOCTEXT("Productivity Book", "Productivity Book"), 100, LOCTEXT("Productivity Book Desc", "+20% productivity")),
@@ -3411,6 +3437,13 @@ static bool IsColonyPlacement(CardEnum buildingEnum)
 	default: return false;
 	}
 }
+
+static bool IsPlacementHidingTree(CardEnum buildingEnum)
+{
+	return IsColonyPlacement(buildingEnum) ||
+		buildingEnum == CardEnum::Farm;
+}
+
 
 static bool IsRoad(CardEnum buildingEnum) {
 	switch (buildingEnum) {

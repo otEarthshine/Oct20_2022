@@ -106,7 +106,7 @@ public:
 	
 	int32 housingQuality();
 	int32 luxuryHappiness() {
-		int32 happiness = 30 + luxuryCount() * 5;
+		int32 happiness = 50 + luxuryCount() * 5;
 		if (_simulation->TownhallCardCountTown(_townId, CardEnum::BlingBling) > 0 &&
 			resourceCount(ResourceEnum::Jewelry)) 
 		{

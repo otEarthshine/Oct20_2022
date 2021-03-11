@@ -265,6 +265,7 @@ public:
 
 	//! Hover warning
 	UPROPERTY(EditAnywhere) UMaterial* M_HoverWarning;
+	UPROPERTY(EditAnywhere) UMaterial* M_HoverWarningHappiness;
 	UPROPERTY(EditAnywhere) UTexture2D* WarningHouse;
 	UPROPERTY(EditAnywhere) UTexture2D* WarningStarving;
 	UPROPERTY(EditAnywhere) UTexture2D* WarningSnow;
@@ -319,6 +320,11 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* GridGuideMaterial;
 	
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* RadiusMaterial;
+	
+	UPROPERTY(EditAnywhere, Category = "Material Import") UStaticMesh* RadiusMesh;
+	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_Radius;
+	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterialInstance* MI_RadiusRed;
+	
 	//UPROPERTY(EditAnywhere, Category = "Material Import") UMaterialInstanceDynamic* RadiusMaterialInstance;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterialInstance* MI_RedRadius;
 

@@ -946,31 +946,39 @@ void UWorldSpaceUI::TickUnits()
 
 				UHoverIconWidgetBase* hoverIcon = _unitHoverIcons.GetHoverUI<UHoverIconWidgetBase>(unitId, UIEnum::HoverIcon, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
 					[&](UHoverIconWidgetBase* ui) {}, WorldZoomTransition_WorldSpaceUIShrink, 1.25f);
-				hoverIcon->IconImage->SetBrushFromMaterial(assetLoader()->M_HoverWarning);
+
+				auto setMaterial = [&](UMaterial* material, UTexture* image) {
+					hoverIcon->IconImage->SetBrushFromMaterial(material);
+					hoverIcon->IconImage->GetDynamicMaterial()->SetTextureParameterValue("IconImage", image);
+				};
 
 				// Set the right image
 				if (needHousing) {
-					hoverIcon->IconImage->GetDynamicMaterial()->SetTextureParameterValue("IconImage", assetLoader()->WarningHouse);
+					setMaterial(assetLoader()->M_HoverWarning, assetLoader()->WarningHouse);
 				}
 				else if (needFood) {
-					hoverIcon->IconImage->GetDynamicMaterial()->SetTextureParameterValue("IconImage", assetLoader()->WarningStarving);
+					setMaterial(assetLoader()->M_HoverWarning, assetLoader()->WarningStarving);
 				}
 				else if (needHeat) {
-					hoverIcon->IconImage->GetDynamicMaterial()->SetTextureParameterValue("IconImage", assetLoader()->WarningSnow);
+					setMaterial(assetLoader()->M_HoverWarning, assetLoader()->WarningSnow);
 				}
 				else if (needHealthcare) {
-					hoverIcon->IconImage->GetDynamicMaterial()->SetTextureParameterValue("IconImage", assetLoader()->WarningHealthcare);
+					setMaterial(assetLoader()->M_HoverWarning, assetLoader()->WarningHealthcare);
 				}
 				else if (needTools) {
-					hoverIcon->IconImage->GetDynamicMaterial()->SetTextureParameterValue("IconImage", assetLoader()->WarningTools);
+					setMaterial(assetLoader()->M_HoverWarning, assetLoader()->WarningTools);
 				}
 				else if (needHappiness) {
-					hoverIcon->IconImage->GetDynamicMaterial()->SetTextureParameterValue("IconImage", assetLoader()->UnhappyHoverIcon);
+					if (human.happinessOverall() < human.happinessLeaveTownThreshold()) {
+						setMaterial(assetLoader()->M_HoverWarningHappiness, assetLoader()->HappinessRedIcon);
+					} else {
+						setMaterial(assetLoader()->M_HoverWarningHappiness, assetLoader()->HappinessOrangeIcon);
+					}
 				}
-				else if (idling) {
-					//PUN_LOG("PUN: idling Style");
-					hoverIcon->IconImage->SetBrush(*_brushes["Idling"]);
-				}
+				//else if (idling) {
+				//	//PUN_LOG("PUN: idling Style");
+				//	hoverIcon->IconImage->SetBrush(*_brushes["Idling"]);
+				//}
 			}
 		}
 	}

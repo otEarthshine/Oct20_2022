@@ -1054,7 +1054,7 @@ public:
 	static FChooseInitialResources GetDefault()
 	{
 		FChooseInitialResources command;
-		command.foodAmount = 180;
+		command.foodAmount = 300;
 		command.woodAmount = 120;
 		command.stoneAmount = 120;
 		

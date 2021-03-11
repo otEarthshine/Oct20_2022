@@ -37,7 +37,7 @@ public:
 		_meshIndexIterator = 0;
 	}
 
-	void Show(Direction faceDirection, const std::vector<ModuleTransform>& modules, UAssetLoaderComponent* assetLoader, int32 customDepthIndex = 0)
+	void Show(Direction faceDirection, const std::vector<ModuleTransform>& modules, UAssetLoaderComponent* assetLoader, int32 customDepthIndex = 0, bool receiveDecal = true)
 	{
 		PUN_CHECK(assetLoader);
 
@@ -48,7 +48,7 @@ public:
 			buildingMesh->AttachToComponent(this, FAttachmentTransformRules::KeepRelativeTransform, NAME_None);
 			buildingMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 			buildingMesh->SetGenerateOverlapEvents(false);
-			buildingMesh->SetReceivesDecals(true);
+			buildingMesh->SetReceivesDecals(receiveDecal);
 			buildingMesh->RegisterComponent();
 			
 			meshes.Add(buildingMesh);

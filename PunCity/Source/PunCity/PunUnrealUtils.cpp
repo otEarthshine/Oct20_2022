@@ -70,6 +70,15 @@ void PunUnrealUtils::UpdateDecals(TArray<UDecalComponent*>& decals, int32& decal
 	decalCount = 0;
 }
 
+void PunUnrealUtils::UpdateMeshes(TArray<UStaticMeshComponent*>& meshes, int32& meshCount)
+{
+	for (int i = meshCount; i < meshes.Num(); i++) {
+		SetActive(meshes[i], false);
+	}
+
+	meshCount = 0;
+}
+
 UPointLightComponent* PunUnrealUtils::CreateLight(class USceneComponent* scene)
 {
 	auto pointLight = NewObject<UPointLightComponent>(scene);

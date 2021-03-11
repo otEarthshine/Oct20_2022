@@ -30,6 +30,8 @@ public:
 										USceneComponent* scene, UMaterialInterface* material, IDisplaySystemDataSource* gameInterface, bool useMaterialInstance = false, float scaleX = 1.0f);
 	static void UpdateDecals(TArray<UDecalComponent*>& decals, int32& decalCount);
 
+	static void UpdateMeshes(TArray<UStaticMeshComponent*>& meshes, int32& meshCount);
+
 	// Light... Note: Only need ShowLight() and UpdateLights()
 	static class UPointLightComponent* CreateLight(USceneComponent* scene);
 	static UPointLightComponent* ShowLight(FTransform transform, TArray<UPointLightComponent*>& pointLights, int32& pointLightCount, USceneComponent* scene);

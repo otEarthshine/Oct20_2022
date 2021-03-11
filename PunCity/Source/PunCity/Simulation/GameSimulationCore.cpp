@@ -2773,9 +2773,14 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 				if (IsRanch(bld.buildingEnum()))
 				{
 					Ranch& ranch = bld.subclass<Ranch>();
-					if (ranch.openAnimalSlots() > 0) {
+					int32 animalCost = ranch.animalCost();
+					
+					if (ranch.openAnimalSlots() > 0 &&
+						animalCost <= money(ranch.playerId()))
+					{
 						UnitEnum animalEnum = ranch.GetAnimalEnum();
 						ranch.AddAnimalOccupant(animalEnum, GetUnitInfo(animalEnum).minBreedingAgeTicks);
+						ChangeMoney(ranch.playerId(), -animalCost);
 					}
 				}
 			}
@@ -3683,7 +3688,7 @@ void GameSimulationCore::SellCards(FSellCards command)
 
 		AddEventLog(command.playerId,
 			FText::Format(
-				LOCTEXT("SoldCard_Event", "Sold {1} {0} {1}|plural(one=card,other=cards) for {2}<img id=\"Coin\"/>"),
+				LOCTEXT("SoldCard_Event", "Sold {1} {0} {1}|plural(one=Card,other=Cards) for {2}<img id=\"Coin\"/>"),
 				GetBuildingInfo(command.buildingEnum).name,
 				TEXT_NUM(sellCount),
 				TEXT_NUM(sellTotal)

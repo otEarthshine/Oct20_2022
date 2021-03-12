@@ -1538,6 +1538,19 @@ void Bank::CalculateRoundProfit()
 	});
 }
 
+void Archives::CalculateRoundProfit()
+{
+	lastRoundProfit = 0;
+
+	for (const CardStatus& cardStatus : _cardSlots) {
+		if (cardStatus.cardEnum != CardEnum::None) {
+			lastRoundProfit += GetBuildingInfo(cardStatus.cardEnum).baseCardPrice;
+		}
+	}
+
+	lastRoundProfit = lastRoundProfit * CardProfitPercentPerRound / 100;
+}
+
 
 //void Barrack::ScheduleTick()
 //{

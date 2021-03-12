@@ -52,7 +52,7 @@ void Building::Init(IGameSimulationCore& simulation, int32 objectId, int32 townI
 	_deliveryTargetId = -1;
 
 	_priority = PriorityEnum::NonPriority;
-	_cardSlot1 = CardStatus();
+	_cardSlots.clear();
 
 	_cachedWaterDestinationPortIds.clear();
 	_cachedWaterRoutes.clear();
@@ -187,7 +187,8 @@ void Building::FinishConstruction()
 	_allowedOccupants = 0;
 	_workDone100 = 0;
 	_isConstructed = true;
-	
+
+	_cardSlots.resize(maxCardSlots());
 
 	// Do not reset roadMakers since they should construct multiple roads
 	if (!IsRoad(_buildingEnum))
@@ -221,8 +222,12 @@ void Building::FinishConstruction()
 
 
 	// Auto-add inputs/outputs accordingly
-	if (hasInput1()) AddResourceHolder(input1(), ResourceHolderType::Requester, baseInputPerBatch() + 10);
-	if (hasInput2()) AddResourceHolder(input2(), ResourceHolderType::Requester, baseInputPerBatch() + 10);
+	if (hasInput1()) {
+		AddResourceHolder(input1(), ResourceHolderType::Requester, baseInputPerBatch() + 10);
+	}
+	if (hasInput2()) {
+		AddResourceHolder(input2(), ResourceHolderType::Requester, baseInputPerBatch() + 10);
+	}
 	if (product() != ResourceEnum::None) AddResourceHolder(product(), ResourceHolderType::Provider, 0);
 	//if (IsProducer(buildingEnum())) AddResourceHolder(ResourceEnum::Tools, ResourceHolderType::Provider, 0);
 

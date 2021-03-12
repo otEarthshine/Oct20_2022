@@ -17,14 +17,14 @@ public:
 		queuedResourceAllowed.resize(ResourceEnumCount, true);
 	}
 
-	virtual ResourceHolderType defaultHolderType() { return ResourceHolderType::Storage; }
+	virtual ResourceHolderType defaultHolderType(ResourceEnum resourceEnum) { return ResourceHolderType::Storage; }
 
 	void FinishConstruction() override
 	{
 		Building::FinishConstruction();
 
 		for (ResourceInfo info : ResourceInfos) {
-			ResourceHolderType holderType = queuedResourceAllowed[info.resourceEnumInt()] ? defaultHolderType() : ResourceHolderType::Provider;
+			ResourceHolderType holderType = queuedResourceAllowed[info.resourceEnumInt()] ? defaultHolderType(info.resourceEnum) : ResourceHolderType::Provider;
 			AddResourceHolder(info.resourceEnum, holderType, 0);
 		}
 		queuedResourceAllowed.clear();
@@ -205,6 +205,28 @@ public:
 	}
 };
 
+class Granary : public StorageYard
+{
+public:
+	int32 storageSlotCount() override {
+		return 30;
+	}
+
+	WorldTile2 gateTile() override {
+		return Building::gateTile();
+	}
+
+	void SetAreaWalkable() override {
+		Building::SetAreaWalkable();
+	}
+
+	ResourceHolderType defaultHolderType(ResourceEnum resourceEnum) override {
+		return IsFoodEnum(resourceEnum) ? ResourceHolderType::Storage : ResourceHolderType::Provider;
+	}
+
+	static const int32 Radius = 20;
+};
+
 class Market : public StorageBase
 {
 public:
@@ -288,7 +310,7 @@ public:
 	}
 
 
-	ResourceHolderType defaultHolderType() override { return ResourceHolderType::Market; }
+	ResourceHolderType defaultHolderType(ResourceEnum resourceEnum) override { return ResourceHolderType::Market; }
 	
 	void Serialize(FArchive& Ar) override {
 		StorageBase::Serialize(Ar);

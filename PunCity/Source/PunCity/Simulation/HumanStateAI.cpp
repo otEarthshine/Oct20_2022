@@ -163,6 +163,12 @@ void HumanStateAI::CalculateActions()
 				return;
 			}
 		}
+		else if (workplc->isEnum(CardEnum::HaulingServices)) {
+			if (TryHaulingServices() || justReset()) {
+				//DEBUG_AI_VAR(TryHaulingServices);
+				return;
+			}
+		}
 		else if (workplc->isEnum(CardEnum::Forester)) {
 			if (TryForesting() || justReset()) {
 				DEBUG_AI_VAR(TryForesting);
@@ -506,7 +512,7 @@ bool HumanStateAI::TryMoveResourcesAnyProviderToDropoff(ResourceFindType provide
 	return true;
 }
 
-bool HumanStateAI::TryMoveResourcesProviderToAnyDropoff(FoundResourceHolderInfo providerInfo, ResourceFindType dropoffType)
+bool HumanStateAI::TryMoveResourcesProviderToAnyDropoff(FoundResourceHolderInfo providerInfo, ResourceFindType dropoffType, UnitAnimationEnum animationEnum)
 {
 	if (!IsResourceMoveValid(providerInfo.info)) {
 		//AddDebugSpeech("(Failed)TryMoveResourcesProviderToAnyDropoff: " + providerInfo.resourceName() + " providerInfo not move valid");
@@ -1998,6 +2004,95 @@ bool HumanStateAI::TryBulkHaul_Market()
 		}
 	}
 	
+	return false;
+}
+
+bool HumanStateAI::TryHaulingServices()
+{
+	HaulingServices& workPlc = workplace()->subclass<HaulingServices>(CardEnum::HaulingServices);
+
+	int32 highestInputHaulNeededPercent = 0;
+	int32 highestInputHaulNeededBuildingId = -1;
+	ResourceEnum highestInputHaulNeededResourceEnum = ResourceEnum::None;
+
+	int32 highestOutputHaulNeededPercent = 0;
+	int32 highestOutputHaulNeededBuildingId = -1;
+	ResourceEnum highestOutputHaulNeededResourceEnum = ResourceEnum::None;
+	
+	auto tryMoveResource = [&](CardEnum buildingEnum)
+	{
+		if (IsProducer(buildingEnum) ||
+			IsConsumerWorkplace(buildingEnum))
+		{
+			std::vector<int32> buildingIds = _simulation->GetBuildingsWithinRadius(workPlc.gateTile(), HaulingServices::Radius, _townId, buildingEnum);
+			for (int32 buildingId : buildingIds)
+			{
+				Building& building = _simulation->building(buildingId);
+
+				std::vector<ResourceEnum> inputs = building.inputs();
+				for (ResourceEnum input : inputs)
+				{
+					const ResourceHolder& inputHolder = building.holder(input);
+					int32 inputHaulNeededPercent = (inputHolder.target() - inputHolder.current()) * 100 / inputHolder.target();
+					if (inputHaulNeededPercent > highestInputHaulNeededPercent) {
+						highestInputHaulNeededPercent = inputHaulNeededPercent;
+						highestInputHaulNeededBuildingId = buildingId;
+						highestInputHaulNeededResourceEnum = input;
+					}
+				}
+
+				std::vector<ResourceEnum> outputs = building.products();
+				for (ResourceEnum output : outputs)
+				{
+					const ResourceHolder& productHolder = building.holder(output);
+					int32 productHaulNeededPercent = (productHolder.current() -	productHolder.target()) * 100 / productHolder.target();
+					if (productHaulNeededPercent > highestOutputHaulNeededPercent) {
+						highestOutputHaulNeededPercent = productHaulNeededPercent;
+						highestOutputHaulNeededBuildingId = buildingId;
+						highestOutputHaulNeededResourceEnum = output;
+					}
+				}
+			}
+		}
+	};
+
+	for (CardEnum buildingEnum : DefaultJobPriorityListAllSeason) {
+		tryMoveResource(buildingEnum);
+	}
+
+
+	if (highestInputHaulNeededPercent > highestOutputHaulNeededPercent)
+	{
+		Building& building = _simulation->building(highestInputHaulNeededBuildingId);
+
+		const ResourceHolder& inputHolder = building.holder(highestInputHaulNeededResourceEnum);
+		int32 resourceNeeded = min(haulerServicesCapacity(), inputHolder.target() - inputHolder.current());
+		check(resourceNeeded > 0);
+		
+		FoundResourceHolderInfo holderInfo = building.GetHolderInfoFull(highestInputHaulNeededResourceEnum, resourceNeeded);
+		if (TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, holderInfo, false, false, UnitAnimationEnum::Immigration))
+		{
+			// successful move, go to market to get cart first
+			Add_MoveTo(workPlc.gateTile(), -1, UnitAnimationEnum::Walk);
+			return true;
+		}
+	}
+
+	Building& building = _simulation->building(highestOutputHaulNeededBuildingId);
+
+	const ResourceHolder& outputHolder = building.holder(highestOutputHaulNeededResourceEnum);
+	int32 resourceNeeded = min(haulerServicesCapacity(), outputHolder.current() - outputHolder.target());
+	check(resourceNeeded > 0);
+
+	FoundResourceHolderInfo holderInfo = building.GetHolderInfoFull(highestOutputHaulNeededResourceEnum, resourceNeeded);
+	if (TryMoveResourcesProviderToAnyDropoff(holderInfo, ResourceFindType::AvailableForDropoff, UnitAnimationEnum::Immigration))
+	{
+		// successful move, go to market to get cart first
+		Add_MoveTo(workPlc.gateTile(), -1, UnitAnimationEnum::Walk);
+		return true;
+	}
+	
+
 	return false;
 }
 

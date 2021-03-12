@@ -45,6 +45,8 @@ static const std::vector<CardEnum> DefaultJobPriorityListAllSeason
 	CardEnum::RanchSheep,
 	CardEnum::RanchPig,
 
+	CardEnum::HaulingServices,
+
 	CardEnum::Windmill,
 	CardEnum::Bakery,
 

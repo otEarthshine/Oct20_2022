@@ -17,7 +17,7 @@ public:
 	bool TryMoveResourcesAnyProviderToDropoff(ResourceFindType providerType, FoundResourceHolderInfo dropoffInfo, bool prioritizeMarket = false, bool checkMarketAfter = false, 
 												UnitAnimationEnum animationEnum = UnitAnimationEnum::Walk);
 
-	bool TryMoveResourcesProviderToAnyDropoff(FoundResourceHolderInfo providerInfo, ResourceFindType dropoffType);
+	bool TryMoveResourcesProviderToAnyDropoff(FoundResourceHolderInfo providerInfo, ResourceFindType dropoffType, UnitAnimationEnum animationEnum = UnitAnimationEnum::Walk);
 	bool TryMoveResourcesAny(ResourceEnum resourceEnum, ResourceFindType providerType, ResourceFindType dropoffType, int32 amountAtLeast);
 
 	bool TryMoveResourcesToDeliveryTarget(int32 deliverySourceId, ResourceEnum resourceEnum, int32 amountAtLeast);
@@ -65,6 +65,7 @@ public:
 	bool TryBulkHaul_Intercity();
 	bool TryBulkHaul_IntercityWater();
 	bool TryBulkHaul_Market();
+	bool TryHaulingServices();
 	bool TryDistribute_Market();
 	//bool TryConsumerWork();
 
@@ -366,6 +367,13 @@ protected:
 private:
 	int32 haulCapacity() {
 		int32 haulCapacity = 10;
+		if (_simulation->IsResearched(_playerId, TechEnum::HaulingCapacity)) {
+			haulCapacity += 10;
+		}
+		return haulCapacity;
+	}
+	int32 haulerServicesCapacity() {
+		int32 haulCapacity = 20;
 		if (_simulation->IsResearched(_playerId, TechEnum::HaulingCapacity)) {
 			haulCapacity += 10;
 		}

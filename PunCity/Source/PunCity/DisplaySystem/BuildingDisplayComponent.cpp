@@ -857,6 +857,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 		SetHighlight(_moduleMeshes[meshId], CardEnum::Fisher, overlayType == OverlayType::Fish);
 		SetHighlight(_moduleMeshes[meshId], CardEnum::FruitGatherer, overlayType == OverlayType::Gatherer);
 		SetHighlight(_moduleMeshes[meshId], CardEnum::HuntingLodge, overlayType == OverlayType::Hunter);
+		
 		SetHighlight(_moduleMeshes[meshId], CardEnum::Forester, overlayType == OverlayType::Forester);
 		SetHighlight(_moduleMeshes[meshId], CardEnum::Windmill, overlayType == OverlayType::Windmill);
 
@@ -869,6 +870,9 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 		SetHighlight(_moduleMeshes[meshId], CardEnum::Library, overlayType == OverlayType::Library);
 		SetHighlight(_moduleMeshes[meshId], CardEnum::School, overlayType == OverlayType::School);
 		SetHighlight(_moduleMeshes[meshId], CardEnum::Bank, overlayType == OverlayType::Bank);
+
+		SetHighlight(_moduleMeshes[meshId], CardEnum::Granary, overlayType == OverlayType::Granary);
+		SetHighlight(_moduleMeshes[meshId], CardEnum::HaulingServices, overlayType == OverlayType::HaulingServices);
 
 		SetHighlight(_moduleMeshes[meshId], CardEnum::Theatre, overlayType == OverlayType::Theatre);
 		SetHighlight(_moduleMeshes[meshId], CardEnum::Tavern, overlayType == OverlayType::Tavern);
@@ -1074,6 +1078,13 @@ void UBuildingDisplayComponent::UpdateDisplayOverlay(Building& building, Overlay
 	}
 	else if (overlayType == OverlayType::Bank && building.isEnum(CardEnum::Bank)) {
 		ShowRadius(Bank::Radius, centerAtom, building);
+	}
+
+	else if (overlayType == OverlayType::Granary && building.isEnum(CardEnum::Granary)) {
+		ShowRadius(Granary::Radius, centerAtom, building);
+	}
+	else if (overlayType == OverlayType::HaulingServices && building.isEnum(CardEnum::HaulingServices)) {
+		ShowRadius(HaulingServices::Radius, centerAtom, building);
 	}
 
 	else if (overlayType == OverlayType::Theatre && building.isEnum(CardEnum::Theatre)) {

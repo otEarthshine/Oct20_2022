@@ -206,6 +206,12 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		CASE_BUILDING(CardEnum::IntercityLogisticsPort, IntercityLogisticsPort);
 		CASE_BUILDING(CardEnum::IntercityBridge, Bridge);
 
+		// Mar 12
+		CASE_BUILDING(CardEnum::Granary, Granary);
+		CASE_BUILDING(CardEnum::Archives, Archives);
+		CASE_BUILDING(CardEnum::HaulingServices, HaulingServices);
+		
+
 		CASE_BUILDING(CardEnum::BoarBurrow, BoarBurrow);
 
 		case CardEnum::DirtRoad:
@@ -475,12 +481,6 @@ void BuildingSystem::RemoveBuilding(int buildingId)
 	TileArea frontArea = area.GetFrontArea(faceDirection);
 	int32 townId = _buildings[buildingId]->townId();
 	bool isConstructed = _buildings[buildingId]->isConstructed();
-
-#if TRAILER_MODE
-	if (buildingEnum == CardEnum::Windmill) {
-		PUN_LOG("Windmill why delete?");
-	}
-#endif
 	
 
 	PlaceBuildingOnMap(buildingId, false, false);

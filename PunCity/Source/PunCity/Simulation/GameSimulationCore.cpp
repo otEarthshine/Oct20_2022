@@ -1926,7 +1926,14 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 		return -1;
 	}
 	
-	
+	if (cardEnum == CardEnum::Archives &&
+		buildingCount(playerId, CardEnum::Archives) >= 8)
+	{
+		AddPopup(playerId,
+			LOCTEXT("MaxArchivesReached", "You can only build the maximum of 8 Archives.")
+		);
+		return -1;
+	}
 	
 
 	// Trap
@@ -2247,19 +2254,6 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 			}
 		}
 
-#if TRAILER_MODE
-		if (playerId == 0) {
-			if (static_cast<CardEnum>(parameters.buildingEnum) == CardEnum::Windmill) {
-				_LOG(PunTrailer, "End Place Windmill size:%d ", buildingIds(playerId, CardEnum::Windmill).size()); //
-				buildingSubregionList().ExecuteRegion(parameters.center.region(), [&](int32 buildingIdLocal) {
-					if (building(buildingIdLocal).buildingEnum() == CardEnum::Windmill) {
-						_LOG(PunTrailer, "buildingSubregionList Windmill %s", ToTChar(building(buildingIdLocal).centerTile().ToString())); //
-					}
-				});
-			}
-		}
-#endif
-
 		return buildingId;
 	}
 	
@@ -2347,11 +2341,11 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 					}
 					else
 					{
+						// Return cards to hand
 						std::vector<CardStatus> slotCards = bld.slotCards();
 						for (CardStatus card : slotCards)
 						{
 							if (cardSys.CanAddCardToBoughtHand(card.cardEnum, 1)) {
-								bld.RemoveSlotCard();
 								cardSys.AddCardToHand2(card.cardEnum);
 							}
 							else {
@@ -2362,7 +2356,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 							}
 						}
 
-						bld.ClearSlotCard();
+						bld.ResetCardSlots();
 					}
 
 					/*
@@ -2642,7 +2636,7 @@ void GameSimulationCore::SetAllowResource(FSetAllowResource command)
 			townManager(bld.townId()).SetHouseResourceAllow(command.resourceEnum, command.allowed);
 		}
 	}
-	else if (IsStorage(bld.buildingEnum()) || bld.isEnum(CardEnum::Market))
+	else if (IsStorage(bld.buildingEnum()))
 	{
 		StorageBase& storage = bld.subclass<StorageBase>();
 		if (command.isExpansionCommand) 
@@ -2656,7 +2650,7 @@ void GameSimulationCore::SetAllowResource(FSetAllowResource command)
 		}
 		else {
 			if (storage.isConstructed()) {
-				storage.SetHolderTypeAndTarget(command.resourceEnum, command.allowed ? storage.defaultHolderType() : ResourceHolderType::Provider, 0);
+				storage.SetHolderTypeAndTarget(command.resourceEnum, command.allowed ? storage.defaultHolderType(command.resourceEnum) : ResourceHolderType::Provider, 0);
 
 				// Refresh storage after setting allowed resource, so that citizens taking the resources to this storage will be reset.
 				resourceSystem(command.playerId).ResetHolderReservers(storage.holderInfo(command.resourceEnum));
@@ -2754,33 +2748,37 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 		else if (command.callbackEnum == CallbackEnum::QuickBuild) {
 			if (command.intVar1 != -1) 
 			{
-				Building& bld = building(command.intVar1);
-				if (!bld.isConstructed() && money(command.playerId) >= bld.GetQuickBuildCost())
+				if (Building* bld = buildingPtr(command.intVar1))
 				{
-					ChangeMoney(command.playerId, -bld.GetQuickBuildCost());
-					_buildingSystem->AddQuickBuild(command.intVar1);
+					if (!bld->isConstructed() && money(command.playerId) >= bld->GetQuickBuildCost())
+					{
+						ChangeMoney(command.playerId, -bld->GetQuickBuildCost());
+						_buildingSystem->AddQuickBuild(command.intVar1);
 
-					bld.InstantClearArea();
-					bld.FinishConstructionResourceAndWorkerReset();
-					bld.SetAreaWalkable();
+						bld->InstantClearArea();
+						bld->FinishConstructionResourceAndWorkerReset();
+						bld->SetAreaWalkable();
+					}
 				}
 			}
 		}
 		else if (command.callbackEnum == CallbackEnum::AddAnimalRanch) {
 			if (command.intVar1 != -1)
 			{
-				Building& bld = building(command.intVar1);
-				if (IsRanch(bld.buildingEnum()))
+				if (Building* bld = buildingPtr(command.intVar1))
 				{
-					Ranch& ranch = bld.subclass<Ranch>();
-					int32 animalCost = ranch.animalCost();
-					
-					if (ranch.openAnimalSlots() > 0 &&
-						animalCost <= money(ranch.playerId()))
+					if (IsRanch(bld->buildingEnum()))
 					{
-						UnitEnum animalEnum = ranch.GetAnimalEnum();
-						ranch.AddAnimalOccupant(animalEnum, GetUnitInfo(animalEnum).minBreedingAgeTicks);
-						ChangeMoney(ranch.playerId(), -animalCost);
+						Ranch& ranch = bld->subclass<Ranch>();
+						int32 animalCost = ranch.animalCost();
+
+						if (ranch.openAnimalSlots() > 0 &&
+							animalCost <= money(ranch.playerId()))
+						{
+							UnitEnum animalEnum = ranch.GetAnimalEnum();
+							ranch.AddAnimalOccupant(animalEnum, GetUnitInfo(animalEnum).minBreedingAgeTicks);
+							ChangeMoney(ranch.playerId(), -animalCost);
+						}
 					}
 				}
 			}
@@ -3930,7 +3928,7 @@ void GameSimulationCore::UnslotCard(FUnslotCard command)
 	}
 	else
 	{
-		CardEnum cardEnum = bld.RemoveSlotCard();
+		CardEnum cardEnum = bld.RemoveSlotCard(command.unslotIndex);
 		if (cardEnum != CardEnum::None) {
 			cardSys.AddCardToHand2(cardEnum);
 		}

@@ -196,6 +196,11 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 		LOCTEXT("Cheap Reroll Desc", "Rerolls cost half as much.")
 	}},
 
+	{ TechEnum::QuickBuild, {
+		LOCTEXT("Quick Build", "Quick Build"),
+		LOCTEXT("Quick Build Desc", "Allows speeding up construction with money.")
+	} },
+	
 	//{TechEnum::ClaimLandByFood, {
 	//	"Expeditionary supply",
 	//	"Allows claiming land by food",
@@ -651,8 +656,9 @@ public:
 			int32 era = 1;
 			AddTech_Bonus(era, TechEnum::ImprovedWoodCutting);
 			AddTech_Building(era, TechEnum::TradingPost, { CardEnum::TradingPost, CardEnum::TradingPort });
+			AddTech_Bonus(era, TechEnum::Plantation);
 			AddTech_Bonus(era, TechEnum::MushroomSubstrateSterilization);
-			AddTech_Bonus(era, TechEnum::BorealLandCost);
+			//AddTech_Bonus(era, TechEnum::BorealLandCost);
 			AddTech_Building(era, TechEnum::SpyGuard, { CardEnum::KidnapGuard, CardEnum::TreasuryGuard });
 
 			AddTech_Building(era, TechEnum::HerbFarming, { CardEnum::HerbSeed });
@@ -661,71 +667,76 @@ public:
 			//
 			era = 2;
 			//AddTech_Building(era, TechEnum::DeepMining, { CardEnum::GemstoneMine });
-			AddTech_Bonus(era, TechEnum::Plantation);
 			//AddTech_Bonus(era, TechEnum::RerollCardsPlus1); // TODO: bring back
 			//AddTech_Bonus(era, TechEnum::CheapReroll); // TODO: bring back
-			AddTech_BuildingPermanent(era, TechEnum::Colony, { CardEnum::Colony, CardEnum::PortColony });
-			AddTech_Building(era, TechEnum::IntercityLogistics, { CardEnum::IntercityLogisticsHub, CardEnum::IntercityLogisticsPort });
+			AddTech_Building(era, TechEnum::Granary, CardEnum::Granary);
+			AddTech_Bonus(era, TechEnum::QuickBuild);
 			AddTech_Building(era, TechEnum::IronRefining, { CardEnum::IronMine, CardEnum::IronSmelter });
 			AddTech_Building(era, TechEnum::Blacksmith, CardEnum::Blacksmith);
 			AddTech_Bonus(era, TechEnum::Sawmill);
 			
+			AddTech_Bonus(era, TechEnum::BudgetAdjustment);
 			AddTech_Building(era, TechEnum::VodkaDistillery, { CardEnum::VodkaDistillery }, ResourceEnum::Potato, 1000);
 			
 			//
 			era = 3;
+			AddTech_Building(era, TechEnum::IntercityRoad, { CardEnum::IntercityRoad, CardEnum::IntercityBridge });
 			AddTech_Building(era, TechEnum::TradingCompany, CardEnum::TradingCompany);
 			AddTech_Building(era, TechEnum::Market, { CardEnum::Market });
 			AddTech_Building(era, TechEnum::Espionage, { CardEnum::Steal });
-			
 			AddTech_Building(era, TechEnum::Medicine, CardEnum::MedicineMaker);
+			
 			AddTech_Building(era, TechEnum::RanchSheep, { CardEnum::RanchSheep });
-
 			AddTech_Building(era, TechEnum::BlueberryFarming, { CardEnum::BlueberrySeed });
-			AddTech_Bonus(era, TechEnum::ShallowWaterEmbark);
 			
 			//
 			era = 4;
+			AddTech_BuildingPermanent(era, TechEnum::Colony, { CardEnum::Colony, CardEnum::PortColony });
+			AddTech_Building(era, TechEnum::HaulingServices, CardEnum::HaulingServices);
+			AddTech_Building(era, TechEnum::Archives, CardEnum::Archives);
 			AddTech_Bonus(era, TechEnum::DesertTrade);
 			AddTech_Bonus(era, TechEnum::HouseAdjacency);
-			AddTech_Bonus(era, TechEnum::QuarryImprovement);
-			AddTech_Bonus(era, TechEnum::ImprovedWoodCutting2);
+			
+			AddTech_Bonus(era, TechEnum::QuarryImprovement); // Quarry Improvement as a precursor to tunnel??
 			AddTech_BuildingPermanent(era, TechEnum::Tunnel, {CardEnum::Tunnel});
-
-			AddTech_Building(era, TechEnum::PumpkinFarming, { CardEnum::PumpkinSeed }, ResourceEnum::Blueberries, 1000);
 			
 			//AddPermanentBuildingResearch(3, TechEnum::Fence, { BuildingEnum::Fence, BuildingEnum::FenceGate });
 
 			
 			//
 			era = 5;
+			
 			AddTech_Bonus(era, TechEnum::MoreGoldPerHouse);
+			AddTech_Building(era, TechEnum::IntercityLogistics, { CardEnum::IntercityLogisticsHub, CardEnum::IntercityLogisticsPort });
 			AddTech_Building(era, TechEnum::ImprovedLogistics, { CardEnum::ShippingDepot });
 			AddTech_Building(era, TechEnum::Irrigation, { CardEnum::IrrigationReservoir });
-
-			AddTech_Building(era, TechEnum::ShroomFarm, { CardEnum::ShroomFarm }, ResourceEnum::Mushroom, 3000);
 			AddTech_Building(era, TechEnum::CoffeeRoaster, { CardEnum::CoffeeRoaster });
+
+			AddTech_Bonus(era, TechEnum::ImprovedWoodCutting2);
+			AddTech_Bonus(era, TechEnum::ShallowWaterEmbark);
+			
 			
 			//
 			era = 6;
-			AddTech_Bonus(era, TechEnum::BudgetAdjustment);
+			AddTech_Bonus(era, TechEnum::HaulingCapacity);
 			AddTech_Building(era, TechEnum::BarrackKnight, CardEnum::BarrackSwordman);
 			AddTech_Building(era, TechEnum::Bank, { CardEnum::Bank });
-			AddTech_Building(era, TechEnum::Theatre, CardEnum::Theatre);
+			AddTech_Building(era, TechEnum::ShroomFarm, { CardEnum::ShroomFarm }, ResourceEnum::Mushroom, 3000);
+			
 			AddTech_Building(era, TechEnum::RanchCow, { CardEnum::RanchCow });
-
-			AddTech_Building(era, TechEnum::MelonFarming, { CardEnum::MelonSeed }, ResourceEnum::Pumpkin, 3000);
-			AddTech_Bonus(era, TechEnum::DeepWaterEmbark);
+			AddTech_Building(era, TechEnum::PumpkinFarming, { CardEnum::PumpkinSeed }, ResourceEnum::Blueberries, 1000);
 			
 			//
 			era = 7;
-			AddTech_Bonus(era, TechEnum::HaulingCapacity);
 			AddTech_Bonus(era, TechEnum::WorkSchedule);
+			AddTech_Building(era, TechEnum::Theatre, CardEnum::Theatre);
 			AddTech_Bonus(era, TechEnum::TaxAdjustment);
 			AddTech_Building(era, TechEnum::Garden, CardEnum::Garden);
-
 			AddTech_Bonus(era, TechEnum::WineryImprovement);
+			
 			AddTech_Bonus(era, TechEnum::TraderDiscount);
+			AddTech_Building(era, TechEnum::MelonFarming, { CardEnum::MelonSeed }, ResourceEnum::Pumpkin, 3000);
+			//AddTech_Bonus(era, TechEnum::DeepWaterEmbark);
 			//AddTech_Building(era, TechEnum::ShrineRot, { CardEnum::ShrineGreedPiece });
 			
 			//
@@ -781,7 +792,6 @@ public:
 			
 			era = 4;
 			AddProsperityTech_Building(era, 10, TechEnum::Winery, CardEnum::Winery);
-			AddProsperityTech_BuildingPermanent(era, 4, TechEnum::IntercityRoad, { CardEnum::IntercityRoad, CardEnum::IntercityBridge });
 			
 			AddProsperityTech_Building(era, 10, TechEnum::School, CardEnum::School);
 			AddProsperityTech_Building(era, 10, TechEnum::PaperMaker, CardEnum::PaperMaker);

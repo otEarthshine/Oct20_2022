@@ -1028,20 +1028,17 @@ public:
 	}
 };
 
-class Bank final : public Building
+class ProfitBuilding : public Building
 {
 public:
-	static const int32 Radius = 30;
-	static const int32 ProfitPerHouse = 10;
-
-	static const int32 MinHouseLvl = 2;
-	
-	void FinishConstruction() final {
+	void FinishConstruction() override {
 		Building::FinishConstruction();
 		lastRoundProfit = 0;
 	}
 
-	void CalculateRoundProfit();
+	virtual IncomeEnum incomeEnum() { return IncomeEnum::BankProfit; }
+
+	virtual void CalculateRoundProfit() {}
 
 	void Serialize(FArchive& Ar) override {
 		Building::Serialize(Ar);
@@ -1050,6 +1047,30 @@ public:
 
 	int32 lastRoundProfit;
 };
+
+class Bank final : public ProfitBuilding
+{
+public:
+	static const int32 Radius = 30;
+	static const int32 ProfitPerHouse = 10;
+
+	static const int32 MinHouseLvl = 2;
+
+	void CalculateRoundProfit() override;
+};
+
+class Archives final : public ProfitBuilding
+{
+public:
+	int32 maxCardSlots() override { return 6; }
+
+	static const int32 CardProfitPercentPerRound = 3;
+
+	IncomeEnum incomeEnum() override { return IncomeEnum::ArchivesProfit; }
+
+	void CalculateRoundProfit() override;
+};
+
 
 
 static const std::vector<int32> BaseServiceQuality
@@ -1337,6 +1358,15 @@ public:
 	std::vector<ResourceEnum> resourceEnums;
 	static const int32 Radius = 12;
 };
+
+class HaulingServices final : public Building
+{
+public:
+
+
+	static const int32 Radius = 32;
+};
+
 
 
 class IrrigationReservoir final : public Building

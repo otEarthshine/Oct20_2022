@@ -874,7 +874,21 @@ public:
 		{ // Intercity Bridge
 			ModuleTransforms({ ModuleTransform("Bridge1", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
 		},
-		
+
+		/*
+		 * Mar 12
+		 */
+		{ // Granary
+			ModuleTransforms::CreateSet("Granary_Era4_")
+		},
+		{ // Archives
+			ModuleTransforms::CreateSet("Archives_Era4_")
+		},
+		{ // Hauling Services
+			ModuleTransforms::CreateSet("HaulingServices_Era2_")
+		},
+
+			
 		/*
 		 * Decorations
 		 */
@@ -1066,6 +1080,16 @@ public:
 
 						subMeshName = setName + FString("Special2");
 						if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName));
+
+						subMeshName = setName + FString("Special3");
+						if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName));
+
+						subMeshName = setName + FString("Special4");
+						if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName));
+
+						subMeshName = setName + FString("Special5");
+						if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName));
+						
 
 						moduleTransforms.transforms.insert(moduleTransforms.transforms.begin(), transforms.begin(), transforms.end());
 						moduleTransforms.miniModules.insert(moduleTransforms.miniModules.begin(), miniTransforms.begin(), miniTransforms.end());

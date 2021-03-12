@@ -2221,6 +2221,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 						return;
 					}
 
+					// No Card Slot
 					if (building.maxCardSlots() == 0) {
 						simulation().AddPopupToFront(playerId(), 
 							LOCTEXT("BldHasNoSlot_Pop", "This building has no card slot."),
@@ -2229,13 +2230,15 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 						return;
 					}
 
-					if (building.slotCard() != CardEnum::None) {
+					// Card Slots Full
+					if (building.IsCardSlotsFull()) {
 						simulation().AddPopupToFront(playerId(), 
-							LOCTEXT("BldSlotAlreadyHasCard_Pop", "This building already has a slotted card. Remove it first by clicking on the slotted card."),
+							LOCTEXT("BldSlotAlreadyHasCard_Pop", "This Building's Card Slots are full. Remove a Card first by clicking on a Slotted Sard."),
 							ExclusiveUIEnum::None, "PopupCannot"
 						);
 						return;
 					}
+					
 					
 					if (building.CanAddSlotCard()) 
 					{

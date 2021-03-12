@@ -19,9 +19,9 @@
 // VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 15 // 3 digit
+#define MINOR_VERSION 16 // 3 digit
 
-#define VERSION_DAY 10
+#define VERSION_DAY 12
 #define VERSION_MONTH 3
 #define VERSION_YEAR 21
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
@@ -62,9 +62,9 @@ static FString GetGameVersionString(int32 version, bool includeDate = true)
 
 // VERSION
 #define MAJOR_SAVE_VERSION 0
-#define MINOR_SAVE_VERSION 15 // 3 digit
+#define MINOR_SAVE_VERSION 16 // 3 digit
 
-#define VERSION_SAVE_DAY 10
+#define VERSION_SAVE_DAY 12
 #define VERSION_SAVE_MONTH 3
 #define VERSION_SAVE_YEAR 21
 #define VERSION_SAVE_DATE (VERSION_SAVE_YEAR * 10000) + (VERSION_SAVE_MONTH * 100) + VERSION_SAVE_DAY
@@ -2092,6 +2092,11 @@ enum class CardEnum : uint16
 	IntercityLogisticsPort,
 	IntercityBridge,
 
+	// Mar 12
+	Granary,
+	Archives,
+	HaulingServices,
+
 	// Decorations
 	FlowerBed,
 	GardenShrubbery1,
@@ -2701,6 +2706,12 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::IntercityLogisticsHub, LOCTEXT("Intercity Logistics Hub", "Intercity Logistics Hub"), LOCTEXT("Intercity Logistics Hub (Plural)", "Intercity Logistics Hubs"), WorldTile2(6, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 1, { 50,20,0 }, LOCTEXT("Intercity Logistics Hub Desc", "Bring resources from another city (land).")),
 	BldInfo(CardEnum::IntercityLogisticsPort, LOCTEXT("Intercity Logistics Port", "Intercity Logistics Port"), LOCTEXT("Intercity Logistics Port (Plural)", "Intercity Logistics Ports"), WorldTile2(12, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 1, { 80,20,0 }, LOCTEXT("Intercity Logistics Port Desc", "Bring resources from another city (water).")),
 	BldInfo(CardEnum::IntercityBridge, LOCTEXT("Intercity Bridge", "Intercity Bridge"), LOCTEXT("Intercity Bridge (Plural)", "Intercity Bridges"), WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Intercity Bridge Desc", "Bridge that can be built outside your territory to connect Cities.")),
+
+	// March 12
+	BldInfo(CardEnum::Granary, LOCTEXT("Granary", "Granary"), LOCTEXT("Granary (Plural)", "Granaries"), WorldTile2(6, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Granary Desc", "Store Food. +25% Productivity to surrounding Farms.")),
+	BldInfo(CardEnum::Archives, LOCTEXT("Archives", "Archives"), LOCTEXT("Archives (Plural)", "Archives"), WorldTile2(6, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Archives Desc", "Store Cards. Generate Income equals to 24% of the Card Price per year (3% per Round)")),
+	BldInfo(CardEnum::HaulingServices, LOCTEXT("Hauling Services", "Hauling Services"), LOCTEXT("Hauling Services (Plural)", "Hauling Services"), WorldTile2(6, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 5, { 50, 20, 0 }, LOCTEXT("Hauling Services Desc", "Workers use carts to haul resources to fill building inputs or clear building outputs.")),
+
 	
 	// Decorations
 	BldInfo(CardEnum::FlowerBed,		LOCTEXT("Flower Bed", "Flower Bed"),		LOCTEXT("Flower Bed (Plural)", "Flower Beds"), WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Flower Bed Desc", "Increase the surrounding appeal by 5 within 5 tiles radius.")),
@@ -3347,6 +3358,19 @@ static bool IsServiceBuilding(CardEnum buildingEnum)
 	}
 }
 
+static const std::vector<CardEnum> ProfitBuildings
+{
+	CardEnum::Bank,
+	CardEnum::Archives,
+};
+static bool IsProfitBuilding(CardEnum cardEnumIn)
+{
+	for (CardEnum cardEnum : ProfitBuildings) {
+		if (cardEnum == cardEnumIn)	return true;
+	}
+	return false;
+}
+
 static const std::vector<CardEnum> TradingPostLikeBuildings
 {
 	CardEnum::TradingPost,
@@ -3458,6 +3482,7 @@ static const std::vector<CardEnum> StorageEnums {
 	CardEnum::StorageYard,
 	CardEnum::Warehouse,
 	CardEnum::Market,
+	CardEnum::Granary,
 };
 static bool IsStorage(CardEnum buildingEnum) {
 	for (CardEnum storageEnum : StorageEnums) {
@@ -4626,14 +4651,14 @@ enum class OverlayType
 	Gatherer,
 	Hunter,
 	Forester,
-	
+
 	Windmill,
 	IrrigationReservoir,
 	Market,
 	ShippingDepot,
-	
+
 	Beekeeper,
-	
+
 	//ConstructionOffice,
 	Industrialist,
 	Consulting,
@@ -4642,6 +4667,9 @@ enum class OverlayType
 	Library,
 	School,
 	Bank,
+
+	Granary,
+	HaulingServices,
 	
 	Theatre,
 	Tavern,
@@ -4716,6 +4744,7 @@ enum class IncomeEnum : uint8
 	// Other income
 	TownhallIncome, // HouseIncomeEnumCount!!!
 	BankProfit,
+	ArchivesProfit,
 	InvestmentProfit,
 	SocialWelfare,
 
@@ -4749,6 +4778,7 @@ static const TArray<FText> IncomeEnumName
 
 	LOCTEXT("Townhall Income", "Townhall Income"),
 	LOCTEXT("Bank Profit", "Bank Profit"),
+	LOCTEXT("Archives Income", "Archives Income"),
 	LOCTEXT("Investment Profit", "Investment Profit"),
 	LOCTEXT("Social Welfare", "Social Welfare"),
 	
@@ -4946,6 +4976,12 @@ enum class TechEnum : uint8
 	ShroomFarm,
 	VodkaDistillery,
 	CoffeeRoaster,
+
+	// Mar 12
+	Granary,
+	Archives,
+	HaulingServices,
+	QuickBuild,
 	
 
 	//Bridge,

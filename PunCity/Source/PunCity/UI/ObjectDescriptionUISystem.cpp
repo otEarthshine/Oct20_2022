@@ -694,6 +694,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 			// Show Description for some building
 			if (building.isEnum(CardEnum::Bank) ||
+				building.isEnum(CardEnum::Archives) ||
+				building.isEnum(CardEnum::HaulingServices) ||
+				building.isEnum(CardEnum::Granary) ||
 				building.isEnum(CardEnum::ShippingDepot) || 
 				building.isEnum(CardEnum::Market) || 
 				building.isEnum(CardEnum::TradingCompany))
@@ -1101,8 +1104,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						}
 
 					}
-					else if (building.isEnum(CardEnum::Bank) ||
-							building.isEnum(CardEnum::InvestmentBank)) 
+					else if (IsProfitBuilding(building.buildingEnum())) 
 					{	
 						ADDTEXT_(INVTEXT("{0}<img id=\"Coin\"/>"), FText::AsNumber(static_cast<Bank*>(&building)->lastRoundProfit));
 						descriptionBox->AddRichText(LOCTEXT("Round profit", "Round profit"), args);
@@ -1689,86 +1691,99 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						}
 					};
 
-					// Food
-					{
-						int32 foodAllowCount = 0;
-						for (ResourceEnum resourceEnum : StaticData::FoodEnums) {
-							if (storage.ResourceAllowed(resourceEnum)) {
-								foodAllowCount++;
-							}
-						}
-						ECheckBoxState checkState;
-						if (foodAllowCount == StaticData::FoodEnumCount) {
-							checkState = ECheckBoxState::Checked;
-						}
-						else if (foodAllowCount > 0) {
-							checkState = ECheckBoxState::Undetermined;
-						}
-						else {
-							checkState = ECheckBoxState::Unchecked;
-						}
 
-						int32 target = 0;
-						if (isMarket) {
-							target = building.subclass<Market>().GetFoodTarget();
-						}
-						
-						auto element = manageStorageBox->AddManageStorageElement(ResourceEnum::Food, LOCTEXT("Food", "Food"), objectId, checkState, true, _justOpenedDescriptionUI, isMarket, target);
-						bool expanded = element->HasDelayOverride() ? element->expandedOverride : storage.expandedFood;
+					// Special Case: Granary
+					if (storage.isEnum(CardEnum::Granary))
+					{
 						for (ResourceEnum resourceEnum : StaticData::FoodEnums) {
-							tryAddManageStorageElement_UnderExpansion(resourceEnum, expanded, false);
+							tryAddManageStorageElement_UnderExpansion(resourceEnum, true, true, false);
 						}
 					}
-
-					// Luxury
+					// Non-Granary
+					else
 					{
-						int32 luxuryAllowCount = 0;
-						for (int32 i = 1; i < TierToLuxuryEnums.size(); i++) {
-							for (ResourceEnum resourceEnum : TierToLuxuryEnums[i]) {
+						// Food
+						{
+							int32 foodAllowCount = 0;
+							for (ResourceEnum resourceEnum : StaticData::FoodEnums) {
 								if (storage.ResourceAllowed(resourceEnum)) {
-									luxuryAllowCount++;
+									foodAllowCount++;
 								}
 							}
-						}
-						ECheckBoxState checkState;
-						if (luxuryAllowCount == LuxuryResourceCount()) {
-							checkState = ECheckBoxState::Checked;
-						}
-						else if (luxuryAllowCount > 0) {
-							checkState = ECheckBoxState::Undetermined;
-						}
-						else {
-							checkState = ECheckBoxState::Unchecked;
-						}
+							ECheckBoxState checkState;
+							if (foodAllowCount == StaticData::FoodEnumCount) {
+								checkState = ECheckBoxState::Checked;
+							}
+							else if (foodAllowCount > 0) {
+								checkState = ECheckBoxState::Undetermined;
+							}
+							else {
+								checkState = ECheckBoxState::Unchecked;
+							}
 
-						auto element = manageStorageBox->AddManageStorageElement(ResourceEnum::Luxury, LOCTEXT("Luxury", "Luxury"), objectId, checkState, true, _justOpenedDescriptionUI, false);
-						bool expanded = element->HasDelayOverride() ? element->expandedOverride : storage.expandedLuxury;
-						for (int32 i = 1; i < TierToLuxuryEnums.size(); i++) {
-							for (ResourceEnum resourceEnum : TierToLuxuryEnums[i]) {
+							int32 target = 0;
+							if (isMarket) {
+								target = building.subclass<Market>().GetFoodTarget();
+							}
+
+							auto element = manageStorageBox->AddManageStorageElement(ResourceEnum::Food, LOCTEXT("Food", "Food"), objectId, checkState, true, _justOpenedDescriptionUI, isMarket, target);
+							bool expanded = element->HasDelayOverride() ? element->expandedOverride : storage.expandedFood;
+							for (ResourceEnum resourceEnum : StaticData::FoodEnums) {
 								tryAddManageStorageElement_UnderExpansion(resourceEnum, expanded, false);
 							}
 						}
-					}
 
-					// Other resources
-					if (building.isEnum(CardEnum::Market))
-					{
-						for (ResourceEnum resourceEnum : FuelEnums) {
-							tryAddManageStorageElement_UnderExpansion(resourceEnum, true, true, false);
-						}
-						for (ResourceEnum resourceEnum : MedicineEnums) {
-							tryAddManageStorageElement_UnderExpansion(resourceEnum, true, true, false);
-						}
-						for (ResourceEnum resourceEnum : ToolsEnums) {
-							tryAddManageStorageElement_UnderExpansion(resourceEnum, true, true, false);
-						}
-					}
-					else
-					{
-						for (ResourceInfo resourceInfo : resourceEnums)
+						// Luxury
 						{
-							tryAddManageStorageElement_UnderExpansion(resourceInfo.resourceEnum, true, true, false);
+							int32 luxuryAllowCount = 0;
+							for (int32 i = 1; i < TierToLuxuryEnums.size(); i++) {
+								for (ResourceEnum resourceEnum : TierToLuxuryEnums[i]) {
+									if (storage.ResourceAllowed(resourceEnum)) {
+										luxuryAllowCount++;
+									}
+								}
+							}
+							ECheckBoxState checkState;
+							if (luxuryAllowCount == LuxuryResourceCount()) {
+								checkState = ECheckBoxState::Checked;
+							}
+							else if (luxuryAllowCount > 0) {
+								checkState = ECheckBoxState::Undetermined;
+							}
+							else {
+								checkState = ECheckBoxState::Unchecked;
+							}
+
+							auto element = manageStorageBox->AddManageStorageElement(ResourceEnum::Luxury, LOCTEXT("Luxury", "Luxury"), objectId, checkState, true, _justOpenedDescriptionUI, false);
+							bool expanded = element->HasDelayOverride() ? element->expandedOverride : storage.expandedLuxury;
+							for (int32 i = 1; i < TierToLuxuryEnums.size(); i++) {
+								for (ResourceEnum resourceEnum : TierToLuxuryEnums[i]) {
+									tryAddManageStorageElement_UnderExpansion(resourceEnum, expanded, false);
+								}
+							}
 						}
+
+						// Other resources
+						if (building.isEnum(CardEnum::Market))
+						{
+							for (ResourceEnum resourceEnum : FuelEnums) {
+								tryAddManageStorageElement_UnderExpansion(resourceEnum, true, true, false);
+							}
+							for (ResourceEnum resourceEnum : MedicineEnums) {
+								tryAddManageStorageElement_UnderExpansion(resourceEnum, true, true, false);
+							}
+							for (ResourceEnum resourceEnum : ToolsEnums) {
+								tryAddManageStorageElement_UnderExpansion(resourceEnum, true, true, false);
+							}
+						}
+						else
+						{
+							for (ResourceInfo resourceInfo : resourceEnums)
+							{
+								tryAddManageStorageElement_UnderExpansion(resourceInfo.resourceEnum, true, true, false);
+							}
+						}
+
 					}
 
 					manageStorageBox->AfterAdd();
@@ -2365,6 +2380,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					case CardEnum::Library: overlayType = OverlayType::Library; break;
 					case CardEnum::School: overlayType = OverlayType::School; break;
 					case CardEnum::Bank: overlayType = OverlayType::Bank; break;
+
+					case CardEnum::HaulingServices: overlayType = OverlayType::HaulingServices; break;
+					case CardEnum::Granary: overlayType = OverlayType::Granary; break;
 						
 					case CardEnum::Theatre: overlayType = OverlayType::Theatre; break;
 					case CardEnum::Tavern: overlayType = OverlayType::Tavern; break;

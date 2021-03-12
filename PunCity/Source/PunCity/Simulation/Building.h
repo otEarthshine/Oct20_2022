@@ -1213,53 +1213,71 @@ public:
 	/*
 	 * Card slots
 	 */
-	CardEnum slotCard() {
-		return _cardSlot1.cardEnum;
+	bool IsCardSlotsFull() {
+		for (const CardStatus& cardStatus : _cardSlots) {
+			if (cardStatus.cardEnum == CardEnum::None) {
+				return false;
+			}
+		}
+		return true;
 	}
 	int32 slotCardCount(CardEnum cardEnum) {
-		return _cardSlot1.cardEnum == cardEnum ? 1 : 0;
-	}
-	std::vector<CardStatus> slotCards() {
-		if (_cardSlot1.cardEnum != CardEnum::None) {
-			return { _cardSlot1 };
+		int32 count = 0;
+		for (const CardStatus& cardStatus : _cardSlots) {
+			if (cardStatus.cardEnum == cardEnum) {
+				count++;
+			}
 		}
-		return {};
+		return count;
+	}
+	const std::vector<CardStatus>& slotCards() {
+		return _cardSlots;
 	}
 	virtual int32 maxCardSlots() {
 		if (IsDecorativeBuilding(_buildingEnum)) {
 			return 0;
 		}
-		return 1;
+		return 2;
 	}
 	bool CanAddSlotCard()
 	{
 		if (isEnum(CardEnum::Townhall)) {
 			return false;
 		}
-		if (maxCardSlots() == 0) {
-			return false;
+		for (const CardStatus& cardStatus : _cardSlots) {
+			if (cardStatus.cardEnum == CardEnum::None) {
+				return true;
+			}
 		}
-		return _cardSlot1.cardEnum == CardEnum::None;
+		return false;
 	}
 	void AddSlotCard(CardStatus card)
 	{
 		PUN_CHECK(!isEnum(CardEnum::Townhall));
 		PUN_CHECK(IsBuildingSlotCard(card.cardEnum));
-		PUN_CHECK(_cardSlot1.cardEnum == CardEnum::None);
-		_cardSlot1 = card;
+
+		for (int32 i = 0; i < _cardSlots.size(); i++) {
+			if (_cardSlots[i].cardEnum == CardEnum::None) {
+				_cardSlots[i] = card;
+				return;
+			}
+		}
+		UE_DEBUG_BREAK();
 	}
-	CardEnum RemoveSlotCard()
+	CardEnum RemoveSlotCard(int32 unslotIndex)
 	{
 		PUN_CHECK(!isEnum(CardEnum::Townhall));
-		PUN_CHECK(_cardSlot1.cardEnum != CardEnum::None);
-		CardEnum result = _cardSlot1.cardEnum;
-		_cardSlot1 = CardStatus();
+		PUN_ENSURE(unslotIndex < _cardSlots.size(), return CardEnum::None);
+		
+		CardEnum result = _cardSlots[unslotIndex].cardEnum;
+		_cardSlots[unslotIndex] = CardStatus();
 		return result;
 	}
-	void ClearSlotCard()
+	void ResetCardSlots()
 	{
 		PUN_CHECK(!isEnum(CardEnum::Townhall));
-		_cardSlot1 = CardStatus();
+		_cardSlots.clear();
+		_cardSlots.resize(maxCardSlots());
 	}
 
 	virtual int32 GetBuildingSelectorHeight() {
@@ -1314,7 +1332,8 @@ public:
 		Ar << _isConstructed;
 
 		Ar << _priority;
-		_cardSlot1 >> Ar;
+		SerializeVecObj(Ar, _cardSlots);
+		//_cardSlot1 >> Ar;
 
 		// Statistics
 		SerializeVecVecObj(Ar, _seasonalProductionPairs);
@@ -1592,7 +1611,7 @@ protected:
 	bool _isConstructed = false;
 
 	PriorityEnum _priority = PriorityEnum::NonPriority;
-	CardStatus _cardSlot1;
+	std::vector<CardStatus> _cardSlots;
 
 	// Statistics
 	std::vector<std::vector<ResourcePair>> _seasonalProductionPairs;

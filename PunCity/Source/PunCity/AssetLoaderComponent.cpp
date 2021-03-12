@@ -379,6 +379,11 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	TryLoadBuildingModuleSet("ShroomHut", "ShroomHut");
 	TryLoadBuildingModuleSet("VodkaDistillery", "VodkaDistillery");
 	TryLoadBuildingModuleSet("CoffeeRoaster", "CoffeeRoaster");
+
+	// Mar 12
+	TryLoadBuildingModuleSet("Granary_Era4_", "Granary");
+	TryLoadBuildingModuleSet("Archives_Era4_", "Archives");
+	TryLoadBuildingModuleSet("HaulingServices_Era2_", "HaulingServices");
 	
 
 	// Mint Modules
@@ -1095,6 +1100,9 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 		"FrameAux",
 		"Special",
 		"Special2",
+		"Special3",
+		"Special4",
+		"Special5",
 	};
 
 	IPlatformFile& platformFile = FPlatformFileManager::Get().GetPlatformFile();

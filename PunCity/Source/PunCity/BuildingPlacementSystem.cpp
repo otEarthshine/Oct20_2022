@@ -515,15 +515,19 @@ void ABuildingPlacementSystem::StartBuildingPlacement(CardEnum buildingEnum, int
 	// Library/School ... Theatre/Tavern
 	else if (buildingEnum == CardEnum::Library) {
 		ShowRadius(Library::Radius, OverlayType::Library);
-		//_gameInterface->SetOverlayType(OverlayType::Library, OverlaySetterType::BuildingPlacement);
 	}
 	else if (buildingEnum == CardEnum::School) {
 		ShowRadius(School::Radius, OverlayType::School);
-		//_gameInterface->SetOverlayType(OverlayType::School, OverlaySetterType::BuildingPlacement);
 	}
 	else if (buildingEnum == CardEnum::Bank) {
 		ShowRadius(Bank::Radius, OverlayType::Bank);
-		//_gameInterface->SetOverlayType(OverlayType::Bank, OverlaySetterType::BuildingPlacement);
+	}
+
+	else if (buildingEnum == CardEnum::Granary) {
+		ShowRadius(Granary::Radius, OverlayType::Granary);
+	}
+	else if (buildingEnum == CardEnum::HaulingServices) {
+		ShowRadius(HaulingServices::Radius, OverlayType::HaulingServices);
 	}
 	
 	else if (buildingEnum == CardEnum::Theatre) {

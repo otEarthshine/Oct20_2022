@@ -1141,53 +1141,45 @@ void TownManager::RecalculateTax(bool showFloatup)
 				continue;
 			}
 
-			if (building.isConstructed()) // TODO: might not need this anymore?
-			{
-				// TODO: InvestmentBank not yet used... Make sure it works as a percentage bank...
-				if (building.isEnum(CardEnum::InvestmentBank)) {
-					Bank* bank = static_cast<Bank*>(&building);
-					bank->lastRoundProfit = globalResourceSys.money() / 10;
-					PUN_LOG("InvestmentBankGain: %d", globalResourceSys.money());
+			//if (building.isConstructed()) // TODO: might not need this anymore?
+			//{
+			//	// TODO: InvestmentBank not yet used... Make sure it works as a percentage bank...
+			//	if (building.isEnum(CardEnum::InvestmentBank)) {
+			//		Bank* bank = static_cast<Bank*>(&building);
+			//		bank->lastRoundProfit = globalResourceSys.money() / 10;
+			//		PUN_LOG("InvestmentBankGain: %d", globalResourceSys.money());
 
-					incomes100[static_cast<int>(IncomeEnum::BankProfit)] += bank->lastRoundProfit * 100;
+			//		incomes100[static_cast<int>(IncomeEnum::BankProfit)] += bank->lastRoundProfit * 100;
 
-					if (showFloatup) {
-						_simulation->uiInterface()->ShowFloatupInfo(FloatupInfo(FloatupEnum::GainMoney, Time::Ticks(), building.centerTile(), TEXT_NUMSIGNED(bank->lastRoundProfit)));
-					}
-				}
-				//// Bank
-				//else if (building.isEnum(CardEnum::Bank)) 
-				//{
-				//	Bank* bank = static_cast<Bank*>(&building);
-				//	
-				//	bank->CalculateRoundProfit();
-				//	incomes100[static_cast<int>(IncomeEnum::BankProfit)] += bank->lastRoundProfit * 100;
+			//		if (showFloatup) {
+			//			_simulation->uiInterface()->ShowFloatupInfo(FloatupInfo(FloatupEnum::GainMoney, Time::Ticks(), building.centerTile(), TEXT_NUMSIGNED(bank->lastRoundProfit)));
+			//		}
+			//	}
 
-				//	if (showFloatup) {
-				//		_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, bank->centerTile(), "+" + to_string(bank->lastRoundProfit));
-				//	}
-				//}
-
-			}
+			//}
 		}
 	}
 
 	/*
-	 * Banks
+	 * ProfitBuilding
+	 *  Bank, Archives
 	 */
-	{
-		const std::vector<int32>& buildingIds = _simulation->buildingIds(_playerId, CardEnum::Bank);
-		for (int32 buildingId : buildingIds) {
-			Bank& bank = _simulation->building<Bank>(buildingId);
 
-			bank.CalculateRoundProfit();
-			incomes100[static_cast<int>(IncomeEnum::BankProfit)] += bank.lastRoundProfit * 100;
+	for (CardEnum buildingEnum : ProfitBuildings)
+	{
+		const std::vector<int32>& buildingIds = _simulation->buildingIds(_playerId, buildingEnum);
+		for (int32 buildingId : buildingIds) {
+			ProfitBuilding& bld = _simulation->building<ProfitBuilding>(buildingId);
+
+			bld.CalculateRoundProfit();
+			incomes100[static_cast<int>(bld.incomeEnum())] += bld.lastRoundProfit * 100;
 
 			if (showFloatup) {
-				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, bank.centerTile(), TEXT_NUMSIGNED(bank.lastRoundProfit));
+				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, bld.centerTile(), TEXT_NUMSIGNED(bld.lastRoundProfit));
 			}
 		}
 	}
+
 
 	/*
 	 * Bonus Buildings

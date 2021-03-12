@@ -353,8 +353,11 @@ void UWorldSpaceUI::TickBuildings()
 	
 
 	OverlayType overlayType = data->GetOverlayType();
-	WorldTile2 overlayTile = dataSource()->GetOverlayTile();
+	WorldTile2 overlayTile = dataSource()->GetOverlayTile(); // Overlay tile is where the mouse is during Building Placement
 
+	/*
+	 * Go through Each building and display Hover Icons as needed
+	 */
 	for (int buildingId : buildingIdsToDisplay) 
 	{
 		if (buildingId == -1) continue; // displayedBuilding list is from BuildingDisplaySystem, invalid objectId is possible
@@ -508,6 +511,16 @@ void UWorldSpaceUI::TickBuildings()
 			hoverIcon->SetTextColor(FLinearColor::White);
 		}
 
+		else if (isInOverlayRadius(OverlayType::Granary, CardEnum::Granary, Granary::Radius))
+		{
+			UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
+				_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
+
+			//hoverIcon->SetImage(assetLoader()->ScienceIcon);
+			hoverIcon->IconImage->SetVisibility(ESlateVisibility::Collapsed);
+			hoverIcon->SetText(FText(), INVTEXT("+25%"));
+			hoverIcon->SetTextColor(FLinearColor::White);
+		}
 
 		
 		

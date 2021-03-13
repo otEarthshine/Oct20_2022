@@ -2121,7 +2121,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					descriptionBox->AddRichText(LOCTEXT("Construct", "Construct"), TEXT_PERCENT(building.constructionPercent()));
 
 					// Quick Build
-					if (building.playerId() == playerId())
+					if (building.playerId() == playerId() &&
+						simulation.IsResearched(playerId(), TechEnum::QuickBuild))
 					{
 						int32 quickBuildCost = building.GetQuickBuildCost();
 						bool canQuickBuild = simulation.money(playerId()) >= quickBuildCost;
@@ -2244,28 +2245,32 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 						_objectDescriptionUI->CardSlots->ClearChildren();
 						
-						for (int32 i = 0; i < _objectDescriptionUI->lastCards.size(); i++)
+						for (int32 i = 0; i < cards.size(); i++)
 						{
-							UBuildingPlacementButton* cardButton = AddWidget<UBuildingPlacementButton>(UIEnum::CardMini);
-							CardEnum cardEnum = _objectDescriptionUI->lastCards[i].cardEnum;
+							CardEnum cardEnum = cards[i].cardEnum;
 
-							cardButton->PunInit(cardEnum, i, 0, 1, this, CallbackEnum::SelectBuildingSlotCard);
-							cardButton->callbackVar1 = building.buildingId();
-							cardButton->cardAnimationOrigin = cards[i].lastPosition();
-							cardButton->cardAnimationStartTime = cards[i].animationStartTime100 / 100.0f; // Animation start time is when FUseCard arrived
-							
-							SetChildHUD(cardButton);
+							if (cardEnum != CardEnum::None)
+							{
+								UBuildingPlacementButton* cardButton = AddWidget<UBuildingPlacementButton>(UIEnum::CardMini);
 
-							cardButton->SetupMaterials(dataSource()->assetLoader());
-							cardButton->SetCardStatus(CardHandEnum::CardSlots, false, false, IsRareCard(cardEnum));
+								cardButton->PunInit(cardEnum, i, 0, 1, this, CallbackEnum::SelectBuildingSlotCard);
+								cardButton->callbackVar1 = building.buildingId();
+								cardButton->cardAnimationOrigin = cards[i].lastPosition();
+								cardButton->cardAnimationStartTime = cards[i].animationStartTime100 / 100.0f; // Animation start time is when FUseCard arrived
 
-							cardButton->SellButton->SetVisibility(ESlateVisibility::Collapsed);
+								SetChildHUD(cardButton);
 
-							_objectDescriptionUI->CardSlots->AddChild(cardButton);
+								cardButton->SetupMaterials(dataSource()->assetLoader());
+								cardButton->SetCardStatus(CardHandEnum::CardSlots, false, false, IsRareCard(cardEnum));
+
+								cardButton->SellButton->SetVisibility(ESlateVisibility::Collapsed);
+
+								_objectDescriptionUI->CardSlots->AddChild(cardButton);
+							}
 						}
 
 						// card slots for the rest
-						for (int32 i = _objectDescriptionUI->lastCards.size(); i < _objectDescriptionUI->lastMaxCards; i++)
+						for (int32 i = cards.size(); i < maxCards; i++)
 						{
 							auto cardSlot = AddWidget<UCardSlot>(UIEnum::CardSlot);
 

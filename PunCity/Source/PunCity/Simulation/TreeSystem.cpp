@@ -82,13 +82,8 @@ void TreeSystem::PlantTree(int32 x, int32 y, TileObjEnum treeEnum, bool initial)
 	int32 i = x + y * _sizeX;
 
 	// Shade
-	//  Forest/Jungle/BorealForest need shade (shade on others just lead to green spots on world map)
 	WorldTile2 tile(x, y);
-	BiomeEnum biomeEnum = _simulation->GetBiomeEnum(tile);
-	if (biomeEnum == BiomeEnum::Forest ||
-		biomeEnum == BiomeEnum::Jungle || 
-		biomeEnum == BiomeEnum::BorealForest)
-	{
+	if (_simulation->GetFertilityPercent(tile) > 25) { //  Desert doesn't need shade (lead to weird green spots on world map)
 		SetSurroundingShade(i);
 	}
 

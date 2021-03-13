@@ -70,6 +70,7 @@ protected:
 		/*
 		 * Debug
 		 */
+		// "TreeGrid" in TileObjDisplay
 		if (PunSettings::Settings["WalkableGrid"] ||
 			PunSettings::Settings["ShippingGrid"] ||
 			PunSettings::Settings["BuildingGrid"] ||

@@ -62,8 +62,6 @@ struct FUnitAsset
 	// Static part is used when the meshes should be faraway (or if there is only staticMesh for this unit like ship)
 	//  Also for collider??
 	UPROPERTY() UStaticMesh* staticMesh = nullptr; // default mesh (except for skeletalMesh usage when zoomed in)
-
-	UPROPERTY() UStaticMesh* auxMesh = nullptr; // Auxiliary static mesh like wagon on donkey
 };
 
 
@@ -131,6 +129,13 @@ public:
 	UStaticMesh* unitWeaponMesh(UnitAnimationEnum animationEnum) {
 		auto found = _animationEnumToWeaponMesh.find(animationEnum);
 		if (found != _animationEnumToWeaponMesh.end()) {
+			return found->second;
+		}
+		return nullptr;
+	}
+	UStaticMesh* unitAuxMesh(UnitAnimationEnum animationEnum) {
+		auto found = _animationEnumToAuxMesh.find(animationEnum);
+		if (found != _animationEnumToAuxMesh.end()) {
 			return found->second;
 		}
 		return nullptr;
@@ -209,6 +214,10 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* ReferenceTerrainMaterial;
 
+	/*
+	 * UI
+	 */
+	
 	UPROPERTY(EditAnywhere) UMaterial* BuildingIconMaterial;
 	UPROPERTY(EditAnywhere) UMaterial* BuildingIconGrayMaterial;
 
@@ -278,10 +287,11 @@ public:
 	UPROPERTY(EditAnywhere) UTexture2D* UnhappyHoverIcon;
 
 	UPROPERTY(EditAnywhere) UTexture2D* BlackIcon;
+	UPROPERTY(EditAnywhere) UTexture2D* WhiteIcon;
 
-	//! Videos
-	//UPROPERTY(EditAnywhere) UMediaPlayer* MediaPlayer;
-
+	UPROPERTY(EditAnywhere) UMaterial* M_GeoresourceIcon;
+	UPROPERTY(EditAnywhere) TMap<int32, UTexture*> _geo_Icon;
+	UPROPERTY(EditAnywhere) TMap<int32, UTexture*> _geo_IconAlpha;
 
 	//!
 
@@ -366,10 +376,6 @@ public:
 
 	UPROPERTY(EditAnywhere) TArray<UParticleSystem*> ParticlesByEnum;
 
-	UPROPERTY(EditAnywhere) UMaterial* M_GeoresourceIcon;
-	UPROPERTY(EditAnywhere) TMap<int32, UTexture*> _geo_Icon;
-	UPROPERTY(EditAnywhere) TMap<int32, UTexture*> _geo_IconAlpha;
-
 
 	
 
@@ -412,9 +418,10 @@ private:
 	}
 
 	void LoadUnit(UnitEnum unitEnum, std::string meshFile);
-	void LoadUnitFull(UnitEnum unitEnum, std::string folderPath, std::string skelFileName, std::unordered_map<UnitAnimationEnum, std::string> animationFileNames, std::string staticFileName, std::string auxFileName = "");
+	void LoadUnitFull(UnitEnum unitEnum, std::string folderPath, std::string skelFileName, std::unordered_map<UnitAnimationEnum, std::string> animationFileNames, std::string staticFileName);
 	//void LoadUnitAnimation(UnitEnum unitEnum, int32 variationIndex, UnitAnimationEnum unitAnimation, std::string file);
 	void LoadUnitWeapon(UnitAnimationEnum unitAnimation, std::string file);
+	void LoadUnitAuxMesh(UnitAnimationEnum unitAnimation, std::string file);
 	
 	void LoadResource(ResourceEnum resourceEnum, std::string meshFile);
 	void LoadResource2(ResourceEnum resourceEnum, std::string meshFilePrefix);
@@ -448,6 +455,8 @@ private:
 	//std::unordered_map<UnitEnum, std::vector<std::unordered_map<UnitAnimationEnum, UAnimSequence*>>> _animationEnumToSequence;
 	
 	std::unordered_map<UnitAnimationEnum, UStaticMesh*> _animationEnumToWeaponMesh;
+
+	std::unordered_map<UnitAnimationEnum, UStaticMesh*> _animationEnumToAuxMesh;
 
 	
 	std::unordered_map<ResourceEnum, UStaticMesh*> _resourceToMesh;

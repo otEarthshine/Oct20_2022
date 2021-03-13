@@ -143,8 +143,9 @@ void UWorldSpaceUI::TickWorldSpaceUI()
 		}
 		else if (building.isEnum(CardEnum::StorageYard) ||
 				building.isEnum(CardEnum::Warehouse) ||
-			building.isEnum(CardEnum::IntercityLogisticsHub)||
-			building.isEnum(CardEnum::IntercityLogisticsPort))
+				building.isEnum(CardEnum::Granary) ||
+				building.isEnum(CardEnum::IntercityLogisticsHub)||
+				building.isEnum(CardEnum::IntercityLogisticsPort))
 		{
 			jobUIState = JobUIState::Storage;
 		}
@@ -412,6 +413,14 @@ void UWorldSpaceUI::TickBuildings()
 				WorldTile2::Distance(building.centerTile(), overlayTile) < radius &&
 				building.playerId() == playerId();
 		};
+
+		auto isInOverlayRadiusFoodBuilding = [&](OverlayType overlayTypeCurrent, int32 radius)
+		{
+			return overlayType == overlayTypeCurrent &&
+				IsAgricultureBuilding(building.buildingEnum()) &&
+				WorldTile2::Distance(building.centerTile(), overlayTile) < radius &&
+				building.playerId() == playerId();
+		};
 		
 		/*
 		 * Science
@@ -511,7 +520,7 @@ void UWorldSpaceUI::TickBuildings()
 			hoverIcon->SetTextColor(FLinearColor::White);
 		}
 
-		else if (isInOverlayRadius(OverlayType::Granary, CardEnum::Granary, Granary::Radius))
+		else if (isInOverlayRadiusFoodBuilding(OverlayType::Granary, Granary::Radius))
 		{
 			UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
 				_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});

@@ -2136,8 +2136,44 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 		return;
 	}
 
+	/*
+	 * SelectBoughtCard
+	 */
 	if (callbackEnum == CallbackEnum::SelectBoughtCard)
 	{
+		DescriptionUIState descriptionUIState = simulation().descriptionUIState();
+
+
+		// Archive take any card
+		if (descriptionUIState.objectType == ObjectTypeEnum::Building)
+		{
+			int32 buildingId = descriptionUIState.objectId;
+			Building& building = simulation().building(buildingId);
+
+			if (building.isEnum(CardEnum::Archives))
+			{
+				// Card Slots Full
+				if (building.IsCardSlotsFull()) {
+					simulation().AddPopupToFront(playerId(),
+						LOCTEXT("BldSlotAlreadyHasCard_Pop", "This Building's Card Slots are full. Remove a Card first by clicking on a Slotted Sard."),
+						ExclusiveUIEnum::None, "PopupCannot"
+					);
+					return;
+				}
+				
+				FVector2D initialPosition = GetViewportPosition(cardButton->GetCachedGeometry());
+
+				auto command = make_shared<FUseCard>();
+				command->cardEnum = buildingEnum;
+				command->variable1 = buildingId;
+				command->SetPosition(initialPosition);
+				networkInterface()->SendNetworkCommand(command);
+
+				return;
+			}
+		}
+
+		
 		// Non-Building Cards
 		if (!IsBuildingCard(buildingEnum))
 		{
@@ -2199,7 +2235,6 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 			 */
 			if (IsBuildingSlotCard(buildingEnum)) 
 			{
-				DescriptionUIState descriptionUIState = simulation().descriptionUIState();
 				if (descriptionUIState.objectType == ObjectTypeEnum::Building)
 				{
 					int32 buildingId = descriptionUIState.objectId;

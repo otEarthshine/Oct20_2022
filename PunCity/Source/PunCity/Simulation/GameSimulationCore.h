@@ -883,7 +883,22 @@ public:
 		const std::vector<int32>& bldIds = buildingIds(townId, buildingEnum);
 		std::vector<int32> resultIds;
 		for (int32 bldId : bldIds) {
-			if (building(bldId).DistanceTo(tileIn) <= radius) {
+			Building& bld = building(bldId);
+			if (bld.DistanceTo(tileIn) <= radius) {
+				resultIds.push_back(bldId);
+			}
+		}
+		return resultIds;
+	}
+	std::vector<int32> GetConstructedBuildingsWithinRadius(WorldTile2 tileIn, int32 radius, int32 townId, CardEnum buildingEnum) final
+	{
+		const std::vector<int32>& bldIds = buildingIds(townId, buildingEnum);
+		std::vector<int32> resultIds;
+		for (int32 bldId : bldIds) {
+			Building& bld = building(bldId);
+			if (bld.isConstructed() &&
+				bld.DistanceTo(tileIn) <= radius) 
+			{
 				resultIds.push_back(bldId);
 			}
 		}

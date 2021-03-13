@@ -3189,7 +3189,7 @@ void GameSimulationCore::ChangeWorkMode(FChangeWorkMode command)
 		if (bld.townId() == command.playerId) 
 		{
 			townManager(bld.townId()).taxLevel = command.enumInt;
-			RecalculateTaxDelayedTown(command.townId);
+			RecalculateTaxDelayedTown(bld.townId());
 			return;
 		}
 
@@ -3703,6 +3703,30 @@ void GameSimulationCore::UseCard(FUseCard command)
 	auto& cardSys = cardSystem(command.playerId);
 	auto& resourceSys = resourceSystem(command.playerId);
 	auto& globalResourceSys = globalResourceSystem(command.playerId);
+
+	// Archives Store Card
+	if (_descriptionUIState.objectType == ObjectTypeEnum::Building)
+	{
+		int32 buildingId = _descriptionUIState.objectId;
+
+		if (command.variable1 == buildingId)
+		{
+			// - Guard against isEnum() crash
+			if (isValidBuildingId(command.variable1))
+			{
+				Building& bld = building(buildingId);
+				if (bld.CanAddSlotCard())
+				{
+					int32 soldPrice = cardSys.RemoveCards(command.cardEnum, 1);
+					if (soldPrice != -1) {
+						bld.AddSlotCard(command.GetCardStatus(_gameManager->GetDisplayWorldTime() * 100.0f));
+					}
+				}
+			}
+		}
+		return;
+	}
+	
 
 	// CardRemoval
 	if (command.cardEnum == CardEnum::CardRemoval)

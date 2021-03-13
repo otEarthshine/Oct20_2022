@@ -296,11 +296,13 @@ std::vector<BonusPair> Farm::GetBonuses()
 		bonuses.push_back({ LOCTEXT("Last Era Technology", "Last Era Technology"), 20 });
 	}
 
-	int32 radiusBonus = GetRadiusBonus(CardEnum::Windmill, Windmill::Radius, [&](int32 bonus, Building& building) {
-		return max(bonus, 10);
-	});
-	if (radiusBonus > 0) {
-		bonuses.push_back({ LOCTEXT("Near Windmill", "Near Windmill"), radiusBonus });
+	{
+		int32 radiusBonus = GetRadiusBonus(CardEnum::Windmill, Windmill::Radius, [&](int32 bonus, Building& building) {
+			return max(bonus, 10);
+		});
+		if (radiusBonus > 0) {
+			bonuses.push_back({ LOCTEXT("Near Windmill", "Near Windmill"), radiusBonus });
+		}
 	}
 
 	return bonuses;
@@ -1543,9 +1545,7 @@ void Archives::CalculateRoundProfit()
 	lastRoundProfit = 0;
 
 	for (const CardStatus& cardStatus : _cardSlots) {
-		if (cardStatus.cardEnum != CardEnum::None) {
-			lastRoundProfit += GetBuildingInfo(cardStatus.cardEnum).baseCardPrice;
-		}
+		lastRoundProfit += GetBuildingInfo(cardStatus.cardEnum).baseCardPrice;
 	}
 
 	lastRoundProfit = lastRoundProfit * CardProfitPercentPerRound / 100;

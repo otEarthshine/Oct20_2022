@@ -83,8 +83,8 @@ void BuildingCardSystem::RollRareHandExecute()
 		std::vector<CardEnum> cardEnums
 		{
 			CardEnum::WheatSeed,
-			CardEnum::Investment,
 			CardEnum::TradingPost,
+			CardEnum::ProductivityBook,
 		};
 		for (CardEnum cardEnum : cardEnums) {
 			_cardsRareHand.push_back(cardEnum);
@@ -95,8 +95,8 @@ void BuildingCardSystem::RollRareHandExecute()
 	{
 		std::vector<CardEnum> cardEnums
 		{
-			CardEnum::ProductivityBook,
 			CardEnum::CabbageSeed,
+			CardEnum::Investment,
 			CardEnum::IronSmelter,
 		};
 		for (CardEnum cardEnum : cardEnums) {

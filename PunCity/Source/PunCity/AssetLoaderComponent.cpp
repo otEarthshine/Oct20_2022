@@ -115,6 +115,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	UnhappyHoverIcon = Load<UTexture2D>("/Game/UI/Images/Unhappy");
 
 	BlackIcon = Load<UTexture2D>("/Game/UI/GeneratedIcons/BlackIcon");
+	WhiteIcon = Load<UTexture2D>("/Game/UI/GeneratedIcons/WhiteIcon");
 
 	M_GeoresourceIcon = Load<UMaterial>("/Game/UI/GeoresourceIcons/M_GeoresourceIcon");
 
@@ -382,8 +383,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	// Mar 12
 	TryLoadBuildingModuleSet("Granary_Era4_", "Granary");
-	TryLoadBuildingModuleSet("Archives_Era4_", "Archives");
-	TryLoadBuildingModuleSet("HaulingServices_Era2_", "HaulingServices");
+	TryLoadBuildingModuleSet("Archives_Era4_", "Archives/Era4");
+	TryLoadBuildingModuleSet("HaulingServices_Era2_", "HaulingServices/Era2");
 	
 
 	// Mint Modules
@@ -577,7 +578,9 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	};
 
 	// Adult Male
-	LoadUnitFull(UnitEnum::Human, "Human/CitizenMale/", "CitizenMale", animationFileNames, "Human/CitizenMale/CitizenMaleStatic", "Human/Cart/Cart");
+	LoadUnitFull(UnitEnum::Human, "Human/CitizenMale/", "CitizenMale", animationFileNames, "Human/CitizenMale/CitizenMaleStatic");
+	LoadUnitAuxMesh(UnitAnimationEnum::ImmigrationCart, "Human/Cart/Cart");
+	LoadUnitAuxMesh(UnitAnimationEnum::HaulingCart, "Human/Cart/FrontCart");
 
 	// Adult Female
 	LoadUnitFull(UnitEnum::Human, "Human/CitizenFemale/", "CitizenFemale", animationFileNames, "Human/CitizenFemale/CitizenFemaleStatic");
@@ -607,17 +610,20 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	// Horse Caravan
 	LoadUnitFull(UnitEnum::HorseCaravan, "Horse/", "HorseSmall", {
 		{ UnitAnimationEnum::Walk, "Anim_Horse_Trot_F_IP"},
-	}, "Horse/HorseSmallStatic", "Horse/CaravanWagon_Game");
+	}, "Horse/HorseSmallStatic");
+	LoadUnitAuxMesh(UnitAnimationEnum::HorseCaravan, "Horse/CaravanWagon_Game");
 
 	// Horse Market
 	LoadUnitFull(UnitEnum::HorseMarket, "Horse/", "HorseSmall", {
 		{ UnitAnimationEnum::Walk, "Anim_Horse_Trot_F_IP"},
-	}, "Horse/HorseSmallStatic", "Horse/MarketWagon");
+	}, "Horse/HorseSmallStatic");
+	LoadUnitAuxMesh(UnitAnimationEnum::HorseMarket, "Horse/MarketWagon");
 
 	// Horse Logistics
 	LoadUnitFull(UnitEnum::HorseLogistics, "Horse/", "HorseSmall", {
 		{ UnitAnimationEnum::Walk, "Anim_Horse_Trot_F_IP"},
-	}, "Horse/HorseSmallStatic", "Horse/LogisticsWagon");
+	}, "Horse/HorseSmallStatic");
+	LoadUnitAuxMesh(UnitAnimationEnum::HorseLogistics, "Horse/LogisticsWagon");
 	
 	
 	LoadUnitWeapon(UnitAnimationEnum::Build, "Human/CitizenMale/CitizenMaleHammer");
@@ -1232,7 +1238,7 @@ void UAssetLoaderComponent::LoadUnit(UnitEnum unitEnum, std::string meshFile)
 
 // SkelMesh will still need 
 void UAssetLoaderComponent::LoadUnitFull(UnitEnum unitEnum, std::string folderPath, std::string skelFileName, 
-	std::unordered_map<UnitAnimationEnum, std::string> animationFileNames, std::string staticFileName, std::string auxFileName)
+	std::unordered_map<UnitAnimationEnum, std::string> animationFileNames, std::string staticFileName)
 {
 	FUnitAsset asset;
 	asset.skeletalMesh = Load<USkeletalMesh>((unitsPath + folderPath + skelFileName).c_str());
@@ -1243,16 +1249,17 @@ void UAssetLoaderComponent::LoadUnitFull(UnitEnum unitEnum, std::string folderPa
 		//PUN_LOG("LoadUnitFull staticFileName %s static:%s", ToTChar(skelFileName), ToTChar(staticFileName));
 		asset.staticMesh = Load<UStaticMesh>((unitsPath + staticFileName).c_str());
 	}
-	if (auxFileName != "") {
-		//PUN_LOG("LoadUnitFull auxFileName %s", ToTChar(auxFileName));LoadUnitFull
-		asset.auxMesh = Load<UStaticMesh>((unitsPath + auxFileName).c_str());
-	}
 	
 	_unitEnumToAsset[static_cast<int>(unitEnum)].push_back(asset);
 }
 void UAssetLoaderComponent::LoadUnitWeapon(UnitAnimationEnum unitAnimation, std::string file)
 {
 	_animationEnumToWeaponMesh[unitAnimation] = Load<UStaticMesh>((unitsPath + file).c_str());
+}
+
+void UAssetLoaderComponent::LoadUnitAuxMesh(UnitAnimationEnum unitAnimation, std::string file)
+{
+	_animationEnumToAuxMesh[unitAnimation] = Load<UStaticMesh>((unitsPath + file).c_str());
 }
 
 /**

@@ -331,7 +331,7 @@ public:
 		_townId = newTownId;
 		_playerId = _simulation->townPlayerId(newTownId);
 
-		Add_MoveToCaravan(newTownGate, UnitAnimationEnum::Immigration);
+		Add_MoveToCaravan(newTownGate, UnitAnimationEnum::ImmigrationCart);
 		Add_MoveTo(lastTownGate);
 	}
 
@@ -350,11 +350,11 @@ public:
 		_townId = newTownId;
 		_playerId = _simulation->townPlayerId(newTownId);
 
-		Add_MoveTo(newTownGate, -1, UnitAnimationEnum::Immigration);
-		Add_MoveToward(endPortGate.worldAtom2(), 100000, UnitAnimationEnum::Immigration); // TODO: Have Forced Move To Later?
+		Add_MoveTo(newTownGate, -1, UnitAnimationEnum::ImmigrationCart);
+		Add_MoveToward(endPortGate.worldAtom2(), 100000, UnitAnimationEnum::ImmigrationCart); // TODO: Have Forced Move To Later?
 		Add_MoveToShip(startPortId, endPortId, UnitAnimationEnum::Ship);
 		// Add_Wait();// Wait for the next 10 sec
-		Add_MoveTo(startPortGate, -1, UnitAnimationEnum::Immigration);
+		Add_MoveTo(startPortGate, -1, UnitAnimationEnum::ImmigrationCart);
 		Add_MoveTo(lastTownGate);
 	}
 

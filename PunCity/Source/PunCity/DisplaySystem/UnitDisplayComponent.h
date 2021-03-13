@@ -59,7 +59,6 @@ public:
 
 		//_unitMeshes->Init("Unit", this, 100, "Unit", 0, true);
 		_unitMeshes->Init("Unit", this, 100, "", 0, true);
-		_auxMeshes->Init("UnitAux", this, 20, "", 0, true);
 		for (int i = 0; i < UnitEnumCount; i++) 
 		{
 			UnitEnum unitEnum = static_cast<UnitEnum>(i);
@@ -68,11 +67,16 @@ public:
 			for (int32 j = 0; j < variationCount; j++) {
 				FUnitAsset unitAsset = assetLoader->unitAsset(unitEnum, j);
 				_unitMeshes->AddProtoMesh(GetMeshName(unitEnum, j), unitAsset.staticMesh, nullptr);
-				if (unitAsset.auxMesh) {
-					_auxMeshes->AddProtoMesh(GetMeshName(unitEnum, j), unitAsset.auxMesh);
-				}
 			}
 		}
+
+		_auxMeshes->Init("UnitAux", this, 20, "", 0, true);
+		_auxMeshes->AddProtoMesh("Immigration", assetLoader->unitAuxMesh(UnitAnimationEnum::ImmigrationCart));
+		_auxMeshes->AddProtoMesh("HorseCaravan", assetLoader->unitAuxMesh(UnitAnimationEnum::HorseCaravan));
+		_auxMeshes->AddProtoMesh("HorseMarket", assetLoader->unitAuxMesh(UnitAnimationEnum::HorseMarket));
+		_auxMeshes->AddProtoMesh("HorseLogistics", assetLoader->unitAuxMesh(UnitAnimationEnum::HorseLogistics));
+		_auxMeshes->AddProtoMesh("HaulingCart", assetLoader->unitAuxMesh(UnitAnimationEnum::HaulingCart));
+		
 
 		_resourceMeshes->Init("UnitResource", this, 100, "", 0, true);
 		for (int i = 0; i < ResourceEnumCount; i++) {
@@ -196,6 +200,9 @@ public:
 		// Despawn all unused meshes
 		for (auto unitSkelMesh : _unitSkelMeshes) {
 			unitSkelMesh->SetVisibility(false);
+		}
+		for (auto unitWeaponMesh : _unitWeaponMeshes) {
+			unitWeaponMesh->SetVisibility(false);
 		}
 		_lastUnitKeyToSkelMeshIndex.Empty();
 		_unitKeyToSkelMeshIndex.Empty();
@@ -368,6 +375,7 @@ private:
 		// Despawn all unused meshes
 		for (auto it : _lastUnitKeyToSkelMeshIndex) {
 			_unitSkelMeshes[it.Value]->SetVisibility(false);
+			_unitWeaponMeshes[it.Value]->SetVisibility(false);
 		}
 		_lastUnitKeyToSkelMeshIndex = _unitKeyToSkelMeshIndex;
 		_unitKeyToSkelMeshIndex.Empty(); // _unitIdToSkelMeshIndex.Num());

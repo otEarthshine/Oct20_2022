@@ -220,6 +220,12 @@ public:
 		Building::SetAreaWalkable();
 	}
 
+	bool RefreshHoverWarning() override
+	{
+		hoverWarning = HoverWarning::None;
+		return false;
+	}
+
 	ResourceHolderType defaultHolderType(ResourceEnum resourceEnum) override {
 		return IsFoodEnum(resourceEnum) ? ResourceHolderType::Storage : ResourceHolderType::Provider;
 	}

@@ -26,7 +26,7 @@ static const TArray<FText> TownhallLvlToUpgradeBonusText =
 
 	LOCTEXT("TownhallLvl3UpgradeBonus", "<bullet>+10% mine/quarry production.</><space>Unlocked Cards:<bullet>Immigrants</><bullet>Kidnap</>"), // 3
 
-	LOCTEXT("TownhallLvl4UpgradeBonus", "<space>Unlocked Cards:<bullet>Warehouse</><bullet>Sharing is caring</>"), // 4
+	LOCTEXT("TownhallLvl4UpgradeBonus", "<space>Unlocked Cards:<bullet>Sharing is caring</>"), // 4
 
 	LOCTEXT("TownhallLvl5UpgradeBonus", "<bullet>+10% industrial production.</>"), // Lvl 5
 };
@@ -167,7 +167,6 @@ void TownHall::UpgradeTownhall()
 		unlockSys->unlockedSetTradeAmount = true;
 	}
 	else if (townhallLvl == 4) {
-		cardSys.AddDrawCards(CardEnum::Warehouse, 1);
 		cardSys.AddDrawCards(CardEnum::SharingIsCaring, 1);
 
 		{
@@ -178,19 +177,19 @@ void TownHall::UpgradeTownhall()
 			unlockSys->unlockedSetDeliveryTarget = true;
 		}
 
-		{
-			_simulation->AddPopup(
-				PopupInfo(_playerId, 
-					FText::Format(LOCTEXT("BuyCardTownhallUpgrade_Pop", "Would you like to buy a {0} card for {1} <img id=\"Coin\"/>."),
-						GetBuildingInfo(CardEnum::Warehouse).name,
-						TEXT_NUM(_simulation->cardSystem(_playerId).GetCardPrice(CardEnum::Warehouse))
-					), 
-					{ LOCTEXT("Buy", "Buy"),
-						LOCTEXT("Refuse", "Refuse") },
-					PopupReceiverEnum::DoneResearchBuyCardEvent, false, "ResearchComplete", static_cast<int>(CardEnum::Warehouse)
-				)
-			);
-		}
+		//{
+		//	_simulation->AddPopup(
+		//		PopupInfo(_playerId, 
+		//			FText::Format(LOCTEXT("BuyCardTownhallUpgrade_Pop", "Would you like to buy a {0} card for {1} <img id=\"Coin\"/>."),
+		//				GetBuildingInfo(CardEnum::Warehouse).name,
+		//				TEXT_NUM(_simulation->cardSystem(_playerId).GetCardPrice(CardEnum::Warehouse))
+		//			), 
+		//			{ LOCTEXT("Buy", "Buy"),
+		//				LOCTEXT("Refuse", "Refuse") },
+		//			PopupReceiverEnum::DoneResearchBuyCardEvent, false, "ResearchComplete", static_cast<int>(CardEnum::Warehouse)
+		//		)
+		//	);
+		//}
 	}
 
 	_simulation->QuestUpdateStatus(_playerId, QuestEnum::TownhallUpgradeQuest);

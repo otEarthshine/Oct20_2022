@@ -34,7 +34,20 @@ public:
 
 			if (IsBuildingCard(buildingEnum)) {
 				material->SetTextureParameterValue("ColorTexture", assetLoader()->GetBuildingIcon(buildingEnum));
-				material->SetTextureParameterValue("DepthTexture", assetLoader()->GetBuildingIconAlpha(buildingEnum));
+
+				UTexture* depthTexture;
+				switch (buildingEnum) {
+				case CardEnum::IntercityRoad:
+				case CardEnum::IntercityBridge:
+				case CardEnum::Tunnel:
+					depthTexture = assetLoader()->WhiteIcon;
+					break;
+				default:
+					depthTexture = assetLoader()->GetBuildingIconAlpha(buildingEnum);
+					break;
+				}
+				
+				material->SetTextureParameterValue("DepthTexture", depthTexture);
 			}
 			else {
 				// TODO: GetBuildingIcon used for all cards..

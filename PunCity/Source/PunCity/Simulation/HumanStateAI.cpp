@@ -1889,10 +1889,10 @@ bool HumanStateAI::TryBulkHaul_Intercity()
 
 	Add_IntercityHaulDropoff(hub.buildingId());
 	//Add_Wait(180, UnitAnimationEnum::Caravan);
-	Add_MoveToCaravan(startTile, UnitAnimationEnum::Caravan);
+	Add_MoveToCaravan(startTile, UnitAnimationEnum::HorseCaravan);
 	Add_IntercityHaulPickup(hub.buildingId(), hub.targetTownId);
 	//Add_Wait(180, UnitAnimationEnum::Caravan);
-	Add_MoveToCaravan(targetTile, UnitAnimationEnum::Caravan);
+	Add_MoveToCaravan(targetTile, UnitAnimationEnum::HorseCaravan);
 	Add_MoveTo(startTile);
 
 	return true;
@@ -2024,7 +2024,7 @@ bool HumanStateAI::TryHaulingServices()
 		if (IsProducer(buildingEnum) ||
 			IsConsumerWorkplace(buildingEnum))
 		{
-			std::vector<int32> buildingIds = _simulation->GetBuildingsWithinRadius(workPlc.gateTile(), HaulingServices::Radius, _townId, buildingEnum);
+			std::vector<int32> buildingIds = _simulation->GetConstructedBuildingsWithinRadius(workPlc.gateTile(), HaulingServices::Radius, _townId, buildingEnum);
 			for (int32 buildingId : buildingIds)
 			{
 				Building& building = _simulation->building(buildingId);
@@ -2045,7 +2045,7 @@ bool HumanStateAI::TryHaulingServices()
 				for (ResourceEnum output : outputs)
 				{
 					const ResourceHolder& productHolder = building.holder(output);
-					int32 productHaulNeededPercent = (productHolder.current() -	productHolder.target()) * 100 / productHolder.target();
+					int32 productHaulNeededPercent = productHolder.current() * 100 / GameConstants::WorkerEmptyBuildingInventoryAmount;
 					if (productHaulNeededPercent > highestOutputHaulNeededPercent) {
 						highestOutputHaulNeededPercent = productHaulNeededPercent;
 						highestOutputHaulNeededBuildingId = buildingId;
@@ -2070,7 +2070,7 @@ bool HumanStateAI::TryHaulingServices()
 		check(resourceNeeded > 0);
 		
 		FoundResourceHolderInfo holderInfo = building.GetHolderInfoFull(highestInputHaulNeededResourceEnum, resourceNeeded);
-		if (TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, holderInfo, false, false, UnitAnimationEnum::Immigration))
+		if (TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, holderInfo, false, false, UnitAnimationEnum::HaulingCart))
 		{
 			// successful move, go to market to get cart first
 			Add_MoveTo(workPlc.gateTile(), -1, UnitAnimationEnum::Walk);
@@ -2078,14 +2078,18 @@ bool HumanStateAI::TryHaulingServices()
 		}
 	}
 
+	if (highestOutputHaulNeededBuildingId == -1) {
+		return false;
+	}
+
 	Building& building = _simulation->building(highestOutputHaulNeededBuildingId);
 
 	const ResourceHolder& outputHolder = building.holder(highestOutputHaulNeededResourceEnum);
-	int32 resourceNeeded = min(haulerServicesCapacity(), outputHolder.current() - outputHolder.target());
+	int32 resourceNeeded = min(haulerServicesCapacity(), outputHolder.current());
 	check(resourceNeeded > 0);
 
 	FoundResourceHolderInfo holderInfo = building.GetHolderInfoFull(highestOutputHaulNeededResourceEnum, resourceNeeded);
-	if (TryMoveResourcesProviderToAnyDropoff(holderInfo, ResourceFindType::AvailableForDropoff, UnitAnimationEnum::Immigration))
+	if (TryMoveResourcesProviderToAnyDropoff(holderInfo, ResourceFindType::AvailableForDropoff, UnitAnimationEnum::HaulingCart))
 	{
 		// successful move, go to market to get cart first
 		Add_MoveTo(workPlc.gateTile(), -1, UnitAnimationEnum::Walk);
@@ -3078,9 +3082,11 @@ void HumanStateAI::UpdateHappiness()
 		return lastHappiness;
 	};
 
+	auto& townManager = _simulation->townManager(_townId);
+
 	// Food
 	{
-		int32 targetFoodVarietyHappiness = 70 + _simulation->townManager(_townId).townFoodVariety() * 3;
+		int32 targetFoodVarietyHappiness = 70 + townManager.townFoodVariety() * 3;
 
 		if (_simulation->TownhallCardCountTown(_townId, CardEnum::HappyBreadDay) > 0 &&
 			_simulation->resourceCountTown(_townId, ResourceEnum::Bread) >= 1000) {
@@ -3172,6 +3178,10 @@ void HumanStateAI::UpdateHappiness()
 		int32 attractivenessDecay = 30 * _simulation->building(_simulation->GetTownhallId(_townId)).buildingAge() / (Time::TicksPerYear * 5);
 		attractivenessDecay = std::min(30, attractivenessDecay);
 		targetHappiness -= attractivenessDecay;
+
+		// Tax
+		targetHappiness += townManager.taxHappinessModifier();
+		
 
 		int32 happiness = moveTowardsTargetHappiness(GetHappinessByType(HappinessEnum::CityAttractiveness), targetHappiness, 200, 50);
 		SetHappiness(HappinessEnum::CityAttractiveness, happiness);

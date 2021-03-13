@@ -680,10 +680,10 @@ public:
 			
 			//
 			era = 3;
-			AddTech_Building(era, TechEnum::IntercityRoad, { CardEnum::IntercityRoad, CardEnum::IntercityBridge });
+			AddTech_BuildingPermanent(era, TechEnum::Warehouse, { CardEnum::Warehouse });
+			AddTech_BuildingPermanent(era, TechEnum::IntercityRoad, { CardEnum::IntercityRoad, CardEnum::IntercityBridge });
 			AddTech_Building(era, TechEnum::TradingCompany, CardEnum::TradingCompany);
 			AddTech_Building(era, TechEnum::Market, { CardEnum::Market });
-			AddTech_Building(era, TechEnum::Espionage, { CardEnum::Steal });
 			AddTech_Building(era, TechEnum::Medicine, CardEnum::MedicineMaker);
 			
 			AddTech_Building(era, TechEnum::RanchSheep, { CardEnum::RanchSheep });
@@ -695,7 +695,7 @@ public:
 			AddTech_Building(era, TechEnum::HaulingServices, CardEnum::HaulingServices);
 			AddTech_Building(era, TechEnum::Archives, CardEnum::Archives);
 			AddTech_Bonus(era, TechEnum::DesertTrade);
-			AddTech_Bonus(era, TechEnum::HouseAdjacency);
+			AddTech_Building(era, TechEnum::Espionage, { CardEnum::Steal });
 			
 			AddTech_Bonus(era, TechEnum::QuarryImprovement); // Quarry Improvement as a precursor to tunnel??
 			AddTech_BuildingPermanent(era, TechEnum::Tunnel, {CardEnum::Tunnel});
@@ -706,9 +706,10 @@ public:
 			//
 			era = 5;
 			
-			AddTech_Bonus(era, TechEnum::MoreGoldPerHouse);
+			//AddTech_Bonus(era, TechEnum::MoreGoldPerHouse);
 			AddTech_Building(era, TechEnum::IntercityLogistics, { CardEnum::IntercityLogisticsHub, CardEnum::IntercityLogisticsPort });
 			AddTech_Building(era, TechEnum::ImprovedLogistics, { CardEnum::ShippingDepot });
+			AddTech_Bonus(era, TechEnum::HouseAdjacency);
 			AddTech_Building(era, TechEnum::Irrigation, { CardEnum::IrrigationReservoir });
 			AddTech_Building(era, TechEnum::CoffeeRoaster, { CardEnum::CoffeeRoaster });
 

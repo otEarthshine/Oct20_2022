@@ -125,7 +125,8 @@ public:
 			// Show items above warehouse
 			if (jobUIState == JobUIState::Storage &&
 					(
-						building.isEnum(CardEnum::Warehouse) || 
+						building.isEnum(CardEnum::Warehouse) ||
+						building.isEnum(CardEnum::Granary) ||
 						building.isEnum(CardEnum::IntercityLogisticsHub) ||
 						building.isEnum(CardEnum::IntercityLogisticsPort)
 					)

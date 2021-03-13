@@ -2259,6 +2259,8 @@ static const std::vector<std::pair<CardEnum, int32>> BuildingEnumToUpkeep =
 	{ CardEnum::Theatre, 50 },
 	{ CardEnum::Tavern, 15 },
 
+	{ CardEnum::Granary, 10 },
+
 	{ CardEnum::TradingPost, 20 },
 	{ CardEnum::TradingCompany, 10 },
 	{ CardEnum::TradingPort, 20 },
@@ -2708,9 +2710,9 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::IntercityBridge, LOCTEXT("Intercity Bridge", "Intercity Bridge"), LOCTEXT("Intercity Bridge (Plural)", "Intercity Bridges"), WorldTile2(1, 1), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 0,0,0 }, LOCTEXT("Intercity Bridge Desc", "Bridge that can be built outside your territory to connect Cities.")),
 
 	// March 12
-	BldInfo(CardEnum::Granary, LOCTEXT("Granary", "Granary"), LOCTEXT("Granary (Plural)", "Granaries"), WorldTile2(6, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Granary Desc", "Store Food. +25% Productivity to surrounding Farms.")),
-	BldInfo(CardEnum::Archives, LOCTEXT("Archives", "Archives"), LOCTEXT("Archives (Plural)", "Archives"), WorldTile2(6, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Archives Desc", "Store Cards. Generate Income equals to 24% of the Card Price per year (3% per Round)")),
-	BldInfo(CardEnum::HaulingServices, LOCTEXT("Hauling Services", "Hauling Services"), LOCTEXT("Hauling Services (Plural)", "Hauling Services"), WorldTile2(6, 4), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 5, { 50, 20, 0 }, LOCTEXT("Hauling Services Desc", "Workers use carts to haul resources to fill building inputs or clear building outputs.")),
+	BldInfo(CardEnum::Granary, LOCTEXT("Granary", "Granary"), LOCTEXT("Granary (Plural)", "Granaries"), WorldTile2(6, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Granary Desc", "Food Storage. +25% Productivity to surrounding Food Producers.")),
+	BldInfo(CardEnum::Archives, LOCTEXT("Archives", "Archives"), LOCTEXT("Archives (Plural)", "Archives"), WorldTile2(6, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Archives Desc", "Card Storage. Generate Income equals to 24% of the Card Price per year (3% per Round).")),
+	BldInfo(CardEnum::HaulingServices, LOCTEXT("Hauling Services", "Hauling Services"), LOCTEXT("Hauling Services (Plural)", "Hauling Services"), WorldTile2(6, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 3, { 50, 0, 0 }, LOCTEXT("Hauling Services Desc", "Workers use carts to haul resources to fill building inputs or clear building outputs.")),
 
 	
 	// Decorations
@@ -2777,7 +2779,7 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::ProductivityBook,	LOCTEXT("Productivity Book", "Productivity Book"), 100, LOCTEXT("Productivity Book Desc", "+20% productivity")),
 	BldInfo(CardEnum::SustainabilityBook,LOCTEXT("Sustainability Book", "Sustainability Book"), 100, LOCTEXT("Sustainability Book Desc","Consume 40% less input")),
 	BldInfo(CardEnum::FrugalityBook,		LOCTEXT("Frugality Book", "Frugality Book"), 100, LOCTEXT("Frugality Book Desc",  "Decrease upkeep by 50%.")),
-	BldInfo(CardEnum::Motivation,	LOCTEXT("Motivation", "Motivation"), 100, LOCTEXT("Motivation Desc", "Every 1% Happiness above 70%, gives +2% productivity")),
+	BldInfo(CardEnum::Motivation,	LOCTEXT("Motivation", "Motivation"), 100, LOCTEXT("Motivation Desc", "Every 1% Happiness above 60%, gives +1% productivity")),
 	BldInfo(CardEnum::Passion,		LOCTEXT("Passion", "Passion"), 100, LOCTEXT("Passion Desc", "+20% Job Happiness, +15% Productivity")),
 
 	
@@ -4978,6 +4980,7 @@ enum class TechEnum : uint8
 	CoffeeRoaster,
 
 	// Mar 12
+	Warehouse,
 	Granary,
 	Archives,
 	HaulingServices,
@@ -5670,12 +5673,13 @@ enum class UnitAnimationEnum : uint8
 	StoneMining,
 	FarmPlanting,
 
-	Caravan,
+	HorseCaravan,
 	Ship,
-	Immigration,
+	ImmigrationCart,
 
 	HorseMarket,
 	HorseLogistics,
+	HaulingCart,
 
 	Rest,
 	Invisible,
@@ -5697,6 +5701,7 @@ static const std::vector<std::string> UnitAnimationNames =
 
 	"HorseMarket",
 	"HorseLogistics",
+	"HaulingCart",
 
 	"Rest",
 	"Invisible",
@@ -5724,6 +5729,7 @@ static const std::vector<float> UnitAnimationPlayRate =
 
 	7.0f, // HorseMarket
 	7.0f, // HorseLogistics
+	1.0f, // HaulingCart
 
 	1.0f,
 	1.0f, // Invisible
@@ -5736,7 +5742,7 @@ static const int32 UnitAnimationCount = UnitAnimationNames.size();
 
 static bool IsHorseAnimation(UnitAnimationEnum animationEnum)
 {
-	return animationEnum == UnitAnimationEnum::Caravan ||
+	return animationEnum == UnitAnimationEnum::HorseCaravan ||
 		animationEnum == UnitAnimationEnum::HorseMarket ||
 		animationEnum == UnitAnimationEnum::HorseLogistics;
 }
@@ -5767,7 +5773,7 @@ enum class HumanVariationEnum : uint8
 
 static HumanVariationEnum GetHumanVariationEnum(bool isChild, bool isMale, UnitAnimationEnum animationEnum)
 {
-	if (animationEnum == UnitAnimationEnum::Caravan) {
+	if (animationEnum == UnitAnimationEnum::HorseCaravan) {
 		return HumanVariationEnum::Caravan;
 	}
 	if (isChild) {

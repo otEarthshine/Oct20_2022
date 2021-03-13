@@ -220,22 +220,24 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 					TileObjInfo tileObjInfo = treeSystem.tileInfo(worldTileId);
 					if (tileObjInfo.type == ResourceTileType::Tree) {
 						float height = treeSystem.growthPercent(worldTileId) / 100.0f * 15 + 5;
-						line->DrawLine(start, start + FVector(0, 0, height), FLinearColor(0, 0.5, 0), 100.0f, 1.0f, 10000);
+						line->DrawLine(start, start + FVector(0, 0, height), FLinearColor(0, 1, 0), 100.0f, 1.0f, 10000);
 					}
 					// TODO: this is for debug
 					else if (tileObjInfo.treeEnum == TileObjEnum::WheatBush) {
 						float height = treeSystem.growthPercent(worldTileId) / 100.0f * 15 + 5;
-						line->DrawLine(start, start + FVector(0, 0, height), FLinearColor::Yellow, 100.0f, 1.0f, 10000);
+						line->DrawLine(start, start + FVector(0, 0, height * 0.5), FLinearColor::Yellow, 100.0f, 1.0f, 10000);
 					}
 					else if (tileObjInfo.type == ResourceTileType::Bush) {
 						float height = treeSystem.growthPercent(worldTileId) / 100.0f * 15 + 5;
-						line->DrawLine(start, start + FVector(0, 0, height), FLinearColor::Green, 100.0f, 1.0f, 10000);
+						line->DrawLine(start, start + FVector(0, 0, height * 0.5), FLinearColor(0, 0.1, 0), 100.0f, 1.0f, 10000);
 					}
 				}
 
 				if (treeSystem.isOnReadyBushesList(worldTile)) {
 					line->DrawLine(start, start + FVector(4, 4, 8), FLinearColor(1, 0, 1), 100.0f, 1.0f, 10000);
 				}
+
+				// Reservation
 				if (treeSystem.hasReservation(worldTile)) {
 					line->DrawLine(start, start + FVector(-4, 4, 8), FLinearColor::Black, 100.0f, 1.0f, 10000);
 				}

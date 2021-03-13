@@ -95,9 +95,7 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 
 		float researchFraction = unlockSys->researchFraction();
 
-		//stringstream ss;
-		//ss << std::fixed << std::showpoint << std::setprecision(1);
-		//ss << (researchFraction * 100) << "%";
+		researchFraction = min(researchFraction, 1.0f);
 		SetText(PercentText, TEXT_FLOAT1_PERCENT(researchFraction * 100)));
 
 		int32 science100XsecPerRound_Left = (100.0f * tech->scienceNeeded(unlockSys->techsFinished) * Time::SecondsPerRound) - unlockSys->science100XsecPerRound;
@@ -106,6 +104,7 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 		int32 science100PerRound = simulation().playerOwned(playerId()).science100PerRound();
 		if (science100PerRound > 0) {
 			int32 secRequired = (science100Left * Time::SecondsPerRound) / science100PerRound;
+			secRequired = std::max(secRequired, 0);
 
 			TArray<FText> args;
 			
@@ -119,7 +118,7 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 			SetText(SecText, args);
 		}
 
-		OuterImage->GetDynamicMaterial()->SetScalarParameterValue("ResearchFraction", unlockSys->researchFraction());
+		OuterImage->GetDynamicMaterial()->SetScalarParameterValue("ResearchFraction", researchFraction);
 	}
 	else {
 		PercentText->SetVisibility(ESlateVisibility::Collapsed);

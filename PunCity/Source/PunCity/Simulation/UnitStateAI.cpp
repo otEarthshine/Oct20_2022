@@ -165,9 +165,9 @@ void UnitStateAI::Update()
 		int ticksPassed = Time::Ticks() - _lastUpdateTick;
 
 		// Caravan/Immigrants/Ship doesn't deduct food
-		if (_animationEnum == UnitAnimationEnum::Caravan ||
+		if (_animationEnum == UnitAnimationEnum::HorseCaravan ||
 			_animationEnum == UnitAnimationEnum::Ship || 
-			_animationEnum == UnitAnimationEnum::Immigration) 
+			_animationEnum == UnitAnimationEnum::ImmigrationCart) 
 		{
 			
 		}

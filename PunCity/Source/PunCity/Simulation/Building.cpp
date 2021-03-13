@@ -188,8 +188,6 @@ void Building::FinishConstruction()
 	_workDone100 = 0;
 	_isConstructed = true;
 
-	_cardSlots.resize(maxCardSlots());
-
 	// Do not reset roadMakers since they should construct multiple roads
 	if (!IsRoad(_buildingEnum))
 	{
@@ -986,14 +984,25 @@ std::vector<BonusPair> Building::GetBonuses()
 		}
 	}
 
+	// Agriculture
+	if (IsAgricultureBuilding(_buildingEnum))
+	{
+		int32 radiusBonus = GetRadiusBonus(CardEnum::Granary, Windmill::Radius, [&](int32 bonus, Building& building) {
+			return max(bonus, 25);
+		});
+		if (radiusBonus > 0) {
+			bonuses.push_back({ LOCTEXT("Near Granary", "Near Granary"), radiusBonus });
+		}
+	}
+
 	if (slotCardCount(CardEnum::ProductivityBook) > 0) {
 		bonuses.push_back({ LOCTEXT("Productivity Book", "Productivity Book"), slotCardCount(CardEnum::ProductivityBook) * 20 });
 	}
 	if (slotCardCount(CardEnum::Passion) > 0) {
-		bonuses.push_back({ LOCTEXT("Passion", "Passion"), 15 });
+		bonuses.push_back({ LOCTEXT("Passion", "Passion"), slotCardCount(CardEnum::Passion) * 15 });
 	}
 	if (slotCardCount(CardEnum::Motivation) > 0) {
-		bonuses.push_back({ LOCTEXT("Motivation", "Motivation"), max(0, (_simulation->GetAverageHappiness(_townId) - 70) * 2) });
+		bonuses.push_back({ LOCTEXT("Motivation", "Motivation"), max(0, (_simulation->GetAverageHappiness(_townId) - 60) * slotCardCount(CardEnum::Motivation)) });
 	}
 
 	// Upgrade bonuses

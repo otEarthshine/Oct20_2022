@@ -140,7 +140,7 @@ UnitDisplayState UUnitDisplayComponent::GetUnitTransformAndVariation(UnitStateAI
 	if (unitEnum == UnitEnum::Human) 
 	{	
 		// Special case: Horse for caravan
-		if (animationEnum == UnitAnimationEnum::Caravan) {
+		if (animationEnum == UnitAnimationEnum::HorseCaravan) {
 			return  { UnitEnum::HorseCaravan, UnitAnimationEnum::Walk, 0 };
 		}
 		if (animationEnum == UnitAnimationEnum::HorseMarket) {
@@ -154,7 +154,8 @@ UnitDisplayState UUnitDisplayComponent::GetUnitTransformAndVariation(UnitStateAI
 		}
 
 		int32 humanVariation = static_cast<int>(GetHumanVariationEnum(unit.isChild(), unit.isMale(), unit.animationEnum()));
-		if (animationEnum == UnitAnimationEnum::Immigration) {
+		if (animationEnum == UnitAnimationEnum::ImmigrationCart ||
+			animationEnum == UnitAnimationEnum::HaulingCart) {
 			return  { UnitEnum::Human, UnitAnimationEnum::Walk, humanVariation };
 		}
 		return  { unitEnum, animationEnum, humanVariation };
@@ -521,22 +522,29 @@ void UUnitDisplayComponent::UpdateResourceDisplay(int32 unitId, UnitStateAI& uni
 	
 	if (_currentDisplayState.unitEnum == UnitEnum::HorseCaravan) 
 	{
-		_auxMeshes->Add(GetMeshName(_currentDisplayState.unitEnum, 0), unitId, getAuxTransform(), 0);
+		_auxMeshes->Add("HorseCaravan", unitId, getAuxTransform(), 0);
 	}
 	else if (_currentDisplayState.unitEnum == UnitEnum::HorseLogistics ||
 			_currentDisplayState.unitEnum == UnitEnum::HorseMarket)
 	{
-		_auxMeshes->Add(GetMeshName(_currentDisplayState.unitEnum, 0), unitId, getAuxTransform(), 0);
+		FString meshName = _currentDisplayState.unitEnum == UnitEnum::HorseLogistics ? "HorseLogistics" : "HorseMarket";
+		_auxMeshes->Add(meshName, unitId, getAuxTransform(), 0);
 
 		displayResource(-15, 5);
 	}
 	else
 	{
 		//! Cart Display
-		if (_currentDisplayState.unitEnum == UnitEnum::Human &&
-			unit.animationEnum() == UnitAnimationEnum::Immigration) 
+		if (_currentDisplayState.unitEnum == UnitEnum::Human) 
 		{
-			_auxMeshes->Add(GetMeshName(UnitEnum::Human, 0), unitId, getAuxTransform(), 0);
+			if (unit.animationEnum() == UnitAnimationEnum::ImmigrationCart) {
+				_auxMeshes->Add("Immigration", unitId, getAuxTransform(), 0);
+			}
+			if (unit.animationEnum() == UnitAnimationEnum::HaulingCart) {
+				_auxMeshes->Add("HaulingCart", unitId, getAuxTransform(), 0);
+				displayResource(7);
+				return;
+			}
 		}
 
 		displayResource(unit.isEnum(UnitEnum::Human) ? 4 : 8);

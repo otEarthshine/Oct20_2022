@@ -133,7 +133,7 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "CacheWaterRoutes", 1 },
 
 	{ "SuppressHoverIcon", 0 },
-	{ "URO", 0 },
+	{ "URO", 1 },
 	{ "URODebug", 0 },
 
 	// Debug Network

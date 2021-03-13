@@ -691,9 +691,6 @@ public:
 	{
 		int32 upkeep = baseUpkeep();
 
-		// Frugality
-		upkeep = std::max(0, upkeep - upkeep * slotCardCount(CardEnum::FrugalityBook) * 50 / 100);
-
 		// Budget Upkeep
 		switch (_budgetLevel)
 		{
@@ -703,6 +700,12 @@ public:
 		case 1: upkeep = upkeep * 25 / 100; break; // The more we are trying to cut, the less we can cut to trade for less Effectiveness
 		default:
 			break;
+		}
+
+		// Frugality
+		int32 frugalityCount = slotCardCount(CardEnum::FrugalityBook);
+		for (int32 i = 0; i < frugalityCount; i++) {
+			upkeep = upkeep * 50 / 100; // 50% maintenance
 		}
 		
 		// No worker, half upkeep
@@ -980,7 +983,13 @@ public:
 	int32 inputPerBatch()
 	{
 		int32 result = baseInputPerBatch();
-		result = std::max(0, result - result * slotCardCount(CardEnum::SustainabilityBook) * 40 / 100);
+
+		int32 sustainabilityCount = slotCardCount(CardEnum::SustainabilityBook);
+		for (int32 i = 0; i < sustainabilityCount; i++) {
+			result = result * slotCardCount(CardEnum::SustainabilityBook) * 60 / 100; // -40%
+		}
+		
+		result = std::max(0, result);
 		return result;
 	}
 
@@ -1087,9 +1096,8 @@ public:
 		if (_simulation->TownhallCardCountTown(_playerId, CardEnum::SocialWelfare)) {
 			jobHappiness += 20;
 		}
-		if (slotCardCount(CardEnum::Passion) > 0) {
-			jobHappiness += 20;
-		}
+		
+		jobHappiness += 20 * slotCardCount(CardEnum::Passion);
 		
 
 		jobHappiness = std::max(0, jobHappiness);
@@ -1214,12 +1222,7 @@ public:
 	 * Card slots
 	 */
 	bool IsCardSlotsFull() {
-		for (const CardStatus& cardStatus : _cardSlots) {
-			if (cardStatus.cardEnum == CardEnum::None) {
-				return false;
-			}
-		}
-		return true;
+		return _cardSlots.size() >= maxCardSlots();
 	}
 	int32 slotCardCount(CardEnum cardEnum) {
 		int32 count = 0;
@@ -1244,40 +1247,28 @@ public:
 		if (isEnum(CardEnum::Townhall)) {
 			return false;
 		}
-		for (const CardStatus& cardStatus : _cardSlots) {
-			if (cardStatus.cardEnum == CardEnum::None) {
-				return true;
-			}
-		}
-		return false;
+		return _cardSlots.size() < maxCardSlots();
 	}
 	void AddSlotCard(CardStatus card)
 	{
 		PUN_CHECK(!isEnum(CardEnum::Townhall));
-		PUN_CHECK(IsBuildingSlotCard(card.cardEnum));
+		PUN_CHECK(IsBuildingSlotCard(card.cardEnum) || isEnum(CardEnum::Archives));
 
-		for (int32 i = 0; i < _cardSlots.size(); i++) {
-			if (_cardSlots[i].cardEnum == CardEnum::None) {
-				_cardSlots[i] = card;
-				return;
-			}
-		}
-		UE_DEBUG_BREAK();
+		_cardSlots.push_back(card);
 	}
 	CardEnum RemoveSlotCard(int32 unslotIndex)
 	{
 		PUN_CHECK(!isEnum(CardEnum::Townhall));
 		PUN_ENSURE(unslotIndex < _cardSlots.size(), return CardEnum::None);
-		
+
 		CardEnum result = _cardSlots[unslotIndex].cardEnum;
-		_cardSlots[unslotIndex] = CardStatus();
+		_cardSlots.erase(_cardSlots.begin() + unslotIndex);
 		return result;
 	}
 	void ResetCardSlots()
 	{
 		PUN_CHECK(!isEnum(CardEnum::Townhall));
 		_cardSlots.clear();
-		_cardSlots.resize(maxCardSlots());
 	}
 
 	virtual int32 GetBuildingSelectorHeight() {
@@ -1523,14 +1514,28 @@ public:
 		}
 		
 		// StorageTooFar Warning
-		if (hasInput1() || hasInput2() || product() != ResourceEnum::None ||
-			IsAgricultureBuilding(_buildingEnum))
+		if (IsAgricultureBuilding(_buildingEnum))
 		{
 			if (!_simulation->HasBuildingWithinRadius(_centerTile, 40, _townId, CardEnum::StorageYard) &&
-				!_simulation->HasBuildingWithinRadius(_centerTile, 40, _townId, CardEnum::Warehouse))
+				!_simulation->HasBuildingWithinRadius(_centerTile, 40, _townId, CardEnum::Warehouse) &&
+				!_simulation->HasBuildingWithinRadius(_centerTile, 40, _townId, CardEnum::Granary) &&
+				!_simulation->HasBuildingWithinRadius(_centerTile, 40, _townId, CardEnum::Market))
 			{
 				hoverWarning = HoverWarning::StorageTooFar;
 				return true;
+			}
+		}
+		else
+		{
+			if (hasInput1() || hasInput2() || product() != ResourceEnum::None)
+			{
+				if (!_simulation->HasBuildingWithinRadius(_centerTile, 40, _townId, CardEnum::StorageYard) &&
+					!_simulation->HasBuildingWithinRadius(_centerTile, 40, _townId, CardEnum::Warehouse) &&
+					!_simulation->HasBuildingWithinRadius(_centerTile, 40, _townId, CardEnum::Market))
+				{
+					hoverWarning = HoverWarning::StorageTooFar;
+					return true;
+				}
 			}
 		}
 

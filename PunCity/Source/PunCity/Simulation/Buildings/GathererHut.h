@@ -1362,7 +1362,12 @@ public:
 class HaulingServices final : public Building
 {
 public:
-
+	void FinishConstruction() override {
+		Building::FinishConstruction();
+		_upgrades = {
+			MakeWorkerSlotUpgrade(50, 2),
+		};
+	}
 
 	static const int32 Radius = 32;
 };

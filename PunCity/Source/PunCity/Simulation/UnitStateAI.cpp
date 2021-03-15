@@ -742,10 +742,15 @@ void UnitStateAI::AttackIncoming(UnitFullId attacker, int32 ownerWorkplaceId, in
 				Building* workplace = unitAI.workplace();
 				int32 efficiency = workplace ? workplace->efficiency() : 0;
 				drops[i].count = GameRand::Rand100RoundTo1(drops[i].count * efficiency / 100);
+
+				drops[i].count = max(1, drops[i].count);
 			}
-			
-			for (ResourcePair& drop : drops)  {
-				_simulation->resourceSystem(unitAI.townId()).SpawnDrop(drop.resourceEnum, drop.count, unitTile());
+
+			int32 attackerTownId = unitAI.townId();
+			if (_simulation->IsValidTown(attackerTownId)) {
+				for (ResourcePair& drop : drops) {
+					_simulation->resourceSystem(attackerTownId).SpawnDrop(drop.resourceEnum, drop.count, unitTile());
+				}
 			}
 
 			// Workplace stat
@@ -2673,6 +2678,9 @@ void UnitStateAI::Construct()
 //! Resource reservations
 void UnitStateAI::ReserveResource(ReservationType type, ResourceHolderInfo info, int32 amount)
 {
+	PUN_CHECK(_simulation->IsValidTown(_townId));
+	PUN_CHECK(resourceSystem().CanAddReservation(type, info));
+	
 	AddDebugSpeech("(Start)ReserveResource:" + ReservationTypeName(type) + ", " + info.ToString() + ", amount:" + to_string(amount));
 	PUN_UNIT_CHECK(info.isValid());
 

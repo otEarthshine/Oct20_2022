@@ -546,6 +546,14 @@ public:
 					{ CardEnum::House, CardEnum::House }
 				);
 			}
+			// Tavern (One for every 50 citizens)
+			else if (population / 50 + 1 > _simulation->buildingCount(_aiPlayerId, CardEnum::Tavern))
+			{
+				block = AICityBlock::MakeBlock(
+					{ CardEnum::Tavern },
+					{ }
+				);
+			}
 			else
 			{
 				// Industry

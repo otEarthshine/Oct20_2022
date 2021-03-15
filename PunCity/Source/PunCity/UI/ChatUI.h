@@ -270,7 +270,10 @@ public:
 						if (command->cheatEnum == CheatEnum::Tog) {
 							command->stringVar1 = FString(commandAndParams[2].c_str());
 						} else {
-							command->var1 = stoi(commandAndParams[2].c_str());
+							command->var1 = FCString::Atoi(commandAndParams[2].c_str());
+							if (commandAndParams.size() >= 4) {
+								command->var2 = FCString::Atoi(commandAndParams[3].c_str());
+							}
 						}
 					}
 					

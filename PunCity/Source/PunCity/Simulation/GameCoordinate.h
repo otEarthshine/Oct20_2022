@@ -836,14 +836,26 @@ struct TileArea
 	std::vector<WorldRegion2> GetOverlapRegions() const
 	{
 		std::vector<WorldRegion2> resultRegions;
-		for (int16_t y = minY; y <= maxY; y++) { // Faster loop
-			for (int16_t x = minX; x <= maxX; x++) {
+		
+		//for (int16_t y = minY; y <= maxY; y++) { // Faster loop
+		//	for (int16_t x = minX; x <= maxX; x++) {
+		//		WorldRegion2 region = WorldTile2(x, y).region();
+		//		if (std::find(resultRegions.begin(), resultRegions.end(), region) == resultRegions.end()) {
+		//			resultRegions.push_back(region);
+		//		}
+		//	}
+		//}
+
+		for (int16_t y = minY; y <= maxY; y += CoordinateConstants::TilesPerRegion) { // Faster loop
+			for (int16_t x = minX; x <= maxX; x += CoordinateConstants::TilesPerRegion) 
+			{
 				WorldRegion2 region = WorldTile2(x, y).region();
-				if (std::find(resultRegions.begin(), resultRegions.end(), region) == resultRegions.end()) {
-					resultRegions.push_back(region);
-				}
+				check(std::find(resultRegions.begin(), resultRegions.end(), region) == resultRegions.end());
+				
+				resultRegions.push_back(region);
 			}
 		}
+		
 		return resultRegions;
 	}
 

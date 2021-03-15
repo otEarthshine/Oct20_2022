@@ -1111,7 +1111,7 @@ void UMainGameUI::Tick()
 			TArray<FText> args;
 			ADDTEXT_(INVTEXT("<Bold>{0}</>\n"), cardInfo.name);
 			ADDTEXT_TAGN_("<SPColor>", LOCTEXT("Leader Skill", "Leader Skill"));
-			ADDTEXT_(INVTEXT("{0}: <Orange>[V]</>"), LOCTEXT("Hotkey", "Hotkey"));
+			ADDTEXT_(INVTEXT("\n{0}: <Orange>[V]</>"), LOCTEXT("Hotkey", "Hotkey"));
 			ADDTEXT_INV_("<line><space>");
 			ADDTEXT_(LOCTEXT("SP cost: {0}\n", "SP cost: {0}\n"), skillMana);
 			ADDTEXT__(cardInfo.GetDescription())
@@ -2164,8 +2164,9 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 				FVector2D initialPosition = GetViewportPosition(cardButton->GetCachedGeometry());
 
 				auto command = make_shared<FUseCard>();
-				command->cardEnum = buildingEnum;
-				command->variable1 = buildingId;
+				command->cardEnum = CardEnum::ArchivesSlotting; // This is buildingEnum of the clicked card
+				command->variable1 = buildingId; // Archives buildingId
+				command->variable2 = static_cast<int32>(buildingEnum); // Target CardEnum
 				command->SetPosition(initialPosition);
 				networkInterface()->SendNetworkCommand(command);
 
@@ -2211,6 +2212,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 							//AnimatedCardOverlay->AddChild(animationCard);
 
 							//cardButton->SetVisibility(ESlateVisibility::Hidden);
+							return;
 						}
 						else {
 							simulation().AddPopupToFront(playerId(),
@@ -2220,13 +2222,12 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 						}
 					}
 				}
-				else
-				{
-					simulation().AddPopupToFront(playerId(), 
-						LOCTEXT("GlobalCardNeedsTownhall_Pop", "Global-slot card must be slotted to the townhall. Click the townhall to open its panel before slotting the card."),
-						ExclusiveUIEnum::None, "PopupCannot"
-					);
-				}
+
+				simulation().AddPopupToFront(playerId(), 
+					LOCTEXT("GlobalCardNeedsTownhall_Pop", "Global-slot card must be slotted to the townhall. Click the townhall to open its panel before slotting the card."),
+					ExclusiveUIEnum::None, "PopupCannot"
+				);
+				
 				return;
 			}
 

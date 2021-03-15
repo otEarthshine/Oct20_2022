@@ -495,7 +495,8 @@ void UWorldSpaceUI::TickBuildings()
 			hoverIcon->SetText(FText(), TEXT_NUMSIGNED(Bank::ProfitPerHouse));
 		}
 		// Bad Appeal
-		else if (overlayType == OverlayType::BadAppeal && IsHumanHouse(building.buildingEnum()) && 
+		else if (overlayType == OverlayType::BadAppeal && 
+				(IsHumanHouse(building.buildingEnum()) || IsFunServiceBuilding(building.buildingEnum())) &&
 				WorldTile2::Distance(building.centerTile(), overlayTile) < BadAppealRadius)
 		{
 			UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,

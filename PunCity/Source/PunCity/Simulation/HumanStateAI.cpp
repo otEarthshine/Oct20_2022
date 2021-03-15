@@ -2033,7 +2033,7 @@ bool HumanStateAI::TryHaulingServices()
 				for (ResourceEnum input : inputs)
 				{
 					const ResourceHolder& inputHolder = building.holder(input);
-					int32 inputHaulNeededPercent = (inputHolder.target() - inputHolder.current()) * 100 / inputHolder.target();
+					int32 inputHaulNeededPercent = (inputHolder.target() - inputHolder.current()) * 100 / std::max(1, inputHolder.target());
 					if (inputHaulNeededPercent > highestInputHaulNeededPercent) {
 						highestInputHaulNeededPercent = inputHaulNeededPercent;
 						highestInputHaulNeededBuildingId = buildingId;
@@ -2060,7 +2060,7 @@ bool HumanStateAI::TryHaulingServices()
 		tryMoveResource(buildingEnum);
 	}
 
-
+	// Try Input Hauling
 	if (highestInputHaulNeededPercent > highestOutputHaulNeededPercent)
 	{
 		Building& building = _simulation->building(highestInputHaulNeededBuildingId);
@@ -2078,26 +2078,104 @@ bool HumanStateAI::TryHaulingServices()
 		}
 	}
 
-	if (highestOutputHaulNeededBuildingId == -1) {
+	// Try Output Hauling
+	if (highestOutputHaulNeededBuildingId != -1) 
+	{
+		Building& building = _simulation->building(highestOutputHaulNeededBuildingId);
+
+		const ResourceHolder& outputHolder = building.holder(highestOutputHaulNeededResourceEnum);
+		int32 resourceNeeded = min(haulerServicesCapacity(), outputHolder.current());
+		check(resourceNeeded > 0);
+
+		FoundResourceHolderInfo holderInfo = building.GetHolderInfoFull(highestOutputHaulNeededResourceEnum, resourceNeeded);
+		if (TryMoveResourcesProviderToAnyDropoff(holderInfo, ResourceFindType::AvailableForDropoff, UnitAnimationEnum::HaulingCart))
+		{
+			// successful move, go to market to get cart first
+			Add_MoveTo(workPlc.gateTile(), -1, UnitAnimationEnum::Walk);
+			return true;
+		}
+
+	}
+
+	// Remove Drops from the ground
+	auto& resourceSys = resourceSystem();
+	WorldTile2 workPlaceTile = workPlc.centerTile();
+	TileArea dropArea(workPlaceTile, HaulingServices::Radius);
+
+	std::vector<DropInfo> drops = resourceSys.GetDropsFromArea_Pickable(dropArea);
+
+	//
+	std::vector<FoundResourceHolderInfo> foundProviderInfos;
+	WorldTile2 curStartTile = workPlaceTile;
+	ResourceEnum resourceEnumToGet = ResourceEnum::None;
+	int32 spaceLeft = haulerServicesCapacity();
+	int32 totalAmount = 0;
+
+	LOOP_CHECK_START();
+	while (true) 
+	{
+		LOOP_CHECK_END();
+		
+		// Find Closest Drop from current tile
+		int32 closestDropDist = 99999;
+		DropInfo closestDropInfo;
+		for (DropInfo dropInfo : drops) 
+		{
+			if (resourceEnumToGet == dropInfo.holderInfo.resourceEnum ||
+				resourceEnumToGet == ResourceEnum::None)
+			{
+				int32 dist = WorldTile2::Distance(curStartTile, dropInfo.tile);
+				if (dist < closestDropDist)
+				{
+					closestDropDist = dist;
+					closestDropInfo = dropInfo;
+				}
+			}
+		}
+
+		// No more drop to get
+		if (!closestDropInfo.isValid()) {
+			break;
+		}
+
+		int32 amountToGetForDrop = min(spaceLeft, resourceSys.resourceCountWithPop(closestDropInfo.holderInfo));
+		check(amountToGetForDrop > 0);
+		spaceLeft -= amountToGetForDrop;
+		check(spaceLeft >= 0);
+		totalAmount += amountToGetForDrop;
+
+		check(resourceEnumToGet == ResourceEnum::None || resourceEnumToGet == closestDropInfo.holderInfo.resourceEnum);
+		resourceEnumToGet = closestDropInfo.holderInfo.resourceEnum;
+
+		// Add Drop to foundInfos
+		foundProviderInfos.push_back(FoundResourceHolderInfo(closestDropInfo.holderInfo, amountToGetForDrop, closestDropInfo.tile));
+
+		// Remove the drop
+		CppUtils::Remove(drops, closestDropInfo);
+
+		curStartTile = closestDropInfo.tile;
+
+		if (spaceLeft == 0) {
+			break;
+		}
+	}
+
+	if (foundProviderInfos.size() == 0) {
 		return false;
 	}
 
-	Building& building = _simulation->building(highestOutputHaulNeededBuildingId);
+	check(resourceEnumToGet != ResourceEnum::None);
 
-	const ResourceHolder& outputHolder = building.holder(highestOutputHaulNeededResourceEnum);
-	int32 resourceNeeded = min(haulerServicesCapacity(), outputHolder.current());
-	check(resourceNeeded > 0);
-
-	FoundResourceHolderInfo holderInfo = building.GetHolderInfoFull(highestOutputHaulNeededResourceEnum, resourceNeeded);
-	if (TryMoveResourcesProviderToAnyDropoff(holderInfo, ResourceFindType::AvailableForDropoff, UnitAnimationEnum::HaulingCart))
-	{
-		// successful move, go to market to get cart first
-		Add_MoveTo(workPlc.gateTile(), -1, UnitAnimationEnum::Walk);
-		return true;
+	FoundResourceHolderInfos foundDropoffs = resourceSys.FindHolder(ResourceFindType::AvailableForDropoff, resourceEnumToGet, totalAmount, curStartTile);
+	if (!foundDropoffs.hasInfos()) {
+		return false;
 	}
-	
 
-	return false;
+	MoveResourceSequence(foundProviderInfos, foundDropoffs.foundInfos, -1, UnitAnimationEnum::HaulingCart); // can't provide more than what foundDropoff can take
+	Add_MoveTo(workPlc.gateTile(), -1, UnitAnimationEnum::Walk);
+	
+	AddDebugSpeech("(Succeed)TryMoveResourcesProviderToAnyDropoff:");
+	return true;
 }
 
 bool HumanStateAI::TryDistribute_Market()

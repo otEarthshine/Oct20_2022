@@ -3704,29 +3704,27 @@ void GameSimulationCore::UseCard(FUseCard command)
 	auto& resourceSys = resourceSystem(command.playerId);
 	auto& globalResourceSys = globalResourceSystem(command.playerId);
 
-	// Archives Store Card
-	if (_descriptionUIState.objectType == ObjectTypeEnum::Building)
-	{
-		int32 buildingId = _descriptionUIState.objectId;
 
-		if (command.variable1 == buildingId)
+	// Archives Store Card
+	if (command.cardEnum == CardEnum::ArchivesSlotting)
+	{
+		int32 buildingId = command.variable1;
+		if (isValidBuildingId(buildingId))
 		{
-			// - Guard against isEnum() crash
-			if (isValidBuildingId(command.variable1))
+			Building& bld = building(buildingId);
+			if (bld.isEnum(CardEnum::Archives) && bld.CanAddSlotCard())
 			{
-				Building& bld = building(buildingId);
-				if (bld.CanAddSlotCard())
-				{
-					int32 soldPrice = cardSys.RemoveCards(command.cardEnum, 1);
-					if (soldPrice != -1) {
-						bld.AddSlotCard(command.GetCardStatus(_gameManager->GetDisplayWorldTime() * 100.0f));
-					}
+				CardEnum targetCardEnum = static_cast<CardEnum>(command.variable2);
+				int32 soldPrice = cardSys.RemoveCards(targetCardEnum, 1);
+				if (soldPrice != -1) {
+					CardStatus cardStatus = command.GetCardStatus(_gameManager->GetDisplayWorldTime() * 100.0f);
+					cardStatus.cardEnum = targetCardEnum;
+					bld.AddSlotCard(cardStatus);
 				}
 			}
 		}
 		return;
 	}
-	
 
 	// CardRemoval
 	if (command.cardEnum == CardEnum::CardRemoval)
@@ -3746,17 +3744,21 @@ void GameSimulationCore::UseCard(FUseCard command)
 	// Global Slot
 	if (IsGlobalSlotCard(command.cardEnum))
 	{
-		auto& townManage = townManager(command.townId);
-		
-		if (townManage.CanAddCardToTownhall()) {
-			int32 soldPrice = cardSys.RemoveCards(command.cardEnum, 1);
-			if (soldPrice != -1) {
-				townManage.AddCardToTownhall(command.GetCardStatus(_gameManager->GetDisplayWorldTime() * 100.0f));
-				townManage.RecalculateTaxDelayed();
+		if (IsValidTown(command.townId)) // (Edge case where Archive UI was hidden)
+		{
+			auto& townManage = townManager(command.townId);
+
+			if (townManage.CanAddCardToTownhall()) {
+				int32 soldPrice = cardSys.RemoveCards(command.cardEnum, 1);
+				if (soldPrice != -1) {
+					townManage.AddCardToTownhall(command.GetCardStatus(_gameManager->GetDisplayWorldTime() * 100.0f));
+					townManage.RecalculateTaxDelayed();
+				}
 			}
-		} else {
-			AddPopupToFront(command.playerId, 
-				LOCTEXT("TownhallSlotsFull", "Townhall card slots full."));
+			else {
+				AddPopupToFront(command.playerId,
+					LOCTEXT("TownhallSlotsFull", "Townhall card slots full."));
+			}
 		}
 		return;
 	}
@@ -3952,10 +3954,24 @@ void GameSimulationCore::UnslotCard(FUnslotCard command)
 	}
 	else
 	{
-		CardEnum cardEnum = bld.RemoveSlotCard(command.unslotIndex);
-		if (cardEnum != CardEnum::None) {
-			cardSys.AddCardToHand2(cardEnum);
+		// Ensure there is enough space to add card
+		CardStatus cardStatus = bld.slotCard(command.unslotIndex);
+		if (cardStatus.cardEnum != CardEnum::None)
+		{
+			if (cardSys.CanAddCardToBoughtHand(cardStatus.cardEnum, 1))
+			{
+				CardEnum cardEnum = bld.RemoveSlotCard(command.unslotIndex);
+				if (cardEnum != CardEnum::None) {
+					cardSys.AddCardToHand2(cardEnum);
+				}
+			}
+			else {
+				AddPopupToFront(command.playerId,
+					LOCTEXT("UnslotErrorHandsFull", "Cannot unslot the Card. Your Card Hand is full.")
+				);
+			}
 		}
+
 	}
 }
 
@@ -4815,6 +4831,55 @@ void GameSimulationCore::Cheat(FCheat command)
 			break;
 		}
 
+		case CheatEnum::AddHuman:
+		{
+			AddUnit(UnitEnum::Human, 0, WorldTile2(command.var1, command.var2).worldAtom2(), Time::TicksPerYear);
+			break;
+		}
+		case CheatEnum::AddAnimal:
+		{
+			WorldTile2 tile(command.var1, command.var2);
+			if (pathAI()->isWalkable(tile.x, tile.y)) {
+				AddUnit(UnitEnum::RedDeer, 0, tile.worldAtom2(), Time::TicksPerYear);
+			}
+			break;
+		}
+		case CheatEnum::KillUnit:
+		{
+			int32 humanId = command.var1; 
+			if (_unitSystem->IsUnitValid(humanId))
+			{
+				UnitStateAI& unit = unitAI(humanId);
+				PUN_LOG("Kill %d %d", humanId, unit.id());
+				check(humanId == unit.id());
+				unit.Die();
+			}
+			break;
+		}
+		case CheatEnum::SpawnDrop:
+		{
+			WorldTile2 tile(command.var1, command.var2);
+			if (pathAI()->isWalkable(tile.x, tile.y)) 
+			{
+				// Drops
+				std::vector<ResourcePair> drops = GetUnitInfo(UnitEnum::Boar).resourceDrops100;
+
+				// Random 100 to 1, add efficiency
+				for (size_t i = 0; i < drops.size(); i++)
+				{
+					PUN_CHECK(drops[i].count >= 100);
+					drops[i].count = GameRand::Rand100RoundTo1(drops[i].count);
+					drops[i].count = max(1, drops[i].count);
+				}
+
+				for (ResourcePair& drop : drops) {
+					resourceSystem(0).SpawnDrop(drop.resourceEnum, drop.count, tile);
+				}
+			}
+			break;
+		}
+		
+
 		case CheatEnum::AddResource:
 		{
 			ResourceEnum resourceEnum = static_cast<ResourceEnum>(command.var1);
@@ -5230,6 +5295,7 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 
 		FChooseInitialResources initialResources = playerOwned.initialResources;
 		if (IsColonyPlacement(commandBuildingEnum)) {
+			initialResources = FChooseInitialResources::GetDefault();
 			initialResources.medicineAmount /= 2;
 			initialResources.toolsAmount /= 4;
 		}

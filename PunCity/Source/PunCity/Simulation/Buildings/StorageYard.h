@@ -147,13 +147,18 @@ public:
 	int32 SpaceLeftFor(ResourceEnum resourceEnum)
 	{
 		PUN_CHECK(resourceEnum != ResourceEnum::None);
+
+		int32 resourceEnumInt = static_cast<int>(resourceEnum);
+
+		PUN_ENSURE(_holderInfos.size() > resourceEnumInt && resourceEnumInt >= 0, return 0);
 		
 		const int32 countPerTile = GameConstants::StorageCountPerTile;
 		
 		int32 spaceLeft = (storageSlotCount() - _tilesOccupied) * GameConstants::StorageCountPerTile;
 
 		// If there is existing resource, we can also fit more into existing tile
-		int32 resourceCountWithPush = resourceSystem().resourceCountWithPush(_holderInfos[static_cast<int>(resourceEnum)]);
+		ResourceHolderInfo info = _holderInfos[resourceEnumInt];
+		int32 resourceCountWithPush = resourceSystem().resourceCountWithPush(info);
 		if (resourceCountWithPush > 0) {
 			int32 tilesOccupiedByThisResource = (countPerTile - 1 + resourceCountWithPush) / countPerTile;
 			spaceLeft += (tilesOccupiedByThisResource * countPerTile) - resourceCountWithPush;
@@ -227,7 +232,7 @@ public:
 	}
 
 	ResourceHolderType defaultHolderType(ResourceEnum resourceEnum) override {
-		return IsFoodEnum(resourceEnum) ? ResourceHolderType::Storage : ResourceHolderType::Provider;
+		return IsAgriculturalGoods(resourceEnum) ? ResourceHolderType::Storage : ResourceHolderType::Provider;
 	}
 
 	static const int32 Radius = 20;

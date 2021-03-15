@@ -19,9 +19,9 @@
 // VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 16 // 3 digit
+#define MINOR_VERSION 17 // 3 digit
 
-#define VERSION_DAY 12
+#define VERSION_DAY 15
 #define VERSION_MONTH 3
 #define VERSION_YEAR 21
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
@@ -62,9 +62,9 @@ static FString GetGameVersionString(int32 version, bool includeDate = true)
 
 // VERSION
 #define MAJOR_SAVE_VERSION 0
-#define MINOR_SAVE_VERSION 16 // 3 digit
+#define MINOR_SAVE_VERSION 17 // 3 digit
 
-#define VERSION_SAVE_DAY 12
+#define VERSION_SAVE_DAY 15
 #define VERSION_SAVE_MONTH 3
 #define VERSION_SAVE_YEAR 21
 #define VERSION_SAVE_DATE (VERSION_SAVE_YEAR * 10000) + (VERSION_SAVE_MONTH * 100) + VERSION_SAVE_DAY
@@ -1401,6 +1401,11 @@ static bool IsFoodEnum(ResourceEnum resourceEnum) {
 	}
 }
 
+static bool IsAgriculturalGoods(ResourceEnum resourceEnum)
+{
+	return IsFoodEnum(resourceEnum) || resourceEnum == ResourceEnum::Flour;
+}
+
 static bool IsMeatEnum(ResourceEnum resourceEnum) {
 	switch(resourceEnum)
 	{
@@ -2238,6 +2243,10 @@ enum class CardEnum : uint16
 	GatherTiles,
 	Hauler,
 	Constructor,
+
+
+	//! Special for Callback
+	ArchivesSlotting,
 };
 
 enum class CardHandEnum
@@ -2711,7 +2720,7 @@ static const BldInfo BuildingInfo[]
 
 	// March 12
 	BldInfo(CardEnum::Granary, LOCTEXT("Granary", "Granary"), LOCTEXT("Granary (Plural)", "Granaries"), WorldTile2(6, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Granary Desc", "Food Storage. +25% Productivity to surrounding Food Producers.")),
-	BldInfo(CardEnum::Archives, LOCTEXT("Archives", "Archives"), LOCTEXT("Archives (Plural)", "Archives"), WorldTile2(6, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Archives Desc", "Card Storage. Generate Income equals to 24% of the Card Price per year (3% per Round).")),
+	BldInfo(CardEnum::Archives, LOCTEXT("Archives", "Archives"), LOCTEXT("Archives (Plural)", "Archives"), WorldTile2(6, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Archives Desc", "Store any Cards. Additionally, earn Income equals to 24% of the Card Price per year.")),
 	BldInfo(CardEnum::HaulingServices, LOCTEXT("Hauling Services", "Hauling Services"), LOCTEXT("Hauling Services (Plural)", "Hauling Services"), WorldTile2(6, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 3, { 50, 0, 0 }, LOCTEXT("Hauling Services Desc", "Workers use carts to haul resources to fill building inputs or clear building outputs.")),
 
 	
@@ -3351,6 +3360,7 @@ static bool IsServiceBuilding(CardEnum buildingEnum)
 
 	case CardEnum::Market:
 	case CardEnum::ShippingDepot:
+	case CardEnum::HaulingServices:
 
 	case CardEnum::IntercityLogisticsHub:
 	case CardEnum::IntercityLogisticsPort:
@@ -5872,6 +5882,11 @@ enum class CheatEnum : int32
 	ClearLand,
 	Unhappy,
 
+	AddHuman,
+	AddAnimal,
+	KillUnit,
+	SpawnDrop,
+
 	AddResource,
 	AddCard,
 	AddMoney,
@@ -5919,7 +5934,6 @@ enum class CheatEnum : int32
 	DebugUI,
 	Tog,
 };
-
 static const std::string CheatName[]
 {
 	"UnlockAll",
@@ -5937,6 +5951,11 @@ static const std::string CheatName[]
 	"Kill",
 	"ClearLand",
 	"Unhappy",
+
+	"AddHuman",
+	"AddAnimal",
+	"KillUnit",
+	"SpawnDrop",
 
 	"AddResource",
 	"AddCard",
@@ -7356,6 +7375,16 @@ const std::vector<FunServiceInfo> FunServiceToCardEnum
 	{FunServiceEnum::Theatre, CardEnum::Theatre, 70 },
 	{FunServiceEnum::Tavern, CardEnum::Tavern, 50},
 };
+
+static bool IsFunServiceBuilding(CardEnum buildingEnum)
+{
+	for (const FunServiceInfo& info : FunServiceToCardEnum) {
+		if (info.buildingEnum == buildingEnum) {
+			return true;
+		}
+	}
+	return false;
+}
 
 static FunServiceEnum BuildingEnumToFunService(CardEnum buildingEnum)
 {

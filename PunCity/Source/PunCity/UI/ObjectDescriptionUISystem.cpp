@@ -1461,8 +1461,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					{
 						if (building.playerId() == playerId())
 						{
-							descriptionBox->AddRichText(LOCTEXT("IntercityLogisticsHub_ChooseResources", "Choose 4 resources to haul to delivery target"));
-							descriptionBox->AddSpacer(12);
+							descriptionBox->AddRichText(LOCTEXT("IntercityLogisticsHub_ChooseResources", "Choose 4 resources to take from target town."));
+							descriptionBox->AddSpacer(18);
 
 							auto& hub = building.subclass<IntercityLogisticsHub>();
 
@@ -1485,6 +1485,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 							// Target Town Dropdown
 							{
+								descriptionBox->AddRichText(LOCTEXT("TargetTownDropdown", "Town Target:"));
+								
 								TArray<FText> options;
 								options.Add(noneText);
 
@@ -1512,15 +1514,16 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 									options,
 									simulation.townNameT(targetTownId),
 									[](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex)
-								{
-									auto command = make_shared<FChangeWorkMode>();
-									command->buildingId = objectId;
-									command->intVar1 = dropdownIndex;
-									command->intVar2 = dataSource->simulation().FindTownIdFromName(networkInterface->playerId(), sItem);
-									networkInterface->SendNetworkCommand(command);
-								},
+									{
+										auto command = make_shared<FChangeWorkMode>();
+										command->buildingId = objectId;
+										command->intVar1 = dropdownIndex;
+										command->intVar2 = dataSource->simulation().FindTownIdFromName(networkInterface->playerId(), sItem);
+										networkInterface->SendNetworkCommand(command);
+									},
 									targetTownDropdownIndex
-									);
+								);
+								descriptionBox->AddSpacer(18);
 							}
 
 
@@ -1698,6 +1701,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						for (ResourceEnum resourceEnum : StaticData::FoodEnums) {
 							tryAddManageStorageElement_UnderExpansion(resourceEnum, true, true, false);
 						}
+						tryAddManageStorageElement_UnderExpansion(ResourceEnum::Flour, true, true, false);
 					}
 					// Non-Granary
 					else

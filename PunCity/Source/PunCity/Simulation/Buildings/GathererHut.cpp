@@ -1172,8 +1172,10 @@ void Mine::OnProduce(int32 productionAmount)
 	} else if (_workMode.name.IdenticalTo(rapidMiningText)) {
 		depletionMultiplier += 30;
 	}
-	if (slotCardCount(CardEnum::SustainabilityBook) > 0) {
-		depletionMultiplier -= 50;
+
+	int32 sustainabilityCount = slotCardCount(CardEnum::SustainabilityBook);
+	for (int32 i = 0; i < sustainabilityCount; i++) {
+		depletionMultiplier = depletionMultiplier * 50 / 100;
 	}
 
 	int32 depletedAmount = productionAmount * depletionMultiplier / 100;

@@ -986,7 +986,7 @@ public:
 
 		int32 sustainabilityCount = slotCardCount(CardEnum::SustainabilityBook);
 		for (int32 i = 0; i < sustainabilityCount; i++) {
-			result = result * slotCardCount(CardEnum::SustainabilityBook) * 60 / 100; // -40%
+			result = result * 60 / 100; // -40%
 		}
 		
 		result = std::max(0, result);
@@ -1236,6 +1236,12 @@ public:
 	const std::vector<CardStatus>& slotCards() {
 		return _cardSlots;
 	}
+	CardStatus slotCard(int32 index) {
+		if (0 <= index && index < _cardSlots.size()) {
+			return _cardSlots[index];
+		}
+		return CardStatus();
+	}
 	virtual int32 maxCardSlots() {
 		if (IsDecorativeBuilding(_buildingEnum)) {
 			return 0;
@@ -1259,7 +1265,9 @@ public:
 	CardEnum RemoveSlotCard(int32 unslotIndex)
 	{
 		PUN_CHECK(!isEnum(CardEnum::Townhall));
-		PUN_ENSURE(unslotIndex < _cardSlots.size(), return CardEnum::None);
+		if (unslotIndex >= _cardSlots.size()) {
+			return CardEnum::None; // This could happen when clicking fast
+		}
 
 		CardEnum result = _cardSlots[unslotIndex].cardEnum;
 		_cardSlots.erase(_cardSlots.begin() + unslotIndex);

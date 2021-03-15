@@ -1700,10 +1700,15 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 	 */
 	if (IsIndustryOrMine(_buildingEnum))
 	{
-		const std::vector<int32>& houseIds = simulation.buildingIds(_gameInterface->playerId(), CardEnum::House);
+		std::vector<int32> buildingIds = simulation.buildingIds(_gameInterface->playerId(), CardEnum::House);
+		const std::vector<int32>& tavernIds = simulation.buildingIds(_gameInterface->playerId(), CardEnum::Tavern);
+		const std::vector<int32>& theatreIds = simulation.buildingIds(_gameInterface->playerId(), CardEnum::Theatre);
+		buildingIds.insert(buildingIds.begin(), tavernIds.begin(), tavernIds.end());
+		buildingIds.insert(buildingIds.begin(), theatreIds.begin(), theatreIds.end());
+
 		bool hasHouseAffectedByBadAppeal = false;
-		for (int32 houseId : houseIds) {
-			if (simulation.building(houseId).DistanceTo(_mouseOnTile) < BadAppealRadius) {
+		for (int32 buildingId : buildingIds) {
+			if (simulation.building(buildingId).DistanceTo(_mouseOnTile) < BadAppealRadius) {
 				hasHouseAffectedByBadAppeal = true;
 				break;
 			}

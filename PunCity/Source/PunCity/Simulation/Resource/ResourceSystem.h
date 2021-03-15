@@ -367,6 +367,18 @@ public:
 		RefreshHolder(holderId, resourceSys);
 	}
 
+
+	bool CanAddReservation(ReservationType type, int32 holderId)
+	{
+		if (!(type == ReservationType::Push || type == ReservationType::Pop)) {
+			return false;
+		}
+		if (holderId < 0) return false;
+		if (holderId >= _holders.size()) return false;
+
+		return true;
+	}
+
 	//! Reserve resource, positive = reserve for add, negative = reserve for remove
 	void AddReservation(ReservationType type, int32 holderId, int unitId, int amount, ResourceSystem& resourceSys)
 	{
@@ -1128,39 +1140,18 @@ public:
 	void AddReservation(ReservationType type, ResourceHolderInfo info, int unitId, int amount)
 	{
 		holderGroup(info.resourceEnum).AddReservation(type, info.holderId, unitId, amount, *this);
-		
-		//ResourceHolder& holder = holderMutable(info); // _enumToHolders[(int)info.resourceEnum].holder(info.holderId);
-		//if (type == ReservationType::Push) {
-		//	holder.AddPushReservation(amount, unitId);
-		//}
-		//else if (type == ReservationType::Pop) {
-		//	holder.AddPopReservation(amount, unitId);
-		//} else {
-		//	checkNoEntry();
-		//}
 	}
 
 	int32 RemoveReservation(ReservationType type, ResourceHolderInfo info, int unitId)
 	{
 		return holderGroup(info.resourceEnum).RemoveReservation(type, info.holderId, unitId, *this);
-		
-		//ResourceHolder& holder = holderMutable(info);// _enumToHolders[(int)info.resourceEnum].holder(info.holderId);
-		//if (type == ReservationType::Push) 
-		//{
-		//	int32_t amount = holder.RemovePushReservation(unitId);
-		//	check(amount != -1);
-		//	return amount;
-		//} 
-		//if (type == ReservationType::Pop) 
-		//{
-		//	int32 amount = holder.RemovePopReservation(unitId);
-		//	check(amount != -1);
-		//	return amount;
-		//}
-
-		//checkNoEntry();
-		//return 0;
 	}
+
+	bool CanAddReservation(ReservationType type, ResourceHolderInfo info) {
+		return holderGroup(info.resourceEnum).CanAddReservation(type, info.holderId);
+	}
+
+	
 
 	// Used in IsLandCleared
 	DropInfo GetDropFromSmallArea_Any(TileArea area)
@@ -1179,17 +1170,25 @@ public:
 		}
 		return DropInfo::Invalid();
 	}
+
+	// Helper
+	bool IsValidDrop_Helper(TileArea area, DropInfo drop)
+	{
+		return area.HasTile(drop.tile) &&
+			drop.townId == _townId &&
+			resourceCountWithPop(drop.holderInfo) > 0;
+	}
+	
 	// Used in TryClearLand
 	DropInfo GetDropFromArea_Pickable(TileArea area, bool isSmallArea = false)
 	{
-		//std::vector<int32> provinceIds = _simulation->GetProvinceIdsFromArea(area, isSmallArea);
 		std::vector<WorldRegion2> regions = area.GetOverlapRegions(isSmallArea);
 		
 		for (WorldRegion2 region : regions)
 		{
 			const std::vector<DropInfo>& drops = _simulation->dropSystem().DropsInRegion(region);
 			for (const DropInfo& drop : drops) {
-				if (area.HasTile(drop.tile) && resourceCountWithPop(drop.holderInfo) > 0) {
+				if (IsValidDrop_Helper(area, drop)) {
 					return drop;
 				}
 			}
@@ -1201,14 +1200,13 @@ public:
 	{
 		std::vector<DropInfo> results;
 
-		//std::vector<int32> provinceIds = _simulation->GetProvinceIdsFromArea(area, isSmallArea);
 		std::vector<WorldRegion2> regions = area.GetOverlapRegions(isSmallArea);
 		
 		for (WorldRegion2 region : regions)
 		{
 			const std::vector<DropInfo>& drops = _simulation->dropSystem().DropsInRegion(region);
 			for (const DropInfo& drop : drops) {
-				if (area.HasTile(drop.tile) && resourceCountWithPop(drop.holderInfo) > 0) {
+				if (IsValidDrop_Helper(area, drop)) {
 					results.push_back(drop);
 				}
 			}

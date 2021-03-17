@@ -2,8 +2,12 @@
 
 static uint32_t randState = 1;
 
+bool GameRand::randUsageValid = false;
+
 int32_t GameRand::Rand()
 {
+	check(randUsageValid);
+	
 	randState ^= randState << 13;
 	randState ^= randState >> 17;
 	randState ^= randState << 5;
@@ -12,6 +16,8 @@ int32_t GameRand::Rand()
 
 uint32_t GameRand::URand()
 {
+	check(randUsageValid);
+	
 	randState ^= randState << 13;
 	randState ^= randState >> 17;
 	randState ^= randState << 5;
@@ -41,6 +47,12 @@ void GameRand::ResetStateToTickCount(uint32_t tickCount)
 
 uint32_t GameRand::RandState() {
 	return randState;
+}
+
+
+void GameRand::SetRandUsageValid(bool randUsageValidIn)
+{
+	randUsageValid = randUsageValidIn;
 }
 
 //void GameRand::SetRandState(uint32_t randStateIn) {

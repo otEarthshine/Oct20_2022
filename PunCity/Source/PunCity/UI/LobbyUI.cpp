@@ -353,7 +353,11 @@ void ULobbyUI::Tick()
 
 			PunTerrainGenerator* terrainGenerator = _terrainGenerator.get();
 			_worldInitCompletedFuture = Async(EAsyncExecution::Thread, [terrainGenerator]() {
-				return terrainGenerator->NextInitStage();
+				GameRand::SetRandUsageValid(true);
+				GameRand::ResetStateToTickCount(0);
+				uint8 succeed = terrainGenerator->NextInitStage();
+				GameRand::SetRandUsageValid(false);
+				return succeed;
 			});
 		}
 		else {

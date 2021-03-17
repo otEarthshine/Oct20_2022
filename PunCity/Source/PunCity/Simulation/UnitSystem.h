@@ -150,11 +150,15 @@ public:
 	// Note that SubregionLists's tile is not unitTile...
 	SubregionLists<int32>& unitSubregionLists() final { return _unitSubregionLists; }
 
-	int32 GetDebugHash() {
+	int32 GetSyncHash() {
 		int32 hash = 0;
 		for (size_t i = _unitLeans.size(); i-- > 0;) {
-			hash += _unitLeans[i].atomLocation.x;
-			hash += _unitLeans[i].atomLocation.y;
+			const UnitLean& unitLean = _unitLeans[i];
+			hash += unitLean.atomLocation.x;
+			hash += unitLean.atomLocation.y;
+			hash += unitLean.targetLocation.x;
+			hash += unitLean.targetLocation.y;
+			hash += unitLean.lastUpdate.nextUpdateTick;
 		}
 		return hash;
 	}

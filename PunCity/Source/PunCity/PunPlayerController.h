@@ -583,7 +583,7 @@ public:
 	UFUNCTION(Reliable, Server) void LoadedClientCallback_ToServer();
 	
 	UFUNCTION(Reliable, Server) void SendServerCloggedStatus(int32 playerId, bool clogStatus);
-	UFUNCTION(Reliable, Client) void SendHash_ToClient(int32 insertIndex, const TArray<int32>& tickToHashes);
+	UFUNCTION(Reliable, Client) void SendHash_ToClient(int32 hashSendTick, const TArray<int32>& allTickHashes);
 
 	void TickLocalSimulation_Base(const TArray<int32>& networkTickInfoBlob);
 	UFUNCTION(Reliable, Client, WithValidation) void TickLocalSimulation_ToClients(const TArray<int32>& networkTickInfoBlob);

@@ -1163,7 +1163,10 @@ public:
 		{
 			const std::vector<DropInfo>& drops = _simulation->dropSystem().DropsInRegion(region);
 			for (const DropInfo& drop : drops) {
-				if (area.HasTile(drop.tile) && resourceCountSafe(drop.holderInfo) > 0) {
+				if (area.HasTile(drop.tile) &&
+					drop.townId == _townId &&
+					resourceCountSafe(drop.holderInfo) > 0) 
+				{
 					return drop;
 				}
 			}

@@ -51,7 +51,10 @@ public:
 	static uint32_t RandState();
 	//static void SetRandState(uint32_t randStateIn);
 
-	static int32_t Rand100RoundTo1(int32_t value100) {
+	static int32_t Rand100RoundTo1(int32_t value100)
+	{
+		check(randUsageValid);
+		
 		int32_t value1 = (value100 / 100);
 		if ((value100 % 100) > (Rand() % 100)) {
 			value1++;
@@ -59,7 +62,10 @@ public:
 		return value1;
 	}
 
-	static int32_t RandRound(int32_t numerator, int32_t denominator) {
+	static int32_t RandRound(int32_t numerator, int32_t denominator)
+	{
+		check(randUsageValid);
+		
 		int32_t value = numerator / denominator;
 		int32_t remainder = numerator - value * denominator;
 		if (remainder > (Rand() % denominator)) {
@@ -68,7 +74,10 @@ public:
 		return value;
 	}
 
-	static int32_t RandRound(int32_t numerator, int32_t denominator, int32_t seed) {
+	static int32_t RandRound(int32_t numerator, int32_t denominator, int32_t seed)
+	{
+		check(randUsageValid);
+		
 		int32_t value = numerator / denominator;
 		int32_t remainder = numerator - value * denominator;
 		if (remainder > (Rand(Rand(seed)) % denominator)) { // Double Rand() to ensure more randomness from seed
@@ -79,9 +88,18 @@ public:
 
 	static bool RandChance(int32_t chance) { return Rand() % chance == 0; }
 
-	// Helpers
+	
+	//! Debug
+	
+	static void SetRandUsageValid(bool randUsageValidIn);
 
+	
+	//! Helpers
+	
 	static int32_t RandFluctuate(int32_t value, int32_t percent) 	{
 		return value * (100 - percent + (Rand() % (percent * 2))) / 100;
 	}
+
+private:
+	static bool randUsageValid;
 };

@@ -375,6 +375,8 @@ void AGameManager::TickNetworking()
 	
 	auto t1 = high_resolution_clock::now();
 
+	GameRand::SetRandUsageValid(true);
+
 	//// Init phases
 	//int32 lastPhase = _initPhase;
 	//_initPhase++;
@@ -512,6 +514,8 @@ void AGameManager::TickNetworking()
 		isGameTickQueueClogged = newCloggedState;
 		isGameTickQueueCloggedDirty = true;
 	}
+
+	GameRand::SetRandUsageValid(false);
 }
 
 void AGameManager::Sample()

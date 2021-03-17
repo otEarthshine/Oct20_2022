@@ -58,6 +58,38 @@ DECLARE_LOG_CATEGORY_EXTERN(LogNetworkInput, All, All);
 // log mylog NoLogging
 // DrawDebugString()!!!!
 
+enum class TickHashEnum
+{
+	Unit,
+	Building,
+
+	Count,
+};
+
+struct TickHashes
+{
+	TArray<int32> allTickHashes;
+
+	void AddTickHash(int32 tickCount, TickHashEnum tickHashEnum, int32 tickHash) {
+		check(allTickHashes.Num() == GetTickIndex(tickCount, tickHashEnum));
+		allTickHashes.Add(tickHash);
+	}
+
+	int32 GetTickHashes(int32 tickCount, TickHashEnum tickHashEnum) {
+		return allTickHashes[GetTickIndex(tickCount, tickHashEnum)];
+	}
+
+	int32 TickCount() const {
+		return allTickHashes.Num() / TickHashEnumCount();
+	}
+
+	
+	static int32 TickHashEnumCount() { return static_cast<int32>(TickHashEnum::Count); }
+
+	static int32 GetTickIndex(int32 tickCount, TickHashEnum tickHashEnum) {
+		return tickCount * TickHashEnumCount() + static_cast<int32>(tickHashEnum);
+	}
+};
 
 /**
  * 
@@ -77,34 +109,43 @@ public:
 
 	void Tick(int bufferCount, NetworkTickInfo& tickInfo);
 
-	TArray<int32> GetTickHashes(int32 startTick) {
-		TArray<int32> tickHashesFromStartTick;
-		for (int i = startTick; i < _tickHashes.size(); i++) {
-			tickHashesFromStartTick.Add(_tickHashes[i]);
+
+	/*
+	 * Desync Check
+	 */
+	void GetUnsentTickHashes(int32 startTick, TArray<int32>& tickHashes) {
+		for (int32 i = startTick * TickHashes::TickHashEnumCount(); i < _tickHashes.allTickHashes.Num(); i++) {
+			tickHashes.Add(_tickHashes.allTickHashes[i]);
 		}
-		return tickHashesFromStartTick;
 	}
-	void AppendAndCompareServerHashes(int32 insertIndex, TArray<int32> newServerTickHashes)
+	void AppendAndCompareServerHashes(int32 hashSendTick, const TArray<int32>& newAllTickHashes)
 	{
-		_LOG(PunTickHash, "AppendAndCompareServerHashes_Before %d %d", _tickHashes.size(), _serverTickHashes.size());
+		_LOG(PunTickHash, "AppendAndCompareServerHashes_Before newAllTickHashes:%d _serverTickHashes.TickCount:%d", newAllTickHashes.Num(), _serverTickHashes.TickCount());
+
+		PUN_CHECK(hashSendTick <= _serverTickHashes.TickCount());
 		
-		PUN_CHECK(insertIndex <= _serverTickHashes.size());
-		
-		int32 index = insertIndex;
-		for (int32 i = 0; i < newServerTickHashes.Num(); i++) {
-			if (index < _serverTickHashes.size()) {
-				_serverTickHashes[index] = newServerTickHashes[i];
+		int32 index = hashSendTick * TickHashes::TickHashEnumCount();
+		for (int32 i = 0; i < newAllTickHashes.Num(); i++) {
+			if (index < _serverTickHashes.allTickHashes.Num()) {
+				_serverTickHashes.allTickHashes[index] = newAllTickHashes[i];
 			} else {
-				_serverTickHashes.push_back(newServerTickHashes[i]);
+				_serverTickHashes.allTickHashes.Add(newAllTickHashes[i]);
 			}
 			index++;
 		}
-		int32 checkSize = std::min(_tickHashes.size(), _serverTickHashes.size());
-		for (int32 i = 0; i < checkSize; i++) {
-			PUN_CHECK(_tickHashes[i] == _serverTickHashes[i]);
+		int32 checkTickCount = std::min(_tickHashes.TickCount(), _serverTickHashes.TickCount());
+		for (int32 i = 0; i < checkTickCount; i++) {
+			int32 hashIndex0 = i * TickHashes::TickHashEnumCount();
+
+			auto compareHashes = [&](TickHashEnum tickHashEnum) {
+				return _tickHashes.allTickHashes[hashIndex0 + static_cast<int32>(tickHashEnum)] == _serverTickHashes.allTickHashes[hashIndex0 + static_cast<int32>(tickHashEnum)];
+			};
+			
+			check(compareHashes(TickHashEnum::Unit));
+			check(compareHashes(TickHashEnum::Building));
 		}
 
-		_LOG(PunTickHash, "AppendAndCompareServerHashes_After %d %d", _tickHashes.size(), _serverTickHashes.size());
+		_LOG(PunTickHash, "AppendAndCompareServerHashes_After _tickHashes.TickCount:%d _serverTickHashes.TickCount:%d", _tickHashes.TickCount(), _serverTickHashes.TickCount());
 	}
 
 	/*
@@ -2690,6 +2731,8 @@ public:
 
 	void MainMenuDisplayInit()
 	{
+		GameRand::SetRandUsageValid(true);
+		
 		_treeSystem = std::make_unique<TreeSystem>();
 		_terrainGenerator = std::make_unique<PunTerrainGenerator>();
 		
@@ -2708,6 +2751,8 @@ public:
 			int32 playerId = _resourceSystems.size();
 			_resourceSystems.push_back(ResourceSystem(playerId, this));
 		}
+
+		GameRand::SetRandUsageValid(false);
 	}
 	void SerializeForMainMenu(FArchive &Ar, const std::vector<int32>& sampleRegionIds)
 	{
@@ -3035,8 +3080,8 @@ private:
 	FMapSettings _mapSettings;
 	FGameEndStatus _endStatus;
 	
-	std::vector<int32> _tickHashes;
-	std::vector<int32> _serverTickHashes;
+	TickHashes _tickHashes;
+	TickHashes _serverTickHashes;
 
 	// Snow (Season * Celsius) 
 	FloatDet _snowAccumulation3 = 0;

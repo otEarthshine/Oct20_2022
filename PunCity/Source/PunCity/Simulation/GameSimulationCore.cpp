@@ -27,6 +27,8 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 	PUN_LLM(PunSimLLMTag::Simulation);
 	
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+
+	GameRand::SetRandUsageValid(true);
 	
 	_gameManager = gameManager;
 	_soundInterface = soundInterface;
@@ -229,6 +231,8 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 
 	// Integrity check
 	TileObjInfosIntegrityCheck();
+
+	GameRand::SetRandUsageValid(false);
 }
 
 void GameSimulationCore::InitRegionalBuildings()
@@ -1347,9 +1351,8 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 		}
 		// Hashes
 		{
-			int32 unitHash = _unitSystem->GetDebugHash();
-			int32 buildingHash = _buildingSystem->GetDebugHash();
-			_tickHashes.push_back(unitHash + buildingHash);
+			_tickHashes.AddTickHash(_tickCount, TickHashEnum::Unit, _unitSystem->GetSyncHash());
+			_tickHashes.AddTickHash(_tickCount, TickHashEnum::Building, _buildingSystem->GetSyncHash());
 		}
 
 		// Snow

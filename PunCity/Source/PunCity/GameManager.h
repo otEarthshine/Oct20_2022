@@ -89,8 +89,6 @@ public:
 		_buildingMeshesList.AfterAdd(); // This should be after all UI to prevent flash...	
 	}
 
-	TArray<int32> GetTickHashes(int32 startTick) { return _simulation->GetTickHashes(startTick); }
-
 	IGameNetworkInterface* networkInterface() override { return _networkInterface; }
 
 	void RefreshHeightForestColorTexture(TileArea area, bool isInstant) override {

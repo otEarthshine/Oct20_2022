@@ -313,19 +313,20 @@ void APunPlayerController::Tick(float DeltaTime)
 	if (GetLocalRole() == ROLE_Authority && _playerControllerTick > 300 && _playerControllerTick % 30 == 0)
 	{
 		auto firstController = CastChecked<APunPlayerController>(GetWorld()->GetFirstPlayerController());
-
 		if (firstController->gameManager)
 		{
-			// For Save Load, get a proper 
+			// For Save Load, get a proper
+			TArray<int32> allTickHashes;
+			firstController->gameManager->simulation().GetUnsentTickHashes(_hashSendTick, allTickHashes);
 			
-			TArray<int32> tickHashes = firstController->gameManager->GetTickHashes(_hashSendTick);
-			if (tickHashes.Num() > 0)
+			if (allTickHashes.Num() > 0)
 			{
 				_LOG(PunTickHash, "SendHash Out Start %d", _hashSendTick);
 
 				// Note: _hashSendTick becomes 0 upon loading, which is fine, since hashes will just override the loaded one...
-				SendHash_ToClient(_hashSendTick, tickHashes);
-				_hashSendTick += tickHashes.Num();
+				SendHash_ToClient(_hashSendTick, allTickHashes);
+				check(allTickHashes.Num() % TickHashes::TickHashEnumCount() == 0);
+				_hashSendTick += allTickHashes.Num() / TickHashes::TickHashEnumCount();
 
 				_LOG(PunTickHash, "SendHash Out End %d", _hashSendTick);
 			}
@@ -783,13 +784,13 @@ void APunPlayerController::SendServerCloggedStatus_Implementation(int32 playerId
 }
 
 
-void APunPlayerController::SendHash_ToClient_Implementation(int32 insertIndex, const TArray<int32>& tickToHashes)
+void APunPlayerController::SendHash_ToClient_Implementation(int32 hashSendTick, const TArray<int32>& allTickHashes)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_Controller);
 	
-	_LOG(PunTickHash, "SendHash Client receive insertIndex:%d hashSize:%d", insertIndex, tickToHashes.Num());
+	_LOG(PunTickHash, "SendHash Client receive hashSendTick:%d hashSize:%d", hashSendTick, allTickHashes.Num());
 
-	gameManager->simulation().AppendAndCompareServerHashes(insertIndex, tickToHashes);
+	gameManager->simulation().AppendAndCompareServerHashes(hashSendTick, allTickHashes);
 }
 
 

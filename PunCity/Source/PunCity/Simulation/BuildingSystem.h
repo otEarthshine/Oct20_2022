@@ -175,7 +175,7 @@ public:
 	}
 	
 
-	int32 GetDebugHash() {
+	int32 GetSyncHash() {
 		int32 hash = 0;
 		for (size_t i = _atomLocation.size(); i-- > 0;) {
 			hash += _atomLocation[i].x;

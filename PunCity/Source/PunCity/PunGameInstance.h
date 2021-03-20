@@ -541,7 +541,7 @@ public:
 			PUN_CHECK(playerId < GameConstants::MaxPlayersAndAI);
 			return GetAITownName(playerId);
 		}
-		PUN_CHECK(playerId < _playerNames.Num());
+		PUN_ENSURE(playerId < _playerNames.Num(), return FString("None"));
 		return _playerNames[playerId];
 	}
 	void SetPlayerNameF(int32 playerId, FString playerNameF) {

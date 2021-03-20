@@ -37,11 +37,11 @@ void UPunGameInstance::Init()
 	FCoreUObjectDelegates::PreLoadMap.AddUObject(this, &UPunGameInstance::BeginLoadingScreen);
 	FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(this, &UPunGameInstance::EndLoadingScreen);
 
-#if WITH_EDITOR
-	InitOnline("NULL");
-#else
+//#if WITH_EDITOR
+//	InitOnline("NULL");
+//#else
 	InitOnline("Steam");
-#endif
+//#endif
 
 	_saveSystem = make_unique<GameSaveSystem>();
 
@@ -265,6 +265,11 @@ void UPunGameInstance::JoinGame(const FOnlineSessionSearchResult& searchResult)
 		mainMenuPopup = LOCTEXT("JoinGame_NotConnectedToSteam", "Failed to join the game. Please connect to Steam.");
 		return;
 	}
+
+	if (IOnlineSubsystem::Get("Steam") == nullptr) {
+		mainMenuPopup = LOCTEXT("JoinGame_NotConnectedToSteam", "Failed to join the game. Please connect to Steam.");
+		return;
+	}
 	
 	FNamedOnlineSession* Session = sessionInterface->GetNamedSession(PUN_SESSION_NAME);
 	if (Session) {
@@ -308,9 +313,9 @@ void UPunGameInstance::ServerOnStartedGame()
 	auto sessionSettings = GetPreferredSessionSettings();
 	sessionSettings.bAllowJoinInProgress = false;
 	sessionSettings.bUsesPresence = false;
-#if !WITH_EDITOR
-	sessionInterface->UpdateSession(PUN_SESSION_NAME, sessionSettings);
-#endif
+//#if !WITH_EDITOR
+//	sessionInterface->UpdateSession(PUN_SESSION_NAME, sessionSettings);
+//#endif
 }
 
 

@@ -2367,7 +2367,10 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 
 				
 				auto command = make_shared<FUseCard>();
+				command->townId = currentTownId();
 				command->cardEnum = buildingEnum;
+
+				auto& townResourceSys = simulation().resourceSystem(command->townId);
 
 				auto sendCommand = [&]() {
 					networkInterface()->SendNetworkCommand(command);
@@ -2380,17 +2383,24 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 
 				
 				if (buildingEnum == CardEnum::SellFood) {
-					sendCommandWithWarning(LOCTEXT("SellFood_Ask", "Are you sure you want to sell half of city's food?"));
+					sendCommandWithWarning(LOCTEXT("SellFood_Ask", "Are you sure you want to sell half of this city's food?"));
 				} 
 				else if (buildingEnum == CardEnum::BuyWood) {
 					int32 cost = GetResourceInfo(ResourceEnum::Wood).basePrice;
 					int32 amountToBuy = simulation().money(playerId()) / 2 / cost;
+					amountToBuy = min(amountToBuy, 1000);
 
-					if (resourceSys.CanAddResourceGlobal(ResourceEnum::Wood, amountToBuy)) {
-						sendCommandWithWarning(LOCTEXT("BuyWood_Ask", "Are you sure you want to spend half of city's money to buy wood?"));
+					if (townResourceSys.CanAddResourceGlobal(ResourceEnum::Wood, amountToBuy)) {
+						sendCommandWithWarning(
+							FText::Format(
+								LOCTEXT("BuyWood_Ask", "Are you sure you want to spend {0}<img id=\"Coin\"/> to buy {1} wood?"),
+								TEXT_NUM(amountToBuy * cost),
+								TEXT_NUM(amountToBuy)
+							)
+						);
 					} else {
 						simulation().AddPopupToFront(playerId(), 
-							FText::Format(LOCTEXT("BuyWoodNoStorageFit_Pop", "Not enough storage space to fit {0} wood."), TEXT_NUM(amountToBuy)),
+							FText::Format(LOCTEXT("BuyWoodNoStorageFit_Pop", "Not enough storage space to fit {0} wood in this city."), TEXT_NUM(amountToBuy)),
 							ExclusiveUIEnum::None, "PopupCannot"
 						);
 					}
@@ -2399,7 +2409,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 				{
 					ResourcePair resourcePair = GetCrateResource(buildingEnum);
 					
-					if (resourceSys.CanAddResourceGlobal(resourcePair.resourceEnum, resourcePair.count)) {
+					if (townResourceSys.CanAddResourceGlobal(resourcePair.resourceEnum, resourcePair.count)) {
 						sendCommand();
 					} else {
 						simulation().AddPopup(playerId(), 

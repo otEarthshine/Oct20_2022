@@ -1287,7 +1287,9 @@ bool HumanStateAI::TryFun()
 				int32 nearestDist = numeric_limits<int32>::max();
 				for (int32 funBuildingId : funBuildingIds) {
 					FunBuilding& funBuilding = _simulation->building(funBuildingId).subclass<FunBuilding>(funBuildingEnum);
-					if (funBuilding.isUsable()) {
+					if (funBuilding.isUsable() && 
+						IsMoveValid(funBuilding.gateTile()))
+					{
 						// Get service nearest to house
 						int32 dist = WorldTile2::Distance(houseCenter, funBuilding.centerTile());
 						if (dist < nearestDist) {
@@ -2869,20 +2871,20 @@ bool HumanStateAI::TryConstructHelper(int32 workplaceId)
 		return false;
 	}
 
-	//// For farm/storage yard, just need to clear land
-	//if (workplace.isEnum(CardEnum::StorageYard) || workplace.isEnum(CardEnum::Farm)) {
-	//	workplace.FinishConstruction();
-	//	AddDebugSpeech("(Success)TryConstruct: StorageYard/Farm");
+	// TODO: maybe this cause some building not getting built?
+	// TODO: this should go before SetAreaWalkable?
+	//WorldTile2 adjacentTile = workplace.adjacentTileNearestTo(unitTile(), unitMaxFloodDistance());
+	//if (!adjacentTile.isValid()) {
+	//	AddDebugSpeech("(Failed)TryConstruct: adjacentTile invalid");
 	//	return false;
 	//}
 
-	// TODO: maybe this cause some building not getting built?
-	WorldTile2 adjacentTile = workplace.adjacentTileNearestTo(unitTile(), unitMaxFloodDistance());
-
-	if (!adjacentTile.isValid()) {
-		AddDebugSpeech("(Failed)TryConstruct: adjacentTile invalid");
+	WorldTile2 workGateTile = workplace.gateTile();
+	if (!IsMoveValid(workGateTile)) {
+		AddDebugSpeech("(Failed)TryConstruct: workGateTile invalid");
 		return false;
 	}
+	
 
 	// Need Resource
 	PUN_CHECK2(workplace.IsValidConstructionResourceHolders(), debugStr());
@@ -2910,7 +2912,7 @@ bool HumanStateAI::TryConstructHelper(int32 workplaceId)
 					hasNeededResourceWithPush = false;
 
 					if (foundProviders.hasInfos()) {
-						MoveResourceSequence(foundProviders.foundInfos, { FoundResourceHolderInfo(workplace.holderInfo(resourceEnum), foundProviders.amount(), adjacentTile) });
+						MoveResourceSequence(foundProviders.foundInfos, { FoundResourceHolderInfo(workplace.holderInfo(resourceEnum), foundProviders.amount(), workGateTile) });
 
 						AddDebugSpeech("(Succeed)TryConstruct: Move needed resource");
 
@@ -2953,7 +2955,7 @@ bool HumanStateAI::TryConstructHelper(int32 workplaceId)
 
 	Add_Construct(workManSec100, waitTicks, ConstructTimesPerBatch, workplaceId);
 	Add_MoveToward(workplace.centerTile().worldAtom2(), 12000);
-	Add_MoveTo(workplace.gateTile());
+	Add_MoveTo(workGateTile);
 
 	AddDebugSpeech("(Succeed)TryConstruct: Succeed -- work actions");
 	SetActivity(UnitState::WorkConstruct);
@@ -2979,15 +2981,49 @@ bool HumanStateAI::TryCheckBadTile_Human()
 {
 	WorldTile2 tile = unitTile();
 
+	WorldTile2 townGate = _simulation->GetTownhallGate(_townId);
+
 	PunAStar128x256* pathAI = _simulation->pathAI();
-	if (!pathAI->isWalkable(tile.x, tile.y))
+	//if (!pathAI->isWalkable(tile.x, tile.y))
+	if (!IsMoveValid(townGate))
 	{
+		// Just spiral out trying to find isWalkable tile...
+		int32 x = 0;
+		int32 y = 0;
+		int32 dx = 0;
+		int32 dy = -1;
+		WorldTile2 end;
+
+		int32 loop;
+		for (loop = 100; loop-- > 0;)
+		{
+			WorldTile2 curTile(x + tile.x, y + tile.y);
+			if (curTile.isValid() && pathAI->isWalkable(curTile.x, curTile.y)) {
+				end = curTile;
+				break;
+			}
+			if ((x == y) || ((x < 0) && (x == -y)) || ((x > 0) && (x == 1 - y))) {
+				int32_t temp = dx;
+				dx = -dy;
+				dy = temp;
+			}
+			x += dx;
+			y += dy;
+		}
+
+		check(loop > 1);
+
+		if (_simulation->IsConnected(end, townGate, unitMaxFloodDistance())) {
+			// move there ignoring obstacles
+			Add_MoveToRobust(end);
+			SetActivity(UnitState::Other);
+			return true;
+		}
+
 		// Not on tile owned by player
 		// Just warp to the townhall
 		_simulation->ResetUnitActions(_id);
-
-		WorldTile2 endTownGate = _simulation->GetTownhallGate(_townId);
-		_simulation->MoveUnitInstantly(_id, endTownGate.worldAtom2());
+		_simulation->MoveUnitInstantly(_id, townGate.worldAtom2());
 
 		AddDebugSpeech("(Succeed)TryCheckBadTile_Human: !isWalkable Warp");
 		return true;

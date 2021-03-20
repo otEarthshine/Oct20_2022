@@ -908,7 +908,7 @@ void APunPlayerController::TileConnected(int32 startX, int32 startY, int32 endX,
 	if (!start.isValid() || !end.isValid()) {
 		PUN_DEBUG(FString("Tile Invalid"));
 	}
-	if (gameManager->simulation().IsConnected(start, end, maxRegionDist, true)) {
+	if (gameManager->simulation().IsConnected(start, end, maxRegionDist)) {
 		PUN_DEBUG(FString("IsConnected True"));
 	} else {
 		PUN_DEBUG(FString("IsConnected False"));

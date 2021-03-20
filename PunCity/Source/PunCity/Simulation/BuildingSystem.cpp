@@ -106,11 +106,18 @@ void BuildingSystem::Tick()
 int BuildingSystem::AddTileBuilding(WorldTile2 tile, CardEnum buildingEnum, int32 playerId)
 {
 	FPlaceBuilding placeBuildingParams;
+	placeBuildingParams.townId = _simulation->tileOwnerTown(tile);
+	if (placeBuildingParams.townId == -1) {
+		return -1;
+	}
+
+	
 	placeBuildingParams.buildingEnum = static_cast<uint8>(buildingEnum);
 	placeBuildingParams.area = TileArea(tile, WorldTile2(1, 1));
 	placeBuildingParams.center = tile;
 	placeBuildingParams.faceDirection = uint8(Direction::S);
 	placeBuildingParams.playerId = playerId;
+	
 	return AddBuilding(placeBuildingParams);
 }
 
@@ -308,13 +315,23 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 
 int BuildingSystem::AddBuilding(FPlaceBuilding parameters)
 {
+	WorldTile2 center = parameters.center;
+	CardEnum buildingEnum = static_cast<CardEnum>(parameters.buildingEnum);
+	
+	int32 townId = -1;
+	if (parameters.playerId != -1) {
+		townId = _simulation->tileOwnerTown(center);
+
+		if (townId == -1) {
+			UE_DEBUG_BREAK();
+			return -1;
+		}
+	}
+	
 	// Special case: Colony turn into townhall
 	if (IsTownPlacement(static_cast<CardEnum>(parameters.buildingEnum))) {
 		parameters.buildingEnum = static_cast<uint8>(CardEnum::Townhall);
 	}
-	
-	WorldTile2 center = parameters.center;
-	CardEnum buildingEnum = static_cast<CardEnum>(parameters.buildingEnum);
 
 	//if (parameters.playerId != -1 && buildingEnum != CardEnum::DirtRoad) {
 	//	//PUN_LOG("parameters.area after %s", *ToFString(parameters.area.ToString()));
@@ -337,10 +354,6 @@ int BuildingSystem::AddBuilding(FPlaceBuilding parameters)
 	Building* building = _buildings.back().get();
 	int32 buildingId = _buildings.size() - 1;
 	TileArea area = parameters.area;
-	int32 townId = -1;
-	if (parameters.playerId != -1) {
-		townId = _simulation->tileOwnerTown(center);
-	}
 
 	_townIdPlus1ToEnumToBuildingIds[townId + 1][static_cast<int>(buildingEnum)].push_back(buildingId);
 	_isBuildingIdConnected.push_back(-1);

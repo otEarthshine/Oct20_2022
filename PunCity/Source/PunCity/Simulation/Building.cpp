@@ -218,6 +218,8 @@ void Building::FinishConstruction()
 
 	ResetDisplay();
 
+	/*_simulation->buildingSystem().RefreshIsBuildingConnected()*/
+
 
 	// Auto-add inputs/outputs accordingly
 	if (hasInput1()) {
@@ -247,6 +249,13 @@ int32 Building::resourceCount(ResourceEnum resourceEnum)
 	PUN_CHECK(info.isValid());
 	return resourceSystem().resourceCount(info);
 }
+int32 Building::resourceCountSafe(ResourceEnum resourceEnum)
+{
+	ResourceHolderInfo info = holderInfo(resourceEnum);
+	PUN_ENSURE(info.isValid(), return 0);
+	return resourceSystem().resourceCountSafe(info);
+}
+
 int32 Building::resourceCountWithPop(ResourceEnum resourceEnum)
 {
 	ResourceHolderInfo info = holderInfo(resourceEnum);
@@ -329,6 +338,11 @@ void Building::Deinit()
 	
 	if (_townId == -1) {
 		OnDeinit();
+
+		_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+			_simulation->SetWalkable(tile, true);
+		});
+		_simulation->SetRoadPathAI(gateTile(), false);
 		return; // Animal Controlled
 	}
 

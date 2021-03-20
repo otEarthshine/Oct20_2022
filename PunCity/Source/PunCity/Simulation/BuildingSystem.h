@@ -302,6 +302,8 @@ private:
 
 	void RefreshIsBuildingConnected(int32 townId, int32 buildingId, WorldTile2 tile)
 	{
+		PUN_LOG("RefreshIsBuildingConnected townId:%d, buildingId:%d tile:%s", townId, buildingId, *tile.To_FString());
+		
 		if (townId != -1)
 		{
 			PUN_CHECK(buildingId < _isBuildingIdConnected.size());
@@ -309,7 +311,7 @@ private:
 
 			if (townGate.isValid()) {
 				DEBUG_ISCONNECTED_VAR(RefreshIsBuildingConnected);
-				_isBuildingIdConnected[buildingId] = _simulation->IsConnected(townGate, tile, GameConstants::MaxFloodDistance_HumanLogistics, true);
+				_isBuildingIdConnected[buildingId] = _simulation->IsConnected(townGate, tile, GameConstants::MaxFloodDistance_HumanLogistics);
 				return;
 			}
 		}

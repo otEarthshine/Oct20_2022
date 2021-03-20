@@ -2793,8 +2793,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					}
 
 #if WITH_EDITOR 
-					ADDTEXT_(INVTEXT(" (id: {0})\n"), TEXT_NUM(unit.workplaceId()));
+					ADDTEXT_(INVTEXT(" (id: {0})"), TEXT_NUM(unit.workplaceId()));
 #endif
+					args.Add(INVTEXT("\n"));
 				}
 				else {
 					ADDTEXT_LOCTEXT("workplace: none \n", "workplace: none \n");
@@ -2803,7 +2804,11 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 			if (unit.houseId() != -1) {
 				FText houseName = simulation.building(unit.houseId()).buildingInfo().GetName();
-				ADDTEXT_(LOCTEXT("house: (id: )", "house: {0} (id: {1})\n"), houseName, TEXT_NUM(unit.houseId()));
+				ADDTEXT_(LOCTEXT("house: X", "house: {0}"), houseName);
+#if WITH_EDITOR 
+				ADDTEXT_(INVTEXT(" (id: {0})"), TEXT_NUM(unit.houseId()));
+#endif
+				args.Add(INVTEXT("\n"));
 			} else {
 				ADDTEXT_LOCTEXT("house: none \n", "house: none \n");
 			}
@@ -2882,7 +2887,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				FTransform transform;
 				UnitDisplayState displayState = dataSource()->GetUnitTransformAndVariation(unit, transform);
 				UStaticMesh* unitMesh = assetLoader->unitAsset(displayState.unitEnum, displayState.variationIndex).staticMesh;
-				if (unitMesh) {
+				if (IsValidPun(unitMesh)) {
 					SpawnMesh(unitMesh, unitMesh->GetMaterial(0), transform, false, 2);
 				}
 			}
@@ -3905,6 +3910,7 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 			command->intVar1 = adjuster->buildingId;
 			command->intVar2 = adjuster->isBudgetOrTime;
 			command->intVar3 = adjuster->level;
+			command->intVar4 = dataSource()->isShiftDown();
 
 			networkInterface()->SendNetworkCommand(command);
 		}

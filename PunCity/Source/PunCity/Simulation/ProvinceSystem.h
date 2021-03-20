@@ -951,7 +951,7 @@ public:
 			DEBUG_ISCONNECTED_VAR(GetProvinceRandomTile);
 			
 			if (abs(GetProvinceIdRaw(tile)) == provinceId &&
-				_simulation->IsConnected(floodOrigin, tile, maxRegionDist, isIntelligent)) 
+				_simulation->IsConnected(floodOrigin, tile, maxRegionDist)) 
 			{
 				return tile;
 			}

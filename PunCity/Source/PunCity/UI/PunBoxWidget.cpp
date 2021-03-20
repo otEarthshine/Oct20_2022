@@ -83,7 +83,7 @@ void UPunBoxWidget::AddBuildingTooltip(UWidget* widget, CardEnum buildingEnum, U
 		}
 		else if (buildingEnum == CardEnum::StorageYard)
 		{
-			tooltipBox->AddIconPair(INVTEXT(" "), ResourceEnum::Wood, LOCTEXT("StorageWoodCost", " 5 x Storage Space"));
+			tooltipBox->AddIconPair(INVTEXT(" "), ResourceEnum::Wood, LOCTEXT("StorageWoodCost", " 2 x Storage Space"));
 		}
 		else
 		{

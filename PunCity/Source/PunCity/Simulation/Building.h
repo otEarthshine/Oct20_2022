@@ -231,7 +231,7 @@ public:
 
 			DEBUG_ISCONNECTED_VAR(adjacentTileNearestTo);
 			
-			if (dist < nearestDist && _simulation->IsConnected(curTile, start, maxRegionDistance, true)) {
+			if (dist < nearestDist && _simulation->IsConnected(curTile, start, maxRegionDistance)) {
 				nearestDist = dist;
 				nearestTile = curTile;
 			}
@@ -525,6 +525,8 @@ public:
 	}
 	
 	int32 resourceCount(ResourceEnum resourceEnum);
+	int32 resourceCountSafe(ResourceEnum resourceEnum);
+	
 	int32 resourceCountWithPop(ResourceEnum resourceEnum);
 	int32 tryResourceCount(ResourceEnum resourceEnum);
 
@@ -1477,7 +1479,7 @@ public:
 			// Construction site check all tiles
 			bool isAccessible = area().ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 tile) {
 				DEBUG_ISCONNECTED_VAR(RefreshHoverWarning);
-				return _simulation->IsConnected(_simulation->GetTownhallGateFast(_townId), tile, GameConstants::MaxFloodDistance_HumanLogistics, true);
+				return _simulation->IsConnected(_simulation->GetTownhallGateFast(_townId), tile, GameConstants::MaxFloodDistance_HumanLogistics);
 			});
 
 			if (!isAccessible) {

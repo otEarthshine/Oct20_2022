@@ -516,7 +516,7 @@ WorldTile2 TreeSystem::FindNearestUnreservedFullBush(WorldTile2 unitTile, WorldR
 		DEBUG_ISCONNECTED_VAR(FindNearestUnreservedFullBush);
 		
 		if (!_reservations.Contains(curTile.tileId()) &&
-			_simulation->IsConnected(unitTile, curTile, maxFloodDist, canPassGate)) //TODO: faster with precomputed floodInfo??
+			_simulation->IsConnected(unitTile, curTile, maxFloodDist)) //TODO: faster with precomputed floodInfo??
 		{
 			int dist = WorldTile2::ManDistance(curTile, unitTile);
 			if (dist < nearestDist) {

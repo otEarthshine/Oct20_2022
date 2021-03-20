@@ -1052,7 +1052,7 @@ bool UnitStateAI::TryGoNearbyHome()
 	WorldTile2 houseGate = _simulation->gateTile(homeId);
 
 	DEBUG_ISCONNECTED_VAR(TryGoNearbyHome);
-	if (_simulation->IsConnected(unitTile(), houseGate, 0, IsIntelligentUnit(unitEnum()))) {
+	if (_simulation->IsConnected(unitTile(), houseGate, 0)) {
 		AddDebugSpeech("(Failed)TryGoNearbyHome: already same flood region as home");
 		return false;
 	}
@@ -1212,7 +1212,7 @@ bool UnitStateAI::TryStockBurrowFood()
 		// MoveToHarder if IsConnected isn't true 
 		// TODO: resolve this without MoveToRobust...
 		DEBUG_ISCONNECTED_VAR(TryStockBurrowFood);
-		if (_simulation->IsConnected(fullBushTile, gateTile, GameConstants::MaxFloodDistance_AnimalFar, IsIntelligentUnit(unitEnum()))) {
+		if (_simulation->IsConnected(fullBushTile, gateTile, GameConstants::MaxFloodDistance_AnimalFar)) {
 			Add_MoveTo(gateTile);
 		} else {
 			Add_MoveToRobust(gateTile);
@@ -2022,7 +2022,7 @@ void UnitStateAI::MoveRandomlyAnimal()
 		return;
 	}
 
-	check(_simulation->IsConnected(uTile, end, 1, IsIntelligentUnit(unitEnum())));
+	check(_simulation->IsConnected(uTile, end, 1));
 
 	AddDebugSpeech("(Transfer)MoveRandomly: Transfer to MoveTo " + uTile.ToString() + end.ToString());
 	MoveTo(end);
@@ -2054,7 +2054,7 @@ void UnitStateAI::MoveRandomly()
 	}
 
 	auto isValidEndTile = [&](WorldTile2 end) {
-		return _simulation->IsConnected(tile, end, 1, IsIntelligentUnit(unitEnum())) &&
+		return _simulation->IsConnected(tile, end, 1) &&
 			_simulation->tileOwnerTown(end) == _townId;
 	};
 
@@ -2100,7 +2100,7 @@ void UnitStateAI::MoveRandomly()
 		return;
 	}
 
-	check(_simulation->IsConnected(tile, end, 1, true));
+	check(_simulation->IsConnected(tile, end, 1));
 
 	AddDebugSpeech("(Transfer)MoveRandomly: Transfer to MoveTo " + tile.ToString() + end.ToString());
 	MoveTo(end);
@@ -2129,7 +2129,7 @@ void UnitStateAI::MoveRandomlyPerlin()
 
 		DEBUG_ISCONNECTED_VAR(MoveRandomlyPerlin);
 		
-		if (_simulation->IsConnected(tile, end, 1, IsIntelligentUnit(unitEnum()))) { // MoveRandomly is not critical, so give it just 1 flood range to make it less likely to overload PathAI
+		if (_simulation->IsConnected(tile, end, 1)) { // MoveRandomly is not critical, so give it just 1 flood range to make it less likely to overload PathAI
 			AddDebugSpeech("(-)MoveRandomlyPerlin: Found on first loop" + tile.ToString() + end.ToString());
 			canWalk = true;
 			break;

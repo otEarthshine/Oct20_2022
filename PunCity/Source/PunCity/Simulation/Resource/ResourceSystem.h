@@ -39,13 +39,15 @@ struct ResourceHolder
 	int32 reservedPop() const { return _reservedPop; }
 	int32 target() const { return _target; }
 
+	bool isValid() { return info.isValid(); }
+
 	void resourcedebugStr(std::stringstream& ss, WorldTile2 townCenterTile, IGameSimulationCore* sim) const {
 		ss << "[" << GetResourceInfoSafe(info.resourceEnum).nameStd() << " " << GetResourceHolderTypeName(type)
 			<< " - " + std::to_string(_current)
 			<< " push:" + std::to_string(_reservedPush)
 			<< " pop:" + std::to_string(_reservedPop)
 			<< " target:" + std::to_string(_target)
-			<< " connected:" + std::to_string(sim->IsConnected(townCenterTile, tile, 3, true))
+			<< " connected:" + std::to_string(sim->IsConnected(townCenterTile, tile, 3))
 			<< " owner:" + GetBuildingInfo(sim->buildingEnum(objectId)).nameStd()
 			<< "]\n";
 	}
@@ -744,7 +746,7 @@ private:
 				}
 				else {
 					DEBUG_ISCONNECTED_VAR(DropResourceSystem);
-					isConnected = _simulation->IsConnected(origin, holder.tile, GameConstants::MaxFloodDistance_HumanDropFetch, true); // Drop case
+					isConnected = _simulation->IsConnected(origin, holder.tile, GameConstants::MaxFloodDistance_HumanDropFetch); // Drop case
 				}
 
 				//PUN_LOG(" > TryHealup tryAddToFoundInfos isConnected:%d", isConnected);
@@ -905,16 +907,17 @@ public:
 	}
 
 	int32 resourceCountSafe(ResourceHolderInfo info) const {
-		if (!info.isValid()) {
-			return 0;
-		}
+		PUN_ENSURE(info.isValid(), return 0);
 
 		if (info.holderId < 0 && 
 			info.holderId >= _enumToHolders[static_cast<int>(info.resourceEnum)].holderCount())
 		{
 			return 0;
 		}
-		return holder(info).current(); // _enumToHolders[(int)info.resourceEnum].holderConst(info.holderId)
+		ResourceHolder holder = holderSafe(info);
+		PUN_ENSURE(holder.isValid(), return 0);
+		
+		return holder.current(); // _enumToHolders[(int)info.resourceEnum].holderConst(info.holderId)
 	}
 	
 
@@ -931,6 +934,16 @@ public:
 		
 		return holderGroup.holderConst(info.holderId);
 	}
+	ResourceHolder holderSafe(ResourceHolderInfo info) const {
+		PUN_ENSURE(info.isValid(), return ResourceHolder());
+
+		const ResourceTypeHolders& holderGroup = _enumToHolders[(int)info.resourceEnum];
+
+		PUN_ENSURE(info.holderId < holderGroup.holderCount(), return ResourceHolder());
+
+		return holderGroup.holderConst(info.holderId);
+	}
+	
 	int32 objectId(ResourceHolderInfo info) const {
 		return holder(info).objectId;
 	}

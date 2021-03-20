@@ -129,7 +129,7 @@ void UBuildingJobUI::SetConstructionResource(std::vector<int32> constructionReso
 			ADDTEXT_INV_("<space>");
 			ADDTEXT_(INVTEXT("{0} {1}/{2}"), ResourceNameT(resourceEnum), TEXT_NUM(constructionResourcesCount[i]), constructionCosts[i]);
 			ADDTEXT_INV_("<space>");
-			ADDTEXT_(LOCTEXT("Stored(city): {0}", "Stored(city): {0}"), TEXT_NUM(simulation().resourceCountTown(building.townId(), resourceEnum)));
+			ADDTEXT_(LOCTEXT("Stored(city): {0}", "Stored(city): {0}"), TEXT_NUM(simulation().resourceCountTownSafe(building.townId(), resourceEnum)));
 
 			auto tooltip = AddToolTip(completionIcon->ResourceImage, args);
 			if (tooltip) {

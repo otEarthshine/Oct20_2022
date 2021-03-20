@@ -83,12 +83,17 @@ struct TickHashes
 		return allTickHashes.Num() / TickHashEnumCount();
 	}
 
+	void operator>>(FArchive &Ar) {
+		Ar << allTickHashes;
+	}
+
 	
 	static int32 TickHashEnumCount() { return static_cast<int32>(TickHashEnum::Count); }
 
 	static int32 GetTickIndex(int32 tickCount, TickHashEnum tickHashEnum) {
 		return tickCount * TickHashEnumCount() + static_cast<int32>(tickHashEnum);
 	}
+	
 };
 
 /**
@@ -114,12 +119,15 @@ public:
 	 * Desync Check
 	 */
 	void GetUnsentTickHashes(int32 startTick, TArray<int32>& tickHashes) {
+#if WITH_EDITOR
 		for (int32 i = startTick * TickHashes::TickHashEnumCount(); i < _tickHashes.allTickHashes.Num(); i++) {
 			tickHashes.Add(_tickHashes.allTickHashes[i]);
 		}
+#endif
 	}
 	void AppendAndCompareServerHashes(int32 hashSendTick, const TArray<int32>& newAllTickHashes)
 	{
+#if WITH_EDITOR
 		_LOG(PunTickHash, "AppendAndCompareServerHashes_Before newAllTickHashes:%d _serverTickHashes.TickCount:%d", newAllTickHashes.Num(), _serverTickHashes.TickCount());
 
 		PUN_CHECK(hashSendTick <= _serverTickHashes.TickCount());
@@ -146,6 +154,7 @@ public:
 		}
 
 		_LOG(PunTickHash, "AppendAndCompareServerHashes_After _tickHashes.TickCount:%d _serverTickHashes.TickCount:%d", _tickHashes.TickCount(), _serverTickHashes.TickCount());
+#endif
 	}
 
 	/*
@@ -294,6 +303,11 @@ public:
 	int32 resourceCountTown(int32 townId, ResourceEnum resourceEnum) final {
 		return _resourceSystems[townId].resourceCount(resourceEnum);
 	}
+	int32 resourceCountTownSafe(int32 townId, ResourceEnum resourceEnum) final {
+		PUN_ENSURE(IsValidTown(townId), return 0);
+		return _resourceSystems[townId].resourceCount(resourceEnum);
+	}
+	
 	int32 resourceCountPlayer(int32 playerId, ResourceEnum resourceEnum) final {
 		const auto& townIds = GetTownIds(playerId);
 		int32 count = 0;
@@ -740,8 +754,11 @@ public:
 
 
 	bool IsCritterBuilding(WorldTile2 tile) {
+		if (!tile.isValid()) {
+			return false;
+		}
 		int32 bldId = buildingIdAtTile(tile);
-		return bldId != -1 && IsCritterBuildingEnum(building(bldId).buildingEnum());
+		return IsValidBuilding(bldId) && IsCritterBuildingEnum(building(bldId).buildingEnum());
 	}
 	bool IsCritterBuildingIncludeFronts(WorldTile2 tile) {
 		return GetCritterBuildingsIncludeFronts(tile).size() > 0;
@@ -800,7 +817,7 @@ public:
 	bool IsValidBuilding(int32 id) final {
 		bool isValid = (0 <= id && id < _buildingSystem->buildingCount()) && _buildingSystem->alive(id);
 		if (!isValid) {
-			LOG_ERROR(LogNetworkInput, "IsValidBuilding: !isValid id:%d bldCount:%d alive:%d", id, _buildingSystem->buildingCount(), isValid ? _buildingSystem->alive(id) : 0);
+			//LOG_ERROR(LogNetworkInput, "IsValidBuilding: !isValid id:%d bldCount:%d alive:%d", id, _buildingSystem->buildingCount(), isValid ? _buildingSystem->alive(id) : 0);
 		}
 		return isValid;
 	}
@@ -983,7 +1000,8 @@ public:
 	bool IsQuickBuild(int32 buildingId) final {
 		return _buildingSystem->IsQuickBuild(buildingId);
 	}
-	
+
+	static int32 StorageCostPerTile() { return 2; }
 
 	std::vector<int32> GetConstructionResourceCost(CardEnum cardEnum, TileArea area) final
 	{
@@ -991,7 +1009,7 @@ public:
 			return { area.tileCount() / 2, 0, 0 };
 		}
 		if (cardEnum == CardEnum::StorageYard) {
-			return { area.tileCount() / 4 * 5, 0, 0 };
+			return { area.tileCount() / 4 * StorageCostPerTile(), 0, 0 };
 		}
 		return GetBuildingInfo(cardEnum).constructionResources;
 	}
@@ -1106,10 +1124,7 @@ public:
 	}
 
 	int16 GetFloodId(WorldTile2 tile) final { return _floodSystem.GetFloodId(tile); }
-	bool IsConnected(WorldTile2 start, WorldTile2 end, int maxRegionDistance, bool canPassGate) final {
-		//if (canPassGate) {
-		//	return _floodSystemHuman.IsConnected(start, end, maxRegionDistance);
-		//}
+	bool IsConnected(WorldTile2 start, WorldTile2 end, int maxRegionDistance) final {
 		return _floodSystem.IsConnected(start, end, maxRegionDistance);
 	}
 
@@ -2704,6 +2719,9 @@ public:
 			}
 
 			//SerializeVecValue(Ar, _tickHashes);
+#if WITH_EDITOR
+			_tickHashes >> Ar;
+#endif
 			//SerializeVecValue(Ar, _serverTickHashes);
 
 			// Snow

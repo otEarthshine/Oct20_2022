@@ -194,7 +194,7 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 					TEXT_NUM(storageSpace)
 				);
 
-				int32 woodNeeded = storageSpace * 5;
+				int32 woodNeeded = storageSpace * GameSimulationCore::StorageCostPerTile();
 				
 				bool isRed = true;
 				if (townId != -1) {
@@ -2025,12 +2025,14 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				}
 			};
 
+			
+
 			_area2 = _area;
 			
 			auto tryPlaceBuilding = [&](WorldTile2 tile)
 			{
 				bool isGreen = false; // IsPlayerBuildable(tile) && !isAllRed;
-				if (!isAllRed) {
+				if (tile.isValid() && !isAllRed) {
 					isGreen = (_buildingEnum == CardEnum::Townhall) ? IsPlayerBuildable(tile) : _gameInterface->IsPlayerColonyBuildable(tile);
 				}
 				
@@ -2050,7 +2052,10 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				if (_buildingEnum == CardEnum::Townhall)
 				{
 					// Townhall
-					if (simulation.overlaySystem().IsRoad(tile)) {
+					if (!tile.isValid()) {
+						gridEnum = PlacementGridEnum::ArrowRed;
+					}
+					else if (simulation.overlaySystem().IsRoad(tile)) {
 						gridEnum = PlacementGridEnum::ArrowGreen;
 					}
 					else if (gameInterface->IsPlayerFrontBuildable(tile)) {
@@ -2064,7 +2069,10 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				else
 				{
 					// Colony
-					if (simulation.overlaySystem().IsRoad(tile)) {
+					if (!tile.isValid()) {
+						gridEnum = PlacementGridEnum::ArrowRed;
+					}
+					else if (simulation.overlaySystem().IsRoad(tile)) {
 						gridEnum = PlacementGridEnum::ArrowGreen;
 					}
 					else if (gameInterface->IsPlayerColonyFrontBuildable(tile)) {
@@ -2132,14 +2140,24 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			//! Colony 
 			if (_buildingEnum == CardEnum::Colony)
 			{
+				if (!_mouseOnTile.isValid()) {
+					_forceCannotPlace = true;
+				}
+				
 				// ColonyTooFar
 				if (!_forceCannotPlace)
 				{
 					WorldTile2 gateTile = Building::CalculateGateTile(_faceDirection, _mouseOnTile, GetBuildingInfo(CardEnum::Townhall).size);
-					std::vector<int32> townIds = IntercityLogisticsHub::GetApproximateTradableTownIdsByDistance(gateTile, playerId, CardEnum::IntercityLogisticsHub, -1, &simulation);
-					if (townIds.size() == 0) {
+					if (gateTile.isValid())
+					{
+						std::vector<int32> townIds = IntercityLogisticsHub::GetApproximateTradableTownIdsByDistance(gateTile, playerId, CardEnum::IntercityLogisticsHub, -1, &simulation);
+						if (townIds.size() == 0) {
+							_forceCannotPlace = true;
+							SetInstruction(PlacementInstructionEnum::ColonyTooFar, true);
+						}
+					}
+					else {
 						_forceCannotPlace = true;
-						SetInstruction(PlacementInstructionEnum::ColonyTooFar, true);
 					}
 				}
 			}
@@ -2147,17 +2165,26 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			//! Port Colony is too far
 			if (_buildingEnum == CardEnum::PortColony)
 			{
+				if (!_area.centerTile().isValid()) {
+					_forceCannotPlace = true;
+				}
+				
 				// PortColonyTooFar
 				if (!_forceCannotPlace)
 				{
 					WorldTile2 portCenterTile = WorldTile2::EvenSizeRotationCenterShift(_area.centerTile(), _faceDirection)
-						+ WorldTile2::RotateTileVector(PortColony_Storage1ShiftTileVec, _faceDirection)
-						+ WorldTile2::RotateTileVector(PortColony_PortExtraShiftTileVec, _faceDirection);
-
-					std::vector<int32> townIds = IntercityLogisticsHub::GetApproximateTradableTownIdsByDistance(portCenterTile, playerId, CardEnum::IntercityLogisticsPort, -1, &simulation);
-					if (townIds.size() == 0) {
+																+ WorldTile2::RotateTileVector(PortColony_Storage1ShiftTileVec, _faceDirection)
+																+ WorldTile2::RotateTileVector(PortColony_PortExtraShiftTileVec, _faceDirection);
+					if (portCenterTile.isValid()) 
+					{
+						std::vector<int32> townIds = IntercityLogisticsHub::GetApproximateTradableTownIdsByDistance(portCenterTile, playerId, CardEnum::IntercityLogisticsPort, -1, &simulation);
+						if (townIds.size() == 0) {
+							_forceCannotPlace = true;
+							SetInstruction(PlacementInstructionEnum::PortColonyTooFar, true);
+						}
+					}
+					else {
 						_forceCannotPlace = true;
-						SetInstruction(PlacementInstructionEnum::PortColonyTooFar, true);
 					}
 				}
 				
@@ -2262,18 +2289,23 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 
 					// Port
 					WorldTile2 portCenter = buildingCenter1 + WorldTile2::RotateTileVector(PortColony_PortExtraShiftTileVec, _faceDirection);
-					TileArea portArea = BuildingArea(portCenter, GetBuildingInfo(CardEnum::IntercityLogisticsPort).size, auxFaceDirection);
-					
-					bool setDockInstruct = false;
-					std::vector<PlacementGridInfo> grids;
-					simulation.CheckPortArea(portArea, auxFaceDirection, CardEnum::IntercityLogisticsPort, grids, setDockInstruct);
+					if (portCenter.isValid())
+					{
+						TileArea portArea = BuildingArea(portCenter, GetBuildingInfo(CardEnum::IntercityLogisticsPort).size, auxFaceDirection);
 
-					for (PlacementGridInfo& gridInfo : grids) {
-						_placementGrid.SpawnGrid(gridInfo.gridEnum, cameraAtom, gridInfo.location, gridInfo.direction);
-					}
+						portArea.EnforceWorldLimit();
 
-					if (setDockInstruct) {
-						SetInstruction(PlacementInstructionEnum::Dock, true);
+						bool setDockInstruct = false;
+						std::vector<PlacementGridInfo> grids;
+						simulation.CheckPortArea(portArea, auxFaceDirection, CardEnum::IntercityLogisticsPort, grids, setDockInstruct);
+
+						for (PlacementGridInfo& gridInfo : grids) {
+							_placementGrid.SpawnGrid(gridInfo.gridEnum, cameraAtom, gridInfo.location, gridInfo.direction);
+						}
+
+						if (setDockInstruct) {
+							SetInstruction(PlacementInstructionEnum::Dock, true);
+						}
 					}
 				}
 

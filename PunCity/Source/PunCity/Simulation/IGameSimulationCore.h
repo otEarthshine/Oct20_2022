@@ -310,7 +310,7 @@ public:
 
 	virtual bool IsCritterBuildingIncludeFronts(WorldTile2 tile) = 0;
 
-	virtual bool IsConnected(WorldTile2 start, WorldTile2 end, int maxRegionDistance, bool canPassGate) = 0;
+	virtual bool IsConnected(WorldTile2 start, WorldTile2 end, int maxRegionDistance) = 0;
 
 	virtual bool IsConnectedBuilding(int32 buildingId) = 0;
 
@@ -473,6 +473,8 @@ public:
 	virtual void DespawnResourceHolder(ResourceHolderInfo info, int32 playerId) = 0;
 	
 	virtual int32 resourceCountTown(int32 townId, ResourceEnum resourceEnum) = 0;
+	virtual int32 resourceCountTownSafe(int32 townId, ResourceEnum resourceEnum) = 0;
+	
 	virtual int32 resourceCountPlayer(int32 playerId, ResourceEnum resourceEnum) = 0;
 
 	virtual void AddResourceGlobal(int32 townId, ResourceEnum resourceEnum, int32 amount) = 0;

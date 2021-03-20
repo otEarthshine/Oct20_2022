@@ -100,7 +100,8 @@ void UBuildingPlacementButton::PunInit(CardEnum buildingEnumIn, int32 cardHandIn
 		IsPermanentCard() ||
 		buildingEnum == CardEnum::Townhall ||
 		buildingEnum == CardEnum::JobManagementBureau ||
-		buildingEnum == CardEnum::StatisticsBureau)
+		buildingEnum == CardEnum::StatisticsBureau ||
+		IsSeedCard(buildingEnum))
 	{
 		SetStars(0);
 		SellButton->SetVisibility(ESlateVisibility::Collapsed);

@@ -196,7 +196,16 @@ void APunBasePlayerController::SendSaveDataChunk_ToClient_Implementation(int32 p
 	//}
 	
 	//PUN_DEBUG2("Client Get Data[%d] %d", packetIndex, saveDataChunk.Num());
-	gameInstance()->saveSystem().ReceivePacket(packetIndex, saveDataChunk);
+	bool succeed = gameInstance()->saveSystem().ReceivePacket(packetIndex, saveDataChunk);
+
+	if (!succeed) {
+		// Return to lobby if saving failed
+		gameInstance()->mainMenuPopup = NSLOCTEXT("PunBasePlayerController", "SaveDataSyncFailed", "Failed to download the save data. Please restart the game and try again.");
+
+		gameInstance()->isReturningToLobbyList = true;
+		gameInstance()->EnsureSessionDestroyed(false);
+		GetWorld()->GetFirstPlayerController()->ClientTravel("/Game/Maps/MainMenu", TRAVEL_Absolute);
+	}
 }
 
 

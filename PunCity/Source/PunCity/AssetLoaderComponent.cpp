@@ -1220,10 +1220,12 @@ void UAssetLoaderComponent::LoadModuleWithConstruction(FString moduleName, FStri
 FUnitAsset UAssetLoaderComponent::unitAsset(UnitEnum unitEnum, int32 variationIndex)
 {
 	int32 unitEnumInt = static_cast<int>(unitEnum);
-	PUN_ENSURE(unitEnumInt >= 0, return FUnitAsset());
-	PUN_ENSURE(unitEnumInt < UnitEnumCount, return FUnitAsset());
+	PUN_ENSURE(0 <= unitEnumInt && unitEnumInt < UnitEnumCount, return FUnitAsset());
+
+	std::vector<FUnitAsset>& assets =  _unitEnumToAsset[unitEnumInt];
+	PUN_ENSURE(0 <= variationIndex && variationIndex < assets.size(), return FUnitAsset());
 	
-	const FUnitAsset& asset = _unitEnumToAsset[unitEnumInt][variationIndex];
+	const FUnitAsset& asset = assets[variationIndex];
 	PUN_CHECK(asset.staticMesh);
 	return asset;
 }

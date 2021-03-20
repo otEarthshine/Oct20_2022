@@ -1351,8 +1351,10 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 		}
 		// Hashes
 		{
+#if WITH_EDITOR
 			_tickHashes.AddTickHash(_tickCount, TickHashEnum::Unit, _unitSystem->GetSyncHash());
 			_tickHashes.AddTickHash(_tickCount, TickHashEnum::Building, _buildingSystem->GetSyncHash());
+#endif
 		}
 
 		// Snow
@@ -2112,6 +2114,11 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 					return false;
 				});
 
+				// Prevent Townhall TryInstantFinishConstruction() crash
+				if (tileOwnerTown(parameters.center) == -1) {
+					isInvalid = false;
+				}
+
 				if (!isInvalid)
 				{
 					// Check if we have enough money
@@ -2147,6 +2154,11 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 
 		// Place Building ***
 		int32 buildingId = _buildingSystem->AddBuilding(parameters);
+
+		// Invalid building
+		if (buildingId == -1) {
+			return - 1;
+		}
 
 		// Special case: Townhall
 		if (IsTownPlacement(cardEnum)) 
@@ -2792,12 +2804,29 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 			bool isBudgetOrTime = command.intVar2;
 			int32 level = command.intVar3;
 
-			if (Building* building = buildingPtr(buildingId))
+			if (Building* bld = buildingPtr(buildingId))
 			{
-				if (isBudgetOrTime) {
-					building->SetBudgetLevel(level);
-				} else {
-					building->SetWorkTimeLevel(level);
+				auto adjustBuilding = [&](Building* curBuilding)
+				{
+					if (isBudgetOrTime) {
+						curBuilding->SetBudgetLevel(level);
+					} else {
+						curBuilding->SetWorkTimeLevel(level);
+					}
+				};
+				
+				bool isShiftDown = command.intVar4;
+				if (isShiftDown)
+				{
+					// Adjust all buildings of the same type
+					const std::vector<int32>& bldIds = buildingIds(bld->townId(), bld->buildingEnum());
+					for (int32 bldId : bldIds) {
+						adjustBuilding(buildingPtr(bldId));
+					}
+				}
+				else
+				{
+					adjustBuilding(bld);
 				}
 			}
 		}
@@ -2950,8 +2979,13 @@ void GameSimulationCore::ChangeName(FChangeName command)
 {
 	UE_LOG(LogNetworkInput, Log, TEXT(" ChangeName[%d] %s"), command.objectId, *command.name);
 
-	TownHall& townhall = building(command.objectId).subclass<TownHall>(CardEnum::Townhall);
-	townhall.SetTownName(command.name);
+	if (isValidBuildingId(command.objectId)) {
+		Building& bld = building(command.objectId);
+		
+		if (bld.isEnum(CardEnum::Townhall)) {
+			bld.subclass<TownHall>().SetTownName(command.name);
+		}
+	}
 }
 
 void GameSimulationCore::SendChat(FSendChat command)
@@ -3878,27 +3912,38 @@ void GameSimulationCore::UseCard(FUseCard command)
 		//resourceSys.cows += 3;
 	}
 
-	else if (command.cardEnum == CardEnum::SellFood) {
-		int32 totalRemoved = 0;
-		for (ResourceEnum foodEnum : StaticData::FoodEnums) {
-			int32 amountToRemove = resourceSys.resourceCount(foodEnum) / 2;
-			resourceSys.RemoveResourceGlobal(foodEnum, amountToRemove);
-			globalResourceSys.ChangeMoney(amountToRemove * FoodCost);
-			totalRemoved += amountToRemove;
+	else if (command.cardEnum == CardEnum::SellFood) 
+	{
+		if (IsValidTown(command.townId))
+		{
+			auto& townResourceSys = resourceSystem(command.townId);
+			
+			int32 totalRemoved = 0;
+			for (ResourceEnum foodEnum : StaticData::FoodEnums) 
+			{
+				int32 amountToRemove = townResourceSys.resourceCount(foodEnum) / 2;
+				townResourceSys.RemoveResourceGlobal(foodEnum, amountToRemove);
+				globalResourceSys.ChangeMoney(amountToRemove * FoodCost);
+				totalRemoved += amountToRemove;
+			}
+			AddPopupToFront(command.playerId,
+				FText::Format(LOCTEXT("SoldFoodForCoin", "Sold {0} food for <img id=\"Coin\"/>{1}."), TEXT_NUM(totalRemoved), TEXT_NUM(totalRemoved * FoodCost))
+			);
+			
 		}
-		AddPopupToFront(command.playerId, 
-			FText::Format(LOCTEXT("SoldFoodForCoin", "Sold {0} food for <img id=\"Coin\"/>{1}."), TEXT_NUM(totalRemoved), TEXT_NUM(totalRemoved * FoodCost))
-		);
 	}
 	else if (command.cardEnum == CardEnum::BuyWood) 
 	{
 		if (globalResourceSys.money() > 0)
 		{
+			auto& townResourceSys = resourceSystem(command.townId);
+			
 			int32 cost = GetResourceInfo(ResourceEnum::Wood).basePrice;
 			int32 amountToBuy = globalResourceSys.money() / 2 / cost;
+			amountToBuy = min(amountToBuy, 1000);
 
-			if (resourceSystem(command.playerId).CanAddResourceGlobal(ResourceEnum::Wood, amountToBuy)) {
-				resourceSys.AddResourceGlobal(ResourceEnum::Wood, amountToBuy, *this);
+			if (townResourceSys.CanAddResourceGlobal(ResourceEnum::Wood, amountToBuy)) {
+				townResourceSys.AddResourceGlobal(ResourceEnum::Wood, amountToBuy, *this);
 				int32 moneyPaid = amountToBuy * cost;
 				globalResourceSys.ChangeMoney(-moneyPaid);
 
@@ -3920,11 +3965,15 @@ void GameSimulationCore::UseCard(FUseCard command)
 			);
 		}
 	}
-	else if (command.cardEnum == CardEnum::Immigration) {
-		GetTownhallCapital(command.playerId).AddImmigrants(5);
-		AddPopupToFront(command.playerId, 
-			LOCTEXT("ImmigrantsJoinedFromAds", "5 immigrants joined after hearing the advertisement.")
-		);
+	else if (command.cardEnum == CardEnum::Immigration) 
+	{
+		if (IsValidTown(command.townId))
+		{
+			GetTownhall(command.townId).AddImmigrants(5);
+			AddPopupToFront(command.playerId,
+				LOCTEXT("ImmigrantsJoinedFromAds", "5 immigrants joined after hearing the advertisement.")
+			);
+		}
 	}
 
 	else {

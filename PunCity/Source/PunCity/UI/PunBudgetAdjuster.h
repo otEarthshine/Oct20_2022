@@ -72,6 +72,16 @@ public:
 		Icon3->SetVisibility(3 <= level ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 		Icon4->SetVisibility(4 <= level ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 		Icon5->SetVisibility(5 <= level ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+
+
+		// Shift tooltip
+		const FText tooltipText = NSLOCTEXT("BudgetAdjuster", "BudgetAdjusterTooltip", "<Orange>Shift-click</> to set all buildings of the same type.");
+
+		AddToolTip(BackButton1, tooltipText);
+		AddToolTip(BackButton2, tooltipText);
+		AddToolTip(BackButton3, tooltipText);
+		AddToolTip(BackButton4, tooltipText);
+		AddToolTip(BackButton5, tooltipText);
 	}
 	
 	UFUNCTION() void OnClickBackButton1() { OnChangeLevel(1); }

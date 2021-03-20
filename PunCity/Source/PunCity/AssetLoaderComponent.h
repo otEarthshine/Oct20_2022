@@ -62,6 +62,8 @@ struct FUnitAsset
 	// Static part is used when the meshes should be faraway (or if there is only staticMesh for this unit like ship)
 	//  Also for collider??
 	UPROPERTY() UStaticMesh* staticMesh = nullptr; // default mesh (except for skeletalMesh usage when zoomed in)
+
+	bool isValid() { return staticMesh != nullptr; }
 };
 
 

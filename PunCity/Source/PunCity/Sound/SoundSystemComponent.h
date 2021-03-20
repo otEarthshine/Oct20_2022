@@ -1562,6 +1562,9 @@ public:
 		//}
 
 		// Note: 2D Sound use _worldContext which is gameInstance
+		if (!IsValidPun(_worldContext)) {
+			return;
+		}
 		UAudioComponent* audio = UGameplayStatics::SpawnSound2D(_worldContext, sound);
 		audio->bAutoDestroy = true;
 

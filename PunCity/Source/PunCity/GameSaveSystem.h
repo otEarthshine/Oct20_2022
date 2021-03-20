@@ -266,8 +266,12 @@ public:
 		}
 		return results;
 	}
-	void ReceivePacket(int32 packetIndex, const TArray<uint8>& data)
+	bool ReceivePacket(int32 packetIndex, const TArray<uint8>& data)
 	{
+		if (packetIndex < 0 || packetIndex >= _receivedData.Num()) {
+			return false;
+		}
+		
 		if (!_receivedData[packetIndex]) {
 			for (int32 i = 0; i < data.Num(); i++) {
 				_syncCompressedData[packetIndex * MaxPacketSize + i] = data[i];
@@ -275,6 +279,7 @@ public:
 			_receivedData[packetIndex] = true;
 			_receivedPacketCount++;
 		}
+		return true;
 	}
 	
 

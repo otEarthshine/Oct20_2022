@@ -524,15 +524,15 @@ public:
 		DEBUG_ISCONNECTED_VAR(IsMoveValid);
 
 		bool isIntelligent = IsIntelligentUnit(unitEnum());
-		bool isMoveValid = _simulation->IsConnected(unitTile(), tile, customFloodDistance, isIntelligent);;
+		bool isMoveValid = _simulation->IsConnected(unitTile(), tile, customFloodDistance);;
 
 		// For human, test the second time going to townhall first then going to target.
 		//  This allow for a lot longer travel check range.
 		//  (Otherwise, IsMoveValid fail could be because IsConnectedBuilding is only rough estimate from townhall)
 		if (!isMoveValid && isIntelligent && _townId != -1) {
 			WorldTile2 gateTile = _simulation->GetTownhallGateFast(_townId);
-			isMoveValid = _simulation->IsConnected(gateTile, tile, customFloodDistance, isIntelligent) &&
-							_simulation->IsConnected(gateTile, unitTile(), customFloodDistance, isIntelligent);
+			isMoveValid = _simulation->IsConnected(gateTile, tile, customFloodDistance) &&
+							_simulation->IsConnected(gateTile, unitTile(), customFloodDistance);
 		}
 		
 		return isMoveValid;
@@ -543,7 +543,7 @@ public:
 		}
 		DEBUG_ISCONNECTED_VAR(ResourceMoveValid);
 		WorldTile2 tile = dropoffBuilding(info).gateTile();
-		return _simulation->IsConnected(unitTile(), tile, unitMaxFloodDistance(), IsIntelligentUnit(unitEnum()));
+		return _simulation->IsConnected(unitTile(), tile, unitMaxFloodDistance());
 	}
 
 	class Building& dropoffBuilding(ResourceHolderInfo dropoffInfo) {

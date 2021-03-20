@@ -732,7 +732,7 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 				for (size_t i = 0; i < constructionResourceRequired.size(); i++) {
 					constructionResourceCounts.push_back(0);
 					if (constructionResourceRequired[i] > 0) {
-						constructionResourceCounts[i] = building.resourceCount(ConstructionResources[i]);
+						constructionResourceCounts[i] = building.resourceCountSafe(ConstructionResources[i]);
 					}
 				}
 				buildingJobUI->SetConstructionResource(constructionResourceCounts, building);
@@ -962,7 +962,8 @@ void UWorldSpaceUI::TickUnits()
 			needTools ||
 			idling)
 		{
-			if (!PunSettings::IsOn("SuppressHoverIcon"))
+			if (!PunSettings::IsOn("SuppressHoverIcon") &&
+				unitAI.animationEnum() != UnitAnimationEnum::Invisible)
 			{
 				FVector displayLocation = data->GetUnitDisplayLocation(unitId, inputSystemInterface()->cameraAtom());
 				displayLocation += FVector(0, 0, 25);

@@ -544,7 +544,8 @@ public:
 		if (townhallId == -1) {
 			return NSLOCTEXT("GameSimulationCore", "None", "None");
 		}
-		return building(townhallId).subclass<TownHall>(CardEnum::Townhall).townNameT();
+		TownHall& townhall = building(townhallId).subclass<TownHall>(CardEnum::Townhall);
+		return townhall.townNameT();
 		//return GetTownhall(townId).townNameT();
 	}
 

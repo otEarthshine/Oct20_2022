@@ -168,7 +168,7 @@ public:
 	int32 alreadyGotInitialCard = false;
 	
 private:
-	FString _townName;
+	FString _townName = FString("None");
 
 	int32 _townStartTick = -1;
 	

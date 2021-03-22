@@ -315,8 +315,17 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 
 int BuildingSystem::AddBuilding(FPlaceBuilding parameters)
 {
+	// Special case: Colony turn into townhall
+	if (IsTownPlacement(static_cast<CardEnum>(parameters.buildingEnum))) {
+		parameters.buildingEnum = static_cast<uint8>(CardEnum::Townhall);
+	}
+	
 	WorldTile2 center = parameters.center;
 	CardEnum buildingEnum = static_cast<CardEnum>(parameters.buildingEnum);
+
+	if (buildingEnum == CardEnum::IntercityBridge) {
+		parameters.playerId = -1;
+	}
 	
 	int32 townId = -1;
 	if (parameters.playerId != -1) {
@@ -326,11 +335,6 @@ int BuildingSystem::AddBuilding(FPlaceBuilding parameters)
 			UE_DEBUG_BREAK();
 			return -1;
 		}
-	}
-	
-	// Special case: Colony turn into townhall
-	if (IsTownPlacement(static_cast<CardEnum>(parameters.buildingEnum))) {
-		parameters.buildingEnum = static_cast<uint8>(CardEnum::Townhall);
 	}
 
 	//if (parameters.playerId != -1 && buildingEnum != CardEnum::DirtRoad) {

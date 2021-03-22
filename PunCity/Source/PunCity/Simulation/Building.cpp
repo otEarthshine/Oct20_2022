@@ -98,7 +98,7 @@ void Building::Init(IGameSimulationCore& simulation, int32 objectId, int32 townI
 	else
 	{
 		// Instant build HumanitarianAidCamp
-		bool cheatBuild = SimSettings::IsOn("CheatFastBuild") && !IsRoad(_buildingEnum);
+		bool cheatBuild = SimSettings::IsOn("CheatFastBuild") && (!IsRoad(_buildingEnum) && _buildingEnum != CardEnum::Townhall);
 
 		if (cheatBuild ||
 			_buildingEnum == CardEnum::HumanitarianAidCamp ||

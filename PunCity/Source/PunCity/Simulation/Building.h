@@ -118,7 +118,7 @@ public:
 	}
 
 	template<class T> 
-	T& subclass(CardEnum buildingEnumIn) { 
+	T& subclass(CardEnum buildingEnumIn) {
 		check(buildingEnum() == buildingEnumIn);
 		return *static_cast<T*>(this); 
 	}
@@ -143,9 +143,6 @@ public:
 			return 0;
 		}
 
-		const int32 quickBuildMultiplier_Resource = 3;
-		const int32 quickBuildMultiplier_Work = 2;
-
 		int32 quickBuildCost_Resource = 0;
 		int32 quickBuildCost_Work = 0;
 		std::vector<int32> constructionCosts = GetConstructionResourceCost();
@@ -160,10 +157,15 @@ public:
 			quickBuildCost_Work += constructionCosts[i] * basePrice;
 		}
 
+		// Road extra work equals to 1 wood
+		if (IsRoad(buildingEnum())) {
+			quickBuildCost_Work += GetResourceInfo(ResourceEnum::Wood).basePrice;
+		}
+
 		// base 
 		quickBuildCost_Work = quickBuildCost_Work * (110 - constructionPercent()) / 100;
 
-		return (quickBuildCost_Resource * quickBuildMultiplier_Resource) + (quickBuildCost_Work * quickBuildMultiplier_Work);
+		return (quickBuildCost_Resource * GameConstants::QuickBuildMultiplier_Resource) + (quickBuildCost_Work * GameConstants::QuickBuildMultiplier_Work);
 	}
 	
 
@@ -629,8 +631,15 @@ public:
 		return baseBuildTime;
 	}
 
-	float constructionFraction() { return _workDone100 / static_cast<float>(buildTime_ManSec100()); }
-	int32 constructionPercent() { return _workDone100 * 100 / buildTime_ManSec100(); }
+	float constructionFraction()
+	{
+		float workNeeded100 = std::fmax(0.001f, buildTime_ManSec100());
+		return _workDone100 / workNeeded100;
+	}
+	int32 constructionPercent() {
+		int32 workNeeded100 = std::max(1, buildTime_ManSec100());
+		return _workDone100 * 100 / workNeeded100;
+	}
 
 	void SetConstructionPercent(int32 percent) { // Note: Be careful of round off issues
 		_workDone100 = buildTime_ManSec100() * percent / 100;

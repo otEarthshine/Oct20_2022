@@ -2828,11 +2828,22 @@ void UnitStateAI::IntercityHaulDropoff()
 
 	AddDebugSpeech("IntercityHaulDropoff");
 
-	check(_simulation->buildingIsAlive(workplaceId));
+	// Building no longer alive, drop resources off on storage
+	if (!_simulation->buildingIsAlive(workplaceId))
+	{
+		const auto& pairs = _inventory.resourcePairs();
+		for (const ResourcePair& pair : pairs) {
+			_simulation->AddResourceGlobal(_townId, pair.resourceEnum, pair.count);
+		}
+		_inventory.Clear();
+		_simulation->ResetUnitActions(_id);
+		return;
+	}
 
 	Building& workplace = _simulation->building(workplaceId);
 	if (!workplace.isEnum(CardEnum::IntercityLogisticsHub) &&
-		!workplace.isEnum(CardEnum::IntercityLogisticsPort)) {
+		!workplace.isEnum(CardEnum::IntercityLogisticsPort)) 
+	{
 		_simulation->ResetUnitActions(_id);
 		return;
 	}

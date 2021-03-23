@@ -1279,50 +1279,18 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 				});
 			}
 
-#if TRAILER_MODE
-			// Tick Trailer AutoBuild
-			const int32 trailerBuildTickInterval = Time::TicksPerSecond / 15;
-			if (_tickCount % trailerBuildTickInterval == 0)
+			ExecuteOnPlayersAndAI([&](int32 playerId) 
 			{
-				ExecuteOnPlayersAndAI([&](int32 playerId)
+				if (_playerOwnedManagers[playerId].hasCapitalTownhall()) 
 				{
-					/*
-					 * Trailer auto-build
-					 */
-					if (PunSettings::TrailerMode() &&
-						IsReplayPlayer(playerId) &&
-						!replaySystem().replayPlayers[playerId].trailerAutoBuildPaused)
-					{
-						// play after 5 sec (2.5 sec trailer)
-						// This prevent the example construction from completing before isCameraTrailerReplayPaused triggers
-						if (TownAge(playerId) > Time::TicksPerSecond * 5) {
-							for (int32 enumInt = 0; enumInt < BuildingEnumCount; enumInt++)
-							{
-								std::vector<int32> bldIds = buildingIds(playerId, static_cast<CardEnum>(enumInt));
-								for (int32 bldId : bldIds)
-								{
-									Building& bld = building(bldId);
-									int32 buildTicks = 24 * 2 * 8;//Time::TicksPerSecond * 8;
-									bld.TickConstruction(buildTicks / trailerBuildTickInterval); // updateCount is the number of ticks per second
-
-									// Farm
-									if (bld.isEnum(CardEnum::Farm)) {
-										SetNeedDisplayUpdate(DisplayClusterEnum::Trees, bld.area().corner00().regionId());
-										SetNeedDisplayUpdate(DisplayClusterEnum::Trees, bld.area().corner01().regionId());
-										SetNeedDisplayUpdate(DisplayClusterEnum::Trees, bld.area().corner10().regionId());
-										SetNeedDisplayUpdate(DisplayClusterEnum::Trees, bld.area().corner11().regionId());
-									}
-								}
-							}
-						}
-					}
-				});
-			}
-#endif
-
-			ExecuteOnPlayersAndAI([&](int32 playerId) {
-				if (_playerOwnedManagers[playerId].hasCapitalTownhall()) {
 					_playerOwnedManagers[playerId].Tick();
+
+					//! Tick Round Town
+					const std::vector<int32>& townIds = _playerOwnedManagers[playerId].townIds();
+					for (int32 townId : townIds) {
+						_townManagers[townId]->Tick();
+					}
+					
 
 					questSystem(playerId)->Tick();
 
@@ -2765,14 +2733,66 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 			{
 				if (Building* bld = buildingPtr(command.intVar1))
 				{
-					if (!bld->isConstructed() && money(command.playerId) >= bld->GetQuickBuildCost())
-					{
-						ChangeMoney(command.playerId, -bld->GetQuickBuildCost());
-						_buildingSystem->AddQuickBuild(command.intVar1);
 
-						bld->InstantClearArea();
-						bld->FinishConstructionResourceAndWorkerReset();
-						bld->SetAreaWalkable();
+					
+					// Quick Build All for Road
+					if (IsRoad(bld->buildingEnum()))
+					{
+						std::vector<int32> roadIds = buildingIds(bld->townId(), bld->buildingEnum());
+
+						// Sort road Ids by closest
+						WorldTile2 origin = bld->centerTile();
+						std::sort(roadIds.begin(), roadIds.end(), [&](int32 a, int32 b) {
+							int32 distA = WorldTile2::Distance(building(a).centerTile(), origin);
+							int32 distB = WorldTile2::Distance(building(b).centerTile(), origin);
+							return distA < distB;
+						});
+						
+						int32 quickBuildAllCost = 0;
+						int32 roadTilesBuilt = 0;
+						for (int32 roadId : roadIds) 
+						{
+							Building& curBld = building(roadId);
+							int32 quickBuildCost = curBld.GetQuickBuildCost();
+							if (money(command.playerId) >= quickBuildCost) 
+							{
+								WorldTile2 tile = curBld.centerTile();
+								_treeSystem->ForceRemoveTileObj(tile, false);
+								SetNeedDisplayUpdate(DisplayClusterEnum::Trees, tile.regionId(), true); // For road, also refresh the grass since we want it to be more visible
+								
+								curBld.FinishConstruction();
+								
+								ChangeMoney(command.playerId, -quickBuildCost);
+								
+								roadTilesBuilt++;
+								quickBuildAllCost += quickBuildCost;
+							}
+							else {
+								break;
+							}
+						}
+
+						if (roadTilesBuilt < roadIds.size()) {
+							// Not enough money to finish all the road warn about it
+							AddPopup(command.playerId,
+								FText::Format(LOCTEXT("QuickBuildAllNotEnoughMoney_Pop", "Not enough money to build all Road Construction of this type. Only {0} Road Tiles was built with {1}<img id=\"Coin\"/>."), 
+									TEXT_NUM(roadTilesBuilt),
+									TEXT_NUM(quickBuildAllCost)
+								)
+							);
+						}
+					}
+					else
+					{
+						if (!bld->isConstructed() && money(command.playerId) >= bld->GetQuickBuildCost())
+						{
+							ChangeMoney(command.playerId, -bld->GetQuickBuildCost());
+							_buildingSystem->AddQuickBuild(command.intVar1);
+
+							bld->InstantClearArea();
+							bld->FinishConstructionResourceAndWorkerReset();
+							bld->SetAreaWalkable();
+						}
 					}
 				}
 			}

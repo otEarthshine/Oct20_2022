@@ -37,11 +37,11 @@ public:
 
 	void Deinit()
 	{
-		for (FPunDecal& decal : _roadDecals) {
-			decal.Deinit();
+		for (int32 i = _roadDecals.Num(); i-- > 0;) {
+			_roadDecals[i].Deinit();
 		}
-		for (FPunDecal& decal : _overlayDecals) {
-			decal.Deinit();
+		for (int32 i = _overlayDecals.Num(); i-- > 0;) {
+			_overlayDecals[i].Deinit();
 		}
 	}
 	

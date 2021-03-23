@@ -13,7 +13,7 @@ public:
 	void CalculateActions() final;
 
 	//! Macros
-	bool TryMoveResourcesProviderToDropoff(int32 providerBuildingId, int32 dropoffBuildingId, ResourceEnum resourceEnum, int32 amountAtLeast);
+	bool TryMoveResourcesProviderToDropoff(int32 providerBuildingId, int32 dropoffBuildingId, ResourceEnum resourceEnum, int32 amountAtLeast, UnitAnimationEnum animationEnum = UnitAnimationEnum::Walk);
 	bool TryMoveResourcesAnyProviderToDropoff(ResourceFindType providerType, FoundResourceHolderInfo dropoffInfo, bool prioritizeMarket = false, bool checkMarketAfter = false, 
 												UnitAnimationEnum animationEnum = UnitAnimationEnum::Walk);
 

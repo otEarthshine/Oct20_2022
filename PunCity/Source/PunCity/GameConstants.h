@@ -43,6 +43,12 @@ public:
 	static const int32 InitialMoney = 3000;
 
 	static const int32 ClaimProvinceByMoneyMultiplier = 2;
+
+
+	static const int32 StoneNeededPerRoadTile = 2;
+
+	static const int32 QuickBuildMultiplier_Resource = 3;
+	static const int32 QuickBuildMultiplier_Work = 2;
 };
 
 static const int32 ModuleMeshCount = 416; // 407

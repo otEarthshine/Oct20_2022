@@ -1218,7 +1218,7 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	}
 	else if (needInstruction(PlacementInstructionEnum::DeliveryPointMustBeStorage)) {
 		punBox->AddRichTextCenter(LOCTEXT("DeliveryPointMustBeStorage1_Instruct", "<Red>Delivery Point must be</>"));
-		punBox->AddRichTextCenter(LOCTEXT("DeliveryPointMustBeStorage2_Instruct", "<Red>Storage Yard or Warehouse</>"));
+		punBox->AddRichTextCenter(LOCTEXT("DeliveryPointMustBeStorage2_Instruct", "<Red>Storage Building or Market</>"));
 	}
 	else if (needInstruction(PlacementInstructionEnum::ShipperDeliveryPointShouldBeOutOfRadius)) {
 		punBox->AddRichTextCenter(LOCTEXT("DeliveryPointShouldBeOutOfRadius1_Instruct", "<Red>Delivery Point must be</>"));

@@ -986,6 +986,14 @@ public:
 
 	bool buildingIsAlive(int32 id) final { return _buildingSystem->alive(id); }
 
+	//bool buildingIsAlive(int32 id, CardEnum buildingEnum) final {
+	//	bool isAlive = _buildingSystem->alive(id);
+	//	if (isAlive) {
+	//		return _buildingSystem->buildingEnum(id) == buildingEnum;
+	//	}
+	//	return false;
+	//}
+
 	WorldTile2 gateTile(int32 id) final { return _buildingSystem->building(id).gateTile(); }
 
 	void AddTickBuilding(int buildingId) final {

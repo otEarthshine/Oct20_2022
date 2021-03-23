@@ -750,7 +750,10 @@ void ULobbyUI::UpdateLobbyUI()
 				// when using percent >= 99... gameInst->clientPacketsReceived[i] == gameInst->saveSystem().totalPackets()
 				// Client's side all ready checkboxes before 100%
 				// Host's side all numbers
-				int32 percentLoaded = gameInst->clientPacketsReceived[i] * 100 / gameInst->saveSystem().totalPackets();
+				int32 totalPackets = gameInst->saveSystem().totalPackets();
+				totalPackets = std::max(totalPackets, 1); // Prevent divided by zero crash
+				
+				int32 percentLoaded = gameInst->clientPacketsReceived[i] * 100 / totalPackets;
 				//if (gameInst->clientPacketsReceived[i] == gameInst->saveSystem().totalPackets())
 				if (percentLoaded >= 99) {
 					showReadyCheckBox();

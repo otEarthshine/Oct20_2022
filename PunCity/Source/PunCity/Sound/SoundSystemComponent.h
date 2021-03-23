@@ -1566,6 +1566,9 @@ public:
 			return;
 		}
 		UAudioComponent* audio = UGameplayStatics::SpawnSound2D(_worldContext, sound);
+		if (!IsValidPun(audio)) {
+			return;
+		}
 		audio->bAutoDestroy = true;
 
 		// RawData sound

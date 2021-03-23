@@ -118,8 +118,9 @@ public:
 			for (FText name : MapSizeNames) {
 				LobbyMapSizeDropdown->AddOption(name.ToString());
 			}
+			_disableDropdownChangedAction = true;
 			LobbyMapSizeDropdown->SetSelectedIndex(serverMapSettings.mapSizeEnumInt);
-
+			_disableDropdownChangedAction = false;
 			
 			auto setupDropdown = [&](UComboBoxString* LobbyDropdown, const std::vector<FText>& enumNames)
 			{
@@ -275,4 +276,6 @@ public:
 
 private:
 	bool _isPreLobby = false;
+
+	bool _disableDropdownChangedAction = false;
 };

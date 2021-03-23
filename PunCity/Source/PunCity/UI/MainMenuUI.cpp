@@ -95,11 +95,11 @@ void UMainMenuUI::Tick()
 	{
 		lastSteamConnectionRetry = UGameplayStatics::GetTimeSeconds(this);
 		
-#if WITH_EDITOR
-		gameInstance()->RefreshSessionInterface("NULL");
-#else
+//#if WITH_EDITOR
+//		gameInstance()->RefreshSessionInterface("NULL");
+//#else
 		gameInstance()->RefreshSessionInterface("Steam");
-#endif
+//#endif
 
 		LobbyConnectionWarning->SetVisibility(gameInstance()->IsSessionInterfaceValid() ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 	}

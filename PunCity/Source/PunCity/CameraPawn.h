@@ -104,6 +104,9 @@ public:
 	void KeyPressed_PlayerDetails() {
 		ExecuteUsingHUD([&](APunHUD* hud) { hud->TogglePlayerDetails(); });
 	}
+	void KeyPressed_NextBuilding() {
+		ExecuteUsingHUD([&](APunHUD* hud) { hud->SwitchToNextBuildingUI(); });
+	}
 
 	void KeyPressed_DirtRoad() {
 		ExecuteUsingMainGameUI([&](auto ui) { ui->ToggleDirtRoad(); });

@@ -419,7 +419,7 @@ void HumanStateAI::GatherSequence(NonWalkableTileAccessInfo accessInfo)
 	Add_MoveTo(accessInfo.nearbyTile);
 }
 
-bool HumanStateAI::TryMoveResourcesProviderToDropoff(int32 providerBuildingId, int32 dropoffBuildingId, ResourceEnum resourceEnum, int32 amountAtLeast)
+bool HumanStateAI::TryMoveResourcesProviderToDropoff(int32 providerBuildingId, int32 dropoffBuildingId, ResourceEnum resourceEnum, int32 amountAtLeast, UnitAnimationEnum animationEnum)
 {
 	Building& provider = _simulation->building(providerBuildingId);
 	ResourceHolderInfo providerInfo = provider.holderInfo(resourceEnum);
@@ -461,7 +461,7 @@ bool HumanStateAI::TryMoveResourcesProviderToDropoff(int32 providerBuildingId, i
 
 	
 	MoveResourceSequence({ FoundResourceHolderInfo(providerInfo, amountAtLeast, provider.centerTile()) }, 
-										{ FoundResourceHolderInfo(dropoffInfo, amountAtLeast, dropoff.centerTile()) });
+										{ FoundResourceHolderInfo(dropoffInfo, amountAtLeast, dropoff.centerTile()) }, -1, animationEnum);
 	return true;
 }
 
@@ -1839,7 +1839,9 @@ bool HumanStateAI::TryBulkHaul_ShippingDepot()
 			for (ResourceEnum resourceEnum : shipper.resourceEnums) {
 				if (resourceEnum != ResourceEnum::None) {
 					for (int32 storageId : storageIds) {
-						if (TryMoveResourcesProviderToDropoff(storageId, deliveryTargetId, resourceEnum, bulkHaulCapacity())) {
+						if (TryMoveResourcesProviderToDropoff(storageId, deliveryTargetId, resourceEnum, bulkHaulCapacity(), UnitAnimationEnum::HorseLogistics)) {
+							// successful move, go to workplace to get cart first
+							Add_MoveTo(shipper.gateTile(), -1, UnitAnimationEnum::Walk);
 							return true;
 						}
 					}
@@ -1848,7 +1850,9 @@ bool HumanStateAI::TryBulkHaul_ShippingDepot()
 			for (ResourceEnum resourceEnum : shipper.resourceEnums) {
 				if (resourceEnum != ResourceEnum::None) {
 					for (int32 storageId : storageIds) {
-						if (TryMoveResourcesProviderToDropoff(storageId, deliveryTargetId, resourceEnum, 1)) {
+						if (TryMoveResourcesProviderToDropoff(storageId, deliveryTargetId, resourceEnum, 1, UnitAnimationEnum::HorseLogistics)) {
+							// successful move, go to workplace to get cart first
+							Add_MoveTo(shipper.gateTile(), -1, UnitAnimationEnum::Walk);
 							return true;
 						}
 					}

@@ -233,7 +233,9 @@ public:
 		return false;
 	}
 
-	virtual bool buildingIsAlive(int32_t id) = 0;
+	virtual bool buildingIsAlive(int32 id) = 0;
+	//virtual bool buildingIsAlive(int32 id, CardEnum buildingEnum) = 0; // Checking enum too help with extra verification
+	
 	virtual WorldTile2 gateTile(int id) = 0;
 	virtual void AddTickBuilding(int32 buildingId) = 0;
 	virtual void ScheduleTickBuilding(int32 buildingId, int32 scheduleTick) = 0;

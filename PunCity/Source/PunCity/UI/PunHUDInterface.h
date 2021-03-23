@@ -61,6 +61,7 @@ public:
 	virtual void ToggleProsperityUI() = 0;
 
 	virtual void TogglePlayerDetails() = 0;
+	virtual void SwitchToNextBuildingUI() = 0;
 
 	virtual void CloseDescriptionUI() = 0;
 

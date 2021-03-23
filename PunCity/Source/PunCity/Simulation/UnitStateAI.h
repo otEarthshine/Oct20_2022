@@ -841,6 +841,8 @@ protected:
 	std::vector<std::string> _lastDebugSpeeches;
 
 	std::vector<Action> _actionHistory;
+
+	; // TODO: Serialize
 protected:
 	/*
 	 * Serialize Variables

@@ -46,6 +46,11 @@ public:
 		return _objectDescriptionUI->EmptyCardSlots;
 	}
 
+	void SwitchToNextBuildingUI()
+	{
+		return _objectDescriptionUI->SwitchToNextBuilding(false);
+	}
+
 	void HideForPhotoMode()
 	{
 		dataSource()->simulation().SetDescriptionUIState(DescriptionUIState());

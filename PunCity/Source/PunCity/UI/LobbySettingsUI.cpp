@@ -217,6 +217,9 @@ void ULobbySettingsUI::OnLobbyAICountDropdownChanged(FString sItem, ESelectInfo:
 	if (sItem.IsEmpty()) {
 		return;
 	}
+	if (_disableDropdownChangedAction) {
+		return;
+	}
 	
 	serverMapSettings.aiCount = FCString::Atoi(*sItem);
 	SendMapSettings();

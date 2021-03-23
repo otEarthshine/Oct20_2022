@@ -90,6 +90,32 @@ public:
 		BuildingSwapArrows->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
+	void SwitchToNextBuilding(bool isLeft)
+	{
+		if (state.objectType == ObjectTypeEnum::Building)
+		{
+			CardEnum buildingEnum = simulation().buildingEnum(state.objectId);
+			const std::vector<int32>& buildingIds = simulation().buildingIds(playerId(), buildingEnum);
+			if (buildingIds.size() > 1) {
+				// Find the index of the current building in the array and increment it by 1
+				int32 index = -1;
+				for (size_t i = 0; i < buildingIds.size(); i++) {
+					if (buildingIds[i] == state.objectId) {
+						index = i;
+						break;
+					}
+				}
+				if (index != -1) {
+					int32 nextIndex = (index + 1) % buildingIds.size();
+					int32 buildingId = buildingIds[nextIndex];
+					simulation().SetDescriptionUIState({ ObjectTypeEnum::Building, buildingId });
+					networkInterface()->SetCameraAtom(simulation().building(buildingId).centerTile().worldAtom2());
+				}
+			}
+		}
+	}
+
+public:
 	DescriptionUIState state;
 	UObjectDescriptionUIParent* parent;
 
@@ -168,28 +194,6 @@ private:
 	}
 	UFUNCTION() void OnClickBuildingSwapArrowRightButton() {
 		SwitchToNextBuilding(false);
-	}
-	void SwitchToNextBuilding(bool isLeft)
-	{
-		if (state.objectType == ObjectTypeEnum::Building)
-		{
-			CardEnum buildingEnum = simulation().buildingEnum(state.objectId);
-			const std::vector<int32>& buildingIds = simulation().buildingIds(playerId(), buildingEnum);
-			if (buildingIds.size() > 1) {
-				// Find the index of the current building in the array and increment it by 1
-				int32 index = -1;
-				for (size_t i = 0; i < buildingIds.size(); i++) {
-					if (buildingIds[i] == state.objectId) {
-						index = i;
-						break;
-					}
-				}
-				if (index != -1) {
-					int32 nextIndex = (index + 1) % buildingIds.size();
-					simulation().SetDescriptionUIState({ ObjectTypeEnum::Building, buildingIds[nextIndex] });
-				}
-			}
-		}
 	}
 	
 	

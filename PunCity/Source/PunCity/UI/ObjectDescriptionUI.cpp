@@ -24,7 +24,7 @@ void UObjectDescriptionUI::Setup()
 
 	BuildingSwapArrowLeftButton->OnClicked.AddDynamic(this, &UObjectDescriptionUI::OnClickBuildingSwapArrowLeftButton);
 	BuildingSwapArrowRightButton->OnClicked.AddDynamic(this, &UObjectDescriptionUI::OnClickBuildingSwapArrowRightButton);
-	const FText buildingSwapTip = NSLOCTEXT("ObjectDescriptionUI", "BuildingSwapArrow_Tip", "Click to switch between buildings of the same type");
+	const FText buildingSwapTip = NSLOCTEXT("ObjectDescriptionUI", "BuildingSwapArrow_Tip", "Click to switch between buildings of the same type <Orange>[TAB]</>");
 	AddToolTip(BuildingSwapArrowLeftButton, buildingSwapTip);
 	AddToolTip(BuildingSwapArrowRightButton, buildingSwapTip);
 	

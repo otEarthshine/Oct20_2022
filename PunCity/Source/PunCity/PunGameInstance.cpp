@@ -266,7 +266,7 @@ void UPunGameInstance::JoinGame(const FOnlineSessionSearchResult& searchResult)
 		return;
 	}
 
-	if (IOnlineSubsystem::Get("Steam") == nullptr) {
+	if (IOnlineSubsystem::Get()->GetSubsystemName() != "Steam") {
 		mainMenuPopup = LOCTEXT("JoinGame_NotConnectedToSteam", "Failed to join the game. Please connect to Steam.");
 		return;
 	}

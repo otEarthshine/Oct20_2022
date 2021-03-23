@@ -288,6 +288,10 @@ public:
 	void TogglePlayerDetails() final {
 		_questUI->TogglePlayerDetails();
 	}
+	void SwitchToNextBuildingUI() final {
+		_descriptionUISystem->SwitchToNextBuildingUI();
+	}
+	
 	void CloseQuestUI() {
 		_questUI->QuestDescriptionOverlay->SetVisibility(ESlateVisibility::Collapsed);
 	}

@@ -2128,15 +2128,33 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					if (building.playerId() == playerId() &&
 						simulation.IsResearched(playerId(), TechEnum::QuickBuild))
 					{
-						int32 quickBuildCost = building.GetQuickBuildCost();
-						bool canQuickBuild = simulation.money(playerId()) >= quickBuildCost;
+						if (IsRoad(building.buildingEnum()))
+						{
+							const std::vector<int32>& roadIds = simulation.buildingIds(building.townId(), building.buildingEnum());
+							int32 quickBuildAllCost = 0;
+							for (int32 roadId : roadIds) {
+								quickBuildAllCost += simulation.building(roadId).GetQuickBuildCost();
+							}
 
-						TArray<FText> argsLocal;
-						argsLocal.Add(LOCTEXT("Quick Build", "Quick Build"));
-						ADDTEXT(argsLocal, INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(FText::AsNumber(quickBuildCost), !canQuickBuild));
+							TArray<FText> argsLocal;
+							argsLocal.Add(LOCTEXT("Quick Build All", "Quick Build All"));
+							ADDTEXT(argsLocal, INVTEXT("\n<img id=\"Coin\"/>{0}"), FText::AsNumber(quickBuildAllCost));
 
-						descriptionBox->AddSpacer();
-						descriptionBox->AddButton2Lines(JOINTEXT(argsLocal), this, CallbackEnum::QuickBuild, true, false, objectId);
+							descriptionBox->AddSpacer();
+							descriptionBox->AddButton2Lines(JOINTEXT(argsLocal), this, CallbackEnum::QuickBuild, true, false, objectId);
+						}
+						else
+						{
+							int32 quickBuildCost = building.GetQuickBuildCost();
+							bool canQuickBuild = simulation.money(playerId()) >= quickBuildCost;
+
+							TArray<FText> argsLocal;
+							argsLocal.Add(LOCTEXT("Quick Build", "Quick Build"));
+							ADDTEXT(argsLocal, INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(FText::AsNumber(quickBuildCost), !canQuickBuild));
+
+							descriptionBox->AddSpacer();
+							descriptionBox->AddButton2Lines(JOINTEXT(argsLocal), this, CallbackEnum::QuickBuild, true, false, objectId);
+						}
 					}
 					
 #if WITH_EDITOR

@@ -286,7 +286,7 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 					bool isStoneRoad = roadTile.isValid() && !roadTile.isDirt;
 					
 					if (!isStoneRoad) {
-						stoneNeeded += 2;
+						stoneNeeded += GameConstants::StoneNeededPerRoadTile;
 					}
 				}
 			}
@@ -2088,7 +2088,9 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 					for (int32 y = tile.y - 1; y <= tile.y + 1; y++) {
 						for (int32 x = tile.x - 1; x <= tile.x + 1; x++) {
 							WorldTile2 curTile(x, y);
-							if (simulation.IsRoadTile(curTile)) {
+							if (curTile.isValid() &&
+								simulation.IsRoadTile(curTile)) 
+							{
 								CppUtils::TryAdd(connectedRoadTiles, curTile);
 							}
 						}

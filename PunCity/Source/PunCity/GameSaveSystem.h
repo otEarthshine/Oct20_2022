@@ -272,7 +272,12 @@ public:
 			return false;
 		}
 		
-		if (!_receivedData[packetIndex]) {
+		if (!_receivedData[packetIndex]) 
+		{
+			if (packetIndex * MaxPacketSize + (data.Num() - 1) < _syncCompressedData.Num()) {
+				return false;
+			}
+			
 			for (int32 i = 0; i < data.Num(); i++) {
 				_syncCompressedData[packetIndex * MaxPacketSize + i] = data[i];
 			}

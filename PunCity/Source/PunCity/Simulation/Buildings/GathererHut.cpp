@@ -1064,6 +1064,9 @@ int32_t Fisher::FisherAreaEfficiency(WorldTile2 centerTile, bool alreadyPlaced, 
 			tileCount++;
 		}
 	});
+
+	tileCount = std::max(tileCount, 1); // prevent out of map placement crash
+	
 	return fish100Count / tileCount * 2; // 2 (half water)
 }
 

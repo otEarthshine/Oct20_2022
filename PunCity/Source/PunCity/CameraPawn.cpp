@@ -98,6 +98,7 @@ void ACameraPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("Demolish", IE_Pressed, this, &ACameraPawn::KeyPressed_Demolish);
 
 	PlayerInputComponent->BindAction("PlayerDetails", IE_Pressed, this, &ACameraPawn::KeyPressed_PlayerDetails);
+	PlayerInputComponent->BindAction("NextBuilding", IE_Pressed, this, &ACameraPawn::KeyPressed_NextBuilding);
 	PlayerInputComponent->BindAction("Skill", IE_Pressed, this, &ACameraPawn::KeyPressed_LeaderSkill);
 }
 

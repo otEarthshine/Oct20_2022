@@ -19,7 +19,7 @@
 // VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 19 // 3 digit
+#define MINOR_VERSION 20 // 3 digit
 
 #define VERSION_DAY 22
 #define VERSION_MONTH 3
@@ -2610,7 +2610,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::BoarBurrow,	LOCTEXT("Boar Burrow", "Boar Burrow"), LOCTEXT("Boar Burrow (Plural)", "Boar Burrows"),	WorldTile2(3, 3),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,0,0},	LOCTEXT("Boar Burrow Desc", "A cozy burrow occupied by a Boar family.")),
 
 	BldInfo(CardEnum::DirtRoad,		LOCTEXT("Dirt Road", "Dirt Road"),		LOCTEXT("Dirt Road (Plural)", "Dirt Road"),			WorldTile2(1, 1),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,0,0},	LOCTEXT("Dirt Road Desc", "A crude road.\n +20% movement speed.")),
-	BldInfo(CardEnum::StoneRoad,		LOCTEXT("Stone Road", "Stone Road"),	LOCTEXT("Stone Road (Plural)", "Stone Road"),			WorldTile2(1, 1),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0,2,0},	LOCTEXT("Stone Road Desc", "A sturdy road.\n +30% movement speed.")),
+	BldInfo(CardEnum::StoneRoad,		LOCTEXT("Stone Road", "Stone Road"),	LOCTEXT("Stone Road (Plural)", "Stone Road"),			WorldTile2(1, 1),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{0, GameConstants::StoneNeededPerRoadTile,0},	LOCTEXT("Stone Road Desc", "A sturdy road.\n +30% movement speed.")),
 	BldInfo(CardEnum::TrapSpike,		INVTEXT("Spike Trap"),					FText(),			WorldTile2(1, 1),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		 0, 0,	{10,0,0},	INVTEXT("Trap that can be used to hurt/disable animals or humans.")),
 
 	BldInfo(CardEnum::Fisher,		LOCTEXT("Fishing Lodge", "Fishing Lodge"), LOCTEXT("Fishing Lodge (Plural)", "Fishing Lodges"),		WorldTile2(6, 4),	ResourceEnum::None, ResourceEnum::None, ResourceEnum::Fish,		 10, 2,	{70,0,0},	LOCTEXT("Fishing Lodge Desc", "Catch Fish from seas, lakes or rivers.")),

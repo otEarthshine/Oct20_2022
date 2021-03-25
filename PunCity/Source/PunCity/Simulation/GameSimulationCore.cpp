@@ -928,8 +928,16 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 			// Tick 1 sec
 			if (_tickCount % Time::TicksPerSecond == 0) 
 			{
+				/*
+				 * Score Victory
+				 */
+				if (Time::Years() == 15) {
+					ExecuteTimeVictory();
+				}
+				
 				ExecuteOnPlayersAndAI([&](int32 playerId)
 				{
+					// Tick 1 sec
 					if (_playerOwnedManagers[playerId].hasCapitalTownhall()) 
 					{
 						const std::vector<int32>& townIds = _playerOwnedManagers[playerId].townIds();
@@ -1189,36 +1197,37 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 						/*
 						 * Economic Victory
 						 */
-						const int32 thousandsToWarn1 = 500;
-						const int32 thousandsToWarn2 = 800;
+						//const int32 thousandsToWarn1 = 500;
+						//const int32 thousandsToWarn2 = 800;
 
-						auto warnEconVictoryPopup = [&](int32 thousandsToWarn)
-						{
-							AddPopup(playerId, FText::Format(
-								LOCTEXT("WarnEcon_Pop", "You accumulated {0},000<img id=\"Coin\"/>!<space>You will achieve economic victory once you accumulate 1,000,000<img id=\"Coin\"/>."),
-								TEXT_NUM(thousandsToWarn)
-							));
-							AddPopupAll(PopupInfo(-1,
-								FText::Format(
-									LOCTEXT("WarnEconAll_Pop", "{0} accumulated {1},000<img id=\"Coin\"/>.<space>At 1,000,000<img id=\"Coin\"/> {0} will achieve the economic victory."),
-									playerNameT(playerId),
-									TEXT_NUM(thousandsToWarn)
-								)
-							), playerId);
-						};
+						//auto warnEconVictoryPopup = [&](int32 thousandsToWarn)
+						//{
+						//	AddPopup(playerId, FText::Format(
+						//		LOCTEXT("WarnEcon_Pop", "You accumulated {0},000<img id=\"Coin\"/>!<space>You will achieve economic victory once you accumulate 1,000,000<img id=\"Coin\"/>."),
+						//		TEXT_NUM(thousandsToWarn)
+						//	));
+						//	AddPopupAll(PopupInfo(-1,
+						//		FText::Format(
+						//			LOCTEXT("WarnEconAll_Pop", "{0} accumulated {1},000<img id=\"Coin\"/>.<space>At 1,000,000<img id=\"Coin\"/> {0} will achieve the economic victory."),
+						//			playerNameT(playerId),
+						//			TEXT_NUM(thousandsToWarn)
+						//		)
+						//	), playerId);
+						//};
+						//
+						//if (_playerOwnedManagers[playerId].economicVictoryPhase == 0 && money(playerId) > (thousandsToWarn1 * 1000)) {
+						//	_playerOwnedManagers[playerId].economicVictoryPhase = 1;
+						//	warnEconVictoryPopup(thousandsToWarn1);
+						//}
+						//else if (_playerOwnedManagers[playerId].economicVictoryPhase == 1 && money(playerId) > (thousandsToWarn2 * 1000)) {
+						//	_playerOwnedManagers[playerId].economicVictoryPhase = 2;
+						//	warnEconVictoryPopup(thousandsToWarn2);
+						//}
+						//else if (_playerOwnedManagers[playerId].economicVictoryPhase == 2 && money(playerId) > (1000000)) 	{
+						//	_endStatus.victoriousPlayerId = playerId;
+						//	_endStatus.gameEndEnum = GameEndEnum::EconomicVictory;
+						//}
 						
-						if (_playerOwnedManagers[playerId].economicVictoryPhase == 0 && money(playerId) > (thousandsToWarn1 * 1000)) {
-							_playerOwnedManagers[playerId].economicVictoryPhase = 1;
-							warnEconVictoryPopup(thousandsToWarn1);
-						}
-						else if (_playerOwnedManagers[playerId].economicVictoryPhase == 1 && money(playerId) > (thousandsToWarn2 * 1000)) {
-							_playerOwnedManagers[playerId].economicVictoryPhase = 2;
-							warnEconVictoryPopup(thousandsToWarn2);
-						}
-						else if (_playerOwnedManagers[playerId].economicVictoryPhase == 2 && money(playerId) > (1000000)) 	{
-							_endStatus.victoriousPlayerId = playerId;
-							_endStatus.gameEndEnum = GameEndEnum::EconomicVictory;
-						}
 					}
 				});
 				
@@ -5236,6 +5245,13 @@ void GameSimulationCore::Cheat(FCheat command)
 			}
 			break;
 		}
+
+		case CheatEnum::ScoreVictory: {
+			ExecuteTimeVictory();
+			break;
+		}
+
+		
 		case CheatEnum::TrailerCityGreen1:
 		{
 			cardSys.AddCardToHand2(CardEnum::FurnitureWorkshop);

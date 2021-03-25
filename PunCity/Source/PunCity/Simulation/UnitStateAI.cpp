@@ -99,6 +99,8 @@ void UnitStateAI::AddUnit(UnitEnum unitEnum, int32 townId, UnitFullId fullId, IU
 
 	_animationEnum = UnitAnimationEnum::Wait;
 
+	_tryWorkFailEnum = TryWorkFailEnum::None;
+
 
 	if (IsWildAnimal(unitEnum)) 
 	{

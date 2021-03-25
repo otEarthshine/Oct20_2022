@@ -2181,6 +2181,17 @@ public:
 	int32 GetAverageHappiness(int32 townId) final {
 		return townManager(townId).aveOverallHappiness();
 	}
+	int32 GetAverageHappinessPlayer(int32 playerId) {
+		int32 totalPopulation = 0;
+		int32 totalHappiness = 0;
+		const auto& townIds = _playerOwnedManagers[playerId].townIds();
+		for (int32 townId : townIds) {
+			totalPopulation += _townManagers[townId]->population();
+			totalHappiness += _townManagers[townId]->aveOverallHappiness();
+		}
+		return totalHappiness / totalPopulation;
+	}
+	
 	int32 GetAverageHappinessByType(int32 townId, HappinessEnum happinessEnum) final {
 		return townManager(townId).aveHappinessByType(happinessEnum);
 	}
@@ -2452,6 +2463,23 @@ public:
 	void ExecuteScienceVictory(int32 playerIdToWin) final {
 		_endStatus.victoriousPlayerId = playerIdToWin;
 		_endStatus.gameEndEnum = GameEndEnum::ScienceVictory;
+	}
+	void ExecuteTimeVictory() {
+		_endStatus.victoriousPlayerId = 0;
+		_endStatus.gameEndEnum = GameEndEnum::TimeVictory;
+	}
+
+	int32 populationScore(int32 playerId) { return populationPlayer(playerId); }
+	int32 happinessScore(int32 playerId) { return GetAverageHappinessPlayer(playerId) * 3; }
+	int32 moneyScore(int32 playerId) { return money(playerId) / 10000; }
+	int32 technologyScore(int32 playerId) { return unlockSystem(playerId)->techsFinished * 10; }
+	int32 wonderScore(int32 playerId) { return 0; }
+	int32 totalScore(int32 playerId) {
+		return populationScore(playerId) + 
+			happinessScore(playerId) + 
+			moneyScore(playerId) + 
+			technologyScore(playerId) + 
+			wonderScore(playerId);
 	}
 
 	bool HasTownhall(int32 playerId) final {

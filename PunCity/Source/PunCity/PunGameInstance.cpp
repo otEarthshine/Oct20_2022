@@ -839,6 +839,73 @@ void UPunGameInstance::UpdateAchievementProgress(const FString& Id, float Percen
 	}
 }
 
+void UPunGameInstance::UpdateSteamStats(const FString& statName, int32 statValue)
+{
+	IOnlineStatsPtr SteamStatsPtr;
+	TSharedPtr<const FUniqueNetId> UserId;
+	if (UseSteamStatsInterface(SteamStatsPtr, UserId))
+	{
+		UpdateStatsCompleteDelegate.BindLambda([&](const FOnlineError& error) {
+			PUN_DEBUG2("Done UpdateStatsCompleteDelegate: %d", error.WasSuccessful());
+		});
+
+		FOnlineStatsUserUpdatedStats stat(UserId.ToSharedRef());
+		stat.Stats.Add(statName, FOnlineStatUpdate(statValue, FOnlineStatUpdate::EOnlineStatModificationType::Set));
+
+		TArray<FOnlineStatsUserUpdatedStats> updatedStats;
+		updatedStats.Add(stat);
+
+		SteamStatsPtr->UpdateStats(UserId.ToSharedRef(), updatedStats, UpdateStatsCompleteDelegate);
+	}
+}
+
+void UPunGameInstance::QuerySteamStats()
+{
+	IOnlineStatsPtr SteamStatsPtr;
+	TSharedPtr<const FUniqueNetId> UserId;
+	if (UseSteamStatsInterface(SteamStatsPtr, UserId))
+	{
+		QueryStatsCompleteDelgate.BindLambda([&](const FOnlineError& error, const TSharedPtr<const FOnlineStatsUserStats>& QueriedStats) {
+			PUN_DEBUG2("Done QueryStatsCompleteDelgate: %d", error.WasSuccessful());
+
+			for (auto pair : QueriedStats->Stats) {
+				int32 value;
+				pair.Value.GetValue(value);
+				PUN_DEBUG2("GetSteamStats [%s, %d]", *pair.Key, value);
+			}
+		});
+
+		SteamStatsPtr->QueryStats(UserId.ToSharedRef(), UserId.ToSharedRef(), QueryStatsCompleteDelgate);
+	}
+}
+
+void UPunGameInstance::GetSteamStats()
+{
+	IOnlineStatsPtr SteamStatsPtr;
+	TSharedPtr<const FUniqueNetId> UserId;
+	if (UseSteamStatsInterface(SteamStatsPtr, UserId))
+	{
+		TSharedPtr<const FOnlineStatsUserStats> stats = SteamStatsPtr->GetStats(UserId.ToSharedRef());
+		for (auto pair : stats->Stats) {
+			int32 value;
+			pair.Value.GetValue(value);
+			PUN_DEBUG2("GetSteamStats [%s, %d]", *pair.Key, value);
+		}
+	}
+}
+
+void UPunGameInstance::ResetSteamStats()
+{
+	IOnlineStatsPtr SteamStatsPtr;
+	TSharedPtr<const FUniqueNetId> UserId;
+	if (UseSteamStatsInterface(SteamStatsPtr, UserId))
+	{
+#if !UE_BUILD_SHIPPING
+		SteamStatsPtr->ResetStats(UserId.ToSharedRef());
+#endif
+	}
+}
+
 /*
  * Handle Network Failure
  */

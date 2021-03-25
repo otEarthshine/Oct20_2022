@@ -121,7 +121,6 @@ const TArray<FText> UnitStateName
 
 	LOCTEXT("Other", "Other"),
 };
-
 #undef LOCTEXT_NAMESPACE
 
 
@@ -131,6 +130,20 @@ enum class UnitAIClassEnum : uint8
 	HumanStateAI,
 	ProjectileArrow,
 };
+
+
+enum class TryWorkFailEnum : uint8
+{
+	None,
+
+};
+#define LOCTEXT_NAMESPACE "TryWorkFailEnum"
+const TArray<FText> TryWorkFailEnumName
+{
+	LOCTEXT("None", "None"),
+};
+#undef LOCTEXT_NAMESPACE
+
 
 class UnitStateAI
 {
@@ -842,7 +855,7 @@ protected:
 
 	std::vector<Action> _actionHistory;
 
-	; // TODO: Serialize
+	TryWorkFailEnum _tryWorkFailEnum; // TODO: Serialize
 protected:
 	/*
 	 * Serialize Variables

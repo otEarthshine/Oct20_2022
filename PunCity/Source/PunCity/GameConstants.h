@@ -35,6 +35,10 @@ public:
 
 	static const int32 MaxFloodDistance_Army = 10;
 
+	static const int32 MaxDistanceFetch_MedTools = 120;
+	static const int32 MaxDistanceFetch_NonLaborer = 40;
+	static const int32 MaxDistanceFetch_Laborer = 180;
+
 	static const int WorkerEmptyBuildingInventoryAmount = 50;
 
 	static const int32 StorageCountPerTile = 120;
@@ -49,6 +53,7 @@ public:
 
 	static const int32 QuickBuildMultiplier_Resource = 3;
 	static const int32 QuickBuildMultiplier_Work = 2;
+
 };
 
 static const int32 ModuleMeshCount = 416; // 407

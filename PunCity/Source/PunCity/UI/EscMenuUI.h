@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "PunCity/UI/PunWidget.h"
+#include "PunCity/UI/PunBoxWidget.h"
 #include "GameSettingsUI.h"
 
 #include "LoadSaveUI.h"
@@ -81,6 +81,19 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* VictoryScoreScreenButton;
 	UPROPERTY(meta = (BindWidget)) UButton* VictoryReturnToGame;
 	bool alreadyShownVictory = false;
+
+	UPROPERTY(meta = (BindWidget)) UTextBlock* TotalScore;
+	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* ScoreBreakdown;
+	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* OtherPlayerScores;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* HighScore;
+	
+	UPROPERTY(meta = (BindWidget)) UTextBlock* PopulationScore;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* HappinessScore;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* MoneyScore;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* TechnologyScore;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* WondersScore;
+	
+	
 
 	//! Load/Save
 	UPROPERTY(meta = (BindWidget)) UButton* EscMenuSaveButton;
@@ -259,6 +272,34 @@ public:
 			gameInstance->SetGameEndStatus(endStatus);
 
 			VictoryPopup->SetVisibility(ESlateVisibility::Visible);
+
+			int32 populationScore = simulation().populationScore(playerId());
+			int32 happinessScore = simulation().happinessScore(playerId());
+			int32 moneyScore = simulation().moneyScore(playerId());
+			int32 technologyScore = simulation().technologyScore(playerId());
+			int32 wonderScore = simulation().wonderScore(playerId());
+			int32 score = simulation().totalScore(playerId());
+
+			TotalScore->SetText(TEXT_NUM(score));
+			ScoreBreakdown->ResetBeforeAdd();
+			ScoreBreakdown->AddMidRowText(NSLOCTEXT("ScoreBreakdown", "Population score:", "Population score:"), TEXT_NUM(populationScore));
+			ScoreBreakdown->AddMidRowText(NSLOCTEXT("ScoreBreakdown", "Happiness score:", "Happiness score:"), TEXT_NUM(happinessScore));
+			ScoreBreakdown->AddMidRowText(NSLOCTEXT("ScoreBreakdown", "Money score:", "Money score:"), TEXT_NUM(moneyScore));
+			ScoreBreakdown->AddMidRowText(NSLOCTEXT("ScoreBreakdown", "Technology score:", "Technology score:"), TEXT_NUM(technologyScore));
+			ScoreBreakdown->AddMidRowText(NSLOCTEXT("ScoreBreakdown", "Wonder score:", "Wonder score:"), TEXT_NUM(wonderScore));
+			ScoreBreakdown->AfterAdd();
+
+			OtherPlayerScores->ResetBeforeAdd();
+			for (int32 i = 0; i < GameConstants::MaxPlayersAndAI; i++) {
+				if (i != playerId() && simulation().HasTownhall(i)) 
+				{
+					OtherPlayerScores->AddMidRowText(
+						FText::Format(NSLOCTEXT("OtherPlayerScores", "{0}'s score:", "{0}'s score:"), simulation().playerNameT(i)),
+						TEXT_NUM(score)
+					);
+				}
+			}
+			OtherPlayerScores->AfterAdd();
 			
 			alreadyShownVictory = true;
 		}

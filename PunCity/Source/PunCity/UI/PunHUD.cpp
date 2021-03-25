@@ -135,6 +135,8 @@ APunHUD::APunHUD()
 	//LoadClass(UIEnum::ArmyChooseNodeButton, "ArmyChooseNodeButton");
 	LoadClass(UIEnum::DamageFloatup, "WorldSpaceUI/DamageFloatup");
 
+	LoadClass(UIEnum::PunMidRowText, "PunMidRowText");
+
 	// Slate Style
 	//TSharedPtr<FSlateStyleSet> style = MakeShareable(new FSlateStyleSet("PunStyle"));
 	_style = FSlateGameResources::New("PunStyle1", "/Game/UI/Styles", "/Game/UI/Styles");

@@ -23,7 +23,7 @@ public:
 	bool TryMoveResourcesToDeliveryTarget(int32 deliverySourceId, ResourceEnum resourceEnum, int32 amountAtLeast);
 	bool TryMoveResourcesToDeliveryTargetAll(int32 amountAtLeast);
 
-	bool TryMoveResourceAny(ResourceInfo info, int32 amountAtLeast)
+	bool TryMoveResourceAny_AllTypes(ResourceInfo info, int32 amountAtLeast)
 	{
 		if (TryMoveResourcesAny(info.resourceEnum, ResourceFindType::AvailableForPickup, ResourceFindType::Requester, amountAtLeast) || justReset()) return true;
 		
@@ -47,7 +47,7 @@ public:
 	bool TryHealup();
 	bool TryFillLuxuries();
 
-	FoundResourceHolderInfos FindNeedHelper(ResourceEnum resourceEnum, int32 wantAmount);
+	FoundResourceHolderInfos FindNeedHelper(ResourceEnum resourceEnum, int32 wantAmount, int32 maxDistance);
 
 	// TODO: might be removable..
 	//FoundResourceHolderInfos FindMarketResourceHolderInfo(ResourceEnum resourceEnum, int32 wantAmount, bool checkOnlyOneMarket, int32 maxFloodDist);

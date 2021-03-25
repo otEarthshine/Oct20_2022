@@ -274,9 +274,10 @@ public:
 		
 		if (!_receivedData[packetIndex]) 
 		{
-			if (packetIndex * MaxPacketSize + (data.Num() - 1) < _syncCompressedData.Num()) {
-				return false;
-			}
+			_LOG(PunNetwork, "ReceivePacket packetIndex:%d startIndex:%d data:%d _syncCompressedData:%d", packetIndex, packetIndex * MaxPacketSize, data.Num(), _syncCompressedData.Num());
+			//if (packetIndex * MaxPacketSize + (data.Num() - 1) < _syncCompressedData.Num()) {
+			//	return false;
+			//}
 			
 			for (int32 i = 0; i < data.Num(); i++) {
 				_syncCompressedData[packetIndex * MaxPacketSize + i] = data[i];

@@ -81,6 +81,10 @@ public:
 	void ToggleProvinceOverlay() {
 		_gameInterface->ToggleOverlayProvince();
 	}
+
+	void ToggleSinglePlayerChat() {
+		PunSettings::Toggle("SinglePlayerChat");
+	}
 	
 	void LeftMouseDown();
 	void LeftMouseUp();

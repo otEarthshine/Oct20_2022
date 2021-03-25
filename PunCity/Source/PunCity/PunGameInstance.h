@@ -811,7 +811,7 @@ public:
 	TArray<FString> lobbyChatMessages;
 
 	/*
-	 * Achievements
+	 * Steam Achievements
 	 */
 	void QueryAchievements();
 
@@ -820,7 +820,36 @@ public:
 	void UpdateAchievementProgress(const FString& Id, float Percent);
 
 	FOnlineAchievementsWritePtr AchievementsWriteObjectPtr;
-	
+
+	/*
+	 * Steam Stats
+	 */
+	bool UseSteamStatsInterface(IOnlineStatsPtr& SteamStatsPtr, TSharedPtr<const FUniqueNetId>& UserId)
+	{
+		IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
+		if (OnlineSub)
+		{
+			IOnlineIdentityPtr Identity = OnlineSub->GetIdentityInterface();
+			if (Identity.IsValid())
+			{
+				UserId = Identity->GetUniquePlayerId(0);
+				SteamStatsPtr = OnlineSub->GetStatsInterface();
+				if (SteamStatsPtr.IsValid()) 
+				{
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	void UpdateSteamStats(const FString& statName, int32 statValue);
+	void QuerySteamStats();
+	void GetSteamStats();
+	void ResetSteamStats();
+
+	FOnlineStatsUpdateStatsComplete UpdateStatsCompleteDelegate;
+	FOnlineStatsQueryUserStatsComplete QueryStatsCompleteDelgate;
 
 	/*
 	 * Others

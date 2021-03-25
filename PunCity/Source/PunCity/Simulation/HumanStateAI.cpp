@@ -46,6 +46,8 @@ void HumanStateAI::CalculateActions()
 
 	_justDidResetActions = false;
 
+	_tryWorkFailEnum = TryWorkFailEnum::None;
+	
 	// Something went wrong... Actions didn't use the reservation...
 	// TODO: Turn this on later?
 	//PUN_CHECK2(reservations.empty(), debugStr());
@@ -217,7 +219,7 @@ void HumanStateAI::CalculateActions()
 			SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_GatherNDrop_Emergency);
 			
 			AddDebugSpeech(">>>Emergency gather trees");
-			if (TryMoveResourceAny(GetResourceInfo(ResourceEnum::Wood), 10) || justReset()) {
+			if (TryMoveResourceAny_AllTypes(GetResourceInfo(ResourceEnum::Wood), 10) || justReset()) {
 				DEBUG_AI_VAR(EmergencyTree10_TryMoveResourceAny);
 				return;
 			}
@@ -227,7 +229,7 @@ void HumanStateAI::CalculateActions()
 				return;
 			}
 
-			if (TryMoveResourceAny(GetResourceInfo(ResourceEnum::Wood), 0) || justReset()) {
+			if (TryMoveResourceAny_AllTypes(GetResourceInfo(ResourceEnum::Wood), 0) || justReset()) {
 				DEBUG_AI_VAR(EmergencyTree0_TryMoveResourceAny);
 				return;
 			}
@@ -295,7 +297,7 @@ void HumanStateAI::CalculateActions()
 
 		// First pass to move larger amount...
 		for (ResourceInfo info : ResourceInfos) {
-			if (TryMoveResourceAny(info, haulCapacity()) || justReset()) {
+			if (TryMoveResourceAny_AllTypes(info, haulCapacity()) || justReset()) {
 				DEBUG_AI_VAR(TryMoveResourcesAny_All10);
 				return;
 			}
@@ -304,7 +306,7 @@ void HumanStateAI::CalculateActions()
 		// Second pass just move any little amount... only check once in a while...
 		if (GameRand::RandChance(3)) {
 			for (ResourceInfo info : ResourceInfos) {
-				if (TryMoveResourceAny(info, 0) || justReset()) {
+				if (TryMoveResourceAny_AllTypes(info, 0) || justReset()) {
 					DEBUG_AI_VAR(TryMoveResourcesAny_All0);
 					return;
 				}
@@ -539,19 +541,17 @@ bool HumanStateAI::TryMoveResourcesProviderToAnyDropoff(FoundResourceHolderInfo 
 
 bool HumanStateAI::TryMoveResourcesAny(ResourceEnum resourceEnum, ResourceFindType providerType, ResourceFindType dropoffType, int32_t amountAtLeast)
 {
+	Building* workplc = workplace();
+	int32 maxDistanceFetch = workplc ? GameConstants::MaxDistanceFetch_NonLaborer : GameConstants::MaxDistanceFetch_Laborer;
+	WorldTile2 maxDistanceTile = workplc ? workplc->centerTile() : WorldTile2::Invalid;
+	
 	int wantAmount = haulCapacity();
-	FoundResourceHolderInfos foundProviders = resourceSystem().FindHolder(providerType, resourceEnum, wantAmount, unitTile());
+	FoundResourceHolderInfos foundProviders = resourceSystem().FindHolder(providerType, resourceEnum, wantAmount, unitTile(), {}, 
+																			maxDistanceFetch, maxDistanceTile);
 	if (!foundProviders.hasInfos()) {
-		//if (resourceEnum == ResourceEnum::Wood) {
-		//	AddDebugSpeech("TryMoveAnyAny(Failed): " + ResourceName(resourceEnum) + " no provider: " + ResourceFindTypeName[(int)providerType]);
-		//}
 		return false;
 	}
 	if (foundProviders.amount() < amountAtLeast) {
-		//if (resourceEnum == ResourceEnum::Wood) {
-		//	AddDebugSpeech("TryMoveAnyAny(Failed): " + ResourceName(resourceEnum) + " providers giving too little. dropType:" + ResourceFindTypeName[(int)providerType] + 
-		//					" providerAmount:" + to_string(foundProviders.amount()) + " amountAtLeast:" + to_string(amountAtLeast) + " providerSize:" + to_string(foundProviders.foundInfos.size()));
-		//}
 		return false;
 	}
 
@@ -582,7 +582,8 @@ bool HumanStateAI::TryMoveResourcesAny(ResourceEnum resourceEnum, ResourceFindTy
 
 	// FindHolder using just first element in foundProviders
 	FoundResourceHolderInfos foundDropoffs = resourceSystem().FindHolder(dropoffType, resourceEnum, foundProviders.amount(),
-																 resourceSystem().GetTile(foundProviders.foundInfos[0].info), objectIds);
+																resourceSystem().GetTile(foundProviders.foundInfos[0].info), objectIds,
+																maxDistanceFetch, maxDistanceTile);
 	if (!foundDropoffs.hasInfos() || foundDropoffs.amount() < amountAtLeast) {
 		//AddDebugSpeech("TryMoveAnyAny(Failed): " + ResourceName(resourceEnum) + " dropoff invalid: " + ResourceFindTypeName[(int)dropoffType]);
 		return false;
@@ -618,10 +619,19 @@ bool HumanStateAI::TryMoveResourcesToDeliveryTargetAll(int32 amountAtLeast)
 	const std::vector<int32>& deliverySourceIds = townManager().allDeliverySources();
 	WorldTile2 uTile = unitTile();
 
+	Building* workplc = workplace();
+
 	std::vector<FoundResourceHolderInfo> closestDeliveryInfos;
 
 	for (int32 deliverySourceId : deliverySourceIds) {
 		Building& deliverySource = _simulation->building(deliverySourceId);
+
+		if (workplc) {
+			int32 dist = WorldTile2::ManDistance(deliverySource.centerTile(), workplc->centerTile());
+			if (dist > GameConstants::MaxDistanceFetch_NonLaborer) {
+				continue;
+			}
+		}
 
 		if (deliverySource.isConstructed())
 		{
@@ -817,41 +827,19 @@ bool HumanStateAI::TryClearLand(TileArea area)
 	return false;
 }
 
-FoundResourceHolderInfos HumanStateAI::FindNeedHelper(ResourceEnum resourceEnum, int32 wantAmount)
+FoundResourceHolderInfos HumanStateAI::FindNeedHelper(ResourceEnum resourceEnum, int32 wantAmount, int32 maxDistance)
 {
 	// Try market first
 	FoundResourceHolderInfos foundProviders;
+	WorldTile2 uTile = unitTile();
+	
+	// Compare market provider to storage provider
+	if (resourceEnum == ResourceEnum::Food) {
+		foundProviders = resourceSystem().FindFoodHolder(ResourceFindType::AvailableForPickup, wantAmount, uTile, maxDistance, uTile);
+	} else {
+		foundProviders = resourceSystem().FindHolder(ResourceFindType::AvailableForPickup, resourceEnum, wantAmount, uTile, {}, maxDistance, uTile);
+	}
 
-	//foundProviders = FindMarketResourceHolderInfo(resourceEnum, wantAmount, true, maxFloodDist);
-	//if (!foundProviders.hasInfos())
-	//{
-		// Compare market provider to storage provider
-		if (resourceEnum == ResourceEnum::Food) {
-			foundProviders = resourceSystem().FindFoodHolder(ResourceFindType::AvailableForPickup, wantAmount, unitTile());
-		} else {
-			foundProviders = resourceSystem().FindHolder(ResourceFindType::AvailableForPickup, resourceEnum, wantAmount, unitTile(), {});
-		}
-
-		//FoundResourceHolderInfos foundProvidersMarket = FindMarketResourceHolderInfo(resourceEnum, wantAmount, false, maxFloodDist);
-		//if (foundProvidersMarket.hasInfos())
-		//{
-		//	if (foundProviders.hasInfos()) {
-		//		FoundResourceHolderInfo bestProvider = foundProviders.best();
-		//		FoundResourceHolderInfo bestProviderMarket = foundProvidersMarket.best();
-		//		if (bestProviderMarket.amount > bestProvider.amount) {
-		//			return foundProvidersMarket;
-		//		}
-		//		if (bestProviderMarket.amount == bestProvider.amount) {
-		//			if (bestProviderMarket.distance < bestProvider.distance) {
-		//				return foundProvidersMarket;
-		//			}
-		//		}
-		//	}
-		//	else {
-		//		return foundProvidersMarket;
-		//	}
-		//}
-	//}
 	
 	return foundProviders;
 }
@@ -866,7 +854,18 @@ bool HumanStateAI::TryFindFood()
 
 		//PUN_LOG("TryFindFood ------- %s -- %s", *GetUnitNameT().ToString(), *unitTile().To_FString());
 
-		FoundResourceHolderInfos foundProviders = FindNeedHelper(ResourceEnum::Food, wantAmount);
+		// Not so hungry, might pass on food (to allow hungrier citizens to get them)
+		if (_food > foodThreshold_Get2() && (GameRand::Rand() % 5) != 0) {
+			return false;
+		}
+
+		// Fetch farther food only if hungry
+		const int32 maxDistanceFetch_Get = 20;
+		const int32 maxDistanceFetch_minWarnFood = 120;
+		int32 percentToMinWarnFood = 100 - Clamp0_100((_food - minWarnFood()) * 100 / (foodThreshold_Get() - minWarnFood()));
+		int32 maxDistanceFetch = maxDistanceFetch_Get + (maxDistanceFetch_minWarnFood - maxDistanceFetch_Get) * percentToMinWarnFood / 100;
+		
+		FoundResourceHolderInfos foundProviders = FindNeedHelper(ResourceEnum::Food, wantAmount, maxDistanceFetch);
 		
 		if (foundProviders.hasInfos()) {
 			// Just go to the best provider (the first one)
@@ -1033,7 +1032,7 @@ bool HumanStateAI::TryToolup()
 			//	foundProviders = FindMarketResourceHolderInfo(resourceEnum, wantAmount, false, maxFloodDist);
 			//}
 
-			FoundResourceHolderInfos foundProviders = FindNeedHelper(resourceEnum, wantAmount);
+			FoundResourceHolderInfos foundProviders = FindNeedHelper(resourceEnum, wantAmount, GameConstants::MaxDistanceFetch_MedTools);
 
 			if (resourceSys.resourceCount(resourceEnum) > 0) {
 				hasToolsInStorage = true;
@@ -1088,7 +1087,7 @@ bool HumanStateAI::TryHealup()
 		{
 			wantAmount = (resourceEnum == ResourceEnum::Herb) ? 2 : 1;
 
-			FoundResourceHolderInfos foundProviders = FindNeedHelper(resourceEnum, wantAmount);
+			FoundResourceHolderInfos foundProviders = FindNeedHelper(resourceEnum, wantAmount, GameConstants::MaxDistanceFetch_MedTools);
 
 			if (foundProviders.hasInfos()) {
 				// Just go to the best provider (the first one)
@@ -2248,6 +2247,12 @@ bool HumanStateAI::TryGather(bool treeOnly)
 
 	if (!tileAccessInfo.isValid()) {
 		AddDebugSpeech("(Failed)TryGather: no tree nearby");
+		return false;
+	}
+
+	const int32 maxDistanceToGather_NonLaborer = 50;
+	Building* workplc = workplace();
+	if (workplc && WorldTile2::ManDistance(workplc->centerTile(), tileAccessInfo.tile) > maxDistanceToGather_NonLaborer) {
 		return false;
 	}
 

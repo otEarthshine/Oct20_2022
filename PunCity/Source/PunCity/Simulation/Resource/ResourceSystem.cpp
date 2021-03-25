@@ -119,7 +119,7 @@ void ResourceTypeHolders::RefreshHolder(int32 holderId, ResourceSystem& resource
 	}
 }
 
-FoundResourceHolderInfos ResourceTypeHolders::FindHolder(ResourceFindType type, int32 amount, WorldTile2 origin, std::vector<int32> avoidIds) const
+FoundResourceHolderInfos ResourceTypeHolders::FindHolder(ResourceFindType type, int32 amount, WorldTile2 origin, std::vector<int32> avoidIds, int32 maxDistance, WorldTile2 maxDistanceCenter) const
 {
 	//! Case for having Requester in FindType::AvailableForPickup too when it is more than target...
 	// There is also a case where Requester's target is set to 0 and we distribute the items a way....
@@ -151,7 +151,7 @@ FoundResourceHolderInfos ResourceTypeHolders::FindHolder(ResourceFindType type, 
 	// if TryMove was trigger, but reservePop was canceled... the building will be overloaded..
 	//  but that is fine since FindType::AvailableForPickup will take excess resource away...
 
-	return FindHolderHelper(type, amount, origin, avoidIds);
+	return FindHolderHelper(type, amount, origin, avoidIds, maxDistance, maxDistanceCenter);
 }
 
 int32 ResourceTypeHolders::CanAddResourceGlobal(int32 amount, ResourceSystem& resourceSys) const

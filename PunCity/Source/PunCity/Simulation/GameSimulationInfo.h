@@ -262,6 +262,10 @@ static float Clamp(int32 value, int32 minValue, int32 maxValue) {
 	return std::max(minValue, std::min(maxValue, value));
 }
 
+static float Clamp0_100(int32 value) {
+	return std::max(0, std::min(100, value));
+}
+
 static void DecreaseToZero(int32& value, int32 decrement = 1)
 {
 	value = std::max(value - decrement, 0);
@@ -5933,6 +5937,8 @@ enum class CheatEnum : int32
 	TestCity,
 	DebugUI,
 	Tog,
+
+	ScoreVictory,
 };
 static const std::string CheatName[]
 {
@@ -6003,6 +6009,8 @@ static const std::string CheatName[]
 	"TestCity",
 	"DebugUI",
 	"Tog",
+
+	"ScoreVictory",
 };
 static std::string GetCheatName(CheatEnum cheatEnum) {
 	return CheatName[static_cast<int>(cheatEnum)];

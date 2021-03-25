@@ -143,6 +143,8 @@ enum class UIEnum
 	//ArmyChooseNodeButton,
 	DamageFloatup,
 
+	PunMidRowText,
+
 	Count,
 };
 

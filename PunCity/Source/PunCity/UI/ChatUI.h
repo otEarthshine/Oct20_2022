@@ -393,6 +393,29 @@ public:
 			gameInstance()->UpdateAchievementProgress(FString(achievementId.c_str()), percent);
 		}
 
+		if (commandAndParams.size() >= 3 && commandAndParams[0] == TEXT("TestUpdateSteamStats"))
+		{
+			PUN_DEBUG2("TestUpdateSteamStats");
+			std::wstring statName = commandAndParams[1];
+			int32 statValue = FCString::Atoi(commandAndParams[2].c_str());
+			gameInstance()->UpdateSteamStats(FString(statName.c_str()), statValue);
+		}
+		if (commandAndParams.size() >= 1 && commandAndParams[0] == TEXT("TestQuerySteamStats"))
+		{
+			PUN_DEBUG2("QuerySteamStats");
+			gameInstance()->QuerySteamStats();
+		}
+		if (commandAndParams.size() >= 1 && commandAndParams[0] == TEXT("TestGetSteamStats"))
+		{
+			PUN_DEBUG2("GetSteamStats");
+			gameInstance()->GetSteamStats();
+		}
+		if (commandAndParams.size() >= 1 && commandAndParams[0] == TEXT("TestResetSteamStats"))
+		{
+			PUN_DEBUG2("ResetSteamStats");
+			gameInstance()->ResetSteamStats();
+		}
+
 		//if (commandAndParams.size() >= 2 && commandAndParams[0] == "WorkToCost")
 		//{
 		//	WorkRevenueToCost_Base = std::stoi(commandAndParams[1]);

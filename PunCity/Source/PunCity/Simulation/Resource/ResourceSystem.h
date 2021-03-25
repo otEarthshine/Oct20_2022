@@ -320,7 +320,8 @@ public:
 		return resourceCountWithPush(holderId) < _holders[holderId].target();
 	}
 
-	FoundResourceHolderInfos FindHolder(ResourceFindType type, int32 amount, WorldTile2 origin, std::vector<int32> avoidIds) const;
+	FoundResourceHolderInfos FindHolder(ResourceFindType type, int32 amount, WorldTile2 origin, std::vector<int32> avoidIds, 
+										int32 maxDistance, WorldTile2 maxDistanceCenter) const;
 
 	/*
 	 * Change
@@ -475,12 +476,13 @@ private:
 		}
 	}
 
-	FoundResourceHolderInfos FindHolderHelper(ResourceFindType type, int32 wantAmount, WorldTile2 origin, std::vector<int32> avoidIds) const
+	FoundResourceHolderInfos FindHolderHelper(ResourceFindType type, int32 wantAmount, WorldTile2 origin, std::vector<int32> avoidIds, 
+												int32 maxDistance, WorldTile2 maxDistanceCenter) const
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_MoveResource_FindHolder);
 		
 		// Find by amount to get pickup candidates
-		FoundResourceHolderInfos filteredInfosWrap = FilterHolders(type, origin, wantAmount);
+		FoundResourceHolderInfos filteredInfosWrap = FilterHolders(type, origin, wantAmount, maxDistance, maxDistanceCenter);
 		std::vector<FoundResourceHolderInfo>& filteredInfos = filteredInfosWrap.foundInfos;
 
 		//if (type == ResourceFindType::AvailableForPickup && _resourceEnum == ResourceEnum::Orange) {
@@ -703,7 +705,7 @@ private:
 		return bestChain;
 	}
 
-	FoundResourceHolderInfos FilterHolders(ResourceFindType type, WorldTile2 origin, int32 wantAmount) const
+	FoundResourceHolderInfos FilterHolders(ResourceFindType type, WorldTile2 origin, int32 wantAmount, int32 maxDistance, WorldTile2 maxDistanceCenter) const
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_MoveResource_FindHolder_Filter);
 
@@ -711,8 +713,18 @@ private:
 		FoundResourceHolderInfos result;
 		std::vector<FoundResourceHolderInfo>& foundInfos = result.foundInfos;
 
+		if (!maxDistanceCenter.isValid()) {
+			maxDistanceCenter = origin;
+		}
+
 		auto tryAddToFoundInfos = [&](int32 availableAmount, const ResourceHolder& holder)
 		{
+			check(holder.tile.isValid());
+			if (holder.tile.isValid() &&
+				WorldTile2::ManDistance(holder.tile, maxDistanceCenter) > maxDistance) {
+				return;
+			}
+			
 			int32 amountAtLeast;
 			if (type == ResourceFindType::AvailableForDropoff) {
 				amountAtLeast = 1;
@@ -733,7 +745,7 @@ private:
 			//if (type == ResourceFindType::AvailableForPickup && _resourceEnum == ResourceEnum::Medicine) {
 			//	PUN_LOG(" > TryHealup tryAddToFoundInfos availableAmount:%d amountAtLeast:%d  tile:%s", availableAmount, amountAtLeast, *_simulation->GetTileBuildingDescription(holder.tile));
 			//}
-
+			
 			if (availableAmount >= amountAtLeast) // Don't get resource from node with less amount, unless necessary
 			{
 				//PUN_LOG("Holder:%d isDrop:%d isAvoidId:%d info:%s isConnected:%d amountAtLeast:%d", holderId, _holders[holderId].isDrop(), isAvoidId, 
@@ -1090,20 +1102,21 @@ public:
 
 
 	//! Find holder
-	FoundResourceHolderInfos FindHolder(ResourceFindType findType, ResourceEnum resourceEnum, int32 amount, WorldTile2 origin, std::vector<int> avoidIds = {}) const
+	FoundResourceHolderInfos FindHolder(ResourceFindType findType, ResourceEnum resourceEnum, int32 amount, WorldTile2 origin, std::vector<int> avoidIds = {}, 
+										int32 maxDistance = GameConstants::MaxDistanceFetch_Laborer, WorldTile2 maxDistanceCenter = WorldTile2::Invalid) const
 	{
 		// Counted in STAT_PunUnit_CalcHuman_MoveResource_FindHolder
-		return holderGroupConst(resourceEnum).FindHolder(findType, amount, origin, avoidIds);
+		return holderGroupConst(resourceEnum).FindHolder(findType, amount, origin, avoidIds, maxDistance, maxDistanceCenter);
 	}
 
-	FoundResourceHolderInfos FindFoodHolder(ResourceFindType findType, int32 amount, WorldTile2 origin)
+	FoundResourceHolderInfos FindFoodHolder(ResourceFindType findType, int32 amount, WorldTile2 origin, int32 maxDistance, WorldTile2 maxDistanceCenter)
 	{
 		// Eat less expensive food first...
 		auto getBestChain = [&](const std::vector<ResourceEnum>& foodEnumsCategory)
 		{
 			FoundResourceHolderInfos bestFoundInfos;
 			for (ResourceEnum resourceEnum : foodEnumsCategory) {
-				FoundResourceHolderInfos foundInfos = _enumToHolders[static_cast<int>(resourceEnum)].FindHolder(findType, amount, origin, {});
+				FoundResourceHolderInfos foundInfos = _enumToHolders[static_cast<int>(resourceEnum)].FindHolder(findType, amount, origin, {}, maxDistance, maxDistanceCenter);
 
 				if (!bestFoundInfos.hasInfos()) {
 					bestFoundInfos = foundInfos;

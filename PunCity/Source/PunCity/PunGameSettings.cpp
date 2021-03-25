@@ -78,7 +78,7 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "TickUnlocks", 1 },
 	{ "TickStats", 1 },
 
-	//! Debug
+	//! Debugawn
 	{ "DebugUI", 0 },
 	{ "SoundDebugUI", 0 },
 	{ "DebugTemp", 0 },

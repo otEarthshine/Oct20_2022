@@ -17,6 +17,7 @@
 #include "PunTutorialLink.h"
 #include "ManageStorageElement.h"
 #include "PunBudgetAdjuster.h"
+#include "PunMidRowText.h"
 
 
 #include "PunBoxWidget.generated.h"
@@ -406,6 +407,15 @@ public:
 		}
 		widget->TargetAmount_Update(showTarget);
 		
+		return widget;
+	}
+
+	UPunMidRowText* AddMidRowText(FText leftText, FText rightText)
+	{
+		auto widget = GetChildElement<UPunMidRowText>(UIEnum::PunMidRowText);
+		widget->LeftText->SetText(leftText);
+		widget->RightText->SetText(rightText);
+		CastChecked<UVerticalBoxSlot>(widget->Slot)->SetHorizontalAlignment(HAlign_Fill);
 		return widget;
 	}
 

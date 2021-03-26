@@ -232,6 +232,9 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 	// Integrity check
 	TileObjInfosIntegrityCheck();
 
+	check(static_cast<int32>(TryWorkFailEnum::Count) == TryWorkFailEnumName.Num());
+	
+
 	GameRand::SetRandUsageValid(false);
 }
 

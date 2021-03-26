@@ -19,9 +19,9 @@
 // VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 20 // 3 digit
+#define MINOR_VERSION 23 // 3 digit
 
-#define VERSION_DAY 22
+#define VERSION_DAY 26
 #define VERSION_MONTH 3
 #define VERSION_YEAR 21
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
@@ -1114,7 +1114,7 @@ static const int32 StoneGatherYield_Base = 4;
 static const int32 CutTreeTicksBase = Time::TicksPerSecond * 10;
 static const int32 HarvestDepositTicksBase = Time::TicksPerSecond * 14;
 
-// How fast people produce money when working compare to money spent on food
+// How fast people produce value when working compare to value spent on food
 // This is high because people don't spend all their time working.
 static const int32 WorkRevenueToCost_Base = 150;
 
@@ -4253,7 +4253,7 @@ static const int32 GrassToBushValue = 3;
 
 /*
  *
- * Note: Gather production tied into the HumanFoodCostPerYear through AssumedFoodProductionPerYear
+ * Note: Gather production tied into the HumanFoodCostPerYear through AssumedFoodProduction100PerYear
  */
 static const int32 GatherUnitsPerYear = 5; // 6;  // GatherBaseYield 4 gives 60 fruits per year... So 15 estimated gather per year...
 static const int32 GatherBaseYield100 = AssumedFoodProduction100PerYear / GatherUnitsPerYear;
@@ -5456,7 +5456,7 @@ struct UnitInfo
 
 /*
  *
- * Note: Hunting production tied into the HumanFoodCostPerYear through AssumedFoodProductionPerYear
+ * Note: Hunting production tied into the HumanFoodCostPerYear through AssumedFoodProduction100PerYear
  */
 static const int32 AssumedHuntUnitPerYear = 4; // 6; // at BaseUnitDrop 5... hunters produce 60 per year ... or 12 Hunt Unit...
 static const int32 BaseUnitDrop100 = AssumedFoodProduction100PerYear / AssumedHuntUnitPerYear;

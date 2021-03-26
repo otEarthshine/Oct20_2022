@@ -136,12 +136,90 @@ enum class TryWorkFailEnum : uint8
 {
 	None,
 
+	// Shared
+	WorkplaceInventoryFull,
+	RequireWorkplaceSetup,
+	WorkplaceInaccessible,
+	WaitingForAnotherWorkerToClearWorkplaceOutputInventory,
+	WorkplaceOutputTargetReached,
+	CannotAcquireWorkplaceInput,
+
+	// TryConstruct
+	WaitingForConstructionAreaToBeCleared,
+	TargetConstructionInaccessible,
+	CannotAccessResourcesInTargetConstruction,
+	WaitingForAnotherCitizenToFulfillConstructionResources,
+	CannotAcquireNeededConstructionResources,
+	ConstructionSiteNoLongerNeedHelp,
+
+	// TryGatherFruit
+	TargetTreeInaccessible,
+
+	// TryHunt
+	NoWildAnimalsNearby,
+
+	// TryRanch
+	NeedAnimalInRanch,
+	WaitingForAnimalsToGrow,
+
+	// TryFarm
+	FarmIsOutOfSeason,
+	WaitingForAnotherFarmerToFinishSeeding,
+	WaitingForAnotherFarmerToNourish,
+	WaitingForAnotherFarmerToHarvest,
+
+	// TryBulkHaul_Intercity
+	NeedRoadConnectionBetweenIntercityLogisticsHubAndTargetTownhall,
+
+	// TryBulkHaul_IntercityWater
+	CannotFindShippingRouteToTargetTown,
+
+	Count,
 };
 #define LOCTEXT_NAMESPACE "TryWorkFailEnum"
 const TArray<FText> TryWorkFailEnumName
 {
 	LOCTEXT("None", "None"),
+
+	// Shared
+	LOCTEXT("WorkplaceInventoryFull", "<Red>Workplace inventory full</>\n<Red>Build Hauling Services to help haul</>"),
+	LOCTEXT("RequireWorkplaceSetup", "<Red>Require workplace setup</>"),
+	LOCTEXT("WorkplaceInaccessible", "<Red>Workplace inaccessible</>"),
+	LOCTEXT("WaitingForAnotherWorkerToClearWorkplaceOutputInventory", "Waiting for another worker to clear workplace output inventory"),
+	LOCTEXT("WorkplaceOutputTargetReached", "Workplace output target reached"),
+	LOCTEXT("CannotAcquireWorkplaceInput", "<Red>Cannot acquire workplace input</>"),
+
+	// TryConstruct
+	LOCTEXT("WaitingForConstructionAreaToBeCleared", "Waiting for construction area to be cleared"),
+	LOCTEXT("TargetConstructionInaccessible", "<Red>Target construction inaccessible</>"),
+	LOCTEXT("CannotAccessResourcesInTargetConstruction", "<Red>Cannot access resources in target construction</>"),
+	LOCTEXT("WaitingForAnotherCitizenToFulfillConstructionResources", "Waiting for another citizen to fulfill construction resources"),
+	LOCTEXT("CannotAcquireNeededConstructionResources", "<Red>Cannot acquire needed construction resources</>"),
+	LOCTEXT("ConstructionSiteNoLongerNeedHelp", "Construction site no longer need help"),
+
+	// TryGatherFruit
+	LOCTEXT("TargetTreeInaccessible", "Target tree inaccessible"),
+
+	// TryHunt
+	LOCTEXT("NoWildAnimalsNearby", "<Red>No wild animals nearby</>"),
+
+	// TryRanch
+	LOCTEXT("NeedAnimalInRanch", "<Red>Need animal in Ranch</>"),
+	LOCTEXT("WaitingForAnimalsToGrow", "Waiting for animals to grow"),
+
+	// TryFarm
+	LOCTEXT("FarmIsOutOfSeason", "Farm is out of season"),
+	LOCTEXT("WaitingForAnotherFarmerToFinishSeeding", "Waiting for another farmer to finish seeding"),
+	LOCTEXT("WaitingForAnotherFarmerToNourish", "Waiting for another farmer to nourish"),
+	LOCTEXT("WaitingForAnotherFarmerToHarvest", "Waiting for another farmer to harvest"),
+
+	// TryBulkHaul_Intercity
+	LOCTEXT("NeedRoadConnectionBetweenIntercityLogisticsHubAndTargetTownhall", "Need Road Connection between Intercity Logistics Hub and target Townhall"),
+	LOCTEXT("CannotFindShippingRouteToTargetTown", "Cannot find shipping route to target town"),
 };
+static const FText& GetTryWorkFailEnumName(TryWorkFailEnum tryWorkFailEnum) {
+	return TryWorkFailEnumName[static_cast<int>(tryWorkFailEnum)];
+}
 #undef LOCTEXT_NAMESPACE
 
 
@@ -616,6 +694,8 @@ public:
 		AddDebugSpeech("SetWorkplaceId: last:" + std::to_string(_lastworkplaceId) + ", cur:" + std::to_string(workplaceId));
 		_lastworkplaceId = _workplaceId;
 		_workplaceId = workplaceId;
+
+		_tryWorkFailEnum = TryWorkFailEnum::None;
 	}
 
 	class Building* workplace() {
@@ -676,6 +756,8 @@ public:
 			}
 		}
 	}
+
+	TryWorkFailEnum tryWorkFailEnum() { return _tryWorkFailEnum; }
 	
 public:
 	//! Serialize
@@ -814,6 +896,11 @@ protected:
 			_lastDebugSpeeches.erase(_lastDebugSpeeches.begin());
 		}
 		_debugSpeech.str("");
+	}
+
+	
+	void WorkFailed(TryWorkFailEnum workFailEnum) {
+		_tryWorkFailEnum = workFailEnum;
 	}
 
 protected:

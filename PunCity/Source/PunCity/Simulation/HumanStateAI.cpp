@@ -1357,14 +1357,14 @@ bool HumanStateAI::TryGatherFruit()
 						resourceSystem().resourceCountWithPush(infoCoconut);
 	
 	if (resourceCount > GameConstants::WorkerEmptyBuildingInventoryAmount) {
-		AddDebugSpeech("(Failed)TryGatherBerry: resourceCount > " + to_string(GameConstants::WorkerEmptyBuildingInventoryAmount));
+		WorkFailed(TryWorkFailEnum::WorkplaceInventoryFull);
 		return false;
 	}
 
 	NonWalkableTileAccessInfo treeAccessInfo = treeSystem().FindNearestUnreservedFruitTree(workplace()->centerTile(), unitTile(), GathererHut::Radius, GameConstants::MaxFloodDistance_Human,
 																						IsIntelligentUnit(unitEnum()));
 	if (!treeAccessInfo.isValid()) {
-		AddDebugSpeech("(Failed)TryGatherBerry: treeAccessInfo invalid");
+		WorkFailed(TryWorkFailEnum::TargetTreeInaccessible);
 		return false;
 	}
 
@@ -1412,8 +1412,8 @@ bool HumanStateAI::TryHunt()
 		
 	int resourceCount = resourceSystem().resourceCountWithPush(info);
 	if (resourceCount > GameConstants::WorkerEmptyBuildingInventoryAmount) {
-		AddDebugSpeech("(Failed)TryHunt: resourceCount > " + to_string(GameConstants::WorkerEmptyBuildingInventoryAmount));
 		// TODO:, this worker should actually be the one taking inventory to storage...
+		WorkFailed(TryWorkFailEnum::WorkplaceInventoryFull);
 		return false;
 	}
 
@@ -1457,7 +1457,7 @@ bool HumanStateAI::TryHunt()
 	}
 
 	if (nearestUnit == -1) {
-		AddDebugSpeech("(Failed)TryHunt: no valid animal nearby");
+		WorkFailed(TryWorkFailEnum::NoWildAnimalsNearby);
 		return false;
 	}
 
@@ -1493,7 +1493,7 @@ bool HumanStateAI::TryRanch()
 	Ranch& ranch = workplace()->subclass<Ranch>();
 
 	if (ranch.animalOccupants().size() == 0) {
-		AddDebugSpeech("(Failed)TryRanch: no animal");
+		WorkFailed(TryWorkFailEnum::NeedAnimalInRanch);
 		return false;
 	}
 
@@ -1505,14 +1505,14 @@ bool HumanStateAI::TryRanch()
 	if (workModeName.IdenticalTo(RanchWorkMode_FullCapacity))
 	{
 		if (ranch.openAnimalSlots() > 1) { // Note > 1 (more balance)
-			AddDebugSpeech("(Failed)TryRanch: still growing animals");
+			WorkFailed(TryWorkFailEnum::WaitingForAnimalsToGrow);
 			return false;
 		}
 	}
 	else if (workModeName.IdenticalTo(RanchWorkMode_HalfCapacity))
 	{
 		if (ranch.openAnimalSlots() > ranch.maxAnimals / 2) {
-			AddDebugSpeech("(Failed)TryRanch: still growing animals");
+			WorkFailed(TryWorkFailEnum::WaitingForAnimalsToGrow);
 			return false;
 		}
 	}
@@ -1542,7 +1542,7 @@ bool HumanStateAI::TryRanch()
 	//auto& unitAI = _simulation->unitAI(targetFullId.id);;
 	PUN_LOG("TryRanch MoveTo:%s", *_unitData->atomLocation(targetFullId.id).worldTile2().To_FString());
 	
-	return false;
+	return true;
 }
 
 bool HumanStateAI::TryFarm()
@@ -1565,7 +1565,7 @@ bool HumanStateAI::TryFarm()
 	// seed until done ... then nourish until autumn, or until fruit (for fruit bearers)
 	if (farm.IsStage(FarmStage::Dormant))
 	{
-		AddDebugSpeech("(Failed)TryFarm: Dormant");
+		WorkFailed(TryWorkFailEnum::FarmIsOutOfSeason);
 		return false;
 	}
 	//// Force dormancy for winter if not yet dormant
@@ -1612,7 +1612,7 @@ bool HumanStateAI::TryFarm()
 				farm.ResetStageTo(FarmStage::Nourishing);
 			}
 			else {
-				AddDebugSpeech("(Failed)TryFarm: Waiting for another person to seed");
+				WorkFailed(TryWorkFailEnum::WaitingForAnotherFarmerToFinishSeeding);
 				return false;
 			}
 		}
@@ -1648,10 +1648,10 @@ bool HumanStateAI::TryFarm()
 				// Check if we can move on to next stage
 				if (farm.IsStageCompleted()) {
 					farm.ResetStageTo(FarmStage::Nourishing); // Reset back to nourishing... harvest happens in autumn
-					AddDebugSpeech("(Failed)TryFarm: Reset to more nourishing...");
+					WorkFailed(TryWorkFailEnum::WaitingForAnotherFarmerToNourish);
 					return false;
 				}
-				AddDebugSpeech("(Failed)TryFarm: Waiting for another person to nourish");
+				WorkFailed(TryWorkFailEnum::WaitingForAnotherFarmerToNourish);
 				return false;
 			}
 		}
@@ -1703,6 +1703,7 @@ bool HumanStateAI::TryFarm()
 		// Ensure there is no drop left
 		std::vector<DropInfo> drops = resourceSystem().GetDropsFromArea_Pickable(farm.area(), true);
 		if (drops.size() > 0) {
+			WorkFailed(TryWorkFailEnum::WaitingForAnotherFarmerToHarvest);
 			return false;
 		}
 		
@@ -1712,11 +1713,12 @@ bool HumanStateAI::TryFarm()
 
 			// Reset the jobs
 			townManager().RefreshJobDelayed();
-			
+
+			WorkFailed(TryWorkFailEnum::WaitingForAnotherFarmerToHarvest);
 			return false; // TODO: true here might have caused farm freeze?
 		}
 
-		AddDebugSpeech("(Failed)TryFarm: Waiting for others to complete the stage?");
+		WorkFailed(TryWorkFailEnum::WaitingForAnotherFarmerToHarvest);
 		return false;
 	}
 
@@ -1787,7 +1789,7 @@ bool HumanStateAI::TryClearFarmDrop(Farm& farm, int32 minDropCount)
 
 	// Try any other dropoff
 	if (!foundDropoffs.hasInfos()) {
-		foundDropoffs = resourceSystem().FindHolder(ResourceFindType::AvailableForDropoff, targetResourceEnum, amount, unitTile());
+		foundDropoffs = resourceSystem().FindHolder(ResourceFindType::AvailableForDropoff, targetResourceEnum, amount, farm.centerTile());
 	}
 
 	if (foundDropoffs.hasInfos())
@@ -1832,15 +1834,16 @@ bool HumanStateAI::TryBulkHaul_ShippingDepot()
 		
 		if (!deliveryTarget.subclass<StorageYard>().isFull())
 		{
-			std::vector<int32> storageIds = _simulation->GetBuildingsWithinRadius(shipper.centerTile(), ShippingDepot::Radius, _townId, CardEnum::StorageYard);
-			CppUtils::AppendVec(storageIds, _simulation->GetBuildingsWithinRadius(shipper.centerTile(), ShippingDepot::Radius, _townId, CardEnum::Warehouse));
+			std::vector<int32> storageIds = _simulation->GetBuildingsWithinRadiusMultiple(shipper.centerTile(), ShippingDepot::Radius, _townId, 
+				{ CardEnum::StorageYard, CardEnum::Warehouse, CardEnum::Granary });
 
 			for (ResourceEnum resourceEnum : shipper.resourceEnums) {
 				if (resourceEnum != ResourceEnum::None) {
 					for (int32 storageId : storageIds) {
 						if (TryMoveResourcesProviderToDropoff(storageId, deliveryTargetId, resourceEnum, bulkHaulCapacity(), UnitAnimationEnum::HorseLogistics)) {
-							// successful move, go to workplace to get cart first
+							// successful move, go to workplace to get cart first, and return to workplace with cart
 							Add_MoveTo(shipper.gateTile(), -1, UnitAnimationEnum::Walk);
+							AddActionFront(ActionEnum::MoveTo, shipper.gateTile().tileId(), -1, static_cast<int32>(UnitAnimationEnum::HorseLogistics));
 							return true;
 						}
 					}
@@ -1852,6 +1855,7 @@ bool HumanStateAI::TryBulkHaul_ShippingDepot()
 						if (TryMoveResourcesProviderToDropoff(storageId, deliveryTargetId, resourceEnum, 1, UnitAnimationEnum::HorseLogistics)) {
 							// successful move, go to workplace to get cart first
 							Add_MoveTo(shipper.gateTile(), -1, UnitAnimationEnum::Walk);
+							AddActionFront(ActionEnum::MoveTo, shipper.gateTile().tileId(), -1, static_cast<int32>(UnitAnimationEnum::HorseLogistics));
 							return true;
 						}
 					}
@@ -1859,6 +1863,8 @@ bool HumanStateAI::TryBulkHaul_ShippingDepot()
 			}
 		}
 	}
+
+	WorkFailed(TryWorkFailEnum::None);
 	return false;
 }
 
@@ -1867,9 +1873,11 @@ bool HumanStateAI::TryBulkHaul_Intercity()
 	IntercityLogisticsHub& hub = workplace()->subclass<IntercityLogisticsHub>(CardEnum::IntercityLogisticsHub);
 	
 	if (hub.targetTownId == -1) {
+		WorkFailed(TryWorkFailEnum::RequireWorkplaceSetup);
 		return false;
 	}
 	if (hub.needSetup()) {
+		WorkFailed(TryWorkFailEnum::RequireWorkplaceSetup);
 		return false;
 	}
 
@@ -1881,6 +1889,7 @@ bool HumanStateAI::TryBulkHaul_Intercity()
 	if (!succeed) {
 		// Try to go to townhall first
 		if (!_simulation->IsConnectedBuilding(hub.buildingId())) {
+			WorkFailed(TryWorkFailEnum::NeedRoadConnectionBetweenIntercityLogisticsHubAndTargetTownhall);
 			return false;
 		}
 
@@ -1888,6 +1897,7 @@ bool HumanStateAI::TryBulkHaul_Intercity()
 		startTile = _simulation->GetTownhallGate(hub.townId());
 		succeed = _simulation->pathAI()->FindPathRoadOnly(startTile.x, startTile.y, targetTile.x, targetTile.y, path);
 		if (!succeed) {
+			WorkFailed(TryWorkFailEnum::NeedRoadConnectionBetweenIntercityLogisticsHubAndTargetTownhall);
 			return false;
 		}
 	}
@@ -1907,14 +1917,17 @@ bool HumanStateAI::TryBulkHaul_IntercityWater()
 	IntercityLogisticsPort& startPort = workplace()->subclass<IntercityLogisticsPort>(CardEnum::IntercityLogisticsPort);
 
 	if (startPort.targetTownId == -1) {
+		WorkFailed(TryWorkFailEnum::RequireWorkplaceSetup);
 		return false;
 	}
 	if (startPort.needSetup()) {
+		WorkFailed(TryWorkFailEnum::RequireWorkplaceSetup);
 		return false;
 	}
 
 	int32 endPortId = -1;
 	if (!_simulation->FindBestPathWater(startPort.buildingId(), startPort.targetTownId, endPortId)) {
+		WorkFailed(TryWorkFailEnum::CannotFindShippingRouteToTargetTown);
 		return false;
 	}
 
@@ -2008,7 +2021,8 @@ bool HumanStateAI::TryBulkHaul_Market()
 			}
 		}
 	}
-	
+
+	WorkFailed(TryWorkFailEnum::None);
 	return false;
 }
 
@@ -2166,6 +2180,7 @@ bool HumanStateAI::TryHaulingServices()
 	}
 
 	if (foundProviderInfos.size() == 0) {
+		WorkFailed(TryWorkFailEnum::None);
 		return false;
 	}
 
@@ -2173,6 +2188,7 @@ bool HumanStateAI::TryHaulingServices()
 
 	FoundResourceHolderInfos foundDropoffs = resourceSys.FindHolder(ResourceFindType::AvailableForDropoff, resourceEnumToGet, totalAmount, curStartTile);
 	if (!foundDropoffs.hasInfos()) {
+		WorkFailed(TryWorkFailEnum::None);
 		return false;
 	}
 
@@ -2522,7 +2538,7 @@ bool HumanStateAI::TryProduce()
 	// Shield against Non connected workplace
 	// TODO: just kick the person out??
 	if (!IsMoveValid(workplace.gateTile())) {
-		AddDebugSpeech("(Failed)TryProduce: Workplace gate-move not valid");
+		WorkFailed(TryWorkFailEnum::WorkplaceInaccessible);
 		return false;
 	}
 
@@ -2558,7 +2574,8 @@ bool HumanStateAI::TryProduce()
 			}
 		}
 		
-		AddDebugSpeech("(Failed)TryProduce: !workplace.NeedWork, No resource to move (all popped?)");
+		//AddDebugSpeech("(Failed)TryProduce: !workplace.NeedWork, No resource to move (all popped?)");
+		WorkFailed(TryWorkFailEnum::WaitingForAnotherWorkerToClearWorkplaceOutputInventory);
 		return false;
 	}
 
@@ -2619,7 +2636,7 @@ bool HumanStateAI::TryProduce()
 					_simulation->townManager(_townId).RefreshJobDelayed();
 				}
 				
-				AddDebugSpeech("(Failed)TryProduce: Already Reached Target");
+				WorkFailed(TryWorkFailEnum::WorkplaceOutputTargetReached);
 				return false;
 			}
 		}
@@ -2860,7 +2877,7 @@ bool HumanStateAI::TryConstructHelper(int32 workplaceId)
 			AddDebugSpeech("(Success)TryConstruct: Clearing land.");
 			return true;
 		}
-		AddDebugSpeech("(Failed)TryConstruct: Failed to clear land.");
+		WorkFailed(TryWorkFailEnum::WaitingForConstructionAreaToBeCleared);
 		return false;
 	}
 	if (!_simulation->IsLandCleared_SmallOnly(_townId, workplace.frontArea())) {
@@ -2868,7 +2885,7 @@ bool HumanStateAI::TryConstructHelper(int32 workplaceId)
 			AddDebugSpeech("(Success)TryConstruct: Clearing land front.");
 			return true;
 		}
-		AddDebugSpeech("(Failed)TryConstruct: Failed to clear land front.");
+		WorkFailed(TryWorkFailEnum::WaitingForConstructionAreaToBeCleared);
 		return false;
 	}
 
@@ -2890,7 +2907,7 @@ bool HumanStateAI::TryConstructHelper(int32 workplaceId)
 
 	WorldTile2 workGateTile = workplace.gateTile();
 	if (!IsMoveValid(workGateTile)) {
-		AddDebugSpeech("(Failed)TryConstruct: workGateTile invalid");
+		WorkFailed(TryWorkFailEnum::TargetConstructionInaccessible);
 		return false;
 	}
 	
@@ -2901,6 +2918,7 @@ bool HumanStateAI::TryConstructHelper(int32 workplaceId)
 	{
 		// TODO: bug return..
 		if (!workplace.IsValidConstructionResourceHolders()) {
+			WorkFailed(TryWorkFailEnum::CannotAccessResourcesInTargetConstruction);
 			return false;
 		}
 
@@ -2940,18 +2958,19 @@ bool HumanStateAI::TryConstructHelper(int32 workplaceId)
 		}
 
 		if (hasNeededResourceWithPush) {
-			AddDebugSpeech("(Failed)TryConstruct: already have resource with push. waiting for last pushes");
+			WorkFailed(TryWorkFailEnum::WaitingForAnotherCitizenToFulfillConstructionResources);
 			return false;
 		}
 
 		//workplace.workplaceInputNeeded = true;
-		AddDebugSpeech("(Failed)TryConstruct: need resource but can't get");
+		WorkFailed(TryWorkFailEnum::CannotAcquireNeededConstructionResources);
 		return false;
 	}
 
 	// Need Construct
 	if (!workplace.NeedConstruct()) {
 		AddDebugSpeech("(Failed)TryConstruct: !workplace.NeedConstruct");
+		WorkFailed(TryWorkFailEnum::ConstructionSiteNoLongerNeedHelp);
 		return false;
 	}
 

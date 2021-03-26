@@ -2794,7 +2794,14 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				descriptionBox->AddSpacer();
 			}
 
-			ADDTEXT_(INVTEXT("{0}: {1}\n"), LOCTEXT("state", "state"), UnitStateName[static_cast<int>(unit.unitState())]);
+			if (unit.isEnum(UnitEnum::Human))
+			{
+				if (unit.tryWorkFailEnum() != TryWorkFailEnum::None) {
+					args.Add(GetTryWorkFailEnumName(unit.tryWorkFailEnum()));
+					descriptionBox->AddSpacer();
+				}
+			}
+			ADDTEXT_(INVTEXT("{0}: {1}\n"), LOCTEXT("Activity", "Activity"), UnitStateName[static_cast<int>(unit.unitState())]);
 
 			// Workplace (Human)
 			if (unit.isEnum(UnitEnum::Human))
@@ -2804,10 +2811,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					Building& workplace = simulation.building(unit.workplaceId());
 
 					if (workplace.isConstructed()) {
-						ADDTEXT_(INVTEXT("{0}: {1}"), LOCTEXT("workplace", "workplace"), workplace.buildingInfo().GetName());
+						ADDTEXT_(INVTEXT("{0}: {1}"), LOCTEXT("Workplace", "Workplace"), workplace.buildingInfo().GetName());
 					}
 					else {
-						ADDTEXT_LOCTEXT("workplace: Construction Site", "workplace: Construction Site");
+						ADDTEXT_LOCTEXT("Workplace: Construction Site", "Workplace: Construction Site");
 					}
 
 #if WITH_EDITOR 
@@ -2816,24 +2823,27 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					args.Add(INVTEXT("\n"));
 				}
 				else {
-					ADDTEXT_LOCTEXT("workplace: none \n", "workplace: none \n");
+					ADDTEXT_LOCTEXT("Workplace: none \n", "Workplace: none \n");
 				}
+
+				descriptionBox->AddSpacer();
 			}
 
+			// House (Human)
 			if (unit.houseId() != -1) {
 				FText houseName = simulation.building(unit.houseId()).buildingInfo().GetName();
-				ADDTEXT_(LOCTEXT("house: X", "house: {0}"), houseName);
+				ADDTEXT_(LOCTEXT("House: X", "House: {0}"), houseName);
 #if WITH_EDITOR 
 				ADDTEXT_(INVTEXT(" (id: {0})"), TEXT_NUM(unit.houseId()));
 #endif
 				args.Add(INVTEXT("\n"));
 			} else {
-				ADDTEXT_LOCTEXT("house: none \n", "house: none \n");
+				ADDTEXT_LOCTEXT("House: none \n", "House: none \n");
 			}
 
 #if WITH_EDITOR
 			if (IsAnimal(unit.unitEnum())) {
-				ADDTEXT_(INVTEXT("home province {0}"), TEXT_NUM(unit.homeProvinceId()));
+				ADDTEXT_(INVTEXT("Home province {0}"), TEXT_NUM(unit.homeProvinceId()));
 			}
 #endif
 

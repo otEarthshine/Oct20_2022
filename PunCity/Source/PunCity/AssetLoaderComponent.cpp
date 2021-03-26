@@ -550,7 +550,6 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadUnit(UnitEnum::Panda, "Panda/Panda_Game");
 
 	// Proper way to do skel collision
-	LoadUnit(UnitEnum::WildMan, "Human/Man/Man1");
 	LoadUnit(UnitEnum::Hippo, "Human/Man/Man1");
 	LoadUnit(UnitEnum::Penguin, "Human/Man/Man1");
 
@@ -593,7 +592,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 
 	// Wild Man
-	LoadUnitFull(UnitEnum::WildMan, "Human/WildMan/", "WildMan", animationFileNames, "Human/CitizenMale/CitizenMaleStatic");
+	LoadUnitFull(UnitEnum::WildMan, "Human/WildMan/", "WildMan", animationFileNames, "Human/WildMan/WildManStatic");
 
 	// Hippo
 	LoadUnitFull(UnitEnum::Hippo, "Hippo/", "HippoSmall", {

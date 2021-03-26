@@ -806,6 +806,13 @@ public:
 	int unitCount() final { return _unitSystem->unitCount(); }
 	bool unitAlive(UnitFullId fullId) final { return _unitSystem->alive(fullId); }
 
+	const UnitEnum& unitEnum(int32 id) final { return _unitSystem->unitEnum(id); }
+
+	const SubregionLists<int32>& unitSubregionLists() final {
+		return _unitSystem->unitSubregionLists();
+	}
+
+	// Building
 	Building& building(int32 id) final {
 		return _buildingSystem->building(id); 
 	}

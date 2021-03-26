@@ -1105,8 +1105,6 @@ static const int32 BaseHumanFoodCost100PerYear = 100 * HumanFoodPerYear * FoodCo
  * - Hunting/Gathering through AssumedFoodProductionPerYear
  * Note: Farm is affected by this
  */
-static const int32 FarmFoodMultiplier100 = 100;
-
 static const int32 WoodGatherYield_Base100 = 250;
 static const int32 FarmBaseYield100 = 150; // 250 (nov 19)
 static const int32 StoneGatherYield_Base = 4;
@@ -1116,7 +1114,8 @@ static const int32 HarvestDepositTicksBase = Time::TicksPerSecond * 14;
 
 // How fast people produce value when working compare to value spent on food
 // This is high because people don't spend all their time working.
-static const int32 WorkRevenueToCost_Base = 150;
+//!!! Change Base Production (Except FarmBaseYield100) !!!!
+static const int32 WorkRevenueToCost_Base = 128; // 150 -> 128 (Mar 26)
 
 // TODO: WorkRevenueToCost is not yet affected by resource modifiers...
 
@@ -5888,6 +5887,7 @@ enum class CheatEnum : int32
 
 	AddHuman,
 	AddAnimal,
+	AddWildMan,
 	KillUnit,
 	SpawnDrop,
 
@@ -5960,6 +5960,7 @@ static const std::string CheatName[]
 
 	"AddHuman",
 	"AddAnimal",
+	"AddWildMan",
 	"KillUnit",
 	"SpawnDrop",
 

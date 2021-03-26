@@ -207,21 +207,7 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 
 	WorldRegion2 region(regionId);
 
-	// Trailer's chopper/builder
-#if TRAILER_MODE
-	auto addTrailerUnit = [&](int32 unitId, UnitAnimationEnum animationEnum, int32 variationIndex, WorldTile2 tile, float yaw, FVector displayUnitShift)
-	{
-		if (tile.region() == region) {
-			FVector displayLocation = MapUtil::DisplayLocation(cameraAtom, tile.worldAtom2());
-			FTransform transform(FRotator(0, yaw, 0), displayLocation + displayUnitShift, FVector::OneVector);
-			AddSkelMesh(unitId, UnitEnum::Human, animationEnum, false, transform, variationIndex);
-		}
-	};
-	addTrailerUnit(99997, UnitAnimationEnum::ChopWood, static_cast<int32>(HumanVariationEnum::AdultMale), WorldTile2(705, 2614), -90, FVector(3, 0, 0));
-	addTrailerUnit(99998, UnitAnimationEnum::ChopWood, static_cast<int32>(HumanVariationEnum::AdultFemale), WorldTile2(704, 2613), 180, FVector(0, -1, 0));
-	addTrailerUnit(99999, UnitAnimationEnum::Build, static_cast<int32>(HumanVariationEnum::AdultMale), WorldTile2(709, 2624), -90, FVector(0, 0, 0));
 
-#endif
 	
 
 	float zoomDistance = _gameManager->zoomDistance();
@@ -246,12 +232,11 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 
 		if (IsUsingSkeletalMesh(unitEnum, unit.animationEnum()))
 		{
-#if !TRAILER_MODE
 			// Zoomed out human should use instancedStaticMesh
-			if (unitEnum == UnitEnum::Human && zoomDistance > WorldZoomTransition_HumanNoAnimate)
+			if ((unitEnum == UnitEnum::Human || unitEnum == UnitEnum::WildMan) && 
+				zoomDistance > WorldZoomTransition_HumanNoAnimate)
 			{}
 			else
-#endif
 			{
 				FTransform transform;
 				AddSkelMesh(unit, transform);

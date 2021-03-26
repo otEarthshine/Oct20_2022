@@ -409,9 +409,6 @@ void Farm::DoFarmWork(int32_t unitId, WorldTile2 tile, FarmStage farmStage)
 		{
 			int32 dropCount = GameRand::Rand100RoundTo1(resource.count * efficiency());
 
-			// Farm multiplier for controlling farm production
-			dropCount = GameRand::Rand100RoundTo1(dropCount * FarmFoodMultiplier100);
-
 			dropCount = max(1, dropCount);
 
 			resourceSystem().SpawnDrop(resource.resourceEnum, dropCount, tile, ResourceHolderType::DropManual);

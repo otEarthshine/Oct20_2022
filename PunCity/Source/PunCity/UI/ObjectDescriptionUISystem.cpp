@@ -386,8 +386,8 @@ void UObjectDescriptionUISystem::LeftMouseDown()
 							UnitDisplayState displayState = dataSource()->GetUnitTransformAndVariation(unit, transform);
 							transform.SetScale3D(FVector::OneVector);
 
-
-							if (unit.unitEnum() == UnitEnum::Human)
+							UnitEnum unitEnum = unit.unitEnum();
+							if (unitEnum == UnitEnum::Human)
 							{
 								if (IsHorseAnimation(unit.animationEnum()))
 								{
@@ -400,15 +400,24 @@ void UObjectDescriptionUISystem::LeftMouseDown()
 								else
 								{
 									// VariationIndex 0 for human.. Rough size is enough
-									if (TryMouseCollision(assetLoader()->unitAsset(unit.unitEnum(), 0).staticMesh, transform, shortestHit)) {
+									if (TryMouseCollision(assetLoader()->unitAsset(unitEnum, 0).staticMesh, transform, shortestHit)) {
 										// Human uses USkeletonAsset, should just mark in sim for UnitDisplayComponent to adjust customDepth
 										uiState.objectType = ObjectTypeEnum::Unit;
 										uiState.objectId = unitId;
 									}
 								}
 							}
-							else
+							else if (unitEnum == UnitEnum::WildMan) 
 							{
+								// VariationIndex 0 for human.. Rough size is enough
+								FUnitAsset unitAsset = assetLoader()->unitAsset(unitEnum, 0);
+								if (TryMouseCollision(unitAsset.staticMesh, transform, shortestHit)) {
+									// Human uses USkeletonAsset, should just mark in sim for UnitDisplayComponent to adjust customDepth
+									uiState.objectType = ObjectTypeEnum::Unit;
+									uiState.objectId = unitId;
+								}
+							}
+							else {
 								if (TryMouseCollision(assetLoader()->unitAsset(displayState.unitEnum, displayState.variationIndex).staticMesh, transform, shortestHit)) {
 									uiState.objectType = ObjectTypeEnum::Unit;
 									uiState.objectId = unitId;
@@ -2616,6 +2625,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 		else if (uiState.objectType == ObjectTypeEnum::Unit) 
 		{
 			UnitStateAI& unit = dataSource()->GetUnitStateAI(objectId);
+			UnitEnum unitEnum = unit.unitEnum();
 
 			// Make sure we don't forget to put in string
 			check((int)unit.unitState() < UnitStateName.Num());
@@ -2910,7 +2920,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			WorldAtom2 atom = dataSource()->unitDataSource().actualAtomLocation(objectId);
 			SpawnSelectionMesh(assetLoader->SelectionMaterialGreen, dataSource()->DisplayLocation(atom) + FVector(0, 0, 30));
 
-			if (unit.unitEnum() != UnitEnum::Human)
+			if (unitEnum != UnitEnum::Human &&
+				unitEnum != UnitEnum::WildMan)
 			{
 				FTransform transform;
 				UnitDisplayState displayState = dataSource()->GetUnitTransformAndVariation(unit, transform);
@@ -4045,7 +4056,7 @@ void UObjectDescriptionUISystem::AddTileInfo(WorldTile2 tile, UPunBoxWidget* des
 	ADDTEXT_(INVTEXT("--Region({0}, {1})\n"), region.x, region.y);
 	ADDTEXT_(INVTEXT("--LocalTile({0}, {1})\n"), tile.localTile(region).x, tile.localTile(region).y)
 #endif
-	ADDTEXT_(INVTEXT("<Header>({0}, {1})</>"), tile.x, tile.y);
+	ADDTEXT_(INVTEXT("<Header>{0}</>"), tile.ToText());
 	SetText(_objectDescriptionUI->DescriptionUITitle, args);
 	descriptionBox->AddSpacer(12);
 

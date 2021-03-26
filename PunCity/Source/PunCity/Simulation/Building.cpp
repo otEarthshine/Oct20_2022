@@ -197,21 +197,29 @@ void Building::FinishConstruction()
 		}
 	}
 
+	// Tribe
+	if (_buildingEnum == CardEnum::RegionTribalVillage)
+	{
+		int32 provinceId = _simulation->GetProvinceIdClean(centerTile());
+		if (_simulation->IsProvinceValid(provinceId)) {
+			for (int32 i = 0; i < 5; i++) {
+				WorldTile2 spawnTile = _simulation->GetProvinceRandomTile(provinceId, gateTile(), 1, false, 10);
+				if (spawnTile.isValid()) {
+					int32 ageTicks = GameRand::Rand() % GetUnitInfo(UnitEnum::WildMan).maxAgeTicks;
+					_simulation->AddUnit(UnitEnum::WildMan, GameInfo::PlayerIdNone, spawnTile.worldAtom2(), ageTicks);
+				}
+			}
+		}
+	}
 
+
+	
 	if (_townId == -1) {
 		return; // Animal Controlled
 	}
-
-	//// Remove Construction Resource Holders
-	//vector<int32> constructionCosts = GetConstructionResourceCost();
-	//for (int i = constructionCosts.size(); i-- > 0;) {
-	//	RemoveResourceHolder(ConstructionResources[i]);
-	//}
-
-	//// Kick out all the constructors
-	//ResetWorkReservers();
-	//_simulation->RemoveJobsFrom(buildingId(), false);
-	//_simulation->PlayerRemoveJobBuilding(_townId, *this, false);
+	/*
+	 * City Beyond This Point
+	 */
 
 	FinishConstructionResourceAndWorkerReset();
 

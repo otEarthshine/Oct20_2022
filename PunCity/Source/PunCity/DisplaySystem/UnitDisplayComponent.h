@@ -315,6 +315,9 @@ private:
 				playRate = playRate * workEfficiency100 / 100.0f;
 			}
 		}
+		if (unitEnum == UnitEnum::WildMan) {
+			playRate = 1.2f;
+		}
 		
 		
 		if (_unitSkelState[index].animationEnum != animationEnum ||

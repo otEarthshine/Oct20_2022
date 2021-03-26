@@ -243,7 +243,7 @@ struct WorldTile2
 
 	std::vector<WorldRegion2> nearby4Regions() const;
 
-	std::string ToString() { return "(" + std::to_string(x) + "," + std::to_string(y) + ")"; }
+	std::string ToString() { return "(" + std::to_string(x) + ", " + std::to_string(y) + ")"; }
 	FString To_FString() { return  FString(ToString().c_str()); }
 	FText ToText() { return FText::FromString(FString(ToString().c_str())); }
 

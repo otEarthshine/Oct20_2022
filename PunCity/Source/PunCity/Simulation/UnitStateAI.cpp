@@ -338,7 +338,8 @@ void UnitStateAI::Update()
 		}
 
 		// TODO: Domestic animal food/cold cheat...
-		if (IsDomesticatedAnimal(unitEnum()))
+		if (IsDomesticatedAnimal(unitEnum()) ||
+			unitEnum() == UnitEnum::WildMan)
 		{
 			// If there is a ranch, make sure it doesn't die.
 			if (_houseId != -1) {
@@ -355,6 +356,7 @@ void UnitStateAI::Update()
 				//UE_DEBUG_BREAK();
 			}
 		}
+
 
 		if (IsWildAnimal(unitEnum()))
 		{
@@ -455,6 +457,32 @@ void UnitStateAI::Update()
 
 				_nextPregnantTick = Time::Ticks() + parameters->TicksBetweenPregnancy() - GameRand::Rand() % parameters->TicksBetweenPregnancyRange();
 			}
+		}
+		else if (unitEnum() == UnitEnum::WildMan)
+		{
+			auto& unitSubregionLists = _simulation->unitSubregionLists();
+			const std::vector<WorldRegion2>& regionOverlaps = _simulation->provinceSystem().GetRegionOverlaps(_homeProvinceId);
+			int32 tribeCount = 0;
+			for (WorldRegion2 regionOverlap : regionOverlaps)
+			{
+				unitSubregionLists.ExecuteRegion(regionOverlap, [&](int32_t unitId)
+				{
+					if (_simulation->unitEnum(unitId) == UnitEnum::WildMan)
+					{
+						WorldTile2 curTile = _simulation->unitAtom(unitId).worldTile2();
+						if (_simulation->GetProvinceIdClean(curTile) == _homeProvinceId)
+						{
+							tribeCount++;
+						}
+					}
+				});
+			}
+
+			if (tribeCount < 5) {
+				_simulation->AddUnit(unitEnum(), -1, _unitData->atomLocation(_id), 0);
+			}
+
+			_nextPregnantTick = Time::Ticks() + Time::TicksPerSeason;
 		}
 		else
 		{
@@ -794,17 +822,22 @@ void UnitStateAI::CalculateActions()
 	AddDebugSpeech("CalculateActions (Animals)");
 
 	// Special case:
+	//  Includes WildMan
 	if (IsWildAnimalWithColony(unitEnum()))
 	{
 		SetActivity(UnitState::Idle);
-		
-		int32 waitTicks = 60 * (GameRand::Rand() % 3 + 4);
+		int32 waitTicks = Time::TicksPerSecond * (GameRand::Rand() % 5 + 5);
 		Add_Wait(waitTicks);
-		//Add_MoveRandomlyPerlin();
+		Add_MoveRandomlyAnimal(); // This will bring the animal to home province...
+
 		AddDebugSpeech("(Success)Idle MoveRandomly");
 		return;
 	}
 	
+
+	/*
+	 * Typical Units
+	 */
 
 	if (TryCheckBadTile()) return;
 

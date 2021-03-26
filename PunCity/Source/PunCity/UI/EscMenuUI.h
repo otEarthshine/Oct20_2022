@@ -282,6 +282,8 @@ public:
 
 			TotalScore->SetText(TEXT_NUM(score));
 			ScoreBreakdown->ResetBeforeAdd();
+
+			ScoreBreakdown->AddMidRowText(NSLOCTEXT("ScoreBreakdown", "Difficulty:", "Difficulty:"), DifficultyLevelNames[static_cast<int>(simulation().mapSettings().difficultyLevel)]);
 			ScoreBreakdown->AddMidRowText(NSLOCTEXT("ScoreBreakdown", "Population score:", "Population score:"), TEXT_NUM(populationScore));
 			ScoreBreakdown->AddMidRowText(NSLOCTEXT("ScoreBreakdown", "Happiness score:", "Happiness score:"), TEXT_NUM(happinessScore));
 			ScoreBreakdown->AddMidRowText(NSLOCTEXT("ScoreBreakdown", "Money score:", "Money score:"), TEXT_NUM(moneyScore));

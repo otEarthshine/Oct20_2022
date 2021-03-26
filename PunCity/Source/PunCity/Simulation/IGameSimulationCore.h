@@ -140,7 +140,11 @@ public:
 	virtual int unitCount() = 0;
 	virtual bool unitAlive(UnitFullId fullId) = 0;
 
+	virtual const UnitEnum& unitEnum(int32 id) = 0;
+
 	virtual void AddImmigrants(int32 townId, int32 count, WorldTile2 tile = WorldTile2::Invalid) = 0;
+
+	virtual const SubregionLists<int32>& unitSubregionLists() = 0;
 
 	// Building
 	virtual class TownHall& GetTownhallCapital(int32 playerId) = 0;

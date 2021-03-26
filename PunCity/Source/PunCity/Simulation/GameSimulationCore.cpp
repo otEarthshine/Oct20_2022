@@ -4646,7 +4646,22 @@ void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 townId)
 					if (IsRegionalBuilding(bld.buildingEnum()) && 
 						GetProvinceIdClean(bld.centerTile()) == provinceId)
 					{
-						if (bld.isEnum(CardEnum::RegionTribalVillage)) {
+						if (bld.isEnum(CardEnum::RegionTribalVillage)) 
+						{
+							// Clear Wildmen
+							for (WorldRegion2 curRegionOverlap : regionOverlaps) {
+								unitSubregionLists().ExecuteRegion(curRegionOverlap, [&](int32_t unitId)
+								{
+									if (unitEnum(unitId) == UnitEnum::WildMan)
+									{
+										WorldTile2 curTile = unitAtom(unitId).worldTile2();
+										if (GetProvinceIdClean(curTile) == provinceId) {
+											unitAI(unitId).Die();
+										}
+									}
+								});
+							}
+							
 							ImmigrationEvent(townId, 5,
 								FText::Format(LOCTEXT("TribalImmigrantAsk_Pop", "{0} wish to join your city."), GenerateTribeName(bld.buildingId())),
 								PopupReceiverEnum::TribalJoinEvent
@@ -4925,6 +4940,14 @@ void GameSimulationCore::Cheat(FCheat command)
 			WorldTile2 tile(command.var1, command.var2);
 			if (pathAI()->isWalkable(tile.x, tile.y)) {
 				AddUnit(UnitEnum::RedDeer, 0, tile.worldAtom2(), Time::TicksPerYear);
+			}
+			break;
+		}
+		case CheatEnum::AddWildMan:
+		{
+			WorldTile2 tile(command.var1, command.var2);
+			if (pathAI()->isWalkable(tile.x, tile.y)) {
+				AddUnit(UnitEnum::WildMan, 0, tile.worldAtom2(), Time::TicksPerYear);
 			}
 			break;
 		}

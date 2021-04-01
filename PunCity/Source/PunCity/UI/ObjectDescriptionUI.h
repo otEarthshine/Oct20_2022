@@ -165,7 +165,7 @@ private:
 			NameEditTextBox->SetText(simulation().townNameT(playerId()));
 			NameEditTextBox->SetVisibility(ESlateVisibility::Visible);
 			DescriptionUITitle->SetVisibility(ESlateVisibility::Collapsed);
-			NameEditButtonText->SetText(FText::FromString("Done"));
+			NameEditButtonText->SetText(NSLOCTEXT("ObjectDescriptionUI", "Done", "Done"));
 		}
 		else {
 			EditName(NameEditTextBox->GetText());
@@ -186,7 +186,7 @@ private:
 
 		NameEditTextBox->SetVisibility(ESlateVisibility::Collapsed);
 		DescriptionUITitle->SetVisibility(ESlateVisibility::Visible);
-		NameEditButtonText->SetText(FText::FromString("Edit"));
+		NameEditButtonText->SetText(NSLOCTEXT("ObjDescUI", "Edit", "Edit"));
 	}
 
 	UFUNCTION() void OnClickBuildingSwapArrowLeftButton() {

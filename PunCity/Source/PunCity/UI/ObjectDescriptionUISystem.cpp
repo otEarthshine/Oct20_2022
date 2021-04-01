@@ -2808,6 +2808,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			{
 				if (unit.tryWorkFailEnum() != TryWorkFailEnum::None) {
 					args.Add(GetTryWorkFailEnumName(unit.tryWorkFailEnum()));
+					args.Add(INVTEXT("\n"));
 					descriptionBox->AddSpacer();
 				}
 			}

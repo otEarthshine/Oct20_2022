@@ -284,11 +284,19 @@ public:
 			ScoreBreakdown->ResetBeforeAdd();
 
 			ScoreBreakdown->AddMidRowText(NSLOCTEXT("ScoreBreakdown", "Difficulty:", "Difficulty:"), DifficultyLevelNames[static_cast<int>(simulation().mapSettings().difficultyLevel)]);
-			ScoreBreakdown->AddMidRowText(NSLOCTEXT("ScoreBreakdown", "Population score:", "Population score:"), TEXT_NUM(populationScore));
-			ScoreBreakdown->AddMidRowText(NSLOCTEXT("ScoreBreakdown", "Happiness score:", "Happiness score:"), TEXT_NUM(happinessScore));
-			ScoreBreakdown->AddMidRowText(NSLOCTEXT("ScoreBreakdown", "Money score:", "Money score:"), TEXT_NUM(moneyScore));
-			ScoreBreakdown->AddMidRowText(NSLOCTEXT("ScoreBreakdown", "Technology score:", "Technology score:"), TEXT_NUM(technologyScore));
-			ScoreBreakdown->AddMidRowText(NSLOCTEXT("ScoreBreakdown", "Wonder score:", "Wonder score:"), TEXT_NUM(wonderScore));
+
+			auto populationScoreWidget = ScoreBreakdown->AddMidRowText(NSLOCTEXT("ScoreBreakdown", "Population score:", "Population score:"), TEXT_NUM(populationScore));
+			auto happinessScoreWidget = ScoreBreakdown->AddMidRowText(NSLOCTEXT("ScoreBreakdown", "Happiness score:", "Happiness score:"), TEXT_NUM(happinessScore));
+			auto moneyScoreWidget = ScoreBreakdown->AddMidRowText(NSLOCTEXT("ScoreBreakdown", "Money score:", "Money score:"), TEXT_NUM(moneyScore));
+			auto technologyScoreWidget = ScoreBreakdown->AddMidRowText(NSLOCTEXT("ScoreBreakdown", "Technology score:", "Technology score:"), TEXT_NUM(technologyScore));
+			auto wonderScoreWidget = ScoreBreakdown->AddMidRowText(NSLOCTEXT("ScoreBreakdown", "Wonder score:", "Wonder score:"), TEXT_NUM(wonderScore));
+
+			AddToolTip(populationScoreWidget, NSLOCTEXT("ScoreBreakdown", "Population score tip", "Population Score = Population X 1"));
+			AddToolTip(happinessScoreWidget, NSLOCTEXT("ScoreBreakdown", "Happiness score tip", "Happiness Score = Average Happiness X 3"));
+			AddToolTip(moneyScoreWidget, NSLOCTEXT("ScoreBreakdown", "Money score tip", "Money Score = Money / 10000"));
+			AddToolTip(technologyScoreWidget, NSLOCTEXT("ScoreBreakdown", "Technology score tip", "Technology Score = Technology X 10"));
+			AddToolTip(wonderScoreWidget, NSLOCTEXT("ScoreBreakdown", "Wonders score tip", "Wonders Score = Wonders x 100"));
+			
 			ScoreBreakdown->AfterAdd();
 
 			OtherPlayerScores->ResetBeforeAdd();
@@ -297,7 +305,7 @@ public:
 				{
 					OtherPlayerScores->AddMidRowText(
 						FText::Format(NSLOCTEXT("OtherPlayerScores", "{0}'s score:", "{0}'s score:"), simulation().playerNameT(i)),
-						TEXT_NUM(score)
+						TEXT_NUM(simulation().totalScore(i))
 					);
 				}
 			}

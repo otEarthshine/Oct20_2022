@@ -913,9 +913,14 @@ void UPunGameInstance::HandleNetworkFailure(UWorld * World, UNetDriver * NetDriv
 	PUN_DEBUG2("!!! NetworkFailure %s, %s", ENetworkFailure::ToString(FailureType), *ErrorString);
 	LOG_ERROR(LogNetworkInput, "!!! NetworkFailure %s, %s", ToString(FailureType), *ErrorString);
 
+	FText translatedErrorString = FText::FromString(ErrorString);
+	if (FailureType == ENetworkFailure::Type::ConnectionLost) {
+		translatedErrorString = LOCTEXT("ConnectionLost_ErrorString", "Your connection to the host has been lost.");
+	}
+
 	//mainMenuPopup = FText::FormatNamed(ErrorString + " (" + FString(ENetworkFailure::ToString(FailureType)) + ")");
 	mainMenuPopup = FText::Format(LOCTEXT("NetworkFailure", "{ErrorString} ({FailureType})"),
-		FText::FromString(ErrorString),
+		translatedErrorString,
 		FText::FromString(ENetworkFailure::ToString(FailureType)));
 }
 void UPunGameInstance::HandleTravelFailure(UWorld* World, ETravelFailure::Type FailureType, const FString& ErrorString)

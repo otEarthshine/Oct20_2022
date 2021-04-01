@@ -35,7 +35,7 @@ public:
 	void FinishConstruction() final;
 	std::vector<BonusPair> GetBonuses() override;
 
-	static const int Radius = 40;
+	static const int Radius = 48;
 };
 
 
@@ -807,6 +807,74 @@ public:
 		return Building::baseInputPerBatch() * (IsUpgraded(1) ? 70 : 100) / 100;
 	}
 };
+
+class SandMine final : public Building
+{
+public:
+};
+
+class Glasswork final : public Building
+{
+public:
+};
+class ConcreteFactory final : public Building
+{
+public:
+};
+
+class CoalPowerPlant final : public Building
+{
+public:
+};
+
+class Steelworks final : public Building
+{
+public:
+};
+
+class StoneToolsShop final : public Building
+{
+public:
+};
+
+class OilWell final : public Building
+{
+public:
+};
+
+class OilPowerPlant final : public Building
+{
+public:
+};
+
+class PaperMill final : public Building
+{
+public:
+};
+
+class ClockMakers final : public Building
+{
+public:
+};
+
+
+class Cathedral final : public Building
+{
+public:
+};
+class Castle final : public Building
+{
+public:
+};
+class GrandMuseum final : public Building
+{
+public:
+};
+class ExhibitionHall final : public Building
+{
+public:
+};
+
 
 /*
  * Others

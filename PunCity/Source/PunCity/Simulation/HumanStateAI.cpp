@@ -1428,6 +1428,11 @@ bool HumanStateAI::TryHunt()
 
 	auto isHuntableAnimal = [&](int32 unitId) {
 		UnitEnum unitEnum = _unitData->unitEnum(unitId);
+
+		// Hunt wild man only if there is cannibalism
+		if (unitEnum == UnitEnum::WildMan) {
+			return _simulation->TownhallCardCountTown(_townId, CardEnum::Cannibalism) > 0;
+		}
 		return IsWildAnimal(unitEnum) || (IsDomesticatedAnimal(unitEnum) && _simulation->unitAI(unitId).houseId() == -1); // Wild animals or domesticated animals without home
 	};
 

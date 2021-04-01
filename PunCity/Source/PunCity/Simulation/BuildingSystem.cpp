@@ -217,8 +217,26 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		CASE_BUILDING(CardEnum::Granary, Granary);
 		CASE_BUILDING(CardEnum::Archives, Archives);
 		CASE_BUILDING(CardEnum::HaulingServices, HaulingServices);
-		
 
+		// Apr 1
+		CASE_BUILDING(CardEnum::SandMine, SandMine);
+		CASE_BUILDING(CardEnum::Glassworks, Glasswork);
+		CASE_BUILDING(CardEnum::ConcreteFactory, ConcreteFactory);
+		CASE_BUILDING(CardEnum::CoalPowerPlant, CoalPowerPlant);
+		CASE_BUILDING(CardEnum::Steelworks, Steelworks);
+		CASE_BUILDING(CardEnum::StoneToolsShop, StoneToolsShop);
+		CASE_BUILDING(CardEnum::OilWell, OilWell);
+		CASE_BUILDING(CardEnum::OilPowerPlant, OilPowerPlant);
+		CASE_BUILDING(CardEnum::PaperMill, PaperMill);
+		CASE_BUILDING(CardEnum::ClockMakers, ClockMakers);
+
+		CASE_BUILDING(CardEnum::Cathedral, Cathedral);
+		CASE_BUILDING(CardEnum::Castle, Castle);
+		CASE_BUILDING(CardEnum::GrandMuseum, GrandMuseum);
+		CASE_BUILDING(CardEnum::ExhibitionHall, ExhibitionHall);
+
+
+		// Others
 		CASE_BUILDING(CardEnum::BoarBurrow, BoarBurrow);
 
 		case CardEnum::DirtRoad:

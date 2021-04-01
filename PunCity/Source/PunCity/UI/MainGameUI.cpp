@@ -945,11 +945,7 @@ void UMainGameUI::Tick()
 			{
 				TArray<FText> args;
 
-				AddToolTip(StorageSpaceBox, FText::Format(LOCTEXT("StorageSpaceBox_Tip",
-					"Storage space:\n"
-					"Used slots: {0}\n"
-					"Total slots: {1}"
-					),
+				AddToolTip(StorageSpaceBox, FText::Format(LOCTEXT("StorageSpaceBox_Tip", "Storage space:\nUsed slots: {0}\nTotal slots: {1}"),
 					TEXT_NUM(usedSlots),
 					TEXT_NUM(totalSlots)
 				));

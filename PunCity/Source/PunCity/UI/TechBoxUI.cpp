@@ -127,42 +127,58 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 		OuterImage->GetDynamicMaterial()->SetScalarParameterValue("ResearchFraction", 0);
 	}
 
-	// Required Resource
-	if (tech && tech->requiredResourceEnum != ResourceEnum::None)
+	/*
+	 * Set Tech Requirement Text
+	 */
+	auto setTechRequirementText = [&](int32 currentCount, int32 requiredCount, const FText& requiredName)
 	{
-		int32 productionCount =  unlockSys->GetResourceProductionCount(tech->requiredResourceEnum);
-
-		if (productionCount < tech->requiredResourceCount)
+		if (currentCount >= requiredCount)
 		{
-			//std::stringstream ss;
-			//ss << "Required:\n" << productionCount << "/" << tech->requiredResourceCount << " " << ResourceName(tech->requiredResourceEnum);
 			SetText(TechRequirement, FText::Format(
-				LOCTEXT("TechBoxRequired", "Required:\n{0}/{1} {2}"),
-				TEXT_NUM(productionCount),
-				TEXT_NUM(tech->requiredResourceCount),
-				ResourceNameT(tech->requiredResourceEnum)
+				LOCTEXT("TechBoxRequirementsCompleted", "Completed:\n{0} {1}"),
+				TEXT_NUM(requiredCount),
+				requiredName
 			));
 		}
 		else {
-			//std::stringstream ss;
-			//ss << "Completed:\n" << tech->requiredResourceCount << " " << ResourceName(tech->requiredResourceEnum);
 			SetText(TechRequirement, FText::Format(
-				LOCTEXT("TechBoxRequirementsCompleted", "Completed:\n{0} {1}"),
-				TEXT_NUM(tech->requiredResourceCount),
-				ResourceNameT(tech->requiredResourceEnum)
+				LOCTEXT("TechBoxRequired", "Required:\n{0}/{1} {2}"),
+				TEXT_NUM(currentCount),
+				TEXT_NUM(requiredCount),
+				requiredName
 			));
 		}
-
+		
 		//SetResourceImage(TechRequirementIcon, tech->requiredResourceEnum, assetLoader());
 		//TechRequirementIcon->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		TechRequirementIcon->SetVisibility(ESlateVisibility::Collapsed);
 		TechRequirement->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	};
+
+	TechRequirement->SetVisibility(ESlateVisibility::Collapsed);
+	TechRequirementIcon->SetVisibility(ESlateVisibility::Collapsed);
+	if (tech)
+	{
+		// Required Resource
+		if (tech->requiredResourceEnum != ResourceEnum::None)
+		{
+			int32 productionCount = unlockSys->GetResourceProductionCount(tech->requiredResourceEnum);
+			setTechRequirementText(
+				productionCount,
+				tech->requiredResourceCount,
+				ResourceNameT(tech->requiredResourceEnum)
+			);
+		}
+		// Required Techs
+		else if (UnlockSystem::IsAgeChangeTech(tech->techEnum))
+		{
+			setTechRequirementText(
+				unlockSys->GetAgeChangeResearchCount(tech->techEnum),
+				UnlockSystem::GetAgeChangeRequiredTechCount(tech->techEnum),
+				FText::Format(LOCTEXT("X-Age Techs", "{0} Techs"), UnlockSystem::GetPreviousAgeText(tech->techEnum))
+			);
+		}
 	}
-	else {
-		TechRequirement->SetVisibility(ESlateVisibility::Collapsed);
-		TechRequirementIcon->SetVisibility(ESlateVisibility::Collapsed);
-	}
-	
 }
 
 
@@ -187,7 +203,6 @@ void UTechBoxUI::UpdateTooltip()
 
 		const FText costText = LOCTEXT("Cost", "Cost");
 		const FText requirementText = LOCTEXT("Requirement", "Requirement");
-		const FText produceText = LOCTEXT("Produce", "Produce");
 
 		TArray<FText> args;
 		ADDTEXT_(INVTEXT("{0}: {1}<img id=\"Science\"/>"), costText, TEXT_NUM(tech->scienceNeeded(unlockSys->techsFinished)));
@@ -195,18 +210,35 @@ void UTechBoxUI::UpdateTooltip()
 		tooltipBox->AddSpacer();
 		//tooltipBox->AddLineSpacer(12);
 
-		// Requirement
-		if (tech->requiredResourceEnum != ResourceEnum::None)
+		auto setRequirementTooltipText = [&](const FText& frontText, int32 currentCount, int32 requiredCount, const FText& requiredText)
 		{
-			int32 productionCount = unlockSys->GetResourceProductionCount(tech->requiredResourceEnum);
-			if (productionCount < tech->requiredResourceCount) {
-				ADDTEXT_(INVTEXT("{0}:\n - {1} {2}/{3} {4}"), requirementText, produceText, TEXT_NUM(productionCount), TEXT_NUM(tech->requiredResourceCount), ResourceNameT(tech->requiredResourceEnum));
+			if (currentCount < requiredCount) {
+				ADDTEXT_(INVTEXT("{0}:\n - {1} {2}/{3} {4}"), requirementText, frontText, TEXT_NUM(currentCount), TEXT_NUM(requiredCount), requiredText);
 			}
 			else {
-				ADDTEXT_(INVTEXT("{0}:\n - {1} {2} {3} ({4})"), requirementText, produceText, TEXT_NUM(tech->requiredResourceCount), ResourceNameT(tech->requiredResourceEnum), LOCTEXT("Completed", "Completed"));
+				ADDTEXT_(INVTEXT("{0}:\n - {1} {2} {3} ({4})"), requirementText, frontText, TEXT_NUM(requiredCount), requiredText, LOCTEXT("Completed", "Completed"));
 			}
 			tooltipBox->AddRichText(args);
 			tooltipBox->AddSpacer(12);
+		};
+
+		// Resource Requirement
+		if (tech->requiredResourceEnum != ResourceEnum::None)
+		{
+			setRequirementTooltipText(LOCTEXT("Produce", "Produce"), 
+				unlockSys->GetResourceProductionCount(tech->requiredResourceEnum),
+				tech->requiredResourceCount, 
+				ResourceNameT(tech->requiredResourceEnum)
+			);
+		}
+		// Tech Requirement
+		else if (unlockSys->IsAgeChangeTech(tech->techEnum))
+		{
+			setRequirementTooltipText(LOCTEXT("Research", "Research"),
+				unlockSys->GetAgeChangeResearchCount(tech->techEnum),
+				UnlockSystem::GetAgeChangeRequiredTechCount(tech->techEnum),
+				FText::Format(LOCTEXT("X-Age Technologies", "{0} Technologies"), UnlockSystem::GetPreviousAgeText(tech->techEnum))
+			);
 		}
 
 

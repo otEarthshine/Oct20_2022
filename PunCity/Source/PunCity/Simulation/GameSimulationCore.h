@@ -2194,7 +2194,10 @@ public:
 		const auto& townIds = _playerOwnedManagers[playerId].townIds();
 		for (int32 townId : townIds) {
 			totalPopulation += _townManagers[townId]->population();
-			totalHappiness += _townManagers[townId]->aveOverallHappiness();
+			totalHappiness += totalPopulation * _townManagers[townId]->aveOverallHappiness();
+		}
+		if (totalPopulation == 0) {
+			return 0;
 		}
 		return totalHappiness / totalPopulation;
 	}

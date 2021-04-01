@@ -3727,11 +3727,9 @@ void GameSimulationCore::BuyCards(FBuyCard command)
 			if (!playerOwned(command.playerId).alreadyBoughtFirstCard &&
 				HasQuest(command.playerId, QuestEnum::FoodBuildingQuest))
 			{
-				AddPopup(command.playerId, LOCTEXT("FirstBuyCard_Pop",
-					"Great job! You have bought your first card.<space>"
-					"Card selections automatically refresh every round.<space>"
-					"The round timer is shown next to the card stack.\n(2 rounds per season)"
-				));
+				AddPopup(command.playerId, 
+					LOCTEXT("FirstBuyCard_Pop", "Great job! You have bought your first card.<space>Card selections automatically refresh every round.<space>The round timer is shown next to the card stack.\n(2 rounds per season)")
+				);
 			}
 		}
 	}

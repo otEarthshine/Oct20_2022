@@ -11,7 +11,7 @@ using namespace std;
 void UTechUI::SetupTechBoxUIs()
 {
 	UnlockSystem* unlockSys = simulation().unlockSystem(playerId());
-	const std::vector<std::vector<TechEnum>>& eraToTechEnums = unlockSys->eraToTechEnums();
+	const std::vector<std::vector<TechEnum>>& eraToTechEnums = unlockSys->columnToTechEnums();
 
 	TechScrollBox->ClearChildren();
 
@@ -59,6 +59,7 @@ void UTechUI::SetupTechBoxUIs()
 			
 			UTechBoxUI* techBox = AddWidget<UTechBoxUI>(UIEnum::TechBox);
 			techEraUI->TechList->AddChild(techBox);
+			techBox->SetPadding(FMargin(0, 0, 0, 12));
 			
 			techEnumToTechBox.Add(static_cast<int32>(tech->techEnum), techBox);
 			PUN_CHECK(techBox->techEnum == TechEnum::None);
@@ -165,7 +166,7 @@ void UTechUI::TickUI()
 		for (const auto& pair : techEnumToTechBox) {
 			UTechBoxUI* techBox = pair.Value;
 			auto tech = unlockSys->GetTechInfo(techBox->techEnum);
-			bool isLocked = tech->era > currentEra;
+			bool isLocked = tech->column > currentEra;
 			
 			pair.Value->SetTechState(tech->state, isLocked, false, tech);
 		}

@@ -57,7 +57,13 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 	{TechEnum::IronRefining, { LOCTEXT("Ironworks", "Ironworks") }},
 	{TechEnum::GoldRefining, { LOCTEXT("Goldworks", "Goldworks") }},
 
-	{TechEnum::ImprovedLogistics, { LOCTEXT("Improved Logistics", "Improved Logistics") }},
+
+	
+	{TechEnum::Logistics4, { LOCTEXT("Logistics IV", "Logistics IV") }},
+	{ TechEnum::Logistics5, {
+		LOCTEXT("Logistics V", "Logistics V"),
+		LOCTEXT("Logistics V Desc", "Allows Citizens to carry +10 more goods."),
+	} },
 
 	{TechEnum::JewelryCrafting, { LOCTEXT("Jewelry Crafting", "Jewelry Crafting") }},
 	{TechEnum::Baking, { LOCTEXT("Baking", "Baking") }},
@@ -112,8 +118,8 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 	}},
 
 	{ TechEnum::Colony, {
-		LOCTEXT("New Colony", "New Colony"),
-		LOCTEXT("New Colony Desc", "Unlock the ability to build new Cities."),
+		LOCTEXT("Colonization", "Colonization"),
+		LOCTEXT("Colonization Desc", "Unlock the ability to build new Cities."),
 	}},
 	{ TechEnum::IntercityLogistics, {
 		LOCTEXT("Intercity Logistics", "Intercity Logistics"),
@@ -200,6 +206,11 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 		LOCTEXT("Quick Build", "Quick Build"),
 		LOCTEXT("Quick Build Desc", "Allows speeding up construction with money.")
 	} },
+
+	{ TechEnum::CityManagementI, {
+		LOCTEXT("City Management I", "City Management I"),
+		LOCTEXT("City Management I Desc", "......."),
+	} },
 	
 	//{TechEnum::ClaimLandByFood, {
 	//	"Expeditionary supply",
@@ -228,10 +239,6 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 		LOCTEXT("Industrial Adjacency Desc", "Industrial buildings get +5% efficiency for each nearby industry of the same type. (max at 15%)"),
 	}},
 
-	{ TechEnum::HaulingCapacity, {
-		LOCTEXT("HaulingCapacity", "Hauling Capacity"),
-		LOCTEXT("HaulingCapacity Desc", "Allows Citizens to carry +10 more goods."),
-	} },
 	{ TechEnum::BudgetAdjustment, {
 		LOCTEXT("BudgetAdjustment", "Budget Adjustment"),
 		LOCTEXT("BudgetAdjustment Desc", "Unlocks the ability to adjust Workplace's Budget Level.\n\nIncreasing the Budget Level lead to higher Effectiveness and Job Happiness, but also increases the Building Upkeep."),
@@ -317,7 +324,7 @@ public:
 	virtual ~ResearchInfo() {}
 
 	void Init(int32 eraIn, TechEnum researchEnumIn) {
-		era = eraIn;
+		column = eraIn;
 		techEnum = researchEnumIn;
 	}
 
@@ -374,7 +381,7 @@ public:
 	virtual TechClassEnum classEnum() { return TechClassEnum::ResearchInfo; }
 	virtual void Serialize(FArchive& Ar, IGameSimulationCore* simulation)
 	{
-		Ar << era;
+		Ar << column;
 		Ar << techEnum;
 		Ar << state;
 
@@ -388,7 +395,7 @@ public:
 	}
 	
 public:
-	int32 era = 0;
+	int32 column = 0;
 	TechEnum techEnum = TechEnum::None;
 	TechStateEnum state = TechStateEnum::Locked;
 
@@ -500,13 +507,13 @@ public:
 	/*
 	 * Tech UI
 	 */
-	void AddTech(int32 era, std::shared_ptr<ResearchInfo> tech) {
+	void AddTech(int32 columnIndex, std::shared_ptr<ResearchInfo> tech) {
 		PUN_CHECK(_enumToTech.find(tech->techEnum) == _enumToTech.end());
-		if (era >= _eraToTechs.size()) {
-			_eraToTechs.push_back({});
+		if (columnIndex >= _columnToTechs.size()) {
+			_columnToTechs.push_back({});
 		}
 
-		_eraToTechs[era].push_back(tech->techEnum);
+		_columnToTechs[columnIndex].push_back(tech->techEnum);
 		_enumToTech[tech->techEnum] = std::static_pointer_cast<ResearchInfo>(tech);
 	}
 
@@ -631,7 +638,7 @@ public:
 			/*
 			 * Tech UI
 			 */
-			_eraToTechs.push_back({}); // Era 0 as blank
+			_columnToTechs.push_back({}); // Era 0 as blank
 			_enumToTech[TechEnum::None] = std::static_pointer_cast<ResearchInfo>(std::make_shared<ResearchNone>());
 
 
@@ -650,103 +657,116 @@ public:
 			//Can add bonus
 			// Market
 			// Steal
-			// 
-			
 			//
-			int32 era = 1;
-			AddTech_Bonus(era, TechEnum::ImprovedWoodCutting);
-			AddTech_Building(era, TechEnum::TradingPost, { CardEnum::TradingPost, CardEnum::TradingPort });
-			AddTech_Bonus(era, TechEnum::Plantation);
-			AddTech_Bonus(era, TechEnum::MushroomSubstrateSterilization);
-			//AddTech_Bonus(era, TechEnum::BorealLandCost);
-			AddTech_Building(era, TechEnum::SpyGuard, { CardEnum::KidnapGuard, CardEnum::TreasuryGuard });
 
-			AddTech_Building(era, TechEnum::HerbFarming, { CardEnum::HerbSeed });
-			AddTech_Building(era, TechEnum::PotatoFarming, { CardEnum::PotatoSeed });
+			int32 column = -1; 
+			AddTech_Bonus(column, TechEnum::Plantation);
+			AddTech_Building(column, TechEnum::SpyGuard, { CardEnum::KidnapGuard, CardEnum::TreasuryGuard });
+			AddTech_Bonus(column, TechEnum::Sawmill);
 			
-			//
-			era = 2;
-			//AddTech_Building(era, TechEnum::DeepMining, { CardEnum::GemstoneMine });
-			//AddTech_Bonus(era, TechEnum::RerollCardsPlus1); // TODO: bring back
-			//AddTech_Bonus(era, TechEnum::CheapReroll); // TODO: bring back
-			AddTech_Building(era, TechEnum::Granary, CardEnum::Granary);
-			AddTech_Bonus(era, TechEnum::QuickBuild);
-			AddTech_Building(era, TechEnum::IronRefining, { CardEnum::IronMine, CardEnum::IronSmelter });
-			AddTech_Building(era, TechEnum::Blacksmith, CardEnum::Blacksmith);
-			AddTech_Bonus(era, TechEnum::Sawmill);
-			
-			AddTech_Bonus(era, TechEnum::BudgetAdjustment);
-			AddTech_Building(era, TechEnum::VodkaDistillery, { CardEnum::VodkaDistillery }, ResourceEnum::Potato, 1000);
-			
-			//
-			era = 3;
-			AddTech_BuildingPermanent(era, TechEnum::Warehouse, { CardEnum::Warehouse });
-			AddTech_BuildingPermanent(era, TechEnum::IntercityRoad, { CardEnum::IntercityRoad, CardEnum::IntercityBridge });
-			AddTech_Building(era, TechEnum::TradingCompany, CardEnum::TradingCompany);
-			AddTech_Building(era, TechEnum::Market, { CardEnum::Market });
-			AddTech_Building(era, TechEnum::Medicine, CardEnum::MedicineMaker);
-			
-			AddTech_Building(era, TechEnum::RanchSheep, { CardEnum::RanchSheep });
-			AddTech_Building(era, TechEnum::BlueberryFarming, { CardEnum::BlueberrySeed });
-			
-			//
-			era = 4;
-			AddTech_BuildingPermanent(era, TechEnum::Colony, { CardEnum::Colony, CardEnum::PortColony });
-			AddTech_Building(era, TechEnum::HaulingServices, CardEnum::HaulingServices);
-			AddTech_Building(era, TechEnum::Archives, CardEnum::Archives);
-			AddTech_Bonus(era, TechEnum::DesertTrade);
-			AddTech_Building(era, TechEnum::Espionage, { CardEnum::Steal });
-			
-			AddTech_Bonus(era, TechEnum::QuarryImprovement); // Quarry Improvement as a precursor to tunnel??
-			AddTech_BuildingPermanent(era, TechEnum::Tunnel, {CardEnum::Tunnel});
-			
-			//AddPermanentBuildingResearch(3, TechEnum::Fence, { BuildingEnum::Fence, BuildingEnum::FenceGate });
+			AddTech_Bonus(column, TechEnum::DesertTrade);
+			AddTech_Building(column, TechEnum::Espionage, { CardEnum::Steal });
+
+			AddTech_Bonus(column, TechEnum::QuarryImprovement); // Quarry Improvement as a precursor to tunnel??
+			AddTech_Building(column, TechEnum::IntercityLogistics, { CardEnum::IntercityLogisticsHub, CardEnum::IntercityLogisticsPort });
+			AddTech_Bonus(column, TechEnum::HouseAdjacency);
+
+			AddTech_Bonus(column, TechEnum::ImprovedWoodCutting2);
+			AddTech_Bonus(column, TechEnum::ShallowWaterEmbark);
+			AddTech_Building(column, TechEnum::BarrackKnight, CardEnum::BarrackSwordman);
+
+			AddTech_Building(column, TechEnum::RanchCow, { CardEnum::RanchCow });
+			AddTech_Bonus(column, TechEnum::WorkSchedule);
+			AddTech_Bonus(column, TechEnum::TaxAdjustment);
+			AddTech_Building(column, TechEnum::Garden, CardEnum::Garden);
+			AddTech_Bonus(column, TechEnum::WineryImprovement);
+
+			AddTech_Bonus(column, TechEnum::TraderDiscount);
+			AddTech_Building(column, TechEnum::MelonFarming, { CardEnum::MelonSeed }, ResourceEnum::Pumpkin, 3000);
 
 			
-			//
-			era = 5;
 			
-			//AddTech_Bonus(era, TechEnum::MoreGoldPerHouse);
-			AddTech_Building(era, TechEnum::IntercityLogistics, { CardEnum::IntercityLogisticsHub, CardEnum::IntercityLogisticsPort });
-			AddTech_Building(era, TechEnum::ImprovedLogistics, { CardEnum::ShippingDepot });
-			AddTech_Bonus(era, TechEnum::HouseAdjacency);
-			AddTech_Building(era, TechEnum::Irrigation, { CardEnum::IrrigationReservoir });
-			AddTech_Building(era, TechEnum::CoffeeRoaster, { CardEnum::CoffeeRoaster });
+			//
+			column = 1;
+			AddTech_Building(column, TechEnum::TradingPost, { CardEnum::TradingPost, CardEnum::TradingPort });
+			AddTech_Building(column, TechEnum::HerbFarming, { CardEnum::HerbSeed });
+			
+			
+			//
+			column = 2;
+			AddTech_Building(column, TechEnum::StoneToolsShop, CardEnum::StoneToolsShop);
+			AddTech_Building(column, TechEnum::Pottery, { CardEnum::Potter, CardEnum::ClayPit });
+			AddTech_Building(column, TechEnum::FurnitureWorkshop, CardEnum::FurnitureWorkshop);
+			AddTech_Building(column, TechEnum::BeerBrewery, CardEnum::BeerBrewery);
 
-			AddTech_Bonus(era, TechEnum::ImprovedWoodCutting2);
-			AddTech_Bonus(era, TechEnum::ShallowWaterEmbark);
+			AddTech_Building(column, TechEnum::RanchSheep, { CardEnum::RanchSheep });
+			AddTech_Bonus(column, TechEnum::MushroomSubstrateSterilization);
+			
+			//
+			column = 3;
+			AddTech_Bonus(column, TechEnum::MiddleAge);
+			AddTech_Building(column, TechEnum::IronRefining, { CardEnum::IronMine, CardEnum::IronSmelter });
+			AddTech_Building(column, TechEnum::BrickMaking, { CardEnum::Brickworks });
+			AddTech_Building(column, TechEnum::Library, CardEnum::Library);
+			AddTech_Building(column, TechEnum::HaulingServices, CardEnum::HaulingServices);
+			AddTech_Building(column, TechEnum::Granary, CardEnum::Granary);
+			AddTech_Building(column, TechEnum::PotatoFarming, { CardEnum::PotatoSeed });
+			
+			//
+			column = 4;
+			AddTech_Building(column, TechEnum::Tailor, CardEnum::Tailor);
+			AddTech_Building(column, TechEnum::Blacksmith, CardEnum::Blacksmith);
+			AddTech_Building(column, TechEnum::PaperMaker, CardEnum::PaperMaker);
+			AddTech_Building(column, TechEnum::Archives, CardEnum::Archives);
+			AddTech_Building(column, TechEnum::Market, { CardEnum::Market });
+			AddTech_Building(column, TechEnum::Beekeeper, CardEnum::Beekeeper);
+			AddTech_Building(column, TechEnum::Baking, { CardEnum::Windmill, CardEnum::Bakery });
+			AddTech_Building(column, TechEnum::VodkaDistillery, { CardEnum::VodkaDistillery }, ResourceEnum::Potato, 1000);
+			AddTech_Building(column, TechEnum::BlueberryFarming, { CardEnum::BlueberrySeed });
+			
+			//
+			column = 5;
+			AddTech_Bonus(column, TechEnum::QuickBuild);
+			AddTech_Building(column, TechEnum::Medicine, CardEnum::MedicineMaker);
+			AddTech_Building(column, TechEnum::CardMaker, CardEnum::CardMaker);
+			AddTech_BuildingPermanent(column, TechEnum::Warehouse, { CardEnum::Warehouse });
+			AddTech_Building(column, TechEnum::CandleMaker, CardEnum::CandleMaker);
+			AddTech_Building(column, TechEnum::Winery, CardEnum::Winery);
+			AddTech_Building(column, TechEnum::Irrigation, { CardEnum::IrrigationReservoir });
+			
+			//
+			column = 6;
+			AddTech_Building(column, TechEnum::Glassworks, CardEnum::Glassworks);
+			AddTech_Building(column, TechEnum::CoffeeRoaster, { CardEnum::CoffeeRoaster });
+			AddTech_Building(column, TechEnum::School, CardEnum::School);
+			AddTech_Building(column, TechEnum::TradingCompany, CardEnum::TradingCompany);
+			AddTech_Building(column, TechEnum::Logistics4, { CardEnum::ShippingDepot });
+			AddTech_Building(column, TechEnum::PumpkinFarming, { CardEnum::PumpkinSeed }, ResourceEnum::Blueberries, 1000);
 			
 			
 			//
-			era = 6;
-			AddTech_Bonus(era, TechEnum::HaulingCapacity);
-			AddTech_Building(era, TechEnum::BarrackKnight, CardEnum::BarrackSwordman);
-			AddTech_Building(era, TechEnum::Bank, { CardEnum::Bank });
-			AddTech_Building(era, TechEnum::ShroomFarm, { CardEnum::ShroomFarm }, ResourceEnum::Mushroom, 3000);
+			column = 7;
+			AddTech_Building(column, TechEnum::ConcreteFactory, CardEnum::Glassworks);
+			AddTech_Bonus(column, TechEnum::BudgetAdjustment);
+			AddTech_Bonus(column, TechEnum::Logistics5);
+			AddTech_BuildingPermanent(column, TechEnum::IntercityRoad, { CardEnum::IntercityRoad, CardEnum::IntercityBridge });
+			AddTech_Building(column, TechEnum::Theatre, CardEnum::Theatre);
+			AddTech_Building(column, TechEnum::ShroomFarm, { CardEnum::ShroomFarm }, ResourceEnum::Mushroom, 3000);
 			
-			AddTech_Building(era, TechEnum::RanchCow, { CardEnum::RanchCow });
-			AddTech_Building(era, TechEnum::PumpkinFarming, { CardEnum::PumpkinSeed }, ResourceEnum::Blueberries, 1000);
-			
+				
 			//
-			era = 7;
-			AddTech_Bonus(era, TechEnum::WorkSchedule);
-			AddTech_Building(era, TechEnum::Theatre, CardEnum::Theatre);
-			AddTech_Bonus(era, TechEnum::TaxAdjustment);
-			AddTech_Building(era, TechEnum::Garden, CardEnum::Garden);
-			AddTech_Bonus(era, TechEnum::WineryImprovement);
+			column = 8;
+			AddTech_BuildingPermanent(column, TechEnum::Tunnel, { CardEnum::Tunnel });
+			AddTech_Building(column, TechEnum::Mint, CardEnum::Mint);
+			AddTech_Building(column, TechEnum::Bank, { CardEnum::Bank });
+			AddTech_Bonus(column, TechEnum::ImprovedWoodCutting);
+			AddTech_BuildingPermanent(column, TechEnum::Colony, { CardEnum::Colony, CardEnum::PortColony });
+			AddTech_Building(column, TechEnum::Chocolatier, CardEnum::Chocolatier);
 			
-			AddTech_Bonus(era, TechEnum::TraderDiscount);
-			AddTech_Building(era, TechEnum::MelonFarming, { CardEnum::MelonSeed }, ResourceEnum::Pumpkin, 3000);
-			//AddTech_Bonus(era, TechEnum::DeepWaterEmbark);
-			//AddTech_Building(era, TechEnum::ShrineRot, { CardEnum::ShrineGreedPiece });
-			
+
 			//
-			era = 8;
-			AddTech_Bonus(era, TechEnum::ScienceLastEra);
-			AddTech_Bonus(era, TechEnum::MoneyLastEra);
-			AddTech_Bonus(era, TechEnum::FarmLastEra);
-			AddTech_Bonus(era, TechEnum::IndustryLastEra);
-			AddTech_Bonus(era, TechEnum::MilitaryLastEra);
+			column = 9;
+			
 
 			townhallUpgradeUnlocked = false;
 			unlockedStatisticsBureau = false;
@@ -761,65 +781,46 @@ public:
 			 *  500 pop is 100 houses
 			 *  unlockCount is suppose to skewed so that lower level
 			 */
-			era = 1;
-			AddProsperityTech_Building(era, 8, TechEnum::FurnitureWorkshop, CardEnum::FurnitureWorkshop);
-			AddProsperityTech_BuildingX(era, 1, TechEnum::Pottery, { CardEnum::Potter, CardEnum::ClayPit });
-			AddProsperityTech_Building(era, 1, TechEnum::BeerBrewery, CardEnum::BeerBrewery);
-			AddProsperityTech_Bonus(era, 2, TechEnum::InfluencePoints);
-			AddProsperityTech_Building(era, 2, TechEnum::BarrackArcher, CardEnum::BarrackArcher);
-			AddProsperityTech_Bonus(era, 2, TechEnum::Conquer);
-			AddProsperityTech_Bonus(era, 2, TechEnum::Vassalize);
+			column = 1;
+			AddProsperityTech_Bonus(column, 2, TechEnum::InfluencePoints);
+			AddProsperityTech_Building(column, 2, TechEnum::BarrackArcher, CardEnum::BarrackArcher);
+			AddProsperityTech_Bonus(column, 2, TechEnum::Conquer);
+			AddProsperityTech_Bonus(column, 2, TechEnum::Vassalize);
 			
 
-			era = 2;
-			AddProsperityTech_Bonus(era, 2, TechEnum::Combo);
-			AddProsperityTech_Bonus(era, 2, TechEnum::HomeLandDefense);
-			AddProsperityTech_Building(era, 4, TechEnum::Library, CardEnum::Library);
-			AddProsperityTech_BuildingX(era, 4, TechEnum::Baking, { CardEnum::Windmill, CardEnum::Bakery });
-			AddProsperityTech_Bonus(era, 20, TechEnum::FarmAdjacency);
-			AddProsperityTech_Bonus(era, 20, TechEnum::FarmingBreakthrough);
-			AddProsperityTech_Bonus(era, 20, TechEnum::FarmImprovement);
+			column = 2;
+			AddProsperityTech_Bonus(column, 2, TechEnum::Combo);
+			AddProsperityTech_Bonus(column, 2, TechEnum::HomeLandDefense);
+			AddProsperityTech_Bonus(column, 20, TechEnum::FarmAdjacency);
+			AddProsperityTech_Bonus(column, 20, TechEnum::FarmingBreakthrough);
+			AddProsperityTech_Bonus(column, 20, TechEnum::FarmImprovement);
 			
 			
-			era = 3;
-			AddProsperityTech_BuildingX(era, 4, TechEnum::BrickMaking, { CardEnum::Brickworks });
-
-			AddProsperityTech_Building(era, 4, TechEnum::Tailor, CardEnum::Tailor);
-			AddProsperityTech_Building(era, 2, TechEnum::Beekeeper, CardEnum::Beekeeper);
-			AddProsperityTech_Building(era, 2, TechEnum::CandleMaker, CardEnum::CandleMaker);
-
-			AddProsperityTech_BuildingPermanent(era, 10, TechEnum::GardenShrubbery1, { CardEnum::GardenShrubbery1 });
+			column = 3;
+			AddProsperityTech_BuildingPermanent(column, 10, TechEnum::GardenShrubbery1, { CardEnum::GardenShrubbery1 });
 			
 			
-			era = 4;
-			AddProsperityTech_Building(era, 10, TechEnum::Winery, CardEnum::Winery);
-			
-			AddProsperityTech_Building(era, 10, TechEnum::School, CardEnum::School);
-			AddProsperityTech_Building(era, 10, TechEnum::PaperMaker, CardEnum::PaperMaker);
-			AddProsperityTech_Building(era, 10, TechEnum::InventorsWorkshop, CardEnum::InventorsWorkshop);
-
-			AddProsperityTech_Building(era, 10, TechEnum::Chocolatier, CardEnum::Chocolatier);
+			column = 4;
+			AddProsperityTech_Building(column, 10, TechEnum::InventorsWorkshop, CardEnum::InventorsWorkshop);
 		
 			
-			era = 5;
-			AddProsperityTech_BuildingPermanent(era, 4, TechEnum::StoneRoad, { CardEnum::StoneRoad });
-			AddProsperityTech_BuildingX(era, 4, TechEnum::GoldRefining, { CardEnum::GoldMine, CardEnum::GoldSmelter });
-			AddProsperityTech_Building(era, 4, TechEnum::Mint, CardEnum::Mint);
-			AddProsperityTech_BuildingX(era, 4, TechEnum::JewelryCrafting, { CardEnum::GemstoneMine, CardEnum::Jeweler });
-			AddProsperityTech_Building(era, 20, TechEnum::Printing, { CardEnum::PrintingPress });
+			column = 5;
+			AddProsperityTech_BuildingPermanent(column, 4, TechEnum::StoneRoad, { CardEnum::StoneRoad });
+			AddProsperityTech_BuildingX(column, 4, TechEnum::GoldRefining, { CardEnum::GoldMine, CardEnum::GoldSmelter });
+			AddProsperityTech_BuildingX(column, 4, TechEnum::JewelryCrafting, { CardEnum::GemstoneMine, CardEnum::Jeweler });
+			AddProsperityTech_Building(column, 20, TechEnum::Printing, { CardEnum::PrintingPress });
 			
-			era = 6;
-			AddProsperityTech_Building(era, 4, TechEnum::Fort, CardEnum::Fort);
-			AddProsperityTech_Building(era, 4, TechEnum::ResourceOutpost, CardEnum::ResourceOutpost);
-			AddProsperityTech_Building(era, 4, TechEnum::CardMaker, CardEnum::CardMaker);
-			AddProsperityTech_Building(era, 10, TechEnum::CottonMilling, CardEnum::CottonMill);
-			AddProsperityTech_BuildingPermanent(era, 10, TechEnum::FlowerBed, { CardEnum::FlowerBed });
+			column = 6;
+			AddProsperityTech_Building(column, 4, TechEnum::Fort, CardEnum::Fort);
+			AddProsperityTech_Building(column, 4, TechEnum::ResourceOutpost, CardEnum::ResourceOutpost);
+			AddProsperityTech_Building(column, 10, TechEnum::CottonMilling, CardEnum::CottonMill);
+			AddProsperityTech_BuildingPermanent(column, 10, TechEnum::FlowerBed, { CardEnum::FlowerBed });
 			
-			era = 7;
-			AddProsperityTech_Bonus(era, 4, TechEnum::IndustrialAdjacency);
-			AddProsperityTech_Bonus(era, 14, TechEnum::Rationalism);
+			column = 7;
+			AddProsperityTech_Bonus(column, 4, TechEnum::IndustrialAdjacency);
+			AddProsperityTech_Bonus(column, 14, TechEnum::Rationalism);
 
-			AddProsperityTech_BuildingPermanent(era, 30, TechEnum::GardenCypress, { CardEnum::GardenCypress });
+			AddProsperityTech_BuildingPermanent(column, 30, TechEnum::GardenCypress, { CardEnum::GardenCypress });
 		}
 	}
 	//virtual ~UnlockSystem() = default;
@@ -833,13 +834,80 @@ public:
 	int32 GetResourceProductionCount(ResourceEnum resourceEnum) {
 		return _resourceEnumToProductionCount[static_cast<int32>(resourceEnum)];
 	}
+
+	// Age Change Tech
+	static bool IsAgeChangeTech(TechEnum techEnum) {
+		return techEnum == TechEnum::MiddleAge ||
+			techEnum == TechEnum::EnlightenmentAge ||
+			techEnum == TechEnum::IndustrialAge;
+	}
+	static int32 GetAgeChangeRequiredTechCount(TechEnum techEnum) {
+		if (techEnum == TechEnum::MiddleAge) return 7;
+		if (techEnum == TechEnum::EnlightenmentAge) return 14;
+		if (techEnum == TechEnum::IndustrialAge) return 12;
+		UE_DEBUG_BREAK();
+		return 0;
+	}
+	int32 GetAgeChangeResearchCount(TechEnum techEnum) {
+		if (techEnum == TechEnum::MiddleAge) return columnToResearchedCount(1) + columnToResearchedCount(2);
+		if (techEnum == TechEnum::EnlightenmentAge) return columnToResearchedCount(3) + columnToResearchedCount(4) + columnToResearchedCount(5);
+		if (techEnum == TechEnum::IndustrialAge) return columnToResearchedCount(6) + columnToResearchedCount(7) + columnToResearchedCount(8);
+		UE_DEBUG_BREAK();
+		return 0;
+	}
+	static FText GetPreviousAgeText(TechEnum techEnum) {
+		if (techEnum == TechEnum::MiddleAge) return LOCTEXT("Dark Age", "Dark Age");
+		if (techEnum == TechEnum::EnlightenmentAge) return LOCTEXT("Enlightenment Age", "Enlightenment Age");
+		if (techEnum == TechEnum::IndustrialAge) return LOCTEXT("Industrial Age", "Industrial Age");
+		UE_DEBUG_BREAK();
+		return FText();
+	}
+	
 	bool IsRequirementMetForTech(TechEnum techEnum)
 	{
-		ResourceEnum requiredResourceEnum = _enumToTech[techEnum]->requiredResourceEnum;
-		if (requiredResourceEnum == ResourceEnum::None) {
-			return true;
+		if (IsAgeChangeTech(techEnum)) {
+			return GetAgeChangeResearchCount(techEnum) >= GetAgeChangeRequiredTechCount(techEnum);
 		}
-		return GetResourceProductionCount(requiredResourceEnum) >= _enumToTech[techEnum]->requiredResourceCount;
+
+		int32 column = GetTechInfo(techEnum)->column;
+		if (column == 3 || column == 4 || column == 5) {
+			return IsResearched(TechEnum::MiddleAge);
+		}
+		if (column == 6 || column == 7 || column == 8) {
+			return IsResearched(TechEnum::EnlightenmentAge);
+		}
+		if (column == 9 || column == 10 || column == 11) {
+			return IsResearched(TechEnum::IndustrialAge);
+		}
+		
+		ResourceEnum requiredResourceEnum = _enumToTech[techEnum]->requiredResourceEnum;
+		if (requiredResourceEnum != ResourceEnum::None) {
+			return GetResourceProductionCount(requiredResourceEnum) >= _enumToTech[techEnum]->requiredResourceCount;
+		}
+		return true;
+	}
+	FText GetTechRequirementPopupText(TechEnum techEnum)
+	{
+		auto tech = GetTechInfo(techEnum);
+
+		if (tech->requiredResourceEnum != ResourceEnum::None) {
+			return FText::Format(
+				NSLOCTEXT("TechUI", "NeedSatisfyTechPrereq_Pop", "Satisfy this Technology's Prerequisite by producing {0} {1}"),
+				TEXT_NUM(tech->requiredResourceCount),
+				GetResourceInfo(tech->requiredResourceEnum).name
+			);
+		}
+
+		if (IsAgeChangeTech(techEnum)) {
+			return FText::Format(
+				NSLOCTEXT("TechUI", "NeedSatisfyTechPrereqAgeChange_Pop", "Satisfy this Technology's Prerequisite by Researching {0} Technologies from the {1}."),
+				TEXT_NUM(GetAgeChangeRequiredTechCount(techEnum)),
+				GetPreviousAgeText(techEnum)
+			);
+		}
+
+		UE_DEBUG_BREAK();
+		return FText();
 	}
 	
 	
@@ -863,7 +931,7 @@ public:
 			}
 		};
 
-		unlockTree(_eraToTechs);
+		unlockTree(_columnToTechs);
 		unlockTree(_houseLvlToProsperityTechEnum);
 
 		_techQueue.clear();
@@ -891,8 +959,20 @@ public:
 
 	//! Research
 	// UI Display
-	const std::vector<std::vector<TechEnum>>& eraToTechEnums() { return _eraToTechs; }
+	const std::vector<std::vector<TechEnum>>& columnToTechEnums() { return _columnToTechs; }
 
+	int32 columnToResearchedCount(int32 columnIndex)
+	{
+		const std::vector<TechEnum>& techEnums = _columnToTechs[columnIndex];
+		int32 researchedCount = 0;
+		for (TechEnum techEnum : techEnums) {
+			if (GetTechInfo(techEnum)->state == TechStateEnum::Researched) {
+				researchedCount++;
+			}
+		}
+		return researchedCount;
+	}
+	
 	std::shared_ptr<ResearchInfo> currentResearch()
 	{
 		if (_techQueue.empty()) {
@@ -955,8 +1035,8 @@ public:
 	int32 currentEra()
 	{
 		int32 currentEra = 1;
-		for (int32 i = 1; i < _eraToTechs.size(); i++) {
-			if (currentEra == _eraToTechs.size() - 1) {
+		for (int32 i = 1; i < _columnToTechs.size(); i++) {
+			if (currentEra == _columnToTechs.size() - 1) {
 				return currentEra; // Max era...
 			}
 			if (techsUnlockedInEra(i) < techsToUnlockedNextEra(i)) {
@@ -967,12 +1047,12 @@ public:
 		return currentEra;
 	}
 	int32 isTechLocked(TechEnum techEnum) {
-		return _enumToTech[techEnum]->era > currentEra();
+		return _enumToTech[techEnum]->column > currentEra();
 	}
 	int32 techsUnlockedInEra(int32 era)
 	{
 		int32 techsUnlocked = 0;
-		auto& techs = _eraToTechs[era];
+		auto& techs = _columnToTechs[era];
 		for (auto& techEnum : techs) {
 			if (IsResearched(techEnum)) {
 				techsUnlocked++;
@@ -981,7 +1061,7 @@ public:
 		return techsUnlocked;
 	}
 
-	int32 lastEra() { return _eraToTechs.size() - 1; }
+	int32 lastEra() { return _columnToTechs.size() - 1; }
 
 	bool shouldFlashTechToggler()
 	{
@@ -997,7 +1077,7 @@ public:
 		return totalTechsInEra(era) * percentTechToEraUnlock / 100;
 	}
 	int32 totalTechsInEra(int32 era) {
-		return _eraToTechs[era].size();
+		return _columnToTechs[era].size();
 	}
 
 	int32 science100Needed() {
@@ -1066,7 +1146,7 @@ public:
 		};
 
 		// Tech
-		SerializeVecVecValue(Ar, _eraToTechs);
+		SerializeVecVecValue(Ar, _columnToTechs);
 		//SerializeVecLoop(Ar, _eraToTechs, [&](std::vector<std::shared_ptr<ResearchInfo>>& vecTech) {
 		//	SerializeVecLoop(Ar, vecTech, [&](std::shared_ptr<ResearchInfo>& tech) {
 		//		serializeTechPtr(tech);
@@ -1148,7 +1228,7 @@ private:
 	std::vector<CardEnum> _unlockedBuildings; // Permanent Building Only
 
 	// Tech
-	std::vector<std::vector<TechEnum>> _eraToTechs; // Need shared_ptr because of polymorphism
+	std::vector<std::vector<TechEnum>> _columnToTechs; // Need shared_ptr because of polymorphism
 	std::unordered_map<TechEnum, std::shared_ptr<ResearchInfo>> _enumToTech;
 	std::vector<TechEnum> _techQueue;
 

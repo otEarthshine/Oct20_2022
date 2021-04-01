@@ -888,6 +888,50 @@ public:
 			ModuleTransforms::CreateSet("HaulingServices_Era2_")
 		},
 
+		/*
+		 * Apr 1
+		 */
+		{ // SandMine
+		ModuleTransforms::CreateSet("Ministry")
+		},
+		{ // Glasswork
+		ModuleTransforms::CreateSet("Ministry")
+		},
+		{ // CoalPowerPlant
+		ModuleTransforms::CreateSet("Ministry")
+		},
+		{ // Steelworks
+		ModuleTransforms::CreateSet("Ministry")
+		},
+		{ // StoneToolsShop
+		ModuleTransforms::CreateSet("Ministry")
+		},
+		{ // OilWell
+		ModuleTransforms::CreateSet("Ministry")
+		},
+		{ // OilPowerPlant
+		ModuleTransforms::CreateSet("Ministry")
+		},
+		{ // PaperMill
+		ModuleTransforms::CreateSet("Ministry")
+		},
+		{ // ClockMakers
+		ModuleTransforms::CreateSet("Ministry")
+		},
+
+		{ // Cathedral
+		ModuleTransforms::CreateSet("Ministry")
+		},
+		{ // Castle
+		ModuleTransforms::CreateSet("Ministry")
+		},
+		{ // GrandMuseum
+		ModuleTransforms::CreateSet("Ministry")
+		},
+		{ // ExhibitionHall
+		ModuleTransforms::CreateSet("Ministry")
+		},
+
 			
 		/*
 		 * Decorations

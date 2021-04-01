@@ -19,9 +19,9 @@
 // VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 23 // 3 digit
+#define MINOR_VERSION 24 // 3 digit
 
-#define VERSION_DAY 26
+#define VERSION_DAY 31
 #define VERSION_MONTH 3
 #define VERSION_YEAR 21
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
@@ -2105,6 +2105,23 @@ enum class CardEnum : uint16
 	Archives,
 	HaulingServices,
 
+	// Apr 1
+	SandMine,
+	Glassworks,
+	ConcreteFactory,
+	CoalPowerPlant,
+	Steelworks,
+	StoneToolsShop,
+	OilWell,
+	OilPowerPlant,
+	PaperMill,
+	ClockMakers,
+
+	Cathedral,
+	Castle,
+	GrandMuseum,
+	ExhibitionHall,
+
 	// Decorations
 	FlowerBed,
 	GardenShrubbery1,
@@ -2725,6 +2742,23 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::Granary, LOCTEXT("Granary", "Granary"), LOCTEXT("Granary (Plural)", "Granaries"), WorldTile2(6, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Granary Desc", "Food Storage. +25% Productivity to surrounding Food Producers.")),
 	BldInfo(CardEnum::Archives, LOCTEXT("Archives", "Archives"), LOCTEXT("Archives (Plural)", "Archives"), WorldTile2(6, 6), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Archives Desc", "Store any Cards. Additionally, earn Income equals to 24% of the Card Price per year.")),
 	BldInfo(CardEnum::HaulingServices, LOCTEXT("Hauling Services", "Hauling Services"), LOCTEXT("Hauling Services (Plural)", "Hauling Services"), WorldTile2(6, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 3, { 50, 0, 0 }, LOCTEXT("Hauling Services Desc", "Workers use carts to haul resources to fill building inputs or clear building outputs.")),
+
+	// Apr 1
+	BldInfo(CardEnum::SandMine, LOCTEXT("SandMine", "Sand Mine"), LOCTEXT("Sand Mine (Plural)", "Sand Mines"), WorldTile2(6, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Sand Mine Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
+	BldInfo(CardEnum::Glassworks, LOCTEXT("Glassworks", "Glassworks"), LOCTEXT("Glassworks (Plural)", "Glassworks"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Glassworks Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
+	BldInfo(CardEnum::ConcreteFactory, LOCTEXT("ConcreteFactory", "Concrete Factory"), LOCTEXT("Concrete Factory (Plural)", "Concrete Factories"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Concrete Factory Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
+	BldInfo(CardEnum::CoalPowerPlant, LOCTEXT("CoalPowerPlant", "Coal Power Plant"), LOCTEXT("CoalPowerPlant (Plural)", "Coal Power Plants"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Coal Power Plants Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
+	BldInfo(CardEnum::Steelworks, LOCTEXT("Steelworks", "Steelworks"), LOCTEXT("Steelworks (Plural)", "Steelworks"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Steelworks Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
+	BldInfo(CardEnum::StoneToolsShop, LOCTEXT("StoneToolsShop", "Stone Tools Shop"), LOCTEXT("StoneToolsShop (Plural)", "Stone Tools Shops"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Stone Tools Shop Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
+	BldInfo(CardEnum::OilWell, LOCTEXT("OilWell", "Oil Well"), LOCTEXT("Oil Well (Plural)", "Oil Wells"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Oil Well Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
+	BldInfo(CardEnum::OilPowerPlant, LOCTEXT("OilPowerPlant", "Oil Power Plant"), LOCTEXT("Oil Power Plant (Plural)", "Oil Power Plants"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Oil Power Plant Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
+	BldInfo(CardEnum::PaperMill, LOCTEXT("PaperMill", "Paper Mill"), LOCTEXT("Paper Mill (Plural)", "Paper Mills"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Paper Mill Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
+	BldInfo(CardEnum::ClockMakers, LOCTEXT("ClockMakers", "Clock Makers"), LOCTEXT("Clock Makers (Plural)", "Clock Makers"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Clock Makers Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
+
+	BldInfo(CardEnum::Cathedral, LOCTEXT("Cathedral", "Cathedral"), LOCTEXT("Cathedral (Plural)", "Cathedrals"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Cathedral Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
+	BldInfo(CardEnum::Castle, LOCTEXT("Castle", "Castle"), LOCTEXT("Castle (Plural)", "Castles"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Castle Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
+	BldInfo(CardEnum::GrandMuseum, LOCTEXT("GrandMuseum", "Grand Museum"), LOCTEXT("Grand Museum (Plural)", "Grand Museums"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Grand Museum Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
+	BldInfo(CardEnum::ExhibitionHall, LOCTEXT("ExhibitionHall", "Exhibition Hall"), LOCTEXT("Exhibition Hall (Plural)", "Exhibition Halls"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Exhibition Hall Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
 
 	
 	// Decorations
@@ -4998,6 +5032,24 @@ enum class TechEnum : uint8
 	Archives,
 	HaulingServices,
 	QuickBuild,
+
+	// Apr 1
+	SandMine,
+	Glassworks,
+	ConcreteFactory,
+	CoalPowerPlant,
+	Steelworks,
+	StoneToolsShop,
+	OilWell,
+	OilPowerPlant,
+	PaperMill,
+	ClockMakers,
+
+	Cathedral,
+	Castle,
+	GrandMuseum,
+	ExhibitionHall,
+
 	
 
 	//Bridge,
@@ -5010,7 +5062,7 @@ enum class TechEnum : uint8
 
 	Irrigation,
 	Market,
-	ImprovedLogistics,
+	Logistics4,
 
 	Tunnel,
 	Colony,
@@ -5043,15 +5095,21 @@ enum class TechEnum : uint8
 	FarmAdjacency,
 	IndustrialAdjacency,
 
-	HaulingCapacity,
+	Logistics5,
 	BudgetAdjustment,
 	WorkSchedule,
+
+	CityManagementI,
 
 	ScienceLastEra,
 	MoneyLastEra,
 	FarmLastEra,
 	IndustryLastEra,
 	MilitaryLastEra,
+
+	MiddleAge,
+	EnlightenmentAge,
+	IndustrialAge,
 
 	/*
 	 * Prosperity

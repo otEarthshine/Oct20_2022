@@ -17,22 +17,75 @@ class UTechTreeUI : public UPunWidget
 {
 	GENERATED_BODY()
 public:
+	UPROPERTY(meta = (BindWidget)) UScrollBox* TechScrollBox;
+
+	UPROPERTY(meta = (BindWidget)) UTextBlock* Title_DarkAge;
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_DarkAge1;
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_DarkAge2;
+
+	UPROPERTY(meta = (BindWidget)) UTextBlock* Title_MiddleAge;
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_MiddleAge1;
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_MiddleAge2;
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_MiddleAge3;
+
+	UPROPERTY(meta = (BindWidget)) UTextBlock* Title_EnlightenmentAge;
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_EnlightenmentAge1;
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_EnlightenmentAge2;
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_EnlightenmentAge3;
+
+	UPROPERTY(meta = (BindWidget)) UTextBlock* Title_IndustrialAge;
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_IndustrialAge1;
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_IndustrialAge2;
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_IndustrialAge3;
+
+	UPROPERTY(meta = (BindWidget)) UButton* CloseButton;
+	UPROPERTY(meta = (BindWidget)) UButton* CloseButton2;
+
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* ScienceAmountText;
+
+	UPROPERTY() TMap<int32, UTechBoxUI*> techEnumToTechBox;
+
+	bool isInitialized = false;
+
+	void LeftMouseDown()
+	{
+
+	}
+	void LeftMouseUp() {
+		_isMouseDownScrolling = false;
+	}
+	void RightMouseDown() {
+
+	}
+	void RightMouseUp() {
+		_isMouseDownScrolling = false;
+	}
+
+	FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override
+	{
+		//PUN_LOG("- NativeOnMouseButtonDown");
+		GetWorld()->GetGameViewport()->GetMousePosition(_initialMousePosition);
+		_initialScrollOffset = TechScrollBox->GetScrollOffset();
+		_isMouseDownScrolling = true;
+		return FReply::Handled();
+	}
+
+	FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override
+	{
+		//PUN_LOG("- NativeOnMouseButtonUp");
+		_isMouseDownScrolling = false;
+		return FReply::Handled();
+	}
+
+public:
 	void PunInit()
 	{
-		AddColumn(1, { TechBox1_1, TechBox1_2 , TechBox1_3 });
-		AddColumn(2, { TechBox2_1, TechBox2_2 , TechBox2_3, TechBox2_4, TechBox2_5 , TechBox2_6 });
-		AddColumn(3, { TechBox3_1, TechBox3_2 , TechBox3_3, TechBox3_4, TechBox3_5 , TechBox3_6,  TechBox3_7 });
-		AddColumn(4, { TechBox4_1, TechBox4_2 , TechBox4_3, TechBox4_4, TechBox4_5 , TechBox4_6,  TechBox4_7 });
-		AddColumn(5, { TechBox5_1, TechBox5_2 , TechBox5_3, TechBox5_4, TechBox5_5 , TechBox5_6,  TechBox5_7 });
-		AddColumn(6, { TechBox6_1, TechBox6_2 , TechBox6_3, TechBox6_4, TechBox6_5 , TechBox6_6,  TechBox6_7 });
-
 		isInitialized = false;
 		SetVisibility(ESlateVisibility::Collapsed);
 
 		CloseButton->OnClicked.AddDynamic(this, &UTechTreeUI::CloseUI);
 		CloseButton2->OnClicked.AddDynamic(this, &UTechTreeUI::CloseUI);
 
-		TechScrollSizeBox->SetWidthOverride(1200);
 		TechScrollBox->SetScrollbarThickness(FVector2D(10, 10));
 	}
 
@@ -40,74 +93,22 @@ public:
 		if (show) {
 			networkInterface()->ResetGameUI();
 
+			simulation().TryRemovePopups(playerId(), PopupReceiverEnum::DoneResearchEvent_ShowTree);
+
 			dataSource()->Spawn2DSound("UI", "UIWindowOpen");
-		} else {
+		}
+		else {
 			dataSource()->Spawn2DSound("UI", "UIWindowClose");
 		}
-		
+
+		int32 era = dataSource()->simulation().unlockSystem(playerId())->currentEra();
+		TechScrollBox->SetScrollOffset(std::max(0, (era - 1) * 294 - 30));
+
 		SetVisibility(show ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 		TickUI();
 	}
 
 	void TickUI();
-
-	//UTechBoxUI* GetTechBoxAtALocation(TechBoxLocation location) {
-	//	return techBoxLocationToTechBox[location];
-	//}
-
-public:
-	UPROPERTY(meta = (BindWidget)) USizeBox* TechScrollSizeBox;
-	UPROPERTY(meta = (BindWidget)) UScrollBox* TechScrollBox;
-
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox1_1;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox1_2;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox1_3;
-
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox2_1;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox2_2;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox2_3;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox2_4;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox2_5;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox2_6;
-
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox3_1;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox3_2;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox3_3;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox3_4;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox3_5;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox3_6;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox3_7;
-
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox4_1;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox4_2;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox4_3;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox4_4;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox4_5;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox4_6;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox4_7;
-
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox5_1;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox5_2;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox5_3;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox5_4;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox5_5;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox5_6;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox5_7;
-
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox6_1;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox6_2;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox6_3;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox6_4;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox6_5;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox6_6;
-	UPROPERTY(meta = (BindWidget)) UTechBoxUI* TechBox6_7;
-
-	UPROPERTY(meta = (BindWidget)) UButton* CloseButton;
-	UPROPERTY(meta = (BindWidget)) UButton* CloseButton2;
-
-	UPROPERTY() TMap<int32, UTechBoxUI*> techBoxLocationToTechBox;
-
-	bool isInitialized = false;
 
 private:
 	// Use ResearchInfo's TechBoxLocation to link the techEnum to proper TechBoxUI
@@ -115,14 +116,15 @@ private:
 
 	void CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callBackEnum) final;
 
-	void AddColumn(int32_t column, TArray<UTechBoxUI*> techBoxes) {
-		for (int32 i = 0; i < techBoxes.Num(); i++) {
-			techBoxLocationToTechBox.Add(TechBoxLocation(column, i + 1).id(), techBoxes[i]);
-		}
+	UFUNCTION() void CloseUI() {
+		SetShowUI(false);
 	}
 
-	UFUNCTION() void CloseUI();
-
 private:
-	std::vector<std::shared_ptr<ResearchInfo>> _lastTechQueue;
+	std::vector<TechEnum> _lastTechQueue;
+
+	bool _isMouseDownScrolling = false;
+
+	FVector2D _initialMousePosition;
+	float _initialScrollOffset;
 };

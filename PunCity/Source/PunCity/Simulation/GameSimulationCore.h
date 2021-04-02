@@ -1448,11 +1448,24 @@ public:
 	}
 	int32 GetProvinceClaimPrice(int32 provinceId, int32 playerId, ClaimConnectionEnum claimConnectionEnum)
 	{
-		int32 percent = 100;
-		percent += GetProvinceSpecialClaimCostPercent(provinceId, playerId);
-		percent += GetProvinceTerrainClaimCostPenalty(claimConnectionEnum);
+		int32 claimPrice = GetProvinceBaseClaimPrice(provinceId);
+
+		//// Tundra/Boreal/Desert/ Expansion
+		//BiomeEnum biomeEnum = GetBiomeProvince(provinceId);
+		//if ((biomeEnum == BiomeEnum::Tundra || biomeEnum == BiomeEnum::BorealForest))
+		//{
+		//	percent -= 50;
+		//}
+
+		// Cost Penalty from being far
+		const int32 maxProvinceDistanceCostPenalty = 500;
+		int32 provinceDistance = regionSystem().provinceDistanceToPlayer(provinceId, playerId);
+		int32 distancePenaltyCostPercent = maxProvinceDistanceCostPenalty * provinceDistance / 7;
+		IncrementByPercent100(claimPrice, distancePenaltyCostPercent);
 		
-		return GetProvinceBaseClaimPrice(provinceId) * percent / 100;
+		IncrementByPercent100(claimPrice, GetProvinceTerrainClaimCostPenalty(claimConnectionEnum));
+		
+		return claimPrice;
 	}
 	
 	int32 GetProvinceAttackStartPrice(int32 provinceId, ClaimConnectionEnum claimConnectionEnum)
@@ -1589,20 +1602,7 @@ public:
 		
 		return penalty;
 	}
-	//  Claim Bonuses
-	int32 GetProvinceSpecialClaimCostPercent(int32 provinceId, int32 playerId)
-	{
-		int32 percent = 0;
 
-		BiomeEnum biomeEnum = GetBiomeProvince(provinceId);
-		if ((biomeEnum == BiomeEnum::Tundra || biomeEnum == BiomeEnum::BorealForest) &&
-			IsResearched(playerId, TechEnum::BorealLandCost))
-		{
-			percent -= 50;
-		}
-
-		return percent;
-	}
 	//  Attack Bonuses
 	int32 GetProvinceAttackCostPercent(int32 provinceId)
 	{
@@ -2583,7 +2583,7 @@ public:
 			if (!globalResourceSystem(playerId).HasSeed(seedCardEnum) &&
 				!cardSystem(playerId).HasBoughtCard(seedCardEnum))
 			{
-				if (unlockSystem(playerId)->IsResearched(TechEnum::Plantation))
+				//if (unlockSystem(playerId)->IsResearched(TechEnum::Plantation))
 				{
 					std::vector<int32> provincesClaimed = GetProvincesPlayer(playerId);
 					for (int32 provinceId : provincesClaimed)
@@ -2608,6 +2608,29 @@ public:
 		checkGetSeed(CardEnum::DyeSeeds, GeoresourceEnum::DyeFarm);
 		checkGetSeed(CardEnum::CoffeeSeeds, GeoresourceEnum::CoffeeFarm);
 		checkGetSeed(CardEnum::TulipSeeds, GeoresourceEnum::TulipFarm);
+
+		auto checkAddMineCard = [&](CardEnum mineCardEnum, GeoresourceEnum georesourceEnum)
+		{
+			if (!HasCardInAnyPile(playerId, mineCardEnum))
+			{
+				std::vector<int32> provincesClaimed = GetProvincesPlayer(playerId);
+				for (int32 provinceId : provincesClaimed)
+				{
+					if (georesourceSystem().georesourceNode(provinceId).georesourceEnum == georesourceEnum)
+					{
+						AddPopup(playerId,
+							FText::Format(NSLOCTEXT("SimCore", "Unlocked Mine", "Unlocked {0}"), GetBuildingInfo(mineCardEnum).name)
+						);
+						cardSystem(playerId).AddDrawCards(mineCardEnum);
+						break;
+					}
+				}
+			}
+		};
+		checkAddMineCard(CardEnum::CoalMine, GeoresourceEnum::CoalOre);
+		checkAddMineCard(CardEnum::IronMine, GeoresourceEnum::IronOre);
+		checkAddMineCard(CardEnum::GoldMine, GeoresourceEnum::GoldOre);
+		checkAddMineCard(CardEnum::GemstoneMine, GeoresourceEnum::Gemstone);
 	}
 
 	void PopupInstantReply(int32 playerId, PopupReceiverEnum replyReceiver, int32 choiceIndex);

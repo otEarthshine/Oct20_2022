@@ -182,8 +182,8 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 		LOCTEXT("Sawmill Desc", "+50% furniture workshop's efficiency.")
 	}},
 	{ TechEnum::ImprovedWoodCutting, {
-		LOCTEXT("Improved woodcutting Lvl 1", "Improved woodcutting Lvl 1"),
-		LOCTEXT("Improved woodcutting Lvl 1 Desc", "+20% wood harvesting yield."),
+		LOCTEXT("Improved woodcutting", "Improved woodcutting"),
+		LOCTEXT("Improved woodcutting Desc", "+50% wood harvesting yield."),
 	}},
 	{ TechEnum::ImprovedWoodCutting2, {
 		LOCTEXT("Improved woodcutting Lvl 2", "Improved woodcutting Lvl 2"),
@@ -248,7 +248,7 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 		LOCTEXT("WorkSchedule Desc", "Unlocks the ability to adjust Workplace's Work Hours Level.\n\nIncreasing the Work Hours Level lead to higher Effectiveness, but lower Job Happiness."),
 	} },
 
-	{ TechEnum::ScienceLastEra, {
+	{ TechEnum::ScientificTheories, {
 		LOCTEXT("Scientific Theories", "Scientific Theories"),
 		LOCTEXT("Scientific Theories Desc", "+20% science output"),
 	}},
@@ -368,7 +368,17 @@ public:
 		/*
 		 * After 40 techs
 		 * - 1250 cost ... (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) / 10 / 10
+		 * - 50 * 5 * 5 * 5
 		 * - at 125 sci production... it is 2.5 seasons
+		 *
+		 * Tech scaling affected by:
+		 * - population growth
+		 * - house upgrades
+		 * 
+		 *
+		 * Expected population in each age:
+		 * - 
+		 * 
 		 */
 		int32 sciNeeded = (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) / 10 / 10 / 10  /* Tech factor: */  * 12000 / 1000; // 5400 / 1000;
 		return std::min(sciNeeded, 100000);
@@ -659,30 +669,24 @@ public:
 			// Steal
 			//
 
-			int32 column = -1; 
-			AddTech_Bonus(column, TechEnum::Plantation);
-			AddTech_Building(column, TechEnum::SpyGuard, { CardEnum::KidnapGuard, CardEnum::TreasuryGuard });
-			AddTech_Bonus(column, TechEnum::Sawmill);
+			int32 column = -1; // Unused stuff
+			//AddTech_Bonus(column, TechEnum::Plantation);
+			//AddTech_Bonus(column, TechEnum::DesertTrade);
+			//AddTech_Bonus(column, TechEnum::Sawmill);
+			//AddTech_Bonus(column, TechEnum::ImprovedWoodCutting2);
+			//AddTech_Building(column, TechEnum::BarrackKnight, CardEnum::BarrackSwordman);
+			//AddTech_Building(column, TechEnum::IntercityLogistics, { CardEnum::IntercityLogisticsHub, CardEnum::IntercityLogisticsPort });
+
 			
-			AddTech_Bonus(column, TechEnum::DesertTrade);
 			AddTech_Building(column, TechEnum::Espionage, { CardEnum::Steal });
-
-			AddTech_Bonus(column, TechEnum::QuarryImprovement); // Quarry Improvement as a precursor to tunnel??
-			AddTech_Building(column, TechEnum::IntercityLogistics, { CardEnum::IntercityLogisticsHub, CardEnum::IntercityLogisticsPort });
+			AddTech_Bonus(column, TechEnum::QuarryImprovement);
 			AddTech_Bonus(column, TechEnum::HouseAdjacency);
-
-			AddTech_Bonus(column, TechEnum::ImprovedWoodCutting2);
 			AddTech_Bonus(column, TechEnum::ShallowWaterEmbark);
-			AddTech_Building(column, TechEnum::BarrackKnight, CardEnum::BarrackSwordman);
-
-			AddTech_Building(column, TechEnum::RanchCow, { CardEnum::RanchCow });
-			AddTech_Bonus(column, TechEnum::WorkSchedule);
+			AddTech_Building(column, TechEnum::SpyGuard, { CardEnum::KidnapGuard, CardEnum::TreasuryGuard });
 			AddTech_Bonus(column, TechEnum::TaxAdjustment);
 			AddTech_Building(column, TechEnum::Garden, CardEnum::Garden);
 			AddTech_Bonus(column, TechEnum::WineryImprovement);
-
 			AddTech_Bonus(column, TechEnum::TraderDiscount);
-			AddTech_Building(column, TechEnum::MelonFarming, { CardEnum::MelonSeed }, ResourceEnum::Pumpkin, 3000);
 
 			
 			
@@ -705,7 +709,7 @@ public:
 			//
 			column = 3;
 			AddTech_Bonus(column, TechEnum::MiddleAge);
-			AddTech_Building(column, TechEnum::IronRefining, { CardEnum::IronMine, CardEnum::IronSmelter });
+			AddTech_Building(column, TechEnum::IronRefining, { CardEnum::IronSmelter, CardEnum::BarrackSwordman });
 			AddTech_Building(column, TechEnum::BrickMaking, { CardEnum::Brickworks });
 			AddTech_Building(column, TechEnum::Library, CardEnum::Library);
 			AddTech_Building(column, TechEnum::HaulingServices, CardEnum::HaulingServices);
@@ -736,6 +740,7 @@ public:
 			
 			//
 			column = 6;
+			AddTech_Bonus(column, TechEnum::EnlightenmentAge);
 			AddTech_Building(column, TechEnum::Glassworks, CardEnum::Glassworks);
 			AddTech_Building(column, TechEnum::CoffeeRoaster, { CardEnum::CoffeeRoaster });
 			AddTech_Building(column, TechEnum::School, CardEnum::School);
@@ -746,7 +751,7 @@ public:
 			
 			//
 			column = 7;
-			AddTech_Building(column, TechEnum::ConcreteFactory, CardEnum::Glassworks);
+			AddTech_Bonus(column, TechEnum::WorkSchedule);
 			AddTech_Bonus(column, TechEnum::BudgetAdjustment);
 			AddTech_Bonus(column, TechEnum::Logistics5);
 			AddTech_BuildingPermanent(column, TechEnum::IntercityRoad, { CardEnum::IntercityRoad, CardEnum::IntercityBridge });
@@ -762,10 +767,29 @@ public:
 			AddTech_Bonus(column, TechEnum::ImprovedWoodCutting);
 			AddTech_BuildingPermanent(column, TechEnum::Colony, { CardEnum::Colony, CardEnum::PortColony });
 			AddTech_Building(column, TechEnum::Chocolatier, CardEnum::Chocolatier);
-			
+			AddTech_Building(column, TechEnum::RanchCow, { CardEnum::RanchCow });
 
 			//
 			column = 9;
+			AddTech_Bonus(column, TechEnum::IndustrialAge);
+			AddTech_Building(column, TechEnum::ConcreteFactory, CardEnum::ConcreteFactory);
+			AddTech_Building(column, TechEnum::CoalPowerPlant, CardEnum::CoalPowerPlant);
+			AddTech_Building(column, TechEnum::JewelryCrafting, { CardEnum::GemstoneMine, CardEnum::Jeweler });
+			AddTech_Bonus(column, TechEnum::ScientificTheories);
+			AddTech_Building(column, TechEnum::MelonFarming, { CardEnum::MelonSeed }, ResourceEnum::Pumpkin, 3000);
+
+
+			column = 10;
+			AddTech_Building(column, TechEnum::Steelworks, CardEnum::Steelworks);
+			AddTech_Building(column, TechEnum::CottonMilling, CardEnum::CottonMill);
+			AddTech_Building(column, TechEnum::OilWell, { CardEnum::OilWell, CardEnum::OilPowerPlant });
+			AddTech_Building(column, TechEnum::Printing, { CardEnum::PrintingPress });
+			AddTech_Bonus(column, TechEnum::MoneyLastEra);
+
+			
+
+
+			column = 11;
 			
 
 			townhallUpgradeUnlocked = false;
@@ -807,8 +831,6 @@ public:
 			column = 5;
 			AddProsperityTech_BuildingPermanent(column, 4, TechEnum::StoneRoad, { CardEnum::StoneRoad });
 			AddProsperityTech_BuildingX(column, 4, TechEnum::GoldRefining, { CardEnum::GoldMine, CardEnum::GoldSmelter });
-			AddProsperityTech_BuildingX(column, 4, TechEnum::JewelryCrafting, { CardEnum::GemstoneMine, CardEnum::Jeweler });
-			AddProsperityTech_Building(column, 20, TechEnum::Printing, { CardEnum::PrintingPress });
 			
 			column = 6;
 			AddProsperityTech_Building(column, 4, TechEnum::Fort, CardEnum::Fort);

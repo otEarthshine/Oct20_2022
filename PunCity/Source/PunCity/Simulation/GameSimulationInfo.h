@@ -262,9 +262,14 @@ static float Clamp(int32 value, int32 minValue, int32 maxValue) {
 	return std::max(minValue, std::min(maxValue, value));
 }
 
-static float Clamp0_100(int32 value) {
+static int32 Clamp0_100(int32 value) {
 	return std::max(0, std::min(100, value));
 }
+
+static int32 IncrementByPercent100(int32 value, int32 percent) {
+	return value * (100 + percent) / 100;
+}
+
 
 static void DecreaseToZero(int32& value, int32 decrement = 1)
 {
@@ -5101,7 +5106,7 @@ enum class TechEnum : uint8
 
 	CityManagementI,
 
-	ScienceLastEra,
+	ScientificTheories,
 	MoneyLastEra,
 	FarmLastEra,
 	IndustryLastEra,

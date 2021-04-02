@@ -62,8 +62,6 @@ public:
 			AddDrawCards(CardEnum::Quarry, 1);
 			//AddCards(BuildingEnum::Tavern, 1);
 
-			AddDrawCards(CardEnum::CoalMine, 1);
-
 			//AddDrawCards(CardEnum::EmergencyRations, 1);
 
 			//AddDrawCards(CardEnum::ShrineWisdom, 1);

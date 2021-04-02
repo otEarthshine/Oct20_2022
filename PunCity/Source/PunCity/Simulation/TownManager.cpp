@@ -1282,7 +1282,7 @@ void TownManager::RecalculateTax(bool showFloatup)
 	}
 
 
-	if (_simulation->IsResearched(_playerId, TechEnum::ScienceLastEra)) {
+	if (_simulation->IsResearched(_playerId, TechEnum::ScientificTheories)) {
 		sciences100[static_cast<int>(ScienceEnum::ScienceLastEra)] += sumFromHouses * 20 / 100;
 	}
 

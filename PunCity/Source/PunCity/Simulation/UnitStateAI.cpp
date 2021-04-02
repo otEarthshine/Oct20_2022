@@ -1729,11 +1729,12 @@ void UnitStateAI::HarvestTileObj()
 		{
 			auto unlockSys = _simulation->unlockSystem(_playerId);
 			int32 efficiency = 100;
-			if (unlockSys->IsResearched(TechEnum::ImprovedWoodCutting2)) {
-				efficiency += 20;
-			}
-			else if (unlockSys->IsResearched(TechEnum::ImprovedWoodCutting)) {
-				efficiency += 20;
+			//if (unlockSys->IsResearched(TechEnum::ImprovedWoodCutting2)) {
+			//	efficiency += 20;
+			//}
+			//else 
+			if (unlockSys->IsResearched(TechEnum::ImprovedWoodCutting)) {
+				efficiency += 50;
 			}
 
 			if (workplace() && workplace()->isEnum(CardEnum::Forester)) {

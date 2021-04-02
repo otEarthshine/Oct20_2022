@@ -256,11 +256,6 @@ void UnlockSystem::OnEraUnlocked(TArray<FText>& args)
 
 void BonusToggle_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulation)
 {
-	if (techEnum == TechEnum::Plantation)
-	{
-		simulation->CheckGetSeedCard(playerId);
-	}
-
 	if (techEnum == TechEnum::ShallowWaterEmbark)
 	{
 		if (!simulation->IsBuildingUnlocked(playerId, CardEnum::Bridge)) {

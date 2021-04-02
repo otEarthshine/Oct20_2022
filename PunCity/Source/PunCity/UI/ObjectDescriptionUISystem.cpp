@@ -3501,7 +3501,7 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 		ClaimConnectionEnum claimConnectionEnum = sim.GetProvinceClaimConnectionEnumPlayer(provinceId, playerId());
 		if (claimConnectionEnum != ClaimConnectionEnum::None)
 		{
-			int32 provinceDistance = sim.regionSystem().provinceDistanceToPlayer(provinceId, playerId());\
+			int32 provinceDistance = sim.regionSystem().provinceDistanceToPlayer(provinceId, playerId());
 			if (provinceDistance != MAX_int32) 
 			{
 				if (provinceDistance > 7) {

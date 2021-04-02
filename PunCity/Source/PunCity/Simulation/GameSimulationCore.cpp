@@ -4624,7 +4624,7 @@ void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 townId)
 			parameters(playerId)->DesertPilgrimOffered = true;
 		}
 
-		// Taking over proper land with plantation research grants seeds
+		// Taking over proper land grants seeds or unlocks proper mine
 		CheckGetSeedCard(playerId);
 		
 		// Claim land hand

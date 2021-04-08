@@ -179,18 +179,6 @@ struct SmelterBonus : Policy
 	}
 };
 
-struct FarmBonus : Policy
-{
-	std::string name() override { return "Farm Bonus"; }
-	std::string description() override { return "Farm gets +10% production for each adjacent farm."; }
-
-	void OnSetActive(bool active) override
-	{
-		//simulation->playerParameters(playerId)->FarmAdjacencyBonus = active;
-	}
-};
-
-
 //------------
 
 

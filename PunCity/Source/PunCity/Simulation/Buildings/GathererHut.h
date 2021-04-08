@@ -489,6 +489,8 @@ public:
 	void FinishConstruction() final;
 	std::vector<BonusPair> GetBonuses() override;
 
+	void ResetWorkModes();
+
 	// Same amount of work required to acquire resources
 	int32 workManSecPerBatch100() final
 	{

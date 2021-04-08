@@ -65,16 +65,18 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 		LOCTEXT("Industrial Age Desc", "Unlocks Townhall Level 4"),
 	} },
 	
-	{TechEnum::DeepMining, { LOCTEXT("Deep Mining", "Deep Mining") }},
+	{ TechEnum::DeepMining, { LOCTEXT("Deep Mining", "Deep Mining") }},
 
-	{TechEnum::IronRefining, { LOCTEXT("Ironworks", "Ironworks") }},
-	{TechEnum::GoldRefining, { LOCTEXT("Goldworks", "Goldworks") }},
+	{ TechEnum::IronRefining, { LOCTEXT("Ironworks", "Ironworks") }},
+	{ TechEnum::GoldRefining, { LOCTEXT("Goldworks", "Goldworks") }},
+
+	{ TechEnum::HerbFarming , {LOCTEXT("Basic Medicine", "Basic Medicine")}},
 
 
-	{TechEnum::Logistics1, { LOCTEXT("Logistics I", "Logistics I") }},
-	{TechEnum::Logistics2, { LOCTEXT("Logistics II", "Logistics II") }},
-	{TechEnum::Logistics3, { LOCTEXT("Logistics III", "Logistics III") }},
-	{TechEnum::Logistics4, { LOCTEXT("Logistics IV", "Logistics IV") }},
+	{ TechEnum::Logistics1, { LOCTEXT("Logistics I", "Logistics I") }},
+	{ TechEnum::Logistics2, { LOCTEXT("Logistics II", "Logistics II") }},
+	{ TechEnum::Logistics3, { LOCTEXT("Logistics III", "Logistics III") }},
+	{ TechEnum::Logistics4, { LOCTEXT("Logistics IV", "Logistics IV") }},
 	{ TechEnum::Logistics5, {
 		LOCTEXT("Logistics V", "Logistics V"),
 		LOCTEXT("Logistics V Desc", "Allows Citizens to carry +10 more goods."),
@@ -107,11 +109,16 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 
 	{TechEnum::AgriculturalRevolution, {
 		LOCTEXT("Agricultural Revolution", "Agricultural Revolution"),
-		LOCTEXT("Agricultural Revolution Desc", ".....")
+		LOCTEXT("Agricultural Revolution Desc", "Farms get +10% efficiency for each nearby farm. (max at 20%)")
 	}},
 	{TechEnum::Industrialization, {
 		LOCTEXT("Industrialization", "Industrialization"),
-		LOCTEXT("Industrialization Desc", ".....")
+		LOCTEXT("Industrialization Desc", "+20% Industrial Output")
+	}},
+
+	{TechEnum::IndustrialAdjacency, {
+		LOCTEXT("Industrial Adjacency", "Industrial Adjacency"),
+		LOCTEXT("Industrial Adjacency Desc", "Industrial Buildings get +5% efficiency for each nearby industry of the same type. (max at 15%)")
 	}},
 	
 	{TechEnum::HouseLvl6Income, {
@@ -250,17 +257,9 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 		LOCTEXT("Extra House Income Desc", "+<img id=\"Coin\"/>3 house income")
 	}},
 
-	{TechEnum::FarmAdjacency, {
-		LOCTEXT("Farm Adjacency", "Farm Adjacency"),
-		LOCTEXT("Farm Adjacency Desc", "Farms get +5% efficiency for each nearby farm. (max at 15%)"),
-	}},
 	{TechEnum::HouseAdjacency, {
 		LOCTEXT("House Adjacency", "House Adjacency"),
 		LOCTEXT("House Adjacency Desc", "Houses get +<img id=\"Coin\"/>1 for each nearby house. (max at +<img id=\"Coin\"/>3)"),
-	}},
-	{TechEnum::IndustrialAdjacency, {
-		LOCTEXT("Industrial Adjacency", "Industrial Adjacency"),
-		LOCTEXT("Industrial Adjacency Desc", "Industrial buildings get +5% efficiency for each nearby industry of the same type. (max at 15%)"),
 	}},
 
 	{ TechEnum::BudgetAdjustment, {
@@ -274,24 +273,20 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 
 	{ TechEnum::ScientificTheories, {
 		LOCTEXT("Scientific Theories", "Scientific Theories"),
-		LOCTEXT("Scientific Theories Desc", "+20% science output"),
+		LOCTEXT("Scientific Theories Desc", "+20% Science Output from Houses"),
 	}},
 	{ TechEnum::EconomicTheories, {
 		LOCTEXT("Economics Theories", "Economics Theories"),
-		LOCTEXT("Economics Theories Desc", "+20% house income"),
+		LOCTEXT("Economics Theories Desc", "+20% House Income"),
 	}},
 	{ TechEnum::SocialScience, {
 		LOCTEXT("Social Science", "Social Science"),
 		LOCTEXT("Social Science Desc", "Allows production of Motivation and Passion Cards at Scholars Office."),
-	} },
+	}},
 	
 	{ TechEnum::Fertilizers, {
 		LOCTEXT("Fertilizers", "Fertilizers"),
-		LOCTEXT("Fertilizers Desc", "+20% Farm Productivity within Granary Radius"),
-	}},
-	{ TechEnum::IndustryLastEra, {
-		LOCTEXT("Machinery Mastery", "Machinery Mastery"),
-		LOCTEXT("Machinery Mastery Desc", "+20% industry output"),
+		LOCTEXT("Fertilizers Desc", "+20% Farm Productivity"),
 	}},
 	{ TechEnum::MilitaryLastEra, {
 		LOCTEXT("Advanced Military", "Advanced Military"),
@@ -395,7 +390,7 @@ public:
 	}
 
 	// Helpers
-	int32 scienceNeeded(int32 techsFinished) {
+	int64 scienceNeeded(int64 techsFinished) {
 		/*
 		 * After 40 techs
 		 * - 1250 cost ... (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) / 10 / 10
@@ -405,17 +400,18 @@ public:
 		 * Tech scaling affected by:
 		 * - population growth
 		 * - house upgrades
-		 * 
+		 *
+		 * - House Lvl 7 sci = 30
 		 *
 		 * Expected population in each age:
 		 * - 
 		 * 
 		 */
-		int32 sciNeeded = (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) * (techsFinished + 10) / 10 / 10 / 10  /* Tech factor: */  * 12000 / 1000; // 5400 / 1000;
-		return std::min(sciNeeded, 100000);
+		int64 sciNeeded = (techsFinished + 10LL) * (techsFinished + 10LL) * (techsFinished + 10LL) * (techsFinished + 10LL) / 10LL / 10LL / 10LL  /* Tech factor: */  * 12000LL / 1000LL; // 5400 / 1000;
+		return std::min(sciNeeded, 100000LL);
 	}
 
-	float researchFraction(int32 researchesFinished, int32 science100XsecPerRound) {
+	float researchFraction(int32 researchesFinished, int64 science100XsecPerRound) {
 		return science100XsecPerRound / (100.0f * scienceNeeded(researchesFinished) * Time::SecondsPerRound);
 	}
 
@@ -812,17 +808,17 @@ public:
 			AddTech_Building(column, TechEnum::VodkaDistillery, { TechEnum::PotatoFarming },
 				{ CardEnum::VodkaDistillery }, ResourceEnum::Potato, 1000
 			);
-			AddTech_Building(column, TechEnum::BlueberryFarming, { TechEnum::BlueberryFarming },
+			AddTech_Building(column, TechEnum::BlueberryFarming, { TechEnum::PotatoFarming },
 				{ CardEnum::BlueberrySeed }
 			);
 			
 			//
 			column = 5;
-			AddTech_Bonus(column, TechEnum::QuickBuild, { TechEnum::BlackSmith });
-			AddTech_Building(column, TechEnum::Medicine, {},
+			AddTech_Bonus(column, TechEnum::QuickBuild, { TechEnum::Blacksmith });
+			AddTech_Building(column, TechEnum::Medicine, { TechEnum::PaperMaker },
 				CardEnum::MedicineMaker
 			);
-			AddTech_Building(column, TechEnum::CardMaker, { TechEnum::PaperMaker },
+			AddTech_Building(column, TechEnum::CardMaker, { TechEnum::PaperMaker, TechEnum::Archives },
 				CardEnum::CardMaker
 			);
 			AddTech_BuildingPermanent(column, TechEnum::Logistics3, { TechEnum::Logistics2 },
@@ -866,7 +862,7 @@ public:
 			AddTech_Bonus(column, TechEnum::WorkSchedule, { TechEnum::Glassworks, TechEnum::CoffeeRoaster });
 			AddTech_Bonus(column, TechEnum::BudgetAdjustment, { TechEnum::School, TechEnum::TradingCompany });
 			AddTech_Bonus(column, TechEnum::Logistics5, { TechEnum::TradingCompany, TechEnum::Logistics4 });
-			AddTech_BuildingPermanent(column, TechEnum::IntercityRoad, { TechEnum::Theatre },
+			AddTech_BuildingPermanent(column, TechEnum::IntercityRoad, { TechEnum::Logistics4 },
 				{ CardEnum::IntercityRoad, CardEnum::IntercityBridge }
 			);
 			AddTech_Building(column, TechEnum::Theatre, { TechEnum::Winery },
@@ -894,7 +890,7 @@ public:
 			AddTech_Building(column, TechEnum::Chocolatier, { TechEnum::Theatre },
 				CardEnum::Chocolatier
 			);
-			AddTech_Building(column, TechEnum::RanchCow, {},
+			AddTech_Building(column, TechEnum::RanchCow, { TechEnum::ShroomFarm },
 				{ CardEnum::RanchCow }
 			);
 
@@ -924,7 +920,7 @@ public:
 			AddTech_Building(column, TechEnum::CottonMilling, { TechEnum::Industrialization },
 				CardEnum::CottonMill
 			);
-			AddTech_Building(column, TechEnum::ClockMakers, { TechEnum::Industrialization, TechEnum::ScientificTheories },
+			AddTech_Building(column, TechEnum::ClockMakers, { TechEnum::JewelryCrafting, TechEnum::ScientificTheories },
 				CardEnum::ClockMakers
 			);
 			AddTech_Bonus(column, TechEnum::SocialScience, { TechEnum::ScientificTheories });
@@ -969,7 +965,6 @@ public:
 			column = 2;
 			AddProsperityTech_Bonus(column, 2, TechEnum::Combo);
 			AddProsperityTech_Bonus(column, 2, TechEnum::HomeLandDefense);
-			AddProsperityTech_Bonus(column, 20, TechEnum::FarmAdjacency);
 			AddProsperityTech_Bonus(column, 20, TechEnum::FarmingBreakthrough);
 			AddProsperityTech_Bonus(column, 20, TechEnum::FarmImprovement);
 			
@@ -980,7 +975,8 @@ public:
 			
 			column = 4;
 			AddProsperityTech_Building(column, 10, TechEnum::InventorsWorkshop, CardEnum::InventorsWorkshop);
-		
+			AddProsperityTech_Bonus(column, 14, TechEnum::IndustrialAdjacency);
+			AddProsperityTech_Bonus(column, 14, TechEnum::Rationalism);
 			
 			column = 5;
 			AddProsperityTech_BuildingPermanent(column, 4, TechEnum::StoneRoad, { CardEnum::StoneRoad });
@@ -992,8 +988,6 @@ public:
 			AddProsperityTech_BuildingPermanent(column, 10, TechEnum::FlowerBed, { CardEnum::FlowerBed });
 			
 			column = 7;
-			AddProsperityTech_Bonus(column, 4, TechEnum::IndustrialAdjacency);
-			AddProsperityTech_Bonus(column, 14, TechEnum::Rationalism);
 
 			AddProsperityTech_BuildingPermanent(column, 30, TechEnum::GardenCypress, { CardEnum::GardenCypress });
 		}
@@ -1032,8 +1026,8 @@ public:
 	}
 	static FText GetPreviousAgeText(TechEnum techEnum) {
 		if (techEnum == TechEnum::MiddleAge) return LOCTEXT("Dark Age", "Dark Age");
-		if (techEnum == TechEnum::EnlightenmentAge) return LOCTEXT("Enlightenment Age", "Enlightenment Age");
-		if (techEnum == TechEnum::IndustrialAge) return LOCTEXT("Industrial Age", "Industrial Age");
+		if (techEnum == TechEnum::EnlightenmentAge) return LOCTEXT("Middle Age", "Middle Age");
+		if (techEnum == TechEnum::IndustrialAge) return LOCTEXT("Enlightenment Age", "Enlightenment Age");
 		UE_DEBUG_BREAK();
 		return FText();
 	}
@@ -1046,6 +1040,9 @@ public:
 		
 		ResourceEnum requiredResourceEnum = _enumToTech[techEnum]->requiredResourceEnum;
 		if (requiredResourceEnum != ResourceEnum::None) {
+			if (SimSettings::IsOn("CheatFastTech")) {
+				return true;
+			}
 			return GetResourceProductionCount(requiredResourceEnum) >= _enumToTech[techEnum]->requiredResourceCount;
 		}
 		return true;
@@ -1056,7 +1053,7 @@ public:
 
 		if (tech->requiredResourceEnum != ResourceEnum::None) {
 			return FText::Format(
-				NSLOCTEXT("TechUI", "NeedSatisfyTechPrereq_Pop", "Satisfy this Technology's Prerequisite by producing {0} {1}"),
+				NSLOCTEXT("TechUI", "NeedSatisfyTechPrereq_Pop", "Technology's Prerequisite not met.<space>Satisfy the Prerequisite by producing {0} {1}"),
 				TEXT_NUM(tech->requiredResourceCount),
 				GetResourceInfo(tech->requiredResourceEnum).name
 			);
@@ -1064,7 +1061,7 @@ public:
 
 		if (IsAgeChangeTech(techEnum)) {
 			return FText::Format(
-				NSLOCTEXT("TechUI", "NeedSatisfyTechPrereqAgeChange_Pop", "Satisfy this Technology's Prerequisite by Researching {0} Technologies from the {1}."),
+				NSLOCTEXT("TechUI", "NeedSatisfyTechPrereqAgeChange_Pop", "Technology's Prerequisite not met.<space>Satisfy the Prerequisite by Researching {0} Technologies from the {1}."),
 				TEXT_NUM(GetAgeChangeRequiredTechCount(techEnum)),
 				GetPreviousAgeText(techEnum)
 			);
@@ -1164,17 +1161,26 @@ public:
 		auto techInfo = GetTechInfo(techEnum);
 		int32 column = techInfo->column;
 		if (column == 3 || column == 4 || column == 5) {
-			if (techEnum != TechEnum::MiddleAge && !IsResearched(TechEnum::MiddleAge)) {
+			if (techEnum == TechEnum::MiddleAge) {
+				return columnToResearchedCount(2) == 0;
+			}
+			if (!IsResearched(TechEnum::MiddleAge)) {
 				return true;
 			}
 		}
 		if (column == 6 || column == 7 || column == 8) {
-			if (techEnum != TechEnum::EnlightenmentAge && !IsResearched(TechEnum::EnlightenmentAge)) {
+			if (techEnum == TechEnum::EnlightenmentAge) {
+				return columnToResearchedCount(5) == 0;
+			}
+			if (!IsResearched(TechEnum::EnlightenmentAge)) {
 				return true;
 			}
 		}
 		if (column == 9 || column == 10 || column == 11) {
-			if (techEnum != TechEnum::IndustrialAge && !IsResearched(TechEnum::IndustrialAge)) {
+			if (techEnum == TechEnum::IndustrialAge) {
+				return columnToResearchedCount(8) == 0;
+			}
+			if (!IsResearched(TechEnum::IndustrialAge)) {
 				return true;
 			}
 		}
@@ -1208,7 +1214,7 @@ public:
 	}
 
 	// Simulation
-	void Research(int32 science100PerRound, int32 updatesPerSec);
+	void Research(int64 science100PerRound, int32 updatesPerSec);
 
 	static void EraUnlockedDescription(TArray<FText>& args, int32 era, bool isTip);
 
@@ -1282,15 +1288,15 @@ public:
 		return _columnToTechs[era].size();
 	}
 
-	int32 science100Needed() {
+	int64 science100Needed() {
 		return scienceNeeded() * 100;
 	}
-	int32 scienceNeeded() {
+	int64 scienceNeeded() {
 		PUN_CHECK(currentResearch()->techEnum != TechEnum::None);
 		return currentResearch()->scienceNeeded(techsFinished);
 	}
 
-	int32 science100() { return science100XsecPerRound / Time::SecondsPerRound; }
+	int64 science100() { return science100XsecPerRound / Time::SecondsPerRound; }
 	
 	
 	/*
@@ -1395,7 +1401,7 @@ public:
 	
 	int32 techsFinished = -1;
 	bool researchEnabled;
-	int32 science100XsecPerRound = 0;
+	int64 science100XsecPerRound = 0;
 	bool shouldOpenTechUI = false;
 	
 	// prosperity

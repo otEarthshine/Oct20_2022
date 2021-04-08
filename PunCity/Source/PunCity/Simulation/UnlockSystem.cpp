@@ -2,6 +2,7 @@
 
 #include "UnlockSystem.h"
 #include "BuildingCardSystem.h"
+#include "Buildings/GathererHut.h"
 
 using namespace std;
 
@@ -69,15 +70,15 @@ void Building_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulation
 	ResearchInfo::OnUnlock(playerId, simulation);
 }
 
-void UnlockSystem::Research(int32 science100PerRound, int32 updatesPerSec)
+void UnlockSystem::Research(int64 science100PerRound, int32 updatesPerSec)
 {
 	if (SimSettings::IsOn("CheatFastTech")) {
-		science100PerRound += 20000 * 100 * 20;
+		science100PerRound += 200000 * 100 * 20;
 	}
 
 	// Multiple updates per second, so we divide accordingly science100PerRound/updatesPerSec
-	science100XsecPerRound += GameRand::RandRound(science100PerRound, updatesPerSec);
-	science100XsecPerRound = std::min(science100XsecPerRound, 1800000000); // 600m = 40,000 -> 1800m = 120,000
+	science100XsecPerRound += GameRand::RandRound64(science100PerRound, updatesPerSec);
+	science100XsecPerRound = std::min(science100XsecPerRound, 1800000000000LL); // 600m = 40,000 -> 1800m = 120,000
 
 	if (!hasTargetResearch()) {
 		return;
@@ -299,6 +300,17 @@ void BonusToggle_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulat
 			LOCTEXT("UnlockedBuildingComboBullet2_Pop", "<bullet>Combo Level 2: 4 same-type buildings (+10% productivity)</>"),
 			LOCTEXT("UnlockedBuildingComboBullet3_Pop", "<bullet>Combo Level 3: 8 same-type buildings (+15% productivity)</>")
 		});
+	}
+
+	/*
+	 * 
+	 */
+	if (techEnum == TechEnum::SocialScience)
+	{
+		const std::vector<int32>& bldIds = simulation->buildingIds(playerId, CardEnum::CardMaker);
+		for (int32 bldId : bldIds) {
+			simulation->building<CardMaker>(bldId).ResetWorkModes();
+		}
 	}
 }
 

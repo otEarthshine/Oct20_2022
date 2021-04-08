@@ -505,8 +505,8 @@ public:
 	/*
 	 * Science
 	 */
-	int32 science100PerRound() {
-		return std::accumulate(sciences100.begin(), sciences100.end(), 0);
+	int64 science100PerRound() {
+		return std::accumulate(sciences100.begin(), sciences100.end(), 0LL);
 	}
 
 
@@ -881,7 +881,7 @@ public:
 	std::vector<int32> _provincesClaimed;
 
 	std::vector<int32> incomes100;
-	std::vector<int32> sciences100;
+	std::vector<int64> sciences100;
 	std::vector<int32> influenceIncomes100;
 
 	// Tax Level

@@ -28,6 +28,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_MiddleAge2;
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_MiddleAge3;
 
+	UPROPERTY(meta = (BindWidget)) UOverlay* TheatreLine;
+	
 	UPROPERTY(meta = (BindWidget)) UTextBlock* Title_EnlightenmentAge;
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_EnlightenmentAge1;
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_EnlightenmentAge2;

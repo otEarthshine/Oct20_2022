@@ -97,8 +97,8 @@ public:
 		return result;
 	}
 
-	int32 science100PerRound() {
-		int32 result = 0;
+	int64 science100PerRound() {
+		int64 result = 0;
 		for (int32 townId : _townIds) {
 			result += _simulation->townManager(townId).science100PerRound();
 		}

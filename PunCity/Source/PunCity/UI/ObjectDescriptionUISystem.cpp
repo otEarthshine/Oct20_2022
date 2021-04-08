@@ -897,14 +897,17 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							int32 cumulative100 = 0;
 							for (int32 i = 0; i < HouseScienceEnums.size(); i++) 
 							{
-								int32 science100 = house->GetScience100(HouseScienceEnums[i], cumulative100);
+								int32 science100 = house->GetScience100(HouseScienceEnums[i], 0);
 								if (science100 != 0) {
-									//ss << (science100 > 0 ? " +" : " ") << science100 / 100.0f << " " << ScienceEnumName[static_cast<int>(HouseScienceEnums[i])] << "\n";
 									ADDTEXT_JOIN_(INVTEXT(" "), TEXT_100SIGNED(science100), INVTEXT(" "), ScienceEnumName(static_cast<int>(HouseScienceEnums[i])), INVTEXT("\n"));
 								}
-
-								if (!IsScienceModifierEnum(HouseScienceEnums[i])) {
-									cumulative100 += science100;
+								cumulative100 += science100;
+							}
+							for (int32 i = 0; i < HouseScienceModifierEnums.size(); i++)
+							{
+								int32 science100 = house->GetScience100(HouseScienceModifierEnums[i], cumulative100);
+								if (science100 != 0) {
+									ADDTEXT_JOIN_(INVTEXT(" "), TEXT_100SIGNED(science100), INVTEXT(" "), ScienceEnumName(static_cast<int>(HouseScienceModifierEnums[i])), INVTEXT("\n"));
 								}
 							}
 

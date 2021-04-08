@@ -4812,7 +4812,7 @@ enum class IncomeEnum : uint8
 	TerritoryUpkeep,
 	TradeRoute,
 	
-	MoneyLastEra,
+	EconomicTheories,
 
 	Count,
 };
@@ -4846,7 +4846,7 @@ static const TArray<FText> IncomeEnumName
 	LOCTEXT("Territory Upkeep", "Territory Upkeep"),
 	LOCTEXT("Trade Route", "Trade Route"),
 	
-	LOCTEXT("Last Era Tech", "Last Era Tech"),
+	LOCTEXT("Economic Theories", "Economic Theories"),
 
 	LOCTEXT("Count", "Count"),
 };
@@ -4877,10 +4877,11 @@ enum class ScienceEnum : uint8
 	HomeBrew,
 
 	KnowledgeTransfer,
-	ScienceLastEra,
+	ScientificTheories,
 
 	Rationalism,
 
+	// ScienceModifiers Below
 	Library,
 	School,
 
@@ -4894,7 +4895,7 @@ static TArray<FText> ScienceEnumNameList
 	LOCTEXT("HomeBrew", "Home Brew"),
 
 	LOCTEXT("Knowledgetransfer", "Knowledge transfer"),
-	LOCTEXT("LastEraTechnology", "Last Era Technology"),
+	LOCTEXT("ScientificTheories", "Scientific Theories"),
 
 	LOCTEXT("Rationalism", "Rationalism"),
 
@@ -4908,17 +4909,15 @@ static const FText& ScienceEnumName(int32 index) {
 }
 static int32 ScienceEnumCount = static_cast<int32>(ScienceEnum::Count);
 
-static int32 ScienceModifierStartEnumInt = static_cast<int32>(ScienceEnum::Library);
-
-static bool IsScienceModifierEnum(ScienceEnum scienceEnum) {
-	return static_cast<int32>(scienceEnum) >= ScienceModifierStartEnumInt;
-}
-
 static std::vector<ScienceEnum> HouseScienceEnums
 {
 	ScienceEnum::Base,
 	ScienceEnum::Luxury,
 	ScienceEnum::HomeBrew,
+};
+
+static std::vector<ScienceEnum> HouseScienceModifierEnums
+{
 	ScienceEnum::Library,
 	ScienceEnum::School,
 };
@@ -4976,7 +4975,6 @@ enum class TechEnum : uint8
 	Plantation,
 	
 	StoneTools,
-	BlackSmith,
 	Medicine,
 	
 	IronStatue,
@@ -5075,6 +5073,8 @@ enum class TechEnum : uint8
 	PortColony,
 	IntercityLogistics,
 
+	IndustrialAdjacency,
+
 	/*
 	 * Bonuses
 	 */
@@ -5098,8 +5098,6 @@ enum class TechEnum : uint8
 	//ClaimLandByFood,
 
 	HouseAdjacency,
-	FarmAdjacency,
-	IndustrialAdjacency,
 
 	Logistics5,
 	BudgetAdjustment,
@@ -5111,7 +5109,6 @@ enum class TechEnum : uint8
 	EconomicTheories,
 	
 	Fertilizers,
-	IndustryLastEra,
 	MilitaryLastEra,
 
 	MiddleAge,

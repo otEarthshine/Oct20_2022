@@ -74,6 +74,18 @@ public:
 		return value;
 	}
 
+	static int64_t RandRound64(int64_t numerator, int64_t denominator)
+	{
+		check(randUsageValid);
+
+		int64_t value = numerator / denominator;
+		int64_t remainder = numerator - value * denominator;
+		if (remainder > (Rand() % denominator)) {
+			value++;
+		}
+		return value;
+	}
+
 	static int32_t RandRound(int32_t numerator, int32_t denominator, int32_t seed)
 	{
 		check(randUsageValid);

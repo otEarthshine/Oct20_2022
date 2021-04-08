@@ -990,8 +990,8 @@ std::vector<BonusPair> Building::GetBonuses()
 			bonuses.push_back({ LOCTEXT("Engineering office", "Engineering office"), 10 });
 		}
 
-		if (_simulation->IsResearched(_playerId, TechEnum::IndustryLastEra)) {
-			bonuses.push_back({ LOCTEXT("Last era technology", "Last era technology"), 10 });
+		if (_simulation->IsResearched(_playerId, TechEnum::Industrialization)) {
+			bonuses.push_back({ LOCTEXT("Industrialization", "Industrialization"), 20 });
 		}
 
 		// Industrialist

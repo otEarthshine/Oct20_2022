@@ -303,7 +303,7 @@ int32 House::GetIncome100(IncomeEnum incomeEnum)
 	};
 }
 
-int32 House::GetScience100(ScienceEnum scienceEnum, int32 cumulative100)
+int64 House::GetScience100(ScienceEnum scienceEnum, int64 cumulative100)
 {
 	switch (scienceEnum)
 	{
@@ -323,23 +323,17 @@ int32 House::GetScience100(ScienceEnum scienceEnum, int32 cumulative100)
 
 	// Modifier
 	case ScienceEnum::Library: {
-		if (_houseLvl < Library::MinHouseLvl) {
-			return 0;
-		}
 		int32 radiusBonus = GetRadiusBonus(CardEnum::Library, Library::Radius, [&](int32 bonus, Building& building) {
 			return max(bonus, 1);
 		});
-		return radiusBonus > 0 ? occupancyFactor(cumulative100) : 0; // +100%
+		return radiusBonus > 0 ? cumulative100 : 0; // +100%
 	}
 
 	case ScienceEnum::School: {
-		if (_houseLvl < School::MinHouseLvl) {
-			return 0;
-		}
 		int32 radiusBonus = GetRadiusBonus(CardEnum::School, Library::Radius, [&](int32 bonus, Building& building) {
 			return max(bonus, 1);
 		});
-		return radiusBonus > 0 ? occupancyFactor(cumulative100 * 120 / 100) : 0; // +120%
+		return radiusBonus > 0 ? (cumulative100 * 120 / 100) : 0; // +120%
 	}
 
 	default:

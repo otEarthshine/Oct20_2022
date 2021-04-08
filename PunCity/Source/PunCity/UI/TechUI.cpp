@@ -215,7 +215,7 @@ void UTechUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callBackEnum)
 		
 		simulation().AddPopupToFront(playerId(), 
 			FText::Format(
-				LOCTEXT("NeedSatisfyTechPrereq_Pop", "Satisfy this Technology's Prerequisite by producing {0} {1}"), 
+				LOCTEXT("NeedSatisfyTechPrereq_Pop", "Technology's Prerequisites not met.<space>Satisfy the Prerequisites by producing {0} {1}"), 
 				TEXT_NUM(tech->requiredResourceCount), 
 				GetResourceInfo(tech->requiredResourceEnum).name
 			),

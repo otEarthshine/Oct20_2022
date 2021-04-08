@@ -1110,7 +1110,7 @@ void TownManager::RecalculateTax(bool showFloatup)
 	{
 		int32 sumFromHouses = CppUtils::Sum(incomes100);
 		if (_simulation->IsResearched(_playerId, TechEnum::EconomicTheories)) {
-			incomes100[static_cast<int>(IncomeEnum::MoneyLastEra)] += sumFromHouses * 20 / 100;
+			incomes100[static_cast<int>(IncomeEnum::EconomicTheories)] += sumFromHouses * 20 / 100;
 		}
 	}
 
@@ -1255,39 +1255,43 @@ void TownManager::RecalculateTax(bool showFloatup)
 	/*
 	 * Science
 	 */
-	std::fill(sciences100.begin(), sciences100.end(), 0);
-	for (auto houseId : _houseIds) {
+	std::fill(sciences100.begin(), sciences100.end(), 0LL);
+	for (auto houseId : _houseIds) 
+	{
 		House& house = _simulation->building(houseId).subclass<House>(CardEnum::House);
 
 		int32 cumulative100 = 0;
 		for (size_t i = 0; i < HouseScienceEnums.size(); i++) 
 		{
-			int32 houseScience100 = house.GetScience100(HouseScienceEnums[i], cumulative100);
-			sciences100[static_cast<int>(HouseScienceEnums[i])] += houseScience100;
-			
-			if (!IsScienceModifierEnum(HouseScienceEnums[i])) {
-				cumulative100 += houseScience100;
-			}
+			int32 houseScience100 = house.GetScience100(HouseScienceEnums[i], 0);
+			sciences100[static_cast<int>(HouseScienceEnums[i])] += static_cast<int64>(houseScience100);
+			cumulative100 += houseScience100;
+		}
+
+		for (size_t i = 0; i < HouseScienceModifierEnums.size(); i++) 
+		{
+			int32 houseScience100 = house.GetScience100(HouseScienceModifierEnums[i], cumulative100);
+			sciences100[static_cast<int>(HouseScienceModifierEnums[i])] += static_cast<int64>(houseScience100);
 		}
 	}
 
-	int32 sumFromHouses = CppUtils::Sum(sciences100);
+	int64 sumFromHouses = CppUtils::Sum(sciences100);
 
 	// Less tech than lord, get +20% sci
 	int32 lordPlayerId = _simulation->playerOwned(_playerId).lordPlayerId();
 	if (lordPlayerId != -1 &&
 		_simulation->sciTechsCompleted(_playerId) < _simulation->sciTechsCompleted(lordPlayerId))
 	{
-		sciences100[static_cast<int>(ScienceEnum::KnowledgeTransfer)] += sumFromHouses * 20 / 100;
+		sciences100[static_cast<int>(ScienceEnum::KnowledgeTransfer)] += sumFromHouses * 20LL / 100LL;
 	}
 
 
 	if (_simulation->IsResearched(_playerId, TechEnum::ScientificTheories)) {
-		sciences100[static_cast<int>(ScienceEnum::ScienceLastEra)] += sumFromHouses * 20 / 100;
+		sciences100[static_cast<int>(ScienceEnum::ScientificTheories)] += sumFromHouses * 20LL / 100LL;
 	}
 
 	if (_simulation->IsResearched(_playerId, TechEnum::Rationalism)) {
-		sciences100[static_cast<int>(ScienceEnum::Rationalism)] += sumFromHouses * 30 / 100;
+		sciences100[static_cast<int>(ScienceEnum::Rationalism)] += sumFromHouses * 30LL / 100LL;
 	}
 
 	/*

@@ -293,7 +293,7 @@ std::vector<BonusPair> Farm::GetBonuses()
 	}
 
 	if (_simulation->IsResearched(_playerId, TechEnum::Fertilizers)) {
-		bonuses.push_back({ LOCTEXT("Last Era Technology", "Last Era Technology"), 20 });
+		bonuses.push_back({ LOCTEXT("Fertilizers", "Fertilizers"), 20 });
 	}
 
 	{
@@ -482,17 +482,26 @@ static const FText cardRemovalCardText =	LOCTEXT("Card Removal Card", "Card Remo
 
 void CardMaker::OnInit()
 {
+	ResetWorkModes();
+}
+
+void CardMaker::ResetWorkModes()
+{
 	SetupWorkMode({
 		WorkMode::Create(productivityBookText,		LOCTEXT("Productivity Book WorkDesc", "Create Productivity Book Card\n(50 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 50),
 		WorkMode::Create(sustainabilityBookText,	LOCTEXT("Sustainability Book WorkDesc", "Create Sustainability Book Card\n(50 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 50),
 		WorkMode::Create(frugalityBookText,			LOCTEXT("Frugality Book WorkDesc", "Create Frugality Book Card\n(50 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 50),
-		WorkMode::Create(motivationBookText,		LOCTEXT("Motivation WorkDesc", "Create Motivation Card\n(100 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 100),
-		WorkMode::Create(passionBookText,			LOCTEXT("Passion WorkDesc", "Create Passion Card\n(100 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 100),
-		
+
 		WorkMode::Create(wildCardText,				LOCTEXT("Wild Card WorkDesc", "Create Wild Card\n(10 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 10),
 		WorkMode::Create(cardRemovalCardText,		LOCTEXT("Card Removal Card WorkDesc", "Create Card Removal Card\n(10 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 10),
 	});
+
+	if (_simulation->IsResearched(_playerId, TechEnum::SocialScience)) {
+		AddWorkMode(WorkMode::Create(motivationBookText, LOCTEXT("Motivation WorkDesc", "Create Motivation Card\n(100 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 100));
+		AddWorkMode(WorkMode::Create(passionBookText, LOCTEXT("Passion WorkDesc", "Create Passion Card\n(100 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 100));
+	}
 }
+
 
 void CardMaker::FinishConstruction()
 {

@@ -151,20 +151,20 @@ public:
 	}
 
 	// Science
-	int32 GetScience100(ScienceEnum scienceEnum, int32 cumulative100);
+	int64 GetScience100(ScienceEnum scienceEnum, int64 cumulative100);
 	
-	int32 science100PerRound()
+	int64 science100PerRound()
 	{
-		int32 result = 0;
-		int32 cumulative100 = 0;
-		
+		int64 result = 0;
 		for (int32 i = 0; i < HouseScienceEnums.size(); i++) {
-			result += GetScience100(HouseScienceEnums[i], cumulative100);
-			
-			if (!IsScienceModifierEnum(HouseScienceEnums[i])) {
-				cumulative100 = result;
-			}
+			result += GetScience100(HouseScienceEnums[i], 0);
 		}
+
+		int64 cumulative100 = result;
+		for (int32 i = 0; i < HouseScienceModifierEnums.size(); i++) {
+			result += GetScience100(HouseScienceModifierEnums[i], cumulative100);
+		}
+		
 		return result;
 	}
 

@@ -1382,6 +1382,8 @@ public:
 		ResourceEnum product = ResourceEnum::None;
 		FText description;
 
+		bool isValid() { return !name.IsEmpty(); }
+
 		static WorkMode Create(FText name, FText description, 
 			ResourceEnum input1 = ResourceEnum::None, 
 			ResourceEnum input2 = ResourceEnum::None,
@@ -1410,6 +1412,10 @@ public:
 			//SerializeStr(Ar, description);
 			Ar << description;
 		}
+
+		bool operator==(const WorkMode& a) {
+			return name.EqualTo(a.name);
+		}
 	};
 	
 	std::vector<WorkMode> workModes;
@@ -1417,8 +1423,14 @@ public:
 	bool hasWorkModes() { return workModes.size() > 0; }
 
 	void SetupWorkMode(std::vector<WorkMode> workModesIn) {
+		workModes.clear();
 		workModes = workModesIn;
-		_workMode = workModes[0];
+		if (!_workMode.isValid()) {
+			_workMode = workModes[0];
+		}
+	}
+	void AddWorkMode(WorkMode workModesIn) {
+		workModes.push_back(workModesIn);
 	}
 	
 	

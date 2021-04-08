@@ -141,6 +141,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* TechName;
 
 	UPROPERTY() UOverlay* lineChild;
+	UPROPERTY() UOverlay* lineChild2 = nullptr;
 
 	UPROPERTY(meta = (BindWidget)) UTextBlock* PercentText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* SecText;

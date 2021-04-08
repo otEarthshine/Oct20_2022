@@ -1046,7 +1046,7 @@ void UMainGameUI::Tick()
 
 			for (size_t i = 0; i < ScienceEnumCount; i++)
 			{
-				int32 science100 = 0;
+				int64 science100 = 0;
 				const auto& townIds = playerOwned.townIds();
 				for (int32 townId : townIds) {
 					science100 += sim.townManager(townId).sciences100[i];

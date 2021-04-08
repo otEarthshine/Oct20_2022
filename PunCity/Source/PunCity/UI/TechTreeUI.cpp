@@ -51,6 +51,9 @@ void UTechTreeUI::SetupTechBoxUIs()
 					techBoxChild->Init(this, tech->techEnum);
 					techBoxChild->TechName->SetText(tech->GetName());
 					techBoxChild->lineChild = lineChild;
+					if (techEnum == TechEnum::Theatre) {
+						techBoxChild->lineChild2 = TheatreLine;
+					}
 				}
 			}
 		}

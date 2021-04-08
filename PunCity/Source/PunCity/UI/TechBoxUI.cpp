@@ -46,14 +46,19 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 
 	auto setLineColorAndOpacity = [&](FLinearColor color)
 	{
-		if (lineChild) 
-		{
-			for (int32 i = 0; i < lineChild->GetChildrenCount(); i++) {
-				if (auto image = Cast<UImage>(lineChild->GetChildAt(i))) {
-					image->SetColorAndOpacity(color);
+		auto setSingleLineColorAndOpacity = [&](UOverlay* lineOverlay) {
+			if (lineOverlay)
+			{
+				for (int32 i = 0; i < lineOverlay->GetChildrenCount(); i++) {
+					if (auto image = Cast<UImage>(lineOverlay->GetChildAt(i))) {
+						image->SetColorAndOpacity(color);
+					}
 				}
 			}
-		}
+		};
+
+		setSingleLineColorAndOpacity(lineChild);
+		setSingleLineColorAndOpacity(lineChild2);
 	};
 
 	if (techStateIn == TechStateEnum::Researched)
@@ -78,7 +83,7 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 			
 			showResearchPercent = (currentTech->techEnum == tech->techEnum); // show research percent on the current tech
 
-			setLineColorAndOpacity(FLinearColor(0.5, 0.5, 0.5, 1));
+			setLineColorAndOpacity(FLinearColor(0.9, 0.9, 0.9, 1));
 			//lineColor = FLinearColor(1, 1, 1, 1);
 		} else {
 			colorState = 0.25f;
@@ -113,22 +118,22 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 		researchFraction = min(researchFraction, 1.0f);
 		SetText(PercentText, TEXT_FLOAT1_PERCENT(researchFraction * 100)));
 
-		int32 science100XsecPerRound_Left = (100.0f * tech->scienceNeeded(unlockSys->techsFinished) * Time::SecondsPerRound) - unlockSys->science100XsecPerRound;
-		int32 science100Left = science100XsecPerRound_Left / Time::SecondsPerRound; // Redundant, but just make it easier to read
+		int64 science100XsecPerRound_Left = (100LL * tech->scienceNeeded(unlockSys->techsFinished) * Time::SecondsPerRound) - unlockSys->science100XsecPerRound;
+		int64 science100Left = science100XsecPerRound_Left / Time::SecondsPerRound; // Redundant, but just make it easier to read
 
-		int32 science100PerRound = simulation().playerOwned(playerId()).science100PerRound();
+		int64 science100PerRound = simulation().playerOwned(playerId()).science100PerRound();
 		if (science100PerRound > 0) {
-			int32 secRequired = (science100Left * Time::SecondsPerRound) / science100PerRound;
-			secRequired = std::max(secRequired, 0);
+			int64 secRequired = (science100Left * Time::SecondsPerRound) / science100PerRound;
+			secRequired = std::max(secRequired, 0LL);
 
 			TArray<FText> args;
 			
-			int32 minuteRequired = secRequired / Time::SecondsPerMinute;
+			int64 minuteRequired = secRequired / Time::SecondsPerMinute;
 			if (minuteRequired > 0) {
 				ADDTEXT_(INVTEXT("{0}m "), TEXT_NUM(minuteRequired));
 			}
 			
-			int32 remainderSecRequired = secRequired % Time::SecondsPerMinute;
+			int64 remainderSecRequired = secRequired % Time::SecondsPerMinute;
 			ADDTEXT_(INVTEXT("{0}s"), TEXT_NUM(remainderSecRequired));
 			SetText(SecText, args);
 		}
@@ -149,11 +154,9 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 	{
 		if (currentCount >= requiredCount)
 		{
-			SetText(TechRequirement, FText::Format(
-				LOCTEXT("TechBoxRequirementsCompleted", "Completed:\n{0} {1}"),
-				TEXT_NUM(requiredCount),
-				requiredName
-			));
+			SetText(TechRequirement,
+				LOCTEXT("TechBoxRequirementsCompleted", "Ready for Research!")
+			);
 		}
 		else {
 			SetText(TechRequirement, FText::Format(
@@ -175,7 +178,8 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 	if (tech)
 	{
 		// Required Resource
-		if (tech->requiredResourceEnum != ResourceEnum::None)
+		if (tech->requiredResourceEnum != ResourceEnum::None && 
+			tech->state == TechStateEnum::Researched)
 		{
 			int32 productionCount = unlockSys->GetResourceProductionCount(tech->requiredResourceEnum);
 			setTechRequirementText(

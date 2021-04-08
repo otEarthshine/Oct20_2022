@@ -31,7 +31,7 @@ class UPunBoxWidget : public UPunWidget
 	GENERATED_BODY()
 public:
 	
-	void ResetBeforeAdd()
+	void ResetBeforeFirstAdd()
 	{
 		PunVerticalBox->ClearChildren();
 		_elementEnums.clear();

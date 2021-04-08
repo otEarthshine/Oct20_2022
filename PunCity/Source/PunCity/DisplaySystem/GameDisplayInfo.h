@@ -897,12 +897,16 @@ public:
 		{ // Glasswork
 		ModuleTransforms::CreateSet("Ministry")
 		},
+		{ // ConcreteFactory
+		ModuleTransforms::CreateSet("Ministry")
+		},
 		{ // CoalPowerPlant
 		ModuleTransforms::CreateSet("Ministry")
 		},
 		{ // Steelworks
 		ModuleTransforms::CreateSet("Ministry")
 		},
+			
 		{ // StoneToolsShop
 		ModuleTransforms::CreateSet("Ministry")
 		},

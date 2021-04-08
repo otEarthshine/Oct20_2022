@@ -292,7 +292,7 @@ std::vector<BonusPair> Farm::GetBonuses()
 		bonuses.push_back({ LOCTEXT("Censorship", "Censorship"), 7 });
 	}
 
-	if (_simulation->IsResearched(_playerId, TechEnum::FarmLastEra)) {
+	if (_simulation->IsResearched(_playerId, TechEnum::Fertilizers)) {
 		bonuses.push_back({ LOCTEXT("Last Era Technology", "Last Era Technology"), 20 });
 	}
 

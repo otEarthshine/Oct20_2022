@@ -115,7 +115,7 @@ void UnlockSystem::Research(int32 science100PerRound, int32 updatesPerSec)
 			OnEraUnlocked(args);
 
 			PopupInfo popupInfo(_playerId, JOINTEXT(args), choices, receiver, true);
-			popupInfo.warningForExclusiveUI = ExclusiveUIEnum::TechUI;
+			popupInfo.warningForExclusiveUI = ExclusiveUIEnum::TechTreeUI;
 			popupInfo.forcedSkipNetworking = true;
 			_simulation->AddPopupToFront(popupInfo);
 
@@ -129,7 +129,7 @@ void UnlockSystem::Research(int32 science100PerRound, int32 updatesPerSec)
 				LOCTEXT("Research Completed.", "Research Completed."), 
 				choices, receiver, true
 			);
-			popupInfo.warningForExclusiveUI = ExclusiveUIEnum::TechUI;
+			popupInfo.warningForExclusiveUI = ExclusiveUIEnum::TechTreeUI;
 			popupInfo.forcedSkipNetworking = true;
 			_simulation->AddPopupToFront(popupInfo);
 

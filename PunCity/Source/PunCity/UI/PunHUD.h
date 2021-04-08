@@ -34,6 +34,7 @@
 #include "GiftResourceUI.h"
 #include "DiplomacyUI.h"
 #include "SendImmigrantsUI.h"
+#include "TechTreeUI.h"
 
 #include "PunHUD.generated.h"
 
@@ -358,7 +359,7 @@ public:
 		case ExclusiveUIEnum::ConfirmingAction: return _mainGameUI->ConfirmationOverlay->GetVisibility() != ESlateVisibility::Collapsed;
 		case ExclusiveUIEnum::EscMenu:			return _escMenuUI->EscMenu->GetVisibility() != ESlateVisibility::Collapsed;
 
-		case ExclusiveUIEnum::TechUI:			return _techUI->GetVisibility() != ESlateVisibility::Collapsed;
+		case ExclusiveUIEnum::TechTreeUI:			return _techUI->GetVisibility() != ESlateVisibility::Collapsed;
 		case ExclusiveUIEnum::ProsperityUI:		return _prosperityUI->GetVisibility() != ESlateVisibility::Collapsed;
 			
 		case ExclusiveUIEnum::Trading:			return _worldTradeUI->GetVisibility() != ESlateVisibility::Collapsed;
@@ -576,7 +577,7 @@ protected:
 
 	UPROPERTY() UStatisticsUI* _statisticsUI;
 
-	UPROPERTY() UTechUI* _techUI;
+	UPROPERTY() UTechTreeUI* _techUI;
 	UPROPERTY() UProsperityUI* _prosperityUI;
 
 	//UPROPERTY() UArmyMoveUI* _armyMoveUI;

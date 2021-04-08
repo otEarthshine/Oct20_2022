@@ -1057,12 +1057,13 @@ public:
 	//bool HasCombo() {
 	//	return _simulation->buildingIds(_playerId, _buildingEnum).size() >= 3;
 	//}
-	int32 adjacentEfficiency() {
+	virtual int32 adjacentEfficiency() {
 		return adjacentBonusCount() * 5;
 	}
+	virtual int32 maxAdjacencyCount() { return 3; }
 	int32 adjacentBonusCount() {
 		// Adjacent Bonus Count max at 3
-		return std::min(3, HasAdjacencyBonus() ? adjacentCount(_buildingEnum) : 0);
+		return std::min(maxAdjacencyCount(), HasAdjacencyBonus() ? adjacentCount(_buildingEnum) : 0);
 	}
 	virtual bool HasAdjacencyBonus() {
 		return IsProducerProcessor(_buildingEnum) && _simulation->IsResearched(_playerId, TechEnum::IndustrialAdjacency);

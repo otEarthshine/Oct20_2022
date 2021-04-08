@@ -38,7 +38,7 @@ void UPopupUI::Tick()
 		
 		// Should still display Tech popup in front of Tech UI
 		// Shouldn't show the "Show tech tree" in this case
-		if (shouldShowExclusive(ExclusiveUIEnum::TechUI))
+		if (shouldShowExclusive(ExclusiveUIEnum::TechTreeUI))
 		{
 			shouldPopup = true;
 			popupToDisplay->choices = { LOCTEXT("Close", "Close") };

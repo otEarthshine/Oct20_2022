@@ -44,19 +44,32 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 	float showBubbles = 0.0f;
 	bool showResearchPercent = false;
 
-	
+	auto setLineColorAndOpacity = [&](FLinearColor color)
+	{
+		if (lineChild) 
+		{
+			for (int32 i = 0; i < lineChild->GetChildrenCount(); i++) {
+				if (auto image = Cast<UImage>(lineChild->GetChildAt(i))) {
+					image->SetColorAndOpacity(color);
+				}
+			}
+		}
+	};
 
 	if (techStateIn == TechStateEnum::Researched)
 	{
 		colorState = 0.75f;
-		//lineColor = FLinearColor(1, 1, 1, 1);
+		
+		setLineColorAndOpacity(FLinearColor(0.28, 0.42, 0.7, 1));
 	}
 	else if (isLocked)
 	{
 		colorState = 0.0f;
+		
+		setLineColorAndOpacity(FLinearColor(0.1, 0.1, 0.1, 1));
 	}
 	else
-	{
+	{	
 		if (isInTechQueue) {
 			colorState = 0.5f;
 			showBubbles = 1.0f;
@@ -64,11 +77,13 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 			auto currentTech = unlockSys->currentResearch();
 			
 			showResearchPercent = (currentTech->techEnum == tech->techEnum); // show research percent on the current tech
-			
+
+			setLineColorAndOpacity(FLinearColor(0.5, 0.5, 0.5, 1));
 			//lineColor = FLinearColor(1, 1, 1, 1);
 		} else {
 			colorState = 0.25f;
-			
+
+			setLineColorAndOpacity(FLinearColor(0.3, 0.3, 0.3, 1));
 			//lineColor = FLinearColor(1, 1, 1, 0.3);
 		}
 	}

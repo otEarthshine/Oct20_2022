@@ -1109,7 +1109,7 @@ void TownManager::RecalculateTax(bool showFloatup)
 
 	{
 		int32 sumFromHouses = CppUtils::Sum(incomes100);
-		if (_simulation->IsResearched(_playerId, TechEnum::MoneyLastEra)) {
+		if (_simulation->IsResearched(_playerId, TechEnum::EconomicTheories)) {
 			incomes100[static_cast<int>(IncomeEnum::MoneyLastEra)] += sumFromHouses * 20 / 100;
 		}
 	}

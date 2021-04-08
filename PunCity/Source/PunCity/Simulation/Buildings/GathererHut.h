@@ -121,8 +121,12 @@ public:
 		return _fertility;
 	}
 
+	int32 adjacentEfficiency() override {
+		return adjacentBonusCount() * 10;
+	}
+	int32 maxAdjacencyCount() override { return 2; }
 	bool HasAdjacencyBonus() override {
-		return _simulation->IsResearched(_playerId, TechEnum::FarmAdjacency);
+		return _simulation->IsResearched(_playerId, TechEnum::AgriculturalRevolution);
 	}
 
 	std::vector<BonusPair> GetBonuses() override;

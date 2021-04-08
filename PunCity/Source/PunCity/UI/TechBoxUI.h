@@ -140,6 +140,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) UImage* OuterImage;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* TechName;
 
+	UPROPERTY() UOverlay* lineChild;
+
 	UPROPERTY(meta = (BindWidget)) UTextBlock* PercentText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* SecText;
 

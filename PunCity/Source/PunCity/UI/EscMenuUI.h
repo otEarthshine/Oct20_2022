@@ -281,7 +281,7 @@ public:
 			int32 score = simulation().totalScore(playerId());
 
 			TotalScore->SetText(TEXT_NUM(score));
-			ScoreBreakdown->ResetBeforeAdd();
+			ScoreBreakdown->ResetBeforeFirstAdd(); // TODO: should be at Init
 
 			ScoreBreakdown->AddMidRowText(NSLOCTEXT("ScoreBreakdown", "Difficulty:", "Difficulty:"), DifficultyLevelNames[static_cast<int>(simulation().mapSettings().difficultyLevel)]);
 
@@ -299,7 +299,8 @@ public:
 			
 			ScoreBreakdown->AfterAdd();
 
-			OtherPlayerScores->ResetBeforeAdd();
+			OtherPlayerScores->ResetBeforeFirstAdd(); // TODO: should be at Init
+			
 			for (int32 i = 0; i < GameConstants::MaxPlayersAndAI; i++) {
 				if (i != playerId() && simulation().HasTownhall(i)) 
 				{

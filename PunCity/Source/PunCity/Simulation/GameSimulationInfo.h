@@ -5032,18 +5032,19 @@ enum class TechEnum : uint8
 	CoffeeRoaster,
 
 	// Mar 12
-	Warehouse,
-	Granary,
+	Logistics3,
+	AgriculturalRevolution,
 	Archives,
-	HaulingServices,
+	Logistics1,
 	QuickBuild,
 
 	// Apr 1
 	SandMine,
 	Glassworks,
 	ConcreteFactory,
-	CoalPowerPlant,
+	Industrialization,
 	Steelworks,
+	
 	StoneToolsShop,
 	OilWell,
 	OilPowerPlant,
@@ -5055,7 +5056,7 @@ enum class TechEnum : uint8
 	GrandMuseum,
 	ExhibitionHall,
 
-	
+	SocialScience,
 
 	//Bridge,
 	HumanitarianAid,
@@ -5066,7 +5067,7 @@ enum class TechEnum : uint8
 	BarrackKnight,
 
 	Irrigation,
-	Market,
+	Logistics2,
 	Logistics4,
 
 	Tunnel,
@@ -5107,8 +5108,9 @@ enum class TechEnum : uint8
 	CityManagementI,
 
 	ScientificTheories,
-	MoneyLastEra,
-	FarmLastEra,
+	EconomicTheories,
+	
+	Fertilizers,
 	IndustryLastEra,
 	MilitaryLastEra,
 
@@ -6275,7 +6277,7 @@ enum class ExclusiveUIEnum : uint8
 	IntercityTrading,
 	TargetConfirm,
 	
-	TechUI,
+	TechTreeUI,
 	QuestUI,
 	//ObjectDescription, // shouldn't be one, to easy to misclick on this...
 

@@ -202,7 +202,7 @@ void UTechUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callBackEnum)
 
 	// Make sure this tech is not locked or researched
 	auto unlockSys = simulation().unlockSystem(playerId());
-	if (unlockSys->isTechLocked(techBox->techEnum) ||
+	if (unlockSys->IsLocked(techBox->techEnum) ||
 		unlockSys->IsResearched(techBox->techEnum)) 
 	{
 		dataSource()->Spawn2DSound("UI", "UIIncrementalError");
@@ -219,7 +219,7 @@ void UTechUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callBackEnum)
 				TEXT_NUM(tech->requiredResourceCount), 
 				GetResourceInfo(tech->requiredResourceEnum).name
 			),
-			ExclusiveUIEnum::TechUI, "PopupCannot"
+			ExclusiveUIEnum::TechTreeUI, "PopupCannot"
 		);
 		return;
 	}

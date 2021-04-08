@@ -106,8 +106,8 @@ APunHUD::APunHUD()
 	LoadClass(UIEnum::PunItemIcon, "PunItemIconWidget");
 	LoadClass(UIEnum::PunItemSelectionChoice, "PunItemSelectionChoiceWidget");
 
-	LoadClass(UIEnum::TechTree, "TechTree/TechTreeUIWidget");
-	LoadClass(UIEnum::TechUI, "TechTree/TechUIWidget");
+	LoadClass(UIEnum::TechTreeUI, "TechTree/TechTreeUIWidget");
+	//LoadClass(UIEnum::TechUI, "TechTree/TechUIWidget");
 	LoadClass(UIEnum::TechEraUI, "TechTree/TechEraUIWidget");
 	LoadClass(UIEnum::TechBox, "TechTree/TechBoxUIWidget");
 	
@@ -348,7 +348,7 @@ void APunHUD::Setup(IPunPlayerController* controller, USceneComponent* worldWidg
 	_giftResourceUI = AddWidgetToHUDCast<UGiftResourceUI>(UIEnum::GiftResourceUI);
 	_giftResourceUI->PunInit();
 
-	_techUI = AddWidgetToHUDCast<UTechUI>(UIEnum::TechUI);
+	_techUI = AddWidgetToHUDCast<UTechTreeUI>(UIEnum::TechTreeUI);
 	_techUI->PunInit();
 
 	_prosperityUI = AddWidgetToHUDCast<UProsperityUI>(UIEnum::ProsperityUI);

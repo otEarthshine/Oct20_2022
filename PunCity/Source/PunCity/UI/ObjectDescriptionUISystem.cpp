@@ -98,8 +98,8 @@ void UObjectDescriptionUISystem::Tick()
 
 	if (dataSource()->simulation().tickCount() == 0) {
 		_objectDescriptionUI->CloseAllSubUIs(true);
-		_objectDescriptionUI->DescriptionPunBox->ResetBeforeAdd();
-		_objectDescriptionUI->DescriptionPunBoxScroll->ResetBeforeAdd();
+		_objectDescriptionUI->DescriptionPunBox->ResetBeforeFirstAdd();
+		_objectDescriptionUI->DescriptionPunBoxScroll->ResetBeforeFirstAdd();
 		_objectDescriptionUI->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
@@ -559,8 +559,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			_justOpenedDescriptionUI = true;
 		}
 		_objectDescriptionUI->CloseAllSubUIs(uiState.shouldCloseStatUI);
-		descriptionBox->ResetBeforeAdd();
-		descriptionBoxScrollable->ResetBeforeAdd();
+		descriptionBox->ResetBeforeFirstAdd();
+		descriptionBoxScrollable->ResetBeforeFirstAdd();
 	}
 
 	if (_tileSelectionDecal) {

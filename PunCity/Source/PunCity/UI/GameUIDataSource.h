@@ -114,8 +114,7 @@ enum class UIEnum
 	PunItemIcon,
 	PunItemSelectionChoice,
 	
-	TechTree,
-	TechUI,
+	TechTreeUI,
 	TechEraUI,
 	TechBox,
 
@@ -147,7 +146,6 @@ enum class UIEnum
 
 	Count,
 };
-
 static const int UIEnumCount = static_cast<int>(UIEnum::Count);
 
 

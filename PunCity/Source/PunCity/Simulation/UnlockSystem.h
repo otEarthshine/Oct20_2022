@@ -920,7 +920,7 @@ public:
 				CardEnum::ConcreteFactory
 			);
 			AddTech_Building(column, TechEnum::Industrialization, { TechEnum::Machinery },
-				CardEnum::CoalPowerPlant
+				CardEnum::Steelworks
 			);
 			AddTech_Building(column, TechEnum::JewelryCrafting, { TechEnum::GoldWorking },
 				{ CardEnum::Jeweler }
@@ -930,8 +930,8 @@ public:
 
 
 			column = 10;
-			AddTech_Building(column, TechEnum::Steelworks, { TechEnum::ConcreteFactory, TechEnum::Industrialization },
-				CardEnum::Steelworks
+			AddTech_Building(column, TechEnum::CoalPowerPlant, { TechEnum::ConcreteFactory, TechEnum::Industrialization },
+				CardEnum::CoalPowerPlant
 			);
 			AddTech_Building(column, TechEnum::PaperMill, { TechEnum::Industrialization },
 				CardEnum::PaperMill
@@ -950,13 +950,13 @@ public:
 
 
 			column = 11;
-			AddTech_Building(column, TechEnum::OilWell, { TechEnum::Steelworks },
+			AddTech_Building(column, TechEnum::OilWell, { TechEnum::CoalPowerPlant },
 				{ CardEnum::OilRig, CardEnum::OilPowerPlant }
 			);
-			AddTech_Building(column, TechEnum::ExhibitionHall, { TechEnum::Steelworks },
+			AddTech_Building(column, TechEnum::ExhibitionHall, { TechEnum::CoalPowerPlant },
 				{ CardEnum::ExhibitionHall }
 			);
-			AddTech_Building(column, TechEnum::Printing, { TechEnum::Steelworks, TechEnum::PaperMill },
+			AddTech_Building(column, TechEnum::Printing, { TechEnum::CoalPowerPlant, TechEnum::PaperMill },
 				{ CardEnum::PrintingPress }
 			);
 			AddTech_Bonus(column, TechEnum::EconomicTheories, { TechEnum::ClockMakers, TechEnum::SocialScience });
@@ -977,9 +977,6 @@ public:
 
 
 			/*
-			AddProsperityTech_Building(column, TechEnum::Espionage, { CardEnum::Steal });
-			AddProsperityTech_Building(column, TechEnum::SpyGuard, { CardEnum::KidnapGuard, CardEnum::TreasuryGuard });
-			
 			AddProsperityTech_Bonus(column, TechEnum::TraderDiscount);
 			 */
 
@@ -991,15 +988,16 @@ public:
 			column = 1;
 			AddProsperityTech_Bonus(column, 8, TechEnum::CharcoalBurnerImprovement);
 			AddProsperityTech_Bonus(column, 2, TechEnum::InfluencePoints);
-			AddProsperityTech_Building(column, 2, TechEnum::BarrackArcher, CardEnum::BarrackArcher);
-			AddProsperityTech_Bonus(column, 2, TechEnum::Conquer);
-			AddProsperityTech_Bonus(column, 2, TechEnum::Vassalize);
-			AddProsperityTech_Bonus(column, 2, TechEnum::QuarryImprovement);
+			AddProsperityTech_Building(column, 4, TechEnum::BarrackArcher, CardEnum::BarrackArcher);
+			AddProsperityTech_Bonus(column, 4, TechEnum::Conquer);
+			AddProsperityTech_Bonus(column, 4, TechEnum::Vassalize);
+			AddProsperityTech_Bonus(column, 10, TechEnum::QuarryImprovement);
 
 			column = 2;
 			AddProsperityTech_Bonus(column, 2, TechEnum::Combo);
 			AddProsperityTech_Bonus(column, 2, TechEnum::HomeLandDefense);
-			AddProsperityTech_Bonus(column, 16, TechEnum::HouseAdjacency);
+			AddProsperityTech_BuildingX(column, 2, TechEnum::SpyGuard, { CardEnum::KidnapGuard, CardEnum::TreasuryGuard });
+			AddProsperityTech_Bonus(column, 14, TechEnum::HouseAdjacency);
 			AddProsperityTech_Bonus(column, 20, TechEnum::FarmingBreakthrough);
 			AddProsperityTech_Bonus(column, 20, TechEnum::FarmImprovement);
 			
@@ -1016,6 +1014,7 @@ public:
 			AddProsperityTech_Bonus(column, 4, TechEnum::TaxAdjustment);
 			AddProsperityTech_Building(column, 10, TechEnum::InventorsWorkshop, CardEnum::InventorsWorkshop);
 			AddProsperityTech_Bonus(column, 14, TechEnum::IndustrialAdjacency);
+			AddProsperityTech_Building(column, 4, TechEnum::Castle, CardEnum::Castle);
 			//AddProsperityTech_Bonus(column, 14, TechEnum::Rationalism);
 			
 			column = 5;

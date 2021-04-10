@@ -1181,7 +1181,7 @@ public:
 	/*
 	 * Trading
 	 */
-	static int32 baseTradingFeePercent() { return 25; }
+	static int32 baseTradingFeePercent() { return 35; }
 	int32 tradingFeePercent()
 	{
 		int32 tradeFeePercent = baseTradingFeePercent();

@@ -1733,8 +1733,8 @@ void UnitStateAI::HarvestTileObj()
 			//	efficiency += 20;
 			//}
 			//else 
-			if (unlockSys->IsResearched(TechEnum::ImprovedWoodCutting)) {
-				efficiency += 50;
+			if (unlockSys->IsResearched(TechEnum::Ironworks)) {
+				efficiency += 30;
 			}
 
 			if (workplace() && workplace()->isEnum(CardEnum::Forester)) {

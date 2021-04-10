@@ -1001,8 +1001,6 @@ enum class ResourceEnum : uint8
 	Furniture,
 	Chocolate,
 
-	//StoneTools,
-	//CrudeIronTools,
 	SteelTools,
 	Herb,
 	Medicine,
@@ -1067,6 +1065,18 @@ enum class ResourceEnum : uint8
 
 	Coffee,
 	Vodka,
+
+	// Added Apr 9
+	StoneTools,
+	Sand,
+	Oil,
+	
+	Glass,
+	Concrete,
+	SteelBeam,
+
+	Glassware,
+	PocketWatch,
 
 	// --- End
 	None,
@@ -1237,6 +1247,18 @@ static const ResourceInfo ResourceInfos[]
 
 	ResourceInfo(ResourceEnum::Coffee,		LOCTEXT("Coffee", "Coffee"),	17, LOCTEXT("Coffee Desc", "Keeps you awake. (Luxury tier 2)")), // +5<img id=\"Science\"/> each unit when consumed.
 	ResourceInfo(ResourceEnum::Vodka,		LOCTEXT("Vodka", "Vodka"),		15, LOCTEXT("Vodka Desc", "Clear alcoholic beverage made from Potato. (Luxury tier 2)")),
+
+	// Apr 9
+	ResourceInfo(ResourceEnum::StoneTools,		LOCTEXT("Stone Tools", "Stone Tools"),	12, LOCTEXT("Stone Tools Desc", "Low-grade Tools made by Stone Tool Shop.")),
+	ResourceInfo(ResourceEnum::Sand,		LOCTEXT("Sand", "Sand"),	12, LOCTEXT("Sand Desc", "Raw material for producing Glass.")),
+	ResourceInfo(ResourceEnum::Oil,			LOCTEXT("Oil", "Oil"),	12, LOCTEXT("Oil Desc", "Fuel used to produce electricity at Oil Power Plant.")),
+	
+	ResourceInfo(ResourceEnum::Glass,		LOCTEXT("Glass", "Glass"),	12, LOCTEXT("Glass Desc", "Transparent construction material made from Sand")),
+	ResourceInfo(ResourceEnum::Concrete,	LOCTEXT("Concrete", "Concrete"),	12, LOCTEXT("Concrete Desc", "Sturdy, versatile construction material")),
+	ResourceInfo(ResourceEnum::SteelBeam,	LOCTEXT("Steel Beam", "Steel Beam"),	12, LOCTEXT("Steel Beam Desc", "Sturdy, versatile construction material")),
+
+	ResourceInfo(ResourceEnum::Glassware,	LOCTEXT("Glassware", "Glassware"),	12, LOCTEXT("Glassware Desc", "Beautiful liquid container made from Glass. (Luxury tier 2)")),
+	ResourceInfo(ResourceEnum::PocketWatch,		LOCTEXT("Pocket Watch", "Pocket Watch"),	12, LOCTEXT("Pocket Watch Desc", "Elegant timepiece crafted by Clockmakers. (Luxury tier 3)")),
 	
 };
 
@@ -2117,7 +2139,7 @@ enum class CardEnum : uint16
 	CoalPowerPlant,
 	Steelworks,
 	StoneToolsShop,
-	OilWell,
+	OilRig,
 	OilPowerPlant,
 	PaperMill,
 	ClockMakers,
@@ -2588,6 +2610,10 @@ TileArea BuildingArea(WorldTile2 centerTile, WorldTile2 size, Direction faceDire
 WorldTile2 GetBuildingCenter(TileArea area, Direction faceDirection);
 
 
+// Building Cost Calculation
+
+
+
 #define LOCTEXT_NAMESPACE "CardInfo"
 
 static const BldInfo BuildingInfo[]
@@ -2749,16 +2775,16 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::HaulingServices, LOCTEXT("Hauling Services", "Hauling Services"), LOCTEXT("Hauling Services (Plural)", "Hauling Services"), WorldTile2(6, 5), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 3, { 50, 0, 0 }, LOCTEXT("Hauling Services Desc", "Workers use carts to haul resources to fill building inputs or clear building outputs.")),
 
 	// Apr 1
-	BldInfo(CardEnum::SandMine, LOCTEXT("SandMine", "Sand Mine"), LOCTEXT("Sand Mine (Plural)", "Sand Mines"), WorldTile2(6, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Sand Mine Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
-	BldInfo(CardEnum::Glassworks, LOCTEXT("Glassworks", "Glassworks"), LOCTEXT("Glassworks (Plural)", "Glassworks"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Glassworks Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
-	BldInfo(CardEnum::ConcreteFactory, LOCTEXT("ConcreteFactory", "Concrete Factory"), LOCTEXT("Concrete Factory (Plural)", "Concrete Factories"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Concrete Factory Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
-	BldInfo(CardEnum::CoalPowerPlant, LOCTEXT("CoalPowerPlant", "Coal Power Plant"), LOCTEXT("CoalPowerPlant (Plural)", "Coal Power Plants"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Coal Power Plants Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
-	BldInfo(CardEnum::Steelworks, LOCTEXT("Steelworks", "Steelworks"), LOCTEXT("Steelworks (Plural)", "Steelworks"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Steelworks Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
-	BldInfo(CardEnum::StoneToolsShop, LOCTEXT("StoneToolsShop", "Stone Tools Shop"), LOCTEXT("StoneToolsShop (Plural)", "Stone Tools Shops"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Stone Tools Shop Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
-	BldInfo(CardEnum::OilWell, LOCTEXT("OilWell", "Oil Well"), LOCTEXT("Oil Well (Plural)", "Oil Wells"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Oil Well Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
-	BldInfo(CardEnum::OilPowerPlant, LOCTEXT("OilPowerPlant", "Oil Power Plant"), LOCTEXT("Oil Power Plant (Plural)", "Oil Power Plants"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Oil Power Plant Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
-	BldInfo(CardEnum::PaperMill, LOCTEXT("PaperMill", "Paper Mill"), LOCTEXT("Paper Mill (Plural)", "Paper Mills"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Paper Mill Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
-	BldInfo(CardEnum::ClockMakers, LOCTEXT("ClockMakers", "Clock Makers"), LOCTEXT("Clock Makers (Plural)", "Clock Makers"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Clock Makers Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
+	BldInfo(CardEnum::SandMine, LOCTEXT("SandMine", "Sand Mine"), LOCTEXT("Sand Mine (Plural)", "Sand Mines"), WorldTile2(6, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::Sand, 10, 0, { 50, 50, 0 }, LOCTEXT("Sand Mine Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
+	BldInfo(CardEnum::Glassworks, LOCTEXT("Glassworks", "Glassworks"), LOCTEXT("Glassworks (Plural)", "Glassworks"), WorldTile2(8, 8), ResourceEnum::Sand, ResourceEnum::Coal, ResourceEnum::Glass, 10, 0, { 50, 50, 0 }, LOCTEXT("Glassworks Desc", "Produce Glass from Sand and Coal.")),
+	BldInfo(CardEnum::ConcreteFactory, LOCTEXT("ConcreteFactory", "Concrete Factory"), LOCTEXT("Concrete Factory (Plural)", "Concrete Factories"), WorldTile2(8, 8), ResourceEnum::Stone, ResourceEnum::Sand, ResourceEnum::Concrete, 10, 0, { 50, 50, 0 }, LOCTEXT("Concrete Factory Desc", "Make Concrete from Stone and Sand.")),
+	BldInfo(CardEnum::CoalPowerPlant, LOCTEXT("CoalPowerPlant", "Coal Power Plant"), LOCTEXT("CoalPowerPlant (Plural)", "Coal Power Plants"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Coal Power Plants Desc", "Provide nearby Buildings with Electricity from Coal.")),
+	BldInfo(CardEnum::Steelworks, LOCTEXT("Steelworks", "Steelworks"), LOCTEXT("Steelworks (Plural)", "Steelworks"), WorldTile2(8, 8), ResourceEnum::Iron, ResourceEnum::Coal, ResourceEnum::SteelBeam, 0, 10, { 50, 50, 0 }, LOCTEXT("Steelworks Desc", "Produce Steel Beam from Iron Bars and Coal.")),
+	BldInfo(CardEnum::StoneToolsShop, LOCTEXT("StoneToolsShop", "Stone Tools Shop"), LOCTEXT("StoneToolsShop (Plural)", "Stone Tools Shops"), WorldTile2(8, 8), ResourceEnum::Stone, ResourceEnum::Wood, ResourceEnum::StoneTools, 10, 0, { 50, 50, 0 }, LOCTEXT("Stone Tools Shop Desc", "Make Stone Tools from Stone and Wood.")),
+	BldInfo(CardEnum::OilRig, LOCTEXT("Oil Rig", "Oil Rig"), LOCTEXT("Oil Rig (Plural)", "Oil Rigs"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::Oil, 10, 0, { 50, 50, 0 }, LOCTEXT("Oil Rig Desc", "Extract Oil from Oil Well.")),
+	BldInfo(CardEnum::OilPowerPlant, LOCTEXT("OilPowerPlant", "Oil Power Plant"), LOCTEXT("Oil Power Plant (Plural)", "Oil Power Plants"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Oil Power Plant Desc", "Provide nearby Buildings with Electricity from Oil.")),
+	BldInfo(CardEnum::PaperMill, LOCTEXT("PaperMill", "Paper Mill"), LOCTEXT("Paper Mill (Plural)", "Paper Mills"), WorldTile2(8, 8), ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::None, 30, 0, { 50, 50, 0 }, LOCTEXT("Paper Mill Desc", "Mass-produce Paper from Wood.")),
+	BldInfo(CardEnum::ClockMakers, LOCTEXT("ClockMakers", "Clock Makers"), LOCTEXT("Clock Makers (Plural)", "Clock Makers"), WorldTile2(8, 8), ResourceEnum::Glass, ResourceEnum::GoldBar, ResourceEnum::PocketWatch, 10, 0, { 50, 50, 0 }, LOCTEXT("Clock Makers Desc", "Craft Pocket Watch from Glass and Gold Bars.")),
 
 	BldInfo(CardEnum::Cathedral, LOCTEXT("Cathedral", "Cathedral"), LOCTEXT("Cathedral (Plural)", "Cathedrals"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Cathedral Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
 	BldInfo(CardEnum::Castle, LOCTEXT("Castle", "Castle"), LOCTEXT("Castle (Plural)", "Castles"), WorldTile2(8, 8), ResourceEnum::None, ResourceEnum::None, ResourceEnum::None, 0, 0, { 50, 50, 0 }, LOCTEXT("Castle Desc", "Extract Sand from beach or river. Sand can be used to make Glass.")),
@@ -4932,8 +4958,7 @@ enum class TechEnum : uint8
 	None,
 
 	DeepMining,
-	IronRefining,
-	GoldRefining,
+	Ironworks,
 
 	RerollCardsPlus1,
 
@@ -4954,12 +4979,14 @@ enum class TechEnum : uint8
 	/*
 	 * Building techs
 	 */
-	Mint,
+	GoldWorking,
 	//TermiteFarm,
 
 	Blacksmith,
 
 	QuarryImprovement,
+	CharcoalBurnerImprovement,
+	
 	StoneRoad,
 	Garden,
 	BlossomShrine,
@@ -5068,7 +5095,7 @@ enum class TechEnum : uint8
 	Logistics2,
 	Logistics4,
 
-	Tunnel,
+	Machinery,
 	Colony,
 	PortColony,
 	IntercityLogistics,
@@ -5548,7 +5575,7 @@ static const UnitInfo UnitInfos[]
 	UnitInfo(UnitEnum::BlackBear, LOCTEXT("Black Bear", "Black Bear"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 	UnitInfo(UnitEnum::Panda, LOCTEXT("Panda", "Panda"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 
-	UnitInfo(UnitEnum::WildMan, LOCTEXT("WildMan", "WildMan"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::WildMan, LOCTEXT("WildMan", "Wild Man"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 	UnitInfo(UnitEnum::Hippo, LOCTEXT("Hippo", "Hippo"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 	UnitInfo(UnitEnum::Penguin, LOCTEXT("Penguin", "Penguin"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 	

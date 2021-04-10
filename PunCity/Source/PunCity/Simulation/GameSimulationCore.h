@@ -1461,9 +1461,9 @@ public:
 		const int32 maxProvinceDistanceCostPenalty = 500;
 		int32 provinceDistance = regionSystem().provinceDistanceToPlayer(provinceId, playerId);
 		int32 distancePenaltyCostPercent = maxProvinceDistanceCostPenalty * provinceDistance / 7;
-		IncrementByPercent100(claimPrice, distancePenaltyCostPercent);
+		claimPrice = IncrementByPercent100(claimPrice, distancePenaltyCostPercent);
 		
-		IncrementByPercent100(claimPrice, GetProvinceTerrainClaimCostPenalty(claimConnectionEnum));
+		claimPrice = IncrementByPercent100(claimPrice, GetProvinceTerrainClaimCostPenalty(claimConnectionEnum));
 		
 		return claimPrice;
 	}
@@ -2621,6 +2621,18 @@ public:
 						AddPopup(playerId,
 							FText::Format(NSLOCTEXT("SimCore", "Unlocked Mine", "Unlocked {0}"), GetBuildingInfo(mineCardEnum).name)
 						);
+						AddPopup(
+							PopupInfo(playerId,
+								FText::Format(
+									NSLOCTEXT("SimCore", "UnlockedBuilding_Pop", "Unlocked {0}\nWould you like to buy a {0} card for {1}<img id=\"Coin\"/>."),
+									GetBuildingInfo(mineCardEnum).name,
+									TEXT_NUM(cardSystem(playerId).GetCardPrice(mineCardEnum))
+								),
+								{ NSLOCTEXT("SimCore", "Buy", "Buy"), NSLOCTEXT("SimCore", "Refuse", "Refuse") },
+								PopupReceiverEnum::DoneResearchBuyCardEvent, false, "ResearchComplete", static_cast<int32>(mineCardEnum)
+							)
+						);
+						
 						cardSystem(playerId).AddDrawCards(mineCardEnum);
 						break;
 					}

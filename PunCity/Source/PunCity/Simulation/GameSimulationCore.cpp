@@ -5474,16 +5474,34 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 
 			// Intercity LogisticsHub/Port
 			Building* bld = nullptr;
+
+			auto& cardSys = cardSystem(command.playerId);
 			
 			if (commandBuildingEnum == CardEnum::Colony)
 			{
 				bld = makeBuilding(CardEnum::IntercityLogisticsHub, GetBuildingInfo(CardEnum::IntercityLogisticsHub).size, buildingCenter1, Direction::N);
 				PUN_ENSURE(bld, return);
+
+				// Unlock IntercityLogisticsHub
+				if (!cardSys.HasCardInAnyPile(CardEnum::IntercityLogisticsHub)) {
+					AddPopup(command.playerId, {
+						LOCTEXT("IntercityLogisticsHub_Pop", "Unlocked Intercity Logistics Hub.<space>Use Intercity Logistics Hub to transfer goods between your Colony and your main City")
+					});
+					cardSys.AddDrawCards(CardEnum::IntercityLogisticsHub);
+				}
 			}
 			else {
 				WorldTile2 center = buildingCenter1 + WorldTile2::RotateTileVector(PortColony_PortExtraShiftTileVec, townhallFaceDirection);
 				bld = makeBuilding(CardEnum::IntercityLogisticsPort, GetBuildingInfo(CardEnum::IntercityLogisticsPort).size, center, Direction::N);
 				PUN_ENSURE(bld, return);
+
+				// Unlock IntercityLogisticsHub
+				if (!cardSys.HasCardInAnyPile(CardEnum::IntercityLogisticsPort)) {
+					AddPopup(command.playerId, {
+						LOCTEXT("IntercityLogisticsPort_Pop", "Unlocked Intercity Logistics Port.<space>Use Intercity Logistics Port to transfer goods between your Port Colony and your main City")
+					});
+					cardSys.AddDrawCards(CardEnum::IntercityLogisticsPort);
+				}
 			}
 
 			auto& hub = bld->subclass<IntercityLogisticsHub>();

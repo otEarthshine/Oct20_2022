@@ -721,6 +721,19 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadResource2(ResourceEnum::Coffee, "Coffee/Coffee");
 	LoadResource2(ResourceEnum::Tulip, "Tulip/Tulip");
 
+	// Apr 9
+	LoadResource2(ResourceEnum::StoneTools, "Brick/Brick");
+	LoadResource2(ResourceEnum::Sand, "Brick/Brick");
+	LoadResource2(ResourceEnum::Oil, "Brick/Brick");
+
+	LoadResource2(ResourceEnum::Glass, "Brick/Brick");
+	LoadResource2(ResourceEnum::Concrete, "Brick/Brick");
+	LoadResource2(ResourceEnum::SteelBeam, "Brick/Brick");
+
+	LoadResource2(ResourceEnum::Glassware, "Brick/Brick");
+	LoadResource2(ResourceEnum::Brick, "Brick/Brick");
+
+	
 	//LoadResource2(ResourceEnum::Oyster, "Pottery/Pottery");
 	//LoadResource2(ResourceEnum::Truffle, "Pottery/Pottery");
 	//LoadResource2(ResourceEnum::Coconut, "Pottery/Pottery");

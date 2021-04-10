@@ -99,7 +99,7 @@ static const std::vector<CardEnum> DefaultJobPriorityListAllSeason
 	CardEnum::CoalPowerPlant,
 	CardEnum::Steelworks,
 	CardEnum::StoneToolsShop,
-	CardEnum::OilWell,
+	CardEnum::OilRig,
 	CardEnum::OilPowerPlant,
 	CardEnum::PaperMill,
 	CardEnum::ClockMakers,

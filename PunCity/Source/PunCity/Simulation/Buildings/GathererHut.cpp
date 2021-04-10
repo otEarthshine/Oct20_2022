@@ -621,6 +621,10 @@ std::vector<BonusPair> CharcoalMaker::GetBonuses()
 	if (_simulation->buildingCount(_townId, CardEnum::EnvironmentalistGuild)) {
 		bonuses.push_back({ LOCTEXT("Environmentalist", "Environmentalist"), -30 });
 	}
+	if (_simulation->IsResearched(_playerId, TechEnum::CharcoalBurnerImprovement)) {
+		bonuses.push_back({ LOCTEXT("Charcoal Burner Improvement", "Charcoal Burner Improvement"), 30 });
+	}
+	
 	return bonuses;
 }
 

@@ -43,7 +43,7 @@ void UBuildingPlacementButton::PunInit(CardEnum buildingEnumIn, int32 cardHandIn
 	BldInfo info = GetBuildingInfo(buildingEnum);
 
 	TArray<FText> args;
-	ADDTEXT__(info.miniDescription);
+	ADDTEXT__(info.GetDescription());
 	if (IsGlobalSlotCard(buildingEnum)) {
 		ADDTEXT_(INVTEXT("\n<Gray>({0})</>"), LOCTEXT("global slot", "global slot"));
 	}

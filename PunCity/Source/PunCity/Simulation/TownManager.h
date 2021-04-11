@@ -50,7 +50,7 @@ static const std::vector<CardEnum> DefaultJobPriorityListAllSeason
 	CardEnum::Windmill,
 	CardEnum::Bakery,
 
-	CardEnum::StoneToolShop,
+	CardEnum::StoneToolShopOld,
 	CardEnum::Blacksmith,
 	CardEnum::Herbalist,
 	CardEnum::MedicineMaker,

@@ -163,7 +163,7 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		CASE_BUILDING(CardEnum::SmallMarket, SmallMarket);
 		CASE_BUILDING(CardEnum::PaperMaker, PaperMaker);
 
-		CASE_BUILDING(CardEnum::StoneToolShop, StoneToolShop);
+		CASE_BUILDING(CardEnum::StoneToolShopOld, StoneToolShop);
 		CASE_BUILDING(CardEnum::Blacksmith, Blacksmith);
 		CASE_BUILDING(CardEnum::Herbalist, Herbalist);
 		CASE_BUILDING(CardEnum::MedicineMaker, MedicineMaker);

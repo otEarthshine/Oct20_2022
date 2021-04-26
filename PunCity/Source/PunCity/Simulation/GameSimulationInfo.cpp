@@ -159,4 +159,33 @@ void AppendClaimConnectionString(TArray<FText>& args, bool isConquering, ClaimCo
 }
 
 
+const std::vector<PermanentBonus::RareCardHand> PermanentBonus::PermanentBonusRareCardHands
+{
+	{ RareHandEnum::BorealCards, { CardEnum::BorealFish, CardEnum::BorealWinterResist }},
+	{ RareHandEnum::BorealCards2, { CardEnum::BorealGoldOil, CardEnum::BorealPineForesting }},
+
+	{ RareHandEnum::DesertCards, { CardEnum::DesertTradeForLiving, CardEnum::DesertOreTrade }},
+	{ RareHandEnum::DesertCards2, { CardEnum::DesertGem, CardEnum::DesertIndustry }},
+
+	{ RareHandEnum::SavannaCards, { CardEnum::SavannaHunt, CardEnum::SavannaRanch }},
+	{ RareHandEnum::SavannaCards2, { CardEnum::SavannaNomad, CardEnum::SavannaExpansion }},
+
+	{ RareHandEnum::JungleCards, { CardEnum::JungleGatherer, CardEnum::JungleMushroom }},
+	{ RareHandEnum::JungleCards2, { CardEnum::JungleHerbFarm, CardEnum::JungleTree }},
+
+	{ RareHandEnum::ForestCards, { CardEnum::ForestFarm, CardEnum::ForestCharcoal }},
+	{ RareHandEnum::ForestCards2, { CardEnum::ForestBeer, CardEnum::ForestTools }},
+
+	{ RareHandEnum::Era2_1_Cards, { CardEnum::Agriculturalist, CardEnum::Geologist }},
+	{ RareHandEnum::Era2_2_Cards, { CardEnum::AlcoholAppreciation, CardEnum::Craftmanship }},
+
+	{ RareHandEnum::Era3_1_Cards, { CardEnum::Rationalism, CardEnum::Romanticism }},
+	{ RareHandEnum::Era3_2_Cards, { CardEnum::Protectionism, CardEnum::FreeThoughts }},
+
+	{ RareHandEnum::Era4_1_Cards, { CardEnum::Capitalism, CardEnum::Communism }},
+	{ RareHandEnum::Era4_2_Cards, { CardEnum::WondersScoreMultiplier, CardEnum::PopulationScoreMultiplier }},
+};
+
+
+
 #undef LOCTEXT_NAMESPACE

@@ -362,7 +362,7 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 			
 			// Building mesh
 			int32_t displayVariationIndex = building.displayVariationIndex();
-			const ModuleTransforms& modulePrototype = displayInfo.GetDisplayModules(buildingEnum, displayVariationIndex);
+			const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(buildingEnum, displayVariationIndex);
 			std::vector<ModuleTransform> modules = modulePrototype.animTransforms;
 
 			if (modules.size() == 0) {

@@ -1986,13 +1986,22 @@ void UnitStateAI::UseTools()
 	//	_nextToolNeedTick = Time::Ticks() + Time::TicksPerYear; // Crude iron tool a year
 	//}
 	//else 
-	if (resourceEnum == ResourceEnum::SteelTools) {
+	if (resourceEnum == ResourceEnum::SteelTools) 
+	{
 		int32 ticksUntilNextToolNeed = (Time::TicksPerYear * 2) + (GameRand::Rand() % Time::TicksPerYear * 2); // Steel tool 3 year;
 
 		ticksUntilNextToolNeed = ticksUntilNextToolNeed * 100 / (100 + _simulation->difficultyConsumptionAdjustment(_playerId));
 		
 		_nextToolNeedTick = Time::Ticks() + ticksUntilNextToolNeed;
 		//_nextToolNeedTick = Time::Ticks() + (Time::TicksPerYear * 2) + (GameRand::Rand() % Time::TicksPerYear * 2); // Steel tool 3 year
+	}
+	else if (resourceEnum == ResourceEnum::StoneTools)
+	{
+		int32 ticksUntilNextToolNeed = (Time::TicksPerYear / 2) + (GameRand::Rand() % Time::TicksPerYear); // Stone tool 1 year;
+
+		ticksUntilNextToolNeed = ticksUntilNextToolNeed * 100 / (100 + _simulation->difficultyConsumptionAdjustment(_playerId));
+
+		_nextToolNeedTick = Time::Ticks() + ticksUntilNextToolNeed;
 	}
 	else {
 		UE_DEBUG_BREAK();

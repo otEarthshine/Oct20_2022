@@ -324,6 +324,24 @@ public:
 	void TryApplyBuff(CardEnum cardEnum);
 
 	/*
+	 * Permanent Global Bonuses
+	 */
+	void AddGlobalBonus(CardEnum cardEnum) {
+		_globalBonuses.push_back(cardEnum);
+	}
+	const std::vector<CardEnum>& globalBonuses() {
+		return _globalBonuses;
+	}
+	bool HasGlobalBonuses(CardEnum cardEnumIn) {
+		for (CardEnum cardEnum : _globalBonuses) {
+			if (cardEnum == cardEnumIn) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/*
 	 * SP Skill
 	 */
 	float spFloat() { return static_cast<float>(_spTicks) / ticksPerSP(); }
@@ -412,6 +430,8 @@ public:
 		// Buffs
 		SerializeVecValue(Ar, _buffTicksLeft);
 
+		SerializeVecValue(Ar, _globalBonuses);
+
 		//_LOG(PunPlayerOwned, "Serialize[%d] After isSaving:%d, %d %d %d", _playerId, Ar.IsSaving(), _roadConstructionIds.size(), _constructionIds.size(), _jobBuildingEnumToIds.size());
 	}
 
@@ -457,6 +477,8 @@ private:
 
 	// Buffs
 	std::vector<int32> _buffTicksLeft;
+
+	std::vector<CardEnum> _globalBonuses;
 
 	// Dark Age
 	bool _isInDarkAge;

@@ -732,6 +732,23 @@ public:
 		return count;
 	}
 
+	/*
+	 * Permanent Town Bonuses
+	 */
+	void AddTownBonus(CardEnum cardEnum) {
+		_townBonuses.push_back(cardEnum);
+	}
+	const std::vector<CardEnum>& townBonuses() {
+		return _townBonuses;
+	}
+	bool HasTownBonuses(CardEnum cardEnumIn) {
+		for (CardEnum cardEnum: _townBonuses) {
+			if (cardEnum == cardEnumIn) {
+				return true;
+			}
+		}
+		return false;
+	}
 	
 
 	/*
@@ -871,6 +888,8 @@ public:
 		Ar << _migrationPendingCount;
 
 		SerializeVecObj(Ar, _cardsInTownhall);;
+
+		SerializeVecValue(Ar, _townBonuses);
 	}
 
 public:
@@ -953,6 +972,9 @@ private:
 
 	std::vector<CardStatus> _cardsInTownhall;
 
+	std::vector<CardEnum> _townBonuses;
+
+	
 private:
 	/*
 	 * Non-Serialize

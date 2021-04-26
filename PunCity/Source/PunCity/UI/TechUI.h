@@ -79,7 +79,7 @@ public:
 			dataSource()->Spawn2DSound("UI", "UIWindowClose");
 		}
 
-		int32 era = dataSource()->simulation().unlockSystem(playerId())->currentEra();
+		int32 era = dataSource()->simulation().unlockSystem(playerId())->currentTechColumn();
 		TechScrollBox->SetScrollOffset(std::max(0, (era - 1) * 294 - 30));
 
 		SetVisibility(show ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);

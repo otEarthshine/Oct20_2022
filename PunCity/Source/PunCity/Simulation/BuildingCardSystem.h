@@ -235,7 +235,7 @@ public:
 					_cardsDrawPile.erase(_cardsDrawPile.begin() + drawIndex);
 
 					// If it is not a bought unique card, discard it
-					if (IsGlobalSlotCard(cardEnum) &&
+					if (IsTownSlotCard(cardEnum) &&
 						(HasBoughtCard(cardEnum) || _simulation->TownhallCardCountAll(_playerId, cardEnum) > 0))
 					{
 						_cardsDiscardPile.push_back(cardEnum);

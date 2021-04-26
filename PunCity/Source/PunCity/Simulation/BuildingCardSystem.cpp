@@ -36,15 +36,39 @@ void BuildingCardSystem::TickRound()
 
 FText BuildingCardSystem::rareHandMessage2()
 {
-	if (_rareHandEnum == RareHandEnum::InitialCards1 ||
-		_rareHandEnum == RareHandEnum::InitialCards2)
+	switch(_rareHandEnum)
 	{
-		return LOCTEXT("ChooseACard", "CHOOSE A CARD");
+	case RareHandEnum::InitialCards1: return LOCTEXT("ChooseAStartingCard", "Choose a Starting Card");
+	case RareHandEnum::InitialCards2: return LOCTEXT("ChooseAnotherStartingCard", "Choose Another Starting Card");
+		
+	case RareHandEnum::BorealCards:
+	case RareHandEnum::DesertCards:
+	case RareHandEnum::SavannaCards:
+	case RareHandEnum::JungleCards:
+	case RareHandEnum::ForestCards:
+		return LOCTEXT("Biome Choose Card", "Choose a Biome Bonus");
+	case RareHandEnum::BorealCards2:
+	case RareHandEnum::DesertCards2:
+	case RareHandEnum::SavannaCards2:
+	case RareHandEnum::JungleCards2:
+	case RareHandEnum::ForestCards2:
+		return LOCTEXT("Biome Choose Another Card", "Choose another Biome Bonus");
+
+		
+	case RareHandEnum::Era2_1_Cards:
+	case RareHandEnum::Era3_1_Cards:
+	case RareHandEnum::Era4_1_Cards:
+		return LOCTEXT("Era Choose Card", "Choose an Era Bonus");
+	case RareHandEnum::Era2_2_Cards:
+	case RareHandEnum::Era3_2_Cards:
+	case RareHandEnum::Era4_2_Cards:
+		return LOCTEXT("Era Choose Another Card", "Choose another Era Bonus");
+
+	case RareHandEnum::BuildingSlotCards: return LOCTEXT("ChoosePrize", "CHOOSE YOUR PRIZE !");
+
+	default:
+		return LOCTEXT("ChooseRareCard", "CHOOSE YOUR RARE CARD PRIZE !");
 	}
-	if (_rareHandEnum == RareHandEnum::BuildingSlotCards) {
-		return LOCTEXT("ChoosePrize", "CHOOSE YOUR PRIZE !");
-	}
-	return LOCTEXT("ChooseRareCard", "CHOOSE YOUR RARE CARD PRIZE !");
 }
 
 void BuildingCardSystem::RollRareHandExecute()
@@ -78,31 +102,22 @@ void BuildingCardSystem::RollRareHandExecute()
 
 	uint8 rareHandEnumInt = static_cast<uint8>(_rareHandEnum);
 
+	// Initial Cards
 	if (_rareHandEnum == RareHandEnum::InitialCards1)
 	{
-		std::vector<CardEnum> cardEnums
-		{
+		_cardsRareHand = {
 			CardEnum::WheatSeed,
 			CardEnum::TradingPost,
 			CardEnum::ProductivityBook,
 		};
-		for (CardEnum cardEnum : cardEnums) {
-			_cardsRareHand.push_back(cardEnum);
-		}
-		//RandomInsertToRareHand(cardEnums, 3);
 	}
 	else if (_rareHandEnum == RareHandEnum::InitialCards2)
 	{
-		std::vector<CardEnum> cardEnums
-		{
+		_cardsRareHand = {
 			CardEnum::CabbageSeed,
 			CardEnum::Investment,
 			CardEnum::IronSmelter,
 		};
-		for (CardEnum cardEnum : cardEnums) {
-			_cardsRareHand.push_back(cardEnum);
-		}
-		//RandomInsertToRareHand(cardEnums, 3);
 
 		PopupInfo popup(_playerId,
 			LOCTEXT("GuideAsk_Pop", "Would you like some guidance?"),
@@ -112,6 +127,9 @@ void BuildingCardSystem::RollRareHandExecute()
 		);
 		_simulation->AddPopup(popup);
 	}
+	
+
+	//
 	else if (_rareHandEnum == RareHandEnum::BuildingSlotCards)
 	{
 		RandomInsertToRareHand(BuildingSlotCards);
@@ -189,35 +207,24 @@ void BuildingCardSystem::RollRareHandExecute()
 	}
 	else
 	{
-		std::vector<CardEnum> cardEnums = {
-			CardEnum::ProductivityBook,
-			CardEnum::SustainabilityBook,
-			CardEnum::FrugalityBook,
-			CardEnum::Motivation,
-			CardEnum::Passion,
-		};
+		// Biomes/Era Bonuses
+		std::vector<CardEnum> bonusCardEnums = PermanentBonus::BonusHandEnumToCardEnums(_rareHandEnum);
+		if (bonusCardEnums.size() > 0) {
+			_cardsRareHand = bonusCardEnums;
+		}
+		else
+		{
+			std::vector<CardEnum> cardEnums = {
+				CardEnum::ProductivityBook,
+				CardEnum::SustainabilityBook,
+				CardEnum::FrugalityBook,
+				CardEnum::Motivation,
+				CardEnum::Passion,
+			};
 
-		RandomInsertToRareHand(cardEnums, 3);
-
-		//std::vector<CardEnum> drawableCards;
-		//for (int32_t i = 0; i < RareCardsCount; i++) {
-		//	if (shouldDraw(RareCards[i])) {
-		//		drawableCards.push_back(RareCards[i]);
-		//	}
-		//}
-
-		//for (int i = 0; i < drawCount; i++)
-		//{
-		//	int32_t rareCardIndex = GameRand::Rand() % drawableCards.size();
-		//	_cardsRareHand.push_back(drawableCards[rareCardIndex]);
-		//	drawableCards.erase(drawableCards.begin() + rareCardIndex);
-
-		//	if (drawableCards.size() == 0) {
-		//		break;
-		//	}
-		//}
-
-		PUN_CHECK(_cardsRareHand.size() <= drawCount);
+			RandomInsertToRareHand(cardEnums, 3);
+			PUN_CHECK(_cardsRareHand.size() <= drawCount);
+		}
 	}
 
 	_cardsRareHandReserved.clear();

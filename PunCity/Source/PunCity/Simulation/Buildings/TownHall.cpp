@@ -28,7 +28,7 @@ static const TArray<FText> TownhallLvlToUpgradeBonusText =
 
 	LOCTEXT("TownhallLvl4UpgradeBonus", "<space>Unlocked Cards:<bullet>Sharing is caring</>"), // 4
 
-	LOCTEXT("TownhallLvl5UpgradeBonus", "<bullet>+10% industrial production.</>"), // Lvl 5
+	//LOCTEXT("TownhallLvl5UpgradeBonus", "<bullet>+10% industrial production.</>"), // Lvl 5
 };
 const FText& GetTownhallLvlToUpgradeBonusText(int32 townhallLvl) {
 	return TownhallLvlToUpgradeBonusText[townhallLvl];
@@ -79,7 +79,7 @@ static const std::vector<int32_t> townhallLvlToUpgradeMoney =
 	200, // Lvl 2
 	1000,
 	5000,
-	30000, // Lvl 5
+	//30000, // Lvl 5
 };
 
 int32 TownHall::GetMaxUpgradeLvl() {
@@ -120,6 +120,39 @@ void TownHall::UpgradeTownhall()
 	// Upgrade
 	townhallLvl++;
 	ResetDisplay();
+
+	// Biome Card
+	if (townhallLvl == 2)
+	{
+		if (!alreadyGotBiomeCards2) {
+			alreadyGotBiomeCards2 = true;
+
+			switch (_simulation->GetBiomeEnum(centerTile()))
+			{
+			case BiomeEnum::BorealForest:
+			case BiomeEnum::Tundra:
+				_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::BorealCards2, FText());
+				break;
+			case BiomeEnum::Desert:
+				_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::DesertCards2, FText());
+				break;
+			case BiomeEnum::Savanna:
+			case BiomeEnum::GrassLand:
+				_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::SavannaCards2, FText());
+				break;
+			case BiomeEnum::Jungle:
+				_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::JungleCards2, FText());
+				break;
+			case BiomeEnum::Forest:
+				_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::ForestCards2, FText());
+				break;
+			default:
+				UE_DEBUG_BREAK();
+				break;
+			}
+		}
+	}
+	
 
 	// Unlock Popup
 	{

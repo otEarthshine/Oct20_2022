@@ -147,10 +147,10 @@ public:
 					heightAdjustment = -5;
 				}
 				
-				const ModuleTransforms& modules = displayInfo.GetDisplayModules(buildingEnum, 0);
+				const ModuleTransformGroup& modules = displayInfo.GetDisplayModules(buildingEnum, 0);
 				std::vector<ModuleTransform> moduleTransforms = modules.transforms;
 
-				PUN_LOG("BakeIcons %d %s size:%d", i, ToTChar(modules.setName),modules.transforms.size());
+				PUN_LOG("BakeIcons %d %s size:%d", i, *modules.setName,modules.transforms.size());
 
 
 				// Always show toggleable transforms

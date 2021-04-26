@@ -122,7 +122,7 @@ void UTechUI::TickUI()
 	 * 
 	 */
 
-	int32 currentEra = unlockSys->currentEra();
+	int32 currentEra = unlockSys->currentTechColumn();
 
 	{
 		TArray<FText> args;

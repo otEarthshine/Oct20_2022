@@ -171,10 +171,10 @@ void House::FinishConstruction()
 		return FText::Format(LOCTEXT("WoodCoalHeatText", "Wood/coal gives {0}% more heat"), TEXT_NUM(percent));
 	};
 	
-	_upgrades = {		
+	AddUpgrades({
 		BuildingUpgrade(LOCTEXT("Stone Insulation", "Stone Insulation"), woodCoalHeatText(20), ResourcePair(ResourceEnum::Stone, 20)),
 		BuildingUpgrade(LOCTEXT("Hearth Fireplace", "Hearth Fireplace"), woodCoalHeatText(30), ResourcePair(ResourceEnum::Brick, 30)),
-	};
+	});
 
 	
 

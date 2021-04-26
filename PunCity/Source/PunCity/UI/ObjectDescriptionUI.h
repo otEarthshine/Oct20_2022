@@ -59,6 +59,11 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) USizeBox* DescriptionPunBoxScrollOuter;
 	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* DescriptionPunBoxScroll;
+
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* TownBonusBox;
+	UPROPERTY(meta = (BindWidget)) UWrapBox* TownBonusSlots;
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* GlobalBonusBox;
+	UPROPERTY(meta = (BindWidget)) UWrapBox* GlobalBonusSlots;
 	
 
 	UPROPERTY(meta = (BindWidget)) UWrapBox* CardSlots;

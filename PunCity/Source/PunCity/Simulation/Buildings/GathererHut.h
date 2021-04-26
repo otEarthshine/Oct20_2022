@@ -375,7 +375,7 @@ public:
 	int32 workManSecPerBatch100() override
 	{
 		// Same amount of work required to acquire resources
-		return baseProfitValue() * 100 * 100 / buildingInfo().workRevenuePerSec100_perMan; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
+		return baseProfitValue() * 100 * 100 / workRevenuePerSec100_perMan_(); // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
 	}
 
 	// Production always yield the same amount of product (2 * baseinput)
@@ -473,8 +473,6 @@ public:
 	{
 		ConsumerIndustrialBuilding::FinishConstruction();
 
-		_upgrades = {
-		};
 	}
 
 	std::vector<BonusPair> GetBonuses() override;
@@ -505,7 +503,7 @@ public:
 		//cardPrice = max(cardPrice, 120);
 
 		const int32 costFactor = 200;
-		int32 result = batchCost() * 100 * 100 / buildingInfo().workRevenuePerSec100_perMan * costFactor / 100; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
+		int32 result = batchCost() * 100 * 100 / workRevenuePerSec100_perMan_() * costFactor / 100; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
 
 		return result * 100 / efficiency();
 	}
@@ -533,7 +531,7 @@ public:
 	int32 workManSecPerBatch100() final
 	{
 		// Assume card 500 price here...
-		return (170 - batchCost()) * 100 * 100 / buildingInfo().workRevenuePerSec100_perMan; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
+		return (170 - batchCost()) * 100 * 100 / workRevenuePerSec100_perMan_( ); // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
 	}
 
 	int32 baseInputPerBatch() override { return 0; }
@@ -699,6 +697,7 @@ class Jeweler final : public IndustrialBuilding
 {
 public:
 	void FinishConstruction() final;
+
 };
 
 
@@ -1066,7 +1065,7 @@ public:
 	int32 workManSecPerBatch100() final
 	{
 		// 500 - 10 * (gold price 25) = 250 profit
-		return (500 - batchCost()) * 100 * 100 / buildingInfo().workRevenuePerSec100_perMan; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
+		return (500 - batchCost()) * 100 * 100 / workRevenuePerSec100_perMan_(); // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
 	}
 
 	// TODO: remove these...
@@ -1382,9 +1381,9 @@ public:
 	void FinishConstruction() override {
 		Building::FinishConstruction();
 
-		_upgrades = {
+		AddUpgrades({
 			MakeWorkerSlotUpgrade(50),
-		};
+		});
 	}
 
 	bool needSetup() {
@@ -1438,9 +1437,9 @@ class HaulingServices final : public Building
 public:
 	void FinishConstruction() override {
 		Building::FinishConstruction();
-		_upgrades = {
+		AddUpgrades({
 			MakeWorkerSlotUpgrade(50, 2),
-		};
+		});
 	}
 
 	static const int32 Radius = 32;

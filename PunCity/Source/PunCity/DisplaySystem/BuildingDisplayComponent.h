@@ -51,7 +51,7 @@ public:
 		LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayBuilding);
 		
 		const GameDisplayInfo& displayInfo = gameManager()->displayInfo();
-		const ModuleTransforms& modulePrototype = displayInfo.GetDisplayModules(buildingEnum, 0);
+		const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(buildingEnum, 0);
 		std::vector<ModuleTransform> modules = modulePrototype.transforms;
 		
 		for (int i = 0; i < modules.size(); i++)
@@ -59,7 +59,7 @@ public:
 			if (modules[i].moduleTypeEnum != ModuleTypeEnum::ConstructionOnly &&
 				modules[i].upgradeStates == 0)
 			{
-				FString setName = ToFString(modulePrototype.setName);
+				FString setName = modulePrototype.setName;
 				if (setName == modules[i].moduleName.Mid(0, setName.Len())) {
 					moduleMesh->SetCustomDepth(modules[i].moduleName, customDepthIndex);
 				}

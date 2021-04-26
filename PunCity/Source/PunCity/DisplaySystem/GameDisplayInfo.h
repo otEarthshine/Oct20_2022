@@ -5,433 +5,357 @@
 #include "PunCity/AssetLoaderComponent.h"
 #include "Components/PrimitiveComponent.h"
 
-// Resolves overlay setting conflict
-enum class OverlaySetterType {
-	BuildingPlacement,
-	ObjectDescriptionUI,
-	OverlayToggler,
-	Count,
-	None,
-};
-
-struct ParticleInfo
-{
-	ParticleEnum particleEnum = ParticleEnum::Smoke;
-	FTransform transform;
-};
-
-struct PointLightInfo
-{
-	float intensity = 0.1f;
-	float attenuationRadius = 35;
-	FLinearColor color = FLinearColor(1, 0.527, 0.076);
-	FVector position;
-	FVector scale;
-};
-
-static FTransform TransformFromPosition(float X, float Y, float Z) {
-	return FTransform(FVector(X, Y, Z));
-}
-static FTransform TransformFromPositionScale(float X, float Y, float Z, float scale) {
-	return FTransform(FRotator::ZeroRotator, FVector(X, Y, Z), FVector(scale));
-}
-static FTransform TransformFromPositionYaw(float X, float Y, float Z, float yaw) {
-	return FTransform(FRotator(0, yaw, 0), FVector(X, Y, Z), FVector::OneVector);
-}
-static FTransform TransformFromPositionYawScale(float X, float Y, float Z, float yaw, float scale) {
-	return FTransform(FRotator(0, yaw, 0), FVector(X, Y, Z), FVector(scale));
-}
-static FTransform TransformFromPositionYawScale(float X, float Y, float Z, float yaw, FVector scale) {
-	return FTransform(FRotator(0, yaw, 0), FVector(X, Y, Z), scale);
-}
-
-
-enum class ModuleTypeEnum
-{
-	Normal,
-	ConstructionOnly,
-	ConstructionBaseHighlight,
-	Frame,
-	Window,
-	RotateRoll,
-	ShaderAnimate,
-	ShaderOnOff,
-};
-
-struct ModuleTransform
-{
-	FString moduleName;
-
-	float relativeConstructionTime = 0;
-	ModuleTypeEnum moduleTypeEnum = ModuleTypeEnum::Normal;
-
-	// !! Note that cannot do scaling on mesh with constructionMesh... (But then we don't need it?)
-	// !! Beware... rotator is Pitch Yaw Roll
-	FTransform transform; 
-
-	// TODO: use grouping system?? don't need this?... each ModuleTransform can be assigned group index.
-	//std::vector<ModuleTransform> children;
-
-	// Calculated values
-	float constructionFractionBegin = 0;
-	float constructionFractionEnd = 0;
-
-	// what index this model should turn on
-	// 0 means all... -1 means removal if [0] is upgraded ... 1 means add if [0] is upgraded
-	// (disadvantage... can't do model upgrade beyond 
-	int32 upgradeStates = 0; //TODO: ????
-
-	float moduleConstructionFraction(float constructionFraction) const {
-		PUN_CHECK(constructionFractionBegin >= 0.0f);
-		return (constructionFraction - constructionFractionBegin) / (constructionFractionEnd - constructionFractionBegin);
-	}
-
-	ModuleTransform(FString moduleName,
-		FTransform transform = FTransform::Identity, float relativeConstructionTime = 0.0f, ModuleTypeEnum moduleTypeEnum = ModuleTypeEnum::Normal,
-		int32 upgradeStates = 0)
-		: moduleName(moduleName),
-		relativeConstructionTime(relativeConstructionTime),
-		moduleTypeEnum(moduleTypeEnum),
-		transform(transform),
-		upgradeStates(upgradeStates)
-	{}
-};
-
-struct ModuleTransforms
-{
-	std::vector<ModuleTransform> transforms; //TODO: change name to modules?
-	std::vector<ModuleTransform> miniModules; // For far zoom
-	
-	std::vector<ParticleInfo> particleInfos;
-
-	std::vector<ModuleTransform> animTransforms;
-	std::vector<ModuleTransform> togglableTransforms;
-
-	std::vector<PointLightInfo> lightInfos;
-	
-	std::string setName; // For building name etc.
-
-	ModuleTransforms(std::vector<ModuleTransform> transforms, 
-						std::vector<ParticleInfo> particleInfos = {},
-						std::vector<ModuleTransform> animTransforms = {},
-						std::vector<ModuleTransform> togglableTransforms = {},
-						std::vector<PointLightInfo> lightInfos = {})
-		:
-		transforms(transforms),
-		particleInfos(particleInfos),
-		animTransforms(animTransforms),
-		togglableTransforms(togglableTransforms),
-		lightInfos(lightInfos)
-	{
-		PUN_CHECK(transforms.size() < 64); // InstanceKey = worldTileId + i * maxWorldTileId ...  2^32 /(2^12*2^13) / 2 = 64 .. more than 128 and it will overflow...
-		
-		CalculateConstructionFractions();
-	}
-
-	static ModuleTransforms CreateSet(std::string setName,
-										std::vector<ModuleTransform> transforms = {},
-										std::vector<ParticleInfo> particleInfos = {},
-										std::vector<ModuleTransform> animTransforms = {},
-										std::vector<ModuleTransform> togglableTransforms = {},
-										std::vector<PointLightInfo> lightInfos = {}) // Note: animTransforms must be set manually since we need its locations
-	{
-		ModuleTransforms result(transforms, particleInfos, animTransforms, togglableTransforms, lightInfos);
-		result.setName = setName;
-		return result;
-	}
-
-	void CalculateConstructionFractions()
-	{
-		//if (setName != "") UE_LOG(LogTemp, Log, TEXT("CalculateConstructionFractions %s"), ToTChar(setName));
-		
-		float totalRelativeConstructionTime = 0.0f;
-		for (ModuleTransform& transform : transforms) {
-			totalRelativeConstructionTime += transform.relativeConstructionTime;
-		}
-		//if (setName != "") UE_LOG(LogTemp, Log, TEXT("  totalRelativeConstructionTime %.2f"), totalRelativeConstructionTime);
-		
-		float constructionFraction = 0.0f;
-		for (size_t i = 0; i < transforms.size(); i++) {
-			transforms[i].constructionFractionBegin = constructionFraction;
-			constructionFraction += transforms[i].relativeConstructionTime / totalRelativeConstructionTime;
-			transforms[i].constructionFractionEnd = constructionFraction;
-
-			//if (transforms[i].moduleTypeEnum == ModuleTypeEnum::Frame) {
-			//	if (setName != "") UE_LOG(LogTemp, Log, TEXT("  Frame begin:%.2f end:%.2f"), transforms[i].constructionFractionBegin, transforms[i].constructionFractionEnd);
-			//}
-			
-			PUN_CHECK(constructionFraction <= 1.0f)
-		}
-	}
-
-
-	static ModuleTransforms CreateOreMineSet(FString oreMineSpecialName, FString oreMineWorkStaticName)
-	{
-		return CreateSet("OreMine", {}, {
-					{ParticleEnum::BlackSmoke, TransformFromPosition(-.27, 11.4, 21.6)},
-				}, {
-					ModuleTransform("OreMineWorkRotation2", TransformFromPosition(4.99, -8.10, 22.899), 0.0f, ModuleTypeEnum::RotateRoll),
-					ModuleTransform(oreMineSpecialName, FTransform::Identity, 0, ModuleTypeEnum::ShaderOnOff),
-				},
-				{
-					ModuleTransform(oreMineWorkStaticName),
-				}
-			);
-	}
-};
-
-// It is roll, pitch, yaw in the editor.. so make it the same..
-static FRotator EditorFRotator(float roll, float pitch, float yaw) {
-	return FRotator(pitch, yaw, roll);
-}
+//// Resolves overlay setting conflict
+//enum class OverlaySetterType {
+//	BuildingPlacement,
+//	ObjectDescriptionUI,
+//	OverlayToggler,
+//	Count,
+//	None,
+//};
+//
+//struct ParticleInfo
+//{
+//	ParticleEnum particleEnum = ParticleEnum::Smoke;
+//	FTransform transform;
+//};
+//
+//struct PointLightInfo
+//{
+//	float intensity = 0.1f;
+//	float attenuationRadius = 35;
+//	FLinearColor color = FLinearColor(1, 0.527, 0.076);
+//	FVector position;
+//	FVector scale;
+//};
+//
+//static FTransform TransformFromPosition(float X, float Y, float Z) {
+//	return FTransform(FVector(X, Y, Z));
+//}
+//static FTransform TransformFromPositionScale(float X, float Y, float Z, float scale) {
+//	return FTransform(FRotator::ZeroRotator, FVector(X, Y, Z), FVector(scale));
+//}
+//static FTransform TransformFromPositionYaw(float X, float Y, float Z, float yaw) {
+//	return FTransform(FRotator(0, yaw, 0), FVector(X, Y, Z), FVector::OneVector);
+//}
+//static FTransform TransformFromPositionYawScale(float X, float Y, float Z, float yaw, float scale) {
+//	return FTransform(FRotator(0, yaw, 0), FVector(X, Y, Z), FVector(scale));
+//}
+//static FTransform TransformFromPositionYawScale(float X, float Y, float Z, float yaw, FVector scale) {
+//	return FTransform(FRotator(0, yaw, 0), FVector(X, Y, Z), scale);
+//}
+//
+//
+//enum class ModuleTypeEnum
+//{
+//	Normal,
+//	ConstructionOnly,
+//	ConstructionBaseHighlight,
+//	Frame,
+//	Window,
+//	RotateRoll,
+//	ShaderAnimate,
+//	ShaderOnOff,
+//};
+//
+//struct ModuleTransform
+//{
+//	FString moduleName;
+//
+//	float relativeConstructionTime = 0;
+//	ModuleTypeEnum moduleTypeEnum = ModuleTypeEnum::Normal;
+//
+//	// !! Note that cannot do scaling on mesh with constructionMesh... (But then we don't need it?)
+//	// !! Beware... rotator is Pitch Yaw Roll
+//	FTransform transform; 
+//
+//	// TODO: use grouping system?? don't need this?... each ModuleTransform can be assigned group index.
+//	//std::vector<ModuleTransform> children;
+//
+//	// Calculated values
+//	float constructionFractionBegin = 0;
+//	float constructionFractionEnd = 0;
+//
+//	// what index this model should turn on
+//	// 0 means all... -1 means removal if [0] is upgraded ... 1 means add if [0] is upgraded
+//	// (disadvantage... can't do model upgrade beyond 
+//	int32 upgradeStates = 0; //TODO: ????
+//
+//	float moduleConstructionFraction(float constructionFraction) const {
+//		PUN_CHECK(constructionFractionBegin >= 0.0f);
+//		return (constructionFraction - constructionFractionBegin) / (constructionFractionEnd - constructionFractionBegin);
+//	}
+//
+//	ModuleTransform(FString moduleName,
+//		FTransform transform = FTransform::Identity, float relativeConstructionTime = 0.0f, ModuleTypeEnum moduleTypeEnum = ModuleTypeEnum::Normal,
+//		int32 upgradeStates = 0)
+//		: moduleName(moduleName),
+//		relativeConstructionTime(relativeConstructionTime),
+//		moduleTypeEnum(moduleTypeEnum),
+//		transform(transform),
+//		upgradeStates(upgradeStates)
+//	{}
+//};
+//
+//struct ModuleTransformGroup
+//{
+//	std::vector<ModuleTransform> transforms; //TODO: change name to modules?
+//	std::vector<ModuleTransform> miniModules; // For far zoom
+//	
+//	std::vector<ParticleInfo> particleInfos;
+//
+//	std::vector<ModuleTransform> animTransforms;
+//	std::vector<ModuleTransform> togglableTransforms;
+//
+//	std::vector<PointLightInfo> lightInfos;
+//	
+//	FString setName; // For building name etc.
+//
+//	ModuleTransformGroup(std::vector<ModuleTransform> transforms, 
+//						std::vector<ParticleInfo> particleInfos = {},
+//						std::vector<ModuleTransform> animTransforms = {},
+//						std::vector<ModuleTransform> togglableTransforms = {},
+//						std::vector<PointLightInfo> lightInfos = {})
+//		:
+//		transforms(transforms),
+//		particleInfos(particleInfos),
+//		animTransforms(animTransforms),
+//		togglableTransforms(togglableTransforms),
+//		lightInfos(lightInfos)
+//	{
+//		PUN_CHECK(transforms.size() < 64); // InstanceKey = worldTileId + i * maxWorldTileId ...  2^32 /(2^12*2^13) / 2 = 64 .. more than 128 and it will overflow...
+//		
+//		CalculateConstructionFractions();
+//	}
+//
+//	static ModuleTransformGroup CreateSet(FString setName,
+//										std::vector<ModuleTransform> transforms = {},
+//										std::vector<ParticleInfo> particleInfos = {},
+//										std::vector<ModuleTransform> animTransforms = {},
+//										std::vector<ModuleTransform> togglableTransforms = {},
+//										std::vector<PointLightInfo> lightInfos = {}) // Note: animTransforms must be set manually since we need its locations
+//	{
+//		ModuleTransformGroup result(transforms, particleInfos, animTransforms, togglableTransforms, lightInfos);
+//		result.setName = setName;
+//		return result;
+//	}
+//
+//	void CalculateConstructionFractions()
+//	{
+//		//if (setName != "") UE_LOG(LogTemp, Log, TEXT("CalculateConstructionFractions %s"), ToTChar(setName));
+//		
+//		float totalRelativeConstructionTime = 0.0f;
+//		for (ModuleTransform& transform : transforms) {
+//			totalRelativeConstructionTime += transform.relativeConstructionTime;
+//		}
+//		//if (setName != "") UE_LOG(LogTemp, Log, TEXT("  totalRelativeConstructionTime %.2f"), totalRelativeConstructionTime);
+//		
+//		float constructionFraction = 0.0f;
+//		for (size_t i = 0; i < transforms.size(); i++) {
+//			transforms[i].constructionFractionBegin = constructionFraction;
+//			constructionFraction += transforms[i].relativeConstructionTime / totalRelativeConstructionTime;
+//			transforms[i].constructionFractionEnd = constructionFraction;
+//
+//			//if (transforms[i].moduleTypeEnum == ModuleTypeEnum::Frame) {
+//			//	if (setName != "") UE_LOG(LogTemp, Log, TEXT("  Frame begin:%.2f end:%.2f"), transforms[i].constructionFractionBegin, transforms[i].constructionFractionEnd);
+//			//}
+//			
+//			PUN_CHECK(constructionFraction <= 1.0f)
+//		}
+//	}
+//
+//
+//	static ModuleTransformGroup CreateOreMineSet(FString oreMineSpecialName, FString oreMineWorkStaticName)
+//	{
+//		return CreateSet("OreMine", {}, {
+//					{ParticleEnum::BlackSmoke, TransformFromPosition(-.27, 11.4, 21.6)},
+//				}, {
+//					ModuleTransform("OreMineWorkRotation2", TransformFromPosition(4.99, -8.10, 22.899), 0.0f, ModuleTypeEnum::RotateRoll),
+//					ModuleTransform(oreMineSpecialName, FTransform::Identity, 0, ModuleTypeEnum::ShaderOnOff),
+//				},
+//				{
+//					ModuleTransform(oreMineWorkStaticName),
+//				}
+//			);
+//	}
+//};
 
 class GameDisplayInfo
 {
 public:
-	void InitBuildingSets()
+
+	/*
+	 ModuleTransformGroup::CreateSet("HouseClayLvl1",
+		 {},
+		 { {ParticleEnum::Smoke, TransformFromPosition(23.8, -5.7, 29.4)} }
+	 ),
+
+				ModuleTransformGroup::CreateSet("Potter", {},
+			{
+				{ParticleEnum::BlackSmoke,  TransformFromPosition(-15.8, -8.77, 7.78)},
+			}, {})
+
+			{ // Vodka Distillery
+			ModuleTransformGroup::CreateSet("VodkaDistillery", {},
+			{
+				{ParticleEnum::Smoke,  TransformFromPosition(13.37, -16.77, 23.05)},
+			}, {
+				ModuleTransform("VodkaDistilleryWorkShaderOnOff", FTransform::Identity, 0, ModuleTypeEnum::ShaderOnOff),
+			})
+		},
+	 */
+	
+	void InitBuildingSets(UAssetLoaderComponent* assetLoader)
 	{
-		BuildingEnumToVariationToModuleTransforms = {
-			{
-				/*
-				 * House by level
-				 */
-				// House level 1
-				ModuleTransforms::CreateSet("HouseLvl1",
-					{
-						ModuleTransform("DecorativeBasketBox", TransformFromPositionScale(-8.35, 19.9, -0.42, 0.07)),
-						ModuleTransform("DecorativeBarrel", TransformFromPosition(-8.53, 5.41, -0.21)),
-						ModuleTransform("DecorativeBlueBottle", TransformFromPosition(-9.34, 5.98, 4.7)),
-						ModuleTransform("DecorativeOrange", TransformFromPosition(-9.01, 4.63, 4.88)),
-						ModuleTransform("DecorativeOrange", TransformFromPosition(-7.92, 5.41, 4.88)),
-					},
-					{ {ParticleEnum::Smoke, TransformFromPosition(22.7, -0.7, 22.36)} }
-				),
-				ModuleTransforms::CreateSet("HouseLvl1V2",
-					{
-						ModuleTransform("DecorativeBasketBox", TransformFromPositionScale(-8.35, 19.9, -0.42, 0.07)),
-						ModuleTransform("DecorativeBarrel", TransformFromPosition(-8.53, 5.41, -0.21)),
-						ModuleTransform("DecorativeBlueBottle", TransformFromPosition(-9.34, 5.98, 4.7)),
-						ModuleTransform("DecorativeOrange", TransformFromPosition(-9.01, 4.63, 4.88)),
-						ModuleTransform("DecorativeOrange", TransformFromPosition(-7.92, 5.41, 4.88)),
-					},
-					{ {ParticleEnum::Smoke, TransformFromPosition(16.7, -12.4, 22.0)} }
-				),
-				ModuleTransforms::CreateSet("HouseClayLvl1",
-					{},
-					{ {ParticleEnum::Smoke, TransformFromPosition(23.8, -5.7, 29.4)} }
-				),
+		BuildingEnumToVariationToModuleTransforms = assetLoader->buildingEnumToVariationToModuleTransforms();
 
-				// House level 2
-				ModuleTransforms::CreateSet("HouseLvl2",
-					{
-						ModuleTransform("DecorativeBasketBox", TransformFromPositionScale(-8.35, 9.9, -0.42, 0.07)),
-						ModuleTransform("DecorativeBarrel", TransformFromPosition(-8.53, 5.41, -0.21)),
-						ModuleTransform("DecorativeBlueBottle", TransformFromPosition(-9.34, 5.98, 4.7)),
-						ModuleTransform("DecorativeOrange", TransformFromPosition(-9.01, 4.63, 4.88)),
-						ModuleTransform("DecorativeOrange", TransformFromPosition(-7.92, 5.41, 4.88)),
-					},
-					{ {ParticleEnum::Smoke, TransformFromPosition(21.9, 4.23, 31.8)} }
-				),
-				ModuleTransforms::CreateSet("HouseLvl2V2",
-					{
-						ModuleTransform("DecorativeBasketBox", TransformFromPositionScale(-8.35, 9.9, -0.42, 0.07)),
-						ModuleTransform("DecorativeBarrel", TransformFromPosition(-8.53, 5.41, -0.21)),
-						ModuleTransform("DecorativeBlueBottle", TransformFromPosition(-9.34, 5.98, 4.7)),
-						ModuleTransform("DecorativeOrange", TransformFromPosition(-9.01, 4.63, 4.88)),
-						ModuleTransform("DecorativeOrange", TransformFromPosition(-7.92, 5.41, 4.88)),
-					},
-					{ {ParticleEnum::Smoke, TransformFromPosition(14.6, -5.7, 34.8)} }
-				),
-				ModuleTransforms::CreateSet("HouseClayLvl2", {},
-					{ {ParticleEnum::Smoke, TransformFromPosition(18.2, 3.3, 44.0)} }
-				),
+		auto set = [&](CardEnum buildingEnum, TArray<ModuleTransformGroup> moduleGroups) {
+			BuildingEnumToVariationToModuleTransforms[static_cast<int>(buildingEnum)] = moduleGroups;
+		};
+		auto setName = [&](CardEnum buildingEnum, FString name) {
+			BuildingEnumToVariationToModuleTransforms[static_cast<int>(buildingEnum)] = { ModuleTransformGroup::CreateSet(name) };
+		};
 
-				// House level 3
-				ModuleTransforms::CreateSet("HouseLvl3",
-					{
-						ModuleTransform("DecorativeBasketBox", TransformFromPositionScale(-8.35, 9.9, -0.42, 0.07)),
-						ModuleTransform("DecorativeBarrel", TransformFromPosition(-8.53, 5.41, -0.21)),
-						ModuleTransform("DecorativeBlueBottle", TransformFromPosition(-9.34, 5.98, 4.7)),
-						ModuleTransform("DecorativeOrange", TransformFromPosition(-9.01, 4.63, 4.88)),
-						ModuleTransform("DecorativeOrange", TransformFromPosition(-7.92, 5.41, 4.88)),
-					},
-					{ {ParticleEnum::Smoke, TransformFromPosition(17.5, 13.3, 43.7)} }
-				),
-				ModuleTransforms::CreateSet("HouseLvl3V2",
-					{
-						ModuleTransform("DecorativeBasketBox", TransformFromPositionScale(-8.35, 9.9, -0.42, 0.07)),
-						ModuleTransform("DecorativeBarrel", TransformFromPosition(-8.53, 5.41, -0.21)),
-						ModuleTransform("DecorativeBlueBottle", TransformFromPosition(-9.34, 5.98, 4.7)),
-						ModuleTransform("DecorativeOrange", TransformFromPosition(-9.01, 4.63, 4.88)),
-						ModuleTransform("DecorativeOrange", TransformFromPosition(-7.92, 5.41, 4.88)),
-					},
-					{ {ParticleEnum::Smoke, TransformFromPosition(16.9, -2.4, 48.4)} }
-				),
-				ModuleTransforms::CreateSet("HouseClayLvl3", {},
-					{ {ParticleEnum::Smoke, TransformFromPosition(24.65, -4.72, 42.16)} }
-				),
 
-				// House level 4
-				ModuleTransforms::CreateSet("HouseLvl4", {},
-					{ {ParticleEnum::Smoke, TransformFromPosition(14.5, 4.7, 41.3)} }
-				),
-				ModuleTransforms::CreateSet("HouseLvl4V2", {},
-					{ {ParticleEnum::Smoke, TransformFromPosition(17.1, 21.24, 40.05)} }
-				),
-				ModuleTransforms::CreateSet("HouseLvl4", {},
-					{ {ParticleEnum::Smoke, TransformFromPosition(14.5, 4.7, 41.3)} }
-				),
+		set(CardEnum::House, {
+			 // House level 1
+			 ModuleTransformGroup::CreateSet("HouseLvl1"),
+			 ModuleTransformGroup::CreateSet("HouseLvl1V2"),
+			 ModuleTransformGroup::CreateSet("HouseClayLvl1",
+				 {},
+				 { {ParticleEnum::Smoke, TransformFromPosition(23.8, -5.7, 29.4)} }
+			 ),
 
-				// House level 5
-				ModuleTransforms::CreateSet("HouseLvl5", {},
-					{ {ParticleEnum::Smoke, TransformFromPosition(1.10, 4.99, 42.03)} }
-				),
-				ModuleTransforms::CreateSet("HouseLvl5V2", {},
-					{ {ParticleEnum::Smoke, TransformFromPosition(18.04, 15.43, 39.4)} }
-				),
-				ModuleTransforms::CreateSet("HouseLvl5", {},
-					{ {ParticleEnum::Smoke, TransformFromPosition(1.10, 4.99, 42.03)} }
-				),
+			// House level 2
+			ModuleTransformGroup::CreateSet("HouseLvl2"),
+			ModuleTransformGroup::CreateSet("HouseLvl2V2"),
+			ModuleTransformGroup::CreateSet("HouseClayLvl2"),
 
-				// House level 6
-				ModuleTransforms::CreateSet("HouseLvl6", {},
-					{ {ParticleEnum::Smoke, TransformFromPosition(22.12, -7.4, 50.88)} }
-				),
-				ModuleTransforms::CreateSet("HouseLvl6V2", {},
-					{ {ParticleEnum::Smoke, TransformFromPosition(20.94, -7.36, 45.18)} }
-				),
-				ModuleTransforms::CreateSet("HouseLvl6", {},
-					{ {ParticleEnum::Smoke, TransformFromPosition(22.12, -7.4, 50.88)} }
-				),
-
-				// House level 7
-				ModuleTransforms::CreateSet("HouseLvl7", {},
-					{ {ParticleEnum::Smoke, TransformFromPosition(5.95, -15.14, 62.02)} }
-				),
-				ModuleTransforms::CreateSet("HouseLvl7V2", {},
-					{ {ParticleEnum::Smoke, TransformFromPosition(5.74, 25.3, 62.0)} }
-				),
-				ModuleTransforms::CreateSet("HouseLvl7", {},
-					{ {ParticleEnum::Smoke, TransformFromPosition(5.95, -15.14, 62.02)} }
-				),
-			},
-			{
-				ModuleTransforms({ ModuleTransform("StoneHouse") }),
-				ModuleTransforms({ ModuleTransform("StoneHouse2") }),
-				ModuleTransforms({ ModuleTransform("StoneHouse3") }),
-			},
-
-			{ // Gatherer
-				ModuleTransforms::CreateSet("Gatherer")
-			},
-
-			{
-				// 1
-				ModuleTransforms::CreateSet("TownhallThatch",
-					{
-						ModuleTransform("DecorativeBread", TransformFromPositionScale(-21.95, -12.92, 5.67, 0.6)),
-						ModuleTransform("DecorativeBread", TransformFromPositionScale(-19.5, -12.05, 5.66, 0.7)),
-						ModuleTransform("DecorativeBlueBottle", TransformFromPosition(-20.59, -18.4, 4.7)),
-						ModuleTransform("DecorativeBlueBottle", TransformFromPosition(-23.22, 35.3, 4.7)),
-						ModuleTransform("DecorativeBlueBottle", TransformFromPosition(-24.87, 34.25, 4.7)),
-						ModuleTransform("DecorativeBlueBottle", TransformFromPosition(9.08, 17.84, 0)),
-						ModuleTransform("DecorativeHam", TransformFromPosition(-19.89, -15.81, 5.81)),
-						ModuleTransform("DecorativeBasketBox", TransformFromPositionYawScale(-16.5, 27.13, 0, 133, 0.07)),
-						ModuleTransform("DecorativeBasketRound", TransformFromPositionScale(7.47, 17.37, 0, 0.08)),
-						ModuleTransform("DecorativeSack", TransformFromPositionYaw(-0.4, 1.66, -1.03, 141)),
-						ModuleTransform("DecorativeSack", TransformFromPositionYaw(3.09, 3.67, -1.03, 142)),
-						ModuleTransform("DecorativeSack", TransformFromPositionYaw(1.09, 2.94, 0.22, 142)),
-					},
-					{
-						{ParticleEnum::Smoke, TransformFromPosition(51.6, -24.3, 38.8)},
-						{ParticleEnum::CampFire, TransformFromPositionYawScale(-2.75, 9.9, 1.85, 0, 0.17)}
-					},
-					{}, {},
-					{{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-2.3, 10.2, 8.5), FVector::OneVector}}
-				),
-			// 2
-			ModuleTransforms::CreateSet("Townhall0",
+			// House level 3
+			ModuleTransformGroup::CreateSet("HouseLvl3",
 				{
-					ModuleTransform("DecorativeBread", TransformFromPositionScale(-21.95, -12.92, 5.67, 0.6)),
-					ModuleTransform("DecorativeBread", TransformFromPositionScale(-19.5, -12.05, 5.66, 0.7)),
-					ModuleTransform("DecorativeBlueBottle", TransformFromPosition(-20.59, -18.4, 4.7)),
-					ModuleTransform("DecorativeBlueBottle", TransformFromPosition(-23.22, 35.3, 4.7)),
-					ModuleTransform("DecorativeBlueBottle", TransformFromPosition(-24.87, 34.25, 4.7)),
-					ModuleTransform("DecorativeBlueBottle", TransformFromPosition(9.08, 17.84, 0)),
-					ModuleTransform("DecorativeHam", TransformFromPosition(-19.89, -15.81, 5.81)),
-					ModuleTransform("DecorativeBasketBox", TransformFromPositionYawScale(-16.5, 27.13, 0, 133, 0.07)),
-					ModuleTransform("DecorativeBasketRound", TransformFromPositionScale(7.47, 17.37, 0, 0.08)),
-					ModuleTransform("DecorativeSack", TransformFromPositionYaw(-0.4, 1.66, -1.03, 141)),
-					ModuleTransform("DecorativeSack", TransformFromPositionYaw(3.09, 3.67, -1.03, 142)),
-					ModuleTransform("DecorativeSack", TransformFromPositionYaw(1.09, 2.94, 0.22, 142)),
+					ModuleTransform("DecorativeBasketBox", TransformFromPositionScale(-8.35, 9.9, -0.42, 0.07)),
+					ModuleTransform("DecorativeBarrel", TransformFromPosition(-8.53, 5.41, -0.21)),
+					ModuleTransform("DecorativeBlueBottle", TransformFromPosition(-9.34, 5.98, 4.7)),
+					ModuleTransform("DecorativeOrange", TransformFromPosition(-9.01, 4.63, 4.88)),
+					ModuleTransform("DecorativeOrange", TransformFromPosition(-7.92, 5.41, 4.88)),
 				},
-				{
-					{ParticleEnum::Smoke, TransformFromPosition(51.6, -24.3, 38.8)},
-					{ParticleEnum::CampFire, TransformFromPositionYawScale(-2.75, 9.9, 1.85, 0, 0.17)}
-				},
-				{}, {},
-				{{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-2.3, 10.2, 8.5), FVector::OneVector}}
+				{ {ParticleEnum::Smoke, TransformFromPosition(17.5, 13.3, 43.7)} }
 			),
-			// 3
-			ModuleTransforms::CreateSet("Townhall3",
+			ModuleTransformGroup::CreateSet("HouseLvl3V2",
 				{
-					ModuleTransform("DecorativeBread", TransformFromPositionScale(-21.95, -12.92, 5.67, 0.6)),
-					ModuleTransform("DecorativeBread", TransformFromPositionScale(-19.5, -12.05, 5.66, 0.7)),
-					ModuleTransform("DecorativeBlueBottle", TransformFromPosition(-20.59, -18.4, 4.7)),
-					ModuleTransform("DecorativeBlueBottle", TransformFromPosition(-23.22, 35.3, 4.7)),
-					ModuleTransform("DecorativeBlueBottle", TransformFromPosition(-24.87, 34.25, 4.7)),
-					ModuleTransform("DecorativeBlueBottle", TransformFromPosition(9.08, 17.84, 0)),
-					ModuleTransform("DecorativeHam", TransformFromPosition(-19.89, -15.81, 5.81)),
-					ModuleTransform("DecorativeBasketBox", TransformFromPositionYawScale(-16.5, 27.13, 0, 133, 0.07)),
-					ModuleTransform("DecorativeBasketRound", TransformFromPositionScale(7.47, 17.37, 0, 0.08)),
-					ModuleTransform("DecorativeSack", TransformFromPositionYaw(-0.4, 1.66, -1.03, 141)),
-					ModuleTransform("DecorativeSack", TransformFromPositionYaw(3.09, 3.67, -1.03, 142)),
-					ModuleTransform("DecorativeSack", TransformFromPositionYaw(1.09, 2.94, 0.22, 142)),
+					ModuleTransform("DecorativeBasketBox", TransformFromPositionScale(-8.35, 9.9, -0.42, 0.07)),
+					ModuleTransform("DecorativeBarrel", TransformFromPosition(-8.53, 5.41, -0.21)),
+					ModuleTransform("DecorativeBlueBottle", TransformFromPosition(-9.34, 5.98, 4.7)),
+					ModuleTransform("DecorativeOrange", TransformFromPosition(-9.01, 4.63, 4.88)),
+					ModuleTransform("DecorativeOrange", TransformFromPosition(-7.92, 5.41, 4.88)),
 				},
-				{
-					{ParticleEnum::Smoke, TransformFromPosition(34.99, -25.34, 51.55)},
-					{ParticleEnum::CampFire, TransformFromPositionYawScale(-10.88, 8.19, 0.37, 0, 0.17)}
-				},
-				{}, {},
-				{{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-10.88, 8.19, 8.5), FVector::OneVector}}
+				{ {ParticleEnum::Smoke, TransformFromPosition(16.9, -2.4, 48.4)} }
 			),
-			// 4
-			ModuleTransforms::CreateSet("Townhall4",
-				{
-					ModuleTransform("DecorativeBread", TransformFromPositionScale(-21.95, -12.92, 5.67, 0.6)),
-					ModuleTransform("DecorativeBread", TransformFromPositionScale(-19.5, -12.05, 5.66, 0.7)),
-					ModuleTransform("DecorativeBlueBottle", TransformFromPosition(-20.59, -18.4, 4.7)),
-					ModuleTransform("DecorativeBlueBottle", TransformFromPosition(-23.22, 35.3, 4.7)),
-					ModuleTransform("DecorativeBlueBottle", TransformFromPosition(-24.87, 34.25, 4.7)),
-					ModuleTransform("DecorativeBlueBottle", TransformFromPosition(9.08, 17.84, 0)),
-					ModuleTransform("DecorativeHam", TransformFromPosition(-19.89, -15.81, 5.81)),
-					ModuleTransform("DecorativeBasketBox", TransformFromPositionYawScale(-16.5, 27.13, 0, 133, 0.07)),
-					ModuleTransform("DecorativeBasketRound", TransformFromPositionScale(7.47, 17.37, 0, 0.08)),
-					ModuleTransform("DecorativeSack", TransformFromPositionYaw(-0.4, 1.66, -1.03, 141)),
-					ModuleTransform("DecorativeSack", TransformFromPositionYaw(3.09, 3.67, -1.03, 142)),
-					ModuleTransform("DecorativeSack", TransformFromPositionYaw(1.09, 2.94, 0.22, 142)),
-				},
-				{
-					{ParticleEnum::Smoke, TransformFromPosition(34.99, -25.34, 51.55)},
-					{ParticleEnum::CampFire, TransformFromPositionYawScale(-10.88, 8.19, 0.37, 0, 0.17)}
-				},
-				{}, {},
-				{{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-10.88, 8.19, 8.5), FVector::OneVector}}
+			ModuleTransformGroup::CreateSet("HouseClayLvl3", {},
+				{ {ParticleEnum::Smoke, TransformFromPosition(24.65, -4.72, 42.16)} }
 			),
-			// 5
-			ModuleTransforms::CreateSet("TownhallLvl5", { ModuleTransform("TownhallLvl5GardenAndSpire", TransformFromPositionYaw(-15, -1.35, -2.364, 0)) }),
-		},
 
-		{ // Storage yard
-			ModuleTransforms({}),
-		},
+			// House level 4
+			ModuleTransformGroup::CreateSet("HouseLvl4", {},
+				{ {ParticleEnum::Smoke, TransformFromPosition(14.5, 4.7, 41.3)} }
+			),
+			ModuleTransformGroup::CreateSet("HouseLvl4V2", {},
+				{ {ParticleEnum::Smoke, TransformFromPosition(17.1, 21.24, 40.05)} }
+			),
+			ModuleTransformGroup::CreateSet("HouseLvl4", {},
+				{ {ParticleEnum::Smoke, TransformFromPosition(14.5, 4.7, 41.3)} }
+			),
 
-		{ // Gold Mine
-			ModuleTransforms::CreateOreMineSet("OreMineSpecial_Gold", "OreMineWorkStatic_Gold")
-		},
+			// House level 5
+			ModuleTransformGroup::CreateSet("HouseLvl5", {},
+				{ {ParticleEnum::Smoke, TransformFromPosition(1.10, 4.99, 42.03)} }
+			),
+			ModuleTransformGroup::CreateSet("HouseLvl5V2", {},
+				{ {ParticleEnum::Smoke, TransformFromPosition(18.04, 15.43, 39.4)} }
+			),
+			ModuleTransformGroup::CreateSet("HouseLvl5", {},
+				{ {ParticleEnum::Smoke, TransformFromPosition(1.10, 4.99, 42.03)} }
+			),
 
-		{ // Quarry
-			ModuleTransforms::CreateSet("Quarry", {}, {
+			// House level 6
+			ModuleTransformGroup::CreateSet("HouseLvl6", {},
+				{ {ParticleEnum::Smoke, TransformFromPosition(22.12, -7.4, 50.88)} }
+			),
+			ModuleTransformGroup::CreateSet("HouseLvl6V2", {},
+				{ {ParticleEnum::Smoke, TransformFromPosition(20.94, -7.36, 45.18)} }
+			),
+			ModuleTransformGroup::CreateSet("HouseLvl6", {},
+				{ {ParticleEnum::Smoke, TransformFromPosition(22.12, -7.4, 50.88)} }
+			),
+
+			// House level 7
+			ModuleTransformGroup::CreateSet("HouseLvl7", {},
+				{ {ParticleEnum::Smoke, TransformFromPosition(5.95, -15.14, 62.02)} }
+			),
+			ModuleTransformGroup::CreateSet("HouseLvl7V2", {},
+				{ {ParticleEnum::Smoke, TransformFromPosition(5.74, 25.3, 62.0)} }
+			),
+			ModuleTransformGroup::CreateSet("HouseLvl7", {},
+				{ {ParticleEnum::Smoke, TransformFromPosition(5.95, -15.14, 62.02)} }
+			),
+		});
+
+		//set(CardEnum::Townhall, {
+		//	// 1
+		//		ModuleTransformGroup::CreateSet("TownhallThatch",
+		//			{},
+		//			{
+		//				{ParticleEnum::Smoke, TransformFromPosition(51.6, -24.3, 38.8)},
+		//				{ParticleEnum::CampFire, TransformFromPositionYawScale(-2.75, 9.9, 1.85, 0, 0.17)}
+		//			},
+		//			{}, {},
+		//			{{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-2.3, 10.2, 8.5), FVector::OneVector}}
+		//		),
+		//	// 2
+		//	ModuleTransformGroup::CreateSet("Townhall0",
+		//		{},
+		//		{
+		//			{ParticleEnum::Smoke, TransformFromPosition(51.6, -24.3, 38.8)},
+		//			{ParticleEnum::CampFire, TransformFromPositionYawScale(-2.75, 9.9, 1.85, 0, 0.17)}
+		//		},
+		//		{}, {},
+		//		{{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-2.3, 10.2, 8.5), FVector::OneVector}}
+		//	),
+		//	// 3
+		//	ModuleTransformGroup::CreateSet("Townhall3",
+		//		{},
+		//		{
+		//			{ParticleEnum::Smoke, TransformFromPosition(34.99, -25.34, 51.55)},
+		//			{ParticleEnum::CampFire, TransformFromPositionYawScale(-10.88, 8.19, 0.37, 0, 0.17)}
+		//		},
+		//		{}, {},
+		//		{{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-10.88, 8.19, 8.5), FVector::OneVector}}
+		//	),
+		//	// 4
+		//	ModuleTransformGroup::CreateSet("Townhall4",
+		//		{},
+		//		{
+		//			{ParticleEnum::Smoke, TransformFromPosition(34.99, -25.34, 51.55)},
+		//			{ParticleEnum::CampFire, TransformFromPositionYawScale(-10.88, 8.19, 0.37, 0, 0.17)}
+		//		},
+		//		{}, {},
+		//		{{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-10.88, 8.19, 8.5), FVector::OneVector}}
+		//	),
+		//	// 5
+		//	ModuleTransformGroup::CreateSet("TownhallLvl5", { ModuleTransform("TownhallLvl5GardenAndSpire", TransformFromPositionYaw(-15, -1.35, -2.364, 0)) }),
+		//});
+
+		set(CardEnum::StorageYard, {
+			ModuleTransformGroup(),
+		});
+
+		set(CardEnum::GoldMine, {
+			ModuleTransformGroup::CreateOreMineSet("OreMineSpecial_Gold", "OreMineWorkStatic_Gold")
+		});
+
+		set(CardEnum::Quarry, {
+			ModuleTransformGroup::CreateSet("Quarry", {}, {
 					//{ParticleEnum::BlackSmoke, TransformFromPosition(-.27, 11.4, 21.6)},
 				}, {
 					//ModuleTransform("OreMineWorkRotation2", TransformFromPosition(4.99, -8.10, 22.899), 0.0f, ModuleTypeEnum::RotateRoll),
@@ -441,60 +365,48 @@ public:
 					ModuleTransform("OreMineWorkStatic_Stone"),
 				}
 			),
-		},
+		});
 
 
-		{ ModuleTransforms({ ModuleTransform("IronStatue")}) },
+		//set(CardEnum::MushroomFarm, {
+		//	ModuleTransformGroup::CreateSet("MushroomHut", {}, {},
+		//		{
+		//			ModuleTransform("MushroomHutWorkShaderAnimate", FTransform::Identity, 0.0f, ModuleTypeEnum::ShaderAnimate),
+		//		}
+		//	)
+		//});
 
-		{ // Bank
-			ModuleTransforms::CreateSet("Bank", {}, {})
-		},
+		set(CardEnum::Fence, {
+			ModuleTransformGroup({ ModuleTransform("FenceFour", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
+			ModuleTransformGroup({ ModuleTransform("FenceThree", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
+			ModuleTransformGroup({ ModuleTransform("FenceOpposite", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
+			ModuleTransformGroup({ ModuleTransform("FenceAdjacent", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
+		});
 
-		{ ModuleTransforms({ ModuleTransform("TempleGrograth")}) },
+		set(CardEnum::FenceGate, {
+			ModuleTransformGroup({ ModuleTransform("FenceGate", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)})
+		});
 
-		{ // Farm
-			ModuleTransforms::CreateSet("Farm")
-		},
+		set(CardEnum::Bridge, {
+			ModuleTransformGroup({ ModuleTransform("Bridge1", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
+		});
 
+		set(CardEnum::Forester, {
+			ModuleTransformGroup::CreateSet("Forester", {}, {{ParticleEnum::Smoke, TransformFromPosition(9.5, 10.2, 29.5)}})
+		});
 
-		{ ModuleTransforms({
-			ModuleTransforms::CreateSet("MushroomHut", {}, {},
-				{
-					ModuleTransform("MushroomHutWorkShaderAnimate", FTransform::Identity, 0.0f, ModuleTypeEnum::ShaderAnimate),
-				}
-			)
-		}) },
+		set(CardEnum::CoalMine, {
+			ModuleTransformGroup::CreateOreMineSet("OreMineSpecial_Coal", "OreMineWorkStatic_Coal")
+		});
 
-		{ // Fence 
-			ModuleTransforms({ ModuleTransform("FenceFour", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
-			ModuleTransforms({ ModuleTransform("FenceThree", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
-			ModuleTransforms({ ModuleTransform("FenceOpposite", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
-			ModuleTransforms({ ModuleTransform("FenceAdjacent", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
-		},
-		{ ModuleTransforms({ ModuleTransform("FenceGate", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}) },
-		{ // Bridge
-			ModuleTransforms({ ModuleTransform("Bridge1", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
-		},
+		set(CardEnum::IronMine, {
+			ModuleTransformGroup::CreateOreMineSet("OreMineSpecial_Iron", "OreMineWorkStatic_Iron")
+		});
 
-		{ // Forester
-			ModuleTransforms::CreateSet("Forester", {}, {{ParticleEnum::Smoke, TransformFromPosition(9.5, 10.2, 29.5)}})
-		},
+		setName(CardEnum::PaperMaker, "PaperMaker");
 
-		{ // Coal Mine
-			ModuleTransforms::CreateOreMineSet("OreMineSpecial_Coal", "OreMineWorkStatic_Coal")
-		},
-		{ // Iron Mine
-			ModuleTransforms::CreateOreMineSet("OreMineSpecial_Iron", "OreMineWorkStatic_Iron")
-		},
-
-		{ ModuleTransforms({ ModuleTransform("SmallMarket")}) },
-			
-		{ // Paper Maker
-			ModuleTransforms::CreateSet("PaperMaker")
-		},
-
-		{ // Iron Smelter
-			ModuleTransforms::CreateSet("Smelter", {},
+		set(CardEnum::IronSmelter, {
+			ModuleTransformGroup::CreateSet("Smelter", {},
 				{
 					{ParticleEnum::BlackSmoke, TransformFromPosition(10.7, -11.1, 37.4)},
 				}, {},
@@ -502,538 +414,141 @@ public:
 					ModuleTransform("SmelterWorkStatic"),
 				}
 			)
-		},
+		});
 
 
-		{ // Stone tool shop
-			ModuleTransforms::CreateSet("StoneToolShop")
-		},
+		set(CardEnum::DirtRoad, { ModuleTransformGroup({ ModuleTransform("DirtRoad") }) });
+		set(CardEnum::StoneRoad, { ModuleTransformGroup({ ModuleTransform("StoneRoad") }) });
 
-		{ // Blacksmith
-			ModuleTransforms::CreateSet("Blacksmith")
-		},
-
-		{ // Herbalist
-			ModuleTransforms::CreateSet("Herbalist")
-		},
-
-		{ // MedicineMaker
-			ModuleTransforms::CreateSet("MedicineMaker")
-		},
-
-
-
-		{ // Furniture
-			ModuleTransforms::CreateSet("FurnitureMaker", {}, {},
-			{
-				ModuleTransform("FurnitureMakerWorkRotation1", TransformFromPosition(-10.208, 1.62, 6.62), 0.0f, ModuleTypeEnum::RotateRoll),
-				ModuleTransform("FurnitureMakerWorkRotation2", TransformFromPosition(-3.311, -1.472, 10.866), 0.0f, ModuleTypeEnum::RotateRoll),
-			})
-		},
-
-		{ // Chocolatier
-			ModuleTransforms::CreateSet("Chocolatier")
-		},
-
-		{ // Garden
-			ModuleTransforms::CreateSet("Garden")
-		},
-
-
-		{ ModuleTransforms({ ModuleTransform("BoarBurrow")}) },
-
-		{ ModuleTransforms({ ModuleTransform("DirtRoad")}) },
-		{ ModuleTransforms({ ModuleTransform("StoneRoad")}) },
-		{ ModuleTransforms({ ModuleTransform("TrapSpike", FTransform::Identity, 10.0f, ModuleTypeEnum::Frame)}) },
-
-		{ // Fisher
-			ModuleTransforms::CreateSet("Fisher", {}, {}, {},
-				{
-					ModuleTransform("FisherMarlin", FTransform(FRotator(0, 90, 90), FVector(2.88, 17.93, 7.51), FVector::OneVector)),
-
-					ModuleTransform("DecorativeBarrel", TransformFromPosition(-23.69, 10.9, -0.21)),
-					ModuleTransform("DecorativeBarrel", TransformFromPosition(-23.69, 14.69, -0.21)),
-					ModuleTransform("DecorativeBarrel", TransformFromPosition(-7.159, 10.15, -0.21)),
-					ModuleTransform("DecorativeBarrel", TransformFromPosition(-2.2, -8.5, -0.21)),
-				}
-			)
-		},
-		{ ModuleTransforms({ ModuleTransform("BlossomShrine")}) },
-
-		{ // Winery
-			ModuleTransforms::CreateSet("Winery", {}, {{ParticleEnum::Smoke, TransformFromPosition(16.2, -16.6, 21.3)}})
-		},
-
-		{ // Library
-			ModuleTransforms::CreateSet("Library")
-		},
-		{ // School
-			ModuleTransforms::CreateSet("Library")
-		},
-
-		{ // Theatre
-			ModuleTransforms::CreateSet("Theatre")
-		},
-		{ // Tavern
-			ModuleTransforms::CreateSet("Tavern", {}, {{ParticleEnum::Smoke, TransformFromPosition(12.2, -10.9, 20.1)}})
-		},
-
-		{ // Tailor
-			ModuleTransforms::CreateSet("Tailor", {}, {{ParticleEnum::Smoke, TransformFromPosition(9.6, 29.3, 22.5)}})
-		},
-
-		{ // Charcoal maker
-			ModuleTransforms::CreateSet("CharcoalMaker", {},
+		set(CardEnum::CharcoalMaker, {
+			ModuleTransformGroup::CreateSet("CharcoalMaker", {},
 			{
 				{ParticleEnum::BlackSmoke,  TransformFromPosition(9.8, 5.9, 5.6)},
 				{ParticleEnum::TorchFire,  FTransform(FRotator::ZeroRotator, FVector(9.11, 5.27, 8.2), FVector(1, 1, 1))},
-			}
-			)
-		},
+			})
+		});
 
-		{ // Beer Brewery
-			ModuleTransforms::CreateSet("BeerBrewery", {},
+		set(CardEnum::BeerBrewery, {
+			ModuleTransformGroup::CreateSet("BeerBrewery", {},
 			{
 				{ParticleEnum::Smoke,  TransformFromPosition(13.37, -16.77, 23.05)},
 			}, {
 				ModuleTransform("BeerBreweryWorkShaderOnOff", FTransform::Identity, 0, ModuleTypeEnum::ShaderOnOff),
 			})
-		},
+		});
 
-		{ // Clay Pit
-			ModuleTransforms::CreateSet("ClayPit")
-		},
+		setName(CardEnum::TradingPost, "TradingPost");
+		setName(CardEnum::TradingCompany, "TradingCompany");
 
-		{ // Potter
-			ModuleTransforms::CreateSet("Potter", {},
-			{
-				{ParticleEnum::BlackSmoke,  TransformFromPosition(-15.8, -8.77, 7.78)},
-			}, {})
-		},
+		setName(CardEnum::BarrackClubman, "Barrack");
+		setName(CardEnum::BarrackArcher, "Barrack");
+		setName(CardEnum::BarrackSwordman, "Barrack");
 
-		{ ModuleTransforms({ ModuleTransform("HolySlimeRanch")}) },
+		setName(CardEnum::LaborerGuild, "LaborerGuild");
 
+		setName(CardEnum::HumanitarianAidCamp, "StorageYard");
 
-
-		{ // Trading Post
-			ModuleTransforms::CreateSet("TradingPost")
-		},
-
-		{ // Trading Company
-			ModuleTransforms::CreateSet("TradingCompany")
-		},
-		{ // Trading Port
-			ModuleTransforms::CreateSet("TradingPort")
-		},
-		{ // Card Maker
-			ModuleTransforms::CreateSet("CardMaker")
-		},
-		{ // Immigration Office
-			ModuleTransforms::CreateSet("ImmigrationOffice")
-		},
-
-		{ ModuleTransforms({ ModuleTransform("ThiefGuild")}) },
-		{ ModuleTransforms({ ModuleTransform("SlimePyramid")}) },
-
-		{ ModuleTransforms({ ModuleTransform("LovelyHeart")}) },
-
-		{ // Hunter
-			ModuleTransforms::CreateSet("Hunter")
-		},
-
-		{ // Ranch Barn
-			ModuleTransforms::CreateSet("RanchBarn"),
-		},
-
-		{ // Ranch Pig
-			ModuleTransforms::CreateSet("Ranch"),
-		},
-		{ // Ranch Sheep
-			ModuleTransforms::CreateSet("Ranch"),
-		},
-		{ // Ranch Cow
-			ModuleTransforms::CreateSet("Ranch"),
-		},
-
-
-		{ // Gold Smelter
-			ModuleTransforms::CreateSet("SmelterGold", {},
-				{
-					{ParticleEnum::BlackSmoke, TransformFromPosition(10.6, -11.4, 31.2)},
-				}, {},
-				{
-					ModuleTransform("SmelterGoldWorkStatic"),
-				}
-			)
-		},
-
-		{ ModuleTransforms({
-			ModuleTransform("MintFrames", FTransform::Identity, 10.0f, ModuleTypeEnum::Frame),
-			ModuleTransform("MintFloor"),
-
-			ModuleTransform("MintMeltPot"),
-			ModuleTransform("MintMoltenGold"),
-			ModuleTransform("MintBody"),
-			ModuleTransform("MintRoof"),
-			ModuleTransform("MintRoofEdge"),
-			ModuleTransform("MintStoneBody"),
-			ModuleTransform("MintFramesAux"),
-		}) }, // Mint
-
-		{ // Clubman Barrack
-			ModuleTransforms::CreateSet("Barrack"),
-		},
-		{ // Swordman Barrack
-			ModuleTransforms::CreateSet("Barrack"),
-		},
-		{ // Archer Barrack
-			ModuleTransforms::CreateSet("Barrack"),
-		},
-
-		{ // Shrine Hope
-			ModuleTransforms::CreateSet("ShrineBasic"),
-		},
-		{ // Shrine Love
-			ModuleTransforms::CreateSet("ShrineBasic"),
-		},
-		{ // Shrine Greed
-			ModuleTransforms::CreateSet("ShrineBasic2"),
-		},
-
-		//{ ModuleTransforms({ ModuleTransform("ShrineRot")}) },
-		//{ ModuleTransforms({ ModuleTransform("ShrineFrost")}) },
-		{ ModuleTransforms({ ModuleTransform("HellPortal")}) },
-
-		{ // LaborerGuild
-			ModuleTransforms::CreateSet("LaborerGuild", {}, {})
-		},
-
-		{ // Humanitarian aid camp
-			ModuleTransforms::CreateSet("StorageYard"),
-		},
-
-		{ // RegionTribalVillage
-			ModuleTransforms::CreateSet("TribalVillage", {},
+		set(CardEnum::RegionTribalVillage, {
+			ModuleTransformGroup::CreateSet("TribalVillage", {},
 				{
 					{ParticleEnum::CampFire, TransformFromPositionYawScale(-5.4, -0.82, 0.62, 0, 0.17)}
 				},
 				{}, {},
 				{{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-5.4, -0.82, 8.5), FVector::OneVector}}
 			),
-		},
-		{ // RegionShrine
-			ModuleTransforms::CreateSet("AncientShrine"),
-		},
-		{ // RegionPort
-			ModuleTransforms::CreateSet("PortVillage"),
-		},
-		{ // RegionCrates
-			ModuleTransforms::CreateSet("RegionCratePile"),
-		},
+		});
 
+		setName(CardEnum::RegionShrine, "AncientShrine");
+		setName(CardEnum::RegionPort, "PortVillage");
+		setName(CardEnum::RegionCrates, "RegionCratePile");
 
-		/*
-		 * June 1 Additions
-		 */
-		{ // Windmill
-			ModuleTransforms::CreateSet("Windmill", {}, {},
+		set(CardEnum::Windmill, {
+			ModuleTransformGroup::CreateSet("Windmill", {}, {},
 			{
 				ModuleTransform("WindmillWorkRotation1", TransformFromPosition(0, 0, 60), 0.0f, ModuleTypeEnum::RotateRoll),
 			})
-			//ModuleTransforms::CreateSet("Windmill")
-		},
-		{ // Bakery
-			ModuleTransforms::CreateSet("Bakery")
-		},
-		{ // GemstoneMine
-			ModuleTransforms::CreateOreMineSet("OreMineSpecial_Gemstone", "OreMineWorkStatic_Gemstone")
-		},
-		{ // Jeweler
-			ModuleTransforms::CreateSet("Jeweler")
-		},
+		});
 
-		/*
-		 * June 9
-		 */
-		{ // Beekeeper
-			ModuleTransforms::CreateSet("Beekeeper")
-		},
-		{ // Brickworks
-			ModuleTransforms::CreateSet("Brickworks")
-		},
-		{ // CandleMaker
-			ModuleTransforms::CreateSet("CandleMaker")
-		},
-		{ // CottonMill
-			ModuleTransforms::CreateSet("CottonMill")
-		},
-		{ // PrintingPress
-			ModuleTransforms::CreateSet("PrintingPress")
-		},
+		setName(CardEnum::Bakery, "Bakery");
 
-		/*
-		 * June 25
-		 */
-		{ // Warehouse
-			ModuleTransforms::CreateSet("Warehouse")
-		},
-		{ // Fort
-			ModuleTransforms::CreateSet("Outpost")
-		},
-		{ // Resource Outpost
-			ModuleTransforms::CreateSet("Colony")
-		},
-		{ // InventorsWorkshop
-			ModuleTransforms::CreateSet("InventorsWorkshop")
-		},
-			
-		// Intercity Road
-		{ ModuleTransforms({ ModuleTransform("DirtRoad")}) },
+		set(CardEnum::GemstoneMine, {
+			ModuleTransformGroup::CreateOreMineSet("OreMineSpecial_Gemstone", "OreMineWorkStatic_Gemstone")
+		});
 
+		setName(CardEnum::Beekeeper, "Beekeeper");
+		setName(CardEnum::Brickworks, "Brickworks");
 
-		/*
-		 * August 16
-		 */
-		{ // FakeTownhall
-			ModuleTransforms::CreateSet("Townhall0")
-		},
-		{ // FakeTribalVillage
-			ModuleTransforms::CreateSet("TribalVillage", {},
+		setName(CardEnum::Fort, "Outpost");
+		setName(CardEnum::ResourceOutpost, "Colony");
+		setName(CardEnum::InventorsWorkshop, "InventorsWorkshop");
+
+		set(CardEnum::IntercityRoad, {
+			ModuleTransformGroup({ ModuleTransform("DirtRoad")})
+		});
+
+		setName(CardEnum::FakeTownhall, "Townhall0");
+
+		set(CardEnum::FakeTribalVillage, {
+			ModuleTransformGroup::CreateSet("TribalVillage", {},
 				{
 					{ParticleEnum::CampFire, TransformFromPositionYawScale(-5.4, -0.82, 0.62, 0, 0.17)}
 				},
 				{}, {},
 				{{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-5.4, -0.82, 8.5), FVector::OneVector}}
 			)
-		},
-		{ // ChichenItza
-			ModuleTransforms::CreateSet("ChichenItza")
-		},
+		});
 
-		/*
-		 * October 20
-		 */
-		{ // Market
-			ModuleTransforms::CreateSet("Market", {}, {})
-		},
-		{ // ShippingDepot
-			ModuleTransforms::CreateSet("ShippingDepot", {}, {})
-		},
-		{ // IrrigationReservoir
-			ModuleTransforms::CreateSet("IrrigationReservoir", {}, {})
-		},
+		setName(CardEnum::ChichenItza, "ChichenItza");
 
-		/*
-		 * Nov 18
-		 */
-		{ // Tunnel
-			ModuleTransforms({ ModuleTransform("Tunnel", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
-		},
-		{ // Garment Factory
-			ModuleTransforms::CreateSet("CottonMill")
-		},
+		setName(CardEnum::Market, "Market");
+		setName(CardEnum::ShippingDepot, "ShippingDepot");
+		setName(CardEnum::IrrigationReservoir, "IrrigationReservoir");
 
-		/*
-		 * Dec 29
-		 */
-		// Shroom Farm
-		{ ModuleTransforms({
-			ModuleTransforms::CreateSet("ShroomHut", {}, {},
-				{
-					ModuleTransform("ShroomHutWorkShaderAnimate", FTransform::Identity, 0.0f, ModuleTypeEnum::ShaderAnimate),
-				}
-			)
-		}) },
-		{ // Vodka Distillery
-			ModuleTransforms::CreateSet("VodkaDistillery", {},
-			{
-				{ParticleEnum::Smoke,  TransformFromPosition(13.37, -16.77, 23.05)},
-			}, {
-				ModuleTransform("VodkaDistilleryWorkShaderOnOff", FTransform::Identity, 0, ModuleTypeEnum::ShaderOnOff),
-			})
-		},
-		{ // Coffee Roaster
-			ModuleTransforms::CreateSet("CoffeeRoaster", {}, {{ParticleEnum::Smoke, TransformFromPosition(16.2, -16.6, 21.3)}})
-		},
-
-		/*
-		 * Feb 2
-		 */
-		{ // Colony
-			ModuleTransforms::CreateSet("Townhall0")
-		},
-		{ // PortColony
-			ModuleTransforms::CreateSet("Townhall0")
-		},
-		{ // Intercity Logistics Hub
-			ModuleTransforms::CreateSet("IntercityLogisticsHub", {}, {})
-		},
-		{ // Intercity Logistics Port
-			ModuleTransforms::CreateSet("IntercityLogisticsPort", {}, {})
-		},
-		{ // Intercity Bridge
-			ModuleTransforms({ ModuleTransform("Bridge1", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
-		},
-
-		/*
-		 * Mar 12
-		 */
-		{ // Granary
-			ModuleTransforms::CreateSet("Granary_Era4_")
-		},
-		{ // Archives
-			ModuleTransforms::CreateSet("Archives_Era4_")
-		},
-		{ // Hauling Services
-			ModuleTransforms::CreateSet("HaulingServices_Era2_")
-		},
-
-		/*
-		 * Apr 1
-		 */
-		{ // SandMine
-		ModuleTransforms::CreateSet("Ministry")
-		},
-		{ // Glasswork
-		ModuleTransforms::CreateSet("Ministry")
-		},
-		{ // ConcreteFactory
-		ModuleTransforms::CreateSet("Ministry")
-		},
-		{ // CoalPowerPlant
-		ModuleTransforms::CreateSet("Ministry")
-		},
-		{ // Steelworks
-		ModuleTransforms::CreateSet("Ministry")
-		},
-			
-		{ // StoneToolsShop
-		ModuleTransforms::CreateSet("Ministry")
-		},
-		{ // OilWell
-		ModuleTransforms::CreateSet("Ministry")
-		},
-		{ // OilPowerPlant
-		ModuleTransforms::CreateSet("Ministry")
-		},
-		{ // PaperMill
-		ModuleTransforms::CreateSet("Ministry")
-		},
-		{ // ClockMakers
-		ModuleTransforms::CreateSet("Ministry")
-		},
-
-		{ // Cathedral
-		ModuleTransforms::CreateSet("Ministry")
-		},
-		{ // Castle
-		ModuleTransforms::CreateSet("Ministry")
-		},
-		{ // GrandMuseum
-		ModuleTransforms::CreateSet("Ministry")
-		},
-		{ // ExhibitionHall
-		ModuleTransforms::CreateSet("Ministry")
-		},
-
-			
-		/*
-		 * Decorations
-		 */
-		{ // FlowerBed
-			ModuleTransforms::CreateSet("FlowerBed")
-		},
-		{ // GardenShrubbery1
-			ModuleTransforms::CreateSet("GardenShrubbery1")
-		},
-		{ // GardenCypress
-			ModuleTransforms::CreateSet("GardenCypress")
-		},
+		set(CardEnum::Tunnel, {
+			ModuleTransformGroup({ ModuleTransform("Tunnel", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
+		});
 
 
-		{ // ArchitectStudio
-			ModuleTransforms::CreateSet("Ministry", {}, {})
-		},
-		{ // EngineeringOffice
-			ModuleTransforms::CreateSet("Ministry", {}, {})
-		},
-		{ // DepartmentOfAgriculture
-			ModuleTransforms::CreateSet("Ministry", {}, {})
-		},
+		setName(CardEnum::Colony, "Townhall0");
+		setName(CardEnum::PortColony, "Townhall0");
 
-		{ // AdventurerGuild
-			ModuleTransforms::CreateSet("Ministry", {}, {})
-		},
-		{ // CensorshipInstitute
-			ModuleTransforms::CreateSet("Ministry", {}, {})
-		},
-		{ // EnvironmentalistGuild
-			ModuleTransforms::CreateSet("Ministry", {}, {})
-		},
-		{ // IndustrialistsGuild
-			ModuleTransforms::CreateSet("Ministry", {}, {})
-		},
-		{ // Oracle
-			ModuleTransforms::CreateSet("Ministry", {}, {})
-		},
-		{ // Venture Capital
-			ModuleTransforms::CreateSet("Ministry", {}, {})
-		},
+		setName(CardEnum::IntercityLogisticsHub, "IntercityLogisticsHub");
+		setName(CardEnum::IntercityLogisticsPort, "IntercityLogisticsPort");
+
+		set(CardEnum::IntercityBridge, {
+			ModuleTransformGroup({ ModuleTransform("Bridge1", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
+		});
 
 
-		{ // Consulting
-			ModuleTransforms::CreateSet("Ministry", {}, {})
-		},
-		{ // ImmigrationPropaganda
-			ModuleTransforms::CreateSet("Ministry", {}, {})
-		},
-		{ // MerchantGuild
-			ModuleTransforms::CreateSet("Ministry", {}, {})
-		},
-		{ // OreSupplier
-			ModuleTransforms::CreateSet("Ministry", {}, {})
-		},
-		{ // BeerBreweryFamous
-			ModuleTransforms::CreateSet("BeerBreweryFamous", {},
-			{
-				{ParticleEnum::Smoke,  TransformFromPosition(19, 0, 23)},
-			}, {
-				ModuleTransform("BeerBreweryFamousWorkShaderOnOff", FTransform::Identity, 0, ModuleTypeEnum::ShaderOnOff),
-			})
-		},
-		{ // Giant Iron Smelter
-			ModuleTransforms::CreateSet("SmelterGiant", {},
-				{
-					{ParticleEnum::BlackSmoke, TransformFromPositionScale(16.9, -9.96, 59.5, 1.5)},
-				}, {},
-				{
-					ModuleTransform("SmelterGiantWorkStatic"),
-				}
-			)
-		},
+		setName(CardEnum::Archives, "Archives_Era4_");
+		setName(CardEnum::HaulingServices, "HaulingServices_Era2_");
 
-		{ // Cattery
-			ModuleTransforms::CreateSet("Library", {}, {})
-		},
-		{ // InvestmentBank
-			ModuleTransforms::CreateSet("Ministry", {}, {})
-		},
 
-		{ // Statistics Bureau
-			ModuleTransforms::CreateSet("Ministry", {}, {})
-		},
-		{ // JobManagementBureau
-			ModuleTransforms::CreateSet("Ministry", {}, {})
-		},
-			
-		};
+		setName(CardEnum::FlowerBed, "FlowerBed");
+		setName(CardEnum::GardenShrubbery1, "GardenShrubbery1");
+		setName(CardEnum::GardenCypress, "GardenCypress");
+		
+
+
+		
+
+
+		for (int32 i = 0; i < BuildingEnumCount; i++) {
+			if (BuildingEnumToVariationToModuleTransforms[i].Num() == 0) {
+				setName(static_cast<CardEnum>(i), "Ministry");
+			}
+		}
 	}
 
+	// Things that gets added when zoomed out
 	static bool IsMiniModule(FString submeshName)
 	{
 		static const TArray<FString> miniModuleList
 		{
 			"Body",
+			"Body1",
+			"Body2",
+			"Body3",
 			"Roof",
 			"Frame",
 			"WindowFrame",
@@ -1051,10 +566,10 @@ public:
 
 	void LoadBuildingSets(UAssetLoaderComponent* assetLoader)
 	{
-		InitBuildingSets();
+		InitBuildingSets(assetLoader);
 
 		// For each building
-		for (size_t buildingEnumInt = BuildingEnumToVariationToModuleTransforms.size(); buildingEnumInt-- > 0;) 
+		for (size_t buildingEnumInt = BuildingEnumToVariationToModuleTransforms.Num(); buildingEnumInt-- > 0;) 
 		{
 			auto& variationToModuleTransforms = BuildingEnumToVariationToModuleTransforms[buildingEnumInt];
 
@@ -1066,7 +581,7 @@ public:
 				if (moduleTransforms.setName != "")
 				{
 					// Load building set and replace this moduleTransform with building set..
-					FString setName = ToFString(moduleTransforms.setName);
+					FString setName = moduleTransforms.setName;
 
 					{
 						//std::vector<ModuleTransform>& transforms = moduleTransforms.transforms;
@@ -1098,6 +613,10 @@ public:
 						if (assetLoader->moduleMesh(subMeshName)) {
 							addTransform(ModuleTransform(subMeshName));
 						}
+						for (int32 i = 1; i < 3; i++) {
+							subMeshName = setName + FString("Body") + FString::FromInt(i);
+							if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName));
+						}
 
 						subMeshName = setName + FString("Roof");
 						if (assetLoader->moduleMesh(subMeshName)) {
@@ -1116,28 +635,12 @@ public:
 						subMeshName = setName + FString("Special");
 						if (assetLoader->moduleMesh(subMeshName)) {
 							addTransform(ModuleTransform(subMeshName));
-
-							//// Special case where Special is the core structure
-							//CardEnum cardEnum = static_cast<CardEnum>(buildingEnumInt);
-							//if (cardEnum == CardEnum::RegionCrates ||
-							//	cardEnum == CardEnum::RegionShrine) 
-							//{
-							//	miniTransforms.push_back(ModuleTransform(subMeshName));
-							//}
 						}
 
-						subMeshName = setName + FString("Special2");
-						if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName));
-
-						subMeshName = setName + FString("Special3");
-						if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName));
-
-						subMeshName = setName + FString("Special4");
-						if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName));
-
-						subMeshName = setName + FString("Special5");
-						if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName));
-						
+						for (int32 i = 0; i < 30; i++) {
+							subMeshName = setName + FString("Special") + FString::FromInt(i);
+							if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName));
+						}
 
 						moduleTransforms.transforms.insert(moduleTransforms.transforms.begin(), transforms.begin(), transforms.end());
 						moduleTransforms.miniModules.insert(moduleTransforms.miniModules.begin(), miniTransforms.begin(), miniTransforms.end());
@@ -1165,16 +668,24 @@ public:
 
 	}
 
-	const ModuleTransforms& GetDisplayModules(CardEnum buildingEnum, int32 variationIndex) const {
+	int32 GetVariationCount(CardEnum buildingEnum) const {
+		return BuildingEnumToVariationToModuleTransforms[static_cast<int>(buildingEnum)].Num();
+	}
+	
+	const ModuleTransformGroup& GetDisplayModules(CardEnum buildingEnum, int32 variationIndex) const {
 		int buildingEnumInt = static_cast<int>(buildingEnum);
-		PUN_CHECK(buildingEnumInt < BuildingEnumToVariationToModuleTransforms.size()); // !!! Hit here? Forgot to put int GameDisplayInfo?
-		PUN_CHECK(variationIndex != -1);
-		PUN_CHECK(variationIndex < BuildingEnumToVariationToModuleTransforms[buildingEnumInt].size());
+		check(buildingEnumInt < BuildingEnumToVariationToModuleTransforms.Num()); // !!! Hit here? Forgot to put int GameDisplayInfo?
+		check(variationIndex != -1);
+		int32 variationCount = BuildingEnumToVariationToModuleTransforms[buildingEnumInt].Num();
+		check(variationCount > 0);
+		if (variationIndex >= variationCount) {
+			variationIndex = variationCount - 1;
+		}
 		return BuildingEnumToVariationToModuleTransforms[buildingEnumInt][variationIndex];
 	}
 
 private:
-	std::vector<std::vector<ModuleTransforms>> BuildingEnumToVariationToModuleTransforms;
+	TArray<TArray<ModuleTransformGroup>> BuildingEnumToVariationToModuleTransforms;
 };
 
 class GameDisplayUtils

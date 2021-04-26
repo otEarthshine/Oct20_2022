@@ -310,6 +310,7 @@ public:
 	BuildingUpgrade MakeProductionUpgrade(FText name, int32 percentOfTotalPrice, int32 efficiencyBonus);
 
 	BuildingUpgrade MakeWorkerSlotUpgrade(int32 percentOfTotalPrice, int32 workerSlotBonus = 1);
+	BuildingUpgrade MakeEraUpgrade(int32 startEra);
 
 	BuildingUpgrade MakeComboUpgrade(FText name, ResourceEnum resourceEnum, int32 percentOfTotalPrice, int32 comboEfficiencyBonus);
 
@@ -677,13 +678,18 @@ public:
 		return batchProfit;
 	}
 
+	
+	int32 workRevenuePerSec100_perMan_() {
+		return buildingInfo().workRevenuePerSec100_perMan(GetEraUpgradeCount());
+	}
+
 	// Work time required per batch...
 	// Calculated based on inputPerBatch() and info.productionBatch
 	virtual int32 workManSecPerBatch100() {
 		// Calculate workPerBatch...
 		// workManSecPerBatch = batchProfit / WorkRevenuePerManSec
 		// This is since we have to work for profit, so time needed to work depends on "profit amount" and "work rate"
-		return batchProfit() * 100 * 100 / buildingInfo().workRevenuePerSec100_perMan; 
+		return batchProfit() * 100 * 100 / workRevenuePerSec100_perMan_();
 	}
 
 	virtual int32 baseUpkeep()
@@ -1004,9 +1010,7 @@ public:
 		return result;
 	}
 
-	virtual int32 displayVariationIndex() {
-		return 0;
-	}
+	virtual int32 displayVariationIndex();
 
 	//bool NeedRoadConnection();
 
@@ -1023,6 +1027,16 @@ public:
 		OnUpgradeBuildingBase(index);
 	}
 
+	void AddUpgrades(std::vector<BuildingUpgrade> upgrades)
+	{
+		_upgrades = upgrades;
+		_upgrades.insert(_upgrades.begin(), MakeEraUpgrade(buildingInfo().resourceInfo.era));
+	}
+
+	int32 GetEraUpgradeCount() {
+		return (_upgrades.size() > 0 && _upgrades[0].isEraUpgrade()) ? _upgrades[0].upgradeLevel : 0;
+	}
+	
 
 	// Delivery
 	int32 deliveryTargetIdAfterConstruction() {  // deliveryTargetId returns -1 if the building under construction

@@ -91,7 +91,7 @@ void UnlockSystem::Research(int64 science100PerRound, int32 updatesPerSec)
 		// Take away the amount of science used 
 		science100XsecPerRound -= science100Needed() * Time::SecondsPerRound;
 
-		int32 lastEra = currentEra();
+		int32 lastEra = currentTechColumn();
 
 		tech->state = TechStateEnum::Researched;
 		_techQueue.pop_back();
@@ -107,22 +107,40 @@ void UnlockSystem::Research(int64 science100PerRound, int32 updatesPerSec)
 		};
 		PopupReceiverEnum receiver = PopupReceiverEnum::DoneResearchEvent_ShowTree;
 
-		// Era popup
-		bool unlockedNewEra = currentEra() > lastEra;
-		if (unlockedNewEra)
+
+		auto unlockEra = [&](PopupReceiverEnum popupReceiver, FText mainMessage)
 		{
 			TArray<FText> args;
-
-			OnEraUnlocked(args);
-
-			PopupInfo popupInfo(_playerId, JOINTEXT(args), choices, receiver, true);
-			popupInfo.warningForExclusiveUI = ExclusiveUIEnum::TechTreeUI;
-			popupInfo.forcedSkipNetworking = true;
-			_simulation->AddPopupToFront(popupInfo);
+			args.Add(mainMessage);
+			OnEraUnlocked(args, GetEra());
+			
+			PopupInfo popup(_playerId, JOINTEXT(args), {}, popupReceiver);
+			popup.warningForExclusiveUI = ExclusiveUIEnum::TechTreeUI;
+			popup.forcedSkipNetworking = true;
+			_simulation->AddPopupToFront(popup);
 
 			_simulation->soundInterface()->Spawn2DSound("UI", "ResearchCompleteNewEra", _playerId);
+		};
+		
 
-			_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::BuildingSlotCards, LOCTEXT("New era!", "New era!"));
+		// Era popup
+		if (tech->techEnum == TechEnum::MiddleAge)
+		{
+			unlockEra(PopupReceiverEnum::EraPopup_MiddleAge, 
+				LOCTEXT("EraPopupMiddleAge", "Congratulation!<space>You have advanced to the Middle Age.<space>Many of your Buildings can now be upgraded to the new Era.")
+			);
+		}
+		else if (tech->techEnum == TechEnum::EnlightenmentAge)
+		{
+			unlockEra(PopupReceiverEnum::EraPopup_EnlightenmentAge,
+				LOCTEXT("EraPopupEnlightenmentAge", "Congratulation!<space>You have advanced to the Enlightenment Age.<space>Many of your Buildings can now be upgraded to the new Era.")
+			);
+		}
+		else if (tech->techEnum == TechEnum::IndustrialAge)
+		{
+			unlockEra(PopupReceiverEnum::EraPopup_IndustrialAge,
+				LOCTEXT("EraPopupIndustrialAge", "Congratulation!<space>You have advanced to the Industrial Age.<space>Many of your Buildings can now be upgraded to the new Era.")
+			);
 		}
 		else
 		{
@@ -139,7 +157,7 @@ void UnlockSystem::Research(int64 science100PerRound, int32 updatesPerSec)
 			/*
 			 * Science victory
 			 */
-			if (currentEra() >= 8)
+			if (currentTechColumn() >= 8)
 			{
 				//std::vector<std::shared_ptr<ResearchInfo>> finalTechs = _eraToTechs[8];
 				//int32 finalEraTechsDone = 0;
@@ -191,19 +209,6 @@ void UnlockSystem::EraUnlockedDescription(TArray<FText>& args, int32 era, bool i
 {
 	if (era == 2) {
 		if (isTip) {
-			ADDTEXT_(INVTEXT(" {0}:"), LOCTEXT("Global Slot Cards", "Global Slot Cards"));
-		}
-		else {
-			ADDTEXT_(INVTEXT(" {0}:"), LOCTEXT("Unlocked Global Slot Cards", "Unlocked Global Slot Cards"));
-		}
-		ADDTEXT_TAG_("<bullet>", LOCTEXT("Chimney Restrictor", "Chimney Restrictor"));
-		//ss << "<bullet>Child Marriage</>";
-		//ss << "<bullet>Prolong Life</>";
-		ADDTEXT_TAG_("<bullet>", LOCTEXT("Birth Control", "Birth Control"));
-		ADDTEXT_TAG_("<bullet>", LOCTEXT("Coal Treatment", "Coal Treatment"));
-	}
-	else if (era == 3) {
-		if (isTip) {
 			ADDTEXT_(INVTEXT(" {0}:"), LOCTEXT("Cards", "Cards"));
 		} else {
 			ADDTEXT_(INVTEXT(" {0}:"), LOCTEXT("Unlocked Cards", "Unlocked Cards"));
@@ -216,24 +221,13 @@ void UnlockSystem::EraUnlockedDescription(TArray<FText>& args, int32 era, bool i
 		ADDTEXT_TAG_("<bullet>", LOCTEXT("Card Removal Card", "Card Removal Card"));
 	}
 }
-
-void UnlockSystem::OnEraUnlocked(TArray<FText>& args)
+void UnlockSystem::OnEraUnlocked(TArray<FText>& args, int32 era)
 {
 	auto& cardSys = _simulation->cardSystem(_playerId);
-	
-	ADDTEXT_(
-		LOCTEXT("EraUnlockCongratsPop", "Congratulation!<space> Your town has advanced to Era {0}.<space>"),
-		eraNumberToText[currentEra()]
-	);
 
-	EraUnlockedDescription(args, currentEra(), false);
+	EraUnlockedDescription(args, currentTechColumn(), false);
 
-	if (currentEra() == 2) {
-		//cardSys.AddDrawCards(CardEnum::ChildMarriage, 1);
-		//cardSys.AddDrawCards(CardEnum::ProlongLife, 1);
-
-	}
-	else if (currentEra() == 3) {
+	if (currentTechColumn() == 2) {
 		cardSys.AddDrawCards(CardEnum::WildCard, 1);
 		cardSys.AddDrawCards(CardEnum::WildCardFood, 2);
 		cardSys.AddDrawCards(CardEnum::WildCardIndustry, 2);
@@ -241,12 +235,9 @@ void UnlockSystem::OnEraUnlocked(TArray<FText>& args)
 		cardSys.AddDrawCards(CardEnum::WildCardService, 1);
 		cardSys.AddDrawCards(CardEnum::CardRemoval, 1);
 	}
-	else if (currentEra() == 8) {
-		//ss << " You have reached the final era.";
-		//ss << "<space>";
-		//ss << " Once you researched all technologies in this era, you win the game.";
-
-
+	else if (currentTechColumn() == 4) {
+		// TODO: ...
+		
 		// Warn other players
 		FText text = FText::Format(LOCTEXT("FinalEraPopAll", "{0} has reached the final era.<space>"), _simulation->playerNameT(_playerId));
 		//warnSS << "Once all final era technologies are researched, " << _simulation->playerName(_playerId) + " will be victorious.";
@@ -301,6 +292,7 @@ void BonusToggle_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulat
 			LOCTEXT("UnlockedBuildingComboBullet3_Pop", "<bullet>Combo Level 3: 8 same-type buildings (+15% productivity)</>")
 		});
 	}
+	
 
 	/*
 	 * 

@@ -13,6 +13,227 @@
 
 #include "AssetLoaderComponent.generated.h"
 
+
+/*
+ * GameDisplayInfo
+ */
+
+ // Resolves overlay setting conflict
+enum class OverlaySetterType {
+	BuildingPlacement,
+	ObjectDescriptionUI,
+	OverlayToggler,
+	Count,
+	None,
+};
+
+enum class ParticleEnum
+{
+	Smoke,
+	BlackSmoke,
+	StoveFire,
+	TorchFire,
+
+	CampFire,
+	BuildingFire,
+	BuildingFireSmoke,
+
+	DemolishDust,
+
+	Count,
+};
+
+struct ParticleInfo
+{
+	ParticleEnum particleEnum = ParticleEnum::Smoke;
+	FTransform transform;
+};
+
+struct PointLightInfo
+{
+	float intensity = 0.1f;
+	float attenuationRadius = 35;
+	FLinearColor color = FLinearColor(1, 0.527, 0.076);
+	FVector position;
+	FVector scale;
+};
+
+static FTransform TransformFromPosition(float X, float Y, float Z) {
+	return FTransform(FVector(X, Y, Z));
+}
+static FTransform TransformFromPositionScale(float X, float Y, float Z, float scale) {
+	return FTransform(FRotator::ZeroRotator, FVector(X, Y, Z), FVector(scale));
+}
+static FTransform TransformFromPositionYaw(float X, float Y, float Z, float yaw) {
+	return FTransform(FRotator(0, yaw, 0), FVector(X, Y, Z), FVector::OneVector);
+}
+static FTransform TransformFromPositionYawScale(float X, float Y, float Z, float yaw, float scale) {
+	return FTransform(FRotator(0, yaw, 0), FVector(X, Y, Z), FVector(scale));
+}
+static FTransform TransformFromPositionYawScale(float X, float Y, float Z, float yaw, FVector scale) {
+	return FTransform(FRotator(0, yaw, 0), FVector(X, Y, Z), scale);
+}
+
+
+enum class ModuleTypeEnum
+{
+	Normal,
+	ConstructionOnly,
+	ConstructionBaseHighlight,
+	Frame,
+	Window,
+	RotateRoll,
+	ShaderAnimate,
+	ShaderOnOff,
+};
+
+struct ModuleTransform
+{
+	FString moduleName;
+
+	float relativeConstructionTime = 0;
+	ModuleTypeEnum moduleTypeEnum = ModuleTypeEnum::Normal;
+
+	// !! Note that cannot do scaling on mesh with constructionMesh... (But then we don't need it?)
+	// !! Beware... rotator is Pitch Yaw Roll
+	FTransform transform;
+
+	// TODO: use grouping system?? don't need this?... each ModuleTransform can be assigned group index.
+	//std::vector<ModuleTransform> children;
+
+	// Calculated values
+	float constructionFractionBegin = 0;
+	float constructionFractionEnd = 0;
+
+	// what index this model should turn on
+	// 0 means all... -1 means removal if [0] is upgraded ... 1 means add if [0] is upgraded
+	// (disadvantage... can't do model upgrade beyond 
+	int32 upgradeStates = 0; //TODO: ????
+
+	float moduleConstructionFraction(float constructionFraction) const {
+		PUN_CHECK(constructionFractionBegin >= 0.0f);
+		return (constructionFraction - constructionFractionBegin) / (constructionFractionEnd - constructionFractionBegin);
+	}
+
+	ModuleTransform(FString moduleName,
+		FTransform transform = FTransform::Identity, float relativeConstructionTime = 0.0f, ModuleTypeEnum moduleTypeEnum = ModuleTypeEnum::Normal,
+		int32 upgradeStates = 0)
+		: moduleName(moduleName),
+		relativeConstructionTime(relativeConstructionTime),
+		moduleTypeEnum(moduleTypeEnum),
+		transform(transform),
+		upgradeStates(upgradeStates)
+	{}
+};
+
+
+struct ModuleTransformGroup
+{
+	std::vector<ModuleTransform> transforms; //TODO: change name to modules?
+	std::vector<ModuleTransform> miniModules; // For far zoom
+
+	std::vector<ParticleInfo> particleInfos;
+
+	std::vector<ModuleTransform> animTransforms;
+	std::vector<ModuleTransform> togglableTransforms;
+
+	std::vector<PointLightInfo> lightInfos;
+
+	FString setName; // For building name etc.
+
+	ModuleTransformGroup() {}
+	
+	ModuleTransformGroup(std::vector<ModuleTransform> transforms,
+		std::vector<ParticleInfo> particleInfos = {},
+		std::vector<ModuleTransform> animTransforms = {},
+		std::vector<ModuleTransform> togglableTransforms = {},
+		std::vector<PointLightInfo> lightInfos = {})
+		:
+		transforms(transforms),
+		particleInfos(particleInfos),
+		animTransforms(animTransforms),
+		togglableTransforms(togglableTransforms),
+		lightInfos(lightInfos)
+	{
+		PUN_CHECK(transforms.size() < 64); // InstanceKey = worldTileId + i * maxWorldTileId ...  2^32 /(2^12*2^13) / 2 = 64 .. more than 128 and it will overflow...
+
+		CalculateConstructionFractions();
+	}
+
+	static ModuleTransformGroup CreateSet(FString setName,
+		std::vector<ModuleTransform> transforms = {},
+		std::vector<ParticleInfo> particleInfos = {},
+		std::vector<ModuleTransform> animTransforms = {},
+		std::vector<ModuleTransform> togglableTransforms = {},
+		std::vector<PointLightInfo> lightInfos = {}) // Note: animTransforms must be set manually since we need its locations
+	{
+		ModuleTransformGroup result(transforms, particleInfos, animTransforms, togglableTransforms, lightInfos);
+		result.setName = setName;
+		return result;
+	}
+
+	static ModuleTransformGroup CreateAuxSet(
+		std::vector<ParticleInfo> particleInfos = {},
+		std::vector<ModuleTransform> animTransforms = {},
+		std::vector<ModuleTransform> togglableTransforms = {},
+		std::vector<PointLightInfo> lightInfos = {}) // Note: animTransforms must be set manually since we need its locations
+	{
+		return ModuleTransformGroup({}, particleInfos, animTransforms, togglableTransforms, lightInfos);
+	}
+
+	static ModuleTransformGroup CreateSet(FString setName, ModuleTransformGroup auxSet) // Note: animTransforms must be set manually since we need its locations
+	{
+		ModuleTransformGroup result(auxSet.transforms, auxSet.particleInfos, auxSet.animTransforms, auxSet.togglableTransforms, auxSet.lightInfos);
+		result.setName = setName;
+		return result;
+	}
+
+	void CalculateConstructionFractions()
+	{
+		//if (setName != "") UE_LOG(LogTemp, Log, TEXT("CalculateConstructionFractions %s"), ToTChar(setName));
+
+		float totalRelativeConstructionTime = 0.0f;
+		for (ModuleTransform& transform : transforms) {
+			totalRelativeConstructionTime += transform.relativeConstructionTime;
+		}
+		//if (setName != "") UE_LOG(LogTemp, Log, TEXT("  totalRelativeConstructionTime %.2f"), totalRelativeConstructionTime);
+
+		float constructionFraction = 0.0f;
+		for (size_t i = 0; i < transforms.size(); i++) {
+			transforms[i].constructionFractionBegin = constructionFraction;
+			constructionFraction += transforms[i].relativeConstructionTime / totalRelativeConstructionTime;
+			transforms[i].constructionFractionEnd = constructionFraction;
+
+			//if (transforms[i].moduleTypeEnum == ModuleTypeEnum::Frame) {
+			//	if (setName != "") UE_LOG(LogTemp, Log, TEXT("  Frame begin:%.2f end:%.2f"), transforms[i].constructionFractionBegin, transforms[i].constructionFractionEnd);
+			//}
+
+			PUN_CHECK(constructionFraction <= 1.0f)
+		}
+	}
+
+
+	static ModuleTransformGroup CreateOreMineSet(FString oreMineSpecialName, FString oreMineWorkStaticName)
+	{
+		return CreateSet("OreMine", {}, {
+					{ParticleEnum::BlackSmoke, TransformFromPosition(-.27, 11.4, 21.6)},
+			}, {
+				ModuleTransform("OreMineWorkRotation2", TransformFromPosition(4.99, -8.10, 22.899), 0.0f, ModuleTypeEnum::RotateRoll),
+				ModuleTransform(oreMineSpecialName, FTransform::Identity, 0, ModuleTypeEnum::ShaderOnOff),
+			},
+				{
+					ModuleTransform(oreMineWorkStaticName),
+				}
+				);
+	}
+};
+
+/*
+ *
+ *
+ * 
+ */
+
 enum class TileSubmeshEnum
 {
 	Trunk,
@@ -35,21 +256,6 @@ const std::string TileSubmeshName[]
 static const int32 TileSubmeshCount = _countof(TileSubmeshName);
 
 
-enum class ParticleEnum
-{
-	Smoke,
-	BlackSmoke,
-	StoveFire,
-	TorchFire,
-	
-	CampFire,
-	BuildingFire,
-	BuildingFireSmoke,
-
-	DemolishDust,
-
-	Count,
-};
 
 USTRUCT()
 struct FUnitAsset
@@ -66,6 +272,17 @@ struct FUnitAsset
 	bool isValid() { return staticMesh != nullptr; }
 };
 
+//USTRUCT()
+//struct FBuildingAsset
+//{
+//	GENERATED_BODY();
+//
+//	UPROPERTY() TMap<FString, UStaticMesh*> bodyMeshes;
+//	UPROPERTY() TMap<FString, UStaticMesh*> scaffoldingMeshes;
+//	UPROPERTY() TMap<FString, UStaticMesh*> windowsMeshes;
+//
+//	bool isValid() { return bodyMeshes.Num() > 0 || scaffoldingMeshes.Num() > 0 || windowsMeshes.Num() > 0; }
+//};
 
 USTRUCT()
 struct FTileMeshAssets
@@ -104,6 +321,13 @@ private:
 public:
 	UStaticMesh* moduleMesh(FString moduleName);
 
+	//FBuildingAsset buildingAsset(FString buildingAssetName) {
+	//	if (_buildingNameToAsset.Contains(buildingAssetName)) {
+	//		return _buildingNameToAsset[buildingAssetName];
+	//	}
+	//	return FBuildingAsset();
+	//}
+
 	bool HasConstructionMesh(FString moduleName) { return _moduleNameToConstructionMesh.Contains(moduleName); }
 	UStaticMesh* moduleConstructionMesh(FString moduleName);
 
@@ -115,6 +339,11 @@ public:
 	}
 	TArray<FString>& animModuleNames() { return _animModuleNames; }
 	TArray<FString>& togglableModuleNames() { return _togglableModuleNames; }
+
+
+	TArray<TArray<ModuleTransformGroup>> buildingEnumToVariationToModuleTransforms() { return _buildingEnumToModuleGroups; }
+
+	
 
 	//UStaticMesh* unitMesh(UnitEnum unitEnum, int32 variationIndex = 0);
 	int32 unitMeshCount(UnitEnum unitEnum) {
@@ -431,9 +660,27 @@ private:
 	void LoadModule(FString moduleName , FString meshFile, bool paintConstructionVertexColor = false, bool isTogglable = false);
 	void LoadTogglableModule(FString moduleName, FString meshFile);
 	void LoadAnimModule(FString moduleName, FString meshFile);
-	void TryLoadBuildingModuleSet(FString moduleSetName, FString meshSetFolder);
 
-	void LoadModuleWithConstruction(FString moduleName, FString meshFile);
+
+	void LoadBuilding(CardEnum buildingEnum, FString moduleGroupName, FString moduleGroupFolderName, bool useOldMethod = false, ModuleTransformGroup auxGroup = ModuleTransformGroup()) {
+		TryLoadBuildingModuleSet(moduleGroupName, moduleGroupFolderName, useOldMethod);
+
+		_buildingEnumToModuleGroups[static_cast<int>(buildingEnum)].Add(
+			ModuleTransformGroup::CreateSet(moduleGroupName, auxGroup)
+		);
+	}
+	void LoadBuilding(CardEnum buildingEnum, FString moduleGroupPrefix, FString moduleGroupFolderPrefix, int32 minEra, int32 maxEra = 4, ModuleTransformGroup auxGroup = ModuleTransformGroup())
+	{
+		for (int32 i = minEra; i <= maxEra; i++) {
+			FString moduleGroupName = moduleGroupPrefix + FString::FromInt(i);
+			FString moduleGroupFolderName = moduleGroupFolderPrefix + FString::FromInt(i);
+			LoadBuilding(buildingEnum, moduleGroupPrefix + FString::FromInt(i), moduleGroupFolderPrefix + FString("/Era") + FString::FromInt(i), false, auxGroup);
+		}
+		check(_buildingEnumToModuleGroups[static_cast<int>(buildingEnum)].Num() == (maxEra - minEra + 1));
+	}
+	void TryLoadBuildingModuleSet(FString moduleSetName, FString meshSetFolder, bool useOldMethod = true);
+
+	
 
 	void LoadGeoresource(GeoresourceEnum georesourceEnum, std::string folder, std::string meshFileNamePrefix, int32 numberOfMeshes);
 	void LoadTree(TileObjEnum treeEnum, std::string trunkMeshFile, std::string leafMeshFile,
@@ -445,6 +692,10 @@ private:
 private:
 	UPROPERTY() TMap<FString, UStaticMesh*> _moduleNameToMesh;
 	UPROPERTY() TMap<FString, UStaticMesh*> _moduleNameToConstructionMesh;
+
+	//UPROPERTY() TMap<FString, FBuildingAsset> _buildingNameToAsset;
+
+	TArray<TArray<ModuleTransformGroup>> _buildingEnumToModuleGroups;
 	
 	UPROPERTY() TArray<FString> _moduleNames;
 	UPROPERTY() TArray<FString> _animModuleNames;

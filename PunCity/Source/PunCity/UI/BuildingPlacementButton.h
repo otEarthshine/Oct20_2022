@@ -96,13 +96,14 @@ public:
 		//material->SetScalarParameterValue("IsRare", isRareCardHand ? 1.0f : 0.0f);
 		material->SetScalarParameterValue("Highlight", isReservedForBuying ? 1.0f : 0.0f);
 
-		bool isGlobalSlotCard = IsGlobalSlotCard(buildingEnum);
+		bool isGlobalSlotCard = IsTownSlotCard(buildingEnum);
 		bool isBuildingSlotCard = IsBuildingSlotCard(buildingEnum);
 		
 		material->SetScalarParameterValue("IsBuildingCard", IsBuildingCard(buildingEnum) ? 1.0f : 0.0f);
 		material->SetScalarParameterValue("IsActionCard", IsActionCard(buildingEnum) ? 1.0f : 0.0f);
 		material->SetScalarParameterValue("IsGlobalSlotCard", isGlobalSlotCard ? 1.0f : 0.0f);
 		material->SetScalarParameterValue("IsBuildingSlotCard", isBuildingSlotCard ? 1.0f : 0.0f);
+		material->SetScalarParameterValue("IsPermanentBonus", IsPermanentBonus(buildingEnum) ? 1.0f : 0.0f);
 
 		// Don't show 
 		bool showNeedResourceUI = !isReservedForBuying && needResource;

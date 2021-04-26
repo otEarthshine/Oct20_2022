@@ -117,6 +117,8 @@ public:
 
 		Ar << _townStartTick;
 		Ar << alreadyGotInitialCard;
+		Ar << alreadyGotBiomeCards1;
+		Ar << alreadyGotBiomeCards2;
 
 		SerializeVecLoop(Ar, animalChoicesForBuy, [&](std::pair<UnitEnum, int32_t>& pair) {
 			Ar << pair.first;
@@ -166,6 +168,8 @@ public:
 		return Time::Ticks() - _townStartTick;
 	}
 	int32 alreadyGotInitialCard = false;
+	bool alreadyGotBiomeCards1 = false;
+	bool alreadyGotBiomeCards2 = false;
 	
 private:
 	FString _townName = FString("None");

@@ -1245,7 +1245,7 @@ void TownManager::RecalculateTax(bool showFloatup)
 	 /*
 	  * Card Bonus
 	  */
-	incomes100[static_cast<int>(IncomeEnum::InvestmentProfit)] = 100 * 30 * _simulation->TownhallCardCountTown(_townId, CardEnum::Investment);
+	incomes100[static_cast<int>(IncomeEnum::InvestmentProfit)] = 100 * min(100, _simulation->money(_playerId) / 20) * _simulation->TownhallCardCountTown(_townId, CardEnum::Investment);
 
 
 	if ( _simulation->TownhallCardCountTown(_townId, CardEnum::SocialWelfare) > 0) {

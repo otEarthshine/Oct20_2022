@@ -564,6 +564,8 @@ void UMainGameUI::Tick()
 
 			// Set RareCardHand message
 			SetText(RareCardHandText, cardSystem.rareHandMessage());
+			RareCardHandText->SetVisibility(cardSystem.rareHandMessage().IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
+			
 			SetText(RareCardHandText2, cardSystem.rareHandMessage2());
 
 			return true;
@@ -2080,6 +2082,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 			cardSystem.SetRareHandCardReservation(cardHandIndex, false);
 		}
 		else {
+			// Deselect old reservation
 			for (size_t i = 0; i < cardsRareHandReserved.size(); i++) {
 				if (cardsRareHandReserved[i]) {
 					cardSystem.SetRareHandCardReservation(i, false);
@@ -2182,9 +2185,9 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 			auto& resourceSys = simulation().resourceSystem(playerId());
 
 			/*
-			 * Use Global Slot Card
+			 * Use Town Slot Card
 			 */
-			if (IsGlobalSlotCard(buildingEnum)) 
+			if (IsTownSlotCard(buildingEnum)) 
 			{
 				DescriptionUIState uiState = simulation().descriptionUIState();
 				if (uiState.objectType == ObjectTypeEnum::Building)
@@ -2220,7 +2223,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 				}
 
 				simulation().AddPopupToFront(playerId(), 
-					LOCTEXT("GlobalCardNeedsTownhall_Pop", "Global-slot card must be slotted to the townhall. Click the townhall to open its panel before slotting the card."),
+					LOCTEXT("TownhallCardNeedsTownhall_Pop", "Town-slot card must be slotted to the townhall. Click the townhall to open its panel before slotting the card."),
 					ExclusiveUIEnum::None, "PopupCannot"
 				);
 				
@@ -2247,7 +2250,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 					
 					if (building.isEnum(CardEnum::Townhall)) {
 						simulation().AddPopupToFront(playerId(), 
-							LOCTEXT("CannotInsertBldSlotToTownhall_Pop", "You cannot insert a building-slot card into the townhall. Townhall's card slot requires a global-slot card."),
+							LOCTEXT("CannotInsertBldSlotToTownhall_Pop", "You cannot insert a building-slot card into the townhall. Townhall's card slot requires a town-slot card."),
 							ExclusiveUIEnum::None, "PopupCannot"
 						);
 						return;

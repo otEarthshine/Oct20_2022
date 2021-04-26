@@ -223,7 +223,6 @@ void Building::FinishConstruction()
 
 	FinishConstructionResourceAndWorkerReset();
 
-
 	ResetDisplay();
 
 	/*_simulation->buildingSystem().RefreshIsBuildingConnected()*/
@@ -578,8 +577,20 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& 
 		return false;
 	}
 
-	ResourcePair resourceNeeded = _upgrades[upgradeIndex].resourceNeeded;
-	int32 moneyNeeded = _upgrades[upgradeIndex].moneyNeeded;
+	// Is Era upgrade valid?
+	BuildingUpgrade& upgrade = _upgrades[upgradeIndex];
+	auto unlockSys = _simulation->unlockSystem(_playerId);
+	if (upgrade.isEraUpgrade() && !upgrade.isEraUpgradable(unlockSys->GetEra())) {
+		if (showPopups) {
+			_simulation->AddPopupToFront(_playerId, FText::Format(LOCTEXT("UpgradeRequiresEra", "Upgrade Failed.<space>Advance to the {0} to unlock this Upgrade."), unlockSys->GetEraText(unlockSys->GetEra() + 1)),
+				ExclusiveUIEnum::None, "PopupCannot");
+		}
+		return false;
+	}
+	
+
+	ResourcePair resourceNeeded = upgrade.currentUpgradeResourceNeeded();
+	int32 moneyNeeded = upgrade.moneyNeeded;
 	
 	// Resource Upgrade
 	if (resourceNeeded.isValid())
@@ -589,7 +600,20 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& 
 		{
 			PUN_CHECK(moneyNeeded == 0);
 			resourceSystem().RemoveResourceGlobal(resourceNeeded.resourceEnum, resourceNeeded.count);
-			_upgrades[upgradeIndex].isUpgraded = true;
+
+			BuildingUpgrade& upgrade = _upgrades[upgradeIndex];
+			if (upgrade.isEraUpgrade()) {
+				if (upgrade.upgradeLevel < upgrade.maxUpgradeLevel()) {
+					upgrade.upgradeLevel++;
+					ResetDisplay();
+					
+					if (upgrade.upgradeLevel >= upgrade.maxUpgradeLevel()) {
+						upgrade.isUpgraded = true;
+					}
+				}
+			} else {
+				upgrade.isUpgraded = true;
+			}
 
 			ResetDisplay();
 
@@ -1211,6 +1235,29 @@ BuildingUpgrade Building::MakeWorkerSlotUpgrade(int32 percentOfTotalPrice, int32
 	return upgrade;
 }
 
+BuildingUpgrade Building::MakeEraUpgrade(int32 startEra)
+{
+	BuildingUpgrade upgrade = BuildingUpgrade(FText(), FText(), 0);
+	upgrade.startEra = startEra;
+	upgrade.upgradeLevel = 0;
+
+	int32 currentResourceCostValue = buildingInfo().resourceInfo.baseResourceCostValue;
+	for (int32 i = startEra; i <= 4; i++) {
+		auto getUpgradeResourceEnum = [&]() {
+			switch (i) {
+			case 1: return ResourceEnum::Brick;
+			case 2: return ResourceEnum::Glass;
+			case 3: return ResourceEnum::Concrete;
+			case 4: default: return ResourceEnum::SteelBeam;
+			}
+		};
+		int32 upgradeResourceCostValue = currentResourceCostValue * (BldResourceInfo::UpgradeCostPercentEraMultiplier - 100) / 100;
+		upgrade.resourceNeededPerLevel.push_back(ResourcePair(getUpgradeResourceEnum(), upgradeResourceCostValue));
+		currentResourceCostValue = upgradeResourceCostValue;
+	}
+	return upgrade;
+}
+
 BuildingUpgrade Building::MakeComboUpgrade(FText name, ResourceEnum resourceEnum, int32 percentOfTotalPrice, int32 comboEfficiencyBonus)
 {
 //	FText buildingNamePluralText;
@@ -1243,5 +1290,11 @@ BuildingUpgrade Building::MakeComboUpgrade(FText name, ResourceEnum resourceEnum
 	return upgrade;
 }
 
+int32 Building::displayVariationIndex() {
+	if (IsAutoUpgrade(buildingEnum())) {
+		return _simulation->unlockSystem(_playerId)->GetEra() - 1;
+	}
+	return GetEraUpgradeCount();
+}
 
 #undef LOCTEXT_NAMESPACE 

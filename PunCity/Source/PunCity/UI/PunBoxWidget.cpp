@@ -42,8 +42,8 @@ void UPunBoxWidget::AddBuildingTooltip(UWidget* widget, CardEnum buildingEnum, U
 	else if (IsSpecialProducer(buildingEnum)) {
 		tooltipBox->AddRichText(LOCTEXT("Type: Special", "Type: Special"));
 	}
-	else if (IsGlobalSlotCard(buildingEnum)) {
-		tooltipBox->AddRichText(LOCTEXT("Type: Global-Slot", "Type: Global-Slot"));
+	else if (IsTownSlotCard(buildingEnum)) {
+		tooltipBox->AddRichText(LOCTEXT("Type: Town-Slot", "Type: Town-Slot"));
 	}
 	else if (IsBuildingSlotCard(buildingEnum)) {
 		tooltipBox->AddRichText(LOCTEXT("Type: Building-Slot", "Type: Building-Slot"));

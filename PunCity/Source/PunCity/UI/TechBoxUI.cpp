@@ -281,7 +281,7 @@ void UTechBoxUI::UpdateTooltip()
 				else if (IsActionCard(cardEnum)) {
 					ADDTEXT_(LOCTEXT("Unlocked Action card Tip", "\n - Action card: {0}"), GetBuildingInfo(cardEnum).name);
 				}
-				else if (IsGlobalSlotCard(cardEnum)) {
+				else if (IsTownSlotCard(cardEnum)) {
 					ADDTEXT_(LOCTEXT("Unlocked Slot card (Global) Tip", "\n - Slot card (Global): {0}"), GetBuildingInfo(cardEnum).name);
 				}
 				else {

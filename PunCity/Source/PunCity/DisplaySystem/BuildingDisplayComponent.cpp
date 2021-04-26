@@ -297,7 +297,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 
 			//PUN_LOG("GetModules %s %d", *ToFString(building.buildingInfo().name), building.displayVariationIndex());
 
-			const ModuleTransforms& modulePrototype = displayInfo.GetDisplayModules(buildingEnum, displayVariationIndex);
+			const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(buildingEnum, displayVariationIndex);
 			std::vector<ModuleTransform> modules = modulePrototype.transforms;
 
 			if (building.isBurnedRuin())
@@ -589,7 +589,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 
 				//PUN_LOG("GetModules %s %d", *ToFString(building.buildingInfo().name), building.displayVariationIndex());
 
-				const ModuleTransforms& modulePrototype = displayInfo.GetDisplayModules(buildingEnum, displayVariationIndex);
+				const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(buildingEnum, displayVariationIndex);
 
 				/*
 				 * Particles
@@ -1101,8 +1101,8 @@ void UBuildingDisplayComponent::UpdateDisplayOverlay(Building& building, Overlay
 void UBuildingDisplayComponent::UpdateDisplayLight(Building& building)
 {
 	const GameDisplayInfo& displayInfo = gameManager()->displayInfo();
-	
-	const ModuleTransforms& modulePrototype = displayInfo.GetDisplayModules(building.buildingEnum(), building.displayVariationIndex());
+
+	const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(building.buildingEnum(), building.displayVariationIndex());
 	const std::vector<PointLightInfo>& lightInfos = modulePrototype.lightInfos;
 	if (lightInfos.size() > 0)
 	{

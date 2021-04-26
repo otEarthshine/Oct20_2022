@@ -1022,10 +1022,14 @@ public:
 	std::vector<int32> GetConstructionResourceCost(CardEnum cardEnum, TileArea area) final
 	{
 		if (cardEnum == CardEnum::Farm) {
-			return { area.tileCount() / 2, 0, 0 };
+			std::vector<int32> constructionResources = { area.tileCount() / 2 };
+			constructionResources.resize(ConstructionResourceCount, 0);
+			return constructionResources;
 		}
 		if (cardEnum == CardEnum::StorageYard) {
-			return { area.tileCount() / 4 * StorageCostPerTile(), 0, 0 };
+			std::vector<int32> constructionResources = { area.tileCount() / 4 * StorageCostPerTile() };
+			constructionResources.resize(ConstructionResourceCount, 0);
+			return constructionResources;
 		}
 		return GetBuildingInfo(cardEnum).constructionResources;
 	}

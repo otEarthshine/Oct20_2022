@@ -36,6 +36,7 @@
 #include "BuildingStatTableRow.h"
 #include "CardSlot.h"
 #include "PunCity/MapUtil.h"
+#include "TownBonusIcon.h"
 
 DECLARE_CYCLE_STAT(TEXT("PUN: [UI]All"), STAT_PunUIAll, STATGROUP_Game);
 
@@ -449,7 +450,8 @@ void UObjectDescriptionUISystem::LeftMouseDown()
 
 							if (building.isConstructed())
 							{
-								const ModuleTransforms& modulePrototype = displayInfo.GetDisplayModules(building.buildingEnum(), building.displayVariationIndex());
+								int32 variationCount = displayInfo.GetVariationCount(building.buildingEnum());
+								const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(building.buildingEnum(), building.displayVariationIndex());
 								std::vector<ModuleTransform> modules = modulePrototype.transforms;
 
 								FTransform transform(FRotator(0, RotationFromDirection(building.faceDirection()), 0), 
@@ -594,6 +596,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 		_objectDescriptionUI->BuildingsStatOpener->SetVisibility(ESlateVisibility::Collapsed);
 		_objectDescriptionUI->NameEditButton->SetVisibility(ESlateVisibility::Collapsed);
 
+		_objectDescriptionUI->TownBonusBox->SetVisibility(ESlateVisibility::Collapsed);
+		_objectDescriptionUI->GlobalBonusBox->SetVisibility(ESlateVisibility::Collapsed);
 
 		//! TileBuilding (such as Building)
 		// TODO: may be TileBuilding should just be TileObject..???
@@ -2002,7 +2006,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					{
 #if WITH_EDITOR
 						descriptionBox->AddRichText("-- workManSecPerBatch100: " + to_string(building.workManSecPerBatch100()));
-						descriptionBox->AddRichText("-- workRevenuePerSec100_perMan: " + to_string(building.buildingInfo().workRevenuePerSec100_perMan));
+						descriptionBox->AddRichText("-- workRevenuePerSec100_perMan_: " + to_string(building.workRevenuePerSec100_perMan_()));
 						descriptionBox->AddRichText("-- batchCost: " + to_string(building.batchCost()));
 						descriptionBox->AddRichText("-- batchProfit: " + to_string(building.batchProfit()));
 #endif
@@ -2060,7 +2064,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					{
 #if WITH_EDITOR
 						descriptionBox->AddRichText("-- workManSecPerBatch100: " + to_string(building.workManSecPerBatch100()));
-						descriptionBox->AddRichText("-- workRevenuePerSec100_perMan: " + to_string(building.buildingInfo().workRevenuePerSec100_perMan));
+						descriptionBox->AddRichText("-- workRevenuePerSec100_perMan_: " + to_string(building.workRevenuePerSec100_perMan_()));
 						if (building.hasInput1()) {
 							descriptionBox->AddRichText("-- baseInputValue: " + to_string(GetResourceInfo(building.input1()).basePrice * building.baseInputPerBatch()));
 						}
@@ -2080,7 +2084,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								descriptionBox->AddRichText("-- baseInputValue: " + to_string(consumerIndustry.baseInputValue()));
 								descriptionBox->AddRichText("-- baseOutputValue: " + to_string(consumerIndustry.baseOutputValue()));
 								descriptionBox->AddRichText("-- baseProfitValue: " + to_string(consumerIndustry.baseProfitValue()));
-								descriptionBox->AddRichText("-- workManSecPerBatch100(calc): " + to_string(consumerIndustry.baseProfitValue() * 100 * 100 / consumerIndustry.buildingInfo().workRevenuePerSec100_perMan));
+								descriptionBox->AddRichText("-- workManSecPerBatch100(calc): " + to_string(consumerIndustry.baseProfitValue() * 100 * 100 / consumerIndustry.buildingInfo().workRevenuePerSec100_perMan()));
 							}
 							break;
 						}
@@ -2124,8 +2128,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							);
 						}
 
-						//PUN_LOG("_workDone100:%d workManSecPerBatch100:%d batchProfit:%d baseInputPerBatch:%d efficiency:%d workRevenuePerSec100_perMan:%d", 
-						//	building.workDone100(), building.workManSecPerBatch100(), building.batchProfit(), building.baseInputPerBatch(), building.efficiency(), building.buildingInfo().workRevenuePerSec100_perMan);
+						//PUN_LOG("_workDone100:%d workManSecPerBatch100:%d batchProfit:%d baseInputPerBatch:%d efficiency:%d workRevenuePerSec100_perMan_:%d", 
+						//	building.workDone100(), building.workManSecPerBatch100(), building.batchProfit(), building.baseInputPerBatch(), building.efficiency(), building.buildingInfo().workRevenuePerSec100_perMan_);
 						
 						descriptionBox->AddRichText(LOCTEXT("Work done", "Work done"), TEXT_PERCENT(building.workPercent()));
 					}
@@ -2330,6 +2334,52 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 
 				/*
+				 * Town/Global Bonuses
+				 */
+				if (building.isEnum(CardEnum::Townhall)) 
+				{
+					auto setBonusIcon = [&](UTownBonusIcon* bonusIcon, CardEnum bonusEnum)
+					{
+						bonusIcon->SetVisibility(ESlateVisibility::Visible);
+						SetChildHUD(bonusIcon);
+						bonusIcon->BuildingIcon->GetDynamicMaterial()->SetTextureParameterValue("ColorTexture", assetLoader->GetCardIcon(bonusEnum));
+
+						const BldInfo& info = GetBuildingInfo(bonusEnum);
+						UToolTipWidgetBase* tooltip = UPunBoxWidget::AddToolTip(bonusIcon, bonusIcon);
+
+						auto tooltipBox = tooltip->TooltipPunBoxWidget;
+						tooltipBox->AfterAdd();
+
+						tooltipBox->AddRichText(TEXT_TAG("<TipHeader>", info.GetName()));
+						tooltipBox->AddSpacer();
+						tooltipBox->AddRichText(info.GetDescription());
+					};
+
+					auto fillBonusIcons = [&](UWrapBox* bonusSlots, UVerticalBox* bonusBox, const std::vector<CardEnum>& bonuses) {
+						int32 bonusSlotCount = bonusSlots->GetChildrenCount();
+						if (bonuses.size() > 0) {
+							for (int32 i = 0; i < bonusSlotCount; i++) {
+								auto bonusIcon = bonusSlots->GetChildAt(i);
+								if (i < bonuses.size()) {
+									setBonusIcon(CastChecked<UTownBonusIcon>(bonusIcon), bonuses[i]);
+								} else {
+									bonusIcon->SetVisibility(ESlateVisibility::Collapsed);
+								}
+							}
+							bonusBox->SetVisibility(ESlateVisibility::Visible);
+						}
+					};
+
+					const std::vector<CardEnum>& townBonuses = simulation.townManager(building.townId()).townBonuses();
+					fillBonusIcons(_objectDescriptionUI->TownBonusSlots, _objectDescriptionUI->TownBonusBox, townBonuses);
+
+					const std::vector<CardEnum>& globalBonuses = simulation.playerOwned(building.playerId()).globalBonuses();
+					fillBonusIcons(_objectDescriptionUI->GlobalBonusSlots, _objectDescriptionUI->GlobalBonusBox, globalBonuses);
+					
+				}
+				
+
+				/*
 				 * Selection Meshes (Related)
 				 */
 				std::vector<int>& occupants = building.occupants();
@@ -2492,9 +2542,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						
 						auto setUpgradeButton = [&](BuildingUpgrade upgrade, int32 upgradeIndex)
 						{
-							ADDTEXT_(LOCTEXT("Upgrade {0}", "Upgrade {0}"), upgrade.name);
+							ADDTEXT_(LOCTEXT("Upgrade {0}", "Upgrade {0}"), upgrade.displayName());
 
-							ResourceEnum resourceEnum = upgrade.resourceNeeded.resourceEnum;
+							ResourceEnum resourceEnum = upgrade.currentUpgradeResourceNeeded().resourceEnum;
 							
 							if (upgrade.isUpgraded) {
 								ADDTEXT_INV_("\n");
@@ -2503,20 +2553,26 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							else {
 								auto showResourceText = [&](FString resourceTagString)
 								{
-									bool isRed = resourceSys.resourceCount(resourceEnum) < upgrade.resourceNeeded.count;
-									
-									ADDTEXT_(INVTEXT("\n<img id=\"{0}\"/>{1}"), FText::FromString(resourceTagString), TextRed(TEXT_NUM(upgrade.resourceNeeded.count), isRed));
+									bool isRed = resourceSys.resourceCount(resourceEnum) < upgrade.currentUpgradeResourceNeeded().count;
+									ADDTEXT_(INVTEXT("\n<img id=\"{0}\"/>{1}"), FText::FromString(resourceTagString), TextRed(TEXT_NUM(upgrade.currentUpgradeResourceNeeded().count), isRed));
 								};
-								
-								if (resourceEnum == ResourceEnum::Stone) { showResourceText("Stone"); }
+
+								auto unlockSys = simulation.unlockSystem(playerId());
+								int32 currentEra = unlockSys->GetEra();
+								bool requireEra = upgrade.isEraUpgrade() && !upgrade.isEraUpgradable(unlockSys->GetEra());
+
+								if (requireEra) {
+									ADDTEXT_(INVTEXT("\n<Red>Require {0}</>"), unlockSys->GetEraText(upgrade.currentEraLevel() + 1));
+								}
+								else if (resourceEnum == ResourceEnum::Stone) { showResourceText("Stone"); }
 								else if (resourceEnum == ResourceEnum::Wood) { showResourceText("Wood"); }
 								else if (resourceEnum == ResourceEnum::Iron) { showResourceText("IronBar"); }
 								else if (resourceEnum == ResourceEnum::SteelTools) { showResourceText("SteelTools"); }
 								else if (resourceEnum == ResourceEnum::Brick) { showResourceText("Brick"); }
 								else if (resourceEnum == ResourceEnum::Paper) { showResourceText("Paper"); }
-								//else if (upgrade.resourceNeeded.isValid()) {
-								//	ss << " (" << upgrade.resourceNeeded.ToString() << ")";
-								//}
+								else if (resourceEnum == ResourceEnum::Glass) { showResourceText("Glass"); }
+								else if (resourceEnum == ResourceEnum::Concrete) { showResourceText("Concrete"); }
+								else if (resourceEnum == ResourceEnum::SteelBeam) { showResourceText("SteelBeam"); }
 								else {
 									PUN_CHECK(resourceEnum == ResourceEnum::None);
 									
@@ -2539,11 +2595,11 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							if (resourceEnum == ResourceEnum::None) {
 								ADDTEXT_(INVTEXT("{0}: <img id=\"Coin\"/>{1}"), costText, TEXT_NUM(upgrade.moneyNeeded));
 							} else {
-								ADDTEXT_(INVTEXT("{0}: {1} {2}"), costText, TEXT_NUM(upgrade.resourceNeeded.count), ResourceNameT(resourceEnum));
+								ADDTEXT_(INVTEXT("{0}: {1} {2}"), costText, TEXT_NUM(upgrade.currentUpgradeResourceNeeded().count), ResourceNameT(resourceEnum));
 							}
 							ADDTEXT_INV_("<space>");
 							
-							ADDTEXT__(upgrade.description);
+							ADDTEXT__(upgrade.displayDescription());
 
 							if (!_alreadyDidShiftDownUpgrade) {
 								ADDTEXT_INV_("<line><space>");

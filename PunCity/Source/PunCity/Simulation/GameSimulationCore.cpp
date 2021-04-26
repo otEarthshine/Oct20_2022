@@ -1153,15 +1153,52 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 
 
 						// Spawn rare hand after 1 sec... Delay so that the ChooseRareCard sound will appear in sync when menu after systemMoveCamera
-						auto& townhal = GetTownhallCapital(playerId);
-						if (!townhal.alreadyGotInitialCard && townhal.townAgeTicks() >= Time::TicksPerSecond) 
 						{
-							GenerateRareCardSelection(playerId, RareHandEnum::InitialCards1, LOCTEXT("A starting card.", "A starting card."));
-							GenerateRareCardSelection(playerId, RareHandEnum::InitialCards2, LOCTEXT("Another starting card.", "Another starting card."));
-							
-							townhal.alreadyGotInitialCard = true;
+							auto& townhallCapital = GetTownhallCapital(playerId);
+
+							if (!townhallCapital.alreadyGotInitialCard && townhallCapital.townAgeTicks() >= Time::TicksPerSecond)
+							{
+								GenerateRareCardSelection(playerId, RareHandEnum::InitialCards1, FText());
+								GenerateRareCardSelection(playerId, RareHandEnum::InitialCards2, FText());
+
+								townhallCapital.alreadyGotInitialCard = true;
+							}
 						}
-						
+
+						// Biome Bonus
+						for (int32 townId : townIds)
+						{
+							if (TownHall* townhal = GetTownhallPtr(townId))
+							{
+								if (!townhal->alreadyGotBiomeCards1 && townhal->townAgeTicks() >= Time::TicksPerSecond) {
+									townhal->alreadyGotBiomeCards1 = true;
+									
+									switch (GetBiomeEnum(townhal->centerTile()))
+									{
+									case BiomeEnum::BorealForest:
+									case BiomeEnum::Tundra:
+										GenerateRareCardSelection(playerId, RareHandEnum::BorealCards, FText());
+										break;
+									case BiomeEnum::Desert:
+										GenerateRareCardSelection(playerId, RareHandEnum::DesertCards, FText());
+										break;
+									case BiomeEnum::Savanna:
+									case BiomeEnum::GrassLand:
+										GenerateRareCardSelection(playerId, RareHandEnum::SavannaCards, FText());
+										break;
+									case BiomeEnum::Jungle:
+										GenerateRareCardSelection(playerId, RareHandEnum::JungleCards, FText());
+										break;
+									case BiomeEnum::Forest:
+										GenerateRareCardSelection(playerId, RareHandEnum::ForestCards, FText());
+										break;
+									default:
+										UE_DEBUG_BREAK();
+										break;
+									}
+								}
+							}
+						}
 
 						//// Check for owner change, and update vassals accordingly...
 						//ArmyNode& armyNode = townhall(playerId).armyNode;
@@ -3076,48 +3113,9 @@ void GameSimulationCore::SetIntercityTrade(FSetIntercityTrade command)
 
 void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
 {
-	// Special case: Replay
-	if (IsReplayPlayer(command.playerId)) 
-	{
-		// Trailer Replay only records townhall
-		if (_replaySystem.replayPlayers[command.playerId].IsTrailerReplay())
-		{
-			ChangeMoney(command.playerId, 20000); // Ensure enough money
-			GetTownhallCapital(command.playerId).UpgradeTownhall();
-			return;
-		}
-		
-		// Check all the buildings and upgrade as necessary
-		ResourceEnum neededResource = ResourceEnum::None;
-		
-		for (int32 i = 0; i < BuildingEnumCount; i++) {
-			const auto& bldIds = buildingIds(command.playerId, static_cast<CardEnum>(i));
-			for (int32 bldId : bldIds) {
-				Building& bld = building(bldId);
-				std::vector<BuildingUpgrade> upgrades = bld.upgrades();
-				for (size_t j = 0; j < upgrades.size(); j++) {
-					if (!upgrades[j].isUpgraded) {
-						bld.UpgradeBuilding(j, true, neededResource);
-					}
-				}
-			}
-		}
-		return;
-	}
-
-#if TRAILER_MODE
-	Building* bld = nullptr;
-	if (command.buildingId == -1) {
-		bld = buildingAtTile(command.tileId);
-		command.buildingId = bld->buildingId();
-	} else {
-		bld = &(building(command.buildingId));
-	}
-#else
 	PUN_ENSURE(IsValidBuilding(command.buildingId), return);
 
 	Building* bld = &(building(command.buildingId));
-#endif
 
 	_LOG(LogNetworkInput, " UpgradeBuilding: pid:%d id:%d bldType:%s upgradeType:%d isShiftDown:%d", command.playerId, command.buildingId, *bld->buildingInfo().nameF(), command.upgradeType, command.isShiftDown);
 
@@ -3132,16 +3130,6 @@ void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
 				townhall.UpgradeTownhall();
 			}
 		}
-		//else {
-		//	if (townhall.wallLvl < townhall.townhallLvl &&
-		//		townhall.HasEnoughStoneToUpgradeWall()) 
-		//	{
-		//		townhall.UpgradeWall();
-		//		if (townhall.armyNode.defendGroups.size() > 0) 	{
-		//			townhall.armyNode.defendGroups[0].UpgradeWallLvl(townhall.wallLvl);
-		//		}
-		//	}
-		//}
 	}
 	// Other buildings
 	else
@@ -3478,6 +3466,22 @@ void GameSimulationCore::PopupInstantReply(int32 playerId, PopupReceiverEnum rep
 			);
 		}
 	}
+
+	else if (replyReceiver == PopupReceiverEnum::EraPopup_MiddleAge)
+	{
+		GenerateRareCardSelection(playerId, RareHandEnum::Era2_1_Cards, FText());
+		GenerateRareCardSelection(playerId, RareHandEnum::Era2_2_Cards, FText());
+	}
+	else if (replyReceiver == PopupReceiverEnum::EraPopup_EnlightenmentAge)
+	{
+		GenerateRareCardSelection(playerId, RareHandEnum::Era3_1_Cards, FText());
+		GenerateRareCardSelection(playerId, RareHandEnum::Era3_2_Cards, FText());
+	}
+	else if (replyReceiver == PopupReceiverEnum::EraPopup_IndustrialAge)
+	{
+		GenerateRareCardSelection(playerId, RareHandEnum::Era4_1_Cards, FText());
+		GenerateRareCardSelection(playerId, RareHandEnum::Era4_2_Cards, FText());
+	}
 }
 
 void GameSimulationCore::PopupDecision(FPopupDecision command) 
@@ -3703,9 +3707,43 @@ void GameSimulationCore::SelectRareCard(FSelectRareCard command)
 	// TODO: rename this to just select card?
 	auto& cardSys = cardSystem(command.playerId);
 
-	if (cardSys.CanSelectRareCardPrize(command.cardEnum)) {
-		cardSys.AddCardToHand2(command.cardEnum);
-		cardSys.DoneSelectRareHand();
+	if (cardSys.CanSelectRareCardPrize(command.cardEnum)) 
+	{
+		// Town Bonus Cards go straight TownManager
+		if (IsPermanentTownBonus(command.cardEnum))
+		{
+			// Since there are multiple towns, check for the one where this bonus is still available
+			RareHandEnum rareHandEnum = PermanentBonus::CardEnumToBonusHandEnum(command.cardEnum);
+
+			const std::vector<int32>& townIds = GetTownIds(command.playerId);
+			for (int32 townId : townIds) {
+				const std::vector<CardEnum>& townBonuses = townManager(townId).townBonuses();
+
+				bool alreadyHasBonus = false;
+				for (CardEnum townBonus : townBonuses) {
+					if (PermanentBonus::CardEnumToBonusHandEnum(townBonus) == rareHandEnum) {
+						alreadyHasBonus = true;
+						break;
+					}
+				}
+
+				if (!alreadyHasBonus) {
+					townManager(townId).AddTownBonus(command.cardEnum);
+					cardSys.DoneSelectRareHand();
+					break;
+				}
+			}
+		}
+		// Global Bonus Cards go straight to PlayerManager
+		else if (IsPermanentTownBonus(command.cardEnum)) {
+			playerOwned(command.playerId).AddGlobalBonus(command.cardEnum);
+			cardSys.DoneSelectRareHand();
+		}
+		else
+		{
+			cardSys.AddCardToHand2(command.cardEnum);
+			cardSys.DoneSelectRareHand();
+		}
 	}
 }
 
@@ -3809,7 +3847,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 	}
 
 	// Global Slot
-	if (IsGlobalSlotCard(command.cardEnum))
+	if (IsTownSlotCard(command.cardEnum))
 	{
 		if (IsValidTown(command.townId)) // (Edge case where Archive UI was hidden)
 		{

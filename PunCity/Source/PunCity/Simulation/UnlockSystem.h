@@ -1069,6 +1069,17 @@ public:
 		UE_DEBUG_BREAK();
 		return FText();
 	}
+	FText GetEraText(int32 era = -1) {
+		if (era == -1) {
+			era = GetEra();
+		}
+		if (era == 1) return LOCTEXT("Dark Age", "Dark Age");
+		if (era == 2) return LOCTEXT("Middle Age", "Middle Age");
+		if (era == 3) return LOCTEXT("Enlightenment Age", "Enlightenment Age");
+		if (era == 4) return LOCTEXT("Industrial Age", "Industrial Age");
+		UE_DEBUG_BREAK();
+		return FText();
+	}
 	
 	bool IsRequirementMetForTech(TechEnum techEnum)
 	{
@@ -1242,6 +1253,14 @@ public:
 		}
 		return count;
 	}
+
+	int32 GetEra()
+	{
+		if (IsResearched(TechEnum::IndustrialAge)) return 4;
+		if (IsResearched(TechEnum::EnlightenmentAge)) return 3;
+		if (IsResearched(TechEnum::MiddleAge)) return 2;
+		return 1;
+	}
 	
 
 	// UI Input
@@ -1255,8 +1274,7 @@ public:
 	void Research(int64 science100PerRound, int32 updatesPerSec);
 
 	static void EraUnlockedDescription(TArray<FText>& args, int32 era, bool isTip);
-
-	void OnEraUnlocked(TArray<FText>& args);
+	void OnEraUnlocked(TArray<FText>& args, int32 era);
 
 	void SetDisplaySciencePoint(TArray<FText>& args, bool hasIcon = true)
 	{
@@ -1281,7 +1299,7 @@ public:
 	int32 totalTechs() { return _enumToTech.size() - 1;  } // -1 for TechEnum::None tech
 	bool allTechsUnlocked() { return techsFinished == totalTechs(); }
 
-	int32 currentEra()
+	int32 currentTechColumn()
 	{
 		int32 currentEra = 1;
 		for (int32 i = 1; i < _columnToTechs.size(); i++) {

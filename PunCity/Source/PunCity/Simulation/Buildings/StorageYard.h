@@ -277,9 +277,9 @@ public:
 	void FinishConstruction() override {
 		StorageBase::FinishConstruction();
 
-		_upgrades = {
+		AddUpgrades({
 			MakeWorkerSlotUpgrade(50, 2),
-		};
+		});
 
 		//PUN_CHECK(lastUIResourceTargets.size() < 1000);
 	}

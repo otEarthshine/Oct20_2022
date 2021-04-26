@@ -18,14 +18,7 @@ int UMiniBuildingDisplayComponent::CreateNewDisplay(int regionId)
 		for (int i = 0; i < moduleNames.Num(); i++) 
 		{
 			// Only keep body and roof
-			if (
-				//moduleNames[i].Right(4) == FString("Body") ||
-				//moduleNames[i].Right(4) == FString("Roof") ||
-				// Special case for regional buildings
-				//moduleNames[i] == FString("AncientShrineSpecial") ||
-				//moduleNames[i] == FString("RegionCratePileSpecial")
-
-				GameDisplayInfo::IsMiniModule(moduleNames[i]))
+			if (GameDisplayInfo::IsMiniModule(moduleNames[i]))
 			{
 				UStaticMesh* protoMesh = _assetLoader->moduleMesh(moduleNames[i]);
 				if (protoMesh) {
@@ -87,7 +80,7 @@ void UMiniBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, Worl
 			WorldTile2 centerTile = building.centerTile();
 			FTransform transform(FRotator(0, buildingRotation, 0), centerTile.localTile().localDisplayLocation());
 
-			const ModuleTransforms& modulePrototype = displayInfo.GetDisplayModules(buildingEnum, displayVariationIndex);
+			const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(buildingEnum, displayVariationIndex);
 			std::vector<ModuleTransform> modules = modulePrototype.miniModules;
 
 			if (building.isBurnedRuin())

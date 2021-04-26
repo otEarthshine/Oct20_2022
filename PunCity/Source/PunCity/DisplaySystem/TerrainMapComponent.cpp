@@ -749,7 +749,7 @@ void UTerrainMapComponent::RefreshAnnotations()
 					FTransform transform(FRotator(0, buildingRotation, 0), displayLocation);
 					//_dataSource->DisplayLocation(centerTile.worldAtom2())
 
-					const ModuleTransforms& modulePrototype = displayInfo.GetDisplayModules(buildingEnum, displayVariationIndex);
+					const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(buildingEnum, displayVariationIndex);
 					std::vector<ModuleTransform> modules = modulePrototype.transforms;
 
 					auto showMesh = [&](int32 i) {

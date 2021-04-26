@@ -44,8 +44,8 @@ void UBuildingPlacementButton::PunInit(CardEnum buildingEnumIn, int32 cardHandIn
 
 	TArray<FText> args;
 	ADDTEXT__(info.GetDescription());
-	if (IsGlobalSlotCard(buildingEnum)) {
-		ADDTEXT_(INVTEXT("\n<Gray>({0})</>"), LOCTEXT("global slot", "global slot"));
+	if (IsTownSlotCard(buildingEnum)) {
+		ADDTEXT_(INVTEXT("\n<Gray>({0})</>"), LOCTEXT("town slot", "town slot"));
 	}
 	if (IsBuildingSlotCard(buildingEnum)) {
 		ADDTEXT_(INVTEXT("\n<Gray>({0})</>"), LOCTEXT("building slot", "building slot"));
@@ -112,7 +112,7 @@ void UBuildingPlacementButton::PunInit(CardEnum buildingEnumIn, int32 cardHandIn
 		SellButton->OnClicked.AddDynamic(this, &UBuildingPlacementButton::OnSellButtonClicked);
 	}
 
-	if (IsGlobalSlotCard(buildingEnum)) {
+	if (IsTownSlotCard(buildingEnum)) {
 		CardSlotUnderneath->GetDynamicMaterial()->SetTextureParameterValue("CardSlot", assetLoader()->CardSlotRound);
 		CardSlotUnderneath->GetDynamicMaterial()->SetScalarParameterValue("IsBuildingSlotCard", false);
 		CardSlotUnderneath->SetVisibility(ESlateVisibility::HitTestInvisible);

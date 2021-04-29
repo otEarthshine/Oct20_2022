@@ -45,6 +45,8 @@ public:
 
 	virtual bool IsPlayerTunnelBuildable(WorldTile2 tile) const = 0;
 
+	virtual int32 GetMinEraDisplay(CardEnum buildingEnum) const = 0;
+
 	virtual GeoresourceNode RegionGeoresource(WorldRegion2 region) = 0;
 
 	virtual void ResizeDisplaySystemBuildingIds(int newSize) = 0;

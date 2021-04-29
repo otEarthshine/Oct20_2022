@@ -54,7 +54,6 @@ DECLARE_CYCLE_STAT(TEXT("PUN: [UI]AddProvinceUpkeepInfo"), STAT_PunUI_AddProvinc
 
 DECLARE_CYCLE_STAT(TEXT("PUN: [UI]ShowRegionSelectionDecal"), STAT_PunUI_ShowRegionSelectionDecal, STATGROUP_Game);
 
-
 #define LOCTEXT_NAMESPACE "ObjectDescriptionUISystem"
 
 using namespace std;
@@ -647,8 +646,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			}
 			
 #if WITH_EDITOR || TRAILER_MODE
-			ADDTEXT_(INVTEXT("[{0}]"), FText::AsNumber(objectId));
-			ADDTEXT_(INVTEXT("\n{0}"), FText::FromString(building.centerTile().To_FString()));
+			if (PunSettings::IsOn("DebugFocusUI")) {
+				ADDTEXT_(INVTEXT("[{0}]"), FText::AsNumber(objectId));
+				ADDTEXT_(INVTEXT("\n{0}"), FText::FromString(building.centerTile().To_FString()));
+			}
 #endif
 
 			
@@ -678,10 +679,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			
 #if WITH_EDITOR
 			// IsConnectedBuilding
-			if (building.playerId() != -1) {
-				//ss << simulation.IsConnectedBuilding(building.buildingId(), playerId());
-				ADDTEXT_NUM(args, simulation.IsConnectedBuilding(building.buildingId()))
-				descriptionBox->AddRichText(FTEXT("<Yellow>IsConnectedBld</>"), args);
+			if (PunSettings::IsOn("DebugFocusUI")) {
+				if (building.playerId() != -1) {
+					//ss << simulation.IsConnectedBuilding(building.buildingId(), playerId());
+					ADDTEXT_NUM(args, simulation.IsConnectedBuilding(building.buildingId()))
+						descriptionBox->AddRichText(FTEXT("<Yellow>IsConnectedBld</>"), args);
+				}
 			}
 #endif
 
@@ -762,9 +765,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					descriptionBox->AddRichText(LOCTEXT("Occupants", "Occupants"), args);
 
 #if WITH_EDITOR
-					//ss << building.adjacentCount(CardEnum::House);
-					//descriptionBox->AddRichText("<Yellow>Adjacent</>", ss);
-					descriptionBox->AddRichText(FText::Join(FText(), INVTEXT("<Yellow>"), LOCTEXT("HouseAdjacent", "Adjacent"), INVTEXT("</>")));
+					if (PunSettings::IsOn("DebugFocusUI")) {
+						descriptionBox->AddRichText(FText::Join(FText(), INVTEXT("<Yellow>"), LOCTEXT("HouseAdjacent", "Adjacent"), INVTEXT("</>")));
+					}
 #endif					
 				}
 				else if (building.maxOccupants() > 0) {
@@ -1006,7 +1009,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						descriptionBox->AddRichText(LOCTEXT("Player", "Player"), FText::FromString(playerNameTrimmed));
 
 #if WITH_EDITOR
-						descriptionBox->AddRichText(TEXT_TAG("<Yellow>", INVTEXT("PlayerId")), FText::AsNumber(townPlayerId));
+						if (PunSettings::IsOn("DebugFocusUI")) {
+							descriptionBox->AddRichText(TEXT_TAG("<Yellow>", INVTEXT("PlayerId")), FText::AsNumber(townPlayerId));
+						}
 #endif
 						
 						descriptionBox->AddRichText(LOCTEXT("Size", "Size"), townManager.GetTownSizeName());
@@ -1142,13 +1147,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						descriptionBox->AddRichText(LOCTEXT("Work stage", "Work stage"), farm.farmStageName());
 						descriptionBox->AddRichText(LOCTEXT("Growth percent", "Growth percent"), TEXT_PERCENT(farm.MinCropGrowthPercent()));
 
-						//if (static_cast<Farm*>(&building)->hasAdjacencyBonus) {
-						//	ss << "Bonus: +" << building.adjacentCount(BuildingEnum::Farm) * 10 << "% productivity\n\n";
-						//}
 #if WITH_EDITOR
-						ADDTEXT_(INVTEXT("(Editor)WorkedTiles: {0}\n"), TEXT_NUM(farm.workedTiles()));
-						ADDTEXT_(INVTEXT("(Editor)adjacents: +{0}\n"), TEXT_NUM(building.adjacentCount()));
-						descriptionBox->AddSpecialRichText(INVTEXT("<Yellow>"), args);
+						if (PunSettings::IsOn("DebugFocusUI")) {
+							ADDTEXT_(INVTEXT("(Editor)WorkedTiles: {0}\n"), TEXT_NUM(farm.workedTiles()));
+							ADDTEXT_(INVTEXT("(Editor)adjacents: +{0}\n"), TEXT_NUM(building.adjacentCount()));
+							descriptionBox->AddSpecialRichText(INVTEXT("<Yellow>"), args);
+						}
 #endif
 						descriptionBox->AddRichText(LOCTEXT("Farm_CurrentPlant", "Current"), GetTileObjInfo(farm.currentPlantEnum).name);
 					}
@@ -1227,13 +1231,6 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						descriptionBox->AddRichText(LOCTEXT("Guests: ", "Guests: "), TEXT_NUM(guestCount));
 
 						descriptionBox->AddRichText(LOCTEXT("Service Quality: ", "Service Quality: "), TEXT_NUM(funBuilding.serviceQuality()));
-//#if WITH_EDITOR 
-//						ss << "guestCountInternal: " << funBuilding.guestCountInternal() << "\n";
-//						ss << "guestCountLastRound: " << funBuilding.guestCountLastRound() << "\n";
-//						ss << "guestCountLastLastRound: " << funBuilding.guestCountLastLastRound() << "\n";
-//						ss << "guestReservations: " << funBuilding.guestReservations() << "\n";
-//						descriptionBox->AddSpecialRichText("<Yellow>", ss);
-//#endif
 					}
 					else if (building.isEnum(CardEnum::Library) ||
 							building.isEnum(CardEnum::School)) 
@@ -2005,10 +2002,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					if (IsProducer(building.buildingEnum()))
 					{
 #if WITH_EDITOR
-						descriptionBox->AddRichText("-- workManSecPerBatch100: " + to_string(building.workManSecPerBatch100()));
-						descriptionBox->AddRichText("-- workRevenuePerSec100_perMan_: " + to_string(building.workRevenuePerSec100_perMan_()));
-						descriptionBox->AddRichText("-- batchCost: " + to_string(building.batchCost()));
-						descriptionBox->AddRichText("-- batchProfit: " + to_string(building.batchProfit()));
+						if (PunSettings::IsOn("DebugFocusUI")) {
+							descriptionBox->AddRichText("-- workManSecPerBatch100: " + to_string(building.workManSecPerBatch100()));
+							descriptionBox->AddRichText("-- workRevenuePerSec100_perMan_: " + to_string(building.workRevenuePerSec100_perMan_()));
+							descriptionBox->AddRichText("-- batchCost: " + to_string(building.batchCost()));
+							descriptionBox->AddRichText("-- batchProfit: " + to_string(building.batchProfit()));
+						}
 #endif
 
 						/*
@@ -2063,33 +2062,35 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					else if (IsSpecialProducer(building.buildingEnum()))
 					{
 #if WITH_EDITOR
-						descriptionBox->AddRichText("-- workManSecPerBatch100: " + to_string(building.workManSecPerBatch100()));
-						descriptionBox->AddRichText("-- workRevenuePerSec100_perMan_: " + to_string(building.workRevenuePerSec100_perMan_()));
-						if (building.hasInput1()) {
-							descriptionBox->AddRichText("-- baseInputValue: " + to_string(GetResourceInfo(building.input1()).basePrice * building.baseInputPerBatch()));
-						}
-	
-						switch (building.buildingEnum())
-						{
-						case CardEnum::BarrackArcher:
-						case CardEnum::BarrackClubman:
-						case CardEnum::Mint:
-						case CardEnum::InventorsWorkshop:
-						case CardEnum::RegionShrine:
-							
-						case CardEnum::CardMaker:
-						case CardEnum::ImmigrationOffice: {
-							auto& consumerIndustry = building.subclass<ConsumerIndustrialBuilding>();
+						if (PunSettings::IsOn("DebugFocusUI")) {
+							descriptionBox->AddRichText("-- workManSecPerBatch100: " + to_string(building.workManSecPerBatch100()));
+							descriptionBox->AddRichText("-- workRevenuePerSec100_perMan_: " + to_string(building.workRevenuePerSec100_perMan_()));
 							if (building.hasInput1()) {
-								descriptionBox->AddRichText("-- baseInputValue: " + to_string(consumerIndustry.baseInputValue()));
-								descriptionBox->AddRichText("-- baseOutputValue: " + to_string(consumerIndustry.baseOutputValue()));
-								descriptionBox->AddRichText("-- baseProfitValue: " + to_string(consumerIndustry.baseProfitValue()));
-								descriptionBox->AddRichText("-- workManSecPerBatch100(calc): " + to_string(consumerIndustry.baseProfitValue() * 100 * 100 / consumerIndustry.buildingInfo().workRevenuePerSec100_perMan()));
+								descriptionBox->AddRichText("-- baseInputValue: " + to_string(GetResourceInfo(building.input1()).basePrice * building.baseInputPerBatch()));
 							}
-							break;
-						}
-						default:
-							break;
+
+							switch (building.buildingEnum())
+							{
+							case CardEnum::BarrackArcher:
+							case CardEnum::BarrackClubman:
+							case CardEnum::Mint:
+							case CardEnum::InventorsWorkshop:
+							case CardEnum::RegionShrine:
+
+							case CardEnum::CardMaker:
+							case CardEnum::ImmigrationOffice: {
+								auto& consumerIndustry = building.subclass<ConsumerIndustrialBuilding>();
+								if (building.hasInput1()) {
+									descriptionBox->AddRichText("-- baseInputValue: " + to_string(consumerIndustry.baseInputValue()));
+									descriptionBox->AddRichText("-- baseOutputValue: " + to_string(consumerIndustry.baseOutputValue()));
+									descriptionBox->AddRichText("-- baseProfitValue: " + to_string(consumerIndustry.baseProfitValue()));
+									descriptionBox->AddRichText("-- workManSecPerBatch100(calc): " + to_string(consumerIndustry.baseProfitValue() * 100 * 100 / consumerIndustry.buildingInfo().workRevenuePerSec100_perMan()));
+								}
+								break;
+							}
+							default:
+								break;
+							}
 						}
 #endif
 						
@@ -2174,7 +2175,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					}
 					
 #if WITH_EDITOR
-					descriptionBox->AddRichText("-- buildManSecCost100", to_string(building.buildTime_ManSec100()));
+					if (PunSettings::IsOn("DebugFocusUI")) {
+						descriptionBox->AddRichText("-- buildManSecCost100", to_string(building.buildTime_ManSec100()));
+					}
 #endif
 				}
 
@@ -2224,11 +2227,13 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					}
 
 #if WITH_EDITOR
-					TArray<FText> argsLocal;
-					ADDTEXT(argsLocal, INVTEXT("hasNeededConstructionResource: {0}"), building.hasNeededConstructionResource() ? INVTEXT("Yes") : INVTEXT("No"));
-					descriptionBox->AddSpecialRichText(INVTEXT("<Yellow>"), argsLocal);
-					ADDTEXT(argsLocal, INVTEXT("NeedConstruct: {0}"), building.NeedConstruct() ? INVTEXT("Yes") : INVTEXT("No"));
-					descriptionBox->AddSpecialRichText(INVTEXT("<Yellow>"), argsLocal);
+					if (PunSettings::IsOn("DebugFocusUI")) {
+						TArray<FText> argsLocal;
+						ADDTEXT(argsLocal, INVTEXT("hasNeededConstructionResource: {0}"), building.hasNeededConstructionResource() ? INVTEXT("Yes") : INVTEXT("No"));
+						descriptionBox->AddSpecialRichText(INVTEXT("<Yellow>"), argsLocal);
+						ADDTEXT(argsLocal, INVTEXT("NeedConstruct: {0}"), building.NeedConstruct() ? INVTEXT("Yes") : INVTEXT("No"));
+						descriptionBox->AddSpecialRichText(INVTEXT("<Yellow>"), argsLocal);
+					}
 #endif
 				}
 				// Inventory
@@ -2257,12 +2262,14 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						descriptionBox->AddIconPair(FText(), holderInfo.resourceEnum, TEXT_NUM(resourceCount));
 
 						//ss << ResourceName(holderInfo.resourceEnum) << ": " << resourceCount;
-#if WITH_EDITOR 
-						ResourceHolder holder = building.resourceSystem().holder(holderInfo);
+#if WITH_EDITOR
+						if (PunSettings::IsOn("DebugFocusUI")) {
+							ResourceHolder holder = building.resourceSystem().holder(holderInfo);
 
-						stringstream sst;
-						sst << "-- Target:" << building.GetResourceTarget(holderInfo) << ",Pop:" << holder.reservedPop() << ",Push:" << holder.reservedPush();
-						descriptionBox->AddRichText(sst);
+							stringstream sst;
+							sst << "-- Target:" << building.GetResourceTarget(holderInfo) << ",Pop:" << holder.reservedPop() << ",Push:" << holder.reservedPush();
+							descriptionBox->AddRichText(sst);
+						}
 #endif
 					}
 				}
@@ -2545,10 +2552,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							ADDTEXT_(LOCTEXT("Upgrade {0}", "Upgrade {0}"), upgrade.displayName());
 
 							ResourceEnum resourceEnum = upgrade.currentUpgradeResourceNeeded().resourceEnum;
+							bool showEnabled = true;
 							
 							if (upgrade.isUpgraded) {
 								ADDTEXT_INV_("\n");
 								ADDTEXT_LOCTEXT("Done", "Done");
+								showEnabled = false;
 							}
 							else {
 								auto showResourceText = [&](FString resourceTagString)
@@ -2558,11 +2567,11 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								};
 
 								auto unlockSys = simulation.unlockSystem(playerId());
-								int32 currentEra = unlockSys->GetEra();
 								bool requireEra = upgrade.isEraUpgrade() && !upgrade.isEraUpgradable(unlockSys->GetEra());
 
 								if (requireEra) {
 									ADDTEXT_(INVTEXT("\n<Red>Require {0}</>"), unlockSys->GetEraText(upgrade.currentEraLevel() + 1));
+									showEnabled = false;
 								}
 								else if (resourceEnum == ResourceEnum::Stone) { showResourceText("Stone"); }
 								else if (resourceEnum == ResourceEnum::Wood) { showResourceText("Wood"); }
@@ -2582,9 +2591,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								}
 							}
 
-							bool isUpgradable = !upgrade.isUpgraded;
-
-							UPunButton* button = descriptionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::UpgradeBuilding, isUpgradable, false,  objectId, upgradeIndex);
+							UPunButton* button = descriptionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::UpgradeBuilding, showEnabled, false,  objectId, upgradeIndex);
 
 							// Tooltip
 							args.Empty();
@@ -2595,6 +2602,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							if (resourceEnum == ResourceEnum::None) {
 								ADDTEXT_(INVTEXT("{0}: <img id=\"Coin\"/>{1}"), costText, TEXT_NUM(upgrade.moneyNeeded));
 							} else {
+								check(static_cast<int>(resourceEnum) < ResourceEnumCount);
 								ADDTEXT_(INVTEXT("{0}: {1} {2}"), costText, TEXT_NUM(upgrade.currentUpgradeResourceNeeded().count), ResourceNameT(resourceEnum));
 							}
 							ADDTEXT_INV_("<space>");
@@ -2700,7 +2708,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			}
 			
 #if WITH_EDITOR
-			ADDTEXT_(INVTEXT("[{0}]"), TEXT_NUM(objectId)); // ID
+			if (PunSettings::IsOn("DebugFocusUI")) {
+				ADDTEXT_(INVTEXT("[{0}]"), TEXT_NUM(objectId)); // ID
+			}
 #endif
 			descriptionBox->AddRichText(args);
 			descriptionBox->AddLineSpacer(8);
@@ -2724,6 +2734,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			}
 			
 #if WITH_EDITOR
+			if (PunSettings::IsOn("DebugFocusUI"))
 			{
 				std::stringstream ss;
 				ss << "-- Tile:(" << unit.unitTile().x << "," << unit.unitTile().y << ")";
@@ -2816,7 +2827,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					dyingMessage(LOCTEXT("Cannot work no tools", "Cannot work properly without tools"));
 				}
 #if WITH_EDITOR
-				descriptionBox->AddRichText("-- Next tools sec", to_string((human.nextToolTick() - Time::Ticks()) / Time::TicksPerSecond));
+				if (PunSettings::IsOn("DebugFocusUI")) {
+					descriptionBox->AddRichText("-- Next tools sec", to_string((human.nextToolTick() - Time::Ticks()) / Time::TicksPerSecond));
+				}
 #endif
 			}
 
@@ -2887,8 +2900,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						ADDTEXT_LOCTEXT("Workplace: Construction Site", "Workplace: Construction Site");
 					}
 
-#if WITH_EDITOR 
-					ADDTEXT_(INVTEXT(" (id: {0})"), TEXT_NUM(unit.workplaceId()));
+#if WITH_EDITOR
+					if (PunSettings::IsOn("DebugFocusUI")) {
+						ADDTEXT_(INVTEXT(" (id: {0})"), TEXT_NUM(unit.workplaceId()));
+					}
 #endif
 					args.Add(INVTEXT("\n"));
 				}
@@ -2903,8 +2918,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			if (unit.houseId() != -1) {
 				FText houseName = simulation.building(unit.houseId()).buildingInfo().GetName();
 				ADDTEXT_(LOCTEXT("House: X", "House: {0}"), houseName);
-#if WITH_EDITOR 
-				ADDTEXT_(INVTEXT(" (id: {0})"), TEXT_NUM(unit.houseId()));
+#if WITH_EDITOR
+				if (PunSettings::IsOn("DebugFocusUI")) {
+					ADDTEXT_(INVTEXT(" (id: {0})"), TEXT_NUM(unit.houseId()));
+				}
 #endif
 				args.Add(INVTEXT("\n"));
 			} else {
@@ -2912,31 +2929,35 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			}
 
 #if WITH_EDITOR
-			if (IsAnimal(unit.unitEnum())) {
-				ADDTEXT_(INVTEXT("Home province {0}"), TEXT_NUM(unit.homeProvinceId()));
+			if (PunSettings::IsOn("DebugFocusUI")) {
+				if (IsAnimal(unit.unitEnum())) {
+					ADDTEXT_(INVTEXT("Home province {0}"), TEXT_NUM(unit.homeProvinceId()));
+				}
 			}
 #endif
 
 			//! Debug
-#if WITH_EDITOR 
-			if (PunSettings::IsOn("UIActions")) {
-				std::stringstream ss;
-				ss << "-- nextActiveTick:" << unit.nextActiveTick() << "\n";
-				ss << "speech:\n" << unit.debugSpeech(true);
-				auto punText = descriptionBox->AddText(ss);
-				
-				FSlateFontInfo fontInfo = FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Bold.ttf"), 7);
-				punText->PunText->SetFont(fontInfo);
-				//punText->PunText->SetRenderScale(FVector2D(1.0f, 0.5));
-			}
+#if WITH_EDITOR
+			if (PunSettings::IsOn("DebugFocusUI")) {
+				if (PunSettings::IsOn("UIActions")) {
+					std::stringstream ss;
+					ss << "-- nextActiveTick:" << unit.nextActiveTick() << "\n";
+					ss << "speech:\n" << unit.debugSpeech(true);
+					auto punText = descriptionBox->AddText(ss);
+					
+					FSlateFontInfo fontInfo = FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Bold.ttf"), 7);
+					punText->PunText->SetFont(fontInfo);
+					//punText->PunText->SetRenderScale(FVector2D(1.0f, 0.5));
+				}
 
 
-			// Animal Arrow to Home Province
-			if (!unit.isEnum(UnitEnum::Human) && unit.homeProvinceId() != -1)
-			{
-				WorldTile2 provinceCenter = simulation.GetProvinceCenterTile(unit.homeProvinceId());
-				dataSource()->ShowDeliveryArrow(dataSource()->DisplayLocation(unit.unitTile().worldAtom2()), 
-												dataSource()->DisplayLocation(provinceCenter.worldAtom2()));
+				// Animal Arrow to Home Province
+				if (!unit.isEnum(UnitEnum::Human) && unit.homeProvinceId() != -1)
+				{
+					WorldTile2 provinceCenter = simulation.GetProvinceCenterTile(unit.homeProvinceId());
+					dataSource()->ShowDeliveryArrow(dataSource()->DisplayLocation(unit.unitTile().worldAtom2()), 
+													dataSource()->DisplayLocation(provinceCenter.worldAtom2()));
+				}
 			}
 #endif
 

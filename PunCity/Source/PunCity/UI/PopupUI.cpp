@@ -42,7 +42,7 @@ void UPopupUI::Tick()
 		{
 			shouldPopup = true;
 			popupToDisplay->choices = { LOCTEXT("Close", "Close") };
-			popupToDisplay->replyReceiver = PopupReceiverEnum::None;
+			//popupToDisplay->replyReceiver = PopupReceiverEnum::None; // Why is this here?
 		}
 		if (shouldShowExclusive(ExclusiveUIEnum::ProsperityUI)) {
 			shouldPopup = true;

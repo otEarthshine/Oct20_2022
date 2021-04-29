@@ -132,6 +132,8 @@ public:
 
 	virtual bool AllPlayerHasTownhallAfterInitialTicks() = 0;
 
+	virtual int32 GetMinEraDisplay(CardEnum buildingEnum) = 0;
+
 	// Unit
 	virtual void ResetUnitActions(int id, int32 waitTicks = 1) = 0;
 	virtual int32 AddUnit(UnitEnum unitEnum, int32 townId, WorldAtom2 location, int32_t ageTicks) = 0;

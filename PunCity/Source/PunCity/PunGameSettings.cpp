@@ -136,6 +136,8 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "URO", 1 },
 	{ "URODebug", 0 },
 
+	{ "DebugFocusUI", 0 },
+
 	// Debug Network
 	{ "ForceDelayInput", 0 },
 	{ "FixedDeltaTime", 1 },

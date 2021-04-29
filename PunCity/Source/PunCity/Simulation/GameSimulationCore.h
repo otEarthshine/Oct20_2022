@@ -2380,6 +2380,10 @@ public:
 	std::vector<int32> connectedPlayerIds() final {
 		return _gameManager->connectedPlayerIds();
 	}
+
+	int32 GetMinEraDisplay(CardEnum buildingEnum) final {
+		return _gameManager->GetMinEraDisplay(buildingEnum);
+	}
 	
 
 	std::string armyNodeName(int32 nodeId) {

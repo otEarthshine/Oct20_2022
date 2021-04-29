@@ -604,14 +604,18 @@ public:
 
 	bool filledInputs() { return _filledInputs; }
 
+	virtual bool shouldAlwaysDisplayParticles() { return false; }
 	bool shouldDisplayParticles() {
 		if (SimSettings::IsOn("WorkAnimate")) {
 			return true;
 		}
-		if (IsProducer(_buildingEnum) && _workDone100 == 0) {
-			return false;
+		if (shouldAlwaysDisplayParticles()) {
+			return true;
 		}
-		return occupantCount() > 0 || isEnum(CardEnum::Townhall);
+		//if (IsProducer(_buildingEnum) && _workDone100 == 0) {
+		//	return false;
+		//}
+		return occupantCount() > 0;
 	}
 
 	int32 buildTime_ManSec100()

@@ -342,7 +342,7 @@ public:
 
 
 	TArray<TArray<ModuleTransformGroup>> buildingEnumToVariationToModuleTransforms() { return _buildingEnumToModuleGroups; }
-
+	int32 GetMinEraDisplay(CardEnum buildingEnum) { return _buildingEnumToMinEraModel[static_cast<int>(buildingEnum)]; }
 	
 
 	//UStaticMesh* unitMesh(UnitEnum unitEnum, int32 variationIndex = 0);
@@ -662,23 +662,28 @@ private:
 	void LoadAnimModule(FString moduleName, FString meshFile);
 
 
-	void LoadBuilding(CardEnum buildingEnum, FString moduleGroupName, FString moduleGroupFolderName, bool useOldMethod = false, ModuleTransformGroup auxGroup = ModuleTransformGroup()) {
-		TryLoadBuildingModuleSet(moduleGroupName, moduleGroupFolderName, useOldMethod);
+	void LoadBuilding(CardEnum buildingEnum, FString moduleGroupName, FString moduleGroupFolderName, bool useOldMethod = false, ModuleTransformGroup auxGroup = ModuleTransformGroup(), int32 minEra = 1) {
+		TryLoadBuildingModuleSet(moduleGroupName, moduleGroupFolderName, useOldMethod, buildingEnum);
+
+		auxGroup.particleInfos.insert(auxGroup.particleInfos.end(), _tempAuxGroup.particleInfos.begin(), _tempAuxGroup.particleInfos.end());
+		_tempAuxGroup = ModuleTransformGroup();
 
 		_buildingEnumToModuleGroups[static_cast<int>(buildingEnum)].Add(
 			ModuleTransformGroup::CreateSet(moduleGroupName, auxGroup)
 		);
+		_buildingEnumToMinEraModel[static_cast<int>(buildingEnum)] = minEra;
 	}
 	void LoadBuilding(CardEnum buildingEnum, FString moduleGroupPrefix, FString moduleGroupFolderPrefix, int32 minEra, int32 maxEra = 4, ModuleTransformGroup auxGroup = ModuleTransformGroup())
 	{
 		for (int32 i = minEra; i <= maxEra; i++) {
 			FString moduleGroupName = moduleGroupPrefix + FString::FromInt(i);
 			FString moduleGroupFolderName = moduleGroupFolderPrefix + FString::FromInt(i);
-			LoadBuilding(buildingEnum, moduleGroupPrefix + FString::FromInt(i), moduleGroupFolderPrefix + FString("/Era") + FString::FromInt(i), false, auxGroup);
+			LoadBuilding(buildingEnum, moduleGroupPrefix + FString::FromInt(i), moduleGroupFolderPrefix + FString("/Era") + FString::FromInt(i), 
+				false, auxGroup, minEra);
 		}
 		check(_buildingEnumToModuleGroups[static_cast<int>(buildingEnum)].Num() == (maxEra - minEra + 1));
 	}
-	void TryLoadBuildingModuleSet(FString moduleSetName, FString meshSetFolder, bool useOldMethod = true);
+	void TryLoadBuildingModuleSet(FString moduleSetName, FString meshSetFolder, bool useOldMethod = true, CardEnum buildingEnum = CardEnum::None);
 
 	
 
@@ -687,6 +692,14 @@ private:
 									std::string fruitMeshFile, std::string leafLowMeshFile, std::string leafShadowMeshFile, std::string stumpMeshFile);
 	void LoadTileObject(TileObjEnum treeEnum, std::vector<std::string> meshFiles);
 
+
+	/*
+	 * Mesh Processing
+	 */
+	void DetectMeshGroups(UStaticMesh* mesh, TArray<FVector>& vertexPositions);
+	
+	void DetectParticleSystemPosition(UStaticMesh* mesh);
+	
 	void PaintMeshForConstruction(FString moduleName);
 
 private:
@@ -696,6 +709,8 @@ private:
 	//UPROPERTY() TMap<FString, FBuildingAsset> _buildingNameToAsset;
 
 	TArray<TArray<ModuleTransformGroup>> _buildingEnumToModuleGroups;
+	TArray<int32> _buildingEnumToMinEraModel;
+	ModuleTransformGroup _tempAuxGroup; // Temp variable for particleSystem detection
 	
 	UPROPERTY() TArray<FString> _moduleNames;
 	UPROPERTY() TArray<FString> _animModuleNames;

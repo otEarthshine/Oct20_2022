@@ -3735,7 +3735,7 @@ void GameSimulationCore::SelectRareCard(FSelectRareCard command)
 			}
 		}
 		// Global Bonus Cards go straight to PlayerManager
-		else if (IsPermanentTownBonus(command.cardEnum)) {
+		else if (IsPermanentGlobalBonus(command.cardEnum)) {
 			playerOwned(command.playerId).AddGlobalBonus(command.cardEnum);
 			cardSys.DoneSelectRareHand();
 		}

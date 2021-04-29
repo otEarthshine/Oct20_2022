@@ -135,6 +135,8 @@ public:
 	void OnTick1Sec() override;
 
 	int32 maxTradeQuatity() override { return 80; }
+
+	bool shouldAlwaysDisplayParticles() override { return true; }
 	
 public:
 	// Migration

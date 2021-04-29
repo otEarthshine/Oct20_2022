@@ -155,7 +155,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	 * Building Modules
 	 */
 	_buildingEnumToModuleGroups.SetNum(BuildingEnumCount);
-
+	_buildingEnumToMinEraModel.SetNum(BuildingEnumCount);
 	
 	LoadBuilding(CardEnum::FruitGatherer, "Fruit_GathererEra", "FruitGatherer", 1);
 	LoadBuilding(CardEnum::Bank, "Bank_Era", "Bank/Era", 3);
@@ -183,13 +183,14 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	LoadBuilding(CardEnum::Library, "Library_Era", "Library", 2, 2);
 	LoadBuilding(CardEnum::Theatre, "Theatre_Era_", "Theatre", 3);
-	LoadBuilding(CardEnum::Tavern, "TavernEra", "Tavern", 3);
+	LoadBuilding(CardEnum::Tavern, "TavernEra", "Tavern", 1);
 	LoadBuilding(CardEnum::Tailor, "TailorEra", "Tailor", 2);
 
 	LoadBuilding(CardEnum::ClayPit, "ClayPit_Era", "ClayPit", 2);
 	LoadBuilding(CardEnum::Potter, "potterEra", "Potter", 1);
 
 	LoadBuilding(CardEnum::TradingPort, "TradingPort_Era", "TradingPort", 1);
+	LoadBuilding(CardEnum::TradingPost, "TradingPost_Era", "TradingPost", 1);
 
 	LoadBuilding(CardEnum::CardMaker, "Scholars_Office_Era_", "ScholarsOffice", 4);
 
@@ -220,15 +221,15 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::Granary, "GRANARY_ERA", "Granary", 2);
 
 	LoadBuilding(CardEnum::SandMine, "SandMine_Era", "SandMine", 3);
-	LoadBuilding(CardEnum::Glassworks, "SandMine_Era", "SandMine", 3);
+	LoadBuilding(CardEnum::Glassworks, "GlassWorks_Era", "GlassWorks", 3);
 	LoadBuilding(CardEnum::ConcreteFactory, "concretefactoryERA", "ConcreteFactory", 4);
 	
 	LoadBuilding(CardEnum::CoalPowerPlant, "coalpowerplant", "CoalPowerPlant/Era4");
-	/**/LoadBuilding(CardEnum::Steelworks, "coalpowerplant", "CoalPowerPlant/Era4");
+	LoadBuilding(CardEnum::Steelworks, "SteelworksEra", "Steelworks");
 	LoadBuilding(CardEnum::OilRig, "OilWell_Era", "OilWell/Era4");
 	LoadBuilding(CardEnum::OilPowerPlant, "oilpowerplant", "OilWell");
-	/**/LoadBuilding(CardEnum::PaperMill, "coalpowerplant", "CoalPowerPlant/Era4");
-	/**/LoadBuilding(CardEnum::ClockMakers, "coalpowerplant", "CoalPowerPlant/Era4");
+	LoadBuilding(CardEnum::PaperMill, "PaperMill_PaperMill_Era4", "PaperMill");
+	LoadBuilding(CardEnum::ClockMakers, "Clock_Maker_Era", "ClockMaker");
 
 	LoadBuilding(CardEnum::Cathedral, "Cathedral_Era2", "Cathedral");
 	LoadBuilding(CardEnum::Castle, "TownhallLvl5", "TownhallLvl5", true);
@@ -239,13 +240,12 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::JobManagementBureau, "Employment_Bureau_Era_", "EmploymentBureau", 1);
 
 	// Test Townhall
-	LoadBuilding(CardEnum::Townhall, "Townhall_Era2", "Townhall/Era2", false, ModuleTransformGroup::CreateAuxSet(
+	LoadBuilding(CardEnum::Townhall, "Townhall_Era1", "Townhall/Era1", false, ModuleTransformGroup::CreateAuxSet(
 		{
-			{ParticleEnum::Smoke, TransformFromPosition(51.6, -24.3, 38.8)},
-			{ParticleEnum::CampFire, TransformFromPositionYawScale(-2.75, 9.9, 1.85, 0, 0.17)}
+			{ParticleEnum::CampFire, TransformFromPositionYawScale(-10.7, 14.6, 1.85, 0, 0.17)}
 		},
 		{}, {},
-		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-2.3, 10.2, 8.5), FVector::OneVector} }
+		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-10.7, 14.6, 8.5), FVector::OneVector} }
 	));
 	LoadBuilding(CardEnum::Townhall, "Townhall_Era2", "Townhall/Era2", false, ModuleTransformGroup::CreateAuxSet(
 		{
@@ -529,11 +529,37 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 		_cardIcons.Add(static_cast<int32>(cardEnum), LoadF<UTexture2D>(FString("/Game/UI/Images/CardImages/") + iconFileName));
 	};
 	addCardIcon(CardEnum::None, "CardNone");
-	addCardIcon(CardEnum::ProductivityBook, "CardBook");
-	addCardIcon(CardEnum::FrugalityBook, "CardBook");
-	addCardIcon(CardEnum::SustainabilityBook, "CardBook");
-	addCardIcon(CardEnum::Motivation, "CardBook");
-	addCardIcon(CardEnum::Passion, "CardBook");
+
+	addCardIcon(CardEnum::AllYouCanEat, "All_you_can_eat");
+	addCardIcon(CardEnum::BeerTax, "Beer_Tex");
+	addCardIcon(CardEnum::BirthControl, "Birth_Control");
+	addCardIcon(CardEnum::CabbageSeed, "Cabbage_seeds");
+	addCardIcon(CardEnum::Cannibalism, "Cannibalism");
+	addCardIcon(CardEnum::ChimneyRestrictor, "ChimneyRestrictorCard_CD_02_v001");
+	addCardIcon(CardEnum::CoalTreatment, "CoalTrestment");
+	addCardIcon(CardEnum::CooperativeFishing, "cooperative_fishing");
+	addCardIcon(CardEnum::FrugalityBook, "Frugality");
+	addCardIcon(CardEnum::BorealGoldOil, "BorealGold_Oil");
+	addCardIcon(CardEnum::HomeBrew, "Home_Brew");
+	addCardIcon(CardEnum::Investment, "Investment");
+	addCardIcon(CardEnum::Kidnap, "Kidnap");
+	addCardIcon(CardEnum::MasterBrewer, "Master_Brewer");
+	addCardIcon(CardEnum::MasterPotter, "master_potter");
+	addCardIcon(CardEnum::HerbSeed, "Medicinal_Herb_Farming");
+	addCardIcon(CardEnum::Motivation, "Motivation");
+	addCardIcon(CardEnum::JungleMushroom, "JungleMushroom");
+	addCardIcon(CardEnum::Passion, "Passion");
+	addCardIcon(CardEnum::BorealPineForesting, "BorealPine_Lumber");
+
+	addCardIcon(CardEnum::ProductivityBook, "Productivity");
+	addCardIcon(CardEnum::SlaveLabor, "Slave_Labor");
+	addCardIcon(CardEnum::SocialWelfare, "Social_Welfare");
+	addCardIcon(CardEnum::SustainabilityBook, "Sustainability");
+	addCardIcon(CardEnum::WheatSeed, "Wheat_Seeds");
+
+
+	//BorealFishing
+	//BorealWinterResistant
 
 	// Army Icons
 	auto addArmyIcon = [&](std::string iconName) {
@@ -746,7 +772,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadResource2(ResourceEnum::Concrete, "Concrete/Concrete");
 	LoadResource2(ResourceEnum::SteelBeam, "SteelBeam/SteelBeam");
 	LoadResource2(ResourceEnum::Glassware, "Glassware/Glassware");
-	// PocketWatch
+	LoadResource2(ResourceEnum::PocketWatch, "PocketWatch/Pocketwatch");
 	
 	//LoadResource2(ResourceEnum::Oyster, "Pottery/Pottery");
 	//LoadResource2(ResourceEnum::Truffle, "Pottery/Pottery");
@@ -1115,7 +1141,7 @@ void UAssetLoaderComponent::LoadAnimModule(FString moduleName, FString meshFile)
 	_animModuleNames.Add(moduleName);
 }
 
-void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FString meshSetFolder, bool useOldMethod)
+void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FString meshSetFolder, bool useOldMethod, CardEnum buildingEnum)
 {
 	const FString buildingPath = "Models/Buildings/";
 	IPlatformFile& platformFile = FPlatformFileManager::Get().GetPlatformFile();
@@ -1278,6 +1304,10 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 					FString moduleName = moduleSetName + "WorkShaderAnimate";
 					_moduleNameToMesh.Add(moduleName, mesh);
 					_animModuleNames.Add(moduleName);
+				}
+				if (foundFiles[i].Contains("_Smoke")) {
+					const auto mesh = loadMesh(i);
+					DetectParticleSystemPosition(mesh);
 				}
 			}
 		}
@@ -1506,6 +1536,242 @@ void UAssetLoaderComponent::TraverseTris(uint32 mergedVertIndex, int32 groupInde
 	}
 };
 
+void UAssetLoaderComponent::DetectParticleSystemPosition(UStaticMesh* mesh)
+{
+	TArray<FVector> vertexPositions;
+	
+	isPrinting = true;
+	DetectMeshGroups(mesh, vertexPositions);
+	isPrinting = false;
+
+	_tempAuxGroup = ModuleTransformGroup();
+	
+	for (const auto& it : groupIndexToConnectedVertIndices) {
+		PUN_LOG(" group:%d", it.first);
+		FVector averagePosition = FVector::ZeroVector;
+		for (int32 vertIndex : it.second) {
+			PUN_LOG("  vertIndex:%d %s", vertIndex, *vertexPositions[vertIndex].ToCompactString());
+			averagePosition += vertexPositions[vertIndex];
+		}
+		averagePosition = averagePosition / it.second.size();
+
+		_tempAuxGroup.particleInfos.push_back({ ParticleEnum::Smoke, FTransform(averagePosition) });
+	}
+}
+
+void UAssetLoaderComponent::DetectMeshGroups(UStaticMesh* mesh, TArray<FVector>& vertexPositions)
+{
+	// TODO: use this for Paint Mesh?
+	const uint32 meshLODIndex = 0;
+	if (mesh->IsSourceModelValid(meshLODIndex) &&
+		mesh->GetSourceModel(meshLODIndex).IsRawMeshEmpty() == false)
+	{
+		// Extract the raw mesh.
+		FRawMesh rawMesh;
+		mesh->GetSourceModel(meshLODIndex).LoadRawMesh(rawMesh);
+
+		// Reserve space for the new vertex colors.
+		if (rawMesh.WedgeColors.Num() == 0 || rawMesh.WedgeColors.Num() != rawMesh.WedgeIndices.Num())
+		{
+			rawMesh.WedgeColors.Empty(rawMesh.WedgeIndices.Num());
+			rawMesh.WedgeColors.AddUninitialized(rawMesh.WedgeIndices.Num());
+		}
+
+		// ---------------
+
+		stringstream ss;
+
+		vertexPositions = rawMesh.VertexPositions;
+		const TArray<uint32>& wedgeIndices = rawMesh.WedgeIndices;
+		int32 vertexCount = vertexPositions.Num();
+		int32 indexCount = wedgeIndices.Num();
+
+		//PUN_LOG("Start Painting");
+
+		auto vertToString = [&](int32 vertIndex) -> FString {
+			return vertexPositions[vertIndex].ToCompactString();
+		};
+
+		// Print Vertices
+		if (isPrinting) {
+			PUN_LOG("Print Vertices:");
+			for (int32 i = 0; i < vertexCount; i++) {
+				PUN_LOG(" %s", *vertToString(i));
+			}
+		}
+
+
+		/*
+		 * Merge nearby vertices
+		 */
+		{
+			mergedVertIndexToVertIndices.clear();
+			vertIndexToMergedVertIndex.clear();
+			vertIndexToMergedVertIndex.resize(vertexCount, 0);
+
+
+			processedVertices.Empty();
+			processedVertices.SetNumZeroed(vertexCount);
+
+			if (isPrinting) PUN_LOG("Merge nearby vertices");
+
+			for (int i = 0; i < vertexCount; i++)
+			{
+				if (isPrinting) PUN_LOG(" i = %d", i);
+
+				if (!processedVertices[i])
+				{
+					processedVertices[i] = true;
+					mergedVertIndexToVertIndices[i].push_back(i);
+					vertIndexToMergedVertIndex[i] = i;
+
+					if (isPrinting) PUN_LOG(" i,i groupIndexToVertIndices_PositionMerge[%d].push_back(%d)", i, i);
+
+					// Add any vertex with the same position
+					// This is because UE4 import sometimes split up the geometry...
+					for (int j = i + 1; j < vertexCount; j++) {
+						if (!processedVertices[j] &&
+							vertexPositions[i].Equals(vertexPositions[j], 0.01f))
+						{
+							processedVertices[j] = true;
+							mergedVertIndexToVertIndices[i].push_back(j);
+							vertIndexToMergedVertIndex[j] = i;
+
+							if (isPrinting) PUN_LOG(" i,j groupIndexToVertIndices_PositionMerge[%d].push_back(%d)", i, j);
+						}
+					}
+				}
+			}
+
+
+			PUN_LOG("Position Merge Group Count:%d vertCount:%d", mergedVertIndexToVertIndices.size(), vertexCount);
+
+			if (isPrinting)
+			{
+				PUN_LOG("________");
+				PUN_LOG("Print mergedVertIndexToVertIndices size:%d", mergedVertIndexToVertIndices.size());
+				for (const auto& it : mergedVertIndexToVertIndices) {
+					PUN_LOG(" mergedVertIndex:%d", it.first);
+					for (int32 vertIndex : it.second) {
+						PUN_LOG("  vertIndex:%d %s", vertIndex, *vertToString(vertIndex));
+					}
+				}
+			}
+		}
+
+
+		/*
+		 * Generate vertIndexToConnectedTrisIndices
+		 */
+		vertIndexToConnectedTrisIndices.clear();
+
+		for (int indexBufferI = 0; indexBufferI < indexCount; indexBufferI++)
+		{
+			int32 vertIndex = wedgeIndices[indexBufferI];
+			vertIndexToConnectedTrisIndices[vertIndex].push_back(indexBufferI);
+
+			if (isPrinting) PUN_LOG("- indexI:%d vertIndex:%d vertIndexToConnectedTrisIndices.size:%d", indexBufferI, vertIndex, vertIndexToConnectedTrisIndices.size());
+		}
+
+		if (isPrinting)
+		{
+			PUN_LOG("________");
+			PUN_LOG("Print vertIndexToConnectedTrisIndices size:%d", vertIndexToConnectedTrisIndices.size());
+			for (const auto& it : vertIndexToConnectedTrisIndices)
+			{
+				PUN_LOG(" vertIndex:%d %s", it.first, *vertToString(it.first));
+				for (int32 trisIndex : it.second) {
+					PUN_CHECK(trisIndex < wedgeIndices.Num());
+					int32 connectedVertIndex = wedgeIndices[trisIndex];
+					PUN_LOG("  trisIndex:%d vertIndex:%d %s", trisIndex, connectedVertIndex, *vertToString(connectedVertIndex));
+				}
+			}
+		}
+
+		// How much average tris connected to vert?
+		{
+			int32 total = 0;
+			for (const auto& it : vertIndexToConnectedTrisIndices) {
+				total += it.second.size();
+			}
+			PUN_LOG("Average trisIndices per Vert: %f", static_cast<float>(total) / vertIndexToConnectedTrisIndices.size());
+		}
+
+		/*
+		 * Merge into mergedVertIndexToConnectedTrisIndices
+		 *  - Allow for easy traversal to other vertIndex via tris
+		 */
+		mergedVertIndexToConnectedTrisIndices.clear();
+
+		for (const auto& it : mergedVertIndexToVertIndices)
+		{
+			for (int32 vertIndex : it.second) {
+				const vector<int32>& trisIndices = vertIndexToConnectedTrisIndices[vertIndex];
+				vector<int32>& result = mergedVertIndexToConnectedTrisIndices[it.first];
+				result.insert(result.end(), trisIndices.begin(), trisIndices.end());
+			}
+		}
+
+		if (isPrinting)
+		{
+			PUN_LOG("________");
+			PUN_LOG("Print mergedVertIndexToConnectedTrisIndices num:%d", mergedVertIndexToConnectedTrisIndices.size());
+			for (const auto& it : mergedVertIndexToConnectedTrisIndices) {
+				PUN_LOG(" mergedVertIndex:%d", it.first);
+				for (int32 trisIndex : it.second) {
+					PUN_CHECK(trisIndex < wedgeIndices.Num());
+					int32 vertIndex = wedgeIndices[trisIndex];
+					PUN_LOG(" trisIndex:%d vertIndex:%d %s", trisIndex, vertIndex, *vertToString(vertIndex));
+				}
+			}
+		}
+
+
+		/*
+		 * Traverse tris to merge
+		 */
+		{
+			processedVertices.Empty();
+			processedVertices.SetNumZeroed(vertexCount);
+
+			groupIndexToConnectedVertIndices.clear();
+
+			if (isPrinting) PUN_LOG("Traverse Tris");
+
+			for (const auto& it : mergedVertIndexToVertIndices) {
+				if (isPrinting) PUN_LOG(" groupIndex:%d", it.first);
+
+				TraverseTris(it.first, it.first, wedgeIndices, vertexPositions);
+			}
+		}
+
+		// Check vertexCount to ensure no group has duplicate vertIndex
+		{
+			int32 vertCount = 0;
+			for (const auto& it : groupIndexToConnectedVertIndices) {
+				vertCount += it.second.size();
+			}
+			PUN_CHECK(vertCount <= vertexCount);
+		}
+
+		// Print groupIndexToConnectedVertIndices
+		if (isPrinting)
+		{
+			PUN_LOG("________");
+			PUN_LOG("Print groupIndexToConnectedVertIndices size:%d", groupIndexToConnectedVertIndices.size());
+			for (const auto& it : groupIndexToConnectedVertIndices) {
+				PUN_LOG(" groupIndex:%d", it.first);
+				const auto& vertIndices = it.second;
+				for (int32 vertIndex : vertIndices) {
+					PUN_LOG("  vertIndex:%d pos:%s", vertIndex, *vertToString(vertIndex));
+				}
+			}
+		}
+
+		PUN_LOG("Group Count %d", groupIndexToConnectedVertIndices.size());
+	}
+}
+
 void UAssetLoaderComponent::PaintMeshForConstruction(FString moduleName)
 {
 #if WITH_EDITOR
@@ -1515,8 +1781,6 @@ void UAssetLoaderComponent::PaintMeshForConstruction(FString moduleName)
 
 	UStaticMesh* mesh = _moduleNameToMesh[moduleName];
 
-	//FPlatformProcess::Sleep(0.5f);
-	
 	PUN_LOG("!!! Start Paint !!! UpdateRHIConstructionMesh");
 
 	/*
@@ -1731,6 +1995,8 @@ void UAssetLoaderComponent::PaintMeshForConstruction(FString moduleName)
 		PUN_LOG("Group Count %d", groupIndexToConnectedVertIndices.size());
 
 
+
+		
 		/*
 		 * Build meshGroupInfo list sorted by submesh's lowest height
 		 */

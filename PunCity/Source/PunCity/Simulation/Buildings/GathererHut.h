@@ -830,6 +830,9 @@ public:
 class CoalPowerPlant final : public Building
 {
 public:
+
+
+	
 };
 
 class Steelworks final : public Building
@@ -1204,6 +1207,7 @@ public:
 
 	static const int32 MinHouseLvl = 2;
 
+	bool shouldAlwaysDisplayParticles() override { return true; }
 };
 
 
@@ -1211,6 +1215,8 @@ class Tavern final : public FunBuilding
 {
 public:
 	static const int32 Radius = 30;
+
+	bool shouldAlwaysDisplayParticles() override { return true; }
 };
 
 

@@ -105,7 +105,6 @@ void UnlockSystem::Research(int64 science100PerRound, int32 updatesPerSec)
 			LOCTEXT("Show tech tree", "Show tech tree"),
 			LOCTEXT("Close", "Close")
 		};
-		PopupReceiverEnum receiver = PopupReceiverEnum::DoneResearchEvent_ShowTree;
 
 
 		auto unlockEra = [&](PopupReceiverEnum popupReceiver, FText mainMessage)
@@ -113,6 +112,20 @@ void UnlockSystem::Research(int64 science100PerRound, int32 updatesPerSec)
 			TArray<FText> args;
 			args.Add(mainMessage);
 			OnEraUnlocked(args, GetEra());
+
+			// Reset all building's display
+			const std::vector<int32>& townIds = _simulation->GetTownIds(_playerId);
+			for (int32 townId : townIds) {
+				for (int32 i = 0; i < BuildingEnumCount; i++) {
+					CardEnum buildingEnum = static_cast<CardEnum>(i);
+					if (IsAutoUpgrade(buildingEnum)) {
+						const std::vector<int32>& buildingIds = _simulation->buildingIds(townId, buildingEnum);
+						for (int32 buildingId : buildingIds) {
+							_simulation->building(buildingId).ResetDisplay();
+						}
+					}
+				}
+			}
 			
 			PopupInfo popup(_playerId, JOINTEXT(args), {}, popupReceiver);
 			popup.warningForExclusiveUI = ExclusiveUIEnum::TechTreeUI;
@@ -146,7 +159,7 @@ void UnlockSystem::Research(int64 science100PerRound, int32 updatesPerSec)
 		{
 			PopupInfo popupInfo(_playerId, 
 				LOCTEXT("Research Completed.", "Research Completed."), 
-				choices, receiver, true
+				choices, PopupReceiverEnum::None, true
 			);
 			popupInfo.warningForExclusiveUI = ExclusiveUIEnum::TechTreeUI;
 			popupInfo.forcedSkipNetworking = true;

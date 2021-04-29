@@ -368,14 +368,6 @@ public:
 		});
 
 
-		//set(CardEnum::MushroomFarm, {
-		//	ModuleTransformGroup::CreateSet("MushroomHut", {}, {},
-		//		{
-		//			ModuleTransform("MushroomHutWorkShaderAnimate", FTransform::Identity, 0.0f, ModuleTypeEnum::ShaderAnimate),
-		//		}
-		//	)
-		//});
-
 		set(CardEnum::Fence, {
 			ModuleTransformGroup({ ModuleTransform("FenceFour", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
 			ModuleTransformGroup({ ModuleTransform("FenceThree", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),

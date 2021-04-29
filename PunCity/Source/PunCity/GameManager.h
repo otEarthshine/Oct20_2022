@@ -546,6 +546,10 @@ public:
 		return  _simulation->IsFrontBuildable(tile) ||
 				_simulation->IsCritterBuilding(tile);
 	}
+
+	int32 GetMinEraDisplay(CardEnum buildingEnum) const final {
+		return _assetLoader->GetMinEraDisplay(buildingEnum);
+	}
 	
 
 	//bool IsGeobuildable(int32_t x, int32_t y) const final {

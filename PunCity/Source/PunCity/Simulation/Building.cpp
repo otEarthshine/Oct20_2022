@@ -601,7 +601,6 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& 
 			PUN_CHECK(moneyNeeded == 0);
 			resourceSystem().RemoveResourceGlobal(resourceNeeded.resourceEnum, resourceNeeded.count);
 
-			BuildingUpgrade& upgrade = _upgrades[upgradeIndex];
 			if (upgrade.isEraUpgrade()) {
 				if (upgrade.upgradeLevel < upgrade.maxUpgradeLevel()) {
 					upgrade.upgradeLevel++;
@@ -1292,7 +1291,9 @@ BuildingUpgrade Building::MakeComboUpgrade(FText name, ResourceEnum resourceEnum
 
 int32 Building::displayVariationIndex() {
 	if (IsAutoUpgrade(buildingEnum())) {
-		return _simulation->unlockSystem(_playerId)->GetEra() - 1;
+		int32 variationIndex = _simulation->unlockSystem(_playerId)->GetEra() - _simulation->GetMinEraDisplay(_buildingEnum);
+		variationIndex = max(variationIndex, 0);
+		return variationIndex;
 	}
 	return GetEraUpgradeCount();
 }

@@ -163,7 +163,7 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		CASE_BUILDING(CardEnum::SmallMarket, SmallMarket);
 		CASE_BUILDING(CardEnum::PaperMaker, PaperMaker);
 
-		CASE_BUILDING(CardEnum::StoneToolShopOld, StoneToolShop);
+		CASE_BUILDING(CardEnum::StoneToolShopOld, StoneToolsShop);
 		CASE_BUILDING(CardEnum::Blacksmith, Blacksmith);
 		CASE_BUILDING(CardEnum::Herbalist, Herbalist);
 		CASE_BUILDING(CardEnum::MedicineMaker, MedicineMaker);
@@ -225,14 +225,14 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		CASE_BUILDING(CardEnum::CoalPowerPlant, CoalPowerPlant);
 		CASE_BUILDING(CardEnum::Steelworks, Steelworks);
 		CASE_BUILDING(CardEnum::StoneToolsShop, StoneToolsShop);
-		CASE_BUILDING(CardEnum::OilRig, OilWell);
+		CASE_BUILDING(CardEnum::OilRig, OilRig);
 		CASE_BUILDING(CardEnum::OilPowerPlant, OilPowerPlant);
 		CASE_BUILDING(CardEnum::PaperMill, PaperMill);
 		CASE_BUILDING(CardEnum::ClockMakers, ClockMakers);
 
 		CASE_BUILDING(CardEnum::Cathedral, Cathedral);
 		CASE_BUILDING(CardEnum::Castle, Castle);
-		CASE_BUILDING(CardEnum::GrandMuseum, GrandMuseum);
+		CASE_BUILDING(CardEnum::GrandPalace, GrandMuseum);
 		CASE_BUILDING(CardEnum::ExhibitionHall, ExhibitionHall);
 
 

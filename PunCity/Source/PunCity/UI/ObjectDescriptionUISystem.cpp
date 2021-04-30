@@ -4488,17 +4488,19 @@ void UObjectDescriptionUISystem::AddTradeFeeText(TradeBuilding& building, UPunBo
 {
 	const FText tradingFeeText = LOCTEXT("Trade Fee:", "Trade Fee:");
 	
-	auto feeText = descriptionBox->AddRichText(tradingFeeText, TEXT_PERCENT(building.tradingFeePercent()));
+	auto feeText = descriptionBox->AddRichText(tradingFeeText, TEXT_PERCENT(building.baseTradingFeePercent()));
 
 	// Tip
 	TArray<FText> args;
 	ADDTEXT_(INVTEXT("<Bold>{0}</>\n"), tradingFeeText);
-	ADDTEXT_(LOCTEXT("base {0}%\n", "base {0}%\n"), TEXT_NUM(building.baseTradingFeePercent()));
+	ADDTEXT_(LOCTEXT("base {0}%\n", "base {0}%\n"), TEXT_NUM(building.baseFixedTradingFeePercent()));
 	std::vector<BonusPair> bonuses = building.GetTradingFeeBonuses();
 	for (const auto& bonus : bonuses) {
 		ADDTEXT_(INVTEXT("{0}% {1}\n"), TEXT_NUM(bonus.value), bonus.name);
 	}
 	AddToolTip(feeText, args);
+
+	// TODO: Resource Fee
 }
 
 

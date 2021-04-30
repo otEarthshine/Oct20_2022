@@ -205,7 +205,8 @@ public:
 
 	virtual const std::vector<int32>& buildingIds(int32 townId, CardEnum buildingEnum) = 0;
 	virtual int32 buildingCount(int32 townId, CardEnum buildingEnum) = 0;
-	virtual int32 buildingFinishedCount(int32 townId, CardEnum cardEnum) = 0;
+	virtual int32 townBuildingFinishedCount(int32 townId, CardEnum cardEnum) = 0;
+	virtual int32 playerBuildingFinishedCount(int32 playerId, CardEnum cardEnum) = 0;
 
 	virtual int32 jobBuildingCount(int32 townId) = 0;
 	
@@ -512,6 +513,9 @@ public:
 	virtual int32 BoughtCardCount(int32 playerId, CardEnum buildingEnum) = 0;
 	virtual int32 TownhallCardCountTown(int32 townId, CardEnum cardEnum) = 0;
 	virtual int32 TownhallCardCountAll(int32 playerId, CardEnum cardEnum) = 0;
+
+	virtual int32 HasTownBonus(int32 townId, CardEnum cardEnum) = 0;
+	virtual int32 HasGlobalBonus(int32 playerId, CardEnum cardEnum) = 0;
 	
 	virtual bool HasCardInAnyPile(int32 playerId, CardEnum cardEnum) = 0;
 	

@@ -313,11 +313,6 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 	/*
 	 * Prosperity Tech
 	 */
-	{ TechEnum::Rationalism, {
-		LOCTEXT("Rationalism", "Rationalism"),
-		LOCTEXT("Rationalism Desc", "+30% Science Output"),
-	}},
-
 	{ TechEnum::InfluencePoints, {
 		LOCTEXT("Influence Points", "Influence Points"),
 		LOCTEXT("Influence Points Desc", "Unlock Influence Points <img id=\"Influence\"/> used to claim land."),
@@ -1015,7 +1010,6 @@ public:
 			AddProsperityTech_Building(column, 10, TechEnum::InventorsWorkshop, CardEnum::InventorsWorkshop);
 			AddProsperityTech_Bonus(column, 14, TechEnum::IndustrialAdjacency);
 			AddProsperityTech_Building(column, 4, TechEnum::Castle, CardEnum::Castle);
-			//AddProsperityTech_Bonus(column, 14, TechEnum::Rationalism);
 			
 			column = 5;
 			AddProsperityTech_Building(column, 10, TechEnum::Garden, CardEnum::Garden);

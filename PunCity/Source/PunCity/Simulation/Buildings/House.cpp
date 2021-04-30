@@ -46,6 +46,11 @@ void House::GetHeatingEfficiencyTip(TArray<FText>& args, ResourceEnum resourceEn
 	if (_simulation->TownhallCardCountTown(_townId, CardEnum::ChimneyRestrictor)) {
 		ADDTEXT_LOCTEXT("ChimneyRestrictor Bonus", " +15% Chimney Restrictor\n");
 	}
+	if (_simulation->HasTownBonus(_townId, CardEnum::BorealWinterResist)) {
+		ADDTEXT_LOCTEXT("Winter Resistance Bonus", " +15% Winter Resistance\n");
+	}
+
+	
 	if (IsUpgraded(0)) {
 		ADDTEXT_LOCTEXT("StoneInsulation Bonus", " +20% Stone Insulation\n");
 	}
@@ -59,24 +64,6 @@ void House::GetHeatingEfficiencyTip(TArray<FText>& args, ResourceEnum resourceEn
 		}
 		ADDTEXT_LOCTEXT("CoalUsage Bonus", " x2 Coal Usage\n");
 	}
-
-	//ss << ResourceName(resourceEnum) << " Heating Efficiency: " << GetHeatingEfficiency(resourceEnum) << "%<space>";
-	//if (_simulation->TownhallCardCount(_playerId, CardEnum::ChimneyRestrictor)) {
-	//	ss << " +15% Chimney Restrictor\n";
-	//}
-	//if (IsUpgraded(0)) {
-	//	ss << " +20% Stone Insulation\n";
-	//}
-	//if (IsUpgraded(1)) {
-	//	ss << " +30% Brick Insulation\n";
-	//}
-
-	//if (resourceEnum == ResourceEnum::Coal) {
-	//	if (_simulation->TownhallCardCount(_playerId, CardEnum::CoalTreatment)) {
-	//		ss << " +20% Coal Treatment\n";
-	//	}
-	//	ss << " x2 Coal Usage\n";
-	//}
 }
 
 
@@ -278,8 +265,13 @@ int32 House::GetIncome100(IncomeEnum incomeEnum)
 	case IncomeEnum::Adjacency:
 		return occupancyFactor(adjacentBonusCount() * 100);
 
-	case IncomeEnum::Luxury:
-		return _roundLuxuryConsumption100 * 4 / 10; // 40% of lux goes to income
+	case IncomeEnum::Luxury: {
+		int32 luxuryIncome = _roundLuxuryConsumption100 * 4 / 10;
+		if (_simulation->HasGlobalBonus(_playerId, CardEnum::Capitalism)) {
+			luxuryIncome *= 2;
+		}
+		return luxuryIncome; // 40% of lux goes to income
+	}
 
 	case IncomeEnum::Card_BeerTax: {
 		if (_simulation->TownhallCardCountTown(_townId, CardEnum::BeerTax) > 0) {
@@ -594,6 +586,8 @@ void Ranch::OnDeinit()
 	}
 	_animalOccupants.clear();
 }
+
+
 
 
 #undef LOCTEXT_NAMESPACE

@@ -141,7 +141,7 @@ void UWorldTradeUI::UpdateTotal()
 	auto& worldTradeSystem = simulation().worldTradeSystem();
 	Building& tradeBuilding = simulation().building(punId);
 
-	int32 tradeFeePercent = tradeBuilding.tradingFeePercent();
+	int32 baseTradeFeePercent = tradeBuilding.baseTradingFeePercent();
 	int32 maxQuantity = tradeBuilding.maxTradeQuatity();
 
 	int32 buyMoneyBeforeFee = 0;
@@ -152,11 +152,15 @@ void UWorldTradeUI::UpdateTotal()
 	int32 totalFee100 = 0;
 	TArray<UWidget*> tradeRows = WorldTradeRowBox->GetAllChildren();
 	
-	for (int32 i = 0; i < tradeRows.Num(); i++) 
+	for (int32 i = 0; i < tradeRows.Num(); i++)
 	{
 		auto tradeRow = CastChecked<UWorldTradeRow>(tradeRows[i]);
+		ResourceEnum tradeResourceEnum = tradeRow->resourceEnum();
+		
+		int32 tradeMoney100BeforeFee = tradeRow->buyAmount() * worldTradeSystem.price100(tradeResourceEnum);
 
-		int32 tradeMoney100BeforeFee = tradeRow->buyAmount() * worldTradeSystem.price100(tradeRow->resourceEnum());
+		int32 tradeFeePercent = tradeBuilding.tradingFeePercent(baseTradeFeePercent, tradeResourceEnum);
+		
 		int32 tradeFee100 = abs(tradeMoney100BeforeFee) * tradeFeePercent / 100;
 		int32 tradeMoney100AfterFee = tradeMoney100BeforeFee + tradeFee100;
 
@@ -187,7 +191,7 @@ void UWorldTradeUI::UpdateTotal()
 	SetFString(QuantityText, FString::FromInt(_quantity) + "/" + FString::FromInt(maxQuantity));
 	QuantityText->SetColorAndOpacity(_quantity <= maxQuantity ? FLinearColor::White : FLinearColor::Red);
 
-	SetText(FeePercentText, to_string(tradeFeePercent) + "%");
+	SetText(FeePercentText, to_string(baseTradeFeePercent) + "%");
 
 	BuyMoney->SetImage(assetLoader()->CoinIcon);
 	BuyMoney->SetFString(FString::FromInt(abs(-buyMoneyBeforeFee)), "");

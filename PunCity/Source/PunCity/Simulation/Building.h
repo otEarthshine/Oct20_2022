@@ -220,6 +220,12 @@ public:
 	}
 	virtual WorldTile2 gateTile() { return gateTileFromDirection(_faceDirection); }
 
+
+	BiomeEnum centerBiomeEnum() {
+		return _simulation->GetBiomeEnum(centerTile());
+	}
+	
+
 	// Go nearby the building (like to construct building)
 	// TODO: need testing???
 	WorldTile2 adjacentTileNearestTo(WorldTile2 start, int32 maxRegionDistance)
@@ -1097,6 +1103,16 @@ public:
 	}
 
 	virtual std::vector<BonusPair> GetBonuses();
+	int32 GetTotalBonus()
+	{
+		int32 total = 0;
+		std::vector<BonusPair> bonuses = GetBonuses();
+		for (BonusPair bonus : bonuses) {
+			total += bonus.value;
+		}
+		return total;
+	}
+	
 
 	int32 GetAppealPercent();
 
@@ -1199,10 +1215,10 @@ public:
 	/*
 	 * Trading
 	 */
-	static int32 baseTradingFeePercent() { return 35; }
-	int32 tradingFeePercent()
+	static int32 baseFixedTradingFeePercent() { return 35; }
+	int32 baseTradingFeePercent()
 	{
-		int32 tradeFeePercent = baseTradingFeePercent();
+		int32 tradeFeePercent = baseFixedTradingFeePercent();
 
 		std::vector<BonusPair> bonuses = GetTradingFeeBonuses();
 		for (const BonusPair& bonus : bonuses) {
@@ -1216,6 +1232,28 @@ public:
 	virtual int32 maxTradeQuatity() { return 0; }
 	
 	std::vector<BonusPair> GetTradingFeeBonuses();
+
+	int32 tradingFeePercent(int32 baseTradingFeePercent, ResourceEnum resourceEnum)
+	{
+		int32 tradeFeePercent = baseTradingFeePercent;
+		if (centerBiomeEnum() == BiomeEnum::Desert) {
+			if (_simulation->HasTownBonus(townId(), CardEnum::DesertTradeForALiving) &&
+				IsFoodEnum(resourceEnum) || resourceEnum == ResourceEnum::Wood || resourceEnum == ResourceEnum::Coal)
+			{
+				tradeFeePercent -= 7;
+			}
+			if (_simulation->HasTownBonus(townId(), CardEnum::DesertOreTrade) &&
+				IsOreEnum(resourceEnum))
+			{
+				tradeFeePercent -= 15;
+			}
+		}
+
+		
+		return std::max(0, tradeFeePercent);
+	}
+
+	
 
 	// 
 	void TickConstruction(int32 ticksToFinish)

@@ -233,7 +233,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	LoadBuilding(CardEnum::Cathedral, "Cathedral_Era2", "Cathedral");
 	LoadBuilding(CardEnum::Castle, "TownhallLvl5", "TownhallLvl5", true);
-	LoadBuilding(CardEnum::GrandMuseum, "Grand_Museum_Era_", "GrandMuseum", 4);
+	LoadBuilding(CardEnum::GrandPalace, "Grand_Museum_Era_", "GrandMuseum", 4);
 	/**/LoadBuilding(CardEnum::ExhibitionHall, "Grand_Museum_Era_", "GrandMuseum", 4);
 
 	LoadBuilding(CardEnum::StatisticsBureau, "Statistic_Bureau_Era_", "StatisticsBureau", 1);
@@ -249,11 +249,11 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	));
 	LoadBuilding(CardEnum::Townhall, "Townhall_Era2", "Townhall/Era2", false, ModuleTransformGroup::CreateAuxSet(
 		{
-			{ParticleEnum::Smoke, TransformFromPosition(51.6, -24.3, 38.8)},
-			{ParticleEnum::CampFire, TransformFromPositionYawScale(-2.75, 9.9, 1.85, 0, 0.17)}
+			//{ParticleEnum::Smoke, TransformFromPosition(51.6, -24.3, 38.8)},
+			{ParticleEnum::CampFire, TransformFromPositionYawScale(-15.38, 6.41, 1.85, 0, 0.17)}
 		},
 		{}, {},
-		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-2.3, 10.2, 8.5), FVector::OneVector} }
+		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-15.38, 6.41, 1.85), FVector::OneVector} }
 	));
 	LoadBuilding(CardEnum::Townhall, "Townhall_Era3", "Townhall/Era3", false, ModuleTransformGroup::CreateAuxSet(
 		{},
@@ -1265,7 +1265,9 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 					const auto mesh = loadMesh(i);
 
 					// Use Lightmap Resolution 100 to mark
-					if (mesh->LightMapResolution == 100 && bodyMainIndex <= 3) {
+					if (moduleTypeName != "Frame" &&
+						mesh->LightMapResolution == 100 && bodyMainIndex <= 3) 
+					{
 						moduleName = moduleSetName + FString("Body") + FString::FromInt(bodyMainIndex);
 						bodyMainIndex++;
 					}

@@ -1102,6 +1102,12 @@ void TownManager::RecalculateTax(bool showFloatup)
 		// influence from Luxury resource consumption
 		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Luxury)] += house.GetInfluenceIncome100();
 
+		if (_simulation->HasTownBonus(_townId, CardEnum::SavannaGrasslandRoamer)) {
+			if (IsGrassDominant(house.centerBiomeEnum())) {
+				influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::GrasslandRoamer)] += house.GetInfluenceIncome100() * 10 / 100;
+			}
+		}
+
 		//if (showFloatup) {
 		//	_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, house.centerTile(), "+" + to_string(house.totalHouseIncome()));
 		//}
@@ -1290,8 +1296,21 @@ void TownManager::RecalculateTax(bool showFloatup)
 		sciences100[static_cast<int>(ScienceEnum::ScientificTheories)] += sumFromHouses * 20LL / 100LL;
 	}
 
-	if (_simulation->IsResearched(_playerId, TechEnum::Rationalism)) {
-		sciences100[static_cast<int>(ScienceEnum::Rationalism)] += sumFromHouses * 30LL / 100LL;
+
+	if (_simulation->HasGlobalBonus(_playerId, CardEnum::Rationalism)) {
+		sciences100[static_cast<int>(ScienceEnum::Rationalism)] += sumFromHouses * ((_simulation->GetAverageHappiness(_townId) - 80) / 2LL) / 100LL;
+	}
+
+	// +0.5% Science Boost for each Trading Post/Port/Company in the World
+	if (_simulation->HasGlobalBonus(_playerId, CardEnum::FreeThoughts)) {
+		int32 totalTradeBuildings = 0;
+		std::vector<int32> playerIds = _simulation->GetAllPlayersAndAI();
+		for (int32 playerId : playerIds) {
+			totalTradeBuildings += _simulation->playerBuildingFinishedCount(playerId, CardEnum::TradingPost);
+			totalTradeBuildings += _simulation->playerBuildingFinishedCount(playerId, CardEnum::TradingPort);
+			totalTradeBuildings += _simulation->playerBuildingFinishedCount(playerId, CardEnum::TradingCompany);
+		}
+		sciences100[static_cast<int>(ScienceEnum::FreeThoughts)] += totalTradeBuildings / 2;
 	}
 
 	/*

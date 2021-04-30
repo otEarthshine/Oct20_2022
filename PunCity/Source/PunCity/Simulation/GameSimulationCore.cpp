@@ -3077,7 +3077,7 @@ void GameSimulationCore::TradeResource(FTradeResource command)
 
 	if (bld.isEnum(CardEnum::Townhall))
 	{
-		int32 tradingFeePercent = command.isIntercityTrade ? 0 : bld.tradingFeePercent();
+		int32 tradingFeePercent = command.isIntercityTrade ? 0 : bld.baseTradingFeePercent();
 
 		int32 exportMoney100 = 0;
 		int32 importMoney100 = 0;

@@ -161,14 +161,14 @@ void AppendClaimConnectionString(TArray<FText>& args, bool isConquering, ClaimCo
 
 const std::vector<PermanentBonus::RareCardHand> PermanentBonus::PermanentBonusRareCardHands
 {
-	{ RareHandEnum::BorealCards, { CardEnum::BorealFish, CardEnum::BorealWinterResist }},
+	{ RareHandEnum::BorealCards, { CardEnum::BorealWinterFishing, CardEnum::BorealWinterResist }},
 	{ RareHandEnum::BorealCards2, { CardEnum::BorealGoldOil, CardEnum::BorealPineForesting }},
 
-	{ RareHandEnum::DesertCards, { CardEnum::DesertTradeForLiving, CardEnum::DesertOreTrade }},
+	{ RareHandEnum::DesertCards, { CardEnum::DesertTradeForALiving, CardEnum::DesertOreTrade }},
 	{ RareHandEnum::DesertCards2, { CardEnum::DesertGem, CardEnum::DesertIndustry }},
 
 	{ RareHandEnum::SavannaCards, { CardEnum::SavannaHunt, CardEnum::SavannaRanch }},
-	{ RareHandEnum::SavannaCards2, { CardEnum::SavannaNomad, CardEnum::SavannaExpansion }},
+	{ RareHandEnum::SavannaCards2, { CardEnum::SavannaGrasslandHerder, CardEnum::SavannaGrasslandRoamer }},
 
 	{ RareHandEnum::JungleCards, { CardEnum::JungleGatherer, CardEnum::JungleMushroom }},
 	{ RareHandEnum::JungleCards2, { CardEnum::JungleHerbFarm, CardEnum::JungleTree }},

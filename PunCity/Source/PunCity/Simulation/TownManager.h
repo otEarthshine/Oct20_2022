@@ -741,7 +741,7 @@ public:
 	const std::vector<CardEnum>& townBonuses() {
 		return _townBonuses;
 	}
-	bool HasTownBonuses(CardEnum cardEnumIn) {
+	bool HasTownBonus(CardEnum cardEnumIn) {
 		for (CardEnum cardEnum: _townBonuses) {
 			if (cardEnum == cardEnumIn) {
 				return true;

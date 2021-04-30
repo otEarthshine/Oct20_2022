@@ -15,7 +15,7 @@ void TradeBuilding::UsedTrade(FTradeResource tradeCommand)
 	// Bought stuff will arrive in 1 season
 	int32 exportMoney100 = 0;
 	int32 importMoney100 = 0;
-	ExecuteTrade(tradeCommand, tradingFeePercent(), centerTile(), _simulation, false, exportMoney100, importMoney100);
+	ExecuteTrade(tradeCommand, baseTradingFeePercent(), centerTile(), _simulation, false, exportMoney100, importMoney100);
 
 	_exportGain100Last1Round += exportMoney100;
 	_importLoss100Last1Round += importMoney100;
@@ -25,21 +25,24 @@ void TradeBuilding::UsedTrade(FTradeResource tradeCommand)
 	_lastCheckTick = Time::Ticks();
 }
 
-void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePercent, WorldTile2 tile, IGameSimulationCore* simulation, bool isInstantBuy, int32& exportMoney100, int32& importMoney100)
+void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 baseTradingFeePercent, WorldTile2 tile, IGameSimulationCore* simulation, bool isInstantBuy, int32& exportMoney100, int32& importMoney100)
 {
 	PUN_CHECK(tradeCommand.objectId >= 0);
 	
 	// Sold stuff executes on the way right away...
 	int32 playerId = tradeCommand.playerId;
-	int32 townId = simulation->building(tradeCommand.objectId).townId();
+	TradeBuilding& building = simulation->building(tradeCommand.objectId).subclass<TradeBuilding>();
+	int32 townId = building.townId();
 	
 	ResourceSystem& resourceSys = simulation->resourceSystem(townId);
 	GlobalResourceSystem& globalResourceSys = simulation->globalResourceSystem(playerId);
 
 	// This value is used in fee calculation
-	//int32 totalTradeMoney100 = 0;
 	int32 totalImportMoney100 = 0;
 	int32 totalExportMoney100 = 0;
+
+	int32 totalImportFeeMoney100 = 0;
+	int32 totalExportFeeMoney100 = 0;
 	
 	for (int i = 0; i < tradeCommand.buyEnums.Num(); i++) {
 		PUN_CHECK(tradeCommand.buyAmounts[i] != 0);
@@ -58,6 +61,9 @@ void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePe
 			int32 tradeMoney100 = sellAmount * simulation->price100(resourceEnum);
 			totalExportMoney100 += tradeMoney100;
 
+			// Fee
+			totalExportFeeMoney100 += tradeMoney100 * building.tradingFeePercent(baseTradingFeePercent, resourceEnum) / 100;
+
 			resourceSys.RemoveResourceGlobal(resourceEnum, sellAmount);
 			globalResourceSys.ChangeMoney100(tradeMoney100);
 		}
@@ -65,6 +71,9 @@ void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePe
 		{
 			int32 tradeMoney100 = buyAmount * simulation->price100(resourceEnum);
 			totalImportMoney100 += tradeMoney100;
+
+			// Fee
+			totalImportFeeMoney100 += tradeMoney100 * building.tradingFeePercent(baseTradingFeePercent, resourceEnum) / 100;
 
 			if (isInstantBuy) {
 				resourceSys.AddResourceGlobal(resourceEnum, buyAmount, *simulation);
@@ -76,14 +85,9 @@ void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePe
 	}
 
 	// Change money from trade's Total
-	//resourceSys.ChangeMoney(tradeCommand.totalGain);
-
-	//int32 totalTradeMoney100 = totalImportMoney100 + totalExportMoney100;
-
-	int32 exportFee100 = totalExportMoney100 * tradingFeePercent / 100;
-	int32 importFee100 = totalImportMoney100 * tradingFeePercent / 100;
+	int32 exportFee100 = totalExportFeeMoney100; // totalExportMoney100 * baseTradingFeePercent / 100;
+	int32 importFee100 = totalImportFeeMoney100; // totalImportMoney100 * baseTradingFeePercent / 100;
 	int32 fee100 = exportFee100 + importFee100;
-	//int32 fee100 = totalTradeMoney100 * tradingFeePercent / 100;
 	globalResourceSys.ChangeMoney100(-fee100);
 	
 	simulation->QuestUpdateStatus(playerId, QuestEnum::TradeQuest, abs((totalExportMoney100 + totalImportMoney100 + fee100) / 100));
@@ -318,7 +322,7 @@ void TradingCompany::OnTick1Sec()
 	auto issueTradeCommand = [&](int32 buyAmount)
 	{
 		int32 tradeMoneyBeforeFee100 = buyAmount * _simulation->price100(activeResourceEnum);
-		int32 tradeFee100 = abs(tradeMoneyBeforeFee100) * tradingFeePercent() / 100;
+		int32 tradeFee100 = abs(tradeMoneyBeforeFee100) * baseTradingFeePercent() / 100;
 		int32 tradeMoney100 = tradeMoneyBeforeFee100 + tradeFee100;
 
 		int32 coinGain = -tradeMoney100 / 100;
@@ -339,7 +343,7 @@ void TradingCompany::OnTick1Sec()
 	{
 		if (targetAmount > currentResourceCount) {
 			int32 buyAmountFromTarget = std::min(targetAmount - currentResourceCount, tradeMaximumPerRound());
-			int32 moneyLeftToBuyAfterFee = globalResourceSystem().money() * 100 / (100 + tradingFeePercent());
+			int32 moneyLeftToBuyAfterFee = globalResourceSystem().money() * 100 / (100 + baseTradingFeePercent());
 			moneyLeftToBuyAfterFee = std::max(0, moneyLeftToBuyAfterFee);
 			
 			int32 maxAmountMoneyCanBuy = moneyLeftToBuyAfterFee / GetResourceInfo(activeResourceEnum).basePrice;

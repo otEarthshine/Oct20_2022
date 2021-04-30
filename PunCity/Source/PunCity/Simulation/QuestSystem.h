@@ -165,7 +165,7 @@ struct BuildHousesQuest final : Quest
 		}
 	}
 
-	int32 currentValue() override { return simulation->buildingFinishedCount(playerId, CardEnum::House); }
+	int32 currentValue() override { return simulation->townBuildingFinishedCount(playerId, CardEnum::House); }
 	int32 neededValue() override { return 5; }
 };
 
@@ -351,7 +351,7 @@ struct BuildStorageQuest : Quest
 	}
 
 private:
-	int32 storageBuilt() { return simulation->buildingFinishedCount(playerId, CardEnum::StorageYard); }
+	int32 storageBuilt() { return simulation->townBuildingFinishedCount(playerId, CardEnum::StorageYard); }
 };
 
 struct SurviveWinterQuest : Quest

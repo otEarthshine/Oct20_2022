@@ -102,7 +102,7 @@ public:
 		if (_simulation->IsResearched(_playerId, TechEnum::RerollCardsPlus1)) {
 			handSize += 1;
 		}
-		if (_simulation->buildingFinishedCount(_playerId, CardEnum::CensorshipInstitute)) {
+		if (_simulation->townBuildingFinishedCount(_playerId, CardEnum::CensorshipInstitute)) {
 			handSize -= 1;
 		}
 		//if (_simulation->IsResearched(_playerId, TechEnum::MoreRerollCards2)) handSize++;

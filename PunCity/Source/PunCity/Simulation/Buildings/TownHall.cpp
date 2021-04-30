@@ -299,7 +299,7 @@ void TownHall::OnTick1Sec()
 		migrationPull_bonuses += migrationPullSoFar * 20 / 100; // 20% immigration increase from foreign trade...
 	}
 
-	if (_simulation->buildingFinishedCount(_townId, CardEnum::ImmigrationPropagandaOffice)) {
+	if (_simulation->townBuildingFinishedCount(_townId, CardEnum::ImmigrationPropagandaOffice)) {
 		migrationPull_bonuses += migrationPullSoFar * 30 / 100; // 30% increase
 	}
 }

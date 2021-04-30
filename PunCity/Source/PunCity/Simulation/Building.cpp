@@ -1009,12 +1009,16 @@ std::vector<BonusPair> Building::GetBonuses()
 	// Industrial
 	if (IsIndustrialBuilding(_buildingEnum))
 	{
-		if (_simulation->buildingFinishedCount(_townId, CardEnum::EngineeringOffice)) {
+		if (_simulation->townBuildingFinishedCount(_townId, CardEnum::EngineeringOffice)) {
 			bonuses.push_back({ LOCTEXT("Engineering office", "Engineering office"), 10 });
 		}
 
 		if (_simulation->IsResearched(_playerId, TechEnum::Industrialization)) {
 			bonuses.push_back({ LOCTEXT("Industrialization", "Industrialization"), 20 });
+		}
+
+		if (_simulation->HasTownBonus(_townId, CardEnum::DesertIndustry)) {
+			bonuses.push_back({ LOCTEXT("Desert Industry", "Desert Industry"), 10 });
 		}
 
 		// Industrialist
@@ -1044,11 +1048,31 @@ std::vector<BonusPair> Building::GetBonuses()
 		bonuses.push_back({ LOCTEXT("Productivity Book", "Productivity Book"), slotCardCount(CardEnum::ProductivityBook) * 20 });
 	}
 	if (slotCardCount(CardEnum::Passion) > 0) {
-		bonuses.push_back({ LOCTEXT("Passion", "Passion"), slotCardCount(CardEnum::Passion) * 15 });
+		int32 passionBonus = slotCardCount(CardEnum::Passion) * 15;
+		if (_simulation->HasGlobalBonus(_playerId, CardEnum::Communism)) {
+			passionBonus /= 2;
+		}
+		bonuses.push_back({ LOCTEXT("Passion", "Passion"), passionBonus });
 	}
 	if (slotCardCount(CardEnum::Motivation) > 0) {
-		bonuses.push_back({ LOCTEXT("Motivation", "Motivation"), max(0, (_simulation->GetAverageHappiness(_townId) - 60) * slotCardCount(CardEnum::Motivation)) });
+		int32 motivationBonus = max(0, (_simulation->GetAverageHappiness(_townId) - 60) * slotCardCount(CardEnum::Motivation));
+		if (_simulation->HasGlobalBonus(_playerId, CardEnum::Communism)) {
+			motivationBonus /= 2;
+		}
+		bonuses.push_back({ LOCTEXT("Motivation", "Motivation"), motivationBonus });
 	}
+
+
+	if (_simulation->HasGlobalBonus(_playerId, CardEnum::Protectionism) &&
+		IsLuxuryEnum(product())) 
+	{
+		bonuses.push_back({ LOCTEXT("Protectionism", "Protectionism"), 20 });
+	}
+
+	if (_simulation->HasGlobalBonus(_playerId, CardEnum::Communism) && product() != ResourceEnum::None) {
+		bonuses.push_back({ LOCTEXT("Communism", "Communism"), 25 });
+	}
+	
 
 	// Upgrade bonuses
 	for (const BuildingUpgrade& upgrade : _upgrades) 
@@ -1096,10 +1120,10 @@ std::vector<BonusPair> Building::GetBonuses()
 int32 Building::GetAppealPercent()
 {
 	int32 appeal = _simulation->overlaySystem().GetAppealPercent(_centerTile);
-	if (_simulation->buildingFinishedCount(_townId, CardEnum::ArchitectStudio)) {
+	if (_simulation->townBuildingFinishedCount(_townId, CardEnum::ArchitectStudio)) {
 		appeal += 5;
 	}
-	if (_simulation->buildingFinishedCount(_townId, CardEnum::EnvironmentalistGuild)) {
+	if (_simulation->townBuildingFinishedCount(_townId, CardEnum::EnvironmentalistGuild)) {
 		appeal += 15;
 	}
 	return appeal;
@@ -1169,7 +1193,7 @@ std::vector<BonusPair> Building::GetTradingFeeBonuses()
 		}
 	}
 
-	if (_simulation->buildingFinishedCount(_townId, CardEnum::MerchantGuild)) {
+	if (_simulation->townBuildingFinishedCount(_townId, CardEnum::MerchantGuild)) {
 		bonuses.push_back({ LOCTEXT("Merchant Guild", "Merchant Guild"), -5 });
 	}
 	if (IsUpgraded(0)) {
@@ -1240,6 +1264,7 @@ BuildingUpgrade Building::MakeEraUpgrade(int32 startEra)
 	upgrade.startEra = startEra;
 	upgrade.upgradeLevel = 0;
 
+	// Fill in alll the Era upgrades including "Upgrade Electric Machinery"
 	int32 currentResourceCostValue = buildingInfo().resourceInfo.baseResourceCostValue;
 	for (int32 i = startEra; i <= 4; i++) {
 		auto getUpgradeResourceEnum = [&]() {
@@ -1251,7 +1276,7 @@ BuildingUpgrade Building::MakeEraUpgrade(int32 startEra)
 			}
 		};
 		int32 upgradeResourceCostValue = currentResourceCostValue * (BldResourceInfo::UpgradeCostPercentEraMultiplier - 100) / 100;
-		upgrade.resourceNeededPerLevel.push_back(ResourcePair(getUpgradeResourceEnum(), upgradeResourceCostValue));
+		upgrade.resourceNeededPerLevel.push_back(ResourcePair(getUpgradeResourceEnum(), upgradeResourceCostValue / GetResourceInfo(getUpgradeResourceEnum()).basePrice));
 		currentResourceCostValue = upgradeResourceCostValue;
 	}
 	return upgrade;

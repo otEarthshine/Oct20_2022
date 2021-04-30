@@ -27,6 +27,7 @@
 #include "DebugLineSystem.h"
 
 #include "Buildings/Townhall.h"
+#include "Buildings/GathererHut.h"
 
 #include "IGameSimulationCore.h"
 #include "PunCity/GameManagerInterface.h"
@@ -890,7 +891,7 @@ public:
 	int32 buildingCount(int32 townId, CardEnum buildingEnum) final {
 		return _buildingSystem->buildingIds(townId, buildingEnum).size();
 	}
-	int32 buildingFinishedCount(int32 townId, CardEnum cardEnum) final {
+	int32 townBuildingFinishedCount(int32 townId, CardEnum cardEnum) final {
 		const std::vector<int32>& bldIds = buildingIds(townId, cardEnum);
 		int32 finishedCount = 0;
 		for (int32 buildingId : bldIds) {
@@ -899,6 +900,15 @@ public:
 			}
 		}
 		return finishedCount;
+	}
+	int32 playerBuildingFinishedCount(int32 playerId, CardEnum cardEnum) final
+	{
+		int32 buildingCount = 0;
+		const std::vector<int32>& townIds = GetTownIds(playerId);
+		for (int32 townId : townIds) {
+			buildingCount += townBuildingFinishedCount(townId, cardEnum);
+		}
+		return buildingCount;
 	}
 
 
@@ -2273,6 +2283,16 @@ public:
 		}
 		return count;
 	}
+
+
+	int32 HasTownBonus(int32 townId, CardEnum cardEnum) final {
+		return townManager(townId).HasTownBonus(cardEnum);
+	}
+	int32 HasGlobalBonus(int32 playerId, CardEnum cardEnum) final {
+		return playerOwned(playerId).HasGlobalBonus(cardEnum);
+	}
+
+	
 	bool HasCardInAnyPile(int32 playerId, CardEnum cardEnum) final {
 		return cardSystem(playerId).HasCardInAnyPile(cardEnum);
 	}
@@ -2487,11 +2507,42 @@ public:
 		_endStatus.gameEndEnum = GameEndEnum::TimeVictory;
 	}
 
-	int32 populationScore(int32 playerId) { return populationPlayer(playerId); }
-	int32 happinessScore(int32 playerId) { return GetAverageHappinessPlayer(playerId) * 3; }
+	/*
+	 * Score
+	 */
+	int32 populationScore(int32 playerId)
+	{
+		int32 populationScore = populationPlayer(playerId);
+		if (HasGlobalBonus(playerId, CardEnum::WondersScoreMultiplier)) {
+			populationScore *= 2;
+		}
+		return populationScore;
+	}
+	int32 happinessScore(int32 playerId)
+	{
+		int32 happinessScore = populationPlayer(playerId) * std::max(0, GetAverageHappinessPlayer(playerId) - 80) / 10;
+		if (HasGlobalBonus(playerId, CardEnum::WondersScoreMultiplier)) {
+			happinessScore *= 2;
+		}
+		return happinessScore;
+	}
 	int32 moneyScore(int32 playerId) { return money(playerId) / 10000; }
 	int32 technologyScore(int32 playerId) { return unlockSystem(playerId)->techsFinished * 10; }
-	int32 wonderScore(int32 playerId) { return 0; }
+	int32 wonderScore(int32 playerId)
+	{
+		int32 wonderScore = 0;
+		for (CardEnum buildingEnum : WorldWonders) {
+			const std::vector<int32>& townIds = GetTownIds(playerId);
+			for (int32 townId : townIds) {
+				const std::vector<int32>& bldIds = buildingIds(townId, buildingEnum);
+				for (int32 buildingId : bldIds) {
+					wonderScore += building(buildingId).subclass<WorldWonder>().WonderScore();
+				}
+			}
+		}
+		
+		return wonderScore;
+	}
 	int32 totalScore(int32 playerId) {
 		return populationScore(playerId) + 
 			happinessScore(playerId) + 
@@ -2500,6 +2551,10 @@ public:
 			wonderScore(playerId);
 	}
 
+	/*
+	 * 
+	 */
+	
 	bool HasTownhall(int32 playerId) final {
 		return playerOwned(playerId).hasCapitalTownhall();
 	}

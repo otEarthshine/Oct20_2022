@@ -66,6 +66,12 @@ std::vector<BonusPair> GathererHut::GetBonuses()
 		bonuses.push_back({ pestTrapText, 30 });
 	}
 
+	if (_simulation->HasTownBonus(_townId, CardEnum::JungleGatherer)) {
+		if (centerBiomeEnum() == BiomeEnum::Jungle) {
+			bonuses.push_back({ NSLOCTEXT("FruitGatherer", "Jungle Gatherer Bonus", "Jungle Gatherer"), 10 });
+		}
+	}
+
 	return bonuses;
 }
 
@@ -102,6 +108,12 @@ std::vector<BonusPair> HuntingLodge::GetBonuses()
 
 	if (IsUpgraded(1) && adjacentCount(CardEnum::FruitGatherer) > 0) {
 		bonuses.push_back({ fruitBaitText, 30 });
+	}
+
+	if (_simulation->HasTownBonus(_townId, CardEnum::SavannaHunt)) {
+		if (IsGrassDominant(centerBiomeEnum())) {
+			bonuses.push_back({ NSLOCTEXT("Ranch", "Savanna Ranch Bonus", "Savanna Ranch"), 30 });
+		}
 	}
 
 	return bonuses;
@@ -156,6 +168,13 @@ std::vector<BonusPair> MushroomFarm::GetBonuses() {
 	if (IsUpgraded(0) && isOccupantFull()) {
 		bonuses.push_back({ intensiveCareText, 30 });
 	}
+
+	if (_simulation->HasTownBonus(_townId, CardEnum::JungleMushroom)) {
+		if (centerBiomeEnum() == BiomeEnum::Jungle) {
+			bonuses.push_back({ NSLOCTEXT("MushroomFarm", "Jungle Mushroom Bonus", "Jungle Mushroom"), 10 });
+		}
+	}
+	
 	return bonuses;
 }
 
@@ -175,6 +194,12 @@ std::vector<BonusPair> ShroomFarm::GetBonuses() {
 	std::vector<BonusPair> bonuses = Building::GetBonuses();
 	if (IsUpgraded(0) && isOccupantFull()) {
 		bonuses.push_back({ intensiveCareText, 30 });
+	}
+
+	if (_simulation->HasTownBonus(_townId, CardEnum::JungleMushroom)) {
+		if (centerBiomeEnum() == BiomeEnum::Jungle) {
+			bonuses.push_back({ NSLOCTEXT("ShroomFarm", "Jungle Mushroom Bonus", "Jungle Mushroom"), 10 });
+		}
 	}
 	return bonuses;
 }
@@ -283,17 +308,33 @@ std::vector<BonusPair> Farm::GetBonuses()
 	if (_simulation->IsResearched(_playerId, TechEnum::FarmImprovement)) {
 		bonuses.push_back({ LOCTEXT("Farm Improvement Upgrade", "Farm Improvement Upgrade"), 5 });
 	}
-	if (_simulation->buildingFinishedCount(_townId, CardEnum::DepartmentOfAgriculture) &&
+	if (_simulation->townBuildingFinishedCount(_townId, CardEnum::DepartmentOfAgriculture) &&
 		_simulation->buildingCount(_townId, CardEnum::Farm) >= 8)
 	{
 		bonuses.push_back({ LOCTEXT("Department of Agriculture", "Department of Agriculture"), 5 });
 	}
-	if (_simulation->buildingFinishedCount(_townId, CardEnum::CensorshipInstitute)) {
+	if (_simulation->townBuildingFinishedCount(_townId, CardEnum::CensorshipInstitute)) {
 		bonuses.push_back({ LOCTEXT("Censorship", "Censorship"), 7 });
 	}
 
 	if (_simulation->IsResearched(_playerId, TechEnum::Fertilizers)) {
 		bonuses.push_back({ LOCTEXT("Fertilizers", "Fertilizers"), 20 });
+	}
+
+	if (_simulation->HasTownBonus(_townId, CardEnum::DesertIndustry)) {
+		bonuses.push_back({ LOCTEXT("Desert Industry", "Desert Industry"), -50 });
+	}
+
+	if (_simulation->HasTownBonus(_townId, CardEnum::JungleHerbFarm) && 
+		centerBiomeEnum() == BiomeEnum::Jungle &&
+		currentPlantEnum == TileObjEnum::Herb) 
+	{
+		bonuses.push_back({ LOCTEXT("Desert Industry", "Desert Industry"), -50 });
+	}
+
+	if (_simulation->HasTownBonus(_townId, CardEnum::ForestFarm) &&
+		centerBiomeEnum() == BiomeEnum::Forest) {
+		bonuses.push_back({ LOCTEXT("Improved Farming", "Improved Farming"), 5 });
 	}
 
 	{
@@ -302,6 +343,16 @@ std::vector<BonusPair> Farm::GetBonuses()
 		});
 		if (radiusBonus > 0) {
 			bonuses.push_back({ LOCTEXT("Near Windmill", "Near Windmill"), radiusBonus });
+		}
+	}
+
+	if (_simulation->HasGlobalBonus(_playerId, CardEnum::Agriculturalist))
+	{
+		int32 radiusBonus = GetRadiusBonus(CardEnum::Granary, Windmill::Radius, [&](int32 bonus, Building& building) {
+			return max(bonus, 10);
+		});
+		if (radiusBonus > 0) {
+			bonuses.push_back({ LOCTEXT("Agriculturalist", "Agriculturalist"), radiusBonus });
 		}
 	}
 
@@ -569,6 +620,20 @@ std::vector<BonusPair> ImmigrationOffice::GetBonuses()
 }
 
 /*
+ * StoneToolsShop
+ */
+std::vector<BonusPair> StoneToolsShop::GetBonuses()
+{
+	std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
+
+	if (_simulation->HasTownBonus(_townId, CardEnum::ForestTools)) {
+		bonuses.push_back({ LOCTEXT("Improved Toolmaking (Forest Biome)", "Improved Toolmaking (Forest Biome)"), 10 });
+	}
+	
+	return bonuses;
+}
+
+/*
  * Blacksmith
  */
 void Blacksmith::FinishConstruction()
@@ -580,6 +645,21 @@ void Blacksmith::FinishConstruction()
 		MakeProductionUpgrade(LOCTEXT("Alloy Recipe", "Alloy Recipe"), ResourceEnum::Paper, 50, 30),
 		MakeComboUpgrade(LOCTEXT("Blacksmith Guild", "Blacksmith Guild"), ResourceEnum::Paper, 50, 25),
 	});
+}
+
+std::vector<BonusPair> Blacksmith::GetBonuses()
+{
+	std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
+
+	if (_simulation->HasTownBonus(_townId, CardEnum::ForestTools)) {
+		bonuses.push_back({ LOCTEXT("Improved Toolmaking (Forest)", "Improved Toolmaking (Forest)"), 10 });
+	}
+
+	if (_simulation->HasGlobalBonus(_playerId, CardEnum::Craftmanship)) {
+		bonuses.push_back({ LOCTEXT("Craftmanship", "Craftmanship"), 20 });
+	}
+
+	return bonuses;
 }
 
 /*
@@ -624,6 +704,10 @@ std::vector<BonusPair> CharcoalMaker::GetBonuses()
 	if (_simulation->IsResearched(_playerId, TechEnum::CharcoalBurnerImprovement)) {
 		bonuses.push_back({ LOCTEXT("Charcoal Burner Improvement", "Charcoal Burner Improvement"), 30 });
 	}
+
+	if (_simulation->HasTownBonus(_townId, CardEnum::ForestCharcoal)) {
+		bonuses.push_back({ LOCTEXT("Improved Charcoal Making (Forest)", "Improved Charcoal Making (Forest)"), 10 });
+	}
 	
 	return bonuses;
 }
@@ -662,6 +746,10 @@ std::vector<BonusPair> Winery::GetBonuses()
 	std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
 	if (_simulation->IsResearched(_playerId, TechEnum::WineryImprovement)) {
 		bonuses.push_back({ LOCTEXT("Winery Improvement Tech", "Winery Improvement Tech"), 30 });
+	}
+
+	if (_simulation->HasGlobalBonus(_playerId, CardEnum::AlcoholAppreciation)) {
+		bonuses.push_back({ LOCTEXT("Alcohol Appreciation", "Alcohol Appreciation"), 15 });
 	}
 
 	return bonuses;
@@ -759,6 +847,14 @@ std::vector<BonusPair> BeerBrewery::GetBonuses()
 		bonuses.push_back({ LOCTEXT("Master brewer", "Master brewer"), 30 });
 	}
 
+	if (_simulation->HasTownBonus(_townId, CardEnum::ForestBeer)) {
+		bonuses.push_back({ LOCTEXT("Improved Beer-Brewing (Forest)", "Improved Beer-Brewing (Forest)"), 15 });
+	}
+
+	if (_simulation->HasGlobalBonus(_playerId, CardEnum::AlcoholAppreciation)) {
+		bonuses.push_back({ LOCTEXT("Alcohol Appreciation", "Alcohol Appreciation"), 15 });
+	}
+
 	return bonuses;
 }
 
@@ -790,6 +886,10 @@ std::vector<BonusPair> VodkaDistillery::GetBonuses()
 	std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
 	if (_simulation->TownhallCardCountTown(_townId, CardEnum::MasterBrewer) > 0) {
 		bonuses.push_back({ LOCTEXT("Master Brewer", "Master Brewer"), 30 });
+	}
+
+	if (_simulation->HasGlobalBonus(_playerId, CardEnum::AlcoholAppreciation)) {
+		bonuses.push_back({ LOCTEXT("Alcohol Appreciation", "Alcohol Appreciation"), 15 });
 	}
 
 	return bonuses;
@@ -1018,10 +1118,17 @@ void Fisher::FinishConstruction() {
 std::vector<BonusPair> Fisher::GetBonuses() 
 {
 	std::vector<BonusPair> bonuses = Building::GetBonuses();
-	int32 cardCount = _simulation->TownhallCardCountTown(_townId, CardEnum::CooperativeFishing);
-	if (cardCount > 0) {
+	if (_simulation->TownhallCardCountTown(_townId, CardEnum::CooperativeFishing)) {
 		bonuses.push_back({ LOCTEXT("Cooperative Fishing", "Cooperative Fishing"), max(0, _simulation->GetAverageHappiness(_townId) - 60) });
 	}
+	if (_simulation->HasTownBonus(_townId, CardEnum::BorealWinterFishing)) 
+	{
+		BiomeEnum biomeEnum = centerBiomeEnum();
+		if (biomeEnum == BiomeEnum::Tundra || biomeEnum == BiomeEnum::BorealForest) {
+			bonuses.push_back({ LOCTEXT("Winter Fishing", "Winter Fishing"), 25 });
+		}
+	}
+	
 	return bonuses;
 }
 
@@ -1191,6 +1298,10 @@ void Mine::OnProduce(int32 productionAmount)
 		depletionMultiplier = depletionMultiplier * 50 / 100;
 	}
 
+	if (_simulation->HasGlobalBonus(_playerId, CardEnum::Geologist)) {
+		depletionMultiplier = depletionMultiplier * 50 / 100;
+	}
+
 	int32 depletedAmount = productionAmount * depletionMultiplier / 100;
 
 	AddDepletionStat({ product(), depletedAmount });
@@ -1226,6 +1337,35 @@ std::vector<BonusPair> GoldMine::GetBonuses()
 	if (_simulation->TownhallCardCountTown(_townId, CardEnum::GoldRush) > 0) {
 		bonuses.push_back({ LOCTEXT("Gold Rush", "Gold Rush"), 30 });
 	}
+
+	if (_simulation->HasTownBonus(_townId, CardEnum::BorealGoldOil)) {
+		BiomeEnum biomeEnum = centerBiomeEnum();
+		if (biomeEnum == BiomeEnum::Tundra || biomeEnum == BiomeEnum::BorealForest) {
+			bonuses.push_back({ LOCTEXT("Gold and Oil Bonus", "Gold and Oil"), 25 });
+		}
+	}
+	
+	if (_simulation->HasTownBonus(_townId, CardEnum::DesertGem)) {
+		if (centerBiomeEnum() == BiomeEnum::Desert) {
+			bonuses.push_back({ LOCTEXT("Desert Gem Bonus", "Desert Gem"), 25 });
+		}
+	}
+	
+	return bonuses;
+}
+
+/*
+ * GemstoneMine
+ */
+std::vector<BonusPair> GemstoneMine::GetBonuses()
+{
+	std::vector<BonusPair> bonuses = Mine::GetBonuses();
+	if (_simulation->HasTownBonus(_townId, CardEnum::DesertGem)) {
+		if (centerBiomeEnum() == BiomeEnum::Desert) {
+			bonuses.push_back({ LOCTEXT("Desert Gem Bonus", "Desert Gem"), 25 });
+		}
+	}
+
 	return bonuses;
 }
 
@@ -1564,6 +1704,23 @@ void Archives::CalculateRoundProfit()
 	}
 
 	lastRoundProfit = lastRoundProfit * CardProfitPercentPerRound / 100;
+}
+
+/*
+ * OilRig
+ */
+std::vector<BonusPair> OilRig::GetBonuses()
+{
+	std::vector<BonusPair> bonuses = Mine::GetBonuses();
+
+	if (_simulation->HasTownBonus(_townId, CardEnum::BorealGoldOil)) {
+		BiomeEnum biomeEnum = centerBiomeEnum();
+		if (biomeEnum == BiomeEnum::Tundra || biomeEnum == BiomeEnum::BorealForest) {
+			bonuses.push_back({ LOCTEXT("Gold and Oil Bonus", "Gold and Oil"), 25 });
+		}
+	}
+	
+	return bonuses;
 }
 
 

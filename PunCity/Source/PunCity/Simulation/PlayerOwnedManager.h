@@ -332,7 +332,7 @@ public:
 	const std::vector<CardEnum>& globalBonuses() {
 		return _globalBonuses;
 	}
-	bool HasGlobalBonuses(CardEnum cardEnumIn) {
+	bool HasGlobalBonus(CardEnum cardEnumIn) {
 		for (CardEnum cardEnum : _globalBonuses) {
 			if (cardEnum == cardEnumIn) {
 				return true;

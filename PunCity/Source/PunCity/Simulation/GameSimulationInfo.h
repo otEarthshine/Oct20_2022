@@ -2158,7 +2158,7 @@ enum class CardEnum : uint16
 
 	Cathedral,
 	Castle,
-	GrandMuseum,
+	GrandPalace,
 	ExhibitionHall,
 
 	// Decorations
@@ -2297,20 +2297,20 @@ enum class CardEnum : uint16
 	SpeedBoost,
 
 	//! Permanent Bonuses
-	BorealFish, // Start Section
+	BorealWinterFishing, // Start Section
 	BorealWinterResist,
 	BorealGoldOil,
 	BorealPineForesting,
 
 	DesertGem,
-	DesertTradeForLiving,
+	DesertTradeForALiving,
 	DesertOreTrade,
 	DesertIndustry, // Industry, but can't farm
 
 	SavannaRanch,
 	SavannaHunt,
-	SavannaNomad,
-	SavannaExpansion,
+	SavannaGrasslandHerder,
+	SavannaGrasslandRoamer,
 
 	JungleGatherer,
 	JungleMushroom,
@@ -2396,6 +2396,26 @@ static int32 GetCardUpkeepBase(CardEnum buildingEnum)
 	}
 	return 0;
 }
+
+/*
+ * World Wonders
+ */
+static const std::vector<CardEnum> WorldWonders
+{
+	CardEnum::Cathedral,
+	CardEnum::Castle,
+	CardEnum::GrandPalace,
+	CardEnum::ExhibitionHall,
+};
+static bool IsWorldWonder(CardEnum cardEnumIn)
+{
+	for (CardEnum cardEnum : WorldWonders) {
+		if (cardEnum == cardEnumIn)	return true;
+	}
+	return false;
+}
+
+
 
 /*
  * Building Cost Calculation
@@ -2520,6 +2540,10 @@ struct BldResourceInfo
 		PUN_CHECK(baseCardPrice_LowPart > 0);
 		PUN_CHECK(baseCardPrice_HighPart >= 0);
 		baseCardPrice = baseCardPrice_LowPart + baseCardPrice_HighPart * 2;
+
+		if (IsWorldWonder(buildingEnum)) {
+			baseCardPrice /= 4;
+		}
 	}
 
 	void CalculateBaseUpkeep()
@@ -2614,7 +2638,7 @@ struct BldInfo
 	bool hasInput1() { return input1 != ResourceEnum::None; }
 	bool hasInput2() { return input2 != ResourceEnum::None; }
 
-	int32 constructionCostAsMoney() {
+	int32 constructionCostAsMoney() const {
 		return ConstructionCostAsMoney(constructionResources);
 	}
 
@@ -3192,16 +3216,16 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(8, 8), GetBldResourceInfo(4, { ResourceEnum::Glass, ResourceEnum::GoldBar, ResourceEnum::PocketWatch }, 3, { 0, 0, 0, 5, 10, 5, 0 }, 0, 10)
 	),
 
-	BldInfo(CardEnum::Cathedral, LOCTEXT("Cathedral", "Cathedral"), LOCTEXT("Cathedral (Plural)", "Cathedrals"), LOCTEXT("Cathedral Desc", "Extract Sand from beach or river. Sand can be used to make Glass."),
+	BldInfo(CardEnum::Cathedral, LOCTEXT("Cathedral", "Cathedral"), LOCTEXT("Cathedral (Plural)", "Cathedrals"), LOCTEXT("Cathedral Desc", "First Cathedral grants X Victory Score."),
 		WorldTile2(16, 7), GetBldResourceInfo(3, {}, 0, { 0, 5, 1, 1, 3 }, 900)
 	),
-	BldInfo(CardEnum::Castle, LOCTEXT("Castle", "Castle"), LOCTEXT("Castle (Plural)", "Castles"), LOCTEXT("Castle Desc", "Extract Sand from beach or river. Sand can be used to make Glass."),
+	BldInfo(CardEnum::Castle, LOCTEXT("Castle", "Castle"), LOCTEXT("Castle (Plural)", "Castles"), LOCTEXT("Castle Desc", "First Castle grants X Victory Score."),
 		WorldTile2(12, 12), GetBldResourceInfo(3, {}, 0, { 0, 5, 1, 0, 1 }, 900)
 	),
-	BldInfo(CardEnum::GrandMuseum, LOCTEXT("GrandMuseum", "Grand Museum"), LOCTEXT("Grand Museum (Plural)", "Grand Museums"), LOCTEXT("Grand Museum Desc", "Extract Sand from beach or river. Sand can be used to make Glass."),
+	BldInfo(CardEnum::GrandPalace, LOCTEXT("Grand Palace", "Grand Palace"), LOCTEXT("Grand Palace (Plural)", "Grand Palaces"), LOCTEXT("Grand Palace Desc", "First Grand Palace grants X Victory Score."),
 		WorldTile2(18, 26), GetBldResourceInfo(4, {}, 0, { 0, 0, 0, 0, 5, 5, 1 }, 900)
 	),
-	BldInfo(CardEnum::ExhibitionHall, LOCTEXT("ExhibitionHall", "Exhibition Hall"), LOCTEXT("Exhibition Hall (Plural)", "Exhibition Halls"), LOCTEXT("Exhibition Hall Desc", "Extract Sand from beach or river. Sand can be used to make Glass."),
+	BldInfo(CardEnum::ExhibitionHall, LOCTEXT("ExhibitionHall", "Exhibition Hall"), LOCTEXT("Exhibition Hall (Plural)", "Exhibition Halls"), LOCTEXT("Exhibition Hall Desc", "First Exhibition Hall grants X Victory Score."),
 		WorldTile2(8, 8), GetBldResourceInfo(4, {}, 0, { 0, 0, 0, 0, 5, 1, 5 }, 900)
 	),
 
@@ -3404,20 +3428,20 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::SpeedBoost,		LOCTEXT("Speed Boost", "Speed Boost"), 0, LOCTEXT("Speed Boost Desc", "Boost target building's work speed by +50% for 50s.")),
 
 
-		BldInfo(CardEnum::BorealFish, LOCTEXT("Winter Fishing", "Winter Fishing"), 0, LOCTEXT("Winter Fishing Desc", "+25% Productivity to Fishing Lodges in Boreal Forest or Tundra.")),
+		BldInfo(CardEnum::BorealWinterFishing, LOCTEXT("Winter Fishing", "Winter Fishing"), 0, LOCTEXT("Winter Fishing Desc", "+25% Productivity to Fishing Lodges in Boreal Forest or Tundra.")),
 		BldInfo(CardEnum::BorealWinterResist, LOCTEXT("Winter Resistance", "Winter Resistance"), 0, LOCTEXT("Winter Resistance Desc", "Wood/Coal gives 15% more heat.")),
 		BldInfo(CardEnum::BorealGoldOil, LOCTEXT("Gold and Oil", "Gold and Oil"), 0, LOCTEXT("Gold and Oil Desc", "+25% Productivity to Gold Mines and Oil Rigs in Boreal Forest or Tundra..")),
 		BldInfo(CardEnum::BorealPineForesting, LOCTEXT("Pine Foresting", "Pine Foresting"), 0, LOCTEXT("Pine Foresting Desc", "+20% Wood yield when cutting Pine Trees.")),
 
 		BldInfo(CardEnum::DesertGem, LOCTEXT("Desert Gem", "Desert Gem"), 0, LOCTEXT("Desert Gem Desc", "+25% Productivity to Gem and Gold Mines.")),
-		BldInfo(CardEnum::DesertTradeForLiving, LOCTEXT("Trade for a Living", "Trade for a Living"), 0, LOCTEXT("Trade for a Living Desc", "-10% Trade Fee when trading Food/Wood.")),
-		BldInfo(CardEnum::DesertOreTrade, LOCTEXT("Ore Trade", "Ore Trade"), 0, LOCTEXT("Ore Trade Desc", "-20% Trade Fee when trading Iron Ore, Gold Ore, and Gemstone.")),
-		BldInfo(CardEnum::DesertIndustry, LOCTEXT("Desert Industry", "Desert Industry"), 0, LOCTEXT("Desert Industry Desc", "+10% Productivity to all Industries. Can no longer build Farms.")),
+		BldInfo(CardEnum::DesertTradeForALiving, LOCTEXT("Trade for a Living", "Trade for a Living"), 0, LOCTEXT("Trade for a Living Desc", "-7% Trade Fee when trading Food/Wood.")),
+		BldInfo(CardEnum::DesertOreTrade, LOCTEXT("Ore Trade", "Ore Trade"), 0, LOCTEXT("Ore Trade Desc", "-15% Trade Fee when trading Ores.")),
+		BldInfo(CardEnum::DesertIndustry, LOCTEXT("Desert Industry", "Desert Industry"), 0, LOCTEXT("Desert Industry Desc", "+10% Productivity to all Industries. -50% Farm Productivity.")),
 
-		BldInfo(CardEnum::SavannaRanch, LOCTEXT("Grass Fed", "Grass Fed"), 0, LOCTEXT("Grass Fed Desc", "+20% Ranch Productivity.")),
-		BldInfo(CardEnum::SavannaHunt, LOCTEXT("Grassland Hunting", "Grassland Hunting"), 0, LOCTEXT("+30% Hunting Lodge Productivity.", "")),
-		BldInfo(CardEnum::SavannaNomad, LOCTEXT("Grassland Nomad", "Grassland Nomad"), 0, LOCTEXT("Grassland Nomad Desc", "Halve Resource Cost for Houses built on Savanna/Grassland.")),
-		BldInfo(CardEnum::SavannaExpansion, LOCTEXT("Grassland Expansion", "Grassland Expansion"), 0, LOCTEXT("Grassland Expansion Desc", "Halve Savanna/Grassland Province Claim Cost")),
+		BldInfo(CardEnum::SavannaRanch, LOCTEXT("Grass Fed", "Grass Fed"), 0, LOCTEXT("Grass Fed Desc", "+10% Ranch Productivity.")),
+		BldInfo(CardEnum::SavannaHunt, LOCTEXT("Grassland Hunting", "Grassland Hunting"), 0, LOCTEXT("Grassland Hunting Desc", "+30% Hunting Lodge Productivity.")),
+		BldInfo(CardEnum::SavannaGrasslandHerder, LOCTEXT("Grassland Herder", "Grassland Herder"), 0, LOCTEXT("Grassland Herder Desc", "+20% Productivity for Ranch on Grassland/Savanna.")),
+		BldInfo(CardEnum::SavannaGrasslandRoamer, LOCTEXT("Grassland Roamer", "Grassland Roamer"), 0, LOCTEXT("Grassland Roamer Desc", "+10% <img id=\"Influence\"/> from Houses on Grassland/Savanna.")),
 
 		BldInfo(CardEnum::JungleGatherer, LOCTEXT("Jungle Gatherer", "Jungle Gatherer"), 0, LOCTEXT("Jungle Gatherer Desc", "+10% Productivity for Fruit Gatherers in Jungle Biome.")),
 		BldInfo(CardEnum::JungleMushroom, LOCTEXT("Jungle Mushroom", "Jungle Mushroom"), 0, LOCTEXT("Jungle Mushroom Desc", "+10% Productivity for Mushroom Farms in Jungle Biome.")),
@@ -3432,17 +3456,17 @@ static const BldInfo CardInfos[]
 		BldInfo(CardEnum::Agriculturalist, LOCTEXT("Agriculturalist", "Agriculturalist"), 0, LOCTEXT("Agriculturalist Desc", "+10% Farm Productivity within Granary's Radius.")),
 		BldInfo(CardEnum::Geologist, LOCTEXT("Geologist", "Geologist"), 0, LOCTEXT("Geologist Desc", "Mines depletes 50% slower.")),
 		BldInfo(CardEnum::AlcoholAppreciation, LOCTEXT("Alcohol Appreciation", "Alcohol Appreciation"), 0, LOCTEXT("Alcohol Appreciation Desc", "+15% Productivity when producing Beer, Vodka, and Wine.")),
-		BldInfo(CardEnum::Craftmanship, LOCTEXT("Craftmanship", "Craftmanship"), 0, LOCTEXT("Craftmanship Desc", "+15% Productivity for Blacksmith.")),
+		BldInfo(CardEnum::Craftmanship, LOCTEXT("Craftmanship", "Craftmanship"), 0, LOCTEXT("Craftmanship Desc", "+20% Productivity for Blacksmith.")),
 
 		BldInfo(CardEnum::Rationalism, LOCTEXT("Rationalism", "Rationalism"), 0, LOCTEXT("Rationalism Desc", "+1% Science Boost for each 2% Happiness above 80%.")),
-		BldInfo(CardEnum::Romanticism, LOCTEXT("Romanticism", "Romanticism"), 0, LOCTEXT("Romanticism Desc", "+1% town attractiveness for each house lv 5+ <Gray>(max 30%)</>.")),
+		BldInfo(CardEnum::Romanticism, LOCTEXT("Romanticism", "Romanticism"), 0, LOCTEXT("Romanticism Desc", "+1% Town Attractiveness for each House lv 5+ <Gray>(max 30%)</>.")),
 		BldInfo(CardEnum::Protectionism, LOCTEXT("Protectionism", "Protectionism"), 0, LOCTEXT("Protectionism Desc", "+20% Luxury Resources Productivity. Doubles Luxury Resources Import Fee.")),
-		BldInfo(CardEnum::FreeThoughts, LOCTEXT("Free Thoughts", "Free Thoughts"), 0, LOCTEXT("Free Thoughts Desc", "+0.5% Science Boost for each Trading Post/Port/Company in the World <Gray>(max 10%)</>")),
+		BldInfo(CardEnum::FreeThoughts, LOCTEXT("Free Thoughts", "Free Thoughts"), 0, LOCTEXT("Free Thoughts Desc", "+0.5% Science Boost for each Trading Post/Port/Company in the World")),
 
 		BldInfo(CardEnum::Capitalism, LOCTEXT("Capitalism", "Capitalism"), 0, LOCTEXT("Capitalism Desc", "+100%<img id=\"Coin\"/> from Luxury Consumption")),
-		BldInfo(CardEnum::Communism, LOCTEXT("Communism", "Communism"), 0, LOCTEXT("Communism Desc", "+25% Productivity to all Buildings. Halve the effectiveness of Motivation/Passion Cards.")),
+		BldInfo(CardEnum::Communism, LOCTEXT("Communism", "Communism"), 0, LOCTEXT("Communism Desc", "+25% Productivity to all Production Buildings. Halve the effectiveness of Motivation/Passion Cards.")),
 		BldInfo(CardEnum::WondersScoreMultiplier, LOCTEXT("Wonders Score", "Wonders Score"), 0, LOCTEXT("Wonders Score Desc", "+100% Scores from Wonders.")),
-		BldInfo(CardEnum::PopulationScoreMultiplier, LOCTEXT("Population Score", "Population Score"), 0, LOCTEXT("Population Score Desc", "+100% Scores from Population.")),
+		BldInfo(CardEnum::PopulationScoreMultiplier, LOCTEXT("Population Score", "Population Score"), 0, LOCTEXT("Population Score Desc", "+100% Scores from Population and Happiness.")),
 
 };
 
@@ -3642,7 +3666,7 @@ static bool IsRareCard(CardEnum cardEnumIn) {
 static bool IsPermanentTownBonus(CardEnum cardEnum)
 {
 	int32 cardEnumInt = static_cast<int>(cardEnum);
-	return static_cast<int>(CardEnum::BorealFish) <= cardEnumInt && cardEnumInt <= static_cast<int>(CardEnum::ForestBeer);
+	return static_cast<int>(CardEnum::BorealWinterFishing) <= cardEnumInt && cardEnumInt <= static_cast<int>(CardEnum::ForestBeer);
 }
 
 static bool IsPermanentGlobalBonus(CardEnum cardEnum)
@@ -5347,6 +5371,7 @@ enum class InfluenceIncomeEnum : uint8
 	Townhall,
 	Population,
 	Luxury,
+	GrasslandRoamer,
 	TerritoryUpkeep,
 	BorderProvinceUpkeep,
 	TooMuchInfluencePoints,
@@ -5361,6 +5386,7 @@ static const TArray<FText> InfluenceIncomeEnumName
 	LOCTEXT("Townhall", "Townhall"),
 	LOCTEXT("Population", "Population"),
 	LOCTEXT("Luxury Consumption", "Luxury Consumption"),
+	LOCTEXT("Grassland Roamer", "Grassland Roamer"),
 	LOCTEXT("Territory Upkeep", "Territory Upkeep"),
 	LOCTEXT("Flat-Land Border Province Upkeep", "Flat-Land Border Province Upkeep"),
 	LOCTEXT("Too Much Stored Influence Points", "Too Much Stored Influence Points"),
@@ -5473,6 +5499,7 @@ enum class ScienceEnum : uint8
 	ScientificTheories,
 
 	Rationalism,
+	FreeThoughts,
 
 	// ScienceModifiers Below
 	Library,
@@ -5491,6 +5518,7 @@ static TArray<FText> ScienceEnumNameList
 	LOCTEXT("ScientificTheories", "Scientific Theories"),
 
 	LOCTEXT("Rationalism", "Rationalism"),
+	LOCTEXT("FreeThoughts", "FreeThoughts"),
 
 	LOCTEXT("Library", "Library"),
 	LOCTEXT("School", "School"),
@@ -5715,8 +5743,6 @@ enum class TechEnum : uint8
 	FlowerBed,
 	GardenShrubbery1,
 	GardenCypress,
-
-	Rationalism,
 
 	Fort,
 	ResourceOutpost,

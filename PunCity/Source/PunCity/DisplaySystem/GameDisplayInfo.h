@@ -527,7 +527,10 @@ public:
 
 		for (int32 i = 0; i < BuildingEnumCount; i++) {
 			if (BuildingEnumToVariationToModuleTransforms[i].Num() == 0) {
-				setName(static_cast<CardEnum>(i), "Ministry");
+				CardEnum buildingEnum = static_cast<CardEnum>(i);
+				if (buildingEnum != CardEnum::Farm) {
+					setName(buildingEnum, "Ministry");
+				}
 			}
 		}
 	}

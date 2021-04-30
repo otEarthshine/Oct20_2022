@@ -3326,6 +3326,12 @@ void HumanStateAI::UpdateHappiness()
 		attractivenessDecay = std::min(30, attractivenessDecay);
 		targetHappiness -= attractivenessDecay;
 
+
+		if (_simulation->HasGlobalBonus(_playerId, CardEnum::Romanticism)) {
+			targetHappiness += std::min(30, _simulation->GetHouseLvlCount(_playerId, 5, true));
+		}
+		
+
 		// Tax
 		targetHappiness += townManager.taxHappinessModifier();
 		

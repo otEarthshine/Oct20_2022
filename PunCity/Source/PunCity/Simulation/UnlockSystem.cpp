@@ -323,7 +323,7 @@ void UnlockSystem::UpdateProsperityHouseCount()
 {
 	// Prosperity unlock at 7 houses
 	if (!prosperityEnabled &&
-		_simulation->buildingFinishedCount(_playerId, CardEnum::House) >= 7)
+		_simulation->townBuildingFinishedCount(_playerId, CardEnum::House) >= 7)
 	{
 		prosperityEnabled = true;
 

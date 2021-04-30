@@ -310,7 +310,7 @@ public:
 class GemstoneMine final : public Mine
 {
 public:
-
+	std::vector<BonusPair> GetBonuses() final;
 };
 
 /*
@@ -537,14 +537,16 @@ public:
 	int32 baseInputPerBatch() override { return 0; }
 };
 
-class StoneToolShop : public IndustrialBuilding
+class StoneToolsShop : public IndustrialBuilding
 {
 public:
+	std::vector<BonusPair> GetBonuses() override;
 };
 class Blacksmith : public IndustrialBuilding
 {
 public:
 	void FinishConstruction() final;
+	std::vector<BonusPair> GetBonuses() override;
 
 };
 class Herbalist : public IndustrialBuilding
@@ -840,14 +842,10 @@ class Steelworks final : public Building
 public:
 };
 
-class StoneToolsShop final : public Building
+class OilRig final : public Mine
 {
 public:
-};
-
-class OilWell final : public Building
-{
-public:
+	std::vector<BonusPair> GetBonuses() final;
 };
 
 class OilPowerPlant final : public Building
@@ -866,19 +864,59 @@ public:
 };
 
 
-class Cathedral final : public Building
+class WorldWonder : public Building
+{
+public:
+	void FinishConstruction() override {
+		Building::FinishConstruction();
+
+		builtNumber = _simulation->playerBuildingFinishedCount(_townId, _buildingEnum);
+	}
+	
+	int32 WonderScore()
+	{
+		const BldInfo& bldInfo = buildingInfo();
+		int32 moneyValue = bldInfo.baseCardPrice + bldInfo.constructionCostAsMoney();
+		int32 minEra = bldInfo.minEra();
+
+		int32 multiplier = 2;
+		for (int32 i = minEra; i < 4; i++) {
+			multiplier *= 2;
+		}
+		int32 wonderScore = multiplier * moneyValue / 10000; // 10000 Money = 1 Score
+
+		if (_simulation->HasGlobalBonus(_playerId, CardEnum::WondersScoreMultiplier)) {
+			wonderScore *= 2;
+		}
+
+		if (builtNumber > 1) {
+			wonderScore /= 2;
+		}
+
+		return wonderScore;
+	}
+
+	void Serialize(FArchive& Ar) override {
+		Building::Serialize(Ar);
+		Ar << builtNumber;
+	}
+
+	int32 builtNumber;
+};
+
+class Cathedral final : public WorldWonder
 {
 public:
 };
-class Castle final : public Building
+class Castle final : public WorldWonder
 {
 public:
 };
-class GrandMuseum final : public Building
+class GrandMuseum final : public WorldWonder
 {
 public:
 };
-class ExhibitionHall final : public Building
+class ExhibitionHall final : public WorldWonder
 {
 public:
 };

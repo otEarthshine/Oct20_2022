@@ -129,8 +129,8 @@ public:
 	int32 GetIncome100Int(int32 incomeEnumInt) { return GetIncome100(static_cast<IncomeEnum>(incomeEnumInt)); }
 	int32 GetIncome100(IncomeEnum incomeEnum);
 
-	int32 GetInfluenceIncome100() { return _roundLuxuryConsumption100 * 2 / 10; } // 20% of Luxury goes to influence
-
+	int32 GetInfluenceIncome100() { return _roundLuxuryConsumption100 * 2 / 10;} // 20% of Luxury goes to influence
+	
 	// Note: these two includes occupancy factor built in...
 	int32 _roundLuxuryConsumption100 = 0;
 	int32 _roundFoodConsumption100 = 0;
@@ -358,6 +358,25 @@ public:
 		WorldTile2 rotatedTile = WorldTile2::RotateTileVector(WorldTile2(-7, 5), _faceDirection);
 		return rotatedTile + _centerTile;
 	}
+
+	std::vector<BonusPair> GetBonuses() override {
+		std::vector<BonusPair> bonuses = Building::GetBonuses();
+		if (_simulation->HasTownBonus(_townId, CardEnum::SavannaRanch)) {
+			bonuses.push_back({ NSLOCTEXT("Ranch", "Grass Fed Bonus", "Grass Fed"), 10 });
+		}
+		if (_simulation->HasTownBonus(_townId, CardEnum::SavannaGrasslandHerder)) {
+
+			if (IsGrassDominant(centerBiomeEnum())) {
+				bonuses.push_back({ NSLOCTEXT("Ranch", "Grassland Herder Bonus", "Grassland Herder"), 20 });
+			}
+		}
+		return bonuses;
+	}
+
+
+	/*
+	 * Occupants
+	 */
 	
 	void AddAnimalOccupant(UnitEnum animalEnum, int32 age);
 	

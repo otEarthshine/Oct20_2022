@@ -96,7 +96,7 @@ public:
 
 	void UsedTrade(FTradeResource tradeCommand);
 
-	static void ExecuteTrade(FTradeResource tradeCommand, int32 tradingFeePercent, WorldTile2 tile, IGameSimulationCore* simulation, bool isInstantBuy, int32& exportMoney100, int32& importMoney100);
+	static void ExecuteTrade(FTradeResource tradeCommand, int32 baseTradingFeePercent, WorldTile2 tile, IGameSimulationCore* simulation, bool isInstantBuy, int32& exportMoney100, int32& importMoney100);
 
 	void OnTick1Sec() override;
 
@@ -198,7 +198,7 @@ public:
 	}
 
 	int32 baseUpkeep() override {
-		if (_simulation->buildingFinishedCount(_playerId, CardEnum::StockMarket)) {
+		if (_simulation->townBuildingFinishedCount(_playerId, CardEnum::StockMarket)) {
 			return 1;
 		}
 		if (_simulation->TownhallCardCountTown(_playerId, CardEnum::Conglomerate)) {

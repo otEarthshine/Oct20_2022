@@ -676,6 +676,7 @@ void UnitStateAI::Die()
 		_simulation->building(_houseId).RemoveOccupant(_id);
 		_houseId = -1;
 	}
+	
 	// Has owner
 	if (IsAnimal(unitEnum()) && _townId != -1) 
 	{
@@ -778,7 +779,14 @@ void UnitStateAI::AttackIncoming(UnitFullId attacker, int32 ownerWorkplaceId, in
 
 			int32 attackerTownId = unitAI.townId();
 			if (_simulation->IsValidTown(attackerTownId)) {
-				for (ResourcePair& drop : drops) {
+				for (ResourcePair& drop : drops) 
+				{
+					// Enhance drop count using ranch's productivity
+					Building* workplc = unitAI.workplace();
+					if (workplc && IsRanch(workplc->buildingEnum())) {
+						drop.count = drop.count * (100 + workplc->GetTotalBonus()) / 100;
+					}
+					
 					_simulation->resourceSystem(attackerTownId).SpawnDrop(drop.resourceEnum, drop.count, unitTile());
 				}
 			}
@@ -1719,6 +1727,7 @@ void UnitStateAI::HarvestTileObj()
 		resourcePairFruit.count /= 200; // Gather by chopping tree lead to less fruit /2, and also get rid of 100 with /100
 	}
 
+	TileObjEnum plantEnum = _simulation->treeSystem().tileObjEnum(targetTile.tileId());
 	ResourcePair resourcePair = _simulation->treeSystem().HumanHarvest(targetTile);
 
 	// Discard hay
@@ -1735,6 +1744,20 @@ void UnitStateAI::HarvestTileObj()
 			//else 
 			if (unlockSys->IsResearched(TechEnum::Ironworks)) {
 				efficiency += 30;
+			}
+
+			if (_simulation->HasTownBonus(_townId, CardEnum::BorealPineForesting)) {
+				if (plantEnum == TileObjEnum::Pine1 || plantEnum == TileObjEnum::Pine2) {
+					efficiency += 20;
+				}
+			}
+			if (_simulation->HasTownBonus(_townId, CardEnum::JungleTree))
+			{
+				if (plantEnum == TileObjEnum::Cyathea || 
+					plantEnum == TileObjEnum::ZamiaDrosi || 
+					plantEnum == TileObjEnum::Papaya) {
+					efficiency += 10;
+				}
 			}
 
 			if (workplace() && workplace()->isEnum(CardEnum::Forester)) {

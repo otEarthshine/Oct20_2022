@@ -71,6 +71,7 @@ static const std::vector<CardEnum> DefaultJobPriorityListAllSeason
 	CardEnum::CoalMine,
 	CardEnum::IronMine,
 
+	CardEnum::IndustrialIronSmelter,
 	CardEnum::IronSmelter,
 	CardEnum::GoldSmelter,
 	CardEnum::Mint,
@@ -94,6 +95,7 @@ static const std::vector<CardEnum> DefaultJobPriorityListAllSeason
 
 
 	CardEnum::SandMine,
+	CardEnum::GlassSmelter,
 	CardEnum::Glassworks,
 	CardEnum::ConcreteFactory,
 	CardEnum::CoalPowerPlant,

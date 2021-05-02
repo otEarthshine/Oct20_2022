@@ -118,7 +118,7 @@ void UnlockSystem::Research(int64 science100PerRound, int32 updatesPerSec)
 			for (int32 townId : townIds) {
 				for (int32 i = 0; i < BuildingEnumCount; i++) {
 					CardEnum buildingEnum = static_cast<CardEnum>(i);
-					if (IsAutoUpgrade(buildingEnum)) {
+					if (IsAutoEraUpgrade(buildingEnum)) {
 						const std::vector<int32>& buildingIds = _simulation->buildingIds(townId, buildingEnum);
 						for (int32 buildingId : buildingIds) {
 							_simulation->building(buildingId).ResetDisplay();
@@ -304,6 +304,40 @@ void BonusToggle_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulat
 			LOCTEXT("UnlockedBuildingComboBullet2_Pop", "<bullet>Combo Level 2: 4 same-type buildings (+10% productivity)</>"),
 			LOCTEXT("UnlockedBuildingComboBullet3_Pop", "<bullet>Combo Level 3: 8 same-type buildings (+15% productivity)</>")
 		});
+	}
+
+	/*
+	 * First Wonder Popup
+	 */
+	const std::vector<TechEnum> wonderTechs {
+		TechEnum::Cathedral,
+		TechEnum::Castle,
+		TechEnum::GrandPalace,
+		TechEnum::ExhibitionHall,
+	};
+	for (TechEnum wonderTechEnum: wonderTechs) {
+		if (techEnum == wonderTechEnum) 
+		{
+			int32 wonderTechesResearched = 0;
+			for (TechEnum curWonderTechEnum : wonderTechs) {
+				if (simulation->IsResearched(playerId, curWonderTechEnum)) {
+					wonderTechesResearched++;
+				}
+			}
+
+			if (wonderTechesResearched == 1)
+			{
+				simulation->AddPopup(playerId, {
+					LOCTEXT("UnlockedFirstWonder_Pop1", "You have unlocked your first World Wonder!"),
+					LOCTEXT("UnlockedFirstWonder_Pop2", "<space>World Wonders grant Victory Score. First World Wonder of its kind that gets built in the world grants the full score, while each subsequent wonders grants half as much score."),
+					LOCTEXT("UnlockedFirstWonder_Pop3", "<space>Once every type of World Wonder gets built, the game ends and the Victory Scores are counted to determine the Winner."),
+				});
+			}
+
+			if (wonderTechesResearched == wonderTechs.size()) {
+				simulation->ExecuteScoreVictory();
+			}
+		}
 	}
 	
 

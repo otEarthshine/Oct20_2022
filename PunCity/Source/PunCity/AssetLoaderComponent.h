@@ -141,6 +141,8 @@ struct ModuleTransformGroup
 
 	FString setName; // For building name etc.
 
+	static const ModuleTransformGroup Empty;
+
 	ModuleTransformGroup() {}
 	
 	ModuleTransformGroup(std::vector<ModuleTransform> transforms,
@@ -698,7 +700,7 @@ private:
 	 */
 	void DetectMeshGroups(UStaticMesh* mesh, TArray<FVector>& vertexPositions);
 	
-	void DetectParticleSystemPosition(UStaticMesh* mesh);
+	void DetectParticleSystemPosition(CardEnum buildingEnum, UStaticMesh* mesh);
 	
 	void PaintMeshForConstruction(FString moduleName);
 

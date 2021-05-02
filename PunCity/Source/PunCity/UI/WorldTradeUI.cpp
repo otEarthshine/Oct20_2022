@@ -191,7 +191,8 @@ void UWorldTradeUI::UpdateTotal()
 	SetFString(QuantityText, FString::FromInt(_quantity) + "/" + FString::FromInt(maxQuantity));
 	QuantityText->SetColorAndOpacity(_quantity <= maxQuantity ? FLinearColor::White : FLinearColor::Red);
 
-	SetText(FeePercentText, to_string(baseTradeFeePercent) + "%");
+	//SetText(FeePercentText, to_string(baseTradeFeePercent) + "%");
+	FeePercentText->SetVisibility(ESlateVisibility::Collapsed);
 
 	BuyMoney->SetImage(assetLoader()->CoinIcon);
 	BuyMoney->SetFString(FString::FromInt(abs(-buyMoneyBeforeFee)), "");

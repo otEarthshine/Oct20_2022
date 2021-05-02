@@ -359,6 +359,10 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 		{
 			Building& building = buildingSystem.building(buildingId);
 			CardEnum buildingEnum = building.buildingEnum();
+
+			if (displayInfo.GetVariationCount(buildingEnum) == 0) {
+				return;
+			}
 			
 			// Building mesh
 			int32_t displayVariationIndex = building.displayVariationIndex();

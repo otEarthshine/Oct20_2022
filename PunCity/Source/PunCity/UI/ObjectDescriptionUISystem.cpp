@@ -449,7 +449,6 @@ void UObjectDescriptionUISystem::LeftMouseDown()
 
 							if (building.isConstructed())
 							{
-								int32 variationCount = displayInfo.GetVariationCount(building.buildingEnum());
 								const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(building.buildingEnum(), building.displayVariationIndex());
 								std::vector<ModuleTransform> modules = modulePrototype.transforms;
 
@@ -1646,6 +1645,22 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					{
 						descriptionBox->AddRichText(LOCTEXT("AttackRequires", "Attacking this province requires 100% more <img id=\"Influence\"/>."));
 					}
+					else if (IsPowerPlant(buildingEnum))
+					{
+						
+					}
+					else if (IsWorldWonder(buildingEnum))
+					{
+						descriptionBox->AddRichText(LOCTEXT("WorldWonder_FocusUI_ThisWonderScore", "Wonder Score (This):"), building.subclass<WorldWonder>().WonderScore());
+						descriptionBox->AddRichText(LOCTEXT("WorldWonder_FocusUI_BuiltNumber", "Built Number:"), building.subclass<WorldWonder>().builtNumber);
+						
+						descriptionBox->AddLineSpacer();
+						descriptionBox->AddRichText(LOCTEXT("WorldWonder_FocusUI_PlayerScore", "Player's Total Score:"), TEXT_NUM(simulation.totalScore(building.playerId())));
+
+						ExecuteFillScoreBreakdownText([&](FText leftText, FText rightText) {
+							return descriptionBox->AddRichText(leftText, rightText);
+						}, building.playerId());
+					}
 					else {
 						//ss << building.buildingInfo().description;
 						//descriptionBox->AddRichText(ss);
@@ -2021,7 +2036,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						descriptionBox->AddRichText(TEXT_TAG("<Subheader>", LOCTEXT("Production batch:", "Production batch:")));
 						descriptionBox->AddProductionChain({ building.input1(), building.inputPerBatch() },
 							{ building.input2(), building.inputPerBatch() },
-							{ building.product(), building.productPerBatch() }
+							{ building.product(), building.outputPerBatch() }
 						);
 
 						//if (building.hasInput1() || building.hasInput2()) {
@@ -2031,12 +2046,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						//if (building.hasInput2()) ss << ", " << building.inputPerBatch() << " " << GetResourceInfo(building.input2()).name;
 						//ss << "\n";
 
-						//ss << "Output: " << building.productPerBatch() << " " << GetResourceInfo(building.product()).name << "\n\n";
+						//ss << "Output: " << building.outputPerBatch() << " " << GetResourceInfo(building.product()).name << "\n\n";
 
 						descriptionBox->AddRichText(LOCTEXT("Work done", "Work done"), TEXT_PERCENT(building.workPercent()));
 
 						if (building.workPercent() > 0) {
-							//ss << "(get " << building.productPerBatch() << " " << ResourceName(building.product()) << ")\n";
+							//ss << "(get " << building.outputPerBatch() << " " << ResourceName(building.product()) << ")\n";
 						}
 						else if (building.needInput1() ||
 								 building.needInput2())
@@ -2104,13 +2119,13 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						
 						switch (buildingEnum)
 						{
-							case CardEnum::Mint: setProduct(assetLoader->CoinIcon, to_string(building.productPerBatch()));  break;
-							case CardEnum::InventorsWorkshop: setProduct(assetLoader->ScienceIcon, to_string(building.productPerBatch()));  break;
-							case CardEnum::RegionShrine: setProduct(assetLoader->ScienceIcon, to_string(building.productPerBatch()));  break;
+							case CardEnum::Mint: setProduct(assetLoader->CoinIcon, to_string(building.outputPerBatch()));  break;
+							case CardEnum::InventorsWorkshop: setProduct(assetLoader->ScienceIcon, to_string(building.outputPerBatch()));  break;
+							case CardEnum::RegionShrine: setProduct(assetLoader->ScienceIcon, to_string(building.outputPerBatch()));  break;
 							
 							case CardEnum::BarrackArcher:
 							case CardEnum::BarrackSwordman:
-									setProduct(assetLoader->InfluenceIcon, to_string(building.productPerBatch()));  break;
+									setProduct(assetLoader->InfluenceIcon, to_string(building.outputPerBatch()));  break;
 							
 							case CardEnum::CardMaker: setProduct(assetLoader->CardBack, "1 card");  break;
 							case CardEnum::ImmigrationOffice: break;
@@ -2143,7 +2158,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 					// Quick Build
 					if (building.playerId() == playerId() &&
-						simulation.IsResearched(playerId(), TechEnum::QuickBuild))
+						(simulation.IsResearched(playerId(), TechEnum::QuickBuild) || PunSettings::IsOn("ForceQuickBuild")))
 					{
 						if (IsRoad(building.buildingEnum()))
 						{
@@ -2498,6 +2513,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 				if (building.playerId() == playerId())
 				{
+					const FText upgradeEraRequiresText = LOCTEXT("Upgrade Requires", "\n<Red>Requires {0}</>");
+					
 					//! Upgrade Button Townhall
 					if (building.isEnum(CardEnum::Townhall))
 					{
@@ -2511,19 +2528,24 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							}
 
 							bool showExclamation = simulation.parameters(playerId())->NeedTownhallUpgradeNoticed;
-
-							//ss << "Upgrade Townhall to lvl " << (townhall.townhallLvl + 1) << "\n";
-							//ss << "<img id=\"Coin\"/>" << moneyText;
+							bool showEnabled = true;
 
 							CLEARTEXT_();
 							ADDTEXT_(
-								LOCTEXT("TownhallUpgradeButton", "Upgrade Townhall to lvl {0}\n<img id=\"Coin\"/>{1}"),
-								FText::AsNumber(townhall.townhallLvl + 1),
-								moneyText
+								LOCTEXT("TownhallUpgradeButton", "Upgrade Townhall to lvl {0}"),
+								FText::AsNumber(townhall.townhallLvl + 1)
 							);
 
+							auto unlockSys = simulation.unlockSystem(playerId());
+							if (unlockSys->GetEra() < townhall.townhallLvl + 1) {
+								ADDTEXT_(upgradeEraRequiresText, unlockSys->GetEraText(townhall.townhallLvl + 1));
+								showEnabled = false;
+							} else {
+								ADDTEXT_(INVTEXT("\n<img id=\"Coin\"/>{0}"), moneyText);
+							}
+
 							descriptionBox->AddLineSpacer(8);
-							UPunButton* button = descriptionBox->AddButton2Lines(FText::Join(FText(), args), this, CallbackEnum::UpgradeBuilding, true, showExclamation, objectId, 0);
+							UPunButton* button = descriptionBox->AddButton2Lines(FText::Join(FText(), args), this, CallbackEnum::UpgradeBuilding, showEnabled, showExclamation, objectId, 0);
 							args.Empty();
 
 							ADDTEXT_LOCTEXT("Upgrade Rewards", "Upgrade Rewards");
@@ -2531,6 +2553,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							ADDTEXT__(GetTownhallLvlToUpgradeBonusText(townhall.townhallLvl + 1));
 
 							int32 capitalLvl = simulation.GetTownLvl(townhall.playerId());
+							
 							if (townhall.townhallLvl >= capitalLvl) {
 								ADDTEXT_INV_("<space>");
 								ADDTEXT_TAG_("<Red>", LOCTEXT("TownhallUpgrade_NeedCapitalUpgrade", "Require higher Capital's Townhall Level."));
@@ -2570,7 +2593,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								bool requireEra = upgrade.isEraUpgrade() && !upgrade.isEraUpgradable(unlockSys->GetEra());
 
 								if (requireEra) {
-									ADDTEXT_(INVTEXT("\n<Red>Require {0}</>"), unlockSys->GetEraText(upgrade.currentEraLevel() + 1));
+									ADDTEXT_(upgradeEraRequiresText, unlockSys->GetEraText(upgrade.currentEraLevel() + 1));
 									showEnabled = false;
 								}
 								else if (resourceEnum == ResourceEnum::Stone) { showResourceText("Stone"); }
@@ -2607,7 +2630,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							}
 							ADDTEXT_INV_("<space>");
 							
-							ADDTEXT__(upgrade.displayDescription());
+							ADDTEXT__(building.GetUpgradeDisplayDescription(upgradeIndex));
 
 							if (!_alreadyDidShiftDownUpgrade) {
 								ADDTEXT_INV_("<line><space>");
@@ -3460,7 +3483,29 @@ void UObjectDescriptionUISystem::AddSelectStartLocationButton(int32 provinceId, 
 	bool hasChosenLocation = simulation().HasChosenLocation(playerId());
 	// If player hasn't select starting location
 	if (!hasChosenLocation)
-	{	
+	{
+		switch(simulation().GetBiomeProvince(provinceId))
+		{
+		case BiomeEnum::Tundra:
+			descriptionBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Difficulty: Extreme", "Difficulty: Extreme")));
+			break;
+		case BiomeEnum::Desert:
+			descriptionBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Difficulty: Very Hard", "Difficulty: Very Hard")));
+			break;
+		case BiomeEnum::BorealForest:
+		case BiomeEnum::Savanna:
+		case BiomeEnum::GrassLand:
+			descriptionBox->AddRichText(TEXT_TAG("<Orange>", LOCTEXT("Difficulty: Hard", "Difficulty: Hard")));
+			break;
+		case BiomeEnum::Jungle:
+			descriptionBox->AddRichText(LOCTEXT("Difficulty: Somewhat Hard", "Difficulty: Somewhat Hard"));
+			break;
+		case BiomeEnum::Forest:
+			descriptionBox->AddRichText(LOCTEXT("Difficulty: Normal", "Difficulty: Normal"));
+			break;
+		}
+		descriptionBox->AddSpacer();
+		
 		bool canClaim = true;
 
 		if (simulation().provinceOwnerTown(provinceId) != -1) {
@@ -4501,6 +4546,15 @@ void UObjectDescriptionUISystem::AddTradeFeeText(TradeBuilding& building, UPunBo
 	AddToolTip(feeText, args);
 
 	// TODO: Resource Fee
+	descriptionBox->AddSpacer();
+	if (simulation().HasTownBonus(building.townId(), CardEnum::DesertTradeForALiving)) {
+		descriptionBox->AddText(GetBuildingInfo(CardEnum::DesertTradeForALiving).GetDescription());
+		descriptionBox->AddSpacer();
+	}
+	if (simulation().HasTownBonus(building.townId(), CardEnum::DesertOreTrade)) {
+		descriptionBox->AddText(GetBuildingInfo(CardEnum::DesertOreTrade).GetDescription());
+		descriptionBox->AddSpacer();
+	}
 }
 
 

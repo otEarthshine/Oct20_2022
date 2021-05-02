@@ -138,6 +138,8 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 
 	{ "DebugFocusUI", 0 },
 
+	{ "ForceQuickBuild", 0 },
+
 	// Debug Network
 	{ "ForceDelayInput", 0 },
 	{ "FixedDeltaTime", 1 },

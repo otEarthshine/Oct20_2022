@@ -40,6 +40,12 @@ FText BuildingCardSystem::rareHandMessage2()
 	{
 	case RareHandEnum::InitialCards1: return LOCTEXT("ChooseAStartingCard", "Choose a Starting Card");
 	case RareHandEnum::InitialCards2: return LOCTEXT("ChooseAnotherStartingCard", "Choose Another Starting Card");
+
+	case RareHandEnum::TownhallLvl2Cards:
+	case RareHandEnum::TownhallLvl3Cards:
+	case RareHandEnum::TownhallLvl4Cards:
+	case RareHandEnum::TownhallLvl5Cards:
+		return LOCTEXT("TownhallLvlChooseCards", "Choose a Townhall Slot Card");
 		
 	case RareHandEnum::BorealCards:
 	case RareHandEnum::DesertCards:
@@ -138,6 +144,18 @@ void BuildingCardSystem::RollRareHandExecute()
 	{
 		RandomInsertToRareHand(CrateCards);
 	}
+	//! Townhall Lvl
+	else if (static_cast<uint8>(RareHandEnum::TownhallLvl2Cards) <= rareHandEnumInt && rareHandEnumInt <= static_cast<uint8>(RareHandEnum::TownhallLvl5Cards))
+	{
+
+		//// Lvl 2 upgrade, mostly encouragement to upgrade houses
+		//_cardsRareHand = {
+		//	CardEnum::BeerTax,
+		//	CardEnum::HomeBrew,
+		//	CardEnum::ChimneyRestrictor,
+		//};
+		
+	}
 	//! Population Quests
 	else if (static_cast<uint8>(RareHandEnum::PopulationQuestCards1) <= rareHandEnumInt && rareHandEnumInt <= static_cast<uint8>(RareHandEnum::PopulationQuestCards7))
 	{
@@ -148,14 +166,14 @@ void BuildingCardSystem::RollRareHandExecute()
 		if (_rareHandEnum == RareHandEnum::PopulationQuestCards1) {
 			cardEnums = {
 				CardEnum::BeerTax,
+				CardEnum::HomeBrew,
 				CardEnum::ChimneyRestrictor,
-				CardEnum::GoldRush,
 			};
 		}
 		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards2) {
 			cardEnums = {
 				CardEnum::MiningEquipment,
-				CardEnum::HomeBrew,
+				CardEnum::FarmWaterManagement,
 				CardEnum::CoalTreatment,
 			};
 		}
@@ -190,10 +208,17 @@ void BuildingCardSystem::RollRareHandExecute()
 		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards7) {
 			cardEnums = {
 				CardEnum::SocialWelfare,
-				CardEnum::Motivation,
+				CardEnum::BookWorm,
 				CardEnum::Passion,
 			};
 		}
+		//else if (_rareHandEnum == RareHandEnum::PopulationQuestCards8) {
+		//	cardEnums = {
+		//		CardEnum::SocialWelfare,
+		//		CardEnum::Motivation,
+		//		CardEnum::Passion,
+		//	};
+		//}
 
 		// Remove card if we already have it
 		//for (size_t i = cardEnums.size(); i-- > 0;) {

@@ -19,6 +19,8 @@
 
 using namespace std;
 
+const ModuleTransformGroup ModuleTransformGroup::Empty = ModuleTransformGroup();
+
 // Sets default values for this component's properties
 UAssetLoaderComponent::UAssetLoaderComponent()
 {
@@ -158,13 +160,14 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	_buildingEnumToMinEraModel.SetNum(BuildingEnumCount);
 	
 	LoadBuilding(CardEnum::FruitGatherer, "Fruit_GathererEra", "FruitGatherer", 1);
-	LoadBuilding(CardEnum::Bank, "Bank_Era", "Bank/Era", 3);
+	LoadBuilding(CardEnum::Bank, "Bank_Era", "Bank", 3);
 
 	LoadBuilding(CardEnum::StoneToolsShop, "StoneToolsShop", "StoneToolShop");
 	LoadBuilding(CardEnum::Blacksmith, "Blacksmith_Era", "Blacksmith", 2);
 	LoadBuilding(CardEnum::MedicineMaker, "MedicineMaker_Era", "MedicineMaker", 2);
 
 	LoadBuilding(CardEnum::FurnitureWorkshop, "FurnitureWorkshop", "FurnitureWorkshop", true);
+	LoadBuilding(CardEnum::BeerBrewery, "Brewery_Era", "BeerBrewery", 1);
 	
 	LoadBuilding(CardEnum::Chocolatier, "Chocolatier_Era", "Chocolatier", 4);
 
@@ -186,13 +189,15 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::Tavern, "TavernEra", "Tavern", 1);
 	LoadBuilding(CardEnum::Tailor, "TailorEra", "Tailor", 2);
 
-	LoadBuilding(CardEnum::ClayPit, "ClayPit_Era", "ClayPit", 2);
+	LoadBuilding(CardEnum::ClayPit, "ClayPit_Era", "ClayPit", 1, 1);
 	LoadBuilding(CardEnum::Potter, "potterEra", "Potter", 1);
 
 	LoadBuilding(CardEnum::TradingPort, "TradingPort_Era", "TradingPort", 1);
 	LoadBuilding(CardEnum::TradingPost, "TradingPost_Era", "TradingPost", 1);
+	LoadBuilding(CardEnum::TradingCompany, "TradingCompany_Era", "TradingCompany", 2);
 
 	LoadBuilding(CardEnum::CardMaker, "Scholars_Office_Era_", "ScholarsOffice", 4);
+	LoadBuilding(CardEnum::Archives, "Archives_Era", "Archives", 3);
 
 	LoadBuilding(CardEnum::ImmigrationOffice, "Immigration_Office_Era_", "ImmigrationOffice", 1);
 	
@@ -211,8 +216,10 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::PrintingPress, "PrintingPress_Industrial_PrintingPress_Era", "PrintingPress", 4);
 
 	LoadBuilding(CardEnum::Warehouse, "wherehouse_era", "Warehouse", 2);
+	LoadBuilding(CardEnum::ShippingDepot, "LogisticsSenderOfficeERA", "LogisticsSender", 3);
+	LoadBuilding(CardEnum::HaulingServices, "HaulingServicecERA", "HaulingServices", 2);
 
-	LoadBuilding(CardEnum::ShroomFarm, "Mushroom_FarmEra", "MushroomFarm", 1);
+	LoadBuilding(CardEnum::ShroomFarm, "ShroomFarmEra", "MagicMushroomFarm", 3);
 
 	LoadBuilding(CardEnum::VodkaDistillery, "VodkaDistilleryERA", "VodkaDistillery", 2);
 
@@ -221,20 +228,28 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::Granary, "GRANARY_ERA", "Granary", 2);
 
 	LoadBuilding(CardEnum::SandMine, "SandMine_Era", "SandMine", 3);
+	LoadBuilding(CardEnum::GlassSmelter, "GlassWorks_Era", "GlassWorks", 3);
 	LoadBuilding(CardEnum::Glassworks, "GlassWorks_Era", "GlassWorks", 3);
 	LoadBuilding(CardEnum::ConcreteFactory, "concretefactoryERA", "ConcreteFactory", 4);
 	
 	LoadBuilding(CardEnum::CoalPowerPlant, "coalpowerplant", "CoalPowerPlant/Era4");
+	LoadBuilding(CardEnum::IndustrialIronSmelter, "SteelworksEra", "Steelworks");
 	LoadBuilding(CardEnum::Steelworks, "SteelworksEra", "Steelworks");
-	LoadBuilding(CardEnum::OilRig, "OilWell_Era", "OilWell/Era4");
-	LoadBuilding(CardEnum::OilPowerPlant, "oilpowerplant", "OilWell");
+	LoadBuilding(CardEnum::OilRig, "OilWell_Era", "OilWell");
+	LoadBuilding(CardEnum::OilPowerPlant, "coalpowerplant", "CoalPowerPlant/Era4");
 	LoadBuilding(CardEnum::PaperMill, "PaperMill_PaperMill_Era4", "PaperMill");
 	LoadBuilding(CardEnum::ClockMakers, "Clock_Maker_Era", "ClockMaker");
 
 	LoadBuilding(CardEnum::Cathedral, "Cathedral_Era2", "Cathedral");
 	LoadBuilding(CardEnum::Castle, "TownhallLvl5", "TownhallLvl5", true);
 	LoadBuilding(CardEnum::GrandPalace, "Grand_Museum_Era_", "GrandMuseum", 4);
-	/**/LoadBuilding(CardEnum::ExhibitionHall, "Grand_Museum_Era_", "GrandMuseum", 4);
+	LoadBuilding(CardEnum::ExhibitionHall, "Crystal_Palace", "CrystalPalace", false, ModuleTransformGroup::CreateAuxSet(
+		{}, {}, {},
+		{
+			{0.4f, 70.0f, FLinearColor(1, 0.651, 0.246), FVector(-40, 0, 20), FVector::OneVector},
+			{0.4f, 70.0f, FLinearColor(1, 0.651, 0.246), FVector(70, 0, 20), FVector::OneVector}
+		}
+	));
 
 	LoadBuilding(CardEnum::StatisticsBureau, "Statistic_Bureau_Era_", "StatisticsBureau", 1);
 	LoadBuilding(CardEnum::JobManagementBureau, "Employment_Bureau_Era_", "EmploymentBureau", 1);
@@ -293,9 +308,6 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	
 	TryLoadBuildingModuleSet("CharcoalMaker", "CharcoalMaker");
 	TryLoadBuildingModuleSet("Forester", "Forester");
-	
-	TryLoadBuildingModuleSet("TradingPost", "TradingPost");
-	TryLoadBuildingModuleSet("TradingCompany", "TradingCompany");
 
 	
 	TryLoadBuildingModuleSet("StorageYard", "StorageYard");
@@ -310,7 +322,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 
 	// Animal modules
-	LoadBuilding(CardEnum::BoarBurrow, "BoarBurrow", "BoarBurrow/BoarBurrow");
+	LoadBuilding(CardEnum::BoarBurrow, "BoarBurrow", "BoarBurrow");
 
 	// Houses
 	TryLoadBuildingModuleSet("HouseLvl1", "HouseLvl1");
@@ -368,9 +380,6 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	//
 	TryLoadBuildingModuleSet("PaperMaker", "PaperMaker");
 
-	
-	TryLoadBuildingModuleSet("BeerBrewery", "BeerBrewery");
-
 	TryLoadBuildingModuleSet("ConstructionOffice", "ConstructionOffice");
 	TryLoadBuildingModuleSet("Ministry", "Ministry");
 
@@ -396,7 +405,6 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	TryLoadBuildingModuleSet("ChichenItza", "ChichenItza");
 
 	TryLoadBuildingModuleSet("Market", "Market");
-	TryLoadBuildingModuleSet("ShippingDepot", "ShippingDepot");
 	TryLoadBuildingModuleSet("IrrigationReservoir", "IrrigationReservoir");
 	
 
@@ -408,10 +416,6 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	// Dec 29
 	TryLoadBuildingModuleSet("ShroomHut", "ShroomHut");
 	TryLoadBuildingModuleSet("VodkaDistillery", "VodkaDistillery");
-
-	// Mar 12
-	TryLoadBuildingModuleSet("Archives_Era4_", "Archives/Era4");
-	TryLoadBuildingModuleSet("HaulingServices_Era2_", "HaulingServices/Era2");
 
 	
 
@@ -1236,6 +1240,8 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 		FString findDirectory = FPaths::ProjectContentDir() + buildingPath + meshSetFolder + FString("/");
 		IFileManager::Get().FindFiles(foundFiles, *findDirectory, TEXT(".uasset"));
 
+		check(foundFiles.Num() > 0);
+
 		//// foundFiles are just file names, so we append the folder to it
 		int32 bodyMainIndex = 1;
 		int32 bodySpecialIndex = 1;
@@ -1263,6 +1269,7 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 					//const auto mesh = LoadF<UStaticMesh>(path.LeftChop(7)); // Chop out .uasset
 
 					const auto mesh = loadMesh(i);
+					check(mesh);
 
 					// Use Lightmap Resolution 100 to mark
 					if (moduleTypeName != "Frame" &&
@@ -1283,33 +1290,47 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 					foundFiles[i].Contains("_Body3_") ||
 					foundFiles[i].Contains("_Windows_")) 
 				{
-					addMesh(FString("Special") + FString::FromInt(bodySpecialIndex));
-					bodySpecialIndex++;
+					FString moduleTypeNameIn = FString("Special") + FString::FromInt(bodySpecialIndex);
+					FString moduleNameOut = addMesh(moduleTypeNameIn);
+					if (moduleTypeNameIn == moduleNameOut.Right(moduleTypeNameIn.Len())) {
+						bodySpecialIndex++;
+					}
 				}
-				if (foundFiles[i].Contains("_Scaffolding_")) {
+				else if (foundFiles[i].Contains("_Scaffolding_")) {
 					FString meshName = addMesh("Frame");
 
 					_modulesNeedingPaintConstruction.Add(meshName);
 				}
-
-
-				if (foundFiles[i].Contains("_WorkStatic"))
+				else if (foundFiles[i].Contains("_WorkStatic"))
 				{
 					const auto mesh = loadMesh(i);
 					FString moduleName = moduleSetName + "WorkStatic";
 					_moduleNameToMesh.Add(moduleName, mesh);
 					_togglableModuleNames.Add(moduleName);
+
+					_tempAuxGroup.togglableTransforms.push_back(ModuleTransform(moduleName));
 				}
-				if (foundFiles[i].Contains("_WorkShaderAnimate"))
+				else if (foundFiles[i].Contains("_WorkShaderAnimate"))
 				{
 					const auto mesh = loadMesh(i);
 					FString moduleName = moduleSetName + "WorkShaderAnimate";
 					_moduleNameToMesh.Add(moduleName, mesh);
 					_animModuleNames.Add(moduleName);
+
+					_tempAuxGroup.animTransforms.push_back(ModuleTransform(moduleName, FTransform::Identity, 0.0f, ModuleTypeEnum::ShaderAnimate));
 				}
-				if (foundFiles[i].Contains("_Smoke")) {
+				else if (foundFiles[i].Contains("_WorkShaderOnOff"))
+				{
 					const auto mesh = loadMesh(i);
-					DetectParticleSystemPosition(mesh);
+					FString moduleName = moduleSetName + "WorkShaderOnOff";
+					_moduleNameToMesh.Add(moduleName, mesh);
+					_animModuleNames.Add(moduleName);
+					
+					_tempAuxGroup.animTransforms.push_back(ModuleTransform(moduleName, FTransform::Identity, 0, ModuleTypeEnum::ShaderOnOff));
+				}
+				else if (foundFiles[i].Contains("_Smoke")) {
+					const auto mesh = loadMesh(i);
+					DetectParticleSystemPosition(buildingEnum, mesh);
 				}
 			}
 		}
@@ -1538,7 +1559,7 @@ void UAssetLoaderComponent::TraverseTris(uint32 mergedVertIndex, int32 groupInde
 	}
 };
 
-void UAssetLoaderComponent::DetectParticleSystemPosition(UStaticMesh* mesh)
+void UAssetLoaderComponent::DetectParticleSystemPosition(CardEnum buildingEnum, UStaticMesh* mesh)
 {
 	TArray<FVector> vertexPositions;
 	
@@ -1557,7 +1578,23 @@ void UAssetLoaderComponent::DetectParticleSystemPosition(UStaticMesh* mesh)
 		}
 		averagePosition = averagePosition / it.second.size();
 
-		_tempAuxGroup.particleInfos.push_back({ ParticleEnum::Smoke, FTransform(averagePosition) });
+		ParticleEnum particleEnum = ParticleEnum::Smoke;
+		const std::vector<CardEnum> blackSmokers {
+			CardEnum::Blacksmith,
+			CardEnum::CandleMaker,
+			CardEnum::CoalPowerPlant,
+			CardEnum::ConcreteFactory,
+			CardEnum::CottonMill,
+			CardEnum::GoldSmelter,
+			CardEnum::IronSmelter,
+			CardEnum::Mint,
+			CardEnum::Potter,
+		};
+		if (CppUtils::Contains(blackSmokers, buildingEnum)) {
+			particleEnum = ParticleEnum::BlackSmoke;;
+		}
+
+		_tempAuxGroup.particleInfos.push_back({ particleEnum, FTransform(averagePosition) });
 	}
 }
 

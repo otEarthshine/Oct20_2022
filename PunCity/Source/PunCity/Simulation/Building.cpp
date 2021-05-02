@@ -677,7 +677,7 @@ void Building::DoWork(int unitId, int workAmount100)
 				_workDone100 = 0;
 				_filledInputs = false;
 				
-				int32 moneyReceived = productPerBatch();
+				int32 moneyReceived = outputPerBatch();
 				globalResourceSystem().ChangeMoney(moneyReceived);
 				_simulation->worldTradeSystem().ChangeSupply(_playerId, ResourceEnum::GoldBar, inputPerBatch());
 
@@ -694,7 +694,7 @@ void Building::DoWork(int unitId, int workAmount100)
 				_workDone100 = 0;
 				_filledInputs = false;
 
-				int32 sciReceived = productPerBatch();
+				int32 sciReceived = outputPerBatch();
 				_simulation->unlockSystem(_playerId)->Research(sciReceived * 100 * Time::SecondsPerRound, 1);
 
 				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainScience, centerTile(), TEXT_NUMSIGNED(sciReceived));
@@ -709,7 +709,7 @@ void Building::DoWork(int unitId, int workAmount100)
 				_workDone100 = 0;
 				_filledInputs = false;
 
-				int32 influenceReceived = productPerBatch();
+				int32 influenceReceived = outputPerBatch();
 				globalResourceSystem().ChangeInfluence(influenceReceived);
 
 				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainInfluence, centerTile(), TEXT_NUMSIGNED(influenceReceived));
@@ -753,7 +753,7 @@ void Building::DoWork(int unitId, int workAmount100)
 			ResourceEnum productEnum = product();
 			ResourceHolderInfo info = holderInfo(productEnum);
 			PUN_CHECK2(info.isValid(), _simulation->unitdebugStr(unitId));
-			int productionAmount = productPerBatch();
+			int productionAmount = outputPerBatch();
 
 			AddResource(info.resourceEnum, productionAmount);
 			AddProductionStat(productionAmount);
@@ -1315,8 +1315,8 @@ BuildingUpgrade Building::MakeComboUpgrade(FText name, ResourceEnum resourceEnum
 }
 
 int32 Building::displayVariationIndex() {
-	if (IsAutoUpgrade(buildingEnum())) {
-		int32 variationIndex = _simulation->unlockSystem(_playerId)->GetEra() - _simulation->GetMinEraDisplay(_buildingEnum);
+	if (IsAutoEraUpgrade(buildingEnum())) {
+		int32 variationIndex = _simulation->GetTownLvl(_townId) - _simulation->GetMinEraDisplay(_buildingEnum);
 		variationIndex = max(variationIndex, 0);
 		return variationIndex;
 	}

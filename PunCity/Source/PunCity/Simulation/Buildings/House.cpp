@@ -211,8 +211,8 @@ void House::CalculateConsumptions(bool consumeLuxury)
 	 */
 	
 	_roundLuxuryConsumption100 = 0;
-	ExecuteOnLuxuryResources([&](ResourceEnum resourceEnum) {
-		//for (ResourceEnum resourceEnum : LuxuryResources) {
+	ExecuteOnLuxuryResources([&](ResourceEnum resourceEnum) 
+	{
 		if (resourceCount(resourceEnum) > 0 &&
 			occupantCount() > 0)
 		{
@@ -220,6 +220,18 @@ void House::CalculateConsumptions(bool consumeLuxury)
 
 			// Target tax taking into account Science/Culture benefit of lux resources
 			int32 luxuryConsumption100_perRound = HumanLuxuryCost100PerRound_ForEachType * occupantCount();
+
+			// Special Cases:
+			if (_simulation->TownhallCardCountTown(_townId, CardEnum::BlingBling) > 0 && resourceEnum == ResourceEnum::Jewelry) {
+				luxuryConsumption100_perRound *= 2;
+			}
+			if (_simulation->TownhallCardCountTown(_townId, CardEnum::BookWorm) > 0 && resourceEnum == ResourceEnum::Book) {
+				luxuryConsumption100_perRound *= 3;
+			}
+
+			if (_simulation->HasGlobalBonus(_playerId, CardEnum::Capitalism)) {
+				luxuryConsumption100_perRound = luxuryConsumption100_perRound * 3 / 2;
+			}
 
 			if (consumeLuxury) 
 			{
@@ -326,6 +338,10 @@ int64 House::GetScience100(ScienceEnum scienceEnum, int64 cumulative100)
 			return max(bonus, 1);
 		});
 		return radiusBonus > 0 ? (cumulative100 * 120 / 100) : 0; // +120%
+	}
+
+	case ScienceEnum::BookWorm: {
+		return cumulative100 * 50 / 100; // +50%
 	}
 
 	default:

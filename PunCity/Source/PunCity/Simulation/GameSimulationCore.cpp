@@ -934,10 +934,6 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 				/*
 				 * Score Victory
 				 */
-				if (Time::Years() == 15) {
-					ExecuteTimeVictory();
-				}
-				
 				ExecuteOnPlayersAndAI([&](int32 playerId)
 				{
 					// Tick 1 sec
@@ -3124,6 +3120,11 @@ void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
 	{
 		auto& townhall = building(command.buildingId).subclass<TownHall>();
 		if (command.upgradeType == 0) {
+			auto unlockSys = unlockSystem(command.playerId);
+			if (unlockSys->GetEra() < townhall.townhallLvl + 1) {
+				AddPopup(command.playerId, LOCTEXT("TownhallUpgradeRequireEra", "Research your way to the next Era to unlock the Townhall Upgrade."));
+			}
+			
 			if (townhall.townhallLvl < townhall.GetMaxUpgradeLvl() &&
 				townhall.HasEnoughUpgradeMoney()) 
 			{
@@ -5309,7 +5310,7 @@ void GameSimulationCore::Cheat(FCheat command)
 		}
 
 		case CheatEnum::ScoreVictory: {
-			ExecuteTimeVictory();
+			ExecuteScoreVictory();
 			break;
 		}
 

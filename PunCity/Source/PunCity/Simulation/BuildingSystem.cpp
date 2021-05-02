@@ -220,10 +220,13 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 
 		// Apr 1
 		CASE_BUILDING(CardEnum::SandMine, SandMine);
+		CASE_BUILDING(CardEnum::GlassSmelter, GlassSmelter);
 		CASE_BUILDING(CardEnum::Glassworks, Glasswork);
 		CASE_BUILDING(CardEnum::ConcreteFactory, ConcreteFactory);
 		CASE_BUILDING(CardEnum::CoalPowerPlant, CoalPowerPlant);
 		CASE_BUILDING(CardEnum::Steelworks, Steelworks);
+		CASE_BUILDING(CardEnum::IndustrialIronSmelter, IndustrialIronSmelter);
+		
 		CASE_BUILDING(CardEnum::StoneToolsShop, StoneToolsShop);
 		CASE_BUILDING(CardEnum::OilRig, OilRig);
 		CASE_BUILDING(CardEnum::OilPowerPlant, OilPowerPlant);

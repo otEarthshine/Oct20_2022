@@ -74,7 +74,9 @@ public:
 	void FinishConstruction() final;
 	std::vector<BonusPair> GetBonuses() override;
 
-	int32 baseInputPerBatch() final;
+	int32 baseInputPerBatch() final {
+		return Building::baseInputPerBatch() * (_simulation->IsResearched(_playerId, TechEnum::MushroomSubstrateSterilization) ? 4 : 8) / 10;
+	}
 };
 
 class ShroomFarm final : public Building
@@ -84,7 +86,7 @@ public:
 	std::vector<BonusPair> GetBonuses() override;
 
 	int32 baseInputPerBatch() final {
-		return _simulation->IsResearched(_playerId, TechEnum::MushroomSubstrateSterilization) ? 4 : 8;
+		return Building::baseInputPerBatch() * (_simulation->IsResearched(_playerId, TechEnum::MushroomSubstrateSterilization) ? 4 : 8) / 10;
 	}
 };
 
@@ -329,7 +331,7 @@ public:
 	void FinishConstruction() final;
 
 	int32 baseInputPerBatch() final {
-		return IsUpgraded(0) ? 5 : 10;
+		return Building::baseInputPerBatch() * (IsUpgraded(0) ? 5 : 10) / 10;
 	}
 };
 
@@ -379,7 +381,7 @@ public:
 	}
 
 	// Production always yield the same amount of product (2 * baseinput)
-	int32 productPerBatch() override {
+	int32 outputPerBatch() override {
 		return baseOutputValue() * efficiency() / 100;
 	}
 	
@@ -452,7 +454,7 @@ class RegionShrine final : public Building
 //		return bonuses;
 //	}
 //
-//	int32 productPerBatch() override {
+//	int32 outputPerBatch() override {
 //		return 5 * efficiency() / 100;
 //	}
 //
@@ -560,7 +562,7 @@ public:
 	std::vector<BonusPair> GetBonuses() override;
 
 	int32 baseInputPerBatch() override {
-		return 5;
+		return Building::baseInputPerBatch() * 50 / 100;
 	}
 };
 
@@ -595,7 +597,7 @@ public:
 	}
 
 	int32 baseInputPerBatch() override {
-		return IsUpgraded(0) ? 5 : 10;
+		return Building::baseInputPerBatch() * (IsUpgraded(0) ? 50 : 100) / 100;
 	}
 };
 
@@ -623,7 +625,7 @@ class BeerBrewery : public IndustrialBuilding
 {
 public:
 	int32 baseInputPerBatch() override {
-		return _workMode.inputPerBatch * (IsUpgraded(0) ? 70 : 100) / 100;
+		return Building::baseInputPerBatch() * (IsUpgraded(0) ? 70 : 100) / 100;
 	}
 	
 	void OnInit() override;
@@ -820,23 +822,51 @@ class SandMine final : public Building
 public:
 };
 
+class GlassSmelter final : public Building
+{
+public:
+};
 class Glasswork final : public Building
 {
 public:
 };
+
 class ConcreteFactory final : public Building
 {
 public:
 };
 
-class CoalPowerPlant final : public Building
+class PowerPlant : public Building
+{
+public:
+	void FinishConstruction() override;
+
+	virtual ResourceEnum fuelEnum() { return ResourceEnum::Coal; }
+
+	int32 ConsumeFuel(int32 consumptionValue) {
+		
+	}
+};
+class CoalPowerPlant final : public PowerPlant
 {
 public:
 
 
 	
 };
+class OilPowerPlant final : public PowerPlant
+{
+public:
 
+
+
+};
+
+class IndustrialIronSmelter final : public Building
+{
+public:
+	
+};
 class Steelworks final : public Building
 {
 public:
@@ -848,10 +878,6 @@ public:
 	std::vector<BonusPair> GetBonuses() final;
 };
 
-class OilPowerPlant final : public Building
-{
-public:
-};
 
 class PaperMill final : public Building
 {

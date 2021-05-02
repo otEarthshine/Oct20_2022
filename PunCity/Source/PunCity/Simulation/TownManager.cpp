@@ -117,8 +117,17 @@ void TownManager::PlayerAddJobBuilding(Building& building, bool isConstructed)
 
 	// Job Building Unlocks
 	auto unlockSys = _simulation->unlockSystem(_playerId);
+	if (!unlockSys->unlockedPriorityStar &&
+		jobBuildingCount() >= 2)
+	{
+		unlockSys->unlockedPriorityStar = true;
+		_simulation->AddPopup(_playerId, {
+			NSLOCTEXT("TownHall", "UnlockedPriorityButton1_Pop", "Unlocked Priority Button <img id=\"NonPriorityStar\"/>!"),
+			NSLOCTEXT("TownHall", "UnlockedPriorityButton2_Pop", "<space>Click it to switch building's priority between 3 states:\n  <img id=\"NonPriorityStar\"/> Default worker allocation\n  <img id=\"PriorityStar\"/> Prioritize working here\n  <img id=\"PriorityStop\"/> Don't allow working here"),
+		});
+	}
 	if (!unlockSys->unlockedStatisticsBureau &&
-		jobBuildingCount() >= 3)
+		jobBuildingCount() >= 5)
 	{
 		if (_simulation->TryAddCardToBoughtHand(_playerId, CardEnum::StatisticsBureau)) 
 		{

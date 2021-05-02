@@ -420,18 +420,18 @@ public:
 			})
 		});
 
-		set(CardEnum::BeerBrewery, {
-			ModuleTransformGroup::CreateSet("BeerBrewery", {},
-			{
-				{ParticleEnum::Smoke,  TransformFromPosition(13.37, -16.77, 23.05)},
-			}, {
-				ModuleTransform("BeerBreweryWorkShaderOnOff", FTransform::Identity, 0, ModuleTypeEnum::ShaderOnOff),
-			})
-		});
+		//set(CardEnum::BeerBrewery, {
+		//	ModuleTransformGroup::CreateSet("BeerBrewery", {},
+		//	{
+		//		{ParticleEnum::Smoke,  TransformFromPosition(13.37, -16.77, 23.05)},
+		//	}, {
+		//		ModuleTransform("BeerBreweryWorkShaderOnOff", FTransform::Identity, 0, ModuleTypeEnum::ShaderOnOff),
+		//	})
+		//});
 
-		setName(CardEnum::TradingPost, "TradingPost");
-		setName(CardEnum::TradingCompany, "TradingCompany");
+		setName(CardEnum::FurnitureWorkshop, "FurnitureWorkshop");
 
+		
 		setName(CardEnum::BarrackClubman, "Barrack");
 		setName(CardEnum::BarrackArcher, "Barrack");
 		setName(CardEnum::BarrackSwordman, "Barrack");
@@ -493,7 +493,6 @@ public:
 		setName(CardEnum::ChichenItza, "ChichenItza");
 
 		setName(CardEnum::Market, "Market");
-		setName(CardEnum::ShippingDepot, "ShippingDepot");
 		setName(CardEnum::IrrigationReservoir, "IrrigationReservoir");
 
 		set(CardEnum::Tunnel, {
@@ -510,10 +509,6 @@ public:
 		set(CardEnum::IntercityBridge, {
 			ModuleTransformGroup({ ModuleTransform("Bridge1", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
 		});
-
-
-		setName(CardEnum::Archives, "Archives_Era4_");
-		setName(CardEnum::HaulingServices, "HaulingServices_Era2_");
 
 
 		setName(CardEnum::FlowerBed, "FlowerBed");
@@ -608,7 +603,7 @@ public:
 						if (assetLoader->moduleMesh(subMeshName)) {
 							addTransform(ModuleTransform(subMeshName));
 						}
-						for (int32 i = 1; i < 3; i++) {
+						for (int32 i = 1; i <= 3; i++) {
 							subMeshName = setName + FString("Body") + FString::FromInt(i);
 							if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName));
 						}
@@ -672,7 +667,9 @@ public:
 		check(buildingEnumInt < BuildingEnumToVariationToModuleTransforms.Num()); // !!! Hit here? Forgot to put int GameDisplayInfo?
 		check(variationIndex != -1);
 		int32 variationCount = BuildingEnumToVariationToModuleTransforms[buildingEnumInt].Num();
-		check(variationCount > 0);
+		if (variationCount == 0) {
+			return ModuleTransformGroup::Empty;
+		}
 		if (variationIndex >= variationCount) {
 			variationIndex = variationCount - 1;
 		}

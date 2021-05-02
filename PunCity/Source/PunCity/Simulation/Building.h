@@ -681,7 +681,7 @@ public:
 		if (productEnum == ResourceEnum::None) {
 			return 0;
 		}
-		int32 batchRevenue = buildingInfo().productionBatch * GetResourceInfo(productEnum).basePrice;
+		int32 batchRevenue = baseOutputPerBatch() * GetResourceInfo(productEnum).basePrice;
 		int32 cost = batchCost();
 		int32 batchProfit = batchRevenue - cost;
 		check(batchProfit > 0);
@@ -694,7 +694,7 @@ public:
 	}
 
 	// Work time required per batch...
-	// Calculated based on inputPerBatch() and info.productionBatch
+	// Calculated based on inputPerBatch() and info.baseOutputPerBatch
 	virtual int32 workManSecPerBatch100() {
 		// Calculate workPerBatch...
 		// workManSecPerBatch = batchProfit / WorkRevenuePerManSec
@@ -978,7 +978,22 @@ public:
 	}
 	
 
-	virtual int32 baseProductPerBatch() {  return buildingInfo().productionBatch; }
+	virtual int32 baseOutputPerBatch()
+	{
+		// Output Batch can be calculated from profit
+		int32 baseProfitValue = 50; // Beer Brewery as base: 10 Beer(10) from 10 Wheat(5)
+		baseProfitValue = buildingInfo().resourceInfo.ApplyUpgradeAndEraMultipliers(baseProfitValue, buildingInfo().minEra(), GetEraUpgradeCount());
+
+		int32 outputValue = baseProfitValue;
+		if (input1() != ResourceEnum::None) {
+			outputValue += baseInputPerBatch() * GetResourceInfo(input1()).basePrice;
+		}
+		if (input2() != ResourceEnum::None) {
+			outputValue += baseInputPerBatch() * GetResourceInfo(input2()).basePrice;
+		}
+
+		return outputValue / GetResourceInfo(product()).basePrice;
+	}
 
 	virtual int32 efficiencyBeforeBonus() { return 100; }
 	int32 efficiency() {
@@ -990,21 +1005,37 @@ public:
 		return total + adjacentEfficiency() + levelEfficiency();
 	}
 
-	// TODO: use productPerBatch instead
-	virtual int32 productPerBatch() { return baseProductPerBatch() * efficiency() / 100; }
+	// TODO: use outputPerBatch instead
+	virtual int32 outputPerBatch() { return baseOutputPerBatch() * efficiency() / 100; }
 
 
 	int32 oreLeft();
 
+	int32 ElectricityNeededPerBatch() {
+		//batchProfit()
+		return 0;
+	}
+	int32 UpgradedElectricity() {
+		if (_upgrades.size() > 0 && _upgrades[0].isEraUpgrade()) {
+			
+		}
+		return 0;
+	}
+
+	
 	/*
 	 * Input
 	 */
 	virtual int32 baseInputPerBatch()
 	{
-		if (_workMode.inputPerBatch > 0) {
-			return _workMode.inputPerBatch;
+		int32 result = 10;
+		if (input2() != ResourceEnum::None) { // Anything with 2 inputs, gets split equally
+			result = 5;
 		}
-		return 10;
+		if (_workMode.inputPerBatch > 0) {
+			result = _workMode.inputPerBatch;
+		}
+		return buildingInfo().resourceInfo.ApplyUpgradeAndEraMultipliers(result, buildingInfo().minEra(), GetEraUpgradeCount());
 	}
 
 	int32 inputPerBatch()
@@ -1040,13 +1071,30 @@ public:
 	void AddUpgrades(std::vector<BuildingUpgrade> upgrades)
 	{
 		_upgrades = upgrades;
-		_upgrades.insert(_upgrades.begin(), MakeEraUpgrade(buildingInfo().resourceInfo.era));
+		if (!IsAutoEraUpgrade(_buildingEnum) && !HasNoEraUpgrade(_buildingEnum)) {
+			_upgrades.insert(_upgrades.begin(), MakeEraUpgrade(buildingInfo().resourceInfo.era));
+		}
 	}
 
 	int32 GetEraUpgradeCount() {
 		return (_upgrades.size() > 0 && _upgrades[0].isEraUpgrade()) ? _upgrades[0].upgradeLevel : 0;
 	}
-	
+
+	FText GetUpgradeDisplayDescription(int32 index) {
+		BuildingUpgrade& upgrade = _upgrades[index];
+		if (upgrade.isEraUpgrade()) {
+			int32 nextLevel = upgrade.upgradeLevel + 2;
+			if (nextLevel == 5) {
+				int32 electricityPerBatch = ElectricityNeededPerBatch();
+				return FText::Format(
+					NSLOCTEXT("BuildingUpgrade", "Electric Machinery Desc", "Once upgraded, this Building will consume Electricity. +100% Productivity when provided with Electricity. Consumes {0} kWh Electricity per production batch."),
+					TEXT_NUM(electricityPerBatch)
+				);
+			}
+			return FText::Format(NSLOCTEXT("BuildingUpgrade", "to Level Desc", "Increases Base Productivity by 50%"), TEXT_NUM(nextLevel));
+		}
+		return upgrade.description;
+	}
 
 	// Delivery
 	int32 deliveryTargetIdAfterConstruction() {  // deliveryTargetId returns -1 if the building under construction
@@ -1394,6 +1442,8 @@ public:
 		
 		Ar << _filledInputs;
 
+		Ar << _electricityReceived;
+
 		// Construction
 		Ar << _didSetWalkable;
 		Ar << _isConstructed;
@@ -1640,6 +1690,12 @@ public:
 				}
 			}
 		}
+
+		//if (_electricityReceived < ElectricityNeeded())
+		//{
+		//	hoverWarning = HoverWarning::NotEnoughElectricity;
+		//	return true;
+		//}
 		
 		hoverWarning = HoverWarning::None;
 		return false;
@@ -1698,6 +1754,8 @@ protected:
 	std::vector<int32> _workReservers;
 	std::vector<int32> _workReserved;
 	bool _filledInputs = false; // TODO: Probably should change filledInput name to _readyForWork ... or get rid of it.. set workDone100 to 1 instead...
+
+	int32 _electricityReceived = 0;
 
 	// Construction
 	bool _didSetWalkable = false;

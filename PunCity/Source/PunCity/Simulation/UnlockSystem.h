@@ -851,8 +851,8 @@ public:
 			//
 			column = 6;
 			AddTech_Bonus(column, TechEnum::EnlightenmentAge, {});
-			AddTech_Building(column, TechEnum::Glassworks, { TechEnum::QuickBuild },
-				CardEnum::Glassworks
+			AddTech_Building(column, TechEnum::GlassSmelting, { TechEnum::QuickBuild },
+				{ CardEnum::SandMine, CardEnum::GlassSmelter }
 			);
 			AddTech_Building(column, TechEnum::CoffeeRoaster, { TechEnum::Medicine },
 				{ CardEnum::CoffeeRoaster }
@@ -873,7 +873,10 @@ public:
 			
 			//
 			column = 7;
-			AddTech_Bonus(column, TechEnum::WorkSchedule, { TechEnum::Glassworks, TechEnum::CoffeeRoaster });
+			AddTech_Building(column, TechEnum::Glassworks, { TechEnum::GlassSmelting },
+				{ CardEnum::Glassworks }
+			);
+			AddTech_Bonus(column, TechEnum::WorkSchedule, { TechEnum::GlassSmelting, TechEnum::CoffeeRoaster });
 			AddTech_Bonus(column, TechEnum::BudgetAdjustment, { TechEnum::School, TechEnum::TradingCompany });
 			AddTech_Bonus(column, TechEnum::Logistics5, { TechEnum::TradingCompany, TechEnum::Logistics4 });
 			AddTech_BuildingPermanent(column, TechEnum::IntercityRoad, { TechEnum::Logistics4 },
@@ -915,7 +918,7 @@ public:
 				CardEnum::ConcreteFactory
 			);
 			AddTech_Building(column, TechEnum::Industrialization, { TechEnum::Machinery },
-				CardEnum::Steelworks
+				{ CardEnum::IndustrialIronSmelter, CardEnum::Steelworks }
 			);
 			AddTech_Building(column, TechEnum::JewelryCrafting, { TechEnum::GoldWorking },
 				{ CardEnum::Jeweler }
@@ -1021,7 +1024,8 @@ public:
 			AddProsperityTech_BuildingPermanent(column, 10, TechEnum::FlowerBed, { CardEnum::FlowerBed });
 			
 			column = 7;
-			AddProsperityTech_BuildingPermanent(column, 30, TechEnum::GardenCypress, { CardEnum::GardenCypress });
+			AddProsperityTech_BuildingPermanent(column, 10, TechEnum::GardenCypress, { CardEnum::GardenCypress });
+			AddProsperityTech_Building(column, 20, TechEnum::GrandPalace, CardEnum::GrandPalace);
 		}
 	}
 	//virtual ~UnlockSystem() = default;

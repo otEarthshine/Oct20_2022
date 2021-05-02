@@ -1246,7 +1246,9 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			// Show construction right away (Fake responsiveness
 
 			std::vector<ModuleTransform> modules;
-			if (_delayFillerEnum == CardEnum::Fisher) {
+			if (_delayFillerEnum == CardEnum::Fisher ||
+				_delayFillerEnum == CardEnum::SandMine)
+			{
 				modules.insert(modules.begin(), ModuleTransform("FisherConstructionPoles", FTransform::Identity, 0.0f, ModuleTypeEnum::ConstructionOnly));
 				modules.insert(modules.begin(), ModuleTransform("FisherConstructionPolesWater", FTransform::Identity, 0.0f, ModuleTypeEnum::ConstructionOnly));
 				

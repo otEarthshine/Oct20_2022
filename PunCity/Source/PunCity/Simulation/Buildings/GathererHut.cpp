@@ -321,6 +321,11 @@ std::vector<BonusPair> Farm::GetBonuses()
 		bonuses.push_back({ LOCTEXT("Fertilizers", "Fertilizers"), 20 });
 	}
 
+	if (_simulation->TownhallCardCountTown(_townId, CardEnum::FarmWaterManagement) > 0) {
+		bonuses.push_back({ LOCTEXT("Farm Water Management", "Farm Water Management"), 8 });
+	}
+
+
 	if (_simulation->HasTownBonus(_townId, CardEnum::DesertIndustry)) {
 		bonuses.push_back({ LOCTEXT("Desert Industry", "Desert Industry"), -50 });
 	}
@@ -513,10 +518,6 @@ FText Farm::farmStageName()
 }
 
 //! Mushroom
-
-int32 MushroomFarm::baseInputPerBatch() {
-	return _simulation->IsResearched(_playerId, TechEnum::MushroomSubstrateSterilization) ? 4 : 8;
-}
 
 
 /*
@@ -1334,9 +1335,6 @@ std::vector<BonusPair> Quarry::GetBonuses()
 std::vector<BonusPair> GoldMine::GetBonuses()
 {
 	std::vector<BonusPair> bonuses = Mine::GetBonuses();
-	if (_simulation->TownhallCardCountTown(_townId, CardEnum::GoldRush) > 0) {
-		bonuses.push_back({ LOCTEXT("Gold Rush", "Gold Rush"), 30 });
-	}
 
 	if (_simulation->HasTownBonus(_townId, CardEnum::BorealGoldOil)) {
 		BiomeEnum biomeEnum = centerBiomeEnum();
@@ -1705,6 +1703,23 @@ void Archives::CalculateRoundProfit()
 
 	lastRoundProfit = lastRoundProfit * CardProfitPercentPerRound / 100;
 }
+
+/*
+ * Power Plants
+ */
+void PowerPlant::FinishConstruction() {
+	Building::FinishConstruction();
+
+	AddUpgrades({
+		// "Regenerative Feed Heating"
+		MakeWorkerSlotUpgrade(30),
+	});
+
+	AddResourceHolder(fuelEnum(), ResourceHolderType::Requester, 100);
+}
+
+
+
 
 /*
  * OilRig

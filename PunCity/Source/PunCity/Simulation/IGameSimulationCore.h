@@ -567,6 +567,7 @@ public:
 	//! Victory Condition
 	virtual FGameEndStatus endStatus() = 0;
 	virtual void ExecuteScienceVictory(int32 playerId) = 0;
+	virtual void ExecuteScoreVictory() = 0;
 
 
 	//! Players

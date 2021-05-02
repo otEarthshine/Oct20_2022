@@ -2502,9 +2502,23 @@ public:
 		_endStatus.victoriousPlayerId = playerIdToWin;
 		_endStatus.gameEndEnum = GameEndEnum::ScienceVictory;
 	}
-	void ExecuteTimeVictory() {
-		_endStatus.victoriousPlayerId = 0;
-		_endStatus.gameEndEnum = GameEndEnum::TimeVictory;
+	void ExecuteScoreVictory()
+	{
+		if (_endStatus.gameEndEnum == GameEndEnum::None)
+		{
+			int32 victoriousPlayerId = 0;
+			int32 maxScore = 0;
+			ExecuteOnPlayersAndAI([&](int32 playerId) {
+				int32 score = totalScore(playerId);
+				if (score > maxScore) {
+					maxScore = score;
+					victoriousPlayerId = playerId;
+				}
+			});
+			
+			_endStatus.victoriousPlayerId = victoriousPlayerId;
+			_endStatus.gameEndEnum = GameEndEnum::ScoreVictory;
+		}
 	}
 
 	/*
@@ -2513,7 +2527,7 @@ public:
 	int32 populationScore(int32 playerId)
 	{
 		int32 populationScore = populationPlayer(playerId);
-		if (HasGlobalBonus(playerId, CardEnum::WondersScoreMultiplier)) {
+		if (HasGlobalBonus(playerId, CardEnum::PopulationScoreMultiplier)) {
 			populationScore *= 2;
 		}
 		return populationScore;
@@ -2521,7 +2535,7 @@ public:
 	int32 happinessScore(int32 playerId)
 	{
 		int32 happinessScore = populationPlayer(playerId) * std::max(0, GetAverageHappinessPlayer(playerId) - 80) / 10;
-		if (HasGlobalBonus(playerId, CardEnum::WondersScoreMultiplier)) {
+		if (HasGlobalBonus(playerId, CardEnum::PopulationScoreMultiplier)) {
 			happinessScore *= 2;
 		}
 		return happinessScore;

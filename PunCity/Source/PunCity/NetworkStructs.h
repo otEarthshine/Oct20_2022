@@ -244,7 +244,7 @@ enum class GameEndEnum : uint8
 	ScienceVictory,
 	EconomicVictory,
 	DominationVictory,
-	TimeVictory,
+	ScoreVictory,
 };
 
 struct FGameEndStatus

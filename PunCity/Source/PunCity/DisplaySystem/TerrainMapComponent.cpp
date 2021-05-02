@@ -732,7 +732,7 @@ void UTerrainMapComponent::RefreshAnnotations()
 			{
 				Building& building = simulation.building(buildingId);
 				
-				if (building.isConstructed())
+				if (building.isConstructed() && displayInfo.GetVariationCount(buildingEnum) > 0)
 				{
 					// Building mesh
 					int32 displayVariationIndex = building.displayVariationIndex();

@@ -222,10 +222,12 @@ void AGameManager::InitPhase2()
 #endif
 	
 #if DISPLAY_BUILDING
+	_LOG(PunInit, "_buildingDisplaySystem Init");
 	_buildingDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader, 150);
 #endif
 
 #if DISPLAY_MINIBUILDING
+	_LOG(PunInit, "_miniBuildingDisplaySystem Init");
 	_miniBuildingDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader, 206);
 #endif
 

@@ -146,7 +146,10 @@ public:
 					captureDistance *= 1.8f;
 					heightAdjustment = -5;
 				}
-				
+
+				if (displayInfo.GetVariationCount(buildingEnum) == 0) {
+					continue;
+				}
 				const ModuleTransformGroup& modules = displayInfo.GetDisplayModules(buildingEnum, 0);
 				std::vector<ModuleTransform> moduleTransforms = modules.transforms;
 

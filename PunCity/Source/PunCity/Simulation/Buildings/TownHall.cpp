@@ -183,12 +183,6 @@ void TownHall::UpgradeTownhall()
 		cardSys.AddDrawCards(CardEnum::SellFood, 1);
 		cardSys.AddDrawCards(CardEnum::BuyWood, 1);
 		//cardSys.AddDrawCards(CardEnum::BarrackClubman, 1);
-
-		_simulation->AddPopup(_playerId, {
-			NSLOCTEXT("TownHall", "UnlockedPriorityButton1_Pop", "Unlocked Priority Button <img id=\"NonPriorityStar\"/>!"),
-			NSLOCTEXT("TownHall", "UnlockedPriorityButton2_Pop", "<space>Click it to switch building's priority between 3 states:\n  <img id=\"NonPriorityStar\"/> Default worker allocation\n  <img id=\"PriorityStar\"/> Prioritize working here\n  <img id=\"PriorityStop\"/> Don't allow working here"),
-		});
-		unlockSys->unlockedPriorityStar = true;
 	}
 	else if (townhallLvl == 3) {
 		cardSys.AddDrawCards(CardEnum::Immigration, 1);

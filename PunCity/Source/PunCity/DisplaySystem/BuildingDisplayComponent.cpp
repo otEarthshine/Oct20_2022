@@ -120,10 +120,10 @@ int UBuildingDisplayComponent::CreateNewDisplay(int objectId)
 			if (protoMesh) {
 				_moduleMeshes[meshId]->AddProtoMesh(moduleNames[i], protoMesh, nullptr);
 
-				// Add burnt frame
-				if (moduleNames[i].Len() > 5 && moduleNames[i].Right(5) == FString("Frame")) {
-					_moduleMeshes[meshId]->AddProtoMesh(moduleNames[i] + FString("Burnt"), protoMesh, _assetLoader->M_WoodFrameBurned);
-				}
+				//// Add burnt frame
+				//if (moduleNames[i].Len() > 5 && moduleNames[i].Right(5) == FString("Frame")) {
+				//	_moduleMeshes[meshId]->AddProtoMesh(moduleNames[i] + FString("Burnt"), protoMesh, _assetLoader->M_WoodFrameBurned);
+				//}
 			}
 		}
 
@@ -478,17 +478,17 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 						//}
 
 						// TODO: remove this???
-						if (_assetLoader->HasConstructionMesh(moduleName)) {
-							// Use construction mesh (construction poly + vertex color representing when the piece should appear)
-							float moduleFraction = modules[i].moduleConstructionFraction(constructionFraction);
-							moduleTransform.SetScale3D(FVector(1, 1, moduleFraction * 0.99f + 0.01f));
-							int32 constructionPercent = constructionFraction * 100;
-							_moduleMeshes[meshId]->Add(moduleName + "Construction", instanceKey, moduleTransform, constructionPercent, buildingId);
+						//if (_assetLoader->HasConstructionMesh(moduleName)) {
+						//	// Use construction mesh (construction poly + vertex color representing when the piece should appear)
+						//	float moduleFraction = modules[i].moduleConstructionFraction(constructionFraction);
+						//	moduleTransform.SetScale3D(FVector(1, 1, moduleFraction * 0.99f + 0.01f));
+						//	int32 constructionPercent = constructionFraction * 100;
+						//	_moduleMeshes[meshId]->Add(moduleName + "Construction", instanceKey, moduleTransform, constructionPercent, buildingId);
 
-							//PUN_LOG("Construction Z:%f age:%d", transform.GetScale3D().Z, static_cast<int32>(constructionFraction * 100));
-						}
-						// This mesh has no pairing construction mesh and will just appear
-						else 
+						//	//PUN_LOG("Construction Z:%f age:%d", transform.GetScale3D().Z, static_cast<int32>(constructionFraction * 100));
+						//}
+						//// This mesh has no pairing construction mesh and will just appear
+						//else 
 						{
 							if (modules[i].moduleTypeEnum == ModuleTypeEnum::Frame) {
 								float moduleFraction = modules[i].moduleConstructionFraction(constructionFraction);

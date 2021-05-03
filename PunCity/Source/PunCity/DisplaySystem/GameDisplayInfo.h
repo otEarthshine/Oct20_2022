@@ -217,44 +217,40 @@ public:
 		};
 
 
-		set(CardEnum::House, {
-			 // House level 1
-			 ModuleTransformGroup::CreateSet("HouseLvl1"),
-			 ModuleTransformGroup::CreateSet("HouseLvl1V2"),
-			 ModuleTransformGroup::CreateSet("HouseClayLvl1",
-				 {},
-				 { {ParticleEnum::Smoke, TransformFromPosition(23.8, -5.7, 29.4)} }
-			 ),
+		auto add = [&](CardEnum buildingEnum, TArray<ModuleTransformGroup> moduleGroups) {
+			for (int32 i = 0; i < moduleGroups.Num(); i++) {
+				BuildingEnumToVariationToModuleTransforms[static_cast<int>(buildingEnum)].Add(moduleGroups[i]);
+			}
+		};
+		add(CardEnum::House, {
+			// // House level 1
+			// ModuleTransformGroup::CreateSet("House_Lvl1_Var1"),
+			// ModuleTransformGroup::CreateSet("House_Lvl1_Var2"),
+			// ModuleTransformGroup::CreateSet("House_Lvl1_Var3"),
+			// ModuleTransformGroup::CreateSet("House_Lvl1_Var1"),
+			// ModuleTransformGroup::CreateSet("HouseClayLvl1",
+			//	 {},
+			//	 { {ParticleEnum::Smoke, TransformFromPosition(23.8, -5.7, 29.4)} }
+			// ),
 
-			// House level 2
-			ModuleTransformGroup::CreateSet("HouseLvl2"),
-			ModuleTransformGroup::CreateSet("HouseLvl2V2"),
-			ModuleTransformGroup::CreateSet("HouseClayLvl2"),
+			//// House level 2
+			//ModuleTransformGroup::CreateSet("House_Lvl1_Var1"),
+			//ModuleTransformGroup::CreateSet("HouseClayLvl2"),
 
-			// House level 3
-			ModuleTransformGroup::CreateSet("HouseLvl3",
-				{
-					ModuleTransform("DecorativeBasketBox", TransformFromPositionScale(-8.35, 9.9, -0.42, 0.07)),
-					ModuleTransform("DecorativeBarrel", TransformFromPosition(-8.53, 5.41, -0.21)),
-					ModuleTransform("DecorativeBlueBottle", TransformFromPosition(-9.34, 5.98, 4.7)),
-					ModuleTransform("DecorativeOrange", TransformFromPosition(-9.01, 4.63, 4.88)),
-					ModuleTransform("DecorativeOrange", TransformFromPosition(-7.92, 5.41, 4.88)),
-				},
-				{ {ParticleEnum::Smoke, TransformFromPosition(17.5, 13.3, 43.7)} }
-			),
-			ModuleTransformGroup::CreateSet("HouseLvl3V2",
-				{
-					ModuleTransform("DecorativeBasketBox", TransformFromPositionScale(-8.35, 9.9, -0.42, 0.07)),
-					ModuleTransform("DecorativeBarrel", TransformFromPosition(-8.53, 5.41, -0.21)),
-					ModuleTransform("DecorativeBlueBottle", TransformFromPosition(-9.34, 5.98, 4.7)),
-					ModuleTransform("DecorativeOrange", TransformFromPosition(-9.01, 4.63, 4.88)),
-					ModuleTransform("DecorativeOrange", TransformFromPosition(-7.92, 5.41, 4.88)),
-				},
-				{ {ParticleEnum::Smoke, TransformFromPosition(16.9, -2.4, 48.4)} }
-			),
-			ModuleTransformGroup::CreateSet("HouseClayLvl3", {},
-				{ {ParticleEnum::Smoke, TransformFromPosition(24.65, -4.72, 42.16)} }
-			),
+			//// House level 3
+			//ModuleTransformGroup::CreateSet("HouseLvl3",
+			//	{
+			//	},
+			//	{ {ParticleEnum::Smoke, TransformFromPosition(17.5, 13.3, 43.7)} }
+			//),
+			//ModuleTransformGroup::CreateSet("HouseLvl3V2",
+			//	{
+			//	},
+			//	{ {ParticleEnum::Smoke, TransformFromPosition(16.9, -2.4, 48.4)} }
+			//),
+			//ModuleTransformGroup::CreateSet("HouseClayLvl3", {},
+			//	{ {ParticleEnum::Smoke, TransformFromPosition(24.65, -4.72, 42.16)} }
+			//),
 
 			// House level 4
 			ModuleTransformGroup::CreateSet("HouseLvl4", {},
@@ -263,9 +259,9 @@ public:
 			ModuleTransformGroup::CreateSet("HouseLvl4V2", {},
 				{ {ParticleEnum::Smoke, TransformFromPosition(17.1, 21.24, 40.05)} }
 			),
-			ModuleTransformGroup::CreateSet("HouseLvl4", {},
-				{ {ParticleEnum::Smoke, TransformFromPosition(14.5, 4.7, 41.3)} }
-			),
+			ModuleTransformGroup::CreateSet("HouseLvl4"),
+			ModuleTransformGroup::CreateSet("HouseLvl4"),
+			ModuleTransformGroup::CreateSet("HouseLvl4"),
 
 			// House level 5
 			ModuleTransformGroup::CreateSet("HouseLvl5", {},
@@ -274,9 +270,9 @@ public:
 			ModuleTransformGroup::CreateSet("HouseLvl5V2", {},
 				{ {ParticleEnum::Smoke, TransformFromPosition(18.04, 15.43, 39.4)} }
 			),
-			ModuleTransformGroup::CreateSet("HouseLvl5", {},
-				{ {ParticleEnum::Smoke, TransformFromPosition(1.10, 4.99, 42.03)} }
-			),
+			ModuleTransformGroup::CreateSet("HouseLvl5"),
+			ModuleTransformGroup::CreateSet("HouseLvl5"),
+			ModuleTransformGroup::CreateSet("HouseLvl5"),
 
 			// House level 6
 			ModuleTransformGroup::CreateSet("HouseLvl6", {},
@@ -285,10 +281,10 @@ public:
 			ModuleTransformGroup::CreateSet("HouseLvl6V2", {},
 				{ {ParticleEnum::Smoke, TransformFromPosition(20.94, -7.36, 45.18)} }
 			),
-			ModuleTransformGroup::CreateSet("HouseLvl6", {},
-				{ {ParticleEnum::Smoke, TransformFromPosition(22.12, -7.4, 50.88)} }
-			),
-
+			ModuleTransformGroup::CreateSet("HouseLvl6"),
+			ModuleTransformGroup::CreateSet("HouseLvl6"),
+			ModuleTransformGroup::CreateSet("HouseLvl6"),
+			
 			// House level 7
 			ModuleTransformGroup::CreateSet("HouseLvl7", {},
 				{ {ParticleEnum::Smoke, TransformFromPosition(5.95, -15.14, 62.02)} }
@@ -296,9 +292,9 @@ public:
 			ModuleTransformGroup::CreateSet("HouseLvl7V2", {},
 				{ {ParticleEnum::Smoke, TransformFromPosition(5.74, 25.3, 62.0)} }
 			),
-			ModuleTransformGroup::CreateSet("HouseLvl7", {},
-				{ {ParticleEnum::Smoke, TransformFromPosition(5.95, -15.14, 62.02)} }
-			),
+			ModuleTransformGroup::CreateSet("HouseLvl7"),
+			ModuleTransformGroup::CreateSet("HouseLvl7"),
+			ModuleTransformGroup::CreateSet("HouseLvl7"),
 		});
 
 		//set(CardEnum::Townhall, {

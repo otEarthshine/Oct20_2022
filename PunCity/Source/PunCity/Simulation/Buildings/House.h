@@ -171,17 +171,26 @@ public:
 	void OnPickupResource(int32 objectId) override;
 	void OnDropoffResource(int32 objectId, ResourceHolderInfo holderInfo, int32 amount) override;
 
-	static const int32 houseTypesPerLevel = 3;
+	static const int32 houseTypesPerLevel = 5;
 	
 	int32 displayVariationIndex() override
 	{
 		if (_simulation->GetBiomeEnum(centerTile()) == BiomeEnum::Desert &&
 			_houseLvl <= 3) 
 		{
-			return (_houseLvl - 1) * houseTypesPerLevel + 2;
+			const int32 desertShift = 4;
+			return (_houseLvl - 1) * houseTypesPerLevel + desertShift;
 		}
+		int32 maxLocalIndex = 2;
+		switch(_houseLvl) {
+		case 1: maxLocalIndex = 3; break;
+		case 2: maxLocalIndex = 4; break;
+		case 3: maxLocalIndex = 4; break;
+		default: break;
+		}
+		
 		// Checker board like pattern so houses doesn't look the same next to each other...
-		int32 localIndex = (((centerTile().x / 6) % 2) + ((centerTile().y / 6) % 2) + 1) % 2;
+		int32 localIndex = (((centerTile().x / 6) % 2) + ((centerTile().y / 6) % 2) + 1) % maxLocalIndex;
 		return (_houseLvl - 1) * houseTypesPerLevel + localIndex;
 	}
 

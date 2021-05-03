@@ -318,7 +318,7 @@ public:
 	BuildingUpgrade MakeWorkerSlotUpgrade(int32 percentOfTotalPrice, int32 workerSlotBonus = 1);
 	BuildingUpgrade MakeEraUpgrade(int32 startEra);
 
-	BuildingUpgrade MakeComboUpgrade(FText name, ResourceEnum resourceEnum, int32 percentOfTotalPrice, int32 comboEfficiencyBonus);
+	BuildingUpgrade MakeComboUpgrade(FText name, ResourceEnum resourceEnum);
 
 
 	//! Budget

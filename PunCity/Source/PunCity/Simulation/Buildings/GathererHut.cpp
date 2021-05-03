@@ -138,7 +138,7 @@ void Forester::FinishConstruction()
 	AddUpgrades({
 		MakeProductionUpgrade(LOCTEXT("Timber Management", "Timber Management"), ResourceEnum::Stone, 50, 30),
 		MakeProductionUpgrade(LOCTEXT("Tree-cutting Techniques", "Tree-cutting Techniques"), ResourceEnum::Stone, 80, 50),
-		MakeComboUpgrade(LOCTEXT("Forest Town", "Forest Town"), ResourceEnum::Wood, 50, 20),
+		MakeComboUpgrade(LOCTEXT("Forest Town", "Forest Town"), ResourceEnum::Wood),
 	});
 }
 
@@ -215,7 +215,7 @@ void Beekeeper::FinishConstruction()
 
 	AddUpgrades({
 		MakeUpgrade(intensiveCareText, intensiveCareDesc, ResourceEnum::Brick, 50),
-		MakeComboUpgrade(LOCTEXT("Knowledge Sharing", "Knowledge Sharing"), ResourceEnum::Paper, 70, 50),
+		MakeComboUpgrade(LOCTEXT("Knowledge Sharing", "Knowledge Sharing"), ResourceEnum::Paper),
 	});
 }
 
@@ -644,7 +644,7 @@ void Blacksmith::FinishConstruction()
 	AddUpgrades({
 		MakeProductionUpgrade(LOCTEXT("Improved Forge", "Improved Forge"), ResourceEnum::Brick, 50, 30),
 		MakeProductionUpgrade(LOCTEXT("Alloy Recipe", "Alloy Recipe"), ResourceEnum::Paper, 50, 30),
-		MakeComboUpgrade(LOCTEXT("Blacksmith Guild", "Blacksmith Guild"), ResourceEnum::Paper, 50, 25),
+		MakeComboUpgrade(LOCTEXT("Blacksmith Guild", "Blacksmith Guild"), ResourceEnum::Paper),
 	});
 }
 
@@ -672,7 +672,7 @@ void MedicineMaker::FinishConstruction() {
 	AddUpgrades({
 		MakeProductionUpgrade(LOCTEXT("Catalyst", "Catalyst"), 100, 30),
 		MakeProductionUpgrade(LOCTEXT("Improved Extraction", "Improved Extraction"), 150, 50),
-		MakeComboUpgrade(LOCTEXT("Pharmaceutical Guild", "Pharmaceutical Guild"), ResourceEnum::Paper, 50, 25),
+		MakeComboUpgrade(LOCTEXT("Pharmaceutical Guild", "Pharmaceutical Guild"), ResourceEnum::Paper),
 	});
 }
 
@@ -692,7 +692,7 @@ void CharcoalMaker::FinishConstruction() {
 	AddUpgrades({
 		MakeUpgrade(LOCTEXT("Charcoal Conversion", "Charcoal Conversion"), LOCTEXT("Use 30% less wood input.", "Use 30% less wood input."), 20),
 		MakeProductionUpgrade(LOCTEXT("Improved Production", "Improved Production"), 50, 50),
-		MakeComboUpgrade(LOCTEXT("Charcoal Burner Guild", "Charcoal Burner Guild"), ResourceEnum::Wood, 30, 15),
+		MakeComboUpgrade(LOCTEXT("Charcoal Burner Guild", "Charcoal Burner Guild"), ResourceEnum::Wood),
 	});
 }
 
@@ -725,7 +725,7 @@ void Chocolatier::FinishConstruction()
 		MakeUpgrade(LOCTEXT("Cocoa Processing", "Cocoa Processing"), LOCTEXT("Cocoa Processing Desc", "Consumes 50% less input."), ResourceEnum::Iron, 50),
 		MakeProductionUpgrade(LOCTEXT("Improved Production", "Improved Production"), ResourceEnum::Iron, 50, 50),
 		MakeUpgrade(LOCTEXT("Reduce Upkeep", "Reduce Upkeep"), LOCTEXT("Reduce Upkeep Desc", "Reduce upkeep by 50%"), ResourceEnum::Brick, 20),
-		MakeComboUpgrade(LOCTEXT("Chocolate Town", "Chocolate Town"), ResourceEnum::Iron, 50, 25),
+		MakeComboUpgrade(LOCTEXT("Chocolate Town", "Chocolate Town"), ResourceEnum::Iron),
 	});
 }
 
@@ -738,7 +738,7 @@ void Winery::FinishConstruction() {
 
 	AddUpgrades({
 		MakeProductionUpgrade(LOCTEXT("Wine Appreciation", "Wine Appreciation"), 70, 50),
-		MakeComboUpgrade(LOCTEXT("Wine Town", "Wine Town"), ResourceEnum::Brick, 50, 50),
+		MakeComboUpgrade(LOCTEXT("Wine Town", "Wine Town"), ResourceEnum::Brick),
 	});
 }
 
@@ -765,7 +765,7 @@ void CoffeeRoaster::FinishConstruction() {
 	AddUpgrades({
 		MakeProductionUpgrade(LOCTEXT("Coffee Appreciation", "Coffee Appreciation"), 70, 50),
 		MakeProductionUpgrade(LOCTEXT("Improved Roasting Stage", "Improved Roasting Stage"), 70, 50),
-		MakeComboUpgrade(LOCTEXT("Coffee Town", "Coffee Town"), ResourceEnum::Brick, 50, 50),
+		MakeComboUpgrade(LOCTEXT("Coffee Town", "Coffee Town"), ResourceEnum::Brick),
 	});
 }
 
@@ -805,7 +805,7 @@ void Tailor::FinishConstruction() {
 
 	AddUpgrades({
 		MakeProductionUpgrade(LOCTEXT("Weaving Machine", "Weaving Machine"), ResourceEnum::Iron, 70, 55),
-		MakeComboUpgrade(LOCTEXT("Tailor Town", "Tailor Town"), ResourceEnum::Iron, 70, 25),
+		MakeComboUpgrade(LOCTEXT("Tailor Town", "Tailor Town"), ResourceEnum::Iron),
 	});
 }
 
@@ -833,7 +833,7 @@ void BeerBrewery::FinishConstruction() {
 	AddUpgrades({
 		MakeUpgrade(LOCTEXT("Improved Malting", "Improved Malting"), LOCTEXT("Consumes 30% less input.", "Consumes 30% less input."), ResourceEnum::Stone, 50),
 		MakeProductionUpgrade(LOCTEXT("Fast Malting", "Fast Malting"), ResourceEnum::Stone, 50, 30),
-		MakeComboUpgrade(LOCTEXT("Brewery Town", "Brewery Town"), ResourceEnum::Stone, 30, 20),
+		MakeComboUpgrade(LOCTEXT("Brewery Town", "Brewery Town"), ResourceEnum::Stone),
 	});
 
 	_simulation->TryAddQuest(_playerId, std::make_shared<BeerQuest>());
@@ -878,7 +878,7 @@ void VodkaDistillery::FinishConstruction() {
 	AddUpgrades({
 		MakeUpgrade(LOCTEXT("Improved Fermentation", "Improved Fermentation"), LOCTEXT("Consumes 30% less input.", "Consumes 30% less input."), ResourceEnum::Stone, 50),
 		MakeProductionUpgrade(LOCTEXT("Improved Filtration", "Improved Filtration"), ResourceEnum::Stone, 50, 30),
-		MakeComboUpgrade(LOCTEXT("Vodka Town", "Vodka Town"), ResourceEnum::Stone, 30, 50),
+		MakeComboUpgrade(LOCTEXT("Vodka Town", "Vodka Town"), ResourceEnum::Stone),
 	});
 }
 
@@ -941,7 +941,7 @@ void Bakery::FinishConstruction() {
 
 	AddUpgrades({
 		MakeProductionUpgrade(LOCTEXT("Improved Oven", "Improved Oven"), ResourceEnum::Stone, 50, 10),
-		MakeComboUpgrade(LOCTEXT("Baker Guild", "Baker Guild"), ResourceEnum::Paper, 50, 15),
+		MakeComboUpgrade(LOCTEXT("Baker Guild", "Baker Guild"), ResourceEnum::Paper),
 	});
 
 	ChangeWorkMode(_workMode); // Need this to setup resource target etc.
@@ -966,7 +966,7 @@ void Jeweler::FinishConstruction() {
 	AddUpgrades({
 		MakeProductionUpgrade(LOCTEXT("Rigorous Training", "Rigorous Training"), ResourceEnum::Brick, 80, 50),
 		MakeProductionUpgrade(LOCTEXT("Specialized Tools", "Specialized Tools"), ResourceEnum::SteelTools, 80, 50),
-		MakeComboUpgrade(LOCTEXT("Jeweler's Guild", "Jeweler's Guild"), ResourceEnum::Brick, 50, 20),
+		MakeComboUpgrade(LOCTEXT("Jeweler's Guild", "Jeweler's Guild"), ResourceEnum::Brick),
 	});
 }
 
@@ -978,7 +978,7 @@ void Brickworks::FinishConstruction() {
 
 	AddUpgrades({
 		MakeProductionUpgrade(LOCTEXT("Specialized Tools", "Specialized Tools"), ResourceEnum::Stone, 50, 50),
-		MakeComboUpgrade(LOCTEXT("Brickworks Town", "Brickworks Town"), ResourceEnum::Brick, 50, 20),
+		MakeComboUpgrade(LOCTEXT("Brickworks Town", "Brickworks Town"), ResourceEnum::Brick),
 	});
 }
 
@@ -990,7 +990,7 @@ void CandleMaker::FinishConstruction() {
 
 	AddUpgrades({
 		MakeProductionUpgrade(LOCTEXT("Specialized Tools", "Specialized Tools"), ResourceEnum::SteelTools, 50, 50),
-		MakeComboUpgrade(LOCTEXT("Candle Maker Guild", "Candle Maker Guild"), ResourceEnum::Brick, 50, 20),
+		MakeComboUpgrade(LOCTEXT("Candle Maker Guild", "Candle Maker Guild"), ResourceEnum::Brick),
 	});
 }
 
@@ -1015,8 +1015,8 @@ void CottonMill::FinishConstruction() {
 	AddResourceHolder(ResourceEnum::DyedCottonFabric, ResourceHolderType::Provider, 0);
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("Advanced Machinery", "Advanced Machinery"), ResourceEnum::Iron, 500, 300),
-		MakeComboUpgrade(LOCTEXT("Cotton Mill Town", "Cotton Mill Town"), ResourceEnum::Iron, 80, 50),
+		MakeProductionUpgrade(LOCTEXT("Advanced Machinery", "Advanced Machinery"), ResourceEnum::Iron, 100, 70),
+		MakeComboUpgrade(LOCTEXT("Cotton Mill Town", "Cotton Mill Town"), ResourceEnum::Iron),
 	});
 }
 
@@ -1027,8 +1027,8 @@ void PrintingPress::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("Advanced Machinery", "Advanced Machinery"), ResourceEnum::Iron, 500, 300),
-		MakeComboUpgrade(LOCTEXT("Printing Press Town", "Printing Press Town"), ResourceEnum::Iron, 80, 50),
+		MakeProductionUpgrade(LOCTEXT("Advanced Machinery", "Advanced Machinery"), ResourceEnum::Iron, 100, 70),
+		MakeComboUpgrade(LOCTEXT("Printing Press Town", "Printing Press Town"), ResourceEnum::Iron),
 	});
 }
 
@@ -1052,7 +1052,7 @@ void Potter::FinishConstruction() {
 	AddUpgrades({
 		MakeProductionUpgrade(LOCTEXT("Improved Kiln", "Improved Kiln"), 50, 30),
 		MakeWorkerSlotUpgrade(30),
-		MakeComboUpgrade(LOCTEXT("Potter Town", "Potter Town"), ResourceEnum::Stone, 50, 20),
+		MakeComboUpgrade(LOCTEXT("Potter Town", "Potter Town"), ResourceEnum::Stone),
 	});
 
 	_simulation->TryAddQuest(_playerId, std::make_shared<PotteryQuest>());
@@ -1077,7 +1077,7 @@ void FurnitureWorkshop::FinishConstruction() {
 	AddUpgrades({
 		MakeWorkerSlotUpgrade(30),
 		MakeUpgrade(LOCTEXT("Minimalism", "Minimalism"), LOCTEXT("Consumes 30% less input.", "Consumes 30% less input."), 30),
-		MakeComboUpgrade(LOCTEXT("Furniture Town", "Furniture Town"), ResourceEnum::Stone, 20, 20),
+		MakeComboUpgrade(LOCTEXT("Furniture Town", "Furniture Town"), ResourceEnum::Stone),
 	});
 }
 
@@ -1403,9 +1403,7 @@ void Smelter::FinishConstruction() {
 	AddUpgrades({
 		MakeUpgrade(teamworkText, LOCTEXT("Smelter Teamwork Desc", "Smelter with full worker slots get 50% production bonus"), ResourceEnum::Stone, 100),
 		MakeUpgrade(LOCTEXT("Efficient Furnace", "Efficient Furnace"), LOCTEXT("Decrease input by 30%", "Decrease input by 30%"), ResourceEnum::Brick, 100),
-		MakeComboUpgrade(
-			FText::Format(LOCTEXT("UpgradeGuild", "{0} Guild"), buildingInfo().GetName()),
-			ResourceEnum::Paper, 70, 30),
+		MakeComboUpgrade(FText::Format(LOCTEXT("UpgradeGuild", "{0} Guild"), buildingInfo().GetName()), ResourceEnum::Paper),
 	});
 }
 
@@ -1452,7 +1450,7 @@ void Mint::FinishConstruction() {
 
 	AddUpgrades({
 		MakeProductionUpgrade(LOCTEXT("Improved Production", "Improved Production"), ResourceEnum::Brick, 50, 30),
-		MakeComboUpgrade(LOCTEXT("Mint Town", "Mint Town"), ResourceEnum::Brick, 50, 10),
+		MakeComboUpgrade(LOCTEXT("Mint Town", "Mint Town"), ResourceEnum::Brick),
 	});
 }
 
@@ -1473,7 +1471,7 @@ void InventorsWorkshop::FinishConstruction() {
 	AddUpgrades({
 		MakeProductionUpgrade(LOCTEXT("Better Tools", "Better Tools"), ResourceEnum::SteelTools, 100, 50),
 		MakeProductionUpgrade(LOCTEXT("Component Blueprints", "Component Blueprints"), ResourceEnum::Paper, 100, 50),
-		MakeComboUpgrade(LOCTEXT("Inventor Guild", "Inventor Guild"), ResourceEnum::Brick, 50, 25),
+		MakeComboUpgrade(LOCTEXT("Inventor Guild", "Inventor Guild"), ResourceEnum::Brick),
 	});
 }
 
@@ -1703,6 +1701,79 @@ void Archives::CalculateRoundProfit()
 
 	lastRoundProfit = lastRoundProfit * CardProfitPercentPerRound / 100;
 }
+
+/*
+ * 
+ */
+void SandMine::FinishConstruction() {
+	Building::FinishConstruction();
+
+	AddUpgrades({
+		MakeComboUpgrade(LOCTEXT("Sand Mine Town", "Sand Mine Town"), ResourceEnum::Stone),
+	});
+}
+void GlassSmelter::FinishConstruction() {
+	Building::FinishConstruction();
+
+	AddUpgrades({
+		MakeComboUpgrade(LOCTEXT("Glass Smelter Town", "Glass Smelter Town"), ResourceEnum::Brick),
+	});
+}
+void Glassworks::FinishConstruction() {
+	Building::FinishConstruction();
+
+	AddUpgrades({
+		MakeComboUpgrade(LOCTEXT("Glassworks Town", "Glassworks Town"), ResourceEnum::Brick),
+	});
+}
+void ConcreteFactory::FinishConstruction() {
+	Building::FinishConstruction();
+
+	AddUpgrades({
+		MakeComboUpgrade(LOCTEXT("Concrete Factory Town", "Concrete Factory Town"), ResourceEnum::Concrete),
+	});
+}
+
+
+void IndustrialIronSmelter::FinishConstruction() {
+	Building::FinishConstruction();
+
+	AddUpgrades({
+		MakeComboUpgrade(LOCTEXT("Smelter Town", "Smelter Town"), ResourceEnum::Concrete),
+	});
+}
+void Steelworks::FinishConstruction() {
+	Building::FinishConstruction();
+
+	AddUpgrades({
+		MakeComboUpgrade(LOCTEXT("Steelworks Town", "Steelworks Town"), ResourceEnum::Concrete),
+	});
+}
+void OilRig::FinishConstruction() {
+	Building::FinishConstruction();
+
+	AddUpgrades({
+		MakeComboUpgrade(LOCTEXT("Oil Rig Town", "Oil Rig Town"), ResourceEnum::SteelBeam),
+	});
+}
+
+void PaperMill::FinishConstruction() {
+	Building::FinishConstruction();
+
+	AddUpgrades({
+		MakeComboUpgrade(LOCTEXT("Paper Mill Town", "Paper Mill Town"), ResourceEnum::SteelBeam),
+	});
+}
+
+void ClockMakers::FinishConstruction() {
+	Building::FinishConstruction();
+
+	AddUpgrades({
+		MakeComboUpgrade(LOCTEXT("Clock Makers Town", "Clock Makers Town"), ResourceEnum::SteelBeam),
+	});
+}
+
+
 
 /*
  * Power Plants

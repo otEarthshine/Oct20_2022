@@ -120,6 +120,8 @@ AGameManager::AGameManager()
 	_assetLoader = CreateDefaultSubobject<UAssetLoaderComponent>("AssetLoader");
 	_displayInfo.LoadBuildingSets(_assetLoader);
 
+	_assetLoader->CheckMeshesAvailable();
+
 	PaintConstructionMesh = false;
 	PrintConstructionMesh = false;
 	//UpdateRHIConstructionMesh = false;
@@ -151,6 +153,8 @@ void AGameManager::Init(int32 playerId, bool isLoadingFromFile, IGameUIInterface
 		HideActorType<ADecalActor>();
 		HideActorType<APointLight>();
 	}
+
+	_assetLoader->CheckMeshesAvailable();
 
 	// Loading from file means we need _simulation right from the start??
 	if (_isLoadingFromFile) {
@@ -216,6 +220,7 @@ void AGameManager::InitPhase2()
 	/*
 	 * Init display systems
 	 */
+	_assetLoader->CheckMeshesAvailable();
 
 #if DISPLAY_UNIT
 	_unitDisplaySystem->Init(unitSystem.unitCount(), this, _assetLoader, 0);

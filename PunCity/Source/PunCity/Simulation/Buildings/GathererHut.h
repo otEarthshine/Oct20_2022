@@ -820,20 +820,24 @@ public:
 class SandMine final : public Building
 {
 public:
+	void FinishConstruction() override;
 };
 
 class GlassSmelter final : public Building
 {
 public:
+	void FinishConstruction() override;
 };
-class Glasswork final : public Building
+class Glassworks final : public Building
 {
 public:
+	void FinishConstruction() override;
 };
 
 class ConcreteFactory final : public Building
 {
 public:
+	void FinishConstruction() override;
 };
 
 class PowerPlant : public Building
@@ -865,16 +869,19 @@ public:
 class IndustrialIronSmelter final : public Building
 {
 public:
+	void FinishConstruction() override;
 	
 };
 class Steelworks final : public Building
 {
 public:
+	void FinishConstruction() override;
 };
 
 class OilRig final : public Mine
 {
 public:
+	void FinishConstruction() override;
 	std::vector<BonusPair> GetBonuses() final;
 };
 
@@ -882,11 +889,13 @@ public:
 class PaperMill final : public Building
 {
 public:
+	void FinishConstruction() override;
 };
 
 class ClockMakers final : public Building
 {
 public:
+	void FinishConstruction() override;
 };
 
 

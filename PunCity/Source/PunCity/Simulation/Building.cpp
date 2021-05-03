@@ -1282,25 +1282,15 @@ BuildingUpgrade Building::MakeEraUpgrade(int32 startEra)
 	return upgrade;
 }
 
-BuildingUpgrade Building::MakeComboUpgrade(FText name, ResourceEnum resourceEnum, int32 percentOfTotalPrice, int32 comboEfficiencyBonus)
+BuildingUpgrade Building::MakeComboUpgrade(FText name, ResourceEnum resourceEnum)
 {
-//	FText buildingNamePluralText;
-//	
-//	switch (buildingInfo().cardEnum)
-//	{
-//#define CASE(cardEnum, pluralName) case cardEnum: buildingNamePluralText = pluralName; break;
-//		CASE(CardEnum::Bakery,			LOCTEXT("Bakeries", "Bakeries"));
-//		CASE(CardEnum::BeerBrewery,		LOCTEXT("Breweries", "Breweries"));
-//		CASE(CardEnum::Winery,			LOCTEXT("Wineries", "Wineries"));
-//		CASE(CardEnum::Brickworks,		LOCTEXT("Brickworks", "Brickworks"));
-//		CASE(CardEnum::PrintingPress,	LOCTEXT("Printing Presses", "Printing Presses"));
-//		CASE(CardEnum::VodkaDistillery, LOCTEXT("Distilleries", "Distilleries"));
-//#undef CASE
-//	default:
-//		buildingNamePluralText =  FText::Format(INVTEXT("{0}s"), buildingInfo().GetName());
-//		break;
-//	}
+	int32 comboEfficiencyBonus = 5;
+	for (int32 i = 1; i < buildingInfo().minEra(); i++) {
+		comboEfficiencyBonus += 5;
+	}
 
+	int32 percentOfTotalPrice = comboEfficiencyBonus * 2;
+	
 	FText description = FText::Format(
 		LOCTEXT("Combo Upgrade Description", "Gain +{0}/{1}/{2}% productivity if this city has 2/4/8 {3}"),
 		TEXT_NUM(comboEfficiencyBonus),
@@ -1314,13 +1304,18 @@ BuildingUpgrade Building::MakeComboUpgrade(FText name, ResourceEnum resourceEnum
 	return upgrade;
 }
 
-int32 Building::displayVariationIndex() {
-	if (IsAutoEraUpgrade(buildingEnum())) {
-		int32 variationIndex = _simulation->GetTownLvl(_townId) - _simulation->GetMinEraDisplay(_buildingEnum);
-		variationIndex = max(variationIndex, 0);
-		return variationIndex;
+int32 Building::displayVariationIndex()
+{
+	if (_playerId != -1)
+	{
+		if (IsAutoEraUpgrade(buildingEnum())) {
+			int32 variationIndex = _simulation->GetTownLvl(_townId) - _simulation->GetMinEraDisplay(_buildingEnum);
+			variationIndex = max(variationIndex, 0);
+			return variationIndex;
+		}
+		return GetEraUpgradeCount();
 	}
-	return GetEraUpgradeCount();
+	return 0;
 }
 
 #undef LOCTEXT_NAMESPACE 

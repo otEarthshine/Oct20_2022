@@ -330,8 +330,7 @@ public:
 	//	return FBuildingAsset();
 	//}
 
-	bool HasConstructionMesh(FString moduleName) { return _moduleNameToConstructionMesh.Contains(moduleName); }
-	UStaticMesh* moduleConstructionMesh(FString moduleName);
+	//bool HasConstructionMesh(FString moduleName) { return false; } // _moduleNameToConstructionMesh.Contains(moduleName);
 
 	//! Module types are used to create separate mesh sets
 	const TArray<FString>& moduleNames()
@@ -414,6 +413,27 @@ public:
 
 	//!!! Constructor loading of material with landscapeLayerBlend crashes...
 	UMaterial* GetTerrainMaterial();
+
+	/*
+	 * Debug
+	 */
+	void CheckMeshesAvailable() {
+		// Building Mesh Check
+		check(_moduleNames.Num() + _togglableModuleNames.Num() + _animModuleNames.Num() == _moduleNameToMesh.Num()); // Doesn't work with old methods
+		for (int32 i = 0; i < _moduleNames.Num(); i++) {
+			check(_moduleNameToMesh.Contains(_moduleNames[i]))
+		}
+	}
+	void CleanModuleNames() {
+		_moduleNames.Empty();
+		for (auto& it : _moduleNameToMesh) {
+			if (!_togglableModuleNames.Contains(it.Key) &&
+				!_animModuleNames.Contains(it.Key)) 
+			{
+				_moduleNames.Add(it.Key);
+			}
+		}
+	}
 
 public:
 	UPROPERTY(EditAnywhere, Category = "Mesh Import") UStaticMesh* GroundMesh;
@@ -667,6 +687,9 @@ private:
 	void LoadBuilding(CardEnum buildingEnum, FString moduleGroupName, FString moduleGroupFolderName, bool useOldMethod = false, ModuleTransformGroup auxGroup = ModuleTransformGroup(), int32 minEra = 1) {
 		TryLoadBuildingModuleSet(moduleGroupName, moduleGroupFolderName, useOldMethod, buildingEnum);
 
+		LinkBuilding(buildingEnum, moduleGroupName, auxGroup, minEra);
+	}
+	void LinkBuilding(CardEnum buildingEnum, FString moduleGroupName, ModuleTransformGroup auxGroup = ModuleTransformGroup(), int32 minEra = 1) {
 		auxGroup.particleInfos.insert(auxGroup.particleInfos.end(), _tempAuxGroup.particleInfos.begin(), _tempAuxGroup.particleInfos.end());
 		_tempAuxGroup = ModuleTransformGroup();
 
@@ -685,6 +708,15 @@ private:
 		}
 		check(_buildingEnumToModuleGroups[static_cast<int>(buildingEnum)].Num() == (maxEra - minEra + 1));
 	}
+	void LinkBuildingEras(CardEnum buildingEnum, FString moduleGroupPrefix, int32 minEra, int32 maxEra = 4, ModuleTransformGroup auxGroup = ModuleTransformGroup())
+	{
+		for (int32 i = minEra; i <= maxEra; i++) {
+			FString moduleGroupName = moduleGroupPrefix + FString::FromInt(i);
+			LinkBuilding(buildingEnum, moduleGroupPrefix + FString::FromInt(i), auxGroup, minEra);
+		}
+		check(_buildingEnumToModuleGroups[static_cast<int>(buildingEnum)].Num() == (maxEra - minEra + 1));
+	}
+	
 	void TryLoadBuildingModuleSet(FString moduleSetName, FString meshSetFolder, bool useOldMethod = true, CardEnum buildingEnum = CardEnum::None);
 
 	
@@ -694,6 +726,16 @@ private:
 									std::string fruitMeshFile, std::string leafLowMeshFile, std::string leafShadowMeshFile, std::string stumpMeshFile);
 	void LoadTileObject(TileObjEnum treeEnum, std::vector<std::string> meshFiles);
 
+
+	void AddBuildingModule(FString moduleName, UStaticMesh* mesh, TArray<FString>& nameListToAdd)
+	{
+		check(!_moduleNameToMesh.Contains(moduleName));
+		_moduleNameToMesh.Add(moduleName, mesh);
+		nameListToAdd.Add(moduleName);
+
+		CheckMeshesAvailable();
+	}
+	
 
 	/*
 	 * Mesh Processing
@@ -706,9 +748,7 @@ private:
 
 private:
 	UPROPERTY() TMap<FString, UStaticMesh*> _moduleNameToMesh;
-	UPROPERTY() TMap<FString, UStaticMesh*> _moduleNameToConstructionMesh;
-
-	//UPROPERTY() TMap<FString, FBuildingAsset> _buildingNameToAsset;
+	//UPROPERTY() TMap<FString, UStaticMesh*> _moduleNameToConstructionMesh;
 
 	TArray<TArray<ModuleTransformGroup>> _buildingEnumToModuleGroups;
 	TArray<int32> _buildingEnumToMinEraModel;

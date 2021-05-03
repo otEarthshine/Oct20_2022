@@ -2439,6 +2439,21 @@ static bool HasNoEraUpgrade(CardEnum buildingEnumIn) { // Upgrade with era witho
 	}
 }
 
+static bool IsEndOfEraBuilding(CardEnum buildingEnumIn) { // End of Era building gets some bonus
+	switch (buildingEnumIn) {
+	case CardEnum::MedicineMaker:
+	case CardEnum::CardMaker:
+	case CardEnum::CandleMaker:
+	case CardEnum::Winery:
+
+	case CardEnum::Mint:
+	case CardEnum::Chocolatier:
+		return true;
+	default:
+		return false;
+	}
+}
+
 
 /*
  * Power Plants
@@ -2518,19 +2533,22 @@ struct BldResourceInfo
 	static const int32 PercentUpkeepToPrice = 10;
 
 	// TODO:
-	static const int32 BaseCostPercentEraMultiplier = 300;
+	static const int32 BaseCostPercentEraMultiplier = 230;
 
 	// For calculating upgrade cost and final base production
-	static const int32 UpgradeCostPercentEraMultiplier = 200;
+	static const int32 UpgradeCostPercentEraMultiplier = 170;
+
+	static const int32 FirstIndustryIncentiveMultiplier = 60;
+	
 
 	void CalculateResourceCostValueBeforeDiscount(const std::vector<ResourceEnum>& inputsAndOutput, int32 percentDiff)
 	{
 		const int32 baseValue = 500;
 
-		// Era 1 special discount encouragement
+		// End of Era building gets some bonus
 		int32 adjustedValue1 = baseValue;
-		if (era == 1) {
-			adjustedValue1 = adjustedValue1 * 60 / 100;
+		if (IsEndOfEraBuilding(buildingEnum)) {
+			adjustedValue1 = adjustedValue1 * 130 / 100;
 		}
 
 		// Era
@@ -2560,6 +2578,12 @@ struct BldResourceInfo
 		
 		// Each worker added after base (2) costs less resource
 		int32 adjustedValue2 = baseResourceCostValueBeforeDiscount;
+
+		// Era 1 special discount encouragement
+		if (era == 1) {
+			adjustedValue2 = adjustedValue2 * FirstIndustryIncentiveMultiplier / 100;
+		}
+		
 		if (workerCount > 0)
 		{
 			int32 value1PerWorker = baseResourceCostValueBeforeDiscount / workerCount;
@@ -2944,7 +2968,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(6, 6), GetBldResourceInfo(2, {ResourceEnum::Paper}, 3, {3, 0, 1, 1}, 0)
 	),
 	BldInfo(CardEnum::IronSmelter,	LOCTEXT("Iron Smelter", "Iron Smelter"), LOCTEXT("Iron Smelter (Plural)", "Iron Smelters"),	LOCTEXT("Iron Smelter Desc", "Smelt Iron Ores into Iron Bars."),
-		WorldTile2(5, 6), GetBldResourceInfo(2, {ResourceEnum::Coal, ResourceEnum::IronOre, ResourceEnum::Iron}, 5, {1,1}, 70)
+		WorldTile2(5, 6), GetBldResourceInfo(2, {ResourceEnum::Coal, ResourceEnum::IronOre, ResourceEnum::Iron}, 5, {1,5}, 70)
 	),
 
 
@@ -3008,7 +3032,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(10, 8), GetBldResourceInfo(3, 0, { 0, 0, 1, 1, 1 }, -50)
 	),
 	BldInfo(CardEnum::Tavern,		LOCTEXT("Tavern", "Tavern"),	LOCTEXT("Tavern (Plural)", "Taverns"), LOCTEXT("Tavern Desc", "Increase visitor's Fun. Base Service quality 50."),
-		WorldTile2(6, 8), GetBldResourceInfo(1, 0, { 1, 1 }, -50)
+		WorldTile2(6, 8), GetBldResourceInfo(1, 0, { 1, 1 }, 100)
 	),
 
 	BldInfo(CardEnum::Tailor,		LOCTEXT("Tailor", "Tailor"),	LOCTEXT("Tailor (Plural)", "Tailors"), LOCTEXT("Tailor Desc", "Make Clothes from Leather or Wool."),
@@ -6631,6 +6655,7 @@ enum class CheatEnum : int32
 	Influence,
 	FastBuild,
 	Resources,
+	ConstructResources,
 	Undead,
 	Immigration,
 
@@ -6704,6 +6729,7 @@ static const std::string CheatName[]
 	"Influence",
 	"FastBuild",
 	"Resources",
+	"ConstructResources",
 	"Undead",
 	"Immigration",
 

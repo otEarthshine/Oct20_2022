@@ -284,6 +284,8 @@ void APunPlayerController::SetupGameManager(bool isLoadingFromFile)
 		
 		gameManager = Cast<AGameManager>(FoundGameManagers[0]);
 
+		gameManager->assetLoader()->CleanModuleNames();
+		gameManager->assetLoader()->CheckMeshesAvailable();
 		//PUN_CHECK(gameManager->assetLoader()->moduleNames().Num() == ModuleMeshCount);
 		
 		gameManager->SetOwner(this);

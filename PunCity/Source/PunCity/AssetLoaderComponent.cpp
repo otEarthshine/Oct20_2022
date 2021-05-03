@@ -151,7 +151,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	// Modules:
 	_modulesNeedingPaintConstruction.Empty();
-
+	_moduleNames.Empty();
+	
 
 	/*
 	 * Building Modules
@@ -166,25 +167,27 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::Blacksmith, "Blacksmith_Era", "Blacksmith", 2);
 	LoadBuilding(CardEnum::MedicineMaker, "MedicineMaker_Era", "MedicineMaker", 2);
 
-	LoadBuilding(CardEnum::FurnitureWorkshop, "FurnitureWorkshop", "FurnitureWorkshop", true);
 	LoadBuilding(CardEnum::BeerBrewery, "Brewery_Era", "BeerBrewery", 1);
 	
 	LoadBuilding(CardEnum::Chocolatier, "Chocolatier_Era", "Chocolatier", 4);
 
-	LoadBuilding(CardEnum::MushroomFarm, "Mushroom_FarmEra", "MushroomFarm", 1 , 4, ModuleTransformGroup::CreateAuxSet(
-		{}, 
-		{ ModuleTransform("Mushroom_FarmEra1WorkShaderAnimate", FTransform::Identity, 0.0f, ModuleTypeEnum::ShaderAnimate), }
-	));
+	LoadBuilding(CardEnum::MushroomFarm, "Mushroom_FarmEra", "MushroomFarm", 1, 4); // ,
+	//	ModuleTransformGroup::CreateAuxSet(
+	//	{}, 
+	//	{ ModuleTransform("Mushroom_FarmEra1WorkShaderAnimate", FTransform::Identity, 0.0f, ModuleTypeEnum::ShaderAnimate), }
+	//));
 
-	LoadBuilding(CardEnum::Garden, "Garden1", "Garden/Variation1");
+	LoadBuilding(CardEnum::Garden, "Garden_Variation1", "Garden/Variation1");
 	//TryLoadBuildingModuleSet("Garden2", "Garden/Variation2");
 	//TryLoadBuildingModuleSet("Garden3", "Garden/Variation3");
 
 	LoadBuilding(CardEnum::Fisher, "Fishing_Lodge_Era_", "FishingLodge", 1);
 
-	LoadBuilding(CardEnum::Winery, "Winery_Era_", "Winery", 3);
+	LoadBuilding(CardEnum::Winery, "Winery_Era_", "Winery", 2);
 
 	LoadBuilding(CardEnum::Library, "Library_Era", "Library", 2, 2);
+	LoadBuilding(CardEnum::School, "College_Name", "College/Era4");
+	
 	LoadBuilding(CardEnum::Theatre, "Theatre_Era_", "Theatre", 3);
 	LoadBuilding(CardEnum::Tavern, "TavernEra", "Tavern", 1);
 	LoadBuilding(CardEnum::Tailor, "TailorEra", "Tailor", 2);
@@ -204,8 +207,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::HuntingLodge, "Hunting_LodgeERA", "HuntingLodge", 1);
 
 	LoadBuilding(CardEnum::RanchPig, "pigranchERA", "Ranch", 1);
-	LoadBuilding(CardEnum::RanchSheep, "pigranchERA", "Ranch", 1);
-	LoadBuilding(CardEnum::RanchCow, "pigranchERA", "Ranch", 1);
+	LinkBuildingEras(CardEnum::RanchSheep, "pigranchERA", 1);
+	LinkBuildingEras(CardEnum::RanchCow, "pigranchERA", 1);
 
 	LoadBuilding(CardEnum::GoldSmelter, "GoldSmelter_Era", "SmelterGold", 2);
 	LoadBuilding(CardEnum::Mint, "Mint_Era", "Mint", 3);
@@ -221,7 +224,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	LoadBuilding(CardEnum::ShroomFarm, "ShroomFarmEra", "MagicMushroomFarm", 3);
 
-	LoadBuilding(CardEnum::VodkaDistillery, "VodkaDistilleryERA", "VodkaDistillery", 2);
+	LoadBuilding(CardEnum::VodkaDistillery, "Vodka_DistilleryERA", "VodkaDistillery", 2);
 
 	LoadBuilding(CardEnum::CoffeeRoaster, "CoffeeRoaster_Era", "CoffeeRoaster", 3);
 
@@ -229,19 +232,18 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	LoadBuilding(CardEnum::SandMine, "SandMine_Era", "SandMine", 3);
 	LoadBuilding(CardEnum::GlassSmelter, "GlassWorks_Era", "GlassWorks", 3);
-	LoadBuilding(CardEnum::Glassworks, "GlassWorks_Era", "GlassWorks", 3);
+	LinkBuildingEras(CardEnum::Glassworks, "GlassWorks_Era", 3);
 	LoadBuilding(CardEnum::ConcreteFactory, "concretefactoryERA", "ConcreteFactory", 4);
 	
 	LoadBuilding(CardEnum::CoalPowerPlant, "coalpowerplant", "CoalPowerPlant/Era4");
-	LoadBuilding(CardEnum::IndustrialIronSmelter, "SteelworksEra", "Steelworks");
-	LoadBuilding(CardEnum::Steelworks, "SteelworksEra", "Steelworks");
+	LoadBuilding(CardEnum::IndustrialIronSmelter, "IndustrialIronSmelterERA", "IndustrialIronSmelter/Era4");
+	LoadBuilding(CardEnum::Steelworks, "SteelworksEra4", "Steelworks");
 	LoadBuilding(CardEnum::OilRig, "OilWell_Era", "OilWell");
-	LoadBuilding(CardEnum::OilPowerPlant, "coalpowerplant", "CoalPowerPlant/Era4");
+	LinkBuilding(CardEnum::OilPowerPlant, "coalpowerplant");
 	LoadBuilding(CardEnum::PaperMill, "PaperMill_PaperMill_Era4", "PaperMill");
 	LoadBuilding(CardEnum::ClockMakers, "Clock_Maker_Era", "ClockMaker");
 
 	LoadBuilding(CardEnum::Cathedral, "Cathedral_Era2", "Cathedral");
-	LoadBuilding(CardEnum::Castle, "TownhallLvl5", "TownhallLvl5", true);
 	LoadBuilding(CardEnum::GrandPalace, "Grand_Museum_Era_", "GrandMuseum", 4);
 	LoadBuilding(CardEnum::ExhibitionHall, "Crystal_Palace", "CrystalPalace", false, ModuleTransformGroup::CreateAuxSet(
 		{}, {}, {},
@@ -281,6 +283,13 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-2.3, 10.2, 8.5), FVector::OneVector} }
 	));
 
+	// OLD METHOD
+	LoadBuilding(CardEnum::FurnitureWorkshop, "FurnitureWorkshop", "FurnitureWorkshop");
+	LoadBuilding(CardEnum::Castle, "TownhallLvl5", "TownhallLvl5", true);
+
+
+
+	
 	
 	// -
 
@@ -325,17 +334,46 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::BoarBurrow, "BoarBurrow", "BoarBurrow");
 
 	// Houses
-	TryLoadBuildingModuleSet("HouseLvl1", "HouseLvl1");
-	TryLoadBuildingModuleSet("HouseLvl1V2", "HouseLvl1");
+	//TryLoadBuildingModuleSet("HouseLvl1", "HouseLvl1");
+	//TryLoadBuildingModuleSet("HouseLvl1V2", "HouseLvl1");
+	////TryLoadBuildingModuleSet("HouseClayLvl1", "HouseClayLvl1");
+
+	// Lvl 1
+	for (int32 i = 1; i <= 3; i++) {
+		FString moduleGroupName = "House_Lvl1_Var" + FString::FromInt(i);
+		FString moduleGroupFolderName = "House/Level1/V" + FString::FromInt(i);
+		LoadBuilding(CardEnum::House, moduleGroupName, moduleGroupFolderName);
+	}
 	TryLoadBuildingModuleSet("HouseClayLvl1", "HouseClayLvl1");
-	
-	TryLoadBuildingModuleSet("HouseLvl2", "HouseLvl2");
-	TryLoadBuildingModuleSet("HouseLvl2V2", "HouseLvl2");
+	LinkBuilding(CardEnum::House, "HouseClayLvl1");
+	LinkBuilding(CardEnum::House, "HouseClayLvl1");
+
+	// Lvl 2
+	for (int32 i = 1; i <= 4; i++) {
+		FString moduleGroupName = "House_LV2_V" + FString::FromInt(i);
+		FString moduleGroupFolderName = "House/Level2/V" + FString::FromInt(i);
+		LoadBuilding(CardEnum::House, moduleGroupName, moduleGroupFolderName);
+	}
 	TryLoadBuildingModuleSet("HouseClayLvl2", "HouseClayLvl2");
-	
-	TryLoadBuildingModuleSet("HouseLvl3", "HouseLvl3");
-	TryLoadBuildingModuleSet("HouseLvl3V2", "HouseLvl3");
+	LinkBuilding(CardEnum::House, "HouseClayLvl2");
+
+	// Lvl 3
+	for (int32 i = 1; i <= 4; i++) {
+		FString moduleGroupName = "House_LV3_V" + FString::FromInt(i);
+		FString moduleGroupFolderName = "House/Level3/V" + FString::FromInt(i);
+		LoadBuilding(CardEnum::House, moduleGroupName, moduleGroupFolderName);
+	}
 	TryLoadBuildingModuleSet("HouseClayLvl3", "HouseClayLvl3");
+	LinkBuilding(CardEnum::House, "HouseClayLvl3");
+
+	
+	//TryLoadBuildingModuleSet("HouseLvl2", "HouseLvl2");
+	//TryLoadBuildingModuleSet("HouseLvl2V2", "HouseLvl2");
+	//TryLoadBuildingModuleSet("HouseClayLvl2", "HouseClayLvl2");
+	
+	//TryLoadBuildingModuleSet("HouseLvl3", "HouseLvl3");
+	//TryLoadBuildingModuleSet("HouseLvl3V2", "HouseLvl3");
+	//TryLoadBuildingModuleSet("HouseClayLvl3", "HouseClayLvl3");
 	
 	TryLoadBuildingModuleSet("HouseLvl4", "HouseLvl4");
 	TryLoadBuildingModuleSet("HouseLvl4V2", "HouseLvl4");
@@ -371,7 +409,6 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	TryLoadBuildingModuleSet("Townhall0", "TownhallModules");
 	TryLoadBuildingModuleSet("Townhall3", "TownhallLvl3");
 	TryLoadBuildingModuleSet("Townhall4", "TownhallLvl3");
-	TryLoadBuildingModuleSet("TownhallLvl5", "TownhallLvl5");
 	LoadModule("TownhallLvl5GardenAndSpire", "TownhallLvl5/TownhallLvl5GardenAndSpire");
 	
 	//PUN_CHECK(moduleMesh("Townhall3Special2"));
@@ -413,11 +450,6 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	TryLoadBuildingModuleSet("PortVillage", "RegionPortVillage");
 	TryLoadBuildingModuleSet("RegionCratePile", "RegionCratePile");
 
-	// Dec 29
-	TryLoadBuildingModuleSet("ShroomHut", "ShroomHut");
-	TryLoadBuildingModuleSet("VodkaDistillery", "VodkaDistillery");
-
-	
 
 	// Fence Modules
 	LoadModule("FenceFour", "Fence/FenceFour", true);
@@ -457,26 +489,17 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadModule("HellPortal", "HellPortal/HellPortal");
 
 
-	// Decorative Modules
-	LoadModule("DecorativeBarrel", "BuildingModule1/DecorativeBarrel/DecorativeBarrel", false, true);
-	LoadModule("DecorativeBasketBox", "BuildingModule1/DecorativeBasket/DecorativeBasketBox");
-	LoadModule("DecorativeBasketNormal", "BuildingModule1/DecorativeBasket/DecorativeBasketNormal");
-	LoadModule("DecorativeBasketRound", "BuildingModule1/DecorativeBasket/DecorativeBasketRound");
-	LoadModule("DecorativeBlueBottle", "BuildingModule1/DecorativeBlueBottle/DecorativeBlueBottle");
-	LoadModule("DecorativeBread", "BuildingModule1/DecorativeBread/DecorativeBread");
-	LoadModule("DecorativeHam", "BuildingModule1/DecorativeHam/DecorativeHam");
-	LoadModule("DecorativeOrange", "BuildingModule1/DecorativeOrange/DecorativeOrange");
-	LoadModule("DecorativeSack", "BuildingModule1/DecorativeSack/DecorativeSack");
-
-
 	// Other Modules
-	LoadModule("WoodFrame", "BuildingModule1/WoodFrame/WoodFrame");
-
-	LoadModule("WindowFrame", "BuildingModule1/WindowsFrame/WindowFrame");
-	LoadModule("WindowGlass", "BuildingModule1/WindowsFrame/WindowGlass");
+	//LoadModule("WindowFrame", "BuildingModule1/WindowsFrame/WindowFrame");
+	//LoadModule("WindowGlass", "BuildingModule1/WindowsFrame/WindowGlass");
 
 	LoadModule("LovelyHeart", "EasterEggs/LovelyHeart");
 
+	//TryLoadBuildingModuleSet("TownhallLvl5", "TownhallLvl5");
+
+	//CheckMeshesAvailable();
+	
+	
 	/*
 	 * Building Icons
 	 */
@@ -1045,8 +1068,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	//_terrainMaterial2 = Load<UMaterial>("/Game/Models/Terrain/Forest/ForestTerrainMaterial");
 
-	//PUN_LOG("_moduleNames %d, toMesh:%d", _moduleNames.Num(), _moduleNameToMesh.Num());
-	//PUN_CHECK(_moduleNames.Num() == ModuleMeshCount);
+	CheckMeshesAvailable();
 }
 
 UMaterialInstanceDynamic* UAssetLoaderComponent::GetResourceIconMaterial(ResourceEnum resourceEnum)
@@ -1092,8 +1114,6 @@ UMaterial* UAssetLoaderComponent::GetTerrainMaterial()
 
 UStaticMesh* UAssetLoaderComponent::moduleMesh(FString moduleName)
 {
-	//PUN_CHECK(moduleName == "Townhall3Special2" || _moduleNames.Num() == 417);
-	
 	if (_moduleNameToMesh.Contains(moduleName)) {
 		return _moduleNameToMesh[moduleName];
 	}
@@ -1102,21 +1122,23 @@ UStaticMesh* UAssetLoaderComponent::moduleMesh(FString moduleName)
 	return nullptr;
 }
 
-UStaticMesh* UAssetLoaderComponent::moduleConstructionMesh(FString moduleName)
-{
-	if (_moduleNameToConstructionMesh.Contains(moduleName)) {
-		return _moduleNameToConstructionMesh[moduleName];
-	}
-	//PUN_LOG("No Module Construction Mesh For %s", *moduleName);
-	return nullptr;
-}
+//UStaticMesh* UAssetLoaderComponent::moduleConstructionMesh(FString moduleName)
+//{
+//	if (_moduleNameToConstructionMesh.Contains(moduleName)) {
+//		return _moduleNameToConstructionMesh[moduleName];
+//	}
+//	//PUN_LOG("No Module Construction Mesh For %s", *moduleName);
+//	return nullptr;
+//}
 
 void UAssetLoaderComponent::LoadModule(FString moduleName, FString meshFile, bool paintConstructionVertexColor, bool isTogglable)
 {
 	const FString buildingPath = "/Game/Models/Buildings/";
 	const auto mesh = LoadF<UStaticMesh>(buildingPath + meshFile);
-	_moduleNameToMesh.Add(moduleName, mesh);
-	_moduleNames.Add(moduleName);
+	
+	AddBuildingModule(moduleName, mesh, _moduleNames);
+	
+	PUN_LOG("LoadModule: %s _ %s", *_moduleNames.Last(), *mesh->GetName());
 
 	if (isTogglable) {
 		_togglableModuleNames.Add(moduleName);
@@ -1133,16 +1155,16 @@ void UAssetLoaderComponent::LoadTogglableModule(FString moduleName, FString mesh
 {
 	const FString buildingPath = "/Game/Models/Buildings/";
 	const auto mesh = LoadF<UStaticMesh>(buildingPath + meshFile);
-	_moduleNameToMesh.Add(moduleName, mesh);
-	_togglableModuleNames.Add(moduleName);
+
+	AddBuildingModule(moduleName, mesh, _togglableModuleNames);
 }
 
 void UAssetLoaderComponent::LoadAnimModule(FString moduleName, FString meshFile)
 {
 	const FString buildingPath = "/Game/Models/Buildings/";
 	const auto mesh = LoadF<UStaticMesh>(buildingPath + meshFile);
-	_moduleNameToMesh.Add(moduleName, mesh);
-	_animModuleNames.Add(moduleName);
+
+	AddBuildingModule(moduleName, mesh, _animModuleNames);
 }
 
 void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FString meshSetFolder, bool useOldMethod, CardEnum buildingEnum)
@@ -1179,10 +1201,9 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 			if (platformFile.FileExists(*(FPaths::ProjectContentDir() + path + FString(".uasset"))))
 			{
 				const auto mesh = LoadF<UStaticMesh>("/Game/" + path);
-				_moduleNameToMesh.Add(moduleName, mesh);
-				_moduleNames.Add(moduleName);
 
-				//PUN_LOG("Adding Module: %s path: %s", *moduleName, *path);
+				AddBuildingModule(moduleName, mesh, _moduleNames);
+				PUN_LOG("TryLoadBuildingModuleSet Old: %s _ %s", *_moduleNames.Last(), *mesh->GetName());
 
 				if (meshTypeNames[i].Equals(FString("Frame"))) {
 					_modulesNeedingPaintConstruction.Add(moduleName);
@@ -1205,8 +1226,8 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 			if (platformFile.FileExists(*(FPaths::ProjectContentDir() + path + FString(".uasset"))))
 			{
 				const auto mesh = LoadF<UStaticMesh>("/Game/" + path);
-				_moduleNameToMesh.Add(moduleName, mesh);
-				_togglableModuleNames.Add(moduleName);
+
+				AddBuildingModule(moduleName, mesh, _togglableModuleNames);
 			}
 		}
 
@@ -1228,8 +1249,8 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 			if (platformFile.FileExists(*(FPaths::ProjectContentDir() + path + FString(".uasset"))))
 			{
 				const auto mesh = LoadF<UStaticMesh>("/Game/" + path);
-				_moduleNameToMesh.Add(moduleName, mesh);
-				_animModuleNames.Add(moduleName);
+				
+				AddBuildingModule(moduleName, mesh, _animModuleNames);
 			}
 		}
 	}
@@ -1262,7 +1283,7 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 			{
 				PUN_LOG("- File is from set");
 
-				auto addMesh = [&](FString moduleTypeName) {
+				auto addMesh = [&](FString moduleTypeName, bool isSpecial = false) {
 					FString moduleName = moduleSetName + moduleTypeName;
 
 					//FString path = "/Game/" + buildingPath + meshSetFolder + FString("/") + foundFiles[i];
@@ -1278,9 +1299,14 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 						moduleName = moduleSetName + FString("Body") + FString::FromInt(bodyMainIndex);
 						bodyMainIndex++;
 					}
+					else if (isSpecial) {
+						bodySpecialIndex++;
+					}
+
+					AddBuildingModule(moduleName, mesh, _moduleNames);
 					
-					_moduleNameToMesh.Add(moduleName, mesh);
-					_moduleNames.Add(moduleName);
+					PUN_LOG("TryLoadBuildingModuleSet New: %s _ %s", *_moduleNames.Last(), *mesh->GetName());
+					
 					return moduleName;
 				};
 
@@ -1288,13 +1314,11 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 					foundFiles[i].Contains("_Body1_") ||
 					foundFiles[i].Contains("_Body2_") ||
 					foundFiles[i].Contains("_Body3_") ||
-					foundFiles[i].Contains("_Windows_")) 
+					foundFiles[i].Contains("_Windows_") ||
+					foundFiles[i].Contains("_Window_"))
 				{
 					FString moduleTypeNameIn = FString("Special") + FString::FromInt(bodySpecialIndex);
-					FString moduleNameOut = addMesh(moduleTypeNameIn);
-					if (moduleTypeNameIn == moduleNameOut.Right(moduleTypeNameIn.Len())) {
-						bodySpecialIndex++;
-					}
+					addMesh(moduleTypeNameIn, true);
 				}
 				else if (foundFiles[i].Contains("_Scaffolding_")) {
 					FString meshName = addMesh("Frame");
@@ -1305,8 +1329,8 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 				{
 					const auto mesh = loadMesh(i);
 					FString moduleName = moduleSetName + "WorkStatic";
-					_moduleNameToMesh.Add(moduleName, mesh);
-					_togglableModuleNames.Add(moduleName);
+
+					AddBuildingModule(moduleName, mesh, _togglableModuleNames);
 
 					_tempAuxGroup.togglableTransforms.push_back(ModuleTransform(moduleName));
 				}
@@ -1314,8 +1338,8 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 				{
 					const auto mesh = loadMesh(i);
 					FString moduleName = moduleSetName + "WorkShaderAnimate";
-					_moduleNameToMesh.Add(moduleName, mesh);
-					_animModuleNames.Add(moduleName);
+
+					AddBuildingModule(moduleName, mesh, _animModuleNames);
 
 					_tempAuxGroup.animTransforms.push_back(ModuleTransform(moduleName, FTransform::Identity, 0.0f, ModuleTypeEnum::ShaderAnimate));
 				}
@@ -1323,8 +1347,8 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 				{
 					const auto mesh = loadMesh(i);
 					FString moduleName = moduleSetName + "WorkShaderOnOff";
-					_moduleNameToMesh.Add(moduleName, mesh);
-					_animModuleNames.Add(moduleName);
+
+					AddBuildingModule(moduleName, mesh, _animModuleNames);
 					
 					_tempAuxGroup.animTransforms.push_back(ModuleTransform(moduleName, FTransform::Identity, 0, ModuleTypeEnum::ShaderOnOff));
 				}
@@ -1334,6 +1358,8 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 				}
 			}
 		}
+
+		check(bodyMainIndex > 1);
 	}
 
 
@@ -1563,7 +1589,7 @@ void UAssetLoaderComponent::DetectParticleSystemPosition(CardEnum buildingEnum, 
 {
 	TArray<FVector> vertexPositions;
 	
-	isPrinting = true;
+	//isPrinting = true;
 	DetectMeshGroups(mesh, vertexPositions);
 	isPrinting = false;
 

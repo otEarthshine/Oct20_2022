@@ -398,6 +398,11 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 					//PUN_LOG("ModuleDisplay %s, %s", *finalTransform.GetRotation().Rotator().ToString(), *modules[i].transform.GetRotation().Rotator().ToString());
 					_moduleMeshes[meshId]->Add(modules[i].moduleName, instanceKey, finalTransform, 0, buildingId);
 				}
+
+				// Special cases:
+				if (buildingEnum == CardEnum::SandMine) {
+					_moduleMeshes[meshId]->SetCastShadow(FString("SandMine_Era3Special1"), false);
+				}
 				
 			}
 			else 
@@ -455,7 +460,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 				//  Don't display the Special during construction
 				//  Don't display the Special during construction
 				//  TODO: remove this?
-				if (modules.size() == 3 && modules[2].moduleTypeEnum != ModuleTypeEnum::Frame) {
+				if (modules.size() == 3 && IsModuleTypeFrame(modules[2].moduleTypeEnum)) {
 					modules.pop_back();
 				}
 
@@ -490,7 +495,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 						//// This mesh has no pairing construction mesh and will just appear
 						//else 
 						{
-							if (modules[i].moduleTypeEnum == ModuleTypeEnum::Frame) {
+							if (IsModuleTypeFrame(modules[i].moduleTypeEnum)) {
 								float moduleFraction = modules[i].moduleConstructionFraction(constructionFraction);
 								moduleTransform.SetScale3D(FVector(1, 1, moduleFraction * 0.99f + 0.01f));
 								int32 modulePercent = moduleFraction * 100;

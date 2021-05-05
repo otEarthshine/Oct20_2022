@@ -307,41 +307,6 @@ void BonusToggle_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulat
 	}
 
 	/*
-	 * First Wonder Popup
-	 */
-	const std::vector<TechEnum> wonderTechs {
-		TechEnum::Cathedral,
-		TechEnum::Castle,
-		TechEnum::GrandPalace,
-		TechEnum::ExhibitionHall,
-	};
-	for (TechEnum wonderTechEnum: wonderTechs) {
-		if (techEnum == wonderTechEnum) 
-		{
-			int32 wonderTechesResearched = 0;
-			for (TechEnum curWonderTechEnum : wonderTechs) {
-				if (simulation->IsResearched(playerId, curWonderTechEnum)) {
-					wonderTechesResearched++;
-				}
-			}
-
-			if (wonderTechesResearched == 1)
-			{
-				simulation->AddPopup(playerId, {
-					LOCTEXT("UnlockedFirstWonder_Pop1", "You have unlocked your first World Wonder!"),
-					LOCTEXT("UnlockedFirstWonder_Pop2", "<space>World Wonders grant Victory Score. First World Wonder of its kind that gets built in the world grants the full score, while each subsequent wonders grants half as much score."),
-					LOCTEXT("UnlockedFirstWonder_Pop3", "<space>Once every type of World Wonder gets built, the game ends and the Victory Scores are counted to determine the Winner."),
-				});
-			}
-
-			if (wonderTechesResearched == wonderTechs.size()) {
-				simulation->ExecuteScoreVictory();
-			}
-		}
-	}
-	
-
-	/*
 	 * 
 	 */
 	if (techEnum == TechEnum::SocialScience)
@@ -351,6 +316,8 @@ void BonusToggle_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulat
 			simulation->building<CardMaker>(bldId).ResetWorkModes();
 		}
 	}
+
+	ResearchInfo::OnUnlock(playerId, simulation);
 }
 
 void UnlockSystem::UpdateProsperityHouseCount()

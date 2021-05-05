@@ -179,7 +179,7 @@ std::vector<BonusPair> MushroomFarm::GetBonuses() {
 }
 
 /*
- * ShroomFarm
+ * MagicMushroomFarm
  */
 void ShroomFarm::FinishConstruction() {
 	Building::FinishConstruction();
@@ -198,7 +198,7 @@ std::vector<BonusPair> ShroomFarm::GetBonuses() {
 
 	if (_simulation->HasTownBonus(_townId, CardEnum::JungleMushroom)) {
 		if (centerBiomeEnum() == BiomeEnum::Jungle) {
-			bonuses.push_back({ NSLOCTEXT("ShroomFarm", "Jungle Mushroom Bonus", "Jungle Mushroom"), 10 });
+			bonuses.push_back({ NSLOCTEXT("MagicMushroomFarm", "Jungle Mushroom Bonus", "Jungle Mushroom"), 10 });
 		}
 	}
 	return bonuses;
@@ -544,8 +544,8 @@ void CardMaker::ResetWorkModes()
 		WorkMode::Create(sustainabilityBookText,	LOCTEXT("Sustainability Book WorkDesc", "Create Sustainability Book Card\n(50 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 50),
 		WorkMode::Create(frugalityBookText,			LOCTEXT("Frugality Book WorkDesc", "Create Frugality Book Card\n(50 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 50),
 
-		WorkMode::Create(wildCardText,				LOCTEXT("Wild Card WorkDesc", "Create Wild Card\n(10 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 10),
-		WorkMode::Create(cardRemovalCardText,		LOCTEXT("Card Removal Card WorkDesc", "Create Card Removal Card\n(10 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 10),
+		WorkMode::Create(wildCardText,				LOCTEXT("Wild Card WorkDesc", "Create Wild Card\n(10 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 20),
+		WorkMode::Create(cardRemovalCardText,		LOCTEXT("Card Removal Card WorkDesc", "Create Card Removal Card\n(10 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 20),
 	});
 
 	if (_simulation->IsResearched(_playerId, TechEnum::SocialScience)) {

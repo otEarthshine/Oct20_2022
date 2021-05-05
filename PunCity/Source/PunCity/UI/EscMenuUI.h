@@ -256,14 +256,14 @@ public:
 
 
 		/*
-		 * Player victorious
+		 * Victory
 		 */
 		if (InterfacesInvalid()) {
 			return;
 		}
 		
 		if (!alreadyShownVictory &&
-			simulation().endStatus().gameEndEnum != GameEndEnum::None)
+			simulation().endStatus().gameEndEnum == GameEndEnum::ScoreVictory)
 		{
 			auto gameInstance = CastChecked<UPunGameInstance>(GetGameInstance());
 
@@ -273,6 +273,12 @@ public:
 
 			VictoryPopup->SetVisibility(ESlateVisibility::Visible);
 
+			if (endStatus.playerId == playerId()) {
+				VictoryPopupText->SetText(NSLOCTEXT("GameEnd", "Victory", "Victory"));
+			} else {
+				VictoryPopupText->SetText(NSLOCTEXT("GameEnd", "Defeat", "Defeat"));
+			}
+
 			int32 score = simulation().totalScore(playerId());
 			TotalScore->SetText(TEXT_NUM(score));
 			ScoreBreakdown->ResetBeforeFirstAdd(); // TODO: should be at Init
@@ -280,18 +286,6 @@ public:
 			ExecuteFillScoreBreakdownText([&](FText leftText, FText rightText) {
 				return ScoreBreakdown->AddMidRowText(leftText, rightText);
 			}, playerId());
-
-			//auto populationScoreWidget = ScoreBreakdown->AddMidRowText(NSLOCTEXT("ScoreBreakdown", "Population score:", "Population score:"), TEXT_NUM(populationScore));
-			//auto happinessScoreWidget = ScoreBreakdown->AddMidRowText(NSLOCTEXT("ScoreBreakdown", "Happiness score:", "Happiness score:"), TEXT_NUM(happinessScore));
-			//auto moneyScoreWidget = ScoreBreakdown->AddMidRowText(NSLOCTEXT("ScoreBreakdown", "Money score:", "Money score:"), TEXT_NUM(moneyScore));
-			//auto technologyScoreWidget = ScoreBreakdown->AddMidRowText(NSLOCTEXT("ScoreBreakdown", "Technology score:", "Technology score:"), TEXT_NUM(technologyScore));
-			//auto wonderScoreWidget = ScoreBreakdown->AddMidRowText(NSLOCTEXT("ScoreBreakdown", "Wonder score:", "Wonder score:"), TEXT_NUM(wonderScore));
-
-			//AddToolTip(populationScoreWidget, NSLOCTEXT("ScoreBreakdown", "Population score tip", "Population Score = Population X 1"));
-			//AddToolTip(happinessScoreWidget, NSLOCTEXT("ScoreBreakdown", "Happiness score tip", "Happiness Score = (Average Happiness above 80%) X Population / 10"));
-			//AddToolTip(moneyScoreWidget, NSLOCTEXT("ScoreBreakdown", "Money score tip", "Money Score = Money / 10000"));
-			//AddToolTip(technologyScoreWidget, NSLOCTEXT("ScoreBreakdown", "Technology score tip", "Technology Score = Technology X 10"));
-			//AddToolTip(wonderScoreWidget, NSLOCTEXT("ScoreBreakdown", "Wonders score tip", "Wonders Score = Wonders x 100"));
 			
 			ScoreBreakdown->AfterAdd();
 

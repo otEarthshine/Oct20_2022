@@ -95,6 +95,10 @@ static std::wstring StringEnvelopImgTag(std::wstring str, std::wstring envelopTa
 	return str;
 }
 
+static bool FStringCompareRight(const FString& str, FString rightStr) {
+	return str.Right(rightStr.Len()) == rightStr;
+}
+
 
 // Network Serializer
 static void FString_SerializeAndAppendToBlob(FString inStr, TArray<int32>& arr)

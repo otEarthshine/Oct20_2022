@@ -62,7 +62,7 @@ static const std::vector<CardEnum> DefaultJobPriorityListAllSeason
 	CardEnum::Potter,
 	CardEnum::Tailor,
 
-	CardEnum::ShroomFarm,
+	CardEnum::MagicMushroomFarm,
 	CardEnum::VodkaDistillery,
 	CardEnum::CoffeeRoaster,
 

@@ -319,9 +319,6 @@ public:
 	UnitInventory inventory;
 };
 
-class RanchBarn final : public BoarBurrow
-{
-};
 
 const FText RanchWorkMode_FullCapacity = NSLOCTEXT("Ranch", "Kill when reached full capacity", "Kill when reached full capacity");
 const FText RanchWorkMode_HalfCapacity = NSLOCTEXT("Ranch", "Kill when above half capacity", "Kill when above half capacity");
@@ -337,13 +334,56 @@ public:
 	void SetAreaWalkable() override
 	{	
 		// Fence
-		for (int32 x = _area.minX; x <= _area.maxX; x++) {
-			_simulation->SetWalkable(WorldTile2(x, _area.minY), false);
-			_simulation->SetWalkable(WorldTile2(x, _area.maxY), false);
-		}
-		for (int32 y = _area.minY; y <= _area.maxY; y++) {
-			_simulation->SetWalkable(WorldTile2(_area.minX, y), false);
-			_simulation->SetWalkable(WorldTile2(_area.maxX, y), false);
+		//for (int32 x = _area.minX; x <= _area.maxX; x++) {
+		//	_simulation->SetWalkable(WorldTile2(x, _area.minY), false);
+		//	_simulation->SetWalkable(WorldTile2(x, _area.maxY), false);
+		//}
+		//for (int32 y = _area.minY; y <= _area.maxY; y++) {
+		//	_simulation->SetWalkable(WorldTile2(_area.minX, y), false);
+		//	_simulation->SetWalkable(WorldTile2(_area.maxX, y), false);
+		//}
+
+		// y is the front(shorter) direction
+		static const std::vector<int32> buildingMark
+		{
+			// y -->
+			// x
+			// |
+			// v
+			1, 1, 1, 1, 1, 1,	1, 1, 1, 1, 1, 1,
+			1, 0, 0, 1, 1, 1,	1, 1, 1, 1, 1, 1,
+			1, 0, 0, 1, 1, 1,	1, 1, 1, 1, 1, 1,
+			1, 0, 0, 1, 1, 1,	1, 1, 1, 1, 1, 1,
+
+			1, 0, 0, 0, 0, 0,	0, 0, 0, 1, 1, 1,
+			1, 0, 0, 0, 0, 0,	0, 0, 0, 1, 1, 1,
+			1, 0, 0, 0, 0, 0,	0, 0, 0, 1, 1, 1,
+
+			1, 0, 0, 0, 1, 0,	0, 0, 0, 1, 1, 1,
+			1, 0, 0, 0, 1, 1,	1, 1, 1, 1, 1, 1,
+
+			1, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 1,
+			
+			1, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 1,
+			1, 1, 1, 1, 1, 1,	1, 0, 0, 0, 1, 1,
+		};
+		int32 centerYShift = -5;
+		int32 centerXShift = -8;
+
+		WorldTile2 size = buildingInfo().size;
+		check(size.x * size.y == buildingMark.size());
+		for (int32 xIndex = 0; xIndex <= size.x; xIndex++) {
+			for (int32 yIndex = 0; yIndex <= size.y; yIndex++) {
+				SetLocalWalkable_WithDirection(
+					WorldTile2(xIndex + centerXShift, yIndex - centerYShift), buildingMark[yIndex + xIndex * _area.sizeY()] == 0
+				);
+			}
 		}
 
 		// Barn area...s

@@ -47,7 +47,7 @@ public:
 	bool IsPermanentCard() { return cardHandIndex == -1; }
 	int32 IsUnboughtCard() { return cardHandIndex >= 0 && buildingLvl == -1; }
 
-	void PunInit(CardEnum buildingEnumIn, int32 cardHandIndexIn, int32 buildingLvlIn, int32 stackSize, UPunWidget* callbackParent, CallbackEnum callbackEnum);
+	void PunInit(CardEnum buildingEnumIn, int32 cardHandIndexIn, int32 buildingLvlIn, int32 stackSize, UPunWidget* callbackParent, CallbackEnum callbackEnum, bool isMiniature);
 
 	FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	FReply NativeOnMouseButtonDoubleClick(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
@@ -298,6 +298,7 @@ public:
 private:
 	UPROPERTY() UPunWidget* _callbackParent;
 	CallbackEnum _callbackEnum;
+	bool _isMiniature = false;
 
 	UPROPERTY() UMaterialInstanceDynamic* colorMaterial;
 	//UPROPERTY() UMaterialInstanceDynamic* grayMaterial;

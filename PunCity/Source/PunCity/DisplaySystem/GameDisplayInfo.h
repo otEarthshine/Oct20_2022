@@ -589,6 +589,9 @@ public:
 						subMeshName = setName + FString("Frame");
 						if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName, FTransform::Identity, 10.0f, ModuleTypeEnum::Frame));
 
+						subMeshName = setName + FString("FrameConstructionOnly");
+						if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName, FTransform::Identity, 10.0f, ModuleTypeEnum::FrameConstructionOnly));
+
 						subMeshName = setName + FString("Chimney");
 						if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName, FTransform::Identity, 1.0f));
 

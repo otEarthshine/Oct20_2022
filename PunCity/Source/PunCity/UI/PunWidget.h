@@ -457,17 +457,17 @@ public:
 
 		func(NSLOCTEXT("ScoreBreakdown", "Difficulty:", "Difficulty:"), DifficultyLevelNames[static_cast<int>(simulation().mapSettings().difficultyLevel)]);
 		
-		auto populationScoreWidget = func(NSLOCTEXT("ScoreBreakdown", "Population score:", "Population score:"), TEXT_NUM(sim.populationScore(playerIdIn)));
-		auto happinessScoreWidget = func(NSLOCTEXT("ScoreBreakdown", "Happiness score:", "Happiness score:"), TEXT_NUM(sim.happinessScore(playerIdIn)));
-		auto moneyScoreWidget = func(NSLOCTEXT("ScoreBreakdown", "Money score:", "Money score:"), TEXT_NUM(sim.moneyScore(playerIdIn)));
-		auto technologyScoreWidget = func(NSLOCTEXT("ScoreBreakdown", "Technology score:", "Technology score:"), TEXT_NUM(sim.technologyScore(playerIdIn)));
-		auto wonderScoreWidget = func(NSLOCTEXT("ScoreBreakdown", "Wonder score:", "Wonder score:"), TEXT_NUM(sim.wonderScore(playerIdIn)));
+		auto populationScoreWidget = func(NSLOCTEXT("ScoreBreakdown", "Population Score:", "Population Score:"), TEXT_NUM(sim.populationScore(playerIdIn)));
+		auto happinessScoreWidget = func(NSLOCTEXT("ScoreBreakdown", "Happiness Score:", "Happiness Score:"), TEXT_NUM(sim.happinessScore(playerIdIn)));
+		auto moneyScoreWidget = func(NSLOCTEXT("ScoreBreakdown", "Money Score:", "Money Score:"), TEXT_NUM(sim.moneyScore(playerIdIn)));
+		auto technologyScoreWidget = func(NSLOCTEXT("ScoreBreakdown", "Technology Score:", "Technology Score:"), TEXT_NUM(sim.technologyScore(playerIdIn)));
+		auto wonderScoreWidget = func(NSLOCTEXT("ScoreBreakdown", "Wonder Score:", "Wonder Score:"), TEXT_NUM(sim.wonderScore(playerIdIn)));
 
-		AddToolTip(populationScoreWidget, NSLOCTEXT("ScoreBreakdown", "Population score tip", "Population Score = Population X 1"));
-		AddToolTip(happinessScoreWidget, NSLOCTEXT("ScoreBreakdown", "Happiness score tip", "Happiness Score = (Average Happiness above 80%) X Population / 10"));
-		AddToolTip(moneyScoreWidget, NSLOCTEXT("ScoreBreakdown", "Money score tip", "Money Score = Money / 10000"));
-		AddToolTip(technologyScoreWidget, NSLOCTEXT("ScoreBreakdown", "Technology score tip", "Technology Score = Technology X 10"));
-		AddToolTip(wonderScoreWidget, NSLOCTEXT("ScoreBreakdown", "Wonders score tip", "Wonders Score = Wonders x 100"));
+		AddToolTip(populationScoreWidget, NSLOCTEXT("ScoreBreakdown", "Population Score tip", "Population Score = Population X 1"));
+		AddToolTip(happinessScoreWidget, NSLOCTEXT("ScoreBreakdown", "Happiness Score tip", "Happiness Score = (Average Happiness above 80%) X Population / 10"));
+		AddToolTip(moneyScoreWidget, NSLOCTEXT("ScoreBreakdown", "Money Score tip", "Money Score = Money / 10000"));
+		AddToolTip(technologyScoreWidget, NSLOCTEXT("ScoreBreakdown", "Technology Score tip", "Technology Score = Technology X 10"));
+		AddToolTip(wonderScoreWidget, NSLOCTEXT("ScoreBreakdown", "Wonders Score tip", "Wonders Score = Sum of score from all Wonders"));
 	}
 	
 

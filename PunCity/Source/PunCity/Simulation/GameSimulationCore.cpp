@@ -931,9 +931,6 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 			// Tick 1 sec
 			if (_tickCount % Time::TicksPerSecond == 0) 
 			{
-				/*
-				 * Score Victory
-				 */
 				ExecuteOnPlayersAndAI([&](int32 playerId)
 				{
 					// Tick 1 sec

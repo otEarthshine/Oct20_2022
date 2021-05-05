@@ -982,7 +982,7 @@ public:
 	{
 		// Output Batch can be calculated from profit
 		int32 baseProfitValue = 50; // Beer Brewery as base: 10 Beer(10) from 10 Wheat(5)
-		baseProfitValue = buildingInfo().resourceInfo.ApplyUpgradeAndEraMultipliers(baseProfitValue, buildingInfo().minEra(), GetEraUpgradeCount());
+		baseProfitValue = buildingInfo().resourceInfo.ApplyUpgradeAndEraProfitMultipliers(baseProfitValue, buildingInfo().minEra(), GetEraUpgradeCount());
 
 		int32 outputValue = baseProfitValue;
 		if (input1() != ResourceEnum::None) {
@@ -1035,7 +1035,7 @@ public:
 		if (_workMode.inputPerBatch > 0) {
 			result = _workMode.inputPerBatch;
 		}
-		return buildingInfo().resourceInfo.ApplyUpgradeAndEraMultipliers(result, buildingInfo().minEra(), GetEraUpgradeCount());
+		return buildingInfo().resourceInfo.ApplyUpgradeAndEraProfitMultipliers(result, buildingInfo().minEra(), GetEraUpgradeCount());
 	}
 
 	int32 inputPerBatch()

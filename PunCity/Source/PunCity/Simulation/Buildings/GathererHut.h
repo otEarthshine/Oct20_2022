@@ -906,6 +906,22 @@ public:
 		Building::FinishConstruction();
 
 		builtNumber = _simulation->playerBuildingFinishedCount(_townId, _buildingEnum);
+
+		bool allWondersBuilt = true;
+		for (CardEnum buildingEnum : WorldWonders) {
+			int32 wonderCount = 0;
+			_simulation->ExecuteOnPlayersAndAI([&](int32 playerId) {
+				wonderCount += _simulation->playerBuildingFinishedCount(playerId, buildingEnum);
+			});
+			if (wonderCount == 0) {
+				allWondersBuilt = false;
+				break;
+			}
+		}
+		
+		if (allWondersBuilt) {
+			_simulation->ExecuteScoreVictory();
+		}
 	}
 	
 	int32 WonderScore()
@@ -914,7 +930,7 @@ public:
 		int32 moneyValue = bldInfo.baseCardPrice + bldInfo.constructionCostAsMoney();
 		int32 minEra = bldInfo.minEra();
 
-		int32 multiplier = 2;
+		int32 multiplier = 5;
 		for (int32 i = minEra; i < 4; i++) {
 			multiplier *= 2;
 		}

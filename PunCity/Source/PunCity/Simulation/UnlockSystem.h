@@ -71,6 +71,9 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 		LOCTEXT("Iron Working", "Iron Working"),
 		LOCTEXT("Iron Working Desc", "+30% wood harvesting yield."),
 	}},
+	{ TechEnum::GoldSmelting, {
+		LOCTEXT("Gold Smelting", "Gold Smelting")
+	}},
 	{ TechEnum::GoldWorking, {
 		LOCTEXT("Gold Smithing", "Gold Smithing")
 	}},
@@ -398,7 +401,36 @@ public:
 
 	virtual void OnUnlock(int32 playerId, IGameSimulationCore* simulation)
 	{
+		/*
+		 * First Wonder Popup
+		 */
+		const std::vector<TechEnum> wonderTechs{
+			TechEnum::Cathedral,
+			TechEnum::Castle,
+			TechEnum::GrandPalace,
+			TechEnum::ExhibitionHall,
+		};
+		for (TechEnum wonderTechEnum : wonderTechs) {
+			if (techEnum == wonderTechEnum)
+			{
+				int32 wonderTechesResearched = 0;
+				for (TechEnum curWonderTechEnum : wonderTechs) {
+					if (simulation->IsResearched(playerId, curWonderTechEnum)) {
+						wonderTechesResearched++;
+					}
+				}
 
+				if (wonderTechesResearched == 1)
+				{
+					simulation->AddPopup(playerId, {
+						LOCTEXT("UnlockedFirstWonder_Pop1", "You have unlocked your first World Wonder!"),
+						LOCTEXT("UnlockedFirstWonder_Pop2", "<space>World Wonders grant Victory Score. First World Wonder of its kind that gets built grants its owner its full score, while each subsequent wonders grants half as much score."),
+						LOCTEXT("UnlockedFirstWonder_Pop3", "<space>The game ends once every type of World Wonder gets built."),
+					});
+				}
+			}
+		}
+		
 	}
 
 	// Helpers
@@ -774,7 +806,7 @@ public:
 			);
 			AddTech_Bonus(column, TechEnum::MushroomSubstrateSterilization, { TechEnum::HerbFarming });
 			
-			//
+			// Middle Age
 			column = 3;
 			AddTech_Bonus(column, TechEnum::MiddleAge, {});
 			AddTech_Building(column, TechEnum::Ironworks, { TechEnum::StoneToolsShop, TechEnum::Pottery },
@@ -810,13 +842,13 @@ public:
 			AddTech_Building(column, TechEnum::Archives, { TechEnum::Library },
 				CardEnum::Archives
 			);
-			AddTech_Building(column, TechEnum::Logistics2, { TechEnum::Logistics1 },
+			AddTech_Building(column, TechEnum::Logistics2, { TechEnum::AgriculturalRevolution, TechEnum::Logistics1 },
 				{ CardEnum::Market }
 			);
 			AddTech_Building(column, TechEnum::Beekeeper, { TechEnum::AgriculturalRevolution },
 				CardEnum::Beekeeper
 			);
-			AddTech_Building(column, TechEnum::Baking, { TechEnum::AgriculturalRevolution },
+			AddTech_Building(column, TechEnum::Baking, { TechEnum::AgriculturalRevolution, TechEnum::PotatoFarming },
 				{ CardEnum::Windmill, CardEnum::Bakery }
 			);
 			AddTech_Building(column, TechEnum::VodkaDistillery, { TechEnum::PotatoFarming },
@@ -828,11 +860,14 @@ public:
 			
 			//
 			column = 5;
+			AddTech_Building(column, TechEnum::GoldSmelting, { TechEnum::Blacksmith },
+				{ CardEnum::GoldSmelter }
+			);
 			AddTech_Bonus(column, TechEnum::QuickBuild, { TechEnum::Blacksmith });
 			AddTech_Building(column, TechEnum::Medicine, { TechEnum::PaperMaker },
 				CardEnum::MedicineMaker
 			);
-			AddTech_Building(column, TechEnum::CardMaker, { TechEnum::PaperMaker, TechEnum::Archives },
+			AddTech_Building(column, TechEnum::CardMaker, { TechEnum::PaperMaker, TechEnum::Archives, TechEnum::Logistics2 },
 				CardEnum::CardMaker
 			);
 			AddTech_BuildingPermanent(column, TechEnum::Logistics3, { TechEnum::Logistics2 },
@@ -848,10 +883,10 @@ public:
 				{ CardEnum::IrrigationReservoir }
 			);
 			
-			//
+			// Enlightenment
 			column = 6;
 			AddTech_Bonus(column, TechEnum::EnlightenmentAge, {});
-			AddTech_Building(column, TechEnum::GlassSmelting, { TechEnum::QuickBuild },
+			AddTech_Building(column, TechEnum::GlassSmelting, { TechEnum::QuickBuild, TechEnum::GoldSmelting },
 				{ CardEnum::SandMine, CardEnum::GlassSmelter }
 			);
 			AddTech_Building(column, TechEnum::CoffeeRoaster, { TechEnum::Medicine },
@@ -860,10 +895,7 @@ public:
 			AddTech_Building(column, TechEnum::School, { TechEnum::Medicine, TechEnum::CardMaker },
 				CardEnum::School
 			);
-			AddTech_Building(column, TechEnum::TradingCompany, { TechEnum::Logistics3 },
-				CardEnum::TradingCompany
-			);
-			AddTech_Building(column, TechEnum::Logistics4, { TechEnum::Logistics3 },
+			AddTech_Building(column, TechEnum::Logistics4, { TechEnum::Logistics3, TechEnum::CandleMaker },
 				{ CardEnum::ShippingDepot }
 			);
 			AddTech_Building(column, TechEnum::PumpkinFarming, { TechEnum::Irrigation },
@@ -877,8 +909,8 @@ public:
 				{ CardEnum::Glassworks }
 			);
 			AddTech_Bonus(column, TechEnum::WorkSchedule, { TechEnum::GlassSmelting, TechEnum::CoffeeRoaster });
-			AddTech_Bonus(column, TechEnum::BudgetAdjustment, { TechEnum::School, TechEnum::TradingCompany });
-			AddTech_Bonus(column, TechEnum::Logistics5, { TechEnum::TradingCompany, TechEnum::Logistics4 });
+			AddTech_Bonus(column, TechEnum::BudgetAdjustment, { TechEnum::School, TechEnum::Logistics4 });
+			AddTech_Bonus(column, TechEnum::Logistics5, { TechEnum::Logistics4 });
 			AddTech_BuildingPermanent(column, TechEnum::IntercityRoad, { TechEnum::Logistics4 },
 				{ CardEnum::IntercityRoad, CardEnum::IntercityBridge }
 			);
@@ -886,7 +918,7 @@ public:
 				CardEnum::Theatre
 			);
 			AddTech_Building(column, TechEnum::ShroomFarm, { TechEnum::PumpkinFarming },
-				{ CardEnum::ShroomFarm }, ResourceEnum::Mushroom, 3000
+				{ CardEnum::MagicMushroomFarm }, ResourceEnum::Mushroom, 3000
 			);
 			
 				
@@ -896,7 +928,7 @@ public:
 				{ CardEnum::Tunnel }
 			); // TODO: Machinery + Improved Woodcutting
 			AddTech_Building(column, TechEnum::GoldWorking, { TechEnum::WorkSchedule, TechEnum::BudgetAdjustment },
-				{ CardEnum::GoldSmelter, CardEnum::Mint }
+				{ CardEnum::Mint }
 			);
 			AddTech_Building(column, TechEnum::Bank, { TechEnum::BudgetAdjustment },
 				{ CardEnum::Bank }
@@ -1001,7 +1033,8 @@ public:
 			
 			
 			column = 3;
-			AddProsperityTech_BuildingPermanent(column, 4, TechEnum::StoneRoad, { CardEnum::StoneRoad });
+			AddProsperityTech_BuildingPermanent(column, 2, TechEnum::StoneRoad, { CardEnum::StoneRoad });
+			AddProsperityTech_Building(column, 2, TechEnum::TradingCompany, { CardEnum::TradingCompany });
 			AddProsperityTech_Bonus(column, 4, TechEnum::ShallowWaterEmbark);
 			AddProsperityTech_Building(column, 10, TechEnum::BarrackKnight, CardEnum::BarrackSwordman);
 			AddProsperityTech_BuildingPermanent(column, 10, TechEnum::GardenShrubbery1, { CardEnum::GardenShrubbery1 });

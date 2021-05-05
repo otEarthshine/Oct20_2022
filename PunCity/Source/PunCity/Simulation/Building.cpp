@@ -1265,8 +1265,10 @@ BuildingUpgrade Building::MakeEraUpgrade(int32 startEra)
 	upgrade.upgradeLevel = 0;
 
 	// Fill in alll the Era upgrades including "Upgrade Electric Machinery"
-	int32 currentResourceCostValue = buildingInfo().resourceInfo.baseResourceCostValue;
-	for (int32 i = startEra; i <= 4; i++) {
+	int32 baseResourceCostMoney = buildingInfo().resourceInfo.baseResourceCostMoney;
+	int32 upgradeCount = 0;
+	for (int32 i = startEra; i <= 4; i++) 
+	{
 		auto getUpgradeResourceEnum = [&]() {
 			switch (i) {
 			case 1: return ResourceEnum::Brick;
@@ -1275,9 +1277,12 @@ BuildingUpgrade Building::MakeEraUpgrade(int32 startEra)
 			case 4: default: return ResourceEnum::SteelBeam;
 			}
 		};
-		int32 upgradeResourceCostValue = currentResourceCostValue * (BldResourceInfo::UpgradeCostPercentEraMultiplier - 100) / 100;
-		upgrade.resourceNeededPerLevel.push_back(ResourcePair(getUpgradeResourceEnum(), upgradeResourceCostValue / GetResourceInfo(getUpgradeResourceEnum()).basePrice));
-		currentResourceCostValue = upgradeResourceCostValue;
+		int32 scaledBaseResourceCostMoney = buildingInfo().resourceInfo.ApplyUpgradeCostMultipliers(baseResourceCostMoney, upgradeCount);
+		upgradeCount++;
+		
+		int32 upgradeResourceCostMoney = scaledBaseResourceCostMoney * (BldResourceInfo::UpgradeCostPercentEraMultiplier - 100) / 100;
+		
+		upgrade.resourceNeededPerLevel.push_back(ResourcePair(getUpgradeResourceEnum(), upgradeResourceCostMoney / GetResourceInfo(getUpgradeResourceEnum()).basePrice));
 	}
 	return upgrade;
 }

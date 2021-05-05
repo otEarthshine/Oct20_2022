@@ -1651,9 +1651,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					}
 					else if (IsWorldWonder(buildingEnum))
 					{
-						descriptionBox->AddRichText(LOCTEXT("WorldWonder_FocusUI_ThisWonderScore", "Wonder Score (This):"), building.subclass<WorldWonder>().WonderScore());
-						descriptionBox->AddRichText(LOCTEXT("WorldWonder_FocusUI_BuiltNumber", "Built Number:"), building.subclass<WorldWonder>().builtNumber);
-						
+						descriptionBox->AddRichText(LOCTEXT("WorldWonder_FocusUI_ThisWonderScore", "Wonder Score (This):"), TEXT_NUM(building.subclass<WorldWonder>().WonderScore()));
+						descriptionBox->AddRichText(LOCTEXT("WorldWonder_FocusUI_BuiltNumber", "Built Number:"), TEXT_NUM(building.subclass<WorldWonder>().builtNumber));
+
+						descriptionBox->AddSpacer(8);
 						descriptionBox->AddLineSpacer();
 						descriptionBox->AddRichText(LOCTEXT("WorldWonder_FocusUI_PlayerScore", "Player's Total Score:"), TEXT_NUM(simulation.totalScore(building.playerId())));
 
@@ -2313,7 +2314,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							{
 								UBuildingPlacementButton* cardButton = AddWidget<UBuildingPlacementButton>(UIEnum::CardMini);
 
-								cardButton->PunInit(cardEnum, i, 0, 1, this, CallbackEnum::SelectBuildingSlotCard);
+								cardButton->PunInit(cardEnum, i, 0, 1, this, CallbackEnum::SelectBuildingSlotCard, true);
 								cardButton->callbackVar1 = building.buildingId();
 								cardButton->cardAnimationOrigin = cards[i].lastPosition();
 								cardButton->cardAnimationStartTime = cards[i].animationStartTime100 / 100.0f; // Animation start time is when FUseCard arrived
@@ -2621,14 +2622,17 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							ADDTEXT__(upgrade.name);
 							ADDTEXT_INV_("<space>");
 
-							const FText costText = LOCTEXT("cost", "cost");
-							if (resourceEnum == ResourceEnum::None) {
-								ADDTEXT_(INVTEXT("{0}: <img id=\"Coin\"/>{1}"), costText, TEXT_NUM(upgrade.moneyNeeded));
-							} else {
-								check(static_cast<int>(resourceEnum) < ResourceEnumCount);
-								ADDTEXT_(INVTEXT("{0}: {1} {2}"), costText, TEXT_NUM(upgrade.currentUpgradeResourceNeeded().count), ResourceNameT(resourceEnum));
+							if (!upgrade.isUpgraded) {
+								const FText costText = LOCTEXT("cost", "cost");
+								if (resourceEnum == ResourceEnum::None) {
+									ADDTEXT_(INVTEXT("{0}: <img id=\"Coin\"/>{1}"), costText, TEXT_NUM(upgrade.moneyNeeded));
+								}
+								else {
+									check(static_cast<int>(resourceEnum) < ResourceEnumCount);
+									ADDTEXT_(INVTEXT("{0}: {1} {2}"), costText, TEXT_NUM(upgrade.currentUpgradeResourceNeeded().count), ResourceNameT(resourceEnum));
+								}
+								ADDTEXT_INV_("<space>");
 							}
-							ADDTEXT_INV_("<space>");
 							
 							ADDTEXT__(building.GetUpgradeDisplayDescription(upgradeIndex));
 

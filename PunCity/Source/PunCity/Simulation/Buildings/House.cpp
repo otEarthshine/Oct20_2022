@@ -508,47 +508,6 @@ void BoarBurrow::OnDeinit()
 	_simulation->RemoveBoarBurrow(_simulation->GetProvinceIdClean(_centerTile), _objectId);
 }
 
-//void RanchBarn::FinishConstruction()
-//{
-//	Building::FinishConstruction();
-//
-//	AddResourceHolder(ResourceEnum::Hay, ResourceHolderType::Requester, 20);
-//}
-//
-//void RanchBarn::OnTick1Sec()
-//{
-//	if (!isConstructed()) {
-//		return;
-//	}
-//}
-//
-//void RanchBarn::AddAnimalOccupant(UnitEnum animalEnum, int32 age) 
-//{
-//	PUN_CHECK(_animalEnum == animalEnum);
-//	int32 newAnimalId = _simulation->AddUnit(animalEnum, _playerId, gateTile().worldAtom2(), age);
-//	PUN_CHECK(_animalOccupants.size() < maxAnimals);
-//	_animalOccupants.push_back(newAnimalId);
-//	_simulation->unitAI(newAnimalId).SetHouseId(buildingId());
-//}
-//
-//void RanchBarn::RemoveAnimalOccupant(int32 animalId)
-//{
-//	CppUtils::Remove(_animalOccupants, animalId);
-//}
-//
-//void RanchBarn::OnDeinit()
-//{
-//	// Release animals into the wild
-//	for (int i = 0; i < _animalOccupants.size(); i++) {
-//		int32_t id = _animalOccupants[i];
-//		auto& unit = _simulation->unitAI(id);
-//		unit.SetHouseId(-1);
-//		unit.SetPlayerId(-1);
-//		_simulation->ResetUnitActions(id);
-//	}
-//	_animalOccupants.clear();
-//}
-
 /*
  * Ranch
  */

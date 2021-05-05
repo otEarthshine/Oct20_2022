@@ -11,6 +11,9 @@
 #include "Materials/MaterialInstance.h"
 #include "Animation/AnimSequence.h"
 
+#include "PunUnrealUtils.h"
+#include "CppUtils.h"
+
 #include "AssetLoaderComponent.generated.h"
 
 
@@ -81,11 +84,18 @@ enum class ModuleTypeEnum
 	ConstructionOnly,
 	ConstructionBaseHighlight,
 	Frame,
+	FrameConstructionOnly,
 	Window,
 	RotateRoll,
 	ShaderAnimate,
 	ShaderOnOff,
 };
+
+static bool IsModuleTypeFrame(ModuleTypeEnum moduleTypeEnum)
+{
+	return moduleTypeEnum == ModuleTypeEnum::Frame || 
+		moduleTypeEnum == ModuleTypeEnum::FrameConstructionOnly;
+}
 
 struct ModuleTransform
 {
@@ -433,6 +443,26 @@ public:
 				_moduleNames.Add(it.Key);
 			}
 		}
+		for (int32 i = _moduleNames.Num(); i-- > 0;) {
+			if (_moduleNameToMesh.Contains(_moduleNames[i])) {
+				if (_moduleNameToMesh[_moduleNames[i]] == nullptr) {
+					_moduleNameToMesh.Remove(_moduleNames[i]);
+					_moduleNames.RemoveAt(i);
+				}
+				else {
+					if (_moduleNames[i] == FString("ClayPit_Era1Special4")) {
+						FString newName = FString("ClayPit_Era1Special1");
+						_moduleNameToMesh.Add(newName, _moduleNameToMesh[_moduleNames[i]]);
+						_moduleNameToMesh.Remove(_moduleNames[i]);
+						_moduleNames[i] = newName;
+					}
+				}
+			} else {
+				_moduleNames.RemoveAt(i);
+			}
+		}
+		
+		check(_moduleNames.Num() + _togglableModuleNames.Num() + _animModuleNames.Num() == _moduleNameToMesh.Num());
 	}
 
 public:
@@ -690,13 +720,34 @@ private:
 		LinkBuilding(buildingEnum, moduleGroupName, auxGroup, minEra);
 	}
 	void LinkBuilding(CardEnum buildingEnum, FString moduleGroupName, ModuleTransformGroup auxGroup = ModuleTransformGroup(), int32 minEra = 1) {
-		auxGroup.particleInfos.insert(auxGroup.particleInfos.end(), _tempAuxGroup.particleInfos.begin(), _tempAuxGroup.particleInfos.end());
+		CppUtils::AppendVec(auxGroup.particleInfos, _tempAuxGroup.particleInfos);
+		CppUtils::AppendVec(auxGroup.animTransforms, _tempAuxGroup.animTransforms);
+		CppUtils::AppendVec(auxGroup.togglableTransforms, _tempAuxGroup.togglableTransforms);
 		_tempAuxGroup = ModuleTransformGroup();
 
 		_buildingEnumToModuleGroups[static_cast<int>(buildingEnum)].Add(
 			ModuleTransformGroup::CreateSet(moduleGroupName, auxGroup)
 		);
 		_buildingEnumToMinEraModel[static_cast<int>(buildingEnum)] = minEra;
+
+		// Buildings with 0 frame count uses Era 1's scaff
+		std::vector<ModuleTransform>& lastEraModules = _buildingEnumToModuleGroups[static_cast<int>(buildingEnum)].Last().transforms;
+		bool hasFrame = false;
+		for (int32 i = 0; i < lastEraModules.size(); i++) {
+			if (FStringCompareRight(lastEraModules[i].moduleName, FString("Frame"))) {
+				hasFrame = true;
+				break;
+			}
+		}
+		if (!hasFrame) {
+			const std::vector<ModuleTransform>& firstEraModules = _buildingEnumToModuleGroups[static_cast<int>(buildingEnum)][0].transforms;
+			for (int32 i = 0; i < firstEraModules.size(); i++) {
+				if (FStringCompareRight(firstEraModules[i].moduleName, FString("FrameConstructionOnly"))) {
+					lastEraModules.push_back(firstEraModules[i]);
+					break;
+				}
+			}
+		}
 	}
 	void LoadBuilding(CardEnum buildingEnum, FString moduleGroupPrefix, FString moduleGroupFolderPrefix, int32 minEra, int32 maxEra = 4, ModuleTransformGroup auxGroup = ModuleTransformGroup())
 	{

@@ -202,7 +202,7 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		CASE_BUILDING(CardEnum::GarmentFactory, GarmentFactory);
 
 		// Dec 29
-		CASE_BUILDING(CardEnum::ShroomFarm, ShroomFarm);
+		CASE_BUILDING(CardEnum::MagicMushroomFarm, ShroomFarm);
 		CASE_BUILDING(CardEnum::VodkaDistillery, VodkaDistillery);
 		CASE_BUILDING(CardEnum::CoffeeRoaster, CoffeeRoaster);
 
@@ -283,7 +283,7 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		  CASE_BUILDING(CardEnum::LovelyHeartStatue, LovelyHeartStatue);
 
 		  CASE_BUILDING(CardEnum::HuntingLodge, HuntingLodge);
-		  CASE_BUILDING(CardEnum::RanchBarn, RanchBarn);
+		  //CASE_BUILDING(CardEnum::RanchBarn, RanchBarn);
 		
 		  CASE_BUILDING(CardEnum::RanchPig, Ranch);
 		  CASE_BUILDING(CardEnum::RanchSheep, Ranch);

@@ -32,13 +32,14 @@ void UBuildingPlacementButton::OnSellButtonClicked()
 }
 
 
-void UBuildingPlacementButton::PunInit(CardEnum buildingEnumIn, int32 cardHandIndexIn, int32 buildingLvlIn, int32 stackSize, UPunWidget* callbackParent, CallbackEnum callbackEnum)
+void UBuildingPlacementButton::PunInit(CardEnum buildingEnumIn, int32 cardHandIndexIn, int32 buildingLvlIn, int32 stackSize, UPunWidget* callbackParent, CallbackEnum callbackEnum, bool isMiniature)
 {
 	buildingEnum = buildingEnumIn;
 	cardHandIndex = cardHandIndexIn;
 	buildingLvl = buildingLvlIn;
 	_callbackParent = callbackParent;
 	_callbackEnum = callbackEnum;
+	_isMiniature = isMiniature;
 
 	BldInfo info = GetBuildingInfo(buildingEnum);
 
@@ -53,7 +54,9 @@ void UBuildingPlacementButton::PunInit(CardEnum buildingEnumIn, int32 cardHandIn
 
 	SetText(DescriptionRichText, args);
 
-	ADDTEXT_TAG_("<CardName>", info.name);
+	// Card Title
+	args.Add(FText::Format(INVTEXT("{0}{1}</>"), _isMiniature ? INVTEXT("<CardName>") : INVTEXT("<CardNameLarge>"), info.name));
+	
 	if (buildingEnum == CardEnum::House) {
 		ADDTEXT_INV_(" <Orange>[B-H]</>");
 	}

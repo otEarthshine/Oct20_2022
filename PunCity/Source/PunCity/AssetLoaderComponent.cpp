@@ -95,7 +95,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	HouseIcon = Load<UTexture2D>("/Game/UI/MiscIcons/HousePNG");
 	SmileIcon = Load<UTexture2D>("/Game/UI/MiscIcons/SmilingPNG");
 	UnhappyIcon = Load<UTexture2D>("/Game/UI/MiscIcons/UnhappyPNG");
-	CoinIcon = Load<UTexture2D>("/Game/UI/MiscIcons/CoinPNG");
+	//CoinIcon = Load<UTexture2D>("/Game/UI/MiscIcons/CoinPNG");
+	CoinIcon = Load<UTexture2D>("/Game/UI/MiscIcons/CoinGameReady");
 	InfluenceIcon = Load<UTexture2D>("/Game/UI/MiscIcons/InfluencePNG");
 	ScienceIcon = Load<UTexture2D>("/Game/UI/MiscIcons/SciencePNG");
 
@@ -169,13 +170,9 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	LoadBuilding(CardEnum::BeerBrewery, "Brewery_Era", "BeerBrewery", 1);
 	
-	LoadBuilding(CardEnum::Chocolatier, "Chocolatier_Era", "Chocolatier", 4);
+	LoadBuilding(CardEnum::Chocolatier, "Chocolatier_Era", "Chocolatier", 3);
 
-	LoadBuilding(CardEnum::MushroomFarm, "Mushroom_FarmEra", "MushroomFarm", 1, 4); // ,
-	//	ModuleTransformGroup::CreateAuxSet(
-	//	{}, 
-	//	{ ModuleTransform("Mushroom_FarmEra1WorkShaderAnimate", FTransform::Identity, 0.0f, ModuleTypeEnum::ShaderAnimate), }
-	//));
+	LoadBuilding(CardEnum::MushroomFarm, "Mushroom_FarmEra", "MushroomFarm", 1, 4);
 
 	LoadBuilding(CardEnum::Garden, "Garden_Variation1", "Garden/Variation1");
 	//TryLoadBuildingModuleSet("Garden2", "Garden/Variation2");
@@ -185,7 +182,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	LoadBuilding(CardEnum::Winery, "Winery_Era_", "Winery", 2);
 
-	LoadBuilding(CardEnum::Library, "Library_Era", "Library", 2, 2);
+	LoadBuilding(CardEnum::Library, "Library_Era", "Library", 2);
 	LoadBuilding(CardEnum::School, "College_Name", "College/Era4");
 	
 	LoadBuilding(CardEnum::Theatre, "Theatre_Era_", "Theatre", 3);
@@ -222,7 +219,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::ShippingDepot, "LogisticsSenderOfficeERA", "LogisticsSender", 3);
 	LoadBuilding(CardEnum::HaulingServices, "HaulingServicecERA", "HaulingServices", 2);
 
-	LoadBuilding(CardEnum::ShroomFarm, "ShroomFarmEra", "MagicMushroomFarm", 3);
+	LoadBuilding(CardEnum::MagicMushroomFarm, "ShroomFarmEra", "MagicMushroomFarm", 3);
 
 	LoadBuilding(CardEnum::VodkaDistillery, "Vodka_DistilleryERA", "VodkaDistillery", 2);
 
@@ -231,8 +228,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::Granary, "GRANARY_ERA", "Granary", 2);
 
 	LoadBuilding(CardEnum::SandMine, "SandMine_Era", "SandMine", 3);
-	LoadBuilding(CardEnum::GlassSmelter, "GlassWorks_Era", "GlassWorks", 3);
-	LinkBuildingEras(CardEnum::Glassworks, "GlassWorks_Era", 3);
+	LoadBuilding(CardEnum::GlassSmelter, "GlassSmelter_Era", "GlassSmelter", 3);
+	LoadBuilding(CardEnum::Glassworks, "GlassWorks_Era", "GlassWorks", 3);
 	LoadBuilding(CardEnum::ConcreteFactory, "concretefactoryERA", "ConcreteFactory", 4);
 	
 	LoadBuilding(CardEnum::CoalPowerPlant, "coalpowerplant", "CoalPowerPlant/Era4");
@@ -739,7 +736,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	//LoadResource(ResourceEnum::WhaleMeat, "WhaleMeat/ResourceWhaleMeat");
 	LoadResource2(ResourceEnum::Grape, "Grape/Grape");
 	LoadResource2(ResourceEnum::Wine, "Wine/Wine");
-	LoadResource2(ResourceEnum::Shroom, "Shroom/Shroom");
+	LoadResource2(ResourceEnum::MagicMushroom, "Shroom/Shroom");
 	LoadResource2(ResourceEnum::Vodka, "Vodka/Vodka");
 
 	LoadResource2(ResourceEnum::Pork, "Meat/Meat");
@@ -1359,6 +1356,8 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 			}
 		}
 
+		// Hit here means Body needs to be specified. Body is for showing model from far away.
+		//  Set with LightMapResolution == 100
 		check(bodyMainIndex > 1);
 	}
 
@@ -1593,8 +1592,6 @@ void UAssetLoaderComponent::DetectParticleSystemPosition(CardEnum buildingEnum, 
 	DetectMeshGroups(mesh, vertexPositions);
 	isPrinting = false;
 
-	_tempAuxGroup = ModuleTransformGroup();
-	
 	for (const auto& it : groupIndexToConnectedVertIndices) {
 		PUN_LOG(" group:%d", it.first);
 		FVector averagePosition = FVector::ZeroVector;

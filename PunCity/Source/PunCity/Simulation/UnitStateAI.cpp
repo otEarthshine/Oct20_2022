@@ -1993,7 +1993,7 @@ void UnitStateAI::UseTools()
 	ResourceEnum resourceEnum = static_cast<ResourceEnum>(action().int32val1);
 
 	PUN_CHECK2(_inventory.Has(resourceEnum), debugStr());
-	PUN_CHECK(resourceEnum == ResourceEnum::SteelTools);
+	PUN_CHECK(IsToolsEnum(resourceEnum));
 
 	/*
 	 * Stone 8 + wood 5 + 2 ... 15 ... half year

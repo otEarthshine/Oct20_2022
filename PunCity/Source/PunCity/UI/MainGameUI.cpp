@@ -1628,7 +1628,7 @@ UBuildingPlacementButton* UMainGameUI::AddCard(CardHandEnum cardHandEnum, CardEn
 	
 	buttonParent->AddChild(cardButton);
 
-	cardButton->PunInit(buildingEnum, cardHandIndex, buildingLvl, stackSize, this, callbackEnum);
+	cardButton->PunInit(buildingEnum, cardHandIndex, buildingLvl, stackSize, this, callbackEnum, isMiniature);
 
 	SetChildHUD(cardButton);
 

@@ -76,9 +76,9 @@ static const std::vector<int32_t> townhallLvlToUpgradeMoney =
 {
 	0,
 	0,
-	200, // Lvl 2
-	1000,
-	5000,
+	1000, // Lvl 2
+	7000,
+	50000,
 	//30000, // Lvl 5
 };
 

@@ -347,9 +347,9 @@ public:
 		static const std::vector<int32> buildingMark
 		{
 			// y -->
-			// x
+			// A
 			// |
-			// v
+			// x
 			1, 1, 1, 1, 1, 1,	1, 1, 1, 1, 1, 1,
 			1, 0, 0, 1, 1, 1,	1, 1, 1, 1, 1, 1,
 			1, 0, 0, 1, 1, 1,	1, 1, 1, 1, 1, 1,
@@ -373,15 +373,16 @@ public:
 			1, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 1,
 			1, 1, 1, 1, 1, 1,	1, 0, 0, 0, 1, 1,
 		};
-		int32 centerYShift = -5;
+		int32 centerYShift = 5;
 		int32 centerXShift = -8;
 
 		WorldTile2 size = buildingInfo().size;
 		check(size.x * size.y == buildingMark.size());
-		for (int32 xIndex = 0; xIndex <= size.x; xIndex++) {
-			for (int32 yIndex = 0; yIndex <= size.y; yIndex++) {
+		for (int32 xIndex = 0; xIndex < size.x; xIndex++) {
+			for (int32 yIndex = 0; yIndex < size.y; yIndex++) {
+				int32 xIndexInv = size.x - 1 - xIndex;
 				SetLocalWalkable_WithDirection(
-					WorldTile2(xIndex + centerXShift, yIndex - centerYShift), buildingMark[yIndex + xIndex * _area.sizeY()] == 0
+					WorldTile2(xIndex + centerXShift, yIndex - centerYShift), buildingMark[yIndex + xIndexInv * size.y] == 0
 				);
 			}
 		}
@@ -389,12 +390,12 @@ public:
 		// Barn area...s
 		// From y: 3 to 6
 		// From x: -4 to -7
-		for (int32 y = 3; y <= 6; y++) {
-			for (int32 x = -7; x <= -4; x++) {
-				bool isWalkable = (y == 5); // Hole through middle of barn so people can get in...
-				SetLocalWalkable_WithDirection(WorldTile2(x, y), isWalkable);
-			}
-		}
+		//for (int32 y = 3; y <= 6; y++) {
+		//	for (int32 x = -7; x <= -4; x++) {
+		//		bool isWalkable = (y == 5); // Hole through middle of barn so people can get in...
+		//		SetLocalWalkable_WithDirection(WorldTile2(x, y), isWalkable);
+		//	}
+		//}
 
 		// Prevent non-human units from going into barn
 		//_simulation->SetWalkableNonIntelligent(gateTile(), false);

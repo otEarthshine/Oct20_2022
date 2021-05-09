@@ -100,6 +100,13 @@ DECLARE_LOG_CATEGORY_EXTERN(PunRefreshJob, NoLogging, NoLogging);
 #endif
 #endif
 
+#if !defined(PUN_EDITOR_LOG)
+	#if WITH_EDITOR && !UE_BUILD_SHIPPING
+		#define PUN_EDITOR_LOG(Format, ...) UE_LOG(LogTemp, Log, TEXT(Format), ##__VA_ARGS__);
+	#else
+		#define PUN_EDITOR_LOG(Format, ...)
+	#endif
+#endif
 
 //#if !defined(PUN_CLOG)
 //	#if DEBUG_BUILD

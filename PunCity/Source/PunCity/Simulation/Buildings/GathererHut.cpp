@@ -125,9 +125,9 @@ std::vector<BonusPair> HuntingLodge::GetBonuses()
 void Forester::OnInit()
 {
 	SetupWorkMode({
-		{ CutAndPlantText, ResourceEnum::None, ResourceEnum::None, 0},
-		{ PrioritizePlantText, ResourceEnum::None, ResourceEnum::None, 0},
-		{ PrioritizeCutText, ResourceEnum::None, ResourceEnum::None, 0},
+		{ CutAndPlantText, ResourceEnum::None, ResourceEnum::None },
+		{ PrioritizePlantText, ResourceEnum::None, ResourceEnum::None },
+		{ PrioritizeCutText, ResourceEnum::None, ResourceEnum::None },
 	});
 }
 
@@ -540,17 +540,17 @@ void CardMaker::OnInit()
 void CardMaker::ResetWorkModes()
 {
 	SetupWorkMode({
-		WorkMode::Create(productivityBookText,		LOCTEXT("Productivity Book WorkDesc", "Create Productivity Book Card\n(50 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 50),
-		WorkMode::Create(sustainabilityBookText,	LOCTEXT("Sustainability Book WorkDesc", "Create Sustainability Book Card\n(50 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 50),
-		WorkMode::Create(frugalityBookText,			LOCTEXT("Frugality Book WorkDesc", "Create Frugality Book Card\n(50 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 50),
+		WorkMode::Create(productivityBookText,		LOCTEXT("Productivity Book WorkDesc", "Create Productivity Book Card\n(50 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 50),
+		WorkMode::Create(sustainabilityBookText,	LOCTEXT("Sustainability Book WorkDesc", "Create Sustainability Book Card\n(50 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 50),
+		WorkMode::Create(frugalityBookText,			LOCTEXT("Frugality Book WorkDesc", "Create Frugality Book Card\n(50 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 50),
 
-		WorkMode::Create(wildCardText,				LOCTEXT("Wild Card WorkDesc", "Create Wild Card\n(10 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 20),
-		WorkMode::Create(cardRemovalCardText,		LOCTEXT("Card Removal Card WorkDesc", "Create Card Removal Card\n(10 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 20),
+		WorkMode::Create(wildCardText,				LOCTEXT("Wild Card WorkDesc", "Create Wild Card\n(10 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 20),
+		WorkMode::Create(cardRemovalCardText,		LOCTEXT("Card Removal Card WorkDesc", "Create Card Removal Card\n(10 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 20),
 	});
 
 	if (_simulation->IsResearched(_playerId, TechEnum::SocialScience)) {
-		AddWorkMode(WorkMode::Create(motivationBookText, LOCTEXT("Motivation WorkDesc", "Create Motivation Card\n(100 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 100));
-		AddWorkMode(WorkMode::Create(passionBookText, LOCTEXT("Passion WorkDesc", "Create Passion Card\n(100 Paper)"), ResourceEnum::Paper, ResourceEnum::None, 100));
+		AddWorkMode(WorkMode::Create(motivationBookText, LOCTEXT("Motivation WorkDesc", "Create Motivation Card\n(100 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 100));
+		AddWorkMode(WorkMode::Create(passionBookText, LOCTEXT("Passion WorkDesc", "Create Passion Card\n(100 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 100));
 	}
 }
 
@@ -776,14 +776,14 @@ void CoffeeRoaster::FinishConstruction() {
 void Tailor::OnInit()
 {
 	SetupWorkMode({
-		{ LOCTEXT("Leather Clothes", "Leather Clothes"), ResourceEnum::Leather, ResourceEnum::None, 10},
-		{ LOCTEXT("Wool Clothes", "Wool Clothes"), ResourceEnum::Wool, ResourceEnum::None, 10},
+		{ LOCTEXT("Leather Clothes", "Leather Clothes"), ResourceEnum::Leather, ResourceEnum::None },
+		{ LOCTEXT("Wool Clothes", "Wool Clothes"), ResourceEnum::Wool, ResourceEnum::None },
 
-		{ LOCTEXT("Cotton Clothes (Cotton)", "Cotton Clothes (Cotton)"), ResourceEnum::Cotton, ResourceEnum::None, 10},
-		{ LOCTEXT("Cotton Clothes (Cotton Fabric)", "Cotton Clothes (Cotton Fabric)"), ResourceEnum::CottonFabric, ResourceEnum::None, 10},
+		{ LOCTEXT("Cotton Clothes (Cotton)", "Cotton Clothes (Cotton)"), ResourceEnum::Cotton, ResourceEnum::None },
+		{ LOCTEXT("Cotton Clothes (Cotton Fabric)", "Cotton Clothes (Cotton Fabric)"), ResourceEnum::CottonFabric, ResourceEnum::None },
 
-		{ LOCTEXT("Fashionable Clothes (Cotton & Dye)", "Fashionable Clothes (Cotton & Dye)"), ResourceEnum::Cotton, ResourceEnum::Dye, 10, ResourceEnum::LuxuriousClothes },
-		{ LOCTEXT("Fashionable Clothes (Dyed Fabric)", "Fashionable Clothes (Dyed Fabric)"), ResourceEnum::DyedCottonFabric, ResourceEnum::None, 10, ResourceEnum::LuxuriousClothes },
+		{ LOCTEXT("Fashionable Clothes (Cotton & Dye)", "Fashionable Clothes (Cotton & Dye)"), ResourceEnum::Cotton, ResourceEnum::Dye, ResourceEnum::LuxuriousClothes },
+		{ LOCTEXT("Fashionable Clothes (Dyed Fabric)", "Fashionable Clothes (Dyed Fabric)"), ResourceEnum::DyedCottonFabric, ResourceEnum::None, ResourceEnum::LuxuriousClothes },
 		});
 }
 
@@ -816,9 +816,9 @@ void Tailor::FinishConstruction() {
 void BeerBrewery::OnInit()
 {
 	SetupWorkMode({
-		{ LOCTEXT("Wheat Beer", "Wheat Beer"), ResourceEnum::Wheat, ResourceEnum::None, 10 },
-		{ LOCTEXT("Orange Cider", "Orange Cider"), ResourceEnum::Orange, ResourceEnum::None, 10 },
-		{ LOCTEXT("Mushroom Beer", "Mushroom Beer"), ResourceEnum::Mushroom, ResourceEnum::None, 10 },
+		{ LOCTEXT("Wheat Beer", "Wheat Beer"), ResourceEnum::Wheat, ResourceEnum::None },
+		{ LOCTEXT("Orange Cider", "Orange Cider"), ResourceEnum::Orange, ResourceEnum::None },
+		{ LOCTEXT("Mushroom Beer", "Mushroom Beer"), ResourceEnum::Mushroom, ResourceEnum::None },
 	});
 }
 
@@ -925,8 +925,8 @@ static const FText woodFireText = LOCTEXT("Wood-fired", "Wood-fired");
 void Bakery::OnInit()
 {
 	SetupWorkMode({
-		{ coalFireText, ResourceEnum::Flour, ResourceEnum::Coal, 5, ResourceEnum::None},
-		{ woodFireText, ResourceEnum::Flour, ResourceEnum::Wood, 5, ResourceEnum::None,
+		{ coalFireText, ResourceEnum::Flour, ResourceEnum::Coal, ResourceEnum::None},
+		{ woodFireText, ResourceEnum::Flour, ResourceEnum::Wood, ResourceEnum::None,
 				LOCTEXT("Wood-fired Desc", "Wood-fired oven cooks food faster locking in more nutrients. +30% productivity")},
 	});
 }
@@ -1001,8 +1001,8 @@ void CandleMaker::FinishConstruction() {
 void CottonMill::OnInit()
 {
 	SetupWorkMode({
-		{ LOCTEXT("Cotton Fabric", "Cotton Fabric"), ResourceEnum::Cotton, ResourceEnum::None, 10},
-		{ LOCTEXT("Dyed Cotton Fabric", "Dyed Cotton Fabric"), ResourceEnum::Cotton, ResourceEnum::Dye, 10, ResourceEnum::DyedCottonFabric },
+		{ LOCTEXT("Cotton Fabric", "Cotton Fabric"), ResourceEnum::Cotton, ResourceEnum::None },
+		{ LOCTEXT("Dyed Cotton Fabric", "Dyed Cotton Fabric"), ResourceEnum::Cotton, ResourceEnum::Dye, ResourceEnum::DyedCottonFabric },
 	});
 }
 

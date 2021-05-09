@@ -2498,7 +2498,7 @@ private:
 		Add3DAudioGroupProperties("Building");
 		AddBuildingSoundProperties("Building", "BuildingBrewery");
 		AddBuildingSoundProperties("Building", "BuildingCharcoalMaker");
-		AddBuildingSoundProperties("Building", "BuildingFurnitureMaker");
+		//AddBuildingSoundProperties("Building", "BuildingFurnitureMaker");
 		AddBuildingSoundProperties("Building", "BuildingSmelter");
 		AddBuildingSoundProperties("Building", "BuildingQuarry");
 		AddBuildingSoundProperties("Building", "BuildingCoalMine");
@@ -2586,7 +2586,7 @@ private:
 		case CardEnum::CharcoalMaker: return "BuildingCharcoalMaker";
 		case CardEnum::BeerBrewery: return "BuildingBrewery";
 		case CardEnum::VodkaDistillery: return "BuildingBrewery";
-		case CardEnum::FurnitureWorkshop: return "BuildingFurnitureMaker";
+		//case CardEnum::FurnitureWorkshop: return "BuildingFurnitureMaker";
 			
 		case CardEnum::IronSmelter:
 		case CardEnum::GoldSmelter:

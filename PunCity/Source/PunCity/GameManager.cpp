@@ -1113,7 +1113,7 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 
 			// Dim winter light
 			const float defaultLightIntensity = 2.5;
-			const float winterLightIntensity = 2.0;
+			const float winterLightIntensity = 1.7;
 			float lightIntensity = defaultLightIntensity + (winterLightIntensity - defaultLightIntensity) * simulation().snowHeightForestStart();
 			directionalLight->SetIntensity(lightIntensity);
 

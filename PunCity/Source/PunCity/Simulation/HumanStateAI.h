@@ -66,6 +66,7 @@ public:
 	bool TryBulkHaul_IntercityWater();
 	bool TryBulkHaul_Market();
 	bool TryHaulingServices();
+	bool TryHaulingPowerPlant();
 	bool TryDistribute_Market();
 	//bool TryConsumerWork();
 
@@ -87,6 +88,8 @@ public:
 	bool TryGoNearWorkplace(int32 distanceThreshold);
 
 	bool TryCheckBadTile_Human();
+
+	//
 	
 	/*
 	 * Actions

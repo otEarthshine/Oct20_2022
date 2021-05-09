@@ -333,6 +333,13 @@ void UPunWidget::SetGeoresourceImage(UImage* image, ResourceEnum resourceEnum, U
 			ResourceNameT(resourceEnum)
 		));
 	}
+	else if (resourceEnum == ResourceEnum::Oil)
+	{
+		punWidget->AddToolTip(image, FText::Format(
+			LOCTEXT("FarmGeoresourceImage_Tip", "Oil-rich region."),
+			ResourceNameT(resourceEnum)
+		));
+	}
 	else {
 		punWidget->AddToolTip(image, FText::Format(
 			LOCTEXT("FarmGeoresourceImage_Tip", "This region is suitable for {0} Farming."),

@@ -46,6 +46,8 @@ static const std::vector<CardEnum> DefaultJobPriorityListAllSeason
 	CardEnum::RanchPig,
 
 	CardEnum::HaulingServices,
+	CardEnum::OilPowerPlant,
+	CardEnum::CoalPowerPlant,
 
 	CardEnum::Windmill,
 	CardEnum::Bakery,
@@ -412,8 +414,11 @@ public:
 
 
 	
-
-
+	/*
+	 * Electricity
+	 */
+	int32 electricityConsumption() { return _electricityConsumption; }
+	int32 electricityProductionCapacity() { return _electricityProductionCapacity; }
 
 	
 
@@ -892,6 +897,9 @@ public:
 		SerializeVecObj(Ar, _cardsInTownhall);;
 
 		SerializeVecValue(Ar, _townBonuses);
+
+		Ar << _electricityProductionCapacity;
+		Ar << _electricityConsumption;
 	}
 
 public:
@@ -976,6 +984,8 @@ private:
 
 	std::vector<CardEnum> _townBonuses;
 
+	int32 _electricityProductionCapacity = 0;
+	int32 _electricityConsumption = 0;
 	
 private:
 	/*

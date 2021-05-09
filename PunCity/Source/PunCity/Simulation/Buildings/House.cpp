@@ -524,9 +524,9 @@ void Ranch::FinishConstruction()
 	AddResourceHolder(ResourceEnum::Milk, ResourceHolderType::Provider, 0);
 
 	workModes = {
-		{ RanchWorkMode_FullCapacity, ResourceEnum::None, ResourceEnum::None, 0},
-		{ RanchWorkMode_HalfCapacity, ResourceEnum::None, ResourceEnum::None, 0},
-		{ RanchWorkMode_KillAll, ResourceEnum::None, ResourceEnum::None, 0},
+		{ RanchWorkMode_FullCapacity, ResourceEnum::None, ResourceEnum::None },
+		{ RanchWorkMode_HalfCapacity, ResourceEnum::None, ResourceEnum::None },
+		{ RanchWorkMode_KillAll, ResourceEnum::None, ResourceEnum::None },
 	};
 	_workMode = workModes[0];
 }

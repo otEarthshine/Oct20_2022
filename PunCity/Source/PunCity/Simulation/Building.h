@@ -368,17 +368,13 @@ public:
 
 	bool CanAddInput()
 	{
-		if (hasInput1() && hasInput2()) {
-			if (!hasInput1Available() && !hasInput2Available()) {
-				return false;
-			}
-		}
-		else if (hasInput1()) {
+		// hasInput1 -> hasInput2
+		if (hasInput1()) {
 			if (!hasInput1Available()) {
 				return false;
 			}
 		}
-		else if (hasInput2()) {
+		if (hasInput2()) {
 			if (!hasInput2Available()) {
 				return false;
 			}
@@ -395,7 +391,10 @@ public:
 		if (!_filledInputs) {
 			// TODO: replace with CanAddInput()
 			if (hasInput1() && hasInput2()) {
-				if (!hasInput1Available() && !hasInput2Available()) {
+				if (!hasInput1Available()) {
+					return false;
+				}
+				if (!hasInput2Available()) {
 					return false;
 				}
 			}
@@ -562,7 +561,8 @@ public:
 
 	int32 GetResourceCount(ResourceHolderInfo holderInfo);
 	int32 GetResourceCount(ResourceEnum resourceEnum) {
-		return GetResourceCount(holderInfo(resourceEnum));
+		ResourceHolderInfo info = holderInfo(resourceEnum);
+		return info.isValid() ? GetResourceCount(info) : 0;
 	}
 	int32 GetResourceCountWithPush(ResourceHolderInfo holderInfo);
 	int32 GetResourceCountWithPush(ResourceEnum resourceEnum) {
@@ -610,13 +610,17 @@ public:
 
 	bool filledInputs() { return _filledInputs; }
 
-	virtual bool shouldAlwaysDisplayParticles() { return false; }
-	bool shouldDisplayParticles() {
+	virtual bool shouldDisplayParticles() {
 		if (SimSettings::IsOn("WorkAnimate")) {
 			return true;
 		}
-		if (shouldAlwaysDisplayParticles()) {
-			return true;
+		if (!isConstructed()) {
+			return false;
+		}
+		if (hasInput1() || hasInput2()) {
+			if (!filledInputs()) {
+				return false;
+			}
 		}
 		//if (IsProducer(_buildingEnum) && _workDone100 == 0) {
 		//	return false;
@@ -665,14 +669,14 @@ public:
 	int32 workPercent() { return static_cast<int32_t>(workFraction() * 100); }
 
 	// Work Batch Calculations
-	int32 batchCost() {
+	int32 baseBatchCost() {
 		BldInfo info = buildingInfo();
 		int32 batchCost = 0;
 		if (hasInput1()) {
-			batchCost += inputPerBatch() * GetResourceInfo(input1()).basePrice;
+			batchCost += baseInputPerBatch() * GetResourceInfo(input1()).basePrice;
 		}
 		if (hasInput2()) {
-			batchCost += inputPerBatch() * GetResourceInfo(input2()).basePrice;
+			batchCost += baseInputPerBatch() * GetResourceInfo(input2()).basePrice;
 		}
 		return batchCost;
 	}
@@ -681,16 +685,32 @@ public:
 		if (productEnum == ResourceEnum::None) {
 			return 0;
 		}
-		int32 batchRevenue = baseOutputPerBatch() * GetResourceInfo(productEnum).basePrice;
-		int32 cost = batchCost();
-		int32 batchProfit = batchRevenue - cost;
-		check(batchProfit > 0);
-		return batchProfit;
+		
+		int32 baseProfitValue = 50; // Beer Brewery as base: 10 Beer(10) from 10 Wheat(5)
+		
+		baseProfitValue = buildingInfo().resourceInfo.ApplyUpgradeAndEraProfitMultipliers(baseProfitValue, buildingInfo().minEra(), GetEraUpgradeCount());
+
+		// Adjust to worker count
+		baseProfitValue = baseProfitValue * buildingInfo().workerCount / 2;
+		
+		check(baseProfitValue > 0);
+		return baseProfitValue;
+		
+		//int32 batchRevenue = baseOutputPerBatch() * GetResourceInfo(productEnum).basePrice;
+		//
+		//int32 cost = baseBatchCost();
+		//int32 batchProfit = batchRevenue - cost;
+		//check(batchProfit > 0);
+		//return batchProfit;
 	}
 
 	
 	int32 workRevenuePerSec100_perMan_() {
-		return buildingInfo().workRevenuePerSec100_perMan(GetEraUpgradeCount());
+		int32 result = buildingInfo().workRevenuePerSec100_perMan(GetEraUpgradeCount());
+		if (IsElectricityUpgraded()) {
+			result += result * ElectricityAmountUsage() / std::max(1, ElectricityAmountNeeded());
+		}
+		return result;
 	}
 
 	// Work time required per batch...
@@ -702,14 +722,17 @@ public:
 		return batchProfit() * 100 * 100 / workRevenuePerSec100_perMan_();
 	}
 
-	virtual int32 baseUpkeep()
+	virtual int32 baseUpkeep() {
+		return BaseUpkeep(_buildingEnum);
+	}
+
+	static int32 BaseUpkeep(CardEnum buildingEnum)
 	{
 		int32 baseUpkeep;
-		if (product() != ResourceEnum::None || IsSpecialProducer(_buildingEnum)) {
-			baseUpkeep = buildingInfo().baseUpkeep;
-		}
-		else {
-			baseUpkeep = GetCardUpkeepBase(_buildingEnum);
+		if (GetBuildingInfo(buildingEnum).produce != ResourceEnum::None || IsSpecialProducer(buildingEnum)) {
+			baseUpkeep = GetBuildingInfo(buildingEnum).baseUpkeep;
+		} else {
+			baseUpkeep = GetCardUpkeepBase(buildingEnum);
 		}
 		return baseUpkeep;
 	}
@@ -980,10 +1003,12 @@ public:
 
 	virtual int32 baseOutputPerBatch()
 	{
-		// Output Batch can be calculated from profit
-		int32 baseProfitValue = 50; // Beer Brewery as base: 10 Beer(10) from 10 Wheat(5)
-		baseProfitValue = buildingInfo().resourceInfo.ApplyUpgradeAndEraProfitMultipliers(baseProfitValue, buildingInfo().minEra(), GetEraUpgradeCount());
+		//// Output Batch can be calculated from profit
+		//int32 baseProfitValue = 30; // Beer Brewery as base: 10 Beer(10) from 10 Wheat(5)
+		//baseProfitValue = buildingInfo().resourceInfo.ApplyUpgradeAndEraProfitMultipliers(baseProfitValue, buildingInfo().minEra(), GetEraUpgradeCount());
 
+		int32 baseProfitValue = batchProfit();
+		
 		int32 outputValue = baseProfitValue;
 		if (input1() != ResourceEnum::None) {
 			outputValue += baseInputPerBatch() * GetResourceInfo(input1()).basePrice;
@@ -1011,15 +1036,22 @@ public:
 
 	int32 oreLeft();
 
-	int32 ElectricityNeededPerBatch() {
-		//batchProfit()
-		return 0;
+	int32 ElectricityAmountUsage() {
+		return _electricityReceived;
 	}
-	int32 UpgradedElectricity() {
-		if (_upgrades.size() > 0 && _upgrades[0].isEraUpgrade()) {
-			
-		}
-		return 0;
+	int32 ElectricityAmountNeeded() {
+		return occupantCount();
+	}
+	bool IsElectricityUpgraded() {
+		// Last era is electricity
+		return GetUpgradeEraLevel() == 5;
+	}
+	void SetElectricityAmountUsage(int32 electricityReceivedIn) {
+		_electricityReceived = electricityReceivedIn;
+	}
+
+	bool NotEnoughElectricity() {
+		return IsElectricityUpgraded() && ElectricityAmountUsage() < ElectricityAmountNeeded() * 3 / 4;
 	}
 
 	
@@ -1032,9 +1064,13 @@ public:
 		if (input2() != ResourceEnum::None) { // Anything with 2 inputs, gets split equally
 			result = 5;
 		}
-		if (_workMode.inputPerBatch > 0) {
-			result = _workMode.inputPerBatch;
+		if (_workMode.customInputPerBatch != -1) {
+			result = _workMode.customInputPerBatch;
 		}
+
+		// Adjust to worker count
+		result = result * buildingInfo().workerCount / 2;
+
 		return buildingInfo().resourceInfo.ApplyUpgradeAndEraProfitMultipliers(result, buildingInfo().minEra(), GetEraUpgradeCount());
 	}
 
@@ -1071,7 +1107,10 @@ public:
 	void AddUpgrades(std::vector<BuildingUpgrade> upgrades)
 	{
 		_upgrades = upgrades;
-		if (!IsAutoEraUpgrade(_buildingEnum) && !HasNoEraUpgrade(_buildingEnum)) {
+		if (!IsAutoEraUpgrade(_buildingEnum) && 
+			!HasNoEraUpgrade(_buildingEnum) &&
+			!IsPowerPlant(_buildingEnum)) 
+		{
 			_upgrades.insert(_upgrades.begin(), MakeEraUpgrade(buildingInfo().resourceInfo.era));
 		}
 	}
@@ -1080,21 +1119,21 @@ public:
 		return (_upgrades.size() > 0 && _upgrades[0].isEraUpgrade()) ? _upgrades[0].upgradeLevel : 0;
 	}
 
-	FText GetUpgradeDisplayDescription(int32 index) {
-		BuildingUpgrade& upgrade = _upgrades[index];
-		if (upgrade.isEraUpgrade()) {
-			int32 nextLevel = upgrade.upgradeLevel + 2;
-			if (nextLevel == 5) {
-				int32 electricityPerBatch = ElectricityNeededPerBatch();
-				return FText::Format(
-					NSLOCTEXT("BuildingUpgrade", "Electric Machinery Desc", "Once upgraded, this Building will consume Electricity. +100% Productivity when provided with Electricity. Consumes {0} kWh Electricity per production batch."),
-					TEXT_NUM(electricityPerBatch)
-				);
-			}
-			return FText::Format(NSLOCTEXT("BuildingUpgrade", "to Level Desc", "Increases Base Productivity by 50%"), TEXT_NUM(nextLevel));
+	int32 GetUpgradeEraLevel() {
+		if (_upgrades.size() > 0 && _upgrades[0].isEraUpgrade()) {
+			return _upgrades[0].upgradeLevel + buildingInfo().minEra();
 		}
-		return upgrade.description;
+		return -1;
 	}
+	bool IsEraUpgradable() {
+		if (GetUpgradeEraLevel() == 4) {
+			return _simulation->IsResearched(playerId(), TechEnum::Electricity);
+		}
+		return GetUpgradeEraLevel() < _simulation->GetEra(_playerId);
+	}
+	
+	FText GetUpgradeDisplayDescription(int32 index);
+	FText GetUpgradeDisplayName(int32 index);
 
 	// Delivery
 	int32 deliveryTargetIdAfterConstruction() {  // deliveryTargetId returns -1 if the building under construction
@@ -1293,7 +1332,7 @@ public:
 			if (_simulation->HasTownBonus(townId(), CardEnum::DesertOreTrade) &&
 				IsOreEnum(resourceEnum))
 			{
-				tradeFeePercent -= 15;
+				tradeFeePercent -= 20;
 			}
 		}
 
@@ -1484,17 +1523,18 @@ public:
 		FText name;
 		ResourceEnum input1 = ResourceEnum::None;
 		ResourceEnum input2 = ResourceEnum::None;
-		int32 inputPerBatch = 0;
 		ResourceEnum product = ResourceEnum::None;
 		FText description;
+
+		int32 customInputPerBatch = -1;
 
 		bool isValid() { return !name.IsEmpty(); }
 
 		static WorkMode Create(FText name, FText description, 
 			ResourceEnum input1 = ResourceEnum::None, 
 			ResourceEnum input2 = ResourceEnum::None,
-			int32 inputPerBatch = 0,
-			ResourceEnum product = ResourceEnum::None)
+			ResourceEnum product = ResourceEnum::None,
+			int32 customInputPerBatch = -1)
 		{
 			WorkMode workMode;
 			workMode.name = name;
@@ -1502,8 +1542,9 @@ public:
 
 			workMode.input1 = input1;
 			workMode.input2 = input2;
-			workMode.inputPerBatch = inputPerBatch;
 			workMode.product = product;
+
+			workMode.customInputPerBatch = customInputPerBatch;
 			
 			return workMode;
 		}
@@ -1513,10 +1554,11 @@ public:
 			Ar << name;
 			Ar << input1;
 			Ar << input2;
-			Ar << inputPerBatch;
 			Ar << product;
 			//SerializeStr(Ar, description);
 			Ar << description;
+
+			Ar << customInputPerBatch;
 		}
 
 		bool operator==(const WorkMode& a) {
@@ -1643,7 +1685,7 @@ public:
 
 		
 		// Not enough input Warning
-		if (hasInput1() &&
+		if (hasInput1() && // hasInput1 -> hasInput2
 			!_filledInputs &&
 			!CanAddInput())
 		{
@@ -1691,11 +1733,11 @@ public:
 			}
 		}
 
-		//if (_electricityReceived < ElectricityNeeded())
-		//{
-		//	hoverWarning = HoverWarning::NotEnoughElectricity;
-		//	return true;
-		//}
+		if (NotEnoughElectricity())
+		{
+			hoverWarning = HoverWarning::NotEnoughElectricity;
+			return true;
+		}
 		
 		hoverWarning = HoverWarning::None;
 		return false;

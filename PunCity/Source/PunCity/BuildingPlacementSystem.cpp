@@ -1247,7 +1247,8 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 
 			std::vector<ModuleTransform> modules;
 			if (_delayFillerEnum == CardEnum::Fisher ||
-				_delayFillerEnum == CardEnum::SandMine)
+				_delayFillerEnum == CardEnum::SandMine ||
+				_delayFillerEnum == CardEnum::PaperMaker)
 			{
 				modules.insert(modules.begin(), ModuleTransform("FisherConstructionPoles", FTransform::Identity, 0.0f, ModuleTypeEnum::ConstructionOnly));
 				modules.insert(modules.begin(), ModuleTransform("FisherConstructionPolesWater", FTransform::Identity, 0.0f, ModuleTypeEnum::ConstructionOnly));
@@ -1962,6 +1963,31 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 						_placementGrid.SpawnGrid(isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Gray, cameraAtom, tile);
 					}
 				}
+			});
+		}
+		else if (_buildingEnum == CardEnum::OilRig)
+		{
+			GeoresourceEnum georesourceEnum = GeoresourceEnum::Oil;
+			
+			GeoresourceSystem& georesourceSystem = simulation.georesourceSystem();
+			auto isCorrectResource = [&](WorldTile2 tile) {
+				// FastBuild doesn't need correct resource
+				if (SimSettings::IsOn("CheatFastBuild")) {
+					return true;
+				}
+				return _buildingEnum == CardEnum::Quarry ||
+					georesourceSystem.georesourceNode(simulation.GetProvinceIdClean(tile)).info().georesourceEnum == georesourceEnum;
+			};
+
+			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+				if (IsPlayerBuildable(tile)) {
+					if (isCorrectResource(tile)) {
+						_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, tile);
+						return;
+					}
+					SetInstruction(PlacementInstructionEnum::NeedGeoresource, true, static_cast<int32>(georesourceEnum));
+				}
+				_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
 			});
 		}
 		// Claypit/Irrigation Reservoir grid

@@ -2134,6 +2134,10 @@ public:
 		return unlockSystem(playerId)->isUnlocked(cardEnumIn);
 	}
 
+	int32 GetEra(int32 playerId) final {
+		return unlockSystem(playerId)->GetEra();
+	}
+
 	// Prosperity
 	void UpdateProsperityHouseCount(int32 playerId) final {
 		unlockSystem(playerId)->UpdateProsperityHouseCount();
@@ -2720,6 +2724,7 @@ public:
 		checkAddMineCard(CardEnum::IronMine, GeoresourceEnum::IronOre);
 		checkAddMineCard(CardEnum::GoldMine, GeoresourceEnum::GoldOre);
 		checkAddMineCard(CardEnum::GemstoneMine, GeoresourceEnum::Gemstone);
+		checkAddMineCard(CardEnum::OilRig, GeoresourceEnum::CoalOre);
 	}
 
 	void PopupInstantReply(int32 playerId, PopupReceiverEnum replyReceiver, int32 choiceIndex);

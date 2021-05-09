@@ -1598,13 +1598,16 @@ void UnitStateAI::Wait()
 	PUN_DEBUG_EXPR(CheckIntegrity());
 	PUN_CHECK2(tickCount < Time::TicksPerMinute, ("badTickCount:" + to_string(tickCount) + debugStr()));
 
-	// TODO: proper repeating cut sound
 	// Play Sound
 	if (_unitState == UnitState::GatherTree || _unitState == UnitState::ClearLandCutTree) {
-		_simulation->soundInterface()->Spawn3DSound("CitizenAction", "TreeChopping", unitAtom());
+		if (_simulation->TryDoNonRepeatAction(_playerId, NonRepeatActionEnum::TreeChopping, Time::TicksPerSecond * 3 / 4)) {
+			_simulation->soundInterface()->Spawn3DSound("CitizenAction", "TreeChopping", unitAtom());
+		}
 	}
 	else if (_unitState == UnitState::GatherStone || _unitState == UnitState::ClearLandCutStone) {
-		_simulation->soundInterface()->Spawn3DSound("CitizenAction", "StonePicking", unitAtom());
+		if (_simulation->TryDoNonRepeatAction(_playerId, NonRepeatActionEnum::StonePicking, Time::TicksPerSecond * 3 / 4)) {
+			_simulation->soundInterface()->Spawn3DSound("CitizenAction", "StonePicking", unitAtom());
+		}
 	}
 	
 

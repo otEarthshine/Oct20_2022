@@ -33,7 +33,9 @@ enum class OverlaySetterType {
 enum class ParticleEnum
 {
 	Smoke,
+	HeavySteam,
 	BlackSmoke,
+	HeavyBlackSmoke,
 	StoveFire,
 	TorchFire,
 
@@ -94,6 +96,11 @@ enum class ModuleTypeEnum
 static bool IsModuleTypeFrame(ModuleTypeEnum moduleTypeEnum)
 {
 	return moduleTypeEnum == ModuleTypeEnum::Frame || 
+		moduleTypeEnum == ModuleTypeEnum::FrameConstructionOnly;
+}
+static bool IsModuleTypeConstructionOnly(ModuleTypeEnum moduleTypeEnum)
+{
+	return moduleTypeEnum == ModuleTypeEnum::ConstructionOnly ||
 		moduleTypeEnum == ModuleTypeEnum::FrameConstructionOnly;
 }
 
@@ -227,16 +234,18 @@ struct ModuleTransformGroup
 
 	static ModuleTransformGroup CreateOreMineSet(FString oreMineSpecialName, FString oreMineWorkStaticName)
 	{
-		return CreateSet("OreMine", {}, {
-					{ParticleEnum::BlackSmoke, TransformFromPosition(-.27, 11.4, 21.6)},
-			}, {
+		return CreateSet("OreMine", {}, 
+			{
+				{ParticleEnum::BlackSmoke, TransformFromPosition(-.27, 11.4, 21.6)},
+			}, 
+			{
 				ModuleTransform("OreMineWorkRotation2", TransformFromPosition(4.99, -8.10, 22.899), 0.0f, ModuleTypeEnum::RotateRoll),
 				ModuleTransform(oreMineSpecialName, FTransform::Identity, 0, ModuleTypeEnum::ShaderOnOff),
 			},
-				{
-					ModuleTransform(oreMineWorkStaticName),
-				}
-				);
+			{
+				ModuleTransform(oreMineWorkStaticName),
+			}
+		);
 	}
 };
 
@@ -729,25 +738,6 @@ private:
 			ModuleTransformGroup::CreateSet(moduleGroupName, auxGroup)
 		);
 		_buildingEnumToMinEraModel[static_cast<int>(buildingEnum)] = minEra;
-
-		// Buildings with 0 frame count uses Era 1's scaff
-		std::vector<ModuleTransform>& lastEraModules = _buildingEnumToModuleGroups[static_cast<int>(buildingEnum)].Last().transforms;
-		bool hasFrame = false;
-		for (int32 i = 0; i < lastEraModules.size(); i++) {
-			if (FStringCompareRight(lastEraModules[i].moduleName, FString("Frame"))) {
-				hasFrame = true;
-				break;
-			}
-		}
-		if (!hasFrame) {
-			const std::vector<ModuleTransform>& firstEraModules = _buildingEnumToModuleGroups[static_cast<int>(buildingEnum)][0].transforms;
-			for (int32 i = 0; i < firstEraModules.size(); i++) {
-				if (FStringCompareRight(firstEraModules[i].moduleName, FString("FrameConstructionOnly"))) {
-					lastEraModules.push_back(firstEraModules[i]);
-					break;
-				}
-			}
-		}
 	}
 	void LoadBuilding(CardEnum buildingEnum, FString moduleGroupPrefix, FString moduleGroupFolderPrefix, int32 minEra, int32 maxEra = 4, ModuleTransformGroup auxGroup = ModuleTransformGroup())
 	{

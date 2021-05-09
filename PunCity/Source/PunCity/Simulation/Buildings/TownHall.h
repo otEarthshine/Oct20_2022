@@ -136,7 +136,7 @@ public:
 
 	int32 maxTradeQuatity() override { return 80; }
 
-	bool shouldAlwaysDisplayParticles() override { return true; }
+	bool shouldDisplayParticles() override { return true; }
 	
 public:
 	// Migration

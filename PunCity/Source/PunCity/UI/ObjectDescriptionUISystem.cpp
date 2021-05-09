@@ -823,6 +823,15 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					descriptionBox->AddSpacer(8);
 				}
 
+				// Electricity
+				if (building.IsElectricityUpgraded())
+				{
+					descriptionBox->AddSpacer();
+					descriptionBox->AddRichText(
+						LOCTEXT("Electricity", "Electricity:"),
+						FText::Format(INVTEXT("{0}/{1}kW"), TextRed(TEXT_NUM(building.ElectricityAmountUsage()), building.NotEnoughElectricity()), TEXT_NUM(building.ElectricityAmountNeeded()))
+					);
+				}
 				
 
 				// Upgrade Level / Appeal / tax
@@ -1047,56 +1056,64 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 						descriptionBox->AddSpacer(10);
 
-						// Lord
-						if (townhallPlayerOwned.lordPlayerId() != -1) {
-							descriptionBox->AddRichText(LOCTEXT("Lord", "Lord"), simulation.playerNameT(townhallPlayerOwned.lordPlayerId()));
-						} else {
-							descriptionBox->AddRichText(LOCTEXT("Independent State", "Independent State")); // TODO: many vassal => empire
-						}
-
-						// Allies
-						const auto& allyPlayerIds = townhallPlayerOwned.allyPlayerIds();
-						if (allyPlayerIds.size() > 0)
+						// Only show Independence/Allies status for other player's town
+						// TODO: Diplomacy panel...
+						if (townPlayerId != playerId())
 						{
-							// Expanded text part
-							for (int32 i = 1; i < allyPlayerIds.size(); i++) {
-								ADDTEXT_(INVTEXT("{0}\n"), simulation.GetTownhallCapital(allyPlayerIds[i]).townNameT());
+							// Lord
+							if (townhallPlayerOwned.lordPlayerId() != -1) {
+								descriptionBox->AddRichText(LOCTEXT("Lord", "Lord"), simulation.playerNameT(townhallPlayerOwned.lordPlayerId()));
 							}
-							
-							descriptionBox->AddRichText(LOCTEXT("Allies", "Allies"), 
-								simulation.GetTownhallCapital(allyPlayerIds[0]).townNameT(), ResourceEnum::None, JOINTEXT(args)
-							);
-							args.Empty();
-						} else {
-							descriptionBox->AddRichText(LOCTEXT("Allies", "Allies"), LOCTEXT("None", "None"));
-						}
+							else {
+								descriptionBox->AddRichText(LOCTEXT("Independent State", "Independent State")); // TODO: many vassal => empire
+							}
 
-						// Vassals
-						const auto& vassalBuildingIds = townhallPlayerOwned.vassalBuildingIds();
-						{
-							TArray<FText> vassalArgs;
-
-							auto getVassalName = [&](int32 vassalBuildingId)
+							// Allies
+							const auto& allyPlayerIds = townhallPlayerOwned.allyPlayerIds();
+							if (allyPlayerIds.size() > 0)
 							{
-								Building& vassalBld = simulation.building(vassalBuildingId);
-								if (vassalBld.isEnum(CardEnum::Townhall)) {
-									return simulation.GetTownhallCapital(vassalBld.playerId()).townNameT();
+								// Expanded text part
+								for (int32 i = 1; i < allyPlayerIds.size(); i++) {
+									ADDTEXT_(INVTEXT("{0}\n"), simulation.GetTownhallCapital(allyPlayerIds[i]).townNameT());
+								}
+
+								descriptionBox->AddRichText(LOCTEXT("Allies", "Allies"),
+									simulation.GetTownhallCapital(allyPlayerIds[0]).townNameT(), ResourceEnum::None, JOINTEXT(args)
+								);
+								args.Empty();
+							}
+							else {
+								descriptionBox->AddRichText(LOCTEXT("Allies", "Allies"), LOCTEXT("None", "None"));
+							}
+
+							// Vassals
+							const auto& vassalBuildingIds = townhallPlayerOwned.vassalBuildingIds();
+							{
+								TArray<FText> vassalArgs;
+
+								auto getVassalName = [&](int32 vassalBuildingId)
+								{
+									Building& vassalBld = simulation.building(vassalBuildingId);
+									if (vassalBld.isEnum(CardEnum::Townhall)) {
+										return simulation.GetTownhallCapital(vassalBld.playerId()).townNameT();
+									}
+									else {
+										return LOCTEXT("Non-player Vassal", "Non-player Vassal");
+									}
+								};
+
+								for (int32 i = 1; i < vassalBuildingIds.size(); i++) {
+									ADDTEXT(vassalArgs, INVTEXT("{0}\n"), getVassalName(vassalBuildingIds[i]));
+								}
+
+								if (vassalBuildingIds.size() > 0) {
+									descriptionBox->AddRichText(LOCTEXT("Vassals", "Vassals"), getVassalName(vassalBuildingIds[0]), ResourceEnum::None, JOINTEXT(vassalArgs));
 								}
 								else {
-									return LOCTEXT("Non-player Vassal", "Non-player Vassal");
+									descriptionBox->AddRichText(LOCTEXT("Vassals", "Vassals"), LOCTEXT("None", "None"));
 								}
-							};
-							
-							for (int32 i = 1; i < vassalBuildingIds.size(); i++) {
-								ADDTEXT(vassalArgs, INVTEXT("{0}\n"), getVassalName(vassalBuildingIds[i]));
+
 							}
-							
-							if (vassalBuildingIds.size() > 0) {
-								descriptionBox->AddRichText(LOCTEXT("Vassals", "Vassals"), getVassalName(vassalBuildingIds[0]), ResourceEnum::None, JOINTEXT(vassalArgs));
-							} else {
-								descriptionBox->AddRichText(LOCTEXT("Vassals", "Vassals"), LOCTEXT("None", "None"));
-							}
-							
 						}
 
 						// Note: Statistics replaced with Statistics Bureau
@@ -1128,11 +1145,6 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					{	
 						ADDTEXT_(INVTEXT("{0}<img id=\"Coin\"/>"), FText::AsNumber(static_cast<Bank*>(&building)->lastRoundProfit));
 						descriptionBox->AddRichText(LOCTEXT("Round profit", "Round profit"), args);
-					}
-					else if (building.isEnum(CardEnum::IronSmelter)) {
-						//if (simulation.playerParameters(playerId())->SmelterAdjacencyBonus) {
-						//	ss << "\nBonus: +" << building.adjacentCount(BuildingEnum::IronSmelter) * 10 << "% productivity\n\n";
-						//}
 					}
 					else if (building.isEnum(CardEnum::Farm)) 
 					{
@@ -1647,7 +1659,18 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					}
 					else if (IsPowerPlant(buildingEnum))
 					{
+						auto& powerPlant = building.subclass<PowerPlant>();
 						
+						auto electricityWidget = descriptionBox->AddRichText(
+							LOCTEXT("Electricity", "Electricity:"),
+							FText::Format(INVTEXT("{0}/{1}kW"), TEXT_NUM(powerPlant.ElectricityConsumption()), TEXT_NUM(powerPlant.ElectricityProductionCapacity()))
+						);
+						descriptionBox->AddSpacer();
+
+						args.Empty();
+						ADDTEXT_LOCTEXT("Electricity_Tip", "Electricity Usage/Capacity<space>Electricity production of 1 kW consumes 1 Coal per Round <Gray>(8 per year)</>");
+						
+						AddToolTip(electricityWidget, args);
 					}
 					else if (IsWorldWonder(buildingEnum))
 					{
@@ -1895,8 +1918,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					}
 
 
-					const FText consumptionSeasonText = LOCTEXT("Consumption(per season):", "Consumption(per season):");
-					const FText depletionSeasonText = LOCTEXT("Depletion(per season):", "Depletion(per season):");
+					const FText consumptionSeasonText = LOCTEXT("Consumption (per season):", "Consumption(per season):");
+					const FText depletionSeasonText = LOCTEXT("Depletion (per season):", "Depletion(per season):");
 
 					// Consumption stat
 					if (IsConsumerWorkplace(building.buildingEnum()))
@@ -2021,7 +2044,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						if (PunSettings::IsOn("DebugFocusUI")) {
 							descriptionBox->AddRichText("-- workManSecPerBatch100: " + to_string(building.workManSecPerBatch100()));
 							descriptionBox->AddRichText("-- workRevenuePerSec100_perMan_: " + to_string(building.workRevenuePerSec100_perMan_()));
-							descriptionBox->AddRichText("-- batchCost: " + to_string(building.batchCost()));
+							descriptionBox->AddRichText("-- batchCost: " + to_string(building.baseBatchCost()));
 							descriptionBox->AddRichText("-- batchProfit: " + to_string(building.batchProfit()));
 						}
 #endif
@@ -2066,7 +2089,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								bool needInput1 = building.needInput1();
 								bool needInput2 = building.needInput2();
 								
-								ADDTEXT_LOCTEXT("Require {0}", "Require {0}");
+								ADDTEXT_LOCTEXT("Requires ", "Requires ");
 								if (needInput1) ADDTEXT_(INVTEXT("{0} {1}"), TEXT_NUM(building.inputPerBatch()), ResourceNameT(building.input1()));
 								if (needInput1 && needInput2) ADDTEXT_INV_(", ");
 								if (needInput2) ADDTEXT_(INVTEXT("{0} {1}"), TEXT_NUM(building.inputPerBatch()), ResourceNameT(building.input2()));
@@ -2237,9 +2260,17 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				{
 					descriptionBox->AddLineSpacer();
 					descriptionBox->AddRichText(TEXT_TAG("<Subheader>", LOCTEXT("Resources needed:", "Resources needed:")));
-					for (ResourceHolderInfo holderInfo : holderInfos) {
-						ADDTEXT_(INVTEXT("{0}/{1}"), TEXT_NUM(building.GetResourceCount(holderInfo)), TEXT_NUM(building.GetResourceTarget(holderInfo)))
-						descriptionBox->AddIconPair(FText(), holderInfo.resourceEnum, args);
+
+
+					
+					for (int32 i = 0; i < ConstructionResourceCount; i++)
+					{
+						ResourceEnum resourceEnum = ConstructionResources[i];
+						ResourceHolderInfo holderInfo = building.holderInfo(resourceEnum);
+						if (holderInfo.isValid()) {
+							ADDTEXT_(INVTEXT("{0}/{1}"), TEXT_NUM(building.GetResourceCount(holderInfo)), TEXT_NUM(building.buildingInfo().constructionResources[i]))
+									descriptionBox->AddIconPair(FText(), resourceEnum, args);
+						}
 					}
 
 #if WITH_EDITOR
@@ -2359,7 +2390,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				/*
 				 * Town/Global Bonuses
 				 */
-				if (building.isEnum(CardEnum::Townhall)) 
+				if (building.isEnum(CardEnum::Townhall) && building.playerId() == playerId())
 				{
 					auto setBonusIcon = [&](UTownBonusIcon* bonusIcon, CardEnum bonusEnum)
 					{
@@ -2553,13 +2584,13 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							ADDTEXT_INV_("<line>");
 							ADDTEXT__(GetTownhallLvlToUpgradeBonusText(townhall.townhallLvl + 1));
 
-							int32 capitalLvl = simulation.GetTownLvl(townhall.playerId());
-							
-							if (townhall.townhallLvl >= capitalLvl) {
-								ADDTEXT_INV_("<space>");
-								ADDTEXT_TAG_("<Red>", LOCTEXT("TownhallUpgrade_NeedCapitalUpgrade", "Require higher Capital's Townhall Level."));
-							}
-							else if (globalResourceSys.money() < upgradeMoney) {
+							//int32 capitalLvl = simulation.GetTownLvl(townhall.playerId());
+							//if (townhall.townhallLvl + 1 < capitalLvl) {
+							//	ADDTEXT_INV_("<space>");
+							//	ADDTEXT_TAG_("<Red>", LOCTEXT("TownhallUpgrade_NeedCapitalUpgrade", "Require higher Capital's Townhall Level."));
+							//}
+							//else 
+							if (globalResourceSys.money() < upgradeMoney) {
 								ADDTEXT_INV_("<space>");
 								ADDTEXT_TAG_("<Red>", LOCTEXT("Not enough money to upgrade.", "Not enough money to upgrade."));
 							}
@@ -2573,7 +2604,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						
 						auto setUpgradeButton = [&](BuildingUpgrade upgrade, int32 upgradeIndex)
 						{
-							ADDTEXT_(LOCTEXT("Upgrade {0}", "Upgrade {0}"), upgrade.displayName());
+							ADDTEXT_(LOCTEXT("Upgrade {0}", "Upgrade {0}"), building.GetUpgradeDisplayName(upgradeIndex));
 
 							ResourceEnum resourceEnum = upgrade.currentUpgradeResourceNeeded().resourceEnum;
 							bool showEnabled = true;
@@ -2591,10 +2622,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								};
 
 								auto unlockSys = simulation.unlockSystem(playerId());
-								bool requireEra = upgrade.isEraUpgrade() && !upgrade.isEraUpgradable(unlockSys->GetEra());
+								bool requireEra = upgrade.isEraUpgrade() && !building.IsEraUpgradable();
 
 								if (requireEra) {
-									ADDTEXT_(upgradeEraRequiresText, unlockSys->GetEraText(upgrade.currentEraLevel() + 1));
+									ADDTEXT_(upgradeEraRequiresText, unlockSys->GetEraText(building.GetUpgradeEraLevel() + 1));
 									showEnabled = false;
 								}
 								else if (resourceEnum == ResourceEnum::Stone) { showResourceText("Stone"); }
@@ -4550,15 +4581,15 @@ void UObjectDescriptionUISystem::AddTradeFeeText(TradeBuilding& building, UPunBo
 	AddToolTip(feeText, args);
 
 	// TODO: Resource Fee
-	descriptionBox->AddSpacer();
 	if (simulation().HasTownBonus(building.townId(), CardEnum::DesertTradeForALiving)) {
-		descriptionBox->AddText(GetBuildingInfo(CardEnum::DesertTradeForALiving).GetDescription());
+		descriptionBox->AddRichText(LOCTEXT("DesertTradeForALiving Fee Bonus", "<Gray>-7% Fee when trading Food/Wood.</>"));
 		descriptionBox->AddSpacer();
 	}
 	if (simulation().HasTownBonus(building.townId(), CardEnum::DesertOreTrade)) {
-		descriptionBox->AddText(GetBuildingInfo(CardEnum::DesertOreTrade).GetDescription());
+		descriptionBox->AddRichText(LOCTEXT("DesertOreTrade Fee Bonus", "<Gray>-20% Fee when trading Ores.</>"));
 		descriptionBox->AddSpacer();
 	}
+	descriptionBox->AddSpacer(12);
 }
 
 

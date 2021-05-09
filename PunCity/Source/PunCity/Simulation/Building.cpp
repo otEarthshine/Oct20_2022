@@ -230,10 +230,10 @@ void Building::FinishConstruction()
 
 	// Auto-add inputs/outputs accordingly
 	if (hasInput1()) {
-		AddResourceHolder(input1(), ResourceHolderType::Requester, baseInputPerBatch() + 10);
+		AddResourceHolder(input1(), ResourceHolderType::Requester, baseInputPerBatch() * 2);
 	}
 	if (hasInput2()) {
-		AddResourceHolder(input2(), ResourceHolderType::Requester, baseInputPerBatch() + 10);
+		AddResourceHolder(input2(), ResourceHolderType::Requester, baseInputPerBatch() * 2);
 	}
 	if (product() != ResourceEnum::None) AddResourceHolder(product(), ResourceHolderType::Provider, 0);
 	//if (IsProducer(buildingEnum())) AddResourceHolder(ResourceEnum::Tools, ResourceHolderType::Provider, 0);
@@ -299,12 +299,12 @@ void Building::SetResourceActive(bool workActive)
 		ResourceHolderInfo input2Info = holderInfo(input2());
 
 		if (workActive) {
-			if (input1Info.isValid()) SetResourceTarget(input1Info, 20);
-			if (input2Info.isValid()) SetResourceTarget(input2Info, 20);
+			if (input1Info.isValid()) SetResourceTarget(input1Info, baseInputPerBatch() * 2);
+			if (input2Info.isValid()) SetResourceTarget(input2Info, baseInputPerBatch() * 2);
 		}
 		else {
-			if (input1Info.isValid()) SetResourceTarget(input1Info, 0);
-			if (input2Info.isValid()) SetResourceTarget(input2Info, 0);
+			if (input1Info.isValid()) SetResourceTarget(input1Info, baseInputPerBatch() * 2);
+			if (input2Info.isValid()) SetResourceTarget(input2Info, baseInputPerBatch() * 2);
 		}
 	}
 }
@@ -580,10 +580,16 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& 
 	// Is Era upgrade valid?
 	BuildingUpgrade& upgrade = _upgrades[upgradeIndex];
 	auto unlockSys = _simulation->unlockSystem(_playerId);
-	if (upgrade.isEraUpgrade() && !upgrade.isEraUpgradable(unlockSys->GetEra())) {
+	if (upgrade.isEraUpgrade() && !IsEraUpgradable()) {
 		if (showPopups) {
-			_simulation->AddPopupToFront(_playerId, FText::Format(LOCTEXT("UpgradeRequiresEra", "Upgrade Failed.<space>Advance to the {0} to unlock this Upgrade."), unlockSys->GetEraText(unlockSys->GetEra() + 1)),
-				ExclusiveUIEnum::None, "PopupCannot");
+			if (GetUpgradeEraLevel() <= 4) {
+				_simulation->AddPopupToFront(_playerId, FText::Format(LOCTEXT("UpgradeRequiresEra", "Upgrade Failed.<space>Advance to the {0} to unlock this Upgrade."), 
+					unlockSys->GetEraText(unlockSys->GetEra() + 1)),
+					ExclusiveUIEnum::None, "PopupCannot"
+				);
+			} else {
+				_simulation->AddPopupToFront(_playerId, LOCTEXT("UpgradeRequiresElectricity", "Upgrade Failed.<space>Unlock Electricity Technology to unlock this Upgrade."));
+			}
 		}
 		return false;
 	}
@@ -655,6 +661,36 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& 
 	}
 	needResourceEnumOut = ResourceEnum::Money;
 	return false;
+}
+
+FText Building::GetUpgradeDisplayDescription(int32 index) {
+	BuildingUpgrade& upgrade = _upgrades[index];
+	if (upgrade.isEraUpgrade()) {
+		int32 nextEra = upgrade.upgradeLevel + buildingInfo().minEra() + 1;
+		if (nextEra == 5) {
+			int32 electricityPerBatch = ElectricityAmountNeeded();
+			return FText::Format(
+				NSLOCTEXT("BuildingUpgrade", "Electric Machinery Desc", "Once upgraded, this Building will need Electricity.<space>Workers work 100% faster with Electricity.<space>Consumes {0} kW Electricity."),
+				TEXT_NUM(electricityPerBatch)
+			);
+		}
+		return NSLOCTEXT("BuildingUpgrade", "Level Desc", "Increases Base Productivity by 50%");
+	}
+	return upgrade.description;
+}
+FText Building::GetUpgradeDisplayName(int32 index) {
+	BuildingUpgrade& upgrade = _upgrades[index];
+	if (upgrade.isEraUpgrade()) {
+		int32 currentEraLevel = upgrade.upgradeLevel + buildingInfo().minEra();
+		if (currentEraLevel == 5) {
+			return NSLOCTEXT("BuildingUpgrade", "Level Maxed", " Level Maxed");
+		}
+		if (currentEraLevel == 4) {
+			return NSLOCTEXT("BuildingUpgrade", "Electric Machinery", "Electric Machinery");
+		}
+		return FText::Format(NSLOCTEXT("BuildingUpgrade", "Level", "Level ({0})"), _simulation->unlockSystem(_playerId)->GetEraText(currentEraLevel + 1));
+	}
+	return upgrade.name;
 }
 
 
@@ -981,9 +1017,9 @@ void Building::ChangeWorkMode(const WorkMode& workMode)
 		setTarget(_workMode.input2, 0);
 		setTarget(_workMode.product, 0);
 
-		setTarget(workMode.input1, workMode.inputPerBatch * 2);
-		setTarget(workMode.input2, workMode.inputPerBatch * 2);
-		setTarget(workMode.product, workMode.inputPerBatch * 2);
+		setTarget(workMode.input1, baseInputPerBatch() * 2);
+		setTarget(workMode.input2, baseInputPerBatch() * 2);
+		setTarget(workMode.product, baseInputPerBatch() * 2);
 	}
 
 	_workMode = workMode;

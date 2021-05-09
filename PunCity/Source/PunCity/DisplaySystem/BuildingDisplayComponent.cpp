@@ -358,7 +358,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 				
 				for (int i = 0; i < modules.size(); i++) 
 				{
-					if (modules[i].moduleTypeEnum == ModuleTypeEnum::ConstructionOnly) {
+					if (IsModuleTypeConstructionOnly(modules[i].moduleTypeEnum)) {
 						continue;
 					}
 

@@ -975,6 +975,60 @@ void TownManager::Tick1Sec()
 		}
 	}
 
+	/*
+	 * Electricity
+	 * - Electricity half worker usage. Existing worker works 100% faster
+	 * - Electricity consumption 1 kW = 1  person
+	 * - 135 food value per year = 20 coal per year, 10 coal per year ~ 1kWh per Round
+	 * - 1 kW = 1 coal burn per round
+	 */
+	int32 totalElectricityNeeded = 0;
+	for (std::vector<int32>& buildingIds : _jobBuildingEnumToIds) {
+		for (int32 buildingId : buildingIds) {
+			Building& building = _simulation->building(buildingId);
+			if (building.IsElectricityUpgraded()) {
+				totalElectricityNeeded += building.ElectricityAmountNeeded();
+			}
+		}
+	}
+	int32 totalElectricityProductionCapacity = 0;
+	for (const auto& powerPlantInfo : PowerPlantInfoList) {
+		const std::vector<int32>& buildingIds = _simulation->buildingIds(_townId, powerPlantInfo.buildingEnum);
+		for (int32 buildingId : buildingIds) {
+			totalElectricityProductionCapacity += _simulation->building(buildingId).subclass<PowerPlant>().ElectricityProductionCapacity();
+		}
+	}
+
+	int32 totalElectricityUsage = 0;
+	if (totalElectricityProductionCapacity >= totalElectricityNeeded) {
+		totalElectricityUsage = totalElectricityNeeded;
+	}
+
+	// Provide Electricity
+	for (std::vector<int32>& buildingIds : _jobBuildingEnumToIds) {
+		for (int32 buildingId : buildingIds) {
+			Building& building = _simulation->building(buildingId);
+			if (building.IsElectricityUpgraded()) {
+				building.SetElectricityAmountUsage(building.ElectricityAmountNeeded() * totalElectricityUsage / std::max(1, totalElectricityNeeded));
+			}
+		}
+	}
+
+	// Consume Fuel
+	for (const auto& powerPlantInfo : PowerPlantInfoList) {
+		const std::vector<int32>& buildingIds = _simulation->buildingIds(_townId, powerPlantInfo.buildingEnum);
+		for (int32 buildingId : buildingIds) {
+			PowerPlant& building = _simulation->building(buildingId).subclass<PowerPlant>();
+			if (building.IsElectricityUpgraded()) {
+				int32 actualProduction_kW = building.ElectricityProductionCapacity() * totalElectricityUsage / std::max(1, totalElectricityProductionCapacity);
+				building.ConsumeFuel1Sec(actualProduction_kW);
+			}
+		}
+	}
+
+	_electricityConsumption = totalElectricityUsage;
+	_electricityProductionCapacity = totalElectricityProductionCapacity;
+	
 
 	/*
 	 * Stat: Add Data
@@ -1210,24 +1264,18 @@ void TownManager::RecalculateTax(bool showFloatup)
 
 	}
 
-	for (const std::pair<CardEnum, int32>& pair : BuildingEnumToUpkeep)
+	for (int32 i = 0; i < BuildingEnumCount; i++)
 	{
-		const std::vector<int32>& buildingIds = _simulation->buildingIds(_playerId, pair.first);
-		for (int32 buildingId : buildingIds) {
+		const std::vector<int32>& buildingIds = _simulation->buildingIds(_playerId, static_cast<CardEnum>(i));
+		for (int32 buildingId : buildingIds)
+		{
 			Building& building = _simulation->building(buildingId);
 
 			if (building.isConstructed())
 			{
 				int32 upkeep = building.upkeep();
-				if (upkeep > 0)
-				{
+				if (upkeep > 0) {
 					ChangeIncome(-upkeep, showFloatup, building.centerTile());
-
-					//incomes[static_cast<int>(IncomeEnum::BuildingUpkeep)] -= upkeep;
-
-					//if (showFloatup) {
-					//	_simulation->uiInterface()->ShowFloatupInfo(FloatupInfo(FloatupEnum::GainMoney, Time::Ticks(), building.centerTile(), "-" + to_string(upkeep)));
-					//}
 				}
 			}
 		}

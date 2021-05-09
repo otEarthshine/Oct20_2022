@@ -391,12 +391,10 @@ public:
 			ModuleTransformGroup::CreateOreMineSet("OreMineSpecial_Iron", "OreMineWorkStatic_Iron")
 		});
 
-		setName(CardEnum::PaperMaker, "PaperMaker");
-
 		set(CardEnum::IronSmelter, {
 			ModuleTransformGroup::CreateSet("Smelter", {},
 				{
-					{ParticleEnum::BlackSmoke, TransformFromPosition(10.7, -11.1, 37.4)},
+					{ParticleEnum::HeavyBlackSmoke, TransformFromPosition(10.7, -11.1, 37.4)},
 				}, {},
 				{
 					ModuleTransform("SmelterWorkStatic"),
@@ -655,6 +653,40 @@ public:
 			}
 		}
 
+		
+		// Buildings with 0 frame count uses Era 1's scaff
+		for (int32 j = 0; j < BuildingEnumCount; j++)
+		{
+			CardEnum buildingEnum = static_cast<CardEnum>(j);
+			if (IsAutoEraUpgrade(buildingEnum)) 
+			{
+				TArray<ModuleTransformGroup>& moduleGroups = BuildingEnumToVariationToModuleTransforms[static_cast<int>(buildingEnum)];
+				for (int32 era = 1; era < moduleGroups.Num(); era++)
+				{
+					std::vector<ModuleTransform>& curEraModules = moduleGroups[era].transforms;
+					bool hasFrame = false;
+					for (int32 i = 0; i < curEraModules.size(); i++) {
+						if (FStringCompareRight(curEraModules[i].moduleName, FString("Frame"))) {
+							hasFrame = true;
+							break;
+						}
+					}
+					if (!hasFrame) {
+						const std::vector<ModuleTransform>& firstEraModules = moduleGroups[0].transforms;
+						for (int32 i = 0; i < firstEraModules.size(); i++) {
+							if (FStringCompareRight(firstEraModules[i].moduleName, FString("Frame"))) {
+								ModuleTransform moduleTransform = firstEraModules[i];
+								moduleTransform.moduleTypeEnum = ModuleTypeEnum::FrameConstructionOnly;
+								curEraModules.insert(curEraModules.begin(), moduleTransform);
+								
+								moduleGroups[era].CalculateConstructionFractions();
+								break;
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	int32 GetVariationCount(CardEnum buildingEnum) const {

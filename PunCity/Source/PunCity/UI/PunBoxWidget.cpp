@@ -65,12 +65,20 @@ void UPunBoxWidget::AddBuildingTooltip(UWidget* widget, CardEnum buildingEnum, U
 
 	if (IsBuildingCard(buildingEnum))
 	{
-		int32 upkeep = GetCardUpkeepBase(buildingEnum);
-		if (upkeep > 0) {
-			const FText upkeepText = LOCTEXT("Upkeep:", "Upkeep:");
-			tooltipBox->AddRichText(FText::Format(INVTEXT("{0} <img id=\"Coin\"/>{1}"), upkeepText, TEXT_NUM(upkeep)));
+		int32 upkeep = Building::BaseUpkeep(buildingEnum);
+		int32 workerCount = GetBuildingInfo(buildingEnum).workerCount;
+		if (upkeep > 0 || workerCount > 0)
+		{
+			tooltipBox->AddSpacer(8);
+			if (upkeep > 0) {
+				tooltipBox->AddRichText(FText::Format(LOCTEXT("Upkeep Tip", "Upkeep: <img id=\"Coin\"/>{0}<Gray>(base)</>"), TEXT_NUM(upkeep)));
+			}
+			if (workerCount > 0) {
+				const FText workerCountText = LOCTEXT("Workers:", "Workers:");
+				tooltipBox->AddRichText(FText::Format(INVTEXT("{0} {1}"), workerCountText, TEXT_NUM(workerCount)));
+			}
 		}
-
+		
 		if (!isPermanent) {
 			tooltipBox->AddLineSpacer(12);
 		}

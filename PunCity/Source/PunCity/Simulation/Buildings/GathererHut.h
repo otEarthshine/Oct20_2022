@@ -505,7 +505,7 @@ public:
 		//cardPrice = max(cardPrice, 120);
 
 		const int32 costFactor = 200;
-		int32 result = batchCost() * 100 * 100 / workRevenuePerSec100_perMan_() * costFactor / 100; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
+		int32 result = baseBatchCost() * 100 * 100 / workRevenuePerSec100_perMan_() * costFactor / 100; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
 
 		return result * 100 / efficiency();
 	}
@@ -533,7 +533,7 @@ public:
 	int32 workManSecPerBatch100() final
 	{
 		// Assume card 500 price here...
-		return (170 - batchCost()) * 100 * 100 / workRevenuePerSec100_perMan_( ); // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
+		return (170 - baseBatchCost()) * 100 * 100 / workRevenuePerSec100_perMan_( ); // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
 	}
 
 	int32 baseInputPerBatch() override { return 0; }
@@ -845,11 +845,53 @@ class PowerPlant : public Building
 public:
 	void FinishConstruction() override;
 
-	virtual ResourceEnum fuelEnum() { return ResourceEnum::Coal; }
+	ResourceEnum fuelEnum() { return GetPowerPlantInfo(_buildingEnum).resourceEnum; }
 
-	int32 ConsumeFuel(int32 consumptionValue) {
+	void ConsumeFuel1Sec(int32 actualProduction_kW)
+	{
+		ResourceEnum resourceEnum = fuelEnum();
+		if (resourceCount(resourceEnum) <= 0) {
+			return;
+		}
 		
+		// 1 kW = 1 coal burn per round
+		bool shouldBurnFuel = (GameRand::Rand() % Time::SecondsPerRound) < actualProduction_kW;
+
+		// Half chance for oil
+		if (shouldBurnFuel && resourceEnum == ResourceEnum::Oil) {
+			shouldBurnFuel = GameRand::Rand() % 2;
+		}
+
+		if (shouldBurnFuel) {
+			if (resourceCount(resourceEnum) > 0) {
+				RemoveResource(resourceEnum, 1);
+				AddConsumption1Stat(ResourcePair(resourceEnum, 1));
+			} else {
+				UE_DEBUG_BREAK();
+			}
+		}
 	}
+
+	int32 ElectricityConsumption()
+	{
+		if (!isConstructed()) {
+			return 0;
+		}
+		auto& townManage = townManager();
+		return ElectricityProductionCapacity() * townManage.electricityConsumption() / std::max(1, townManage.electricityProductionCapacity());
+	}
+
+	int32 ElectricityProductionCapacity() {
+		if (!isConstructed()) {
+			return 0;
+		}
+		return resourceCount(fuelEnum()) > 0 ? GetPowerPlantInfo(_buildingEnum).baseCapacity : 0;
+	}
+
+	bool shouldDisplayParticles() override {
+		return isConstructed() && resourceCount(fuelEnum()) > 0;
+	}
+	
 };
 class CoalPowerPlant final : public PowerPlant
 {
@@ -930,7 +972,7 @@ public:
 		int32 moneyValue = bldInfo.baseCardPrice + bldInfo.constructionCostAsMoney();
 		int32 minEra = bldInfo.minEra();
 
-		int32 multiplier = 5;
+		int32 multiplier = 8;
 		for (int32 i = minEra; i < 4; i++) {
 			multiplier *= 2;
 		}
@@ -1157,7 +1199,7 @@ public:
 	int32 workManSecPerBatch100() final
 	{
 		// 500 - 10 * (gold price 25) = 250 profit
-		return (500 - batchCost()) * 100 * 100 / workRevenuePerSec100_perMan_(); // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
+		return (500 - baseBatchCost()) * 100 * 100 / workRevenuePerSec100_perMan_(); // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
 	}
 
 	// TODO: remove these...
@@ -1296,7 +1338,7 @@ public:
 
 	static const int32 MinHouseLvl = 2;
 
-	bool shouldAlwaysDisplayParticles() override { return true; }
+	bool shouldDisplayParticles() override { return true; }
 };
 
 
@@ -1305,7 +1347,7 @@ class Tavern final : public FunBuilding
 public:
 	static const int32 Radius = 30;
 
-	bool shouldAlwaysDisplayParticles() override { return true; }
+	bool shouldDisplayParticles() override { return true; }
 };
 
 

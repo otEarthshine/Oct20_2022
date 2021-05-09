@@ -171,6 +171,10 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 	{ TechEnum::IntercityLogistics, {
 		LOCTEXT("Intercity Logistics", "Intercity Logistics"),
 	}},
+
+	{ TechEnum::Electricity, {
+		LOCTEXT("Electricity", "Electricity"),
+	} },
 	
 	//{TechEnum::ShrineRot, {
 	//	LOCTEXT("Unlock Shrines",
@@ -456,7 +460,7 @@ public:
 		// - Last column tech is 143360 cost
 		// - Full House Sci = 30 (7 ppl), 100 with library + school
 		// - Full lvl 7 house 1400 pop: 1400 / 7  = 200 houses = 20000 sci per round
-		int64 sciNeeded = 140;
+		int64 sciNeeded = 70;
 		for (int32 i = 1; i < column; i++) {
 			sciNeeded *= 2;
 		}
@@ -960,7 +964,7 @@ public:
 
 
 			column = 10;
-			AddTech_Building(column, TechEnum::CoalPowerPlant, { TechEnum::ConcreteFactory, TechEnum::Industrialization },
+			AddTech_Building(column, TechEnum::Electricity, { TechEnum::ConcreteFactory, TechEnum::Industrialization },
 				CardEnum::CoalPowerPlant
 			);
 			AddTech_Building(column, TechEnum::PaperMill, { TechEnum::Industrialization },
@@ -980,13 +984,13 @@ public:
 
 
 			column = 11;
-			AddTech_Building(column, TechEnum::OilWell, { TechEnum::CoalPowerPlant },
+			AddTech_Building(column, TechEnum::OilWell, { TechEnum::Electricity },
 				{ CardEnum::OilRig, CardEnum::OilPowerPlant }
 			);
-			AddTech_Building(column, TechEnum::ExhibitionHall, { TechEnum::CoalPowerPlant },
+			AddTech_Building(column, TechEnum::ExhibitionHall, { TechEnum::Electricity },
 				{ CardEnum::ExhibitionHall }
 			);
-			AddTech_Building(column, TechEnum::Printing, { TechEnum::CoalPowerPlant, TechEnum::PaperMill },
+			AddTech_Building(column, TechEnum::Printing, { TechEnum::Electricity, TechEnum::PaperMill },
 				{ CardEnum::PrintingPress }
 			);
 			AddTech_Bonus(column, TechEnum::EconomicTheories, { TechEnum::ClockMakers, TechEnum::SocialScience });
@@ -1026,7 +1030,7 @@ public:
 			column = 2;
 			AddProsperityTech_Bonus(column, 2, TechEnum::Combo);
 			AddProsperityTech_Bonus(column, 2, TechEnum::HomeLandDefense);
-			AddProsperityTech_BuildingX(column, 2, TechEnum::SpyGuard, { CardEnum::KidnapGuard, CardEnum::TreasuryGuard });
+			//AddProsperityTech_BuildingX(column, 2, TechEnum::SpyGuard, { CardEnum::KidnapGuard, CardEnum::TreasuryGuard }); //TODO: properly bring it back
 			AddProsperityTech_Bonus(column, 14, TechEnum::HouseAdjacency);
 			AddProsperityTech_Bonus(column, 20, TechEnum::FarmingBreakthrough);
 			AddProsperityTech_Bonus(column, 20, TechEnum::FarmImprovement);
@@ -1108,6 +1112,7 @@ public:
 		if (era == 2) return LOCTEXT("Middle Age", "Middle Age");
 		if (era == 3) return LOCTEXT("Enlightenment Age", "Enlightenment Age");
 		if (era == 4) return LOCTEXT("Industrial Age", "Industrial Age");
+		if (era == 5) return LOCTEXT("Electicity", "Electicity");
 		UE_DEBUG_BREAK();
 		return FText();
 	}

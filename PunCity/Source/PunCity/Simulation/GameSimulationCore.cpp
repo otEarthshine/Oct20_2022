@@ -4835,7 +4835,11 @@ void GameSimulationCore::Cheat(FCheat command)
 			_popupSystems[command.playerId].ClearPopups();
 			break;
 		}
-		case CheatEnum::Money: ChangeMoney(command.playerId, 3000000); break;
+		case CheatEnum::Money: {
+			ChangeMoney(command.playerId, 3000000);
+			PunSettings::Set("ForceQuickBuild", 1);
+			break;
+		}
 		case CheatEnum::Influence: ChangeInfluence(command.playerId, 10000); break;
 		
 		case CheatEnum::FastBuild: SimSettings::Toggle("CheatFastBuild"); break;
@@ -4884,7 +4888,7 @@ void GameSimulationCore::Cheat(FCheat command)
 			}
 			break;
 		}
-		case CheatEnum::ConstructResources: {
+		case CheatEnum::ConstructionResources: {
 			for (ResourceEnum resourceEnum : ConstructionResources) {
 				resourceSystem(command.playerId).AddResourceGlobal(resourceEnum, 1000, *this);
 			}

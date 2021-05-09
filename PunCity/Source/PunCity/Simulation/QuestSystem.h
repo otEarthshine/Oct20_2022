@@ -469,7 +469,7 @@ struct TradeQuest : Quest
 	QuestEnum classEnum() override { return QuestEnum::TradeQuest; }
 	
 	int32 currentValue() override { return valueSoFar; }
-	int32 neededValue() override { return 3000; }
+	int32 neededValue() override { return 10000; }
 	CardEnum rewardCardEnum() override { return CardEnum::CompaniesAct; }
 	
 	FText questTitle() override

@@ -108,6 +108,9 @@ void GeoresourceSystem::InitGeoresourceSystem(IGameSimulationCore* simulation, b
 					if (GameRand::RandChance(3)) {
 						PlantResource(provinceId, GeoresourceEnum::GoldOre, 16000);
 					}
+					else if (GameRand::RandChance(3)) {
+						PlantResource(provinceId, GeoresourceEnum::Oil, 50000);
+					}
 					PlantResource(provinceId, GeoresourceEnum::Gemstone, 16000);
 					continue;
 				}
@@ -118,6 +121,9 @@ void GeoresourceSystem::InitGeoresourceSystem(IGameSimulationCore* simulation, b
 				if (taigaTundraPercent >= 80) {
 					if (GameRand::RandChance(2)) {
 						PlantResource(provinceId, GeoresourceEnum::GoldOre, 16000);
+					}
+					else if (GameRand::RandChance(3)) {
+						PlantResource(provinceId, GeoresourceEnum::Oil, 50000);
 					}
 					continue;
 				}
@@ -142,6 +148,11 @@ void GeoresourceSystem::InitGeoresourceSystem(IGameSimulationCore* simulation, b
 			}
 			if (GameRand::RandChance(15)) {
 				PlantResource(provinceId, GeoresourceEnum::CoalOre, 40000);
+				continue;
+			}
+
+			if (GameRand::RandChance(15)) {
+				PlantResource(provinceId, GeoresourceEnum::Oil, 30000);
 				continue;
 			}
 			//if (GameRand::RandChance(15)) {

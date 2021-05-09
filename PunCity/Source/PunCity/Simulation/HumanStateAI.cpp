@@ -171,6 +171,13 @@ void HumanStateAI::CalculateActions()
 				return;
 			}
 		}
+		else if (IsPowerPlant(workplc->buildingEnum()))
+		{
+			if (TryHaulingPowerPlant() || justReset()) {
+				//DEBUG_AI_VAR(TryHaulingServices);
+				return;
+			}
+		}
 		else if (workplc->isEnum(CardEnum::Forester)) {
 			if (TryForesting() || justReset()) {
 				DEBUG_AI_VAR(TryForesting);
@@ -2031,6 +2038,7 @@ bool HumanStateAI::TryBulkHaul_Market()
 	return false;
 }
 
+
 bool HumanStateAI::TryHaulingServices()
 {
 	HaulingServices& workPlc = workplace()->subclass<HaulingServices>(CardEnum::HaulingServices);
@@ -2202,6 +2210,28 @@ bool HumanStateAI::TryHaulingServices()
 	
 	AddDebugSpeech("(Succeed)TryMoveResourcesProviderToAnyDropoff:");
 	return true;
+}
+
+bool HumanStateAI::TryHaulingPowerPlant()
+{
+	PowerPlant& workPlc = workplace()->subclass<PowerPlant>();
+	ResourceEnum fuelEnum = workPlc.fuelEnum();
+
+	const ResourceHolder& inputHolder = workPlc.holder(fuelEnum);
+	int32 resourceNeeded = min(haulerServicesCapacity(), inputHolder.target() - inputHolder.current());
+	if (resourceNeeded <= 0) {
+		return false;
+	}
+
+	FoundResourceHolderInfo holderInfo = workPlc.GetHolderInfoFull(fuelEnum, resourceNeeded);
+	if (TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, holderInfo, false, false, UnitAnimationEnum::HaulingCart))
+	{
+		// successful move, go to workPlace to get cart first
+		Add_MoveTo(workPlc.gateTile(), -1, UnitAnimationEnum::Walk);
+		return true;
+	}
+
+	return false;
 }
 
 bool HumanStateAI::TryDistribute_Market()
@@ -3111,6 +3141,7 @@ bool HumanStateAI::TryCheckBadTile_Human()
 	AddDebugSpeech("(Failed)TryCheckBadTile_Human:");
 	return false;
 }
+
 
 //void HumanStateAI::Add_DoConsumerWork(int32_t workManSec100) {
 //	AddAction(ActionEnum::DoConsumerWork, workManSec100);

@@ -65,7 +65,7 @@ public:
 
 	virtual bool isLoadingFromFile() = 0;
 	virtual bool isLoadingForMainMenu() = 0;
-	virtual int32 playerId() = 0;
+	virtual int32 gameManagerPlayerId() = 0;
 	
 	virtual class TreeSystem& treeSystem() = 0;
 	virtual class OverlaySystem& overlaySystem() = 0;
@@ -171,6 +171,7 @@ public:
 		return IsResearched(playerId, TechEnum::InfluencePoints);
 	}
 	virtual int32 GetEra(int32 playerId) = 0;
+	virtual void ResetTechDisplay(int32 playerId) = 0;
 
 	virtual class Building& building(int32 id) = 0;
 	virtual class Building* buildingPtr(int32 id) = 0;
@@ -526,7 +527,7 @@ public:
 	
 	virtual void GenerateRareCardSelection(int32 playerId, RareHandEnum rareHandEnum, FText rareHandMessage) = 0;
 
-	virtual void CheckGetSeedCard(int32 playerId) = 0;
+	virtual void CheckSeedAndMineCard(int32 playerId) = 0;
 
 	virtual bool isStorageAllFull(int32 townId) = 0;
 	virtual int32 SpaceLeftFor(ResourceEnum resourceEnum, int32 storageId) = 0;

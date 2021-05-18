@@ -472,7 +472,7 @@ public:
 		std::vector<int32> playerIds = simulation().allHumanPlayerIds();
 		
 		std::sort(playerIds.begin(), playerIds.end(), [&](int32 playerA, int32 playerB) {
-			return simulation().populationTown(playerA) > simulation().populationTown(playerB);
+			return simulation().populationPlayer(playerA) > simulation().populationPlayer(playerB);
 		});
 		return playerIds;
 	}

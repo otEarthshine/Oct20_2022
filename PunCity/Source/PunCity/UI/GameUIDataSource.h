@@ -11,6 +11,7 @@
 #include "PunCity/Simulation/Buildings/TownHall.h"
 #include "Components/Widget.h"
 #include "Components/Button.h"
+#include "Components/CheckBox.h"
 #include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
 #include "Components/HorizontalBox.h"
@@ -193,23 +194,16 @@ public:
 		UTextBlock* Employed,
 
 		UHorizontalBox* LaborerBox,
-		UButton* LaborerPriorityButton, UButton* LaborerNonPriorityButton, USizeBox* LaborerArrowOverlay,
+		UCheckBox* LaborerManualCheckBox, USizeBox* LaborerArrowOverlay,
 		UTextBlock* Laborer,
 		UTextBlock* LaborerRed,
 
 		UHorizontalBox* BuilderBox,
-		UButton* BuilderNonPriorityButton,
-		UButton* BuilderPriorityButton,
+		UCheckBox* BuilderManualCheckBox,
 		UTextBlock* Builder,
 		USizeBox* BuilderArrowOverlay
 	);
-
-	static void SetPriorityButtons(UButton* PriorityButton, UButton* NonPriorityButton, USizeBox* ArrowOverlay, bool priority)
-	{
-		PriorityButton->SetVisibility(priority ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-		NonPriorityButton->SetVisibility(priority ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
-		ArrowOverlay->SetVisibility(priority ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-	}
+	
 };
 
 

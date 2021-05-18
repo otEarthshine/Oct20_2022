@@ -155,17 +155,13 @@ void UMainGameUI::PunInit()
 	JobPriorityOverlay->SetVisibility(ESlateVisibility::Collapsed);
 	_laborerPriorityState.lastPriorityInputTime = -999.0f;
 
-	BUTTON_ON_CLICK(LaborerNonPriorityButton, this, &UMainGameUI::OnClickLaborerNonPriorityButton);
-	BUTTON_ON_CLICK(LaborerPriorityButton, this, &UMainGameUI::OnClickLaborerPriorityButton);
+	LaborerManualCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UMainGameUI::OnCheckManualLaborer);
 	BUTTON_ON_CLICK(LaborerArrowUp, this, &UMainGameUI::IncreaseLaborers);
 	BUTTON_ON_CLICK(LaborerArrowDown, this, &UMainGameUI::DecreaseLaborers);
 
-	BUTTON_ON_CLICK(BuilderNonPriorityButton, this, &UMainGameUI::OnClickBuilderNonPriorityButton);
-	BUTTON_ON_CLICK(BuilderPriorityButton, this, &UMainGameUI::OnClickBuilderPriorityButton);
+	BuilderManualCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UMainGameUI::OnCheckManualBuilder);
 	BUTTON_ON_CLICK(BuilderArrowUp, this, &UMainGameUI::IncreaseBuilders);
 	BUTTON_ON_CLICK(BuilderArrowDown, this, &UMainGameUI::DecreaseBuilders);
-
-	
 
 	
 
@@ -644,12 +640,11 @@ void UMainGameUI::Tick()
 				}
 				else
 				{
-					
-					
+					// Show all buildings
 					for (int32 i = 0; i < SortedNameBuildingEnum.size(); i++)
 					{
 						CardEnum buildingEnum = SortedNameBuildingEnum[i];
-						
+
 						// Show wild card by type
 						if (wildCardEnum == CardEnum::WildCardFood && !IsAgricultureBuilding(buildingEnum)) {
 							continue;
@@ -667,7 +662,7 @@ void UMainGameUI::Tick()
 						if (uniqueAvailableCards.find(buildingEnum) != uniqueAvailableCards.end())
 						{
 							// Can only convert to building
-							if (IsBuildingCard(buildingEnum)) 
+							if (IsBuildingCard(buildingEnum))
 							{
 								// Only Cards filtered by Search Box
 								if (searchString.IsEmpty() ||
@@ -680,6 +675,28 @@ void UMainGameUI::Tick()
 									cardButton->PriceTextBox->SetVisibility(ESlateVisibility::HitTestInvisible);
 								}
 							}
+						}
+					}
+
+					// When cheat is on, show all cards
+					if (PunSettings::IsOn("SeeAllCards"))
+					{
+						int32 i = 0;
+						for (const BldInfo& cardInfo : CardInfos)
+						{
+							CardEnum buildingEnum = cardInfo.cardEnum;
+
+							// Only Cards filtered by Search Box
+							if (searchString.IsEmpty() ||
+								GetBuildingInfo(buildingEnum).nameF().Find(searchString, ESearchCase::Type::IgnoreCase, ESearchDir::FromStart) != INDEX_NONE)
+							{
+								auto cardButton = AddCard(CardHandEnum::ConverterHand, buildingEnum, ConverterCardHandBox, CallbackEnum::None, i);
+
+								SetText(ConverterCardHandTitle, LOCTEXT("ConverterCardHandTitle", "CHOOSE A CARD\npay the price to build"));
+								SetText(cardButton->PriceText, TEXT_NUM(cardSystem.GetCardPrice(buildingEnum)));
+								cardButton->PriceTextBox->SetVisibility(ESlateVisibility::HitTestInvisible);
+							}
+							i++;
 						}
 					}
 				}
@@ -983,7 +1000,6 @@ void UMainGameUI::Tick()
 			Happiness->SetTextColor(GetHappinessColor(overallHappiness));
 			
 			TArray<FText> args;
-
 			ADDTEXT_(LOCTEXT("Happiness_Tip1", "Happiness: {0}%\n"), TEXT_NUM(overallHappiness));
 			for (size_t i = 0; i < HappinessEnumCount; i++) {
 				int32 aveHappiness = townManager.aveHappinessByType(static_cast<HappinessEnum>(i));
@@ -992,6 +1008,8 @@ void UMainGameUI::Tick()
 					HappinessEnumName[i]
 				);
 			}
+			ADDTEXT_INV_("<space>");
+			ADDTEXT_LOCTEXT("Happiness_Tip2", "Low Happiness can lower citizens's Work Speed. If Happiness is very low, citizens may leave your city.");
 
 			AddToolTip(Happiness, JOINTEXT(args));
 		}
@@ -1967,16 +1985,30 @@ void UMainGameUI::RightMouseUp()
 	ResetBottomMenuDisplay();
 }
 
-void UMainGameUI::EscDown()
+bool UMainGameUI::EscDown()
 {
-	if (BuildMenuOverlay->GetVisibility() != ESlateVisibility::Collapsed) {
+	bool isClosingUI = false;
+	if (BuildMenuOverlay->IsVisible()) {
 		dataSource()->Spawn2DSound("UI", "UIWindowClose");
+		isClosingUI = true;
+	}
+
+	// Bottom Menu
+	if (GatherSettingsOverlay->IsVisible() ||
+		BuildMenuOverlay->IsVisible()) {
+		isClosingUI = true;
 	}
 	ResetBottomMenuDisplay();
 
 	// Esc down will also quit any card menu
+	if (CardHand1Overlay->IsVisible() ||
+		ConverterCardHandOverlay->IsVisible()) {
+		isClosingUI = true;
+	}
 	ClickCardHand1CancelButton();
 	ClickConverterCardHandCancelButton();
+
+	return isClosingUI;
 }
 
 void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum)

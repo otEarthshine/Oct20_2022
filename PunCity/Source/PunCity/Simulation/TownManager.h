@@ -10,6 +10,8 @@
 #include <algorithm>
 #include "PunCity/CppUtils.h"
 #include <numeric>
+
+#include "Building.h"
 #include "ProvinceSystem.h"
 #include "GameRegionSystem.h"
 
@@ -46,8 +48,6 @@ static const std::vector<CardEnum> DefaultJobPriorityListAllSeason
 	CardEnum::RanchPig,
 
 	CardEnum::HaulingServices,
-	CardEnum::OilPowerPlant,
-	CardEnum::CoalPowerPlant,
 
 	CardEnum::Windmill,
 	CardEnum::Bakery,
@@ -364,6 +364,7 @@ public:
 	//! Houses
 	void PlayerAddHouse(int32_t objectId) {
 		// PUN_LOG("PlayerAddHouse");
+		check(_simulation->building(objectId).isEnum(CardEnum::House));
 		_houseIds.push_back(objectId);
 	}
 	void PlayerRemoveHouse(int32_t objectId) {

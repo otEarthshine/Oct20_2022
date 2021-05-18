@@ -37,7 +37,8 @@ public:
 
 	virtual bool isSinglePlayer() = 0;
 	virtual AutosaveEnum autosaveEnum() = 0;
-	
+
+	virtual void SendNetworkCommand(std::shared_ptr<FNetworkCommand> networkCommand) = 0;
 	
 	//virtual bool IsPlayerBuildable(WorldTile2 tile) const = 0;
 	virtual bool IsPlayerFrontBuildable(WorldTile2 tile) const = 0;

@@ -62,7 +62,7 @@ std::vector<BonusPair> GathererHut::GetBonuses()
 {
 	std::vector<BonusPair> bonuses = Building::GetBonuses();
 
-	if (IsUpgraded(1) && adjacentCount(CardEnum::HuntingLodge) > 0) {
+	if (IsUpgraded_InitialIndex(1) && adjacentCount(CardEnum::HuntingLodge) > 0) {
 		bonuses.push_back({ pestTrapText, 30 });
 	}
 
@@ -98,7 +98,7 @@ void HuntingLodge::FinishConstruction()
 
 	AddUpgrades({
 		MakeProductionUpgrade(smokingChamberText, ResourceEnum::Stone, 50, 30),
-		MakeUpgrade(fruitBaitText, LOCTEXT("Pests Traps Desc", "+30% productivity if there is an adjacent Fruit Gatherer (does not stack)."), ResourceEnum::Wood, 30),
+		MakeUpgrade(fruitBaitText, LOCTEXT("Fruit Bait Desc", "+30% productivity if there is an adjacent Fruit Gatherer (does not stack)."), ResourceEnum::Wood, 30),
 	});
 }
 
@@ -106,7 +106,7 @@ std::vector<BonusPair> HuntingLodge::GetBonuses()
 {
 	std::vector<BonusPair> bonuses = Building::GetBonuses();
 
-	if (IsUpgraded(1) && adjacentCount(CardEnum::FruitGatherer) > 0) {
+	if (IsUpgraded_InitialIndex(1) && adjacentCount(CardEnum::FruitGatherer) > 0) {
 		bonuses.push_back({ fruitBaitText, 30 });
 	}
 
@@ -165,7 +165,7 @@ void MushroomFarm::FinishConstruction() {
 
 std::vector<BonusPair> MushroomFarm::GetBonuses() {
 	std::vector<BonusPair> bonuses = Building::GetBonuses();
-	if (IsUpgraded(0) && isOccupantFull()) {
+	if (IsUpgraded_InitialIndex(0) && isOccupantFull()) {
 		bonuses.push_back({ intensiveCareText, 30 });
 	}
 
@@ -192,7 +192,7 @@ void ShroomFarm::FinishConstruction() {
 
 std::vector<BonusPair> ShroomFarm::GetBonuses() {
 	std::vector<BonusPair> bonuses = Building::GetBonuses();
-	if (IsUpgraded(0) && isOccupantFull()) {
+	if (IsUpgraded_InitialIndex(0) && isOccupantFull()) {
 		bonuses.push_back({ intensiveCareText, 30 });
 	}
 
@@ -222,7 +222,7 @@ void Beekeeper::FinishConstruction()
 std::vector<BonusPair> Beekeeper::GetBonuses()
 {
 	std::vector<BonusPair> bonuses = Building::GetBonuses();
-	if (IsUpgraded(0) && isOccupantFull()) {
+	if (IsUpgraded_InitialIndex(0) && isOccupantFull()) {
 		bonuses.push_back({ intensiveCareText, 30 });
 	}
 	return bonuses;
@@ -540,12 +540,13 @@ void CardMaker::OnInit()
 void CardMaker::ResetWorkModes()
 {
 	SetupWorkMode({
+		WorkMode::Create(wildCardText,				LOCTEXT("Wild Card WorkDesc", "Create Wild Card\n(10 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 10),
+		
 		WorkMode::Create(productivityBookText,		LOCTEXT("Productivity Book WorkDesc", "Create Productivity Book Card\n(50 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 50),
 		WorkMode::Create(sustainabilityBookText,	LOCTEXT("Sustainability Book WorkDesc", "Create Sustainability Book Card\n(50 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 50),
 		WorkMode::Create(frugalityBookText,			LOCTEXT("Frugality Book WorkDesc", "Create Frugality Book Card\n(50 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 50),
 
-		WorkMode::Create(wildCardText,				LOCTEXT("Wild Card WorkDesc", "Create Wild Card\n(10 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 20),
-		WorkMode::Create(cardRemovalCardText,		LOCTEXT("Card Removal Card WorkDesc", "Create Card Removal Card\n(10 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 20),
+		WorkMode::Create(cardRemovalCardText,		LOCTEXT("Card Removal Card WorkDesc", "Create Card Removal Card\n(10 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 10),
 	});
 
 	if (_simulation->IsResearched(_playerId, TechEnum::SocialScience)) {
@@ -609,7 +610,7 @@ void ImmigrationOffice::FinishConstruction() {
 	ConsumerIndustrialBuilding::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("First Impression", "First Impression"), ResourceEnum::Stone, 30, 30),
+		MakeProductionUpgrade(LOCTEXT("First Impression", "First Impression"), 50, 50),
 	});
 }
 

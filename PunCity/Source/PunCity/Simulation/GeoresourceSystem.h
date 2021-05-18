@@ -65,6 +65,20 @@ public:
 private:
 	void PlantResource(int32 provinceId, GeoresourceEnum georesourceEnum, int32 depositAmount = 0);
 
+	template <typename Func>
+	static void ExecuteRegionsWithJumpAndExit(Func func) {
+		for (int i = 0; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) break; }
+		for (int i = 1; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) break; }
+		for (int i = 2; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) break; }
+		for (int i = 3; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) break; }
+		for (int i = 4; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) break; }
+		for (int i = 5; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) break; }
+		for (int i = 6; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) break; }
+		for (int i = 7; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) break; }
+		for (int i = 8; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) break; }
+		for (int i = 9; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) break; }
+	}
+
 private:
 	IGameSimulationCore* _simulation = nullptr;
 

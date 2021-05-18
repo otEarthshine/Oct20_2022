@@ -785,7 +785,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					int32 upkeep = building.upkeep();
 
 					if (building.playerId() == playerId() &&
-						IsProducer(building.buildingEnum()) &&
+						IsBudgetAdjustable(building.buildingEnum()) &&
 						simulation.IsResearched(playerId(), TechEnum::BudgetAdjustment))
 					{
 						if (_justOpenedDescriptionUI) {
@@ -809,7 +809,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 				// Work Hour
 				if (building.playerId() == playerId() &&
-					IsProducer(building.buildingEnum()) &&
+					IsBudgetAdjustable(building.buildingEnum()) &&
 					simulation.IsResearched(playerId(), TechEnum::WorkSchedule))
 				{
 					if (_justOpenedDescriptionUI) {
@@ -3316,7 +3316,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 			if (tile.isValid()) {
 				int32 provinceId = simulation.GetProvinceIdClean(objectId);
-				AddProvinceInfo(provinceId, descriptionBox);
+				AddProvinceInfo(provinceId, tile, descriptionBox);
 			}
 
 			descriptionBox->AfterAdd();
@@ -4290,9 +4290,24 @@ void UObjectDescriptionUISystem::AddTileInfo(WorldTile2 tile, UPunBoxWidget* des
 	}
 }
 
-void UObjectDescriptionUISystem::AddProvinceInfo(int32 provinceId, UPunBoxWidget* descriptionBox)
+void UObjectDescriptionUISystem::AddProvinceInfo(int32 provinceId, WorldTile2 tile, UPunBoxWidget* descriptionBox)
 {
-	if (provinceId == -1) {
+	if (provinceId == -1) 
+	{
+		SCOPE_CYCLE_COUNTER(STAT_PunUI_Province1);
+		if (simulation().IsMountain(tile)) {
+			SetText(_objectDescriptionUI->DescriptionUITitle, TEXT_TAG("<Header>", LOCTEXT("High Mountain", "High Mountain")));
+			descriptionBox->AddRichText(LOCTEXT("High Mountain Desc", "Impassable unclaimed mountain."));
+		}
+		else if (simulation().IsWater(tile)) {
+			SetText(_objectDescriptionUI->DescriptionUITitle, TEXT_TAG("<Header>", LOCTEXT("Deep Ocean", "Deep Ocean")));
+			descriptionBox->AddRichText(LOCTEXT("Deep Ocean Desc", "Large body of water."));
+		}
+		else  {
+			SetText(_objectDescriptionUI->DescriptionUITitle, TEXT_TAG("<Header>", LOCTEXT("Unusable Land", "Unusable Land")));
+			descriptionBox->AddRichText(LOCTEXT("Unusable Land Desc", "Land without any use that no one bothers with."));
+		}
+		
 		return;
 	}
 
@@ -4300,31 +4315,31 @@ void UObjectDescriptionUISystem::AddProvinceInfo(int32 provinceId, UPunBoxWidget
 
 	TArray<FText> args;
 
-	{
-		SCOPE_CYCLE_COUNTER(STAT_PunUI_Province1);
-		
-		if (provinceId == OceanProvinceId)
-		{
-			SetText(_objectDescriptionUI->DescriptionUITitle, TEXT_TAG("<Header>", LOCTEXT("Deep Ocean", "Deep Ocean")));
-			descriptionBox->AddRichText(LOCTEXT("Deep Ocean Desc", "Large body of water."));
-			return;
-		}
+	//{
+	//	SCOPE_CYCLE_COUNTER(STAT_PunUI_Province1);
+	//	
+	//	if (provinceId == OceanProvinceId)
+	//	{
+	//		SetText(_objectDescriptionUI->DescriptionUITitle, TEXT_TAG("<Header>", LOCTEXT("Deep Ocean", "Deep Ocean")));
+	//		descriptionBox->AddRichText(LOCTEXT("Deep Ocean Desc", "Large body of water."));
+	//		return;
+	//	}
 
-		if (provinceId == MountainProvinceId)
-		{
-			SetText(_objectDescriptionUI->DescriptionUITitle, TEXT_TAG("<Header>", LOCTEXT("High Mountain", "High Mountain")));
-			descriptionBox->AddRichText(LOCTEXT("High Mountain Desc", "Impassable unclaimed mountain."));
-			return;
-		}
+	//	if (provinceId == MountainProvinceId)
+	//	{
+	//		SetText(_objectDescriptionUI->DescriptionUITitle, TEXT_TAG("<Header>", LOCTEXT("High Mountain", "High Mountain")));
+	//		descriptionBox->AddRichText(LOCTEXT("High Mountain Desc", "Impassable unclaimed mountain."));
+	//		return;
+	//	}
 
-		if (provinceId == RiverProvinceId ||
-			provinceId == EmptyProvinceId)
-		{
-			SetText(_objectDescriptionUI->DescriptionUITitle, TEXT_TAG("<Header>", LOCTEXT("Unusable Land", "Unusable Land")));
-			descriptionBox->AddRichText(LOCTEXT("Unusable Land Desc", "Land without any use that no one bothers with."));
-			return;
-		}
-	}
+	//	if (provinceId == RiverProvinceId ||
+	//		provinceId == EmptyProvinceId)
+	//	{
+	//		SetText(_objectDescriptionUI->DescriptionUITitle, TEXT_TAG("<Header>", LOCTEXT("Unusable Land", "Unusable Land")));
+	//		descriptionBox->AddRichText(LOCTEXT("Unusable Land Desc", "Land without any use that no one bothers with."));
+	//		return;
+	//	}
+	//}
 
 	provinceId = abs(provinceId);
 

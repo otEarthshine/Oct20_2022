@@ -538,6 +538,7 @@ public:
 			"WindowFrame",
 			"WindowGlass",
 			"Special",
+			"AlwaysOn",
 		};
 
 		for (const FString& suffix : miniModuleList) {
@@ -581,14 +582,14 @@ public:
 						};
 
 						// Such as clay pit's hole...
-						FString subMeshName = setName + FString("SpecialInstant");
-						if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName, FTransform::Identity, 0.0f));
+						//FString subMeshName = setName + FString("SpecialInstant");
+						//if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName, FTransform::Identity, 0.0f));
 
-						subMeshName = setName + FString("Frame");
+						FString subMeshName = setName + FString("Frame");
 						if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName, FTransform::Identity, 10.0f, ModuleTypeEnum::Frame));
 
-						subMeshName = setName + FString("FrameConstructionOnly");
-						if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName, FTransform::Identity, 10.0f, ModuleTypeEnum::FrameConstructionOnly));
+						//subMeshName = setName + FString("FrameConstructionOnly");
+						//if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName, FTransform::Identity, 10.0f, ModuleTypeEnum::FrameConstructionOnly));
 
 						subMeshName = setName + FString("Chimney");
 						if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName, FTransform::Identity, 1.0f));
@@ -603,6 +604,15 @@ public:
 						for (int32 i = 1; i <= 3; i++) {
 							subMeshName = setName + FString("Body") + FString::FromInt(i);
 							if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName));
+						}
+
+						// Such as clay pit's hole...
+						subMeshName = setName + FString("AlwaysOn");
+						if (assetLoader->moduleMesh(subMeshName)) {
+							// AlwaysOn Goes to the front so it gets displayed right away
+							ModuleTransform transform(subMeshName, FTransform::Identity, 0.0f, ModuleTypeEnum::AlwaysOn);
+							transforms.insert(transforms.begin(), transform);
+							miniTransforms.push_back(transform);
 						}
 
 						subMeshName = setName + FString("Roof");

@@ -385,7 +385,21 @@ void APunHUD::KeyPressed_Escape()
 	
 	ExclusiveUIEnum uiEnum = GetCurrentExclusiveUIDisplay();
 
-	_mainGameUI->EscDown();
+	bool isClosingMainGameUIElement = _mainGameUI->EscDown();
+
+	bool isClosingUI = isClosingMainGameUIElement ||
+						_worldTradeUI->IsVisible() ||
+						_intercityTradeUI->IsVisible() ||
+						_targetConfirmUI->IsVisible() ||
+						_techUI->IsVisible() ||
+						_prosperityUI->IsVisible() ||
+						_descriptionUISystem->IsShowingDescriptionUI() ||
+						_statisticsUI->IsVisible() ||
+						_questUI->QuestDescriptionOverlay->IsVisible() ||
+						_questUI->PlayerDetailsOverlay->IsVisible() ||
+						_sendImmigrantsUI->IsVisible() ||
+						_giftResourceUI->IsVisible() ||
+						_escMenuUI->OverlaySettingsOverlay->IsVisible();
 
 	_worldTradeUI->CloseUI();
 	_intercityTradeUI->CloseUI();
@@ -394,20 +408,19 @@ void APunHUD::KeyPressed_Escape()
 	_techUI->SetShowUI(false);
 	_prosperityUI->SetShowUI(false);
 
-	//if (uiEnum == ExclusiveUIEnum::None &&
-	//	!_descriptionUISystem->IsShowingDescriptionUI())
-	{
-		_escMenuUI->KeyPressed_Escape();
-	}
-
 	_descriptionUISystem->CloseDescriptionUI();
 
 	CloseStatisticsUI();
 
 	_questUI->OnQuestDescriptionCloseButtonClick();
 
-	//_armyMoveUI->CloseArmyMoveUI();
-
 	_sendImmigrantsUI->CloseUI();
 	_giftResourceUI->CloseUI();
+
+	_escMenuUI->CloseOverlayUI();
+	_questUI->PlayerDetailsOverlay->SetVisibility(ESlateVisibility::Collapsed);
+
+	if (!isClosingUI) {
+		_escMenuUI->KeyPressed_Escape();
+	}
 }

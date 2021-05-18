@@ -191,10 +191,14 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 		// Required Techs
 		else if (UnlockSystem::IsAgeChangeTech(tech->techEnum))
 		{
+			int32 requiredHouseLvl = unlockSys->GetTechRequirement_HouseLvl(tech->techEnum);
+			int32 requiredHouseLvlCount = unlockSys->GetTechRequirement_HouseLvlCount(tech->techEnum);
+			int32 houseLvlCount = simulation().GetHouseLvlCount(playerId(), requiredHouseLvl, true);
+			
 			setTechRequirementText(
-				unlockSys->GetAgeChangeResearchCount(tech->techEnum),
-				UnlockSystem::GetAgeChangeRequiredTechCount(tech->techEnum),
-				FText::Format(LOCTEXT("X-Age Techs", "{0} Techs"), UnlockSystem::GetPreviousAgeText(tech->techEnum))
+				houseLvlCount,
+				requiredHouseLvlCount,
+				FText::Format(LOCTEXT("House Lv X", "House Lv {0}"), requiredHouseLvl)
 			);
 		}
 	}
@@ -253,10 +257,14 @@ void UTechBoxUI::UpdateTooltip()
 		// Tech Requirement
 		else if (unlockSys->IsAgeChangeTech(tech->techEnum))
 		{
-			setRequirementTooltipText(LOCTEXT("Research", "Research"),
-				unlockSys->GetAgeChangeResearchCount(tech->techEnum),
-				UnlockSystem::GetAgeChangeRequiredTechCount(tech->techEnum),
-				FText::Format(LOCTEXT("X-Age Technologies", "{0} Technologies"), UnlockSystem::GetPreviousAgeText(tech->techEnum))
+			int32 requiredHouseLvl = unlockSys->GetTechRequirement_HouseLvl(tech->techEnum);
+			int32 requiredHouseLvlCount = unlockSys->GetTechRequirement_HouseLvlCount(tech->techEnum);
+			int32 houseLvlCount = simulation().GetHouseLvlCount(playerId(), requiredHouseLvl, true);
+			
+			setRequirementTooltipText(FText(),
+				houseLvlCount,
+				requiredHouseLvlCount,
+				FText::Format(LOCTEXT("House Lv X", "House Lv {0}"), requiredHouseLvl)
 			);
 		}
 

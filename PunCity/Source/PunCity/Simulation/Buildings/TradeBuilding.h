@@ -41,10 +41,10 @@ public:
 	//	return Time::TicksPerSeason * 100 / efficiency();
 	//}
 	int32 totalTicks() {
-		int32 result = Time::TicksPerSeason;
-		if (isEnum(CardEnum::TradingCompany)) {
-			result /= 2;
-		}
+		int32 result = Time::TicksPerSeason / 2;
+		//if (isEnum(CardEnum::TradingCompany)) {
+		//	result /= 2;
+		//}
 		return result;
 	}
 

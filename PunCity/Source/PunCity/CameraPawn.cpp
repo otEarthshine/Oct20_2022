@@ -296,9 +296,10 @@ void ACameraPawn::KeyPressed_Escape()
 		buildingPlacementSystem->CancelPlacement();
 		_gameInterface->Spawn2DSound("UI", "CancelPlacement");
 	}
-	
-	if (_networkInterface) {
-		_networkInterface->GetPunHUD()->KeyPressed_Escape();
+	else {
+		if (_networkInterface) {
+			_networkInterface->GetPunHUD()->KeyPressed_Escape();
+		}
 	}
 }
 

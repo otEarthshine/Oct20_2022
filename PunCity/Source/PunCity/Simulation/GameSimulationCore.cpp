@@ -199,6 +199,13 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 	}
 
 
+#if CHECK_TICKHASH
+	_tickHashes.Clear();
+	_serverTickHashes.Clear();
+	_currentInputHashes = 0;
+	_commandsExecuted.clear();
+#endif
+
 	/*
 	 * Displays
 	 */
@@ -832,7 +839,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 		simTicksForThisControllerTick = tickInfo.tickCount % 2;
 	}
 
-	for (size_t i = 0; i < simTicksForThisControllerTick; i++)
+	for (size_t localTickIndex = 0; localTickIndex < simTicksForThisControllerTick; localTickIndex++)
 	{
 		//_LOG(PunTick, "TickCore %d", _tickCount);
 
@@ -1270,6 +1277,9 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 
 				_eventLogSystem.Tick1Sec();
 				_worldTradeSystem.Tick1Sec();
+
+				TestCityNetworkStage();
+				
 			}
 
 			// Tick quarter sec
@@ -1361,7 +1371,9 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 		}
 		// Hashes
 		{
-#if WITH_EDITOR
+#if CHECK_TICKHASH
+			_tickHashes.AddTickHash(_tickCount, TickHashEnum::Input, _currentInputHashes);
+			_tickHashes.AddTickHash(_tickCount, TickHashEnum::Rand, GameRand::RandState());
 			_tickHashes.AddTickHash(_tickCount, TickHashEnum::Unit, _unitSystem->GetSyncHash());
 			_tickHashes.AddTickHash(_tickCount, TickHashEnum::Building, _buildingSystem->GetSyncHash());
 #endif
@@ -1490,6 +1502,10 @@ void GameSimulationCore::RemoveUnit(int id)
 
 bool GameSimulationCore::ExecuteNetworkCommand(std::shared_ptr<FNetworkCommand> command)
 {
+#if CHECK_TICKHASH
+	_LOG(PunTickHash, "ExecuteNetworkCommand %s  TickCount:%d", ToTChar(GetNetworkCommandName(command->commandType())), Time::Ticks());
+#endif
+	
 	switch (command->commandType())
 	{
 	case NetworkCommandEnum::PlaceBuilding: {
@@ -1532,6 +1548,11 @@ bool GameSimulationCore::ExecuteNetworkCommand(std::shared_ptr<FNetworkCommand> 
 	default: UE_DEBUG_BREAK();
 	}
 
+#if CHECK_TICKHASH
+	_currentInputHashes += command->GetTickHash();
+	_commandsExecuted.push_back(command->commandType());
+#endif
+
 	return true;
 }
 
@@ -1542,6 +1563,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 	TileArea frontArea = area.GetFrontArea(faceDirection);
 	CardEnum cardEnum = static_cast<CardEnum>(parameters.buildingEnum);
 	int32 playerId = parameters.playerId;
+	
 
 	bool succeedUsingCard = true;
 
@@ -2309,7 +2331,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 	else if (placementType == PlacementType::Demolish)
 	{
 		// Sound here since demolish needs to pass confirmation first before playing sound.
-		_soundInterface->Spawn2DSound("UI", "PlaceBuilding", playerId());
+		_soundInterface->Spawn2DSound("UI", "PlaceBuilding", gameManagerPlayerId());
 		
 		PUN_LOG("DragPlacement Demolish!!");
 		area.EnforceWorldLimit();
@@ -3141,15 +3163,35 @@ void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
 			// Shift Upgrade
 			if (command.isShiftDown)
 			{
+				int32 upgradedLevelCount = -1;
+				
 				// Upgrade the clicked building first to ensure it gets upgraded
 				if (bld->UpgradeBuilding(command.upgradeType, false, neededResource)) {
 					upgradedCount++;
+
+					if (bld->GetUpgrade(command.upgradeType).isEraUpgrade()) {
+						upgradedLevelCount = bld->GetEraUpgradeCount() - 1;
+					}
 				}
 
 				// Try to upgrade as many buildings in the town as possible when using shift
 				const std::vector<int32>& bldIds = buildingIds(bld->townId(), bld->buildingEnum());
-				for (int32 bldId : bldIds) {
-					if (building(bldId).UpgradeBuilding(command.upgradeType, false, neededResource)) {
+				for (int32 bldId : bldIds) 
+				{
+					// Don't upgrade, if this building isn't the same level as the Shift-click origin building
+					Building& curBuilding = building(bldId);
+					if (!curBuilding.isConstructed()) {
+						continue;
+					}
+					
+					const BuildingUpgrade& upgrade = curBuilding.GetUpgrade(command.upgradeType);
+					if (upgrade.isEraUpgrade() &&
+						curBuilding.GetEraUpgradeCount() != upgradedLevelCount)
+					{
+						continue;
+					}
+					
+					if (curBuilding.UpgradeBuilding(command.upgradeType, false, neededResource)) {
 						upgradedCount++;
 					}
 				}
@@ -3564,7 +3606,7 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 	else if (replyReceiver == PopupReceiverEnum::CaravanBuyer)
 	{
 		if (command.choiceIndex == 0) {
-			if (command.playerId == playerId()) {
+			if (command.playerId == gameManagerPlayerId()) {
 				uiInterface()->OpenTradeUI(town.buildingId());
 			}
 		}
@@ -3621,14 +3663,12 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 				GainAlly(requesterPlayerId, command.playerId);
 
 				// Tell requester alliance is accepted
-				if (requesterPlayerId == playerId()) {
-					AddPopup(requesterPlayerId, 
-						FText::Format(LOCTEXT("AllianceAccepted_RequesterPop", "Alliance request accepted by {0}."), playerNameT(command.playerId))
-					);
-					AddPopup(command.playerId, 
-						FText::Format(LOCTEXT("AllianceAccepted_SelfPop", "You are now allied with {0}."), playerNameT(requesterPlayerId))
-					);
-				}
+				AddPopup(requesterPlayerId,
+					FText::Format(LOCTEXT("AllianceAccepted_RequesterPop", "Alliance request accepted by {0}."), playerNameT(command.playerId))
+				);
+				AddPopup(command.playerId,
+					FText::Format(LOCTEXT("AllianceAccepted_SelfPop", "You are now allied with {0}."), playerNameT(requesterPlayerId))
+				);
 			}
 		}
 	}
@@ -4661,7 +4701,7 @@ void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 townId)
 		}
 
 		// Taking over proper land grants seeds or unlocks proper mine
-		CheckGetSeedCard(playerId);
+		CheckSeedAndMineCard(playerId);
 		
 		// Claim land hand
 		int32 claimCount = GetProvinceCountPlayer(playerId);
@@ -4669,52 +4709,57 @@ void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 townId)
 		// Remove any existing regional building and give the according bonus...
 		if (claimCount > 1)
 		{
-			const std::vector<WorldRegion2>& regionOverlaps = _provinceSystem.GetRegionOverlaps(provinceId);
-
-			for (WorldRegion2 regionOverlap : regionOverlaps)
+			ExecuteOnRegionalBuildings(provinceId, [&](Building& bld, const std::vector<WorldRegion2>& regionOverlaps)
 			{
-				auto& buildingList = buildingSystem().buildingSubregionList();
-				buildingList.ExecuteRegion(regionOverlap, [&](int32 buildingId)
+				if (bld.isEnum(CardEnum::RegionTribalVillage))
 				{
-					auto bld = building(buildingId);
-					if (IsRegionalBuilding(bld.buildingEnum()) && 
-						GetProvinceIdClean(bld.centerTile()) == provinceId)
-					{
-						if (bld.isEnum(CardEnum::RegionTribalVillage)) 
+					// Clear Wildmen
+					for (WorldRegion2 curRegionOverlap : regionOverlaps) {
+						unitSubregionLists().ExecuteRegion(curRegionOverlap, [&](int32_t unitId)
 						{
-							// Clear Wildmen
-							for (WorldRegion2 curRegionOverlap : regionOverlaps) {
-								unitSubregionLists().ExecuteRegion(curRegionOverlap, [&](int32_t unitId)
-								{
-									if (unitEnum(unitId) == UnitEnum::WildMan)
-									{
-										WorldTile2 curTile = unitAtom(unitId).worldTile2();
-										if (GetProvinceIdClean(curTile) == provinceId) {
-											unitAI(unitId).Die();
-										}
-									}
-								});
+							if (unitEnum(unitId) == UnitEnum::WildMan)
+							{
+								WorldTile2 curTile = unitAtom(unitId).worldTile2();
+								if (GetProvinceIdClean(curTile) == provinceId) {
+									unitAI(unitId).Die();
+								}
 							}
-							
-							ImmigrationEvent(townId, 5,
-								FText::Format(LOCTEXT("TribalImmigrantAsk_Pop", "{0} wish to join your city."), GenerateTribeName(bld.buildingId())),
-								PopupReceiverEnum::TribalJoinEvent
-							);
-							//townhall(playerId).ImmigrationEvent(5, GenerateTribeName(bld.buildingId()) + " wish to join your city.", PopupReceiverEnum::TribalJoinEvent);
-							ClearProvinceBuildings(bld.provinceId());
-						}
-						else if (bld.isEnum(CardEnum::RegionCrates)) {
-							GenerateRareCardSelection(playerId, RareHandEnum::CratesCards, LOCTEXT("CratesUseCardSelection", "Searching through the crates you found."));
-							ClearProvinceBuildings(bld.provinceId());
-						}
-						else if (bld.isEnum(CardEnum::RegionShrine)) {
-							GenerateRareCardSelection(playerId, RareHandEnum::BuildingSlotCards, LOCTEXT("ShrineUseCardSelection", "The shrine bestows its wisdom upon us."));
-							//bld.subclass<RegionShrine>().PlayerTookOver(playerId);
-						}
-
+						});
 					}
-				});
-			}
+
+					ImmigrationEvent(townId, 5,
+						FText::Format(LOCTEXT("TribalImmigrantAsk_Pop", "{0} wish to join your city."), GenerateTribeName(bld.buildingId())),
+						PopupReceiverEnum::TribalJoinEvent
+					);
+					//townhall(playerId).ImmigrationEvent(5, GenerateTribeName(bld.buildingId()) + " wish to join your city.", PopupReceiverEnum::TribalJoinEvent);
+					ClearProvinceBuildings(bld.provinceId());
+				}
+				else if (bld.isEnum(CardEnum::RegionCrates)) {
+					GenerateRareCardSelection(playerId, RareHandEnum::CratesCards, LOCTEXT("CratesUseCardSelection", "Searching through the crates you found."));
+					ClearProvinceBuildings(bld.provinceId());
+				}
+				else if (bld.isEnum(CardEnum::RegionShrine)) {
+					GenerateRareCardSelection(playerId, RareHandEnum::BuildingSlotCards, LOCTEXT("ShrineUseCardSelection", "The shrine bestows its wisdom upon us."));
+					//bld.subclass<RegionShrine>().PlayerTookOver(playerId);
+				}
+			});
+			
+			//const std::vector<WorldRegion2>& regionOverlaps = _provinceSystem.GetRegionOverlaps(provinceId);
+
+			//for (WorldRegion2 regionOverlap : regionOverlaps)
+			//{
+			//	auto& buildingList = buildingSystem().buildingSubregionList();
+			//	buildingList.ExecuteRegion(regionOverlap, [&](int32 buildingId)
+			//	{
+			//		auto bld = building(buildingId);
+			//		if (IsRegionalBuilding(bld.buildingEnum()) && 
+			//			GetProvinceIdClean(bld.centerTile()) == provinceId)
+			//		{
+			//			
+
+			//		}
+			//	});
+			//}
 		}
 
 	}
@@ -4934,7 +4979,7 @@ void GameSimulationCore::Cheat(FCheat command)
 		}
 
 		case CheatEnum::Kill: {
-			const std::vector<int32>& humanIds = townManager(playerId()).humanIds();
+			const std::vector<int32>& humanIds = townManager(command.playerId).humanIds();
 			for (int32 i = humanIds.size(); i-- > 0;) {
 				UnitStateAI& unit = unitAI(humanIds[i]);
 				PUN_LOG("Kill %d %d", humanIds[i], unit.id());
@@ -5153,7 +5198,7 @@ void GameSimulationCore::Cheat(FCheat command)
 
 					TileArea endArea = SimUtils::SpiralFindAvailableBuildArea(startArea,
 						[&](WorldTile2 tile) {
-						return IsPlayerBuildable(tile, playerId());
+						return IsPlayerBuildable(tile, command.playerId);
 					},
 						[&](WorldTile2 tile) {
 						return WorldTile2::ManDistance(curTile, tile) > 200;
@@ -5206,6 +5251,22 @@ void GameSimulationCore::Cheat(FCheat command)
 			break;
 		}
 
+		/*
+		 * Test City Building Across Network (Desync)
+		 */
+		case CheatEnum::TestCityNetwork:
+		{
+			if (command.playerId == gameManagerPlayerId()) 
+			{
+				if (PunSettings::Get("TestCityNetwork_Stage") > 0) {
+					PunSettings::Set("TestCityNetwork_Stage", -1);
+				} else {
+					PunSettings::Set("TestCityNetwork_Stage", 0);
+				}
+			}
+			break;
+		}
+
 		case CheatEnum::DebugUI:
 		{	
 			PunSettings::Toggle("DebugUI");
@@ -5220,12 +5281,17 @@ void GameSimulationCore::Cheat(FCheat command)
 
 		case CheatEnum::YearlyTrade:
 		{
-			AddPopup(PopupInfo(command.playerId, 
-				LOCTEXT("CaravanArrive_Pop", "A caravan has arrived. They wish to buy any goods you might have."), 
-				{ LOCTEXT("Trade", "Trade"),
-					LOCTEXT("Refuse", "Refuse") },
-				PopupReceiverEnum::CaravanBuyer)
-			);
+			// Show Caravan only if there is no Trading Post/Port
+			if (playerBuildingFinishedCount(command.playerId, CardEnum::TradingPost) > 0 ||
+				playerBuildingFinishedCount(command.playerId, CardEnum::TradingPort) > 0) 
+			{
+				AddPopup(PopupInfo(command.playerId,
+					LOCTEXT("CaravanArrive_Pop", "A caravan has arrived. They wish to buy any goods you might have."),
+					{ LOCTEXT("Trade", "Trade"),
+						LOCTEXT("Refuse", "Refuse") },
+					PopupReceiverEnum::CaravanBuyer)
+				);
+			}
 			break;
 		}
 
@@ -5441,6 +5507,8 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 		// Townhall
 		PUN_LOG("Set TownManager pid:%d", command.playerId);
 		townManager(townId).townHallId = townhallId;
+
+		CheckSeedAndMineCard(command.playerId);
 		
 		//playerOwned.TryAddArmyNodeVisited(townhallId);
 	}
@@ -5655,6 +5723,211 @@ void GameSimulationCore::DemolishCritterBuildingsIncludingFronts(WorldTile2 tile
 		//		resourceSystem(playerId).SpawnDrop(resource.resourceEnum, resource.count, tile);
 		//	}
 		//});
+	}
+}
+
+/*
+ * Test for what causes the desync
+ */
+void GameSimulationCore::TestCityNetworkStage()
+{
+	if (PunSettings::Get("TestCityNetwork_Stage") == -1) {
+		return;
+	}
+
+	if (Time::Ticks() % PunSettings::Get("TestCityNetwork_TimeInterval") != 0) {
+		return;
+	}
+
+	
+	const int32 addCount = 500;
+
+	int32 commandPlayerId = gameManagerPlayerId();
+	int32 townId = gameManagerPlayerId();
+	auto& townManage = townManager(townId);
+
+
+	// Money
+	if (money(commandPlayerId) < 1000000)
+	{
+		auto command = make_shared<FCheat>();
+		command->cheatEnum = CheatEnum::Money;
+		_gameManager->SendNetworkCommand(command);
+
+		PUN_LOG("TestCityNetworkStage Money");
+		return;
+	}
+
+	
+
+	// Add enough province
+	std::vector<int32> provinceIds = townManage.provincesClaimed();
+	if (provinceIds.size() < addCount / 15)
+	{
+		// Claim one out level at a time
+		for (int32 i = 0; i < provinceIds.size(); i++) {
+			std::vector<ProvinceConnection> connections = GetProvinceConnections(provinceIds[i]);
+			for (ProvinceConnection connection : connections) {
+				if (IsProvinceValid(connection.provinceId) &&
+					provinceOwnerTown(connection.provinceId) == -1)
+				{
+					auto command = make_shared<FClaimLand>();
+					command->claimEnum = CallbackEnum::ClaimLandMoney;
+					command->provinceId = connection.provinceId;
+					PUN_CHECK(command->provinceId != -1);
+					_gameManager->SendNetworkCommand(command);
+
+					PUN_LOG("TestCityNetworkStage ClaimProvince:%d", connection.provinceId);
+					return;
+				}
+			}
+		}
+	}
+
+	if (PunSettings::Get("TestCityNetwork_CurTileId") == -1) {
+		PunSettings::Set("TestCityNetwork_CurTileId", GetTownhallGateCapital(commandPlayerId).tileId());
+	}
+
+	auto placeBuilding = [&](CardEnum buildingEnum)
+	{
+		WorldTile2 curTile(PunSettings::Get("TestCityNetwork_CurTileId"));
+
+		TileArea startArea(curTile, GetBuildingInfo(buildingEnum).size + WorldTile2(2, 2));
+
+		TileArea endArea = SimUtils::SpiralFindAvailableBuildArea(startArea,
+			[&](WorldTile2 tile) {
+			return IsPlayerBuildable(tile, commandPlayerId);
+		},
+			[&](WorldTile2 tile) {
+			return WorldTile2::ManDistance(curTile, tile) > 200;
+		}
+		);
+
+		if (!endArea.isValid()) {
+			return false;
+		}
+
+		PunSettings::Set("TestCityNetwork_CurTileId", curTile.tileId());
+
+		{
+			auto command = make_shared<FPlaceBuilding>();
+			command->center = endArea.centerTile();
+			command->buildingEnum = static_cast<uint8>(buildingEnum);
+			command->faceDirection = static_cast<uint8>(Direction::S);
+			command->area = BuildingArea(command->center, GetBuildingInfo(buildingEnum).size, static_cast<Direction>(command->faceDirection));
+			_gameManager->SendNetworkCommand(command);
+
+			PUN_LOG("TestCityNetworkStage FPlaceBuilding:%s", *GetBuildingInfo(buildingEnum).nameF());
+		}
+
+		return true;
+	};
+
+	auto quickBuild = [&](CardEnum buildingEnum)
+	{
+		const std::vector<int32>& bldIds = buildingIds(townId, buildingEnum);
+		for (int32 bldId : bldIds)
+		{
+			if (!building(bldId).isConstructed() &&
+				!_buildingSystem->IsQuickBuild(bldId))
+			{
+				auto command = make_shared<FGenericCommand>();
+				command->callbackEnum = CallbackEnum::QuickBuild;
+				command->intVar1 = bldId;
+				_gameManager->SendNetworkCommand(command);
+
+				PUN_LOG("TestCityNetworkStage QuickBuild:%s id:%d", *GetBuildingInfo(buildingEnum).nameF(), bldId);
+			}
+		}
+	};
+
+	// Build Storages
+	{
+		int32 numberOfBuildings = 5;
+		if (townBuildingFinishedCount(townId, CardEnum::Warehouse) < numberOfBuildings)
+		{
+			if (buildingCount(townId, CardEnum::Warehouse) < numberOfBuildings) {
+				if (placeBuilding(CardEnum::Warehouse)) {
+					return;
+				}
+			}
+
+			quickBuild(CardEnum::Warehouse);
+		}
+	}
+	
+
+	// Build Houses
+	int32 numberOfHouses = 10;
+	if (townBuildingFinishedCount(townId, CardEnum::House) < numberOfHouses)
+	{
+		if (buildingCount(townId, CardEnum::House) < numberOfHouses) {
+			if (placeBuilding(CardEnum::House)) {
+				return;
+			}
+		}
+		
+		quickBuild(CardEnum::House);
+	}
+
+	// Research
+	if (!unlockSystem(commandPlayerId)->IsResearched(TechEnum::IndustrialAge))
+	{
+		auto command = make_shared<FCheat>();
+		command->cheatEnum = CheatEnum::UnlockAll;
+		_gameManager->SendNetworkCommand(command);
+
+		PUN_LOG("TestCityNetworkStage UnlockAll");
+		return;
+	}
+	
+
+	std::vector<CardEnum> availableCards = cardSystem(gameManagerPlayerId()).GetAllPiles();
+	unordered_set<CardEnum> uniqueAvailableCards(availableCards.begin(), availableCards.end());
+
+	for (CardEnum buildingEnum : SortedNameBuildingEnum)
+	{
+		if (static_cast<int32>(buildingEnum) >= PunSettings::Get("TestCityNetwork_BuildingEnumToStop")) {
+			continue;
+		}
+		
+		if (uniqueAvailableCards.find(buildingEnum) != uniqueAvailableCards.end() &&
+			buildingCount(townId, buildingEnum) < 1 && 
+			buildingEnum != CardEnum::Bridge &&
+			buildingEnum != CardEnum::ClayPit &&
+			buildingEnum != CardEnum::IrrigationReservoir &&
+			!IsPortBuilding(buildingEnum) &&
+			!IsMountainMine(buildingEnum))
+		{
+			if (placeBuilding(buildingEnum)) {
+				return;
+			}
+		}
+
+		quickBuild(buildingEnum);
+
+		// check resources
+		const std::vector<int32>& bldIds = buildingIds(townId, buildingEnum);
+		for (int32 bldId : bldIds)
+		{
+			Building& bld = building(bldId);
+
+			auto fillResource = [&](ResourceEnum resourceEnum) {
+				if (resourceEnum != ResourceEnum::None && resourceCountTown(townId, resourceEnum) < bld.inputPerBatch() * 2)
+				{
+					auto command = make_shared<FCheat>();
+					command->cheatEnum = CheatEnum::AddResource;
+					command->var1 = static_cast<int32>(resourceEnum);
+					command->var2 = bld.inputPerBatch() * 2;
+					_gameManager->SendNetworkCommand(command);
+
+					PUN_LOG("TestCityNetworkStage AddResource:%s id:%d", *GetBuildingInfo(buildingEnum).nameF(), bldId);
+				}
+			};
+
+			fillResource(bld.input1());
+			fillResource(bld.input2());
+		}
 	}
 }
 

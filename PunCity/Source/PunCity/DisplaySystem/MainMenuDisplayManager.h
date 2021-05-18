@@ -28,6 +28,7 @@ public:
 		SetPostProcessVolume(_postProcessVolume, CastChecked<UPunGameInstance>(GetGameInstance()));
 	}
 
+	void SendNetworkCommand(std::shared_ptr<FNetworkCommand> networkCommand) override {}
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) USceneComponent* _root;
 

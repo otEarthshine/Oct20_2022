@@ -16,13 +16,12 @@ void LaborerPriorityState::RefreshUILaborerPriority(
 	UTextBlock* Employed,
 
 	UHorizontalBox* LaborerBox,
-	UButton* LaborerPriorityButton, UButton* LaborerNonPriorityButton, USizeBox* LaborerArrowOverlay,
+	UCheckBox* LaborerManualCheckBox, USizeBox* LaborerArrowOverlay,
 	UTextBlock* Laborer,
 	UTextBlock* LaborerRed,
 
 	UHorizontalBox* BuilderBox,
-	UButton* BuilderNonPriorityButton,
-	UButton* BuilderPriorityButton,
+	UCheckBox* BuilderManualCheckBox,
 	UTextBlock* Builder,
 	USizeBox* BuilderArrowOverlay
 	)
@@ -62,8 +61,9 @@ void LaborerPriorityState::RefreshUILaborerPriority(
 			ADDTEXT_INV_("/");
 			ADDTEXT_NUM_(townPriorityState.targetLaborerCount);
 		}
-		SetPriorityButtons(LaborerPriorityButton, LaborerNonPriorityButton, LaborerArrowOverlay, townPriorityState.laborerPriority);
-
+		LaborerManualCheckBox->SetIsChecked(townPriorityState.laborerPriority);
+		LaborerArrowOverlay->SetVisibility(townPriorityState.laborerPriority ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+		
 		if (laborerCount == 0) {
 			LaborerRed->SetText(JOINTEXT(args));
 			LaborerRed->SetVisibility(ESlateVisibility::HitTestInvisible);
@@ -93,7 +93,9 @@ void LaborerPriorityState::RefreshUILaborerPriority(
 			ADDTEXT_INV_("/");
 			ADDTEXT_NUM_(townPriorityState.targetBuilderCount);
 		}
-		SetPriorityButtons(BuilderPriorityButton, BuilderNonPriorityButton, BuilderArrowOverlay, townPriorityState.builderPriority);
+		BuilderManualCheckBox->SetIsChecked(townPriorityState.builderPriority);
+		BuilderArrowOverlay->SetVisibility(townPriorityState.builderPriority ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+		
 		Builder->SetText(JOINTEXT(args));
 
 		widget->AddToolTip(BuilderBox, 

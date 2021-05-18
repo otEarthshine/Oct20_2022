@@ -54,9 +54,13 @@ public:
 			meshes.Add(buildingMesh);
 		}
 
+		int32 meshI = _meshIndexIterator;
 		for (int i = 0; i < modules.size(); i++)
 		{
-			int32 meshI = i + _meshIndexIterator;
+			if (IsModuleTypeConstructionOnly(modules[i].moduleTypeEnum)) {
+				continue;
+			}
+			
 			UStaticMesh* mesh = assetLoader->moduleMesh(modules[i].moduleName);
 			PUN_CHECK(mesh || modules[i].moduleName == "StoneRoad" || modules[i].moduleName == "DirtRoad");
 			
@@ -70,13 +74,9 @@ public:
 			FString moduleName = modules[i].moduleName;
 			FTransform moduleTransform = modules[i].transform;
 			
-			//if (moduleName.Equals(FString("DecorativeBasketBox"))) {
-			//	PUN_LOG("%s transform: %s, %s, %s", *moduleName, *moduleTransform.GetTranslation().ToCompactString(),
-			//		*moduleTransform.GetRotation().Rotator().ToString(),
-			//		*moduleTransform.GetScale3D().ToCompactString());
-			//}
 			
 			meshes[i]->SetRelativeTransform(moduleTransform);
+			meshI++;
 		}
 
 		_meshIndexIterator += modules.size();

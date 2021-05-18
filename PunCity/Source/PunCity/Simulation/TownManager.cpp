@@ -1149,7 +1149,8 @@ void TownManager::RecalculateTax(bool showFloatup)
 	 */
 	for (auto houseId : _houseIds)
 	{
-		House& house = _simulation->building(houseId).subclass<House>(CardEnum::House);
+		Building& houseBld = _simulation->building(houseId);
+		House& house = houseBld.subclass<House>(CardEnum::House);
 
 		if (house.isDisabled()) {
 			continue;
@@ -1355,7 +1356,7 @@ void TownManager::RecalculateTax(bool showFloatup)
 
 
 	if (_simulation->HasGlobalBonus(_playerId, CardEnum::Rationalism)) {
-		sciences100[static_cast<int>(ScienceEnum::Rationalism)] += sumFromHouses * ((_simulation->GetAverageHappiness(_townId) - 80) / 2LL) / 100LL;
+		sciences100[static_cast<int>(ScienceEnum::Rationalism)] += std::max(0LL, sumFromHouses * ((_simulation->GetAverageHappiness(_townId) - 80) / 2LL) / 100LL);
 	}
 
 	// +0.5% Science Boost for each Trading Post/Port/Company in the World
@@ -1367,7 +1368,7 @@ void TownManager::RecalculateTax(bool showFloatup)
 			totalTradeBuildings += _simulation->playerBuildingFinishedCount(playerId, CardEnum::TradingPort);
 			totalTradeBuildings += _simulation->playerBuildingFinishedCount(playerId, CardEnum::TradingCompany);
 		}
-		sciences100[static_cast<int>(ScienceEnum::FreeThoughts)] += totalTradeBuildings / 2;
+		sciences100[static_cast<int>(ScienceEnum::FreeThoughts)] += totalTradeBuildings * sumFromHouses * 5 / 1000;
 	}
 
 	/*

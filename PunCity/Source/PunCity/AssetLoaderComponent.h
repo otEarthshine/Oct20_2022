@@ -91,6 +91,7 @@ enum class ModuleTypeEnum
 	RotateRoll,
 	ShaderAnimate,
 	ShaderOnOff,
+	AlwaysOn,
 };
 
 static bool IsModuleTypeFrame(ModuleTypeEnum moduleTypeEnum)

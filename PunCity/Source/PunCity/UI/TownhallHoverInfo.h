@@ -68,13 +68,12 @@ public:
 			Employed,
 
 			LaborerBox,
-			LaborerPriorityButton, LaborerNonPriorityButton, LaborerArrowOverlay,
+			LaborerManualCheckBox, LaborerArrowOverlay,
 			Laborer,
 			LaborerRed,
 
 			BuilderBox,
-			BuilderNonPriorityButton,
-			BuilderPriorityButton,
+			BuilderManualCheckBox,
 			Builder,
 			BuilderArrowOverlay
 		);
@@ -127,8 +126,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* Employed;
 
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* LaborerBox;
-	UPROPERTY(meta = (BindWidget)) UButton* LaborerNonPriorityButton;
-	UPROPERTY(meta = (BindWidget)) UButton* LaborerPriorityButton;
+	UPROPERTY(meta = (BindWidget)) UCheckBox* LaborerManualCheckBox;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* Laborer;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* LaborerRed;
 	UPROPERTY(meta = (BindWidget)) UButton* LaborerArrowUp;
@@ -136,8 +134,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) USizeBox* LaborerArrowOverlay;
 
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* BuilderBox;
-	UPROPERTY(meta = (BindWidget)) UButton* BuilderNonPriorityButton;
-	UPROPERTY(meta = (BindWidget)) UButton* BuilderPriorityButton;
+	UPROPERTY(meta = (BindWidget)) UCheckBox* BuilderManualCheckBox;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* Builder;
 	UPROPERTY(meta = (BindWidget)) UButton* BuilderArrowUp;
 	UPROPERTY(meta = (BindWidget)) UButton* BuilderArrowDown;
@@ -245,16 +242,23 @@ private:
 	 * Laborer
 	 */
 	
-	UFUNCTION() void OnClickLaborerNonPriorityButton() {
-		townPriorityState().laborerPriority = true;
+	//UFUNCTION() void OnClickLaborerNonPriorityButton() {
+	//	townPriorityState().laborerPriority = true;
+	//	RefreshUI();
+	//	SendNetworkPriority();
+	//}
+	//UFUNCTION() void OnClickLaborerPriorityButton() {
+	//	townPriorityState().laborerPriority = false;
+	//	RefreshUI();
+	//	SendNetworkPriority();
+	//}
+	UFUNCTION() void OnCheckManualLaborer(bool isChecked) {
+		townPriorityState().laborerPriority = isChecked;
 		RefreshUI();
 		SendNetworkPriority();
 	}
-	UFUNCTION() void OnClickLaborerPriorityButton() {
-		townPriorityState().laborerPriority = false;
-		RefreshUI();
-		SendNetworkPriority();
-	}
+
+	
 	UFUNCTION() void IncreaseLaborers() {
 		townPriorityState().targetLaborerCount++;
 		RefreshUI();
@@ -273,16 +277,22 @@ private:
 	/*
 	 * Builder
 	 */
-	UFUNCTION() void OnClickBuilderNonPriorityButton() {
-		townPriorityState().builderPriority = true;
+	//UFUNCTION() void OnClickBuilderNonPriorityButton() {
+	//	townPriorityState().builderPriority = true;
+	//	RefreshUI();
+	//	SendNetworkPriority();
+	//}
+	//UFUNCTION() void OnClickBuilderPriorityButton() {
+	//	townPriorityState().builderPriority = false;
+	//	RefreshUI();
+	//	SendNetworkPriority();
+	//}
+	UFUNCTION() void OnCheckManualBuilder(bool isChecked) {
+		townPriorityState().builderPriority = isChecked;
 		RefreshUI();
 		SendNetworkPriority();
 	}
-	UFUNCTION() void OnClickBuilderPriorityButton() {
-		townPriorityState().builderPriority = false;
-		RefreshUI();
-		SendNetworkPriority();
-	}
+	
 	UFUNCTION() void IncreaseBuilders() {
 		townPriorityState().targetBuilderCount++;
 		RefreshUI();

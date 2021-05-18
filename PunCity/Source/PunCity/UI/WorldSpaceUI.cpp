@@ -492,7 +492,7 @@ void UWorldSpaceUI::TickBuildings()
 				_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
 
 			hoverIcon->SetImage(assetLoader()->CoinIcon);
-			hoverIcon->SetText(FText(), TEXT_NUMSIGNED(Bank::ProfitPerHouse));
+			hoverIcon->SetText("+", "");
 		}
 		// Bad Appeal
 		else if (overlayType == OverlayType::BadAppeal && 
@@ -1043,6 +1043,12 @@ void UWorldSpaceUI::TickMap()
 		{
 			GeoresourceNode node = georesourceSys.georesourceNode(regionId);
 
+			// Oil Invisible before research
+			if (node.georesourceEnum == GeoresourceEnum::Oil) {
+				if (!simulation.IsResearched(playerId(), TechEnum::Petroleum)) {
+					continue;
+				}
+			}
 			
 			FVector displayLocation = data->DisplayLocation(node.centerTile.worldAtom2());
 			displayLocation += FVector(0, 0, 30);
@@ -1401,11 +1407,18 @@ void UWorldSpaceUI::TickPlacementInstructions()
 		});
 		// Less than 12 (=24*24 / 4 / 4 / 3), need to warn red there is too little fruit trees
 		// Less than 18, need to warn orange
-		//ss << "Fruit Tree Count: " << fruitTreeCount;
-		punBox->AddRichTextCenter(TextRedOrange(
-			FText::Format(LOCTEXT("PlaceInfo_Appeal", "Fruit Tree Count: {0}"), TEXT_NUM(fruitTreeCount)),
-			fruitTreeCount, 30, 20
-		));
+		FText textTag = INVTEXT("<NotFlashing>");
+		if (fruitTreeCount < 20) {
+			textTag = INVTEXT("<FlashingRed>");
+		} else if (fruitTreeCount < 30) {
+			textTag = INVTEXT("<AlmostFlashing>");
+		}
+		
+		punBox->AddRichTextCenter(
+			FText::Format(LOCTEXT("PlaceInfo_Appeal", "{0}Fruit Tree Count: {1}</>"),
+				textTag, TEXT_NUM(fruitTreeCount)
+			)
+		);
 		punBox->AddSpacer(12);
 	}
 	// Building with Instructions

@@ -374,7 +374,10 @@ struct WorldTile2
 		Ar << x << y;
 		return Ar;
 	}
-	
+
+	int32 GetHash() {
+		return x + y;
+	}
 };
 //#pragma pack(pop)
 
@@ -985,6 +988,10 @@ struct TileArea
 		Ar << minX << minY;
 		Ar << maxX << maxY;
 		return Ar;
+	}
+
+	int32 GetHash() {
+		return minX + minY + maxX + maxY;
 	}
 };
 

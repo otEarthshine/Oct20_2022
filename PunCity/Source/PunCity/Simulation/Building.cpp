@@ -34,6 +34,7 @@ void Building::Init(IGameSimulationCore& simulation, int32 objectId, int32 townI
 	_filledInputs = false;
 
 	_buildingPlacedTick = Time::Ticks();
+	_buildingLastWorkedTick = Time::Ticks();
 	
 	//workplaceNeedInput = false;
 	workplaceInputNeeded = ResourceEnum::None;
@@ -187,6 +188,8 @@ void Building::FinishConstruction()
 	_allowedOccupants = 0;
 	_workDone100 = 0;
 	_isConstructed = true;
+
+	_buildingLastWorkedTick = Time::Ticks();
 
 	// Do not reset roadMakers since they should construct multiple roads
 	if (!IsRoad(_buildingEnum))
@@ -555,7 +558,12 @@ bool Building::NeedWork()
 
 bool Building::NeedConstruct()
 {
-	PUN_CHECK(!isConstructed())
+	PUN_CHECK(!isConstructed());
+
+	// Go build anyway
+	//if (shouldPrioritizeConstruction()) {
+	//	return true;
+	//}
 
 	// TODO: Possible fix for construction site not finishing
 	int32 extraBuildTimeFactor = (buildingAge() > Time::TicksPerYear) ? 2 : 1;
@@ -674,7 +682,11 @@ FText Building::GetUpgradeDisplayDescription(int32 index) {
 				TEXT_NUM(electricityPerBatch)
 			);
 		}
-		return NSLOCTEXT("BuildingUpgrade", "Level Desc", "Increases Base Productivity by 50%");
+
+		return FText::Format(
+			NSLOCTEXT("BuildingUpgrade", "Level Desc", "Increases Work Speed by {0}%"),
+			TEXT_NUM(BldResourceInfo::UpgradeProfitPercentEraMultiplier - 100)
+		);
 	}
 	return upgrade.description;
 }
@@ -881,6 +893,8 @@ void Building::DoWork(int unitId, int workAmount100)
 				_simulation->soundInterface()->Spawn3DSound("CitizenAction", "WoodConstruction", unitAtom);
 			}
 		}
+
+		_buildingLastWorkedTick = Time::Ticks();
 	}
 }
 
@@ -1325,7 +1339,7 @@ BuildingUpgrade Building::MakeEraUpgrade(int32 startEra)
 
 BuildingUpgrade Building::MakeComboUpgrade(FText name, ResourceEnum resourceEnum)
 {
-	int32 comboEfficiencyBonus = 5;
+	int32 comboEfficiencyBonus = 10;
 	for (int32 i = 1; i < buildingInfo().minEra(); i++) {
 		comboEfficiencyBonus += 5;
 	}

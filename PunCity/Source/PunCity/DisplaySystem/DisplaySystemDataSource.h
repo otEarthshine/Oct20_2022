@@ -30,6 +30,8 @@ public:
 	virtual class UAssetLoaderComponent* assetLoader() = 0;
 
 	virtual class IGameNetworkInterface* networkInterface() = 0;
+
+	virtual void SendNetworkCommand(std::shared_ptr<FNetworkCommand> networkCommand) = 0;
 	
 	virtual GameSimulationCore& simulation() = 0;
 	virtual USceneComponent* componentToAttach() = 0;

@@ -19,35 +19,35 @@ void UTechUI::SetupTechBoxUIs()
 	{
 		UTechEraUI* techEraUI = AddWidget<UTechEraUI>(UIEnum::TechEraUI);
 
-		{ // EraText
-			techEraUI->EraText->SetText(FText::Format(LOCTEXT("EraX", "Era {0}"), eraNumberToText[i]));
+		//{ // EraText
+		//	techEraUI->EraText->SetText(FText::Format(LOCTEXT("EraX", "Era {0}"), eraNumberToText[i]));
 
-			TArray<FText> args;
-			ADDTEXT_(LOCTEXT("EraX", "Era {0}"), eraNumberToText[i]);
+		//	TArray<FText> args;
+		//	ADDTEXT_(LOCTEXT("EraX", "Era {0}"), eraNumberToText[i]);
 
-			if (i < eraToTechEnums.size() - 1)
-			{
-				ADDTEXT_INV_("<space>");
-				ADDTEXT_(
-					LOCTEXT("UnlockTechToUnlockEra", "Unlock {0} Technologies in Era {1} to unlock Era {2}."),
-					unlockSys->techsToUnlockedNextEra(i),
-					eraNumberToText[i],
-					eraNumberToText[i + 1]
-				);
+		//	if (i < eraToTechEnums.size() - 1)
+		//	{
+		//		ADDTEXT_INV_("<space>");
+		//		ADDTEXT_(
+		//			LOCTEXT("UnlockTechToUnlockEra", "Unlock {0} Technologies in Era {1} to unlock Era {2}."),
+		//			unlockSys->techsToUnlockedNextEra(i),
+		//			eraNumberToText[i],
+		//			eraNumberToText[i + 1]
+		//		);
 
-				TArray<FText> args2;
-				UnlockSystem::EraUnlockedDescription(args2, i + 1, true);
+		//		TArray<FText> args2;
+		//		UnlockSystem::EraUnlockedDescription(args2, i + 1, true);
 
-				if (args2.Num() > 0) {
-					ADDTEXT_INV_("<space>");
-					ADDTEXT_(LOCTEXT("RewardForUnlockEra", "Rewards for Unlocking Era {0}:"), eraNumberToText[i + 1]);
-					ADDTEXT_INV_("<space>");
-					ADDTEXT__(JOINTEXT(args2));
-				}
-			}
+		//		if (args2.Num() > 0) {
+		//			ADDTEXT_INV_("<space>");
+		//			ADDTEXT_(LOCTEXT("RewardForUnlockEra", "Rewards for Unlocking Era {0}:"), eraNumberToText[i + 1]);
+		//			ADDTEXT_INV_("<space>");
+		//			ADDTEXT__(JOINTEXT(args2));
+		//		}
+		//	}
 
-			AddToolTip(techEraUI->EraText, args);
-		}
+		//	AddToolTip(techEraUI->EraText, args);
+		//}
 		
 		techEraUI->TechList->ClearChildren();
 		TechScrollBox->AddChild(techEraUI);

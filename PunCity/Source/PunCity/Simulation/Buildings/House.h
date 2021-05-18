@@ -52,6 +52,7 @@ public:
 		{
 			if (_lastHouseUpgradeTick == -1) {
 				_lastHouseUpgradeTick = Time::Ticks();
+
 				// Delayed upgrade
 #if TRAILER_MODE
 				_simulation->ScheduleTickBuilding(buildingId(), _lastHouseUpgradeTick + 1);
@@ -69,6 +70,8 @@ public:
 			_allowedOccupants = houseBaseOccupants + (lvl - 1) / 2;
 			_simulation->RecalculateTaxDelayedTown(_townId); // Recalculate sci
 			ResetDisplay();
+
+			_simulation->ResetTechDisplay(_playerId);
 		}
 	}
 	void UpgradeHouse(int32 lvl);

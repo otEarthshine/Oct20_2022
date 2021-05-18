@@ -410,7 +410,7 @@ public:
 
 		sessionSettings.bIsLANMatch = (IOnlineSubsystem::Get()->GetSubsystemName() == "NULL") || isSinglePlayer;
 
-		const int32 MaxPlayer = 6;
+		const int32 MaxPlayer = 8;
 		sessionSettings.NumPublicConnections = MaxPlayer;
 		sessionSettings.NumPrivateConnections = 0;
 		sessionSettings.bAllowInvites = true;

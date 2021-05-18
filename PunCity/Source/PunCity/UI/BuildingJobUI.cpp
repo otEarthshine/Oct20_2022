@@ -166,13 +166,13 @@ void UBuildingJobUI::SetTradeProgress(TradeBuilding& tradeBuilding, float fracti
 				material->SetScalarParameterValue("Fraction", fraction);
 				material->SetScalarParameterValue("IsInput", 0.0f);
 				material->SetScalarParameterValue("HasNoResource", 0.0f);
-
+				
 				completionIcon->SetIsPaused(false);
-
+				
 				TArray<FText> args;
-				ADDTEXT__(ResourceNameT(resourceEnum));
-				ADDTEXT_INV_("<space>");
-				ADDTEXT_LOCTEXT("Bought resources\n", "Bought resources\n");
+				ADDTEXT_(
+					LOCTEXT("Bought resources", "Bought {0} {1}<space>"), TEXT_NUM(resourcePair.count), ResourceNameT(resourceEnum)
+				);
 				ADDTEXT_(LOCTEXT("arriving in {0}s", "arriving in {0}s"), TEXT_NUM(tradeBuilding.CountdownSecondsDisplay()));
 				AddToolTip(completionIcon->ResourceImage, args);
 			}

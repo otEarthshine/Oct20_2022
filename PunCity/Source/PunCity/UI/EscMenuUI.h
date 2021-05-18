@@ -369,7 +369,7 @@ public:
 	
 
 	void KeyPressed_Escape()
-	{
+	{	
 		// Close Delete Save Confirmation
 		if (LoadSaveUI->KeyPressed_Escape())
 		{
@@ -411,8 +411,6 @@ public:
 			EscMenu->SetVisibility(ESlateVisibility::Visible);
 			dataSource()->Spawn2DSound("UI", "UIWindowOpen");
 		}
-
-		CloseOverlayUI();
 	}
 
 	void RightMouseUp() {

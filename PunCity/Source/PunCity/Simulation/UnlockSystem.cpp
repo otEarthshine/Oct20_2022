@@ -101,31 +101,12 @@ void UnlockSystem::Research(int64 science100PerRound, int32 updatesPerSec)
 		techsFinished++;
 		needTechDisplayUpdate = true;
 
-		std::vector<FText> choices = {
-			LOCTEXT("Show tech tree", "Show tech tree"),
-			LOCTEXT("Close", "Close")
-		};
-
 
 		auto unlockEra = [&](PopupReceiverEnum popupReceiver, FText mainMessage)
 		{
 			TArray<FText> args;
 			args.Add(mainMessage);
 			OnEraUnlocked(args, GetEra());
-
-			// Reset all building's display
-			const std::vector<int32>& townIds = _simulation->GetTownIds(_playerId);
-			for (int32 townId : townIds) {
-				for (int32 i = 0; i < BuildingEnumCount; i++) {
-					CardEnum buildingEnum = static_cast<CardEnum>(i);
-					if (IsAutoEraUpgrade(buildingEnum)) {
-						const std::vector<int32>& buildingIds = _simulation->buildingIds(townId, buildingEnum);
-						for (int32 buildingId : buildingIds) {
-							_simulation->building(buildingId).ResetDisplay();
-						}
-					}
-				}
-			}
 			
 			PopupInfo popup(_playerId, JOINTEXT(args), {}, popupReceiver);
 			popup.warningForExclusiveUI = ExclusiveUIEnum::TechTreeUI;
@@ -146,20 +127,23 @@ void UnlockSystem::Research(int64 science100PerRound, int32 updatesPerSec)
 		else if (tech->techEnum == TechEnum::EnlightenmentAge)
 		{
 			unlockEra(PopupReceiverEnum::EraPopup_EnlightenmentAge,
-				LOCTEXT("EraPopupEnlightenmentAge", "Congratulation!<space>You have advanced to the Enlightenment Age.<space>Many of your Buildings can now be upgraded to the new Era.")
+				LOCTEXT("EraPopupEnlightenmentAge", "Congratulation!<space>You have advanced to the Enlightenment Age.")
 			);
 		}
 		else if (tech->techEnum == TechEnum::IndustrialAge)
 		{
 			unlockEra(PopupReceiverEnum::EraPopup_IndustrialAge,
-				LOCTEXT("EraPopupIndustrialAge", "Congratulation!<space>You have advanced to the Industrial Age.<space>Many of your Buildings can now be upgraded to the new Era.")
+				LOCTEXT("EraPopupIndustrialAge", "Congratulation!<space>You have advanced to the Industrial Age.")
 			);
 		}
 		else
 		{
 			PopupInfo popupInfo(_playerId, 
 				LOCTEXT("Research Completed.", "Research Completed."), 
-				choices, PopupReceiverEnum::None, true
+				{
+					LOCTEXT("Show tech tree", "Show tech tree"),
+					LOCTEXT("Close", "Close")
+				}, PopupReceiverEnum::DoneResearchEvent_ShowTree, true
 			);
 			popupInfo.warningForExclusiveUI = ExclusiveUIEnum::TechTreeUI;
 			popupInfo.forcedSkipNetworking = true;
@@ -218,44 +202,54 @@ void UnlockSystem::Research(int64 science100PerRound, int32 updatesPerSec)
 	}
 }
 
-void UnlockSystem::EraUnlockedDescription(TArray<FText>& args, int32 era, bool isTip)
-{
-	if (era == 2) {
-		if (isTip) {
-			ADDTEXT_(INVTEXT(" {0}:"), LOCTEXT("Cards", "Cards"));
-		} else {
-			ADDTEXT_(INVTEXT(" {0}:"), LOCTEXT("Unlocked Cards", "Unlocked Cards"));
-		}
-		ADDTEXT_TAG_("<bullet>", LOCTEXT("Wild Card", "Wild Card"));
-		ADDTEXT_TAG_("<bullet>", LOCTEXT("Agriculture Wild Card", "Agriculture Wild Card"));
-		ADDTEXT_TAG_("<bullet>", LOCTEXT("Industry Wild Card", "Industry Wild Card"));
-		ADDTEXT_TAG_("<bullet>", LOCTEXT("Mine Wild Card", "Mine Wild Card"));
-		ADDTEXT_TAG_("<bullet>", LOCTEXT("Service Wild Card", "Service Wild Card"));
-		ADDTEXT_TAG_("<bullet>", LOCTEXT("Card Removal Card", "Card Removal Card"));
-	}
-}
+//void UnlockSystem::EraUnlockedDescription(TArray<FText>& args, int32 era, bool isTip)
+//{
+//	if (era == 2) {
+//		if (isTip) {
+//			ADDTEXT_(INVTEXT(" {0}:"), LOCTEXT("Cards", "Cards"));
+//		} else {
+//			ADDTEXT_(INVTEXT(" {0}:"), LOCTEXT("Unlocked Cards", "Unlocked Cards"));
+//		}
+//		ADDTEXT_TAG_("<bullet>", LOCTEXT("Wild Card", "Wild Card"));
+//		ADDTEXT_TAG_("<bullet>", LOCTEXT("Agriculture Wild Card", "Agriculture Wild Card"));
+//		ADDTEXT_TAG_("<bullet>", LOCTEXT("Industry Wild Card", "Industry Wild Card"));
+//		ADDTEXT_TAG_("<bullet>", LOCTEXT("Mine Wild Card", "Mine Wild Card"));
+//		ADDTEXT_TAG_("<bullet>", LOCTEXT("Service Wild Card", "Service Wild Card"));
+//		ADDTEXT_TAG_("<bullet>", LOCTEXT("Card Removal Card", "Card Removal Card"));
+//	}
+//}
 void UnlockSystem::OnEraUnlocked(TArray<FText>& args, int32 era)
 {
 	auto& cardSys = _simulation->cardSystem(_playerId);
 
-	EraUnlockedDescription(args, currentTechColumn(), false);
+	//EraUnlockedDescription(args, currentTechColumn(), false);
 
-	if (currentTechColumn() == 2) {
+	if (era == 2) {
 		cardSys.AddDrawCards(CardEnum::WildCard, 1);
 		cardSys.AddDrawCards(CardEnum::WildCardFood, 2);
 		cardSys.AddDrawCards(CardEnum::WildCardIndustry, 2);
 		cardSys.AddDrawCards(CardEnum::WildCardMine, 1);
 		cardSys.AddDrawCards(CardEnum::WildCardService, 1);
 		cardSys.AddDrawCards(CardEnum::CardRemoval, 1);
+
+		ADDTEXT_(INVTEXT(" {0}:"), LOCTEXT("Unlocked Cards", "Unlocked Cards"));
+		ADDTEXT_TAG_("<bullet>", LOCTEXT("Wild Card", "Wild Card"));
+		ADDTEXT_TAG_("<bullet>", LOCTEXT("Agriculture Wild Card", "Agriculture Wild Card"));
+		ADDTEXT_TAG_("<bullet>", LOCTEXT("Industry Wild Card", "Industry Wild Card"));
+		ADDTEXT_TAG_("<bullet>", LOCTEXT("Mine Wild Card", "Mine Wild Card"));
+		ADDTEXT_TAG_("<bullet>", LOCTEXT("Service Wild Card", "Service Wild Card"));
+		ADDTEXT_TAG_("<bullet>", LOCTEXT("Card Removal Card", "Card Removal Card"));
+
+		_simulation->AddPopup(_playerId, JOINTEXT(args));
 	}
-	else if (currentTechColumn() == 4) {
-		// TODO: ...
-		
-		// Warn other players
-		FText text = FText::Format(LOCTEXT("FinalEraPopAll", "{0} has reached the final era.<space>"), _simulation->playerNameT(_playerId));
-		//warnSS << "Once all final era technologies are researched, " << _simulation->playerName(_playerId) + " will be victorious.";
-		_simulation->AddPopupAll(PopupInfo(_playerId, text), _playerId);
-	}
+	//else if (IsResearched(TechEnum::)) {
+	//	// TODO: ...
+	//	
+	//	// Warn other players
+	//	FText text = FText::Format(LOCTEXT("FinalEraPopAll", "{0} has reached the final era.<space>"), _simulation->playerNameT(_playerId));
+	//	//warnSS << "Once all final era technologies are researched, " << _simulation->playerName(_playerId) + " will be victorious.";
+	//	_simulation->AddPopupAll(PopupInfo(_playerId, text), _playerId);
+	//}
 }
 
 

@@ -91,6 +91,11 @@ public:
 
 	IGameNetworkInterface* networkInterface() override { return _networkInterface; }
 
+	void SendNetworkCommand(std::shared_ptr<FNetworkCommand> networkCommand) override {
+		_networkInterface->SendNetworkCommand(networkCommand);
+	}
+	
+
 	void RefreshHeightForestColorTexture(TileArea area, bool isInstant) override {
 		_terrainMap->RefreshHeightForestColorTexture(area, isInstant);
 	}

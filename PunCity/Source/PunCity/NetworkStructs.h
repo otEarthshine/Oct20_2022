@@ -313,6 +313,8 @@ enum class NetworkCommandEnum : uint8
 	SendChat,
 
 	ReplayPause,
+
+	Count,
 };
 
 static const std::string NetworkCommandNames[] =
@@ -357,6 +359,7 @@ static const std::string NetworkCommandNames[] =
 	"ReplayPause",
 };
 static std::string GetNetworkCommandName(NetworkCommandEnum commandEnum) {
+	check(static_cast<int32>(NetworkCommandEnum::Count) - 1 == NetworkCommandNames->size());
 	return NetworkCommandNames[static_cast<int>(commandEnum)];
 }
 
@@ -389,6 +392,10 @@ public:
 	virtual FString ToCompactString() {
 		return ToFString(GetNetworkCommandName(commandType()));
 	}
+
+	virtual int32 GetTickHash() {
+		return playerId + townId + static_cast<int32>(commandType()) + (Time::Ticks() % Time::TicksPerYear);
+	}
 };
 
 // 
@@ -407,6 +414,10 @@ public:
 		blob << buildingId;
 		blob << buildingTileId;
 		blob << buildingEnum;
+	}
+
+	virtual int32 GetTickHash() override {
+		return FNetworkCommand::GetTickHash() + buildingId + buildingTileId + static_cast<int32>(buildingEnum);
 	}
 };
 
@@ -450,6 +461,17 @@ public:
 
 	FString ToCompactString() override {
 		return ToFString(GetNetworkCommandName(commandType())) + "-" + GetBuildingInfoInt(buildingEnum).nameF();
+	}
+
+	virtual int32 GetTickHash() override {
+		return FNetworkCommand::GetTickHash()
+			+ area.GetHash()
+			+ area2.GetHash()
+			+ center.GetHash()
+			+ static_cast<int32>(faceDirection)
+			+ static_cast<int32>(buildingEnum)
+			+ static_cast<int32>(useBoughtCard)
+			+ static_cast<int32>(useWildCard) + buildingIdToSetDelivery;
 	}
 };
 
@@ -759,6 +781,9 @@ public:
 		blob << isShiftDown;
 	}
 
+	virtual int32 GetTickHash() override {
+		return FNetworkCommand::GetTickHash() + buildingId + upgradeLevel + upgradeType + isShiftDown;
+	}
 };
 
 // TODO: Generalize this for changing product type for any...
@@ -783,6 +808,10 @@ public:
 		blob << intVar1;
 		blob << intVar2;
 		blob << intVar3;
+	}
+
+	virtual int32 GetTickHash() override {
+		return FBuildingCommand::GetTickHash() + enumInt + intVar1 + intVar2 + intVar3;
 	}
 };
 

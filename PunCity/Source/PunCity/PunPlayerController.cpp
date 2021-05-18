@@ -215,13 +215,19 @@ void APunPlayerController::LoadController_GameManager()
 	gameInstance->ResetServerTick();
 
 	// Load if needed
-	if (saveInfo.IsValid()) {
+	if (saveInfo.IsValid()) 
+	{
 		PUN_LOG("IsLoadingGame");
 		_LOG(PunSaveCheck, "IsLoadingGame");
 
 		gameInstance->saveSystem().Load(saveInfo.folderPath);
 
 		gameInstance->SetSavedGameToLoad(GameSaveInfo());
+
+#if CHECK_TICKHASH
+		_hashSendTick = gameManager->simulation().GetHashSendTickAfterLoad();
+		PUN_LOG("CHECK_TICKHASH Set _hashSendTick:%d", _hashSendTick);
+#endif
 
 		//PUN_LOG("UnitSystem LoadController unitCount():%d _unitLeans:%d", simulation().unitSystem().unitCount(), simulation().unitCount() - simulation().unitSystem().deadCount());
 	}
@@ -309,7 +315,7 @@ void APunPlayerController::Tick(float DeltaTime)
 		return;
 	}
 	
-#if WITH_EDITOR
+#if CHECK_TICKHASH
 	// Once in a while also send tickHash to client.
 	_playerControllerTick++;
 	if (GetLocalRole() == ROLE_Authority && _playerControllerTick > 300 && _playerControllerTick % 30 == 0)

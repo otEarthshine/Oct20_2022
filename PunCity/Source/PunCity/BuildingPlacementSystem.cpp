@@ -221,7 +221,12 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 
 		TArray<FText> args;
 		int32 fertility = _dragState == DragState::Dragging ? Farm::GetAverageFertility(_area, &sim) : sim.GetFertilityPercent(_mouseOnTile);
-		ADDTEXT_(LOCTEXT("Farm_BuildInstruction1", "Fertility: {0}%<space>"), TEXT_NUM(fertility));
+
+		ADDTEXT_(LOCTEXT("Farm_BuildInstruction1", "{0}Fertility: {1}%</>"),
+			(fertility < 70 ? INVTEXT("<FlashingRed>") : INVTEXT("<NotFlashing>")),
+			TEXT_NUM(fertility)
+		);
+		ADDTEXT_INV_("<space>");
 		
 		if (_dragState == DragState::NeedDragStart)
 		{
@@ -1247,8 +1252,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 
 			std::vector<ModuleTransform> modules;
 			if (_delayFillerEnum == CardEnum::Fisher ||
-				_delayFillerEnum == CardEnum::SandMine ||
-				_delayFillerEnum == CardEnum::PaperMaker)
+				_delayFillerEnum == CardEnum::SandMine)
 			{
 				modules.insert(modules.begin(), ModuleTransform("FisherConstructionPoles", FTransform::Identity, 0.0f, ModuleTypeEnum::ConstructionOnly));
 				modules.insert(modules.begin(), ModuleTransform("FisherConstructionPolesWater", FTransform::Identity, 0.0f, ModuleTypeEnum::ConstructionOnly));

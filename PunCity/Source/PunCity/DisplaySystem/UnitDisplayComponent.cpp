@@ -123,19 +123,23 @@ UnitDisplayState UUnitDisplayComponent::GetUnitTransformAndVariation(UnitStateAI
 		scale = std::fmodf(lastAnimationTime + (unitSystem.isMoving(unitId) ? (GetWorld()->GetDeltaSeconds() * 2.0f * gameSpeed) : 0.0f), 2.0f);
 	}
 
-	//if (!unitSystem.isMoving(unitId)) {
-	//	scale = 0.0f;
-	//} else {
-	//	
-	//}
-	
-	//scale = unitSystem.isMoving(unitId) ? 1.0f : 0.01f;
-	transform.SetScale3D(FVector(scale, scale, scale)); // Need same scale x,y,z to make lighting work properly...
-	//}}
 
 	//! Display State
 	UnitAnimationEnum animationEnum = unit.animationEnum();
+
+
+	// Walking Human uses VertexAnimation
+	if (unitEnum == UnitEnum::Human && 
+		!IsUsingSkeletalMesh(unitEnum, unit.animationEnum(), _gameManager->zoomDistance()) &&
+		animationEnum != UnitAnimationEnum::Ship)
+	{
+		float gameSpeed = sim.gameSpeedFloat();
+		scale = std::fmodf(lastAnimationTime + (unitSystem.isMoving(unitId) ? (GetWorld()->GetDeltaSeconds() * 2.0f * gameSpeed) : 0.0f), 2.0f);
+	}
 	
+	transform.SetScale3D(FVector(scale, scale, scale)); // Need same scale x,y,z to make lighting work properly...
+
+
 	// Human
 	if (unitEnum == UnitEnum::Human) 
 	{	
@@ -160,8 +164,8 @@ UnitDisplayState UUnitDisplayComponent::GetUnitTransformAndVariation(UnitStateAI
 		}
 		return  { unitEnum, animationEnum, humanVariation };
 	}
-	
-	if (IsUsingSkeletalMesh(unitEnum, animationEnum)) {
+
+	if (IsUsingSkeletalMesh(unitEnum, animationEnum, _gameManager->zoomDistance())) {
 		return { unitEnum, animationEnum, 0 };
 	}
 	
@@ -230,10 +234,11 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 			return;
 		}
 
-		if (IsUsingSkeletalMesh(unitEnum, unit.animationEnum()))
+		// Special
+		if (IsUsingSkeletalMesh(unitEnum, unit.animationEnum(), zoomDistance))
 		{
-			// Zoomed out human should use instancedStaticMesh
-			if ((unitEnum == UnitEnum::Human || unitEnum == UnitEnum::WildMan) && 
+			// Zoomed out human should always use instancedStaticMesh
+			if ((unitEnum == UnitEnum::Human || unitEnum == UnitEnum::WildMan) &&
 				zoomDistance > WorldZoomTransition_HumanNoAnimate)
 			{}
 			else

@@ -27,7 +27,7 @@ public:
 	void PunInit();
 	void Tick();
 	void RightMouseUp();
-	void EscDown();
+	bool EscDown();
 
 	//UBuildingPlacementButton* AddAnimationCard(CardEnum buildingEnum);
 	UBuildingPlacementButton* AddCard(CardHandEnum cardHandEnum, CardEnum buildingEnum, UWrapBox* buttonParent, CallbackEnum callbackEnum, int32 cardHandIndex = -1,
@@ -289,8 +289,7 @@ private:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* EmployedText;
 
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* LaborerBox;
-	UPROPERTY(meta = (BindWidget)) UButton* LaborerNonPriorityButton;
-	UPROPERTY(meta = (BindWidget)) UButton* LaborerPriorityButton;
+	UPROPERTY(meta = (BindWidget)) UCheckBox* LaborerManualCheckBox;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* Laborer;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* LaborerRed;
 	UPROPERTY(meta = (BindWidget)) UButton* LaborerArrowUp;
@@ -298,8 +297,7 @@ private:
 	UPROPERTY(meta = (BindWidget)) USizeBox* LaborerArrowOverlay;
 
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* BuilderBox;
-	UPROPERTY(meta = (BindWidget)) UButton* BuilderNonPriorityButton;
-	UPROPERTY(meta = (BindWidget)) UButton* BuilderPriorityButton;
+	UPROPERTY(meta = (BindWidget)) UCheckBox* BuilderManualCheckBox;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* Builder;
 	UPROPERTY(meta = (BindWidget)) UButton* BuilderArrowUp;
 	UPROPERTY(meta = (BindWidget)) UButton* BuilderArrowDown;
@@ -332,26 +330,20 @@ private:
 			EmployedText,
 
 			LaborerBox,
-			LaborerPriorityButton, LaborerNonPriorityButton, LaborerArrowOverlay,
+			LaborerManualCheckBox, LaborerArrowOverlay,
 			Laborer,
 			LaborerRed,
 
 			BuilderBox,
-			BuilderNonPriorityButton,
-			BuilderPriorityButton,
+			BuilderManualCheckBox,
 			Builder,
 			BuilderArrowOverlay
 		);
 	}
 
 	// Laborer
-	UFUNCTION() void OnClickLaborerNonPriorityButton() {
-		townPriorityState().laborerPriority = true;
-		RefreshLaborerUI();
-		SendNetworkPriority();
-	}
-	UFUNCTION() void OnClickLaborerPriorityButton() {
-		townPriorityState().laborerPriority = false;
+	UFUNCTION() void OnCheckManualLaborer(bool isChecked) {
+		townPriorityState().laborerPriority = isChecked;
 		RefreshLaborerUI();
 		SendNetworkPriority();
 	}
@@ -371,13 +363,8 @@ private:
 	}
 
 	// Builder
-	UFUNCTION() void OnClickBuilderNonPriorityButton() {
-		townPriorityState().builderPriority = true;
-		RefreshLaborerUI();
-		SendNetworkPriority();
-	}
-	UFUNCTION() void OnClickBuilderPriorityButton() {
-		townPriorityState().builderPriority = false;
+	UFUNCTION() void OnCheckManualBuilder(bool isChecked) {
+		townPriorityState().builderPriority = isChecked;
 		RefreshLaborerUI();
 		SendNetworkPriority();
 	}

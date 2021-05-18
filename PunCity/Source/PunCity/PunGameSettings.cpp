@@ -140,6 +140,16 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 
 	{ "ForceQuickBuild", 0 },
 
+	{ "UseFullSkelAnim", 0 },
+
+	{ "SeeAllCards", 0 },
+
+
+	{ "TestCityNetwork_Stage", -1 },
+	{ "TestCityNetwork_CurTileId", -1 },
+	{ "TestCityNetwork_TimeInterval", 1 },
+	{ "TestCityNetwork_BuildingEnumToStop", 1000 },
+	
 	// Debug Network
 	{ "ForceDelayInput", 0 },
 	{ "FixedDeltaTime", 1 },

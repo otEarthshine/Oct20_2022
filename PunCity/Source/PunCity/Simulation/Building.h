@@ -132,6 +132,14 @@ public:
 	bool didSetWalkable() { return _didSetWalkable; }
 	bool noWorker() { return !IsHouse(_buildingEnum) && _maxOccupants > 0 && occupantCount() == 0; }
 
+	bool shouldPrioritizeConstruction() {
+		if (isConstructed()) {
+			return false;
+		}
+		return (Time::Ticks() - _buildingLastWorkedTick > Time::TicksPerRound) || priority() == PriorityEnum::Priority;
+	}
+	
+
 	// Not constructed and Not QuickBuild
 	bool shouldDisplayConstructionUI() {
 		return !isConstructed() && !_simulation->IsQuickBuild(buildingId());
@@ -299,6 +307,8 @@ public:
 
 	//! Upgrades
 	const std::vector<BuildingUpgrade>& upgrades() { return _upgrades; }
+	const BuildingUpgrade& GetUpgrade(int32 upgradeIndex) { return _upgrades[upgradeIndex]; }
+	
 	bool UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& needResourceEnumOut);
 	
 	virtual void OnUpgradeBuilding(int upgradeIndex) {}
@@ -307,6 +317,16 @@ public:
 		if (upgradeIndex < _upgrades.size() && _upgrades[upgradeIndex].workerSlotBonus > 0) {
 			SetJobBuilding(maxOccupants() + _upgrades[upgradeIndex].workerSlotBonus);
 		}
+
+		// Upgrade might change inputCount
+		auto setTarget = [&](ResourceEnum resourceEnumIn, int32 targetIn) {
+			if (resourceEnumIn != ResourceEnum::None) {
+				resourceSystem().SetResourceTarget(holderInfo(resourceEnumIn), targetIn);
+			}
+		};
+		if (input1() != ResourceEnum::None) setTarget(input1(), baseInputPerBatch() * 2);
+		if (input2() != ResourceEnum::None) setTarget(input2(), baseInputPerBatch() * 2);
+		if (product() != ResourceEnum::None) setTarget(product(), baseInputPerBatch() * 2);
 	}
 
 	BuildingUpgrade MakeUpgrade(FText name, FText description, ResourceEnum resourceEnum, int32 percentOfTotalPrice);
@@ -584,8 +604,20 @@ public:
 	void ReserveWork(int objectId, int amount) { 
 		//ACTION_LOG(_objectId, TEXT("ReserveWork: unitId:%d amount:%d"), objectId, amount);
 
-		bool reservedBefore = std::find(_workReservers.begin(), _workReservers.end(), objectId) == _workReservers.end();
-		PUN_CHECK2(reservedBefore, _simulation->unitdebugStr(objectId));
+		// There could be issues with leftover _workReservers.
+		// TryConstruct will force someone to work regardless
+		//for (int i = _workReservers.size(); i-- > 0;) {
+		//	if (_workReservers[i] == objectId) {
+		//		_workReservers.erase(_workReservers.begin() + i);
+		//		_workReserved.erase(_workReserved.begin() + i);
+		//	}
+		//}
+		PUN_CHECK(std::find(_workReservers.begin(), _workReservers.end(), objectId) == _workReservers.end());
+		//bool reservedBefore = std::find(_workReservers.begin(), _workReservers.end(), objectId) == _workReservers.end();
+		//if (reservedBefore) 	{
+		//	CppUtils::TryRemove(_workReservers, objectId);
+		//}
+		
 		_workReservers.push_back(objectId);
 		_workReserved.push_back(amount);
 	}
@@ -1068,6 +1100,11 @@ public:
 			result = _workMode.customInputPerBatch;
 		}
 
+		// Scholar Office doesn't scale input batch
+		if (_buildingEnum == CardEnum::CardMaker) {
+			return result;
+		}
+
 		// Adjust to worker count
 		result = result * buildingInfo().workerCount / 2;
 
@@ -1093,6 +1130,11 @@ public:
 
 	bool IsUpgraded(int index) {
 		return _upgrades.size() > index ? _upgrades[index].isUpgraded : false;
+	}
+
+	// UpgradeIndex gets changed by Era Upgrade addition. This fixes it.
+	bool IsUpgraded_InitialIndex(int index) {
+		return IsUpgraded(index + 1);
 	}
 
 	void UpgradeInstantly(int32 index)
@@ -1327,12 +1369,12 @@ public:
 			if (_simulation->HasTownBonus(townId(), CardEnum::DesertTradeForALiving) &&
 				IsFoodEnum(resourceEnum) || resourceEnum == ResourceEnum::Wood || resourceEnum == ResourceEnum::Coal)
 			{
-				tradeFeePercent -= 7;
+				tradeFeePercent -= 25;
 			}
 			if (_simulation->HasTownBonus(townId(), CardEnum::DesertOreTrade) &&
 				IsOreEnum(resourceEnum))
 			{
-				tradeFeePercent -= 20;
+				tradeFeePercent -= 25;
 			}
 		}
 
@@ -1470,6 +1512,7 @@ public:
 		Ar << _isBurnedRuin;
 
 		Ar << _buildingPlacedTick;
+		Ar << _buildingLastWorkedTick;
 
 		// Resources
 		SerializeVecObj(Ar, _holderInfos);
@@ -1786,6 +1829,7 @@ protected:
 	bool _isBurnedRuin = false;
 	
 	int32 _buildingPlacedTick = -1;
+	int32 _buildingLastWorkedTick = -1;
 
 	// Resources
 	std::vector<ResourceHolderInfo> _holderInfos;

@@ -16,12 +16,12 @@
 
 #define TRAILER_MODE 0
 
-// VERSION
+// GAME_VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 25 // 3 digit
+#define MINOR_VERSION 30 // 3 digit
 
-#define VERSION_DAY 8
+#define VERSION_DAY 12
 #define VERSION_MONTH 5
 #define VERSION_YEAR 21
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
@@ -29,6 +29,18 @@
 #define COMBINE_VERSION (MAJOR_VERSION * 1000000000) + (MINOR_VERSION * 1000000) + VERSION_DATE
 
 #define GAME_VERSION COMBINE_VERSION
+
+// SAVE_VERSION
+#define MAJOR_SAVE_VERSION 0
+#define MINOR_SAVE_VERSION 20 // 3 digit
+
+#define VERSION_SAVE_DAY 12
+#define VERSION_SAVE_MONTH 5
+#define VERSION_SAVE_YEAR 21
+#define VERSION_SAVE_DATE (VERSION_SAVE_YEAR * 10000) + (VERSION_SAVE_MONTH * 100) + VERSION_SAVE_DAY
+
+#define SAVE_VERSION (MAJOR_SAVE_VERSION * 1000000000) + (MINOR_SAVE_VERSION * 1000000) + VERSION_SAVE_DATE
+
 
 static std::string GetGameVersionString()
 {
@@ -60,17 +72,6 @@ static FString GetGameVersionString(int32 version, bool includeDate = true)
 	return result;
 }
 
-// VERSION
-#define MAJOR_SAVE_VERSION 0
-#define MINOR_SAVE_VERSION 17 // 3 digit
-
-#define VERSION_SAVE_DAY 15
-#define VERSION_SAVE_MONTH 3
-#define VERSION_SAVE_YEAR 21
-#define VERSION_SAVE_DATE (VERSION_SAVE_YEAR * 10000) + (VERSION_SAVE_MONTH * 100) + VERSION_SAVE_DAY
-
-#define SAVE_VERSION (MAJOR_SAVE_VERSION * 1000000000) + (MINOR_SAVE_VERSION * 1000000) + VERSION_SAVE_DATE
-
 //! Utils
 
 #define ToFString(stdString) FString((stdString).c_str())
@@ -92,13 +93,25 @@ static FString GetGameVersionString(int32 version, bool includeDate = true)
 #define DEBUG_BUILD !UE_BUILD_SHIPPING // WITH_EDITOR
 #define DEV_BUILD !UE_BUILD_SHIPPING
 
+#define FULL_CHECK 0
+#define CHECK_TICKHASH 1
+
+
+#if !defined(REMINDER_CHECK)
+	#if FULL_CHECK
+		#define REMINDER_CHECK(x) if (!(x)) { FDebug::DumpStackTraceToLog(); checkNoEntry(); }
+	#else
+		#define REMINDER_CHECK(x)
+	#endif
+#endif
+
 #if !defined(PUN_CHECK)
 	#if UE_BUILD_SHIPPING
 		#define PUN_CHECK(x) 
 	#elif DEBUG_BUILD
 		#define PUN_CHECK(x) if (!(x)) { FDebug::DumpStackTraceToLog(); checkNoEntry(); }
 	#else
-		#define PUN_CHECK(x) if (!(x)) { FDebug::DumpStackTraceToLog(); UE_LOG(LogTemp, Error, TEXT("PUN_ERROR")); }
+		#define PUN_CHECK(x) //if (!(x)) { FDebug::DumpStackTraceToLog(); UE_LOG(LogTemp, Error, TEXT("PUN_ERROR")); }
 	#endif
 #endif
 
@@ -1110,7 +1123,7 @@ struct ResourceInfo
 // BALANCE
 // human consume 100 food per year, 100 food is roughly 300 coins, 1 year is 20 mins or 1200 sec..
 //
-static const int32 HumanFoodPerYear = 27; // 45 (nov 19) // 35 // 70
+static const int32 HumanFoodPerYear = 24; // 45 (nov 19) // 35 // 70
 static const int32 FoodCost = 5; // 3 (nov 19)
 static const int32 BaseHumanFoodCost100PerYear = 100 * HumanFoodPerYear * FoodCost;
 
@@ -1121,7 +1134,7 @@ static const int32 BaseHumanFoodCost100PerYear = 100 * HumanFoodPerYear * FoodCo
  * Note: Farm is affected by this
  */
 static const int32 WoodGatherYield_Base100 = 250;
-static const int32 FarmBaseYield100 = 150; // 250 (nov 19)
+static const int32 FarmBaseYield100 = 200; // 250 (nov 19)
 static const int32 StoneGatherYield_Base = 4;
 
 static const int32 CutTreeTicksBase = Time::TicksPerSecond * 10;
@@ -1130,7 +1143,7 @@ static const int32 HarvestDepositTicksBase = Time::TicksPerSecond * 14;
 // How fast people produce value when working compare to value spent on food
 // This is high because people don't spend all their time working.
 //!!! Change Base Production (Except FarmBaseYield100) !!!!
-static const int32 WorkRevenueToCost_Base = 128; // 150 -> 128 (Mar 26)
+static const int32 WorkRevenueToCost_Base = 150; // 150 -> 128 (Mar 26)... -> 150 (May 10)
 
 // TODO: WorkRevenueToCost is not yet affected by resource modifiers...
 
@@ -1138,7 +1151,7 @@ static const int32 WorkRevenue100PerYear_perMan_Base = BaseHumanFoodCost100PerYe
 // This is the same as WorkRevenuePerManSec100_Base
 static const int32 WorkRevenue100PerSec_perMan_Base = WorkRevenue100PerYear_perMan_Base / Time::SecondsPerYear;
 
-static const int32 AssumedFoodProduction100PerYear = WorkRevenue100PerYear_perMan_Base / FoodCost; // Food has cost of 3...
+static const int32 AssumedFoodProduction100PerYear = WorkRevenue100PerYear_perMan_Base / FoodCost;
 
 // How much a person spend on each type of luxury per year. ... /4 comes from testing... it makes houselvl 2 gives x2 income compare to house lvl 1
 static const int32 HumanLuxuryCost100PerYear_ForEachType = BaseHumanFoodCost100PerYear / 8;
@@ -1208,8 +1221,8 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::Leather,		LOCTEXT("Leather", "Leather"), 6, LOCTEXT("Leather Desc", "Animal skin that can be used to make Clothes")),
 	ResourceInfo(ResourceEnum::Cloth,		LOCTEXT("Clothes", "Clothes"), 30, LOCTEXT("Clothes Desc", "Luxury tier 2 used for housing upgrade. Provide cover and comfort.")),
 
-	ResourceInfo(ResourceEnum::GoldOre,		LOCTEXT("Gold Ore", "Gold Ore"), 10, LOCTEXT("Gold Ore Desc", "Precious ore that can be smelted into Gold Bar")),
-	ResourceInfo(ResourceEnum::GoldBar,		LOCTEXT("Gold Bar", "Gold Bar"), 25, LOCTEXT("Gold Bar Desc", "Precious metal that can be minted into money or crafted into Jewelry")),
+	ResourceInfo(ResourceEnum::GoldOre,		LOCTEXT("Gold Ore", "Gold Ore"), 14, LOCTEXT("Gold Ore Desc", "Precious ore that can be smelted into Gold Bar")),
+	ResourceInfo(ResourceEnum::GoldBar,		LOCTEXT("Gold Bar", "Gold Bar"), 30, LOCTEXT("Gold Bar Desc", "Precious metal that can be minted into money or crafted into Jewelry")),
 
 	ResourceInfo(ResourceEnum::Beer,			LOCTEXT("Beer", "Beer"), 10, LOCTEXT("Beer Desc", "Luxury tier 1 used for housing upgrade. The cause and solution to all life's problems.")),
 	//ResourceInfo(ResourceEnum::Barley,		"Barley", FoodCost, 100, "Edible grain, obtained from farming. Ideal for brewing Beer"),
@@ -1245,27 +1258,29 @@ static const ResourceInfo ResourceInfos[]
 	// Dec 17
 	ResourceInfo(ResourceEnum::Potato,		LOCTEXT("Potato", "Potato"),	FoodCost, LOCTEXT("Potato Desc", "Common tuber. Can be consumed as Food or brewed into Vodka.")),
 	ResourceInfo(ResourceEnum::Blueberries,	LOCTEXT("Blueberries", "Blueberries"),	FoodCost, LOCTEXT("Blueberries Desc", "Blue-skinned fruit with refreshing taste.")),
-	ResourceInfo(ResourceEnum::Melon,		LOCTEXT("Melon", "Melon"),			FoodCost + 3, LOCTEXT("Melon Desc", "Sweet and refreshing fruit. +3<img id=\"Coin\"/> each unit when consumed.")),
+	ResourceInfo(ResourceEnum::Melon,		LOCTEXT("Melon", "Melon"),			FoodCost + 5, LOCTEXT("Melon Desc", "Sweet and refreshing fruit. +5<img id=\"Coin\"/> each unit when consumed.")),
 	ResourceInfo(ResourceEnum::Pumpkin,		LOCTEXT("Pumpkin", "Pumpkin"),		FoodCost, LOCTEXT("Pumpkin Desc", "Fruit with delicate, mildly-flavored flesh.")),
-	ResourceInfo(ResourceEnum::RawCoffee,	LOCTEXT("Raw Coffee", "Raw Coffee"),	FoodCost + 1, LOCTEXT("Raw Coffee Desc", "Fruit that can be roasted to make Coffee.")),
-	ResourceInfo(ResourceEnum::Tulip,		LOCTEXT("Tulip", "Tulip"),				FoodCost * 2, LOCTEXT("Tulip Desc", "Beautiful decorative flower. (Luxury tier 1)")),
+	ResourceInfo(ResourceEnum::RawCoffee,	LOCTEXT("Raw Coffee", "Raw Coffee"),	FoodCost + 4, LOCTEXT("Raw Coffee Desc", "Fruit that can be roasted to make Coffee.")),
+	ResourceInfo(ResourceEnum::Tulip,		LOCTEXT("Tulip", "Tulip"),				FoodCost + 2, LOCTEXT("Tulip Desc", "Beautiful decorative flower. (Luxury tier 1)")),
 
 	ResourceInfo(ResourceEnum::Coffee,		LOCTEXT("Coffee", "Coffee"),	17, LOCTEXT("Coffee Desc", "Keeps you awake. (Luxury tier 2)")), // +5<img id=\"Science\"/> each unit when consumed.
-	ResourceInfo(ResourceEnum::Vodka,		LOCTEXT("Vodka", "Vodka"),		15, LOCTEXT("Vodka Desc", "Clear alcoholic beverage made from Potato. (Luxury tier 2)")),
+	ResourceInfo(ResourceEnum::Vodka,		LOCTEXT("Vodka", "Vodka"),		17, LOCTEXT("Vodka Desc", "Clear alcoholic beverage made from Potato. (Luxury tier 2)")),
 
 	// Apr 9
 	ResourceInfo(ResourceEnum::StoneTools,	LOCTEXT("Stone Tools", "Stone Tools"),	10, LOCTEXT("Stone Tools Desc", "Low-grade Tools made by Stone Tool Shop.")),
-	ResourceInfo(ResourceEnum::Sand,		LOCTEXT("Sand", "Sand"),	5, LOCTEXT("Sand Desc", "Raw material for producing Glass.")),
+	ResourceInfo(ResourceEnum::Sand,		LOCTEXT("Sand", "Sand"),	6, LOCTEXT("Sand Desc", "Raw material for producing Glass.")),
 	ResourceInfo(ResourceEnum::Oil,			LOCTEXT("Oil", "Oil"),	12, LOCTEXT("Oil Desc", "Fuel used to produce electricity at Oil Power Plant.")),
 	
-	ResourceInfo(ResourceEnum::Glass,		LOCTEXT("Glass", "Glass"),	12, LOCTEXT("Glass Desc", "Transparent construction material made from Sand")),
+	ResourceInfo(ResourceEnum::Glass,		LOCTEXT("Glass", "Glass"),	20, LOCTEXT("Glass Desc", "Transparent construction material made from Sand")),
 	ResourceInfo(ResourceEnum::Concrete,	LOCTEXT("Concrete", "Concrete"),	18, LOCTEXT("Concrete Desc", "Sturdy, versatile construction material")),
 	ResourceInfo(ResourceEnum::SteelBeam,	LOCTEXT("Steel Beam", "Steel Beam"), 30, LOCTEXT("Steel Beam Desc", "Sturdy, versatile construction material")),
 
-	ResourceInfo(ResourceEnum::Glassware,	LOCTEXT("Glassware", "Glassware"),	20, LOCTEXT("Glassware Desc", "Beautiful liquid container made from Glass. (Luxury tier 2)")),
+	ResourceInfo(ResourceEnum::Glassware,	LOCTEXT("Glassware", "Glassware"),	30, LOCTEXT("Glassware Desc", "Beautiful liquid container made from Glass. (Luxury tier 2)")),
 	ResourceInfo(ResourceEnum::PocketWatch,		LOCTEXT("Pocket Watch", "Pocket Watch"),	75, LOCTEXT("Pocket Watch Desc", "Elegant timepiece crafted by Clockmakers. (Luxury tier 3)")),
 	
 };
+
+//!!! Remember that resources other than Food shouldn't cost 5 !!!
 
 static const int ResourceEnumCount = _countof(ResourceInfos);
 
@@ -1559,8 +1574,8 @@ static const std::vector<std::vector<ResourceEnum>> TierToLuxuryEnums =
 {
 	{},
 	{ResourceEnum::Beer, ResourceEnum::Cannabis, ResourceEnum::Furniture, ResourceEnum::Pottery, ResourceEnum::Tulip },
-	{ResourceEnum::Cloth, ResourceEnum::Wine, ResourceEnum::Candle, ResourceEnum::Vodka, ResourceEnum::MagicMushroom, ResourceEnum::Coffee},
-	{ResourceEnum::Book, ResourceEnum::LuxuriousClothes, ResourceEnum::Jewelry, ResourceEnum::Chocolate},
+	{ResourceEnum::Cloth, ResourceEnum::Wine, ResourceEnum::Candle, ResourceEnum::Vodka, ResourceEnum::MagicMushroom, ResourceEnum::Coffee, ResourceEnum::Glassware},
+	{ResourceEnum::Book, ResourceEnum::LuxuriousClothes, ResourceEnum::Jewelry, ResourceEnum::Chocolate, ResourceEnum::PocketWatch},
 };
 
 static const std::vector<ResourceEnum>& GetLuxuryResourcesByTier(int32 tier) {
@@ -1606,6 +1621,8 @@ static bool IsLuxuryEnum(ResourceEnum resourceEnum) {
 static FText LuxuryResourceTip(int32 tier)
 {
 	TArray<FText> args;
+	args.Add(NSLOCTEXT("LuxuryTip", "Luxury Tip Usage", "To Upgrade Houses, provide them with Luxury Resources."));
+	ADDTEXT_INV_("<space>");
 	ADDTEXT_TAG_("<Bold>", FText::Format(NSLOCTEXT("LuxuryTip", "Luxury tier X:", "Luxury tier {0}:"), TEXT_NUM(tier)));
 	for (size_t i = 0; i < TierToLuxuryEnums[tier].size(); i++) {
 		ADDTEXT_(INVTEXT("\n {0}"), GetResourceInfo(TierToLuxuryEnums[tier][i]).GetName());
@@ -1638,34 +1655,9 @@ static std::vector<ResourceEnum> MiscResources = {
 // How fast price goes back to base price without tampering
 static int64 EquilibriumSupplyValue_PerPerson(ResourceEnum resourceEnum)
 {
-	if (resourceEnum == ResourceEnum::IronOre ||
-		resourceEnum == ResourceEnum::GoldOre ||
-		resourceEnum == ResourceEnum::Clay ||
-		resourceEnum == ResourceEnum::Cocoa)
-	{
-		return 50;
-	}
-	if (resourceEnum == ResourceEnum::Wood ||
-		resourceEnum == ResourceEnum::Coal) 
-	{
-		return 80;
-	}
-	if (resourceEnum == ResourceEnum::Iron ||
-		resourceEnum == ResourceEnum::GoldBar) 
-	{
-		return 120;
-	}
-	if (resourceEnum == ResourceEnum::Gemstone) { // Jewelry has small market
-		return 30;
-	}
-	if (resourceEnum == ResourceEnum::Jewelry) { // Jewelry has small market
-		return 80;
-	}
-	if (IsLuxuryEnum(resourceEnum)) {
-		return 120;
-	}
+	static const int32 SupplyMultiplier = 30; // Determines how fast price changes
 	
-	return 80;
+	return GetResourceInfo(resourceEnum).basePrice * SupplyMultiplier;
 }
 static int64 EquilibriumSupplyValue100_PerPerson(ResourceEnum resourceEnum) {
 	return EquilibriumSupplyValue_PerPerson(resourceEnum) * 100;
@@ -2561,12 +2553,12 @@ struct BldResourceInfo
 	static const int32 PercentUpkeepToPrice = 5;
 
 	// TODO:
-	static const int32 BaseCostPercentEraMultiplier = 175;
-	static const int32 BaseProfitPercentEraMultiplier = 150;
+	static const int32 BaseCostPercentEraMultiplier = 170;
+	static const int32 BaseProfitPercentEraMultiplier = 170;
 
 	// For calculating upgrade cost and final base production
 	static const int32 UpgradeCostPercentEraMultiplier = 140;
-	static const int32 UpgradeProfitPercentEraMultiplier = 120;
+	static const int32 UpgradeProfitPercentEraMultiplier = 130;
 
 	static const int32 FirstIndustryIncentiveMultiplier = 80;
 
@@ -2658,7 +2650,7 @@ struct BldResourceInfo
 		if (workerCount > 0)
 		{
 			// Revenue calculated from base cost (cost before discount for construction)
-			const int32 secsToBreakEven = Time::SecondsPerYear * 3 / 4;
+			const int32 secsToBreakEven = Time::SecondsPerYear / 2;
 
 			// Era
 			int32 costPerWorker_beforeUpgrade = costPerWorker_beforeEraAndUpgrade;
@@ -2674,16 +2666,13 @@ struct BldResourceInfo
 			workRevenuePerSec100_perMan_beforeUpgrade = workRevenuePerSec100_perMan_beforeUpgrade * WorkRevenueToCost_Base / 100;
 
 			// Economy of scale, each worker increases revenue by 5%
-			workRevenuePerSec100_perMan_beforeUpgrade = workRevenuePerSec100_perMan_beforeUpgrade * (workerCount * 5 + 100) / 100;
+			workRevenuePerSec100_perMan_beforeUpgrade = workRevenuePerSec100_perMan_beforeUpgrade * (workerCount * 7 + 100) / 100;
 
 			// Building without era upgrade gets work bonus
 			if (HasNoEraUpgrade(buildingEnum)) {
 				workRevenuePerSec100_perMan_beforeUpgrade = workRevenuePerSec100_perMan_beforeUpgrade * UpgradeProfitPercentEraMultiplier / 100;
 			}
 
-			//workRevenuePerSec100_perMan_beforeUpgrade = WorkRevenue100PerSec_perMan_Base + revenuePerSec100_initialCost_perMan; // TODO: WorkRevenue100PerSec_perMan_Base needed??
-
-			//UE_LOG(LogTemp, Error, TEXT("workRevenuePerSec100_perMan_ %s: %d"), ToTChar(name), workRevenuePerSec100_perMan_);
 		}
 	}
 };
@@ -2945,7 +2934,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::IronStatue,	LOCTEXT("Stone Statue",	"Stone Statue"),	LOCTEXT("Stone Statue (Plural)", "Stone Statues"), FText(),
 		WorldTile2(4, 4),	GetBldResourceInfoManual({})
 	),
-	BldInfo(CardEnum::Bank,			LOCTEXT("Bank",	"Bank"), LOCTEXT("Bank (Plural)", "Banks"),	LOCTEXT("Bank Desc", "+<img id=\"Coin\"/>10 for each surrounding level 2+ houses."),
+	BldInfo(CardEnum::Bank,			LOCTEXT("Bank",	"Bank"), LOCTEXT("Bank (Plural)", "Banks"),	LOCTEXT("Bank Desc", "+50%<img id=\"Coin\"/> Income from Luxury for each surrounding level 5+ houses."),
 		WorldTile2(4, 5),	GetBldResourceInfo(3, {}, {0, 0, 0, 2, 1}, -50, 100, -999)
 	),
 	BldInfo(CardEnum::IceAgeSpire,	INVTEXT("Ice Age Spire"),	INVTEXT("Ice Age Spire"),	INVTEXT("Spire for worshipping Groth, the god of destruction. Decrease global temperature by -10 C."),
@@ -2982,7 +2971,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(5, 8), GetBldResourceInfoManual({})
 	),
 	BldInfo(CardEnum::PaperMaker,	LOCTEXT("Paper Maker", "Paper Maker"),		LOCTEXT("Paper Maker (Plural)", "Paper Makers"),	LOCTEXT("Paper Maker Desc", "Produce Paper."),
-		WorldTile2(8, 6), GetBldResourceInfo(2, {ResourceEnum::Paper}, {3, 0, 1, 1}, 0)
+		WorldTile2(8, 6), GetBldResourceInfo(2, {ResourceEnum::Wood, ResourceEnum::Paper}, {3, 0, 1, 1}, 0)
 	),
 	BldInfo(CardEnum::IronSmelter,	LOCTEXT("Iron Smelter", "Iron Smelter"), LOCTEXT("Iron Smelter (Plural)", "Iron Smelters"),	LOCTEXT("Iron Smelter Desc", "Smelt Iron Ores into Iron Bars."),
 		WorldTile2(5, 6), GetBldResourceInfo(2, {ResourceEnum::IronOre, ResourceEnum::Coal, ResourceEnum::Iron}, {1,5}, 0, 100, 1)
@@ -2993,7 +2982,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(5, 8), GetBldResourceInfo(1, {ResourceEnum::Stone, ResourceEnum::Wood, ResourceEnum::SteelTools}, {2, 1})
 	),
 	BldInfo(CardEnum::Blacksmith,	LOCTEXT("Blacksmith", "Blacksmith"),	LOCTEXT("Blacksmith (Plural)", "Blacksmiths"),	LOCTEXT("Blacksmith Desc", "Forge Tools from Iron Bars and Wood."),
-		WorldTile2(5, 8), GetBldResourceInfo(2, {ResourceEnum::Stone, ResourceEnum::Wood, ResourceEnum::SteelTools}, {1, 1, 1}, 0, 100, -1)
+		WorldTile2(5, 8), GetBldResourceInfo(2, {ResourceEnum::Iron, ResourceEnum::Wood, ResourceEnum::SteelTools}, {1, 1, 1}, 0, 100, -1)
 	),
 	BldInfo(CardEnum::Herbalist, LOCTEXT("Herbalist", "Herbalist"),	LOCTEXT("Herbalist (Plural)", "Herbalists"), FText(),
 		WorldTile2(4, 4),	GetBldResourceInfoManual ({})
@@ -3082,10 +3071,10 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(10, 9), GetBldResourceInfoManual({ 50, 50 })
 	),
 	BldInfo(CardEnum::CardMaker,		LOCTEXT("Scholars Office", "Scholars Office"), LOCTEXT("Scholars Office (Plural)", "Scholars Offices"), LOCTEXT("Scholars Office Desc", "Craft a Card from Paper."),
-		WorldTile2(10, 8), GetBldResourceInfo(2, { ResourceEnum::Paper, ResourceEnum::None }, { 0, 1, 1, 1, 1 }, 80)
+		WorldTile2(10, 8), GetBldResourceInfo(2, { ResourceEnum::Paper, ResourceEnum::None }, { 1, 1, 1, 1 }, 80)
 	),
 	BldInfo(CardEnum::ImmigrationOffice,	LOCTEXT("Immigration Office", "Immigration Office"), LOCTEXT("Immigration Office (Plural)", "Immigration Offices"), LOCTEXT("Immigration Office Desc", "Attract new immigrants."),
-		WorldTile2(6, 6), GetBldResourceInfoManual({50}, 2)
+		WorldTile2(6, 6), GetBldResourceInfoManual({50}, 1)
 	),
 
 	/**/BldInfo(CardEnum::ThiefGuild,	LOCTEXT("Thief Guild", "Thief Guild"),	LOCTEXT("Thief Guild (Plural)", "Thief Guilds"), FText(),
@@ -3188,7 +3177,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(6, 9), GetBldResourceInfo(2, { ResourceEnum::Beeswax }, { 1, 1}, -1)
 	),
 	BldInfo(CardEnum::Brickworks, LOCTEXT("Brickworks", "Brickworks"),			LOCTEXT("Brickworks (Plural)", "Brickworks"), LOCTEXT("Brickworks Desc", "Produces Brick from Clay and Coal."),
-		WorldTile2(6, 5), GetBldResourceInfo(2, { ResourceEnum::Clay, ResourceEnum::Coal, ResourceEnum::Brick }, { 1 }, 0)
+		WorldTile2(6, 6), GetBldResourceInfo(2, { ResourceEnum::Clay, ResourceEnum::Coal, ResourceEnum::Brick }, { 1 }, 0)
 	),
 	BldInfo(CardEnum::CandleMaker, LOCTEXT("Candle Maker", "Candle Maker"),		LOCTEXT("Candle Maker (Plural)", "Candle Makers"), LOCTEXT("Candle Maker Desc", "Make Candles from Beeswax and Cotton wicks."),
 		WorldTile2(4, 6), GetBldResourceInfo(2, { ResourceEnum::Beeswax, ResourceEnum::Cotton, ResourceEnum::Candle }, { 3, 2 }, 0)
@@ -3230,7 +3219,7 @@ static const BldInfo BuildingInfo[]
 
 	// October 20
 	BldInfo(CardEnum::Market,	LOCTEXT("Market", "Market"),	LOCTEXT("Market (Plural)", "Markets"), LOCTEXT("Market Desc", "Supplies anything a household needs within its radius. Workers carry 50 units."),
-		WorldTile2(6, 12), GetBldResourceInfoManual({ 120, 120 }, 3)
+		WorldTile2(6, 12), GetBldResourceInfoManual({ 50 }, 2)
 	),
 	BldInfo(CardEnum::ShippingDepot, LOCTEXT("Logistics Office", "Logistics Office"),	LOCTEXT("Logistics Office (Plural)", "Logistics Offices"), LOCTEXT("Logistics Office Desc", "Haul specified resources from within the radius to its delivery target in 50-units bulk."),
 		WorldTile2(4, 4), GetBldResourceInfoManual({ 30, 10 }, 1)
@@ -3252,7 +3241,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(8, 8), GetBldResourceInfo(3, { ResourceEnum::Wood, ResourceEnum::MagicMushroom }, { 1, 1, 0, 1, 1 }, 0, 120, -2)
 	),
 	BldInfo(CardEnum::VodkaDistillery, LOCTEXT("Vodka Distillery", "Vodka Distillery"), LOCTEXT("Vodka Distillery (Plural)", "Vodka Distilleries"), LOCTEXT("Vodka Distillery Desc", "Brew Potato into Vodka."),
-		WorldTile2(6, 6), GetBldResourceInfo(2, { ResourceEnum::Potato, ResourceEnum::Vodka }, { 1, 1 }, 20)
+		WorldTile2(6, 6), GetBldResourceInfo(2, { ResourceEnum::Potato, ResourceEnum::Vodka }, { 1, 1, 1 }, 20)
 	),
 	BldInfo(CardEnum::CoffeeRoaster, LOCTEXT("Coffee Roaster", "Coffee Roaster"),		LOCTEXT("Coffee Roaster (Plural)", "Coffee Roasters"), LOCTEXT("Coffee Roaster Desc", "Roast Raw Coffee into Coffee."),
 		WorldTile2(5, 5), GetBldResourceInfo(3, { ResourceEnum::RawCoffee, ResourceEnum::Coffee }, { 2, 0, 1, 3 }, 20, 100, -2)
@@ -3544,8 +3533,8 @@ static const BldInfo CardInfos[]
 		BldInfo(CardEnum::BorealPineForesting, LOCTEXT("Pine Foresting", "Pine Foresting"), 0, LOCTEXT("Pine Foresting Desc", "+20% Wood yield when cutting Pine Trees.")),
 
 		BldInfo(CardEnum::DesertGem, LOCTEXT("Desert Gem", "Desert Gem"), 0, LOCTEXT("Desert Gem Desc", "+25% Productivity to Gem and Gold Mines.")),
-		BldInfo(CardEnum::DesertTradeForALiving, LOCTEXT("Trade for a Living", "Trade for a Living"), 0, LOCTEXT("Trade for a Living Desc", "-7% Trade Fee when trading Food/Wood.")),
-		BldInfo(CardEnum::DesertOreTrade, LOCTEXT("Ore Trade", "Ore Trade"), 0, LOCTEXT("Ore Trade Desc", "-20% Trade Fee when trading Ores.")),
+		BldInfo(CardEnum::DesertTradeForALiving, LOCTEXT("Trade for a Living", "Trade for a Living"), 0, LOCTEXT("Trade for a Living Desc", "-25% Trade Fee when trading Food/Wood.")),
+		BldInfo(CardEnum::DesertOreTrade, LOCTEXT("Ore Trade", "Ore Trade"), 0, LOCTEXT("Ore Trade Desc", "-25% Trade Fee when trading Ores/Coal/Gemstone.")),
 		BldInfo(CardEnum::DesertIndustry, LOCTEXT("Desert Industry", "Desert Industry"), 0, LOCTEXT("Desert Industry Desc", "+10% Productivity to all Industries. -50% Farm Productivity.")),
 
 		BldInfo(CardEnum::SavannaRanch, LOCTEXT("Grass Fed", "Grass Fed"), 0, LOCTEXT("Grass Fed Desc", "+10% Ranch Productivity.")),
@@ -4032,6 +4021,10 @@ static bool IsPollutingHeavyIndustryOrMine(CardEnum buildingEnum)
 	}
 }
 
+static bool IsBudgetAdjustable(CardEnum buildingEnum) {
+	return IsProducer(buildingEnum) || buildingEnum == CardEnum::CardMaker;
+}
+
 static std::vector<CardEnum> FoodBuildings // Change to AgricultureBuildings
 {
 	CardEnum::Farm,
@@ -4330,6 +4323,10 @@ static std::pair<int32, int32> DockPlacementExtraInfo(CardEnum cardEnum)
 		indexLandEnd = 5; 
 		minWaterCount = 16; 
 	}
+	if (cardEnum == CardEnum::PaperMaker) { // 12 x 6
+		indexLandEnd = 2;
+		minWaterCount = 27;
+	}
 	
 	return std::make_pair(indexLandEnd, minWaterCount);
 }
@@ -4474,9 +4471,9 @@ struct BuildingUpgrade
 	int32 upgradeLevel = 0;
 	std::vector<ResourcePair> resourceNeededPerLevel;
 	
-	bool isEraUpgrade() { return startEra != -1; }
+	bool isEraUpgrade() const { return startEra != -1; }
 	
-	int32 maxUpgradeLevel() { return 5 - startEra; }
+	int32 maxUpgradeLevel() const { return 5 - startEra; }
 
 	ResourcePair currentUpgradeResourceNeeded() {
 		if (isEraUpgrade()) {
@@ -5021,7 +5018,7 @@ static const int32 GrassToBushValue = 3;
  *
  * Note: Gather production tied into the HumanFoodCostPerYear through AssumedFoodProduction100PerYear
  */
-static const int32 GatherUnitsPerYear = 5; // 6;  // GatherBaseYield 4 gives 60 fruits per year... So 15 estimated gather per year...
+static const int32 GatherUnitsPerYear = 6; // 6;  // GatherBaseYield 4 gives 60 fruits per year... So 15 estimated gather per year...
 static const int32 GatherBaseYield100 = AssumedFoodProduction100PerYear / GatherUnitsPerYear;
 static const int32 JungleGatherBaseYield100 = GatherBaseYield100 * 2;
 
@@ -5093,7 +5090,7 @@ static const TileObjInfo TreeInfos[] = {
 	// Dec 17
 	TileObjInfo(TileObjEnum::Potato,	LOCTEXT("Potato", "Potato"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Potato, FarmBaseYield100), LOCTEXT("Potato Desc", "Common tuber.")),
 	TileObjInfo(TileObjEnum::Blueberry,	LOCTEXT("Blueberries", "Blueberries"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Blueberries, FarmBaseYield100), LOCTEXT("Blueberries Desc", "Blue-skinned fruit with refreshing taste.")),
-	TileObjInfo(TileObjEnum::Melon,		LOCTEXT("Melon", "Melon"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Melon, FarmBaseYield100), LOCTEXT("Melon Desc", "Sweet and refreshing fruit. +3<img id=\"Coin\"/> each unit when consumed.")),
+	TileObjInfo(TileObjEnum::Melon,		LOCTEXT("Melon", "Melon"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Melon, FarmBaseYield100), LOCTEXT("Melon Desc", "Sweet and refreshing fruit. +5<img id=\"Coin\"/> each unit when consumed.")),
 	TileObjInfo(TileObjEnum::Pumpkin,	LOCTEXT("Pumpkin", "Pumpkin"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Pumpkin, FarmBaseYield100), LOCTEXT("Pumpkin Desc", "Fruit with delicate, mildly-flavored flesh.")),
 	TileObjInfo(TileObjEnum::RawCoffee,	LOCTEXT("Raw Coffee", "Raw Coffee"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::RawCoffee, FarmBaseYield100), LOCTEXT("Raw Coffee Desc", "Fruit that can be roasted to make Coffee.")),
 	TileObjInfo(TileObjEnum::Tulip,		LOCTEXT("Tulip", "Tulip"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Tulip, FarmBaseYield100), LOCTEXT("Tulip Desc", "Beautiful decorative flower. (Luxury tier 1)")),
@@ -5519,9 +5516,9 @@ enum class IncomeEnum : uint8
 	Luxury,
 
 	Adjacency,
-	//Card_MiddleClass,
 	Card_BeerTax,
 	Card_DesertPilgrim,
+	Bank,
 
 	// HouseIncomeEnumCount!!!
 
@@ -5556,9 +5553,9 @@ static const TArray<FText> IncomeEnumName
 	LOCTEXT("Luxury", "Luxury"),
 
 	LOCTEXT("Adjacency", "Adjacency"),
-	//LOCTEXT("Card Middle Class Income", "Card Middle Class Income"),
 	LOCTEXT("Card Beer Tax", "Card Beer Tax"),
 	LOCTEXT("Card Desert Pilgrim", "Card Desert Pilgrim"),
+	LOCTEXT("Bank", "Bank"),
 
 	LOCTEXT("Townhall Income", "Townhall Income"),
 	LOCTEXT("Bank Profit", "Bank Profit"),
@@ -5781,8 +5778,8 @@ enum class TechEnum : uint8
 	Electricity,
 	
 	StoneToolsShop,
-	OilWell,
-	OilPowerPlant,
+	Petroleum,
+	OilPowerPlant_Remove,
 	PaperMill,
 	ClockMakers,
 
@@ -6254,7 +6251,7 @@ struct UnitInfo
  *
  * Note: Hunting production tied into the HumanFoodCostPerYear through AssumedFoodProduction100PerYear
  */
-static const int32 AssumedHuntUnitPerYear = 4; // 6; // at BaseUnitDrop 5... hunters produce 60 per year ... or 12 Hunt Unit...
+static const int32 AssumedHuntUnitPerYear = 5; // 6; // at BaseUnitDrop 5... hunters produce 60 per year ... or 12 Hunt Unit...
 static const int32 BaseUnitDrop100 = AssumedFoodProduction100PerYear / AssumedHuntUnitPerYear;
 
 static const int32 AnimalFoodPerYear = 300;
@@ -6557,10 +6554,26 @@ static bool IsHorseAnimation(UnitAnimationEnum animationEnum)
 		animationEnum == UnitAnimationEnum::HorseLogistics;
 }
 
+static bool IsCitizenWalkAnimation(UnitAnimationEnum animationEnum)
+{
+	return animationEnum == UnitAnimationEnum::Walk ||
+		animationEnum == UnitAnimationEnum::ImmigrationCart || 
+		animationEnum == UnitAnimationEnum::HaulingCart;
+}
+
 static float GetUnitAnimationPlayRate(UnitAnimationEnum animationEnum) {
 	return UnitAnimationPlayRate[static_cast<int>(animationEnum)];
 }
 
+#if TRAILER_MODE
+const float WorldZoomTransition_Unit = 1200;
+#else
+const float WorldZoomTransition_Unit = 680; // 680
+#endif
+const float WorldZoomTransition_UnitSmall = 680;
+const float WorldZoomTransition_UnitAnimate = 1500;
+const float WorldZoomTransition_HumanWalkAnimate = 300;
+const float WorldZoomTransition_HumanNoAnimate = 490;
 
 
 struct UnitDisplayState
@@ -6598,10 +6611,22 @@ static const UnitEnum SkelMeshUnits[] = {
 	UnitEnum::Hippo,
 	UnitEnum::Penguin,
 };
-static bool IsUsingSkeletalMesh(UnitEnum unitEnumIn, UnitAnimationEnum animationEnum) {
+static bool IsUsingSkeletalMesh(UnitEnum unitEnumIn, UnitAnimationEnum animationEnum, int32 zoomDistance) {
 	if (animationEnum == UnitAnimationEnum::Ship) {
 		return false;
 	}
+	
+	if (unitEnumIn == UnitEnum::Human) {
+		if (PunSettings::IsOn("UseFullSkelAnim")) {
+			return true;
+		}
+		// Walk animation should use Vertex Animation
+		if (IsCitizenWalkAnimation(animationEnum)) {
+			return zoomDistance > WorldZoomTransition_HumanWalkAnimate;
+		}
+		return true;
+	}
+	
 	for (UnitEnum unitEnum : SkelMeshUnits) {
 		if (unitEnum == unitEnumIn) {
 			return true;
@@ -6733,6 +6758,7 @@ enum class CheatEnum : int32
 	AddAIInfluence,
 
 	TestCity,
+	TestCityNetwork,
 	DebugUI,
 	Tog,
 
@@ -6807,6 +6833,7 @@ static const std::string CheatName[]
 	"AddAIInfluence",
 
 	"TestCity",
+	"TestCityNetwork",
 	"DebugUI",
 	"Tog",
 
@@ -8247,12 +8274,13 @@ struct FunServiceInfo
 	FunServiceEnum funServiceEnum = FunServiceEnum::Theatre;
 	CardEnum buildingEnum = CardEnum::None;
 	int32 baseServiceQuality = -1;
+	int32 funPercentToGetService = -1;
 };
 
 const std::vector<FunServiceInfo> FunServiceToCardEnum
 {
-	{FunServiceEnum::Theatre, CardEnum::Theatre, 70 },
-	{FunServiceEnum::Tavern, CardEnum::Tavern, 50},
+	{FunServiceEnum::Theatre, CardEnum::Theatre, 100, 95 },
+	{FunServiceEnum::Tavern, CardEnum::Tavern, 75, 70 },
 };
 
 static bool IsFunServiceBuilding(CardEnum buildingEnum)
@@ -8263,6 +8291,19 @@ static bool IsFunServiceBuilding(CardEnum buildingEnum)
 		}
 	}
 	return false;
+}
+static const FunServiceInfo& GetFunServiceInfo(CardEnum buildingEnum)
+{
+	for (const FunServiceInfo& info : FunServiceToCardEnum) {
+		if (info.buildingEnum == buildingEnum) {
+			return info;
+		}
+	}
+	UE_DEBUG_BREAK();
+	return FunServiceToCardEnum[0];
+}
+static const FunServiceInfo& GetFunServiceInfo(FunServiceEnum funServiceEnum) {
+	return FunServiceToCardEnum[static_cast<int32>(funServiceEnum)];
 }
 
 static FunServiceEnum BuildingEnumToFunService(CardEnum buildingEnum)
@@ -8413,15 +8454,6 @@ const float WorldZoomTransition_TreeHidden = 5000;
 const float WorldZoomTransition_GameToMap = GetCameraZoomAmount(zoomStepBounceLow + 1);
 
 const float WorldZoomTransition_PostProcessEnable = 3000;
-
-#if TRAILER_MODE
-const float WorldZoomTransition_Unit = 1200;
-#else
-const float WorldZoomTransition_Unit = 680; // 680
-#endif
-const float WorldZoomTransition_UnitSmall = 680;
-const float WorldZoomTransition_UnitAnimate = 1500;
-const float WorldZoomTransition_HumanNoAnimate = 490;
 
 const float MapIconShrinkZoomAmount = 5382;
 

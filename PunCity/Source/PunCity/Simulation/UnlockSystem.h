@@ -317,6 +317,11 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 		LOCTEXT("Advanced Military Desc", "+100% influence points from Barracks"),
 	}},
 
+	{ TechEnum::Petroleum, {
+		LOCTEXT("Petroleum", "Petroleum"),
+		LOCTEXT("Petroleum Desc", "Reveals Oil Resource on the Map."),
+	} },
+
 	/*
 	 * Prosperity Tech
 	 */
@@ -434,7 +439,17 @@ public:
 				}
 			}
 		}
-		
+
+		/*
+		 * Georesource Check
+		 */
+		if (techEnum == TechEnum::Petroleum)
+		{
+			simulation->AddPopup(playerId, {
+				LOCTEXT("UnlockedOilResource", "Oil Resource on the Map is revealed.")
+			});
+			simulation->CheckSeedAndMineCard(playerId);
+		}
 	}
 
 	// Helpers
@@ -460,7 +475,7 @@ public:
 		// - Last column tech is 143360 cost
 		// - Full House Sci = 30 (7 ppl), 100 with library + school
 		// - Full lvl 7 house 1400 pop: 1400 / 7  = 200 houses = 20000 sci per round
-		int64 sciNeeded = 70;
+		int64 sciNeeded = 50;
 		for (int32 i = 1; i < column; i++) {
 			sciNeeded *= 2;
 		}
@@ -953,7 +968,7 @@ public:
 			AddTech_Building(column, TechEnum::ConcreteFactory, { TechEnum::Machinery },
 				CardEnum::ConcreteFactory
 			);
-			AddTech_Building(column, TechEnum::Industrialization, { TechEnum::Machinery },
+			AddTech_Building(column, TechEnum::Industrialization, { TechEnum::Machinery, TechEnum::GoldWorking },
 				{ CardEnum::IndustrialIronSmelter, CardEnum::Steelworks }
 			);
 			AddTech_Building(column, TechEnum::JewelryCrafting, { TechEnum::GoldWorking },
@@ -984,7 +999,7 @@ public:
 
 
 			column = 11;
-			AddTech_Building(column, TechEnum::OilWell, { TechEnum::Electricity },
+			AddTech_Building(column, TechEnum::Petroleum, { TechEnum::Electricity },
 				{ CardEnum::OilRig, CardEnum::OilPowerPlant }
 			);
 			AddTech_Building(column, TechEnum::ExhibitionHall, { TechEnum::Electricity },
@@ -1083,27 +1098,22 @@ public:
 			techEnum == TechEnum::EnlightenmentAge ||
 			techEnum == TechEnum::IndustrialAge;
 	}
-	static int32 GetAgeChangeRequiredTechCount(TechEnum techEnum) {
-		if (techEnum == TechEnum::MiddleAge) return 5;
-		if (techEnum == TechEnum::EnlightenmentAge) return 14;
-		if (techEnum == TechEnum::IndustrialAge) return 12;
+	// GetAgeChangeRequiredTechCount
+	static int32 GetTechRequirement_HouseLvl(TechEnum techEnum) {
+		if (techEnum == TechEnum::MiddleAge) return 2;
+		if (techEnum == TechEnum::EnlightenmentAge) return 4;
+		if (techEnum == TechEnum::IndustrialAge) return 5;
 		UE_DEBUG_BREAK();
-		return 0;
+		return 1;
 	}
-	int32 GetAgeChangeResearchCount(TechEnum techEnum) {
-		if (techEnum == TechEnum::MiddleAge) return columnToResearchedCount(1) + columnToResearchedCount(2);
-		if (techEnum == TechEnum::EnlightenmentAge) return columnToResearchedCount(3) + columnToResearchedCount(4) + columnToResearchedCount(5);
-		if (techEnum == TechEnum::IndustrialAge) return columnToResearchedCount(6) + columnToResearchedCount(7) + columnToResearchedCount(8);
+	static int32 GetTechRequirement_HouseLvlCount(TechEnum techEnum) {
+		if (techEnum == TechEnum::MiddleAge) return 10;
+		if (techEnum == TechEnum::EnlightenmentAge) return 30;
+		if (techEnum == TechEnum::IndustrialAge) return 100;
 		UE_DEBUG_BREAK();
-		return 0;
+		return 1;
 	}
-	static FText GetPreviousAgeText(TechEnum techEnum) {
-		if (techEnum == TechEnum::MiddleAge) return LOCTEXT("Dark Age", "Dark Age");
-		if (techEnum == TechEnum::EnlightenmentAge) return LOCTEXT("Middle Age", "Middle Age");
-		if (techEnum == TechEnum::IndustrialAge) return LOCTEXT("Enlightenment Age", "Enlightenment Age");
-		UE_DEBUG_BREAK();
-		return FText();
-	}
+	
 	FText GetEraText(int32 era = -1) {
 		if (era == -1) {
 			era = GetEra();
@@ -1120,7 +1130,12 @@ public:
 	bool IsRequirementMetForTech(TechEnum techEnum)
 	{
 		if (IsAgeChangeTech(techEnum)) {
-			return GetAgeChangeResearchCount(techEnum) >= GetAgeChangeRequiredTechCount(techEnum);
+			if (SimSettings::IsOn("CheatFastTech")) {
+				return true;
+			}
+			int32 houseLvl = GetTechRequirement_HouseLvl(techEnum);
+			int32 houseLvlCount = GetTechRequirement_HouseLvlCount(techEnum);
+			return _simulation->GetHouseLvlCount(_playerId, houseLvl, true) >= houseLvlCount;
 		}
 		
 		ResourceEnum requiredResourceEnum = _enumToTech[techEnum]->requiredResourceEnum;
@@ -1145,10 +1160,12 @@ public:
 		}
 
 		if (IsAgeChangeTech(techEnum)) {
+			int32 houseLvl = GetTechRequirement_HouseLvl(techEnum);
+			int32 houseLvlCount = GetTechRequirement_HouseLvlCount(techEnum);
 			return FText::Format(
-				NSLOCTEXT("TechUI", "NeedSatisfyTechPrereqAgeChange_Pop", "Technology's Prerequisite not met.<space>Satisfy the Prerequisite by Researching {0} Technologies from the {1}."),
-				TEXT_NUM(GetAgeChangeRequiredTechCount(techEnum)),
-				GetPreviousAgeText(techEnum)
+				NSLOCTEXT("TechUI", "NeedSatisfyTechPrereqAgeChange_Pop", "Technology's Prerequisite not met.<space>Satisfy the Prerequisite by upgrading {0} Houses to Lv {1}."),
+				TEXT_NUM(houseLvlCount),
+				TEXT_NUM(houseLvl)
 			);
 		}
 
@@ -1309,7 +1326,7 @@ public:
 	// Simulation
 	void Research(int64 science100PerRound, int32 updatesPerSec);
 
-	static void EraUnlockedDescription(TArray<FText>& args, int32 era, bool isTip);
+	//static void EraUnlockedDescription(TArray<FText>& args, int32 era, bool isTip);
 	void OnEraUnlocked(TArray<FText>& args, int32 era);
 
 	void SetDisplaySciencePoint(TArray<FText>& args, bool hasIcon = true)

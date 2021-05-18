@@ -353,7 +353,8 @@ void UnitStateAI::Update()
 			}
 			else {
  				PUN_LOG("Animal without home %s", ToTChar(compactStr()));
-				//UE_DEBUG_BREAK();
+				Die();
+				return;
 			}
 		}
 
@@ -1863,8 +1864,8 @@ void UnitStateAI::Eat()
 
 			// Special case:
 			if (resourceEnum == ResourceEnum::Melon) {
-				_simulation->ChangeMoney(_playerId, 3);
-				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, unitTile(), INVTEXT("+3"), resourceEnum);
+				_simulation->ChangeMoney(_playerId, 5);
+				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, unitTile(), INVTEXT("+5"), resourceEnum);
 			}
 		}
 		else
@@ -2049,9 +2050,8 @@ void UnitStateAI::HaveFun()
 	int32 funBuildingId = action().int32val1;
 	
 	Building& building = _simulation->building(funBuildingId);
-	
-	if (building.isEnum(CardEnum::Theatre) ||
-		building.isEnum(CardEnum::Tavern)) 
+
+	if (IsFunServiceBuilding(building.buildingEnum()))
 	{
 		FunBuilding& funBuilding = building.subclass<FunBuilding>();
 		funBuilding.UseService();
@@ -2719,7 +2719,6 @@ void UnitStateAI::Construct()
 	//UnitReservation reservation = GetReservation(workplaceId);
 
 	Building& workplace = _simulation->building(workplaceId);
-
 	if (!workplace.isConstructed()) 
 	{
 		DoWork(workManSec100, workplaceId);

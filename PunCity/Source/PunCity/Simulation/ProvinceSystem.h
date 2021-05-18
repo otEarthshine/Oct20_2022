@@ -1033,15 +1033,6 @@ public:
 	
 
 	static int32 MinTileCountForGeoresource() { return CoordinateConstants::TilesPerRegion * 3 / 4; }
-	
-	bool CanPlantMountainGeoresource(int32 provinceId) const {
-		int32 tileCount = provinceTileCount(provinceId);
-		return tileCount > MinTileCountForGeoresource()  && provinceIsMountain(provinceId) && provinceFlatTileCount(provinceId) > tileCount / 4;
-	}
-
-	bool CanPlantFarmGeoresource(int32 provinceId) const {
-		return provinceFlatTileCount(provinceId) > provinceFlatTileCount(provinceId) * 3 / 4;
-	}
 
 	
 public:

@@ -36,6 +36,8 @@ public:
 		}
 	}
 
+	int32 GetElementPlayerId() { return _playerId; }
+
 private:
 	int32 _playerId = -1;
 };

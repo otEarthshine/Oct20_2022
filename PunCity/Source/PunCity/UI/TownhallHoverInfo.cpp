@@ -12,13 +12,19 @@ void UTownhallHoverInfo::PunInit(int buildingId)
 	_buildingId = buildingId;
 	//CityNameEditableText->OnTextCommitted.AddDynamic(this, &UTownhallHoverInfo::ChangedCityName);
 
-	BUTTON_ON_CLICK(LaborerNonPriorityButton, this, &UTownhallHoverInfo::OnClickLaborerNonPriorityButton);
-	BUTTON_ON_CLICK(LaborerPriorityButton, this, &UTownhallHoverInfo::OnClickLaborerPriorityButton);
+	LaborerManualCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UTownhallHoverInfo::OnCheckManualLaborer);
+	AddToolTip(LaborerManualCheckBox,
+		LOCTEXT("LaborerManualCheckBox_Tip", "Check this box to manually adjust the number of Laborers.<space>If unchecked, Laborers will be assigned after all Building Jobs (Employed) are already filled.<space>If checked, Laborers will be assigned before the Normal-Priority Building Jobs are filled (according to the number you manually set).")
+	);
+	
 	BUTTON_ON_CLICK(LaborerArrowUp, this, &UTownhallHoverInfo::IncreaseLaborers);
 	BUTTON_ON_CLICK(LaborerArrowDown, this, &UTownhallHoverInfo::DecreaseLaborers);
 
-	BUTTON_ON_CLICK(BuilderNonPriorityButton, this, &UTownhallHoverInfo::OnClickBuilderNonPriorityButton);
-	BUTTON_ON_CLICK(BuilderPriorityButton, this, &UTownhallHoverInfo::OnClickBuilderPriorityButton);
+	BuilderManualCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UTownhallHoverInfo::OnCheckManualBuilder);
+	AddToolTip(BuilderManualCheckBox,
+		LOCTEXT("BuilderManualCheckBox_Tip", "Check this box to manually adjust the number of Builders.<space>If unchecked, Builders will be assigned after all Building Jobs (Employed) are already filled.<space>If checked, Builders will be assigned before the Normal-Priority Building Jobs are filled (according to the number you manually set).")
+	);
+	
 	BUTTON_ON_CLICK(BuilderArrowUp, this, &UTownhallHoverInfo::IncreaseBuilders);
 	BUTTON_ON_CLICK(BuilderArrowDown, this, &UTownhallHoverInfo::DecreaseBuilders);
 

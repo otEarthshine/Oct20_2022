@@ -59,7 +59,7 @@ void HumanStateAI::CalculateActions()
 
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_PreWorkPlc);
-		
+
 		if (TryCheckBadTile_Human() || justReset()) {
 			DEBUG_AI_VAR(TryCheckBadTile);
 			return;
@@ -68,6 +68,16 @@ void HumanStateAI::CalculateActions()
 		if (TryStoreInventory() || justReset()) {
 			DEBUG_AI_VAR(TryStoreInventory);
 			return;
+		}
+
+		// When construction is prioritized, just go construct regardless of food (won't go into starvation anyway because of cheat)
+		if (Building* workplc = workplace()) {
+			if (workplc->shouldPrioritizeConstruction()) { // Constructor
+				if (TryConstruct() || justReset()) {
+					DEBUG_AI_VAR(TryConstruct_Constructor);
+					return;
+				}
+			}
 		}
 
 		if (TryFindFood() || justReset()) {
@@ -1278,11 +1288,11 @@ bool HumanStateAI::TryFun()
 		return false;
 	}
 
-	const int32 funPercentToGoToTavern = 80;
-
 	for (int32 i = 0; i < FunServiceEnumCount; i++)
 	{
-		if (funPercent(i) < funPercentToGoToTavern)
+		const int32 funPercentToGetService = FunServiceToCardEnum[i].funPercentToGetService;
+		
+		if (funPercent(i) < funPercentToGetService)
 		{
 			House& house = _simulation->building<House>(_houseId, CardEnum::House);
 			WorldTile2 houseCenter = house.centerTile();
@@ -2932,14 +2942,6 @@ bool HumanStateAI::TryConstructHelper(int32 workplaceId)
 		return false;
 	}
 
-	// TODO: maybe this cause some building not getting built?
-	// TODO: this should go before SetAreaWalkable?
-	//WorldTile2 adjacentTile = workplace.adjacentTileNearestTo(unitTile(), unitMaxFloodDistance());
-	//if (!adjacentTile.isValid()) {
-	//	AddDebugSpeech("(Failed)TryConstruct: adjacentTile invalid");
-	//	return false;
-	//}
-
 	WorldTile2 workGateTile = workplace.gateTile();
 	if (!IsMoveValid(workGateTile)) {
 		WorkFailed(TryWorkFailEnum::TargetConstructionInaccessible);
@@ -3074,7 +3076,7 @@ bool HumanStateAI::TryCheckBadTile_Human()
 			y += dy;
 		}
 
-		check(loop > 1);
+		REMINDER_CHECK(loop > 1);
 
 		if (_simulation->IsConnected(end, townGate, unitMaxFloodDistance())) {
 			// move there ignoring obstacles

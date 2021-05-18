@@ -78,7 +78,7 @@ private:
 	void AddBiomeDebugInfo(WorldTile2 tile, UPunBoxWidget* descriptionBox);
 	
 	void AddTileInfo(WorldTile2 tile, UPunBoxWidget* descriptionBox);
-	void AddProvinceInfo(int32 provinceId, UPunBoxWidget* descriptionBox);
+	void AddProvinceInfo(int32 provinceId, WorldTile2 tile, UPunBoxWidget* descriptionBox);
 
 	void AddGeoresourceInfo(int32 provinceId, UPunBoxWidget* descriptionBox, bool showTopLine = false);
 

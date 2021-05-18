@@ -1155,7 +1155,6 @@ public:
 			if (bestClaimProvinceId != -1)
 			{
 				int32 regionPrice = _simulation->GetProvinceClaimPrice(bestClaimProvinceId, _aiPlayerId);
-				
 				if (globalResourceSys.money() >= regionPrice)
 				{
 					// AI claim at half price...

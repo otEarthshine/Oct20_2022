@@ -691,7 +691,8 @@ void UTerrainMapComponent::InitAnnotations()
 			UStaticMesh* protoMesh = _assetLoader->moduleMesh(moduleNames[i]);
 			if (protoMesh) {
 				if (moduleNames[i].Right(4) == FString("Body") ||
-					moduleNames[i].Right(4) == FString("Roof"))
+					moduleNames[i].Right(4) == FString("Roof") ||
+					FStringCompareRight(moduleNames[i], FString("AlwaysOn")))
 				{
 					_buildingsMeshes->AddProtoMesh(moduleNames[i], protoMesh, nullptr);
 				}
@@ -777,7 +778,8 @@ void UTerrainMapComponent::RefreshAnnotations()
 						for (int32 i = 0; i < modules.size(); i++)
 						{
 							if (modules[i].moduleName.Right(4) == FString("Body") ||
-								modules[i].moduleName.Right(4) == FString("Roof"))
+								modules[i].moduleName.Right(4) == FString("Roof") ||
+								FStringCompareRight(modules[i].moduleName, FString("AlwaysOn")))
 							{
 								showMesh(i);
 								//int32 instanceKey = centerTile.tileId() + i * GameMapConstants::TilesPerWorld;

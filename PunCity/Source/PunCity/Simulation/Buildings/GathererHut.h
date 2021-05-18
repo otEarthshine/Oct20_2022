@@ -331,7 +331,7 @@ public:
 	void FinishConstruction() final;
 
 	int32 baseInputPerBatch() final {
-		return Building::baseInputPerBatch() * (IsUpgraded(0) ? 5 : 10) / 10;
+		return Building::baseInputPerBatch() * (IsUpgraded_InitialIndex(0) ? 5 : 10) / 10;
 	}
 };
 
@@ -342,7 +342,7 @@ public:
 	std::vector<BonusPair> GetBonuses() override;
 
 	int32 baseInputPerBatch() override {
-		return Building::baseInputPerBatch() * (IsUpgraded(1) ? 70 : 100) / 100;
+		return Building::baseInputPerBatch() * (IsUpgraded_InitialIndex(1) ? 70 : 100) / 100;
 	}
 
 	int32 GetBaseJobHappiness() override {
@@ -494,19 +494,11 @@ public:
 	// Same amount of work required to acquire resources
 	int32 workManSecPerBatch100() final
 	{
-		// Assume card 800 price for SlotCards
-		//CardEnum cardEnum = GetCardProduced();
-		//int32 cardPrice = GetBuildingInfo(cardEnum).baseCardPrice;
-
-		//if (IsBuildingSlotCard(cardEnum)) {
-		//	cardPrice = 500;
-		//}
-		//// ensure Wild Card and Card Removal cards are not negative
-		//cardPrice = max(cardPrice, 120);
-
 		const int32 costFactor = 200;
 		int32 result = baseBatchCost() * 100 * 100 / workRevenuePerSec100_perMan_() * costFactor / 100; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
 
+		result = buildingInfo().resourceInfo.ApplyUpgradeAndEraProfitMultipliers(result, buildingInfo().minEra(), GetEraUpgradeCount());
+		
 		return result * 100 / efficiency();
 	}
 
@@ -532,8 +524,8 @@ public:
 	// Same amount of work required to acquire resources
 	int32 workManSecPerBatch100() final
 	{
-		// Assume card 500 price here...
-		return (170 - baseBatchCost()) * 100 * 100 / workRevenuePerSec100_perMan_( ); // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
+		// 1 Round per human?
+		return 25 * 100 * 100 / workRevenuePerSec100_perMan_(); // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
 	}
 
 	int32 baseInputPerBatch() override { return 0; }
@@ -569,7 +561,7 @@ public:
 class CharcoalMaker final : public IndustrialBuilding
 {
 public:
-	int32 baseInputPerBatch() override { return IsUpgraded(0) ? 7 : 10; }
+	int32 baseInputPerBatch() override { return IsUpgraded_InitialIndex(0) ? 7 : 10; }
 	
 	void FinishConstruction() final;
 	std::vector<BonusPair> GetBonuses() override;
@@ -597,7 +589,7 @@ public:
 	}
 
 	int32 baseInputPerBatch() override {
-		return Building::baseInputPerBatch() * (IsUpgraded(0) ? 50 : 100) / 100;
+		return Building::baseInputPerBatch() * (IsUpgraded_InitialIndex(0) ? 50 : 100) / 100;
 	}
 };
 
@@ -625,7 +617,7 @@ class BeerBrewery : public IndustrialBuilding
 {
 public:
 	int32 baseInputPerBatch() override {
-		return Building::baseInputPerBatch() * (IsUpgraded(0) ? 70 : 100) / 100;
+		return Building::baseInputPerBatch() * (IsUpgraded_InitialIndex(0) ? 70 : 100) / 100;
 	}
 	
 	void OnInit() override;
@@ -644,7 +636,7 @@ class VodkaDistillery : public IndustrialBuilding
 {
 public:
 	int32 baseInputPerBatch() override {
-		return Building::baseInputPerBatch() * (IsUpgraded(0) ? 70 : 100) / 100;
+		return Building::baseInputPerBatch() * (IsUpgraded_InitialIndex(0) ? 70 : 100) / 100;
 	}
 	
 	void FinishConstruction() override;
@@ -813,7 +805,7 @@ public:
 	std::vector<BonusPair> GetBonuses() final;
 
 	int32 baseInputPerBatch() override {
-		return Building::baseInputPerBatch() * (IsUpgraded(1) ? 70 : 100) / 100;
+		return Building::baseInputPerBatch() * (IsUpgraded_InitialIndex(1) ? 70 : 100) / 100;
 	}
 };
 
@@ -1036,7 +1028,7 @@ public:
 	static const int32 Radius = 12;
 
 	//ResourceEnum product() final {
-	//	return IsUpgraded(1) ? ResourceEnum::WhaleMeat : ResourceEnum::Fish;
+	//	return IsUpgraded_InitialIndex(1) ? ResourceEnum::WhaleMeat : ResourceEnum::Fish;
 	//}
 	ResourceEnum product() final {
 		return ResourceEnum::Fish;
@@ -1261,7 +1253,7 @@ public:
 	static const int32 Radius = 30;
 	static const int32 ProfitPerHouse = 10;
 
-	static const int32 MinHouseLvl = 2;
+	static const int32 MinHouseLvl = 5;
 
 	void CalculateRoundProfit() override;
 };
@@ -1280,11 +1272,11 @@ public:
 
 
 
-static const std::vector<int32> BaseServiceQuality
-{
-	50,
-	70,
-};
+//static const std::vector<int32> BaseServiceQuality
+//{
+//	50,
+//	70,
+//};
 
 class FunBuilding : public Building
 {
@@ -1298,7 +1290,7 @@ public:
 		return quality;
 	}
 	static int32 ServiceQuality(CardEnum buildingEnum, int32 appealPercent) {
-		return BuildingEnumToBaseServiceQuality(buildingEnum) + appealPercent / 2;
+		return BuildingEnumToBaseServiceQuality(buildingEnum) + std::max(0, appealPercent / 4);
 	}
 
 	// System:
@@ -1614,7 +1606,7 @@ public:
 	int32 baseUpkeep() override {
 		int32 baseUpkeep = 80;
 
-		if (IsUpgraded(0) && adjacentCount(CardEnum::Windmill) > 0) {
+		if (IsUpgraded_InitialIndex(0) && adjacentCount(CardEnum::Windmill) > 0) {
 			return baseUpkeep / 2;
 		}
 		return baseUpkeep;

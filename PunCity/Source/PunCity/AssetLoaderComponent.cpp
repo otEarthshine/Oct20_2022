@@ -183,7 +183,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::Winery, "Winery_Era_", "Winery", 2);
 
 	LoadBuilding(CardEnum::Library, "Library_Era", "Library", 2);
-	LoadBuilding(CardEnum::School, "College_Name", "College/Era4");
+	LoadBuilding(CardEnum::School, "College_Era", "College", 3);
 
 	LoadBuilding(CardEnum::PaperMaker, "PaperMakerEra", "PaperMaker", 2, 2);
 	
@@ -198,8 +198,12 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::TradingPost, "TradingPost_Era", "TradingPost", 1);
 	LoadBuilding(CardEnum::TradingCompany, "TradingCompany_Era", "TradingCompany", 2);
 
-	LoadBuilding(CardEnum::CardMaker, "Scholars_Office_Era_", "ScholarsOffice", 4);
-	LoadBuilding(CardEnum::Archives, "Archives_Era", "Archives", 3);
+	//LoadBuilding(CardEnum::CardMaker, "Scholars_Office_Era_", "ScholarsOffice", 2);
+	LoadBuilding(CardEnum::CardMaker, "ScholarsOffice_Era2", "ScholarsOffice/Era2", false, {}, 2);
+	LoadBuilding(CardEnum::CardMaker, "ScholarsOffice_Era3", "ScholarsOffice/Era3", false, {}, 3);
+	LoadBuilding(CardEnum::CardMaker, "Scholars_Office_Era_4", "ScholarsOffice/Era4", false, {}, 4);
+	
+	LoadBuilding(CardEnum::Archives, "Archives_Era", "Archives", 2);
 
 	LoadBuilding(CardEnum::ImmigrationOffice, "Immigration_Office_Era_", "ImmigrationOffice", 1);
 	
@@ -645,18 +649,18 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	};
 
 	// Adult Male
-	LoadUnitFull(UnitEnum::Human, "Human/CitizenMale/", "CitizenMale", animationFileNames, "Human/CitizenMale/CitizenMaleStatic");
+	LoadUnitFull(UnitEnum::Human, "Human/CitizenMale/", "CitizenMale", animationFileNames, "Human/CitizenMale/VertexAnim/CitizenMale_VertexAnim3"); // "Human/CitizenMale/CitizenMaleStatic"
 	LoadUnitAuxMesh(UnitAnimationEnum::ImmigrationCart, "Human/Cart/Cart");
 	LoadUnitAuxMesh(UnitAnimationEnum::HaulingCart, "Human/Cart/FrontCart");
 
 	// Adult Female
-	LoadUnitFull(UnitEnum::Human, "Human/CitizenFemale/", "CitizenFemale", animationFileNames, "Human/CitizenFemale/CitizenFemaleStatic");
+	LoadUnitFull(UnitEnum::Human, "Human/CitizenFemale/", "CitizenFemale", animationFileNames, "Human/CitizenFemale/VertexAnim/CitizenFemale_VertexAnim"); // "Human/CitizenFemale/CitizenFemaleStatic"
 
 	// Child Male
-	LoadUnitFull(UnitEnum::Human, "Human/CitizenChildMale/", "CitizenChildMale", animationFileNames, "Human/CitizenChildMale/CitizenChildMaleStatic");
+	LoadUnitFull(UnitEnum::Human, "Human/CitizenChildMale/", "CitizenChildMale", animationFileNames, "Human/CitizenChildMale/VertexAnim/CitizenChildMale_VertexAnim");
 
 	// Child Female
-	LoadUnitFull(UnitEnum::Human, "Human/CitizenChildFemale/", "CitizenChildFemale", animationFileNames, "Human/CitizenChildFemale/CitizenChildFemaleStatic");
+	LoadUnitFull(UnitEnum::Human, "Human/CitizenChildFemale/", "CitizenChildFemale", animationFileNames, "Human/CitizenChildFemale/VertexAnim/CitizenChildFemale_VertexAnim");
 
 
 	// Wild Man
@@ -1258,6 +1262,7 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 		//// foundFiles are just file names, so we append the folder to it
 		int32 bodyMainIndex = 1;
 		int32 bodySpecialIndex = 1;
+		int32 alwaysOnIndex = 1;
 
 		auto loadMesh = [&](int32 fileIndex)
 		{
@@ -1275,7 +1280,8 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 			{
 				PUN_EDITOR_LOG("- File is from set");
 
-				auto addMesh = [&](FString moduleTypeName, bool isSpecial = false) {
+				auto addMesh = [&](FString moduleTypeName, bool isSpecial = false)
+				{
 					FString moduleName = moduleSetName + moduleTypeName;
 
 					//FString path = "/Game/" + buildingPath + meshSetFolder + FString("/") + foundFiles[i];
@@ -1286,6 +1292,7 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 
 					// Use Lightmap Resolution 100 to mark
 					if (moduleTypeName != "Frame" &&
+						moduleTypeName != "AlwaysOn" &&
 						mesh->LightMapResolution == 100 && bodyMainIndex <= 3) 
 					{
 						moduleName = moduleSetName + FString("Body") + FString::FromInt(bodyMainIndex);
@@ -1302,7 +1309,12 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 					return moduleName;
 				};
 
-				if (foundFiles[i].Contains("_Body_") ||
+				
+				if (foundFiles[i].Contains("_AlwaysOn_")) {
+					addMesh("AlwaysOn");
+					alwaysOnIndex++;
+				}
+				else if (foundFiles[i].Contains("_Body_") ||
 					foundFiles[i].Contains("_Body1_") ||
 					foundFiles[i].Contains("_Body2_") ||
 					foundFiles[i].Contains("_Body3_") ||
@@ -1372,7 +1384,7 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 
 		// Hit here means Body needs to be specified. Body is for showing model from far away.
 		//  Set with LightMapResolution == 100
-		check(bodyMainIndex > 1);
+		check(bodyMainIndex > 1 || alwaysOnIndex > 1);
 	}
 
 

@@ -292,14 +292,26 @@ int32 House::GetIncome100(IncomeEnum incomeEnum)
 		return 0;
 	}
 
-	case IncomeEnum::Card_DesertPilgrim:
+	case IncomeEnum::Card_DesertPilgrim: {
 		if (_simulation->TownhallCardCountTown(_townId, CardEnum::DesertPilgrim) > 0 &&
-			_simulation->terrainGenerator().GetBiome(_centerTile) == BiomeEnum::Desert) 
+			_simulation->terrainGenerator().GetBiome(_centerTile) == BiomeEnum::Desert)
 		{
 			return  occupancyFactor(500);
-		} else {
+		}
+		else {
 			return 0;
 		}
+	}
+
+	case IncomeEnum::Bank: {
+		if (_houseLvl >= 5) {
+			return 0;
+		}
+		int32 radiusBonus = GetRadiusBonus(CardEnum::Bank, Bank::Radius, [&](int32 bonus, Building& building) {
+			return max(bonus, 1);
+		});
+		return (radiusBonus > 0) ? (GetIncome100(IncomeEnum::Luxury) * 50 / 100) : 0; // +50%
+	}
 
 	default:
 		UE_DEBUG_BREAK();
@@ -312,7 +324,7 @@ int64 House::GetScience100(ScienceEnum scienceEnum, int64 cumulative100)
 	switch (scienceEnum)
 	{
 	case ScienceEnum::Base:
-		return _roundFoodConsumption100 / 30;
+		return _roundFoodConsumption100 / 20; // May 10: /30 -> /20
 
 	case ScienceEnum::Luxury:
 		return _roundLuxuryConsumption100 * 2 / 10; // 20% lux goes to science ... 20% could be gained from having Library
@@ -420,6 +432,7 @@ void House::UpgradeHouse(int32 lvl)
 
 
 	_simulation->UpdateProsperityHouseCount(_playerId);
+	_simulation->ResetTechDisplay(_playerId);
 	
 	
 	_simulation->soundInterface()->Spawn2DSound("UI", "UpgradeHouse", -1, _centerTile);

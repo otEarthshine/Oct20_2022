@@ -238,9 +238,10 @@ private:
 		return EquilibriumSupplyValue100_PerPerson(resourceEnum) * worldPopulationWithBase();
 	}
 
-	static const int64 BaseWorldPopulation = 100;
-	static const int64 MinSupplyValue100_PerPerson = 30 * 100; // also sort of min price %
+	static const int64 BaseWorldPopulation = 300;
+	static const int64 MinSupplyValue100_PerPerson = 50 * 100; // also sort of min price % // May 10: 30 -> 50
 	static const int64 WorldTradeFluctuationPercent = 30;
+	// Also see SupplyMultiplier in SimInfo
 
 
 private:

@@ -61,6 +61,8 @@ DECLARE_LOG_CATEGORY_EXTERN(LogNetworkInput, All, All);
 
 enum class TickHashEnum
 {
+	Input,
+	Rand,
 	Unit,
 	Building,
 
@@ -94,7 +96,10 @@ struct TickHashes
 	static int32 GetTickIndex(int32 tickCount, TickHashEnum tickHashEnum) {
 		return tickCount * TickHashEnumCount() + static_cast<int32>(tickHashEnum);
 	}
-	
+
+	void Clear() {
+		allTickHashes.Empty();
+	}
 };
 
 /**
@@ -120,7 +125,7 @@ public:
 	 * Desync Check
 	 */
 	void GetUnsentTickHashes(int32 startTick, TArray<int32>& tickHashes) {
-#if WITH_EDITOR
+#if CHECK_TICKHASH
 		for (int32 i = startTick * TickHashes::TickHashEnumCount(); i < _tickHashes.allTickHashes.Num(); i++) {
 			tickHashes.Add(_tickHashes.allTickHashes[i]);
 		}
@@ -128,7 +133,7 @@ public:
 	}
 	void AppendAndCompareServerHashes(int32 hashSendTick, const TArray<int32>& newAllTickHashes)
 	{
-#if WITH_EDITOR
+#if CHECK_TICKHASH
 		_LOG(PunTickHash, "AppendAndCompareServerHashes_Before newAllTickHashes:%d _serverTickHashes.TickCount:%d", newAllTickHashes.Num(), _serverTickHashes.TickCount());
 
 		PUN_CHECK(hashSendTick <= _serverTickHashes.TickCount());
@@ -143,13 +148,21 @@ public:
 			index++;
 		}
 		int32 checkTickCount = std::min(_tickHashes.TickCount(), _serverTickHashes.TickCount());
-		for (int32 i = 0; i < checkTickCount; i++) {
+		for (int32 i = 0; i < checkTickCount; i++) 
+		{
+			// i is Tick Count
 			int32 hashIndex0 = i * TickHashes::TickHashEnumCount();
 
+			int32 localHash = -1;
+			int32 serverHash = -1;
 			auto compareHashes = [&](TickHashEnum tickHashEnum) {
-				return _tickHashes.allTickHashes[hashIndex0 + static_cast<int32>(tickHashEnum)] == _serverTickHashes.allTickHashes[hashIndex0 + static_cast<int32>(tickHashEnum)];
+				localHash = _tickHashes.allTickHashes[hashIndex0 + static_cast<int32>(tickHashEnum)];
+				serverHash = _serverTickHashes.allTickHashes[hashIndex0 + static_cast<int32>(tickHashEnum)];
+				return localHash == serverHash;
 			};
-			
+
+			check(compareHashes(TickHashEnum::Input));
+			check(compareHashes(TickHashEnum::Rand));
 			check(compareHashes(TickHashEnum::Unit));
 			check(compareHashes(TickHashEnum::Building));
 		}
@@ -157,6 +170,12 @@ public:
 		_LOG(PunTickHash, "AppendAndCompareServerHashes_After _tickHashes.TickCount:%d _serverTickHashes.TickCount:%d", _tickHashes.TickCount(), _serverTickHashes.TickCount());
 #endif
 	}
+
+	// After Loading game, hashSendTick is reset
+	int32 GetHashSendTickAfterLoad() {
+		return _tickHashes.TickCount();
+	}
+	
 
 	/*
 	 * Subsystems
@@ -795,7 +814,7 @@ public:
 	bool isLoadingFromFile() final { return _isLoadingFromFile; }
 	bool isLoadingForMainMenu() final { return _isLoadingForMainMenu; }
 
-	int32 playerId() final { return _gameManager->playerId(); }
+	int32 gameManagerPlayerId() final { return _gameManager->playerId(); }
 
 	void ResetUnitActions(int id, int32 waitTicks = 1) final;
 	int32 AddUnit(UnitEnum unitEnum, int32 townId, WorldAtom2 location, int32 ageTicks) final;
@@ -1474,10 +1493,30 @@ public:
 		// Cost Penalty from being far
 		const int32 maxProvinceDistanceCostPenalty = 500;
 		int32 provinceDistance = regionSystem().provinceDistanceToPlayer(provinceId, playerId);
-		int32 distancePenaltyCostPercent = maxProvinceDistanceCostPenalty * provinceDistance / 7;
-		claimPrice = IncrementByPercent100(claimPrice, distancePenaltyCostPercent);
+		if (provinceDistance != MAX_int32) {
+			int32 distancePenaltyCostPercent = maxProvinceDistanceCostPenalty * std::max(0, provinceDistance - 1) / 7;
+			claimPrice = IncrementByPercent100(claimPrice, distancePenaltyCostPercent);
+		}
 		
 		claimPrice = IncrementByPercent100(claimPrice, GetProvinceTerrainClaimCostPenalty(claimConnectionEnum));
+
+		
+		// Cost Penalty from Regional Building
+		int32 regionalBuildingCost = 0;
+		ExecuteOnRegionalBuildings(provinceId, [&](Building& bld, const std::vector<WorldRegion2>& regionOverlaps)
+		{
+			if (bld.isEnum(CardEnum::RegionTribalVillage)) {
+				regionalBuildingCost = std::max(regionalBuildingCost, 200);
+			}
+			else if (bld.isEnum(CardEnum::RegionCrates)) {
+				regionalBuildingCost = std::max(regionalBuildingCost, 50);
+			}
+			else if (bld.isEnum(CardEnum::RegionShrine)) {
+				regionalBuildingCost = std::max(regionalBuildingCost, 50);
+			}
+		});
+		claimPrice += regionalBuildingCost;
+		
 		
 		return claimPrice;
 	}
@@ -1710,6 +1749,26 @@ public:
 				provinceOwnerTown(connection.provinceId) == townId;
 		});
 	}
+
+	template<typename Func>
+	void ExecuteOnRegionalBuildings(int32 provinceId, Func func)
+	{
+		const std::vector<WorldRegion2>& regionOverlaps = _provinceSystem.GetRegionOverlaps(provinceId);
+		for (WorldRegion2 regionOverlap : regionOverlaps)
+		{
+			auto& buildingList = buildingSystem().buildingSubregionList();
+			buildingList.ExecuteRegion(regionOverlap, [&](int32 buildingId) {
+				auto bld = building(buildingId);
+				if (IsRegionalBuilding(bld.buildingEnum()) &&
+					GetProvinceIdClean(bld.centerTile()) == provinceId)
+				{
+					func(bld, regionOverlaps);
+				}
+			});
+		}
+	}
+
+	
 	//bool IsProvinceOverseaClaimableByPlayer(int32 provinceId, int32 playerId, int32 townId)
 	//{
 	//	// TODO: have military harbor that do flood check..
@@ -2136,6 +2195,10 @@ public:
 
 	int32 GetEra(int32 playerId) final {
 		return unlockSystem(playerId)->GetEra();
+	}
+
+	void ResetTechDisplay(int32 playerId) final {
+		unlockSystem(playerId)->needTechDisplayUpdate = true;
 	}
 
 	// Prosperity
@@ -2657,7 +2720,7 @@ public:
 		return cardSystem(playerId).RollRareHand(rareHandEnum, rareHandMessage);
 	}
 
-	void CheckGetSeedCard(int32 playerId) final
+	void CheckSeedAndMineCard(int32 playerId) final
 	{
 		auto checkGetSeed = [&](CardEnum seedCardEnum, GeoresourceEnum georesourceEnum)
 		{
@@ -2692,6 +2755,15 @@ public:
 
 		auto checkAddMineCard = [&](CardEnum mineCardEnum, GeoresourceEnum georesourceEnum)
 		{
+			// Ensure Townhall is already built
+			if (!HasTownhall(playerId)) {
+				return;
+			}
+			// Special case: Oil requires research
+			if (IsResearched(playerId, TechEnum::Petroleum)) {
+				return;
+			}
+			
 			if (!HasCardInAnyPile(playerId, mineCardEnum))
 			{
 				std::vector<int32> provincesClaimed = GetProvincesPlayer(playerId);
@@ -2724,7 +2796,7 @@ public:
 		checkAddMineCard(CardEnum::IronMine, GeoresourceEnum::IronOre);
 		checkAddMineCard(CardEnum::GoldMine, GeoresourceEnum::GoldOre);
 		checkAddMineCard(CardEnum::GemstoneMine, GeoresourceEnum::Gemstone);
-		checkAddMineCard(CardEnum::OilRig, GeoresourceEnum::CoalOre);
+		checkAddMineCard(CardEnum::OilRig, GeoresourceEnum::Oil);
 	}
 
 	void PopupInstantReply(int32 playerId, PopupReceiverEnum replyReceiver, int32 choiceIndex);
@@ -2882,11 +2954,16 @@ public:
 #undef LOOP
 			}
 
-			//SerializeVecValue(Ar, _tickHashes);
-#if WITH_EDITOR
+#if CHECK_TICKHASH
 			_tickHashes >> Ar;
+			if (Ar.IsLoading()) {
+				_serverTickHashes = _tickHashes;
+				_LOG(PunTickHash, "CHECK_TICKHASHLoad _tickHashes.TickCount:%d _serverTickHashes.TickCount:%d", _tickHashes.TickCount(), _serverTickHashes.TickCount());
+			}
+			
+			Ar << _currentInputHashes;
+			SerializeVecValue(Ar, _commandsExecuted);
 #endif
-			//SerializeVecValue(Ar, _serverTickHashes);
 
 			// Snow
 			Ar << _snowAccumulation3;
@@ -3003,14 +3080,14 @@ public:
 				ClearProvinceBuildings(provinceId);
 
 				// Claim Land
-				SetProvinceOwnerFull(provinceId, playerId());
+				SetProvinceOwnerFull(provinceId, gameManagerPlayerId());
 
 				FPlaceBuilding params;
 				params.buildingEnum = static_cast<uint8>(CardEnum::Townhall);
 				params.faceDirection = static_cast<uint8>(Direction::S);
 				params.center = center;
 				params.area = BuildingArea(params.center, GetBuildingInfo(CardEnum::Townhall).size, static_cast<Direction>(params.faceDirection));
-				params.playerId = playerId();
+				params.playerId = gameManagerPlayerId();
 				int32 townhallId = PlaceBuilding(params);
 
 				building(townhallId).InstantClearArea();
@@ -3020,15 +3097,15 @@ public:
 				});
 
 				// PlayerOwnedManager
-				_playerOwnedManagers[playerId()].capitalTownhallId = townhallId;
-				_playerOwnedManagers[playerId()].justChoseLocation = true;
-				_playerOwnedManagers[playerId()].needChooseLocation = false;
+				_playerOwnedManagers[gameManagerPlayerId()].capitalTownhallId = townhallId;
+				_playerOwnedManagers[gameManagerPlayerId()].justChoseLocation = true;
+				_playerOwnedManagers[gameManagerPlayerId()].needChooseLocation = false;
 
 				break;
 			}
 		}
 
-		ChangeMoney(playerId(), 1000000);
+		ChangeMoney(gameManagerPlayerId(), 1000000);
 
 		// Claim Land
 		// TODO: bring back?
@@ -3055,7 +3132,7 @@ public:
 			command.faceDirection = buildingJson->GetIntegerField("faceDirection");
 
 			command.area = BuildingArea(command.center, GetBuildingInfoInt(command.buildingEnum).size, static_cast<Direction>(command.faceDirection));
-			command.playerId = playerId();
+			command.playerId = gameManagerPlayerId();
 			
 			PlaceBuilding(command);
 		}
@@ -3204,6 +3281,8 @@ private:
 		});
 	}
 
+	void TestCityNetworkStage();
+
 public:
 	DescriptionUIState _descriptionUIState;
 	
@@ -3261,9 +3340,13 @@ private:
 
 	FMapSettings _mapSettings;
 	FGameEndStatus _endStatus;
-	
+
+	// Tick Hashes
 	TickHashes _tickHashes;
 	TickHashes _serverTickHashes;
+
+	int32 _currentInputHashes = 0;
+	std::vector<NetworkCommandEnum> _commandsExecuted;
 
 	// Snow (Season * Celsius) 
 	FloatDet _snowAccumulation3 = 0;

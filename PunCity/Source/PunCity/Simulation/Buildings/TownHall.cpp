@@ -58,10 +58,7 @@ void TownHall::FinishConstruction()
 
 	_simulation->RecalculateTaxDelayedTown(_townId);
 
-	//armyNode.Init(_playerId, buildingId(), _simulation);
-
 	_townStartTick = Time::Ticks();
-
 
 	// Trailer Mode and Editor show no rare card
 	if (PunSettings::TrailerMode()) {
@@ -119,7 +116,19 @@ void TownHall::UpgradeTownhall()
 
 	// Upgrade
 	townhallLvl++;
+	
 	ResetDisplay();
+	
+	// Reset all autoupgrade building's display
+	for (int32 i = 0; i < BuildingEnumCount; i++) {
+		CardEnum buildingEnum = static_cast<CardEnum>(i);
+		if (IsAutoEraUpgrade(buildingEnum)) {
+			const std::vector<int32>& buildingIds = _simulation->buildingIds(_townId, buildingEnum);
+			for (int32 buildingId : buildingIds) {
+				_simulation->building(buildingId).ResetDisplay();
+			}
+		}
+	}
 
 	// Biome Card
 	if (townhallLvl == 2)
@@ -188,20 +197,22 @@ void TownHall::UpgradeTownhall()
 		cardSys.AddDrawCards(CardEnum::Immigration, 1);
 		cardSys.AddDrawCards(CardEnum::Kidnap, 1);
 
-		_simulation->AddPopup(_playerId, 
-			LOCTEXT("UnlockedSetTradeOffer_Pop", "Unlocked \"Set Trade Offer\" Button.<space>Use it to put up Trade Offers at the Townhall.\nOther players can examine your Trade Offers, and directly trade with you (0% Fee).")
-		);
-		unlockSys->unlockedSetTradeAmount = true;
+		{
+			_simulation->AddPopup(_playerId, {
+				LOCTEXT("UnlockedSetDeliveryTarget1_Pop", "Unlocked ability to Set Delivery Target!<space>You can set the storage/market where the building's output will be stored.<space>"),
+				LOCTEXT("UnlockedSetDeliveryTarget2_Pop", "To set the delivery target:<bullet>Click on a production building to bring up its panel</><bullet>Click the [Set Delivery Target] button</><bullet>Select the target you wish to deliver to</>")
+				});
+			unlockSys->unlockedSetDeliveryTarget = true;
+		}
 	}
 	else if (townhallLvl == 4) {
 		cardSys.AddDrawCards(CardEnum::SharingIsCaring, 1);
 
 		{
-			_simulation->AddPopup(_playerId, {
-				LOCTEXT("UnlockedSetDeliveryTarget1_Pop", "Unlocked ability to Set Delivery Target!<space>You can set the storage/market where the building's output will be stored.<space>"),
-				LOCTEXT("UnlockedSetDeliveryTarget2_Pop", "To set the delivery target:<bullet>Click on a production building to bring up its panel</><bullet>Click the [Set Delivery Target] button</><bullet>Select the target you wish to deliver to</>")
-			});
-			unlockSys->unlockedSetDeliveryTarget = true;
+			_simulation->AddPopup(_playerId,
+				LOCTEXT("UnlockedSetTradeOffer_Pop", "Unlocked \"Set Trade Offer\" Button.<space>Use it to put up Trade Offers at the Townhall.\nOther players can examine your Trade Offers, and directly trade with you (0% Fee).")
+			);
+			unlockSys->unlockedSetTradeAmount = true;
 		}
 
 		//{

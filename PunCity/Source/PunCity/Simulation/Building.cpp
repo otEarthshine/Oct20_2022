@@ -113,6 +113,18 @@ void Building::Init(IGameSimulationCore& simulation, int32 objectId, int32 townI
 	InitStatistics();
 
 	_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Overlay, _centerTile.regionId(), true);
+
+	if (isEnum(CardEnum::Townhall)) {
+		_simulation->AddFireOnceParticleInfo(ParticleEnum::OnTownhall, _area);
+	} else {
+		_simulation->AddFireOnceParticleInfo(ParticleEnum::PlacementDust, _area);
+	}
+
+	
+	// AutoQuickBuild?
+	if (IsAutoQuickBuild(_buildingEnum)) {
+		_simulation->AddQuickBuild(_objectId);
+	}
 	
 
 	// Special case Bridge,
@@ -229,7 +241,7 @@ void Building::FinishConstruction()
 	ResetDisplay();
 
 	/*_simulation->buildingSystem().RefreshIsBuildingConnected()*/
-
+	
 
 	// Auto-add inputs/outputs accordingly
 	if (hasInput1()) {
@@ -675,7 +687,10 @@ FText Building::GetUpgradeDisplayDescription(int32 index) {
 	BuildingUpgrade& upgrade = _upgrades[index];
 	if (upgrade.isEraUpgrade()) {
 		int32 nextEra = upgrade.upgradeLevel + buildingInfo().minEra() + 1;
-		if (nextEra == 5) {
+		if (nextEra == 5) 
+		{
+			// TODO: special Upgrade description for Traders
+			
 			int32 electricityPerBatch = ElectricityAmountNeeded();
 			return FText::Format(
 				NSLOCTEXT("BuildingUpgrade", "Electric Machinery Desc", "Once upgraded, this Building will need Electricity.<space>Workers work 100% faster with Electricity.<space>Consumes {0} kW Electricity."),

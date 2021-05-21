@@ -317,7 +317,7 @@ enum class NetworkCommandEnum : uint8
 	Count,
 };
 
-static const std::string NetworkCommandNames[] =
+static const std::vector<std::string> NetworkCommandNames
 {
 	"None",
 	"AddPlayer",
@@ -359,7 +359,7 @@ static const std::string NetworkCommandNames[] =
 	"ReplayPause",
 };
 static std::string GetNetworkCommandName(NetworkCommandEnum commandEnum) {
-	check(static_cast<int32>(NetworkCommandEnum::Count) - 1 == NetworkCommandNames->size());
+	check(static_cast<int32>(NetworkCommandEnum::Count) == NetworkCommandNames.size());
 	return NetworkCommandNames[static_cast<int>(commandEnum)];
 }
 
@@ -1226,10 +1226,32 @@ struct NetworkTickInfo
 			commands[i]->Serialize(punBlob);
 		}
 		blob.Append(punBlob);
+
+		uint32 checksum = BSDChecksum(0, blob);
+		int32* checksumInt = reinterpret_cast<int32*>(&checksum);
+		blob.Insert(*checksumInt, 0);
+
+		_LOG(PunTickHash, "<<< NetworkTickInfo tick:%d gameSpeed:%d tickSim:%d commands:%d", tickCount, gameSpeed, tickCountSim, commands.size());
+	}
+
+	uint32 BSDChecksum(int32 shift, const TArray<int32>& blob)
+	{
+		uint32 checksum = 0;
+		for (int32 i = shift; i < blob.Num(); i++) {
+			checksum = (checksum >> 1) + ((checksum & 1) << 15);
+			checksum += static_cast<uint32>(abs(blob[i]));
+			checksum &= 0xffff;       /* Keep it within bounds. */
+		}
+		return checksum;
 	}
 
 	void DeserializeFromBlob(const TArray<int32>& blob, int index = 0)
 	{
+		int32 sourceChecksumInt = blob[index++];
+		uint32 sourceChecksum = *reinterpret_cast<uint32*>(&sourceChecksumInt);
+		uint32 checksum = BSDChecksum(1, blob);
+		check(sourceChecksum == checksum);
+		
 		tickCount = blob[index++];
 		gameSpeed = blob[index++];
 		tickCountSim = blob[index++];
@@ -1240,11 +1262,12 @@ struct NetworkTickInfo
 		
 		while (punBlob.readIndex < punBlob.Num()) {
 			commands.push_back(NetworkHelper::DeserializeFromBlob(punBlob));
-
 			LOOP_CHECK_END();
 		}
 
 		check(punBlob.readIndex == punBlob.Num()); // Ensure there is no leftover data
+
+		_LOG(PunTickHash, ">>> NetworkTickInfo tick:%d gameSpeed:%d tickSim:%d commands:%d", tickCount, gameSpeed, tickCountSim, commands.size());
 	}
 
 	FString ToString() {

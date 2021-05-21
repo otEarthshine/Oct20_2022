@@ -109,7 +109,11 @@ public:
 	void RemoveQuickBuild(int32 buildingId) {
 		CppUtils::TryRemove(_quickBuildList, buildingId);
 	}
-	bool IsQuickBuild(int32 buildingId) {
+	bool IsQuickBuild(int32 buildingId)
+	{
+		if (IsAutoQuickBuild(_simulation->building(buildingId).buildingEnum())) {
+			return true;
+		}
 		for (int32 quickBuildId : _quickBuildList) {
 			if (quickBuildId == buildingId) {
 				return true;
@@ -302,7 +306,7 @@ private:
 
 	void RefreshIsBuildingConnected(int32 townId, int32 buildingId, WorldTile2 tile)
 	{
-		PUN_LOG("RefreshIsBuildingConnected townId:%d, buildingId:%d tile:%s", townId, buildingId, *tile.To_FString());
+		//PUN_LOG("RefreshIsBuildingConnected townId:%d, buildingId:%d tile:%s", townId, buildingId, *tile.To_FString());
 		
 		if (townId != -1)
 		{

@@ -278,11 +278,6 @@ void APunHUD::PunTick(bool isPhotoMode)
 	//if (Time::Ticks() > Time::TicksPerSecond * 3 / 2 + mapStartTick) {
 	//	_escMenuUI->HideLoadingScreen();
 	//}
-
-	// Hide the loading screen after server started ticking for 1.5 secs
-	if (networkInterface()->serverTick() > Time::TicksPerSecond * 3 / 2) {
-		_escMenuUI->HideLoadingScreen();
-	}
 }
 
 void APunHUD::InitBeforeGameManager()

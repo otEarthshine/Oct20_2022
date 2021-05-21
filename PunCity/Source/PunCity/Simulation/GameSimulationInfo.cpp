@@ -168,7 +168,7 @@ const std::vector<PermanentBonus::RareCardHand> PermanentBonus::PermanentBonusRa
 	{ RareHandEnum::DesertCards2, { CardEnum::DesertGem, CardEnum::DesertIndustry }},
 
 	{ RareHandEnum::SavannaCards, { CardEnum::SavannaHunt, CardEnum::SavannaRanch }},
-	{ RareHandEnum::SavannaCards2, { CardEnum::SavannaGrasslandHerder, CardEnum::SavannaGrasslandRoamer }},
+	{ RareHandEnum::SavannaCards2, { CardEnum::SavannaGrasslandHerder, CardEnum::SavannaGrasslandHunting }},
 
 	{ RareHandEnum::JungleCards, { CardEnum::JungleGatherer, CardEnum::JungleMushroom }},
 	{ RareHandEnum::JungleCards2, { CardEnum::JungleHerbFarm, CardEnum::JungleTree }},

@@ -89,13 +89,15 @@ public:
 //}
 
 unordered_map<int32, int32> APunPlayerController::kPlayerIdToClogStatus;
+unordered_map<int32, std::vector<int32>> APunPlayerController::kPlayerIdToTickHashList;
 
 int32 APunPlayerController::kGameSpeed = 1;
 int32 APunPlayerController::kResumeGameSpeed = 1;
 
-unordered_map<int32, std::vector<int32>> APunPlayerController::kPlayerIdToTickHashList;
-
 std::vector<shared_ptr<FNetworkCommand>> APunPlayerController::kCommandQueue;
+
+std::vector<NetworkTickInfo> APunPlayerController::kNetworkTickInfoCache;
+std::unordered_map<int32, int32> APunPlayerController::kPlayerIdToMissingGameTick;
 
 
 APunPlayerController::APunPlayerController() : APunBasePlayerController()
@@ -329,14 +331,14 @@ void APunPlayerController::Tick(float DeltaTime)
 			
 			if (allTickHashes.Num() > 0)
 			{
-				_LOG(PunTickHash, "SendHash Out Start %d", _hashSendTick);
+				_LOG(PunTickHash, "SendHash Out Start cid:%d hashSendTick:%d", playerId(), _hashSendTick);
 
 				// Note: _hashSendTick becomes 0 upon loading, which is fine, since hashes will just override the loaded one...
 				SendHash_ToClient(_hashSendTick, allTickHashes);
 				check(allTickHashes.Num() % TickHashes::TickHashEnumCount() == 0);
 				_hashSendTick += allTickHashes.Num() / TickHashes::TickHashEnumCount();
 
-				_LOG(PunTickHash, "SendHash Out End %d", _hashSendTick);
+				_LOG(PunTickHash, "SendHash Out End cid:%d hashSendTick:%d", playerId(), _hashSendTick);
 			}
 		}
 	}
@@ -444,6 +446,42 @@ void APunPlayerController::Tick(float DeltaTime)
 				}
 			}
 
+			/*
+			 * Send the missing Tick if not yet sent
+			 */
+			for (auto it : kPlayerIdToMissingGameTick)
+			{
+				int32 missingTick = it.second;
+				if (missingTick != -1)
+				{
+					_LOG(PunTickHash, "TickMissingGameTick <p%d> missingTick:%d kNetworkTickInfoCache:%d %d->%d", 
+						it.first, missingTick, kNetworkTickInfoCache.size(), kNetworkTickInfoCache.front().tickCount, kNetworkTickInfoCache.back().tickCount);
+					
+					// Find and Send the missing tick
+					for (size_t i = 0; i < kNetworkTickInfoCache.size(); i++)
+					{
+						_LOG(PunTickHash, "TickMissingGameTick <p%d> i:%d tick:%d", it.first, i, kNetworkTickInfoCache[i].tickCount);
+						
+						auto& curTickInfo = kNetworkTickInfoCache[i];
+						if (curTickInfo.tickCount == missingTick)
+						{
+							// Serialize NetworkTickInfo 
+							TArray<int32> networkTickInfoBlob;
+							curTickInfo.SerializeToBlob(networkTickInfoBlob);
+
+							_LOG(PunTickHash, "TickMissingGameTick <p%d> TickLocalSimulation_ToClients i:%d", it.first, i);
+
+							TickLocalSimulation_ToClients(networkTickInfoBlob);
+							return;
+						}
+					}
+					checkNoEntry();
+				}
+			}
+			
+			/*
+			 * No Clog Tick the Sims of all controllers
+			 */
 			if (!gameInstance->shouldDelayInput() ||
 				NoPlayerClogged()) 
 			{
@@ -478,18 +516,48 @@ void APunPlayerController::Tick(float DeltaTime)
 							//   serverTick isn't  used beyond this point, each controller count its own ticks
 							//   beyond this, _proxyControllerTick keep track of ticks
 
+							// Prepare NetworkTickInfo
+							//  NetworkTickInfo contains information used to tick simulation including player interactions
+							NetworkTickInfo tickInfo;
+							tickInfo.gameSpeed = kGameSpeed;
+
+							// Dispatch all commands (Limited to 50)
+							int32 numberOfCommandsToSend = min(static_cast<int>(kCommandQueue.size()), 50);
+							for (int32 j = 0; j < numberOfCommandsToSend; j++) {
+								tickInfo.commands.push_back(kCommandQueue[j]);
+								//PUN_DEBUG(FString::Printf(TEXT("Add tickInfo.commands init: %d"), tickInfo.commands.size()));
+							}
+							vector<shared_ptr<FNetworkCommand>> commands;
+							for (int32 j = numberOfCommandsToSend; j < kCommandQueue.size(); j++) {
+								commands.push_back(kCommandQueue[j]);
+							}
+							kCommandQueue = commands;
+
+							// Cache
+							if (kNetworkTickInfoCache.size() > 100) {
+								kNetworkTickInfoCache.erase(kNetworkTickInfoCache.begin());
+							}
+							kNetworkTickInfoCache.push_back(tickInfo);
+
 							const TArray<APunBasePlayerController*>& controllers = gameMode->ConnectedControllers();
 							for (APunBasePlayerController* controller : controllers) {
-								CastChecked<APunPlayerController>(controller)->SendTickToClient();
+								CastChecked<APunPlayerController>(controller)->SendTickToClient(tickInfo);
 							}
-							kCommandQueue.clear();
 						}
 					}
 					else
 					{
-						// Send each tick without the GameTicksPerNetworkTicks delay
-						SendTickToClient();
+						// Prepare NetworkTickInfo
+						NetworkTickInfo tickInfo;
+						tickInfo.gameSpeed = kGameSpeed;
+						for (auto& command : kCommandQueue) {
+							tickInfo.commands.push_back(command);
+							//PUN_DEBUG(FString::Printf(TEXT("Add tickInfo.commands init: %d"), tickInfo.commands.size()));
+						}
 						kCommandQueue.clear();
+						
+						// Send each tick without the GameTicksPerNetworkTicks delay
+						SendTickToClient(tickInfo);
 					}
 					
 					gameInstance->IncrementServerTick();
@@ -540,7 +608,6 @@ void APunPlayerController::Tick(float DeltaTime)
 			SendServerCloggedStatus(controllerPlayerId(), gameManager->isGameTickQueueClogged);
 			gameManager->isGameTickQueueCloggedDirty = false;
 		}
-
 	}
 
 	/*
@@ -653,25 +720,13 @@ int32 APunPlayerController::GetPlayersBeyondLoadStage(ClientLoadStage stageIn)
 }
 
 // Called on server-side playerControllers to tick the simulations
-void APunPlayerController::SendTickToClient()
+void APunPlayerController::SendTickToClient(NetworkTickInfo& tickInfo)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_Controller);
-	
-	// NetworkTickInfo contains information used to tick simulation including player interactions
-	NetworkTickInfo tickInfo;
-	tickInfo.tickCount = _proxyControllerTick;
-	//tickInfo.playerCount = kPlayerControllers.size();
-	tickInfo.gameSpeed = kGameSpeed;
 
-	_proxyControllerTick++;
+	PUN_LOG("SendTickToClient cid:%d _proxyControllerTick %d", controllerPlayerId(), _proxyControllerTick);
+	tickInfo.tickCount = _proxyControllerTick++;
 
-	//PUN_LOG("_proxyControllerTick %d", _proxyControllerTick);
-
-	// Dispatch all commands
-	for (auto& command : kCommandQueue) {
-		tickInfo.commands.push_back(command);
-		//PUN_DEBUG(FString::Printf(TEXT("Add tickInfo.commands init: %d"), tickInfo.commands.size()));
-	}
 
 	// Serialize NetworkTickInfo 
 	TArray<int32> networkTickInfoBlob;
@@ -689,7 +744,7 @@ void APunPlayerController::SendTickToClient()
 	if (gameInstance()->shouldDelayInput()) {
 		TickLocalSimulation_ToClients(networkTickInfoBlob);
 	} else {
-		TickLocalSimulation_Base(networkTickInfoBlob);
+		TickLocalSimulation_Base(tickInfo);
 	}
 }
 
@@ -791,6 +846,12 @@ void APunPlayerController::SendServerCloggedStatus_Implementation(int32 playerId
 	kPlayerIdToClogStatus[playerId] = clogStatus;
 }
 
+void APunPlayerController::SendServerMissingTick_Implementation(int32 playerId, int32 missingTick)
+{
+	PUN_LOG("Receive SendServerMissingTick <p:%d> missingTick:%d", playerId, missingTick);
+	
+	kPlayerIdToMissingGameTick[playerId] = missingTick;
+}
 
 void APunPlayerController::SendHash_ToClient_Implementation(int32 hashSendTick, const TArray<int32>& allTickHashes)
 {
@@ -806,54 +867,101 @@ void APunPlayerController::SendHash_ToClient_Implementation(int32 hashSendTick, 
 
 
 //! Tick Everyone
-void APunPlayerController::TickLocalSimulation_Base(const TArray<int32>& networkTickInfoBlob)
+void APunPlayerController::TickLocalSimulation_Base(const NetworkTickInfo& tickInfo)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_Controller);
-	
-	if (gameManager)
+
+	if (!gameManager) {
+		return;
+	}
+
+	//PUN_LOG("Tick: controller->TickLocalSimulation_Base() tickCount:%d gameSpeed:%d tickCountSim:%d", tickInfo.tickCount, tickInfo.gameSpeed, tickInfo.tickCountSim);
+
+	// Discard previous tick (might be resent)
+	if (tickInfo.tickCount - _lastNetworkTickCount <= 0) {
+		return;
+	}
+
+	// Tick was skipped
+	if (tickInfo.tickCount - _lastNetworkTickCount > 1)
 	{
-		NetworkTickInfo tickInfo;
-		tickInfo.DeserializeFromBlob(networkTickInfoBlob);
+		PUN_LOG("Tick was skipped tick:%d last:%d", tickInfo.tickCount, _lastNetworkTickCount);
+		SendServerMissingTick(controllerPlayerId(), _lastNetworkTickCount + 1);
+		_blockedNetworkTickInfoList.push_back(tickInfo);
+		return;
+	}
 
-		//PUN_LOG("Tick: controller->TickLocalSimulation_Base() tickCount:%d gameSpeed:%d tickCountSim:%d", tickInfo.tickCount, tickInfo.gameSpeed, tickInfo.tickCountSim);
+	_lastNetworkTickCount = tickInfo.tickCount;
+	AddTickInfo(tickInfo);
 
-		if (tickInfo.hasCommand()) { // Check if this is comand tick
-			PUN_LOG("ClientTickLocalSimulation..TickInfo: size:%d tickCount: %d, commandSize:%d", networkTickInfoBlob.Num(), tickInfo.tickCount, tickInfo.commands.size());
-		}
-
-		//PUN_DEBUG(FString::Printf(TEXT("Add Tick:%d"), tickInfo.tickCount));
-
-		// Server ticks comes at 5fps while game tick is 60fps
-		// server_tick is the server playerController's tick
-		// network_tick is a batch of ticks that gets send across the network
-		// game_tick is broken down network_ticks used to tick client's sim
-		// sim_tick is game_tick with game_speed
-		// 
-		// X server_tick = 1 network_tick
-		// 1 network_tick = X game_ticks
-		// Note: game_ticks = sim_ticks * game_speed
-		// Add tick-1 info with input commands
-		gameManager->AddGameTick(tickInfo);
-
-		if (gameInstance()->shouldDelayInput()) // Multiplayer does multiple ticks at once (GameTicksPerNetworkTicks)
+	if (_blockedNetworkTickInfoList.size() > 0)
+	{
+		for (int32 i = 0; i < _blockedNetworkTickInfoList.size(); i++) 
 		{
-			// Add (GameTicksPerNetworkTicks - 1) more empty ticks
-			int tickCount = tickInfo.tickCount;
-			const int32 moreTicksToAdd = GameTicksPerNetworkTicks - 1;
-
-			for (int i = 0; i < moreTicksToAdd; i++) {
-				NetworkTickInfo tickInfoNoCommand;
-				tickInfoNoCommand.tickCount = ++tickCount; // since game ticks at 30fps the tickCount sent is serverTick / 2
-				//tickInfoNoCommand.playerCount = tickInfo.playerCount;
-				tickInfoNoCommand.gameSpeed = tickInfo.gameSpeed;
-				gameManager->AddGameTick(tickInfoNoCommand);
+			auto& curTickInfo = _blockedNetworkTickInfoList[i];
+			if (curTickInfo.tickCount - _lastNetworkTickCount == 1) {
+				_lastNetworkTickCount = curTickInfo.tickCount;
+				AddTickInfo(curTickInfo);
+			}
+			else if (curTickInfo.tickCount - _lastNetworkTickCount <= 0) {
+				continue;
+			}
+			else {
+				PUN_LOG("Tick was skipped (2) tick:%d last:%d", curTickInfo.tickCount, _lastNetworkTickCount);
+				SendServerMissingTick(controllerPlayerId(), _lastNetworkTickCount + 1);
+				_blockedNetworkTickInfoList = std::vector<NetworkTickInfo>(_blockedNetworkTickInfoList.begin() + i, _blockedNetworkTickInfoList.end());
+				return;
 			}
 		}
+
+		// This was blocked and just got unlocked
+		SendServerMissingTick(controllerPlayerId(), -1);
 	}
 }
+
+void APunPlayerController::AddTickInfo(const NetworkTickInfo& tickInfo)
+{
+	//PUN_DEBUG(FString::Printf(TEXT("Add Tick:%d"), tickInfo.tickCount));
+
+	// Server ticks comes at 5fps while game tick is 60fps
+	// server_tick is the server playerController's tick
+	// network_tick is a batch of ticks that gets send across the network
+	// game_tick is broken down network_ticks used to tick client's sim
+	// sim_tick is game_tick with game_speed
+	// 
+	// X server_tick = 1 network_tick
+	// 1 network_tick = X game_ticks
+	// Note: game_ticks = sim_ticks * game_speed
+	// Add tick-1 info with input commands
+	gameManager->AddGameTick(tickInfo);
+
+	if (gameInstance()->shouldDelayInput()) // Multiplayer does multiple ticks at once (GameTicksPerNetworkTicks)
+	{
+		// Add (GameTicksPerNetworkTicks - 1) more empty ticks
+		int tickCount = tickInfo.tickCount;
+		const int32 moreTicksToAdd = GameTicksPerNetworkTicks - 1;
+
+		for (int i = 0; i < moreTicksToAdd; i++) {
+			NetworkTickInfo tickInfoNoCommand;
+			tickInfoNoCommand.tickCount = ++tickCount; // since game ticks at 30fps the tickCount sent is serverTick / 2
+			//tickInfoNoCommand.playerCount = tickInfo.playerCount;
+			tickInfoNoCommand.gameSpeed = tickInfo.gameSpeed;
+			gameManager->AddGameTick(tickInfoNoCommand);
+		}
+	}
+	
+}
+
 void APunPlayerController::TickLocalSimulation_ToClients_Implementation(const TArray<int32>& networkTickInfoBlob)
 {
-	TickLocalSimulation_Base(networkTickInfoBlob);
+	NetworkTickInfo tickInfo;
+	tickInfo.DeserializeFromBlob(networkTickInfoBlob);
+
+	if (tickInfo.hasCommand()) { // Check if this is comand tick
+		PUN_LOG("ClientTickLocalSimulation..TickInfo: size:%d tickCount: %d, commandSize:%d", networkTickInfoBlob.Num(), tickInfo.tickCount, tickInfo.commands.size());
+	}
+	
+	TickLocalSimulation_Base(tickInfo);
 }
 bool APunPlayerController::TickLocalSimulation_ToClients_Validate(const TArray<int32>& networkTickInfoBlob) { return true; }
 

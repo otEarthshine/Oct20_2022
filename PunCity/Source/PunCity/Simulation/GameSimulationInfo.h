@@ -2313,7 +2313,7 @@ enum class CardEnum : uint16
 	SavannaRanch,
 	SavannaHunt,
 	SavannaGrasslandHerder,
-	SavannaGrasslandRoamer,
+	SavannaGrasslandHunting,
 
 	JungleGatherer,
 	JungleMushroom,
@@ -2416,6 +2416,21 @@ static bool IsWorldWonder(CardEnum cardEnumIn) {
 	}
 	return false;
 }
+
+static const std::vector<CardEnum> AutoQuickBuildList
+{
+	CardEnum::StatisticsBureau,
+	CardEnum::JobManagementBureau,
+	CardEnum::Fort,
+	CardEnum::ResourceOutpost,
+};
+static bool IsAutoQuickBuild(CardEnum cardEnumIn) {
+	for (CardEnum cardEnum : AutoQuickBuildList) {
+		if (cardEnum == cardEnumIn)	return true;
+	}
+	return false;
+}
+
 
 /*
  * No Era Upgrade
@@ -2626,6 +2641,12 @@ struct BldResourceInfo
 		int32 variablePrice = baseResourceCostMoney / 12;
 		variablePrice = (variablePrice / 10) * 10; // round to 10,20,30... etc.
 		baseCardPrice = 20 + variablePrice * 2;
+
+		if (buildingEnum == CardEnum::StatisticsBureau ||
+			buildingEnum == CardEnum::JobManagementBureau) 
+		{
+			baseCardPrice = 0;
+		}
 	}
 
 	void CalculateBaseUpkeep()
@@ -2803,9 +2824,7 @@ struct BldInfo
 		if (buildingEnum == CardEnum::Farm) {
 			maxBuilderCount = 2;
 		}
-		else if (buildingEnum == CardEnum::Fort ||
-				buildingEnum == CardEnum::ResourceOutpost) 
-		{
+		else if (IsAutoQuickBuild(buildingEnum)) {
 			maxBuilderCount = 0;
 		}
 
@@ -3046,7 +3065,7 @@ static const BldInfo BuildingInfo[]
 	),
 
 	BldInfo(CardEnum::CharcoalMaker,LOCTEXT("Charcoal Burner", "Charcoal Burner"), LOCTEXT("Charcoal Burner (Plural)", "Charcoal Burners"), LOCTEXT("Charcoal Burner Desc", "Burn Wood into Coal which provides x2 heat when heating houses."),
-		WorldTile2(4, 5), GetBldResourceInfo(1, { ResourceEnum::Wood, ResourceEnum::Coal }, { 1 }, -30)
+		WorldTile2(6, 6), GetBldResourceInfo(1, { ResourceEnum::Wood, ResourceEnum::Coal }, { 1 }, -30)
 	),
 	BldInfo(CardEnum::BeerBrewery,	LOCTEXT("Beer Brewery", "Beer Brewery"),	LOCTEXT("Beer Brewery (Plural)", "Beer Breweries"), LOCTEXT("Beer Brewery Desc", "Brew Wheat into Beer."),
 		WorldTile2(6, 6), GetBldResourceInfo(1, { ResourceEnum::Wheat, ResourceEnum::Beer }, { 1, 1 }, 30)
@@ -3174,10 +3193,10 @@ static const BldInfo BuildingInfo[]
 
 	// June 9 addition
 	BldInfo(CardEnum::Beekeeper, LOCTEXT("Beekeeper", "Beekeeper"),				LOCTEXT("Beekeeper (Plural)", "Beekeepers"), LOCTEXT("Beekeeper Desc", "Produces Beeswax and Honey. Efficiency increases with more surrounding trees."),
-		WorldTile2(6, 9), GetBldResourceInfo(2, { ResourceEnum::Beeswax }, { 1, 1}, -1)
+		WorldTile2(6, 8), GetBldResourceInfo(2, { ResourceEnum::Beeswax }, { 1, 1}, -1)
 	),
 	BldInfo(CardEnum::Brickworks, LOCTEXT("Brickworks", "Brickworks"),			LOCTEXT("Brickworks (Plural)", "Brickworks"), LOCTEXT("Brickworks Desc", "Produces Brick from Clay and Coal."),
-		WorldTile2(6, 6), GetBldResourceInfo(2, { ResourceEnum::Clay, ResourceEnum::Coal, ResourceEnum::Brick }, { 1 }, 0)
+		WorldTile2(6, 6), GetBldResourceInfo(2, { ResourceEnum::Clay, ResourceEnum::Coal, ResourceEnum::Brick }, { 1, 2 }, 0)
 	),
 	BldInfo(CardEnum::CandleMaker, LOCTEXT("Candle Maker", "Candle Maker"),		LOCTEXT("Candle Maker (Plural)", "Candle Makers"), LOCTEXT("Candle Maker Desc", "Make Candles from Beeswax and Cotton wicks."),
 		WorldTile2(4, 6), GetBldResourceInfo(2, { ResourceEnum::Beeswax, ResourceEnum::Cotton, ResourceEnum::Candle }, { 3, 2 }, 0)
@@ -3314,7 +3333,7 @@ static const BldInfo BuildingInfo[]
 	),
 
 	BldInfo(CardEnum::Cathedral, LOCTEXT("Cathedral", "Cathedral"), LOCTEXT("Cathedral (Plural)", "Cathedrals"), LOCTEXT("Cathedral Desc", "First Cathedral grants X Victory Score."),
-		WorldTile2(16, 7), GetBldResourceInfo(3, {}, { 0, 1, 1, 5, 3 }, 3000, 100, -1)
+		WorldTile2(21, 13), GetBldResourceInfo(3, {}, { 0, 1, 1, 5, 3 }, 3000, 100, -1)
 	),
 	BldInfo(CardEnum::Castle, LOCTEXT("Castle", "Castle"), LOCTEXT("Castle (Plural)", "Castles"), LOCTEXT("Castle Desc", "First Castle grants X Victory Score."),
 		WorldTile2(16, 16), GetBldResourceInfo(3, {}, { 0, 5, 1, 0, 1 }, 4000, 100, -1)
@@ -3399,10 +3418,10 @@ static const BldInfo BuildingInfo[]
 
 	// Unique Cards	
 	BldInfo(CardEnum::StatisticsBureau, LOCTEXT("Statistics Bureau", "Statistics Bureau"), FText(), LOCTEXT("Statistics Bureau Desc", "Show Town Statistics."),
-		WorldTile2(6, 9), GetBldResourceInfoManual({ 30 })
+		WorldTile2(6, 9), GetBldResourceInfoManual({ 0 })
 	),
 	BldInfo(CardEnum::JobManagementBureau, LOCTEXT("Employment Bureau", "Employment Bureau"), FText(), LOCTEXT("Employment Bureau Desc", "Allow managing job priority (global)."),
-		WorldTile2(6, 9), GetBldResourceInfoManual({ 30 })
+		WorldTile2(6, 9), GetBldResourceInfoManual({ 0 })
 	)
 
 	
@@ -3540,7 +3559,7 @@ static const BldInfo CardInfos[]
 		BldInfo(CardEnum::SavannaRanch, LOCTEXT("Grass Fed", "Grass Fed"), 0, LOCTEXT("Grass Fed Desc", "+10% Ranch Productivity.")),
 		BldInfo(CardEnum::SavannaHunt, LOCTEXT("Grassland Hunting", "Grassland Hunting"), 0, LOCTEXT("Grassland Hunting Desc", "+30% Hunting Lodge Productivity.")),
 		BldInfo(CardEnum::SavannaGrasslandHerder, LOCTEXT("Grassland Herder", "Grassland Herder"), 0, LOCTEXT("Grassland Herder Desc", "+20% Productivity for Ranch on Grassland/Savanna.")),
-		BldInfo(CardEnum::SavannaGrasslandRoamer, LOCTEXT("Grassland Roamer", "Grassland Roamer"), 0, LOCTEXT("Grassland Roamer Desc", "+10% <img id=\"Influence\"/> from Houses on Grassland/Savanna.")),
+		BldInfo(CardEnum::SavannaGrasslandHunting, LOCTEXT("Grassland Roamer", "Grassland Roamer"), 0, LOCTEXT("Grassland Roamer Desc", "+10% <img id=\"Influence\"/> from Houses on Grassland/Savanna.")),
 
 		BldInfo(CardEnum::JungleGatherer, LOCTEXT("Jungle Gatherer", "Jungle Gatherer"), 0, LOCTEXT("Jungle Gatherer Desc", "+10% Productivity for Fruit Gatherers in Jungle Biome.")),
 		BldInfo(CardEnum::JungleMushroom, LOCTEXT("Jungle Mushroom", "Jungle Mushroom"), 0, LOCTEXT("Jungle Mushroom Desc", "+10% Productivity for Mushroom Farms in Jungle Biome.")),
@@ -4223,26 +4242,19 @@ static bool IsStorage(CardEnum buildingEnum) {
 }
 
 
-//static const std::vector<CardEnum> BuildingAutoUpgradeEnums {
-//	CardEnum::Warehouse,
-//	CardEnum::Granary,
-//	CardEnum::Tavern,
-//};
 static bool IsAutoEraUpgrade(CardEnum buildingEnumIn) { // Upgrade with era without pressing upgrade manually
 	switch(buildingEnumIn) {
 	case CardEnum::ImmigrationOffice:
 	case CardEnum::InventorsWorkshop:
+		
+	case CardEnum::TradingCompany:
+	case CardEnum::TradingPort:
+	case CardEnum::TradingPost:
 		return false;
 	default: break;
 	}
 	const BldInfo& info = GetBuildingInfo(buildingEnumIn);
 	return info.produce == ResourceEnum::None && info.input1 == ResourceEnum::None;
-	//for (CardEnum buildingEnum : BuildingAutoUpgradeEnums) {
-	//	if (buildingEnum == buildingEnumIn) {
-	//		return true;
-	//	}
-	//}
-	//return false;
 }
 
 
@@ -6929,6 +6941,38 @@ enum class DisplayGlobalEnum
 	Count,
 };
 
+/*
+ * Particles
+ */
+
+enum class ParticleEnum
+{
+	Smoke,
+	HeavySteam,
+	BlackSmoke,
+	HeavyBlackSmoke,
+	StoveFire,
+	TorchFire,
+
+	CampFire,
+	BuildingFire,
+	BuildingFireSmoke,
+
+	DemolishDust, // End Particle
+
+	PlacementDust,
+	OnTownhall,
+	OnUpgrade,
+
+	Count,
+};
+
+struct ParticleInfo
+{
+	ParticleEnum particleEnum = ParticleEnum::Smoke;
+	FTransform transform;
+};
+
 struct DemolishDisplayInfo
 {
 	CardEnum buildingEnum = CardEnum::None;
@@ -6939,6 +6983,13 @@ struct DemolishDisplayInfo
 
 	bool isInUse() { return tickDemolished != -1; }
 };
+
+struct FireOnceParticleInfo
+{
+	ParticleEnum particleEnum = ParticleEnum::Smoke;
+	TileArea area;
+};
+
 
 // Prevent flood of some actions. For example, event log shouldn't get flooded with "Food reserve low." text.
 enum class NonRepeatActionEnum

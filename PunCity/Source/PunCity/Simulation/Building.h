@@ -327,6 +327,9 @@ public:
 		if (input1() != ResourceEnum::None) setTarget(input1(), baseInputPerBatch() * 2);
 		if (input2() != ResourceEnum::None) setTarget(input2(), baseInputPerBatch() * 2);
 		if (product() != ResourceEnum::None) setTarget(product(), baseInputPerBatch() * 2);
+
+		// Display
+		_simulation->AddFireOnceParticleInfo(ParticleEnum::OnUpgrade, _area);
 	}
 
 	BuildingUpgrade MakeUpgrade(FText name, FText description, ResourceEnum resourceEnum, int32 percentOfTotalPrice);
@@ -674,6 +677,11 @@ public:
 			isEnum(CardEnum::ResourceOutpost))
 		{
 			return 10000;
+		}
+		if (isEnum(CardEnum::StatisticsBureau) ||
+			isEnum(CardEnum::JobManagementBureau))
+		{
+			return 1000;
 		}
 		return baseBuildTime;
 	}
@@ -1440,7 +1448,8 @@ public:
 		return CardStatus();
 	}
 	virtual int32 maxCardSlots() {
-		if (IsDecorativeBuilding(_buildingEnum)) {
+		if (IsDecorativeBuilding(_buildingEnum) ||
+			IsServiceBuilding(_buildingEnum)) {
 			return 0;
 		}
 		return 2;

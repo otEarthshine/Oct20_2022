@@ -427,6 +427,12 @@ void AGameManager::TickNetworking()
 		return;
 	}
 
+
+	// Pause tick consumption if there is a missing tick
+	if (networkInterface()->IsCloggedFromMissingTick()) {
+		return;
+	}
+	
 	
 	// Latency adjustment
 	int32 gameTickQuarter = 5;

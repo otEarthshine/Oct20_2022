@@ -141,9 +141,12 @@ private:
 		for (auto it : kPlayerIdToClogStatus) {
 			if (it.second) return false;
 		}
+		for (auto it : kPlayerIdToMissingGameTick) {
+			if (it.second != -1) return false;
+		}
 		return true;
 	}
-	void SendTickToClient();
+	void SendTickToClient(NetworkTickInfo& tickInfo);
 
 	//bool isLocalInitialized() { return gameManager != nullptr; }
 
@@ -215,6 +218,11 @@ public:
 		}
 		ToServer_SavedGameEndStatus(controllerPlayerId());
 	}
+
+	virtual bool IsAllPlayersReady() final {
+		return gameInstance()->IsAllPlayersReady();
+	}
+	
 
 	bool WorldLocationToScreen(FVector WorldLocation, FVector2D& ScreenLocation) final {
 		return ProjectWorldLocationToScreen(WorldLocation, ScreenLocation);
@@ -487,6 +495,10 @@ public:
 
 	int32 serverTick() final { return gameInstance()->serverTick(); }
 
+	virtual int32 IsCloggedFromMissingTick() final {
+		return _blockedNetworkTickInfoList.size() > 0;
+	}
+	
 
 	// Test ship move
 	UFUNCTION(Exec) void FindPathShip(int32 heuristicsFactor, uint16 customCalcCount, int32 startX, int32 startY, int32 endX, int32 endY)
@@ -583,9 +595,11 @@ public:
 	UFUNCTION(Reliable, Server) void LoadedClientCallback_ToServer();
 	
 	UFUNCTION(Reliable, Server) void SendServerCloggedStatus(int32 playerId, bool clogStatus);
+	UFUNCTION(Reliable, Server) void SendServerMissingTick(int32 playerId, int32 missingTick);
 	UFUNCTION(Reliable, Client) void SendHash_ToClient(int32 hashSendTick, const TArray<int32>& allTickHashes);
 
-	void TickLocalSimulation_Base(const TArray<int32>& networkTickInfoBlob);
+	void TickLocalSimulation_Base(const NetworkTickInfo& tickInfo);
+	void AddTickInfo(const NetworkTickInfo& tickInfo);
 	UFUNCTION(Reliable, Client, WithValidation) void TickLocalSimulation_ToClients(const TArray<int32>& networkTickInfoBlob);
 	
 
@@ -1949,10 +1963,12 @@ private:
 
 	// Server First Controller only!
 	int32 GetPlayersBeyondLoadStage(ClientLoadStage stageIn);
-	
-private:
+
+public:
 	static std::unordered_map<int32, int32> kPlayerIdToClogStatus;
-	
+	static std::unordered_map<int32, int32> kPlayerIdToMissingGameTick;
+
+private:
 	static int32 kGameSpeed;
 	static int32 kResumeGameSpeed;
 
@@ -1973,6 +1989,11 @@ private:
 	float _leftOverDeltaTime = 0;
 
 	bool _tickDisabled = false;
+
+	// Manage missingGameTick resend as necessary
+	int32 _lastNetworkTickCount = 0;
+	std::vector<NetworkTickInfo> _blockedNetworkTickInfoList;
+	static std::vector<NetworkTickInfo> kNetworkTickInfoCache; // Cache the last X ticks so it can be resent in the case of missing Ticks
 
 private:
 	int32 _hashSendTick = 0; // hashes from this tick up until the most recent tick will be sent to server

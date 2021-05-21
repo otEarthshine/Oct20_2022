@@ -118,6 +118,7 @@ void TownHall::UpgradeTownhall()
 	townhallLvl++;
 	
 	ResetDisplay();
+	_simulation->AddFireOnceParticleInfo(ParticleEnum::OnUpgrade, _area);
 	
 	// Reset all autoupgrade building's display
 	for (int32 i = 0; i < BuildingEnumCount; i++) {

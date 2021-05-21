@@ -287,12 +287,18 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-2.3, 10.2, 8.5), FVector::OneVector} }
 	));
 
-	// OLD METHOD
-	LoadBuilding(CardEnum::FurnitureWorkshop, "FurnitureWorkshop", "FurnitureWorkshop");
+	LoadBuilding(CardEnum::FurnitureWorkshop, "Furniture_Workshop_Era", "FurnitureWorkshop", 1);
+	LoadBuilding(CardEnum::CharcoalMaker, "CharcoalMakerEra", "CharcoalBurner", 1);
+	LoadBuilding(CardEnum::Brickworks, "BrickworkEra", "Brickworks", 2);
+	LoadBuilding(CardEnum::Beekeeper, "BeeKeeper_Era", "Beekeeper", 2, 2);
 
-
-
-	
+	//set(CardEnum::CharcoalMaker, {
+	//ModuleTransformGroup::CreateSet("CharcoalMaker", {},
+	//{
+	//	{ParticleEnum::BlackSmoke,  TransformFromPosition(9.8, 5.9, 5.6)},
+	//	{ParticleEnum::TorchFire,  FTransform(FRotator::ZeroRotator, FVector(9.11, 5.27, 8.2), FVector(1, 1, 1))},
+	//})
+	//	});
 	
 	// -
 
@@ -318,7 +324,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	TryLoadBuildingModuleSet("SmelterGold", "SmelterGold");
 	TryLoadBuildingModuleSet("SmelterGiant", "SmelterGiant");
 	
-	TryLoadBuildingModuleSet("CharcoalMaker", "CharcoalMaker");
+	//TryLoadBuildingModuleSet("CharcoalMaker", "CharcoalMaker");
 	TryLoadBuildingModuleSet("Forester", "Forester");
 
 	
@@ -337,9 +343,17 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::BoarBurrow, "BoarBurrow", "BoarBurrow");
 
 	// Houses
-	//TryLoadBuildingModuleSet("HouseLvl1", "HouseLvl1");
-	//TryLoadBuildingModuleSet("HouseLvl1V2", "HouseLvl1");
-	////TryLoadBuildingModuleSet("HouseClayLvl1", "HouseClayLvl1");
+	// Note: Model count starts with House Lvl 0 (legacy imports, not worth the change)
+	
+	// Lvl 0
+	for (int32 i = 1; i <= 3; i++) {
+		FString moduleGroupName = "HouseERA0V" + FString::FromInt(i);
+		FString moduleGroupFolderName = "House/Level0/V" + FString::FromInt(i);
+		LoadBuilding(CardEnum::House, moduleGroupName, moduleGroupFolderName);
+	}
+	TryLoadBuildingModuleSet("HouseClayLvl1", "HouseClayLvl1");
+	LinkBuilding(CardEnum::House, "HouseClayLvl1");
+	LinkBuilding(CardEnum::House, "HouseClayLvl1");
 
 	// Lvl 1
 	for (int32 i = 1; i <= 3; i++) {
@@ -347,7 +361,6 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 		FString moduleGroupFolderName = "House/Level1/V" + FString::FromInt(i);
 		LoadBuilding(CardEnum::House, moduleGroupName, moduleGroupFolderName);
 	}
-	TryLoadBuildingModuleSet("HouseClayLvl1", "HouseClayLvl1");
 	LinkBuilding(CardEnum::House, "HouseClayLvl1");
 	LinkBuilding(CardEnum::House, "HouseClayLvl1");
 
@@ -434,8 +447,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	TryLoadBuildingModuleSet("Bakery", "Bakery");
 	TryLoadBuildingModuleSet("Windmill", "Windmill");
 
-	TryLoadBuildingModuleSet("Beekeeper", "Beekeeper");
-	TryLoadBuildingModuleSet("Brickworks", "Brickworks");
+	//TryLoadBuildingModuleSet("Beekeeper", "Beekeeper");
+	//TryLoadBuildingModuleSet("Brickworks", "Brickworks");
 
 	TryLoadBuildingModuleSet("Colony", "Colony");
 	TryLoadBuildingModuleSet("Outpost", "Outpost");
@@ -556,36 +569,81 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	 * Card Icons
 	 */
 	auto addCardIcon = [&](CardEnum cardEnum, FString iconFileName) {
-		_cardIcons.Add(static_cast<int32>(cardEnum), LoadF<UTexture2D>(FString("/Game/UI/Images/CardImages/") + iconFileName));
+		_cardIcons.Add(static_cast<int32>(cardEnum), LoadF<UTexture2D>(FString("/Game/UI/Images/CardImages_BleGood/") + iconFileName + FString("_1024")));
 	};
 	addCardIcon(CardEnum::None, "CardNone");
 
-	addCardIcon(CardEnum::AllYouCanEat, "All_you_can_eat");
-	addCardIcon(CardEnum::BeerTax, "Beer_Tex");
-	addCardIcon(CardEnum::BirthControl, "Birth_Control");
-	addCardIcon(CardEnum::CabbageSeed, "Cabbage_seeds");
+	
+	addCardIcon(CardEnum::Agriculturalist, "Agriculturalist");
+	addCardIcon(CardEnum::AllYouCanEat, "AllYouCanEat");
+	addCardIcon(CardEnum::AlcoholAppreciation, "Appreciation");
+	addCardIcon(CardEnum::BeerTax, "BeerTax");
+	addCardIcon(CardEnum::BirthControl, "BirthControl");
+	addCardIcon(CardEnum::BlingBling, "BlingBling");
+	addCardIcon(CardEnum::BlueberrySeed, "Blueberry");
+	addCardIcon(CardEnum::BookWorm, "BookWorm");
+	addCardIcon(CardEnum::BuyWood, "BuyWood");
+	addCardIcon(CardEnum::CabbageSeed, "CabbageSeeds");
+	addCardIcon(CardEnum::CannabisSeeds, "Cannabis");
 	addCardIcon(CardEnum::Cannibalism, "Cannibalism");
-	addCardIcon(CardEnum::ChimneyRestrictor, "ChimneyRestrictorCard_CD_02_v001");
-	addCardIcon(CardEnum::CoalTreatment, "CoalTrestment");
-	addCardIcon(CardEnum::CooperativeFishing, "cooperative_fishing");
+	addCardIcon(CardEnum::Capitalism, "Capitalism");
+	addCardIcon(CardEnum::ChimneyRestrictor, "ChimneyRestrictor");
+	addCardIcon(CardEnum::CoalTreatment, "CoalTreatment");
+	addCardIcon(CardEnum::CocoaSeeds, "Cocoa");
+	addCardIcon(CardEnum::CoffeeSeeds, "Coffee");
+	addCardIcon(CardEnum::Communism, "Communism");
+	addCardIcon(CardEnum::CooperativeFishing, "CooperativeFishing");
+	addCardIcon(CardEnum::CottonSeeds, "Cotton");
+	addCardIcon(CardEnum::Craftmanship, "Craftmanship");
+	addCardIcon(CardEnum::DyeSeeds, "Dye");
+	addCardIcon(CardEnum::FarmWaterManagement, "FarmWaterManagement");
+	addCardIcon(CardEnum::BorealWinterFishing, "Fish");
 	addCardIcon(CardEnum::FrugalityBook, "Frugality");
-	addCardIcon(CardEnum::BorealGoldOil, "BorealGold_Oil");
-	addCardIcon(CardEnum::HomeBrew, "Home_Brew");
+	addCardIcon(CardEnum::DesertGem, "Gem");
+	addCardIcon(CardEnum::BorealGoldOil, "GoldOil");
+	addCardIcon(CardEnum::GrapeSeeds, "Grape");
+	addCardIcon(CardEnum::Geologist, "Geologist");
+	addCardIcon(CardEnum::SavannaGrasslandHerder, "GrasslandHerding");
+	addCardIcon(CardEnum::SavannaGrasslandHunting, "GrasslandHunting");
+	addCardIcon(CardEnum::HappyBreadDay, "HappyBreadDay");
+	addCardIcon(CardEnum::HomeBrew, "HomeBrew");
+	addCardIcon(CardEnum::Immigration, "Immigration");
+	addCardIcon(CardEnum::ForestCharcoal, "ImprovedCharcoalMaking");
+	addCardIcon(CardEnum::ForestFarm, "ImprovedFarming");
 	addCardIcon(CardEnum::Investment, "Investment");
+	addCardIcon(CardEnum::JungleGatherer, "JungleGatherer");
 	addCardIcon(CardEnum::Kidnap, "Kidnap");
-	addCardIcon(CardEnum::MasterBrewer, "Master_Brewer");
-	addCardIcon(CardEnum::MasterPotter, "master_potter");
-	addCardIcon(CardEnum::HerbSeed, "Medicinal_Herb_Farming");
+	addCardIcon(CardEnum::Lockdown, "Lockdown");
+	addCardIcon(CardEnum::MasterBrewer, "MasterBrewer");
+	addCardIcon(CardEnum::MasterPotter, "MasterPotter");
 	addCardIcon(CardEnum::Motivation, "Motivation");
-	addCardIcon(CardEnum::JungleMushroom, "JungleMushroom");
+	addCardIcon(CardEnum::HerbSeed, "MedicinalHerbFarming");
+	addCardIcon(CardEnum::MelonSeed, "Melon");
+	addCardIcon(CardEnum::JungleMushroom, "Mushroom");
+	//addCardIcon(CardEnum::DesertOreTrade, "DesertOreTrade");
 	addCardIcon(CardEnum::Passion, "Passion");
-	addCardIcon(CardEnum::BorealPineForesting, "BorealPine_Lumber");
-
+	addCardIcon(CardEnum::BorealPineForesting, "PineLumber");
+	addCardIcon(CardEnum::PopulationScoreMultiplier, "PopulationScore");
+	addCardIcon(CardEnum::PotatoSeed, "Potato");
 	addCardIcon(CardEnum::ProductivityBook, "Productivity");
-	addCardIcon(CardEnum::SlaveLabor, "Slave_Labor");
-	addCardIcon(CardEnum::SocialWelfare, "Social_Welfare");
+	addCardIcon(CardEnum::PumpkinSeed, "Pumpkin");
+	addCardIcon(CardEnum::Rationalism, "Rationalism");
+	addCardIcon(CardEnum::Romanticism, "Romanticism");
+	addCardIcon(CardEnum::SlaveLabor, "SlaveLabor");
+	addCardIcon(CardEnum::SocialWelfare, "SocialWelfare");
 	addCardIcon(CardEnum::SustainabilityBook, "Sustainability");
-	addCardIcon(CardEnum::WheatSeed, "Wheat_Seeds");
+	addCardIcon(CardEnum::TulipSeeds, "Tulip");
+	addCardIcon(CardEnum::DesertTradeForALiving, "TradeForALiving");
+	
+	addCardIcon(CardEnum::WildCard, "WildCard");
+	addCardIcon(CardEnum::WildCardFood, "WildCard");
+	addCardIcon(CardEnum::WildCardIndustry, "WildCard");
+	addCardIcon(CardEnum::WildCardMine, "WildCard");
+	addCardIcon(CardEnum::WildCardService, "WildCard");
+
+	addCardIcon(CardEnum::WheatSeed, "WheatSeeds");
+	addCardIcon(CardEnum::BorealWinterResist, "WinterResistance");
+	addCardIcon(CardEnum::WondersScoreMultiplier, "WondersScore");
 
 
 	//BorealFishing
@@ -1071,9 +1129,39 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	ParticlesByEnum.Add(Load<UParticleSystem>("/Game/Models/Others/P_PunDemolishDustLit"));
 
+	//NiagaraByEnum.Add(Load<UNiagaraSystem>("/Game/VFX/OnPlacement/NS_PlacementDust"));
+	//NiagaraByEnum.Add(Load<UNiagaraSystem>("/Game/VFX/OnTownhall/NS_OnTownhall"));
+	//NiagaraByEnum.Add(Load<UNiagaraSystem>("/Game/VFX/OnUpgrade/NS_OnUpgrade"));
+
 	//_terrainMaterial2 = Load<UMaterial>("/Game/Models/Terrain/Forest/ForestTerrainMaterial");
 
 	CheckMeshesAvailable();
+}
+
+void UAssetLoaderComponent::InitNiagara()
+{
+	NiagaraByEnum.Add(NS_OnPlacement);
+	NiagaraByEnum.Add(NS_OnTownhall);
+	NiagaraByEnum.Add(NS_OnUpgrade);
+
+	//
+	//auto loadObject = [&](FString string) {
+	//	UObject* niagaraSys = StaticLoadObject(UNiagaraSystem::StaticClass(), NULL, *string);
+	//	check(niagaraSys);
+	//	
+	//	NiagaraByEnum.Add(CastChecked<UNiagaraSystem>(niagaraSys));
+	//};
+	//loadObject("/Game/VFX/OnPlacement/NS_PlacementDust");
+	//loadObject("/Game/VFX/OnTownhall/NS_OnTownhall");
+	//loadObject("/Game/VFX/OnUpgrade/NS_OnUpgrade");
+	//
+	
+	//NiagaraByEnum.Add(Cast<UNiagaraSystem>()));
+	//NiagaraByEnum.Add(Cast<UNiagaraSystem>(StaticLoadObject(UNiagaraSystem::StaticClass(), NULL, *FString("/Game/VFX/OnTownhall/NS_OnTownhall"))));
+	//NiagaraByEnum.Add(Cast<UNiagaraSystem>(StaticLoadObject(UNiagaraSystem::StaticClass(), NULL, *FString("/Game/VFX/OnUpgrade/NS_OnUpgrade"))));
+	//NiagaraByEnum.Add(Load<UNiagaraSystem>("/Game/VFX/OnPlacement/NS_PlacementDust"));
+	//NiagaraByEnum.Add(Load<UNiagaraSystem>("/Game/VFX/OnTownhall/NS_OnTownhall"));
+	//NiagaraByEnum.Add(Load<UNiagaraSystem>("/Game/VFX/OnUpgrade/NS_OnUpgrade"));
 }
 
 UMaterialInstanceDynamic* UAssetLoaderComponent::GetResourceIconMaterial(ResourceEnum resourceEnum)
@@ -1293,7 +1381,8 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 					// Use Lightmap Resolution 100 to mark
 					if (moduleTypeName != "Frame" &&
 						moduleTypeName != "AlwaysOn" &&
-						mesh->LightMapResolution == 100 && bodyMainIndex <= 3) 
+						(mesh->LightMapResolution == 100 || mesh->GetMaterial(0)->GetName().Contains(TEXT("Roof"), ESearchCase::Type::IgnoreCase))
+						&& bodyMainIndex <= 3) 
 					{
 						moduleName = moduleSetName + FString("Body") + FString::FromInt(bodyMainIndex);
 						bodyMainIndex++;
@@ -1638,22 +1727,32 @@ void UAssetLoaderComponent::DetectParticleSystemPosition(CardEnum buildingEnum, 
 			CardEnum::Mint,
 			CardEnum::GlassSmelter,
 			CardEnum::Glassworks,
+			CardEnum::CharcoalMaker
 		};
 		const std::vector<CardEnum> heavySteam{
 			CardEnum::CottonMill,
 			CardEnum::PaperMill,
 			CardEnum::BeerBrewery,
 		};
-		if (CppUtils::Contains(blackSmokers, buildingEnum)) {
-			particleEnum = ParticleEnum::BlackSmoke;;
+		
+		if (it.second.size() == 12) { // BlackSmoke
+			particleEnum = ParticleEnum::BlackSmoke;
+		}
+		else if (it.second.size() == 16) { // TorchFire
+			particleEnum = ParticleEnum::TorchFire;
+		}
+		else if (CppUtils::Contains(blackSmokers, buildingEnum)) {
+			particleEnum = ParticleEnum::BlackSmoke;
 		}
 		else if (IsPollutingHeavyIndustryOrMine(buildingEnum)) {
-			particleEnum = ParticleEnum::HeavyBlackSmoke;;
+			particleEnum = ParticleEnum::HeavyBlackSmoke;
 		}
 		else if (CppUtils::Contains(heavySteam, buildingEnum)) {
-			particleEnum = ParticleEnum::HeavySteam;;
+			particleEnum = ParticleEnum::HeavySteam;
 		}
-
+		else if (it.second.size() == 12) { // Black Smoker
+			particleEnum = ParticleEnum::BlackSmoke;
+		}
 
 		_tempAuxGroup.particleInfos.push_back({ particleEnum, FTransform(averagePosition) });
 	}

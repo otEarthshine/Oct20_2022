@@ -251,6 +251,7 @@ public:
 	virtual void RemoveScheduleTickBuilding(int32 buildingId) = 0;
 
 	virtual bool IsQuickBuild(int32 buildingId) = 0;
+	virtual void AddQuickBuild(int32 buildingId) = 0;
 
 	virtual std::vector<int32> GetConstructionResourceCost(CardEnum cardEnum, TileArea area) = 0;
 	
@@ -500,6 +501,8 @@ public:
 	virtual int PlaceBuilding(class FPlaceBuilding parameters) = 0;
 
 	//virtual void SetLoadingText(std::string loadingText) = 0;
+
+	virtual void AddFireOnceParticleInfo(ParticleEnum particleEnum, TileArea area) = 0;
 
 	//! Happiness
 	virtual int32 GetAverageHappiness(int32 townId) = 0;

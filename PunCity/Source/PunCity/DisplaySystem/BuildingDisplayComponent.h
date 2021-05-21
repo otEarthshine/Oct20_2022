@@ -122,4 +122,6 @@ private:
 	//!
 	UPROPERTY() TArray<UParticleSystemComponent*> _demolishParticlePool;
 	std::vector<DemolishDisplayInfo> _demolishInfos;
+
+
 };

@@ -14,6 +14,8 @@
 #include "PunCity/Simulation/OverlaySystem.h"
 #include "Materials/MaterialInterface.h"
 
+#include "NiagaraFunctionLibrary.h"
+
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "PunCity/PunUtils.h"
@@ -88,7 +90,6 @@ void UBuildingDisplayComponent::AfterAdd()
 			}
 		}
 	}
-
 }
 
 /*
@@ -853,6 +854,26 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 			}
 		});
 	}
+
+	static int32 niagaraInt = 0;
+	std::vector<FireOnceParticleInfo> fireOnceParticleInfos = simulation().GetFireOnceParticleInfos(regionId);
+	for (FireOnceParticleInfo info : fireOnceParticleInfos) {
+		FRotator rotator(0, 0, 0);
+		FVector localDisplayLocation = info.area.centerTile().localTile().localDisplayLocation() + FVector(info.area.sizeX() % 2 == 0 ? 5 : 0, 
+																											info.area.sizeY() % 2 == 0 ? 5 : 0, 0);
+
+		UNiagaraSystem* niagaraSys = _assetLoader->niagaraSystem(info.particleEnum);
+		check(niagaraSys);
+		
+		UNiagaraComponent* niagaraComp = UNiagaraFunctionLibrary::SpawnSystemAttached(niagaraSys, _moduleMeshes[meshId], FName(*(FString("niagara") + FString::FromInt(niagaraInt++))),
+			localDisplayLocation, rotator, FVector::OneVector, EAttachLocation::Type::KeepRelativeOffset, true, ENCPoolMethod::AutoRelease);
+		check(niagaraComp);
+
+		niagaraComp->SetFloatParameter("BoxSize_X", info.area.sizeX());
+		niagaraComp->SetFloatParameter("BoxSize_Y", info.area.sizeY());
+	}
+	
+	
 
 	// Highlight all object of type
 	if (_lastModuleMeshesOverlayType[meshId] != overlayType)

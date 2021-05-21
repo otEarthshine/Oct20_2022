@@ -307,7 +307,7 @@ public:
 	}
 
 	void RecalculateTaxDelayed() {
-		PUN_LOG("RecalculateTaxDelayed");
+		//PUN_LOG("RecalculateTaxDelayed");
 		_needTaxRecalculation = true;
 	}
 	void RecalculateTax(bool showFloatup);

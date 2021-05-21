@@ -1045,6 +1045,10 @@ public:
 	bool IsQuickBuild(int32 buildingId) final {
 		return _buildingSystem->IsQuickBuild(buildingId);
 	}
+	void AddQuickBuild(int32 buildingId) final {
+		_buildingSystem->AddQuickBuild(buildingId);
+	}
+	
 
 	static int32 StorageCostPerTile() { return 2; }
 
@@ -2265,6 +2269,16 @@ public:
 		return demolishInfos;
 	}
 
+	void AddFireOnceParticleInfo(ParticleEnum particleEnum, TileArea area) override {
+		_regionToFireOnceParticleInfo[area.centerTile().regionId()].push_back({ particleEnum, area });
+	}
+	std::vector<FireOnceParticleInfo> GetFireOnceParticleInfos(int32 regionId) {
+		std::vector<FireOnceParticleInfo> result = _regionToFireOnceParticleInfo[regionId];
+		_regionToFireOnceParticleInfo[regionId].clear();
+		return result;
+	}
+	
+
 	// If half pop dies from starve/cold, happiness would -100
 	int32 GetAverageHappiness(int32 townId) final {
 		return townManager(townId).aveOverallHappiness();
@@ -3149,6 +3163,8 @@ private:
 public:
 	void ExecuteNetworkCommands(std::vector<std::shared_ptr<FNetworkCommand>>& commands) final
 	{
+		// Note: For AI and Trailer only
+
 		for (auto& command : commands) {
 			ExecuteNetworkCommand(command);
 		}
@@ -3374,8 +3390,11 @@ private:
 	std::vector<std::vector<int32>> _displayEnumToNeedUpdateIds;
 
 	std::vector<std::vector<DemolishDisplayInfo>> _regionToDemolishDisplayInfos;
+	std::vector<std::vector<FireOnceParticleInfo>> _regionToFireOnceParticleInfo;
 	
 	DebugLineSystem _debugLineSystem;
+
+	int32 tempVariable = 0;
 
 public:
 	// Save Check

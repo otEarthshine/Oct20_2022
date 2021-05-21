@@ -348,6 +348,8 @@ void UPunWidget::SetGeoresourceImage(UImage* image, ResourceEnum resourceEnum, U
 	}
 
 
+	
+
 	switch (resourceEnum) {
 	case ResourceEnum::IronOre: resourceEnum = ResourceEnum::Iron; break;
 	case ResourceEnum::GoldOre: resourceEnum = ResourceEnum::GoldBar; break;

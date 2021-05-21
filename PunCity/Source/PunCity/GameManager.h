@@ -141,6 +141,7 @@ public:
 	bool isGameTickQueueCloggedDirty = false; // If dirty, we need to notify server that _gameTickQueue is clogged, or no longer clogged
 	bool isGameTickQueueClogged = false;
 
+
 	UPROPERTY(EditAnywhere) bool PaintConstructionMesh;
 	UPROPERTY(EditAnywhere) bool PrintConstructionMesh;
 	UPROPERTY(EditAnywhere) bool RemoveVertexColor;

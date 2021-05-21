@@ -21,6 +21,10 @@ public class PrototypeCity : ModuleRules
         DynamicallyLoadedModuleNames.Add("OnlineSubsystemSteam");
 
         PublicDependencyModuleNames.AddRange(new string[] {
+            "Niagara"
+        });
+
+        PublicDependencyModuleNames.AddRange(new string[] {
             //"KantanChartsSlate",
             "KantanChartsDatasource",
             "KantanChartsUMG",

@@ -183,27 +183,6 @@
 class GameDisplayInfo
 {
 public:
-
-	/*
-	 ModuleTransformGroup::CreateSet("HouseClayLvl1",
-		 {},
-		 { {ParticleEnum::Smoke, TransformFromPosition(23.8, -5.7, 29.4)} }
-	 ),
-
-				ModuleTransformGroup::CreateSet("Potter", {},
-			{
-				{ParticleEnum::BlackSmoke,  TransformFromPosition(-15.8, -8.77, 7.78)},
-			}, {})
-
-			{ // Vodka Distillery
-			ModuleTransformGroup::CreateSet("VodkaDistillery", {},
-			{
-				{ParticleEnum::Smoke,  TransformFromPosition(13.37, -16.77, 23.05)},
-			}, {
-				ModuleTransform("VodkaDistilleryWorkShaderOnOff", FTransform::Identity, 0, ModuleTypeEnum::ShaderOnOff),
-			})
-		},
-	 */
 	
 	void InitBuildingSets(UAssetLoaderComponent* assetLoader)
 	{
@@ -406,13 +385,6 @@ public:
 		set(CardEnum::DirtRoad, { ModuleTransformGroup({ ModuleTransform("DirtRoad") }) });
 		set(CardEnum::StoneRoad, { ModuleTransformGroup({ ModuleTransform("StoneRoad") }) });
 
-		set(CardEnum::CharcoalMaker, {
-			ModuleTransformGroup::CreateSet("CharcoalMaker", {},
-			{
-				{ParticleEnum::BlackSmoke,  TransformFromPosition(9.8, 5.9, 5.6)},
-				{ParticleEnum::TorchFire,  FTransform(FRotator::ZeroRotator, FVector(9.11, 5.27, 8.2), FVector(1, 1, 1))},
-			})
-		});
 
 		//set(CardEnum::BeerBrewery, {
 		//	ModuleTransformGroup::CreateSet("BeerBrewery", {},
@@ -422,8 +394,6 @@ public:
 		//		ModuleTransform("BeerBreweryWorkShaderOnOff", FTransform::Identity, 0, ModuleTypeEnum::ShaderOnOff),
 		//	})
 		//});
-
-		setName(CardEnum::FurnitureWorkshop, "FurnitureWorkshop");
 
 		
 		setName(CardEnum::BarrackClubman, "Barrack");
@@ -460,9 +430,6 @@ public:
 		set(CardEnum::GemstoneMine, {
 			ModuleTransformGroup::CreateOreMineSet("OreMineSpecial_Gemstone", "OreMineWorkStatic_Gemstone")
 		});
-
-		setName(CardEnum::Beekeeper, "Beekeeper");
-		setName(CardEnum::Brickworks, "Brickworks");
 
 		setName(CardEnum::Fort, "Outpost");
 		setName(CardEnum::ResourceOutpost, "Colony");

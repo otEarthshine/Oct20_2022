@@ -11,6 +11,8 @@
 #include "Materials/MaterialInstance.h"
 #include "Animation/AnimSequence.h"
 
+#include "Niagara/Public/NiagaraComponent.h"
+
 #include "PunUnrealUtils.h"
 #include "CppUtils.h"
 
@@ -30,29 +32,6 @@ enum class OverlaySetterType {
 	None,
 };
 
-enum class ParticleEnum
-{
-	Smoke,
-	HeavySteam,
-	BlackSmoke,
-	HeavyBlackSmoke,
-	StoveFire,
-	TorchFire,
-
-	CampFire,
-	BuildingFire,
-	BuildingFireSmoke,
-
-	DemolishDust,
-
-	Count,
-};
-
-struct ParticleInfo
-{
-	ParticleEnum particleEnum = ParticleEnum::Smoke;
-	FTransform transform;
-};
 
 struct PointLightInfo
 {
@@ -331,6 +310,7 @@ class UAssetLoaderComponent : public UActorComponent
 	GENERATED_BODY()
 public:	
 	UAssetLoaderComponent();
+	void InitNiagara();
 
 	void PaintConstructionMesh();
 	void UpdateRHIConstructionMesh();
@@ -399,6 +379,13 @@ public:
 	FGeoresourceMeshAssets georesourceMesh(GeoresourceEnum georesourceEnum);
 
 	UParticleSystem* particleSystem(ParticleEnum particleEnum) { return ParticlesByEnum[static_cast<int>(particleEnum)]; }
+	UNiagaraSystem* niagaraSystem(ParticleEnum particleEnum)
+	{
+		if (NiagaraByEnum.Num() == 0) {
+			InitNiagara();
+		}
+		return NiagaraByEnum[static_cast<int>(particleEnum) - static_cast<int>(ParticleEnum::DemolishDust) - 1];
+	}
 
 	UTexture2D* GetBuildingIcon(CardEnum buildingEnum) { return _buildingIcons[static_cast<int>(buildingEnum)]; }
 	UTexture2D* GetBuildingIconAlpha(CardEnum buildingEnum) { return _buildingIconsAlpha[static_cast<int>(buildingEnum)]; }
@@ -586,6 +573,10 @@ public:
 	UPROPERTY(EditAnywhere) TMap<int32, UTexture*> _geo_Icon;
 	UPROPERTY(EditAnywhere) TMap<int32, UTexture*> _geo_IconAlpha;
 
+	//! 
+	UPROPERTY(EditAnywhere) UNiagaraSystem* NS_OnPlacement;
+	UPROPERTY(EditAnywhere) UNiagaraSystem* NS_OnTownhall;
+	UPROPERTY(EditAnywhere) UNiagaraSystem* NS_OnUpgrade;
 	//!
 
 	UPROPERTY(EditAnywhere, Category = "Mesh Import") UStaticMesh* EmptyMesh;
@@ -668,7 +659,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Weather") UMaterial* M_RainWetness;
 
 	UPROPERTY(EditAnywhere) TArray<UParticleSystem*> ParticlesByEnum;
-
+	UPROPERTY(EditAnywhere) TArray<UNiagaraSystem*> NiagaraByEnum;
 
 	
 

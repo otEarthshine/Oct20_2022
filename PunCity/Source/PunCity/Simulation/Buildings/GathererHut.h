@@ -1206,7 +1206,7 @@ public:
 	static const int32_t Radius = 30;
 	//static const int32_t SciencePerHouse = 2;
 
-	static const int32 MinHouseLvl = 2;
+	static const int32 MinHouseLvl = 1;
 
 	void FinishConstruction() final {
 		Building::FinishConstruction();
@@ -1219,7 +1219,7 @@ public:
 	static const int32_t Radius = 30;
 	//static const int32_t SciencePerHouse = 3;
 
-	static const int32 MinHouseLvl = 3;
+	static const int32 MinHouseLvl = 1;
 
 	void FinishConstruction() final {
 		Building::FinishConstruction();

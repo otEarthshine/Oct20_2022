@@ -174,6 +174,10 @@ void APunGameMode::Logout(AController* Exiting)
 		command->isSystemMessage = true;
 		command->message = playerName + FString(" disconnected");
 		punPlayer->networkInterface()->SendNetworkCommand(command);
+
+		// Remove clog for the player that left
+		APunPlayerController::kPlayerIdToClogStatus.erase(punPlayer->playerId());
+		APunPlayerController::kPlayerIdToMissingGameTick.erase(punPlayer->playerId());
 	}
 
 	

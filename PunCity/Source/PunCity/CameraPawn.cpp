@@ -190,7 +190,7 @@ void ACameraPawn::LeftMouseDown()
 	_isLeftMouseDown = true;
 	
 	// Don't accept click before game actually start
-	if (Time::Ticks() < Time::TicksPerSecond) { // 1.5 sec is when HideLoadingScreen triggers
+	if (!_networkInterface->IsAllPlayersReady()) {
 		return;
 	}
 

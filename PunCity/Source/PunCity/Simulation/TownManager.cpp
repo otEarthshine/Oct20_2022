@@ -1166,7 +1166,7 @@ void TownManager::RecalculateTax(bool showFloatup)
 		// influence from Luxury resource consumption
 		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Luxury)] += house.GetInfluenceIncome100();
 
-		if (_simulation->HasTownBonus(_townId, CardEnum::SavannaGrasslandRoamer)) {
+		if (_simulation->HasTownBonus(_townId, CardEnum::SavannaGrasslandHunting)) {
 			if (IsGrassDominant(house.centerBiomeEnum())) {
 				influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::GrasslandRoamer)] += house.GetInfluenceIncome100() * 10 / 100;
 			}

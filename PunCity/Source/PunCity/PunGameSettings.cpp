@@ -148,6 +148,8 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "TestCityNetwork_Stage", -1 },
 	{ "TestCityNetwork_CurTileId", -1 },
 	{ "TestCityNetwork_TimeInterval", 1 },
+
+	{ "TestCityNetwork_BuildingEnumToStart", 0 },
 	{ "TestCityNetwork_BuildingEnumToStop", 1000 },
 	
 	// Debug Network

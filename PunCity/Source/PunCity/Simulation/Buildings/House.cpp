@@ -443,18 +443,19 @@ void House::UpgradeHouse(int32 lvl)
 }
 
 int32 House::GetMaxHouseLvl() {
-	return 7;
+	return 8;
 }
 FText House::HouseNeedDescription()
 {
 	switch(_houseLvl)
 	{
 	case 1: return LOCTEXT("HouseNeed1", "Need 1 type of luxury tier 1");
-	case 2: return LOCTEXT("HouseNeed2", "Need 3 types of luxury tier 1");
-	case 3: return LOCTEXT("HouseNeed3", "Need 1 type of luxury tier 2");
-	case 4: return LOCTEXT("HouseNeed4", "Need 3 types of luxury tier 2");
-	case 5: return LOCTEXT("HouseNeed5", "Need 1 types of luxury tier 3");
-	case 6: return LOCTEXT("HouseNeed6", "Need 3 types of luxury tier 3");
+	case 2: return LOCTEXT("HouseNeed2", "Need 2 types of luxury tier 1");
+	case 3: return LOCTEXT("HouseNeed3", "Need 3 types of luxury tier 1");
+	case 4: return LOCTEXT("HouseNeed4", "Need 1 type of luxury tier 2");
+	case 5: return LOCTEXT("HouseNeed5", "Need 3 types of luxury tier 2");
+	case 6: return LOCTEXT("HouseNeed6", "Need 1 types of luxury tier 3");
+	case 7: return LOCTEXT("HouseNeed7", "Need 3 types of luxury tier 3");
 	default:
 		UE_DEBUG_BREAK();
 		return FText();
@@ -466,10 +467,11 @@ FText House::HouseNeedTooltipDescription()
 	{
 	case 1: return LuxuryResourceTip(1);
 	case 2: return LuxuryResourceTip(1);
-	case 3: return LuxuryResourceTip(2);
+	case 3: return LuxuryResourceTip(1);
 	case 4: return LuxuryResourceTip(2);
-	case 5: return LuxuryResourceTip(3);
+	case 5: return LuxuryResourceTip(2);
 	case 6: return LuxuryResourceTip(3);
+	case 7: return LuxuryResourceTip(3);
 	default:
 		UE_DEBUG_BREAK();
 		return FText();
@@ -480,24 +482,25 @@ int32 House::CalculateHouseLevel()
 	switch(LuxuryTypeCount(1))
 	{
 	case 0:			return 1;
-	case 1: case 2: return 2;
+	case 1:			return 2;
+	case 2:			return 3;
 	default: break;
 	}
 
 	switch (LuxuryTypeCount(2))
 	{
-	case 0:			return 3;
-	case 1: case 2: return 4;
+	case 0:			return 4;
+	case 1: case 2: return 5;
 	default: break;
 	}
 
 	switch (LuxuryTypeCount(3))
 	{
-	case 0:			return 5;
-	case 1: case 2: return 6;
-	case 3:			return 7;
+	case 0:			return 6;
+	case 1: case 2: return 7;
+	case 3:			return 8;
 
-	default: return 7;
+	default: return 8;
 	}
 	
 }

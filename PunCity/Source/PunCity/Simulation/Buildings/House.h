@@ -179,7 +179,7 @@ public:
 	int32 displayVariationIndex() override
 	{
 		if (_simulation->GetBiomeEnum(centerTile()) == BiomeEnum::Desert &&
-			_houseLvl <= 3) 
+			(2 <= _houseLvl && _houseLvl <= 4))
 		{
 			const int32 desertShift = 4;
 			return (_houseLvl - 1) * houseTypesPerLevel + desertShift;
@@ -187,8 +187,9 @@ public:
 		int32 maxLocalIndex = 2;
 		switch(_houseLvl) {
 		case 1: maxLocalIndex = 3; break;
-		case 2: maxLocalIndex = 4; break;
+		case 2: maxLocalIndex = 3; break;
 		case 3: maxLocalIndex = 4; break;
+		case 4: maxLocalIndex = 4; break;
 		default: break;
 		}
 		

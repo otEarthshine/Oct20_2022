@@ -41,6 +41,8 @@ public:
 	virtual void GoToSinglePlayerLobby() = 0;
 	virtual void GoToVictoryScreen() = 0;
 
+	virtual bool IsAllPlayersReady() = 0;
+
 	// TODO: shouldn't be here, move if there is better place for this ???
 	virtual bool WorldLocationToScreen(FVector WorldLocation, FVector2D& ScreenLocation) = 0;
 	virtual bool ControllerGetMouseHit(struct FHitResult& hitResult, ECollisionChannel channel = ECC_WorldStatic) = 0;
@@ -65,6 +67,8 @@ public:
 	virtual std::string playerName(int32 playerId) = 0;
 
 	virtual int32 serverTick() = 0;
+
+	virtual int32 IsCloggedFromMissingTick() = 0;
 
 	virtual bool IsChatFocus() = 0;
 	virtual void SetFocusChat() = 0;

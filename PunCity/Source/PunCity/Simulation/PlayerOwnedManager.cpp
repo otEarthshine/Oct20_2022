@@ -30,11 +30,11 @@ void PlayerOwnedManager::Tick1Sec()
 	if (!_isInDarkAge && _simulation->populationTown(_playerId) <= 15)
 	{
 		_simulation->AddPopup(PopupInfo(_playerId,
-			LOCTEXT("DarkAgeBegin_Pop",
-				"Dark Age begins.<line><space>"
+			LOCTEXT("CrisisBegin_Pop",
+				"Crisis begins.<line><space>"
 				"You must survive this slump and pull your settlement back on track.<space>"
 				"Crisis, such as this, tests your skill as a leader.<space>"
-				"During Dark Age, Leader Skills are x2 more effective and SP recovers x2 faster."
+				"During crisis, Leader Skills are x2 more effective and SP recovers x2 faster."
 			),
 			{ LOCTEXT("We must survive!", "We must survive!") },
 			PopupReceiverEnum::None, false, "PopupBad"
@@ -45,8 +45,8 @@ void PlayerOwnedManager::Tick1Sec()
 	if (_isInDarkAge && _simulation->populationTown(_playerId) >= 20)
 	{
 		_simulation->AddPopup(PopupInfo(_playerId,
-			LOCTEXT("DarkAgeEnd_Pop",
-				"Congratulation, you have survived the Dark Age.<line>"
+			LOCTEXT("CrisisEnd_Pop",
+				"Congratulation, you have survived the crisis.<line>"
 				"What doesn't kill you makes you stronger.\n"
 				"Our people are now crisis hardened, ready to march forward through any future obstacles."
 			)
@@ -94,6 +94,12 @@ void PlayerOwnedManager::TickRound()
 	 * Mid autumn buyer arrival
 	 */
 	PUN_LOG("MidAutumn TickRound: %d, %d, %d, %d", Time::Ticks(), (Time::Ticks() % Time::TicksPerSeason), (Time::Ticks() % Time::TicksPerSeason != 0), Time::IsAutumn());
+	// Show Caravan only if there is no Trading Post/Port
+	if (_simulation->playerBuildingFinishedCount(_playerId, CardEnum::TradingPost) > 0 ||
+		_simulation->playerBuildingFinishedCount(_playerId, CardEnum::TradingPort) > 0) {
+		return;
+	}
+
 	if (Time::IsAutumn() && Time::Ticks() % Time::TicksPerSeason != 0)
 	{
 		_simulation->AddPopup(PopupInfo(_playerId,

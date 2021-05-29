@@ -261,6 +261,13 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::JobManagementBureau, "Employment_Bureau_Era_", "EmploymentBureau", 1);
 
 	// Test Townhall
+	LoadBuilding(CardEnum::Townhall, "Townhall_Era0", "Townhall/Era0", false, ModuleTransformGroup::CreateAuxSet(
+		{
+			{ParticleEnum::CampFire, TransformFromPositionYawScale(-5.65, -.669, 1, 0, 0.17)}
+		},
+		{}, {},
+		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-5.65, -.669, 5), FVector::OneVector} }
+	));
 	LoadBuilding(CardEnum::Townhall, "Townhall_Era1", "Townhall/Era1", false, ModuleTransformGroup::CreateAuxSet(
 		{
 			{ParticleEnum::CampFire, TransformFromPositionYawScale(-10.7, 14.6, 1.85, 0, 0.17)}
@@ -568,8 +575,10 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	/*
 	 * Card Icons
 	 */
+	int32 addCardIconCount = 0;
 	auto addCardIcon = [&](CardEnum cardEnum, FString iconFileName) {
 		_cardIcons.Add(static_cast<int32>(cardEnum), LoadF<UTexture2D>(FString("/Game/UI/Images/CardImages_BleGood/") + iconFileName + FString("_1024")));
+		addCardIconCount++;
 	};
 	addCardIcon(CardEnum::None, "CardNone");
 
@@ -595,16 +604,18 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	addCardIcon(CardEnum::CooperativeFishing, "CooperativeFishing");
 	addCardIcon(CardEnum::CottonSeeds, "Cotton");
 	addCardIcon(CardEnum::Craftmanship, "Craftmanship");
+	addCardIcon(CardEnum::DesertIndustry, "DesertIndustry");
 	addCardIcon(CardEnum::DyeSeeds, "Dye");
 	addCardIcon(CardEnum::FarmWaterManagement, "FarmWaterManagement");
 	addCardIcon(CardEnum::BorealWinterFishing, "Fish");
+	addCardIcon(CardEnum::FreeThoughts, "FreeThoughts");
 	addCardIcon(CardEnum::FrugalityBook, "Frugality");
 	addCardIcon(CardEnum::DesertGem, "Gem");
 	addCardIcon(CardEnum::BorealGoldOil, "GoldOil");
 	addCardIcon(CardEnum::GrapeSeeds, "Grape");
 	addCardIcon(CardEnum::Geologist, "Geologist");
-	addCardIcon(CardEnum::SavannaGrasslandHerder, "GrasslandHerding");
-	addCardIcon(CardEnum::SavannaGrasslandHunting, "GrasslandHunting");
+	addCardIcon(CardEnum::SavannaRanch, "GrasslandHerding");
+	addCardIcon(CardEnum::SavannaHunt, "GrasslandHunting");
 	addCardIcon(CardEnum::HappyBreadDay, "HappyBreadDay");
 	addCardIcon(CardEnum::HomeBrew, "HomeBrew");
 	addCardIcon(CardEnum::Immigration, "Immigration");
@@ -620,12 +631,13 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	addCardIcon(CardEnum::HerbSeed, "MedicinalHerbFarming");
 	addCardIcon(CardEnum::MelonSeed, "Melon");
 	addCardIcon(CardEnum::JungleMushroom, "Mushroom");
-	//addCardIcon(CardEnum::DesertOreTrade, "DesertOreTrade");
+	addCardIcon(CardEnum::DesertOreTrade, "OreTrade");
 	addCardIcon(CardEnum::Passion, "Passion");
 	addCardIcon(CardEnum::BorealPineForesting, "PineLumber");
 	addCardIcon(CardEnum::PopulationScoreMultiplier, "PopulationScore");
 	addCardIcon(CardEnum::PotatoSeed, "Potato");
 	addCardIcon(CardEnum::ProductivityBook, "Productivity");
+	addCardIcon(CardEnum::Protectionism, "Protectionism");
 	addCardIcon(CardEnum::PumpkinSeed, "Pumpkin");
 	addCardIcon(CardEnum::Rationalism, "Rationalism");
 	addCardIcon(CardEnum::Romanticism, "Romanticism");
@@ -645,6 +657,27 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	addCardIcon(CardEnum::BorealWinterResist, "WinterResistance");
 	addCardIcon(CardEnum::WondersScoreMultiplier, "WondersScore");
 
+
+
+	// Add Building Card Icons
+	addCardIconCount = 0;
+	
+	for (CardEnum buildingEnum : SortedNameBuildingEnum) {
+		FString name = GetBuildingInfo(buildingEnum).nameF().Replace(TEXT(" "), TEXT(""));
+		name = name.Replace(TEXT("'"), TEXT(""));
+
+		UObject* cardIconTextureObj = StaticLoadObject(UTexture2D::StaticClass(), NULL, *(FString("/Game/UI/BuildingSnapshots/") + name));
+		UTexture2D* cardIconTexture = Cast<UTexture2D>(cardIconTextureObj);
+
+		//LoadF_Nullable<UTexture2D>(FString("/Game/UI/BuildingSnapshots/") + name);
+		
+		if (cardIconTexture) {
+			_cardIcons.Add(static_cast<int32>(buildingEnum), cardIconTexture);
+			addCardIconCount++;
+		}
+	}
+
+	check(addCardIconCount == 58);
 
 	//BorealFishing
 	//BorealWinterResistant
@@ -1031,7 +1064,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 		"Trees/Coffee/CoffeeTrunk",
 	});
 	LoadTileObject(TileObjEnum::Tulip, {
-		"Trees/Tulip/TulipPlant",
+		"Trees/Tulip/TulipPlanta",
 	});
 	LoadTileObject(TileObjEnum::Blueberry, {
 		"Trees/Blueberry/BlueberryPlant",
@@ -1129,11 +1162,6 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	ParticlesByEnum.Add(Load<UParticleSystem>("/Game/Models/Others/P_PunDemolishDustLit"));
 
-	//NiagaraByEnum.Add(Load<UNiagaraSystem>("/Game/VFX/OnPlacement/NS_PlacementDust"));
-	//NiagaraByEnum.Add(Load<UNiagaraSystem>("/Game/VFX/OnTownhall/NS_OnTownhall"));
-	//NiagaraByEnum.Add(Load<UNiagaraSystem>("/Game/VFX/OnUpgrade/NS_OnUpgrade"));
-
-	//_terrainMaterial2 = Load<UMaterial>("/Game/Models/Terrain/Forest/ForestTerrainMaterial");
 
 	CheckMeshesAvailable();
 }
@@ -1143,25 +1171,6 @@ void UAssetLoaderComponent::InitNiagara()
 	NiagaraByEnum.Add(NS_OnPlacement);
 	NiagaraByEnum.Add(NS_OnTownhall);
 	NiagaraByEnum.Add(NS_OnUpgrade);
-
-	//
-	//auto loadObject = [&](FString string) {
-	//	UObject* niagaraSys = StaticLoadObject(UNiagaraSystem::StaticClass(), NULL, *string);
-	//	check(niagaraSys);
-	//	
-	//	NiagaraByEnum.Add(CastChecked<UNiagaraSystem>(niagaraSys));
-	//};
-	//loadObject("/Game/VFX/OnPlacement/NS_PlacementDust");
-	//loadObject("/Game/VFX/OnTownhall/NS_OnTownhall");
-	//loadObject("/Game/VFX/OnUpgrade/NS_OnUpgrade");
-	//
-	
-	//NiagaraByEnum.Add(Cast<UNiagaraSystem>()));
-	//NiagaraByEnum.Add(Cast<UNiagaraSystem>(StaticLoadObject(UNiagaraSystem::StaticClass(), NULL, *FString("/Game/VFX/OnTownhall/NS_OnTownhall"))));
-	//NiagaraByEnum.Add(Cast<UNiagaraSystem>(StaticLoadObject(UNiagaraSystem::StaticClass(), NULL, *FString("/Game/VFX/OnUpgrade/NS_OnUpgrade"))));
-	//NiagaraByEnum.Add(Load<UNiagaraSystem>("/Game/VFX/OnPlacement/NS_PlacementDust"));
-	//NiagaraByEnum.Add(Load<UNiagaraSystem>("/Game/VFX/OnTownhall/NS_OnTownhall"));
-	//NiagaraByEnum.Add(Load<UNiagaraSystem>("/Game/VFX/OnUpgrade/NS_OnUpgrade"));
 }
 
 UMaterialInstanceDynamic* UAssetLoaderComponent::GetResourceIconMaterial(ResourceEnum resourceEnum)

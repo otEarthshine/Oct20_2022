@@ -131,7 +131,8 @@ UnitDisplayState UUnitDisplayComponent::GetUnitTransformAndVariation(UnitStateAI
 	// Walking Human uses VertexAnimation
 	if (unitEnum == UnitEnum::Human && 
 		!IsUsingSkeletalMesh(unitEnum, unit.animationEnum(), _gameManager->zoomDistance()) &&
-		animationEnum != UnitAnimationEnum::Ship)
+		animationEnum != UnitAnimationEnum::Ship &&
+		!IsHorseAnimation(animationEnum))
 	{
 		float gameSpeed = sim.gameSpeedFloat();
 		scale = std::fmodf(lastAnimationTime + (unitSystem.isMoving(unitId) ? (GetWorld()->GetDeltaSeconds() * 2.0f * gameSpeed) : 0.0f), 2.0f);

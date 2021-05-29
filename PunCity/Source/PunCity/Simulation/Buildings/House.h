@@ -71,7 +71,7 @@ public:
 			_simulation->RecalculateTaxDelayedTown(_townId); // Recalculate sci
 			ResetDisplay();
 
-			_simulation->ResetTechDisplay(_playerId);
+			_simulation->ResetTechTreeDisplay(_playerId);
 		}
 	}
 	void UpgradeHouse(int32 lvl);

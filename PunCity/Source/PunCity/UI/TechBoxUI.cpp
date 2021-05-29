@@ -34,9 +34,6 @@ FReply UTechBoxUI::NativeOnMouseButtonDoubleClick(const FGeometry& InGeometry, c
 
 void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool isInTechQueue, std::shared_ptr<ResearchInfo> tech)
 {
-	// TODO: get rid of line color??
-	//FLinearColor lineColor;
-
 	auto unlockSys = simulation().unlockSystem(playerId());
 	isLocked = isLockedIn;
 	
@@ -61,7 +58,7 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 		setSingleLineColorAndOpacity(lineChild2);
 	};
 
-	if (techStateIn == TechStateEnum::Researched)
+	if (tech && tech->CannotUpgradeFurther())
 	{
 		colorState = 0.75f;
 		
@@ -99,7 +96,16 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 	OuterImage->GetDynamicMaterial()->SetScalarParameterValue("ShowBubbles", showBubbles);
 	InnerImage->GetDynamicMaterial()->SetScalarParameterValue("ShowBubbles", showBubbles);
 
-	TechName->SetColorAndOpacity(colorState < 0.25f ? FLinearColor(0.5, 0.5, 0.5) : FLinearColor::White);
+	FLinearColor techNameColor = colorState < 0.25f ? FLinearColor(0.5, 0.5, 0.5) : FLinearColor::White;
+	TechName->SetColorAndOpacity(techNameColor);
+	TechUpgradeCount->SetColorAndOpacity(techNameColor);
+
+	if (tech && tech->maxUpgradeCount != -1) {
+		TechUpgradeCount->SetText(FText::FromString(FString::FromInt(tech->upgradeCount) + "/" + FString::FromInt(tech->maxUpgradeCount)));
+	} else {
+		TechUpgradeCount->SetText(FText());
+	}
+	
 
 	RewardBuildingIcon1->SetOpacity(colorState < 0.25f ? 0.3 : 1);
 	RewardBuildingIcon2->SetOpacity(colorState < 0.25f ? 0.3 : 1);
@@ -160,7 +166,7 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 		}
 		else {
 			SetText(TechRequirement, FText::Format(
-				LOCTEXT("TechBoxRequired", "Required:\n{0}/{1} {2}"),
+				LOCTEXT("TechBoxRequires", "Requires:\n{0}/{1} {2}"),
 				TEXT_NUM(currentCount),
 				TEXT_NUM(requiredCount),
 				requiredName
@@ -178,27 +184,27 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 	if (tech)
 	{
 		// Required Resource
-		if (tech->requiredResourceEnum != ResourceEnum::None && 
-			tech->state == TechStateEnum::Researched)
+		TechRequirements requirements = tech->techRequirements;
+		if (requirements.requiredResourceEnum != ResourceEnum::None &&
+			tech->state != TechStateEnum::Researched)
 		{
-			int32 productionCount = unlockSys->GetResourceProductionCount(tech->requiredResourceEnum);
+			int32 productionCount = unlockSys->GetResourceProductionCount(requirements.requiredResourceEnum);
 			setTechRequirementText(
 				productionCount,
-				tech->requiredResourceCount,
-				ResourceNameT(tech->requiredResourceEnum)
+				requirements.requiredResourceCount,
+				ResourceNameT(requirements.requiredResourceEnum)
 			);
 		}
-		// Required Techs
-		else if (UnlockSystem::IsAgeChangeTech(tech->techEnum))
+
+		// Required House Lvl
+		else if (requirements.requiredHouseLvl != -1 &&
+			tech->state != TechStateEnum::Researched)
 		{
-			int32 requiredHouseLvl = unlockSys->GetTechRequirement_HouseLvl(tech->techEnum);
-			int32 requiredHouseLvlCount = unlockSys->GetTechRequirement_HouseLvlCount(tech->techEnum);
-			int32 houseLvlCount = simulation().GetHouseLvlCount(playerId(), requiredHouseLvl, true);
-			
+			int32 houseLvlCount = simulation().GetHouseLvlCount(playerId(), requirements.requiredHouseLvl, true);
 			setTechRequirementText(
 				houseLvlCount,
-				requiredHouseLvlCount,
-				FText::Format(LOCTEXT("House Lv X", "House Lv {0}"), requiredHouseLvl)
+				requirements.requiredHouselvlCount,
+				FText::Format(LOCTEXT("House Lv X", "House Lv {0}"), TEXT_NUM(requirements.requiredHouseLvl))
 			);
 		}
 	}
@@ -246,27 +252,38 @@ void UTechBoxUI::UpdateTooltip()
 		};
 
 		// Resource Requirement
-		if (tech->requiredResourceEnum != ResourceEnum::None)
+		TechRequirements requirements = tech->techRequirements;
+		if (requirements.requiredResourceEnum != ResourceEnum::None)
 		{
 			setRequirementTooltipText(LOCTEXT("Produce", "Produce"), 
-				unlockSys->GetResourceProductionCount(tech->requiredResourceEnum),
-				tech->requiredResourceCount, 
-				ResourceNameT(tech->requiredResourceEnum)
+				unlockSys->GetResourceProductionCount(requirements.requiredResourceEnum),
+				requirements.requiredResourceCount,
+				ResourceNameT(requirements.requiredResourceEnum)
 			);
 		}
-		// Tech Requirement
-		else if (unlockSys->IsAgeChangeTech(tech->techEnum))
+		else if (requirements.requiredHouseLvl != -1)
 		{
-			int32 requiredHouseLvl = unlockSys->GetTechRequirement_HouseLvl(tech->techEnum);
-			int32 requiredHouseLvlCount = unlockSys->GetTechRequirement_HouseLvlCount(tech->techEnum);
-			int32 houseLvlCount = simulation().GetHouseLvlCount(playerId(), requiredHouseLvl, true);
+			int32 houseLvlCount = simulation().GetHouseLvlCount(playerId(), requirements.requiredHouseLvl, true);
 			
-			setRequirementTooltipText(FText(),
+			setRequirementTooltipText(LOCTEXT("Produce", "Produce"),
 				houseLvlCount,
-				requiredHouseLvlCount,
-				FText::Format(LOCTEXT("House Lv X", "House Lv {0}"), requiredHouseLvl)
+				requirements.requiredHouselvlCount,
+				FText::Format(LOCTEXT("House Lv X", "House Lv {0}"), requirements.requiredHouseLvl)
 			);
 		}
+		//// Tech Requirement
+		//else if (unlockSys->IsAgeChangeTech(tech->techEnum))
+		//{
+		//	int32 requiredHouseLvl = unlockSys->GetTechRequirement_HouseLvl(tech->techEnum);
+		//	int32 requiredHouseLvlCount = unlockSys->GetTechRequirement_HouseLvlCount(tech->techEnum);
+		//	int32 houseLvlCount = simulation().GetHouseLvlCount(playerId(), requiredHouseLvl, true);
+		//	
+		//	setRequirementTooltipText(FText(),
+		//		houseLvlCount,
+		//		requiredHouseLvlCount,
+		//		FText::Format(LOCTEXT("House Lv X", "House Lv {0}"), requiredHouseLvl)
+		//	);
+		//}
 
 
 		// Bonus body

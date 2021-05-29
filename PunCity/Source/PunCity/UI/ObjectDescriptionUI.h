@@ -38,8 +38,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* BuildingSwapArrowLeftButton;
 	UPROPERTY(meta = (BindWidget)) UButton* BuildingSwapArrowRightButton;
 
-	UPROPERTY(meta = (BindWidget)) UCheckBox* ToolCheckBox;
-	UPROPERTY(meta = (BindWidget)) UTextBlock* ToolCheckBoxText;
+	//UPROPERTY(meta = (BindWidget)) UCheckBox* ToolCheckBox;
+	//UPROPERTY(meta = (BindWidget)) UTextBlock* ToolCheckBoxText;
 
 	UPROPERTY(meta = (BindWidget)) UComboBoxString* ObjectDropDownBox;
 	UPROPERTY(meta = (BindWidget)) UPunEditableNumberBox* EditableNumberBox;
@@ -79,7 +79,7 @@ public:
 
 	void CloseAllSubUIs(bool shouldCloseStatistics)
 	{
-		ToolCheckBox->SetVisibility(ESlateVisibility::Collapsed);
+		//ToolCheckBox->SetVisibility(ESlateVisibility::Collapsed);
 
 		ObjectDropDownBox->SetVisibility(ESlateVisibility::Collapsed);
 		EditableNumberBox->SetVisibility(ESlateVisibility::Collapsed);
@@ -126,7 +126,7 @@ public:
 
 private:
 
-	UFUNCTION() void ToolCheckBoxChanged(bool active);
+	//UFUNCTION() void ToolCheckBoxChanged(bool active);
 
 	UFUNCTION() void ClickedChooseResource() {
 		ChooseResourceOverlay->SetVisibility(ESlateVisibility::Collapsed);

@@ -1046,7 +1046,9 @@ void UWorldSpaceUI::TickMap()
 			// Oil Invisible before research
 			if (node.georesourceEnum == GeoresourceEnum::Oil) {
 				if (!simulation.IsResearched(playerId(), TechEnum::Petroleum)) {
-					continue;
+					if (!PunSettings::IsOn("ShowAllResourceNodes")) {
+						continue;
+					}
 				}
 			}
 			

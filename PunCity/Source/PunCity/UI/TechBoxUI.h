@@ -32,25 +32,35 @@ public:
 			rewardBuildingIcon->SetVisibility(ESlateVisibility::Visible);
 			auto material = rewardBuildingIcon->GetDynamicMaterial();
 
-			if (IsBuildingCard(buildingEnum)) {
-				material->SetTextureParameterValue("ColorTexture", assetLoader()->GetBuildingIcon(buildingEnum));
-
-				UTexture* depthTexture;
-				switch (buildingEnum) {
-				case CardEnum::IntercityRoad:
-				case CardEnum::IntercityBridge:
-				case CardEnum::Tunnel:
-					depthTexture = assetLoader()->WhiteIcon;
-					break;
-				default:
-					depthTexture = assetLoader()->GetBuildingIconAlpha(buildingEnum);
-					break;
-				}
+			if (IsBuildingCard(buildingEnum)) 
+			{
+				material->SetScalarParameterValue("ShowCard", 0);
 				
-				material->SetTextureParameterValue("DepthTexture", depthTexture);
+				if (UTexture2D* cardIcon = assetLoader()->GetCardIconNullable(buildingEnum)) {
+					material->SetTextureParameterValue("ColorTexture", cardIcon);
+					material->SetTextureParameterValue("DepthTexture", nullptr);
+				}
+				else {
+					material->SetTextureParameterValue("ColorTexture", assetLoader()->GetBuildingIcon(buildingEnum));
+
+					UTexture* depthTexture;
+					switch (buildingEnum) {
+					case CardEnum::IntercityRoad:
+					case CardEnum::IntercityBridge:
+					case CardEnum::Tunnel:
+						depthTexture = assetLoader()->WhiteIcon;
+						break;
+					default:
+						depthTexture = assetLoader()->GetBuildingIconAlpha(buildingEnum);
+						break;
+					}
+
+					material->SetTextureParameterValue("DepthTexture", depthTexture);
+				}
 			}
 			else {
 				// TODO: GetBuildingIcon used for all cards..
+				material->SetScalarParameterValue("ShowCard", 0);
 				material->SetTextureParameterValue("ColorTexture", nullptr);
 				material->SetTextureParameterValue("DepthTexture", nullptr);
 			}
@@ -117,14 +127,12 @@ public:
 		UpdateTooltip();
 	}
 
-	FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
-	FReply NativeOnMouseButtonDoubleClick(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
-	//void SetHighlight(TechStateEnum techState, bool active);
-	//FReply NativeOnHover
-	void NativeOnMouseEnter(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override {
+	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	virtual FReply NativeOnMouseButtonDoubleClick(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	virtual void NativeOnMouseEnter(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override {
 		OuterImage->GetDynamicMaterial()->SetScalarParameterValue("IsHovered", !isLocked);
 	}
-	void NativeOnMouseLeave(const FPointerEvent& InMouseEvent) override {
+	virtual void NativeOnMouseLeave(const FPointerEvent& InMouseEvent) override {
 		OuterImage->GetDynamicMaterial()->SetScalarParameterValue("IsHovered", 0.0f);
 	}
 
@@ -139,6 +147,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UImage* InnerImage;
 	UPROPERTY(meta = (BindWidget)) UImage* OuterImage;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* TechName;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* TechUpgradeCount;
 
 	UPROPERTY() UOverlay* lineChild;
 	UPROPERTY() UOverlay* lineChild2 = nullptr;

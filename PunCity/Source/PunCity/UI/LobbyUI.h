@@ -49,34 +49,7 @@ public:
 
 	class AMainMenuPlayerController* GetFirstController() { return LobbySettingsUI->GetFirstController(); }
 	
-	//// Map Dropdown
-	//UPROPERTY(meta = (BindWidget)) UHorizontalBox* LobbyPasswordRowBox;
-	//UPROPERTY(meta = (BindWidget)) UEditableTextBox* LobbyPasswordInputBox;
-	//
-	//UPROPERTY(meta = (BindWidget)) UEditableTextBox* LobbyMapSeedInputBox;
-	//UPROPERTY(meta = (BindWidget)) UComboBoxString* LobbyMapSizeDropdown;
-	//UPROPERTY(meta = (BindWidget)) UComboBoxString* LobbySeaLevelDropdown;
-	//UPROPERTY(meta = (BindWidget)) UComboBoxString* LobbyMoistureDropdown;
-	//UPROPERTY(meta = (BindWidget)) UComboBoxString* LobbyTemperatureDropdown;
-	//UPROPERTY(meta = (BindWidget)) UComboBoxString* LobbyMountainDensityDropdown;
-	//
-	//UPROPERTY(meta = (BindWidget)) UComboBoxString* LobbyAICountDropdown;
-	//UPROPERTY(meta = (BindWidget)) UComboBoxString* LobbyDifficultyDropdown;
 
-	//// Map Text
-	//UPROPERTY(meta = (BindWidget)) UImage* SettingsBackgroundImage;
-	//UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyMapSeedText;
-	//UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyMapSizeText;
-	//UPROPERTY(meta = (BindWidget)) UTextBlock* LobbySeaLevelText;
-	//UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyMoistureText;
-	//UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyTemperatureText;
-	//UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyMountainDensityText;
-	//
-	//UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyAICountText;
-	//UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyDifficultyText;
-
-
-	
 
 	UPROPERTY(meta = (BindWidget)) USizeBox* LobbyReadyBox;
 	UPROPERTY(meta = (BindWidget)) UButton* LobbyReadyButton;

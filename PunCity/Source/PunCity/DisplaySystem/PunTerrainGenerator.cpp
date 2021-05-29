@@ -1581,15 +1581,15 @@ int32 PunTerrainGenerator::GetFertilityPercent(WorldTile2 tile)
 	if (provinceId != -1)
 	{
 		GeoresourceEnum georesourceEnum = _simulation->georesource(provinceId).georesourceEnum;
-		if (fertility <= 90)
+		if (fertility <= 100)
 		{
 			if (IsFarmGeoresource(georesourceEnum))
 			{
-				int32 fertilityBuff100 = max(0, 16 - WorldTile2::Distance(tile.region().centerTile(), tile));
+				int32 fertilityBuff100 = max(0, 20 - WorldTile2::Distance(tile.region().centerTile(), tile));
 				fertilityBuff100 = fertilityBuff100 * 50 / 16;
 				fertility = fertility + fertilityBuff100;
 
-				fertility = min(90, fertility);
+				fertility = min(100, fertility);
 			}
 		}
 

@@ -560,7 +560,7 @@ private:
 	UFUNCTION() void OnCheckOverlay_Fertility(bool active) {
 		dataSource()->SetOverlayType(OverlayType::None, OverlaySetterType::OverlayToggler);
 		overlayTypeToChangeTo = OverlayType::Farm;
-
+		
 		SetOverlayCheckBox(OverlayCheckBox_Fertility);
 	}
 	UFUNCTION() void OnCheckOverlay_Appeal(bool active) {

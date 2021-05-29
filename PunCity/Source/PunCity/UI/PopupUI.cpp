@@ -17,6 +17,9 @@ void UPopupUI::PunInit()
 	PopupButton4->OnClicked.AddDynamic(this, &UPopupUI::ClickPopupButton4);
 	PopupButton5->OnClicked.AddDynamic(this, &UPopupUI::ClickPopupButton5);
 
+	EraPopupOverlay->SetVisibility(ESlateVisibility::Collapsed);
+	EraPopupButton->OnClicked.AddDynamic(this, &UPopupUI::ClickPopupButton1);
+
 	SetChildHUD(PopupBox);
 }
 
@@ -89,48 +92,79 @@ void UPopupUI::Tick()
 	
 	if (popupToDisplay) 
 	{
-		// Popup changed, play sound...
-		if (!TextEquals(currentPopup.body, popupToDisplay->body) ||
-			currentPopup.startTick != popupToDisplay->startTick ||
-			currentPopup.startDisplayTick != popupToDisplay->startDisplayTick)
+		// Special case: Era Popups
+		PopupReceiverEnum receiverEnum = popupToDisplay->replyReceiver;
+		if (receiverEnum == PopupReceiverEnum::StartGame_Story ||
+			receiverEnum == PopupReceiverEnum::EraPopup_MiddleAge ||
+			receiverEnum == PopupReceiverEnum::EraPopup_EnlightenmentAge ||
+			receiverEnum == PopupReceiverEnum::EraPopup_IndustrialAge)
 		{
+			PopupBox->AfterAdd();
+			PopupOverlay->SetVisibility(ESlateVisibility::Collapsed);
+			EraPopupOverlay->SetVisibility(ESlateVisibility::Visible);
+
 			currentPopup = *popupToDisplay;
-			dataSource()->Spawn2DSound("UI", currentPopup.popupSound == "" ? "PopupNeutral" : currentPopup.popupSound);
+			// Sound for this is played from when popup executes
+
+			// EraSwitcher
+			int32 activeWidgetIndex = 0;
+			switch(receiverEnum) {
+				case PopupReceiverEnum::StartGame_Story:		activeWidgetIndex = 0; break;
+				case PopupReceiverEnum::EraPopup_MiddleAge:		activeWidgetIndex = 1; break;
+				case PopupReceiverEnum::EraPopup_EnlightenmentAge: activeWidgetIndex = 2; break;
+				case PopupReceiverEnum::EraPopup_IndustrialAge: activeWidgetIndex = 3; break;
+				default: break;
+			}
+			EraSwitcher->SetActiveWidgetIndex(activeWidgetIndex);
+			
+			EraPopupButtonText->SetText((receiverEnum == PopupReceiverEnum::StartGame_Story) ? LOCTEXT("CheersBeginning", "Cheers to the new beginning!") : LOCTEXT("Continue", "Continue"));
 		}
+		else
+		{
+			// Popup changed, play sound...
+			if (!TextEquals(currentPopup.body, popupToDisplay->body) ||
+				currentPopup.startTick != popupToDisplay->startTick ||
+				currentPopup.startDisplayTick != popupToDisplay->startDisplayTick)
+			{
+				currentPopup = *popupToDisplay;
+				dataSource()->Spawn2DSound("UI", currentPopup.popupSound == "" ? "PopupNeutral" : currentPopup.popupSound);
+			}
 
-		PopupBox->AddRichTextParsed(popupToDisplay->body, true);
-		PopupBox->AfterAdd();
+			PopupBox->AddRichTextParsed(popupToDisplay->body, true);
+			PopupBox->AfterAdd();
 
-		
-		PopupOverlay->SetVisibility(ESlateVisibility::Visible);
-		
 
-		auto& choices = currentPopup.choices;
-		bool hasChoice1 = choices.size() >= 1;
-		PopupButton1Text->SetText(hasChoice1 ? choices[0] : LOCTEXT("Close", "Close"));
+			PopupOverlay->SetVisibility(ESlateVisibility::Visible);
+			EraPopupOverlay->SetVisibility(ESlateVisibility::Collapsed);
 
-		bool hasChoice2 = choices.size() >= 2;
-		PopupButton2->SetVisibility(hasChoice2 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-		if (hasChoice2) {
-			PopupButton2Text->SetText(choices[1]);
-		}
 
-		bool hasChoice3 = choices.size() >= 3;
-		PopupButton3->SetVisibility(hasChoice3 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-		if (hasChoice3) {
-			PopupButton3Text->SetText(choices[2]);
-		}
+			auto& choices = currentPopup.choices;
+			bool hasChoice1 = choices.size() >= 1;
+			PopupButton1Text->SetText(hasChoice1 ? choices[0] : LOCTEXT("Close", "Close"));
 
-		bool hasChoice4 = choices.size() >= 4;
-		PopupButton4->SetVisibility(hasChoice4 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-		if (hasChoice4) {
-			PopupButton4Text->SetText(choices[3]);
-		}
+			bool hasChoice2 = choices.size() >= 2;
+			PopupButton2->SetVisibility(hasChoice2 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+			if (hasChoice2) {
+				PopupButton2Text->SetText(choices[1]);
+			}
 
-		bool hasChoice5 = choices.size() >= 5;
-		PopupButton5->SetVisibility(hasChoice5 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-		if (hasChoice5) {
-			PopupButton5Text->SetText(choices[4]);
+			bool hasChoice3 = choices.size() >= 3;
+			PopupButton3->SetVisibility(hasChoice3 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+			if (hasChoice3) {
+				PopupButton3Text->SetText(choices[2]);
+			}
+
+			bool hasChoice4 = choices.size() >= 4;
+			PopupButton4->SetVisibility(hasChoice4 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+			if (hasChoice4) {
+				PopupButton4Text->SetText(choices[3]);
+			}
+
+			bool hasChoice5 = choices.size() >= 5;
+			PopupButton5->SetVisibility(hasChoice5 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+			if (hasChoice5) {
+				PopupButton5Text->SetText(choices[4]);
+			}
 		}
 	}
 }
@@ -158,6 +192,7 @@ void UPopupUI::ClickPopupButton(int32 choiceIndex)
 	check(currentPopup.playerId == playerId());
 
 	PopupOverlay->SetVisibility(ESlateVisibility::Collapsed);
+	EraPopupOverlay->SetVisibility(ESlateVisibility::Collapsed);
 
 	dataSource()->Spawn2DSound("UI", "UIWindowClose");
 

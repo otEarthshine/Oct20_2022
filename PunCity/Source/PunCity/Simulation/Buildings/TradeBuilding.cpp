@@ -177,7 +177,6 @@ void TradeBuilding::OnTick1Sec()
 /*
  * TradingPost/Port
  */
-const FText FeeDiscountText = LOCTEXT("Fee Discount", "Fee Discount");
 const FText FastDeliveryText = LOCTEXT("Fast Delivery", "Fast Delivery");
 const FText IncreaseLoadText = LOCTEXT("Increased Load", "Increased Load");
 const FText SpeedBoostText = LOCTEXT("Speed Boost", "Speed Boost");
@@ -190,7 +189,6 @@ void TradingPost::FinishConstruction() {
 	}
 
 	AddUpgrades({
-		BuildingUpgrade(FeeDiscountText, LOCTEXT("Fee Discount Desc1", "Decrease trading fee by 5%."), 250),
 		BuildingUpgrade(FastDeliveryText, LOCTEXT("Fast Delivery Desc1", "-30% the time it takes, for traders to arrive (+50% efficiency)."), 300),
 		BuildingUpgrade(IncreaseLoadText, LOCTEXT("Increased Load Desc1", "+120 goods quantity per trade."), 200),
 	});
@@ -203,7 +201,7 @@ void TradingPost::FinishConstruction() {
 std::vector<BonusPair> TradingPost::GetBonuses()
 {
 	std::vector<BonusPair> result;
-	if (IsUpgraded(1)) {
+	if (IsUpgraded_InitialIndex(0)) {
 		result.push_back({ FastDeliveryText, 50 });
 	}
 	if (_simulation->playerOwned(_playerId).HasSpeedBoost(buildingId())) {
@@ -226,7 +224,6 @@ void TradingPort::FinishConstruction() {
 	}
 
 	AddUpgrades({
-		BuildingUpgrade(FeeDiscountText, LOCTEXT("Fee Discount Desc2", "Decrease trading fee by 5%."), 250),
 		BuildingUpgrade(FastDeliveryText, LOCTEXT("Fast Delivery Desc2", "Halve the time it takes, for traders to arrive (+100% efficiency)."), 500),
 		BuildingUpgrade(IncreaseLoadText, LOCTEXT("Increased Load Desc2", "+240 goods quantity per trade."), 300),
 	});
@@ -239,7 +236,7 @@ void TradingPort::FinishConstruction() {
 std::vector<BonusPair> TradingPort::GetBonuses() 
 {
 	std::vector<BonusPair> result;
-	if (IsUpgraded(1)) {
+	if (IsUpgraded_InitialIndex(0)) {
 		result.push_back({ FastDeliveryText, 100 });
 	}
 	if (_simulation->playerOwned(_playerId).HasSpeedBoost(buildingId())) {
@@ -263,7 +260,6 @@ void TradingCompany::FinishConstruction() {
 	}
 
 	AddUpgrades({
-		BuildingUpgrade(FeeDiscountText,								LOCTEXT("Fee Discount Desc3", "Decrease trading fee by 5%."), 250),
 		BuildingUpgrade(LOCTEXT("Efficient Hauling", "Efficient Hauling"), LOCTEXT("Efficient Hauling Desc3", "+60 goods quantity per trade."), 350),
 		BuildingUpgrade(LOCTEXT("Marine Trade", "Marine Trade"),		LOCTEXT("Marine Trade Desc3", "+60 goods quantity per trade, if adjacent to a trading port."), 200),
 	});
@@ -387,18 +383,18 @@ void TradingCompany::OnTick1Sec()
 /*
  * OreSupplier
  */
-void OreSupplier::FinishConstruction() {
-	Building::FinishConstruction();
-
-	AddUpgrades({
-		BuildingUpgrade(INVTEXT("More Ore"), INVTEXT("Buy 10 more ore each round"), 200),
-		BuildingUpgrade(INVTEXT("Even More Ore"), INVTEXT("Buy 20 more ore each round"), 500),
-	});
-}
-void OreSupplier::TickRound()
-{
-
-}
-
-
-#undef LOCTEXT_NAMESPACE
+//void OreSupplier::FinishConstruction() {
+//	Building::FinishConstruction();
+//
+//	AddUpgrades({
+//		BuildingUpgrade(INVTEXT("More Ore"), INVTEXT("Buy 10 more ore each round"), 200),
+//		BuildingUpgrade(INVTEXT("Even More Ore"), INVTEXT("Buy 20 more ore each round"), 500),
+//	});
+//}
+//void OreSupplier::TickRound()
+//{
+//
+//}
+//
+//
+//#undef LOCTEXT_NAMESPACE

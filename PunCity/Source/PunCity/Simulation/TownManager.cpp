@@ -1437,7 +1437,12 @@ void TownManager::RecalculateTax(bool showFloatup)
 		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Townhall)] += 20 * 100;
 
 		// Population: Influence gain equals to population
-		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Population)] += _simulation->populationTown(_playerId) * 100;
+		int32 incomeFromPopulation = _simulation->populationTown(_playerId) * 100;
+		if (_simulation->townBuildingFinishedCount(_townId, CardEnum::Castle) > 0) {
+			incomeFromPopulation = incomeFromPopulation * 115 / 100;
+		}
+		
+		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Population)] += incomeFromPopulation;
 
 		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::TerritoryUpkeep)] -= territoryUpkeep100;
 

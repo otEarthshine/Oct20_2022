@@ -302,7 +302,7 @@ std::vector<BonusPair> Farm::GetBonuses()
 {
 	std::vector<BonusPair> bonuses = Building::GetBonuses();
 
-	if (_simulation->IsResearched(_playerId, TechEnum::FarmingBreakthrough)) {
+	if (_simulation->IsResearched(_playerId, TechEnum::CropBreeding)) {
 		bonuses.push_back({ LOCTEXT("Farm Breakthrough Upgrade", "Farm Breakthrough Upgrade"), 20 });
 	}
 	if (_simulation->IsResearched(_playerId, TechEnum::FarmImprovement)) {
@@ -746,7 +746,7 @@ void Winery::FinishConstruction() {
 std::vector<BonusPair> Winery::GetBonuses()
 {
 	std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
-	if (_simulation->IsResearched(_playerId, TechEnum::WineryImprovement)) {
+	if (_simulation->IsResearched(_playerId, TechEnum::WinerySnob)) {
 		bonuses.push_back({ LOCTEXT("Winery Improvement Tech", "Winery Improvement Tech"), 30 });
 	}
 
@@ -1263,7 +1263,7 @@ std::vector<BonusPair> Mine::GetBonuses()
 	if (_simulation->GetTownLvl(_townId) >= 3) {
 		bonuses.push_back({ TownhallUpgradeBonusText(3), 10 });
 	}
-	if (IsUpgraded(1) && isOccupantFull()) {
+	if (IsUpgraded_InitialIndex(1) && isOccupantFull()) {
 		bonuses.push_back({ LOCTEXT("Improved Shift", "Improved Shift"), 20 });
 	}
 	if (_simulation->buildingCount(_townId, CardEnum::EnvironmentalistGuild)) {
@@ -1700,7 +1700,7 @@ void Archives::CalculateRoundProfit()
 		lastRoundProfit += GetBuildingInfo(cardStatus.cardEnum).baseCardPrice;
 	}
 
-	lastRoundProfit = lastRoundProfit * CardProfitPercentPerRound / 100;
+	lastRoundProfit = lastRoundProfit * CardProfitPercentPerYear / Time::RoundsPerYear / 100;
 }
 
 /*

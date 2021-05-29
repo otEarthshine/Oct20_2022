@@ -160,11 +160,11 @@ public:
 
 
 		if (isServer()) {
-			PUN_DEBUG2("LobbyUI Open: SetPlayerCount 6");
+			PUN_DEBUG2("LobbyUI Open: SetPlayerCount");
 
 			// Set player count settings
-			serverMapSettings.playerCount = 6;
-			gameInstance()->SetPlayerCount(6);
+			serverMapSettings.playerCount = gameInstance()->MaxPlayer;
+			gameInstance()->SetPlayerCount(gameInstance()->MaxPlayer);
 		}
 	}
 

@@ -188,7 +188,7 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 	// Only set the "InitialAIs" active
 	PUN_CHECK(_mapSettings.aiCount <= GameConstants::MaxAIs);
 	for (int i = 0; i < _mapSettings.aiCount; i++) {
-		_aiPlayerSystem[GameConstants::MaxPlayers + i].SetActive(true);
+		_aiPlayerSystem[GameConstants::MaxPlayersPossible + i].SetActive(true);
 	}
 
 	// Replay is fixed for 1 player for now
@@ -1150,7 +1150,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 							if (!townhallCapital.alreadyGotInitialCard && townhallCapital.townAgeTicks() >= Time::TicksPerSecond)
 							{
 								GenerateRareCardSelection(playerId, RareHandEnum::InitialCards1, FText());
-								GenerateRareCardSelection(playerId, RareHandEnum::InitialCards2, FText());
+								//GenerateRareCardSelection(playerId, RareHandEnum::InitialCards2, FText());
 
 								townhallCapital.alreadyGotInitialCard = true;
 							}
@@ -1262,7 +1262,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 					}
 				});
 				
-				for (int j = GameConstants::MaxPlayers; j < GameConstants::MaxPlayersAndAI; j++) {
+				for (int j = GameConstants::MaxPlayersPossible; j < GameConstants::MaxPlayersAndAI; j++) {
 					_aiPlayerSystem[j].Tick1Sec();
 				}
 
@@ -3757,6 +3757,16 @@ void GameSimulationCore::SelectRareCard(FSelectRareCard command)
 			cardSys.AddCardToHand2(command.cardEnum);
 			cardSys.DoneSelectRareHand();
 		}
+
+		// Special case: unlocked rare card before it is done
+		if (command.cardEnum == CardEnum::WheatSeed)
+		{
+			auto unlockSys = unlockSystem(command.playerId);
+			std::shared_ptr<ResearchInfo> tech = unlockSys->GetTechInfo(TechEnum::Wheat);
+			tech->state = TechStateEnum::Researched;
+			tech->upgradeCount++;
+			unlockSys->techsFinished++;
+		}
 	}
 }
 
@@ -4668,12 +4678,12 @@ void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 townId)
 		QuestUpdateStatus(playerId, QuestEnum::ClaimLandQuest);
 
 		// Desert, unlock the desert pilgrim card
-		if (GetBiomeProvince(provinceId) == BiomeEnum::Desert &&
-			!parameters(playerId)->DesertPilgrimOffered)
-		{
-			cardSystem(playerId).AddDrawCards(CardEnum::DesertPilgrim, 1);
-			parameters(playerId)->DesertPilgrimOffered = true;
-		}
+		//if (GetBiomeProvince(provinceId) == BiomeEnum::Desert &&
+		//	!parameters(playerId)->DesertPilgrimOffered)
+		//{
+		//	cardSystem(playerId).AddDrawCards(CardEnum::DesertPilgrim, 1);
+		//	parameters(playerId)->DesertPilgrimOffered = true;
+		//}
 
 		// Taking over proper land grants seeds or unlocks proper mine
 		CheckSeedAndMineCard(playerId);
@@ -4710,11 +4720,11 @@ void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 townId)
 					ClearProvinceBuildings(bld.provinceId());
 				}
 				else if (bld.isEnum(CardEnum::RegionCrates)) {
-					GenerateRareCardSelection(playerId, RareHandEnum::CratesCards, LOCTEXT("CratesUseCardSelection", "Searching through the crates you found."));
+					GenerateRareCardSelection(playerId, RareHandEnum::BuildingSlotCards, LOCTEXT("CratesUseCardSelection", "Searching through the crates you found."));
 					ClearProvinceBuildings(bld.provinceId());
 				}
 				else if (bld.isEnum(CardEnum::RegionShrine)) {
-					GenerateRareCardSelection(playerId, RareHandEnum::BuildingSlotCards, LOCTEXT("ShrineUseCardSelection", "The shrine bestows its wisdom upon us."));
+					GenerateRareCardSelection(playerId, RareHandEnum::BuildingSlotCards, LOCTEXT("ShrineUseCardSelection", "The Shrine bestows its wisdom upon us."));
 					//bld.subclass<RegionShrine>().PlayerTookOver(playerId);
 				}
 			});
@@ -5256,9 +5266,6 @@ void GameSimulationCore::Cheat(FCheat command)
 
 		case CheatEnum::YearlyTrade:
 		{
-			// Show Caravan only if there is no Trading Post/Port
-			if (playerBuildingFinishedCount(command.playerId, CardEnum::TradingPost) > 0 ||
-				playerBuildingFinishedCount(command.playerId, CardEnum::TradingPort) > 0) 
 			{
 				AddPopup(PopupInfo(command.playerId,
 					LOCTEXT("CaravanArrive_Pop", "A caravan has arrived. They wish to buy any goods you might have."),

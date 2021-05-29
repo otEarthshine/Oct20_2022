@@ -19,27 +19,6 @@ class UTechTreeUI : public UPunWidget
 public:
 	UPROPERTY(meta = (BindWidget)) UScrollBox* TechScrollBox;
 
-	UPROPERTY(meta = (BindWidget)) UTextBlock* Title_DarkAge;
-	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_DarkAge1;
-	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_DarkAge2;
-
-	UPROPERTY(meta = (BindWidget)) UTextBlock* Title_MiddleAge;
-	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_MiddleAge1;
-	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_MiddleAge2;
-	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_MiddleAge3;
-
-	UPROPERTY(meta = (BindWidget)) UOverlay* TheatreLine;
-	
-	UPROPERTY(meta = (BindWidget)) UTextBlock* Title_EnlightenmentAge;
-	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_EnlightenmentAge1;
-	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_EnlightenmentAge2;
-	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_EnlightenmentAge3;
-
-	UPROPERTY(meta = (BindWidget)) UTextBlock* Title_IndustrialAge;
-	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_IndustrialAge1;
-	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_IndustrialAge2;
-	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_IndustrialAge3;
-
 	UPROPERTY(meta = (BindWidget)) UButton* CloseButton;
 	UPROPERTY(meta = (BindWidget)) UButton* CloseButton2;
 
@@ -49,21 +28,16 @@ public:
 
 	bool isInitialized = false;
 
-	void LeftMouseDown()
-	{
-
-	}
+	void LeftMouseDown() {}
 	void LeftMouseUp() {
 		_isMouseDownScrolling = false;
 	}
-	void RightMouseDown() {
-
-	}
+	void RightMouseDown() {}
 	void RightMouseUp() {
 		_isMouseDownScrolling = false;
 	}
 
-	FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override
+	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override
 	{
 		//PUN_LOG("- NativeOnMouseButtonDown");
 		GetWorld()->GetGameViewport()->GetMousePosition(_initialMousePosition);
@@ -71,8 +45,8 @@ public:
 		_isMouseDownScrolling = true;
 		return FReply::Handled();
 	}
-
-	FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override
+	
+	virtual FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override
 	{
 		//PUN_LOG("- NativeOnMouseButtonUp");
 		_isMouseDownScrolling = false;
@@ -110,13 +84,30 @@ public:
 		TickUI();
 	}
 
-	void TickUI();
+	virtual void TickUI();
+
+protected: 
+	virtual UOverlay* GetTechSpecialLine(TechEnum techEnum) {
+		return nullptr;
+	}
+	virtual void SetupTechBoxUIs() {}
+
+	// Use ResearchInfo's TechBoxLocation to link the techEnum to proper TechBoxUI
+	virtual void SetupTechBoxColumn(const std::vector<TechEnum>& techEnums, UVerticalBox* columnBox);
+
+	virtual ExclusiveUIEnum GetExclusiveUIEnum() { return ExclusiveUIEnum::TechTreeUI; }
+	
+	virtual bool GetShouldOpenUI() { return unlockSys()->shouldOpenTechUI; }
+	virtual void SetShouldOpenUI(bool value) { unlockSys()->shouldOpenTechUI = value; }
+
+	virtual bool GetNeedDisplayUpdate() { return unlockSys()->needTechDisplayUpdate; }
+	virtual void SetNeedDisplayUpdate(bool value) { unlockSys()->needTechDisplayUpdate = value; }
+
+	UnlockSystem* unlockSys() { return simulation().unlockSystem(playerId()); }
 
 private:
-	// Use ResearchInfo's TechBoxLocation to link the techEnum to proper TechBoxUI
-	void SetupTechBoxUIs();
 
-	void CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callBackEnum) final;
+	virtual void CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callBackEnum) override;
 
 	UFUNCTION() void CloseUI() {
 		SetShowUI(false);

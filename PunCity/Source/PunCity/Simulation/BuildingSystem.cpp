@@ -317,7 +317,7 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		  CASE_BUILDING(CardEnum::ConsultingFirm, Building);
 		  CASE_BUILDING(CardEnum::ImmigrationPropagandaOffice, Building);
 		  CASE_BUILDING(CardEnum::MerchantGuild, Building);
-		  CASE_BUILDING(CardEnum::OreSupplier, OreSupplier);
+		  //CASE_BUILDING(CardEnum::OreSupplier, OreSupplier);
 		  CASE_BUILDING(CardEnum::BeerBreweryFamous, BeerBreweryFamous);
 
 		  CASE_BUILDING(CardEnum::Cattery, Building);

@@ -63,15 +63,25 @@ public:
 
 	void SetupMaterials(UAssetLoaderComponent* assetLoader)
 	{
-		if (IsBuildingCard(buildingEnum)) {
+		if (IsBuildingCard(buildingEnum)) 
+		{
 			colorMaterial = UMaterialInstanceDynamic::Create(assetLoader->BuildingIconMaterial, this);
-			colorMaterial->SetTextureParameterValue("ColorTexture", assetLoader->GetBuildingIcon(buildingEnum));
-			colorMaterial->SetTextureParameterValue("DepthTexture", assetLoader->GetBuildingIconAlpha(buildingEnum));
 
-			if (assetLoader->IsBuildingUsingSpecialIcon(buildingEnum)) {
-				colorMaterial->SetScalarParameterValue("IsSpecial", 1.0f);
-			} else {
-				colorMaterial->SetScalarParameterValue("IsSpecial", 0.0f);
+			if (UTexture2D* cardIcon = assetLoader->GetCardIconNullable(buildingEnum)) {
+				colorMaterial->SetTextureParameterValue("ColorTexture", cardIcon);
+				colorMaterial->SetTextureParameterValue("DepthTexture", nullptr);
+			}
+			else
+			{
+				colorMaterial->SetTextureParameterValue("ColorTexture", assetLoader->GetBuildingIcon(buildingEnum));
+				colorMaterial->SetTextureParameterValue("DepthTexture", assetLoader->GetBuildingIconAlpha(buildingEnum));
+
+				if (assetLoader->IsBuildingUsingSpecialIcon(buildingEnum)) {
+					colorMaterial->SetScalarParameterValue("IsSpecial", 1.0f);
+				}
+				else {
+					colorMaterial->SetScalarParameterValue("IsSpecial", 0.0f);
+				}
 			}
 			
 		} else {

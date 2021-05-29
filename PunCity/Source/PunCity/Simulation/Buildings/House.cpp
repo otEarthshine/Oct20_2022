@@ -282,6 +282,9 @@ int32 House::GetIncome100(IncomeEnum incomeEnum)
 		if (_simulation->HasGlobalBonus(_playerId, CardEnum::Capitalism)) {
 			luxuryIncome *= 2;
 		}
+		if (_simulation->townBuildingFinishedCount(_townId, CardEnum::ExhibitionHall) > 0) {
+			luxuryIncome = luxuryIncome * 120 / 100;
+		}
 		return luxuryIncome; // 40% of lux goes to income
 	}
 
@@ -296,7 +299,7 @@ int32 House::GetIncome100(IncomeEnum incomeEnum)
 		if (_simulation->TownhallCardCountTown(_townId, CardEnum::DesertPilgrim) > 0 &&
 			_simulation->terrainGenerator().GetBiome(_centerTile) == BiomeEnum::Desert)
 		{
-			return  occupancyFactor(500);
+			return  occupancyFactor(1000);
 		}
 		else {
 			return 0;
@@ -432,8 +435,7 @@ void House::UpgradeHouse(int32 lvl)
 
 
 	_simulation->UpdateProsperityHouseCount(_playerId);
-	_simulation->ResetTechDisplay(_playerId);
-	
+	_simulation->ResetTechTreeDisplay(_playerId);
 	
 	_simulation->soundInterface()->Spawn2DSound("UI", "UpgradeHouse", -1, _centerTile);
 

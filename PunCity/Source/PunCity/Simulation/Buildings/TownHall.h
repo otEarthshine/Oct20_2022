@@ -7,18 +7,13 @@
 
 const FText& GetTownhallLvlToUpgradeBonusText(int32 townhallLvl);
 
-//class ArmyNodeBuilding : public Building
-//{
-//public:
-//	virtual ArmyNode& GetArmyNode() = 0;
-//};
 
 class TownHall : public Building
 {
 public:
-	void FinishConstruction() override;
+	virtual void FinishConstruction() override;
 
-	int32 displayVariationIndex() override {
+	virtual int32 displayVariationIndex() override {
 		if (!isConstructed()) {
 			return 1;
 		}

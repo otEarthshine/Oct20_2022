@@ -17,11 +17,11 @@ const FText PoisonArrowWorkModeText = NSLOCTEXT("GathererHut", "PoisonArrow_Work
 class GathererHut final : public Building
 {
 public:
-	ResourceEnum product() final { return ResourceEnum::Orange; }
+	virtual ResourceEnum product() final { return ResourceEnum::Orange; }
 	
-	void OnInit() override;
-	void FinishConstruction() override;
-	std::vector<BonusPair> GetBonuses() override;
+	virtual void OnInit() override;
+	virtual void FinishConstruction() override;
+	virtual std::vector<BonusPair> GetBonuses() override;
 
 	static const int Radius = 24;
 };
@@ -29,11 +29,11 @@ public:
 class HuntingLodge final : public Building
 {
 public:
-	ResourceEnum product() final { return ResourceEnum::Pork; }
+	virtual ResourceEnum product() final { return ResourceEnum::Pork; }
 
-	void OnInit() override;
-	void FinishConstruction() final;
-	std::vector<BonusPair> GetBonuses() override;
+	virtual void OnInit() override;
+	virtual void FinishConstruction() override;
+	virtual std::vector<BonusPair> GetBonuses() override;
 
 	static const int Radius = 48;
 };
@@ -328,9 +328,9 @@ public:
 class PaperMaker final : public IndustrialBuilding
 {
 public:
-	void FinishConstruction() final;
+	virtual void FinishConstruction() final;
 
-	int32 baseInputPerBatch() final {
+	virtual int32 baseInputPerBatch() final {
 		return Building::baseInputPerBatch() * (IsUpgraded_InitialIndex(0) ? 5 : 10) / 10;
 	}
 };
@@ -338,14 +338,14 @@ public:
 class Smelter : public IndustrialBuilding
 {
 public:
-	void FinishConstruction() final;
-	std::vector<BonusPair> GetBonuses() override;
+	virtual void FinishConstruction() final;
+	virtual std::vector<BonusPair> GetBonuses() override;
 
-	int32 baseInputPerBatch() override {
+	virtual int32 baseInputPerBatch() override {
 		return Building::baseInputPerBatch() * (IsUpgraded_InitialIndex(1) ? 70 : 100) / 100;
 	}
 
-	int32 GetBaseJobHappiness() override {
+	virtual int32 GetBaseJobHappiness() override {
 		return 60;
 	}
 };
@@ -353,7 +353,7 @@ public:
 class IronSmelter : public Smelter
 {
 public:
-	std::vector<BonusPair> GetBonuses() override;
+	virtual std::vector<BonusPair> GetBonuses() override;
 };
 class IronSmelterGiant final : public IronSmelter
 {
@@ -1263,7 +1263,7 @@ class Archives final : public ProfitBuilding
 public:
 	int32 maxCardSlots() override { return 6; }
 
-	static const int32 CardProfitPercentPerRound = 3;
+	static const int32 CardProfitPercentPerYear = 12; // 12% per year
 
 	IncomeEnum incomeEnum() override { return IncomeEnum::ArchivesProfit; }
 

@@ -17,16 +17,16 @@ class PROTOTYPECITY_API UProsperityBoxUI : public UPunWidget
 public:
 	
 	TechEnum uiTechEnum = TechEnum::None;
-	int32 houseLvl = -1;
+	int32 columnIndex = -1;
 	
 	int32 localIndex = -1;
-	int32 unlockCount = -1;
+	int32 upgradeCount = -1;
 
-	void Init(UPunWidget* callbackParent, TechEnum techEnumIn, int32 houseLvlIn, int32 unlockCountIn, int32 localIndexIn)
+	void PunInit(UPunWidget* callbackParent, TechEnum techEnumIn, int32 columnIndexIn, int32 localIndexIn, int32 upgradeCountIn)
 	{
 		uiTechEnum = techEnumIn;
-		houseLvl = houseLvlIn;
-		unlockCount = unlockCountIn;
+		columnIndex = columnIndexIn;
+		upgradeCount = upgradeCountIn;
 		localIndex = localIndexIn;
 
 		auto unlockSys = simulation().unlockSystem(playerId());
@@ -119,18 +119,18 @@ public:
 		auto unlockSys = simulation().unlockSystem(playerId());
 		
 		// House Count Text
-		int32 houseLvlCount = simulation().GetHouseLvlCount(playerId(), houseLvl, true);
+		int32 houseLvlCount = simulation().GetHouseLvlCount(playerId(), columnIndex, true);
 
-		TechEnum techEnum = unlockSys->GetProsperityTechEnum(houseLvl, localIndex);
+		TechEnum techEnum = unlockSys->GetProsperityTechEnum(columnIndex, localIndex);
 		auto tech = unlockSys->GetTechInfo(techEnum);
 
 		// Done Tech
 		if (tech->state == TechStateEnum::Researched)
 		{
-			SetText(HouseCountText, std::to_string(unlockCount));
+			SetText(UpgradeCountText, std::to_string(upgradeCount));
 			TechName->SetColorAndOpacity(FLinearColor::White);
-			HouseCountText->SetColorAndOpacity(FLinearColor::Gray);
-			HouseCountText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			UpgradeCountText->SetColorAndOpacity(FLinearColor::Gray);
+			UpgradeCountText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 			OuterImage->GetDynamicMaterial()->SetScalarParameterValue("ResearchFraction", 1);
 			OuterImage->GetDynamicMaterial()->SetScalarParameterValue("IsActive", 0);
 			return;
@@ -139,23 +139,23 @@ public:
 
 		// Helpers
 		auto setTechNotReachedYet = [&]() {
-			SetText(HouseCountText, std::to_string(unlockCount));
+			SetText(UpgradeCountText, std::to_string(upgradeCount));
 			TechName->SetColorAndOpacity(FLinearColor::Gray);
-			HouseCountText->SetColorAndOpacity(FLinearColor::Gray);
-			HouseCountText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			UpgradeCountText->SetColorAndOpacity(FLinearColor::Gray);
+			UpgradeCountText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 			OuterImage->GetDynamicMaterial()->SetScalarParameterValue("ResearchFraction", 0);
 			OuterImage->GetDynamicMaterial()->SetScalarParameterValue("IsActive", 0);
 		};
 
 		auto setTechActive = [&]() {
 			std::stringstream ss;
-			ss << houseLvlCount << "/" << unlockCount;
-			SetText(HouseCountText, ss.str());
+			ss << houseLvlCount << "/" << upgradeCount;
+			SetText(UpgradeCountText, ss.str());
 			TechName->SetColorAndOpacity(FLinearColor::White);
-			HouseCountText->SetColorAndOpacity(FLinearColor::White);
-			HouseCountText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			UpgradeCountText->SetColorAndOpacity(FLinearColor::White);
+			UpgradeCountText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
-			OuterImage->GetDynamicMaterial()->SetScalarParameterValue("ResearchFraction", static_cast<float>(houseLvlCount) / unlockCount);
+			OuterImage->GetDynamicMaterial()->SetScalarParameterValue("ResearchFraction", static_cast<float>(houseLvlCount) / upgradeCount);
 			OuterImage->GetDynamicMaterial()->SetScalarParameterValue("IsActive", 1);
 		};
 		
@@ -163,7 +163,7 @@ public:
 		// Not the first tech in column
 		if (localIndex > 0)
 		{
-			TechEnum techEnumBelow = unlockSys->GetProsperityTechEnum(houseLvl, localIndex - 1);
+			TechEnum techEnumBelow = unlockSys->GetProsperityTechEnum(columnIndex, localIndex - 1);
 			auto techBelow = unlockSys->GetTechInfo(techEnumBelow);
 
 			// Tech below is researched, this one is active
@@ -179,8 +179,8 @@ public:
 		
 		// First tech in column
 		bool isAdjacentTechDone = true;
-		if (houseLvl > 1) {
-			TechEnum techEnumToTheLeft = unlockSys->GetProsperityTechEnum(houseLvl - 1, localIndex);
+		if (columnIndex > 1) {
+			TechEnum techEnumToTheLeft = unlockSys->GetProsperityTechEnum(columnIndex - 1, localIndex);
 			auto techToTheLeft = unlockSys->GetTechInfo(techEnumToTheLeft);
 			isAdjacentTechDone = (techToTheLeft->state == TechStateEnum::Researched);
 		}
@@ -200,7 +200,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UImage* OuterImage;
 	
 	UPROPERTY(meta = (BindWidget)) UTextBlock* TechName;
-	UPROPERTY(meta = (BindWidget)) UTextBlock* HouseCountText;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* UpgradeCountText;
 
 	UPROPERTY(meta = (BindWidget)) UImage* RewardBuildingIcon1;
 	UPROPERTY(meta = (BindWidget)) UImage* RewardBuildingIcon2;

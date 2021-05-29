@@ -171,7 +171,8 @@ public:
 		return IsResearched(playerId, TechEnum::InfluencePoints);
 	}
 	virtual int32 GetEra(int32 playerId) = 0;
-	virtual void ResetTechDisplay(int32 playerId) = 0;
+	
+	virtual void ResetTechTreeDisplay(int32 playerId, bool resetTechTree = true, bool resetUpgradesTree = true) = 0;
 
 	virtual class Building& building(int32 id) = 0;
 	virtual class Building* buildingPtr(int32 id) = 0;

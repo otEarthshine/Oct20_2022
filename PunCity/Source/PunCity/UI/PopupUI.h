@@ -3,6 +3,8 @@
 #pragma once
 
 #include "PunWidget.h"
+#include "Components/WidgetSwitcher.h"
+
 #include "PopupUI.generated.h"
 
 /**
@@ -33,6 +35,13 @@ public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* PopupButton4Text;
 	UPROPERTY(meta = (BindWidget)) UButton* PopupButton5;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* PopupButton5Text;
+
+
+	// Era Popups
+	UPROPERTY(meta = (BindWidget)) UOverlay* EraPopupOverlay;
+	UPROPERTY(meta = (BindWidget)) UWidgetSwitcher* EraSwitcher;
+	UPROPERTY(meta = (BindWidget)) UButton* EraPopupButton;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* EraPopupButtonText;
 
 private:
 	UFUNCTION() void ClickPopupButton1();

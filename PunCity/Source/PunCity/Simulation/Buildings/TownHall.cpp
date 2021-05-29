@@ -28,7 +28,7 @@ static const TArray<FText> TownhallLvlToUpgradeBonusText =
 
 	LOCTEXT("TownhallLvl4UpgradeBonus", "<space>Unlocked Cards:<bullet>Sharing is caring</>"), // 4
 
-	//LOCTEXT("TownhallLvl5UpgradeBonus", "<bullet>+10% industrial production.</>"), // Lvl 5
+	LOCTEXT("TownhallLvl5UpgradeBonus", "<bullet>+10% Industrial Production.</>"), // Lvl 5
 };
 const FText& GetTownhallLvlToUpgradeBonusText(int32 townhallLvl) {
 	return TownhallLvlToUpgradeBonusText[townhallLvl];
@@ -73,10 +73,10 @@ static const std::vector<int32_t> townhallLvlToUpgradeMoney =
 {
 	0,
 	0,
-	1000, // Lvl 2
-	7000,
-	50000,
-	//30000, // Lvl 5
+	500, // Lvl 2
+	2000, // Lvl 3 Middle Age
+	8000,
+	50000, // Lvl 5 Industrial
 };
 
 int32 TownHall::GetMaxUpgradeLvl() {
@@ -187,12 +187,9 @@ void TownHall::UpgradeTownhall()
 	auto unlockSys = _simulation->unlockSystem(_playerId);
 
 	if (townhallLvl == 2) {
-		cardSys.AddDrawCards(CardEnum::Snatch, 1);
-		cardSys.AddDrawCards(CardEnum::WheatSeed, 1);
-		cardSys.AddDrawCards(CardEnum::CabbageSeed, 1);
 		cardSys.AddDrawCards(CardEnum::SellFood, 1);
 		cardSys.AddDrawCards(CardEnum::BuyWood, 1);
-		//cardSys.AddDrawCards(CardEnum::BarrackClubman, 1);
+		cardSys.AddDrawCards(CardEnum::Snatch, 1);
 	}
 	else if (townhallLvl == 3) {
 		cardSys.AddDrawCards(CardEnum::Immigration, 1);
@@ -215,20 +212,9 @@ void TownHall::UpgradeTownhall()
 			);
 			unlockSys->unlockedSetTradeAmount = true;
 		}
-
-		//{
-		//	_simulation->AddPopup(
-		//		PopupInfo(_playerId, 
-		//			FText::Format(LOCTEXT("BuyCardTownhallUpgrade_Pop", "Would you like to buy a {0} card for {1} <img id=\"Coin\"/>."),
-		//				GetBuildingInfo(CardEnum::Warehouse).name,
-		//				TEXT_NUM(_simulation->cardSystem(_playerId).GetCardPrice(CardEnum::Warehouse))
-		//			), 
-		//			{ LOCTEXT("Buy", "Buy"),
-		//				LOCTEXT("Refuse", "Refuse") },
-		//			PopupReceiverEnum::DoneResearchBuyCardEvent, false, "ResearchComplete", static_cast<int>(CardEnum::Warehouse)
-		//		)
-		//	);
-		//}
+	}
+	else if (townhallLvl == 5) {
+		
 	}
 
 	_simulation->QuestUpdateStatus(_playerId, QuestEnum::TownhallUpgradeQuest);

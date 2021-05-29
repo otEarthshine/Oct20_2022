@@ -125,7 +125,6 @@ enum class UIEnum
 
 	JobPriorityRow,
 	
-	
 	SaveSelection,
 
 	PlayerListElement,

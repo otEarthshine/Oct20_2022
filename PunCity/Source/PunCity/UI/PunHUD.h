@@ -27,12 +27,14 @@
 #include "TechUI.h"
 #include "StatisticsUI.h"
 #include "ArmyMoveUI.h"
+#include "AuxTechTreeUI.h"
 #include "TopLayerGameUI.h"
 #include "IntercityTradeUI.h"
 #include "TargetConfirmUI.h"
 #include "ProsperityUI.h"
 #include "GiftResourceUI.h"
 #include "DiplomacyUI.h"
+#include "MainTechTreeUI.h"
 #include "SendImmigrantsUI.h"
 #include "TechTreeUI.h"
 
@@ -577,10 +579,9 @@ protected:
 
 	UPROPERTY() UStatisticsUI* _statisticsUI;
 
-	UPROPERTY() UTechTreeUI* _techUI;
-	UPROPERTY() UProsperityUI* _prosperityUI;
+	UPROPERTY() UMainTechTreeUI* _techUI;
+	UPROPERTY() UAuxTechTreeUI* _prosperityUI;
 
-	//UPROPERTY() UArmyMoveUI* _armyMoveUI;
 
 	TSharedPtr<FSlateGameResources> _style;
 

@@ -311,10 +311,6 @@ void APunHUD::Setup(IPunPlayerController* controller, USceneComponent* worldWidg
 	_chatUI = AddWidgetToHUDCast<UChatUI>(UIEnum::Chat);
 	_chatUI->PunInit();
 
-	// description UI should be behind choose card UI (_mainGameUI)
-	_descriptionUISystem = AddWidgetToHUDCast<UObjectDescriptionUISystem>(UIEnum::ObjectDescriptionSystem);
-	_descriptionUISystem->CreateWidgets();
-
 	_statisticsUI = AddWidgetToHUDCast<UStatisticsUI>(UIEnum::StatisticsUI);
 	_statisticsUI->InitStatisticsUI();
 
@@ -343,22 +339,25 @@ void APunHUD::Setup(IPunPlayerController* controller, USceneComponent* worldWidg
 	_giftResourceUI = AddWidgetToHUDCast<UGiftResourceUI>(UIEnum::GiftResourceUI);
 	_giftResourceUI->PunInit();
 
-	_techUI = AddWidgetToHUDCast<UTechTreeUI>(UIEnum::TechTreeUI);
+	_techUI = AddWidgetToHUDCast<UMainTechTreeUI>(UIEnum::TechTreeUI);
 	_techUI->PunInit();
 
-	_prosperityUI = AddWidgetToHUDCast<UProsperityUI>(UIEnum::ProsperityUI);
+	_prosperityUI = AddWidgetToHUDCast<UAuxTechTreeUI>(UIEnum::ProsperityUI);
 	_prosperityUI->PunInit();
 
-	//_armyMoveUI = AddWidgetToHUDCast<UArmyMoveUI>(UIEnum::ArmyMoveUI);
-	//_armyMoveUI->PunInit();
+	// description UI should be behind choose card UI (_mainGameUI)
+	_descriptionUISystem = AddWidgetToHUDCast<UObjectDescriptionUISystem>(UIEnum::ObjectDescriptionSystem);
+	_descriptionUISystem->CreateWidgets();
+
+	// Top layer comes later
+	_topLayerGameUI = AddWidgetToHUDCast<UTopLayerGameUI>(UIEnum::TopLayerUI);
+	_topLayerGameUI->PunInit();
 
 	// 
 	_popupUI = AddWidgetToHUDCast<UPopupUI>(UIEnum::Popup);
 	_popupUI->PunInit();
 
-	// Top layer comes later
-	_topLayerGameUI = AddWidgetToHUDCast<UTopLayerGameUI>(UIEnum::TopLayerUI);
-	_topLayerGameUI->PunInit();
+	
 	
 	//_policyMenu = AddWidgetToHUDCast<UPolicyMenu>(UIEnum::Policy);
 	//_policyMenu->PunInit(_tradeUIWidget);

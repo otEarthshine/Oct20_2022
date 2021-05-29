@@ -56,6 +56,7 @@ void ACameraPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 	PlayerInputComponent->BindAction("KeyPressed_ToggleHideTree", IE_Pressed, this, &ACameraPawn::KeyPressed_ToggleHideTree);
 	PlayerInputComponent->BindAction("ToggleProvinceOverlay", IE_Pressed, this, &ACameraPawn::ToggleProvinceOverlay);
+	PlayerInputComponent->BindAction("KeyPressed_ToggleFertility", IE_Pressed, this, &ACameraPawn::KeyPressed_ToggleFertility);
 	
 	PlayerInputComponent->BindAction("LeftMouseButton", IE_Pressed, this, &ACameraPawn::LeftMouseDown);
 	PlayerInputComponent->BindAction("LeftMouseButton", IE_Released, this, &ACameraPawn::LeftMouseUp);
@@ -93,6 +94,7 @@ void ACameraPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("Gather", IE_Pressed, this, &ACameraPawn::KeyPressed_Gather);
 	PlayerInputComponent->BindAction("Cards", IE_Pressed, this, &ACameraPawn::KeyPressed_Cards);
 	PlayerInputComponent->BindAction("Tech", IE_Pressed, this, &ACameraPawn::KeyPressed_Tech);
+	PlayerInputComponent->BindAction("UpgradesTree", IE_Pressed, this, &ACameraPawn::KeyPressed_UpgradesTree);
 
 	PlayerInputComponent->BindAction("DirtRoad", IE_Pressed, this, &ACameraPawn::KeyPressed_DirtRoad);
 	PlayerInputComponent->BindAction("Demolish", IE_Pressed, this, &ACameraPawn::KeyPressed_Demolish);

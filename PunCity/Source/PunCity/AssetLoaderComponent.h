@@ -405,6 +405,12 @@ public:
 		}
 		return _cardIcons[static_cast<int32>(CardEnum::None)];
 	}
+	UTexture2D* GetCardIconNullable(CardEnum cardEnum) {
+		if (_cardIcons.Contains(static_cast<int32>(cardEnum))) {
+			return _cardIcons[static_cast<int32>(cardEnum)];
+		}
+		return nullptr;
+	}
 
 	UTexture2D* GetArmyIcon(ArmyEnum armyEnum) { return _armyIcons[static_cast<int>(armyEnum)]; }
 

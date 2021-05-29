@@ -705,12 +705,16 @@ public:
 		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Trees, _sampleRegionIds);
 	}
 
-	bool isShowingProvinceOverlay() final { return _showProvinceOverlay; }
-	void SetOverlayProvince(bool showProvinceOverlay) final {
+	virtual bool isShowingProvinceOverlay() final { return _showProvinceOverlay; }
+	virtual void SetOverlayProvince(bool showProvinceOverlay) final {
 		_showProvinceOverlay = showProvinceOverlay;
 	}
-	void ToggleOverlayProvince() final {
+	virtual void ToggleOverlayProvince() final {
 		_showProvinceOverlay = !_showProvinceOverlay;
+	}
+	
+	virtual void ToggleOverlayFertility() final {
+		SetOverlayType((GetOverlayType() == OverlayType::Farm) ? OverlayType::None : OverlayType::Farm, OverlaySetterType::OverlayToggler);
 	}
 	
 

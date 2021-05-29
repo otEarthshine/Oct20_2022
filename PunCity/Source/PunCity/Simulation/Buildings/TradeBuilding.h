@@ -147,12 +147,12 @@ protected:
 class TradingPost final : public TradeBuilding
 {
 public:
-	void FinishConstruction() final;
-	std::vector<BonusPair> GetBonuses() final;
+	virtual void FinishConstruction() final;
+	virtual std::vector<BonusPair> GetBonuses() final;
 
-	int32 maxTradeQuatity() override {
+	virtual int32 maxTradeQuatity() override {
 		int32 quantity = 180;
-		if (IsUpgraded(2)) {
+		if (IsUpgraded_InitialIndex(1)) {
 			quantity += 120;
 		}
 		return quantity;
@@ -162,12 +162,12 @@ public:
 class TradingPort final : public TradeBuilding
 {
 public:
-	void FinishConstruction() final;
-	std::vector<BonusPair> GetBonuses() final;
+	virtual void FinishConstruction() final;
+	virtual std::vector<BonusPair> GetBonuses() final;
 
-	int32 maxTradeQuatity() override {
+	virtual int32 maxTradeQuatity() override {
 		int32 quantity = 240;
-		if (IsUpgraded(2)) {
+		if (IsUpgraded_InitialIndex(1)) {
 			quantity += 240;
 		}
 		return quantity;
@@ -177,8 +177,8 @@ public:
 class TradingCompany final : public TradeBuilding
 {
 public:
-	void FinishConstruction() final;
-	std::vector<BonusPair> GetBonuses() final;
+	virtual void FinishConstruction() final;
+	virtual std::vector<BonusPair> GetBonuses() final;
 
 	int32 tradeMaximumPerRound()
 	{
@@ -263,22 +263,22 @@ class HumanitarianAidCamp final : public Building
 		AddResource(ResourceEnum::Wheat, 100);
 	}
 };
-
-class OreSupplier final : public Building
-{
-public:
-	void FinishConstruction() override;
-
-	void TickRound() override;
-
-	int32_t maxBuyAmount() {
-		int32_t buyAmount = 10;
-		if (IsUpgraded(0)) {
-			buyAmount += 10;
-		}
-		if (IsUpgraded(1)) {
-			buyAmount += 20;
-		}
-		return buyAmount;
-	}
-};
+//
+//class OreSupplier final : public Building
+//{
+//public:
+//	void FinishConstruction() override;
+//
+//	void TickRound() override;
+//
+//	int32_t maxBuyAmount() {
+//		int32_t buyAmount = 10;
+//		if (IsUpgraded(0)) {
+//			buyAmount += 10;
+//		}
+//		if (IsUpgraded(1)) {
+//			buyAmount += 20;
+//		}
+//		return buyAmount;
+//	}
+//};

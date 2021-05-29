@@ -110,31 +110,6 @@ struct SeedExtraction : Policy
 };
 
 
-//	void tradeEventHandler(int objectId) {
-//
-//
-//		houseBuilt++;
-//		//PUN_DEBUG(FString::Printf(TEXT("HouseBuilt %d by: %d"), houseBuilt, playerId));
-//		if (houseBuilt == 5) {
-//			check(simulation)
-//				UnlockSystem* unlockSystem = simulation->unlockSystem(playerId);
-//			unlockSystem->townLevelUnlocked = 2;
-//
-//			// Remove Policy
-//			IPolicySystem* policySystem = simulation->policySystem(playerId);
-//			policySystem->MoveCardFromInUseToBin(policyEnum);
-//			policySystem->MoveCardFromLockedToAvailable(PolicyEnum::ChildMarriage);
-//			policySystem->AddPopupToDisplay("Congratulation!\nYou have unlocked a Town Hall Level 2 Upgrade");
-//		}
-//	}
-//
-//	bool hasQuest() override { return true; }
-//	std::string QuestDescription() override {
-//		return "Build House: " + std::to_string(houseBuilt) + "/5\nReward: Unlock townhall upgrade level 2 ";
-//	}
-//};
-
-
 struct ForageCard : Policy
 {
 	std::string name() override { return "Gatherer society"; }

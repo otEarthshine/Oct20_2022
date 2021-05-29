@@ -7,13 +7,13 @@
 class GameConstants
 {
 public:
-	static const int MaxPlayers = 30;
+	static const int MaxPlayersPossible = 30;
 	static const int MaxAIs = 15;
-	static const int MaxPlayersAndAI = MaxPlayers + MaxAIs;
+	static const int MaxPlayersAndAI = MaxPlayersPossible + MaxAIs;
 
-	static bool IsAI(int32 playerId) { return playerId >= MaxPlayers; }
+	static bool IsAI(int32 playerId) { return playerId >= MaxPlayersPossible; }
 
-	static bool IsHumanPlayer(int32 playerId) { return 0 <= playerId && playerId < MaxPlayers; }
+	static bool IsHumanPlayer(int32 playerId) { return 0 <= playerId && playerId < MaxPlayersPossible; }
 	
 	//static const int InitialTownhallUnits = 8;
 
@@ -51,8 +51,8 @@ public:
 
 	static const int32 StoneNeededPerRoadTile = 2;
 
-	static const int32 QuickBuildMultiplier_Resource = 5;
-	static const int32 QuickBuildMultiplier_Work = 3;
+	static const int32 QuickBuildMultiplier_Resource = 3;
+	static const int32 QuickBuildMultiplier_Work = 2;
 
 };
 

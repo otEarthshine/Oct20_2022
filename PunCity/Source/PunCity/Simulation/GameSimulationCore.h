@@ -378,9 +378,9 @@ public:
 	}
 	
 
-	int32 aiStartIndex() final { return GameConstants::MaxPlayers; }
+	int32 aiStartIndex() final { return GameConstants::MaxPlayersPossible; }
 	int32 aiEndIndex() final { return GameConstants::MaxPlayersAndAI - 1; }
-	bool IsAIPlayer(int32 playerId) final { return playerId >= GameConstants::MaxPlayers; }
+	bool IsAIPlayer(int32 playerId) final { return playerId >= GameConstants::MaxPlayersPossible; }
 	//bool isAIPlayer(int32_t playerId) { return aiPlayerStartIndex() <= playerId && playerId <= aiPlayerEndIndex(); }
 
 	TCHAR* AIPrintPrefix(int32 aiPlayerId) final
@@ -2201,8 +2201,13 @@ public:
 		return unlockSystem(playerId)->GetEra();
 	}
 
-	void ResetTechDisplay(int32 playerId) final {
-		unlockSystem(playerId)->needTechDisplayUpdate = true;
+	virtual void ResetTechTreeDisplay(int32 playerId, bool resetTechTree = true, bool resetUpgradesTree = true) final {
+		if (resetTechTree) {
+			unlockSystem(playerId)->needTechDisplayUpdate = true;
+		}
+		if (resetUpgradesTree) {
+			unlockSystem(playerId)->needProsperityDisplayUpdate = true;
+		}
 	}
 
 	// Prosperity
@@ -2774,7 +2779,7 @@ public:
 				return;
 			}
 			// Special case: Oil requires research
-			if (IsResearched(playerId, TechEnum::Petroleum)) {
+			if (!IsResearched(playerId, TechEnum::Petroleum)) {
 				return;
 			}
 			
@@ -2810,6 +2815,7 @@ public:
 		checkAddMineCard(CardEnum::IronMine, GeoresourceEnum::IronOre);
 		checkAddMineCard(CardEnum::GoldMine, GeoresourceEnum::GoldOre);
 		checkAddMineCard(CardEnum::GemstoneMine, GeoresourceEnum::Gemstone);
+		
 		checkAddMineCard(CardEnum::OilRig, GeoresourceEnum::Oil);
 	}
 

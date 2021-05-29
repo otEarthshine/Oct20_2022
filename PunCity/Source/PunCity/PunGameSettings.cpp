@@ -143,7 +143,8 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "UseFullSkelAnim", 0 },
 
 	{ "SeeAllCards", 0 },
-
+	
+	{ "ShowAllResourceNodes", 0 },
 
 	{ "TestCityNetwork_Stage", -1 },
 	{ "TestCityNetwork_CurTileId", -1 },

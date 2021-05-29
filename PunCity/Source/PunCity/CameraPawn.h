@@ -81,6 +81,9 @@ public:
 	void ToggleProvinceOverlay() {
 		_gameInterface->ToggleOverlayProvince();
 	}
+	void KeyPressed_ToggleFertility() {
+		_gameInterface->ToggleOverlayFertility();
+	}
 
 	void ToggleSinglePlayerChat() {
 		PunSettings::Toggle("SinglePlayerChat");
@@ -101,6 +104,9 @@ public:
 	}
 	void KeyPressed_Tech() {
 		ExecuteUsingMainGameUI([&](auto ui) { ui->ToggleResearchMenu(); });
+	}
+	void KeyPressed_UpgradesTree() {
+		ExecuteUsingMainGameUI([&](auto ui) { ui->ToggleProsperityUI(); });
 	}
 	void KeyPressed_Cards() {
 		ExecuteUsingMainGameUI([&](auto ui) { ui->ClickCardStackButton(); });

@@ -1249,15 +1249,15 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						descriptionBox->AddSpacer();
 						descriptionBox->AddRichText(building.buildingInfo().GetDescription());
 					}
-					else if (building.isEnum(CardEnum::OreSupplier)) 
-					{
-						descriptionBox->AddRichText(building.buildingInfo().GetDescription());
-						descriptionBox->AddLineSpacer();
+					//else if (building.isEnum(CardEnum::OreSupplier)) 
+					//{
+					//	descriptionBox->AddRichText(building.buildingInfo().GetDescription());
+					//	descriptionBox->AddLineSpacer();
 
-						int32 targetBuyAmount = building.subclass<OreSupplier>().maxBuyAmount();
-						descriptionBox->AddRichText(LOCTEXT("Resource Type", "Resource Type"), LOCTEXT("Iron ore", "Iron ore"));
-						descriptionBox->AddRichText(LOCTEXT("Target Buy Amount", "Target Buy Amount"), TEXT_NUM(targetBuyAmount));
-					}
+					//	int32 targetBuyAmount = building.subclass<OreSupplier>().maxBuyAmount();
+					//	descriptionBox->AddRichText(LOCTEXT("Resource Type", "Resource Type"), LOCTEXT("Iron ore", "Iron ore"));
+					//	descriptionBox->AddRichText(LOCTEXT("Target Buy Amount", "Target Buy Amount"), TEXT_NUM(targetBuyAmount));
+					//}
 					else if (IsTradingPostLike(building.buildingEnum()))
 					{
 						if (building.isConstructed())
@@ -2569,11 +2569,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							);
 
 							auto unlockSys = simulation.unlockSystem(playerId());
-							if (unlockSys->GetEra() < townhall.townhallLvl + 1) {
-								ADDTEXT_(upgradeEraRequiresText, unlockSys->GetEraText(townhall.townhallLvl + 1));
-								showEnabled = false;
-							} else {
+							int32 nextTownhallLvl = townhall.townhallLvl + 1;
+							if (nextTownhallLvl < unlockSys->GetEra() + 2) { // townhallLvl 1 ... Era 1, can upgrade
 								ADDTEXT_(INVTEXT("\n<img id=\"Coin\"/>{0}"), moneyText);
+							} else {
+								ADDTEXT_(upgradeEraRequiresText, unlockSys->GetEraText(unlockSys->GetEra() + 1));
+								showEnabled = false;
 							}
 
 							descriptionBox->AddLineSpacer(8);
@@ -2622,6 +2623,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								};
 
 								auto unlockSys = simulation.unlockSystem(playerId());
+								
 								bool requireEra = upgrade.isEraUpgrade() && !building.IsEraUpgradable();
 
 								if (requireEra) {
@@ -4597,11 +4599,11 @@ void UObjectDescriptionUISystem::AddTradeFeeText(TradeBuilding& building, UPunBo
 
 	// TODO: Resource Fee
 	if (simulation().HasTownBonus(building.townId(), CardEnum::DesertTradeForALiving)) {
-		descriptionBox->AddRichText(LOCTEXT("DesertTradeForALiving Fee Bonus", "<Gray>-7% Fee when trading Food/Wood.</>"));
+		descriptionBox->AddRichText(LOCTEXT("DesertTradeForALiving Fee Bonus", "<Gray>-15% Fee when trading Food/Wood.</>"));
 		descriptionBox->AddSpacer();
 	}
 	if (simulation().HasTownBonus(building.townId(), CardEnum::DesertOreTrade)) {
-		descriptionBox->AddRichText(LOCTEXT("DesertOreTrade Fee Bonus", "<Gray>-20% Fee when trading Ores.</>"));
+		descriptionBox->AddRichText(LOCTEXT("DesertOreTrade Fee Bonus", "<Gray>-25% Fee when trading Ores.</>"));
 		descriptionBox->AddSpacer();
 	}
 	descriptionBox->AddSpacer(12);

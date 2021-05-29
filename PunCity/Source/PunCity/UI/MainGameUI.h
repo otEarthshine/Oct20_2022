@@ -269,6 +269,7 @@ private:
 	UPROPERTY(meta = (BindWidget)) UButton* ResearchBarUI;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* ResearchingText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* ResearchingAmountText;
+	UPROPERTY(meta = (BindWidget)) USizeBox* ResearchBarBox;
 	UPROPERTY(meta = (BindWidget)) USizeBox* ResearchBar;
 
 	//! Job Priority
@@ -388,8 +389,10 @@ private:
 	 */
 	
 	UPROPERTY(meta = (BindWidget)) UButton* ProsperityBarUI;
+	UPROPERTY(meta = (BindWidget)) USizeBox* ProsperityBarBox;
 	UPROPERTY(meta = (BindWidget)) USizeBox* ProsperityBar;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* ProsperityAmountText;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* UpgradeTitleText;
 
 
 	UPROPERTY(meta = (BindWidget)) UExclamationIcon* ExclamationIcon_Build;

@@ -403,14 +403,17 @@ private:
 	void CreateGame_Phase2();
 
 public:
+	const int32 MaxPlayer = 8;
+
 	int32 sessionTickCount = 0;
+
+	
 	FOnlineSessionSettings GetPreferredSessionSettings()
 	{
 		FOnlineSessionSettings sessionSettings;
 
 		sessionSettings.bIsLANMatch = (IOnlineSubsystem::Get()->GetSubsystemName() == "NULL") || isSinglePlayer;
 
-		const int32 MaxPlayer = 8;
 		sessionSettings.NumPublicConnections = MaxPlayer;
 		sessionSettings.NumPrivateConnections = 0;
 		sessionSettings.bAllowInvites = true;
@@ -537,7 +540,7 @@ public:
 		return _playerNames;
 	}
 	FString playerNameF(int32 playerId) {
-		if (playerId >= GameConstants::MaxPlayers) {
+		if (playerId >= GameConstants::MaxPlayersPossible) {
 			PUN_CHECK(playerId < GameConstants::MaxPlayersAndAI);
 			return GetAITownName(playerId);
 		}

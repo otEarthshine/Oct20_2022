@@ -1142,7 +1142,10 @@ public:
 
 	// UpgradeIndex gets changed by Era Upgrade addition. This fixes it.
 	bool IsUpgraded_InitialIndex(int index) {
-		return IsUpgraded(index + 1);
+		if (_upgrades.size() > 0 && _upgrades[0].isEraUpgrade()) {
+			return IsUpgraded(index + 1);
+		}
+		return IsUpgraded(index);
 	}
 
 	void UpgradeInstantly(int32 index)
@@ -1279,6 +1282,10 @@ public:
 		if (_simulation->TownhallCardCountTown(_playerId, CardEnum::SocialWelfare)) {
 			jobHappiness += 20;
 		}
+
+		if (_simulation->townBuildingFinishedCount(_townId, CardEnum::Cathedral) > 0) {
+			jobHappiness += 10;
+		}
 		
 		jobHappiness += 20 * slotCardCount(CardEnum::Passion);
 		
@@ -1377,7 +1384,7 @@ public:
 			if (_simulation->HasTownBonus(townId(), CardEnum::DesertTradeForALiving) &&
 				IsFoodEnum(resourceEnum) || resourceEnum == ResourceEnum::Wood || resourceEnum == ResourceEnum::Coal)
 			{
-				tradeFeePercent -= 25;
+				tradeFeePercent -= 15;
 			}
 			if (_simulation->HasTownBonus(townId(), CardEnum::DesertOreTrade) &&
 				IsOreEnum(resourceEnum))

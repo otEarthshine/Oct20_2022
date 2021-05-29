@@ -114,15 +114,7 @@ void BuildingCardSystem::RollRareHandExecute()
 		_cardsRareHand = {
 			CardEnum::WheatSeed,
 			CardEnum::TradingPost,
-			CardEnum::ProductivityBook,
-		};
-	}
-	else if (_rareHandEnum == RareHandEnum::InitialCards2)
-	{
-		_cardsRareHand = {
-			CardEnum::CabbageSeed,
 			CardEnum::Investment,
-			CardEnum::IronSmelter,
 		};
 
 		PopupInfo popup(_playerId,
@@ -132,6 +124,22 @@ void BuildingCardSystem::RollRareHandExecute()
 			PopupReceiverEnum::StartGame_AskAboutAdvice, true
 		);
 		_simulation->AddPopup(popup);
+	}
+	else if (_rareHandEnum == RareHandEnum::InitialCards2)
+	{
+		_cardsRareHand = {
+			CardEnum::CabbageSeed,
+			CardEnum::Investment,
+			CardEnum::IronSmelter,
+		};
+
+		//PopupInfo popup(_playerId,
+		//	LOCTEXT("GuideAsk_Pop", "Would you like some guidance?"),
+		//	{ LOCTEXT("ChoiceGuide", "Yes, guide me"),
+		//		LOCTEXT("ChoiceNoGuide", "No, I already know what to do") },
+		//	PopupReceiverEnum::StartGame_AskAboutAdvice, true
+		//);
+		//_simulation->AddPopup(popup);
 	}
 	
 
@@ -165,50 +173,50 @@ void BuildingCardSystem::RollRareHandExecute()
 		std::vector<CardEnum> cardEnums;
 		if (_rareHandEnum == RareHandEnum::PopulationQuestCards1) {
 			cardEnums = {
-				CardEnum::BeerTax,
-				CardEnum::HomeBrew,
-				CardEnum::ChimneyRestrictor,
+				CardEnum::ProductivityBook,
+				CardEnum::SustainabilityBook,
+				CardEnum::FrugalityBook,
 			};
 		}
 		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards2) {
 			cardEnums = {
-				CardEnum::MiningEquipment,
-				CardEnum::FarmWaterManagement,
-				CardEnum::CoalTreatment,
+				CardEnum::ProductivityBook,
+				CardEnum::SustainabilityBook,
+				CardEnum::FrugalityBook,
 			};
 		}
 		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards3) {
 			cardEnums = {
-				CardEnum::CoalPipeline,
-				CardEnum::HappyBreadDay,
-				CardEnum::BirthControl,
+				CardEnum::ProductivityBook,
+				CardEnum::SustainabilityBook,
+				CardEnum::FrugalityBook,
 			};
 		}
 		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards4) {
 			cardEnums = {
-				CardEnum::BlingBling,
-				CardEnum::SmeltCombo,
-				CardEnum::Lockdown,
+				CardEnum::ProductivityBook,
+				CardEnum::SustainabilityBook,
+				CardEnum::Motivation,
 			};
 		}
 		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards5) {
 			cardEnums = {
-				CardEnum::AllYouCanEat,
-				CardEnum::SlaveLabor,
-				CardEnum::Conglomerate,
+				CardEnum::ProductivityBook,
+				CardEnum::Motivation,
+				CardEnum::Passion,
 			};
 		}
 		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards6) {
 			cardEnums = {
-				CardEnum::ArchitectStudio,
-				CardEnum::EngineeringOffice,
-				CardEnum::DepartmentOfAgriculture,
+				CardEnum::SustainabilityBook,
+				CardEnum::Motivation,
+				CardEnum::Passion,
 			};
 		}
 		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards7) {
 			cardEnums = {
-				CardEnum::SocialWelfare,
-				CardEnum::BookWorm,
+				CardEnum::ProductivityBook,
+				CardEnum::Motivation,
 				CardEnum::Passion,
 			};
 		}

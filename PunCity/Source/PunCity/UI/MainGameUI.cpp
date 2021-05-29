@@ -93,12 +93,12 @@ void UMainGameUI::PunInit()
 
 	ResearchBarUI->OnClicked.AddDynamic(this, &UMainGameUI::ToggleResearchMenu);
 	AddToolTip(ResearchBarUI, 
-		LOCTEXT("ResearchBarUI_Tip", "Bring up Technology UI.\n<Orange>[T]</>")
+		LOCTEXT("ResearchBarUI_Tip", "Bring up the Tech Tree.\n<Orange>[T]</>")
 	);
 
 	ProsperityBarUI->OnClicked.AddDynamic(this, &UMainGameUI::ToggleProsperityUI);
 	AddToolTip(ProsperityBarUI, 
-		LOCTEXT("ProsperityBarUI_Tip", "Bring up House Upgrade Unlocks UI.")
+		LOCTEXT("ProsperityBarUI_Tip", "Bring up the Upgrades Tree.\n<Orange>[U]</>")
 	);
 
 	GatherSettingsOverlay->SetVisibility(ESlateVisibility::Collapsed);
@@ -1358,115 +1358,81 @@ void UMainGameUI::Tick()
 				}
 			}
 		}
-
-		/*
-		 * Research
-		 */
-		UnlockSystem* unlockSys = dataSource()->simulation().unlockSystem(playerId());
-		if (unlockSys && 
-			unlockSys->researchEnabled)
-		{
-			std::shared_ptr<ResearchInfo> currentTech = unlockSys->currentResearch();
-
-			ResearchingText->SetText(currentTech->GetName());
-			
-			TArray<FText> args;
-			unlockSys->SetDisplaySciencePoint(args, false);
-			SetText(ResearchingAmountText, args);
-			
-			ResearchBar->SetWidthOverride(unlockSys->hasTargetResearch() ? (unlockSys->researchFraction() * 240) : 0);
-			ResearchBarUI->SetVisibility(ESlateVisibility::Visible);
-		}
-		else {
-			ResearchBarUI->SetVisibility(ESlateVisibility::Collapsed);
-		}
 	}
 
-	UnlockSystem* unlockSystem = sim.unlockSystem(playerId());
-	if (unlockSystem) 
+	/*
+	 * ResearchBarUI
+	 */
+	UnlockSystem* unlockSys = sim.unlockSystem(playerId());
+	if (unlockSys) 
 	{
-		// ResearchBarUI
 		// Flash ResearchBarUI if there is nothing being researched
 		FLinearColor researchBarDark = FLinearColor(.025f, .025f, .025f, 0.8f);
 		FLinearColor researchBarColor = researchBarDark;
-		if (unlockSystem->shouldFlashTechToggler()) {
+		if (unlockSys->shouldFlashTechToggler()) {
 			if (kTickCount % 60 < 30) {
 				researchBarColor = FLinearColor(1.0f, 0.33333f, 0.0f, 0.8f);
 			}
 		}
 		
-		ResearchBarUI->SetBackgroundColor(researchBarColor);
-		//PUN_LOG("ResearchBarUI %f, %f, %f", researchBarColor.R, researchBarColor.G, researchBarColor.B);
+		std::shared_ptr<ResearchInfo> currentTech = unlockSys->currentResearch();
+		bool isOnMainTree = unlockSys->IsOnMainTechTree(currentTech->techEnum);
 
-		if (unlockSystem->allTechsUnlocked()) {
+		/*
+		 * Technologies
+		 */
+		if (unlockSys->researchEnabled &&
+			!unlockSys->allTechsUnlocked())
+		{
+			if (currentTech->techEnum != TechEnum::None && isOnMainTree)
+			{
+				ResearchingText->SetText(currentTech->GetName());
+				
+				TArray<FText> args;
+				unlockSys->SetDisplaySciencePoint(args, false);
+				SetText(ResearchingAmountText, args);
+				
+				ResearchBar->SetWidthOverride(unlockSys->hasTargetResearch() ? (unlockSys->researchFraction() * 240) : 0);
+				ResearchBarBox->SetVisibility(ESlateVisibility::Visible);
+			}
+			else {
+				ResearchingText->SetText(LOCTEXT("Tech Tree", "Tech Tree"));
+				ResearchBarBox->SetVisibility(ESlateVisibility::Collapsed);
+			}
+
+			ResearchBarUI->SetBackgroundColor(researchBarColor);
+			ResearchBarUI->SetVisibility(ESlateVisibility::Visible);
+		}
+		else {
 			ResearchBarUI->SetVisibility(ESlateVisibility::Collapsed);
 		}
 
-
+		/*
+		 * Upgrades
+		 */
 		// ProsperityBarUI Tick
-		if (unlockSystem->prosperityEnabled) 
+		if (unlockSys->prosperityEnabled) 
 		{
-			ProsperityBarUI->SetBackgroundColor(researchBarDark);
-			ProsperityBarUI->SetVisibility(ESlateVisibility::Visible);
-
-			// Find the tech that is closest to done and display that...
-			//  Note: This system allow for flexibility in tweaking unlockCount to get the desired techs to come first
-			int32 closestTech_HouseNeeded = 99999;
-			int32 closestTech_HouseLvl = -1;
-			int32 closestTech_CurrentHouseCount = 0;
-			
-			const std::vector<std::vector<int32>>& houseLvlToUnlockCount = unlockSystem->houseLvlToUnlockCounts();
-			for (size_t lvl = 1; lvl < houseLvlToUnlockCount.size(); lvl++) 
+			if (currentTech->techEnum != TechEnum::None && !isOnMainTree)
 			{
-				int32 houseLvlCount = sim.GetHouseLvlCount(playerId(), lvl, true);
-				for (size_t i = 0; i < houseLvlToUnlockCount[lvl].size(); i++) 
-				{
-					// skip i == 0 for the tech with zero left?
-					if (i == 0 && lvl > 1)
-					{
-						//int32 houseLvlCountToLeft = simulation.GetHouseLvlCount(playerId(), lvl - 1, true);
-						//// If the left tech is unfinished, skip this
-						//if (houseLvlCountToLeft < houseLvlToUnlockCount[lvl - 1][0]) {
-						//	continue;
-						//}
-						int32 houseLvlCountToLeft = sim.GetHouseLvlCount(playerId(), lvl - 1, true);
-						if (houseLvlCountToLeft == 0) {
-							continue;
-						}
-					}
+				UpgradeTitleText->SetText(currentTech->GetName());
 
-					// skip showing the part of the column
-					//if (simulation.GetHouseLvlCount(playerId(), lvl, true) == 0) {
-					//	continue;
-					//}
-					
-					int32 houseNeeded = houseLvlToUnlockCount[lvl][i] - houseLvlCount;
-					if (houseNeeded > 0 && 
-						houseNeeded < closestTech_HouseNeeded) 
-					{
-						closestTech_HouseNeeded = houseNeeded;
-						closestTech_HouseLvl = lvl;
-						closestTech_CurrentHouseCount = houseLvlCount;
-					}
-				}
-			}
+				TArray<FText> args;
+				unlockSys->SetDisplaySciencePoint(args, false);
+				SetText(ProsperityAmountText, args);
 
-			if (closestTech_HouseLvl != -1) 
-			{
-				int32 totalHouseCount = closestTech_CurrentHouseCount + closestTech_HouseNeeded;
-
-				SetText(ProsperityAmountText, FText::Format(
-					LOCTEXT("ProsperityAmountText", "House Lvl {0}: {1}/{2}"),
-					TEXT_NUM(closestTech_HouseLvl),
-					TEXT_NUM(closestTech_CurrentHouseCount),
-					TEXT_NUM(totalHouseCount)
-				));
-				ProsperityBar->SetWidthOverride(closestTech_CurrentHouseCount * 240.0f / totalHouseCount);
+				ProsperityBar->SetWidthOverride(unlockSys->hasTargetResearch() ? (unlockSys->researchFraction() * 240) : 0);
+				ProsperityBarBox->SetVisibility(ESlateVisibility::Visible);
 			}
 			else {
-				ProsperityAmountText->SetVisibility(ESlateVisibility::Collapsed);
+				UpgradeTitleText->SetText(LOCTEXT("Upgrades Tree", "Upgrades Tree"));
+				ProsperityBarBox->SetVisibility(ESlateVisibility::Collapsed);
 			}
-		} else {
+			
+			ProsperityBarUI->SetBackgroundColor(researchBarColor);
+			ProsperityBarUI->SetVisibility(ESlateVisibility::Visible);
+		}
+		else {
 			ProsperityBarUI->SetVisibility(ESlateVisibility::Collapsed);
 		}
 	}

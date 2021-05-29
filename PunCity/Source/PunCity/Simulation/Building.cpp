@@ -123,6 +123,7 @@ void Building::Init(IGameSimulationCore& simulation, int32 objectId, int32 townI
 	
 	// AutoQuickBuild?
 	if (IsAutoQuickBuild(_buildingEnum)) {
+		InstantClearArea();
 		_simulation->AddQuickBuild(_objectId);
 	}
 	
@@ -628,11 +629,11 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& 
 			resourceSystem().RemoveResourceGlobal(resourceNeeded.resourceEnum, resourceNeeded.count);
 
 			if (upgrade.isEraUpgrade()) {
-				if (upgrade.upgradeLevel < upgrade.maxUpgradeLevel()) {
+				if (upgrade.upgradeLevel < upgrade.maxUpgradeLevel(buildingEnum())) {
 					upgrade.upgradeLevel++;
 					ResetDisplay();
 					
-					if (upgrade.upgradeLevel >= upgrade.maxUpgradeLevel()) {
+					if (upgrade.upgradeLevel >= upgrade.maxUpgradeLevel(buildingEnum())) {
 						upgrade.isUpgraded = true;
 					}
 				}
@@ -685,12 +686,17 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& 
 
 FText Building::GetUpgradeDisplayDescription(int32 index) {
 	BuildingUpgrade& upgrade = _upgrades[index];
-	if (upgrade.isEraUpgrade()) {
+	if (upgrade.isEraUpgrade()) 
+	{
 		int32 nextEra = upgrade.upgradeLevel + buildingInfo().minEra() + 1;
+		
+		// Special case: Trading Post/Port
+		if (IsTradingPostLike(buildingEnum())) {
+			return NSLOCTEXT("BuildingUpgrade", "Trader Level Desc", "Decrease Trading Fee by 5% per Upgrade Level");
+		}
+		
 		if (nextEra == 5) 
 		{
-			// TODO: special Upgrade description for Traders
-			
 			int32 electricityPerBatch = ElectricityAmountNeeded();
 			return FText::Format(
 				NSLOCTEXT("BuildingUpgrade", "Electric Machinery Desc", "Once upgraded, this Building will need Electricity.<space>Workers work 100% faster with Electricity.<space>Consumes {0} kW Electricity."),
@@ -713,6 +719,9 @@ FText Building::GetUpgradeDisplayName(int32 index) {
 			return NSLOCTEXT("BuildingUpgrade", "Level Maxed", " Level Maxed");
 		}
 		if (currentEraLevel == 4) {
+			if (IsTradingPostLike(buildingEnum())) {
+				return NSLOCTEXT("BuildingUpgrade", "Level Maxed", " Level Maxed");
+			}
 			return NSLOCTEXT("BuildingUpgrade", "Electric Machinery", "Electric Machinery");
 		}
 		return FText::Format(NSLOCTEXT("BuildingUpgrade", "Level", "Level ({0})"), _simulation->unlockSystem(_playerId)->GetEraText(currentEraLevel + 1));
@@ -1188,6 +1197,9 @@ int32 Building::GetAppealPercent()
 	if (_simulation->townBuildingFinishedCount(_townId, CardEnum::ArchitectStudio)) {
 		appeal += 5;
 	}
+	if (_simulation->townBuildingFinishedCount(_townId, CardEnum::GrandPalace) > 0) {
+		appeal += 20;
+	}
 	if (_simulation->townBuildingFinishedCount(_townId, CardEnum::EnvironmentalistGuild)) {
 		appeal += 15;
 	}
@@ -1250,6 +1262,11 @@ std::vector<BonusPair> Building::GetTradingFeeBonuses()
 {
 	std::vector<BonusPair> bonuses;
 
+	int32 eraLevel = GetUpgradeEraLevel();
+	if (eraLevel > 1) {
+		bonuses.push_back({ LOCTEXT("Trade Building Upgrade Level", "Upgrade Level"), -5 * (eraLevel - 1) });
+	}
+
 	if (isEnum(CardEnum::TradingCompany)) {
 		bonuses.push_back({ LOCTEXT("Trading Company", "Trading Company"), -5 });
 
@@ -1260,9 +1277,6 @@ std::vector<BonusPair> Building::GetTradingFeeBonuses()
 
 	if (_simulation->townBuildingFinishedCount(_townId, CardEnum::MerchantGuild)) {
 		bonuses.push_back({ LOCTEXT("Merchant Guild", "Merchant Guild"), -5 });
-	}
-	if (IsUpgraded(0)) {
-		bonuses.push_back({ LOCTEXT("Fee Discount", "Fee Discount"), -5 });
 	}
 
 	if (_simulation->IsResearched(playerId(), TechEnum::TraderDiscount))
@@ -1379,7 +1393,7 @@ int32 Building::displayVariationIndex()
 	if (_playerId != -1)
 	{
 		if (IsAutoEraUpgrade(buildingEnum())) {
-			int32 variationIndex = _simulation->GetTownLvl(_townId) - _simulation->GetMinEraDisplay(_buildingEnum);
+			int32 variationIndex = (_simulation->GetTownLvl(_townId) - 1) - _simulation->GetMinEraDisplay(_buildingEnum);
 			variationIndex = max(variationIndex, 0);
 			return variationIndex;
 		}

@@ -13,7 +13,7 @@ using namespace std;
 
 void UObjectDescriptionUI::Setup() 
 {
-	ToolCheckBox->OnCheckStateChanged.AddDynamic(this, &UObjectDescriptionUI::ToolCheckBoxChanged);
+	//ToolCheckBox->OnCheckStateChanged.AddDynamic(this, &UObjectDescriptionUI::ToolCheckBoxChanged);
 
 	ObjectDropDownBox->OnSelectionChanged.AddDynamic(this, &UObjectDescriptionUI::OnDropDownChanged);
 
@@ -220,10 +220,10 @@ void UObjectDescriptionUI::OnDropDownChanged(FString sItem, ESelectInfo::Type se
 	}
 }
 
-void UObjectDescriptionUI::ToolCheckBoxChanged(bool active)
-{
-	if (InterfacesInvalid()) return;
-
-	//PUN_DEBUG(FString(("ToolCheckBoxChanged: " + to_string(active)).c_str()));
-	//UE_LOG(LogTemp, Error, TEXT("ToolCheckBoxChanged: "));
-}
+//void UObjectDescriptionUI::ToolCheckBoxChanged(bool active)
+//{
+//	if (InterfacesInvalid()) return;
+//
+//	//PUN_DEBUG(FString(("ToolCheckBoxChanged: " + to_string(active)).c_str()));
+//	//UE_LOG(LogTemp, Error, TEXT("ToolCheckBoxChanged: "));
+//}

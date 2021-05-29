@@ -330,6 +330,8 @@ void AGameManager::InitPhase3()
 			PopupReceiverEnum::StartGame_Story, false, ""
 		);
 		_simulation->AddPopup(popup);
+
+		_simulation->soundInterface()->Spawn2DSound("UI", "PopupNeutral", _playerId);
 	}
 
 	/*

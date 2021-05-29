@@ -19,9 +19,9 @@
 // GAME_VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 30 // 3 digit
+#define MINOR_VERSION 33 // 3 digit
 
-#define VERSION_DAY 12
+#define VERSION_DAY 28
 #define VERSION_MONTH 5
 #define VERSION_YEAR 21
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
@@ -32,9 +32,9 @@
 
 // SAVE_VERSION
 #define MAJOR_SAVE_VERSION 0
-#define MINOR_SAVE_VERSION 20 // 3 digit
+#define MINOR_SAVE_VERSION 21 // 3 digit
 
-#define VERSION_SAVE_DAY 12
+#define VERSION_SAVE_DAY 23
 #define VERSION_SAVE_MONTH 5
 #define VERSION_SAVE_YEAR 21
 #define VERSION_SAVE_DATE (VERSION_SAVE_YEAR * 10000) + (VERSION_SAVE_MONTH * 100) + VERSION_SAVE_DAY
@@ -3083,7 +3083,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::TradingPost,	LOCTEXT("Trading Post", "Trading Post"),		LOCTEXT("Trading Post (Plural)", "Trading Posts"), LOCTEXT("Trading Post Desc", "Trade resources with world market."),
 		WorldTile2(8, 8), GetBldResourceInfoManual({50, 50})
 	),
-	BldInfo(CardEnum::TradingCompany, LOCTEXT("Trading Company", "Trading Company"), LOCTEXT("Trading Company (Plural)", "Trading Companies"), LOCTEXT("Trading Company Desc", "Automatically trade resources with world market at lower fees."),
+	BldInfo(CardEnum::TradingCompany, LOCTEXT("Trading Company", "Trading Company"), LOCTEXT("Trading Company (Plural)", "Trading Companies"), LOCTEXT("Trading Company Desc", "Automatically trade resources with world market at without any trade fees."),
 		WorldTile2(6, 6), GetBldResourceInfoManual({ 50, 50 })
 	),
 	BldInfo(CardEnum::TradingPort,	LOCTEXT("Trading Port", "Trading Port"),		LOCTEXT("Trading Port (Plural)", "Trading Ports"), LOCTEXT("Trading Port Desc", "Trade resources with world market. Must be built on the coast."),
@@ -3196,7 +3196,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(6, 8), GetBldResourceInfo(2, { ResourceEnum::Beeswax }, { 1, 1}, -1)
 	),
 	BldInfo(CardEnum::Brickworks, LOCTEXT("Brickworks", "Brickworks"),			LOCTEXT("Brickworks (Plural)", "Brickworks"), LOCTEXT("Brickworks Desc", "Produces Brick from Clay and Coal."),
-		WorldTile2(6, 6), GetBldResourceInfo(2, { ResourceEnum::Clay, ResourceEnum::Coal, ResourceEnum::Brick }, { 1, 2 }, 0)
+		WorldTile2(8, 6), GetBldResourceInfo(2, { ResourceEnum::Clay, ResourceEnum::Coal, ResourceEnum::Brick }, { 1, 2 }, 0)
 	),
 	BldInfo(CardEnum::CandleMaker, LOCTEXT("Candle Maker", "Candle Maker"),		LOCTEXT("Candle Maker (Plural)", "Candle Makers"), LOCTEXT("Candle Maker Desc", "Make Candles from Beeswax and Cotton wicks."),
 		WorldTile2(4, 6), GetBldResourceInfo(2, { ResourceEnum::Beeswax, ResourceEnum::Cotton, ResourceEnum::Candle }, { 3, 2 }, 0)
@@ -3213,10 +3213,10 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(6, 4), GetBldResourceInfoManual({ 50, 0, 0, 50 })
 	),
 	BldInfo(CardEnum::Fort, LOCTEXT("Fort", "Fort"),				LOCTEXT("Fort (Plural)", "Forts"), LOCTEXT("Fort Desc", "+100% province's defense."),
-		WorldTile2(9, 9), GetBldResourceInfoMoney(500)
+		WorldTile2(9, 9), GetBldResourceInfoMoney(3000)
 	),
 	BldInfo(CardEnum::ResourceOutpost, LOCTEXT("Resource Outpost", "Resource Outpost"),	LOCTEXT("Resource Outpost (Plural)", "Resource Outposts"), LOCTEXT("Resource Outpost Desc", "Extract resource from province."),
-		WorldTile2(10, 10), GetBldResourceInfoMoney(5000)
+		WorldTile2(10, 10), GetBldResourceInfoMoney(10000)
 	),
 	BldInfo(CardEnum::InventorsWorkshop, LOCTEXT("Inventor's Workshop", "Inventor's Workshop"), LOCTEXT("Inventor's Workshop (Plural)", "Inventor's Workshops"), LOCTEXT("Inventor's Workshop Desc", "Generate Science Points. Use Iron Bars as input."),
 		WorldTile2(6, 6), GetBldResourceInfo(3, { ResourceEnum::Iron, ResourceEnum::None }, {1, 0, 0, 1, 1}, 0, 100, -2)
@@ -3287,7 +3287,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::Granary, LOCTEXT("Granary", "Granary"), LOCTEXT("Granary (Plural)", "Granaries"), LOCTEXT("Granary Desc", "Food Storage. +25% Productivity to surrounding Food Producers."),
 		WorldTile2(6, 6), GetBldResourceInfoManual({ 50, 50 })
 	),
-	BldInfo(CardEnum::Archives, LOCTEXT("Archives", "Archives"), LOCTEXT("Archives (Plural)", "Archives"), LOCTEXT("Archives Desc", "Store any Cards. Additionally, earn Income equals to 24% of the Card Price per year."),
+	BldInfo(CardEnum::Archives, LOCTEXT("Archives", "Archives"), LOCTEXT("Archives (Plural)", "Archives"), LOCTEXT("Archives Desc", "Store any Cards. Additionally, earn Income equals to 12% of the Card Price per year."),
 		WorldTile2(6, 6), GetBldResourceInfoManual({ 50, 50 })
 	),
 	BldInfo(CardEnum::HaulingServices, LOCTEXT("Hauling Services", "Hauling Services"), LOCTEXT("Hauling Services (Plural)", "Hauling Services"), LOCTEXT("Hauling Services Desc", "Workers use carts to haul resources to fill building inputs or clear building outputs."),
@@ -3332,16 +3332,16 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(8, 8), GetBldResourceInfo(4, { ResourceEnum::Glass, ResourceEnum::GoldBar, ResourceEnum::PocketWatch }, { 0, 0, 0, 5, 10, 5, 0 }, 0, 100, -3)
 	),
 
-	BldInfo(CardEnum::Cathedral, LOCTEXT("Cathedral", "Cathedral"), LOCTEXT("Cathedral (Plural)", "Cathedrals"), LOCTEXT("Cathedral Desc", "First Cathedral grants X Victory Score."),
+	BldInfo(CardEnum::Cathedral, LOCTEXT("Cathedral", "Cathedral"), LOCTEXT("Cathedral (Plural)", "Cathedrals"), LOCTEXT("Cathedral Desc", "First Cathedral grants X Victory Score. +10% Job Happiness in the city"),
 		WorldTile2(21, 13), GetBldResourceInfo(3, {}, { 0, 1, 1, 5, 3 }, 3000, 100, -1)
 	),
-	BldInfo(CardEnum::Castle, LOCTEXT("Castle", "Castle"), LOCTEXT("Castle (Plural)", "Castles"), LOCTEXT("Castle Desc", "First Castle grants X Victory Score."),
+	BldInfo(CardEnum::Castle, LOCTEXT("Castle", "Castle"), LOCTEXT("Castle (Plural)", "Castles"), LOCTEXT("Castle Desc", "First Castle grants X Victory Score. +15%<img id=\"Influence\"/> Income from city population"),
 		WorldTile2(16, 16), GetBldResourceInfo(3, {}, { 0, 5, 1, 0, 1 }, 4000, 100, -1)
 	),
-	BldInfo(CardEnum::GrandPalace, LOCTEXT("Grand Palace", "Grand Palace"), LOCTEXT("Grand Palace (Plural)", "Grand Palaces"), LOCTEXT("Grand Palace Desc", "First Grand Palace grants X Victory Score."),
+	BldInfo(CardEnum::GrandPalace, LOCTEXT("Grand Palace", "Grand Palace"), LOCTEXT("Grand Palace (Plural)", "Grand Palaces"), LOCTEXT("Grand Palace Desc", "First Grand Palace grants X Victory Score. +20% Building Appeal in the city. "),
 		WorldTile2(18, 26), GetBldResourceInfo(4, {}, { 0, 0, 0, 0, 5, 5, 1 }, 5000, 100, -1)
 	),
-	BldInfo(CardEnum::ExhibitionHall, LOCTEXT("ExhibitionHall", "Exhibition Hall"), LOCTEXT("Exhibition Hall (Plural)", "Exhibition Halls"), LOCTEXT("Exhibition Hall Desc", "First Exhibition Hall grants X Victory Score."),
+	BldInfo(CardEnum::ExhibitionHall, LOCTEXT("ExhibitionHall", "Exhibition Hall"), LOCTEXT("Exhibition Hall (Plural)", "Exhibition Halls"), LOCTEXT("Exhibition Hall Desc", "First Exhibition Hall grants X Victory Score. +20%<img id=\"Coin\"/> from luxury consumption"),
 		WorldTile2(36, 24), GetBldResourceInfo(4, {}, { 0, 0, 0, 0, 5, 1, 5 }, 5000, 100, -1)
 	),
 
@@ -3458,7 +3458,7 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::Passion,		LOCTEXT("Passion", "Passion"), 100, LOCTEXT("Passion Desc", "+20% Job Happiness, +15% Productivity")),
 
 	
-	BldInfo(CardEnum::DesertPilgrim,		LOCTEXT("Desert Pilgrim", "Desert Pilgrim"), 200, LOCTEXT("Desert Pilgrim Desc", "Houses built on Desert get +5<img id=\"Coin\"/>.")),
+	BldInfo(CardEnum::DesertPilgrim,		LOCTEXT("Desert Pilgrim", "Desert Pilgrim"), 200, LOCTEXT("Desert Pilgrim Desc", "Houses built on Desert get +10<img id=\"Coin\"/>.")),
 
 	BldInfo(CardEnum::WheatSeed,			LOCTEXT("Wheat Seeds", "Wheat Seeds"), 300, LOCTEXT("Wheat Seeds Desc", "Unlock Wheat farming. Wheat can be eaten or brewed into Beer.")),
 	BldInfo(CardEnum::CabbageSeed,		LOCTEXT("Cabbage Seeds", "Cabbage Seeds"), 350, LOCTEXT("Cabbage Seeds Desc", "Unlock Cabbage farming. Cabbage has high fertility sensitivity.")),
@@ -3552,7 +3552,7 @@ static const BldInfo CardInfos[]
 		BldInfo(CardEnum::BorealPineForesting, LOCTEXT("Pine Foresting", "Pine Foresting"), 0, LOCTEXT("Pine Foresting Desc", "+20% Wood yield when cutting Pine Trees.")),
 
 		BldInfo(CardEnum::DesertGem, LOCTEXT("Desert Gem", "Desert Gem"), 0, LOCTEXT("Desert Gem Desc", "+25% Productivity to Gem and Gold Mines.")),
-		BldInfo(CardEnum::DesertTradeForALiving, LOCTEXT("Trade for a Living", "Trade for a Living"), 0, LOCTEXT("Trade for a Living Desc", "-25% Trade Fee when trading Food/Wood.")),
+		BldInfo(CardEnum::DesertTradeForALiving, LOCTEXT("Trade for a Living", "Trade for a Living"), 0, LOCTEXT("Trade for a Living Desc", "-15% Trade Fee when trading Food/Wood.")),
 		BldInfo(CardEnum::DesertOreTrade, LOCTEXT("Ore Trade", "Ore Trade"), 0, LOCTEXT("Ore Trade Desc", "-25% Trade Fee when trading Ores/Coal/Gemstone.")),
 		BldInfo(CardEnum::DesertIndustry, LOCTEXT("Desert Industry", "Desert Industry"), 0, LOCTEXT("Desert Industry Desc", "+10% Productivity to all Industries. -50% Farm Productivity.")),
 
@@ -4485,7 +4485,13 @@ struct BuildingUpgrade
 	
 	bool isEraUpgrade() const { return startEra != -1; }
 	
-	int32 maxUpgradeLevel() const { return 5 - startEra; }
+	int32 maxUpgradeLevel(CardEnum cardEnum) const
+	{
+		if (IsTradingPostLike(cardEnum)) {
+			return 3;
+		}
+		return 5 - startEra;
+	}
 
 	ResourcePair currentUpgradeResourceNeeded() {
 		if (isEraUpgrade()) {
@@ -5802,6 +5808,43 @@ enum class TechEnum : uint8
 
 	SocialScience,
 
+	// CardGiving
+	Wheat,
+	Cabbage,
+	
+	Frugality,
+	Productivity,
+	Sustainability,
+	Motivation,
+	Passion,
+
+	ChimneyRestrictor,
+	HomeBrew,
+	BeerTax,
+
+	SmelterCombo,
+	MiningEquipment,
+	FarmWaterManagement,
+	CoalPipeline,
+	CoalTreatment,
+
+	Lockdown,
+	SlaveLabor,
+	DesertPilgrim,
+	SocialWelfare,
+
+	Conglomerate,
+	WineSnob,
+	BlingBling,
+	BookWorm,
+	BirthControl,
+	HappyBreadDay,
+	AllYouCanEat,
+
+	DepartmentOfAgriculture,
+	EngineeringOffice,
+	ArchitectsStudio,
+
 	//Bridge,
 	HumanitarianAid,
 
@@ -5817,7 +5860,6 @@ enum class TechEnum : uint8
 	Machinery,
 	Colony,
 	PortColony,
-	IntercityLogistics,
 
 	IndustrialAdjacency,
 
@@ -5832,11 +5874,11 @@ enum class TechEnum : uint8
 	CheapReroll,
 	CheapLand,
 
-	FarmingBreakthrough,
+	CropBreeding,
 
 	MoreGoldPerHouse,
 	
-	WineryImprovement,
+	WinerySnob,
 
 	TraderDiscount,
 
@@ -7227,8 +7269,6 @@ struct PopupInfo
 	void operator>>(FArchive& Ar)
 	{
 		Ar << playerId;
-		//SerializeStr(Ar, title);
-		
 		Ar << body;
 		
 		SerializeVecLoop(Ar, choices, [&](FText& text) {
@@ -7243,8 +7283,9 @@ struct PopupInfo
 		Ar << replyVar3;
 
 		Ar << forcedNetworking;
-		Ar << warningForExclusiveUI;
+		//Ar << forcedSkipNetworking;
 		
+		Ar << warningForExclusiveUI;
 		Ar << startTick;
 		Ar << startDisplayTick;
 	}
@@ -8584,7 +8625,7 @@ static const FString AITownNames[] =
 static FString GetAITownName(int32 playerId)
 {
 	int32 count = _countof(AITownNames);
-	int32 aiPlayerId = std::max(0, playerId - GameConstants::MaxPlayers);
+	int32 aiPlayerId = std::max(0, playerId - GameConstants::MaxPlayersPossible);
 	FString name = AITownNames[aiPlayerId % count];
 	if (aiPlayerId / count > 0) {
 		name += FString::FromInt(aiPlayerId / count);

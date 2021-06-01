@@ -1394,10 +1394,13 @@ void UMainGameUI::Tick()
 				
 				ResearchBar->SetWidthOverride(unlockSys->hasTargetResearch() ? (unlockSys->researchFraction() * 240) : 0);
 				ResearchBarBox->SetVisibility(ESlateVisibility::Visible);
+				ResearchingLeftoverAmountBox->SetVisibility(ESlateVisibility::Collapsed);
 			}
 			else {
 				ResearchingText->SetText(LOCTEXT("Tech Tree", "Tech Tree"));
 				ResearchBarBox->SetVisibility(ESlateVisibility::Collapsed);
+				ResearchingLeftoverAmountText->SetText(TEXT_100(unlockSys->science100()));
+				ResearchingLeftoverAmountBox->SetVisibility(ESlateVisibility::Visible);
 			}
 
 			ResearchBarUI->SetBackgroundColor(researchBarColor);

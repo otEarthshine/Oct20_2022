@@ -465,7 +465,7 @@ public:
 
 		AddToolTip(populationScoreWidget, NSLOCTEXT("ScoreBreakdown", "Population Score tip", "Population Score = Population X 1"));
 		AddToolTip(happinessScoreWidget, NSLOCTEXT("ScoreBreakdown", "Happiness Score tip", "Happiness Score = (Average Happiness above 80%) X Population / 10"));
-		AddToolTip(moneyScoreWidget, NSLOCTEXT("ScoreBreakdown", "Money Score tip", "Money Score = Money / 10000"));
+		AddToolTip(moneyScoreWidget, NSLOCTEXT("ScoreBreakdown", "Money Score tip", "Money Score = Money / 1000"));
 		AddToolTip(technologyScoreWidget, NSLOCTEXT("ScoreBreakdown", "Technology Score tip", "Technology Score = Technology X 10"));
 		AddToolTip(wonderScoreWidget, NSLOCTEXT("ScoreBreakdown", "Wonders Score tip", "Wonders Score = Sum of score from all Wonders"));
 	}

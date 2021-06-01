@@ -70,6 +70,7 @@ public:
 			networkInterface()->ResetGameUI();
 
 			simulation().TryRemovePopups(playerId(), PopupReceiverEnum::DoneResearchEvent_ShowTree);
+			simulation().TryRemovePopups(playerId(), PopupReceiverEnum::DoneResearchEvent_ShowAllTrees);
 
 			dataSource()->Spawn2DSound("UI", "UIWindowOpen");
 		}

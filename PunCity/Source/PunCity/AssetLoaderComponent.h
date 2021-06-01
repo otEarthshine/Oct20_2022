@@ -392,6 +392,13 @@ public:
 	bool IsBuildingUsingSpecialIcon(CardEnum buildingEnum) {
 		return _buildingsUsingSpecialIcon.Contains(buildingEnum);
 	}
+
+	UTexture2D* GetBuildingIconNullable(CardEnum buildingEnum) {
+		if (static_cast<int32>(buildingEnum) >= _buildingIcons.Num()) {
+			return nullptr;
+		}
+		return _buildingIcons[static_cast<int>(buildingEnum)];
+	}
 	
 	
 	UTexture2D* GetResourceIcon(ResourceEnum resourceEnum) { return _resourceIcons[static_cast<int>(resourceEnum)]; }
@@ -579,7 +586,8 @@ public:
 	UPROPERTY(EditAnywhere) TMap<int32, UTexture*> _geo_Icon;
 	UPROPERTY(EditAnywhere) TMap<int32, UTexture*> _geo_IconAlpha;
 
-	//! 
+	//!
+	UPROPERTY(EditAnywhere) UNiagaraSystem* NS_OnDemolish;
 	UPROPERTY(EditAnywhere) UNiagaraSystem* NS_OnPlacement;
 	UPROPERTY(EditAnywhere) UNiagaraSystem* NS_OnTownhall;
 	UPROPERTY(EditAnywhere) UNiagaraSystem* NS_OnUpgrade;

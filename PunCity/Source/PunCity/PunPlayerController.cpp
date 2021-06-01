@@ -336,6 +336,7 @@ void APunPlayerController::Tick(float DeltaTime)
 				// Note: _hashSendTick becomes 0 upon loading, which is fine, since hashes will just override the loaded one...
 				SendHash_ToClient(_hashSendTick, allTickHashes);
 				check(allTickHashes.Num() % TickHashes::TickHashEnumCount() == 0);
+				
 				_hashSendTick += allTickHashes.Num() / TickHashes::TickHashEnumCount();
 
 				_LOG(PunTickHash, "SendHash Out End cid:%d hashSendTick:%d", playerId(), _hashSendTick);
@@ -470,6 +471,7 @@ void APunPlayerController::Tick(float DeltaTime)
 							curTickInfo.SerializeToBlob(networkTickInfoBlob);
 
 							_LOG(PunTickHash, "TickMissingGameTick <p%d> TickLocalSimulation_ToClients i:%d", it.first, i);
+							check(networkTickInfoBlob.Num() < MaxPacketSize32);
 
 							TickLocalSimulation_ToClients(networkTickInfoBlob);
 							return;
@@ -739,6 +741,7 @@ void APunPlayerController::SendTickToClient(NetworkTickInfo& tickInfo)
 	}
 	//PUN_DEBUG(FString::Printf(TEXT("Server Add Tick:%d queue:%d"), tickInfo.tickCount, gameManager->networkTickQueueCount()));
 
+	check(networkTickInfoBlob.Num() < MaxPacketSize32);
 
 	// TickSimulations
 	if (gameInstance()->shouldDelayInput()) {
@@ -767,6 +770,7 @@ void APunPlayerController::SendNetworkCommand(std::shared_ptr<FNetworkCommand> n
 	NetworkHelper::SerializeAndAppendToBlob(networkCommand, blob);
 
 	//PUN_DEBUG(FString::Printf(TEXT("serializedCommand init: %d"), blob.Num()));
+	check(blob.Num() < MaxPacketSize32);
 
 	if (gameInstance()->shouldDelayInput()) {
 		ServerSendNetworkCommand_ToServer(blob);
@@ -857,7 +861,8 @@ void APunPlayerController::SendHash_ToClient_Implementation(int32 hashSendTick, 
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_Controller);
 	
-	_LOG(PunTickHash, "SendHash Client receive hashSendTick:%d hashSize:%d", hashSendTick, allTickHashes.Num());
+	_LOG(PunTickHash, "SendHash Client receive hashSendTick:%d hash32Size:%d hashTickBlockSize:%d", hashSendTick, allTickHashes.Num(), allTickHashes.Num() / TickHashes::TickHashEnumCount());
+	check(allTickHashes.Num() < MaxPacketSize32);
 
 	gameManager->simulation().AppendAndCompareServerHashes(hashSendTick, allTickHashes);
 }

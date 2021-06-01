@@ -395,6 +395,7 @@ void TradingCompany::OnTick1Sec()
 //{
 //
 //}
-//
-//
-//#undef LOCTEXT_NAMESPACE
+
+
+
+#undef LOCTEXT_NAMESPACE

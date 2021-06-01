@@ -183,10 +183,10 @@ public:
 	int32 tradeMaximumPerRound()
 	{
 		int32 quantity = 120;
-		if (IsUpgraded(1)) {
+		if (IsUpgraded_InitialIndex(0)) {
 			quantity += 60;
 		}
-		if (IsUpgraded(2)) {
+		if (IsUpgraded_InitialIndex(1)) {
 			bool hasNearbyPort = _simulation->hasBuildingWithCondition(_playerId, CardEnum::TradingPort, [&](Building& bld) {
 				return WorldTile2::ManDistance(bld.centerTile(), centerTile()) <= 18;
 			});

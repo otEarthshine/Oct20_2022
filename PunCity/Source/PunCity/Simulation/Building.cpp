@@ -246,10 +246,10 @@ void Building::FinishConstruction()
 
 	// Auto-add inputs/outputs accordingly
 	if (hasInput1()) {
-		AddResourceHolder(input1(), ResourceHolderType::Requester, baseInputPerBatch() * 2);
+		AddResourceHolder(input1(), ResourceHolderType::Requester, baseInputPerBatch(input1()) * 2);
 	}
 	if (hasInput2()) {
-		AddResourceHolder(input2(), ResourceHolderType::Requester, baseInputPerBatch() * 2);
+		AddResourceHolder(input2(), ResourceHolderType::Requester, baseInputPerBatch(input2()) * 2);
 	}
 	if (product() != ResourceEnum::None) AddResourceHolder(product(), ResourceHolderType::Provider, 0);
 	//if (IsProducer(buildingEnum())) AddResourceHolder(ResourceEnum::Tools, ResourceHolderType::Provider, 0);
@@ -315,12 +315,13 @@ void Building::SetResourceActive(bool workActive)
 		ResourceHolderInfo input2Info = holderInfo(input2());
 
 		if (workActive) {
-			if (input1Info.isValid()) SetResourceTarget(input1Info, baseInputPerBatch() * 2);
-			if (input2Info.isValid()) SetResourceTarget(input2Info, baseInputPerBatch() * 2);
+			if (input1Info.isValid()) SetResourceTarget(input1Info, baseInputPerBatch(input1()) * 2);
+			if (input2Info.isValid()) SetResourceTarget(input2Info, baseInputPerBatch(input2()) * 2);
 		}
 		else {
-			if (input1Info.isValid()) SetResourceTarget(input1Info, baseInputPerBatch() * 2);
-			if (input2Info.isValid()) SetResourceTarget(input2Info, baseInputPerBatch() * 2);
+			// TODO: make this 0??
+			if (input1Info.isValid()) SetResourceTarget(input1Info, baseInputPerBatch(input1()) * 2);
+			if (input2Info.isValid()) SetResourceTarget(input2Info, baseInputPerBatch(input2()) * 2);
 		}
 	}
 }
@@ -751,7 +752,7 @@ void Building::DoWork(int unitId, int workAmount100)
 				
 				int32 moneyReceived = outputPerBatch();
 				globalResourceSystem().ChangeMoney(moneyReceived);
-				_simulation->worldTradeSystem().ChangeSupply(_playerId, ResourceEnum::GoldBar, inputPerBatch());
+				_simulation->worldTradeSystem().ChangeSupply(_playerId, ResourceEnum::GoldBar, inputPerBatch(input1()));
 
 				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, centerTile(), TEXT_NUMSIGNED(moneyReceived));
 				AddProductionStat(moneyReceived);
@@ -1055,9 +1056,9 @@ void Building::ChangeWorkMode(const WorkMode& workMode)
 		setTarget(_workMode.input2, 0);
 		setTarget(_workMode.product, 0);
 
-		setTarget(workMode.input1, baseInputPerBatch() * 2);
-		setTarget(workMode.input2, baseInputPerBatch() * 2);
-		setTarget(workMode.product, baseInputPerBatch() * 2);
+		setTarget(workMode.input1, baseInputPerBatch(input1()) * 2);
+		setTarget(workMode.input2, baseInputPerBatch(input2()) * 2);
+		setTarget(workMode.product, 0);
 	}
 
 	_workMode = workMode;
@@ -1373,7 +1374,7 @@ BuildingUpgrade Building::MakeComboUpgrade(FText name, ResourceEnum resourceEnum
 		comboEfficiencyBonus += 5;
 	}
 
-	int32 percentOfTotalPrice = comboEfficiencyBonus * 2;
+	int32 percentOfTotalPrice = comboEfficiencyBonus * 2 * 2 / 3; // May 30: -30% comboupgrade price
 	
 	FText description = FText::Format(
 		LOCTEXT("Combo Upgrade Description", "Gain +{0}/{1}/{2}% productivity if this city has 2/4/8 {3}"),

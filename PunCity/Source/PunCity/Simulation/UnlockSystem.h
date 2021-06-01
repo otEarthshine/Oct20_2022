@@ -487,11 +487,13 @@ public:
 	// Helpers
 	int64 scienceNeeded(int64 techsFinished)
 	{
+		const int64 scalingPercent = 230;
+		
 		if (!isMainTree)
 		{
 			int64 sciNeeded = 100;
 			for (int32 i = 1; i < column; i ++) {
-				sciNeeded *= 2;
+				sciNeeded = sciNeeded * scalingPercent / 100;
 			}
 			
 			if (_buildingEnums.size() > 0)
@@ -544,7 +546,10 @@ public:
 		// - Full lvl 7 house 1400 pop: 1400 / 7  = 200 houses = 20000 sci per round
 		int64 sciNeeded = 50;
 		for (int32 i = 1; i < column; i++) {
-			sciNeeded *= 2;
+			// May 30: scale up more
+			//  100 * 2^10 = 102,400
+			//  100 * 2.3^10 = 414,265
+			sciNeeded = sciNeeded * scalingPercent / 100;
 		}
 		
 		return std::min(sciNeeded, 1000000LL);
@@ -784,8 +789,19 @@ public:
 
 
 	void AddTech_CardGiving(TechEnum researchEnum, std::vector<TechEnum> prerequisites,
-		CardEnum buildingEnum, int32 maxCards = 3, TechRequirements techRequirements = TechRequirements())
+		CardEnum buildingEnum, TechRequirements techRequirements = TechRequirements())
 	{
+		int32 maxCards = 3;
+		if (IsSeedCard(buildingEnum)) {
+			maxCards = 1;
+		}
+		if (IsBuildingSlotCard(buildingEnum)) {
+			maxCards = 10;
+		}
+		if (IsBuildingCard(buildingEnum)) {
+			maxCards = 1;
+		}
+		
 		auto tech = std::make_shared<CardGiving_Research>();
 		tech->Init(_columnIndex, researchEnum, prerequisites, _simulation);
 		tech->InitCardGivingResearch({ buildingEnum }, maxCards);
@@ -1009,8 +1025,7 @@ public:
 				{ CardEnum::Windmill, CardEnum::Bakery }
 			);
 			AddTech_Building(TechEnum::VodkaDistillery, { TechEnum::PotatoFarming },
-				{ CardEnum::VodkaDistillery }, 
-				TechRequirements::ResourceProduced(ResourceEnum::Potato, 1000)
+				{ CardEnum::VodkaDistillery }
 			);
 			AddTech_Building(TechEnum::Beekeeper, { TechEnum::PotatoFarming },
 				CardEnum::Beekeeper
@@ -1059,7 +1074,7 @@ public:
 			AddTech_Building(TechEnum::School, { TechEnum::Medicine, TechEnum::CardMaker },
 				CardEnum::School
 			);
-			AddTech_Building(TechEnum::Logistics4, { TechEnum::Logistics3, TechEnum::CandleMaker },
+			AddTech_Building(TechEnum::Logistics4, { TechEnum::Logistics3 },
 				{ CardEnum::ShippingDepot }
 			);
 			AddTech_BuildingPermanent(TechEnum::StoneRoad, { TechEnum::Logistics3 },
@@ -1194,14 +1209,14 @@ public:
 			AddTech_Bonus(TechEnum::CharcoalBurnerImprovement, {});
 		
 			AddTech_CardGiving(TechEnum::Wheat, {},
-				CardEnum::WheatSeed, 1
+				CardEnum::WheatSeed
 			);
 			AddTech_CardGiving(TechEnum::Cabbage, {},
-				CardEnum::CabbageSeed, 1
+				CardEnum::CabbageSeed
 			);
 
 			AddTech_CardGiving(TechEnum::Frugality, {},
-				CardEnum::FrugalityBook, 10
+				CardEnum::FrugalityBook
 			);
 			
 			AddTech_Bonus(TechEnum::InfluencePoints, {});
@@ -1222,7 +1237,7 @@ public:
 				CardEnum::BeerTax
 			);
 			AddTech_CardGiving(TechEnum::Productivity, { TechEnum::Frugality },
-				CardEnum::ProductivityBook, 10
+				CardEnum::ProductivityBook
 			);
 
 			AddTech_Bonus(TechEnum::HomeLandDefense, {});
@@ -1242,7 +1257,7 @@ public:
 			AddTech_Bonus(TechEnum::FarmImprovement, {});
 
 			AddTech_CardGiving(TechEnum::Sustainability, { TechEnum::Productivity },
-				CardEnum::SustainabilityBook, 10
+				CardEnum::SustainabilityBook
 			);
 			AddTech_Building(TechEnum::BarrackArcher, { TechEnum::HomeLandDefense },
 				CardEnum::BarrackArcher
@@ -1281,10 +1296,10 @@ public:
 			);
 
 			AddTech_CardGiving(TechEnum::BlueberryFarming, {},
-				{ CardEnum::BlueberrySeed }, 1
+				{ CardEnum::BlueberrySeed }
 			);
 			AddTech_CardGiving(TechEnum::Motivation, {},
-				{ CardEnum::Motivation }, 10
+				{ CardEnum::Motivation }
 			);
 			AddTech_CardGiving(TechEnum::Lockdown, { TechEnum::SlaveLabor },
 				{ CardEnum::Lockdown }
@@ -1302,7 +1317,7 @@ public:
 			);
 			
 			AddTech_CardGiving(TechEnum::PumpkinFarming, { TechEnum::BlueberryFarming },
-				{ CardEnum::PumpkinSeed }, 1,
+				{ CardEnum::PumpkinSeed },
 				TechRequirements::ResourceProduced(ResourceEnum::Blueberries, 1000)
 			);
 			AddTech_CardGiving(TechEnum::Passion, { TechEnum::Motivation },
@@ -1365,14 +1380,14 @@ public:
 			);
 
 			AddTech_CardGiving(TechEnum::MelonFarming, { TechEnum::Fertilizers },
-				{ CardEnum::MelonSeed }, 1,
+				{ CardEnum::MelonSeed },
 				TechRequirements::ResourceProduced(ResourceEnum::Pumpkin, 3000)
 			);
 
 			
 			//
 			_columnIndex = 10;
-			AddTech_CardGiving(TechEnum::BlingBling, { TechEnum::WineSnob},
+			AddTech_CardGiving(TechEnum::BlingBling, { TechEnum::WinerySnob },
 				{ CardEnum::BlingBling }
 			);
 			AddTech_CardGiving(TechEnum::BookWorm, { TechEnum ::InventorsWorkshop },

@@ -417,7 +417,7 @@ void UWorldSpaceUI::TickBuildings()
 		auto isInOverlayRadiusFoodBuilding = [&](OverlayType overlayTypeCurrent, int32 radius)
 		{
 			return overlayType == overlayTypeCurrent &&
-				IsAgricultureBuilding(building.buildingEnum()) &&
+				IsFoodBuilding(building.buildingEnum()) &&
 				WorldTile2::Distance(building.centerTile(), overlayTile) < radius &&
 				building.playerId() == playerId();
 		};

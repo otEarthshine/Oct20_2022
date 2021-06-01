@@ -376,7 +376,7 @@ private:
 		return haulCapacity;
 	}
 	int32 haulerServicesCapacity() {
-		int32 haulCapacity = 20;
+		int32 haulCapacity = 50;
 		if (_simulation->IsResearched(_playerId, TechEnum::Logistics5)) {
 			haulCapacity += 10;
 		}

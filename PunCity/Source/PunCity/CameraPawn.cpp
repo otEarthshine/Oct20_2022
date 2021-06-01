@@ -97,6 +97,7 @@ void ACameraPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("UpgradesTree", IE_Pressed, this, &ACameraPawn::KeyPressed_UpgradesTree);
 
 	PlayerInputComponent->BindAction("DirtRoad", IE_Pressed, this, &ACameraPawn::KeyPressed_DirtRoad);
+	PlayerInputComponent->BindAction("StoneRoad", IE_Pressed, this, &ACameraPawn::KeyPressed_StoneRoad);
 	PlayerInputComponent->BindAction("Demolish", IE_Pressed, this, &ACameraPawn::KeyPressed_Demolish);
 
 	PlayerInputComponent->BindAction("PlayerDetails", IE_Pressed, this, &ACameraPawn::KeyPressed_PlayerDetails);

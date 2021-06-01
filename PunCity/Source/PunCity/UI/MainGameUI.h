@@ -101,12 +101,12 @@ public:
 		return TextEquals(confirmationStrIn, confirmationString);
 	}
 
-	void ToggleDirtRoad()
+	void ToggleRoad(bool isStoneRoad)
 	{
-		if (inputSystemInterface()->placementState() == PlacementType::DirtRoad) {
+		if (inputSystemInterface()->placementState() == (isStoneRoad ? PlacementType::StoneRoad : PlacementType::DirtRoad)) {
 			inputSystemInterface()->CancelPlacement();
 		} else {
-			inputSystemInterface()->StartRoadPlacement(false);
+			inputSystemInterface()->StartRoadPlacement(isStoneRoad);
 		}
 	}
 
@@ -268,6 +268,9 @@ private:
 
 	UPROPERTY(meta = (BindWidget)) UButton* ResearchBarUI;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* ResearchingText;
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* ResearchingLeftoverAmountBox;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* ResearchingLeftoverAmountText;
+	
 	UPROPERTY(meta = (BindWidget)) UTextBlock* ResearchingAmountText;
 	UPROPERTY(meta = (BindWidget)) USizeBox* ResearchBarBox;
 	UPROPERTY(meta = (BindWidget)) USizeBox* ResearchBar;

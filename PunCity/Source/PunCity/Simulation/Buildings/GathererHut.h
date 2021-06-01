@@ -74,8 +74,8 @@ public:
 	void FinishConstruction() final;
 	std::vector<BonusPair> GetBonuses() override;
 
-	int32 baseInputPerBatch() final {
-		return Building::baseInputPerBatch() * (_simulation->IsResearched(_playerId, TechEnum::MushroomSubstrateSterilization) ? 4 : 8) / 10;
+	int32 baseInputPerBatch(ResourceEnum resourceEnum) final {
+		return Building::baseInputPerBatch(resourceEnum) * (_simulation->IsResearched(_playerId, TechEnum::MushroomSubstrateSterilization) ? 4 : 8) / 10;
 	}
 };
 
@@ -85,8 +85,8 @@ public:
 	void FinishConstruction() final;
 	std::vector<BonusPair> GetBonuses() override;
 
-	int32 baseInputPerBatch() final {
-		return Building::baseInputPerBatch() * (_simulation->IsResearched(_playerId, TechEnum::MushroomSubstrateSterilization) ? 4 : 8) / 10;
+	int32 baseInputPerBatch(ResourceEnum resourceEnum) final {
+		return Building::baseInputPerBatch(resourceEnum) * (_simulation->IsResearched(_playerId, TechEnum::MushroomSubstrateSterilization) ? 4 : 8) / 10;
 	}
 };
 
@@ -330,8 +330,8 @@ class PaperMaker final : public IndustrialBuilding
 public:
 	virtual void FinishConstruction() final;
 
-	virtual int32 baseInputPerBatch() final {
-		return Building::baseInputPerBatch() * (IsUpgraded_InitialIndex(0) ? 5 : 10) / 10;
+	virtual int32 baseInputPerBatch(ResourceEnum resourceEnum) final {
+		return Building::baseInputPerBatch(resourceEnum) * (IsUpgraded_InitialIndex(0) ? 5 : 10) / 10;
 	}
 };
 
@@ -341,8 +341,8 @@ public:
 	virtual void FinishConstruction() final;
 	virtual std::vector<BonusPair> GetBonuses() override;
 
-	virtual int32 baseInputPerBatch() override {
-		return Building::baseInputPerBatch() * (IsUpgraded_InitialIndex(1) ? 70 : 100) / 100;
+	virtual int32 baseInputPerBatch(ResourceEnum resourceEnum) override {
+		return Building::baseInputPerBatch(resourceEnum) * (IsUpgraded_InitialIndex(1) ? 70 : 100) / 100;
 	}
 
 	virtual int32 GetBaseJobHappiness() override {
@@ -387,7 +387,7 @@ public:
 	
 
 	int32 baseInputValue() {
-		return GetResourceInfo(input1()).basePrice * baseInputPerBatch();
+		return GetResourceInfo(input1()).basePrice * baseInputPerBatch(input1());
 	}
 	int32 baseOutputValue() {
 		return baseInputValue() * 2;
@@ -395,7 +395,7 @@ public:
 	int32 baseProfitValue() {
 		// Without sustainability card, baseProfitValue == baseInputValue
 		// With Sustainability, baseProfitValue would increase, increase the work time...
-		return baseOutputValue() - GetResourceInfo(input1()).basePrice * inputPerBatch(); // inputPerBatch default to 10 taking into account sustainability card...
+		return baseOutputValue() - GetResourceInfo(input1()).basePrice * inputPerBatch(input1()); // inputPerBatch default to 10 taking into account sustainability card...
 	}
 };
 
@@ -494,13 +494,14 @@ public:
 	// Same amount of work required to acquire resources
 	int32 workManSecPerBatch100() final
 	{
-		const int32 costFactor = 200;
+		const int32 costFactor = 70; // May 31 adjust from 200
 		int32 result = baseBatchCost() * 100 * 100 / workRevenuePerSec100_perMan_() * costFactor / 100; // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
 
 		result = buildingInfo().resourceInfo.ApplyUpgradeAndEraProfitMultipliers(result, buildingInfo().minEra(), GetEraUpgradeCount());
 		
 		return result * 100 / efficiency();
 	}
+	
 
 	CardEnum GetCardProduced();
 	
@@ -528,7 +529,7 @@ public:
 		return 25 * 100 * 100 / workRevenuePerSec100_perMan_(); // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
 	}
 
-	int32 baseInputPerBatch() override { return 0; }
+	virtual int32 baseInputPerBatch(ResourceEnum resourceEnum) override { return 0; }
 };
 
 class StoneToolsShop : public IndustrialBuilding
@@ -550,23 +551,23 @@ public:
 class MedicineMaker : public IndustrialBuilding
 {
 public:
-	void FinishConstruction() final;
-	std::vector<BonusPair> GetBonuses() override;
+	virtual void FinishConstruction() final;
+	virtual std::vector<BonusPair> GetBonuses() override;
 
-	int32 baseInputPerBatch() override {
-		return Building::baseInputPerBatch() * 50 / 100;
+	virtual int32 baseInputPerBatch(ResourceEnum resourceEnum) override {
+		return Building::baseInputPerBatch(resourceEnum) * 50 / 100;
 	}
 };
 
 class CharcoalMaker final : public IndustrialBuilding
 {
 public:
-	int32 baseInputPerBatch() override { return IsUpgraded_InitialIndex(0) ? 7 : 10; }
+	virtual int32 baseInputPerBatch(ResourceEnum resourceEnum) override { return IsUpgraded_InitialIndex(0) ? 7 : 10; }
 	
-	void FinishConstruction() final;
-	std::vector<BonusPair> GetBonuses() override;
+	virtual void FinishConstruction() final;
+	virtual std::vector<BonusPair> GetBonuses() override;
 
-	int32 GetBaseJobHappiness() override { return 60; }
+	virtual int32 GetBaseJobHappiness() override { return 60; }
 };
 
 class Chocolatier : public IndustrialBuilding
@@ -574,22 +575,8 @@ class Chocolatier : public IndustrialBuilding
 public:
 	void FinishConstruction() override;
 
-	std::vector<BonusPair> GetBonuses() override {
-		std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
-
-
-		return bonuses;
-	}
-
-	int32 baseUpkeep() override {
-		if (IsUpgraded(3)) {
-			return Building::baseUpkeep() / 2;
-		}
-		return Building::baseUpkeep();
-	}
-
-	int32 baseInputPerBatch() override {
-		return Building::baseInputPerBatch() * (IsUpgraded_InitialIndex(0) ? 50 : 100) / 100;
+	int32 baseInputPerBatch(ResourceEnum resourceEnum) override {
+		return Building::baseInputPerBatch(resourceEnum) * (IsUpgraded_InitialIndex(0) ? 50 : 100) / 100;
 	}
 };
 
@@ -616,14 +603,14 @@ public:
 class BeerBrewery : public IndustrialBuilding
 {
 public:
-	int32 baseInputPerBatch() override {
-		return Building::baseInputPerBatch() * (IsUpgraded_InitialIndex(0) ? 70 : 100) / 100;
+	virtual int32 baseInputPerBatch(ResourceEnum resourceEnum) override {
+		return Building::baseInputPerBatch(resourceEnum) * (IsUpgraded_InitialIndex(0) ? 70 : 100) / 100;
 	}
 	
-	void OnInit() override;
+	virtual void OnInit() override;
 	
-	void FinishConstruction() override;
-	std::vector<BonusPair> GetBonuses() override;
+	virtual void FinishConstruction() override;
+	virtual std::vector<BonusPair> GetBonuses() override;
 };
 
 class BeerBreweryFamous final : public BeerBrewery
@@ -635,8 +622,8 @@ public:
 class VodkaDistillery : public IndustrialBuilding
 {
 public:
-	int32 baseInputPerBatch() override {
-		return Building::baseInputPerBatch() * (IsUpgraded_InitialIndex(0) ? 70 : 100) / 100;
+	int32 baseInputPerBatch(ResourceEnum resourceEnum) override {
+		return Building::baseInputPerBatch(resourceEnum) * (IsUpgraded_InitialIndex(0) ? 70 : 100) / 100;
 	}
 	
 	void FinishConstruction() override;
@@ -804,8 +791,8 @@ public:
 	void FinishConstruction() final;
 	std::vector<BonusPair> GetBonuses() final;
 
-	int32 baseInputPerBatch() override {
-		return Building::baseInputPerBatch() * (IsUpgraded_InitialIndex(1) ? 70 : 100) / 100;
+	int32 baseInputPerBatch(ResourceEnum resourceEnum) override {
+		return Building::baseInputPerBatch(resourceEnum) * (IsUpgraded_InitialIndex(1) ? 70 : 100) / 100;
 	}
 };
 
@@ -964,7 +951,7 @@ public:
 		int32 moneyValue = bldInfo.baseCardPrice + bldInfo.constructionCostAsMoney();
 		int32 minEra = bldInfo.minEra();
 
-		int32 multiplier = 8;
+		int32 multiplier = 15; // May 30 Adjust
 		for (int32 i = minEra; i < 4; i++) {
 			multiplier *= 2;
 		}
@@ -1197,7 +1184,7 @@ public:
 	// TODO: remove these...
 	virtual void DoConsumerWork(int32_t workManSec100, int32_t resourceConsumed) = 0;
 
-	int32 resourceConsumptionAmount100(int32 workManSec100) { return inputPerBatch() * workManSec100 * 100 / workManSecPerBatch100(); }
+	int32 resourceConsumptionAmount100(int32 workManSec100) { return inputPerBatch(input1()) * workManSec100 * 100 / workManSecPerBatch100(); }
 };
 
 class Library final : public Building

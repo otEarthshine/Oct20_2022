@@ -62,7 +62,19 @@ void Building_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulation
 		}
 	}
 
-	for (CardEnum buildingEnum : _permanentBuildingEnums) {
+	/*
+	 * Permanent Building
+	 */
+	for (CardEnum buildingEnum : _permanentBuildingEnums) 
+	{
+		if (buildingEnum == CardEnum::Warehouse)
+		{
+			_simulation->AddPopup(
+				playerId,
+				LOCTEXT("UnlockedWarehouse_Pop", "Unlocked Warehouse in the Build Menu.")
+			);
+		}
+		
 		unlockSys->UnlockBuilding(buildingEnum);
 	}
 
@@ -137,24 +149,30 @@ void UnlockSystem::Research(int64 science100PerRound, int32 updatesPerSec)
 			popup.forcedSkipNetworking = true;
 			_simulation->AddPopupToFront(popup);
 
-			auto cardSys = _simulation->cardSystem(_playerId);
+			auto& cardSys = _simulation->cardSystem(_playerId);
 			if (GetEra() == 2) {
-				cardSys.AddDrawCards(CardEnum::WildCard, 1);
-				cardSys.AddDrawCards(CardEnum::WildCardFood, 2);
-				cardSys.AddDrawCards(CardEnum::WildCardIndustry, 2);
-				cardSys.AddDrawCards(CardEnum::WildCardMine, 1);
-				cardSys.AddDrawCards(CardEnum::WildCardService, 1);
+				cardSys.AddDrawCards(CardEnum::WildCard, 5);
+				//cardSys.AddDrawCards(CardEnum::WildCardFood, 2);
+				//cardSys.AddDrawCards(CardEnum::WildCardIndustry, 2);
+				//cardSys.AddDrawCards(CardEnum::WildCardMine, 1);
+				//cardSys.AddDrawCards(CardEnum::WildCardService, 1);
+
+				TArray<FText> args;
+				ADDTEXT_LOCTEXT("Unlocked Wild Card", "Unlocked Wild Card!<space>Wild Card can be used to build any building that you have unlocked.");
+				//ADDTEXT_TAG_("<bullet>", LOCTEXT("Wild Card", "Wild Card"));
+				//ADDTEXT_TAG_("<bullet>", LOCTEXT("Agriculture Wild Card", "Agriculture Wild Card"));
+				//ADDTEXT_TAG_("<bullet>", LOCTEXT("Industry Wild Card", "Industry Wild Card"));
+				//ADDTEXT_TAG_("<bullet>", LOCTEXT("Mine Wild Card", "Mine Wild Card"));
+				//ADDTEXT_TAG_("<bullet>", LOCTEXT("Service Wild Card", "Service Wild Card"));
+				//ADDTEXT_TAG_("<bullet>", LOCTEXT("Card Removal Card", "Card Removal Card"));
+
+				_simulation->AddPopup(_playerId, JOINTEXT(args));
+			}
+			else if (GetEra() == 3) {
 				cardSys.AddDrawCards(CardEnum::CardRemoval, 1);
 
 				TArray<FText> args;
-				ADDTEXT_(INVTEXT(" {0}:"), LOCTEXT("Unlocked Cards", "Unlocked Cards"));
-				ADDTEXT_TAG_("<bullet>", LOCTEXT("Wild Card", "Wild Card"));
-				ADDTEXT_TAG_("<bullet>", LOCTEXT("Agriculture Wild Card", "Agriculture Wild Card"));
-				ADDTEXT_TAG_("<bullet>", LOCTEXT("Industry Wild Card", "Industry Wild Card"));
-				ADDTEXT_TAG_("<bullet>", LOCTEXT("Mine Wild Card", "Mine Wild Card"));
-				ADDTEXT_TAG_("<bullet>", LOCTEXT("Service Wild Card", "Service Wild Card"));
-				ADDTEXT_TAG_("<bullet>", LOCTEXT("Card Removal Card", "Card Removal Card"));
-
+				ADDTEXT_LOCTEXT("Unlocked Card Removal", "Unlocked Card Removal!<space>Card Removal Cards can be used to remove any unused Cards from the deck that you draw Cards from.");
 				_simulation->AddPopup(_playerId, JOINTEXT(args));
 			}
 
@@ -168,43 +186,54 @@ void UnlockSystem::Research(int64 science100PerRound, int32 updatesPerSec)
 		else if (tech->techEnum == TechEnum::EnlightenmentAge) { unlockEra(PopupReceiverEnum::EraPopup_EnlightenmentAge); }
 		else if (tech->techEnum == TechEnum::IndustrialAge) { unlockEra(PopupReceiverEnum::EraPopup_IndustrialAge); }
 		else
-		{
-			PopupInfo popupInfo(_playerId, 
-				LOCTEXT("Research Completed.", "Research Completed."), 
-				{
-					LOCTEXT("Show tech tree", "Show tech tree"),
-					LOCTEXT("Close", "Close")
-				}, PopupReceiverEnum::DoneResearchEvent_ShowTree, true
-			);
+		{	
+			PopupInfo popupInfo;
+			if (prosperityEnabled)
+			{
+				popupInfo = PopupInfo(_playerId,
+					LOCTEXT("Research Completed. UpgradesTreeEnabled", "Research Completed."),
+					{
+						LOCTEXT("Show Tech Tree", "Show Tech Tree"),
+						LOCTEXT("Show Upgrades Tree", "Show Upgrades Tree"),
+						LOCTEXT("Close", "Close")
+					}, PopupReceiverEnum::DoneResearchEvent_ShowAllTrees, true
+				);
+			}
+			else {
+				popupInfo = PopupInfo(_playerId,
+					LOCTEXT("Research Completed.", "Research Completed."),
+					{
+						LOCTEXT("Show Tech Tree", "Show Tech Tree"),
+						LOCTEXT("Close", "Close")
+					}, PopupReceiverEnum::DoneResearchEvent_ShowTree, true
+				);
+			}
+
 			popupInfo.warningForExclusiveUI = ExclusiveUIEnum::TechTreeUI;
 			popupInfo.forcedSkipNetworking = true;
 			_simulation->AddPopupToFront(popupInfo);
 
 			_simulation->soundInterface()->Spawn2DSound("UI", "ResearchComplete", _playerId);
 
-			/*
-			 * Science victory
-			 */
-			if (currentTechColumn() >= 8)
-			{
-				//std::vector<std::shared_ptr<ResearchInfo>> finalTechs = _eraToTechs[8];
-				//int32 finalEraTechsDone = 0;
-				//for (auto& finalTech : finalTechs) {
-				//	if (IsResearched(finalTech->techEnum)) {
-				//		finalEraTechsDone++;
-				//	}
-				//}
+		}
 
-				//if (finalEraTechsDone == 3) {
-				//	_simulation->AddPopupAll(PopupInfo(_playerId,
-				//		_simulation->playerName(_playerId) + " is only 2 technolgies away from the science victory."
-				//	), _playerId);
-				//	_simulation->AddPopup(_playerId, "You are only 2 technolgies away from the science victory.");
-				//}
-				//else if (finalEraTechsDone == 5) {
-				//	_simulation->ExecuteScienceVictory(_playerId);
-				//}
-			}
+		/*
+		 * Upgrades Tree unlocks at 5 techs researched
+		 */
+		if (!prosperityEnabled && techsFinished >= 5) {
+			prosperityEnabled = true;
+
+			TArray<FText> args;
+			ADDTEXT_LOCTEXT("UnlockedUpgradeTreeUIPop", "Unlocked: Upgrades Tree<space>You can choose to spend Science <img id=\"Science\"/> on the Technology Tree or the Upgrades Tree.<space>Upgrades Tree can be used to acquire Bonuses or Rare Cards");
+
+			PopupInfo popupInfo(_playerId, JOINTEXT(args), {
+				LOCTEXT("Show Upgrades Tree", "Show Upgrades Tree"),
+				LOCTEXT("Close", "Close") },
+				PopupReceiverEnum::UnlockedHouseTree_ShowProsperityUI
+			);
+			popupInfo.warningForExclusiveUI = ExclusiveUIEnum::ProsperityUI;
+			popupInfo.forcedSkipNetworking = true;
+			_simulation->AddPopupToFront(popupInfo);
 		}
 
 		// Reply to show tech tree if needed..
@@ -296,23 +325,23 @@ void BonusToggle_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulat
 
 void UnlockSystem::UpdateProsperityHouseCount()
 {
-	// Prosperity unlock at 7 houses
-	if (!prosperityEnabled &&
-		_simulation->townBuildingFinishedCount(_playerId, CardEnum::House) >= 7)
-	{
-		prosperityEnabled = true;
+	//// Prosperity unlock at 7 houses
+	//if (!prosperityEnabled &&
+	//	_simulation->townBuildingFinishedCount(_playerId, CardEnum::House) >= 7)
+	//{
+	//	prosperityEnabled = true;
 
-		TArray<FText> args;
-		ADDTEXT_LOCTEXT("UnlockedUpgradeTreeUIPop", "Unlocked: Upgrades Tree<space>You can choose to spend Science <img id=\"Science\"/> on the Technology Tree or the Upgrades Tree.<space>Upgrades Tree can be used to acquire Bonuses or Rare Cards");
+	//	TArray<FText> args;
+	//	ADDTEXT_LOCTEXT("UnlockedUpgradeTreeUIPop", "Unlocked: Upgrades Tree<space>You can choose to spend Science <img id=\"Science\"/> on the Technology Tree or the Upgrades Tree.<space>Upgrades Tree can be used to acquire Bonuses or Rare Cards");
 
-		PopupInfo popupInfo(_playerId, JOINTEXT(args), {
-			LOCTEXT("Show Upgrades Tree", "Show Upgrades Tree"),
-			LOCTEXT("Close", "Close") },
-			PopupReceiverEnum::UnlockedHouseTree_ShowProsperityUI);
-		popupInfo.warningForExclusiveUI = ExclusiveUIEnum::ProsperityUI;
-		popupInfo.forcedSkipNetworking = true;
-		_simulation->AddPopupToFront(popupInfo);
-	}
+	//	PopupInfo popupInfo(_playerId, JOINTEXT(args), {
+	//		LOCTEXT("Show Upgrades Tree", "Show Upgrades Tree"),
+	//		LOCTEXT("Close", "Close") },
+	//		PopupReceiverEnum::UnlockedHouseTree_ShowProsperityUI);
+	//	popupInfo.warningForExclusiveUI = ExclusiveUIEnum::ProsperityUI;
+	//	popupInfo.forcedSkipNetworking = true;
+	//	_simulation->AddPopupToFront(popupInfo);
+	//}
 
 	if (!prosperityEnabled) {
 		return;

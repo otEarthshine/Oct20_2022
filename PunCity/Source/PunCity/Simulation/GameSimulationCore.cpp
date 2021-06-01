@@ -3463,6 +3463,15 @@ void GameSimulationCore::PopupInstantReply(int32 playerId, PopupReceiverEnum rep
 			unlockSystem(playerId)->shouldOpenTechUI = true;
 		}
 	}
+	else if (replyReceiver == PopupReceiverEnum::DoneResearchEvent_ShowAllTrees)
+	{
+		if (choiceIndex == 0) {
+			unlockSystem(playerId)->shouldOpenTechUI = true;
+		}
+		else if (choiceIndex == 1) {
+			unlockSystem(playerId)->shouldOpenProsperityUI = true;
+		}
+	}
 	else if (replyReceiver == PopupReceiverEnum::UnlockedHouseTree_ShowProsperityUI)
 	{
 		if (choiceIndex == 0) {
@@ -5369,6 +5378,30 @@ void GameSimulationCore::Cheat(FCheat command)
 			break;
 		}
 
+		case CheatEnum::ResourceStatus:
+		{
+			int32 buildingId = command.var1;
+			Building* bld = buildingPtr(buildingId);
+			if (bld) {
+				int32 resourceInt = command.var2;
+				ResourceHolderInfo info = bld->holderInfo(static_cast<ResourceEnum>(resourceInt));
+				if (info.isValid()) {
+					const ResourceHolder& holder = resourceSystem(command.playerId).holder(info);
+					PUN_LOG("ResourceStatus %s current:%d target:%d pop:%d push:%d", *ResourceNameF(info.resourceEnum), holder.current(), holder.target(), holder.reservedPop(), holder.reservedPush());
+				}
+				else {
+					PUN_LOG("ResourceStatus Invalid %s", *ResourceNameF(info.resourceEnum));
+				}
+			}
+			break;
+		}
+		case CheatEnum::AddAllResources:
+		{
+			for (int32 i = 0; i < ResourceEnumCount; i++) {
+				AddResourceGlobal(command.playerId, static_cast<ResourceEnum>(i), 120);
+			}
+			break;
+		}
 		
 		case CheatEnum::TrailerCityGreen1:
 		{
@@ -5901,12 +5934,12 @@ void GameSimulationCore::TestCityNetworkStage()
 			Building& bld = building(bldId);
 
 			auto fillResource = [&](ResourceEnum resourceEnum) {
-				if (resourceEnum != ResourceEnum::None && resourceCountTown(townId, resourceEnum) < bld.inputPerBatch() * 2)
+				if (resourceEnum != ResourceEnum::None && resourceCountTown(townId, resourceEnum) < bld.inputPerBatch(resourceEnum) * 2)
 				{
 					auto command = make_shared<FCheat>();
 					command->cheatEnum = CheatEnum::AddResource;
 					command->var1 = static_cast<int32>(resourceEnum);
-					command->var2 = bld.inputPerBatch() * 2;
+					command->var2 = bld.inputPerBatch(resourceEnum) * 2;
 					_gameManager->SendNetworkCommand(command);
 
 					PUN_LOG("TestCityNetworkStage AddResource:%s id:%d", *GetBuildingInfo(buildingEnum).nameF(), bldId);

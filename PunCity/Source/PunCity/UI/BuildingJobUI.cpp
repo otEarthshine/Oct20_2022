@@ -278,7 +278,7 @@ void UBuildingJobUI::SetResourceCompletion(std::vector<ResourceEnum> inputs, std
 		material->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(inputs[i]));
 
 		int32 hasCount = building.resourceCount(inputs[i]);
-		int32 needCount = building.inputPerBatch();
+		int32 needCount = building.inputPerBatch(inputs[i]);
 
 		material->SetScalarParameterValue("Fraction", static_cast<float>(hasCount) / needCount);
 		material->SetScalarParameterValue("IsInput", 1.0f);

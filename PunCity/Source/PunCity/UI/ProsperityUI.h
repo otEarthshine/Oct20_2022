@@ -36,7 +36,9 @@ public:
 	{
 		if (show) {
 			networkInterface()->ResetGameUI();
+			
 			simulation().TryRemovePopups(playerId(), PopupReceiverEnum::UnlockedHouseTree_ShowProsperityUI);
+			simulation().TryRemovePopups(playerId(), PopupReceiverEnum::DoneResearchEvent_ShowAllTrees);
 			
 			dataSource()->Spawn2DSound("UI", "UIWindowOpen");
 		}

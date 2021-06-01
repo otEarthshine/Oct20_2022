@@ -324,9 +324,9 @@ public:
 				resourceSystem().SetResourceTarget(holderInfo(resourceEnumIn), targetIn);
 			}
 		};
-		if (input1() != ResourceEnum::None) setTarget(input1(), baseInputPerBatch() * 2);
-		if (input2() != ResourceEnum::None) setTarget(input2(), baseInputPerBatch() * 2);
-		if (product() != ResourceEnum::None) setTarget(product(), baseInputPerBatch() * 2);
+		if (input1() != ResourceEnum::None) setTarget(input1(), baseInputPerBatch(input1()) * 2);
+		if (input2() != ResourceEnum::None) setTarget(input2(), baseInputPerBatch(input2()) * 2);
+		if (product() != ResourceEnum::None) setTarget(product(), 0);
 
 		// Display
 		_simulation->AddFireOnceParticleInfo(ParticleEnum::OnUpgrade, _area);
@@ -692,8 +692,8 @@ public:
 		return _workDone100 / workNeeded100;
 	}
 	int32 constructionPercent() {
-		int32 workNeeded100 = std::max(1, buildTime_ManSec100());
-		return _workDone100 * 100 / workNeeded100;
+		int64 workNeeded100 = std::max(1, buildTime_ManSec100());
+		return static_cast<int64>(_workDone100) * 100LL / workNeeded100;
 	}
 
 	void SetConstructionPercent(int32 percent) { // Note: Be careful of round off issues
@@ -713,10 +713,10 @@ public:
 		BldInfo info = buildingInfo();
 		int32 batchCost = 0;
 		if (hasInput1()) {
-			batchCost += baseInputPerBatch() * GetResourceInfo(input1()).basePrice;
+			batchCost += baseInputCost(input1());
 		}
 		if (hasInput2()) {
-			batchCost += baseInputPerBatch() * GetResourceInfo(input2()).basePrice;
+			batchCost += baseInputCost(input2());
 		}
 		return batchCost;
 	}
@@ -795,7 +795,7 @@ public:
 		// Frugality
 		int32 frugalityCount = slotCardCount(CardEnum::FrugalityBook);
 		for (int32 i = 0; i < frugalityCount; i++) {
-			upkeep = upkeep * 50 / 100; // 50% maintenance
+			upkeep = upkeep * 30 / 100; // 30% maintenance (-70%)
 		}
 		
 		// No worker, half upkeep
@@ -952,9 +952,8 @@ public:
 	void AddDepletionStat(ResourcePair resource);
 
 	void AddConsumptionStats() {
-		int32 inputCount = inputPerBatch();
-		if (hasInput1()) AddConsumption1Stat(ResourcePair(input1(), inputCount));
-		if (hasInput2()) AddConsumption2Stat(ResourcePair(input2(), inputCount));
+		if (hasInput1()) AddConsumption1Stat(ResourcePair(input1(), inputPerBatch(input1())));
+		if (hasInput2()) AddConsumption2Stat(ResourcePair(input2(), inputPerBatch(input2())));
 	}
 
 	void MinuteStatisticsUpdate()
@@ -1017,10 +1016,10 @@ public:
 	bool hasInput2() { return input2() != ResourceEnum::None; }
 
 	bool hasInput1Available() {
-		return _simulation->resourceCountTown(_townId, input1()) > 0 || resourceCount(input1()) >= inputPerBatch();
+		return _simulation->resourceCountTown(_townId, input1()) > 0 || resourceCount(input1()) >= inputPerBatch(input1());
 	}
 	bool hasInput2Available() {
-		return _simulation->resourceCountTown(_townId, input2()) > 0 || resourceCount(input2()) >= inputPerBatch();
+		return _simulation->resourceCountTown(_townId, input2()) > 0 || resourceCount(input2()) >= inputPerBatch(input2());
 	}
 
 	bool needInput1()
@@ -1029,7 +1028,7 @@ public:
 			return false;
 		}
 		int32 resourceCountWithPop1 = resourceSystem().resourceCountWithPop(holderInfo(input1()));
-		return resourceCountWithPop1 < inputPerBatch();
+		return resourceCountWithPop1 < inputPerBatch(input1());
 	}
 	bool needInput2()
 	{
@@ -1037,7 +1036,7 @@ public:
 			return false;
 		}
 		int32 resourceCountWithPop2 = resourceSystem().resourceCountWithPop(holderInfo(input2()));
-		return resourceCountWithPop2 < inputPerBatch();
+		return resourceCountWithPop2 < inputPerBatch(input2());
 	}
 	
 
@@ -1051,10 +1050,10 @@ public:
 		
 		int32 outputValue = baseProfitValue;
 		if (input1() != ResourceEnum::None) {
-			outputValue += baseInputPerBatch() * GetResourceInfo(input1()).basePrice;
+			outputValue += baseInputCost(input1());
 		}
 		if (input2() != ResourceEnum::None) {
-			outputValue += baseInputPerBatch() * GetResourceInfo(input2()).basePrice;
+			outputValue += baseInputCost(input2());
 		}
 
 		return outputValue / GetResourceInfo(product()).basePrice;
@@ -1098,12 +1097,19 @@ public:
 	/*
 	 * Input
 	 */
-	virtual int32 baseInputPerBatch()
+	virtual int32 baseInputPerBatch(ResourceEnum resourceEnum)
 	{
 		int32 result = 10;
 		if (input2() != ResourceEnum::None) { // Anything with 2 inputs, gets split equally
 			result = 5;
 		}
+
+		// Special case:
+		if (isEnum(CardEnum::PrintingPress)) {
+			
+		}
+		
+		
 		if (_workMode.customInputPerBatch != -1) {
 			result = _workMode.customInputPerBatch;
 		}
@@ -1119,9 +1125,17 @@ public:
 		return buildingInfo().resourceInfo.ApplyUpgradeAndEraProfitMultipliers(result, buildingInfo().minEra(), GetEraUpgradeCount());
 	}
 
-	int32 inputPerBatch()
+	int32 baseInputCost(ResourceEnum resourceEnum) {
+		return GetResourceInfo(resourceEnum).basePrice * baseInputPerBatch(resourceEnum);
+	}
+
+	int32 inputPerBatch(ResourceEnum resourceEnum)
 	{
-		int32 result = baseInputPerBatch();
+		if (resourceEnum == ResourceEnum::None) {
+			return 0;
+		}
+		
+		int32 result = baseInputPerBatch(resourceEnum);
 
 		int32 sustainabilityCount = slotCardCount(CardEnum::SustainabilityBook);
 		for (int32 i = 0; i < sustainabilityCount; i++) {

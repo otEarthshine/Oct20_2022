@@ -126,8 +126,14 @@ public:
 	 */
 	void GetUnsentTickHashes(int32 startTick, TArray<int32>& tickHashes) {
 #if CHECK_TICKHASH
+		int32 hashCountLeft = MaxPacketSize32;
 		for (int32 i = startTick * TickHashes::TickHashEnumCount(); i < _tickHashes.allTickHashes.Num(); i++) {
 			tickHashes.Add(_tickHashes.allTickHashes[i]);
+			
+			hashCountLeft--;
+			if (hashCountLeft <= 0) {
+				break;
+			}
 		}
 #endif
 	}
@@ -2626,7 +2632,7 @@ public:
 		}
 		return happinessScore;
 	}
-	int32 moneyScore(int32 playerId) { return money(playerId) / 10000; }
+	int32 moneyScore(int32 playerId) { return money(playerId) / 1000; }
 	int32 technologyScore(int32 playerId) { return unlockSystem(playerId)->techsFinished * 10; }
 	int32 wonderScore(int32 playerId)
 	{
@@ -2779,7 +2785,7 @@ public:
 				return;
 			}
 			// Special case: Oil requires research
-			if (!IsResearched(playerId, TechEnum::Petroleum)) {
+			if (mineCardEnum == CardEnum::OilRig && !IsResearched(playerId, TechEnum::Petroleum)) {
 				return;
 			}
 			

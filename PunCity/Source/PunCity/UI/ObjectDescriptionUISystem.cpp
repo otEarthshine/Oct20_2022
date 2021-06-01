@@ -828,7 +828,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				{
 					descriptionBox->AddSpacer();
 					descriptionBox->AddRichText(
-						LOCTEXT("Electricity", "Electricity:"),
+						LOCTEXT("Electricity", "Electricity Usage/Needed:"),
 						FText::Format(INVTEXT("{0}/{1}kW"), TextRed(TEXT_NUM(building.ElectricityAmountUsage()), building.NotEnoughElectricity()), TEXT_NUM(building.ElectricityAmountNeeded()))
 					);
 				}
@@ -1660,17 +1660,38 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					else if (IsPowerPlant(buildingEnum))
 					{
 						auto& powerPlant = building.subclass<PowerPlant>();
-						
-						auto electricityWidget = descriptionBox->AddRichText(
-							LOCTEXT("Electricity", "Electricity:"),
-							FText::Format(INVTEXT("{0}/{1}kW"), TEXT_NUM(powerPlant.ElectricityConsumption()), TEXT_NUM(powerPlant.ElectricityProductionCapacity()))
-						);
+
+						auto addElectricityRow = [&](FText leftText, FText rightText, FText tipText)
+						{
+							auto electricityWidget = descriptionBox->AddRichText(leftText, rightText);
+
+							args.Empty();
+							args.Add(tipText);
+							AddToolTip(electricityWidget, args);
+						};
+
 						descriptionBox->AddSpacer();
 
-						args.Empty();
-						ADDTEXT_LOCTEXT("Electricity_Tip", "Electricity Usage/Capacity<space>Electricity production of 1 kW consumes 1 Coal per Round <Gray>(8 per year)</>");
-						
-						AddToolTip(electricityWidget, args);
+						addElectricityRow(
+							LOCTEXT("Electricity_FocusUI1", "Electricity Stats:"),
+							FText(),
+							LOCTEXT("Electricity_Tip1", "Electricity production of 1 kW consumes 1 Coal per Round\n<Gray>(8 per year)</>")
+						);
+
+						addElectricityRow(
+							LOCTEXT("Electricity_FocusUI2", "Building Production Capacity"),
+							FText::Format(INVTEXT("{0}kW"), TEXT_NUM(powerPlant.ElectricityProductionCapacity())),
+							LOCTEXT("Electricity_Tip2", "The maximum Electricity Production (kW) from this Building.")
+						);
+
+						auto& townManager = simulation.townManager(powerPlant.playerId());
+						addElectricityRow(
+							LOCTEXT("Electricity_FocusUI3", "City Usage/Capacity"),
+							FText::Format(INVTEXT("{0}/{1}kW"), TEXT_NUM(townManager.electricityConsumption()), TEXT_NUM(townManager.electricityProductionCapacity())),
+							LOCTEXT("Electricity_Tip3", "City-wide Electricity:<space>[Consumption]/[Production Capacity].")
+						);
+
+						descriptionBox->AddSpacer();
 					}
 					else if (IsWorldWonder(buildingEnum))
 					{
@@ -2058,8 +2079,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 						descriptionBox->AddSpacer();
 						descriptionBox->AddRichText(TEXT_TAG("<Subheader>", LOCTEXT("Production batch:", "Production batch:")));
-						descriptionBox->AddProductionChain({ building.input1(), building.inputPerBatch() },
-							{ building.input2(), building.inputPerBatch() },
+						descriptionBox->AddProductionChain(
+							{ building.input1(), building.inputPerBatch(building.input1()) },
+							{ building.input2(), building.inputPerBatch(building.input2()) },
 							{ building.product(), building.outputPerBatch() }
 						);
 
@@ -2090,9 +2112,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								bool needInput2 = building.needInput2();
 								
 								ADDTEXT_LOCTEXT("Requires ", "Requires ");
-								if (needInput1) ADDTEXT_(INVTEXT("{0} {1}"), TEXT_NUM(building.inputPerBatch()), ResourceNameT(building.input1()));
+								if (needInput1) ADDTEXT_(INVTEXT("{0} {1}"), TEXT_NUM(building.inputPerBatch(building.input1())), ResourceNameT(building.input1()));
 								if (needInput1 && needInput2) ADDTEXT_INV_(", ");
-								if (needInput2) ADDTEXT_(INVTEXT("{0} {1}"), TEXT_NUM(building.inputPerBatch()), ResourceNameT(building.input2()));
+								if (needInput2) ADDTEXT_(INVTEXT("{0} {1}"), TEXT_NUM(building.inputPerBatch(building.input2())), ResourceNameT(building.input2()));
 
 								descriptionBox->AddRichText(TEXT_TAG("<Orange>", JOINTEXT(args)));
 							}
@@ -2105,7 +2127,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							descriptionBox->AddRichText("-- workManSecPerBatch100: " + to_string(building.workManSecPerBatch100()));
 							descriptionBox->AddRichText("-- workRevenuePerSec100_perMan_: " + to_string(building.workRevenuePerSec100_perMan_()));
 							if (building.hasInput1()) {
-								descriptionBox->AddRichText("-- baseInputValue: " + to_string(GetResourceInfo(building.input1()).basePrice * building.baseInputPerBatch()));
+								descriptionBox->AddRichText("-- baseInputValue: " + to_string(building.baseInputCost(building.input1())));
 							}
 
 							switch (building.buildingEnum())
@@ -2162,8 +2184,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						{
 							descriptionBox->AddSpacer();
 							descriptionBox->AddRichText(TEXT_TAG("<Subheader>", LOCTEXT("Production batch:", "Production batch:")));
-							descriptionBox->AddProductionChain({ building.input1(), building.inputPerBatch() },
-								{ building.input2(), building.inputPerBatch() },
+							descriptionBox->AddProductionChain(
+								{ building.input1(), building.inputPerBatch(building.input1()) },
+								{ building.input2(), building.inputPerBatch(building.input2()) },
 								{}, productTexture, productStr
 							);
 						}

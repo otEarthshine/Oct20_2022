@@ -69,6 +69,9 @@ void UBuildingPlacementButton::PunInit(CardEnum buildingEnumIn, int32 cardHandIn
 	else if (buildingEnum == CardEnum::DirtRoad) {
 		ADDTEXT_INV_(" <Orange>[Z]</>");
 	}
+	else if (buildingEnum == CardEnum::StoneRoad) {
+		ADDTEXT_INV_(" <Orange>[Shift-Z]</>");
+	}
 	SetText(BuildingNameRichText, args);
 
 	CardGlow->SetVisibility(ESlateVisibility::Hidden);

@@ -216,7 +216,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::GoldSmelter, "GoldSmelter_Era", "SmelterGold", 2);
 	LoadBuilding(CardEnum::Mint, "Mint_Era", "Mint", 3);
 	LoadBuilding(CardEnum::Jeweler, "Jeweler_Era", "Jeweler", 4);
-	LoadBuilding(CardEnum::CandleMaker, "CandleMaker_Era", "CandleMaker", 3);
+	LoadBuilding(CardEnum::CandleMaker, "CandleMaker_Era", "CandleMaker", 2);
 
 	LoadBuilding(CardEnum::CottonMill, "CottonMill_Era", "TextileMill", 4);
 	LoadBuilding(CardEnum::PrintingPress, "PrintingPress_Industrial_PrintingPress_Era", "PrintingPress", 4);
@@ -666,14 +666,38 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 		FString name = GetBuildingInfo(buildingEnum).nameF().Replace(TEXT(" "), TEXT(""));
 		name = name.Replace(TEXT("'"), TEXT(""));
 
-		UObject* cardIconTextureObj = StaticLoadObject(UTexture2D::StaticClass(), NULL, *(FString("/Game/UI/BuildingSnapshots/") + name));
-		UTexture2D* cardIconTexture = Cast<UTexture2D>(cardIconTextureObj);
+		FString path = FString("UI/BuildingSnapshots/") + name;
 
-		//LoadF_Nullable<UTexture2D>(FString("/Game/UI/BuildingSnapshots/") + name);
-		
-		if (cardIconTexture) {
-			_cardIcons.Add(static_cast<int32>(buildingEnum), cardIconTexture);
-			addCardIconCount++;
+		IPlatformFile& platformFile = FPlatformFileManager::Get().GetPlatformFile();
+		if (platformFile.FileExists(*(FPaths::ProjectContentDir() + path + FString(".uasset"))))
+		{
+			UObject* cardIconTextureObj = StaticLoadObject(UTexture2D::StaticClass(), NULL, *(FString("/Game/") + path));
+			UTexture2D* cardIconTexture = Cast<UTexture2D>(cardIconTextureObj);
+
+			if (cardIconTexture) {
+				_cardIcons.Add(static_cast<int32>(buildingEnum), cardIconTexture);
+				addCardIconCount++;
+			}
+			
+			//FSoftObjectPath ItemToReference(FString("/Game/UI/BuildingSnapshots/") + name);
+			//UObject* ItemObject = ItemToReference.ResolveObject();  // <---- FAILS
+			//if (!ItemObject)  // if the asset isn't in memory already, try to load it
+			//{
+			//	ItemObject = ItemToReference.TryLoad();  // <---- FAILS
+			//}
+
+			//if (ItemObject)
+			//{
+			//	//UObject* cardIconTextureObj = StaticLoadObject(UTexture2D::StaticClass(), NULL, *(FString("/Game/UI/BuildingSnapshots/") + name));
+			//	UTexture2D* cardIconTexture = Cast<UTexture2D>(ItemObject);
+
+			//	//LoadF_Nullable<UTexture2D>(FString("/Game/UI/BuildingSnapshots/") + name);
+
+			//	if (cardIconTexture) {
+			//		_cardIcons.Add(static_cast<int32>(buildingEnum), cardIconTexture);
+			//		addCardIconCount++;
+			//	}
+			//}
 		}
 	}
 
@@ -1064,7 +1088,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 		"Trees/Coffee/CoffeeTrunk",
 	});
 	LoadTileObject(TileObjEnum::Tulip, {
-		"Trees/Tulip/TulipPlanta",
+		"Trees/Tulip/TulipPlant",
 	});
 	LoadTileObject(TileObjEnum::Blueberry, {
 		"Trees/Blueberry/BlueberryPlant",
@@ -1168,6 +1192,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 void UAssetLoaderComponent::InitNiagara()
 {
+	NiagaraByEnum.Add(NS_OnDemolish);
 	NiagaraByEnum.Add(NS_OnPlacement);
 	NiagaraByEnum.Add(NS_OnTownhall);
 	NiagaraByEnum.Add(NS_OnUpgrade);

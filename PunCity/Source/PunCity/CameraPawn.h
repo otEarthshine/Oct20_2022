@@ -119,8 +119,14 @@ public:
 	}
 
 	void KeyPressed_DirtRoad() {
-		ExecuteUsingMainGameUI([&](auto ui) { ui->ToggleDirtRoad(); });
+		ExecuteUsingMainGameUI([&](auto ui) { ui->ToggleRoad(false); });
 	}
+	void KeyPressed_StoneRoad() {
+		if (_gameInterface->simulation().IsResearched(_gameInterface->playerId(), TechEnum::StoneRoad)) {
+			ExecuteUsingMainGameUI([&](auto ui) { ui->ToggleRoad(true); });
+		}
+	}
+	
 	void KeyPressed_Demolish() {
 		ExecuteUsingMainGameUI([&](auto ui) { ui->ToggleDemolishButton(); });
 	}

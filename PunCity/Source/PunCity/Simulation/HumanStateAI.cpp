@@ -2631,8 +2631,6 @@ bool HumanStateAI::TryProduce()
 		// If there is nothing at the workplace, we need to go out to grab the resource to fill it
 		ResourceSystem& resourceSys = resourceSystem();
 
-		int32 inputPerBatch = workplace.inputPerBatch();
-
 		//bool needInput1 = false;
 		//bool needInput2 = false;
 
@@ -2699,12 +2697,16 @@ bool HumanStateAI::TryProduce()
 			AddDebugSpeech("(Succeed)TryProduce: TryFillWorkplace input2");
 			return true;
 		}
+
+		ResourceEnum input1 = workplace.input1();
+		ResourceEnum input2 = workplace.input2();
+		
 		// Need input, but TryFillWorkplace failed
 		if (needInput1 || needInput2) 
 		{
 			// Check resourceCountWithPush, we would display needInput icon in the case where we need input and no one is trying to deliver them
-			bool needInput1_WithPush = workplace.hasInput1() && resourceSys.resourceCountWithPush(workplace.holderInfo(workplace.input1())) < inputPerBatch;
-			bool needInput2_WithPush = workplace.hasInput2() && resourceSys.resourceCountWithPush(workplace.holderInfo(workplace.input2())) < inputPerBatch;
+			bool needInput1_WithPush = workplace.hasInput1() && resourceSys.resourceCountWithPush(workplace.holderInfo(input1)) < workplace.inputPerBatch(input1);
+			bool needInput2_WithPush = workplace.hasInput2() && resourceSys.resourceCountWithPush(workplace.holderInfo(input2)) < workplace.inputPerBatch(input2);
 			if (needInput1_WithPush) {
 				workplace.workplaceInputNeeded = workplace.input1();
 			}
@@ -2719,10 +2721,10 @@ bool HumanStateAI::TryProduce()
 		// Reserve fill the input
 		{
 			if (workplace.hasInput1()) {
-				ReserveResource(ReservationType::Pop, workplace.holderInfo(workplace.input1()), inputPerBatch);
+				ReserveResource(ReservationType::Pop, workplace.holderInfo(input1), workplace.inputPerBatch(input1));
 			}
 			if (workplace.hasInput2()) {
-				ReserveResource(ReservationType::Pop, workplace.holderInfo(workplace.input2()), inputPerBatch);
+				ReserveResource(ReservationType::Pop, workplace.holderInfo(input2), workplace.inputPerBatch(input2));
 			}
 			ReserveWork(100); // Reserve work 100 to disallow others from using this building
 		}
@@ -3337,7 +3339,7 @@ void HumanStateAI::UpdateHappiness()
 		else {
 			targetHappiness = 70;
 			if (_simulation->TownhallCardCountTown(_playerId, CardEnum::SocialWelfare)) {
-				targetHappiness += 20;
+				targetHappiness += 30;
 			}
 		}
 

@@ -1313,7 +1313,7 @@ void TownManager::RecalculateTax(bool showFloatup)
 
 
 	if ( _simulation->TownhallCardCountTown(_townId, CardEnum::SocialWelfare) > 0) {
-		incomes100[static_cast<int>(IncomeEnum::SocialWelfare)] = -100 * 10 * population();
+		incomes100[static_cast<int>(IncomeEnum::SocialWelfare)] = -100 * 5 * population();
 	}
 
 	/*

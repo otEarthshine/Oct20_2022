@@ -540,18 +540,19 @@ void CardMaker::OnInit()
 void CardMaker::ResetWorkModes()
 {
 	SetupWorkMode({
-		WorkMode::Create(wildCardText,				LOCTEXT("Wild Card WorkDesc", "Create Wild Card\n(10 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 10),
+		// !!!Note: Don't forget to change hardcoded description when changing params
+		WorkMode::Create(wildCardText,				LOCTEXT("Wild Card WorkDesc", "Create Wild Card\n(20 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 20),
 		
-		WorkMode::Create(productivityBookText,		LOCTEXT("Productivity Book WorkDesc", "Create Productivity Book Card\n(50 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 50),
-		WorkMode::Create(sustainabilityBookText,	LOCTEXT("Sustainability Book WorkDesc", "Create Sustainability Book Card\n(50 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 50),
-		WorkMode::Create(frugalityBookText,			LOCTEXT("Frugality Book WorkDesc", "Create Frugality Book Card\n(50 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 50),
+		WorkMode::Create(productivityBookText,		LOCTEXT("Productivity Book WorkDesc", "Create Productivity Book Card\n(100 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 100),
+		WorkMode::Create(sustainabilityBookText,	LOCTEXT("Sustainability Book WorkDesc", "Create Sustainability Book Card\n(100 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 100),
+		WorkMode::Create(frugalityBookText,			LOCTEXT("Frugality Book WorkDesc", "Create Frugality Book Card\n(100 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 100),
 
-		WorkMode::Create(cardRemovalCardText,		LOCTEXT("Card Removal Card WorkDesc", "Create Card Removal Card\n(10 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 10),
+		WorkMode::Create(cardRemovalCardText,		LOCTEXT("Card Removal Card WorkDesc", "Create Card Removal Card\n(20 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 20),
 	});
 
 	if (_simulation->IsResearched(_playerId, TechEnum::SocialScience)) {
-		AddWorkMode(WorkMode::Create(motivationBookText, LOCTEXT("Motivation WorkDesc", "Create Motivation Card\n(100 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 100));
-		AddWorkMode(WorkMode::Create(passionBookText, LOCTEXT("Passion WorkDesc", "Create Passion Card\n(100 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 100));
+		AddWorkMode(WorkMode::Create(motivationBookText, LOCTEXT("Motivation WorkDesc", "Create Motivation Card\n(200 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 200));
+		AddWorkMode(WorkMode::Create(passionBookText, LOCTEXT("Passion WorkDesc", "Create Passion Card\n(200 Paper)"), ResourceEnum::Paper, ResourceEnum::None, ResourceEnum::None, 200));
 	}
 }
 
@@ -725,7 +726,6 @@ void Chocolatier::FinishConstruction()
 	AddUpgrades({
 		MakeUpgrade(LOCTEXT("Cocoa Processing", "Cocoa Processing"), LOCTEXT("Cocoa Processing Desc", "Consumes 50% less input."), ResourceEnum::Iron, 50),
 		MakeProductionUpgrade(LOCTEXT("Improved Production", "Improved Production"), ResourceEnum::Iron, 50, 50),
-		MakeUpgrade(LOCTEXT("Reduce Upkeep", "Reduce Upkeep"), LOCTEXT("Reduce Upkeep Desc", "Reduce upkeep by 50%"), ResourceEnum::Brick, 20),
 		MakeComboUpgrade(LOCTEXT("Chocolate Town", "Chocolate Town"), ResourceEnum::Iron),
 	});
 }
@@ -1402,8 +1402,8 @@ void Smelter::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeUpgrade(teamworkText, LOCTEXT("Smelter Teamwork Desc", "Smelter with full worker slots get 50% production bonus"), ResourceEnum::Stone, 100),
-		MakeUpgrade(LOCTEXT("Efficient Furnace", "Efficient Furnace"), LOCTEXT("Decrease input by 30%", "Decrease input by 30%"), ResourceEnum::Brick, 100),
+		MakeUpgrade(teamworkText, LOCTEXT("Smelter Teamwork Desc", "Smelter with full worker slots get 50% production bonus"), ResourceEnum::Stone, 50),
+		MakeUpgrade(LOCTEXT("Efficient Furnace", "Efficient Furnace"), LOCTEXT("Decrease input by 30%", "Decrease input by 30%"), ResourceEnum::Brick, 50),
 		MakeComboUpgrade(FText::Format(LOCTEXT("UpgradeGuild", "{0} Guild"), buildingInfo().GetName()), ResourceEnum::Paper),
 	});
 }
@@ -1414,7 +1414,7 @@ std::vector<BonusPair> Smelter::GetBonuses()
 	if (_simulation->buildingCount(_townId, CardEnum::EnvironmentalistGuild)) {
 		bonuses.push_back({ LOCTEXT("Environmentalist", "Environmentalist"), -30 });
 	}
-	if (IsUpgraded(0) && isOccupantFull()) {
+	if (IsUpgraded_InitialIndex(0) && isOccupantFull()) {
 		bonuses.push_back({ teamworkText, 50 });
 	}
 
@@ -1782,10 +1782,10 @@ void ClockMakers::FinishConstruction() {
 void PowerPlant::FinishConstruction() {
 	Building::FinishConstruction();
 
-	AddUpgrades({
-		// "Regenerative Feed Heating"
-		MakeWorkerSlotUpgrade(30),
-	});
+	//AddUpgrades({
+	//	// "Regenerative Feed Heating"
+	//	MakeWorkerSlotUpgrade(30),
+	//});
 
 	AddResourceHolder(fuelEnum(), ResourceHolderType::Requester, 100);
 }

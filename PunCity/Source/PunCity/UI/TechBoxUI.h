@@ -26,22 +26,21 @@ public:
 
 		auto unlockSys = simulation().unlockSystem(playerId());
 		auto techInfo = unlockSys->GetTechInfo(techEnumIn);
+		bool isMainTree = techInfo->isMainTree;
 
 		auto setBuildingRewardIcon = [&](UImage* rewardBuildingIcon, CardEnum buildingEnum, bool isPermanent)
 		{
 			rewardBuildingIcon->SetVisibility(ESlateVisibility::Visible);
 			auto material = rewardBuildingIcon->GetDynamicMaterial();
 
-			if (IsBuildingCard(buildingEnum)) 
+			auto setCardIcon = [&]()
 			{
-				material->SetScalarParameterValue("ShowCard", 0);
-				
 				if (UTexture2D* cardIcon = assetLoader()->GetCardIconNullable(buildingEnum)) {
 					material->SetTextureParameterValue("ColorTexture", cardIcon);
 					material->SetTextureParameterValue("DepthTexture", nullptr);
 				}
-				else {
-					material->SetTextureParameterValue("ColorTexture", assetLoader()->GetBuildingIcon(buildingEnum));
+				else if (UTexture2D* buildingIcon = assetLoader()->GetBuildingIconNullable(buildingEnum)) {
+					material->SetTextureParameterValue("ColorTexture", buildingIcon);
 
 					UTexture* depthTexture;
 					switch (buildingEnum) {
@@ -57,14 +56,31 @@ public:
 
 					material->SetTextureParameterValue("DepthTexture", depthTexture);
 				}
+				else {
+					material->SetTextureParameterValue("ColorTexture", nullptr);
+					material->SetTextureParameterValue("DepthTexture", nullptr);
+				}
+			};
+			
+			// Is Card-Giving Tech
+			if (!isMainTree && techInfo->_buildingEnums.size() > 0 && techInfo->maxUpgradeCount != -1)
+			{
+				material->SetScalarParameterValue("ShowCard", 1);
+
+				setCardIcon();
+			}
+			else if (IsBuildingCard(buildingEnum))
+			{
+				material->SetScalarParameterValue("ShowCard", 0);
+
+				setCardIcon();
 			}
 			else {
-				// TODO: GetBuildingIcon used for all cards..
 				material->SetScalarParameterValue("ShowCard", 0);
 				material->SetTextureParameterValue("ColorTexture", nullptr);
 				material->SetTextureParameterValue("DepthTexture", nullptr);
 			}
-
+				
 			// Add Tooltip
 			UPunBoxWidget::AddBuildingTooltip(rewardBuildingIcon, buildingEnum, this, isPermanent);
 		};

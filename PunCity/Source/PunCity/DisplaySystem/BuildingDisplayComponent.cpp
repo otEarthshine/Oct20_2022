@@ -866,11 +866,24 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 		check(niagaraSys);
 		
 		UNiagaraComponent* niagaraComp = UNiagaraFunctionLibrary::SpawnSystemAttached(niagaraSys, _moduleMeshes[meshId], FName(*(FString("niagara") + FString::FromInt(niagaraInt++))),
-			localDisplayLocation, rotator, FVector::OneVector, EAttachLocation::Type::KeepRelativeOffset, true, ENCPoolMethod::AutoRelease);
+			localDisplayLocation, rotator, FVector::OneVector, EAttachLocation::Type::KeepRelativeOffset, true, ENCPoolMethod::AutoRelease, false);
 		check(niagaraComp);
 
-		niagaraComp->SetFloatParameter("BoxSize_X", info.area.sizeX());
-		niagaraComp->SetFloatParameter("BoxSize_Y", info.area.sizeY());
+
+		WorldTile2 size = info.area.size();
+		niagaraComp->SetNiagaraVariableInt("BoxSize_X", size.x);
+		niagaraComp->SetNiagaraVariableInt("BoxSize_Y", size.y);
+
+		//niagaraComp->SetNiagaraVariableLinearColor("User.Color", FLinearColor(PunSettings::Get("TestPosX"), 1, 1));
+		//niagaraComp->SetNiagaraVariableLinearColor("Color", FLinearColor(PunSettings::Get("TestPosX"), 1, 1));
+		
+		niagaraComp->Activate();
+
+		
+//		const FNiagaraVariable VariableDesc(FNiagaraTypeDefinition::GetFloatDef(), InVariableName);
+//		OverrideParameters.SetParameterValue(InValue, VariableDesc, true);
+//#if WITH_EDITOR
+//		SetParameterOverride(VariableDesc, FNiagaraVariant(&InValue, sizeof(float)));
 	}
 	
 	

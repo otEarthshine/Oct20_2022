@@ -933,14 +933,11 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						{
 							descriptionBox->AddLineSpacer();
 							descriptionBox->AddSpacer();
-							//ss << "<Header>Level " << houseLvl << "</>";
-							//descriptionBox->AddRichText(ss);
 
 							// TODO: add appeal later?
 							//int32 appealNeeded = house->GetAppealUpgradeRequirement(houseLvl + 1);
 
 							if (houseLvl == house->GetMaxHouseLvl()) {
-								//ss << "Maximum lvl";
 								descriptionBox->AddRichText(LOCTEXT("Maximum lvl", "Maximum lvl"));
 							}
 							// TODO: add appeal later?
@@ -949,7 +946,6 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							//	descriptionBox->AddRichText(args);
 							//}
 							else {
-								//ss << "<Orange>" + house->HouseNeedDescription() + "</>\n<Orange>(to increase level)</>";
 								ADDTEXT_(INVTEXT("<Orange>{0}</>\n"), house->HouseNeedDescription());
 								ADDTEXT_LOCTEXT("HouseToIncreaseLevel", "<Orange>(to increase level)</>");
 								auto widget = descriptionBox->AddRichText(args);
@@ -964,9 +960,11 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							_objectDescriptionUI->DescriptionPunBoxScrollOuter->SetVisibility(ESlateVisibility::Visible);
 							
 							auto addCheckBoxIconPair = [&](ResourceEnum resourceEnum) {
-								UIconTextPairWidget* widget = descriptionBoxScrollable->AddIconPair(FText(), resourceEnum, TEXT_NUM(building.resourceCount(resourceEnum)));
+								int32 resourceCount = building.resourceCount(resourceEnum);
+								UIconTextPairWidget* widget = descriptionBoxScrollable->AddIconPair(FText(), resourceEnum, TEXT_NUM(resourceCount));
 								widget->ObjectId = building.buildingId();
 								widget->UpdateAllowCheckBox(resourceEnum);
+								widget->SetTextColor(resourceCount > 0 ? FLinearColor(1, 1, 1) : FLinearColor(.15, .15, .15));
 							};
 
 							//ADDTEXT_(INVTEXT("<Bold>{0}</>"), LOCTEXT("Fuel_C", "Fuel:"))
@@ -982,22 +980,33 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								addCheckBoxIconPair(luxury1[i]);
 							}
 
-							if (houseLvl >= 3)
+
+							auto hasAnyResource = [&](const std::vector<ResourceEnum>& resourceEnums) {
+								for (ResourceEnum resourceEnum : resourceEnums) {
+									if (house->resourceCountSafe(resourceEnum) > 0) {
+										return true;
+									}
+								}
+								return false;
+							};
+
+							const std::vector<ResourceEnum>& luxury2 = GetLuxuryResourcesByTier(2);
+							const std::vector<ResourceEnum>& luxury3 = GetLuxuryResourcesByTier(3);
+							
+							if (houseLvl >= 3 || hasAnyResource(luxury2))
 							{
 								ADDTEXT_TAG_("<Bold>", LOCTEXT("LuxuryTier2_C", "Luxury tier 2:"));
 								descriptionBoxScrollable->AddRichText(args);
-								const std::vector<ResourceEnum>& luxury2 = GetLuxuryResourcesByTier(2);
 								for (size_t i = 0; i < luxury2.size(); i++) {
 									addCheckBoxIconPair(luxury2[i]);
 								}
 							}
-							if (houseLvl >= 5)
+							if (houseLvl >= 5 || hasAnyResource(luxury3))
 							{
 								ADDTEXT_TAG_("<Bold>", LOCTEXT("LuxuryTier3_C", "Luxury tier 3:"));
 								descriptionBoxScrollable->AddRichText(args);
-								const std::vector<ResourceEnum>& luxury = GetLuxuryResourcesByTier(3);
-								for (size_t i = 0; i < luxury.size(); i++) {
-									addCheckBoxIconPair(luxury[i]);
+								for (size_t i = 0; i < luxury3.size(); i++) {
+									addCheckBoxIconPair(luxury3[i]);
 								}
 							}
 
@@ -1210,7 +1219,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							ADDTEXT_(INVTEXT("<img id=\"Coin\"/>{0}"), TEXT_NUM(building.seasonalProduction()));
 							descriptionBox->AddRichText(LOCTEXT("Income(per season)", "Income(per season)"), args);
 						}
-						if (building.isEnum(CardEnum::InventorsWorkshop)) {
+						if (building.isEnum(CardEnum::ResearchLab)) {
 							ADDTEXT_(INVTEXT("<img id=\"Science\"/>{0}"), TEXT_NUM(building.seasonalProduction()));
 							descriptionBox->AddRichText(LOCTEXT("Science(per season)", "Science(per season)"), args);
 						}
@@ -1939,7 +1948,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					}
 
 
-					const FText consumptionSeasonText = LOCTEXT("Consumption (per season):", "Consumption(per season):");
+					const FText consumptionSeasonText = LOCTEXT("Consumption (season):", "Consumption(season):");
 					const FText depletionSeasonText = LOCTEXT("Depletion (per season):", "Depletion(per season):");
 
 					// Consumption stat
@@ -1947,21 +1956,27 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					{
 						if (hasInput1 && hasInput2)
 						{
-							descriptionBox->AddRichText(consumptionSeasonText);
-							if (hasInput1) {
-								descriptionBox->AddIconPair(FText(), building.input1(), TEXT_NUM(building.seasonalConsumption1()));
+							descriptionBox->AddRichText(consumptionSeasonText, 
+								TEXT_NUM(building.seasonalConsumption1()), building.input1(), FText(),
+								TEXT_NUM(building.seasonalConsumption2()), building.input2()
+							);
 
-								PUN_DEBUG_EXPR(profitInternal -= (building.seasonalConsumption1() * GetResourceInfo(building.input1()).basePrice));
-							}
-							//if (hasInput1 && hasInput2) ss << ", ";
-							if (hasInput2) {
-								descriptionBox->AddIconPair(FText(), building.input2(), TEXT_NUM(building.seasonalConsumption2()));
+							PUN_DEBUG_EXPR(profitInternal -= (building.seasonalConsumption1() * GetResourceInfo(building.input1()).basePrice));
+							PUN_DEBUG_EXPR(profitInternal -= (building.seasonalConsumption2() * GetResourceInfo(building.input2()).basePrice));
+							
+							//descriptionBox->AddRichText(consumptionSeasonText);
+							//if (hasInput1) {
+							//	descriptionBox->AddIconPair(FText(), building.input1(), TEXT_NUM(building.seasonalConsumption1()));
 
-								PUN_DEBUG_EXPR(profitInternal -= (building.seasonalConsumption2() * GetResourceInfo(building.input2()).basePrice));
-							}
-							//ss << "\n";
+							//	PUN_DEBUG_EXPR(profitInternal -= (building.seasonalConsumption1() * GetResourceInfo(building.input1()).basePrice));
+							//}
+							//if (hasInput2) {
+							//	descriptionBox->AddIconPair(FText(), building.input2(), TEXT_NUM(building.seasonalConsumption2()));
+
+							//	PUN_DEBUG_EXPR(profitInternal -= (building.seasonalConsumption2() * GetResourceInfo(building.input2()).basePrice));
+							//}
 						}
-						if (hasInput1)
+						else if (hasInput1)
 						{
 							descriptionBox->AddRichText(consumptionSeasonText, TEXT_NUM(building.seasonalConsumption1()), building.input1());
 						}
@@ -2135,7 +2150,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							case CardEnum::BarrackArcher:
 							case CardEnum::BarrackClubman:
 							case CardEnum::Mint:
-							case CardEnum::InventorsWorkshop:
+							case CardEnum::ResearchLab:
 							case CardEnum::RegionShrine:
 
 							case CardEnum::CardMaker:
@@ -2166,7 +2181,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						switch (buildingEnum)
 						{
 							case CardEnum::Mint: setProduct(assetLoader->CoinIcon, to_string(building.outputPerBatch()));  break;
-							case CardEnum::InventorsWorkshop: setProduct(assetLoader->ScienceIcon, to_string(building.outputPerBatch()));  break;
+							case CardEnum::ResearchLab: setProduct(assetLoader->ScienceIcon, to_string(building.outputPerBatch()));  break;
 							case CardEnum::RegionShrine: setProduct(assetLoader->ScienceIcon, to_string(building.outputPerBatch()));  break;
 							
 							case CardEnum::BarrackArcher:

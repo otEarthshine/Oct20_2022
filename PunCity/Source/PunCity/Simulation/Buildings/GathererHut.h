@@ -74,8 +74,8 @@ public:
 	void FinishConstruction() final;
 	std::vector<BonusPair> GetBonuses() override;
 
-	int32 baseInputPerBatch(ResourceEnum resourceEnum) final {
-		return Building::baseInputPerBatch(resourceEnum) * (_simulation->IsResearched(_playerId, TechEnum::MushroomSubstrateSterilization) ? 4 : 8) / 10;
+	virtual int32 inputPerBatch(ResourceEnum resourceEnum) final {
+		return Building::inputPerBatch(resourceEnum) * (_simulation->IsResearched(_playerId, TechEnum::MushroomSubstrateSterilization) ? 4 : 8) / 10;
 	}
 };
 
@@ -85,8 +85,8 @@ public:
 	void FinishConstruction() final;
 	std::vector<BonusPair> GetBonuses() override;
 
-	int32 baseInputPerBatch(ResourceEnum resourceEnum) final {
-		return Building::baseInputPerBatch(resourceEnum) * (_simulation->IsResearched(_playerId, TechEnum::MushroomSubstrateSterilization) ? 4 : 8) / 10;
+	virtual int32 inputPerBatch(ResourceEnum resourceEnum) final {
+		return Building::inputPerBatch(resourceEnum) * (_simulation->IsResearched(_playerId, TechEnum::MushroomSubstrateSterilization) ? 4 : 8) / 10;
 	}
 };
 
@@ -330,8 +330,8 @@ class PaperMaker final : public IndustrialBuilding
 public:
 	virtual void FinishConstruction() final;
 
-	virtual int32 baseInputPerBatch(ResourceEnum resourceEnum) final {
-		return Building::baseInputPerBatch(resourceEnum) * (IsUpgraded_InitialIndex(0) ? 5 : 10) / 10;
+	virtual int32 inputPerBatch(ResourceEnum resourceEnum) final {
+		return Building::inputPerBatch(resourceEnum) * (IsUpgraded_InitialIndex(0) ? 5 : 10) / 10;
 	}
 };
 
@@ -341,13 +341,15 @@ public:
 	virtual void FinishConstruction() final;
 	virtual std::vector<BonusPair> GetBonuses() override;
 
-	virtual int32 baseInputPerBatch(ResourceEnum resourceEnum) override {
-		return Building::baseInputPerBatch(resourceEnum) * (IsUpgraded_InitialIndex(1) ? 70 : 100) / 100;
+	virtual int32 inputPerBatch(ResourceEnum resourceEnum) override {
+		return Building::inputPerBatch(resourceEnum) * (IsUpgraded_InitialIndex(1) ? 70 : 100) / 100;
 	}
 
 	virtual int32 GetBaseJobHappiness() override {
 		return 60;
 	}
+
+	virtual ResourceEnum mainUpgradeResource() { return ResourceEnum::Brick; }
 };
 
 class IronSmelter : public Smelter
@@ -505,15 +507,6 @@ public:
 
 	CardEnum GetCardProduced();
 	
-	//int32 baseInputPerBatch() override
-	//{
-	//	return 10;
-	//	//CardEnum cardEnum = GetCardProduced();
-	//	//if (IsBuildingSlotCard(cardEnum)) {
-	//	//	return 10;
-	//	//}
-	//	//return 5;
-	//}
 };
 
 class ImmigrationOffice final : public ConsumerIndustrialBuilding
@@ -529,7 +522,7 @@ public:
 		return 25 * 100 * 100 / workRevenuePerSec100_perMan_(); // first 100 for workManSecPerBatch100, second 100 to cancel out WorkRevenuePerManSec100
 	}
 
-	virtual int32 baseInputPerBatch(ResourceEnum resourceEnum) override { return 0; }
+	virtual int32 inputPerBatch(ResourceEnum resourceEnum) override { return 0; }
 };
 
 class StoneToolsShop : public IndustrialBuilding
@@ -554,15 +547,12 @@ public:
 	virtual void FinishConstruction() final;
 	virtual std::vector<BonusPair> GetBonuses() override;
 
-	virtual int32 baseInputPerBatch(ResourceEnum resourceEnum) override {
-		return Building::baseInputPerBatch(resourceEnum) * 50 / 100;
-	}
 };
 
-class CharcoalMaker final : public IndustrialBuilding
+class CharcoalBurner final : public IndustrialBuilding
 {
 public:
-	virtual int32 baseInputPerBatch(ResourceEnum resourceEnum) override { return IsUpgraded_InitialIndex(0) ? 7 : 10; }
+	virtual int32 inputPerBatch(ResourceEnum resourceEnum) override { return Building::inputPerBatch(resourceEnum) * (IsUpgraded_InitialIndex(0) ? 7 : 10) / 10; }
 	
 	virtual void FinishConstruction() final;
 	virtual std::vector<BonusPair> GetBonuses() override;
@@ -575,8 +565,8 @@ class Chocolatier : public IndustrialBuilding
 public:
 	void FinishConstruction() override;
 
-	int32 baseInputPerBatch(ResourceEnum resourceEnum) override {
-		return Building::baseInputPerBatch(resourceEnum) * (IsUpgraded_InitialIndex(0) ? 50 : 100) / 100;
+	virtual int32 inputPerBatch(ResourceEnum resourceEnum) override {
+		return Building::inputPerBatch(resourceEnum) * (IsUpgraded_InitialIndex(0) ? 50 : 100) / 100;
 	}
 };
 
@@ -603,8 +593,8 @@ public:
 class BeerBrewery : public IndustrialBuilding
 {
 public:
-	virtual int32 baseInputPerBatch(ResourceEnum resourceEnum) override {
-		return Building::baseInputPerBatch(resourceEnum) * (IsUpgraded_InitialIndex(0) ? 70 : 100) / 100;
+	virtual int32 inputPerBatch(ResourceEnum resourceEnum) override {
+		return Building::inputPerBatch(resourceEnum) * (IsUpgraded_InitialIndex(0) ? 70 : 100) / 100;
 	}
 	
 	virtual void OnInit() override;
@@ -622,8 +612,8 @@ public:
 class VodkaDistillery : public IndustrialBuilding
 {
 public:
-	int32 baseInputPerBatch(ResourceEnum resourceEnum) override {
-		return Building::baseInputPerBatch(resourceEnum) * (IsUpgraded_InitialIndex(0) ? 70 : 100) / 100;
+	virtual int32 inputPerBatch(ResourceEnum resourceEnum) override {
+		return Building::inputPerBatch(resourceEnum) * (IsUpgraded_InitialIndex(0) ? 70 : 100) / 100;
 	}
 	
 	void FinishConstruction() override;
@@ -672,9 +662,6 @@ public:
 	void FinishConstruction() final;
 	std::vector<BonusPair> GetBonuses() final;
 
-	//int32 baseInputPerBatch() {
-	//	return 5;
-	//}
 };
 class Jeweler final : public IndustrialBuilding
 {
@@ -791,8 +778,8 @@ public:
 	void FinishConstruction() final;
 	std::vector<BonusPair> GetBonuses() final;
 
-	int32 baseInputPerBatch(ResourceEnum resourceEnum) override {
-		return Building::baseInputPerBatch(resourceEnum) * (IsUpgraded_InitialIndex(1) ? 70 : 100) / 100;
+	virtual int32 inputPerBatch(ResourceEnum resourceEnum) override {
+		return Building::inputPerBatch(resourceEnum) * (IsUpgraded_InitialIndex(1) ? 70 : 100) / 100;
 	}
 };
 
@@ -802,10 +789,10 @@ public:
 	void FinishConstruction() override;
 };
 
-class GlassSmelter final : public Building
+class GlassSmelter final : public Smelter
 {
 public:
-	void FinishConstruction() override;
+
 };
 class Glassworks final : public Building
 {
@@ -887,10 +874,10 @@ public:
 
 };
 
-class IndustrialIronSmelter final : public Building
+class IndustrialIronSmelter final : public Smelter
 {
 public:
-	void FinishConstruction() override;
+	virtual ResourceEnum mainUpgradeResource() override { return ResourceEnum::Concrete; }
 	
 };
 class Steelworks final : public Building
@@ -911,6 +898,10 @@ class PaperMill final : public Building
 {
 public:
 	void FinishConstruction() override;
+
+	virtual int32 inputPerBatch(ResourceEnum resourceEnum) final {
+		return Building::inputPerBatch(resourceEnum) * (IsUpgraded_InitialIndex(0) ? 5 : 10) / 10;
+	}
 };
 
 class ClockMakers final : public Building

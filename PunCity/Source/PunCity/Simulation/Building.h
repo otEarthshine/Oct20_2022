@@ -735,13 +735,6 @@ public:
 		
 		check(baseProfitValue > 0);
 		return baseProfitValue;
-		
-		//int32 batchRevenue = baseOutputPerBatch() * GetResourceInfo(productEnum).basePrice;
-		//
-		//int32 cost = baseBatchCost();
-		//int32 batchProfit = batchRevenue - cost;
-		//check(batchProfit > 0);
-		//return batchProfit;
 	}
 
 	
@@ -1097,22 +1090,26 @@ public:
 	/*
 	 * Input
 	 */
-	virtual int32 baseInputPerBatch(ResourceEnum resourceEnum)
+	int32 baseInputPerBatch(ResourceEnum resourceEnum)
 	{
 		int32 result = 10;
 		if (input2() != ResourceEnum::None) { // Anything with 2 inputs, gets split equally
 			result = 5;
 		}
+		
+		if (resourceEnum == input1() && _workMode.customInputPerBatch1 != -1) {
+			result = _workMode.customInputPerBatch1;
+		}
+		if (resourceEnum == input2() && _workMode.customInputPerBatch2 != -1) {
+			result = _workMode.customInputPerBatch2;
+		}
 
 		// Special case:
 		if (isEnum(CardEnum::PrintingPress)) {
-			
+			if (resourceEnum == ResourceEnum::Paper) result = 8;
+			if (resourceEnum == ResourceEnum::Dye) result = 2;
 		}
 		
-		
-		if (_workMode.customInputPerBatch != -1) {
-			result = _workMode.customInputPerBatch;
-		}
 
 		// Scholar Office doesn't scale input batch
 		if (_buildingEnum == CardEnum::CardMaker) {
@@ -1129,7 +1126,7 @@ public:
 		return GetResourceInfo(resourceEnum).basePrice * baseInputPerBatch(resourceEnum);
 	}
 
-	int32 inputPerBatch(ResourceEnum resourceEnum)
+	virtual int32 inputPerBatch(ResourceEnum resourceEnum)
 	{
 		if (resourceEnum == ResourceEnum::None) {
 			return 0;
@@ -1470,7 +1467,14 @@ public:
 	}
 	virtual int32 maxCardSlots() {
 		if (IsDecorativeBuilding(_buildingEnum) ||
-			IsServiceBuilding(_buildingEnum)) {
+			IsServiceBuilding(_buildingEnum) ||
+			IsWorldWonder(_buildingEnum) ||
+			_buildingEnum == CardEnum::StatisticsBureau ||
+			_buildingEnum == CardEnum::JobManagementBureau ||
+			_buildingEnum == CardEnum::ArchitectStudio ||
+			_buildingEnum == CardEnum::DepartmentOfAgriculture ||
+			_buildingEnum == CardEnum::EngineeringOffice) 
+		{
 			return 0;
 		}
 		return 2;
@@ -1599,7 +1603,8 @@ public:
 		ResourceEnum product = ResourceEnum::None;
 		FText description;
 
-		int32 customInputPerBatch = -1;
+		int32 customInputPerBatch1 = -1;
+		int32 customInputPerBatch2 = -1;
 
 		bool isValid() { return !name.IsEmpty(); }
 
@@ -1607,7 +1612,8 @@ public:
 			ResourceEnum input1 = ResourceEnum::None, 
 			ResourceEnum input2 = ResourceEnum::None,
 			ResourceEnum product = ResourceEnum::None,
-			int32 customInputPerBatch = -1)
+			int32 customInputPerBatch1 = -1, 
+			int32 customInputPerBatch2 = -1)
 		{
 			WorkMode workMode;
 			workMode.name = name;
@@ -1617,7 +1623,8 @@ public:
 			workMode.input2 = input2;
 			workMode.product = product;
 
-			workMode.customInputPerBatch = customInputPerBatch;
+			workMode.customInputPerBatch1 = customInputPerBatch1;
+			workMode.customInputPerBatch2 = customInputPerBatch2;
 			
 			return workMode;
 		}
@@ -1631,7 +1638,8 @@ public:
 			//SerializeStr(Ar, description);
 			Ar << description;
 
-			Ar << customInputPerBatch;
+			Ar << customInputPerBatch1;
+			Ar << customInputPerBatch2;
 		}
 
 		bool operator==(const WorkMode& a) {

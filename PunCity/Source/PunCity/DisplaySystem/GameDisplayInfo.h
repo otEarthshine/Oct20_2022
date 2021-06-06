@@ -207,7 +207,7 @@ public:
 
 		setName(CardEnum::Fort, "Outpost");
 		setName(CardEnum::ResourceOutpost, "Colony");
-		setName(CardEnum::InventorsWorkshop, "InventorsWorkshop");
+		setName(CardEnum::ResearchLab, "InventorsWorkshop");
 
 		set(CardEnum::IntercityRoad, {
 			ModuleTransformGroup({ ModuleTransform("DirtRoad")})

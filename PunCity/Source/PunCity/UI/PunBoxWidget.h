@@ -206,9 +206,12 @@ public:
 	}
 
 	// FText
-	UPunRichTextTwoSided* AddRichText(FText leftText, FText rightText, ResourceEnum resourceEnum = ResourceEnum::None, FText expandedText = FText()) {
+	UPunRichTextTwoSided* AddRichText(FText leftText, 
+		FText rightText1, ResourceEnum resourceEnum1 = ResourceEnum::None, FText expandedText = FText(), 
+		FText rightText2 = FText(), ResourceEnum resourceEnum2 = ResourceEnum::None)
+	{
 		auto textWidget = GetChildElement<UPunRichTextTwoSided>(UIEnum::PunRichTextTwoSided);
-		textWidget->SetText(leftText, rightText, resourceEnum, expandedText);
+		textWidget->SetText(leftText, rightText1, resourceEnum1, expandedText, rightText2, resourceEnum2);
 		textWidget->PunRichText->SetAutoWrapText(true);
 		return textWidget;
 	}

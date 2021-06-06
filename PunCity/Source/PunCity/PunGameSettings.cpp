@@ -144,6 +144,16 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 
 	{ "SeeAllCards", 0 },
 	
+	{ "ForceDesyncPopup", 0 },
+	{ "AlreadyDesynced", 0 },
+
+	{ "TestPosX", 0 },
+	{ "TestPosY", 0 },
+	{ "TestPosZ", 0 },
+	{ "TestRotX", 0 },
+	{ "TestRotY", 0 },
+	{ "TestRotZ", 0 },
+	
 	{ "ShowAllResourceNodes", 0 },
 
 	{ "TestCityNetwork_Stage", -1 },

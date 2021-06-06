@@ -1240,7 +1240,7 @@ public:
 				CardEnum::ProductivityBook
 			);
 
-			AddTech_Bonus(TechEnum::HomeLandDefense, {});
+			AddTech_Bonus(TechEnum::HomeLandDefense, { TechEnum::InfluencePoints });
 
 			
 			//
@@ -1248,7 +1248,7 @@ public:
 			AddTech_Building(TechEnum::TradingCompany, {},
 				{ CardEnum::TradingCompany }
 			);
-			AddTech_CardGiving(TechEnum::SmelterCombo, { TechEnum::ChimneyRestrictor },
+			AddTech_CardGiving(TechEnum::SmelterCombo, { TechEnum::QuarryImprovement },
 				CardEnum::SmeltCombo
 			);
 			AddTech_CardGiving(TechEnum::MiningEquipment, { TechEnum::QuarryImprovement },
@@ -1371,8 +1371,8 @@ public:
 			//
 			_columnIndex = 9;
 			AddTech_Bonus(TechEnum::WinerySnob, { TechEnum::Conglomerate });
-			AddTech_Building(TechEnum::InventorsWorkshop, { TechEnum::Conglomerate },
-				CardEnum::InventorsWorkshop
+			AddTech_Building(TechEnum::ResearchLab, { TechEnum::Conglomerate },
+				CardEnum::ResearchLab
 			);
 
 			AddTech_Building(TechEnum::Garden, { TechEnum::GardenCypress },
@@ -1390,7 +1390,7 @@ public:
 			AddTech_CardGiving(TechEnum::BlingBling, { TechEnum::WinerySnob },
 				{ CardEnum::BlingBling }
 			);
-			AddTech_CardGiving(TechEnum::BookWorm, { TechEnum ::InventorsWorkshop },
+			AddTech_CardGiving(TechEnum::BookWorm, { TechEnum ::ResearchLab },
 				{ CardEnum::BookWorm }
 			);
 

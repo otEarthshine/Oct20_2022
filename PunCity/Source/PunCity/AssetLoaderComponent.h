@@ -626,6 +626,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* RegionBorderMaterial;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* OverlayMaterial;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* GridGuideMaterial;
+	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_GridGuideLine;
 	
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* RadiusMaterial;
 	

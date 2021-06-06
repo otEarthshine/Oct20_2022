@@ -56,12 +56,14 @@ public:
 		else {
 			RewardBuildingIcon1->SetVisibility(ESlateVisibility::Collapsed);
 		}
+		
 		if (techInfo->_buildingEnums.size() > 1) {
 			setBuildingRewardIcon(RewardBuildingIcon2, techInfo->_buildingEnums[1], false);
 		}
 		else {
 			RewardBuildingIcon2->SetVisibility(ESlateVisibility::Collapsed);
 		}
+		
 		if (techInfo->_buildingEnums.size() > 2) {
 			setBuildingRewardIcon(RewardBuildingIcon3, techInfo->_buildingEnums[2], false);
 		}

@@ -152,7 +152,7 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 
 		CASE_BUILDING(CardEnum::GoldSmelter, GoldSmelter);
 		CASE_BUILDING(CardEnum::Mint, Mint);
-		CASE_BUILDING(CardEnum::InventorsWorkshop, InventorsWorkshop);
+		CASE_BUILDING(CardEnum::ResearchLab, InventorsWorkshop);
 		
 		//CASE_BUILDING(CardEnum::Barrack, Barrack);
 
@@ -264,7 +264,7 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		  CASE_BUILDING(CardEnum::Tavern, Tavern);
 		  CASE_BUILDING(CardEnum::Tailor, Tailor);
 
-		  CASE_BUILDING(CardEnum::CharcoalMaker, CharcoalMaker);
+		  CASE_BUILDING(CardEnum::CharcoalMaker, CharcoalBurner);
 		  CASE_BUILDING(CardEnum::LaborerGuild, LaborerGuild);
 		  CASE_BUILDING(CardEnum::BeerBrewery, BeerBrewery);
 		  CASE_BUILDING(CardEnum::ClayPit, ClayPit);

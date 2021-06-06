@@ -1128,6 +1128,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	RegionBorderMaterial = Load<UMaterial>("/Game/Models/Decals/RegionBorderMaterial");
 	OverlayMaterial = Load<UMaterial>("/Game/Models/Decals/OverlayMaterial");
 	GridGuideMaterial = Load<UMaterial>("/Game/Models/Decals/GridGuideMaterial");
+	M_GridGuideLine = Load<UMaterial>("/Game/Models/Decals/M_GridGuideLine");
 
 	RadiusMesh = Load<UStaticMesh>("/Game/Models/SelectionMesh/RadiusMesh");
 	M_Radius = Load<UMaterial>("/Game/Models/SelectionMesh/M_Radius");

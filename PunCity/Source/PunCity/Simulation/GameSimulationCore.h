@@ -68,15 +68,18 @@ enum class TickHashEnum
 
 	Count,
 };
+const std::vector<FString> TickHashEnumName
+{
+	"Input",
+	"Rand",
+	"Unit",
+	"Building",
+};
+
 
 struct TickHashes
 {
 	TArray<int32> allTickHashes;
-
-	void AddTickHash(int32 tickCount, TickHashEnum tickHashEnum, int32 tickHash) {
-		check(allTickHashes.Num() == GetTickIndex(tickCount, tickHashEnum));
-		allTickHashes.Add(tickHash);
-	}
 
 	int32 GetTickHashes(int32 tickCount, TickHashEnum tickHashEnum) {
 		return allTickHashes[GetTickIndex(tickCount, tickHashEnum)];
@@ -89,7 +92,7 @@ struct TickHashes
 	void operator>>(FArchive &Ar) {
 		Ar << allTickHashes;
 	}
-
+	
 	
 	static int32 TickHashEnumCount() { return static_cast<int32>(TickHashEnum::Count); }
 
@@ -167,10 +170,15 @@ public:
 				return localHash == serverHash;
 			};
 
-			check(compareHashes(TickHashEnum::Input));
-			check(compareHashes(TickHashEnum::Rand));
-			check(compareHashes(TickHashEnum::Unit));
-			check(compareHashes(TickHashEnum::Building));
+			//check(compareHashes(TickHashEnum::Input));
+			//check(compareHashes(TickHashEnum::Rand));
+			//check(compareHashes(TickHashEnum::Unit));
+			//check(compareHashes(TickHashEnum::Building));
+
+			_gameManager->CheckDesync(compareHashes(TickHashEnum::Input), FString("compareHashes_Input"));
+			_gameManager->CheckDesync(compareHashes(TickHashEnum::Rand), FString("compareHashes_Rand"));
+			_gameManager->CheckDesync(compareHashes(TickHashEnum::Unit), FString("compareHashes_Unit"));
+			_gameManager->CheckDesync(compareHashes(TickHashEnum::Building), FString("compareHashes_Building"));
 		}
 
 		_LOG(PunTickHash, "AppendAndCompareServerHashes_After _tickHashes.TickCount:%d _serverTickHashes.TickCount:%d", _tickHashes.TickCount(), _serverTickHashes.TickCount());
@@ -2257,6 +2265,19 @@ public:
 		});
 #endif
 	}
+
+	
+	const std::vector<NetworkCommandEnum>& GetCommandsExecuted() const {
+		return _commandsExecuted;
+	}
+	const TickHashes& tickHashes() { return _tickHashes; }
+	const TickHashes& serverTickHashes() { return _serverTickHashes; }
+
+	void AddTickHash(TickHashes& tickHashes, int32 tickCount, TickHashEnum tickHashEnum, int32 tickHash);
+
+	/*
+	 *  Demolish
+	 */
 
 	void AddDemolishDisplayInfo(WorldTile2 tile, DemolishDisplayInfo demolishInfo)
 	{

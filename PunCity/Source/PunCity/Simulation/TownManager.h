@@ -77,7 +77,7 @@ static const std::vector<CardEnum> DefaultJobPriorityListAllSeason
 	CardEnum::IronSmelter,
 	CardEnum::GoldSmelter,
 	CardEnum::Mint,
-	CardEnum::InventorsWorkshop,
+	CardEnum::ResearchLab,
 
 	CardEnum::FurnitureWorkshop,
 	CardEnum::Chocolatier,

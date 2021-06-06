@@ -117,7 +117,7 @@ void Building::Init(IGameSimulationCore& simulation, int32 objectId, int32 townI
 	if (isEnum(CardEnum::Townhall)) {
 		_simulation->AddFireOnceParticleInfo(ParticleEnum::OnTownhall, _area);
 	} else {
-		_simulation->AddFireOnceParticleInfo(ParticleEnum::PlacementDust, _area);
+		_simulation->AddFireOnceParticleInfo(ParticleEnum::OnPlacement, _area);
 	}
 
 	
@@ -402,6 +402,9 @@ void Building::Deinit()
 		_simulation->SetWalkable(tile, true);
 	});
 	_simulation->SetRoadPathAI(gateTile(), false);
+
+	// Smoke
+	_simulation->AddFireOnceParticleInfo(ParticleEnum::OnDemolish, _area);
 	
 
 	TryRemoveDeliveryTarget();
@@ -761,7 +764,7 @@ void Building::DoWork(int unitId, int workAmount100)
 				_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
 				return;
 			}
-			if (isEnum(CardEnum::InventorsWorkshop) ||
+			if (isEnum(CardEnum::ResearchLab) ||
 				isEnum(CardEnum::RegionShrine))
 			{
 				_workDone100 = 0;
@@ -934,7 +937,7 @@ void Building::AddProductionStat(ResourcePair resource)
 		statSystem().AddStat(SeasonStatEnum::Money, resource.count);
 		return;
 	}
-	if (isEnum(CardEnum::InventorsWorkshop)) {
+	if (isEnum(CardEnum::ResearchLab)) {
 		statSystem().AddStat(SeasonStatEnum::Science, resource.count);
 		return;
 	}

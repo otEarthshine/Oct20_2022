@@ -215,6 +215,7 @@ void Beekeeper::FinishConstruction()
 
 	AddUpgrades({
 		MakeUpgrade(intensiveCareText, intensiveCareDesc, ResourceEnum::Brick, 50),
+		MakeProductionUpgrade(LOCTEXT("Movable Frame Hive", "Movable Frame Hive"), ResourceEnum::Wood, 70, 50),
 		MakeComboUpgrade(LOCTEXT("Knowledge Sharing", "Knowledge Sharing"), ResourceEnum::Paper),
 	});
 }
@@ -611,13 +612,18 @@ void ImmigrationOffice::FinishConstruction() {
 	ConsumerIndustrialBuilding::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("First Impression", "First Impression"), 50, 50),
+		MakeUpgrade(LOCTEXT("Immigrants Dream", "Immigrants Dream"), LOCTEXT("Immigrants Dream Desc", "+2% Productivity for Every 1% Average Happiness above 75%."), 20),
+		MakeProductionUpgrade(LOCTEXT("First Impression", "First Impression"), 70, 30),
 	});
 }
 
 std::vector<BonusPair> ImmigrationOffice::GetBonuses()
 {
 	std::vector<BonusPair> bonuses = ConsumerIndustrialBuilding::GetBonuses();
+
+	if (IsUpgraded_InitialIndex(0)) {
+		bonuses.push_back({LOCTEXT("Immigrants Dream", "Immigrants Dream"), max(0, _simulation->GetAverageHappiness(_townId) - 75) * 2 });
+	}
 
 	return bonuses;
 }
@@ -671,6 +677,15 @@ std::vector<BonusPair> Blacksmith::GetBonuses()
 void MedicineMaker::FinishConstruction() {
 	Building::FinishConstruction();
 
+	AddResourceHolder(ResourceEnum::Mushroom, ResourceHolderType::Requester, 0);
+	AddResourceHolder(ResourceEnum::Wood, ResourceHolderType::Requester, 0);
+
+	SetupWorkMode({
+		WorkMode::Create(LOCTEXT("Medicinal Herb Input", "Medicinal Herb Input"),	FText(), ResourceEnum::Herb),
+		WorkMode::Create(LOCTEXT("Mushroom Input", "Mushroom Extract"),	FText(), ResourceEnum::Mushroom),
+		WorkMode::Create(LOCTEXT("Wood Input", "Bark-based Extract (Wood)"),	FText(), ResourceEnum::Wood),
+	});
+
 	AddUpgrades({
 		MakeProductionUpgrade(LOCTEXT("Catalyst", "Catalyst"), 100, 30),
 		MakeProductionUpgrade(LOCTEXT("Improved Extraction", "Improved Extraction"), 150, 50),
@@ -688,7 +703,7 @@ std::vector<BonusPair> MedicineMaker::GetBonuses()
 /*
  * CharcoalMaker
  */
-void CharcoalMaker::FinishConstruction() {
+void CharcoalBurner::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
@@ -698,7 +713,7 @@ void CharcoalMaker::FinishConstruction() {
 	});
 }
 
-std::vector<BonusPair> CharcoalMaker::GetBonuses()
+std::vector<BonusPair> CharcoalBurner::GetBonuses()
 {
 	std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
 	if (_simulation->buildingCount(_townId, CardEnum::EnvironmentalistGuild)) {
@@ -783,9 +798,8 @@ void Tailor::OnInit()
 		{ LOCTEXT("Cotton Clothes (Cotton)", "Cotton Clothes (Cotton)"), ResourceEnum::Cotton, ResourceEnum::None },
 		{ LOCTEXT("Cotton Clothes (Cotton Fabric)", "Cotton Clothes (Cotton Fabric)"), ResourceEnum::CottonFabric, ResourceEnum::None },
 
-		{ LOCTEXT("Fashionable Clothes (Cotton & Dye)", "Fashionable Clothes (Cotton & Dye)"), ResourceEnum::Cotton, ResourceEnum::Dye, ResourceEnum::LuxuriousClothes },
 		{ LOCTEXT("Fashionable Clothes (Dyed Fabric)", "Fashionable Clothes (Dyed Fabric)"), ResourceEnum::DyedCottonFabric, ResourceEnum::None, ResourceEnum::LuxuriousClothes },
-		});
+	});
 }
 
 void Tailor::FinishConstruction() {
@@ -926,9 +940,11 @@ static const FText woodFireText = LOCTEXT("Wood-fired", "Wood-fired");
 void Bakery::OnInit()
 {
 	SetupWorkMode({
-		{ coalFireText, ResourceEnum::Flour, ResourceEnum::Coal, ResourceEnum::None},
+		{ coalFireText, ResourceEnum::Flour, ResourceEnum::Coal, ResourceEnum::None, FText(), 8, 2},
 		{ woodFireText, ResourceEnum::Flour, ResourceEnum::Wood, ResourceEnum::None,
-				LOCTEXT("Wood-fired Desc", "Wood-fired oven cooks food faster locking in more nutrients. +30% productivity")},
+			LOCTEXT("Wood-fired Desc", "Wood-fired oven cooks food faster locking in more nutrients. +30% productivity"),
+			8, 2
+		},
 	});
 }
 
@@ -941,7 +957,7 @@ void Bakery::FinishConstruction() {
 	AddResourceHolder(ResourceEnum::Bread, ResourceHolderType::Provider, 0);
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("Improved Oven", "Improved Oven"), ResourceEnum::Stone, 50, 10),
+		MakeProductionUpgrade(LOCTEXT("Improved Oven", "Improved Oven"), ResourceEnum::Brick, 100, 30),
 		MakeComboUpgrade(LOCTEXT("Baker Guild", "Baker Guild"), ResourceEnum::Paper),
 	});
 
@@ -1003,7 +1019,7 @@ void CottonMill::OnInit()
 {
 	SetupWorkMode({
 		{ LOCTEXT("Cotton Fabric", "Cotton Fabric"), ResourceEnum::Cotton, ResourceEnum::None },
-		{ LOCTEXT("Dyed Cotton Fabric", "Dyed Cotton Fabric"), ResourceEnum::Cotton, ResourceEnum::Dye, ResourceEnum::DyedCottonFabric },
+		{ LOCTEXT("Dyed Cotton Fabric", "Dyed Cotton Fabric"), ResourceEnum::Cotton, ResourceEnum::Dye, ResourceEnum::DyedCottonFabric, FText(), 8, 2 },
 	});
 }
 
@@ -1016,7 +1032,7 @@ void CottonMill::FinishConstruction() {
 	AddResourceHolder(ResourceEnum::DyedCottonFabric, ResourceHolderType::Provider, 0);
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("Advanced Machinery", "Advanced Machinery"), ResourceEnum::Iron, 100, 70),
+		MakeProductionUpgrade(LOCTEXT("Advanced Machinery", "Advanced Machinery"), ResourceEnum::Iron, 80, 50),
 		MakeComboUpgrade(LOCTEXT("Cotton Mill Town", "Cotton Mill Town"), ResourceEnum::Iron),
 	});
 }
@@ -1028,7 +1044,7 @@ void PrintingPress::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("Advanced Machinery", "Advanced Machinery"), ResourceEnum::Iron, 100, 70),
+		MakeProductionUpgrade(LOCTEXT("Advanced Machinery", "Advanced Machinery"), ResourceEnum::Iron, 80, 50),
 		MakeComboUpgrade(LOCTEXT("Printing Press Town", "Printing Press Town"), ResourceEnum::Iron),
 	});
 }
@@ -1402,9 +1418,9 @@ void Smelter::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeUpgrade(teamworkText, LOCTEXT("Smelter Teamwork Desc", "Smelter with full worker slots get 50% production bonus"), ResourceEnum::Stone, 50),
-		MakeUpgrade(LOCTEXT("Efficient Furnace", "Efficient Furnace"), LOCTEXT("Decrease input by 30%", "Decrease input by 30%"), ResourceEnum::Brick, 50),
-		MakeComboUpgrade(FText::Format(LOCTEXT("UpgradeGuild", "{0} Guild"), buildingInfo().GetName()), ResourceEnum::Paper),
+		MakeUpgrade(teamworkText, LOCTEXT("Smelter Teamwork Desc", "Smelter with full worker slots get 50% production bonus"), mainUpgradeResource(), 50),
+		MakeUpgrade(LOCTEXT("Efficient Furnace", "Efficient Furnace"), LOCTEXT("Decrease input by 30%", "Decrease input by 30%"), mainUpgradeResource(), 50),
+		MakeComboUpgrade(FText::Format(LOCTEXT("UpgradeGuild", "{0} Guild"), buildingInfo().GetName()), mainUpgradeResource()),
 	});
 }
 
@@ -1710,20 +1726,16 @@ void SandMine::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeComboUpgrade(LOCTEXT("Sand Mine Town", "Sand Mine Town"), ResourceEnum::Stone),
+		MakeProductionUpgrade(LOCTEXT("Improved Tooling", "Improved Tooling"), ResourceEnum::SteelTools, 70, 30),
+		MakeComboUpgrade(LOCTEXT("Sand Mine Town", "Sand Mine Town"), ResourceEnum::Brick),
 	});
 }
-void GlassSmelter::FinishConstruction() {
-	Building::FinishConstruction();
 
-	AddUpgrades({
-		MakeComboUpgrade(LOCTEXT("Glass Smelter Town", "Glass Smelter Town"), ResourceEnum::Brick),
-	});
-}
 void Glassworks::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
+		MakeProductionUpgrade(LOCTEXT("Glass Annealer", "Glass Annealer"), ResourceEnum::Brick, 70, 55),
 		MakeComboUpgrade(LOCTEXT("Glassworks Town", "Glassworks Town"), ResourceEnum::Brick),
 	});
 }
@@ -1731,18 +1743,13 @@ void ConcreteFactory::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
+		MakeProductionUpgrade(LOCTEXT("High Temperature Kiln", "High Temperature Kiln"), ResourceEnum::SteelBeam, 70, 55),
 		MakeComboUpgrade(LOCTEXT("Concrete Factory Town", "Concrete Factory Town"), ResourceEnum::Concrete),
 	});
 }
 
 
-void IndustrialIronSmelter::FinishConstruction() {
-	Building::FinishConstruction();
 
-	AddUpgrades({
-		MakeComboUpgrade(LOCTEXT("Smelter Town", "Smelter Town"), ResourceEnum::Concrete),
-	});
-}
 void Steelworks::FinishConstruction() {
 	Building::FinishConstruction();
 
@@ -1762,6 +1769,7 @@ void PaperMill::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
+		MakeUpgrade(LOCTEXT("Drying Cylinder PaperMill", "Drying Cylinder"), LOCTEXT("Uses 50% less wood to produce paper.", "Uses 50% less wood to produce paper."), ResourceEnum::SteelBeam, 50),
 		MakeComboUpgrade(LOCTEXT("Paper Mill Town", "Paper Mill Town"), ResourceEnum::SteelBeam),
 	});
 }

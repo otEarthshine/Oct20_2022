@@ -37,28 +37,12 @@ public:
 			{
 				if (UTexture2D* cardIcon = assetLoader()->GetCardIconNullable(buildingEnum)) {
 					material->SetTextureParameterValue("ColorTexture", cardIcon);
-					material->SetTextureParameterValue("DepthTexture", nullptr);
 				}
 				else if (UTexture2D* buildingIcon = assetLoader()->GetBuildingIconNullable(buildingEnum)) {
 					material->SetTextureParameterValue("ColorTexture", buildingIcon);
-
-					UTexture* depthTexture;
-					switch (buildingEnum) {
-					case CardEnum::IntercityRoad:
-					case CardEnum::IntercityBridge:
-					case CardEnum::Tunnel:
-						depthTexture = assetLoader()->WhiteIcon;
-						break;
-					default:
-						depthTexture = assetLoader()->GetBuildingIconAlpha(buildingEnum);
-						break;
-					}
-
-					material->SetTextureParameterValue("DepthTexture", depthTexture);
 				}
 				else {
-					material->SetTextureParameterValue("ColorTexture", nullptr);
-					material->SetTextureParameterValue("DepthTexture", nullptr);
+					material->SetTextureParameterValue("ColorTexture", assetLoader()->BlackIcon);
 				}
 			};
 			
@@ -76,9 +60,15 @@ public:
 				setCardIcon();
 			}
 			else {
-				material->SetScalarParameterValue("ShowCard", 0);
-				material->SetTextureParameterValue("ColorTexture", nullptr);
-				material->SetTextureParameterValue("DepthTexture", nullptr);
+				if (isMainTree) {
+					material->SetScalarParameterValue("ShowCard", 1);
+
+					setCardIcon();
+				}
+				else {
+					material->SetScalarParameterValue("ShowCard", 0);
+					material->SetTextureParameterValue("ColorTexture", assetLoader()->BlackIcon);
+				}
 			}
 				
 			// Add Tooltip
@@ -91,11 +81,13 @@ public:
 		} else {
 			RewardBuildingIcon1->SetVisibility(ESlateVisibility::Collapsed);
 		}
+		
 		if (techInfo->_buildingEnums.size() > 1) {
 			setBuildingRewardIcon(RewardBuildingIcon2, techInfo->_buildingEnums[1], false);
 		} else {
 			RewardBuildingIcon2->SetVisibility(ESlateVisibility::Collapsed);
 		}
+		
 		if (techInfo->_buildingEnums.size() > 2) {
 			setBuildingRewardIcon(RewardBuildingIcon3, techInfo->_buildingEnums[2], false);
 		}

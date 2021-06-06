@@ -366,6 +366,8 @@ void UTileObjectDisplayComponent::UpdateDisplay_PrepareReset(MeshChunkInfo& chun
 
 	bool isHidingTree = gameManager()->isHidingTree();
 
+	PlacementInfo placementInfo = gameManager()->networkInterface()->GetPlacementBuildingInfo();
+
 	auto showBush = [&](TileObjInfo info, int32 worldTileId, FTransform transform, LocalTile2 localTile, int32 ageState)
 	{
 		// Plant uses the mesh array for multiple meshes (for example flower + its leaves)
@@ -509,7 +511,12 @@ void UTileObjectDisplayComponent::UpdateDisplay_PrepareReset(MeshChunkInfo& chun
 			FTransform transform = GameDisplayUtils::GetTreeTransform(localTile.localDisplayLocation(), 0, worldTileId, ageTick, info);
 
 			// Show only stump
-			if (isHidingTree) {
+
+			bool isHidingThisTree =
+				isHidingTree ||
+				(placementInfo.placementType == PlacementType::Building && WorldTile2::Distance(WorldTile2(worldTileId), placementInfo.mouseOnTile) < GetBuildingInfo(placementInfo.buildingEnum).size.maxElement() + 5);
+			
+			if (isHidingThisTree) {
 				meshes->Add(GetMeshName(tileObjEnum, static_cast<int32>(TileSubmeshEnum::Stump)) /*tileObjectName + FString::FromInt(static_cast<int32>(TileSubmeshEnum::Stump))*/, worldTileId + 1 * GameMapConstants::TilesPerWorld, transform, ageState, worldTileId);
 				return;
 			}

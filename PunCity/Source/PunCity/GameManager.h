@@ -657,6 +657,47 @@ public:
 	float GetTrailerTime() override {
 		return networkInterface()->GetTrailerTime();
 	}
+
+
+
+	virtual void CheckDesync(bool checkSucceed, FString desyncMessage) final
+	{
+		if (PunSettings::IsOn("AlreadyDesynced")) {
+			return;
+		}
+		if (PunSettings::IsOn("ForceDesyncPopup")) {
+			PunSettings::Set("ForceDesyncPopup", 0);
+			checkSucceed = false;
+		}
+
+		if (!checkSucceed)
+		{
+			PunSettings::Set("AlreadyDesynced", 1);
+
+			TArray<FText> args;
+			args.Add(INVTEXT("!!! Desync !!!<space>"));
+			args.Add(INVTEXT("Please screenshot this and post it on the Discord Bug Room.<space>"));
+
+			args.Add(FText::Format(INVTEXT("  At: {0}"), FText::FromString(desyncMessage)));
+			args.Add(FText::Format(INVTEXT("  tickHashes:{0} serverTickHashes:{1}"), simulation().tickHashes().TickCount(), simulation().serverTickHashes().TickCount()));
+
+			args.Add(INVTEXT("<space>Commands Executed (latest first):\n"));
+			const std::vector<NetworkCommandEnum>& commandsExecuted = simulation().GetCommandsExecuted();
+			int32 count = 0;
+			for (int32 i = commandsExecuted.size(); i-- > 0;) {
+				args.Add(ToFText(GetNetworkCommandName(commandsExecuted[i])));
+				args.Add(INVTEXT("\n"));
+				if (++count > 20) {
+					break;
+				}
+			}
+
+			simulation().AddPopup(playerId(),
+				JOINTEXT(args)
+			);
+		}
+	}
+	
 	
 	/*
 	 * 

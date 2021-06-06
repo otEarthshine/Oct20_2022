@@ -19,10 +19,10 @@
 // GAME_VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 34 // 3 digit
+#define MINOR_VERSION 35 // 3 digit
 
-#define VERSION_DAY 31
-#define VERSION_MONTH 5
+#define VERSION_DAY 4
+#define VERSION_MONTH 6
 #define VERSION_YEAR 21
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
 
@@ -32,10 +32,10 @@
 
 // SAVE_VERSION
 #define MAJOR_SAVE_VERSION 0
-#define MINOR_SAVE_VERSION 21 // 3 digit
+#define MINOR_SAVE_VERSION 22 // 3 digit
 
-#define VERSION_SAVE_DAY 23
-#define VERSION_SAVE_MONTH 5
+#define VERSION_SAVE_DAY 4
+#define VERSION_SAVE_MONTH 6
 #define VERSION_SAVE_YEAR 21
 #define VERSION_SAVE_DATE (VERSION_SAVE_YEAR * 10000) + (VERSION_SAVE_MONTH * 100) + VERSION_SAVE_DAY
 
@@ -1190,7 +1190,7 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::Mushroom,	LOCTEXT("Mushroom", "Mushroom"),	FoodCost, LOCTEXT("Mushroom Desc", "Delicious, earthy tasting fungus")),
 	ResourceInfo(ResourceEnum::Hay,			LOCTEXT("Hay", "Hay"),		1, LOCTEXT("Hay Desc", "Dried grass that can be used as animal feed")),
 
-	ResourceInfo(ResourceEnum::Paper,		LOCTEXT("Paper", "Paper"),	15, LOCTEXT("Paper Desc", "Used for research and book making")),
+	ResourceInfo(ResourceEnum::Paper,		LOCTEXT("Paper", "Paper"),	18, LOCTEXT("Paper Desc", "Used for research and book making")),
 	ResourceInfo(ResourceEnum::Clay,		LOCTEXT("Clay", "Clay"),		3, LOCTEXT("Clay Desc", "Fine-grained earth used to make Pottery and Bricks")),
 	ResourceInfo(ResourceEnum::Brick,		LOCTEXT("Brick", "Brick"),	12, LOCTEXT("Brick Desc", "Sturdy, versatile construction material")),
 
@@ -1253,7 +1253,7 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::Candle,		LOCTEXT("Candles", "Candles"), 15,	LOCTEXT("Candles Desc", "Luxury tier 2 used for housing upgrade.")),
 	
 	ResourceInfo(ResourceEnum::Dye,			LOCTEXT("Dye", "Dye"), 7, LOCTEXT("Dye Desc", "Colored substance used for printing or dyeing clothes.")),
-	ResourceInfo(ResourceEnum::Book,		LOCTEXT("Book", "Book"), 30, LOCTEXT("Book Desc", "Luxury tier 3 used for housing upgrade.")),
+	ResourceInfo(ResourceEnum::Book,		LOCTEXT("Book", "Book"), 50, LOCTEXT("Book Desc", "Luxury tier 3 used for housing upgrade.")),
 
 	// Oct 26
 	ResourceInfo(ResourceEnum::Coconut,		LOCTEXT("Coconut", "Coconut"),	FoodCost, LOCTEXT("Coconut Desc", "Large delicious fruit with white meat and refreshing juice.")),
@@ -2110,7 +2110,7 @@ enum class CardEnum : uint16
 	Warehouse,
 	Fort,
 	ResourceOutpost,
-	InventorsWorkshop,
+	ResearchLab,
 	IntercityRoad,
 
 	// August 16
@@ -3234,8 +3234,8 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::ResourceOutpost, LOCTEXT("Resource Outpost", "Resource Outpost"),	LOCTEXT("Resource Outpost (Plural)", "Resource Outposts"), LOCTEXT("Resource Outpost Desc", "Extract resource from province."),
 		WorldTile2(10, 10), GetBldResourceInfoMoney(10000)
 	),
-	BldInfo(CardEnum::InventorsWorkshop, LOCTEXT("Inventor's Workshop", "Inventor's Workshop"), LOCTEXT("Inventor's Workshop (Plural)", "Inventor's Workshops"), LOCTEXT("Inventor's Workshop Desc", "Generate Science Points. Use Iron Bars as input."),
-		WorldTile2(6, 6), GetBldResourceInfo(3, { ResourceEnum::Iron, ResourceEnum::None }, {1, 0, 0, 1, 1}, 0, 100, -2)
+	BldInfo(CardEnum::ResearchLab, LOCTEXT("Research Lab", "Research Lab"), LOCTEXT("Research Lab (Plural)", "Research Labs"), LOCTEXT("Research Lab Desc", "Generate Science Points. Uses Paper as input."),
+		WorldTile2(6, 6), GetBldResourceInfo(3, { ResourceEnum::Paper, ResourceEnum::None }, {1, 0, 0, 1, 1}, 0, 100, -2)
 	),
 	BldInfo(CardEnum::IntercityRoad, LOCTEXT("Intercity Road", "Intercity Road"),	LOCTEXT("Intercity Road (Plural)", "Intercity Road"), LOCTEXT("Intercity Road Desc", "Build Road to connect with other Cities. Same as Dirt Road, but buildable outside your territory."),
 		WorldTile2(1, 1), GetBldResourceInfoManual({})
@@ -3254,7 +3254,7 @@ static const BldInfo BuildingInfo[]
 
 	// October 20
 	BldInfo(CardEnum::Market,	LOCTEXT("Market", "Market"),	LOCTEXT("Market (Plural)", "Markets"), LOCTEXT("Market Desc", "Supplies anything a household needs within its radius. Workers carry 50 units."),
-		WorldTile2(6, 12), GetBldResourceInfoManual({ 50 }, 2)
+		WorldTile2(6, 12), GetBldResourceInfoManual({ 50 }, 3)
 	),
 	BldInfo(CardEnum::ShippingDepot, LOCTEXT("Logistics Office", "Logistics Office"),	LOCTEXT("Logistics Office (Plural)", "Logistics Offices"), LOCTEXT("Logistics Office Desc", "Haul specified resources from within the radius to its delivery target in 50-units bulk."),
 		WorldTile2(4, 4), GetBldResourceInfoManual({ 30, 10 }, 1)
@@ -3349,7 +3349,7 @@ static const BldInfo BuildingInfo[]
 	),
 
 	BldInfo(CardEnum::Cathedral, LOCTEXT("Cathedral", "Cathedral"), LOCTEXT("Cathedral (Plural)", "Cathedrals"), LOCTEXT("Cathedral Desc", "First Cathedral grants X Victory Score. +10% Job Happiness in the city"),
-		WorldTile2(21, 13), GetBldResourceInfo(3, {}, { 0, 1, 1, 5, 3 }, 3000, 100, -999)
+		WorldTile2(21, 13), GetBldResourceInfo(3, {}, { 0, 0, 0, 5, 2 }, 3000, 100, -999)
 	),
 	BldInfo(CardEnum::Castle, LOCTEXT("Castle", "Castle"), LOCTEXT("Castle (Plural)", "Castles"), LOCTEXT("Castle Desc", "First Castle grants X Victory Score. +15%<img id=\"Influence\"/> Income from city population"),
 		WorldTile2(16, 16), GetBldResourceInfo(3, {}, { 0, 5, 1, 0, 1 }, 4000, 100, -999)
@@ -3376,13 +3376,13 @@ static const BldInfo BuildingInfo[]
 	// Rare cards
 	//BldInfo("Sales Office",			WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0,	{20, 20, 0},	"Decrease the amount of trade fee by 50%."),
 	BldInfo(CardEnum::ArchitectStudio,		LOCTEXT("Architect's Studio", "Architect's Studio"),		LOCTEXT("Architect's Studio (Plural)", "Architect's Studios"), LOCTEXT("Architect's Studio Desc", "+5% housing appeal."),
-		WorldTile2(4, 5), GetBldResourceInfoManual({30, 30})
+		WorldTile2(4, 5), GetBldResourceInfoManual({0, 0, 0, 0, 0, 30, 30})
 	),
 	BldInfo(CardEnum::EngineeringOffice,	LOCTEXT("Engineer's Office", "Engineer's Office"),			LOCTEXT("Engineer's Office (Plural)", "Engineer's Offices"), LOCTEXT("Engineer's Office Desc", "+10% industrial production."),
-		WorldTile2(4, 5), GetBldResourceInfoManual({ 30, 30 })
+		WorldTile2(4, 5), GetBldResourceInfoManual({ 0, 0, 0, 0, 0, 30, 30 })
 	),
 	BldInfo(CardEnum::DepartmentOfAgriculture, LOCTEXT("Ministry of Agriculture", "Ministry of Agriculture"), FText(), LOCTEXT("Ministry of Agriculture Desc", "+5% Farm production when there are 8 or more Farms."),
-		WorldTile2(4, 5), GetBldResourceInfoManual({ 30, 30 })
+		WorldTile2(4, 5), GetBldResourceInfoManual({ 0, 0, 0, 0, 0, 30, 30 })
 	),
 	//BldInfo("Isolationist Publisher", WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0,	{20, 20, 0},	"Double trade fees. -10% food consumption."),
 
@@ -4186,7 +4186,7 @@ static bool IsSpecialProducer(CardEnum buildingEnum)
 	switch (buildingEnum) {
 	case CardEnum::Mint:
 	case CardEnum::CardMaker:
-	case CardEnum::InventorsWorkshop:
+	case CardEnum::ResearchLab:
 	//case CardEnum::RegionShrine:
 	case CardEnum::ImmigrationOffice:
 
@@ -4271,7 +4271,7 @@ static bool IsStorage(CardEnum buildingEnum) {
 static bool IsAutoEraUpgrade(CardEnum buildingEnumIn) { // Upgrade with era without pressing upgrade manually
 	switch(buildingEnumIn) {
 	case CardEnum::ImmigrationOffice:
-	case CardEnum::InventorsWorkshop:
+	case CardEnum::ResearchLab:
 		
 	case CardEnum::TradingCompany:
 	case CardEnum::TradingPort:
@@ -5938,7 +5938,7 @@ enum class TechEnum : uint8
 
 	Fort,
 	ResourceOutpost,
-	InventorsWorkshop,
+	ResearchLab,
 	IntercityRoad,
 
 	Combo,
@@ -7040,7 +7040,7 @@ enum class ParticleEnum
 	DemolishDust, // End Particle
 
 	OnDemolish,
-	PlacementDust,
+	OnPlacement,
 	OnTownhall,
 	OnUpgrade,
 
@@ -8915,10 +8915,10 @@ static FText GameSpeedName(int32 gameSpeed)
 {
 	switch(gameSpeed)
 	{
-	case GameSpeedValue1: return LOCTEXT("half speed", "half speed");
-	case GameSpeedValue2: return LOCTEXT("x1 speed", "x1 speed");
-	case GameSpeedValue3: return LOCTEXT("x2 speed", "x2 speed");
-	case GameSpeedValue4: return LOCTEXT("x5 speed", "x5 speed");
+	case GameSpeedValue1: return LOCTEXT("x1 speed", "x1 speed");
+	case GameSpeedValue2: return LOCTEXT("x2 speed", "x2 speed");
+	case GameSpeedValue3: return LOCTEXT("x4 speed", "x4 speed");
+	case GameSpeedValue4: return LOCTEXT("x10 speed", "x10 speed");
 	}
 	return LOCTEXT("paused", "paused");
 }

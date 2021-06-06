@@ -16,11 +16,15 @@ class UPunRichTextTwoSided : public UPunWidget
 	GENERATED_BODY()
 public:
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* PunRichText;
-	UPROPERTY(meta = (BindWidget)) URichTextBlock* PunRichTextRight;
 
-	// Note, thiis gets swapped to the left..
-	UPROPERTY(meta = (BindWidget)) USizeBox* RightImageSizeBox;
-	UPROPERTY(meta = (BindWidget)) UImage* RightImage;
+	// Note, this gets swapped to the left. ???
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* PunRichTextRight1;
+	//UPROPERTY(meta = (BindWidget)) USizeBox* RightImageSizeBox1;
+	UPROPERTY(meta = (BindWidget)) UImage* RightImage1;
+
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* PunRichTextRight2;
+	//UPROPERTY(meta = (BindWidget)) USizeBox* RightImageSizeBox2;
+	UPROPERTY(meta = (BindWidget)) UImage* RightImage2;
 
 	UPROPERTY(meta = (BindWidget)) USizeBox* ExpanderBox;
 	UPROPERTY(meta = (BindWidget)) UButton* ExpanderButton;
@@ -31,22 +35,31 @@ public:
 		SetText(ToFText(leftText), ToFText(rightText), resourceEnum, ToFText(expandedText));
 	}
 
-	void SetText(FText leftText, FText rightText, ResourceEnum resourceEnum = ResourceEnum::None, FText expandedText = FText())
+	void SetText(FText leftText, 
+		FText rightText1, ResourceEnum resourceEnum1 = ResourceEnum::None, FText expandedText = FText(), 
+		FText rightText2 = FText(), ResourceEnum resourceEnum2 = ResourceEnum::None)
 	{
 		PunRichText->SetText(leftText);
-		PunRichTextRight->SetText(rightText);
 
-		if (resourceEnum == ResourceEnum::None) {
-			RightImageSizeBox->SetVisibility(ESlateVisibility::Collapsed);
-		}
-		else {
-			RightImageSizeBox->SetVisibility(ESlateVisibility::HitTestInvisible);
+		auto setImage = [&](FText text, URichTextBlock* textBlock, ResourceEnum resourceEnum, UImage* image)
+		{
+			textBlock->SetVisibility(text.IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
+			textBlock->SetText(text);
+			
+			if (resourceEnum == ResourceEnum::None) {
+				image->SetVisibility(ESlateVisibility::Collapsed);
+			}
+			else {
+				image->SetVisibility(ESlateVisibility::HitTestInvisible);
+				image->GetDynamicMaterial()->SetTextureParameterValue("ColorTexture", assetLoader()->GetResourceIcon(resourceEnum));
+				image->GetDynamicMaterial()->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(resourceEnum));
+			}
+		};
 
-			UMaterialInstanceDynamic* materialInstance = UMaterialInstanceDynamic::Create(assetLoader()->ResourceIconMaterial, this);
-			materialInstance->SetTextureParameterValue("ColorTexture", assetLoader()->GetResourceIcon(resourceEnum));
-			materialInstance->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(resourceEnum));
-			RightImage->SetBrushFromMaterial(materialInstance);
-		}
+		PunRichTextRight1->SetText(rightText1);
+
+		setImage(rightText1, PunRichTextRight1, resourceEnum1, RightImage1);
+		setImage(rightText2, PunRichTextRight2, resourceEnum2, RightImage2);
 
 		if (!expandedText.IsEmpty())
 		{

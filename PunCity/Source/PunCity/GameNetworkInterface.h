@@ -81,6 +81,8 @@ public:
 
 	virtual PlacementType placementType() = 0;
 	virtual CardEnum placementBuildingEnum() = 0;
+	virtual PlacementInfo GetPlacementBuildingInfo() = 0;
+	
 	virtual void OnCancelPlacement() = 0;
 
 	//virtual void SetMainGameUIActive(bool active) = 0;

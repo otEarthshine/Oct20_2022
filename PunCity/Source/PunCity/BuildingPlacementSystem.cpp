@@ -95,6 +95,15 @@ ABuildingPlacementSystem::ABuildingPlacementSystem()
 	_gridGuide->SetActive(false);
 	_gridGuide->SetVisibility(false);
 
+	for (int32 i = 0; i < 4; i++) {
+		UDecalComponent* decalComp = CreateDefaultSubobject<UDecalComponent>(*(FString("GridGuideLine") + FString::FromInt(i)));
+		_gridGuideLines.Add(decalComp);
+		decalComp->SetRelativeRotation(FVector(0, 0, -1).Rotation()); // Rotate to project the decal down
+		decalComp->DecalSize = FVector(10, 640, 10);
+		decalComp->SetActive(false);
+		decalComp->SetVisibility(false);
+	}
+	
 	//_radiusDecal = CreateDefaultSubobject<UDecalComponent>("RadiusDecal");
 	//_radiusDecal->SetRelativeRotation(FVector(0, 0, -1).Rotation()); // Rotate to project the decal down
 	//_radiusDecal->DecalSize = FVector(100, 160, 160);
@@ -429,8 +438,16 @@ void ABuildingPlacementSystem::StartBuildingPlacement(CardEnum buildingEnum, int
 		_buildingEnum = buildingEnum;
 		StartDrag();
 
+		// Grid Guide
 		_gridGuide->SetVisibility(false);
 		_gridGuide->SetActive(false);
+
+		for (auto gridGuideLine : _gridGuideLines) {
+			gridGuideLine->SetVisibility(false);
+			gridGuideLine->SetActive(false);
+		}
+		
+		
 		_gameInterface->SetOverlayType(OverlayType::Farm, OverlaySetterType::BuildingPlacement);
 		return;
 	}
@@ -450,6 +467,11 @@ void ABuildingPlacementSystem::StartBuildingPlacement(CardEnum buildingEnum, int
 	//_lastPlacedInfo = PlacementInfo();
 
 	_gridGuide->SetMaterial(0, _assetLoader->GridGuideMaterial);
+
+	for (auto gridGuideLine : _gridGuideLines) {
+		gridGuideLine->SetMaterial(0, _assetLoader->M_GridGuideLine);
+	}
+	
 
 	_placementGrid.SetActive(true);
 	
@@ -560,10 +582,15 @@ void ABuildingPlacementSystem::StartBuildingPlacement(CardEnum buildingEnum, int
 		showGridGuide = false;
 	}
 
-	//! Grid Guide
+	// Grid Guide
 	if (showGridGuide) {
 		_gridGuide->SetVisibility(true);
 		_gridGuide->SetActive(true);
+
+		for (auto gridGuideLine : _gridGuideLines) {
+			gridGuideLine->SetVisibility(true);
+			gridGuideLine->SetActive(true);
+		}
 	}
 
 	// Province Buildings always show province hover
@@ -897,6 +924,8 @@ void ABuildingPlacementSystem::CancelPlacement()
 		_gameInterface->simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Trees, _gameInterface->sampleRegionIds());
 	}
 
+	RefreshTreesNearMouseOnTile();
+
 	if (_dragState == DragState::Dragging) {
 		if (_buildingEnum == CardEnum::StorageYard) {
 			_placementType = PlacementType::Building;
@@ -915,8 +944,14 @@ void ABuildingPlacementSystem::CancelPlacement()
 	_placementGrid.SetActive(false);
 	_placementGrid.Clear();
 
+	// Grid Guide
 	_gridGuide->SetVisibility(false);
 	_gridGuide->SetActive(false);
+
+	for (auto gridGuideLine : _gridGuideLines) {
+		gridGuideLine->SetVisibility(false);
+		gridGuideLine->SetActive(false);
+	}
 
 	//_radiusDecal->SetVisibility(false);
 	//_radiusDecal->SetActive(false);
@@ -1361,10 +1396,18 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 	//	return;
 	//}
 
-	// Play Drag Sound each time mouse move a tile during drag
-	if (_dragState == DragState::Dragging && _mouseOnTile != _lastMouseOnTile) {
-		_gameInterface->Spawn2DSound("UI", "PlacementDrag");
+	if (_mouseOnTile != _lastMouseOnTile)
+	{
+		// Play Drag Sound each time mouse move a tile during drag
+		if (_dragState == DragState::Dragging) {
+			_gameInterface->Spawn2DSound("UI", "PlacementDrag");
+		}
+
+		// Refresh to show trees hiding 
+		RefreshTreesNearMouseOnTile();
 	}
+
+	
 
 	_lastMouseOnTile = _mouseOnTile;
 	_lastDragState = _dragState;
@@ -1696,6 +1739,26 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 	FVector meshLocation = MapUtil::DisplayLocation(cameraAtom, _mouseOnTile.worldAtom2());
 
 	_gridGuide->SetWorldLocation(meshLocation);
+
+	WorldTile2 center = _area.centerTile();
+	auto setWorldLocation = [&](UDecalComponent* decalComp, FVector v, float rotation = 0.0f) {
+		decalComp->SetWorldLocation(meshLocation + v);
+		decalComp->SetWorldRotation(FVector(0, 0, -1).Rotation() + FRotator(0, rotation, 0));
+	};
+	setWorldLocation(_gridGuideLines[0], FVector((_area.minX - 1 - center.x) * 10, 0, 0));
+	setWorldLocation(_gridGuideLines[1], FVector((_area.maxX + 1 - center.x) * 10, 0, 0), 180);
+	
+	setWorldLocation(_gridGuideLines[2], FVector(0, (_area.minY - 1 - center.y) * 10, 0), 90);
+	setWorldLocation(_gridGuideLines[3], FVector(0, (_area.maxY + 1 - center.y) * 10, 0), 270);
+
+	//setWorldLocation(_gridGuideLines[3], FVector(PunSettings::Get("TestPosX"), PunSettings::Get("TestPosY"), PunSettings::Get("TestPosZ")));
+	
+	//_gridGuideLines[3]->SetWorldRotation(FVector(0, 0, -1).Rotation() + FRotator(PunSettings::Get("TestRotX"), PunSettings::Get("TestRotY"), PunSettings::Get("TestRotZ")));
+
+	//_gridGuideLines[0]->SetWorldRotation(FRotator(0));
+
+
+	
 	//_radiusDecal->SetWorldLocation(meshLocation);
 	_radiusMesh->SetWorldLocation(meshLocation);
 	

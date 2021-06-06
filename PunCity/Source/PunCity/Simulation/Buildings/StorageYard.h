@@ -67,19 +67,19 @@ public:
 class StorageYard : public StorageBase
 {
 public:
-	int32 storageSlotCount() override {
+	virtual int32 storageSlotCount() override {
 		return (_area.sizeX() / 2) * (_area.sizeY() / 2);
 	}
-	int32 stackPerSide() override {
+	virtual int32 stackPerSide() override {
 		return (_area.sizeX() / 2);
 	}
 
 	// Gate on the S in the middle.
-	WorldTile2 gateTile() override {
+	virtual WorldTile2 gateTile() override {
 		return WorldTile2(_area.minX, _area.minY / 2 + _area.maxY / 2);
 	}
 
-	void SetAreaWalkable() override
+	virtual void SetAreaWalkable() override
 	{
 		// Make the area on which this was built walkable.
 		_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
@@ -166,10 +166,10 @@ public:
 		return spaceLeft;
 	}
 
-	int32 maxCardSlots() override { return 0; }
+	virtual int32 maxCardSlots() override { return 0; }
 
 
-	bool RefreshHoverWarning() override
+	virtual bool RefreshHoverWarning() override
 	{
 		if (_simulation->isStorageAllFull(_townId)) {
 			hoverWarning = HoverWarning::StorageFull;
@@ -181,7 +181,7 @@ public:
 	}
 	
 
-	void Serialize(FArchive& Ar) override {
+	virtual void Serialize(FArchive& Ar) override {
 		StorageBase::Serialize(Ar);
 		Ar << _tilesOccupied;
 	}
@@ -278,7 +278,7 @@ public:
 		StorageBase::FinishConstruction();
 
 		AddUpgrades({
-			MakeWorkerSlotUpgrade(50, 2),
+			MakeWorkerSlotUpgrade(50, 3),
 		});
 
 		//PUN_CHECK(lastUIResourceTargets.size() < 1000);

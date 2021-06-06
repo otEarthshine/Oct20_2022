@@ -259,25 +259,35 @@ public:
 		}
 
 		// Cheat command
-		if (commandAndParams.size() >= 2 && commandAndParams[0] == TEXT("Cheat"))
+		if (commandAndParams.size() >= 2)
 		{
-			for (int i = 0; i < _countof(CheatName); i++) {
-				if (ToFString(CheatName[i]).Equals(ToFString(commandAndParams[1]))) {
-					auto command = std::make_shared<FCheat>();
-					command->cheatEnum = static_cast<CheatEnum>(i);
+			bool isCheatCommand = (commandAndParams[0] == TEXT("Cheat"));
+			bool isDebugCommand = false;
+#if !UE_BUILD_SHIPPING
+			isDebugCommand = (commandAndParams[0] == TEXT("Debug"));
+#endif
 
-					if (commandAndParams.size() >= 3) {
-						if (command->cheatEnum == CheatEnum::Tog) {
-							command->stringVar1 = FString(commandAndParams[2].c_str());
-						} else {
-							command->var1 = FCString::Atoi(commandAndParams[2].c_str());
-							if (commandAndParams.size() >= 4) {
-								command->var2 = FCString::Atoi(commandAndParams[3].c_str());
+			if (isCheatCommand || isDebugCommand)
+			{
+				for (int i = 0; i < _countof(CheatName); i++) {
+					if (ToFString(CheatName[i]).Equals(ToFString(commandAndParams[1]))) {
+						auto command = std::make_shared<FCheat>();
+						command->cheatEnum = static_cast<CheatEnum>(i);
+
+						if (commandAndParams.size() >= 3) {
+							if (command->cheatEnum == CheatEnum::Tog) {
+								command->stringVar1 = FString(commandAndParams[2].c_str());
+							}
+							else {
+								command->var1 = FCString::Atoi(commandAndParams[2].c_str());
+								if (commandAndParams.size() >= 4) {
+									command->var2 = FCString::Atoi(commandAndParams[3].c_str());
+								}
 							}
 						}
+
+						networkInterface()->SendNetworkCommand(command);
 					}
-					
-					networkInterface()->SendNetworkCommand(command);
 				}
 			}
 		}

@@ -375,9 +375,12 @@ struct WorldTile2
 		return Ar;
 	}
 
-	int32 GetHash() {
+	int32 GetHash() const {
 		return x + y;
 	}
+
+
+	int32 maxElement() const { return std::max(x, y); }
 };
 //#pragma pack(pop)
 

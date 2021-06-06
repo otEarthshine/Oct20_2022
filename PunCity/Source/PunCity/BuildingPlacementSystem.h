@@ -155,6 +155,15 @@ public:
 	TileArea GetDemolishHighlightArea() {
 		return _demolishHighlightArea;
 	}
+
+
+	void RefreshTreesNearMouseOnTile()
+	{
+		_mouseOnTile.region().ExecuteOnNearbyRegions([&](WorldRegion2 region) {
+			_gameInterface->simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Trees, region.regionId(), true);
+		});
+	}
+	
 	
 public:
 	PlacementGrids _placementGrid;
@@ -231,7 +240,9 @@ private:
 	TileArea _delayFillerArea;
 	bool justPlacedBuilding() { return _lastNetworkPlacementTime >= 0; }
 	
-	class UDecalComponent* _gridGuide;
+	UPROPERTY() UDecalComponent* _gridGuide;
+	UPROPERTY() TArray<UDecalComponent*> _gridGuideLines;
+	
 	//class UDecalComponent* _radiusDecal;
 	UPROPERTY() UStaticMeshComponent* _radiusMesh;
 

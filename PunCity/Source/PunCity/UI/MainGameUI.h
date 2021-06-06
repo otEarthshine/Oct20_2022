@@ -493,6 +493,9 @@ private:
 	//
 	UPROPERTY(meta = (BindWidget)) USizeBox* QuickDebugBox;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* QuickDebugText;
+
+	UPROPERTY(meta = (BindWidget)) USizeBox* QuickDebugDesyncBox;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* QuickDebugDesyncText;
 	
 private:
 	// Confirmation

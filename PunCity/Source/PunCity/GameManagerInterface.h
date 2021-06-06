@@ -95,4 +95,7 @@ public:
 	virtual float zoomDistance() = 0;
 	virtual bool IsInSampleRange(WorldTile2 tile) = 0;
 	virtual const std::vector<int32>& sampleRegionIds() = 0;
+
+	// Debug
+	virtual void CheckDesync(bool checkSucceed, FString desyncMessage) = 0;
 };

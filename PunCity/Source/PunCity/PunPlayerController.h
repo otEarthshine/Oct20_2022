@@ -361,6 +361,11 @@ public:
 
 	PlacementType placementType() final { return cameraPawn->buildingPlacementSystem->placementState(); }
 	CardEnum placementBuildingEnum() final { return cameraPawn->buildingPlacementSystem->placementBuildingEnum(); }
+
+	virtual PlacementInfo GetPlacementBuildingInfo() final {
+		return cameraPawn->buildingPlacementSystem->GetPlacementInfo();
+	}
+	
 	
 	void OnCancelPlacement() final {
 #if !UI_ALL
@@ -1946,7 +1951,7 @@ public:
 		_tickDisabled = tickDisabled;
 	}
 
-	IGameSimulationCore& simulation() {
+	GameSimulationCore& simulation() {
 		return gameManager->simulation();
 	}
 

@@ -1363,10 +1363,10 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 		// Hashes
 		{
 #if CHECK_TICKHASH
-			_tickHashes.AddTickHash(_tickCount, TickHashEnum::Input, _currentInputHashes);
-			_tickHashes.AddTickHash(_tickCount, TickHashEnum::Rand, GameRand::RandState());
-			_tickHashes.AddTickHash(_tickCount, TickHashEnum::Unit, _unitSystem->GetSyncHash());
-			_tickHashes.AddTickHash(_tickCount, TickHashEnum::Building, _buildingSystem->GetSyncHash());
+			AddTickHash(_tickHashes, _tickCount, TickHashEnum::Input, _currentInputHashes);
+			AddTickHash(_tickHashes, _tickCount, TickHashEnum::Rand, GameRand::RandState());
+			AddTickHash(_tickHashes, _tickCount, TickHashEnum::Unit, _unitSystem->GetSyncHash());
+			AddTickHash(_tickHashes, _tickCount, TickHashEnum::Building, _buildingSystem->GetSyncHash());
 #endif
 		}
 
@@ -5740,6 +5740,17 @@ void GameSimulationCore::DemolishCritterBuildingsIncludingFronts(WorldTile2 tile
 		//});
 	}
 }
+
+
+void GameSimulationCore::AddTickHash(TickHashes& tickHashes, int32 tickCount, TickHashEnum tickHashEnum, int32 tickHash)
+{
+
+	_gameManager->CheckDesync(tickHashes.allTickHashes.Num() == tickHashes.GetTickIndex(tickCount, tickHashEnum), FString("AddTickHash-") + TickHashEnumName[static_cast<int32>(tickHashEnum)]);
+	
+	//check(tickHashes.allTickHashes.Num() == tickHashes.GetTickIndex(tickCount, tickHashEnum));
+	tickHashes.allTickHashes.Add(tickHash);
+}
+
 
 /*
  * Test for what causes the desync

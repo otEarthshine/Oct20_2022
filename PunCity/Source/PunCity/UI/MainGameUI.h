@@ -443,7 +443,18 @@ private:
 	UPROPERTY(meta = (BindWidget)) UButton* ConverterCardHandCancelButton;
 	UPROPERTY(meta = (BindWidget)) UConfirmUI* ConverterCardHandConfirmUI;
 
+	int32 converterHandCategoryState = -1;
+	int32 lastConverterHandCategoryState = -1;
+	UPROPERTY(meta = (BindWidget)) UImage* ConverterCardHand_AgricultureActiveImage;
+	UPROPERTY(meta = (BindWidget)) UImage* ConverterCardHand_IndustryActiveImage;
+	UPROPERTY(meta = (BindWidget)) UImage* ConverterCardHand_ServicesActiveImage;
+	UPROPERTY(meta = (BindWidget)) UImage* ConverterCardHand_OthersActiveImage;
 
+	UPROPERTY(meta = (BindWidget)) UButton* ConverterCardHand_AgricultureButton;
+	UPROPERTY(meta = (BindWidget)) UButton* ConverterCardHand_IndustryButton;
+	UPROPERTY(meta = (BindWidget)) UButton* ConverterCardHand_ServicesButton;
+	UPROPERTY(meta = (BindWidget)) UButton* ConverterCardHand_OthersButton;
+	
 	
 	
 	UPROPERTY(meta = (BindWidget)) UWrapBox* CardHand2Box;
@@ -545,6 +556,8 @@ private:
 		ConverterCardHandOverlay->SetVisibility(ESlateVisibility::Collapsed);
 		simulation().cardSystem(playerId()).converterCardState = ConverterCardUseState::SubmittedUI;
 
+		converterHandCategoryState = -1;
+
 		auto command = make_shared<FUseCard>();
 		command->cardEnum = CardEnum::CardRemoval;
 		command->variable1 = static_cast<int32>(buildingEnumToRemove);
@@ -552,6 +565,19 @@ private:
 	}
 	UFUNCTION() void ClickCardRemovalConfirmNoButton() {
 		ConverterCardHandConfirmUI->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	UFUNCTION() void ClickConverterCardHand_AgricultureButton() {
+		converterHandCategoryState = (converterHandCategoryState != 0) ?  0 : -1;
+	}
+	UFUNCTION() void ClickConverterCardHand_IndustryButton() {
+		converterHandCategoryState = (converterHandCategoryState != 1) ? 1 : -1;
+	}
+	UFUNCTION() void ClickConverterCardHand_ServicesButton() {
+		converterHandCategoryState = (converterHandCategoryState != 2) ? 2 : -1;
+	}
+	UFUNCTION() void ClickConverterCardHand_OthersButton() {
+		converterHandCategoryState = (converterHandCategoryState != 3) ? 3 : -1;
 	}
 
 	

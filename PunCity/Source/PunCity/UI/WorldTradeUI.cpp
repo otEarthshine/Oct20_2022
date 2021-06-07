@@ -14,6 +14,14 @@ void UWorldTradeUI::PunInit()
 	TradeButton->OnClicked.AddDynamic(this, &UWorldTradeUI::ClickedTradeButton);
 	DismissButton->OnClicked.AddDynamic(this, &UWorldTradeUI::ClickedDismissButton);
 
+
+	TradeNeedsButton->OnClicked.AddDynamic(this, &UWorldTradeUI::ClickTradeNeedsButton);
+	TradeConstructionButton->OnClicked.AddDynamic(this, &UWorldTradeUI::ClickTradeConstructionButton);
+	TradeLuxuryButton->OnClicked.AddDynamic(this, &UWorldTradeUI::ClickTradeLuxuryButton);
+	TradeOthersButton->OnClicked.AddDynamic(this, &UWorldTradeUI::ClickTradeOthersButton);
+	tradeCategoryState = -1;
+
+	
 	SetVisibility(ESlateVisibility::Collapsed);
 }
 
@@ -97,7 +105,8 @@ void UWorldTradeUI::TickUI()
 		for (int32 i = 0; i < tradeRows.Num(); i++)
 		{
 			auto tradeRow = CastChecked<UWorldTradeRow>(tradeRows[i]);
-			int32 resourceCount = resourceSys.resourceCount(tradeRow->resourceEnum());
+			ResourceEnum resourceEnum = tradeRow->resourceEnum();
+			int32 resourceCount = resourceSys.resourceCount(resourceEnum);
 
 			// Can't sell more than resourceCount
 			if (tradeRow->buyAmount() < -resourceCount) {
@@ -121,13 +130,29 @@ void UWorldTradeUI::TickUI()
 			FString resourceName = ResourceNameF(tradeRow->resourceEnum());
 			resourceName = resourceName.Replace(TEXT(" "), TEXT(""));
 
-			if (searchString.IsEmpty() ||
-				resourceName.Find(searchString, ESearchCase::Type::IgnoreCase, ESearchDir::FromStart) != INDEX_NONE) 
-			{
-				tradeRow->SetVisibility(ESlateVisibility::Visible);
-			} else {
-				tradeRow->SetVisibility(ESlateVisibility::Collapsed);
+			bool isValidTradeCategory = true;
+			if (tradeCategoryState == 0) {
+				isValidTradeCategory = IsFoodEnum(resourceEnum) || IsFuelEnum(resourceEnum) || IsMedicineEnum(resourceEnum) || IsToolsEnum(resourceEnum);
 			}
+			if (tradeCategoryState == 1) {
+				isValidTradeCategory = IsConstructionResourceEnum(resourceEnum);
+			}
+			if (tradeCategoryState == 2) {
+				isValidTradeCategory = IsLuxuryEnum(resourceEnum);
+			}
+			if (tradeCategoryState == 3) {
+				isValidTradeCategory = !(IsFoodEnum(resourceEnum) || IsFuelEnum(resourceEnum) || IsMedicineEnum(resourceEnum) || IsToolsEnum(resourceEnum) || IsConstructionResourceEnum(resourceEnum) || IsLuxuryEnum(resourceEnum));
+			}
+
+			bool isValidForSearch = searchString.IsEmpty() ||
+									resourceName.Find(searchString, ESearchCase::Type::IgnoreCase, ESearchDir::FromStart) != INDEX_NONE;
+			
+			tradeRow->SetVisibility((isValidTradeCategory && isValidForSearch) ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+
+			TradeNeedsActiveImage->SetVisibility(tradeCategoryState == 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+			TradeConstructionActiveImage->SetVisibility(tradeCategoryState == 1 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+			TradeLuxuryActiveImage->SetVisibility(tradeCategoryState == 2 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+			TradeOthersActiveImage->SetVisibility(tradeCategoryState == 3 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
 		}
 
 		if (amountUpdated) {

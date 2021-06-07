@@ -49,6 +49,9 @@ public:
 	static void ResetStateToTickCount(uint32_t tickCount);
 
 	static uint32_t RandState();
+
+	static int32_t RandUsageCount() { return randUsageCount; }
+	
 	//static void SetRandState(uint32_t randStateIn);
 
 	static int32_t Rand100RoundTo1(int32_t value100)
@@ -114,4 +117,6 @@ public:
 
 private:
 	static bool randUsageValid;
+
+	static int32_t randUsageCount;
 };

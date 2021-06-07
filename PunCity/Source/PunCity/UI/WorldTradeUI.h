@@ -55,6 +55,31 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) UEditableTextBox* SearchBox;
 
+
+	int32 tradeCategoryState = -1;
+	UPROPERTY(meta = (BindWidget)) UImage* TradeNeedsActiveImage;
+	UPROPERTY(meta = (BindWidget)) UImage* TradeConstructionActiveImage;
+	UPROPERTY(meta = (BindWidget)) UImage* TradeLuxuryActiveImage;
+	UPROPERTY(meta = (BindWidget)) UImage* TradeOthersActiveImage;
+
+	UPROPERTY(meta = (BindWidget)) UButton* TradeNeedsButton;
+	UPROPERTY(meta = (BindWidget)) UButton* TradeConstructionButton;
+	UPROPERTY(meta = (BindWidget)) UButton* TradeLuxuryButton;
+	UPROPERTY(meta = (BindWidget)) UButton* TradeOthersButton;
+
+	UFUNCTION() void ClickTradeNeedsButton() {
+		tradeCategoryState = (tradeCategoryState != 0) ? 0 : -1;
+	}
+	UFUNCTION() void ClickTradeConstructionButton() {
+		tradeCategoryState = (tradeCategoryState != 1) ? 1 : -1;
+	}
+	UFUNCTION() void ClickTradeLuxuryButton() {
+		tradeCategoryState = (tradeCategoryState != 2) ? 2 : -1;
+	}
+	UFUNCTION() void ClickTradeOthersButton() {
+		tradeCategoryState = (tradeCategoryState != 3) ? 3 : -1;
+	}
+
 private:
 	int32 _totalCoinGain = 0;
 	int32 _quantity = 0;

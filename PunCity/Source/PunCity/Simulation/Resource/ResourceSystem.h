@@ -361,10 +361,14 @@ public:
 	}
 
 	void SetResourceTarget(int32 holderId, int32 target, ResourceSystem& resourceSys) {
+		check(holderId < _holders.size());
+		
 		_holders[holderId].SetTarget(target);
 		RefreshHolder(holderId, resourceSys);
 	}
 	void SetHolderTypeAndTarget(int32 holderId, ResourceHolderType type, int32 target, ResourceSystem& resourceSys) {
+		check(holderId < _holders.size());
+		
 		_holders[holderId].SetTarget(target);
 		_holders[holderId].SetType(type);
 		RefreshHolder(holderId, resourceSys);
@@ -466,6 +470,8 @@ private:
 	void RemoveFromAvailableStacks(int32 holderId) {
 		for (int32 i = 0; i < static_cast<int32>(ResourceFindType::Count); i++) 
 		{
+			check(i < _findTypeToAvailableIdToAmount.size());
+			
 			std::vector<HolderIdToAmount>& holderIdToAmounts = _findTypeToAvailableIdToAmount[i];
 			for (int j = holderIdToAmounts.size(); j-- > 0;) {
 				if (holderIdToAmounts[j].holderId == holderId) {

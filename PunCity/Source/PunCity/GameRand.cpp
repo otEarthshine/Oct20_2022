@@ -3,10 +3,12 @@
 static uint32_t randState = 1;
 
 bool GameRand::randUsageValid = false;
+int32_t GameRand::randUsageCount = 0;
 
 int32_t GameRand::Rand()
 {
 	check(randUsageValid);
+	randUsageCount++;
 	
 	randState ^= randState << 13;
 	randState ^= randState >> 17;
@@ -17,6 +19,7 @@ int32_t GameRand::Rand()
 uint32_t GameRand::URand()
 {
 	check(randUsageValid);
+	randUsageCount++;
 	
 	randState ^= randState << 13;
 	randState ^= randState >> 17;
@@ -43,6 +46,8 @@ int32_t GameRand::DisplayRand(uint32_t seed)
 void GameRand::ResetStateToTickCount(uint32_t tickCount)
 {
 	randState = tickCount + 17877; // Add number since randState close to 0 is bad
+
+	randUsageCount = 0;
 }
 
 uint32_t GameRand::RandState() {

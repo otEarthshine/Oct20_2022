@@ -660,16 +660,8 @@ public:
 
 
 
-	virtual void CheckDesync(bool checkSucceed, FString desyncMessage) final
+	virtual void CheckDesync(bool checkSucceed, FString desyncMessage, int32 tick = -1) final
 	{
-		if (PunSettings::IsOn("AlreadyDesynced")) {
-			return;
-		}
-		if (PunSettings::IsOn("ForceDesyncPopup")) {
-			PunSettings::Set("ForceDesyncPopup", 0);
-			checkSucceed = false;
-		}
-
 		if (!checkSucceed)
 		{
 			PunSettings::Set("AlreadyDesynced", 1);
@@ -677,15 +669,39 @@ public:
 			TArray<FText> args;
 			args.Add(INVTEXT("!!! Desync !!!<space>"));
 			args.Add(INVTEXT("Please screenshot this and post it on the Discord Bug Room.<space>"));
+			
+			args.Add(FText::Format(INVTEXT(" - Tick: {0}\n"), TEXT_NUM(tick)));
+			args.Add(FText::Format(INVTEXT(" - At: {0}\n"), FText::FromString(desyncMessage)));
+			args.Add(FText::Format(INVTEXT(" - tickHashes:{0} serverTickHashes:{1}\n"), simulation().tickHashes().TickCount(), simulation().serverTickHashes().TickCount()));
 
-			args.Add(FText::Format(INVTEXT("  At: {0}"), FText::FromString(desyncMessage)));
-			args.Add(FText::Format(INVTEXT("  tickHashes:{0} serverTickHashes:{1}"), simulation().tickHashes().TickCount(), simulation().serverTickHashes().TickCount()));
+			if (tick != -1)
+			{
+				int32 hashIndex0 = tick * TickHashes::TickHashEnumCount();
+				const TickHashes& tickHashes = simulation().tickHashes();
+				const TickHashes& serverTickHashes = simulation().serverTickHashes();
+				auto compareHashes = [&](int32 tickHashEnumInt) {
+					int32 localHash = tickHashes.allTickHashes[hashIndex0 + tickHashEnumInt];
+					int32 serverHash = serverTickHashes.allTickHashes[hashIndex0 + tickHashEnumInt];
+					return localHash == serverHash;
+				};
+
+				args.Add(INVTEXT("<space>TickHashStates: "));
+				for (int32 i = 0; i < static_cast<int32>(TickHashEnum::Count); i++) {
+					args.Add(INVTEXT(" "));
+					args.Add(TEXT_NUM(compareHashes(i)));
+					args.Add(INVTEXT(" "));
+				}
+			}
 
 			args.Add(INVTEXT("<space>Commands Executed (latest first):\n"));
-			const std::vector<NetworkCommandEnum>& commandsExecuted = simulation().GetCommandsExecuted();
+			const std::vector<std::shared_ptr<FNetworkCommand>>& commandsExecuted = simulation().GetCommandsExecuted();
+			const std::vector<int32>& commandsTickExecuted = simulation().GetCommandsTickExecuted();
+			
 			int32 count = 0;
 			for (int32 i = commandsExecuted.size(); i-- > 0;) {
-				args.Add(ToFText(GetNetworkCommandName(commandsExecuted[i])));
+				args.Add(FText::FromString(commandsExecuted[i]->ToCompactString()));
+				args.Add(INVTEXT(" t:"));
+				args.Add(TEXT_NUM(commandsTickExecuted[i]));
 				args.Add(INVTEXT("\n"));
 				if (++count > 20) {
 					break;

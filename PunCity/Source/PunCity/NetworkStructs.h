@@ -371,6 +371,7 @@ public:
 
 	int32 playerId = -1; // Note!!! This is filled after being sent on network
 	int32 townId = -1;
+	int32 proxyControllerTick = -1;
 
 	virtual NetworkCommandEnum commandType() { return NetworkCommandEnum::None; }
 
@@ -383,6 +384,7 @@ public:
 		Ar << commandInt;
 		Ar << playerId;
 		Ar << townId;
+		Ar << proxyControllerTick;
 	}
 
 	static NetworkCommandEnum GetCommandTypeFromBlob(PunSerializedData& blob) {
@@ -390,7 +392,7 @@ public:
 	}
 
 	virtual FString ToCompactString() {
-		return ToFString(GetNetworkCommandName(commandType()));
+		return ToFString(GetNetworkCommandName(commandType())) + " [" + FString::FromInt(playerId) + "] pT:" + FString::FromInt(proxyControllerTick) + " ";
 	}
 
 	virtual int32 GetTickHash() {
@@ -418,6 +420,10 @@ public:
 
 	virtual int32 GetTickHash() override {
 		return FNetworkCommand::GetTickHash() + buildingId + buildingTileId + static_cast<int32>(buildingEnum);
+	}
+
+	virtual FString ToCompactString() override {
+		return FNetworkCommand::ToCompactString() + " bldId:" + FString::FromInt(buildingId);
 	}
 };
 
@@ -499,6 +505,11 @@ public:
 		blob << placementType;
 		blob << harvestResourceEnum;
 	}
+	
+
+	virtual FString ToCompactString() override {
+		return FNetworkCommand::ToCompactString() + " placementType:" + FString::FromInt(placementType);
+	}
 };
 
 class FJobSlotChange final : public FBuildingCommand
@@ -551,11 +562,17 @@ public:
 	int32 priority = -1;
 
 	NetworkCommandEnum commandType() final { return NetworkCommandEnum::SetPriority; }
+	
 
 	void Serialize(PunSerializedData& blob) final {
 		FBuildingCommand::Serialize(blob);
 		
 		blob << priority;
+	}
+	
+
+	virtual FString ToCompactString() override {
+		return FBuildingCommand::ToCompactString() + " prior:" + FString::FromInt(priority);
 	}
 };
 
@@ -706,6 +723,10 @@ public:
 		Ar << objectId;
 		Ar << isIntercityTrade;
 	}
+
+	virtual FString ToCompactString() override {
+		return FNetworkCommand::ToCompactString() + " buyEnums:" + FString::FromInt(buyEnums.Num()) + " totalGain:" + FString::FromInt(totalGain) + " objId:" + FString::FromInt(objectId) + " intercity:" + FString::FromInt(isIntercityTrade);
+	}
 };
 
 
@@ -812,6 +833,10 @@ public:
 
 	virtual int32 GetTickHash() override {
 		return FBuildingCommand::GetTickHash() + enumInt + intVar1 + intVar2 + intVar3;
+	}
+
+	virtual FString ToCompactString() override {
+		return FNetworkCommand::ToCompactString() + " enumInt:" + FString::FromInt(enumInt) + " int1:" + FString::FromInt(intVar1) + " int2:" + FString::FromInt(intVar2) + " int3:" + FString::FromInt(intVar3);
 	}
 };
 
@@ -965,6 +990,10 @@ public:
 	void Serialize(PunSerializedData& blob) final {
 		FNetworkCommand::Serialize(blob);
 		blob << techEnum;
+	}
+
+	virtual FString ToCompactString() override {
+		return FNetworkCommand::ToCompactString() + " techEnum:" + FString::FromInt(static_cast<int32>(techEnum));
 	}
 };
 
@@ -1206,7 +1235,7 @@ public:
 
 struct NetworkTickInfo
 {
-	int32 tickCount = 0; // This is server tick... Not simulation tick. These may be different depending on gameSpeed.
+	int32 proxyControllerTick = 0; // This is server tick... Not simulation tick. These may be different depending on gameSpeed.
 	//int32 playerCount = 0;
 	int32 gameSpeed = 1;
 	int32 tickCountSim = 0;
@@ -1217,7 +1246,7 @@ struct NetworkTickInfo
 
 	void SerializeToBlob(TArray<int32>& blob)
 	{
-		blob.Add(tickCount);
+		blob.Add(proxyControllerTick);
 		blob.Add(gameSpeed);
 		blob.Add(tickCountSim);
 
@@ -1231,7 +1260,7 @@ struct NetworkTickInfo
 		int32* checksumInt = reinterpret_cast<int32*>(&checksum);
 		blob.Insert(*checksumInt, 0);
 
-		_LOG(PunTickHash, "<<< NetworkTickInfo tick:%d gameSpeed:%d tickSim:%d commands:%d", tickCount, gameSpeed, tickCountSim, commands.size());
+		_LOG(PunTickHash, "<<< NetworkTickInfo tick:%d gameSpeed:%d tickSim:%d commands:%d", proxyControllerTick, gameSpeed, tickCountSim, commands.size());
 	}
 
 	uint32 BSDChecksum(int32 shift, const TArray<int32>& blob)
@@ -1252,7 +1281,7 @@ struct NetworkTickInfo
 		uint32 checksum = BSDChecksum(1, blob);
 		check(sourceChecksum == checksum);
 		
-		tickCount = blob[index++];
+		proxyControllerTick = blob[index++];
 		gameSpeed = blob[index++];
 		tickCountSim = blob[index++];
 
@@ -1267,11 +1296,11 @@ struct NetworkTickInfo
 
 		check(punBlob.readIndex == punBlob.Num()); // Ensure there is no leftover data
 
-		_LOG(PunTickHash, ">>> NetworkTickInfo tick:%d gameSpeed:%d tickSim:%d commands:%d", tickCount, gameSpeed, tickCountSim, commands.size());
+		_LOG(PunTickHash, ">>> NetworkTickInfo tick:%d gameSpeed:%d tickSim:%d commands:%d", proxyControllerTick, gameSpeed, tickCountSim, commands.size());
 	}
 
 	FString ToString() {
-		FString string = FString::Printf(TEXT("TickInfo serverTick:%d simTick:%d commands:%d, "), tickCount, tickCountSim, commands.size());
+		FString string = FString::Printf(TEXT("TickInfo serverTick:%d simTick:%d commands:%d, "), proxyControllerTick, tickCountSim, commands.size());
 		for (size_t i = 0; i < commands.size(); i++) {
 			string.Append(FString("|") + ToFString(NetworkCommandNames[static_cast<int>(commands[i]->commandType())]));
 		}

@@ -62,18 +62,28 @@ DECLARE_LOG_CATEGORY_EXTERN(LogNetworkInput, All, All);
 enum class TickHashEnum
 {
 	Input,
+	RandCount,
 	Rand,
 	Unit,
 	Building,
+
+	Buffer6,
+	Buffer7,
+	Buffer8,
 
 	Count,
 };
 const std::vector<FString> TickHashEnumName
 {
 	"Input",
+	"RandCount",
 	"Rand",
 	"Unit",
 	"Building",
+
+	"Buffer6",
+	"Buffer7",
+	"Buffer8",
 };
 
 
@@ -143,6 +153,10 @@ public:
 	void AppendAndCompareServerHashes(int32 hashSendTick, const TArray<int32>& newAllTickHashes)
 	{
 #if CHECK_TICKHASH
+		if (PunSettings::IsOn("AlreadyDesynced")) {
+			return;
+		}
+		
 		_LOG(PunTickHash, "AppendAndCompareServerHashes_Before newAllTickHashes:%d _serverTickHashes.TickCount:%d", newAllTickHashes.Num(), _serverTickHashes.TickCount());
 
 		PUN_CHECK(hashSendTick <= _serverTickHashes.TickCount());
@@ -156,29 +170,31 @@ public:
 			}
 			index++;
 		}
+		
 		int32 checkTickCount = std::min(_tickHashes.TickCount(), _serverTickHashes.TickCount());
 		for (int32 i = 0; i < checkTickCount; i++) 
 		{
 			// i is Tick Count
 			int32 hashIndex0 = i * TickHashes::TickHashEnumCount();
 
-			int32 localHash = -1;
-			int32 serverHash = -1;
 			auto compareHashes = [&](TickHashEnum tickHashEnum) {
-				localHash = _tickHashes.allTickHashes[hashIndex0 + static_cast<int32>(tickHashEnum)];
-				serverHash = _serverTickHashes.allTickHashes[hashIndex0 + static_cast<int32>(tickHashEnum)];
+				int32 localHash = _tickHashes.allTickHashes[hashIndex0 + static_cast<int32>(tickHashEnum)];
+				int32 serverHash = _serverTickHashes.allTickHashes[hashIndex0 + static_cast<int32>(tickHashEnum)];
 				return localHash == serverHash;
 			};
 
-			//check(compareHashes(TickHashEnum::Input));
-			//check(compareHashes(TickHashEnum::Rand));
-			//check(compareHashes(TickHashEnum::Unit));
-			//check(compareHashes(TickHashEnum::Building));
 
-			_gameManager->CheckDesync(compareHashes(TickHashEnum::Input), FString("compareHashes_Input"));
-			_gameManager->CheckDesync(compareHashes(TickHashEnum::Rand), FString("compareHashes_Rand"));
-			_gameManager->CheckDesync(compareHashes(TickHashEnum::Unit), FString("compareHashes_Unit"));
-			_gameManager->CheckDesync(compareHashes(TickHashEnum::Building), FString("compareHashes_Building"));
+			_gameManager->CheckDesync(compareHashes(TickHashEnum::Input), FString("compareHashes_Input:"), i);
+			_gameManager->CheckDesync(compareHashes(TickHashEnum::RandCount), FString("compareHashes_RandCount:"), i);
+			_gameManager->CheckDesync(compareHashes(TickHashEnum::Rand), FString("compareHashes_Rand:"), i);
+			_gameManager->CheckDesync(compareHashes(TickHashEnum::Unit), FString("compareHashes_Unit:"), i);
+			_gameManager->CheckDesync(compareHashes(TickHashEnum::Building), FString("compareHashes_Building:"), i);
+		}
+
+		if (PunSettings::IsOn("ForceDesyncPopup")) {
+			PunSettings::Set("ForceDesyncPopup", 0);
+			_gameManager->CheckDesync(false, FString("ForcedDesync:"));
+			return;
 		}
 
 		_LOG(PunTickHash, "AppendAndCompareServerHashes_After _tickHashes.TickCount:%d _serverTickHashes.TickCount:%d", _tickHashes.TickCount(), _serverTickHashes.TickCount());
@@ -2267,9 +2283,10 @@ public:
 	}
 
 	
-	const std::vector<NetworkCommandEnum>& GetCommandsExecuted() const {
-		return _commandsExecuted;
-	}
+	const std::vector<std::shared_ptr<FNetworkCommand>>& GetCommandsExecuted() const { return _commandsExecuted; }
+	const std::vector<int32>& GetCommandsTickExecuted() const { return _commandsTickExecuted; }
+
+	
 	const TickHashes& tickHashes() { return _tickHashes; }
 	const TickHashes& serverTickHashes() { return _serverTickHashes; }
 
@@ -3009,7 +3026,7 @@ public:
 			}
 			
 			Ar << _currentInputHashes;
-			SerializeVecValue(Ar, _commandsExecuted);
+			SerializeVecValue(Ar, _commandEnumsExecuted);
 #endif
 
 			// Snow
@@ -3395,7 +3412,9 @@ private:
 	TickHashes _serverTickHashes;
 
 	int32 _currentInputHashes = 0;
-	std::vector<NetworkCommandEnum> _commandsExecuted;
+	std::vector<NetworkCommandEnum> _commandEnumsExecuted; // Serialized
+	std::vector<std::shared_ptr<FNetworkCommand>> _commandsExecuted; // Not Serialized
+	std::vector<int32> _commandsTickExecuted; // Not Serialized
 
 	// Snow (Season * Celsius) 
 	FloatDet _snowAccumulation3 = 0;

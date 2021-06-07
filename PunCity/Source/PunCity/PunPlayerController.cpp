@@ -334,7 +334,7 @@ void APunPlayerController::Tick(float DeltaTime)
 			
 			if (allTickHashes.Num() > 0)
 			{
-				_LOG(PunTickHash, "SendHash Out Start cid:%d hashSendTick:%d", playerId(), _hashSendTick);
+				_LOG(PunTickHash, "[%d] SendHash Out Start hashSendTick:%d", playerId(), _hashSendTick);
 
 				// Note: _hashSendTick becomes 0 upon loading, which is fine, since hashes will just override the loaded one...
 				check(allTickHashes.Num() <= MaxPacketSize32);
@@ -344,7 +344,7 @@ void APunPlayerController::Tick(float DeltaTime)
 				
 				_hashSendTick += allTickHashes.Num() / TickHashes::TickHashEnumCount();
 
-				_LOG(PunTickHash, "SendHash Out End cid:%d hashSendTick:%d", playerId(), _hashSendTick);
+				_LOG(PunTickHash, "[%d] SendHash Out End hashSendTick:%d", playerId(), _hashSendTick);
 			}
 		}
 	}
@@ -460,22 +460,22 @@ void APunPlayerController::Tick(float DeltaTime)
 				int32 missingTick = it.second;
 				if (missingTick != -1)
 				{
-					_LOG(PunTickHash, "TickMissingGameTick <p%d> missingTick:%d kNetworkTickInfoCache:%d %d->%d", 
-						it.first, missingTick, kNetworkTickInfoCache.size(), kNetworkTickInfoCache.front().tickCount, kNetworkTickInfoCache.back().tickCount);
+					_LOG(PunTickHash, "[%d] TickMissingGameTick <p%d> missingTick:%d kNetworkTickInfoCache:%d %d->%d", 
+						playerId(), it.first, missingTick, kNetworkTickInfoCache.size(), kNetworkTickInfoCache.front().proxyControllerTick, kNetworkTickInfoCache.back().proxyControllerTick);
 					
 					// Find and Send the missing tick
 					for (size_t i = 0; i < kNetworkTickInfoCache.size(); i++)
 					{
-						_LOG(PunTickHash, "TickMissingGameTick <p%d> i:%d tick:%d", it.first, i, kNetworkTickInfoCache[i].tickCount);
+						_LOG(PunTickHash, "[%d] TickMissingGameTick <p%d> i:%d tick:%d", playerId(), it.first, i, kNetworkTickInfoCache[i].proxyControllerTick);
 						
 						auto& curTickInfo = kNetworkTickInfoCache[i];
-						if (curTickInfo.tickCount == missingTick)
+						if (curTickInfo.proxyControllerTick == missingTick)
 						{
 							// Serialize NetworkTickInfo 
 							TArray<int32> networkTickInfoBlob;
 							curTickInfo.SerializeToBlob(networkTickInfoBlob);
 
-							_LOG(PunTickHash, "TickMissingGameTick <p%d> TickLocalSimulation_ToClients i:%d", it.first, i);
+							_LOG(PunTickHash, "[%d] TickMissingGameTick <p%d> TickLocalSimulation_ToClients i:%d", playerId(), it.first, i);
 							check(networkTickInfoBlob.Num() <= MaxPacketSize32);
 
 							TickLocalSimulation_ToClients(networkTickInfoBlob);
@@ -528,8 +528,8 @@ void APunPlayerController::Tick(float DeltaTime)
 							NetworkTickInfo tickInfo;
 							tickInfo.gameSpeed = kGameSpeed;
 
-							// Dispatch all commands (Limited to 50)
-							int32 numberOfCommandsToSend = min(static_cast<int>(kCommandQueue.size()), 50);
+							// Dispatch all commands (Limited to 10)
+							int32 numberOfCommandsToSend = min(static_cast<int>(kCommandQueue.size()), 10);
 							for (int32 j = 0; j < numberOfCommandsToSend; j++) {
 								tickInfo.commands.push_back(kCommandQueue[j]);
 								//PUN_DEBUG(FString::Printf(TEXT("Add tickInfo.commands init: %d"), tickInfo.commands.size()));
@@ -732,7 +732,12 @@ void APunPlayerController::SendTickToClient(NetworkTickInfo& tickInfo)
 	LLM_SCOPE_(EPunSimLLMTag::PUN_Controller);
 
 	PUN_LOG("SendTickToClient cid:%d _proxyControllerTick %d", controllerPlayerId(), _proxyControllerTick);
-	tickInfo.tickCount = _proxyControllerTick++;
+	tickInfo.proxyControllerTick = _proxyControllerTick++;
+
+
+	for (int32 j = 0; j < tickInfo.commands.size(); j++) {
+		tickInfo.commands[j]->proxyControllerTick = tickInfo.proxyControllerTick;
+	}
 
 
 	// Serialize NetworkTickInfo 
@@ -888,20 +893,20 @@ void APunPlayerController::TickLocalSimulation_Base(const NetworkTickInfo& tickI
 	//PUN_LOG("Tick: controller->TickLocalSimulation_Base() tickCount:%d gameSpeed:%d tickCountSim:%d", tickInfo.tickCount, tickInfo.gameSpeed, tickInfo.tickCountSim);
 
 	// Discard previous tick (might be resent)
-	if (tickInfo.tickCount - _lastNetworkTickCount <= 0) {
+	if (tickInfo.proxyControllerTick - _lastNetworkTickCount <= 0) {
 		return;
 	}
 
 	// Tick was skipped
-	if (tickInfo.tickCount - _lastNetworkTickCount > 1)
+	if (tickInfo.proxyControllerTick - _lastNetworkTickCount > 1)
 	{
-		PUN_LOG("Tick was skipped tick:%d last:%d", tickInfo.tickCount, _lastNetworkTickCount);
+		PUN_LOG("Tick was skipped tick:%d last:%d", tickInfo.proxyControllerTick, _lastNetworkTickCount);
 		SendServerMissingTick(controllerPlayerId(), _lastNetworkTickCount + 1);
 		_blockedNetworkTickInfoList.push_back(tickInfo);
 		return;
 	}
 
-	_lastNetworkTickCount = tickInfo.tickCount;
+	_lastNetworkTickCount = tickInfo.proxyControllerTick;
 	AddTickInfo(tickInfo);
 
 	if (_blockedNetworkTickInfoList.size() > 0)
@@ -909,15 +914,15 @@ void APunPlayerController::TickLocalSimulation_Base(const NetworkTickInfo& tickI
 		for (int32 i = 0; i < _blockedNetworkTickInfoList.size(); i++) 
 		{
 			auto& curTickInfo = _blockedNetworkTickInfoList[i];
-			if (curTickInfo.tickCount - _lastNetworkTickCount == 1) {
-				_lastNetworkTickCount = curTickInfo.tickCount;
+			if (curTickInfo.proxyControllerTick - _lastNetworkTickCount == 1) {
+				_lastNetworkTickCount = curTickInfo.proxyControllerTick;
 				AddTickInfo(curTickInfo);
 			}
-			else if (curTickInfo.tickCount - _lastNetworkTickCount <= 0) {
+			else if (curTickInfo.proxyControllerTick - _lastNetworkTickCount <= 0) {
 				continue;
 			}
 			else {
-				PUN_LOG("Tick was skipped (2) tick:%d last:%d", curTickInfo.tickCount, _lastNetworkTickCount);
+				PUN_LOG("Tick was skipped (2) tick:%d last:%d", curTickInfo.proxyControllerTick, _lastNetworkTickCount);
 				SendServerMissingTick(controllerPlayerId(), _lastNetworkTickCount + 1);
 				_blockedNetworkTickInfoList = std::vector<NetworkTickInfo>(_blockedNetworkTickInfoList.begin() + i, _blockedNetworkTickInfoList.end());
 				return;
@@ -948,12 +953,12 @@ void APunPlayerController::AddTickInfo(const NetworkTickInfo& tickInfo)
 	if (gameInstance()->shouldDelayInput()) // Multiplayer does multiple ticks at once (GameTicksPerNetworkTicks)
 	{
 		// Add (GameTicksPerNetworkTicks - 1) more empty ticks
-		int tickCount = tickInfo.tickCount;
+		int tickCount = tickInfo.proxyControllerTick;
 		const int32 moreTicksToAdd = GameTicksPerNetworkTicks - 1;
 
 		for (int i = 0; i < moreTicksToAdd; i++) {
 			NetworkTickInfo tickInfoNoCommand;
-			tickInfoNoCommand.tickCount = ++tickCount; // since game ticks at 30fps the tickCount sent is serverTick / 2
+			tickInfoNoCommand.proxyControllerTick = ++tickCount; // since game ticks at 30fps the tickCount sent is serverTick / 2
 			//tickInfoNoCommand.playerCount = tickInfo.playerCount;
 			tickInfoNoCommand.gameSpeed = tickInfo.gameSpeed;
 			gameManager->AddGameTick(tickInfoNoCommand);
@@ -968,7 +973,7 @@ void APunPlayerController::TickLocalSimulation_ToClients_Implementation(const TA
 	tickInfo.DeserializeFromBlob(networkTickInfoBlob);
 
 	if (tickInfo.hasCommand()) { // Check if this is comand tick
-		PUN_LOG("ClientTickLocalSimulation..TickInfo: size:%d tickCount: %d, commandSize:%d", networkTickInfoBlob.Num(), tickInfo.tickCount, tickInfo.commands.size());
+		PUN_LOG("ClientTickLocalSimulation..TickInfo: size:%d tickCount: %d, commandSize:%d", networkTickInfoBlob.Num(), tickInfo.proxyControllerTick, tickInfo.commands.size());
 	}
 	
 	TickLocalSimulation_Base(tickInfo);

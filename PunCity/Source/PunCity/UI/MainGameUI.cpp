@@ -78,9 +78,18 @@ void UMainGameUI::PunInit()
 	//ConverterCardHandSubmitButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickConverterCardHandSubmitButton);
 	ConverterCardHandCancelButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickConverterCardHandCancelButton);
 
+	converterHandCategoryState = -1;
+	lastConverterHandCategoryState = -1;
+	
+	ConverterCardHand_AgricultureButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickConverterCardHand_AgricultureButton);
+	ConverterCardHand_IndustryButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickConverterCardHand_IndustryButton);
+	ConverterCardHand_ServicesButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickConverterCardHand_ServicesButton);
+	ConverterCardHand_OthersButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickConverterCardHand_OthersButton);
+
 	ConverterCardHandConfirmUI->ConfirmYesButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickCardRemovalConfirmYesButton);
 	ConverterCardHandConfirmUI->ConfirmNoButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickCardRemovalConfirmNoButton);
 	ConverterCardHandConfirmUI->SetVisibility(ESlateVisibility::Collapsed);
+	
 
 	ConfirmationOverlay->SetVisibility(ESlateVisibility::Collapsed);
 	ConfirmationYesButton->OnClicked.AddDynamic(this, &UMainGameUI::OnClickConfirmationYes);
@@ -591,15 +600,21 @@ void UMainGameUI::Tick()
 		 * !!! CONFUSING CARD HANDS
 		 * We do not need special variable like _needDrawHandDisplay because we will never need a delayed hand display for this
 		 */
+		
 		if (cardSystem.converterCardState == ConverterCardUseState::JustUsed)
 		{
 			FString searchString = ConverterCardHandOverlay->IsVisible() ? ConverterCardHandSearchBox->GetText().ToString() : "";
+			if (!ConverterCardHandOverlay->IsVisible()) {
+				converterHandCategoryState = -1;
+			}
 			
 			// Open if not already done so
 			if (!ConverterCardHandOverlay->IsVisible() ||
-				lastSearchString != searchString)
+				lastSearchString != searchString ||
+				lastConverterHandCategoryState != converterHandCategoryState)
 			{
 				lastSearchString = searchString;
+				lastConverterHandCategoryState = converterHandCategoryState;
 				
 				ConverterCardHandBox->ClearChildren();
 				ConverterCardHandConfirmUI->SetVisibility(ESlateVisibility::Collapsed);
@@ -646,16 +661,17 @@ void UMainGameUI::Tick()
 						CardEnum buildingEnum = SortedNameBuildingEnum[i];
 
 						// Show wild card by type
-						if (wildCardEnum == CardEnum::WildCardFood && !IsAgricultureBuilding(buildingEnum)) {
+						if (converterHandCategoryState == 0 && !IsAgricultureBuilding(buildingEnum)) {
 							continue;
 						}
-						if (wildCardEnum == CardEnum::WildCardIndustry && !IsIndustrialBuilding(buildingEnum)) {
+						if (converterHandCategoryState == 1 && !(IsIndustrialBuilding(buildingEnum) || IsMountainMine(buildingEnum))) {
 							continue;
 						}
-						if (wildCardEnum == CardEnum::WildCardMine && !IsMountainMine(buildingEnum)) {
+						if (converterHandCategoryState == 2 && !IsServiceBuilding(buildingEnum)) {
 							continue;
 						}
-						if (wildCardEnum == CardEnum::WildCardService && !IsServiceBuilding(buildingEnum)) {
+						if (converterHandCategoryState == 3 && 
+							(IsAgricultureBuilding(buildingEnum) || IsIndustrialBuilding(buildingEnum) || IsMountainMine(buildingEnum) || IsServiceBuilding(buildingEnum))) {
 							continue;
 						}
 
@@ -702,7 +718,14 @@ void UMainGameUI::Tick()
 				}
 
 				networkInterface()->ResetGameUI();
+
+				ConverterCardHand_AgricultureActiveImage->SetVisibility(converterHandCategoryState == 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+				ConverterCardHand_IndustryActiveImage->SetVisibility(converterHandCategoryState == 1 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+				ConverterCardHand_ServicesActiveImage->SetVisibility(converterHandCategoryState == 2 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+				ConverterCardHand_OthersActiveImage->SetVisibility(converterHandCategoryState == 3 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+				
 				ConverterCardHandOverlay->SetVisibility(ESlateVisibility::Visible);
+
 				_lastConverterChosenCard = CardEnum::None; // Start off with nothing chosen
 
 				// TODO: proper card deal animation+sound

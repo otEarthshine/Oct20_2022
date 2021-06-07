@@ -873,9 +873,6 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 		WorldTile2 size = info.area.size();
 		niagaraComp->SetNiagaraVariableInt("BoxSize_X", size.x);
 		niagaraComp->SetNiagaraVariableInt("BoxSize_Y", size.y);
-
-		//niagaraComp->SetNiagaraVariableLinearColor("User.Color", FLinearColor(PunSettings::Get("TestPosX"), 1, 1));
-		//niagaraComp->SetNiagaraVariableLinearColor("Color", FLinearColor(PunSettings::Get("TestPosX"), 1, 1));
 		
 		niagaraComp->Activate();
 

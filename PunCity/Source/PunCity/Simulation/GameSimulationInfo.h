@@ -19,9 +19,9 @@
 // GAME_VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 35 // 3 digit
+#define MINOR_VERSION 36 // 3 digit
 
-#define VERSION_DAY 4
+#define VERSION_DAY 7
 #define VERSION_MONTH 6
 #define VERSION_YEAR 21
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
@@ -32,9 +32,9 @@
 
 // SAVE_VERSION
 #define MAJOR_SAVE_VERSION 0
-#define MINOR_SAVE_VERSION 22 // 3 digit
+#define MINOR_SAVE_VERSION 23 // 3 digit
 
-#define VERSION_SAVE_DAY 4
+#define VERSION_SAVE_DAY 7
 #define VERSION_SAVE_MONTH 6
 #define VERSION_SAVE_YEAR 21
 #define VERSION_SAVE_DATE (VERSION_SAVE_YEAR * 10000) + (VERSION_SAVE_MONTH * 100) + VERSION_SAVE_DAY
@@ -1567,6 +1567,16 @@ static int32 ConstructionCostAsMoney(std::vector<int32> bldResourceCost) {
 		resourceValue += bldResourceCost[i] * GetResourceInfo(ConstructionResources[i]).basePrice;
 	}
 	return resourceValue;
+}
+
+static bool IsConstructionResourceEnum(ResourceEnum resourceEnumIn)
+{
+	for (ResourceEnum resourceEnum : ConstructionResources) {
+		if (resourceEnum == resourceEnumIn) {
+			return true;
+		}
+	}
+	return false;
 }
 
 /*

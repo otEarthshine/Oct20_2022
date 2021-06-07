@@ -1736,11 +1736,11 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 	bool useNormalPlacement = true;
 	bool isAllRed = false;
 
-	FVector meshLocation = MapUtil::DisplayLocation(cameraAtom, _mouseOnTile.worldAtom2());
+	WorldTile2 center = _area.centerTile();
+	FVector meshLocation = MapUtil::DisplayLocation(cameraAtom, center.worldAtom2());
 
 	_gridGuide->SetWorldLocation(meshLocation);
 
-	WorldTile2 center = _area.centerTile();
 	auto setWorldLocation = [&](UDecalComponent* decalComp, FVector v, float rotation = 0.0f) {
 		decalComp->SetWorldLocation(meshLocation + v);
 		decalComp->SetWorldRotation(FVector(0, 0, -1).Rotation() + FRotator(0, rotation, 0));

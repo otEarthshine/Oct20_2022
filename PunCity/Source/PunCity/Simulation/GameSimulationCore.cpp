@@ -203,7 +203,9 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 	_tickHashes.Clear();
 	_serverTickHashes.Clear();
 	_currentInputHashes = 0;
+	_commandEnumsExecuted.clear();
 	_commandsExecuted.clear();
+	_commandsTickExecuted.clear();
 #endif
 
 	/*
@@ -827,12 +829,12 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 	// Special -12 game speed which means 1/2 discard a tick
 	int32 simTicksForThisControllerTick = gameSpeed;
 	if (gameSpeed == -12) {
-		simTicksForThisControllerTick = tickInfo.tickCount % 2;
+		simTicksForThisControllerTick = tickInfo.proxyControllerTick % 2;
 	}
 
 	for (size_t localTickIndex = 0; localTickIndex < simTicksForThisControllerTick; localTickIndex++)
 	{
-		_LOG(PunTick, "TickCore %d", _tickCount);
+		_LOG(PunTick, "[%d] TickCore %d", _gameManager->playerId(), _tickCount);
 
 		GameRand::ResetStateToTickCount(_tickCount);
 		Time::SetTickCount(_tickCount);
@@ -1364,9 +1366,13 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 		{
 #if CHECK_TICKHASH
 			AddTickHash(_tickHashes, _tickCount, TickHashEnum::Input, _currentInputHashes);
+			AddTickHash(_tickHashes, _tickCount, TickHashEnum::RandCount, GameRand::RandUsageCount());
 			AddTickHash(_tickHashes, _tickCount, TickHashEnum::Rand, GameRand::RandState());
 			AddTickHash(_tickHashes, _tickCount, TickHashEnum::Unit, _unitSystem->GetSyncHash());
 			AddTickHash(_tickHashes, _tickCount, TickHashEnum::Building, _buildingSystem->GetSyncHash());
+			AddTickHash(_tickHashes, _tickCount, TickHashEnum::Buffer6, 0);
+			AddTickHash(_tickHashes, _tickCount, TickHashEnum::Buffer7, 0);
+			AddTickHash(_tickHashes, _tickCount, TickHashEnum::Buffer8, 0);
 #endif
 		}
 
@@ -1537,7 +1543,16 @@ bool GameSimulationCore::ExecuteNetworkCommand(std::shared_ptr<FNetworkCommand> 
 
 #if CHECK_TICKHASH
 	_currentInputHashes += command->GetTickHash();
-	_commandsExecuted.push_back(command->commandType());
+	_commandEnumsExecuted.push_back(command->commandType());
+
+	// Poor man's copy
+	PunSerializedData blobIn(true);
+	NetworkHelper::SerializeAndAppendToBlob(command, blobIn);
+
+	PunSerializedData blobOut(false, blobIn);
+	
+	_commandsExecuted.push_back(NetworkHelper::DeserializeFromBlob(blobOut));
+	_commandsTickExecuted.push_back(Time::Ticks());
 #endif
 
 	return true;
@@ -5744,7 +5759,10 @@ void GameSimulationCore::DemolishCritterBuildingsIncludingFronts(WorldTile2 tile
 
 void GameSimulationCore::AddTickHash(TickHashes& tickHashes, int32 tickCount, TickHashEnum tickHashEnum, int32 tickHash)
 {
-
+	if (PunSettings::IsOn("AlreadyDesynced")) {
+		return;
+	}
+	
 	_gameManager->CheckDesync(tickHashes.allTickHashes.Num() == tickHashes.GetTickIndex(tickCount, tickHashEnum), FString("AddTickHash-") + TickHashEnumName[static_cast<int32>(tickHashEnum)]);
 	
 	//check(tickHashes.allTickHashes.Num() == tickHashes.GetTickIndex(tickCount, tickHashEnum));

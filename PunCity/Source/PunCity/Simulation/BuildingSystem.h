@@ -186,6 +186,7 @@ public:
 			hash += _atomLocation[i].y;
 			hash += static_cast<int32>(_buildingEnum[i]);
 			hash += static_cast<int32>(_alive[i]);
+			hash += static_cast<int32>(_buildings[i]->priority());
 		}
 
 		hash += _buildingsToTick.size();
@@ -193,6 +194,7 @@ public:
 		hash += _quickBuildList.size();
 		hash += _scheduleBuildingIds.size();
 		hash += _scheduleTicks.size();
+		
 		return hash;
 	}
 

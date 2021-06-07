@@ -97,5 +97,5 @@ public:
 	virtual const std::vector<int32>& sampleRegionIds() = 0;
 
 	// Debug
-	virtual void CheckDesync(bool checkSucceed, FString desyncMessage) = 0;
+	virtual void CheckDesync(bool checkSucceed, FString desyncMessage, int32 tick = -1) = 0;
 };

@@ -104,6 +104,7 @@ void BuildingCardSystem::RollRareHandExecute()
 	};
 
 	// Clear old hand
+
 	_cardsRareHand.clear();
 
 	uint8 rareHandEnumInt = static_cast<uint8>(_rareHandEnum);

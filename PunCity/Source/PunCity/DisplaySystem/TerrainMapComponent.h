@@ -37,7 +37,7 @@ public:
 	
 	UPROPERTY() UMaterialInstanceDynamic* M_MapWater;
 
-	UPROPERTY() UStaticFastInstancedMeshesComp* _georesourceEnumToMesh;
+	//UPROPERTY() UStaticFastInstancedMeshesComp* _georesourceEnumToMesh;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) UStaticFastInstancedMeshesComp* _buildingsMeshes;
 
 	void SetupWorldMapMesh(IDisplaySystemDataSource* dataSource, int tileDimXIn, int tileDimYIn, int worldMapSizeX, int worldMapSizeY, MapSizeEnum mapSizeEnum, UAssetLoaderComponent* assetLoader);

@@ -95,7 +95,7 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 	{ TechEnum::Logistics4, { LOCTEXT("Logistics IV", "Logistics IV") }},
 	{ TechEnum::Logistics5, {
 		LOCTEXT("Logistics V", "Logistics V"),
-		LOCTEXT("Logistics V Desc", "Allows Citizens to carry +10 more goods."),
+		LOCTEXT("Logistics V Desc", "Doubles hauling capacity of all citizens."),
 	} },
 
 	{TechEnum::JewelryCrafting, { LOCTEXT("Jewelry Crafting", "Jewelry Crafting") }},
@@ -488,6 +488,8 @@ public:
 	int64 scienceNeeded(int64 techsFinished)
 	{
 		const int64 scalingPercent = 230;
+		//const int64 scalingPercentChangeThreshold = 7
+		//const int64 scalingPercent2 = ... 100 * 2.4^7 * 2.0^3 = 366917
 		
 		if (!isMainTree)
 		{
@@ -544,7 +546,7 @@ public:
 		// - Last column tech is 143360 cost
 		// - Full House Sci = 30 (7 ppl), 100 with library + school
 		// - Full lvl 7 house 1400 pop: 1400 / 7  = 200 houses = 20000 sci per round
-		int64 sciNeeded = 50;
+		int64 sciNeeded = 70; // June 16: 50->70
 		for (int32 i = 1; i < column; i++) {
 			// May 30: scale up more
 			//  100 * 2^10 = 102,400
@@ -1134,7 +1136,7 @@ public:
 			// Industrial
 			_columnIndex = 9;
 			AddTech_Bonus(TechEnum::IndustrialAge, {},
-				TechRequirements::HouseLvlCount(6, 100)
+				TechRequirements::HouseLvlCount(6, 80)
 			);
 			AddTech_Building(TechEnum::ConcreteFactory, { TechEnum::Machinery },
 				CardEnum::ConcreteFactory

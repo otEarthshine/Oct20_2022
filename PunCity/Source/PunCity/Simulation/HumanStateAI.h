@@ -371,21 +371,21 @@ private:
 	int32 haulCapacity() {
 		int32 haulCapacity = 10;
 		if (_simulation->IsResearched(_playerId, TechEnum::Logistics5)) {
-			haulCapacity += 10;
+			haulCapacity *= 2;
 		}
 		return haulCapacity;
 	}
 	int32 haulerServicesCapacity() {
 		int32 haulCapacity = 50;
 		if (_simulation->IsResearched(_playerId, TechEnum::Logistics5)) {
-			haulCapacity += 10;
+			haulCapacity *= 2;
 		}
 		return haulCapacity;
 	}
 	int32 bulkHaulCapacity() {
 		int32 haulCapacity = 50;
 		if (_simulation->IsResearched(_playerId, TechEnum::Logistics5)) {
-			haulCapacity += 10;
+			haulCapacity *= 2;
 		}
 		return haulCapacity;
 	}

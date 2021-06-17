@@ -355,8 +355,17 @@ void UPunWidget::SetGeoresourceImage(UImage* image, ResourceEnum resourceEnum, U
 	case ResourceEnum::GoldOre: resourceEnum = ResourceEnum::GoldBar; break;
 	}
 
-	material->SetTextureParameterValue("ColorTexture", assetLoader->GetResourceIcon(resourceEnum));
-	material->SetTextureParameterValue("DepthTexture", assetLoader->GetResourceIconAlpha(resourceEnum));
+	UTexture2D* worldGeoresourceIcon = assetLoader->GetGeoresourceIcon(resourceEnum);
+	if (worldGeoresourceIcon)
+	{
+		material->SetScalarParameterValue("IsAlphaOpacity", 1);
+		material->SetTextureParameterValue("ColorTexture", worldGeoresourceIcon);
+	}
+	else {
+		material->SetScalarParameterValue("IsAlphaOpacity", 0);
+		material->SetTextureParameterValue("ColorTexture", assetLoader->GetResourceIcon(resourceEnum));
+		material->SetTextureParameterValue("DepthTexture", assetLoader->GetResourceIconAlpha(resourceEnum));
+	}
 };
 
 

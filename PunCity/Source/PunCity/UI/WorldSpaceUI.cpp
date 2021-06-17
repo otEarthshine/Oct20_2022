@@ -1053,9 +1053,7 @@ void UWorldSpaceUI::TickMap()
 			}
 			
 			FVector displayLocation = data->DisplayLocation(node.centerTile.worldAtom2());
-			displayLocation += FVector(0, 0, 30);
-
-			//displayLocation = FVector(0, 0, 30); // TODO:
+			//displayLocation += FVector(0, 0, 30);
 
 			UHoverIconWidgetBase* hoverIcon = _mapHoverIcons.GetHoverUI<UHoverIconWidgetBase>(regionId, UIEnum::HoverIcon, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
 				[&](UHoverIconWidgetBase* ui) 
@@ -1260,7 +1258,7 @@ void UWorldSpaceUI::TickPlacementInstructions()
 		punBox->AddRichTextCenter(LOCTEXT("FarmAndRanch_Instruct", "<Red>Cannot be built on desert</>"));
 	}
 	else if (needInstruction(PlacementInstructionEnum::FarmNoValidSeedForRegion)) {
-		punBox->AddRichTextCenter(LOCTEXT("FarmNoValidSeedForRegion_Instruct", "<Red>None of your seeds can be planted in this region.</>"));
+		punBox->AddRichTextCenter(LOCTEXT("FarmNoValidSeedForRegion_Instruct", "<Red>None of your seeds can be planted in this province.</>"));
 	}
 	else if (needInstruction(PlacementInstructionEnum::FireOnTownhall)) {
 		int32 razeInfluence = getInstruction(PlacementInstructionEnum::FireOnTownhall).intVar1;

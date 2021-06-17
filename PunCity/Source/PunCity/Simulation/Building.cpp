@@ -266,7 +266,7 @@ void Building::FinishConstruction()
 	}
 }
 
-int32 Building::resourceCount(ResourceEnum resourceEnum) 
+int32 Building::resourceCount(ResourceEnum resourceEnum) const
 {
 	ResourceHolderInfo info = holderInfo(resourceEnum);
 	PUN_CHECK(info.isValid());
@@ -404,7 +404,7 @@ void Building::Deinit()
 	_simulation->SetRoadPathAI(gateTile(), false);
 
 	// Smoke
-	_simulation->AddFireOnceParticleInfo(ParticleEnum::OnDemolish, _area);
+	_simulation->AddFireOnceParticleInfo(IsRoad(buildingEnum()) ? ParticleEnum::OnPlacement : ParticleEnum::OnDemolish, _area);
 	
 
 	TryRemoveDeliveryTarget();
@@ -1096,7 +1096,7 @@ std::vector<BonusPair> Building::GetBonuses()
 		}
 
 		if (_simulation->HasTownBonus(_townId, CardEnum::DesertIndustry)) {
-			bonuses.push_back({ LOCTEXT("Desert Industry", "Desert Industry"), 10 });
+			bonuses.push_back({ LOCTEXT("Desert Industry", "Desert Industry"), 20 });
 		}
 
 		// Industrialist
@@ -1336,7 +1336,7 @@ BuildingUpgrade Building::MakeProductionUpgrade(FText name, int32 percentOfTotal
 BuildingUpgrade Building::MakeWorkerSlotUpgrade(int32 percentOfTotalPrice, int32 workerSlotBonus)
 {
 	const FText name = FText::Format(LOCTEXT("+{0} Worker Slots", "+{0} Worker {0}|plural(one=Slot,other=Slots)"), TEXT_NUM(workerSlotBonus));
-	BuildingUpgrade upgrade = MakeUpgrade(name, name, percentOfTotalPrice);
+	BuildingUpgrade upgrade = MakeUpgrade(name, FText(), percentOfTotalPrice);
 	upgrade.workerSlotBonus = workerSlotBonus;
 	return upgrade;
 }

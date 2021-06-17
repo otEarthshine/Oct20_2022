@@ -48,9 +48,28 @@ struct ResourceHolder
 			<< " pop:" + std::to_string(_reservedPop)
 			<< " target:" + std::to_string(_target)
 			<< " connected:" + std::to_string(sim->IsConnected(townCenterTile, tile, 3))
+			<< " ownerId:" << objectId
 			<< " owner:" + GetBuildingInfo(sim->buildingEnum(objectId)).nameStd()
+			<< " tile:" << tile.x << "," << tile.y
 			<< "]\n";
 	}
+
+	int32 GetSyncHash() const
+	{
+		int32 hash = 0;
+		hash += info.GetSyncHash();
+		hash += static_cast<int32>(type);
+		hash += objectId; // objectId is building's. for drop, this is -1
+		hash += tile.tileId();
+
+		hash += reservePushUnitIds.size();
+		hash += reservePushs.size();
+		hash += reservePopUnitIds.size();
+		hash += reservePops.size();
+
+		return hash;
+	}
+	
 
 	void SetTarget(int32 newTarget) {
 		_target = newTarget;
@@ -434,6 +453,29 @@ public:
 		
 		SerializeVecVecObj(Ar, _findTypeToAvailableIdToAmount);
 	}
+
+	int32 GetSyncHash() const
+	{
+		int32 hash = static_cast<int32>(_resourceEnum);
+		hash += _disabledHolderIds.size();
+
+		for (int32 i = 0; i < _holders.size(); i++) {
+			hash += _holders[i].GetSyncHash();
+		}
+
+		for (int32 i = 0; i < _findTypeToAvailableIdToAmount.size(); i++) {
+			const std::vector<HolderIdToAmount>& availableIdToAmount = _findTypeToAvailableIdToAmount[i];
+			for (int32 j = 0; j < availableIdToAmount.size(); j++) {
+				hash += availableIdToAmount[j].holderId;
+				hash += availableIdToAmount[j].amount;
+			}
+		}
+
+		return hash;
+	}
+
+	const std::vector<ResourceHolder>& holders() { return _holders; }
+	
 
 	void resourcedebugStr(std::stringstream& ss, WorldTile2 townCenterTile, IGameSimulationCore* sim) const
 	{
@@ -864,6 +906,18 @@ public:
 
 		PUN_CHECK(_enumToHolders.size() > 0);
 	}
+
+	int32 GetSyncHash()
+	{
+		int32 hash = _townId;
+		for (int32 i = 0; i < _enumToHolders.size(); i++) {
+			hash += _enumToHolders[i].GetSyncHash();
+		}
+		return hash;
+	}
+
+	std::vector<int32> GetResourcesSyncHashes();
+	void FindDesyncInResourceSyncHashes(const TArray<int32>& serverHashes, int32& currentIndex);
 
 	/*
 	 * Get

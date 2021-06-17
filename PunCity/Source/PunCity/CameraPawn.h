@@ -118,6 +118,31 @@ public:
 		ExecuteUsingHUD([&](APunHUD* hud) { hud->SwitchToNextBuildingUI(); });
 	}
 
+	void KeyPressed_QuickBuild()
+	{
+		GameSimulationCore& sim = _gameInterface->simulation();
+		const DescriptionUIState& descriptionUIState = sim.descriptionUIState();
+		if (descriptionUIState.objectType == ObjectTypeEnum::Building) {
+			if (Building* building = sim.buildingPtr(descriptionUIState.objectId)) {
+				if (!building->isConstructed() && building->shouldDisplayConstructionUI()) {
+					if (building->playerId() == _gameInterface->playerId() &&
+						(sim.IsResearched(_gameInterface->playerId(), TechEnum::QuickBuild) || PunSettings::IsOn("ForceQuickBuild")))
+					{
+						if (!IsRoad(building->buildingEnum()))
+						{
+							auto command = make_shared<FGenericCommand>();
+							command->callbackEnum = CallbackEnum::QuickBuild;
+							command->intVar1 = descriptionUIState.objectId;
+
+							_networkInterface->SendNetworkCommand(command);
+						}
+					}
+				}
+			}
+		}
+	}
+	
+
 	void KeyPressed_DirtRoad() {
 		ExecuteUsingMainGameUI([&](auto ui) { ui->ToggleRoad(false); });
 	}

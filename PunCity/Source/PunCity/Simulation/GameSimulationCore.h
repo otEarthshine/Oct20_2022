@@ -67,9 +67,9 @@ enum class TickHashEnum
 	Unit,
 	Building,
 
-	Buffer6,
-	Buffer7,
-	Buffer8,
+	GlobalStats,
+	UnitActions,
+	Resources,
 
 	Count,
 };
@@ -81,9 +81,9 @@ const std::vector<FString> TickHashEnumName
 	"Unit",
 	"Building",
 
-	"Buffer6",
-	"Buffer7",
-	"Buffer8",
+	"GlobalStats",
+	"UnitActions",
+	"Resources",
 };
 
 
@@ -189,6 +189,10 @@ public:
 			_gameManager->CheckDesync(compareHashes(TickHashEnum::Rand), FString("compareHashes_Rand:"), i);
 			_gameManager->CheckDesync(compareHashes(TickHashEnum::Unit), FString("compareHashes_Unit:"), i);
 			_gameManager->CheckDesync(compareHashes(TickHashEnum::Building), FString("compareHashes_Building:"), i);
+			_gameManager->CheckDesync(compareHashes(TickHashEnum::GlobalStats), FString("compareHashes_GlobalStats:"), i);
+			_gameManager->CheckDesync(compareHashes(TickHashEnum::UnitActions), FString("compareHashes_UnitActions:"), i);
+			_gameManager->CheckDesync(compareHashes(TickHashEnum::Resources), FString("compareHashes_Resources:"), i);
+			
 		}
 
 		if (PunSettings::IsOn("ForceDesyncPopup")) {
@@ -202,9 +206,11 @@ public:
 	}
 
 	// After Loading game, hashSendTick is reset
+#if CHECK_TICKHASH
 	int32 GetHashSendTickAfterLoad() {
 		return _tickHashes.TickCount();
 	}
+#endif
 	
 
 	/*
@@ -1472,21 +1478,21 @@ public:
 		TileArea area = _provinceSystem.GetProvinceRectArea(provinceId);
 
 		int32 fertilityPercentTotal = 100;
-		int32 tilesExamined = 1; // 1 to prevent /0
+		//int32 tilesExamined = 1; // 1 to prevent /0
 		for (int32 y = area.minY; y <= area.maxY; y += 4) {
 			for (int32 x = area.minX; x <= area.maxX; x += 4) {
 				WorldTile2 tile(x, y);
 				if (_provinceSystem.GetProvinceIdClean(tile) == provinceId &&
 					_terrainGenerator->terrainTileType(tile) == TerrainTileType::None) 
 				{
-					fertilityPercentTotal += _terrainGenerator->GetFertilityPercent(WorldTile2(x, y));
-					tilesExamined++;
+					fertilityPercentTotal += std::max(10, _terrainGenerator->GetFertilityPercent(WorldTile2(x, y) - 20));
+					//tilesExamined++;
 				}
 			}
 		}
 
-		int32 provinceIncome100 = fertilityPercentTotal * Income100PerTiles * _provinceSystem.provinceFlatTileCount(provinceId) / (tilesExamined * 100);
-		return std::max(100, provinceIncome100);
+		int32 provinceIncome100 = fertilityPercentTotal * Income100PerFertilityPercent / 100;
+		return std::max(100, provinceIncome100 + 1);
 	}
 	int32 GetProvinceBaseUpkeep100(int32 provinceId)
 	{
@@ -1525,14 +1531,17 @@ public:
 		//}
 
 		// Cost Penalty from being far
-		const int32 maxProvinceDistanceCostPenalty = 500;
-		int32 provinceDistance = regionSystem().provinceDistanceToPlayer(provinceId, playerId);
-		if (provinceDistance != MAX_int32) {
-			int32 distancePenaltyCostPercent = maxProvinceDistanceCostPenalty * std::max(0, provinceDistance - 1) / 7;
-			claimPrice = IncrementByPercent100(claimPrice, distancePenaltyCostPercent);
-		}
+		//const int32 maxProvinceDistanceCostPenalty = 500;
+		//int32 provinceDistance = regionSystem().provinceDistanceToPlayer(provinceId, playerId);
+		//if (provinceDistance != MAX_int32) {
+		//	int32 distancePenaltyCostPercent = maxProvinceDistanceCostPenalty * std::max(0, provinceDistance - 1) / 7;
+		//	claimPrice = IncrementByPercent100(claimPrice, distancePenaltyCostPercent);
+		//}
+
+		int32 distancePenaltyCostPercent = GetProvinceClaimCostPenalty_DistanceFromTownhall(provinceId, playerId);
+		claimPrice = IncrementByPercent100(claimPrice, distancePenaltyCostPercent);
 		
-		claimPrice = IncrementByPercent100(claimPrice, GetProvinceTerrainClaimCostPenalty(claimConnectionEnum));
+		claimPrice = IncrementByPercent100(claimPrice, GetProvinceClaimCostPenalty_ShallowDeep(claimConnectionEnum));
 
 		
 		// Cost Penalty from Regional Building
@@ -1567,7 +1576,7 @@ public:
 	int32 GetTotalAttackPercent(int32 provinceId, ClaimConnectionEnum claimConnectionEnum)
 	{
 		int32 percent = 100;
-		percent += GetProvinceTerrainClaimCostPenalty(claimConnectionEnum);
+		percent += GetProvinceClaimCostPenalty_ShallowDeep(claimConnectionEnum);
 		percent += GetProvinceAttackCostPercent(provinceId);
 		return percent;
 	}
@@ -1674,7 +1683,7 @@ public:
 
 	// Claim/Attack Cost Percent
 	//  Base Bonuses
-	int32 GetProvinceTerrainClaimCostPenalty(ClaimConnectionEnum claimConnectionEnum)
+	int32 GetProvinceClaimCostPenalty_ShallowDeep(ClaimConnectionEnum claimConnectionEnum)
 	{
 		int32 penalty = 0;
 
@@ -1689,6 +1698,18 @@ public:
 		
 		return penalty;
 	}
+
+	int32 GetProvinceClaimCostPenalty_DistanceFromTownhall(int32 provinceId, int32 playerId)
+	{
+		int32 provinceDistance = regionSystem().provinceDistanceToPlayer(provinceId, playerId);
+		if (provinceDistance != MAX_int32) {
+			const int32 maxProvinceDistanceCostPenalty = 500;
+			return maxProvinceDistanceCostPenalty * std::max(0, provinceDistance - 1) / 7;
+		}
+		return 0;
+	}
+
+	
 
 	//  Attack Bonuses
 	int32 GetProvinceAttackCostPercent(int32 provinceId)
@@ -2282,15 +2303,17 @@ public:
 #endif
 	}
 
-	
+#if KEEP_ACTION_HISTORY
 	const std::vector<std::shared_ptr<FNetworkCommand>>& GetCommandsExecuted() const { return _commandsExecuted; }
 	const std::vector<int32>& GetCommandsTickExecuted() const { return _commandsTickExecuted; }
+#endif
 
-	
+#if CHECK_TICKHASH
 	const TickHashes& tickHashes() { return _tickHashes; }
 	const TickHashes& serverTickHashes() { return _serverTickHashes; }
 
 	void AddTickHash(TickHashes& tickHashes, int32 tickCount, TickHashEnum tickHashEnum, int32 tickHash);
+#endif
 
 	/*
 	 *  Demolish
@@ -2319,7 +2342,7 @@ public:
 	}
 
 	void AddFireOnceParticleInfo(ParticleEnum particleEnum, TileArea area) override {
-		_regionToFireOnceParticleInfo[area.centerTile().regionId()].push_back({ particleEnum, area });
+		_regionToFireOnceParticleInfo[area.centerTile().regionId()].push_back({ particleEnum, area, Time::Ticks() });
 	}
 	std::vector<FireOnceParticleInfo> GetFireOnceParticleInfos(int32 regionId) {
 		std::vector<FireOnceParticleInfo> result = _regionToFireOnceParticleInfo[regionId];
@@ -3026,7 +3049,6 @@ public:
 			}
 			
 			Ar << _currentInputHashes;
-			SerializeVecValue(Ar, _commandEnumsExecuted);
 #endif
 
 			// Snow
@@ -3408,13 +3430,16 @@ private:
 	FGameEndStatus _endStatus;
 
 	// Tick Hashes
+#if CHECK_TICKHASH
 	TickHashes _tickHashes;
 	TickHashes _serverTickHashes;
-
 	int32 _currentInputHashes = 0;
-	std::vector<NetworkCommandEnum> _commandEnumsExecuted; // Serialized
+#endif
+
+#if KEEP_ACTION_HISTORY
 	std::vector<std::shared_ptr<FNetworkCommand>> _commandsExecuted; // Not Serialized
 	std::vector<int32> _commandsTickExecuted; // Not Serialized
+#endif
 
 	// Snow (Season * Celsius) 
 	FloatDet _snowAccumulation3 = 0;

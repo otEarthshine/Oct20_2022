@@ -322,6 +322,7 @@ public:
 	const std::vector<CardEnum>& GetRareHand() {
 		return _cardsRareHand;
 	}
+	RareHandEnum GetRareHandEnum() { return _rareHandEnum; }
 
 	
 	/*

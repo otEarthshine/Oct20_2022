@@ -193,6 +193,12 @@ public:
 	void Pause() final;
 	void Resume() final;
 
+	virtual void Pause_ToServer() override {
+		GamePause_ToServer();
+	}
+
+	
+
 	void GoToSinglePlayerLobby() final {
 		gameInstance()->CreateSinglePlayerGame();
 		//EnsureSessionDestroyed(false, true);
@@ -612,6 +618,14 @@ public:
 	void ServerSendNetworkCommand_Base(const TArray<int32>& serializedCommand);
 	UFUNCTION(Reliable, Server, WithValidation) void ServerSendNetworkCommand_ToServer(const TArray<int32>& serializedCommand);
 
+	// Debug
+	UFUNCTION(Reliable, Server) void GamePause_ToServer();
+
+	UFUNCTION(Reliable, Client) void CompareUnitHashes_ToClient(int32 startIndex, const TArray<int32>& serverHashes);
+
+	TArray<int32> tempServerHashes;
+	UFUNCTION(Reliable, Client) void SendResourceHashes_ToClient(int32 startIndex, const TArray<int32>& serverHashes);
+	UFUNCTION(Reliable, Client) void CompareResourceHashes_ToClient();
 
 	// Victory
 	UFUNCTION(Reliable, Server, WithValidation) void ToServer_SavedGameEndStatus(int32 playerId);
@@ -635,6 +649,10 @@ public:
 
 	UFUNCTION(Exec) void OpenTradeUI();
 	UFUNCTION(Exec) void OpenRareCardUI();
+
+	UFUNCTION(Exec) void CompareUnitHashes();
+	UFUNCTION(Exec) void CompareResourceHashes();
+	
 
 	UFUNCTION(Exec) void SetAIIntercityTrade()
 	{
@@ -1056,6 +1074,7 @@ public:
 	UFUNCTION(Exec) void PrintMeshPoolCount() {
 		gameManager->PrintMeshPoolCount();
 	}
+	
 
 	/*
 	 * Debug

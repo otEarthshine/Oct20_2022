@@ -658,7 +658,9 @@ void UnitStateAI::Update()
 		_currentAction = _actions.back();
 		_actions.pop_back();
 
+#if DEBUG_BUILD
 		_actionHistory.push_back(_currentAction);
+#endif
 
 		AddDebugSpeech("[POP]: size:" + to_string(_actions.size()));
 
@@ -1272,7 +1274,7 @@ bool UnitStateAI::TryStockBurrowFood()
 		Add_MoveToward(fullBushTile.worldAtom2(), 4000); // 40000 or 0.4 fraction so that the unit won't step into unwalkable tile TODO: check this as 40000?
 		Add_MoveTo(fullBushTile);
 
-		_unitState = UnitState::TrimBush;
+		SetActivity(UnitState::TrimBush);
 		AddDebugSpeech("(Success)TryStockBurrowFood:");
 		debugFindFullBushSuccessCount++;
 		return true;
@@ -1752,7 +1754,7 @@ void UnitStateAI::HarvestTileObj()
 
 			if (_simulation->HasTownBonus(_townId, CardEnum::BorealPineForesting)) {
 				if (plantEnum == TileObjEnum::Pine1 || plantEnum == TileObjEnum::Pine2) {
-					efficiency += 20;
+					efficiency += 30;
 				}
 			}
 			if (_simulation->HasTownBonus(_townId, CardEnum::JungleTree))
@@ -1760,7 +1762,7 @@ void UnitStateAI::HarvestTileObj()
 				if (plantEnum == TileObjEnum::Cyathea || 
 					plantEnum == TileObjEnum::ZamiaDrosi || 
 					plantEnum == TileObjEnum::Papaya) {
-					efficiency += 10;
+					efficiency += 20;
 				}
 			}
 
@@ -2574,6 +2576,10 @@ void UnitStateAI::PickupResource()
 		PUN_CHECK(building.holderInfo(info.resourceEnum) == info);
 		
 		building.OnPickupResource(_id);
+
+#if DEBUG_BUILD
+		building.buildingActionHistory.push_back({ BuildingActionEnum::PickupResource, static_cast<int32>(info.resourceEnum), amount });
+#endif
 	}
 
 	_simulation->soundInterface()->Spawn3DSound("ResourceDropoffPickup", "Pickup", unitAtom());
@@ -2613,6 +2619,11 @@ void UnitStateAI::DropoffResource()
 	building.OnDropoffResource(_id, info, amount);
 
 	_simulation->soundInterface()->SpawnResourceDropoffAudio(info.resourceEnum, unitAtom());
+
+#if DEBUG_BUILD
+	building.buildingActionHistory.push_back({ BuildingActionEnum::DropoffResource, static_cast<int32>(info.resourceEnum), amount });
+#endif
+	
 
 	NextAction(UnitUpdateCallerEnum::DropoffResource);
 }
@@ -2799,6 +2810,10 @@ void UnitStateAI::FillInputs()
 		PUN_UNIT_CHECK(workplace.resourceCount(resourceEnum) >= reservation.amount);
 		workplace.RemoveResource(resourceEnum, reservation.amount);
 
+#if DEBUG_BUILD
+		workplace.buildingActionHistory.push_back({ BuildingActionEnum::FillInput, static_cast<int32>(resourceEnum), reservation.amount });
+#endif
+		
 		//if (i == 0) {
 		//	workplace.AddConsumption1Stat(ResourcePair(resourceEnum, reservation.amount));
 		//} else if (i == 1) {

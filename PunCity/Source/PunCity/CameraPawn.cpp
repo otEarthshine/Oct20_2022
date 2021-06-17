@@ -105,6 +105,8 @@ void ACameraPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("Skill", IE_Pressed, this, &ACameraPawn::KeyPressed_LeaderSkill);
 
 	PlayerInputComponent->BindAction("SinglePlayerChat", IE_Pressed, this, &ACameraPawn::ToggleSinglePlayerChat);
+
+	PlayerInputComponent->BindAction("QuickBuild", IE_Pressed, this, &ACameraPawn::KeyPressed_QuickBuild);
 }
 
 void ACameraPawn::MoveForward(float axisValue)

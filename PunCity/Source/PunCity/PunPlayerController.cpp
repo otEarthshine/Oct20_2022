@@ -323,28 +323,32 @@ void APunPlayerController::Tick(float DeltaTime)
 #if CHECK_TICKHASH
 	// Once in a while also send tickHash to client.
 	_playerControllerTick++;
-	if (GetLocalRole() == ROLE_Authority && _playerControllerTick > 300 && _playerControllerTick % 30 == 0)
+	if (GetLocalRole() == ROLE_Authority && _playerControllerTick > 300)
 	{
 		auto firstController = CastChecked<APunPlayerController>(GetWorld()->GetFirstPlayerController());
 		if (firstController->gameManager)
 		{
-			// For Save Load, get a proper
-			TArray<int32> allTickHashes;
-			firstController->gameManager->simulation().GetUnsentTickHashes(_hashSendTick, allTickHashes);
-			
-			if (allTickHashes.Num() > 0)
+			GameSimulationCore* simulation = firstController->gameManager->simulationPtr();
+			if (simulation && simulation->tickHashes().TickCount() - _hashSendTick > 30)
 			{
-				_LOG(PunTickHash, "[%d] SendHash Out Start hashSendTick:%d", playerId(), _hashSendTick);
+				// For Save Load, get a proper
+				TArray<int32> allTickHashes;
+				simulation->GetUnsentTickHashes(_hashSendTick, allTickHashes);
 
-				// Note: _hashSendTick becomes 0 upon loading, which is fine, since hashes will just override the loaded one...
-				check(allTickHashes.Num() <= MaxPacketSize32);
-				check(allTickHashes.Num() % TickHashes::TickHashEnumCount() == 0);
-				
-				SendHash_ToClient(_hashSendTick, allTickHashes);
-				
-				_hashSendTick += allTickHashes.Num() / TickHashes::TickHashEnumCount();
+				if (allTickHashes.Num() > 0)
+				{
+					_LOG(PunTickHash, "[%d] SendHash Out Start hashSendTick:%d", playerId(), _hashSendTick);
 
-				_LOG(PunTickHash, "[%d] SendHash Out End hashSendTick:%d", playerId(), _hashSendTick);
+					// Note: _hashSendTick becomes 0 upon loading, which is fine, since hashes will just override the loaded one...
+					check(allTickHashes.Num() <= MaxPacketSize32);
+					check(allTickHashes.Num() % TickHashes::TickHashEnumCount() == 0);
+
+					SendHash_ToClient(_hashSendTick, allTickHashes);
+
+					_hashSendTick += allTickHashes.Num() / TickHashes::TickHashEnumCount();
+
+					_LOG(PunTickHash, "[%d] SendHash Out End hashSendTick:%d", playerId(), _hashSendTick);
+				}
 			}
 		}
 	}
@@ -732,6 +736,7 @@ void APunPlayerController::SendTickToClient(NetworkTickInfo& tickInfo)
 	LLM_SCOPE_(EPunSimLLMTag::PUN_Controller);
 
 	PUN_LOG("SendTickToClient cid:%d _proxyControllerTick %d", controllerPlayerId(), _proxyControllerTick);
+	
 	tickInfo.proxyControllerTick = _proxyControllerTick++;
 
 
@@ -999,6 +1004,98 @@ void APunPlayerController::ServerSendNetworkCommand_ToServer_Implementation(cons
 }
 bool APunPlayerController::ServerSendNetworkCommand_ToServer_Validate(const TArray<int32>& serializedCommand) { return true; }
 
+
+void APunPlayerController::GamePause_ToServer_Implementation() {
+	Pause();
+}
+
+void APunPlayerController::CompareUnitHashes_ToClient_Implementation(int32 startIndex, const TArray<int32>& serverHashes)
+{
+	std::vector<int32> localHashes = simulation().unitSystem().GetUnitSyncHashes();
+	for (int32 i = 0; i < serverHashes.Num(); i++) {
+		if (localHashes[startIndex + i] != serverHashes[i]) {
+			simulation().AddPopup(playerId(), FText::Format(
+				INVTEXT("Unit {0} Hash Compare Failed localHash:{1} serverHash:{2}"), 
+				TEXT_NUM(i), TEXT_NUM(localHashes[startIndex + i]), TEXT_NUM(serverHashes[i])
+			));
+		}
+	}
+
+	simulation().AddPopup(playerId(), FText::Format(INVTEXT("Hash Compare Ended startIndex:{0}"), TEXT_NUM(startIndex)));
+}
+void APunPlayerController::CompareUnitHashes()
+{
+	if (APunGameMode* gameMode = Cast<APunGameMode>(UGameplayStatics::GetGameMode(this)))
+	{
+		const TArray<APunBasePlayerController*>& controllers = gameMode->ConnectedControllers();
+		for (APunBasePlayerController* controller : controllers) 
+		{
+			std::vector<int32> serverHashes = simulation().unitSystem().GetUnitSyncHashes();
+			for (int32 i = 0; i < serverHashes.size(); i += MaxPacketSize32)
+			{
+				TArray<int32> packetHashes;
+				for (int32 j = i; j < i + MaxPacketSize32; j++) {
+					if (j >= serverHashes.size()) {
+						break;
+					}
+					packetHashes.Add(serverHashes[j]);
+				}
+
+				CastChecked<APunPlayerController>(controller)->CompareUnitHashes_ToClient(i, packetHashes);
+			}
+		}
+	}
+}
+
+void APunPlayerController::SendResourceHashes_ToClient_Implementation(int32 startIndex, const TArray<int32>& serverHashes)
+{
+	PUN_LOG("Receive: SendResourceHashes_ToClient startIndex:%d serverHashes:%d", startIndex, serverHashes.Num());
+
+	tempServerHashes.Append(serverHashes);
+}
+void APunPlayerController::CompareResourceHashes_ToClient_Implementation()
+{
+	int32 currentIndex = 0;
+	int32 curPlayerId = tempServerHashes[currentIndex++];
+	simulation().resourceSystem(curPlayerId).FindDesyncInResourceSyncHashes(tempServerHashes, currentIndex);
+	tempServerHashes.SetNum(0);
+
+	PUN_LOG("Receive: CompareResourceHashes_ToClient pid:%d", curPlayerId);
+	
+	simulation().AddPopup(curPlayerId, INVTEXT("Resource Hash Compare Ended"));
+}
+void APunPlayerController::CompareResourceHashes()
+{
+	if (APunGameMode* gameMode = Cast<APunGameMode>(UGameplayStatics::GetGameMode(this)))
+	{
+		const TArray<APunBasePlayerController*>& controllers = gameMode->ConnectedControllers();
+		for (APunBasePlayerController* controller : controllers)
+		{
+			simulation().ExecuteOnPlayersAndAI([&](int32 playerId)
+			{
+				std::vector<int32> serverHashes = simulation().resourceSystem(playerId).GetResourcesSyncHashes();
+				check(serverHashes.size() > 0);
+				
+				for (int32 i = 0; i < serverHashes.size(); i += MaxPacketSize32)
+				{
+					TArray<int32> packetHashes;
+					for (int32 j = i; j < i + MaxPacketSize32; j++) {
+						if (j >= serverHashes.size()) {
+							break;
+						}
+						packetHashes.Add(serverHashes[j]);
+					}
+
+					PUN_LOG("Send: SendResourceHashes_ToClient startIndex:%d serverHashes:%d", i, packetHashes.Num());
+					CastChecked<APunPlayerController>(controller)->SendResourceHashes_ToClient(i, packetHashes);
+				}
+
+				PUN_LOG("Send: CompareResourceHashes_ToClient");
+				CastChecked<APunPlayerController>(controller)->CompareResourceHashes_ToClient();
+			});
+		}
+	}
+}
 
 //! Send NetworkCommand to server to be added to a tick
 void APunPlayerController::ToServer_SavedGameEndStatus_Implementation(int32 playerId)

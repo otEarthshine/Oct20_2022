@@ -93,6 +93,30 @@ void APunBasePlayerController::SendSaveInfo_ToClient_Implementation(const TArray
 
 void APunBasePlayerController::Tick(float DeltaTime)
 {
+	// TODO: try to fix hardware cursor problem
+	bShowMouseCursor = true;
+	if (PunSettings::IsOn("ShouldResetMouseCursor")) {
+		if (GEngine && GEngine->GameViewport && GEngine->GameViewport->Viewport) 
+		{
+			FVector2D MousePosition;
+			GEngine->GameViewport->GetMousePosition(MousePosition);
+			PUN_LOG("GEngine->GameViewport->GetMousePosition %f %f", MousePosition.X, MousePosition.Y);
+			
+			FIntPoint size = GEngine->GameViewport->Viewport->GetSizeXY();
+			GEngine->GameViewport->MouseEnter(GEngine->GameViewport->Viewport, size.X / 2, size.Y / 2);
+
+			if (MousePosition.Equals(FVector2D::ZeroVector)) {
+				GEngine->GameViewport->Viewport->SetMouse(size.X / 2, size.Y / 2);
+			}
+			else {
+				GEngine->GameViewport->Viewport->SetMouse(MousePosition.X, MousePosition.Y);
+			}
+			
+			PunSettings::Set("ShouldResetMouseCursor", 0);
+		}
+	}
+
+	
 	_dataSyncTick++;
 	if (_dataSyncTick % 5 != 0) {
 		return;

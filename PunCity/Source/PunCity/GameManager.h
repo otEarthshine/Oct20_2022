@@ -659,12 +659,14 @@ public:
 	}
 
 
-
+#if CHECK_TICKHASH
 	virtual void CheckDesync(bool checkSucceed, FString desyncMessage, int32 tick = -1) final
 	{
 		if (!checkSucceed)
 		{
 			PunSettings::Set("AlreadyDesynced", 1);
+
+			networkInterface()->Pause_ToServer();
 
 			TArray<FText> args;
 			args.Add(INVTEXT("!!! Desync !!!<space>"));
@@ -713,7 +715,7 @@ public:
 			);
 		}
 	}
-	
+#endif
 	
 	/*
 	 * 

@@ -108,22 +108,18 @@ public:
 			ModuleTransformGroup(),
 		});
 
-		set(CardEnum::GoldMine, {
-			ModuleTransformGroup::CreateOreMineSet("OreMineSpecial_Gold", "OreMineWorkStatic_Gold")
-		});
-
-		set(CardEnum::Quarry, {
-			ModuleTransformGroup::CreateSet("Quarry", {}, {
-					//{ParticleEnum::BlackSmoke, TransformFromPosition(-.27, 11.4, 21.6)},
-				}, {
-					//ModuleTransform("OreMineWorkRotation2", TransformFromPosition(4.99, -8.10, 22.899), 0.0f, ModuleTypeEnum::RotateRoll),
-					ModuleTransform("QuarrySpecialToggle", FTransform::Identity, 0, ModuleTypeEnum::ShaderOnOff),
-				},
-				{
-					ModuleTransform("OreMineWorkStatic_Stone"),
-				}
-			),
-		});
+		//set(CardEnum::Quarry, {
+		//	ModuleTransformGroup::CreateSet("Quarry", {}, {
+		//			//{ParticleEnum::BlackSmoke, TransformFromPosition(-.27, 11.4, 21.6)},
+		//		}, {
+		//			//ModuleTransform("OreMineWorkRotation2", TransformFromPosition(4.99, -8.10, 22.899), 0.0f, ModuleTypeEnum::RotateRoll),
+		//			ModuleTransform("QuarrySpecialToggle", FTransform::Identity, 0, ModuleTypeEnum::ShaderOnOff),
+		//		},
+		//		{
+		//			ModuleTransform("OreMineWorkStatic_Stone"),
+		//		}
+		//	),
+		//});
 
 
 		set(CardEnum::Fence, {
@@ -143,14 +139,6 @@ public:
 
 		set(CardEnum::Forester, {
 			ModuleTransformGroup::CreateSet("Forester", {}, {{ParticleEnum::Smoke, TransformFromPosition(9.5, 10.2, 29.5)}})
-		});
-
-		set(CardEnum::CoalMine, {
-			ModuleTransformGroup::CreateOreMineSet("OreMineSpecial_Coal", "OreMineWorkStatic_Coal")
-		});
-
-		set(CardEnum::IronMine, {
-			ModuleTransformGroup::CreateOreMineSet("OreMineSpecial_Iron", "OreMineWorkStatic_Iron")
 		});
 
 		set(CardEnum::IronSmelter, {
@@ -201,9 +189,6 @@ public:
 
 		setName(CardEnum::Bakery, "Bakery");
 
-		set(CardEnum::GemstoneMine, {
-			ModuleTransformGroup::CreateOreMineSet("OreMineSpecial_Gemstone", "OreMineWorkStatic_Gemstone")
-		});
 
 		setName(CardEnum::Fort, "Outpost");
 		setName(CardEnum::ResourceOutpost, "Colony");
@@ -397,8 +382,6 @@ public:
 						subMeshName = setName + FString("WindowGlass");
 						if (assetLoader->moduleMesh(subMeshName)) togglableTransforms.push_back(ModuleTransform(subMeshName, FTransform::Identity, 0.0f, ModuleTypeEnum::Window));
 					}
-
-					
 				}
 				
 			}

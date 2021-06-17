@@ -132,7 +132,9 @@ UnitDisplayState UUnitDisplayComponent::GetUnitTransformAndVariation(UnitStateAI
 	if (unitEnum == UnitEnum::Human && 
 		!IsUsingSkeletalMesh(unitEnum, unit.animationEnum(), _gameManager->zoomDistance()) &&
 		animationEnum != UnitAnimationEnum::Ship &&
-		!IsHorseAnimation(animationEnum))
+		!IsHorseAnimation(animationEnum) &&
+		animationEnum != UnitAnimationEnum::ImmigrationCart &&
+		animationEnum != UnitAnimationEnum::HaulingCart)
 	{
 		float gameSpeed = sim.gameSpeedFloat();
 		scale = std::fmodf(lastAnimationTime + (unitSystem.isMoving(unitId) ? (GetWorld()->GetDeltaSeconds() * 2.0f * gameSpeed) : 0.0f), 2.0f);
@@ -392,28 +394,50 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 
 			if (building.isConstructed())
 			{
-				for (int i = 0; i < modules.size(); i++) {
+				for (int i = 0; i < modules.size(); i++) 
+				{
 					int32 instanceKey = centerTile.tileId() + i * GameMapConstants::TilesPerWorld;
+
+					ModuleTypeEnum moduleTypeEnum = modules[i].moduleTypeEnum;
 
 					// Rotation
 					FRotationInfo rotation;
+					rotation.moduleTypeEnum = moduleTypeEnum;
 					{
 						// Windmill default degree special case
 						if (buildingEnum == CardEnum::Windmill) {
 							rotation.rotationFloat = 45;
 						}
-						
-						if (_lastWorkRotatorRotation.Contains(buildingId)) {
-							rotation = _lastWorkRotatorRotation[buildingId];
+
+						int32 moduleHash = static_cast<int32>(moduleTypeEnum) * buildingId;
+						if (_lastWorkRotatorRotation.Contains(moduleHash)) {
+							rotation = _lastWorkRotatorRotation[moduleHash];
 						}
 						else {
-							_lastWorkRotatorRotation.Add(buildingId, rotation);
+							_lastWorkRotatorRotation.Add(moduleHash, rotation);
 						}
-
-						bool shouldRotate = modules[i].moduleTypeEnum == ModuleTypeEnum::RotateRoll &&
+						
+						bool shouldRotate = (moduleTypeEnum == ModuleTypeEnum::RotateRoll || 
+											moduleTypeEnum == ModuleTypeEnum::RotateRollMine ||
+											moduleTypeEnum == ModuleTypeEnum::RotateRollMine2 ||
+											moduleTypeEnum == ModuleTypeEnum::RotateRollQuarry ||
+											moduleTypeEnum == ModuleTypeEnum::RotateRollFurniture) &&
 											building.shouldDisplayParticles();
 
-						const float targetDegreePerSec = 90;
+						float targetDegreePerSec = 90;
+
+						// Roll Speed
+						if (moduleTypeEnum == ModuleTypeEnum::RotateRollMine) {
+							targetDegreePerSec = 45;
+						}
+						else if (moduleTypeEnum == ModuleTypeEnum::RotateRollMine2) {
+							targetDegreePerSec = 15;
+						}
+						else if (moduleTypeEnum == ModuleTypeEnum::RotateRollQuarry) {
+							targetDegreePerSec = 45;
+						}
+						
+						
 						const float rotationAcceleration = 90; // 1 sec to reach full speed
 						float deltaTime = UGameplayStatics::GetWorldDeltaSeconds(GetWorld());
 						if (shouldRotate)
@@ -429,7 +453,7 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 							rotation.rotationSpeed = fmax(rotation.rotationSpeed - rotationAcceleration * deltaTime, 0);
 							rotation.rotationFloat = rotation.rotationFloat - deltaTime * rotation.rotationSpeed;
 						}
-						_lastWorkRotatorRotation[buildingId] = rotation;
+						_lastWorkRotatorRotation[moduleHash] = rotation;
 					}
 					
 					// WorkShaderAnimate
@@ -447,13 +471,20 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 
 					// WorkShaderOnOff
 					// - Beer Brewery
-					if (modules[i].moduleTypeEnum == ModuleTypeEnum::ShaderOnOff)
+					if (moduleTypeEnum == ModuleTypeEnum::ShaderOnOff)
 					{
 						rotation.rotationFloat = 0.0f;
 						scale = building.shouldDisplayParticles() ? FVector(1.0f) :FVector(0.5f);
 					}
+
+					FRotator rotator = FRotator(0, 0, rotation.rotationFloat);
+					if (moduleTypeEnum == ModuleTypeEnum::RotateRollMine ||
+						moduleTypeEnum == ModuleTypeEnum::RotateRollMine2 ||
+						moduleTypeEnum == ModuleTypeEnum::RotateRollFurniture) {
+						rotator = FRotator(rotation.rotationFloat, 0, 0);
+					}
 					
-					FTransform localTransform = FTransform(FRotator(0, 0, rotation.rotationFloat), modules[i].transform.GetTranslation(), scale);
+					FTransform localTransform = FTransform(rotator, modules[i].transform.GetTranslation(), scale);
 
 					FTransform moduleTransform;
 					FTransform::Multiply(&moduleTransform, &localTransform, &transform);

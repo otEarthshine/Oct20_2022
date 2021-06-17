@@ -95,6 +95,9 @@ public:
 			_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Road, tile.regionId(), true);
 
 			_simulation->SetRoadWorldTexture(tile, false, true);
+
+			_simulation->AddFireOnceParticleInfo(ParticleEnum::OnPlacement, TileArea(tile, WorldTile2(1, 1)));
+			
 			//PUN_LOG("Overlay RemoveRoad True");
 			return true;
 		}

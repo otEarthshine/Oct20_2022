@@ -68,7 +68,7 @@ std::vector<BonusPair> GathererHut::GetBonuses()
 
 	if (_simulation->HasTownBonus(_townId, CardEnum::JungleGatherer)) {
 		if (centerBiomeEnum() == BiomeEnum::Jungle) {
-			bonuses.push_back({ NSLOCTEXT("FruitGatherer", "Jungle Gatherer Bonus", "Jungle Gatherer"), 10 });
+			bonuses.push_back({ NSLOCTEXT("FruitGatherer", "Jungle Gatherer Bonus", "Jungle Gatherer"), 30 });
 		}
 	}
 
@@ -112,7 +112,7 @@ std::vector<BonusPair> HuntingLodge::GetBonuses()
 
 	if (_simulation->HasTownBonus(_townId, CardEnum::SavannaHunt)) {
 		if (IsGrassDominant(centerBiomeEnum())) {
-			bonuses.push_back({ NSLOCTEXT("Ranch", "Savanna Ranch Bonus", "Savanna Ranch"), 30 });
+			bonuses.push_back({ NSLOCTEXT("Ranch", "Savanna Ranch Bonus", "Savanna Ranch"), 50 });
 		}
 	}
 
@@ -171,7 +171,7 @@ std::vector<BonusPair> MushroomFarm::GetBonuses() {
 
 	if (_simulation->HasTownBonus(_townId, CardEnum::JungleMushroom)) {
 		if (centerBiomeEnum() == BiomeEnum::Jungle) {
-			bonuses.push_back({ NSLOCTEXT("MushroomFarm", "Jungle Mushroom Bonus", "Jungle Mushroom"), 10 });
+			bonuses.push_back({ NSLOCTEXT("MushroomFarm", "Jungle Mushroom Bonus", "Jungle Mushroom"), 30 });
 		}
 	}
 	
@@ -198,7 +198,7 @@ std::vector<BonusPair> ShroomFarm::GetBonuses() {
 
 	if (_simulation->HasTownBonus(_townId, CardEnum::JungleMushroom)) {
 		if (centerBiomeEnum() == BiomeEnum::Jungle) {
-			bonuses.push_back({ NSLOCTEXT("MagicMushroomFarm", "Jungle Mushroom Bonus", "Jungle Mushroom"), 10 });
+			bonuses.push_back({ NSLOCTEXT("MagicMushroomFarm", "Jungle Mushroom Bonus", "Jungle Mushroom"), 30 });
 		}
 	}
 	return bonuses;
@@ -278,6 +278,12 @@ void Farm::OnInit()
 			}
 		}
 	}
+
+	// TODO: this prevents Birch showing up as crop
+	// ?? This happens when farm was built outside georesource region, and wheat seeds etc. not unlocked?
+	if (!globalResourceSystem().HasSeed(currentPlantEnum)) {
+		currentPlantEnum = TileObjEnum::WheatBush;
+	}
 }
 
 void Farm::FinishConstruction()
@@ -335,12 +341,12 @@ std::vector<BonusPair> Farm::GetBonuses()
 		centerBiomeEnum() == BiomeEnum::Jungle &&
 		currentPlantEnum == TileObjEnum::Herb) 
 	{
-		bonuses.push_back({ LOCTEXT("Desert Industry", "Desert Industry"), -50 });
+		bonuses.push_back({ LOCTEXT("Jungle Herb", "Jungle Herb"), 30 });
 	}
 
 	if (_simulation->HasTownBonus(_townId, CardEnum::ForestFarm) &&
 		centerBiomeEnum() == BiomeEnum::Forest) {
-		bonuses.push_back({ LOCTEXT("Improved Farming", "Improved Farming"), 5 });
+		bonuses.push_back({ LOCTEXT("Improved Farming", "Improved Farming"), 10 });
 	}
 
 	{
@@ -612,7 +618,7 @@ void ImmigrationOffice::FinishConstruction() {
 	ConsumerIndustrialBuilding::FinishConstruction();
 
 	AddUpgrades({
-		MakeUpgrade(LOCTEXT("Immigrants Dream", "Immigrants Dream"), LOCTEXT("Immigrants Dream Desc", "+2% Productivity for Every 1% Average Happiness above 75%."), 20),
+		MakeUpgrade(LOCTEXT("Immigrants Dream", "Immigrant's Dream"), LOCTEXT("Immigrants Dream Desc", "+2% Productivity for Every 1% Average Happiness above 75%."), 20),
 		MakeProductionUpgrade(LOCTEXT("First Impression", "First Impression"), 70, 30),
 	});
 }
@@ -636,7 +642,7 @@ std::vector<BonusPair> StoneToolsShop::GetBonuses()
 	std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
 
 	if (_simulation->HasTownBonus(_townId, CardEnum::ForestTools)) {
-		bonuses.push_back({ LOCTEXT("Improved Toolmaking (Forest Biome)", "Improved Toolmaking (Forest Biome)"), 10 });
+		bonuses.push_back({ LOCTEXT("Improved Toolmaking (Forest Biome)", "Improved Toolmaking (Forest Biome)"), 20 });
 	}
 	
 	return bonuses;
@@ -661,7 +667,7 @@ std::vector<BonusPair> Blacksmith::GetBonuses()
 	std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
 
 	if (_simulation->HasTownBonus(_townId, CardEnum::ForestTools)) {
-		bonuses.push_back({ LOCTEXT("Improved Toolmaking (Forest)", "Improved Toolmaking (Forest)"), 10 });
+		bonuses.push_back({ LOCTEXT("Improved Toolmaking (Forest)", "Improved Toolmaking (Forest)"), 20 });
 	}
 
 	if (_simulation->HasGlobalBonus(_playerId, CardEnum::Craftmanship)) {
@@ -724,7 +730,7 @@ std::vector<BonusPair> CharcoalBurner::GetBonuses()
 	}
 
 	if (_simulation->HasTownBonus(_townId, CardEnum::ForestCharcoal)) {
-		bonuses.push_back({ LOCTEXT("Improved Charcoal Making (Forest)", "Improved Charcoal Making (Forest)"), 10 });
+		bonuses.push_back({ LOCTEXT("Improved Charcoal Making (Forest)", "Improved Charcoal Making (Forest)"), 30 });
 	}
 	
 	return bonuses;
@@ -864,7 +870,7 @@ std::vector<BonusPair> BeerBrewery::GetBonuses()
 	}
 
 	if (_simulation->HasTownBonus(_townId, CardEnum::ForestBeer)) {
-		bonuses.push_back({ LOCTEXT("Improved Beer-Brewing (Forest)", "Improved Beer-Brewing (Forest)"), 15 });
+		bonuses.push_back({ LOCTEXT("Improved Beer-Brewing (Forest)", "Improved Beer-Brewing (Forest)"), 30 });
 	}
 
 	if (_simulation->HasGlobalBonus(_playerId, CardEnum::AlcoholAppreciation)) {
@@ -1143,7 +1149,7 @@ std::vector<BonusPair> Fisher::GetBonuses()
 	{
 		BiomeEnum biomeEnum = centerBiomeEnum();
 		if (biomeEnum == BiomeEnum::Tundra || biomeEnum == BiomeEnum::BorealForest) {
-			bonuses.push_back({ LOCTEXT("Winter Fishing", "Winter Fishing"), 25 });
+			bonuses.push_back({ LOCTEXT("Winter Fishing", "Winter Fishing"), 50 });
 		}
 	}
 	
@@ -1356,13 +1362,13 @@ std::vector<BonusPair> GoldMine::GetBonuses()
 	if (_simulation->HasTownBonus(_townId, CardEnum::BorealGoldOil)) {
 		BiomeEnum biomeEnum = centerBiomeEnum();
 		if (biomeEnum == BiomeEnum::Tundra || biomeEnum == BiomeEnum::BorealForest) {
-			bonuses.push_back({ LOCTEXT("Gold and Oil Bonus", "Gold and Oil"), 25 });
+			bonuses.push_back({ LOCTEXT("Gold and Oil Bonus", "Gold and Oil"), 70 });
 		}
 	}
 	
 	if (_simulation->HasTownBonus(_townId, CardEnum::DesertGem)) {
 		if (centerBiomeEnum() == BiomeEnum::Desert) {
-			bonuses.push_back({ LOCTEXT("Desert Gem Bonus", "Desert Gem"), 25 });
+			bonuses.push_back({ LOCTEXT("Desert Gem Bonus", "Desert Gem"), 50 });
 		}
 	}
 	
@@ -1377,7 +1383,7 @@ std::vector<BonusPair> GemstoneMine::GetBonuses()
 	std::vector<BonusPair> bonuses = Mine::GetBonuses();
 	if (_simulation->HasTownBonus(_townId, CardEnum::DesertGem)) {
 		if (centerBiomeEnum() == BiomeEnum::Desert) {
-			bonuses.push_back({ LOCTEXT("Desert Gem Bonus", "Desert Gem"), 25 });
+			bonuses.push_back({ LOCTEXT("Desert Gem Bonus", "Desert Gem"), 50 });
 		}
 	}
 
@@ -1811,7 +1817,7 @@ std::vector<BonusPair> OilRig::GetBonuses()
 	if (_simulation->HasTownBonus(_townId, CardEnum::BorealGoldOil)) {
 		BiomeEnum biomeEnum = centerBiomeEnum();
 		if (biomeEnum == BiomeEnum::Tundra || biomeEnum == BiomeEnum::BorealForest) {
-			bonuses.push_back({ LOCTEXT("Gold and Oil Bonus", "Gold and Oil"), 25 });
+			bonuses.push_back({ LOCTEXT("Gold and Oil Bonus", "Gold and Oil"), 70 });
 		}
 	}
 	

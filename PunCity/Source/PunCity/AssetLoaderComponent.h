@@ -59,7 +59,7 @@ static FTransform TransformFromPositionYawScale(float X, float Y, float Z, float
 }
 
 
-enum class ModuleTypeEnum
+enum class ModuleTypeEnum : uint8
 {
 	Normal,
 	ConstructionOnly,
@@ -68,6 +68,10 @@ enum class ModuleTypeEnum
 	FrameConstructionOnly,
 	Window,
 	RotateRoll,
+	RotateRollMine,
+	RotateRollMine2,
+	RotateRollQuarry,
+	RotateRollFurniture,
 	ShaderAnimate,
 	ShaderOnOff,
 	AlwaysOn,
@@ -404,6 +408,13 @@ public:
 	UTexture2D* GetResourceIcon(ResourceEnum resourceEnum) { return _resourceIcons[static_cast<int>(resourceEnum)]; }
 	UTexture2D* GetResourceIconAlpha(ResourceEnum resourceEnum) { return _resourceIconsAlpha[static_cast<int>(resourceEnum)]; }
 	UMaterialInstanceDynamic* GetResourceIconMaterial(ResourceEnum resourceEnum);
+
+	UTexture2D* GetGeoresourceIcon(ResourceEnum resourceEnum) {
+		if (_georesourceIcons.find(resourceEnum) == _georesourceIcons.end()) {
+			return nullptr;
+		}
+		return _georesourceIcons[resourceEnum];
+	}
 	
 
 	UTexture2D* GetCardIcon(CardEnum cardEnum) {
@@ -730,8 +741,8 @@ private:
 	void LoadAnimModule(FString moduleName, FString meshFile);
 
 
-	void LoadBuilding(CardEnum buildingEnum, FString moduleGroupName, FString moduleGroupFolderName, bool useOldMethod = false, ModuleTransformGroup auxGroup = ModuleTransformGroup(), int32 minEra = 1) {
-		TryLoadBuildingModuleSet(moduleGroupName, moduleGroupFolderName, useOldMethod, buildingEnum);
+	void LoadBuilding(CardEnum buildingEnum, FString moduleGroupName, FString moduleGroupFolderName, bool useOldMethod = false, ModuleTransformGroup auxGroup = ModuleTransformGroup(), int32 minEra = 1, int32 era = 1) {
+		TryLoadBuildingModuleSet(moduleGroupName, moduleGroupFolderName, useOldMethod, buildingEnum, era);
 
 		LinkBuilding(buildingEnum, moduleGroupName, auxGroup, minEra);
 	}
@@ -740,6 +751,7 @@ private:
 		CppUtils::AppendVec(auxGroup.animTransforms, _tempAuxGroup.animTransforms);
 		CppUtils::AppendVec(auxGroup.togglableTransforms, _tempAuxGroup.togglableTransforms);
 		_tempAuxGroup = ModuleTransformGroup();
+		_lastTempAuxGroup = auxGroup;
 
 		_buildingEnumToModuleGroups[static_cast<int>(buildingEnum)].Add(
 			ModuleTransformGroup::CreateSet(moduleGroupName, auxGroup)
@@ -752,7 +764,7 @@ private:
 			FString moduleGroupName = moduleGroupPrefix + FString::FromInt(i);
 			FString moduleGroupFolderName = moduleGroupFolderPrefix + FString::FromInt(i);
 			LoadBuilding(buildingEnum, moduleGroupPrefix + FString::FromInt(i), moduleGroupFolderPrefix + FString("/Era") + FString::FromInt(i), 
-				false, auxGroup, minEra);
+				false, auxGroup, minEra, i);
 		}
 		check(_buildingEnumToModuleGroups[static_cast<int>(buildingEnum)].Num() == (maxEra - minEra + 1));
 	}
@@ -765,7 +777,7 @@ private:
 		check(_buildingEnumToModuleGroups[static_cast<int>(buildingEnum)].Num() == (maxEra - minEra + 1));
 	}
 	
-	void TryLoadBuildingModuleSet(FString moduleSetName, FString meshSetFolder, bool useOldMethod = true, CardEnum buildingEnum = CardEnum::None);
+	void TryLoadBuildingModuleSet(FString moduleSetName, FString meshSetFolder, bool useOldMethod = true, CardEnum buildingEnum = CardEnum::None, int32 era = 1);
 
 	
 
@@ -780,6 +792,7 @@ private:
 		check(!_moduleNameToMesh.Contains(moduleName));
 		_moduleNameToMesh.Add(moduleName, mesh);
 		nameListToAdd.Add(moduleName);
+		_recentlyAddedModuleNames.Add(moduleName);
 
 		CheckMeshesAvailable();
 	}
@@ -796,11 +809,13 @@ private:
 
 private:
 	UPROPERTY() TMap<FString, UStaticMesh*> _moduleNameToMesh;
-	//UPROPERTY() TMap<FString, UStaticMesh*> _moduleNameToConstructionMesh;
+
+	UPROPERTY() TArray<FString> _recentlyAddedModuleNames;
 
 	TArray<TArray<ModuleTransformGroup>> _buildingEnumToModuleGroups;
 	TArray<int32> _buildingEnumToMinEraModel;
 	ModuleTransformGroup _tempAuxGroup; // Temp variable for particleSystem detection
+	ModuleTransformGroup _lastTempAuxGroup; // Temp variable
 	
 	UPROPERTY() TArray<FString> _moduleNames;
 	UPROPERTY() TArray<FString> _animModuleNames;
@@ -834,6 +849,8 @@ private:
 	UPROPERTY() TArray<UTexture2D*> _resourceIcons;
 	UPROPERTY() TArray<UTexture2D*> _resourceIconsAlpha;
 	UPROPERTY() TArray<UMaterialInstanceDynamic*> _resourceIconMaterials;
+
+	std::unordered_map<ResourceEnum, UTexture2D*> _georesourceIcons;
 
 	TSet<CardEnum> _buildingsUsingSpecialIcon;
 

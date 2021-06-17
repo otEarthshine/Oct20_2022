@@ -123,7 +123,7 @@ public:
 	int32 luxuryCount();
 	void CalculateConsumptions(bool consumeLuxury = false);
 
-	int32 occupancyFactor(int32 value) {
+	int32 occupancyFactor(int32 value) const {
 		return value * occupantCount() / houseBaseOccupants; // Higher house lvl with more occupancy
 	}
 
@@ -154,7 +154,7 @@ public:
 	}
 
 	// Science
-	int64 GetScience100(ScienceEnum scienceEnum, int64 cumulative100);
+	int64 GetScience100(ScienceEnum scienceEnum, int64 cumulative100) const;
 	
 	int64 science100PerRound()
 	{
@@ -231,6 +231,9 @@ public:
 		int32 heatEfficiency = 100;
 		if (_simulation->TownhallCardCountTown(_townId, CardEnum::ChimneyRestrictor)) {
 			heatEfficiency += 15;
+		}
+		if (_simulation->HasTownBonus(_townId, CardEnum::BorealWinterResist)) {
+			heatEfficiency += 30;
 		}
 
 		if (IsUpgraded(0)) {
@@ -416,12 +419,12 @@ public:
 	std::vector<BonusPair> GetBonuses() override {
 		std::vector<BonusPair> bonuses = Building::GetBonuses();
 		if (_simulation->HasTownBonus(_townId, CardEnum::SavannaRanch)) {
-			bonuses.push_back({ NSLOCTEXT("Ranch", "Grass Fed Bonus", "Grass Fed"), 10 });
+			bonuses.push_back({ NSLOCTEXT("Ranch", "Grass Fed Bonus", "Grass Fed"), 35 });
 		}
 		if (_simulation->HasTownBonus(_townId, CardEnum::SavannaGrasslandHerder)) {
 
 			if (IsGrassDominant(centerBiomeEnum())) {
-				bonuses.push_back({ NSLOCTEXT("Ranch", "Grassland Herder Bonus", "Grassland Herder"), 20 });
+				bonuses.push_back({ NSLOCTEXT("Ranch", "Grassland Herder Bonus", "Grassland Herder"), 50 });
 			}
 		}
 		return bonuses;

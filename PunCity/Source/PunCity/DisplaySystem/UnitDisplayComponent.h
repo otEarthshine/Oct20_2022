@@ -17,6 +17,7 @@ DECLARE_CYCLE_STAT(TEXT("PUN: [Display] Unit.Resource"), STAT_PunDisplayUnitReso
 
 struct FRotationInfo
 {
+	ModuleTypeEnum moduleTypeEnum = ModuleTypeEnum::Normal;
 	float rotationFloat = 0;
 	float rotationSpeed = 0;
 };
@@ -117,9 +118,12 @@ public:
 
 		// Clean up last rotator transforms that are out of sight
 		auto lastRotatorTransformsCopy = _lastWorkRotatorRotation;
-		for (auto it : lastRotatorTransformsCopy) {
-			if (simulation().buildingIsAlive(it.Key) &&
-				 _gameManager->IsInSampleRange(simulation().buildingCenter(it.Key)))
+		for (auto it : lastRotatorTransformsCopy) 
+		{
+			int32 buildingId = it.Key / static_cast<int32>(it.Value.moduleTypeEnum);
+			
+			if (simulation().buildingIsAlive(buildingId) &&
+				 _gameManager->IsInSampleRange(simulation().buildingCenter(buildingId)))
 			{}
 			else {
 				_lastWorkRotatorRotation.Remove(it.Key);

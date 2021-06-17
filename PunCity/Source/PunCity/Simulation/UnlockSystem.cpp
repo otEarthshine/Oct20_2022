@@ -146,7 +146,8 @@ void UnlockSystem::Research(int64 science100PerRound, int32 updatesPerSec)
 		{
 			PopupInfo popup(_playerId, FText(), {}, popupReceiver);
 			popup.warningForExclusiveUI = ExclusiveUIEnum::TechTreeUI;
-			popup.forcedSkipNetworking = true;
+			//popup.forcedSkipNetworking = true;
+			popup.forcedNetworking = true; // forcedNetworking even if it only has 1 choice (since it ends with GenerateRareCardHand)
 			_simulation->AddPopupToFront(popup);
 
 			auto& cardSys = _simulation->cardSystem(_playerId);
@@ -167,6 +168,9 @@ void UnlockSystem::Research(int64 science100PerRound, int32 updatesPerSec)
 				//ADDTEXT_TAG_("<bullet>", LOCTEXT("Card Removal Card", "Card Removal Card"));
 
 				_simulation->AddPopup(_playerId, JOINTEXT(args));
+
+				//_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::Era2_1_Cards, FText());
+				//_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::Era2_2_Cards, FText());
 			}
 			else if (GetEra() == 3) {
 				cardSys.AddDrawCards(CardEnum::CardRemoval, 1);
@@ -174,6 +178,14 @@ void UnlockSystem::Research(int64 science100PerRound, int32 updatesPerSec)
 				TArray<FText> args;
 				ADDTEXT_LOCTEXT("Unlocked Card Removal", "Unlocked Card Removal!<space>Card Removal Cards can be used to remove any unused Cards from the deck that you draw Cards from.");
 				_simulation->AddPopup(_playerId, JOINTEXT(args));
+
+				//_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::Era3_1_Cards, FText());
+				//_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::Era3_2_Cards, FText());
+			}
+			else if (GetEra() == 4)
+			{
+				//_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::Era4_1_Cards, FText());
+				//_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::Era4_2_Cards, FText());
 			}
 
 
@@ -220,7 +232,7 @@ void UnlockSystem::Research(int64 science100PerRound, int32 updatesPerSec)
 		/*
 		 * Upgrades Tree unlocks at 5 techs researched
 		 */
-		if (!prosperityEnabled && techsFinished >= 5) {
+		if (!prosperityEnabled && techsFinished >= 3) {
 			prosperityEnabled = true;
 
 			TArray<FText> args;

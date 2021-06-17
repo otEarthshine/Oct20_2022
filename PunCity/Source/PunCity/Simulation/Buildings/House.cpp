@@ -47,7 +47,7 @@ void House::GetHeatingEfficiencyTip(TArray<FText>& args, ResourceEnum resourceEn
 		ADDTEXT_LOCTEXT("ChimneyRestrictor Bonus", " +15% Chimney Restrictor\n");
 	}
 	if (_simulation->HasTownBonus(_townId, CardEnum::BorealWinterResist)) {
-		ADDTEXT_LOCTEXT("Winter Resistance Bonus", " +15% Winter Resistance\n");
+		ADDTEXT_LOCTEXT("Winter Resistance Bonus", " +30% Winter Resistance\n");
 	}
 
 	
@@ -241,12 +241,17 @@ void House::CalculateConsumptions(bool consumeLuxury)
 				
 				RemoveResource(resourceEnum, actualConsumption);
 				_simulation->statSystem(_townId).AddResourceStat(ResourceSeasonStatEnum::Consumption, resourceEnum, actualConsumption);
+
+#if DEBUG_BUILD
+				buildingActionHistory.push_back({ BuildingActionEnum::ConsumeLuxury, static_cast<int32>(resourceEnum), actualConsumption });
+#endif
 			}
 
 			_roundLuxuryConsumption100 += luxuryConsumption100_perRound;
 		}
 		//}
 	});
+	
 
 	// Food consumption
 	const int32 foodCost100PerRound_perMan = BaseHumanFoodCost100PerYear / Time::RoundsPerYear;
@@ -322,7 +327,7 @@ int32 House::GetIncome100(IncomeEnum incomeEnum)
 	};
 }
 
-int64 House::GetScience100(ScienceEnum scienceEnum, int64 cumulative100)
+int64 House::GetScience100(ScienceEnum scienceEnum, int64 cumulative100) const
 {
 	switch (scienceEnum)
 	{

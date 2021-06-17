@@ -203,7 +203,9 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 	_tickHashes.Clear();
 	_serverTickHashes.Clear();
 	_currentInputHashes = 0;
-	_commandEnumsExecuted.clear();
+#endif
+	
+#if KEEP_ACTION_HISTORY
 	_commandsExecuted.clear();
 	_commandsTickExecuted.clear();
 #endif
@@ -1271,6 +1273,19 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 				_eventLogSystem.Tick1Sec();
 				_worldTradeSystem.Tick1Sec();
 
+
+				// Delete old particles
+				for (int32 i = 0; i < GameMapConstants::TotalRegions; i++) {
+					std::vector<FireOnceParticleInfo>& particles = _regionToFireOnceParticleInfo[i];
+					for (int32 j = particles.size(); j-- > 0;) {
+						if (Time::Ticks() - particles[j].startTick > Time::TicksPerSecond) {
+							particles.erase(particles.begin() + j);
+						}
+					}
+				}
+
+
+
 				TestCityNetworkStage();
 				
 			}
@@ -1370,9 +1385,20 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 			AddTickHash(_tickHashes, _tickCount, TickHashEnum::Rand, GameRand::RandState());
 			AddTickHash(_tickHashes, _tickCount, TickHashEnum::Unit, _unitSystem->GetSyncHash());
 			AddTickHash(_tickHashes, _tickCount, TickHashEnum::Building, _buildingSystem->GetSyncHash());
-			AddTickHash(_tickHashes, _tickCount, TickHashEnum::Buffer6, 0);
-			AddTickHash(_tickHashes, _tickCount, TickHashEnum::Buffer7, 0);
-			AddTickHash(_tickHashes, _tickCount, TickHashEnum::Buffer8, 0);
+
+			int32 hash = 0;
+			ExecuteOnPlayersAndAI([&](int32 playerId) {
+				hash += populationPlayer(playerId);
+			});
+			AddTickHash(_tickHashes, _tickCount, TickHashEnum::GlobalStats, hash);
+			
+			AddTickHash(_tickHashes, _tickCount, TickHashEnum::UnitActions, _unitSystem->GetSyncHash_Actions());
+
+			int32 hashResources = 0;
+			ExecuteOnPlayersAndAI([&](int32 playerId) {
+				hashResources += resourceSystem(playerId).GetSyncHash();
+			});
+			AddTickHash(_tickHashes, _tickCount, TickHashEnum::Resources, hashResources);
 #endif
 		}
 
@@ -1543,8 +1569,9 @@ bool GameSimulationCore::ExecuteNetworkCommand(std::shared_ptr<FNetworkCommand> 
 
 #if CHECK_TICKHASH
 	_currentInputHashes += command->GetTickHash();
-	_commandEnumsExecuted.push_back(command->commandType());
+#endif
 
+#if KEEP_ACTION_HISTORY
 	// Poor man's copy
 	PunSerializedData blobIn(true);
 	NetworkHelper::SerializeAndAppendToBlob(command, blobIn);
@@ -3506,21 +3533,21 @@ void GameSimulationCore::PopupInstantReply(int32 playerId, PopupReceiverEnum rep
 		}
 	}
 
-	else if (replyReceiver == PopupReceiverEnum::EraPopup_MiddleAge)
-	{
-		GenerateRareCardSelection(playerId, RareHandEnum::Era2_1_Cards, FText());
-		GenerateRareCardSelection(playerId, RareHandEnum::Era2_2_Cards, FText());
-	}
-	else if (replyReceiver == PopupReceiverEnum::EraPopup_EnlightenmentAge)
-	{
-		GenerateRareCardSelection(playerId, RareHandEnum::Era3_1_Cards, FText());
-		GenerateRareCardSelection(playerId, RareHandEnum::Era3_2_Cards, FText());
-	}
-	else if (replyReceiver == PopupReceiverEnum::EraPopup_IndustrialAge)
-	{
-		GenerateRareCardSelection(playerId, RareHandEnum::Era4_1_Cards, FText());
-		GenerateRareCardSelection(playerId, RareHandEnum::Era4_2_Cards, FText());
-	}
+	//else if (replyReceiver == PopupReceiverEnum::EraPopup_MiddleAge)
+	//{
+	//	GenerateRareCardSelection(playerId, RareHandEnum::Era2_1_Cards, FText());
+	//	GenerateRareCardSelection(playerId, RareHandEnum::Era2_2_Cards, FText());
+	//}
+	//else if (replyReceiver == PopupReceiverEnum::EraPopup_EnlightenmentAge)
+	//{
+	//	GenerateRareCardSelection(playerId, RareHandEnum::Era3_1_Cards, FText());
+	//	GenerateRareCardSelection(playerId, RareHandEnum::Era3_2_Cards, FText());
+	//}
+	//else if (replyReceiver == PopupReceiverEnum::EraPopup_IndustrialAge)
+	//{
+	//	GenerateRareCardSelection(playerId, RareHandEnum::Era4_1_Cards, FText());
+	//	GenerateRareCardSelection(playerId, RareHandEnum::Era4_2_Cards, FText());
+	//}
 }
 
 void GameSimulationCore::PopupDecision(FPopupDecision command) 
@@ -3703,6 +3730,21 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 				SetProvinceOwner(provinceId, townId);
 			}
 		}
+	}
+	else if (replyReceiver == PopupReceiverEnum::EraPopup_MiddleAge)
+	{
+		GenerateRareCardSelection(command.playerId, RareHandEnum::Era2_1_Cards, FText());
+		GenerateRareCardSelection(command.playerId, RareHandEnum::Era2_2_Cards, FText());
+	}
+	else if (replyReceiver == PopupReceiverEnum::EraPopup_EnlightenmentAge)
+	{
+		GenerateRareCardSelection(command.playerId, RareHandEnum::Era3_1_Cards, FText());
+		GenerateRareCardSelection(command.playerId, RareHandEnum::Era3_2_Cards, FText());
+	}
+	else if (replyReceiver == PopupReceiverEnum::EraPopup_IndustrialAge)
+	{
+		GenerateRareCardSelection(command.playerId, RareHandEnum::Era4_1_Cards, FText());
+		GenerateRareCardSelection(command.playerId, RareHandEnum::Era4_2_Cards, FText());
 	}
 	else if (replyReceiver == PopupReceiverEnum::None)
 	{
@@ -3900,7 +3942,13 @@ void GameSimulationCore::UseCard(FUseCard command)
 		{
 			auto& townManage = townManager(command.townId);
 
-			if (townManage.CanAddCardToTownhall()) {
+			if (townManage.TownhallHasCard(command.cardEnum)) {
+				AddPopupToFront(command.playerId, FText::Format(
+					LOCTEXT("TownhallSlots_NoSameTypeCard", "Townhall cannot take a duplicate Card.<space>{0} is already slotted."),
+					GetBuildingInfo(command.cardEnum).name
+				));
+			}
+			else if (townManage.CanAddCardToTownhall()) {
 				int32 soldPrice = cardSys.RemoveCards(command.cardEnum, 1);
 				if (soldPrice != -1) {
 					townManage.AddCardToTownhall(command.GetCardStatus(_gameManager->GetDisplayWorldTime() * 100.0f));
@@ -3908,8 +3956,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 				}
 			}
 			else {
-				AddPopupToFront(command.playerId,
-					LOCTEXT("TownhallSlotsFull", "Townhall card slots full."));
+				AddPopupToFront(command.playerId, LOCTEXT("TownhallSlotsFull", "Townhall card slots full."));
 			}
 		}
 		return;
@@ -4107,7 +4154,9 @@ void GameSimulationCore::UnslotCard(FUnslotCard command)
 	UE_LOG(LogNetworkInput, Log, TEXT(" UnslotCard"));
 	
 	Building& bld = building(command.buildingId);
-	PUN_CHECK(bld.playerId() == command.playerId);
+	PUN_ENSURE(bld.playerId() == command.playerId, return);
+
+	
 	auto& cardSys = cardSystem(command.playerId);
 
 	if (bld.isEnum(CardEnum::Townhall))
@@ -4887,6 +4936,7 @@ void GameSimulationCore::Cheat(FCheat command)
 			unlockSystem(command.playerId)->researchEnabled = true;
 			unlockSystem(command.playerId)->UnlockAll();
 			_popupSystems[command.playerId].ClearPopups();
+			cardSys.ClearBoughtCards();
 			break;
 		}
 		case CheatEnum::Money: {
@@ -5282,9 +5332,37 @@ void GameSimulationCore::Cheat(FCheat command)
 			break;
 		}
 
-		case CheatEnum::Tog:
+		case CheatEnum::PunTog: PunSettings::Toggle(command.stringVar1);
+		case CheatEnum::PunGet:
 		{
-			PunSettings::Toggle(command.stringVar1);
+			auto it = PunSettings::Settings.find(ToStdString(command.stringVar1));
+			if (it != PunSettings::Settings.end()) {
+				AddPopup(command.playerId, FText::Format(INVTEXT("{0} {1}"), FText::FromString(command.stringVar1), it->second));
+			} else {
+				AddPopup(command.playerId, FText::Format(INVTEXT("{0} doesn't exists"), FText::FromString(command.stringVar1)));
+			}
+			break;
+		}
+		case CheatEnum::UnitInfo:
+		{
+			int32 unitId = command.var1;
+			if (unitSystem().IsUnitValid(unitId)) {
+				auto& unitAI = unitSystem().unitStateAI(unitId);
+				AddPopup(command.playerId, FText::FromString(unitAI.GetUnitDebugInfo()));
+				AddPopup(command.playerId, FText::FromString(unitAI.GetUnitActivityHistory()));
+			}
+			else {
+				AddPopup(command.playerId, INVTEXT("Unit doesn't exists"));
+			}
+			break;
+		}
+		case CheatEnum::BuildingInfo:
+		{
+			int32 buildingId = command.var1;
+			if (IsValidBuilding(buildingId)) {
+				auto& bld = building(buildingId);
+				AddPopup(command.playerId, FText::FromString(bld.GetBuildingActionHistory()));
+			}
 			break;
 		}
 
@@ -5756,7 +5834,7 @@ void GameSimulationCore::DemolishCritterBuildingsIncludingFronts(WorldTile2 tile
 	}
 }
 
-
+#if CHECK_TICKHASH
 void GameSimulationCore::AddTickHash(TickHashes& tickHashes, int32 tickCount, TickHashEnum tickHashEnum, int32 tickHash)
 {
 	if (PunSettings::IsOn("AlreadyDesynced")) {
@@ -5768,6 +5846,7 @@ void GameSimulationCore::AddTickHash(TickHashes& tickHashes, int32 tickCount, Ti
 	//check(tickHashes.allTickHashes.Num() == tickHashes.GetTickIndex(tickCount, tickHashEnum));
 	tickHashes.allTickHashes.Add(tickHash);
 }
+#endif
 
 
 /*

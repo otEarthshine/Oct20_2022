@@ -77,6 +77,7 @@ void UMainGameUI::PunInit()
 	ConverterCardHandOverlay->SetVisibility(ESlateVisibility::Collapsed);
 	//ConverterCardHandSubmitButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickConverterCardHandSubmitButton);
 	ConverterCardHandCancelButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickConverterCardHandCancelButton);
+	ConverterCardHandXCloseButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickConverterCardHandCancelButton);
 
 	converterHandCategoryState = -1;
 	lastConverterHandCategoryState = -1;
@@ -948,12 +949,27 @@ void UMainGameUI::Tick()
 		AdultPopulationText->SetText(FText::FromString(FString::FromInt(adultPopulation)));
 		ChildPopulationText->SetText(FText::FromString(FString::FromInt(childPopulation)));
 		{
-			AddToolTip(PopulationBox, FText::Format(
+			auto tooltip = AddToolTip(PopulationBox, FText::Format(
 				LOCTEXT("PopulationBox_Tip", "Population: {0}<bullet>{1} Adults</><bullet>{2} Children</>"),
 				TEXT_NUM(population),
 				TEXT_NUM(adultPopulation),
 				TEXT_NUM(childPopulation)
 			));
+
+			
+			auto punGraph = tooltip->TooltipPunBoxWidget->AddThinGraph();
+
+			// Food Graph
+			if (bIsHoveredButGraphNotSetup ||
+				tooltip->TooltipPunBoxWidget->DidElementResetThisRound())
+			{
+				bIsHoveredButGraphNotSetup = false;
+				
+				punGraph->SetupGraph({
+					{ LOCTEXT("Population", "Population").ToString(), PlotStatEnum::Population, FLinearColor(0.3, 1, 0.3), playerId(), currentTownId() },
+					{ LOCTEXT("Children", "Children").ToString(), PlotStatEnum::ChildPopulation, FLinearColor(0.3, 0.3, 1), playerId(), currentTownId() },
+				});
+			}
 		}
 
 		if (shouldDisplayMainGameUI)

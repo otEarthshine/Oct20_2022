@@ -147,6 +147,9 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "ForceDesyncPopup", 0 },
 	{ "AlreadyDesynced", 0 },
 
+
+	{ "ShouldResetMouseCursor", 1 },
+
 	{ "TestPosX", 0 },
 	{ "TestPosY", 0 },
 	{ "TestPosZ", 0 },

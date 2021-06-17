@@ -4,6 +4,8 @@
 #include "UnitBase.h"
 
 #include <array>
+
+#include "UnitStateAI.h"
 #include "PunCity/PunUtils.h"
 #include "PunCity/PunContainers.h"
 #include "UpdateRingBuffer.h"
@@ -159,9 +161,32 @@ public:
 			hash += unitLean.targetLocation.x;
 			hash += unitLean.targetLocation.y;
 			hash += unitLean.lastUpdate.nextUpdateTick;
+			hash += unitLean.birthTicks();
+			hash += unitLean.alive();
+			hash += unitLean.waypointStack.size();
+			hash += unitLean.isForceMove;
 		}
 		return hash;
 	}
+
+	int32 GetSyncHash_Actions() {
+		int32 hash = 0;
+		for (size_t i = _stateAI.size(); i-- > 0;) {
+			const UnitStateAI* unit = _stateAI[i].get();
+			hash += unit->GetSyncHash_Actions();
+		}
+		return hash;
+	}
+
+	std::vector<int32> GetUnitSyncHashes() {
+		std::vector<int32> hashes;
+		for (size_t i = _stateAI.size(); i-- > 0;) {
+			const UnitStateAI* unit = _stateAI[i].get();
+			hashes.push_back(unit->GetSyncHash_Actions());
+		}
+		return hashes;
+	}
+	
 
 	void Serialize(FArchive& Ar);
 

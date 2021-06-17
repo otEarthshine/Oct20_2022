@@ -47,6 +47,13 @@ public:
 		}
 		return false;
 	}
+	bool HasSeed(TileObjEnum tileObjEnum) const {
+		for (SeedInfo seedInfo : _unlockedSeeds) {
+			if (seedInfo.tileObjEnum == tileObjEnum) return true;
+		}
+		return false;
+	}
+	
 	void AddSeed(SeedInfo seedInfo) {
 		_unlockedSeeds.push_back(seedInfo);
 

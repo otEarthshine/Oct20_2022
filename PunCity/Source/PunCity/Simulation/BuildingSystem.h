@@ -187,6 +187,9 @@ public:
 			hash += static_cast<int32>(_buildingEnum[i]);
 			hash += static_cast<int32>(_alive[i]);
 			hash += static_cast<int32>(_buildings[i]->priority());
+			hash += _buildings[i]->playerId();
+			hash += _buildings[i]->isConstructed();
+			hash += _buildings[i]->centerTile().tileId();
 		}
 
 		hash += _buildingsToTick.size();

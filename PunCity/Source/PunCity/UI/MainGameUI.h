@@ -441,6 +441,7 @@ private:
 	// Converter Hand
 	UPROPERTY(meta = (BindWidget)) UWrapBox* ConverterCardHandBox;
 	UPROPERTY(meta = (BindWidget)) UButton* ConverterCardHandCancelButton;
+	UPROPERTY(meta = (BindWidget)) UButton* ConverterCardHandXCloseButton;
 	UPROPERTY(meta = (BindWidget)) UConfirmUI* ConverterCardHandConfirmUI;
 
 	int32 converterHandCategoryState = -1;

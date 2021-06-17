@@ -58,7 +58,7 @@ UTerrainMapComponent::UTerrainMapComponent()
 	//_buildingsMeshes->AttachToComponent(terrainMesh, FAttachmentTransformRules::KeepRelativeTransform);
 	//_buildingsMeshes->SetRelativeLocationAndRotation(FVector::ZeroVector, FRotator::ZeroRotator);
 	
-	_georesourceEnumToMesh = CreateDefaultSubobject<UStaticFastInstancedMeshesComp>("_georesourceEnumToMesh");
+	//_georesourceEnumToMesh = CreateDefaultSubobject<UStaticFastInstancedMeshesComp>("_georesourceEnumToMesh");
 
 	// Territory Decal
 	auto decal = CreateDefaultSubobject<UDecalComponent>("_territoryMapDecal");
@@ -183,11 +183,11 @@ void UTerrainMapComponent::UpdateTerrainMapDisplay(bool mapTerrainVisible, bool 
 	 */
 	bool mapCityVisible = !_dataSource->ZoomDistanceBelow(WorldZoomTransition_BuildingsMini);
 	if (mapCityVisible && !_buildingsMeshes->IsActive()) {
-		_georesourceEnumToMesh->SetActive(true, true);
+		//_georesourceEnumToMesh->SetActive(true, true);
 		_buildingsMeshes->SetActive(true, true);
 		RefreshAnnotations();
 	} else if (!mapCityVisible && _buildingsMeshes->IsActive()) {
-		_georesourceEnumToMesh->SetActive(false, true);
+		//_georesourceEnumToMesh->SetActive(false, true);
 		_buildingsMeshes->SetActive(false, true);
 	}
 
@@ -198,11 +198,11 @@ void UTerrainMapComponent::UpdateTerrainMapDisplay(bool mapTerrainVisible, bool 
 		_didFirstRefreshAnnotation = true;
 
 		if (mapCityVisible) {
-			_georesourceEnumToMesh->SetActive(true, true);
+			//_georesourceEnumToMesh->SetActive(true, true);
 			_buildingsMeshes->SetActive(true, true);
 			RefreshAnnotations();
 		} else {
-			_georesourceEnumToMesh->SetActive(false, true);
+			//_georesourceEnumToMesh->SetActive(false, true);
 			_buildingsMeshes->SetActive(false, true);
 		}
 	}
@@ -670,15 +670,14 @@ void UTerrainMapComponent::SetBlurredProvinceArea(TileArea area2x2, std::vector<
 
 void UTerrainMapComponent::InitAnnotations()
 {	
-	_georesourceEnumToMesh->Init("MapResourceNode1", terrainMeshWater, 200, "", 0);
-	//_georesourceEnumToMesh2->Init("MapResourceNode2", terrainMesh, 200, "", 0);
-	for (int32_t i = GeoresourceEnumCount; i-- > 0;) {
-		GeoresourceInfo info = GetGeoresourceInfo(i);
-		TArray<UStaticMesh*> miniMeshes = _assetLoader->georesourceMesh(info.georesourceEnum).miniMeshes;
-		for (int32 j = 0; j < miniMeshes.Num(); j++) {
-			_georesourceEnumToMesh->AddProtoMesh((*info.GetDisplayName()) + FString::FromInt(j), miniMeshes[j]);
-		}
-	}
+	//_georesourceEnumToMesh->Init("MapResourceNode1", terrainMeshWater, 200, "", 0);
+	//for (int32_t i = GeoresourceEnumCount; i-- > 0;) {
+	//	GeoresourceInfo info = GetGeoresourceInfo(i);
+	//	TArray<UStaticMesh*> miniMeshes = _assetLoader->georesourceMesh(info.georesourceEnum).miniMeshes;
+	//	for (int32 j = 0; j < miniMeshes.Num(); j++) {
+	//		_georesourceEnumToMesh->AddProtoMesh((*info.GetDisplayName()) + FString::FromInt(j), miniMeshes[j]);
+	//	}
+	//}
 
 	/*
 	 * Buildings
@@ -806,44 +805,44 @@ void UTerrainMapComponent::RefreshAnnotations()
 	_buildingsMeshes->SetActive(mapCityVisible, true);
 
 	// No showing Georesource for trailer
-	if (PunSettings::TrailerSession) {
-		_georesourceEnumToMesh->AfterAdd();
-		return;
-	}
+	//if (PunSettings::TrailerSession) {
+	//	_georesourceEnumToMesh->AfterAdd();
+	//	return;
+	//}
 	
 
 	/*
 	 * Georesources
 	 */
-	GeoresourceSystem& georesourceSystem = _dataSource->simulation().georesourceSystem();
-	const std::vector<GeoresourceNode>& georesources = georesourceSystem.provinceToGeoresource();
+	//GeoresourceSystem& georesourceSystem = _dataSource->simulation().georesourceSystem();
+	//const std::vector<GeoresourceNode>& georesources = georesourceSystem.provinceToGeoresource();
 
-	for (const GeoresourceNode& node : georesources)
-	{
-		if (node.HasResource())
-		{
-			GeoresourceInfo info = node.info();
-			// Add
-			WorldTile2 centerTile = node.centerTile;
-			FVector displayLocation(centerTile.x * _tileToWorldMapX, centerTile.y * _tileToWorldMapY, 0);
-			
-			FVector size = FVector::OneVector * 0.5f; // From 2x2 tile to 1x1 sized...
+	//for (const GeoresourceNode& node : georesources)
+	//{
+	//	if (node.HasResource())
+	//	{
+	//		GeoresourceInfo info = node.info();
+	//		// Add
+	//		WorldTile2 centerTile = node.centerTile;
+	//		FVector displayLocation(centerTile.x * _tileToWorldMapX, centerTile.y * _tileToWorldMapY, 0);
+	//		
+	//		FVector size = FVector::OneVector * 0.5f; // From 2x2 tile to 1x1 sized...
 
-			FTransform transform(FRotator::ZeroRotator, displayLocation, size);
+	//		FTransform transform(FRotator::ZeroRotator, displayLocation, size);
 
-			int32 miniMeshesCount = _assetLoader->georesourceMesh(info.georesourceEnum).miniMeshes.Num();
-			for (int32 j = 0; j < miniMeshesCount; j++) {
-				// TODO: later standardize this...
-				if (info.georesourceEnum == GeoresourceEnum::Ruin) {
-					transform.SetScale3D(FVector::OneVector * 0.1f);
-				}
-				
-				_georesourceEnumToMesh->Add(*info.GetDisplayName() + FString::FromInt(j), centerTile.tileId(), transform, 0);
-			}
-			//_georesourceEnumToMesh2->Add(ToFString(info.name), centerTile.tileId(), transform, 0);
-		}
-	}
+	//		int32 miniMeshesCount = _assetLoader->georesourceMesh(info.georesourceEnum).miniMeshes.Num();
+	//		for (int32 j = 0; j < miniMeshesCount; j++) {
+	//			// TODO: later standardize this...
+	//			if (info.georesourceEnum == GeoresourceEnum::Ruin) {
+	//				transform.SetScale3D(FVector::OneVector * 0.1f);
+	//			}
+	//			
+	//			_georesourceEnumToMesh->Add(*info.GetDisplayName() + FString::FromInt(j), centerTile.tileId(), transform, 0);
+	//		}
+	//		//_georesourceEnumToMesh2->Add(ToFString(info.name), centerTile.tileId(), transform, 0);
+	//	}
+	//}
 
-	_georesourceEnumToMesh->AfterAdd();
+	//_georesourceEnumToMesh->AfterAdd();
 
 }

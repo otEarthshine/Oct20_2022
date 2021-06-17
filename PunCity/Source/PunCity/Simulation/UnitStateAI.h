@@ -351,6 +351,59 @@ public:
 		_actions.insert(_actions.begin(), Action(actionEnum, int32val1, int32val2, int32val3, int32val4, fullId1));
 	}
 
+	int32 GetSyncHash_Actions() const
+	{
+		int32 hash = 0;
+		hash += _id;
+		hash += _fullId.birthTicks;
+		hash += _townId;
+		hash += _playerId;
+		hash += static_cast<int32>(_unitEnum);
+		hash += static_cast<int32>(_unitState);
+		hash += _food;
+		hash += _health;
+		hash += _heat;
+		hash += _lastTickCelsiusRate;
+		hash += _lastUpdateTick;
+		hash += _lastPregnant;
+		hash += _nextPregnantTick;
+
+		hash += _inventory.resourceCountAll();
+
+		hash += _houseId;
+		hash += _workplaceId;
+		hash += _lastworkplaceId;
+
+		hash += _homeProvinceId;
+		hash += _lastFindWildFoodTick;
+
+		for (int32 i = 0; i < reservations.size(); i++)
+		{
+			hash += reservations[i].unitId;
+			hash += static_cast<int32>(reservations[i].reservationType);
+			hash += static_cast<int32>(reservations[i].reserveHolder.resourceEnum);
+			hash += reservations[i].reserveHolder.holderId;
+			hash += reservations[i].reserveTileId;
+			hash += reservations[i].reserveWorkplaceId;
+			hash += reservations[i].amount;
+		}
+
+		hash += _hp100;
+		hash += _isSick;
+		hash += _nextToolNeedTick;
+
+		hash += _justDidResetActions;
+
+		hash += static_cast<int32>(_animationEnum);
+
+		for (int32 i = 0; i < _actions.size(); i++) {
+			hash += static_cast<int32>(_actions[i].actionEnum);
+			hash += _actions[i].int32val1;
+			hash += _actions[i].int32val2;
+		}
+		return hash;
+	}
+
 	//const std::vector<std::string> UnitActionEnumString = {
 	//	"Wait",
 	//	"MoveRandomly",
@@ -570,6 +623,10 @@ public:
 	UnitState unitState() { return _unitState; }
 	void SetActivity(UnitState unitState) {
 		_unitState = unitState;
+
+#if DEBUG_BUILD
+		_activityHistory.push_back(_unitState);
+#endif
 	}
 
 	UnitInventory& inventory() { return _inventory; }
@@ -579,7 +636,7 @@ public:
 	int32 id() const { return _id; }
 	UnitFullId fullId() const { return _unitData->fullId(_id); }
 
-	int32 birthTicks() { return _fullId.birthTicks; }
+	int32 birthTicks() const { return _fullId.birthTicks; }
 
 	int32 birthChance();
 
@@ -933,6 +990,78 @@ public:
 	static int32 debugFindFullBushSuccessCount;
 	static int32 debugFindFullBushFailCount;
 
+	FString GetUnitDebugInfo() const
+	{
+		std::stringstream ss;
+		ss << "_id: " << _id;
+		ss << "\n birthTicks: " << birthTicks();
+		ss << "\n _townId: " << _townId;
+		ss << "\n _playerId: " << _playerId;
+
+		ss << "\n _unitEnum: " << GetUnitInfo(_unitEnum).nameStr();
+		ss << "\n _unitState: " << FTextToStd(UnitStateName[static_cast<int32>(_unitState)]);
+
+		ss << "\n _actions: ";
+		for (int32 i = 0; i < _actions.size(); i++) {
+			ss << " " << static_cast<int32>(_actions[i].actionEnum);
+		}
+
+		ss << "\n _currentAction: " << static_cast<int32>(_currentAction.actionEnum);
+		
+		ss << "\n _food: " << _food;
+		ss << "\n _health: " << _health;
+		ss << "\n _heat: " << _heat;
+		ss << "\n _lastTickCelsiusRate: " << _lastTickCelsiusRate;
+
+		ss << "\n _happiness: ";
+		for (int32 i = 0; i < _happiness.size(); i++) {
+			ss << " " << _happiness[i];
+		}
+
+		ss << "\n _lastUpdateTick: " << _lastUpdateTick;
+		ss << "\n _lastPregnant: " << _lastPregnant;
+		ss << "\n _nextPregnantTick: " << _nextPregnantTick;
+
+		ss << "\n _inventory: " << _inventory.ToString();
+
+		ss << "\n _houseId: " << _houseId;
+		ss << "\n _workplaceId: " << _workplaceId;
+		ss << "\n _lastworkplaceId: " << _lastworkplaceId;
+
+		ss << "\n _homeProvinceId: " << _homeProvinceId;
+		ss << "\n _lastFindWildFoodTick: " << _lastFindWildFoodTick;
+
+		ss << "\n reservations:";
+		for (int32 i = 0; i < reservations.size(); i++) {
+			ss << " " << ReservationTypeName(reservations[i].reservationType);
+		}
+
+		ss << "\n _hp100: " << _hp100;
+		ss << "\n _isSick: " << _isSick;
+		ss << "\n _nextToolNeedTick: " << _nextToolNeedTick;
+
+		ss << "\n _justDidResetActions: " << _justDidResetActions;
+		ss << "\n _animationEnum: " << GetUnitAnimationName(_animationEnum);
+
+		return ToFString(ss.str());
+	}
+
+	FString GetUnitActivityHistory() const
+	{
+		std::stringstream ss;
+		ss << "_activityHistory:";
+#if DEBUG_BUILD
+		int32 count = 0;
+		for (int32 i = _activityHistory.size() - 1; i-- > 0;) {
+			ss << "\n  " << FTextToStd(UnitStateName[static_cast<int32>(_activityHistory[i])]);
+			if (count++ > 30) {
+				break;
+			}
+		}
+#endif
+		return ToFString(ss.str());
+	}
+
 protected:
 	IUnitDataSource* _unitData;
 	IGameSimulationCore* _simulation;
@@ -940,7 +1069,10 @@ protected:
 	std::stringstream _debugSpeech;
 	std::vector<std::string> _lastDebugSpeeches;
 
+#if DEBUG_BUILD
+	std::vector<UnitState> _activityHistory;
 	std::vector<Action> _actionHistory;
+#endif
 
 	TryWorkFailEnum _tryWorkFailEnum; // TODO: Serialize
 protected:

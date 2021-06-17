@@ -37,6 +37,8 @@ public:
 	virtual int32 hostGameSpeed() = 0;
 	virtual void Pause() = 0;
 	virtual void Resume() = 0;
+	virtual void Pause_ToServer() = 0;
+	
 	virtual void GoToMainMenu() = 0;
 	virtual void GoToSinglePlayerLobby() = 0;
 	virtual void GoToVictoryScreen() = 0;

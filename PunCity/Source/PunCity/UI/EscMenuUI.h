@@ -48,6 +48,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* PlayButton2;
 	UPROPERTY(meta = (BindWidget)) UButton* PlayButton3;
 	UPROPERTY(meta = (BindWidget)) UButton* PlayButton4;
+	UPROPERTY(meta = (BindWidget)) USizeBox* PlayButton4SizeBox;
 
 	UPROPERTY(meta = (BindWidget)) UButton* OverlayToggler;
 	UPROPERTY(meta = (BindWidget)) UOverlay* OverlaySettingsOverlay;
@@ -235,6 +236,8 @@ public:
 		PlayIcon3->SetColorAndOpacity(play3Color);
 		PlayIcon4->SetColorAndOpacity(play4Color);
 
+		// PlayButton4 is displayed only if player uses hotkey to get to this speed 
+		PlayButton4SizeBox->SetVisibility(gameSpeedToDisplay == GameSpeedValue4 ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 
 #define LOCTEXT_NAMESPACE "EscMenuUI"
 		FText PlayButtonTipText = LOCTEXT("PlayButton_Tip", "Change to {0}<space>(current: {1})<space>Hotkey: <Orange>[{2}]</>");

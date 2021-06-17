@@ -360,3 +360,65 @@ void ResourceSystem::UpdateResourceDisplay(const ResourceHolder& holder) const
 		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Resource, holder.tile.regionId(), true);
 	}
 }
+
+
+
+std::vector<int32> ResourceSystem::GetResourcesSyncHashes() {
+	std::vector<int32> hashes;
+	hashes.push_back(_townId);
+	for (int32 i = 0; i < _enumToHolders.size(); i++) {
+		const std::vector<ResourceHolder>& holders = _enumToHolders[i].holders();
+		hashes.push_back(holders.size());
+		for (int32 j = 0; j < holders.size(); j++) {
+			hashes.push_back(holders[j].GetSyncHash());
+		}
+	}
+	return hashes;
+}
+void ResourceSystem::FindDesyncInResourceSyncHashes(const TArray<int32>& serverHashes, int32& currentIndex)
+{
+	for (int32 i = 0; i < _enumToHolders.size(); i++) {
+		const std::vector<ResourceHolder>& holders = _enumToHolders[i].holders();
+
+		int32 serverHash1 = serverHashes[currentIndex++];
+		if (holders.size() != serverHash1) {
+			_simulation->AddPopup(_simulation->gameManagerPlayerId(), FText::Format(
+				INVTEXT("Resource {0} Hash Compare Failed holders.size:{1} serverHash:{2}"),
+				ResourceNameT(static_cast<ResourceEnum>(i)), TEXT_NUM(holders.size()), TEXT_NUM(serverHash1)
+			));
+			return;
+		}
+
+
+		for (int32 j = 0; j < holders.size(); j++) {
+			int32 serverHash2 = serverHashes[currentIndex++];
+			if (holders[j].GetSyncHash() != serverHash2)
+			{
+				const ResourceHolder& holder = holders[j];
+
+				std::stringstream ss;
+				ss << "Resource Hash Compare Failed holderHash:" << holders[j].GetSyncHash() << " serverHash:" << serverHash2;
+				ss << "[" << GetResourceInfoSafe(holder.info.resourceEnum).nameStd() << " " << GetResourceHolderTypeName(holder.type)
+					<< " - cur:" + std::to_string(holder.current())
+					<< " push:" + std::to_string(holder.reservedPush())
+					<< " pop:" + std::to_string(holder.reservedPop())
+					<< " target:" + std::to_string(holder.target())
+					<< " tile:" << holder.tile.x << "," << holder.tile.y
+					<< " ownerId:" << holder.objectId << "|";
+
+				if (simulation()->IsValidBuilding(holder.objectId))
+				{
+					Building& bld = simulation()->building(holder.objectId);
+					ss << " ownerPid:" << bld.playerId();
+					ss << " ownerName:" << bld.buildingInfo().nameStd();
+					ss << " ownerTile:" << bld.centerTile().ToString();
+				}
+
+				ss << "]\n";
+
+				_simulation->AddPopup(_simulation->gameManagerPlayerId(), ToFText(ss.str()));
+				return;
+			}
+		}
+	}
+}

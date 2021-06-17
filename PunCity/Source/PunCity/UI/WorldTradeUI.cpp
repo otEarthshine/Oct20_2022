@@ -13,7 +13,7 @@ void UWorldTradeUI::PunInit()
 {
 	TradeButton->OnClicked.AddDynamic(this, &UWorldTradeUI::ClickedTradeButton);
 	DismissButton->OnClicked.AddDynamic(this, &UWorldTradeUI::ClickedDismissButton);
-
+	TradeXCloseButton->OnClicked.AddDynamic(this, &UWorldTradeUI::ClickedDismissButton);
 
 	TradeNeedsButton->OnClicked.AddDynamic(this, &UWorldTradeUI::ClickTradeNeedsButton);
 	TradeConstructionButton->OnClicked.AddDynamic(this, &UWorldTradeUI::ClickTradeConstructionButton);
@@ -72,6 +72,8 @@ void UWorldTradeUI::OpenUI(int32 objectId)
 			}
 		}
 	}
+
+	tradeCategoryState = -1;
 
 	SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	TickUI();

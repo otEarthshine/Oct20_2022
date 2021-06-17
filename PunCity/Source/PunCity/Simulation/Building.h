@@ -13,6 +13,30 @@
 #include "Resource/ResourceSystem.h"
 #include "GlobalResourceSystem.h"
 
+
+enum class BuildingActionEnum : uint8
+{
+	DropoffResource,
+	PickupResource,
+	ConsumeLuxury,
+	FillInput,
+};
+static const std::vector<std::string> BuildingActionEnums
+{
+	"DropoffResource",
+	"PickupResource",
+	"ConsumeLuxury",
+	"FillInput",
+};
+struct BuildingDebugAction
+{
+	BuildingActionEnum actionEnum = BuildingActionEnum::DropoffResource;
+	int32 var1 = -1;
+	int32 var2 = -1;
+	int32 var3 = -1;
+};
+
+
 class Building
 {
 public:
@@ -361,7 +385,7 @@ public:
 	int32 level() { return _level; }
 
 	//! Occupancy
-	int occupantCount() { return _occupantIds.size(); }
+	int occupantCount() const { return _occupantIds.size(); }
 	int allowedOccupants() { 
 		//UE_LOG(LogTemp, Error, TEXT("allowedOccupants %d"), _allowedOccupants);
 		return _allowedOccupants; 
@@ -527,7 +551,7 @@ public:
 
 	//! Helper
 	class OverlaySystem& overlaySystem() { return _simulation->overlaySystem(); }
-	ResourceSystem& resourceSystem() {
+	ResourceSystem& resourceSystem() const {
 		ResourceSystem& resourceSys = _simulation->resourceSystem(townId());
 		resourceSys.CheckIntegrity_ResourceSys();
 		return resourceSys;
@@ -548,14 +572,14 @@ public:
 	//! Resources
 
 	std::vector<ResourceHolderInfo>& holderInfos() { return _holderInfos; }
-	ResourceHolderInfo holderInfo(ResourceEnum resourceEnum) {
-		for (auto& info : _holderInfos) {
+	ResourceHolderInfo holderInfo(ResourceEnum resourceEnum) const {
+		for (const auto& info : _holderInfos) {
 			if (info.resourceEnum == resourceEnum) return info;
 		}
 		return ResourceHolderInfo(resourceEnum, InvalidResourceHolderId);
 	}
 	
-	int32 resourceCount(ResourceEnum resourceEnum);
+	int32 resourceCount(ResourceEnum resourceEnum) const;
 	int32 resourceCountSafe(ResourceEnum resourceEnum);
 	
 	int32 resourceCountWithPop(ResourceEnum resourceEnum);
@@ -732,6 +756,18 @@ public:
 
 		// Adjust to worker count
 		baseProfitValue = baseProfitValue * buildingInfo().workerCount / 2;
+
+
+		// Special Case:
+		if (productEnum == ResourceEnum::Gemstone ||
+			productEnum == ResourceEnum::GoldOre)
+		{
+			baseProfitValue = baseProfitValue * 130 / 100;
+		}
+		if (productEnum == ResourceEnum::Oil) {
+			baseProfitValue = baseProfitValue * 200 / 100;
+		}
+		
 		
 		check(baseProfitValue > 0);
 		return baseProfitValue;
@@ -756,17 +792,25 @@ public:
 	}
 
 	virtual int32 baseUpkeep() {
-		return BaseUpkeep(_buildingEnum);
+		int32 baseUpkeep = BaseUpkeep(_buildingEnum);
+		
+		const BldInfo& info = GetBuildingInfo(_buildingEnum);
+		baseUpkeep = info.resourceInfo.ApplyUpgradeAndEraProfitMultipliers(baseUpkeep, info.minEra(), GetEraUpgradeCount());
+		
+		return baseUpkeep;
 	}
 
 	static int32 BaseUpkeep(CardEnum buildingEnum)
 	{
+		const BldInfo& info = GetBuildingInfo(buildingEnum);
+		
 		int32 baseUpkeep;
-		if (GetBuildingInfo(buildingEnum).produce != ResourceEnum::None || IsSpecialProducer(buildingEnum)) {
-			baseUpkeep = GetBuildingInfo(buildingEnum).baseUpkeep;
+		if (info.produce != ResourceEnum::None || IsSpecialProducer(buildingEnum)) {
+			baseUpkeep = info.baseUpkeep;
 		} else {
 			baseUpkeep = GetCardUpkeepBase(buildingEnum);
 		}
+		
 		return baseUpkeep;
 	}
 
@@ -866,7 +910,7 @@ public:
 	 * Radius
 	 */
 	template<typename BonusFunc>
-	int32 GetRadiusBonus(CardEnum buildingEnum, int32 radius, BonusFunc getBonus)
+	int32 GetRadiusBonus(CardEnum buildingEnum, int32 radius, BonusFunc getBonus) const
 	{
 		const std::vector<int32>& buildingIds = _simulation->buildingIds(_playerId, buildingEnum);
 		int32 bonus = 0;
@@ -1108,6 +1152,14 @@ public:
 		if (isEnum(CardEnum::PrintingPress)) {
 			if (resourceEnum == ResourceEnum::Paper) result = 8;
 			if (resourceEnum == ResourceEnum::Dye) result = 2;
+		}
+		else if (isEnum(CardEnum::Brickworks)) {
+			if (resourceEnum == ResourceEnum::Clay) result = 7;
+			if (resourceEnum == ResourceEnum::Coal) result = 3;
+		}
+		else if (isEnum(CardEnum::Chocolatier)) {
+			if (resourceEnum == ResourceEnum::Cocoa) result = 8;
+			if (resourceEnum == ResourceEnum::Milk) result = 2;
 		}
 		
 
@@ -1395,12 +1447,12 @@ public:
 			if (_simulation->HasTownBonus(townId(), CardEnum::DesertTradeForALiving) &&
 				IsFoodEnum(resourceEnum) || resourceEnum == ResourceEnum::Wood || resourceEnum == ResourceEnum::Coal)
 			{
-				tradeFeePercent -= 15;
+				tradeFeePercent = 0;
 			}
 			if (_simulation->HasTownBonus(townId(), CardEnum::DesertOreTrade) &&
 				IsOreEnum(resourceEnum))
 			{
-				tradeFeePercent -= 25;
+				tradeFeePercent = 0;
 			}
 		}
 
@@ -1469,6 +1521,7 @@ public:
 		if (IsDecorativeBuilding(_buildingEnum) ||
 			IsServiceBuilding(_buildingEnum) ||
 			IsWorldWonder(_buildingEnum) ||
+			_buildingEnum == CardEnum::Farm ||
 			_buildingEnum == CardEnum::StatisticsBureau ||
 			_buildingEnum == CardEnum::JobManagementBureau ||
 			_buildingEnum == CardEnum::ArchitectStudio ||
@@ -1685,7 +1738,7 @@ public:
 	std::vector<int32_t> children;
 
 	// Debug...
-	PUN_DEBUG_EXPR(BldInfo buildingInfo_ = BldInfo(CardEnum::None, INVTEXT("none"), -1, INVTEXT("none")));
+	PUN_DEBUG_EXPR(BldInfo buildingInfo_ = BldInfo(CardEnum::None, INVTEXT("none"), FString("none"), -1, INVTEXT("none")));
 
 
 	// Public Non-serialized (Mostly UI)
@@ -1836,6 +1889,31 @@ public:
 		ResetWorkReservers();
 		_simulation->RemoveJobsFrom(buildingId(), false);
 		_simulation->PlayerRemoveJobBuilding(_townId, *this, false);
+	}
+
+public:
+	// Debug
+#if DEBUG_BUILD
+	std::vector<BuildingDebugAction> buildingActionHistory;
+#endif
+
+	FString GetBuildingActionHistory() const
+	{
+		std::stringstream ss;
+		ss << "buildingActionHistory:";
+#if DEBUG_BUILD
+		int32 count = 0;
+		for (int32 i = buildingActionHistory.size() - 1; i-- > 0;) {
+			ss << "\n  " << BuildingActionEnums[static_cast<int32>(buildingActionHistory[i].actionEnum)]
+				<< " " << buildingActionHistory[i].var1
+				<< " " << buildingActionHistory[i].var2
+				<< " " << buildingActionHistory[i].var3;
+			if (count++ > 30) {
+				break;
+			}
+		}
+#endif
+		return ToFString(ss.str());
 	}
 
 protected:

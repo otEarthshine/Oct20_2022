@@ -299,6 +299,47 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::Brickworks, "BrickworkEra", "Brickworks", 2);
 	LoadBuilding(CardEnum::Beekeeper, "BeeKeeper_Era", "Beekeeper", 2, 2);
 
+
+	LoadBuilding(CardEnum::Quarry, "Quarry_Era", "Quarry", 1);
+
+	for (int32 eraInt = 1; eraInt <= 4; eraInt++)
+	{
+		FString era = FString::FromInt(eraInt);
+		LoadBuilding(CardEnum::GoldMine, "Ore_Mine_Era" + era, "OreMine/Era" + era);
+		LinkBuilding(CardEnum::IronMine, "Ore_Mine_Era" + era, _lastTempAuxGroup);
+		LinkBuilding(CardEnum::GemstoneMine, "Ore_Mine_Era" + era, _lastTempAuxGroup);
+		LinkBuilding(CardEnum::CoalMine, "Ore_Mine_Era" + era, _lastTempAuxGroup);
+
+		{
+			//PUN_LOG("_recentlyAddedModuleNames %d", _recentlyAddedModuleNames.Num());
+
+			auto manualAddTransforms = [&](CardEnum buildingEnum, FString searchString)
+			{
+				for (int32 i = _recentlyAddedModuleNames.Num(); i-- > 0;) {
+					if (_recentlyAddedModuleNames[i].Contains("_Manual_"))
+					{
+						if (_recentlyAddedModuleNames[i].Contains(searchString)) {
+							_buildingEnumToModuleGroups[static_cast<int>(buildingEnum)][eraInt - 1].transforms.push_back(ModuleTransform(_recentlyAddedModuleNames[i]));
+						}
+					}
+					else if (_recentlyAddedModuleNames[i].Contains("_ManualToggle_"))
+					{
+						if (_recentlyAddedModuleNames[i].Contains(searchString)) {
+							_buildingEnumToModuleGroups[static_cast<int>(buildingEnum)][eraInt - 1].togglableTransforms.push_back(ModuleTransform(_recentlyAddedModuleNames[i]));
+						}
+					}
+				}
+			};
+
+			manualAddTransforms(CardEnum::GoldMine, "Gold");
+			manualAddTransforms(CardEnum::IronMine, "Iron");
+			manualAddTransforms(CardEnum::CoalMine, "Coal");
+			manualAddTransforms(CardEnum::GemstoneMine, "Gem");
+		}
+	}
+
+	//
+
 	//set(CardEnum::CharcoalMaker, {
 	//ModuleTransformGroup::CreateSet("CharcoalMaker", {},
 	//{
@@ -308,7 +349,12 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	//	});
 	
 	// -
+	//
+		//
 
+		//
+		//	//
+		//
 
 	TryLoadBuildingModuleSet("Quarry", "Quarry");
 	LoadAnimModule("QuarrySpecialToggle", "Quarry/QuarrySpecialToggle");
@@ -572,6 +618,17 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 		_resourceIconMaterials.Add(nullptr);
 	}
 
+	// Georesource World Icons
+	_georesourceIcons[ResourceEnum::Cannabis] = LoadF<UTexture2D>(FString("/Game/UI/Images/GeoresourceIcons/LogoWorldCannabis"));
+	_georesourceIcons[ResourceEnum::Cocoa] = LoadF<UTexture2D>(FString("/Game/UI/Images/GeoresourceIcons/LogoWorldCocoa"));
+	_georesourceIcons[ResourceEnum::RawCoffee] = LoadF<UTexture2D>(FString("/Game/UI/Images/GeoresourceIcons/LogoWorldCoffee"));
+	
+	_georesourceIcons[ResourceEnum::Cotton] = LoadF<UTexture2D>(FString("/Game/UI/Images/GeoresourceIcons/LogoWorldCotton"));
+	_georesourceIcons[ResourceEnum::Dye] = LoadF<UTexture2D>(FString("/Game/UI/Images/GeoresourceIcons/LogoWorldDye"));
+	_georesourceIcons[ResourceEnum::Grape] = LoadF<UTexture2D>(FString("/Game/UI/Images/GeoresourceIcons/LogoWorldGrape"));
+	_georesourceIcons[ResourceEnum::Tulip] = LoadF<UTexture2D>(FString("/Game/UI/Images/GeoresourceIcons/LogoWorldTulip"));
+	
+
 	/*
 	 * Card Icons
 	 */
@@ -597,6 +654,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	addCardIcon(CardEnum::Cannibalism, "Cannibalism");
 	addCardIcon(CardEnum::Capitalism, "Capitalism");
 	addCardIcon(CardEnum::ChimneyRestrictor, "ChimneyRestrictor");
+	addCardIcon(CardEnum::CoalPipeline, "CoalPipeline");
 	addCardIcon(CardEnum::CoalTreatment, "CoalTreatment");
 	addCardIcon(CardEnum::CocoaSeeds, "Cocoa");
 	addCardIcon(CardEnum::CoffeeSeeds, "Coffee");
@@ -641,6 +699,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	addCardIcon(CardEnum::PumpkinSeed, "Pumpkin");
 	addCardIcon(CardEnum::Rationalism, "Rationalism");
 	addCardIcon(CardEnum::Romanticism, "Romanticism");
+	addCardIcon(CardEnum::SellFood, "SellFood");
 	addCardIcon(CardEnum::SlaveLabor, "SlaveLabor");
 	addCardIcon(CardEnum::SocialWelfare, "SocialWelfare");
 	addCardIcon(CardEnum::SustainabilityBook, "Sustainability");
@@ -678,26 +737,6 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 				_cardIcons.Add(static_cast<int32>(buildingEnum), cardIconTexture);
 				addCardIconCount++;
 			}
-			
-			//FSoftObjectPath ItemToReference(FString("/Game/UI/BuildingSnapshots/") + name);
-			//UObject* ItemObject = ItemToReference.ResolveObject();  // <---- FAILS
-			//if (!ItemObject)  // if the asset isn't in memory already, try to load it
-			//{
-			//	ItemObject = ItemToReference.TryLoad();  // <---- FAILS
-			//}
-
-			//if (ItemObject)
-			//{
-			//	//UObject* cardIconTextureObj = StaticLoadObject(UTexture2D::StaticClass(), NULL, *(FString("/Game/UI/BuildingSnapshots/") + name));
-			//	UTexture2D* cardIconTexture = Cast<UTexture2D>(ItemObject);
-
-			//	//LoadF_Nullable<UTexture2D>(FString("/Game/UI/BuildingSnapshots/") + name);
-
-			//	if (cardIconTexture) {
-			//		_cardIcons.Add(static_cast<int32>(buildingEnum), cardIconTexture);
-			//		addCardIconCount++;
-			//	}
-			//}
 		}
 	}
 
@@ -1286,7 +1325,7 @@ void UAssetLoaderComponent::LoadAnimModule(FString moduleName, FString meshFile)
 	AddBuildingModule(moduleName, mesh, _animModuleNames);
 }
 
-void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FString meshSetFolder, bool useOldMethod, CardEnum buildingEnum)
+void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FString meshSetFolder, bool useOldMethod, CardEnum buildingEnum, int32 era)
 {
 	const FString buildingPath = "Models/Buildings/";
 	IPlatformFile& platformFile = FPlatformFileManager::Get().GetPlatformFile();
@@ -1382,6 +1421,8 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 
 		check(foundFiles.Num() > 0);
 
+		_recentlyAddedModuleNames.Empty();
+
 		//// foundFiles are just file names, so we append the folder to it
 		int32 bodyMainIndex = 1;
 		int32 bodySpecialIndex = 1;
@@ -1453,6 +1494,18 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 
 					_modulesNeedingPaintConstruction.Add(meshName);
 				}
+				else if (foundFiles[i].Contains("_Manual_"))
+				{
+					const auto mesh = loadMesh(i);
+					FString moduleName = moduleSetName + "_Manual_" + foundFiles[i];
+					AddBuildingModule(moduleName, mesh, _moduleNames);
+				}
+				else if (foundFiles[i].Contains("_ManualToggle_"))
+				{
+					const auto mesh = loadMesh(i);
+					FString moduleName = moduleSetName + "_ManualToggle_" + foundFiles[i];
+					AddBuildingModule(moduleName, mesh, _togglableModuleNames);
+				}
 				else if (foundFiles[i].Contains("_WorkStatic"))
 				{
 					const auto mesh = loadMesh(i);
@@ -1480,6 +1533,7 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 					
 					_tempAuxGroup.animTransforms.push_back(ModuleTransform(moduleName, FTransform::Identity, 0, ModuleTypeEnum::ShaderOnOff));
 				}
+				// Work Rotation
 				else if (foundFiles[i].Contains("_WorkRotation1"))
 				{
 					const auto mesh = loadMesh(i);
@@ -1488,16 +1542,45 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 					AddBuildingModule(moduleName, mesh, _animModuleNames);
 
 					FTransform transform;
-					switch(buildingEnum)
-					{
-					case CardEnum::FurnitureWorkshop: transform = TransformFromPosition(0, 0, 0); break;
-					case CardEnum::PaperMaker: transform = TransformFromPosition(0, 0, 7.388654); break;
-					default:
+					ModuleTypeEnum moduleTypeEnum = ModuleTypeEnum::RotateRoll;
+
+					if (buildingEnum == CardEnum::Quarry) {
+						transform = TransformFromPosition(0, -11.122, 7.325);
+						moduleTypeEnum = ModuleTypeEnum::RotateRollQuarry;
+					}
+					else if (IsMountainMine(buildingEnum)) {
+						transform = TransformFromPosition(2.3193, 0, 5.1714);
+						moduleTypeEnum = ModuleTypeEnum::RotateRollMine;
+					}
+					else if (buildingEnum == CardEnum::FurnitureWorkshop) {
+						transform = TransformFromPosition(6.506, 0, 13.303);
+						moduleTypeEnum = ModuleTypeEnum::RotateRollFurniture;
+					}
+					else if (buildingEnum == CardEnum::PaperMaker) {
+						transform = TransformFromPosition(0, 0, 7.388654);
+					}
+					else {
 						UE_DEBUG_BREAK();
-						break;
 					}
 					
-					_tempAuxGroup.animTransforms.push_back(ModuleTransform(moduleName, transform, 0.0f, ModuleTypeEnum::RotateRoll));
+					_tempAuxGroup.animTransforms.push_back(ModuleTransform(moduleName, transform, 0.0f, moduleTypeEnum));
+				}
+				else if (foundFiles[i].Contains("_WorkRotation2"))
+				{
+					const auto mesh = loadMesh(i);
+					FString moduleName = moduleSetName + "WorkRotation2";
+
+					AddBuildingModule(moduleName, mesh, _animModuleNames);
+
+					FTransform transform;
+					ModuleTypeEnum moduleTypeEnum = ModuleTypeEnum::RotateRoll;
+					
+					if (IsMountainMine(buildingEnum) && buildingEnum != CardEnum::Quarry) {
+						transform = TransformFromPosition(21.994, 0, 27.776);
+						moduleTypeEnum = ModuleTypeEnum::RotateRollMine2;
+					}
+
+					_tempAuxGroup.animTransforms.push_back(ModuleTransform(moduleName, transform, 0.0f, moduleTypeEnum));
 				}
 				else if (foundFiles[i].Contains("_Smoke")) {
 					const auto mesh = loadMesh(i);

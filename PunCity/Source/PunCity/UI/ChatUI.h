@@ -275,7 +275,8 @@ public:
 						command->cheatEnum = static_cast<CheatEnum>(i);
 
 						if (commandAndParams.size() >= 3) {
-							if (command->cheatEnum == CheatEnum::Tog) {
+							if (command->cheatEnum == CheatEnum::PunTog ||
+								command->cheatEnum == CheatEnum::PunGet) {
 								command->stringVar1 = FString(commandAndParams[2].c_str());
 							}
 							else {

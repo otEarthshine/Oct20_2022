@@ -1289,18 +1289,18 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			if (_delayFillerEnum == CardEnum::Fisher ||
 				_delayFillerEnum == CardEnum::SandMine)
 			{
-				modules.insert(modules.begin(), ModuleTransform("FisherConstructionPoles", FTransform::Identity, 0.0f, ModuleTypeEnum::ConstructionOnly));
-				modules.insert(modules.begin(), ModuleTransform("FisherConstructionPolesWater", FTransform::Identity, 0.0f, ModuleTypeEnum::ConstructionOnly));
-				
-				_gameInterface->ShowBuildingMesh(_delayFillerTile, _delayFillerFaceDirection, modules, 0);
-				_gameInterface->ShowDecal(_delayFillerArea, _assetLoader->ConstructionBaseDecalMaterial);
+				//modules.insert(modules.begin(), ModuleTransform("FisherConstructionPoles", FTransform::Identity, 0.0f, ModuleTypeEnum::ConstructionOnly));
+				//modules.insert(modules.begin(), ModuleTransform("FisherConstructionPolesWater", FTransform::Identity, 0.0f, ModuleTypeEnum::ConstructionOnly));
+				//
+				//_gameInterface->ShowBuildingMesh(_delayFillerTile, _delayFillerFaceDirection, modules, 0);
+				//_gameInterface->ShowDecal(_delayFillerArea, _assetLoader->ConstructionBaseDecalMaterial);
 			}
 			else if (_delayFillerEnum == CardEnum::TradingPort) {
-				modules.insert(modules.begin(), ModuleTransform("TradingPortConstructionPoles", FTransform::Identity, 0.0f, ModuleTypeEnum::ConstructionOnly));
-				modules.insert(modules.begin(), ModuleTransform("TradingPortConstructionPolesWater", FTransform::Identity, 0.0f, ModuleTypeEnum::ConstructionOnly));
+				//modules.insert(modules.begin(), ModuleTransform("TradingPortConstructionPoles", FTransform::Identity, 0.0f, ModuleTypeEnum::ConstructionOnly));
+				//modules.insert(modules.begin(), ModuleTransform("TradingPortConstructionPolesWater", FTransform::Identity, 0.0f, ModuleTypeEnum::ConstructionOnly));
 
-				_gameInterface->ShowBuildingMesh(_delayFillerTile, _delayFillerFaceDirection, modules, 0);
-				_gameInterface->ShowDecal(_delayFillerArea, _assetLoader->ConstructionBaseDecalMaterial);
+				//_gameInterface->ShowBuildingMesh(_delayFillerTile, _delayFillerFaceDirection, modules, 0);
+				//_gameInterface->ShowDecal(_delayFillerArea, _assetLoader->ConstructionBaseDecalMaterial);
 			}
 			// Typical case
 			else if (_delayFillerEnum != CardEnum::SpeedBoost &&
@@ -2435,7 +2435,36 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 					return;
 				}
 				_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
-		});
+			});
+		}
+		else if (_buildingEnum == CardEnum::Library ||
+				_buildingEnum == CardEnum::School)
+		{
+			// Also warn that having the same type of building will not stack
+			int32 radius = (_buildingEnum == CardEnum::Library) ? Library::Radius : School::Radius;
+			ScienceEnum scienceEnum = (_buildingEnum == CardEnum::Library) ? ScienceEnum::Library : ScienceEnum::School;
+			
+			const std::vector<int32>& buildingIds = simulation.buildingIds(townId, CardEnum::House);
+			for (int32 buildingId : buildingIds) {
+				Building& bld = simulation.building(buildingId);
+				if (WorldTile2::Distance(bld.centerTile(), _mouseOnTile) <= radius &&
+					bld.subclass<House>().GetScience100(scienceEnum, 100) > 0)
+				{
+					TArray<FText> args;
+					ADDTEXT_(LOCTEXT("LibraryBuildInstruction_NoStack", "<Orange>Warning!</>\n<Orange>Bonus from other {0}</>\n<Orange>will not stack</>"),
+						GetBuildingInfo(_buildingEnum).name
+					);
+						
+					SetInstruction(PlacementInstructionEnum::Generic, true, JOINTEXT(args));
+					break;
+				}
+			}
+
+			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 location)
+			{
+				bool isGreen = IsPlayerBuildable(location) && !isAllRed;
+				_placementGrid.SpawnGrid(isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, location);
+			});
 		}
 		//else if (_buildingEnum == CardEnum::Farm)
 		//{

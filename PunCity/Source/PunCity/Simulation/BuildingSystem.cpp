@@ -289,7 +289,7 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		  CASE_BUILDING(CardEnum::RanchSheep, Ranch);
 		  CASE_BUILDING(CardEnum::RanchCow, Ranch);
 
-		  CASE_BUILDING(CardEnum::TrapSpike, Trap);
+		  //CASE_BUILDING(CardEnum::TrapSpike, Trap);
 
 		  CASE_BUILDING(CardEnum::ShrineWisdom, ShrineWisdom);
 		  CASE_BUILDING(CardEnum::ShrineLove, Shrine);
@@ -553,8 +553,8 @@ void BuildingSystem::RemoveBuilding(int buildingId)
 	RemoveQuickBuild(buildingId);
 }
 
-int32 BuildingSystem::GetHouseLvlCount(int32 playerId, int32 houseLvl, bool includeHigherLvl) {
-	const std::vector<int32>& houseIds = buildingIds(playerId, CardEnum::House);
+int32 BuildingSystem::GetHouseLvlCount(int32 townId, int32 houseLvl, bool includeHigherLvl) {
+	const std::vector<int32>& houseIds = buildingIds(townId, CardEnum::House);
 	int32 count = 0;
 	for (int32 houseId : houseIds) {
 		House& house = building(houseId).subclass<House>(CardEnum::House);

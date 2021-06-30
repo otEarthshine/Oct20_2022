@@ -114,6 +114,7 @@ FVector UWorldSpaceUI::GetBuildingTrueCenterDisplayLocation(int buildingId, floa
 
 void UWorldSpaceUI::TickWorldSpaceUI()
 {
+	LEAN_PROFILING_UI(TickWorldSpaceUI);
 #if !UI_WORLDSPACE
 	return;
 #endif
@@ -156,7 +157,7 @@ void UWorldSpaceUI::TickWorldSpaceUI()
 }
 
 void UWorldSpaceUI::TickBuildings()
-{
+{	
 	if (InterfacesInvalid()) return;
 
 	IGameUIDataSource* data = dataSource();
@@ -169,31 +170,6 @@ void UWorldSpaceUI::TickBuildings()
 	auto& buildingSystem = sim.buildingSystem();
 	auto& buildingList = buildingSystem.buildingSubregionList();
 
-	/*
-	 * Fill buildingIdsToDisplay
-	 */
-	for (int32 sampleRegionId : sampleRegionIds)
-	{
-		WorldRegion2 curRegion(sampleRegionId);
-
-		buildingList.ExecuteRegion(curRegion, [&](int32 buildingId)
-		{
-			Building& building = dataSource()->GetBuilding(buildingId);
-			if (IsRoad(building.buildingEnum()) ||
-				building.isEnum(CardEnum::Fence))
-			{
-				if (building.workReservers().size() > 0) {
-					buildingIdsToDisplay.push_back(buildingId);
-				}
-			}
-			else
-			{
-				buildingIdsToDisplay.push_back(buildingId);
-			}
-
-		});
-	}
-
 	auto& playerOwned = sim.playerOwned(playerId());
 	auto& provinceSys = sim.provinceSystem();
 
@@ -203,6 +179,8 @@ void UWorldSpaceUI::TickBuildings()
 	 * Province UI
 	 */
 	{
+		LEAN_PROFILING_UI(TickWorldSpaceUI_Province);
+		
 		for (int32 provinceId : sampleProvinceIds)
 		{
 			int32 provincePlayerId = sim.provinceOwnerPlayer(provinceId);
@@ -314,7 +292,7 @@ void UWorldSpaceUI::TickBuildings()
 						);
 						regionHoverUI->ReinforceRightButton->SetIsEnabled(hasEnoughInfluence);
 
-						int32 hasEnoughMoney = sim.money(playerId()) >= BattleInfluencePrice;
+						int32 hasEnoughMoney = sim.moneyCap32(playerId()) >= BattleInfluencePrice;
 						SetText(regionHoverUI->ReinforceMoneyRightButtonText,
 							FText::Format(INVTEXT("{0}\n<img id=\"Coin\"/>{1}"), LOCTEXT("Reinforce", "Reinforce"), TextRed(TEXT_NUM(BattleInfluencePrice), !hasEnoughMoney))
 						);
@@ -351,215 +329,255 @@ void UWorldSpaceUI::TickBuildings()
 			}
 		}
 	}
-	
 
-	OverlayType overlayType = data->GetOverlayType();
-	WorldTile2 overlayTile = dataSource()->GetOverlayTile(); // Overlay tile is where the mouse is during Building Placement
 
-	/*
-	 * Go through Each building and display Hover Icons as needed
-	 */
-	for (int buildingId : buildingIdsToDisplay) 
 	{
-		if (buildingId == -1) continue; // displayedBuilding list is from BuildingDisplaySystem, invalid objectId is possible
+		LeanProfiler leanProfilerOuter(LeanProfilerEnum::TickWorldSpaceUI_Building);
 
-		Building& building = dataSource()->GetBuilding(buildingId);
-
-		if (building.isEnum(CardEnum::Townhall)) 
+		/*
+		 * Fill buildingIdsToDisplay
+		 */
+		for (int32 sampleRegionId : sampleRegionIds)
 		{
-			if (townhallUIActive) {
-				TickTownhallInfo(buildingId);
+			WorldRegion2 curRegion(sampleRegionId);
 
-				// Townhall Upgrade notification...
-				if (simulation().parameters(playerId())->NeedTownhallUpgradeNoticed)
+			buildingList.ExecuteRegion(curRegion, [&](int32 buildingId)
+			{
+				Building& building = dataSource()->GetBuilding(buildingId);
+				if (IsRoad(building.buildingEnum()) ||
+					building.isEnum(CardEnum::Fence))
 				{
-					bool isTownhallUIOpened = simulation().descriptionUIState().objectType == ObjectTypeEnum::Building &&
-												simulation().building(simulation().descriptionUIState().objectId).isEnum(CardEnum::Townhall);
-
-					if (!isTownhallUIOpened)
-					{
-						UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
-							_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {},
-							WorldZoomTransition_WorldSpaceUIShrink, 2.0f);
-
-						hoverIcon->SetImage(assetLoader()->ExclamationIcon);
-						hoverIcon->SetText(FText(), FText());
+					if (building.workReservers().size() > 0) {
+						buildingIdsToDisplay.push_back(buildingId);
 					}
 				}
-			}
-			
-		} else {
-			// Don't show jobUI at all beyond some zoom
-			//  (Zoom distance... 455 to 541)
-			if (zoomDistance < WorldZoomTransition_WorldSpaceUIHide) {
-				TickJobUI(buildingId);
-			}
-		}
+				else
+				{
+					buildingIdsToDisplay.push_back(buildingId);
+				}
 
-
-		auto isInOverlayRadiusHouse = [&](OverlayType overlayTypeCurrent, int32 minimumHouseLvl, int32 radius)
-		{
-			return overlayType == overlayTypeCurrent &&
-				building.isEnum(CardEnum::House) &&
-				building.subclass<House>().houseLvl() >= minimumHouseLvl &&
-				WorldTile2::Distance(building.centerTile(), overlayTile) < radius &&
-				building.playerId() == playerId();
-		};
-
-		auto isInOverlayRadius = [&](OverlayType overlayTypeCurrent, CardEnum buildingEnum, int32 radius)
-		{
-			return overlayType == overlayTypeCurrent &&
-				building.isEnum(buildingEnum) &&
-				WorldTile2::Distance(building.centerTile(), overlayTile) < radius &&
-				building.playerId() == playerId();
-		};
-
-		auto isInOverlayRadiusFoodBuilding = [&](OverlayType overlayTypeCurrent, int32 radius)
-		{
-			return overlayType == overlayTypeCurrent &&
-				IsFoodBuilding(building.buildingEnum()) &&
-				WorldTile2::Distance(building.centerTile(), overlayTile) < radius &&
-				building.playerId() == playerId();
-		};
-		
-		/*
-		 * Science
-		 */
-		
-		if (isInOverlayRadiusHouse(OverlayType::Library, Library::MinHouseLvl, Library::Radius)) 
-		{
-			UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
-																								_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
-
-			hoverIcon->SetImage(assetLoader()->ScienceIcon);
-
-			bool alreadyHasLibrary = false; ;
-			int32 radiusBonus = building.GetRadiusBonus(CardEnum::Library, Library::Radius, [&](int32 bonus, Building& buildingScope) {
-				return max(bonus, 1);
 			});
-			if (radiusBonus > 0) {
-				alreadyHasLibrary = true;
-			}
-			
-			hoverIcon->SetText("+", "");
-			hoverIcon->SetTextColor(alreadyHasLibrary ? FLinearColor(0.38, 0.38, 0.38, 0.5) : FLinearColor::White);
 		}
-		else if (isInOverlayRadiusHouse(OverlayType::School, School::MinHouseLvl, School::Radius))
-		{
-			UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
-																								_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
 
-			hoverIcon->SetImage(assetLoader()->ScienceIcon);
+		OverlayType overlayType = data->GetOverlayType();
+		WorldTile2 overlayTile = dataSource()->GetOverlayTile(); // Overlay tile is where the mouse is during Building Placement
 
-			bool alreadyHasSchool = false; ;
-			int32 radiusBonus = building.GetRadiusBonus(CardEnum::School, School::Radius, [&](int32 bonus, Building& buildingScope) {
-				return max(bonus, 1);
-			});
-			if (radiusBonus > 0) {
-				alreadyHasSchool = true;
-			}
-
-			hoverIcon->SetText("+", "");
-			hoverIcon->SetTextColor(alreadyHasSchool ? FLinearColor(0.38, 0.38, 0.38) : FLinearColor::White);
-		}
 		/*
-		 * Entertainment
+		 * Go through Each building and display Hover Icons as needed
 		 */
-		else if (isInOverlayRadiusHouse(OverlayType::Tavern, 1, Tavern::Radius))
+		for (int buildingId : buildingIdsToDisplay)
 		{
-			UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
-				_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
+			if (buildingId == -1) continue; // displayedBuilding list is from BuildingDisplaySystem, invalid objectId is possible
 
-			hoverIcon->SetImage(assetLoader()->SmileIcon);
-			hoverIcon->SetText(FText(), FText());
-		}
-		else if (isInOverlayRadiusHouse(OverlayType::Theatre, Theatre::MinHouseLvl, Theatre::Radius))
-		{
-			UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
-				_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
+			Building& building = dataSource()->GetBuilding(buildingId);
 
-			hoverIcon->SetImage(assetLoader()->SmileIcon);
-			hoverIcon->SetText(FText(), FText());
-		}
+			if (building.isEnum(CardEnum::Townhall))
+			{
+				if (townhallUIActive) 
+				{
+					LEAN_PROFILING_UI(TickWorldSpaceUI_Townhall);
+					
+					TickTownhallInfo(buildingId);
 
-		
-		/*
-		 * Others
-		 */
-		else if (isInOverlayRadiusHouse(OverlayType::Bank, Bank::MinHouseLvl, Bank::Radius))
-		{
-			UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
-				_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
+					// Townhall Upgrade notification...
+					if (simulation().parameters(playerId())->NeedTownhallUpgradeNoticed)
+					{
+						bool isTownhallUIOpened = simulation().descriptionUIState().objectType == ObjectTypeEnum::Building &&
+							simulation().building(simulation().descriptionUIState().objectId).isEnum(CardEnum::Townhall);
 
-			hoverIcon->SetImage(assetLoader()->CoinIcon);
-			hoverIcon->SetText("+", "");
-		}
-		// Bad Appeal
-		else if (overlayType == OverlayType::BadAppeal && 
+						if (!isTownhallUIOpened)
+						{
+							UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
+								_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {},
+								WorldZoomTransition_WorldSpaceUIShrink, 2.0f);
+
+							hoverIcon->SetImage(assetLoader()->ExclamationIcon);
+							hoverIcon->SetText(FText(), FText());
+						}
+					}
+				}
+
+			}
+			else {
+				// Don't show jobUI at all beyond some zoom
+				//  (Zoom distance... 455 to 541)
+				if (zoomDistance < WorldZoomTransition_WorldSpaceUIHide) 
+				{
+					LEAN_PROFILING_UI(TickWorldSpaceUI_BldJob);
+					
+					TickJobUI(buildingId);
+				}
+			}
+
+			LEAN_PROFILING_UI(TickWorldSpaceUI_BldOverlay);
+
+			auto isInOverlayRadiusHouse = [&](OverlayType overlayTypeCurrent, int32 minimumHouseLvl, int32 radius)
+			{
+				return overlayType == overlayTypeCurrent &&
+					building.isEnum(CardEnum::House) &&
+					building.subclass<House>().houseLvl() >= minimumHouseLvl &&
+					WorldTile2::Distance(building.centerTile(), overlayTile) < radius &&
+					building.playerId() == playerId();
+			};
+
+			auto isInOverlayRadius = [&](OverlayType overlayTypeCurrent, CardEnum buildingEnum, int32 radius)
+			{
+				return overlayType == overlayTypeCurrent &&
+					building.isEnum(buildingEnum) &&
+					WorldTile2::Distance(building.centerTile(), overlayTile) < radius &&
+					building.playerId() == playerId();
+			};
+
+			auto isInOverlayRadiusFoodBuilding = [&](OverlayType overlayTypeCurrent, int32 radius)
+			{
+				return overlayType == overlayTypeCurrent &&
+					IsFoodBuilding(building.buildingEnum()) &&
+					WorldTile2::Distance(building.centerTile(), overlayTile) < radius &&
+					building.playerId() == playerId();
+			};
+
+			/*
+			 * Science
+			 */
+
+			if (isInOverlayRadiusHouse(OverlayType::Library, Library::MinHouseLvl, Library::Radius))
+			{
+				UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
+					_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
+
+				hoverIcon->SetImage(assetLoader()->ScienceIcon);
+
+				bool alreadyHasLibrary = false; ;
+				int32 radiusBonus = building.GetRadiusBonus(CardEnum::Library, Library::Radius, [&](int32 bonus, Building& buildingScope) {
+					return max(bonus, 1);
+				});
+				if (radiusBonus > 0) {
+					alreadyHasLibrary = true;
+				}
+
+				hoverIcon->SetText("+", "");
+				hoverIcon->SetTextColor(alreadyHasLibrary ? FLinearColor(0.38, 0.38, 0.38, 0.5) : FLinearColor::White);
+			}
+			else if (isInOverlayRadiusHouse(OverlayType::School, School::MinHouseLvl, School::Radius))
+			{
+				UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
+					_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
+
+				hoverIcon->SetImage(assetLoader()->ScienceIcon);
+
+				bool alreadyHasSchool = false; ;
+				int32 radiusBonus = building.GetRadiusBonus(CardEnum::School, School::Radius, [&](int32 bonus, Building& buildingScope) {
+					return max(bonus, 1);
+				});
+				if (radiusBonus > 0) {
+					alreadyHasSchool = true;
+				}
+
+				hoverIcon->SetText("+", "");
+				hoverIcon->SetTextColor(alreadyHasSchool ? FLinearColor(0.38, 0.38, 0.38) : FLinearColor::White);
+			}
+			/*
+			 * Entertainment
+			 */
+			else if (isInOverlayRadiusHouse(OverlayType::Tavern, 1, Tavern::Radius))
+			{
+				UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
+					_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
+
+				hoverIcon->SetImage(assetLoader()->SmileIcon);
+				hoverIcon->SetText(FText(), FText());
+			}
+			else if (isInOverlayRadiusHouse(OverlayType::Theatre, Theatre::MinHouseLvl, Theatre::Radius))
+			{
+				UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
+					_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
+
+				hoverIcon->SetImage(assetLoader()->SmileIcon);
+				hoverIcon->SetText(FText(), FText());
+			}
+
+
+			/*
+			 * Others
+			 */
+			else if (isInOverlayRadiusHouse(OverlayType::Bank, Bank::MinHouseLvl, Bank::Radius))
+			{
+				UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
+					_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
+
+				hoverIcon->SetImage(assetLoader()->CoinIcon);
+				hoverIcon->SetText("+", "");
+			}
+			// Bad Appeal
+			else if (overlayType == OverlayType::BadAppeal &&
 				(IsHumanHouse(building.buildingEnum()) || IsFunServiceBuilding(building.buildingEnum())) &&
 				WorldTile2::Distance(building.centerTile(), overlayTile) < BadAppealRadius)
-		{
-			UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
-				_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {},
-			WorldZoomTransition_WorldSpaceUIShrink, 1.5);
+			{
+				UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
+					_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {},
+					WorldZoomTransition_WorldSpaceUIShrink, 1.5);
 
-			hoverIcon->SetImage(assetLoader()->UnhappyIcon);
-			hoverIcon->SetText(FText(), FText());
+				hoverIcon->SetImage(assetLoader()->UnhappyIcon);
+				hoverIcon->SetText(FText(), FText());
+			}
+
+			/*
+			 * Workplace
+			 */
+			else if (isInOverlayRadius(OverlayType::Windmill, CardEnum::Farm, Windmill::Radius))
+			{
+				UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
+					_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
+
+				//hoverIcon->SetImage(assetLoader()->ScienceIcon);
+				hoverIcon->IconImage->SetVisibility(ESlateVisibility::Collapsed);
+				hoverIcon->SetText(FText(), INVTEXT("+10%"));
+				hoverIcon->SetTextColor(FLinearColor::White);
+			}
+
+			else if (isInOverlayRadiusFoodBuilding(OverlayType::Granary, Granary::Radius))
+			{
+				UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
+					_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
+
+				//hoverIcon->SetImage(assetLoader()->ScienceIcon);
+				hoverIcon->IconImage->SetVisibility(ESlateVisibility::Collapsed);
+				hoverIcon->SetText(FText(), INVTEXT("+25%"));
+				hoverIcon->SetTextColor(FLinearColor::White);
+			}
+
+
+
+			//else if (overlayType == OverlayType::Theatre && IsHumanHouse(building.buildingEnum()) &&
+			//		WorldTile2::Distance(building.centerTile(), overlayTile) < Theatre::Radius) 
+			//{
+			//	UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, -1000, this,
+			//		_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), [&](UIconTextPairWidget* ui) {});
+			//	hoverIcon->SetImage(assetLoader()->CultureIcon);
+			//	hoverIcon->SetText("", "+" + to_string(Theatre::BaseCultureByLvl[0]));
+			//}
+			//else if (overlayType == OverlayType::Tavern && IsHumanHouse(building.buildingEnum()) &&
+			//		WorldTile2::Distance(building.centerTile(), overlayTile) < Tavern::Radius) 
+			//{
+			//	UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
+			//																						_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
+			//	hoverIcon->SetImage(assetLoader()->SmileIcon);
+			//	hoverIcon->SetText("", "+" + to_string(Tavern::BaseHappinessByLvl[0]));
+			//}
 		}
 
-		/*
-		 * Workplace
-		 */
-		else if (isInOverlayRadius(OverlayType::Windmill, CardEnum::Farm, Windmill::Radius))
-		{
-			UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
-				_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
+		//! Remove unused UIs
+		_buildingJobUIs.AfterAdd();
+		_townhallHoverInfos.AfterAdd();
+		_regionHoverUIs.AfterAdd();
 
-			//hoverIcon->SetImage(assetLoader()->ScienceIcon);
-			hoverIcon->IconImage->SetVisibility(ESlateVisibility::Collapsed);
-			hoverIcon->SetText(FText(), INVTEXT("+10%"));
-			hoverIcon->SetTextColor(FLinearColor::White);
-		}
+		_buildingHoverIcons.AfterAdd();
 
-		else if (isInOverlayRadiusFoodBuilding(OverlayType::Granary, Granary::Radius))
-		{
-			UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
-				_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
+		_iconTextHoverIcons.AfterAdd();
 
-			//hoverIcon->SetImage(assetLoader()->ScienceIcon);
-			hoverIcon->IconImage->SetVisibility(ESlateVisibility::Collapsed);
-			hoverIcon->SetText(FText(), INVTEXT("+25%"));
-			hoverIcon->SetTextColor(FLinearColor::White);
-		}
+	} // End TickWorldSpaceUI_Building
 
-		
-		
-		//else if (overlayType == OverlayType::Theatre && IsHumanHouse(building.buildingEnum()) &&
-		//		WorldTile2::Distance(building.centerTile(), overlayTile) < Theatre::Radius) 
-		//{
-		//	UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, -1000, this,
-		//		_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), [&](UIconTextPairWidget* ui) {});
-		//	hoverIcon->SetImage(assetLoader()->CultureIcon);
-		//	hoverIcon->SetText("", "+" + to_string(Theatre::BaseCultureByLvl[0]));
-		//}
-		//else if (overlayType == OverlayType::Tavern && IsHumanHouse(building.buildingEnum()) &&
-		//		WorldTile2::Distance(building.centerTile(), overlayTile) < Tavern::Radius) 
-		//{
-		//	UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
-		//																						_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
-		//	hoverIcon->SetImage(assetLoader()->SmileIcon);
-		//	hoverIcon->SetText("", "+" + to_string(Tavern::BaseHappinessByLvl[0]));
-		//}
-	}
-
-	//! Remove unused UIs
-	_buildingJobUIs.AfterAdd();
-	_townhallHoverInfos.AfterAdd();
-	_regionHoverUIs.AfterAdd();
-
-	_buildingHoverIcons.AfterAdd();
-
-	_iconTextHoverIcons.AfterAdd();
+	
 
 	_floatupUIs.Tick();
 
@@ -568,6 +586,8 @@ void UWorldSpaceUI::TickBuildings()
 	 */
 	if (zoomDistance < WorldZoomTransition_WorldSpaceUIHide)
 	{
+		LEAN_PROFILING_UI(TickWorldSpaceUI_BldFloatup);
+		
 		for (const FloatupInfo& floatupInfo : _floatupInfos)
 		{
 			if (Time::Ticks() - floatupInfo.startTick < Time::TicksPerSecond * 10)
@@ -677,6 +697,8 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 	bool isTileBld = IsRoad(building.buildingEnum()) || building.isEnum(CardEnum::Fence);
 	if (isTileBld)
 	{
+		LEAN_PROFILING_UI(TickWorldSpaceUI_BldJobTile);
+		
 		UBuildingJobUI* buildingJobUI = GetJobUI(buildingId, 10);
 		
 		//if (jobUIState == JobUIState::Job)
@@ -700,6 +722,16 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 
 	UBuildingJobUI* buildingJobUI = GetJobUI(buildingId, jobUIHeight);
 
+	DescriptionUIState uiState = simulation().descriptionUIState();
+	_uiStateDirty = (uiState != _lastUIState);
+	_lastUIState = uiState;
+
+	//bool shouldUpdateUI = uiStateDirty || buildingJobUI->justInitializedUI || building.isBuildingUIDirty();
+	//if (!shouldUpdateUI) {
+	//	return;
+	//}
+	//building.SetBuildingUIDirty(false);
+	
 
 	// Special case hide when constructed
 	if (building.isConstructed())
@@ -719,6 +751,8 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 	// Under construction
 	if (!building.isConstructed())
 	{
+		LEAN_PROFILING_UI(TickWorldSpaceUI_BldJobUC);
+		
 		if (building.shouldDisplayConstructionUI())
 		{
 			auto showAlwaysOnPart = [&]()
@@ -765,13 +799,18 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 	}
 	
 	// After construction is done, shouldn't be any ResourceCompletion circle left
-	buildingJobUI->ClearResourceCompletionBox();
+	if (building.justFinishedConstructionJobUIDirty()) {
+		building.SetJustFinishedConstructionJobUIDirty(false);
+		buildingJobUI->ClearResourceCompletionBox();
+	}
 
 	// Houses
 	if (IsHouse(building.buildingEnum()))
 	{
 		if (IsHumanHouse(building.buildingEnum()))
 		{
+			LEAN_PROFILING_UI(TickWorldSpaceUI_BldJobHouse);
+			
 			FLinearColor lightGreen(0.7, 1, 0.7);
 
 			// Show house UI only when clicked
@@ -805,6 +844,8 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 		//buildingJobUI->SetStars(0);
 		return;
 	}
+
+	LeanProfiler leanProfilerOuter(LeanProfilerEnum::TickWorldSpaceUI_BldJobWork);
 
 	// Non-house finished buildings beyond this
 	bool showOccupants = building.maxOccupants() > 0;
@@ -848,7 +889,6 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 				buildingJobUI->SetHoverWarning(building);
 			}
 
-			//buildingJobUI->SetStars(building.level());
 			return;
 		}
 	}
@@ -863,7 +903,6 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 			buildingJobUI->SetHoverWarning(building);
 		}
 
-		//buildingJobUI->SetStars(building.level());
 		return;
 	}
 	
@@ -915,96 +954,134 @@ void UWorldSpaceUI::TickTownhallInfo(int buildingId, bool isMini)
 
 void UWorldSpaceUI::TickUnits()
 {
+	
 	if (InterfacesInvalid()) return;
 
 	IGameUIDataSource* data = dataSource();
 	auto& sim = data->simulation();
 
-	std::vector<int> unitIdsToDisplay;
+	std::unordered_map<int32, std::vector<int32>> townIdToUnitIdsToDisplay;
+
+	
 	const std::vector<int32>& sampleRegionIds = data->sampleRegionIds();
 
 	auto& unitLists = sim.unitSystem().unitSubregionLists();
 
-	// TODO: don't do accumulation and use ExecuteRegion directly??
-	for (int32_t sampleRegionId : sampleRegionIds) {
-		unitLists.ExecuteRegion(WorldRegion2(sampleRegionId), [&](int32_t unitId) {
-			unitIdsToDisplay.push_back(unitId);
-		});
+	{
+		LEAN_PROFILING_UI(TickWorldSpaceUI_Unit);
+		
+		// TODO: don't do accumulation and use ExecuteRegion directly??
+		for (int32_t sampleRegionId : sampleRegionIds) {
+			unitLists.ExecuteRegion(WorldRegion2(sampleRegionId), [&](int32_t unitId) {
+				UnitStateAI& unitAI = data->GetUnitStateAI(unitId);
+				int32 townId = unitAI.townId();
+				if (townId != -1) {
+					townIdToUnitIdsToDisplay[townId].push_back(unitId);
+				}
+			});
+		}
 	}
 
-	for (int unitId : unitIdsToDisplay) 
+	int32 countLeft = 100;
+
+	if (!PunSettings::IsOn("SuppressHoverIcon"))
 	{
-		if (!data->IsUnitValid(unitId)) {
-			continue;
-		}
+		LEAN_PROFILING_UI(TickWorldSpaceUI_Unit2);
 
-		UnitStateAI& unitAI = data->GetUnitStateAI(unitId);
-
-		if (unitAI.unitEnum() != UnitEnum::Human) {
-			continue;
-		}
-		HumanStateAI& human = unitAI.subclass<HumanStateAI>();
-
-		bool needHousing = unitAI.needHouse();
-		bool needFood = unitAI.showNeedFood();
-		bool needHeat = unitAI.showNeedHeat();
-		bool needHappiness = human.needHappiness();
-		bool needHealthcare = human.needHealthcare();
-		bool needTools = human.needTools();
-		bool idling = false;// unitAI.unitState() == UnitState::Idle;
-		// Don't forget to add this in DespawnUnusedUIs too...
-
-		if (needHousing || 
-			needFood || 
-			needHeat || 
-			needHappiness ||
-			needHealthcare ||
-			needTools ||
-			idling)
+		for (auto it : townIdToUnitIdsToDisplay)
 		{
-			if (!PunSettings::IsOn("SuppressHoverIcon") &&
-				unitAI.animationEnum() != UnitAnimationEnum::Invisible)
+			auto& resourceSys = sim.resourceSystem(it.first);
+			int32 population = sim.populationTown(it.first);
+
+			// Already have enough food/medicine/tools in storage? Just don't show the warning...
+			bool hasLotsOfFood = resourceSys.foodCount() > std::min(1000, population);
+			bool hasLotsOfFuel = resourceSys.fuelCount() > std::min(500, population / 2);
+			bool hasLotsOfMedicine = resourceSys.resourceCountWithPop(ResourceEnum::Medicine) + resourceSys.resourceCountWithPop(ResourceEnum::Herb) > std::min(300, population / 2);
+			bool hasLotsOfTools = resourceSys.resourceCountWithPop(ResourceEnum::SteelTools) + resourceSys.resourceCountWithPop(ResourceEnum::StoneTools) > std::min(300, population / 4);
+
+
+			const std::vector<int32>& unitIdsToDisplay = it.second;
+			for (int unitId : unitIdsToDisplay)
 			{
-				FVector displayLocation = data->GetUnitDisplayLocation(unitId, inputSystemInterface()->cameraAtom());
-				displayLocation += FVector(0, 0, 25);
+				if (!data->IsUnitValid(unitId)) {
+					continue;
+				}
 
-				UHoverIconWidgetBase* hoverIcon = _unitHoverIcons.GetHoverUI<UHoverIconWidgetBase>(unitId, UIEnum::HoverIcon, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
-					[&](UHoverIconWidgetBase* ui) {}, WorldZoomTransition_WorldSpaceUIShrink, 1.25f);
+				UnitStateAI& unitAI = data->GetUnitStateAI(unitId);
 
-				auto setMaterial = [&](UMaterial* material, UTexture* image) {
-					hoverIcon->IconImage->SetBrushFromMaterial(material);
-					hoverIcon->IconImage->GetDynamicMaterial()->SetTextureParameterValue("IconImage", image);
-				};
+				if (unitAI.unitEnum() != UnitEnum::Human) {
+					continue;
+				}
+				HumanStateAI& human = unitAI.subclass<HumanStateAI>();
 
-				// Set the right image
-				if (needHousing) {
-					setMaterial(assetLoader()->M_HoverWarning, assetLoader()->WarningHouse);
-				}
-				else if (needFood) {
-					setMaterial(assetLoader()->M_HoverWarning, assetLoader()->WarningStarving);
-				}
-				else if (needHeat) {
-					setMaterial(assetLoader()->M_HoverWarning, assetLoader()->WarningSnow);
-				}
-				else if (needHealthcare) {
-					setMaterial(assetLoader()->M_HoverWarning, assetLoader()->WarningHealthcare);
-				}
-				else if (needTools) {
-					setMaterial(assetLoader()->M_HoverWarning, assetLoader()->WarningTools);
-				}
-				else if (needHappiness) {
-					if (human.happinessOverall() < human.happinessLeaveTownThreshold()) {
-						setMaterial(assetLoader()->M_HoverWarningHappiness, assetLoader()->HappinessRedIcon);
-					} else {
-						setMaterial(assetLoader()->M_HoverWarningHappiness, assetLoader()->HappinessOrangeIcon);
+
+				bool needHousing = unitAI.needHouse();
+				bool needFood = unitAI.showNeedFood() && !hasLotsOfFood;
+				bool needHeat = unitAI.showNeedHeat() && !hasLotsOfFuel;
+				bool needHappiness = human.needHappiness();
+				bool needHealthcare = human.needHealthcare() && !hasLotsOfMedicine;
+				bool needTools = human.needTools() && !hasLotsOfTools;
+				bool idling = false;// unitAI.unitState() == UnitState::Idle;
+				// Don't forget to add this in DespawnUnusedUIs too...
+
+				if (needHousing ||
+					needFood ||
+					needHeat ||
+					needHappiness ||
+					needHealthcare ||
+					needTools ||
+					idling)
+				{
+					if (unitAI.animationEnum() != UnitAnimationEnum::Invisible)
+					{
+						if (countLeft-- <= 0) {
+							break;
+						}
+
+						FVector displayLocation = data->GetUnitDisplayLocation(unitId, inputSystemInterface()->cameraAtom());
+						displayLocation += FVector(0, 0, 25);
+
+						UHoverIconWidgetBase* hoverIcon = _unitHoverIcons.GetHoverUI<UHoverIconWidgetBase>(unitId, UIEnum::HoverIcon, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
+							[&](UHoverIconWidgetBase* ui) {}, WorldZoomTransition_WorldSpaceUIShrink, 1.25f);
+
+						auto setMaterial = [&](UAssetLoaderComponent::HoverWarningEnum hoverWarningEnum) {
+							hoverIcon->IconImage->SetBrushFromMaterial(assetLoader()->GetHoverWarningMaterial(hoverWarningEnum));
+						};
+
+						// Set the right image
+						if (needHousing) {
+							setMaterial(UAssetLoaderComponent::HoverWarningEnum::Housing);
+						}
+						else if (needFood) {
+							setMaterial(UAssetLoaderComponent::HoverWarningEnum::Starving);
+						}
+						else if (needHeat) {
+							setMaterial(UAssetLoaderComponent::HoverWarningEnum::Freezing);
+						}
+						else if (needHealthcare) {
+							setMaterial(UAssetLoaderComponent::HoverWarningEnum::Sick);
+						}
+						else if (needTools) {
+							setMaterial(UAssetLoaderComponent::HoverWarningEnum::Tools);
+						}
+						else if (needHappiness) {
+							if (human.happinessOverall() < human.happinessLeaveTownThreshold()) {
+								setMaterial(UAssetLoaderComponent::HoverWarningEnum::UnhappyRed);
+							}
+							else {
+								setMaterial(UAssetLoaderComponent::HoverWarningEnum::UnhappyOrange);
+							}
+						}
+						//else if (idling) {
+						//	//PUN_LOG("PUN: idling Style");
+						//	hoverIcon->IconImage->SetBrush(*_brushes["Idling"]);
+						//}
 					}
 				}
-				//else if (idling) {
-				//	//PUN_LOG("PUN: idling Style");
-				//	hoverIcon->IconImage->SetBrush(*_brushes["Idling"]);
-				//}
 			}
+
 		}
+
 	}
 
 	_unitHoverIcons.AfterAdd();
@@ -1012,6 +1089,8 @@ void UWorldSpaceUI::TickUnits()
 
 void UWorldSpaceUI::TickMap()
 {
+	LEAN_PROFILING_UI(TickWorldSpaceUI_Map);
+	
 	if (InterfacesInvalid()) return;
 
 	if (!PunSettings::IsOn("DisplayMapUI")) {
@@ -1196,7 +1275,7 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	else if (needInstruction(PlacementInstructionEnum::DragRoadIntercity)) {
 		int32 goldNeeded = getInstruction(PlacementInstructionEnum::DragRoadIntercity).intVar1;
 		punBox->AddRichText(
-			TextRed(to_string(goldNeeded), simulation().money(playerId()) < goldNeeded) + "<img id=\"Coin\"/>"
+			TextRed(to_string(goldNeeded), simulation().moneyCap32(playerId()) < goldNeeded) + "<img id=\"Coin\"/>"
 		);
 	}
 	
@@ -1309,10 +1388,10 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	}
 	else if (needInstruction(PlacementInstructionEnum::ColonyClaimCost)) {
 		int32 claimCost = getInstruction(PlacementInstructionEnum::ColonyClaimCost).intVar1;
-		int32 money = simulation().money(playerId());
+		int32 moneyCap32 = simulation().moneyCap32(playerId());
 		punBox->AddRichTextCenter(FText::Format(
 			LOCTEXT("ClaimProvincesCost_Instruct", "Provinces Claim Cost <img id=\"Coin\"/>{0}"),
-			TextRed(TEXT_NUM(claimCost), money < claimCost)
+			TextRed(TEXT_NUM(claimCost), moneyCap32 < claimCost)
 		));
 	}
 	

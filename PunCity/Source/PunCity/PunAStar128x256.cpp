@@ -4,6 +4,7 @@
 #include "PunCity/GameRand.h"
 #include "PunCity/PunSTLContainerOverride.h"
 #include "PunGameSettings.h"
+#include "PunTimer.h"
 
 DECLARE_CYCLE_STAT(TEXT("PUN: PathAI"), STAT_PunPathAI, STATGROUP_Game);
 
@@ -253,6 +254,8 @@ void PunAStar128x256::PrintUInt32(uint32_t locInt)
 
 bool PunAStar128x256::FindPath(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path, bool isAccurate, int32 roadCostDownFactor, int32 customCalculationCount)
 {
+	LEAN_PROFILING_P(FindPath);
+	
 	SCOPE_CYCLE_COUNTER(STAT_PunPathAI);
 
 	if (0 > startX || startX >= (int)_xDim || 
@@ -569,6 +572,8 @@ int PunAStar128x256::GetHeuristic(uint32_t start, uint32_t end) const
  */
 bool PunAStar128x256::FindPathAnimal(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path, int32 heuristicsFactor, int32 customCalculationCount)
 {
+	LEAN_PROFILING_P(FindPathAnimal);
+	
 	SCOPE_CYCLE_COUNTER(STAT_PunPathAI);
 
 	if (0 > startX || startX >= (int)_xDim ||
@@ -816,6 +821,8 @@ void PunAStar128x256::GetSuccessorsRoadOnly(uint32_t locInt, uint32_t* successor
 
 bool PunAStar128x256::FindPathRoadOnly(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path)
 {
+	LEAN_PROFILING_P(FindPathRoadOnly);
+	
 	SCOPE_CYCLE_COUNTER(STAT_PunPathAI);
 
 	if (0 > startX || startX >= (int)_xDim ||
@@ -1286,6 +1293,8 @@ void PunAStar128x256::GetSuccessorsRobust(uint32_t locInt, uint32_t* successors,
 // Robust algorithm can ignores terrain
 bool PunAStar128x256::FindPathRobust(int startX, int startY, int endX, int endY, std::vector<uint32_t>& path)
 {
+	LEAN_PROFILING_P(FindPathRobust);
+	
 	uint32_t start = GetUIntId(startX, startY);
 	uint32_t end = GetUIntId(endX, endY);
 

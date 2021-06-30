@@ -34,6 +34,8 @@ AMainMenuPlayerController::AMainMenuPlayerController() : APunBasePlayerControlle
 
 	isStartingGame = false;
 	initStage = 1;
+
+	PunSettings::Set("ShouldResetMouseCursor", 1);
 	
 	//CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("GameCamera"));
 	//CameraComponent->SetupAttachment(RootComponent);

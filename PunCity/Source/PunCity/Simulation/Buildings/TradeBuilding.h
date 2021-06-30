@@ -89,6 +89,10 @@ public:
 	bool CanTrade() const { return !_hasPendingTrade; }
 	bool HasPendingTrade() const { return _hasPendingTrade; }
 
+	virtual bool isBuildingResourceUIDirty() override {
+		return isEnum(CardEnum::TradingCompany) || HasPendingTrade();
+	}
+	
 
 	/*
 	 * Trade

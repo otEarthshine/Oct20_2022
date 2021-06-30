@@ -84,6 +84,7 @@ void UWorldTradeUI::OpenUI(int32 objectId)
 
 void UWorldTradeUI::TickUI()
 {
+	LEAN_PROFILING_UI(TickWorldTradeUI);
 	if (GetVisibility() != ESlateVisibility::SelfHitTestInvisible) {
 		return;
 	}
@@ -247,7 +248,7 @@ void UWorldTradeUI::ClickedTradeButton()
 	}
 	
 	if (_totalCoinGain < 0 &&
-		_totalCoinGain + globalResourceSys.money() < 0)
+		_totalCoinGain + globalResourceSys.moneyCap32() < 0)
 	{
 		simulation().AddPopupToFront(playerId(), 
 			LOCTEXT("Not enough money for trade.", "Not enough money for trade."),

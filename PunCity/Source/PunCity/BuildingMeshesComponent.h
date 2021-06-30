@@ -22,6 +22,7 @@ public:
 	void AfterAdd() {
 		// Remove Unused
 		for (int32 i = _meshIndexIterator; i < meshes.Num(); i++) {
+			meshes[i]->SetStaticMesh(nullptr);
 			meshes[i]->SetVisibility(false);
 			meshes[i]->SetActive(false);
 		}
@@ -31,6 +32,7 @@ public:
 	void Hide()
 	{
 		for (int i = 0; i < meshes.Num(); i++) {
+			meshes[i]->SetStaticMesh(nullptr);
 			meshes[i]->SetVisibility(false);
 			meshes[i]->SetActive(false);
 		}
@@ -54,32 +56,37 @@ public:
 			meshes.Add(buildingMesh);
 		}
 
-		int32 meshI = _meshIndexIterator;
-		for (int i = 0; i < modules.size(); i++)
-		{
-			if (IsModuleTypeConstructionOnly(modules[i].moduleTypeEnum)) {
-				continue;
+		//int32 meshI = _meshIndexIterator;
+
+		if (PunSettings::IsOn("ShowFocusUIMesh")) {
+			for (int i = 0; i < modules.size(); i++)
+			{
+				if (IsModuleTypeConstructionOnly(modules[i].moduleTypeEnum)) {
+					meshes[_meshIndexIterator]->SetStaticMesh(nullptr);
+					meshes[_meshIndexIterator]->SetVisibility(false);
+					continue;
+				}
+
+				UStaticMesh* mesh = assetLoader->moduleMesh(modules[i].moduleName);
+				PUN_CHECK(mesh || modules[i].moduleName == "StoneRoad" || modules[i].moduleName == "DirtRoad");
+
+				meshes[_meshIndexIterator]->SetStaticMesh(mesh);
+				meshes[_meshIndexIterator]->SetVisibility(true);
+				meshes[_meshIndexIterator]->SetActive(true);
+
+				GameDisplayUtils::SetCustomDepth(meshes[_meshIndexIterator], customDepthIndex);
+
+				// Set Transform
+				FString moduleName = modules[i].moduleName;
+				FTransform moduleTransform = modules[i].transform;
+
+
+				meshes[_meshIndexIterator]->SetRelativeTransform(moduleTransform);
+				_meshIndexIterator++;
 			}
-			
-			UStaticMesh* mesh = assetLoader->moduleMesh(modules[i].moduleName);
-			PUN_CHECK(mesh || modules[i].moduleName == "StoneRoad" || modules[i].moduleName == "DirtRoad");
-			
-			meshes[meshI]->SetStaticMesh(mesh);
-			meshes[meshI]->SetVisibility(true);
-			meshes[meshI]->SetActive(true);
-
-			GameDisplayUtils::SetCustomDepth(meshes[meshI], customDepthIndex);
-
-			// Set Transform
-			FString moduleName = modules[i].moduleName;
-			FTransform moduleTransform = modules[i].transform;
-			
-			
-			meshes[i]->SetRelativeTransform(moduleTransform);
-			meshI++;
 		}
 
-		_meshIndexIterator += modules.size();
+		//_meshIndexIterator += modules.size();
 		
 		SetWorldRotation(FRotator(0.0f, RotationFromDirection(faceDirection), 0.0f));
 	}

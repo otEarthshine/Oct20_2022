@@ -13,6 +13,7 @@
 #include "GameSettingsUI.h"
 #include "JobPriorityRow.h"
 #include "ConfirmUI.h"
+#include "WGT_ButtonCpp.h"
 
 #include "MainGameUI.generated.h"
 
@@ -131,7 +132,7 @@ public:
 		} else {
 			GetPunHUD()->OpenStatisticsUI(playerId());
 		}
-		SetButtonImage(StatsImage, !statOpened); // Reverse, since we just toggled
+		//SetButtonImage(StatsImage, !statOpened); // Reverse, since we just toggled
 	}
 
 	UFUNCTION() void ClickCardStackButton();
@@ -171,20 +172,20 @@ public:
 
 	
 private:
-	UPROPERTY(meta = (BindWidget)) UButton* BuildMenuTogglerButton;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* BuildMenuTogglerButton;
 	UPROPERTY(meta = (BindWidget)) UImage* BuildMenuTogglerImage;
 
 	UPROPERTY(meta = (BindWidget)) UWrapBox* BuildingMenuWrap;
 
 
-	UPROPERTY(meta = (BindWidget)) UButton* GatherButton;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* GatherButton;
 	UPROPERTY(meta = (BindWidget)) UImage* GatherImage;
 	UPROPERTY(meta = (BindWidget)) UOverlay* GatherSettingsOverlay;
-	UPROPERTY(meta = (BindWidget)) UButton* GatherSettingsCloseButton;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* GatherSettingsCloseButton;
 
-	UPROPERTY(meta = (BindWidget)) UOverlay* StatsButtonOverlay;
-	UPROPERTY(meta = (BindWidget)) UButton* StatsButton;
-	UPROPERTY(meta = (BindWidget)) UImage* StatsImage;
+	//UPROPERTY(meta = (BindWidget)) UOverlay* StatsButtonOverlay;
+	//UPROPERTY(meta = (BindWidget)) UButton* StatsButton;
+	//UPROPERTY(meta = (BindWidget)) UImage* StatsImage;
 
 	UPROPERTY(meta = (BindWidget)) UCheckBox* HarvestCheckBox_All;
 	UPROPERTY(meta = (BindWidget)) UCheckBox* HarvestCheckBox_Wood;
@@ -435,13 +436,14 @@ private:
 	UPROPERTY(meta = (BindWidget)) UButton* RareCardHandSubmitButton;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* RareCardHandText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* RareCardHandText2;
+	int32 rareHandObjectId = -1;
 
 	//bool _needRareCardDisplay = false;
 
 	// Converter Hand
 	UPROPERTY(meta = (BindWidget)) UWrapBox* ConverterCardHandBox;
 	UPROPERTY(meta = (BindWidget)) UButton* ConverterCardHandCancelButton;
-	UPROPERTY(meta = (BindWidget)) UButton* ConverterCardHandXCloseButton;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* ConverterCardHandXCloseButton;
 	UPROPERTY(meta = (BindWidget)) UConfirmUI* ConverterCardHandConfirmUI;
 
 	int32 converterHandCategoryState = -1;
@@ -483,10 +485,10 @@ private:
 
 	int32 _lastRoundCountdown = -1;
 
-	UPROPERTY(meta = (BindWidget)) UButton* LeaderSkillButton;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* LeaderSkillButton;
 	UPROPERTY(meta = (BindWidget)) UImage* LeaderSkillClock;
 	UPROPERTY(meta = (BindWidget)) UImage* LeaderManaBar;
-	UPROPERTY(meta = (BindWidget)) UTextBlock* LeaderManaText;
+	//UPROPERTY(meta = (BindWidget)) UTextBlock* LeaderManaText;
 
 	// Confirmation
 	UPROPERTY(meta = (BindWidget)) UButton* ConfirmationYesButton;
@@ -527,7 +529,7 @@ private:
 	}
 
 	
-	int32 MoneyLeftAfterTentativeBuy();
+	int32 MoneyNeededForTentativeBuy();
 	
 	static void SetButtonImage(UImage* buttonImage, bool active, bool hovered = false) {
 		buttonImage->SetVisibility(active ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);

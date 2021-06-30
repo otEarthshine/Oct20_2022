@@ -171,8 +171,8 @@ public:
 		return result;
 	}
 
-	void OnPickupResource(int32 objectId) override;
-	void OnDropoffResource(int32 objectId, ResourceHolderInfo holderInfo, int32 amount) override;
+	virtual void OnPickupResource(int32 objectId) override;
+	virtual void OnDropoffResource(int32 objectId, ResourceHolderInfo holderInfo, int32 amount) override;
 
 	static const int32 houseTypesPerLevel = 5;
 	
@@ -190,6 +190,11 @@ public:
 		case 2: maxLocalIndex = 3; break;
 		case 3: maxLocalIndex = 4; break;
 		case 4: maxLocalIndex = 4; break;
+
+		case 5: maxLocalIndex = 4; break;
+		case 6: maxLocalIndex = 3; break;
+		case 7: maxLocalIndex = 2; break;
+		case 8: maxLocalIndex = 2; break;
 		default: break;
 		}
 		
@@ -235,6 +240,12 @@ public:
 		if (_simulation->HasTownBonus(_townId, CardEnum::BorealWinterResist)) {
 			heatEfficiency += 30;
 		}
+
+		int32 heatingTechUpgradeCount = _simulation->GetTechnologyUpgradeCount(_playerId, TechEnum::HeatingTechnologies);
+		if (heatingTechUpgradeCount > 0) {
+			heatEfficiency += (heatingTechUpgradeCount * 5);
+		}
+		
 
 		if (IsUpgraded(0)) {
 			heatEfficiency +=  20;
@@ -418,6 +429,12 @@ public:
 
 	std::vector<BonusPair> GetBonuses() override {
 		std::vector<BonusPair> bonuses = Building::GetBonuses();
+
+		int32 ranchingTechUpgradeCount = _simulation->GetTechnologyUpgradeCount(_playerId, TechEnum::RanchingTechnologies);
+		if (ranchingTechUpgradeCount > 0) {
+			bonuses.push_back({ NSLOCTEXT("Ranch", "Ranching Technologies", "Ranching Technologies"), ranchingTechUpgradeCount * 3 });
+		}
+		
 		if (_simulation->HasTownBonus(_townId, CardEnum::SavannaRanch)) {
 			bonuses.push_back({ NSLOCTEXT("Ranch", "Grass Fed Bonus", "Grass Fed"), 35 });
 		}

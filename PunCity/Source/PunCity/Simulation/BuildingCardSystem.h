@@ -130,11 +130,9 @@ public:
 
 	void TryRefreshRareHand()
 	{
-		if (_rareHandsEnumQueued.size() > 0 && _cardsRareHand.size() == 0) {
-			_rareHandEnum = _rareHandsEnumQueued[0];
-			_rareHandMessage = _rareHandsMessageQueued[0];
-			_rareHandsEnumQueued.erase(_rareHandsEnumQueued.begin());
-			_rareHandsMessageQueued.erase(_rareHandsMessageQueued.begin());
+		if (_rareHandsDataQueued.size() > 0 && _cardsRareHand.size() == 0) {
+			_rareHandData = _rareHandsDataQueued[0];
+			_rareHandsDataQueued.erase(_rareHandsDataQueued.begin());
 			RollRareHandExecute();
 		}
 	}
@@ -283,10 +281,9 @@ public:
 	/*
 	 * Rare cards prize
 	 */
-	void RollRareHand(RareHandEnum rareHandEnum, FText rareHandMessage)
+	void RollRareHand(RareHandEnum rareHandEnum, FText rareHandMessage, int32 objectId)
 	{
-		_rareHandsEnumQueued.push_back(rareHandEnum);
-		_rareHandsMessageQueued.push_back(rareHandMessage);
+		_rareHandsDataQueued.push_back({ rareHandEnum, rareHandMessage, objectId });
 		
 		TryRefreshRareHand();
 	}
@@ -304,7 +301,7 @@ public:
 	}
 
 	FText rareHandMessage() {
-		return _rareHandMessage;
+		return _rareHandData.message;
 	}
 	FText rareHandMessage2();
 
@@ -322,8 +319,9 @@ public:
 	const std::vector<CardEnum>& GetRareHand() {
 		return _cardsRareHand;
 	}
-	RareHandEnum GetRareHandEnum() { return _rareHandEnum; }
-
+	
+	RareHandEnum GetRareHandEnum() { return _rareHandData.rareHandEnum; }
+	int32 GetRareHandObjectId() { return _rareHandData.objectId; }
 	
 	/*
 	 * CardStatusTracking... (!!!Not over network)
@@ -513,8 +511,7 @@ public:
 		_cardsBought.clear();
 	}
 	void ClearRareHands() {
-		_rareHandsEnumQueued.clear();
-		_rareHandsMessageQueued.clear();
+		_rareHandsDataQueued.clear();
 		TryRefreshRareHand();
 	}
 
@@ -575,12 +572,8 @@ public:
 
 		
 		SerializeVecValue(Ar, _cardsRareHand);
-		Ar << _rareHandMessage;
-		Ar << _rareHandEnum;
-		SerializeVecLoop(Ar, _rareHandsMessageQueued, [&](FText& text) {
-			Ar << text;
-		});
-		SerializeVecValue(Ar, _rareHandsEnumQueued);
+		_rareHandData >> Ar;
+		SerializeVecObj(Ar, _rareHandsDataQueued);
 
 		Ar << _rerollCountThisRound;
 		Ar << _alreadyBoughtCardThisRound;
@@ -592,6 +585,19 @@ public:
 
 		PUN_CHECK(_cardsRareHand.size() == _cardsRareHandReserved.size());
 	}
+
+	struct RareHandData
+	{
+		RareHandEnum rareHandEnum;
+		FText message;
+		int32 objectId = -1;
+		
+		void operator>>(FArchive &Ar) {
+			Ar << rareHandEnum;
+			Ar << message;
+			Ar << objectId;
+		}
+	};
 
 private:
 
@@ -649,10 +655,8 @@ private:
 	std::vector<BuildingCardStack> _cardsBought;
 
 	std::vector<CardEnum> _cardsRareHand;
-	FText _rareHandMessage;
-	RareHandEnum _rareHandEnum;
-	std::vector<FText> _rareHandsMessageQueued;
-	std::vector<RareHandEnum> _rareHandsEnumQueued;
+	RareHandData _rareHandData;
+	std::vector<RareHandData> _rareHandsDataQueued;
 
 	int32 _rerollCountThisRound = 0;
 	bool _alreadyBoughtCardThisRound = false; // If cards was not bought yet this round, gain 1 free reroll

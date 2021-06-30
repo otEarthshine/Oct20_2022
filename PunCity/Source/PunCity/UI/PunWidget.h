@@ -29,6 +29,9 @@
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Components/Spacer.h"
+#include "WGT_ButtonCpp.h"
+
+
 #include "Blueprint/SlateBlueprintLibrary.h"
 #include "Slate/SGameLayerManager.h"
 
@@ -535,6 +538,9 @@ public:
 
 	UIEnum uiEnum = UIEnum::MainGame;
 	float startTime = -1;
+
+
+	bool justInitializedUI = false;
 
 protected:
 	UPROPERTY() TMap<FString, UWidgetAnimation*> Animations;

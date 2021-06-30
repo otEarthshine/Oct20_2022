@@ -272,7 +272,7 @@ public:
 		MoveTo,
 		MoveToResource,
 		MoveInRange,
-		MoveToForceLongDistance,
+		//MoveToForceLongDistance,
 		MoveToRobust,
 		MoveToward,
 		MoveToCaravan,
@@ -404,16 +404,12 @@ public:
 		return hash;
 	}
 
-	//const std::vector<std::string> UnitActionEnumString = {
-	//	"Wait",
-	//	"MoveRandomly",
-	//	"GatherFruit",
-	//	"TrimFullBush",
-	//};
 
 	Action& action() { return _currentAction; }
 	virtual void ExecuteAction()
 	{
+		LEAN_PROFILING_U(ExecuteAction);
+		
 #define CASE(Action) case ActionEnum::Action: Action(); break;
 		switch (_currentAction.actionEnum)
 		{
@@ -435,7 +431,7 @@ public:
 			CASE(MoveTo);
 			CASE(MoveToResource);
 			CASE(MoveInRange);
-			CASE(MoveToForceLongDistance);
+			//CASE(MoveToForceLongDistance);
 			CASE(MoveToRobust);
 			CASE(MoveToward);
 			CASE(MoveToCaravan);
@@ -494,7 +490,7 @@ public:
 	bool MoveToResource(ResourceHolderInfo holderInfo, int32 customFloodDistance, UnitAnimationEnum animationEnum);
 
 	void Add_MoveInRange(WorldTile2 end, int32_t range);			void MoveInRange(); // TODO: REmove??
-	void Add_MoveToForceLongDistance(WorldTile2 end);				void MoveToForceLongDistance();
+	//void Add_MoveToForceLongDistance(WorldTile2 end);				void MoveToForceLongDistance();
 	void Add_MoveToRobust(WorldTile2 end);							void MoveToRobust();	void MoveToRobust(WorldTile2 end);
 	void Add_MoveToward(WorldAtom2 end, int32 fraction100000, UnitAnimationEnum animationEnum = UnitAnimationEnum::Walk);	void MoveToward();
 	//void Add_MoveToStraight(WorldAtom2 end);	void MoveToStraight(); // TODO: need save break
@@ -672,7 +668,7 @@ public:
 		DEBUG_ISCONNECTED_VAR(IsMoveValid);
 
 		bool isIntelligent = IsIntelligentUnit(unitEnum());
-		bool isMoveValid = _simulation->IsConnected(unitTile(), tile, customFloodDistance);;
+		bool isMoveValid = _simulation->IsConnected(unitTile(), tile, customFloodDistance);
 
 		// For human, test the second time going to townhall first then going to target.
 		//  This allow for a lot longer travel check range.

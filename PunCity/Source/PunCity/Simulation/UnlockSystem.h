@@ -108,9 +108,29 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 		LOCTEXT("Ideation Desc", "+1 card each reroll.")
 	}},
 
-	{TechEnum::FarmImprovement, {
-		LOCTEXT("Farm Improvements", "Farm Improvements"),
-		LOCTEXT("Farm Improvements Desc", "+5% farm production.")
+	{TechEnum::FarmingTechnologies, {
+		LOCTEXT("Farming Technologies", "Farming Technologies"),
+		LOCTEXT("Farming Technologies Desc", "+3% Farm Productivity per Level.")
+	}},
+	{TechEnum::RanchingTechnologies, {
+		LOCTEXT("Ranching Technologies", "Ranching Technologies"),
+		LOCTEXT("Ranching Technologies Desc", "+3% Ranch Productivity per Level.")
+	}},
+	{TechEnum::HeatingTechnologies, {
+		LOCTEXT("Heating Technologies", "Heating Technologies"),
+		LOCTEXT("Heating Technologies Desc", "Wood/Coal gives 5% more Heat per Level.")
+	}},
+	{TechEnum::ForestryTechnologies, {
+		LOCTEXT("Forestry Technologies", "Forestry Technologies"),
+		LOCTEXT("Forestry Technologies Desc", "+5% Wood Cutting Yield per Level.")
+	}},
+	{TechEnum::IndustrialTechnologies, {
+		LOCTEXT("Industrial Technologies", "Industrial Technologies"),
+		LOCTEXT("Industrial Technologies Desc", "+3% Industrial Productivity per Level.")
+	}},
+	{TechEnum::HighFashion, {
+		LOCTEXT("High Fashion", "High Fashion"),
+		LOCTEXT("High Fashion Desc", "Unlocks Tailor's new Work Mode: Fashionable Cloth")
 	}},
 
 	//{TechEnum::FarmImprovement, {
@@ -828,6 +848,15 @@ public:
 		auto tech = std::make_shared<BonusToggle_Research>();
 		tech->Init(_columnIndex, researchEnum, prerequisites, _simulation);
 		tech->techRequirements = techRequirements;
+
+		if (researchEnum == TechEnum::ForestryTechnologies ||
+			researchEnum == TechEnum::FarmingTechnologies ||
+			researchEnum == TechEnum::RanchingTechnologies ||
+			researchEnum == TechEnum::HeatingTechnologies ||
+			researchEnum == TechEnum::IndustrialTechnologies) {
+			tech->maxUpgradeCount = 10;
+		}
+		
 		AddTech(tech);
 	}
 
@@ -905,6 +934,8 @@ public:
 			UnlockBuilding(CardEnum::DirtRoad);
 			UnlockBuilding(CardEnum::House);
 			UnlockBuilding(CardEnum::StorageYard);
+			UnlockBuilding(CardEnum::Demolish);
+			
 			//UnlockBuilding(BuildingEnum::Fence);
 			//UnlockBuilding(BuildingEnum::FenceGate);
 
@@ -1226,7 +1257,7 @@ public:
 
 			//
 			_columnIndex = 2;
-
+			AddTech_Bonus(TechEnum::ForestryTechnologies, { TechEnum::CharcoalBurnerImprovement });
 			AddTech_CardGiving(TechEnum::ChimneyRestrictor, { TechEnum::CharcoalBurnerImprovement },
 				CardEnum::ChimneyRestrictor
 			);
@@ -1256,7 +1287,7 @@ public:
 			AddTech_CardGiving(TechEnum::MiningEquipment, { TechEnum::QuarryImprovement },
 				CardEnum::MiningEquipment
 			);
-			AddTech_Bonus(TechEnum::FarmImprovement, {});
+			AddTech_Bonus(TechEnum::FarmingTechnologies, {});
 
 			AddTech_CardGiving(TechEnum::Sustainability, { TechEnum::Productivity },
 				CardEnum::SustainabilityBook
@@ -1273,8 +1304,9 @@ public:
 			AddTech_CardGiving(TechEnum::CoalPipeline, { TechEnum::SmelterCombo },
 				CardEnum::CoalPipeline
 			);
+			AddTech_Bonus(TechEnum::HeatingTechnologies, {});
 
-			AddTech_CardGiving(TechEnum::FarmWaterManagement, { TechEnum::FarmImprovement },
+			AddTech_CardGiving(TechEnum::FarmWaterManagement, { TechEnum::FarmingTechnologies },
 				CardEnum::FarmWaterManagement
 			);
 			AddTech_Building(TechEnum::Cathedral, {},
@@ -1296,6 +1328,8 @@ public:
 			AddTech_CardGiving(TechEnum::CoalTreatment, { TechEnum::CoalPipeline },
 				{ CardEnum::CoalTreatment }
 			);
+
+			AddTech_Bonus(TechEnum::RanchingTechnologies, {});
 
 			AddTech_CardGiving(TechEnum::BlueberryFarming, {},
 				{ CardEnum::BlueberrySeed }
@@ -1376,7 +1410,8 @@ public:
 			AddTech_Building(TechEnum::ResearchLab, { TechEnum::Conglomerate },
 				CardEnum::ResearchLab
 			);
-
+			AddTech_Bonus(TechEnum::IndustrialTechnologies, {});
+			
 			AddTech_Building(TechEnum::Garden, { TechEnum::GardenCypress },
 				CardEnum::Garden
 			);
@@ -1396,6 +1431,7 @@ public:
 				{ CardEnum::BookWorm }
 			);
 
+			AddTech_Bonus(TechEnum::HighFashion, {});
 			AddTech_CardGiving(TechEnum::DepartmentOfAgriculture, {},
 				{ CardEnum::DepartmentOfAgriculture }
 			);
@@ -1596,6 +1632,13 @@ public:
 		return _enumToTech[techEnum]->state != TechStateEnum::Researched;
 	}
 
+	int32 GetTechnologyUpgradeCount(TechEnum techEnum) {
+		if (_enumToTech.find(techEnum) == _enumToTech.end()) {
+			return false;
+		}
+		return _enumToTech[techEnum]->upgradeCount;
+	}
+	
 	bool IsLocked(TechEnum techEnum)
 	{
 		// Age

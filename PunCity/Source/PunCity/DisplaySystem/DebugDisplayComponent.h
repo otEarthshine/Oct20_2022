@@ -66,10 +66,13 @@ protected:
 		auto& sim = simulation();
 		TreeSystem& treeSystem = sim.treeSystem();
 		auto& terrainGen = sim.terrainGenerator();
+		
 
 		/*
 		 * Debug
 		 */
+		ULineBatchComponent* line = lineBatch();
+		
 		// "TreeGrid" in TileObjDisplay
 		if (PunSettings::Settings["WalkableGrid"] ||
 			PunSettings::Settings["ShippingGrid"] ||
@@ -80,7 +83,6 @@ protected:
 			PunSettings::Settings["Province"])
 		{
 			auto pathAI = sim.pathAI();
-			ULineBatchComponent* line = lineBatch();
 			auto& buildingSys = sim.buildingSystem();
 
 			int startX = region.minXTile();
@@ -150,9 +152,9 @@ protected:
 						else if (sim.buildingEnumAtTile(curTile) == CardEnum::DirtRoad) {
 							color = FLinearColor(1.0f, 1.0f, 0.0f);
 						}
-						else if (sim.buildingEnumAtTile(curTile) == CardEnum::TrapSpike) {
-							color = FLinearColor(0.2f, 0, 0);
-						}
+						//else if (sim.buildingEnumAtTile(curTile) == CardEnum::TrapSpike) {
+						//	color = FLinearColor(0.2f, 0, 0);
+						//}
 						else if (sim.buildingEnumAtTile(curTile) != CardEnum::None) {
 							color = FLinearColor::Red;
 						}
@@ -173,6 +175,9 @@ protected:
 								(GameRand::DisplayRand(buildingId + 1) % 255) / 255.0f,
 								(GameRand::DisplayRand(buildingId + 2) % 255) / 255.0f);
 							line->DrawLine(start, start + FVector(-5, -5, 10), color, 100.0f, 1.0f, 10000);
+
+							FVector gate = MapUtil::DisplayLocation(cameraAtom, simulation().building(buildingId).gateTile().worldAtom2());
+							line->DrawLine(gate, gate + FVector(2, 2, 20), FLinearColor::Green, 100.0f, 1.0f, 10000);
 						}
 					}
 
@@ -300,6 +305,25 @@ protected:
 			line->DrawLine(pos01, pos11, FLinearColor(0.1, 0, 0.1), 100.0f, 1.0f, 10000);
 			line->DrawLine(pos11, pos10, FLinearColor(0.1, 0, 0.1), 100.0f, 1.0f, 10000);
 			line->DrawLine(pos10, pos00, FLinearColor(0.1, 0, 0.1), 100.0f, 1.0f, 10000);
+		}
+
+		// Waypoints
+		if (PunSettings::Settings["CachedWaypoints"])
+		{
+			DescriptionUIState uiState = simulation().descriptionUIState();
+			if (uiState.objectType == ObjectTypeEnum::Building &&
+				uiState.objectId != -1)
+			{
+				Building& bld = simulation().building(uiState.objectId);
+				const std::vector<std::vector<WorldTile2>>& waypoints = bld.cachedWaypoints();
+				for (const std::vector<WorldTile2>& waypoint : waypoints) {
+					for (int32 i = waypoint.size(); i-- > 1;) {
+						FVector wayStart = MapUtil::DisplayLocation(cameraAtom, waypoint[i].worldAtom2());
+						FVector wayEnd = MapUtil::DisplayLocation(cameraAtom, waypoint[i - 1].worldAtom2());
+						line->DrawLine(wayStart, wayEnd + FVector(0, 0, 3), FLinearColor::Black, 100.0f, 1.0f, 10000);
+					}
+				}
+			}
 		}
 
 		// Flood Connections

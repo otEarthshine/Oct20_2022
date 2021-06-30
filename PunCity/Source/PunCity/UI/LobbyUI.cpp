@@ -307,8 +307,8 @@ void ULobbyUI::Tick()
 
 		// Cancel start if someone unready
 		if (!gameInstance()->IsAllPlayersReady()) {
-			firstController->SendChat_ToServer("", FString("Not all players are ready..."));
-			firstController->SendChat_ToServer("", FString("Start canceled..."));
+			firstController->SendChat_ToServer("", LOCTEXT("Not all players are ready", "Not all players are ready...").ToString());
+			firstController->SendChat_ToServer("", LOCTEXT("Start canceled", "Start canceled...").ToString());
 			isCountingDown = false;
 			//SetText(StartGameButtonText, "Start Game");
 			return;
@@ -323,7 +323,7 @@ void ULobbyUI::Tick()
 	else
 	{
 		// Not counting down yet, but everyone is ready.. say start now
-		SetText(StartGameButtonText, gameInstance()->IsAllPlayersReady() ? "Start Now" : "Start Game");
+		StartGameButtonText->SetText(gameInstance()->IsAllPlayersReady() ? LOCTEXT("Start Now", "Start Now") : LOCTEXT("Start Game", "Start Game"));
 	}
 
 	/*
@@ -578,7 +578,7 @@ void ULobbyUI::OnClickLobbyStartGameButton()
 	if (isCountingDown) {
 		//SetText(StartGameButtonText, "Start Game");
 		isCountingDown = false;
-		GetFirstController()->SendChat_ToServer("", FString("Start canceled..."));
+		GetFirstController()->SendChat_ToServer("", LOCTEXT("Start canceled", "Start canceled...").ToString());
 
 		// Allow players to join the server again
 		gameInstance()->UpdateSession();
@@ -597,7 +597,7 @@ void ULobbyUI::OnClickLobbyStartGameButton()
 
 	gameInstance()->Spawn2DSound("UI", "ButtonClick2");
 
-	GetFirstController()->SendChat_ToServer("", FString("Starting in 10..."));
+	GetFirstController()->SendChat_ToServer("", LOCTEXT("Starting in 10", "Starting in 10...").ToString());
 
 	//SetText(StartGameButtonText, "Cancel");
 	isCountingDown = true;

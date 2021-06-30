@@ -131,6 +131,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	WarningHealthcare = Load<UTexture2D>("/Game/UI/Images/Healthcare");
 	WarningTools = Load<UTexture2D>("/Game/UI/Images/ToolsWarning");
 	WarningUnhappy = Load<UTexture2D>("/Game/UI/Images/Unhappy");
+	
 
 	//! Video
 	//MediaPlayer = Load<UMediaPlayer>("/Game/UI/Images/Unhappy");
@@ -294,6 +295,11 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-2.3, 10.2, 8.5), FVector::OneVector} }
 	));
 
+	
+	LinkBuilding(CardEnum::Colony, "Townhall_Era0");
+	LinkBuilding(CardEnum::PortColony, "Townhall_Era0");
+	
+
 	LoadBuilding(CardEnum::FurnitureWorkshop, "Furniture_Workshop_Era", "FurnitureWorkshop", 1);
 	LoadBuilding(CardEnum::CharcoalMaker, "CharcoalMakerEra", "CharcoalBurner", 1);
 	LoadBuilding(CardEnum::Brickworks, "BrickworkEra", "Brickworks", 2);
@@ -397,8 +403,10 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	// Houses
 	// Note: Model count starts with House Lvl 0 (legacy imports, not worth the change)
+
+	// 5 Variations per house lvl
 	
-	// Lvl 0
+	// Lvl 0 (1)
 	for (int32 i = 1; i <= 3; i++) {
 		FString moduleGroupName = "HouseERA0V" + FString::FromInt(i);
 		FString moduleGroupFolderName = "House/Level0/V" + FString::FromInt(i);
@@ -408,16 +416,16 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LinkBuilding(CardEnum::House, "HouseClayLvl1");
 	LinkBuilding(CardEnum::House, "HouseClayLvl1");
 
-	// Lvl 1
+	// Lvl 1 (2)
 	for (int32 i = 1; i <= 3; i++) {
 		FString moduleGroupName = "House_Lvl1_Var" + FString::FromInt(i);
 		FString moduleGroupFolderName = "House/Level1/V" + FString::FromInt(i);
 		LoadBuilding(CardEnum::House, moduleGroupName, moduleGroupFolderName);
 	}
 	LinkBuilding(CardEnum::House, "HouseClayLvl1");
-	LinkBuilding(CardEnum::House, "HouseClayLvl1");
+	LinkBuilding(CardEnum::House, "HouseClayLvl1"); // Buffer
 
-	// Lvl 2
+	// Lvl 2 (3)
 	for (int32 i = 1; i <= 4; i++) {
 		FString moduleGroupName = "House_LV2_V" + FString::FromInt(i);
 		FString moduleGroupFolderName = "House/Level2/V" + FString::FromInt(i);
@@ -426,7 +434,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	TryLoadBuildingModuleSet("HouseClayLvl2", "HouseClayLvl2");
 	LinkBuilding(CardEnum::House, "HouseClayLvl2");
 
-	// Lvl 3
+	// Lvl 3 (4)
 	for (int32 i = 1; i <= 4; i++) {
 		FString moduleGroupName = "House_LV3_V" + FString::FromInt(i);
 		FString moduleGroupFolderName = "House/Level3/V" + FString::FromInt(i);
@@ -436,6 +444,45 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LinkBuilding(CardEnum::House, "HouseClayLvl3");
 
 	
+
+	// Lvl 4 (5)
+	for (int32 i = 1; i <= 4; i++) {
+		FString moduleGroupName = "House_LV5_V" + FString::FromInt(i);
+		FString moduleGroupFolderName = "House/Level5/V" + FString::FromInt(i);
+		LoadBuilding(CardEnum::House, moduleGroupName, moduleGroupFolderName);
+	}
+	LinkBuilding(CardEnum::House, "HouseClayLvl1"); // Buffer
+
+	// Lvl 5 (6)
+	for (int32 i = 1; i <= 3; i++) {
+		FString moduleGroupName = "House_LV6_V" + FString::FromInt(i);
+		FString moduleGroupFolderName = "House/Level6/V" + FString::FromInt(i);
+		LoadBuilding(CardEnum::House, moduleGroupName, moduleGroupFolderName);
+	}
+	LinkBuilding(CardEnum::House, "HouseClayLvl1"); // Buffer
+	LinkBuilding(CardEnum::House, "HouseClayLvl1"); // Buffer
+
+	// Lvl 6 (7)
+	for (int32 i = 1; i <= 2; i++) {
+		FString moduleGroupName = "House_LV7_V" + FString::FromInt(i);
+		FString moduleGroupFolderName = "House/Level7/V" + FString::FromInt(i);
+		LoadBuilding(CardEnum::House, moduleGroupName, moduleGroupFolderName);
+	}
+	LinkBuilding(CardEnum::House, "HouseClayLvl1"); // Buffer
+	LinkBuilding(CardEnum::House, "HouseClayLvl1"); // Buffer
+	LinkBuilding(CardEnum::House, "HouseClayLvl1"); // Buffer
+
+		// Lvl 7 (8)
+	for (int32 i = 1; i <= 2; i++) {
+		FString moduleGroupName = "House_LV8_V" + FString::FromInt(i);
+		FString moduleGroupFolderName = "House/Level8/V" + FString::FromInt(i);
+		LoadBuilding(CardEnum::House, moduleGroupName, moduleGroupFolderName);
+	}
+	LinkBuilding(CardEnum::House, "HouseClayLvl1"); // Buffer
+	LinkBuilding(CardEnum::House, "HouseClayLvl1"); // Buffer
+	LinkBuilding(CardEnum::House, "HouseClayLvl1"); // Buffer
+	
+	
 	//TryLoadBuildingModuleSet("HouseLvl2", "HouseLvl2");
 	//TryLoadBuildingModuleSet("HouseLvl2V2", "HouseLvl2");
 	//TryLoadBuildingModuleSet("HouseClayLvl2", "HouseClayLvl2");
@@ -443,18 +490,19 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	//TryLoadBuildingModuleSet("HouseLvl3", "HouseLvl3");
 	//TryLoadBuildingModuleSet("HouseLvl3V2", "HouseLvl3");
 	//TryLoadBuildingModuleSet("HouseClayLvl3", "HouseClayLvl3");
-	
-	TryLoadBuildingModuleSet("HouseLvl4", "HouseLvl4");
-	TryLoadBuildingModuleSet("HouseLvl4V2", "HouseLvl4");
-	
-	TryLoadBuildingModuleSet("HouseLvl5", "HouseLvl5");
-	TryLoadBuildingModuleSet("HouseLvl5V2", "HouseLvl5");
-	
-	TryLoadBuildingModuleSet("HouseLvl6", "HouseLvl6");
-	TryLoadBuildingModuleSet("HouseLvl6V2", "HouseLvl6");
-	
-	TryLoadBuildingModuleSet("HouseLvl7", "HouseLvl7");
-	TryLoadBuildingModuleSet("HouseLvl7V2", "HouseLvl7");
+
+	//!!! June 18
+	//TryLoadBuildingModuleSet("HouseLvl4", "HouseLvl4");
+	//TryLoadBuildingModuleSet("HouseLvl4V2", "HouseLvl4");
+	//
+	//TryLoadBuildingModuleSet("HouseLvl5", "HouseLvl5");
+	//TryLoadBuildingModuleSet("HouseLvl5V2", "HouseLvl5");
+	//
+	//TryLoadBuildingModuleSet("HouseLvl6", "HouseLvl6");
+	//TryLoadBuildingModuleSet("HouseLvl6V2", "HouseLvl6");
+	//
+	//TryLoadBuildingModuleSet("HouseLvl7", "HouseLvl7");
+	//TryLoadBuildingModuleSet("HouseLvl7V2", "HouseLvl7");
 	
 	// Construction
 	//LoadModule("ConstructionBase", "BuildingModule1/ConstructionBase/ConstructionBase");
@@ -627,7 +675,9 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	_georesourceIcons[ResourceEnum::Dye] = LoadF<UTexture2D>(FString("/Game/UI/Images/GeoresourceIcons/LogoWorldDye"));
 	_georesourceIcons[ResourceEnum::Grape] = LoadF<UTexture2D>(FString("/Game/UI/Images/GeoresourceIcons/LogoWorldGrape"));
 	_georesourceIcons[ResourceEnum::Tulip] = LoadF<UTexture2D>(FString("/Game/UI/Images/GeoresourceIcons/LogoWorldTulip"));
-	
+
+	_georesourceIcons[ResourceEnum::Coal] = LoadF<UTexture2D>(FString("/Game/UI/Images/GeoresourceIcons/LogoWorldCoal"));
+	_georesourceIcons[ResourceEnum::Gemstone] = LoadF<UTexture2D>(FString("/Game/UI/Images/GeoresourceIcons/LogoWorldGemstone"));
 
 	/*
 	 * Card Icons
@@ -758,6 +808,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	 * Unit
 	 */
 	_unitEnumToAsset.resize(UnitEnumCount);
+	_unitDisplayEnumToAsset.resize(UnitDisplayEnumCount);
 	
 	//LoadUnit(UnitEnum::Human, "Human/Man/Man1");
 	//LoadUnit(UnitEnum::Human, "Human/Man/Boy1");
@@ -1600,29 +1651,31 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 /**
  * Units
  */
-FUnitAsset UAssetLoaderComponent::unitAsset(UnitEnum unitEnum, int32 variationIndex)
-{
-	int32 unitEnumInt = static_cast<int>(unitEnum);
-	PUN_ENSURE(0 <= unitEnumInt && unitEnumInt < UnitEnumCount, return FUnitAsset());
-
-	std::vector<FUnitAsset>& assets =  _unitEnumToAsset[unitEnumInt];
-	PUN_ENSURE(0 <= variationIndex && variationIndex < assets.size(), return FUnitAsset());
-	
-	const FUnitAsset& asset = assets[variationIndex];
-	PUN_CHECK(asset.staticMesh);
-	return asset;
-}
+//FUnitAsset UAssetLoaderComponent::unitAsset(UnitEnum unitEnum, int32 variationIndex)
+//{
+//	int32 unitEnumInt = static_cast<int>(unitEnum);
+//	PUN_ENSURE(0 <= unitEnumInt && unitEnumInt < UnitEnumCount, return FUnitAsset());
+//
+//	std::vector<FUnitAsset>& assets =  _unitEnumToAsset[unitEnumInt];
+//	PUN_ENSURE(0 <= variationIndex && variationIndex < assets.size(), return FUnitAsset());
+//	
+//	const FUnitAsset& asset = assets[variationIndex];
+//	PUN_CHECK(asset.staticMesh);
+//	return asset;
+//}
 
 const std::string unitsPath = "/Game/Models/Units/";
 void UAssetLoaderComponent::LoadUnit(UnitEnum unitEnum, std::string meshFile)
 {
 	FUnitAsset asset;
 	asset.staticMesh = Load<UStaticMesh>((unitsPath + meshFile).c_str());
+	
+	_unitDisplayEnumToAsset[static_cast<int>(GetUnitDisplayEnum(unitEnum, _unitEnumToAsset[static_cast<int>(unitEnum)].size()))] = asset;
 	_unitEnumToAsset[static_cast<int>(unitEnum)].push_back(asset);
 }
 
 // SkelMesh will still need 
-void UAssetLoaderComponent::LoadUnitFull(UnitEnum unitEnum, std::string folderPath, std::string skelFileName, 
+void UAssetLoaderComponent::LoadUnitFull(UnitEnum unitEnum, std::string folderPath, std::string skelFileName,
 	std::unordered_map<UnitAnimationEnum, std::string> animationFileNames, std::string staticFileName)
 {
 	FUnitAsset asset;
@@ -1634,7 +1687,8 @@ void UAssetLoaderComponent::LoadUnitFull(UnitEnum unitEnum, std::string folderPa
 		//PUN_EDITOR_LOG("LoadUnitFull staticFileName %s static:%s", ToTChar(skelFileName), ToTChar(staticFileName));
 		asset.staticMesh = Load<UStaticMesh>((unitsPath + staticFileName).c_str());
 	}
-	
+
+	_unitDisplayEnumToAsset[static_cast<int>(GetUnitDisplayEnum(unitEnum, _unitEnumToAsset[static_cast<int>(unitEnum)].size()))] = asset;
 	_unitEnumToAsset[static_cast<int>(unitEnum)].push_back(asset);
 }
 void UAssetLoaderComponent::LoadUnitWeapon(UnitAnimationEnum unitAnimation, std::string file)

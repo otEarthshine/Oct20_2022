@@ -61,6 +61,8 @@ void UTechTreeUI::SetupTechBoxColumn(const std::vector<TechEnum>& techEnums, UVe
 
 void UTechTreeUI::TickUI()
 {
+	LEAN_PROFILING_UI(TickTechTreeUI);
+	
 	auto& sim = simulation();
 	const auto& unlockSys = sim.unlockSystem(playerId());
 

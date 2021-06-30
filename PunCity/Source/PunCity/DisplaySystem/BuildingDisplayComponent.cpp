@@ -584,7 +584,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 					return;
 				}
 
-				bool shouldDisplayParticles = building.shouldDisplayParticles() || isMainMenuDisplay || PunSettings::TrailerSession;
+				bool shouldDisplayParticles = building.shouldDisplayParticles() || isMainMenuDisplay || PunSettings::TrailerSession || PunSettings::IsOn("ForceWorkAnimation");
 
 				// Building mesh
 				float buildingRotation = RotationFromDirection(building.faceDirection());

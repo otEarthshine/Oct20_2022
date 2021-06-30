@@ -597,6 +597,7 @@ public:
 		PrintPath_Helper(path);
 	}
 	
+	
 public:
 	/**
 	 * Networking
@@ -621,11 +622,16 @@ public:
 	// Debug
 	UFUNCTION(Reliable, Server) void GamePause_ToServer();
 
+
 	UFUNCTION(Reliable, Client) void CompareUnitHashes_ToClient(int32 startIndex, const TArray<int32>& serverHashes);
 
 	TArray<int32> tempServerHashes;
 	UFUNCTION(Reliable, Client) void SendResourceHashes_ToClient(int32 startIndex, const TArray<int32>& serverHashes);
 	UFUNCTION(Reliable, Client) void CompareResourceHashes_ToClient();
+
+	UFUNCTION(Exec) void CompareUnitHashes();
+	UFUNCTION(Exec) void CompareResourceHashes();
+	
 
 	// Victory
 	UFUNCTION(Reliable, Server, WithValidation) void ToServer_SavedGameEndStatus(int32 playerId);
@@ -649,9 +655,6 @@ public:
 
 	UFUNCTION(Exec) void OpenTradeUI();
 	UFUNCTION(Exec) void OpenRareCardUI();
-
-	UFUNCTION(Exec) void CompareUnitHashes();
-	UFUNCTION(Exec) void CompareResourceHashes();
 	
 
 	UFUNCTION(Exec) void SetAIIntercityTrade()
@@ -1082,6 +1085,8 @@ public:
 	UFUNCTION(Exec) void TestAchievement(const FString& achievementId) override {
 		gameInstance()->UpdateAchievementProgress(achievementId, 100);
 	}
+
+	virtual int32 GetFPS() override;
 
 	// Photo taking
 	// !!! In-Game Only

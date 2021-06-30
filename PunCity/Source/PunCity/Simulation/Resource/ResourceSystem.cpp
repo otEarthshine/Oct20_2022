@@ -7,6 +7,8 @@ using namespace std;
 
 int32 ResourceTypeHolders::SpawnHolder(ResourceEnum resourceEnum, ResourceHolderType type, int objectId, WorldTile2 tile, int target, ResourceSystem& resourceSys)
 {
+	_resourceCountCache = -1;
+	
 	//_LOG(PunResource, "SpawnHolder: player:%d enum:%d type:%d size:%llu sim:%p", _playerId, static_cast<int>(resourceEnum), type, _holders.size(), _simulation);
 	PUN_CHECK(_resourceEnum == resourceEnum);
 
@@ -177,6 +179,7 @@ int32 ResourceTypeHolders::CanAddResourceGlobal(int32 amount, ResourceSystem& re
 
 int32 ResourceTypeHolders::AddResourceGlobal(int32 amount, ResourceSystem& resourceSys)
 {
+	_resourceCountCache = -1;
 	PUN_LOG("AddResource: %d", amount);
 
 	for (int i = 0; i < _holders.size(); i++) 
@@ -204,6 +207,7 @@ int32 ResourceTypeHolders::AddResourceGlobal(int32 amount, ResourceSystem& resou
 }
 void ResourceTypeHolders::RemoveResourceGlobal(int32 amount, ResourceSystem& resourceSys)
 {
+	_resourceCountCache = -1;
 	PUN_LOG("RemoveResource: %d", amount);
 
 	for (int i = 0; i < _holders.size(); i++)
@@ -232,6 +236,7 @@ void ResourceTypeHolders::RemoveResourceGlobal(int32 amount, ResourceSystem& res
 
 void ResourceTypeHolders::RemoveResourceGlobal_Unreserved(int32 amount, ResourceSystem& resourceSys)
 {
+	_resourceCountCache = -1;
 	PUN_LOG("RemoveResourceGlobal_Unreserved: %d", amount);
 
 	for (int i = 0; i < _holders.size(); i++)
@@ -255,12 +260,14 @@ void ResourceTypeHolders::RemoveResourceGlobal_Unreserved(int32 amount, Resource
 	UE_DEBUG_BREAK();
 }
 
-void ResourceTypeHolders::CheckIntegrity_ResourceTypeHolder() {
+void ResourceTypeHolders::CheckIntegrity_ResourceTypeHolder() const {
 	PUN_CHECK(_simulation);
 }
 
 int32 ResourceSystem::CanReceiveAmount(const ResourceHolder& holder) const
 {
+	LEAN_PROFILING_R(CanReceiveAmount);
+	
 	if (holder.type != ResourceHolderType::Storage) {
 		return 0;
 	}
@@ -303,6 +310,8 @@ int32 ResourceSystem::CanReceiveAmount(const ResourceHolder& holder) const
 //  resourceCountWithPush -> resourceCount
 int32 ResourceSystem::CanReceiveAmountAfterReset(const ResourceHolder& holder) const
 {
+	LEAN_PROFILING_R(CanReceiveAmountAfterReset);
+	
 	check(holder.type == ResourceHolderType::Storage);
 
 	Building& building = _simulation->building(holder.objectId);
@@ -362,7 +371,7 @@ void ResourceSystem::UpdateResourceDisplay(const ResourceHolder& holder) const
 }
 
 
-
+#if CHECK_TICKHASH
 std::vector<int32> ResourceSystem::GetResourcesSyncHashes() {
 	std::vector<int32> hashes;
 	hashes.push_back(_townId);
@@ -422,3 +431,5 @@ void ResourceSystem::FindDesyncInResourceSyncHashes(const TArray<int32>& serverH
 		}
 	}
 }
+
+#endif

@@ -159,6 +159,8 @@ void UnitStateAI::Update()
 
 	if (uInfo.IsAgingUnit())
 	{
+		LEAN_PROFILING_U(Update_FoodAge);
+		
 		SCOPE_CYCLE_COUNTER(STAT_PunUnitFoodAgeAI);
 
 		OnUnitUpdate();
@@ -824,6 +826,7 @@ void UnitStateAI::AttackIncoming(UnitFullId attacker, int32 ownerWorkplaceId, in
 
 void UnitStateAI::CalculateActions()
 {
+	LEAN_PROFILING_U(CalcAnimal);
 	SCOPE_CYCLE_COUNTER(STAT_PunUnitCalcAnimal);
 
 	PUN_DEBUG_EXPR(CheckIntegrity());
@@ -1361,6 +1364,8 @@ void UnitStateAI::Add_DropoffFoodAnimal() {
 }
 void UnitStateAI::DropoffFoodAnimal()
 {
+	LEAN_PROFILING_A(DropoffFoodAnimal);
+	
 	if (_houseId == -1) {
 		AddDebugSpeech("(Failed)DropoffFoodAnimal: Animal no longer  have house");
 		PUN_LOG("DropoffFoodAnimal: Animal no longer  have house...");
@@ -1401,6 +1406,8 @@ void UnitStateAI::Add_PickupFoodAnimal() {
 }
 void UnitStateAI::PickupFoodAnimal()
 {
+	LEAN_PROFILING_A(PickupFoodAnimal);
+	
 	check(_houseId != -1);
 	BoarBurrow& boarBurrow = _simulation->building(_houseId).subclass<BoarBurrow>();
 
@@ -1595,6 +1602,8 @@ void UnitStateAI::Add_Wait(int32 tickCount, UnitAnimationEnum animationEnum) {
 }
 void UnitStateAI::Wait()
 {
+	LEAN_PROFILING_A(Wait);
+	
 	int32 tickCount = action().int32val1;
 	_animationEnum = static_cast<UnitAnimationEnum>(action().int32val2);
 	
@@ -1624,6 +1633,8 @@ void UnitStateAI::Add_GatherFruit(WorldTile2 targetTile) {
 }
 void UnitStateAI::GatherFruit()
 {
+	LEAN_PROFILING_A(GatherFruit);
+	
 	WorldTile2 targetTile(action().int32val1);
 	
 	UnitReservation reservation = PopReservation(ReservationType::TreeTile);
@@ -1668,6 +1679,8 @@ void UnitStateAI::Add_TrimFullBush(WorldTile2 targetTile) {
 }
 void UnitStateAI::TrimFullBush()
 {
+	LEAN_PROFILING_A(TrimFullBush);
+	
 	/*
 	 * Animal trimming bush..
 	 */
@@ -1721,6 +1734,8 @@ void UnitStateAI::Add_HarvestTileObj(WorldTile2 targetTile) {
 }
 void UnitStateAI::HarvestTileObj()
 {
+	LEAN_PROFILING_A(HarvestTileObj);
+	
 	WorldTile2 targetTile(action().int32val1);
 	
 	UnitReservation reservation = PopReservation(ReservationType::TreeTile);
@@ -1751,6 +1766,8 @@ void UnitStateAI::HarvestTileObj()
 			if (unlockSys->IsResearched(TechEnum::Ironworks)) {
 				efficiency += 30;
 			}
+
+			efficiency += (unlockSys->GetTechnologyUpgradeCount(TechEnum::ForestryTechnologies) * 5);
 
 			if (_simulation->HasTownBonus(_townId, CardEnum::BorealPineForesting)) {
 				if (plantEnum == TileObjEnum::Pine1 || plantEnum == TileObjEnum::Pine2) {
@@ -1810,6 +1827,8 @@ void UnitStateAI::Add_PlantTree(WorldTile2 targetTile, TileObjEnum tileObjEnum) 
 }
 void UnitStateAI::PlantTree()
 {
+	LEAN_PROFILING_A(PlantTree);
+	
 	WorldTile2 targetTile(action().int32val1);
 	TileObjEnum tileObjEnum = static_cast<TileObjEnum>(action().int32val2);
 	
@@ -1833,7 +1852,10 @@ void UnitStateAI::PlantTree()
 void UnitStateAI::Add_NourishTree(WorldTile2 targetTile) {
 	_actions.push_back(Action(ActionEnum::NourishTree, targetTile.tileId()));
 }
-void UnitStateAI::NourishTree() {
+void UnitStateAI::NourishTree()
+{
+	LEAN_PROFILING_A(NourishTree);
+	
 	WorldTile2 targetTile(action().int32val1);
 	treeSystem().UnitNourishTree(targetTile);
 
@@ -1846,6 +1868,8 @@ void UnitStateAI::Add_Eat(ResourceEnum resourceEnum) {
 }
 void UnitStateAI::Eat()
 {
+	LEAN_PROFILING_A(Eat);
+	
 	ResourceEnum resourceEnum = static_cast<ResourceEnum>(action().int32val1);
 	
 	// Animal has no reservation and there may not be any food left...
@@ -1928,6 +1952,8 @@ void UnitStateAI::Add_Heat() {
 }
 void UnitStateAI::Heat()
 {
+	LEAN_PROFILING_A(Heat);
+	
 	//ResourceEnum resourceEnum = _inventory.Has(ResourceEnum::Wood) ? ResourceEnum::Wood : ResourceEnum::Coal;
 	PUN_CHECK2(_inventory.Has(ResourceEnum::Wood) || _inventory.Has(ResourceEnum::Coal), debugStr());
 
@@ -1973,6 +1999,8 @@ void UnitStateAI::Add_UseMedicine(ResourceEnum resourceEnum) {
 }
 void UnitStateAI::UseMedicine()
 {
+	LEAN_PROFILING_A(UseMedicine);
+	
 	ResourceEnum resourceEnum = static_cast<ResourceEnum>(action().int32val1);
 	
 	PUN_CHECK2(_inventory.Has(resourceEnum), debugStr());
@@ -1996,6 +2024,8 @@ void UnitStateAI::Add_UseTools(ResourceEnum resourceEnum) {
 }
 void UnitStateAI::UseTools()
 {
+	LEAN_PROFILING_A(UseTools);
+	
 	ResourceEnum resourceEnum = static_cast<ResourceEnum>(action().int32val1);
 
 	PUN_CHECK2(_inventory.Has(resourceEnum), debugStr());
@@ -2049,6 +2079,8 @@ void UnitStateAI::Add_HaveFun(int32 funBuildingId) {
 }
 void UnitStateAI::HaveFun()
 {
+	LEAN_PROFILING_A(HaveFun);
+	
 	int32 funBuildingId = action().int32val1;
 	
 	Building& building = _simulation->building(funBuildingId);
@@ -2078,6 +2110,7 @@ void UnitStateAI::Add_MoveRandomlyAnimal() {
 }
 void UnitStateAI::MoveRandomlyAnimal()
 {
+	LEAN_PROFILING_A(MoveRandomlyAnimal);
 	SCOPE_CYCLE_COUNTER(STAT_PunUnitDoMoveRandomly);
 
 	// TODO: make animals with home also use _homeProvinceId
@@ -2106,6 +2139,7 @@ void UnitStateAI::Add_MoveRandomly(TileArea area) {
 }
 void UnitStateAI::MoveRandomly()
 {
+	LEAN_PROFILING_A(MoveRandomly);
 	SCOPE_CYCLE_COUNTER(STAT_PunUnitDoMoveRandomly);
 
 	//UE_LOG(LogTemp, Error, TEXT("at %s"), *FString(pathEnd.ToString().c_str()));
@@ -2185,6 +2219,8 @@ void UnitStateAI::Add_MoveRandomlyPerlin(TileArea area)
 }
 void UnitStateAI::MoveRandomlyPerlin()
 {
+	LEAN_PROFILING_A(MoveRandomlyPerlin);
+	
 	TileArea area;
 	area.minX = action().int32val1;
 	area.minY = action().int32val2;
@@ -2225,21 +2261,64 @@ void UnitStateAI::MoveTo() {
 	MoveTo(WorldTile2(action().int32val1), action().int32val2, static_cast<UnitAnimationEnum>(action().int32val3));
 }
 bool UnitStateAI::MoveTo(WorldTile2 end, int32 customFloodDistance, UnitAnimationEnum animationEnum)
-{
+{	
 	SCOPE_CYCLE_COUNTER(STAT_PunUnitDoMoveTo);
 	WorldTile2 tile = unitTile();
 
-	// Trailer
-	if (PunSettings::TrailerSession)
+	/*
+	 * Cached Case
+	 */
+	bool shouldCacheWaypoints = false;
+	int32 startBuildingId = _simulation->buildingIdAtTile(tile);
 	{
-		// Too far, in another city, don't walk there and walk randomly instead
-		if (WorldTile2::Distance(tile, end) > 80) {
-			Add_Wait(Time::TicksPerSecond);
-			Add_MoveRandomly();
-			return true;
+		LEAN_PROFILING_A(MoveTo_UseCache);
+		
+		if (startBuildingId != -1) {
+			Building& startBuilding = _simulation->building(startBuildingId);
+			if (startBuilding.isConstructed() &&
+				tile == startBuilding.gateTile())
+			{
+				int32 endBuildingId = _simulation->buildingIdAtTile(end);
+				if (endBuildingId != -1) {
+					Building& endBuilding = _simulation->building(endBuildingId);
+					if (endBuilding.isConstructed() &&
+						end == endBuilding.gateTile())
+					{
+						const std::vector<std::vector<WorldTile2>>& cachedWaypoints = startBuilding.cachedWaypoints();
+
+						for (int32 i = 0; i < cachedWaypoints.size(); i++) {
+							check(cachedWaypoints[i].size() > 0);
+							if (cachedWaypoints[i].front() == end)
+							{
+								_animationEnum = animationEnum;
+
+								//MapUtil::UnpackAStarPath(rawWaypoint, _unitData->waypoint(_id));
+								_unitData->SetWaypoint(_id, cachedWaypoints[i]);
+								_unitData->SetWaypointCacheBuildingId(_id, startBuildingId);
+								_unitData->SetForceMove(_id, false);
+
+								startBuilding.UseCachedWaypoints(end);
+
+								// Convert waypoint to targetTile next tick.
+								_unitData->SetNextTickState(_id, TransformState::NeedTargetAtom, UnitUpdateCallerEnum::MoveTo_Done);
+								PUN_CHECK2(nextActiveTick() > Time::Ticks(), debugStr());
+								AddDebugSpeech("---DONE]MoveTo:" + end.ToString());
+								return true;
+							}
+						}
+
+						shouldCacheWaypoints = true;
+					}
+				}
+			}
 		}
 	}
 
+	LEAN_PROFILING_A(MoveTo);
+
+	/*
+	 * Normal Case
+	 */
 	
 	bool succeed;
 
@@ -2281,6 +2360,8 @@ bool UnitStateAI::MoveTo(WorldTile2 end, int32 customFloodDistance, UnitAnimatio
 				roadCostDownFactor = 2;
 			}
 
+			
+
 			succeed = _simulation->pathAI()->FindPath(tile.x, tile.y, end.x, end.y, rawWaypoint, true, roadCostDownFactor, customCalculationCount); // ppl like road
 		}
 		else {
@@ -2308,7 +2389,19 @@ bool UnitStateAI::MoveTo(WorldTile2 end, int32 customFloodDistance, UnitAnimatio
 	_animationEnum = animationEnum;
 
 	MapUtil::UnpackAStarPath(rawWaypoint, _unitData->waypoint(_id));
+	_unitData->SetWaypointCacheBuildingId(_id, -1);
 	_unitData->SetForceMove(_id, false);
+
+
+	// Cache waypoint
+	if (shouldCacheWaypoints) {
+		const std::vector<WorldTile2>& waypoint = _unitData->waypoint(_id);
+		check(_simulation->building(startBuildingId).gateTile() == tile);
+		check(waypoint.back() == tile);
+		
+		_simulation->building(startBuildingId).AddCachedWaypoints(waypoint);
+	}
+	
 
 	// Convert waypoint to targetTile next tick.
 	_unitData->SetNextTickState(_id, TransformState::NeedTargetAtom, UnitUpdateCallerEnum::MoveTo_Done);
@@ -2323,7 +2416,11 @@ void UnitStateAI::Add_MoveToResource(ResourceHolderInfo holderInfo, int32 custom
 void UnitStateAI::MoveToResource() {
 	MoveToResource(ResourceHolderInfo(static_cast<ResourceEnum>(action().int32val1), action().int32val2), action().int32val3, static_cast<UnitAnimationEnum>(action().int32val4));
 }
-bool UnitStateAI::MoveToResource(ResourceHolderInfo holderInfo, int32 customFloodDistance, UnitAnimationEnum animationEnum) {
+bool UnitStateAI::MoveToResource(ResourceHolderInfo holderInfo, int32 customFloodDistance, UnitAnimationEnum animationEnum)
+{
+	LeanProfiler leanProfiler(customFloodDistance == -1 ? LeanProfilerEnum::MoveToResource : LeanProfilerEnum::MoveToResource_custom);
+	//LEAN_PROFILING_A(MoveToResource);
+	
 	const ResourceHolder& holder = resourceSystem().holder(holderInfo);
 	
 	bool succeed = MoveTo(holder.tile, customFloodDistance, animationEnum);
@@ -2340,40 +2437,42 @@ bool UnitStateAI::MoveToResource(ResourceHolderInfo holderInfo, int32 customFloo
 }
 
 // For moving army across long distance.
-void UnitStateAI::Add_MoveToForceLongDistance(WorldTile2 end) {
-	_actions.push_back(Action(ActionEnum::MoveToForceLongDistance, end.tileId()));
-}
-void UnitStateAI::MoveToForceLongDistance()
-{
-	WorldTile2 end(action().int32val1);
-	
-	SCOPE_CYCLE_COUNTER(STAT_PunUnitDoMoveTo);
-	WorldTile2 tile = unitTile();
-
-	bool isIntelligent = IsIntelligentUnit(unitEnum());
-	
-	const int32 customCalculationCount = 200000;
-	bool succeed = _simulation->pathAI()->FindPath(tile.x, tile.y, end.x, end.y, rawWaypoint, true, isIntelligent, customCalculationCount);
-
-	if (!succeed) 
-	{
-		DEBUG_AI_VAR(FailedToFindPathLongDist);
-		_simulation->ResetUnitActions(_id, 60);
-		
-		AddDebugSpeech("(Bad)MoveToForceLongDistance: " + tile.ToString() + end.ToString());
-		MoveToRobust(end);
-		return;
-	}
-
-	_animationEnum = UnitAnimationEnum::Walk;
-
-	MapUtil::UnpackAStarPath(rawWaypoint, _unitData->waypoint(_id));
-	_unitData->SetForceMove(_id, true);
-
-	// Convert waypoint to targetTile next tick.
-	_unitData->SetNextTickState(_id, TransformState::NeedTargetAtom, UnitUpdateCallerEnum::MoveToForceLongDistance_Done);
-	AddDebugSpeech("(Done)MoveToForceLongDistance:" + end.ToString());
-}
+//void UnitStateAI::Add_MoveToForceLongDistance(WorldTile2 end) {
+//	_actions.push_back(Action(ActionEnum::MoveToForceLongDistance, end.tileId()));
+//}
+//void UnitStateAI::MoveToForceLongDistance()
+//{
+//	LEAN_PROFILING_A(MoveToForceLongDistance);
+//	
+//	WorldTile2 end(action().int32val1);
+//	
+//	SCOPE_CYCLE_COUNTER(STAT_PunUnitDoMoveTo);
+//	WorldTile2 tile = unitTile();
+//
+//	bool isIntelligent = IsIntelligentUnit(unitEnum());
+//	
+//	const int32 customCalculationCount = 200000;
+//	bool succeed = _simulation->pathAI()->FindPath(tile.x, tile.y, end.x, end.y, rawWaypoint, true, isIntelligent, customCalculationCount);
+//
+//	if (!succeed) 
+//	{
+//		DEBUG_AI_VAR(FailedToFindPathLongDist);
+//		_simulation->ResetUnitActions(_id, 60);
+//		
+//		AddDebugSpeech("(Bad)MoveToForceLongDistance: " + tile.ToString() + end.ToString());
+//		MoveToRobust(end);
+//		return;
+//	}
+//
+//	_animationEnum = UnitAnimationEnum::Walk;
+//
+//	MapUtil::UnpackAStarPath(rawWaypoint, _unitData->waypoint(_id));
+//	_unitData->SetForceMove(_id, true);
+//
+//	// Convert waypoint to targetTile next tick.
+//	_unitData->SetNextTickState(_id, TransformState::NeedTargetAtom, UnitUpdateCallerEnum::MoveToForceLongDistance_Done);
+//	AddDebugSpeech("(Done)MoveToForceLongDistance:" + end.ToString());
+//}
 
 void UnitStateAI::Add_MoveInRange(WorldTile2 end, int32_t range) {
 	_actions.push_back(Action(ActionEnum::MoveInRange, end.tileId(), range));
@@ -2381,6 +2480,8 @@ void UnitStateAI::Add_MoveInRange(WorldTile2 end, int32_t range) {
 // Typical MoveTo that trims off the rest of the stack once the unit moves close enough
 void UnitStateAI::MoveInRange()
 {
+	LEAN_PROFILING_A(MoveInRange);
+	
 	WorldTile2 end(action().int32val1);
 	int32 range = action().int32val2;
 	
@@ -2422,6 +2523,8 @@ void UnitStateAI::MoveToRobust() {
 }
 void UnitStateAI::MoveToRobust(WorldTile2 end)
 {
+	LEAN_PROFILING_A(MoveToRobust);
+	
 	WorldTile2 tile = unitTile();
 	check(tile.isValid());
 
@@ -2456,6 +2559,8 @@ void UnitStateAI::Add_MoveToward(WorldAtom2 end, int32 fraction100000, UnitAnima
 }
 void UnitStateAI::MoveToward()
 {
+	LEAN_PROFILING_A(MoveToward);
+	
 	WorldAtom2 end(action().int32val1, action().int32val2);
 	int64 fraction100000 = action().int32val3;
 	
@@ -2493,6 +2598,8 @@ void UnitStateAI::Add_MoveToCaravan(WorldTile2 end, UnitAnimationEnum animationE
 }
 bool UnitStateAI::MoveToCaravan()
 {
+	LEAN_PROFILING_A(MoveToCaravan);
+	
 	WorldAtom2 end(action().int32val1, action().int32val2);
 	WorldTile2 start = unitTile();
 
@@ -2521,6 +2628,8 @@ void UnitStateAI::Add_MoveToShip(int32 startPortId, int32 endPortId, UnitAnimati
 }
 bool UnitStateAI::MoveToShip()
 {
+	LEAN_PROFILING_A(MoveToShip);
+	
 	int32 startPortId = action().int32val1;
 	int32 endPortId = action().int32val2;
 
@@ -2553,6 +2662,8 @@ void UnitStateAI::Add_PickupResource(ResourceHolderInfo info, int amount) {
 }
 void UnitStateAI::PickupResource()
 {
+	LEAN_PROFILING_A(PickupResource);
+	
 	ResourceHolderInfo info(static_cast<ResourceEnum>(action().int32val1), action().int32val2);
 	int amount = action().int32val3;
 	
@@ -2592,6 +2703,8 @@ void UnitStateAI::Add_DropoffResource(ResourceHolderInfo info, int amount) {
 }
 void UnitStateAI::DropoffResource()
 {
+	LEAN_PROFILING_A(DropoffResource);
+	
 	ResourceHolderInfo info(static_cast<ResourceEnum>(action().int32val1), action().int32val2);
 	int amount = action().int32val3;
 	
@@ -2633,6 +2746,8 @@ void UnitStateAI::Add_DropInventoryAction() {
 }
 void UnitStateAI::DropInventoryAction()
 {
+	LEAN_PROFILING_A(DropInventoryAction);
+	
 	//std::vector<ResourcePair> drops = unitInfo().resourceDrops;
 	_inventory.ForEachResource([&](ResourcePair pair) {
 		resourceSystem().SpawnDrop(pair.resourceEnum, pair.count, unitTile());
@@ -2650,6 +2765,8 @@ void UnitStateAI::Add_StoreGatheredAtWorkplace() {
 }
 void UnitStateAI::StoreGatheredAtWorkplace()
 {
+	LEAN_PROFILING_A(StoreGatheredAtWorkplace);
+	
 	// TODO: right now only fruit, later on will need to be able to clear the whole inventory
 	PUN_CHECK2(_inventory.Has(ResourceEnum::Orange) 
 			|| _inventory.Has(ResourceEnum::Papaya)
@@ -2687,6 +2804,8 @@ void UnitStateAI::Add_Produce(int32 workManSec100, int32 waitTicks, int32 timesL
 }
 void UnitStateAI::Produce()
 {
+	LEAN_PROFILING_A(Produce);
+	
 	int workManSec100 = action().int32val1;
 	int waitTicks = action().int32val2;
 	int timesLeft = action().int32val3;
@@ -2720,6 +2839,8 @@ void UnitStateAI::Add_Construct(int32 workManSec100, int32 waitTicks, int32 time
 }
 void UnitStateAI::Construct()
 {
+	LEAN_PROFILING_A(Construct);
+	
 	int32 workManSec100 = action().int32val1;
 	int32 waitTicks = action().int32val2;
 	int32 timesLeft = action().int32val3;
@@ -2782,6 +2903,8 @@ void UnitStateAI::Add_FillInputs(int32 workplaceId) {
 }
 void UnitStateAI::FillInputs()
 {
+	LEAN_PROFILING_A(FillInputs);
+	
 	int32 workplaceId = action().int32val1;
 	
 	UnitReservation workplaceReservation = PopReservationWorkplace(workplaceId);
@@ -2833,6 +2956,8 @@ void UnitStateAI::Add_IntercityHaulPickup(int32 workplaceId, int32 townId) {
 }
 void UnitStateAI::IntercityHaulPickup()
 {
+	LEAN_PROFILING_A(IntercityHaulPickup);
+	
 	int32 workplaceId = action().int32val1;
 	int32 townId = action().int32val2;
 
@@ -2909,6 +3034,8 @@ void UnitStateAI::Add_IntercityHaulDropoff(int32 workplaceId) {
 }
 void UnitStateAI::IntercityHaulDropoff()
 {
+	LEAN_PROFILING_A(IntercityHaulDropoff);
+	
 	int32 workplaceId = action().int32val1;
 
 	AddDebugSpeech("IntercityHaulDropoff");

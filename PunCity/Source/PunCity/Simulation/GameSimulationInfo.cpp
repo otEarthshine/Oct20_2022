@@ -187,5 +187,4 @@ const std::vector<PermanentBonus::RareCardHand> PermanentBonus::PermanentBonusRa
 };
 
 
-
 #undef LOCTEXT_NAMESPACE

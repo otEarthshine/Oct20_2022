@@ -15,7 +15,7 @@ void UGiftResourceUI::OnClickConfirmButton()
 
 		if (resourceName == MoneyText.ToString()) {
 			resourceEnum = ResourceEnum::Money;
-			if (amount > simulation().money(playerId())) {
+			if (amount > simulation().moneyCap32(playerId())) {
 				simulation().AddPopupToFront(playerId(),
 					LOCTEXT("Not enough money to give.", "Not enough money to give."),
 					ExclusiveUIEnum::GiftResourceUI, "PopupCannot"

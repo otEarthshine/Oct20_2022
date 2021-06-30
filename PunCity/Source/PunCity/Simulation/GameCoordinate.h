@@ -256,6 +256,13 @@ struct WorldTile2
 		return abs(v.x) + abs(v.y);
 	}
 
+	static int32_t ManDiagDistance(WorldTile2 start, WorldTile2 end) {
+		WorldTile2 v = end - start;
+		int16_t vx = abs(v.x);
+		int16_t vy = abs(v.y);
+		return vx > vy ? vx : vy;
+	}
+
 	// TODO: use ref?
 	static int32_t Distance(WorldTile2 start, WorldTile2 end) {
 		WorldTile2 v = end - start;

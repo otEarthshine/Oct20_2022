@@ -128,14 +128,27 @@ public:
 		
 		if (node.HasResource())
 		{
-			ResourceEnum resourceEnum = node.info().resourceEnum;
+			// Oil Invisible before research
+			bool shouldShowGeoresource = true;
+			if (node.georesourceEnum == GeoresourceEnum::Oil) {
+				if (!sim.IsResearched(playerId(), TechEnum::Petroleum)) {
+					if (!PunSettings::IsOn("ShowAllResourceNodes")) {
+						shouldShowGeoresource = false;
+					}
+				}
+			}
 
-			SetGeoresourceImage(IconImage, resourceEnum, assetLoader(), this);
-			
-			IconSizeBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			if (shouldShowGeoresource)
+			{
+				ResourceEnum resourceEnum = node.info().resourceEnum;
 
-			if (node.depositAmount > 0) {
-				PunBox->AddIconPair(FText(), node.info().resourceEnum, TEXT_NUM(node.depositAmount));
+				SetGeoresourceImage(IconImage, resourceEnum, assetLoader(), this);
+
+				IconSizeBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+
+				if (node.depositAmount > 0) {
+					PunBox->AddIconPair(FText(), node.info().resourceEnum, TEXT_NUM(node.depositAmount));
+				}
 			}
 		}
 		

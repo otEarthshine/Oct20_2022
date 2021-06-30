@@ -324,6 +324,14 @@ void BonusToggle_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulat
 	/*
 	 * 
 	 */
+	if (techEnum == TechEnum::HighFashion)
+	{
+		const std::vector<int32>& bldIds = simulation->buildingIds(playerId, CardEnum::Tailor);
+		for (int32 bldId : bldIds) {
+			simulation->building<Tailor>(bldId).ResetWorkModes();
+		}
+	}
+
 	if (techEnum == TechEnum::SocialScience)
 	{
 		const std::vector<int32>& bldIds = simulation->buildingIds(playerId, CardEnum::CardMaker);

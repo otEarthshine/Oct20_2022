@@ -406,6 +406,8 @@ public:
 
 	virtual void AddPopupNonDuplicate(PopupInfo popupInfo) = 0;
 
+	virtual void SetPopupTimeDelay(int32 playerId, int32 ticks) = 0;
+
 	virtual PopupInfo* PopupToDisplay(int32 playerId) = 0;
 	virtual void CloseCurrentPopup(int32 playerId) = 0;
 	virtual void TryRemovePopups(int32 playerId, PopupReceiverEnum receiverEnum) = 0;
@@ -427,6 +429,8 @@ public:
 	// Science
 	virtual int32 GetScience100PerRound(int32 playerId) = 0;
 	virtual bool IsResearched(int32 playerId, TechEnum techEnum) = 0;
+	virtual int32 GetTechnologyUpgradeCount(int32 playerId, TechEnum techEnum) = 0;
+	
 	virtual bool HasTargetResearch(int32 playerId) = 0;;
 	virtual int32 sciTechsCompleted(int32 playerId) = 0;
 
@@ -459,7 +463,7 @@ public:
 	virtual int32 worldPlayerPopulation() = 0;
 	
 	virtual int HousingCapacity(int32 townId) = 0;
-	virtual int32 GetHouseLvlCount(int32 playerId, int32 houseLvl, bool includeHigherLvl = false) = 0;
+	virtual int32 GetHouseLvlCount(int32 townId, int32 houseLvl, bool includeHigherLvl = false) = 0;
 
 	virtual std::pair<int32, int32> GetStorageCapacity(int32 townId, bool includeUnderConstruction = false) = 0;
 
@@ -475,7 +479,9 @@ public:
 	virtual int32 influence(int32 playerId) = 0;
 	virtual int32 influence100(int32 playerId) = 0;
 	
-	virtual int32 money(int32 playerId) = 0;
+	virtual int64 money64(int32 playerId) = 0;
+	virtual int32 moneyCap32(int32 playerId) = 0;
+	
 	virtual void ChangeMoney(int32 playerId, int32 moneyChange) = 0;
 	virtual void ChangeMoney100(int32 playerId, int32 moneyChange100) = 0;
 	virtual void ChangeInfluence(int32 playerId, int32 influenceChange) = 0;
@@ -529,7 +535,7 @@ public:
 
 	virtual bool TryAddCardToBoughtHand(int32 playerId, CardEnum cardEnum, int32 cardCount = 1) = 0;
 	
-	virtual void GenerateRareCardSelection(int32 playerId, RareHandEnum rareHandEnum, FText rareHandMessage) = 0;
+	virtual void GenerateRareCardSelection(int32 playerId, RareHandEnum rareHandEnum, FText rareHandMessage, int32 objectId = -1) = 0;
 
 	virtual void CheckSeedAndMineCard(int32 playerId) = 0;
 

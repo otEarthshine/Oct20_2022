@@ -41,20 +41,20 @@ void UEscMenuUI::PunInit()
 	SetChildHUD(LoadSaveUI);
 	LoadSaveUI->PunInit(this);
 	
-	EscMenuToggler->OnClicked.AddDynamic(this, &UEscMenuUI::ToggleEscMenu);
-	EscMenuResumeButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickEscMenuResumeButton);
-	EscMenuSettingsButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickEscMenuSettingsButton);
-	EscMenuRestartGameButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickEscMenuRestartGameButton);
-	EscMenuExitToMainMenuButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickEscMenuExitToMainMenuButton);
-	EscMenuQuitButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickEscMenuQuitButton);
+	EscMenuToggler->CoreButton->OnClicked.AddDynamic(this, &UEscMenuUI::ToggleEscMenu);
+	EscMenuResumeButton->CoreButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickEscMenuResumeButton);
+	EscMenuSettingsButton->CoreButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickEscMenuSettingsButton);
+	EscMenuRestartGameButton->CoreButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickEscMenuRestartGameButton);
+	EscMenuExitToMainMenuButton->CoreButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickEscMenuExitToMainMenuButton);
+	EscMenuQuitButton->CoreButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickEscMenuQuitButton);
 
-	TutorialToggler->OnClicked.AddDynamic(this, &UEscMenuUI::ToggleTutorial);
+	TutorialToggler->CoreButton->OnClicked.AddDynamic(this, &UEscMenuUI::ToggleTutorial);
 
-	ConfirmYesButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickConfirmYesButton);
-	ConfirmNoButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickConfirmNoButton);
+	ConfirmYesButton->CoreButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickConfirmYesButton);
+	ConfirmNoButton->CoreButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickConfirmNoButton);
 
-	EscMenuSaveButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickEscMenuSaveButton);
-	EscMenuLoadButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickEscMenuLoadButton);
+	EscMenuSaveButton->CoreButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickEscMenuSaveButton);
+	EscMenuLoadButton->CoreButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickEscMenuLoadButton);
 
 	PauseButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickPauseButton);
 
@@ -77,7 +77,7 @@ void UEscMenuUI::PunInit()
 
 	// Overlay toggler
 	OverlaySettingsOverlay->SetVisibility(ESlateVisibility::Collapsed);
-	OverlayToggler->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickOverlayToggler);
+	OverlayToggler->CoreButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickOverlayToggler);
 	OverlayCheckBox_None->OnCheckStateChanged.AddDynamic(this, &UEscMenuUI::OnCheckOverlay_None);
 	OverlayCheckBox_Appeal->OnCheckStateChanged.AddDynamic(this, &UEscMenuUI::OnCheckOverlay_Appeal);
 	OverlayCheckBox_Fertility->OnCheckStateChanged.AddDynamic(this, &UEscMenuUI::OnCheckOverlay_Fertility);
@@ -97,7 +97,7 @@ void UEscMenuUI::PunInit()
 	// others
 
 	VictoryScoreScreenButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickVictoryPopupScoreScreen);
-	VictoryReturnToGame->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickVictoryPopupReturnToGame);
+	VictoryReturnToGame->CoreButton->OnClicked.AddDynamic(this, &UEscMenuUI::OnClickVictoryPopupReturnToGame);
 
 	SetChildHUD(ScoreBreakdown);
 	SetChildHUD(OtherPlayerScores);

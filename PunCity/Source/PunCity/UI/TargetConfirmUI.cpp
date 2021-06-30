@@ -33,7 +33,7 @@ void UTargetConfirmUI::OnClickConfirmButton()
 
 	if (offer.offerEnum == IntercityTradeOfferEnum::SellWhenAbove) {
 		// This town is selling to you, ensure you have enough money to buy
-		if (amount * simulation().price(resourceEnum) > simulation().money(playerId()))
+		if (amount * simulation().price(resourceEnum) > simulation().moneyCap32(playerId()))
 		{
 			simulation().AddPopupToFront(playerId(),
 				LOCTEXT("Not enough money for trade.", "Not enough money for trade."),

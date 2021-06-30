@@ -57,6 +57,8 @@ public:
 		QuestSystem* questSystem = dataSource()->simulation().questSystem(playerId());
 		if (questSystem) 
 		{
+			LEAN_PROFILING_UI(TickQuestUI);
+			
 			/*
 			 * Quest List
 			 */
@@ -123,6 +125,8 @@ public:
 		 */
 		if (simulation().HasTownhall(playerId()))
 		{
+			LEAN_PROFILING_UI(TickPlayerCompare);
+			
 			std::vector<int32> playerIds = GetPlayersSortedByPopulation();
 
 			for (int32 i = 0; i < playerIds.size(); i++)
@@ -280,174 +284,187 @@ public:
 
 	void TickPlayerDetails()
 	{
+		if (!PlayerDetailsOverlay->IsVisible()) {
+			return;
+		}
+		
 		std::vector<int32> playerIds = GetPlayersSortedByPopulation();
 
-		for (size_t k = 0; k < playerIds.size(); k++)
 		{
-			int32 curId = playerIds[k];
+			LEAN_PROFILING_UI(TickPlayerDetails);
 			
-			if (k >= PlayerDetailsBox->GetChildrenCount()) {
-				PlayerDetailsBox->AddChild(AddWidget<UPlayerCompareDetailedElement>(UIEnum::PlayerCompareDetailedElement));
-			}
-
-			auto element = CastChecked<UPlayerCompareDetailedElement>(PlayerDetailsBox->GetChildAt(k));
-			SetChildHUD(element);
-
-			auto& playerOwned = simulation().playerOwned(curId);
-
-			bool isUIPlayer = (curId == playerId());
-			auto setText = [&](URichTextBlock* textBlock, FText message) {
-				if (isUIPlayer) {
-					SetText(textBlock, TEXT_TAG("<Bold>", message));
-				} else {
-					SetText(textBlock, TEXT_TAG("<SlightGray>", message));
-				}
-			};
-
-			element->HighlightImage->SetVisibility(isUIPlayer ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
-
-			setText(element->PlayerNameText, FText::FromString(TrimStringF_Dots(simulation().playerNameF(curId), 14)));
-			setText(element->PopulationText, TEXT_NUM(simulation().populationPlayer(curId)));
-			setText(element->TechnologyText, TEXT_NUM(simulation().sciTechsCompleted(curId)));
-			setText(element->RevenueText, TEXT_NUM(playerOwned.totalRevenue100() / 100));
-			setText(element->MilitarySizeText, TEXT_NUM(simulation().influence(curId)));
-			setText(element->LandText, TEXT_NUM(playerOwned.GetPlayerLandTileCount(true)));
-
-
-			int32 gdp100 = 0;
-			std::vector<int32> productionValue100s;
-
-			const auto& townIds = simulation().GetTownIds(curId);
-			for (int32 townId : townIds)
+			for (size_t k = 0; k < playerIds.size(); k++)
 			{
-				auto& statSystem = simulation().statSystem(townId);
-				const std::vector<std::vector<int32>>& productionStats = statSystem.GetResourceStat(ResourceSeasonStatEnum::Production);
-				const std::vector<std::vector<int32>>& consumptionStats = statSystem.GetResourceStat(ResourceSeasonStatEnum::Consumption);
+				int32 curId = playerIds[k];
 
-				for (int enumInt = 0; enumInt < ResourceEnumCount; enumInt++)
-				{
-					check(productionStats[enumInt].size() == 4);
-					int32 productionCount = productionStats[enumInt][0] +
-						productionStats[enumInt][1] +
-						productionStats[enumInt][2] +
-						productionStats[enumInt][3];
-					int32 productionValue100 = productionCount * simulation().price100(static_cast<ResourceEnum>(enumInt));
-
-					if (enumInt < productionValue100s.size()) {
-						productionValue100s[enumInt] += productionValue100;
-					} else {
-						productionValue100s.push_back(productionValue100);
-					}
-
-					check(consumptionStats[enumInt].size() == 4);
-					int32 consumptionCount = consumptionStats[enumInt][0] +
-						consumptionStats[enumInt][1] +
-						consumptionStats[enumInt][2] +
-						consumptionStats[enumInt][3];
-					int32 consumptionValue100 = consumptionCount * simulation().price100(static_cast<ResourceEnum>(enumInt));
-
-					gdp100 += productionValue100 - consumptionValue100;
+				if (k >= PlayerDetailsBox->GetChildrenCount()) {
+					PlayerDetailsBox->AddChild(AddWidget<UPlayerCompareDetailedElement>(UIEnum::PlayerCompareDetailedElement));
 				}
 
-				// Mint included in GDP
-				{
-					gdp100 += 100 * statSystem.GetYearlyStat(SeasonStatEnum::Money);
-				}
-			}
+				auto element = CastChecked<UPlayerCompareDetailedElement>(PlayerDetailsBox->GetChildAt(k));
+				SetChildHUD(element);
 
-			//! Set GDP Text
-			setText(element->GDPText, TEXT_100(gdp100));
+				auto& playerOwned = simulation().playerOwned(curId);
 
-
-			//! Main Production Text
-			{
-				// Calculate main production
-				std::vector<std::pair<ResourceEnum, int32>> mainProductions;
-				for (size_t i = 0; i < ResourceEnumCount; i++)
-				{
-					if (productionValue100s[i] > 0)
-					{
-						bool added = false;
-						for (size_t j = 0; j < mainProductions.size(); j++)
-						{
-							if (productionValue100s[i] > mainProductions[j].second) {
-								mainProductions.insert(mainProductions.begin() + j, std::make_pair(static_cast<ResourceEnum>(i), productionValue100s[i]));
-								added = true;
-								break;
-							}
-						}
-						if (!added) {
-							mainProductions.push_back(std::make_pair(static_cast<ResourceEnum>(i), productionValue100s[i]));
-						}
-						if (mainProductions.size() > 2) {
-							mainProductions.pop_back();
-						}
-					}
-				}
-
-				//! Set MainProductionText
-				auto addSS = [&](TArray<FText>& args, FText text) {
+				bool isUIPlayer = (curId == playerId());
+				auto setText = [&](URichTextBlock* textBlock, FText message) {
 					if (isUIPlayer) {
-						ADDTEXT_TAG_("<Bold>", text);
-					} else {
-						ADDTEXT_TAG_("<SlightGray>", text);
+						SetText(textBlock, TEXT_TAG("<Bold>", message));
+					}
+					else {
+						SetText(textBlock, TEXT_TAG("<SlightGray>", message));
 					}
 				};
 
-				TArray<FText> args;
-				if (mainProductions.size() > 0) {
-					addSS(args, ResourceNameT(mainProductions[0].first));
+				element->HighlightImage->SetVisibility(isUIPlayer ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+
+				setText(element->PlayerNameText, FText::FromString(TrimStringF_Dots(simulation().playerNameF(curId), 14)));
+				setText(element->PopulationText, TEXT_NUM(simulation().populationPlayer(curId)));
+				setText(element->TechnologyText, TEXT_NUM(simulation().sciTechsCompleted(curId)));
+				setText(element->RevenueText, TEXT_NUM(playerOwned.totalRevenue100() / 100));
+				setText(element->MilitarySizeText, TEXT_NUM(simulation().influence(curId)));
+				setText(element->LandText, TEXT_NUM(playerOwned.GetPlayerLandTileCount(true)));
+
+
+				int32 gdp100 = 0;
+				std::vector<int32> productionValue100s;
+
+				const auto& townIds = simulation().GetTownIds(curId);
+				for (int32 townId : townIds)
+				{
+					auto& statSystem = simulation().statSystem(townId);
+					const std::vector<std::vector<int32>>& productionStats = statSystem.GetResourceStat(ResourceSeasonStatEnum::Production);
+					const std::vector<std::vector<int32>>& consumptionStats = statSystem.GetResourceStat(ResourceSeasonStatEnum::Consumption);
+
+					for (int enumInt = 0; enumInt < ResourceEnumCount; enumInt++)
+					{
+						check(productionStats[enumInt].size() == 4);
+						int32 productionCount = productionStats[enumInt][0] +
+							productionStats[enumInt][1] +
+							productionStats[enumInt][2] +
+							productionStats[enumInt][3];
+						int32 productionValue100 = productionCount * simulation().price100(static_cast<ResourceEnum>(enumInt));
+
+						if (enumInt < productionValue100s.size()) {
+							productionValue100s[enumInt] += productionValue100;
+						}
+						else {
+							productionValue100s.push_back(productionValue100);
+						}
+
+						check(consumptionStats[enumInt].size() == 4);
+						int32 consumptionCount = consumptionStats[enumInt][0] +
+							consumptionStats[enumInt][1] +
+							consumptionStats[enumInt][2] +
+							consumptionStats[enumInt][3];
+						int32 consumptionValue100 = consumptionCount * simulation().price100(static_cast<ResourceEnum>(enumInt));
+
+						gdp100 += productionValue100 - consumptionValue100;
+					}
+
+					// Mint included in GDP
+					{
+						gdp100 += 100 * statSystem.GetYearlyStat(SeasonStatEnum::Money);
+					}
 				}
-				if (mainProductions.size() > 1) {
-					ADDTEXT_INV_("\n");
-					addSS(args, ResourceNameT(mainProductions[1].first));
+
+				//! Set GDP Text
+				setText(element->GDPText, TEXT_100(gdp100));
+
+
+				//! Main Production Text
+				{
+					// Calculate main production
+					std::vector<std::pair<ResourceEnum, int32>> mainProductions;
+					for (size_t i = 0; i < ResourceEnumCount; i++)
+					{
+						if (productionValue100s[i] > 0)
+						{
+							bool added = false;
+							for (size_t j = 0; j < mainProductions.size(); j++)
+							{
+								if (productionValue100s[i] > mainProductions[j].second) {
+									mainProductions.insert(mainProductions.begin() + j, std::make_pair(static_cast<ResourceEnum>(i), productionValue100s[i]));
+									added = true;
+									break;
+								}
+							}
+							if (!added) {
+								mainProductions.push_back(std::make_pair(static_cast<ResourceEnum>(i), productionValue100s[i]));
+							}
+							if (mainProductions.size() > 2) {
+								mainProductions.pop_back();
+							}
+						}
+					}
+
+					//! Set MainProductionText
+					auto addSS = [&](TArray<FText>& args, FText text) {
+						if (isUIPlayer) {
+							ADDTEXT_TAG_("<Bold>", text);
+						}
+						else {
+							ADDTEXT_TAG_("<SlightGray>", text);
+						}
+					};
+
+					TArray<FText> args;
+					if (mainProductions.size() > 0) {
+						addSS(args, ResourceNameT(mainProductions[0].first));
+					}
+					if (mainProductions.size() > 1) {
+						ADDTEXT_INV_("\n");
+						addSS(args, ResourceNameT(mainProductions[1].first));
+					}
+					SetText(element->MainProductionText, JOINTEXT(args));
 				}
-				SetText(element->MainProductionText, JOINTEXT(args));
+
+
+
+				//// Allies and vassals
+				//{
+				//	std::stringstream ss;
+				//	const std::vector<int32> allyIds = playerOwned.allyPlayerIds();
+				//	for (int32 i = 0; i < allyIds.size(); i++) {
+				//		if (i > 0) {
+				//			ss << "\n";
+				//		}
+				//		addSS(ss, TrimString_Dots(simulation().playerName(allyIds[i]), 10));
+				//	}
+				//	SetText(element->AlliesText, ss.str());
+				//}
+				//{
+				//	std::stringstream ss;
+				//	const std::vector<int32> vassalBuildingIds = playerOwned.vassalBuildingIds();
+				//	int32 i = 0;
+				//	for (int32 nodeId : vassalBuildingIds) {
+				//		Building& bld = simulation().building(nodeId);
+				//		if (bld.isEnum(CardEnum::Townhall)) {
+				//			if (i > 0) {
+				//				ss << "\n";
+				//			}
+				//			addSS(ss, TrimString_Dots(simulation().playerName(bld.playerId()), 10));
+				//			i++;
+				//		}
+				//	}
+				//	SetText(element->VassalsText, ss.str());
+				//}
+
+				//element->AlliesText
+
+				element->SetVisibility(ESlateVisibility::Visible);
 			}
 
-			
-
-			//// Allies and vassals
-			//{
-			//	std::stringstream ss;
-			//	const std::vector<int32> allyIds = playerOwned.allyPlayerIds();
-			//	for (int32 i = 0; i < allyIds.size(); i++) {
-			//		if (i > 0) {
-			//			ss << "\n";
-			//		}
-			//		addSS(ss, TrimString_Dots(simulation().playerName(allyIds[i]), 10));
-			//	}
-			//	SetText(element->AlliesText, ss.str());
-			//}
-			//{
-			//	std::stringstream ss;
-			//	const std::vector<int32> vassalBuildingIds = playerOwned.vassalBuildingIds();
-			//	int32 i = 0;
-			//	for (int32 nodeId : vassalBuildingIds) {
-			//		Building& bld = simulation().building(nodeId);
-			//		if (bld.isEnum(CardEnum::Townhall)) {
-			//			if (i > 0) {
-			//				ss << "\n";
-			//			}
-			//			addSS(ss, TrimString_Dots(simulation().playerName(bld.playerId()), 10));
-			//			i++;
-			//		}
-			//	}
-			//	SetText(element->VassalsText, ss.str());
-			//}
-			
-			//element->AlliesText
-			
-			element->SetVisibility(ESlateVisibility::Visible);
-		}
-
-		for (size_t i = playerIds.size(); i < PlayerDetailsBox->GetChildrenCount(); i++) {
-			PlayerDetailsBox->GetChildAt(i)->SetVisibility(ESlateVisibility::Collapsed);
+			for (size_t i = playerIds.size(); i < PlayerDetailsBox->GetChildrenCount(); i++) {
+				PlayerDetailsBox->GetChildAt(i)->SetVisibility(ESlateVisibility::Collapsed);
+			}
 		}
 
 		// Initialize Graphs later
 		if (!isInitializedWithSim) {
 			isInitializedWithSim = true;
+
+			LEAN_PROFILING_UI(TickPlayerDetails_Graph);
 			
 			std::vector<int32> allHumanIds = simulation().allHumanPlayerIds();
 			auto addSeriesAll = [&](FString graphName, UTimeSeriesPlot* plot, PlotStatEnum plotEnum) {

@@ -91,6 +91,9 @@ void APunBasePlayerController::SendSaveInfo_ToClient_Implementation(const TArray
 	_packetsRequested = 0;
 }
 
+
+//static FVector2D TargetMousePosition = FVector2D::ZeroVector;
+
 void APunBasePlayerController::Tick(float DeltaTime)
 {
 	// TODO: try to fix hardware cursor problem
@@ -98,23 +101,30 @@ void APunBasePlayerController::Tick(float DeltaTime)
 	if (PunSettings::IsOn("ShouldResetMouseCursor")) {
 		if (GEngine && GEngine->GameViewport && GEngine->GameViewport->Viewport) 
 		{
-			FVector2D MousePosition;
-			GEngine->GameViewport->GetMousePosition(MousePosition);
-			PUN_LOG("GEngine->GameViewport->GetMousePosition %f %f", MousePosition.X, MousePosition.Y);
+			//FVector2D MousePosition;
+			//GEngine->GameViewport->GetMousePosition(MousePosition);
+			//PUN_LOG("GEngine->GameViewport->GetMousePosition %f %f", MousePosition.X, MousePosition.Y);
 			
 			FIntPoint size = GEngine->GameViewport->Viewport->GetSizeXY();
-			GEngine->GameViewport->MouseEnter(GEngine->GameViewport->Viewport, size.X / 2, size.Y / 2);
-
-			if (MousePosition.Equals(FVector2D::ZeroVector)) {
-				GEngine->GameViewport->Viewport->SetMouse(size.X / 2, size.Y / 2);
-			}
-			else {
-				GEngine->GameViewport->Viewport->SetMouse(MousePosition.X, MousePosition.Y);
-			}
+			GEngine->GameViewport->MouseEnter(GEngine->GameViewport->Viewport, 200, 200);
+			
+			//if (MousePosition.Equals(FVector2D::ZeroVector)) {
+			//	TargetMousePosition = FVector2D(size.X / 2, size.Y / 2);
+			//	//GEngine->GameViewport->Viewport->SetMouse(size.X / 2, size.Y / 2);
+			//}
+			//else {
+			//	//GEngine->GameViewport->Viewport->SetMouse(MousePosition.X, MousePosition.Y);
+			//	TargetMousePosition = MousePosition;
+			//}
 			
 			PunSettings::Set("ShouldResetMouseCursor", 0);
 		}
 	}
+
+	//if (!TargetMousePosition.IsNearlyZero()) {
+	//	GEngine->GameViewport->Viewport->SetMouse(TargetMousePosition.X, TargetMousePosition.Y);
+	//	TargetMousePosition = FVector2D::ZeroVector;
+	//}
 
 	
 	_dataSyncTick++;

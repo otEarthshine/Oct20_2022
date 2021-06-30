@@ -92,7 +92,7 @@ bool TownHall::HasEnoughUpgradeMoney()
 {
 	PUN_CHECK(townhallLvl < GetMaxUpgradeLvl());
 
-	int32 upgradeMoney = GetUpgradeMoney(townhallLvl + 1);
+	int64 upgradeMoney = static_cast<int64>(GetUpgradeMoney(townhallLvl + 1));
 	return globalResourceSystem().money() >= upgradeMoney;
 }
 
@@ -141,20 +141,20 @@ void TownHall::UpgradeTownhall()
 			{
 			case BiomeEnum::BorealForest:
 			case BiomeEnum::Tundra:
-				_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::BorealCards2, FText());
+				_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::BorealCards2, FText(), _townId);
 				break;
 			case BiomeEnum::Desert:
-				_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::DesertCards2, FText());
+				_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::DesertCards2, FText(), _townId);
 				break;
 			case BiomeEnum::Savanna:
 			case BiomeEnum::GrassLand:
-				_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::SavannaCards2, FText());
+				_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::SavannaCards2, FText(), _townId);
 				break;
 			case BiomeEnum::Jungle:
-				_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::JungleCards2, FText());
+				_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::JungleCards2, FText(), _townId);
 				break;
 			case BiomeEnum::Forest:
-				_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::ForestCards2, FText());
+				_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::ForestCards2, FText(), _townId);
 				break;
 			default:
 				UE_DEBUG_BREAK();
@@ -174,8 +174,7 @@ void TownHall::UpgradeTownhall()
 		ADDTEXT__(TownhallLvlToUpgradeBonusText[townhallLvl]);
 
 		_simulation->AddPopup(_playerId, 
-			JOINTEXT(args),
-			"UpgradeTownhall"
+			JOINTEXT(args)
 		);
 
 		_simulation->AddPopupAll(PopupInfo(_playerId, 
@@ -221,10 +220,11 @@ void TownHall::UpgradeTownhall()
 
 	_simulation->RecalculateTaxDelayedTown(_townId);
 
-	
 	_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::TownhallUpgrade, _centerTile, FText());
 
-	//_simulation->soundInterface()->Spawn2DSoundAllPlayers("UI", "UpgradeTownhall", _centerTile);
+	_simulation->soundInterface()->Spawn2DSoundAllPlayers("UI", "UpgradeTownhall", _centerTile);
+
+	_simulation->SetPopupTimeDelay(_playerId, Time::TicksPerSecond * 2);
 }
 
 void TownHall::UpgradeWall() {

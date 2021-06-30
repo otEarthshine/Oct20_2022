@@ -35,18 +35,18 @@ void UMainGameUI::PunInit()
 	if (!ensure(BuildMenuTogglerButton)) return;
 	if (!ensure(BuildingMenuWrap)) return;
 
-	// Build Menu
-	BuildMenuTogglerButton->OnClicked.AddDynamic(this, &UMainGameUI::ToggleBuildingMenu);
+	//// Build Menu
+	BuildMenuTogglerButton->CoreButton->OnClicked.AddDynamic(this, &UMainGameUI::ToggleBuildingMenu);
 
 	// Gather Menu
-	GatherButton->OnClicked.AddDynamic(this, &UMainGameUI::ToggleGatherButton);
-	GatherSettingsCloseButton->OnClicked.AddDynamic(this, &UMainGameUI::CloseGatherUI);
+	GatherButton->CoreButton->OnClicked.AddDynamic(this, &UMainGameUI::ToggleGatherButton);
+	GatherSettingsCloseButton->CoreButton->OnClicked.AddDynamic(this, &UMainGameUI::CloseGatherUI);
 
 	DemolishButton->OnClicked.AddDynamic(this, &UMainGameUI::ToggleDemolishButton);
 
 	//StatsButton->OnClicked.AddDynamic(this, &UMainGameUI::ToggleStatisticsUI);
 	//AddToolTip(StatsButton, "Show statistics");
-	StatsButtonOverlay->SetVisibility(ESlateVisibility::Collapsed);
+	//StatsButtonOverlay->SetVisibility(ESlateVisibility::Collapsed);
 
 	CardRerollButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickRerollButton);
 	CardRerollButton1->OnClicked.AddDynamic(this, &UMainGameUI::ClickRerollButton);
@@ -77,7 +77,7 @@ void UMainGameUI::PunInit()
 	ConverterCardHandOverlay->SetVisibility(ESlateVisibility::Collapsed);
 	//ConverterCardHandSubmitButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickConverterCardHandSubmitButton);
 	ConverterCardHandCancelButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickConverterCardHandCancelButton);
-	ConverterCardHandXCloseButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickConverterCardHandCancelButton);
+	ConverterCardHandXCloseButton->CoreButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickConverterCardHandCancelButton);
 
 	converterHandCategoryState = -1;
 	lastConverterHandCategoryState = -1;
@@ -154,7 +154,7 @@ void UMainGameUI::PunInit()
 	Science->SetImage(assetLoader->ScienceIcon);
 	Science->SetTextColorScience();
 
-	LeaderSkillButton->OnClicked.AddDynamic(this, &UMainGameUI::OnClickLeaderSkillButton);
+	LeaderSkillButton->CoreButton->OnClicked.AddDynamic(this, &UMainGameUI::OnClickLeaderSkillButton);
 	LeaderSkillButton->bOverride_Cursor = false;
 
 	/*
@@ -263,6 +263,8 @@ void UMainGameUI::Tick()
 		return;
 	}
 
+	LeanProfiler leanProfilerOuter(LeanProfilerEnum::TickMainGameUI);
+
 
 	// TODO: Debug kPointerOnUI
 	if (PunSettings::IsOn("ShowDebugExtra"))
@@ -274,7 +276,7 @@ void UMainGameUI::Tick()
 			ss << ToStdString(UPunWidget::kPointerOnUINames[i]);
 			ss << "\n";
 		}
-		
+
 		SetText(QuickDebugText, ss.str());
 		QuickDebugBox->SetVisibility(ESlateVisibility::Visible);
 	}
@@ -282,9 +284,15 @@ void UMainGameUI::Tick()
 		QuickDebugBox->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
-	
-	
+
+
 	kTickCount++;
+
+	int32 modTickCountShift = 0;
+	auto runEachXTicks = [&](int32 xTick) {
+		return (kTickCount % (xTick + modTickCountShift++)) == 0;
+	};
+	
 
 	if (InterfacesInvalid()) return;
 
@@ -341,6 +349,8 @@ void UMainGameUI::Tick()
 	//}
 	
 	{
+		LEAN_PROFILING_UI(TickMainGameUI_Cards);
+		
 		// Cards
 		auto& cardSystem = sim.cardSystem(playerId());
 		int32 rollCountdown = Time::SecondsPerRound - Time::Seconds() % Time::SecondsPerRound;
@@ -418,7 +428,7 @@ void UMainGameUI::Tick()
 
 		// Reroll price
 		int32 rerollPrice = cardSystem.GetRerollPrice();
-		RerollPrice->SetColorAndOpacity(globalResourceSys.money() >= rerollPrice ? FLinearColor::White : FLinearColor(0.4, 0.4, 0.4));
+		RerollPrice->SetColorAndOpacity(globalResourceSys.moneyCap32() >= rerollPrice ? FLinearColor::White : FLinearColor(0.4, 0.4, 0.4));
 		if (rerollPrice == 0) {
 			RerollPrice->SetText(LOCTEXT("Free", "Free"));
 			RerollPrice1->SetText(LOCTEXT("Free", "Free"));
@@ -434,7 +444,7 @@ void UMainGameUI::Tick()
 
 		// Money
 		//bool moneyChanged = false;
-		int32 currentMoneyLeft = MoneyLeftAfterTentativeBuy();
+		int32 currentMoneyLeft = sim.moneyCap32(playerId()) -  MoneyNeededForTentativeBuy();
 		//if (_lastMoney != currentMoneyLeft) {
 		//	_lastMoney = currentMoneyLeft;
 		//	//moneyChanged = true;
@@ -573,6 +583,8 @@ void UMainGameUI::Tick()
 			RareCardHandText->SetVisibility(cardSystem.rareHandMessage().IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
 			
 			SetText(RareCardHandText2, cardSystem.rareHandMessage2());
+
+			rareHandObjectId = cardSystem.GetRareHandObjectId();
 
 			return true;
 		};
@@ -822,6 +834,8 @@ void UMainGameUI::Tick()
 
 	{
 		// Events
+		LEAN_PROFILING_UI(TickMainGameUI_Events);
+		
 		auto& eventSystem = sim.eventLogSystem();
 
 		if (eventSystem.needRefreshEventLog[playerId()])
@@ -854,6 +868,8 @@ void UMainGameUI::Tick()
 	
 
 	{
+		LEAN_PROFILING_UI(TickMainGameUI_Exclamation);
+		
 		/*
 		 * Exclamation
 		 */
@@ -904,22 +920,29 @@ void UMainGameUI::Tick()
 
 
 	{
+		LeanProfiler leanProfilerOuter2(LeanProfilerEnum::TickMainGameUI_LeftUI);
+		
 		//! Stats:
-		UnitSystem& unitSystem = sim.unitSystem();
-		StatSystem& statSystem = sim.statSystem();
+		UnitSystem& unitSys = sim.unitSystem();
+		StatSystem& statSys = sim.statSystem();
 		GlobalResourceSystem& globalResourceSys = sim.globalResourceSystem(playerId());
+
+		int32 population = sim.populationTown(currentTownId());
+
+		
 
 		// Top left
 		{
+			LEAN_PROFILING_UI(TickMainGameUI_TopLeft);
+
 			SetText(TimeText, FText::FormatNamed(
 				LOCTEXT("InGameTopLeft_SeasonYear", "{EarlyMidLate} {SeasonName}\nYear {Years}"),
 				TEXT("EarlyMidLate"), Time::SeasonPrefix(Time::Ticks()),
 				TEXT("SeasonName"), Time::SeasonName(Time::Seasons()),
 				TEXT("Years"), TEXT_NUM(Time::Years())
 			));
-		}
-		
-		{
+
+
 			FloatDet celsius = sim.Celsius(dataSource()->cameraAtom().worldTile2());
 			SetText(TemperatureText, FText::Format(
 				INVTEXT("{0}°C ({1}°F)"),
@@ -930,50 +953,50 @@ void UMainGameUI::Tick()
 			float fraction = FDToFloat(celsius - Time::MinCelsiusBase()) / FDToFloat(Time::MaxCelsiusBase() - Time::MinCelsiusBase());
 			TemperatureImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", fraction);
 
-			AddToolTip(TemperatureTextBox, FText::Format(
-				LOCTEXT("TemperatureTextBox_Tip", "Below {0}°C, citizens will need wood/coal to heat themselves"),
-				TEXT_NUM(FDToInt(Time::ColdCelsius()))
-			));
-
 			TemperatureTextBox->SetVisibility(ESlateVisibility::Visible);
-		}
 
-		stringstream ss;
-		//TopLeftText->SetText(FText::FromString(FString(ss.str().c_str())));
-		//ss("");
+			int32 childPopulation = sim.townManager(currentTownId()).childPopulation();
+			int32 adultPopulation = population - childPopulation;
+			AdultPopulationText->SetText(FText::FromString(FString::FromInt(adultPopulation)));
+			ChildPopulationText->SetText(FText::FromString(FString::FromInt(childPopulation)));
 
-		int32 population = sim.populationTown(currentTownId());
-		int32 childPopulation = sim.townManager(currentTownId()).childPopulation();
-		int32 adultPopulation = population - childPopulation;
-
-		AdultPopulationText->SetText(FText::FromString(FString::FromInt(adultPopulation)));
-		ChildPopulationText->SetText(FText::FromString(FString::FromInt(childPopulation)));
-		{
-			auto tooltip = AddToolTip(PopulationBox, FText::Format(
-				LOCTEXT("PopulationBox_Tip", "Population: {0}<bullet>{1} Adults</><bullet>{2} Children</>"),
-				TEXT_NUM(population),
-				TEXT_NUM(adultPopulation),
-				TEXT_NUM(childPopulation)
-			));
-
-			
-			auto punGraph = tooltip->TooltipPunBoxWidget->AddThinGraph();
-
-			// Food Graph
-			if (bIsHoveredButGraphNotSetup ||
-				tooltip->TooltipPunBoxWidget->DidElementResetThisRound())
+			if (runEachXTicks(60))
 			{
-				bIsHoveredButGraphNotSetup = false;
+				LeanProfiler leanProfilerInner(LeanProfilerEnum::TickMainGameUI_TopLeftTip);
+
+				AddToolTip(TemperatureTextBox, FText::Format(
+					LOCTEXT("TemperatureTextBox_Tip", "Below {0}°C, citizens will need wood/coal to heat themselves"),
+					TEXT_NUM(FDToInt(Time::ColdCelsius()))
+				));
 				
-				punGraph->SetupGraph({
-					{ LOCTEXT("Population", "Population").ToString(), PlotStatEnum::Population, FLinearColor(0.3, 1, 0.3), playerId(), currentTownId() },
-					{ LOCTEXT("Children", "Children").ToString(), PlotStatEnum::ChildPopulation, FLinearColor(0.3, 0.3, 1), playerId(), currentTownId() },
-				});
+				auto tooltip = AddToolTip(PopulationBox, FText::Format(
+					LOCTEXT("PopulationBox_Tip", "Population: {0}<bullet>{1} Adults</><bullet>{2} Children</>"),
+					TEXT_NUM(population),
+					TEXT_NUM(adultPopulation),
+					TEXT_NUM(childPopulation)
+				));
+
+
+				auto punGraph = tooltip->TooltipPunBoxWidget->AddThinGraph();
+
+				// Food Graph
+				if (bIsHoveredButGraphNotSetup ||
+					tooltip->TooltipPunBoxWidget->DidElementResetThisRound())
+				{
+					bIsHoveredButGraphNotSetup = false;
+
+					punGraph->SetupGraph({
+						{ LOCTEXT("Population", "Population").ToString(), PlotStatEnum::Population, FLinearColor(0.3, 1, 0.3), playerId(), currentTownId() },
+						{ LOCTEXT("Children", "Children").ToString(), PlotStatEnum::ChildPopulation, FLinearColor(0.3, 0.3, 1), playerId(), currentTownId() },
+					});
+				}
 			}
 		}
 
 		if (shouldDisplayMainGameUI)
 		{
+			LEAN_PROFILING_UI(TickMainGameUI_TopLeft);
+			
 			int32 housingCapacity = sim.HousingCapacity(currentTownId());
 			HousingSpaceText->SetText(FText::FromString(FString::FromInt(population) + FString("/") + FString::FromInt(housingCapacity)));
 
@@ -983,56 +1006,48 @@ void UMainGameUI::Tick()
 			int32 totalSlots = slotsPair.second;
 			SetText(StorageSpaceText, to_string(usedSlots) + "/" + to_string(totalSlots));
 
+			if (runEachXTicks(60))
 			{
-				TArray<FText> args;
-				ADDTEXT_(
-					LOCTEXT("HousingSpaceBox_Tip1", "Population: {0}\nHousing space: {1}"),
-					TEXT_NUM(population),
-					TEXT_NUM(housingCapacity)
-				);
-				ADDTEXT_INV_("<space>");
-				for (int32 i = 1; i <= House::GetMaxHouseLvl(); i++) {
-					int32 houseLvlCount = sim.GetHouseLvlCount(currentTownId(), i, false);
-					if (houseLvlCount > 0) {
-						ADDTEXT_(LOCTEXT("HousingSpaceBox_Tip2", "<bullet>House lvl {0}: {1}</>"), TEXT_NUM(i), TEXT_NUM(houseLvlCount));
+				{
+					LeanProfiler leanProfilerInner(LeanProfilerEnum::TickMainGameUI_TopLeftTip);
+
+					TArray<FText> args;
+					ADDTEXT_(
+						LOCTEXT("HousingSpaceBox_Tip1", "Population: {0}\nHousing space: {1}"),
+						TEXT_NUM(population),
+						TEXT_NUM(housingCapacity)
+					);
+					ADDTEXT_INV_("<space>");
+					for (int32 i = 1; i <= House::GetMaxHouseLvl(); i++) {
+						int32 houseLvlCount = sim.GetHouseLvlCount(currentTownId(), i, false);
+						if (houseLvlCount > 0) {
+							ADDTEXT_(LOCTEXT("HousingSpaceBox_Tip2", "<bullet>House lvl {0}: {1}</>"), TEXT_NUM(i), TEXT_NUM(houseLvlCount));
+						}
 					}
+
+					AddToolTip(HousingSpaceBox, JOINTEXT(args));
 				}
-				
-				AddToolTip(HousingSpaceBox, JOINTEXT(args));
-			}
-			{
-				TArray<FText> args;
+				{
+					LeanProfiler leanProfilerInner(LeanProfilerEnum::TickMainGameUI_TopLeftTip);
 
-				AddToolTip(StorageSpaceBox, FText::Format(LOCTEXT("StorageSpaceBox_Tip", "Storage space:\nUsed slots: {0}\nTotal slots: {1}"),
-					TEXT_NUM(usedSlots),
-					TEXT_NUM(totalSlots)
-				));
-			}
-			
-			//auto& townhall = simulation.townhall(playerId());
-			//MigrationText->SetText(ToFText("Migration " + to_string(townhall.migrationPull())));
-			
-			//std::stringstream migrationTip;
-			//migrationTip << "City's attractiveness in the eyes of immigrants.\n";
-			//migrationTip << " Total: " << townhall.migrationPull() << "\n";
-			//migrationTip << "  population size: " << townhall.migrationPull_populationSize << "\n";
+					TArray<FText> args;
 
-			//if (townhall.migrationPull_freeLivingSpace >= 0) {
-			//	migrationTip << "  free space: " << townhall.migrationPull_freeLivingSpace << "\n";
-			//} else {
-			//	migrationTip << "  homeless: " << townhall.migrationPull_freeLivingSpace << "\n";
-			//}
-			//
-			//migrationTip << "  happiness: " << townhall.migrationPull_happiness << "\n";
-			//migrationTip << "  bonuses: " << townhall.migrationPull_bonuses;
-			//AddToolTip(MigrationText, migrationTip.str());
+					AddToolTip(StorageSpaceBox, FText::Format(LOCTEXT("StorageSpaceBox_Tip", "Storage space:\nUsed slots: {0}\nTotal slots: {1}"),
+						TEXT_NUM(usedSlots),
+						TEXT_NUM(totalSlots)
+					));
+				}
+			}
 		}
 
 		auto& playerOwned = sim.playerOwned(playerId());
 		auto& townManager = sim.townManager(currentTownId());
 		
 		// Happiness (Town)
+		if (runEachXTicks(60))
 		{
+			LEAN_PROFILING_UI(TickMainGameUI_Happiness);
+			
 			int32 overallHappiness = townManager.aveOverallHappiness();
 			Happiness->SetImage(assetLoader()->GetHappinessFace(overallHappiness));
 			Happiness->SetText(FText(), TEXT_NUM(overallHappiness));
@@ -1055,10 +1070,17 @@ void UMainGameUI::Tick()
 
 		// Money (Player)
 		{
+			LEAN_PROFILING_UI(TickMainGameUI_Money);
+
 			Money->SetText(FText(), TEXT_NUM(globalResourceSys.money()));
 
 			int32 totalIncome100 = playerOwned.totalIncome100();
 			MoneyChangeText->SetText(TEXT_100SIGNED(totalIncome100));
+		}
+
+		if (runEachXTicks(60))
+		{
+			LEAN_PROFILING_UI(TickMainGameUI_MoneyTip);
 
 			TArray<FText> args;
 			ADDTEXT_LOCTEXT("Money_TipTitle", "Coins (Money) is used for purchasing buildings and goods. Coins come from tax and trade.\n\n");
@@ -1073,16 +1095,21 @@ void UMainGameUI::Tick()
 		if (sim.HasChosenLocation(playerId()) &&
 			sim.unlockedInfluence(playerId()))
 		{
+			LEAN_PROFILING_UI(TickMainGameUI_Influence);
+			
 			Influence->SetText("", to_string(globalResourceSys.influence()));
 			InfluenceChangeText->SetText(TEXT_100SIGNED(playerOwned.totalInfluenceIncome100()));
 
-			TArray<FText> args;
-			ADDTEXT_LOCTEXT("Influence_Tip1", "Influence points used for claiming land and vassalizing other towns.\n\n");
-			playerOwned.AddInfluenceIncomeToString(args);
+			if (runEachXTicks(60))
+			{
+				TArray<FText> args;
+				ADDTEXT_LOCTEXT("Influence_Tip1", "Influence points used for claiming land and vassalizing other towns.\n\n");
+				playerOwned.AddInfluenceIncomeToString(args);
 
-			FText tipText = JOINTEXT(args);
-			AddToolTip(Influence, tipText);
-			AddToolTip(InfluenceChangeText, tipText);
+				FText tipText = JOINTEXT(args);
+				AddToolTip(Influence, tipText);
+				AddToolTip(InfluenceChangeText, tipText);
+			}
 
 			Influence->SetVisibility(ESlateVisibility::Visible);
 			InfluenceChangeText->SetVisibility(ESlateVisibility::Visible);
@@ -1094,28 +1121,31 @@ void UMainGameUI::Tick()
 		// Science (Player)
 		if (sim.unlockSystem(playerId())->researchEnabled) 
 		{
+			LEAN_PROFILING_UI(TickMainGameUI_Science);
+			
 			// Science Text
-			TArray<FText> args;
-			ADDTEXT_(INVTEXT("+{0}"), TEXT_100(playerOwned.science100PerRound()));
-			Science->SetText(FText(), JOINTEXT(args));
+			Science->SetText(FText(), FText::Format(INVTEXT("+{0}"), TEXT_100(playerOwned.science100PerRound())));
 
 			// Science Tip
-			args.Empty();
-			ADDTEXT_(LOCTEXT("ScienceTip", "Science is used for researching new technology.\n Science per round: {0} <img id=\"Science\"/>\n"), TEXT_100(playerOwned.science100PerRound()));
-
-			for (size_t i = 0; i < ScienceEnumCount; i++)
+			if (runEachXTicks(60))
 			{
-				int64 science100 = 0;
-				const auto& townIds = playerOwned.townIds();
-				for (int32 townId : townIds) {
-					science100 += sim.townManager(townId).sciences100[i];
+				TArray<FText> args;
+				ADDTEXT_(LOCTEXT("ScienceTip", "Science is used for researching new technology.\n Science per round: {0} <img id=\"Science\"/>\n"), TEXT_100(playerOwned.science100PerRound()));
+
+				for (size_t i = 0; i < ScienceEnumCount; i++)
+				{
+					int64 science100 = 0;
+					const auto& townIds = playerOwned.townIds();
+					for (int32 townId : townIds) {
+						science100 += sim.townManager(townId).sciences100[i];
+					}
+					if (science100 != 0) {
+						ADDTEXT_(INVTEXT("  {0} {1}\n"), TEXT_100(science100), ScienceEnumName(i));
+					}
 				}
-				if (science100 != 0) {
-					ADDTEXT_(INVTEXT("  {0} {1}\n"), TEXT_100(science100), ScienceEnumName(i));
-				}
+
+				AddToolTip(Science, args);
 			}
-			
-			AddToolTip(Science, args);
 
 			Science->SetVisibility(ESlateVisibility::Visible);
 		} else {
@@ -1126,27 +1156,10 @@ void UMainGameUI::Tick()
 		 * Town Swap Texts
 		 */
 		{
-			//int32 townId = currentTownId();
-			//if (townId != -1) {
-			//	LeftUITownName->SetText(sim.townNameT(townId));
-			//	LeftUITownSwapHorizontalBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-			//} else {
-			//	LeftUITownSwapHorizontalBox->SetVisibility(ESlateVisibility::Collapsed);
-			//}
+			LEAN_PROFILING_UI(TickMainGameUI_TownSwap);
+
 			PunUIUtils::SetTownSwapText(currentTownId(), &sim, LeftUITownSwapText, LeftUITownSwapHorizontalBox);
 			PunUIUtils::SetTownSwapText(jobPriorityTownId, &sim, TownSwapText, TownSwapHorizontalBox);
-			//if (jobPriorityTownId != -1) {
-			//	int32 townPlayerId = sim.townPlayerId(jobPriorityTownId);
-			//	if (sim.GetTownIds(townPlayerId).size() > 1) {
-			//		TownSwapText->SetText(sim.townNameT(jobPriorityTownId));
-			//		TownSwapHorizontalBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-			//	}
-			//	else {
-			//		TownSwapHorizontalBox->SetVisibility(ESlateVisibility::Collapsed);
-			//	}
-			//} else {
-			//	TownSwapHorizontalBox->SetVisibility(ESlateVisibility::Collapsed);
-			//}
 		}
 
 		/*
@@ -1159,39 +1172,31 @@ void UMainGameUI::Tick()
 
 		// Skill
 		{
+			LEAN_PROFILING_UI(TickMainGameUI_Skill);
+			
 			BldInfo cardInfo = GetBuildingInfo(playerOwned.currentSkill());
 			int32 skillMana = GetSkillManaCost(cardInfo.cardEnum);
 			int32 maxMana = playerOwned.maxSP();
-			
-			TArray<FText> args;
-			ADDTEXT_(INVTEXT("<Bold>{0}</>\n"), cardInfo.name);
-			ADDTEXT_TAGN_("<SPColor>", LOCTEXT("Leader Skill", "Leader Skill"));
-			ADDTEXT_(INVTEXT("\n{0}: <Orange>[V]</>"), LOCTEXT("Hotkey", "Hotkey"));
-			ADDTEXT_INV_("<line><space>");
-			ADDTEXT_(LOCTEXT("SP cost: {0}\n", "SP cost: {0}\n"), skillMana);
-			ADDTEXT__(cardInfo.GetDescription())
-			ADDTEXT_INV_("<space>");
-			ADDTEXT_(INVTEXT("<SPColor>SP: {0}/{1}</>"), TEXT_NUM(playerOwned.GetSP()), TEXT_NUM(maxMana));
-			AddToolTip(LeaderSkillButton, args);
+
+			if (runEachXTicks(60))
+			{
+				TArray<FText> args;
+				ADDTEXT_(INVTEXT("<Bold>{0}</>\n"), cardInfo.name);
+				ADDTEXT_TAGN_("<SPColor>", LOCTEXT("Leader Skill", "Leader Skill"));
+				ADDTEXT_(INVTEXT("\n{0}: <Orange>[V]</>"), LOCTEXT("Hotkey", "Hotkey"));
+				ADDTEXT_INV_("<line><space>");
+				ADDTEXT_(LOCTEXT("SP cost: {0}\n", "SP cost: {0}\n"), skillMana);
+				ADDTEXT__(cardInfo.GetDescription())
+					ADDTEXT_INV_("<space>");
+				ADDTEXT_(INVTEXT("<SPColor>SP: {0}/{1}</>"), TEXT_NUM(playerOwned.GetSP()), TEXT_NUM(maxMana));
+				AddToolTip(LeaderSkillButton, args);
+			}
 			
 			LeaderManaBar->GetDynamicMaterial()->SetScalarParameterValue("Fraction", Clamp01(playerOwned.spFloat() / maxMana));
-			SetText(LeaderManaText, "SP " + to_string(playerOwned.GetSP()) + "/" + to_string(maxMana));
+			//SetText(LeaderManaText, "SP " + to_string(playerOwned.GetSP()) + "/" + to_string(maxMana));
 			LeaderSkillClock->GetDynamicMaterial()->SetScalarParameterValue("Fraction", Clamp01(playerOwned.spFloat() / skillMana));
 		}
 
-		// Animals
-
-		//FString animalsText;
-		//if (resourceSystem.pigs > 0) animalsText.Append("Pigs (need ranch): ").AppendInt(resourceSystem.pigs);
-		//if (resourceSystem.sheep > 0) animalsText.Append("Sheep (need ranch): ").AppendInt(resourceSystem.sheep);
-		//if (resourceSystem.cows > 0) animalsText.Append("Cows (need ranch): ").AppendInt(resourceSystem.cows);
-		//if (resourceSystem.pandas > 0) animalsText.Append("Pandas (need ranch): ").AppendInt(resourceSystem.pandas);
-		//if (resourceSystem.pigs > 0 || resourceSystem.sheep > 0 || resourceSystem.cows > 0 || resourceSystem.pandas > 0) {
-		//	AnimalsNeedingRanch->SetText(FText::FromString(animalsText));
-		//	AnimalsNeedingRanch->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-		//} else {
-			//AnimalsNeedingRanch->SetVisibility(ESlateVisibility::Collapsed);
-		//}
 
 		/*
 		 * Resources
@@ -1207,87 +1212,79 @@ void UMainGameUI::Tick()
 			if (iconTextPair->HasAnimation()) {
 				iconTextPair->PlayAnimationIf("Flash", resourceCount == 0);
 			}
-			
-			iconTextPair->SetImage(resourceEnum, assetLoader(), true);
+
+			iconTextPair->SetImage(resourceEnum, assetLoader(), true); // Note.. AddResourceTooltip already checked for IsHovered
 			iconTextPair->InitBackgroundButton(resourceEnum);
 		};
 
 		//SetResourceIconPair(WoodCount, ResourceEnum::Wood);
 
 
-		// Food
-		int32 foodCount = sim.foodCount(currentTownId());
-		FoodCountText->SetText(FText::Format(LOCTEXT("Food: {0}", "Food: {0}"), TEXT_NUM(foodCount)));
-		FoodCountText->SetColorAndOpacity(foodCount > 0 ? FLinearColor::White : FLinearColor::Red);
-		PlayAnimationIf("FoodCountLowFlash", foodCount == 0);
-
-		BUTTON_ON_CLICK(FoodCountButton, this, &UMainGameUI::OnClickFoodCountButton);
 
 		{
-			auto& statSys = sim.statSystem(currentTownId());
+			LEAN_PROFILING_UI(TickMainGameUI_LeftFood);
 			
-			const std::vector<std::vector<int32>>& productionStats = statSys.GetResourceStat(ResourceSeasonStatEnum::Production);
-			const std::vector<std::vector<int32>>& consumptionStats = statSys.GetResourceStat(ResourceSeasonStatEnum::Consumption);
+			// Food
+			int32 foodCount = sim.foodCount(currentTownId());
+			FoodCountText->SetText(FText::Format(LOCTEXT("Food: {0}", "Food: {0}"), TEXT_NUM(foodCount)));
+			FoodCountText->SetColorAndOpacity(foodCount > 0 ? FLinearColor::White : FLinearColor::Red);
+			PlayAnimationIf("FoodCountLowFlash", foodCount == 0);
 
-			int32 foodProduction = 0;
-			int32 foodConsumption = 0;
-			for (int i = 0; i < StaticData::FoodEnumCount; i++) {
-				foodProduction += CppUtils::Sum(productionStats[static_cast<int>(StaticData::FoodEnums[i])]);
-				foodConsumption += CppUtils::Sum(consumptionStats[static_cast<int>(StaticData::FoodEnums[i])]);
-			}
+			BUTTON_ON_CLICK(FoodCountButton, this, &UMainGameUI::OnClickFoodCountButton);
 
-			auto tooltip = AddToolTip(FoodCountText, FText::Format(
-				LOCTEXT("FoodCountText_Tip", "Food Count: {0}<space>Food Production (yearly): <FaintGreen>{1}</>\nFood Consumption (yearly): <FaintRed>{2}</>"),
-				TEXT_NUM(foodCount),
-				TEXT_NUM(foodProduction),
-				TEXT_NUM(foodConsumption)
-			));
-
-			auto punGraph = tooltip->TooltipPunBoxWidget->AddThinGraph();
-
-			// Food Graph
-			bool shouldUpdateFuel = false;
-			if (bIsHoveredButGraphNotSetup || 
-				tooltip->TooltipPunBoxWidget->DidElementResetThisRound()) 
+			if (runEachXTicks(60))
 			{
-				bIsHoveredButGraphNotSetup = false;
-				shouldUpdateFuel = true;
+				// Food Stats Tip
+				auto& subStatSys = sim.statSystem(currentTownId());
 
-				punGraph->SetupGraph({
-					{ LOCTEXT("Production (season)", "Production (season)").ToString(), PlotStatEnum::FoodProduction, FLinearColor(0.3, 1, 0.3) },
-					{ LOCTEXT("Consumption (season)", "Consumption (season)").ToString(), PlotStatEnum::FoodConsumption, FLinearColor(1, 0.3, 0.3) },
-				});
+				const std::vector<std::vector<int32>>& productionStats = subStatSys.GetResourceStat(ResourceSeasonStatEnum::Production);
+				const std::vector<std::vector<int32>>& consumptionStats = subStatSys.GetResourceStat(ResourceSeasonStatEnum::Consumption);
+
+				int32 foodProduction = 0;
+				int32 foodConsumption = 0;
+				for (int i = 0; i < StaticData::FoodEnumCount; i++) {
+					foodProduction += CppUtils::Sum(productionStats[static_cast<int>(StaticData::FoodEnums[i])]);
+					foodConsumption += CppUtils::Sum(consumptionStats[static_cast<int>(StaticData::FoodEnums[i])]);
+				}
+
+				auto tooltip = AddToolTip(FoodCountText, FText::Format(
+					LOCTEXT("FoodCountText_Tip", "Food Count: {0}<space>Food Production (yearly): <FaintGreen>{1}</>\nFood Consumption (yearly): <FaintRed>{2}</>"),
+					TEXT_NUM(foodCount),
+					TEXT_NUM(foodProduction),
+					TEXT_NUM(foodConsumption)
+				));
+
+				auto punGraph = tooltip->TooltipPunBoxWidget->AddThinGraph();
+
+				// Food Graph
+				if (bIsHoveredButGraphNotSetup ||
+					tooltip->TooltipPunBoxWidget->DidElementResetThisRound())
+				{
+					bIsHoveredButGraphNotSetup = false;
+
+					punGraph->SetupGraph({
+						{ LOCTEXT("Production (season)", "Production (season)").ToString(), PlotStatEnum::FoodProduction, FLinearColor(0.3, 1, 0.3) },
+						{ LOCTEXT("Consumption (season)", "Consumption (season)").ToString(), PlotStatEnum::FoodConsumption, FLinearColor(1, 0.3, 0.3) },
+						});
+				}
+
 			}
-
-			//// Fuel Graph
-			//int32 fuelProduction = CppUtils::Sum(productionStats[static_cast<int>(ResourceEnum::Wood)]) + CppUtils::Sum(productionStats[static_cast<int>(ResourceEnum::Coal)]);
-			//int32 fuelConsumption = CppUtils::Sum(consumptionStats[static_cast<int>(ResourceEnum::Wood)]) + CppUtils::Sum(consumptionStats[static_cast<int>(ResourceEnum::Coal)]);
-
-			//tip << "<space>";
-			//tip << "<space>";
-			//tip << "Fuel Production (yearly): <FaintGreen>" << fuelProduction << "</>\n";
-			//tip << "Fuel Consumption (yearly): <FaintRed>" << fuelConsumption << "</>\n";
-			//tip << "Fuel Count: " << simulation.resourceCount(currentTownId(), ResourceEnum::Wood) + simulation.resourceCount(currentTownId(), ResourceEnum::Coal);
-			//
-			//tooltip->TooltipPunBoxWidget->AddRichTextParsed(tip);
-
-			//auto punThinGraph = tooltip->TooltipPunBoxWidget->AddThinGraph();
-
-			//if (shouldUpdateFuel)
-			//{
-			//	punGraph->SetupGraph({
-			//		{ FString("Fuel"), PlotStatEnum::Fuel, FLinearColor::Yellow },
-			//	});
-			//}
 		}
-		
-		// Luxury
-		AddToolTip(LuxuryTier1Text, LuxuryResourceTip(1));
-		AddToolTip(LuxuryTier2Text, LuxuryResourceTip(2));
-		AddToolTip(LuxuryTier3Text, LuxuryResourceTip(3));
+
+		if (runEachXTicks(60))
+		{
+			LEAN_PROFILING_UI(TickMainGameUI_LeftLuxTip);
+			
+			// Luxury
+			AddToolTip(LuxuryTier1Text, LuxuryResourceTip(1));
+			AddToolTip(LuxuryTier2Text, LuxuryResourceTip(2));
+			AddToolTip(LuxuryTier3Text, LuxuryResourceTip(3));
+		}
 
 		for (int i = 0; i < ResourceEnumCount; i++)
 		{
+			LEAN_PROFILING_UI(TickMainGameUI_LeftResources);
+			
 			ResourceEnum resourceEnum = static_cast<ResourceEnum>(i);
 			int amount = dataSource()->GetResourceCount(currentTownId(), resourceEnum);
 
@@ -1330,24 +1327,6 @@ void UMainGameUI::Tick()
 							iconTextPair->SetVisibility(ESlateVisibility::Collapsed);
 						}
 					};
-					
-					//if (IsFuelEnum(resourceEnum))
-					//{
-					//	int32 fuelCount = dataSource()->GetResourceCount(currentTownId(), FuelEnums);
-					//	if (fuelCount > 0) {
-					//		displayNormally();
-					//	}
-					//	else {
-					//		// Without fuel, we show flashing 0 wood
-					//		if (resourceEnum == ResourceEnum::Wood) {
-					//			iconTextPair->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-					//			SetResourceIconPair(iconTextPair, resourceEnum);
-					//		}
-					//		else {
-					//			iconTextPair->SetVisibility(ESlateVisibility::Collapsed);
-					//		}
-					//	}
-					//}
 					
 					if (resourceEnum == ResourceEnum::Wood)
 					{
@@ -1405,12 +1384,14 @@ void UMainGameUI::Tick()
 	UnlockSystem* unlockSys = sim.unlockSystem(playerId());
 	if (unlockSys) 
 	{
+		LEAN_PROFILING_UI(TickMainGameUI_TechBar);
+		
 		// Flash ResearchBarUI if there is nothing being researched
-		FLinearColor researchBarDark = FLinearColor(.025f, .025f, .025f, 0.8f);
-		FLinearColor researchBarColor = researchBarDark;
+		//FLinearColor researchBarDark = FLinearColor(.025f, .025f, .025f, 0.8f);
+		//FLinearColor researchBarColor = researchBarDark;
 		if (unlockSys->shouldFlashTechToggler()) {
 			if (kTickCount % 60 < 30) {
-				researchBarColor = FLinearColor(1.0f, 0.33333f, 0.0f, 0.8f);
+				//researchBarColor = FLinearColor(1.0f, 0.33333f, 0.0f, 0.8f);
 			}
 		}
 		
@@ -1442,7 +1423,7 @@ void UMainGameUI::Tick()
 				ResearchingLeftoverAmountBox->SetVisibility(ESlateVisibility::Visible);
 			}
 
-			ResearchBarUI->SetBackgroundColor(researchBarColor);
+			//ResearchBarUI->SetBackgroundColor(researchBarColor);
 			ResearchBarUI->SetVisibility(ESlateVisibility::Visible);
 		}
 		else {
@@ -1471,7 +1452,7 @@ void UMainGameUI::Tick()
 				ProsperityBarBox->SetVisibility(ESlateVisibility::Collapsed);
 			}
 			
-			ProsperityBarUI->SetBackgroundColor(researchBarColor);
+			//ProsperityBarUI->SetBackgroundColor(researchBarColor);
 			ProsperityBarUI->SetVisibility(ESlateVisibility::Visible);
 		}
 		else {
@@ -1502,6 +1483,8 @@ void UMainGameUI::Tick()
 	 */
 	if (jobPriorityTownId != -1)
 	{
+		LEAN_PROFILING_UI(TickMainGameUI_JobPrior);
+		
 		auto& townManager = sim.townManager(jobPriorityTownId);
 
 		// lazy init
@@ -1669,7 +1652,7 @@ void UMainGameUI::ResetBottomMenuDisplay()
 	SetButtonImage(BuildMenuTogglerImage, false);
 	SetButtonImage(GatherImage, false);
 	SetButtonImage(DemolishImage, false);
-	SetButtonImage(StatsImage, false);
+	//SetButtonImage(StatsImage, false);
 
 	if (shouldCloseGatherSettingsOverlay) {
 		GatherSettingsOverlay->SetVisibility(ESlateVisibility::Collapsed);
@@ -1691,12 +1674,12 @@ void UMainGameUI::ToggleBuildingMenu()
 		std::vector<CardEnum> buildingEnums = simulation().unlockSystem(playerId())->unlockedBuildings();
 
 		auto cardSys = simulation().cardSystem(playerId());
-		int32 money = simulation().money(playerId());
+		int32 moneyCap32 = simulation().moneyCap32(playerId());
 
 		auto refreshPermanentCard = [&](UBuildingPlacementButton* cardButton)
 		{
 			int32 cardPrice = cardSys.GetCardPrice(cardButton->buildingEnum);
-			cardButton->SetCardStatus(CardHandEnum::PermanentHand, false, cardPrice > 0 && money < cardPrice);
+			cardButton->SetCardStatus(CardHandEnum::PermanentHand, false, cardPrice > 0 && moneyCap32 < cardPrice);
 			cardButton->SetPrice(cardPrice);
 		};
 
@@ -1719,6 +1702,20 @@ void UMainGameUI::ToggleBuildingMenu()
 			auto cardButton = AddCard(CardHandEnum::PermanentHand, buildingEnum, BuildingMenuWrap, CallbackEnum::SelectPermanentCard, -1, -1, -1, true);
 			refreshPermanentCard(cardButton);
 		}
+
+		// Always swap Demolish to the back
+		UBuildingPlacementButton* demolishButton = nullptr;
+		for (int i = BuildingMenuWrap->GetChildrenCount(); i-- > 0;) {
+			auto cardButton = Cast<UBuildingPlacementButton>(BuildingMenuWrap->GetChildAt(i));
+			if (cardButton->buildingEnum == CardEnum::Demolish) {
+				demolishButton = cardButton;
+				BuildingMenuWrap->RemoveChildAt(i);
+				break;
+			}
+		}
+		check(demolishButton);
+		BuildingMenuWrap->AddChild(demolishButton);
+		
 
 		// Close other UIs
 		networkInterface()->ResetGameUI();
@@ -1820,9 +1817,9 @@ void UMainGameUI::ClickRerollButton()
 		return;
 	}
 	
-	int32 money = simulation().money(playerId());
+	int32 moneyCap32 = simulation().moneyCap32(playerId());
 	int32 rerollPrice = cardSystem.GetRerollPrice();
-	if (money >= rerollPrice || rerollPrice == 0) {
+	if (moneyCap32 >= rerollPrice || rerollPrice == 0) {
 		auto command = make_shared<FRerollCards>();
 		networkInterface()->SendNetworkCommand(command);
 		cardSystem.SetPendingCommand(true);
@@ -1872,8 +1869,12 @@ void UMainGameUI::ClickCardHand1SubmitButton()
 	}
 	
 	// Check if not enough money, and put on a warning...
-	if (CardHand1SubmitButtonText->GetText().ToString() == FString("Submit")) {
-		if (MoneyLeftAfterTentativeBuy() < 0) {
+	if (CardHand1SubmitButtonText->GetText().ToString() == FString("Submit"))
+	{
+		int32 moneyNeeded = MoneyNeededForTentativeBuy();
+		int32 currentMoney = simulation().moneyCap32(playerId());
+		if (moneyNeeded > 0 && moneyNeeded > currentMoney)
+		{
 			simulation().AddPopupToFront(playerId(), 
 				LOCTEXT("NotEnoughMoneyToBuyCard_Pop", "Not enough money to purchase the card."), 
 				ExclusiveUIEnum::CardHand1, "PopupCannot"
@@ -1938,6 +1939,7 @@ void UMainGameUI::ClickRareCardHandSubmitButton()
 		auto cardButton = CastChecked<UBuildingPlacementButton>(cardButtons[i]);
 		if (_lastRareHandReserveStatus[i]) {
 			command->cardEnum = cardButton->buildingEnum;
+			command->objectId = rareHandObjectId;
 			break;
 		}
 	}
@@ -2029,9 +2031,9 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 	// Permanent cards
 	if (callbackEnum == CallbackEnum::SelectPermanentCard)
 	{
-		int32 money = simulation().money(playerId());
+		int32 moneyCap32 = simulation().moneyCap32(playerId());
 		int32 cardPrice = cardSystem.GetCardPrice(buildingEnum);
-		if (cardPrice > 0 && money < cardPrice) {
+		if (cardPrice > 0 && moneyCap32 < cardPrice) {
 			simulation().AddPopupToFront(playerId(), 
 				LOCTEXT("NoMoneyToBuyCommonCard_Pop", "Not enough money to buy the common card."), 
 				ExclusiveUIEnum::BuildMenu, "PopupCannot"
@@ -2041,6 +2043,9 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 
 		if (buildingEnum == CardEnum::IntercityRoad) {
 			inputSystemInterface()->StartRoadPlacement(false, true);
+		}
+		else if (buildingEnum == CardEnum::Demolish) {
+			inputSystemInterface()->StartDemolish();
 		}
 		else if (IsRoad(buildingEnum)) {
 			inputSystemInterface()->StartRoadPlacement(buildingEnum == CardEnum::StoneRoad);
@@ -2083,7 +2088,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 		}
 		else {
 			// Check if there is enough money
-			int32 money = MoneyLeftAfterTentativeBuy();
+			int32 money = simulation().moneyCap32(playerId()) - MoneyNeededForTentativeBuy();
 			if (cardHandIndex != -1 && money < cardSystem.GetCardPrice(buildingEnum)) {
 				simulation().AddPopupToFront(playerId(), 
 					LOCTEXT("NoMoneyToBuyCard_Pop", "Not enough money to purchase the card."), 
@@ -2130,13 +2135,17 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 			}
 
 			// Check if we reached hand limit
-			if (!simulation().cardSystem(playerId()).CanAddCardToBoughtHand(buildingEnum, 1)) 
+			if (!IsPermanentTownBonus(buildingEnum) &&
+				!IsPermanentGlobalBonus(buildingEnum))
 			{
-				simulation().AddPopupToFront(playerId(), 
-					LOCTEXT("ReachedHandLimitRare_Pop", "Reached hand limit for bought cards.<space>Please sell or use some cards on your hand, then choose a rare card prize again."),
-					ExclusiveUIEnum::RareCardHand, "PopupCannot"
-				);
-				return;
+				if (!simulation().cardSystem(playerId()).CanAddCardToBoughtHand(buildingEnum, 1))
+				{
+					simulation().AddPopupToFront(playerId(),
+						LOCTEXT("ReachedHandLimitRare_Pop", "Reached hand limit for bought cards.<space>Please sell or use some cards on your hand, then choose a rare card prize again."),
+						ExclusiveUIEnum::RareCardHand, "PopupCannot"
+					);
+					return;
+				}
 			}
 
 			cardSystem.SetRareHandCardReservation(cardHandIndex, true);
@@ -2147,7 +2156,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 	if (callbackEnum == CallbackEnum::SelectConverterCard)
 	{
 		// Check if there is enough money...
-		if (simulation().money(playerId()) < cardSystem.GetCardPrice(buildingEnum) / 2) {
+		if (simulation().moneyCap32(playerId()) < cardSystem.GetCardPrice(buildingEnum) / 2) {
 			simulation().AddPopupToFront(playerId(), 
 				LOCTEXT("NotEnoughMoneyWildCard_Pop", "Not enough money. Need to pay the building price to use wild card."), 
 				ExclusiveUIEnum::ConverterCardHand, "PopupCannot"
@@ -2426,7 +2435,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 				} 
 				else if (buildingEnum == CardEnum::BuyWood) {
 					int32 cost = GetResourceInfo(ResourceEnum::Wood).basePrice;
-					int32 amountToBuy = simulation().money(playerId()) / 2 / cost;
+					int32 amountToBuy = simulation().moneyCap32(playerId()) / 2 / cost;
 					amountToBuy = min(amountToBuy, 1000);
 
 					if (townResourceSys.CanAddResourceGlobal(ResourceEnum::Wood, amountToBuy)) {
@@ -2643,9 +2652,9 @@ void UMainGameUI::CallBack2(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 }
 
 
-int32 UMainGameUI::MoneyLeftAfterTentativeBuy()
+int32 UMainGameUI::MoneyNeededForTentativeBuy()
 {
-	int32 money = simulation().money(playerId());
+	int32 moneyNeeded = 0;
 	auto& cardSystem = simulation().cardSystem(playerId());
 	std::vector<bool> reserveStatus = cardSystem.GetHand1ReserveStatus();
 	
@@ -2654,10 +2663,10 @@ int32 UMainGameUI::MoneyLeftAfterTentativeBuy()
 	for (int i = 0; i < loopSize; i++) {
 		auto cardButton = CastChecked<UBuildingPlacementButton>(cardButtons[i]);
 		if (reserveStatus[i]) {
-			money -= cardSystem.GetCardPrice(cardButton->buildingEnum);
+			moneyNeeded += cardSystem.GetCardPrice(cardButton->buildingEnum);
 		}
 	}
-	return money;
+	return moneyNeeded;
 }
 
 

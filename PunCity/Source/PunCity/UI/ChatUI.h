@@ -10,7 +10,6 @@
 #include "PunCity/Sound/SoundSystemComponent.h"
 
 #include "ChatUI.generated.h"
-
 /**
  * 
  */
@@ -33,6 +32,7 @@ public:
 	// Debug
 	UPROPERTY(meta = (BindWidget)) UOverlay* DebugOverlay;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* TopLeftTextDebug;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* TopLeftTextDebug2;
 	
 	
 	void PunInit()
@@ -274,10 +274,19 @@ public:
 						auto command = std::make_shared<FCheat>();
 						command->cheatEnum = static_cast<CheatEnum>(i);
 
-						if (commandAndParams.size() >= 3) {
+						if (commandAndParams.size() >= 3) 
+						{
 							if (command->cheatEnum == CheatEnum::PunTog ||
-								command->cheatEnum == CheatEnum::PunGet) {
+								command->cheatEnum == CheatEnum::PunGet ||
+								command->cheatEnum == CheatEnum::GetResourceTypeHolders) 
+							{
 								command->stringVar1 = FString(commandAndParams[2].c_str());
+							}
+							else if (command->cheatEnum == CheatEnum::PunSet) {
+								command->stringVar1 = FString(commandAndParams[2].c_str());
+								if (commandAndParams.size() >= 4) {
+									command->var1 = FCString::Atoi(commandAndParams[3].c_str());
+								}
 							}
 							else {
 								command->var1 = FCString::Atoi(commandAndParams[2].c_str());
@@ -541,6 +550,9 @@ public:
 #if !AUDIO_ALL
 		return;
 #endif
+		if (!HiddenSettingsOverlay->IsVisible()) {
+			return;
+		}
 		
 		auto soundSystem = dataSource()->soundSystem();
 

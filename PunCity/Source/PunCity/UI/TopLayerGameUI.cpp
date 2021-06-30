@@ -7,6 +7,8 @@
 
 void UTopLayerGameUI::Tick()
 {
+	LEAN_PROFILING_UI(TickTopLayerGameUI);
+	
 	// Game Pause
 	int32 gameSpeed = simulation().gameSpeed();
 	if (networkInterface()->IsHost()) {

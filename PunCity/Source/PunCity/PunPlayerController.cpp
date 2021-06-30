@@ -310,6 +310,15 @@ void APunPlayerController::SetupGameManager(bool isLoadingFromFile)
 	}
 }
 
+
+static std::chrono::time_point<std::chrono::steady_clock> lastFPSCountTime;
+static int32 fpsCount = 0;
+static int32 lastCountedFPS = 0;
+int32 APunPlayerController::GetFPS() {
+	return lastCountedFPS;
+}
+
+
 void APunPlayerController::Tick(float DeltaTime)
 {
 	APunBasePlayerController::Tick(DeltaTime);
@@ -319,10 +328,39 @@ void APunPlayerController::Tick(float DeltaTime)
 	if (_tickDisabled) {
 		return;
 	}
+
+	_playerControllerTick++;
+
+#if USE_LEAN_PROFILING
+	// FPS counter
+	{
+		auto timeNow = std::chrono::high_resolution_clock::now();
+		long long time_span_nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(timeNow - lastFPSCountTime).count();
+
+		if (time_span_nanoseconds >= 1000 * 1000 * 1000) 
+		{
+			lastCountedFPS = fpsCount;
+			
+			lastFPSCountTime = timeNow;
+			fpsCount = 0;
+		}
+
+		fpsCount++;
+	}
+
+	if (LeanProfiler::EnumToElements.size() > 0) 
+	{
+		int32 endIndex = static_cast<int32>(LeanProfilerEnum::TickStatisticsUI);
+		LeanProfiler::FinishTick(0, endIndex);
+		if (_playerControllerTick % (PunSettings::Get("LeanProfilingTicksInterval")) == 0) {
+			LeanProfiler::FinishInterval(0, endIndex);
+		}
+	}
+#endif
+	
 	
 #if CHECK_TICKHASH
 	// Once in a while also send tickHash to client.
-	_playerControllerTick++;
 	if (GetLocalRole() == ROLE_Authority && _playerControllerTick > 300)
 	{
 		auto firstController = CastChecked<APunPlayerController>(GetWorld()->GetFirstPlayerController());
@@ -1009,8 +1047,10 @@ void APunPlayerController::GamePause_ToServer_Implementation() {
 	Pause();
 }
 
+
 void APunPlayerController::CompareUnitHashes_ToClient_Implementation(int32 startIndex, const TArray<int32>& serverHashes)
 {
+#if CHECK_TICKHASH
 	std::vector<int32> localHashes = simulation().unitSystem().GetUnitSyncHashes();
 	for (int32 i = 0; i < serverHashes.Num(); i++) {
 		if (localHashes[startIndex + i] != serverHashes[i]) {
@@ -1022,9 +1062,11 @@ void APunPlayerController::CompareUnitHashes_ToClient_Implementation(int32 start
 	}
 
 	simulation().AddPopup(playerId(), FText::Format(INVTEXT("Hash Compare Ended startIndex:{0}"), TEXT_NUM(startIndex)));
+#endif
 }
 void APunPlayerController::CompareUnitHashes()
 {
+#if CHECK_TICKHASH
 	if (APunGameMode* gameMode = Cast<APunGameMode>(UGameplayStatics::GetGameMode(this)))
 	{
 		const TArray<APunBasePlayerController*>& controllers = gameMode->ConnectedControllers();
@@ -1045,6 +1087,7 @@ void APunPlayerController::CompareUnitHashes()
 			}
 		}
 	}
+#endif
 }
 
 void APunPlayerController::SendResourceHashes_ToClient_Implementation(int32 startIndex, const TArray<int32>& serverHashes)
@@ -1055,6 +1098,7 @@ void APunPlayerController::SendResourceHashes_ToClient_Implementation(int32 star
 }
 void APunPlayerController::CompareResourceHashes_ToClient_Implementation()
 {
+#if CHECK_TICKHASH
 	int32 currentIndex = 0;
 	int32 curPlayerId = tempServerHashes[currentIndex++];
 	simulation().resourceSystem(curPlayerId).FindDesyncInResourceSyncHashes(tempServerHashes, currentIndex);
@@ -1063,9 +1107,11 @@ void APunPlayerController::CompareResourceHashes_ToClient_Implementation()
 	PUN_LOG("Receive: CompareResourceHashes_ToClient pid:%d", curPlayerId);
 	
 	simulation().AddPopup(curPlayerId, INVTEXT("Resource Hash Compare Ended"));
+#endif
 }
 void APunPlayerController::CompareResourceHashes()
 {
+#if CHECK_TICKHASH
 	if (APunGameMode* gameMode = Cast<APunGameMode>(UGameplayStatics::GetGameMode(this)))
 	{
 		const TArray<APunBasePlayerController*>& controllers = gameMode->ConnectedControllers();
@@ -1095,6 +1141,7 @@ void APunPlayerController::CompareResourceHashes()
 			});
 		}
 	}
+#endif
 }
 
 //! Send NetworkCommand to server to be added to a tick

@@ -150,7 +150,7 @@ public:
 	}
 	
 
-	int32 GetHouseLvlCount(int32 playerId, int32 houseLvl, bool includeHigherLvl);
+	int32 GetHouseLvlCount(int32 townId, int32 houseLvl, bool includeHigherLvl);
 	
 
 	void StartFire(int32 buildingId) {

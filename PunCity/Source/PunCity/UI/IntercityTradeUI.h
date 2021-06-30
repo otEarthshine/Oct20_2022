@@ -46,6 +46,7 @@ public:
 
 	void TickUI()
 	{
+		LEAN_PROFILING_UI(TickIntercityTradeUI);
 		if (GetVisibility() != ESlateVisibility::SelfHitTestInvisible) {
 			return;
 		}

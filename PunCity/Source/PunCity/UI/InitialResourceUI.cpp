@@ -8,7 +8,7 @@
 bool UInitialResourceUI::CheckEnoughMoneyAndStorage()
 {
 	int32 valueIncrease = initialResources.totalCost() - FChooseInitialResources::GetDefault().totalCost();
-	if (valueIncrease > GetMoney()) {
+	if (valueIncrease > simulation().moneyCap32(playerId())) {
 		// Not enough money... revert the change
 		initialResources = lastInitialResources;
 		simulation().AddPopupToFront(playerId(),

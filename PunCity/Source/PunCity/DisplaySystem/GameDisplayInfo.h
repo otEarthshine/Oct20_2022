@@ -58,49 +58,49 @@ public:
 			//	{ {ParticleEnum::Smoke, TransformFromPosition(24.65, -4.72, 42.16)} }
 			//),
 
-			// House level 4
-			ModuleTransformGroup::CreateSet("HouseLvl4", {},
-				{ {ParticleEnum::Smoke, TransformFromPosition(14.5, 4.7, 41.3)} }
-			),
-			ModuleTransformGroup::CreateSet("HouseLvl4V2", {},
-				{ {ParticleEnum::Smoke, TransformFromPosition(17.1, 21.24, 40.05)} }
-			),
-			ModuleTransformGroup::CreateSet("HouseLvl4"),
-			ModuleTransformGroup::CreateSet("HouseLvl4"),
-			ModuleTransformGroup::CreateSet("HouseLvl4"),
+			//// House level 4
+			//ModuleTransformGroup::CreateSet("HouseLvl4", {},
+			//	{ {ParticleEnum::Smoke, TransformFromPosition(14.5, 4.7, 41.3)} }
+			//),
+			//ModuleTransformGroup::CreateSet("HouseLvl4V2", {},
+			//	{ {ParticleEnum::Smoke, TransformFromPosition(17.1, 21.24, 40.05)} }
+			//),
+			//ModuleTransformGroup::CreateSet("HouseLvl4"),
+			//ModuleTransformGroup::CreateSet("HouseLvl4"),
+			//ModuleTransformGroup::CreateSet("HouseLvl4"),
 
-			// House level 5
-			ModuleTransformGroup::CreateSet("HouseLvl5", {},
-				{ {ParticleEnum::Smoke, TransformFromPosition(1.10, 4.99, 42.03)} }
-			),
-			ModuleTransformGroup::CreateSet("HouseLvl5V2", {},
-				{ {ParticleEnum::Smoke, TransformFromPosition(18.04, 15.43, 39.4)} }
-			),
-			ModuleTransformGroup::CreateSet("HouseLvl5"),
-			ModuleTransformGroup::CreateSet("HouseLvl5"),
-			ModuleTransformGroup::CreateSet("HouseLvl5"),
+			//// House level 5
+			//ModuleTransformGroup::CreateSet("HouseLvl5", {},
+			//	{ {ParticleEnum::Smoke, TransformFromPosition(1.10, 4.99, 42.03)} }
+			//),
+			//ModuleTransformGroup::CreateSet("HouseLvl5V2", {},
+			//	{ {ParticleEnum::Smoke, TransformFromPosition(18.04, 15.43, 39.4)} }
+			//),
+			//ModuleTransformGroup::CreateSet("HouseLvl5"),
+			//ModuleTransformGroup::CreateSet("HouseLvl5"),
+			//ModuleTransformGroup::CreateSet("HouseLvl5"),
 
-			// House level 6
-			ModuleTransformGroup::CreateSet("HouseLvl6", {},
-				{ {ParticleEnum::Smoke, TransformFromPosition(22.12, -7.4, 50.88)} }
-			),
-			ModuleTransformGroup::CreateSet("HouseLvl6V2", {},
-				{ {ParticleEnum::Smoke, TransformFromPosition(20.94, -7.36, 45.18)} }
-			),
-			ModuleTransformGroup::CreateSet("HouseLvl6"),
-			ModuleTransformGroup::CreateSet("HouseLvl6"),
-			ModuleTransformGroup::CreateSet("HouseLvl6"),
-			
-			// House level 7
-			ModuleTransformGroup::CreateSet("HouseLvl7", {},
-				{ {ParticleEnum::Smoke, TransformFromPosition(5.95, -15.14, 62.02)} }
-			),
-			ModuleTransformGroup::CreateSet("HouseLvl7V2", {},
-				{ {ParticleEnum::Smoke, TransformFromPosition(5.74, 25.3, 62.0)} }
-			),
-			ModuleTransformGroup::CreateSet("HouseLvl7"),
-			ModuleTransformGroup::CreateSet("HouseLvl7"),
-			ModuleTransformGroup::CreateSet("HouseLvl7"),
+			//// House level 6
+			//ModuleTransformGroup::CreateSet("HouseLvl6", {},
+			//	{ {ParticleEnum::Smoke, TransformFromPosition(22.12, -7.4, 50.88)} }
+			//),
+			//ModuleTransformGroup::CreateSet("HouseLvl6V2", {},
+			//	{ {ParticleEnum::Smoke, TransformFromPosition(20.94, -7.36, 45.18)} }
+			//),
+			//ModuleTransformGroup::CreateSet("HouseLvl6"),
+			//ModuleTransformGroup::CreateSet("HouseLvl6"),
+			//ModuleTransformGroup::CreateSet("HouseLvl6"),
+			//
+			//// House level 7
+			//ModuleTransformGroup::CreateSet("HouseLvl7", {},
+			//	{ {ParticleEnum::Smoke, TransformFromPosition(5.95, -15.14, 62.02)} }
+			//),
+			//ModuleTransformGroup::CreateSet("HouseLvl7V2", {},
+			//	{ {ParticleEnum::Smoke, TransformFromPosition(5.74, 25.3, 62.0)} }
+			//),
+			//ModuleTransformGroup::CreateSet("HouseLvl7"),
+			//ModuleTransformGroup::CreateSet("HouseLvl7"),
+			//ModuleTransformGroup::CreateSet("HouseLvl7"),
 		});
 		
 
@@ -220,8 +220,8 @@ public:
 		});
 
 
-		setName(CardEnum::Colony, "Townhall0");
-		setName(CardEnum::PortColony, "Townhall0");
+		//setName(CardEnum::Colony, "Townhall0");
+		//setName(CardEnum::PortColony, "Townhall0");
 
 		setName(CardEnum::IntercityLogisticsHub, "IntercityLogisticsHub");
 		setName(CardEnum::IntercityLogisticsPort, "IntercityLogisticsPort");

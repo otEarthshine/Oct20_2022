@@ -4,6 +4,9 @@
 
 #include "DisplaySystemComponent.h"
 #include "StaticFastInstancedMeshesComp.h"
+//#include "UnitInstancedMeshComponent.h"
+#include "UnitInstancedStaticMeshComponent.h"
+#include "UnitInstancedStaticMeshGroup.h"
 #include "Components/SkeletalMeshComponent.h"
 
 
@@ -44,33 +47,49 @@ public:
 	{
 		LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayUnit);
 		
-		_unitMeshes = CreateDefaultSubobject<UStaticFastInstancedMeshesComp>("_unitMeshes");
 		_resourceMeshes = CreateDefaultSubobject<UStaticFastInstancedMeshesComp>("_resourceMeshes");
 		_auxMeshes = CreateDefaultSubobject<UStaticFastInstancedMeshesComp>("_auxMeshes");
 		_animatingModuleMeshes = CreateDefaultSubobject<UStaticFastInstancedMeshesComp>("_animatingModuleMeshes");
 
-		//_testAnimatedMesh = CreateDefaultSubobject<USkeletalMeshComponent>("_testAnimatedMesh");
+
+		_unitMeshes1 = CreateDefaultSubobject<UUnitInstancedStaticMeshGroup>("_unitMeshesBuiBui");
+		//_unitMeshes = CreateDefaultSubobject<UStaticFastInstancedMeshesComp>("_unitMeshesBuiBui");
+		check(_unitMeshes1 != nullptr);
+
+		//PUN_LOG("UUnitDisplayComponent Construct this:%d _unitMeshes:%d _resourceMeshes:%d", this, _unitMeshes1, _resourceMeshes);
 	}
 	
 	void Init(int size, TScriptInterface<IDisplaySystemDataSource> gameManager, UAssetLoaderComponent* assetLoader, int32 initialPoolSize) override
 	{
 		LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayUnit);
+
+		check(_unitMeshes1 != nullptr);
 		
 		UDisplaySystemComponent::Init(size, gameManager, assetLoader, initialPoolSize);
 
-		//_unitMeshes->Init("Unit", this, 100, "Unit", 0, true);
-		_unitMeshes->Init("Unit", this, 100, "", 0, true);
-		for (int i = 0; i < UnitEnumCount; i++) 
-		{
+		//_unitMeshes->Init("Unit", this, 100, "", 0, true);
+		//for (int i = 0; i < UnitEnumCount; i++)
+		//{
+		//	UnitEnum unitEnum = static_cast<UnitEnum>(i);
+		//	
+		//	int32 variationCount = assetLoader->unitMeshCount(unitEnum);
+		//	for (int32 j = 0; j < variationCount; j++) {
+		//		FUnitAsset unitAsset = assetLoader->unitAsset(unitEnum, j);
+		//		_unitMeshes->AddProtoMesh(GetMeshName(unitEnum, j), unitAsset.staticMesh, nullptr);
+		//	}
+		//}
+
+		_unitMeshes1->Init();
+		for (int i = 0; i < UnitEnumCount; i++) {
 			UnitEnum unitEnum = static_cast<UnitEnum>(i);
 			
 			int32 variationCount = assetLoader->unitMeshCount(unitEnum);
 			for (int32 j = 0; j < variationCount; j++) {
 				FUnitAsset unitAsset = assetLoader->unitAsset(unitEnum, j);
-				_unitMeshes->AddProtoMesh(GetMeshName(unitEnum, j), unitAsset.staticMesh, nullptr);
+				_unitMeshes1->AddProtoMesh(GetUnitDisplayEnum(unitEnum, j), unitAsset.staticMesh);
 			}
 		}
-
+		
 		_auxMeshes->Init("UnitAux", this, 20, "", 0, true);
 		_auxMeshes->AddProtoMesh("Immigration", assetLoader->unitAuxMesh(UnitAnimationEnum::ImmigrationCart));
 		_auxMeshes->AddProtoMesh("HorseCaravan", assetLoader->unitAuxMesh(UnitAnimationEnum::HorseCaravan));
@@ -111,7 +130,8 @@ public:
 	{
 		LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayUnit);
 		
-		_unitMeshes->AfterAdd();
+		_unitMeshes1->AfterAdd();
+		
 		_resourceMeshes->AfterAdd();
 		_auxMeshes->AfterAdd();
 		_animatingModuleMeshes->AfterAdd();
@@ -179,7 +199,7 @@ public:
 		LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayUnit);
 		
 		bool shouldDisplay = sampleIds.size() != 0;
-		_unitMeshes->SetActive(shouldDisplay);
+		_unitMeshes1->SetActive(shouldDisplay);
 		_resourceMeshes->SetActive(shouldDisplay);
 		_auxMeshes->SetActive(shouldDisplay);
 		_animatingModuleMeshes->SetActive(shouldDisplay);
@@ -192,7 +212,7 @@ public:
 		
 		int32 variationCount = _assetLoader->unitMeshCount(unitEnum);
 		for (int32 i = 0; i < variationCount; i++) {
-			_unitMeshes->SetCustomDepth(GetMeshName(unitEnum, i), customDepthIndex);
+			_unitMeshes1->SetCustomDepth(GetUnitDisplayEnum(unitEnum, i), customDepthIndex);
 		}
 	}
 
@@ -391,7 +411,10 @@ private:
 	void UpdateResourceDisplay(int32 unitId, UnitStateAI& unit, FTransform& transform);
 	
 private:
-	UPROPERTY() UStaticFastInstancedMeshesComp* _unitMeshes;
+	//UPROPERTY() UStaticFastInstancedMeshesComp* _unitMeshes;
+	UPROPERTY() UUnitInstancedStaticMeshGroup* _unitMeshes1;
+
+	
 	UPROPERTY() UStaticFastInstancedMeshesComp* _resourceMeshes;
 	UPROPERTY() UStaticFastInstancedMeshesComp* _auxMeshes;
 

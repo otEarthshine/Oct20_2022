@@ -191,6 +191,7 @@ void UChatUI::Tick()
 {
 	TickDebugUI();
 
+	LEAN_PROFILING_UI(TickChatUI);
 	
 	// Don't display in single player unless toggled single player chat
 	if (gameInstance()->isSinglePlayer && 
@@ -238,19 +239,160 @@ void UChatUI::Tick()
 
 }
 
+
 void UChatUI::TickDebugUI()
 {
+	LEAN_PROFILING_UI(TickDebugUI);
+	
 	/*
 	 * Debug
 	 *  !!! Must open SinglePlayerChat !!!
 	 */
 
-#if DEV_BUILD
+#if USE_LEAN_PROFILING
+	if (PunSettings::IsOn("LeanProfilingUI"))
+	{
+		DebugOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+
+		check(static_cast<int32>(LeanProfilerEnum::Count) == LeanScopeTimerChar.size());
+
+		std::vector<LeanProfilerElement> allProfilerElements = LeanProfiler::LastEnumToElements;
+
+		const int32 groupCount = 8;
+		std::vector<std::vector<LeanProfilerElement>> groupToProfilingElements(groupCount);
+		
+		auto addToProfilingGroup = [&](int32 i)
+		{
+			int32 profilerEnumInt = static_cast<int32>(allProfilerElements[i].profilerEnum);
+
+			if (profilerEnumInt >= static_cast<int32>(LeanProfilerEnum::AttackOutgoing)) {
+				groupToProfilingElements[7].push_back(allProfilerElements[i]);
+			}
+			else if (profilerEnumInt >= static_cast<int32>(LeanProfilerEnum::TryCheckBadTile_Human)) {
+				groupToProfilingElements[6].push_back(allProfilerElements[i]);
+			}
+			else if (profilerEnumInt >= static_cast<int32>(LeanProfilerEnum::U_Update_FoodAge)) {
+				groupToProfilingElements[5].push_back(allProfilerElements[i]);
+			}
+			else if (profilerEnumInt >= static_cast<int32>(LeanProfilerEnum::P_FindPath)) {
+				groupToProfilingElements[4].push_back(allProfilerElements[i]);
+			}
+			else if (profilerEnumInt >= static_cast<int32>(LeanProfilerEnum::R_resourceCount)) {
+				groupToProfilingElements[3].push_back(allProfilerElements[i]);
+			}
+			else if (profilerEnumInt >= static_cast<int32>(LeanProfilerEnum::TickMainGameUI)) {
+				groupToProfilingElements[2].push_back(allProfilerElements[i]);
+			}
+			else if (profilerEnumInt >= static_cast<int32>(LeanProfilerEnum::TickUnitDisplay)) {
+				groupToProfilingElements[1].push_back(allProfilerElements[i]);
+			}
+			else {
+				groupToProfilingElements[0].push_back(allProfilerElements[i]);
+			}
+		};
+
+		// Simulation Normal Profiling
+		{
+			std::stringstream ss;
+
+			int32 profilingTicksInterval = PunSettings::Get("LeanProfilingTicksInterval");
+
+			// sort into group
+			for (int32 i = 0; i < allProfilerElements.size(); i++)
+			{
+				if (allProfilerElements[i].nanosecondsSum / 1000 / profilingTicksInterval <= PunSettings::Get("LeanProfilingMin")) {
+					continue;
+				}
+
+				addToProfilingGroup(i);
+			}
+
+			ss << "FPS: " << networkInterface()->GetFPS() << "\n";
+			ss << "us Per Frame\n";
+
+			for (int32 j = 0; j < groupCount; j++)
+			{
+				std::vector<LeanProfilerElement>& profilerElements = groupToProfilingElements[j];
+
+				std::sort(profilerElements.begin(), profilerElements.end(),
+					[&](const LeanProfilerElement& a, const LeanProfilerElement& b) -> bool
+				{
+					return a.nanosecondsSum > b.nanosecondsSum;
+				});
+
+
+				for (int32 i = 0; i < profilerElements.size(); i++)
+				{
+					if (profilerElements[i].count > 0) {
+						ss << LeanScopeTimerChar[static_cast<int32>(profilerElements[i].profilerEnum)] << ":\t"
+							<< (profilerElements[i].nanosecondsSum / 1000 / profilingTicksInterval)
+							<< "us \t(" << profilerElements[i].count << ")\n";
+					}
+				}
+
+				ss << "\n";
+			}
+
+			TopLeftTextDebug->SetText(FText::FromString(FString(ss.str().c_str())));
+		}
+
+		// Simulation Max Profiling
+		{
+			groupToProfilingElements.clear();
+			groupToProfilingElements.resize(groupCount);
+			
+			std::stringstream ss;
+
+			// sort into group
+			for (int32 i = 0; i < allProfilerElements.size(); i++)
+			{
+				if (allProfilerElements[i].maxTickNanosecondsSum / 1000 <= PunSettings::Get("LeanProfilingMaxMin")) {
+					continue;
+				}
+
+				addToProfilingGroup(i);
+			}
+
+			ss << "Max per frame (us)\n";
+
+			for (int32 j = 0; j < groupCount; j++)
+			{
+				std::vector<LeanProfilerElement>& profilerElements = groupToProfilingElements[j];
+
+				std::sort(profilerElements.begin(), profilerElements.end(),
+					[&](const LeanProfilerElement& a, const LeanProfilerElement& b) -> bool
+				{
+					return a.maxTickNanosecondsSum > b.maxTickNanosecondsSum;
+				});
+
+
+				for (int32 i = 0; i < profilerElements.size(); i++)
+				{
+					if (profilerElements[i].count > 0) {
+						ss << LeanScopeTimerChar[static_cast<int32>(profilerElements[i].profilerEnum)] << ":\t"
+							<< (profilerElements[i].maxTickNanosecondsSum / 1000)
+							<< "us\n";
+					}
+				}
+
+				ss << "\n";
+			}
+
+			TopLeftTextDebug2->SetText(FText::FromString(FString(ss.str().c_str())));
+		}
+
+		
+		return;
+	}
+#endif
+
+#if TICK_DEBUG_UI
+	
 	if (PunSettings::IsOn("SoundDebugUI"))
 	{
 		std::stringstream ss;
 		
-		SetVisibility(ESlateVisibility::Collapsed);
+		SetVisibility(ESlateVisibility::Collapsed); // Why this?
 		DebugOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
 		TArray<UFireForgetAudioComponent*> punAudios = networkInterface()->GetPunAudios();

@@ -388,7 +388,7 @@ void UnitSystem::Tick()
 						animationEnum == UnitAnimationEnum::HorseMarket ||
 						animationEnum == UnitAnimationEnum::HorseLogistics)
 					{
-						moveSpeed = moveSpeed * 2;
+						moveSpeed = moveSpeed * 3;
 					}
 					else if (animationEnum == UnitAnimationEnum::Ship) {
 						moveSpeed = moveSpeed * 4;
@@ -467,10 +467,16 @@ void UnitSystem::Tick()
 					//SCOPE_CYCLE_COUNTER(STAT_PunUnitNeedTargetAtomForce);
 					
 					auto pathAI = _simulation->pathAI();
-					if (!pathAI->isWalkable(tile.x, tile.y)) {
+					if (!pathAI->isWalkable(tile.x, tile.y)) 
+					{
 						waypoint.clear();
 						_simulation->ResetUnitActions(id);
 						//PUN_LOG("TargetLocation no longer valid %d", id);
+
+						// Clear CachedWaypoint if needed
+						if (_simulation->IsValidBuilding(unitLean.waypointCacheBuildingId)) {
+							_simulation->building(unitLean.waypointCacheBuildingId).ClearCachedWaypoints();
+						}
 					}
 				}
 			}

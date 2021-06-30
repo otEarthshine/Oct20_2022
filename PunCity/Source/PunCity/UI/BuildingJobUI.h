@@ -67,6 +67,8 @@ public:
 
 	void SetShowHumanSlots(bool isVisible, bool canManipulateOccupants, bool isTileBld = false);
 	void SetShowBar(bool showBar, bool showHouseUpgradeBar = false) {
+		LEAN_PROFILING_UI(TickWorldSpaceUI_BldJobShowBars);
+		
 		ProductionBarOverlay->SetVisibility(showBar ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 		HouseUpgradeCountdownBar->SetVisibility(showHouseUpgradeBar ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 	}
@@ -92,43 +94,36 @@ public:
 	}
 
 	void SetBuildingStatus(Building& building, JobUIState jobUIState)
-	{
-		if (IsTradingPostLike(building.buildingEnum()) ||
-			building.isEnum(CardEnum::TradingCompany)) {
-			SetTradeProgress(building.subclass<TradeBuilding>(), building.barFraction());
-		}
-		//else if (IsBarrack(building.buildingEnum())) {
-		//	Barrack& barrack = building.subclass<Barrack>();
-		//	SetProgress(barrack.trainingPercent() / 100.0f, barrack.queueCount());
-		//}
-		else if (IsSpecialProducer(building.buildingEnum())) {
-			SetSpecialProducerProgress(building.barFraction(), building);
-		}
-		else if (building.isEnum(CardEnum::StatisticsBureau)) {
+	{	
+		LEAN_PROFILING_UI(TickWorldSpaceUI_BldJobBldStatus);
+
+		if (building.isEnum(CardEnum::StatisticsBureau)) {
 			// Note StatisticsButton gets its visibility set to Collapsed when it gets init
 			if (building.ownedBy(playerId())) {
 				StatisticsButton->SetVisibility(ESlateVisibility::Visible);
 			}
+			return;
 		}
-		else if (building.isEnum(CardEnum::JobManagementBureau)) {
+		if (building.isEnum(CardEnum::JobManagementBureau)) {
 			// Note JobPriorityButton gets its visibility set to Collapsed when it gets init
 			if (building.ownedBy(playerId())) {
 				JobPriorityButton->SetVisibility(ESlateVisibility::Visible);
 			}
+			return;
 		}
-		else if (IsStorage(building.buildingEnum()) ||
+		if (IsStorage(building.buildingEnum()) ||
 			building.isEnum(CardEnum::IntercityLogisticsHub) ||
 			building.isEnum(CardEnum::IntercityLogisticsPort) ||
 			building.isEnum(CardEnum::FruitGatherer) ||
-			building.isEnum(CardEnum::HuntingLodge)) 
+			building.isEnum(CardEnum::HuntingLodge))
 		{
 			// Show items above warehouse
 			if (jobUIState == JobUIState::Storage &&
-					(
-						building.isEnum(CardEnum::Warehouse) ||
-						building.isEnum(CardEnum::Granary) ||
-						building.isEnum(CardEnum::IntercityLogisticsHub) ||
-						building.isEnum(CardEnum::IntercityLogisticsPort)
+				(
+					building.isEnum(CardEnum::Warehouse) ||
+					building.isEnum(CardEnum::Granary) ||
+					building.isEnum(CardEnum::IntercityLogisticsHub) ||
+					building.isEnum(CardEnum::IntercityLogisticsPort)
 					)
 				)
 			{
@@ -141,7 +136,7 @@ public:
 				for (ResourceHolderInfo holderInfo : holderInfos)
 				{
 					int32 resourceCount = building.GetResourceCount(holderInfo);
-					if  (resourceCount > 0)
+					if (resourceCount > 0)
 					{
 						bool inserted = false;
 						for (size_t i = 0; i < maxResourcePairs.size(); i++) {
@@ -170,12 +165,32 @@ public:
 					textWidget->PunText->SetShadowColorAndOpacity(FLinearColor(0, 0, 0, 0.5));
 					CastChecked<UVerticalBoxSlot>(textWidget->Slot)->SetHorizontalAlignment(HAlign_Center);
 				}
-				
+
 				PunBox->AfterAdd();
 			}
 			else {
 				PunBox->SetVisibility(ESlateVisibility::Collapsed);
 			}
+			return;
+		}
+
+		// ResourceUI Dirty?
+		if (!building.isBuildingResourceUIDirty()) {
+			return;
+		}
+		building.SetBuildingResourceUIDirty(false);
+		
+		
+		if (IsTradingPostLike(building.buildingEnum()) ||
+			building.isEnum(CardEnum::TradingCompany)) {
+			SetTradeProgress(building.subclass<TradeBuilding>(), building.barFraction());
+		}
+		//else if (IsBarrack(building.buildingEnum())) {
+		//	Barrack& barrack = building.subclass<Barrack>();
+		//	SetProgress(barrack.trainingPercent() / 100.0f, barrack.queueCount());
+		//}
+		else if (IsSpecialProducer(building.buildingEnum())) {
+			SetSpecialProducerProgress(building.barFraction(), building);
 		}
 		else {
 			SetResourceCompletion(building.inputs(), building.products(), building);
@@ -184,6 +199,8 @@ public:
 
 	void SetHoverWarning(Building& building)
 	{
+		LEAN_PROFILING_UI(TickWorldSpaceUI_BldJobHoverWarning);
+		
 		// Refresh Hover Warning
 		// Check every sec
 		if (building.ownedBy(playerId()))

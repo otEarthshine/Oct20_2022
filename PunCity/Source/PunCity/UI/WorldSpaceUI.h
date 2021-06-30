@@ -44,6 +44,8 @@ struct FHoverUIs
 	T* GetHoverUI(int objectId, UIEnum uiEnum, UPunWidget* punWidget, USceneComponent* parent, FVector worldLocation, float zoomAmount, 
 					std::function<void(T*)> onInit, float zoomThreshold = WorldZoomTransition_WorldSpaceUIShrink, float scale = 1.0f)
 	{
+		LEAN_PROFILING_UI(TickWorldSpaceUI_GetHoverUI);
+		
 		PUN_CHECK(objectId != -1);
 		_displayIds.push_back(objectId);
 
@@ -58,6 +60,7 @@ struct FHoverUIs
 		for (int i = 0; i < hoverWidgetComps.Num(); i++) {
 			T* hoverWidget = CastChecked<T>(hoverWidgetComps[i]->GetUserWidgetObject());
 			if (hoverWidget->punId == objectId) {
+				hoverWidget->justInitializedUI = false;
 				hoverWidgetComps[i]->GetUserWidgetObject()->SetRenderScale(FVector2D(scale, scale));
 				hoverWidgetComps[i]->SetWorldLocation(worldLocation);
 				return hoverWidget;
@@ -94,6 +97,7 @@ struct FHoverUIs
 
 		auto widget = CastChecked<T>(widgetComp->GetUserWidgetObject());
 		widget->punId = objectId;
+		widget->justInitializedUI = true;
 		onInit(widget);
 		widget->SetRenderScale(FVector2D(scale, scale));
 
@@ -306,6 +310,9 @@ private:
 	UPROPERTY() FHoverUIs _buildingJobUIs;
 	UPROPERTY() FHoverUIs _townhallHoverInfos;
 	UPROPERTY() FHoverUIs _regionHoverUIs; // Claim Land
+
+	DescriptionUIState _lastUIState; // if Focus UI state changed, we need to reset the jobUI
+	bool _uiStateDirty = false;
 
 	//! Show house/starving/etc. warning icons
 	TSharedPtr<FSlateStyleSet> _style;

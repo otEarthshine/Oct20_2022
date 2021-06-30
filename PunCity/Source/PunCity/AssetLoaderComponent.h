@@ -360,7 +360,14 @@ public:
 		//return _unitToMeshes[unitEnum].size();
 	}
 
-	FUnitAsset unitAsset(UnitEnum unitEnum, int32 variationIndex = 0);
+	//FUnitAsset unitAsset(UnitEnum unitEnum, int32 variationIndex = 0);
+	FUnitAsset unitAsset(UnitEnum unitEnum, int32 variationIndex = 0) {
+		return unitAsset(GetUnitDisplayEnum(unitEnum, variationIndex));
+	}
+	FUnitAsset unitAsset(UnitDisplayEnum unitDisplayEnum) {
+		check(static_cast<int32>(unitDisplayEnum) < UnitDisplayEnumCount);
+		return _unitDisplayEnumToAsset[static_cast<int32>(unitDisplayEnum)];
+	}
 	
 	UStaticMesh* unitWeaponMesh(UnitAnimationEnum animationEnum) {
 		auto found = _animationEnumToWeaponMesh.find(animationEnum);
@@ -448,8 +455,10 @@ public:
 	/*
 	 * Debug
 	 */
-	void CheckMeshesAvailable() {
+	void CheckMeshesAvailable()
+	{
 		// Building Mesh Check
+		// !!! If check broke here, there might be duplicate load???
 		check(_moduleNames.Num() + _togglableModuleNames.Num() + _animModuleNames.Num() == _moduleNameToMesh.Num()); // Doesn't work with old methods
 		for (int32 i = 0; i < _moduleNames.Num(); i++) {
 			check(_moduleNameToMesh.Contains(_moduleNames[i]))
@@ -585,6 +594,36 @@ public:
 	UPROPERTY(EditAnywhere) UTexture2D* WarningHealthcare;
 	UPROPERTY(EditAnywhere) UTexture2D* WarningTools;
 	UPROPERTY(EditAnywhere) UTexture2D* WarningUnhappy;
+
+	enum class HoverWarningEnum : uint8 {
+		Housing,
+		Starving,
+		Freezing,
+		Sick,
+		Tools,
+		UnhappyOrange,
+		UnhappyRed,
+	};
+	UPROPERTY(EditAnywhere) TArray<UMaterialInstanceDynamic*> MI_HoverWarnings;
+	UMaterialInstanceDynamic* GetHoverWarningMaterial(HoverWarningEnum warningEnum)
+	{
+		if (MI_HoverWarnings.Num() == 0) {
+			auto addHoverWarningIconInst = [&](UMaterial* material, UTexture2D* image) {
+				MI_HoverWarnings.Add(UMaterialInstanceDynamic::Create(material, this));
+				if (image) {
+					MI_HoverWarnings.Last()->SetTextureParameterValue("IconImage", image);;
+				}
+			};
+			addHoverWarningIconInst(M_HoverWarning, WarningHouse);
+			addHoverWarningIconInst(M_HoverWarning, WarningStarving);
+			addHoverWarningIconInst(M_HoverWarning, WarningSnow);
+			addHoverWarningIconInst(M_HoverWarning, WarningHealthcare);
+			addHoverWarningIconInst(M_HoverWarning, WarningTools);
+			addHoverWarningIconInst(M_HoverWarningHappiness, HappinessOrangeIcon);
+			addHoverWarningIconInst(M_HoverWarningHappiness, HappinessRedIcon);
+		}
+		return MI_HoverWarnings[static_cast<int32>(warningEnum)];
+	}
 	
 
 	//! HoverIcon
@@ -824,6 +863,7 @@ private:
 	//std::unordered_map<UnitEnum, std::vector<UStaticMesh*>> _unitToMeshes;
 
 	std::vector<std::vector<FUnitAsset>> _unitEnumToAsset;
+	std::vector<FUnitAsset> _unitDisplayEnumToAsset;
 	//std::unordered_map<UnitEnum, std::vector<USkeletalMesh*>> _unitToSkeletalMesh;
 	//std::unordered_map<UnitEnum, std::vector<std::unordered_map<UnitAnimationEnum, UAnimSequence*>>> _animationEnumToSequence;
 	

@@ -95,19 +95,32 @@ void PlayerOwnedManager::TickRound()
 	 */
 	PUN_LOG("MidAutumn TickRound: %d, %d, %d, %d", Time::Ticks(), (Time::Ticks() % Time::TicksPerSeason), (Time::Ticks() % Time::TicksPerSeason != 0), Time::IsAutumn());
 	// Show Caravan only if there is no Trading Post/Port
-	if (_simulation->playerBuildingFinishedCount(_playerId, CardEnum::TradingPost) > 0 ||
-		_simulation->playerBuildingFinishedCount(_playerId, CardEnum::TradingPort) > 0) {
-		return;
+	if (_simulation->playerBuildingFinishedCount(_playerId, CardEnum::TradingPost) == 0 &&
+		_simulation->playerBuildingFinishedCount(_playerId, CardEnum::TradingPort) == 0) 
+	{
+		if (Time::IsAutumn() &&
+			Time::Ticks() % Time::TicksPerSeason != 0)
+		{
+			_simulation->AddPopup(PopupInfo(_playerId,
+				LOCTEXT("CaravanArrive_Pop", "A caravan has arrived. They wish to buy any goods you might have."),
+				{ LOCTEXT("Trade", "Trade"),
+					LOCTEXT("Refuse", "Refuse") },
+				PopupReceiverEnum::CaravanBuyer
+			));
+		}
 	}
 
-	if (Time::IsAutumn() && Time::Ticks() % Time::TicksPerSeason != 0)
+	if (_simulation->playerBuildingFinishedCount(_playerId, CardEnum::ImmigrationOffice) == 0)
 	{
-		_simulation->AddPopup(PopupInfo(_playerId,
-			LOCTEXT("CaravanArrive_Pop", "A caravan has arrived. They wish to buy any goods you might have."),
-			{ LOCTEXT("Trade", "Trade"),
-				LOCTEXT("Refuse", "Refuse") },
-			PopupReceiverEnum::CaravanBuyer
-		));
+		if (Time::IsSpring() &&
+			Time::Ticks() % Time::TicksPerSeason != 0 &&
+			Time::Ticks() > Time::TicksPerYear)
+		{
+			_simulation->ImmigrationEvent(_playerId, 3,
+				LOCTEXT("YearlyImmigrantAsk_Pop", "3 Immigrants wishes to join your City."),
+				PopupReceiverEnum::TribalJoinEvent
+			);
+		}
 	}
 }
 
@@ -122,7 +135,7 @@ void PlayerOwnedManager::TryApplyBuff(CardEnum cardEnum)
 	}
 
 	int32 cost = _simulation->populationTown(_playerId);
-	if (_simulation->money(_playerId) < cost) {
+	if (_simulation->moneyCap32(_playerId) < cost) {
 		_simulation->AddPopupToFront(_playerId, 
 			LOCTEXT("BuffNotEnoughCoin", "Require <img id=\"Coin\"/>xPopulation to activate the protection.")
 		);

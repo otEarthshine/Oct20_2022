@@ -389,7 +389,7 @@ public:
 			// Gifting
 			if (maxRelationshipPlayerId != -1 &&
 				_simulation->HasTownhall(maxRelationshipPlayerId) &&
-				_simulation->money(_aiPlayerId) > 500)
+				_simulation->moneyCap32(_aiPlayerId) > 500)
 			{
 				PUN_LOG("[AIPlayer] gift pid:%d target:%d second:%d", _aiPlayerId, maxRelationshipPlayerId, secondToAct);
 				
@@ -398,7 +398,7 @@ public:
 				command->playerId = _aiPlayerId;
 				command->intVar1 = maxRelationshipPlayerId;
 				command->intVar2 = static_cast<int>(ResourceEnum::Money);
-				command->intVar3 = std::min(100, _simulation->money(_aiPlayerId) - 500);
+				command->intVar3 = std::min(100, _simulation->moneyCap32(_aiPlayerId) - 500);
 
 				_playerInterface->GenericCommand(*command);
 			}
@@ -1027,7 +1027,7 @@ public:
 
 				if (tradeCommand->buyEnums.Num() > 0)
 				{
-					if (_simulation->money(_aiPlayerId) < 300) 
+					if (_simulation->moneyCap32(_aiPlayerId) < 300)
 					{
 						// Cheat if no money
 						_simulation->ChangeMoney(_aiPlayerId, population * 10);
@@ -1071,7 +1071,7 @@ public:
 		 */
 		//_LOG(PunAI, "%s CheckDefendLand(outer): sec:%d money:%d", AIPrintPrefix(), Time::Seconds(), resourceSystem.money());
 		if (Time::Seconds() % 10 == 0 && // Check every 10 sec
-			globalResourceSys.money() > BattleInfluencePrice)
+			globalResourceSys.moneyCap32() > BattleInfluencePrice)
 		{
 			//_LOG(PunAI, "%s CheckDefendLand", AIPrintPrefix());
 			
@@ -1155,7 +1155,7 @@ public:
 			if (bestClaimProvinceId != -1)
 			{
 				int32 regionPrice = _simulation->GetProvinceClaimPrice(bestClaimProvinceId, _aiPlayerId);
-				if (globalResourceSys.money() >= regionPrice)
+				if (globalResourceSys.moneyCap32() >= regionPrice)
 				{
 					// AI claim at half price...
 					globalResourceSys.ChangeMoney(regionPrice / 2);

@@ -135,3 +135,461 @@ struct ScopeTimerLoop
 //				UE_LOG(LogTimer, Log, TEXT("%s %umb crc: %u"), *FString(name), data.Num()/1000000, FCrc::MemCrc32(data.GetData(), data.Num())); \
 //			} \
 //		};
+
+#if USE_LEAN_PROFILING
+
+
+#define OUTER_PROFILING_LIST(entry) \
+	entry(TickSim) \
+	entry(TickUI) \
+	entry(TickDisplay)
+
+#define DISPLAY_PROFILING_LIST(entry) \
+	entry(TickUnitDisplay) \
+	entry(TickTerrainRegion) \
+	entry(TickTerrainRegion4x4) \
+	entry(TickRegionDecal) \
+	entry(TickTileObjDisplay) \
+	entry(TickResourceDisplay) \
+	entry(TickDisplayMisc) \
+	entry(TickMiniBuildingDisplay) \
+	entry(TickBuildingDisplay)
+
+#define UI_PROFILING_LIST(entry) \
+	entry(TickMainGameUI) \
+	entry(TickMainGameUI_Cards) \
+	entry(TickMainGameUI_Events) \
+	entry(TickMainGameUI_Exclamation) \
+	entry(TickMainGameUI_LeftUI) \
+	entry(TickMainGameUI_TopLeft) \
+	entry(TickMainGameUI_TopLeftTip) \
+	entry(TickMainGameUI_Happiness) \
+	entry(TickMainGameUI_Money) \
+	entry(TickMainGameUI_MoneyTip) \
+	entry(TickMainGameUI_Influence) \
+	entry(TickMainGameUI_Science) \
+	entry(TickMainGameUI_TownSwap) \
+	entry(TickMainGameUI_Skill) \
+	entry(TickMainGameUI_LeftFood) \
+	entry(TickMainGameUI_LeftLuxTip) \
+	entry(TickMainGameUI_LeftResources) \
+	entry(TickMainGameUI_TechBar) \
+	entry(TickMainGameUI_JobPrior) \
+	entry(TickPopupUI) \
+	entry(TickQuestUI) \
+	entry(TickPlayerDetails) \
+	entry(TickPlayerDetails_Graph) \
+	entry(TickPlayerCompare) \
+	entry(TickEscMenuUI) \
+	entry(TickChatUI) \
+	entry(TickDebugUI) \
+	entry(TickTopLayerGameUI) \
+	entry(TickWorldSpaceUI) \
+	entry(TickWorldSpaceUI_Building) \
+	entry(TickWorldSpaceUI_Townhall) \
+	entry(TickWorldSpaceUI_BldJob) \
+	entry(TickWorldSpaceUI_BldJobTile) \
+	entry(TickWorldSpaceUI_BldJobUC) \
+	entry(TickWorldSpaceUI_BldJobHouse) \
+	entry(TickWorldSpaceUI_BldJobWork) \
+	entry(TickWorldSpaceUI_BldJobHumanSlots) \
+	entry(TickWorldSpaceUI_BldJobShowBars) \
+	entry(TickWorldSpaceUI_BldJobSetSlots) \
+	entry(TickWorldSpaceUI_BldJobBldStatus) \
+	entry(TickWorldSpaceUI_BldJobResourceComplete) \
+	entry(TickWorldSpaceUI_BldJobHoverWarning) \
+	entry(TickWorldSpaceUI_BldOverlay) \
+	entry(TickWorldSpaceUI_Province) \
+	entry(TickWorldSpaceUI_BldFloatup) \
+	entry(TickWorldSpaceUI_Unit) \
+	entry(TickWorldSpaceUI_Unit2) \
+	entry(TickWorldSpaceUI_GetHoverUI) \
+	entry(TickWorldSpaceUI_Map) \
+	entry(TickObjDescriptionUI) \
+	entry(TickWorldTradeUI) \
+	entry(TickIntercityTradeUI) \
+	entry(TickTargetConfirmUI) \
+	entry(TickInitialResourceUI) \
+	entry(TickSendImmigrantsUI) \
+	entry(TickDiplomacyUI) \
+	entry(TickTechTreeUI) \
+	entry(TickStatisticsUI)
+
+
+#define RESOURCE_PROFILING_LIST(entry) \
+	entry(R_resourceCount) \
+	entry(R_resourceCountWithPop) \
+	entry(R_resourceCountWithDrops) \
+	entry(R_resourceCountDropOnly) \
+	\
+	entry(R_HasAvailableFood) \
+	entry(R_HasAvailableHeat) \
+	entry(R_HasAvailableMedicine) \
+	entry(R_HasAvailableTools) \
+	\
+	entry(R_CanAddResourceGlobal) \
+	\
+	entry(R_CanReceiveAmount) \
+	entry(R_CanReceiveAmountAfterReset) \
+	entry(R_FindHolder) \
+	entry(R_FindFoodHolder) \
+	entry(R_CanAddReservation) \
+	\
+	entry(R_GetDropFromSmallArea_Any) \
+	entry(R_GetDropFromArea_Pickable) \
+	entry(R_GetDropsFromArea_Pickable) \
+	\
+	entry(R_TreeSysTick)
+
+
+
+
+
+
+
+//
+#define CREATE_ENUM(name) name,
+#define CREATE_STRINGS(name) #name,
+
+	enum class LeanProfilerEnum
+	{
+		OUTER_PROFILING_LIST(CREATE_ENUM)
+		
+#if USE_DISPLAY_PROFILING
+		DISPLAY_PROFILING_LIST(CREATE_ENUM)
+#endif
+
+#if USE_UI_PROFILING
+		UI_PROFILING_LIST(CREATE_ENUM)
+#endif
+		
+#if USE_RESOURCE_PROFILING
+		RESOURCE_PROFILING_LIST(CREATE_ENUM)
+#endif
+
+#if USE_PATH_PROFILING
+		P_FindPath, // Also ResourceProfiling Count;
+		P_FindPathAnimal,
+		P_FindPathRoadOnly,
+		P_FindPathRobust,
+		
+		IsConnected,
+		IsConnectedBuilding,
+		FindNearestBuildingId,
+#endif
+
+#if USE_UNIT_PROFILING
+		// Update group
+		U_Update_FoodAge, // Also PathProfilingCount;
+		U_CalcAnimal,
+		U_CalcHuman,
+		U_ExecuteAction,
+
+		// Try Group
+		TryCheckBadTile_Human,
+		TryStoreInventory,
+		TryConstructHelper, // Includes TryConstruct
+		TryFindFood,
+		TryHeatup,
+		TryToolup,
+		TryHealup,
+		TryFillLuxuries,
+		TryFun,
+		TryGatherFruit,
+		TryHunt,
+		TryRanch,
+		TryFarm,
+		TryBulkHaul_ShippingDepot,
+		TryBulkHaul_Intercity,
+		TryBulkHaul_Market,
+		TryHaulingServices,
+		TryHaulingPowerPlant,
+		TryGather,
+		TryForesting,
+		TryFillWorkplace,
+		TryProduce,
+		TryConstructRoad,
+		TryGoNearWorkplace,
+#endif
+
+#if USE_ACTION_PROFILING
+		// Action Group
+		AttackOutgoing,
+		DoFarmWork,
+		TryForestingPlantAction,
+		Wait,
+		MoveRandomly,
+		MoveRandomlyAnimal,
+		MoveRandomlyPerlin,
+		GatherFruit,
+		TrimFullBush,
+		HarvestTileObj,
+		PlantTree,
+		NourishTree,
+		MoveTo,
+		MoveTo_UseCache,
+		MoveToResource,
+		MoveToResource_custom,
+		MoveInRange,
+		//MoveToForceLongDistance,
+		MoveToRobust,
+		MoveToward,
+		MoveToCaravan,
+		MoveToShip,
+		Produce,
+		Construct,
+		Eat,
+		Heat,
+		UseMedicine,
+		UseTools,
+		HaveFun,
+		PickupResource,
+		DropoffResource,
+		DropInventoryAction,
+		StoreGatheredAtWorkplace,
+		FillInputs,
+		IntercityHaulPickup,
+		IntercityHaulDropoff,
+		PickupFoodAnimal,
+		DropoffFoodAnimal,
+		
+#endif
+		
+		Count,
+	};
+	static const std::vector<std::string> LeanScopeTimerChar
+	{
+		OUTER_PROFILING_LIST(CREATE_STRINGS)
+		
+#if USE_DISPLAY_PROFILING
+		DISPLAY_PROFILING_LIST(CREATE_STRINGS)
+#endif
+
+#if USE_UI_PROFILING
+		UI_PROFILING_LIST(CREATE_STRINGS)
+#endif
+		
+#if USE_RESOURCE_PROFILING
+		RESOURCE_PROFILING_LIST(CREATE_STRINGS)
+#endif
+
+#if USE_PATH_PROFILING
+		"P_FindPath",
+		"P_FindPathAnimal",
+		"P_FindPathRoadOnly",
+		"P_FindPathRobust",
+
+		"IsConnected",
+		"IsConnectedBuilding",
+		"FindNearestBuildingId",
+#endif
+
+#if USE_UNIT_PROFILING
+
+		// Update group
+		"U_Update_FoodAge", // Also PathProfilingCount;
+		"U_CalcAnimal",
+		"U_CalcHuman",
+		"U_ExecuteAction",
+
+		// Try Group
+		"TryCheckBadTile_Human",
+		"TryStoreInventory",
+		"TryConstructHelper", // Includes TryConstruct
+		"TryFindFood",
+		"TryHeatup",
+		"TryToolup",
+		"TryHealup",
+		"TryFillLuxuries",
+		"TryFun",
+		"TryGatherFruit",
+		"TryHunt",
+		"TryRanch",
+		"TryFarm",
+		"TryBulkHaul_ShippingDepot",
+		"TryBulkHaul_Intercity",
+		"TryBulkHaul_Market",
+		"TryHaulingServices",
+		"TryHaulingPowerPlant",
+		"TryGather",
+		"TryForesting",
+		"TryFillWorkplace",
+		"TryProduce",
+		"TryConstructRoad",
+		"TryGoNearWorkplace",
+#endif
+
+#if USE_ACTION_PROFILING
+		// Action Group
+		"AttackOutgoing",
+		"DoFarmWork",
+		"TryForestingPlantAction",
+		"Wait",
+		"MoveRandomly",
+		"MoveRandomlyAnimal",
+		"MoveRandomlyPerlin",
+		"GatherFruit",
+		"TrimFullBush",
+		"HarvestTileObj",
+		"PlantTree",
+		"NourishTree",
+		"MoveTo",
+		"MoveTo_UseCache",
+		"MoveToResource",
+		"MoveToResource_custom",
+		"MoveInRange",
+		//"MoveToForceLongDistance",
+		"MoveToRobust",
+		"MoveToward",
+		"MoveToCaravan",
+		"MoveToShip",
+		"Produce",
+		"Construct",
+		"Eat",
+		"Heat",
+		"UseMedicine",
+		"UseTools",
+		"HaveFun",
+		"PickupResource",
+		"DropoffResource",
+		"DropInventoryAction",
+		"StoreGatheredAtWorkplace",
+		"FillInputs",
+		"IntercityHaulPickup",
+		"IntercityHaulDropoff",
+		"PickupFoodAnimal",
+		"DropoffFoodAnimal",
+#endif
+
+	};
+
+#undef CREATE_ENUM
+#undef CREATE_STRINGS
+
+	struct LeanProfilerElement
+	{
+		LeanProfilerEnum profilerEnum;
+		int32 count;
+		long long nanosecondsSum;
+
+		long long tickNanosecondsSum;
+		long long maxTickNanosecondsSum;
+	};
+
+	struct LeanProfiler
+	{
+		std::chrono::time_point<std::chrono::steady_clock> time1;
+		LeanProfilerEnum timerEnum = LeanProfilerEnum::R_resourceCount;
+		
+		static std::vector<LeanProfilerElement> EnumToElements;
+		static std::vector<LeanProfilerElement> LastEnumToElements;
+
+		LeanProfiler() {}
+		
+		LeanProfiler(LeanProfilerEnum timerEnumIn) {
+			timerEnum = timerEnumIn;
+			time1 = std::chrono::high_resolution_clock::now();
+			
+			if (EnumToElements.size() < LeanScopeTimerChar.size()) {
+				for (int32 i = 0; i < LeanScopeTimerChar.size(); i++) {
+					EnumToElements.push_back({ static_cast<LeanProfilerEnum>(i), 0, 0});
+					LastEnumToElements.push_back({ static_cast<LeanProfilerEnum>(i), 0, 0 });
+				}
+			}
+		}
+
+		~LeanProfiler()
+		{
+			auto time2 = std::chrono::high_resolution_clock::now();
+			auto time_span = std::chrono::duration_cast<std::chrono::nanoseconds>(time2 - time1);
+			
+			auto nanoseconds = time_span.count();
+			EnumToElements[static_cast<long long>(timerEnum)].count++;
+			EnumToElements[static_cast<long long>(timerEnum)].nanosecondsSum += nanoseconds;
+			EnumToElements[static_cast<long long>(timerEnum)].tickNanosecondsSum += nanoseconds;
+		}
+
+		static void FinishInterval(int32 startIndex, int32 endIndex)
+		{
+			check(endIndex < EnumToElements.size());
+			
+			for (int32 i = startIndex; i <= endIndex; i++)
+			{
+				LastEnumToElements[i] = EnumToElements[i];
+
+				EnumToElements[i].count = 0;
+				EnumToElements[i].nanosecondsSum = 0;
+				
+				EnumToElements[i].tickNanosecondsSum = 0;
+				EnumToElements[i].maxTickNanosecondsSum = 0;
+			}
+		}
+
+		static void FinishTick(int32 startIndex, int32 endIndex)
+		{
+			check(endIndex < EnumToElements.size());
+			
+			for (int32 i = startIndex; i <= endIndex; i++)
+			{
+				EnumToElements[i].maxTickNanosecondsSum = std::max(EnumToElements[i].maxTickNanosecondsSum, EnumToElements[i].tickNanosecondsSum);
+				EnumToElements[i].tickNanosecondsSum = 0;
+			}
+		}
+	};
+
+#define LEAN_PROFILING(leanProfilerEnumName) LeanProfiler leanProfiler(LeanProfilerEnum::##leanProfilerEnumName);
+
+#if USE_RESOURCE_PROFILING
+	#define LEAN_PROFILING_R(leanProfilerEnumName) LeanProfiler leanProfiler(LeanProfilerEnum::R_##leanProfilerEnumName);
+#else
+	#define LEAN_PROFILING_R(leanProfilerEnumName)
+#endif
+
+#if USE_PATH_PROFILING
+	#define LEAN_PROFILING_P(leanProfilerEnumName) LeanProfiler leanProfiler(LeanProfilerEnum::P_##leanProfilerEnumName);
+#else
+	#define LEAN_PROFILING_P(leanProfilerEnumName)
+#endif
+
+#if USE_UNIT_PROFILING
+	#define LEAN_PROFILING_U(leanProfilerEnumName) LeanProfiler leanProfiler(LeanProfilerEnum::U_##leanProfilerEnumName);
+#else
+	#define LEAN_PROFILING_U(leanProfilerEnumName)
+#endif
+
+#if USE_TRYCALC_PROFILING
+	#define LEAN_PROFILING_T(leanProfilerEnumName) LeanProfiler leanProfiler(LeanProfilerEnum::##leanProfilerEnumName);
+#else
+	#define LEAN_PROFILING_T(leanProfilerEnumName)
+#endif
+
+#if USE_ACTION_PROFILING
+	#define LEAN_PROFILING_A(leanProfilerEnumName) LeanProfiler leanProfiler(LeanProfilerEnum::##leanProfilerEnumName);
+#else
+	#define LEAN_PROFILING_A(leanProfilerEnumName)
+#endif
+
+#if USE_DISPLAY_PROFILING
+	#define LEAN_PROFILING_D(leanProfilerEnumName) LeanProfiler leanProfiler(LeanProfilerEnum::##leanProfilerEnumName);
+#else
+	#define LEAN_PROFILING_D(leanProfilerEnumName)
+#endif
+
+#if USE_UI_PROFILING
+	#define LEAN_PROFILING_UI(leanProfilerEnumName) LeanProfiler leanProfiler(LeanProfilerEnum::##leanProfilerEnumName);
+#else
+	#define LEAN_PROFILING_UI(leanProfilerEnumName)
+#endif
+
+#else
+
+	#define LEAN_PROFILING(leanProfilerEnum)
+
+	#define LEAN_PROFILING_R(leanProfilerEnumName)
+	#define LEAN_PROFILING_P(leanProfilerEnumName)
+	#define LEAN_PROFILING_U(leanProfilerEnumName)
+	#define LEAN_PROFILING_T(leanProfilerEnumName)
+	#define LEAN_PROFILING_A(leanProfilerEnumName)
+	#define LEAN_PROFILING_D(leanProfilerEnumName)
+
+#endif

@@ -359,8 +359,10 @@ public:
 	BuildingUpgrade MakeUpgrade(FText name, FText description, ResourceEnum resourceEnum, int32 percentOfTotalPrice);
 	BuildingUpgrade MakeUpgrade(FText name, FText description, int32 percentOfTotalPrice);
 
-	BuildingUpgrade MakeProductionUpgrade(FText name, ResourceEnum resourceEnum, int32 percentOfTotalPrice, int32 efficiencyBonus);
-	BuildingUpgrade MakeProductionUpgrade(FText name, int32 percentOfTotalPrice, int32 efficiencyBonus);
+	BuildingUpgrade MakeProductionUpgrade(FText name, ResourceEnum resourceEnum, int32 efficiencyBonus);
+	BuildingUpgrade MakeProductionUpgrade_Money(FText name, int32 efficiencyBonus);
+
+	BuildingUpgrade MakeProductionUpgrade_WithHouseLvl(FText name, ResourceEnum resourceEnum, int32 houseLvl);
 
 	BuildingUpgrade MakeWorkerSlotUpgrade(int32 percentOfTotalPrice, int32 workerSlotBonus = 1);
 	BuildingUpgrade MakeEraUpgrade(int32 startEra);
@@ -597,13 +599,19 @@ public:
 	void AddResource(ResourceEnum resourceEnum, int amount);
 	void RemoveResource(ResourceEnum resourceEnum, int amount);
 
-	virtual void OnPickupResource(int32 objectId) {}
-	virtual void OnDropoffResource(int32 objectId, ResourceHolderInfo holderInfo, int32 amount) {}
+	virtual void OnPickupResource(int32 objectId) {
+		SetBuildingResourceUIDirty();
+	}
+	virtual void OnDropoffResource(int32 objectId, ResourceHolderInfo holderInfo, int32 amount) {
+		SetBuildingResourceUIDirty();
+	}
 	
 	void FillInputs() {
 		_filledInputs = true;
 		_workDone100 = 1;
 		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
+
+		SetBuildingResourceUIDirty();
 	}
 
 	int32 GetResourceCount(ResourceHolderInfo holderInfo);
@@ -1274,6 +1282,40 @@ public:
 		check(_deliverySourceIds.size() == 0);
 	}
 
+	// Cached Path
+	const std::vector<std::vector<WorldTile2>>& cachedWaypoints() { return _cachedWaypoints; }
+	void AddCachedWaypoints(const std::vector<WorldTile2>& waypointsIn)
+	{
+		check(waypointsIn.back() == gateTile());
+		for (int32 i = 0; i < _cachedWaypoints.size(); i++) {
+			check(_cachedWaypoints[i].front() != waypointsIn.front());
+		}
+
+		_cachedWaypoints.insert(_cachedWaypoints.begin(), waypointsIn);
+
+		if (_cachedWaypoints.size() > PunSettings::Get("CachedWaypointsThreshold")) {
+			_cachedWaypoints.pop_back();
+		}
+	}
+	void UseCachedWaypoints(WorldTile2 end)
+	{
+		// Move the waypoints used to the top (so it doesn't get deleted)
+		for (int32 i = 0; i < _cachedWaypoints.size(); i++) {
+			if (_cachedWaypoints[i].front() == end) {
+				std::vector<WorldTile2> cachedWaypoint = _cachedWaypoints[i];
+				_cachedWaypoints.erase(_cachedWaypoints.begin() + i);
+				_cachedWaypoints.insert(_cachedWaypoints.begin(), cachedWaypoint);
+				return;
+			}
+		}
+		UE_DEBUG_BREAK();
+	}
+	void ClearCachedWaypoints() {
+		_cachedWaypoints.clear();
+	}
+
+	
+	// Water Path
 	const std::vector<int32>& cachedWaterDestinationPortIds() { return _cachedWaterDestinationPortIds; }
 	const std::vector<WorldTile2>& cachedWaterRoute(int32 index) { return _cachedWaterRoutes[index]; }
 	void AddWaterRoute(int32 portId, const std::vector<WorldTile2>& waterRoute) {
@@ -1443,17 +1485,15 @@ public:
 	int32 tradingFeePercent(int32 baseTradingFeePercent, ResourceEnum resourceEnum)
 	{
 		int32 tradeFeePercent = baseTradingFeePercent;
-		if (centerBiomeEnum() == BiomeEnum::Desert) {
-			if (_simulation->HasTownBonus(townId(), CardEnum::DesertTradeForALiving) &&
-				IsFoodEnum(resourceEnum) || resourceEnum == ResourceEnum::Wood || resourceEnum == ResourceEnum::Coal)
-			{
-				tradeFeePercent = 0;
-			}
-			if (_simulation->HasTownBonus(townId(), CardEnum::DesertOreTrade) &&
-				IsOreEnum(resourceEnum))
-			{
-				tradeFeePercent = 0;
-			}
+		if (_simulation->HasTownBonus(townId(), CardEnum::DesertTradeForALiving) &&
+			IsFoodEnum(resourceEnum) || resourceEnum == ResourceEnum::Wood || resourceEnum == ResourceEnum::Coal)
+		{
+			tradeFeePercent = 0;
+		}
+		if (_simulation->HasTownBonus(townId(), CardEnum::DesertOreTrade) &&
+			IsOreEnum(resourceEnum))
+		{
+			tradeFeePercent = 0;
 		}
 
 		
@@ -1521,6 +1561,8 @@ public:
 		if (IsDecorativeBuilding(_buildingEnum) ||
 			IsServiceBuilding(_buildingEnum) ||
 			IsWorldWonder(_buildingEnum) ||
+			IsPowerPlant(_buildingEnum) ||
+			IsRoad(_buildingEnum) ||
 			_buildingEnum == CardEnum::Farm ||
 			_buildingEnum == CardEnum::StatisticsBureau ||
 			_buildingEnum == CardEnum::JobManagementBureau ||
@@ -1639,6 +1681,9 @@ public:
 		// Delivery
 		Ar << _deliveryTargetId;
 		SerializeVecValue(Ar, _deliverySourceIds);
+
+		// Cached Path
+		SerializeVecVecObj(Ar, _cachedWaypoints);
 
 		// Water Path
 		SerializeVecValue(Ar, _cachedWaterDestinationPortIds);
@@ -1891,6 +1936,19 @@ public:
 		_simulation->PlayerRemoveJobBuilding(_townId, *this, false);
 	}
 
+
+	virtual bool isBuildingResourceUIDirty() {
+		return _isBuildingResourceUIDirty;
+	}
+	void SetBuildingResourceUIDirty(bool dirty = true) {
+		_isBuildingResourceUIDirty = dirty;
+	}
+
+	bool justFinishedConstructionJobUIDirty() { return _justFinishedConstructionJobUIDirty; }
+	void SetJustFinishedConstructionJobUIDirty(bool value) {
+		_justFinishedConstructionJobUIDirty = value;
+	}
+
 public:
 	// Debug
 #if DEBUG_BUILD
@@ -1985,6 +2043,10 @@ protected:
 	int32 _deliveryTargetId = -1;
 	std::vector<int32> _deliverySourceIds;
 
+	// Waypoint Cache
+	std::vector<std::vector<WorldTile2>> _cachedWaypoints;
+	
+
 	// Water Path Cache
 	// TODO: Cached PortId should be BuildingFullId!!! Need BuildingFullId???
 	std::vector<int32> _cachedWaterDestinationPortIds;
@@ -1994,4 +2056,7 @@ protected:
 	 * No Serialize
 	 */
 	int32 lastWorkSound = 0;
+
+	bool _isBuildingResourceUIDirty = true;
+	bool _justFinishedConstructionJobUIDirty = false;
 };

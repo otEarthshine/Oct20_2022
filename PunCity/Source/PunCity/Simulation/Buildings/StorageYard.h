@@ -241,7 +241,7 @@ public:
 class Market : public StorageBase
 {
 public:
-	static const int32 Radius = 34;
+	static const int32 Radius = 30;
 
 	void OnInit() override
 	{
@@ -261,8 +261,13 @@ public:
 			}
 			else if (IsMedicineEnum(resourceEnum) ||
 				IsToolsEnum(resourceEnum) ||
-				IsLuxuryEnum(resourceEnum)) {
+				IsLuxuryEnum(resourceEnum)) 
+			{
 				_resourceTargets[i] = 70;
+				if (IsLuxuryEnum(resourceEnum, 1)) {
+					_resourceTargets[i] = 100; // Stash more luxury tier 1
+				}
+				
 				queuedResourceAllowed[i] = true;
 			}
 			else {

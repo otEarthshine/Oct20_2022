@@ -50,6 +50,14 @@ void House::GetHeatingEfficiencyTip(TArray<FText>& args, ResourceEnum resourceEn
 		ADDTEXT_LOCTEXT("Winter Resistance Bonus", " +30% Winter Resistance\n");
 	}
 
+	int32 heatingTechUpgradeCount = _simulation->GetTechnologyUpgradeCount(_playerId, TechEnum::HeatingTechnologies);
+	if (heatingTechUpgradeCount > 0) {
+		ADDTEXT_(
+			LOCTEXT("HeatingTechnologies Bonus", " +{0}% Heating Technologies\n"),
+			TEXT_NUM(heatingTechUpgradeCount * 5)
+		);
+	}
+
 	
 	if (IsUpgraded(0)) {
 		ADDTEXT_LOCTEXT("StoneInsulation Bonus", " +20% Stone Insulation\n");
@@ -312,7 +320,7 @@ int32 House::GetIncome100(IncomeEnum incomeEnum)
 	}
 
 	case IncomeEnum::Bank: {
-		if (_houseLvl >= 5) {
+		if (_houseLvl < 5) {
 			return 0;
 		}
 		int32 radiusBonus = GetRadiusBonus(CardEnum::Bank, Bank::Radius, [&](int32 bonus, Building& building) {
@@ -372,6 +380,8 @@ int64 House::GetScience100(ScienceEnum scienceEnum, int64 cumulative100) const
 
 void House::OnPickupResource(int32 objectId)
 {
+	Building::OnPickupResource(objectId);
+	
 	PUN_CHECK(_buildingEnum == CardEnum::House);
 	if (!_simulation->buildingIsAlive(_objectId) || isDisabled() || !isConstructed() || _townId == -1) {
 		return;
@@ -381,6 +391,8 @@ void House::OnPickupResource(int32 objectId)
 }
 void House::OnDropoffResource(int32 objectId, ResourceHolderInfo holderInfo, int32 amount)
 {
+	Building::OnDropoffResource(objectId, holderInfo, amount);
+	
 	PUN_CHECK(_buildingEnum == CardEnum::House);
 	if (!_simulation->buildingIsAlive(_objectId) || isDisabled() || !isConstructed() || _townId == -1) {
 		return;

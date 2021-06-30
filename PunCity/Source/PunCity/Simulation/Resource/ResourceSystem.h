@@ -11,6 +11,7 @@
 #include <iterator>
 #include "PunCity/CppUtils.h"
 #include "PunCity/GameConstants.h"
+#include "PunCity/PunTimer.h"
 
 DECLARE_CYCLE_STAT(TEXT("PUN: Unit.CalcHuman.MoveResource.FindHolder [4.2.4.1]"), STAT_PunUnit_CalcHuman_MoveResource_FindHolder, STATGROUP_Game);
 
@@ -54,6 +55,7 @@ struct ResourceHolder
 			<< "]\n";
 	}
 
+#if CHECK_TICKHASH
 	int32 GetSyncHash() const
 	{
 		int32 hash = 0;
@@ -69,6 +71,7 @@ struct ResourceHolder
 
 		return hash;
 	}
+#endif
 	
 
 	void SetTarget(int32 newTarget) {
@@ -239,7 +242,8 @@ class ResourceSystem;
 
 // All Resource Holders for a resource type
 class ResourceTypeHolders
-{
+{	
+public:
 	struct HolderIdToAmount
 	{
 		int32 holderId;
@@ -250,8 +254,8 @@ class ResourceTypeHolders
 			Ar << amount;
 		}
 	};
+
 	
-public:
 	void Init(ResourceEnum resourceEnum, IGameSimulationCore* simulation, int32 townId)
 	{
 		//PUN_LOG("ResourceTypeHolders Init: %d, sim:%p, sys%p", static_cast<int>(resourceEnum), simulation, resourceSystem);
@@ -261,13 +265,20 @@ public:
 		_townId = townId;
 		
 		_findTypeToAvailableIdToAmount.resize(static_cast<int>(ResourceFindType::Count));
+
+		_resourceCountCache = -1;
 	}
 	
 	/*
 	 * Const Get
 	 */
 	
-	int32 resourceCount() const {
+	int32 resourceCount() const
+	{
+		if (_resourceCountCache != -1) {
+			return _resourceCountCache;
+		}
+		
 		int count = 0;
 		for (int i = 0; i < _holders.size(); i++) {
 			ResourceHolderType type = _holders[i].type;
@@ -277,6 +288,7 @@ public:
 				count += _holders[i].current();
 			}
 		}
+		_resourceCountCache = count;
 		return count;
 	}
 	int32 resourceCountWithPop() const {
@@ -349,7 +361,10 @@ public:
 	//ResourceHolder& holderMutable(int holderId) { return _holders[holderId]; }
 	
 	int32 SpawnHolder(ResourceEnum resourceEnum, ResourceHolderType type, int objectId, WorldTile2 tile, int target, ResourceSystem& resourceSys);
-	void DespawnHolder(int holderId) { 
+	void DespawnHolder(int holderId)
+	{
+		_resourceCountCache = -1;
+		
 		_disabledHolderIds.push_back(holderId); 
 		_holders[holderId].type = ResourceHolderType::Dead;
 
@@ -363,6 +378,8 @@ public:
 	void RemoveResourceGlobal_Unreserved(int32 amount, ResourceSystem& resourceSys);
 
 	void ResetHolderReservers(int32 holderId, ResourceSystem& resourceSys) {
+		_resourceCountCache = -1;
+		
 		ResourceHolder& holder = _holders[holderId]; // _enumToHolders[(int)info.resourceEnum].holderMutable(info.holderId);
 		holder.ResetPopReservers(*_simulation);
 		holder.ResetPushReservers(*_simulation);
@@ -371,21 +388,25 @@ public:
 	}
 
 	void AddResource(int32 holderId, int amount, ResourceSystem& resourceSys) {
+		_resourceCountCache = -1;
 		_holders[holderId].AddResource(amount);
 		RefreshHolder(holderId, resourceSys);
 	}
 	void RemoveResource(int32 holderId, int amount, ResourceSystem& resourceSys) {
+		_resourceCountCache = -1;
 		_holders[holderId].RemoveResource(amount);
 		RefreshHolder(holderId, resourceSys);
 	}
 
 	void SetResourceTarget(int32 holderId, int32 target, ResourceSystem& resourceSys) {
+		_resourceCountCache = -1;
 		check(holderId < _holders.size());
 		
 		_holders[holderId].SetTarget(target);
 		RefreshHolder(holderId, resourceSys);
 	}
 	void SetHolderTypeAndTarget(int32 holderId, ResourceHolderType type, int32 target, ResourceSystem& resourceSys) {
+		_resourceCountCache = -1;
 		check(holderId < _holders.size());
 		
 		_holders[holderId].SetTarget(target);
@@ -394,7 +415,7 @@ public:
 	}
 
 
-	bool CanAddReservation(ReservationType type, int32 holderId)
+	bool CanAddReservation(ReservationType type, int32 holderId) const
 	{
 		if (!(type == ReservationType::Push || type == ReservationType::Pop)) {
 			return false;
@@ -408,6 +429,8 @@ public:
 	//! Reserve resource, positive = reserve for add, negative = reserve for remove
 	void AddReservation(ReservationType type, int32 holderId, int unitId, int amount, ResourceSystem& resourceSys)
 	{
+		_resourceCountCache = -1;
+		
 		if (type == ReservationType::Push) {
 			_holders[holderId].AddPushReservation(amount, unitId);
 		}
@@ -422,6 +445,8 @@ public:
 
 	int32 RemoveReservation(ReservationType type, int32 holderId, int unitId, ResourceSystem& resourceSys)
 	{
+		_resourceCountCache = -1;
+		
 		if (type == ReservationType::Push)
 		{
 			int32_t amount = _holders[holderId].RemovePushReservation(unitId);
@@ -452,8 +477,11 @@ public:
 		SerializeVecObj(Ar, _holders);
 		
 		SerializeVecVecObj(Ar, _findTypeToAvailableIdToAmount);
+
+		Ar << _resourceCountCache;
 	}
 
+#if CHECK_TICKHASH
 	int32 GetSyncHash() const
 	{
 		int32 hash = static_cast<int32>(_resourceEnum);
@@ -473,8 +501,9 @@ public:
 
 		return hash;
 	}
+#endif
 
-	const std::vector<ResourceHolder>& holders() { return _holders; }
+	const std::vector<ResourceHolder>& holders() const { return _holders; }
 	
 
 	void resourcedebugStr(std::stringstream& ss, WorldTile2 townCenterTile, IGameSimulationCore* sim) const
@@ -498,7 +527,13 @@ public:
 		}
 	}
 
-	void CheckIntegrity_ResourceTypeHolder();
+
+	const std::vector<std::vector<HolderIdToAmount>>& findTypeToAvailableIdToAmount() const {
+		return _findTypeToAvailableIdToAmount;
+	}
+	
+
+	void CheckIntegrity_ResourceTypeHolder() const;
 
 	int32 townId() const { return _townId; }
 
@@ -769,7 +804,7 @@ private:
 		{
 			check(holder.tile.isValid());
 			if (holder.tile.isValid() &&
-				WorldTile2::ManDistance(holder.tile, maxDistanceCenter) > maxDistance) {
+				WorldTile2::ManDiagDistance(holder.tile, maxDistanceCenter) > maxDistance) {
 				return;
 			}
 			
@@ -875,7 +910,14 @@ private:
 	std::vector<ResourceHolder> _holders;
 
 	std::vector<std::vector<HolderIdToAmount>> _findTypeToAvailableIdToAmount; // availableIds for each holder Type
+
+	mutable int32 _resourceCountCache = -1;
 };
+
+
+/*
+ * Resource System
+ */
 
 // TODO: revamp resource system to use gateTile based system?? makes more sense than objId??
 class ResourceSystem
@@ -907,6 +949,7 @@ public:
 		PUN_CHECK(_enumToHolders.size() > 0);
 	}
 
+#if CHECK_TICKHASH
 	int32 GetSyncHash()
 	{
 		int32 hash = _townId;
@@ -918,21 +961,16 @@ public:
 
 	std::vector<int32> GetResourcesSyncHashes();
 	void FindDesyncInResourceSyncHashes(const TArray<int32>& serverHashes, int32& currentIndex);
+#endif
 
 	/*
 	 * Get
 	 */
 
-	int32 foodCount() {
-		int count = 0;
-		for (ResourceEnum foodEnum : StaticData::FoodEnums) {
-			count += resourceCount(foodEnum);
-		}
-		return count;
-	}
-
 	int32 resourceCount(ResourceEnum resourceEnum) const
 	{
+		LEAN_PROFILING_R(resourceCount);
+		
 		// At x5, 700 count, 0.35ms
 		//SCOPE_CYCLE_COUNTER(STAT_PunResourceCountTotal);
 		
@@ -946,14 +984,17 @@ public:
 	}
 	
 	int32 resourceCountWithPop(ResourceEnum resourceEnum) const {
+		LEAN_PROFILING_R(resourceCountWithPop);
 		return _enumToHolders[static_cast<int>(resourceEnum)].resourceCountWithPop();
 	}
 
 	int32 resourceCountWithDrops(ResourceEnum resourceEnum) {
+		LEAN_PROFILING_R(resourceCountWithDrops);
 		return _enumToHolders[static_cast<int>(resourceEnum)].resourceCountWithDrops();
 	}
 
 	int32 resourceCountDropOnly(ResourceEnum resourceEnum) {
+		LEAN_PROFILING_R(resourceCountDropOnly);
 		return _enumToHolders[static_cast<int>(resourceEnum)].resourceCountDropOnly();
 	}
 	
@@ -1020,7 +1061,23 @@ public:
 		return holder(info).objectId;
 	}
 
-	bool HasAvailableFood() const {
+	/*
+	 * Needs
+	 */
+	int32 foodCount() {
+		int count = 0;
+		for (ResourceEnum foodEnum : StaticData::FoodEnums) {
+			count += resourceCount(foodEnum);
+		}
+		return count;
+	}
+
+	int32 fuelCount() const { return resourceCountWithPop(ResourceEnum::Coal) + resourceCountWithPop(ResourceEnum::Wood); }
+
+	bool HasAvailableFood() const
+	{
+		LEAN_PROFILING_R(HasAvailableFood);
+		
 		for (ResourceEnum resourceEnum : StaticData::FoodEnums) {
 			if (resourceCountWithPop(resourceEnum) > 0) {
 				return true;
@@ -1028,14 +1085,20 @@ public:
 		}
 		return false;
 	}
-	bool HasAvailableHeat() const {
+	bool HasAvailableHeat() const
+	{
+		LEAN_PROFILING_R(HasAvailableHeat);
 		// TODO: check AvailableToPickup list instead
-		return resourceCountWithPop(ResourceEnum::Coal) + resourceCountWithPop(ResourceEnum::Wood) > 0;
+		return fuelCount() > 0;
 	}
 	bool HasAvailableMedicine() const {
+		LEAN_PROFILING_R(HasAvailableMedicine);
+		
 		return resourceCountWithPop(ResourceEnum::Medicine) + resourceCountWithPop(ResourceEnum::Herb) > 0;
 	}
 	bool HasAvailableTools() const {
+		LEAN_PROFILING_R(HasAvailableTools);
+		
 		for (ResourceEnum resourceEnum : ToolsEnums) {
 			if (resourceCountWithPop(resourceEnum) > 0) {
 				return true;
@@ -1059,6 +1122,8 @@ public:
 
 	//! Add/Remove resource global
 	bool CanAddResourceGlobal(ResourceEnum resourceEnum, int32 amount) {
+		LEAN_PROFILING_R(CanAddResourceGlobal);
+		
 		return holderGroup(resourceEnum).CanAddResourceGlobal(amount, *this);
 	}
 	void AddResourceGlobal(ResourceEnum resourceEnum, int32 amount, IGameSimulationCore& simulation) {
@@ -1165,12 +1230,16 @@ public:
 	FoundResourceHolderInfos FindHolder(ResourceFindType findType, ResourceEnum resourceEnum, int32 amount, WorldTile2 origin, std::vector<int> avoidIds = {}, 
 										int32 maxDistance = GameConstants::MaxDistanceFetch_Laborer, WorldTile2 maxDistanceCenter = WorldTile2::Invalid) const
 	{
+		LEAN_PROFILING_R(FindHolder);
+		
 		// Counted in STAT_PunUnit_CalcHuman_MoveResource_FindHolder
 		return holderGroupConst(resourceEnum).FindHolder(findType, amount, origin, avoidIds, maxDistance, maxDistanceCenter);
 	}
 
 	FoundResourceHolderInfos FindFoodHolder(ResourceFindType findType, int32 amount, WorldTile2 origin, int32 maxDistance, WorldTile2 maxDistanceCenter)
 	{
+		LEAN_PROFILING_R(FindFoodHolder);
+		
 		// Eat less expensive food first...
 		auto getBestChain = [&](const std::vector<ResourceEnum>& foodEnumsCategory)
 		{
@@ -1234,14 +1303,17 @@ public:
 	}
 
 	bool CanAddReservation(ReservationType type, ResourceHolderInfo info) {
+		LEAN_PROFILING_R(CanAddReservation);
+		
 		return holderGroup(info.resourceEnum).CanAddReservation(type, info.holderId);
 	}
 
 	
 
 	// Used in IsLandCleared
-	DropInfo GetDropFromSmallArea_Any(TileArea area)
-	{
+	DropInfo GetDropFromSmallArea_Any(TileArea area) {
+		LEAN_PROFILING_R(GetDropFromSmallArea_Any);
+		
 		//std::vector<int32> provinceIds = _simulation->GetProvinceIdsFromArea(area, true);
 		std::vector<WorldRegion2> regions = area.GetOverlapRegionsSmallArea();
 
@@ -1271,6 +1343,8 @@ public:
 	// Used in TryClearLand
 	DropInfo GetDropFromArea_Pickable(TileArea area, bool isSmallArea = false)
 	{
+		LEAN_PROFILING_R(GetDropFromArea_Pickable);
+		
 		std::vector<WorldRegion2> regions = area.GetOverlapRegions(isSmallArea);
 		
 		for (WorldRegion2 region : regions)
@@ -1287,6 +1361,8 @@ public:
 	// Used in Farm pickup (small area less than region's width/height)
 	std::vector<DropInfo> GetDropsFromArea_Pickable(TileArea area, bool isSmallArea = false)
 	{
+		LEAN_PROFILING_R(GetDropsFromArea_Pickable);
+		
 		std::vector<DropInfo> results;
 
 		std::vector<WorldRegion2> regions = area.GetOverlapRegions(isSmallArea);
@@ -1376,6 +1452,10 @@ public:
 		ss << "\n--- RESOURCE SYS --- \n";
 		holderGroupConst(resourceEnum).resourcedebugStr(ss, townCenterTile, _simulation);
 		ss << "\n--- END RESOURCE SYS--- ";
+	}
+
+	const ResourceTypeHolders& GetDebugHolder(ResourceEnum resourceEnum) const {
+		return _enumToHolders[static_cast<int32>(resourceEnum)];
 	}
 
 private:

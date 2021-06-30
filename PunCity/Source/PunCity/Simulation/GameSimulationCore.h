@@ -456,8 +456,8 @@ public:
 	//}
 	
 
-	int32 GetHouseLvlCount(int32 playerId, int32 houseLvl, bool includeHigherLvl) final {
-		return _buildingSystem->GetHouseLvlCount(playerId, houseLvl, includeHigherLvl);
+	int32 GetHouseLvlCount(int32 townId, int32 houseLvl, bool includeHigherLvl) final {
+		return _buildingSystem->GetHouseLvlCount(townId, houseLvl, includeHigherLvl);
 	}
 
 	std::pair<int32, int32> GetStorageCapacity(int32 townId, bool includeUnderConstruction = false) final
@@ -509,9 +509,13 @@ public:
 		return globalResourceSystem(playerId).influence100();
 	}
 	
-	int32 money(int32 playerId) final {
+	int64 money64(int32 playerId) final {
 		return globalResourceSystem(playerId).money();
 	}
+	int32 moneyCap32(int32 playerId) final {
+		return globalResourceSystem(playerId).moneyCap32();
+	}
+	
 	void ChangeMoney(int32 playerId, int32 moneyChange) final {
 		globalResourceSystem(playerId).ChangeMoney(moneyChange);
 	}
@@ -1213,13 +1217,16 @@ public:
 	}
 
 	int16 GetFloodId(WorldTile2 tile) final { return _floodSystem.GetFloodId(tile); }
-	bool IsConnected(WorldTile2 start, WorldTile2 end, int maxRegionDistance) final {
+	bool IsConnected(WorldTile2 start, WorldTile2 end, int maxRegionDistance) final
+	{
+		LEAN_PROFILING(IsConnected);
 		return _floodSystem.IsConnected(start, end, maxRegionDistance);
 	}
 
 	// Cached Connected for human
 	bool IsConnectedBuilding(int32 buildingId) final
 	{
+		LEAN_PROFILING(IsConnectedBuilding);
 		PUN_CHECK(buildingId != -1);
 
 		int8 isConnected = _buildingSystem->IsConnectedBuilding(buildingId);
@@ -1236,6 +1243,8 @@ public:
 
 	int32 FindNearestBuildingId(WorldTile2 tile, CardEnum buildingEnum, int32 townId, int32& minBuildingDist) override
 	{
+		LEAN_PROFILING(FindNearestBuildingId);
+		
 		minBuildingDist = MAX_int32;
 		int32 nearestBuildingId = -1;
 
@@ -2134,6 +2143,10 @@ public:
 		}
 	}
 
+	virtual void SetPopupTimeDelay(int32 playerId, int32 ticks) override {
+		_popupSystems[playerId].SetPopupTimeDelay(ticks);
+	}
+
 
 	
 	PopupInfo* PopupToDisplay(int32 playerId) final {
@@ -2240,6 +2253,10 @@ public:
 		}
 		return unlockSystem(playerId)->IsResearched(techEnum);
 	}
+	virtual int32 GetTechnologyUpgradeCount(int32 playerId, TechEnum techEnum) final {
+		return unlockSystem(playerId)->GetTechnologyUpgradeCount(techEnum);
+	}
+	
 	bool HasTargetResearch(int32 playerId) final { return unlockSystem(playerId)->hasTargetResearch(); }
 	int32 sciTechsCompleted(int32 playerId) final { return unlockSystem(playerId)->techsCompleted(); }
 
@@ -2404,8 +2421,8 @@ public:
 	bool CanBuyCard(int32 playerId, CardEnum buildingEnum)
 	{
 		// Not enough money
-		int32 money = globalResourceSystem(playerId).money();
-		if (money < cardSystem(playerId).GetCardPrice(buildingEnum)) {
+		int32 moneyCap32 = globalResourceSystem(playerId).moneyCap32();
+		if (moneyCap32 < cardSystem(playerId).GetCardPrice(buildingEnum)) {
 			AddPopupToFront(playerId, 
 				NSLOCTEXT("SimCore", "NotEnoughMoneyPurchaseCard", "Not enough money to purchase the card."), 
 				ExclusiveUIEnum::CardHand1, "PopupCannot"
@@ -2693,7 +2710,7 @@ public:
 		}
 		return happinessScore;
 	}
-	int32 moneyScore(int32 playerId) { return money(playerId) / 1000; }
+	int32 moneyScore(int32 playerId) { return money64(playerId) / 1000; }
 	int32 technologyScore(int32 playerId) { return unlockSystem(playerId)->techsFinished * 10; }
 	int32 wonderScore(int32 playerId)
 	{
@@ -2801,9 +2818,9 @@ public:
 		return true;
 	}
 
-	void GenerateRareCardSelection(int32 playerId, RareHandEnum rareHandEnum, FText rareHandMessage) final
+	void GenerateRareCardSelection(int32 playerId, RareHandEnum rareHandEnum, FText rareHandMessage, int32 objectId = -1) final
 	{
-		return cardSystem(playerId).RollRareHand(rareHandEnum, rareHandMessage);
+		return cardSystem(playerId).RollRareHand(rareHandEnum, rareHandMessage, objectId);
 	}
 
 	void CheckSeedAndMineCard(int32 playerId) final
@@ -3104,7 +3121,7 @@ public:
 		_isLoadingForMainMenu = true;
 		
 		TArray<uint8> data;
-		_treeSystem->SerializeForMainMenu(Ar, sampleRegionIds, data);
+		//_treeSystem->SerializeForMainMenu(Ar, sampleRegionIds, data);
 		_terrainGenerator->SerializeForMainMenu(Ar, sampleRegionIds);
 
 		_buildingSystem->Serialize(Ar, data, nullptr, nullptr, true);

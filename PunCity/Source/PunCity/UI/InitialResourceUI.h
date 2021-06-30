@@ -92,6 +92,8 @@ public:
 
 	void TickUI()
 	{
+		LEAN_PROFILING_UI(TickInitialResourceUI);
+		
 		if (UGameplayStatics::GetTimeSeconds(this) - lastConfirmTime < 3.0f) { // Delayed confirm
 			InitialResourceUI->SetVisibility(ESlateVisibility::Collapsed);
 			return;
@@ -139,7 +141,7 @@ public:
 			SetText(ToolsInventoryText, std::to_string(initialResources.toolsAmount));
 
 			int32 resourceValueIncrease = initialResources.totalCost() - FChooseInitialResources::GetDefault().totalCost();
-			SetText(InitialMoneyText, std::to_string(GetMoney() - resourceValueIncrease));
+			SetText(InitialMoneyText, std::to_string(simulation().money64(playerId()) - static_cast<int64>(resourceValueIncrease)));
 			auto resourceMap = initialResources.resourceMap();
 			SetText(InitialStorageSpaceText, std::to_string(StorageTilesOccupied(resourceMap)) + "/" + std::to_string(InitialStorageSpace));
 			return;
@@ -153,7 +155,6 @@ public:
 	float lastConfirmTime = -1;
 
 private:
-	int32 GetMoney() { return simulation().money(playerId()); }
 
 	bool CheckEnoughMoneyAndStorage();
 	

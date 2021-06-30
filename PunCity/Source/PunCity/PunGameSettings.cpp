@@ -39,6 +39,9 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "Province", 0 },
 	{ "ProvinceFlatConnectionOnly", 0},
 
+	{ "CachedWaypoints", 0 },
+	{ "CachedWaypointsThreshold", 10 },
+
 	{ "PlayerCount", 1 },
 
 	{ "ActionLog", -1 },
@@ -81,6 +84,7 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	//! Debugawn
 	{ "DebugUI", 0 },
 	{ "SoundDebugUI", 0 },
+	
 	{ "DebugTemp", 0 },
 	{ "DebugTemp1", 0 },
 	{ "DebugTemp2", 0 },
@@ -89,6 +93,13 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "DebugTemp5", 0 },
 	{ "ShowFullDebugLog", 1 },
 
+	{ "LeanProfilingUI", 0 },
+	{ "LeanProfilingTicksInterval", 120 },
+	{ "LeanProfilingMin", 1 },
+	{ "LeanProfilingMaxMin", 1 },
+
+	{ "DisplayProfilingUI", 0 },
+	
 	//! TickUI
 	{ "UIWorldSpace", 1 },
 	{ "UIEscMenu", 1 },
@@ -125,6 +136,8 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "ForceNoSnow", 0 },
 	{ "ToggleRain", 0 },
 
+	{ "SkyLightIntensity", 40 },
+
 	// Debug Toggle
 	{ "MultithreadedMeshGeneration", 1 },
 	{ "ForceClickthrough", 0 },
@@ -147,6 +160,8 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "ForceDesyncPopup", 0 },
 	{ "AlreadyDesynced", 0 },
 
+	{ "ShowFocusUIMesh", 1 },
+	{ "ForceWorkAnimation", 0 },
 
 	{ "ShouldResetMouseCursor", 1 },
 

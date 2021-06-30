@@ -480,7 +480,14 @@ void UTerrainMapComponent::SetupGlobalTextures(int tileDimXIn, int tileDimYIn, I
 				//uint8 trimmedRainfall = static_cast<int32_t>(rainfallMap[tile4x4Id]) * 8 / 10;
 				//uint8 moisture = max(trimmedRainfall, riverMap[tile4x4Id]); // 0 - 0.8 is normal green... beyond that it is river green...
 
-				biomeData[tile4x4Id] = FColor(temperature, rainfall, mountain, riverMap[tile4x4Id]).ToPackedARGB();
+				// x10 multiplier in shader seems fine... so 256 -> 16
+				uint8 height = min(255, abs(heightMap[(x4 * 4) + (y4 * 4) * tileDimX]) / 16);
+				height = 255 - height;
+				
+				uint8 riverWithHeight = (riverMap[tile4x4Id] / 2) + 128 - (height / 2);
+
+				biomeData[tile4x4Id] = FColor(temperature, rainfall, mountain, riverWithHeight).ToPackedARGB();
+				//biomeData[tile4x4Id] = FColor(temperature, rainfall, mountain, riverMap[tile4x4Id]).ToPackedARGB();
 			}
 		}
 		

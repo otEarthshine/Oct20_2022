@@ -262,7 +262,19 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 	{
 		_laborerPriorityState.TrySyncToSimulation(&simulation(), townId(), this);
 		RefreshUI();
-		LaborerBuilderBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+
+		// Hide unless focused on Townhall or Workplace
+		const DescriptionUIState& uiState = sim.descriptionUIState();
+		bool shouldHide = true;
+		if (uiState.objectType == ObjectTypeEnum::Building) {
+			Building& bld = sim.building(uiState.objectId);
+			if ((bld.maxOccupants() > 0 && !bld.isEnum(CardEnum::House)) || 
+				bld.isEnum(CardEnum::Townhall))
+			{
+				shouldHide = false;
+			}
+		}
+		LaborerBuilderBox->SetVisibility(shouldHide ? ESlateVisibility::Hidden : ESlateVisibility::SelfHitTestInvisible);
 	}
 
 

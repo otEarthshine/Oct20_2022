@@ -184,7 +184,7 @@ public:
 
 				ResetWorkReservers(); // TODO: still worker crash???
 
-				//ResetStageTo(FarmStage::Dormant);
+				ResetStageTo(FarmStage::Dormant);
 			}
 		}
 	}
@@ -588,6 +588,8 @@ class Tailor final : public IndustrialBuilding
 public:
 	void OnInit() override;
 	void FinishConstruction() final;
+
+	void ResetWorkModes();
 };
 
 class BeerBrewery : public IndustrialBuilding
@@ -917,7 +919,7 @@ public:
 	void FinishConstruction() override {
 		Building::FinishConstruction();
 
-		builtNumber = _simulation->playerBuildingFinishedCount(_townId, _buildingEnum);
+		builtNumber = _simulation->playerBuildingFinishedCount(_playerId, _buildingEnum);
 
 		bool allWondersBuilt = true;
 		for (CardEnum buildingEnum : WorldWonders) {
@@ -1233,7 +1235,7 @@ public:
 
 	static const int32 MinHouseLvl = 5;
 
-	void CalculateRoundProfit() override;
+	//void CalculateRoundProfit() override;
 };
 
 class Archives final : public ProfitBuilding

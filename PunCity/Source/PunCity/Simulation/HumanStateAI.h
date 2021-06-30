@@ -14,8 +14,7 @@ public:
 
 	//! Macros
 	bool TryMoveResourcesProviderToDropoff(int32 providerBuildingId, int32 dropoffBuildingId, ResourceEnum resourceEnum, int32 amountAtLeast, UnitAnimationEnum animationEnum = UnitAnimationEnum::Walk);
-	bool TryMoveResourcesAnyProviderToDropoff(ResourceFindType providerType, FoundResourceHolderInfo dropoffInfo, bool prioritizeMarket = false, bool checkMarketAfter = false, 
-												UnitAnimationEnum animationEnum = UnitAnimationEnum::Walk);
+	bool TryMoveResourcesAnyProviderToDropoff(ResourceFindType providerType, FoundResourceHolderInfo dropoffInfo, UnitAnimationEnum animationEnum = UnitAnimationEnum::Walk, int32 maxDistance = -1);
 
 	bool TryMoveResourcesProviderToAnyDropoff(FoundResourceHolderInfo providerInfo, ResourceFindType dropoffType, UnitAnimationEnum animationEnum = UnitAnimationEnum::Walk);
 	bool TryMoveResourcesAny(ResourceEnum resourceEnum, ResourceFindType providerType, ResourceFindType dropoffType, int32 amountAtLeast);
@@ -104,7 +103,10 @@ public:
 
 	
 
-	void ExecuteAction() override {
+	void ExecuteAction() override
+	{
+		LEAN_PROFILING_U(ExecuteAction);
+		
 #define CASE(Action) case ActionEnum::Action: Action(); break;
 		switch (_currentAction.actionEnum) {
 			// HumanAI

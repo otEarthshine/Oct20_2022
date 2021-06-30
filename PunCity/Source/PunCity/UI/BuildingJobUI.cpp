@@ -68,6 +68,8 @@ void UBuildingJobUI::PunInit(int buildingId, bool isHouse)
 
 void UBuildingJobUI::SetSlots(int filledSlotCount, int allowedSlotCount, int slotCount, FLinearColor color, bool fromInput)
 {
+	LEAN_PROFILING_UI(TickWorldSpaceUI_BldJobSetSlots);
+	
 	// Don't set slots for a while after last user input
 	if (!fromInput && UGameplayStatics::GetTimeSeconds(this) < _lastInputTime + NetworkInputDelayTime) {
 		return;
@@ -124,16 +126,21 @@ void UBuildingJobUI::SetConstructionResource(std::vector<int32> constructionReso
 
 			completionIcon->SetIsPaused(building.priority() == PriorityEnum::Disable);
 
-			TArray<FText> args;
-			ADDTEXT_LOCTEXT("Construction Input", "Construction Input");
-			ADDTEXT_INV_("<space>");
-			ADDTEXT_(INVTEXT("{0} {1}/{2}"), ResourceNameT(resourceEnum), TEXT_NUM(constructionResourcesCount[i]), constructionCosts[i]);
-			ADDTEXT_INV_("<space>");
-			ADDTEXT_(LOCTEXT("Stored(city): {0}", "Stored(city): {0}"), TEXT_NUM(simulation().resourceCountTownSafe(building.townId(), resourceEnum)));
+			if (completionIcon->ResourceImage->IsHovered())
+			{
+				TArray<FText> args;
+				ADDTEXT_LOCTEXT("Construction Input", "Construction Input");
+				ADDTEXT_INV_("<space>");
 
-			auto tooltip = AddToolTip(completionIcon->ResourceImage, args);
-			if (tooltip) {
-				tooltip->TipSizeBox->SetMinDesiredWidth(200);
+				int32 constructionResourceCount = std::min(constructionResourcesCount[i], constructionCosts[i]); // TODO: !!! Sometimes there is more resources than needed and ppl complained
+				ADDTEXT_(INVTEXT("{0} {1}/{2}"), ResourceNameT(resourceEnum), TEXT_NUM(constructionResourceCount), constructionCosts[i]);
+				ADDTEXT_INV_("<space>");
+				ADDTEXT_(LOCTEXT("Stored(city): {0}", "Stored(city): {0}"), TEXT_NUM(simulation().resourceCountTownSafe(building.townId(), resourceEnum)));
+
+				auto tooltip = AddToolTip(completionIcon->ResourceImage, args);
+				if (tooltip) {
+					tooltip->TipSizeBox->SetMinDesiredWidth(200);
+				}
 			}
 		}
 	}
@@ -168,13 +175,16 @@ void UBuildingJobUI::SetTradeProgress(TradeBuilding& tradeBuilding, float fracti
 				material->SetScalarParameterValue("HasNoResource", 0.0f);
 				
 				completionIcon->SetIsPaused(false);
-				
-				TArray<FText> args;
-				ADDTEXT_(
-					LOCTEXT("Bought resources", "Bought {0} {1}<space>"), TEXT_NUM(resourcePair.count), ResourceNameT(resourceEnum)
-				);
-				ADDTEXT_(LOCTEXT("arriving in {0}s", "arriving in {0}s"), TEXT_NUM(tradeBuilding.CountdownSecondsDisplay()));
-				AddToolTip(completionIcon->ResourceImage, args);
+
+				if (completionIcon->ResourceImage->IsHovered())
+				{
+					TArray<FText> args;
+					ADDTEXT_(
+						LOCTEXT("Bought resources", "Bought {0} {1}<space>"), TEXT_NUM(resourcePair.count), ResourceNameT(resourceEnum)
+					);
+					ADDTEXT_(LOCTEXT("arriving in {0}s", "arriving in {0}s"), TEXT_NUM(tradeBuilding.CountdownSecondsDisplay()));
+					AddToolTip(completionIcon->ResourceImage, args);
+				}
 			}
 		}
 
@@ -268,34 +278,44 @@ void UBuildingJobUI::SetTradeProgress(TradeBuilding& tradeBuilding, float fracti
 
 void UBuildingJobUI::SetResourceCompletion(std::vector<ResourceEnum> inputs, std::vector<ResourceEnum> outputs, Building& building)
 {
+	LEAN_PROFILING_UI(TickWorldSpaceUI_BldJobResourceComplete);
+	
 	int32 index = 0;
-	for (size_t i = 0; i < inputs.size(); i++)
+
+	// Show input if it is not filled yet
+	if (!building.filledInputs())
 	{
-		auto completionIcon = GetBoxChild<UResourceCompletionIcon>(ResourceCompletionIconBox, index, UIEnum::ResourceCompletionIcon, true);
-		UMaterialInstanceDynamic* material = completionIcon->ResourceImage->GetDynamicMaterial();
+		for (size_t i = 0; i < inputs.size(); i++)
+		{
+			auto completionIcon = GetBoxChild<UResourceCompletionIcon>(ResourceCompletionIconBox, index, UIEnum::ResourceCompletionIcon, true);
+			UMaterialInstanceDynamic* material = completionIcon->ResourceImage->GetDynamicMaterial();
 
-		material->SetTextureParameterValue("ColorTexture", assetLoader()->GetResourceIcon(inputs[i]));
-		material->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(inputs[i]));
+			material->SetTextureParameterValue("ColorTexture", assetLoader()->GetResourceIcon(inputs[i]));
+			material->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(inputs[i]));
 
-		int32 hasCount = building.resourceCount(inputs[i]);
-		int32 needCount = building.inputPerBatch(inputs[i]);
+			int32 hasCount = building.resourceCount(inputs[i]);
+			int32 needCount = building.inputPerBatch(inputs[i]);
 
-		material->SetScalarParameterValue("Fraction", static_cast<float>(hasCount) / needCount);
-		material->SetScalarParameterValue("IsInput", 1.0f);
-		material->SetScalarParameterValue("HasNoResource", hasCount < needCount && simulation().resourceCountTown(building.townId(), inputs[i]) == 0);
+			material->SetScalarParameterValue("Fraction", static_cast<float>(hasCount) / needCount);
+			material->SetScalarParameterValue("IsInput", 1.0f);
+			material->SetScalarParameterValue("HasNoResource", hasCount < needCount && simulation().resourceCountTown(building.townId(), inputs[i]) == 0);
 
-		completionIcon->SetIsPaused(building.priority() == PriorityEnum::Disable);
+			completionIcon->SetIsPaused(building.priority() == PriorityEnum::Disable);
 
-		TArray<FText> args;
-		ADDTEXT_LOCTEXT("Input", "Input");
-		ADDTEXT_INV_("<space>");
-		ADDTEXT_(INVTEXT("{0} {1}/{2}"), ResourceNameT(inputs[i]), TEXT_NUM(hasCount), TEXT_NUM(needCount));
-		ADDTEXT_INV_("<space>");
-		ADDTEXT_(LOCTEXT("Stored(city): {0}", "Stored(city): {0}"), TEXT_NUM(simulation().resourceCountTown(building.townId(), inputs[i])));
+			if (completionIcon->ResourceImage->IsHovered())
+			{
+				TArray<FText> args;
+				ADDTEXT_LOCTEXT("Input", "Input");
+				ADDTEXT_INV_("<space>");
+				ADDTEXT_(INVTEXT("{0} {1}/{2}"), ResourceNameT(inputs[i]), TEXT_NUM(hasCount), TEXT_NUM(needCount));
+				ADDTEXT_INV_("<space>");
+				ADDTEXT_(LOCTEXT("Stored(city): {0}", "Stored(city): {0}"), TEXT_NUM(simulation().resourceCountTown(building.townId(), inputs[i])));
 
-		auto tooltip = AddToolTip(completionIcon->ResourceImage, args);
-		if (tooltip) {
-			tooltip->TipSizeBox->SetMinDesiredWidth(150);
+				auto tooltip = AddToolTip(completionIcon->ResourceImage, args);
+				if (tooltip) {
+					tooltip->TipSizeBox->SetMinDesiredWidth(150);
+				}
+			}
 		}
 	}
 
@@ -323,14 +343,17 @@ void UBuildingJobUI::SetResourceCompletion(std::vector<ResourceEnum> inputs, std
 
 		//index++;
 
-		TArray<FText> args;
-		ADDTEXT_LOCTEXT("Output", "Output");
-		ADDTEXT_INV_("<space>");
-		ADDTEXT_(INVTEXT("{0} {1}"), ResourceNameT(outputs[i]), TEXT_PERCENT(static_cast<int>(outputFraction * 100)));
+		if (completionIcon->ResourceImage->IsHovered())
+		{
+			TArray<FText> args;
+			ADDTEXT_LOCTEXT("Output", "Output");
+			ADDTEXT_INV_("<space>");
+			ADDTEXT_(INVTEXT("{0} {1}"), ResourceNameT(outputs[i]), TEXT_PERCENT(static_cast<int>(outputFraction * 100)));
 
-		auto tooltip = AddToolTip(completionIcon->ResourceImage, args);
-		if (tooltip) {
-			tooltip->TipSizeBox->SetMinDesiredWidth(150);
+			auto tooltip = AddToolTip(completionIcon->ResourceImage, args);
+			if (tooltip) {
+				tooltip->TipSizeBox->SetMinDesiredWidth(150);
+			}
 		}
 	}
 
@@ -341,6 +364,8 @@ void UBuildingJobUI::SetResourceCompletion(std::vector<ResourceEnum> inputs, std
 
 void UBuildingJobUI::SetShowHumanSlots(bool isVisible, bool canManipulateOccupants, bool isTileBld)
 {
+	LEAN_PROFILING_UI(TickWorldSpaceUI_BldJobHumanSlots);
+	
 	if (isVisible)
 	{
 		HumanSlotsUI->SetVisibility(ESlateVisibility::Visible);

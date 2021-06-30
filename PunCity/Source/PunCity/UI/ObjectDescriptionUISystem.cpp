@@ -88,6 +88,7 @@ void UObjectDescriptionUISystem::CreateWidgets()
 
 void UObjectDescriptionUISystem::Tick()
 {
+	LEAN_PROFILING_UI(TickObjDescriptionUI);
 	SCOPE_CYCLE_COUNTER(STAT_PunUIAll);
 	
 	if (InterfacesInvalid()) return;
@@ -1193,6 +1194,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						ADDTEXT_(INVTEXT("{0}/{1}"), TEXT_NUM(ranch.animalOccupants().size()), TEXT_NUM(ranch.maxAnimals));
 						descriptionBox->AddRichText(LOCTEXT("Animals:", "Animals:"), args);
 
+						AddEfficiencyText(ranch, descriptionBox);
+
 						// Add Animal Button
 						if (building.playerId() == playerId())
 						{
@@ -1201,7 +1204,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							
 							TArray<FText> argsLocal;
 							argsLocal.Add(LOCTEXT("Buy Animal", "Buy Animal"));
-							ADDTEXT(argsLocal, INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(FText::AsNumber(animalCost), animalCost > simulation.money(playerId())));
+							ADDTEXT(argsLocal, INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(FText::AsNumber(animalCost), animalCost > simulation.moneyCap32(playerId())));
 
 							descriptionBox->AddSpacer();
 							descriptionBox->AddButton2Lines(JOINTEXT(argsLocal), this, CallbackEnum::AddAnimalRanch, showEnabled, false, objectId);
@@ -2251,7 +2254,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						else
 						{
 							int32 quickBuildCost = building.GetQuickBuildCost();
-							bool canQuickBuild = simulation.money(playerId()) >= quickBuildCost;
+							bool canQuickBuild = simulation.moneyCap32(playerId()) >= quickBuildCost;
 
 							TArray<FText> argsLocal;
 							argsLocal.Add(LOCTEXT("Quick Build <Orange>[Ctrl-B]</>", "Quick Build <Orange>[Ctrl-B]</>"));
@@ -2621,7 +2624,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						{
 							int32 upgradeMoney = townhall.GetUpgradeMoney();
 							FText moneyText = FText::AsNumber(upgradeMoney);
-							if (globalResourceSys.money() < upgradeMoney) {
+							if (globalResourceSys.moneyCap32() < upgradeMoney) {
 								moneyText = TEXT_TAG("<Red>", moneyText);
 							}
 
@@ -2657,7 +2660,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							//	ADDTEXT_TAG_("<Red>", LOCTEXT("TownhallUpgrade_NeedCapitalUpgrade", "Require higher Capital's Townhall Level."));
 							//}
 							//else 
-							if (globalResourceSys.money() < upgradeMoney) {
+							if (globalResourceSys.moneyCap32() < upgradeMoney) {
 								ADDTEXT_INV_("<space>");
 								ADDTEXT_TAG_("<Red>", LOCTEXT("Not enough money to upgrade.", "Not enough money to upgrade."));
 							}
@@ -2708,7 +2711,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								else {
 									PUN_CHECK(resourceEnum == ResourceEnum::None);
 									
-									FText moneyText = TextRed(TEXT_NUM(upgrade.moneyNeeded), globalResourceSys.money() < upgrade.moneyNeeded);
+									FText moneyText = TextRed(TEXT_NUM(upgrade.moneyNeeded), globalResourceSys.moneyCap32() < upgrade.moneyNeeded);
 									
 									ADDTEXT_(INVTEXT("\n<img id=\"Coin\"/>{0}"), moneyText);
 								}
@@ -3127,8 +3130,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			WorldAtom2 atom = dataSource()->unitDataSource().actualAtomLocation(objectId);
 			SpawnSelectionMesh(assetLoader->SelectionMaterialGreen, dataSource()->DisplayLocation(atom) + FVector(0, 0, 30));
 
-			if (unitEnum != UnitEnum::Human &&
-				unitEnum != UnitEnum::WildMan)
+			//if (unitEnum != UnitEnum::Human &&
+			//	unitEnum != UnitEnum::WildMan)
 			{
 				FTransform transform;
 				UnitDisplayState displayState = dataSource()->GetUnitTransformAndVariation(unit, transform);
@@ -3693,7 +3696,7 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 			// Claim by money
 			{
 				int32 provincePriceMoney = provincePrice * GameConstants::ClaimProvinceByMoneyMultiplier;
-				bool canClaim = simulation().money(playerId()) >= provincePriceMoney;
+				bool canClaim = simulation().moneyCap32(playerId()) >= provincePriceMoney;
 
 				TArray<FText> args;
 				AppendClaimConnectionString(args, false, claimConnectionEnum);
@@ -4229,11 +4232,10 @@ void UObjectDescriptionUISystem::AddBiomeInfo(WorldTile2 tile, UPunBoxWidget* de
 	FloatDet maxCelsius = sim.MaxCelsius(tile);
 	FloatDet minCelsius = sim.MinCelsius(tile);
 
-	//const FText temperatureText = LOCTEXT("Temperature", "Temperature");
-	ADDTEXT_LOCTEXT("BiomeInfo_Temperature", "<Bold>Temperature</>");
+
 	ADDTEXT_(INVTEXT("<Bold>{0}</>\n"), LOCTEXT("Temperature", "Temperature"));
 	
-	ADDTEXT_(INVTEXT("  Summer: {0}°C ({1}°F)"), TEXT_NUMINT(FDToFloat(maxCelsius)), TEXT_NUMINT(FDToFloat(CelsiusToFahrenheit(maxCelsius))));
+	ADDTEXT_(INVTEXT("  Summer: {0}°C ({1}°F)\n"), TEXT_NUMINT(FDToFloat(maxCelsius)), TEXT_NUMINT(FDToFloat(CelsiusToFahrenheit(maxCelsius))));
 	ADDTEXT_(INVTEXT("  Winter: {0}°C ({1}°F)"), TEXT_NUMINT(FDToFloat(minCelsius)), TEXT_NUMINT(FDToFloat(CelsiusToFahrenheit(minCelsius))));
 	
 	//ADDTEXT_(
@@ -4611,45 +4613,48 @@ void UObjectDescriptionUISystem::AddEfficiencyText(Building& building, UPunBoxWi
 	
 	auto widget = descriptionBox->AddRichText(efficiencyText, TEXT_PERCENT(building.efficiency()));
 
-	TArray<FText> args;
-
-	if (building.isEnum(CardEnum::CardMaker))
+	if (descriptionBox->IsHovered())
 	{
-		ADDTEXT_LOCTEXT("Scholars Office's Efficiency", "Scholars Office's Efficiency increases work speed.");
+		TArray<FText> args;
+
+		if (building.isEnum(CardEnum::CardMaker))
+		{
+			ADDTEXT_LOCTEXT("Scholars Office's Efficiency", "Scholars Office's Efficiency increases work speed.");
+			ADDTEXT_INV_("<space>");
+		}
+
+		ADDTEXT_TAG_("<Bold>", FText::Format(INVTEXT("{0}: {1}%"), efficiencyText, TEXT_NUM(building.efficiency())));
 		ADDTEXT_INV_("<space>");
-	}
-	
-	ADDTEXT_TAG_("<Bold>", FText::Format(INVTEXT("{0}: {1}%"), efficiencyText, TEXT_NUM(building.efficiency())));
-	ADDTEXT_INV_("<space>");
-	ADDTEXT_(INVTEXT(" {0}: {1}%"), baseText, TEXT_NUM(building.efficiencyBeforeBonus()));
-	ADDTEXT_INV_("<space>");
-	ADDTEXT_(INVTEXT(" {0}:"), LOCTEXT("Bonuses", "Bonuses"));
+		ADDTEXT_(INVTEXT(" {0}: {1}%"), baseText, TEXT_NUM(building.efficiencyBeforeBonus()));
+		ADDTEXT_INV_("<space>");
+		ADDTEXT_(INVTEXT(" {0}:"), LOCTEXT("Bonuses", "Bonuses"));
 
-	{
-		TArray<FText> args2;
-		if (building.adjacentEfficiency() > 0) {
-			ADDTEXT(args2, INVTEXT("\n  +{0}% Adjacency Bonus"), TEXT_NUM(building.adjacentEfficiency()));
-		}
-		if (building.levelEfficiency() > 0) {
-			ADDTEXT(args2, INVTEXT("\n  +{0}% Combo Level {1}"), TEXT_NUM(building.levelEfficiency()), TEXT_NUM(building.level()));
-		}
-
-		auto bonuses = building.GetBonuses();
-		for (BonusPair bonus : bonuses) {
-			if (bonus.value > 0) {
-				ADDTEXT(args2, INVTEXT("\n  +{0}% {1}"), TEXT_NUM(bonus.value), bonus.name);
+		{
+			TArray<FText> args2;
+			if (building.adjacentEfficiency() > 0) {
+				ADDTEXT(args2, INVTEXT("\n  +{0}% Adjacency Bonus"), TEXT_NUM(building.adjacentEfficiency()));
 			}
+			if (building.levelEfficiency() > 0) {
+				ADDTEXT(args2, INVTEXT("\n  +{0}% Combo Level {1}"), TEXT_NUM(building.levelEfficiency()), TEXT_NUM(building.level()));
+			}
+
+			auto bonuses = building.GetBonuses();
+			for (BonusPair bonus : bonuses) {
+				if (bonus.value > 0) {
+					ADDTEXT(args2, INVTEXT("\n  +{0}% {1}"), TEXT_NUM(bonus.value), bonus.name);
+				}
+			}
+
+			if (args2.Num() == 0) {
+				ADDTEXT(args2, INVTEXT(" {0}"), LOCTEXT("None", "None"));
+			}
+
+			//ss << ss2.str();
+			args.Add(JOINTEXT(args2));
 		}
 
-		if (args2.Num() == 0) {
-			ADDTEXT(args2, INVTEXT(" {0}"), LOCTEXT("None", "None"));
-		}
-
-		//ss << ss2.str();
-		args.Add(JOINTEXT(args2));
+		AddToolTip(widget, args);
 	}
-	
-	AddToolTip(widget, args);
 
 
 	// Job Happiness
@@ -4677,11 +4682,11 @@ void UObjectDescriptionUISystem::AddTradeFeeText(TradeBuilding& building, UPunBo
 
 	// TODO: Resource Fee
 	if (simulation().HasTownBonus(building.townId(), CardEnum::DesertTradeForALiving)) {
-		descriptionBox->AddRichText(LOCTEXT("DesertTradeForALiving Fee Bonus", "<Gray>-15% Fee when trading Food/Wood.</>"));
+		descriptionBox->AddRichText(LOCTEXT("DesertTradeForALiving Fee Bonus", "<Gray>0% Fee when trading Food/Wood.</>"));
 		descriptionBox->AddSpacer();
 	}
 	if (simulation().HasTownBonus(building.townId(), CardEnum::DesertOreTrade)) {
-		descriptionBox->AddRichText(LOCTEXT("DesertOreTrade Fee Bonus", "<Gray>-25% Fee when trading Ores.</>"));
+		descriptionBox->AddRichText(LOCTEXT("DesertOreTrade Fee Bonus", "<Gray>0% Fee when trading Ores.</>"));
 		descriptionBox->AddSpacer();
 	}
 	descriptionBox->AddSpacer(12);

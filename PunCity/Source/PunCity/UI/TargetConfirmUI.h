@@ -39,6 +39,7 @@ public:
 
 	void TickUI()
 	{
+		LEAN_PROFILING_UI(TickTargetConfirmUI);
 		if (townhallId == -1) {
 			return;
 		}

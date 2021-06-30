@@ -36,6 +36,7 @@ DECLARE_CYCLE_STAT(TEXT("PUN: Unit.CalcHuman.PostWorkplc [4.2.6]"), STAT_PunUnit
 
 void HumanStateAI::CalculateActions()
 {
+	LEAN_PROFILING_U(CalcHuman);
 	SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman);
 
 	DEBUG_AI_VAR(CalculateActions);
@@ -384,7 +385,6 @@ void HumanStateAI::MoveResourceSequence(std::vector<FoundResourceHolderInfo> pro
 
 		Add_DropoffResource(dropoffInfos[i].info, dropoffInfos[i].amount);
 		Add_MoveToResource(dropoffInfos[i].info, customFloodDistance, animationEnum);
-		//Add_MoveTo(resourceSystem().GetTile(dropoffInfos[i].info));
 	}
 
 	for (int i = providerInfos.size(); i-- > 0;) {
@@ -396,7 +396,6 @@ void HumanStateAI::MoveResourceSequence(std::vector<FoundResourceHolderInfo> pro
 		// Set Actions
 		Add_PickupResource(providerInfos[i].info, providerInfos[i].amount);
 		Add_MoveToResource(providerInfos[i].info, customFloodDistance, animationEnum);
-		//Add_MoveTo(resourceSystem().GetTile(providerInfos[i].info));
 	}
 
 	SetActivity(UnitState::MoveResource);
@@ -484,7 +483,7 @@ bool HumanStateAI::TryMoveResourcesProviderToDropoff(int32 providerBuildingId, i
 	return true;
 }
 
-bool HumanStateAI::TryMoveResourcesAnyProviderToDropoff(ResourceFindType providerType, FoundResourceHolderInfo dropoffInfo, bool prioritizeMarket, bool checkMarketAfter, UnitAnimationEnum animationEnum)
+bool HumanStateAI::TryMoveResourcesAnyProviderToDropoff(ResourceFindType providerType, FoundResourceHolderInfo dropoffInfo, UnitAnimationEnum animationEnum, int32 maxDistance)
 {
 	PUN_CHECK2(dropoffInfo.isValid(), debugStr());
 	if (!IsMoveValid(dropoffInfo.tile)) {
@@ -492,27 +491,12 @@ bool HumanStateAI::TryMoveResourcesAnyProviderToDropoff(ResourceFindType provide
 		return false;
 	}
 
-	FoundResourceHolderInfos foundProviders;
+	if (maxDistance == -1) {
+		maxDistance = GameConstants::MaxDistanceFetch_Laborer;
+	}
 
-	// Prioritize market is done twice
-	//  1) check just 1 nearby market
-	//  2) check all markets sorted by distance
-	//if (prioritizeMarket) {
-	//	foundProviders = FindMarketResourceHolderInfo(dropoffInfo.info.resourceEnum, dropoffInfo.amount, true, maxFloodDist);
-	//}
+	FoundResourceHolderInfos foundProviders = resourceSystem().FindHolder(providerType, dropoffInfo.info.resourceEnum, dropoffInfo.amount, unitTile(), {}, maxDistance);
 
-	//if (!foundProviders.hasInfos()) {
-		foundProviders = resourceSystem().FindHolder(providerType, dropoffInfo.info.resourceEnum, dropoffInfo.amount, unitTile(), {});
-	//}
-
-	//if (!foundProviders.hasInfos() && prioritizeMarket) {
-	//	foundProviders = FindMarketResourceHolderInfo(dropoffInfo.info.resourceEnum, dropoffInfo.amount, false, maxFloodDist);
-	//}
-	
-
-	//if (!foundProviders.hasInfos() && checkMarketAfter) {
-	//	foundProviders = FindMarketResourceHolderInfo(dropoffInfo.info.resourceEnum, dropoffInfo.amount, true, maxFloodDist);
-	//}
 	
 	if (!foundProviders.hasInfos()) {
 		AddDebugSpeech("(Failed)TryMoveResourcesAnyProviderToDropoff: " + dropoffInfo.ToString() + " providerInfo invalid: " + ResourceFindTypeName[(int)providerType]);
@@ -551,7 +535,7 @@ bool HumanStateAI::TryMoveResourcesProviderToAnyDropoff(FoundResourceHolderInfo 
 		return false;
 	}
 
-	MoveResourceSequence({ providerInfo }, foundDropoffs.foundInfos); // can't provide more than what foundDropoff can take
+	MoveResourceSequence({ providerInfo }, foundDropoffs.foundInfos, -1, animationEnum); // can't provide more than what foundDropoff can take
 	AddDebugSpeech("(Succeed)TryMoveResourcesProviderToAnyDropoff:");
 	return true;
 }
@@ -697,6 +681,8 @@ bool HumanStateAI::TryMoveResourcesToDeliveryTargetAll(int32 amountAtLeast)
 
 bool HumanStateAI::TryStoreInventory()
 {
+	LEAN_PROFILING_T(TryStoreInventory);
+	
 	auto& resourceSys = resourceSystem();
 
 	// Free inventory
@@ -722,7 +708,6 @@ bool HumanStateAI::TryStoreInventory()
 				// Set Actions
 				Add_DropoffResource(foundInfo.info, foundInfo.amount);
 				Add_MoveToResource(foundInfo.info);
-				//Add_MoveTo(foundInfo.tile);
 
 				SetActivity(UnitState::StoreInventory);
 			}
@@ -809,7 +794,6 @@ bool HumanStateAI::TryClearLand(TileArea area)
 				// Set Actions
 				Add_DropoffResource(foundInfo.info, foundInfo.amount);
 				Add_MoveToResource(foundInfo.info);
-				//Add_MoveTo(foundInfo.tile);
 			}
 
 			Add_PickupResource(holderInfo, amount);
@@ -832,7 +816,6 @@ bool HumanStateAI::TryClearLand(TileArea area)
 			Add_MoveTo(newDropTile);
 			Add_PickupResource(holderInfo, amount);
 			Add_MoveToResource(holderInfo);
-			//Add_MoveTo(resourceSystem().GetTile(holderInfo));
 
 			SetActivity(UnitState::ClearLandRemoveDrop);
 			AddDebugSpeech("(Succeed)TryClearLand: RemoveDrop place nearby");
@@ -864,6 +847,8 @@ FoundResourceHolderInfos HumanStateAI::FindNeedHelper(ResourceEnum resourceEnum,
 // Find food in civilization, if there is really none, get it the wild way
 bool HumanStateAI::TryFindFood()
 {
+	LEAN_PROFILING_T(TryFindFood);
+	
 	// Go get food only if needed
 	if (_food < foodThreshold_Get())
 	{
@@ -907,7 +892,6 @@ bool HumanStateAI::TryFindFood()
 			Add_Wait(60);
 			Add_PickupResource(bestProvider.info, bestProvider.amount);
 			Add_MoveToResource(bestProvider.info);
-			//Add_MoveTo(bestProvider.tile);
 			
 			SetActivity(UnitState::GetFood);
 
@@ -947,6 +931,8 @@ bool HumanStateAI::TryFindFood()
 
 bool HumanStateAI::TryHeatup()
 {
+	LEAN_PROFILING_T(TryHeatup);
+	
 	if (_houseId == -1) {
 		AddDebugSpeech("(Failed)TryHeatup no house");
 		return false;
@@ -961,7 +947,7 @@ bool HumanStateAI::TryHeatup()
 		
 		// Try to fill with coal first since it is cheaper
 		if (townManage.GetHouseResourceAllow(ResourceEnum::Coal) &&
-			TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, house.GetHolderInfoFull(ResourceEnum::Coal, 10), true)) 
+			TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, house.GetHolderInfoFull(ResourceEnum::Coal, 10))) 
 		{
 			AddDebugSpeech("(Succeed)TryHeatup move coal");
 			return true;
@@ -969,7 +955,7 @@ bool HumanStateAI::TryHeatup()
 
 		// Otherwise fill with wood
 		if (townManage.GetHouseResourceAllow(ResourceEnum::Wood) &&
-			TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, house.GetHolderInfoFull(ResourceEnum::Wood, 10), true))
+			TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, house.GetHolderInfoFull(ResourceEnum::Wood, 10)))
 		{
 			AddDebugSpeech("(Succeed)TryHeatup move firewood");
 			return true;
@@ -996,7 +982,6 @@ bool HumanStateAI::TryHeatup()
 		Add_Wait(Time::TicksPerSecond * 2);
 		Add_PickupResource(holderInfo, amount);
 		Add_MoveToResource(holderInfo);
-		//Add_MoveTo(house.gateTile());
 		
 		SetActivity(UnitState::GetHeat);
 
@@ -1024,6 +1009,8 @@ bool HumanStateAI::TryHeatup()
 
 bool HumanStateAI::TryToolup()
 {
+	LEAN_PROFILING_T(TryToolup);
+	
 	if (isBelowWorkingAge()) {
 		AddDebugSpeech("(Failed)TryToolup: Is child");
 		return false;
@@ -1067,7 +1054,6 @@ bool HumanStateAI::TryToolup()
 				Add_Wait(60);
 				Add_PickupResource(bestProvider.info, bestProvider.amount);
 				Add_MoveToResource(bestProvider.info);
-				//Add_MoveTo(bestProvider.tile);
 
 				SetActivity(UnitState::GetTools);
 
@@ -1094,6 +1080,8 @@ bool HumanStateAI::TryToolup()
 }
 bool HumanStateAI::TryHealup()
 {
+	LEAN_PROFILING_T(TryHealup);
+	
 	if (_isSick)
 	{
 		//PUN_LOG("TryHealup ------- %s -- %s", *GetUnitNameT().ToString(), *unitTile().To_FString());
@@ -1137,6 +1125,8 @@ bool HumanStateAI::TryHealup()
 
 bool HumanStateAI::TryFillLuxuries()
 {
+	LEAN_PROFILING_T(TryFillLuxuries);
+	
 	if (_houseId == -1) {
 		AddDebugSpeech("(Failed)TryFillLuxuries: No House");
 		return false;
@@ -1167,7 +1157,7 @@ bool HumanStateAI::TryFillLuxuries()
 	{
 		if (townManage.GetHouseResourceAllow(resourceEnum) &&
 			house.GetResourceCountWithPush(resourceEnum) < 5 &&
-			TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, house.GetHolderInfoFull(resourceEnum, maxPickupAmount), true))
+			TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, house.GetHolderInfoFull(resourceEnum, maxPickupAmount)))
 		{
 			AddDebugSpeech("(Succeed)TryFillLuxuries: " + house.GetHolderInfoFull(resourceEnum, maxPickupAmount).ToString());
 
@@ -1181,108 +1171,11 @@ bool HumanStateAI::TryFillLuxuries()
 	return false;
 }
 
-//FoundResourceHolderInfos HumanStateAI::FindMarketResourceHolderInfo(ResourceEnum resourceEnum, int32 wantAmount, bool checkOnlyOneMarket, int32 maxFloodDist)
-//{
-//	auto tryFindMarketResourceHolder = [&](Building& building)
-//	{
-//		if (resourceEnum == ResourceEnum::Food)
-//		{
-//			for (ResourceEnum foodEnum : StaticData::FoodEnums) {
-//				int32 resourceCount = building.GetResourceCountWithPop(foodEnum);
-//				int32 actualAmount = std::min(wantAmount, resourceCount);
-//				if (actualAmount > 0) {
-//					return FoundResourceHolderInfos({ FoundResourceHolderInfo(building.holderInfo(foodEnum), actualAmount, building.gateTile()) });
-//				}
-//			}
-//		}
-//		else
-//		{
-//			int32 resourceCount = building.GetResourceCountWithPop(resourceEnum);
-//			int32 actualAmount = std::min(wantAmount, resourceCount);
-//			if (actualAmount > 0) {
-//				return FoundResourceHolderInfos({ FoundResourceHolderInfo(building.holderInfo(resourceEnum), actualAmount, building.gateTile()) });
-//			}
-//		}
-//		return FoundResourceHolderInfos();
-//	};
-//	
-//	std::vector<int32> marketIds = _simulation->buildingIds(_townId, CardEnum::Market);
-//
-//	/*
-//	 * Sort market by distance
-//	 */
-//	WorldTile2 houseTile = (_houseId != -1) ? _simulation->building(_houseId).centerTile() : unitTile();
-//	std::vector<int32> sortedMarketIds;
-//	std::vector<int32> sortedMarketDistance;
-//	
-//	for (int32 marketId : marketIds)
-//	{
-//		DEBUG_ISCONNECTED_VAR(FindMarketResourceHolderInfo);
-//		
-//		Building& market = _simulation->building(marketId);
-//		if (market.isConstructed() &&
-//			_simulation->IsConnected(market.centerTile(), houseTile, maxFloodDist, true))
-//		{
-//			int32 distance = WorldTile2::Distance(market.centerTile(), houseTile);
-//			bool inserted = false;
-//			for (size_t i = 0; i < sortedMarketIds.size(); i++) {
-//				if (distance < sortedMarketDistance[i]) {
-//					sortedMarketIds.insert(sortedMarketIds.begin() + i, marketId);
-//					sortedMarketDistance.insert(sortedMarketDistance.begin() + i, distance);
-//				}
-//			}
-//			if (!inserted) {
-//				sortedMarketIds.push_back(marketId);
-//				sortedMarketDistance.push_back(distance);
-//			}
-//		}
-//	}
-//
-//	// Check only one market close by
-//	if (checkOnlyOneMarket)
-//	{
-//		if (sortedMarketIds.size() > 0 && 
-//			sortedMarketDistance[0] <= Market::Radius)
-//		{
-//			Building& market = _simulation->building(sortedMarketIds[0]);
-//			
-//			return tryFindMarketResourceHolder(market);
-//		}
-//		return FoundResourceHolderInfos();
-//	}
-//
-//
-//	// Check all sorted markets
-//	for (int32 marketId : sortedMarketIds)
-//	{
-//		Building& market = _simulation->building(marketId);
-//
-//		FoundResourceHolderInfos holderInfos = tryFindMarketResourceHolder(market);
-//		if (holderInfos.hasInfos()) {
-//			return holderInfos;
-//		}
-//	}
-//
-//	//for (int32 marketId : marketIds)
-//	//{
-//	//	// Ensure this is in market's range
-//	//	//  This is the first check and we should ensure it is the fast one.
-//	//	Building& building = _simulation->building(marketId);
-//	//	if (building.isConstructed() &&
-//	//		WorldTile2::Distance(building.centerTile(), houseTile) <= Market::Radius)
-//	//	{
-//	//		FoundResourceHolderInfos holderInfos = tryFindMarketResourceHolder(building);
-//	//		if (holderInfos.hasInfos()) {
-//	//			return holderInfos;
-//	//		}
-//	//	}
-//	//}
-//	
-//	return FoundResourceHolderInfos();
-//}
 
 bool HumanStateAI::TryFun()
 {
+	LEAN_PROFILING_T(TryFun);
+	
 	if (_houseId == -1) {
 		AddDebugSpeech("(Failed)TryFun no house");
 		return false;
@@ -1355,6 +1248,8 @@ bool HumanStateAI::TryFun()
 
 bool HumanStateAI::TryGatherFruit()
 {
+	LEAN_PROFILING_T(TryGatherFruit);
+	
 	if (TryGoNearWorkplace(100)) {
 		return true;
 	}
@@ -1418,6 +1313,8 @@ bool HumanStateAI::TryGatherFruit()
 
 bool HumanStateAI::TryHunt()
 {
+	LEAN_PROFILING_T(TryHunt);
+	
 	if (TryGoNearWorkplace(100)) {
 		return true;
 	}
@@ -1508,6 +1405,8 @@ bool HumanStateAI::TryHunt()
 
 bool HumanStateAI::TryRanch()
 {
+	LEAN_PROFILING_T(TryRanch);
+	
 	if (TryGoNearWorkplace(100)) {
 		return true;
 	}
@@ -1569,6 +1468,8 @@ bool HumanStateAI::TryRanch()
 
 bool HumanStateAI::TryFarm()
 {
+	LEAN_PROFILING_T(TryFarm);
+	
 	if (TryGoNearWorkplace(100)) {
 		return true;
 	}
@@ -1847,6 +1748,8 @@ bool HumanStateAI::TryClearFarmDrop(Farm& farm, int32 minDropCount)
 
 bool HumanStateAI::TryBulkHaul_ShippingDepot()
 {
+	LEAN_PROFILING_T(TryBulkHaul_ShippingDepot);
+	
 	auto& shipper = workplace()->subclass<ShippingDepot>(CardEnum::ShippingDepot);
 	int32 deliveryTargetId = shipper.deliveryTargetIdAfterConstruction();
 
@@ -1892,6 +1795,8 @@ bool HumanStateAI::TryBulkHaul_ShippingDepot()
 
 bool HumanStateAI::TryBulkHaul_Intercity()
 {
+	LEAN_PROFILING_T(TryBulkHaul_Intercity);
+	
 	IntercityLogisticsHub& hub = workplace()->subclass<IntercityLogisticsHub>(CardEnum::IntercityLogisticsHub);
 	
 	if (hub.targetTownId == -1) {
@@ -1969,11 +1874,15 @@ bool HumanStateAI::TryBulkHaul_IntercityWater()
 
 bool HumanStateAI::TryBulkHaul_Market()
 {
+	LEAN_PROFILING_T(TryBulkHaul_Market);
+	
 	Market& market = workplace()->subclass<Market>(CardEnum::Market);
 
 	std::vector<ResourceInfo> resourceInfos = SortedNameResourceInfo;
 
-	auto tryMoveResource = [&](ResourceEnum resourceEnum) {
+	const int32 minBulkAmount = 30;
+	
+	auto tryMoveResource = [&](ResourceEnum resourceEnum, bool moveBulkOnly) {
 		if (market.holder(resourceEnum).type == ResourceHolderType::Provider) {
 			return false;
 		}
@@ -1985,9 +1894,12 @@ bool HumanStateAI::TryBulkHaul_Market()
 		}
 		
 		int32 resourceToMove = std::min(bulkHaulCapacity(), target - resourceCount);
+
+		if (moveBulkOnly && resourceToMove < minBulkAmount) {
+			return false;
+		}
 		
-		if (TryMoveResourcesAnyProviderToDropoff(ResourceFindType::MarketPickup, market.GetHolderInfoFull(resourceEnum, resourceToMove), 
-													false, false, UnitAnimationEnum::HorseMarket))
+		if (TryMoveResourcesAnyProviderToDropoff(ResourceFindType::MarketPickup, market.GetHolderInfoFull(resourceEnum, resourceToMove), UnitAnimationEnum::HorseMarket))
 		{
 			// successful move, go to market to get cart first
 			Add_MoveTo(market.gateTile(), -1, UnitAnimationEnum::Walk);
@@ -1996,53 +1908,67 @@ bool HumanStateAI::TryBulkHaul_Market()
 		return false;
 	};
 
-	// Low food count, get food first
-	int32 foodCount = market.GetFoodCount();
-	bool shouldAddFood = foodCount < market.GetFoodTarget();
+	auto tryMoveResourceAll = [&](bool moveBulkOnly)
+	{
+		// Low food count, get food first
+		int32 foodCount = market.GetFoodCount();
+		bool shouldAddFood = foodCount < market.GetFoodTarget();
+
+		bool isFoodHighPriority = foodCount <= 200;
+		if (isFoodHighPriority && shouldAddFood) {
+			for (ResourceEnum foodEnum : StaticData::FoodEnums) {
+				if (tryMoveResource(foodEnum, moveBulkOnly)) {
+					return true;
+				}
+			}
+		}
+
+		// Fuel enum
+		for (ResourceEnum resourceEnum : FuelEnums) {
+			if (tryMoveResource(resourceEnum, moveBulkOnly)) {
+				return true;
+			}
+		}
+		// Medicine Enum
+		for (ResourceEnum resourceEnum : MedicineEnums) {
+			if (tryMoveResource(resourceEnum, moveBulkOnly)) {
+				return true;
+			}
+		}
+		// Tools Enum
+		for (ResourceEnum resourceEnum : ToolsEnums) {
+			if (tryMoveResource(resourceEnum, moveBulkOnly)) {
+				return true;
+			}
+		}
+		// Luxury
+		const std::vector<ResourceEnum>& luxuryEnums = GetLuxuryResources();
+		for (ResourceEnum resourceEnum : luxuryEnums) {
+			if (tryMoveResource(resourceEnum, moveBulkOnly)) {
+				return true;
+			}
+		}
+
+		// Food low priority
+		if (!isFoodHighPriority && shouldAddFood) {
+			for (ResourceEnum foodEnum : StaticData::FoodEnums) {
+				if (tryMoveResource(foodEnum, moveBulkOnly)) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	};
+
+	if (tryMoveResourceAll(true)) {
+		return true;
+	}
+
+	if (tryMoveResourceAll(false)) {
+		return true;
+	}
 	
-	bool isFoodHighPriority = foodCount <= 200;
-	if (isFoodHighPriority && shouldAddFood) {
-		for (ResourceEnum foodEnum : StaticData::FoodEnums) {
-			if (tryMoveResource(foodEnum)) {
-				return true;
-			}
-		}
-	}
-
-	// Fuel enum
-	for (ResourceEnum resourceEnum : FuelEnums) {
-		if (tryMoveResource(resourceEnum)) {
-			return true;
-		}
-	}
-	// Medicine Enum
-	for (ResourceEnum resourceEnum : MedicineEnums) {
-		if (tryMoveResource(resourceEnum)) {
-			return true;
-		}
-	}
-	// Tools Enum
-	for (ResourceEnum resourceEnum : ToolsEnums) {
-		if (tryMoveResource(resourceEnum)) {
-			return true;
-		}
-	}
-	// Luxury
-	const std::vector<ResourceEnum>& luxuryEnums = GetLuxuryResources();
-	for (ResourceEnum resourceEnum : luxuryEnums) {
-		if (tryMoveResource(resourceEnum)) {
-			return true;
-		}
-	}
-
-	// Food low priority
-	if (!isFoodHighPriority && shouldAddFood) {
-		for (ResourceEnum foodEnum : StaticData::FoodEnums) {
-			if (tryMoveResource(foodEnum)) {
-				return true;
-			}
-		}
-	}
 
 	WorkFailed(TryWorkFailEnum::None);
 	return false;
@@ -2051,6 +1977,8 @@ bool HumanStateAI::TryBulkHaul_Market()
 
 bool HumanStateAI::TryHaulingServices()
 {
+	LEAN_PROFILING_T(TryHaulingServices);
+	
 	HaulingServices& workPlc = workplace()->subclass<HaulingServices>(CardEnum::HaulingServices);
 
 	int32 highestInputHaulNeededPercent = 0;
@@ -2112,7 +2040,7 @@ bool HumanStateAI::TryHaulingServices()
 		check(resourceNeeded > 0);
 		
 		FoundResourceHolderInfo holderInfo = building.GetHolderInfoFull(highestInputHaulNeededResourceEnum, resourceNeeded);
-		if (TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, holderInfo, false, false, UnitAnimationEnum::HaulingCart))
+		if (TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, holderInfo, UnitAnimationEnum::HaulingCart))
 		{
 			// successful move, go to market to get cart first
 			Add_MoveTo(workPlc.gateTile(), -1, UnitAnimationEnum::Walk);
@@ -2224,6 +2152,8 @@ bool HumanStateAI::TryHaulingServices()
 
 bool HumanStateAI::TryHaulingPowerPlant()
 {
+	LEAN_PROFILING_T(TryHaulingPowerPlant);
+	
 	PowerPlant& workPlc = workplace()->subclass<PowerPlant>();
 	ResourceEnum fuelEnum = workPlc.fuelEnum();
 
@@ -2234,7 +2164,7 @@ bool HumanStateAI::TryHaulingPowerPlant()
 	}
 
 	FoundResourceHolderInfo holderInfo = workPlc.GetHolderInfoFull(fuelEnum, resourceNeeded);
-	if (TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, holderInfo, false, false, UnitAnimationEnum::HaulingCart))
+	if (TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, holderInfo, UnitAnimationEnum::HaulingCart))
 	{
 		// successful move, go to workPlace to get cart first
 		Add_MoveTo(workPlc.gateTile(), -1, UnitAnimationEnum::Walk);
@@ -2246,6 +2176,7 @@ bool HumanStateAI::TryHaulingPowerPlant()
 
 bool HumanStateAI::TryDistribute_Market()
 {
+	//TODO:  NEED TO DO SOMETHING WITH THIS???
 	auto market = workplace()->subclass<Market>(CardEnum::Market);
 	
 	std::vector<int32> houseIds = _simulation->GetBuildingsWithinRadius(market.centerTile(), Market::Radius, _townId, CardEnum::House);
@@ -2293,6 +2224,8 @@ bool HumanStateAI::TryDistribute_Market()
 
 bool HumanStateAI::TryGather(bool treeOnly)
 {
+	LEAN_PROFILING_T(TryGather);
+	
 	SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_TryGather);
 	
 	if (isBelowWorkingAge()) {
@@ -2396,6 +2329,8 @@ void HumanStateAI::Add_TryForestingPlantAction(TileObjEnum tileObjEnum, NonWalka
 }
 void HumanStateAI::TryForestingPlantAction()
 {
+	LEAN_PROFILING_A(TryForestingPlantAction);
+	
 	TileObjEnum tileObjEnum = static_cast<TileObjEnum>(action().int32val1);
 	NonWalkableTileAccessInfo accessInfo(WorldTile2(action().int32val2), WorldTile2(action().int32val3));
 	
@@ -2502,6 +2437,8 @@ bool HumanStateAI::TryForestingPlant(TileObjEnum lastCutTileObjEnum, NonWalkable
 
 bool HumanStateAI::TryForesting()
 {
+	LEAN_PROFILING_T(TryForesting);
+	
 	if (TryGoNearWorkplace(100)) {
 		return true;
 	}
@@ -2547,6 +2484,8 @@ bool HumanStateAI::TryForesting()
 
 bool HumanStateAI::TryFillWorkplace(ResourceEnum resourceEnum)
 {
+	LEAN_PROFILING_T(TryFillWorkplace);
+	
 	Building* workPlc = workplace();
 	const int32 maxAmount = 10;
 
@@ -2560,7 +2499,7 @@ bool HumanStateAI::TryFillWorkplace(ResourceEnum resourceEnum)
 		return false;
 	}
 
-	if (TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, dropoffInfo, false, true)) {
+	if (TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, dropoffInfo)) {
 		AddDebugSpeech("TryFillWorkplace(Done): move resource");
 		return true;
 	}
@@ -2570,6 +2509,8 @@ bool HumanStateAI::TryFillWorkplace(ResourceEnum resourceEnum)
 
 bool HumanStateAI::TryProduce()
 {
+	LEAN_PROFILING_T(TryProduce);
+	
 	if (TryGoNearWorkplace(100)) {
 		return true;
 	}
@@ -2759,6 +2700,8 @@ bool HumanStateAI::TryProduce()
 
 bool HumanStateAI::TryConstructRoad()
 {
+	LEAN_PROFILING_T(TryConstructRoad);
+	
 	const std::vector<int32>& roadConstructionIds = _simulation->townManager(_townId).roadConstructionIds();
 
 	const int32 maxLoop = 1000;
@@ -2913,6 +2856,8 @@ bool HumanStateAI::TryConstructRoad()
 
 bool HumanStateAI::TryConstructHelper(int32 workplaceId)
 {
+	LEAN_PROFILING_T(TryConstructHelper);
+	
 	Building& workplace = _simulation->building(workplaceId);
 	PUN_UNIT_CHECK(!workplace.isConstructed());
 
@@ -3032,6 +2977,8 @@ bool HumanStateAI::TryConstructHelper(int32 workplaceId)
 
 bool HumanStateAI::TryGoNearWorkplace(int32 distanceThreshold)
 {
+	LEAN_PROFILING_T(TryGoNearWorkplace);
+	
 	Building* workplc = workplace();
 	if (workplc->DistanceTo(unitTile()) > distanceThreshold)
 	{
@@ -3046,12 +2993,84 @@ bool HumanStateAI::TryGoNearWorkplace(int32 distanceThreshold)
 
 bool HumanStateAI::TryCheckBadTile_Human()
 {
+	LEAN_PROFILING_T(TryCheckBadTile_Human);
+	
 	WorldTile2 tile = unitTile();
 
+	/*
+	 * Is not in town? Just Warp
+	 */
+	int32 tileTownId = _simulation->tileOwnerTown(tile);
+	if (tileTownId != _townId)
+	{
+		if (_simulation->tileOwnerPlayer(tile) == _playerId)
+		{
+			// In another town try to get to correct town
+			int32 startTownId = tileTownId;
+			int32 endTownId = _townId;
+
+			WorldTile2 startTownGate = _simulation->GetTownhallGate(startTownId);
+			WorldTile2 endTownGate = _simulation->GetTownhallGate(endTownId);
+
+			std::vector<uint32_t> path;
+			bool succeed = _simulation->pathAI()->FindPathRoadOnly(startTownGate.x, startTownGate.y, endTownGate.x, endTownGate.y, path);
+			if (succeed) {
+				SendToTownLand(startTownId, endTownId);
+
+				AddDebugSpeech("(Succeed)TryCheckBadTile_Human: SendToTownLand");
+				return true;
+			}
+
+			int32 startPortId = -1;
+			int32 endPortId = -1;
+
+			_simulation->FindBestPathWater(startTownId, endTownId, startTownGate, startPortId, endPortId);
+
+			if (startPortId != -1) {
+				SendToTownWater(startTownId, endTownId, startPortId, endPortId);
+
+				AddDebugSpeech("(Succeed)TryCheckBadTile_Human: SendToTownWater");
+				return true;
+			}
+		}
+
+		// Not on tile owned by player
+		// Just warp to the townhall
+		_simulation->ResetUnitActions(_id);
+
+		WorldTile2 endTownGate = _simulation->GetTownhallGate(_townId);
+		_simulation->MoveUnitInstantly(_id, endTownGate.worldAtom2());
+
+		AddDebugSpeech("(Succeed)TryCheckBadTile_Human:");
+		return true;
+	}
+
+	
+
+	/*
+	 * Check House
+	 */
+	PunAStar128x256* pathAI = _simulation->pathAI();
+
+	if (_houseId != -1)
+	{
+		if (_simulation->IsConnectedBuilding(_houseId))
+		{
+			// Succeed in going to house gate
+			if (_simulation->IsConnected(tile, _simulation->building(_houseId).centerTile(), unitMaxFloodDistance())) {
+				AddDebugSpeech("(Failed)TryCheckBadTile_Human:");
+				return false;
+			}
+		}
+	}
+
+
+
+	/*
+	 * Check TownGate (No House or house check failed)
+	 */
 	WorldTile2 townGate = _simulation->GetTownhallGate(_townId);
 
-	PunAStar128x256* pathAI = _simulation->pathAI();
-	//if (!pathAI->isWalkable(tile.x, tile.y))
 	if (!IsMoveValid(townGate))
 	{
 		// Just spiral out trying to find isWalkable tile...
@@ -3093,52 +3112,6 @@ bool HumanStateAI::TryCheckBadTile_Human()
 		_simulation->MoveUnitInstantly(_id, townGate.worldAtom2());
 
 		AddDebugSpeech("(Succeed)TryCheckBadTile_Human: !isWalkable Warp");
-		return true;
-	}
-
-	// Is not in town?
-	int32 tileTownId = _simulation->tileOwnerTown(tile);
-	if (tileTownId != _townId)
-	{
-		if (_simulation->tileOwnerPlayer(tile) == _playerId)
-		{
-			// In another town try to get to correct town
-			int32 startTownId = tileTownId;
-			int32 endTownId = _townId;
-			
-			WorldTile2 startTownGate = _simulation->GetTownhallGate(startTownId);
-			WorldTile2 endTownGate = _simulation->GetTownhallGate(endTownId);
-
-			std::vector<uint32_t> path;
-			bool succeed = _simulation->pathAI()->FindPathRoadOnly(startTownGate.x, startTownGate.y, endTownGate.x, endTownGate.y, path);
-			if (succeed) {
-				SendToTownLand(startTownId, endTownId);
-				
-				AddDebugSpeech("(Succeed)TryCheckBadTile_Human: SendToTownLand");
-				return true;
-			}
-
-			int32 startPortId = -1;
-			int32 endPortId = -1;
-
-			_simulation->FindBestPathWater(startTownId, endTownId, startTownGate, startPortId, endPortId);
-
-			if (startPortId != -1) {
-				SendToTownWater(startTownId, endTownId, startPortId, endPortId);
-
-				AddDebugSpeech("(Succeed)TryCheckBadTile_Human: SendToTownWater");
-				return true;
-			}
-		}
-
-		// Not on tile owned by player
-		// Just warp to the townhall
-		_simulation->ResetUnitActions(_id);
-
-		WorldTile2 endTownGate = _simulation->GetTownhallGate(_townId);
-		_simulation->MoveUnitInstantly(_id, endTownGate.worldAtom2());
-
-		AddDebugSpeech("(Succeed)TryCheckBadTile_Human:");
 		return true;
 	}
 
@@ -3193,6 +3166,8 @@ void HumanStateAI::Add_AttackOutgoing(UnitFullId defender, int32 damage) {
 }
 void HumanStateAI::AttackOutgoing()
 {
+	LEAN_PROFILING_A(AttackOutgoing);
+	
 	UnitFullId defender = action().fullId1;
 	int32 damage = action().int32val1;
 	
@@ -3226,6 +3201,8 @@ void HumanStateAI::Add_DoFarmWork(WorldTile2 tile, FarmStage farmStage) {
 }
 void HumanStateAI::DoFarmWork()
 {
+	LEAN_PROFILING_A(DoFarmWork);
+	
 	WorldTile2 tile(action().int32val1);
 	FarmStage farmStage = static_cast<FarmStage>(action().int32val2);
 	

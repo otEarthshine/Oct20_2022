@@ -65,6 +65,9 @@ void Building::Init(IGameSimulationCore& simulation, int32 objectId, int32 townI
 	_isConstructed = false;
 	_didSetWalkable = false;
 
+	SetBuildingResourceUIDirty();
+	_justFinishedConstructionJobUIDirty = false;
+
 
 	if (_playerId == -1 && 
 		!IsBridgeOrTunnel(_buildingEnum))
@@ -203,6 +206,8 @@ void Building::FinishConstruction()
 	_isConstructed = true;
 
 	_buildingLastWorkedTick = Time::Ticks();
+
+	_justFinishedConstructionJobUIDirty = true;
 
 	// Do not reset roadMakers since they should construct multiple roads
 	if (!IsRoad(_buildingEnum))
@@ -505,6 +510,8 @@ void Building::AddResourceHolder(ResourceEnum resourceEnum, ResourceHolderType h
 	
 	int holderId = resourceSys.SpawnHolder(resourceEnum, holderType, _objectId, gateTile(), target);
 	_holderInfos.push_back(ResourceHolderInfo(resourceEnum, holderId));
+
+	SetBuildingResourceUIDirty();
 }
 
 void Building::RemoveResourceHolder(ResourceEnum resourceEnum)
@@ -520,6 +527,8 @@ void Building::RemoveResourceHolder(ResourceEnum resourceEnum)
 			break;
 		}
 	}
+
+	SetBuildingResourceUIDirty();
 }
 
 void Building::AddResource(ResourceEnum resourceEnum, int amount){
@@ -666,7 +675,7 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& 
 	
 	// Money Upgrade
 	PUN_CHECK(moneyNeeded > 0);
-	if (globalResourceSystem().money() >= moneyNeeded)
+	if (globalResourceSystem().moneyCap32() >= moneyNeeded)
 	{
 		globalResourceSystem().ChangeMoney(-moneyNeeded);
 		_upgrades[upgradeIndex].isUpgraded = true;
@@ -741,6 +750,8 @@ void Building::DoWork(int unitId, int workAmount100)
 
 	_workDone100 += workAmount100;
 	lastWorkedOn = Time::Ticks();
+
+	SetBuildingResourceUIDirty();
 
 	// TODO: On Finish Work
 	if (_isConstructed) 
@@ -1000,7 +1011,7 @@ void Building::CheckCombo()
 	case CardEnum::FenceGate:
 	case CardEnum::Bridge:
 	case CardEnum::IntercityBridge:
-	case CardEnum::TrapSpike:
+	//case CardEnum::TrapSpike:
 	case CardEnum::None:
 	case CardEnum::BoarBurrow:
 		
@@ -1099,6 +1110,10 @@ std::vector<BonusPair> Building::GetBonuses()
 			bonuses.push_back({ LOCTEXT("Desert Industry", "Desert Industry"), 20 });
 		}
 
+		if (int32 industrialTechUpgradeCount = _simulation->GetTechnologyUpgradeCount(_playerId, TechEnum::IndustrialTechnologies)) {
+			bonuses.push_back({ LOCTEXT("Industrial Technologies", "Industrial Technologies"), 3 * industrialTechUpgradeCount });
+		}
+
 		// Industrialist
 		{
 			const int32 industrialistGuildRadius = 10;
@@ -1157,6 +1172,13 @@ std::vector<BonusPair> Building::GetBonuses()
 	{
 		if (upgrade.isUpgraded && upgrade.efficiencyBonus > 0) {
 			bonuses.push_back({ upgrade.name, upgrade.efficiencyBonus });
+		}
+
+		// House Lvl Upgrade Bonuses
+		if (upgrade.isUpgraded && upgrade.houseLvlForBonus > 0) {
+			int32 bonusAmount = _simulation->GetHouseLvlCount(_townId, upgrade.houseLvlForBonus, true);
+			bonusAmount = std::min(bonusAmount, BuildingUpgrade::CalculateMaxHouseLvlBonus(upgrade.houseLvlForBonus));
+			bonuses.push_back({ upgrade.name, bonusAmount });
 		}
 		
 		// Combo Upgrade bonuses
@@ -1318,18 +1340,40 @@ BuildingUpgrade Building::MakeUpgrade(FText name, FText description, int32 perce
 	return BuildingUpgrade(name, description, upgradeCost);
 }
 
-BuildingUpgrade Building::MakeProductionUpgrade(FText name, ResourceEnum resourceEnum, int32 percentOfTotalPrice, int32 efficiencyBonus)
+BuildingUpgrade Building::MakeProductionUpgrade(FText name, ResourceEnum resourceEnum, int32 efficiencyBonus)
 {
+	int32 costToProfitRatio100 = hasInput1() ? 200 : 300;
+	int32 percentOfTotalPrice = efficiencyBonus * costToProfitRatio100 / 100;
+	
 	const FText bonusText = FText::Format(LOCTEXT("+{0}% productivity", "+{0}% productivity"), TEXT_NUM(efficiencyBonus));
 	BuildingUpgrade upgrade = MakeUpgrade(name, bonusText, resourceEnum, percentOfTotalPrice);
 	upgrade.efficiencyBonus = efficiencyBonus;
 	return upgrade;
 }
-BuildingUpgrade Building::MakeProductionUpgrade(FText name, int32 percentOfTotalPrice, int32 efficiencyBonus)
+BuildingUpgrade Building::MakeProductionUpgrade_Money(FText name, int32 efficiencyBonus)
 {
+	int32 percentOfTotalPrice = efficiencyBonus * 300 / 100;
+	
 	const FText bonusText = FText::Format(LOCTEXT("+{0}% productivity", "+{0}% productivity"), TEXT_NUM(efficiencyBonus));
 	BuildingUpgrade upgrade = MakeUpgrade(name, bonusText, percentOfTotalPrice);
 	upgrade.efficiencyBonus = efficiencyBonus;
+	return upgrade;
+}
+
+BuildingUpgrade Building::MakeProductionUpgrade_WithHouseLvl(FText name, ResourceEnum resourceEnum, int32 houseLvl)
+{
+	check(houseLvl <= House::GetMaxHouseLvl())
+	
+	int32 maxHouseLvlBonus = BuildingUpgrade::CalculateMaxHouseLvlBonus(houseLvl);
+	const FText bonusText = FText::Format(
+		LOCTEXT("ProductionUpgradeWithHouseLvl_Description", "+1% Productivity for each\nHouse Lvl {0}+ in this City\n(max {1}%)"), 
+		TEXT_NUM(houseLvl),
+		TEXT_NUM(maxHouseLvlBonus)
+	);
+	int32 percentOfTotalPrice = maxHouseLvlBonus;
+	
+	BuildingUpgrade upgrade = MakeUpgrade(name, bonusText, resourceEnum, percentOfTotalPrice);
+	upgrade.houseLvlForBonus = houseLvl;
 	return upgrade;
 }
 

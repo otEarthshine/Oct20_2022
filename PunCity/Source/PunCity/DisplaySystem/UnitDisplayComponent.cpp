@@ -37,10 +37,10 @@ UnitDisplayState UUnitDisplayComponent::GetUnitTransformAndVariation(UnitStateAI
 	pose.facingLocation = unitSystem.targetLocation(unitId);
 
 	FVector displayLocation = MapUtil::DisplayLocation(cameraAtom, pose.actualLocation);
-
+	int32 zoomDistance = _gameManager->zoomDistance();
 	
 	// No Animation
-	if (_gameManager->zoomDistance() > WorldZoomTransition_UnitAnimate)
+	if (zoomDistance > WorldZoomTransition_UnitAnimate)
 	{
 		transform = FTransform(FRotator::ZeroRotator, displayLocation, FVector::OneVector);
 		return UnitDisplayState();
@@ -118,27 +118,46 @@ UnitDisplayState UUnitDisplayComponent::GetUnitTransformAndVariation(UnitStateAI
 	//if (IsAnimal(unit.unitEnum())) {
 		// Don't exceed the scale of 300 to prevent stuttering animation from inaccurate float
 
-	if (IsUsingVertexAnimation(unitEnum)) {
-		float gameSpeed = sim.gameSpeedFloat();
-		scale = std::fmodf(lastAnimationTime + (unitSystem.isMoving(unitId) ? (GetWorld()->GetDeltaSeconds() * 2.0f * gameSpeed) : 0.0f), 2.0f);
-	}
+	//if (IsUsingVertexAnimation(unitEnum)) {
+	//	float gameSpeed = sim.gameSpeedFloat();
+	//	scale = std::fmodf(lastAnimationTime + (unitSystem.isMoving(unitId) ? (GetWorld()->GetDeltaSeconds() * 2.0f * gameSpeed) : 0.0f), 2.0f);
+	//}
 
 
 	//! Display State
 	UnitAnimationEnum animationEnum = unit.animationEnum();
 
+	//		if (PunSettings::IsOn("UseFullSkelAnim")) {
+//			return true;
+//		}
+//		// Walk animation should use Vertex Animation
+//		if (IsCitizenWalkAnimation(animationEnum)) {
+//			return true;
+//			//return zoomDistance > WorldZoomTransition_HumanWalkAnimate;
+//		}
 
 	// Walking Human uses VertexAnimation
-	if (unitEnum == UnitEnum::Human && 
-		!IsUsingSkeletalMesh(unitEnum, unit.animationEnum(), _gameManager->zoomDistance()) &&
-		animationEnum != UnitAnimationEnum::Ship &&
-		!IsHorseAnimation(animationEnum) &&
-		animationEnum != UnitAnimationEnum::ImmigrationCart &&
-		animationEnum != UnitAnimationEnum::HaulingCart)
+	if (unitEnum == UnitEnum::Human)
 	{
+		//if (animationEnum != UnitAnimationEnum::Ship &&
+		//	!IsHorseAnimation(animationEnum) &&
+		//	animationEnum != UnitAnimationEnum::ImmigrationCart &&
+		//	animationEnum != UnitAnimationEnum::HaulingCart)
+		//{
+			if (ShouldHumanUseVertexAnimation(animationEnum, zoomDistance)) {
+				float gameSpeed = sim.gameSpeedFloat();
+				scale = std::fmodf(lastAnimationTime + (unitSystem.isMoving(unitId) ? (GetWorld()->GetDeltaSeconds() * 2.0f * gameSpeed) : 0.0f), 2.0f);
+			}
+		//}
+	}
+	else if (unitEnum == UnitEnum::WildMan) {
+		
+	}
+	else {
 		float gameSpeed = sim.gameSpeedFloat();
 		scale = std::fmodf(lastAnimationTime + (unitSystem.isMoving(unitId) ? (GetWorld()->GetDeltaSeconds() * 2.0f * gameSpeed) : 0.0f), 2.0f);
 	}
+	
 	
 	transform.SetScale3D(FVector(scale, scale, scale)); // Need same scale x,y,z to make lighting work properly...
 
@@ -168,10 +187,12 @@ UnitDisplayState UUnitDisplayComponent::GetUnitTransformAndVariation(UnitStateAI
 		return  { unitEnum, animationEnum, humanVariation };
 	}
 
-	if (IsUsingSkeletalMesh(unitEnum, animationEnum, _gameManager->zoomDistance())) {
+	//if (IsUsingSkeletalMesh(unitEnum, animationEnum, _gameManager->zoomDistance())) {
+	if (unitEnum == UnitEnum::WildMan) {
 		return { unitEnum, animationEnum, 0 };
 	}
-	
+
+	// Animals with children
 	if (_assetLoader->unitMeshCount(unitEnum) >= 2) {
 		return { unitEnum, animationEnum, unit.isChild() ? 1 : 0 };
 	}
@@ -238,13 +259,18 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 		}
 
 		// Special
-		if (IsUsingSkeletalMesh(unitEnum, unit.animationEnum(), zoomDistance))
+		//if (IsUsingSkeletalMesh(unitEnum, unit.animationEnum(), zoomDistance))
 		{
 			// Zoomed out human should always use instancedStaticMesh
-			if ((unitEnum == UnitEnum::Human || unitEnum == UnitEnum::WildMan) &&
-				zoomDistance > WorldZoomTransition_HumanNoAnimate)
-			{}
-			else
+			if (unitEnum == UnitEnum::Human &&
+				!ShouldHumanUseVertexAnimation(unit.animationEnum(), zoomDistance))
+			{
+				FTransform transform;
+				AddSkelMesh(unit, transform);
+				UpdateResourceDisplay(unitId, unit, transform);
+				return;
+			}
+			if (unitEnum == UnitEnum::WildMan)
 			{
 				FTransform transform;
 				AddSkelMesh(unit, transform);
@@ -252,7 +278,6 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 				return;
 			}
 		}
-
 
 
 
@@ -322,7 +347,8 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 
 		{
 			SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitAddInst);
-			_unitMeshes->Add(GetMeshName(_currentDisplayState.unitEnum, _currentDisplayState.variationIndex), unitId, transform, 0, unitId);
+			//_unitMeshes->Add(GetMeshName(_currentDisplayState.unitEnum, _currentDisplayState.variationIndex), unitId, transform, 0, unitId);
+			_unitMeshes1->Add(GetUnitDisplayEnum(_currentDisplayState.unitEnum, _currentDisplayState.variationIndex), unitId, transform);
 		}
 		
 

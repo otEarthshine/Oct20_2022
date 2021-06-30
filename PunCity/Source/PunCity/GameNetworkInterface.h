@@ -116,4 +116,5 @@ public:
 
 	// Debug
 	virtual void TestAchievement(const FString& achievementId) = 0;
+	virtual int32 GetFPS() = 0;
 };

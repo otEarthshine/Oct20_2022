@@ -879,10 +879,12 @@ public:
 	NetworkCommandEnum commandType() override { return NetworkCommandEnum::SelectRareCard; }
 
 	CardEnum cardEnum = CardEnum::None;
+	int32 objectId = -1;
 
 	void Serialize(PunSerializedData& blob) override {
 		FNetworkCommand::Serialize(blob);
 		blob << cardEnum;
+		blob << objectId;
 	}
 };
 

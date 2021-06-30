@@ -26,10 +26,14 @@ public:
 	const WorldAtom2& atomLocation(int id) const final { return _unitLeans[id].atomLocation; }
 	const WorldAtom2& targetLocation(int id) const final { return _unitLeans[id].targetLocation; }
 	const UnitEnum& unitEnum(int id) const final { return _unitLeans[id].unitEnum; }
+	
 	std::vector<WorldTile2>& waypoint(int id) final { return _unitLeans[id].waypointStack; }
 
-	void SetWaypoint(int32 id, std::vector<WorldTile2>& waypoint) final {
+	void SetWaypoint(int32 id, const std::vector<WorldTile2>& waypoint) final {
 		_unitLeans[id].waypointStack = waypoint;
+	}
+	void SetWaypointCacheBuildingId(int32 id, int32 waypointCacheBuildingId) final {
+		_unitLeans[id].waypointCacheBuildingId = waypointCacheBuildingId;
 	}
 
 	// Trim waypoint for placing resources on storage's nearest point
@@ -152,6 +156,7 @@ public:
 	// Note that SubregionLists's tile is not unitTile...
 	SubregionLists<int32>& unitSubregionLists() final { return _unitSubregionLists; }
 
+#if CHECK_TICKHASH
 	int32 GetSyncHash() {
 		int32 hash = 0;
 		for (size_t i = _unitLeans.size(); i-- > 0;) {
@@ -186,6 +191,7 @@ public:
 		}
 		return hashes;
 	}
+#endif
 	
 
 	void Serialize(FArchive& Ar);

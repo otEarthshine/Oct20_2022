@@ -25,6 +25,8 @@ void UPopupUI::PunInit()
 
 void UPopupUI::Tick()
 {
+	LEAN_PROFILING_UI(TickPopupUI);
+	
 	PopupInfo* popupToDisplay = dataSource()->simulation().PopupToDisplay(playerId());
 	auto punHUD = GetPunHUD();
 	bool shouldPopup = popupToDisplay != nullptr;

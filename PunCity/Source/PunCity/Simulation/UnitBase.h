@@ -23,7 +23,7 @@ enum class UnitUpdateCallerEnum : uint8
 	FirstEverUpdate,
 	ResetActions,
 	MoveTo_Done,
-	MoveToForceLongDistance_Done,
+	//MoveToForceLongDistance_Done,
 	MoveToRobust_Done,
 	MoveTowards_Done,
 	MoveToCaravan_Done,
@@ -95,7 +95,8 @@ public:
 
 	virtual std::vector<WorldTile2>& waypoint(int id) = 0;
 	virtual void TrimWaypoint(int storageIdToTrim, int32 unitId) = 0;
-	virtual void SetWaypoint(int32 id, std::vector<WorldTile2>& waypoint) = 0;
+	virtual void SetWaypoint(int32 id, const std::vector<WorldTile2>& waypoint) = 0;
+	virtual void SetWaypointCacheBuildingId(int32 id, int32 waypointCacheBuildingId) = 0;
 
 	virtual void SetNextTickState(int id, TransformState state, UnitUpdateCallerEnum caller, int ticks = 1, bool resetActions = false) = 0;
 	virtual int nextActiveTick(int id) const = 0;
@@ -197,7 +198,10 @@ struct UnitLean
 	
 	WorldAtom2 atomLocation;
 	WorldAtom2 targetLocation;
+
 	std::vector<WorldTile2> waypointStack;
+	int32 waypointCacheBuildingId = -1;
+	
 	UnitEnum unitEnum;
 	bool isForceMove = false;
 
@@ -233,7 +237,10 @@ struct UnitLean
 	{
 		atomLocation >> Ar;
 		targetLocation >> Ar;
+
 		SerializeVecObj(Ar, waypointStack);
+		Ar << waypointCacheBuildingId;
+		
 		Ar << unitEnum;
 		Ar << isForceMove;
 

@@ -144,6 +144,8 @@ enum class UIEnum
 
 	PunMidRowText,
 
+	WGT_Button,
+
 	Count,
 };
 static const int UIEnumCount = static_cast<int>(UIEnum::Count);

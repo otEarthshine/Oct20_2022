@@ -38,6 +38,7 @@ public:
 	static const int32 MaxDistanceFetch_MedTools = 120;
 	static const int32 MaxDistanceFetch_NonLaborer = 40;
 	static const int32 MaxDistanceFetch_Laborer = 180;
+	static const int32 MaxDistanceFetch_Market = 240;
 
 	static const int WorkerEmptyBuildingInventoryAmount = 50;
 

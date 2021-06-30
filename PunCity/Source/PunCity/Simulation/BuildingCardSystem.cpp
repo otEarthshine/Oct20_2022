@@ -36,7 +36,7 @@ void BuildingCardSystem::TickRound()
 
 FText BuildingCardSystem::rareHandMessage2()
 {
-	switch(_rareHandEnum)
+	switch(_rareHandData.rareHandEnum)
 	{
 	case RareHandEnum::InitialCards1: return LOCTEXT("ChooseAStartingCard", "Choose a Starting Card");
 	case RareHandEnum::InitialCards2: return LOCTEXT("ChooseAnotherStartingCard", "Choose Another Starting Card");
@@ -107,10 +107,10 @@ void BuildingCardSystem::RollRareHandExecute()
 
 	_cardsRareHand.clear();
 
-	uint8 rareHandEnumInt = static_cast<uint8>(_rareHandEnum);
+	uint8 rareHandEnumInt = static_cast<uint8>(_rareHandData.rareHandEnum);
 
 	// Initial Cards
-	if (_rareHandEnum == RareHandEnum::InitialCards1)
+	if (_rareHandData.rareHandEnum == RareHandEnum::InitialCards1)
 	{
 		_cardsRareHand = {
 			CardEnum::WheatSeed,
@@ -126,7 +126,7 @@ void BuildingCardSystem::RollRareHandExecute()
 		);
 		_simulation->AddPopup(popup);
 	}
-	else if (_rareHandEnum == RareHandEnum::InitialCards2)
+	else if (_rareHandData.rareHandEnum == RareHandEnum::InitialCards2)
 	{
 		_cardsRareHand = {
 			CardEnum::CabbageSeed,
@@ -145,11 +145,11 @@ void BuildingCardSystem::RollRareHandExecute()
 	
 
 	//
-	else if (_rareHandEnum == RareHandEnum::BuildingSlotCards)
+	else if (_rareHandData.rareHandEnum == RareHandEnum::BuildingSlotCards)
 	{
 		RandomInsertToRareHand(BuildingSlotCards);
 	}
-	else if (_rareHandEnum == RareHandEnum::CratesCards)
+	else if (_rareHandData.rareHandEnum == RareHandEnum::CratesCards)
 	{
 		RandomInsertToRareHand(CrateCards);
 	}
@@ -169,52 +169,52 @@ void BuildingCardSystem::RollRareHandExecute()
 	else if (static_cast<uint8>(RareHandEnum::PopulationQuestCards1) <= rareHandEnumInt && rareHandEnumInt <= static_cast<uint8>(RareHandEnum::PopulationQuestCards7))
 	{
 		int32 population = _simulation->populationPlayer(_playerId);
-		_rareHandMessage = FText::Format(LOCTEXT("PopulationMilestone_Pop", "{0} people now call your city home!"), TEXT_NUM(population));
+		_rareHandData.message = FText::Format(LOCTEXT("PopulationMilestone_Pop", "{0} people now call your city home!"), TEXT_NUM(population));
 
 		std::vector<CardEnum> cardEnums;
-		if (_rareHandEnum == RareHandEnum::PopulationQuestCards1) {
+		if (_rareHandData.rareHandEnum == RareHandEnum::PopulationQuestCards1) {
 			cardEnums = {
 				CardEnum::ProductivityBook,
 				CardEnum::SustainabilityBook,
 				CardEnum::FrugalityBook,
 			};
 		}
-		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards2) {
+		else if (_rareHandData.rareHandEnum == RareHandEnum::PopulationQuestCards2) {
 			cardEnums = {
 				CardEnum::ProductivityBook,
 				CardEnum::SustainabilityBook,
 				CardEnum::FrugalityBook,
 			};
 		}
-		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards3) {
+		else if (_rareHandData.rareHandEnum == RareHandEnum::PopulationQuestCards3) {
 			cardEnums = {
 				CardEnum::ProductivityBook,
 				CardEnum::SustainabilityBook,
 				CardEnum::FrugalityBook,
 			};
 		}
-		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards4) {
+		else if (_rareHandData.rareHandEnum == RareHandEnum::PopulationQuestCards4) {
 			cardEnums = {
 				CardEnum::ProductivityBook,
 				CardEnum::SustainabilityBook,
 				CardEnum::Motivation,
 			};
 		}
-		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards5) {
+		else if (_rareHandData.rareHandEnum == RareHandEnum::PopulationQuestCards5) {
 			cardEnums = {
 				CardEnum::ProductivityBook,
-				CardEnum::Motivation,
-				CardEnum::Passion,
-			};
-		}
-		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards6) {
-			cardEnums = {
-				CardEnum::SustainabilityBook,
 				CardEnum::Motivation,
 				CardEnum::Passion,
 			};
 		}
-		else if (_rareHandEnum == RareHandEnum::PopulationQuestCards7) {
+		else if (_rareHandData.rareHandEnum == RareHandEnum::PopulationQuestCards6) {
+			cardEnums = {
+				CardEnum::SustainabilityBook,
+				CardEnum::Motivation,
+				CardEnum::Passion,
+			};
+		}
+		else if (_rareHandData.rareHandEnum == RareHandEnum::PopulationQuestCards7) {
 			cardEnums = {
 				CardEnum::ProductivityBook,
 				CardEnum::Motivation,
@@ -242,7 +242,7 @@ void BuildingCardSystem::RollRareHandExecute()
 	else
 	{
 		// Biomes/Era Bonuses
-		std::vector<CardEnum> bonusCardEnums = PermanentBonus::BonusHandEnumToCardEnums(_rareHandEnum);
+		std::vector<CardEnum> bonusCardEnums = PermanentBonus::BonusHandEnumToCardEnums(_rareHandData.rareHandEnum);
 		if (bonusCardEnums.size() > 0) {
 			_cardsRareHand = bonusCardEnums;
 		}

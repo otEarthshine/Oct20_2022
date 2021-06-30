@@ -137,6 +137,8 @@ APunHUD::APunHUD()
 
 	LoadClass(UIEnum::PunMidRowText, "PunMidRowText");
 
+	LoadClass(UIEnum::WGT_Button, "Components/Buttons/WGT_Button");
+
 	// Slate Style
 	//TSharedPtr<FSlateStyleSet> style = MakeShareable(new FSlateStyleSet("PunStyle"));
 	_style = FSlateGameResources::New("PunStyle1", "/Game/UI/Styles", "/Game/UI/Styles");
@@ -168,6 +170,9 @@ void APunHUD::PunTick(bool isPhotoMode)
 #endif
 	
 	if (!_isInitialized) return;
+
+	LEAN_PROFILING_D(TickUI);
+	
 
 	// Check photo mode...
 	if (isPhotoMode) {
@@ -227,7 +232,7 @@ void APunHUD::PunTick(bool isPhotoMode)
 	
 	_worldSpaceUI->TickWorldSpaceUI();
 	_descriptionUISystem->Tick();
-	_policyMenu->TickUI();
+	//_policyMenu->TickUI();
 	_worldTradeUI->TickUI();
 	_intercityTradeUI->TickUI();
 	_targetConfirmUI->TickUI();

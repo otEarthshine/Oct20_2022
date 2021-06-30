@@ -24,16 +24,16 @@ public:
 	void PunInit();
 
 	UPROPERTY(meta = (BindWidget)) USpacer* EscMenuSpacer;
-	UPROPERTY(meta = (BindWidget)) UButton* EscMenuToggler;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* EscMenuToggler;
 	UPROPERTY(meta = (BindWidget)) UOverlay* EscMenu;
-	UPROPERTY(meta = (BindWidget)) UButton* EscMenuResumeButton;
-	UPROPERTY(meta = (BindWidget)) UButton* EscMenuSettingsButton;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* EscMenuResumeButton;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* EscMenuSettingsButton;
 
 	UPROPERTY(meta = (BindWidget)) UOverlay*EscMenuRestartGameButtonOverlay;
-	UPROPERTY(meta = (BindWidget)) UButton* EscMenuRestartGameButton;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* EscMenuRestartGameButton;
 	
-	UPROPERTY(meta = (BindWidget)) UButton* EscMenuExitToMainMenuButton;
-	UPROPERTY(meta = (BindWidget)) UButton* EscMenuQuitButton;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* EscMenuExitToMainMenuButton;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* EscMenuQuitButton;
 
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* TopLeftBoxWithSpacer;
 
@@ -50,7 +50,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* PlayButton4;
 	UPROPERTY(meta = (BindWidget)) USizeBox* PlayButton4SizeBox;
 
-	UPROPERTY(meta = (BindWidget)) UButton* OverlayToggler;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* OverlayToggler;
 	UPROPERTY(meta = (BindWidget)) UOverlay* OverlaySettingsOverlay;
 	UPROPERTY(meta = (BindWidget)) class UCheckBox* OverlayCheckBox_None;
 	UPROPERTY(meta = (BindWidget)) UCheckBox* OverlayCheckBox_Appeal;
@@ -71,8 +71,8 @@ public:
 	
 	UPROPERTY(meta = (BindWidget)) UOverlay* ConfirmUI;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* ConfirmText;
-	UPROPERTY(meta = (BindWidget)) UButton* ConfirmYesButton;
-	UPROPERTY(meta = (BindWidget)) UButton* ConfirmNoButton;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* ConfirmYesButton;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* ConfirmNoButton;
 
 	UPROPERTY(meta = (BindWidget)) ULoadingScreenUI* LoadingScreen;
 
@@ -80,7 +80,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UOverlay* VictoryPopup;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* VictoryPopupText;
 	UPROPERTY(meta = (BindWidget)) UButton* VictoryScoreScreenButton;
-	UPROPERTY(meta = (BindWidget)) UButton* VictoryReturnToGame;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* VictoryReturnToGame;
 	bool alreadyShownVictory = false;
 
 	UPROPERTY(meta = (BindWidget)) UTextBlock* TotalScore;
@@ -97,13 +97,13 @@ public:
 	
 
 	//! Load/Save
-	UPROPERTY(meta = (BindWidget)) UButton* EscMenuSaveButton;
-	UPROPERTY(meta = (BindWidget)) UButton* EscMenuLoadButton;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* EscMenuSaveButton;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* EscMenuLoadButton;
 	UPROPERTY(meta = (BindWidget)) UOverlay* EscMenuLoadButtonOverlay;
 	UPROPERTY(meta = (BindWidget)) ULoadSaveUI* LoadSaveUI;
 
 	//! Tutorials
-	UPROPERTY(meta = (BindWidget)) UButton* TutorialToggler;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* TutorialToggler;
 	UPROPERTY(meta = (BindWidget)) UTutorialUI* TutorialUI;
 	float lastTutorialAttentionOpen = 0.0f;
 
@@ -135,6 +135,7 @@ public:
 
 	void Tick()
 	{
+		LEAN_PROFILING_UI(TickEscMenuUI);
 #if !UI_ESCMENU
 		return;
 #endif

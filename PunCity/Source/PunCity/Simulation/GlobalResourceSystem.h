@@ -14,14 +14,21 @@ public:
 
 
 	//! Money
-	int32 money() const { return _money100 / 100; }
-	int32 money100() const { return _money100; }
+	int64 money() const { return _money100 / 100; }
+	int64 money100() const { return _money100; }
 
-	void SetMoney(int32 amount) { _money100 = amount * 100; }
-	void ChangeMoney(int32 amount) {
+	int32 moneyCap32() {
+		if (money() <= static_cast<int64>(MAX_int32 / 100)) {
+			return static_cast<int32>(money());
+		}
+		return MAX_int32 / 100;
+	}
+
+	void SetMoney(int64 amount) { _money100 = amount * 100; }
+	void ChangeMoney(int64 amount) {
 		_money100 += amount * 100;
 	}
-	void ChangeMoney100(int32 amount100) {
+	void ChangeMoney100(int64 amount100) {
 		_money100 += amount100;
 	}
 
@@ -85,7 +92,7 @@ public:
 	}
 
 private:
-	int32 _money100 = 0;
+	int64 _money100 = 0;
 	int32 _influence100 = 0;
 
 	std::vector<SeedInfo> _unlockedSeeds;

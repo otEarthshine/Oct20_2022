@@ -78,6 +78,8 @@ public:
 
 	void TickUI()
 	{
+		LEAN_PROFILING_UI(TickSendImmigrantsUI);
+		
 		if (IsVisible())
 		{
 			int32 fromTownId = simulation().FindTownIdFromName(playerId(), ImmigrantsFromTownDropdown->GetSelectedOption());

@@ -1849,7 +1849,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 							if (!building.isConstructed()) {
 								int32 cost = building.buildingInfo().constructionCostAsMoney() * 3;
 
-								if (cost < simulation.money(playerId)) {
+								if (cost < simulation.moneyCap32(playerId)) {
 									//_buildingSpecificWarning = "Pay " + to_string(cost) + " <img id=\"Coin\"/> to instantly build this.";
 									_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, location);
 								}
@@ -2855,7 +2855,7 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 			}
 		}
 
-		if (goldNeeded > 0 && goldNeeded > _gameInterface->simulation().money(playerId)) {
+		if (goldNeeded > 0 && goldNeeded > _gameInterface->simulation().moneyCap32(playerId)) {
 			_gameInterface->simulation().AddEventLog(playerId, 
 				LOCTEXT("PlacementNoMoney", "Not enough money."), 
 				true
@@ -2979,10 +2979,10 @@ void ABuildingPlacementSystem::NetworkTryPlaceBuilding(IGameNetworkInterface* ne
 			{
 				if (sim.IsPermanentBuilding(playerId, _buildingEnum))
 				{
-					int32 money = sim.money(playerId);
+					int32 moneyCap32 = sim.moneyCap32(playerId);
 
 					// Shift-Click only if there is enough money for buying 2 (current placement, and next placement)
-					if (money >= 2 * sim.cardSystem(playerId).GetCardPrice(_buildingEnum)) {
+					if (moneyCap32 >= 2 * sim.cardSystem(playerId).GetCardPrice(_buildingEnum)) {
 						_timesShifted++;
 						return;
 					}

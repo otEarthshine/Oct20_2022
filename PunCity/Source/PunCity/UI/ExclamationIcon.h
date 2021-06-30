@@ -17,17 +17,19 @@ class PROTOTYPECITY_API UExclamationIcon : public UPunWidget
 public:
 	void SetShow(bool active)
 	{
-		if (active && GetVisibility() == ESlateVisibility::Collapsed) {
-			SetVisibility(ESlateVisibility::HitTestInvisible);
+		SetVisibility(active ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+		
+		//if (active && GetVisibility() == ESlateVisibility::Collapsed) {
+		//	SetVisibility(ESlateVisibility::HitTestInvisible);
 
-			if (Animations.Num() == 0) {
-				GetAnimations(Animations);
-			}
-			TryPlayAnimation("Pulse");
-		}
-		else if (!active && GetVisibility() != ESlateVisibility::Collapsed) {
-			SetVisibility(ESlateVisibility::Collapsed);
-		}
+		//	if (Animations.Num() == 0) {
+		//		GetAnimations(Animations);
+		//	}
+		//	TryPlayAnimation("Pulse");
+		//}
+		//else if (!active && GetVisibility() != ESlateVisibility::Collapsed) {
+		//	SetVisibility(ESlateVisibility::Collapsed);
+		//}
 	}
 
 };

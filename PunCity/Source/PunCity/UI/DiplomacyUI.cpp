@@ -7,6 +7,8 @@
 
 void UDiplomacyUI::TickUI()
 {
+	LEAN_PROFILING_UI(TickDiplomacyUI);
+	
 	auto& sim = simulation();
 
 	if (IsVisible() &&
@@ -25,7 +27,7 @@ void UDiplomacyUI::TickUI()
 		// Interactions
 		if (aiPlayerSys.shouldShow_DeclareFriendship(playerId()))
 		{
-			bool isRed = sim.money(playerId()) < aiPlayerSys.friendshipPrice();
+			bool isRed = sim.moneyCap32(playerId()) < aiPlayerSys.friendshipPrice();
 			ADDTEXT_LOCTEXT("Declare Friendship", "Declare Friendship");
 			ADDTEXT_(INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(TEXT_NUM(aiPlayerSys.friendshipPrice()), isRed));
 			InteractionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::DeclareFriendship, !isRed, false);
@@ -34,7 +36,7 @@ void UDiplomacyUI::TickUI()
 		args.Empty();
 		if (aiPlayerSys.shouldShow_MarryOut(playerId()))
 		{
-			bool isRed = sim.money(playerId()) < aiPlayerSys.marryOutPrice();
+			bool isRed = sim.moneyCap32(playerId()) < aiPlayerSys.marryOutPrice();
 			ADDTEXT_LOCTEXT("Marry out", "Marry out daughter or son");
 			ADDTEXT_(INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(TEXT_NUM(aiPlayerSys.marryOutPrice()), isRed));
 			InteractionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::MarryOut, !isRed, false);

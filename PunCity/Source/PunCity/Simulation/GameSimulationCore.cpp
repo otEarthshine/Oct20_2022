@@ -391,6 +391,7 @@ void GameSimulationCore::InitRegionalBuildings()
  */
 void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 {
+	LEAN_PROFILING_D(TickSim);
 	PUN_LLM(PunSimLLMTag::Simulation);
 
 #if PUN_LLM_ON
@@ -1172,20 +1173,20 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 									{
 									case BiomeEnum::BorealForest:
 									case BiomeEnum::Tundra:
-										GenerateRareCardSelection(playerId, RareHandEnum::BorealCards, FText());
+										GenerateRareCardSelection(playerId, RareHandEnum::BorealCards, FText(), townId);
 										break;
 									case BiomeEnum::Desert:
-										GenerateRareCardSelection(playerId, RareHandEnum::DesertCards, FText());
+										GenerateRareCardSelection(playerId, RareHandEnum::DesertCards, FText(), townId);
 										break;
 									case BiomeEnum::Savanna:
 									case BiomeEnum::GrassLand:
-										GenerateRareCardSelection(playerId, RareHandEnum::SavannaCards, FText());
+										GenerateRareCardSelection(playerId, RareHandEnum::SavannaCards, FText(), townId);
 										break;
 									case BiomeEnum::Jungle:
-										GenerateRareCardSelection(playerId, RareHandEnum::JungleCards, FText());
+										GenerateRareCardSelection(playerId, RareHandEnum::JungleCards, FText(), townId);
 										break;
 									case BiomeEnum::Forest:
-										GenerateRareCardSelection(playerId, RareHandEnum::ForestCards, FText());
+										GenerateRareCardSelection(playerId, RareHandEnum::ForestCards, FText(), townId);
 										break;
 									default:
 										UE_DEBUG_BREAK();
@@ -1323,7 +1324,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 						eventText = LOCTEXT("HappinessLove_Event", "People love you.");
 					}
 					else if (happiness >= 70) {
-						eventText = LOCTEXT("HappinessLove_Event", "People think you are ok.");
+						eventText = LOCTEXT("HappinessOk_Event", "People think you are ok.");
 					}
 					else if (happiness >= 55) {
 						eventText = LOCTEXT("HappinessHate_Event", "People hate you.");
@@ -1377,9 +1378,11 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 		{
 
 		}
+
+		
 		// Hashes
-		{
 #if CHECK_TICKHASH
+		{
 			AddTickHash(_tickHashes, _tickCount, TickHashEnum::Input, _currentInputHashes);
 			AddTickHash(_tickHashes, _tickCount, TickHashEnum::RandCount, GameRand::RandUsageCount());
 			AddTickHash(_tickHashes, _tickCount, TickHashEnum::Rand, GameRand::RandState());
@@ -1399,8 +1402,17 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 				hashResources += resourceSystem(playerId).GetSyncHash();
 			});
 			AddTickHash(_tickHashes, _tickCount, TickHashEnum::Resources, hashResources);
-#endif
 		}
+#endif
+
+#if USE_LEAN_PROFILING
+		LeanProfiler::FinishTick(static_cast<int32>(LeanProfilerEnum::R_resourceCount), static_cast<int32>(LeanProfilerEnum::DropoffFoodAnimal));
+		if (Time::Ticks() % (PunSettings::Get("LeanProfilingTicksInterval") * gameSpeed) == 0)
+		{
+			LeanProfiler::FinishInterval(static_cast<int32>(LeanProfilerEnum::R_resourceCount), static_cast<int32>(LeanProfilerEnum::DropoffFoodAnimal));
+		}
+#endif
+		
 
 		// Snow
 		{
@@ -1653,7 +1665,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 		}
 
 		int32 converterPrice = cardSystem(playerId).GetCardPrice(cardEnum);
-		if (money(playerId) < converterPrice) {
+		if (moneyCap32(playerId) < converterPrice) {
 			AddPopupToFront(playerId, 
 				FText::Format(LOCTEXT("NeedCoinToConvertWildCard", "Need {0}<img id=\"Coin\"/> to convert wild card to this building."), TEXT_NUM(converterPrice)), 
 				ExclusiveUIEnum::ConverterCardHand, "PopupCannot");
@@ -1724,7 +1736,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 					}
 					else
 					{
-						int32 targetPlayerMoney = money(targetPlayerId);
+						int32 targetPlayerMoney = moneyCap32(targetPlayerId);
 						targetPlayerMoney = max(0, targetPlayerMoney); // Ensure no negative steal..
 						
 						int32 actualSteal = targetPlayerMoney * 30 / 100;
@@ -1759,7 +1771,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 					}
 					else
 					{
-						int32 targetPlayerMoney = money(targetPlayerId);
+						int32 targetPlayerMoney = moneyCap32(targetPlayerId);
 						targetPlayerMoney = max(0, targetPlayerMoney); // Ensure no negative steal..
 						
 						int32 actualSteal = min(targetPlayerMoney, populationTown(targetPlayerId));
@@ -2173,7 +2185,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 					for (int32 provinceId : provinceIds) {
 						totalProvincePriceMoney += GetProvinceClaimPrice(provinceId, playerId) * GameConstants::ClaimProvinceByMoneyMultiplier;
 					}
-					if (money(playerId) >= totalProvincePriceMoney)
+					if (moneyCap32(playerId) >= totalProvincePriceMoney)
 					{
 						// Add town
 						int32 townId = _resourceSystems.size();
@@ -2835,7 +2847,7 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 						{
 							Building& curBld = building(roadId);
 							int32 quickBuildCost = curBld.GetQuickBuildCost();
-							if (money(command.playerId) >= quickBuildCost) 
+							if (moneyCap32(command.playerId) >= quickBuildCost)
 							{
 								WorldTile2 tile = curBld.centerTile();
 								_treeSystem->ForceRemoveTileObj(tile, false);
@@ -2865,10 +2877,13 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 					}
 					else
 					{
-						if (!bld->isConstructed() && money(command.playerId) >= bld->GetQuickBuildCost())
+						if (!bld->isConstructed() && moneyCap32(command.playerId) >= bld->GetQuickBuildCost())
 						{
 							ChangeMoney(command.playerId, -bld->GetQuickBuildCost());
 							_buildingSystem->AddQuickBuild(command.intVar1);
+
+							// Remove the tree at the gate tile to prevent inaccessibility
+							treeSystem().ForceRemoveTileObj(bld->gateTile().tileId(), true);
 
 							bld->InstantClearArea();
 							bld->FinishConstructionResourceAndWorkerReset();
@@ -2889,7 +2904,7 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 						int32 animalCost = ranch.animalCost();
 
 						if (ranch.openAnimalSlots() > 0 &&
-							animalCost <= money(ranch.playerId()))
+							animalCost <= moneyCap32(ranch.playerId()))
 						{
 							UnitEnum animalEnum = ranch.GetAnimalEnum();
 							ranch.AddAnimalOccupant(animalEnum, GetUnitInfo(animalEnum).minBreedingAgeTicks);
@@ -2944,7 +2959,7 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 
 		if (resourceEnum == ResourceEnum::Money)
 		{
-			if (money(giverPlayerId) < amount) {
+			if (moneyCap32(giverPlayerId) < amount) {
 				AddPopupToFront(giverPlayerId, 
 					LOCTEXT("NotEnoughMoneyToGive", "Not enough <img id=\"Coin\"/> to give out."), 
 					ExclusiveUIEnum::GiftResourceUI, "PopupCannot");
@@ -3767,7 +3782,7 @@ void GameSimulationCore::RerollCards(FRerollCards command)
 	if (rerollPrice == 0) { // Free reroll
 		cardSys.RollHand(cardSys.handSize(), true);
 	}
-	else if (money(command.playerId) >= rerollPrice) {
+	else if (moneyCap32(command.playerId) >= rerollPrice) {
 		cardSys.RollHand(cardSys.handSize(), true);
 		ChangeMoney(command.playerId , -rerollPrice);
 	} else {
@@ -3789,29 +3804,9 @@ void GameSimulationCore::SelectRareCard(FSelectRareCard command)
 	if (cardSys.CanSelectRareCardPrize(command.cardEnum)) 
 	{
 		// Town Bonus Cards go straight TownManager
-		if (IsPermanentTownBonus(command.cardEnum))
-		{
-			// Since there are multiple towns, check for the one where this bonus is still available
-			RareHandEnum rareHandEnum = PermanentBonus::CardEnumToBonusHandEnum(command.cardEnum);
-
-			const std::vector<int32>& townIds = GetTownIds(command.playerId);
-			for (int32 townId : townIds) {
-				const std::vector<CardEnum>& townBonuses = townManager(townId).townBonuses();
-
-				bool alreadyHasBonus = false;
-				for (CardEnum townBonus : townBonuses) {
-					if (PermanentBonus::CardEnumToBonusHandEnum(townBonus) == rareHandEnum) {
-						alreadyHasBonus = true;
-						break;
-					}
-				}
-
-				if (!alreadyHasBonus) {
-					townManager(townId).AddTownBonus(command.cardEnum);
-					cardSys.DoneSelectRareHand();
-					break;
-				}
-			}
+		if (IsPermanentTownBonus(command.cardEnum)) {
+			townManager(command.objectId).AddTownBonus(command.cardEnum);
+			cardSys.DoneSelectRareHand();
 		}
 		// Global Bonus Cards go straight to PlayerManager
 		else if (IsPermanentGlobalBonus(command.cardEnum)) {
@@ -4096,12 +4091,12 @@ void GameSimulationCore::UseCard(FUseCard command)
 	}
 	else if (command.cardEnum == CardEnum::BuyWood) 
 	{
-		if (globalResourceSys.money() > 0)
+		if (globalResourceSys.moneyCap32() > 0)
 		{
 			auto& townResourceSys = resourceSystem(command.townId);
 			
 			int32 cost = GetResourceInfo(ResourceEnum::Wood).basePrice;
-			int32 amountToBuy = globalResourceSys.money() / 2 / cost;
+			int32 amountToBuy = globalResourceSys.moneyCap32() / 2 / cost;
 			amountToBuy = min(amountToBuy, 1000);
 
 			if (townResourceSys.CanAddResourceGlobal(ResourceEnum::Wood, amountToBuy)) {
@@ -4401,7 +4396,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 		{
 			int32 provincePriceMoney = provincePrice * GameConstants::ClaimProvinceByMoneyMultiplier;
 
-			if (globalResourceSys.money() >= provincePriceMoney &&
+			if (globalResourceSys.moneyCap32() >= provincePriceMoney &&
 				provinceOwnerTown(command.provinceId) == -1)
 			{
 				SetProvinceOwner_Popup(command.provinceId, attackerPlayerId, true);
@@ -4678,7 +4673,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 		auto& provincePlayerOwner = playerOwned(provinceOwnerPlayer(command.provinceId));
 
 		if (provincePlayerOwner.GetDefendingClaimProgress(command.provinceId).isValid() &&
-			money(command.playerId) >= BattleInfluencePrice)
+			moneyCap32(command.playerId) >= BattleInfluencePrice)
 		{
 			ChangeMoney(command.playerId, -BattleInfluencePrice);
 			provincePlayerOwner.ReinforceDefender(command.provinceId, BattleInfluencePrice);
@@ -5170,6 +5165,10 @@ void GameSimulationCore::Cheat(FCheat command)
 		{
 			int32 addCount = command.var1;
 			GetTownhallCapital(command.playerId).AddImmigrants(addCount);
+
+			_popupSystems[command.playerId].ClearPopups();
+			cardSys.ClearBoughtCards();
+			cardSys.ClearRareHands();
 			break;
 		}
 
@@ -5305,6 +5304,26 @@ void GameSimulationCore::Cheat(FCheat command)
 						placeCluster(CardEnum::Warehouse);
 					}
 				}
+
+				_popupSystems[command.playerId].ClearPopups();
+				cardSys.ClearBoughtCards();
+				cardSys.ClearRareHands();
+
+				AddResourceGlobal(command.playerId, ResourceEnum::SteelTools, 2000);
+				AddResourceGlobal(command.playerId, ResourceEnum::Coal, 50000);
+				AddResourceGlobal(command.playerId, ResourceEnum::Medicine, 10000);
+				AddResourceGlobal(command.playerId, ResourceEnum::Grape, 150000);
+				
+				AddResourceGlobal(command.playerId, ResourceEnum::Furniture, 10000);
+				AddResourceGlobal(command.playerId, ResourceEnum::Cannabis, 10000);
+				AddResourceGlobal(command.playerId, ResourceEnum::Pottery, 10000);
+
+				AddResourceGlobal(command.playerId, ResourceEnum::Candle, 10000);
+				AddResourceGlobal(command.playerId, ResourceEnum::Cloth, 10000);
+
+				AddResourceGlobal(command.playerId, ResourceEnum::LuxuriousClothes, 10000);
+				AddResourceGlobal(command.playerId, ResourceEnum::Jewelry, 10000);
+				AddResourceGlobal(command.playerId, ResourceEnum::Book, 10000);
 			}
 				
 			break;
@@ -5332,9 +5351,17 @@ void GameSimulationCore::Cheat(FCheat command)
 			break;
 		}
 
-		case CheatEnum::PunTog: PunSettings::Toggle(command.stringVar1);
+		case CheatEnum::PunTog: 
+		case CheatEnum::PunSet:
 		case CheatEnum::PunGet:
 		{
+			if (command.cheatEnum == CheatEnum::PunTog) {
+				PunSettings::Toggle(command.stringVar1);
+			}
+			if (command.cheatEnum == CheatEnum::PunSet) {
+				PunSettings::Set(command.stringVar1, command.var1);
+			}
+				
 			auto it = PunSettings::Settings.find(ToStdString(command.stringVar1));
 			if (it != PunSettings::Settings.end()) {
 				AddPopup(command.playerId, FText::Format(INVTEXT("{0} {1}"), FText::FromString(command.stringVar1), it->second));
@@ -5343,6 +5370,7 @@ void GameSimulationCore::Cheat(FCheat command)
 			}
 			break;
 		}
+		
 		case CheatEnum::UnitInfo:
 		{
 			int32 unitId = command.var1;
@@ -5495,6 +5523,50 @@ void GameSimulationCore::Cheat(FCheat command)
 			}
 			break;
 		}
+
+		case CheatEnum::GetRoadConstructionCount:
+		{
+			AddPopup(command.playerId, ToFText("RoadConstructionCount: " + std::to_string(townManager(command.playerId).roadConstructionIds().size())));
+			break;
+		}
+		case CheatEnum::ResetCachedWaypoints:
+		{
+			for (int32 i = 0; i < BuildingEnumCount; i++) {
+				const std::vector<int32>& bldIds = buildingIds(command.playerId, static_cast<CardEnum>(i));
+				for (int32 bldId : bldIds) {
+					building(bldId).ClearCachedWaypoints();
+				}
+			}
+			break;
+		}
+		case CheatEnum::GetResourceTypeHolders:
+		{
+			ResourceEnum resourceEnum = FindResourceEnumByName(ToWString(command.stringVar1));
+			if (resourceEnum == ResourceEnum::None) {
+				return;
+			}
+				
+			const std::vector<std::vector<ResourceTypeHolders::HolderIdToAmount>>& holders = resourceSystem(command.playerId).GetDebugHolder(resourceEnum).findTypeToAvailableIdToAmount();
+
+			std::stringstream ss;
+			for (int32 i = 0; i < holders.size(); i++) 
+			{
+				ss << ResourceFindTypeName[i] << ":\n";
+				
+				for (int32 j = 0; j < holders[i].size(); j++) {
+					ResourceTypeHolders::HolderIdToAmount holderIdToAmount = holders[i][j];
+
+					const ResourceHolder& holder = resourceSystem(command.playerId).holder(ResourceHolderInfo(resourceEnum, holderIdToAmount.holderId));
+					if (holder.objectId != -1) {
+						Building& bld = building(holder.objectId);
+						ss << " - " << ToStdString(bld.buildingInfo().nameF()) << " " << holderIdToAmount.amount << "\n";
+					}
+				}
+			}
+			AddPopup(command.playerId, ToFText(ss.str()));
+				
+			break;
+		}
 		
 		case CheatEnum::TrailerCityGreen1:
 		{
@@ -5586,6 +5658,7 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 
 		auto tryAddRoad = [&](WorldTile2 tile) {
 			if (IsFrontBuildable(tile) && !_overlaySystem.IsRoad(tile)) {
+				PUN_LOG("tryAddRoad %s", ToTChar(tile.ToString()));
 				_treeSystem->ForceRemoveTileObj(tile, false);
 				overlaySystem().AddRoad(tile, true, true);
 			}
@@ -5871,7 +5944,7 @@ void GameSimulationCore::TestCityNetworkStage()
 
 
 	// Money
-	if (money(commandPlayerId) < 1000000)
+	if (moneyCap32(commandPlayerId) < 1000000)
 	{
 		auto command = make_shared<FCheat>();
 		command->cheatEnum = CheatEnum::Money;
@@ -5915,7 +5988,8 @@ void GameSimulationCore::TestCityNetworkStage()
 	{
 		WorldTile2 curTile(PunSettings::Get("TestCityNetwork_CurTileId"));
 
-		TileArea startArea(curTile, GetBuildingInfo(buildingEnum).size + WorldTile2(2, 2));
+		const WorldTile2 buildingSpacing(3, 3);
+		TileArea startArea(curTile, GetBuildingInfo(buildingEnum).size + WorldTile2(2, 2) + buildingSpacing);
 
 		TileArea endArea = SimUtils::SpiralFindAvailableBuildArea(startArea,
 			[&](WorldTile2 tile) {

@@ -23,9 +23,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) UImage* QuestImage;
 
 	UPROPERTY(meta = (BindWidget)) USizeBox* QuestNumberSizeBox;
-	UPROPERTY(meta = (BindWidget)) UHorizontalBox* ImagesIncomplete;
-	UPROPERTY(meta = (BindWidget)) UHorizontalBox* ImagesComplete;
-	UPROPERTY(meta = (BindWidget)) UHorizontalBox* ImagesSpecialQuest;
+	//UPROPERTY(meta = (BindWidget)) UHorizontalBox* ImagesIncomplete;
+	//UPROPERTY(meta = (BindWidget)) UHorizontalBox* ImagesSpecialQuest;
 
 	UPROPERTY(meta = (BindWidget)) UImage* QuestBar;
 
@@ -75,16 +74,15 @@ public:
 			QuestImage->SetBrushFromTexture(assetLoader()->HouseIcon);
 		}
 
-		// Special Quest Mark as another color
-		if (IsImportantQuest(quest->classEnum())) {
-			ImagesSpecialQuest->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-			ImagesIncomplete->SetVisibility(ESlateVisibility::Collapsed);
-			ImagesComplete->SetVisibility(ESlateVisibility::Collapsed);
-		} else {
-			ImagesSpecialQuest->SetVisibility(ESlateVisibility::Collapsed);
-			ImagesIncomplete->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-			ImagesComplete->SetVisibility(ESlateVisibility::Collapsed);
-		}
+		//// Special Quest Mark as another color
+		//if (IsImportantQuest(quest->classEnum())) {
+		//	ImagesSpecialQuest->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		//	ImagesIncomplete->SetVisibility(ESlateVisibility::Collapsed);
+		//} else {
+		//	ImagesSpecialQuest->SetVisibility(ESlateVisibility::Collapsed);
+		//	ImagesIncomplete->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		//}
+		//ImagesIncomplete->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
 		ExclamationIcon->SetShow(_timesClicked == 0);
 	}

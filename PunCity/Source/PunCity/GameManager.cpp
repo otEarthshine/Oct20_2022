@@ -769,6 +769,9 @@ void AGameManager::SampleRegions(std::vector<int32>& sampleRegionIds, float cust
 
 void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoomDistance, float smoothZoomDistance, FVector cameraLocation, bool isPhotoMode, bool isBounceZooming)
 {
+#if USE_DISPLAY_PROFILING
+	LeanProfiler leanProfilerOuter(LeanProfilerEnum::TickDisplay);
+#endif
 	LLM_SCOPE_(EPunSimLLMTag::PUN_GameManager);
 	
 	if (!isGameManagerInitialized()) {
@@ -818,6 +821,7 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 
 		{
 #if DISPLAY_UNIT
+			LEAN_PROFILING_D(TickUnitDisplay);
 			SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnit);
 			SCOPE_TIMER_FILTER(5000, "** Tick Unit -");
 			
@@ -833,6 +837,7 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 
 #if DISPLAY_BUILDING
 			{
+				LEAN_PROFILING_D(TickBuildingDisplay);
 				SCOPE_CYCLE_COUNTER(STAT_PunDisplayBuilding);
 				SCOPE_TIMER_FILTER(5000, "** Tick Building -");
 
@@ -849,6 +854,7 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 			}
 			
 			{
+				LEAN_PROFILING_D(TickMiniBuildingDisplay);
 				SCOPE_CYCLE_COUNTER(STAT_PunDisplayMiniBuilding);
 				SCOPE_TIMER_FILTER(5000, "** Tick MiniBuilding -");
 				
@@ -861,6 +867,7 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 #if DISPLAY_TERRAIN
 			if (PunSettings::IsOn("DisplayRegions"))
 			{
+				LEAN_PROFILING_D(TickTerrainRegion);
 				SCOPE_CYCLE_COUNTER(STAT_PunDisplayRegion);
 				SCOPE_TIMER_FILTER(5000, "** Tick Region - zoom:%f trans:%f bouncing:%d", smoothZoomDistance, WorldZoomTransition_RegionToRegion4x4, isBounceZooming);
 				
@@ -887,6 +894,7 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 
 			if (PunSettings::IsOn("DisplayRegions4x4"))
 			{
+				LEAN_PROFILING_D(TickTerrainRegion4x4);
 				SCOPE_CYCLE_COUNTER(STAT_PunDisplayRegion);
 				SCOPE_TIMER_FILTER(5000, "** Tick Region4x4 - zoom:%f trans:%f bouncing:%d", smoothZoomDistance, WorldZoomTransition_RegionToRegion4x4, isBounceZooming);
 
@@ -942,6 +950,7 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 
 		{
 #if DISPLAY_REGIONDECAL
+			LEAN_PROFILING_D(TickRegionDecal);
 			SCOPE_CYCLE_COUNTER(STAT_PunDisplayLandmark);
 			SCOPE_TIMER_FILTER(5000, "** Tick Decals -");
 			
@@ -955,6 +964,7 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 
 		{
 #if DISPLAY_TILEOBJ
+			LEAN_PROFILING_D(TickTileObjDisplay);
 			SCOPE_CYCLE_COUNTER(STAT_PunDisplayTree);
 			SCOPE_TIMER_FILTER(5000, "** Tick TileObj -");
 
@@ -986,6 +996,7 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 
 		{
 #if DISPLAY_RESOURCE
+			LEAN_PROFILING_D(TickResourceDisplay);
 			SCOPE_CYCLE_COUNTER(STAT_PunDisplayResource);
 			SCOPE_TIMER_FILTER(5000, "Tick Resource -");
 			
@@ -999,6 +1010,7 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 	}
 
 	{
+		LEAN_PROFILING_D(TickDisplayMisc);
 		SCOPE_CYCLE_COUNTER(STAT_PunDisplayTickMisc);
 
 		{
@@ -1120,12 +1132,13 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 			directionalLight->SetDynamicShadowDistanceMovableLight(shadowDistance);
 
 			// Dim winter light
-			const float defaultLightIntensity = 2.5;
-			const float winterLightIntensity = 1.7;
+			const float defaultLightIntensity = 2.7;
+			const float winterLightIntensity = 1.8;
 			float lightIntensity = defaultLightIntensity + (winterLightIntensity - defaultLightIntensity) * simulation().snowHeightForestStart();
 			directionalLight->SetIntensity(lightIntensity);
 
-			skyLight->SetIntensity(0.5);
+			//skyLight->SetIntensity(0.5);
+			skyLight->SetIntensity(PunSettings::Get("SkyLightIntensity") / 100.0f);
 
 			//PUN_LOG("directionalLight %f sky %f", directionalLight->Intensity, skyLight->Intensity);
 		}

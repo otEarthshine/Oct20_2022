@@ -31,6 +31,10 @@ public:
 			return nullptr;
 		}
 
+		if (_pausePopupUntilTick > Time::Ticks()) {
+			return nullptr;
+		}
+
 		if (PunSettings::TrailerMode()) {
 			ClearPopups();
 			return nullptr;
@@ -70,6 +74,11 @@ public:
 		waitingForReply = false;
 	}
 
+	
+	void SetPopupTimeDelay(int32 ticks) {
+		_pausePopupUntilTick = Time::Ticks() + ticks;
+	}
+
 	void TickRound() {
 		for (size_t i = _popups.size(); i-- > 0;) {
 			if (Time::Ticks() - _popups[i].startTick > Time::TicksPerSeason) {
@@ -81,6 +90,7 @@ public:
 	void Serialize(FArchive& Ar)
 	{
 		SerializeVecObj(Ar, _popups);
+		Ar << _pausePopupUntilTick;
 	}
 
 public:
@@ -96,4 +106,5 @@ private:
 	 * Serialize
 	 */
 	std::vector<PopupInfo> _popups; //PlayerId to popups
+	int32 _pausePopupUntilTick = 0;
 };

@@ -773,7 +773,7 @@ void APunPlayerController::SendTickToClient(NetworkTickInfo& tickInfo)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_Controller);
 
-	PUN_LOG("SendTickToClient cid:%d _proxyControllerTick %d", controllerPlayerId(), _proxyControllerTick);
+	//PUN_LOG("SendTickToClient cid:%d _proxyControllerTick %d", controllerPlayerId(), _proxyControllerTick);
 	
 	tickInfo.proxyControllerTick = _proxyControllerTick++;
 

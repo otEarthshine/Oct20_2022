@@ -24,7 +24,7 @@ public:
 	//UPROPERTY(meta = (BindWidget)) UVerticalBox* ChatBoxWhenInactive;
 
 	UPROPERTY(meta = (BindWidget)) UButton* ChatMinimizeButton;
-	UPROPERTY(meta = (BindWidget)) UImage* ChatMinimizeImage;
+	//UPROPERTY(meta = (BindWidget)) UImage* ChatMinimizeImage;
 	UPROPERTY(meta = (BindWidget)) USizeBox* ChatSizeBox;
 
 	UPROPERTY(meta = (BindWidget)) UTextBlock* FontExampleChat;
@@ -185,12 +185,14 @@ public:
 	}
 
 	UFUNCTION() void ChatToggleMinimize() {
-		if (ChatSizeBox->HeightOverride > 299) {
+		if (ChatSizeBox->HeightOverride >= 280) {
 			ChatSizeBox->SetHeightOverride(130);
-			ChatMinimizeImage->SetRenderScale(FVector2D(1, 1));
+			ChatMinimizeButton->SetRenderScale(FVector2D(1, 1));
+			//ChatMinimizeImage->SetRenderScale(FVector2D(1, 1));
 		} else {
-			ChatSizeBox->SetHeightOverride(300);
-			ChatMinimizeImage->SetRenderScale(FVector2D(1, -1));
+			ChatSizeBox->SetHeightOverride(288);
+			ChatMinimizeButton->SetRenderScale(FVector2D(1, -1));
+			//ChatMinimizeImage->SetRenderScale(FVector2D(1, -1));
 		}
 	}
 
@@ -607,9 +609,6 @@ private:
 		// System message
 		if (message.isSystemMessage)
 		{
-			//std::string messageStd = ToStdString(message.message);
-			//std::string wrappedMessage = widget->WrapString(messageStd, chatWrapSize, &fontInfo);
-			//widget->SetRichText(ToFString(wrappedMessage));
 			widget->SetRichText(message.message);
 			widget->PunRichText->SetAutoWrapText(false);
 			return widget;
@@ -629,7 +628,10 @@ private:
 		finalMessage.Append("<ChatName>")
 					.Append(trimmedName.Left(namePartLength))
 					.Append("</>"); // Name
-		finalMessage.Append(trimmedName.RightChop(namePartLength)); // Message
+		finalMessage.Append(trimmedName.RightChop(namePartLength)); // Message (RichTextTable_Chat)
+		//.Append("<Chat>")
+		//.Append(trimmedName.RightChop(namePartLength))
+		//.Append("</>"); // Message
 
 		widget->SetRichText(finalMessage);
 		widget->PunRichText->SetAutoWrapText(false);

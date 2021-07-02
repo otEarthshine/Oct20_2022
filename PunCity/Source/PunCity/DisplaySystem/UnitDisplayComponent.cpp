@@ -346,6 +346,7 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 		_thisTransform.Add(unitId, transform);
 
 		{
+			LEAN_PROFILING_D(TickUnitDisplay_Unit);
 			SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitAddInst);
 			//_unitMeshes->Add(GetMeshName(_currentDisplayState.unitEnum, _currentDisplayState.variationIndex), unitId, transform, 0, unitId);
 			_unitMeshes1->Add(GetUnitDisplayEnum(_currentDisplayState.unitEnum, _currentDisplayState.variationIndex), unitId, transform);
@@ -529,6 +530,8 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 
 void UUnitDisplayComponent::UpdateResourceDisplay(int32 unitId, UnitStateAI& unit, FTransform& transformIn)
 {
+	LEAN_PROFILING_D(TickUnitDisplay_Resource);
+	
 	SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitResource);
 
 	/*

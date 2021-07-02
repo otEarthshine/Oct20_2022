@@ -34,6 +34,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* ArrowUp;
 	UPROPERTY(meta = (BindWidget)) UButton* ArrowDown;
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* HumanSlots;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* HumanSlotCount1;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* HumanSlotCount2;
 
 	UPROPERTY(meta = (BindWidget)) UButton* PriorityButton;
 	UPROPERTY(meta = (BindWidget)) UButton* NonPriorityButton;
@@ -111,6 +113,7 @@ public:
 			}
 			return;
 		}
+		
 		if (IsStorage(building.buildingEnum()) ||
 			building.isEnum(CardEnum::IntercityLogisticsHub) ||
 			building.isEnum(CardEnum::IntercityLogisticsPort) ||
@@ -173,6 +176,14 @@ public:
 			}
 			return;
 		}
+		
+		if (IsTradingPostLike(building.buildingEnum()) ||
+			building.isEnum(CardEnum::TradingCompany)) 
+		{
+			SetTradeProgress(building.subclass<TradeBuilding>(), building.barFraction());
+			return;
+		}
+
 
 		// ResourceUI Dirty?
 		if (!building.isBuildingResourceUIDirty()) {
@@ -180,16 +191,8 @@ public:
 		}
 		building.SetBuildingResourceUIDirty(false);
 		
-		
-		if (IsTradingPostLike(building.buildingEnum()) ||
-			building.isEnum(CardEnum::TradingCompany)) {
-			SetTradeProgress(building.subclass<TradeBuilding>(), building.barFraction());
-		}
-		//else if (IsBarrack(building.buildingEnum())) {
-		//	Barrack& barrack = building.subclass<Barrack>();
-		//	SetProgress(barrack.trainingPercent() / 100.0f, barrack.queueCount());
-		//}
-		else if (IsSpecialProducer(building.buildingEnum())) {
+
+		if (IsSpecialProducer(building.buildingEnum())) {
 			SetSpecialProducerProgress(building.barFraction(), building);
 		}
 		else {

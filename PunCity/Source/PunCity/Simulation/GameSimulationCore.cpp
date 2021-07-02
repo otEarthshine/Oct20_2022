@@ -837,13 +837,12 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 
 	for (size_t localTickIndex = 0; localTickIndex < simTicksForThisControllerTick; localTickIndex++)
 	{
-		_LOG(PunTick, "[%d] TickCore %d", _gameManager->playerId(), _tickCount);
+		//_LOG(PunTick, "[%d] TickCore %d", _gameManager->playerId(), _tickCount);
 
 		GameRand::ResetStateToTickCount(_tickCount);
 		Time::SetTickCount(_tickCount);
 
 		_floodSystem.Tick();
-		//_floodSystemHuman.Tick();
 
 
 		if (Time::Ticks() % 60 == 0)
@@ -855,8 +854,6 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 			//isConnectedCached = 0;
 		}
 		
-		//_floodSystem2.Tick();
-		//_floodSystem2Human.Tick();
 
 		if (PunSettings::IsOn("TickStats")) {
 			_statSystem.Tick(this);
@@ -2395,20 +2392,30 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 							return;
 						}
 						
-						// Try adding all townhall's card to hand
+						// Check if we can add townhall's cards to hand
 						auto& townManage = townManager(bld.townId());
+
+						std::vector<CardEnum> addedCards;
 						
 						std::vector<CardStatus> slotCards = townManage.cardsInTownhall();
 						for (size_t i = 0; i < slotCards.size(); i++)
 						{
 							if (cardSys.CanAddCardToBoughtHand(slotCards[i].cardEnum, 1)) {
 								townManage.RemoveCardFromTownhall(i);
+								
+								addedCards.push_back(slotCards[i].cardEnum);
 								cardSys.AddCardToHand2(slotCards[i].cardEnum);
 							}
 							else {
+								// Remove the added cards from the Hand
+								for (CardEnum addedCard : addedCards) {
+									cardSys.RemoveCards(addedCard, 1);
+								}
+								
 								AddPopupToFront(parameters.playerId, 
 									LOCTEXT("CardFullDemolitionFailed", "Card hand is full. Demolition failed."), 
-									ExclusiveUIEnum::None, "PopupCannot");
+									ExclusiveUIEnum::None, "PopupCannot"
+								);
 								return;
 							}
 						}
@@ -2416,13 +2423,22 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 					else
 					{
 						// Return cards to hand
+						std::vector<CardEnum> addedCards;
+						
 						std::vector<CardStatus> slotCards = bld.slotCards();
 						for (CardStatus card : slotCards)
 						{
-							if (cardSys.CanAddCardToBoughtHand(card.cardEnum, 1)) {
+							if (cardSys.CanAddCardToBoughtHand(card.cardEnum, 1)) 
+							{
+								addedCards.push_back(card.cardEnum);
 								cardSys.AddCardToHand2(card.cardEnum);
 							}
 							else {
+								// Remove the added cards from the Hand
+								for (CardEnum addedCard : addedCards) {
+									cardSys.RemoveCards(addedCard, 1);
+								}
+								
 								AddPopupToFront(parameters.playerId, 
 									LOCTEXT("CardFullDemolitionFailed", "Card hand is full. Demolition failed."), 
 									ExclusiveUIEnum::None, "PopupCannot");
@@ -2434,7 +2450,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 					}
 
 					/*
-					 * if this isn't a permanent building or Fort/Colony, return the card
+					 * if this isn't a permanent building or Fort/Colony, return the card used to build this
 					 */
 					// If this building was just built less than 15 sec ago, return the card...
 					//if (bld.buildingAge() < Time::TicksPerSecond * 15)
@@ -2826,8 +2842,6 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 			{
 				if (Building* bld = buildingPtr(command.intVar1))
 				{
-
-					
 					// Quick Build All for Road
 					if (IsRoad(bld->buildingEnum()))
 					{
@@ -2883,7 +2897,9 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 							_buildingSystem->AddQuickBuild(command.intVar1);
 
 							// Remove the tree at the gate tile to prevent inaccessibility
-							treeSystem().ForceRemoveTileObj(bld->gateTile().tileId(), true);
+							bld->frontArea().ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+								treeSystem().ForceRemoveTileObj(tile.tileId(), false);
+							});
 
 							bld->InstantClearArea();
 							bld->FinishConstructionResourceAndWorkerReset();

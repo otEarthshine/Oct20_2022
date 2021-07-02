@@ -424,8 +424,10 @@ public:
 	 */
 	void KeyPressed_H() final
 	{
-		if (GetPunHUD()->mainGameUI()->BuildMenuOverlay->GetVisibility() != ESlateVisibility::Collapsed) {
-			inputSystemInterface()->StartBuildingPlacement(CardEnum::House, 0, false);
+		if (GetPunHUD()->mainGameUI()->BuildMenuOverlay->GetVisibility() != ESlateVisibility::Collapsed) 
+		{
+			GetPunHUD()->mainGameUI()->SelectPermanentCard(CardEnum::House);
+			//inputSystemInterface()->StartBuildingPlacement(CardEnum::House, 0, false);
 		}
 		else {
 			// If camera is already pointed to a town, shift it to the next town
@@ -445,7 +447,8 @@ public:
 		if (GetPunHUD()->mainGameUI()->BuildMenuOverlay->GetVisibility() != ESlateVisibility::Collapsed &&
 			simulation().IsBuildingUnlocked(playerId(), CardEnum::Farm))
 		{
-			inputSystemInterface()->StartBuildingPlacement(CardEnum::Farm, 0, false);
+			GetPunHUD()->mainGameUI()->SelectPermanentCard(CardEnum::Farm);
+			//inputSystemInterface()->StartBuildingPlacement(CardEnum::Farm, 0, false);
 
 			// Noticed farm, no longer need exclamation on farm after this...
 			simulation().parameters(playerId())->FarmNoticed = true;
@@ -455,7 +458,8 @@ public:
 	{
 		if (GetPunHUD()->mainGameUI()->BuildMenuOverlay->GetVisibility() != ESlateVisibility::Collapsed)
 		{
-			inputSystemInterface()->StartBuildingPlacement(CardEnum::StorageYard, 0, false);
+			GetPunHUD()->mainGameUI()->SelectPermanentCard(CardEnum::StorageYard);
+			//inputSystemInterface()->StartBuildingPlacement(CardEnum::StorageYard, 0, false);
 		}
 	}
 

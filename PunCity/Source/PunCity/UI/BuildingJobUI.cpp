@@ -45,6 +45,9 @@ void UBuildingJobUI::PunInit(int buildingId, bool isHouse)
 	BUTTON_ON_CLICK(JobPriorityButton, this, &UBuildingJobUI::OnClickJobPriorityButton);
 	JobPriorityButton->SetVisibility(ESlateVisibility::Collapsed);
 
+	AddToolTip(HumanSlotCount1, LOCTEXT("HumanSlotCount1 Tip", "Current Workers / Allowed Workers Slots"));
+	AddToolTip(HumanSlotCount2, LOCTEXT("HumanSlotCount2 Tip", "(Max possible Worker Slots)"));
+
 	//if (isHouse)
 	//{
 	//	ArrowUp->SetVisibility(ESlateVisibility::Collapsed);
@@ -79,26 +82,54 @@ void UBuildingJobUI::SetSlots(int filledSlotCount, int allowedSlotCount, int slo
 	_allowedSlotCount = allowedSlotCount;
 	_slotCount = slotCount;
 	_slotColor = color;
-	
-	for (int i = 0; i < slotCount; i++) 
+
+	// Display people icons if there less than X slots
+	if (slotCount <= 6)
 	{
-		if (_humanIcons.Num() <= i) {
-			auto humanIcon = AddWidget<UHumanSlotIcon>(UIEnum::JobHumanIcon);
-			HumanSlots->AddChild(humanIcon);
-			_humanIcons.Add(humanIcon);
+		for (int i = 0; i < slotCount; i++)
+		{
+			if (_humanIcons.Num() <= i) {
+				auto humanIcon = AddWidget<UHumanSlotIcon>(UIEnum::JobHumanIcon);
+				HumanSlots->AddChild(humanIcon);
+				_humanIcons.Add(humanIcon);
+			}
+
+			_humanIcons[i]->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			_humanIcons[i]->SlotFiller->SetVisibility(i < filledSlotCount ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Hidden);
+			_humanIcons[i]->SlotFillerImage->SetColorAndOpacity(color);
+			_humanIcons[i]->SlotShadow->SetVisibility(_humanIcons[i]->SlotFiller->IsVisible() ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Hidden);
+
+			_humanIcons[i]->SlotCross->SetVisibility(i < allowedSlotCount ? ESlateVisibility::Hidden : ESlateVisibility::SelfHitTestInvisible);
 		}
 
-		_humanIcons[i]->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-		_humanIcons[i]->SlotFiller->SetVisibility(i < filledSlotCount ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Hidden);
-		_humanIcons[i]->SlotFillerImage->SetColorAndOpacity(color);
-		_humanIcons[i]->SlotShadow->SetVisibility(_humanIcons[i]->SlotFiller->IsVisible() ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Hidden);
-		
-		_humanIcons[i]->SlotCross->SetVisibility(i < allowedSlotCount ? ESlateVisibility::Hidden : ESlateVisibility::SelfHitTestInvisible);
-	}
+		// Deactivate unused meshes
+		for (int i = slotCount; i < _humanIcons.Num(); i++) {
+			_humanIcons[i]->SetVisibility(ESlateVisibility::Collapsed);
+		}
 
-	// Deactivate unused meshes
-	for (int i = slotCount; i < _humanIcons.Num(); i++) {
-		_humanIcons[i]->SetVisibility(ESlateVisibility::Collapsed);
+		// Hide Texts
+		HumanSlotCount1->SetVisibility(ESlateVisibility::Collapsed);
+		HumanSlotCount2->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	else
+	{
+		// Show
+		HumanSlotCount1->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		HumanSlotCount2->SetVisibility(allowedSlotCount != slotCount ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+		HumanSlotCount1->SetText(FText::Format(
+			INVTEXT("{0}/{1}"),
+			TEXT_NUM(filledSlotCount),
+			TEXT_NUM(allowedSlotCount)
+		));
+		HumanSlotCount2->SetText(FText::Format(
+			INVTEXT("({0})"),
+			TEXT_NUM(slotCount)
+		));
+
+		// Deactivate all slots
+		for (int i = 0; i < _humanIcons.Num(); i++) {
+			_humanIcons[i]->SetVisibility(ESlateVisibility::Collapsed);
+		}
 	}
 }
 
@@ -132,8 +163,7 @@ void UBuildingJobUI::SetConstructionResource(std::vector<int32> constructionReso
 				ADDTEXT_LOCTEXT("Construction Input", "Construction Input");
 				ADDTEXT_INV_("<space>");
 
-				int32 constructionResourceCount = std::min(constructionResourcesCount[i], constructionCosts[i]); // TODO: !!! Sometimes there is more resources than needed and ppl complained
-				ADDTEXT_(INVTEXT("{0} {1}/{2}"), ResourceNameT(resourceEnum), TEXT_NUM(constructionResourceCount), constructionCosts[i]);
+				ADDTEXT_(INVTEXT("{0} {1}/{2}"), ResourceNameT(resourceEnum), TEXT_NUM(constructionResourcesCount[i]), TEXT_NUM(constructionCosts[i]));
 				ADDTEXT_INV_("<space>");
 				ADDTEXT_(LOCTEXT("Stored(city): {0}", "Stored(city): {0}"), TEXT_NUM(simulation().resourceCountTownSafe(building.townId(), resourceEnum)));
 

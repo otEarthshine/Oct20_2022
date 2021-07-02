@@ -750,16 +750,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			{
 
 				if (!building.isConstructed()) {
-					//ss << "Under construction\n";
 					descriptionBox->AddRichText(LOCTEXT("UnderConstruction", "Under construction\n"));
 				}
 
 				// Occupants
 				if (IsHouse(building.buildingEnum()) && building.isConstructed()) 
 				{
-					//ss << "<img id=\"House\"/>" << building.occupantCount() << "/" << building.allowedOccupants(); // House's allowedOccupants
-					//descriptionBox->AddRichText("Occupants", ss);
-					
 					ADDTEXT(args, INVTEXT("<img id=\"House\"/>{0}/{1}"),
 						FText::AsNumber(building.occupantCount()), 
 						FText::AsNumber(building.allowedOccupants())
@@ -772,8 +768,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					}
 #endif					
 				}
-				else if (building.maxOccupants() > 0) {
-					//ss << building.occupantCount() << "/" << building.maxOccupants();
+				else if (building.maxOccupants() > 0) 
+				{
 					ADDTEXT(args, INVTEXT("{0}/{1}"),
 						FText::AsNumber(building.occupantCount()),
 						FText::AsNumber(building.maxOccupants())
@@ -2314,14 +2310,19 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					descriptionBox->AddRichText(TEXT_TAG("<Subheader>", LOCTEXT("Resources needed:", "Resources needed:")));
 
 
+					std::vector<int32> constructionCosts = building.GetConstructionResourceCost();
 					
 					for (int32 i = 0; i < ConstructionResourceCount; i++)
 					{
 						ResourceEnum resourceEnum = ConstructionResources[i];
 						ResourceHolderInfo holderInfo = building.holderInfo(resourceEnum);
 						if (holderInfo.isValid()) {
-							ADDTEXT_(INVTEXT("{0}/{1}"), TEXT_NUM(building.GetResourceCount(holderInfo)), TEXT_NUM(building.buildingInfo().constructionResources[i]))
-									descriptionBox->AddIconPair(FText(), resourceEnum, args);
+
+							ADDTEXT_(INVTEXT("{0}/{1}"),
+								TEXT_NUM(building.GetResourceCount(holderInfo)),
+								TEXT_NUM(constructionCosts[i])
+							);
+							descriptionBox->AddIconPair(FText(), resourceEnum, args);
 						}
 					}
 
@@ -2351,6 +2352,21 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 					for (ResourceHolderInfo holderInfo : holderInfos)
 					{
+#if !UE_BUILD_SHIPPING
+						if (PunSettings::IsOn("DebugFocusUI")) {
+							ResourceHolder holder = building.resourceSystem().holder(holderInfo);
+
+							int32 target = building.GetResourceTarget(holderInfo);
+							int32 pop = holder.reservedPop();
+							int32 push = holder.reservedPush();
+							if (target != 0 || pop != 0 || push != 0) {
+								stringstream sst;
+								sst << "-- Target:" << target << ",Pop:" << pop << ",Push:" << push;
+								descriptionBox->AddRichText(sst);
+							}
+						}
+#endif
+						
 						int32 resourceCount = building.GetResourceCount(holderInfo);
 
 						// Don't display 0
@@ -2359,17 +2375,6 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						}
 
 						descriptionBox->AddIconPair(FText(), holderInfo.resourceEnum, TEXT_NUM(resourceCount));
-
-						//ss << ResourceName(holderInfo.resourceEnum) << ": " << resourceCount;
-#if !UE_BUILD_SHIPPING
-						if (PunSettings::IsOn("DebugFocusUI")) {
-							ResourceHolder holder = building.resourceSystem().holder(holderInfo);
-
-							stringstream sst;
-							sst << "-- Target:" << building.GetResourceTarget(holderInfo) << ",Pop:" << holder.reservedPop() << ",Push:" << holder.reservedPush();
-							descriptionBox->AddRichText(sst);
-						}
-#endif
 					}
 				}
 
@@ -3045,16 +3050,14 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 			// House (Human)
 			if (unit.houseId() != -1) {
-				FText houseName = simulation.building(unit.houseId()).buildingInfo().GetName();
-				ADDTEXT_(LOCTEXT("House: X", "House: {0}"), houseName);
 #if !UE_BUILD_SHIPPING
 				if (PunSettings::IsOn("DebugFocusUI")) {
+					FText houseName = simulation.building(unit.houseId()).buildingInfo().GetName();
+					ADDTEXT_(LOCTEXT("House: X", "House: {0}"), houseName);
 					ADDTEXT_(INVTEXT(" (id: {0})"), TEXT_NUM(unit.houseId()));
+					args.Add(INVTEXT("\n"));
 				}
 #endif
-				args.Add(INVTEXT("\n"));
-			} else {
-				ADDTEXT_LOCTEXT("House: none \n", "House: none \n");
 			}
 
 #if !UE_BUILD_SHIPPING
@@ -3142,45 +3145,6 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			}
 
 			descriptionBox->AfterAdd();
-		}
-
-		/*
-		 * Georesource
-		 */
-		else if (uiState.objectType == ObjectTypeEnum::Georesource)
-		{
-			// TODO: remove???
-			
-			//WorldRegion2 region(objectId);
-			//
-			//auto& georesourceSystem = simulation.georesourceSystem();
-			//GeoresourceNode node = georesourceSystem.georesourceNode(objectId);
-			////GeoresourceInfo info = node.info();
-			////
-			////stringstream ss;
-			////ss << info.name << "\n";
-			////descriptionBox->AddTextWithSpacer(ss);
-			////
-			////ss << info.description << "\n\n";
-
-			////descriptionBox->AddTextWithSpacer(ss);
-
-			//AddGeoresourceInfo(objectId, descriptionBox);
-
-			//AddSelectStartLocationButton(region, descriptionBox);
-			//AddClaimLandButtons(region, descriptionBox);
-			//AddClaimRuinButton(WorldRegion2(objectId), descriptionBox);
-
-			//// Selection Mesh
-			//FVector displayLocation = dataSource()->DisplayLocation(node.centerTile.worldAtom2());
-			//SpawnSelectionMesh(assetLoader->SelectionMaterialGreen, displayLocation + FVector(0, 0, 30));
-
-			//ShowTileSelectionDecal(displayLocation, node.area.size());
-			//if (simulation.provinceOwner(region.regionId()) != playerId()) {
-			//	ShowRegionSelectionDecal(node.centerTile);
-			//}
-
-			//descriptionBox->AfterAdd();
 		}
 
 		/*
@@ -3590,26 +3554,6 @@ void UObjectDescriptionUISystem::AddSelectStartLocationButton(int32 provinceId, 
 	// If player hasn't select starting location
 	if (!hasChosenLocation)
 	{
-		switch(simulation().GetBiomeProvince(provinceId))
-		{
-		case BiomeEnum::Tundra:
-			descriptionBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Difficulty: Extreme", "Difficulty: Extreme")));
-			break;
-		case BiomeEnum::Desert:
-			descriptionBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Difficulty: Very Hard", "Difficulty: Very Hard")));
-			break;
-		case BiomeEnum::BorealForest:
-		case BiomeEnum::Savanna:
-		case BiomeEnum::GrassLand:
-			descriptionBox->AddRichText(TEXT_TAG("<Orange>", LOCTEXT("Difficulty: Hard", "Difficulty: Hard")));
-			break;
-		case BiomeEnum::Jungle:
-			descriptionBox->AddRichText(LOCTEXT("Difficulty: Somewhat Hard", "Difficulty: Somewhat Hard"));
-			break;
-		case BiomeEnum::Forest:
-			descriptionBox->AddRichText(LOCTEXT("Difficulty: Normal", "Difficulty: Normal"));
-			break;
-		}
 		descriptionBox->AddSpacer();
 		
 		bool canClaim = true;
@@ -3640,12 +3584,37 @@ void UObjectDescriptionUISystem::AddSelectStartLocationButton(int32 provinceId, 
 
 		TArray<FText> args;
 		ADDTEXT_LOCTEXT("SelectStart", "Select Starting Location");
+
+		ADDTEXT_INV_("\n");
+		switch (simulation().GetBiomeProvince(provinceId))
+		{
+		case BiomeEnum::Tundra:
+			ADDTEXT_LOCTEXT("Difficulty: Extreme", "(<Red>Extreme Difficulty</>)");
+			break;
+		case BiomeEnum::Desert:
+			ADDTEXT_LOCTEXT("Difficulty: Very Hard", "(<Red>Very Hard Difficulty</>)");
+			break;
+		case BiomeEnum::BorealForest:
+		case BiomeEnum::Savanna:
+		case BiomeEnum::GrassLand:
+			ADDTEXT_LOCTEXT("Difficulty: Hard", "(<Orange>Hard Difficulty</>)");
+			break;
+		case BiomeEnum::Jungle:
+			ADDTEXT_LOCTEXT("Difficulty: Somewhat Hard", "(<Orange>Somewhat Hard Difficulty</>)");
+			break;
+		case BiomeEnum::Forest:
+			ADDTEXT_LOCTEXT("Difficulty: Normal", "(Normal Difficulty)");
+			break;
+		}
+
+		
 		ADDTEXT_INV_("\n");
 		if (area.isValid()) {
 			ADDTEXT_(INVTEXT("<img id=\"Coin\"/>{0}"), TextRed(FText::AsNumber(provincePriceMoney), !canClaim));
 		} else {
 			ADDTEXT_TAG_("<Red>", LOCTEXT("NotEnoughBuildingSpace", "Not enough buildable space."));
 		}
+		
 		descriptionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::SelectStartingLocation, canClaim, false, provinceId);
 	}
 }
@@ -4250,8 +4219,8 @@ void UObjectDescriptionUISystem::AddBiomeInfo(WorldTile2 tile, UPunBoxWidget* de
 	descriptionBox->AddSpacer(5);
 
 	if (biomeEnum == BiomeEnum::Jungle) {
-		const int32 jungleDiseaseFactor = 3;
-		ADDTEXT_(LOCTEXT("DiseaseFreqJungle", "<OrangeRed>Disease Frequency: {0} per year</>"), TEXT_NUM(jungleDiseaseFactor));
+		const int32 jungleDiseaseFactor100 = 300;
+		ADDTEXT_(LOCTEXT("DiseaseFreqJungle", "<OrangeRed>Disease Frequency: {0} per year</>"), TEXT_100_2(jungleDiseaseFactor100));
 	} else {
 		ADDTEXT_LOCTEXT("DiseaseFreq", "<Bold>Disease Frequency:</> 1.0 per year");
 	}
@@ -4568,34 +4537,40 @@ void UObjectDescriptionUISystem::AddGeoresourceInfo(int32 provinceId, UPunBoxWid
 	
 	if (node.HasResource())
 	{
-		if (showTopLine) {
-			descriptionBox->AddLineSpacer(15);
+		bool shouldShowResource = true;
+		if (node.georesourceEnum == GeoresourceEnum::Oil) {
+			shouldShowResource = simulation.IsResearched(playerId(), TechEnum::Petroleum);
 		}
 		
-		//stringstream ss;
-		//ss << "<Header>" << node.info().name << "</>";
-		descriptionBox->AddRichText(TEXT_TAG("<Header>", node.info().name));
-		descriptionBox->AddSpacer(8);
-		
-		//ss << node.info().description;
-		descriptionBox->AddRichText(node.info().description);
-		descriptionBox->AddSpacer();
-
-		if (node.depositAmount > 0 || isMountain) {
-			descriptionBox->AddRichText(LOCTEXT("Resource amount:", "Resource amount:"));
-
-			if (node.depositAmount > 0) {
-				descriptionBox->AddIconPair(FText(), node.info().resourceEnum, TEXT_NUM(node.depositAmount));
+		if (shouldShowResource)
+		{
+			if (showTopLine) {
+				descriptionBox->AddLineSpacer(15);
 			}
-			if (isMountain) {
-				descriptionBox->AddIconPair(FText(), ResourceEnum::Stone, TEXT_NUM(node.stoneAmount));
-			}
-			
+
+			descriptionBox->AddRichText(TEXT_TAG("<Header>", node.info().name));
+			descriptionBox->AddSpacer(8);
+
+			descriptionBox->AddRichText(node.info().description);
 			descriptionBox->AddSpacer();
-		}
 
+			if (node.depositAmount > 0 || isMountain) {
+				descriptionBox->AddRichText(LOCTEXT("Resource amount:", "Resource amount:"));
+
+				if (node.depositAmount > 0) {
+					descriptionBox->AddIconPair(FText(), node.info().resourceEnum, TEXT_NUM(node.depositAmount));
+				}
+				if (isMountain) {
+					descriptionBox->AddIconPair(FText(), ResourceEnum::Stone, TEXT_NUM(node.stoneAmount));
+				}
+
+				descriptionBox->AddSpacer();
+			}
+			return;
+		}
 	}
-	else if (isMountain)
+
+	if (isMountain)
 	{
 		if (showTopLine) {
 			descriptionBox->AddLineSpacer(15);

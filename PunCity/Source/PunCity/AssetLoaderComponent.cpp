@@ -755,6 +755,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	addCardIcon(CardEnum::SustainabilityBook, "Sustainability");
 	addCardIcon(CardEnum::TulipSeeds, "Tulip");
 	addCardIcon(CardEnum::DesertTradeForALiving, "TradeForALiving");
+	addCardIcon(CardEnum::Demolish, "Demolish");
 	
 	addCardIcon(CardEnum::WildCard, "WildCard");
 	addCardIcon(CardEnum::WildCardFood, "WildCard");

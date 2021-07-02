@@ -355,6 +355,11 @@ void UnitStateAI::Update()
 			}
 			else {
  				PUN_LOG("Animal without home %s", ToTChar(compactStr()));
+
+				if (unitEnum() == UnitEnum::WildMan) {
+					PUN_LOG("Wild Man no home death %d", _id);
+				}
+				
 				Die();
 				return;
 			}
@@ -473,6 +478,7 @@ void UnitStateAI::Update()
 					if (_simulation->unitEnum(unitId) == UnitEnum::WildMan)
 					{
 						WorldTile2 curTile = _simulation->unitAtom(unitId).worldTile2();
+						
 						if (_simulation->GetProvinceIdClean(curTile) == _homeProvinceId)
 						{
 							tribeCount++;
@@ -482,7 +488,9 @@ void UnitStateAI::Update()
 			}
 
 			if (tribeCount < 5) {
-				_simulation->AddUnit(unitEnum(), -1, _unitData->atomLocation(_id), 0);
+				int32 newBornId = _simulation->AddUnit(unitEnum(), -1, _unitData->atomLocation(_id), 0);
+				_simulation->unitAI(newBornId).SetHouseId(_houseId);
+				PUN_LOG("Wildman Born id:%d", newBornId);
 			}
 
 			_nextPregnantTick = Time::Ticks() + Time::TicksPerSeason;
@@ -774,7 +782,8 @@ void UnitStateAI::AttackIncoming(UnitFullId attacker, int32 ownerWorkplaceId, in
 			for (size_t i = 0; i < drops.size(); i++) 
 			{
 				PUN_CHECK(drops[i].count >= 100);
-				
+
+				// Ranch Enhance drop count (productivity)
 				Building* workplace = unitAI.workplace();
 				int32 efficiency = workplace ? workplace->efficiency() : 0;
 				drops[i].count = GameRand::Rand100RoundTo1(drops[i].count * efficiency / 100);
@@ -786,11 +795,11 @@ void UnitStateAI::AttackIncoming(UnitFullId attacker, int32 ownerWorkplaceId, in
 			if (_simulation->IsValidTown(attackerTownId)) {
 				for (ResourcePair& drop : drops) 
 				{
-					// Enhance drop count using ranch's productivity
-					Building* workplc = unitAI.workplace();
-					if (workplc && IsRanch(workplc->buildingEnum())) {
-						drop.count = drop.count * (100 + workplc->GetTotalBonus()) / 100;
-					}
+					//// Enhance drop count using ranch's productivity
+					//Building* workplc = unitAI.workplace();
+					//if (workplc && IsRanch(workplc->buildingEnum())) {
+					//	drop.count = drop.count * (100 + workplc->GetTotalBonus()) / 100;
+					//}
 					
 					_simulation->resourceSystem(attackerTownId).SpawnDrop(drop.resourceEnum, drop.count, unitTile());
 				}

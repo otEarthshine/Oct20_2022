@@ -146,6 +146,8 @@ struct ScopeTimerLoop
 
 #define DISPLAY_PROFILING_LIST(entry) \
 	entry(TickUnitDisplay) \
+	entry(TickUnitDisplay_Resource) \
+	entry(TickUnitDisplay_Unit) \
 	entry(TickTerrainRegion) \
 	entry(TickTerrainRegion4x4) \
 	entry(TickRegionDecal) \

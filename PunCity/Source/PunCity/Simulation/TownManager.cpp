@@ -1184,8 +1184,8 @@ void TownManager::RecalculateTax(bool showFloatup)
 		}
 	}
 
-	ResourceSystem& resourceSys = _simulation->resourceSystem(_playerId);
-	GlobalResourceSystem& globalResourceSys = _simulation->globalResourceSystem(_playerId);
+	ResourceSystem& resourceSys = _simulation->resourceSystem(_townId);
+	GlobalResourceSystem& globalResourceSys = _simulation->globalResourceSystem(_townId);
 
 	/*
 	 * Townhall
@@ -1237,7 +1237,7 @@ void TownManager::RecalculateTax(bool showFloatup)
 
 	for (CardEnum buildingEnum : ProfitBuildings)
 	{
-		const std::vector<int32>& buildingIds = _simulation->buildingIds(_playerId, buildingEnum);
+		const std::vector<int32>& buildingIds = _simulation->buildingIds(_townId, buildingEnum);
 		for (int32 buildingId : buildingIds) {
 			ProfitBuilding& bld = _simulation->building<ProfitBuilding>(buildingId);
 
@@ -1267,7 +1267,7 @@ void TownManager::RecalculateTax(bool showFloatup)
 
 	for (int32 i = 0; i < BuildingEnumCount; i++)
 	{
-		const std::vector<int32>& buildingIds = _simulation->buildingIds(_playerId, static_cast<CardEnum>(i));
+		const std::vector<int32>& buildingIds = _simulation->buildingIds(_townId, static_cast<CardEnum>(i));
 		for (int32 buildingId : buildingIds)
 		{
 			Building& building = _simulation->building(buildingId);
@@ -1283,10 +1283,10 @@ void TownManager::RecalculateTax(bool showFloatup)
 	}
 
 	//// Stock market
-	//auto& stockMarketIds = _simulation->buildingIds(_playerId, CardEnum::StockMarket);;
+	//auto& stockMarketIds = _simulation->buildingIds(_townId, CardEnum::StockMarket);;
 	//if (stockMarketIds.size() > 0)
 	//{
-	//	int32 tradingCompanyCount = _simulation->buildingCount(_playerId, CardEnum::TradingCompany);
+	//	int32 tradingCompanyCount = _simulation->buildingCount(_townId, CardEnum::TradingCompany);
 	//	ChangeIncome(tradingCompanyCount * 5, showFloatup, _simulation->building(stockMarketIds[0]).centerTile());
 	//}
 
@@ -1437,7 +1437,7 @@ void TownManager::RecalculateTax(bool showFloatup)
 		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Townhall)] += 20 * 100;
 
 		// Population: Influence gain equals to population
-		int32 incomeFromPopulation = _simulation->populationTown(_playerId) * 100;
+		int32 incomeFromPopulation = _simulation->populationTown(_townId) * 100;
 		if (_simulation->townBuildingFinishedCount(_townId, CardEnum::Castle) > 0) {
 			incomeFromPopulation = incomeFromPopulation * 115 / 100;
 		}
@@ -1457,8 +1457,8 @@ void TownManager::RecalculateTax(bool showFloatup)
 		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::BorderProvinceUpkeep)] -= numberOfBorderProvinces * 500; // 5 upkeep per border province
 
 		// Fort/Colony
-		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Fort)] -= _simulation->buildingCount(_playerId, CardEnum::Fort) * 10 * 100;
-		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Colony)] -= _simulation->buildingCount(_playerId, CardEnum::ResourceOutpost) * ResourceOutpost::GetColonyUpkeep() * 100;
+		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Fort)] -= _simulation->buildingCount(_townId, CardEnum::Fort) * 10 * 100;
+		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Colony)] -= _simulation->buildingCount(_townId, CardEnum::ResourceOutpost) * ResourceOutpost::GetColonyUpkeep() * 100;
 	}
 	else
 	{

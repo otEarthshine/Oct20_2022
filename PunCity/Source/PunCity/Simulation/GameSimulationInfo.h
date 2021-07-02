@@ -19,10 +19,10 @@
 // GAME_VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 43 // 3 digit
+#define MINOR_VERSION 44 // 3 digit
 
-#define VERSION_DAY 30
-#define VERSION_MONTH 6
+#define VERSION_DAY 2
+#define VERSION_MONTH 7
 #define VERSION_YEAR 21
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
 
@@ -32,10 +32,10 @@
 
 // SAVE_VERSION
 #define MAJOR_SAVE_VERSION 0
-#define MINOR_SAVE_VERSION 30 // 3 digit
+#define MINOR_SAVE_VERSION 31 // 3 digit
 
-#define VERSION_SAVE_DAY 30
-#define VERSION_SAVE_MONTH 6
+#define VERSION_SAVE_DAY 2
+#define VERSION_SAVE_MONTH 7
 #define VERSION_SAVE_YEAR 21
 #define VERSION_SAVE_DATE (VERSION_SAVE_YEAR * 10000) + (VERSION_SAVE_MONTH * 100) + VERSION_SAVE_DAY
 
@@ -3007,7 +3007,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(4, 4), GetBldResourceInfoManual({30}, 2)
 	),
 	BldInfo(CardEnum::Townhall,		_LOCTEXT("Townhall",	"Townhall"),	LOCTEXT("Townhall (Plural)", "Townhalls"),	LOCTEXT("Townhall Desc",	"The administrative center of your town."),
-		WorldTile2(12, 12),	GetBldResourceInfoManual({})
+		WorldTile2(12, 12),	GetBldResourceInfoMoney(0)
 	),
 	BldInfo(CardEnum::StorageYard,	_LOCTEXT("Storage Yard",	"Storage Yard"),	LOCTEXT("Storage Yard (Plural)", "Storage Yards"),	LOCTEXT("Storage Yard Desc",	"Store resources."),
 		WorldTile2(2, 2),	 GetBldResourceInfoManual({10})
@@ -3103,7 +3103,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(1, 1), GetBldResourceInfoManual({ 0, GameConstants::StoneNeededPerRoadTile })
 	),
 	BldInfo(CardEnum::Demolish, _LOCTEXT("Demolish", "Demolish"),	FText(), INVTEXT("Demolish Buildings."),
-		WorldTile2(1, 1), GetBldResourceInfoManual({})
+		WorldTile2(1, 1), GetBldResourceInfoMoney(0)
 	),
 
 	BldInfo(CardEnum::Fisher, _LOCTEXT("Fishing Lodge", "Fishing Lodge"), LOCTEXT("Fishing Lodge (Plural)", "Fishing Lodges"), LOCTEXT("Fishing Lodge Desc", "Catch Fish from seas, lakes or rivers."),
@@ -3377,7 +3377,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(8, 8), GetBldResourceInfo(4, { ResourceEnum::Stone, ResourceEnum::Sand, ResourceEnum::Concrete }, { 0, 0, 1, 5 }, 0, 100, -3)
 	),
 	BldInfo(CardEnum::CoalPowerPlant, _LOCTEXT("CoalPowerPlant", "Coal Power Plant"), LOCTEXT("CoalPowerPlant (Plural)", "Coal Power Plants"), LOCTEXT("Coal Power Plants Desc", "Provide Electricity converting 1 Coal to 1 kWh of Electricity."),
-		WorldTile2(8, 12), GetBldResourceInfo(4, { ResourceEnum::Coal, ResourceEnum::None }, { 0, 0, 0, 5, 0, 5, 3 }, 0, 100, -6)
+		WorldTile2(8, 12), GetBldResourceInfo(4, { ResourceEnum::Coal, ResourceEnum::None }, { 0, 0, 0, 5, 0, 5, 3 }, 0, 100, -8)
 	),
 	BldInfo(CardEnum::IndustrialIronSmelter, _LOCTEXT("Industrial Iron Smelter", "Industrial Iron Smelter"), LOCTEXT("Industrial Iron Smelter (Plural)", "Industrial Iron Smelters"), LOCTEXT("Industrial Iron Smelter Desc", "Produce Iron Bars on the industrial scale."),
 		WorldTile2(10, 14), GetBldResourceInfo(4, { ResourceEnum::IronOre, ResourceEnum::Coal, ResourceEnum::Iron }, { 0, 0, 0, 5, 0 }, 20)
@@ -3392,7 +3392,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(6, 6), GetBldResourceInfo(4, { ResourceEnum::Oil }, { 0, 0, 0, 0, 0, 1, 5 }, 0, 150, -5)
 	),
 	BldInfo(CardEnum::OilPowerPlant, _LOCTEXT("OilPowerPlant", "Oil Power Plant"), LOCTEXT("Oil Power Plant (Plural)", "Oil Power Plants"), LOCTEXT("Oil Power Plant Desc", "Provide Electricity converting 1 Oil to 2 kWh of Electricity."),
-		WorldTile2(8, 12), GetBldResourceInfo(4, { ResourceEnum::Oil, ResourceEnum::None }, { 0, 0, 0, 5, 0, 5, 5 }, 30, 100, -6)
+		WorldTile2(8, 12), GetBldResourceInfo(4, { ResourceEnum::Oil, ResourceEnum::None }, { 0, 0, 0, 5, 0, 5, 5 }, 30, 100, -8)
 	),
 	BldInfo(CardEnum::PaperMill, _LOCTEXT("PaperMill", "Paper Mill"), LOCTEXT("Paper Mill (Plural)", "Paper Mills"), LOCTEXT("Paper Mill Desc", "Mass-produce Paper from Wood."),
 		WorldTile2(10, 16), GetBldResourceInfo(4, { ResourceEnum::Wood, ResourceEnum::Paper }, { 0, 0, 0, 5, 0, 0, 5 }, 0, 100, -2)
@@ -3577,7 +3577,7 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::TreasuryGuard,	_LOCTEXT("Treasury Guard", "Treasury Guard"), 20, LOCTEXT("Treasury Guard Desc", "Guard your city against Steal and Snatch for two years. Require <img id=\"Coin\"/>xPopulation to activate.")),
 
 	
-	BldInfo(CardEnum::Cannibalism,		_LOCTEXT("Cannibalism", "Cannibalism"), 0, LOCTEXT("Cannibalism Desc", "On death, people drop Meat. -50% City Attractiveness Happiness.")),
+	BldInfo(CardEnum::Cannibalism,		_LOCTEXT("Cannibalism", "Cannibalism"), 0, LOCTEXT("Cannibalism Desc", "On death, people drop Meat. Hunters can hunt Wild Man. -50% City Attractiveness Happiness.")),
 
 	BldInfo(CardEnum::WildCard,		_LOCTEXT("Wild Card", "Wild Card"), 15, LOCTEXT("Wild Card Desc", "Build an unlocked building of your choice.")),
 
@@ -3621,7 +3621,7 @@ static const BldInfo CardInfos[]
 		BldInfo(CardEnum::BorealPineForesting, _LOCTEXT("Pine Foresting", "Pine Foresting"), 0, LOCTEXT("Pine Foresting Desc", "+30% Wood yield when cutting Pine Trees.")),
 
 		BldInfo(CardEnum::DesertGem, _LOCTEXT("Desert Gem", "Desert Gem"), 0, LOCTEXT("Desert Gem Desc", "+50% Productivity to Gem and Gold Mines.")),
-		BldInfo(CardEnum::DesertTradeForALiving, _LOCTEXT("Trade for a Living", "Trade for a Living"), 0, LOCTEXT("Trade for a Living Desc", "Food/Wood has 0% Trading Fee.")),
+		BldInfo(CardEnum::DesertTradeForALiving, _LOCTEXT("Trade for a Living", "Trade for a Living"), 0, LOCTEXT("Trade for a Living Desc", "Food/Wood/Coal has 0% Trading Fee.")),
 		BldInfo(CardEnum::DesertOreTrade, _LOCTEXT("Ore Trade", "Ore Trade"), 0, LOCTEXT("Ore Trade Desc", "Ores/Coal/Gemstone has 0% Trading Fee.")),
 		BldInfo(CardEnum::DesertIndustry, _LOCTEXT("Desert Industry", "Desert Industry"), 0, LOCTEXT("Desert Industry Desc", "+20% Productivity to all Industries. -50% Farm Productivity.")),
 
@@ -5864,6 +5864,7 @@ enum class TechEnum : uint8
 	HeatingTechnologies,
 	ForestryTechnologies,
 	IndustrialTechnologies,
+	TradeRelations,
 	HighFashion,
 	
 	Espionage,

@@ -1262,7 +1262,7 @@ struct NetworkTickInfo
 		int32* checksumInt = reinterpret_cast<int32*>(&checksum);
 		blob.Insert(*checksumInt, 0);
 
-		_LOG(PunTickHash, "<<< NetworkTickInfo tick:%d gameSpeed:%d tickSim:%d commands:%d", proxyControllerTick, gameSpeed, tickCountSim, commands.size());
+		//_LOG(PunTickHash, "<<< NetworkTickInfo tick:%d gameSpeed:%d tickSim:%d commands:%d", proxyControllerTick, gameSpeed, tickCountSim, commands.size());
 	}
 
 	uint32 BSDChecksum(int32 shift, const TArray<int32>& blob)

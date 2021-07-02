@@ -315,6 +315,8 @@ public:
 	void Tick1Sec()
 	{
 		OnTick1Sec();
+
+		TestWorkDone();
 	}
 	virtual void OnTick1Sec() {
 		//if (_playerId != -1) {
@@ -656,7 +658,10 @@ public:
 		_workReservers.push_back(objectId);
 		_workReserved.push_back(amount);
 	}
+
+	void TestWorkDone();
 	void DoWork(int unitId, int amount);
+	
 	int UnreserveWork(int objectId) {
 		//ACTION_LOG(_objectId, TEXT("UnreserveWork: unitId:%d"), objectId);
 
@@ -785,7 +790,7 @@ public:
 	int32 workRevenuePerSec100_perMan_() {
 		int32 result = buildingInfo().workRevenuePerSec100_perMan(GetEraUpgradeCount());
 		if (IsElectricityUpgraded()) {
-			result += result * ElectricityAmountUsage() / std::max(1, ElectricityAmountNeeded());
+			result += result * ElectricityAmountUsage() / std::max(1, ElectricityAmountNeeded()) / 2; // having full (usage == needed) means we get 50% increase in productivity
 		}
 		return result;
 	}
@@ -1137,6 +1142,8 @@ public:
 	bool NotEnoughElectricity() {
 		return IsElectricityUpgraded() && ElectricityAmountUsage() < ElectricityAmountNeeded() * 3 / 4;
 	}
+
+	
 
 	
 	/*

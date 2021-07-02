@@ -42,7 +42,7 @@ void UMainGameUI::PunInit()
 	GatherButton->CoreButton->OnClicked.AddDynamic(this, &UMainGameUI::ToggleGatherButton);
 	GatherSettingsCloseButton->CoreButton->OnClicked.AddDynamic(this, &UMainGameUI::CloseGatherUI);
 
-	DemolishButton->OnClicked.AddDynamic(this, &UMainGameUI::ToggleDemolishButton);
+	//DemolishButton->OnClicked.AddDynamic(this, &UMainGameUI::ToggleDemolishButton);
 
 	//StatsButton->OnClicked.AddDynamic(this, &UMainGameUI::ToggleStatisticsUI);
 	//AddToolTip(StatsButton, "Show statistics");
@@ -128,7 +128,7 @@ void UMainGameUI::PunInit()
 	// Tooltips 
 	AddToolTip(BuildMenuTogglerButton, LOCTEXT("BuildMenuTogglerButton_Tip", "Build houses, farms, and infrastructures\n<Orange>[B]</>"));
 	AddToolTip(GatherButton, LOCTEXT("GatherButton_Tip", "Gather trees, stone etc\n<Orange>[G]</><space>Activate this button, then Click and Drag to Gather."));
-	AddToolTip(DemolishButton, LOCTEXT("DemolishButton_Tip", "Demolish\n<Orange>[X]</>"));
+	//AddToolTip(DemolishButton, LOCTEXT("DemolishButton_Tip", "Demolish\n<Orange>[X]</>"));
 
 	AddToolTip(CardStackButton, LOCTEXT("CardStackButton_Tip", "Show drawn cards that can be bought.\n<Orange>[C]</>"));
 	AddToolTip(RoundCountdownImage, LOCTEXT("RoundCountdownImage_Tip", "Round timer<space>You get a new card hand each round.<space>Each season contains 2 rounds."));
@@ -936,9 +936,13 @@ void UMainGameUI::Tick()
 			LEAN_PROFILING_UI(TickMainGameUI_TopLeft);
 
 			SetText(TimeText, FText::FormatNamed(
-				LOCTEXT("InGameTopLeft_SeasonYear", "{EarlyMidLate} {SeasonName}\nYear {Years}"),
+				LOCTEXT("InGameTopLeft_SeasonYear", "{EarlyMidLate} {SeasonName}"),
 				TEXT("EarlyMidLate"), Time::SeasonPrefix(Time::Ticks()),
-				TEXT("SeasonName"), Time::SeasonName(Time::Seasons()),
+				TEXT("SeasonName"), Time::SeasonName(Time::Seasons())
+			));
+
+			SetText(YearText, FText::FormatNamed(
+				LOCTEXT("InGameTopLeft_SeasonYear", "Year {Years}"),
 				TEXT("Years"), TEXT_NUM(Time::Years())
 			));
 
@@ -1651,7 +1655,7 @@ void UMainGameUI::ResetBottomMenuDisplay()
 {
 	SetButtonImage(BuildMenuTogglerImage, false);
 	SetButtonImage(GatherImage, false);
-	SetButtonImage(DemolishImage, false);
+	//SetButtonImage(DemolishImage, false);
 	//SetButtonImage(StatsImage, false);
 
 	if (shouldCloseGatherSettingsOverlay) {
@@ -1776,23 +1780,80 @@ void UMainGameUI::ToggleDemolishButton()
 	PUN_LOG("ToggleDemolishButton");
 	if (InterfacesInvalid()) return;
 
-	bool wasActive = DemolishImage->IsVisible();
-	ResetBottomMenuDisplay();
+	bool wasDemolishing = (inputSystemInterface()->PlacementBuildingInfo().placementType == PlacementType::Demolish);
+	//ResetBottomMenuDisplay();
 
 	inputSystemInterface()->CancelPlacement();
-	
-	if (!wasActive) {
+	if (!wasDemolishing) {
 		inputSystemInterface()->StartDemolish();
-		GetPunHUD()->CloseDescriptionUI();
+	}
+	
+	//if (!wasActive) {
+	//	inputSystemInterface()->StartDemolish();
+	//	GetPunHUD()->CloseDescriptionUI();
 
-		dataSource()->Spawn2DSound("UI", "ButtonClick"); //TODO: need button click start/end
-	} else {
-		dataSource()->Spawn2DSound("UI", "CancelPlacement");
+	//	dataSource()->Spawn2DSound("UI", "ButtonClick"); //TODO: need button click start/end
+	//} else {
+	//	dataSource()->Spawn2DSound("UI", "CancelPlacement");
+	//}
+
+	
+	//SetButtonImage(DemolishImage, !wasActive);
+}
+
+void UMainGameUI::SelectPermanentCard(CardEnum buildingEnum)
+{
+	int32 moneyCap32 = simulation().moneyCap32(playerId());
+	int32 cardPrice = simulation().cardSystem(playerId()).GetCardPrice(buildingEnum);
+	if (cardPrice > 0 && moneyCap32 < cardPrice) {
+		simulation().AddPopupToFront(playerId(),
+			FText::Format(
+				LOCTEXT("NoMoneyToBuildCommonCard_Pop", "Not enough money to place {0}."),
+				GetBuildingInfo(buildingEnum).GetDescription()
+			),
+			ExclusiveUIEnum::BuildMenu, "PopupCannot"
+		);
+		return;
 	}
 
-	
-	SetButtonImage(DemolishImage, !wasActive);
+	if (buildingEnum == CardEnum::IntercityRoad) {
+		inputSystemInterface()->StartRoadPlacement(false, true);
+	}
+	else if (buildingEnum == CardEnum::Demolish) {
+		inputSystemInterface()->StartDemolish();
+	}
+	else if (IsRoad(buildingEnum)) {
+		inputSystemInterface()->StartRoadPlacement(buildingEnum == CardEnum::StoneRoad);
+		//inputSystemInterface()->StartRoadPlacement(buildingEnum == CardEnum::StoneRoad);
+	}
+	else if (buildingEnum == CardEnum::Fence) {
+		inputSystemInterface()->StartFencePlacement();
+	}
+	else if (buildingEnum == CardEnum::Bridge) {
+		inputSystemInterface()->StartBridgePlacement(false);
+		simulation().parameters(playerId())->BridgeNoticed = true;
+	}
+	else if (buildingEnum == CardEnum::IntercityBridge) {
+		inputSystemInterface()->StartBridgePlacement(true);
+	}
+	else if (buildingEnum == CardEnum::Tunnel) {
+		inputSystemInterface()->StartTunnelPlacement();
+	}
+	else {
+		inputSystemInterface()->StartBuildingPlacement(buildingEnum, 0, false);
+
+		// Noticed farm, no longer need exclamation on farm after this...
+		if (buildingEnum == CardEnum::Farm) {
+			simulation().parameters(playerId())->FarmNoticed = true;
+		}
+	}
+
+	GetPunHUD()->CloseDescriptionUI();
+
+	BuildMenuOverlay->SetVisibility(ESlateVisibility::Collapsed);
+	SetButtonImage(BuildMenuTogglerImage, false);
 }
+
 
 void UMainGameUI::ToggleResearchMenu()
 {
@@ -2031,52 +2092,59 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 	// Permanent cards
 	if (callbackEnum == CallbackEnum::SelectPermanentCard)
 	{
-		int32 moneyCap32 = simulation().moneyCap32(playerId());
-		int32 cardPrice = cardSystem.GetCardPrice(buildingEnum);
-		if (cardPrice > 0 && moneyCap32 < cardPrice) {
-			simulation().AddPopupToFront(playerId(), 
-				LOCTEXT("NoMoneyToBuyCommonCard_Pop", "Not enough money to buy the common card."), 
-				ExclusiveUIEnum::BuildMenu, "PopupCannot"
-			);
-			return;
-		}
+		SelectPermanentCard(buildingEnum);
+		
+		//int32 moneyCap32 = simulation().moneyCap32(playerId());
+		//int32 cardPrice = cardSystem.GetCardPrice(buildingEnum);
+		//if (cardPrice > 0 && moneyCap32 < cardPrice) {
+		//	simulation().AddPopupToFront(playerId(), 
+		//		FText::Format(
+		//			LOCTEXT("NoMoneyToBuildCommonCard_Pop", "Not enough money to place {0}."),
+		//			GetBuildingInfo(buildingEnum).GetDescription()
+		//		), 
+		//		ExclusiveUIEnum::BuildMenu, "PopupCannot"
+		//	);
+		//	return;
+		//}
 
-		if (buildingEnum == CardEnum::IntercityRoad) {
-			inputSystemInterface()->StartRoadPlacement(false, true);
-		}
-		else if (buildingEnum == CardEnum::Demolish) {
-			inputSystemInterface()->StartDemolish();
-		}
-		else if (IsRoad(buildingEnum)) {
-			inputSystemInterface()->StartRoadPlacement(buildingEnum == CardEnum::StoneRoad);
-			//inputSystemInterface()->StartRoadPlacement(buildingEnum == CardEnum::StoneRoad);
-		}
-		else if (buildingEnum == CardEnum::Fence) {
-			inputSystemInterface()->StartFencePlacement();
-		}
-		else if (buildingEnum == CardEnum::Bridge) {
-			inputSystemInterface()->StartBridgePlacement(false);
-			simulation().parameters(playerId())->BridgeNoticed = true;
-		}
-		else if (buildingEnum == CardEnum::IntercityBridge) {
-			inputSystemInterface()->StartBridgePlacement(true);
-		}
-		else if (buildingEnum == CardEnum::Tunnel) {
-			inputSystemInterface()->StartTunnelPlacement();
-		}
-		else {
-			inputSystemInterface()->StartBuildingPlacement(buildingEnum, 0, false);
+		//if (buildingEnum == CardEnum::IntercityRoad) {
+		//	inputSystemInterface()->StartRoadPlacement(false, true);
+		//}
+		//else if (buildingEnum == CardEnum::Demolish) {
+		//	inputSystemInterface()->StartDemolish();
+		//}
+		//else if (IsRoad(buildingEnum)) {
+		//	inputSystemInterface()->StartRoadPlacement(buildingEnum == CardEnum::StoneRoad);
+		//	//inputSystemInterface()->StartRoadPlacement(buildingEnum == CardEnum::StoneRoad);
+		//}
+		//else if (buildingEnum == CardEnum::Fence) {
+		//	inputSystemInterface()->StartFencePlacement();
+		//}
+		//else if (buildingEnum == CardEnum::Bridge) {
+		//	inputSystemInterface()->StartBridgePlacement(false);
+		//	simulation().parameters(playerId())->BridgeNoticed = true;
+		//}
+		//else if (buildingEnum == CardEnum::IntercityBridge) {
+		//	inputSystemInterface()->StartBridgePlacement(true);
+		//}
+		//else if (buildingEnum == CardEnum::Tunnel) {
+		//	inputSystemInterface()->StartTunnelPlacement();
+		//}
+		//else {
+		//	inputSystemInterface()->StartBuildingPlacement(buildingEnum, 0, false);
 
-			// Noticed farm, no longer need exclamation on farm after this...
-			if (buildingEnum == CardEnum::Farm) {
-				simulation().parameters(playerId())->FarmNoticed = true;
-			}
-		}
+		//	// Noticed farm, no longer need exclamation on farm after this...
+		//	if (buildingEnum == CardEnum::Farm) {
+		//		simulation().parameters(playerId())->FarmNoticed = true;
+		//	}
+		//}
 
-		GetPunHUD()->CloseDescriptionUI();
+		//GetPunHUD()->CloseDescriptionUI();
 
-		BuildMenuOverlay->SetVisibility(ESlateVisibility::Collapsed);
-		SetButtonImage(BuildMenuTogglerImage, false);
+		//BuildMenuOverlay->SetVisibility(ESlateVisibility::Collapsed);
+		//SetButtonImage(BuildMenuTogglerImage, false);
+
+		
 		return;
 	}
 	

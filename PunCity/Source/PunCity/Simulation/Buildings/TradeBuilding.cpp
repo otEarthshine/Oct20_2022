@@ -153,6 +153,7 @@ void TradeBuilding::OnTick1Sec()
 
 			if (!_isTradingPostFull) {
 				_hasPendingTrade = false;
+				SetBuildingResourceUIDirty();
 			}
 
 			return;

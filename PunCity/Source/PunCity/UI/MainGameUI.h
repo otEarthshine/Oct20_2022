@@ -111,6 +111,7 @@ public:
 		}
 	}
 
+	void SelectPermanentCard(CardEnum buildingEnum);
 
 	
 	/*
@@ -198,8 +199,8 @@ private:
 	bool shouldCloseGatherSettingsOverlay = true;
 	
 
-	UPROPERTY(meta = (BindWidget)) UButton* DemolishButton;
-	UPROPERTY(meta = (BindWidget)) UImage* DemolishImage;
+	//UPROPERTY(meta = (BindWidget)) UButton* DemolishButton;
+	//UPROPERTY(meta = (BindWidget)) UImage* DemolishImage;
 
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* PopulationBox;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* AdultPopulationText;
@@ -259,6 +260,7 @@ private:
 
 	//UPROPERTY(meta = (BindWidget)) class UTextBlock* TopLeftText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* TimeText;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* YearText;
 
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* TemperatureTextBox;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* TemperatureText;

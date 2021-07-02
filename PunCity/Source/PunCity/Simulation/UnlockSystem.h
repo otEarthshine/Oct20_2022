@@ -128,6 +128,10 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 		LOCTEXT("Industrial Technologies", "Industrial Technologies"),
 		LOCTEXT("Industrial Technologies Desc", "+3% Industrial Productivity per Level.")
 	}},
+	{TechEnum::TradeRelations, {
+		LOCTEXT("Trade Relations", "Trade Relations"),
+		LOCTEXT("Trade Relations Desc", "-2% Trading Fee per Level.")
+	}},
 	{TechEnum::HighFashion, {
 		LOCTEXT("High Fashion", "High Fashion"),
 		LOCTEXT("High Fashion Desc", "Unlocks Tailor's new Work Mode: Fashionable Cloth")
@@ -853,7 +857,8 @@ public:
 			researchEnum == TechEnum::FarmingTechnologies ||
 			researchEnum == TechEnum::RanchingTechnologies ||
 			researchEnum == TechEnum::HeatingTechnologies ||
-			researchEnum == TechEnum::IndustrialTechnologies) {
+			researchEnum == TechEnum::IndustrialTechnologies ||
+			researchEnum == TechEnum::TradeRelations) {
 			tech->maxUpgradeCount = 10;
 		}
 		
@@ -1300,7 +1305,7 @@ public:
 			
 			//
 			_columnIndex = 4;
-			AddTech_Bonus(TechEnum::Combo, { TechEnum::TradingCompany });
+			AddTech_Bonus(TechEnum::TradeRelations, { TechEnum::TradingCompany });
 			AddTech_CardGiving(TechEnum::CoalPipeline, { TechEnum::SmelterCombo },
 				CardEnum::CoalPipeline
 			);
@@ -1309,9 +1314,7 @@ public:
 			AddTech_CardGiving(TechEnum::FarmWaterManagement, { TechEnum::FarmingTechnologies },
 				CardEnum::FarmWaterManagement
 			);
-			AddTech_Building(TechEnum::Cathedral, {},
-				CardEnum::Cathedral
-			);
+			AddTech_Bonus(TechEnum::Combo, {});
 			AddTech_BuildingPermanent(TechEnum::GardenShrubbery1, {},
 				{ CardEnum::GardenShrubbery1 }
 			);
@@ -1324,12 +1327,16 @@ public:
 			
 			//
 			_columnIndex = 5;
-			AddTech_Bonus(TechEnum::HouseAdjacency, { TechEnum::Combo });
+			AddTech_Bonus(TechEnum::HouseAdjacency, { TechEnum::TradeRelations });
 			AddTech_CardGiving(TechEnum::CoalTreatment, { TechEnum::CoalPipeline },
 				{ CardEnum::CoalTreatment }
 			);
 
 			AddTech_Bonus(TechEnum::RanchingTechnologies, {});
+
+			AddTech_Building(TechEnum::Cathedral, { TechEnum::Combo },
+				CardEnum::Cathedral
+			);
 
 			AddTech_CardGiving(TechEnum::BlueberryFarming, {},
 				{ CardEnum::BlueberrySeed }

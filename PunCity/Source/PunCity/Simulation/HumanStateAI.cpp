@@ -2487,7 +2487,7 @@ bool HumanStateAI::TryFillWorkplace(ResourceEnum resourceEnum)
 	LEAN_PROFILING_T(TryFillWorkplace);
 	
 	Building* workPlc = workplace();
-	const int32 maxAmount = 10;
+	const int32 maxAmount = haulCapacity();
 
 	check(IsProducer(workplace()->buildingEnum()) || IsConsumerOnlyWorkplace(workplace()->buildingEnum()));
 	FoundResourceHolderInfo dropoffInfo = workPlc->GetHolderInfoFull(resourceEnum, maxAmount);
@@ -2528,8 +2528,6 @@ bool HumanStateAI::TryProduce()
 		return false;
 	}
 
-	//ResourceHolderInfo info = workplace.holderInfo(workplace.product());
-	//PUN_CHECK2(info.isValid(), debugStr());
 	
 	// If work isn't needed, this could be because we need to send resource to delivery target
 	if (!workplace.NeedWork()) 
@@ -2545,7 +2543,7 @@ bool HumanStateAI::TryProduce()
 		{
 			ResourceHolderInfo productHolderInfo = workplace.holderInfo(productEnum);
 
-			int32 amount = min(10, resourceSystem().resourceCountWithPop(productHolderInfo)); // Don't move more than 10 resources at a time
+			int32 amount = min(haulCapacity(), resourceSystem().resourceCountWithPop(productHolderInfo)); // Don't move more than haulCapacity() resources at a time
 			if (amount > 0) {
 				// Try sending resource to delivery target first
 				if (TryMoveResourcesToDeliveryTarget(workplaceId(), productEnum, amount)) {
@@ -2571,18 +2569,6 @@ bool HumanStateAI::TryProduce()
 	{
 		// If there is nothing at the workplace, we need to go out to grab the resource to fill it
 		ResourceSystem& resourceSys = resourceSystem();
-
-		//bool needInput1 = false;
-		//bool needInput2 = false;
-
-		//if (workplace.hasInput1()) {
-		//	int32 resourceCountWithPop1 = resourceSystem.resourceCountWithPop(workplace.holderInfo(workplace.input1()));
-		//	needInput1 = resourceCountWithPop1 < inputPerBatch;
-		//}
-		//if (workplace.hasInput2()) {
-		//	int32 resourceCountWithPop2 = resourceSystem.resourceCountWithPop(workplace.holderInfo(workplace.input2()));
-		//	needInput2 = resourceCountWithPop2 < inputPerBatch;
-		//}
 		
 		bool needInput1 = workplace.needInput1();
 		bool needInput2 = workplace.needInput2();
@@ -2594,25 +2580,6 @@ bool HumanStateAI::TryProduce()
 		{
 			if (_simulation->IsOutputTargetReached(_townId, product))
 			{
-				//// Only continue if there is unfinished filling
-				//bool shouldContinueFilling = false;
-
-				//if (needInput1) {
-				//	if (resourceSystem.resourceCountWithPop(workplace.holderInfo(workplace.input1())) > 0) {
-				//		shouldContinueFilling = true;
-				//	}
-				//}
-				//if (needInput2) {
-				//	if (resourceSystem.resourceCountWithPop(workplace.holderInfo(workplace.input2())) > 0) {
-				//		shouldContinueFilling = true;
-				//	}
-				//}
-
-				//if (!shouldContinueFilling) {
-				//	AddDebugSpeech("(Failed)TryProduce: Already Reached Target");
-				//	return false;
-				//}
-
 				// TODO: Need to think of when to refresh outputTargetReached etc... this may cause too much refresh?
 
 				// Should switch jobs if this is not priority
@@ -2918,7 +2885,7 @@ bool HumanStateAI::TryConstructHelper(int32 workplaceId)
 				int32 neededResource = constructionCosts[i] - workplace.GetResourceCountWithPush(resourceEnum);
 				if (neededResource > 0) 
 				{
-					int32 amount = min(neededResource, 10);
+					int32 amount = min(neededResource, haulCapacity());
 					FoundResourceHolderInfos foundProviders = resourceSys.FindHolder(ResourceFindType::AvailableForPickup, resourceEnum, amount, unitTile(), {});
 					hasNeededResourceWithPush = false;
 

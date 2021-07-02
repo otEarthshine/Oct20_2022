@@ -10,6 +10,7 @@
 #include "UnlockSystem.h"
 #include "PunCity/Simulation/Buildings/GathererHut.h"
 #include "PunCity/Simulation/GeoresourceSystem.h"
+#include "UnitStateAI.h"
 
 using namespace std;
 
@@ -222,12 +223,16 @@ void Building::FinishConstruction()
 	if (_buildingEnum == CardEnum::RegionTribalVillage)
 	{
 		int32 provinceId = _simulation->GetProvinceIdClean(centerTile());
-		if (_simulation->IsProvinceValid(provinceId)) {
+		if (_simulation->IsProvinceValid(provinceId)) 
+		{
 			for (int32 i = 0; i < 5; i++) {
 				WorldTile2 spawnTile = _simulation->GetProvinceRandomTile(provinceId, gateTile(), 1, false, 10);
 				if (spawnTile.isValid()) {
 					int32 ageTicks = GameRand::Rand() % GetUnitInfo(UnitEnum::WildMan).maxAgeTicks;
-					_simulation->AddUnit(UnitEnum::WildMan, GameInfo::PlayerIdNone, spawnTile.worldAtom2(), ageTicks);
+					int32 newBornId = _simulation->AddUnit(UnitEnum::WildMan, GameInfo::PlayerIdNone, spawnTile.worldAtom2(), ageTicks);
+					_simulation->unitAI(newBornId).SetHouseId(buildingId());
+					
+					PUN_LOG("Wildman Born Village id:%d bldId:%d bldTile:%s", newBornId, buildingId(), *centerTile().To_FString());
 				}
 			}
 		}
@@ -712,7 +717,7 @@ FText Building::GetUpgradeDisplayDescription(int32 index) {
 		{
 			int32 electricityPerBatch = ElectricityAmountNeeded();
 			return FText::Format(
-				NSLOCTEXT("BuildingUpgrade", "Electric Machinery Desc", "Once upgraded, this Building will need Electricity.<space>Workers work 100% faster with Electricity.<space>Consumes {0} kW Electricity."),
+				NSLOCTEXT("BuildingUpgrade", "Electric Machinery Desc", "Once upgraded, this Building will need Electricity.<space>Workers work 50% faster with Electricity.<space>Consumes {0} kW Electricity."),
 				TEXT_NUM(electricityPerBatch)
 			);
 		}
@@ -742,6 +747,146 @@ FText Building::GetUpgradeDisplayName(int32 index) {
 	return upgrade.name;
 }
 
+void Building::TestWorkDone()
+{
+	if (!isConstructed() ||
+		!isJobBuilding()) {
+		return;
+	}
+	if (!_filledInputs) {
+		return;
+	}
+	
+	if (_workDone100 >= workManSecPerBatch100())
+	{
+		// Special case: ConsumerWorkplace
+		if (isEnum(CardEnum::Mint))
+		{
+			_workDone100 = 0;
+			_filledInputs = false;
+
+			int32 moneyReceived = outputPerBatch();
+			globalResourceSystem().ChangeMoney(moneyReceived);
+			_simulation->worldTradeSystem().ChangeSupply(_playerId, ResourceEnum::GoldBar, inputPerBatch(input1()));
+
+			_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, centerTile(), TEXT_NUMSIGNED(moneyReceived));
+			AddProductionStat(moneyReceived);
+			AddConsumptionStats();
+
+			_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
+			return;
+		}
+		if (isEnum(CardEnum::ResearchLab) ||
+			isEnum(CardEnum::RegionShrine))
+		{
+			_workDone100 = 0;
+			_filledInputs = false;
+
+			int32 sciReceived = outputPerBatch();
+			_simulation->unlockSystem(_playerId)->Research(sciReceived * 100 * Time::SecondsPerRound, 1);
+
+			_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainScience, centerTile(), TEXT_NUMSIGNED(sciReceived));
+			AddProductionStat(sciReceived);
+			AddConsumptionStats();
+
+			_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
+			return;
+		}
+		if (IsBarrack(buildingEnum()))
+		{
+			_workDone100 = 0;
+			_filledInputs = false;
+
+			int32 influenceReceived = outputPerBatch();
+			globalResourceSystem().ChangeInfluence(influenceReceived);
+
+			_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainInfluence, centerTile(), TEXT_NUMSIGNED(influenceReceived));
+			AddProductionStat(influenceReceived);
+			AddConsumptionStats();
+
+			_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
+			return;
+		}
+		if (isEnum(CardEnum::CardMaker))
+		{
+			_workDone100 = 0;
+			_filledInputs = false;
+
+			auto& cardSys = _simulation->cardSystem(_playerId);
+			cardSys.AddCardToHand2(static_cast<CardMaker*>(this)->GetCardProduced());
+
+			AddConsumptionStats();
+
+			_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
+			return;
+		}
+		if (isEnum(CardEnum::ImmigrationOffice))
+		{
+			_workDone100 = 0;
+			_filledInputs = false;
+
+			_simulation->AddImmigrants(_townId, 1);
+			_simulation->AddEventLog(_playerId,
+				LOCTEXT("ImmigrationOfficeBroughtIn_Event", "The immigration office brought in an immigrant."),
+				false
+			);
+
+			_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
+			return;
+		}
+
+		_workDone100 = 0;
+		_filledInputs = false;
+
+		ResourceEnum productEnum = product();
+		ResourceHolderInfo info = holderInfo(productEnum);
+		PUN_CHECK(info.isValid());
+		int productionAmount = outputPerBatch();
+
+		AddResource(info.resourceEnum, productionAmount);
+		AddProductionStat(productionAmount);
+		AddConsumptionStats();
+
+		// Special case: Beeswax + Honey
+		if (info.resourceEnum == ResourceEnum::Beeswax)
+		{
+			AddResource(ResourceEnum::Honey, productionAmount);
+			AddProductionStat(productionAmount);
+
+			FloatupInfo floatupInfo(FloatupEnum::GainResource, Time::Ticks(), centerTile(), TEXT_NUMSIGNED(productionAmount), ResourceEnum::Beeswax);
+			floatupInfo.resourceEnum2 = ResourceEnum::Honey;
+			floatupInfo.text2 = TEXT_NUMSIGNED(productionAmount);
+
+			_simulation->uiInterface()->ShowFloatupInfo(floatupInfo);
+		}
+		else
+		{
+			// All other floatups
+
+			_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainResource, centerTile(), TEXT_NUMSIGNED(productionAmount), info.resourceEnum);
+		}
+
+
+		// Quest and Update Requirements
+		if (productEnum == ResourceEnum::Beer) {
+			_simulation->QuestUpdateStatus(_playerId, QuestEnum::BeerQuest, productionAmount);
+		}
+		else if (productEnum == ResourceEnum::Pottery) {
+			_simulation->QuestUpdateStatus(_playerId, QuestEnum::PotteryQuest, productionAmount);
+		}
+		else if (productEnum == ResourceEnum::Fish) {
+			_simulation->QuestUpdateStatus(_playerId, QuestEnum::CooperativeFishingQuest, productionAmount);
+		}
+
+		_simulation->unlockSystem(_playerId)->UpdateResourceProductionCount(productEnum, productionAmount);
+
+
+		OnProduce(productionAmount);
+
+		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
+	}
+}
+
 
 
 void Building::DoWork(int unitId, int workAmount100)
@@ -756,134 +901,136 @@ void Building::DoWork(int unitId, int workAmount100)
 	// TODO: On Finish Work
 	if (_isConstructed) 
 	{
-		if (_workDone100 >= workManSecPerBatch100()) 
-		{
-			// Special case: ConsumerWorkplace
-			if (isEnum(CardEnum::Mint)) 
-			{
-				_workDone100 = 0;
-				_filledInputs = false;
-				
-				int32 moneyReceived = outputPerBatch();
-				globalResourceSystem().ChangeMoney(moneyReceived);
-				_simulation->worldTradeSystem().ChangeSupply(_playerId, ResourceEnum::GoldBar, inputPerBatch(input1()));
+		TestWorkDone();
+		
+		//if (_workDone100 >= workManSecPerBatch100()) 
+		//{
+		//	// Special case: ConsumerWorkplace
+		//	if (isEnum(CardEnum::Mint)) 
+		//	{
+		//		_workDone100 = 0;
+		//		_filledInputs = false;
+		//		
+		//		int32 moneyReceived = outputPerBatch();
+		//		globalResourceSystem().ChangeMoney(moneyReceived);
+		//		_simulation->worldTradeSystem().ChangeSupply(_playerId, ResourceEnum::GoldBar, inputPerBatch(input1()));
 
-				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, centerTile(), TEXT_NUMSIGNED(moneyReceived));
-				AddProductionStat(moneyReceived);
-				AddConsumptionStats();
-				
-				_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
-				return;
-			}
-			if (isEnum(CardEnum::ResearchLab) ||
-				isEnum(CardEnum::RegionShrine))
-			{
-				_workDone100 = 0;
-				_filledInputs = false;
+		//		_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, centerTile(), TEXT_NUMSIGNED(moneyReceived));
+		//		AddProductionStat(moneyReceived);
+		//		AddConsumptionStats();
+		//		
+		//		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
+		//		return;
+		//	}
+		//	if (isEnum(CardEnum::ResearchLab) ||
+		//		isEnum(CardEnum::RegionShrine))
+		//	{
+		//		_workDone100 = 0;
+		//		_filledInputs = false;
 
-				int32 sciReceived = outputPerBatch();
-				_simulation->unlockSystem(_playerId)->Research(sciReceived * 100 * Time::SecondsPerRound, 1);
+		//		int32 sciReceived = outputPerBatch();
+		//		_simulation->unlockSystem(_playerId)->Research(sciReceived * 100 * Time::SecondsPerRound, 1);
 
-				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainScience, centerTile(), TEXT_NUMSIGNED(sciReceived));
-				AddProductionStat(sciReceived);
-				AddConsumptionStats();
-				
-				_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
-				return;
-			}
-			if (IsBarrack(buildingEnum()))
-			{
-				_workDone100 = 0;
-				_filledInputs = false;
+		//		_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainScience, centerTile(), TEXT_NUMSIGNED(sciReceived));
+		//		AddProductionStat(sciReceived);
+		//		AddConsumptionStats();
+		//		
+		//		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
+		//		return;
+		//	}
+		//	if (IsBarrack(buildingEnum()))
+		//	{
+		//		_workDone100 = 0;
+		//		_filledInputs = false;
 
-				int32 influenceReceived = outputPerBatch();
-				globalResourceSystem().ChangeInfluence(influenceReceived);
+		//		int32 influenceReceived = outputPerBatch();
+		//		globalResourceSystem().ChangeInfluence(influenceReceived);
 
-				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainInfluence, centerTile(), TEXT_NUMSIGNED(influenceReceived));
-				AddProductionStat(influenceReceived);
-				AddConsumptionStats();
-				
-				_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
-				return;
-			}
-			if (isEnum(CardEnum::CardMaker))
-			{
-				_workDone100 = 0;
-				_filledInputs = false;
+		//		_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainInfluence, centerTile(), TEXT_NUMSIGNED(influenceReceived));
+		//		AddProductionStat(influenceReceived);
+		//		AddConsumptionStats();
+		//		
+		//		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
+		//		return;
+		//	}
+		//	if (isEnum(CardEnum::CardMaker))
+		//	{
+		//		_workDone100 = 0;
+		//		_filledInputs = false;
 
-				auto& cardSys = _simulation->cardSystem(_playerId);
-				cardSys.AddCardToHand2(static_cast<CardMaker*>(this)->GetCardProduced());
+		//		auto& cardSys = _simulation->cardSystem(_playerId);
+		//		cardSys.AddCardToHand2(static_cast<CardMaker*>(this)->GetCardProduced());
 
-				AddConsumptionStats();
+		//		AddConsumptionStats();
 
-				_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
-				return;
-			}
-			if (isEnum(CardEnum::ImmigrationOffice))
-			{
-				_workDone100 = 0;
-				_filledInputs = false;
+		//		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
+		//		return;
+		//	}
+		//	if (isEnum(CardEnum::ImmigrationOffice))
+		//	{
+		//		_workDone100 = 0;
+		//		_filledInputs = false;
 
-				_simulation->AddImmigrants(_townId, 1);
-				_simulation->AddEventLog(_playerId, 
-					LOCTEXT("ImmigrationOfficeBroughtIn_Event", "The immigration office brought in an immigrant."), 
-					false
-				);
+		//		_simulation->AddImmigrants(_townId, 1);
+		//		_simulation->AddEventLog(_playerId, 
+		//			LOCTEXT("ImmigrationOfficeBroughtIn_Event", "The immigration office brought in an immigrant."), 
+		//			false
+		//		);
 
-				_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
-				return;
-			}
+		//		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
+		//		return;
+		//	}
 
-			_workDone100 = 0;
-			_filledInputs = false;
+		//	_workDone100 = 0;
+		//	_filledInputs = false;
 
-			ResourceEnum productEnum = product();
-			ResourceHolderInfo info = holderInfo(productEnum);
-			PUN_CHECK2(info.isValid(), _simulation->unitdebugStr(unitId));
-			int productionAmount = outputPerBatch();
+		//	ResourceEnum productEnum = product();
+		//	ResourceHolderInfo info = holderInfo(productEnum);
+		//	PUN_CHECK2(info.isValid(), _simulation->unitdebugStr(unitId));
+		//	int productionAmount = outputPerBatch();
 
-			AddResource(info.resourceEnum, productionAmount);
-			AddProductionStat(productionAmount);
-			AddConsumptionStats();
+		//	AddResource(info.resourceEnum, productionAmount);
+		//	AddProductionStat(productionAmount);
+		//	AddConsumptionStats();
 
-			// Special case: Beeswax + Honey
-			if (info.resourceEnum == ResourceEnum::Beeswax) 
-			{
-				AddResource(ResourceEnum::Honey, productionAmount);
-				AddProductionStat(productionAmount);
+		//	// Special case: Beeswax + Honey
+		//	if (info.resourceEnum == ResourceEnum::Beeswax) 
+		//	{
+		//		AddResource(ResourceEnum::Honey, productionAmount);
+		//		AddProductionStat(productionAmount);
 
-				FloatupInfo floatupInfo(FloatupEnum::GainResource, Time::Ticks(), centerTile(), TEXT_NUMSIGNED(productionAmount), ResourceEnum::Beeswax);
-				floatupInfo.resourceEnum2 = ResourceEnum::Honey;
-				floatupInfo.text2 = TEXT_NUMSIGNED(productionAmount);
+		//		FloatupInfo floatupInfo(FloatupEnum::GainResource, Time::Ticks(), centerTile(), TEXT_NUMSIGNED(productionAmount), ResourceEnum::Beeswax);
+		//		floatupInfo.resourceEnum2 = ResourceEnum::Honey;
+		//		floatupInfo.text2 = TEXT_NUMSIGNED(productionAmount);
 
-				_simulation->uiInterface()->ShowFloatupInfo(floatupInfo);
-			}
-			else
-			{
-				// All other floatups
-				
-				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainResource, centerTile(), TEXT_NUMSIGNED(productionAmount), info.resourceEnum);
-			}
-			
+		//		_simulation->uiInterface()->ShowFloatupInfo(floatupInfo);
+		//	}
+		//	else
+		//	{
+		//		// All other floatups
+		//		
+		//		_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainResource, centerTile(), TEXT_NUMSIGNED(productionAmount), info.resourceEnum);
+		//	}
+		//	
 
-			// Quest and Update Requirements
-			if (productEnum == ResourceEnum::Beer) {
-				_simulation->QuestUpdateStatus(_playerId, QuestEnum::BeerQuest, productionAmount);
-			}
-			else if (productEnum == ResourceEnum::Pottery) {
-				_simulation->QuestUpdateStatus(_playerId, QuestEnum::PotteryQuest, productionAmount);
-			}
-			else if (productEnum == ResourceEnum::Fish) {
-				_simulation->QuestUpdateStatus(_playerId, QuestEnum::CooperativeFishingQuest, productionAmount);
-			}
+		//	// Quest and Update Requirements
+		//	if (productEnum == ResourceEnum::Beer) {
+		//		_simulation->QuestUpdateStatus(_playerId, QuestEnum::BeerQuest, productionAmount);
+		//	}
+		//	else if (productEnum == ResourceEnum::Pottery) {
+		//		_simulation->QuestUpdateStatus(_playerId, QuestEnum::PotteryQuest, productionAmount);
+		//	}
+		//	else if (productEnum == ResourceEnum::Fish) {
+		//		_simulation->QuestUpdateStatus(_playerId, QuestEnum::CooperativeFishingQuest, productionAmount);
+		//	}
 
-			_simulation->unlockSystem(_playerId)->UpdateResourceProductionCount(productEnum, productionAmount);
+		//	_simulation->unlockSystem(_playerId)->UpdateResourceProductionCount(productEnum, productionAmount);
 
 
-			OnProduce(productionAmount);
+		//	OnProduce(productionAmount);
 
-			_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
-		}
+		//	_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
+		//}
 
 		if (isEnum(CardEnum::Farm)) {
 			_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::FarmPlant, centerTile().regionId());
@@ -1070,12 +1217,14 @@ void Building::ChangeWorkMode(const WorkMode& workMode)
 		setTarget(_workMode.input2, 0);
 		setTarget(_workMode.product, 0);
 
+		_workMode = workMode;
 		setTarget(workMode.input1, baseInputPerBatch(input1()) * 2);
 		setTarget(workMode.input2, baseInputPerBatch(input2()) * 2);
 		setTarget(workMode.product, 0);
 	}
-
-	_workMode = workMode;
+	else {
+		_workMode = workMode;
+	}
 }
 
 std::vector<BonusPair> Building::GetBonuses()
@@ -1318,6 +1467,10 @@ std::vector<BonusPair> Building::GetTradingFeeBonuses()
 		_simulation->GetBiomeEnum(_centerTile) == BiomeEnum::Desert)
 	{
 		bonuses.push_back({ LOCTEXT("Silk Road", "Silk Road"), -10 });
+	}
+
+	if (int32 tradeRelationsTechUpgradeCount = _simulation->GetTechnologyUpgradeCount(_playerId, TechEnum::TradeRelations)) {
+		bonuses.push_back({ LOCTEXT("Trade Relations", "Trade Relations"), -2 * tradeRelationsTechUpgradeCount });
 	}
 
 	return bonuses;

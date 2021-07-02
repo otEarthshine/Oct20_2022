@@ -8,7 +8,7 @@ DECLARE_CYCLE_STAT(TEXT("PUN: [Display]Drops"), STAT_PunDisplayDropTick, STATGRO
 
 using namespace std;
 
-static const int32_t maxStack = 1;
+static const int32_t maxStack = 2;
 
 int UResourceDisplayComponent::CreateNewDisplay(int objectId)
 {

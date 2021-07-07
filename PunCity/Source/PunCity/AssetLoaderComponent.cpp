@@ -303,9 +303,14 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::FurnitureWorkshop, "Furniture_Workshop_Era", "FurnitureWorkshop", 1);
 	LoadBuilding(CardEnum::CharcoalMaker, "CharcoalMakerEra", "CharcoalBurner", 1);
 	LoadBuilding(CardEnum::Brickworks, "BrickworkEra", "Brickworks", 2);
-	LoadBuilding(CardEnum::Beekeeper, "BeeKeeper_Era", "Beekeeper", 2, 2);
+	
+	LoadBuilding(CardEnum::Beekeeper, "BeeKeeper_Era", "Beekeeper", 2);
+	LoadBuilding(CardEnum::Market, "Market__Era", "Market", 2, 2);
+	
+	LoadBuilding(CardEnum::Bakery, "Bakery_Era", "Bakery", 2);
+	LoadBuilding(CardEnum::IronSmelter, "Iron_Smelter_Era", "IronSmelter", 2, 2);
 
-
+	
 	LoadBuilding(CardEnum::Quarry, "Quarry_Era", "Quarry", 1);
 
 	for (int32 eraInt = 1; eraInt <= 4; eraInt++)
@@ -379,7 +384,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadTogglableModule("OreMineWorkStatic_Gemstone", "OreMine/GemstoneSpecial");
 	
 	
-	TryLoadBuildingModuleSet("Smelter", "Smelter");
+	//TryLoadBuildingModuleSet("Smelter", "Smelter");
 	TryLoadBuildingModuleSet("SmelterGold", "SmelterGold");
 	TryLoadBuildingModuleSet("SmelterGiant", "SmelterGiant");
 	
@@ -545,7 +550,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	// Barrack Modules
 	TryLoadBuildingModuleSet("Barrack", "Barrack");
 
-	TryLoadBuildingModuleSet("Bakery", "Bakery");
+	//TryLoadBuildingModuleSet("Bakery", "Bakery");
 	TryLoadBuildingModuleSet("Windmill", "Windmill");
 
 	//TryLoadBuildingModuleSet("Beekeeper", "Beekeeper");
@@ -558,7 +563,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	TryLoadBuildingModuleSet("ChichenItza", "ChichenItza");
 
-	TryLoadBuildingModuleSet("Market", "Market");
+	//TryLoadBuildingModuleSet("Market", "Market");
 	TryLoadBuildingModuleSet("IrrigationReservoir", "IrrigationReservoir");
 	
 
@@ -679,6 +684,15 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	_georesourceIcons[ResourceEnum::Coal] = LoadF<UTexture2D>(FString("/Game/UI/Images/GeoresourceIcons/LogoWorldCoal"));
 	_georesourceIcons[ResourceEnum::Gemstone] = LoadF<UTexture2D>(FString("/Game/UI/Images/GeoresourceIcons/LogoWorldGemstone"));
 
+	// Biome Icons
+	_biomeIcons[BiomeEnum::BorealForest] = LoadF<UTexture2D>(FString("/Game/UI/Components/Icons/BiomeBorealForest"));
+	_biomeIcons[BiomeEnum::Desert] = LoadF<UTexture2D>(FString("/Game/UI/Components/Icons/BiomeDesert"));
+	_biomeIcons[BiomeEnum::Forest] = LoadF<UTexture2D>(FString("/Game/UI/Components/Icons/BiomeForest"));
+	_biomeIcons[BiomeEnum::GrassLand] = LoadF<UTexture2D>(FString("/Game/UI/Components/Icons/BiomeGrassland"));
+	_biomeIcons[BiomeEnum::Jungle] = LoadF<UTexture2D>(FString("/Game/UI/Components/Icons/BiomeJungle"));
+	_biomeIcons[BiomeEnum::Savanna] = LoadF<UTexture2D>(FString("/Game/UI/Components/Icons/BiomeSavana"));
+	_biomeIcons[BiomeEnum::Tundra] = LoadF<UTexture2D>(FString("/Game/UI/Components/Icons/BiomeTundra"));
+	
 	/*
 	 * Card Icons
 	 */
@@ -791,7 +805,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 		}
 	}
 
-	check(addCardIconCount == 58);
+	check(addCardIconCount == 66);
 
 	//BorealFishing
 	//BorealWinterResistant

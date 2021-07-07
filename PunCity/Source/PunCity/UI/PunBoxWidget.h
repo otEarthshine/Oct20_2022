@@ -18,7 +18,13 @@
 #include "ManageStorageElement.h"
 #include "PunBudgetAdjuster.h"
 #include "PunMidRowText.h"
+#include "WGT_Focus_EditableTextRow_Cpp.h"
 
+#include "WGT_ObjectFocus_Title_Cpp.h"
+#include "WGT_ObjectFocus_TextRow_Cpp.h"
+#include "Components/HorizontalBoxSlot.h"
+#include "Components/OverlaySlot.h"
+#include "Components/PanelSlot.h"
 
 #include "PunBoxWidget.generated.h"
 
@@ -88,7 +94,8 @@ public:
 
 			bElementResetThisRound = true;
 		}
-		
+
+		// !!!
 		// !!! Error here could be caused by leaving items in PunBoxWidget !!!
 		
 		UWidget* childBeforeCast = PunVerticalBox->GetChildAt(currentIndex);
@@ -97,6 +104,7 @@ public:
 		currentIndex++;
 
 		// !!! Error here could be caused by leaving items in PunBoxWidget !!!
+		// !!!
 
 		PUN_CHECK(PunVerticalBox->GetChildrenCount() >= currentIndex);
 		return child;
@@ -180,6 +188,9 @@ public:
 		auto textWidget = GetChildElement<UPunRichText>(UIEnum::PunRichText, GetTypeHash(text.ToString()));
 		textWidget->PunRichText->SetText(text);
 		textWidget->PunRichText->SetAutoWrapText(isAutoWrap); // Non-autowrap has 280 width
+
+		Indent(textWidget->PunRichText->Slot, nullptr, 4);
+		
 		return textWidget;
 	}
 	UPunRichText* AddRichTextCenter(FText text, bool isAutoWrap = true) {
@@ -187,6 +198,9 @@ public:
 		textWidget->PunRichText->SetText(text);
 		textWidget->PunRichText->SetAutoWrapText(isAutoWrap); // Non-autowrap has 280 width
 		textWidget->SetJustification(ETextJustify::Type::Center);
+
+		Indent(textWidget->PunRichText->Slot, nullptr, 4);
+		
 		return textWidget;
 	}
 
@@ -196,6 +210,9 @@ public:
 		auto textWidget = GetChildElement<UPunRichTextTwoSided>(UIEnum::PunRichTextTwoSided);
 		textWidget->SetText(leftText, rightText, resourceEnum, expandedText);
 		textWidget->PunRichText->SetAutoWrapText(true);
+
+		Indent(textWidget->PunRichText->Slot, textWidget->RightBox->Slot, 4);
+		
 		return textWidget;
 	}
 	UPunRichTextTwoSided* AddRichText(std::string leftText, std::stringstream& ss) {
@@ -211,7 +228,11 @@ public:
 		FText rightText2 = FText(), ResourceEnum resourceEnum2 = ResourceEnum::None)
 	{
 		auto textWidget = GetChildElement<UPunRichTextTwoSided>(UIEnum::PunRichTextTwoSided);
+
+		Indent(textWidget->PunRichText->Slot, textWidget->RightBox->Slot, 4);
+		
 		textWidget->SetText(leftText, rightText1, resourceEnum1, expandedText, rightText2, resourceEnum2);
+
 		textWidget->PunRichText->SetAutoWrapText(true);
 		return textWidget;
 	}
@@ -219,6 +240,7 @@ public:
 		auto textWidget = AddRichText(leftText, FText::Join(FText(), args));
 		textWidget->PunRichText->SetAutoWrapText(true);
 		args.Empty();
+		
 		return textWidget;
 	}
 	UPunRichText* AddRichText(TArray<FText>& args, bool isAutoWrap = true) {
@@ -228,6 +250,122 @@ public:
 		return textWidget;
 	}
 
+	/*
+	 * WGT
+	 */
+	UWGT_ObjectFocus_Title_Cpp* AddWGT_ObjectFocus_Title(FText title, FText subtitle = FText(), UTexture2D* textureIcon = nullptr, UPunWidget* buildingSwapArrowParent = nullptr)
+	{
+		auto textWidget = GetChildElement<UWGT_ObjectFocus_Title_Cpp>(UIEnum::WGT_ObjectFocus_Title);
+		textWidget->Title->SetText(title);
+		if (!subtitle.IsEmpty()) {
+			textWidget->Subtitle->SetText(subtitle);
+			textWidget->Subtitle->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		} else {
+			textWidget->Subtitle->SetVisibility(ESlateVisibility::Collapsed);
+		}
+		
+		if (textureIcon) {
+			textWidget->Image->SetBrushFromTexture(textureIcon);
+			textWidget->Image->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		} else {
+			textWidget->Image->SetVisibility(ESlateVisibility::Collapsed);
+		}
+
+		textWidget->callbackEnum = CallbackEnum::BuildingSwapArrow;
+		textWidget->callbackParent = buildingSwapArrowParent;
+		textWidget->BuildingSwapArrows->SetVisibility(buildingSwapArrowParent ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+		
+		return textWidget;
+	}
+
+	UWGT_ObjectFocus_Title_Cpp* AddWGT_ObjectFocus_ProvinceTitle(FText titleText, FText subtitleText, BiomeEnum biomeEnum)
+	{
+		auto textWidget = GetChildElement<UWGT_ObjectFocus_Title_Cpp>(UIEnum::WGT_ObjectFocus_ProvinceTitle);
+		textWidget->Title->SetText(titleText);
+		textWidget->Subtitle->SetText(subtitleText);
+		textWidget->Image->SetBrushFromTexture(assetLoader()->GetBiomeIcon(biomeEnum));
+
+		textWidget->BuildingSwapArrows->SetVisibility(ESlateVisibility::Collapsed);
+
+		textWidget->BuildingSwapArrows->SetVisibility(ESlateVisibility::Collapsed);
+		textWidget->BuildingSwapArrowLeftButton->SetVisibility(ESlateVisibility::Collapsed);
+		textWidget->BuildingSwapArrowRightButton->SetVisibility(ESlateVisibility::Collapsed);
+
+		return textWidget;
+	}
+	
+	UWGT_ObjectFocus_TextRow_Cpp* AddWGT_TextRow(UIEnum uiEnumIn, FText textLeft, FText textRight = FText(), UTexture2D* iconImage = nullptr)
+	{
+		auto textWidget = GetChildElement<UWGT_ObjectFocus_TextRow_Cpp>(uiEnumIn);
+		textWidget->TextLeft->SetText(textLeft);
+		textWidget->TextRight->SetText(textRight);
+
+		Indent(textWidget->LeftBox->Slot, textWidget->RightBox->Slot);
+		
+		if (iconImage) {
+			textWidget->Icon->SetBrushFromTexture(iconImage);
+			textWidget->Icon->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		} else {
+			textWidget->Icon->SetVisibility(ESlateVisibility::Collapsed);
+		}
+		
+		return textWidget;
+	}
+	UWGT_ObjectFocus_TextRow_Cpp* AddWGT_TextRow_Resource(UIEnum uiEnumIn, FText textLeft, FText textRight, ResourceEnum resourceEnum)
+	{
+		auto textWidget = GetChildElement<UWGT_ObjectFocus_TextRow_Cpp>(uiEnumIn);
+		textWidget->TextLeft->SetText(textLeft);
+		textWidget->TextRight->SetText(textRight);
+
+		Indent(textWidget->LeftBox->Slot, textWidget->RightBox->Slot);
+
+		if (resourceEnum != ResourceEnum::None) {
+			SetResourceImage(textWidget->Icon, resourceEnum, assetLoader());
+			textWidget->Icon->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		} else {
+			textWidget->Icon->SetVisibility(ESlateVisibility::Collapsed);
+		}
+		return textWidget;
+	}
+
+	// TODO: for now only for townhall, later on, for others too??
+	UWGT_Focus_EditableTextRow_Cpp* AddWGT_TownhallEditableTextRow(FText textLeft, FText textRight, UPunWidget* parent, CallbackEnum callbackEnum)
+	{
+		auto textWidget = GetChildElement<UWGT_Focus_EditableTextRow_Cpp>(UIEnum::WGT_Focus_EditableTextRow);
+		textWidget->TextLeft->SetText(textLeft);
+		textWidget->TextRight->SetText(textRight);
+
+		textWidget->Icon->SetVisibility(ESlateVisibility::Collapsed);
+
+		textWidget->callbackParent = parent;
+		textWidget->callbackEnum = callbackEnum;
+		
+		return textWidget;
+	}
+
+
+
+
+	UPunTextWidget* AddWGT_PunText(UIEnum uiEnumIn, FText text)
+	{
+		auto textWidget = GetChildElement<UPunTextWidget>(uiEnumIn);
+		textWidget->PunText->SetText(text);
+
+		// Subheader indented slightly less
+		if (uiEnumIn == UIEnum::WGT_ObjectFocus_Subheader) {
+			Indent(textWidget->PunText->Slot, nullptr, -8.0f);
+		}
+		
+		return textWidget;
+	}
+
+	UPunRichText* AddWGT_PunRichText(UIEnum uiEnumIn, FText text)
+	{
+		auto textWidget = GetChildElement<UPunRichText>(uiEnumIn);
+		textWidget->PunRichText->SetText(text);
+
+		return textWidget;
+	}
 
 	
 
@@ -261,12 +399,13 @@ public:
 	}
 
 	void AddLineSpacer(int32 height = 10) {
-		auto widget = GetChildElement<UPunSpacerElement>(UIEnum::PunLineSpacerWidget);
-		widget->Spacer->SetSize(FVector2D(0, height));
+		auto widget = GetChildElement<UUserWidget>(UIEnum::WGT_ObjectFocus_Divider);
+		//widget->Spacer->SetSize(FVector2D(0, height));
 	}
 	void AddThinLineSpacer(int32 height = 8) {
-		auto widget = GetChildElement<UPunSpacerElement>(UIEnum::PunThinLineSpacerWidget);
-		widget->Spacer->SetSize(FVector2D(0, height));
+		auto widget = GetChildElement<UUserWidget>(UIEnum::WGT_ObjectFocus_Divider);
+		//auto widget = GetChildElement<UPunSpacerElement>(UIEnum::PunThinLineSpacerWidget);
+		//widget->Spacer->SetSize(FVector2D(0, height));
 	}
 
 	
@@ -281,7 +420,7 @@ public:
 		widget->SetResource(input1, input2, output, productTexture, productStr);
 	}
 
-	UIconTextPairWidget* AddIconPair(FText prefix, ResourceEnum resourceEnum, FText suffix, bool isRed = false, bool hasShadow = false) {
+	UIconTextPairWidget* AddIconPair(FText prefix, ResourceEnum resourceEnum, FText suffix, bool isRed = false, bool hasShadow = false, float indentationIn = 0.0f) {
 		auto widget = GetChildElement<UIconTextPairWidget>(UIEnum::IconTextPair);
 		widget->SetText(prefix, suffix);
 		widget->SetImage(resourceEnum, dataSource()->assetLoader(), true);
@@ -291,6 +430,9 @@ public:
 		if (hasShadow) {
 			widget->SetTextShadow();
 		}
+
+		Cast<UHorizontalBoxSlot>(widget->OuterOverlay->Slot)->SetPadding(FMargin(indentationIn, 0, 0, 0));
+		
 		return widget;
 	}
 	UIconTextPairWidget* AddIconPair(FText prefix, ResourceEnum resourceEnum, TArray<FText>& args, bool isRed = false, bool hasShadow = false) {
@@ -564,6 +706,29 @@ public:
 	static void AddBuildingTooltip(UWidget* widget, CardEnum buildingEnum, UPunWidget* punWidgetSupport, bool isPermanent);
 
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* PunVerticalBox;
+
+	float indentation = 0.0f;
+
+	void Indent(UPanelSlot* leftSlot, UPanelSlot* rightSlot, float extraIndentation = 0.0f)
+	{
+		auto indentSlot = [&](UPanelSlot* slot, FMargin margin)
+		{
+			if (slot) {
+				if (auto slotCasted1 = Cast<UHorizontalBoxSlot>(slot)) {
+					slotCasted1->SetPadding(margin);
+				}
+				else if (auto slotCasted2 = Cast<UOverlaySlot>(leftSlot)) {
+					slotCasted2->SetPadding(margin);
+				}
+				else {
+					UE_DEBUG_BREAK();
+				}
+			}
+		};
+
+		indentSlot(leftSlot, FMargin(indentation + extraIndentation, 0, 0, 0));
+		indentSlot(rightSlot, FMargin(0, 0, indentation + extraIndentation, 0));
+	}
 	
 private:
 	int32 currentIndex = 0;

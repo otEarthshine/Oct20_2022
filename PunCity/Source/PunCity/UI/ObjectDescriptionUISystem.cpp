@@ -533,8 +533,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 	SCOPE_CYCLE_COUNTER(STAT_PunUIUpdateDescriptionUI);
 
-	UPunBoxWidget* descriptionBox = _objectDescriptionUI->DescriptionPunBox;
+	UPunBoxWidget* focusBox = _objectDescriptionUI->DescriptionPunBox;
 	UPunBoxWidget* descriptionBoxScrollable = _objectDescriptionUI->DescriptionPunBoxScroll;
+	
 	
 	// DescriptionPunBoxScroll is used for House
 	_objectDescriptionUI->DescriptionPunBoxScrollOuter->SetVisibility(ESlateVisibility::Collapsed);
@@ -547,8 +548,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 		return;
 	}
 
-	GameSimulationCore& simulation = dataSource()->simulation();
-	DescriptionUIState uiState = simulation.descriptionUIState();
+	GameSimulationCore& sim = dataSource()->simulation();
+	DescriptionUIState uiState = sim.descriptionUIState();
 
 	auto assetLoader = dataSource()->assetLoader();
 	
@@ -560,7 +561,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			_justOpenedDescriptionUI = true;
 		}
 		_objectDescriptionUI->CloseAllSubUIs(uiState.shouldCloseStatUI);
-		descriptionBox->ResetBeforeFirstAdd();
+		focusBox->ResetBeforeFirstAdd();
 		descriptionBoxScrollable->ResetBeforeFirstAdd();
 	}
 
@@ -579,7 +580,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 	OverlayType overlayType = OverlayType::None;
 
-	auto& globalResourceSys = simulation.globalResourceSystem(playerId());
+	auto& globalResourceSys = sim.globalResourceSystem(playerId());
 	
 
 	if (uiState.objectType == ObjectTypeEnum::None) {
@@ -592,11 +593,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 		int32 objectId = uiState.objectId;
 
-		_objectDescriptionUI->BuildingsStatOpener->SetVisibility(ESlateVisibility::Collapsed);
-		_objectDescriptionUI->NameEditButton->SetVisibility(ESlateVisibility::Collapsed);
+		//_objectDescriptionUI->BuildingsStatOpener->SetVisibility(ESlateVisibility::Collapsed);
 
 		_objectDescriptionUI->TownBonusBox->SetVisibility(ESlateVisibility::Collapsed);
 		_objectDescriptionUI->GlobalBonusBox->SetVisibility(ESlateVisibility::Collapsed);
+
+		ResetIndent();
 
 		//! TileBuilding (such as Building)
 		// TODO: may be TileBuilding should just be TileObject..???
@@ -605,8 +607,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			WorldTile2 tile(-objectId);
 			check(tile.isValid());
 
-			SetText(_objectDescriptionUI->DescriptionUITitle, "Fence");
-			descriptionBox->AfterAdd();
+			//SetText(_objectDescriptionUI->DescriptionUITitle, "Fence");
+			focusBox->AfterAdd();
 
 			// Selection Mesh
 			SpawnSelectionMesh(assetLoader->SelectionMaterialGreen, dataSource()->DisplayLocation(tile.worldAtom2()) + FVector(0, 0, 40));
@@ -620,72 +622,78 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			CardEnum buildingEnum = building.buildingEnum();
 			BldInfo buildingInfo = building.buildingInfo();
 
-			auto& resourceSys = simulation.resourceSystem(building.townId());
+			auto& resourceSys = sim.resourceSystem(building.townId());
 
 			bool showWhenOwnedByCurrentPlayer = building.playerId() == playerId() || PunSettings::IsOn("DebugFocusUI");
-			
-			//stringstream ss;
+
 			TArray<FText> args;
-			
+
 			/*
 			 * Header
 			 */
+			auto showBuildingSwapArrow = [&]() {
+				if (playerId() == building.playerId()) {
+					const std::vector<int32>& buildingIds = sim.buildingIds(building.townId(), buildingEnum);
+					return buildingIds.size() > 1;
+				}
+				return false;
+			};
+			
 			if (buildingEnum == CardEnum::RegionTribalVillage) {
-				ADDTEXT_(LOCTEXT("TribeName", "<Header>{0} tribe</>"), GenerateTribeName(objectId));
+				_objectDescriptionUI->DescriptionPunBox->AddWGT_ObjectFocus_Title(
+					FText::Format(LOCTEXT("TribeName", "{0} tribe"), GenerateTribeName(objectId))
+				);
 			}
 			else if (buildingEnum == CardEnum::Townhall) {
-				FString townName = simulation.townNameT(building.townId()).ToString();
-				ADDTEXT_(INVTEXT("<Header>{0}</>"), FText::FromString(TrimStringF_Dots(townName, 15)));
+				_objectDescriptionUI->DescriptionPunBox->AddWGT_ObjectFocus_Title(
+					FText::Format(LOCTEXT("Townhall Title", "Townhall Lv {0}"), TEXT_NUM(building.subclass<TownHall>().townhallLvl)),
+					FText(), nullptr,
+					(showBuildingSwapArrow() ? this : nullptr)
+				);
 			}
 			else if (buildingEnum == CardEnum::House) {
-				ADDTEXT_(LOCTEXT("HouseName", "<Header>House Level {0}</>"), FText::AsNumber(building.subclass<House>().houseLvl()));
+				_objectDescriptionUI->DescriptionPunBox->AddWGT_ObjectFocus_Title(
+					FText::Format(LOCTEXT("HouseName", "House Lv {0}"), FText::AsNumber(building.subclass<House>().houseLvl()))
+				);
 			}
 			else
 			{
-				//ss << "<Header>" << building.buildingInfo().name << "</>";
-				//ADDINVTEXT(args, "<Header>{buildingName}</>", building.buildingInfo().GetName());
-				ADDTEXT_(INVTEXT("<Header>{0}</>"), building.buildingInfo().GetName());
+				_objectDescriptionUI->DescriptionPunBox->AddWGT_ObjectFocus_Title(
+					building.buildingInfo().GetName(),
+					FText(), nullptr,
+					(showBuildingSwapArrow() ? this : nullptr)
+				);
 			}
-			
-#if !UE_BUILD_SHIPPING
-			if (PunSettings::IsOn("DebugFocusUI")) {
-				ADDTEXT_(INVTEXT("[{0}]"), FText::AsNumber(objectId));
-				ADDTEXT_(INVTEXT("\n{0}"), FText::FromString(building.centerTile().To_FString()));
-			}
-#endif
 
-			
-			//SetText(_objectDescriptionUI->DescriptionUITitle, ss);
-			SetText(_objectDescriptionUI->DescriptionUITitle, FText::Join(FText(), args));
-			args.Empty();
+
+			//_objectDescriptionUI->DescriptionUITitle->SetVisibility(ESlateVisibility::Collapsed);
+			//SetText(_objectDescriptionUI->DescriptionUITitle, FText::Join(FText(), args));
+			//args.Empty();
 
 			
 			
 			//_objectDescriptionUI->BuildingsStatOpener->SetVisibility(building.maxOccupants() > 0 && !IsHouse(building.buildingEnum()) ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-			_objectDescriptionUI->BuildingsStatOpener->SetVisibility(ESlateVisibility::Collapsed); // TODO: Don't use it anymore?
-			_objectDescriptionUI->NameEditButton->SetVisibility((building.isEnum(CardEnum::Townhall) && building.playerId() == playerId()) ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+			//_objectDescriptionUI->BuildingsStatOpener->SetVisibility(ESlateVisibility::Collapsed); // TODO: Don't use it anymore?
+			//_objectDescriptionUI->NameEditButton->SetVisibility((building.isEnum(CardEnum::Townhall) && building.playerId() == playerId()) ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
-			// Swap between same type of buildings
-			if (building.playerId() == playerId()) {
-				const std::vector<int32>& buildingIds = simulation.buildingIds(building.townId(), buildingEnum);
-				_objectDescriptionUI->BuildingSwapArrows->SetVisibility(buildingIds.size() > 1 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-			} else {
-				_objectDescriptionUI->BuildingSwapArrows->SetVisibility(ESlateVisibility::Collapsed);
-			}
+			//// Swap between same type of buildings
+			//if (building.playerId() == playerId()) {
+			//	const std::vector<int32>& buildingIds = sim.buildingIds(building.townId(), buildingEnum);
+			//	_objectDescriptionUI->BuildingSwapArrows->SetVisibility(buildingIds.size() > 1 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+			//} else {
+			//	_objectDescriptionUI->BuildingSwapArrows->SetVisibility(ESlateVisibility::Collapsed);
+			//}
 
-			
-			
-			//descriptionBox->AddRichText(ss);
-			descriptionBox->AddLineSpacer(8);
 
-			
 #if !UE_BUILD_SHIPPING
-			// IsConnectedBuilding
-			if (PunSettings::IsOn("DebugFocusUI")) {
+			if (PunSettings::IsOn("DebugFocusUI")) 
+			{
+				focusBox->AddRichText(FText::Format(INVTEXT("[{0}]"), FText::AsNumber(objectId)));
+				focusBox->AddRichText(FText::Format(INVTEXT("\n{0}"), FText::FromString(building.centerTile().To_FString())));
+
 				if (building.playerId() != -1) {
-					//ss << simulation.IsConnectedBuilding(building.buildingId(), playerId());
-					ADDTEXT_NUM(args, simulation.IsConnectedBuilding(building.buildingId()))
-						descriptionBox->AddRichText(FTEXT("<Yellow>IsConnectedBld</>"), args);
+					ADDTEXT_NUM(args, sim.IsConnectedBuilding(building.buildingId()));
+					focusBox->AddRichText(FTEXT("<Yellow>IsConnectedBld</>"), args);
 				}
 			}
 #endif
@@ -695,17 +703,11 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			building.TryRefreshHoverWarning(UGameplayStatics::GetTimeSeconds(this));
 			if (building.hoverWarning != HoverWarning::None)
 			{
-				//std::string description = GetHoverWarningDescription(building.hoverWarning);
-				//if (description.size() > 0) {
-				//	FString descriptionText = ToFString(description);
-				//	descriptionText = descriptionText.Replace(TEXT("\n"), TEXT("</>\n<Red>"));
-				//	std::string descriptionStr = ToStdString(descriptionText);
-				//	descriptionBox->AddRichText("<Red>" + descriptionStr + "</>");
-				//}
 				FText description = GetHoverWarningDescription(building.hoverWarning);
 				if (!description.IsEmpty()) {
 					FString descriptionStr = description.ToString().Replace(TEXT("\n"), TEXT("</>\n<Red>"));
-					descriptionBox->AddRichTextF("<Red>" + descriptionStr + "</>");
+					focusBox->AddRichTextF("<Red>" + descriptionStr + "</>");
+					focusBox->AddSpacer();
 				}
 			}
 			
@@ -719,10 +721,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				building.isEnum(CardEnum::Market) || 
 				building.isEnum(CardEnum::TradingCompany))
 			{
-				//ss << WrapString(building.buildingInfo().description);
-				//descriptionBox->AddRichTextF(WrapStringF(building.buildingInfo().GetDescription().ToString())); // WrapString helps prevent flash
-				descriptionBox->AddRichText(building.buildingInfo().GetDescription(), false); // Autowrap off prevent flash
-				descriptionBox->AddSpacer(8);
+				focusBox->AddWGT_PunRichText(UIEnum::WGT_ObjectFocus_FlavorText, building.buildingInfo().GetDescription()); // Autowrap off prevent flash
 			}
 
 			
@@ -737,44 +736,48 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			 */
 			if (building.isOnFire())
 			{
-				//ss << "<Red>Building is on fire.</>";
-				//descriptionBox->AddRichText(ss);
-				descriptionBox->AddRichText(LOCTEXT("BuildingOnFire", "<Red>Building is on fire.</>"));
+				focusBox->AddRichText(LOCTEXT("BuildingOnFire", "<Red>Building is on fire.</>"));
 			}
 			else if (building.isBurnedRuin())
 			{
 				//ss << "<Red>Burned ruin.</>";
-				descriptionBox->AddRichText(LOCTEXT("BurnedRuin", "<Red>Burned ruin.</>"));
+				focusBox->AddRichText(LOCTEXT("BurnedRuin", "<Red>Burned ruin.</>"));
 			}
 			else
 			{
 
 				if (!building.isConstructed()) {
-					descriptionBox->AddRichText(LOCTEXT("UnderConstruction", "Under construction\n"));
+					focusBox->AddRichText(LOCTEXT("UnderConstruction", "Under construction"));
+					focusBox->AddSpacer();
 				}
 
 				// Occupants
 				if (IsHouse(building.buildingEnum()) && building.isConstructed()) 
 				{
-					ADDTEXT(args, INVTEXT("<img id=\"House\"/>{0}/{1}"),
-						FText::AsNumber(building.occupantCount()), 
-						FText::AsNumber(building.allowedOccupants())
+					focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+						LOCTEXT("Occupants", "Occupants"),
+						FText::Format(
+							INVTEXT("{0}/{1}"),
+							FText::AsNumber(building.occupantCount()),
+							FText::AsNumber(building.allowedOccupants())
+						),
+						assetLoader->HouseIcon
 					);
-					descriptionBox->AddRichText(LOCTEXT("Occupants", "Occupants"), args);
 
 #if !UE_BUILD_SHIPPING
 					if (PunSettings::IsOn("DebugFocusUI")) {
-						descriptionBox->AddRichText(FText::Join(FText(), INVTEXT("<Yellow>"), LOCTEXT("HouseAdjacent", "Adjacent"), INVTEXT("</>")));
+						focusBox->AddRichText(FText::Join(FText(), INVTEXT("<Yellow>"), LOCTEXT("HouseAdjacent", "Adjacent"), INVTEXT("</>")));
 					}
 #endif					
 				}
 				else if (building.maxOccupants() > 0) 
 				{
-					ADDTEXT(args, INVTEXT("{0}/{1}"),
+					focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
+						LOCTEXT("Workers_C", "Workers: "), FText::Format(
+						INVTEXT("{0}/{1}"),
 						FText::AsNumber(building.occupantCount()),
 						FText::AsNumber(building.maxOccupants())
-					);
-					descriptionBox->AddRichText(LOCTEXT("Workers_C", "Workers: "), args);
+					));
 				}
 
 				// Upkeep
@@ -785,49 +788,72 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 					if (showWhenOwnedByCurrentPlayer &&
 						IsBudgetAdjustable(building.buildingEnum()) &&
-						simulation.IsResearched(playerId(), TechEnum::BudgetAdjustment))
+						sim.IsResearched(playerId(), TechEnum::BudgetAdjustment))
 					{
 						if (_justOpenedDescriptionUI) {
 							building.lastBudgetLevel = building.budgetLevel();
 						}
 
-						descriptionBox->AddSpacer();
-						descriptionBox->AddRichText(
-							LOCTEXT("Budget_C", "Budget: "), FText::Join(FText(), INVTEXT("<img id=\"Coin\"/>"), FText::AsNumber(upkeep))
+						focusBox->AddSpacer();
+						
+						Indent(50);
+						focusBox->AddRichText(
+							TEXT_TAG("<Bold>", LOCTEXT("Budget_C", "Budget: ")),
+							FText::Format(INVTEXT("<Bold>{0}</><img id=\"Coin\"/>"), FText::AsNumber(upkeep))
 						);
-						auto widget = descriptionBox->AddBudgetAdjuster(this, building.buildingId(), true, building.lastBudgetLevel);
+						ResetIndent();
+						
+						auto widget = focusBox->AddBudgetAdjuster(this, building.buildingId(), true, building.lastBudgetLevel);
 						AddToolTip(widget, LOCTEXT("Budget_Tip", "Increasing the Budget Level lead to higher Effectiveness and Job Happiness, but also increases the Building Upkeep."));
-						descriptionBox->AddSpacer();
+						focusBox->AddSpacer();
 					}
 					else {
-						descriptionBox->AddRichText(
-							LOCTEXT("Upkeep_C", "Upkeep: "), FText::Join(FText(), INVTEXT("<img id=\"Coin\"/>"), FText::AsNumber(upkeep))
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+							LOCTEXT("Upkeep_C", "Upkeep"),
+							FText::AsNumber(upkeep),
+							assetLoader->CoinIcon
 						);
 					}
 				}
 
+				// Efficiency + Job Happiness
+				//  ... exclude farm
+				if (IsProducer(building.buildingEnum()) ||
+					building.buildingEnum() == CardEnum::FruitGatherer ||
+					building.buildingEnum() == CardEnum::Forester ||
+					building.buildingEnum() == CardEnum::HuntingLodge)
+				{
+					AddEfficiencyText(building, focusBox);
+				}
+				
+
 				// Work Hour
 				if (showWhenOwnedByCurrentPlayer &&
 					IsBudgetAdjustable(building.buildingEnum()) &&
-					simulation.IsResearched(playerId(), TechEnum::WorkSchedule))
+					sim.IsResearched(playerId(), TechEnum::WorkSchedule))
 				{
 					if (_justOpenedDescriptionUI) {
 						building.lastWorkTimeLevel = building.workTimeLevel();
 					}
 
-					descriptionBox->AddSpacer();
-					descriptionBox->AddRichText(LOCTEXT("WorkHour_C", "Work Hours: "));
-					auto widget = descriptionBox->AddBudgetAdjuster(this, building.buildingId(), false, building.lastWorkTimeLevel);
+					focusBox->AddSpacer();
+					Indent(50);
+					focusBox->AddRichText(
+						TEXT_TAG("<Bold>", LOCTEXT("WorkHour_C", "Work Hours: "))
+					);
+					ResetIndent();
+					
+					auto widget = focusBox->AddBudgetAdjuster(this, building.buildingId(), false, building.lastWorkTimeLevel);
 					AddToolTip(widget, LOCTEXT("Budget_Tip", "Increasing the Work Hours Level lead to higher Effectiveness, but lower Job Happiness."));
-					descriptionBox->AddSpacer(8);
+					focusBox->AddSpacer();
 				}
 
 				// Electricity
 				if (building.IsElectricityUpgraded())
 				{
-					descriptionBox->AddSpacer();
-					descriptionBox->AddRichText(
-						LOCTEXT("Electricity", "Electricity Usage/Needed:"),
+					focusBox->AddSpacer();
+					focusBox->AddRichText(
+						TEXT_TAG("<GrayBold>", LOCTEXT("Electricity", "Electric Usage/Need")),
 						FText::Format(INVTEXT("{0}/{1}kW"), TextRed(TEXT_NUM(building.ElectricityAmountUsage()), building.NotEnoughElectricity()), TEXT_NUM(building.ElectricityAmountNeeded()))
 					);
 				}
@@ -842,7 +868,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					{
 						House* house = static_cast<House*>(&building);
 						
-						descriptionBox->AddSpacer(10);
+						focusBox->AddSpacer(10);
 
 						int32 houseLvl = house->houseLvl();
 
@@ -851,41 +877,50 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							args.Empty();
 
 							
-							auto widgetCoal = descriptionBox->AddRichText(
-								LOCTEXT("CoalHeatingEfficiency", "Coal Heating Efficiency"), TEXT_PERCENT(house->GetHeatingEfficiency(ResourceEnum::Coal))
+							auto widgetCoal = focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+								LOCTEXT("CoalHeatingEfficiency", "Coal Heating Efficiency"),
+								TEXT_PERCENT(house->GetHeatingEfficiency(ResourceEnum::Coal))
 							);
 							house->GetHeatingEfficiencyTip(args, ResourceEnum::Coal);
 							AddToolTip(widgetCoal, args);
 							
 
-							auto widgetWood = descriptionBox->AddRichText(
-								LOCTEXT("WoodHeatingEfficiency", "Wood Heating Efficiency"), TEXT_PERCENT(house->GetHeatingEfficiency(ResourceEnum::Wood))
+							auto widgetWood = focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+								LOCTEXT("WoodHeatingEfficiency", "Wood Heating Efficiency"), 
+								TEXT_PERCENT(house->GetHeatingEfficiency(ResourceEnum::Wood))
 							);
 							house->GetHeatingEfficiencyTip(args, ResourceEnum::Wood);
 							AddToolTip(widgetWood, args);
 						}
-						descriptionBox->AddSpacer(10);
+						focusBox->AddSpacer(10);
 						
-						descriptionBox->AddRichText(LOCTEXT("Appeal", "Appeal"), TEXT_PERCENT(house->GetAppealPercent()));
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+							LOCTEXT("Appeal", "Appeal"), 
+							TEXT_PERCENT(house->GetAppealPercent())
+						);
 
 						// Happiness
 						{
-							auto widget = descriptionBox->AddRichText(
+							auto widget = focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
 								LOCTEXT("Housingquality", "Housing quality"), TEXT_PERCENT(house->housingQuality())
 							);
-							descriptionBox->AddSpacer();
+							focusBox->AddSpacer();
 						}
 
-						descriptionBox->AddSpacer(5);
+						focusBox->AddSpacer(5);
 
 						// Tax
 						{
-							ADDTEXT_(INVTEXT("{0}<img id=\"Coin\"/>\n"), TEXT_100(house->totalHouseIncome100()));
-							auto widget = descriptionBox->AddRichText(LOCTEXT("Income", "Income"), args);
-							descriptionBox->AddSpacer();
+							auto widget = focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+								LOCTEXT("Income", "Income"),
+								TEXT_100(house->totalHouseIncome100()),
+								assetLoader->CoinIcon
+							);
+							focusBox->AddSpacer();
 
 							// Tooltip
 							// Single house tax...
+							args.Empty();
 							ADDTEXT_(LOCTEXT("Income_C", "Income: {0}<img id=\"Coin\"/>\n"), TEXT_100(house->totalHouseIncome100()));
 
 							for (int32 i = 0; i < HouseIncomeEnumCount; i++) {
@@ -901,9 +936,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 						// Science
 						{
-							ADDTEXT_(INVTEXT("{0}<img id=\"Science\"/>\n"), TEXT_100(house->science100PerRound()));
-							auto widget = descriptionBox->AddRichText(LOCTEXT("Science", "Science"), args);
-							descriptionBox->AddSpacer();
+							auto widget = focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+								LOCTEXT("Science", "Science"),
+								TEXT_100(house->science100PerRound()),
+								assetLoader->ScienceIcon
+							);
+							focusBox->AddSpacer();
 
 							// Tooltip
 							ADDTEXT_(LOCTEXT("ScienceOutput_C", "Science output: {0}<img id=\"Science\"/>\n"), TEXT_100(house->science100PerRound()));
@@ -930,28 +968,22 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 						if (showWhenOwnedByCurrentPlayer)
 						{
-							descriptionBox->AddLineSpacer();
-							descriptionBox->AddSpacer();
+							focusBox->AddLineSpacer();
 
 							// TODO: add appeal later?
 							//int32 appealNeeded = house->GetAppealUpgradeRequirement(houseLvl + 1);
 
 							if (houseLvl == house->GetMaxHouseLvl()) {
-								descriptionBox->AddRichText(LOCTEXT("Maximum lvl", "Maximum lvl"));
+								focusBox->AddRichText(LOCTEXT("Maximum lvl", "Maximum lvl"));
 							}
-							// TODO: add appeal later?
-							//else if (house->GetAppealPercent() < appealNeeded) {
-							//	ADDTEXT_(LOCTEXT("HouseNeedAppeal", "<Orange>Need {0} appeal to increase lvl</>"), FText::AsNumber(appealNeeded));
-							//	descriptionBox->AddRichText(args);
-							//}
 							else {
 								ADDTEXT_(INVTEXT("<Orange>{0}</>\n"), house->HouseNeedDescription());
 								ADDTEXT_LOCTEXT("HouseToIncreaseLevel", "<Orange>(to increase level)</>");
-								auto widget = descriptionBox->AddRichText(args);
+								auto widget = focusBox->AddRichText(args);
 								AddToolTip(widget, house->HouseNeedTooltipDescription());
 							}
 
-							descriptionBox->AddSpacer();
+							focusBox->AddSpacer();
 
 							/*
 							 * House Resource Checkboxes
@@ -966,13 +998,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								widget->SetTextColor(resourceCount > 0 ? FLinearColor(1, 1, 1) : FLinearColor(.15, .15, .15));
 							};
 
-							//ADDTEXT_(INVTEXT("<Bold>{0}</>"), LOCTEXT("Fuel_C", "Fuel:"))
-							ADDTEXT_TAG_("<Bold>", LOCTEXT("Fuel_C", "Fuel:"));
+							ADDTEXT_TAG_("<GrayBold>", LOCTEXT("Fuel_C", "Fuel:"));
 							descriptionBoxScrollable->AddRichText(args);
 							addCheckBoxIconPair(ResourceEnum::Wood);
 							addCheckBoxIconPair(ResourceEnum::Coal);
 
-							ADDTEXT_TAG_("<Bold>", LOCTEXT("LuxuryTier1_C", "Luxury tier 1:"));
+							ADDTEXT_TAG_("<GrayBold>", LOCTEXT("LuxuryTier1_C", "Luxury tier 1:"));
 							descriptionBoxScrollable->AddRichText(args);
 							const std::vector<ResourceEnum>& luxury1 = GetLuxuryResourcesByTier(1);
 							for (size_t i = 0; i < luxury1.size(); i++) {
@@ -994,16 +1025,18 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							
 							if (houseLvl >= 3 || hasAnyResource(luxury2))
 							{
-								ADDTEXT_TAG_("<Bold>", LOCTEXT("LuxuryTier2_C", "Luxury tier 2:"));
-								descriptionBoxScrollable->AddRichText(args);
+								descriptionBoxScrollable->AddWGT_PunText(UIEnum::WGT_ObjectFocus_Subheader, 
+									LOCTEXT("LuxuryTier2_C", "Luxury tier 2:")
+								);
 								for (size_t i = 0; i < luxury2.size(); i++) {
 									addCheckBoxIconPair(luxury2[i]);
 								}
 							}
 							if (houseLvl >= 5 || hasAnyResource(luxury3))
 							{
-								ADDTEXT_TAG_("<Bold>", LOCTEXT("LuxuryTier3_C", "Luxury tier 3:"));
-								descriptionBoxScrollable->AddRichText(args);
+								descriptionBoxScrollable->AddWGT_PunText(UIEnum::WGT_ObjectFocus_Subheader, 
+									LOCTEXT("LuxuryTier3_C", "Luxury tier 3:")
+								);
 								for (size_t i = 0; i < luxury3.size(); i++) {
 									addCheckBoxIconPair(luxury3[i]);
 								}
@@ -1016,73 +1049,143 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					{
 						TownHall& townhall = building.subclass<TownHall>();
 						int32 townPlayerId = townhall.playerId();
-						auto& townManager = simulation.townManager(townhall.townId());
-						auto& townhallPlayerOwned = simulation.playerOwned(townPlayerId);
+						auto& townManager = sim.townManager(townhall.townId());
+						auto& townhallPlayerOwned = sim.playerOwned(townPlayerId);
 						
-						int32 lvl = townhall.townhallLvl;
+						FString townName = sim.townNameT(building.townId()).ToString();
 
-						FString playerNameTrimmed = TrimStringF_Dots(simulation.playerNameF(townPlayerId), 12);
-						descriptionBox->AddRichText(LOCTEXT("Player", "Player"), FText::FromString(playerNameTrimmed));
+						Indent(10);
+						
+						if (townPlayerId == playerId()) {
+							focusBox->AddWGT_TownhallEditableTextRow(
+								LOCTEXT("Town Name", "Town Name"),
+								FText::FromString(TrimStringF_Dots(townName, 12)),
+								this, CallbackEnum::TownNameEdit
+							);
+						}
+						else {
+							focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+								LOCTEXT("Town Name", "Town Name"),
+								FText::FromString(TrimStringF_Dots(townName, 15))
+							);
+						}
+
+						FString playerNameTrimmed = TrimStringF_Dots(sim.playerNameF(townPlayerId), 12);
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+							LOCTEXT("Player", "Player"),
+							FText::FromString(playerNameTrimmed)
+						);
 
 #if !UE_BUILD_SHIPPING
 						if (PunSettings::IsOn("DebugFocusUI")) {
-							descriptionBox->AddRichText(TEXT_TAG("<Yellow>", INVTEXT("PlayerId")), FText::AsNumber(townPlayerId));
+							focusBox->AddRichText(TEXT_TAG("<Yellow>", INVTEXT("PlayerId")), FText::AsNumber(townPlayerId));
 						}
 #endif
 						
-						descriptionBox->AddRichText(LOCTEXT("Size", "Size"), townManager.GetTownSizeName());
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
+							LOCTEXT("Size", "Size"), 
+							townManager.GetTownSizeName()
+						);
 
-						descriptionBox->AddRichText(LOCTEXT("TownLevel", "Town Level"), FText::AsNumber(lvl));
+						//focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
+						//	LOCTEXT("TownLevel", "Town Level"), 
+						//	FText::AsNumber(lvl)
+						//);
 
 						// Only show these if it is player's townhall
 						if (townPlayerId == playerId()) {
-							descriptionBox->AddRichText(
-								LOCTEXT("TownhallIncome", "Townhall Income"), 
-								FText::Join(FText(), INVTEXT("<img id=\"Coin\"/>"), FText::AsNumber(townhall.townhallIncome())) // TODO:
+							focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+								LOCTEXT("TownhallIncome", "Townhall Income"),
+								FText::AsNumber(townhall.townhallIncome()),
+								assetLoader->CoinIcon
 							);
 						}
 
 						// Show how much money he has..
 						if (townPlayerId != playerId())
 						{
-							ADDTEXT_(INVTEXT("<img id=\"Coin\"/>{0}"), FText::AsNumber(simulation.globalResourceSystem(townPlayerId).money()));
-							descriptionBox->AddRichText(LOCTEXT("Money", "Money"), args);
+							//ADDTEXT_(INVTEXT("<img id=\"Coin\"/>{0}"), FText::AsNumber(sim.globalResourceSystem(townPlayerId).money()));
+							//focusBox->AddRichText(LOCTEXT("Money", "Money"), args);
+							focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+								LOCTEXT("Money", "Money"),
+								FText::AsNumber(sim.globalResourceSystem(townPlayerId).money()),
+								assetLoader->CoinIcon
+							);
 
-							ADDTEXT_(INVTEXT("<img id=\"Coin\"/>{0}"), TEXT_100(townManager.totalIncome100()));
-							descriptionBox->AddRichText(LOCTEXT("Money Income", "Money Income"), args);
-							descriptionBox->AddSpacer();
+							//ADDTEXT_(INVTEXT("<img id=\"Coin\"/>{0}"), TEXT_100(townManager.totalIncome100()));
+							//focusBox->AddRichText(LOCTEXT("Money Income", "Money Income"), args);
+							focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+								LOCTEXT("Money Income", "Money Income"),
+								TEXT_100(townManager.totalIncome100()),
+								assetLoader->CoinIcon
+							);
+							
+							focusBox->AddSpacer();
 
-							if (simulation.unlockedInfluence(townPlayerId)) {
-								ADDTEXT_(INVTEXT("<img id=\"Influence\"/>{0}"), FText::AsNumber(simulation.globalResourceSystem(townPlayerId).influence()));
-								descriptionBox->AddRichText(LOCTEXT("Influence", "Influence"), args);
-								ADDTEXT_(INVTEXT("<img id=\"Influence\"/>{0}"), TEXT_100(townManager.totalInfluenceIncome100()));
-								descriptionBox->AddRichText(LOCTEXT("Influence Income", "Influence Income"), args);
-								descriptionBox->AddSpacer();
+							if (sim.unlockedInfluence(townPlayerId)) 
+							{
+								//ADDTEXT_(INVTEXT("<img id=\"Influence\"/>{0}"), FText::AsNumber(sim.globalResourceSystem(townPlayerId).influence()));
+								//focusBox->AddRichText(LOCTEXT("Influence", "Influence"), args);
+								focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+									LOCTEXT("Influence", "Influence"),
+									FText::AsNumber(sim.globalResourceSystem(townPlayerId).influence()),
+									assetLoader->InfluenceIcon
+								);
+								
+								//ADDTEXT_(INVTEXT("<img id=\"Influence\"/>{0}"), TEXT_100(townManager.totalInfluenceIncome100()));
+								//focusBox->AddRichText(LOCTEXT("Influence Income", "Influence Income"), args);
+								focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+									LOCTEXT("Influence Income", "Influence Income"),
+									TEXT_100(townManager.totalInfluenceIncome100()),
+									assetLoader->InfluenceIcon
+								);
+
+								
+								focusBox->AddSpacer();
 							}
 
-							int32 science100PerRound = simulation.GetScience100PerRound(townPlayerId);
+							int32 science100PerRound = sim.GetScience100PerRound(townPlayerId);
 							if (science100PerRound > 0) {
-								ADDTEXT_(INVTEXT("<img id=\"Science\"/>{0}"), FText::AsNumber(science100PerRound));
-								descriptionBox->AddRichText(LOCTEXT("Science", "Science"), args);
-								descriptionBox->AddSpacer();
+								//ADDTEXT_(INVTEXT("<img id=\"Science\"/>{0}"), FText::AsNumber(science100PerRound));
+								//focusBox->AddRichText(LOCTEXT("Science", "Science"), args);
+								focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+									LOCTEXT("Science", "Science"),
+									FText::AsNumber(science100PerRound),
+									assetLoader->ScienceIcon
+								);
+								
+								focusBox->AddSpacer();
 							}
 							
-							ADDTEXT_(INVTEXT("<img id=\"Smile\"/>{0}"), FText::AsNumber(simulation.GetAverageHappiness(townhall.townId())));
-							descriptionBox->AddRichText(LOCTEXT("Happiness", "Happiness"), args);
+							//ADDTEXT_(INVTEXT("<img id=\"Smile\"/>{0}"), FText::AsNumber(sim.GetAverageHappiness(townhall.townId())));
+							//focusBox->AddRichText(LOCTEXT("Happiness", "Happiness"), args);
+							focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+								LOCTEXT("Happiness", "Happiness"),
+								FText::AsNumber(sim.GetAverageHappiness(townhall.townId())),
+								assetLoader->SmileIcon
+							);
 						}
 
-						descriptionBox->AddSpacer(10);
+						ResetIndent();
+						//focusBox->AddSpacer(10);
 
 						// Only show Independence/Allies status for other player's town
 						// TODO: Diplomacy panel...
 						if (townPlayerId != playerId())
 						{
+							focusBox->AddSpacer();
+							
 							// Lord
 							if (townhallPlayerOwned.lordPlayerId() != -1) {
-								descriptionBox->AddRichText(LOCTEXT("Lord", "Lord"), simulation.playerNameT(townhallPlayerOwned.lordPlayerId()));
+								focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
+									LOCTEXT("Lord", "Lord"), 
+									sim.playerNameT(townhallPlayerOwned.lordPlayerId())
+								);
 							}
 							else {
-								descriptionBox->AddRichText(LOCTEXT("Independent State", "Independent State")); // TODO: many vassal => empire
+								focusBox->AddWGT_PunText(UIEnum::WGT_ObjectFocus_TextLeft, 
+									LOCTEXT("Independent State", "Independent State")
+								); // TODO: many vassal => empire
 							}
 
 							// Allies
@@ -1091,16 +1194,16 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							{
 								// Expanded text part
 								for (int32 i = 1; i < allyPlayerIds.size(); i++) {
-									ADDTEXT_(INVTEXT("{0}\n"), simulation.GetTownhallCapital(allyPlayerIds[i]).townNameT());
+									ADDTEXT_(INVTEXT("{0}\n"), sim.GetTownhallCapital(allyPlayerIds[i]).townNameT());
 								}
 
-								descriptionBox->AddRichText(LOCTEXT("Allies", "Allies"),
-									simulation.GetTownhallCapital(allyPlayerIds[0]).townNameT(), ResourceEnum::None, JOINTEXT(args)
+								focusBox->AddRichText(LOCTEXT("Allies", "Allies"),
+									sim.GetTownhallCapital(allyPlayerIds[0]).townNameT(), ResourceEnum::None, JOINTEXT(args)
 								);
 								args.Empty();
 							}
 							else {
-								descriptionBox->AddRichText(LOCTEXT("Allies", "Allies"), LOCTEXT("None", "None"));
+								focusBox->AddRichText(LOCTEXT("Allies", "Allies"), LOCTEXT("None", "None"));
 							}
 
 							// Vassals
@@ -1110,9 +1213,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 								auto getVassalName = [&](int32 vassalBuildingId)
 								{
-									Building& vassalBld = simulation.building(vassalBuildingId);
+									Building& vassalBld = sim.building(vassalBuildingId);
 									if (vassalBld.isEnum(CardEnum::Townhall)) {
-										return simulation.GetTownhallCapital(vassalBld.playerId()).townNameT();
+										return sim.GetTownhallCapital(vassalBld.playerId()).townNameT();
 									}
 									else {
 										return LOCTEXT("Non-player Vassal", "Non-player Vassal");
@@ -1124,10 +1227,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								}
 
 								if (vassalBuildingIds.size() > 0) {
-									descriptionBox->AddRichText(LOCTEXT("Vassals", "Vassals"), getVassalName(vassalBuildingIds[0]), ResourceEnum::None, JOINTEXT(vassalArgs));
+									focusBox->AddRichText(LOCTEXT("Vassals", "Vassals"), getVassalName(vassalBuildingIds[0]), ResourceEnum::None, JOINTEXT(vassalArgs));
 								}
 								else {
-									descriptionBox->AddRichText(LOCTEXT("Vassals", "Vassals"), LOCTEXT("None", "None"));
+									focusBox->AddRichText(LOCTEXT("Vassals", "Vassals"), LOCTEXT("None", "None"));
 								}
 
 							}
@@ -1135,7 +1238,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 						// Note: Statistics replaced with Statistics Bureau
 						//descriptionBox->AddButton("Show Statistics", nullptr, "", this, CallbackEnum::OpenStatistics, true, false, townhall.playerId());
-						descriptionBox->AddLineSpacer(10);
+						//focusBox->AddLineSpacer(10);
 
 						if (building.playerId() == playerId())
 						{
@@ -1150,7 +1253,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						else
 						{
 							// Vassalize
-							if (simulation.IsResearched(playerId(), TechEnum::Vassalize))
+							if (sim.IsResearched(playerId(), TechEnum::Vassalize))
 							{
 
 								
@@ -1160,37 +1263,51 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					}
 					else if (IsProfitBuilding(building.buildingEnum())) 
 					{	
-						ADDTEXT_(INVTEXT("{0}<img id=\"Coin\"/>"), FText::AsNumber(static_cast<Bank*>(&building)->lastRoundProfit));
-						descriptionBox->AddRichText(LOCTEXT("Round profit", "Round profit"), args);
+						//ADDTEXT_(INVTEXT("{0}<img id=\"Coin\"/>"), FText::AsNumber(static_cast<Bank*>(&building)->lastRoundProfit));
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+							LOCTEXT("Round profit", "Round profit"),
+							FText::AsNumber(static_cast<Bank*>(&building)->lastRoundProfit),
+							assetLoader->CoinIcon
+						);
 					}
 					else if (building.isEnum(CardEnum::Farm)) 
 					{
 						Farm& farm = building.subclass<Farm>();
 
 						int32 fertility = farm.fertility();
-						descriptionBox->AddRichText(LOCTEXT("Fertility", "Fertility"), TEXT_PERCENT(fertility));
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
+							LOCTEXT("Fertility", "Fertility"), TEXT_PERCENT(fertility)
+						);
 
-						AddEfficiencyText(farm, descriptionBox);
+						AddEfficiencyText(farm, focusBox);
 
-						descriptionBox->AddRichText(LOCTEXT("Work stage", "Work stage"), farm.farmStageName());
-						descriptionBox->AddRichText(LOCTEXT("Growth percent", "Growth percent"), TEXT_PERCENT(farm.MinCropGrowthPercent()));
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
+							LOCTEXT("Work stage", "Work stage"), farm.farmStageName()
+						);
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
+							LOCTEXT("Growth percent", "Growth percent"), TEXT_PERCENT(farm.MinCropGrowthPercent())
+						);
 
 #if !UE_BUILD_SHIPPING
 						if (PunSettings::IsOn("DebugFocusUI")) {
 							ADDTEXT_(INVTEXT("(Editor)WorkedTiles: {0}\n"), TEXT_NUM(farm.workedTiles()));
 							ADDTEXT_(INVTEXT("(Editor)adjacents: +{0}\n"), TEXT_NUM(building.adjacentCount()));
-							descriptionBox->AddSpecialRichText(INVTEXT("<Yellow>"), args);
+							focusBox->AddSpecialRichText(INVTEXT("<Yellow>"), args);
 						}
 #endif
-						descriptionBox->AddRichText(LOCTEXT("Farm_CurrentPlant", "Current"), GetTileObjInfo(farm.currentPlantEnum).name);
+						focusBox->AddRichText(LOCTEXT("Farm_CurrentPlant", "Current"), GetTileObjInfo(farm.currentPlantEnum).name);
 					}
 					else if (IsRanch(building.buildingEnum()))
 					{
 						Ranch& ranch = building.subclass<Ranch>();
-						ADDTEXT_(INVTEXT("{0}/{1}"), TEXT_NUM(ranch.animalOccupants().size()), TEXT_NUM(ranch.maxAnimals));
-						descriptionBox->AddRichText(LOCTEXT("Animals:", "Animals:"), args);
+						//ADDTEXT_(INVTEXT("{0}/{1}"), TEXT_NUM(ranch.animalOccupants().size()), TEXT_NUM(ranch.maxAnimals));
+						//focusBox->AddRichText(LOCTEXT("Animals:", "Animals:"), args);
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+							LOCTEXT("Animals:", "Animals:"),
+							FText::Format(INVTEXT("{0}/{1}"), TEXT_NUM(ranch.animalOccupants().size()), TEXT_NUM(ranch.maxAnimals))
+						);
 
-						AddEfficiencyText(ranch, descriptionBox);
+						AddEfficiencyText(ranch, focusBox);
 
 						// Add Animal Button
 						if (building.playerId() == playerId())
@@ -1200,11 +1317,11 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							
 							TArray<FText> argsLocal;
 							argsLocal.Add(LOCTEXT("Buy Animal", "Buy Animal"));
-							ADDTEXT(argsLocal, INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(FText::AsNumber(animalCost), animalCost > simulation.moneyCap32(playerId())));
+							ADDTEXT(argsLocal, INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(FText::AsNumber(animalCost), animalCost > sim.moneyCap32(playerId())));
 
-							descriptionBox->AddSpacer();
-							descriptionBox->AddButton2Lines(JOINTEXT(argsLocal), this, CallbackEnum::AddAnimalRanch, showEnabled, false, objectId);
-							descriptionBox->AddSpacer(8);
+							focusBox->AddSpacer();
+							focusBox->AddButton2Lines(JOINTEXT(argsLocal), this, CallbackEnum::AddAnimalRanch, showEnabled, false, objectId);
+							focusBox->AddSpacer(8);
 						}
 
 						// Selection Meshes
@@ -1215,31 +1332,48 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						}
 					}
 					// TODO: Boar should just use the normal inventory?
-					else if (building.isEnum(CardEnum::BoarBurrow)) {
-						ADDTEXT_(INVTEXT("{0}\n"), building.buildingInfo().GetDescription());
+					else if (building.isEnum(CardEnum::BoarBurrow)) 
+					{
+						focusBox->AddSpacer();
+						focusBox->AddWGT_PunRichText(UIEnum::WGT_ObjectFocus_FlavorText,
+							building.buildingInfo().GetDescription()
+						);
+						
 						ADDTEXT__(building.subclass<BoarBurrow>().inventory.ToText());
-						descriptionBox->AddRichText(args, false);
+						focusBox->AddRichText(args, false);
 					}
 
 					else if (IsSpecialProducer(building.buildingEnum())) 
 					{
-						AddEfficiencyText(building, descriptionBox);
+						AddEfficiencyText(building, focusBox);
 
 						if (building.isEnum(CardEnum::Mint)) {
-							ADDTEXT_(INVTEXT("<img id=\"Coin\"/>{0}"), TEXT_NUM(building.seasonalProduction()));
-							descriptionBox->AddRichText(LOCTEXT("Income(per season)", "Income(per season)"), args);
+							focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
+								LOCTEXT("Income(per season)", "Income(per season)"), 
+								TEXT_NUM(building.seasonalProduction()),
+								assetLoader->CoinIcon
+							);
 						}
 						if (building.isEnum(CardEnum::ResearchLab)) {
-							ADDTEXT_(INVTEXT("<img id=\"Science\"/>{0}"), TEXT_NUM(building.seasonalProduction()));
-							descriptionBox->AddRichText(LOCTEXT("Science(per season)", "Science(per season)"), args);
+							focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
+								LOCTEXT("Science(per season)", "Science(per season)"), 
+								TEXT_NUM(building.seasonalProduction()),
+								assetLoader->ScienceIcon
+							);
 						}
 						if (building.isEnum(CardEnum::RegionShrine)) {
-							ADDTEXT_(INVTEXT("<img id=\"Science\"/>{0}"), TEXT_NUM(building.seasonalProduction()));
-							descriptionBox->AddRichText(LOCTEXT("Science(per season)", "Science(per season)"), args);
+							focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
+								LOCTEXT("Science(per season)", "Science(per season)"), 
+								TEXT_NUM(building.seasonalProduction()),
+								assetLoader->ScienceIcon
+							);
 						}
 						if (IsBarrack(building.buildingEnum())) {
-							ADDTEXT_(INVTEXT("<img id=\"Influence\"/>{0}"), TEXT_NUM(building.seasonalProduction()));
-							descriptionBox->AddRichText(LOCTEXT("Influence(per season)", "Influence(per season)"), args);
+							focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
+								LOCTEXT("Influence(per season)", "Influence(per season)"), 
+								TEXT_NUM(building.seasonalProduction()),
+								assetLoader->InfluenceIcon
+							);
 						}
 					}
 					else if (IsStorage(building.buildingEnum()))
@@ -1247,10 +1381,14 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						if (!building.isEnum(CardEnum::Market))
 						{
 							StorageYard& storage = building.subclass<StorageYard>();
-							ADDTEXT_(INVTEXT("{0}/{1}"), TEXT_NUM(storage.tilesOccupied()), TEXT_NUM(storage.storageSlotCount()));
-							descriptionBox->AddRichText(LOCTEXT("Slots", "Slots"), args);
 
-							descriptionBox->AddSpacer(12);
+							Indent(50);
+							focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
+								LOCTEXT("Slots", "Slots"),
+								FText::Format(INVTEXT("{0}/{1}"), TEXT_NUM(storage.tilesOccupied()), TEXT_NUM(storage.storageSlotCount()))
+							);
+							ResetIndent();
+							focusBox->AddSpacer();
 						}
 					}
 					else if (building.isEnum(CardEnum::Tavern) || 
@@ -1258,15 +1396,20 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					{
 						FunBuilding& funBuilding = building.subclass<FunBuilding>();
 						int32 guestCount = funBuilding.guestCountLastRound() + funBuilding.guestCountThisRound();
-						descriptionBox->AddRichText(LOCTEXT("Guests: ", "Guests: "), TEXT_NUM(guestCount));
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
+							LOCTEXT("Guests: ", "Guests: "), TEXT_NUM(guestCount)
+						);
 
-						descriptionBox->AddRichText(LOCTEXT("Service Quality: ", "Service Quality: "), TEXT_NUM(funBuilding.serviceQuality()));
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+							LOCTEXT("Service Quality: ", "Service Quality: "), TEXT_NUM(funBuilding.serviceQuality())
+						);
 					}
 					else if (building.isEnum(CardEnum::Library) ||
 							building.isEnum(CardEnum::School)) 
 					{
-						descriptionBox->AddSpacer();
-						descriptionBox->AddRichText(building.buildingInfo().GetDescription());
+						focusBox->AddWGT_PunRichText(UIEnum::WGT_ObjectFocus_FlavorText,
+							building.buildingInfo().GetDescription()
+						);
 					}
 					//else if (building.isEnum(CardEnum::OreSupplier)) 
 					//{
@@ -1284,8 +1427,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							auto tradingPost = static_cast<TradingPost*>(&building);
 							int32 countdown = tradingPost->CountdownSecondsDisplay();
 
-							AddTradeFeeText(building.subclass<TradeBuilding>(), descriptionBox);
-							AddEfficiencyText(building, descriptionBox);
+							AddTradeFeeText(building.subclass<TradeBuilding>(), focusBox);
+							AddEfficiencyText(building, focusBox);
 
 //#if WITH_EDITOR 
 //							ADDTEXT_(INVTEXT("-- Ticks from last check: {0} ticks"), TEXT_NUM(tradingPost->ticksFromLastCheck()));
@@ -1293,11 +1436,13 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 //							ADDTEXT_(INVTEXT("-- lastCheckTick: {0} secs"), TEXT_NUM(tradingPost->lastCheckTick()));
 //							descriptionBox->AddRichText(args);
 //#endif
-							ADDTEXT_(LOCTEXT("{0} secs", "{0} secs"), TEXT_NUM(countdown));
-							descriptionBox->AddRichText(LOCTEXT("Trade complete in", "Trade complete in"), args);
+							focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
+								LOCTEXT("Trade complete in", "Trade complete in"), 
+								FText::Format(LOCTEXT("{0} secs", "{0} secs"), TEXT_NUM(countdown))
+							);
 
 							bool showEnabled = (tradingPost->playerId() == playerId()) && tradingPost->CanTrade();
-							descriptionBox->AddButton(LOCTEXT("Trade", "Trade"), nullptr, FText(), this, CallbackEnum::TradingPostTrade, showEnabled, false, objectId);
+							focusBox->AddButton(LOCTEXT("Trade", "Trade"), nullptr, FText(), this, CallbackEnum::TradingPostTrade, showEnabled, false, objectId);
 							
 						}
 					}
@@ -1312,25 +1457,28 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							// Display status only if the trade type was chosen...
 							if (tradingCompany.activeResourceEnum != ResourceEnum::None)
 							{
-								descriptionBox->AddRichText(
+								focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
 									LOCTEXT("Maximum trade per round", "Maximum trade per round"), 
 									TEXT_NUM(tradingCompany.tradeMaximumPerRound())
 								);
 
-								AddTradeFeeText(building.subclass<TradeBuilding>(), descriptionBox);
+								AddTradeFeeText(building.subclass<TradeBuilding>(), focusBox);
 
-								AddEfficiencyText(building, descriptionBox);
+								AddEfficiencyText(building, focusBox);
 
-								descriptionBox->AddRichText(
+								focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
 									LOCTEXT("Profit", "Profit"),
-									FText::Format(INVTEXT("{0}<img id=\"Coin\"/>"), TEXT_100SIGNED(tradingCompany.exportMoney100() - tradingCompany.importMoney100()))
+									TEXT_100SIGNED(tradingCompany.exportMoney100() - tradingCompany.importMoney100()),
+									assetLoader->CoinIcon
 								);
 
-								descriptionBox->AddLineSpacer();
+								focusBox->AddLineSpacer();
 							}
 
-							if (tradingCompany.activeResourceEnum == ResourceEnum::None) {
-								descriptionBox->AddRichText(
+							if (tradingCompany.activeResourceEnum == ResourceEnum::None) 
+							{
+								focusBox->AddSpacer();
+								focusBox->AddRichText(
 									TEXT_TAG("<Red>", LOCTEXT("Setup automatic trade below.", "Setup automatic trade below."))
 								);
 							}
@@ -1338,7 +1486,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								FText importExportText = tradingCompany.isImport ? LOCTEXT("Importing", "Importing") : LOCTEXT("Exporting", "Exporting");
 								ADDTEXT_(LOCTEXT("ImportUntil", "{0} until {1}"), importExportText, TEXT_NUM(tradingCompany.targetAmount));
 								
-								descriptionBox->AddIconPair(JOINTEXT(args), tradingCompany.activeResourceEnum, LOCTEXT("ImportTarget", " target"));
+								focusBox->AddIconPair(JOINTEXT(args), tradingCompany.activeResourceEnum, LOCTEXT("ImportTarget", " target"));
 								args.Empty();
 
 								if (tradingCompany.activeResourceEnum != ResourceEnum::None)
@@ -1363,18 +1511,18 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 											ADDTEXT_LOCTEXT("StorageBelowTarget", "(resources in storage already below storage-target)");
 										}
 									}
-									descriptionBox->AddRichText(args);
+									focusBox->AddRichText(args);
 								}
 							}
 
-							descriptionBox->AddSpacer(12);
+							focusBox->AddSpacer();
 
 							if (showWhenOwnedByCurrentPlayer)
 							{
 								static const FText importText = LOCTEXT("Import", "Import");
 								static const FText exportText = LOCTEXT("Export", "Export");
 								
-								descriptionBox->AddDropdown(
+								focusBox->AddDropdown(
 									building.buildingId(),
 									{ importText, exportText },
 									tradingCompany.isImport ? importText : exportText,
@@ -1391,12 +1539,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								});
 							}
 
-							descriptionBox->AddSpacer(12);
+							focusBox->AddSpacer(12);
 
 							// Show choose box
-							descriptionBox->AddChooseResourceElement(tradingCompany.activeResourceEnum, this, CallbackEnum::OpenChooseResource);
+							focusBox->AddChooseResourceElement(tradingCompany.activeResourceEnum, this, CallbackEnum::OpenChooseResource);
 
-							descriptionBox->AddSpacer(12);
+							focusBox->AddSpacer(12);
 
 							// targetAmount
 							// - just opened UI, get it from targetAmount (actual value)
@@ -1406,34 +1554,39 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							}
 							int32 targetAmount = tradingCompany.lastTargetAmountSet;
 							
-							descriptionBox->AddEditableNumberBox(this, CallbackEnum::EditNumberChooseResource, building.buildingId(), 
+							focusBox->AddEditableNumberBox(this, CallbackEnum::EditNumberChooseResource, building.buildingId(), 
 								FText::Format(INVTEXT("{0}: "), LOCTEXT("Target", "Target")), targetAmount
 							);
 
-							descriptionBox->AddLineSpacer(12);
+							focusBox->AddLineSpacer();
 							if (tradingCompany.HasPendingTrade()) {
-								ADDTEXT_(LOCTEXT("{0} secs", "{0} secs"), TEXT_NUM(tradingCompany.CountdownSecondsDisplayInt()));
-								descriptionBox->AddRichText(LOCTEXT("Trade complete in", "Trade complete in"), args);
+								focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
+									LOCTEXT("Trade complete in", "Trade complete in"), 
+									FText::Format(LOCTEXT("{0} secs", "{0} secs"), TEXT_NUM(tradingCompany.CountdownSecondsDisplayInt()))
+								);
 							}
 							else 
 							{
 								// TODO: do we need args on the right?
 								if (tradingCompany.hoverWarning == HoverWarning::NotEnoughMoney) {
-									descriptionBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Import Failed", "Import Failed")), args);
-									descriptionBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Not enough Money", "Not enough Money")), args);
+									focusBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Import Failed", "Import Failed")), args);
+									focusBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Not enough Money", "Not enough Money")), args);
 								}
 								else if (tradingCompany.hoverWarning == HoverWarning::AlreadyReachedTarget) {
-									descriptionBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Import Failed", "Import Failed")), args);
-									descriptionBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Already reached import target", "Already reached import target")), args);
+									focusBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Import Failed", "Import Failed")), args);
+									focusBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Already reached import target", "Already reached import target")), args);
 								}
 								else if (tradingCompany.hoverWarning == HoverWarning::ResourcesBelowTarget) {
-									descriptionBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Export Failed", "Export Failed")), args);
-									descriptionBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Resource below target", "Resource count below storage target")), args);
+									focusBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Export Failed", "Export Failed")), args);
+									focusBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Resource below target", "Resource count below storage target")), args);
 								}
 
 								int32 tradeRetryCountdown = max(0, tradingCompany.TradeRetryCountDownTicks() / Time::TicksPerSecond);
-								ADDTEXT_(LOCTEXT("{0} secs", "{0} secs"), TEXT_NUM(tradeRetryCountdown));
-								descriptionBox->AddRichText(LOCTEXT("Retry trade in", "Retry trade in"), args);
+
+								focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
+									LOCTEXT("Retry trade in", "Retry trade in"), 
+									FText::Format(LOCTEXT("{0} secs", "{0} secs"), TEXT_NUM(tradeRetryCountdown))
+								);
 							}
 
 							// Dropdown / EditableNumberBox set in ObjectDescriptionUI.cpp
@@ -1467,8 +1620,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					}
 					else if (building.isEnum(CardEnum::ShippingDepot))
 					{
-						descriptionBox->AddRichText(LOCTEXT("Choose3Resources", "Choose 3 resources to haul to delivery target"));
-						descriptionBox->AddSpacer(12);
+						focusBox->AddWGT_PunRichText(UIEnum::WGT_ObjectFocus_FlavorText,
+							LOCTEXT("Choose3Resources", "Choose 3 resources to haul to delivery target")
+						);
+						focusBox->AddSpacer(12);
 						
 						TArray<FText> options;
 						options.Add(LOCTEXT("None", "None"));
@@ -1480,7 +1635,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						{
 							ResourceEnum resourceEnum = building.subclass<ShippingDepot>().resourceEnums[index];
 							
-							descriptionBox->AddDropdown(
+							focusBox->AddDropdown(
 								building.buildingId(),
 								options,
 								ResourceName_WithNone(resourceEnum),
@@ -1504,8 +1659,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					{
 						if (showWhenOwnedByCurrentPlayer)
 						{
-							descriptionBox->AddRichText(LOCTEXT("IntercityLogisticsHub_ChooseResources", "Choose 4 resources to take from target town."));
-							descriptionBox->AddSpacer(18);
+							focusBox->AddWGT_PunRichText(UIEnum::WGT_ObjectFocus_FlavorText,
+								LOCTEXT("IntercityLogisticsHub_ChooseResources", "Choose 4 resources to take from target town.")
+							);
+							focusBox->AddSpacer(18);
 
 							auto& hub = building.subclass<IntercityLogisticsHub>();
 
@@ -1528,7 +1685,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 							// Target Town Dropdown
 							{
-								descriptionBox->AddRichText(LOCTEXT("TargetTownDropdown", "Town Target:"));
+								focusBox->AddWGT_PunText(UIEnum::WGT_ObjectFocus_Subheader, 
+									LOCTEXT("TargetTownDropdown", "Town Target:")
+								);
 								
 								TArray<FText> options;
 								options.Add(noneText);
@@ -1548,14 +1707,14 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 								for (int32 townId : tradableTownIds) {
 									if (townId != building.townId()) {
-										options.Add(simulation.townNameT(townId));
+										options.Add(sim.townNameT(townId));
 									}
 								}
 
-								descriptionBox->AddDropdown(
+								focusBox->AddDropdown(
 									building.buildingId(),
 									options,
-									simulation.townNameT(targetTownId),
+									sim.townNameT(targetTownId),
 									[](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex)
 									{
 										auto command = make_shared<FChangeWorkMode>();
@@ -1566,7 +1725,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 									},
 									targetTownDropdownIndex
 								);
-								descriptionBox->AddSpacer(18);
+								focusBox->AddSpacer(18);
 							}
 
 
@@ -1584,7 +1743,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								{
 									ResourceEnum resourceEnum = resourceEnums[index];
 
-									descriptionBox->AddDropdown(
+									focusBox->AddDropdown(
 										building.buildingId(),
 										options,
 										ResourceName_WithNone(resourceEnum),
@@ -1601,7 +1760,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 										index
 										);
 
-									descriptionBox->AddEditableNumberBox(
+									focusBox->AddEditableNumberBox(
 										building.buildingId(),
 										index + numberBoxStartIndex, FText::Format(INVTEXT("{0}: "), LOCTEXT("Target", "Target")),
 										resourceCounts[index],
@@ -1625,7 +1784,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 										FText(), false, resourceEnums[index]
 										);
 
-									descriptionBox->AddSpacer(12);
+									focusBox->AddSpacer(12);
 								};
 
 								for (int32 i = 0; i < resourceEnums.size(); i++) {
@@ -1638,64 +1797,91 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					{
 						int32 oreLeft = building.subclass<Mine>().oreLeft();
 						if (oreLeft > 0) {
-							descriptionBox->AddRichText(LOCTEXT("Resource left", "Resource left"), TEXT_NUM(oreLeft), building.product());
+							focusBox->AddWGT_TextRow_Resource(UIEnum::WGT_ObjectFocus_TextRow,
+								LOCTEXT("Resource left", "Resource left"), 
+								TEXT_NUM(oreLeft), 
+								building.product()
+							);
 						} else {
-							descriptionBox->AddRichText(TEXT_TAG("<Red", LOCTEXT("Mine Depleted", "Mine Depleted")));
+							focusBox->AddRichText(TEXT_TAG("<Red", LOCTEXT("Mine Depleted", "Mine Depleted")));
 						}
 					}
 					else if (IsRegionalBuilding(building.buildingEnum()))
 					{
-						descriptionBox->AddRichText(building.buildingInfo().description);
+						focusBox->AddWGT_PunRichText(UIEnum::WGT_ObjectFocus_FlavorText,
+							building.buildingInfo().description
+						);
 					}
 					else if (building.isEnum(CardEnum::ResourceOutpost))
 					{
 						auto& colony = building.subclass<ResourceOutpost>();
-						descriptionBox->AddRichText(LOCTEXT("Upkeep: ", "Upkeep: "), FText::Format(INVTEXT("{0}<img id=\"Influence\"/>"), TEXT_NUM(colony.GetColonyUpkeep())));
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+							LOCTEXT("Upkeep: ", "Upkeep: "), 
+							TEXT_NUM(colony.GetColonyUpkeep()),
+							assetLoader->InfluenceIcon
+						);
 
-						descriptionBox->AddSpacer();
+						focusBox->AddSpacer();
 
 						ResourceEnum resourceEnum = colony.GetColonyResourceEnum();
 						int32 resourceIncome = colony.GetColonyResourceIncome(resourceEnum);
-						descriptionBox->AddRichText(LOCTEXT("Production (per round):", "Production (per round):"), TEXT_NUM(resourceIncome), resourceEnum);
+						focusBox->AddWGT_TextRow_Resource(UIEnum::WGT_ObjectFocus_TextRow,
+							LOCTEXT("Production (per round):", "Production (per round):"), 
+							TEXT_NUM(resourceIncome), 
+							resourceEnum
+						);
 
-						descriptionBox->AddSpacer();
+						focusBox->AddSpacer();
 
 						// Mine Resources
 						if (IsOreEnum(resourceEnum))
 						{
 							int32 oreLeft = building.oreLeft();
 							if (oreLeft > 0) {
-								descriptionBox->AddRichText(LOCTEXT("Resource left", "Resource left"), TEXT_NUM(oreLeft), building.product());
+								focusBox->AddWGT_TextRow_Resource(UIEnum::WGT_ObjectFocus_TextRow,
+									LOCTEXT("Resource left", "Resource left"), 
+									TEXT_NUM(oreLeft), 
+									building.product()
+								);
 							}
 							else {
-								descriptionBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Mine Depleted", "Mine Depleted")));
+								focusBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Mine Depleted", "Mine Depleted")));
 							}
 						}
 					}
 					else if (building.isEnum(CardEnum::Fort))
 					{
-						descriptionBox->AddRichText(LOCTEXT("AttackRequires", "Attacking this province requires 100% more <img id=\"Influence\"/>."));
+						focusBox->AddRichText(LOCTEXT("AttackRequires", "Attacking this province requires 100% more <img id=\"Influence\"/>."));
 					}
 					else if (IsPowerPlant(buildingEnum))
 					{
+						focusBox->AddRichText(TEXT_TAG("<GrayBold>", LOCTEXT("Consumption (season):", "Consumption (per season):")),
+							TEXT_NUM(building.seasonalConsumption1()), building.input1()
+						);
+
+						focusBox->AddLineSpacer();
+						Indent(5);
+						
 						auto& powerPlant = building.subclass<PowerPlant>();
 
 						auto addElectricityRow = [&](FText leftText, FText rightText, FText tipText)
 						{
-							auto electricityWidget = descriptionBox->AddRichText(leftText, rightText);
+							auto electricityWidget = focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+								leftText, rightText
+							);
 
 							args.Empty();
 							args.Add(tipText);
 							AddToolTip(electricityWidget, args);
 						};
-
-						descriptionBox->AddSpacer();
-
-						addElectricityRow(
-							LOCTEXT("Electricity_FocusUI1", "Electricity Stats:"),
-							FText(),
-							LOCTEXT("Electricity_Tip1", "Electricity production of 1 kW consumes 1 Coal per Round\n<Gray>(8 per year)</>")
+						
+						auto electricityWidget = focusBox->AddWGT_PunText(UIEnum::WGT_ObjectFocus_Subheader,
+							LOCTEXT("Electricity_FocusUI1", "Electricity Stats:")
 						);
+						args.Empty();
+						args.Add(LOCTEXT("Electricity_Tip1", "Electricity production of 1 kW consumes 1 Coal per Round\n<Gray>(8 per year)</>"));
+						AddToolTip(electricityWidget, args);
+						
 
 						addElectricityRow(
 							LOCTEXT("Electricity_FocusUI2", "Building Production Capacity"),
@@ -1703,26 +1889,35 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							LOCTEXT("Electricity_Tip2", "The maximum Electricity Production (kW) from this Building.")
 						);
 
-						auto& townManager = simulation.townManager(powerPlant.playerId());
+						auto& townManager = sim.townManager(powerPlant.playerId());
 						addElectricityRow(
 							LOCTEXT("Electricity_FocusUI3", "City Usage/Capacity"),
 							FText::Format(INVTEXT("{0}/{1}kW"), TEXT_NUM(townManager.electricityConsumption()), TEXT_NUM(townManager.electricityProductionCapacity())),
 							LOCTEXT("Electricity_Tip3", "City-wide Electricity:<space>[Consumption]/[Production Capacity].")
 						);
 
-						descriptionBox->AddSpacer();
+						ResetIndent();
 					}
 					else if (IsWorldWonder(buildingEnum))
 					{
-						descriptionBox->AddRichText(LOCTEXT("WorldWonder_FocusUI_ThisWonderScore", "Wonder Score (This):"), TEXT_NUM(building.subclass<WorldWonder>().WonderScore()));
-						descriptionBox->AddRichText(LOCTEXT("WorldWonder_FocusUI_BuiltNumber", "Built Number:"), TEXT_NUM(building.subclass<WorldWonder>().builtNumber));
+					focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+							LOCTEXT("WorldWonder_FocusUI_ThisWonderScore", "Wonder Score (This):"), 
+							TEXT_NUM(building.subclass<WorldWonder>().WonderScore())
+						);
+					focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+							LOCTEXT("WorldWonder_FocusUI_BuiltNumber", "Built Number:"), 
+							TEXT_NUM(building.subclass<WorldWonder>().builtNumber)
+						);
 
-						descriptionBox->AddSpacer(8);
-						descriptionBox->AddLineSpacer();
-						descriptionBox->AddRichText(LOCTEXT("WorldWonder_FocusUI_PlayerScore", "Player's Total Score:"), TEXT_NUM(simulation.totalScore(building.playerId())));
+						focusBox->AddLineSpacer();
+						
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+							LOCTEXT("WorldWonder_FocusUI_PlayerScore", "Player's Total Score:"), 
+							TEXT_NUM(sim.totalScore(building.playerId()))
+						);
 
 						ExecuteFillScoreBreakdownText([&](FText leftText, FText rightText) {
-							return descriptionBox->AddRichText(leftText, rightText);
+							return focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, leftText, rightText);
 						}, building.playerId());
 					}
 					else {
@@ -1741,8 +1936,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					building.ownedBy(playerId()))
 				{
 					const FText buttonName = isMarket ? LOCTEXT("Manage Market", "Manage Market") : LOCTEXT("Manage Storage", "Manage Storage");
-					descriptionBox->AddButton(buttonName, nullptr, FText(), this, CallbackEnum::OpenManageStorage, true, false, objectId);
-					//descriptionBox->AddLineSpacer(12);
+					focusBox->AddButton(buttonName, nullptr, FText(), this, CallbackEnum::OpenManageStorage, true, false, objectId);
 
 					/*
 					 * Fill ManageStorage
@@ -1884,25 +2078,45 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 					manageStorageBox->AfterAdd();
 				}
+
+
+
+				/*
+				 * Dropdown
+				 *   Comes just before "production (per season)
+				 */
+				if (building.hasWorkModes() &&
+					showWhenOwnedByCurrentPlayer)
+				{
+					focusBox->AddDropdown(
+						building.buildingId(),
+						building.workModeNames(),
+						building.workMode().name,
+						[](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex)
+					{
+						auto command = make_shared<FChangeWorkMode>();
+						command->buildingId = objectId;
+						command->enumInt = dataSource->simulation().building(objectId).workModeIntFromString(sItem);
+						networkInterface->SendNetworkCommand(command);
+					});
+					if (!building.workMode().description.IsEmpty()) {
+						focusBox->AddWGT_PunRichText(UIEnum::WGT_ObjectFocus_FlavorText,
+							building.workMode().description
+						);
+					}
+				}
 				
 
 
 				/*
-				 * Work Status 1
+				 *  Production/Consumption
 				 */
 				bool hasInput1 = building.hasInput1();
 				bool hasInput2 = building.hasInput2();
 				
 				if (building.isConstructed())
 				{
-					// Productivity ... exclude farm
-					if (IsProducer(building.buildingEnum()) ||
-						building.buildingEnum() == CardEnum::FruitGatherer ||
-						building.buildingEnum() == CardEnum::Forester ||
-						building.buildingEnum() == CardEnum::HuntingLodge)
-					{
-						AddEfficiencyText(building, descriptionBox);
-					}
+					Indent(10);
 
 					PUN_DEBUG_EXPR(int32 profitInternal = 0);
 
@@ -1914,8 +2128,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					if (IsProducer(building.buildingEnum()) ||
 						building.buildingEnum() == CardEnum::Forester)
 					{
-						descriptionBox->AddLineSpacer();
-						descriptionBox->AddRichText(perSeasonText, TEXT_NUM(building.seasonalProduction()), building.product());
+						focusBox->AddLineSpacer();
+						focusBox->AddWGT_TextRow_Resource(UIEnum::WGT_ObjectFocus_TextRow, 
+							perSeasonText, 
+							TEXT_NUM(building.seasonalProduction()), 
+							building.product()
+						);
 
 						PUN_DEBUG_EXPR(profitInternal += (building.seasonalProduction() * GetResourceInfo(building.product()).basePrice));
 					}
@@ -1930,23 +2148,31 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						if (pairs.size() == 0) 
 						{
 							if (building.isEnum(CardEnum::Farm)) {
-								descriptionBox->AddRichText(perYearText, noneText);
+								focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, perYearText, noneText);
 							} else {
-								descriptionBox->AddRichText(perSeasonText, noneText);
+								focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, perSeasonText, noneText);
 							}
 						}
 						else if (pairs.size() == 1) 
 						{
 							if (building.isEnum(CardEnum::Farm)) {
-								descriptionBox->AddRichText(perYearText, TEXT_NUM(pairs[0].count), pairs[0].resourceEnum);
+								focusBox->AddWGT_TextRow_Resource(UIEnum::WGT_ObjectFocus_TextRow,
+									perYearText, 
+									TEXT_NUM(pairs[0].count), 
+									pairs[0].resourceEnum
+								);
 							} else {
-								descriptionBox->AddRichText(perSeasonText, TEXT_NUM(pairs[0].count), pairs[0].resourceEnum);
+								focusBox->AddWGT_TextRow_Resource(UIEnum::WGT_ObjectFocus_TextRow,
+									perSeasonText, 
+									TEXT_NUM(pairs[0].count), 
+									pairs[0].resourceEnum
+								);
 							}
 						}
 						else {
-							descriptionBox->AddRichText(perSeasonText);
+							focusBox->AddRichText(perSeasonText);
 							for (ResourcePair pair : pairs) {
-								descriptionBox->AddIconPair(INVTEXT(" "), pair.resourceEnum, TEXT_NUM(pair.count));
+								focusBox->AddIconPair(INVTEXT(" "), pair.resourceEnum, TEXT_NUM(pair.count));
 							}
 						}
 
@@ -1962,11 +2188,11 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					const FText depletionSeasonText = LOCTEXT("Depletion (per season):", "Depletion(per season):");
 
 					// Consumption stat
-					if (IsConsumerWorkplace(building.buildingEnum()))
+					if (IsConsumerWorkplace(buildingEnum) && !IsPowerPlant(buildingEnum))
 					{
 						if (hasInput1 && hasInput2)
 						{
-							descriptionBox->AddRichText(consumptionSeasonText, 
+							focusBox->AddRichText(TEXT_TAG("<GrayBold>", consumptionSeasonText), 
 								TEXT_NUM(building.seasonalConsumption1()), building.input1(), FText(),
 								TEXT_NUM(building.seasonalConsumption2()), building.input2()
 							);
@@ -1974,52 +2200,56 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							PUN_DEBUG_EXPR(profitInternal -= (building.seasonalConsumption1() * GetResourceInfo(building.input1()).basePrice));
 							PUN_DEBUG_EXPR(profitInternal -= (building.seasonalConsumption2() * GetResourceInfo(building.input2()).basePrice));
 							
-							//descriptionBox->AddRichText(consumptionSeasonText);
-							//if (hasInput1) {
-							//	descriptionBox->AddIconPair(FText(), building.input1(), TEXT_NUM(building.seasonalConsumption1()));
-
-							//	PUN_DEBUG_EXPR(profitInternal -= (building.seasonalConsumption1() * GetResourceInfo(building.input1()).basePrice));
-							//}
-							//if (hasInput2) {
-							//	descriptionBox->AddIconPair(FText(), building.input2(), TEXT_NUM(building.seasonalConsumption2()));
-
-							//	PUN_DEBUG_EXPR(profitInternal -= (building.seasonalConsumption2() * GetResourceInfo(building.input2()).basePrice));
-							//}
 						}
 						else if (hasInput1)
 						{
-							descriptionBox->AddRichText(consumptionSeasonText, TEXT_NUM(building.seasonalConsumption1()), building.input1());
+							focusBox->AddRichText(TEXT_TAG("<GrayBold>", consumptionSeasonText), 
+								TEXT_NUM(building.seasonalConsumption1()), building.input1()
+							);
 						}
 					}
 					// Mines consume deposits
 					if (IsMountainMine(building.buildingEnum())) {
-						descriptionBox->AddRichText(depletionSeasonText, TEXT_NUM(building.seasonalConsumption1()), building.product());
+						focusBox->AddRichText(TEXT_TAG("<GrayBold>", depletionSeasonText),
+							TEXT_NUM(building.seasonalConsumption1()), building.product()
+						);
 					}
 
-					PUN_DEBUG_EXPR(descriptionBox->AddRichText(INVTEXT("<Yellow>PROFIT:</>"), TEXT_NUM(profitInternal)));
-				}
-
-				/*
-				 * Dropdown
-				 */
-				if (building.hasWorkModes() &&
-					showWhenOwnedByCurrentPlayer)
-				{
-					descriptionBox->AddDropdown(
-						building.buildingId(),
-						building.workModeNames(),
-						building.workMode().name,
-						[](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex)
-					{
-						auto command = make_shared<FChangeWorkMode>();
-						command->buildingId = objectId;
-						command->enumInt = dataSource->simulation().building(objectId).workModeIntFromString(sItem);
-						networkInterface->SendNetworkCommand(command);
-					});
-					if (!building.workMode().description.IsEmpty()) {
-						descriptionBox->AddRichText(building.workMode().description);
+#if !UE_BUILD_SHIPPING
+					if (PunSettings::IsOn("DebugFocusUI")) {
+						PUN_DEBUG_EXPR(focusBox->AddRichText(INVTEXT("<Yellow>PROFIT:</>"), TEXT_NUM(profitInternal)));
 					}
+#endif
+
+					ResetIndent();
 				}
+				//! End Production/Consumption
+
+				
+
+				///*
+				// * Dropdown OLD SPOT
+				// */
+				//if (building.hasWorkModes() &&
+				//	showWhenOwnedByCurrentPlayer)
+				//{
+				//	focusBox->AddDropdown(
+				//		building.buildingId(),
+				//		building.workModeNames(),
+				//		building.workMode().name,
+				//		[](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex)
+				//	{
+				//		auto command = make_shared<FChangeWorkMode>();
+				//		command->buildingId = objectId;
+				//		command->enumInt = dataSource->simulation().building(objectId).workModeIntFromString(sItem);
+				//		networkInterface->SendNetworkCommand(command);
+				//	});
+				//	if (!building.workMode().description.IsEmpty()) {
+				//		focusBox->AddWGT_PunRichText(UIEnum::WGT_ObjectFocus_FlavorText,
+				//			building.workMode().description
+				//		);
+				//	}
+				//}
 
 				// Forester
 				if (building.isEnum(CardEnum::Forester) &&
@@ -2029,7 +2259,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					
 					auto addDropdown = [&](TArray<FText> options, FText defaultOption, int32 dropdownIndex)
 					{
-						descriptionBox->AddDropdown(
+						focusBox->AddDropdown(
 							building.buildingId(),
 							options,
 							defaultOption,
@@ -2073,7 +2303,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						workModeName.IdenticalTo(PrioritizeCutText))  {
 						addDropdown(cutOptions, cutOptions[static_cast<int>(forester.cuttingEnum)], 1);
 					}
-					descriptionBox->AddSpacer();
+					focusBox->AddSpacer();
 				}
 
 
@@ -2088,38 +2318,37 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					{
 #if !UE_BUILD_SHIPPING
 						if (PunSettings::IsOn("DebugFocusUI")) {
-							descriptionBox->AddRichText("-- workManSecPerBatch100: " + to_string(building.workManSecPerBatch100()));
-							descriptionBox->AddRichText("-- workRevenuePerSec100_perMan_: " + to_string(building.workRevenuePerSec100_perMan_()));
-							descriptionBox->AddRichText("-- batchCost: " + to_string(building.baseBatchCost()));
-							descriptionBox->AddRichText("-- batchProfit: " + to_string(building.batchProfit()));
+							focusBox->AddRichText("-- workManSecPerBatch100: " + to_string(building.workManSecPerBatch100()));
+							focusBox->AddRichText("-- workRevenuePerSec100_perMan_: " + to_string(building.workRevenuePerSec100_perMan_()));
+							focusBox->AddRichText("-- batchCost: " + to_string(building.baseBatchCost()));
+							focusBox->AddRichText("-- batchProfit: " + to_string(building.batchProfit()));
 						}
 #endif
 
 						/*
 						 * Work modes
 						 */
-						//if (BuildingHasDropdown(building.buildingEnum())) {
-						//	addDropDown();
-						//}
 
-						descriptionBox->AddSpacer();
-						descriptionBox->AddRichText(TEXT_TAG("<Subheader>", LOCTEXT("Production batch:", "Production batch:")));
-						descriptionBox->AddProductionChain(
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+							LOCTEXT("Work done", "Work done"),
+							TEXT_PERCENT(building.workPercent())
+						);
+						
+						focusBox->AddSpacer();
+						focusBox->AddSpacer();
+
+						Indent(50);
+						focusBox->AddWGT_PunText(UIEnum::WGT_ObjectFocus_Subheader,
+							LOCTEXT("Production batch:", "Production batch:")
+						);
+						ResetIndent();
+						
+						focusBox->AddProductionChain(
 							{ building.input1(), building.inputPerBatch(building.input1()) },
 							{ building.input2(), building.inputPerBatch(building.input2()) },
 							{ building.product(), building.outputPerBatch() }
 						);
-
-						//if (building.hasInput1() || building.hasInput2()) {
-						//	descriptionBox->AddRichText("Input: ");
-						//}
-						//if (building.hasInput1()) ss << building.inputPerBatch() << " " << GetResourceInfo(building.input1()).name << " ";
-						//if (building.hasInput2()) ss << ", " << building.inputPerBatch() << " " << GetResourceInfo(building.input2()).name;
-						//ss << "\n";
-
-						//ss << "Output: " << building.outputPerBatch() << " " << GetResourceInfo(building.product()).name << "\n\n";
-
-						descriptionBox->AddRichText(LOCTEXT("Work done", "Work done"), TEXT_PERCENT(building.workPercent()));
+						
 
 						if (building.workPercent() > 0) {
 							//ss << "(get " << building.outputPerBatch() << " " << ResourceName(building.product()) << ")\n";
@@ -2141,7 +2370,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								if (needInput1 && needInput2) ADDTEXT_INV_(", ");
 								if (needInput2) ADDTEXT_(INVTEXT("{0} {1}"), TEXT_NUM(building.inputPerBatch(building.input2())), ResourceNameT(building.input2()));
 
-								descriptionBox->AddRichText(TEXT_TAG("<Orange>", JOINTEXT(args)));
+								focusBox->AddSpacer();
+								focusBox->AddSpacer();
+								focusBox->AddRichText(TEXT_TAG("<Orange>", JOINTEXT(args)));
 							}
 						}
 					}
@@ -2149,10 +2380,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					{
 #if !UE_BUILD_SHIPPING
 						if (PunSettings::IsOn("DebugFocusUI")) {
-							descriptionBox->AddRichText("-- workManSecPerBatch100: " + to_string(building.workManSecPerBatch100()));
-							descriptionBox->AddRichText("-- workRevenuePerSec100_perMan_: " + to_string(building.workRevenuePerSec100_perMan_()));
+							focusBox->AddRichText("-- workManSecPerBatch100: " + to_string(building.workManSecPerBatch100()));
+							focusBox->AddRichText("-- workRevenuePerSec100_perMan_: " + to_string(building.workRevenuePerSec100_perMan_()));
 							if (building.hasInput1()) {
-								descriptionBox->AddRichText("-- baseInputValue: " + to_string(building.baseInputCost(building.input1())));
+								focusBox->AddRichText("-- baseInputValue: " + to_string(building.baseInputCost(building.input1())));
 							}
 
 							switch (building.buildingEnum())
@@ -2167,10 +2398,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							case CardEnum::ImmigrationOffice: {
 								auto& consumerIndustry = building.subclass<ConsumerIndustrialBuilding>();
 								if (building.hasInput1()) {
-									descriptionBox->AddRichText("-- baseInputValue: " + to_string(consumerIndustry.baseInputValue()));
-									descriptionBox->AddRichText("-- baseOutputValue: " + to_string(consumerIndustry.baseOutputValue()));
-									descriptionBox->AddRichText("-- baseProfitValue: " + to_string(consumerIndustry.baseProfitValue()));
-									descriptionBox->AddRichText("-- workManSecPerBatch100(calc): " + to_string(consumerIndustry.baseProfitValue() * 100 * 100 / consumerIndustry.buildingInfo().workRevenuePerSec100_perMan()));
+									focusBox->AddRichText("-- baseInputValue: " + to_string(consumerIndustry.baseInputValue()));
+									focusBox->AddRichText("-- baseOutputValue: " + to_string(consumerIndustry.baseOutputValue()));
+									focusBox->AddRichText("-- baseProfitValue: " + to_string(consumerIndustry.baseProfitValue()));
+									focusBox->AddRichText("-- workManSecPerBatch100(calc): " + to_string(consumerIndustry.baseProfitValue() * 100 * 100 / consumerIndustry.buildingInfo().workRevenuePerSec100_perMan()));
 								}
 								break;
 							}
@@ -2207,72 +2438,70 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 						if (productTexture)
 						{
-							descriptionBox->AddSpacer();
-							descriptionBox->AddRichText(TEXT_TAG("<Subheader>", LOCTEXT("Production batch:", "Production batch:")));
-							descriptionBox->AddProductionChain(
+							focusBox->AddSpacer();
+							focusBox->AddWGT_PunText(UIEnum::WGT_ObjectFocus_Subheader, 
+								LOCTEXT("Production batch:", "Production batch:")
+							);
+							focusBox->AddProductionChain(
 								{ building.input1(), building.inputPerBatch(building.input1()) },
 								{ building.input2(), building.inputPerBatch(building.input2()) },
 								{}, productTexture, productStr
 							);
 						}
 
-						//PUN_LOG("_workDone100:%d workManSecPerBatch100:%d batchProfit:%d baseInputPerBatch:%d efficiency:%d workRevenuePerSec100_perMan_:%d", 
-						//	building.workDone100(), building.workManSecPerBatch100(), building.batchProfit(), building.baseInputPerBatch(), building.efficiency(), building.buildingInfo().workRevenuePerSec100_perMan_);
-						
-						descriptionBox->AddRichText(LOCTEXT("Work done", "Work done"), TEXT_PERCENT(building.workPercent()));
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
+							LOCTEXT("Work done", "Work done"), 
+							TEXT_PERCENT(building.workPercent())
+						);
 					}
 				}
 				else if (building.shouldDisplayConstructionUI())
-				{		
-					//resourceAndWorkSS << "constructReserved: " << (int)(100.0f * building.workReserved() / workCost) << "%\n";
-
-					descriptionBox->AddRichText(LOCTEXT("Construct", "Construct"), TEXT_PERCENT(building.constructionPercent()));
+				{	
+					focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
+						LOCTEXT("Construct", "Construct"), 
+						TEXT_PERCENT(building.constructionPercent())
+					);
 
 					// Quick Build
 					if (showWhenOwnedByCurrentPlayer &&
-						(simulation.IsResearched(playerId(), TechEnum::QuickBuild) || PunSettings::IsOn("ForceQuickBuild")))
+						(sim.IsResearched(playerId(), TechEnum::QuickBuild) || PunSettings::IsOn("ForceQuickBuild")))
 					{
 						if (IsRoad(building.buildingEnum()))
 						{
-							const std::vector<int32>& roadIds = simulation.buildingIds(building.townId(), building.buildingEnum());
+							const std::vector<int32>& roadIds = sim.buildingIds(building.townId(), building.buildingEnum());
 							int32 quickBuildAllCost = 0;
 							for (int32 roadId : roadIds) {
-								quickBuildAllCost += simulation.building(roadId).GetQuickBuildCost();
+								quickBuildAllCost += sim.building(roadId).GetQuickBuildCost();
 							}
 
 							TArray<FText> argsLocal;
 							argsLocal.Add(LOCTEXT("Quick Build All", "Quick Build All"));
 							ADDTEXT(argsLocal, INVTEXT("\n<img id=\"Coin\"/>{0}"), FText::AsNumber(quickBuildAllCost));
 
-							descriptionBox->AddSpacer();
-							descriptionBox->AddButton2Lines(JOINTEXT(argsLocal), this, CallbackEnum::QuickBuild, true, false, objectId);
+							focusBox->AddSpacer();
+							focusBox->AddButton2Lines(JOINTEXT(argsLocal), this, CallbackEnum::QuickBuild, true, false, objectId);
 						}
 						else
 						{
 							int32 quickBuildCost = building.GetQuickBuildCost();
-							bool canQuickBuild = simulation.moneyCap32(playerId()) >= quickBuildCost;
+							bool canQuickBuild = sim.moneyCap32(playerId()) >= quickBuildCost;
 
 							TArray<FText> argsLocal;
 							argsLocal.Add(LOCTEXT("Quick Build <Orange>[Ctrl-B]</>", "Quick Build <Orange>[Ctrl-B]</>"));
 							ADDTEXT(argsLocal, INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(FText::AsNumber(quickBuildCost), !canQuickBuild));
 
-							descriptionBox->AddSpacer();
-							descriptionBox->AddButton2Lines(JOINTEXT(argsLocal), this, CallbackEnum::QuickBuild, true, false, objectId);
+							focusBox->AddSpacer();
+							focusBox->AddButton2Lines(JOINTEXT(argsLocal), this, CallbackEnum::QuickBuild, true, false, objectId);
 						}
 					}
 					
 #if !UE_BUILD_SHIPPING
 					if (PunSettings::IsOn("DebugFocusUI")) {
-						descriptionBox->AddRichText("-- buildManSecCost100", to_string(building.buildTime_ManSec100()));
+						focusBox->AddRichText("-- buildManSecCost100", to_string(building.buildTime_ManSec100()));
 					}
 #endif
 				}
 
-				// Work Reservers (Editor)
-				//std::vector<int>& workReservers = building.workReservers();
-				//for (int i = 0; i < workReservers.size(); i++) {
-				//	ss << workReservers[i] << "\n";
-				//}
 
 				/*
 				 * Set Output Target
@@ -2281,15 +2510,15 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				if (showWhenOwnedByCurrentPlayer &&
 					product != ResourceEnum::None)
 				{
-					auto& townManager = simulation.townManager(building.townId());
+					auto& townManager = sim.townManager(building.townId());
 					if (_justOpenedDescriptionUI) {
 						townManager.SetOutputTargetDisplay(product, townManager.GetOutputTarget(product));
 					}
 					int32 targetDisplay = townManager.GetOutputTargetDisplay(product);
 					bool isChecked = (targetDisplay != -1);
 
-					descriptionBox->AddLineSpacer();
-					auto numberBox = descriptionBox->AddEditableNumberBox(this, CallbackEnum::EditableNumberSetOutputTarget, building.buildingId(),
+					focusBox->AddSpacer();
+					auto numberBox = focusBox->AddEditableNumberBox(this, CallbackEnum::EditableNumberSetOutputTarget, building.buildingId(),
 						LOCTEXT("set produce target", "set produce target"), targetDisplay, 
 						FText::Format(INVTEXT("{0} "), LOCTEXT("produce until", "produce until")),
 						isChecked, product
@@ -2306,8 +2535,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				std::vector<ResourceHolderInfo>& holderInfos = building.holderInfos();
 				if (building.shouldDisplayConstructionUI())
 				{
-					descriptionBox->AddLineSpacer();
-					descriptionBox->AddRichText(TEXT_TAG("<Subheader>", LOCTEXT("Resources needed:", "Resources needed:")));
+					focusBox->AddLineSpacer();
+					focusBox->AddWGT_PunText(UIEnum::WGT_ObjectFocus_Subheader, 
+						LOCTEXT("Resources needed:", "Resources needed:")
+					);
 
 
 					std::vector<int32> constructionCosts = building.GetConstructionResourceCost();
@@ -2322,7 +2553,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								TEXT_NUM(building.GetResourceCount(holderInfo)),
 								TEXT_NUM(constructionCosts[i])
 							);
-							descriptionBox->AddIconPair(FText(), resourceEnum, args);
+							focusBox->AddIconPair(FText(), resourceEnum, args);
 						}
 					}
 
@@ -2330,24 +2561,28 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					if (PunSettings::IsOn("DebugFocusUI")) {
 						TArray<FText> argsLocal;
 						ADDTEXT(argsLocal, INVTEXT("hasNeededConstructionResource: {0}"), building.hasNeededConstructionResource() ? INVTEXT("Yes") : INVTEXT("No"));
-						descriptionBox->AddSpecialRichText(INVTEXT("<Yellow>"), argsLocal);
+						focusBox->AddSpecialRichText(INVTEXT("<Yellow>"), argsLocal);
 						ADDTEXT(argsLocal, INVTEXT("NeedConstruct: {0}"), building.NeedConstruct() ? INVTEXT("Yes") : INVTEXT("No"));
-						descriptionBox->AddSpecialRichText(INVTEXT("<Yellow>"), argsLocal);
+						focusBox->AddSpecialRichText(INVTEXT("<Yellow>"), argsLocal);
 					}
 #endif
 				}
 				// Inventory
 				else if (!holderInfos.empty() && buildingEnum != CardEnum::House)
 				{
-					descriptionBox->AddLineSpacer();
+					focusBox->AddLineSpacer();
 
-					const FText inventoryText = TEXT_TAG("<Subheader>", LOCTEXT("Inventory:", "Inventory:"));
+					const FText inventoryText = LOCTEXT("Inventory:", "Inventory:");
 					
 					if (holderInfos.size() > 0) {
-						descriptionBox->AddRichText(inventoryText);
+						focusBox->AddWGT_PunText(UIEnum::WGT_ObjectFocus_Subheader, 
+							inventoryText
+						);
 					}
 					else {
-						descriptionBox->AddRichText(inventoryText, LOCTEXT("None", "None"));
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
+							inventoryText, LOCTEXT("None", "None")
+						);
 					}
 
 					for (ResourceHolderInfo holderInfo : holderInfos)
@@ -2362,7 +2597,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							if (target != 0 || pop != 0 || push != 0) {
 								stringstream sst;
 								sst << "-- Target:" << target << ",Pop:" << pop << ",Push:" << push;
-								descriptionBox->AddRichText(sst);
+								focusBox->AddRichText(sst);
 							}
 						}
 #endif
@@ -2374,7 +2609,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							continue;
 						}
 
-						descriptionBox->AddIconPair(FText(), holderInfo.resourceEnum, TEXT_NUM(resourceCount));
+						focusBox->AddIconPair(FText(), holderInfo.resourceEnum, TEXT_NUM(resourceCount));
 					}
 				}
 
@@ -2435,7 +2670,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				if (building.playerId() == playerId())
 				{
 					if (building.isEnum(CardEnum::Townhall)) {
-						auto& townManage = simulation.townManager(building.townId());
+						auto& townManage = sim.townManager(building.townId());
 						updateCardSlotUI(townManage.cardsInTownhall(), townManage.maxTownhallCards(), true);
 					}
 					else {
@@ -2481,10 +2716,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						}
 					};
 
-					const std::vector<CardEnum>& townBonuses = simulation.townManager(building.townId()).townBonuses();
+					const std::vector<CardEnum>& townBonuses = sim.townManager(building.townId()).townBonuses();
 					fillBonusIcons(_objectDescriptionUI->TownBonusSlots, _objectDescriptionUI->TownBonusBox, townBonuses);
 
-					const std::vector<CardEnum>& globalBonuses = simulation.playerOwned(building.playerId()).globalBonuses();
+					const std::vector<CardEnum>& globalBonuses = sim.playerOwned(building.playerId()).globalBonuses();
 					fillBonusIcons(_objectDescriptionUI->GlobalBonusSlots, _objectDescriptionUI->GlobalBonusBox, globalBonuses);
 					
 				}
@@ -2513,7 +2748,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				const std::vector<int32>& deliverySourceIds = building.deliverySourceIds();
 				for (int32 sourceId : deliverySourceIds)
 				{
-					Building& buildingScope = simulation.buildingChecked(sourceId);
+					Building& buildingScope = sim.buildingChecked(sourceId);
 					FVector displayLocationScope = dataSource()->DisplayLocationTrueCenter(buildingScope);
 					dataSource()->ShowDeliveryArrow(displayLocationScope, displayLocation);
 				}
@@ -2521,7 +2756,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				int32 deliveryTargetId = building.deliveryTargetId();
 				if (deliveryTargetId != -1)
 				{
-					Building& buildingScope = simulation.buildingChecked(deliveryTargetId);
+					Building& buildingScope = sim.buildingChecked(deliveryTargetId);
 					FVector displayLocationScope = dataSource()->DisplayLocationTrueCenter(buildingScope);
 					dataSource()->ShowDeliveryArrow(displayLocation, displayLocationScope);
 				}
@@ -2531,10 +2766,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					// Special case: Logistics Office
 					if (building.isEnum(CardEnum::ShippingDepot))
 					{
-						vector<int32> storageIds = simulation.GetBuildingsWithinRadiusMultiple(building.centerTile(), ShippingDepot::Radius, building.townId(), StorageEnums);
+						vector<int32> storageIds = sim.GetBuildingsWithinRadiusMultiple(building.centerTile(), ShippingDepot::Radius, building.townId(), StorageEnums);
 						for (int32 storageId : storageIds)
 						{
-							Building& buildingScope = simulation.buildingChecked(storageId);
+							Building& buildingScope = sim.buildingChecked(storageId);
 							FVector displayLocationScope = dataSource()->DisplayLocationTrueCenter(buildingScope);
 							dataSource()->ShowDeliveryArrow(displayLocationScope, displayLocation, true);
 						}
@@ -2548,7 +2783,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						std::vector<int32>& occupantIds = house.occupants();
 						for (int32 occupantId : occupantIds)
 						{
-							Building* workplace = simulation.unitAI(occupantId).workplace();
+							Building* workplace = sim.unitAI(occupantId).workplace();
 							if (workplace && !workplace->isEnum(CardEnum::Townhall)) {
 								FVector displayLocationScope = dataSource()->DisplayLocationTrueCenter(*workplace);
 								dataSource()->ShowDeliveryArrow(displayLocation, displayLocationScope, true, true);
@@ -2564,8 +2799,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						std::vector<int32>& occupantIds = building.occupants();
 						for (int32 occupantId : occupantIds)
 						{
-							int32 houseId = simulation.unitAI(occupantId).houseId();
-							if (Building* house = simulation.buildingPtr(houseId))
+							int32 houseId = sim.unitAI(occupantId).houseId();
+							if (Building* house = sim.buildingPtr(houseId))
 							{
 								check(IsHouse(house->buildingEnum()));
 								dataSource()->ShowDeliveryArrow(displayLocation, dataSource()->DisplayLocationTrueCenter(*house), true, true);
@@ -2633,7 +2868,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								moneyText = TEXT_TAG("<Red>", moneyText);
 							}
 
-							bool showExclamation = simulation.parameters(playerId())->NeedTownhallUpgradeNoticed;
+							bool showExclamation = sim.parameters(playerId())->NeedTownhallUpgradeNoticed;
 							bool showEnabled = true;
 
 							CLEARTEXT_();
@@ -2642,7 +2877,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								FText::AsNumber(townhall.townhallLvl + 1)
 							);
 
-							auto unlockSys = simulation.unlockSystem(playerId());
+							auto unlockSys = sim.unlockSystem(playerId());
 							int32 nextTownhallLvl = townhall.townhallLvl + 1;
 							if (nextTownhallLvl < unlockSys->GetEra() + 2) { // townhallLvl 1 ... Era 1, can upgrade
 								ADDTEXT_(INVTEXT("\n<img id=\"Coin\"/>{0}"), moneyText);
@@ -2651,8 +2886,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								showEnabled = false;
 							}
 
-							descriptionBox->AddLineSpacer(8);
-							UPunButton* button = descriptionBox->AddButton2Lines(FText::Join(FText(), args), this, CallbackEnum::UpgradeBuilding, showEnabled, showExclamation, objectId, 0);
+							UPunButton* button = focusBox->AddButton2Lines(FText::Join(FText(), args), this, CallbackEnum::UpgradeBuilding, showEnabled, showExclamation, objectId, 0);
 							args.Empty();
 
 							ADDTEXT_LOCTEXT("Upgrade Rewards", "Upgrade Rewards");
@@ -2696,7 +2930,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 									ADDTEXT_(INVTEXT("\n<img id=\"{0}\"/>{1}"), FText::FromString(resourceTagString), TextRed(TEXT_NUM(upgrade.currentUpgradeResourceNeeded().count), isRed));
 								};
 
-								auto unlockSys = simulation.unlockSystem(playerId());
+								auto unlockSys = sim.unlockSystem(playerId());
 								
 								bool requireEra = upgrade.isEraUpgrade() && !building.IsEraUpgradable();
 
@@ -2722,7 +2956,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								}
 							}
 
-							UPunButton* button = descriptionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::UpgradeBuilding, showEnabled, false,  objectId, upgradeIndex);
+							UPunButton* button = focusBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::UpgradeBuilding, showEnabled, false,  objectId, upgradeIndex);
 
 							// Tooltip
 							args.Empty();
@@ -2751,8 +2985,6 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							AddToolTip(button, args);
 						};
 
-
-						descriptionBox->AddLineSpacer(8);
 						
 						const std::vector<BuildingUpgrade>& upgrades = building.upgrades();
 						for (size_t i = 0; i < upgrades.size(); i++) {
@@ -2764,14 +2996,14 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					/*
 					 * Delivery
 					 */
-					if ((building.product() != ResourceEnum::None && simulation.unlockSystem(playerId())->unlockedSetDeliveryTarget) ||
+					if ((building.product() != ResourceEnum::None && sim.unlockSystem(playerId())->unlockedSetDeliveryTarget) ||
 						building.isEnum(CardEnum::ShippingDepot))
 					{
-						auto button = descriptionBox->AddButton(LOCTEXT("SetDeliveryTarget_Button", "Set Delivery Target"), nullptr, FText(), this, CallbackEnum::SetDeliveryTarget, true, false, objectId);
+						auto button = focusBox->AddButton(LOCTEXT("SetDeliveryTarget_Button", "Set Delivery Target"), nullptr, FText(), this, CallbackEnum::SetDeliveryTarget, true, false, objectId);
 						AddToolTip(button, LOCTEXT("SetDeliveryTarget_Tip", "Set the Target Storage/Market where output resources would be delivered"));
 						
 						if (building.deliveryTargetId() != -1) {
-							descriptionBox->AddButton(LOCTEXT("RemoveDeliveryTarget_Button", "Remove Delivery Target"), nullptr, FText(), this, CallbackEnum::RemoveDeliveryTarget, true, false, objectId);
+							focusBox->AddButton(LOCTEXT("RemoveDeliveryTarget_Button", "Remove Delivery Target"), nullptr, FText(), this, CallbackEnum::RemoveDeliveryTarget, true, false, objectId);
 						}
 					}
 				}
@@ -2817,7 +3049,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				showGroundBoxHighlightDecal();
 			}
 
-			descriptionBox->AfterAdd();
+			focusBox->AfterAdd();
 		}
 
 		/*
@@ -2831,40 +3063,40 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			// Make sure we don't forget to put in string
 			check((int)unit.unitState() < UnitStateName.Num());
 
-			TArray<FText> args;
+			if (unit.isEnum(UnitEnum::Human)) 
+			{
+				int32 age = unit.age() * PlayerParameters::PeopleAgeToGameYear / Time::TicksPerYear + 3; // cheat 3 years older so no 0 years old ppl
+				
+				focusBox->AddWGT_ObjectFocus_Title(
+					unit.GetUnitNameT(),
+					FText::Format(
+						LOCTEXT("Human subtitle", "{0}, Age {1}"),
+						(unit.isChild()) 
+						? (unit.isMale() ? LOCTEXT("Boy", "Boy") : LOCTEXT("Girl", "Girl"))
+						: (unit.isMale() ? LOCTEXT("Man", "Man") : LOCTEXT("Woman", "Woman")),
+						TEXT_NUM(age)
+					)
+				);
 
-			if (unit.isEnum(UnitEnum::Human)) {
-				SetText(_objectDescriptionUI->DescriptionUITitle, TEXT_TAG("<Header>", unit.GetUnitNameT()));
-
-				ADDTEXT_TAG_("<Subheader>", unit.GetTypeName());
-			} else {
-				SetText(_objectDescriptionUI->DescriptionUITitle, TEXT_TAG("<Header>", unit.GetTypeName()));
+			}
+			else {
+				focusBox->AddWGT_ObjectFocus_Title(unit.GetTypeName());
 			}
 			
 #if !UE_BUILD_SHIPPING
 			if (PunSettings::IsOn("DebugFocusUI")) {
+				TArray<FText> args;
 				ADDTEXT_(INVTEXT("[{0}]"), TEXT_NUM(objectId)); // ID
+				focusBox->AddRichText(args);
 			}
 #endif
-			descriptionBox->AddRichText(args);
-			descriptionBox->AddLineSpacer(8);
 
-			if (!unit.isEnum(UnitEnum::Human)) {
-				ADDTEXT_(INVTEXT("{0}: {1}"), 
-					LOCTEXT("Gender", "Gender"),
-					unit.isMale() ? LOCTEXT("male", "male") : LOCTEXT("female", "female")
-				);
+			if (unit.townId() != -1) 
+			{
+				focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Player", "Player"), sim.playerNameT(unit.playerId()), nullptr);
+				focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("City", "City"), sim.townNameT(unit.townId()), nullptr);
 				
-				descriptionBox->AddRichText(args);
-			}
-
-			if (unit.townId() != -1) {
-				ADDTEXT_(INVTEXT("{0}: {1}"), LOCTEXT("Player", "Player"), simulation.playerNameT(unit.playerId()));
-				ADDTEXT_INV_("\n");
-				ADDTEXT_(LOCTEXT("UnitDescriptionUI_City", "City: {0}"), simulation.townNameT(unit.townId()));
-				
-				descriptionBox->AddRichText(args);
-				descriptionBox->AddSpacer(12);
+				focusBox->AddLineSpacer();
 			}
 			
 #if !UE_BUILD_SHIPPING
@@ -2872,27 +3104,34 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			{
 				std::stringstream ss;
 				ss << "-- Tile:(" << unit.unitTile().x << "," << unit.unitTile().y << ")";
-				descriptionBox->AddRichText(ss);
+				focusBox->AddRichText(ss);
 				ss << "-- lastBirthTick:(" << unit.lastPregnantTick() << ")";
-				descriptionBox->AddRichText(ss);
+				focusBox->AddRichText(ss);
 				ss << "animation: " << GetUnitAnimationName(unit.animationEnum());
-				descriptionBox->AddRichText(ss);
+				focusBox->AddRichText(ss);
 			}
 #endif
 
-			int32 age = unit.age() * PlayerParameters::PeopleAgeToGameYear / Time::TicksPerYear + 3; // cheat 3 years older so no 0 years old ppl
-			ADDTEXT_(LOCTEXT("Age: {0} years", "Age: {0} years"), TEXT_NUM(age));
-			
-			descriptionBox->AddRichText(args);
-			descriptionBox->AddLineSpacer();
-			descriptionBox->AddSpacer(8);
-
 			// Show Food/Heat as percent
+			Indent(60);
+			
 			int32 foodPercent = unit.foodActual() * 100 / unit.maxFood();
 			int32 heatPercent = unit.heatActual() * 100 / unit.maxHeat();
-			ADDTEXT_(INVTEXT("{0}: {1}"), LOCTEXT("Food", "Food"), TextNumberColor(TEXT_PERCENT(foodPercent), foodPercent, unit.foodThreshold_Get2Percent(), unit.minWarnFoodPercent()));
-			ADDTEXT_(INVTEXT("<space>{0}: {1}"), LOCTEXT("Heat", "Heat"), TextNumberColor(TEXT_PERCENT(heatPercent), heatPercent, unit.heatGetThresholdPercent(), unit.minWarnHeatPercent()));
-			ADDTEXT_(INVTEXT("<space>{0}: {1}"), LOCTEXT("Health", "Health"), TextNumberColor(TEXT_PERCENT(unit.hp()), unit.hp(), 60, 40));
+			focusBox->AddRichText(
+				TEXT_TAG("<GrayBold>", LOCTEXT("Food", "Food")), 
+				TextNumberColor(TEXT_PERCENT(foodPercent), foodPercent, unit.foodThreshold_Get2Percent(), unit.minWarnFoodPercent())
+			);
+			focusBox->AddRichText(
+				TEXT_TAG("<GrayBold>", LOCTEXT("Heat", "Heat")),
+				TextNumberColor(TEXT_PERCENT(heatPercent), heatPercent, unit.heatGetThresholdPercent(), unit.minWarnHeatPercent())
+			);
+			focusBox->AddRichText(
+				TEXT_TAG("<GrayBold>", LOCTEXT("Health", "Health")),
+				TextNumberColor(TEXT_PERCENT(unit.hp()), unit.hp(), 60, 40)
+			);
+			focusBox->AddLineSpacer();
+
+			ResetIndent();
 			
 			/*
 			 * Happiness
@@ -2900,41 +3139,46 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			if (unit.isEnum(UnitEnum::Human)) 
 			{
 				auto& human = unit.subclass<HumanStateAI>();
-
-				descriptionBox->AddRichTextParsed(args);
-				descriptionBox->AddSpacer(8);
-				descriptionBox->AddLineSpacer();
-				descriptionBox->AddSpacer(8);
 			
 				int32 happinessOverall = human.happinessOverall();
-				ADDTEXT_(INVTEXT("{0}: {1}{2}"), LOCTEXT("Happiness", "Happiness"), ColorHappinessText(happinessOverall, TEXT_PERCENT(happinessOverall)), GetHappinessFace(happinessOverall));
-				descriptionBox->AddRichText(args);
-				descriptionBox->AddSpacer();
+
+				Indent(45);
+				
+				focusBox->AddRichText(
+					FText::Format(INVTEXT("{0} {1}"), LOCTEXT("Happiness", "Happiness"), GetHappinessFace(happinessOverall)),
+					ColorHappinessText(happinessOverall, TEXT_PERCENT(happinessOverall))
+				);
+				focusBox->AddSpacer();
+
+				Indent(50);
 
 				for (size_t i = 0; i < HappinessEnumCount; i++) 
 				{
 					int32 happiness = human.GetHappinessByType(static_cast<HappinessEnum>(i));
-					ADDTEXT_(INVTEXT("  {0} {1}"),
-						ColorHappinessText(happiness, FText::Format(INVTEXT("{0}%"), TEXT_NUM(happiness))),
-						HappinessEnumName[i]
+
+					auto widget = focusBox->AddRichText(
+						FText::Format(
+							INVTEXT("  {0} {1}"),
+							ColorHappinessText(happiness, FText::Format(INVTEXT("{0}%"), TEXT_NUM(happiness))),
+							HappinessEnumName[i]
+						)
 					);
-					auto widget = descriptionBox->AddRichText(args);
 
 					AddToolTip(widget, GetHappinessEnumTip(static_cast<HappinessEnum>(i)));
 				}
+
+				ResetIndent();
+
+				focusBox->AddLineSpacer();
 			}
 
-			descriptionBox->AddRichTextParsed(args);
-			descriptionBox->AddSpacer(8);
-			descriptionBox->AddLineSpacer();
-			descriptionBox->AddSpacer(8);
 
 			// Dying
 			auto dyingMessage = [&](FText dyingDescription) {
-				ADDTEXT_(INVTEXT("<space><Red>{0}</>"), dyingDescription);
-				descriptionBox->AddRichTextParsed(args);
-				descriptionBox->AddSpacer();
+				focusBox->AddRichTextParsed(FText::Format(INVTEXT("<Red>{0}</>"), dyingDescription));
+				focusBox->AddSpacer();
 			};
+			
 			if (unit.foodActual() <= 0) {
 				dyingMessage(LOCTEXT("Dying from starvation", "Dying from starvation"));
 			}
@@ -2962,7 +3206,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				}
 #if !UE_BUILD_SHIPPING
 				if (PunSettings::IsOn("DebugFocusUI")) {
-					descriptionBox->AddRichText("-- Next tools sec", to_string((human.nextToolTick() - Time::Ticks()) / Time::TicksPerSecond));
+					focusBox->AddRichText("-- Next tools sec", to_string((human.nextToolTick() - Time::Ticks()) / Time::TicksPerSecond));
 				}
 #endif
 			}
@@ -2973,8 +3217,13 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				auto& human = unit.subclass<HumanStateAI>();
 
 				{
-					auto widget = descriptionBox->AddRichText(LOCTEXT("Work efficiency", "Work efficiency"), TEXT_PERCENT(human.workEfficiency100()));
+					auto widget = focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+						LOCTEXT("Work efficiency", "Work efficiency"),
+						TEXT_PERCENT(human.workEfficiency100())
+					);
 
+					// Tip
+					TArray<FText> args;
 					ADDTEXT_(
 						LOCTEXT("Work efficiency tip", "Work efficiency: {0}%\n 100% base\n penalties:\n"),
 						TEXT_NUM(human.workEfficiency100())
@@ -3006,56 +3255,73 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					
 					AddToolTip(widget, args);
 				}
-				
-				descriptionBox->AddSpacer();
 			}
 
 			if (unit.isEnum(UnitEnum::Human))
 			{
 				if (unit.tryWorkFailEnum() != TryWorkFailEnum::None) {
-					args.Add(GetTryWorkFailEnumName(unit.tryWorkFailEnum()));
-					args.Add(INVTEXT("\n"));
-					descriptionBox->AddSpacer();
+					//args.Add(GetTryWorkFailEnumName(unit.tryWorkFailEnum()));
+					//args.Add(INVTEXT("\n"));
+					focusBox->AddWGT_PunText(UIEnum::WGT_ObjectFocus_TextLeft, GetTryWorkFailEnumName(unit.tryWorkFailEnum()));
+					focusBox->AddSpacer();
 				}
 			}
-			ADDTEXT_(INVTEXT("{0}: {1}\n"), LOCTEXT("Activity", "Activity"), UnitStateName[static_cast<int>(unit.unitState())]);
+			
+			//ADDTEXT_(INVTEXT("{0}: {1}\n"), LOCTEXT("Activity", "Activity"), UnitStateName[static_cast<int>(unit.unitState())]);
+			focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+				LOCTEXT("Activity", "Activity"), 
+				UnitStateName[static_cast<int>(unit.unitState())]
+			);
 
 			// Workplace (Human)
 			if (unit.isEnum(UnitEnum::Human))
 			{
 				if (unit.workplaceId() != -1)
 				{
-					Building& workplace = simulation.building(unit.workplaceId());
+					Building& workplace = sim.building(unit.workplaceId());
 
 					if (workplace.isConstructed()) {
-						ADDTEXT_(INVTEXT("{0}: {1}"), LOCTEXT("Workplace", "Workplace"), workplace.buildingInfo().GetName());
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+							LOCTEXT("Workplace", "Workplace"), 
+							workplace.buildingInfo().GetName()
+						);
 					}
 					else {
-						ADDTEXT_LOCTEXT("Workplace: Construction Site", "Workplace: Construction Site");
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+							LOCTEXT("Workplace", "Workplace"),
+							LOCTEXT("Construction Site", "Construction Site")
+						);
 					}
 
 #if !UE_BUILD_SHIPPING
 					if (PunSettings::IsOn("DebugFocusUI")) {
-						ADDTEXT_(INVTEXT(" (id: {0})"), TEXT_NUM(unit.workplaceId()));
+						focusBox->AddRichText(FText::Format(
+							INVTEXT(" (id: {0})"), TEXT_NUM(unit.workplaceId())
+						));
 					}
 #endif
-					args.Add(INVTEXT("\n"));
 				}
 				else {
-					ADDTEXT_LOCTEXT("Workplace: none \n", "Workplace: none \n");
+					focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+						LOCTEXT("Workplace", "Workplace"),
+						LOCTEXT("None", "None")
+					);
 				}
 
-				descriptionBox->AddSpacer();
+				focusBox->AddSpacer();
 			}
 
 			// House (Human)
 			if (unit.houseId() != -1) {
 #if !UE_BUILD_SHIPPING
-				if (PunSettings::IsOn("DebugFocusUI")) {
-					FText houseName = simulation.building(unit.houseId()).buildingInfo().GetName();
+				if (PunSettings::IsOn("DebugFocusUI")) 
+				{
+					TArray<FText> args;
+					FText houseName = sim.building(unit.houseId()).buildingInfo().GetName();
 					ADDTEXT_(LOCTEXT("House: X", "House: {0}"), houseName);
 					ADDTEXT_(INVTEXT(" (id: {0})"), TEXT_NUM(unit.houseId()));
 					args.Add(INVTEXT("\n"));
+					focusBox->AddRichText(args);
 				}
 #endif
 			}
@@ -3063,7 +3329,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 #if !UE_BUILD_SHIPPING
 			if (PunSettings::IsOn("DebugFocusUI")) {
 				if (IsAnimal(unit.unitEnum())) {
+					TArray<FText> args;
 					ADDTEXT_(INVTEXT("Home province {0}"), TEXT_NUM(unit.homeProvinceId()));
+					focusBox->AddRichText(args);
 				}
 			}
 #endif
@@ -3075,7 +3343,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					std::stringstream ss;
 					ss << "-- nextActiveTick:" << unit.nextActiveTick() << "\n";
 					ss << "speech:\n" << unit.debugSpeech(true);
-					auto punText = descriptionBox->AddText(ss);
+					auto punText = focusBox->AddText(ss);
 					
 					FSlateFontInfo fontInfo = FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Bold.ttf"), 7);
 					punText->PunText->SetFont(fontInfo);
@@ -3086,47 +3354,40 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				// Animal Arrow to Home Province
 				if (!unit.isEnum(UnitEnum::Human) && unit.homeProvinceId() != -1)
 				{
-					WorldTile2 provinceCenter = simulation.GetProvinceCenterTile(unit.homeProvinceId());
+					WorldTile2 provinceCenter = sim.GetProvinceCenterTile(unit.homeProvinceId());
 					dataSource()->ShowDeliveryArrow(dataSource()->DisplayLocation(unit.unitTile().worldAtom2()), 
 													dataSource()->DisplayLocation(provinceCenter.worldAtom2()));
 				}
 			}
 #endif
 
-			//if (unit.isEnum(UnitEnum::Infantry)) {
-			//	ss << "target:" << unit.subclass<ArmyStateAI>().targetBuildingId() << "\n";
-			//	ss << "garrison:" << unit.subclass<ArmyStateAI>().garrisonBuildingId() << "\n";
-			//}
-
-			descriptionBox->AddRichText(args);
-
 			// Inventory
-			descriptionBox->AddLineSpacer();
-			descriptionBox->AddRichText(LOCTEXT("Inventory:", "Inventory:"));
-			unit.inventory().ForEachResource([&](ResourcePair resource) {
-				descriptionBox->AddIconPair(FText(), resource.resourceEnum, TEXT_NUM(resource.count));
-			});
-			descriptionBox->AddLineSpacer();
+			focusBox->AddLineSpacer();
+
+			if (unit.inventory().Count() > 0)
+			{
+				focusBox->AddWGT_PunText(UIEnum::WGT_ObjectFocus_Subheader, LOCTEXT("Inventory:", "Inventory:"));
+
+				unit.inventory().ForEachResource([&](ResourcePair resource) {
+					focusBox->AddIconPair(FText(), resource.resourceEnum, TEXT_NUM(resource.count), false, false, focusBox->indentation);
+				});
+			}
+			else
+			{
+				focusBox->AddWGT_PunText(UIEnum::WGT_ObjectFocus_Subheader, LOCTEXT("Inventory:", "Inventory:"));
+				focusBox->AddRichText(
+					TEXT_TAG("<Bold>", LOCTEXT("None", "None"))
+				);
+			}
 
 			// Selection Meshes
 			if (unit.houseId() != -1) {
-				//WorldAtom2 atom = simulation.buildingSystem().actualAtomLocation(unit.houseId());
-				//SpawnSelectionMesh(assetLoader->SelectionMaterialYellow, dataSource()->DisplayLocation(atom) + FVector(0, 0, 30));
-
-				FVector selectorLocation = dataSource()->DisplayLocationTrueCenter(simulation.building(unit.houseId()));
+				FVector selectorLocation = dataSource()->DisplayLocationTrueCenter(sim.building(unit.houseId()));
 				SpawnSelectionMesh(assetLoader->SelectionMaterialYellow, selectorLocation);
 			}
 			if (unit.workplaceId() != -1) {
-				//WorldAtom2 atom = simulation.buildingSystem().actualAtomLocation(unit.workplaceId());
-				//SpawnSelectionMesh(assetLoader->SelectionMaterialYellow, dataSource()->DisplayLocation(atom) + FVector(0, 0, 30));
-
-				FVector selectorLocation = dataSource()->DisplayLocationTrueCenter(simulation.building(unit.workplaceId()));
+				FVector selectorLocation = dataSource()->DisplayLocationTrueCenter(sim.building(unit.workplaceId()));
 				SpawnSelectionMesh(assetLoader->SelectionMaterialYellow, selectorLocation);
-
-				// TODO: why this??
-				//if (GameRand::DisplayRand(Time::Ticks()) == 123456789) {
-				//	SpawnSelectionMesh(assetLoader->ReferenceTerrainMaterial, dataSource()->DisplayLocation(atom) + FVector(0, 0, -30));
-				//}
 			}
 
 			// Selection Mesh
@@ -3135,6 +3396,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 			//if (unitEnum != UnitEnum::Human &&
 			//	unitEnum != UnitEnum::WildMan)
+			// TODO: Display Human Mesh
 			{
 				FTransform transform;
 				UnitDisplayState displayState = dataSource()->GetUnitTransformAndVariation(unit, transform);
@@ -3144,7 +3406,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				}
 			}
 
-			descriptionBox->AfterAdd();
+			focusBox->AfterAdd();
 		}
 
 		/*
@@ -3152,97 +3414,79 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 		 */
 		else if (uiState.objectType == ObjectTypeEnum::TileObject)
 		{
-			auto& treeSystem = simulation.treeSystem();
+			auto& treeSystem = sim.treeSystem();
 			TileObjInfo info = treeSystem.tileInfo(objectId);
 			WorldTile2 tile(objectId);
 
-			int32 provinceId = simulation.GetProvinceIdClean(tile);
+			int32 provinceId = sim.GetProvinceIdClean(tile);
 
-			TArray<FText> args;
-			ADDTEXT_(INVTEXT("<Header>{0}</> {1}"), info.name, tile.ToText());
-			SetText(_objectDescriptionUI->DescriptionUITitle, args);
-			descriptionBox->AddSpacer(12);
-
-			//descriptionBox->AddRichText(FText::FromString(WrapStringF(info.description.ToString()))); // WrapString Help Prevent flash
-			descriptionBox->AddRichText(info.description); // WrapString Help Prevent flash
+			focusBox->AddWGT_ObjectFocus_Title(info.name);
+			focusBox->AddWGT_PunRichText(UIEnum::WGT_ObjectFocus_FlavorText, info.description);
+			
 			
 			if (info.IsPlant()) {
-				descriptionBox->AddSpacer(12);
-				const FText growthPercentageText = LOCTEXT("Growth percentage", "Growth percentage");
-				const FText lifespanText = LOCTEXT("Lifespan percentage", "Lifespan percentage");
-				const FText bonusYieldText = LOCTEXT("Bonus yield", "Bonus yield");
-				
-				ADDTEXT_(INVTEXT(
-					"<Bold>{0}:</> {3}%\n"
-					"<Bold>{1}:</> {4}%\n"
-					"<Bold>{2}:</> {5}%"),
-					growthPercentageText, lifespanText, bonusYieldText,
-					TEXT_NUM(treeSystem.growthPercent(objectId)),
-					TEXT_NUM(treeSystem.lifeSpanPercent(objectId)),
-					TEXT_NUM(treeSystem.bonusYieldPercent(objectId))
-				);
-				
-				descriptionBox->AddRichText(args);
+				Indent(20);
+				focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Growth percentage", "Growth percentage"), TEXT_PERCENT(treeSystem.growthPercent(objectId)));
+				focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Lifespan percentage", "Lifespan percentage"), TEXT_PERCENT(treeSystem.lifeSpanPercent(objectId)));
+				focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Bonus yield", "Bonus yield"), TEXT_PERCENT(treeSystem.bonusYieldPercent(objectId)));
+				ResetIndent();
 			}
 
 			if (treeSystem.HasMark(playerId(), objectId))
 			{
-				descriptionBox->AddRichText(LOCTEXT("Marked for gather.", "Marked for gather."));
-				descriptionBox->AddSpacer();
+				focusBox->AddSpacer();
+				focusBox->AddWGT_PunText(UIEnum::WGT_ObjectFocus_TextLeft, LOCTEXT("Marked for gather.", "Marked for gather."));
 			}
 
-			if (treeSystem.IsReserved(objectId))
+#if !UE_BUILD_SHIPPING
+			if (PunSettings::IsOn("DebugFocusUI"))
 			{
-				int32_t reserverId = treeSystem.Reservation(objectId).unitId;
-				UnitStateAI& unit = simulation.unitAI(reserverId);
-
-				ADDTEXT_LOCTEXT("Reserver: \n", "Reserver: \n");
-				if (unit.isEnum(UnitEnum::Human)) {
-					ADDTEXT_(INVTEXT(" {0}\n"), unit.GetUnitNameT());
-				}
-				ADDTEXT_(INVTEXT(" {0} (id: {1})"), unit.unitInfo().name, TEXT_NUM(objectId));
-			}
-
-			descriptionBox->AddRichText(args);
-			descriptionBox->AddSpacer(12);
-
-			{
-				auto& terrainGen = simulation.terrainGenerator();
-
-				ADDTEXT_(LOCTEXT("TileDescription_BiomeFertilityArea", "<Bold>Biome:</> {0}\n<Bold>Fertility:</> {1}%\n<Bold>Province flat area:</> {2} tiles"),
-					terrainGen.GetBiomeNameT(tile),
-					TEXT_NUM(terrainGen.GetFertilityPercent(tile)),
-					TEXT_NUM(simulation.provinceSystem().provinceFlatTileCount(provinceId))
-				);
-
-				int32 provinceDistance = simulation.regionSystem().provinceDistanceToPlayer(provinceId, playerId());
-				if (provinceDistance != MAX_int32)
+				if (treeSystem.IsReserved(objectId))
 				{
-					ADDTEXT_(LOCTEXT("TileDescription_Distance", "\n<Bold>Distance from Townhall:</> {0} provinces"),
-						TEXT_NUM(provinceDistance)
-					);
+					int32_t reserverId = treeSystem.Reservation(objectId).unitId;
+					UnitStateAI& unit = sim.unitAI(reserverId);
+
+					TArray<FText> args;
+					ADDTEXT_LOCTEXT("Reserver: \n", "Reserver: \n");
+					if (unit.isEnum(UnitEnum::Human)) {
+						ADDTEXT_(INVTEXT(" {0}\n"), unit.GetUnitNameT());
+					}
+					ADDTEXT_(INVTEXT(" {0} (id: {1})"), unit.unitInfo().name, TEXT_NUM(objectId));
+					focusBox->AddRichText(args);
 				}
+			}
+#endif
+
+
+			focusBox->AddWGT_PunText(UIEnum::WGT_ObjectFocus_SectionTitle, LOCTEXT("Tile & Province Info", "Tile & Province Info"));
+			
+			{
+				auto& terrainGen = sim.terrainGenerator();
+
+				Indent(40);
+				focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Biome", "Biome"), terrainGen.GetBiomeNameT(tile));
+				focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Fertility", "Fertility"), TEXT_PERCENT(terrainGen.GetFertilityPercent(tile)));
+				focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Appeal", "Appeal"), TEXT_PERCENT(terrainGen.GetAppealPercent(tile)));
+				ResetIndent();
 				
-				descriptionBox->AddRichText(args);
+				focusBox->AddLineSpacer();
 			}
 
-			AddBiomeDebugInfo(tile, descriptionBox);
+			AddBiomeDebugInfo(tile, focusBox);
 
 
-			descriptionBox->AddSpacer();
-
-			// Georesource (automatically add top line)
-			AddGeoresourceInfo(provinceId, descriptionBox);
+			// Georesource
+			AddGeoresourceInfo(provinceId, focusBox);
 
 			// Province Upkeep Info
-			AddProvinceUpkeepInfo(provinceId, descriptionBox);
+			AddProvinceUpkeepInfo(provinceId, focusBox);
 
 			/*
 			 * 
 			 */
 
-			AddSelectStartLocationButton(provinceId, descriptionBox);
-			AddClaimLandButtons(provinceId, descriptionBox);
+			AddSelectStartLocationButton(provinceId, focusBox);
+			AddClaimLandButtons(provinceId, focusBox);
 
 			// Selection Mesh
 			FVector displayLocation = dataSource()->DisplayLocation(tile.worldAtom2());
@@ -3252,7 +3496,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			SpawnSelectionMesh(assetLoader->SelectionMaterialGreen, displayLocation + FVector(0, 0, selectionHeight));
 
 			ShowTileSelectionDecal(dataSource()->DisplayLocation(tile.worldAtom2()));
-			if (simulation.tileOwnerPlayer(tile) == playerId()) {
+			if (sim.tileOwnerPlayer(tile) == playerId()) {
 				ShowRegionSelectionDecal(tile, true);
 			} else {
 				ShowRegionSelectionDecal(tile);
@@ -3268,7 +3512,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			}
 			else if (info.type == ResourceTileType::Bush)
 			{
-				FTransform transform = GameDisplayUtils::GetBushTransform(displayLocation, 0, objectId, treeSystem.tileObjAge(objectId), info, simulation.terrainGenerator().GetBiome(tile));
+				FTransform transform = GameDisplayUtils::GetBushTransform(displayLocation, 0, objectId, treeSystem.tileObjAge(objectId), info, sim.terrainGenerator().GetBiome(tile));
 
 				// Plant uses the mesh array for multiple meshes (for example flower + its leaves)
 				TArray<UStaticMesh*> assets = assetLoader->tileMeshAsset(info.treeEnum).assets;
@@ -3292,56 +3536,155 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				}
 			}
 
-			descriptionBox->AfterAdd();
+			focusBox->AfterAdd();
 		}
 		else if (uiState.objectType == ObjectTypeEnum::Drop)
 		{
-			auto& dropSystem = simulation.dropSystem();
+			auto& dropSystem = sim.dropSystem();
 			WorldTile2 tile(objectId);
 			std::vector<DropInfo> drops = dropSystem.GetDrops(tile);
 
 			if (drops.size() > 0)
 			{
-				auto& resourceSystem = simulation.resourceSystem(drops[0].townId);
+				auto& resourceSystem = sim.resourceSystem(drops[0].townId);
 
-				//stringstream ss;
-				//ss << "<Header>Dropped Resource " << tile.ToString() << "</>";
-				SetText(_objectDescriptionUI->DescriptionUITitle, FText::Format(
-					LOCTEXT("DroppedResourceObjUI", "<Header>Dropped Resource {0}</>"),
-					tile.ToText()
-				));
-				_objectDescriptionUI->BuildingsStatOpener->SetVisibility(ESlateVisibility::Collapsed);
+				//SetText(_objectDescriptionUI->DescriptionUITitle, FText::Format(
+				//	LOCTEXT("DroppedResourceObjUI", "<Header>Dropped Resource {0}</>"),
+				//	tile.ToText()
+				//));
+				focusBox->AddWGT_ObjectFocus_Title(LOCTEXT("DroppedResourceObjUI", "Dropped Resource"));
 				
-				descriptionBox->AddLineSpacer(8);
+				focusBox->AddLineSpacer();
 
 				TArray<FText> args;
-				for (int i = 0; i < drops.size(); i++) {
-					ADDTEXT_(INVTEXT("{0} {1}\n"), 
-						TEXT_NUM(resourceSystem.resourceCount(drops[i].holderInfo)),
-						ResourceNameT(drops[i].holderInfo.resourceEnum)
+				for (int i = 0; i < drops.size(); i++) 
+				{
+					ADDTEXT_(INVTEXT("{0} {1}\n"),
+						ResourceNameT(drops[i].holderInfo.resourceEnum),
+						TEXT_NUM(resourceSystem.resourceCount(drops[i].holderInfo))
 					);
 				}
-
-				descriptionBox->AddRichText(args);
+				focusBox->AddRichText(args);
 
 				// Selection Mesh
 				SpawnSelectionMesh(assetLoader->SelectionMaterialGreen, dataSource()->DisplayLocation(tile.worldAtom2()) + FVector(0, 0, 20));
 
 				ShowTileSelectionDecal(dataSource()->DisplayLocation(tile.worldAtom2()));
 
-				descriptionBox->AfterAdd();
+				focusBox->AfterAdd();
 			}
 			else {
-				simulation.SetDescriptionUIState(DescriptionUIState(ObjectTypeEnum::None, -1));
+				sim.SetDescriptionUIState(DescriptionUIState(ObjectTypeEnum::None, -1));
 			}
 		}
 		else if (uiState.objectType == ObjectTypeEnum::EmptyTile)
-		{	
+		{
 			WorldTile2 tile(objectId);
+			WorldRegion2 region = tile.region();
 
-			AddTileInfo(tile, descriptionBox);
+			if (tile.isValid())
+			{
+				int32 provinceId = sim.GetProvinceIdClean(tile);
+				if (provinceId == -1) {
+					AddImpassableTileInfo(tile, focusBox);
+				}
+				else if (sim.IsWater(tile)) {
+					focusBox->AddWGT_ObjectFocus_Title(LOCTEXT("Water Tile", "Water Tile"));
+				}
+				else if (sim.IsMountain(tile)) {
+					focusBox->AddWGT_ObjectFocus_Title(LOCTEXT("Mountain Tile", "Mountain Tile"));
+				}
+				else
+				{
+					BiomeEnum biomeEnum = sim.GetBiomeEnum(tile);
+					BiomeInfo biomeInfo = GetBiomeInfo(biomeEnum);
 
-			descriptionBox->AfterAdd();
+					focusBox->AddWGT_ObjectFocus_ProvinceTitle(
+						FText::Format(LOCTEXT("TileInfoHeader", "{0} Tile"), biomeInfo.name),
+						biomeInfo.description,
+						biomeEnum
+					);
+
+#if !UE_BUILD_SHIPPING
+					if (PunSettings::IsOn("DebugFocusUI")) {
+						TArray<FText> args;
+						ADDTEXT_(INVTEXT("--Region({0}, {1})\n"), region.x, region.y);
+						ADDTEXT_(INVTEXT("--LocalTile({0}, {1})\n"), tile.localTile(region).x, tile.localTile(region).y)
+							ADDTEXT_(INVTEXT("<Header>{0}</>"), tile.ToText());
+						focusBox->AddSpecialRichText(INVTEXT("<Yellow>"), args);
+					}
+#endif
+
+					// Biome
+					AddBiomeInfo(tile, focusBox);
+					focusBox->AddLineSpacer();
+
+
+					// Region Owner
+					int32 ownerPlayerId = sim.provinceOwnerPlayer(provinceId);
+					focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+						LOCTEXT("TileOwner", "Owner"),
+						(ownerPlayerId == -1 ? INVTEXT("None") : sim.playerNameT(ownerPlayerId))
+					);
+					focusBox->AddLineSpacer();
+					//ADDTEXT_(LOCTEXT("TileOwner", "Owner: {0}"), (ownerPlayerId == -1 ? INVTEXT("None") : sim.playerNameT(ownerPlayerId)));
+					//focusBox->AddRichText(args);
+
+
+					// - Spacer: Tile, Georesource
+					//focusBox->AddSpacer(12);
+
+					// Georesource
+					AddGeoresourceInfo(provinceId, focusBox);
+
+					// Province Upkeep Info
+					AddProvinceUpkeepInfo(provinceId, focusBox);
+
+					// - Spacer: Georesource, Claim
+					//if (ownerPlayerId == -1) {
+					//	focusBox->AddSpacer();
+					//	focusBox->AddLineSpacer(15);
+					//}
+
+					// Claim land
+					AddSelectStartLocationButton(provinceId, focusBox);
+					AddClaimLandButtons(provinceId, focusBox);
+
+					// Extras
+#if !UE_BUILD_SHIPPING
+					if (PunSettings::IsOn("DebugFocusUI"))
+					{
+						TArray<FText> args;
+						FVector displayLocation = dataSource()->DisplayLocation(tile.worldAtom2());
+						ADDTEXT_(INVTEXT("Display ({0},{1})"), displayLocation.X, displayLocation.Y);
+						focusBox->AddSpecialRichText(INVTEXT("<Yellow>"), args);
+
+						int32 provincePlayerId = sim.provinceOwnerPlayer(provinceId);
+						if (provincePlayerId != -1) {
+							AIPlayerSystem& aiPlayer = sim.aiPlayerSystem(provincePlayerId);
+
+							if (aiPlayer.active()) {
+								AIRegionStatus* regionStatus = aiPlayer.regionStatus(provinceId);
+								if (regionStatus) {
+									ADDTEXT_(INVTEXT("AIRegion ({0}, proposed:{1})"),
+										ToFText(AIRegionPurposeName[static_cast<int>(regionStatus->currentPurpose)]),
+										ToFText(AIRegionProposedPurposeName[static_cast<int>(regionStatus->proposedPurpose)])
+									);
+									focusBox->AddSpecialRichText(INVTEXT("<Yellow>"), args);
+								}
+							}
+						}
+					}
+#endif
+
+					ShowTileSelectionDecal(dataSource()->DisplayLocation(tile.worldAtom2()));
+					if (sim.tileOwnerPlayer(tile) != playerId()) {
+						ShowRegionSelectionDecal(tile);
+					}
+				}
+			}
+
+			focusBox->AfterAdd();
 		}
 		else if (uiState.objectType == ObjectTypeEnum::Map)
 		{
@@ -3350,11 +3693,11 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			WorldTile2 tile(objectId);
 
 			if (tile.isValid()) {
-				int32 provinceId = simulation.GetProvinceIdClean(objectId);
-				AddProvinceInfo(provinceId, tile, descriptionBox);
+				int32 provinceId = sim.GetProvinceIdClean(objectId);
+				AddProvinceInfo(provinceId, tile, focusBox);
 			}
 
-			descriptionBox->AfterAdd();
+			focusBox->AfterAdd();
 		}
 
 		_objectDescriptionUI->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
@@ -3589,21 +3932,21 @@ void UObjectDescriptionUISystem::AddSelectStartLocationButton(int32 provinceId, 
 		switch (simulation().GetBiomeProvince(provinceId))
 		{
 		case BiomeEnum::Tundra:
-			ADDTEXT_LOCTEXT("Difficulty: Extreme", "(<Red>Extreme Difficulty</>)");
+			ADDTEXT_LOCTEXT("Difficulty: Extreme", "<Red>Extreme Difficulty</>");
 			break;
 		case BiomeEnum::Desert:
-			ADDTEXT_LOCTEXT("Difficulty: Very Hard", "(<Red>Very Hard Difficulty</>)");
+			ADDTEXT_LOCTEXT("Difficulty: Very Hard", "<Red>Very Hard Difficulty</>");
 			break;
 		case BiomeEnum::BorealForest:
 		case BiomeEnum::Savanna:
 		case BiomeEnum::GrassLand:
-			ADDTEXT_LOCTEXT("Difficulty: Hard", "(<Orange>Hard Difficulty</>)");
+			ADDTEXT_LOCTEXT("Difficulty: Hard", "<Orange>Hard Difficulty</>");
 			break;
 		case BiomeEnum::Jungle:
-			ADDTEXT_LOCTEXT("Difficulty: Somewhat Hard", "(<Orange>Somewhat Hard Difficulty</>)");
+			ADDTEXT_LOCTEXT("Difficulty: Somewhat Hard", "<Orange>Somewhat Hard Difficulty</>");
 			break;
 		case BiomeEnum::Forest:
-			ADDTEXT_LOCTEXT("Difficulty: Normal", "(Normal Difficulty)");
+			ADDTEXT_LOCTEXT("Difficulty: Normal", "<Gray>Normal Difficulty</>");
 			break;
 		}
 
@@ -4155,10 +4498,15 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 			networkInterface()->SendNetworkCommand(command);
 		}
 	}
-
+	else if (callbackEnum == CallbackEnum::TownNameEdit) {
+		_objectDescriptionUI->OpenNameEditPopup();
+	}
+	else if (callbackEnum == CallbackEnum::BuildingSwapArrow) {
+		SwitchToNextBuilding(punWidgetCaller->callbackVar1);
+	}
 }
 
-void UObjectDescriptionUISystem::AddBiomeInfo(WorldTile2 tile, UPunBoxWidget* descriptionBox)
+void UObjectDescriptionUISystem::AddBiomeInfo(WorldTile2 tile, UPunBoxWidget* focusBox)
 {
 	auto& sim = simulation();
 	auto& provinceSys = sim.provinceSystem();
@@ -4167,34 +4515,39 @@ void UObjectDescriptionUISystem::AddBiomeInfo(WorldTile2 tile, UPunBoxWidget* de
 	BiomeEnum biomeEnum = terrainGenerator.GetBiome(tile);
 
 	TArray<FText> args;
-	//ss << fixed << setprecision(0);
 
 	// Don't display Fertility on water
 	if (terrainGenerator.terrainTileType(tile) == TerrainTileType::ImpassableFlat) {
-		ADDTEXT_(INVTEXT("<Red>{0}</>\n"), LOCTEXT("Impassable Terrain", "Impassable Terrain"));
+		//ADDTEXT_(INVTEXT("<Red>{0}</>\n"), LOCTEXT("Impassable Terrain", "Impassable Terrain"));
+		focusBox->AddWGT_PunText(UIEnum::WGT_ObjectFocus_TextLeft, 
+			FText::Format(INVTEXT("<Red>{0}</>\n"), LOCTEXT("Impassable Terrain", "Impassable Terrain"))
+		);
 	}
 	else if (IsWaterTileType(terrainGenerator.terrainTileType(tile))) {
 		
-	} else {
-		ADDTEXT_(LOCTEXT("BiomeInfoFertility", "<Bold>Fertility:</> {0}\n"), TEXT_PERCENT(terrainGenerator.GetFertilityPercent(tile)));
+	}
+	else {
+		//ADDTEXT_(LOCTEXT("BiomeInfoFertility", "<Bold>Fertility:</> {0}\n"), TEXT_PERCENT(terrainGenerator.GetFertilityPercent(tile)));
+		focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+			LOCTEXT("BiomeInfoFertility", "Fertility"), TEXT_PERCENT(terrainGenerator.GetFertilityPercent(tile))
+		);
 
 		int32 provinceId = provinceSys.GetProvinceIdClean(tile);
 		if (provinceId != -1) 
 		{
 			// Province flat area
-			ADDTEXT_(LOCTEXT("BiomeInfoProvinceFlatArea", "<Bold>Province flat area:</> {0} tiles\n"),
-				TEXT_NUM(provinceSys.provinceFlatTileCount(provinceSys.GetProvinceIdClean(tile)))
-			);
+			//ADDTEXT_(LOCTEXT("BiomeInfoProvinceFlatArea", "<Bold>Province flat area:</> {0} tiles\n"),
+			//	TEXT_NUM(provinceSys.provinceFlatTileCount(provinceSys.GetProvinceIdClean(tile)))
+			//);
 
 			// Distance from Townhall
-			int32 provinceDistance = sim.regionSystem().provinceDistanceToPlayer(provinceId, playerId());
-			if (provinceDistance != MAX_int32) {
-				ADDTEXT_(LOCTEXT("BiomeInfoDescription_Distance", "<Bold>Distance from Townhall:</> {0} provinces\n"),
-					TEXT_NUM(provinceDistance)
-				);
-			}
-			//ss << "Defense Bonus:" << (simulation().provinceSystem().provinceIsMountain(provinceId) ? "50%(Mountain)" : "0%");
-			ADDTEXT_INV_("\n");
+			//int32 provinceDistance = sim.regionSystem().provinceDistanceToPlayer(provinceId, playerId());
+			//if (provinceDistance != MAX_int32) {
+			//	ADDTEXT_(LOCTEXT("BiomeInfoDescription_Distance", "<Bold>Distance from Townhall:</> {0} provinces\n"),
+			//		TEXT_NUM(provinceDistance)
+			//	);
+			//}
+			//ADDTEXT_INV_("\n");
 		}
 	}
 
@@ -4202,10 +4555,20 @@ void UObjectDescriptionUISystem::AddBiomeInfo(WorldTile2 tile, UPunBoxWidget* de
 	FloatDet minCelsius = sim.MinCelsius(tile);
 
 
-	ADDTEXT_(INVTEXT("<Bold>{0}</>\n"), LOCTEXT("Temperature", "Temperature"));
-	
-	ADDTEXT_(INVTEXT("  Summer: {0}°C ({1}°F)\n"), TEXT_NUMINT(FDToFloat(maxCelsius)), TEXT_NUMINT(FDToFloat(CelsiusToFahrenheit(maxCelsius))));
-	ADDTEXT_(INVTEXT("  Winter: {0}°C ({1}°F)"), TEXT_NUMINT(FDToFloat(minCelsius)), TEXT_NUMINT(FDToFloat(CelsiusToFahrenheit(minCelsius))));
+	//ADDTEXT_(INVTEXT("<Bold>{0}</>\n"), LOCTEXT("Temperature", "Temperature"));
+	//
+	//ADDTEXT_(INVTEXT("  Summer: {0}°C ({1}°F)\n"), TEXT_NUMINT(FDToFloat(maxCelsius)), TEXT_NUMINT(FDToFloat(CelsiusToFahrenheit(maxCelsius))));
+	//ADDTEXT_(INVTEXT("  Winter: {0}°C ({1}°F)"), TEXT_NUMINT(FDToFloat(minCelsius)), TEXT_NUMINT(FDToFloat(CelsiusToFahrenheit(minCelsius))));
+	//focusBox->AddRichText(args);
+
+	focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+		LOCTEXT("Temperature", "Temperature"),
+		FText::Format(INVTEXT("{0} to {1}°C"), TEXT_NUMINT(FDToFloat(minCelsius)), TEXT_NUMINT(FDToFloat(maxCelsius)))
+	);
+	focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+		FText(),
+		FText::Format(INVTEXT("{0} to {1}°F"), TEXT_NUMINT(FDToFloat(CelsiusToFahrenheit(minCelsius))), TEXT_NUMINT(FDToFloat(CelsiusToFahrenheit(maxCelsius))))
+	);
 	
 	//ADDTEXT_(
 	//	//LOCTEXT("BiomeInfoTemperature", "<Bold>Temperature:</> {0}-{1}°C ({2}-{3}°F)\n"),
@@ -4215,170 +4578,154 @@ void UObjectDescriptionUISystem::AddBiomeInfo(WorldTile2 tile, UPunBoxWidget* de
 	//	TEXT_NUMINT(FDToFloat(CelsiusToFahrenheit(minCelsius))),
 	//	TEXT_NUMINT(FDToFloat(CelsiusToFahrenheit(maxCelsius)))
 	//);
-	descriptionBox->AddRichText(args);
-	descriptionBox->AddSpacer(5);
+	focusBox->AddSpacer(5);
 
 	if (biomeEnum == BiomeEnum::Jungle) {
 		const int32 jungleDiseaseFactor100 = 300;
-		ADDTEXT_(LOCTEXT("DiseaseFreqJungle", "<OrangeRed>Disease Frequency: {0} per year</>"), TEXT_100_2(jungleDiseaseFactor100));
+		focusBox->AddRichText(
+			TEXT_TAG("<Disease>", LOCTEXT("Disease Frequency", "Disease Frequency")), 
+			TEXT_TAG("<Disease>", FText::Format(LOCTEXT("X per year", "{0} per year"), TEXT_100_2(jungleDiseaseFactor100)))
+		);
 	} else {
-		ADDTEXT_LOCTEXT("DiseaseFreq", "<Bold>Disease Frequency:</> 1.0 per year");
+		focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Disease Frequency", "Disease Frequency"), LOCTEXT("1.0 per year", "1.0 per year"));
 	}
 	
-	descriptionBox->AddRichText(args);
-	descriptionBox->AddSpacer(5);
+	focusBox->AddRichText(args);
 	
-	AddBiomeDebugInfo(tile, descriptionBox);
+	AddBiomeDebugInfo(tile, focusBox);
 }
 
 void UObjectDescriptionUISystem::AddBiomeDebugInfo(WorldTile2 tile, UPunBoxWidget* descriptionBox)
 {
 #if WITH_EDITOR
-	auto& terrainGenerator = simulation().terrainGenerator();
-	
-	TArray<FText> args;
-	int32 rainFall100 = terrainGenerator.GetRainfall100(tile);
-	ADDTEXT_(INVTEXT("Rainfall100 {0}"), TEXT_NUM(rainFall100));
-	descriptionBox->AddSpecialRichText(INVTEXT("<Yellow>"), args);
-	ADDTEXT_(INVTEXT("Temp10000: {0}"), TEXT_NUM(terrainGenerator.GetTemperatureFraction10000(tile.x, rainFall100)));
-	descriptionBox->AddSpecialRichText(INVTEXT("-- "), args);
+	if (PunSettings::IsOn("DebugFocusUI"))
+	{
+		auto& terrainGenerator = simulation().terrainGenerator();
+
+		TArray<FText> args;
+		int32 rainFall100 = terrainGenerator.GetRainfall100(tile);
+		ADDTEXT_(INVTEXT("Rainfall100 {0}"), TEXT_NUM(rainFall100));
+		descriptionBox->AddSpecialRichText(INVTEXT("<Yellow>"), args);
+		ADDTEXT_(INVTEXT("Temp10000: {0}"), TEXT_NUM(terrainGenerator.GetTemperatureFraction10000(tile.x, rainFall100)));
+		descriptionBox->AddSpecialRichText(INVTEXT("-- "), args);
+	}
 #endif
 }
 
-void UObjectDescriptionUISystem::AddTileInfo(WorldTile2 tile, UPunBoxWidget* descriptionBox)
+//void UObjectDescriptionUISystem::AddTileInfo(WorldTile2 tile, UPunBoxWidget* descriptionBox)
+//{
+//	WorldRegion2 region = tile.region();
+//	auto& sim = simulation();
+//
+//	TArray<FText> args;
+//	ADDTEXT_(LOCTEXT("TileInfoHeader", "<Header>{0} Tile</>\n"), sim.terrainGenerator().GetBiomeNameT(tile));
+//#if WITH_EDITOR
+//	ADDTEXT_(INVTEXT("--Region({0}, {1})\n"), region.x, region.y);
+//	ADDTEXT_(INVTEXT("--LocalTile({0}, {1})\n"), tile.localTile(region).x, tile.localTile(region).y)
+//#endif
+//	ADDTEXT_(INVTEXT("<Header>{0}</>"), tile.ToText());
+//	SetText(_objectDescriptionUI->DescriptionUITitle, args);
+//	descriptionBox->AddSpacer(12);
+//
+//	// Biome
+//	AddBiomeInfo(tile, descriptionBox);
+//
+//
+//	int32 provinceId = simulation().GetProvinceIdClean(tile);
+//	if (provinceId == -1) {
+//		return;
+//	}
+//	
+//	descriptionBox->AddSpacer(12);
+//
+//	// Region
+//	//ss << "Region (" << region.x << ", " << region.y << ")";
+//	//descriptionBox->AddRichText(ss);
+//
+//	// Region Owner
+//	int32 ownerPlayerId = sim.provinceOwnerPlayer(provinceId);
+//	ADDTEXT_(LOCTEXT("TileOwner", "Owner: {0}"), (ownerPlayerId == -1 ? INVTEXT("None") : sim.playerNameT(ownerPlayerId)));
+//	descriptionBox->AddRichText(args);
+//
+//
+//	// - Spacer: Tile, Georesource
+//	descriptionBox->AddSpacer(12);
+//
+//	// Georesource
+//	AddGeoresourceInfo(provinceId, descriptionBox);
+//
+//	// Province Upkeep Info
+//	AddProvinceUpkeepInfo(provinceId, descriptionBox);
+//
+//	// - Spacer: Georesource, Claim
+//	if (ownerPlayerId == -1) {
+//		descriptionBox->AddSpacer();
+//		descriptionBox->AddLineSpacer(15);
+//	}
+//	
+//	// Claim land
+//	AddSelectStartLocationButton(provinceId, descriptionBox);
+//	AddClaimLandButtons(provinceId, descriptionBox);
+//
+//	// Extras
+//#if WITH_EDITOR
+//	FVector displayLocation = dataSource()->DisplayLocation(tile.worldAtom2());
+//	ADDTEXT_(INVTEXT("Display ({0},{1})"), displayLocation.X, displayLocation.Y);
+//	descriptionBox->AddSpecialRichText(INVTEXT("<Yellow>"), args);
+//
+//	int32 provincePlayerId = sim.provinceOwnerPlayer(provinceId);
+//	if (provincePlayerId != -1) {
+//		AIPlayerSystem& aiPlayer = sim.aiPlayerSystem(provincePlayerId);
+//
+//		if (aiPlayer.active()) {
+//			AIRegionStatus* regionStatus = aiPlayer.regionStatus(provinceId);
+//			if (regionStatus) {
+//				ADDTEXT_(INVTEXT("AIRegion ({0}, proposed:{1})"),
+//					ToFText(AIRegionPurposeName[static_cast<int>(regionStatus->currentPurpose)]),
+//					ToFText(AIRegionProposedPurposeName[static_cast<int>(regionStatus->proposedPurpose)])
+//				);
+//				descriptionBox->AddSpecialRichText(INVTEXT("<Yellow>"), args);
+//			}
+//		}
+//	}
+//#endif
+//
+//	ShowTileSelectionDecal(dataSource()->DisplayLocation(tile.worldAtom2()));
+//	if (sim.tileOwnerPlayer(tile) != playerId()) {
+//		ShowRegionSelectionDecal(tile);
+//	}
+//}
+
+void UObjectDescriptionUISystem::AddImpassableTileInfo(WorldTile2 tile, UPunBoxWidget* focusBox)
 {
-	WorldRegion2 region = tile.region();
-	auto& sim = simulation();
-
-	TArray<FText> args;
-	ADDTEXT_(LOCTEXT("TileInfoHeader", "<Header>{0} Tile</>\n"), sim.terrainGenerator().GetBiomeNameT(tile));
-#if WITH_EDITOR
-	ADDTEXT_(INVTEXT("--Region({0}, {1})\n"), region.x, region.y);
-	ADDTEXT_(INVTEXT("--LocalTile({0}, {1})\n"), tile.localTile(region).x, tile.localTile(region).y)
-#endif
-	ADDTEXT_(INVTEXT("<Header>{0}</>"), tile.ToText());
-	SetText(_objectDescriptionUI->DescriptionUITitle, args);
-	descriptionBox->AddSpacer(12);
-
-	// Biome
-	AddBiomeInfo(tile, descriptionBox);
-
-
-	int32 provinceId = simulation().GetProvinceIdClean(tile);
-	if (provinceId == -1) {
-		return;
+	if (simulation().IsMountain(tile))
+	{
+		focusBox->AddWGT_ObjectFocus_Title(LOCTEXT("High Mountain", "High Mountain"));
+		focusBox->AddWGT_PunRichText(UIEnum::WGT_ObjectFocus_FlavorText, LOCTEXT("High Mountain Desc", "Impassable unclaimed mountain."));
 	}
-	
-	descriptionBox->AddSpacer(12);
-
-	// Region
-	//ss << "Region (" << region.x << ", " << region.y << ")";
-	//descriptionBox->AddRichText(ss);
-
-	// Region Owner
-	int32 ownerPlayerId = sim.provinceOwnerPlayer(provinceId);
-	ADDTEXT_(LOCTEXT("TileOwner", "Owner: {0}"), (ownerPlayerId == -1 ? INVTEXT("None") : sim.playerNameT(ownerPlayerId)));
-	descriptionBox->AddRichText(args);
-
-
-	// - Spacer: Tile, Georesource
-	descriptionBox->AddSpacer(12);
-
-	// Georesource
-	AddGeoresourceInfo(provinceId, descriptionBox, true);
-
-	// Province Upkeep Info
-	AddProvinceUpkeepInfo(provinceId, descriptionBox);
-
-	// - Spacer: Georesource, Claim
-	if (ownerPlayerId == -1) {
-		descriptionBox->AddSpacer();
-		descriptionBox->AddLineSpacer(15);
+	else if (simulation().IsWater(tile)) {
+		focusBox->AddWGT_ObjectFocus_Title(LOCTEXT("Deep Ocean", "Deep Ocean"));
+		focusBox->AddWGT_PunRichText(UIEnum::WGT_ObjectFocus_FlavorText, LOCTEXT("Deep Ocean Desc", "Large body of water."));
 	}
-	
-	// Claim land
-	AddSelectStartLocationButton(provinceId, descriptionBox);
-	AddClaimLandButtons(provinceId, descriptionBox);
-
-	// Extras
-#if WITH_EDITOR
-	FVector displayLocation = dataSource()->DisplayLocation(tile.worldAtom2());
-	ADDTEXT_(INVTEXT("Display ({0},{1})"), displayLocation.X, displayLocation.Y);
-	descriptionBox->AddSpecialRichText(INVTEXT("<Yellow>"), args);
-
-	int32 provincePlayerId = sim.provinceOwnerPlayer(provinceId);
-	if (provincePlayerId != -1) {
-		AIPlayerSystem& aiPlayer = sim.aiPlayerSystem(provincePlayerId);
-
-		if (aiPlayer.active()) {
-			AIRegionStatus* regionStatus = aiPlayer.regionStatus(provinceId);
-			if (regionStatus) {
-				ADDTEXT_(INVTEXT("AIRegion ({0}, proposed:{1})"),
-					ToFText(AIRegionPurposeName[static_cast<int>(regionStatus->currentPurpose)]),
-					ToFText(AIRegionProposedPurposeName[static_cast<int>(regionStatus->proposedPurpose)])
-				);
-				descriptionBox->AddSpecialRichText(INVTEXT("<Yellow>"), args);
-			}
-		}
-	}
-#endif
-
-	ShowTileSelectionDecal(dataSource()->DisplayLocation(tile.worldAtom2()));
-	if (sim.tileOwnerPlayer(tile) != playerId()) {
-		ShowRegionSelectionDecal(tile);
+	else {
+		focusBox->AddWGT_ObjectFocus_Title(LOCTEXT("Unusable Land", "Unusable Land"));
+		focusBox->AddWGT_PunRichText(UIEnum::WGT_ObjectFocus_FlavorText, LOCTEXT("Unusable Land Desc", "Land without any use that no one bothers with."));
 	}
 }
 
-void UObjectDescriptionUISystem::AddProvinceInfo(int32 provinceId, WorldTile2 tile, UPunBoxWidget* descriptionBox)
+void UObjectDescriptionUISystem::AddProvinceInfo(int32 provinceId, WorldTile2 tile, UPunBoxWidget* focusBox)
 {
 	if (provinceId == -1)
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUI_Province1);
-		if (simulation().IsMountain(tile)) {
-			SetText(_objectDescriptionUI->DescriptionUITitle, TEXT_TAG("<Header>", LOCTEXT("High Mountain", "High Mountain")));
-			descriptionBox->AddRichText(LOCTEXT("High Mountain Desc", "Impassable unclaimed mountain."));
-		}
-		else if (simulation().IsWater(tile)) {
-			SetText(_objectDescriptionUI->DescriptionUITitle, TEXT_TAG("<Header>", LOCTEXT("Deep Ocean", "Deep Ocean")));
-			descriptionBox->AddRichText(LOCTEXT("Deep Ocean Desc", "Large body of water."));
-		}
-		else {
-			SetText(_objectDescriptionUI->DescriptionUITitle, TEXT_TAG("<Header>", LOCTEXT("Unusable Land", "Unusable Land")));
-			descriptionBox->AddRichText(LOCTEXT("Unusable Land Desc", "Land without any use that no one bothers with."));
-		}
-
+		AddImpassableTileInfo(tile, focusBox);
+		
 		return;
 	}
 
 	auto& terrainGenerator = simulation().terrainGenerator();
 
 	TArray<FText> args;
-
-	//{
-	//	SCOPE_CYCLE_COUNTER(STAT_PunUI_Province1);
-	//	
-	//	if (provinceId == OceanProvinceId)
-	//	{
-	//		SetText(_objectDescriptionUI->DescriptionUITitle, TEXT_TAG("<Header>", LOCTEXT("Deep Ocean", "Deep Ocean")));
-	//		descriptionBox->AddRichText(LOCTEXT("Deep Ocean Desc", "Large body of water."));
-	//		return;
-	//	}
-
-	//	if (provinceId == MountainProvinceId)
-	//	{
-	//		SetText(_objectDescriptionUI->DescriptionUITitle, TEXT_TAG("<Header>", LOCTEXT("High Mountain", "High Mountain")));
-	//		descriptionBox->AddRichText(LOCTEXT("High Mountain Desc", "Impassable unclaimed mountain."));
-	//		return;
-	//	}
-
-	//	if (provinceId == RiverProvinceId ||
-	//		provinceId == EmptyProvinceId)
-	//	{
-	//		SetText(_objectDescriptionUI->DescriptionUITitle, TEXT_TAG("<Header>", LOCTEXT("Unusable Land", "Unusable Land")));
-	//		descriptionBox->AddRichText(LOCTEXT("Unusable Land Desc", "Land without any use that no one bothers with."));
-	//		return;
-	//	}
-	//}
 
 	provinceId = abs(provinceId);
 
@@ -4388,41 +4735,56 @@ void UObjectDescriptionUISystem::AddProvinceInfo(int32 provinceId, WorldTile2 ti
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUI_ProvinceAddBiomeInfo);
 
-		const FText provinceText = LOCTEXT("Province", "Province");
+		//ADDTEXT_(INVTEXT("<Header>{0} {1}</>"), terrainGenerator.GetBiomeNameT(provinceCenter), provinceText);
+		//SetText(_objectDescriptionUI->DescriptionUITitle, args);
+		//focusBox->AddSpacer(12);
 
-		ADDTEXT_(INVTEXT("<Header>{0} {1}</>"), terrainGenerator.GetBiomeNameT(provinceCenter), provinceText);
-		SetText(_objectDescriptionUI->DescriptionUITitle, args);
-		descriptionBox->AddSpacer(12);
+		//focusBox->AddWGT_ObjectFocus_Title(FText::Format(
+		//	INVTEXT("{0} {1}"),
+		//	terrainGenerator.GetBiomeNameT(provinceCenter), provinceText
+		//));
+
+		BiomeEnum biomeEnum = simulation().GetBiomeEnum(provinceCenter);
+		const BiomeInfo& info = GetBiomeInfo(biomeEnum);
+		
+		focusBox->AddWGT_ObjectFocus_ProvinceTitle(
+			FText::Format(INVTEXT("{0} {1}"), info.name, LOCTEXT("Province", "Province")),
+			info.description,
+			biomeEnum
+		);
 
 		// Biome Description
 		//FString wrappedDescription = WrapStringF(terrainGenerator.GetBiomeInfoFromTile(provinceCenter).description.ToString());
 		//descriptionBox->AddRichText(FText::FromString(wrappedDescription));
 
-		descriptionBox->AddRichText(terrainGenerator.GetBiomeInfoFromTile(provinceCenter).description, false);
+		//focusBox->AddWGT_PunText(
+		//	UIEnum::WGT_ObjectFocus_FlavorText, 
+		//	terrainGenerator.GetBiomeInfoFromTile(provinceCenter).description
+		//);
 
-		descriptionBox->AddSpacer(12);
+		//focusBox->AddSpacer(12);
 
 		// Biome number info
-		AddBiomeInfo(provinceCenter, descriptionBox);
+		AddBiomeInfo(provinceCenter, focusBox);
 
-		descriptionBox->AddSpacer();
+		focusBox->AddLineSpacer();
 	}
 
 	// Georesource
-	AddGeoresourceInfo(provinceId, descriptionBox);
+	AddGeoresourceInfo(provinceId, focusBox);
 
 	// Province Upkeep Info
-	AddProvinceUpkeepInfo(provinceId, descriptionBox);
+	AddProvinceUpkeepInfo(provinceId, focusBox);
 
 	// Claim land
-	AddSelectStartLocationButton(provinceId, descriptionBox);
-	AddClaimLandButtons(provinceId, descriptionBox);
+	AddSelectStartLocationButton(provinceId, focusBox);
+	AddClaimLandButtons(provinceId, focusBox);
 
 	// If no longer in map mode, don't display the selections
 	ShowRegionSelectionDecal(provinceCenter);
 }
 
-void UObjectDescriptionUISystem::AddProvinceUpkeepInfo(int32 provinceIdClean, UPunBoxWidget* descriptionBox)
+void UObjectDescriptionUISystem::AddProvinceUpkeepInfo(int32 provinceIdClean, UPunBoxWidget* focusBox)
 {
 	SCOPE_CYCLE_COUNTER(STAT_PunUI_AddProvinceUpkeepInfo);
 	
@@ -4430,95 +4792,123 @@ void UObjectDescriptionUISystem::AddProvinceUpkeepInfo(int32 provinceIdClean, UP
 		return;
 	}
 
-	descriptionBox->AddLineSpacer(15);
-
 	auto& sim = simulation();
 	int32 provincePlayerId = sim.provinceOwnerPlayer(provinceIdClean);
 	bool unlockedInfluence = sim.unlockedInfluence(playerId());
-	
-	TArray<FText> args;
-	ADDTEXT_TAG_("<Subheader>", LOCTEXT("Province Info:", "Province Info:"));
-	ADDTEXT_INV_("\n");
-	descriptionBox->AddRichText(JOINTEXT(args));
+
+	Indent(15);
+	focusBox->AddWGT_PunText(UIEnum::WGT_ObjectFocus_Subheader, LOCTEXT("Province Info:", "Province Info:"));
 
 	// Already own this province, Show real income/upkeep
 	if (provincePlayerId == playerId())
-	{
-		descriptionBox->AddRichText(FText::Format(
-			LOCTEXT("Income: CoinX", "Income: <img id=\"Coin\"/>{0}"), 
-			TEXT_100(sim.GetProvinceIncome100(provinceIdClean))
-		));
+	{	
+		focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+			LOCTEXT("Income", "Income"),
+			TEXT_100(sim.GetProvinceIncome100(provinceIdClean)),
+			assetLoader()->CoinIcon
+		);
+		
 		
 		if (unlockedInfluence) {
-			descriptionBox->AddRichText(FText::Format(
-				LOCTEXT("Upkeep: InfluenceX", "Upkeep: <img id=\"Influence\"/>{0}"), 
-				TEXT_100(sim.GetProvinceUpkeep100(provinceIdClean, provincePlayerId))
-			));
+			//focusBox->AddRichText(FText::Format(
+			//	LOCTEXT("Upkeep: InfluenceX", "Upkeep: <img id=\"Influence\"/>{0}"), 
+			//	TEXT_100(sim.GetProvinceUpkeep100(provinceIdClean, provincePlayerId))
+			//));
+
+			focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+				LOCTEXT("Upkeep", "Upkeep"),
+				TEXT_100(sim.GetProvinceUpkeep100(provinceIdClean, provincePlayerId)),
+				assetLoader()->InfluenceIcon
+			);
 
 			if (sim.IsBorderProvince(provinceIdClean)) {
-				descriptionBox->AddRichText(
-					LOCTEXT("Border Upkeep: InfluenceX", "Border Upkeep: <img id=\"Influence\"/>5")
+				//focusBox->AddRichText(
+				//	LOCTEXT("Border Upkeep: InfluenceX", "Border Upkeep: <img id=\"Influence\"/>5")
+				//);
+				focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+					LOCTEXT("Border Upkeep", "Border Upkeep"),
+					TEXT_100(500),
+					assetLoader()->InfluenceIcon
 				);
 			}
 		}
 		
-		auto widget = descriptionBox->AddRichText(FText::Format(
-			LOCTEXT("Defense Bonus: X", "Defense Bonus: {0}"),
+		auto widget = focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+			LOCTEXT("Defense Bonus", "Defense Bonus"),
 			TEXT_PERCENT(sim.GetProvinceAttackCostPercent(provinceIdClean))
-		));
+		);
 		AddToolTip(widget, sim.GetProvinceDefenseBonusTip(provinceIdClean));
 	}
 	// Other player's Home Province
 	else if (provincePlayerId != -1 && sim.homeProvinceId(provincePlayerId) == provinceIdClean)
 	{
-		descriptionBox->AddRichText(FText::Format(LOCTEXT("Home Province of X", 
-			"Home Province of {0}"),
+		focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+			LOCTEXT("Home Province of X", "Home Province of"),
 			sim.playerNameT(provincePlayerId)
-		));
+		);
 		
-		auto widget = descriptionBox->AddRichText(FText::Format(
-			LOCTEXT("VassalizeDefenseBonus:X", "Vassalize Defense Bonus: {0}"),
+		auto widget = focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+			LOCTEXT("VassalizeDefenseBonus", "Vassalize Defense Bonus"),
 			TEXT_PERCENT(sim.GetProvinceVassalizeDefenseBonus(provinceIdClean))
-		));
+		);
 		
 		AddToolTip(widget, sim.GetProvinceVassalizeDefenseBonusTip(provinceIdClean));
 	}
 	else 
 	{
-		descriptionBox->AddRichText(FText::Format(
-			LOCTEXT("BaseIncome:CoinX", "Base Income: <img id=\"Coin\"/>{0}"),
-			TEXT_100(sim.GetProvinceIncome100(provinceIdClean))
-		));
+		focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+			LOCTEXT("BaseIncome", "Base Income"),
+			TEXT_100(sim.GetProvinceIncome100(provinceIdClean)),
+			assetLoader()->CoinIcon
+		);
 		
 		if (unlockedInfluence) {
-			descriptionBox->AddRichText(FText::Format(
-				LOCTEXT("BaseUpkeep:InfluenceX", "Base Upkeep: <img id=\"Influence\"/>{0}"),
-				TEXT_100(sim.GetProvinceBaseUpkeep100(provinceIdClean))
-			));
+			focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+				LOCTEXT("BaseUpkeep", "Base Upkeep"),
+				TEXT_100(sim.GetProvinceBaseUpkeep100(provinceIdClean)),
+				assetLoader()->InfluenceIcon
+			);
 		}
 		
-		auto widget = descriptionBox->AddRichText(FText::Format(
-			LOCTEXT("DefenseBonus:X", "Defense Bonus: {0}"),
+		auto widget = focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+			LOCTEXT("DefenseBonus", "Defense Bonus"),
 			TEXT_PERCENT(sim.GetProvinceAttackCostPercent(provinceIdClean))
-		));
+		);
 		AddToolTip(widget, sim.GetProvinceDefenseBonusTip(provinceIdClean));
 	}
 
 
+	// Distance from Townhall
+	int32 provinceDistance = sim.regionSystem().provinceDistanceToPlayer(provinceIdClean, playerId());
+	if (provinceDistance != MAX_int32) {
+		focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+			LOCTEXT("BiomeInfoDescription_Distance", "Distance to Townhall"),
+			FText::Format(LOCTEXT("{0} provinces", "{0} provinces"), TEXT_NUM(provinceDistance))
+		);
+	}
+
+	// Flat Area
+	focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+		LOCTEXT("BiomeInfoDescription_FlatArea", "Flat Area"),
+		FText::Format(LOCTEXT("{0} tiles", "{0} tiles"), TEXT_NUM(simulation().provinceSystem().provinceFlatTileCount(provinceIdClean)))
+	);
+
 #if !UE_BUILD_SHIPPING
 	if (PunSettings::IsOn("DebugFocusUI")) {
+		TArray<FText> args;
 		ADDTEXT_(INVTEXT("GetProvinceBaseClaimPrice: {0}"), TEXT_NUM(simulation().GetProvinceBaseClaimPrice(provinceIdClean)));
 		ADDTEXT_(INVTEXT("GetProvinceClaimCostPenalty_DistanceFromTownhall: {0}"), TEXT_NUM(simulation().GetProvinceClaimCostPenalty_DistanceFromTownhall(provinceIdClean, playerId())));
 		ADDTEXT_(INVTEXT("GetProvinceClaimPrice: {0}"), TEXT_NUM(simulation().GetProvinceClaimPrice(provinceIdClean, playerId(), ClaimConnectionEnum::Flat)));
-		descriptionBox->AddRichText(JOINTEXT(args));
+		focusBox->AddRichText(JOINTEXT(args));
 	}
 #endif
 	
+	ResetIndent();
 	
-	descriptionBox->AddSpacer(12);
+	focusBox->AddSpacer(12);
 }
 
-void UObjectDescriptionUISystem::AddGeoresourceInfo(int32 provinceId, UPunBoxWidget* descriptionBox, bool showTopLine)
+void UObjectDescriptionUISystem::AddGeoresourceInfo(int32 provinceId, UPunBoxWidget* focusBox)
 {
 	SCOPE_CYCLE_COUNTER(STAT_PunUI_AddGeoresourceInfo);
 	
@@ -4534,61 +4924,65 @@ void UObjectDescriptionUISystem::AddGeoresourceInfo(int32 provinceId, UPunBoxWid
 	GeoresourceNode node = georesourceSys.georesourceNode(provinceId);
 	ProvinceSystem& provinceSys = simulation.provinceSystem();
 	bool isMountain = provinceSys.provinceMountainTileCount(provinceId) > 0;
+
+	bool shouldShowResource = node.HasResource();
+	if (node.georesourceEnum == GeoresourceEnum::Oil) {
+		shouldShowResource = simulation.IsResearched(playerId(), TechEnum::Petroleum);
+	}
+
 	
-	if (node.HasResource())
+	// No Georesource and mountain for stone
+	if (!shouldShowResource && !isMountain) {
+		return;
+	}
+
+	focusBox->AddWGT_PunText(UIEnum::WGT_ObjectFocus_Subheader, LOCTEXT("Resources:", "Resources:"));
+	
+	if (shouldShowResource)
 	{
-		bool shouldShowResource = true;
-		if (node.georesourceEnum == GeoresourceEnum::Oil) {
-			shouldShowResource = simulation.IsResearched(playerId(), TechEnum::Petroleum);
-		}
-		
-		if (shouldShowResource)
+		if (IsFarmGeoresource(node.georesourceEnum))  
 		{
-			if (showTopLine) {
-				descriptionBox->AddLineSpacer(15);
-			}
-
-			descriptionBox->AddRichText(TEXT_TAG("<Header>", node.info().name));
-			descriptionBox->AddSpacer(8);
-
-			descriptionBox->AddRichText(node.info().description);
-			descriptionBox->AddSpacer();
-
-			if (node.depositAmount > 0 || isMountain) {
-				descriptionBox->AddRichText(LOCTEXT("Resource amount:", "Resource amount:"));
-
-				if (node.depositAmount > 0) {
-					descriptionBox->AddIconPair(FText(), node.info().resourceEnum, TEXT_NUM(node.depositAmount));
-				}
-				if (isMountain) {
-					descriptionBox->AddIconPair(FText(), ResourceEnum::Stone, TEXT_NUM(node.stoneAmount));
-				}
-
-				descriptionBox->AddSpacer();
-			}
-			return;
+			focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_InventoryEntry,
+				GetResourceInfo(node.info().resourceEnum).name,
+				LOCTEXT("Available", "Available"),
+				assetLoader()->GetGeoresourceIcon(node.info().resourceEnum)
+			);
 		}
+		else {
+			focusBox->AddWGT_TextRow_Resource(UIEnum::WGT_ObjectFocus_InventoryEntry,
+				GetResourceInfo(node.info().resourceEnum).name,
+				TEXT_NUM(node.depositAmount),
+				node.info().resourceEnum
+			);
+			
+			//descriptionBox->AddIconPair(FText(), node.info().resourceEnum, TEXT_NUM(node.depositAmount));
+		}
+
+		//descriptionBox->AddSpacer();
 	}
 
 	if (isMountain)
 	{
-		if (showTopLine) {
-			descriptionBox->AddLineSpacer(15);
-		}
-		
-		descriptionBox->AddRichText(LOCTEXT("Stone deposit:", "Stone deposit:"));
-		descriptionBox->AddIconPair(FText(), ResourceEnum::Stone, TEXT_NUM(node.stoneAmount));
+		focusBox->AddWGT_TextRow_Resource(UIEnum::WGT_ObjectFocus_InventoryEntry,
+			GetResourceInfo(ResourceEnum::Stone).name,
+			TEXT_NUM(node.stoneAmount),
+			ResourceEnum::Stone
+		);
 	}
+
+	focusBox->AddLineSpacer();
 }
 
-void UObjectDescriptionUISystem::AddEfficiencyText(Building& building, UPunBoxWidget* descriptionBox)
+void UObjectDescriptionUISystem::AddEfficiencyText(Building& building, UPunBoxWidget* focusBox)
 {
 	const FText efficiencyText = LOCTEXT("Efficiency", "Efficiency");
 	const FText baseText = LOCTEXT("Base", "Base");
 	
-	auto widget = descriptionBox->AddRichText(efficiencyText, TEXT_PERCENT(building.efficiency()));
+	auto widget = focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
+		efficiencyText, TEXT_PERCENT(building.efficiency())
+	);
 
-	if (descriptionBox->IsHovered())
+	if (focusBox->IsHovered())
 	{
 		TArray<FText> args;
 
@@ -4635,7 +5029,9 @@ void UObjectDescriptionUISystem::AddEfficiencyText(Building& building, UPunBoxWi
 	// Job Happiness
 	if (building.maxOccupants() > 0) {
 		int32 jobHappiness = building.GetJobHappiness();
-		descriptionBox->AddRichText(LOCTEXT("Job Happiness", "Job Happiness"), ColorHappinessText(jobHappiness, TEXT_PERCENT(jobHappiness)));
+		focusBox->AddRichText(
+			TEXT_TAG("<GrayBold>", LOCTEXT("Job Happiness", "Job Happiness")), ColorHappinessText(jobHappiness, TEXT_PERCENT(jobHappiness))
+		);
 	}
 }
 

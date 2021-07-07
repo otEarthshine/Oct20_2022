@@ -29,7 +29,7 @@ struct UnitSkelMeshState
 {
 	static const int32 animationChangeDelayTicks = 12;
 	
-	UnitAnimationEnum animationEnum = UnitAnimationEnum::None;
+	UnitAnimationEnum animationEnum = UnitAnimationEnum::Wait;
 	int32 animationChangeDelayCountDown = animationChangeDelayTicks;
 	float animationPlayRate = 10.0f;
 	int32 customDepth = 0;
@@ -209,7 +209,8 @@ public:
 	void SetHighlight(UnitEnum unitEnum, int32 customDepthIndex)
 	{
 		LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayUnit);
-		
+
+		// Used for highlighting animals
 		int32 variationCount = _assetLoader->unitMeshCount(unitEnum);
 		for (int32 i = 0; i < variationCount; i++) {
 			_unitMeshes1->SetCustomDepth(GetUnitDisplayEnum(unitEnum, i), customDepthIndex);

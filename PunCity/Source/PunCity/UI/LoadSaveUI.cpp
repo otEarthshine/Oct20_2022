@@ -25,8 +25,8 @@ void ULoadSaveUI::PunInit(UPunWidget* parent)
 	
 	ConfirmBlur->SetVisibility(ESlateVisibility::Collapsed);
 	ConfirmUI->SetVisibility(ESlateVisibility::Collapsed);
-	ConfirmUI->ConfirmYesButton->OnClicked.AddDynamic(this, &ULoadSaveUI::OnClickConfirmDeleteGameButton);
-	ConfirmUI->ConfirmNoButton->OnClicked.AddDynamic(this, &ULoadSaveUI::OnClickCancelDeleteGameButton);
+	ConfirmUI->ConfirmYesButton->CoreButton->OnClicked.AddDynamic(this, &ULoadSaveUI::OnClickConfirmDeleteGameButton);
+	ConfirmUI->ConfirmNoButton->CoreButton->OnClicked.AddDynamic(this, &ULoadSaveUI::OnClickCancelDeleteGameButton);
 }
 
 void ULoadSaveUI::OpenSaveUI()

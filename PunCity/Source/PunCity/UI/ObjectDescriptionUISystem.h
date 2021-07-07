@@ -46,9 +46,35 @@ public:
 		return _objectDescriptionUI->EmptyCardSlots;
 	}
 
-	void SwitchToNextBuildingUI()
+	void SwitchToNextBuilding(bool isLeft)
 	{
-		return _objectDescriptionUI->SwitchToNextBuilding(false);
+		DescriptionUIState uiState = simulation().descriptionUIState();
+
+		if (uiState.objectType == ObjectTypeEnum::Building)
+		{
+			CardEnum buildingEnum = simulation().buildingEnum(uiState.objectId);
+			const std::vector<int32>& buildingIds = simulation().buildingIds(playerId(), buildingEnum);
+			if (buildingIds.size() > 1) {
+				// Find the index of the current building in the array and increment it by 1
+				int32 index = -1;
+				for (size_t i = 0; i < buildingIds.size(); i++) {
+					if (buildingIds[i] == uiState.objectId) {
+						index = i;
+						break;
+					}
+				}
+				if (index != -1) {
+					int32 nextIndex = (index + 1) % buildingIds.size();
+					if (isLeft) {
+						nextIndex = (index - 1 + buildingIds.size()) % buildingIds.size();
+					}
+
+					int32 buildingId = buildingIds[nextIndex];
+					simulation().SetDescriptionUIState({ ObjectTypeEnum::Building, buildingId });
+					networkInterface()->SetCameraAtom(simulation().building(buildingId).centerTile().worldAtom2());
+				}
+			}
+		}
 	}
 
 	void HideForPhotoMode()
@@ -74,18 +100,27 @@ private:
 
 	// Helper
 	
-	void AddBiomeInfo(WorldTile2 tile, UPunBoxWidget* descriptionBox);
+	void AddBiomeInfo(WorldTile2 tile, UPunBoxWidget* focusBox);
 	void AddBiomeDebugInfo(WorldTile2 tile, UPunBoxWidget* descriptionBox);
 	
-	void AddTileInfo(WorldTile2 tile, UPunBoxWidget* descriptionBox);
-	void AddProvinceInfo(int32 provinceId, WorldTile2 tile, UPunBoxWidget* descriptionBox);
+	//void AddTileInfo(WorldTile2 tile, UPunBoxWidget* descriptionBox);
+	void AddImpassableTileInfo(WorldTile2 tile, UPunBoxWidget* focusBox);
+	void AddProvinceInfo(int32 provinceId, WorldTile2 tile, UPunBoxWidget* focusBox);
 
-	void AddGeoresourceInfo(int32 provinceId, UPunBoxWidget* descriptionBox, bool showTopLine = false);
+	void AddGeoresourceInfo(int32 provinceId, UPunBoxWidget* focusBox);
 
-	void AddProvinceUpkeepInfo(int32 provinceIdClean, UPunBoxWidget* descriptionBox);
+	void AddProvinceUpkeepInfo(int32 provinceIdClean, UPunBoxWidget* focusBox);
 	
-	void AddEfficiencyText(Building& building, UPunBoxWidget* descriptionBox);
+	void AddEfficiencyText(Building& building, UPunBoxWidget* focusBox);
 	void AddTradeFeeText(class TradeBuilding& building, UPunBoxWidget* descriptionBox);
+
+
+	void Indent(float amount) {
+		_objectDescriptionUI->DescriptionPunBox->indentation = amount;
+	}
+	void ResetIndent() {
+		_objectDescriptionUI->DescriptionPunBox->indentation = 20;
+	}
 
 private:
 	UPROPERTY() class UObjectDescriptionUI* _objectDescriptionUI;

@@ -17,16 +17,12 @@ void UObjectDescriptionUI::Setup()
 
 	ObjectDropDownBox->OnSelectionChanged.AddDynamic(this, &UObjectDescriptionUI::OnDropDownChanged);
 
-	BuildingsStatOpener->OnClicked.AddDynamic(this, &UObjectDescriptionUI::OnClickBuildingsStatOpener);
-	
-	NameEditButton->OnClicked.AddDynamic(this, &UObjectDescriptionUI::OnClickNameEditButton);
-	NameEditTextBox->OnTextCommitted.AddDynamic(this, &UObjectDescriptionUI::NameEditCommitted);
+	//BuildingsStatOpener->OnClicked.AddDynamic(this, &UObjectDescriptionUI::OnClickBuildingsStatOpener);
 
-	BuildingSwapArrowLeftButton->OnClicked.AddDynamic(this, &UObjectDescriptionUI::OnClickBuildingSwapArrowLeftButton);
-	BuildingSwapArrowRightButton->OnClicked.AddDynamic(this, &UObjectDescriptionUI::OnClickBuildingSwapArrowRightButton);
-	const FText buildingSwapTip = NSLOCTEXT("ObjectDescriptionUI", "BuildingSwapArrow_Tip", "Click to switch between buildings of the same type <Orange>[TAB]</>");
-	AddToolTip(BuildingSwapArrowLeftButton, buildingSwapTip);
-	AddToolTip(BuildingSwapArrowRightButton, buildingSwapTip);
+	NameEditSubmitButton->OnClicked.AddDynamic(this, &UObjectDescriptionUI::OnClickNameEditSubmitButton);
+	NameEditCancelButton->OnClicked.AddDynamic(this, &UObjectDescriptionUI::OnClickNameEditCancelButton);
+	NameEditCloseButton->CoreButton->OnClicked.AddDynamic(this, &UObjectDescriptionUI::OnClickNameEditCancelButton);
+		
 	
 	ChooseResourceCloseButton->OnClicked.AddDynamic(this, &UObjectDescriptionUI::ClickedChooseResource);
 	SearchBox->SelectAllTextWhenFocused = true;
@@ -34,7 +30,7 @@ void UObjectDescriptionUI::Setup()
 	AllowAllButton->OnClicked.AddDynamic(this, &UObjectDescriptionUI::ClickAllowAll);
 	DisallowAllButton->OnClicked.AddDynamic(this, &UObjectDescriptionUI::ClickDisallowAll);
 
-	CloseButton->OnClicked.AddDynamic(this, &UObjectDescriptionUI::OnClickCloseButton);
+	CloseButton->CoreButton->OnClicked.AddDynamic(this, &UObjectDescriptionUI::OnClickCloseButton);
 
 	ManageStorageCloseButton->OnClicked.AddDynamic(this, &UObjectDescriptionUI::ClickCloseManageStorageOverlay);
 

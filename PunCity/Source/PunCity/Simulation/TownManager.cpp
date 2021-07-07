@@ -1017,10 +1017,16 @@ void TownManager::Tick1Sec()
 	// Consume Fuel
 	for (const auto& powerPlantInfo : PowerPlantInfoList) {
 		const std::vector<int32>& buildingIds = _simulation->buildingIds(_townId, powerPlantInfo.buildingEnum);
-		for (int32 buildingId : buildingIds) {
+		for (int32 buildingId : buildingIds) 
+		{
 			PowerPlant& building = _simulation->building(buildingId).subclass<PowerPlant>();
-			if (building.IsElectricityUpgraded()) {
-				int32 actualProduction_kW = building.ElectricityProductionCapacity() * totalElectricityUsage / std::max(1, totalElectricityProductionCapacity);
+
+			if (building.isConstructed())
+			{
+				int32 actualProduction_kW = GameRand::RandRound(
+					building.ElectricityProductionCapacity() * totalElectricityUsage,
+					std::max(1, totalElectricityProductionCapacity)
+				);
 				building.ConsumeFuel1Sec(actualProduction_kW);
 			}
 		}

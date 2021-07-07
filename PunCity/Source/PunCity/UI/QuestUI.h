@@ -23,6 +23,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UOverlay* QuestDescriptionOverlay;
 	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* QuestDescriptionBox;
 	UPROPERTY(meta = (BindWidget)) UButton* QuestDescriptionCloseButton;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* QuestDescriptionXButton;
 
 	UPROPERTY(meta = (BindWidget)) UOverlay* PlayerCompareOverlay;
 	UPROPERTY(meta = (BindWidget)) UOverlay* PlayerCompareInnerOverlay;
@@ -39,6 +40,7 @@ public:
 
 		QuestDescriptionOverlay->SetVisibility(ESlateVisibility::Collapsed);
 		QuestDescriptionCloseButton->OnClicked.AddDynamic(this, &UQuestUI::OnQuestDescriptionCloseButtonClick);
+		QuestDescriptionXButton->CoreButton->OnClicked.AddDynamic(this, &UQuestUI::OnQuestDescriptionCloseButtonClick);
 
 		SetChildHUD(QuestDescriptionBox);
 
@@ -230,7 +232,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UOverlay* PlayerDetailsOverlay;
 	UPROPERTY(meta = (BindWidget)) UScrollBox* PlayerDetailsBox;
 	UPROPERTY(meta = (BindWidget)) UButton* PlayerDetailsCloseButton;
-	UPROPERTY(meta = (BindWidget)) UButton* PlayerDetailsXButton;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* PlayerDetailsXButton;
 
 	UPROPERTY(meta = (BindWidget)) UButton* TableTabButton;
 	UPROPERTY(meta = (BindWidget)) UButton* GraphTabButton;
@@ -250,7 +252,7 @@ public:
 		PlayerDetailsBox->ClearChildren();
 		PlayerDetailsToggleButton->OnClicked.AddDynamic(this, &UQuestUI::TogglePlayerDetails);
 		PlayerDetailsCloseButton->OnClicked.AddDynamic(this, &UQuestUI::TogglePlayerDetails);
-		PlayerDetailsXButton->OnClicked.AddDynamic(this, &UQuestUI::TogglePlayerDetails);
+		PlayerDetailsXButton->CoreButton->OnClicked.AddDynamic(this, &UQuestUI::TogglePlayerDetails);
 
 		SetTabSelection(TableTabButton);
 		PlayerDetailsSwitcher->SetActiveWidgetIndex(0);

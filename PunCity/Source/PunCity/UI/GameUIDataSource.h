@@ -146,6 +146,20 @@ enum class UIEnum
 
 	WGT_Button,
 
+	WGT_ObjectFocus_Divider,
+	WGT_ObjectFocus_FlavorText, // PunTextWidget cpp
+	WGT_ObjectFocus_ProvinceTitle, // WGT_ObjectFocus_Title_Cpp
+	WGT_ObjectFocus_SectionTitle, // PunTextWidget cpp
+	WGT_ObjectFocus_Subheader, // PunTextWidget cpp
+	WGT_ObjectFocus_TextLeft, // PunTextWidget cpp
+	WGT_ObjectFocus_Title,
+	WGT_ObjectFocus_TextRow, // WGT_ObjectFocus_TextRow cpp
+	WGT_ObjectFocus_InventoryEntry, // WGT_ObjectFocus_TextRow cpp
+	WGT_Focus_EditableTextRow,
+
+	// Unused:
+	// WGT_ObjectFocus_ProductionTarget
+
 	Count,
 };
 static const int UIEnumCount = static_cast<int>(UIEnum::Count);

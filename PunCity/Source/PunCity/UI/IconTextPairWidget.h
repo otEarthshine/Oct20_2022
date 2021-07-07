@@ -122,6 +122,8 @@ public:
 	ResourceEnum uiResourceEnum = ResourceEnum::None;
 	
 public:
+	UPROPERTY(meta = (BindWidget)) UOverlay* OuterOverlay;
+	
 	UPROPERTY(meta = (BindWidget)) UCheckBox* FrontCheckBox;
 	
 	UPROPERTY(meta = (BindWidget)) UImage* IconImage;

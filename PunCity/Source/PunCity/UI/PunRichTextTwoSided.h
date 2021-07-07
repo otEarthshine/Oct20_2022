@@ -17,6 +17,8 @@ class UPunRichTextTwoSided : public UPunWidget
 public:
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* PunRichText;
 
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* RightBox;
+	
 	// Note, this gets swapped to the left. ???
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* PunRichTextRight1;
 	//UPROPERTY(meta = (BindWidget)) USizeBox* RightImageSizeBox1;

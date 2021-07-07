@@ -1492,10 +1492,11 @@ public:
 	int32 tradingFeePercent(int32 baseTradingFeePercent, ResourceEnum resourceEnum)
 	{
 		int32 tradeFeePercent = baseTradingFeePercent;
-		if (_simulation->HasTownBonus(townId(), CardEnum::DesertTradeForALiving) &&
-			IsFoodEnum(resourceEnum) || resourceEnum == ResourceEnum::Wood || resourceEnum == ResourceEnum::Coal)
+		if (_simulation->HasTownBonus(townId(), CardEnum::DesertTradeForALiving))
 		{
-			tradeFeePercent = 0;
+			if (IsFoodEnum(resourceEnum) || resourceEnum == ResourceEnum::Wood || resourceEnum == ResourceEnum::Coal) {
+				tradeFeePercent = 0;
+			}
 		}
 		if (_simulation->HasTownBonus(townId(), CardEnum::DesertOreTrade) &&
 			IsOreEnum(resourceEnum))

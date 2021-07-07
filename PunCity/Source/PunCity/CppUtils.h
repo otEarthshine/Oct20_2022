@@ -36,7 +36,7 @@ public:
 				return;
 			}
 		}
-		UE_DEBUG_BREAK_EDITOR();
+		UE_DEBUG_BREAK();
 	}
 
 	template<typename T, typename Func>

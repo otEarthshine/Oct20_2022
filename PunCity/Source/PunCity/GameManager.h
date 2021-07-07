@@ -572,6 +572,12 @@ public:
 #endif
 	}
 
+
+	virtual void ExecuteCheat(CheatEnum cheatEnum) override {
+		_networkInterface->ExecuteCheat(cheatEnum);
+	}
+	
+
 	/*
 	 * IGameSoundInterface
 	 */

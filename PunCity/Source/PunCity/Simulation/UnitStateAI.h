@@ -797,6 +797,16 @@ public:
 
 	UnitAnimationEnum animationEnum() { return _animationEnum; }
 
+	UnitAnimationEnum GetDisplayAnimationEnum()
+	{
+		// This prevents flashes that happens with animation reset
+		if (Time::Ticks() - _lastAnimationChangeTick < 10) {
+			return _lastAnimationEnum;
+		}
+		return _animationEnum;
+	}
+	
+
 	void ChangeTownOwningPlayer(int32 playerId) {
 		_playerId = playerId;
 		_simulation->ResetUnitActions(_id);
@@ -921,9 +931,17 @@ protected:
 		reservations.clear();
 	}
 
-	void ResetAnimation() {
-		_animationEnum = UnitAnimationEnum::Wait;
+
+	void SetAnimation(UnitAnimationEnum animationEnum) {
+		_lastAnimationEnum = _animationEnum;
+		_animationEnum = animationEnum;
+		_lastAnimationChangeTick = Time::Ticks();
 	}
+	void ResetAnimation() {
+		SetAnimation(UnitAnimationEnum::Wait);
+	}
+
+	
 
 	//! Helpers
 	TreeSystem& treeSystem() { return _simulation->treeSystem(); }
@@ -1071,6 +1089,10 @@ protected:
 #endif
 
 	TryWorkFailEnum _tryWorkFailEnum; // TODO: Serialize
+
+	int32 _lastAnimationChangeTick = 0;
+	UnitAnimationEnum _lastAnimationEnum = UnitAnimationEnum::Wait;
+
 protected:
 	/*
 	 * Serialize Variables
@@ -1120,5 +1142,5 @@ protected:
 
 	bool _justDidResetActions;
 
-	UnitAnimationEnum _animationEnum;
+	UnitAnimationEnum _animationEnum = UnitAnimationEnum::Wait;
 };

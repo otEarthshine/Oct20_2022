@@ -14,6 +14,6 @@ class PROTOTYPECITY_API UConfirmUI : public UPunWidget
 	GENERATED_BODY()
 public:
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* ConfirmText;
-	UPROPERTY(meta = (BindWidget)) UButton* ConfirmYesButton;
-	UPROPERTY(meta = (BindWidget)) UButton* ConfirmNoButton;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* ConfirmYesButton;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* ConfirmNoButton;
 };

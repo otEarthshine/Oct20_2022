@@ -440,9 +440,9 @@ public:
 		}
 		if (_simulation->HasTownBonus(_townId, CardEnum::SavannaGrasslandHerder)) {
 
-			if (IsGrassDominant(centerBiomeEnum())) {
+			//if (IsGrassDominant(centerBiomeEnum())) {
 				bonuses.push_back({ NSLOCTEXT("Ranch", "Grassland Herder Bonus", "Grassland Herder"), 50 });
-			}
+			//}
 		}
 		return bonuses;
 	}

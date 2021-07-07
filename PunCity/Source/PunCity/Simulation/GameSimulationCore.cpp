@@ -956,7 +956,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo)
 						 * Special
 						 */
 						auto unlockSys = unlockSystem(playerId);
-						if (!unlockSys->didFirstTimeMedicineLowPopup && GetResourceCount(playerId, MedicineEnums) < 10) {
+						if (!unlockSys->didFirstTimeMedicineLowPopup && GetResourceCount(playerId, MedicineEnums) < 20) {
 							unlockSys->didFirstTimeMedicineLowPopup = true;
 							AddPopup(playerId, {
 								LOCTEXT("MedicineFirstWarn1_Pop", "Your Medicine/Medicinal Herb count is low.<space>If you run out of both Medicine and Medicinal Herb, sickness will spread killing your citizens.<space>"),
@@ -1771,7 +1771,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 						int32 targetPlayerMoney = moneyCap32(targetPlayerId);
 						targetPlayerMoney = max(0, targetPlayerMoney); // Ensure no negative steal..
 						
-						int32 actualSteal = min(targetPlayerMoney, populationTown(targetPlayerId));
+						int32 actualSteal = min(targetPlayerMoney, 5 * populationTown(targetPlayerId));
 						ChangeMoney(targetPlayerId, -actualSteal);
 						ChangeMoney(playerId, actualSteal);
 						AddPopup(targetPlayerId, 
@@ -5583,6 +5583,16 @@ void GameSimulationCore::Cheat(FCheat command)
 				
 			break;
 		}
+
+		case CheatEnum::SaveCameraTransform: {
+			_gameManager->ExecuteCheat(CheatEnum::SaveCameraTransform);
+			break;
+		}
+		case CheatEnum::LoadCameraTransform: {
+			_gameManager->ExecuteCheat(CheatEnum::LoadCameraTransform);
+			break;
+		}
+		
 		
 		case CheatEnum::TrailerCityGreen1:
 		{

@@ -3062,7 +3062,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(8, 6), GetBldResourceInfo(2, {ResourceEnum::Wood, ResourceEnum::Paper}, {3, 0, 1, 1}, 0)
 	),
 	BldInfo(CardEnum::IronSmelter,	_LOCTEXT("Iron Smelter", "Iron Smelter"), LOCTEXT("Iron Smelter (Plural)", "Iron Smelters"),	LOCTEXT("Iron Smelter Desc", "Smelt Iron Ores into Iron Bars."),
-		WorldTile2(5, 6), GetBldResourceInfo(2, {ResourceEnum::IronOre, ResourceEnum::Coal, ResourceEnum::Iron}, {1,5}, 0, 100, 1)
+		WorldTile2(6, 7), GetBldResourceInfo(2, {ResourceEnum::IronOre, ResourceEnum::Coal, ResourceEnum::Iron}, {1,5}, 0, 100, 1)
 	),
 
 
@@ -3570,7 +3570,7 @@ static const BldInfo CardInfos[]
 
 	BldInfo(CardEnum::FireStarter,		_LOCTEXT("Fire Starter", "Fire Starter"), 200,	LOCTEXT("Fire Starter Desc", "Start a fire in an area (3 tiles radius).")),
 	BldInfo(CardEnum::Steal,			_LOCTEXT("Steal", "Steal"), 200,					LOCTEXT("Steal Desc", "Steal 30% of target player's treasury<img id=\"Coin\"/>. Use on Townhall.")),
-	BldInfo(CardEnum::Snatch,			_LOCTEXT("Snatch", "Snatch"), 50,				LOCTEXT("Snatch Desc", "Steal <img id=\"Coin\"/> equal to target player's population. Use on Townhall.")),
+	BldInfo(CardEnum::Snatch,			_LOCTEXT("Snatch", "Snatch"), 50,				LOCTEXT("Snatch Desc", "Steal <img id=\"Coin\"/> equal to target player's population X 5. Use on Townhall.")),
 	BldInfo(CardEnum::SharingIsCaring,	_LOCTEXT("Sharing is Caring", "Sharing is Caring"), 120, LOCTEXT("Sharing is Caring Desc", "Give 100 Wheat to the target player. Use on Townhall.")),
 	BldInfo(CardEnum::Kidnap,			_LOCTEXT("Kidnap", "Kidnap"), 350,				LOCTEXT("Kidnap Desc", "Steal up to 3 citizens from target player. Apply on Townhall.")),
 	BldInfo(CardEnum::KidnapGuard,		_LOCTEXT("Kidnap Guard", "Kidnap Guard"), 20,	LOCTEXT("Kidnap Guard Desc", "Guard your city against Kidnap for two years. Require <img id=\"Coin\"/>xPopulation to activate.")),
@@ -3627,8 +3627,8 @@ static const BldInfo CardInfos[]
 
 		BldInfo(CardEnum::SavannaRanch, _LOCTEXT("Grass Fed", "Grass Fed"), 0, LOCTEXT("Grass Fed Desc", "+35% Ranch Productivity.")),
 		BldInfo(CardEnum::SavannaHunt, _LOCTEXT("Grassland Hunting", "Grassland Hunting"), 0, LOCTEXT("Grassland Hunting Desc", "+50% Hunting Lodge Productivity.")),
-		BldInfo(CardEnum::SavannaGrasslandHerder, _LOCTEXT("Grassland Herder", "Grassland Herder"), 0, LOCTEXT("Grassland Herder Desc", "+50% Productivity for Ranch on Grassland/Savanna.")),
-		BldInfo(CardEnum::SavannaGrasslandRoamer, _LOCTEXT("Grassland Roamer", "Grassland Roamer"), 0, LOCTEXT("Grassland Roamer Desc", "+50% <img id=\"Influence\"/> from Houses on Grassland/Savanna.")),
+		BldInfo(CardEnum::SavannaGrasslandHerder, _LOCTEXT("Grassland Herder", "Grassland Herder"), 0, LOCTEXT("Grassland Herder Desc", "+50% Productivity for Ranch.")),
+		BldInfo(CardEnum::SavannaGrasslandRoamer, _LOCTEXT("Grassland Roamer", "Grassland Roamer"), 0, LOCTEXT("Grassland Roamer Desc", "+50% <img id=\"Influence\"/> from Houses built on Grassland/Savanna.")),
 
 		BldInfo(CardEnum::JungleGatherer, _LOCTEXT("Jungle Gatherer", "Jungle Gatherer"), 0, LOCTEXT("Jungle Gatherer Desc", "+30% Productivity for Fruit Gatherers in Jungle Biome.")),
 		BldInfo(CardEnum::JungleMushroom, _LOCTEXT("Jungle Mushroom", "Jungle Mushroom"), 0, LOCTEXT("Jungle Mushroom Desc", "+30% Productivity for Mushroom Farms in Jungle Biome.")),
@@ -6214,10 +6214,10 @@ struct BiomeInfo
 	
 	int32 initialBushChance = 10;
 
-	TileObjEnum GetRandomTreeEnum() {
+	TileObjEnum GetRandomTreeEnum() const {
 		return trees[GameRand::Rand() % trees.size()];
 	}
-	TileObjEnum GetRandomPlantEnum() {
+	TileObjEnum GetRandomPlantEnum() const {
 		return plants[GameRand::Rand() % plants.size()];
 	}
 
@@ -6306,7 +6306,7 @@ static const BiomeInfo BiomeInfos[]
 
 // TODO: add plants
 //  plants like cactus that can grow in very low fertility area, but very sparse (limited number per region, limited density)
-static BiomeInfo GetBiomeInfo(BiomeEnum biomeEnum) {
+static const BiomeInfo& GetBiomeInfo(BiomeEnum biomeEnum) {
 	return BiomeInfos[static_cast<int>(biomeEnum)];
 }
 
@@ -6807,7 +6807,7 @@ static float GetUnitAnimationPlayRate(UnitAnimationEnum animationEnum) {
 struct UnitDisplayState
 {
 	UnitEnum unitEnum = UnitEnum::Alpaca;
-	UnitAnimationEnum animationEnum = UnitAnimationEnum::None;
+	UnitAnimationEnum animationEnum = UnitAnimationEnum::Wait;
 	int32 variationIndex = -1;
 
 	bool isValid() { return variationIndex != -1; }
@@ -6999,9 +6999,10 @@ static FLinearColor PlayerColor2(int32 playerId)
 	\
 	entry(GetRoadConstructionCount) \
 	entry(ResetCachedWaypoints) \
-	entry(GetResourceTypeHolders)
-
-
+	entry(GetResourceTypeHolders)\
+	\
+	entry(SaveCameraTransform) \
+	entry(LoadCameraTransform)
 
 #define CREATE_ENUM(name) name,
 #define CREATE_STRINGS(name) #name,
@@ -7844,6 +7845,8 @@ public:
 		}
 		return 0;
 	}
+
+	int32 Count() { return _resourcePairs.size(); }
 
 	// Display largest...
 	ResourceEnum Display() {
@@ -8974,6 +8977,9 @@ enum class CallbackEnum : uint8
 	AddAnimalRanch,
 
 	BudgetAdjust,
+
+	TownNameEdit,
+	BuildingSwapArrow,
 
 	// Military
 	ArmyConquer,

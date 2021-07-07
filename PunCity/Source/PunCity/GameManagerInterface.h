@@ -79,6 +79,8 @@ public:
 
 	virtual TArray<FString> GetReplayFileNames() = 0;
 
+	virtual void ExecuteCheat(CheatEnum cheatEnum) = 0;
+
 	// Audio
 	virtual void SpawnResourceDropoffAudio(ResourceEnum resourceEnum, WorldAtom2 worldAtom) = 0;
 	virtual void SpawnAnimalSound(UnitEnum unitEnum, bool isAngry, WorldAtom2 worldAtom, bool usePlayProbability = false) = 0;

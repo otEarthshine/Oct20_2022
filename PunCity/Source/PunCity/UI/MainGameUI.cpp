@@ -61,7 +61,7 @@ void UMainGameUI::PunInit()
 
 	CardHand1SubmitButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickCardHand1SubmitButton);
 	CardHand1CancelButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickCardHand1CancelButton);
-	CardHand1CloseButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickCardHand1CancelButton);
+	CardHand1CloseButton->CoreButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickCardHand1CancelButton);
 
 	{
 		AddToolTip(CardHand1SubmitButton, 
@@ -87,8 +87,8 @@ void UMainGameUI::PunInit()
 	ConverterCardHand_ServicesButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickConverterCardHand_ServicesButton);
 	ConverterCardHand_OthersButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickConverterCardHand_OthersButton);
 
-	ConverterCardHandConfirmUI->ConfirmYesButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickCardRemovalConfirmYesButton);
-	ConverterCardHandConfirmUI->ConfirmNoButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickCardRemovalConfirmNoButton);
+	ConverterCardHandConfirmUI->ConfirmYesButton->CoreButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickCardRemovalConfirmYesButton);
+	ConverterCardHandConfirmUI->ConfirmNoButton->CoreButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickCardRemovalConfirmNoButton);
 	ConverterCardHandConfirmUI->SetVisibility(ESlateVisibility::Collapsed);
 	
 
@@ -1405,8 +1405,8 @@ void UMainGameUI::Tick()
 		/*
 		 * Technologies
 		 */
-		if (unlockSys->researchEnabled &&
-			!unlockSys->allTechsUnlocked())
+		if (unlockSys->researchEnabled)
+			//&&!unlockSys->allTechsUnlocked())
 		{
 			if (currentTech->techEnum != TechEnum::None && isOnMainTree)
 			{

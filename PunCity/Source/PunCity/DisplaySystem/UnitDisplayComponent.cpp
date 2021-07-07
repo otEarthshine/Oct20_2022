@@ -125,8 +125,8 @@ UnitDisplayState UUnitDisplayComponent::GetUnitTransformAndVariation(UnitStateAI
 
 
 	//! Display State
-	UnitAnimationEnum animationEnum = unit.animationEnum();
-
+	UnitAnimationEnum animationEnum = unit.GetDisplayAnimationEnum();
+	check(animationEnum != UnitAnimationEnum::None);
 	//		if (PunSettings::IsOn("UseFullSkelAnim")) {
 //			return true;
 //		}
@@ -179,7 +179,7 @@ UnitDisplayState UUnitDisplayComponent::GetUnitTransformAndVariation(UnitStateAI
 			return  { UnitEnum::SmallShip, UnitAnimationEnum::Walk, 0 };
 		}
 
-		int32 humanVariation = static_cast<int>(GetHumanVariationEnum(unit.isChild(), unit.isMale(), unit.animationEnum()));
+		int32 humanVariation = static_cast<int>(GetHumanVariationEnum(unit.isChild(), unit.isMale(), unit.GetDisplayAnimationEnum()));
 		if (animationEnum == UnitAnimationEnum::ImmigrationCart ||
 			animationEnum == UnitAnimationEnum::HaulingCart) {
 			return  { UnitEnum::Human, UnitAnimationEnum::Walk, humanVariation };
@@ -263,7 +263,7 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 		{
 			// Zoomed out human should always use instancedStaticMesh
 			if (unitEnum == UnitEnum::Human &&
-				!ShouldHumanUseVertexAnimation(unit.animationEnum(), zoomDistance))
+				!ShouldHumanUseVertexAnimation(unit.GetDisplayAnimationEnum(), zoomDistance))
 			{
 				FTransform transform;
 				AddSkelMesh(unit, transform);
@@ -288,7 +288,7 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 		 */
 
 		FTransform transform;
-		_currentDisplayState = { unitEnum, unit.animationEnum(), 0 };
+		_currentDisplayState = { unitEnum, unit.GetDisplayAnimationEnum(), 0 };
 		
 		//PUN_LOG("UnitAddStart ticks:%d id:%d regionId:%d", TimeDisplay::Ticks(), unitId, regionId);
 
@@ -592,10 +592,10 @@ void UUnitDisplayComponent::UpdateResourceDisplay(int32 unitId, UnitStateAI& uni
 		//! Cart Display
 		if (_currentDisplayState.unitEnum == UnitEnum::Human) 
 		{
-			if (unit.animationEnum() == UnitAnimationEnum::ImmigrationCart) {
+			if (unit.GetDisplayAnimationEnum() == UnitAnimationEnum::ImmigrationCart) {
 				_auxMeshes->Add("Immigration", unitId, getAuxTransform(), 0);
 			}
-			if (unit.animationEnum() == UnitAnimationEnum::HaulingCart) {
+			if (unit.GetDisplayAnimationEnum() == UnitAnimationEnum::HaulingCart) {
 				_auxMeshes->Add("HaulingCart", unitId, getAuxTransform(), 0);
 				displayResource(7);
 				return;

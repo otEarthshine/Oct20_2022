@@ -50,14 +50,16 @@ void UResourceDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 			_tileIdToInUse.resize(maxStack * CoordinateConstants::TileIdsPerRegion);
 			fill(_tileIdToInUse.begin(), _tileIdToInUse.end(), false);
 
-			for (int j = 0; j < drops.size(); j++) {
+			for (int j = 0; j < drops.size(); j++) 
+			{
 				DropInfo dropInfo = drops[j];
 
 				WorldTile2 tile = dropInfo.tile;
 				LocalTile2 localTile = tile.localTile();
 
 				// Increment the tileId if it was already in used
-				for (int k = 0; k < maxStack; k++) {
+				for (int k = 0; k < maxStack; k++) 
+				{
 					int32_t tileIdWithStack = localTile.tileId() + k * CoordinateConstants::TileIdsPerRegion;
 					if (!_tileIdToInUse[tileIdWithStack])
 					{

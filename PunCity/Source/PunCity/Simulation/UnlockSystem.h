@@ -1423,7 +1423,7 @@ public:
 				CardEnum::Garden
 			);
 
-			AddTech_CardGiving(TechEnum::MelonFarming, { TechEnum::Fertilizers },
+			AddTech_CardGiving(TechEnum::MelonFarming, {},
 				{ CardEnum::MelonSeed },
 				TechRequirements::ResourceProduced(ResourceEnum::Pumpkin, 3000)
 			);
@@ -1737,7 +1737,7 @@ public:
 	}
 
 	int32 totalTechs() { return _enumToTech.size() - 1;  } // -1 for TechEnum::None tech
-	bool allTechsUnlocked() { return techsFinished == totalTechs(); }
+	//bool allTechsUnlocked() { return techsFinished == totalTechs(); } // TODO: fix this... should only compare Tech Tree's tech
 
 	int32 currentTechColumn()
 	{

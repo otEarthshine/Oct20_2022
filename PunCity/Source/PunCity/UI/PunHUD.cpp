@@ -72,7 +72,7 @@ APunHUD::APunHUD()
 
 	LoadClass(UIEnum::IconTextPair, "IconTextPair");
 	LoadClass(UIEnum::BuildingResourceChain, "BuildingResourceChainWidget");
-	LoadClass(UIEnum::PunTextWidget, "PunTextWidget");
+	LoadClass(UIEnum::PunTextWidget, "PunTextWidgetWidget");
 	LoadClass(UIEnum::PunSpacerWidget, "PunSpacerWidget");
 	LoadClass(UIEnum::PunLineSpacerWidget, "PunLineSpacerWidget");
 	LoadClass(UIEnum::PunThinLineSpacerWidget, "PunThinLineSpacerWidget");
@@ -138,6 +138,19 @@ APunHUD::APunHUD()
 	LoadClass(UIEnum::PunMidRowText, "PunMidRowText");
 
 	LoadClass(UIEnum::WGT_Button, "Components/Buttons/WGT_Button");
+
+	// New Object Focus
+	LoadClass(UIEnum::WGT_ObjectFocus_Divider, "Components/ObjectFocus/WGT_ObjectFocus_Divider");
+	LoadClass(UIEnum::WGT_ObjectFocus_FlavorText, "Components/ObjectFocus/WGT_ObjectFocus_FlavorText");
+	LoadClass(UIEnum::WGT_ObjectFocus_ProvinceTitle, "Components/ObjectFocus/WGT_ObjectFocus_ProvinceTitle");
+	LoadClass(UIEnum::WGT_ObjectFocus_SectionTitle, "Components/ObjectFocus/WGT_ObjectFocus_SectionTitle");
+	LoadClass(UIEnum::WGT_ObjectFocus_Subheader, "Components/ObjectFocus/WGT_ObjectFocus_Subheader");
+	LoadClass(UIEnum::WGT_ObjectFocus_TextLeft, "Components/ObjectFocus/WGT_ObjectFocus_TextLeft");
+	
+	LoadClass(UIEnum::WGT_ObjectFocus_Title, "Components/ObjectFocus/WGT_ObjectFocus_Title");
+	LoadClass(UIEnum::WGT_ObjectFocus_TextRow, "Components/ObjectFocus/WGT_ObjectFocus_TextRow");
+	LoadClass(UIEnum::WGT_ObjectFocus_InventoryEntry, "Components/ObjectFocus/WGT_ObjectFocus_InventoryEntry");
+	LoadClass(UIEnum::WGT_Focus_EditableTextRow, "Components/ObjectFocus/WGT_ObjectFocus_EditableTextRow");
 
 	// Slate Style
 	//TSharedPtr<FSlateStyleSet> style = MakeShareable(new FSlateStyleSet("PunStyle"));

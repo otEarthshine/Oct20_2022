@@ -114,6 +114,8 @@ public:
 
 	virtual TArray<class UFireForgetAudioComponent*> GetPunAudios() = 0;
 
+	virtual void ExecuteCheat(CheatEnum cheatEnum) = 0;
+
 	// Debug
 	virtual void TestAchievement(const FString& achievementId) = 0;
 	virtual int32 GetFPS() = 0;

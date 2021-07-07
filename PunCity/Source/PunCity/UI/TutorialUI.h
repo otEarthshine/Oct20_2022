@@ -43,7 +43,7 @@ public:
 		
 #undef INIT_TAB
 		TutorialCloseButton->OnClicked.AddDynamic(this, &UTutorialUI::OnClickCloseButton);
-		TutorialXButton->OnClicked.AddDynamic(this, &UTutorialUI::OnClickCloseButton);
+		TutorialXButton->CoreButton->OnClicked.AddDynamic(this, &UTutorialUI::OnClickCloseButton);
 
 		// Other links
 		MoreHousingButton->OnClicked.AddDynamic(this, &UTutorialUI::OnClickHousing);
@@ -72,7 +72,7 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) UWidgetSwitcher* TutorialSwitcher;
 	UPROPERTY(meta = (BindWidget)) UButton* TutorialCloseButton;
-	UPROPERTY(meta = (BindWidget)) UButton* TutorialXButton;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* TutorialXButton;
 
 	UPROPERTY() TArray<UButton*> SwitchButtons;
 private:

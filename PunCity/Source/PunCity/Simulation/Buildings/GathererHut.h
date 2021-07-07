@@ -1462,6 +1462,9 @@ public:
 	static int32 GetColonyUpkeep() { return (GetColonyIncomeValue() / 3) / 10 * 10; }
 
 	static int32 GetColonyResourceIncome(ResourceEnum resourceEnum) {
+		if (resourceEnum == ResourceEnum::None) {
+			return 0;
+		}
 		return GetColonyIncomeValue() / GetResourceInfo(resourceEnum).basePrice;
 	}
 	ResourceEnum GetColonyResourceEnum() {

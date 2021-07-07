@@ -422,6 +422,13 @@ public:
 		}
 		return _georesourceIcons[resourceEnum];
 	}
+
+	UTexture2D* GetBiomeIcon(BiomeEnum biomeEnum) {
+		if (_biomeIcons.find(biomeEnum) == _biomeIcons.end()) {
+			return nullptr;
+		}
+		return _biomeIcons[biomeEnum];
+	}
 	
 
 	UTexture2D* GetCardIcon(CardEnum cardEnum) {
@@ -891,6 +898,7 @@ private:
 	UPROPERTY() TArray<UMaterialInstanceDynamic*> _resourceIconMaterials;
 
 	std::unordered_map<ResourceEnum, UTexture2D*> _georesourceIcons;
+	std::unordered_map<BiomeEnum, UTexture2D*> _biomeIcons;
 
 	TSet<CardEnum> _buildingsUsingSpecialIcon;
 

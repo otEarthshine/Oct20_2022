@@ -141,16 +141,16 @@ public:
 			ModuleTransformGroup::CreateSet("Forester", {}, {{ParticleEnum::Smoke, TransformFromPosition(9.5, 10.2, 29.5)}})
 		});
 
-		set(CardEnum::IronSmelter, {
-			ModuleTransformGroup::CreateSet("Smelter", {},
-				{
-					{ParticleEnum::HeavyBlackSmoke, TransformFromPosition(10.7, -11.1, 37.4)},
-				}, {},
-				{
-					ModuleTransform("SmelterWorkStatic"),
-				}
-			)
-		});
+		//set(CardEnum::IronSmelter, {
+		//	ModuleTransformGroup::CreateSet("Smelter", {},
+		//		{
+		//			{ParticleEnum::HeavyBlackSmoke, TransformFromPosition(10.7, -11.1, 37.4)},
+		//		}, {},
+		//		{
+		//			ModuleTransform("SmelterWorkStatic"),
+		//		}
+		//	)
+		//});
 
 
 		set(CardEnum::DirtRoad, { ModuleTransformGroup({ ModuleTransform("DirtRoad") }) });
@@ -187,7 +187,6 @@ public:
 			})
 		});
 
-		setName(CardEnum::Bakery, "Bakery");
 
 
 		setName(CardEnum::Fort, "Outpost");
@@ -212,7 +211,6 @@ public:
 
 		setName(CardEnum::ChichenItza, "ChichenItza");
 
-		setName(CardEnum::Market, "Market");
 		setName(CardEnum::IrrigationReservoir, "IrrigationReservoir");
 
 		set(CardEnum::Tunnel, {

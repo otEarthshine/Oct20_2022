@@ -97,7 +97,7 @@ void UnitStateAI::AddUnit(UnitEnum unitEnum, int32 townId, UnitFullId fullId, IU
 
 	_justDidResetActions = false;
 
-	_animationEnum = UnitAnimationEnum::Wait;
+	SetAnimation(UnitAnimationEnum::Wait);
 
 	_tryWorkFailEnum = TryWorkFailEnum::None;
 
@@ -1614,7 +1614,7 @@ void UnitStateAI::Wait()
 	LEAN_PROFILING_A(Wait);
 	
 	int32 tickCount = action().int32val1;
-	_animationEnum = static_cast<UnitAnimationEnum>(action().int32val2);
+	SetAnimation(static_cast<UnitAnimationEnum>(action().int32val2));
 	
 	PUN_DEBUG_EXPR(CheckIntegrity());
 	PUN_CHECK2(tickCount < Time::TicksPerMinute, ("badTickCount:" + to_string(tickCount) + debugStr()));
@@ -2299,7 +2299,7 @@ bool UnitStateAI::MoveTo(WorldTile2 end, int32 customFloodDistance, UnitAnimatio
 							check(cachedWaypoints[i].size() > 0);
 							if (cachedWaypoints[i].front() == end)
 							{
-								_animationEnum = animationEnum;
+								SetAnimation(animationEnum);
 
 								//MapUtil::UnpackAStarPath(rawWaypoint, _unitData->waypoint(_id));
 								_unitData->SetWaypoint(_id, cachedWaypoints[i]);
@@ -2395,7 +2395,7 @@ bool UnitStateAI::MoveTo(WorldTile2 end, int32 customFloodDistance, UnitAnimatio
 
 	//PUN_LOG("MoveTo() UnitAnimationEnum::Walk id:%d", _id);
 
-	_animationEnum = animationEnum;
+	SetAnimation(animationEnum);
 
 	MapUtil::UnpackAStarPath(rawWaypoint, _unitData->waypoint(_id));
 	_unitData->SetWaypointCacheBuildingId(_id, -1);
@@ -2543,7 +2543,7 @@ void UnitStateAI::MoveToRobust(WorldTile2 end)
 	MapUtil::UnpackAStarPath(rawWaypoint, _unitData->waypoint(_id));
 	_unitData->SetForceMove(_id, true);
 
-	_animationEnum = UnitAnimationEnum::Invisible;
+	SetAnimation(UnitAnimationEnum::Invisible);
 
 	// Convert waypoint to targetTile next tick.
 	_unitData->SetNextTickState(_id, TransformState::NeedTargetAtom, UnitUpdateCallerEnum::MoveToRobust_Done);
@@ -2573,7 +2573,7 @@ void UnitStateAI::MoveToward()
 	WorldAtom2 end(action().int32val1, action().int32val2);
 	int64 fraction100000 = action().int32val3;
 	
-	_animationEnum = static_cast<UnitAnimationEnum>(max(0, min(UnitAnimationCount, action().int32val4)));
+	SetAnimation(static_cast<UnitAnimationEnum>(max(0, min(UnitAnimationCount, action().int32val4))));
 	
 	WorldAtom2 targetLocation = WorldAtom2::Lerp(_unitData->atomLocation(_id), end, fraction100000);
 	_unitData->SetTargetLocation(_id, targetLocation);
@@ -2620,7 +2620,7 @@ bool UnitStateAI::MoveToCaravan()
 		return false;
 	}
 
-	_animationEnum = static_cast<UnitAnimationEnum>(action().int32val3);
+	SetAnimation(static_cast<UnitAnimationEnum>(action().int32val3));
 
 	MapUtil::UnpackAStarPath(rawWaypoint, _unitData->waypoint(_id));
 	_unitData->SetForceMove(_id, true);
@@ -2653,7 +2653,7 @@ bool UnitStateAI::MoveToShip()
 		return false;
 	}
 
-	_animationEnum = static_cast<UnitAnimationEnum>(action().int32val3);
+	SetAnimation(static_cast<UnitAnimationEnum>(action().int32val3));
 
 	_unitData->SetWaypoint(_id, path);
 	_unitData->SetForceMove(_id, true);
@@ -2880,7 +2880,7 @@ void UnitStateAI::Construct()
 		AddDebugSpeech(" Already constructed");
 	}
 
-	_animationEnum = UnitAnimationEnum::Build;
+	SetAnimation(UnitAnimationEnum::Build);
 
 	NextAction(waitTicks, UnitUpdateCallerEnum::Construct_Done);
 	AddDebugSpeech("(Done)Construct: workAmount:" + to_string(workManSec100) + ", tickCount:" + to_string(waitTicks));

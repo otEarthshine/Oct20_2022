@@ -493,6 +493,22 @@ public:
 		cameraPawn->SetActorRotation(rotation);
 	}
 
+
+	WorldAtom2 cameraSavedAtom;
+	FRotator cameraSavedRotator;
+	virtual void ExecuteCheat(CheatEnum cheatEnum) override
+	{
+		if (cheatEnum == CheatEnum::SaveCameraTransform) {
+			cameraSavedAtom = cameraPawn->cameraAtom();
+			cameraSavedRotator = cameraPawn->GetActorRotation();
+		}
+		else if (cheatEnum == CheatEnum::LoadCameraTransform) {
+			SetCameraAtom(cameraSavedAtom);
+			cameraPawn->SetActorRotation(cameraSavedRotator);
+		}
+	}
+
+
 	/*
 	 * Helpers
 	 */

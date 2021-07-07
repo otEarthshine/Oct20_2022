@@ -427,7 +427,7 @@ private:
 	UPROPERTY(meta = (BindWidget)) UWrapBox* CardHand1Box;
 	UPROPERTY(meta = (BindWidget)) UButton* CardHand1SubmitButton;
 	UPROPERTY(meta = (BindWidget)) UButton* CardHand1CancelButton;
-	UPROPERTY(meta = (BindWidget)) UButton* CardHand1CloseButton;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* CardHand1CloseButton;
 
 	UPROPERTY(meta = (BindWidget)) UTextBlock* CardHand1SubmitButtonText;
 

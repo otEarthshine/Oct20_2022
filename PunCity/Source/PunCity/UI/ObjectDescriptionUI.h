@@ -24,22 +24,15 @@ class UObjectDescriptionUI : public UPunWidget
 {
 	GENERATED_BODY()
 public:
-	UPROPERTY(meta = (BindWidget)) URichTextBlock* DescriptionUITitle;
+	//UPROPERTY(meta = (BindWidget)) URichTextBlock* DescriptionUITitle;
 	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* DescriptionPunBox;
-	UPROPERTY(meta = (BindWidget)) UButton* BuildingsStatOpener;
+	//UPROPERTY(meta = (BindWidget)) UButton* BuildingsStatOpener;
 
-	UPROPERTY(meta = (BindWidget)) UEditableTextBox* NameEditTextBox;
-	UPROPERTY(meta = (BindWidget)) UButton* NameEditButton;
-	UPROPERTY(meta = (BindWidget)) UTextBlock* NameEditButtonText;
+	//UPROPERTY(meta = (BindWidget)) UEditableTextBox* NameEditTextBox;
+	//UPROPERTY(meta = (BindWidget)) UButton* NameEditButton;
+	//UPROPERTY(meta = (BindWidget)) UTextBlock* NameEditButtonText;
 
-	UPROPERTY(meta = (BindWidget)) UButton* CloseButton;
-
-	UPROPERTY(meta = (BindWidget)) USizeBox* BuildingSwapArrows;
-	UPROPERTY(meta = (BindWidget)) UButton* BuildingSwapArrowLeftButton;
-	UPROPERTY(meta = (BindWidget)) UButton* BuildingSwapArrowRightButton;
-
-	//UPROPERTY(meta = (BindWidget)) UCheckBox* ToolCheckBox;
-	//UPROPERTY(meta = (BindWidget)) UTextBlock* ToolCheckBoxText;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* CloseButton;
 
 	UPROPERTY(meta = (BindWidget)) UComboBoxString* ObjectDropDownBox;
 	UPROPERTY(meta = (BindWidget)) UPunEditableNumberBox* EditableNumberBox;
@@ -64,7 +57,14 @@ public:
 	UPROPERTY(meta = (BindWidget)) UWrapBox* TownBonusSlots;
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* GlobalBonusBox;
 	UPROPERTY(meta = (BindWidget)) UWrapBox* GlobalBonusSlots;
-	
+
+	//UPROPERTY(meta = (BindWidget)) UOverlay* OldFocusUITitle;
+
+	UPROPERTY(meta = (BindWidget)) USizeBox* NameEditPopup;
+	UPROPERTY(meta = (BindWidget)) UEditableTextBox* NameEditTextBox;
+	UPROPERTY(meta = (BindWidget)) UButton* NameEditSubmitButton;
+	UPROPERTY(meta = (BindWidget)) UButton* NameEditCancelButton;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* NameEditCloseButton;
 
 	UPROPERTY(meta = (BindWidget)) UWrapBox* CardSlots;
 	std::vector<CardStatus> lastCards;
@@ -80,6 +80,7 @@ public:
 	void CloseAllSubUIs(bool shouldCloseStatistics)
 	{
 		//ToolCheckBox->SetVisibility(ESlateVisibility::Collapsed);
+		NameEditPopup->SetVisibility(ESlateVisibility::Collapsed);
 
 		ObjectDropDownBox->SetVisibility(ESlateVisibility::Collapsed);
 		EditableNumberBox->SetVisibility(ESlateVisibility::Collapsed);
@@ -88,36 +89,12 @@ public:
 		ManageStorageOverlay->SetVisibility(ESlateVisibility::Collapsed);
 
 		CardSlots->SetVisibility(ESlateVisibility::Collapsed);
-
-		NameEditTextBox->SetVisibility(ESlateVisibility::Collapsed);
-		NameEditButtonText->SetText(NSLOCTEXT("ObjDescUI", "Edit", "Edit"));
-
-		BuildingSwapArrows->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
-	void SwitchToNextBuilding(bool isLeft)
+	void OpenNameEditPopup()
 	{
-		if (state.objectType == ObjectTypeEnum::Building)
-		{
-			CardEnum buildingEnum = simulation().buildingEnum(state.objectId);
-			const std::vector<int32>& buildingIds = simulation().buildingIds(playerId(), buildingEnum);
-			if (buildingIds.size() > 1) {
-				// Find the index of the current building in the array and increment it by 1
-				int32 index = -1;
-				for (size_t i = 0; i < buildingIds.size(); i++) {
-					if (buildingIds[i] == state.objectId) {
-						index = i;
-						break;
-					}
-				}
-				if (index != -1) {
-					int32 nextIndex = (index + 1) % buildingIds.size();
-					int32 buildingId = buildingIds[nextIndex];
-					simulation().SetDescriptionUIState({ ObjectTypeEnum::Building, buildingId });
-					networkInterface()->SetCameraAtom(simulation().building(buildingId).centerTile().worldAtom2());
-				}
-			}
-		}
+		NameEditTextBox->SetText(simulation().townNameT(playerId()));
+		NameEditPopup->SetVisibility(ESlateVisibility::Visible);
 	}
 
 public:
@@ -153,55 +130,33 @@ private:
 		simulation().SetDescriptionUIState(DescriptionUIState());
 	}
 
-	UFUNCTION() void OnClickBuildingsStatOpener() {
-		//ESlateVisibility visibility = StatisticsPanel->GetVisibility();
-		//if (visibility == ESlateVisibility::Visible) {
-		//	StatisticsPanel->SetVisibility(ESlateVisibility::Collapsed);
-		//}
-		//else {
-		//	StatisticsPanel->SetVisibility(ESlateVisibility::Visible);
-		//	OnBuildingsStatButtonClick();
-		//}
-	}
-
-	UFUNCTION() void OnClickNameEditButton()
-	{
-		if (NameEditTextBox->GetVisibility() == ESlateVisibility::Collapsed) {
-			NameEditTextBox->SetText(simulation().townNameT(playerId()));
-			NameEditTextBox->SetVisibility(ESlateVisibility::Visible);
-			DescriptionUITitle->SetVisibility(ESlateVisibility::Collapsed);
-			NameEditButtonText->SetText(NSLOCTEXT("ObjectDescriptionUI", "Done", "Done"));
-		}
-		else {
-			EditName(NameEditTextBox->GetText());
-		}
-	}
-	UFUNCTION() void NameEditCommitted(const FText& Text, ETextCommit::Type CommitMethod)
-	{
-		if (CommitMethod == ETextCommit::Type::OnEnter)  {
-			EditName(Text);
-		}
-	}
-	void EditName(const FText& Text) {
-		auto command = make_shared<FChangeName>();
-		command->name = TrimStringF(Text.ToString(), 30);
-		PUN_CHECK(simulation().descriptionUIState().objectType == ObjectTypeEnum::Building);
-		command->objectId = simulation().descriptionUIState().objectId;
-		networkInterface()->SendNetworkCommand(command);
-
-		NameEditTextBox->SetVisibility(ESlateVisibility::Collapsed);
-		DescriptionUITitle->SetVisibility(ESlateVisibility::Visible);
-		NameEditButtonText->SetText(NSLOCTEXT("ObjDescUI", "Edit", "Edit"));
-	}
-
-	UFUNCTION() void OnClickBuildingSwapArrowLeftButton() {
-		SwitchToNextBuilding(true);
-	}
-	UFUNCTION() void OnClickBuildingSwapArrowRightButton() {
-		SwitchToNextBuilding(false);
-	}
+	//UFUNCTION() void OnClickBuildingsStatOpener() {
+	//	//ESlateVisibility visibility = StatisticsPanel->GetVisibility();
+	//	//if (visibility == ESlateVisibility::Visible) {
+	//	//	StatisticsPanel->SetVisibility(ESlateVisibility::Collapsed);
+	//	//}
+	//	//else {
+	//	//	StatisticsPanel->SetVisibility(ESlateVisibility::Visible);
+	//	//	OnBuildingsStatButtonClick();
+	//	//}
+	//}
 	
 	
 	UFUNCTION() void OnDropDownChanged(FString sItem, ESelectInfo::Type seltype);
 
+
+
+	UFUNCTION() void OnClickNameEditSubmitButton()
+	{
+		auto command = make_shared<FChangeName>();
+		command->name = TrimStringF(NameEditTextBox->GetText().ToString(), 30);
+		PUN_CHECK(simulation().descriptionUIState().objectType == ObjectTypeEnum::Building);
+		command->objectId = simulation().descriptionUIState().objectId;
+		networkInterface()->SendNetworkCommand(command);
+		
+		NameEditPopup->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	UFUNCTION() void OnClickNameEditCancelButton() {
+		NameEditPopup->SetVisibility(ESlateVisibility::Collapsed);
+	}
 };

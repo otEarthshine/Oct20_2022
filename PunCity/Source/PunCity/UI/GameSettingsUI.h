@@ -66,6 +66,9 @@ public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* SoundEffectsNumber;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* AmbientSoundsNumber;
 
+	UPROPERTY(meta = (BindWidget)) UCheckBox* HomelessWarningSoundCheckBox;
+	UPROPERTY(meta = (BindWidget)) UCheckBox* RoundCountdownSoundCheckBox;
+
 	// Input
 	UPROPERTY(meta = (BindWidget)) UButton* InputSettingsButton;
 
@@ -236,6 +239,9 @@ private:
 	UFUNCTION() void OnLanguageDropdownChanged(FString sItem, ESelectInfo::Type seltype);
 	UFUNCTION() void OnMultithreadedMeshGenerationCheckBoxChecked(bool active);
 	UFUNCTION() void OnForceClickthroughCheckBoxChecked(bool active);
+
+	UFUNCTION() void OnHomelessWarningSoundCheckBoxChecked(bool active);
+	UFUNCTION() void OnRoundCountdownSoundCheckBoxChecked(bool active);
 	
 	void ResetTabSelection();
 

@@ -556,7 +556,7 @@ public:
 
 	int32 heat() { return _heat; }
 	int32 maxHeat() { return unitInfo().maxHeatCelsiusTicks; }
-	int32 heatGetThreshold() { return maxHeat() * 3 / 4; }
+	int32 heatGetThreshold() { return maxHeat() * 7 / 10; } // maxHeat() * 3 / 4;
 	int32 minWarnHeat() { return maxHeat() / 2; }
 
 	static int32 heatGetThresholdPercent() { return 75; }
@@ -608,7 +608,12 @@ public:
 	int32 maxAge()
 	{
 		if (unitEnum() == UnitEnum::Human) {
-			return _simulation->parameters(_playerId)->DeathAgeTicks();
+			int32 averageDeathAgeTicks = _simulation->parameters(_playerId)->DeathAgeTicks();
+
+			// maxAge randomized depending the birthTick
+			int32 deathAgeVariation = averageDeathAgeTicks / 5;
+
+			return averageDeathAgeTicks + GameRand::Rand(birthTicks()) % deathAgeVariation;
 		}
 		return unitInfo().maxAgeTicks;
 	}

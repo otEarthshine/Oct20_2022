@@ -32,14 +32,14 @@ public:
 		PunRichText->SetText(text);
 	}
 
-	UPunRichText* SetJustification(ETextJustify::Type justification) {
-		PunRichText->SetJustification(justification);
-		return this;
-	}
-	UPunRichText* SetAutoWrapText(bool autoTextWrap) {
-		PunRichText->SetAutoWrapText(autoTextWrap);
-		return this;
-	}
+	//UPunRichText* SetJustification(ETextJustify::Type justification) {
+	//	PunRichText->SetJustification(justification);
+	//	return this;
+	//}
+	//UPunRichText* SetAutoWrapText(bool autoTextWrap) {
+	//	PunRichText->SetAutoWrapText(autoTextWrap);
+	//	return this;
+	//}
 
 	void FlashRed()
 	{

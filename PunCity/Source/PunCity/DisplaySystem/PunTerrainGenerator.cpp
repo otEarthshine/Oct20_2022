@@ -694,7 +694,8 @@ void PunTerrainGenerator::Erode(std::vector<int16_t>& heightMapBeforeFlatten, st
 				const FloatDet maxDepth = RiverMaxDepth;// FD0_XXX(110); // old 115 or -10 ... 125
 				
 				const auto erodeTile = [&](int16_t& heightTile, int16_t curErodeAmount) {
-					heightTile = max(heightTile - curErodeAmount, maxDepth);
+					int16_t minHeight = min(heightTile, static_cast<int16_t>(maxDepth));
+					heightTile = max(static_cast<int16_t>(heightTile - curErodeAmount), minHeight);
 				};
 
 				for (int32_t dropIndex : riverTileIndices)

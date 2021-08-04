@@ -1593,7 +1593,14 @@ int32 Building::displayVariationIndex()
 {
 	if (_playerId != -1)
 	{
-		if (IsAutoEraUpgrade(buildingEnum())) {
+		if (IsAutoEraUpgrade(buildingEnum())) 
+		{
+			// Auto Era Upgrade should use lowest era while under construction
+			if (!isConstructed()) {
+				return 0;
+			}
+			
+			// Some building upgrade according to Town Lvl
 			int32 variationIndex = (_simulation->GetTownLvl(_townId) - 1) - _simulation->GetMinEraDisplay(_buildingEnum);
 			variationIndex = max(variationIndex, 0);
 			return variationIndex;

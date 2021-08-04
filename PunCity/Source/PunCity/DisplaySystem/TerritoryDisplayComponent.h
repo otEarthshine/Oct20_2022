@@ -92,12 +92,7 @@ private:
 		return comp;
 	}
 	
-	//void DisplayPlayerId(int32 playerId, std::vector<int32>& territoryOwnerMap, FTerritoryDecals& decals);
-
 private:
-	// TODO: Remove This
-	//UPROPERTY() FTerritoryDecals playerDecals;
-
 	UPROPERTY() TArray<UTerritoryMeshComponent*> _provinceMeshes;
 	UPROPERTY() TArray<UTerritoryMeshComponent*> _territoryMeshesInner;
 	UPROPERTY() TArray<UTerritoryMeshComponent*> _provinceMeshesPool;

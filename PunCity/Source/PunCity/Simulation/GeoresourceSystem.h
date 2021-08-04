@@ -44,13 +44,19 @@ public:
 
 	void MineStone(int32 regionId, int32 amount)
 	{
-		int32& depositAmount = _provinceToGeoresource[regionId].stoneAmount;
-		depositAmount = std::max(0, depositAmount - amount);
+		if (_provinceToGeoresource.size() > regionId && regionId >= 0) 
+		{
+			int32& depositAmount = _provinceToGeoresource[regionId].stoneAmount;
+			depositAmount = std::max(0, depositAmount - amount);
+		}
 	}
 	void MineOre(int32 regionId, int32 amount)
 	{
-		int32& depositAmount = _provinceToGeoresource[regionId].depositAmount;
-		depositAmount = std::max(0, depositAmount - amount);
+		if (_provinceToGeoresource.size() > regionId && regionId >= 0) 
+		{
+			int32& depositAmount = _provinceToGeoresource[regionId].depositAmount;
+			depositAmount = std::max(0, depositAmount - amount);
+		}
 	}
 
 	void Serialize(FArchive &Ar)

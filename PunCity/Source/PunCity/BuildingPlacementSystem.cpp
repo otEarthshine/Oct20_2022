@@ -236,10 +236,17 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 			TEXT_NUM(fertility)
 		);
 		ADDTEXT_INV_("<space>");
+
+		PlacementInstructionEnum placementInstructionEnum = PlacementInstructionEnum::DragFarm;
 		
 		if (_dragState == DragState::NeedDragStart)
 		{
-			ADDTEXT_LOCTEXT("Farm_BuildInstruction2", "Click and Drag Cursor\nto specify area");
+			if (HasValidSeed(_mouseOnTile)) {
+				ADDTEXT_LOCTEXT("Farm_BuildInstruction2", "Click and Drag Cursor\nto specify area");
+			}
+			else {
+				placementInstructionEnum = PlacementInstructionEnum::FarmNoValidSeedForRegion;
+			}
 		}
 		else {
 			int32 sizeX = _area.sizeX();
@@ -281,7 +288,7 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 				ADDTEXT_LOCTEXT("Farm_BuildInvalid3", "\n<Red>Area is too small (Min Area: 16)</>");
 			}
 		}
-		SetInstruction(PlacementInstructionEnum::DragFarm, true, JOINTEXT(args));
+		SetInstruction(placementInstructionEnum, true, JOINTEXT(args));
 	}
 	else if (_placementType == PlacementType::StoneRoad)
 	{
@@ -687,7 +694,14 @@ void ABuildingPlacementSystem::TickLineDrag(WorldAtom2 cameraAtom, function<bool
 			int32 index = 0;
 			int32 lastIndex = std::max(_area.sizeX(), _area.sizeY()) - 1;
 
-			auto isSuitableTile = [&](WorldTile2 tile) {
+			auto isSuitableTile = [&](WorldTile2 tile)
+			{
+				// Don't allow bridge across deep water
+				if (IsBridgePlacement(_placementType) &&
+					simulation.GetProvinceIdClean(tile) == -1) 
+				{
+					return false;
+				}
 				return IsBridgePlacement(_placementType) ? simulation.IsWater(tile) : simulation.IsMountain(tile);
 			};
 			
@@ -1568,26 +1582,26 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 						return PlacementGridEnum::Red;
 					}
 
-					// Any seed that can be planted here?
-					std::vector<SeedInfo> seedsOwned = simulation.globalResourceSystem(_gameInterface->playerId()).seedsPlantOwned();
-					GeoresourceEnum georesourceEnum = simulation.georesource(simulation.GetProvinceIdClean(tile)).georesourceEnum;
-					
-					bool hasValidSeed = false;
-					for (SeedInfo seed : seedsOwned)
-					{
-						if (IsCommonSeedCard(seed.cardEnum)) {
-							hasValidSeed = true;
-							break;
-						}
-						if (IsSpecialSeedCard(seed.cardEnum) &&
-							seed.georesourceEnum == georesourceEnum)
-						{
-							hasValidSeed = true;
-							break;
-						}
-					}
+					//// Any seed that can be planted here?
+					//std::vector<SeedInfo> seedsOwned = simulation.globalResourceSystem(_gameInterface->playerId()).seedsPlantOwned();
+					//GeoresourceEnum georesourceEnum = simulation.georesource(simulation.GetProvinceIdClean(tile)).georesourceEnum;
+					//
+					//bool hasValidSeed = false;
+					//for (SeedInfo seed : seedsOwned)
+					//{
+					//	if (IsCommonSeedCard(seed.cardEnum)) {
+					//		hasValidSeed = true;
+					//		break;
+					//	}
+					//	if (IsSpecialSeedCard(seed.cardEnum) &&
+					//		seed.georesourceEnum == georesourceEnum)
+					//	{
+					//		hasValidSeed = true;
+					//		break;
+					//	}
+					//}
 
-					if (!hasValidSeed) {
+					if (!HasValidSeed(tile)) {
 						SetInstruction(PlacementInstructionEnum::FarmNoValidSeedForRegion, true);
 						return PlacementGridEnum::Red;
 					}
@@ -2018,6 +2032,10 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 
 						SetInstruction(PlacementInstructionEnum::NeedGeoresource, true, static_cast<int32>(georesourceEnum));
 
+						_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
+					}
+					else if (simulation.buildingIdAtTile(tile) != -1)
+					{
 						_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
 					}
 					else if (mountainCount < 5) {

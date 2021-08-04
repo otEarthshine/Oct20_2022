@@ -83,6 +83,12 @@ public:
 	}
 
 	void TickNetworking();
+
+	void TickNetworkOnce() {
+		_simulation->Tick(_gameTickQueue.size(), _gameTickQueue[0], true);
+		_gameTickQueue.erase(_gameTickQueue.begin());
+	}
+	
 	void TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoomDistance, float smoothZoomDistance, FVector cameraLocation, bool isPhotoMode, bool isBounceZooming);
 
 	void UIMeshAfterAdd() {
@@ -146,6 +152,8 @@ public:
 	UPROPERTY(EditAnywhere) bool PrintConstructionMesh;
 	UPROPERTY(EditAnywhere) bool RemoveVertexColor;
 
+	UPROPERTY(EditAnywhere) bool SaveSmokeJson;
+
 	// Trouble?: Don't forget to set viewport to realtime
 	bool ShouldTickIfViewportsOnly() const override { return true; }
 	void Tick(float DeltaSeconds) override {
@@ -162,6 +170,10 @@ public:
 		if (RemoveVertexColor) {
 			_assetLoader->RemoveVertexColor();
 			RemoveVertexColor = false;
+		}
+		if (SaveSmokeJson) {
+			_assetLoader->SaveSmokeJson();
+			SaveSmokeJson = false;
 		}
 	}
 
@@ -191,16 +203,21 @@ private:
 	UPROPERTY(EditAnywhere) UUnitDisplayComponent* _unitDisplaySystem;
 	UPROPERTY(EditAnywhere) UBuildingDisplayComponent* _buildingDisplaySystem;
 	UPROPERTY(EditAnywhere) UMiniBuildingDisplayComponent* _miniBuildingDisplaySystem;
+
+	// Terrain
 	UPROPERTY(EditAnywhere) URegionDisplayComponent* _regionDisplaySystem;
 	UPROPERTY(EditAnywhere) UTerrainLargeDisplayComponent* _terrainLargeDisplaySystem;
-	
+
+	// Debug lines
 	UPROPERTY(EditAnywhere) UDebugDisplayComponent* _debugDisplaySystem;
-	
+
+	// Road/Overlay
 	UPROPERTY(EditAnywhere) URegionDecalDisplayComponent* _decalDisplaySystem;
 	
 	UPROPERTY(EditAnywhere) UTileObjectDisplayComponent* _tileDisplaySystem;
 	UPROPERTY(EditAnywhere) UResourceDisplayComponent* _resourceDisplaySystem;
 
+	// Territory/Provinces
 	UPROPERTY(EditAnywhere) UTerritoryDisplayComponent* _territoryDisplaySystem;
 	
 	UPROPERTY(EditAnywhere) class UParticleSystemComponent* _snowParticles;
@@ -574,6 +591,10 @@ public:
 
 
 	virtual void ExecuteCheat(CheatEnum cheatEnum) override {
+		if (cheatEnum == CheatEnum::StepSimulation) {
+			TickNetworkOnce();
+			return;
+		}
 		_networkInterface->ExecuteCheat(cheatEnum);
 	}
 	

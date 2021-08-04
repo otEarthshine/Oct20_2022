@@ -214,7 +214,8 @@ void ResourceTypeHolders::RemoveResourceGlobal(int32 amount, ResourceSystem& res
 	{
 		// Remove from storage/provider only
 		if (_holders[i].type == ResourceHolderType::Storage ||
-			_holders[i].type == ResourceHolderType::Provider)
+			_holders[i].type == ResourceHolderType::Provider ||
+			_holders[i].type == ResourceHolderType::Market)
 		{
 			//_holders[i].ResetPopReservers(*resourceSystem.simulation());
 			ResetHolderReservers(i, resourceSys);

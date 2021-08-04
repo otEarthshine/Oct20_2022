@@ -244,9 +244,9 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 		LOCTEXT("Silk Road Desc", "Trading post and company built on desert gets -10% trade fee.")
 	} },
 	
-	{ TechEnum::ShallowWaterEmbark, {
-		LOCTEXT("Shallow Water Embark", "Shallow Water Embark"),
-		LOCTEXT("Shallow Water Embark Desc", "Allows claiming bordering provinces across a body of water. 100% cost penalty applied to claim/attack through shallow water.")
+	{ TechEnum::ChocolateSnob, {
+		LOCTEXT("Chocolate Snob", "Chocolate Snob"),
+		LOCTEXT("Chocolate Snob Desc", "+30% production to Chocolatier.")
 	}},
 	{ TechEnum::DeepWaterEmbark, {
 		LOCTEXT("Deepwater Embark", "Deepwater Embark"),
@@ -1375,7 +1375,7 @@ public:
 			//
 			_columnIndex = 7;
 			AddTech_Bonus(TechEnum::IndustrialAdjacency, { TechEnum::TaxAdjustment });
-			AddTech_Bonus(TechEnum::ShallowWaterEmbark, {});
+			AddTech_Bonus(TechEnum::ChocolateSnob, {});
 
 			AddTech_Building(TechEnum::Castle, {},
 				CardEnum::Castle
@@ -1419,8 +1419,8 @@ public:
 			);
 			AddTech_Bonus(TechEnum::IndustrialTechnologies, {});
 			
-			AddTech_Building(TechEnum::Garden, { TechEnum::GardenCypress },
-				CardEnum::Garden
+			AddTech_BuildingPermanent(TechEnum::Garden, { TechEnum::GardenCypress },
+				{ CardEnum::Garden }
 			);
 
 			AddTech_CardGiving(TechEnum::MelonFarming, {},
@@ -1488,7 +1488,7 @@ public:
 		if (era == 2) return LOCTEXT("Middle Age", "Middle Age");
 		if (era == 3) return LOCTEXT("Enlightenment Age", "Enlightenment Age");
 		if (era == 4) return LOCTEXT("Industrial Age", "Industrial Age");
-		if (era == 5) return LOCTEXT("Electicity", "Electicity");
+		if (era == 5) return LOCTEXT("Electricity", "Electricity");
 		UE_DEBUG_BREAK();
 		return FText();
 	}
@@ -1708,6 +1708,22 @@ public:
 	// UI Input
 	void ChooseResearch(TechEnum researchEnum) 
 	{
+		if (_techQueue.size() > 0)
+		{
+			TechEnum lastTechEnum = _techQueue.back();
+			if (IsOnMainTechTree(researchEnum) != IsOnMainTechTree(lastTechEnum))
+			{
+				_simulation->AddPopupToFront(_playerId,
+					FText::Format(
+						LOCTEXT("Switched Research", "Switched from researching {0} to {1}"),
+						GetTechInfo(lastTechEnum)->GetName(),
+						GetTechInfo(researchEnum)->GetName()
+					),
+					IsOnMainTechTree(researchEnum) ? ExclusiveUIEnum::TechTreeUI : ExclusiveUIEnum::ProsperityUI, ""
+				);
+			}
+		}
+		
 		_techQueue.clear();
 		_techQueue.push_back(researchEnum);
 	}

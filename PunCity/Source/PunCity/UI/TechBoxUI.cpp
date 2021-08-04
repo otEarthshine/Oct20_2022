@@ -288,7 +288,7 @@ void UTechBoxUI::UpdateTooltip()
 
 		// Bonus body
 		if (tech->HasBonus()) {
-			tooltipBox->AddRichText(tech->GetBonusDescription());
+			tooltipBox->AddRichTextWrap(tech->GetBonusDescription());
 		}
 
 		if (tech->HasBonus() && unlockCards.size() > 0) {

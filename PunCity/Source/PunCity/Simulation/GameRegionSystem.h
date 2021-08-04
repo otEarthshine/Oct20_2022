@@ -73,13 +73,22 @@ public:
 	}
 	
 	int32 provinceOwner(int32 provinceId) { return _provinceOwnerMap[provinceId]; }
-	
+
+	int32 provinceOwnerSafe(int32 provinceId)
+	{
+		if (_provinceOwnerMap.size() > provinceId && provinceId >= 0) {
+			return _provinceOwnerMap[provinceId];
+		}
+		return -1;
+	}
+
+	// provinceDistanceMap does not take into account bridge etc.
 	int32 provinceDistanceMap(int32 provinceId) { return _provinceDistanceMap[provinceId]; }
 	void SetProvinceDistanceMap(int32 provinceId, int32 provinceDistance) {
 		_provinceDistanceMap[provinceId] = provinceDistance;
 	}
 
-	int32 provinceDistanceToPlayer(int32 provinceId, int32 playerId)
+	int32 provinceDistanceToPlayer(int32 provinceId, int32 playerId, bool withShallowWater = false)
 	{
 		int32 cachedDist = provinceDistanceMap(provinceId);
 		if (cachedDist != MAX_int32) {
@@ -89,7 +98,7 @@ public:
 		int32 minProvinceDistance = MAX_int32;
 		const std::vector<ProvinceConnection>& connections = _simulation->GetProvinceConnections(provinceId);
 		for (const ProvinceConnection& connection : connections) {
-			if (connection.isConnectedTileType() &&
+			if (connection.isConnectedTileType(withShallowWater) &&
 				_simulation->provinceOwnerPlayer(connection.provinceId) == playerId)
 			{
 				int32 connectedProvinceDist = provinceDistanceMap(connection.provinceId);
@@ -100,6 +109,7 @@ public:
 		}
 		return minProvinceDistance;
 	}
+
 	
 	//bool IsOwnedByPlayer(WorldRegion2 region, int32 playerId) {
 	//	return region.IsValid() && _territoryOwnerMap[region.regionId()] == playerId;

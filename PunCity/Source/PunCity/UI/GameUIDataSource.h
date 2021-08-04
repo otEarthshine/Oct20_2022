@@ -106,10 +106,13 @@ enum class UIEnum
 	TownhallUpgrade,
 
 	PunRichText,
+	PunRichTextTooltipWrap,
+	PunRichTextQuestWrap,
+	PunRichTextCenter,
 	PunRichText_Chat,
 	PunRichText_Popup,
 	PunRichTextTwoSided,
-	PunRichTextBullet,
+	PunRichTextBullet_QuestWrap,
 	//PunEventText,
 
 	PunItemIcon,

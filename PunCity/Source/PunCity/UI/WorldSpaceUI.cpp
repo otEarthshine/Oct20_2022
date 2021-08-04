@@ -407,6 +407,9 @@ void UWorldSpaceUI::TickBuildings()
 					
 					TickJobUI(buildingId);
 				}
+				else {
+					building.SetBuildingResourceUIDirty(true);
+				}
 			}
 
 			LEAN_PROFILING_UI(TickWorldSpaceUI_BldOverlay);
@@ -888,6 +891,9 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 				buildingJobUI->SetBuildingStatus(building, jobUIState);
 				buildingJobUI->SetHoverWarning(building);
 			}
+			else if (building.isEnum(CardEnum::Farm)) {
+				buildingJobUI->SetHoverWarning(building);
+			}
 
 			return;
 		}
@@ -1251,12 +1257,12 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	}
 	// Drag
 	else if (needInstruction(PlacementInstructionEnum::DragGather)) {
-		punBox->AddRichTextCenter(LOCTEXT("DragGather1_Instruct", "Click and drag cursor"))->SetAutoWrapText(false);
-		punBox->AddRichTextCenter(LOCTEXT("DragGather2_Instruct", "to specify the area to harvest"))->SetAutoWrapText(false);
+		punBox->AddRichTextCenter(LOCTEXT("DragGather1_Instruct", "Click and drag cursor"));
+		punBox->AddRichTextCenter(LOCTEXT("DragGather2_Instruct", "to specify the area to harvest"));
 	}
 	else if (needInstruction(PlacementInstructionEnum::DragRoad1)) {
-		punBox->AddRichTextCenter(LOCTEXT("DragRoad11_Instruct", "Click and drag cursor"))->SetAutoWrapText(false);
-		punBox->AddRichTextCenter(LOCTEXT("DragRoad12_Instruct", "to build"))->SetAutoWrapText(false);
+		punBox->AddRichTextCenter(LOCTEXT("DragRoad11_Instruct", "Click and drag cursor"));
+		punBox->AddRichTextCenter(LOCTEXT("DragRoad12_Instruct", "to build"));
 	}
 	//else if (needInstruction(PlacementInstructionEnum::DragRoad2)) { // Not used yet???
 	//	//punBox->AddRichText("Shift-click to repeat")->SetJustification(ETextJustify::Type::Center)->SetAutoWrapText(false);
@@ -1282,9 +1288,17 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	else if (needInstruction(PlacementInstructionEnum::DragStorageYard)) {
 		punBox->AddRichTextParsed(getInstruction(PlacementInstructionEnum::DragStorageYard).instruction);
 	}
+
+	else if (needInstruction(PlacementInstructionEnum::FarmAndRanch)) {
+		punBox->AddRichTextCenter(LOCTEXT("FarmAndRanch_Instruct", "<Red>Cannot be built on desert</>"));
+	}
+	else if (needInstruction(PlacementInstructionEnum::FarmNoValidSeedForRegion)) {
+		punBox->AddRichTextCenter(LOCTEXT("FarmNoValidSeedForRegion_Instruct", "<Red>None of your seeds can be planted in this province.</>"));
+	}
 	else if (needInstruction(PlacementInstructionEnum::DragFarm)) {
 		punBox->AddRichTextParsed(getInstruction(PlacementInstructionEnum::DragFarm).instruction);
 	}
+	
 	else if (needInstruction(PlacementInstructionEnum::Kidnap)) {
 		punBox->AddRichTextParsed(getInstruction(PlacementInstructionEnum::Kidnap).instruction);
 	}
@@ -1293,13 +1307,13 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	}
 	
 	else if (needInstruction(PlacementInstructionEnum::DragDemolish)) {
-		punBox->AddRichTextCenter(LOCTEXT("DragDemolish1_Instruct", "Click and drag cursor"))->SetAutoWrapText(false);
-		punBox->AddRichTextCenter(LOCTEXT("DragDemolish2_Instruct", "to specify the area to demolish"))->SetAutoWrapText(false);
+		punBox->AddRichTextCenter(LOCTEXT("DragDemolish1_Instruct", "Click and drag cursor"));
+		punBox->AddRichTextCenter(LOCTEXT("DragDemolish2_Instruct", "to specify the area to demolish"));
 	}
 
 	else if (needInstruction(PlacementInstructionEnum::DeliveryPointInstruction)) {
-		punBox->AddRichTextCenter(LOCTEXT("DeliveryPointInstruction1_Instruct", "Choose storage/market"))->SetAutoWrapText(false);
-		punBox->AddRichTextCenter(LOCTEXT("DeliveryPointInstruction2_Instruct", "to set the delivery point."))->SetAutoWrapText(false);
+		punBox->AddRichTextCenter(LOCTEXT("DeliveryPointInstruction1_Instruct", "Choose storage/market"));
+		punBox->AddRichTextCenter(LOCTEXT("DeliveryPointInstruction2_Instruct", "to set the delivery point."));
 	}
 	else if (needInstruction(PlacementInstructionEnum::DeliveryPointMustBeStorage)) {
 		punBox->AddRichTextCenter(LOCTEXT("DeliveryPointMustBeStorage1_Instruct", "<Red>Delivery Point must be</>"));
@@ -1329,16 +1343,10 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	}
 	else if (needInstruction(PlacementInstructionEnum::LogisticsOffice))
 	{
-		punBox->AddRichTextCenter(LOCTEXT("LogisticsOffice1_Instruct", "Take resources from within radius"))->SetAutoWrapText(false);
-		punBox->AddRichTextCenter(LOCTEXT("LogisticsOffice2_Instruct", "Ship them to faraway destination"))->SetAutoWrapText(false);
+		punBox->AddRichTextCenter(LOCTEXT("LogisticsOffice1_Instruct", "Take resources from within radius"));
+		punBox->AddRichTextCenter(LOCTEXT("LogisticsOffice2_Instruct", "Ship them to faraway destination"));
 	}
 	
-	else if (needInstruction(PlacementInstructionEnum::FarmAndRanch)) {
-		punBox->AddRichTextCenter(LOCTEXT("FarmAndRanch_Instruct", "<Red>Cannot be built on desert</>"));
-	}
-	else if (needInstruction(PlacementInstructionEnum::FarmNoValidSeedForRegion)) {
-		punBox->AddRichTextCenter(LOCTEXT("FarmNoValidSeedForRegion_Instruct", "<Red>None of your seeds can be planted in this province.</>"));
-	}
 	else if (needInstruction(PlacementInstructionEnum::FireOnTownhall)) {
 		int32 razeInfluence = getInstruction(PlacementInstructionEnum::FireOnTownhall).intVar1;
 		punBox->AddRichTextCenter(FText::Format(LOCTEXT("FireOnTownhall_Instruct", "Requires {0}<img id=\"Influence\"/> to set townhall on fire"), TEXT_NUM(razeInfluence)));
@@ -1417,15 +1425,15 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	if (!hasPrimaryInstruction && IsBuildingCard(placementInfo.buildingEnum)) 
 	{
 		if (needInstruction(PlacementInstructionEnum::Rotate)) {
-			punBox->AddRichTextCenter(LOCTEXT("Rotate_Instruct", "Press R to rotate"))->SetAutoWrapText(false);
+			punBox->AddRichTextCenter(LOCTEXT("Rotate_Instruct", "Press R to rotate"));
 			punBox->AddSpacer(12);
 
 			showResource = false;
 		}
 		else if (needInstruction(PlacementInstructionEnum::Shift))
 		{
-			punBox->AddRichTextCenter(LOCTEXT("Shift1_Instruct", "Shift-click for"))->SetAutoWrapText(false);
-			punBox->AddRichTextCenter(LOCTEXT("Shift2_Instruct", "multiple placement"))->SetAutoWrapText(false);
+			punBox->AddRichTextCenter(LOCTEXT("Shift1_Instruct", "Shift-click for"));
+			punBox->AddRichTextCenter(LOCTEXT("Shift2_Instruct", "multiple placement"));
 			punBox->AddSpacer(12);
 
 			showResource = false;

@@ -31,6 +31,7 @@ public class PrototypeCity : ModuleRules
             "OnlineSubsystem",
             "OnlineSubsystemUtils",
             "Steamworks",
+            "RHI",
             //"OnlineSubsystemSteam",
         });
 

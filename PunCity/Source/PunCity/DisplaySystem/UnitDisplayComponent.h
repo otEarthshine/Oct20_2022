@@ -256,6 +256,8 @@ private:
 	
 	void AddSkelMesh(int32 unitId, UnitEnum unitEnum, UnitAnimationEnum animationEnum, bool isChild, FTransform& transform, int32 variationIndex, int32 birthTicks)
 	{
+		LEAN_PROFILING_D(TickUnitDisplay_Skel);
+		
 		SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitSkel);
 
 		// Key is needed just in case unitEnum changed
@@ -273,7 +275,7 @@ private:
 			auto setupSkelMesh = [&](USkeletalMeshComponent* skelMesh)
 			{
 				skelMesh->SetVisibility(true);
-				skelMesh->SetCollisionEnabled(PunSettings::Get("DebugTemp2") ? ECollisionEnabled::NoCollision : ECollisionEnabled::QueryAndPhysics);
+				skelMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 				skelMesh->bSkipBoundsUpdateWhenInterpolating = PunSettings::Get("DebugTemp3");
 				skelMesh->bComponentUseFixedSkelBounds = PunSettings::Get("DebugTemp4");
 			};
@@ -291,6 +293,7 @@ private:
 					break;
 				}
 			}
+			
 			// Spawn brand new unit
 			if (index == -1) {
 				index = _unitSkelMeshes.Num();
@@ -328,7 +331,7 @@ private:
 
 		//
 		float playRate = 0.7f; // animal
-		if (IsHumanDisplay(unitEnum))
+		if (IsHumanAnimatedDisplay(unitEnum))
 		{
 			playRate = GetUnitAnimationPlayRate(animationEnum) * simulation().gameSpeedFloat();
 			if (isChild) {
@@ -343,10 +346,13 @@ private:
 		if (unitEnum == UnitEnum::WildMan) {
 			playRate = 1.2f;
 		}
+
 		
+		int32 targetCustomDepth = IsFocusedUnit(unitId) ? 2 : 0;
 		
 		if (_unitSkelState[index].animationEnum != animationEnum ||
-			fabs(_unitSkelState[index].animationPlayRate - playRate) > 0.01f)
+			fabs(_unitSkelState[index].animationPlayRate - playRate) > 0.01f ||
+			_unitSkelState[index].customDepth != targetCustomDepth)
 		{
 			SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitSkel1);
 			
@@ -359,6 +365,7 @@ private:
 			{
 				skelMesh->PlayAnimation(skelAsset.animationEnumToSequence[animationEnum], true);
 				skelMesh->SetPlayRate(playRate);
+				skelMesh->SetPosition(5.5f); // Fast-forward to not get flash when clicking
 
 				// DEBUG TEST
 				//skelMesh->EnableExternalTickRateControl(true);
@@ -383,20 +390,34 @@ private:
 			} else {
 				_unitWeaponMeshes[index]->SetVisibility(false);
 			}
-		}
 
-		DescriptionUIState uiState = simulation().descriptionUIState();
-		int32 targetCustomDepth = (uiState.objectType == ObjectTypeEnum::Unit && uiState.objectId == unitId) ? 2 : 0;
-		if (_unitSkelState[index].customDepth != targetCustomDepth) 
-		{
-			SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitSkel2);
-			
-			_unitSkelState[index].customDepth = targetCustomDepth;
-			GameDisplayUtils::SetCustomDepth(skelMesh, targetCustomDepth);
+			// Highlight the focused Unit
+			{
+				LeanProfiler leanProfilerInner(LeanProfilerEnum::TickUnitDisplay_Skel2);
+				SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitSkel2);
+
+				_unitSkelState[index].customDepth = targetCustomDepth;
+				GameDisplayUtils::SetCustomDepth(skelMesh, targetCustomDepth);
+			}
 		}
+		
+		//if (_unitSkelState[index].customDepth != targetCustomDepth)
+		//{
+		//	LeanProfiler leanProfilerInner(LeanProfilerEnum::TickUnitDisplay_Skel2);
+		//	SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitSkel2);
+		//	
+		//	_unitSkelState[index].customDepth = targetCustomDepth;
+		//	GameDisplayUtils::SetCustomDepth(skelMesh, targetCustomDepth);
+		//}
 
 		_thisTransform.Add(unitId, transform);
 	}
+
+	bool IsFocusedUnit(int32 unitId) {
+		DescriptionUIState uiState = simulation().descriptionUIState();
+		return uiState.objectType == ObjectTypeEnum::Unit && uiState.objectId == unitId;
+	}
+	
 
 	void SkelMeshAfterAdd()
 	{

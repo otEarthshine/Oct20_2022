@@ -198,6 +198,12 @@ void UGameSettingsUI::PunInit(UPunWidget* callbackParent)
 	));
 
 
+	HomelessWarningSoundCheckBox->OnCheckStateChanged.AddDynamic(this, &UGameSettingsUI::OnHomelessWarningSoundCheckBoxChecked);
+	HomelessWarningSoundCheckBox->SetIsChecked(PunSettings::Get("HomelessWarningSound"));
+
+	RoundCountdownSoundCheckBox->OnCheckStateChanged.AddDynamic(this, &UGameSettingsUI::OnRoundCountdownSoundCheckBoxChecked);
+	RoundCountdownSoundCheckBox->SetIsChecked(PunSettings::Get("RoundCountdownSound"));
+
 	//RefreshDropdowns();
 	//ResetTabSelection();
 
@@ -347,6 +353,9 @@ void UGameSettingsUI::RefreshUI(bool resetTabs, bool resetDropdown, bool setting
 	LanguageDropdown->SetSelectedOption(languageOption);
 	MultithreadedMeshGenerationCheckBox->SetIsChecked(gameInst->useMultithreadedMeshGeneration);
 	ForceClickthroughCheckBox->SetIsChecked(gameInst->forceClickthrough);
+
+	HomelessWarningSoundCheckBox->SetIsChecked(gameInst->homelessWarningSound);
+	RoundCountdownSoundCheckBox->SetIsChecked(gameInst->roundCountdownSound);
 
 	if (settingsUndirty) {
 		_isSettingsDirty = false;
@@ -548,6 +557,10 @@ void UGameSettingsUI::OnLanguageDropdownChanged(FString sItem, ESelectInfo::Type
 		// RefreshCulture is done in RefreshUI, since RefreshUI refreshed the culture back to en (from dropdown refresh)
 		RefreshUI(false, true, false);
 
+		// Sorted names need to reset
+		ResetSortedNameBuildingEnum();
+		ResetSortedNameResourceEnum();
+
 		Spawn2DSound("UI", "DropdownChange");
 	}
 }
@@ -563,6 +576,24 @@ void UGameSettingsUI::OnForceClickthroughCheckBoxChecked(bool active)
 {
 	_isSettingsDirty = true;
 	gameInstance()->forceClickthrough = active;
+	gameInstance()->RefreshOtherSettings();
+
+	Spawn2DSound("UI", "DropdownChange");
+}
+
+void UGameSettingsUI::OnHomelessWarningSoundCheckBoxChecked(bool active)
+{
+	_isSettingsDirty = true;
+	gameInstance()->homelessWarningSound = active;
+	gameInstance()->RefreshOtherSettings();
+
+	Spawn2DSound("UI", "DropdownChange");
+}
+
+void UGameSettingsUI::OnRoundCountdownSoundCheckBoxChecked(bool active)
+{
+	_isSettingsDirty = true;
+	gameInstance()->roundCountdownSound = active;
 	gameInstance()->RefreshOtherSettings();
 
 	Spawn2DSound("UI", "DropdownChange");
@@ -590,6 +621,7 @@ void UGameSettingsUI::RestoreDefault()
 		settings->SetVisualEffectQuality(0);
 
 		settings->SetVSyncEnabled(true);
+		settings->SetFrameRateLimit(60);
 
 		gameInstance()->RestoreDefaultsGraphics();
 

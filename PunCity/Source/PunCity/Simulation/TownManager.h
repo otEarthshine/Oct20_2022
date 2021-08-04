@@ -618,72 +618,10 @@ public:
 	{
 		//PUN_LOG("ClaimProvince province:%d pid:%d", provinceId, _playerId);
 
-		//WorldTile2 minTile = region.minTile();
-		//WorldTile2 maxTile = region.maxTile();
-		//if (_regionsClaimed.size() == 0) {
-		//	_territoryBoxExtent = TileArea(minTile.x, minTile.y, maxTile.x, maxTile.y);
-		//}
-		//_territoryBoxExtent = TileArea(std::min(_territoryBoxExtent.minX, minTile.x), std::min(_territoryBoxExtent.minY, minTile.y),
-		//								std::max(_territoryBoxExtent.maxX, maxTile.x), std::max(_territoryBoxExtent.maxY, maxTile.y));
-
 		_provincesClaimed.push_back(provinceIdIn);
 
-		//WorldTile2 townGate = _simulation->townhallGateTile(_playerId);
-		//WorldTile2 provinceCenter = _simulation->GetProvinceCenterTile(provinceId);
-		//WorldTile2 availableProvinceTile = AlgorithmUtils::FindNearbyAvailableTile(provinceCenter, [&](const WorldTile2& tile) {
-		//	return _simulation->pathAI(true)->isWalkable(tile.x, tile.y);
-		//}, 9);
-		//DEBUG_ISCONNECTED_VAR(ClaimProvince);
-		//_claimedProvinceConnected.emplace(provinceId, _simulation->IsConnected(townGate, availableProvinceTile, GameConstants::MaxFloodDistance_HumanLogistics, true));
+		RefreshProvinceDistanceMap();
 
-		// Check for number of provinces from townhall
-		//  Use Breadth-first search
-		auto& regionSys = _simulation->regionSystem();
-		
-		for (int32 provinceId : _provincesClaimed) {
-			regionSys.SetProvinceDistanceMap(provinceId, MAX_int32);
-		}
-
-		int32 level = 0;
-		std::vector<int32> curProvinceIds;
-		curProvinceIds.push_back(_provincesClaimed[0]);
-		regionSys.SetProvinceDistanceMap(_provincesClaimed[0], level);
-		
-		while (level < 7) 
-		{
-			level++;
-			
-			std::vector<int32> nextProvinceIds;
-			for (int32 curProvinceId : curProvinceIds) {
-				const std::vector<ProvinceConnection>& connections = _simulation->GetProvinceConnections(curProvinceId);
-				for (const ProvinceConnection& connection : connections) {
-					if (connection.tileType == TerrainTileType::River ||
-						connection.tileType == TerrainTileType::None)
-					{
-						// If this province is claimed by us
-						if (_simulation->provinceOwnerTown(connection.provinceId) == _townId) 
-						{
-							// Set the provincesFromTownhall if needed
-							for (int32 i = 0; i < _provincesClaimed.size(); i++) {
-								if (connection.provinceId == _provincesClaimed[i] &&
-									regionSys.provinceDistanceMap(connection.provinceId) == MAX_int32)
-								{
-									regionSys.SetProvinceDistanceMap(connection.provinceId, level);
-									nextProvinceIds.push_back(connection.provinceId);
-								}
-							}
-						}
-					}
-				}
-			}
-			
-			curProvinceIds = nextProvinceIds;
-		}
-
-		// DEBUG
-		for (int32 i = 0; i < _provincesClaimed.size(); i++) {
-			PUN_LOG("Refresh province:%d distance:%d", _provincesClaimed[i], regionSys.provinceDistanceMap(_provincesClaimed[i]));
-		}
 		
 		if (lightMode) {
 			return;
@@ -793,6 +731,62 @@ private:
 		}
 		return _adultIds.size();
 	}
+
+
+	void RefreshProvinceDistanceMap()
+	{
+		// Check for number of provinces from townhall
+		//  Use Breadth-first search
+		auto& regionSys = _simulation->regionSystem();
+
+		// Clear claimed provinces (reset below)
+		for (int32 provinceId : _provincesClaimed) {
+			regionSys.SetProvinceDistanceMap(provinceId, MAX_int32);
+		}
+
+		int32 level = 0;
+		std::vector<int32> curProvinceIds;
+		curProvinceIds.push_back(_provincesClaimed[0]);
+		regionSys.SetProvinceDistanceMap(_provincesClaimed[0], level);
+
+		while (level < 7)
+		{
+			level++;
+
+			std::vector<int32> nextProvinceIds;
+			for (int32 curProvinceId : curProvinceIds)
+			{
+				const std::vector<ProvinceConnection>& connections = _simulation->GetProvinceConnections(curProvinceId);
+				for (const ProvinceConnection& connection : connections) {
+					if (connection.tileType == TerrainTileType::River ||
+						connection.tileType == TerrainTileType::None)
+					{
+						// If this province is claimed by us
+						if (_simulation->provinceOwnerTown(connection.provinceId) == _townId)
+						{
+							// Set the provincesFromTownhall if needed
+							for (int32 i = 0; i < _provincesClaimed.size(); i++) {
+								if (connection.provinceId == _provincesClaimed[i] &&
+									regionSys.provinceDistanceMap(connection.provinceId) == MAX_int32)
+								{
+									regionSys.SetProvinceDistanceMap(connection.provinceId, level);
+									nextProvinceIds.push_back(connection.provinceId);
+								}
+							}
+						}
+					}
+				}
+			}
+
+			curProvinceIds = nextProvinceIds;
+		}
+
+		// DEBUG
+		for (int32 i = 0; i < _provincesClaimed.size(); i++) {
+			PUN_LOG("Refresh province:%d distance:%d", _provincesClaimed[i], regionSys.provinceDistanceMap(_provincesClaimed[i]));
+		}
+	}
+	
 
 	/*
 	 * Influence Price

@@ -288,6 +288,8 @@ public:
 	virtual void SetWalkable(WorldTile2 tile, bool isWalkable) = 0;
 	virtual void SetWalkableSkipFlood(WorldTile2 tile, bool isWalkable) = 0;
 	//virtual void SetWalkableNonIntelligent(WorldTile2 tile, bool isWalkable) = 0;
+	virtual bool IsWalkable(WorldTile2 tile) = 0;
+	
 	virtual class PunAStar128x256* pathAI() = 0;
 
 	virtual void SetRoadPathAI(WorldTile2 tile, bool isRoad) = 0;

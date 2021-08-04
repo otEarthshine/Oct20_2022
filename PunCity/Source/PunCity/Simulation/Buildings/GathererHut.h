@@ -161,8 +161,16 @@ public:
 	FText farmStageName();
 
 	bool ShouldAddWorker_ConstructedNonPriority() override {
+		if (HasDropsLeft()) {
+			return true;
+		}
 		return !IsStage(FarmStage::Dormant);
 	}
+
+	bool HasDropsLeft() {
+		return resourceSystem().GetDropsFromArea_Pickable(area(), true).size() > 0;
+	}
+	
 
 	void OnTick1Sec() final
 	{
@@ -565,6 +573,8 @@ class Chocolatier : public IndustrialBuilding
 public:
 	void FinishConstruction() override;
 
+	std::vector<BonusPair> GetBonuses() final;
+
 	virtual int32 inputPerBatch(ResourceEnum resourceEnum) override {
 		return Building::inputPerBatch(resourceEnum) * (IsUpgraded_InitialIndex(0) ? 50 : 100) / 100;
 	}
@@ -916,7 +926,7 @@ public:
 class WorldWonder : public Building
 {
 public:
-	void FinishConstruction() override {
+	virtual void FinishConstruction() override {
 		Building::FinishConstruction();
 
 		builtNumber = _simulation->playerBuildingFinishedCount(_playerId, _buildingEnum);

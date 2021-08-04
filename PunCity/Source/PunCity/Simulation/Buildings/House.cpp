@@ -369,6 +369,9 @@ int64 House::GetScience100(ScienceEnum scienceEnum, int64 cumulative100) const
 	}
 
 	case ScienceEnum::BookWorm: {
+		if (_simulation->TownhallCardCountTown(_townId, CardEnum::BookWorm) == 0) {
+			return 0;
+		}
 		return cumulative100 * 50 / 100; // +50%
 	}
 
@@ -575,9 +578,18 @@ void Ranch::AddAnimalOccupant(UnitEnum animalEnum, int32_t age)
 	auto& unitAI = _simulation->unitAI(newAnimalId);
 	unitAI.SetHouseId(buildingId());
 
-	PUN_LOG("AddAnimalOccupant %s", ToTChar(unitAI.compactStr()));
+	//PUN_LOG("AddAnimalOccupant %s", ToTChar(unitAI.compactStr()));
 
-	PUN_CHECK(_simulation->unitAI(newAnimalId).houseId() != -1);
+	PUN_CHECK(unitAI.houseId() != -1);
+	PUN_CHECK(IsDomesticatedAnimal(unitAI.unitEnum()));
+}
+
+void Ranch::RemoveAnimalOccupant(int32_t animalId)
+{
+	//PUN_LOG("RemoveAnimalOccupant %d", animalId);
+	PUN_CHECK(IsDomesticatedAnimal(_simulation->unitAI(animalId).unitEnum()));
+
+	CppUtils::Remove(_animalOccupants, animalId);
 }
 
 void Ranch::OnDeinit()

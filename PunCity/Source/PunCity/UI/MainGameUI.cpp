@@ -31,10 +31,6 @@ void UMainGameUI::PunInit()
 {
 	kTickCount = 0;
 
-	if (!ensure(BuildMenuOverlay)) return;
-	if (!ensure(BuildMenuTogglerButton)) return;
-	if (!ensure(BuildingMenuWrap)) return;
-
 	//// Build Menu
 	BuildMenuTogglerButton->CoreButton->OnClicked.AddDynamic(this, &UMainGameUI::ToggleBuildingMenu);
 
@@ -42,11 +38,9 @@ void UMainGameUI::PunInit()
 	GatherButton->CoreButton->OnClicked.AddDynamic(this, &UMainGameUI::ToggleGatherButton);
 	GatherSettingsCloseButton->CoreButton->OnClicked.AddDynamic(this, &UMainGameUI::CloseGatherUI);
 
-	//DemolishButton->OnClicked.AddDynamic(this, &UMainGameUI::ToggleDemolishButton);
+	// Card Inventory UI
+	CardInventoryToggleButton->OnClicked.AddDynamic(this, &UMainGameUI::ToggleCardInventoryButton);
 
-	//StatsButton->OnClicked.AddDynamic(this, &UMainGameUI::ToggleStatisticsUI);
-	//AddToolTip(StatsButton, "Show statistics");
-	//StatsButtonOverlay->SetVisibility(ESlateVisibility::Collapsed);
 
 	CardRerollButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickRerollButton);
 	CardRerollButton1->OnClicked.AddDynamic(this, &UMainGameUI::ClickRerollButton);
@@ -128,8 +122,9 @@ void UMainGameUI::PunInit()
 	// Tooltips 
 	AddToolTip(BuildMenuTogglerButton, LOCTEXT("BuildMenuTogglerButton_Tip", "Build houses, farms, and infrastructures\n<Orange>[B]</>"));
 	AddToolTip(GatherButton, LOCTEXT("GatherButton_Tip", "Gather trees, stone etc\n<Orange>[G]</><space>Activate this button, then Click and Drag to Gather."));
-	//AddToolTip(DemolishButton, LOCTEXT("DemolishButton_Tip", "Demolish\n<Orange>[X]</>"));
+	AddToolTip(CardInventoryToggleButton, LOCTEXT("CardInventoryToggleButton_Tip", "Show the Card Inventory where you can keep cards that are rarely used."));
 
+	
 	AddToolTip(CardStackButton, LOCTEXT("CardStackButton_Tip", "Show drawn cards that can be bought.\n<Orange>[C]</>"));
 	AddToolTip(RoundCountdownImage, LOCTEXT("RoundCountdownImage_Tip", "Round timer<space>You get a new card hand each round.<space>Each season contains 2 rounds."));
 
@@ -357,19 +352,23 @@ void UMainGameUI::Tick()
 		
 		if (_lastRoundCountdown != rollCountdown) {
 			_lastRoundCountdown = rollCountdown;
-			if (_lastRoundCountdown <= 5) {
-				PlayAnimation(Animations["CountdownFlash"]);
 
-				PlayAnimation(Animations["CardHand1Flash"]);
+			if (PunSettings::IsOn("RoundCountdownSound")) 
+			{
+				if (_lastRoundCountdown <= 5) {
+					PlayAnimation(Animations["CountdownFlash"]);
 
-				dataSource()->Spawn2DSound("UI", "RoundCountdown" + to_string(_lastRoundCountdown));
-			}
+					PlayAnimation(Animations["CardHand1Flash"]);
 
-			// At exact 0
-			if (Time::Seconds() > 10 && _lastRoundCountdown == Time::SecondsPerRound) {
-				PlayAnimation(Animations["CountdownFlash"]);
+					dataSource()->Spawn2DSound("UI", "RoundCountdown" + to_string(_lastRoundCountdown));
+				}
 
-				dataSource()->Spawn2DSound("UI", "RoundCountdown0");
+				// At exact 0
+				if (Time::Seconds() > 10 && _lastRoundCountdown == Time::SecondsPerRound) {
+					PlayAnimation(Animations["CountdownFlash"]);
+
+					dataSource()->Spawn2DSound("UI", "RoundCountdown0");
+				}
 			}
 			
 		}
@@ -695,7 +694,7 @@ void UMainGameUI::Tick()
 							{
 								// Only Cards filtered by Search Box
 								if (searchString.IsEmpty() ||
-									GetBuildingInfo(buildingEnum).nameF().Find(searchString, ESearchCase::Type::IgnoreCase, ESearchDir::FromStart) != INDEX_NONE)
+									GetBuildingInfo(buildingEnum).name.ToString().Find(searchString, ESearchCase::Type::IgnoreCase, ESearchDir::FromStart) != INDEX_NONE)
 								{
 									auto cardButton = AddCard(CardHandEnum::ConverterHand, buildingEnum, ConverterCardHandBox, CallbackEnum::SelectConverterCard, i);
 
@@ -1012,6 +1011,11 @@ void UMainGameUI::Tick()
 
 			if (runEachXTicks(60))
 			{
+				bool isStorageAllFull = sim.isStorageAllFull(currentTownId());
+				StorageSpaceText->SetColorAndOpacity(
+					isStorageAllFull ? FLinearColor(1, 0, 0, 0.7) : FLinearColor(1, 1, 1, 0.7)
+				);
+				
 				{
 					LeanProfiler leanProfilerInner(LeanProfilerEnum::TickMainGameUI_TopLeftTip);
 
@@ -1056,13 +1060,13 @@ void UMainGameUI::Tick()
 			Happiness->SetImage(assetLoader()->GetHappinessFace(overallHappiness));
 			Happiness->SetText(FText(), TEXT_NUM(overallHappiness));
 			Happiness->SetTextColor(GetHappinessColor(overallHappiness));
-			
+
 			TArray<FText> args;
-			ADDTEXT_(LOCTEXT("Happiness_Tip1", "Happiness: {0}%\n"), TEXT_NUM(overallHappiness));
+			ADDTEXT_(LOCTEXT("Happiness_Tip1", "Happiness: {0}\n"), ColorHappinessText(overallHappiness, TEXT_PERCENT(overallHappiness)));
 			for (size_t i = 0; i < HappinessEnumCount; i++) {
 				int32 aveHappiness = townManager.aveHappinessByType(static_cast<HappinessEnum>(i));
 				ADDTEXT_(INVTEXT("  {0} {1}\n"), 
-					ColorHappinessText(aveHappiness, FText::Format(INVTEXT("{0}%"), TEXT_NUM(aveHappiness))),
+					ColorHappinessText(aveHappiness, TEXT_PERCENT(aveHappiness)),
 					HappinessEnumName[i]
 				);
 			}
@@ -1571,6 +1575,19 @@ void UMainGameUI::Tick()
 	}
 
 	/*
+	 * 
+	 */
+
+	// erase buildingEnums that already have buttons
+	for (int i = BuildingMenuWrap->GetChildrenCount(); i-- > 0;)
+	{
+		auto cardButton = Cast<UBuildingPlacementButton>(BuildingMenuWrap->GetChildAt(i));
+		
+		cardButton->SetCardStatus(CardHandEnum::CardInventorySlots, false, false);
+	}
+	
+
+	/*
 	 * Card animation, the beginning part
 	 */
 	//DescriptionUIState uiState = simulation.descriptionUIState();
@@ -1673,7 +1690,8 @@ void UMainGameUI::ToggleBuildingMenu()
 	bool wasActive = BuildMenuTogglerImage->GetVisibility() != ESlateVisibility::Collapsed;
 	ResetBottomMenuDisplay();
 
-	if (!wasActive) {
+	if (!wasActive) 
+	{
 		// Refresh building buttons
 		std::vector<CardEnum> buildingEnums = simulation().unlockSystem(playerId())->unlockedBuildings();
 
@@ -1787,18 +1805,13 @@ void UMainGameUI::ToggleDemolishButton()
 	if (!wasDemolishing) {
 		inputSystemInterface()->StartDemolish();
 	}
-	
-	//if (!wasActive) {
-	//	inputSystemInterface()->StartDemolish();
-	//	GetPunHUD()->CloseDescriptionUI();
+}
 
-	//	dataSource()->Spawn2DSound("UI", "ButtonClick"); //TODO: need button click start/end
-	//} else {
-	//	dataSource()->Spawn2DSound("UI", "CancelPlacement");
-	//}
+void UMainGameUI::ToggleCardInventoryButton()
+{
+	if (InterfacesInvalid()) return;
 
-	
-	//SetButtonImage(DemolishImage, !wasActive);
+	CardInventoryOverlay->SetVisibility(CardInventoryOverlay->IsVisible() ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
 }
 
 void UMainGameUI::SelectPermanentCard(CardEnum buildingEnum)

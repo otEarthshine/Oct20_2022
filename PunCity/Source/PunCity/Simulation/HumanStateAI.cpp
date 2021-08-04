@@ -1133,19 +1133,18 @@ bool HumanStateAI::TryFillLuxuries()
 	}
 	House& house = _simulation->building(_houseId).subclass<House>(CardEnum::House);
 
-	const int32 maxPickupAmount = 10;
-
 	// Get resource up to the current level
 	std::vector<ResourceEnum> resourceEnums;
 	switch(house.houseLvl())
 	{
+	case 8:
 	case 7:
 	case 6:
-	case 5:
 		resourceEnums.insert(resourceEnums.end(), TierToLuxuryEnums[3].begin(), TierToLuxuryEnums[3].end());
+	case 5:
 	case 4:
-	case 3:
 		resourceEnums.insert(resourceEnums.end(), TierToLuxuryEnums[2].begin(), TierToLuxuryEnums[2].end());
+	case 3:
 	case 2:
 	case 1:
 		resourceEnums.insert(resourceEnums.end(), TierToLuxuryEnums[1].begin(), TierToLuxuryEnums[1].end());
@@ -1155,8 +1154,15 @@ bool HumanStateAI::TryFillLuxuries()
 
 	for (ResourceEnum resourceEnum : resourceEnums)
 	{
+		int32 maxPickupAmount = 10;
+		int32 pickupThreshold = 5;
+		if (house.houseLvl() >= 5 && IsLuxuryEnum(resourceEnum, 1)) {
+			maxPickupAmount = 20;
+			pickupThreshold = 10;
+		}
+		
 		if (townManage.GetHouseResourceAllow(resourceEnum) &&
-			house.GetResourceCountWithPush(resourceEnum) < 5 &&
+			house.GetResourceCountWithPush(resourceEnum) < pickupThreshold &&
 			TryMoveResourcesAnyProviderToDropoff(ResourceFindType::AvailableForPickup, house.GetHolderInfoFull(resourceEnum, maxPickupAmount)))
 		{
 			AddDebugSpeech("(Succeed)TryFillLuxuries: " + house.GetHolderInfoFull(resourceEnum, maxPickupAmount).ToString());
@@ -1441,10 +1447,22 @@ bool HumanStateAI::TryRanch()
 	// Kill oldest animal...
 	UnitFullId targetFullId;
 	int32 maxAge = 0;
-	const auto& animalOccupants = ranch.animalOccupants();
+	std::vector<int32> animalOccupants = ranch.animalOccupants();
 	for (size_t i = 0; i < animalOccupants.size(); i++) {
 		int32 animalId = animalOccupants[i];
-		int32 age = _simulation->unitAI(animalId).age();
+
+		UnitStateAI& unitAI = _simulation->unitAI(animalId);
+		int32 age = unitAI.age();
+		UnitEnum unitEnum = unitAI.unitEnum();
+
+		// TODO: proper fix?
+		// Somehow, some animal lose _houseId, below triggers, and it dies without RemoveOccupants
+		// PUN_LOG("Animal without home %s", ToTChar(compactStr()));
+		if (!IsDomesticatedAnimal(unitEnum)) {
+			ranch.RemoveAnimalOccupant(animalId);
+			continue;
+		}
+		
 		if (age >= maxAge) {
 			targetFullId = _unitData->fullId(animalId);
 			maxAge = age;
@@ -1461,7 +1479,7 @@ bool HumanStateAI::TryRanch()
 	SetActivity(UnitState::Ranch);
 
 	//auto& unitAI = _simulation->unitAI(targetFullId.id);;
-	PUN_LOG("TryRanch MoveTo:%s", *_unitData->atomLocation(targetFullId.id).worldTile2().To_FString());
+	//PUN_LOG("TryRanch MoveTo:%s", *_unitData->atomLocation(targetFullId.id).worldTile2().To_FString());
 	
 	return true;
 }
@@ -1488,7 +1506,13 @@ bool HumanStateAI::TryFarm()
 	// seed until done ... then nourish until autumn, or until fruit (for fruit bearers)
 	if (farm.IsStage(FarmStage::Dormant))
 	{
-		WorkFailed(TryWorkFailEnum::FarmIsOutOfSeason);
+		// Last few drops?
+		if (TryClearFarmDrop(farm, 1)) {
+			AddDebugSpeech("(Succeed)TryFarm(Dormant): TryClearFarmDrop 1");
+			return true;
+		}
+
+		//WorkFailed(TryWorkFailEnum::FarmIsOutOfSeason);
 		return false;
 	}
 	//// Force dormancy for winter if not yet dormant
@@ -1503,6 +1527,12 @@ bool HumanStateAI::TryFarm()
 
 	if (farm.IsStage(FarmStage::Seeding))
 	{
+		// Last few drops?
+		if (TryClearFarmDrop(farm, 1)) {
+			AddDebugSpeech("(Succeed)TryFarm(Seeding): TryClearFarmDrop 1");
+			return true;
+		}
+		
 		WorldTile2 seedTile = farm.FindFarmableTile(_id);
 
 		if (seedTile.isValid()) {
@@ -2921,7 +2951,7 @@ bool HumanStateAI::TryConstructHelper(int32 workplaceId)
 	// Need Construct
 	if (!workplace.NeedConstruct()) {
 		AddDebugSpeech("(Failed)TryConstruct: !workplace.NeedConstruct");
-		WorkFailed(TryWorkFailEnum::ConstructionSiteNoLongerNeedHelp);
+		//WorkFailed(TryWorkFailEnum::ConstructionSiteNoLongerNeedHelp);
 		return false;
 	}
 
@@ -2993,7 +3023,8 @@ bool HumanStateAI::TryCheckBadTile_Human()
 
 			_simulation->FindBestPathWater(startTownId, endTownId, startTownGate, startPortId, endPortId);
 
-			if (startPortId != -1) {
+			if (startPortId != -1) 
+			{
 				SendToTownWater(startTownId, endTownId, startPortId, endPortId);
 
 				AddDebugSpeech("(Succeed)TryCheckBadTile_Human: SendToTownWater");
@@ -3282,7 +3313,7 @@ void HumanStateAI::UpdateHappiness()
 		}
 		else {
 			targetHappiness = 70;
-			if (_simulation->TownhallCardCountTown(_playerId, CardEnum::SocialWelfare)) {
+			if (_simulation->TownhallCardCountTown(_townId, CardEnum::SocialWelfare)) {
 				targetHappiness += 30;
 			}
 		}

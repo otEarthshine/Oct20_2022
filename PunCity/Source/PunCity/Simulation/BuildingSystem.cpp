@@ -352,7 +352,17 @@ int BuildingSystem::AddBuilding(FPlaceBuilding parameters)
 	if (parameters.playerId != -1) {
 		townId = _simulation->tileOwnerTown(center);
 
-		if (townId == -1) {
+		// Special case: Tunnel can start in our territory
+		if (buildingEnum == CardEnum::Tunnel) {
+			townId = _simulation->tileOwnerTown(parameters.area.min());
+			if (townId == -1) {
+				townId = _simulation->tileOwnerTown(parameters.area.max());
+				check(townId != -1);
+			}
+		}
+
+		if (townId == -1) 
+		{
 			UE_DEBUG_BREAK();
 			return -1;
 		}
@@ -392,7 +402,14 @@ int BuildingSystem::AddBuilding(FPlaceBuilding parameters)
 		RefreshIsBuildingConnected(townId, buildingId, building->gateTile());
 	}
 
-	_buildingSubregionList.Add(center, buildingId);
+	// Add both ends of bridge and tunnels to prevent them disappearing
+	if (IsBridgeOrTunnel(buildingEnum)) {
+		_buildingSubregionList.Add(area.min(), buildingId);
+		_buildingSubregionList.Add(area.max(), buildingId);
+	}
+	else {
+		_buildingSubregionList.Add(center, buildingId);
+	}
 
 	building->ResetDisplay();
 
@@ -495,17 +512,6 @@ void BuildingSystem::PlaceBuildingOnMap(int32 buildingIdIn, bool isBuildingIniti
 	}
 }
 
-//void BuildingSystem::RemoveBuildingFromBuildingSystem(int32 buildingId)
-//{
-//	CardEnum buildingEnum = _buildings[buildingId]->buildingEnum();
-//	WorldTile2 centerTile = _buildings[buildingId]->centerTile();
-//	int32 playerId = _buildings[buildingId]->playerId();
-//
-//
-//	_buildingSubregionList.Remove(centerTile, buildingId);
-//	CppUtils::Remove(_playerIdPlus1ToEnumToBuildingIds[playerId + 1][static_cast<int>(buildingEnum)], buildingId);
-//	_alive[buildingId] = false;
-//}
 
 void BuildingSystem::RemoveBuilding(int buildingId)
 {
@@ -523,9 +529,15 @@ void BuildingSystem::RemoveBuilding(int buildingId)
 
 	PlaceBuildingOnMap(buildingId, false, false);
 
-	//RemoveBuildingFromBuildingSystem(buildingId);
 	// Remove from system
-	_buildingSubregionList.Remove(centerTile, buildingId);
+	if (IsBridgeOrTunnel(buildingEnum)) {
+		_buildingSubregionList.Remove(area.min(), buildingId);
+		_buildingSubregionList.Remove(area.max(), buildingId);
+	}
+	else {
+		_buildingSubregionList.Remove(centerTile, buildingId);
+	}
+	
 	CppUtils::Remove(_townIdPlus1ToEnumToBuildingIds[townId + 1][static_cast<int>(buildingEnum)], buildingId);
 	_alive[buildingId] = false;
 

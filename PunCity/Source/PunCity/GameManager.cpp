@@ -125,7 +125,8 @@ AGameManager::AGameManager()
 	PaintConstructionMesh = false;
 	PrintConstructionMesh = false;
 	//UpdateRHIConstructionMesh = false;
-
+	SaveSmokeJson = false;
+	
 
 	//PUN_CHECK(assetLoader()->moduleNames().Num() == ModuleMeshCount);
 }

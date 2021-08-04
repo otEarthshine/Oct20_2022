@@ -121,6 +121,7 @@ public:
 	UFUNCTION() void ToggleGatherButton();
 	UFUNCTION() void CloseGatherUI();
 	UFUNCTION() void ToggleDemolishButton();
+	UFUNCTION() void ToggleCardInventoryButton();
 	
 	UFUNCTION() void ToggleResearchMenu();
 	UFUNCTION() void ToggleProsperityUI();
@@ -197,10 +198,14 @@ private:
 	UPROPERTY(meta = (BindWidget)) UCheckBox* RemoveHarvestCheckBox_Stone;
 
 	bool shouldCloseGatherSettingsOverlay = true;
-	
 
-	//UPROPERTY(meta = (BindWidget)) UButton* DemolishButton;
-	//UPROPERTY(meta = (BindWidget)) UImage* DemolishImage;
+
+	// Card Inventory
+	UPROPERTY(meta = (BindWidget)) UButton* CardInventoryToggleButton;
+	UPROPERTY(meta = (BindWidget)) UOverlay* CardInventoryOverlay;
+	UPROPERTY(meta = (BindWidget)) UWrapBox* CardInventoryUIWrap;
+	
+	
 
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* PopulationBox;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* AdultPopulationText;

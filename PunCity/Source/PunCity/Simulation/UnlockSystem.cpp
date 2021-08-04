@@ -276,16 +276,16 @@ void UnlockSystem::Research(int64 science100PerRound, int32 updatesPerSec)
 
 void BonusToggle_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulation)
 {
-	if (techEnum == TechEnum::ShallowWaterEmbark)
-	{
-		if (!simulation->IsBuildingUnlocked(playerId, CardEnum::Bridge)) {
-			simulation->AddPopupToFront(playerId, 
-				LOCTEXT("Unlocked bridge!", "Unlocked bridge!"),
-				ExclusiveUIEnum::None, "PopupNeutral"
-			);
-			simulation->unlockSystem(playerId)->UnlockBuilding(CardEnum::Bridge);
-		}
-	}
+	//if (techEnum == TechEnum::Shallow)
+	//{
+	//	if (!simulation->IsBuildingUnlocked(playerId, CardEnum::Bridge)) {
+	//		simulation->AddPopupToFront(playerId, 
+	//			LOCTEXT("Unlocked bridge!", "Unlocked bridge!"),
+	//			ExclusiveUIEnum::None, "PopupNeutral"
+	//		);
+	//		simulation->unlockSystem(playerId)->UnlockBuilding(CardEnum::Bridge);
+	//	}
+	//}
 
 	if (techEnum == TechEnum::InfluencePoints) {
 		simulation->AddPopup(playerId, 

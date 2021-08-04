@@ -144,7 +144,9 @@ UnitDisplayState UUnitDisplayComponent::GetUnitTransformAndVariation(UnitStateAI
 		//	animationEnum != UnitAnimationEnum::ImmigrationCart &&
 		//	animationEnum != UnitAnimationEnum::HaulingCart)
 		//{
-			if (ShouldHumanUseVertexAnimation(animationEnum, zoomDistance)) {
+			if (ShouldHumanUseVertexAnimation(animationEnum, zoomDistance) &&
+				!IsFocusedUnit(unitId))
+			{
 				float gameSpeed = sim.gameSpeedFloat();
 				scale = std::fmodf(lastAnimationTime + (unitSystem.isMoving(unitId) ? (GetWorld()->GetDeltaSeconds() * 2.0f * gameSpeed) : 0.0f), 2.0f);
 			}
@@ -258,17 +260,26 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 			return;
 		}
 
-		// Special
-		//if (IsUsingSkeletalMesh(unitEnum, unit.animationEnum(), zoomDistance))
+		/*
+		 * Special case Human/WildMan
+		 *
+		 *  Decided when to use Skeletal Mesh VS Vertex Animation
+		 */
 		{
 			// Zoomed out human should always use instancedStaticMesh
+			UnitAnimationEnum animationEnum = unit.GetDisplayAnimationEnum();
+			
 			if (unitEnum == UnitEnum::Human &&
-				!ShouldHumanUseVertexAnimation(unit.GetDisplayAnimationEnum(), zoomDistance))
+				animationEnum != UnitAnimationEnum::Ship)
 			{
-				FTransform transform;
-				AddSkelMesh(unit, transform);
-				UpdateResourceDisplay(unitId, unit, transform);
-				return;
+				if (!ShouldHumanUseVertexAnimation(animationEnum, zoomDistance) ||
+					IsFocusedUnit(unitId))
+				{
+					FTransform transform;
+					AddSkelMesh(unit, transform);
+					UpdateResourceDisplay(unitId, unit, transform);
+					return;
+				}
 			}
 			if (unitEnum == UnitEnum::WildMan)
 			{

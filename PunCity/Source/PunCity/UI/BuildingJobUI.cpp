@@ -108,13 +108,13 @@ void UBuildingJobUI::SetSlots(int filledSlotCount, int allowedSlotCount, int slo
 		}
 
 		// Hide Texts
-		HumanSlotCount1->SetVisibility(ESlateVisibility::Collapsed);
-		HumanSlotCount2->SetVisibility(ESlateVisibility::Collapsed);
+		HumanSlotCountOverlay->SetVisibility(ESlateVisibility::Collapsed);
 	}
 	else
 	{
 		// Show
-		HumanSlotCount1->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		HumanSlotCountOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		
 		HumanSlotCount2->SetVisibility(allowedSlotCount != slotCount ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 		HumanSlotCount1->SetText(FText::Format(
 			INVTEXT("{0}/{1}"),

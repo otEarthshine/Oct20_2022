@@ -52,8 +52,9 @@ public:
 
 		if (uiState.objectType == ObjectTypeEnum::Building)
 		{
-			CardEnum buildingEnum = simulation().buildingEnum(uiState.objectId);
-			const std::vector<int32>& buildingIds = simulation().buildingIds(playerId(), buildingEnum);
+			Building& selectedBuilding = simulation().building(uiState.objectId);
+			
+			const std::vector<int32>& buildingIds = simulation().buildingIds(selectedBuilding.townId(), selectedBuilding.buildingEnum());
 			if (buildingIds.size() > 1) {
 				// Find the index of the current building in the array and increment it by 1
 				int32 index = -1;

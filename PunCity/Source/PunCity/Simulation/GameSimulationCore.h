@@ -131,7 +131,7 @@ public:
 	 * Tick and sample for render
 	 */
 
-	void Tick(int bufferCount, NetworkTickInfo& tickInfo);
+	void Tick(int bufferCount, NetworkTickInfo& tickInfo, bool tickOnce = false);
 
 
 	/*
@@ -1206,6 +1206,10 @@ public:
 	//	_pathAI->SetWalkable(tile.x, tile.y, isWalkable);
 	//	_floodSystem.ResetRegionFloodDelayed(TileToRegion64Id(tile));
 	//}
+	virtual bool IsWalkable(WorldTile2 tile) override {
+		return _pathAI->isWalkable(tile.x, tile.y);
+	}
+	
 	PunAStar128x256* pathAI() final {
 		return _pathAI.get();
 	}
@@ -1801,10 +1805,11 @@ public:
 					provinceOwnerTown(connection.provinceId) == townId;
 		});
 	}
-	bool IsProvinceNextToTownByShallowWater(int32 provinceId, int32 townId) final {
-		if (!unlockSystem(townPlayerId(townId))->IsResearched(TechEnum::ShallowWaterEmbark)) {
-			return false;
-		}
+	bool IsProvinceNextToTownByShallowWater(int32 provinceId, int32 townId) final
+	{
+		//if (!unlockSystem(townPlayerId(townId))->IsResearched(TechEnum::Shallow)) {
+		//	return false;
+		//}
 		return _provinceSystem.ExecuteAdjacentProvincesWithExitTrue(provinceId, [&](ProvinceConnection connection)
 		{
 			bool isValidConnectionType = (connection.tileType == TerrainTileType::Ocean);
@@ -2066,9 +2071,13 @@ public:
 
 	void SetProvinceOwner_Popup(int32 provinceId, int32 attackerPlayerId, bool isFull);
 
-	int32 provinceOwnerTown(int32 provinceId) final { return _regionSystem->provinceOwner(provinceId); }
-	int32 provinceOwnerPlayer(int32 provinceId) final {
-		int32 townId = provinceOwnerTown(provinceId);
+	int32 provinceOwnerTown(int32 provinceId) final { return _regionSystem->provinceOwner(provinceId); }\
+	
+	int32 provinceOwnerTownSafe(int32 provinceId) { return _regionSystem->provinceOwnerSafe(provinceId); }
+	
+	int32 provinceOwnerPlayer(int32 provinceId) final
+	{
+		int32 townId = provinceOwnerTownSafe(provinceId);
 		if (townId == -1) {
 			return -1;
 		}
@@ -2377,8 +2386,9 @@ public:
 		int32 totalHappiness = 0;
 		const auto& townIds = _playerOwnedManagers[playerId].townIds();
 		for (int32 townId : townIds) {
-			totalPopulation += _townManagers[townId]->population();
-			totalHappiness += totalPopulation * _townManagers[townId]->aveOverallHappiness();
+			int32 townPopulation = _townManagers[townId]->population();
+			totalPopulation += townPopulation;
+			totalHappiness += townPopulation * _townManagers[townId]->aveOverallHappiness();
 		}
 		if (totalPopulation == 0) {
 			return 0;
@@ -2480,7 +2490,7 @@ public:
 	 * Storage
 	 */
 
-	bool isStorageAllFull(int32 townId) final
+	virtual bool isStorageAllFull(int32 townId) override
 	{
 		std::vector<int32> storageIds = buildingIds(townId, CardEnum::StorageYard);
 
@@ -2488,15 +2498,16 @@ public:
 		std::vector<int32> warehouseIds = buildingIds(townId, CardEnum::Warehouse);
 		storageIds.insert(storageIds.end(), warehouseIds.begin(), warehouseIds.end());
 
-		// Add markets
-		std::vector<int32> marketIds = buildingIds(townId, CardEnum::Market);
-		storageIds.insert(storageIds.end(), marketIds.begin(), marketIds.end());
+		//// Add markets
+		//std::vector<int32> marketIds = buildingIds(townId, CardEnum::Market);
+		//storageIds.insert(storageIds.end(), marketIds.begin(), marketIds.end());
 		
 		for (int32 storageId : storageIds) {
 			if (!building(storageId).subclass<StorageYard>().isFull()) {
 				return false;
 			}
 		}
+		
 		return true;
 	}
 	int32 SpaceLeftFor(ResourceEnum resourceEnum, int32 storageId) final {
@@ -3083,7 +3094,10 @@ public:
 			// Refresh Territory Display
 			for (size_t playerId = 0; playerId < _playerOwnedManagers.size(); playerId++) {
 				if (_playerOwnedManagers[playerId].hasChosenLocation()) {
-					AddNeedDisplayUpdateId(DisplayGlobalEnum::Territory, playerId);
+					const std::vector<int32>& townIds = GetTownIds(playerId);
+					for (int32 townId : townIds) {
+						AddNeedDisplayUpdateId(DisplayGlobalEnum::Territory, townId);
+					}
 				}
 			}
 		}

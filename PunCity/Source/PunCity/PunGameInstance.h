@@ -889,7 +889,10 @@ public:
 	FString preferredCultureTag;
 	bool useMultithreadedMeshGeneration = true;
 	bool forceClickthrough = false;
-
+	
+	bool homelessWarningSound = true;
+	bool roundCountdownSound = true;
+	
 public:
 	/*
 	 * Settings
@@ -919,6 +922,9 @@ public:
 		preferredCultureTag = FString("en");
 		useMultithreadedMeshGeneration = true;
 		forceClickthrough = false;
+		
+		homelessWarningSound = true;
+		roundCountdownSound = true;
 	}
 
 	void RestoreDefaultsAll()
@@ -959,6 +965,9 @@ public:
 		Ar << useMultithreadedMeshGeneration;
 		Ar << forceClickthrough;
 
+		Ar << homelessWarningSound;
+		Ar << roundCountdownSound;
+
 		// Ensure uncorrupted preferredCultureTag
 		TArray<FString> languageTags = UKismetInternationalizationLibrary::GetLocalizedCultures(ELocalizationLoadFlags::Game);
 		if (!languageTags.Contains(preferredCultureTag)) { 
@@ -982,6 +991,9 @@ public:
 		PunSettings::Set("MultithreadedMeshGeneration", useMultithreadedMeshGeneration);
 		PunSettings::Set("ForceClickthrough", forceClickthrough);
 		PunSettings::Set("ShowDebugExtra", forceClickthrough);
+
+		PunSettings::Set("HomelessWarningSound", homelessWarningSound);
+		PunSettings::Set("RoundCountdownSound", roundCountdownSound);
 	}
 
 	void RefreshCulture()

@@ -755,6 +755,17 @@ void Chocolatier::FinishConstruction()
 	});
 }
 
+std::vector<BonusPair> Chocolatier::GetBonuses()
+{
+	std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
+	
+	if (_simulation->IsResearched(_playerId, TechEnum::ChocolateSnob)) {
+		bonuses.push_back({ LOCTEXT("Chocolate Snob Tech", "Chocolate Snob Tech"), 30 });
+	}
+
+	return bonuses;
+}
+
 
 /*
  * Winery
@@ -773,7 +784,7 @@ std::vector<BonusPair> Winery::GetBonuses()
 {
 	std::vector<BonusPair> bonuses = IndustrialBuilding::GetBonuses();
 	if (_simulation->IsResearched(_playerId, TechEnum::WinerySnob)) {
-		bonuses.push_back({ LOCTEXT("Winery Improvement Tech", "Winery Improvement Tech"), 30 });
+		bonuses.push_back({ LOCTEXT("Wine Snob Tech", "Wine Snob Tech"), 30 });
 	}
 
 	if (_simulation->HasGlobalBonus(_playerId, CardEnum::AlcoholAppreciation)) {

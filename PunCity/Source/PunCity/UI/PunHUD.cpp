@@ -97,10 +97,14 @@ APunHUD::APunHUD()
 	LoadClass(UIEnum::TownhallUpgrade, "WorldSpaceUI/TownhallUpgradeWidget");
 
 	LoadClass(UIEnum::PunRichText, "PunRichTextWidget");
+	LoadClass(UIEnum::PunRichTextTooltipWrap, "PunRichTextTooltipWrapWidget");
+	LoadClass(UIEnum::PunRichTextQuestWrap, "PunRichTextQuestWrapWidget");
+	
+	LoadClass(UIEnum::PunRichTextCenter, "PunRichTextCenterWidget");
 	LoadClass(UIEnum::PunRichText_Chat, "PunRichTextWidget_Chat");
 	LoadClass(UIEnum::PunRichText_Popup, "PunRichTextWidget_Popup");
 	LoadClass(UIEnum::PunRichTextTwoSided, "PunRichTextTwoSidedWidget");
-	LoadClass(UIEnum::PunRichTextBullet, "PunRichTextBulletWidget");
+	LoadClass(UIEnum::PunRichTextBullet_QuestWrap, "PunRichTextBulletWidget_QuestWrap");
 	//LoadClass(UIEnum::PunEventText, "PunEventTextWidget");
 
 	LoadClass(UIEnum::PunItemIcon, "PunItemIconWidget");

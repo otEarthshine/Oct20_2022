@@ -119,6 +119,7 @@ void UnitStateAI::AddUnit(UnitEnum unitEnum, int32 townId, UnitFullId fullId, IU
 	//PUN_LOG("AddUnit %s", ToTChar(compactStr()));
 }
 
+// TODO: Human no longer use this...
 int32 UnitStateAI::birthChance()
 {
 	int32 cap, population;
@@ -129,8 +130,8 @@ int32 UnitStateAI::birthChance()
 		// the more empty space (houseCap - pop) the faster growth
 		// At pop of 0, slow factor is 1
 		case UnitEnum::Human: {
-			cap = _simulation->HousingCapacity(_playerId);
-			population = _simulation->populationTown(_playerId);
+			cap = _simulation->HousingCapacity(_townId);
+			population = _simulation->populationTown(_townId);
 			break;
 		} 
 		default: {
@@ -215,8 +216,8 @@ void UnitStateAI::Update()
 		// Ppl with sickness will die in 2 seasons without medicine...
 		if (_isSick)
 		{
-			// 1-3 season to death (2 ave)
-			int32 ticksToDeath = Time::TicksPerSeason + GameRand::Rand() % (Time::TicksPerSeason * 2);
+			// 2-7 season to death (4.5 ave)
+			int32 ticksToDeath = (Time::TicksPerSeason * 2) + GameRand::Rand() % (Time::TicksPerSeason * 5);
 			_hp100 -= (ticksPassed * maxHP100()) / ticksToDeath;
 
 			if (_hp100 <= 0)
@@ -311,7 +312,9 @@ void UnitStateAI::Update()
 						true
 					);
 
-					_simulation->soundInterface()->Spawn2DSound("UI", "DeathBell", _playerId);
+					if (PunSettings::IsOn("HomelessWarningSound")) {
+						_simulation->soundInterface()->Spawn2DSound("UI", "DeathBell", _playerId);
+					}
 
 					if (_simulation->IsAIPlayer(_playerId)) {
 						_LOG(PunAI, "%s Left Homeless", _simulation->AIPrintPrefix(_playerId));
@@ -456,10 +459,32 @@ void UnitStateAI::Update()
 				//	_simulation->soundInterface()->Spawn2DSound("UI", "BabyBornBell", _playerId);
 				//}
 
-				bool isBirthControlActivated = _simulation->TownhallCardCountTown(_townId, CardEnum::BirthControl) > 0 &&
-												_simulation->populationTown(_townId) >= _simulation->HousingCapacity(_townId);
+				//bool isBirthControlActivated = _simulation->TownhallCardCountTown(_townId, CardEnum::BirthControl) > 0 &&
+				//								_simulation->populationTown(_townId) >= _simulation->HousingCapacity(_townId);
 
-				if (!isBirthControlActivated) {
+
+				int32 townPopulation = _simulation->populationTown(_townId);
+				int32 houseCapacity = _simulation->HousingCapacity(_townId);
+
+				bool shouldGiveBirth = true;
+
+				// Birth Control
+				if (_simulation->TownhallCardCountTown(_townId, CardEnum::BirthControl) > 0 &&
+					townPopulation >= houseCapacity)
+				{
+					shouldGiveBirth = false;
+				}
+
+				// Beyond 100 citizens, less birth when citizens are almost at limit
+				if (townPopulation > 100 &&
+					townPopulation >= houseCapacity &&
+					GameRand::Rand() % 2 == 0)
+				{
+					shouldGiveBirth = false;
+				}
+				
+
+				if (shouldGiveBirth) {
 					_simulation->AddUnit(unitEnum(), _townId, _unitData->atomLocation(_id), 0);
 				}
 
@@ -469,28 +494,34 @@ void UnitStateAI::Update()
 		else if (unitEnum() == UnitEnum::WildMan)
 		{
 			auto& unitSubregionLists = _simulation->unitSubregionLists();
-			const std::vector<WorldRegion2>& regionOverlaps = _simulation->provinceSystem().GetRegionOverlaps(_homeProvinceId);
-			int32 tribeCount = 0;
-			for (WorldRegion2 regionOverlap : regionOverlaps)
-			{
-				unitSubregionLists.ExecuteRegion(regionOverlap, [&](int32_t unitId)
-				{
-					if (_simulation->unitEnum(unitId) == UnitEnum::WildMan)
-					{
-						WorldTile2 curTile = _simulation->unitAtom(unitId).worldTile2();
-						
-						if (_simulation->GetProvinceIdClean(curTile) == _homeProvinceId)
-						{
-							tribeCount++;
-						}
-					}
-				});
-			}
 
-			if (tribeCount < 5) {
-				int32 newBornId = _simulation->AddUnit(unitEnum(), -1, _unitData->atomLocation(_id), 0);
-				_simulation->unitAI(newBornId).SetHouseId(_houseId);
-				PUN_LOG("Wildman Born id:%d", newBornId);
+			if (_homeProvinceId != -1)
+			{
+				int32 tribeCount = 0;
+
+				const std::vector<WorldRegion2>& regionOverlaps = _simulation->provinceSystem().GetRegionOverlaps(_homeProvinceId);
+				for (WorldRegion2 regionOverlap : regionOverlaps)
+				{
+					unitSubregionLists.ExecuteRegion(regionOverlap, [&](int32_t unitId)
+					{
+						if (_simulation->unitEnum(unitId) == UnitEnum::WildMan)
+						{
+							WorldTile2 curTile = _simulation->unitAtom(unitId).worldTile2();
+
+							if (_simulation->GetProvinceIdClean(curTile) == _homeProvinceId)
+							{
+								tribeCount++;
+							}
+						}
+					});
+				}
+
+				if (tribeCount < 5) {
+					auto& tribalVillage = _simulation->building(_houseId);
+					int32 newBornId = _simulation->AddUnit(unitEnum(), -1, tribalVillage.gateTile().worldAtom2(), 0);
+					_simulation->unitAI(newBornId).SetHouseId(_houseId);
+					PUN_LOG("Wildman Born id:%d", newBornId);
+				}
 			}
 
 			_nextPregnantTick = Time::Ticks() + Time::TicksPerSeason;
@@ -499,9 +530,12 @@ void UnitStateAI::Update()
 		{
 			if (_lastPregnant > 0) // breeded before
 			{
+				WorldTile2 birthTile = unitTile();
+				
 				bool canGiveBirth = Time::Ticks() - _lastPregnant > uInfo.gestationTicks &&
-									food() > minWarnFood() && 
-									_simulation->GetProvinceIdClean(unitTile()) != -1;
+									food() > minWarnFood() &&
+									_simulation->IsWalkable(birthTile) &&
+									_simulation->GetProvinceIdClean(birthTile) != -1;
 
 
 				// Domesticated animal can't reproduce outside
@@ -562,14 +596,14 @@ void UnitStateAI::Update()
 						else
 						{
 							// Beyond province's max, baby spawn else away from its mother
-							WorldAtom2 spawnAtom = _unitData->atomLocation(_id);
+							WorldTile2 spawnTile = birthTile;
 							if (_homeProvinceId != -1) 
 							{
 								const int32 provinceMaxAnimal = 3;
 								if (_simulation->provinceAnimals(_homeProvinceId).size() >= provinceMaxAnimal)
 								{
 									int32 maxProvincesDist = 5;
-									WorldRegion2 middleRegion = spawnAtom.worldTile2().region();
+									WorldRegion2 middleRegion = spawnTile.region();
 									
 									auto tryGetNewSpawnPoint = [&]()
 									{
@@ -585,7 +619,7 @@ void UnitStateAI::Update()
 														WorldTile2 provinceCenter = _simulation->GetProvinceRandomTile_NoFlood(curProvinceId, 10);
 														if (provinceCenter.isValid()) {
 															check(_simulation->GetProvinceIdClean(provinceCenter) != -1);
-															spawnAtom = provinceCenter.worldAtom2();
+															spawnTile = provinceCenter;
 															return;
 														}
 													}
@@ -597,12 +631,15 @@ void UnitStateAI::Update()
 									tryGetNewSpawnPoint();
 								}
 							}
-							
-							int32 newUnitId = _simulation->AddUnit(unitEnum(), _townId, spawnAtom, 0);
 
-							if (IsDomesticatedAnimal(unitEnum())) {
-								PUN_LOG("NonRanch Stray Animal %s", ToTChar(compactStr()));
-								PUN_CHECK(_simulation->unitAI(newUnitId).houseId() != -1);
+							if (_simulation->IsWalkable(spawnTile))
+							{
+								int32 newUnitId = _simulation->AddUnit(unitEnum(), _townId, spawnTile.worldAtom2(), 0);
+
+								if (IsDomesticatedAnimal(unitEnum())) {
+									PUN_LOG("NonRanch Stray Animal %s", ToTChar(compactStr()));
+									PUN_CHECK(_simulation->unitAI(newUnitId).houseId() != -1);
+								}
 							}
 						}
 
@@ -699,6 +736,8 @@ void UnitStateAI::Die()
 		// Note: need this check to combat (_houseId == -1) weirdness
 		if (_houseId != -1)
 		{
+			PUN_LOG("Animal Died id:%d houseId:%d", _id, _houseId);
+			
 			Building& bld = _simulation->building(_houseId);
 			if (IsRanch(bld.buildingEnum())) {
 				_simulation->building(_houseId).subclass<Ranch>().RemoveAnimalOccupant(_id);

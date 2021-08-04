@@ -301,11 +301,40 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	
 
 	LoadBuilding(CardEnum::FurnitureWorkshop, "Furniture_Workshop_Era", "FurnitureWorkshop", 1);
-	LoadBuilding(CardEnum::CharcoalMaker, "CharcoalMakerEra", "CharcoalBurner", 1);
+
+
+	LoadBuilding(CardEnum::CharcoalMaker, "CharcoalMakerEra1", "CharcoalBurner/Era1", false, ModuleTransformGroup::CreateAuxSet(
+		{
+			{ParticleEnum::BlackSmoke,  TransformFromPosition(3.6, 7.92, 9.0)}, // 8.2 -> 5.6 ... decrease by 2.6
+			{ParticleEnum::TorchFire,  FTransform(FRotator::ZeroRotator, FVector(3.6, 7.92, 11.5), FVector(1, 1, 1))}
+		}
+	));
+	LoadBuilding(CardEnum::CharcoalMaker, "CharcoalMakerEra2", "CharcoalBurner/Era2", false, ModuleTransformGroup::CreateAuxSet(
+		{
+			{ParticleEnum::BlackSmoke,  TransformFromPosition(3.6, 8.53, 9.0)}, // 8.2 -> 5.6 ... decrease by 2.6
+			{ParticleEnum::TorchFire,  FTransform(FRotator::ZeroRotator, FVector(3.6, 8.53, 11.5), FVector(1, 1, 1))}
+		}
+	));
+	LoadBuilding(CardEnum::CharcoalMaker, "CharcoalMakerEra3", "CharcoalBurner/Era3", false, ModuleTransformGroup::CreateAuxSet(
+		{
+			{ParticleEnum::BlackSmoke,  TransformFromPosition(3.6, 8.3, 20.0)}, // 8.2 -> 5.6 ... decrease by 2.6
+			{ParticleEnum::TorchFire,  FTransform(FRotator::ZeroRotator, FVector(3.6, 8.3, 22.6), FVector(1, 1, 1))}
+		}
+	));
+	LoadBuilding(CardEnum::CharcoalMaker, "CharcoalMakerEra4", "CharcoalBurner/Era4", false, ModuleTransformGroup::CreateAuxSet(
+		{
+			{ParticleEnum::BlackSmoke,  TransformFromPosition(3.3, 8.37, 21.3)}, // 8.2 -> 5.6 ... decrease by 2.6
+			{ParticleEnum::TorchFire,  FTransform(FRotator::ZeroRotator, FVector(3.3, 8.37, 23.9), FVector(1, 1, 1))}
+		}
+	));
+
+	
 	LoadBuilding(CardEnum::Brickworks, "BrickworkEra", "Brickworks", 2);
 	
 	LoadBuilding(CardEnum::Beekeeper, "BeeKeeper_Era", "Beekeeper", 2);
 	LoadBuilding(CardEnum::Market, "Market__Era", "Market", 2, 2);
+
+	LoadBuilding(CardEnum::IrrigationReservoir, "IrrigationReservoir", "IrrigationReservoir");
 	
 	LoadBuilding(CardEnum::Bakery, "Bakery_Era", "Bakery", 2);
 	LoadBuilding(CardEnum::IronSmelter, "Iron_Smelter_Era", "IronSmelter", 2, 2);
@@ -564,7 +593,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	TryLoadBuildingModuleSet("ChichenItza", "ChichenItza");
 
 	//TryLoadBuildingModuleSet("Market", "Market");
-	TryLoadBuildingModuleSet("IrrigationReservoir", "IrrigationReservoir");
+	//TryLoadBuildingModuleSet("IrrigationReservoir", "IrrigationReservoir");
 	
 
 	TryLoadBuildingModuleSet("TribalVillage", "RegionTribalVillage");
@@ -781,7 +810,19 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	addCardIcon(CardEnum::BorealWinterResist, "WinterResistance");
 	addCardIcon(CardEnum::WondersScoreMultiplier, "WondersScore");
 
+	addCardIcon(CardEnum::DesertPilgrim, "DesertPilgrim");
+	addCardIcon(CardEnum::MiningEquipment, "MiningEquipment");
 
+	addCardIcon(CardEnum::ForestTools, "ForestImprovedToolmaking");
+	addCardIcon(CardEnum::ForestBeer, "ForestImprovedBeerBrewing");
+
+	addCardIcon(CardEnum::JungleTree, "JungleForestry");
+	addCardIcon(CardEnum::JungleHerbFarm, "JungleHerb");
+
+	addCardIcon(CardEnum::Snatch, "StealCard");
+	addCardIcon(CardEnum::Steal, "SnatchCard");
+
+	
 
 	// Add Building Card Icons
 	addCardIconCount = 0;
@@ -805,7 +846,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 		}
 	}
 
-	check(addCardIconCount == 66);
+	check(addCardIconCount == 70);
 
 	//BorealFishing
 	//BorealWinterResistant
@@ -1294,6 +1335,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 
 	CheckMeshesAvailable();
+
+	_LOG(PunInit, "!!! AssetLoader Done Init !!!");
 }
 
 void UAssetLoaderComponent::InitNiagara()
@@ -1789,6 +1832,69 @@ void UAssetLoaderComponent::PaintConstructionMesh()
 	PUN_EDITOR_LOG("PAINTING ALL DONE");
 }
 
+void UAssetLoaderComponent::SaveSmokeJson()
+{
+	/*
+	 * Save meshName_to_groupIndexToConnectedVertIndices to json (for Smoke Position)
+	 */
+	FString path = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
+
+	FString saveFileName = "Paks/SmokePositions.json";
+
+
+	auto allJsonObject = MakeShared<FJsonObject>();
+
+	for (auto meshIt : meshName_to_groupIndexToConnectedVertIndices)
+	{
+		auto meshJsonObject = MakeShared<FJsonObject>();
+
+		// vertex positions
+		TArray<TSharedPtr<FJsonValue>> vertexPositionsJsonArray;
+		TArray<FVector>& vertexPositions = meshName_to_vertexPositions[ToFString(meshIt.first)];
+		for (FVector vertexPosition : vertexPositions)
+		{
+			TSharedPtr<FJsonObject> vertexPosition_jsonObj = MakeShared<FJsonObject>();
+
+			vertexPosition_jsonObj->SetNumberField("X", vertexPosition.X);
+			vertexPosition_jsonObj->SetNumberField("Y", vertexPosition.Y);
+			vertexPosition_jsonObj->SetNumberField("Z", vertexPosition.Z);
+
+			TSharedPtr<FJsonValue> jsonValue = MakeShared<FJsonValueObject>(vertexPosition_jsonObj);
+
+			vertexPositionsJsonArray.Add(jsonValue);
+		}
+		meshJsonObject->SetArrayField("vertexPosition", vertexPositionsJsonArray);
+
+
+		auto groupsJsonObject = MakeShared<FJsonObject>();
+		std::unordered_map<int32, std::vector<int32>>& groupIndexToConnectedVertIndices = meshIt.second;
+		for (auto vertGroupIt : groupIndexToConnectedVertIndices)
+		{
+			TArray<TSharedPtr<FJsonValue>> Array;
+
+			std::vector<int32>& connectedVertIndices = vertGroupIt.second;
+			for (int32 connectedVertIndex : connectedVertIndices)
+			{
+				Array.Add(MakeShareable(new FJsonValueNumber(connectedVertIndex)));
+			}
+
+			groupsJsonObject->SetArrayField(FString::FromInt(vertGroupIt.first), Array);
+		}
+		meshJsonObject->SetObjectField("group", groupsJsonObject);
+
+
+		allJsonObject->SetObjectField(ToFString(meshIt.first), meshJsonObject);
+	}
+
+
+	FString jsonString;
+	TSharedRef<TJsonWriter<>> writer = TJsonWriterFactory<>::Create(&jsonString);
+	FJsonSerializer::Serialize(allJsonObject, writer);
+
+	FFileHelper::SaveStringToFile(jsonString, *(path + saveFileName));
+
+}
+
 void UAssetLoaderComponent::RemoveVertexColor() 
 {
 	PUN_EDITOR_LOG("RemoveVertexColor");
@@ -1886,13 +1992,107 @@ void UAssetLoaderComponent::TraverseTris(uint32 mergedVertIndex, int32 groupInde
 	}
 };
 
+void UAssetLoaderComponent::TraverseTris_July10(uint32 mergedVertIndex, int32 groupIndex_Parent, const TArray<int32>& indexBuffer, const TArray<FVector>& vertexPositions)
+{
+	//if (isPrinting) PUN_EDITOR_LOG(" TraverseTris groupIndex:%d groupIndex_Parent:%d %s", groupIndex, groupIndex_Parent, *vertexPositions.VertexPosition(groupIndex).ToCompactString());
+
+	// already processed
+	if (processedVertices[mergedVertIndex]) {
+		return;
+	}
+	processedVertices[mergedVertIndex] = true;
+
+	const vector<int32>& trisIndices = mergedVertIndexToConnectedTrisIndices[mergedVertIndex];
+
+	for (int32 trisIndex : trisIndices)
+	{
+		int32 vertIndex = indexBuffer[trisIndex];
+
+		CppUtils::TryAdd(groupIndexToConnectedVertIndices[groupIndex_Parent], vertIndex);
+		processedVertices[vertIndex] = true;
+
+		int32 trisIndex_0 = (trisIndex / 3) * 3;
+
+		//if (isPrinting) PUN_EDITOR_LOG("   -Recurse trisIndex_0:%d", trisIndex_0);
+
+		PUN_CHECK((indexBuffer.Num() / 3) * 3 == indexBuffer.Num());
+		PUN_CHECK((trisIndex_0 + 2) < indexBuffer.Num());
+
+		TraverseTris_July10(vertIndexToMergedVertIndex[indexBuffer[trisIndex_0]], groupIndex_Parent, indexBuffer, vertexPositions);
+		TraverseTris_July10(vertIndexToMergedVertIndex[indexBuffer[trisIndex_0 + 1]], groupIndex_Parent, indexBuffer, vertexPositions);
+		TraverseTris_July10(vertIndexToMergedVertIndex[indexBuffer[trisIndex_0 + 2]], groupIndex_Parent, indexBuffer, vertexPositions);
+	}
+};
+
 void UAssetLoaderComponent::DetectParticleSystemPosition(CardEnum buildingEnum, UStaticMesh* mesh)
 {
 	TArray<FVector> vertexPositions;
+
+//#if WITH_EDITOR
+	// In the editor, we DetectMeshGroups and cache results in meshName_to_groupIndexToConnectedVertIndices
 	
 	//isPrinting = true;
-	DetectMeshGroups(mesh, vertexPositions);
+	//DetectMeshGroups(mesh, vertexPositions);
 	isPrinting = false;
+
+	//meshName_to_vertexPositions.Add(mesh->GetName(), vertexPositions);
+	//meshName_to_groupIndexToConnectedVertIndices[ToStdString(mesh->GetName())] = groupIndexToConnectedVertIndices;
+//#else
+	/*
+	 * Load groupIndexToConnectedVertIndices
+	 *  -  In the actual game, we fill meshName_to_groupIndexToConnectedVertIndices from json file
+	 */
+	if (meshName_to_groupIndexToConnectedVertIndices.size() == 0)
+	{
+		FString path = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
+		FString saveFileName = "Paks/SmokePositions.json";
+		
+		FString jsonString;
+		FFileHelper::LoadFileToString(jsonString, *(path + saveFileName));
+
+		TSharedPtr<FJsonObject> all_jsonObj(new FJsonObject());
+
+		TSharedRef<TJsonReader<>> reader = TJsonReaderFactory<>::Create(jsonString);
+		FJsonSerializer::Deserialize(reader, all_jsonObj);
+
+		for (auto& all_jsonObj_it : all_jsonObj->Values)
+		{
+			const FString& meshName = all_jsonObj_it.Key;
+			const TSharedPtr<FJsonObject>& mesh_jsonObj = all_jsonObj->GetObjectField(meshName);
+
+			meshName_to_vertexPositions.Add(meshName, {});
+			const TArray<TSharedPtr<FJsonValue>>& vertexPositions_jsonArray = mesh_jsonObj->GetArrayField("vertexPosition");
+			for (int32 j = 0; j < vertexPositions_jsonArray.Num(); j++)
+			{
+				TSharedPtr<FJsonObject> vertexPosition_jsonObj = vertexPositions_jsonArray[j]->AsObject();
+				meshName_to_vertexPositions[meshName].Add(
+					FVector(vertexPosition_jsonObj->GetNumberField("X"),
+								vertexPosition_jsonObj->GetNumberField("Y"),
+								vertexPosition_jsonObj->GetNumberField("Z"))
+				);
+			}
+
+			const TSharedPtr<FJsonObject>& groups_jsonObj = mesh_jsonObj->GetObjectField("group");
+			for (auto& groups_jsonObj_it : groups_jsonObj->Values)
+			{
+				std::vector<int32> connectedIndices;
+				
+				const FString& groupIndex = groups_jsonObj_it.Key;
+				
+				const TArray<TSharedPtr<FJsonValue>>& vertIndices_jsonObj = groups_jsonObj->GetArrayField(groupIndex);
+				for (int32 i = 0; i < vertIndices_jsonObj.Num(); i++) {
+					connectedIndices.push_back(FMath::RoundToInt(vertIndices_jsonObj[i]->AsNumber()));
+				}
+				
+				meshName_to_groupIndexToConnectedVertIndices[ToStdString(meshName)][FCString::Atoi(*groupIndex)] = connectedIndices;
+			}
+		}
+	}
+
+	vertexPositions = meshName_to_vertexPositions[mesh->GetName()];
+	groupIndexToConnectedVertIndices = meshName_to_groupIndexToConnectedVertIndices[ToStdString(mesh->GetName())];
+
+//#endif
 
 	for (const auto& it : groupIndexToConnectedVertIndices) 
 	{
@@ -1948,29 +2148,79 @@ void UAssetLoaderComponent::DetectParticleSystemPosition(CardEnum buildingEnum, 
 
 void UAssetLoaderComponent::DetectMeshGroups(UStaticMesh* mesh, TArray<FVector>& vertexPositions)
 {
-#if WITH_EDITOR
-	// TODO: use this for Paint Mesh?
-	const uint32 meshLODIndex = 0;
-	if (mesh->IsSourceModelValid(meshLODIndex) &&
-		mesh->GetSourceModel(meshLODIndex).IsRawMeshEmpty() == false)
-	{
-		// Extract the raw mesh.
-		FRawMesh rawMesh;
-		mesh->GetSourceModel(meshLODIndex).LoadRawMesh(rawMesh);
+#if !WITH_EDITOR
+	return;
+#endif
+	_LOG(PunInit, "DetectMeshGroups %s", *mesh->GetName());
+	
+	//// TODO: use this for Paint Mesh?
+	//const uint32 meshLODIndex = 0;
+	//if (mesh->IsSourceModelValid(meshLODIndex) &&
+	//	mesh->GetSourceModel(meshLODIndex).IsRawMeshEmpty() == false)
+	//{
+	//	// Extract the raw mesh.
+	//	FRawMesh rawMesh;
+	//	mesh->GetSourceModel(meshLODIndex).LoadRawMesh(rawMesh);
 
-		// Reserve space for the new vertex colors.
-		if (rawMesh.WedgeColors.Num() == 0 || rawMesh.WedgeColors.Num() != rawMesh.WedgeIndices.Num())
-		{
-			rawMesh.WedgeColors.Empty(rawMesh.WedgeIndices.Num());
-			rawMesh.WedgeColors.AddUninitialized(rawMesh.WedgeIndices.Num());
+	//	// Reserve space for the new vertex colors.
+	//	if (rawMesh.WedgeColors.Num() == 0 || rawMesh.WedgeColors.Num() != rawMesh.WedgeIndices.Num())
+	//	{
+	//		rawMesh.WedgeColors.Empty(rawMesh.WedgeIndices.Num());
+	//		rawMesh.WedgeColors.AddUninitialized(rawMesh.WedgeIndices.Num());
+	//	}
+
+	// vertexPositions = rawMesh.VertexPositions;
+	// const TArray<uint32>& wedgeIndices = rawMesh.WedgeIndices;
+
+	if (mesh &&
+		mesh->RenderData &&
+		mesh->RenderData->LODResources.Num() > 0)
+	{
+		// Set Vertex Position
+		vertexPositions.Empty();
+
+		FStaticMeshLODResources& meshLOD0 = mesh->RenderData->LODResources[0];
+		
+		const FPositionVertexBuffer& VertexBuffer = meshLOD0.VertexBuffers.PositionVertexBuffer;
+		
+		const int32 VertexCount = VertexBuffer.GetNumVertices();
+		for (int32 Index = 0; Index < VertexCount; Index++) {
+			vertexPositions.Add(VertexBuffer.VertexPosition(Index));
 		}
 
+		_LOG(PunInit, " -- VertexCount:%d", VertexCount);
+
+
+
+
+		
+		FRawStaticIndexBuffer* IndexBuffer = &(meshLOD0.IndexBuffer);
+		int32 numIndices = IndexBuffer->GetNumIndices();
+		check(numIndices >= 0);
+
+
+		_LOG(PunInit, " -- numIndices:%d", numIndices);
+		
+		
+		TArray<int32> wedgeIndices;
+		
+		for (int32 i = 0; i < numIndices; i++) {
+			int32 wedgeIndex = meshLOD0.IndexBuffer.GetIndex(i);
+			wedgeIndices.Add(wedgeIndex);
+		}
+
+#if WITH_EDITOR
+		const TArray<int32>& wedgeIndicesTest = meshLOD0.WedgeMap;
+
+		check(wedgeIndices.Num() == wedgeIndicesTest.Num());
+#endif
+
+		_LOG(PunInit, " -- wedgeIndices %d", wedgeIndices.Num());
+	
 		// ---------------
 
 		stringstream ss;
 
-		vertexPositions = rawMesh.VertexPositions;
-		const TArray<uint32>& wedgeIndices = rawMesh.WedgeIndices;
 		int32 vertexCount = vertexPositions.Num();
 		int32 indexCount = wedgeIndices.Num();
 
@@ -2001,11 +2251,11 @@ void UAssetLoaderComponent::DetectMeshGroups(UStaticMesh* mesh, TArray<FVector>&
 			processedVertices.Empty();
 			processedVertices.SetNumZeroed(vertexCount);
 
-			if (isPrinting) PUN_EDITOR_LOG("Merge nearby vertices");
+			if (isPrinting) { PUN_EDITOR_LOG("Merge nearby vertices"); }
 
 			for (int i = 0; i < vertexCount; i++)
 			{
-				if (isPrinting) PUN_EDITOR_LOG(" i = %d", i);
+				if (isPrinting) { PUN_EDITOR_LOG(" i = %d", i); }
 
 				if (!processedVertices[i])
 				{
@@ -2013,7 +2263,7 @@ void UAssetLoaderComponent::DetectMeshGroups(UStaticMesh* mesh, TArray<FVector>&
 					mergedVertIndexToVertIndices[i].push_back(i);
 					vertIndexToMergedVertIndex[i] = i;
 
-					if (isPrinting) PUN_EDITOR_LOG(" i,i groupIndexToVertIndices_PositionMerge[%d].push_back(%d)", i, i);
+					if (isPrinting) { PUN_EDITOR_LOG(" i,i groupIndexToVertIndices_PositionMerge[%d].push_back(%d)", i, i); }
 
 					// Add any vertex with the same position
 					// This is because UE4 import sometimes split up the geometry...
@@ -2025,7 +2275,7 @@ void UAssetLoaderComponent::DetectMeshGroups(UStaticMesh* mesh, TArray<FVector>&
 							mergedVertIndexToVertIndices[i].push_back(j);
 							vertIndexToMergedVertIndex[j] = i;
 
-							if (isPrinting) PUN_EDITOR_LOG(" i,j groupIndexToVertIndices_PositionMerge[%d].push_back(%d)", i, j);
+							if (isPrinting) { PUN_EDITOR_LOG(" i,j groupIndexToVertIndices_PositionMerge[%d].push_back(%d)", i, j); }
 						}
 					}
 				}
@@ -2058,7 +2308,9 @@ void UAssetLoaderComponent::DetectMeshGroups(UStaticMesh* mesh, TArray<FVector>&
 			int32 vertIndex = wedgeIndices[indexBufferI];
 			vertIndexToConnectedTrisIndices[vertIndex].push_back(indexBufferI);
 
-			if (isPrinting) PUN_EDITOR_LOG("- indexI:%d vertIndex:%d vertIndexToConnectedTrisIndices.size:%d", indexBufferI, vertIndex, vertIndexToConnectedTrisIndices.size());
+			if (isPrinting) {
+				PUN_EDITOR_LOG("- indexI:%d vertIndex:%d vertIndexToConnectedTrisIndices.size:%d", indexBufferI, vertIndex, vertIndexToConnectedTrisIndices.size());
+			}
 		}
 
 		if (isPrinting)
@@ -2124,12 +2376,12 @@ void UAssetLoaderComponent::DetectMeshGroups(UStaticMesh* mesh, TArray<FVector>&
 
 			groupIndexToConnectedVertIndices.clear();
 
-			if (isPrinting) PUN_EDITOR_LOG("Traverse Tris");
+			if (isPrinting) { PUN_EDITOR_LOG("Traverse Tris"); }
 
 			for (const auto& it : mergedVertIndexToVertIndices) {
-				if (isPrinting) PUN_EDITOR_LOG(" groupIndex:%d", it.first);
+				if (isPrinting) { PUN_EDITOR_LOG(" groupIndex:%d", it.first); }
 
-				TraverseTris(it.first, it.first, wedgeIndices, vertexPositions);
+				TraverseTris_July10(it.first, it.first, wedgeIndices, vertexPositions);
 			}
 		}
 
@@ -2158,7 +2410,7 @@ void UAssetLoaderComponent::DetectMeshGroups(UStaticMesh* mesh, TArray<FVector>&
 
 		PUN_EDITOR_LOG("Group Count %d", groupIndexToConnectedVertIndices.size());
 	}
-#endif
+//#endif
 }
 
 void UAssetLoaderComponent::PaintMeshForConstruction(FString moduleName)

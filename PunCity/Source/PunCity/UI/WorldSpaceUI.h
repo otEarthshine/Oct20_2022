@@ -287,6 +287,7 @@ public:
 
 	bool townhallUIActive = true;
 
+
 private:
 	void TickBuildings();
 	void TickJobUI(int buildingId);

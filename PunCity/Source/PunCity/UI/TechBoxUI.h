@@ -121,7 +121,7 @@ public:
 			UPunBoxWidget* tooltipBox = UPunBoxWidget::AddToolTip(RewardBonusIcon1, this)->TooltipPunBoxWidget;
 			if (tooltipBox) {
 				tooltipBox->AfterAdd();
-				tooltipBox->AddRichText(techInfo->GetBonusDescription());
+				tooltipBox->AddRichTextWrap(techInfo->GetBonusDescription());
 			}
 			
 		}

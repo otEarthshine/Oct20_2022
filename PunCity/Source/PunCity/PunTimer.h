@@ -148,6 +148,8 @@ struct ScopeTimerLoop
 	entry(TickUnitDisplay) \
 	entry(TickUnitDisplay_Resource) \
 	entry(TickUnitDisplay_Unit) \
+	entry(TickUnitDisplay_Skel) \
+	entry(TickUnitDisplay_Skel2) \
 	entry(TickTerrainRegion) \
 	entry(TickTerrainRegion4x4) \
 	entry(TickRegionDecal) \

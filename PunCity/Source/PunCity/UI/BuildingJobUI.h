@@ -34,6 +34,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* ArrowUp;
 	UPROPERTY(meta = (BindWidget)) UButton* ArrowDown;
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* HumanSlots;
+
+	UPROPERTY(meta = (BindWidget)) UOverlay* HumanSlotCountOverlay;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* HumanSlotCount1;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* HumanSlotCount2;
 
@@ -122,7 +124,7 @@ public:
 		{
 			// Show items above warehouse
 			if (jobUIState == JobUIState::Storage &&
-				(
+					(
 					building.isEnum(CardEnum::Warehouse) ||
 					building.isEnum(CardEnum::Granary) ||
 					building.isEnum(CardEnum::IntercityLogisticsHub) ||
@@ -130,6 +132,14 @@ public:
 					)
 				)
 			{
+				if (building.isEnum(CardEnum::IntercityLogisticsHub) ||
+					building.isEnum(CardEnum::IntercityLogisticsPort))
+				{
+					bool canManipulateOccupant = playerId() == building.playerId();
+					SetShowHumanSlots(true, canManipulateOccupant);
+					SetSlots(building.occupantCount(), building.allowedOccupants(), building.maxOccupants(), FLinearColor::White);
+				}
+				
 				PunBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 				const std::vector<ResourceHolderInfo>& holderInfos = building.subclass<StorageYard>().holderInfos();
 
@@ -186,17 +196,17 @@ public:
 
 
 		// ResourceUI Dirty?
-		if (!building.isBuildingResourceUIDirty()) {
-			return;
-		}
-		building.SetBuildingResourceUIDirty(false);
-		
+		if (building.isBuildingResourceUIDirty()) 
+		{
+			building.SetBuildingResourceUIDirty(false);
 
-		if (IsSpecialProducer(building.buildingEnum())) {
-			SetSpecialProducerProgress(building.barFraction(), building);
-		}
-		else {
-			SetResourceCompletion(building.inputs(), building.products(), building);
+
+			if (IsSpecialProducer(building.buildingEnum())) {
+				SetSpecialProducerProgress(building.barFraction(), building);
+			}
+			else {
+				SetResourceCompletion(building.inputs(), building.products(), building);
+			}
 		}
 	}
 
@@ -224,7 +234,7 @@ public:
 			//PUN_LOG("Hover Warning %s warningId:%d", ToTChar(building.buildingInfo().nameStd()), static_cast<int>(building.hoverWarning));
 
 			DepletedText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-			SetText(DepletedText, GetHoverWarningString(building.hoverWarning));
+			SetText(DepletedText, GetHoverWarningName(building.hoverWarning));
 		}
 		else {
 			DepletedText->SetVisibility(ESlateVisibility::Collapsed);

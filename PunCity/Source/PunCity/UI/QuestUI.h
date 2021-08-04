@@ -30,6 +30,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* PlayerCompareBox;
 	
 	void CheckChildrenPointerOnUI() {
+		CheckPointerOnUI(QuestDescriptionOverlay);
 		CheckPointerOnUI(QuestOverlay);
 		CheckPointerOnUI(PlayerDetailsOverlay);
 		CheckPointerOnUI(PlayerCompareInnerOverlay);
@@ -116,7 +117,7 @@ public:
 						QuestDescriptionBox->AddRichText(FText::Format(NSLOCTEXT("QuestUI", "Progress: X", "Progress: {0}"), quest->numberDescription()));
 						QuestDescriptionBox->AddSpacer(10);
 					}
-					QuestDescriptionBox->AddRichTextParsed(quest->questDescription());
+					QuestDescriptionBox->AddRichTextParsed(quest->questDescription(), UIEnum::PunRichTextQuestWrap);
 				}
 			}
 			
@@ -159,17 +160,17 @@ public:
 						SetText(element->PopulationBoldText, std::to_string(pop));
 						setHomeTownIcon();
 
-						AddToolTip(element->PlayerZoomButton, NSLOCTEXT("QuestUI", "PlayerZoomButton_Tip1",
-							"Click to travel home <Orange>[H]</>"
-						));
+						AddToolTip(element->PlayerZoomButton, 
+							NSLOCTEXT("QuestUI", "PlayerZoomButton_Tip1", "Click to travel home <Orange>[H]</>")
+						);
 					}
 					else {
 						SetTextF(element->PlayerNameText, TrimStringF_Dots(name, 17));
 						SetText(element->PopulationText, std::to_string(pop));
 						setHomeTownIcon();
 
-						AddToolTip(element->PlayerZoomButton, FText::Format(NSLOCTEXT("QuestUI", "PlayerZoomButton_Tip2",
-							"Click to travel to {0}"),
+						AddToolTip(element->PlayerZoomButton, FText::Format(
+							NSLOCTEXT("QuestUI", "PlayerZoomButton_Tip2", "Click to travel to {0}"),
 							FText::FromString(name)
 						));
 					}

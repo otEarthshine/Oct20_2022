@@ -223,6 +223,26 @@ private:
 		return true;
 	}
 
+	bool HasValidSeed(WorldTile2 tile) {
+		// Any seed that can be planted here?
+		auto& sim = _gameInterface->simulation();
+		std::vector<SeedInfo> seedsOwned = sim.globalResourceSystem(_gameInterface->playerId()).seedsPlantOwned();
+		GeoresourceEnum georesourceEnum = sim.georesource(sim.GetProvinceIdClean(tile)).georesourceEnum;
+
+		for (SeedInfo seed : seedsOwned)
+		{
+			if (IsCommonSeedCard(seed.cardEnum)) {
+				return true;
+			}
+			if (IsSpecialSeedCard(seed.cardEnum) &&
+				seed.georesourceEnum == georesourceEnum)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
 	void HighlightDemolishAreaBuildingRed();
 
 	

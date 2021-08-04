@@ -321,8 +321,12 @@ public:
 	void PrintConstructionMesh();
 	void RemoveVertexColor();
 
+	void SaveSmokeJson();
+
 private:
 	void TraverseTris(uint32 groupIndex_PositionMerge, int32 groupIndex_Parent, const TArray<uint32>& indexBuffer, const TArray<FVector>& vertexPositions);
+
+	void TraverseTris_July10(uint32 groupIndex_PositionMerge, int32 groupIndex_Parent, const TArray<int32>& indexBuffer, const TArray<FVector>& vertexPositions);
 
 public:
 	UStaticMesh* moduleMesh(FString moduleName);
@@ -501,6 +505,11 @@ public:
 		
 		check(_moduleNames.Num() + _togglableModuleNames.Num() + _animModuleNames.Num() == _moduleNameToMesh.Num());
 	}
+
+
+
+	std::unordered_map<std::string, std::unordered_map<int32, std::vector<int32>>> meshName_to_groupIndexToConnectedVertIndices;
+	TMap<FString, TArray<FVector>> meshName_to_vertexPositions;
 
 public:
 	UPROPERTY(EditAnywhere, Category = "Mesh Import") UStaticMesh* GroundMesh;
@@ -847,11 +856,13 @@ private:
 	/*
 	 * Mesh Processing
 	 */
+	
 	void DetectMeshGroups(UStaticMesh* mesh, TArray<FVector>& vertexPositions);
 	
 	void DetectParticleSystemPosition(CardEnum buildingEnum, UStaticMesh* mesh);
 	
 	void PaintMeshForConstruction(FString moduleName);
+
 
 private:
 	UPROPERTY() TMap<FString, UStaticMesh*> _moduleNameToMesh;

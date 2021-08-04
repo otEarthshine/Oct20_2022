@@ -138,6 +138,9 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 
 	{ "SkyLightIntensity", 40 },
 
+	{ "HomelessWarningSound", 1 },
+	{ "RoundCountdownSound", 1 },
+
 	// Debug Toggle
 	{ "MultithreadedMeshGeneration", 1 },
 	{ "ForceClickthrough", 0 },

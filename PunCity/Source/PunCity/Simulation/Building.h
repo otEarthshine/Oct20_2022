@@ -925,7 +925,7 @@ public:
 	template<typename BonusFunc>
 	int32 GetRadiusBonus(CardEnum buildingEnum, int32 radius, BonusFunc getBonus) const
 	{
-		const std::vector<int32>& buildingIds = _simulation->buildingIds(_playerId, buildingEnum);
+		const std::vector<int32>& buildingIds = _simulation->buildingIds(_townId, buildingEnum);
 		int32 bonus = 0;
 		for (int32 buildingId : buildingIds) {
 			Building& building = _simulation->building(buildingId);
@@ -941,7 +941,7 @@ public:
 	template<typename Func>
 	void ExecuteInRadius(CardEnum buildingEnum, int32 radius, Func func)
 	{
-		const std::vector<int32>& buildingIds = _simulation->buildingIds(_playerId, buildingEnum);
+		const std::vector<int32>& buildingIds = _simulation->buildingIds(_townId, buildingEnum);
 		for (int32 buildingId : buildingIds) {
 			Building& building = _simulation->building(buildingId);
 			PUN_CHECK(building.isEnum(buildingEnum));
@@ -1391,7 +1391,7 @@ public:
 			break;
 		}
 
-		if (_simulation->TownhallCardCountTown(_playerId, CardEnum::SocialWelfare)) {
+		if (_simulation->TownhallCardCountTown(_townId, CardEnum::SocialWelfare)) {
 			jobHappiness += 20;
 		}
 
@@ -1905,6 +1905,16 @@ public:
 				}
 			}
 		}
+
+		// Storage Full (Warn on production building)
+		if (products().size() > 0 || isEnum(CardEnum::Farm))
+		{
+			if (_simulation->isStorageAllFull(_townId)) {
+				hoverWarning = HoverWarning::StorageFull;
+				return true;
+			}
+		}
+		
 
 		// OutputInventoryFull
 		{

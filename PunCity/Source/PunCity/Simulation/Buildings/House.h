@@ -81,20 +81,24 @@ public:
 		if (lvl > 1) {
 			switch (lvl)
 			{
-			case 7:
+			case 8:
 				AddResource(ResourceEnum::Jewelry, 10);
 				AddResource(ResourceEnum::Chocolate, 10);
-			case 6: AddResource(ResourceEnum::Book, 10);
+			case 7: 
+				AddResource(ResourceEnum::Book, 10);
 				
-			case 5:
+			case 6:
 				AddResource(ResourceEnum::Vodka, 10);
 				AddResource(ResourceEnum::Candle, 10);
-			case 4: AddResource(ResourceEnum::Wine, 10);
+			case 5: 
+				AddResource(ResourceEnum::Wine, 10);
 				
-			case 3:
+			case 4:
 				AddResource(ResourceEnum::Tulip, 10);
+			case 3:
 				AddResource(ResourceEnum::Beer, 10);
-			case 2: AddResource(ResourceEnum::Pottery, 10);
+			case 2: 
+				AddResource(ResourceEnum::Pottery, 10);
 				break;
 			default:
 				break;
@@ -454,9 +458,7 @@ public:
 	
 	void AddAnimalOccupant(UnitEnum animalEnum, int32 age);
 	
-	void RemoveAnimalOccupant(int32_t animalId) {
-		CppUtils::Remove(_animalOccupants, animalId);
-	}
+	void RemoveAnimalOccupant(int32_t animalId);
 
 	int32 openAnimalSlots() { return maxAnimals - _animalOccupants.size(); }
 	const std::vector<int32>& animalOccupants() { return _animalOccupants; }

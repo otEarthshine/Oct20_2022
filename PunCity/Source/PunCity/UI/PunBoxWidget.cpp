@@ -23,7 +23,7 @@ void UPunBoxWidget::AddBuildingTooltip(UWidget* widget, CardEnum buildingEnum, U
 	}
 
 	tooltipBox->AddSpacer();
-	tooltipBox->AddRichText(info.GetDescription());
+	tooltipBox->AddRichTextWrap(info.GetDescription());
 	tooltipBox->AddLineSpacer(12);
 
 	// Card type

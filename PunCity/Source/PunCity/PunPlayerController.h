@@ -506,6 +506,40 @@ public:
 			SetCameraAtom(cameraSavedAtom);
 			cameraPawn->SetActorRotation(cameraSavedRotator);
 		}
+		else if (cheatEnum == CheatEnum::TestGetJson) {
+			FString path = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
+
+			FString saveFileName = "Paks/SmokePositions.json";
+
+			//if (isSaving) {
+			//auto jsonObject = MakeShared<FJsonObject>();
+
+			//jsonObject->SetNumberField(FString("TEST"), 10);
+
+			//FString jsonString;
+
+			//TSharedRef<TJsonWriter<>> writer = TJsonWriterFactory<>::Create(&jsonString);
+			//FJsonSerializer::Serialize(jsonObject, writer);
+
+			//FFileHelper::SaveStringToFile(jsonString, *(path + saveFileName));
+			//}
+			//else {
+				FString jsonString;
+				FFileHelper::LoadFileToString(jsonString, *(path + saveFileName));
+
+				TSharedPtr<FJsonObject> jsonObject(new FJsonObject());
+
+				TSharedRef<TJsonReader<>> reader = TJsonReaderFactory<>::Create(jsonString);
+				FJsonSerializer::Deserialize(reader, jsonObject);
+
+				double value;
+				if (jsonObject->TryGetNumberField(FString("TEST"), value)) {
+					gameManager->simulation().AddPopup(playerId(), FText::AsNumber(value));
+				}
+			
+				//saveOrLoadJsonObject(jsonObject.ToSharedRef());
+			//}
+		}
 	}
 
 
@@ -1982,6 +2016,9 @@ public:
 	UFUNCTION(Exec) void SetApplicationScale(float NewValue) {
 		FSlateApplication::Get().SetApplicationScale(NewValue);
 	}
+	
+
+	
 
 
 	float GetTrailerTime() override {

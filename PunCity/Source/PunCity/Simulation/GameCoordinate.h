@@ -698,6 +698,7 @@ struct TileArea
 
 	bool isInMap() { return minX >= 0 && minY >= 0 && maxX < GameMapConstants::TilesPerWorldX && maxY < GameMapConstants::TilesPerWorldY; }
 
+	// IsInArea
 	bool HasTile(WorldTile2 tile) {
 		return minX <= tile.x && tile.x <= maxX &&
 				minY <= tile.y && tile.y <= maxY;
@@ -959,6 +960,10 @@ struct TileArea
 		return TileArea::Invalid;
 	}
 
+	TileArea GetExpandedArea(int32 tiles = 1) const {
+		return TileArea(minX - tiles, minY - tiles, maxX + tiles, maxY + tiles);
+	}
+
 	void ExpandArea(int32 tiles)
 	{
 		minX -= tiles;
@@ -966,6 +971,7 @@ struct TileArea
 		maxX += tiles;
 		maxY += tiles;
 	}
+	
 	void EnsureTileInsideArea(WorldTile2 tile)
 	{
 		if (tile.x < minX) { minX = tile.x; }

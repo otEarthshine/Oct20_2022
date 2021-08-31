@@ -125,7 +125,12 @@ UnitDisplayState UUnitDisplayComponent::GetUnitTransformAndVariation(UnitStateAI
 
 
 	//! Display State
-	UnitAnimationEnum animationEnum = unit.GetDisplayAnimationEnum();
+	bool isFocusedUnit = IsFocusedUnit(unitId);
+	bool justFocusedUnit = JustFocusedUnit();
+	bool disableFlashPrevention = isFocusedUnit && justFocusedUnit;
+	
+	UnitAnimationEnum animationEnum = unit.GetDisplayAnimationEnum(!disableFlashPrevention);
+	
 	check(animationEnum != UnitAnimationEnum::None);
 	//		if (PunSettings::IsOn("UseFullSkelAnim")) {
 //			return true;
@@ -145,7 +150,7 @@ UnitDisplayState UUnitDisplayComponent::GetUnitTransformAndVariation(UnitStateAI
 		//	animationEnum != UnitAnimationEnum::HaulingCart)
 		//{
 			if (ShouldHumanUseVertexAnimation(animationEnum, zoomDistance) &&
-				!IsFocusedUnit(unitId))
+				!isFocusedUnit)
 			{
 				float gameSpeed = sim.gameSpeedFloat();
 				scale = std::fmodf(lastAnimationTime + (unitSystem.isMoving(unitId) ? (GetWorld()->GetDeltaSeconds() * 2.0f * gameSpeed) : 0.0f), 2.0f);
@@ -181,7 +186,8 @@ UnitDisplayState UUnitDisplayComponent::GetUnitTransformAndVariation(UnitStateAI
 			return  { UnitEnum::SmallShip, UnitAnimationEnum::Walk, 0 };
 		}
 
-		int32 humanVariation = static_cast<int>(GetHumanVariationEnum(unit.isChild(), unit.isMale(), unit.GetDisplayAnimationEnum()));
+		int32 humanVariation = static_cast<int>(GetHumanVariationEnum(unit.isChild(), unit.isMale(), unit.GetDisplayAnimationEnum(!isFocusedUnit)));
+		
 		if (animationEnum == UnitAnimationEnum::ImmigrationCart ||
 			animationEnum == UnitAnimationEnum::HaulingCart) {
 			return  { UnitEnum::Human, UnitAnimationEnum::Walk, humanVariation };
@@ -265,15 +271,18 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 		 *
 		 *  Decided when to use Skeletal Mesh VS Vertex Animation
 		 */
+		bool isFocusedUnit = IsFocusedUnit(unitId);
+		bool justFocusedUnit = JustFocusedUnit();
+		bool disableFlashPrevention = isFocusedUnit && justFocusedUnit;
 		{
 			// Zoomed out human should always use instancedStaticMesh
-			UnitAnimationEnum animationEnum = unit.GetDisplayAnimationEnum();
+			UnitAnimationEnum animationEnum = unit.GetDisplayAnimationEnum(!disableFlashPrevention);
 			
 			if (unitEnum == UnitEnum::Human &&
 				animationEnum != UnitAnimationEnum::Ship)
 			{
 				if (!ShouldHumanUseVertexAnimation(animationEnum, zoomDistance) ||
-					IsFocusedUnit(unitId))
+					isFocusedUnit)
 				{
 					FTransform transform;
 					AddSkelMesh(unit, transform);
@@ -299,7 +308,7 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 		 */
 
 		FTransform transform;
-		_currentDisplayState = { unitEnum, unit.GetDisplayAnimationEnum(), 0 };
+		_currentDisplayState = { unitEnum, unit.GetDisplayAnimationEnum(!disableFlashPrevention), 0 };
 		
 		//PUN_LOG("UnitAddStart ticks:%d id:%d regionId:%d", TimeDisplay::Ticks(), unitId, regionId);
 
@@ -360,7 +369,7 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 			LEAN_PROFILING_D(TickUnitDisplay_Unit);
 			SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitAddInst);
 			//_unitMeshes->Add(GetMeshName(_currentDisplayState.unitEnum, _currentDisplayState.variationIndex), unitId, transform, 0, unitId);
-			_unitMeshes1->Add(GetUnitDisplayEnum(_currentDisplayState.unitEnum, _currentDisplayState.variationIndex), unitId, transform);
+			_unitMeshes1->Add(_currentDisplayState.unitEnum, _currentDisplayState.variationIndex, unitId, transform);
 		}
 		
 
@@ -603,10 +612,14 @@ void UUnitDisplayComponent::UpdateResourceDisplay(int32 unitId, UnitStateAI& uni
 		//! Cart Display
 		if (_currentDisplayState.unitEnum == UnitEnum::Human) 
 		{
-			if (unit.GetDisplayAnimationEnum() == UnitAnimationEnum::ImmigrationCart) {
+			bool isFocusedUnit = IsFocusedUnit(unitId);
+			bool justFocusedUnit = JustFocusedUnit();
+			bool disableFlashPrevention = isFocusedUnit && justFocusedUnit;
+			
+			if (unit.GetDisplayAnimationEnum(!disableFlashPrevention) == UnitAnimationEnum::ImmigrationCart) {
 				_auxMeshes->Add("Immigration", unitId, getAuxTransform(), 0);
 			}
-			if (unit.GetDisplayAnimationEnum() == UnitAnimationEnum::HaulingCart) {
+			if (unit.GetDisplayAnimationEnum(!disableFlashPrevention) == UnitAnimationEnum::HaulingCart) {
 				_auxMeshes->Add("HaulingCart", unitId, getAuxTransform(), 0);
 				displayResource(7);
 				return;

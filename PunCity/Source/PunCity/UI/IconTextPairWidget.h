@@ -63,12 +63,6 @@ public:
 	
 	void SetImage(ResourceEnum resourceEnum, UAssetLoaderComponent* assetLoader, bool autoAddToolTip = false)
 	{
-		// TODO: LEAK possible source??
-		//UMaterialInstanceDynamic* materialInstance = UMaterialInstanceDynamic::Create(assetLoader->ResourceIconMaterial, this);
-		//materialInstance->SetTextureParameterValue("ColorTexture", assetLoader->GetResourceIcon(resourceEnum));
-		//materialInstance->SetTextureParameterValue("DepthTexture", assetLoader->GetResourceIconAlpha(resourceEnum));
-		//IconImage->SetBrushFromMaterial(materialInstance);
-
 		IconImage->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		IconImage->SetBrushFromMaterial(assetLoader->GetResourceIconMaterial(resourceEnum));
 

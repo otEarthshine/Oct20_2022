@@ -30,6 +30,14 @@
 
 /**
  * Manages the recycling of items so that we can easily do BeforeAdd(), Add... , AfterAdd() for UI manipulation
+ *
+ * Advantages:
+ * - Automatic hash check to prevent unnecessary updates (Allows for tooltip creation in update loop)
+ * - Allows usage of multiple types of children
+ *
+ * Disadvantages:
+ * - Not very compatible with EditableNumber boxes (because of the refresh)
+ * 
  */
 UCLASS()
 class UPunBoxWidget : public UPunWidget

@@ -34,12 +34,10 @@ void UTownhallHoverInfo::PunInit(int buildingId)
 	BUTTON_ON_CLICK(RoadMakerArrowDown, this, &UTownhallHoverInfo::DecreaseRoadMakers);
 
 
-	LeftArmyBox->ClearChildren();
-	RightArmyBox->ClearChildren();
-	MilitaryButtons->ClearChildren();
-
-	SetChildHUD(BuyingBox);
-	SetChildHUD(SellingBox);
+	//LeftArmyBox->ClearChildren();
+	//RightArmyBox->ClearChildren();
+	//MilitaryButtons->ClearChildren();
+	
 
 	_laborerPriorityState.lastPriorityInputTime = -999.0f;
 	//_laborerPriorityState.PunInit(&simulation(), simulation().building(_buildingId).playerId());c
@@ -77,16 +75,6 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 		 */
 		if (townhall.ownedBy(playerId()))
 		{
-			// Intercity Trade / Trade Route
-			if (sim.unlockSystem(playerId())->unlockedSetTradeAmount) {
-				SetText(TradeButtonText, LOCTEXT("Set Trade Offer", "Set Trade Offer"));
-				BUTTON_ON_CLICK(TradeButton, this, &UTownhallHoverInfo::OnClickSetTradeOfferButton);
-				TradeButton->SetVisibility(ESlateVisibility::Visible);
-			}
-			else {
-				TradeButton->SetVisibility(ESlateVisibility::Collapsed);
-			}
-
 			// SendImmigrants
 			const auto& townIds = sim.GetTownIds(playerId());
 			if (townIds.size() > 1) {
@@ -99,9 +87,26 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 
 			// Gift
 			GiftButton->SetVisibility(ESlateVisibility::Collapsed);
+			TradeButton->SetVisibility(ESlateVisibility::Collapsed);
 
 			// Diplomacy
 			DiplomacyButton->SetVisibility(ESlateVisibility::Collapsed);
+
+			// TrainUnits
+			TrainUnitsRow->SetVisibility(ESlateVisibility::Visible);
+			BUTTON_ON_CLICK(TrainUnitsButton, this, &UTownhallHoverInfo::OnClickTrainUnitsButton);
+
+			TownManager& townMgr = sim.townManager(townhall.townId());
+			std::vector<CardStatus> trainCards = townMgr.trainUnitsQueueDisplay();
+			if (trainCards.size() > 0) {
+				UMaterialInstanceDynamic* material = TrainUnitsClock->GetDynamicMaterial();
+				material->SetScalarParameterValue(FName("Fraction"), townMgr.GetTrainingFraction());
+				material->SetTextureParameterValue(FName("UnitIcon"), assetLoader()->GetCardIconNullable(trainCards[0].cardEnum));
+				TrainUnitsClock->SetVisibility(ESlateVisibility::Visible);
+			}
+			else {
+				TrainUnitsClock->SetVisibility(ESlateVisibility::Collapsed);
+			}
 
 			// Vassalize
 			// (Declare Independence)
@@ -138,37 +143,20 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 		 */
 		else
 		{
-			// Intercity Trade / Trade Route
-			if (sim.IsResearched(playerId(), TechEnum::IntercityRoad) &&
-				townhall.isCapital())
-			{
-				// Other ppl's town, show trade route button instead
-				std::vector<int32> tradePartners = simulation().worldTradeSystem().GetTradePartners(playerId());
-				if (CppUtils::Contains(tradePartners, townhall.playerId())) {
-					SetText(TradeButtonText, LOCTEXT("Cancel Trade Route", "Cancel Trade Route"));
-					BUTTON_ON_CLICK(TradeButton, this, &UTownhallHoverInfo::OnClickCancelTradeRouteButton);
-				}
-				else {
-					SetText(TradeButtonText, LOCTEXT("Establish Trade Route", "Establish Trade Route"));
-					BUTTON_ON_CLICK(TradeButton, this, &UTownhallHoverInfo::OnClickEstablishTradeRouteButton);
-				}
-				TradeButton->SetVisibility(ESlateVisibility::Visible);
-			}
-			else
-			{
-				TradeButton->SetVisibility(ESlateVisibility::Collapsed);
-			}
-
 			// SendImmigrants
 			SendImmigrantsButton->SetVisibility(ESlateVisibility::Collapsed);
 
 			// Gift
 			GiftButton->SetVisibility(ESlateVisibility::Visible);
+			TradeButton->SetVisibility(ESlateVisibility::Visible);
 			BUTTON_ON_CLICK(GiftButton, this, &UTownhallHoverInfo::OnClickGiftButton);
 
 			// Diplomacy
 			DiplomacyButton->SetVisibility(ESlateVisibility::Visible);
 			BUTTON_ON_CLICK(DiplomacyButton, this, &UTownhallHoverInfo::OnClickDiplomacyButton);
+
+			// Train Units
+			TrainUnitsRow->SetVisibility(ESlateVisibility::Collapsed);
 
 			if (townhall.isCapital())
 			{
@@ -236,12 +224,16 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 			BuffRow->SetVisibility(ESlateVisibility::Collapsed);
 		}
 	}
-	else {
+	else 
+	{
 		SendImmigrantsButton->SetVisibility(ESlateVisibility::Collapsed);
+		
 		GiftButton->SetVisibility(ESlateVisibility::Collapsed);
 		DiplomacyButton->SetVisibility(ESlateVisibility::Collapsed);
 
 		TradeButton->SetVisibility(ESlateVisibility::Collapsed);
+		
+		TrainUnitsRow->SetVisibility(ESlateVisibility::Collapsed);
 
 		AttackButton1->SetVisibility(ESlateVisibility::Collapsed);
 		AttackButton2->SetVisibility(ESlateVisibility::Collapsed);
@@ -315,26 +307,26 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 	 * Update TradeInfoOverlay
 	 */
 	{
-		const std::vector<IntercityTradeOffer>& offers = simulation().worldTradeSystem().GetIntercityTradeOffers(townId());
-		TradeInfoOverlay->SetVisibility(offers.size() > 0 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-		CallbackEnum callbackEnum = (townhall.playerId() == playerId()) ? CallbackEnum::None : CallbackEnum::IntercityTrade;
+		//const std::vector<IntercityTradeOffer>& offers = simulation().worldTradeSystem().GetIntercityTradeOffers(townId());
+		//TradeInfoOverlay->SetVisibility(offers.size() > 0 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+		//CallbackEnum callbackEnum = (townhall.playerId() == playerId()) ? CallbackEnum::None : CallbackEnum::IntercityTrade;
 
-		for (const auto& offer : offers) {
-			int32 inventory = simulation().resourceCountTown(townhall.townId(), offer.resourceEnum);
-			if (offer.offerEnum == IntercityTradeOfferEnum::BuyWhenBelow) {
-				if (offer.targetInventory > inventory) {
-					BuyingBox->AddChooseResourceElement2(offer.resourceEnum, TEXT_NUM(offer.targetInventory - inventory), this, callbackEnum);
-				}
-			}
-			else {
-				if (inventory > offer.targetInventory) {
-					SellingBox->AddChooseResourceElement2(offer.resourceEnum, TEXT_NUM(inventory - offer.targetInventory), this, callbackEnum);
-				}
-			}
-		}
+		//for (const auto& offer : offers) {
+		//	int32 inventory = simulation().resourceCountTown(townhall.townId(), offer.resourceEnum);
+		//	if (offer.offerEnum == IntercityTradeOfferEnum::BuyWhenBelow) {
+		//		if (offer.targetInventory > inventory) {
+		//			BuyingBox->AddChooseResourceElement2(offer.resourceEnum, TEXT_NUM(offer.targetInventory - inventory), this, callbackEnum);
+		//		}
+		//	}
+		//	else {
+		//		if (inventory > offer.targetInventory) {
+		//			SellingBox->AddChooseResourceElement2(offer.resourceEnum, TEXT_NUM(inventory - offer.targetInventory), this, callbackEnum);
+		//		}
+		//	}
+		//}
 
-		BuyingBox->AfterAdd();
-		SellingBox->AfterAdd();
+		//BuyingBox->AfterAdd();
+		//SellingBox->AfterAdd();
 	}
 
 
@@ -346,10 +338,10 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 
 
 	// No more military
-	ArmyFightBox->SetVisibility(ESlateVisibility::Collapsed);
-	MilitaryButtons->SetVisibility(ESlateVisibility::Collapsed);
-	LeftArmyBox->SetVisibility(ESlateVisibility::Collapsed);
-	RightArmyBox->SetVisibility(ESlateVisibility::Collapsed);
+	//ArmyFightBox->SetVisibility(ESlateVisibility::Collapsed);
+	//MilitaryButtons->SetVisibility(ESlateVisibility::Collapsed);
+	//LeftArmyBox->SetVisibility(ESlateVisibility::Collapsed);
+	//RightArmyBox->SetVisibility(ESlateVisibility::Collapsed);
 	return;
 
 	/*

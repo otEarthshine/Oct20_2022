@@ -46,7 +46,7 @@ public:
 
 		Building& townhall = simulation().building(townhallId);
 		int32 townId = townhall.townId();
-		IntercityTradeOffer offer = simulation().worldTradeSystem().GetIntercityTradeOffer(townId, resourceEnum);
+		/*IntercityTradeOffer offer = simulation().worldTradeSystem().GetIntercityTradeOffer(townId, resourceEnum);
 
 #define LOCTEXT_NAMESPACE "TargetConfirmUI"
 		if (offer.offerEnum == IntercityTradeOfferEnum::BuyWhenBelow)
@@ -79,7 +79,7 @@ public:
 			int32 moneyPaid = TargetAmount->amount * simulation().price(resourceEnum);
 			BottomText->SetText(FText::Format(LOCTEXT("YouPayXCoin", "You pay: {0}<img id=\"Coin\"/>"), TEXT_NUM(moneyPaid)));
 		}
-#undef LOCTEXT_NAMESPACE
+#undef LOCTEXT_NAMESPACE*/
 	}
 
 	void OpenUI(int32 townhallIdIn, ResourceEnum resourceEnumIn)

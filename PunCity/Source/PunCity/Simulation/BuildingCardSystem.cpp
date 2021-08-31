@@ -86,7 +86,7 @@ void BuildingCardSystem::RollRareHandExecute()
 	{
 		// Don't draw if already bought
 		for (size_t j = 0; j < _cardsBought.size(); j++) {
-			if (_cardsBought[j].buildingEnum == cardEnum) {
+			if (_cardsBought[j].cardEnum == cardEnum) {
 				return false;
 			}
 		}

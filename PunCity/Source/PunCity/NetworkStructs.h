@@ -4,124 +4,7 @@
 #include "PunCity/Simulation/GameSimulationInfo.h"
 #include "PunUnrealUtils.h"
 
-/*
- * Light weight alternative to UE4's FArchive FMemoryReader etc.
- */
-class PunSerializedData : public TArray<int32>
-{
-public:
-	PunSerializedData(bool isSaving) {
-		readIndex = isSaving ? -1 : 0;
-	}
 
-	PunSerializedData(bool isSaving, const TArray<int32>& blob, int32 index = 0)
-	{
-		readIndex = isSaving ? -1 : index;
-		Append(blob);
-	}
-
-	int32 readIndex = -1;
-	
-	bool isSaving() { return readIndex == -1; }
-
-	
-	void operator<<(int32& value) {
-		if (isSaving()) {
-			Add(value);
-		} else {
-			value = (*this)[readIndex++];
-		}
-	}
-	void operator<<(int16& value) {
-		if (isSaving()) {
-			Add(value);
-		}
-		else {
-			value = (*this)[readIndex++];
-		}
-	}
-	void operator<<(int8& value) {
-		if (isSaving()) {
-			Add(value);
-		} else {
-			value = (*this)[readIndex++];
-		}
-	}
-	void operator<<(uint16& value) {
-		if (isSaving()) {
-			Add(value);
-		}
-		else {
-			value = (*this)[readIndex++];
-		}
-	}
-	void operator<<(uint8& value) {
-		if (isSaving()) {
-			Add(value);
-		} else {
-			value = (*this)[readIndex++];
-		}
-	}
-	void operator<<(bool& value) {
-		if (isSaving()) {
-			Add(value);
-		} else {
-			value = (*this)[readIndex++];
-		}
-	}
-
-	// Enum
-	template <
-		typename EnumType,
-		typename = typename TEnableIf<TIsEnumClass<EnumType>::Value>::Type
-	>
-	void operator<<(EnumType& Value) {
-		return (*this) << (__underlying_type(EnumType)&)Value;
-	}
-
-	void operator<<(FString& value) {
-		if (isSaving()) {
-			FString_SerializeAndAppendToBlob(value, *this);
-		} else {
-			value = FString_DeserializeFromBlob(*this, readIndex);
-		}
-	}
-
-	void operator<<(TArray<int32>& inArray) {
-		if (isSaving()) {
-			Add(inArray.Num());
-			Append(inArray);
-		} else {
-			int32 count = (*this)[readIndex++];
-			for (int i = 0; i < count; i++) {
-				inArray.Add((*this)[readIndex++]);
-			}
-		}
-	}
-	void operator<<(TArray<uint8>& inArray) {
-		if (isSaving()) {
-			Add(inArray.Num());
-			Append(inArray);
-		}
-		else {
-			int32 count = (*this)[readIndex++];
-			for (int i = 0; i < count; i++) {
-				inArray.Add((*this)[readIndex++]);
-			}
-		}
-	}
-
-	void operator<<(WorldTile2& value) {
-		(*this) << value.x;
-		(*this) << value.y;
-	}
-	void operator<<(TileArea& value) {
-		(*this) << value.minX;
-		(*this) << value.minY;
-		(*this) << value.maxX;
-		(*this) << value.maxY;
-	}
-};
 
 /*
  * Map settings sent across network in the lobby
@@ -434,7 +317,7 @@ public:
 	virtual ~FPlaceBuilding() {}
 
 	uint8 buildingEnum;
-	int32 buildingLevel = 0; // Note TrailerMode - Farm: use buildingLevel to specify plant type (need after-edit..)
+	int32 intVar1 = 0; // Note TrailerMode - Farm: use buildingLevel to specify plant type (need after-edit..)
 
 	TileArea area; // Needed in the case for manipulable area
 	TileArea area2;
@@ -453,7 +336,7 @@ public:
 		FNetworkCommand::Serialize(blob);
 
 		blob << buildingEnum;
-		blob << buildingLevel;
+		blob << intVar1;
 		
 		blob << area;
 		blob << area2;
@@ -621,6 +504,17 @@ public:
 		blob << intVar3;
 		blob << intVar4;
 		blob << intVar5;
+	}
+
+	bool operator==(const FGenericCommand& a)
+	{
+		return callbackEnum == a.callbackEnum ||
+			genericCommandType == a.genericCommandType ||
+			intVar1 == a.intVar1 ||
+			intVar2 == a.intVar2 ||
+			intVar3 == a.intVar3 ||
+			intVar4 == a.intVar4 ||
+			intVar5 == a.intVar5;
 	}
 };
 
@@ -908,14 +802,12 @@ public:
 	virtual ~FSellCards() {}
 	NetworkCommandEnum commandType() final { return NetworkCommandEnum::SellCards; }
 
-	CardEnum buildingEnum = CardEnum::None;
-	int32 cardCount = 0;
+	CardStatus cardStatus;
 	int32 isShiftDown = false;
 
 	void Serialize(PunSerializedData& blob) final {
 		FNetworkCommand::Serialize(blob);
-		blob << buildingEnum;
-		blob << cardCount;
+		cardStatus.Serialize(blob);
 		blob << isShiftDown;
 	}
 };
@@ -926,9 +818,11 @@ public:
 	virtual ~FUseCard() {}
 	NetworkCommandEnum commandType() final { return NetworkCommandEnum::UseCard; }
 
-	CardEnum cardEnum = CardEnum::None;
+	CardStatus cardStatus;
 	int32 variable1 = -1;
 	int32 variable2 = -1;
+
+	CallbackEnum callbackEnum = CallbackEnum::None;
 
 	int32 positionX100 = -1;
 	int32 positionY100 = -1;
@@ -942,42 +836,38 @@ public:
 
 	void Serialize(PunSerializedData& blob) final {
 		FNetworkCommand::Serialize(blob);
-		blob << cardEnum;
+
+		cardStatus.Serialize(blob);
+		
 		blob << variable1;
 		blob << variable2;
+
+		blob << callbackEnum;
 
 		blob << positionX100;
 		blob << positionY100;
 
 		//blob.Add(animationStartTime100);
 	}
+
+	bool operator==(const FUseCard& a)
+	{
+		return cardStatus == a.cardStatus ||
+			variable1 == a.variable1 ||
+			variable2 == a.variable2 ||
+			callbackEnum == a.callbackEnum ||
+			positionX100 == a.positionX100 ||
+			positionY100 == a.positionY100;
+	}
 	
-	//void SerializeAndAppendToBlob(TArray<int32>& blob) final {
-	//	FNetworkCommand::SerializeAndAppendToBlob(blob);
-	//	blob.Add(static_cast<int32>(cardEnum));
-	//	blob.Add(variable1);
-	//	blob.Add(variable2);
-
-	//	blob.Add(positionX100);
-	//	blob.Add(positionY100);
-
-	//	//blob.Add(animationStartTime100);
-	//}
-
-	//void DeserializeFromBlob(const TArray<int32>& blob, int32& index) final {
-	//	FNetworkCommand::DeserializeFromBlob(blob, index);
-	//	cardEnum = static_cast<CardEnum>(blob[index++]);
-	//	variable1 = blob[index++];
-	//	variable2 = blob[index++];
-
-	//	positionX100 = blob[index++];
-	//	positionY100 = blob[index++];
-
-	//	//animationStartTime100 = blob[index++];
-	//}
-
-	CardStatus GetCardStatus(int32 animationStartTime100) {
-		return { cardEnum, positionX100, positionY100, animationStartTime100 };
+	CardStatus GetCardStatus_AnimationOnly(int32 animationStartTime100)
+	{
+		CardStatus cardStatusOut = cardStatus;
+		cardStatusOut.lastPositionX100 = positionX100;
+		cardStatusOut.lastPositionY100 = positionY100;
+		cardStatusOut.animationStartTime100 = animationStartTime100;
+		
+		return cardStatusOut;
 	}
 };
 
@@ -1151,6 +1041,9 @@ public:
 	CheatEnum cheatEnum;
 	int32 var1;
 	int32 var2;
+	int32 var3;
+	int32 var4;
+	int32 var5;
 	FString stringVar1;
 
 	NetworkCommandEnum commandType() override { return NetworkCommandEnum::Cheat; }
@@ -1161,7 +1054,10 @@ public:
 		blob << cheatEnum;
 		blob << var1;
 		blob << var2;
-
+		blob << var3;
+		blob << var4;
+		blob << var5;
+		
 		blob << stringVar1;
 	}
 };

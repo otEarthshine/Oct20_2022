@@ -258,12 +258,12 @@ public:
 	/*
 	 * Building placement
 	 */
-	void StartBuildingPlacement(CardEnum buildingEnum, int32_t buildingLvl, bool useBoughtCard, CardEnum useWildCard) final {
+	void StartBuildingPlacement(CardStatus cardStatus, bool useBoughtCard, CardEnum useWildCard) final {
 		_networkInterface->ResetGameUI();
-		buildingPlacementSystem->StartBuildingPlacement(buildingEnum, buildingLvl, useBoughtCard, useWildCard);
+		buildingPlacementSystem->StartBuildingPlacement(cardStatus, useBoughtCard, useWildCard);
 
 		// Ensure TileObj Refresh to hide trees
-		if (IsPlacementHidingTree(buildingEnum)) {
+		if (IsPlacementHidingTree(cardStatus.cardEnum)) {
 			_gameInterface->simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Trees, _gameInterface->sampleRegionIds());
 		}
 	}

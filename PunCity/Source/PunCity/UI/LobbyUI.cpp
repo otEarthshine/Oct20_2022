@@ -134,6 +134,9 @@ void ULobbyUI::Init()
 	LobbyPopupCloseButton->OnClicked.AddDynamic(this, &ULobbyUI::OnClickPopupCloseButton);
 
 
+	// Player Logo
+	LobbyChooseLogoMenu->SetVisibility(ESlateVisibility::Collapsed);
+	LobbyChooseLogoMenuCloseXButton->CoreButton->OnClicked.AddUniqueDynamic(this, &ULobbyUI::OnClickChoosePlayerLogoCloseButton);
 
 	gameInstance()->Spawn2DSound("UI", "UIWindowOpen");
 
@@ -815,6 +818,9 @@ void ULobbyUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum)
 	if (callbackEnum == CallbackEnum::SelectEmptySlot) {
 		UPlayerListElementUI* element = CastChecked<UPlayerListElementUI>(punWidgetCaller);
 		GetFirstController()->TryChangePlayerId_ToServer(element->slotId);
+	}
+	else if (callbackEnum == CallbackEnum::LobbyChoosePlayerLogo) {
+		LobbyChooseLogoMenu->SetVisibility(ESlateVisibility::Visible);
 	}
 }
 

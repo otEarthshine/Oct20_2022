@@ -39,16 +39,16 @@ public:
 
 		SetChildHUD(TargetInventory);
 
-		IntercityTradeOffer offer = dataSource()->simulation().worldTradeSystem().GetIntercityTradeOffer(playerId(), _resourceEnum);
-		OfferTypeDropdown->SetSelectedOption(GetIntercityTradeOfferEnumName(offer.offerEnum).ToString());
-		
-		TargetInventory->Set(this, CallbackEnum::None);
-		TargetInventory->amount = offer.targetInventory;
-		TargetInventory->UpdateText();
+		//IntercityTradeOffer offer = dataSource()->simulation().worldTradeSystem().GetIntercityTradeOffer(playerId(), _resourceEnum);
+		//OfferTypeDropdown->SetSelectedOption(GetIntercityTradeOfferEnumName(offer.offerEnum).ToString());
+		//
+		//TargetInventory->Set(this, CallbackEnum::None);
+		//TargetInventory->amount = offer.targetInventory;
+		//TargetInventory->UpdateText();
 
-		UpdateTexts();
+		//UpdateTexts();
 
-		TargetInventory->isUsingSpecialControl = false;
+		//TargetInventory->isUsingSpecialControl = false;
 	}
 
 	void UpdateTexts()

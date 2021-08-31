@@ -79,6 +79,10 @@ public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyPopupText;
 	UPROPERTY(meta = (BindWidget)) UButton* LobbyPopupCloseButton;
 
+	// Choose Logo
+	UPROPERTY(meta = (BindWidget)) USizeBox* LobbyChooseLogoMenu;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* LobbyChooseLogoMenuCloseXButton;
+
 	void AddPopup(FText message) {
 		LobbyPopupOverlay->SetVisibility(ESlateVisibility::Visible);
 		SetText(LobbyPopupText, message);
@@ -100,6 +104,11 @@ public:
 	UFUNCTION() void OnClickPopupCloseButton() {
 		gameInstance()->Spawn2DSound("UI", "UIWindowClose");
 		LobbyPopupOverlay->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	UFUNCTION() void OnClickChoosePlayerLogoCloseButton() {
+		gameInstance()->Spawn2DSound("UI", "UIWindowClose");
+		LobbyChooseLogoMenu->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
 	UFUNCTION() void OnClickGenerateWorldButton() {

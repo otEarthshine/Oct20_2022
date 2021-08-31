@@ -169,7 +169,9 @@ void ABuildingPlacementSystem::Init(UAssetLoaderComponent* assetLoader)
 
 PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 {
-	if (!_gameInterface) return PlacementInfo();
+	if (!_gameInterface) {
+		return PlacementInfo();
+	}
 	
 	auto& sim = _gameInterface->simulation();
 	//int32 playerId = _gameInterface->playerId();
@@ -241,13 +243,14 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 		
 		if (_dragState == DragState::NeedDragStart)
 		{
-			if (HasValidSeed(_mouseOnTile)) {
+			if (_simulation->HasValidSeed(_mouseOnTile, _gameInterface->playerId())) {
 				ADDTEXT_LOCTEXT("Farm_BuildInstruction2", "Click and Drag Cursor\nto specify area");
 			}
 			else {
 				placementInstructionEnum = PlacementInstructionEnum::FarmNoValidSeedForRegion;
 			}
 		}
+		// Farm
 		else {
 			int32 sizeX = _area.sizeX();
 			int32 sizeY = _area.sizeY();
@@ -255,36 +258,36 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 			ADDTEXT_LOCTEXT("Farm_BuildInstruction3", "Drag cursor to resize the farm");
 
 			if (sizeX > 1 || sizeY > 1) {
-				int32 areaSize = (sizeY * sizeX);
-				//ss << "\n" << sizeY << "x" << sizeX << " (Area:" << areaSize << ")";
+				int32 areaSize = _farmWorldTiles.size();
+				int32 farmWorkerCount = Farm::GetFarmWorkerCount(areaSize);
+				
 				ADDTEXT_(
-					LOCTEXT("Farm_BuildInstructionArea", "\n{0}x{1} (Area:{2})"),
+					LOCTEXT("Farm_BuildInstructionArea", "\n{0}x{1}\nArea:{2} (Workers:{3})"),
 					TEXT_NUM(sizeY),
 					TEXT_NUM(sizeX),
-					TEXT_NUM(areaSize)
+					TEXT_NUM(areaSize),
+					TEXT_NUM(farmWorkerCount)
 				);
 
-				int32 woodNeeded = areaSize / 2;
+				int32 woodNeeded = sim.GetFarmCost(areaSize);
 				bool isRed = true;
 				if (townId != -1) {
 					isRed = sim.resourceSystem(townId).resourceCountWithDrops(ResourceEnum::Wood) < woodNeeded;
 				}
 				
-				//ss << "\n" << MaybeRedText(to_string(woodNeeded), sim.resourceCountWithDrops(playerId, ResourceEnum::Wood) < woodNeeded) << "<img id=\"Wood\"/>";
 				ADDTEXT_(
 					INVTEXT("\n{0}<img id=\"Wood\"/>"),
 					TextRed(TEXT_NUM(woodNeeded), isRed)
 				);
 			}
 
-			TileArea area(WorldTile2(0, 0), WorldTile2(sizeX, sizeY));
-			if (IsFarmWidthTooHigh(area)) {
-				ADDTEXT_LOCTEXT("Farm_BuildInvalid1", "\n<Red>Width or Length too large</>\n<Red>(Max Width/Length: 16)</>");
+			if (_simulation->IsFarmWidthTooHigh(_area2)) {
+				ADDTEXT_LOCTEXT("Farm_BuildInvalid1", "\n<Red>Width or Length too large</>\n<Red>(Max Width/Length: 50)</>");
 			}
-			else if (IsFarmTooLarge(area)) {
-				ADDTEXT_LOCTEXT("Farm_BuildInvalid2", "\n<Red>Area is too large (Max Area: 64)</>");
+			else if (_simulation->IsFarmTooLarge(_farmWorldTiles)) {
+				ADDTEXT_LOCTEXT("Farm_BuildInvalid2", "\n<Red>Area is too large (Max Area: 500)</>");
 			}
-			else if (IsFarmTooSmall(area)) {
+			else if (_simulation->IsFarmTooSmall(_farmWorldTiles)) {
 				ADDTEXT_LOCTEXT("Farm_BuildInvalid3", "\n<Red>Area is too small (Min Area: 16)</>");
 			}
 		}
@@ -429,12 +432,13 @@ void ABuildingPlacementSystem::ShowRadius(int radius, OverlayType overlayType, b
 	_radiusMesh->SetWorldTransform(transform);
 }
 
-void ABuildingPlacementSystem::StartBuildingPlacement(CardEnum buildingEnum, int32 buildingLvl, bool useBoughtCard, CardEnum useWildCard)
+void ABuildingPlacementSystem::StartBuildingPlacement(CardStatus cardStatus, bool useBoughtCard, CardEnum useWildCard)
 {
 	if (!_gameInterface) return;
 
 	CancelPlacement();
 
+	CardEnum buildingEnum = cardStatus.cardEnum;
 
 	/*
 	 * Building starting with Drag
@@ -461,11 +465,12 @@ void ABuildingPlacementSystem::StartBuildingPlacement(CardEnum buildingEnum, int
 
 	
 	
-	PUN_LOG("StartBuildingPlacement: %s lvl:%d", *(GetBuildingInfo(buildingEnum).nameF()), buildingLvl);
+	PUN_LOG("StartBuildingPlacement: %s invVar1:%d", *(GetBuildingInfo(buildingEnum).nameF()), cardStatus.cardStateValue1);
 
 	_placementType = PlacementType::Building;
 	_buildingEnum = buildingEnum;
-	_buildingLvl = buildingLvl;
+	
+	_intVar1 = cardStatus.cardStateValue1;
 	//_faceDirection = Direction::S;
 
 	_useBoughtCard = useBoughtCard;
@@ -585,7 +590,7 @@ void ABuildingPlacementSystem::StartBuildingPlacement(CardEnum buildingEnum, int
 #undef SHOW_RADIUS
 
 	// Spell
-	if (IsAreaSpell(buildingEnum)) {
+	if (IsSpellCard(buildingEnum)) {
 		showGridGuide = false;
 	}
 
@@ -801,31 +806,71 @@ void ABuildingPlacementSystem::TickAreaDrag(WorldAtom2 cameraAtom, function<Plac
 	if (_dragState == DragState::NeedDragStart ||
 		_dragState == DragState::LeftMouseDown)
 	{
-		//PUN_DEBUG_FAST(FString::Printf(TEXT("Tick DragStart %d, %d"), _mouseOnTile.x, _mouseOnTile.y));
-		_placementGrid.SpawnGrid(getPlacementGridEnum(_mouseOnTile), cameraAtom, _mouseOnTile);
+		// Special case: Farm
+		if (_buildingEnum == CardEnum::Farm)
+		{
+			_canPlace = _simulation->IsFarmBuildable(_mouseOnTile, _gameInterface->playerId());
+			_placementGrid.SpawnGrid(
+				_canPlace ? PlacementGridEnum::Green : PlacementGridEnum::Red,
+				cameraAtom, _mouseOnTile
+			);
+		}
+		else {
+			_placementGrid.SpawnGrid(getPlacementGridEnum(_mouseOnTile), cameraAtom, _mouseOnTile);
+		}
 	}
 	else if (_dragState == DragState::Dragging)
 	{
 		CalculateDragArea();
-		_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-			SCOPE_CYCLE_COUNTER(STAT_DragSpawnPlacement);
-			_placementGrid.SpawnGrid(getPlacementGridEnum(tile), cameraAtom, tile);
-		});
 
-
-		// Building area drag not always placable
-		if (_placementType == PlacementType::BuildingDrag)
+		// Special case: Farm
+		if (_buildingEnum == CardEnum::Farm)
 		{
-			_canPlace = _placementGrid.IsDisplayCountZero(PlacementGridEnum::Red);
+			// Loop by flooding from the initial tile
+			check(_area.HasTile(_dragStartTile));
 
-			if (_buildingEnum == CardEnum::Farm) {
-				if (IsFarmSizeInvalid(_area)) {
-					_canPlace = false;
-				}
+			_farmStartTile = _dragStartTile;
+			_farmWorldTiles = _simulation->GetFarmTiles(_area, _farmStartTile, _gameInterface->playerId());
+
+			for (const FarmTile& farmTile : _farmWorldTiles) {
+				_placementGrid.SpawnGrid(getPlacementGridEnum(farmTile.worldTile), cameraAtom, farmTile.worldTile);
 			}
-			else if (_buildingEnum == CardEnum::StorageYard) {
-				if (IsStorageTooLarge(_area)) {
-					_canPlace = false;
+
+			TileArea area;
+			area.minX = _dragStartTile.x;
+			area.minY = _dragStartTile.y;
+			area.maxX = area.minX;
+			area.maxY = area.minY;
+			
+			for (const FarmTile& farmTile : _farmWorldTiles) {
+				area.minX = std::min(area.minX, farmTile.worldTile.x);
+				area.minY = std::min(area.minY, farmTile.worldTile.y);
+				area.maxX = std::max(area.maxX, farmTile.worldTile.x);
+				area.maxY = std::max(area.maxY, farmTile.worldTile.y);
+			}
+			_area2 = area; // Area2 as the actual area
+
+			if (_simulation->IsFarmSizeInvalid(_farmWorldTiles, area)) {
+				_canPlace = false;
+			}
+		}
+		else
+		{
+			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+				SCOPE_CYCLE_COUNTER(STAT_DragSpawnPlacement);
+				_placementGrid.SpawnGrid(getPlacementGridEnum(tile), cameraAtom, tile);
+			});
+
+
+			// Building area drag not always placable
+			if (_placementType == PlacementType::BuildingDrag)
+			{
+				_canPlace = _placementGrid.IsDisplayCountZero(PlacementGridEnum::Red);
+
+				if (_buildingEnum == CardEnum::StorageYard) {
+					if (IsStorageTooLarge(_area)) {
+						_canPlace = false;
+					}
 				}
 			}
 		}
@@ -892,9 +937,15 @@ void ABuildingPlacementSystem::LeftClickDown(IGameNetworkInterface* networkInter
 	NetworkTryPlaceBuilding(networkInterface);
 
 	// Drag can start by leftClick down/up on the same tile, this drag will end with another leftClickDown
-	if (_dragState == DragState::NeedDragStart && _canPlace) {
-		_dragState = DragState::LeftMouseDown;
-		_dragStartTile = _mouseOnTile;
+	if (_dragState == DragState::NeedDragStart) 
+	{
+		if (_canPlace) {
+			_dragState = DragState::LeftMouseDown;
+			_dragStartTile = _mouseOnTile;
+		}
+		else { 
+			_gameInterface->Spawn2DSound("UI", "PopupCannot");
+		}
 	}
 	// Up Drag
 	else if (_dragState == DragState::Dragging)  {
@@ -1280,6 +1331,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 {
 	// TODO: find proper place to set this?
 	_gameInterface = gameInterface;
+	_simulation = &(_gameInterface->simulation());
 	_networkInterface = networkInterface;
 
 	_forceCannotPlace = false;
@@ -1337,6 +1389,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 
 			if (_delayFillerEnum != CardEnum::SpeedBoost &&
 				!IsActionCard(_delayFillerEnum) &&
+				_delayFillerEnum != CardEnum::Farm &&
 				!IsDecorativeBuilding(_delayFillerEnum))
 			{
 				_gameInterface->ShowBuildingMesh(_delayFillerTile, _delayFillerFaceDirection, modules, 0);
@@ -1436,7 +1489,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		_dragState = DragState::Dragging;
 	}
 
-	GameRegionSystem& regionSystem = simulation.regionSystem();
+	GameRegionSystem& regionSystem = simulation.provinceInfoSystem();
 	PunTerrainGenerator& terrainGenerator = simulation.terrainGenerator();
 
 	_placementGrid.BeforeAdd();
@@ -1540,8 +1593,12 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		_placementType == PlacementType::Fence ||
 		_placementType == PlacementType::Bridge)
 	{
+		bool isFastBuild = SimSettings::IsOn("CheatFastBuild");
 		
 		TickLineDrag(cameraAtom, [&](WorldTile2 tile) {
+			if (isFastBuild) {
+				return _gameInterface->IsIntercityRoadBuildable(tile);
+			}
 			return _gameInterface->IsPlayerRoadBuildable(tile);
 		});
 		return;
@@ -1575,39 +1632,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		{
 			TickAreaDrag(cameraAtom, [&](WorldTile2 tile)
 			{
-				if (IsPlayerBuildable(tile))
-				{
-					if (simulation.GetFertilityPercent(tile) < 20) {
-						SetInstruction(PlacementInstructionEnum::FarmAndRanch, true);
-						return PlacementGridEnum::Red;
-					}
-
-					//// Any seed that can be planted here?
-					//std::vector<SeedInfo> seedsOwned = simulation.globalResourceSystem(_gameInterface->playerId()).seedsPlantOwned();
-					//GeoresourceEnum georesourceEnum = simulation.georesource(simulation.GetProvinceIdClean(tile)).georesourceEnum;
-					//
-					//bool hasValidSeed = false;
-					//for (SeedInfo seed : seedsOwned)
-					//{
-					//	if (IsCommonSeedCard(seed.cardEnum)) {
-					//		hasValidSeed = true;
-					//		break;
-					//	}
-					//	if (IsSpecialSeedCard(seed.cardEnum) &&
-					//		seed.georesourceEnum == georesourceEnum)
-					//	{
-					//		hasValidSeed = true;
-					//		break;
-					//	}
-					//}
-
-					if (!HasValidSeed(tile)) {
-						SetInstruction(PlacementInstructionEnum::FarmNoValidSeedForRegion, true);
-						return PlacementGridEnum::Red;
-					}
-					return PlacementGridEnum::Green;
-				}
-				return PlacementGridEnum::Red;
+				return simulation.IsFarmBuildable(tile, _gameInterface->playerId()) ? PlacementGridEnum::Green : PlacementGridEnum::Gray;
 			});
 			
 			return;
@@ -1806,7 +1831,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 	 */
 	if (!IsBuildingCard(_buildingEnum))
 	{
-		PUN_CHECK(IsAreaSpell(_buildingEnum));
+		check(IsSpellCard(_buildingEnum))
 		
 		_area = TileArea(_mouseOnTile, AreaSpellRadius(_buildingEnum));
 		_area.ExecuteOnArea_WorldTile2([&](WorldTile2 location) 
@@ -1853,6 +1878,16 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 						SetInstruction(PlacementInstructionEnum::TownhallTarget, true);
 
 						_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
+						return;
+					}
+					else if (IsAnimalCard(_buildingEnum))
+					{
+						if (simulation.IsWalkable(location)) {
+							_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, location);
+						}
+						else {
+							_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
+						}
 						return;
 					}
 					else if (_buildingEnum == CardEnum::InstantBuild)
@@ -1948,7 +1983,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 
 		_placementGrid.AfterAdd();
 		return;
-	}
+	} // End: Is not building card
 		
 	/*
 	 * Placement grids
@@ -2171,7 +2206,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 					else if (simulation.overlaySystem().IsRoad(tile)) {
 						gridEnum = PlacementGridEnum::ArrowGreen;
 					}
-					else if (gameInterface->IsPlayerFrontBuildable(tile)) {
+					else if (IsPlayerFrontBuildable(tile)) {
 						gridEnum = PlacementGridEnum::ArrowYellow;
 					}
 
@@ -2435,7 +2470,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		else if (IsRoadOverlapBuilding(_buildingEnum))
 		{
 			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 location) {
-				bool isGreen = gameInterface->IsPlayerFrontBuildable(location) && !isAllRed;
+				bool isGreen = IsPlayerFrontBuildable(location) && !isAllRed;
 
 				_placementGrid.SpawnGrid(isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, location);
 			});
@@ -2539,6 +2574,15 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				_placementGrid.SpawnGrid(isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, tile);
 			});
 		}
+		// Cheat FastBuild... Build anywhere
+		else if (SimSettings::IsOn("CheatFastBuild"))
+		{
+			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 location)
+			{
+				bool isGreen = GameMap::IsInGrid(location) && _gameInterface->simulation().IsBuildable(location);
+				_placementGrid.SpawnGrid(isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, location);
+			});
+		}
 		// Grid
 		else
 		{
@@ -2578,6 +2622,8 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			_buildingEnum != CardEnum::StorageYard &&
 			!IsDecorativeBuilding(_buildingEnum))
 		{
+			bool isFastBuild = SimSettings::IsOn("CheatFastBuild");
+			
 			TileArea frontArea = _area.GetFrontArea(_faceDirection);
 
 			frontArea.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) 
@@ -2586,10 +2632,16 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 
 				if (tile.isValid())
 				{
+					bool isFrontBuildable = IsPlayerFrontBuildable(tile);
+
+					if (isFastBuild && IsForeignFrontBuildable(tile)) {
+						isFrontBuildable = true;
+					}
+					
 					if (simulation.overlaySystem().IsRoad(tile)) {
 						gridEnum = PlacementGridEnum::ArrowGreen;
 					}
-					else if (gameInterface->IsPlayerFrontBuildable(tile)) {
+					else if (isFrontBuildable) {
 						gridEnum = PlacementGridEnum::ArrowYellow;
 					}
 				}
@@ -2669,9 +2721,9 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 			{
 				auto command = make_shared<FPlaceBuilding>();
 				command->buildingEnum = buildingEnumInt();
-				command->buildingLevel = _buildingLvl;
-				command->area = _area;
-				command->center = _area.centerTile();
+				command->intVar1 = _farmStartTile.tileId();
+				command->area = _area2; // Area2 is the trimmed area
+				command->center = _farmStartTile;// dragStart  _area.centerTile();
 				command->faceDirection = static_cast<uint8>(Direction::S);
 				command->useBoughtCard = _useBoughtCard;
 				command->useWildCard = _useWildCard;
@@ -2699,7 +2751,7 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 			{
 				auto command = make_shared<FPlaceBuilding>();
 				command->buildingEnum = buildingEnumInt();
-				command->buildingLevel = _buildingLvl;
+				command->intVar1 = _intVar1;
 				command->area = _area3; // Storage trimmed area
 				//command->area2 = _area2; // TODO: Ranch use this
 				command->center = _area3.centerTile();
@@ -2824,7 +2876,7 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 					default: break;
 					}
 					//command->buildingEnum = static_cast<uint8>(_placementType == PlacementType::Bridge ? CardEnum::Bridge : CardEnum::Tunnel);
-					command->buildingLevel = _buildingLvl;
+					command->intVar1 = _intVar1;
 					command->area = bridgeArea;
 					command->center = bridgeArea.min();
 					command->faceDirection = static_cast<uint8>(_faceDirection);
@@ -2955,7 +3007,7 @@ void ABuildingPlacementSystem::NetworkTryPlaceBuilding(IGameNetworkInterface* ne
 
 			auto command = make_shared<FPlaceBuilding>();
 			command->buildingEnum = buildingEnumInt();
-			command->buildingLevel = _buildingLvl;
+			command->intVar1 = _intVar1;
 			command->area = _area;
 			command->area2 = _area2;
 			command->center = _mouseOnTile;
@@ -2964,7 +3016,7 @@ void ABuildingPlacementSystem::NetworkTryPlaceBuilding(IGameNetworkInterface* ne
 			command->useWildCard = _useWildCard;
 
 			// Trailer Mode record house lvl
-			command->buildingLevel = SimSettings::Get("CheatHouseLevel");
+			command->intVar1 = SimSettings::Get("CheatHouseLevel");
 
 			//// Special cases
 			//if (_buildingEnum == CardEnum::SpeedBoost)

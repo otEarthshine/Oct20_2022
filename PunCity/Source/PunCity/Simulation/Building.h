@@ -49,6 +49,7 @@ public:
 		_simulation = simulation;
 	}
 
+	virtual void OnPreInit() {}
 	virtual void OnInit() {}
 	virtual void OnDeinit() {}
 
@@ -116,6 +117,8 @@ public:
 	Direction faceDirection() const { return _faceDirection; }
 	TileArea area() const { return _area; }
 	TileArea frontArea() const { return _area.GetFrontArea(_faceDirection); }
+
+	virtual int32 tileCount() { return _area.tileCount(); }
 
 	static WorldTile2 GetPortTile(WorldTile2 gateTile, Direction faceDirection, CardEnum buildingEnum) {
 		return gateTile + WorldTile2::RotateTileVector(WorldTile2(GetBuildingInfo(buildingEnum).size.x - 1, 0), faceDirection);
@@ -203,8 +206,20 @@ public:
 
 	PriorityEnum priority() { return _priority; }
 
-	std::vector<int32> GetConstructionResourceCost() {
-		return _simulation->GetConstructionResourceCost(_buildingEnum, _area);
+	std::vector<int32> GetConstructionResourceCost()
+	{
+		if (_buildingEnum == CardEnum::Farm) {
+			std::vector<int32> constructionResources = { _simulation->GetFarmCost(tileCount()) };
+			constructionResources.resize(ConstructionResourceCount, 0);
+			return constructionResources;
+		}
+		if (_buildingEnum == CardEnum::StorageYard) {
+			std::vector<int32> constructionResources = { _area.tileCount() / 4 * _simulation->StorageCostPerTile() };
+			constructionResources.resize(ConstructionResourceCount, 0);
+			return constructionResources;
+		}
+		return GetBuildingInfo(_buildingEnum).constructionResources;
+		//return _simulation->GetConstructionResourceCost(_buildingEnum, _area);
 	}
 
 	bool hasNeededConstructionResource() {
@@ -399,6 +414,10 @@ public:
 
 	bool isJobBuilding() {
 		return !IsHouse(_buildingEnum) && maxOccupants() > 0;
+	}
+
+	virtual int32 GetWorkerCount() {
+		return buildingInfo().workerCount;
 	}
 
 	void AddJobBuilding(int maxOccupant) {
@@ -1507,8 +1526,6 @@ public:
 		
 		return std::max(0, tradeFeePercent);
 	}
-
-	
 
 	// 
 	void TickConstruction(int32 ticksToFinish)

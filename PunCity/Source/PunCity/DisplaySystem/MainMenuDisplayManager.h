@@ -94,6 +94,8 @@ public:
 	FVector DisplayLocation(WorldAtom2 atom) final { return MapUtil::DisplayLocation(_cameraAtom, atom); }
 
 	float GetTrailerTime() final { return 0.0f; }
+
+	virtual void GetDefenseNodeDisplayInfo(int32 provinceId, float displayScaling, DefenseOverlayEnum& defenseOverlayEnum_Out, FTransform& nodeTransform_Out, TArray<FTransform>& lineTransforms_Out, bool isMap) override {}
 	
 	int timeSinceTickStart() final {
 		return 0;

@@ -61,6 +61,9 @@ void UPopupUI::Tick()
 		else if (shouldShowExclusive(ExclusiveUIEnum::CardHand1)) {
 			shouldPopup = true;
 		}
+		else if (shouldShowExclusive(ExclusiveUIEnum::CardInventory)) {
+			shouldPopup = true;
+		}
 		else if (shouldShowExclusive(ExclusiveUIEnum::ConverterCardHand)) {
 			shouldPopup = true;
 		}
@@ -79,10 +82,16 @@ void UPopupUI::Tick()
 		else if (shouldShowExclusive(ExclusiveUIEnum::DiplomacyUI)) {
 			shouldPopup = true;
 		}
+		else if (shouldShowExclusive(ExclusiveUIEnum::TrainUnitsUI)) {
+			shouldPopup = true;
+		}
 		else if (shouldShowExclusive(ExclusiveUIEnum::GiftResourceUI)) {
 			shouldPopup = true;
 		}
 		else if (shouldShowExclusive(ExclusiveUIEnum::SendImmigrantsUI)) {
+			shouldPopup = true;
+		}
+		else if (shouldShowExclusive(ExclusiveUIEnum::TownAutoTradeUI)) {
 			shouldPopup = true;
 		}
 	}

@@ -158,20 +158,142 @@ struct ProvinceClaimProgress
 	}
 };
 
+struct AutoTradeElement
+{
+	bool isImport = true;
+	ResourceEnum resourceEnum = ResourceEnum::None;
+	int32 targetInventory = 0;
+	int32 maxTradeAmount = 0;
+	
+	int32 calculatedTradeAmountNextRound = 0;
+	int32 calculatedFulfilledTradeAmountNextRound = 0;
+
+	int32 calculatedFulfillmentLeft() const {
+		return calculatedTradeAmountNextRound - calculatedFulfilledTradeAmountNextRound;
+	}
+
+	//! Serialize
+	FArchive& operator>>(FArchive &Ar) {
+		Ar << isImport;
+		Ar << resourceEnum;
+		Ar << targetInventory;
+		Ar << maxTradeAmount;
+		
+		Ar << calculatedTradeAmountNextRound;
+		Ar << calculatedFulfilledTradeAmountNextRound;
+		return Ar;
+	}
+
+	int32 GetHash() const
+	{
+		return FastHashCombineMany({
+			isImport,
+			static_cast<int32>(resourceEnum),
+			targetInventory,
+			maxTradeAmount,
+			calculatedTradeAmountNextRound,
+			calculatedFulfilledTradeAmountNextRound,
+		});
+	}
+};
+
+/*
+ * 
+ */
+class TownManagerBase
+{
+public:
+
+	int32 _playerId = -1;
+	int32 _townId = -1;
+	int32 townHallId = -1;
+
+	TownManagerBase(int32 playerId, int32 townId, IGameSimulationCore* simulation) :
+		_playerId(playerId),
+		_townId(townId),
+		_simulation(simulation)
+	{}
+	
+
+	/*
+	 * Claim Province
+	 */
+	void TryRemoveProvinceClaim(int32 provinceId, bool lightMode)
+	{
+		CppUtils::TryRemove(_provincesClaimed, provinceId);
+		//_claimedProvinceConnected.erase(provinceId);
+
+		if (!lightMode) {
+			RecalculateTax(false);
+		}
+	}
+
+	void ClaimProvince(int32 provinceIdIn, bool lightMode = false)
+	{
+		//PUN_LOG("ClaimProvince province:%d pid:%d", provinceId, _playerId);
+
+		_provincesClaimed.push_back(provinceIdIn);
+
+		RefreshProvinceInfo();
+
+
+		if (lightMode) {
+			return;
+		}
+
+		RecalculateTax(false);
+	}
+
+	/*
+	 * Helpers
+	 */
+	virtual void RefreshProvinceInfo() {}
+
+	virtual void RecalculateTax(bool showFloatup) {}
+
+	/*
+	 * Serialize
+	 */
+	void Serialize(FArchive& Ar)
+	{
+		//! Public
+		Ar << _playerId;
+		Ar << _townId;
+		Ar << townHallId;
+
+		SerializeVecValue(Ar, _provincesClaimed);
+	}
+
+	static const int32 MinorTownShift = 10000;
+	static bool IsMinorTownId(int32 townId) {
+		return townId >= MinorTownShift;
+	}
+
+protected:
+	std::vector<int32> _provincesClaimed;
+
+	/*
+	 * Non-Serialize
+	 */
+	IGameSimulationCore* _simulation = nullptr;
+};
+
 
 /**
  * 
  */
-class TownManager
+class TownManager : public TownManagerBase
 {
 public:
-	TownManager(int32 playerId, int32 townId, IGameSimulationCore* simulation)
+	TownManager(int32 playerId, int32 townId, IGameSimulationCore* simulation) :
+		TownManagerBase(playerId, townId, simulation)
 	{
-		_playerId = playerId;
-		_townId = townId;
+		//_playerId = playerId;
+		//_townId = townId;
 		PUN_LOG("Create TownManager pid:%d tid:%d", playerId, townId);
 		
-		_simulation = simulation;
+		//_simulation = simulation;
+		
 		taxLevel = 2;
 
 		_aveHappiness.resize(HappinessEnumName.Num());
@@ -213,6 +335,25 @@ public:
 		if (_needTaxRecalculation) {
 			_needTaxRecalculation = false;
 			RecalculateTax(false);
+		}
+
+		// Unit Training
+		if (_trainUnitsQueue.size() > 0)
+		{
+			_trainUnitsTicks100 += 1 * 100;
+			
+			if (_trainUnitsTicks100 >= GetTrainingLengthTicks(_trainUnitsQueue[0].cardEnum))
+			{
+				if (_simulation->TryAddCardToBoughtHand(_playerId, _trainUnitsQueue[0].cardEnum))
+				{
+					_trainUnitsTicks100 = 0;
+					_trainUnitsQueue[0].stackSize--;
+
+					if (_trainUnitsQueue[0].stackSize <= 0) {
+						_trainUnitsQueue.erase(_trainUnitsQueue.begin());
+					}
+				}
+			}
 		}
 	}
 
@@ -310,7 +451,7 @@ public:
 		//PUN_LOG("RecalculateTaxDelayed");
 		_needTaxRecalculation = true;
 	}
-	void RecalculateTax(bool showFloatup);
+	virtual void RecalculateTax(bool showFloatup) override;
 
 	void ChangeIncome(int32 changeAmount, bool showFloatup, WorldTile2 floatupTile)
 	{
@@ -601,34 +742,6 @@ public:
 		_migrationPendingCount += count;
 	}
 
-	/*
-	 * Claim Province
-	 */
-	void TryRemoveProvinceClaim(int32 provinceId, bool lightMode)
-	{
-		CppUtils::TryRemove(_provincesClaimed, provinceId);
-		//_claimedProvinceConnected.erase(provinceId);
-
-		if (!lightMode) {
-			RecalculateTax(false);
-		}
-	}
-
-	void ClaimProvince(int32 provinceIdIn, bool lightMode = false)
-	{
-		//PUN_LOG("ClaimProvince province:%d pid:%d", provinceId, _playerId);
-
-		_provincesClaimed.push_back(provinceIdIn);
-
-		RefreshProvinceDistanceMap();
-
-		
-		if (lightMode) {
-			return;
-		}
-
-		RecalculateTax(false);
-	}
 
 	/*
 	 * Townhall cards
@@ -695,6 +808,298 @@ public:
 		}
 		return false;
 	}
+
+	/*
+	 * Training Queue
+	 */
+	std::vector<CardStatus> trainUnitsQueueDisplay()
+	{
+		std::vector<CardStatus> result = _trainUnitsQueue;
+		for (const FUseCard& command : _pendingTrainCommands) {
+			TrainUnits_Helper(command, result, false);
+		}
+		return result;
+	}
+
+	const std::vector<FUseCard>& pendingTrainCommands() {
+		return _pendingTrainCommands;
+	}
+	void AddPendingTrainCommand(const FUseCard& command) {
+		_pendingTrainCommands.push_back(command);
+	}
+
+	int32 GetTrainUnitCost(CardEnum cardEnum) {
+		return GetBuildingInfo(cardEnum).baseCardPrice;
+	}
+	static int32 GetTrainingLengthTicks(CardEnum cardEnum)
+	{
+		int32 price = GetBuildingInfo(cardEnum).baseCardPrice;
+		const int32 moneyCostPerSec = 20;
+		return Time::TicksPerSecond * price / moneyCostPerSec;
+	}
+
+	float GetTrainingFraction()
+	{
+		if (_trainUnitsQueue.size() > 0) {
+			return FMath::Clamp(static_cast<float>(_trainUnitsTicks100) / GetTrainingLengthTicks(_trainUnitsQueue[0].cardEnum), 0.0f, 1.0f);
+		}
+		return 0.0f;
+	}
+	
+	void TrainUnits(const FUseCard& command) {
+		TrainUnits_Helper(command, _trainUnitsQueue, true);
+	}
+	
+	void TrainUnits_Helper(const FUseCard& command, std::vector<CardStatus>& trainUnitsQueue, bool isRealAction)
+	{
+		check(_pendingTrainCommands.size() > 0);
+		check(_pendingTrainCommands[0] == command);
+		if (isRealAction) {
+			_pendingTrainCommands.erase(_pendingTrainCommands.begin());
+		}
+
+		CardEnum cardEnum = command.cardStatus.cardEnum;
+
+		/*
+		 * Cancel Train
+		 */
+		if (command.callbackEnum == CallbackEnum::CancelTrainUnit)
+		{
+			for (int32 i = trainUnitsQueue.size(); i-- > 0;)
+			{
+				if (trainUnitsQueue[i].cardBirthTicks == command.variable2) 
+				{
+					trainUnitsQueue[i].stackSize -= command.variable1;
+					trainUnitsQueue[i].stackSize = std::max(0, trainUnitsQueue[i].stackSize);
+
+					// Real Action: return the money
+					if (isRealAction) {
+						_simulation->ChangeMoney(_playerId, GetBuildingInfo(trainUnitsQueue[i].cardEnum).baseCardPrice);
+					}
+
+					// Remove stack if the size is 0
+					if (trainUnitsQueue[i].stackSize == 0) {
+						trainUnitsQueue.erase(trainUnitsQueue.begin() + i);
+
+						// Real Action: If this is the first stack, reset the timer
+						if (isRealAction && i == 0) {
+							_trainUnitsTicks100 = 0;
+						}
+					}
+					return;
+				}
+			}
+			return;
+		}
+
+		/*
+		 * Train
+		 */
+		// Real Action: pay money
+		int32 trainingCount = command.variable1;
+		if (isRealAction) 
+		{
+			int32 cardPrice = GetBuildingInfo(cardEnum).baseCardPrice;
+
+			// Must be able to train at least one unit
+			if (_simulation->moneyCap32(_playerId) >= cardPrice) 
+			{
+				// Can't train more than money allows
+				int32 maxPossibleTraining = _simulation->moneyCap32(playerId()) / GetTrainUnitCost(command.cardStatus.cardEnum);
+				trainingCount = std::min(trainingCount, maxPossibleTraining);
+				trainingCount = std::max(1, trainingCount);
+
+				int32 moneyToSpend = cardPrice * trainingCount;
+				
+				_simulation->ChangeMoney(_playerId, -moneyToSpend);
+			}
+			else {
+				_simulation->AddPopupToFront(_playerId, 
+					NSLOCTEXT("TrainUnits", "NotEnoughMoneyToTrainUnit", "Not enough money to train this unit."), 
+					ExclusiveUIEnum::TrainUnitsUI, "PopupCannot"
+				);
+				return;
+			}
+		}
+
+		// Fill the old stack
+		if (trainUnitsQueue.size() > 0 &&
+			trainUnitsQueue.back().cardEnum == cardEnum)
+		{
+			trainUnitsQueue.back().stackSize += trainingCount;
+			return;
+		}
+
+		// Make a new stack
+		if (trainUnitsQueue.size() < 5)
+		{
+			CardStatus cardStatus;
+			cardStatus.cardEnum = cardEnum;
+			cardStatus.stackSize = trainingCount;
+			cardStatus.cardBirthTicks = Time::Ticks();
+
+			trainUnitsQueue.push_back(cardStatus);
+		}
+	}
+
+	/*
+	 * Auto Trade
+	 */
+	void GetAutoTradeElementsDisplay(std::vector<AutoTradeElement>& autoExportElements, std::vector<AutoTradeElement>& autoImportElements)
+	{
+		autoExportElements = _autoExportElements;
+		autoImportElements = _autoImportElements;
+
+		for (int32 i = 0; i < _pendingAutoTradeCommands.size(); i++) {
+			ExecuteAutoTradeCommand_Helper(_pendingAutoTradeCommands[i], autoExportElements, autoImportElements);
+		}
+	}
+
+	std::vector<AutoTradeElement>& autoExportElements() { return _autoExportElements; }
+	std::vector<AutoTradeElement>& autoImportElements() { return _autoImportElements; }
+
+	int32 GetMaxAutoTradeAmount();
+
+	void CalculateAutoTradeAmountNextRound() {
+		CalculateAutoTradeAmountNextRound_Helper(_autoExportElements, _autoImportElements);
+	}
+	
+	void CalculateAutoTradeAmountNextRound_Helper(std::vector<AutoTradeElement>& autoExportElements, std::vector<AutoTradeElement>& autoImportElements)
+	{
+		int32 tradeAmountLeftOver = GetMaxAutoTradeAmount();
+		
+		// Calculate the Trade Amount Next Round
+		for (AutoTradeElement& autoTradeElement : autoExportElements) {
+			int32 resourceCountTown = _simulation->resourceCountTown(_townId, autoTradeElement.resourceEnum);
+			int32 tradeAmount = resourceCountTown - autoTradeElement.targetInventory;
+			tradeAmount = Clamp(tradeAmount, 0, std::min(autoTradeElement.maxTradeAmount, tradeAmountLeftOver));
+			autoTradeElement.calculatedTradeAmountNextRound = tradeAmount;
+			
+			tradeAmountLeftOver -= tradeAmount;
+			check(tradeAmountLeftOver >= 0);
+		}
+		for (AutoTradeElement& autoTradeElement : autoImportElements) {
+			int32 resourceCountTown = _simulation->resourceCountTown(_townId, autoTradeElement.resourceEnum);
+			int32 tradeAmount = autoTradeElement.targetInventory - resourceCountTown;
+			tradeAmount = Clamp(tradeAmount, 0, std::min(autoTradeElement.maxTradeAmount, tradeAmountLeftOver));
+			autoTradeElement.calculatedTradeAmountNextRound = tradeAmount;
+
+			tradeAmountLeftOver -= tradeAmount;
+			check(tradeAmountLeftOver >= 0);
+		}
+	}
+
+	bool HasAutoTradeResource(ResourceEnum resourceEnum)
+	{
+		std::vector<AutoTradeElement> autoExportElements;
+		std::vector<AutoTradeElement> autoImportElements;
+		GetAutoTradeElementsDisplay(autoExportElements, autoImportElements);
+		
+		for (int32 i = autoExportElements.size(); i-- > 0;) {
+			if (autoExportElements[i].resourceEnum == resourceEnum) {
+				return true;
+			}
+		}
+		for (int32 i = autoImportElements.size(); i-- > 0;) {
+			if (autoImportElements[i].resourceEnum == resourceEnum) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	void AddPendingAutoTradeCommand(const FGenericCommand& command) {
+		_pendingAutoTradeCommands.push_back(command);
+	}
+
+	void ExecuteAutoTradeCommand(const FGenericCommand& command)
+	{
+		check(_pendingAutoTradeCommands.size() > 0);
+		check(_pendingAutoTradeCommands[0] == command);
+		_pendingAutoTradeCommands.erase(_pendingAutoTradeCommands.begin());
+		
+		ExecuteAutoTradeCommand_Helper(command, _autoExportElements, _autoImportElements);
+	}
+
+	void ExecuteAutoTradeCommand_Helper(const FGenericCommand& command, std::vector<AutoTradeElement>& autoExportElements, std::vector<AutoTradeElement>& autoImportElements)
+	{
+		CallbackEnum callbackEnum = command.callbackEnum;
+		
+		bool isExport = command.intVar1;
+		ResourceEnum resourceEnum = static_cast<ResourceEnum>(command.intVar2);
+		int32 targetInventory = command.intVar3;
+		int32 maxTradeAmount = command.intVar4;
+
+		std::vector<AutoTradeElement>& autoTradeElements = isExport ? autoExportElements : autoImportElements;
+		
+		if (callbackEnum == CallbackEnum::AddAutoTradeResource)
+		{
+			AutoTradeElement element;
+			element.resourceEnum = resourceEnum;
+			element.maxTradeAmount = 100;
+
+			autoTradeElements.push_back(element);
+		}
+		else if (callbackEnum == CallbackEnum::ShiftAutoTradeRowUp ||
+				callbackEnum == CallbackEnum::ShiftAutoTradeRowDown ||
+				callbackEnum == CallbackEnum::ShiftAutoTradeRowFastUp ||
+				callbackEnum == CallbackEnum::ShiftAutoTradeRowFastDown ||
+				callbackEnum == CallbackEnum::RemoveAutoTradeRow)
+		{
+			int32 oldIndex = -1;
+			AutoTradeElement oldAutoTradeElement;
+			int32 initialElementsSize = autoTradeElements.size();
+
+			for (int32 i = autoTradeElements.size(); i-- > 0;) 
+			{
+				if (autoTradeElements[i].resourceEnum == resourceEnum)
+				{
+					oldAutoTradeElement = autoTradeElements[i];
+					oldIndex = i;
+					autoTradeElements.erase(autoTradeElements.begin() + i);
+					break;
+				}
+			}
+			check(oldIndex != -1);
+
+			if (callbackEnum == CallbackEnum::ShiftAutoTradeRowUp) {
+				int32 index = std::max(0, oldIndex - 1);
+				autoTradeElements.insert(autoTradeElements.begin() + index, oldAutoTradeElement);
+			}
+			else if (callbackEnum == CallbackEnum::ShiftAutoTradeRowDown) {
+				int32 index = std::min(initialElementsSize - 1, oldIndex + 1);
+				autoTradeElements.insert(autoTradeElements.begin() + index, oldAutoTradeElement);
+			}
+			else if (callbackEnum == CallbackEnum::ShiftAutoTradeRowFastUp) {
+				autoTradeElements.insert(autoTradeElements.begin(), oldAutoTradeElement);
+			}
+			else if (callbackEnum == CallbackEnum::ShiftAutoTradeRowFastDown) {
+				autoTradeElements.push_back(oldAutoTradeElement);
+			}
+		}
+		else if (callbackEnum == CallbackEnum::AutoTradeRowTargetInventoryChanged ||
+				callbackEnum == CallbackEnum::AutoTradeRowMaxTradeAmountChanged)
+		{
+			for (int32 i = autoTradeElements.size(); i-- > 0;)
+			{
+				if (autoTradeElements[i].resourceEnum == resourceEnum) {
+					autoTradeElements[i].targetInventory = targetInventory;
+					autoTradeElements[i].maxTradeAmount = maxTradeAmount;
+					break;
+				}
+			}
+		}
+
+	}
+
+
+	void TickRound_AutoTrade()
+	{
+		
+	}
+
+
+	
 	
 
 	/*
@@ -733,11 +1138,11 @@ private:
 	}
 
 
-	void RefreshProvinceDistanceMap()
+	virtual void RefreshProvinceInfo() override
 	{
 		// Check for number of provinces from townhall
 		//  Use Breadth-first search
-		auto& regionSys = _simulation->regionSystem();
+		auto& regionSys = _simulation->provinceInfoSystem();
 
 		// Clear claimed provinces (reset below)
 		for (int32 provinceId : _provincesClaimed) {
@@ -826,12 +1231,14 @@ public:
 	 */
 	void Serialize(FArchive& Ar)
 	{
+		TownManagerBase::Serialize(Ar);
+		
 		//! Public
-		Ar << _playerId;
-		Ar << _townId;
-		Ar << townHallId;
+		//Ar << _playerId;
+		//Ar << _townId;
+		//Ar << townHallId;
 
-		SerializeVecValue(Ar, _provincesClaimed);
+		//SerializeVecValue(Ar, _provincesClaimed);
 
 		SerializeVecValue(Ar, incomes100);
 		SerializeVecValue(Ar, sciences100);
@@ -889,20 +1296,22 @@ public:
 
 		Ar << _migrationPendingCount;
 
-		SerializeVecObj(Ar, _cardsInTownhall);;
+		SerializeVecObj(Ar, _cardsInTownhall);
 
 		SerializeVecValue(Ar, _townBonuses);
+		
+		SerializeVecValue(Ar, _trainUnitsQueue);
+		Ar << _trainUnitsTicks100;
 
+		SerializeVecValue(Ar, _autoExportElements);
+		SerializeVecValue(Ar, _autoImportElements);
+		
 		Ar << _electricityProductionCapacity;
 		Ar << _electricityConsumption;
 	}
 
 public:
-	int32 _playerId = -1;
-	int32 _townId = -1;
-	int32 townHallId = -1;
 
-	std::vector<int32> _provincesClaimed;
 
 	std::vector<int32> incomes100;
 	std::vector<int64> sciences100;
@@ -979,12 +1388,24 @@ private:
 
 	std::vector<CardEnum> _townBonuses;
 
+	// Train Units
+	std::vector<CardStatus> _trainUnitsQueue;
+	int32 _trainUnitsTicks100 = 0;
+
+
+	// Auto Trade
+	std::vector<AutoTradeElement> _autoExportElements;
+	std::vector<AutoTradeElement> _autoImportElements;
+
 	int32 _electricityProductionCapacity = 0;
 	int32 _electricityConsumption = 0;
+
 	
 private:
 	/*
 	 * Non-Serialize
 	 */
-	IGameSimulationCore* _simulation;
+
+	std::vector<FUseCard> _pendingTrainCommands;
+	std::vector<FGenericCommand> _pendingAutoTradeCommands;
 };

@@ -310,12 +310,28 @@ public:
 		return result;
 	}
 
-	FVector GetBuildingTrueCenterDisplayLocation(int objectId, WorldAtom2 cameraAtom) final {
-		WorldAtom2 actualLocation = _simulation->buildingSystem().actualAtomLocation(objectId);
+	virtual FVector GetBuildingTrueCenterDisplayLocation(int objectId, WorldAtom2 cameraAtom) final
+	{
+		Building& building = _simulation->building(objectId);
+		
+		WorldAtom2 actualLocation;
+
+		// Special case: Farm
+		if (building.isEnum(CardEnum::Farm)) {
+			actualLocation = building.area().centerTile().worldAtom2();
+		}
+		else {
+			actualLocation = _simulation->buildingSystem().actualAtomLocation(objectId);
+		}
+		
 		FVector displayLocation = MapUtil::DisplayLocation(cameraAtom, actualLocation);
 
-		Building& building = _simulation->building(objectId);
 		AlgorithmUtils::ShiftDisplayLocationToTrueCenter(displayLocation, building.area(), building.faceDirection());
+
+		if (building.isEnum(CardEnum::Farm)) {
+			displayLocation = MapUtil::DisplayLocation(cameraAtom, building.subclass<Farm>().GetFarmDisplayCenter().worldAtom2());
+		}
+		
 		return displayLocation;
 	}
 	
@@ -360,7 +376,14 @@ public:
 
 	FVector DisplayLocationTrueCenter(Building& building, bool withHeight = false) final
 	{
+		// Special Case: Farm
+		if (building.isEnum(CardEnum::Farm)) {
+			return DisplayLocation(building.subclass<Farm>().GetFarmDisplayCenter().worldAtom2());
+		}
+		
 		FVector displayLocationScope = DisplayLocation(building.centerTile().worldAtom2());
+		
+		
 		AlgorithmUtils::ShiftDisplayLocationToTrueCenter(displayLocationScope, building.area(), building.faceDirection());
 
 		if (withHeight) {
@@ -525,14 +548,7 @@ public:
 	//	
 	//	return _simulation->IsBuildable(tile) || _simulation->IsCritterBuildingIncludeFronts(tile);
 	//}
-
-	bool IsPlayerFrontBuildable(WorldTile2 tile) const final
-	{
-		if (!GameMap::IsInGrid(tile)) return false;
-		if (_simulation->tileOwnerPlayer(tile) != _playerId) return false;
-
-		return _simulation->IsFrontBuildable(tile) || _simulation->IsCritterBuilding(tile);
-	}
+	
 
 	bool IsPlayerColonyBuildable(WorldTile2 tile) const {
 		if (!GameMap::IsInGrid(tile)) return false;
@@ -683,6 +699,11 @@ public:
 	}
 	float GetTrailerTime() override {
 		return networkInterface()->GetTrailerTime();
+	}
+
+	virtual void GetDefenseNodeDisplayInfo(int32 provinceId, float displayScaling, DefenseOverlayEnum& defenseOverlayEnum_Out, FTransform& nodeTransform_Out, TArray<FTransform>& lineTransforms_Out, bool isMap) override
+	{
+		_territoryDisplaySystem->GetDefenseNodeDisplayInfo(provinceId, displayScaling, defenseOverlayEnum_Out, nodeTransform_Out, lineTransforms_Out, isMap);
 	}
 
 

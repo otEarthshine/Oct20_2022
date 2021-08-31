@@ -66,18 +66,39 @@ protected:
 		auto& sim = simulation();
 		TreeSystem& treeSystem = sim.treeSystem();
 		auto& terrainGen = sim.terrainGenerator();
-		
 
 		/*
 		 * Debug
 		 */
 		ULineBatchComponent* line = lineBatch();
+
+		auto drawAreaBox = [&](TileArea area, FLinearColor color, bool showCross = true)
+		{
+			auto drawLine = [&](WorldTile2 start, WorldTile2 end) {
+				FVector startVec = MapUtil::DisplayLocation(cameraAtom, start.worldAtom2());
+				FVector endVec = MapUtil::DisplayLocation(cameraAtom, end.worldAtom2());
+				line->DrawLine(startVec, endVec, color, 100.0f, 1.0f, 10000);
+			};
+
+			drawLine(WorldTile2(area.minX, area.minY), WorldTile2(area.maxX, area.minY));
+			drawLine(WorldTile2(area.minX, area.minY), WorldTile2(area.minX, area.maxY));
+			drawLine(WorldTile2(area.maxX, area.maxY), WorldTile2(area.maxX, area.minY));
+			drawLine(WorldTile2(area.maxX, area.maxY), WorldTile2(area.minX, area.maxY));
+
+			if (showCross) {
+				drawLine(WorldTile2(area.minX, area.minY), WorldTile2(area.maxX, area.maxY));
+				drawLine(WorldTile2(area.minX, area.maxY), WorldTile2(area.maxX, area.minY));
+			}
+		};
+
+		
 		
 		// "TreeGrid" in TileObjDisplay
 		if (PunSettings::Settings["WalkableGrid"] ||
 			PunSettings::Settings["ShippingGrid"] ||
 			PunSettings::Settings["BuildingGrid"] ||
 			PunSettings::Settings["BuildingId"] ||
+			PunSettings::Settings["FarmDebugLines"] ||
 			PunSettings::Settings["FloodId"] ||
 			PunSettings::Settings["FloodIdHuman"] ||
 			PunSettings::Settings["Province"])
@@ -104,6 +125,7 @@ protected:
 				line->DrawLine(start, end, color, 100.0f, 1.0f, 10000);
 			};
 
+			TSet<int32> farmIdsAlreadyShown_FarmDebugLines;
 
 			for (int y = startY; y < startY + CoordinateConstants::TilesPerRegion; y++) {
 				for (int x = startX; x < startX + CoordinateConstants::TilesPerRegion; x++)
@@ -171,9 +193,11 @@ protected:
 					{
 						int32 buildingId = simulation().buildingIdAtTile(curTile);
 						if (buildingId != -1) {
-							FLinearColor color((GameRand::DisplayRand(buildingId) % 255) / 255.0f,
-								(GameRand::DisplayRand(buildingId + 1) % 255) / 255.0f,
-								(GameRand::DisplayRand(buildingId + 2) % 255) / 255.0f);
+							//FLinearColor color((GameRand::DisplayRand(buildingId) % 255) / 255.0f,
+							//	(GameRand::DisplayRand(buildingId + 1) % 255) / 255.0f,
+							//	(GameRand::DisplayRand(buildingId + 2) % 255) / 255.0f);
+
+							FLinearColor color = PunUnrealUtils::GetRandomColor(buildingId);
 							line->DrawLine(start, start + FVector(-5, -5, 10), color, 100.0f, 1.0f, 10000);
 
 							FVector gate = MapUtil::DisplayLocation(cameraAtom, simulation().building(buildingId).gateTile().worldAtom2());
@@ -181,6 +205,35 @@ protected:
 						}
 					}
 
+					if (PunSettings::Settings["FarmDebugLines"])
+					{
+						int32 buildingId = simulation().buildingIdAtTile(curTile);
+						if (buildingId != -1)
+						{
+							Building& bld = simulation().building(buildingId);
+							if (bld.isEnum(CardEnum::Farm) &&
+								!farmIdsAlreadyShown_FarmDebugLines.Contains(buildingId))
+							{
+								farmIdsAlreadyShown_FarmDebugLines.Add(buildingId);
+
+								const std::vector<FarmTile>& farmTiles = bld.subclass<Farm>().farmTiles();
+								for (int32 i = 1; i < farmTiles.size(); i++) 
+								{
+									if (farmTiles[i].groupId != farmTiles[i - 1].groupId) {
+										continue;
+									}
+									
+									FLinearColor color = PunUnrealUtils::GetRandomColor(farmTiles[i].groupId);
+									FVector tile = MapUtil::DisplayLocation(cameraAtom, farmTiles[i].worldTile.worldAtom2());
+									FVector lastTile = MapUtil::DisplayLocation(cameraAtom, farmTiles[i - 1].worldTile.worldAtom2());
+									
+									line->DrawLine(tile, tile + FVector(2, 2, 10), color, 100.0f, 1.0f, 10000);
+									line->DrawLine(lastTile + FVector(0, 0, 5), tile, color, 100.0f, 1.0f, 10000);
+								}
+							}
+						}
+					}
+					
 					if (PunSettings::Settings["FloodId"])
 					{
 						int16 floodId = sim.floodSystem().GetFloodId(curTile);
@@ -375,6 +428,64 @@ protected:
 				}
 			}
 		}
+
+		/*
+		 * Coastal
+		 */
+		if (PunSettings::Settings["ShowProvinceSlots"])
+		{
+			const ProvinceBuildingSlot& slot = simulation().provinceInfoSystem().provinceBuildingSlot(regionId);
+			if (slot.isValid())
+			{
+				for (WorldTile2 coastalTile : slot.coastalTiles) {
+					FVector coastalTileVec = MapUtil::DisplayLocation(cameraAtom, coastalTile.worldAtom2());
+					lineBatch()->DrawLine(coastalTileVec, coastalTileVec + FVector(0, 0, 10), FLinearColor::Blue, 100.0f, 1.0f, 10000);
+				}
+
+				for (WorldTile2 mountainTile : slot.mountainTiles) {
+					FVector coastalTileVec = MapUtil::DisplayLocation(cameraAtom, mountainTile.worldAtom2());
+					lineBatch()->DrawLine(coastalTileVec, coastalTileVec + FVector(0, 0, 10), FLinearColor(0.05, 0.05, 0.05), 100.0f, 1.0f, 10000);
+				}
+
+				// Show port
+				if (slot.portSlot.isValid()) {
+					TileArea area = BuildingArea(slot.portSlot, GetBuildingInfo(CardEnum::TradingPort).size, slot.portSlotFaceDirection);
+					drawAreaBox(area, FLinearColor::Blue);
+					drawAreaBox(area.GetFrontArea(slot.portSlotFaceDirection), FLinearColor::Blue);
+				}
+				if (slot.landSlot.isValid()) {
+					TileArea area = BuildingArea(slot.landSlot, GetBuildingInfo(CardEnum::MinorCity).size, slot.landSlotFaceDirection);
+					drawAreaBox(area, FLinearColor::Yellow);
+					drawAreaBox(area.GetExpandedArea(), FLinearColor::Yellow, false);
+				}
+			}
+
+			const ProvinceOwnerInfo& provinceOwnerInfo = simulation().provinceInfoSystem().provinceOwnerInfo(regionId);
+			if (provinceOwnerInfo.provinceId != -1)
+			{
+				WorldTile2 centerTile = simulation().GetProvinceCenterTile(provinceOwnerInfo.provinceId);
+				check(centerTile.isValid());
+				
+				FVector centerTileVec = MapUtil::DisplayLocation(cameraAtom, centerTile.worldAtom2());
+
+				FLinearColor color;
+				if (sim.townPlayerId(provinceOwnerInfo.townId) == playerId())
+				{
+					if (!provinceOwnerInfo.isSafe) {
+						color = FLinearColor(0.5, 0.5, 1);
+					} else {
+						color = FLinearColor(0.5, 1, 0.5);
+					}
+				}
+				else {
+					color = FLinearColor(1, .1, .1);
+				}
+				
+				lineBatch()->DrawLine(centerTileVec, centerTileVec + FVector(20, 20, 70), color, 100.0f, 1.0f);
+
+			}
+		}
+		
 
 		//if (PunSettings::Settings[""])
 		{

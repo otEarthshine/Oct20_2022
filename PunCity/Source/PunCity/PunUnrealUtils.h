@@ -78,6 +78,14 @@ public:
 		component->SetWorldLocation(displayLocation);
 		component->SetWorldScale3D(scale);
 	}
+
+	static FLinearColor GetRandomColor(int32 seed) {
+		return FLinearColor(
+			(GameRand::DisplayRand(seed) % 255) / 255.0f,
+			(GameRand::DisplayRand(seed + 1) % 255) / 255.0f,
+			(GameRand::DisplayRand(seed + 2) % 255) / 255.0f
+		);
+	}
 };
 
 
@@ -100,24 +108,6 @@ static bool FStringCompareRight(const FString& str, FString rightStr) {
 }
 
 
-// Network Serializer
-static void FString_SerializeAndAppendToBlob(FString inStr, TArray<int32>& arr)
-{
-	arr.Add(inStr.Len());
-	for (int32 i = 0; i < inStr.Len(); i++) {
-		arr.Add(static_cast<int32>(inStr[i]));
-	}
-}
-
-static FString FString_DeserializeFromBlob(const TArray<int32>& arr, int32& readIndex)
-{
-	FString result;
-	int32 len = arr[readIndex++];
-	for (int32 i = 0; i < len; i++) {
-		result.AppendChar(static_cast<TCHAR>(arr[readIndex++]));
-	}
-	return result;
-}
 
 // Serializer
 static void SerializeArray(TArray<int32>& blob, TArray<uint8>& inArray) {

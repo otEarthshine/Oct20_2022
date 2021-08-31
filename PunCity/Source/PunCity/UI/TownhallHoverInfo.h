@@ -92,22 +92,26 @@ public:
 
 public:
 	//UPROPERTY(meta = (BindWidget)) UVerticalBox* BattleBox;
-	UPROPERTY(meta = (BindWidget)) UCanvasPanel* ArmyFightBox;
-	UPROPERTY(meta = (BindWidget)) UVerticalBox* LeftArmyBox;
-	UPROPERTY(meta = (BindWidget)) UVerticalBox* RightArmyBox;
-	UPROPERTY(meta = (BindWidget)) USizeBox* FightIcon;
+	//UPROPERTY(meta = (BindWidget)) UCanvasPanel* ArmyFightBox;
+	//UPROPERTY(meta = (BindWidget)) UVerticalBox* LeftArmyBox;
+	//UPROPERTY(meta = (BindWidget)) UVerticalBox* RightArmyBox;
+	//UPROPERTY(meta = (BindWidget)) USizeBox* FightIcon;
 	
-	UPROPERTY(meta = (BindWidget)) UVerticalBox* MilitaryButtons;
+	//UPROPERTY(meta = (BindWidget)) UVerticalBox* MilitaryButtons;
 
 	UPROPERTY(meta = (BindWidget)) UButton* TradeButton;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* TradeButtonText;
-	UPROPERTY(meta = (BindWidget)) UOverlay* TradeInfoOverlay;
-	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* BuyingBox;
-	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* SellingBox;
+	//UPROPERTY(meta = (BindWidget)) UOverlay* TradeInfoOverlay;
+	//UPROPERTY(meta = (BindWidget)) UPunBoxWidget* BuyingBox;
+	//UPROPERTY(meta = (BindWidget)) UPunBoxWidget* SellingBox;
 
 	UPROPERTY(meta = (BindWidget)) UButton* SendImmigrantsButton;
 	UPROPERTY(meta = (BindWidget)) UButton* GiftButton;
 	UPROPERTY(meta = (BindWidget)) UButton* DiplomacyButton;
+
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* TrainUnitsRow;
+	UPROPERTY(meta = (BindWidget)) UButton* TrainUnitsButton;
+	UPROPERTY(meta = (BindWidget)) UImage* TrainUnitsClock;
 	
 	UPROPERTY(meta = (BindWidget)) UButton* AttackButton1;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* AttackButton1RichText;
@@ -195,6 +199,10 @@ private:
 	UFUNCTION() void OnClickDiplomacyButton() {
 		int32 targetPlayerId = simulation().building(_buildingId).playerId();
 		GetPunHUD()->OpenDiplomacyUI(targetPlayerId);
+	}
+	UFUNCTION() void OnClickTrainUnitsButton() {
+		int32 townId = simulation().building(_buildingId).townId();
+		GetPunHUD()->OpenTrainUnitsUI(townId);
 	}
 
 	void AttackDefenseHelper(CallbackEnum claimEnum)

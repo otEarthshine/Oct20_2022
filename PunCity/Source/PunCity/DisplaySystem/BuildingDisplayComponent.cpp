@@ -330,9 +330,123 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 					}
 				}
 			}
+			// Special case: Farm
+			else if (buildingEnum == CardEnum::Farm)
+			{
+				auto& sim = simulation();
+
+				const std::vector<FarmTile>& farmTiles = building.subclass<Farm>().farmTiles();
+
+				// Check Duplicate
+				TSet<int32> farmWorldTilesTemp;
+				for (FarmTile farmTile : farmTiles) {
+					check(!farmWorldTilesTemp.Contains(farmTile.worldTile.tileId()));
+					farmWorldTilesTemp.Add(farmTile.worldTile.tileId());
+				}
+
+				//float smoothZoomDistance = gameManager()->smoothZoomDistance();
+				//float zoomScaling = smoothZoomDistance / 500;
+
+				for (int32 i = 0; i < farmTiles.size(); i++)
+				{
+					WorldTile2 tile = farmTiles[i].worldTile;
+
+					int32 height = 0;
+
+					if (sim.buildingIdAtTile(tile + WorldTile2(-1, -1)) != buildingId) height += 1;
+					if (sim.buildingIdAtTile(tile + WorldTile2(-1, 0)) != buildingId) height += 2;
+					if (sim.buildingIdAtTile(tile + WorldTile2(-1, 1)) != buildingId) height += 4;
+					if (sim.buildingIdAtTile(tile + WorldTile2(0, -1)) != buildingId) height += 8;
+					if (sim.buildingIdAtTile(tile + WorldTile2(0, 1)) != buildingId) height += 16;
+					if (sim.buildingIdAtTile(tile + WorldTile2(1, -1)) != buildingId) height += 32;
+					if (sim.buildingIdAtTile(tile + WorldTile2(1, 0)) != buildingId) height += 64;
+					if (sim.buildingIdAtTile(tile + WorldTile2(1, 1)) != buildingId) height += 128;
+
+					int32 instanceKey = tile.tileId();
+					int32 stateMod = 8;
+					float scale = 1;
+
+					if (buildingId == selectedBuildingId) {
+						instanceKey += GameMapConstants::TilesPerWorld;
+						stateMod += 1;
+						height += 256;
+					}
+					//if (!building.isConstructed()) {
+					//	instanceKey += 2 * GameMapConstants::TilesPerWorld;
+					//	stateMod += 2;
+					//	//scale = 2;
+					//	height += 512;
+					//}
+
+					// height is too high causing some instance to cull
+					
+					FTransform farmTransform(
+						FRotator(0, 0, 0),
+						tile.localTile(region).localDisplayLocation() + FVector(0, 0, height),
+						FVector(scale, scale, scale)
+					);
+
+					if (building.isConstructed()) {
+						_moduleMeshes[meshId]->Add("FarmTile", instanceKey, farmTransform, stateMod, buildingId);
+					}
+					else {
+						_moduleMeshes[meshId]->Add("FarmTile_UC", instanceKey, farmTransform, stateMod, buildingId);
+					}
+				}
+
+				return;
+			}
 			else if (building.isConstructed())
 			{
-				// If it is selected, ObjectDescriptionUI would display it instead...
+
+				
+				//// Special case (before focus check): Farm
+				//if (buildingEnum == CardEnum::Farm)
+				//{
+				//	auto& sim = simulation();
+
+				//	const std::vector<FarmTile>& farmTiles = building.subclass<Farm>().farmTiles();
+
+				//	// Check Duplicate
+				//	TSet<int32> farmWorldTilesTemp;
+				//	for (FarmTile farmTile : farmTiles) {
+				//		check(!farmWorldTilesTemp.Contains(farmTile.worldTile.tileId()));
+				//		farmWorldTilesTemp.Add(farmTile.worldTile.tileId());
+				//	}
+
+				//	for (int32 i = 0; i < farmTiles.size(); i++)
+				//	{
+				//		WorldTile2 tile = farmTiles[i].worldTile;
+
+				//		uint32 height = 0;
+
+				//		if (sim.buildingIdAtTile(tile + WorldTile2(-1, -1)) != buildingId) height += 1;
+				//		if (sim.buildingIdAtTile(tile + WorldTile2(-1, 0)) != buildingId) height += 2;
+				//		if (sim.buildingIdAtTile(tile + WorldTile2(-1, 1)) != buildingId) height += 4;
+				//		if (sim.buildingIdAtTile(tile + WorldTile2(0, -1)) != buildingId) height += 8;
+				//		if (sim.buildingIdAtTile(tile + WorldTile2(0, 1)) != buildingId) height += 16;
+				//		if (sim.buildingIdAtTile(tile + WorldTile2(1, -1)) != buildingId) height += 32;
+				//		if (sim.buildingIdAtTile(tile + WorldTile2(1, 0)) != buildingId) height += 64;
+				//		if (sim.buildingIdAtTile(tile + WorldTile2(1, 1)) != buildingId) height += 128;
+				//		
+				//		if (buildingId == selectedBuildingId) height += 256;
+
+				//		int32 instanceKey = tile.tileId() + height * GameMapConstants::TilesPerWorld;
+
+				//		FTransform farmTransform(
+				//			FRotator(0, 0, 0),
+				//			tile.localTile(region).localDisplayLocation() + FVector(0, 0, height)
+				//		);
+				//		_moduleMeshes[meshId]->Add("FarmTile", instanceKey, farmTransform, 0, buildingId);
+				//	}
+
+				//	return;
+				//}
+				
+				/*
+				 * Focus Check
+				 *  - If it is selected, ObjectDescriptionUI would display it instead...
+				 */
 				if (buildingId == selectedBuildingId) {
 					return;
 				}
@@ -356,6 +470,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 
 					return;
 				}
+				
 				
 				for (int i = 0; i < modules.size(); i++) 
 				{
@@ -794,13 +909,13 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 			{
 				if (building.isConstructed())
 				{
-					TileArea area = building.area();
+					//TileArea area = building.area();
 
-					UDecalComponent* decals = PunUnrealUtils::ShowDecal(building.area().trueCenterAtom(), area.size(), _farmDecals, _farmCount, 
-						this, _assetLoader->FarmDecalMaterial, gameManager(), true, 0.01f);
-					auto farmMaterial = CastChecked<UMaterialInstanceDynamic>(decals->GetDecalMaterial());
-					farmMaterial->SetScalarParameterValue("FarmTilesX", area.sizeX());
-					farmMaterial->SetScalarParameterValue("FarmTilesY", area.sizeY());
+					//UDecalComponent* decals = PunUnrealUtils::ShowDecal(building.area().trueCenterAtom(), area.size(), _farmDecals, _farmCount, 
+					//	this, _assetLoader->FarmDecalMaterial, gameManager(), true, 0.01f);
+					//auto farmMaterial = CastChecked<UMaterialInstanceDynamic>(decals->GetDecalMaterial());
+					//farmMaterial->SetScalarParameterValue("FarmTilesX", area.sizeX());
+					//farmMaterial->SetScalarParameterValue("FarmTilesY", area.sizeY());
 				}
 				return;
 			}

@@ -92,6 +92,11 @@ void UMainGameUI::PunInit()
 
 	BuildingMenuWrap->ClearChildren();
 
+	for (int i = CardInventoryUIWrap->GetChildrenCount(); i-- > 0;) {
+		auto cardButton = Cast<UBuildingPlacementButton>(CardInventoryUIWrap->GetChildAt(i));
+		SetChildHUD(cardButton);
+	}
+
 	//ItemSelectionUI->SetVisibility(ESlateVisibility::Collapsed);
 	//GlobalItemsHorizontalBox->ClearChildren();
 
@@ -481,7 +486,7 @@ void UMainGameUI::Tick()
 			for (size_t i = 0; i < hand.size(); i++)
 			{
 				CardEnum buildingEnum = hand[i];
-				auto cardButton = AddCard(CardHandEnum::DrawHand, buildingEnum, CardHand1Box, CallbackEnum::SelectUnboughtCard, i);
+				auto cardButton = AddCard(CardHandEnum::DrawHand, CardStatus(buildingEnum, 1), CardHand1Box, CallbackEnum::SelectUnboughtCard, i);
 
 
 				// Price
@@ -566,7 +571,7 @@ void UMainGameUI::Tick()
 			
 			for (size_t i = 0; i < rareHand.size(); i++) {
 				CardEnum buildingEnum = rareHand[i];
-				AddCard(CardHandEnum::RareHand, buildingEnum, RareCardHandBox, CallbackEnum::SelectUnboughtRareCardPrize, i);
+				AddCard(CardHandEnum::RareHand, CardStatus(buildingEnum, 1), RareCardHandBox, CallbackEnum::SelectUnboughtRareCardPrize, i);
 			}
 
 			// Highlight the selected card
@@ -655,7 +660,7 @@ void UMainGameUI::Tick()
 								if (searchString.IsEmpty() ||
 									GetBuildingInfo(buildingEnum).nameF().Find(searchString, ESearchCase::Type::IgnoreCase, ESearchDir::FromStart) != INDEX_NONE)
 								{
-									auto cardButton = AddCard(CardHandEnum::ConverterHand, buildingEnum, ConverterCardHandBox, CallbackEnum::SelectCardRemoval, i);
+									auto cardButton = AddCard(CardHandEnum::ConverterHand, CardStatus(buildingEnum, 1), ConverterCardHandBox, CallbackEnum::SelectCardRemoval, i);
 
 									SetText(ConverterCardHandTitle, LOCTEXT("CHOOSE A CARD TO REMOVE", "CHOOSE A CARD TO REMOVE"));
 									SetText(cardButton->PriceText, TEXT_NUM(cardSystem.GetCardPrice(buildingEnum)));
@@ -696,7 +701,7 @@ void UMainGameUI::Tick()
 								if (searchString.IsEmpty() ||
 									GetBuildingInfo(buildingEnum).name.ToString().Find(searchString, ESearchCase::Type::IgnoreCase, ESearchDir::FromStart) != INDEX_NONE)
 								{
-									auto cardButton = AddCard(CardHandEnum::ConverterHand, buildingEnum, ConverterCardHandBox, CallbackEnum::SelectConverterCard, i);
+									auto cardButton = AddCard(CardHandEnum::ConverterHand, CardStatus(buildingEnum, 1), ConverterCardHandBox, CallbackEnum::SelectConverterCard, i);
 
 									SetText(ConverterCardHandTitle, LOCTEXT("ConverterCardHandTitle", "CHOOSE A CARD\npay the price to build"));
 									SetText(cardButton->PriceText, TEXT_NUM(cardSystem.GetCardPrice(buildingEnum)));
@@ -718,7 +723,7 @@ void UMainGameUI::Tick()
 							if (searchString.IsEmpty() ||
 								GetBuildingInfo(buildingEnum).nameF().Find(searchString, ESearchCase::Type::IgnoreCase, ESearchDir::FromStart) != INDEX_NONE)
 							{
-								auto cardButton = AddCard(CardHandEnum::ConverterHand, buildingEnum, ConverterCardHandBox, CallbackEnum::None, i);
+								auto cardButton = AddCard(CardHandEnum::ConverterHand, CardStatus(buildingEnum, 1), ConverterCardHandBox, CallbackEnum::None, i);
 
 								SetText(ConverterCardHandTitle, LOCTEXT("ConverterCardHandTitle", "CHOOSE A CARD\npay the price to build"));
 								SetText(cardButton->PriceText, TEXT_NUM(cardSystem.GetCardPrice(buildingEnum)));
@@ -748,7 +753,7 @@ void UMainGameUI::Tick()
 			TArray<UWidget*> cardButtons = ConverterCardHandBox->GetAllChildren();
 			for (int i = 0; i < cardButtons.Num(); i++) {
 				auto cardButton = CastChecked<UBuildingPlacementButton>(cardButtons[i]);
-				bool shouldHighlight = cardButton->buildingEnum == _lastConverterChosenCard;
+				bool shouldHighlight = cardButton->cardStatus.cardEnum == _lastConverterChosenCard;
 				cardButton->SetCardStatus(CardHandEnum::ConverterHand, shouldHighlight, false, false, false);
 			}
 		}
@@ -771,14 +776,14 @@ void UMainGameUI::Tick()
 			_lastConverterCardState = cardSystem.converterCardState;
 
 			// Remove index being placed or used
-			std::vector<BuildingCardStack> actualDisplayBought;
+			std::vector<CardStatus> actualDisplayBought;
 			for (size_t i = 0; i < _lastDisplayBought.size(); i++)
 			{
-				BuildingCardStack currentStack = _lastDisplayBought[i];
-				if (currentStack.buildingEnum == cardEnumBeingPlaced) {
+				CardStatus currentStack = _lastDisplayBought[i];
+				if (currentStack.cardEnum == cardEnumBeingPlaced) {
 					currentStack.stackSize--;
 				}
-				else if (_lastConverterCardState != ConverterCardUseState::None && currentStack.buildingEnum == cardSystem.wildCardEnumUsed)
+				else if (_lastConverterCardState != ConverterCardUseState::None && currentStack.cardEnum == cardSystem.wildCardEnumUsed)
 				{
 					currentStack.stackSize--;
 				}
@@ -792,23 +797,19 @@ void UMainGameUI::Tick()
 			CardHand2Box->ClearChildren();
 			for (size_t i = 0; i < actualDisplayBought.size(); i++)
 			{
-				BuildingCardStack stack = actualDisplayBought[i];
-
-				int32_t stackSize = stack.stackSize;// +simulation.buildingIds(playerId(), stack.buildingEnum).size();
-
-				// Show stars??
-				auto cardButton = AddCard(CardHandEnum::BoughtHand, stack.buildingEnum, CardHand2Box, CallbackEnum::SelectBoughtCard, i, 0, stackSize, true);
+				AddCard(CardHandEnum::BoughtHand, actualDisplayBought[i], CardHand2Box, CallbackEnum::SelectBoughtCard, i, true);
 			}
 
 			// Warning to bought cards that need resources
 			TArray<UWidget*> cardBoughtButtons = CardHand2Box->GetAllChildren();
-			for (int i = 0; i < cardBoughtButtons.Num(); i++) {
+			for (int i = 0; i < cardBoughtButtons.Num(); i++) 
+			{
 				auto cardButton = CastChecked<UBuildingPlacementButton>(cardBoughtButtons[i]);
 
-				if (IsBuildingCard(cardButton->buildingEnum)) 
+				if (IsBuildingCard(cardButton->cardStatus.cardEnum))
 				{
 					bool needResource = false;
-					const std::vector<int32> resourceNeeded = GetBuildingInfo(cardButton->buildingEnum).constructionResources;
+					const std::vector<int32> resourceNeeded = GetBuildingInfo(cardButton->cardStatus.cardEnum).constructionResources;
 					
 					for (size_t j = 0; j < _countof(ConstructionResources); j++) {
 						if (resourceNeeded[j] > resourceSystem.resourceCount(ConstructionResources[j])) {
@@ -890,7 +891,7 @@ void UMainGameUI::Tick()
 				
 				auto cardsBought = sim.cardSystem(playerId()).GetCardsBought();
 				for (const auto& cardStack : cardsBought) {
-					if (IsAgricultureBuilding(cardStack.buildingEnum)) {
+					if (IsAgricultureBuilding(cardStack.cardEnum)) {
 						needExclamation = false; // Food card alreay bought, don't need too buy more...
 						break;
 					}
@@ -1575,18 +1576,42 @@ void UMainGameUI::Tick()
 	}
 
 	/*
-	 * 
+	 * CardInventory
 	 */
-
-	// erase buildingEnums that already have buttons
-	for (int i = BuildingMenuWrap->GetChildrenCount(); i-- > 0;)
 	{
-		auto cardButton = Cast<UBuildingPlacementButton>(BuildingMenuWrap->GetChildAt(i));
-		
-		cardButton->SetCardStatus(CardHandEnum::CardInventorySlots, false, false);
-	}
-	
+		auto& cardSys = sim.cardSystem(playerId());
 
+		int32 maxCardInventorySlots = cardSys.maxCardInventorySlots();
+		CardInventoryToggleButton->SetVisibility(maxCardInventorySlots > 0 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+
+		const std::vector<CardStatus>& cardInventory = cardSys.cardInventory();
+
+		for (int i = CardInventoryUIWrap->GetChildrenCount(); i-- > 0;)
+		{
+			CardStatus cardStatus;
+			if (i < cardInventory.size()) {
+				cardStatus = cardInventory[i];
+			}
+
+			auto cardButton = Cast<UBuildingPlacementButton>(CardInventoryUIWrap->GetChildAt(i));
+
+			if (i >= maxCardInventorySlots) {
+				cardButton->SetVisibility(ESlateVisibility::Collapsed);
+				continue;
+			}
+			cardButton->SetVisibility(ESlateVisibility::Visible);
+			
+			cardButton->PunInit(cardStatus, i, this, CallbackEnum::SelectInventorySlotCard, CardHandEnum::CardInventorySlots);
+			cardButton->SetCardStatus(CardHandEnum::CardInventorySlots, false, false);
+			cardButton->RefreshBuildingIcon(assetLoader());
+			
+			//cardButton->ParentOverlay->SetVisibility(cardEnum == CardEnum::None ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+			//cardButton->CardSlotUnderneath->SetVisibility(ESlateVisibility::HitTestInvisible);
+		}
+	}
+
+
+	
 	/*
 	 * Card animation, the beginning part
 	 */
@@ -1649,21 +1674,22 @@ void UMainGameUI::Tick()
 //
 //	return cardButton;
 //}
-UBuildingPlacementButton* UMainGameUI::AddCard(CardHandEnum cardHandEnum, CardEnum buildingEnum, UWrapBox* buttonParent, CallbackEnum callbackEnum, int32 cardHandIndex,
-																	int32 buildingLvl, int32 stackSize, bool isMiniature)
+UBuildingPlacementButton* UMainGameUI::AddCard(CardHandEnum cardHandEnum, CardStatus cardStatus, UWrapBox* buttonParent, CallbackEnum callbackEnum, int32 cardHandIndex, bool isMiniature)
 {
-	if (InterfacesInvalid()) return nullptr;
-
+	if (InterfacesInvalid()) {
+		return nullptr;
+	}
+	
 	UBuildingPlacementButton* cardButton = AddWidget<UBuildingPlacementButton>(isMiniature ? UIEnum::CardMini : UIEnum::BuildingPlacementButton);
 	
 	buttonParent->AddChild(cardButton);
 
-	cardButton->PunInit(buildingEnum, cardHandIndex, buildingLvl, stackSize, this, callbackEnum, isMiniature);
+	cardButton->PunInit(cardStatus, cardHandIndex, this, callbackEnum, cardHandEnum);
 
 	SetChildHUD(cardButton);
 
-	cardButton->SetupMaterials(dataSource()->assetLoader());
-	cardButton->SetCardStatus(cardHandEnum, false, false, IsRareCard(buildingEnum));
+	cardButton->RefreshBuildingIcon(dataSource()->assetLoader());
+	cardButton->SetCardStatus(cardHandEnum, false, false, IsRareCard(cardStatus.cardEnum));
 
 	return cardButton;
 }
@@ -1700,7 +1726,7 @@ void UMainGameUI::ToggleBuildingMenu()
 
 		auto refreshPermanentCard = [&](UBuildingPlacementButton* cardButton)
 		{
-			int32 cardPrice = cardSys.GetCardPrice(cardButton->buildingEnum);
+			int32 cardPrice = cardSys.GetCardPrice(cardButton->cardStatus.cardEnum);
 			cardButton->SetCardStatus(CardHandEnum::PermanentHand, false, cardPrice > 0 && moneyCap32 < cardPrice);
 			cardButton->SetPrice(cardPrice);
 		};
@@ -1709,7 +1735,7 @@ void UMainGameUI::ToggleBuildingMenu()
 		for (int i = BuildingMenuWrap->GetChildrenCount(); i --> 0;) 
 		{
 			auto cardButton = Cast<UBuildingPlacementButton>(BuildingMenuWrap->GetChildAt(i));
-			auto found = find(buildingEnums.begin(), buildingEnums.end(), cardButton->buildingEnum);
+			auto found = find(buildingEnums.begin(), buildingEnums.end(), cardButton->cardEnum());
 			if (found != buildingEnums.end()) { // found old card, reusing it...
 				buildingEnums.erase(found);
 
@@ -1719,9 +1745,10 @@ void UMainGameUI::ToggleBuildingMenu()
 			}
 		}
 
+		
 		// Create the rest of the buttons
 		for (CardEnum buildingEnum : buildingEnums) {
-			auto cardButton = AddCard(CardHandEnum::PermanentHand, buildingEnum, BuildingMenuWrap, CallbackEnum::SelectPermanentCard, -1, -1, -1, true);
+			auto cardButton = AddCard(CardHandEnum::PermanentHand, CardStatus(buildingEnum, 1), BuildingMenuWrap, CallbackEnum::SelectPermanentCard, -1, true);
 			refreshPermanentCard(cardButton);
 		}
 
@@ -1729,7 +1756,7 @@ void UMainGameUI::ToggleBuildingMenu()
 		UBuildingPlacementButton* demolishButton = nullptr;
 		for (int i = BuildingMenuWrap->GetChildrenCount(); i-- > 0;) {
 			auto cardButton = Cast<UBuildingPlacementButton>(BuildingMenuWrap->GetChildAt(i));
-			if (cardButton->buildingEnum == CardEnum::Demolish) {
+			if (cardButton->cardEnum() == CardEnum::Demolish) {
 				demolishButton = cardButton;
 				BuildingMenuWrap->RemoveChildAt(i);
 				break;
@@ -1811,7 +1838,7 @@ void UMainGameUI::ToggleCardInventoryButton()
 {
 	if (InterfacesInvalid()) return;
 
-	CardInventoryOverlay->SetVisibility(CardInventoryOverlay->IsVisible() ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
+	CardInventorySizeBox->SetVisibility(CardInventorySizeBox->IsVisible() ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
 }
 
 void UMainGameUI::SelectPermanentCard(CardEnum buildingEnum)
@@ -1853,7 +1880,7 @@ void UMainGameUI::SelectPermanentCard(CardEnum buildingEnum)
 		inputSystemInterface()->StartTunnelPlacement();
 	}
 	else {
-		inputSystemInterface()->StartBuildingPlacement(buildingEnum, 0, false);
+		inputSystemInterface()->StartBuildingPlacement(CardStatus(buildingEnum, 1), false);
 
 		// Noticed farm, no longer need exclamation on farm after this...
 		if (buildingEnum == CardEnum::Farm) {
@@ -2012,7 +2039,7 @@ void UMainGameUI::ClickRareCardHandSubmitButton()
 	for (int i = 0; i < cardButtons.Num(); i++) {
 		auto cardButton = CastChecked<UBuildingPlacementButton>(cardButtons[i]);
 		if (_lastRareHandReserveStatus[i]) {
-			command->cardEnum = cardButton->buildingEnum;
+			command->cardEnum = cardButton->cardEnum();
 			command->objectId = rareHandObjectId;
 			break;
 		}
@@ -2057,7 +2084,7 @@ void UMainGameUI::OnClickLeaderSkillButton()
 		return;
 	}
 
-	inputSystemInterface()->StartBuildingPlacement(skillEnum, 0, false);
+	inputSystemInterface()->StartBuildingPlacement(CardStatus(skillEnum, 1), false);
 }
 
 void UMainGameUI::RightMouseUp()
@@ -2099,7 +2126,10 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 {
 	UBuildingPlacementButton* cardButton = CastChecked<UBuildingPlacementButton>(punWidgetCaller);
 	int32 cardHandIndex = cardButton->cardHandIndex;
-	CardEnum buildingEnum = cardButton->buildingEnum;
+
+	CardStatus cardStatus = cardButton->cardStatus;
+	CardEnum buildingEnum = cardButton->cardEnum();
+	
 	auto& cardSystem = simulation().cardSystem(playerId());
 
 	// Permanent cards
@@ -2248,8 +2278,8 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 		dataSource()->Spawn2DSound("UI", "CardDeal");
 		ConverterCardHandOverlay->SetVisibility(ESlateVisibility::Collapsed);
 		cardSystem.converterCardState = ConverterCardUseState::SubmittedUI;
-		
-		inputSystemInterface()->StartBuildingPlacement(buildingEnum, cardButton->buildingLvl, false, cardSystem.wildCardEnumUsed);
+
+		inputSystemInterface()->StartBuildingPlacement(cardButton->cardStatus, false, cardSystem.wildCardEnumUsed);
 
 		return;
 	}
@@ -2273,6 +2303,27 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 		DescriptionUIState descriptionUIState = simulation().descriptionUIState();
 
 
+		// Move To Card Inventory
+		if (CardInventorySizeBox->IsVisible())
+		{
+			if (cardSystem.CanAddCardsToCardInventory(buildingEnum))
+			{
+				FVector2D initialPosition = GetViewportPosition(cardButton->GetCachedGeometry());
+
+				auto command = make_shared<FUseCard>();
+				command->callbackEnum = CallbackEnum::CardInventorySlotting;
+				command->cardStatus = cardButton->cardStatus;
+				command->variable1 = dataSource()->isShiftDown() ? command->cardStatus.stackSize : 1;
+				
+				command->SetPosition(initialPosition);
+				networkInterface()->SendNetworkCommand(command);
+			}
+			
+			return;
+		}
+		
+		
+
 		// Archive take any card
 		if (descriptionUIState.objectType == ObjectTypeEnum::Building)
 		{
@@ -2293,9 +2344,9 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 				FVector2D initialPosition = GetViewportPosition(cardButton->GetCachedGeometry());
 
 				auto command = make_shared<FUseCard>();
-				command->cardEnum = CardEnum::ArchivesSlotting; // This is buildingEnum of the clicked card
+				command->callbackEnum = CallbackEnum::ArchivesSlotting;
+				command->cardStatus = cardStatus;
 				command->variable1 = buildingId; // Archives buildingId
-				command->variable2 = static_cast<int32>(buildingEnum); // Target CardEnum
 				command->SetPosition(initialPosition);
 				networkInterface()->SendNetworkCommand(command);
 
@@ -2308,11 +2359,15 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 		if (!IsBuildingCard(buildingEnum))
 		{
 			PUN_LOG("Not Building Card %s", *GetBuildingInfo(buildingEnum).nameF());
-			if (IsAreaSpell(buildingEnum)) {
-				inputSystemInterface()->StartBuildingPlacement(buildingEnum, cardButton->buildingLvl, true);
+			if (IsSpellCard(buildingEnum)) 
+			{
+				if (IsAnimalCard(buildingEnum)) {
+					//cardStatus.cardStateValue1 = 
+				}
+				
+				inputSystemInterface()->StartBuildingPlacement(cardButton->cardStatus, true);
+				return;
 			}
-
-			auto& resourceSys = simulation().resourceSystem(playerId());
 
 			/*
 			 * Use Town Slot Card
@@ -2331,7 +2386,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 
 							auto command = make_shared<FUseCard>();
 							command->townId = bld.subclass<TownHall>().townId();
-							command->cardEnum = buildingEnum;
+							command->cardStatus = cardStatus;
 							command->SetPosition(initialPosition);
 							networkInterface()->SendNetworkCommand(command);
 
@@ -2420,7 +2475,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 						FVector2D initialPosition = GetViewportPosition(cardButton->GetCachedGeometry());
 						
 						auto command = make_shared<FUseCard>();
-						command->cardEnum = buildingEnum;
+						command->cardStatus = cardStatus;
 						command->variable1 = buildingId;
 						command->SetPosition(initialPosition);
 						networkInterface()->SendNetworkCommand(command);
@@ -2497,7 +2552,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 				
 				auto command = make_shared<FUseCard>();
 				command->townId = currentTownId();
-				command->cardEnum = buildingEnum;
+				command->cardStatus = cardStatus;
 
 				auto& townResourceSys = simulation().resourceSystem(command->townId);
 
@@ -2557,7 +2612,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 			// Select ConverterCard
 			if (IsWildCard(buildingEnum)) {
 				// Make sure the hand is not full..
-				if (cardButton->cardCount > 1 &&
+				if (cardButton->cardStatus.stackSize > 1 &&
 					!cardSystem.CanAddCardToBoughtHand(buildingEnum, 1))
 				{
 					simulation().AddPopupToFront(playerId(), 
@@ -2574,31 +2629,10 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 				return;
 			}
 
-			//auto warnOfBarnWorkMode = [&](UnitEnum unitEnum)
-			//{
-			//	const std::vector<int32_t>& barns = simulation().buildingIds(playerId(), CardEnum::RanchBarn);
-			//	for (int32_t barnId : barns) {
-			//		if (simulation().building(barnId).subclass<RanchBarn>().animalEnum() == unitEnum) {
-			//			return;
-			//		}
-			//	}
-			//	simulation().AddPopupToFront(playerId(), "Need barn with work mode set to " + GetUnitInfo(unitEnum).name);
-			//};
-			
-			if (IsAnimalCard(buildingEnum)) 
-			{
-				//warnOfBarnWorkMode(GetAnimalEnumFromCardEnum(buildingEnum));
-				cardButton->SetVisibility(ESlateVisibility::Hidden); // Temporily set so people can't click on this twice
-
-				auto command = make_shared<FUseCard>();
-				command->cardEnum = buildingEnum;
-				networkInterface()->SendNetworkCommand(command);
-				return;
-			}
 			
 			GetPunHUD()->CloseDescriptionUI();
 			return;
-		}
+		} // End: Non-Building Cards
 
 		//// Special cases
 		//if (buildingEnum == BuildingEnum::BeerBreweryFamous) {
@@ -2608,31 +2642,49 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 		//		return;
 		//	}
 		//}
-		
 
-		inputSystemInterface()->StartBuildingPlacement(buildingEnum, cardButton->buildingLvl, true);
+		inputSystemInterface()->StartBuildingPlacement(cardButton->cardStatus, true);
 		
 		GetPunHUD()->CloseDescriptionUI();
 		return;
 	}
+	
+	/*
+	 * SelectInventorySlotCard
+	 */
+	if (callbackEnum == CallbackEnum::SelectInventorySlotCard)
+	{
+		auto command = make_shared<FUseCard>();
+		command->callbackEnum = CallbackEnum::SelectInventorySlotCard;
+		command->cardStatus = cardButton->cardStatus;
+		command->variable1 = dataSource()->isShiftDown() ? simulation().cardSystem(playerId()).cardInventory().size() : 1;
 
+		networkInterface()->SendNetworkCommand(command);
+		
+		return;
+	}
+	
+
+	/*
+	 * Sell Card
+	 */
 	if (callbackEnum == CallbackEnum::SellCard)
 	{
 		auto command = make_shared<FSellCards>();
-		command->buildingEnum = cardButton->buildingEnum;
-		command->cardCount = cardButton->cardCount;
+		command->cardStatus = cardButton->cardStatus;
 		command->isShiftDown = dataSource()->isShiftDown();
 
-		int32 cardPrice = simulation().cardSystem(playerId()).GetCardPrice(command->buildingEnum);
+		int32 cardPrice = simulation().cardSystem(playerId()).GetCardPrice(command->cardStatus.cardEnum);
 
 		if (command->isShiftDown)
 		{
+			int32 sellCount = command->cardStatus.stackSize;
 			networkInterface()->ShowConfirmationUI(
 				FText::Format(
 					LOCTEXT("SellCardSure_Pop", "Are you sure you want to sell {0} {1} {0}|plural(one=Card,other=Cards) for {2}<img id=\"Coin\"/>?"),
-					command->cardCount,
-					GetBuildingInfo(command->buildingEnum).name,
-					TEXT_NUM(cardPrice * command->cardCount)
+					sellCount,
+					GetBuildingInfo(command->cardStatus.cardEnum).name,
+					TEXT_NUM(cardPrice * sellCount)
 				),
 				command
 			);
@@ -2641,7 +2693,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 			networkInterface()->ShowConfirmationUI(
 				FText::Format(
 					LOCTEXT("SellCardSure_Pop", "Are you sure you want to sell {0} for {1}<img id=\"Coin\"/>?"),
-					GetBuildingInfo(command->buildingEnum).name,
+					GetBuildingInfo(command->cardStatus.cardEnum).name,
 					TEXT_NUM(cardPrice)
 				),
 				command
@@ -2744,7 +2796,7 @@ int32 UMainGameUI::MoneyNeededForTentativeBuy()
 	for (int i = 0; i < loopSize; i++) {
 		auto cardButton = CastChecked<UBuildingPlacementButton>(cardButtons[i]);
 		if (reserveStatus[i]) {
-			moneyNeeded += cardSystem.GetCardPrice(cardButton->buildingEnum);
+			moneyNeeded += cardSystem.GetCardPrice(cardButton->cardEnum());
 		}
 	}
 	return moneyNeeded;

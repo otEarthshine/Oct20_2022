@@ -77,7 +77,7 @@ public:
 	virtual class GameMapFlood& floodSystem() = 0;
 	//virtual class GameMapFlood& floodSystemHuman() = 0;
 	virtual class ProvinceSystem& provinceSystem() = 0;
-	virtual class GameRegionSystem& regionSystem() = 0;
+	virtual class GameRegionSystem& provinceInfoSystem() = 0;
 	
 	virtual class ResourceDropSystem& dropSystem() = 0;
 	//virtual GameEventSource& eventSource(EventSourceEnum eventEnum) = 0;
@@ -86,6 +86,10 @@ public:
 	virtual class PunTerrainChanges& terrainChanges() = 0;
 
 	virtual class TownManager& townManager(int32 townId) = 0;
+	virtual class TownManager* townManagerPtr(int32 townId) = 0;
+
+	virtual class TownManagerBase* townManagerBase(int32 townId) = 0;
+	
 	virtual class ResourceSystem& resourceSystem(int32 townId) = 0;
 
 	virtual class GlobalResourceSystem& globalResourceSystem(int32 playerId) = 0;
@@ -254,7 +258,13 @@ public:
 	virtual bool IsQuickBuild(int32 buildingId) = 0;
 	virtual void AddQuickBuild(int32 buildingId) = 0;
 
-	virtual std::vector<int32> GetConstructionResourceCost(CardEnum cardEnum, TileArea area) = 0;
+	static int32 StorageCostPerTile() { return 2; }
+
+	static int32 GetFarmCost(int32 farmAreaSize) {
+		return farmAreaSize / 4;
+	}
+
+	//virtual std::vector<int32> GetConstructionResourceCost(CardEnum cardEnum, TileArea area) = 0;
 	
 	virtual bool IsLandCleared_SmallOnly(int32 townId, TileArea area) = 0;
 
@@ -266,6 +276,10 @@ public:
 	//virtual std::vector<int32> GetCapitalArmyCounts(int32 playerId, bool skipWall = false) = 0;
 	//virtual std::vector<int32> GetTotalArmyCounts(int32 playerId, bool skipWall = false) = 0;
 
+	virtual void AddFortToProvince(int32 provinceId, int32 fortId) = 0;
+	virtual void TryRemoveFortFromProvince(int32 provinceId, int32 fortId) = 0;
+
+	
 	// Display
 	virtual void SetNeedDisplayUpdate(DisplayClusterEnum displayEnum, int32 regionId, bool needUpdate = true) = 0;
 	virtual void SetNeedDisplayUpdate(DisplayClusterEnum displayEnum, TileArea area, bool isSmallArea, bool needUpdate = true) = 0;
@@ -299,7 +313,11 @@ public:
 	virtual std::vector<int32> GetPortIds(int32 townId) = 0;
 	virtual bool FindBestPathWater(int32 startTownId, int32 endTownId, WorldTile2 startLand, int32& startPortId, int32& endPortId) = 0;
 	virtual bool FindBestPathWater(int32 startPortId, int32 endTownId, int32& endPortId) = 0;
+
+	//! Minor Town
+	virtual int32 AddMinorTown() = 0;
 	
+	//! Terrain
 	virtual TerrainTileType terraintileType(int32 tileId) = 0;
 	virtual bool IsWater(WorldTile2 tile) = 0;
 	virtual bool IsMountain(WorldTile2 tile) = 0;
@@ -330,6 +348,8 @@ public:
 	virtual bool IsConnectedBuilding(int32 buildingId) = 0;
 
 	virtual void OnRefreshFloodGrid(WorldRegion2 region) = 0;
+
+
 	
 	/*
 	 * Province
@@ -365,6 +385,8 @@ public:
 	virtual int32 GetProvinceCountPlayer(int32 playerId) = 0;
 	virtual std::vector<int32> GetProvincesPlayer(int32 playerId) = 0;
 	virtual const std::vector<int32>& GetProvincesTown(int32 townId) = 0;
+
+	virtual const std::vector<int32>& GetTownProvincesClaimed(int32 townId) = 0;
 
 	virtual int32 GetProvinceIncome100(int32 provinceId) = 0;
 	virtual int32 GetProvinceUpkeep100(int32 provinceId, int32 playerId) = 0;
@@ -544,6 +566,11 @@ public:
 	virtual bool isStorageAllFull(int32 townId) = 0;
 	virtual int32 SpaceLeftFor(ResourceEnum resourceEnum, int32 storageId) = 0;
 	virtual void RefreshStorageStatus(int32 storageId) = 0;
+
+	// Farm
+	virtual std::vector<FarmTile> GetFarmTiles(TileArea area, WorldTile2 startTile, int32 playerId) = 0;
+
+	virtual bool IsFarmBuildable(WorldTile2 tile, int32 playerId) = 0;
 	
 	//virtual void Just
 
@@ -554,6 +581,8 @@ public:
 	virtual void DrawLine(WorldTile2 tile, FLinearColor Color, float Thickness = 1.0f, float LifeTime = 10000) = 0;
 	virtual void DrawLinePath(WorldTile2 start, WorldTile2 end, FLinearColor Color, float Thickness = 1.0f, float LifeTime = 10000) = 0;
 	virtual void DrawArea(TileArea area, FLinearColor color = FLinearColor::Yellow, float tilt = 0) = 0;
+
+	virtual void DrawAreaBox(TileArea area, FLinearColor color, bool showCross = true) = 0;
 
 	//! Terrain
 	virtual int32 GetFertilityPercent(WorldTile2 tile) = 0;
@@ -569,12 +598,16 @@ public:
 	virtual int32 aiStartIndex() = 0;
 	virtual int32 aiEndIndex() = 0;
 	virtual bool IsAIPlayer(int32 playerId) = 0;
+	virtual bool IsAIActive(int32 playerId) = 0;
 
 	virtual TCHAR* AIPrintPrefix(int32 aiPlayerId) = 0;
 
 	virtual void ChangeRelationshipModifier(int32 aiPlayerId, int32 towardPlayerId, RelationshipModifierEnum modifierEnum, int32 amount) = 0;
 
 	virtual WorldAtom2 homeAtom(int32 townId) = 0;
+
+	virtual void CheckPortArea(TileArea area, Direction faceDirection, CardEnum buildingEnum, std::vector<PlacementGridInfo>& grids,
+								bool& setDockInstruction, int32 playerId = -1, int32 extraMinWaterCount = 0) = 0;
 
 	//! Snow
 
@@ -597,7 +630,9 @@ public:
 			func(playerId);
 		}
 		for (int32 playerId = aiStartIndex(); playerId <= aiEndIndex(); playerId++) {
-			func(playerId);
+			if (IsAIActive(playerId)) {
+				func(playerId);
+			}
 		}
 	}
 	std::vector<int32> GetAllPlayersAndAI()
@@ -607,6 +642,25 @@ public:
 			playersAndAIIds.push_back(playerId);
 		}
 		return playersAndAIIds;
+	}
+
+	template<typename Func>
+	void ExecuteOnAllTowns(Func func) {
+		std::vector<int32> allHumanPlayerIdsLocal = allHumanPlayerIds();
+		for (int32 playerId : allHumanPlayerIdsLocal) {
+			const std::vector<int32>& townIds = GetTownIds(playerId);
+			for (int32 townId : townIds) {
+				func(townId);
+			}
+		}
+		for (int32 playerId = aiStartIndex(); playerId <= aiEndIndex(); playerId++) {
+			if (IsAIActive(playerId)) {
+				const std::vector<int32>& townIds = GetTownIds(playerId);
+				for (int32 townId : townIds) {
+					func(townId);
+				}
+			}
+		}
 	}
 	
 	template<typename Func>

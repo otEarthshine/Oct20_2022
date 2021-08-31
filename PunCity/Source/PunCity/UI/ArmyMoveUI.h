@@ -111,7 +111,7 @@ public:
 			
 			if (rowIndex == 0) {
 				//simulation().AddPopupToFront(playerId(), "No available node.", ExclusiveUIEnum::ArmyMoveUI, "PopupCannot");
-				CloseArmyMoveUI();
+				//CloseArmyMoveUI();
 				return;
 			}
 			ArmyChooseNodeOverlay->SetVisibility(ESlateVisibility::Visible);
@@ -256,52 +256,52 @@ public:
 	 * Open/Close
 	 */
 
-	void OpenArmyMoveUI(std::shared_ptr<FAttack> armyCommandIn)
-	{
-		networkInterface()->ResetGameUI();
-		dataSource()->Spawn2DSound("UI", "UIWindowOpen");
-		
-		armyCommand = armyCommandIn;
-		CallbackEnum orderEnum = armyCommand->armyOrderEnum;
+	//void OpenArmyMoveUI(std::shared_ptr<FAttack> armyCommandIn)
+	//{
+	//	networkInterface()->ResetGameUI();
+	//	dataSource()->Spawn2DSound("UI", "UIWindowOpen");
+	//	
+	//	armyCommand = armyCommandIn;
+	//	CallbackEnum orderEnum = armyCommand->armyOrderEnum;
 
-		// Recall: Choose node to recall to then send command...
-		if (orderEnum == CallbackEnum::ArmyRecall ||
-			orderEnum == CallbackEnum::ArmyMoveBetweenNode ||
-			orderEnum == CallbackEnum::ArmyConquer ||
-			orderEnum == CallbackEnum::ArmyHelp ||
-			orderEnum == CallbackEnum::ArmyReinforce ||
-			orderEnum == CallbackEnum::ArmyLiberate) 
-		{
-			// Special case: warn about being too far
-			if (orderEnum == CallbackEnum::ArmyConquer ||
-				orderEnum == CallbackEnum::ArmyHelp ||
-				orderEnum == CallbackEnum::ArmyLiberate)
-			{
-				//ArmyNode& targetNode = simulation().GetArmyNode(armyCommand->targetNodeId);
-				//int32 attackDelayPenalty = targetNode.PlayerAttackDelayPenaltyPercent(playerId());
+	//	// Recall: Choose node to recall to then send command...
+	//	if (orderEnum == CallbackEnum::ArmyRecall ||
+	//		orderEnum == CallbackEnum::ArmyMoveBetweenNode ||
+	//		orderEnum == CallbackEnum::ArmyConquer ||
+	//		orderEnum == CallbackEnum::ArmyHelp ||
+	//		orderEnum == CallbackEnum::ArmyReinforce ||
+	//		orderEnum == CallbackEnum::ArmyLiberate) 
+	//	{
+	//		// Special case: warn about being too far
+	//		if (orderEnum == CallbackEnum::ArmyConquer ||
+	//			orderEnum == CallbackEnum::ArmyHelp ||
+	//			orderEnum == CallbackEnum::ArmyLiberate)
+	//		{
+	//			//ArmyNode& targetNode = simulation().GetArmyNode(armyCommand->targetNodeId);
+	//			//int32 attackDelayPenalty = targetNode.PlayerAttackDelayPenaltyPercent(playerId());
 
-				//if (attackDelayPenalty > 0)
-				//{
-				//	ConfirmUI->SetVisibility(ESlateVisibility::Visible);
-				//	int32 attackSpeedPenalty = 100 - 100 * 100 / (100 + attackDelayPenalty);
-				//	SetText(ConfirmText,  simulation().armyNodeName(targetNode.nodeId) + 
-				//		" is very far from cities and colonies you own. As a result, your army will incur an attack speed penalty of " + std::to_string(attackSpeedPenalty) + "%. "+
-				//		"Will you still execute the move?");
+	//			//if (attackDelayPenalty > 0)
+	//			//{
+	//			//	ConfirmUI->SetVisibility(ESlateVisibility::Visible);
+	//			//	int32 attackSpeedPenalty = 100 - 100 * 100 / (100 + attackDelayPenalty);
+	//			//	SetText(ConfirmText,  simulation().armyNodeName(targetNode.nodeId) + 
+	//			//		" is very far from cities and colonies you own. As a result, your army will incur an attack speed penalty of " + std::to_string(attackSpeedPenalty) + "%. "+
+	//			//		"Will you still execute the move?");
 
-				//	SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-				//	return;
-				//}
-			}
-			
-			showArmyChooseNode = true;
-			SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-			
-			TickUI();
-			return;
-		}
+	//			//	SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	//			//	return;
+	//			//}
+	//		}
+	//		
+	//		showArmyChooseNode = true;
+	//		SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	//		
+	//		TickUI();
+	//		return;
+	//	}
 
-		UE_DEBUG_BREAK();
-	}
+	//	UE_DEBUG_BREAK();
+	//}
 
 	void OpenArmyCountUI()
 	{
@@ -309,19 +309,19 @@ public:
 		showArmyCountUI = true;
 	}
 
-	void CloseArmyMoveUI()
-	{
-		if (ArmyMoveOverlay->GetVisibility() != ESlateVisibility::Collapsed ||
-			ArmyChooseNodeOverlay->GetVisibility() != ESlateVisibility::Collapsed)
-		{
-			dataSource()->Spawn2DSound("UI", "UIWindowClose");
-		}
-		showArmyChooseNode = false;
-		showArmyCountUI = false;
-		ArmyMoveOverlay->SetVisibility(ESlateVisibility::Collapsed);
-		ArmyChooseNodeOverlay->SetVisibility(ESlateVisibility::Collapsed);
-		SetVisibility(ESlateVisibility::Collapsed);
-	}
+	//void CloseArmyMoveUI()
+	//{
+	//	if (ArmyMoveOverlay->GetVisibility() != ESlateVisibility::Collapsed ||
+	//		ArmyChooseNodeOverlay->GetVisibility() != ESlateVisibility::Collapsed)
+	//	{
+	//		dataSource()->Spawn2DSound("UI", "UIWindowClose");
+	//	}
+	//	showArmyChooseNode = false;
+	//	showArmyCountUI = false;
+	//	ArmyMoveOverlay->SetVisibility(ESlateVisibility::Collapsed);
+	//	ArmyChooseNodeOverlay->SetVisibility(ESlateVisibility::Collapsed);
+	//	SetVisibility(ESlateVisibility::Collapsed);
+	//}
 
 	UFUNCTION() void OnClickConfirmButton()
 	{
@@ -336,13 +336,13 @@ public:
 		armyCommand->armyCounts = armyCounts;
 		
 		networkInterface()->SendNetworkCommand(armyCommand);
-		CloseArmyMoveUI();
+		//CloseArmyMoveUI();
 	}
 
 	UFUNCTION() void OnClickCancelButton()
 	{
 		GetArmyCountsAndClear();
-		CloseArmyMoveUI();
+		//CloseArmyMoveUI();
 	}
 
 	// Confirm in case the attack could incur penalty
@@ -354,7 +354,7 @@ public:
 	}
 	UFUNCTION() void OnClickNoButton() {
 		ConfirmUI->SetVisibility(ESlateVisibility::Collapsed);
-		CloseArmyMoveUI();
+		//CloseArmyMoveUI();
 	}
 	
 

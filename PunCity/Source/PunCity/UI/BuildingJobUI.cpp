@@ -35,6 +35,9 @@ void UBuildingJobUI::PunInit(int buildingId, bool isHouse)
 
 	DepletedText->SetVisibility(ESlateVisibility::Collapsed);
 
+	LargeWhiteText->SetVisibility(ESlateVisibility::Collapsed);
+	MediumGrayText->SetVisibility(ESlateVisibility::Collapsed);
+
 	TradeButton->OnClicked.Clear();
 	TradeButton->OnClicked.AddDynamic(this, &UBuildingJobUI::OnClickTradeButton);
 	TradeButton->SetVisibility(ESlateVisibility::Collapsed);
@@ -44,6 +47,9 @@ void UBuildingJobUI::PunInit(int buildingId, bool isHouse)
 
 	BUTTON_ON_CLICK(JobPriorityButton, this, &UBuildingJobUI::OnClickJobPriorityButton);
 	JobPriorityButton->SetVisibility(ESlateVisibility::Collapsed);
+
+	BUTTON_ON_CLICK(AutoTradeButton, this, &UBuildingJobUI::OnClickAutoTradeButton);
+	AutoTradeButton->SetVisibility(ESlateVisibility::Collapsed);
 
 	AddToolTip(HumanSlotCount1, LOCTEXT("HumanSlotCount1 Tip", "Current Workers / Allowed Workers Slots"));
 	AddToolTip(HumanSlotCount2, LOCTEXT("HumanSlotCount2 Tip", "(Max possible Worker Slots)"));

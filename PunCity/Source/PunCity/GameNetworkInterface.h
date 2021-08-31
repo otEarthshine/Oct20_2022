@@ -77,6 +77,8 @@ public:
 	virtual void SetFocusGame() = 0;
 	//virtual void SetFocusGameOnly() = 0;
 
+	virtual bool HasUserFocus(class UWidget* widget) = 0;
+
 	virtual void SetCursor(FName name) = 0;
 
 	virtual bool IsHoveredOnScrollUI() = 0;

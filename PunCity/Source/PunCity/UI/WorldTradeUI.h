@@ -42,7 +42,7 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) UButton* TradeButton;
 	UPROPERTY(meta = (BindWidget)) UButton* DismissButton;
-	UPROPERTY(meta = (BindWidget)) UButton* TradeXCloseButton;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* TradeCloseXButton;
 
 	UPROPERTY(meta = (BindWidget)) UTextBlock* QuantityText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* FeePercentText;

@@ -427,8 +427,8 @@ void UChatUI::TickDebugUI()
 		ss << "deer units: " << unitSystem.unitCount(UnitEnum::DarkDeer) + unitSystem.unitCount(UnitEnum::YellowDeer) + unitSystem.unitCount(UnitEnum::RedDeer) << "\n";
 		ss << "boar units: " << unitSystem.unitCount(UnitEnum::Boar) << "\n";
 		ss << "human units: " << unitSystem.unitCount(UnitEnum::Human) << "\n";
-		ss << "Max animal in province: " << sim.regionSystem().debugMaxAnimalCount << "\n";
-		ss << "Total province animals: " << sim.regionSystem().debugTotalProvinceAnimalCount << "\n";
+		ss << "Max animal in province: " << sim.provinceInfoSystem().debugMaxAnimalCount << "\n";
+		ss << "Total province animals: " << sim.provinceInfoSystem().debugTotalProvinceAnimalCount << "\n";
 
 		int32 findFullBushTotal = UnitStateAI::debugFindFullBushSuccessCount + UnitStateAI::debugFindFullBushFailCount;
 		ss << "FindFullBush Success: " << (static_cast<float>(UnitStateAI::debugFindFullBushSuccessCount) / findFullBushTotal) << "\n";

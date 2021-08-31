@@ -344,6 +344,12 @@ public:
 	//	isChatFocus = false;
 	//}
 
+	virtual bool HasUserFocus(UWidget* widget) final
+	{
+		return widget->HasUserFocus(this) || widget->HasUserFocusedDescendants(this);
+	}
+
+	
 	void SetCursor(FName name) final {
 		//CurrentMouseCursor = cursorType;
 		//if (FSlateApplication::IsInitialized()) {
@@ -998,7 +1004,7 @@ public:
 		auto command = make_shared<FPlaceBuilding>();
 		command->playerId = tileOwner;
 		command->buildingEnum = static_cast<uint8>(buildingEnum);
-		command->buildingLevel = 1;
+		command->intVar1 = 1;
 		command->center = WorldTile2(tileX, tileY);
 		command->area = BuildingArea(command->center, GetBuildingInfo(buildingEnum).size, Direction::S);
 		command->faceDirection = static_cast<uint8_t>(Direction::S);
@@ -1014,7 +1020,7 @@ public:
 
 	UFUNCTION(Exec) void GoToMaxAnimal()
 	{
-		int32 provinceId = simulation().regionSystem().debugMaxAnimalCountProvinceId;
+		int32 provinceId = simulation().provinceInfoSystem().debugMaxAnimalCountProvinceId;
 		if (provinceId == -1) {
 			return;
 		}
@@ -1274,7 +1280,7 @@ public:
 			
 			FPlaceBuilding placeCommand;
 			placeCommand.buildingEnum = static_cast<uint8>(CardEnum::FakeTribalVillage);
-			placeCommand.buildingLevel = 0;
+			placeCommand.intVar1 = 0;
 			placeCommand.center = center;
 			placeCommand.faceDirection = static_cast<uint8>(Direction::S);
 			placeCommand.area = BuildingArea(placeCommand.center, GetBuildingInfoInt(placeCommand.buildingEnum).size, static_cast<Direction>(placeCommand.faceDirection));
@@ -1311,7 +1317,7 @@ public:
 		{
 			FPlaceBuilding placeCommand;
 			placeCommand.buildingEnum = static_cast<uint8>(CardEnum::ChichenItza);
-			placeCommand.buildingLevel = 0;
+			placeCommand.intVar1 = 0;
 			placeCommand.center = WorldTile2(1057, 2754);
 			placeCommand.faceDirection = static_cast<uint8>(Direction::S);
 			placeCommand.area = BuildingArea(placeCommand.center, GetBuildingInfoInt(placeCommand.buildingEnum).size, static_cast<Direction>(placeCommand.faceDirection));
@@ -1678,7 +1684,7 @@ public:
 				jsonObj->SetNumberField("buildingEnum", command->buildingEnum);
 				jsonObj->SetStringField("buildingName", GetBuildingInfoInt(command->buildingEnum).nameF());
 				
-				jsonObj->SetNumberField("buildingLevel", command->buildingLevel);
+				jsonObj->SetNumberField("buildingLevel", command->intVar1);
 
 				SetAreaField(jsonObj, "area", command->area);
 				//SetAreaField(jsonObj, "area2", command->area2);
@@ -1827,7 +1833,7 @@ public:
 
 				command->buildingEnum = jsonObj->GetNumberField("buildingEnum");
 
-				command->buildingLevel = jsonObj->GetNumberField("buildingLevel");
+				command->intVar1 = jsonObj->GetNumberField("buildingLevel");
 
 				GetAreaField(jsonObj, "area", command->area);
 				//GetAreaField(jsonObj, "area2", command->area2);
@@ -1980,22 +1986,22 @@ public:
 
 
 	UFUNCTION(Exec) void AddHippoColony(int32 centerX, int32 centerY, int32 radius, int32 chancePercentMultiplier) {
-		gameManager->simulation().regionSystem().AddAnimalColony(UnitEnum::Hippo, WorldTile2(centerX, centerY), radius, chancePercentMultiplier);
+		gameManager->simulation().provinceInfoSystem().AddAnimalColony(UnitEnum::Hippo, WorldTile2(centerX, centerY), radius, chancePercentMultiplier);
 	}
 	UFUNCTION(Exec) void AddPenguinColony(int32 centerX, int32 centerY, int32 radius, int32 chancePercentMultiplier) {
-		gameManager->simulation().regionSystem().AddAnimalColony(UnitEnum::Penguin, WorldTile2(centerX, centerY), radius, chancePercentMultiplier);
+		gameManager->simulation().provinceInfoSystem().AddAnimalColony(UnitEnum::Penguin, WorldTile2(centerX, centerY), radius, chancePercentMultiplier);
 	}
 	UFUNCTION(Exec) void AddWildManColony(int32 centerX, int32 centerY, int32 radius, int32 chancePercentMultiplier) {
-		gameManager->simulation().regionSystem().AddAnimalColony(UnitEnum::WildMan, WorldTile2(centerX, centerY), radius, chancePercentMultiplier);
+		gameManager->simulation().provinceInfoSystem().AddAnimalColony(UnitEnum::WildMan, WorldTile2(centerX, centerY), radius, chancePercentMultiplier);
 	}
 	UFUNCTION(Exec) void ClearHippoColony() {
-		gameManager->simulation().regionSystem().RemoveAnimalColony(UnitEnum::Hippo);
+		gameManager->simulation().provinceInfoSystem().RemoveAnimalColony(UnitEnum::Hippo);
 	}
 	UFUNCTION(Exec) void ClearPenguinColony() {
-		gameManager->simulation().regionSystem().RemoveAnimalColony(UnitEnum::Penguin);
+		gameManager->simulation().provinceInfoSystem().RemoveAnimalColony(UnitEnum::Penguin);
 	}
 	UFUNCTION(Exec) void ClearWildManColony() {
-		gameManager->simulation().regionSystem().RemoveAnimalColony(UnitEnum::WildMan);
+		gameManager->simulation().provinceInfoSystem().RemoveAnimalColony(UnitEnum::WildMan);
 	}
 
 	UFUNCTION(Exec) void CheckWindmill()

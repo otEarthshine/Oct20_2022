@@ -44,6 +44,15 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	GatherMarkMeshMaterial = Load<UStaticMesh>("/Game/Models/Trees/GatherMark");
 
+	DefenseOverlay_Line = Load<UStaticMesh>("/Game/Models/Placement/DefenseOverlay_Line");
+	DefenseOverlay_Node = Load<UStaticMesh>("/Game/Models/Placement/DefenseOverlay_Node");
+	DefenseOverlay_CityNode = Load<UStaticMesh>("/Game/Models/Placement/DefenseOverlay_CityNode");
+	DefenseOverlay_FortNode = Load<UStaticMesh>("/Game/Models/Placement/DefenseOverlay_FortNode");
+
+	DefenseOverlay_Line_Map = Load<UStaticMesh>("/Game/Models/Placement/DefenseOverlay_Line_Map");
+	DefenseOverlay_Node_Map = Load<UStaticMesh>("/Game/Models/Placement/DefenseOverlay_Node_Map");
+	DefenseOverlay_CityNode_Map = Load<UStaticMesh>("/Game/Models/Placement/DefenseOverlay_CityNode_Map");
+	DefenseOverlay_FortNode_Map = Load<UStaticMesh>("/Game/Models/Placement/DefenseOverlay_FortNode_Map");
 
 	/**
 	 * Building
@@ -628,7 +637,10 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	// Storage
 	LoadModule("StorageTile", "StorageYard/StorageYardTile");
-	
+
+	// Farm
+	LoadModule("FarmTile", "Farm/FarmTile");
+	LoadModule("FarmTile_UC", "Farm/FarmTile_UC");
 
 	// Trap
 	LoadModule("TrapSpike", "TrapSpike/TrapSpike", true);
@@ -685,6 +697,9 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 			case CardEnum::IntercityRoad: addBuildIcon(CardEnum::IntercityRoad, FString(TO_STR(DirtRoadIcon)), FString("SpecialIconAlpha"), true); break;
 			case CardEnum::IntercityBridge: addBuildIcon(CardEnum::IntercityBridge, FString(TO_STR(BridgeIcon)), FString("SpecialIconAlpha"), true); break;
+
+			// Temp
+			case CardEnum::MinorCity: addBuildIcon(CardEnum::MinorCity, FString(TO_STR(DirtRoadIcon)), FString("SpecialIconAlpha"), true); break;
 #undef CASE
 		default:
 			addBuildIcon(buildingEnum, FString("BuildingIcon") + FString::FromInt(i), FString("BuildingIconAlpha") + FString::FromInt(i), false);
@@ -824,7 +839,9 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	
 
-	// Add Building Card Icons
+	/*
+	 * Add Building Card Icons
+	 */
 	addCardIconCount = 0;
 	
 	for (CardEnum buildingEnum : SortedNameBuildingEnum) {
@@ -848,6 +865,30 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	check(addCardIconCount == 70);
 
+	/*
+	 * Add Player Logos
+	 */
+	int32 playerLogoCount = 97;
+
+	for (int32 i = 0; i < playerLogoCount; i++)
+	{
+		FString number = FString::FromInt(i + 1);
+		if (number.Len() == 1) {
+			number = FString("0") + number;
+		}
+		FString path = FString("UI/PlayerLogos/LogoTeam_") + number;
+
+		IPlatformFile& platformFile = FPlatformFileManager::Get().GetPlatformFile();
+		check(platformFile.FileExists(*(FPaths::ProjectContentDir() + path + FString(".uasset"))));
+
+		UObject* playerLogosTextureObj = StaticLoadObject(UTexture2D::StaticClass(), NULL, *(FString("/Game/") + path));
+		UTexture2D* playerLogosTexture = Cast<UTexture2D>(playerLogosTextureObj);
+		check(playerLogosTexture);
+		
+		_playerLogos.Add(playerLogosTexture);
+	}
+	
+	
 	//BorealFishing
 	//BorealWinterResistant
 
@@ -864,15 +905,15 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	 * Unit
 	 */
 	_unitEnumToAsset.resize(UnitEnumCount);
-	_unitDisplayEnumToAsset.resize(UnitDisplayEnumCount);
+	//_unitDisplayEnumToAsset.resize(UnitDisplayEnumCount);
 	
 	//LoadUnit(UnitEnum::Human, "Human/Man/Man1");
 	//LoadUnit(UnitEnum::Human, "Human/Man/Boy1");
 	
 	LoadUnit(UnitEnum::Alpaca, "Alpaca/Alpaca");
 	
-	LoadUnit(UnitEnum::Boar, "Boar/Boar_Game");
-	LoadUnit(UnitEnum::Boar, "Boar/BoarMini_Game");
+	LoadUnit(UnitEnum::Boar, "Boar/Boar_Game", 0);
+	LoadUnit(UnitEnum::Boar, "Boar/BoarMini_Game", 1);
 	
 	LoadUnit(UnitEnum::RedDeer, "Deer/Stag_Game");
 	LoadUnit(UnitEnum::YellowDeer, "Deer/StagYellow_Game");
@@ -883,8 +924,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadUnit(UnitEnum::Panda, "Panda/Panda_Game");
 
 	// Proper way to do skel collision
-	LoadUnit(UnitEnum::Hippo, "Human/Man/Man1");
-	LoadUnit(UnitEnum::Penguin, "Human/Man/Man1");
+	//LoadUnit(UnitEnum::Hippo, "Human/Man/Man1");
+	//LoadUnit(UnitEnum::Penguin, "Human/Man/Man1");
 
 	LoadUnit(UnitEnum::Pig, "Pig/StorePig");
 	LoadUnit(UnitEnum::Sheep, "Sheep/Sheep_Game");
@@ -910,18 +951,18 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	};
 
 	// Adult Male
-	LoadUnitFull(UnitEnum::Human, "Human/CitizenMale/", "CitizenMale", animationFileNames, "Human/CitizenMale/VertexAnim/CitizenMale_VertexAnim3"); // "Human/CitizenMale/CitizenMaleStatic"
+	LoadUnitFull(UnitEnum::Human, "Human/CitizenMale/", "CitizenMale", animationFileNames, "Human/CitizenMale/VertexAnim/CitizenMale_VertexAnim3", 0); // "Human/CitizenMale/CitizenMaleStatic"
 	LoadUnitAuxMesh(UnitAnimationEnum::ImmigrationCart, "Human/Cart/Cart");
 	LoadUnitAuxMesh(UnitAnimationEnum::HaulingCart, "Human/Cart/FrontCart");
 
 	// Adult Female
-	LoadUnitFull(UnitEnum::Human, "Human/CitizenFemale/", "CitizenFemale", animationFileNames, "Human/CitizenFemale/VertexAnim/CitizenFemale_VertexAnim"); // "Human/CitizenFemale/CitizenFemaleStatic"
+	LoadUnitFull(UnitEnum::Human, "Human/CitizenFemale/", "CitizenFemale", animationFileNames, "Human/CitizenFemale/VertexAnim/CitizenFemale_VertexAnim", 1); // "Human/CitizenFemale/CitizenFemaleStatic"
 
 	// Child Male
-	LoadUnitFull(UnitEnum::Human, "Human/CitizenChildMale/", "CitizenChildMale", animationFileNames, "Human/CitizenChildMale/VertexAnim/CitizenChildMale_VertexAnim");
+	LoadUnitFull(UnitEnum::Human, "Human/CitizenChildMale/", "CitizenChildMale", animationFileNames, "Human/CitizenChildMale/VertexAnim/CitizenChildMale_VertexAnim", 2);
 
 	// Child Female
-	LoadUnitFull(UnitEnum::Human, "Human/CitizenChildFemale/", "CitizenChildFemale", animationFileNames, "Human/CitizenChildFemale/VertexAnim/CitizenChildFemale_VertexAnim");
+	LoadUnitFull(UnitEnum::Human, "Human/CitizenChildFemale/", "CitizenChildFemale", animationFileNames, "Human/CitizenChildFemale/VertexAnim/CitizenChildFemale_VertexAnim", 3);
 
 
 	// Wild Man
@@ -962,6 +1003,11 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadUnitWeapon(UnitAnimationEnum::ChopWood, "Human/CitizenMale/CitizenMaleAxe");
 	LoadUnitWeapon(UnitAnimationEnum::StoneMining, "Human/CitizenMale/CitizenMalePickAxe");
 	LoadUnitWeapon(UnitAnimationEnum::FarmPlanting, "Human/CitizenMale/CitizenMaleFarmTool");
+
+	_maxUnitVariationCount = 0;
+	for (int32 i = 0; i < _unitEnumToAsset.size(); i++) {
+		_maxUnitVariationCount = std::max(_maxUnitVariationCount, static_cast<int32>(_unitEnumToAsset[i].size()));
+	}
 	
 	/**
 	 * Resource
@@ -1287,7 +1333,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	M_IronOreDecal = Load<UMaterial>("/Game/Models/Decals/M_IronOreDecal");
 	M_CoalOreDecal = Load<UMaterial>("/Game/Models/Decals/M_CoalOreDecal");
 	M_GemstoneDecal = Load<UMaterial>("/Game/Models/Decals/M_GemstoneDecal");
-	
+
 	FarmDecalMaterial = Load<UMaterial>("/Game/Models/Buildings/Farm/M_Farm");
 	ConstructionBaseDecalMaterial = Load<UMaterial>("/Game/Models/Buildings/BuildingModule1/ConstructionBase/M_BuildingBase");
 	
@@ -1723,18 +1769,19 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 //}
 
 const std::string unitsPath = "/Game/Models/Units/";
-void UAssetLoaderComponent::LoadUnit(UnitEnum unitEnum, std::string meshFile)
+void UAssetLoaderComponent::LoadUnit(UnitEnum unitEnum, std::string meshFile, int32 variationIndex)
 {
 	FUnitAsset asset;
 	asset.staticMesh = Load<UStaticMesh>((unitsPath + meshFile).c_str());
-	
-	_unitDisplayEnumToAsset[static_cast<int>(GetUnitDisplayEnum(unitEnum, _unitEnumToAsset[static_cast<int>(unitEnum)].size()))] = asset;
+
+	check(_unitEnumToAsset[static_cast<int>(unitEnum)].size() == variationIndex);
+	//_unitDisplayEnumToAsset[static_cast<int>(GetUnitDisplayEnum(unitEnum, _unitEnumToAsset[static_cast<int>(unitEnum)].size()))] = asset;
 	_unitEnumToAsset[static_cast<int>(unitEnum)].push_back(asset);
 }
 
 // SkelMesh will still need 
 void UAssetLoaderComponent::LoadUnitFull(UnitEnum unitEnum, std::string folderPath, std::string skelFileName,
-	std::unordered_map<UnitAnimationEnum, std::string> animationFileNames, std::string staticFileName)
+	std::unordered_map<UnitAnimationEnum, std::string> animationFileNames, std::string staticFileName, int32 variationIndex)
 {
 	FUnitAsset asset;
 	asset.skeletalMesh = Load<USkeletalMesh>((unitsPath + folderPath + skelFileName).c_str());
@@ -1746,7 +1793,8 @@ void UAssetLoaderComponent::LoadUnitFull(UnitEnum unitEnum, std::string folderPa
 		asset.staticMesh = Load<UStaticMesh>((unitsPath + staticFileName).c_str());
 	}
 
-	_unitDisplayEnumToAsset[static_cast<int>(GetUnitDisplayEnum(unitEnum, _unitEnumToAsset[static_cast<int>(unitEnum)].size()))] = asset;
+	check(_unitEnumToAsset[static_cast<int>(unitEnum)].size() == variationIndex);
+	//_unitDisplayEnumToAsset[static_cast<int>(GetUnitDisplayEnum(unitEnum, _unitEnumToAsset[static_cast<int>(unitEnum)].size()))] = asset;
 	_unitEnumToAsset[static_cast<int>(unitEnum)].push_back(asset);
 }
 void UAssetLoaderComponent::LoadUnitWeapon(UnitAnimationEnum unitAnimation, std::string file)

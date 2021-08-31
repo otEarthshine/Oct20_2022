@@ -120,3 +120,19 @@ private:
 
 	static int32_t randUsageCount;
 };
+
+template<typename T>
+static int32 FastHashCombine(int32 lhs, T rhs) {
+	lhs ^= static_cast<int32>(rhs) + 0x9e3779b9 + (lhs << 6) + (lhs >> 2);
+	return lhs;
+}
+
+static int32 FastHashCombineMany(std::vector<int32> hashes)
+{
+	check(hashes.size() >= 2);
+	int32 lhs = hashes[0];
+	for (int32 i = 1; i < hashes.size(); i++) {
+		lhs ^= hashes[i] + 0x9e3779b9 + (lhs << 6) + (lhs >> 2);
+	}
+	return lhs;
+}

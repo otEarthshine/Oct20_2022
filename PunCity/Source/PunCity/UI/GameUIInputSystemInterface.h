@@ -22,7 +22,7 @@ class IGameUIInputSystemInterface
 {
 	GENERATED_BODY()
 public:
-	virtual void StartBuildingPlacement(CardEnum buildingEnum, int32 buildingLvl, bool useBoughtCard, CardEnum useWildCard = CardEnum::None) = 0;
+	virtual void StartBuildingPlacement(CardStatus cardStatus, bool useBoughtCard, CardEnum useWildCard = CardEnum::None) = 0;
 	virtual void StartHarvestPlacement(bool isRemoving, ResourceEnum resourceEnum) = 0;
 	virtual void StartDemolish() = 0;
 	virtual void StartRoadPlacement(bool isStoneRoad, bool isIntercity = false) = 0;

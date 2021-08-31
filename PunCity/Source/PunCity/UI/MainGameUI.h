@@ -31,8 +31,9 @@ public:
 	bool EscDown();
 
 	//UBuildingPlacementButton* AddAnimationCard(CardEnum buildingEnum);
-	UBuildingPlacementButton* AddCard(CardHandEnum cardHandEnum, CardEnum buildingEnum, UWrapBox* buttonParent, CallbackEnum callbackEnum, int32 cardHandIndex = -1,
-															int32 buildingLvl = -1, int32 stackSize = -1, bool isMiniature = false);
+	//UBuildingPlacementButton* AddCardOld(CardHandEnum cardHandEnum, CardEnum buildingEnum, UWrapBox* buttonParent, CallbackEnum callbackEnum, int32 cardHandIndex = -1,
+	//														int32 buildingLvl = -1, int32 stackSize = -1, bool isMiniature = false){}
+	UBuildingPlacementButton* AddCard(CardHandEnum cardHandEnum, CardStatus cardStatus, UWrapBox* buttonParent, CallbackEnum callbackEnum, int32 cardHandIndex = -1, bool isMiniature = false);
 
 	void CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum) override;
 	void CallBack2(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum) override;
@@ -67,7 +68,10 @@ public:
 		CardHand1Overlay->SetVisibility(ESlateVisibility::Collapsed);
 		RareCardHandOverlay->SetVisibility(ESlateVisibility::Collapsed);
 		ConverterCardHandOverlay->SetVisibility(ESlateVisibility::Collapsed);
+
+		CardInventorySizeBox->SetVisibility(ESlateVisibility::Collapsed);
 		BuildMenuOverlay->SetVisibility(ESlateVisibility::Collapsed);
+		
 		ConfirmationOverlay->SetVisibility(ESlateVisibility::Collapsed);
 	}
 	
@@ -154,6 +158,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UOverlay* RareCardHandOverlay;
 	UPROPERTY(meta = (BindWidget)) UOverlay* ConverterCardHandOverlay;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* ConverterCardHandTitle;
+	UPROPERTY(meta = (BindWidget)) USizeBox* CardInventorySizeBox;
 
 	UPROPERTY(meta = (BindWidget)) UEditableTextBox* ConverterCardHandSearchBox;
 	FString lastSearchString;
@@ -202,7 +207,6 @@ private:
 
 	// Card Inventory
 	UPROPERTY(meta = (BindWidget)) UButton* CardInventoryToggleButton;
-	UPROPERTY(meta = (BindWidget)) UOverlay* CardInventoryOverlay;
 	UPROPERTY(meta = (BindWidget)) UWrapBox* CardInventoryUIWrap;
 	
 	
@@ -423,7 +427,7 @@ private:
 
 	CardEnum _lastConverterChosenCard = CardEnum::None;
 	
-	std::vector<BuildingCardStack> _lastDisplayBought;
+	std::vector<CardStatus> _lastDisplayBought;
 	CardEnum _lastCardEnumBeingPlaced = CardEnum::None;
 	ConverterCardUseState _lastConverterCardState = ConverterCardUseState::None;
 	//int32_t _lastMoney = -1;
@@ -569,7 +573,7 @@ private:
 		converterHandCategoryState = -1;
 
 		auto command = make_shared<FUseCard>();
-		command->cardEnum = CardEnum::CardRemoval;
+		command->cardStatus = CardStatus(CardEnum::CardRemoval, 1);
 		command->variable1 = static_cast<int32>(buildingEnumToRemove);
 		networkInterface()->SendNetworkCommand(command);
 	}

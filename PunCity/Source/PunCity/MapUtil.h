@@ -15,7 +15,8 @@ public:
 	//static WorldTile2 RandomTile(TileArea area);
 
 	static FVector DisplayLocation(WorldAtom2 cameraAtom, WorldAtom2 objectAtom, float height = 0.0f);
-	//static FVector DisplayLocationMapMode(FVector mapCameraLocation, WorldAtom2 objectAtom);
+	static FVector DisplayLocation_Map(WorldTile2 tile);
+	
 	static WorldAtom2 AtomLocation(WorldAtom2 cameraAtom, FVector displayLocation);
 
 	static float GlobalDecalZoomFactor(float zoomDistance);

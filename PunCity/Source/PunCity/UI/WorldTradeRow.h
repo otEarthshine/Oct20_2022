@@ -51,5 +51,5 @@ public:
 	UPROPERTY(meta = (BindWidget)) UPunEditableNumberBox* PunTradeAmount;
 
 private:
-	class UWorldTradeUI* _worldTradeUI;
+	UPROPERTY() class UWorldTradeUI* _worldTradeUI;
 };

@@ -14,7 +14,8 @@ class UPunEditableNumberBox : public UPunWidget
 {
 	GENERATED_BODY()
 public:
-	void OnInit() override {
+	void OnInit() override
+	{
 		DescriptionText->SetVisibility(ESlateVisibility::Collapsed);
 
 		EnableCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UPunEditableNumberBox::OnEnableCheckBox);
@@ -28,6 +29,8 @@ public:
 		EditableNumber->PunEditableTextBox->OnTextCommitted.AddDynamic(this, &UPunEditableNumberBox::NumberChanged);
 		amount = 0;
 		UpdateText();
+
+		callbackWidgetCaller = this;
 
 		justInitialized = true;
 	}
@@ -102,7 +105,7 @@ public:
 	int32 minAmount = MIN_int32;
 	int32 maxAmount = MAX_int32;
 
-	bool isUsingSpecialControl = false;
+	bool isUsingSpecialControl = false; // Special Ctrl key will increment/decrement to maximum possible
 	int32 ctrlClickIncrementAmount = 10;
 	int32 ctrlClickDecrementAmount = 10;
 
@@ -110,6 +113,8 @@ public:
 
 	int32 uiIndex = -1;
 	std::function<void(int32, int32, int32, IGameNetworkInterface*)> onEditNumber;
+
+	UPROPERTY() UPunWidget* callbackWidgetCaller;
 	
 private:
 	UFUNCTION() void ClickArrowDownButton();

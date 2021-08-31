@@ -34,6 +34,10 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "BuildingGrid", 0 },
 	{ "ShippingGrid", 0 },
 	{ "BuildingId", 0 },
+	{ "FarmDebugLines", 0 },
+
+	{ "ShowProvinceSlots", 0 },
+	
 	{ "FloodId", 0},
 	{ "FloodIdHuman", 0},
 	{ "Province", 0 },
@@ -157,6 +161,8 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "ForceQuickBuild", 0 },
 
 	{ "UseFullSkelAnim", 0 },
+
+	{ "SpawnSingleMan", 0 },
 
 	{ "SeeAllCards", 0 },
 	

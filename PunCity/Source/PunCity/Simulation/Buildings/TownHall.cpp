@@ -374,6 +374,7 @@ void TownHall::AddInitialImmigrants()
 #else
 	int32 adultCount = 14;
 	int32 childrenCount = 4;
+	
 	if (!isCapital()) {
 		const int32 targetImmigrantCount = 10;
 		auto& townManager = _simulation->townManager(_playerId);
@@ -396,6 +397,30 @@ void TownHall::AddInitialImmigrants()
 	}
 #endif
 
+	/*
+	 * Special Case
+	 */
+	if (PunSettings::IsOn("SpawnSingleMan")) 
+	{
+		// Spawn until we get a man... (doesn't reproduce)
+		std::vector<int32> killList;
+		while (true) {
+			int32 unitId = _simulation->AddUnit(UnitEnum::Human, _townId, gateTile().worldAtom2(), beginAdultTick);
+			if (_simulation->unitAI(unitId).isMale()) {
+				break;
+			}
+			killList.push_back(unitId);
+		}
+		// Kill all non-man
+		for (int32 unitId : killList) {
+			_simulation->unitAI(unitId).Die();
+		}
+		return;
+	}
+
+	/*
+	 * Spawn Immigrants
+	 */
 	auto getRandomTile = [&]() -> WorldTile2 {
 		if (GameRand::Rand() % 2 == 0) {
 			return WorldTile2(GameRand::Rand() % 2 == 0 ? _area.minX - 1 : _area.maxX + 1, (GameRand::Rand() % _area.sizeY()) + _area.minY);

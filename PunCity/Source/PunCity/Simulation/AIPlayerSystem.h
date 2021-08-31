@@ -732,7 +732,7 @@ public:
 					{
 						TileArea curArea(tile, size);
 						bool hasInvalidTile = curArea.ExecuteOnAreaWithExit_WorldTile2([&](const WorldTile2& curTile) {
-							return !_simulation->IsBuildableForPlayer(curTile, _aiPlayerId);
+							return !_simulation->IsFarmBuildable(curTile, _aiPlayerId);
 						});
 
 						return !hasInvalidTile;
@@ -1117,7 +1117,7 @@ public:
 				if (connection.tileType == TerrainTileType::None &&
 					_simulation->IsProvinceValid(connection.provinceId) && 
 					_simulation->provinceOwnerTown(connection.provinceId) == -1 &&
-					_simulation->regionSystem().provinceDistanceToPlayer(connection.provinceId, _aiPlayerId) < 7
+					_simulation->provinceInfoSystem().provinceDistanceToPlayer(connection.provinceId, _aiPlayerId) < 7
 					)
 				{
 					

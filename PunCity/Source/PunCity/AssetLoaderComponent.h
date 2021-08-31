@@ -261,6 +261,14 @@ const std::string TileSubmeshName[]
 static const int32 TileSubmeshCount = _countof(TileSubmeshName);
 
 
+enum class DefenseOverlayEnum : uint8
+{
+	Node,
+	CityNode,
+	FortNode,
+};
+
+
 
 USTRUCT()
 struct FUnitAsset
@@ -354,24 +362,18 @@ public:
 	int32 GetMinEraDisplay(CardEnum buildingEnum) { return _buildingEnumToMinEraModel[static_cast<int>(buildingEnum)]; }
 	
 
-	//UStaticMesh* unitMesh(UnitEnum unitEnum, int32 variationIndex = 0);
 	int32 unitMeshCount(UnitEnum unitEnum) {
 		return _unitEnumToAsset[static_cast<int>(unitEnum)].size();
-		
-		//if (unitEnum == UnitEnum::Human) {
-		//	return _unitEnumToAsset[static_cast<int>(unitEnum)].size();
-		//}
-		//return _unitToMeshes[unitEnum].size();
 	}
 
-	//FUnitAsset unitAsset(UnitEnum unitEnum, int32 variationIndex = 0);
 	FUnitAsset unitAsset(UnitEnum unitEnum, int32 variationIndex = 0) {
-		return unitAsset(GetUnitDisplayEnum(unitEnum, variationIndex));
+		return _unitEnumToAsset[static_cast<int>(unitEnum)][variationIndex];
 	}
-	FUnitAsset unitAsset(UnitDisplayEnum unitDisplayEnum) {
-		check(static_cast<int32>(unitDisplayEnum) < UnitDisplayEnumCount);
-		return _unitDisplayEnumToAsset[static_cast<int32>(unitDisplayEnum)];
+
+	int32 maxUnitMeshVariationCount() {
+		return _maxUnitVariationCount;
 	}
+	
 	
 	UStaticMesh* unitWeaponMesh(UnitAnimationEnum animationEnum) {
 		auto found = _animationEnumToWeaponMesh.find(animationEnum);
@@ -447,6 +449,12 @@ public:
 		}
 		return nullptr;
 	}
+
+
+	const TArray<UTexture2D*>& GetPlayerLogos() {
+		return _playerLogos;
+	}
+	
 
 	UTexture2D* GetArmyIcon(ArmyEnum armyEnum) { return _armyIcons[static_cast<int>(armyEnum)]; }
 
@@ -542,6 +550,16 @@ public:
 	UPROPERTY(EditAnywhere) UStaticMesh* WorldMapForestMesh;
 
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* ReferenceTerrainMaterial;
+
+	UPROPERTY(EditAnywhere) UStaticMesh* DefenseOverlay_Line;
+	UPROPERTY(EditAnywhere) UStaticMesh* DefenseOverlay_Node;
+	UPROPERTY(EditAnywhere) UStaticMesh* DefenseOverlay_CityNode;
+	UPROPERTY(EditAnywhere) UStaticMesh* DefenseOverlay_FortNode;
+
+	UPROPERTY(EditAnywhere) UStaticMesh* DefenseOverlay_Line_Map;
+	UPROPERTY(EditAnywhere) UStaticMesh* DefenseOverlay_Node_Map;
+	UPROPERTY(EditAnywhere) UStaticMesh* DefenseOverlay_CityNode_Map;
+	UPROPERTY(EditAnywhere) UStaticMesh* DefenseOverlay_FortNode_Map;
 
 	/*
 	 * UI
@@ -696,7 +714,7 @@ public:
 	
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* RadiusMaterial;
 	
-	UPROPERTY(EditAnywhere, Category = "Material Import") UStaticMesh* RadiusMesh;
+	UPROPERTY(EditAnywhere) UStaticMesh* RadiusMesh;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_Radius;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterialInstance* MI_RadiusRed;
 	
@@ -707,7 +725,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_IronOreDecal;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_CoalOreDecal;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_GemstoneDecal;
-	
+
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* FarmDecalMaterial;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* ConstructionBaseDecalMaterial;
 
@@ -782,9 +800,9 @@ private:
 		return objectFinder.Object;
 	}
 
-	void LoadUnit(UnitEnum unitEnum, std::string meshFile);
-	void LoadUnitFull(UnitEnum unitEnum, std::string folderPath, std::string skelFileName, std::unordered_map<UnitAnimationEnum, std::string> animationFileNames, std::string staticFileName);
-	//void LoadUnitAnimation(UnitEnum unitEnum, int32 variationIndex, UnitAnimationEnum unitAnimation, std::string file);
+	void LoadUnit(UnitEnum unitEnum, std::string meshFile, int32 variationIndex = 0);
+	void LoadUnitFull(UnitEnum unitEnum, std::string folderPath, std::string skelFileName, std::unordered_map<UnitAnimationEnum, std::string> animationFileNames, std::string staticFileName, int32 variationIndex = 0);
+	
 	void LoadUnitWeapon(UnitAnimationEnum unitAnimation, std::string file);
 	void LoadUnitAuxMesh(UnitAnimationEnum unitAnimation, std::string file);
 	
@@ -881,7 +899,8 @@ private:
 	//std::unordered_map<UnitEnum, std::vector<UStaticMesh*>> _unitToMeshes;
 
 	std::vector<std::vector<FUnitAsset>> _unitEnumToAsset;
-	std::vector<FUnitAsset> _unitDisplayEnumToAsset;
+	int32 _maxUnitVariationCount = 0;
+	//std::vector<FUnitAsset> _unitDisplayEnumToAsset;
 	//std::unordered_map<UnitEnum, std::vector<USkeletalMesh*>> _unitToSkeletalMesh;
 	//std::unordered_map<UnitEnum, std::vector<std::unordered_map<UnitAnimationEnum, UAnimSequence*>>> _animationEnumToSequence;
 	
@@ -914,6 +933,8 @@ private:
 	TSet<CardEnum> _buildingsUsingSpecialIcon;
 
 	UPROPERTY() TMap<int32, UTexture2D*> _cardIcons;
+
+	UPROPERTY() TArray<UTexture2D*> _playerLogos;
 
 	//! ArmyIcon
 	UPROPERTY() TArray<UTexture2D*> _armyIcons;

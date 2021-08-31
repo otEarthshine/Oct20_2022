@@ -116,12 +116,13 @@ public:
 struct UnitReservation
 {
 public:
-	int32_t unitId = -1;
+	int32 unitId = -1;
 	ReservationType reservationType = ReservationType::None;
 	ResourceHolderInfo reserveHolder = ResourceHolderInfo::Invalid();
-	int32_t reserveTileId = -1;
-	int32_t reserveWorkplaceId = -1;
-	int32_t amount = -1;
+	int32 reserveTileId = -1;
+	int32 reserveWorkplaceId = -1;
+	int32 amount = -1;
+	int32 var1 = -1;
 
 	//! Serialize
 	FArchive& operator>>(FArchive &Ar) {
@@ -131,6 +132,7 @@ public:
 		Ar << reserveTileId;
 		Ar << reserveWorkplaceId;
 		Ar << amount;
+		Ar << var1;
 		return Ar;
 	}
 

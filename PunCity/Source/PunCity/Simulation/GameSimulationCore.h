@@ -227,7 +227,7 @@ public:
 	GameMapFlood& floodSystem() final { return _floodSystem; }
 	//GameMapFlood& floodSystemHuman() final { return _floodSystemHuman; }
 	ProvinceSystem& provinceSystem() final { return _provinceSystem; }
-	GameRegionSystem& regionSystem() final { return *_regionSystem; }
+	GameRegionSystem& provinceInfoSystem() final { return *_regionSystem; }
 	
 	ResourceDropSystem& dropSystem() final { return _dropSystem; }
 	//GameEventSource& eventSource(EventSourceEnum eventEnum) final { return _gameEventSystem.source(eventEnum); }
@@ -236,6 +236,25 @@ public:
 		check(_townManagers[townId]);
 		return *_townManagers[townId];
 	}
+	TownManager* townManagerPtr(int32 townId) final {
+		check(townId < _townManagers.size());
+		check(_townManagers[townId]);
+		return _townManagers[townId].get();
+	}
+
+	virtual TownManagerBase* townManagerBase(int32 townId) override
+	{
+		if (townId >= TownManagerBase::MinorTownShift) {
+			int32 minorTownId = townId - TownManagerBase::MinorTownShift;
+			check(minorTownId < _minorTownManagers.size());
+			check(_minorTownManagers[minorTownId]);
+			return _minorTownManagers[minorTownId].get();
+		}
+		check(townId < _townManagers.size());
+		check(_townManagers[townId]);
+		return static_cast<TownManagerBase*>(_townManagers[townId].get());
+	}
+	
 	ResourceSystem& resourceSystem(int32 townId) final { return _resourceSystems[townId]; }
 
 	PlayerOwnedManager& playerOwned(int32 playerId) final { return _playerOwnedManagers[playerId]; }
@@ -280,6 +299,9 @@ public:
 	}
 	int32 townPlayerId(int32 townId) final {
 		if (townId == -1) {
+			return -1;
+		}
+		if (townId >= TownManagerBase::MinorTownShift) {
 			return -1;
 		}
 		return townManager(townId).playerId();
@@ -419,6 +441,10 @@ public:
 	bool IsAIPlayer(int32 playerId) final { return playerId >= GameConstants::MaxPlayersPossible; }
 	//bool isAIPlayer(int32_t playerId) { return aiPlayerStartIndex() <= playerId && playerId <= aiPlayerEndIndex(); }
 
+	virtual bool IsAIActive(int32 playerId) override {
+		return _aiPlayerSystem[playerId].active();
+	}
+
 	TCHAR* AIPrintPrefix(int32 aiPlayerId) final
 	{
 		std::stringstream ss;
@@ -553,8 +579,18 @@ public:
 	int32 GetTownhallId(int32 townId) override {
 		if (townId == -1) return -1;
 		if (townId >= _townManagers.size()) return -1;
-		return townManager(townId).townHallId;
+		return townManagerBase(townId)->townHallId;
 	}
+
+	
+	int32 GetTownProvinceId(int32 townId)
+	{
+		if (townId == -1) return -1;
+		int32 townhallId = GetTownhallId(townId);
+		if (townhallId == -1) return -1;
+		return building(townhallId).provinceId();
+	}
+	
 
 	bool IsValidTown(int32 townId) override {
 		if (townId < 0) return false;
@@ -664,6 +700,20 @@ public:
 		return unlockSystem(playerId)->IsPermanentBuilding(cardEnum);
 	}
 
+	/*
+	 * Minor Town
+	 */
+	virtual int32 AddMinorTown() override
+	{
+		int32 townId = _minorTownManagers.size() + TownManagerBase::MinorTownShift;
+		_minorTownManagers.push_back(std::make_unique<TownManagerBase>(-1, townId, this));
+		return townId;
+	}
+
+	/*
+	 * Get Terrain
+	 */
+
 	TerrainTileType terraintileType(int32 tileId) final { return _terrainGenerator->terrainTileType(tileId); }
 	bool IsWater(WorldTile2 tile) final {
 		return IsWaterTileType(terraintileType(tile.tileId()));
@@ -726,7 +776,7 @@ public:
 	
 	
 
-	int32 tileOwnerTown(WorldTile2 tile) final
+	virtual int32 tileOwnerTown(WorldTile2 tile) final
 	{
 		int32 provinceId = _provinceSystem.GetProvinceIdClean(tile);
 		if (provinceId == -1) {
@@ -734,7 +784,7 @@ public:
 		}
 		return _regionSystem->provinceOwner(provinceId);
 	}
-	int32 tileOwnerPlayer(WorldTile2 tile) final {
+	virtual int32 tileOwnerPlayer(WorldTile2 tile) final {
 		int32 townId = tileOwnerTown(tile);
 		if (townId == -1) {
 			return -1;
@@ -1090,22 +1140,21 @@ public:
 	}
 	
 
-	static int32 StorageCostPerTile() { return 2; }
 
-	std::vector<int32> GetConstructionResourceCost(CardEnum cardEnum, TileArea area) final
-	{
-		if (cardEnum == CardEnum::Farm) {
-			std::vector<int32> constructionResources = { area.tileCount() / 2 };
-			constructionResources.resize(ConstructionResourceCount, 0);
-			return constructionResources;
-		}
-		if (cardEnum == CardEnum::StorageYard) {
-			std::vector<int32> constructionResources = { area.tileCount() / 4 * StorageCostPerTile() };
-			constructionResources.resize(ConstructionResourceCount, 0);
-			return constructionResources;
-		}
-		return GetBuildingInfo(cardEnum).constructionResources;
-	}
+	//std::vector<int32> GetConstructionResourceCost(CardEnum cardEnum, TileArea area) final
+	//{
+	//	if (cardEnum == CardEnum::Farm) {
+	//		std::vector<int32> constructionResources = { area.tileCount() / 2 };
+	//		constructionResources.resize(ConstructionResourceCount, 0);
+	//		return constructionResources;
+	//	}
+	//	if (cardEnum == CardEnum::StorageYard) {
+	//		std::vector<int32> constructionResources = { area.tileCount() / 4 * StorageCostPerTile() };
+	//		constructionResources.resize(ConstructionResourceCount, 0);
+	//		return constructionResources;
+	//	}
+	//	return GetBuildingInfo(cardEnum).constructionResources;
+	//}
 
 	/*
 	 * Only valid for area smaller than a region
@@ -1481,6 +1530,7 @@ public:
 		return townManager(townId).provincesClaimed();
 	}
 
+	virtual const std::vector<int32>& GetTownProvincesClaimed(int32 townId) override { return townManager(townId).provincesClaimed(); }
 
 	/*
 	 * Province Income/Upkeep/Costs
@@ -1714,7 +1764,7 @@ public:
 
 	int32 GetProvinceClaimCostPenalty_DistanceFromTownhall(int32 provinceId, int32 playerId)
 	{
-		int32 provinceDistance = regionSystem().provinceDistanceToPlayer(provinceId, playerId);
+		int32 provinceDistance = provinceInfoSystem().provinceDistanceToPlayer(provinceId, playerId);
 		if (provinceDistance != MAX_int32) {
 			const int32 maxProvinceDistanceCostPenalty = 500;
 			return maxProvinceDistanceCostPenalty * std::max(0, provinceDistance - 1) / 7;
@@ -1780,6 +1830,13 @@ public:
 		
 		_buildingSystem->ChangeTownOwningPlayer(townId, newPlayerId);
 		_townManagers[townId]->ChangeTownOwningPlayer(newPlayerId);
+	}
+
+	virtual void AddFortToProvince(int32 provinceId, int32 fortId) override {
+		_regionSystem->AddFortToProvince(provinceId, fortId);
+	}
+	virtual void TryRemoveFortFromProvince(int32 provinceId, int32 fortId) override {
+		_regionSystem->TryRemoveFortFromProvince(provinceId, fortId);
 	}
 
 	// NOT NEEDED YET
@@ -1954,6 +2011,139 @@ public:
 	void AddTunnelProvinceConnections(int32 provinceId1, int32 provinceId2) final
 	{
 		_provinceSystem.AddTunnelProvinceConnection(provinceId1, provinceId2, TerrainTileType::None);
+	}
+
+	/*
+	 * Price Helpers
+	 */
+	int32 GetCaptureAnimalPrice(int32 playerId, UnitEnum unitEnum, WorldTile2 tile)
+	{
+		const std::vector<int32>& townIds = GetTownIds(playerId);
+		int32 nearestDistance = INT_MAX;
+		for (int32 townId : townIds) {
+			int32 dist = WorldTile2::Distance(GetTownhallGate(townId), tile);
+			if (dist < nearestDistance) {
+				nearestDistance = dist;
+			}
+		}
+		check(nearestDistance < INT_MAX);
+
+		int32 result =  GetAnimalBaseCost(unitEnum) + nearestDistance;
+		return result / 10 * 10;
+	}
+
+
+	int32 GetSpyNestPrice(int32 sourcePlayerId, int32 targetTownId) {
+		return 1000;
+	}
+	std::vector<BonusPair> GetSpyBonuses(int32 sourcePlayerId, int32 targetTownId)
+	{
+		std::vector<BonusPair> spyBonuses;
+		
+		const std::vector<int32>& houseIds = buildingIds(targetTownId, CardEnum::House);
+		int32 spyNestCount = 0;
+		for (int32 houseId : houseIds) {
+			if (building<House>(houseId).spyPlayerId() == sourcePlayerId) {
+				spyNestCount++;
+			}
+		}
+		if (spyNestCount > 0) {
+			spyBonuses.push_back({NSLOCTEXT("SpyBonus", "Spy Nest", "Spy Nest"), 30 * spyNestCount });
+		}
+
+		// TODO: bonus from Low Happiness and Spy Center
+
+		return spyBonuses;
+	}
+
+	/*
+	 * Auto Trade Helpers
+	 */
+	std::vector<AutoTradeElement>& GetAutoExportElements1(const TradeRoutePair& tradeRoutePair) {
+		return tradeRoutePair.townId1 != -1 ? townManager(tradeRoutePair.townId1).autoExportElements() : building<ProvincialBuilding>(tradeRoutePair.buildingId1).autoExportElements;
+	}
+	std::vector<AutoTradeElement>& GetAutoImportElements1(const TradeRoutePair& tradeRoutePair) {
+		return tradeRoutePair.townId1 != -1 ? townManager(tradeRoutePair.townId1).autoImportElements() : building<ProvincialBuilding>(tradeRoutePair.buildingId1).autoImportElements;
+	}
+	std::vector<AutoTradeElement>& GetAutoExportElements2(const TradeRoutePair& tradeRoutePair) {
+		return tradeRoutePair.townId2 != -1 ? townManager(tradeRoutePair.townId2).autoExportElements() : building<ProvincialBuilding>(tradeRoutePair.buildingId2).autoExportElements;
+	}
+	std::vector<AutoTradeElement>& GetAutoImportElements2(const TradeRoutePair& tradeRoutePair) {
+		return tradeRoutePair.townId2 != -1 ? townManager(tradeRoutePair.townId2).autoImportElements() : building<ProvincialBuilding>(tradeRoutePair.buildingId2).autoImportElements;
+	}
+
+	// 1) calculatedTradeAmountNextRound
+	void RefreshAutoTradeAmount()
+	{
+		// Note: non-town trader has calculatedTradeAmountNextRound set without inventory
+		ExecuteOnAllTowns([&](int32 townId) {
+			townManager(townId).CalculateAutoTradeAmountNextRound();
+		});
+	}
+
+	// 2) calculatedFulfilledTradeAmountNextRound
+	void RefreshAutoTradeFulfillment()
+	{
+		/*
+		 * This only refreshes fulfillment
+		 * - tradeRoutePair.tradeResources
+		 * - element.calculatedFulfilledTradeAmountNextRound
+		 */
+		
+		auto& worldTradeSys = worldTradeSystem();
+		worldTradeSys.SortTradeRoutes();
+		std::vector<TradeRoutePair>& tradeRoutePairs = worldTradeSys.tradeRoutePairs();
+
+		// Clean up the old pairs
+		for (TradeRoutePair& tradeRoutePair : tradeRoutePairs) 
+		{
+			tradeRoutePair.tradeResources.clear();
+
+			auto clearAutoTradeFulfillmentCalculations = [&](std::vector<AutoTradeElement>& autoTradeElements) {
+				for (AutoTradeElement& element : autoTradeElements) {
+					element.calculatedFulfilledTradeAmountNextRound = 0;
+				}
+			};
+
+			clearAutoTradeFulfillmentCalculations(GetAutoExportElements1(tradeRoutePair));
+			clearAutoTradeFulfillmentCalculations(GetAutoImportElements1(tradeRoutePair));
+			clearAutoTradeFulfillmentCalculations(GetAutoExportElements2(tradeRoutePair));
+			clearAutoTradeFulfillmentCalculations(GetAutoImportElements2(tradeRoutePair));
+		}
+		
+
+		// Try to pair up resources for connected cities
+		// - tradeRoutePairs should already be sorted from min distance to max distance
+		for (TradeRoutePair& tradeRoutePair : tradeRoutePairs)
+		{	
+			auto resolveTrade = [&](std::vector<AutoTradeElement>& autoExportElements, std::vector<AutoTradeElement>& autoImportElements, bool isTown1ToTown2)
+			{
+				for (AutoTradeElement& exportElement : autoExportElements) {
+					for (AutoTradeElement& importElement : autoImportElements)
+					{
+						if (exportElement.resourceEnum == importElement.resourceEnum) {
+							int32 exportLeft = exportElement.calculatedFulfillmentLeft();
+							int32 importLeft = importElement.calculatedFulfillmentLeft();
+							
+							int32 tradeAmount = std::min(exportLeft, importLeft);
+							if (tradeAmount > 0) 
+							{
+								TradeRouteResourcePair pair;
+								pair.isTown1ToTown2 = isTown1ToTown2;
+								pair.resourcePair = ResourcePair(exportElement.resourceEnum, tradeAmount);
+								
+								tradeRoutePair.tradeResources.push_back(pair);
+								exportElement.calculatedFulfilledTradeAmountNextRound += tradeAmount;
+								importElement.calculatedFulfilledTradeAmountNextRound += tradeAmount;
+							}
+						}
+					}
+				}
+			};
+
+			resolveTrade(GetAutoExportElements1(tradeRoutePair), GetAutoImportElements2(tradeRoutePair), true);
+			resolveTrade(GetAutoExportElements2(tradeRoutePair), GetAutoImportElements1(tradeRoutePair), false);
+		}
 	}
 	
 	/*
@@ -2318,7 +2508,7 @@ public:
 		DrawLine(end, FVector::ZeroVector, end, FVector(0, 0, 10), FLinearColor::Red, Thickness, LifeTime);
 	}
 
-	void DrawArea(TileArea area, FLinearColor color, float tilt) final
+	virtual void DrawArea(TileArea area, FLinearColor color, float tilt) override
 	{
 #if WITH_EDITOR
 		//PUN_LOG("DrawArea %s", *ToFString(area.ToString()));
@@ -2327,6 +2517,23 @@ public:
 			DrawLine(tile.worldAtom2(), FVector::ZeroVector, tile.worldAtom2(), FVector(0, tilt, 10), color, 1.0f);
 		});
 #endif
+	}
+
+	virtual void DrawAreaBox(TileArea area, FLinearColor color, bool showCross = true) override
+	{
+		auto drawLine = [&](WorldTile2 start, WorldTile2 end) {
+			DrawLine(start, FVector::ZeroVector, end, FVector::ZeroVector, FLinearColor::Green, 1.0f, 10000);
+		};
+
+		drawLine(WorldTile2(area.minX, area.minY), WorldTile2(area.maxX, area.minY));
+		drawLine(WorldTile2(area.minX, area.minY), WorldTile2(area.minX, area.maxY));
+		drawLine(WorldTile2(area.maxX, area.maxY), WorldTile2(area.maxX, area.minY));
+		drawLine(WorldTile2(area.maxX, area.maxY), WorldTile2(area.minX, area.maxY));
+
+		if (showCross) {
+			drawLine(WorldTile2(area.minX, area.minY), WorldTile2(area.maxX, area.maxY));
+			drawLine(WorldTile2(area.minX, area.maxY), WorldTile2(area.maxX, area.minY));
+		}
 	}
 
 #if KEEP_ACTION_HISTORY
@@ -2519,8 +2726,164 @@ public:
 		bld.subclass<StorageYard>().RefreshStorage();
 	}
 
+	/*
+	 * Farm
+	 */
+	virtual std::vector<FarmTile> GetFarmTiles(TileArea area, WorldTile2 startTile, int32 playerId) override
+	{
+		TSet<int32> connectedTiles;
+		
+		// Flood to see parts connected to startTile
+		std::function<void(WorldTile2)> floodConnectToStartTile = [&](WorldTile2 tile)
+		{
+			if (area.HasTile(tile) &&
+				IsFarmBuildable(tile, playerId))
+			{
+				connectedTiles.Add(tile.tileId());
+
+				// Flood nearby tiles
+				auto tryFlood = [&](const WorldTile2& shift)
+				{
+					WorldTile2 adjacentTile = tile + shift;
+					if (!connectedTiles.Contains(adjacentTile.tileId())) {
+						floodConnectToStartTile(adjacentTile);
+					}
+				};
+				
+				tryFlood(WorldTile2(1, 0));
+				tryFlood(WorldTile2(-1, 0));
+				tryFlood(WorldTile2(0, 1));
+				tryFlood(WorldTile2(0, -1));
+			}
+		};
+
+		floodConnectToStartTile(startTile);
 
 
+		/*
+		 * Main flood
+		 */
+		std::vector<FarmTile> farmTiles;
+		TSet<int32> visitedTiles;
+		
+		int32 groupIndex = 0;
+		
+		std::function<void(WorldTile2)> flood = [&](WorldTile2 tile)
+		{
+			if (connectedTiles.Contains(tile.tileId()))
+			{
+				check(area.HasTile(tile));
+				check(IsFarmBuildable(tile, playerId));
+				
+				visitedTiles.Add(tile.tileId());
+
+				FarmTile farmTile;
+				farmTile.farmTileId = farmTiles.size();
+				farmTile.groupId = groupIndex;
+				farmTile.worldTile = tile;
+				
+				farmTiles.push_back(farmTile);
+
+				// Flood nearby tiles
+				auto tryFlood = [&](const WorldTile2& shift)
+				{
+					WorldTile2 adjacentTile = tile + shift;
+					if (!visitedTiles.Contains(adjacentTile.tileId())) {
+						flood(adjacentTile);
+					}
+				};
+
+				bool isEven = (tile.y - area.minY) % 2 == 0;
+				if (isEven) {
+					tryFlood(WorldTile2(1, 0));
+					tryFlood(WorldTile2(1, 1));
+					tryFlood(WorldTile2(0, 1));
+					tryFlood(WorldTile2(-1, 1));
+				} else {
+					tryFlood(WorldTile2(-1, 0));
+				}
+			}
+		};
+
+		// Loop so that we can get different groups
+		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile)
+		{
+			if (!visitedTiles.Contains(tile.tileId())) 
+			{
+				if (area.HasTile(tile) &&
+					IsFarmBuildable(tile, playerId))
+				{
+					flood(tile);
+					groupIndex++;
+				}
+			}
+		});
+
+		// CHECK
+		TSet<int32> farmWorldTilesTemp;
+		for (const FarmTile& farmTile : farmTiles) {
+			check(!farmWorldTilesTemp.Contains(farmTile.worldTile.tileId()));
+			farmWorldTilesTemp.Add(farmTile.worldTile.tileId());
+		}
+
+		return farmTiles;
+	}
+
+	virtual bool IsFarmBuildable(WorldTile2 tile, int32 playerId) override
+	{
+		if (!IsPlayerBuildable(tile, playerId)) {
+			return false;
+		}
+
+		if (GetFertilityPercent(tile) < 20) {
+			return false;
+		}
+
+		if (!HasValidSeed(tile, playerId)) {
+			return false;
+		}
+		
+		return true;
+	}
+
+	bool HasValidSeed(WorldTile2 tile, int32 playerId)
+	{
+		// Any seed that can be planted here?
+		std::vector<SeedInfo> seedsOwned = globalResourceSystem(playerId).seedsPlantOwned();
+		GeoresourceEnum georesourceEnum = georesource(GetProvinceIdClean(tile)).georesourceEnum;
+
+		for (SeedInfo seed : seedsOwned)
+		{
+			if (IsCommonSeedCard(seed.cardEnum)) {
+				return true;
+			}
+			if (IsSpecialSeedCard(seed.cardEnum) &&
+				seed.georesourceEnum == georesourceEnum)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool IsFarmTooLarge(const std::vector<FarmTile>& farmTiles) {
+		return farmTiles.size() > 500;
+	}
+	bool IsFarmTooSmall(const std::vector<FarmTile>& farmTiles) {
+		return farmTiles.size() < 16;
+	}
+	bool IsFarmWidthTooHigh(TileArea area) {
+		return area.sizeX() > 50 || area.sizeY() > 50;
+	}
+	bool IsFarmSizeInvalid(const std::vector<FarmTile>& farmTiles, TileArea farmArea) {
+		if (SimSettings::IsOn("NoFarmSizeCap")) {
+			return false;
+		}
+
+		return IsFarmTooLarge(farmTiles) ||
+			IsFarmTooSmall(farmTiles) ||
+			IsFarmWidthTooHigh(farmArea);
+	}
 	
 public:
 	const DescriptionUIState& descriptionUIState() { return _descriptionUIState; }
@@ -2540,9 +2903,10 @@ public:
 			}
 		}
 
-		
+		PUN_LOG("SetDescriptionUIState");
 		
 		_descriptionUIState = uiState;
+		_descriptionUIState.openedTick = Time::Ticks();
 	}
 	void TryRemoveDescriptionUI(ObjectTypeEnum type, int32_t objectId) override {
 		_descriptionUIState.TryRemove(type, objectId);
@@ -2777,7 +3141,7 @@ public:
 		return replaySystem().replayPlayers[playerId].isInitialize();
 	}
 
-	void AbandonTown(int32 playerId);
+	void AbandonTown(int32 townId);
 
 	/*
 	 * Settings
@@ -3069,6 +3433,25 @@ public:
 #undef LOOP
 			}
 
+			//! Per Minor Town
+			{
+				int32 minorTownCountAr;
+				if (Ar.IsSaving()) {
+					minorTownCountAr = _minorTownManagers.size();
+				}
+				Ar << minorTownCountAr;
+
+				if (Ar.IsLoading()) {
+					// Ensure same town count as before
+					_minorTownManagers.resize(minorTownCountAr, std::make_unique<TownManagerBase>(-1, -1, this));
+				}
+
+				for (int32 i = 0; i < minorTownCountAr; i++) {
+					_minorTownManagers[i]->Serialize(Ar);
+				}
+			}
+			
+
 #if CHECK_TICKHASH
 			_tickHashes >> Ar;
 			if (Ar.IsLoading()) {
@@ -3336,12 +3719,12 @@ public:
 		return adjacentAttackerTownIds;
 	}
 	
-	void CheckPortArea(TileArea area, Direction faceDirection, CardEnum buildingEnum, std::vector<PlacementGridInfo>& grids, 
-						bool& setDockInstruction, int32 playerId = -1) // player == -1 means no player check
+	virtual void CheckPortArea(TileArea area, Direction faceDirection, CardEnum buildingEnum, std::vector<PlacementGridInfo>& grids, 
+						bool& setDockInstruction, int32 playerId = -1, int32 extraMinWaterCount = 0) override // player == -1 means no player check
 	{
 		auto extraInfoPair = DockPlacementExtraInfo(buildingEnum);
 		int32 indexLandEnd = extraInfoPair.first;
-		int32 minWaterCount = extraInfoPair.second;
+		int32 minWaterCount = extraInfoPair.second + extraMinWaterCount;
 
 		// Need to face water with overlapping at least 5 water tiles 
 		int32 waterCount = 0;
@@ -3389,7 +3772,7 @@ public:
 private:
 	void PlaceInitialTownhallHelper(FPlaceBuilding command, int32 townhallId);
 	
-	void InitRegionalBuildings();
+	void InitProvinceBuildings();
 
 	void DemolishCritterBuildingsIncludingFronts(WorldTile2 tile, int32 playerId);
 
@@ -3452,6 +3835,9 @@ private:
 	std::vector<AIPlayerSystem> _aiPlayerSystem;
 	
 	std::vector<std::vector<int32>> _playerIdToNonRepeatActionToAvailableTick;
+
+	// Per Minor Town
+	std::vector<std::unique_ptr<TownManagerBase>> _minorTownManagers; // id starting with 10000
 
 	// TODO: Remove
 	// int32 _playerCount = 0;

@@ -39,6 +39,15 @@ public:
 
 	//UPROPERTY() UStaticFastInstancedMeshesComp* _georesourceEnumToMesh;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) UStaticFastInstancedMeshesComp* _buildingsMeshes;
+	// TODO: later on, can change building by its type??? not refresh the whole thing? (buildings not shared anyway)
+
+	UPROPERTY(EditAnywhere) USceneComponent* _mapMeshesParent;
+	UPROPERTY(EditAnywhere) UInstancedStaticMeshComponent* _defenseNodeMeshes;
+	UPROPERTY(EditAnywhere) UInstancedStaticMeshComponent* _defenseCityNodeMeshes;
+	UPROPERTY(EditAnywhere) UInstancedStaticMeshComponent* _defenseFortNodeMeshes;
+
+	UPROPERTY(EditAnywhere) UInstancedStaticMeshComponent* _defenseLineMeshes;
+	
 
 	void SetupWorldMapMesh(IDisplaySystemDataSource* dataSource, int tileDimXIn, int tileDimYIn, int worldMapSizeX, int worldMapSizeY, MapSizeEnum mapSizeEnum, UAssetLoaderComponent* assetLoader);
 	static void SetupGlobalTextures(int tileDimXIn, int tileDimYIn, IGameSimulationCore* simulation, UAssetLoaderComponent* assetLoader);
@@ -54,6 +63,8 @@ public:
 
 	void InitAnnotations();
 	void RefreshAnnotations();
+
+	void RefreshDefenseMap();
 
 	void RefreshHeightForestColorTexture(TileArea area, bool isInstant) {
 		RefreshHeightForestColor(area, &(_dataSource->simulation()), false);

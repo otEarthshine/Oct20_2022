@@ -55,6 +55,7 @@ UToolTipWidgetBase* UPunWidget::AddToolTip(UWidget* widget, FText message)
 
 #define LOCTEXT_NAMESPACE "ResourceTooltip"
 
+// Note: This is spammable... It won't trigger before hover... Graphs will only trigger on mouse hover
 void UPunWidget::AddResourceTooltip(UWidget* widget, ResourceEnum resourceEnum, bool skipWidgetHoverCheck)
 {
 	if (IsSimulationInvalid()) return;

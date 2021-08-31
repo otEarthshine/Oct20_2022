@@ -53,11 +53,11 @@ public:
 	virtual void OpenSendImmigrantsUI(int32 townIdIn) = 0;
 	virtual void OpenGiftUI(int32 targetPlayerId) = 0;
 	virtual void OpenDiplomacyUI(int32 targetPlayerId) = 0;
+	virtual void OpenTrainUnitsUI(int32 townIdIn) = 0;
 
-	virtual void CloseTechUI() = 0;
+	virtual void OpenTownAutoTradeUI(int32 townIdIn) = 0;
+
 	virtual void ToggleTechUI() = 0;
-	
-	virtual void CloseProsperityUI() = 0;
 	virtual void ToggleProsperityUI() = 0;
 
 	virtual void TogglePlayerDetails() = 0;
@@ -81,7 +81,7 @@ public:
 
 	virtual void ShowTutorialUI(TutorialLinkEnum linkEnum) = 0;
 
-	virtual void OpenArmyMoveUI(std::shared_ptr<FAttack> armyCommand) = 0;
+	//virtual void OpenArmyMoveUI(std::shared_ptr<FAttack> armyCommand) = 0;
 
 	virtual bool IsInvalid() = 0;
 	virtual bool IsSimulationInvalid() = 0;

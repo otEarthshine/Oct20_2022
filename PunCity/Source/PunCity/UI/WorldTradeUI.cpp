@@ -13,7 +13,7 @@ void UWorldTradeUI::PunInit()
 {
 	TradeButton->OnClicked.AddDynamic(this, &UWorldTradeUI::ClickedTradeButton);
 	DismissButton->OnClicked.AddDynamic(this, &UWorldTradeUI::ClickedDismissButton);
-	TradeXCloseButton->OnClicked.AddDynamic(this, &UWorldTradeUI::ClickedDismissButton);
+	TradeCloseXButton->CoreButton->OnClicked.AddDynamic(this, &UWorldTradeUI::ClickedDismissButton);
 
 	TradeNeedsButton->OnClicked.AddDynamic(this, &UWorldTradeUI::ClickTradeNeedsButton);
 	TradeConstructionButton->OnClicked.AddDynamic(this, &UWorldTradeUI::ClickTradeConstructionButton);

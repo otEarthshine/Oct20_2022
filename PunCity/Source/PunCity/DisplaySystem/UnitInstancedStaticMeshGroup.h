@@ -9,6 +9,7 @@
 #include "UnitInstancedStaticMeshGroup.generated.h"
 
 
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class PROTOTYPECITY_API UUnitInstancedStaticMeshGroup : public USceneComponent
 {
@@ -17,37 +18,61 @@ public:
 	
 	UUnitInstancedStaticMeshGroup()
 	{
-		for (int32 i = 0; i < UnitDisplayEnumCount; i++) {
-			meshes.Add(CreateDefaultSubobject<UUnitInstancedStaticMeshComponent>(FName(FString("UnitMeshesNew") + FString::FromInt(i))));
+		//for (int32 i = 0; i < UnitDisplayEnumCount; i++) {
+		//	meshes.Add(CreateDefaultSubobject<UUnitInstancedStaticMeshComponent>(FName(FString("UnitMeshesNew") + FString::FromInt(i))));
+		//}
+	}
+
+	void Init(UAssetLoaderComponent* assetLoader) {
+		_assetLoader = assetLoader;
+		_meshes.SetNum(UnitEnumCount * _assetLoader->maxUnitMeshVariationCount());
+	}
+
+	int32 GetMeshIndex(UnitEnum unitEnum, int32 variationIndex) {
+		return static_cast<int32>(unitEnum) * _assetLoader->maxUnitMeshVariationCount() + variationIndex;
+	}
+
+	void AddProtoMesh(UnitEnum unitEnum, int32 variationIndex, UStaticMesh* mesh)
+	{
+		int32 meshIndex = GetMeshIndex(unitEnum, variationIndex);
+
+		if (_meshes[meshIndex] == nullptr)
+		{
+			auto unitMesh = NewObject<UUnitInstancedStaticMeshComponent>(this);
+			unitMesh->Rename(*(FString("UnitMeshes") + FString::FromInt(meshIndex)));
+			unitMesh->AttachToComponent(this, FAttachmentTransformRules::KeepRelativeTransform, NAME_None);
+			unitMesh->RegisterComponent();
+			unitMesh->SetStaticMesh(mesh);
+			unitMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+			PUN_LOG("AddProtoMesh unitEnum%d variation:%d mIndex:%d", unitEnum, variationIndex, meshIndex);
+
+			_meshes[meshIndex] = unitMesh;
 		}
 	}
 
-	void Init() {
-		for (int32 i = 0; i < UnitDisplayEnumCount; i++) {
-			meshes[i]->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		}
-	}
-
-	UPROPERTY() TArray<UUnitInstancedStaticMeshComponent*> meshes;
-
-	void AddProtoMesh(UnitDisplayEnum displayEnum, UStaticMesh* mesh) {
-		meshes[static_cast<int32>(displayEnum)]->SetStaticMesh(mesh);
-	}
-
-	void Add(UnitDisplayEnum displayEnum, int32 unitId, FTransform& transform) {
-		meshes[static_cast<int32>(displayEnum)]->Add(unitId, transform);
+	void Add(UnitEnum unitEnum, int32 variationIndex, int32 unitId, FTransform& transform)
+	{
+		check(_meshes[GetMeshIndex(unitEnum, variationIndex)] != nullptr);
+		_meshes[GetMeshIndex(unitEnum, variationIndex)]->Add(unitId, transform);
 	}
 
 
 	void AfterAdd() {
-		for (int32 i = 0; i < meshes.Num(); i++) {
-			meshes[i]->AfterAdd();
+		for (int32 i = 0; i < _meshes.Num(); i++) {
+			if (_meshes[i]) {
+				_meshes[i]->AfterAdd();
+			}
 		}
 	}
 
-	void SetCustomDepth(UnitDisplayEnum displayEnum, int32 customDepthIndex) {
-		GameDisplayUtils::SetCustomDepth(meshes[static_cast<int32>(displayEnum)], customDepthIndex);
+	void SetCustomDepth(UnitEnum unitEnum, int32 variationIndex, int32 customDepthIndex) {
+		GameDisplayUtils::SetCustomDepth(_meshes[GetMeshIndex(unitEnum, variationIndex)], customDepthIndex);
 	}
 
+private:
+
+	UPROPERTY() UAssetLoaderComponent* _assetLoader;
+	UPROPERTY() TArray<UUnitInstancedStaticMeshComponent*> _meshes;
 	
 };

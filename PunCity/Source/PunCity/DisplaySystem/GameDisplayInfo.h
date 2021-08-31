@@ -180,6 +180,16 @@ public:
 		setName(CardEnum::RegionPort, "PortVillage");
 		setName(CardEnum::RegionCrates, "RegionCratePile");
 
+		set(CardEnum::MinorCity, {
+				ModuleTransformGroup::CreateSet("TribalVillage", {},
+					{
+						{ParticleEnum::CampFire, TransformFromPositionYawScale(-5.4, -0.82, 0.62, 0, 0.17)}
+					}
+				),
+		});
+
+		
+
 		set(CardEnum::Windmill, {
 			ModuleTransformGroup::CreateSet("Windmill", {}, {},
 			{

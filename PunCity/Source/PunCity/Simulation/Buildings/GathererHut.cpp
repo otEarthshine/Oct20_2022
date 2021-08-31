@@ -236,6 +236,14 @@ std::vector<BonusPair> Beekeeper::GetBonuses()
  * Farm
  */
 
+void Farm::OnPreInit()
+{
+	/*
+	 * Calculate Farm Tiles
+	 */
+	_farmTiles = _simulation->GetFarmTiles(_area, _startTile, _playerId);
+}
+
 void Farm::OnInit()
 {
 	// Set initial seed
@@ -295,14 +303,30 @@ void Farm::FinishConstruction()
 		AddResourceHolder(GetTileObjInfo(seedInfos[i].tileObjEnum).harvestResourceEnum(), ResourceHolderType::Provider, 0);
 	}
 
-	_isTileWorked.resize(totalFarmTiles(), false);
-
 	RefreshFertility();
-	//_fertility = GetAverageFertility(area(), _simulation);
 }
 
-bool Farm::NoFarmerOnTileId(int32_t farmTileId) {
-	return !CppUtils::Contains(_reservingUnitIdToFarmTileId, [&](const pair<int32, int32>& pair) { return pair.second == farmTileId; });
+int32 Farm::GetFarmerReserverOnTileRow(int32 farmTileId)
+{
+	// Farmer reservedUnitId is placed at group's firstTile
+
+	for (int32 i = farmTileId; i >= 0; i--)
+	{
+		if (_farmTiles[i].reservedUnitId != -1) {
+			return _farmTiles[i].reservedUnitId;
+		}
+		
+		int32 previousGroupId = -1;
+		if (i > 0) {
+			previousGroupId = _farmTiles[i - 1].groupId;
+		}
+		
+		if (previousGroupId != _farmTiles[i].groupId) {
+			break;
+		}
+	}
+
+	return -1;
 }
 
 std::vector<BonusPair> Farm::GetBonuses()
@@ -375,31 +399,37 @@ std::vector<BonusPair> Farm::GetBonuses()
 	return bonuses;
 }
 
-WorldTile2 Farm::FindFarmableTile(int32 unitId) {
-	WorldTile2 resultTile = WorldTile2::Invalid;
-
-	_area.ExecuteOnAreaWithExit_Zero([&](int16 x, int16 y) 
+FarmTile Farm::FindFarmableTile(int32 unitId)
+{
+	for (int32 i = 0; i < _farmTiles.size(); i++)
 	{
-		int32 farmTileId = x + y * _area.sizeX();
-		if (!_isTileWorked[farmTileId] && NoFarmerOnTileId(farmTileId))
+		if (!_farmTiles[i].isTileWorked &&
+			GetFarmerReserverOnTileRow(i) == -1)
 		{
-			_isTileWorked[farmTileId] = true;
-			resultTile = _area.min() + WorldTile2(x, y);
-
 			// Kick any animals out of this tile...
-			_simulation->treeSystem().ForceRemoveTileReservation(resultTile);
-			return true;
+			_simulation->treeSystem().ForceRemoveTileReservation(_farmTiles[i].worldTile);
+			return _farmTiles[i];
 		}
-		return false;
-	});
+	}
 
-	return resultTile;
+	return FarmTile();
+}
+
+FarmTile Farm::GetNextFarmableTile(int32 farmTileId)
+{
+	if (farmTileId + 1 < _farmTiles.size() && 
+		_farmTiles[farmTileId + 1].groupId == _farmTiles[farmTileId].groupId)
+	{
+		return _farmTiles[farmTileId + 1];
+	}
+	
+	return FarmTile();
 }
 
 bool Farm::IsStageCompleted() {
 	// use _isTileWorked to determine this
-	for (int i = 0; i < _isTileWorked.size(); i++) {
-		if (!_isTileWorked[i]) return false;
+	for (int i = 0; i < _farmTiles.size(); i++) {
+		if (!_farmTiles[i].isTileWorked) return false;
 	}
 	return true;
 }
@@ -412,39 +442,34 @@ int32 Farm::MinCropGrowthPercent()
 	// With this, we ignore plant that has 60% or less when we already have 100% grown plant.
 	// Also want at least 3/10 full grown tile before harvest..
 	auto& treeSystem = _simulation->treeSystem();
-	//int32_t readyTiles = 0;
-	//int32_t trimmedTiles = 0;
+
 	int32_t minGrowth = 200;
-	_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-		TileObjEnum tileObjEnum = treeSystem.tileObjEnum(tile.tileId());
-		if (tileObjEnum == TileObjEnum::None) {
-			return;
+
+	for (const FarmTile& farmTile: _farmTiles) 
+	{
+		TileObjEnum tileObjEnum = treeSystem.tileObjEnum(farmTile.worldTile.tileId());
+		if (tileObjEnum != TileObjEnum::None) 
+		{
+			int32_t growth = GetTileObjInfo(tileObjEnum).growthPercent(treeSystem.tileObjAge(farmTile.worldTile.tileId()));
+			if (growth < minGrowth) {
+				minGrowth = growth;
+			}
 		}
-		int32_t growth = GetTileObjInfo(tileObjEnum).growthPercent(treeSystem.tileObjAge(tile.tileId()));
-		//if (growth == 100) readyTiles++;
-		//if (growth <= 60) trimmedTiles++;
-		if (growth < minGrowth) {
-			minGrowth = growth;
-		}
-	});
+	}
 
 	return minGrowth;
-
-	//if (readyTiles < totalFarmTiles() * 3 / 10) {
-	//	return false;
-	//}
-
-	//return (readyTiles + trimmedTiles) >= (totalFarmTiles() * 8 / 10);
 }
 
-void Farm::ReserveFarmTile(int32_t unitId, WorldTile2 tile) {
-	_reservingUnitIdToFarmTileId.push_back(pair<int32_t, int32_t>(unitId, farmTileIdFromWorldTile(tile)));
+void Farm::ReserveFarmTile(int32 unitId, const FarmTile& farmTile) {
+	check(_farmTiles[farmTile.farmTileId].reservedUnitId == -1);
+	_farmTiles[farmTile.farmTileId].reservedUnitId = unitId;
 }
-void Farm::UnreserveFarmTile(int32_t unitId, WorldTile2 tile) {
-	CppUtils::Remove(_reservingUnitIdToFarmTileId, pair<int32_t, int32_t>(unitId, farmTileIdFromWorldTile(tile)));
+void Farm::UnreserveFarmTile(int32 farmTileId) {
+	check(_farmTiles[farmTileId].reservedUnitId != -1);
+	_farmTiles[farmTileId].reservedUnitId = -1;
 }
 
-void Farm::DoFarmWork(int32_t unitId, WorldTile2 tile, FarmStage farmStage)
+void Farm::DoFarmWork(int32_t unitId, int32 farmTileId, FarmStage farmStage)
 {
 	// TODO: solve this properly ???
 	//if (farmStage != _farmStage) {
@@ -454,6 +479,8 @@ void Farm::DoFarmWork(int32_t unitId, WorldTile2 tile, FarmStage farmStage)
 
 
 	auto& treeSystem = _simulation->treeSystem();
+	
+	WorldTile2 tile = _farmTiles[farmTileId].worldTile;
 
 	switch (_farmStage)
 	{
@@ -507,12 +534,18 @@ void Farm::DoFarmWork(int32_t unitId, WorldTile2 tile, FarmStage farmStage)
 	default:
 		break;
 		// TODO: figure out why it can reach this point...
-		//UE_DEBUG_BREAK();
+		UE_DEBUG_BREAK();
 	}
+
+	check(!_farmTiles[farmTileId].isTileWorked);
+	_farmTiles[farmTileId].isTileWorked = true;
 }
 
-void Farm::ClearAllPlants() {
-	_simulation->treeSystem().ForceRemoveTileObjArea(_area);
+void Farm::ClearAllPlants()
+{
+	for (const FarmTile& farmTile : _farmTiles) {
+		_simulation->treeSystem().ForceRemoveTileObj(farmTile.worldTile, false);
+	}
 	_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Trees, _area, true);
 }
 

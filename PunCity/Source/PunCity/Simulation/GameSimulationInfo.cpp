@@ -139,6 +139,49 @@ FText UnitInventory::ToText() const {
 }
 
 /*
+ * CardStatus
+ */
+const CardStatus CardStatus::None = CardStatus(CardEnum::None, 0);
+
+FArchive& CardStatus::operator>>(FArchive &Ar)
+{
+	if (Ar.IsSaving()) {
+		ResetAnimation();
+	}
+
+	Ar << cardEnum;
+
+	Ar << cardBirthTicks;
+	Ar << stackSize;
+
+	Ar << cardStateValue1;
+	Ar << cardStateValue2;
+	Ar << cardStateValue3;
+
+	Ar << lastPositionX100;
+	Ar << lastPositionY100;
+	Ar << animationStartTime100;
+
+	return Ar;
+}
+
+void CardStatus::Serialize(class PunSerializedData& blob)
+{
+	blob << cardEnum;
+
+	blob << cardBirthTicks;
+	blob << stackSize;
+
+	blob << cardStateValue1;
+	blob << cardStateValue2;
+	blob << cardStateValue3;
+
+	blob << lastPositionX100;
+	blob << lastPositionY100;
+	blob << animationStartTime100;
+}
+
+/*
  * Claim
  */
 

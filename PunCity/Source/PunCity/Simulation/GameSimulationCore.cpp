@@ -114,7 +114,7 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 	_buildingSystem->Init(this);
 
 	_regionSystem = make_unique<GameRegionSystem>();
-	_regionSystem->Init(this);
+	_regionSystem->InitProvinceInfoSystem(this);
 
 	_georesourceSystem = make_unique<GeoresourceSystem>();
 	_georesourceSystem->InitGeoresourceSystem(this, !isLoadingFromFile);
@@ -225,7 +225,7 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 	_regionToFireOnceParticleInfo.resize(GameMapConstants::TotalRegions);
 
 	if (!isLoadingFromFile) {
-		InitRegionalBuildings();
+		InitProvinceBuildings();
 	}
 	
 	
@@ -250,16 +250,88 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 	GameRand::SetRandUsageValid(false);
 }
 
-void GameSimulationCore::InitRegionalBuildings()
+void GameSimulationCore::InitProvinceBuildings()
 {
-	std::vector<CardEnum> regionalBuildings(GameMapConstants::TotalRegions, CardEnum::None);
-
+	std::vector<CardEnum> provinceBuildings(GameMapConstants::TotalRegions, CardEnum::None);
 
 #if TRAILER_MODE
 	return;
 #endif
 	
 	auto& provinceSys = provinceSystem();
+
+	/*
+	 * Process:
+	 * - Find possible slots first
+	 * - Distribute from fixed count
+	 */
+
+	GameRegionSystem& provinceInfoSys = provinceInfoSystem();
+
+	const int32 targetMinorPortCityCount = 10;
+	const int32 targetMinorCityCount = 20;
+
+	const std::vector<int32>& portSlotProvinceIds = provinceInfoSys.portSlotProvinceIds();
+
+	// Fill Port first
+	const int32 skipCount = 20; // Skip to try to distribute evenly
+	int32 minorPortCityCount = 0;
+	int32 minorCityCount = 0;
+
+	for (int32 i = 0; i < skipCount; i++) {
+		for (int32 j = i; j < portSlotProvinceIds.size(); j += skipCount)
+		{
+			int32 provinceId = portSlotProvinceIds[j];
+			const ProvinceBuildingSlot& slot = provinceInfoSys.provinceBuildingSlot(provinceId);
+			check(slot.landSlot.isValid());
+
+			int32 townId = AddMinorTown();
+			provinceInfoSys.SetSlotTownId(provinceId, townId);
+			TownManagerBase* townManager = townManagerBase(townId);
+
+			SetProvinceOwner()
+
+			// Create building
+			FPlaceBuilding parameters;
+			parameters.buildingEnum = static_cast<uint8>(CardEnum::MinorCity);
+			parameters.faceDirection = static_cast<uint8>(slot.landSlotFaceDirection);
+			parameters.center = slot.landSlot;
+			parameters.area = BuildingArea(parameters.center, GetBuildingInfo(CardEnum::MinorCity).size, parameters.faceDirection);
+			parameters.playerId = -1;
+
+			int32 buildingId = PlaceBuilding(parameters);
+			Building& bld = building(buildingId);
+
+			bld.TryInstantFinishConstruction();
+
+			// Clear the trees
+			const int32 radiusToClearTrees = 7;
+			TileArea(centerTile, radiusToClearTrees).ExecuteOnArea_WorldTile2([&](WorldTile2 tile)
+			{
+				if (WorldTile2::Distance(centerTile, tile) <= radiusToClearTrees) {
+					_treeSystem->ForceRemoveTileObj(tile, false);
+				}
+			});
+
+			minorPortCityCount++;
+			minorCityCount++;
+			if (minorPortCityCount >= targetMinorPortCityCount) {
+				goto endPortLoop;
+			}
+		}
+	}
+	endPortLoop:
+
+	for (int32 i = 0; i < skipCount; i++) {
+		for (int32 j = i; j < portSlotProvinceIds.size(); j += skipCount)
+		{
+
+			
+		}
+	}
+	
+
+	return;
 	
 	for (int y = 0; y < GameMapConstants::RegionsPerWorldY; y++) {
 		for (int x = 0; x < GameMapConstants::RegionsPerWorldX; x++)
@@ -270,7 +342,6 @@ void GameSimulationCore::InitRegionalBuildings()
 			
 			WorldRegion2 region(x, y);
 			int32 provinceId = region.regionId();
-			//WorldTile2 regionCenter = region.centerTile();
 
 			WorldTile2 provinceCenter = provinceSys.GetProvinceCenterTile(provinceId);
 			if (!provinceCenter.isValid()) {
@@ -283,16 +354,22 @@ void GameSimulationCore::InitRegionalBuildings()
 				bool hasNearby = false;
 				// TODO: faster if check only 4 regions before loop reach this
 				region.ExecuteOnNearbyRegions([&](WorldRegion2 curRegion) {
-					if (curRegion.IsValid() && regionalBuildings[curRegion.regionId()] == cardEnum) {
+					if (curRegion.IsValid() && provinceBuildings[curRegion.regionId()] == cardEnum) {
 						hasNearby = true;
 					}
 				});
 				return hasNearby;
 			};
 
+			/*
+			 * Province Buildings
+			 */
 			CardEnum buildingEnum = CardEnum::None;
 
-			if (GameRand::Rand() % 10 == 0 && !hasNearbyBuilding(CardEnum::RegionShrine)) {
+			if (GameRand::Rand() % 3 == 0 && !hasNearbyBuilding(CardEnum::MinorCity)) {
+				buildingEnum = CardEnum::MinorCity;
+			}
+			else if (GameRand::Rand() % 10 == 0 && !hasNearbyBuilding(CardEnum::RegionShrine)) {
 				buildingEnum = CardEnum::RegionShrine;
 			}
 			else if (biomeEnum == BiomeEnum::Desert)
@@ -376,7 +453,7 @@ void GameSimulationCore::InitRegionalBuildings()
 						}
 					});
 
-					regionalBuildings[region.regionId()] = buildingEnum;
+					provinceBuildings[region.regionId()] = buildingEnum;
 
 					break;
 				}
@@ -1362,7 +1439,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 			return -1;
 		}
 
-		_cardSystem[playerId].RemoveCards(parameters.useWildCard, 1);
+		_cardSystem[playerId].RemoveCardsOld(parameters.useWildCard, 1);
 		_cardSystem[playerId].converterCardState = ConverterCardUseState::None;
 		ChangeMoney(playerId, -converterPrice);
 	}
@@ -1376,7 +1453,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 	/*
 	 * Special cases
 	 */
-	if (IsAreaSpell(cardEnum))
+	if (IsSpellCard(cardEnum))
 	{
 		auto spellOnArea = [&](auto spellOnTile) {
 			area.ExecuteOnArea_WorldTile2([&](WorldTile2 location) {
@@ -1556,6 +1633,10 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 				}
 			}
 		}
+		else if (IsAnimalCard(cardEnum))
+		{
+			AddUnit(GetAnimalUnitEnumFromCardEnum(cardEnum), 0, parameters.center.worldAtom2(), Time::TicksPerYear);
+		}
 		else if (cardEnum == CardEnum::InstantBuild)
 		{
 			int32 buildingId = buildingIdAtTile(parameters.center);
@@ -1636,7 +1717,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 		}
 		
 		return -1;
-	}
+	} // End if(IsSpell)
 
 	if (IsBridgeOrTunnel(cardEnum))
 	{
@@ -1754,7 +1835,31 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 			}
 		});
 	}
-	
+	// Farm
+	else if (cardEnum == CardEnum::Farm) 
+	{
+		// Note: startTile was sent through parameters.center
+		std::vector<FarmTile> farmTiles = GetFarmTiles(area, parameters.center, parameters.playerId);
+		check(farmTiles.size() > 0);
+
+		// Calculate farm center
+		parameters.center = WorldTile2::Invalid;
+		int32 minDist = 99999;
+		
+		WorldTile2 targetCenter = area.centerTile();
+		for (int32 i = 0; i < farmTiles.size(); i++) {
+			int32 dist = WorldTile2::Distance(targetCenter, farmTiles[i].worldTile);
+			if (dist < minDist) {
+				minDist = dist;
+				parameters.center = farmTiles[i].worldTile;
+			}
+		}
+		check(parameters.center.isValid());
+		
+		if (IsFarmSizeInvalid(farmTiles, area)) {
+			canPlace = false;
+		}
+	}
 	// Road Overlap Building
 	else if (IsRoadOverlapBuilding(cardEnum)) {
 		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
@@ -1782,6 +1887,24 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 				canPlace = false;
 			}
 		});
+	}
+	// FastBuild should be able to place outside player's territory
+	else if (cardEnum != CardEnum::BoarBurrow &&
+			!IsRegionalBuilding(cardEnum) &&
+			SimSettings::IsOn("CheatFastBuild"))
+	{
+		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+			if (!IsBuildable(tile)) {
+				canPlace = false;
+			}
+		});
+
+		parameters.playerId = tileOwnerPlayer(area.centerTile());
+		parameters.townId = tileOwnerTown(area.centerTile());
+
+		if (parameters.playerId == -1) {
+			canPlace = false;
+		}
 	}
 	// All other buildings
 	else {
@@ -1834,16 +1957,6 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 			_treeSystem->ForceRemoveTileReservationArea(frontArea);
 		}
 		
-		//// Delete all drops
-		//area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-		//	_dropSystem.ForceRemoveDrop(tile);
-		//});
-
-
-		if (playerId != -1) {
-			//DrawArea(parameters.area, FLinearColor::Blue, 10);
-			//PUN_LOG("parameters.area before %s", *ToFString(parameters.area.ToString()));
-		}
 
 		// Special case: Colony Prepare
 		if (IsTownPlacement(cardEnum)) 
@@ -2001,7 +2114,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 				}
 
 				// Refresh trade network
-				_worldTradeSystem.RefreshTradeClusters();
+				_worldTradeSystem.RefreshTradeRoutes();
 			}
 		}
 
@@ -2101,7 +2214,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 							else {
 								// Remove the added cards from the Hand
 								for (CardEnum addedCard : addedCards) {
-									cardSys.RemoveCards(addedCard, 1);
+									cardSys.RemoveCardsOld(addedCard, 1);
 								}
 								
 								AddPopupToFront(parameters.playerId, 
@@ -2128,7 +2241,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 							else {
 								// Remove the added cards from the Hand
 								for (CardEnum addedCard : addedCards) {
-									cardSys.RemoveCards(addedCard, 1);
+									cardSys.RemoveCardsOld(addedCard, 1);
 								}
 								
 								AddPopupToFront(parameters.playerId, 
@@ -2247,7 +2360,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 			}
 		});
 
-		_worldTradeSystem.RefreshTradeClusters();
+		_worldTradeSystem.RefreshTradeRoutes();
 	}
 
 	//! Tile placement types
@@ -2654,6 +2767,58 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 				}
 			}
 		}
+		else if (IsSpyCallback(command.callbackEnum))
+		{
+			int32 buildingId = command.intVar1;
+			if (buildingIsAlive(buildingId) && building(buildingId).isEnum(CardEnum::House)) {
+				building<House>(buildingId).ExecuteSpyCommand(command);
+			}
+		}
+		else if (command.callbackEnum == CallbackEnum::CaptureUnit)
+		{
+			if (unitAlive(UnitFullId(command.intVar1, command.intVar2)))
+			{
+				auto& unit = unitAI(command.intVar1);
+
+				int32 animalPrice = GetCaptureAnimalPrice(command.playerId, unit.unitEnum(), unit.unitTile());
+				
+				if (animalPrice <= moneyCap32(command.playerId))
+				{
+					CardStatus cardStatus;
+					cardStatus.cardEnum = GetAnimalCardEnumFromUnitEnum(unit.unitEnum());
+					cardStatus.cardStateValue1 = unit.birthTicks(); // Might put state as vector?? or we may not need it at all...
+
+					if (cardSystem(command.playerId).TryAddCardStatusToBoughtHand(cardStatus))
+					{
+						unit.Die();
+						AddPopupToFront(command.playerId,
+							FText::Format(
+								LOCTEXT("CapturedAnimal_Succeed", "Captured {0}."),
+								GetUnitInfo(unit.unitEnum()).name
+							)
+						);
+					}
+					else {
+						AddPopupToFront(command.playerId,
+							LOCTEXT("CapturedAnimal_NoSpace", "Cannot Capture the Unit. Your Card Hand is full."),
+							ExclusiveUIEnum::None, "PopupCannot"
+						);
+					}
+				}
+				else {
+					AddPopupToFront(command.playerId,
+						LOCTEXT("CapturedAnimal_NoMoney", "Cannot Capture the Unit. Not enough money."),
+						ExclusiveUIEnum::None, "PopupCannot"
+					);
+				}
+			}
+		}
+		else if (IsAutoTradeCallback(command.callbackEnum))
+		{
+			if (IsValidTown(command.townId)) {
+				townManager(command.townId).ExecuteAutoTradeCommand(command);
+			}
+		}
 		
 		return;
 	}
@@ -2854,16 +3019,16 @@ void GameSimulationCore::SetIntercityTrade(FSetIntercityTrade command)
 		return;
 	}
 	
-	if (command.buildingIdToEstablishTradeRoute != -1) {
-		if (command.isCancelingTradeRoute) {
-			worldTradeSystem().TryCancelTradeRoute(command);
-		} else {
-			worldTradeSystem().TryEstablishTradeRoute(command);
-		}
-	}
-	else {
-		worldTradeSystem().SetIntercityTradeOffers(command);
-	}
+	//if (command.buildingIdToEstablishTradeRoute != -1) {
+	//	if (command.isCancelingTradeRoute) {
+	//		//worldTradeSystem().TryCancelTradeRoute(command);
+	//	} else {
+	//		//worldTradeSystem().TryEstablishTradeRoute(command);
+	//	}
+	//}
+	//else {
+	//	worldTradeSystem().SetIntercityTradeOffers(command);
+	//}
 }
 
 void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
@@ -3084,128 +3249,128 @@ void GameSimulationCore::ChangeWorkMode(FChangeWorkMode command)
 	}
 }
 
-void GameSimulationCore::AbandonTown(int32 playerId)
+void GameSimulationCore::AbandonTown(int32 townId)
 {
-	if (playerId == -1) {
+	if (townId == -1) {
 		return;
 	}
-	if (!HasTownhall(playerId)) {
+	if (!GetTownhallPtr(townId)) {
 		return;
 	}
 
 	
-	vector<int32> provinceIds = GetProvincesPlayer(playerId);
-	const SubregionLists<int32>& buildingList = buildingSystem().buildingSubregionList();
+	//vector<int32> provinceIds = GetProvincesPlayer(playerId);
+	//const SubregionLists<int32>& buildingList = buildingSystem().buildingSubregionList();
 
-	// Kill all humans
-	std::vector<int32> townIds = playerOwned(playerId).townIds();
-	for (int32 townId : townIds)
-	{
-		std::vector<int32> citizenIds = townManager(townId).adultIds();
-		std::vector<int32> childIds = townManager(townId).childIds();
-		citizenIds.insert(citizenIds.end(), childIds.begin(), childIds.end());
-		
-		for (int32 citizenId : citizenIds) {
-			unitSystem().unitStateAI(citizenId).Die();
-		}
-	}
+	//// Kill all humans
+	//std::vector<int32> townIds = playerOwned(playerId).townIds();
+	//for (int32 townId : townIds)
+	//{
+	//	std::vector<int32> citizenIds = townManager(townId).adultIds();
+	//	std::vector<int32> childIds = townManager(townId).childIds();
+	//	citizenIds.insert(citizenIds.end(), childIds.begin(), childIds.end());
+	//	
+	//	for (int32 citizenId : citizenIds) {
+	//		unitSystem().unitStateAI(citizenId).Die();
+	//	}
+	//}
 
-	// End all Alliance...
-	std::vector<int32> allyPlayerIds = _playerOwnedManagers[playerId].allyPlayerIds();
-	for (int32 allyPlayerId : allyPlayerIds) {
-		LoseAlly(playerId, allyPlayerId);
-	}
-	PUN_CHECK(_playerOwnedManagers[playerId].allyPlayerIds().size() == 0);
+	//// End all Alliance...
+	//std::vector<int32> allyPlayerIds = _playerOwnedManagers[playerId].allyPlayerIds();
+	//for (int32 allyPlayerId : allyPlayerIds) {
+	//	LoseAlly(playerId, allyPlayerId);
+	//}
+	//PUN_CHECK(_playerOwnedManagers[playerId].allyPlayerIds().size() == 0);
 
-	// End all Vassalage...
-	std::vector<int32> vassalBuildingIds = _playerOwnedManagers[playerId].vassalBuildingIds();
-	for (int32 vassalBuildingId : vassalBuildingIds) {
-		//ArmyNode& armyNode = building(vassalBuildingId).subclass<ArmyNodeBuilding>().GetArmyNode();
-		//armyNode.lordPlayerId = armyNode.originalPlayerId;
+	//// End all Vassalage...
+	//std::vector<int32> vassalBuildingIds = _playerOwnedManagers[playerId].vassalBuildingIds();
+	//for (int32 vassalBuildingId : vassalBuildingIds) {
+	//	//ArmyNode& armyNode = building(vassalBuildingId).subclass<ArmyNodeBuilding>().GetArmyNode();
+	//	//armyNode.lordPlayerId = armyNode.originalPlayerId;
 
-		_playerOwnedManagers[playerId].LoseVassal(vassalBuildingId);
-	}
-	PUN_CHECK(_playerOwnedManagers[playerId].vassalBuildingIds().size() == 0);
+	//	_playerOwnedManagers[playerId].LoseVassal(vassalBuildingId);
+	//}
+	//PUN_CHECK(_playerOwnedManagers[playerId].vassalBuildingIds().size() == 0);
 
-	// Detach from lord
-	{
-		int32 lordPlayerId = _playerOwnedManagers[playerId].lordPlayerId();
+	//// Detach from lord
+	//{
+	//	int32 lordPlayerId = _playerOwnedManagers[playerId].lordPlayerId();
 
-		PUN_DEBUG2("[BEFORE] Detach from lord %d, size:%llu", lordPlayerId, _playerOwnedManagers[lordPlayerId].vassalBuildingIds().size());
-		_playerOwnedManagers[lordPlayerId].LoseVassal(playerId);
-		PUN_DEBUG2("[AFTER] Detach from lord %d, size:%llu", lordPlayerId, _playerOwnedManagers[lordPlayerId].vassalBuildingIds().size());
-	}
+	//	PUN_DEBUG2("[BEFORE] Detach from lord %d, size:%llu", lordPlayerId, _playerOwnedManagers[lordPlayerId].vassalBuildingIds().size());
+	//	_playerOwnedManagers[lordPlayerId].LoseVassal(playerId);
+	//	PUN_DEBUG2("[AFTER] Detach from lord %d, size:%llu", lordPlayerId, _playerOwnedManagers[lordPlayerId].vassalBuildingIds().size());
+	//}
 
-	std::vector<WorldRegion2> overlapRegions = _provinceSystem.GetRegionOverlaps(provinceIds);
-	for (WorldRegion2 region : overlapRegions)
-	{
-		// Destroy all buildings owned by player
-		buildingList.ExecuteRegion(region, [&](int32 buildingId)
-		{
-			Building& bld = building(buildingId);
+	//std::vector<WorldRegion2> overlapRegions = _provinceSystem.GetRegionOverlaps(provinceIds);
+	//for (WorldRegion2 region : overlapRegions)
+	//{
+	//	// Destroy all buildings owned by player
+	//	buildingList.ExecuteRegion(region, [&](int32 buildingId)
+	//	{
+	//		Building& bld = building(buildingId);
 
-			if (bld.playerId() == playerId) {
-				soundInterface()->TryStopBuildingWorkSound(bld);
-				_buildingSystem->RemoveBuilding(buildingId);
+	//		if (bld.playerId() == playerId) {
+	//			soundInterface()->TryStopBuildingWorkSound(bld);
+	//			_buildingSystem->RemoveBuilding(buildingId);
 
-				AddDemolishDisplayInfo(region.centerTile(), { bld.buildingEnum(), bld.area(), Time::Ticks() });
-				//_regionToDemolishDisplayInfos[region.regionId()].push_back({ bld.buildingEnum(), bld.area(), Time::Ticks() });
-			}
-		});
-	}
+	//			AddDemolishDisplayInfo(region.centerTile(), { bld.buildingEnum(), bld.area(), Time::Ticks() });
+	//			//_regionToDemolishDisplayInfos[region.regionId()].push_back({ bld.buildingEnum(), bld.area(), Time::Ticks() });
+	//		}
+	//	});
+	//}
 
-	for (int32 provinceId : provinceIds)
-	{
-		// Destroy all drops
-		_dropSystem.ResetProvinceDrop(provinceId);
+	//for (int32 provinceId : provinceIds)
+	//{
+	//	// Destroy all drops
+	//	_dropSystem.ResetProvinceDrop(provinceId);
 
-		// Clear Road
-		_overlaySystem.ClearRoadInProvince(provinceId);
+	//	// Clear Road
+	//	_overlaySystem.ClearRoadInProvince(provinceId);
 
-		// Remove all gather marks
-		TileArea area = _provinceSystem.GetProvinceRectArea(provinceId);
-		_treeSystem->MarkArea(playerId, area, true, ResourceEnum::None);
+	//	// Remove all gather marks
+	//	TileArea area = _provinceSystem.GetProvinceRectArea(provinceId);
+	//	_treeSystem->MarkArea(playerId, area, true, ResourceEnum::None);
 
-		// Release region ownership
-		SetProvinceOwner(provinceId, -1);
-	}
+	//	// Release region ownership
+	//	SetProvinceOwner(provinceId, -1);
+	//}
 
-	// Remove Trade Route
-	worldTradeSystem().RemoveAllTradeRoutes(playerId);
+	//// Remove Trade Route
+	//worldTradeSystem().RemoveAllTradeRoutes(playerId);
 
 
-	// Remove Relationship
-	ExecuteOnAI([&](int32 aiPlayerId) {
-		aiPlayerSystem(aiPlayerId).ClearRelationshipModifiers(playerId);
-	});
-	
+	//// Remove Relationship
+	//ExecuteOnAI([&](int32 aiPlayerId) {
+	//	aiPlayerSystem(aiPlayerId).ClearRelationshipModifiers(playerId);
+	//});
+	//
 
-	// Reset all Systems
-	for (int32 townId : townIds) {
-		_resourceSystems[townId] = ResourceSystem(townId, this);
-		_townManagers[townId].reset();
-		_townManagers[townId] = make_unique<TownManager>(playerId, townId, this); // TODO: Proper reset of TownManager
-	}
+	//// Reset all Systems
+	//for (int32 townId : townIds) {
+	//	_resourceSystems[townId] = ResourceSystem(townId, this);
+	//	_townManagers[townId].reset();
+	//	_townManagers[townId] = make_unique<TownManager>(playerId, townId, this); // TODO: Proper reset of TownManager
+	//}
 
-	
-	_unlockSystems[playerId] = UnlockSystem(playerId, this);
-	_questSystems[playerId] = QuestSystem(playerId, this);
-	_playerOwnedManagers[playerId] = PlayerOwnedManager(playerId, this);
-	_playerParameters[playerId] = PlayerParameters(playerId, this);
-	_statSystem.ResetTown(playerId);
-	_popupSystems[playerId] = PopupSystem(playerId, this);
-	_cardSystem[playerId] = BuildingCardSystem(playerId, this);
+	//
+	//_unlockSystems[playerId] = UnlockSystem(playerId, this);
+	//_questSystems[playerId] = QuestSystem(playerId, this);
+	//_playerOwnedManagers[playerId] = PlayerOwnedManager(playerId, this);
+	//_playerParameters[playerId] = PlayerParameters(playerId, this);
+	//_statSystem.ResetTown(playerId);
+	//_popupSystems[playerId] = PopupSystem(playerId, this);
+	//_cardSystem[playerId] = BuildingCardSystem(playerId, this);
 
-	_aiPlayerSystem[playerId] = AIPlayerSystem(playerId, this, this);
+	//_aiPlayerSystem[playerId] = AIPlayerSystem(playerId, this, this);
 
-	_eventLogSystem.ResetPlayer(playerId);
+	//_eventLogSystem.ResetPlayer(playerId);
 
-	_playerIdToNonRepeatActionToAvailableTick[playerId] = std::vector<int32>(static_cast<int>(NonRepeatActionEnum::Count), 0);
+	//_playerIdToNonRepeatActionToAvailableTick[playerId] = std::vector<int32>(static_cast<int>(NonRepeatActionEnum::Count), 0);
 
-	AddEventLogToAllExcept(playerId, 
-		FText::Format(LOCTEXT("XAbandonedTown_AllPop", "{0} abandoned the old town to start a new one."), playerNameT(playerId)),
-		false
-	);
+	//AddEventLogToAllExcept(playerId, 
+	//	FText::Format(LOCTEXT("XAbandonedTown_AllPop", "{0} abandoned the old town to start a new one."), playerNameT(playerId)),
+	//	false
+	//);
 }
 
 void GameSimulationCore::PopupInstantReply(int32 playerId, PopupReceiverEnum replyReceiver, int32 choiceIndex)
@@ -3496,7 +3661,8 @@ void GameSimulationCore::RerollCards(FRerollCards command)
 	} else {
 		AddPopupToFront(command.playerId, 
 			LOCTEXT("NoRerollMoney", "Not enough money for reroll"), 
-			ExclusiveUIEnum::CardHand1, "PopupCannot");
+			ExclusiveUIEnum::CardHand1, "PopupCannot"
+		);
 	}
 
 	cardSys.SetPendingCommand(false);
@@ -3574,22 +3740,28 @@ void GameSimulationCore::SellCards(FSellCards command)
 	UE_LOG(LogNetworkInput, Log, TEXT(" SellCards"));
 
 	auto& cardSys = cardSystem(command.playerId);
-	int32 sellCount = command.isShiftDown ? cardSys.BoughtCardCount(command.buildingEnum) : 1;
-	
-	int32 sellTotal = cardSys.RemoveCards(command.buildingEnum, sellCount);
-	if (sellTotal != -1) 
-	{
-		ChangeMoney(command.playerId, sellTotal);
 
-		AddEventLog(command.playerId,
-			FText::Format(
-				LOCTEXT("SoldCard_Event", "Sold {1} {0} {1}|plural(one=Card,other=Cards) for {2}<img id=\"Coin\"/>"),
-				GetBuildingInfo(command.buildingEnum).name,
-				TEXT_NUM(sellCount),
-				TEXT_NUM(sellTotal)
-			), 
-			false
-		);
+	CardStatus cardStatus = cardSys.GetActualBoughtCardStatus(command.cardStatus);
+
+	if (cardStatus.isValid())
+	{
+		int32 sellCount = command.isShiftDown ? cardStatus.stackSize : 1;
+
+		int32 soldCount = cardSys.RemoveCards(cardStatus, sellCount);
+		if (soldCount != -1)
+		{
+			ChangeMoney(command.playerId, soldCount * cardSys.GetCardPrice(cardStatus.cardEnum));
+
+			AddEventLog(command.playerId,
+				FText::Format(
+					LOCTEXT("SoldCard_Event", "Sold {1} {0} {1}|plural(one=Card,other=Cards) for {2}<img id=\"Coin\"/>"),
+					GetBuildingInfo(cardStatus.cardEnum).name,
+					TEXT_NUM(sellCount),
+					TEXT_NUM(soldCount)
+				),
+				false
+			);
+		}
 	}
 }
 
@@ -3601,9 +3773,10 @@ void GameSimulationCore::UseCard(FUseCard command)
 	auto& resourceSys = resourceSystem(command.playerId);
 	auto& globalResourceSys = globalResourceSystem(command.playerId);
 
+	CardEnum commandCardEnum = command.cardStatus.cardEnum;
 
 	// Archives Store Card
-	if (command.cardEnum == CardEnum::ArchivesSlotting)
+	if (command.callbackEnum == CallbackEnum::ArchivesSlotting)
 	{
 		int32 buildingId = command.variable1;
 		if (isValidBuildingId(buildingId))
@@ -3611,11 +3784,10 @@ void GameSimulationCore::UseCard(FUseCard command)
 			Building& bld = building(buildingId);
 			if (bld.isEnum(CardEnum::Archives) && bld.CanAddSlotCard())
 			{
-				CardEnum targetCardEnum = static_cast<CardEnum>(command.variable2);
-				int32 soldPrice = cardSys.RemoveCards(targetCardEnum, 1);
-				if (soldPrice != -1) {
-					CardStatus cardStatus = command.GetCardStatus(_gameManager->GetDisplayWorldTime() * 100.0f);
-					cardStatus.cardEnum = targetCardEnum;
+				int32 soldCount = cardSys.RemoveCards(command.cardStatus, 1);
+				if (soldCount != -1)
+				{
+					CardStatus cardStatus = command.GetCardStatus_AnimationOnly(_gameManager->GetDisplayWorldTime() * 100.0f);
 					bld.AddSlotCard(cardStatus);
 				}
 			}
@@ -3623,8 +3795,31 @@ void GameSimulationCore::UseCard(FUseCard command)
 		return;
 	}
 
+	// Train Unit
+	if (command.callbackEnum == CallbackEnum::TrainUnit ||
+		command.callbackEnum == CallbackEnum::CancelTrainUnit)
+	{
+		if (IsValidTown(command.townId)) {
+			townManager(command.townId).TrainUnits(command);
+		}
+		return;
+	}
+
+	// Card Inventory Store Card
+	if (command.callbackEnum == CallbackEnum::SelectInventorySlotCard)
+	{
+		cardSys.MoveCardInventoryToHand(command.cardStatus, command.variable1);
+		return;
+	}
+	if (command.callbackEnum == CallbackEnum::CardInventorySlotting)
+	{
+		cardSys.MoveHandToCardInventory(command.cardStatus, command.variable1);
+		return;
+	}
+	
+
 	// CardRemoval
-	if (command.cardEnum == CardEnum::CardRemoval)
+	if (commandCardEnum == CardEnum::CardRemoval)
 	{
 		if (cardSys.HasBoughtCard(CardEnum::CardRemoval))
 		{
@@ -3632,29 +3827,29 @@ void GameSimulationCore::UseCard(FUseCard command)
 			AddPopupToFront(command.playerId, 
 				FText::Format(LOCTEXT("CardRemovalDone", "Removed {0} Card from your deck.<space>{0} is now only available from Wild Cards."), GetBuildingInfoInt(command.variable1).name));
 			
-			cardSys.RemoveCards(CardEnum::CardRemoval, 1);
+			cardSys.RemoveCardsOld(CardEnum::CardRemoval, 1);
 			cardSys.RemoveDrawCards(static_cast<CardEnum>(command.variable1));
 		}
 		return;
 	}
 
 	// Global Slot
-	if (IsTownSlotCard(command.cardEnum))
+	if (IsTownSlotCard(commandCardEnum))
 	{
 		if (IsValidTown(command.townId)) // (Edge case where Archive UI was hidden)
 		{
 			auto& townManage = townManager(command.townId);
 
-			if (townManage.TownhallHasCard(command.cardEnum)) {
+			if (townManage.TownhallHasCard(commandCardEnum)) {
 				AddPopupToFront(command.playerId, FText::Format(
 					LOCTEXT("TownhallSlots_NoSameTypeCard", "Townhall cannot take a duplicate Card.<space>{0} is already slotted."),
-					GetBuildingInfo(command.cardEnum).name
+					GetBuildingInfo(commandCardEnum).name
 				));
 			}
 			else if (townManage.CanAddCardToTownhall()) {
-				int32 soldPrice = cardSys.RemoveCards(command.cardEnum, 1);
-				if (soldPrice != -1) {
-					townManage.AddCardToTownhall(command.GetCardStatus(_gameManager->GetDisplayWorldTime() * 100.0f));
+				int32 soldCount = cardSys.RemoveCardsOld(commandCardEnum, 1);
+				if (soldCount != -1) {
+					townManage.AddCardToTownhall(command.GetCardStatus_AnimationOnly(_gameManager->GetDisplayWorldTime() * 100.0f));
 					townManage.RecalculateTaxDelayed();
 				}
 			}
@@ -3666,7 +3861,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 	}
 
 	// Building Slot
-	if (IsBuildingSlotCard(command.cardEnum))
+	if (IsBuildingSlotCard(commandCardEnum))
 	{
 		// - Guard against isEnum() crash
 		if (isValidBuildingId(command.variable1))
@@ -3675,15 +3870,15 @@ void GameSimulationCore::UseCard(FUseCard command)
 			if (bld.CanAddSlotCard())
 			{
 				// Don't allow slotting Mint with "SustainabilityBook"
-				if (command.cardEnum == CardEnum::SustainabilityBook &&
+				if (commandCardEnum == CardEnum::SustainabilityBook &&
 					bld.isEnum(CardEnum::Mint))
 				{
 					return;
 				}
 
-				int32 soldPrice = cardSys.RemoveCards(command.cardEnum, 1);
-				if (soldPrice != -1) {
-					bld.AddSlotCard(command.GetCardStatus(_gameManager->GetDisplayWorldTime() * 100.0f));
+				int32 soldCount = cardSys.RemoveCardsOld(commandCardEnum, 1);
+				if (soldCount != -1) {
+					bld.AddSlotCard(command.GetCardStatus_AnimationOnly(_gameManager->GetDisplayWorldTime() * 100.0f));
 				}
 			}
 		}
@@ -3692,18 +3887,18 @@ void GameSimulationCore::UseCard(FUseCard command)
 	}
 
 	// Crate
-	if (IsCrateCard(command.cardEnum))
+	if (IsCrateCard(commandCardEnum))
 	{
-		ResourcePair resourcePair = GetCrateResource(command.cardEnum);
+		ResourcePair resourcePair = GetCrateResource(commandCardEnum);
 
 		if (resourceSystem(command.playerId).CanAddResourceGlobal(resourcePair.resourceEnum, resourcePair.count) &&
-			cardSys.HasBoughtCard(command.cardEnum))
+			cardSys.HasBoughtCard(commandCardEnum))
 		{
 			resourceSystem(command.playerId).AddResourceGlobal(resourcePair.resourceEnum, resourcePair.count, *this);
 			AddPopupToFront(command.playerId, 
 				FText::Format(LOCTEXT("GainedXResourceFromCrate", "Gained {0} {1} from crates."), TEXT_NUM(resourcePair.count), GetResourceInfo(resourcePair.resourceEnum).name)
 			);
-			cardSys.RemoveCards(command.cardEnum, 1);
+			cardSys.RemoveCardsOld(commandCardEnum, 1);
 		}
 		else {
 			AddPopup(command.playerId, 
@@ -3720,28 +3915,28 @@ void GameSimulationCore::UseCard(FUseCard command)
 	 */
 	bool succeedUsingCard = true;
 	
-	if (command.cardEnum == CardEnum::Treasure) {
+	if (commandCardEnum == CardEnum::Treasure) {
 		ChangeMoney(command.playerId, 500);
 		AddPopupToFront(command.playerId, 
 			LOCTEXT("GainedCoinFromTreasure", "Gained 500<img id=\"Coin\"/> from treasure.")
 		);
 	}
-	else if (command.cardEnum == CardEnum::EmergencyRations) {
+	else if (commandCardEnum == CardEnum::EmergencyRations) {
 		resourceSystem(command.playerId).AddResourceGlobal(ResourceEnum::Wheat, 50, *this);
 		AddPopupToFront(command.playerId, 
 			FText::Format(LOCTEXT("GainedEmergencyRation", "Gained {0} {1} from emergency ration."), TEXT_NUM(50), GetResourceInfo(ResourceEnum::Wheat).name)
 		);
 	}
 	
-	else if (command.cardEnum == CardEnum::KidnapGuard ||
-			command.cardEnum == CardEnum::TreasuryGuard) 
+	else if (commandCardEnum == CardEnum::KidnapGuard ||
+		commandCardEnum == CardEnum::TreasuryGuard)
 	{
-		playerOwned(command.playerId).TryApplyBuff(command.cardEnum);
+		playerOwned(command.playerId).TryApplyBuff(commandCardEnum);
 	}
 	
-	else if (IsSeedCard(command.cardEnum)) 
+	else if (IsSeedCard(commandCardEnum))
 	{
-		SeedInfo seedInfo = GetSeedInfo(command.cardEnum);
+		SeedInfo seedInfo = GetSeedInfo(commandCardEnum);
 		FText plantName = GetTileObjInfo(seedInfo.tileObjEnum).name;
 		
 		// Unlock farm if needed
@@ -3754,12 +3949,12 @@ void GameSimulationCore::UseCard(FUseCard command)
 		
 		globalResourceSystem(command.playerId).AddSeed(seedInfo);
 
-		if (IsCommonSeedCard(command.cardEnum)) {
+		if (IsCommonSeedCard(commandCardEnum)) {
 			AddPopupToFront(command.playerId, 
 				FText::Format(LOCTEXT("UnlockedCropSwithToGrow", "Unlocked {0}. Switch your farm's workmode to grow {0}."), plantName)
 			);
 		} else {
-			PUN_CHECK(IsSpecialSeedCard(command.cardEnum));
+			PUN_CHECK(IsSpecialSeedCard(commandCardEnum));
 			
 			AddPopupToFront(command.playerId, FText::Format(
 				LOCTEXT("UnlockedCropRequireSuitableRegion", "Unlocked {0}. {0} requires suitable regions marked on the map to be grown."), 
@@ -3767,17 +3962,8 @@ void GameSimulationCore::UseCard(FUseCard command)
 			));
 		}
 	}
-	else if (command.cardEnum == CardEnum::Pig) {
-		//resourceSys.pigs += 3;
-	}
-	else if (command.cardEnum == CardEnum::Sheep) {
-		//resourceSys.sheep += 3;
-	}
-	else if (command.cardEnum == CardEnum::Cow) {
-		//resourceSys.cows += 3;
-	}
 
-	else if (command.cardEnum == CardEnum::SellFood) 
+	else if (commandCardEnum == CardEnum::SellFood)
 	{
 		if (IsValidTown(command.townId))
 		{
@@ -3797,7 +3983,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 			
 		}
 	}
-	else if (command.cardEnum == CardEnum::BuyWood) 
+	else if (commandCardEnum == CardEnum::BuyWood)
 	{
 		if (globalResourceSys.moneyCap32() > 0)
 		{
@@ -3830,7 +4016,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 			);
 		}
 	}
-	else if (command.cardEnum == CardEnum::Immigration) 
+	else if (commandCardEnum == CardEnum::Immigration) 
 	{
 		if (IsValidTown(command.townId))
 		{
@@ -3846,7 +4032,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 	}
 
 	if (succeedUsingCard) {
-		cardSys.RemoveCards(command.cardEnum, 1);
+		cardSys.RemoveCardsOld(commandCardEnum, 1);
 	}
 }
 
@@ -4408,13 +4594,13 @@ void GameSimulationCore::SetProvinceOwner(int32 provinceId, int32 townId, bool l
 
 	int32 oldTownId = provinceOwnerTown(provinceId);
 	if (oldTownId != -1) {
-		townManager(oldTownId).TryRemoveProvinceClaim(provinceId, lightMode); // TODO: Try moving this below???
+		townManagerBase(oldTownId)->TryRemoveProvinceClaim(provinceId, lightMode); // TODO: Try moving this below???
 	}
 
 	_regionSystem->SetProvinceOwner(provinceId, townId, lightMode);
 
 	if (townId != -1) {
-		townManager(townId).ClaimProvince(provinceId, lightMode);
+		townManagerBase(townId)->ClaimProvince(provinceId, lightMode);
 
 		if (!lightMode) {
 			RefreshTerritoryEdge(townId);
@@ -5299,6 +5485,25 @@ void GameSimulationCore::Cheat(FCheat command)
 				Building& house = building(houseId);
 				int32 beerCount = house.resourceCount(ResourceEnum::Beer);
 				house.RemoveResource(ResourceEnum::Beer, beerCount - 1);
+			}
+			break;
+		}
+		case CheatEnum::AISpyNest:
+		{
+			WorldTile2 originPlayerTile(command.var1, command.var2);
+			WorldTile2 targetTile(command.var3, command.var4);
+
+			int32 originPlayerId = tileOwnerPlayer(originPlayerTile);
+			int32 targetHouseId = buildingIdAtTile(targetTile);
+			if (originPlayerId != -1 &&
+				IsValidBuilding(targetHouseId) && building(targetHouseId).isEnum(CardEnum::House))
+			{
+				FGenericCommand spyCommand;
+				spyCommand.playerId = originPlayerId;
+				spyCommand.callbackEnum = command.var5 == 0 ? CallbackEnum::SpyEstablishNest : CallbackEnum::SpyEnsureAnonymity;
+				spyCommand.intVar1 = targetHouseId;
+				
+				GenericCommand(spyCommand);
 			}
 			break;
 		}

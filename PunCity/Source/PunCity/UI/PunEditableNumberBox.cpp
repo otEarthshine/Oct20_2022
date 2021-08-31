@@ -49,7 +49,7 @@ void UPunEditableNumberBox::ClickArrow(bool isDown)
 	UpdateText();
 
 	if (_callbackTarget) {
-		_callbackTarget->CallBack1(this, _callbackEnum);
+		_callbackTarget->CallBack1(callbackWidgetCaller, _callbackEnum);
 	}
 	else if (onEditNumber) {
 		onEditNumber(punId, uiIndex, amount, networkInterface());
@@ -77,7 +77,7 @@ void UPunEditableNumberBox::NumberChanged(const FText& Text, ETextCommit::Type C
 		UpdateText();
 
 		if (_callbackTarget) {
-			_callbackTarget->CallBack1(this, _callbackEnum);
+			_callbackTarget->CallBack1(callbackWidgetCaller, _callbackEnum);
 		}
 		else if (onEditNumber) {
 			onEditNumber(punId, uiIndex, amount, networkInterface());

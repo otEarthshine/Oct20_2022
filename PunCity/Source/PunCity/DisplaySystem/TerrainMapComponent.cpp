@@ -8,6 +8,8 @@
 #include "../MapUtil.h"
 #include "DisplaySystemDataSource.h"
 
+#include "TerritoryDisplayComponent.h"
+
 using namespace std;
 
 bool UTerrainMapComponent::isHeightForestColorDirty = false;
@@ -67,6 +69,20 @@ UTerrainMapComponent::UTerrainMapComponent()
 	decal->SetRelativeRotation(FVector(0, 0, -1).Rotation()); // Rotate to project the decal down
 	_territoryMapDecal = decal;
 
+
+	// Defense Nodes
+	_mapMeshesParent = CreateDefaultSubobject<USceneComponent>("_mapMeshesParent");
+	_mapMeshesParent->AttachToComponent(this, FAttachmentTransformRules::KeepRelativeTransform);
+	
+	_defenseNodeMeshes = CreateDefaultSubobject<UInstancedStaticMeshComponent>("Map_defenseNodeMeshes");
+	_defenseCityNodeMeshes = CreateDefaultSubobject<UInstancedStaticMeshComponent>("Map_defenseCityNodeMeshes");
+	_defenseFortNodeMeshes = CreateDefaultSubobject<UInstancedStaticMeshComponent>("Map_defenseFortNodeMeshes");
+	_defenseLineMeshes = CreateDefaultSubobject<UInstancedStaticMeshComponent>("Map_defenseLineMeshes");
+	
+	_defenseNodeMeshes->AttachToComponent(_mapMeshesParent, FAttachmentTransformRules::KeepRelativeTransform);
+	_defenseCityNodeMeshes->AttachToComponent(_mapMeshesParent, FAttachmentTransformRules::KeepRelativeTransform);
+	_defenseFortNodeMeshes->AttachToComponent(_mapMeshesParent, FAttachmentTransformRules::KeepRelativeTransform);
+	_defenseLineMeshes->AttachToComponent(_mapMeshesParent, FAttachmentTransformRules::KeepRelativeTransform);
 }
 
 void UTerrainMapComponent::UpdateTerrainMapDisplay(bool mapTerrainVisible, bool mapTerrainWaterVisible, bool tileDisplayNoRegionSkip)
@@ -94,24 +110,15 @@ void UTerrainMapComponent::UpdateTerrainMapDisplay(bool mapTerrainVisible, bool 
 			RefreshPartialProvinceTexture(sim.GetProvinceRectArea(provinceId));
 		}
 	}
-	
-	// Terrain Mesh
-	{
-		//if (mapTerrainVisible) {
 
-		//	terrainMesh->SetVisibility(true);
-		//	terrainMesh->SetActive(true);
-		//	terrainMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-		//}
-		//else
-		//{
-		//	terrainMesh->SetVisibility(false);
-		//	terrainMesh->SetActive(false);
-		//	terrainMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		//	terrainMesh->SetWorldLocation(FVector(0, 0, 1000000));
-		//	terrainMesh->SetWorldScale3D(FVector::ZeroVector);
-		//}
+	// Meshes Parent
+	{
+		FVector parentDisplayLocation = MapUtil::DisplayLocation(_dataSource->cameraAtom(), WorldAtom2::Zero);
+		//FVector centerShift = FVector(GameMapConstants::TilesPerWorldX, GameMapConstants::TilesPerWorldY, 0) * CoordinateConstants::DisplayUnitPerTile / 2;
+		
+		_mapMeshesParent->SetWorldLocation(parentDisplayLocation);
 	}
+	
 
 	if (mapTerrainWaterVisible) {
 		//terrainMesh->SetWorldLocation(MapUtil::DisplayLocationMapMode(MapUtil::GetCamShiftLocation(_dataSource->cameraAtom()), WorldAtom2::Zero));
@@ -179,15 +186,41 @@ void UTerrainMapComponent::UpdateTerrainMapDisplay(bool mapTerrainVisible, bool 
 	}
 
 	/*
+	 * Defense Nodes
+	 */
+	bool defenseNodesVisible = !_dataSource->ZoomDistanceBelow(WorldZoomTransition_GameToMap);
+	if (defenseNodesVisible && !_mapMeshesParent->IsVisible())
+	{
+		RefreshDefenseMap();
+		_mapMeshesParent->SetVisibility(true, true);
+	}
+	else if (!defenseNodesVisible && _mapMeshesParent->IsVisible())
+	{
+		_mapMeshesParent->SetVisibility(false, true);
+	}
+	else 
+	{
+		auto& sim = _dataSource->simulation();
+		if (sim.NeedDisplayUpdate(DisplayGlobalEnum::MapDefenseNode)) {
+			sim.SetNeedDisplayUpdate(DisplayGlobalEnum::MapDefenseNode, false);
+
+			RefreshDefenseMap();
+		}
+	}
+
+	
+
+	/*
 	 * Buildings/Georesource
 	 */
 	bool mapCityVisible = !_dataSource->ZoomDistanceBelow(WorldZoomTransition_BuildingsMini);
-	if (mapCityVisible && !_buildingsMeshes->IsActive()) {
-		//_georesourceEnumToMesh->SetActive(true, true);
+	if (mapCityVisible && !_buildingsMeshes->IsActive()) 
+	{
 		_buildingsMeshes->SetActive(true, true);
 		RefreshAnnotations();
-	} else if (!mapCityVisible && _buildingsMeshes->IsActive()) {
-		//_georesourceEnumToMesh->SetActive(false, true);
+	}
+	else if (!mapCityVisible && _buildingsMeshes->IsActive()) 
+	{
 		_buildingsMeshes->SetActive(false, true);
 	}
 
@@ -719,10 +752,10 @@ void UTerrainMapComponent::RefreshAnnotations()
 	 */
 	const GameDisplayInfo& displayInfo = _dataSource->displayInfo();
 
-	auto& simulation = _dataSource->simulation();
+	auto& sim = _dataSource->simulation();
 
 #if DISPLAY_WORLDMAP_BUILDING
-	simulation.ExecuteOnPlayersAndAI([&](int32 playerId)
+	sim.ExecuteOnPlayersAndAI([&](int32 playerId)
 	{
 		for (int32 j = 0; j < BuildingEnumCount; j++)
 		{
@@ -733,13 +766,13 @@ void UTerrainMapComponent::RefreshAnnotations()
 				return;
 			}
 			
-			const std::vector<int32> buildingIds = simulation.buildingIds(playerId, buildingEnum);
+			const std::vector<int32> buildingIds = sim.buildingIds(playerId, buildingEnum);
 
 			//PUN_LOG("RefreshAnnotations count:%d", buildingIds.size());
 			
 			for (int32 buildingId : buildingIds) 
 			{
-				Building& building = simulation.building(buildingId);
+				Building& building = sim.building(buildingId);
 				
 				if (building.isConstructed() && displayInfo.GetVariationCount(buildingEnum) > 0)
 				{
@@ -813,11 +846,6 @@ void UTerrainMapComponent::RefreshAnnotations()
 	bool mapCityVisible = !_dataSource->ZoomDistanceBelow(WorldZoomTransition_BuildingsMini);
 	_buildingsMeshes->SetActive(mapCityVisible, true);
 
-	// No showing Georesource for trailer
-	//if (PunSettings::TrailerSession) {
-	//	_georesourceEnumToMesh->AfterAdd();
-	//	return;
-	//}
 	
 
 	/*
@@ -854,4 +882,52 @@ void UTerrainMapComponent::RefreshAnnotations()
 
 	//_georesourceEnumToMesh->AfterAdd();
 
+}
+
+void UTerrainMapComponent::RefreshDefenseMap()
+{
+	auto& sim = _dataSource->simulation();
+	
+	_defenseNodeMeshes->SetStaticMesh(_assetLoader->DefenseOverlay_Node_Map);
+	_defenseCityNodeMeshes->SetStaticMesh(_assetLoader->DefenseOverlay_CityNode_Map);
+	_defenseFortNodeMeshes->SetStaticMesh(_assetLoader->DefenseOverlay_FortNode_Map);
+	_defenseLineMeshes->SetStaticMesh(_assetLoader->DefenseOverlay_Line_Map);
+
+	_defenseNodeMeshes->TranslucencySortPriority = 5000;
+	_defenseCityNodeMeshes->TranslucencySortPriority = 5000;
+	_defenseFortNodeMeshes->TranslucencySortPriority = 5000;
+	_defenseLineMeshes->TranslucencySortPriority = 4000;
+
+	_defenseNodeMeshes->ClearInstances();
+	_defenseCityNodeMeshes->ClearInstances();
+	_defenseFortNodeMeshes->ClearInstances();
+	_defenseLineMeshes->ClearInstances();
+
+	for (int32 provinceId = 0; provinceId < GameMapConstants::TotalRegions; provinceId++)
+	{
+		if (!sim.provinceSystem().IsProvinceValid(provinceId)) {
+			continue;
+		}
+
+		DefenseOverlayEnum defenseOverlayEnum;
+		FTransform nodeTransform;
+		TArray<FTransform> lineTransforms;
+		_dataSource->GetDefenseNodeDisplayInfo(provinceId, 3.0f, defenseOverlayEnum, nodeTransform, lineTransforms, true);
+
+		nodeTransform.SetTranslation(nodeTransform.GetTranslation()); //  + FVector(0, 0, 128)
+
+		if (defenseOverlayEnum == DefenseOverlayEnum::CityNode) {
+			_defenseCityNodeMeshes->AddInstance(nodeTransform);
+		}
+		else if (defenseOverlayEnum == DefenseOverlayEnum::FortNode) {
+			_defenseFortNodeMeshes->AddInstance(nodeTransform);
+		}
+		else {
+			_defenseNodeMeshes->AddInstance(nodeTransform);
+		}
+
+		for (const FTransform& lineTransform : lineTransforms) {
+			_defenseLineMeshes->AddInstance(lineTransform);
+		}
+	}
 }

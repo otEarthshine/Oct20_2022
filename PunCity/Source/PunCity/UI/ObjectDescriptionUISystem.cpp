@@ -739,7 +739,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			// Helpers:
 			TileArea area = building.area();
 			FVector displayLocation = dataSource()->DisplayLocation(building.centerTile().worldAtom2());
+			
 			AlgorithmUtils::ShiftDisplayLocationToTrueCenter(displayLocation, area, building.faceDirection());
+
+			if (building.isEnum(CardEnum::Farm)) {
+				displayLocation = dataSource()->DisplayLocation(building.subclass<Farm>().GetFarmDisplayCenter().worldAtom2());
+			}
 
 			/*
 			 * Body
@@ -1060,6 +1065,61 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							descriptionBoxScrollable->indentation = 0;
 							
 							descriptionBoxScrollable->AfterAdd();
+						}
+
+						// Foreigners
+						if (building.playerId() != playerId())
+						{
+							/*
+							 * Spy Nest
+							 */
+							// TODO: show more info than Townhall ???
+							
+							if (house->spyPlayerId() != playerId())
+							{
+								int32 spyNestPrice = sim.GetSpyNestPrice(playerId(), house->townId());
+
+								UPunButton* button = focusBox->AddButton2Lines(
+									FText::Format(
+										LOCTEXT("EstablishSpyNest_Button", "Establish Spy Nest\n<img id=\"Coin\"/>{0}"),
+										TextRed(TEXT_NUM(spyNestPrice), spyNestPrice > sim.moneyCap32(playerId()))
+									),
+									this, CallbackEnum::SpyEstablishNest, true, false, objectId
+								);
+
+								// Tooltip
+								AddToolTip(button, 
+									LOCTEXT("EstablishSpyNest_Tip", "Establish a Spy Nest.<space>Spy Cards used in this City will not reveal your identity.<space>+30% Spy Bonus when using Spy Cards in this City.")
+								);
+							}
+							else
+							{
+								FText anonymityText;
+								bool showEnabled = true;
+								
+								if (house->isConcealed()) {
+									anonymityText = LOCTEXT("EnsureAnonymity_Button", "Ensure Anonymity\n(Upgraded)");
+									showEnabled = false;
+								}
+								else {
+									int32 spyNestPrice = sim.GetSpyNestPrice(playerId(), house->townId());
+									
+									anonymityText = FText::Format(
+										LOCTEXT("EnsureAnonymity_Button", "Ensure Anonymity\n<img id=\"Coin\"/>{0}"),
+										TextRed(TEXT_NUM(spyNestPrice), spyNestPrice > sim.moneyCap32(playerId()))
+									);
+								}
+								
+								UPunButton* button = focusBox->AddButton2Lines(
+									anonymityText,
+									this, CallbackEnum::SpyEnsureAnonymity, showEnabled, false, objectId
+								);
+
+								// Tooltip
+								AddToolTip(button, 
+									LOCTEXT("ConcealSpyNest_Tip", "Upgrade benefit: If your Spy Nest is found, you will not be revealed as the owner of this Spy Nest.")
+								);
+							}
 						}
 					}
 					else if (building.isEnum(CardEnum::Townhall))
@@ -2654,14 +2714,14 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							{
 								UBuildingPlacementButton* cardButton = AddWidget<UBuildingPlacementButton>(UIEnum::CardMini);
 
-								cardButton->PunInit(cardEnum, i, 0, 1, this, CallbackEnum::SelectBuildingSlotCard, true);
+								cardButton->PunInit(CardStatus(cardEnum, 1), i, this, CallbackEnum::SelectBuildingSlotCard, CardHandEnum::CardSlots);
 								cardButton->callbackVar1 = building.buildingId();
 								cardButton->cardAnimationOrigin = cards[i].lastPosition();
 								cardButton->cardAnimationStartTime = cards[i].animationStartTime100 / 100.0f; // Animation start time is when FUseCard arrived
 
 								SetChildHUD(cardButton);
 
-								cardButton->SetupMaterials(dataSource()->assetLoader());
+								cardButton->RefreshBuildingIcon(dataSource()->assetLoader());
 								cardButton->SetCardStatus(CardHandEnum::CardSlots, false, false, IsRareCard(cardEnum));
 
 								cardButton->SellButton->SetVisibility(ESlateVisibility::Collapsed);
@@ -3058,7 +3118,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			
 			// Show Selection Highlight Mesh
 			if (building.isEnum(CardEnum::Farm)) {
-				showGroundBoxHighlightDecal();
+				// Farm is shown using the BuildingDisplayComponent
 			}
 			else if (building.isConstructed() && !building.isBurnedRuin()) {
 				dataSource()->ShowBuildingMesh(building, 2);
@@ -3380,7 +3440,29 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			}
 #endif
 
-			// Inventory
+			/*
+			 * Unit Capture Button
+			 */
+			if (IsWildAnimal(unit.unitEnum()))
+			{
+				int32 animalPrice = sim.GetCaptureAnimalPrice(playerId(), unit.unitEnum(), unit.unitTile());
+
+				UPunButton* button = focusBox->AddButton2Lines(
+					FText::Format(
+						LOCTEXT("UnitCapture_Button", "Capture\n<img id=\"Coin\"/>{0}"), 
+						TextRed(FText::AsNumber(animalPrice), animalPrice > sim.moneyCap32(playerId()))
+					),
+					this, CallbackEnum::CaptureUnit, true, false, objectId, unit.birthTicks()
+				);
+
+				// Tooltip
+				AddToolTip(button, LOCTEXT("UnitCapture_Tip", "Captured animals can be placed in Zoo to increase its Service Quality and Town Attractiveness."));
+			};
+			
+
+			/*
+			 * Unit Inventory
+			 */
 			focusBox->AddLineSpacer();
 
 			if (unit.inventory().Count() > 0)
@@ -3648,6 +3730,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 #if !UE_BUILD_SHIPPING
 					if (PunSettings::IsOn("DebugFocusUI")) {
 						TArray<FText> args;
+						ADDTEXT_(INVTEXT("--Province: {0}\n"), provinceId);
 						ADDTEXT_(INVTEXT("--Region({0}, {1})\n"), region.x, region.y);
 						ADDTEXT_(INVTEXT("--LocalTile({0}, {1})\n"), tile.localTile(region).x, tile.localTile(region).y)
 							ADDTEXT_(INVTEXT("<Header>{0}</>"), tile.ToText());
@@ -4072,7 +4155,7 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 		if (claimConnectionEnum != ClaimConnectionEnum::None)
 		{
 			//bool withShallowWater = sim.IsResearched(playerId(), TechEnum::ShallowWaterEmbark);
-			int32 provinceDistance = sim.regionSystem().provinceDistanceToPlayer(provinceId, playerId(), false);
+			int32 provinceDistance = sim.provinceInfoSystem().provinceDistanceToPlayer(provinceId, playerId(), false);
 			if (provinceDistance != MAX_int32)
 			{
 				if (provinceDistance > 7) {
@@ -4532,6 +4615,31 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 	else if (callbackEnum == CallbackEnum::BuildingSwapArrow) {
 		SwitchToNextBuilding(punWidgetCaller->callbackVar1);
 	}
+
+	/*
+	 * Spy
+	 */
+	else if (IsSpyCallback(callbackEnum))
+	{
+		auto command = make_shared<FGenericCommand>();
+		command->callbackEnum = callbackEnum;
+		command->intVar1 = punWidgetCaller->callbackVar1;
+
+		networkInterface()->SendNetworkCommand(command);
+	}
+
+	/*
+	 * Unit
+	 */
+	else if (callbackEnum == CallbackEnum::CaptureUnit)
+	{
+		auto command = make_shared<FGenericCommand>();
+		command->callbackEnum = CallbackEnum::CaptureUnit;
+		command->intVar1 = punWidgetCaller->callbackVar1; // objectId
+		command->intVar2 = punWidgetCaller->callbackVar2; // birthTicks
+
+		networkInterface()->SendNetworkCommand(command);
+	}
 }
 
 void UObjectDescriptionUISystem::AddBiomeInfo(WorldTile2 tile, UPunBoxWidget* focusBox)
@@ -4902,7 +5010,7 @@ void UObjectDescriptionUISystem::AddProvinceUpkeepInfo(int32 provinceIdClean, UP
 
 
 	// Distance from Townhall
-	int32 provinceDistance = sim.regionSystem().provinceDistanceToPlayer(provinceIdClean, playerId());
+	int32 provinceDistance = sim.provinceInfoSystem().provinceDistanceToPlayer(provinceIdClean, playerId());
 	if (provinceDistance != MAX_int32) {
 		focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
 			LOCTEXT("BiomeInfoDescription_Distance", "Distance to Townhall"),

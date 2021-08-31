@@ -8,123 +8,40 @@
 
 #define LOCTEXT_NAMESPACE "WorldTradeSystem"
 
-void WorldTradeSystem::RefreshTradeClusters()
+void WorldTradeSystem::RefreshTradeRoutes()
 {
-	//SCOPE_TIMER("RefreshTradeClusters");
-	//
-	//auto pathAI = _simulation->pathAI(true);
+	// TODO: this is for demolish.. check if trade routes are still valid
 
-	//_tradeClusterToPlayerIds.clear();
 
-	//_simulation->ExecuteOnPlayersAndAI([&](int32 playerId) 
-	//{
-	//	if (!_simulation->IsPlayerInitialized(playerId)) {
-	//		return;
-	//	}
-	//	
-	//	// if already in cluster, ignore
-	//	for (auto& playerIds : _tradeClusterToPlayerIds) {
-	//		if (CppUtils::Contains(playerIds, playerId)) {
-	//			return;
-	//		}
-	//	}
 
-	//	WorldTile2 gateTile = _simulation->townhallGateTile(playerId);
-	//	WorldTile2 startTile = WorldTile2::Invalid;
-
-	//	auto tryFindStartTile = [&](WorldTile2 shift) {
-	//		if (startTile == WorldTile2::Invalid) {
-	//			WorldTile2 testTile = gateTile + shift;
-	//			if (pathAI->isRoad(testTile.x, testTile.y)) {
-	//				startTile = testTile;
-	//			}
-	//		}
-	//	};
-	//	tryFindStartTile(WorldTile2(1, 0));
-	//	tryFindStartTile(WorldTile2(-1, 0));
-	//	tryFindStartTile(WorldTile2(0, 1));
-	//	tryFindStartTile(WorldTile2(0, -1));
-	//	PUN_CHECK(startTile.isValid());
-	//	
-
-	//	std::vector<WorldTile2> tileQueue;
-	//	std::vector<bool> visitedTiles(GameMapConstants::TilesPerWorld, false);
-	//	std::vector<int32> newClusterPlayerIds;
-
-	//	tileQueue.push_back(startTile);
-
-	//	for (int32 i = 0; i < 30000; i++)
-	//	{
-	//		if (tileQueue.empty()) {
-	//			PUN_LOG("RefreshTradeClusters Flood %d", i);
-	//			break;
-	//		}
-	//		
-	//		WorldTile2 curTile = tileQueue.back();
-	//		tileQueue.pop_back();
-
-	//		int32 curTileId = curTile.tileId();
-	//		if (visitedTiles[curTileId]) {
-	//			continue;
-	//		}
-	//		visitedTiles[curTileId] = true;
-
-	//		auto tryQueue = [&](WorldTile2 shift) {
-	//			WorldTile2 tile = curTile + shift;
-	//			if (pathAI->isRoad(tile.x, tile.y)) {
-	//				tileQueue.push_back(tile);
-	//			}
-	//		};
-
-	//		tryQueue(WorldTile2(1, 0));
-	//		tryQueue(WorldTile2(-1, 0));
-	//		tryQueue(WorldTile2(0, 1));
-	//		tryQueue(WorldTile2(0, -1));
-
-	//		//// Found townhall
-	//		//if (_simulation->tileHasBuilding(curTile) &&
-	//		//	_simulation->buildingEnumAtTile(curTile) == CardEnum::Townhall)
-	//		//{
-	//		//	CppUtils::TryAdd(newClusterPlayerIds, _simulation->tileOwner(curTile));
-	//		//}
-	//	}
-
-	//	PUN_CHECK(tileQueue.empty());
-	//	
-
-	//	// TODO: remove
-	//	newClusterPlayerIds.push_back(playerId);
-	//	
-	//	PUN_CHECK(newClusterPlayerIds.size() > 0);
-
-	//	_tradeClusterToPlayerIds.push_back(newClusterPlayerIds);
-	//});
-}
-//std::vector<int32> WorldTradeSystem::GetTradePartners(int32 playerId)
-//{
-//	//for (auto& playerIds :_tradeClusterToPlayerIds) {
-//	//	if (CppUtils::Contains(playerIds, playerId)) {
-//	//		return playerIds;
-//	//	}
-//	//}
-//	return std::vector<int32>();
-//}
-std::vector<int32> WorldTradeSystem::GetTradePartners(int32 playerId) {
-	return _playerIdToTradePartners[playerId];
+	
 }
 
-void WorldTradeSystem::TryEstablishTradeRoute(FSetIntercityTrade command)
+void WorldTradeSystem::TryEstablishTradeRoute(const FGenericCommand& command)
 {
 	SCOPE_TIMER("TryEstablishTradeRoute");
 	
 	auto pathAI = _simulation->pathAI();
-	
-	int32 playerId = command.playerId;
-	int32 targetPlayerId = _simulation->building(command.buildingIdToEstablishTradeRoute).playerId();
 
+	TradeRoutePair tradeRoutePair;
+	tradeRoutePair.townId1 = command.intVar1;
+	tradeRoutePair.buildingId1 = command.intVar2;
+	tradeRoutePair.townId2 = command.intVar3;
+	tradeRoutePair.buildingId2 = command.intVar4;
+
+	const Building& building1 = _simulation->building(tradeRoutePair.buildingId1);
+	const Building& building2 = _simulation->building(tradeRoutePair.buildingId2);
+
+	tradeRoutePair.distance = WorldTile2::Distance(building1.centerTile(), building2.centerTile());
+	
+	int32 playerId1 = building1.playerId();
+	check(playerId1 != -1);
+	int32 playerId2 = building2.playerId();
+	
 	// Already established
-	if (CppUtils::Contains(_playerIdToTradePartners[playerId], targetPlayerId)) {
-		_simulation->AddPopupToFront(playerId, 
+	if (HasTradeRoute(tradeRoutePair)) 
+	{
+		_simulation->AddPopupToFront(playerId1,
 			LOCTEXT("AlreadyHasTradeRoute","Already establish the trade route."), 
 			ExclusiveUIEnum::None, "PopupCannot"
 		);
@@ -149,13 +66,13 @@ void WorldTradeSystem::TryEstablishTradeRoute(FSetIntercityTrade command)
 		return result;
 	};
 
-	WorldTile2 startTile = findNearestRoadTile(_simulation->GetTownhallGateCapital(playerId));
-	WorldTile2 targetTile = findNearestRoadTile(_simulation->building(command.buildingIdToEstablishTradeRoute).gateTile());
+	WorldTile2 startTile = findNearestRoadTile(_simulation->building(tradeRoutePair.buildingId1).gateTile());
+	WorldTile2 targetTile = findNearestRoadTile(_simulation->building(tradeRoutePair.buildingId2).gateTile());
 
 	if (!startTile.isValid() ||
 		!targetTile.isValid()) 
 	{
-		_simulation->AddPopupToFront(playerId, 
+		_simulation->AddPopupToFront(playerId1,
 			LOCTEXT("ConnectTownhallsToEstablishTradePop", "Connect your Townhall to target Townhall with Intercity Road to establish a trade route."), 
 			ExclusiveUIEnum::None, "PopupCannot"
 		);
@@ -168,122 +85,64 @@ void WorldTradeSystem::TryEstablishTradeRoute(FSetIntercityTrade command)
 	if (succeed)
 	{
 		// Connect both players
-		_playerIdToTradePartners[playerId].push_back(targetPlayerId);
-		_playerIdToTradePartners[targetPlayerId].push_back(playerId);
-		_simulation->RecalculateTaxDelayedPlayer(playerId);
-		_simulation->RecalculateTaxDelayedPlayer(targetPlayerId);
+		_tradeRoutePairs.push_back(tradeRoutePair);
 
+		_simulation->RecalculateTaxDelayedPlayer(playerId1);
+		if (playerId2 != -1) {
+			_simulation->RecalculateTaxDelayedPlayer(playerId2);
+		}
+
+		// TODO: Get Proper name for single building that can be traded with
 		FText text = FText::Format(
 			LOCTEXT("TradeRouteEstablish_Pop", "Trade Route was established between {0} and {1}!\nTrade Route Income varies with the population of both cities."),
-			_simulation->townNameT(playerId),
-			_simulation->townNameT(targetPlayerId)
+			GetTradeRouteNodeName1(tradeRoutePair),
+			GetTradeRouteNodeName2(tradeRoutePair)
 		);
-		_simulation->AddPopup(playerId, text);
-		_simulation->AddPopup(targetPlayerId, text);
+		_simulation->AddPopup(playerId1, text);
+		if (playerId2 != -1) {
+			_simulation->AddPopup(playerId2, text);
+		}
+
+		SortTradeRoutes();
 	}
 	else {
-		_simulation->AddPopupToFront(playerId,
+		_simulation->AddPopupToFront(playerId1,
 			LOCTEXT("NeedIntercityToMakeTradeRoute", "Need intercity road to establish a trade route. Connect your Townhall to target Townhall with Road."),
 			ExclusiveUIEnum::None, "PopupCannot"
 		);
 	}
 	
-	return;
-	// TODO: OLD
-
-	std::vector<WorldTile2> tileQueue;
-	std::vector<bool> visitedTiles(GameMapConstants::TilesPerWorld, false);
-
-	tileQueue.push_back(startTile);
-
-	for (int32 i = 0; i < 30000; i++)
-	{
-		if (tileQueue.empty()) {
-			_simulation->AddPopupToFront(playerId, 
-				LOCTEXT("NeedIntercityToMakeTradeRoute", "Need intercity road to establish a trade route. Connect your Townhall to target Townhall with Road."), 
-				ExclusiveUIEnum::None, "PopupCannot"
-			);
-			PUN_LOG("RefreshTradeClusters Flood %d", i);
-			return;
-		}
-
-		WorldTile2 curTile = tileQueue.back();
-		tileQueue.pop_back();
-
-		int32 curTileId = curTile.tileId();
-		if (visitedTiles[curTileId]) {
-			continue;
-		}
-		visitedTiles[curTileId] = true;
-
-		if (curTile == targetTile)
-		{
-			// Connect both players
-			_playerIdToTradePartners[playerId].push_back(targetPlayerId);
-			_playerIdToTradePartners[targetPlayerId].push_back(playerId);
-			_simulation->RecalculateTaxDelayedPlayer(playerId);
-			_simulation->RecalculateTaxDelayedPlayer(targetPlayerId);
-
-			FText text = FText::Format(
-				LOCTEXT("TradeRouteEstablish_Pop", "Trade Route was established between {0} and {1}!\nTrade Route Income varies with the population of both cities."),
-				_simulation->townNameT(playerId),
-				_simulation->townNameT(targetPlayerId)
-			);
-			_simulation->AddPopup(playerId, text);
-			_simulation->AddPopup(targetPlayerId, text);
-
-			return;
-		}
-
-		auto tryQueue = [&](WorldTile2 shift) {
-			WorldTile2 tile = curTile + shift;
-			if (pathAI->isRoad(tile.x, tile.y)) {
-				tileQueue.push_back(tile);
-			}
-		};
-
-		tryQueue(WorldTile2(1, 0));
-		tryQueue(WorldTile2(-1, 0));
-		tryQueue(WorldTile2(0, 1));
-		tryQueue(WorldTile2(0, -1));
-
-		tryQueue(WorldTile2(1, 1));
-		tryQueue(WorldTile2(1, -1));
-		tryQueue(WorldTile2(-1, 1));
-		tryQueue(WorldTile2(-1, -1));
-	}
-
-	UE_DEBUG_BREAK();
 }
-void WorldTradeSystem::TryCancelTradeRoute(FSetIntercityTrade command)
+void WorldTradeSystem::TryCancelTradeRoute(const FGenericCommand& command)
 {
-	int32 playerId = command.playerId;
-	int32 targetPlayerId = _simulation->building(command.buildingIdToEstablishTradeRoute).playerId();
+	TradeRoutePair tradeRoutePair;
+	tradeRoutePair.townId1 = command.intVar1;
+	tradeRoutePair.buildingId1 = command.intVar2;
+	tradeRoutePair.townId2 = command.intVar3;
+	tradeRoutePair.buildingId2 = command.intVar4;
 	
-	bool succeed = CppUtils::TryRemove(_playerIdToTradePartners[playerId], targetPlayerId);
+	bool succeed = CppUtils::TryRemove(_tradeRoutePairs, tradeRoutePair);
 	if (succeed)
 	{
-		CppUtils::TryRemove(_playerIdToTradePartners[targetPlayerId], playerId);
-		_simulation->RecalculateTaxDelayedPlayer(playerId);
-		_simulation->RecalculateTaxDelayedPlayer(targetPlayerId);
+		int32 playerId1 = _simulation->building(tradeRoutePair.buildingId1).playerId();
+		check(playerId1 != -1);
+		int32 playerId2 = _simulation->building(tradeRoutePair.buildingId2).playerId();
+		
+		_simulation->RecalculateTaxDelayedPlayer(playerId1);
+		_simulation->RecalculateTaxDelayedPlayer(playerId2);
 
 		FText text = FText::Format(
 			LOCTEXT("CancelTradeRoute_Pop", "Trade Route between {0} and {1} was removed."),
-			_simulation->townNameT(playerId),
-			_simulation->townNameT(targetPlayerId)
+			GetTradeRouteNodeName1(tradeRoutePair),
+			GetTradeRouteNodeName2(tradeRoutePair)
 		);
-		_simulation->AddPopup(playerId, text);
-		_simulation->AddPopup(targetPlayerId, text);
+		_simulation->AddPopup(playerId1, text);
+		if (playerId2 != -1) {
+			_simulation->AddPopup(playerId2, text);
+		}
 	}
 }
-void WorldTradeSystem::RemoveAllTradeRoutes(int32 playerId)
-{
-	std::vector<int32>& partners = _playerIdToTradePartners[playerId];
-	for (int32 partnerId : partners) {
-		CppUtils::TryRemove(_playerIdToTradePartners[partnerId], playerId);
-	}
-	partners.clear();
-}
+
 
 
 #undef LOCTEXT_NAMESPACE

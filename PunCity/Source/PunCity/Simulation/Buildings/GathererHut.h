@@ -113,6 +113,7 @@ public:
 class Farm final : public Building
 {
 public:
+	virtual void OnPreInit() override;
 	void OnInit() override;
 	
 	void FinishConstruction() override;
@@ -131,28 +132,57 @@ public:
 		return _simulation->IsResearched(_playerId, TechEnum::AgriculturalRevolution);
 	}
 
+	virtual WorldTile2 gateTile() override { return _farmTiles[0].worldTile; }
+
+	void SetFarmStartTile(WorldTile2 tile) {
+		_startTile = tile;
+	}
+
 	std::vector<BonusPair> GetBonuses() override;
 
-	int32 totalFarmTiles() { return _area.sizeX() * _area.sizeY();  }
+	virtual int32 tileCount() override { return _farmTiles.size(); }
 
-	WorldTile2 FindFarmableTile(int32 unitId);
+	const std::vector<FarmTile>& farmTiles() { return _farmTiles; }
+
+	FarmTile FindFarmableTile(int32 unitId);
+	FarmTile GetNextFarmableTile(int32 farmTileId);
+
+	FarmTile GetFarmTile(int32 farmTileId) { return _farmTiles[farmTileId]; }
 
 	bool IsStageCompleted();
 	int32 GetStagePercent() {
-		return CppUtils::Sum(_isTileWorked) * 100 / _isTileWorked.size();
+		int32 totalWorked = 0;
+		for (const FarmTile& farmTile : _farmTiles) {
+			if (farmTile.isTileWorked) {
+				totalWorked++;
+			}
+		}
+		return totalWorked * 100 / _farmTiles.size();
 	}
 	
 	int32 MinCropGrowthPercent();
-	void ResetStageTo(FarmStage farmStage) {
+	
+	void ResetStageTo(FarmStage farmStage)
+	{
 		_farmStage = farmStage;
-		std::fill(_isTileWorked.begin(), _isTileWorked.end(), false);
+
+		// Reset Workers
+		for (int32 occupantId : _occupantIds) {
+			_simulation->ResetUnitActions(occupantId);
+		}
+
+		// Reset Farm Tiles
+		for (FarmTile& farmTile : _farmTiles) {
+			farmTile.isTileWorked = false;
+			check(farmTile.reservedUnitId == -1);
+		}
 	}
 
 	void SetAreaWalkable() final {
 		_didSetWalkable = true;
 	}
 	
-	void DoFarmWork(int32 unitId, WorldTile2 tile, FarmStage farmStage);
+	void DoFarmWork(int32 unitId, int32 farmTileId, FarmStage farmStage);
 
 	void ClearAllPlants();
 
@@ -199,25 +229,26 @@ public:
 
 	int32 workedTiles() {
 		int32 tilesWorked = 0;
-		for (size_t i = _isTileWorked.size(); i-- > 0;) {
-			if (_isTileWorked[i]) tilesWorked++;
+		for (const FarmTile& farmTile : _farmTiles) {
+			if (farmTile.isTileWorked) {
+				tilesWorked++;
+			}
 		}
 		return tilesWorked;
 	}
 
-	void UnreserveFarmTile(int32 unitId, WorldTile2 tile);
-	void ReserveFarmTile(int32 unitId, WorldTile2 tile);
+	void UnreserveFarmTile(int32 farmTileId);
+	void ReserveFarmTile(int32 unitId, const FarmTile& farmTile);
 
 	void Serialize(FArchive& Ar) override {
 		Building::Serialize(Ar);
 		Ar << currentPlantEnum;
+		
 		Ar << _farmStage;
-		SerializeVecBool(Ar, _isTileWorked);
-		SerializeVecLoop(Ar, _reservingUnitIdToFarmTileId, [&](std::pair<int32, int32>& pair) {
-			Ar << pair.first;
-			Ar << pair.second;
-		});
 		Ar << _fertility;
+		
+		SerializeVecObj(Ar, _farmTiles);
+		_startTile >> Ar;
 	}
 
 	static int32 GetAverageFertility(TileArea area, IGameSimulationCore* simulation)
@@ -234,23 +265,48 @@ public:
 		_fertility = GetAverageFertility(area(), _simulation);
 	}
 
-private:
-	bool NoFarmerOnTileId(int32 farmTileId);
+	int32 GetFarmerReserverOnTileRow(int32 farmTileId);
 
-	int32 farmTileIdFromWorldTile(WorldTile2 tile) {
-		WorldTile2 farmTile = tile - _area.min();
-		PUN_CHECK2(farmTile.x >= 0 && farmTile.y >= 0, debugStr());
-		return farmTile.x + farmTile.y * _area.sizeX();
+
+	WorldTile2 GetFarmDisplayCenter()
+	{
+		int32 minDist = 99999;
+		WorldTile2 center = WorldTile2::Invalid;
+		for (const FarmTile& farmTileCandidate : _farmTiles) {
+			WorldTile2 centerCandidate = farmTileCandidate.worldTile;
+
+			int32 dist = 0;
+			for (const FarmTile& farmTile : _farmTiles) {
+				dist += WorldTile2::Distance(farmTile.worldTile, centerCandidate);
+			}
+
+			if (dist < minDist) {
+				minDist = dist;
+				center = centerCandidate;
+			}
+		}
+
+		check(center.isValid());
+		return center;
 	}
+
+	static int32 GetFarmWorkerCount(int32 tileCount) {
+		return (tileCount - 1) / 64 + 1;
+	}
+	
+	virtual int32 GetWorkerCount() override {
+		return GetFarmWorkerCount(tileCount());
+	}
+
 public:
 	TileObjEnum currentPlantEnum = TileObjEnum::None;
 	
-private:	
+private:
 	FarmStage _farmStage = FarmStage::Dormant; // seed until done ... then nourish until autumn, or until fruit (for fruit bearers)
-	std::vector<bool> _isTileWorked;
 	int32 _fertility = 0;
 	
-	std::vector<std::pair<int32, int32>> _reservingUnitIdToFarmTileId;
+	std::vector<FarmTile> _farmTiles;
+	WorldTile2 _startTile;
 };
 
 /*
@@ -1463,6 +1519,15 @@ public:
 class Fort final : public ProvinceBuilding
 {
 public:
+	virtual void FinishConstruction() override {
+		Building::FinishConstruction();
+
+		_simulation->AddFortToProvince(provinceId(), buildingId());
+	}
+
+	virtual void OnDeinit() override {
+		_simulation->TryRemoveFortFromProvince(provinceId(), buildingId());
+	}
 };
 
 class ResourceOutpost final : public ProvinceBuilding
@@ -1606,4 +1671,13 @@ public:
 	}
 
 	static const int32 Radius = 12;
+};
+
+
+class ProvincialBuilding : Building
+{
+public:
+
+	std::vector<AutoTradeElement> autoExportElements;
+	std::vector<AutoTradeElement> autoImportElements;
 };

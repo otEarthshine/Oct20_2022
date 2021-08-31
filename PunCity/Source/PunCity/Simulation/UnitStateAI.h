@@ -802,11 +802,16 @@ public:
 
 	UnitAnimationEnum animationEnum() { return _animationEnum; }
 
-	UnitAnimationEnum GetDisplayAnimationEnum()
+	UnitAnimationEnum GetDisplayAnimationEnum(bool useFlashPrevention)
 	{
 		// This prevents flashes that happens with animation reset
-		if (Time::Ticks() - _lastAnimationChangeTick < 10) {
-			return _lastAnimationEnum;
+		if (useFlashPrevention)
+		{
+			if (_lastAnimationEnum != UnitAnimationEnum::Wait &&
+				Time::Ticks() - _lastAnimationChangeTick < 10)
+			{
+				return _lastAnimationEnum;
+			}
 		}
 		return _animationEnum;
 	}
@@ -927,7 +932,7 @@ protected:
 	void DoWork(int32 workAmount, int32 workplaceId = -1);
 
 	void ReserveTreeTile(int32_t tileId);
-	void ReserveFarmTile(int32_t tileId);
+	void ReserveFarmTile(const struct FarmTile& farmTile, int32 workplaceId);
 
 	void CancelReservations() {
 		for (int i = reservations.size(); i-- > 0;) {

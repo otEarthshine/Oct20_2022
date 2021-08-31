@@ -375,6 +375,18 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 		LOCTEXT("Building Combo", "Building Combo"),
 		LOCTEXT("Building Combo Desc", "Gain Combo level 1,2,3 by constructing 2,4,8 buildings of the same type."),
 	} },
+
+	/*
+	 * August 4
+	 */
+	{ TechEnum::CardInventory1, {
+		LOCTEXT("Card Inventory I", "Card Inventory I"),
+		LOCTEXT("Card Inventory I Desc", "Unlocks Card Inventory that can be used to stored unused cards (7 slots)."),
+	}},
+	{ TechEnum::CardInventory2, {
+		LOCTEXT("Card Inventory II", "Card Inventory II"),
+		LOCTEXT("Card Inventory II Desc", "Expand the number of slots in the Card Inventory (14 slots)."),
+	}},
 };
 
 enum class TechClassEnum
@@ -1319,6 +1331,8 @@ public:
 				{ CardEnum::GardenShrubbery1 }
 			);
 
+			AddTech_Bonus(TechEnum::CardInventory1, {});
+
 			AddTech_CardGiving(TechEnum::SlaveLabor, {},
 				CardEnum::SlaveLabor
 			);
@@ -1341,9 +1355,9 @@ public:
 			AddTech_CardGiving(TechEnum::BlueberryFarming, {},
 				{ CardEnum::BlueberrySeed }
 			);
-			AddTech_CardGiving(TechEnum::Motivation, {},
-				{ CardEnum::Motivation }
-			);
+
+			AddTech_Bonus(TechEnum::CardInventory2, { TechEnum::CardInventory1 });
+			
 			AddTech_CardGiving(TechEnum::Lockdown, { TechEnum::SlaveLabor },
 				{ CardEnum::Lockdown }
 			);
@@ -1363,8 +1377,9 @@ public:
 				{ CardEnum::PumpkinSeed },
 				TechRequirements::ResourceProduced(ResourceEnum::Blueberries, 1000)
 			);
-			AddTech_CardGiving(TechEnum::Passion, { TechEnum::Motivation },
-				{ CardEnum::Passion }
+			
+			AddTech_CardGiving(TechEnum::Motivation, {},
+				{ CardEnum::Motivation }
 			);
 
 			AddTech_Building(TechEnum::BarrackKnight, { TechEnum::Fort },
@@ -1387,6 +1402,9 @@ public:
 				{ CardEnum::AllYouCanEat }
 			);
 
+			AddTech_CardGiving(TechEnum::Passion, { TechEnum::Motivation },
+				{ CardEnum::Passion }
+			);
 			
 			AddTech_Building(TechEnum::ResourceOutpost, {},
 				CardEnum::ResourceOutpost

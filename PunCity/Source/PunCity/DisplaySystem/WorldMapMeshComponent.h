@@ -101,37 +101,37 @@ public:
 		needForceUpdate = true;
 	}
 
-	void InitProvinceMesh()
-	{
-		auto& provinceSys = simulation().provinceSystem();
-		
-		for (int32 i = 0; i < GameMapConstants::TotalRegions; i++)
-		{
-			if (simulation().IsProvinceValid(i)) 
-			{
-				auto comp = NewObject<UTerritoryMeshComponent>(this);
-				comp->Rename(*FString(("ProvinceMesh_Map" + to_string(i)).c_str()));
-				comp->AttachToComponent(_terrainChunkParent, FAttachmentTransformRules::KeepRelativeTransform, NAME_None);
-				comp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-				comp->SetGenerateOverlapEvents(false);
-				comp->bAffectDistanceFieldLighting = false;
-				comp->RegisterComponent();
+	//void InitProvinceMesh()
+	//{
+	//	auto& provinceSys = simulation().provinceSystem();
+	//	
+	//	for (int32 i = 0; i < GameMapConstants::TotalRegions; i++)
+	//	{
+	//		if (simulation().IsProvinceValid(i)) 
+	//		{
+	//			auto comp = NewObject<UTerritoryMeshComponent>(this);
+	//			comp->Rename(*FString(("ProvinceMesh_Map" + to_string(i)).c_str()));
+	//			comp->AttachToComponent(_terrainChunkParent, FAttachmentTransformRules::KeepRelativeTransform, NAME_None);
+	//			comp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	//			comp->SetGenerateOverlapEvents(false);
+	//			comp->bAffectDistanceFieldLighting = false;
+	//			comp->RegisterComponent();
 
-				WorldTile2 provinceCenter = provinceSys.GetProvinceCenter(i).worldTile2();
-				comp->SetRelativeLocation(FVector(provinceCenter.x * CoordinateConstants::DisplayUnitPerTile, 
-													provinceCenter.y * CoordinateConstants::DisplayUnitPerTile, 0));
+	//			WorldTile2 provinceCenter = provinceSys.GetProvinceCenter(i).worldTile2();
+	//			comp->SetRelativeLocation(FVector(provinceCenter.x * CoordinateConstants::DisplayUnitPerTile, 
+	//												provinceCenter.y * CoordinateConstants::DisplayUnitPerTile, 0));
 
-				//comp->UpdateMesh(true, i, );
-				comp->SetTerritoryMaterial(_assetLoader->M_Province, _assetLoader->M_Province_Top);
+	//			//comp->UpdateMesh(true, i, );
+	//			comp->SetTerritoryMaterial(_assetLoader->M_Province, _assetLoader->M_Province_Top);
 
-				comp->SetCastShadow(false);
-				comp->SetReceivesDecals(true);
+	//			comp->SetCastShadow(false);
+	//			comp->SetReceivesDecals(true);
 
-				//_terrainChunks.Add(terrainComp);
-				//_provinceChunks
-			}
-		}
-	}
+	//			//_terrainChunks.Add(terrainComp);
+	//			//_provinceChunks
+	//		}
+	//	}
+	//}
 
 
 	void Update(bool mapVisible, bool colliderVisible)

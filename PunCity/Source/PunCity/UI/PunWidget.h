@@ -52,6 +52,8 @@ public:
 		punId = -1;
 		uiEnum = uiEnumIn;
 		startTime = UGameplayStatics::GetTimeSeconds(GetWorld());
+		uiHash = -1;
+		
 		OnInit();
 	}
 
@@ -535,10 +537,13 @@ public:
 	int32 punId = -1; // Any attached objectId... optional
 	int32 callbackVar1 = -1;
 	int32 callbackVar2 = -1;
+	int32 callbackVar3 = -1;
+	int32 callbackVar4 = -1;
 
 	UIEnum uiEnum = UIEnum::MainGame;
 	float startTime = -1;
 
+	int32 uiHash = -1;
 
 	bool justInitializedUI = false;
 

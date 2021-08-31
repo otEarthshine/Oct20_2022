@@ -130,14 +130,18 @@ public:
 
 	bool IsReserved(int tileId) { return _reservations.Contains(tileId); }
 	UnitReservation& Reservation(int tileId) { return _reservations[tileId]; }
-	void SetReserved(int tileId, UnitReservation& reservation) { 
+	void SetReserved(int tileId, UnitReservation& reservation)
+	{
+		PUN_LOG("SetReserved tileId:%d unitId:%d", tileId, reservation.unitId);
 		PUN_CHECK2(!_reservations.Contains(tileId), ("ExistingUnit:\n" + _simulation->unitdebugStr(_reservations[tileId].unitId) + "\n\nNewUnit:" + _simulation->unitdebugStr(reservation.unitId)));
 		_reservations.Add(tileId, reservation);
 
 		WorldTile2 tile(tileId);
 		//GameMap::PathAI->SetUnreservedFruit(tile.x, tile.y, false); // Just in case this is fruit, it won't be available for pathing anymore
 	}
-	void Unreserve(int tileId, UnitReservation& reservation) {
+	void Unreserve(int tileId, UnitReservation& reservation)
+	{
+		PUN_LOG("Unreserve tileId:%d unitId:%d", tileId, reservation.unitId);
 		UnitReservation tileReservation = _reservations.Remove(tileId);
 		PUN_CHECK2(reservation == tileReservation, (tileReservation.ToString() + "," + reservation.ToString() + "," + _simulation->unitdebugStr(reservation.unitId)));
 		

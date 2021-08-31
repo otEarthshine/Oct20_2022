@@ -31,21 +31,28 @@ public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* EmptyText;
 	UPROPERTY(meta = (BindWidget)) UButton* EmptySelectButton;
 	
-	UPROPERTY(meta = (BindWidget)) UButton* PlayerKickButton;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* PlayerKickButton;
+
+	UPROPERTY(meta = (BindWidget)) UButton* PlayerLogoChangeButton;
 
 	FString playerName;
 	
 	void PunInit(UPunWidget* parent, int32 slotIdIn) {
 		_parent = parent;
 		slotId = slotIdIn;
-		BUTTON_ON_CLICK(PlayerKickButton, this, &UPlayerListElementUI::OnClickPlayerKickButton);
+		BUTTON_ON_CLICK(PlayerKickButton->CoreButton, this, &UPlayerListElementUI::OnClickPlayerKickButton);
 		BUTTON_ON_CLICK(EmptySelectButton, this, &UPlayerListElementUI::OnClickEmptySelectButton);
+		PlayerLogoChangeButton->OnClicked.AddUniqueDynamic(this, &UPlayerListElementUI::OnClickPlayerLogoChangeButton);
 	}
 	
 	UFUNCTION() void OnClickPlayerKickButton();
 
 	UFUNCTION() void OnClickEmptySelectButton() {
 		_parent->CallBack1(this, CallbackEnum::SelectEmptySlot);
+	}
+
+	UFUNCTION() void OnClickPlayerLogoChangeButton() {
+		_parent->CallBack1(this, CallbackEnum::LobbyChoosePlayerLogo);
 	}
 
 	int32 slotId = -1;

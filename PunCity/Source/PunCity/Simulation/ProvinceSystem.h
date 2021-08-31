@@ -501,7 +501,71 @@ public:
 			}
 		}
 
+		/*
+		 * Split province into two
+		 * - if center isn't townhall placable
+		 */
 
+		for (int32 provinceId = 0; provinceId < proviceIdsSize; provinceId++)
+		{
+			if (_provinceFlatTileCount[provinceId] > 1000)
+			{
+				int64 sumX = 0;
+				int64 sumY = 0;
+				int32 count = 0;
+				ExecuteOnProvinceTiles(provinceId, [&](WorldTile2& tile)
+				{
+					if (terrainGen.terrainTileType(tile) == TerrainTileType::None) {
+						sumX += tile.x;
+						sumY += tile.y;
+						count++;
+					}
+				});
+
+				WorldTile2 newCenter(sumX / count, sumY / count);
+
+				// check centroid
+				if (terrainGen.terrainTileType(newCenter) == TerrainTileType::None &&
+					terrainGen.terrainTileType(newCenter + WorldTile2(3, 3)) == TerrainTileType::None &&
+					terrainGen.terrainTileType(newCenter + WorldTile2(-3, 3)) == TerrainTileType::None &&
+					terrainGen.terrainTileType(newCenter + WorldTile2(3, -3)) == TerrainTileType::None &&
+					terrainGen.terrainTileType(newCenter + WorldTile2(-3, -3)) == TerrainTileType::None)
+				{
+					_provinceCenters[provinceId] = WorldTile2x2(newCenter);
+				}
+			}
+		}
+
+
+		 /*
+		  * Set invalid center Tiles to Invalid
+		  */
+		for (int32 provinceId = 0; provinceId < proviceIdsSize; provinceId++)
+		{
+			if (terrainGen.terrainTileType(_provinceCenters[provinceId].worldTile2()) != TerrainTileType::None) {
+				_provinceCenters[provinceId] = WorldTile2x2();
+			}
+		}
+
+		/*
+		 * Trim invalid connections
+		 */
+		for (int32 provinceId = 0; provinceId < proviceIdsSize; provinceId++)
+		{
+			std::vector<ProvinceConnection>& connections = _provinceConnections[provinceId];
+			for (int32 i = connections.size(); i-- > 0;) 
+			{
+				if (_provinceCenters[connections[i].provinceId].IsInvalid() ||
+					(connections[i].tileType == TerrainTileType::River && connections[i].connectedTiles <= 3)) // River mouth that is not very connected...
+				{
+					connections.erase(connections.begin() + i);
+				}
+			}
+		}
+
+		 /*
+		  * _totalFlatTiles
+		  */
 		_totalFlatTiles = 0;
 		for (size_t i = 0; i < _provinceFlatTileCount.size(); i++) {
 			_totalFlatTiles += _provinceFlatTileCount[i];
@@ -748,9 +812,13 @@ public:
 		if (!tile.isValid()) {
 			return -1;
 		}
-		int32 provinceId = _provinceId2x2[WorldTile2x2(tile).tile2x2Id()];
-		if (IsValidRawProvinceId(provinceId)) {
-			return abs(provinceId);
+		int32 provinceIdRaw = _provinceId2x2[WorldTile2x2(tile).tile2x2Id()];
+		if (IsValidRawProvinceId(provinceIdRaw)) {
+			int32 provinceIdClean = abs(provinceIdRaw);
+			if (_provinceCenters[provinceIdClean].IsInvalid()) {
+				return -1;
+			}
+			return provinceIdClean;
 		}
 		return -1;
 	}
@@ -805,6 +873,7 @@ public:
 	/*
 	 * Connections
 	 */
+	// Note ProvinceConnection can have duplicate provinceIds (if there are multiple type of connections)
 	const std::vector<ProvinceConnection>& GetProvinceConnections(int32 provinceId) {
 		return _provinceConnections[provinceId];
 	}

@@ -36,7 +36,7 @@ public:
 
 	bool TryStoreInventory();
 
-	bool TryClearLand(TileArea area);
+	bool TryClearLand(TileArea area, Building* farmPtr = nullptr);
 
 	// Fill Specific Building. Worker fill workshop raw material
 	bool TryFillWorkplace(ResourceEnum resourceEnum);
@@ -97,10 +97,12 @@ public:
 	//void Add_SearchAreaForDrop(ResourceEnum resourceEnum);			void SearchAreaForDrop();
 
 	//void Add_DoConsumerWork(int32_t workManSec100);					void DoConsumerWork();
-	void Add_DoFarmWork(WorldTile2 tile, FarmStage farmStage);		void DoFarmWork();
+	void Add_DoFarmWork(int32 farmTileId, WorldTile2 farmWorldTile, FarmStage farmStage);		void DoFarmWork();
 
 	void Add_TryForestingPlantAction(TileObjEnum tileObjEnum, NonWalkableTileAccessInfo accessInfo);		void TryForestingPlantAction();
 
+
+	void ReserveAndAdd_DoFarmWork(const FarmTile& farmTile, FarmStage farmStage, int32 workplaceId = -1);
 	
 
 	void ExecuteAction() override

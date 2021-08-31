@@ -26,9 +26,12 @@ APunHUD::APunHUD()
 
 	LoadClass(UIEnum::InitialResourceUI, "InitialResourceWidget");
 	LoadClass(UIEnum::DiplomacyUI, "DiplomacyUIWidget");
+	LoadClass(UIEnum::TrainUnitsUI, "TrainUnitsUIWidget");
 
 	LoadClass(UIEnum::SendImmigrantsUI, "SendImmigrantsWidget");
 	LoadClass(UIEnum::GiftResourceUI, "GiftResourceWidget");
+
+	LoadClass(UIEnum::TownAutoTradeUI, "TownAutoTradeUIWidget");
 
 	LoadClass(UIEnum::DragCardSlot, "Drag/DragCardSlotWidget");
 	LoadClass(UIEnum::DragCard, "Drag/DragCardWidget");
@@ -41,12 +44,14 @@ APunHUD::APunHUD()
 	LoadClass(UIEnum::ToolTip, "TooltipWidget");
 	LoadClass(UIEnum::TradeRow, "WorldTradeRowWidget");
 	LoadClass(UIEnum::TradeRowIntercity, "IntercityTradeRowWidget");
-	
 	LoadClass(UIEnum::QuestElement, "QuestMiniElementWidget");
 	LoadClass(UIEnum::PlayerCompareElement, "PlayerCompareElement");
 	LoadClass(UIEnum::PlayerCompareDetailedElement, "PlayerDetailElement");
 	LoadClass(UIEnum::ResourceStatTableRow, "StatisticsUI/ResourceStatTableRow");
 	LoadClass(UIEnum::BuildingStatTableRow, "StatisticsUI/BuildingStatTableRow");
+
+	LoadClass(UIEnum::TownAutoTradeRow, "TownAutoTradeRowWidget");
+	LoadClass(UIEnum::TownTradeOffersRow, "TownTradeOffersRowWidget");
 
 	//LoadClass(UIEnum::ArmyUI, "ArmyUI");
 	//LoadClass(UIEnum::ArmyRow, "ArmyRow");
@@ -257,7 +262,10 @@ void APunHUD::PunTick(bool isPhotoMode)
 
 	_sendImmigrantsUI->TickUI();
 	_diplomacyUI->TickUI();
+	_trainUnitsUI->TickUI();
 	_giftResourceUI->TickUI();
+
+	_townAutoTradeUI->TickUI();
 	
 	_techUI->TickUI();
 	_prosperityUI->TickUI();
@@ -281,6 +289,9 @@ void APunHUD::PunTick(bool isPhotoMode)
 	_sendImmigrantsUI->CheckPointerOnUI();
 	_initialResourceUI->CheckPointerOnUI();
 	_giftResourceUI->CheckPointerOnUI();
+
+	_trainUnitsUI->CheckPointerOnUI();
+	_townAutoTradeUI->CheckPointerOnUI();
 	
 	_techUI->CheckPointerOnUI();
 	_prosperityUI->CheckPointerOnUI();
@@ -358,8 +369,14 @@ void APunHUD::Setup(IPunPlayerController* controller, USceneComponent* worldWidg
 	_diplomacyUI = AddWidgetToHUDCast<UDiplomacyUI>(UIEnum::DiplomacyUI);
 	_diplomacyUI->PunInit();
 
+	_trainUnitsUI = AddWidgetToHUDCast<UTrainUnitsUI>(UIEnum::TrainUnitsUI);
+	_trainUnitsUI->PunInit();
+
 	_giftResourceUI = AddWidgetToHUDCast<UGiftResourceUI>(UIEnum::GiftResourceUI);
 	_giftResourceUI->PunInit();
+
+	_townAutoTradeUI = AddWidgetToHUDCast<UTownAutoTradeUI>(UIEnum::TownAutoTradeUI);
+	_townAutoTradeUI->PunInit();
 
 	_techUI = AddWidgetToHUDCast<UMainTechTreeUI>(UIEnum::TechTreeUI);
 	_techUI->PunInit();
@@ -399,23 +416,44 @@ void APunHUD::KeyPressed_Escape()
 	return;
 #endif
 	
-	ExclusiveUIEnum uiEnum = GetCurrentExclusiveUIDisplay();
-
 	bool isClosingMainGameUIElement = _mainGameUI->EscDown();
 
 	bool isClosingUI = isClosingMainGameUIElement ||
 						_worldTradeUI->IsVisible() ||
 						_intercityTradeUI->IsVisible() ||
 						_targetConfirmUI->IsVisible() ||
+
 						_techUI->IsVisible() ||
 						_prosperityUI->IsVisible() ||
+
 						_descriptionUISystem->IsShowingDescriptionUI() ||
 						_statisticsUI->IsVisible() ||
-						_questUI->QuestDescriptionOverlay->IsVisible() ||
-						_questUI->PlayerDetailsOverlay->IsVisible() ||
+
 						_sendImmigrantsUI->IsVisible() ||
 						_giftResourceUI->IsVisible() ||
+						_diplomacyUI->IsVisible() ||
+						_trainUnitsUI->IsVisible() ||
+						_townAutoTradeUI->IsVisible() ||
+
+						_questUI->QuestDescriptionOverlay->IsVisible() ||
+						_questUI->PlayerDetailsOverlay->IsVisible() ||
+		
 						_escMenuUI->OverlaySettingsOverlay->IsVisible();
+	
+
+	ResetGameUI(true);
+
+	if (!isClosingUI) {
+		_escMenuUI->KeyPressed_Escape();
+	}
+}
+
+void APunHUD::ResetGameUI(bool isEscPressed)
+{
+	// If isEscPressed, the KeyPressed_Escape is already managing some UI, so ignore them
+	if (!isEscPressed) {
+		mainGameUI()->ResetGameUI();
+	}
 
 	_worldTradeUI->CloseUI();
 	_intercityTradeUI->CloseUI();
@@ -424,19 +462,23 @@ void APunHUD::KeyPressed_Escape()
 	_techUI->SetShowUI(false);
 	_prosperityUI->SetShowUI(false);
 
-	_descriptionUISystem->CloseDescriptionUI();
-
+	CloseDescriptionUI();
 	CloseStatisticsUI();
-
-	_questUI->OnQuestDescriptionCloseButtonClick();
 
 	_sendImmigrantsUI->CloseUI();
 	_giftResourceUI->CloseUI();
+	_diplomacyUI->CloseUI();
+	_trainUnitsUI->CloseUI();
+	_townAutoTradeUI->CloseUI();
 
-	_escMenuUI->CloseOverlayUI();
+	_questUI->QuestDescriptionOverlay->SetVisibility(ESlateVisibility::Collapsed);
 	_questUI->PlayerDetailsOverlay->SetVisibility(ESlateVisibility::Collapsed);
 
-	if (!isClosingUI) {
-		_escMenuUI->KeyPressed_Escape();
+	_escMenuUI->CloseOverlayUI();
+	
+
+	if (!isEscPressed) {
+		_escMenuUI->EscMenu->SetVisibility(ESlateVisibility::Collapsed);
+		_escMenuUI->TutorialUI->SetVisibility(ESlateVisibility::Collapsed);
 	}
 }

@@ -82,6 +82,8 @@ void Building::Init(IGameSimulationCore& simulation, int32 objectId, int32 townI
 
 	// Mark area for land clearing
 	simulation.treeSystem().MarkArea(_townId, _area, false, ResourceEnum::None);
+
+	OnPreInit();
 	
 	// Set initial construction resource
 	vector<int32> constructionCosts = GetConstructionResourceCost();
@@ -264,8 +266,10 @@ void Building::FinishConstruction()
 	if (product() != ResourceEnum::None) AddResourceHolder(product(), ResourceHolderType::Provider, 0);
 	//if (IsProducer(buildingEnum())) AddResourceHolder(ResourceEnum::Tools, ResourceHolderType::Provider, 0);
 
-	// Add workers
-	int32 workerCount = buildingInfo().workerCount;
+	/*
+	 * Add workers
+	 */
+	int32 workerCount = GetWorkerCount();
 	if (workerCount > 0) {
 		AddJobBuilding(workerCount);
 	}

@@ -38,7 +38,10 @@ enum class UIEnum
 
 	SendImmigrantsUI,
 	DiplomacyUI,
+	TrainUnitsUI,
 	GiftResourceUI,
+
+	TownAutoTradeUI,
 	
 	DragCardSlot,
 	DragCard,
@@ -56,6 +59,9 @@ enum class UIEnum
 	PlayerCompareDetailedElement,
 	ResourceStatTableRow,
 	BuildingStatTableRow,
+
+	TownAutoTradeRow,
+	TownTradeOffersRow,
 
 	//ArmyUI,
 	//ArmyRow,

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "IGameSimulationCore.h"
+#include "Building.h"
 
 struct PlayerSupplyChange
 {
@@ -19,19 +20,86 @@ struct PlayerSupplyChange
 	}
 };
 
+struct TradeRouteResourcePair
+{
+	bool isTown1ToTown2 = true;
+	ResourcePair resourcePair;
+
+	//! Serialize
+	FArchive& operator>>(FArchive &Ar) {
+		Ar << isTown1ToTown2;
+		resourcePair >> Ar;
+		return Ar;
+	}
+};
+
+struct TradeRoutePair
+{
+	int32 townId1;
+	int32 buildingId1;
+
+	int32 townId2;
+	int32 buildingId2;
+
+	int32 distance;
+
+	std::vector<TradeRouteResourcePair> tradeResources;
+
+	bool HasBuildingId(int32 buildingId) const {
+		return buildingId == buildingId1 ||
+			buildingId == buildingId2;
+	}
+
+	bool HasTownId(int32 townId) const {
+		return townId == townId1 ||
+			townId == townId2;
+	}
+
+	int32 GetCounterpartTownId(int32 buildingIdIn) const {
+		if (buildingIdIn == buildingId1) {
+			return townId2;
+		}
+		return townId1;
+	}
+	
+
+	//! Serialize
+	FArchive& operator>>(FArchive &Ar) {
+		Ar << townId1;
+		Ar << buildingId1;
+		
+		Ar << townId2;
+		Ar << buildingId2;
+
+		Ar << distance;
+
+		SerializeVecObj(Ar, tradeResources);
+		return Ar;
+	}
+
+	bool operator==(const TradeRoutePair& a) const {
+		return townId1 == a.townId1 &&
+			buildingId1 == a.buildingId1 &&
+
+			townId2 == a.townId2 &&
+			buildingId2 == a.buildingId2;
+	}
+};
+
+
+
 /**
  * 
  */
 class WorldTradeSystem
 {
 public:
-	void Init(IGameSimulationCore* simulation, int32 maxPlayers) {
+	void Init(IGameSimulationCore* simulation, int32 maxPlayers)
+	{
 		_simulation = simulation;
 		_enumToSupplyValue100.resize(ResourceEnumCount);
 		_resourceEnumToPrice100Vec.resize(ResourceEnumCount);
 		_resourceEnumToPlayerSupplyChanges.resize(ResourceEnumCount);
-
-		_playerIdToTradePartners.resize(maxPlayers);
 	}
 
 	void AddTown(int32 townId)
@@ -145,35 +213,81 @@ public:
 	}
 
 	// Trade Route
-	void RefreshTradeClusters();
-	std::vector<int32> GetTradePartners(int32 playerId); // Note: this includes self
-	void TryEstablishTradeRoute(FSetIntercityTrade command);
-	void TryCancelTradeRoute(FSetIntercityTrade command);
-	void RemoveAllTradeRoutes(int32 playerId);
+	void RefreshTradeRoutes();
+
+	void SortTradeRoutes()
+	{
+		std::sort(_tradeRoutePairs.begin(), _tradeRoutePairs.end(), [&](const TradeRoutePair& a, const TradeRoutePair& b) {
+			return a.distance < b.distance;
+		});
+	}
+	
+	std::vector<TradeRoutePair> GetTradeRoutesTo(int32 buildingIdIn) {
+		std::vector<TradeRoutePair> routes;
+		for (const TradeRoutePair& route : _tradeRoutePairs) {
+			if (route.HasBuildingId(buildingIdIn)) {
+				routes.push_back(route);
+			}
+		}
+		return routes;
+	}
+
+	void CalculateTradeRouteBuildings(TradeRoutePair& tradeRoutePair) const {
+		if (tradeRoutePair.townId1 != -1) {
+			tradeRoutePair.buildingId1 = _simulation->GetTownhallId(tradeRoutePair.townId1);
+		}
+		if (tradeRoutePair.townId2 != -1) {
+			tradeRoutePair.buildingId2 = _simulation->GetTownhallId(tradeRoutePair.townId2);
+		}
+	}
+	
+	bool HasTradeRoute(const TradeRoutePair& tradeRoutePairIn) const {
+		for (const TradeRoutePair& tradeRoutePair : _tradeRoutePairs) {
+			if (tradeRoutePair == tradeRoutePairIn) {
+				return true;
+			}
+		}
+		return false;
+	}
+	void TryEstablishTradeRoute(const FGenericCommand& command);
+	void TryCancelTradeRoute(const FGenericCommand& command);
+
+	std::vector<TradeRoutePair>& tradeRoutePairs() {
+		return _tradeRoutePairs;
+	}
+	
+	
+	FText GetTradeRouteNodeName1(const TradeRoutePair& tradeRoutePair) {
+		return tradeRoutePair.townId1 != -1 ? _simulation->townNameT(tradeRoutePair.townId1) : _simulation->building(tradeRoutePair.buildingId1).buildingInfo().GetName();
+	}
+	FText GetTradeRouteNodeName2(const TradeRoutePair& tradeRoutePair) {
+		return tradeRoutePair.townId2 != -1 ? _simulation->townNameT(tradeRoutePair.townId2) : _simulation->building(tradeRoutePair.buildingId2).buildingInfo().GetName();
+	}
 
 	// Intercity Trade
-	const std::vector<IntercityTradeOffer>& GetIntercityTradeOffers(int32 townId) {
-		return _intercityTradeOffers[townId];
-	}
-	IntercityTradeOffer GetIntercityTradeOffer(int32 townId, ResourceEnum resourceEnum) {
-		std::vector<IntercityTradeOffer>& offers = _intercityTradeOffers[townId];
-		for (IntercityTradeOffer& offer : offers) {
-			if (offer.resourceEnum == resourceEnum) {
-				return offer;
-			}
-		}
-		return IntercityTradeOffer();
-	}
-	void SetIntercityTradeOffers(FSetIntercityTrade command)
-	{
-		if (command.townId != -1 && command.townId < _intercityTradeOffers.size())
-		{
-			_intercityTradeOffers[command.townId].clear();
-			for (int32 i = 0; i < command.resourceEnums.Num(); i++) {
-				_intercityTradeOffers[command.townId].push_back({ static_cast<ResourceEnum>(command.resourceEnums[i]),  static_cast<IntercityTradeOfferEnum>(command.intercityTradeOfferEnum[i]), command.targetInventories[i] });
-			}
-		}
-	}
+	// TODO: REMOVE
+	//const std::vector<IntercityTradeOffer>& GetIntercityTradeOffers(int32 townId) {
+	//	return _intercityTradeOffers[townId];
+	//}
+	//IntercityTradeOffer GetIntercityTradeOffer(int32 townId, ResourceEnum resourceEnum) {
+	//	std::vector<IntercityTradeOffer>& offers = _intercityTradeOffers[townId];
+	//	for (IntercityTradeOffer& offer : offers) {
+	//		if (offer.resourceEnum == resourceEnum) {
+	//			return offer;
+	//		}
+	//	}
+	//	return IntercityTradeOffer();
+	//}
+	//void SetIntercityTradeOffers(FSetIntercityTrade command)
+	//{
+	//	if (command.townId != -1 && command.townId < _intercityTradeOffers.size())
+	//	{
+	//		_intercityTradeOffers[command.townId].clear();
+	//		for (int32 i = 0; i < command.resourceEnums.Num(); i++) {
+	//			_intercityTradeOffers[command.townId].push_back({ static_cast<ResourceEnum>(command.resourceEnums[i]),  static_cast<IntercityTradeOfferEnum>(command.intercityTradeOfferEnum[i]), command.targetInventories[i] });
+	//		}
+	//	}
+	//}
 	
 
 	// Serial
@@ -186,7 +300,7 @@ public:
 
 		SerializeVecVecObj(Ar, _resourceEnumToPlayerSupplyChanges);
 		
-		SerializeVecVecValue(Ar, _playerIdToTradePartners);
+		SerializeVecObj(Ar, _tradeRoutePairs);
 
 		SerializeVecVecObj(Ar, _intercityTradeOffers);
 	}
@@ -262,7 +376,8 @@ private:
 
 
 	// TradeRoute Clusters
-	std::vector<std::vector<int32>> _playerIdToTradePartners;
+	std::vector<TradeRoutePair> _tradeRoutePairs;
+	//std::vector<std::vector<int32>> _playerIdToTradePartners;
 
 	// Intercity Trade Offer
 	std::vector<std::vector<IntercityTradeOffer>> _intercityTradeOffers;

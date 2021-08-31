@@ -33,8 +33,8 @@ public:
 		SetPriceColor(PriceTextPair, price100, basePrice100);
 
 
-		AddResourceTooltip(ResourceTextPair, _resourceEnum, true);
-		AddResourceTooltip(PriceTextPair, _resourceEnum, true);
+		AddResourceTooltip(ResourceTextPair, _resourceEnum, false);
+		AddResourceTooltip(PriceTextPair, _resourceEnum, false);
 	}
 
 	ResourceEnum resourceEnum() { return _resourceEnum; }

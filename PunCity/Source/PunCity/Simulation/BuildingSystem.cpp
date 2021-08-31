@@ -314,6 +314,8 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		  CASE_BUILDING(CardEnum::RegionPort, Building);
 		  CASE_BUILDING(CardEnum::RegionCrates, Building);
 
+		  CASE_BUILDING(CardEnum::MinorCity, Building);
+
 		  CASE_BUILDING(CardEnum::ConsultingFirm, Building);
 		  CASE_BUILDING(CardEnum::ImmigrationPropagandaOffice, Building);
 		  CASE_BUILDING(CardEnum::MerchantGuild, Building);
@@ -392,6 +394,13 @@ int BuildingSystem::AddBuilding(FPlaceBuilding parameters)
 
 	_townIdPlus1ToEnumToBuildingIds[townId + 1][static_cast<int>(buildingEnum)].push_back(buildingId);
 	_isBuildingIdConnected.push_back(-1);
+
+	// Special cases:
+	if (buildingEnum == CardEnum::Farm) {
+		building->subclass<Farm>().SetFarmStartTile(WorldTile2(parameters.intVar1));
+	}
+	
+	
 	WorldTile2 assumedGateTile = Building::CalculateGateTile(static_cast<Direction>(parameters.faceDirection), center, GetBuildingInfo(buildingEnum).size);
 	RefreshIsBuildingConnected(townId, buildingId, assumedGateTile); // Some building needs IsConnected during Init()
 
@@ -482,6 +491,20 @@ void BuildingSystem::PlaceBuildingOnMap(int32 buildingIdIn, bool isBuildingIniti
 		return;
 	}
 
+	// Farm Special case
+	if (buildingEnum == CardEnum::Farm)
+	{
+		const std::vector<FarmTile>& farmTiles = bld.subclass<Farm>().farmTiles();
+		for (const FarmTile& farmTile : farmTiles) {
+			SetBuildingTile(farmTile.worldTile, bldId);
+		}
+		
+		if (isBuildingInitialAdd) {
+			bld.CheckCombo();
+		}
+		return;
+	}
+
 	/*
 	 * Typical buildings
 	 */
@@ -491,8 +514,7 @@ void BuildingSystem::PlaceBuildingOnMap(int32 buildingIdIn, bool isBuildingIniti
 	});
 
 	// Front Grid
-	if (HasBuildingFront(buildingEnum) &&
-		buildingEnum != CardEnum::RegionTribalVillage)
+	if (HasBuildingFront(buildingEnum))
 	{
 		Direction faceDirection = bld.faceDirection();
 		TileArea frontArea = area.GetFrontArea(faceDirection);

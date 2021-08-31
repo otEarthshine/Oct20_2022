@@ -750,6 +750,9 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 	}
 	buildingJobUI->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
+	buildingJobUI->LargeWhiteText->SetVisibility(ESlateVisibility::Collapsed);
+	buildingJobUI->MediumGrayText->SetVisibility(ESlateVisibility::Collapsed);
+	
 
 	// Under construction
 	if (!building.isConstructed())
@@ -839,6 +842,40 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 			}
 
 			buildingJobUI->SetSpeedBoost(building);
+
+			// Spy
+			if (house.spyPlayerId() == playerId())
+			{
+				buildingJobUI->LargeWhiteText->SetVisibility(ESlateVisibility::Visible);
+				buildingJobUI->MediumGrayText->SetVisibility(ESlateVisibility::Visible);
+
+				std::vector<BonusPair> bonuses = simulation().GetSpyBonuses(playerId(), house.townId());
+
+				buildingJobUI->LargeWhiteText->SetText(LOCTEXT("Spy Nest", "Spy Nest"));
+
+				TArray<FText> args;
+				int32 bonusValue = 0;
+				for (BonusPair bonus : bonuses) {
+					if (bonus.value > 0) {
+						ADDTEXT(args, INVTEXT("\n  +{0}% {1}"), TEXT_NUM(bonus.value), bonus.name);
+						bonusValue += bonus.value;
+					}
+				}
+
+				args.Insert(FText::Format(
+					LOCTEXT("Spy Bonus:", "Spy Bonus: {0}%"),
+					FText::AsNumber(bonusValue)
+				), 0);
+				
+				FText bonusText = JOINTEXT(args);
+				AddToolTip(buildingJobUI->LargeWhiteText, bonusText);
+				AddToolTip(buildingJobUI->MediumGrayText, bonusText);
+				
+				buildingJobUI->MediumGrayText->SetText(FText::Format(
+					LOCTEXT("Spy Bonus {0}%", "Spy Bonus {0}%"),
+					TEXT_NUM(bonusValue)
+				));
+			}
 			
 			return;
 		}

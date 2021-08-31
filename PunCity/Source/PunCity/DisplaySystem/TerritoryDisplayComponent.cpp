@@ -7,42 +7,6 @@
 
 using namespace std;
 
-enum class TerritoryCornerEnum
-{
-	None,
-	Convex,
-	Concave,
-	BendoutVertical,
-	BendoutHorizontal,
-	StraightVertical,
-	StraightHorizontal,
-};
-
-
-static float TerritoryCornerEnumToFloat(TerritoryCornerEnum cornerEnum)
-{
-	static const float shift = 0.02;
-	if (cornerEnum == TerritoryCornerEnum::Convex) {
-		return 0.7 + shift;
-	}
-	if (cornerEnum == TerritoryCornerEnum::Concave) {
-		return 0.6 + shift;
-	}
-	if (cornerEnum == TerritoryCornerEnum::BendoutVertical) {
-		return 0.5 + shift;
-	}
-	if (cornerEnum == TerritoryCornerEnum::BendoutHorizontal) {
-		return 0.4 + shift;
-	}
-	if (cornerEnum == TerritoryCornerEnum::StraightVertical) {
-		return 0.3 + shift;
-	}
-	if (cornerEnum == TerritoryCornerEnum::StraightHorizontal) {
-		return 0.2 + shift;
-	}
-	return 0.0;
-}
-
 void FTerritoryDecals::AddNewDecal(int32_t playerId, USceneComponent* parent, UAssetLoaderComponent* assetLoader)
 {
 	playerIdToDecalIndex.Add(playerId, decals.Num());
@@ -84,16 +48,93 @@ void FTerritoryDecals::AddNewDecal(int32_t playerId, USceneComponent* parent, UA
 	material->SetScalarParameterValue(TEXT("DisplayUnitPerWorldY"), GameMapConstants::RegionsPerWorldY * CoordinateConstants::DisplayUnitPerRegion);
 }
 
-static std::vector<uint32> territoryAdjacencyEncoding;
-static std::vector<uint32> territoryAdjacencyEncoding2;
-
 void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 {
+	auto& sim = simulation();
+	auto& provinceSys = sim.provinceSystem();
+	auto& provinceInfoSys = sim.provinceInfoSystem();
+	
 	/*
 	 * Show province connections
 	 */
+	{
+		int32 index = 0;
 
-	
+		if (_gameManager->ZoomDistanceBelow(WorldZoomTransition_GameToMap))
+		{
+			auto spawnMesh = [&]()
+			{
+				UStaticMeshComponent* meshComp;
+				if (index == _defenseOverlayMeshes.Num()) {
+					meshComp = NewObject<UStaticMeshComponent>(this);
+					meshComp->AttachToComponent(this, FAttachmentTransformRules::KeepRelativeTransform);
+					meshComp->RegisterComponent();
+					meshComp->SetReceivesDecals(false);
+					meshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+					_defenseOverlayMeshes.Add(meshComp);
+					check(index < _defenseOverlayMeshes.Num());
+				}
+				else {
+					meshComp = _defenseOverlayMeshes[index];
+				}
+
+				meshComp->SetVisibility(true);
+				index++;
+
+				return meshComp;
+			};
+
+
+			const float maxScaling = 3.0f;
+			const float minZoomDistance = 500;
+			const float maxZoomDistance = 2000;
+			float lerp01 = fabs(gameManager()->zoomDistance() - minZoomDistance) / (maxZoomDistance - minZoomDistance);
+			float displayScaling = 1.0f + lerp01 * (maxScaling - 1.0f);
+
+			for (int32 i = 0; i < sampleProvinceIds.size(); i++)
+			{
+				int32 provinceId = sampleProvinceIds[i];
+
+				DefenseOverlayEnum defenseOverlayEnum;
+				FTransform nodeTransform;
+				TArray<FTransform> lineTransforms;
+				GetDefenseNodeDisplayInfo(provinceId, displayScaling, defenseOverlayEnum, nodeTransform, lineTransforms);
+
+
+				// Node
+				UStaticMeshComponent* nodeMesh = spawnMesh();
+				if (defenseOverlayEnum == DefenseOverlayEnum::CityNode) {
+					nodeMesh->SetStaticMesh(_assetLoader->DefenseOverlay_CityNode);
+				}
+				else if (defenseOverlayEnum == DefenseOverlayEnum::FortNode) {
+					nodeMesh->SetStaticMesh(_assetLoader->DefenseOverlay_FortNode);
+				}
+				else {
+					nodeMesh->SetStaticMesh(_assetLoader->DefenseOverlay_Node);
+				}
+				nodeMesh->SetRelativeTransform(nodeTransform);
+				nodeMesh->TranslucencySortPriority = 5000;
+
+
+				// Lines
+				for (const FTransform& lineTransform : lineTransforms)
+				{
+					UStaticMeshComponent* lineMesh = spawnMesh();
+					lineMesh->SetStaticMesh(_assetLoader->DefenseOverlay_Line);
+
+					lineMesh->SetRelativeTransform(lineTransform);
+					lineMesh->TranslucencySortPriority = 4000;
+				}
+
+			}
+		}
+		
+		
+		for (int32 i = index; i < _defenseOverlayMeshes.Num(); i++)
+		{
+			_defenseOverlayMeshes[i]->SetVisibility(false);
+		}
+	}
 
 	/*
 	 * Territory
@@ -114,8 +155,6 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 			}
 		}
 	}
-	
-	auto& provinceSys = simulation().provinceSystem();
 	
 	//std::vector<int32> provinceIdsToDisplayInner;
 	//for (int32 provinceId : sampleProvinceIdsNonPlayer) {
@@ -233,7 +272,6 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 		 */
 		for (int32 townId = 0; townId < _townIdToTerritoryMesh.Num(); townId++)
 		{
-			auto& sim = simulation();
 			auto& playerOwned = sim.playerOwnedFromTownId(townId);
 			auto& townManage = sim.townManager(townId);
 			

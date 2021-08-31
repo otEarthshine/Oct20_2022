@@ -736,24 +736,47 @@ bool HumanStateAI::TryStoreInventory()
 	return false;
 }
 
-bool HumanStateAI::TryClearLand(TileArea area)
+bool HumanStateAI::TryClearLand(TileArea area, Building* farmPtr)
 {
 	// Clear tileObjs
 	auto& treeSys = treeSystem();
 	NonWalkableTileAccessInfo cutTileAccessInfo = NonWalkableTileAccessInfoInvalid;
-	area.ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 tile) {
-		int32_t tileId = tile.tileId();
-		if (!treeSys.IsEmptyTile_WaterAsEmpty(tileId)) {
-			if (!treeSys.IsReserved(tileId)) {
-				NonWalkableTileAccessInfo accessInfo = _simulation->TryAccessNonWalkableTile(unitTile(), tile, GameConstants::MaxFloodDistance_HumanLogistics, true);
-				if (accessInfo.isValid()) {
-					cutTileAccessInfo = accessInfo;
+
+	if (farmPtr)
+	{
+		// Special case: Farm
+		const std::vector<FarmTile>& farmTiles = farmPtr->subclass<Farm>(CardEnum::Farm).farmTiles();
+		for (const FarmTile& farmTile : farmTiles) 
+		{
+			int32 tileId = farmTile.worldTile.tileId();
+			if (!treeSys.IsEmptyTile_WaterAsEmpty(tileId)) {
+				if (!treeSys.IsReserved(tileId)) {
+					NonWalkableTileAccessInfo accessInfo = _simulation->TryAccessNonWalkableTile(unitTile(), farmTile.worldTile, GameConstants::MaxFloodDistance_HumanLogistics, true);
+					if (accessInfo.isValid()) {
+						cutTileAccessInfo = accessInfo;
+					}
+					break;
 				}
-				return true;
 			}
 		}
-		return false;
-	});
+	}
+	else
+	{
+		area.ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 tile) {
+			int32 tileId = tile.tileId();
+			if (!treeSys.IsEmptyTile_WaterAsEmpty(tileId)) {
+				if (!treeSys.IsReserved(tileId)) {
+					NonWalkableTileAccessInfo accessInfo = _simulation->TryAccessNonWalkableTile(unitTile(), tile, GameConstants::MaxFloodDistance_HumanLogistics, true);
+					if (accessInfo.isValid()) {
+						cutTileAccessInfo = accessInfo;
+					}
+					return true;
+				}
+			}
+			return false;
+		});
+	}
+	
 	
 	if (cutTileAccessInfo.isValid())
 	{
@@ -1533,27 +1556,11 @@ bool HumanStateAI::TryFarm()
 			return true;
 		}
 		
-		WorldTile2 seedTile = farm.FindFarmableTile(_id);
+		FarmTile seedTile = farm.FindFarmableTile(_id);
 
-		if (seedTile.isValid()) {
-
-			//if ((farm.currentPlantEnum == TileObjEnum::WheatBush && resourceSystem().wheatSeeds <= 0) ||
-			//	(farm.currentPlantEnum == TileObjEnum::GrassGreen && resourceSystem().grassSeeds <= 0) || 
-			//	(farm.currentPlantEnum == TileObjEnum::Grapevines && resourceSystem().grapeSeeds <= 0))
-			//{
-			//	workplc.workplaceNeedInput = true;
-			//	AddDebugSpeech("(Failed)TryFarm: No seed");
-			//	return false;
-			//}
-
-			ReserveWork(0);
-			ReserveTreeTile(seedTile.tileId());
-			ReserveFarmTile(seedTile.tileId());
-
-			int32_t waitTicks = 60;
-			Add_DoFarmWork(seedTile, FarmStage::Seeding);
-			Add_Wait(waitTicks, UnitAnimationEnum::FarmPlanting);
-			Add_MoveTo(seedTile);
+		if (seedTile.isValid()) 
+		{
+			ReserveAndAdd_DoFarmWork(seedTile, FarmStage::Seeding);
 
 			SetActivity(UnitState::FarmSeeding);
 			AddDebugSpeech("(Succeed)TryFarm: Seeding");
@@ -1580,17 +1587,11 @@ bool HumanStateAI::TryFarm()
 		}
 		else
 		{
-			WorldTile2 nourishTile = farm.FindFarmableTile(_id);
+			FarmTile nourishTile = farm.FindFarmableTile(_id);
 
-			if (nourishTile.isValid()) {
-				ReserveWork(0);
-				ReserveTreeTile(nourishTile.tileId());
-				ReserveFarmTile(nourishTile.tileId());
-
-				int32_t waitTicks = 60;
-				Add_DoFarmWork(nourishTile, FarmStage::Nourishing);
-				Add_Wait(waitTicks);
-				Add_MoveTo(nourishTile);
+			if (nourishTile.isValid()) 
+			{
+				ReserveAndAdd_DoFarmWork(nourishTile, FarmStage::Nourishing);
 
 				AddDebugSpeech("(Succeed)TryFarm: Nourishing");
 
@@ -1627,18 +1628,12 @@ bool HumanStateAI::TryFarm()
 			return true;
 		}
 		
-		WorldTile2 harvestTile = farm.FindFarmableTile(_id);
+		FarmTile harvestTile = farm.FindFarmableTile(_id);
 
 		// Try t harvest
-		if (harvestTile.isValid()) {
-			ReserveWork(0);
-			ReserveTreeTile(harvestTile.tileId());
-			ReserveFarmTile(harvestTile.tileId());
-
-			int32 waitTicks = 30;
-			Add_DoFarmWork(harvestTile, FarmStage::Harvesting);
-			Add_Wait(waitTicks);
-			Add_MoveTo(harvestTile);
+		if (harvestTile.isValid()) 
+		{
+			ReserveAndAdd_DoFarmWork(harvestTile, FarmStage::Harvesting);
 
 			AddDebugSpeech("(Succeed)TryFarm: FarmHarvesting");
 			SetActivity(UnitState::FarmHarvesting);
@@ -2861,21 +2856,57 @@ bool HumanStateAI::TryConstructHelper(int32 workplaceId)
 	workplace.workplaceInputNeeded = ResourceEnum::None;
 
 	// Clear area
-	if (!_simulation->IsLandCleared_SmallOnly(_townId, workplace.area())) {
-		if (TryClearLand(workplace.area())) {
-			AddDebugSpeech("(Success)TryConstruct: Clearing land.");
+	if (workplace.isEnum(CardEnum::Farm))
+	{
+		Farm& farm = workplace.subclass<Farm>();
+		const std::vector<FarmTile>& farmTiles = farm.farmTiles();
+
+		auto isFarmLandCleared = [&]() {
+			// TileObj
+			auto& tileObjSys = treeSystem();
+			
+			for (const FarmTile& farmTile : farmTiles) {
+				if (!tileObjSys.IsEmptyTile_WaterAsEmpty(farmTile.worldTile.tileId())) {
+					return false;
+				}
+			}
+
+			// Drops
+			if (resourceSystem().GetDropFromSmallArea_Any(workplace.area()).isValid()) {
+				return false;
+			}
+			
 			return true;
+		};
+
+		if (!isFarmLandCleared()) {
+			if (TryClearLand(TileArea::Invalid, &farm)) {
+				AddDebugSpeech("(Success)TryConstruct: Clearing land.");
+				return true;
+			}
+			WorkFailed(TryWorkFailEnum::WaitingForConstructionAreaToBeCleared);
+			return false;
 		}
-		WorkFailed(TryWorkFailEnum::WaitingForConstructionAreaToBeCleared);
-		return false;
 	}
-	if (!_simulation->IsLandCleared_SmallOnly(_townId, workplace.frontArea())) {
-		if (TryClearLand(workplace.frontArea())) {
-			AddDebugSpeech("(Success)TryConstruct: Clearing land front.");
-			return true;
+	else
+	{
+		if (!_simulation->IsLandCleared_SmallOnly(_townId, workplace.area())) {
+			if (TryClearLand(workplace.area())) {
+				AddDebugSpeech("(Success)TryConstruct: Clearing land.");
+				return true;
+			}
+			WorkFailed(TryWorkFailEnum::WaitingForConstructionAreaToBeCleared);
+			return false;
 		}
-		WorkFailed(TryWorkFailEnum::WaitingForConstructionAreaToBeCleared);
-		return false;
+
+		if (!_simulation->IsLandCleared_SmallOnly(_townId, workplace.frontArea())) {
+			if (TryClearLand(workplace.frontArea())) {
+				AddDebugSpeech("(Success)TryConstruct: Clearing land front.");
+				return true;
+			}
+			WorkFailed(TryWorkFailEnum::WaitingForConstructionAreaToBeCleared);
+			return false;
+		}
 	}
 
 	// Land cleared and didn't SetWalkable yet.
@@ -3194,15 +3225,18 @@ void HumanStateAI::AttackOutgoing()
 	NextAction(UnitUpdateCallerEnum::AttackOutgoing_Done);
 }
 
-void HumanStateAI::Add_DoFarmWork(WorldTile2 tile, FarmStage farmStage) {
-	AddAction(ActionEnum::DoFarmWork, tile.tileId(), static_cast<int32>(farmStage));
+void HumanStateAI::Add_DoFarmWork(int32 farmTileId, WorldTile2 farmWorldTile, FarmStage farmStage) {
+	AddAction(ActionEnum::DoFarmWork, farmTileId, farmWorldTile.tileId(), static_cast<int32>(farmStage));
 }
 void HumanStateAI::DoFarmWork()
 {
 	LEAN_PROFILING_A(DoFarmWork);
-	
-	WorldTile2 tile(action().int32val1);
-	FarmStage farmStage = static_cast<FarmStage>(action().int32val2);
+
+	int32 farmTileId = action().int32val1;
+	WorldTile2 tile(action().int32val2);
+	FarmStage farmStage = static_cast<FarmStage>(action().int32val3);
+
+	PUN_LOG("DoFarmWork farmTileId:%d tileId:%d unitId:%d", farmTileId, tile.tileId(), _id);
 	
 	UnitReservation reservation = PopReservation(ReservationType::TreeTile);
 	PUN_CHECK2(reservation.reserveTileId == tile.tileId(), debugStr());
@@ -3212,13 +3246,52 @@ void HumanStateAI::DoFarmWork()
 	PUN_CHECK2(building.isEnum(CardEnum::Farm), debugStr());
 	Farm& farm = building.subclass<Farm>();
 
-	UnitReservation farmTileReservation = PopReservation(ReservationType::FarmTile);
-	PUN_CHECK2(farmTileReservation.reserveTileId == tile.tileId(), debugStr());
+	{
+		check(reservations.size() == 1);
+		check(reservations[0].reserveWorkplaceId == workplaceReservation.reserveWorkplaceId);
+		FarmTile farmTile = farm.GetFarmTile(farmTileId);
+		check(farmTile.worldTile == tile);
+		int32 reserverId = farm.GetFarmerReserverOnTileRow(farmTileId);
+		check(reserverId == _id);
+	}
 
-	farm.DoFarmWork(_id, tile, farmStage);
+	UnitReservation farmTileReservation = PopReservation(ReservationType::FarmTile);
+	check(farmTileReservation.var1 == farmTileId);
+	check(farmTileReservation.reserveTileId == tile.tileId());
+
+	farm.DoFarmWork(_id, farmTileId, farmStage);
+
+	// Go work on the next tile if needed;
+	FarmTile farmTile = farm.GetNextFarmableTile(farmTileId);
+	if (farmTile.isValid()) {
+		ReserveAndAdd_DoFarmWork(farmTile, farmStage, workplaceReservation.reserveWorkplaceId);
+	}
 
 	AddDebugSpeech("(Done)DoFarmWork: bld:" + building.buildingInfo().nameStd() + " reservation:" + ReservationsToString());
 	NextAction(UnitUpdateCallerEnum::DoFarmWork);
+}
+
+void HumanStateAI::ReserveAndAdd_DoFarmWork(const FarmTile& farmTile, FarmStage farmStage, int32 workplaceId)
+{
+	int32 waitTicks = 60;
+	UnitAnimationEnum animationEnum = UnitAnimationEnum::FarmPlanting;
+	
+	if (farmStage == FarmStage::Harvesting) {
+		waitTicks = 30;
+		animationEnum = UnitAnimationEnum::Wait;
+	}
+
+	if (workplaceId == -1) {
+		workplaceId = _workplaceId;
+	}
+	
+	ReserveWork(0, workplaceId);
+	ReserveTreeTile(farmTile.worldTile.tileId());
+	ReserveFarmTile(farmTile, workplaceId);
+
+	Add_DoFarmWork(farmTile.farmTileId, farmTile.worldTile, farmStage);
+	Add_Wait(waitTicks, animationEnum);
+	Add_MoveTo(farmTile.worldTile);
 }
 
 

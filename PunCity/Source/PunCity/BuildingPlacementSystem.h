@@ -90,6 +90,10 @@ public:
 		return _placementGrids[static_cast<int>(gridEnum)].displayCount == 0;
 	}
 
+	int32 GetDisplayGridCount(PlacementGridEnum gridEnum) {
+		return _placementGrids[static_cast<int>(gridEnum)].displayCount;
+	}
+
 private:
 	std::vector<PlacementGrid> _placementGrids;
 };
@@ -108,7 +112,7 @@ public:
 public:	
 	void Init(UAssetLoaderComponent* assetLoader);
 
-	void StartBuildingPlacement(CardEnum buildingEnum, int32 buildingLvl, bool useBoughtCard, CardEnum useWildCard);
+	void StartBuildingPlacement(CardStatus cardStatus, bool useBoughtCard, CardEnum useWildCard);
 	void StartSetDeliveryTarget(int32 buildingId);
 	
 	void StartHarvestPlacement(bool isRemoving, ResourceEnum resourceEnum);
@@ -223,33 +227,36 @@ private:
 		return true;
 	}
 
-	bool HasValidSeed(WorldTile2 tile) {
-		// Any seed that can be planted here?
-		auto& sim = _gameInterface->simulation();
-		std::vector<SeedInfo> seedsOwned = sim.globalResourceSystem(_gameInterface->playerId()).seedsPlantOwned();
-		GeoresourceEnum georesourceEnum = sim.georesource(sim.GetProvinceIdClean(tile)).georesourceEnum;
+	bool IsPlayerFrontBuildable(WorldTile2 tile)
+	{
+		if (!GameMap::IsInGrid(tile)) return false;
+		if (_simulation->tileOwnerPlayer(tile) != _gameInterface->playerId()) return false;
 
-		for (SeedInfo seed : seedsOwned)
-		{
-			if (IsCommonSeedCard(seed.cardEnum)) {
-				return true;
-			}
-			if (IsSpecialSeedCard(seed.cardEnum) &&
-				seed.georesourceEnum == georesourceEnum)
-			{
-				return true;
-			}
+		return _simulation->IsFrontBuildable(tile) || _simulation->IsCritterBuilding(tile);
+	}
+
+	bool IsForeignFrontBuildable(WorldTile2 tile)
+	{
+		if (!GameMap::IsInGrid(tile)) return false;
+
+		int32 tileOwner = _simulation->tileOwnerPlayer(tile);
+		if (tileOwner != -1 && tileOwner != _gameInterface->playerId()) {
+			return _simulation->IsFrontBuildable(tile) || _simulation->IsCritterBuilding(tile);
 		}
 		return false;
 	}
+
+	
 
 	void HighlightDemolishAreaBuildingRed();
 
 	
 private:
-	UPROPERTY() UAssetLoaderComponent* _assetLoader = nullptr;
+	UPROPERTY() UAssetLoaderComponent* _assetLoader;
 	UPROPERTY() USceneComponent* _root = nullptr;
-	UPROPERTY() AGameManager* _gameInterface = nullptr;
+	
+	UPROPERTY() AGameManager* _gameInterface;
+	GameSimulationCore* _simulation = nullptr;
 	class IGameNetworkInterface* _networkInterface = nullptr;
 
 	
@@ -274,8 +281,11 @@ private:
 	PlacementType _placementType = PlacementType::None;
 	ResourceEnum _harvestResourceEnum = ResourceEnum::None;
 	CardEnum _buildingEnum = CardEnum::None;
-	int32 _buildingLvl = 0;
-
+	
+	int32 _intVar1 = 0;
+	int32 _intVar2 = 0;
+	int32 _intVar3 = 0;
+	
 	Direction _faceDirection;
 
 	FVector _buildingLocation;
@@ -294,7 +304,7 @@ private:
 	int32 _dragDemolishSuccessCount = 0;
 	
 	TileArea _area;
-	TileArea _area2; // For road, and TODO: Ranch start
+	TileArea _area2; // For road, and farm's actual area and TODO: Ranch start
 	TileArea _area3; // Storage trimmed TODO: Ranch final form
 	TArray<int32> _roadPathTileIds;
 	bool _canPlaceRoad = false;
@@ -303,6 +313,10 @@ private:
 
 	DragState _dragState;
 	WorldTile2 _dragStartTile;
+
+	// Special
+	std::vector<FarmTile> _farmWorldTiles;
+	WorldTile2 _farmStartTile;
 
 	// Don't recalculate if there is no state change
 	WorldTile2 _lastMouseOnTile = WorldTile2::Invalid;

@@ -295,6 +295,15 @@ public:
 								if (commandAndParams.size() >= 4) {
 									command->var2 = FCString::Atoi(commandAndParams[3].c_str());
 								}
+								if (commandAndParams.size() >= 5) {
+									command->var3 = FCString::Atoi(commandAndParams[4].c_str());
+								}
+								if (commandAndParams.size() >= 6) {
+									command->var4 = FCString::Atoi(commandAndParams[5].c_str());
+								}
+								if (commandAndParams.size() >= 7) {
+									command->var5 = FCString::Atoi(commandAndParams[6].c_str());
+								}
 							}
 						}
 

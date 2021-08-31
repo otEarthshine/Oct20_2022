@@ -41,7 +41,6 @@ public:
 	virtual void SendNetworkCommand(std::shared_ptr<FNetworkCommand> networkCommand) = 0;
 	
 	//virtual bool IsPlayerBuildable(WorldTile2 tile) const = 0;
-	virtual bool IsPlayerFrontBuildable(WorldTile2 tile) const = 0;
 	virtual bool IsPlayerRoadBuildable(WorldTile2 tile) const = 0;
 
 	virtual bool IsPlayerTunnelBuildable(WorldTile2 tile) const = 0;

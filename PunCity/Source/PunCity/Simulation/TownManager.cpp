@@ -1090,6 +1090,8 @@ void TownManager::TickRound()
 		//AddDataPoint(PlotStatEnum::TradeBalance, (exportMoney100 - importMoney100) / 100, Time::TicksPerSeason);
 	}
 
+	TickRound_AutoTrade();
+	
 
 	/*
 	 * Migration accumulate and migrate out
@@ -1417,13 +1419,16 @@ void TownManager::RecalculateTax(bool showFloatup)
 		incomes100[static_cast<int>(IncomeEnum::TerritoryRevenue)] += territoryRevenue100;
 	}
 
-	std::vector<int32> tradePartners = _simulation->worldTradeSystem().GetTradePartners(_playerId);
+	std::vector<TradeRoutePair> tradeRoutesTo = _simulation->worldTradeSystem().GetTradeRoutesTo(townHallId);
 	int32 tradeClusterTotalPopulation = 0;
-	if (tradePartners.size() > 0) { // 1 trade parter means self only, no trade route income
-		for (int32 playerId : tradePartners) {
-			tradeClusterTotalPopulation += _simulation->populationPlayer(playerId);
+	for (const TradeRoutePair& route : tradeRoutesTo) 
+	{
+		int32 counterPartTownId = route.GetCounterpartTownId(townHallId);
+		if (counterPartTownId != -1) {
+			tradeClusterTotalPopulation += _simulation->populationTown(counterPartTownId);
 		}
 	}
+	
 	incomes100[static_cast<int>(IncomeEnum::TradeRoute)] += 100 * tradeClusterTotalPopulation / 2;
 
 	/*
@@ -1511,5 +1516,16 @@ void TownManager::ChangeTownOwningPlayer(int32 newPlayerId)
 	}
 }
 
+int32 TownManager::GetMaxAutoTradeAmount()
+{
+	int32 maxAutoTradeAmount = 0;
+	const std::vector<int32>& tradingCompanyIds = _simulation->buildingIds(_townId, CardEnum::TradingCompany);
+	for (int32 tradingCompanyId : tradingCompanyIds)
+	{
+		TradingCompany& tradingCompany = _simulation->building<TradingCompany>(tradingCompanyId);
+		maxAutoTradeAmount += tradingCompany.tradeMaximumPerRound();
+	}
+	return maxAutoTradeAmount;
+}
 
 #undef LOCTEXT_NAMESPACE

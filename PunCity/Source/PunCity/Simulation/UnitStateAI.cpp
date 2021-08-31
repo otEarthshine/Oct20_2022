@@ -3152,6 +3152,8 @@ void UnitStateAI::DoWork(int32 workAmount, int32 workplaceId)
 
 void UnitStateAI::ReserveTreeTile(int32_t tileId)
 {
+	PUN_LOG("ReserveTreeTile tileId:%d unitId:%d", tileId, _id);
+	
 	UnitReservation reservation;
 	reservation.unitId = _id;
 	reservation.reservationType = ReservationType::TreeTile;
@@ -3163,16 +3165,20 @@ void UnitStateAI::ReserveTreeTile(int32_t tileId)
 	AddDebugSpeech("ReserveTreeTile: " + ReservationsToString());
 }
 
-void UnitStateAI::ReserveFarmTile(int32_t tileId)
+void UnitStateAI::ReserveFarmTile(const FarmTile& farmTile, int32 workplaceId)
 {
+	PUN_LOG("ReserveFarmTile workplaceId:%d farmTileId:%d unitId:%d", workplaceId, farmTile.farmTileId, _id);
+	
 	UnitReservation reservation;
 	reservation.unitId = _id;
-	reservation.reserveWorkplaceId = workplaceId();
+	reservation.reserveWorkplaceId = workplaceId;
 	reservation.reservationType = ReservationType::FarmTile;
-	reservation.reserveTileId = tileId;
+	reservation.reserveTileId = farmTile.worldTile.tileId();
+	reservation.var1 = farmTile.farmTileId;
 	reservations.push_back(reservation);
 
-	workplace()->subclass<Farm>(CardEnum::Farm).ReserveFarmTile(_id, tileId);
+	int32 farmId = _simulation->buildingIdAtTile(farmTile.worldTile);
+	_simulation->building<Farm>(farmId, CardEnum::Farm).ReserveFarmTile(_id, farmTile);
 
 	AddDebugSpeech("ReserveFarmTile: " + ReservationsToString());
 }
@@ -3209,7 +3215,7 @@ UnitReservation UnitStateAI::PopReservationWorkplace(int32 workplaceId)
 }
 
 UnitReservation UnitStateAI::PopReservation(int index)
-{
+{	
 	UnitReservation reservation = reservations[index];
 	PUN_UNIT_CHECK(reservation.unitId == _id);
 
@@ -3226,17 +3232,27 @@ UnitReservation UnitStateAI::PopReservation(int index)
 			break;
 		}
 		case ReservationType::TreeTile: {
+			PUN_LOG("PopReservation TreeTile reserveTileId:%d", reservation.reserveTileId);
+				
 			auto& treeSystem = _simulation->treeSystem();
 			PUN_UNIT_CHECK(treeSystem.Reservation(reservation.reserveTileId).unitId == _id);
 
 			treeSystem.Unreserve(reservation.reserveTileId, reservation);
 			break;
 		}
-		case ReservationType::FarmTile: {
+		case ReservationType::FarmTile: 
+		{	
 			Farm& farm = _simulation->building(reservation.reserveWorkplaceId).subclass<Farm>(CardEnum::Farm);
-			WorldTile2 tile(reservation.reserveTileId);
-			PUN_UNIT_CHECK(tile.isValid());
-			farm.UnreserveFarmTile(_id, tile);
+			int32 worldTileId = reservation.reserveTileId;
+			int32 farmTileId = reservation.var1;
+			int32 reservedUnitId = farm.GetFarmerReserverOnTileRow(farmTileId);
+
+			PUN_LOG("PopReservation FarmTile workplaceId:%d farmTileId:%d tileId:%d reservedUnitId:%d unitId:%d type:%d", 
+				reservation.reserveWorkplaceId, farmTileId, worldTileId, reservedUnitId, _id, reservation.reservationType
+			);
+			check(reservedUnitId == _id);
+				
+			farm.UnreserveFarmTile(farmTileId);
 			break;
 		}
 		default:

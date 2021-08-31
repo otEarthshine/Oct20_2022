@@ -80,11 +80,11 @@ FVector MapUtil::DisplayLocation(WorldAtom2 cameraAtom, WorldAtom2 objectAtom, f
 					displayAtomLocation.y / CoordinateConstants::AtomPerDisplayUnit, height);
 }
 
-//FVector MapUtil::DisplayLocationMapMode(FVector mapCameraLocation, WorldAtom2 objectAtom)
-//{
-//	FVector locationWithinMap = FVector(objectAtom.x, objectAtom.y, 0) / CoordinateConstants::AtomPerMapDisplayUnit;
-//	return locationWithinMap - mapCameraLocation;
-//}
+FVector MapUtil::DisplayLocation_Map(WorldTile2 tile)
+{
+	return FVector(tile.x * CoordinateConstants::DisplayUnitPerTile,
+					tile.y * CoordinateConstants::DisplayUnitPerTile, 0);
+}
 
 
 WorldAtom2 MapUtil::AtomLocation(WorldAtom2 cameraAtom, FVector displayLocation)

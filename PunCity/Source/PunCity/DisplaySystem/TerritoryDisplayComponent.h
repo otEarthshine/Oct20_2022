@@ -72,6 +72,144 @@ public:
 		//playerDecals.Deinit();
 	}
 
+	void GetDefenseNodeDisplayInfo(int32 provinceId, float displayScaling, DefenseOverlayEnum& defenseOverlayEnum_Out,
+									FTransform& nodeTransform_Out, TArray<FTransform>& lineTransforms_Out, bool isMap = false)
+	{
+		auto& sim = simulation();
+		auto& provinceSys = sim.provinceSystem();
+		auto& provinceInfoSys = sim.provinceInfoSystem();
+		
+		WorldTile2 outerProvinceCenterTile = provinceSys.GetProvinceCenterTile(provinceId);
+		const ProvinceOwnerInfo& outerProvinceOwnerInfo = provinceInfoSys.provinceOwnerInfo(provinceId);
+		check(outerProvinceOwnerInfo.provinceId == provinceId);
+		check(outerProvinceCenterTile.isValid());;
+
+		// Node
+		{
+			// Mesh
+			if (outerProvinceOwnerInfo.townId != -1 &&
+				sim.GetTownProvinceId(outerProvinceOwnerInfo.townId) == provinceId)
+			{
+				defenseOverlayEnum_Out = DefenseOverlayEnum::CityNode;
+			}
+			else if (outerProvinceOwnerInfo.fortIds.size() > 0) {
+				defenseOverlayEnum_Out = DefenseOverlayEnum::FortNode;
+			}
+			else {
+				defenseOverlayEnum_Out = DefenseOverlayEnum::Node;
+			}
+
+			FVector displayLocation;
+			if (isMap) {
+				displayLocation = MapUtil::DisplayLocation_Map(outerProvinceCenterTile);
+			} else {
+				displayLocation = MapUtil::DisplayLocation(gameManager()->cameraAtom(), outerProvinceCenterTile.worldAtom2());
+			}
+
+			if (sim.townPlayerId(outerProvinceOwnerInfo.townId) == playerId())
+			{
+				if (!outerProvinceOwnerInfo.isSafe) {
+					displayLocation.Z += 2; // Source Unsafe Color
+				}
+			}
+			else {
+				displayLocation.Z += 1; // Enemy
+			}
+
+			nodeTransform_Out = FTransform(FRotator::ZeroRotator, displayLocation, FVector(displayScaling, displayScaling, displayScaling));
+		}
+
+		// Lines
+		{
+			float lineDisplayScaling = displayScaling * 0.67f;
+			
+			const std::vector<ProvinceConnection>& connections = provinceSys.GetProvinceConnections(provinceId);
+
+			TSet<int32> flatConnectedProvinceIds;
+			for (const ProvinceConnection& connection : connections) {
+				if (connection.tileType == TerrainTileType::None) {
+					flatConnectedProvinceIds.Add(connection.provinceId);
+				}
+			}
+
+			for (const ProvinceConnection& connection : connections)
+			{
+				bool shouldShowConnection = false;
+				if (connection.tileType == TerrainTileType::None) {
+					shouldShowConnection = true;
+				}
+				else if (connection.tileType == TerrainTileType::River &&
+					!flatConnectedProvinceIds.Contains(connection.provinceId))
+				{
+					shouldShowConnection = true; // Has River, and has no flat connection
+				}
+
+				if (shouldShowConnection)
+				{
+					WorldTile2 innerProvinceCenterTile = provinceSys.GetProvinceCenterTile(connection.provinceId);
+					check(innerProvinceCenterTile.isValid());;
+					const ProvinceOwnerInfo& innerProvinceOwnerInfo = provinceInfoSys.provinceOwnerInfo(connection.provinceId);
+
+
+					bool useSelfAsOrigin = false;
+					if (outerProvinceCenterTile.x > innerProvinceCenterTile.x) {
+						useSelfAsOrigin = true;
+					}
+					else if (outerProvinceCenterTile.x == innerProvinceCenterTile.x) {
+						useSelfAsOrigin = outerProvinceCenterTile.y > innerProvinceCenterTile.y;
+					}
+
+					WorldTile2 sourceTile = useSelfAsOrigin ? outerProvinceCenterTile : innerProvinceCenterTile;
+					WorldTile2 targetTile = useSelfAsOrigin ? innerProvinceCenterTile : outerProvinceCenterTile;
+
+					ProvinceOwnerInfo sourceOwnerInfo = useSelfAsOrigin ? outerProvinceOwnerInfo : innerProvinceOwnerInfo;
+					ProvinceOwnerInfo targetOwnerInfo = useSelfAsOrigin ? innerProvinceOwnerInfo : outerProvinceOwnerInfo;
+
+					FVector sourceVec;
+					FVector targetVec;
+					if (isMap) {
+						sourceVec = MapUtil::DisplayLocation_Map(sourceTile);
+						targetVec = MapUtil::DisplayLocation_Map(targetTile);
+					}
+					else {
+						sourceVec = MapUtil::DisplayLocation(gameManager()->cameraAtom(), sourceTile.worldAtom2());
+						targetVec = MapUtil::DisplayLocation(gameManager()->cameraAtom(), targetTile.worldAtom2());
+					}
+					
+					FVector diffVec = targetVec - sourceVec;
+
+					// Coloring
+					if (connection.tileType == TerrainTileType::River) {
+						sourceVec.Z += 1; // Gray River
+					}
+					else {
+						if (sim.townPlayerId(sourceOwnerInfo.townId) == playerId()) {
+							if (!sourceOwnerInfo.isSafe) {
+								sourceVec.Z += 4; // Source Unsafe Color
+							}
+						}
+						else {
+							sourceVec.Z += 2; // Source Enemy Color	
+						}
+
+						if (sim.townPlayerId(targetOwnerInfo.townId) == playerId()) {
+							if (!targetOwnerInfo.isSafe) {
+								sourceVec.Z += 16; // Target Unsafe Color
+							}
+						}
+						else {
+							sourceVec.Z += 8; // Target Enemy Color	
+						}
+					}
+
+					lineTransforms_Out.Add(FTransform(diffVec.Rotation(), sourceVec, FVector(diffVec.Size() * 0.1f, lineDisplayScaling, lineDisplayScaling)));
+				}
+			}
+		}
+
+		
+	}
+
 private:
 	UTerritoryMeshComponent* CreateTerritoryMeshComponent(bool isProvince)
 	{
@@ -98,7 +236,8 @@ private:
 	UPROPERTY() TArray<UTerritoryMeshComponent*> _provinceMeshesPool;
 
 	UPROPERTY() TArray<FTerritoryMeshes> _townIdToTerritoryMesh;
-	
+
+	UPROPERTY() TArray<UStaticMeshComponent*> _defenseOverlayMeshes;
 	
 	int32 territoryNameCounter = 0;
 };

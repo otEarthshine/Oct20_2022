@@ -32,15 +32,32 @@ void UBuildingPlacementButton::OnSellButtonClicked()
 }
 
 
-void UBuildingPlacementButton::PunInit(CardEnum buildingEnumIn, int32 cardHandIndexIn, int32 buildingLvlIn, int32 stackSize, UPunWidget* callbackParent, CallbackEnum callbackEnum, bool isMiniature)
+void UBuildingPlacementButton::PunInit(CardStatus cardStatusIn, int32 cardHandIndexIn, UPunWidget* callbackParent, CallbackEnum callbackEnum, CardHandEnum cardHandEnum)
 {
-	buildingEnum = buildingEnumIn;
+	cardStatus = cardStatusIn;
 	cardHandIndex = cardHandIndexIn;
-	buildingLvl = buildingLvlIn;
+
 	_callbackParent = callbackParent;
 	_callbackEnum = callbackEnum;
-	_isMiniature = isMiniature;
+	_cardHandEnum = cardHandEnum;
 
+	bool isFullCard = _cardHandEnum == CardHandEnum::DrawHand ||
+						_cardHandEnum == CardHandEnum::ConverterHand ||
+						_cardHandEnum == CardHandEnum::RareHand;
+
+	CardEnum buildingEnum = cardStatus.cardEnum;
+
+	// Prevent Crash for None
+	if (buildingEnum == CardEnum::None) 
+	{
+		ParentOverlay->SetVisibility(ESlateVisibility::Collapsed);
+		CardSlotUnderneath->SetVisibility(ESlateVisibility::HitTestInvisible);
+		return;
+	}
+	ParentOverlay->SetVisibility(ESlateVisibility::Visible);
+	CardSlotUnderneath->SetVisibility(ESlateVisibility::Collapsed);
+
+	
 	BldInfo info = GetBuildingInfo(buildingEnum);
 
 	TArray<FText> args;
@@ -55,7 +72,7 @@ void UBuildingPlacementButton::PunInit(CardEnum buildingEnumIn, int32 cardHandIn
 	SetText(DescriptionRichText, args);
 
 	// Card Title
-	args.Add(FText::Format(INVTEXT("{0}{1}</>"), _isMiniature ? INVTEXT("<CardName>") : INVTEXT("<CardNameLarge>"), info.name));
+	args.Add(FText::Format(INVTEXT("{0}{1}</>"), isFullCard ? INVTEXT("<CardNameLarge>") : INVTEXT("<CardName>"), info.name));
 	
 	if (buildingEnum == CardEnum::House) {
 		ADDTEXT_INV_(" <Orange>[B-H]</>");
@@ -79,25 +96,8 @@ void UBuildingPlacementButton::PunInit(CardEnum buildingEnumIn, int32 cardHandIn
 
 	CardGlow->SetVisibility(ESlateVisibility::Hidden);
 
-	if (stackSize > 0) {
-		cardCount = stackSize;
-
-		Count->SetText(FText::FromString(FString::FromInt(stackSize)));
-
-		//// 1/2, 2/4, 3/4, 4/8
-		//if (stackSize >= CardCountForLvl[3]) {
-		//	Count->SetText(FText::FromString(FString::FromInt(stackSize)));
-		//}
-		//else if (stackSize >= CardCountForLvl[2]) {
-		//	Count->SetText(FText::FromString(FString::FromInt(stackSize) + "/8"));
-		//}
-		//else if (stackSize >= CardCountForLvl[1]) {
-		//	Count->SetText(FText::FromString(FString::FromInt(stackSize) + "/4"));
-		//}
-		//else if (stackSize >= CardCountForLvl[0]) {
-		//	Count->SetText(FText::FromString(FString::FromInt(stackSize) + "/2"));
-		//}
-
+	if (cardStatus.stackSize > 1) {
+		Count->SetText(FText::FromString(FString::FromInt(cardStatus.stackSize)));
 		Count->SetVisibility(ESlateVisibility::HitTestInvisible);
 	}
 	else {
@@ -112,13 +112,18 @@ void UBuildingPlacementButton::PunInit(CardEnum buildingEnumIn, int32 cardHandIn
 		buildingEnum == CardEnum::StatisticsBureau ||
 		IsSeedCard(buildingEnum))
 	{
-		SetStars(0);
+		//SetStars(0);
+		SellButton->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	else if (isFullCard ||
+			cardHandEnum == CardHandEnum::CardInventorySlots
+		)
+	{
 		SellButton->SetVisibility(ESlateVisibility::Collapsed);
 	}
 	else {
-		SetStars(buildingLvl);
 		SellButton->SetVisibility(ESlateVisibility::Visible);
-		SellButton->OnClicked.AddDynamic(this, &UBuildingPlacementButton::OnSellButtonClicked);
+		SellButton->OnClicked.AddUniqueDynamic(this, &UBuildingPlacementButton::OnSellButtonClicked);
 	}
 
 	if (IsTownSlotCard(buildingEnum)) {

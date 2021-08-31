@@ -25,9 +25,9 @@ class UBuildingPlacementButton : public UPunWidget
 {
 	GENERATED_BODY()
 public:
-	CardEnum buildingEnum;
+	CardStatus cardStatus;
+	
 	int32 cardHandIndex = -1;
-	int32 buildingLvl = 0;
 	
 	FVector2D position;
 
@@ -44,10 +44,12 @@ public:
 	float initTime = 0;
 	bool needExclamation = false;
 
-	bool IsPermanentCard() { return cardHandIndex == -1; }
-	int32 IsUnboughtCard() { return cardHandIndex >= 0 && buildingLvl == -1; }
+	CardEnum cardEnum() { return cardStatus.cardEnum; }
 
-	void PunInit(CardEnum buildingEnumIn, int32 cardHandIndexIn, int32 buildingLvlIn, int32 stackSize, UPunWidget* callbackParent, CallbackEnum callbackEnum, bool isMiniature);
+	bool IsPermanentCard() { return cardHandIndex == -1; }
+	int32 IsUnboughtCard() { return cardHandIndex >= 0 && cardStatus.cardStateValue1 == -1; }
+
+	void PunInit(CardStatus cardStatusIn, int32 cardHandIndexIn, UPunWidget* callbackParent, CallbackEnum callbackEnum, CardHandEnum cardHandEnum);
 
 	FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	FReply NativeOnMouseButtonDoubleClick(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
@@ -61,8 +63,10 @@ public:
 		CardGlow->SetVisibility(ESlateVisibility::Hidden);
 	}
 
-	void SetupMaterials(UAssetLoaderComponent* assetLoader)
+	void RefreshBuildingIcon(UAssetLoaderComponent* assetLoader)
 	{
+		CardEnum buildingEnum = cardStatus.cardEnum;
+		
 		if (IsBuildingCard(buildingEnum)) 
 		{
 			colorMaterial = UMaterialInstanceDynamic::Create(assetLoader->BuildingIconMaterial, this);
@@ -73,7 +77,7 @@ public:
 			}
 			else
 			{
-				colorMaterial->SetTextureParameterValue("ColorTexture", assetLoader->GetBuildingIcon(buildingEnum));
+				colorMaterial->SetTextureParameterValue("ColorTexture", assetLoader->GetBuildingIconNullable(buildingEnum));
 				colorMaterial->SetTextureParameterValue("DepthTexture", assetLoader->GetBuildingIconAlpha(buildingEnum));
 
 				if (assetLoader->IsBuildingUsingSpecialIcon(buildingEnum)) {
@@ -96,6 +100,8 @@ public:
 
 	void SetCardStatus(CardHandEnum cardHandEnum, bool isReservedForBuying, bool needResource, bool isRareCardHand = false, bool tryShowBuyText = true)
 	{
+		CardEnum buildingEnum = cardStatus.cardEnum;
+		
 		if (tryShowBuyText) {
 			BuyText->SetVisibility(isReservedForBuying && !isRareCardHand ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 		} else {
@@ -184,13 +190,6 @@ public:
 		//NeedResourcesText->SetText(FText::FromString("Need resources"));
 
 		NeedResourcesText->SetVisibility(ESlateVisibility::Collapsed);
-	}
-
-	void SetStars(int32 count) {
-		Star1->SetVisibility(count >= 1 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
-		Star2->SetVisibility(count >= 2 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
-		Star3->SetVisibility(count >= 3 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
-		//PUN_LOG("SetStars1 %d", Star1->GetVisibility() == ESlateVisibility::HitTestInvisible);
 	}
 
 	/*
@@ -287,11 +286,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* PriceText;
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* PriceTextBox;
 
-	UPROPERTY(meta = (BindWidget)) USizeBox* Star1;
-	UPROPERTY(meta = (BindWidget)) USizeBox* Star2;
-	UPROPERTY(meta = (BindWidget)) USizeBox* Star3;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* Count;
-	int32 cardCount = 0;
 
 	UPROPERTY(meta = (BindWidget)) UImage* CardBackgroundImage;
 	UPROPERTY(meta = (BindWidget)) UImage* CardGlow;
@@ -308,7 +303,7 @@ public:
 private:
 	UPROPERTY() UPunWidget* _callbackParent;
 	CallbackEnum _callbackEnum;
-	bool _isMiniature = false;
+	CardHandEnum _cardHandEnum;
 
 	UPROPERTY() UMaterialInstanceDynamic* colorMaterial;
 	//UPROPERTY() UMaterialInstanceDynamic* grayMaterial;

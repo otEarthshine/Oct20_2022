@@ -29,7 +29,7 @@ struct UnitSkelMeshState
 {
 	static const int32 animationChangeDelayTicks = 12;
 	
-	UnitAnimationEnum animationEnum = UnitAnimationEnum::Wait;
+	UnitAnimationEnum animationEnum = UnitAnimationEnum::Walk; // Use walk first to prevent flash when clicking?
 	int32 animationChangeDelayCountDown = animationChangeDelayTicks;
 	float animationPlayRate = 10.0f;
 	int32 customDepth = 0;
@@ -79,14 +79,14 @@ public:
 		//	}
 		//}
 
-		_unitMeshes1->Init();
+		_unitMeshes1->Init(assetLoader);
 		for (int i = 0; i < UnitEnumCount; i++) {
 			UnitEnum unitEnum = static_cast<UnitEnum>(i);
 			
 			int32 variationCount = assetLoader->unitMeshCount(unitEnum);
 			for (int32 j = 0; j < variationCount; j++) {
 				FUnitAsset unitAsset = assetLoader->unitAsset(unitEnum, j);
-				_unitMeshes1->AddProtoMesh(GetUnitDisplayEnum(unitEnum, j), unitAsset.staticMesh);
+				_unitMeshes1->AddProtoMesh(unitEnum, j, unitAsset.staticMesh);
 			}
 		}
 		
@@ -213,7 +213,7 @@ public:
 		// Used for highlighting animals
 		int32 variationCount = _assetLoader->unitMeshCount(unitEnum);
 		for (int32 i = 0; i < variationCount; i++) {
-			_unitMeshes1->SetCustomDepth(GetUnitDisplayEnum(unitEnum, i), customDepthIndex);
+			_unitMeshes1->SetCustomDepth(unitEnum, i, customDepthIndex);
 		}
 	}
 
@@ -263,6 +263,8 @@ private:
 		// Key is needed just in case unitEnum changed
 		int32 oneK = 1000;
 		int64 unitKey = static_cast<int64>(unitId) + static_cast<int64>(unitEnum) * (oneK * oneK) + variationIndex * (oneK * oneK * oneK) + static_cast<int64>(birthTicks) * (oneK * oneK * oneK * oneK); // 1m Ticks are roughly
+
+		bool isFocusedUnit = IsFocusedUnit(unitId);
 		
 		int32 index = -1;
 		// Use the existing unit already displayed
@@ -279,21 +281,35 @@ private:
 				skelMesh->bSkipBoundsUpdateWhenInterpolating = PunSettings::Get("DebugTemp3");
 				skelMesh->bComponentUseFixedSkelBounds = PunSettings::Get("DebugTemp4");
 			};
+
+			FUnitAsset asset = _assetLoader->unitAsset(unitEnum, variationIndex);
 			
 			// Try to spawn new unit from despawn pool
-			for (int32 i = 0; i < _unitSkelMeshes.Num(); i++) {
-				if (!_unitSkelMeshes[i]->IsVisible()) {
+			for (int32 i = 0; i < _unitSkelMeshes.Num(); i++) 
+			{
+				bool canUseThisMesh = !_unitSkelMeshes[i]->IsVisible();
+
+				// Prevent scale flashing when focusing unit
+				// Focused Unit, only use unit of the same type
+				if (canUseThisMesh && isFocusedUnit) {
+					canUseThisMesh = (asset.skeletalMesh == _unitSkelMeshes[i]->SkeletalMesh);
+				}
+				
+				if (canUseThisMesh) 
+				{
 					index = i;
-					
-					//_unitSkelMeshes[index]->SetVisibility(true);
+
 					setupSkelMesh(_unitSkelMeshes[index]);
 
 					_unitWeaponMeshes[index]->SetVisibility(false);
 					_unitSkelState[index] = UnitSkelMeshState();
+
+					PUN_LOG("_unitSkelMeshes from Pool index:%d", index);
 					break;
 				}
 			}
-			
+
+		
 			// Spawn brand new unit
 			if (index == -1) {
 				index = _unitSkelMeshes.Num();
@@ -303,9 +319,6 @@ private:
 				setupSkelMesh(skelMesh);
 				skelMesh->SetReceivesDecals(false);
 				_unitSkelMeshes.Add(skelMesh);
-
-				FUnitAsset asset = _assetLoader->unitAsset(unitEnum, variationIndex);
-				_unitSkelMeshes[index]->SetSkeletalMesh(asset.skeletalMesh);
 
 				FAttachmentTransformRules attachmentRules(EAttachmentRule::SnapToTarget, false);
 				auto weaponMesh = NewObject<UStaticMeshComponent>(this);
@@ -317,10 +330,13 @@ private:
 				_unitWeaponMeshes.Add(weaponMesh);
 
 				_unitSkelState.push_back(UnitSkelMeshState());
+
+				PUN_LOG("_unitSkelMeshes not from Pool index:%d", index);
 			}
 
-			FUnitAsset asset = _assetLoader->unitAsset(unitEnum, variationIndex);
 			_unitSkelMeshes[index]->SetSkeletalMesh(asset.skeletalMesh, false);
+
+			//PUN_LOG("unitDisplayEnum index:%d unitDisplayEnum:%d", index, static_cast<int32>(unitDisplayEnum));
 			
 		}
 		_unitKeyToSkelMeshIndex.Add(unitKey, index);
@@ -346,15 +362,20 @@ private:
 		if (unitEnum == UnitEnum::WildMan) {
 			playRate = 1.2f;
 		}
-
 		
-		int32 targetCustomDepth = IsFocusedUnit(unitId) ? 2 : 0;
+		int32 targetCustomDepth = isFocusedUnit ? 2 : 0;
 		
 		if (_unitSkelState[index].animationEnum != animationEnum ||
 			fabs(_unitSkelState[index].animationPlayRate - playRate) > 0.01f ||
 			_unitSkelState[index].customDepth != targetCustomDepth)
 		{
 			SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitSkel1);
+
+			PUN_LOG("UnitAnimationChanged %s -> %s, %f->%f, %d->%d", 
+				ToTChar(GetUnitAnimationName(_unitSkelState[index].animationEnum)), ToTChar(GetUnitAnimationName(animationEnum)),
+				_unitSkelState[index].animationPlayRate, playRate,
+				_unitSkelState[index].customDepth, targetCustomDepth
+			);
 			
 			FUnitAsset skelAsset = _assetLoader->unitAsset(unitEnum, variationIndex);
 
@@ -365,7 +386,6 @@ private:
 			{
 				skelMesh->PlayAnimation(skelAsset.animationEnumToSequence[animationEnum], true);
 				skelMesh->SetPlayRate(playRate);
-				skelMesh->SetPosition(5.5f); // Fast-forward to not get flash when clicking
 
 				// DEBUG TEST
 				//skelMesh->EnableExternalTickRateControl(true);
@@ -417,12 +437,20 @@ private:
 		DescriptionUIState uiState = simulation().descriptionUIState();
 		return uiState.objectType == ObjectTypeEnum::Unit && uiState.objectId == unitId;
 	}
+	bool JustFocusedUnit() {
+		DescriptionUIState uiState = simulation().descriptionUIState();
+		if (uiState.isValid()) {
+			return Time::Ticks() - uiState.openedTick < 20;
+		}
+		return false;
+	}
 	
 
 	void SkelMeshAfterAdd()
 	{
 		// Despawn all unused meshes
-		for (auto it : _lastUnitKeyToSkelMeshIndex) {
+		for (auto it : _lastUnitKeyToSkelMeshIndex) 
+		{
 			_unitSkelMeshes[it.Value]->SetVisibility(false);
 			_unitWeaponMeshes[it.Value]->SetVisibility(false);
 		}

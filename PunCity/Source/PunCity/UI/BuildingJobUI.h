@@ -58,8 +58,12 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) UTextBlock* DepletedText;
 
+	UPROPERTY(meta = (BindWidget)) UTextBlock* LargeWhiteText;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* MediumGrayText;
+
 	UPROPERTY(meta = (BindWidget)) USizeBox* SpeedBoostIcon;
 	UPROPERTY(meta = (BindWidget)) UButton* TradeButton;
+	UPROPERTY(meta = (BindWidget)) UButton* AutoTradeButton;
 
 	UPROPERTY(meta = (BindWidget)) UButton* StatisticsButton;
 	UPROPERTY(meta = (BindWidget)) UButton* JobPriorityButton;
@@ -112,6 +116,14 @@ public:
 			// Note JobPriorityButton gets its visibility set to Collapsed when it gets init
 			if (building.ownedBy(playerId())) {
 				JobPriorityButton->SetVisibility(ESlateVisibility::Visible);
+			}
+			return;
+		}
+		if (building.isEnum(CardEnum::TradingCompany)) 
+		{
+			// Note StatisticsButton gets its visibility set to Collapsed when it gets init
+			if (building.ownedBy(playerId()) || SimSettings::IsOn("CheatFastBuild")) {
+				AutoTradeButton->SetVisibility(ESlateVisibility::Visible);
 			}
 			return;
 		}
@@ -327,6 +339,14 @@ private:
 		if (static_cast<TradingPost*>(&building)->CanTrade()) {
 			GetPunHUD()->OpenTradeUI(_buildingId);
 		}
+	}
+
+	UFUNCTION() void OnClickAutoTradeButton()
+	{
+		Building& building = dataSource()->simulation().building(_buildingId);
+		PUN_CHECK(building.buildingEnum() == CardEnum::TradingCompany);
+
+		GetPunHUD()->OpenTownAutoTradeUI(building.townId());
 	}
 
 	UFUNCTION() void OnClickStatisticsButton() {

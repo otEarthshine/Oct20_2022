@@ -19,10 +19,10 @@
 // GAME_VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 54 // 3 digit
+#define MINOR_VERSION 55 // 3 digit
 
-#define VERSION_DAY 29
-#define VERSION_MONTH 7
+#define VERSION_DAY 5
+#define VERSION_MONTH 8
 #define VERSION_YEAR 21
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
 
@@ -32,10 +32,10 @@
 
 // SAVE_VERSION
 #define MAJOR_SAVE_VERSION 0
-#define MINOR_SAVE_VERSION 32 // 3 digit
+#define MINOR_SAVE_VERSION 33 // 3 digit
 
-#define VERSION_SAVE_DAY 8
-#define VERSION_SAVE_MONTH 7
+#define VERSION_SAVE_DAY 5
+#define VERSION_SAVE_MONTH 8
 #define VERSION_SAVE_YEAR 21
 #define VERSION_SAVE_DATE (VERSION_SAVE_YEAR * 10000) + (VERSION_SAVE_MONTH * 100) + VERSION_SAVE_DAY
 
@@ -2132,6 +2132,7 @@ enum class CardEnum : uint16
 	RegionPort,
 	RegionCrates,
 
+	
 	// June 1 additions
 	Windmill,
 	Bakery,
@@ -2233,6 +2234,30 @@ enum class CardEnum : uint16
 
 	StatisticsBureau,
 	JobManagementBureau,
+
+	// Aug 25
+	MinorCity,
+	//MinorPortCity,
+	//GuildWarrior,
+	//GuildAssassin,
+	//GuildEngineer,
+	//GuildScientist,
+	//GuildMerchant,
+
+	//MayanPyramid,
+	//EgyptianPyramid,
+	//StoneHenge,
+	//EasterIsland,
+	//Oasis,
+
+	//Embassy,
+	//MachinePartsFactory,
+	//Zoo,
+	//GlobalHotel,
+	//GlobalCompanyHeadquarter,
+	//GlobalCompanyBranch,
+	//SpyCenter,
+	
 	
 	//! Non-Building Cards
 	Investment,
@@ -2293,7 +2318,20 @@ enum class CardEnum : uint16
 	Pig,
 	Sheep,
 	Cow,
+
+	Boar,
+	RedDeer,
+	YellowDeer,
+	DarkDeer,
+
+	BrownBear,
+	BlackBear,
 	Panda,
+
+	Moose,
+	Hippo,
+	Penguin,
+	Bobcat,
 	
 	FireStarter,
 	Steal,
@@ -2382,6 +2420,28 @@ enum class CardEnum : uint16
 	WondersScoreMultiplier,
 	PopulationScoreMultiplier, // End Section
 
+	/* 
+	 * Military
+	 */
+	Warrior,
+	Swordman,
+	Musketeer,
+	Infantry,
+	
+	Knight, // Attack Bonus
+	Tank, // Attack Bonus
+	
+	Archer,
+	MachineGun, // Defense Bonus
+	
+	Catapult,
+	Cannon,
+	Artillery,
+	
+	Galley,
+	Frigate,
+	Battleship,
+
 	
 	
 	None,
@@ -2391,12 +2451,9 @@ enum class CardEnum : uint16
 	Hauler,
 	Constructor,
 
-
-	//! Special for Callback
-	ArchivesSlotting,
 };
 
-enum class CardHandEnum
+enum class CardHandEnum : uint8
 {
 	CardSlots,
 	CardInventorySlots,
@@ -2405,6 +2462,9 @@ enum class CardHandEnum
 	BoughtHand,
 	ConverterHand,
 	RareHand,
+	TrainUnits,
+
+	None,
 };
 
 static const std::vector<std::pair<CardEnum, int32>> BuildingEnumToUpkeep =
@@ -3255,6 +3315,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::RegionCrates, _LOCTEXT("Crates", "Crates"),						LOCTEXT("Crates (Plural)", "Crates"), LOCTEXT("Crates Desc", "Crates that may contain valuable resources."),
 		WorldTile2(4, 6), GetBldResourceInfoManual({})
 	),
+	
 
 	// June 1 addition
 	BldInfo(CardEnum::Windmill, _LOCTEXT("Windmill", "Windmill"),				LOCTEXT("Windmill (Plural)", "Windmills"), LOCTEXT("Windmill Desc", "Grinds Wheat into Wheat Flour. +10% Productivity to surrounding Farms."),
@@ -3501,14 +3562,31 @@ static const BldInfo BuildingInfo[]
 	),
 	BldInfo(CardEnum::JobManagementBureau, _LOCTEXT("Employment Bureau", "Employment Bureau"), FText(), LOCTEXT("Employment Bureau Desc", "Allow managing job priority (global)."),
 		WorldTile2(6, 9), GetBldResourceInfoManual({ 0 })
-	)
+	),
 
+
+	// Aug 25 additions
+	BldInfo(CardEnum::MinorCity, _LOCTEXT("Minor City", "Minor City"), LOCTEXT("Minor City (Plural)", "Minor Cities"), LOCTEXT("Minor City Desc", ""),
+		WorldTile2(12, 12), GetBldResourceInfoManual({})
+	),
 	
 	// Can no longer pickup cards
 	//BldInfo("Necromancer tower",	WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0,	{30, 30, 0},	"All citizens become zombie minions. Happiness becomes irrelevant. Immigration ceased."),
 	// Imperialist
 };
 
+static const int32 MilitaryEraCostMultiplier = 150;
+static const int32 MilitaryEraPowerMultiplier = 200;
+
+static int32 GetMilitaryCost(int32 baseCost, int32 era)
+{
+	int32 cost = baseCost;
+	for (int32 i = 1; i < era; i++) {
+		cost = cost * MilitaryEraCostMultiplier / 100;
+	}
+
+	return cost;
+}
 
 static const BldInfo CardInfos[]
 {
@@ -3576,7 +3654,22 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::Pig,				_INVTEXT("Pig"), 100, INVTEXT("Spawn 3 Pigs on a Ranch.")),
 	BldInfo(CardEnum::Sheep,			_INVTEXT("Sheep"), 200, INVTEXT("Spawn 3 Sheep on a Ranch.")),
 	BldInfo(CardEnum::Cow,				_INVTEXT("Cow"), 300, INVTEXT("Spawn 3 Cows on a Ranch.")),
-	BldInfo(CardEnum::Panda,			_INVTEXT("Panda"), 1000, INVTEXT("Spawn 3 Pandas on a Ranch.")),
+
+	// Zoo animals
+	BldInfo(CardEnum::Boar,				_INVTEXT("Boar"), 1000, INVTEXT("Zoo.")),
+	BldInfo(CardEnum::RedDeer,			_INVTEXT("RedDeer"), 1000, INVTEXT("Zoo.")),
+	BldInfo(CardEnum::YellowDeer,		_INVTEXT("YellowDeer"), 1000, INVTEXT("Zoo.")),
+	BldInfo(CardEnum::DarkDeer,			_INVTEXT("DarkDeer"), 1000, INVTEXT("Zoo.")),
+
+	BldInfo(CardEnum::BrownBear,		_INVTEXT("BrownBear"), 1000, INVTEXT("Zoo.")),
+	BldInfo(CardEnum::BlackBear,		_INVTEXT("BlackBear"), 1000, INVTEXT("Zoo.")),
+	BldInfo(CardEnum::Panda,			_INVTEXT("Panda"), 1000, INVTEXT("Zoo.")),
+
+	BldInfo(CardEnum::Moose,			_INVTEXT("Moose"), 1000, INVTEXT("Zoo.")),
+	BldInfo(CardEnum::Hippo,			_INVTEXT("Hippo"), 1000, INVTEXT("Zoo.")),
+	BldInfo(CardEnum::Penguin,			_INVTEXT("Penguin"), 1000, INVTEXT("Zoo.")),
+	BldInfo(CardEnum::Bobcat,			_INVTEXT("Bobcat"), 1000, INVTEXT("Zoo.")),
+
 
 	BldInfo(CardEnum::FireStarter,		_LOCTEXT("Fire Starter", "Fire Starter"), 200,	LOCTEXT("Fire Starter Desc", "Start a fire in an area (3 tiles radius).")),
 	BldInfo(CardEnum::Steal,			_LOCTEXT("Steal", "Steal"), 200,					LOCTEXT("Steal Desc", "Steal 30% of target player's treasury<img id=\"Coin\"/>. Use on Townhall.")),
@@ -3665,6 +3758,25 @@ static const BldInfo CardInfos[]
 		BldInfo(CardEnum::WondersScoreMultiplier, _LOCTEXT("Wonders Score", "Wonders Score"), 0, LOCTEXT("Wonders Score Desc", "+100% Scores from Wonders.")),
 		BldInfo(CardEnum::PopulationScoreMultiplier, _LOCTEXT("Population Score", "Population Score"), 0, LOCTEXT("Population Score Desc", "+100% Scores from Population and Happiness.")),
 
+	
+		BldInfo(CardEnum::Warrior, _LOCTEXT("Warrior", "Warrior"),		GetMilitaryCost(1000, 1), LOCTEXT("Warrior Desc", "")),
+		BldInfo(CardEnum::Swordman, _LOCTEXT("Swordman", "Swordman"),	GetMilitaryCost(1000, 2), LOCTEXT("Swordman Desc", "")),
+		BldInfo(CardEnum::Musketeer, _LOCTEXT("Musketeer", "Musketeer"), GetMilitaryCost(1000, 3), LOCTEXT("Musketeer Desc", "")),
+		BldInfo(CardEnum::Infantry, _LOCTEXT("Infantry", "Infantry"), GetMilitaryCost(1000, 4), LOCTEXT("Infantry Desc", "")), // (Trench Warfare = Defense Bonus for Infantry)
+
+		BldInfo(CardEnum::Knight, _LOCTEXT("Knight", "Knight"), GetMilitaryCost(1500, 2), LOCTEXT("Knight Desc", "")), // Attack Bonus
+		BldInfo(CardEnum::Tank, _LOCTEXT("Tank", "Tank"),		GetMilitaryCost(3000, 4), LOCTEXT("Tank Desc", "")), // Attack Bonus
+
+		BldInfo(CardEnum::Archer, _LOCTEXT("Archer", "Archer"),				GetMilitaryCost(1000, 2), LOCTEXT("Archer Desc", "")),
+		BldInfo(CardEnum::MachineGun, _LOCTEXT("Machine Gun", "Machine Gun"), GetMilitaryCost(1500, 3), LOCTEXT("Machine Gun Desc", "")), // Defense Bonus
+
+		BldInfo(CardEnum::Catapult, _LOCTEXT("Catapult", "Catapult"), GetMilitaryCost(1700, 2), LOCTEXT("Catapult Desc", "")),
+		BldInfo(CardEnum::Cannon, _LOCTEXT("Cannon", "Cannon"),			GetMilitaryCost(1700, 3), LOCTEXT("Cannon Desc", "")),
+		BldInfo(CardEnum::Artillery, _LOCTEXT("Artillery", "Artillery"), GetMilitaryCost(1700, 4), LOCTEXT("Artillery Desc", "")), // Defense Bonus
+
+		BldInfo(CardEnum::Galley, _LOCTEXT("Galley", "Galley"),			GetMilitaryCost(1500, 2), LOCTEXT("Galley Desc", "")),
+		BldInfo(CardEnum::Frigate, _LOCTEXT("Frigate", "Frigate"),		GetMilitaryCost(2500, 3), LOCTEXT("Frigate Desc", "")),
+		BldInfo(CardEnum::Battleship, _LOCTEXT("Battleship", "Battleship"), GetMilitaryCost(2500, 4), LOCTEXT("Battleship Desc", "")),
 };
 
 #undef _LOCTEXT
@@ -3762,14 +3874,33 @@ static bool IsTownSlotCard(CardEnum cardEnum)
 
 struct CardStatus
 {
-	// Enum and status used to animate card
 	CardEnum cardEnum = CardEnum::None;
+	
+	// Status
+	int32 cardBirthTicks = -1; // used for tracking down the right card stack (network delay means we cannot use index)
+	int32 stackSize = 1;
+
+	int32 cardStateValue1 = 0;
+	int32 cardStateValue2 = 0;
+	int32 cardStateValue3 = 0;
+
+	// Animation
 	int32 lastPositionX100 = -1;
 	int32 lastPositionY100 = -1;
 	int32 animationStartTime100 = -1;
 
+
 	FVector2D lastPosition() const {
 		return FVector2D(lastPositionX100 / 100.0f, lastPositionY100 / 100.0f);
+	}
+
+
+	CardStatus() {
+		
+	}
+	CardStatus(CardEnum cardEnum, int32 stackSize) :
+		cardEnum(cardEnum), stackSize(stackSize)
+	{
 	}
 
 	void ResetAnimation() {
@@ -3778,23 +3909,26 @@ struct CardStatus
 		animationStartTime100 = -1;
 	}
 
-	//! Serialize
-	FArchive& operator>>(FArchive &Ar)
-	{
-		if (Ar.IsSaving()) {
-			ResetAnimation();
-		}
-		
-		Ar << cardEnum;
-		Ar << lastPositionX100;
-		Ar << lastPositionY100;
-		Ar << animationStartTime100;
-		return Ar;
+	static const CardStatus None;
+
+	bool operator==(const CardStatus& a) const {
+		return cardEnum == a.cardEnum && 
+			stackSize == a.stackSize &&
+			cardStateValue1 == a.cardStateValue1 &&
+			cardStateValue2 == a.cardStateValue2 &&
+			cardStateValue3 == a.cardStateValue3 &&
+			animationStartTime100 == a.animationStartTime100;
 	}
+
+	bool isValid() {
+		return cardEnum != CardEnum::None;
+	}
+	
+	//! Serialize
+	FArchive& operator>>(FArchive &Ar);
+
+	void Serialize(class PunSerializedData& blob);
 };
-inline bool operator==(const CardStatus& lhs, const CardStatus& rhs) {
-	return lhs.cardEnum == rhs.cardEnum && lhs.animationStartTime100 == rhs.animationStartTime100;
-}
 
 static const std::vector<CardEnum> BuildingSlotCards
 {
@@ -3936,25 +4070,6 @@ static ResourcePair GetCrateResource(CardEnum cardEnumIn)
 	}
 	UE_DEBUG_BREAK();
 	return ResourcePair::Invalid();
-}
-
-static int32 AreaSpellRadius(CardEnum cardEnum) {
-	switch (cardEnum) {
-	case CardEnum::FireStarter: return 3;
-	case CardEnum::Steal: return 1;
-	case CardEnum::Snatch: return 1;
-	case CardEnum::Kidnap: return 1;
-	case CardEnum::SharingIsCaring: return 1;
-
-	// Skill
-	case CardEnum::SpeedBoost: return 1;
-		
-	case CardEnum::InstantBuild: return 1;
-	default: return -1;
-	}
-}
-inline bool IsAreaSpell(CardEnum cardEnum) {
-	return AreaSpellRadius(cardEnum) != -1;
 }
 
 
@@ -5511,6 +5626,9 @@ static bool HasBuildingFront(CardEnum cardEnum)
 			cardEnum != CardEnum::StorageYard &&
 			cardEnum != CardEnum::FakeTribalVillage &&
 			cardEnum != CardEnum::ChichenItza &&
+			
+			cardEnum != CardEnum::RegionTribalVillage &&
+
 			!IsDecorativeBuilding(cardEnum);
 }
 
@@ -5520,24 +5638,6 @@ static bool IsStorageTooLarge(TileArea area) {
 }
 static bool IsStorageWidthTooHigh(TileArea area) {
 	return (area.sizeX() / 2) > 16 || (area.sizeY() / 2) > 16;
-}
-
-static bool IsFarmTooLarge(TileArea area) {
-	return area.sizeX() * area.sizeY() > 64;
-}
-static bool IsFarmTooSmall(TileArea area) {
-	return area.sizeX() * area.sizeY() < 16;
-}
-static bool IsFarmWidthTooHigh(TileArea area) {
-	return area.sizeX() > 16 || area.sizeY() > 16;
-}
-static bool IsFarmSizeInvalid(TileArea area) {
-	if (SimSettings::IsOn("NoFarmSizeCap")) {
-		return false;
-	}
-	return IsFarmTooLarge(area) || 
-			IsFarmTooSmall(area) || 
-			IsFarmWidthTooHigh(area);
 }
 
 enum class OverlayType
@@ -6026,6 +6126,12 @@ enum class TechEnum : uint8
 
 	Combo,
 
+	/*
+	 * August 4
+	 */
+	CardInventory1,
+	CardInventory2,
+
 	Count,
 };
 
@@ -6128,10 +6234,10 @@ static bool IsGrassDominant(BiomeEnum biomeEnum) {
 
 enum class UnitEnum : uint8
 {
-	Alpaca,
 	Human,
+	WildMan,
+	
 	Boar,
-
 	RedDeer,
 	YellowDeer,
 	DarkDeer,
@@ -6140,10 +6246,12 @@ enum class UnitEnum : uint8
 	BlackBear,
 	Panda,
 
-	WildMan,
+	Moose,
 	Hippo,
 	Penguin,
+	Bobcat,
 
+	Alpaca,
 	Pig,
 	Sheep,
 	Cow,
@@ -6165,55 +6273,29 @@ static bool IsHumanAnimatedDisplay(UnitEnum unitEnum)
 		unitEnum == UnitEnum::HorseLogistics;
 }
 
-enum class UnitDisplayEnum : uint8
+static int32 GetAnimalBaseCost(UnitEnum unitEnum)
 {
-	Alpaca,
-	HumanMale,
-	Boar,
-
-	RedDeer,
-	YellowDeer,
-	DarkDeer,
-
-	BrownBear,
-	BlackBear,
-	Panda,
-
-	WildMan,
-	Hippo,
-	Penguin,
-
-	Pig,
-	Sheep,
-	Cow,
-
-	Infantry,
-	ProjectileArrow,
-
-	HorseCaravan,
-	HorseMarket,
-	HorseLogistics,
-	SmallShip,
-
-	HumanFemale,
-	HumanChildMale,
-	HumanChildFemale,
-
-	Count,
-};
-static int32 UnitDisplayEnumCount = static_cast<int32>(UnitDisplayEnum::Count);
-
-static UnitDisplayEnum GetUnitDisplayEnum(UnitEnum unitEnum, int32 variationIndex) {
-	if (unitEnum == UnitEnum::Human) {
-		switch(variationIndex) {
-		case 0: return UnitDisplayEnum::HumanMale;
-		case 1: return UnitDisplayEnum::HumanFemale;
-		case 2: return UnitDisplayEnum::HumanChildMale;
-		default: return UnitDisplayEnum::HumanChildFemale;
-		}
+	switch (unitEnum) {
+	case UnitEnum::Boar:
+		return 200;
+	case UnitEnum::RedDeer:
+	case UnitEnum::YellowDeer:
+	case UnitEnum::DarkDeer:
+		return 300;
+	case UnitEnum::BrownBear:
+	case UnitEnum::BlackBear:
+	case UnitEnum::Panda:
+		return 1000;
+	case UnitEnum::Bobcat:
+		return 700;
+	case UnitEnum::WildMan:
+		return 1000;
+	default:
+		return 200;
 	}
-	return static_cast<UnitDisplayEnum>(unitEnum);
 }
+
+
 
 struct BiomeInfo
 {
@@ -6486,10 +6568,10 @@ static const UnitInfo UnitInfos[]
 
 	//	adultYears100, maxAgeYears100, minBreedingAgeYears100,
 	//	gestationYears100, winterSurvivalLength_Years100, foodPerYear
-	UnitInfo(UnitEnum::Alpaca, LOCTEXT("Feral Alpaca", "Feral Alpaca"),	500,	100,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Pork, 2 * BaseUnitDrop100}}),
 	UnitInfo(UnitEnum::Human,	LOCTEXT("Human", "Human"),	1000,	100,		025,	020,	HumanFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}}),
-	UnitInfo(UnitEnum::Boar,	LOCTEXT("Boar", "Boar"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::WildMan, LOCTEXT("WildMan", "Wild Man"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 
+	UnitInfo(UnitEnum::Boar,	LOCTEXT("Boar", "Boar"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 	UnitInfo(UnitEnum::RedDeer,	LOCTEXT("Red Deer", "Red Deer"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 	UnitInfo(UnitEnum::YellowDeer, LOCTEXT("Mule Deer", "Mule Deer"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 	UnitInfo(UnitEnum::DarkDeer, LOCTEXT("Sambar Deer", "Sambar Deer"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
@@ -6498,11 +6580,12 @@ static const UnitInfo UnitInfos[]
 	UnitInfo(UnitEnum::BlackBear, LOCTEXT("Black Bear", "Black Bear"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 	UnitInfo(UnitEnum::Panda, LOCTEXT("Panda", "Panda"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 
-	UnitInfo(UnitEnum::WildMan, LOCTEXT("WildMan", "Wild Man"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+	UnitInfo(UnitEnum::Moose, LOCTEXT("Moose", "Moose"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 	UnitInfo(UnitEnum::Hippo, LOCTEXT("Hippo", "Hippo"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
 	UnitInfo(UnitEnum::Penguin, LOCTEXT("Penguin", "Penguin"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
-	
-	
+	UnitInfo(UnitEnum::Bobcat, LOCTEXT("Bobcat", "Bobcat"),	UsualAnimalAge,	AnimalMinBreedingAge,		AnimalGestation,	100,	AnimalFoodPerYear, {{ResourceEnum::GameMeat, 2 * BaseUnitDrop100}, {ResourceEnum::Leather, BaseUnitDrop100}}),
+
+	UnitInfo(UnitEnum::Alpaca, LOCTEXT("Alpaca", "Alpaca"),	500,	100,		AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Pork, 2 * BaseUnitDrop100}}),
 	UnitInfo(UnitEnum::Pig, LOCTEXT("Pig", "Pig"),	Ranch_UsualAnimalAge,	Ranch_AnimalMinBreedingAge,		Ranch_AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Pork, BaseUnitDrop100 * 400 / 100}}),
 	UnitInfo(UnitEnum::Sheep, LOCTEXT("Sheep", "Sheep"),	Ranch_UsualAnimalAge,	Ranch_AnimalMinBreedingAge,		Ranch_AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Lamb, BaseUnitDrop100 * 480 / 2 / 100}, {ResourceEnum::Wool, BaseUnitDrop100 * 480 / 2 / 100}}),
 	UnitInfo(UnitEnum::Cow, LOCTEXT("Cow", "Cow"),	Ranch_UsualAnimalAge,	Ranch_AnimalMinBreedingAge,		Ranch_AnimalGestation,	100,	HumanFoodPerYear, {{ResourceEnum::Beef, BaseUnitDrop100 * 576 / 2 / 100}, {ResourceEnum::Leather,  BaseUnitDrop100 * 576 / 2 / 100}}),
@@ -6529,35 +6612,60 @@ static UnitInfo GetUnitInfo(int32_t unitEnumInt) {
 	return UnitInfos[unitEnumInt];
 }
 
-static const CardEnum AnimalCards[] =
+
+/*
+ * Unit Cards
+ */
+static UnitEnum GetAnimalUnitEnumFromCardEnum(CardEnum cardEnum)
 {
-	CardEnum::Cow,
-	CardEnum::Pig,
-	CardEnum::Sheep,
-	CardEnum::Panda,
+	int32 shift = static_cast<int32>(cardEnum) - static_cast<int32>(CardEnum::Boar);
+	return static_cast<UnitEnum>(static_cast<int32>(UnitEnum::Boar) + shift);
+}
+static CardEnum GetAnimalCardEnumFromUnitEnum(UnitEnum unitEnum)
+{
+	int32 shift = static_cast<int32>(unitEnum) - static_cast<int32>(UnitEnum::Boar);
+	return static_cast<CardEnum>(static_cast<int32>(CardEnum::Boar) + shift);
+}
+static bool IsAnimalCard(CardEnum cardEnum)
+{
+	int32 cardEnumInt = static_cast<int32>(cardEnum);
+	return static_cast<int32>(CardEnum::Boar) <= cardEnumInt && cardEnumInt <= static_cast<int32>(CardEnum::Bobcat);
+}
+
+/*
+ * Spell Cards
+ */
+static std::vector<CardEnum> SpellCards
+{
+	CardEnum::FireStarter,
+	CardEnum::Steal,
+	CardEnum::Snatch,
+	CardEnum::Kidnap,
+	CardEnum::SharingIsCaring,
+
+	// Skill
+	CardEnum::SpeedBoost,
+
+	CardEnum::InstantBuild,
 };
-static bool IsAnimalCard(CardEnum cardEnumIn)
-{
-	for (CardEnum cardEnum : AnimalCards) {
+static int32 AreaSpellRadius(CardEnum cardEnum) {
+	switch (cardEnum) {
+	case CardEnum::FireStarter: return 3;
+	default: return 1;
+	}
+}
+inline bool IsSpellCard(CardEnum cardEnumIn) {
+	for (const CardEnum& cardEnum : SpellCards) {
 		if (cardEnum == cardEnumIn) {
 			return true;
 		}
 	}
+	if (IsAnimalCard(cardEnumIn)) {
+		return true;
+	}
 	return false;
 }
-static UnitEnum GetAnimalEnumFromCardEnum(CardEnum buildingEnum)
-{
-	switch (buildingEnum)
-	{
-	case CardEnum::Cow: return UnitEnum::Cow;
-	case CardEnum::Pig: return UnitEnum::Pig;
-	case CardEnum::Sheep: return UnitEnum::Sheep;
-	case CardEnum::Panda: return UnitEnum::Panda;
-	default:
-		UE_DEBUG_BREAK();
-	}
-	return UnitEnum::Cow;
-}
+
 
 static int32_t UnitEnumIntFromName(FString name) {
 	for (int i = 0; i < UnitEnumCount; i++) {
@@ -6723,28 +6831,55 @@ enum class UnitAnimationEnum : uint8
 	Rest,
 	Invisible,
 };
-static const std::vector<std::string> UnitAnimationNames =
+
+struct UnitAnimationInfo
 {
-	"None",
-	"Wait",
-	"Walk",
-	"Build",
+	UnitAnimationEnum animationEnum;
+	std::string name;
+	float playrate;
 
-	"ChopWood",
-	"StoneMining",
-	"FarmPlanting",
-
-	"Caravan",
-	"Ship",
-	"Immigration",
-
-	"HorseMarket",
-	"HorseLogistics",
-	"HaulingCart",
-
-	"Rest",
-	"Invisible",
+	UnitAnimationInfo(UnitAnimationEnum animationEnumIn,
+					std::string nameIn,
+					float playrateIn)
+	{
+		animationEnum = animationEnumIn;
+		name = nameIn;
+		playrate = playrateIn;
+	}
 };
+
+static const std::vector<UnitAnimationInfo> UnitAnimationInfos
+{
+	UnitAnimationInfo(UnitAnimationEnum::None, "None", 1.0f),
+	UnitAnimationInfo(UnitAnimationEnum::Wait, "Wait", 1.0f),
+	UnitAnimationInfo(UnitAnimationEnum::Walk, "Walk", 2.5f),
+	UnitAnimationInfo(UnitAnimationEnum::Build, "Build", 1.183),
+
+	UnitAnimationInfo(UnitAnimationEnum::ChopWood, "ChopWood", 2.0f),
+	UnitAnimationInfo(UnitAnimationEnum::StoneMining, "StoneMining", 3.0f),
+	UnitAnimationInfo(UnitAnimationEnum::FarmPlanting, "FarmPlanting", 1.0f),
+
+	UnitAnimationInfo(UnitAnimationEnum::HorseCaravan, "Caravan", 7.0f),
+	UnitAnimationInfo(UnitAnimationEnum::Ship, "Ship", 4.0f),
+	UnitAnimationInfo(UnitAnimationEnum::ImmigrationCart, "Immigration", 1.0f),
+
+	UnitAnimationInfo(UnitAnimationEnum::HorseMarket, "HorseMarket", 7.0f),
+	UnitAnimationInfo(UnitAnimationEnum::HorseLogistics, "HorseLogistics", 7.0f),
+	UnitAnimationInfo(UnitAnimationEnum::HaulingCart, "HaulingCart", 1.0f),
+
+	UnitAnimationInfo(UnitAnimationEnum::Rest, "Rest", 1.0f),
+	UnitAnimationInfo(UnitAnimationEnum::Invisible, "Invisible", 1.0f),
+};
+
+static const std::string& GetUnitAnimationName(UnitAnimationEnum animationEnum) {
+	return UnitAnimationInfos[static_cast<int>(animationEnum)].name;
+}
+static const int32 UnitAnimationCount = UnitAnimationInfos.size();
+
+static float GetUnitAnimationPlayRate(UnitAnimationEnum animationEnum) {
+	return UnitAnimationInfos[static_cast<int>(animationEnum)].playrate;
+}
+
 static const std::vector<float> UnitAnimationPlayRate =
 {
 	1.0f,
@@ -6774,10 +6909,8 @@ static const std::vector<float> UnitAnimationPlayRate =
 	1.0f, // Invisible
 };
 
-static const std::string& GetUnitAnimationName(UnitAnimationEnum animationEnum) {
-	return UnitAnimationNames[static_cast<int>(animationEnum)];
-}
-static const int32 UnitAnimationCount = UnitAnimationNames.size();
+
+
 
 static bool IsHorseAnimation(UnitAnimationEnum animationEnum)
 {
@@ -6810,11 +6943,6 @@ static bool ShouldHumanUseVertexAnimation(UnitAnimationEnum animationEnum, int32
 		}
 	}
 	return false;
-}
-
-
-static float GetUnitAnimationPlayRate(UnitAnimationEnum animationEnum) {
-	return UnitAnimationPlayRate[static_cast<int>(animationEnum)];
 }
 
 
@@ -7022,7 +7150,9 @@ static FLinearColor PlayerColor2(int32 playerId)
 	\
 	entry(TestGetJson) \
 	\
-	entry(ClearLuxuryTier1)
+	entry(ClearLuxuryTier1) \
+	\
+	entry(AISpyNest)
 
 #define CREATE_ENUM(name) name,
 #define CREATE_STRINGS(name) #name,
@@ -7088,6 +7218,8 @@ struct DescriptionUIState
 	int32 objectId;
 	bool shouldCloseStatUI = true;
 
+	int32 openedTick = -1;
+
 	DescriptionUIState() : objectType(ObjectTypeEnum::None), objectId(-1) {}
 	DescriptionUIState(ObjectTypeEnum objectType, int32_t objectId) : objectType(objectType), objectId(objectId) {}
 
@@ -7127,6 +7259,7 @@ enum class DisplayGlobalEnum
 {
 	Province,
 	Territory,
+	MapDefenseNode,
 
 	Count,
 };
@@ -7275,8 +7408,10 @@ enum class GridConnectType {
 enum class ExclusiveUIEnum : uint8
 {
 	CardHand1,
+	CardInventory,
 	RareCardHand,
 	ConverterCardHand,
+	
 	BuildMenu,
 	Placement,
 	ConfirmingAction,
@@ -7296,6 +7431,8 @@ enum class ExclusiveUIEnum : uint8
 
 	InitialResourceUI,
 	DiplomacyUI,
+	TrainUnitsUI,
+	TownAutoTradeUI,
 
 	SendImmigrantsUI,
 	GiftResourceUI,
@@ -8242,6 +8379,28 @@ static bool IsSeedCard(CardEnum cardEnumIn) {
 	return IsCommonSeedCard(cardEnumIn) || IsSpecialSeedCard(cardEnumIn);
 }
 
+struct FarmTile
+{
+	int32 farmTileId = -1;
+	int32 groupId = -1;
+	WorldTile2 worldTile;
+
+	bool isTileWorked = false;
+	int32 reservedUnitId = -1;
+
+	bool isValid() { return farmTileId != -1; }
+
+	//! Serialize
+	FArchive& operator>>(FArchive &Ar) {
+		Ar << farmTileId;
+		Ar << groupId;
+		worldTile >> Ar;
+		Ar << isTileWorked;
+		Ar << reservedUnitId;
+		return Ar;
+	}
+};
+
 /*
  * Items
  */
@@ -8952,9 +9111,13 @@ enum class CallbackEnum : uint8
 	SelectCardRemoval,
 	SellCard,
 	SelectBuildingSlotCard,
+	SelectInventorySlotCard,
+	CardInventorySlotting,
+	ArchivesSlotting,
 
 	SelectStartingLocation,
 	UpgradeBuilding,
+	CaptureUnit,
 	TrainUnit,
 	CancelTrainUnit,
 	OpenStatistics,
@@ -8985,6 +9148,7 @@ enum class CallbackEnum : uint8
 	QuestOpenDescription,
 
 	SelectEmptySlot,
+	LobbyChoosePlayerLogo,
 
 	SetGlobalJobPriority_Up,
 	SetGlobalJobPriority_Down,
@@ -9020,7 +9184,37 @@ enum class CallbackEnum : uint8
 
 	DeclareFriendship,
 	MarryOut,
+
+	// AutoTrade
+	AddAutoTradeResource,
+	ShiftAutoTradeRowUp,
+	ShiftAutoTradeRowDown,
+	ShiftAutoTradeRowFastUp,
+	ShiftAutoTradeRowFastDown,
+	RemoveAutoTradeRow,
+	AutoTradeRowTargetInventoryChanged,
+	AutoTradeRowMaxTradeAmountChanged,
+	EstablishTradeRoute,
+	CancelTradeRoute,
+
+	// Spy
+	SpyEstablishNest,
+	SpyEnsureAnonymity,
+	
 };
+
+static bool IsAutoTradeCallback(CallbackEnum callbackEnum)
+{
+	int32 callbackInt = static_cast<int32>(callbackEnum);
+	return static_cast<int32>(CallbackEnum::AddAutoTradeResource) <= callbackInt && callbackInt <= static_cast<int32>(CallbackEnum::AutoTradeRowMaxTradeAmountChanged);
+}
+
+static bool IsSpyCallback(CallbackEnum callbackEnum)
+{
+	return callbackEnum == CallbackEnum::SpyEstablishNest ||
+		callbackEnum == CallbackEnum::SpyEnsureAnonymity;
+}
+
 
 static const int32 GameSpeedHalf = -12;
 static const int32 GameSpeedValue1 = GameSpeedHalf;
@@ -9284,3 +9478,148 @@ static int32 GetDefaultAICount(MapSizeEnum mapSizeEnum)
 	default: return 0;
 	}
 }
+
+
+/*
+ * Light weight alternative to UE4's FArchive FMemoryReader etc.
+ */
+ // Network Serializer
+static void FString_SerializeAndAppendToBlob(FString inStr, TArray<int32>& arr)
+{
+	arr.Add(inStr.Len());
+	for (int32 i = 0; i < inStr.Len(); i++) {
+		arr.Add(static_cast<int32>(inStr[i]));
+	}
+}
+
+static FString FString_DeserializeFromBlob(const TArray<int32>& arr, int32& readIndex)
+{
+	FString result;
+	int32 len = arr[readIndex++];
+	for (int32 i = 0; i < len; i++) {
+		result.AppendChar(static_cast<TCHAR>(arr[readIndex++]));
+	}
+	return result;
+}
+
+class PunSerializedData : public TArray<int32>
+{
+public:
+	PunSerializedData(bool isSaving) {
+		readIndex = isSaving ? -1 : 0;
+	}
+
+	PunSerializedData(bool isSaving, const TArray<int32>& blob, int32 index = 0)
+	{
+		readIndex = isSaving ? -1 : index;
+		Append(blob);
+	}
+
+	int32 readIndex = -1;
+
+	bool isSaving() { return readIndex == -1; }
+
+
+	void operator<<(int32& value) {
+		if (isSaving()) {
+			Add(value);
+		}
+		else {
+			value = (*this)[readIndex++];
+		}
+	}
+	void operator<<(int16& value) {
+		if (isSaving()) {
+			Add(value);
+		}
+		else {
+			value = (*this)[readIndex++];
+		}
+	}
+	void operator<<(int8& value) {
+		if (isSaving()) {
+			Add(value);
+		}
+		else {
+			value = (*this)[readIndex++];
+		}
+	}
+	void operator<<(uint16& value) {
+		if (isSaving()) {
+			Add(value);
+		}
+		else {
+			value = (*this)[readIndex++];
+		}
+	}
+	void operator<<(uint8& value) {
+		if (isSaving()) {
+			Add(value);
+		}
+		else {
+			value = (*this)[readIndex++];
+		}
+	}
+	void operator<<(bool& value) {
+		if (isSaving()) {
+			Add(value);
+		}
+		else {
+			value = (*this)[readIndex++];
+		}
+	}
+
+	// Enum
+	template <
+		typename EnumType,
+		typename = typename TEnableIf<TIsEnumClass<EnumType>::Value>::Type
+	>
+		void operator<<(EnumType& Value) {
+		return (*this) << (__underlying_type(EnumType)&)Value;
+	}
+
+	void operator<<(FString& value) {
+		if (isSaving()) {
+			FString_SerializeAndAppendToBlob(value, *this);
+		}
+		else {
+			value = FString_DeserializeFromBlob(*this, readIndex);
+		}
+	}
+
+	void operator<<(TArray<int32>& inArray) {
+		if (isSaving()) {
+			Add(inArray.Num());
+			Append(inArray);
+		}
+		else {
+			int32 count = (*this)[readIndex++];
+			for (int i = 0; i < count; i++) {
+				inArray.Add((*this)[readIndex++]);
+			}
+		}
+	}
+	void operator<<(TArray<uint8>& inArray) {
+		if (isSaving()) {
+			Add(inArray.Num());
+			Append(inArray);
+		}
+		else {
+			int32 count = (*this)[readIndex++];
+			for (int i = 0; i < count; i++) {
+				inArray.Add((*this)[readIndex++]);
+			}
+		}
+	}
+
+	void operator<<(WorldTile2& value) {
+		(*this) << value.x;
+		(*this) << value.y;
+	}
+	void operator<<(TileArea& value) {
+		(*this) << value.minX;
+		(*this) << value.minY;
+		(*this) << value.maxX;
+		(*this) << value.maxY;
+	}
+};

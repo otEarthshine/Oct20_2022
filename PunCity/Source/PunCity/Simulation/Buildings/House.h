@@ -277,6 +277,8 @@ public:
 		Building::Serialize(Ar);
 		Ar << _houseLvl;
 		Ar << _lastHouseUpgradeTick;
+		
+		Ar << _spyPlayerId;
 	}
 
 	void ScheduleTick() override {
@@ -298,6 +300,70 @@ public:
 	 */
 	FText HouseNeedDescription();
 	FText HouseNeedTooltipDescription();
+
+	/*
+	 * Spy
+	 */
+	int32 spyPlayerId() { return _spyPlayerId; }
+	int32 isConcealed() { return _isConcealed; }
+	
+	void ExecuteSpyCommand(const FGenericCommand& command)
+	{
+		check(command.playerId != _playerId);
+		
+		if (command.callbackEnum == CallbackEnum::SpyEstablishNest) {
+			if (_spyPlayerId == -1) {
+				_spyPlayerId = command.playerId;
+				_isConcealed = false;
+
+				_simulation->AddPopupToFront(command.playerId,
+					NSLOCTEXT("HouseSpy", "SpyEstablishNest_Succeed", "Established a Spy Nest.<space>Spy Nest gives Spy Bonus to Spy Cards such as Kidnap, Steal, Snatch.")
+				);
+			}
+			else {
+				_simulation->AddPopupToFront(command.playerId,
+					NSLOCTEXT("HouseSpy", "SpyNestOccupied_AlreadyOccupied", "This House is already occupied by other player's spies.")
+				);
+			}
+		}
+		else if (command.callbackEnum == CallbackEnum::SpyEnsureAnonymity) {
+			if (_spyPlayerId == command.playerId) {
+				_isConcealed = true;
+				_simulation->AddPopupToFront(command.playerId,
+					NSLOCTEXT("HouseSpy", "SpyEnsureAnonymity_Succeed", "We have ensured the anonymity of this Spy Nest.<space>If this Spy Nest is found, they won't know you are behind this.")
+				);
+			}
+		}
+		else {
+			UE_DEBUG_BREAK();
+		}
+	}
+	void RemoveSpyNest()
+	{
+		if (_isConcealed) {
+			_simulation->AddPopupToFront(_playerId, 
+				NSLOCTEXT("HouseSpy", "RemoveSpyNestWarning_RemoverUnrevealed", "You found and removed a Spy Nest. The Spies escaped without revealing their master")
+			);
+			_simulation->AddPopupToFront(_spyPlayerId, FText::Format(
+				NSLOCTEXT("HouseSpy", "RemoveSpyNestWarning_Unrevealed", "The Spy Nest at {0} was found. Your Spies escaped without being caught."),
+				_simulation->townNameT(_townId)
+			));
+		} else {
+			_simulation->AddPopupToFront(_playerId, FText::Format(
+				NSLOCTEXT("HouseSpy", "RemoveSpyNestWarning_RemoverRevealed", "Found and removed a Spy Nest.<space>The Spies were caught and revealed they were sent by {0}"),
+				_simulation->playerNameT(_spyPlayerId)
+			));
+			_simulation->AddPopupToFront(_spyPlayerId, FText::Format(
+				NSLOCTEXT("HouseSpy", "RemoveSpyNestWarning_Revealed", "The Spy Nest at {0} was found.<space>Your Spy was caught, {1} now know you are spying on them."),
+				_simulation->townNameT(_townId),
+				_simulation->playerNameT(_playerId)
+			));
+		}
+
+		_spyPlayerId = -1;
+		_isConcealed = false;
+	}
+
 private:
 	int32 CalculateHouseLevel();
 
@@ -317,6 +383,10 @@ private:
 private:
 	int32 _houseLvl = 1;
 	int32 _lastHouseUpgradeTick = -1;
+
+	int32 _spyPlayerId = -1;
+	bool _isConcealed = false;
+	
 	const int32 houseUpgradeDelayTicks = Time::TicksPerSecond * 8;
 
 	const int32 houseBaseOccupants = 4;

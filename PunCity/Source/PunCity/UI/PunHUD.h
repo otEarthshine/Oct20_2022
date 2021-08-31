@@ -37,6 +37,8 @@
 #include "MainTechTreeUI.h"
 #include "SendImmigrantsUI.h"
 #include "TechTreeUI.h"
+#include "TownAutoTradeUI.h"
+#include "TrainUnitsUI.h"
 
 #include "PunHUD.generated.h"
 
@@ -148,6 +150,9 @@ public:
 				_giftResourceUI->IsHovered() ||
 				_diplomacyUI->IsHovered() ||
 
+				_trainUnitsUI->IsHovered() ||
+				_townAutoTradeUI->IsHovered() ||
+
 				_intercityTradeUI->IsHovered() ||
 				_mainGameUI->IsHoveredOnScrollUI() ||
 				_chatUI->IsHoveredOnScrollUI() ||
@@ -247,43 +252,46 @@ public:
 		networkInterface()->ResetGameUI();
 		_worldTradeUI->OpenUI(objectId);
 	}
-	void CloseTradeUI() { _worldTradeUI->CloseUI(); }
 
 	void OpenIntercityTradeUI(int32 objectId) final {
 		networkInterface()->ResetGameUI();
 		_intercityTradeUI->OpenUI(objectId);
 	}
-	void CloseIntercityTradeUI() { _intercityTradeUI->CloseUI(); }
 
 	void OpenTargetConfirmUI_IntercityTrade(int32 townhallId, ResourceEnum resourceEnum) final {
 		networkInterface()->ResetGameUI();
 		_targetConfirmUI->OpenUI(townhallId, resourceEnum);
 	}
-	void CloseTargetConfirmUI() { _targetConfirmUI->CloseUI(); }
 
 	void OpenSendImmigrantsUI(int32 townIdIn) override {
+		networkInterface()->ResetGameUI();
 		_sendImmigrantsUI->OpenUI(townIdIn);
 	}
 	void OpenGiftUI(int32 targetPlayerId) override {
+		networkInterface()->ResetGameUI();
 		_giftResourceUI->OpenUI(targetPlayerId);
 	}
 	void OpenDiplomacyUI(int32 targetPlayerId) override {
+		networkInterface()->ResetGameUI();
 		_diplomacyUI->OpenUI(targetPlayerId);
 	}
-	
+
+	virtual void OpenTrainUnitsUI(int32 townIdIn) override {
+		networkInterface()->ResetGameUI();
+		_trainUnitsUI->OpenUI(townIdIn);
+	}
+
+	virtual void OpenTownAutoTradeUI(int32 townIdIn) override {
+		networkInterface()->ResetGameUI();
+		_townAutoTradeUI->OpenUI(townIdIn);
+	}
 	
 	// Tech Tree
-	void CloseTechUI() final {
-		_techUI->SetVisibility(ESlateVisibility::Collapsed);
-	}
 	void ToggleTechUI() final {
 		_techUI->SetShowUI(_techUI->GetVisibility() == ESlateVisibility::Collapsed);
 	}
 
 	// ProsperityTree
-	void CloseProsperityUI() final {
-		_prosperityUI->SetVisibility(ESlateVisibility::Collapsed);
-	}
 	void ToggleProsperityUI() final {
 		_prosperityUI->SetShowUI(_prosperityUI->GetVisibility() == ESlateVisibility::Collapsed);
 	}
@@ -294,47 +302,11 @@ public:
 	void SwitchToNextBuildingUI() final {
 		_descriptionUISystem->SwitchToNextBuilding(false);
 	}
-	
-	void CloseQuestUI() {
-		_questUI->QuestDescriptionOverlay->SetVisibility(ESlateVisibility::Collapsed);
-	}
 
-	void ClosePlayerOverview() {
-		_questUI->PlayerDetailsOverlay->SetVisibility(ESlateVisibility::Collapsed);
-	}
 
-	void OpenArmyMoveUI(std::shared_ptr<FAttack> armyCommand) final {
-		//_armyMoveUI->OpenArmyMoveUI(armyCommand);
-	}
-	void CloseArmyMoveUI() {
-		//_armyMoveUI->CloseArmyMoveUI();
-	}
 
-	void ResetGameUI()
-	{
-		mainGameUI()->ResetGameUI();
-		
-		CloseTechUI();
-		CloseProsperityUI();
 
-		CloseTradeUI();
-		CloseIntercityTradeUI();
-		CloseTargetConfirmUI();
-		
-		CloseQuestUI();
-		CloseDescriptionUI();
-		CloseStatisticsUI();
-		ClosePlayerOverview();
-
-		_sendImmigrantsUI->CloseUI();
-		_diplomacyUI->CloseUI();
-		_giftResourceUI->CloseUI();
-
-		_escMenuUI->EscMenu->SetVisibility(ESlateVisibility::Collapsed);
-		_escMenuUI->TutorialUI->SetVisibility(ESlateVisibility::Collapsed);
-
-		_escMenuUI->CloseOverlayUI();
-	}
+	void ResetGameUI(bool isEscPressed = false);
 	
 	/*
 	 * Determine what exclusive UI to display
@@ -353,31 +325,36 @@ public:
 	{
 		switch (exclusiveUIEnum)
 		{
-		case ExclusiveUIEnum::CardHand1:		return _mainGameUI->CardHand1Overlay->GetVisibility() == ESlateVisibility::Visible;
-		case ExclusiveUIEnum::RareCardHand:		return _mainGameUI->RareCardHandOverlay->GetVisibility() == ESlateVisibility::Visible;
-		case ExclusiveUIEnum::ConverterCardHand:return _mainGameUI->ConverterCardHandOverlay->GetVisibility() == ESlateVisibility::Visible;
-		case ExclusiveUIEnum::BuildMenu:		return _mainGameUI->BuildMenuOverlay->GetVisibility() != ESlateVisibility::Collapsed;
+		case ExclusiveUIEnum::CardHand1:		return _mainGameUI->CardHand1Overlay->IsVisible();;
+		case ExclusiveUIEnum::CardInventory:	return _mainGameUI->CardInventorySizeBox->IsVisible();
+			
+		case ExclusiveUIEnum::RareCardHand:		return _mainGameUI->RareCardHandOverlay->IsVisible();;
+		case ExclusiveUIEnum::ConverterCardHand:return _mainGameUI->ConverterCardHandOverlay->IsVisible();;
+		case ExclusiveUIEnum::BuildMenu:		return _mainGameUI->BuildMenuOverlay->IsVisible();
 		case ExclusiveUIEnum::Placement:		return inputSystemInterface()->placementState() != PlacementType::None;
-		case ExclusiveUIEnum::ConfirmingAction: return _mainGameUI->ConfirmationOverlay->GetVisibility() != ESlateVisibility::Collapsed;
-		case ExclusiveUIEnum::EscMenu:			return _escMenuUI->EscMenu->GetVisibility() != ESlateVisibility::Collapsed;
+		case ExclusiveUIEnum::ConfirmingAction: return _mainGameUI->ConfirmationOverlay->IsVisible();
+		case ExclusiveUIEnum::EscMenu:			return _escMenuUI->EscMenu->IsVisible();
 
-		case ExclusiveUIEnum::TechTreeUI:			return _techUI->GetVisibility() != ESlateVisibility::Collapsed;
-		case ExclusiveUIEnum::ProsperityUI:		return _prosperityUI->GetVisibility() != ESlateVisibility::Collapsed;
+		case ExclusiveUIEnum::TechTreeUI:		return _techUI->IsVisible();
+		case ExclusiveUIEnum::ProsperityUI:		return _prosperityUI->IsVisible();
 			
-		case ExclusiveUIEnum::Trading:			return _worldTradeUI->GetVisibility() != ESlateVisibility::Collapsed;
-		case ExclusiveUIEnum::IntercityTrading:	return _intercityTradeUI->GetVisibility() != ESlateVisibility::Collapsed;
-		case ExclusiveUIEnum::TargetConfirm:	return _targetConfirmUI->GetVisibility() != ESlateVisibility::Collapsed;
+		case ExclusiveUIEnum::Trading:			return _worldTradeUI->IsVisible();
+		case ExclusiveUIEnum::IntercityTrading:	return _intercityTradeUI->IsVisible();
+		case ExclusiveUIEnum::TargetConfirm:	return _targetConfirmUI->IsVisible();
 			
-		case ExclusiveUIEnum::QuestUI:			return _questUI->QuestDescriptionOverlay->GetVisibility() != ESlateVisibility::Collapsed;
-		case ExclusiveUIEnum::StatisticsUI:		return _statisticsUI->GetVisibility() != ESlateVisibility::Collapsed;
-		case ExclusiveUIEnum::PlayerOverviewUI:	return _questUI->PlayerDetailsOverlay->GetVisibility() != ESlateVisibility::Collapsed;
-		//case ExclusiveUIEnum::ArmyMoveUI:		return _armyMoveUI->GetVisibility() != ESlateVisibility::Collapsed;
+		case ExclusiveUIEnum::QuestUI:			return _questUI->QuestDescriptionOverlay->IsVisible();;
+		case ExclusiveUIEnum::StatisticsUI:		return _statisticsUI->IsVisible();;
+		case ExclusiveUIEnum::PlayerOverviewUI:	return _questUI->PlayerDetailsOverlay->IsVisible();;
 
 		case ExclusiveUIEnum::InitialResourceUI:return _initialResourceUI->InitialResourceUI->IsVisible();
 
 		case ExclusiveUIEnum::SendImmigrantsUI:	return _sendImmigrantsUI->IsVisible();
 		case ExclusiveUIEnum::DiplomacyUI:		return _diplomacyUI->IsVisible();
+		case ExclusiveUIEnum::TrainUnitsUI:		return _trainUnitsUI->IsVisible();
 		case ExclusiveUIEnum::GiftResourceUI:	return _giftResourceUI->IsVisible();
+
+		case ExclusiveUIEnum::TownAutoTradeUI: return _townAutoTradeUI->IsVisible();
+			
 		default:
 			UE_DEBUG_BREAK();
 			return false;
@@ -569,7 +546,12 @@ protected:
 
 	UPROPERTY() USendImmigrantsUI* _sendImmigrantsUI;
 	UPROPERTY() UDiplomacyUI* _diplomacyUI;
+
+	UPROPERTY() UTrainUnitsUI* _trainUnitsUI;
+	
 	UPROPERTY() UGiftResourceUI* _giftResourceUI;
+
+	UPROPERTY() UTownAutoTradeUI* _townAutoTradeUI;
 
 	UPROPERTY() TSubclassOf<UUserWidget> _dragCardSlotClass;
 	UPROPERTY() TSubclassOf<UUserWidget> _dragCardClass;

@@ -77,6 +77,10 @@ public:
 	static void SetRoadWorldTexture(WorldTile2 tile, bool isRoad, bool isDirtRoad)
 	{
 		//PUN_LOG("SetRoadWorldTexture %s", *tile.To_FString());
+
+		if (heightForestColor.size() == 0) {
+			return;
+		}
 		
 		isHeightForestColorDirty = true;
 

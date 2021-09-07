@@ -132,7 +132,7 @@ public:
 		return _simulation->IsResearched(_playerId, TechEnum::AgriculturalRevolution);
 	}
 
-	virtual WorldTile2 gateTile() override { return _farmTiles[0].worldTile; }
+	virtual WorldTile2 gateTile() const override { return _farmTiles[0].worldTile; }
 
 	void SetFarmStartTile(WorldTile2 tile) {
 		_startTile = tile;
@@ -1673,11 +1673,65 @@ public:
 	static const int32 Radius = 12;
 };
 
+class MinorCityChild : public Building
+{
+public:
+	virtual void Serialize(FArchive& Ar) override {
+		Building::Serialize(Ar);
+		Ar << _parentId;
+	}
 
-class ProvincialBuilding : Building
+	int32 parentId() { return _parentId; }
+	
+	void SetParentId(int32 parentIdIn) {
+		_parentId = parentIdIn;
+	}
+
+private:
+	int32 _parentId = -1;
+};
+
+class MinorCity : public Building
 {
 public:
 
-	std::vector<AutoTradeElement> autoExportElements;
-	std::vector<AutoTradeElement> autoImportElements;
+	virtual void Serialize(FArchive& Ar) override {
+		Building::Serialize(Ar);
+		SerializeVecObj(Ar, _autoExportElements);
+		SerializeVecObj(Ar, _autoImportElements);
+	}
+
+	virtual void FinishConstruction() override;
+
+	virtual void OnDeinit() override;
+
+	int32 minorCityLevel() { return _minorCityLevel; }
+
+	void AddChildBuilding(MinorCityChild& child) {
+		child.SetParentId(buildingId());
+		_childBuildingIds.push_back(child.buildingId());
+	}
+
+	const std::vector<int32>& childBuildingIds() {
+		return _childBuildingIds;
+	}
+
+	std::vector<int32> GetPortIds()
+	{
+		for (int32 childBuildingId : _childBuildingIds) {
+			if (_simulation->building(childBuildingId).isEnum(CardEnum::MinorCityPort)) {
+				return _childBuildingIds;
+			}
+		}
+		return {};
+	}
+
+private:
+	std::vector<AutoTradeElement> _autoExportElements;
+	std::vector<AutoTradeElement> _autoImportElements;
+
+	int32 _minorCityLevel = -1;
+
+	std::vector<int32> _childBuildingIds;
 };
+

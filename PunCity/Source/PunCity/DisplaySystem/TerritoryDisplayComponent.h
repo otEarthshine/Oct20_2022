@@ -86,10 +86,14 @@ public:
 
 		// Node
 		{
-			// Mesh
+			// Main City Node
 			if (outerProvinceOwnerInfo.townId != -1 &&
 				sim.GetTownProvinceId(outerProvinceOwnerInfo.townId) == provinceId)
 			{
+				defenseOverlayEnum_Out = DefenseOverlayEnum::CityNode;
+			}
+			// Minor City Node
+			else if (sim.IsValidMinorTown(outerProvinceOwnerInfo.townId)) {
 				defenseOverlayEnum_Out = DefenseOverlayEnum::CityNode;
 			}
 			else if (outerProvinceOwnerInfo.fortIds.size() > 0) {

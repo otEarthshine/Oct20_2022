@@ -217,7 +217,7 @@ public:
 		}
 
 		// Town Conquer
-		int32 townId = _simulation->provinceOwnerTown(provinceId);
+		int32 townId = _simulation->provinceOwnerTown_Major(provinceId);
 		if (townId != -1 &&
 			_simulation->IsTownhallOverlapProvince(provinceId, provincePlayerId))
 		{

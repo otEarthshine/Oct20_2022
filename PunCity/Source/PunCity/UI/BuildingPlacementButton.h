@@ -181,6 +181,8 @@ public:
 
 		//PlayAnimationIf("Flash", needExclamation);
 		//ExclamationIcon->SetShow(needExclamation);
+
+		SellButton->SetVisibility(cardHandEnum == CardHandEnum::BoughtHand ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	}
 	
 	void SetBoughtCardNeedResource(bool needResource) {

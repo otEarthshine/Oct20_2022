@@ -267,10 +267,14 @@ public:
 		networkInterface()->ResetGameUI();
 		_sendImmigrantsUI->OpenUI(townIdIn);
 	}
-	void OpenGiftUI(int32 targetPlayerId) override {
+	virtual void OpenGiftUI(int32 sourcePlayerIdIn, int32 targetTownIdIn, TradeDealStageEnum dealStageEnumIn) override {
 		networkInterface()->ResetGameUI();
-		_giftResourceUI->OpenUI(targetPlayerId);
+		_giftResourceUI->OpenGiftUI(sourcePlayerIdIn, targetTownIdIn, dealStageEnumIn);
 	}
+	virtual void FillDealInfo(const TradeDealSideInfo& sourceDealInfo, const TradeDealSideInfo& targetDealInfo) override {
+		_giftResourceUI->FillDealInfo(sourceDealInfo, targetDealInfo);
+	}
+	
 	void OpenDiplomacyUI(int32 targetPlayerId) override {
 		networkInterface()->ResetGameUI();
 		_diplomacyUI->OpenUI(targetPlayerId);

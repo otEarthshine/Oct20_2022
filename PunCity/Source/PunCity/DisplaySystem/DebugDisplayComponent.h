@@ -275,7 +275,7 @@ protected:
 								{
 									provinceSys.displayedProvinceThisTick[provinceId] = true;
 
-									int32 townId = sim.provinceOwnerTown(provinceId);
+									int32 townId = sim.provinceOwnerTown_Major(provinceId);
 
 									int32 clusterId = -1;
 									if (townId != -1) {
@@ -449,7 +449,7 @@ protected:
 
 				// Show port
 				if (slot.portSlot.isValid()) {
-					TileArea area = BuildingArea(slot.portSlot, GetBuildingInfo(CardEnum::TradingPort).size, slot.portSlotFaceDirection);
+					TileArea area = BuildingArea(slot.portSlot, GetBuildingInfo(CardEnum::MinorCityPort).size, slot.portSlotFaceDirection);
 					drawAreaBox(area, FLinearColor::Blue);
 					drawAreaBox(area.GetFrontArea(slot.portSlotFaceDirection), FLinearColor::Blue);
 				}

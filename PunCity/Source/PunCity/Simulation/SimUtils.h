@@ -66,7 +66,7 @@ public:
 		
 		bool cannotPlant = simulation->provinceSystem().ExecuteNearbyProvincesWithExitTrue(provinceId, spread, [&](ProvinceConnection connection)
 		{
-			return simulation->provinceOwnerTown(connection.provinceId) != -1;
+			return simulation->provinceOwnerTown_Major(connection.provinceId) != -1;
 		});
 
 		return !cannotPlant;

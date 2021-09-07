@@ -646,7 +646,7 @@ public:
 						for (const ProvinceConnection& connection : connections) 
 						{
 							// Flood into owned province
-							if (_simulation->provinceOwnerTown(connection.provinceId) == townId &&
+							if (_simulation->provinceOwnerTown_Major(connection.provinceId) == townId &&
 								!floodedProvinceIds.Contains(connection.provinceId)) 
 							{
 								floodQueue.push_back(connection.provinceId);
@@ -693,7 +693,7 @@ public:
 				localProvinceId = abs(localProvinceId);
 
 				// Instead of checking for same provinceId, we check for same player owner
-				if (_simulation->provinceOwnerTown(localProvinceId) == townId)
+				if (_simulation->provinceOwnerTown_Major(localProvinceId) == townId)
 				{
 					auto isInvalidSide = [&](int16 x2, int16 y2)
 					{
@@ -702,7 +702,7 @@ public:
 							return true;
 						}
 						lambdaProvinceIdId = abs(lambdaProvinceIdId);
-						return _simulation->provinceOwnerTown(lambdaProvinceIdId) != townId;
+						return _simulation->provinceOwnerTown_Major(lambdaProvinceIdId) != townId;
 					};
 
 					int32 invalidSides = isInvalidSide(localTile2x2.x + 1, localTile2x2.y) +
@@ -741,13 +741,13 @@ public:
 				}
 
 				// Loop until we hit the territory edge
-				if (_simulation->provinceOwnerTown(curProvinceId) == townId)
+				if (_simulation->provinceOwnerTown_Major(curProvinceId) == townId)
 				{
 					auto isInArea = [&](int32 provinceRawId) -> bool {
 						if (!IsValidRawProvinceId(provinceRawId)) {
 							return false;
 						}
-						return _simulation->provinceOwnerTown(abs(provinceRawId)) == townId;
+						return _simulation->provinceOwnerTown_Major(abs(provinceRawId)) == townId;
 					};
 
 					GenerateEdge(tile2x2Id, curProvinceId, tile2x2, 

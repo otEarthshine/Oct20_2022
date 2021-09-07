@@ -653,7 +653,7 @@ struct TileArea
 
 	int16_t sizeX() const { return maxX - minX + 1; }
 	int16_t sizeY() const { return maxY - minY + 1; }
-	WorldTile2 size() { return WorldTile2(sizeX(), sizeY()); }
+	WorldTile2 size() const { return WorldTile2(sizeX(), sizeY()); }
 	int32 tileCount() { return static_cast<int32>(sizeX()) * sizeY(); }
 
 	WorldTile2 min() { return WorldTile2(minX, minY); }

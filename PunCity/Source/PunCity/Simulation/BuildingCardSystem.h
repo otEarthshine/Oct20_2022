@@ -486,12 +486,20 @@ public:
 		return CardStatus::None;
 	}
 
-	int32 BoughtCardCount(CardEnum cardEnum) {
+	int32 BoughtCardCount(CardEnum cardEnum)
+	{
 		for (size_t i = _cardsBought.size(); i-- > 0;) {
 			if (_cardsBought[i].cardEnum == cardEnum) {
 				return _cardsBought[i].stackSize;
 			}
 		}
+
+		for (size_t i = _cardsInventory.size(); i-- > 0;) {
+			if (_cardsInventory[i].cardEnum == cardEnum) {
+				return _cardsInventory[i].stackSize;
+			}
+		}
+		
 		return 0;
 	}
 	bool HasBoughtCard(CardEnum cardEnum) { return BoughtCardCount(cardEnum) > 0; }
@@ -540,7 +548,8 @@ public:
 		return -1;
 	}
 
-	int32 RemoveCards(CardStatus cardStatus, int32 removeCount)
+	//! Check cardBirthTicks
+	int32 RemoveCardsFromBoughtHand(CardStatus cardStatus, int32 removeCount)
 	{
 		for (size_t i = _cardsBought.size(); i-- > 0;)
 		{
@@ -558,6 +567,74 @@ public:
 
 		// Removal failed
 		return -1;
+	}
+
+
+	void AddCards_BoughtHandAndInventory(CardStatus cardStatus)
+	{
+		auto tryAddCards = [&](std::vector<CardStatus>& cardStatuses, int32 maxCardCount)
+		{
+			for (size_t i = cardStatuses.size(); i-- > 0;) {
+				if (cardStatuses[i].cardEnum == cardStatus.cardEnum) {
+					cardStatuses[i].stackSize += cardStatus.stackSize;
+					cardStatus.stackSize = 0;
+					return true;
+				}
+			}
+
+			if (cardStatuses.size() < maxCardCount) {
+				cardStatuses.push_back(cardStatus);
+			}
+			
+			return false;
+		};
+
+		if (tryAddCards(_cardsBought, maxCardsBought)) {
+			return;
+		}
+		tryAddCards(_cardsInventory, maxCardInventorySlots());
+	}
+	
+	void RemoveCards_BoughtHandAndInventory(CardStatus cardStatus)
+	{
+		auto removeCards = [&](std::vector<CardStatus>& cardStatuses)
+		{
+			for (size_t i = cardStatuses.size(); i-- > 0;)
+			{
+				if (cardStatuses[i].cardEnum == cardStatus.cardEnum)
+				{
+					int32_t actualSellStackSize = std::min(cardStatuses[i].stackSize, cardStatus.stackSize);
+					cardStatuses[i].stackSize -= actualSellStackSize;
+					cardStatus.stackSize -= actualSellStackSize;
+					if (cardStatuses[i].stackSize == 0) {
+						cardStatuses.erase(cardStatuses.begin() + i);
+					}
+				}
+
+				if (cardStatus.stackSize <= 0) {
+					return;
+				}
+			}
+		};
+		
+		removeCards(_cardsBought);
+		removeCards(_cardsInventory);
+	}
+
+	static void RemoveCards(CardStatus cardStatus, std::vector<CardStatus>& cardStatuses)
+	{
+		for (size_t i = cardStatuses.size(); i-- > 0;)
+		{
+			if (cardStatuses[i].cardEnum == cardStatus.cardEnum)
+			{
+				int32_t actualSellStackSize = std::min(cardStatuses[i].stackSize, cardStatus.stackSize);
+				cardStatuses[i].stackSize -= actualSellStackSize;
+				if (cardStatuses[i].stackSize == 0) {
+					cardStatuses.erase(cardStatuses.begin() + i);
+				}
+				return;
+			}
+		}
 	}
 
 	
@@ -608,7 +685,7 @@ public:
 	
 	void MoveHandToCardInventory(CardStatus cardStatus, int32 targetCount)
 	{
-		int32 removedCount = RemoveCards(cardStatus, targetCount);
+		int32 removedCount = RemoveCardsFromBoughtHand(cardStatus, targetCount);
 
 		if (removedCount > 0)
 		{

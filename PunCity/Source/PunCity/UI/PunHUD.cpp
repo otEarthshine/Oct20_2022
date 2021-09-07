@@ -146,6 +146,9 @@ APunHUD::APunHUD()
 
 	LoadClass(UIEnum::PunMidRowText, "PunMidRowText");
 
+	LoadClass(UIEnum::TradeDealResourceRow, "W_TradeDealResourceRow");
+	
+
 	LoadClass(UIEnum::WGT_Button, "Components/Buttons/WGT_Button");
 
 	// New Object Focus

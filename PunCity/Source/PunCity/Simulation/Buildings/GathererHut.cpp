@@ -908,6 +908,8 @@ void BeerBrewery::OnInit()
 		{ LOCTEXT("Wheat Beer", "Wheat Beer"), ResourceEnum::Wheat, ResourceEnum::None },
 		{ LOCTEXT("Orange Cider", "Orange Cider"), ResourceEnum::Orange, ResourceEnum::None },
 		{ LOCTEXT("Mushroom Beer", "Mushroom Beer"), ResourceEnum::Mushroom, ResourceEnum::None },
+		{ LOCTEXT("Pumpkin Beer", "Pumpkin Beer"), ResourceEnum::Pumpkin, ResourceEnum::None },
+		{ LOCTEXT("Honey Mead", "Honey Mead"), ResourceEnum::Honey, ResourceEnum::None },
 	});
 }
 
@@ -917,6 +919,9 @@ void BeerBrewery::FinishConstruction() {
 	AddResourceHolder(ResourceEnum::Wheat, ResourceHolderType::Requester, 0);
 	AddResourceHolder(ResourceEnum::Orange, ResourceHolderType::Requester, 0);
 	AddResourceHolder(ResourceEnum::Mushroom, ResourceHolderType::Requester, 0);
+	AddResourceHolder(ResourceEnum::Pumpkin, ResourceHolderType::Requester, 0);
+	AddResourceHolder(ResourceEnum::Honey, ResourceHolderType::Requester, 0);
+	
 	AddResourceHolder(ResourceEnum::Beer, ResourceHolderType::Provider, 0);
 
 	AddUpgrades({
@@ -1822,7 +1827,7 @@ void ConcreteFactory::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("High Temperature Kiln", "High Temperature Kiln"), ResourceEnum::SteelBeam, 55),
+		MakeProductionUpgrade(LOCTEXT("High Temperature Kiln", "High Temperature Kiln"), ResourceEnum::Steel, 55),
 		MakeComboUpgrade(LOCTEXT("Concrete Factory Town", "Concrete Factory Town"), ResourceEnum::Concrete),
 	});
 }
@@ -1833,7 +1838,7 @@ void Steelworks::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Advanced Machinery", "Advanced Machinery"), ResourceEnum::SteelBeam, 8),
+		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Advanced Machinery", "Advanced Machinery"), ResourceEnum::Steel, 8),
 		MakeComboUpgrade(LOCTEXT("Steelworks Town", "Steelworks Town"), ResourceEnum::Concrete),
 	});
 }
@@ -1841,8 +1846,8 @@ void OilRig::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Advanced Machinery", "Advanced Machinery"), ResourceEnum::SteelBeam, 8),
-		MakeComboUpgrade(LOCTEXT("Oil Rig Town", "Oil Rig Town"), ResourceEnum::SteelBeam),
+		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Advanced Machinery", "Advanced Machinery"), ResourceEnum::Steel, 8),
+		MakeComboUpgrade(LOCTEXT("Oil Rig Town", "Oil Rig Town"), ResourceEnum::Steel),
 	});
 }
 
@@ -1850,9 +1855,9 @@ void PaperMill::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeUpgrade(LOCTEXT("Drying Cylinder PaperMill", "Drying Cylinder"), LOCTEXT("Uses 50% less wood to produce paper.", "Uses 50% less wood to produce paper."), ResourceEnum::SteelBeam, 50),
-		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Advanced Machinery", "Advanced Machinery"), ResourceEnum::SteelBeam, 8),
-		MakeComboUpgrade(LOCTEXT("Paper Mill Town", "Paper Mill Town"), ResourceEnum::SteelBeam),
+		MakeUpgrade(LOCTEXT("Drying Cylinder PaperMill", "Drying Cylinder"), LOCTEXT("Uses 50% less wood to produce paper.", "Uses 50% less wood to produce paper."), ResourceEnum::Steel, 50),
+		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Advanced Machinery", "Advanced Machinery"), ResourceEnum::Steel, 8),
+		MakeComboUpgrade(LOCTEXT("Paper Mill Town", "Paper Mill Town"), ResourceEnum::Steel),
 	});
 }
 
@@ -1860,8 +1865,8 @@ void ClockMakers::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Advanced Machinery", "Advanced Machinery"), ResourceEnum::SteelBeam, 8),
-		MakeComboUpgrade(LOCTEXT("Clock Makers Town", "Clock Makers Town"), ResourceEnum::SteelBeam),
+		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Advanced Machinery", "Advanced Machinery"), ResourceEnum::Steel, 8),
+		MakeComboUpgrade(LOCTEXT("Clock Makers Town", "Clock Makers Town"), ResourceEnum::Steel),
 	});
 }
 
@@ -1954,6 +1959,68 @@ void IrrigationReservoir::FinishConstruction() {
 	ExecuteInRadius(CardEnum::Farm, Radius + 20, [&](Building& building) {
 		building.subclass<Farm>().RefreshFertility();
 	}); // extra 20 just in case it is farm's rim
+}
+
+/*
+ * Provincial Building
+ */
+void MinorCity::FinishConstruction()
+{
+	Building::FinishConstruction();
+
+	int32 provinceId = _simulation->GetProvinceIdClean(centerTile());
+	check(_simulation->IsProvinceValid(provinceId));
+
+	for (int32 i = 0; i < 5; i++) {
+		WorldTile2 spawnTile = _simulation->GetProvinceRandomTile(provinceId, gateTile(), 1, false, 10);
+		if (spawnTile.isValid()) {
+			int32 ageTicks = GameRand::Rand() % GetUnitInfo(UnitEnum::WildMan).maxAgeTicks;
+			int32 newBornId = _simulation->AddUnit(UnitEnum::WildMan, GameInfo::PlayerIdNone, spawnTile.worldAtom2(), ageTicks);
+			_simulation->unitAI(newBornId).SetHouseId(buildingId());
+			AddOccupant(newBornId);
+			
+			PUN_LOG("Wildman Born Village id:%d bldId:%d bldTile:%s", newBornId, buildingId(), *centerTile().To_FString());
+		}
+	}
+
+	_minorCityLevel = 1;
+
+	
+	// Place road around townhall
+	WorldTile2 roadMin(_area.minX - 1, _area.minY - 1);
+	WorldTile2 roadMax(_area.maxX + 1, _area.maxY + 1);
+	int32 sizeX = roadMax.x - roadMin.x + 1;
+	int32 sizeY = roadMax.y - roadMin.y - 1;
+	
+	std::vector<TileArea> roadAreas;
+	roadAreas.push_back(TileArea(roadMin, WorldTile2(sizeX, 1)));
+	roadAreas.push_back(TileArea(WorldTile2(roadMin.x, roadMax.y), WorldTile2(sizeX, 1)));
+	roadAreas.push_back(TileArea(WorldTile2(roadMin.x, roadMin.y + 1), WorldTile2(1, sizeY)));
+	roadAreas.push_back(TileArea(WorldTile2(roadMax.x, roadMin.y + 1), WorldTile2(1, sizeY)));
+
+	auto& treeSys = _simulation->treeSystem();
+	
+	auto tryAddRoad = [&](WorldTile2 tile) {
+		if (_simulation->IsFrontBuildable(tile) && !_simulation->overlaySystem().IsRoad(tile)) {
+			//PUN_LOG("tryAddRoad %s", ToTChar(tile.ToString()));
+			treeSys.ForceRemoveTileObj(tile, false);
+			overlaySystem().AddRoad(tile, true, true);
+		}
+	};
+
+	for (size_t i = 0; i < roadAreas.size(); i++) {
+		treeSys.ForceRemoveTileObjArea(roadAreas[i]);
+		roadAreas[i].ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+			tryAddRoad(tile);
+		});
+	}
+}
+
+void MinorCity::OnDeinit()
+{
+	for (int32 occupantId : _occupantIds) {
+		_simulation->unitAI(occupantId).Die();
+	}
 }
 
 

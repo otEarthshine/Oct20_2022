@@ -39,6 +39,9 @@ public:
 
 	virtual void OpenTradeUI(int32 objectId) = 0;
 	virtual void OpenIntercityTradeUI(int32 objectId) = 0;
+	
+	virtual void OpenGiftUI(int32 sourcePlayerIdIn, int32 targetTownIdIn, TradeDealStageEnum dealStageEnumIn) = 0;
+	virtual void FillDealInfo(const TradeDealSideInfo& sourceDealInfo, const TradeDealSideInfo& targetDealInfo) = 0;
 
 	virtual void SetLoadingText(FText message) = 0;
 
@@ -77,7 +80,7 @@ public:
 	virtual class GameMapFlood& floodSystem() = 0;
 	//virtual class GameMapFlood& floodSystemHuman() = 0;
 	virtual class ProvinceSystem& provinceSystem() = 0;
-	virtual class GameRegionSystem& provinceInfoSystem() = 0;
+	virtual class ProvinceInfoSystem& provinceInfoSystem() = 0;
 	
 	virtual class ResourceDropSystem& dropSystem() = 0;
 	//virtual GameEventSource& eventSource(EventSourceEnum eventEnum) = 0;
@@ -89,6 +92,7 @@ public:
 	virtual class TownManager* townManagerPtr(int32 townId) = 0;
 
 	virtual class TownManagerBase* townManagerBase(int32 townId) = 0;
+	virtual TownManagerBase* townManager_Minor(int32 townId) = 0;
 	
 	virtual class ResourceSystem& resourceSystem(int32 townId) = 0;
 
@@ -315,7 +319,7 @@ public:
 	virtual bool FindBestPathWater(int32 startPortId, int32 endTownId, int32& endPortId) = 0;
 
 	//! Minor Town
-	virtual int32 AddMinorTown() = 0;
+	virtual int32 AddMinorTown(int32 provinceId) = 0;
 	
 	//! Terrain
 	virtual TerrainTileType terraintileType(int32 tileId) = 0;
@@ -526,7 +530,9 @@ public:
 	
 
 	virtual void SetProvinceOwnerFull(int32 provinceId, int32 townId) = 0;
-	virtual int32 provinceOwnerTown(int32 provinceId) = 0;
+	virtual int32 provinceOwnerTown_Major(int32 provinceId) = 0;
+	virtual int32 provinceOwnerTown_Minor(int32 provinceId) = 0;
+	
 	virtual int32 provinceOwnerPlayer(int32 provinceId) = 0;
 
 	virtual int PlaceBuilding(class FPlaceBuilding parameters) = 0;
@@ -644,8 +650,10 @@ public:
 		return playersAndAIIds;
 	}
 
+	virtual int32 minorTownCount() = 0;
+
 	template<typename Func>
-	void ExecuteOnAllTowns(Func func) {
+	void ExecuteOnMajorTowns(Func func) {
 		std::vector<int32> allHumanPlayerIdsLocal = allHumanPlayerIds();
 		for (int32 playerId : allHumanPlayerIdsLocal) {
 			const std::vector<int32>& townIds = GetTownIds(playerId);
@@ -662,6 +670,19 @@ public:
 			}
 		}
 	}
+
+	template<typename Func>
+	void ExecuteOnAllTowns(Func func) {
+		ExecuteOnMajorTowns(func);
+
+		for (int32 i = minorTownCount(); i-- > 0;) {
+			int32 townId = i + MinorTownShift;
+			if (townManager_Minor(townId)) {
+				func(townId);
+			}
+		}
+	}
+
 	
 	template<typename Func>
 	void ExecuteOnAI(Func func) {

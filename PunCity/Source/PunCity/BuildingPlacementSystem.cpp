@@ -1489,7 +1489,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		_dragState = DragState::Dragging;
 	}
 
-	GameRegionSystem& regionSystem = simulation.provinceInfoSystem();
+	ProvinceInfoSystem& regionSystem = simulation.provinceInfoSystem();
 	PunTerrainGenerator& terrainGenerator = simulation.terrainGenerator();
 
 	_placementGrid.BeforeAdd();
@@ -2575,7 +2575,8 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			});
 		}
 		// Cheat FastBuild... Build anywhere
-		else if (SimSettings::IsOn("CheatFastBuild"))
+		else if (SimSettings::IsOn("CheatFastBuild") ||
+				simulation.IsResearched(playerId, TechEnum::QuickBuild))
 		{
 			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 location)
 			{

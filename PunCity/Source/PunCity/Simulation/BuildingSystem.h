@@ -313,7 +313,7 @@ private:
 	{
 		//PUN_LOG("RefreshIsBuildingConnected townId:%d, buildingId:%d tile:%s", townId, buildingId, *tile.To_FString());
 		
-		if (townId != -1)
+		if (IsValidMajorTown(townId))
 		{
 			PUN_CHECK(buildingId < _isBuildingIdConnected.size());
 			WorldTile2 townGate = _simulation->GetTownhallGate(townId);

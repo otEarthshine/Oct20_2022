@@ -205,6 +205,10 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::Potter, "potterEra", "Potter", 1);
 
 	LoadBuilding(CardEnum::TradingPort, "TradingPort_Era", "TradingPort", 1);
+
+	// TODO:
+	LinkBuildingEras(CardEnum::MinorCityPort, "TradingPort_Era", 1);
+	
 	LoadBuilding(CardEnum::TradingPost, "TradingPost_Era", "TradingPost", 1);
 	LoadBuilding(CardEnum::TradingCompany, "TradingCompany_Era", "TradingCompany", 2);
 
@@ -700,6 +704,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 			// Temp
 			case CardEnum::MinorCity: addBuildIcon(CardEnum::MinorCity, FString(TO_STR(DirtRoadIcon)), FString("SpecialIconAlpha"), true); break;
+			case CardEnum::MinorCityPort: addBuildIcon(CardEnum::MinorCityPort, FString(TO_STR(DirtRoadIcon)), FString("SpecialIconAlpha"), true); break;
+#undef CASE
 #undef CASE
 		default:
 			addBuildIcon(buildingEnum, FString("BuildingIcon") + FString::FromInt(i), FString("BuildingIconAlpha") + FString::FromInt(i), false);
@@ -1107,7 +1113,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	LoadResource2(ResourceEnum::Glass, "Glass/Glass");
 	LoadResource2(ResourceEnum::Concrete, "Concrete/Concrete");
-	LoadResource2(ResourceEnum::SteelBeam, "SteelBeam/SteelBeam");
+	LoadResource2(ResourceEnum::Steel, "SteelBeam/SteelBeam");
 	LoadResource2(ResourceEnum::Glassware, "Glassware/Glassware");
 	LoadResource2(ResourceEnum::PocketWatch, "PocketWatch/Pocketwatch");
 	
@@ -1410,7 +1416,7 @@ void UAssetLoaderComponent::SetMaterialCollectionParametersScalar(FName Paramete
 {
 	if (UWorld* world = GetWorld()) {
 		UKismetMaterialLibrary::SetScalarParameterValue(world, collection, ParameterName, ParameterValue);
-		//PUN_EDITOR_LOG("SetSnow %f", ParameterValue);
+		//_LOG(PunLogAsset, "SetSnow %f", ParameterValue);
 	}
 }
 
@@ -1418,7 +1424,7 @@ void UAssetLoaderComponent::SetMaterialCollectionParametersVector(FName Paramete
 {
 	if (UWorld* world = GetWorld()) {
 		UKismetMaterialLibrary::SetVectorParameterValue(world, collection, ParameterName, ParameterValue);
-		//PUN_EDITOR_LOG("SetVectorParameterValue %f, %f", ParameterValue.R, ParameterValue.G);
+		//_LOG(PunLogAsset, "SetVectorParameterValue %f, %f", ParameterValue.R, ParameterValue.G);
 	}
 }
 
@@ -1440,7 +1446,7 @@ UStaticMesh* UAssetLoaderComponent::moduleMesh(FString moduleName)
 		return _moduleNameToMesh[moduleName];
 	}
 	
-	//PUN_EDITOR_LOG("No Module Mesh For %s",  *moduleName);
+	//_LOG(PunLogAsset, "No Module Mesh For %s",  *moduleName);
 	return nullptr;
 }
 
@@ -1451,7 +1457,7 @@ void UAssetLoaderComponent::LoadModule(FString moduleName, FString meshFile, boo
 	
 	AddBuildingModule(moduleName, mesh, _moduleNames);
 	
-	PUN_EDITOR_LOG("LoadModule: %s _ %s", *_moduleNames.Last(), *mesh->GetName());
+	_LOG(PunLogAsset, "LoadModule: %s _ %s", *_moduleNames.Last(), *mesh->GetName());
 
 	if (isTogglable) {
 		_togglableModuleNames.Add(moduleName);
@@ -1509,14 +1515,14 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 			FString moduleName = moduleSetName + meshTypeNames[i];
 			FString path = buildingPath + meshSetFolder + FString("/") + moduleName;
 
-			//PUN_EDITOR_LOG("Try Adding Module: %s path: %s", *moduleName, *path);
+			//_LOG(PunLogAsset, "Try Adding Module: %s path: %s", *moduleName, *path);
 
 			if (platformFile.FileExists(*(FPaths::ProjectContentDir() + path + FString(".uasset"))))
 			{
 				const auto mesh = LoadF<UStaticMesh>("/Game/" + path);
 
 				AddBuildingModule(moduleName, mesh, _moduleNames);
-				PUN_EDITOR_LOG("TryLoadBuildingModuleSet Old: %s _ %s", *_moduleNames.Last(), *mesh->GetName());
+				_LOG(PunLogAsset, "TryLoadBuildingModuleSet Old: %s _ %s", *_moduleNames.Last(), *mesh->GetName());
 
 				if (meshTypeNames[i].Equals(FString("Frame"))) {
 					_modulesNeedingPaintConstruction.Add(moduleName);
@@ -1592,12 +1598,12 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 		for (int32 i = 0; i < foundFiles.Num(); i++) 
 		{
 			//foundFiles[i] = folderPath + FString("/") + foundFiles[i];
-			PUN_EDITOR_LOG("Files:%s", *(foundFiles[i]));
+			_LOG(PunLogAsset, "Files:%s", *(foundFiles[i]));
 
 			// Is from this set
 			if (moduleSetName == foundFiles[i].Left(moduleSetName.Len()))
 			{
-				PUN_EDITOR_LOG("- File is from set");
+				_LOG(PunLogAsset, "- File is from set");
 
 				auto addMesh = [&](FString moduleTypeName, bool isSpecial = false)
 				{
@@ -1624,7 +1630,7 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FStr
 
 					AddBuildingModule(moduleName, mesh, _moduleNames);
 					
-					PUN_EDITOR_LOG("TryLoadBuildingModuleSet New: %s _ %s", *_moduleNames.Last(), *mesh->GetName());
+					_LOG(PunLogAsset, "TryLoadBuildingModuleSet New: %s _ %s", *_moduleNames.Last(), *mesh->GetName());
 					
 					return moduleName;
 				};
@@ -1789,7 +1795,7 @@ void UAssetLoaderComponent::LoadUnitFull(UnitEnum unitEnum, std::string folderPa
 		asset.animationEnumToSequence.Add(it.first, Load<UAnimSequence>((unitsPath + folderPath + it.second).c_str()));
 	}
 	if (staticFileName != "") {
-		//PUN_EDITOR_LOG("LoadUnitFull staticFileName %s static:%s", ToTChar(skelFileName), ToTChar(staticFileName));
+		//_LOG(PunLogAsset, "LoadUnitFull staticFileName %s static:%s", ToTChar(skelFileName), ToTChar(staticFileName));
 		asset.staticMesh = Load<UStaticMesh>((unitsPath + staticFileName).c_str());
 	}
 
@@ -1817,7 +1823,7 @@ UStaticMesh* UAssetLoaderComponent::resourceMesh(ResourceEnum resourceEnum)
 	if (got != _resourceToMesh.end()) {
 		return _resourceToMesh[resourceEnum];
 	}
-	_LOG(PunAsset, "No Resource Mesh For %s", ToTChar(ResourceName(resourceEnum)));
+	_LOG(PunLogAsset, "No Resource Mesh For %s", ToTChar(ResourceName(resourceEnum)));
 	return nullptr;
 }
 
@@ -1827,7 +1833,7 @@ UStaticMesh* UAssetLoaderComponent::resourceHandMesh(ResourceEnum resourceEnum)
 	if (got != _resourceToHandMesh.end()) {
 		return _resourceToHandMesh[resourceEnum];
 	}
-	_LOG(PunAsset, "No Resource Hand Mesh For %s", ToTChar(ResourceName(resourceEnum)));
+	_LOG(PunLogAsset, "No Resource Hand Mesh For %s", ToTChar(ResourceName(resourceEnum)));
 	return resourceMesh(resourceEnum);
 }
 
@@ -1851,7 +1857,7 @@ FGeoresourceMeshAssets UAssetLoaderComponent::georesourceMesh(GeoresourceEnum ge
 	if (got != _georesourceToMesh.end()) {
 		return _georesourceToMesh[georesourceEnum];
 	}
-	//PUN_EDITOR_LOG("No Georesource Mesh For %d", static_cast<int>(georesourceEnum));
+	//_LOG(PunLogAsset, "No Georesource Mesh For %d", static_cast<int>(georesourceEnum));
 	return FGeoresourceMeshAssets();
 }
 
@@ -1872,12 +1878,12 @@ void UAssetLoaderComponent::LoadGeoresource(GeoresourceEnum georesourceEnum, std
 
 void UAssetLoaderComponent::PaintConstructionMesh()
 {
-	PUN_EDITOR_LOG("Painting this shit 11 %d", _modulesNeedingPaintConstruction.Num());
+	_LOG(PunLogAsset, "Painting this shit 11 %d", _modulesNeedingPaintConstruction.Num());
 	for (auto i = 0; i < _modulesNeedingPaintConstruction.Num(); i++) {
-		PUN_EDITOR_LOG("----- %d", i);
+		_LOG(PunLogAsset, "----- %d", i);
 		PaintMeshForConstruction(_modulesNeedingPaintConstruction[i]);
 	}
-	PUN_EDITOR_LOG("PAINTING ALL DONE");
+	_LOG(PunLogAsset, "PAINTING ALL DONE");
 }
 
 void UAssetLoaderComponent::SaveSmokeJson()
@@ -1945,7 +1951,7 @@ void UAssetLoaderComponent::SaveSmokeJson()
 
 void UAssetLoaderComponent::RemoveVertexColor() 
 {
-	PUN_EDITOR_LOG("RemoveVertexColor");
+	_LOG(PunLogAsset, "RemoveVertexColor");
 	for (auto i = 0; i < _modulesNeedingPaintConstruction.Num(); i++) {
 		FString moduleName = _modulesNeedingPaintConstruction[i];
 		FStaticMeshVertexBuffers* vertexBuffers = &_moduleNameToMesh[moduleName]->RenderData->LODResources[0].VertexBuffers;
@@ -1957,16 +1963,16 @@ void UAssetLoaderComponent::RemoveVertexColor()
 
 void UAssetLoaderComponent::PrintConstructionMesh()
 {
-	PUN_EDITOR_LOG("PrintConstructionMesh dfgsdfg %d", _modulesNeedingPaintConstruction.Num());
+	_LOG(PunLogAsset, "PrintConstructionMesh dfgsdfg %d", _modulesNeedingPaintConstruction.Num());
 	for (auto i = 0; i < _modulesNeedingPaintConstruction.Num(); i++) {
 		FString moduleName = _modulesNeedingPaintConstruction[i];
 		FStaticMeshVertexBuffers& vertexBuffers = _moduleNameToMesh[moduleName]->RenderData->LODResources[0].VertexBuffers;
 		UStaticMesh* mesh = _moduleNameToMesh[moduleName];
 
 		int vertexCount = vertexBuffers.PositionVertexBuffer.GetNumVertices();
-		PUN_EDITOR_LOG("PrintConstructionMesh %s, vertCount: %d , colorBuffer:%d", *moduleName, vertexCount, &vertexBuffers.ColorVertexBuffer != nullptr);
+		_LOG(PunLogAsset, "PrintConstructionMesh %s, vertCount: %d , colorBuffer:%d", *moduleName, vertexCount, &vertexBuffers.ColorVertexBuffer != nullptr);
 		if (&vertexBuffers.ColorVertexBuffer) {
-			PUN_EDITOR_LOG(" ------------ colorCount:%d", vertexBuffers.ColorVertexBuffer.GetNumVertices());
+			_LOG(PunLogAsset, " ------------ colorCount:%d", vertexBuffers.ColorVertexBuffer.GetNumVertices());
 		}
 
 		for (int j = 0; j < vertexCount; j++) {
@@ -1975,7 +1981,7 @@ void UAssetLoaderComponent::PrintConstructionMesh()
 				colorStr = vertexBuffers.ColorVertexBuffer.VertexColor(j).ToString();
 			}
 
-			PUN_EDITOR_LOG("%s ... %s", *vertexBuffers.PositionVertexBuffer.VertexPosition(j).ToCompactString(), *colorStr);
+			_LOG(PunLogAsset, "%s ... %s", *vertexBuffers.PositionVertexBuffer.VertexPosition(j).ToCompactString(), *colorStr);
 		}
 
 	}
@@ -1983,7 +1989,7 @@ void UAssetLoaderComponent::PrintConstructionMesh()
 
 void UAssetLoaderComponent::UpdateRHIConstructionMesh()
 {
-	PUN_EDITOR_LOG("UpdateRHIConstructionMesh aaa %d", _modulesNeedingPaintConstruction.Num());
+	_LOG(PunLogAsset, "UpdateRHIConstructionMesh aaa %d", _modulesNeedingPaintConstruction.Num());
 	//for (int i = 0; i < _modulesNeedingPaintConstruction.Num(); i++) {
 	//	FString moduleName = _modulesNeedingPaintConstruction[i];
 	//	UStaticMesh* mesh = _moduleNameToMesh[moduleName];
@@ -2010,7 +2016,7 @@ static int32 isPrinting = false;
 
 void UAssetLoaderComponent::TraverseTris(uint32 mergedVertIndex, int32 groupIndex_Parent, const TArray<uint32>& indexBuffer, const TArray<FVector>& vertexPositions)
 {
-	//if (isPrinting) PUN_EDITOR_LOG(" TraverseTris groupIndex:%d groupIndex_Parent:%d %s", groupIndex, groupIndex_Parent, *vertexPositions.VertexPosition(groupIndex).ToCompactString());
+	//if (isPrinting) _LOG(PunLogAsset, " TraverseTris groupIndex:%d groupIndex_Parent:%d %s", groupIndex, groupIndex_Parent, *vertexPositions.VertexPosition(groupIndex).ToCompactString());
 	
 	// already processed
 	if (processedVertices[mergedVertIndex]) {
@@ -2029,7 +2035,7 @@ void UAssetLoaderComponent::TraverseTris(uint32 mergedVertIndex, int32 groupInde
 		
 		int32 trisIndex_0 = (trisIndex / 3) * 3;
 
-		//if (isPrinting) PUN_EDITOR_LOG("   -Recurse trisIndex_0:%d", trisIndex_0);
+		//if (isPrinting) _LOG(PunLogAsset, "   -Recurse trisIndex_0:%d", trisIndex_0);
 
 		PUN_CHECK((indexBuffer.Num() / 3) * 3 == indexBuffer.Num());
 		PUN_CHECK((trisIndex_0 + 2) < indexBuffer.Num());
@@ -2042,7 +2048,7 @@ void UAssetLoaderComponent::TraverseTris(uint32 mergedVertIndex, int32 groupInde
 
 void UAssetLoaderComponent::TraverseTris_July10(uint32 mergedVertIndex, int32 groupIndex_Parent, const TArray<int32>& indexBuffer, const TArray<FVector>& vertexPositions)
 {
-	//if (isPrinting) PUN_EDITOR_LOG(" TraverseTris groupIndex:%d groupIndex_Parent:%d %s", groupIndex, groupIndex_Parent, *vertexPositions.VertexPosition(groupIndex).ToCompactString());
+	//if (isPrinting) _LOG(PunLogAsset, " TraverseTris groupIndex:%d groupIndex_Parent:%d %s", groupIndex, groupIndex_Parent, *vertexPositions.VertexPosition(groupIndex).ToCompactString());
 
 	// already processed
 	if (processedVertices[mergedVertIndex]) {
@@ -2061,7 +2067,7 @@ void UAssetLoaderComponent::TraverseTris_July10(uint32 mergedVertIndex, int32 gr
 
 		int32 trisIndex_0 = (trisIndex / 3) * 3;
 
-		//if (isPrinting) PUN_EDITOR_LOG("   -Recurse trisIndex_0:%d", trisIndex_0);
+		//if (isPrinting) _LOG(PunLogAsset, "   -Recurse trisIndex_0:%d", trisIndex_0);
 
 		PUN_CHECK((indexBuffer.Num() / 3) * 3 == indexBuffer.Num());
 		PUN_CHECK((trisIndex_0 + 2) < indexBuffer.Num());
@@ -2144,11 +2150,11 @@ void UAssetLoaderComponent::DetectParticleSystemPosition(CardEnum buildingEnum, 
 
 	for (const auto& it : groupIndexToConnectedVertIndices) 
 	{
-		PUN_EDITOR_LOG(" group:%d", it.first);
+		_LOG(PunLogAsset, " group:%d", it.first);
 
 		FVector averagePosition = FVector::ZeroVector;
 		for (int32 vertIndex : it.second) {
-			PUN_EDITOR_LOG("  vertIndex:%d %s", vertIndex, *vertexPositions[vertIndex].ToCompactString());
+			_LOG(PunLogAsset, "  vertIndex:%d %s", vertIndex, *vertexPositions[vertIndex].ToCompactString());
 			averagePosition += vertexPositions[vertIndex];
 		}
 		averagePosition = averagePosition / it.second.size();
@@ -2272,7 +2278,7 @@ void UAssetLoaderComponent::DetectMeshGroups(UStaticMesh* mesh, TArray<FVector>&
 		int32 vertexCount = vertexPositions.Num();
 		int32 indexCount = wedgeIndices.Num();
 
-		//PUN_EDITOR_LOG("Start Painting");
+		//_LOG(PunLogAsset, "Start Painting");
 
 		auto vertToString = [&](int32 vertIndex) -> FString {
 			return vertexPositions[vertIndex].ToCompactString();
@@ -2280,9 +2286,9 @@ void UAssetLoaderComponent::DetectMeshGroups(UStaticMesh* mesh, TArray<FVector>&
 
 		// Print Vertices
 		if (isPrinting) {
-			PUN_EDITOR_LOG("Print Vertices:");
+			_LOG(PunLogAsset, "Print Vertices:");
 			for (int32 i = 0; i < vertexCount; i++) {
-				PUN_EDITOR_LOG(" %s", *vertToString(i));
+				_LOG(PunLogAsset, " %s", *vertToString(i));
 			}
 		}
 
@@ -2299,11 +2305,11 @@ void UAssetLoaderComponent::DetectMeshGroups(UStaticMesh* mesh, TArray<FVector>&
 			processedVertices.Empty();
 			processedVertices.SetNumZeroed(vertexCount);
 
-			if (isPrinting) { PUN_EDITOR_LOG("Merge nearby vertices"); }
+			if (isPrinting) { _LOG(PunLogAsset, "Merge nearby vertices"); }
 
 			for (int i = 0; i < vertexCount; i++)
 			{
-				if (isPrinting) { PUN_EDITOR_LOG(" i = %d", i); }
+				if (isPrinting) { _LOG(PunLogAsset, " i = %d", i); }
 
 				if (!processedVertices[i])
 				{
@@ -2311,7 +2317,7 @@ void UAssetLoaderComponent::DetectMeshGroups(UStaticMesh* mesh, TArray<FVector>&
 					mergedVertIndexToVertIndices[i].push_back(i);
 					vertIndexToMergedVertIndex[i] = i;
 
-					if (isPrinting) { PUN_EDITOR_LOG(" i,i groupIndexToVertIndices_PositionMerge[%d].push_back(%d)", i, i); }
+					if (isPrinting) { _LOG(PunLogAsset, " i,i groupIndexToVertIndices_PositionMerge[%d].push_back(%d)", i, i); }
 
 					// Add any vertex with the same position
 					// This is because UE4 import sometimes split up the geometry...
@@ -2323,23 +2329,23 @@ void UAssetLoaderComponent::DetectMeshGroups(UStaticMesh* mesh, TArray<FVector>&
 							mergedVertIndexToVertIndices[i].push_back(j);
 							vertIndexToMergedVertIndex[j] = i;
 
-							if (isPrinting) { PUN_EDITOR_LOG(" i,j groupIndexToVertIndices_PositionMerge[%d].push_back(%d)", i, j); }
+							if (isPrinting) { _LOG(PunLogAsset, " i,j groupIndexToVertIndices_PositionMerge[%d].push_back(%d)", i, j); }
 						}
 					}
 				}
 			}
 
 
-			PUN_EDITOR_LOG("Position Merge Group Count:%d vertCount:%d", mergedVertIndexToVertIndices.size(), vertexCount);
+			_LOG(PunLogAsset, "Position Merge Group Count:%d vertCount:%d", mergedVertIndexToVertIndices.size(), vertexCount);
 
 			if (isPrinting)
 			{
-				PUN_EDITOR_LOG("________");
-				PUN_EDITOR_LOG("Print mergedVertIndexToVertIndices size:%d", mergedVertIndexToVertIndices.size());
+				_LOG(PunLogAsset, "________");
+				_LOG(PunLogAsset, "Print mergedVertIndexToVertIndices size:%d", mergedVertIndexToVertIndices.size());
 				for (const auto& it : mergedVertIndexToVertIndices) {
-					PUN_EDITOR_LOG(" mergedVertIndex:%d", it.first);
+					_LOG(PunLogAsset, " mergedVertIndex:%d", it.first);
 					for (int32 vertIndex : it.second) {
-						PUN_EDITOR_LOG("  vertIndex:%d %s", vertIndex, *vertToString(vertIndex));
+						_LOG(PunLogAsset, "  vertIndex:%d %s", vertIndex, *vertToString(vertIndex));
 					}
 				}
 			}
@@ -2357,21 +2363,21 @@ void UAssetLoaderComponent::DetectMeshGroups(UStaticMesh* mesh, TArray<FVector>&
 			vertIndexToConnectedTrisIndices[vertIndex].push_back(indexBufferI);
 
 			if (isPrinting) {
-				PUN_EDITOR_LOG("- indexI:%d vertIndex:%d vertIndexToConnectedTrisIndices.size:%d", indexBufferI, vertIndex, vertIndexToConnectedTrisIndices.size());
+				_LOG(PunLogAsset, "- indexI:%d vertIndex:%d vertIndexToConnectedTrisIndices.size:%d", indexBufferI, vertIndex, vertIndexToConnectedTrisIndices.size());
 			}
 		}
 
 		if (isPrinting)
 		{
-			PUN_EDITOR_LOG("________");
-			PUN_EDITOR_LOG("Print vertIndexToConnectedTrisIndices size:%d", vertIndexToConnectedTrisIndices.size());
+			_LOG(PunLogAsset, "________");
+			_LOG(PunLogAsset, "Print vertIndexToConnectedTrisIndices size:%d", vertIndexToConnectedTrisIndices.size());
 			for (const auto& it : vertIndexToConnectedTrisIndices)
 			{
-				PUN_EDITOR_LOG(" vertIndex:%d %s", it.first, *vertToString(it.first));
+				_LOG(PunLogAsset, " vertIndex:%d %s", it.first, *vertToString(it.first));
 				for (int32 trisIndex : it.second) {
 					PUN_CHECK(trisIndex < wedgeIndices.Num());
 					int32 connectedVertIndex = wedgeIndices[trisIndex];
-					PUN_EDITOR_LOG("  trisIndex:%d vertIndex:%d %s", trisIndex, connectedVertIndex, *vertToString(connectedVertIndex));
+					_LOG(PunLogAsset, "  trisIndex:%d vertIndex:%d %s", trisIndex, connectedVertIndex, *vertToString(connectedVertIndex));
 				}
 			}
 		}
@@ -2382,7 +2388,7 @@ void UAssetLoaderComponent::DetectMeshGroups(UStaticMesh* mesh, TArray<FVector>&
 			for (const auto& it : vertIndexToConnectedTrisIndices) {
 				total += it.second.size();
 			}
-			PUN_EDITOR_LOG("Average trisIndices per Vert: %f", static_cast<float>(total) / vertIndexToConnectedTrisIndices.size());
+			_LOG(PunLogAsset, "Average trisIndices per Vert: %f", static_cast<float>(total) / vertIndexToConnectedTrisIndices.size());
 		}
 
 		/*
@@ -2402,14 +2408,14 @@ void UAssetLoaderComponent::DetectMeshGroups(UStaticMesh* mesh, TArray<FVector>&
 
 		if (isPrinting)
 		{
-			PUN_EDITOR_LOG("________");
-			PUN_EDITOR_LOG("Print mergedVertIndexToConnectedTrisIndices num:%d", mergedVertIndexToConnectedTrisIndices.size());
+			_LOG(PunLogAsset, "________");
+			_LOG(PunLogAsset, "Print mergedVertIndexToConnectedTrisIndices num:%d", mergedVertIndexToConnectedTrisIndices.size());
 			for (const auto& it : mergedVertIndexToConnectedTrisIndices) {
-				PUN_EDITOR_LOG(" mergedVertIndex:%d", it.first);
+				_LOG(PunLogAsset, " mergedVertIndex:%d", it.first);
 				for (int32 trisIndex : it.second) {
 					PUN_CHECK(trisIndex < wedgeIndices.Num());
 					int32 vertIndex = wedgeIndices[trisIndex];
-					PUN_EDITOR_LOG(" trisIndex:%d vertIndex:%d %s", trisIndex, vertIndex, *vertToString(vertIndex));
+					_LOG(PunLogAsset, " trisIndex:%d vertIndex:%d %s", trisIndex, vertIndex, *vertToString(vertIndex));
 				}
 			}
 		}
@@ -2424,10 +2430,10 @@ void UAssetLoaderComponent::DetectMeshGroups(UStaticMesh* mesh, TArray<FVector>&
 
 			groupIndexToConnectedVertIndices.clear();
 
-			if (isPrinting) { PUN_EDITOR_LOG("Traverse Tris"); }
+			if (isPrinting) { _LOG(PunLogAsset, "Traverse Tris"); }
 
 			for (const auto& it : mergedVertIndexToVertIndices) {
-				if (isPrinting) { PUN_EDITOR_LOG(" groupIndex:%d", it.first); }
+				if (isPrinting) { _LOG(PunLogAsset, " groupIndex:%d", it.first); }
 
 				TraverseTris_July10(it.first, it.first, wedgeIndices, vertexPositions);
 			}
@@ -2445,18 +2451,18 @@ void UAssetLoaderComponent::DetectMeshGroups(UStaticMesh* mesh, TArray<FVector>&
 		// Print groupIndexToConnectedVertIndices
 		if (isPrinting)
 		{
-			PUN_EDITOR_LOG("________");
-			PUN_EDITOR_LOG("Print groupIndexToConnectedVertIndices size:%d", groupIndexToConnectedVertIndices.size());
+			_LOG(PunLogAsset, "________");
+			_LOG(PunLogAsset, "Print groupIndexToConnectedVertIndices size:%d", groupIndexToConnectedVertIndices.size());
 			for (const auto& it : groupIndexToConnectedVertIndices) {
-				PUN_EDITOR_LOG(" groupIndex:%d", it.first);
+				_LOG(PunLogAsset, " groupIndex:%d", it.first);
 				const auto& vertIndices = it.second;
 				for (int32 vertIndex : vertIndices) {
-					PUN_EDITOR_LOG("  vertIndex:%d pos:%s", vertIndex, *vertToString(vertIndex));
+					_LOG(PunLogAsset, "  vertIndex:%d pos:%s", vertIndex, *vertToString(vertIndex));
 				}
 			}
 		}
 
-		PUN_EDITOR_LOG("Group Count %d", groupIndexToConnectedVertIndices.size());
+		_LOG(PunLogAsset, "Group Count %d", groupIndexToConnectedVertIndices.size());
 	}
 //#endif
 }
@@ -2464,13 +2470,13 @@ void UAssetLoaderComponent::DetectMeshGroups(UStaticMesh* mesh, TArray<FVector>&
 void UAssetLoaderComponent::PaintMeshForConstruction(FString moduleName)
 {
 #if WITH_EDITOR
-	PUN_EDITOR_LOG("PaintMeshForConstruction s1ds33s %s", *moduleName);
+	_LOG(PunLogAsset, "PaintMeshForConstruction s1ds33s %s", *moduleName);
 
 	isPrinting = false; // (moduleName == "HouseLvl1Frame");
 
 	UStaticMesh* mesh = _moduleNameToMesh[moduleName];
 
-	PUN_EDITOR_LOG("!!! Start Paint !!! UpdateRHIConstructionMesh");
+	_LOG(PunLogAsset, "!!! Start Paint !!! UpdateRHIConstructionMesh");
 
 	/*
 	 * Paint
@@ -2499,7 +2505,7 @@ void UAssetLoaderComponent::PaintMeshForConstruction(FString moduleName)
 		int32 vertexCount = vertexPositions.Num();
 		int32 indexCount = wedgeIndices.Num();
 
-		//PUN_EDITOR_LOG("Start Painting");
+		//_LOG(PunLogAsset, "Start Painting");
 
 		auto vertToString = [&](int32 vertIndex) -> FString {
 			return vertexPositions[vertIndex].ToCompactString();
@@ -2507,9 +2513,9 @@ void UAssetLoaderComponent::PaintMeshForConstruction(FString moduleName)
 
 		// Print Vertices
 		if (isPrinting) {
-			PUN_EDITOR_LOG("Print Vertices:");
+			_LOG(PunLogAsset, "Print Vertices:");
 			for (int32 i = 0; i < vertexCount; i++) {
-				PUN_EDITOR_LOG(" %s", *vertToString(i));
+				_LOG(PunLogAsset, " %s", *vertToString(i));
 			}
 		}
 
@@ -2526,11 +2532,11 @@ void UAssetLoaderComponent::PaintMeshForConstruction(FString moduleName)
 			processedVertices.Empty();
 			processedVertices.SetNumZeroed(vertexCount);
 
-			if (isPrinting) PUN_EDITOR_LOG("Merge nearby vertices");
+			if (isPrinting) _LOG(PunLogAsset, "Merge nearby vertices");
 
 			for (int i = 0; i < vertexCount; i++)
 			{
-				if (isPrinting) PUN_EDITOR_LOG(" i = %d", i);
+				if (isPrinting) _LOG(PunLogAsset, " i = %d", i);
 
 				if (!processedVertices[i])
 				{
@@ -2538,7 +2544,7 @@ void UAssetLoaderComponent::PaintMeshForConstruction(FString moduleName)
 					mergedVertIndexToVertIndices[i].push_back(i);
 					vertIndexToMergedVertIndex[i] = i;
 
-					if (isPrinting) PUN_EDITOR_LOG(" i,i groupIndexToVertIndices_PositionMerge[%d].push_back(%d)", i, i);
+					if (isPrinting) _LOG(PunLogAsset, " i,i groupIndexToVertIndices_PositionMerge[%d].push_back(%d)", i, i);
 
 					// Add any vertex with the same position
 					// This is because UE4 import sometimes split up the geometry...
@@ -2550,23 +2556,23 @@ void UAssetLoaderComponent::PaintMeshForConstruction(FString moduleName)
 							mergedVertIndexToVertIndices[i].push_back(j);
 							vertIndexToMergedVertIndex[j] = i;
 
-							if (isPrinting) PUN_EDITOR_LOG(" i,j groupIndexToVertIndices_PositionMerge[%d].push_back(%d)", i, j);
+							if (isPrinting) _LOG(PunLogAsset, " i,j groupIndexToVertIndices_PositionMerge[%d].push_back(%d)", i, j);
 						}
 					}
 				}
 			}
 
 
-			PUN_EDITOR_LOG("Position Merge Group Count:%d vertCount:%d", mergedVertIndexToVertIndices.size(), vertexCount);
+			_LOG(PunLogAsset, "Position Merge Group Count:%d vertCount:%d", mergedVertIndexToVertIndices.size(), vertexCount);
 
 			if (isPrinting)
 			{
-				PUN_EDITOR_LOG("________");
-				PUN_EDITOR_LOG("Print mergedVertIndexToVertIndices size:%d", mergedVertIndexToVertIndices.size());
+				_LOG(PunLogAsset, "________");
+				_LOG(PunLogAsset, "Print mergedVertIndexToVertIndices size:%d", mergedVertIndexToVertIndices.size());
 				for (const auto& it : mergedVertIndexToVertIndices) {
-					PUN_EDITOR_LOG(" mergedVertIndex:%d", it.first);
+					_LOG(PunLogAsset, " mergedVertIndex:%d", it.first);
 					for (int32 vertIndex : it.second) {
-						PUN_EDITOR_LOG("  vertIndex:%d %s", vertIndex, *vertToString(vertIndex));
+						_LOG(PunLogAsset, "  vertIndex:%d %s", vertIndex, *vertToString(vertIndex));
 					}
 				}
 			}
@@ -2583,20 +2589,20 @@ void UAssetLoaderComponent::PaintMeshForConstruction(FString moduleName)
 			int32 vertIndex = wedgeIndices[indexBufferI];
 			vertIndexToConnectedTrisIndices[vertIndex].push_back(indexBufferI);
 
-			if (isPrinting) PUN_EDITOR_LOG("- indexI:%d vertIndex:%d vertIndexToConnectedTrisIndices.size:%d", indexBufferI, vertIndex, vertIndexToConnectedTrisIndices.size());
+			if (isPrinting) _LOG(PunLogAsset, "- indexI:%d vertIndex:%d vertIndexToConnectedTrisIndices.size:%d", indexBufferI, vertIndex, vertIndexToConnectedTrisIndices.size());
 		}
 
 		if (isPrinting)
 		{
-			PUN_EDITOR_LOG("________");
-			PUN_EDITOR_LOG("Print vertIndexToConnectedTrisIndices size:%d", vertIndexToConnectedTrisIndices.size());
+			_LOG(PunLogAsset, "________");
+			_LOG(PunLogAsset, "Print vertIndexToConnectedTrisIndices size:%d", vertIndexToConnectedTrisIndices.size());
 			for (const auto& it : vertIndexToConnectedTrisIndices)
 			{
-				PUN_EDITOR_LOG(" vertIndex:%d %s", it.first, *vertToString(it.first));
+				_LOG(PunLogAsset, " vertIndex:%d %s", it.first, *vertToString(it.first));
 				for (int32 trisIndex : it.second) {
 					PUN_CHECK(trisIndex < wedgeIndices.Num());
 					int32 connectedVertIndex = wedgeIndices[trisIndex];
-					PUN_EDITOR_LOG("  trisIndex:%d vertIndex:%d %s", trisIndex, connectedVertIndex, *vertToString(connectedVertIndex));
+					_LOG(PunLogAsset, "  trisIndex:%d vertIndex:%d %s", trisIndex, connectedVertIndex, *vertToString(connectedVertIndex));
 				}
 			}
 		}
@@ -2607,7 +2613,7 @@ void UAssetLoaderComponent::PaintMeshForConstruction(FString moduleName)
 			for (const auto& it : vertIndexToConnectedTrisIndices) {
 				total += it.second.size();
 			}
-			PUN_EDITOR_LOG("Average trisIndices per Vert: %f", static_cast<float>(total) / vertIndexToConnectedTrisIndices.size());
+			_LOG(PunLogAsset, "Average trisIndices per Vert: %f", static_cast<float>(total) / vertIndexToConnectedTrisIndices.size());
 		}
 
 		/*
@@ -2627,14 +2633,14 @@ void UAssetLoaderComponent::PaintMeshForConstruction(FString moduleName)
 
 		if (isPrinting)
 		{
-			PUN_EDITOR_LOG("________");
-			PUN_EDITOR_LOG("Print mergedVertIndexToConnectedTrisIndices num:%d", mergedVertIndexToConnectedTrisIndices.size());
+			_LOG(PunLogAsset, "________");
+			_LOG(PunLogAsset, "Print mergedVertIndexToConnectedTrisIndices num:%d", mergedVertIndexToConnectedTrisIndices.size());
 			for (const auto& it : mergedVertIndexToConnectedTrisIndices) {
-				PUN_EDITOR_LOG(" mergedVertIndex:%d", it.first);
+				_LOG(PunLogAsset, " mergedVertIndex:%d", it.first);
 				for (int32 trisIndex : it.second) {
 					PUN_CHECK(trisIndex < wedgeIndices.Num());
 					int32 vertIndex = wedgeIndices[trisIndex];
-					PUN_EDITOR_LOG(" trisIndex:%d vertIndex:%d %s", trisIndex, vertIndex, *vertToString(vertIndex));
+					_LOG(PunLogAsset, " trisIndex:%d vertIndex:%d %s", trisIndex, vertIndex, *vertToString(vertIndex));
 				}
 			}
 		}
@@ -2649,10 +2655,10 @@ void UAssetLoaderComponent::PaintMeshForConstruction(FString moduleName)
 
 			groupIndexToConnectedVertIndices.clear();
 
-			if (isPrinting) PUN_EDITOR_LOG("Traverse Tris");
+			if (isPrinting) _LOG(PunLogAsset, "Traverse Tris");
 
 			for (const auto& it : mergedVertIndexToVertIndices) {
-				if (isPrinting) PUN_EDITOR_LOG(" groupIndex:%d", it.first);
+				if (isPrinting) _LOG(PunLogAsset, " groupIndex:%d", it.first);
 
 				TraverseTris(it.first, it.first, wedgeIndices, vertexPositions);
 			}
@@ -2670,18 +2676,18 @@ void UAssetLoaderComponent::PaintMeshForConstruction(FString moduleName)
 		// Print groupIndexToConnectedVertIndices
 		if (isPrinting)
 		{
-			PUN_EDITOR_LOG("________");
-			PUN_EDITOR_LOG("Print groupIndexToConnectedVertIndices size:%d", groupIndexToConnectedVertIndices.size());
+			_LOG(PunLogAsset, "________");
+			_LOG(PunLogAsset, "Print groupIndexToConnectedVertIndices size:%d", groupIndexToConnectedVertIndices.size());
 			for (const auto& it : groupIndexToConnectedVertIndices) {
-				PUN_EDITOR_LOG(" groupIndex:%d", it.first);
+				_LOG(PunLogAsset, " groupIndex:%d", it.first);
 				const auto& vertIndices = it.second;
 				for (int32 vertIndex : vertIndices) {
-					PUN_EDITOR_LOG("  vertIndex:%d pos:%s", vertIndex, *vertToString(vertIndex));
+					_LOG(PunLogAsset, "  vertIndex:%d pos:%s", vertIndex, *vertToString(vertIndex));
 				}
 			}
 		}
 
-		PUN_EDITOR_LOG("Group Count %d", groupIndexToConnectedVertIndices.size());
+		_LOG(PunLogAsset, "Group Count %d", groupIndexToConnectedVertIndices.size());
 
 
 
@@ -2746,7 +2752,7 @@ void UAssetLoaderComponent::PaintMeshForConstruction(FString moduleName)
 			return a.lowestZ < b.lowestZ;
 		});
 
-		PUN_EDITOR_LOG("meshGroupInfos %d groupTrisCount:%f indices:%d indices/3:%d verts:%d", meshGroupInfos.size(), static_cast<float>(indexCount / 3) / meshGroupInfos.size(), indexCount, indexCount / 3, vertexCount);
+		_LOG(PunLogAsset, "meshGroupInfos %d groupTrisCount:%f indices:%d indices/3:%d verts:%d", meshGroupInfos.size(), static_cast<float>(indexCount / 3) / meshGroupInfos.size(), indexCount, indexCount / 3, vertexCount);
 
 
 		/*
@@ -2766,13 +2772,13 @@ void UAssetLoaderComponent::PaintMeshForConstruction(FString moduleName)
 
 			if (isPrinting)
 			{
-				PUN_EDITOR_LOG("________");
-				PUN_EDITOR_LOG("Print groupIndexToConnectedTrisIndices size:%d", groupIndexToConnectedTrisIndices.size());
+				_LOG(PunLogAsset, "________");
+				_LOG(PunLogAsset, "Print groupIndexToConnectedTrisIndices size:%d", groupIndexToConnectedTrisIndices.size());
 				for (const auto& it : groupIndexToConnectedTrisIndices) {
-					PUN_EDITOR_LOG(" groupIndex:%d", it.first);
+					_LOG(PunLogAsset, " groupIndex:%d", it.first);
 					for (int32 trisIndex : it.second) {
 						int32 vertIndex = wedgeIndices[trisIndex];
-						PUN_EDITOR_LOG("  trisIndex:%d vertIndex:%d %s", trisIndex, vertIndex, *vertToString(vertIndex));
+						_LOG(PunLogAsset, "  trisIndex:%d vertIndex:%d %s", trisIndex, vertIndex, *vertToString(vertIndex));
 					}
 				}
 			}
@@ -2825,7 +2831,7 @@ void UAssetLoaderComponent::PaintMeshForConstruction(FString moduleName)
 		
 		float currentColorFloat = 0.0f;
 
-		PUN_EDITOR_LOG("meshGroupInfos:%d", meshGroupInfos.size());
+		_LOG(PunLogAsset, "meshGroupInfos:%d", meshGroupInfos.size());
 		
 		for (int i = 0; i < meshGroupInfos.size(); i++) 
 		{
@@ -2833,7 +2839,7 @@ void UAssetLoaderComponent::PaintMeshForConstruction(FString moduleName)
 			
 			int32 groupIndex = meshGroupInfos[i].groupIndex;
 
-			if (isPrinting) PUN_EDITOR_LOG("  groupIndex:%d", groupIndex);
+			if (isPrinting) _LOG(PunLogAsset, "  groupIndex:%d", groupIndex);
 
 			// Color by group
 			FColor currentColorVec = FLinearColor(currentColorFloat, currentColorFloat, currentColorFloat, 1.0f).ToFColor(false);
@@ -2844,7 +2850,7 @@ void UAssetLoaderComponent::PaintMeshForConstruction(FString moduleName)
 				rawMesh.WedgeColors[trisIndex] = currentColorVec;
 
 				int32 vertIndex = wedgeIndices[trisIndex];
-				if (isPrinting) PUN_EDITOR_LOG("  - tris:%d vertIndex:%d %s", trisIndex, vertIndex, *vertToString(vertIndex));
+				if (isPrinting) _LOG(PunLogAsset, "  - tris:%d vertIndex:%d %s", trisIndex, vertIndex, *vertToString(vertIndex));
 			}
 			
 			currentColorFloat += groupIndexToMaxEdgeLength[groupIndex] / totalEdgeLength;

@@ -5,7 +5,7 @@
 #include "UnitSystem.h"
 #include "BuildingSystem.h"
 #include "TreeSystem.h"
-#include "GameRegionSystem.h"
+#include "ProvinceInfoSystem.h"
 #include "GeoresourceSystem.h"
 #include "OverlaySystem.h"
 #include "StatSystem.h"
@@ -227,7 +227,7 @@ public:
 	GameMapFlood& floodSystem() final { return _floodSystem; }
 	//GameMapFlood& floodSystemHuman() final { return _floodSystemHuman; }
 	ProvinceSystem& provinceSystem() final { return _provinceSystem; }
-	GameRegionSystem& provinceInfoSystem() final { return *_regionSystem; }
+	ProvinceInfoSystem& provinceInfoSystem() final { return *_regionSystem; }
 	
 	ResourceDropSystem& dropSystem() final { return _dropSystem; }
 	//GameEventSource& eventSource(EventSourceEnum eventEnum) final { return _gameEventSystem.source(eventEnum); }
@@ -244,16 +244,25 @@ public:
 
 	virtual TownManagerBase* townManagerBase(int32 townId) override
 	{
-		if (townId >= TownManagerBase::MinorTownShift) {
-			int32 minorTownId = townId - TownManagerBase::MinorTownShift;
+		if (townId >= MinorTownShift) {
+			int32 minorTownId = townId - MinorTownShift;
 			check(minorTownId < _minorTownManagers.size());
-			check(_minorTownManagers[minorTownId]);
+			check(_minorTownManagers[minorTownId]->isValid());
 			return _minorTownManagers[minorTownId].get();
 		}
 		check(townId < _townManagers.size());
 		check(_townManagers[townId]);
 		return static_cast<TownManagerBase*>(_townManagers[townId].get());
 	}
+
+	virtual TownManagerBase* townManager_Minor(int32 townId) override
+	{
+		check(townId >= MinorTownShift);
+		int32 minorTownId = townId - MinorTownShift;
+		check(minorTownId < _minorTownManagers.size());
+		return _minorTownManagers[minorTownId]->isValid() ? _minorTownManagers[minorTownId].get() : nullptr;
+	}
+	
 	
 	ResourceSystem& resourceSystem(int32 townId) final { return _resourceSystems[townId]; }
 
@@ -301,7 +310,7 @@ public:
 		if (townId == -1) {
 			return -1;
 		}
-		if (townId >= TownManagerBase::MinorTownShift) {
+		if (townId >= MinorTownShift) {
 			return -1;
 		}
 		return townManager(townId).playerId();
@@ -578,7 +587,12 @@ public:
 	}
 	int32 GetTownhallId(int32 townId) override {
 		if (townId == -1) return -1;
-		if (townId >= _townManagers.size()) return -1;
+		if (IsMajorTown(townId) && townId >= _townManagers.size()) {
+			return -1;
+		}
+		if (townManagerBase(townId) == nullptr) {
+			return -1;
+		}
 		return townManagerBase(townId)->townHallId;
 	}
 
@@ -636,13 +650,16 @@ public:
 		if (townId == -1) {
 			return NSLOCTEXT("GameSimulationCore", "None", "None");
 		}
-		int32 townhallId = townManager(townId).townHallId;
+		int32 townhallId = townManagerBase(townId)->townHallId;
 		if (townhallId == -1) {
 			return NSLOCTEXT("GameSimulationCore", "None", "None");
 		}
+		if (IsMinorTown(townId)) {
+			return GenerateTribeName(townhallId);
+		}
+		
 		TownHall& townhall = building(townhallId).subclass<TownHall>(CardEnum::Townhall);
 		return townhall.townNameT();
-		//return GetTownhall(townId).townNameT();
 	}
 
 	int32 GetTownAgeTicks(int32 townId) final {
@@ -683,8 +700,19 @@ public:
 	//	return nodes;
 	//}
 
+	bool IsValidMinorTown(int32 townId) {
+		return townId != -1 && 
+				townId >= MinorTownShift &&
+				GetTownhallId(townId) != -1;
+	}
+	
 	WorldAtom2 homeAtom(int32 townId) final
 	{
+		// Minor City
+		if (IsValidMinorTown(townId)) {
+			return building(GetTownhallId(townId)).centerTile().worldAtom2();
+		}
+		
 		// Go to townhall center if there is townhall
 		if (HasTownhall(townPlayerId(townId))) {
 			return GetTownhall(townId).centerTile().worldAtom2();
@@ -703,12 +731,24 @@ public:
 	/*
 	 * Minor Town
 	 */
-	virtual int32 AddMinorTown() override
+	virtual int32 AddMinorTown(int32 provinceId) override
 	{
-		int32 townId = _minorTownManagers.size() + TownManagerBase::MinorTownShift;
+		// TODO: Spawn new town from pool
+		//for () {
+		//	
+		//}
+		
+		int32 townId = _minorTownManagers.size() + MinorTownShift;
 		_minorTownManagers.push_back(std::make_unique<TownManagerBase>(-1, townId, this));
+		_minorTownManagers.back()->InitAutoTrade(provinceId);
 		return townId;
 	}
+	void RemoveMinorTown(int32 townId) {
+		_minorTownManagers[TownIdToMinorTownId(townId)] = std::make_unique<TownManagerBase>(-1, -1, nullptr);
+	}
+
+	virtual int32 minorTownCount() override { return _minorTownManagers.size(); }
+	
 
 	/*
 	 * Get Terrain
@@ -787,6 +827,9 @@ public:
 	virtual int32 tileOwnerPlayer(WorldTile2 tile) final {
 		int32 townId = tileOwnerTown(tile);
 		if (townId == -1) {
+			return -1;
+		}
+		if (IsMinorTown(townId)) {
 			return -1;
 		}
 		return townManager(townId).playerId();
@@ -1386,8 +1429,12 @@ public:
 		}
 		return false;
 	}
-	std::vector<int32> GetPortIds(int32 townId) final
+	virtual std::vector<int32> GetPortIds(int32 townId) override
 	{
+		if (IsMinorTown(townId)) {
+			return building<MinorCity>(GetTownhallId(townId)).GetPortIds();
+		}
+		
 		std::vector<int32> portIds = buildingIds(townId, CardEnum::TradingPort);
 		const std::vector<int32>& portIds2 = buildingIds(townId, CardEnum::IntercityLogisticsPort);
 		portIds.insert(portIds.end(), portIds2.begin(), portIds2.end());
@@ -1582,50 +1629,80 @@ public:
 	int32 GetProvinceClaimPrice(int32 provinceId, int32 playerId) final {
 		return GetProvinceClaimPrice(provinceId, playerId, GetProvinceClaimConnectionEnumPlayer(provinceId, playerId));
 	}
+	std::vector<BonusPair> GetProvinceClaimPriceStructure(int32 provinceId, int32 playerId, ClaimConnectionEnum claimConnectionEnum, int32 baseClaimPrice)
+	{
+		std::vector<BonusPair> result;
+
+		auto tryAddPercent = [&](FText penaltyText, int32 penaltyPercent)
+		{
+			int32 penaltyMoney = baseClaimPrice * penaltyPercent / 100;
+			if (penaltyMoney > 0) {
+				result.push_back({ penaltyText, penaltyMoney / 100 });
+			}
+		};
+
+		tryAddPercent(NSLOCTEXT("ProvinceClaim", "ClaimPricePenalty_Distance", "distance from Townhall"), GetProvinceClaimCostPenalty_DistanceFromTownhall(provinceId, playerId));
+
+		tryAddPercent(NSLOCTEXT("ProvinceClaim", "ClaimPricePenalty_ShallowDeep", "through shallow water"), GetProvinceClaimCostPenalty_ShallowDeep(claimConnectionEnum));
+
+		if (claimConnectionEnum == ClaimConnectionEnum::River) {
+			tryAddPercent(NSLOCTEXT("ProvinceClaim", "ClaimPricePenalty_River", "through river"), 100);
+		}
+
+		// Cost Penalty from Regional Building
+		ExecuteOnProvinceBuildings(provinceId, [&](Building& bld, const std::vector<WorldRegion2>& regionOverlaps)
+		{
+			if (bld.isEnum(CardEnum::MinorCity)) {
+				result.push_back({ NSLOCTEXT("ProvinceClaim", "ClaimPricePenalty_MinorCity", "minor city"), 200 });
+			}
+			else if (bld.isEnum(CardEnum::RegionCrates)) {
+				result.push_back({ NSLOCTEXT("ProvinceClaim", "ClaimPricePenalty_Crates", "crates"), 200 });
+			}
+			else if (bld.isEnum(CardEnum::RegionShrine)) {
+				result.push_back({ NSLOCTEXT("ProvinceClaim", "ClaimPricePenalty_Shrine", "shrine"), 50 });
+			}
+		});
+
+
+		return result;
+	}
 	int32 GetProvinceClaimPrice(int32 provinceId, int32 playerId, ClaimConnectionEnum claimConnectionEnum)
 	{
 		int32 claimPrice = GetProvinceBaseClaimPrice(provinceId);
 
-		//// Tundra/Boreal/Desert/ Expansion
-		//BiomeEnum biomeEnum = GetBiomeProvince(provinceId);
-		//if ((biomeEnum == BiomeEnum::Tundra || biomeEnum == BiomeEnum::BorealForest))
+		std::vector<BonusPair> pairs = GetProvinceClaimPriceStructure(provinceId, playerId, claimConnectionEnum, claimPrice);
+
+		for (const BonusPair& pair : pairs) {
+			claimPrice += pair.value;
+		}
+
+		//int32 distancePenaltyCostPercent = GetProvinceClaimCostPenalty_DistanceFromTownhall(provinceId, playerId);
+		//claimPrice = IncrementByPercent100(claimPrice, distancePenaltyCostPercent);
+		//
+		//claimPrice = IncrementByPercent100(claimPrice, GetProvinceClaimCostPenalty_ShallowDeep(claimConnectionEnum));
+
+		//
+		//// Cost Penalty from Regional Building
+		//int32 regionalBuildingCost = 0;
+		//ExecuteOnProvinceBuildings(provinceId, [&](Building& bld, const std::vector<WorldRegion2>& regionOverlaps)
 		//{
-		//	percent -= 50;
-		//}
-
-		// Cost Penalty from being far
-		//const int32 maxProvinceDistanceCostPenalty = 500;
-		//int32 provinceDistance = regionSystem().provinceDistanceToPlayer(provinceId, playerId);
-		//if (provinceDistance != MAX_int32) {
-		//	int32 distancePenaltyCostPercent = maxProvinceDistanceCostPenalty * std::max(0, provinceDistance - 1) / 7;
-		//	claimPrice = IncrementByPercent100(claimPrice, distancePenaltyCostPercent);
-		//}
-
-		int32 distancePenaltyCostPercent = GetProvinceClaimCostPenalty_DistanceFromTownhall(provinceId, playerId);
-		claimPrice = IncrementByPercent100(claimPrice, distancePenaltyCostPercent);
-		
-		claimPrice = IncrementByPercent100(claimPrice, GetProvinceClaimCostPenalty_ShallowDeep(claimConnectionEnum));
-
-		
-		// Cost Penalty from Regional Building
-		int32 regionalBuildingCost = 0;
-		ExecuteOnRegionalBuildings(provinceId, [&](Building& bld, const std::vector<WorldRegion2>& regionOverlaps)
-		{
-			if (bld.isEnum(CardEnum::RegionTribalVillage)) {
-				regionalBuildingCost = std::max(regionalBuildingCost, 200);
-			}
-			else if (bld.isEnum(CardEnum::RegionCrates)) {
-				regionalBuildingCost = std::max(regionalBuildingCost, 50);
-			}
-			else if (bld.isEnum(CardEnum::RegionShrine)) {
-				regionalBuildingCost = std::max(regionalBuildingCost, 50);
-			}
-		});
-		claimPrice += regionalBuildingCost;
+		//	if (bld.isEnum(CardEnum::RegionTribalVillage)) {
+		//		regionalBuildingCost = std::max(regionalBuildingCost, 200);
+		//	}
+		//	else if (bld.isEnum(CardEnum::RegionCrates)) {
+		//		regionalBuildingCost = std::max(regionalBuildingCost, 50);
+		//	}
+		//	else if (bld.isEnum(CardEnum::RegionShrine)) {
+		//		regionalBuildingCost = std::max(regionalBuildingCost, 50);
+		//	}
+		//});
+		//claimPrice += regionalBuildingCost;
 		
 		
 		return claimPrice;
 	}
+
+	
 	
 	int32 GetProvinceAttackStartPrice(int32 provinceId, ClaimConnectionEnum claimConnectionEnum)
 	{
@@ -1655,7 +1732,7 @@ public:
 	}
 	int32 GetProvinceConquerColonyStartPrice(int32 provinceId)
 	{
-		int32 townId = provinceOwnerTown(provinceId);
+		int32 townId = provinceOwnerTown_Major(provinceId);
 
 		return BattleInfluencePrice + populationTown(townId) * 100; // 33 pop = 3.3k influence to take over
 	}
@@ -1779,7 +1856,7 @@ public:
 	{
 		int32 percent = 0;
 		
-		int32 townId = provinceOwnerTown(provinceId);
+		int32 townId = provinceOwnerTown_Major(provinceId);
 		if (townId != -1)
 		{
 			// Fort
@@ -1797,7 +1874,7 @@ public:
 			NSLOCTEXT("SimCore", "DefenseBonus_TipTitle","Defense Bonus: {0}"), 
 			TEXT_PERCENT(GetProvinceAttackCostPercent(provinceId))
 		);
-		int32 townId = provinceOwnerTown(provinceId);
+		int32 townId = provinceOwnerTown_Major(provinceId);
 		if (townId != -1) {
 			const FText bulletText = INVTEXT("<bullet>{0} {1}%</>");
 			ADDTEXT_(bulletText, NSLOCTEXT("SimCore", "fort", "fort"), TEXT_NUM(GetFortDefenseBonus_Helper(provinceId, townId)));
@@ -1859,7 +1936,7 @@ public:
 		return _provinceSystem.ExecuteAdjacentProvincesWithExitTrue(provinceId, [&](ProvinceConnection connection) 
 		{
 			return connection.isConnectedTileType() &&
-					provinceOwnerTown(connection.provinceId) == townId;
+					provinceOwnerTown_Major(connection.provinceId) == townId;
 		});
 	}
 	bool IsProvinceNextToTownByShallowWater(int32 provinceId, int32 townId) final
@@ -1872,12 +1949,12 @@ public:
 			bool isValidConnectionType = (connection.tileType == TerrainTileType::Ocean);
 
 			return isValidConnectionType &&
-				provinceOwnerTown(connection.provinceId) == townId;
+				provinceOwnerTown_Major(connection.provinceId) == townId;
 		});
 	}
 
 	template<typename Func>
-	void ExecuteOnRegionalBuildings(int32 provinceId, Func func)
+	void ExecuteOnProvinceBuildings(int32 provinceId, Func func)
 	{
 		const std::vector<WorldRegion2>& regionOverlaps = _provinceSystem.GetRegionOverlaps(provinceId);
 		for (WorldRegion2 regionOverlap : regionOverlaps)
@@ -1906,9 +1983,19 @@ public:
 	{
 		const auto& townIds = GetTownIds(playerId);
 		
-		for (int32 townId : townIds) {
-			if (IsProvinceNextToTown(provinceId, townId)) {
-				return ClaimConnectionEnum::Flat;
+		for (int32 townId : townIds)
+		{
+			ClaimConnectionEnum claimConnectionEnum = ClaimConnectionEnum::Flat;
+			bool isProvinceNextToTown = _provinceSystem.ExecuteAdjacentProvincesWithExitTrue(provinceId, [&](ProvinceConnection connection)
+			{
+				if (connection.tileType == TerrainTileType::River) {
+					claimConnectionEnum = ClaimConnectionEnum::River;
+				}
+				return connection.isConnectedTileType() &&
+					provinceOwnerTown_Major(connection.provinceId) == townId;
+			});
+			if (isProvinceNextToTown) {
+				return claimConnectionEnum;
 			}
 		}
 		for (int32 townId : townIds) {
@@ -2060,23 +2147,23 @@ public:
 	 * Auto Trade Helpers
 	 */
 	std::vector<AutoTradeElement>& GetAutoExportElements1(const TradeRoutePair& tradeRoutePair) {
-		return tradeRoutePair.townId1 != -1 ? townManager(tradeRoutePair.townId1).autoExportElements() : building<ProvincialBuilding>(tradeRoutePair.buildingId1).autoExportElements;
+		return townManagerBase(tradeRoutePair.townId1)->autoExportElements();
 	}
 	std::vector<AutoTradeElement>& GetAutoImportElements1(const TradeRoutePair& tradeRoutePair) {
-		return tradeRoutePair.townId1 != -1 ? townManager(tradeRoutePair.townId1).autoImportElements() : building<ProvincialBuilding>(tradeRoutePair.buildingId1).autoImportElements;
+		return townManagerBase(tradeRoutePair.townId1)->autoImportElements();
 	}
 	std::vector<AutoTradeElement>& GetAutoExportElements2(const TradeRoutePair& tradeRoutePair) {
-		return tradeRoutePair.townId2 != -1 ? townManager(tradeRoutePair.townId2).autoExportElements() : building<ProvincialBuilding>(tradeRoutePair.buildingId2).autoExportElements;
+		return townManagerBase(tradeRoutePair.townId2)->autoExportElements();
 	}
 	std::vector<AutoTradeElement>& GetAutoImportElements2(const TradeRoutePair& tradeRoutePair) {
-		return tradeRoutePair.townId2 != -1 ? townManager(tradeRoutePair.townId2).autoImportElements() : building<ProvincialBuilding>(tradeRoutePair.buildingId2).autoImportElements;
+		return townManagerBase(tradeRoutePair.townId2)->autoImportElements();
 	}
 
 	// 1) calculatedTradeAmountNextRound
 	void RefreshAutoTradeAmount()
 	{
 		// Note: non-town trader has calculatedTradeAmountNextRound set without inventory
-		ExecuteOnAllTowns([&](int32 townId) {
+		ExecuteOnMajorTowns([&](int32 townId) {
 			townManager(townId).CalculateAutoTradeAmountNextRound();
 		});
 	}
@@ -2145,6 +2232,7 @@ public:
 			resolveTrade(GetAutoExportElements2(tradeRoutePair), GetAutoImportElements1(tradeRoutePair), false);
 		}
 	}
+
 	
 	/*
 	 * 
@@ -2175,8 +2263,18 @@ public:
 
 	void PlayerAddHouse(int32 townId, int objectId) override { _townManagers[townId]->PlayerAddHouse(objectId); }
 	void PlayerRemoveHouse(int32 townId, int objectId) override { _townManagers[townId]->PlayerRemoveHouse(objectId); }
-	void PlayerAddJobBuilding(int32 townId, Building& building, bool isConstructed) override { _townManagers[townId]->PlayerAddJobBuilding(building, isConstructed); }
-	void PlayerRemoveJobBuilding(int32 townId, Building& building, bool isConstructed) override { _townManagers[townId]->PlayerRemoveJobBuilding(building, isConstructed); }
+	void PlayerAddJobBuilding(int32 townId, Building& building, bool isConstructed) override
+	{
+		if (IsMajorTown(townId)) {
+			_townManagers[townId]->PlayerAddJobBuilding(building, isConstructed);
+		}
+	}
+	void PlayerRemoveJobBuilding(int32 townId, Building& building, bool isConstructed) override
+	{
+		if (IsMajorTown(townId)) {
+			_townManagers[townId]->PlayerRemoveJobBuilding(building, isConstructed);
+		}
+	}
 	void RefreshJobDelayed(int32 townId) override {
 		_townManagers[townId]->RefreshJobDelayed();
 	}
@@ -2251,7 +2349,6 @@ public:
 				_buildingSystem->RemoveBuilding(bldId);
 
 				AddDemolishDisplayInfo(tile, { bld.buildingEnum(), bld.area(), Time::Ticks() });
-				//_regionToDemolishDisplayInfos[tile.regionId()].push_back({ bld.buildingEnum(), bld.area(), Time::Ticks() });
 			}
 		});
 	}
@@ -2261,7 +2358,15 @@ public:
 
 	void SetProvinceOwner_Popup(int32 provinceId, int32 attackerPlayerId, bool isFull);
 
-	int32 provinceOwnerTown(int32 provinceId) final { return _regionSystem->provinceOwner(provinceId); }\
+	virtual int32 provinceOwnerTown_Major(int32 provinceId) override {
+		int32 townId = _regionSystem->provinceOwner(provinceId);
+		return IsMinorTown(townId) ? -1 : townId;
+	}
+
+	virtual int32 provinceOwnerTown_Minor(int32 provinceId) override {
+		int32 townId = _regionSystem->provinceOwner(provinceId);
+		return IsMinorTown(townId) ? townId : -1;
+	}
 	
 	int32 provinceOwnerTownSafe(int32 provinceId) { return _regionSystem->provinceOwnerSafe(provinceId); }
 	
@@ -2269,6 +2374,9 @@ public:
 	{
 		int32 townId = provinceOwnerTownSafe(provinceId);
 		if (townId == -1) {
+			return -1;
+		}
+		if (IsMinorTown(townId)) {
 			return -1;
 		}
 		return townManager(townId).playerId();
@@ -3278,8 +3386,10 @@ public:
 		checkAddMineCard(CardEnum::OilRig, GeoresourceEnum::Oil);
 	}
 
-	void PopupInstantReply(int32 playerId, PopupReceiverEnum replyReceiver, int32 choiceIndex);
+	void PopupInstantReply(const PopupInfo& popupInfo, int32 choiceIndex);
 
+	int32 GetTradeDealValue(const TradeDealSideInfo& tradeDealSideInfo);
+	void ProcessTradeDeal(const PopupInfo& popupInfo);
 
 	/*
 	 * Serialize
@@ -3435,6 +3545,8 @@ public:
 
 			//! Per Minor Town
 			{
+				SERIALIZE_TIMER("MinorTownManagers", data, crcs, crcLabels)
+				
 				int32 minorTownCountAr;
 				if (Ar.IsSaving()) {
 					minorTownCountAr = _minorTownManagers.size();
@@ -3443,7 +3555,9 @@ public:
 
 				if (Ar.IsLoading()) {
 					// Ensure same town count as before
-					_minorTownManagers.resize(minorTownCountAr, std::make_unique<TownManagerBase>(-1, -1, this));
+					for (int32 i = _minorTownManagers.size(); i < minorTownCountAr; i++) {
+						_minorTownManagers.push_back(std::make_unique<TownManagerBase>(-1, -1, this));
+					}
 				}
 
 				for (int32 i = 0; i < minorTownCountAr; i++) {
@@ -3703,7 +3817,7 @@ public:
 		
 		std::vector<int32> adjacentAttackerTownIds;
 		for (const ProvinceConnection& connection : connections) {
-			int32 adjacentOwnerTownId = provinceOwnerTown(connection.provinceId);
+			int32 adjacentOwnerTownId = provinceOwnerTown_Major(connection.provinceId);
 			
 			if (adjacentOwnerTownId != -1 && 
 				CppUtils::Contains(attackerTownIds, adjacentOwnerTownId)) 
@@ -3729,7 +3843,8 @@ public:
 		// Need to face water with overlapping at least 5 water tiles 
 		int32 waterCount = 0;
 
-		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) 
+		{
 			if (GameMap::IsInGrid(tile.x, tile.y) && IsTileBuildableForPlayer(tile, playerId))
 			{
 				int steps = GameMap::GetFacingStep(faceDirection, area, tile);
@@ -3745,16 +3860,27 @@ public:
 			}
 		});
 
+		bool useLastStep = extraMinWaterCount > 0;
+
 		// When there isn't enough water tiles, make the part facing water red...
 		// Otherwise make it green on water, and gray on non-water
-		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) 
+		{
 			int steps = GameMap::GetFacingStep(faceDirection, area, tile);
-			if (steps > indexLandEnd) {
-				if (waterCount < minWaterCount) {
+			if (steps > indexLandEnd) 
+			{
+				// Last step is water
+				if (useLastStep && 
+					GameMap::IsLastStep(faceDirection, area, tile) &&
+					!IsWater(tile))
+				{
 					grids.push_back({ PlacementGridEnum::Red, tile });
-
 					setDockInstruction = true;
-					//SetInstruction(PlacementInstructionEnum::Dock, true);
+				}
+				else if (waterCount < minWaterCount) 
+				{
+					grids.push_back({ PlacementGridEnum::Red, tile });
+					setDockInstruction = true;
 				}
 				else {
 					if (tileHasBuilding(tile)) { // Maybe bridge
@@ -3793,7 +3919,7 @@ private:
 
 	std::unique_ptr<PunTerrainGenerator> _terrainGenerator;
 	std::unique_ptr<TreeSystem> _treeSystem;
-	std::unique_ptr<GameRegionSystem> _regionSystem;
+	std::unique_ptr<ProvinceInfoSystem> _regionSystem;
 	std::unique_ptr<GeoresourceSystem> _georesourceSystem;
 	PunTerrainChanges _terrainChanges;
 

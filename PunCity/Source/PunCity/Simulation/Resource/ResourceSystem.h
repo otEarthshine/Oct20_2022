@@ -1126,7 +1126,9 @@ public:
 		
 		return holderGroup(resourceEnum).CanAddResourceGlobal(amount, *this);
 	}
-	void AddResourceGlobal(ResourceEnum resourceEnum, int32 amount, IGameSimulationCore& simulation) {
+	void AddResourceGlobal(ResourceEnum resourceEnum, int32 amount, IGameSimulationCore& simulation)
+	{
+		check(amount >= 0);
 		int amountLeft = holderGroup(resourceEnum).AddResourceGlobal(amount, *this);
 
 		if (amountLeft > 0) {
@@ -1135,7 +1137,10 @@ public:
 			);
 		}
 	}
-	void RemoveResourceGlobal(ResourceEnum resourceEnum, int32 amount) {
+	void RemoveResourceGlobal(ResourceEnum resourceEnum, int32 amount)
+	{
+		check(amount >= 0);
+		
 		if (resourceEnum == ResourceEnum::Food) {
 			int32 amountLeftToRemove = amount;
 			for (ResourceEnum foodEnum : StaticData::FoodEnums) {

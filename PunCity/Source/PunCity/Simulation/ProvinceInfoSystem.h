@@ -81,7 +81,7 @@ struct ProvinceOwnerInfo
 /**
  * 
  */
-class GameRegionSystem
+class ProvinceInfoSystem
 {
 public:
 	void InitProvinceInfoSystem(IGameSimulationCore* simulation)
@@ -196,12 +196,12 @@ public:
 						{
 							auto checkPortSlotAvailable = [&](WorldTile2 centerTile, Direction faceDirection)
 							{
-								WorldTile2 portSize = GetBuildingInfo(CardEnum::TradingPort).size;
+								WorldTile2 portSize = GetBuildingInfo(CardEnum::MinorCityPort).size;
 								TileArea portArea = BuildingArea(centerTile, portSize, faceDirection);
 
 								bool setDockInstruct;
 								std::vector<PlacementGridInfo> grids;
-								_simulation->CheckPortArea(portArea, faceDirection, CardEnum::TradingPort, grids, setDockInstruct, -1, 10);
+								_simulation->CheckPortArea(portArea, faceDirection, CardEnum::MinorCityPort, grids, setDockInstruct, -1, 5);
 
 								// Main Port Area not buildable
 								for (PlacementGridInfo& gridInfo : grids) {
@@ -330,7 +330,7 @@ public:
 		check(_provinceOwnerInfos[provinceId].provinceId == provinceId);
 		_provinceOwnerInfos[provinceId].townId = townId;
 
-		if (townId != -1) {
+		if (townId != -1 && !IsMinorTown(townId)) {
 			RefreshFlood_IsSafe(provinceId);
 		}
 

@@ -71,6 +71,19 @@ public:
 		}
 	}
 
+	void SetResource(ResourceEnum resourceEnum, UAssetLoaderComponent* assetLoader, bool autoAddToolTip = false)
+	{
+		PrefixText->SetText(FText());
+		SuffixText->SetText(ResourceNameT(resourceEnum));
+		
+		IconImage->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		IconImage->SetBrushFromMaterial(assetLoader->GetResourceIconMaterial(resourceEnum));
+
+		if (autoAddToolTip) {
+			AddResourceTooltip(this, resourceEnum);
+		}
+	}
+
 	void InitBackgroundButton(ResourceEnum resourceEnumIn) {
 		uiResourceEnum = resourceEnumIn;
 		BackgroundButton->SetVisibility(ESlateVisibility::Visible);

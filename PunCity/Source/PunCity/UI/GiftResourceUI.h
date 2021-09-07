@@ -2,9 +2,12 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "PunWidget.h"
+#include "BuildingPlacementButton.h"
+#include "ChooseResourceElement.h"
+#include "PunBoxWidget.h"
 #include "PunEditableNumberBox.h"
+#include "TradeDealResourceRow.h"
+
 #include "GiftResourceUI.generated.h"
 
 /**
@@ -15,55 +18,208 @@ class PROTOTYPECITY_API UGiftResourceUI : public UPunWidget
 {
 	GENERATED_BODY()
 public:
-	UPROPERTY(meta = (BindWidget)) UButton* ConfirmButton;
-	UPROPERTY(meta = (BindWidget)) UButton* CloseButton1;
-	UPROPERTY(meta = (BindWidget)) UButton* CloseButton2;
+	UPROPERTY(meta = (BindWidget)) UButton* MakeOfferButton;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* MakeOfferButtonText;
+
+	UPROPERTY(meta = (BindWidget)) UButton* AcceptOfferButton;
+	
+	UPROPERTY(meta = (BindWidget)) UButton* CancelButton;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* CloseXButton;
 
 	UPROPERTY(meta = (BindWidget)) UTextBlock* GiftTitleText;
-	UPROPERTY(meta = (BindWidget)) UImage* GiftIcon;
-	UPROPERTY(meta = (BindWidget)) UComboBoxString* GiftTypeDropdown;
-	UPROPERTY(meta = (BindWidget)) UPunEditableNumberBox* GiftTargetAmount;
+	//UPROPERTY(meta = (BindWidget)) UImage* GiftIcon;
+	//UPROPERTY(meta = (BindWidget)) UComboBoxString* GiftTypeDropdown;
+	//UPROPERTY(meta = (BindWidget)) UPunEditableNumberBox* GiftTargetAmount;
 
-	int32 targetPlayerId = -1;
+	//! Trade
+	// Left
+	UPROPERTY(meta = (BindWidget)) UButton* LeftAddMoneyButton;
+	UPROPERTY(meta = (BindWidget)) UButton* LeftAddResourceButton;
+	UPROPERTY(meta = (BindWidget)) UButton* LeftAddCardButton;
 
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* LeftMoneyTargetBox;
+	UPROPERTY(meta = (BindWidget)) UPunEditableNumberBox* LeftMoneyTargetAmount;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* LeftMoneyCloseXButton;
+	
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* LeftResourceValueBox;
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* LeftResourceValueText;
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* LeftTradeResourceRows;
+	
+	UPROPERTY(meta = (BindWidget)) UWrapBox* LeftCardBox;
+
+	// Right
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* RightDealBox;
+	UPROPERTY(meta = (BindWidget)) UButton* RightAddMoneyButton;
+	UPROPERTY(meta = (BindWidget)) UButton* RightAddResourceButton;
+	UPROPERTY(meta = (BindWidget)) UButton* RightAddCardButton;
+
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* RightMoneyTargetBox;
+	UPROPERTY(meta = (BindWidget)) UPunEditableNumberBox* RightMoneyTargetAmount;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* RightMoneyCloseXButton;
+
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* RightResourceValueBox;
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* RightResourceValueText;
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* RightTradeResourceRows;
+
+	UPROPERTY(meta = (BindWidget)) UWrapBox* RightCardBox;
+
+
+	
+	
+
+	UPROPERTY(meta = (BindWidget)) UOverlay* ChooseResourceOverlay;
+	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* ChooseResourceBox;
+	UPROPERTY(meta = (BindWidget)) UButton* ChooseResourceCloseButton;
+	UPROPERTY(meta = (BindWidget)) UEditableTextBox* ChooseResourceSearchBox;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* ChooseResourceCloseXButton;
+	bool isChoosingLeftResource = false;
+
+
+	UPROPERTY(meta = (BindWidget)) UOverlay* CardChooseOverlay;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* CardChooseText;
+	UPROPERTY(meta = (BindWidget)) UWrapBox* CardChooseBox;
+	UPROPERTY(meta = (BindWidget)) UButton* CardChooseCloseButton;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* CardChooseCloseXButton;
+	bool isChoosingLeftCards = false;
+	
+	int32 sourceTownId = -1;
+	int32 targetTownId = -1;
+	TradeDealStageEnum dealStageEnum = TradeDealStageEnum::None;
+	
 	const FText MoneyText = NSLOCTEXT("UGiftResourceUI", "Money", "Money");
 	
 	void PunInit()
 	{
-		BUTTON_ON_CLICK(ConfirmButton, this, &UGiftResourceUI::OnClickConfirmButton);
-		BUTTON_ON_CLICK(CloseButton1, this, &UGiftResourceUI::OnClickCloseButton);
-		BUTTON_ON_CLICK(CloseButton2, this, &UGiftResourceUI::OnClickCloseButton);
+		BUTTON_ON_CLICK(MakeOfferButton, this, &UGiftResourceUI::OnClickConfirmButton);
+		BUTTON_ON_CLICK(CancelButton, this, &UGiftResourceUI::OnClickCloseButton);
+		BUTTON_ON_CLICK(CloseXButton->CoreButton, this, &UGiftResourceUI::OnClickCloseButton);
 
-		GiftTypeDropdown->OnSelectionChanged.Clear();
-		GiftTypeDropdown->OnSelectionChanged.AddDynamic(this, &UGiftResourceUI::OnDropDownChanged);
+		//GiftTypeDropdown->OnSelectionChanged.Clear();
+		//GiftTypeDropdown->OnSelectionChanged.AddDynamic(this, &UGiftResourceUI::OnDropDownChanged);
 
-		SetChildHUD(GiftTargetAmount);
-		GiftTargetAmount->minAmount = 0;
+		//SetChildHUD(GiftTargetAmount);
+		//GiftTargetAmount->minAmount = 0;
+
+		//! Left
+		SetChildHUD(LeftMoneyTargetAmount);
+		LeftMoneyTargetAmount->minAmount = 0;
+
+		LeftAddMoneyButton->OnClicked.AddUniqueDynamic(this, &UGiftResourceUI::OnClickLeftAddMoneyButton);
+		LeftAddResourceButton->OnClicked.AddUniqueDynamic(this, &UGiftResourceUI::OnClickLeftAddResourceButton);
+		LeftAddCardButton->OnClicked.AddUniqueDynamic(this, &UGiftResourceUI::OnClickLeftAddCardButton);
+
+		LeftMoneyCloseXButton->CoreButton->OnClicked.AddUniqueDynamic(this, &UGiftResourceUI::OnClickAddMoneyCloseXButton);
+
+		//! Right
+		SetChildHUD(RightMoneyTargetAmount);
+		RightMoneyTargetAmount->minAmount = 0;
+
+		RightAddMoneyButton->OnClicked.AddUniqueDynamic(this, &UGiftResourceUI::OnClickRightAddMoneyButton);
+		RightAddResourceButton->OnClicked.AddUniqueDynamic(this, &UGiftResourceUI::OnClickRightAddResourceButton);
+		RightAddCardButton->OnClicked.AddUniqueDynamic(this, &UGiftResourceUI::OnClickRightAddCardButton);
+
+		RightMoneyCloseXButton->CoreButton->OnClicked.AddUniqueDynamic(this, &UGiftResourceUI::OnClickAddMoneyCloseXButton);
+		
+
+		SetChildHUD(ChooseResourceBox);
+		ChooseResourceCloseButton->OnClicked.AddUniqueDynamic(this, &UGiftResourceUI::CloseChooseResourceUI);
+		ChooseResourceCloseXButton->CoreButton->OnClicked.AddUniqueDynamic(this, &UGiftResourceUI::CloseChooseResourceUI);
+
+
+		CardChooseCloseButton->OnClicked.AddUniqueDynamic(this, &UGiftResourceUI::CloseCardChooseOverlay);
+		CardChooseCloseXButton->CoreButton->OnClicked.AddUniqueDynamic(this, &UGiftResourceUI::CloseCardChooseOverlay);
+		
 
 		SetVisibility(ESlateVisibility::Collapsed);
 	}
 
-	void OpenUI(int32 targetPlayerIdIn)
+	void OpenGiftUI(int32 sourcePlayerIdIn, int32 targetTownIdIn, TradeDealStageEnum dealStageEnumIn)
 	{
-		targetPlayerId = targetPlayerIdIn;
+		sourceTownId = sourcePlayerIdIn;
+		targetTownId = targetTownIdIn;
+
+		dealStageEnum = dealStageEnumIn;
 		
-		SetText(GiftTitleText, FText::Format(
-			NSLOCTEXT("GiftResourceUI", "GiftToX", "Gift to {0}"),
-			simulation().playerNameT(targetPlayerId)
-		));
+		if (dealStageEnum == TradeDealStageEnum::Gifting) {
+			SetText(GiftTitleText, FText::Format(
+				NSLOCTEXT("GiftResourceUI", "GiftToX", "Gift to {0}"),
+				simulation().townNameT(targetTownId)
+			));
+			RightDealBox->SetVisibility(ESlateVisibility::Collapsed);
+		}
+		else {
+			SetText(GiftTitleText, FText::Format(
+				NSLOCTEXT("TradeDealUI", "TradeDealTitle", "Trade Deal with {0}"),
+				simulation().townNameT(targetTownId)
+			));
+			RightDealBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		}
+
+		// Left and Right
+		LeftAddMoneyButton->SetVisibility(ESlateVisibility::Visible);
+		LeftMoneyTargetBox->SetVisibility(ESlateVisibility::Collapsed);
+		LeftResourceValueBox->SetVisibility(ESlateVisibility::Collapsed);
+		LeftCardBox->SetVisibility(ESlateVisibility::Collapsed);
+
+		LeftTradeResourceRows->ClearChildren();
+		LeftCardBox->ClearChildren();
+
+		RightAddMoneyButton->SetVisibility(ESlateVisibility::Visible);
+		RightMoneyTargetBox->SetVisibility(ESlateVisibility::Collapsed);
+		RightResourceValueBox->SetVisibility(ESlateVisibility::Collapsed);
+		RightCardBox->SetVisibility(ESlateVisibility::Collapsed);
+
+		RightTradeResourceRows->ClearChildren();
+		RightCardBox->ClearChildren();
+
+		//! Shared
+		ChooseResourceOverlay->SetVisibility(ESlateVisibility::Collapsed);
+		
+		CardChooseOverlay->SetVisibility(ESlateVisibility::Collapsed);
+		CardChooseBox->ClearChildren();
+		
 
 		// Gift Type Dropdown
-		GiftTypeDropdown->ClearOptions();
-		GiftTypeDropdown->AddOption(MoneyText.ToString());
-		for (ResourceInfo info : SortedNameResourceInfo) {
-			GiftTypeDropdown->AddOption(info.name.ToString());
-		}
-		GiftTypeDropdown->SetSelectedOption(MoneyText.ToString());
+		//GiftTypeDropdown->ClearOptions();
+		//GiftTypeDropdown->AddOption(MoneyText.ToString());
+		//for (ResourceInfo info : SortedNameResourceInfo) {
+		//	GiftTypeDropdown->AddOption(info.name.ToString());
+		//}
+		//GiftTypeDropdown->SetSelectedOption(MoneyText.ToString());
 
 		
-		GiftIcon->SetBrushFromTexture(assetLoader()->CoinIcon);
+		//GiftIcon->SetBrushFromTexture(assetLoader()->CoinIcon);
 		
 		SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	}
+
+	void FillDealInfo(const TradeDealSideInfo& sourceDealInfo, const TradeDealSideInfo& targetDealInfo)
+	{
+		auto fillTradeDealSide = [&](
+			bool isLeft,
+			const TradeDealSideInfo& dealInfo,
+			UHorizontalBox* moneyTargetBox,
+			UPunEditableNumberBox* moneyTargetAmount
+			)
+		{
+			if (dealInfo.moneyAmount > 0) {
+				moneyTargetBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+				moneyTargetAmount->amount = dealInfo.moneyAmount;
+				moneyTargetAmount->UpdateText();
+			}
+
+			for (const ResourcePair& resourcePair : dealInfo.resourcePairs) {
+				AddTradeDealResource(isLeft, resourcePair.resourceEnum, resourcePair.count);
+			}
+
+			for (const CardStatus& cardStatus : dealInfo.cardStatuses) {
+				AddTradeDealCard(isLeft, cardStatus.cardEnum, 1);
+			}
+		};
+		
+		fillTradeDealSide(true, sourceDealInfo, LeftMoneyTargetBox, LeftMoneyTargetAmount);
+		fillTradeDealSide(false, targetDealInfo, RightMoneyTargetBox, RightMoneyTargetAmount);
+		
 	}
 
 	void CloseUI() {
@@ -72,24 +228,330 @@ public:
 
 	void TickUI()
 	{
-		
-	}
-
-	UFUNCTION() void OnDropDownChanged(FString sItem, ESelectInfo::Type seltype)
-	{
-		FString resourceName = GiftTypeDropdown->GetSelectedOption();
-		if (resourceName.IsEmpty()) {
+		if (!IsVisible()) {
 			return;
 		}
 		
-		if (resourceName == MoneyText.ToString()) {
-			GiftIcon->SetBrushFromTexture(assetLoader()->CoinIcon);
+		auto& sim = simulation();
+
+		auto showButton = [&](bool isGreen, const FText& text)
+		{
+			MakeOfferButtonText->SetText(text);
+			MakeOfferButton->SetVisibility(isGreen ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+			AcceptOfferButton->SetVisibility(isGreen ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+		};
+
+		switch(dealStageEnum)
+		{
+		case TradeDealStageEnum::Gifting: showButton(true, NSLOCTEXT("UGiftResourceUI", "Confirm Gift", "Confirm Gift")); break;
+		case TradeDealStageEnum::CreateDeal: showButton(true, NSLOCTEXT("UGiftResourceUI", "Make Offer", "Make Offer")); break;
+
+		case TradeDealStageEnum::ExamineDeal:
+		case TradeDealStageEnum::ExamineCounterOfferDeal: showButton(false, FText()); break;
+
+		case TradeDealStageEnum::PrepareCounterOfferDeal: showButton(true, NSLOCTEXT("UGiftResourceUI", "Counter Offer", "Counter Offer")); break;
+
+		default:
+			UE_DEBUG_BREAK();
+			break;
 		}
-		else {
-			ResourceEnum resourceEnum = FindResourceEnumByName(ToWString(resourceName));
-			GiftIcon->SetBrushFromMaterial(assetLoader()->GetResourceIconMaterial(resourceEnum));
+		
+		
+		/*
+		 * Fill choose resource box
+		 */
+		if (ChooseResourceOverlay->IsVisible())
+		{
+			FString searchString = ChooseResourceSearchBox->GetText().ToString();
+
+			for (const ResourceInfo& info : SortedNameResourceInfo)
+			{
+				FString name = info.name.ToString();
+
+				if (IsTradeResource(info.resourceEnum))
+				{
+					if (searchString.IsEmpty() ||
+						name.Find(searchString, ESearchCase::Type::IgnoreCase, ESearchDir::FromStart) != INDEX_NONE)
+					{
+						int32 townId = isChoosingLeftResource ? sourceTownId : targetTownId;
+						if (sim.resourceCountTown(townId, info.resourceEnum) > 0) 
+						{
+							// Remove Added Resource
+							bool resourceAdded = false;
+							UVerticalBox* resourceRows = isChoosingLeftResource ? LeftTradeResourceRows : RightTradeResourceRows;
+							for (int32 i = 0; i < resourceRows->GetChildrenCount(); i++) {
+								auto tradeRow = CastChecked<UTradeDealResourceRow>(resourceRows->GetChildAt(i));
+								if (tradeRow->resourceEnum == info.resourceEnum) {
+									resourceAdded = true;
+									break;
+								}
+							}
+
+							if (!resourceAdded) {
+								ChooseResourceBox->AddChooseResourceElement(info.resourceEnum, this, CallbackEnum::AddTradeDealResource);
+							}
+						}
+					}
+				}
+			}
+
+			ChooseResourceBox->AfterAdd();
+		}
+
+		/*
+		 * Trade Deals
+		 */
+		auto updateResourceValue = [&](UVerticalBox* resourceValueBox, URichTextBlock* resourceValueText, UVerticalBox* tradeResourceRows)
+		{
+			if (resourceValueBox->IsVisible())
+			{
+				int32 totalValue100 = 0;
+				for (int32 i = 0; i < tradeResourceRows->GetChildrenCount(); i++)
+				{
+					auto row = CastChecked<UTradeDealResourceRow>(tradeResourceRows->GetChildAt(i));
+					totalValue100 += sim.price100(row->resourceEnum) * row->TargetAmount->amount;
+				}
+				resourceValueText->SetText(FText::Format(INVTEXT("<img id=\"Coin\"/>{0}"), TEXT_100(totalValue100)));
+			}
+		};
+		updateResourceValue(LeftResourceValueBox, LeftResourceValueText, LeftTradeResourceRows);
+		updateResourceValue(RightResourceValueBox, RightResourceValueText, RightTradeResourceRows);
+
+
+		if (CardChooseOverlay->IsVisible()) 
+		{
+			if (isChoosingLeftCards) {
+				CardChooseText->SetText(NSLOCTEXT("UGiftResourceUI", "Choose Your Cards", "Choose Your Cards"));
+			} else {
+				CardChooseText->SetText(FText::Format(NSLOCTEXT("UGiftResourceUI", "Choose Counterparty Cards", "Choose {0}'s Cards"), 
+					targetTownId != -1 ? sim.playerNameT(sim.townPlayerId(targetTownId)) : FText()
+				));
+			}
+		}		
+
+		
+	}
+
+	// Add Column
+	UFUNCTION() void OnClickLeftAddMoneyButton() {
+		LeftMoneyTargetBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		LeftAddMoneyButton->SetVisibility(ESlateVisibility::Hidden);
+		LeftMoneyTargetAmount->amount = 0;
+		LeftMoneyTargetAmount->UpdateText();
+
+		RightMoneyTargetAmount->amount = 0;
+		RightMoneyTargetBox->SetVisibility(ESlateVisibility::Collapsed);
+		RightAddMoneyButton->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	}
+	UFUNCTION() void OnClickLeftAddResourceButton() {
+		ChooseResourceOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		isChoosingLeftResource = true;
+	}
+	UFUNCTION() void OnClickLeftAddCardButton()
+	{
+		isChoosingLeftCards = true;
+		OpenCardChooseUI();
+	}
+
+	UFUNCTION() void OnClickRightAddMoneyButton() {
+		RightMoneyTargetBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		RightAddMoneyButton->SetVisibility(ESlateVisibility::Hidden);
+		RightMoneyTargetAmount->amount = 0;
+		RightMoneyTargetAmount->UpdateText();
+
+		LeftMoneyTargetAmount->amount = 0;
+		LeftMoneyTargetBox->SetVisibility(ESlateVisibility::Collapsed);
+		LeftAddMoneyButton->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	}
+	UFUNCTION() void OnClickRightAddResourceButton() {
+		ChooseResourceOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		isChoosingLeftResource = false;
+	}
+	UFUNCTION() void OnClickRightAddCardButton()
+	{
+		isChoosingLeftCards = false;
+		OpenCardChooseUI();
+	}
+
+	UFUNCTION() void OnClickAddMoneyCloseXButton()
+	{
+		LeftMoneyTargetAmount->amount = 0;
+		LeftMoneyTargetBox->SetVisibility(ESlateVisibility::Collapsed);
+		LeftAddMoneyButton->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+
+		RightMoneyTargetAmount->amount = 0;
+		RightMoneyTargetBox->SetVisibility(ESlateVisibility::Collapsed);
+		RightAddMoneyButton->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	}
+	
+
+	void OpenCardChooseUI()
+	{
+		auto& sim = simulation();
+
+		int32 cardOwnerId = isChoosingLeftCards ? sim.townPlayerId(sourceTownId) : sim.townPlayerId(targetTownId);
+		auto& cardSys = sim.cardSystem(cardOwnerId);
+
+
+		std::vector<CardStatus> cards = cardSys.GetCardsBought();
+		const std::vector<CardStatus>& cardInventory = cardSys.cardInventory();
+
+		cards.insert(cards.begin(), cardInventory.begin(), cardInventory.end());
+
+		// Remove Added Card
+		{
+			UWrapBox* cardBox = isChoosingLeftCards ? LeftCardBox : RightCardBox;
+			for (int32 i = 0; i < cardBox->GetChildrenCount(); i++)
+			{
+				auto cardButton = CastChecked<UBuildingPlacementButton>(cardBox->GetChildAt(i));
+				BuildingCardSystem::RemoveCards(cardButton->cardStatus, cards);
+			}
+		}
+		
+
+		CardChooseBox->ClearChildren();
+
+		for (CardStatus cardStatus : cards)
+		{
+			UBuildingPlacementButton* cardButton = AddWidget<UBuildingPlacementButton>(UIEnum::CardMini);
+			cardButton->PunInit(
+				cardStatus,
+				0, this, CallbackEnum::AddTradeDealCard, CardHandEnum::TradeDealOffer
+			);
+
+			cardButton->RefreshBuildingIcon(dataSource()->assetLoader());
+			cardButton->SetCardStatus(CardHandEnum::TradeDealSelect, false, false, false);
+
+			CardChooseBox->AddChild(cardButton);
+		}
+
+		CardChooseOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	}
+
+	// Choose Resource
+	UFUNCTION() void CloseChooseResourceUI() {
+		ChooseResourceOverlay->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	// Choose Cards
+	UFUNCTION() void CloseCardChooseOverlay() {
+		CardChooseOverlay->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	
+	
+
+	virtual void CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum) override
+	{
+		// Trigger Counter offer if the deal was changed
+		if (dealStageEnum == TradeDealStageEnum::ExamineDeal ||
+			dealStageEnum == TradeDealStageEnum::ExamineCounterOfferDeal)
+		{
+			dealStageEnum = TradeDealStageEnum::PrepareCounterOfferDeal;
+		}
+		
+		if (callbackEnum == CallbackEnum::AddTradeDealResource)
+		{
+			auto chooseButton = CastChecked<UChooseResourceElement>(punWidgetCaller);
+
+			AddTradeDealResource(isChoosingLeftResource, chooseButton->resourceEnum);
+
+			CloseChooseResourceUI();
+		}
+		else if (callbackEnum == CallbackEnum::RemoveTradeDealResource)
+		{
+			auto callerTradeRow = CastChecked<UTradeDealResourceRow>(punWidgetCaller);
+			ResourceEnum resourceEnum = callerTradeRow->resourceEnum;
+			
+			UVerticalBox* cardBox = isChoosingLeftResource ? LeftTradeResourceRows : LeftResourceValueBox;
+			for (int32 i = cardBox->GetChildrenCount(); i-- > 0;) {
+				auto tradeRow = CastChecked<UTradeDealResourceRow>(cardBox->GetChildAt(i));
+				if (tradeRow->resourceEnum == resourceEnum) {
+					cardBox->RemoveChildAt(i);
+					break;
+				}
+			}
+		}
+		
+		else if (callbackEnum == CallbackEnum::AddTradeDealCard)
+		{
+			auto selectedCardButton = CastChecked<UBuildingPlacementButton>(punWidgetCaller);
+			
+			AddTradeDealCard(isChoosingLeftCards, selectedCardButton->cardStatus.cardEnum, 1);
+
+			CloseCardChooseOverlay();
+		}
+		else if (callbackEnum == CallbackEnum::RemoveTradeDealCard)
+		{
+			auto selectedCardButton = CastChecked<UBuildingPlacementButton>(punWidgetCaller);
+			bool isLeftCard = selectedCardButton->cardHandIndex;
+			CardEnum cardEnum = selectedCardButton->cardStatus.cardEnum;
+
+			UWrapBox* cardBox = isLeftCard ? LeftCardBox : RightCardBox;
+			for (int32 i = cardBox->GetChildrenCount(); i-- > 0;) {
+				auto cardButton = CastChecked<UBuildingPlacementButton>(cardBox->GetChildAt(i));
+				if (cardButton->cardStatus.cardEnum == cardEnum) {
+					cardBox->RemoveChildAt(i);
+					break;
+				}
+			}
 		}
 	}
+
+	void AddTradeDealResource(bool isLeft, ResourceEnum resourceEnum, int32 resourceCount = 0)
+	{
+		auto tradeRow = AddWidget<UTradeDealResourceRow>(UIEnum::TradeDealResourceRow);
+		tradeRow->ResourcePair->SetResource(resourceEnum, assetLoader());
+		tradeRow->isLeft = isLeft;
+		tradeRow->resourceEnum = resourceEnum;
+		tradeRow->TargetAmount->Set(this, CallbackEnum::UpdateTradeDealResource);
+		tradeRow->TargetAmount->amount = resourceCount;
+		tradeRow->TargetAmount->UpdateText();
+		tradeRow->callbackParent = this;
+
+		UVerticalBox* resourceRows = isLeft ? LeftTradeResourceRows : RightTradeResourceRows;
+		resourceRows->AddChild(tradeRow);
+
+		UVerticalBox* resourceBox = isLeft ? LeftResourceValueBox : RightResourceValueBox;
+		resourceBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	}
+
+	void AddTradeDealCard(bool isLeft, CardEnum cardEnum, int32 stackSize = 1)
+	{
+		UBuildingPlacementButton* cardButton = AddWidget<UBuildingPlacementButton>(UIEnum::CardMini);
+
+		// put isLeft into cardHandIndex
+		cardButton->PunInit(
+			CardStatus(cardEnum, stackSize),
+			isLeft, this, CallbackEnum::RemoveTradeDealCard, CardHandEnum::TradeDealOffer
+		);
+
+		cardButton->RefreshBuildingIcon(dataSource()->assetLoader());
+		cardButton->SetCardStatus(CardHandEnum::TradeDealOffer, false, false, false);
+
+		UWrapBox* cardBox = isLeft ? LeftCardBox : RightCardBox;
+		cardBox->AddChild(cardButton);
+
+		cardBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	}
+
+	
+	
+
+	//UFUNCTION() void OnDropDownChanged(FString sItem, ESelectInfo::Type seltype)
+	//{
+	//	FString resourceName = GiftTypeDropdown->GetSelectedOption();
+	//	if (resourceName.IsEmpty()) {
+	//		return;
+	//	}
+	//	
+	//	if (resourceName == MoneyText.ToString()) {
+	//		GiftIcon->SetBrushFromTexture(assetLoader()->CoinIcon);
+	//	}
+	//	else {
+	//		ResourceEnum resourceEnum = FindResourceEnumByName(ToWString(resourceName));
+	//		GiftIcon->SetBrushFromMaterial(assetLoader()->GetResourceIconMaterial(resourceEnum));
+	//	}
+	//}
 
 	UFUNCTION() void OnClickConfirmButton();
 

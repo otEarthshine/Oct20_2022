@@ -221,7 +221,7 @@ void UPopupUI::ClickPopupButton(int32 choiceIndex)
 	else {
 		// Instant reply for popup that has only 1 choice etc.
 		if (currentPopup.replyReceiver != PopupReceiverEnum::None) {
-			dataSource()->simulation().PopupInstantReply(playerId(), currentPopup.replyReceiver, choiceIndex);
+			dataSource()->simulation().PopupInstantReply(currentPopup, choiceIndex);
 		}
 		
 		dataSource()->simulation().CloseCurrentPopup(playerId());

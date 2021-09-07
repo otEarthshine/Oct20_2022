@@ -1419,7 +1419,7 @@ void TownManager::RecalculateTax(bool showFloatup)
 		incomes100[static_cast<int>(IncomeEnum::TerritoryRevenue)] += territoryRevenue100;
 	}
 
-	std::vector<TradeRoutePair> tradeRoutesTo = _simulation->worldTradeSystem().GetTradeRoutesTo(townHallId);
+	std::vector<TradeRoutePair> tradeRoutesTo = _simulation->worldTradeSystem().GetTradeRoutesTo(_townId);
 	int32 tradeClusterTotalPopulation = 0;
 	for (const TradeRoutePair& route : tradeRoutesTo) 
 	{

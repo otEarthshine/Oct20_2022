@@ -496,7 +496,7 @@ public:
 
 		_didSetWalkable = true;
 	}
-	WorldTile2 gateTile() override {
+	WorldTile2 gateTile() const override {
 		WorldTile2 rotatedTile = WorldTile2::RotateTileVector(WorldTile2(-7, 5), _faceDirection);
 		return rotatedTile + _centerTile;
 	}

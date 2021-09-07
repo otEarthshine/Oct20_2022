@@ -222,23 +222,23 @@ void Building::FinishConstruction()
 	}
 
 	// Tribe
-	if (_buildingEnum == CardEnum::RegionTribalVillage)
-	{
-		int32 provinceId = _simulation->GetProvinceIdClean(centerTile());
-		if (_simulation->IsProvinceValid(provinceId)) 
-		{
-			for (int32 i = 0; i < 5; i++) {
-				WorldTile2 spawnTile = _simulation->GetProvinceRandomTile(provinceId, gateTile(), 1, false, 10);
-				if (spawnTile.isValid()) {
-					int32 ageTicks = GameRand::Rand() % GetUnitInfo(UnitEnum::WildMan).maxAgeTicks;
-					int32 newBornId = _simulation->AddUnit(UnitEnum::WildMan, GameInfo::PlayerIdNone, spawnTile.worldAtom2(), ageTicks);
-					_simulation->unitAI(newBornId).SetHouseId(buildingId());
-					
-					PUN_LOG("Wildman Born Village id:%d bldId:%d bldTile:%s", newBornId, buildingId(), *centerTile().To_FString());
-				}
-			}
-		}
-	}
+	//if (_buildingEnum == CardEnum::RegionTribalVillage)
+	//{
+	//	int32 provinceId = _simulation->GetProvinceIdClean(centerTile());
+	//	if (_simulation->IsProvinceValid(provinceId)) 
+	//	{
+	//		for (int32 i = 0; i < 5; i++) {
+	//			WorldTile2 spawnTile = _simulation->GetProvinceRandomTile(provinceId, gateTile(), 1, false, 10);
+	//			if (spawnTile.isValid()) {
+	//				int32 ageTicks = GameRand::Rand() % GetUnitInfo(UnitEnum::WildMan).maxAgeTicks;
+	//				int32 newBornId = _simulation->AddUnit(UnitEnum::WildMan, GameInfo::PlayerIdNone, spawnTile.worldAtom2(), ageTicks);
+	//				_simulation->unitAI(newBornId).SetHouseId(buildingId());
+	//				
+	//				PUN_LOG("Wildman Born Village id:%d bldId:%d bldTile:%s", newBornId, buildingId(), *centerTile().To_FString());
+	//			}
+	//		}
+	//	}
+	//}
 
 
 	
@@ -385,11 +385,14 @@ void Building::Deinit()
 	}
 
 	// Despawn all resource holders
-	ResourceSystem& resourceSys = resourceSystem();
-	for (auto& info : _holderInfos) {
-		resourceSys.DespawnHolder(info);
+	if (_holderInfos.size() > 0)
+	{
+		ResourceSystem& resourceSys = resourceSystem();
+		for (auto& info : _holderInfos) {
+			resourceSys.DespawnHolder(info);
+		}
+		_holderInfos.clear();
 	}
-	_holderInfos.clear();
 
 	// Jobs
 	// This is shared for all buildings for simplicity...
@@ -1558,7 +1561,7 @@ BuildingUpgrade Building::MakeEraUpgrade(int32 startEra)
 			case 1: return ResourceEnum::Brick;
 			case 2: return ResourceEnum::Glass;
 			case 3: return ResourceEnum::Concrete;
-			case 4: default: return ResourceEnum::SteelBeam;
+			case 4: default: return ResourceEnum::Steel;
 			}
 		};
 		int32 scaledBaseResourceCostMoney = buildingInfo().resourceInfo.ApplyUpgradeCostMultipliers(baseResourceCostMoney, upgradeCount);

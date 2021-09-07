@@ -1595,8 +1595,8 @@ int32 PunTerrainGenerator::GetFertilityPercent(WorldTile2 tile)
 		}
 
 		// nearby
-		int32 provinceTownId = _simulation->provinceOwnerTown(provinceId);
-		if (provinceTownId != -1)
+		int32 provinceTownId = _simulation->provinceOwnerTown_Major(provinceId);
+		if (IsValidMajorTown(provinceTownId))
 		{
 			const std::vector<int32>& buildingIds = _simulation->buildingIds(provinceTownId, CardEnum::IrrigationReservoir);
 			for (int32 buildingId: buildingIds)

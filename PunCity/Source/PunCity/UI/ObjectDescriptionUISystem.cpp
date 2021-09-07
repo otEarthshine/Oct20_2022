@@ -648,6 +648,62 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					FText::Format(LOCTEXT("TribeName", "{0} tribe"), GenerateTribeName(objectId))
 				);
 			}
+			else if (buildingEnum == CardEnum::MinorCity ||
+					buildingEnum == CardEnum::MinorCityPort)
+			{
+				int32 minorCityId;
+				if (buildingEnum == CardEnum::MinorCity) {
+					minorCityId = objectId;
+				} else {
+					minorCityId = building.subclass<MinorCityChild>().parentId();
+				}
+
+				int32 townId = building.townId();
+				MinorCity& minorCityBld = sim.building<MinorCity>(sim.GetTownhallId(townId));
+				
+				if (minorCityBld.minorCityLevel() == 1) {
+					_objectDescriptionUI->DescriptionPunBox->AddWGT_ObjectFocus_Title(
+						FText::Format(LOCTEXT("TribeName", "{0} tribe"), sim.townNameT(townId))
+					);
+				}
+				else {
+					_objectDescriptionUI->DescriptionPunBox->AddWGT_ObjectFocus_Title(
+						FText::Format(LOCTEXT("TribeName", "{0} (minor town)"), sim.townNameT(townId))
+					);
+				}
+
+				focusBox->AddRichText(FText::Format(INVTEXT("Level {0}"), minorCityBld.minorCityLevel()));
+
+#if !UE_BUILD_SHIPPING
+				//if (PunSettings::IsOn("DebugFocusUI")) {
+					focusBox->AddRichText(FText::Format(INVTEXT("TownId {0}"), townId));
+				//}
+#endif			
+
+				TownManagerBase* townManagerBase = sim.townManagerBase(townId);
+				focusBox->AddRichText(FText::Format(INVTEXT("TownhallId {0}"), townManagerBase->townHallId));
+
+				std::vector<AutoTradeElement>& autoExportElements = townManagerBase->autoExportElements();
+				for (AutoTradeElement& element : autoExportElements) {
+					focusBox->AddRichText(FText::Format(INVTEXT("Export {0}({1}) {2}"), 
+						TEXT_NUM(element.calculatedFulfillmentLeft()), 
+						TEXT_NUM(element.calculatedTradeAmountNextRound), 
+						ResourceNameT(element.resourceEnum))
+					);
+				}
+
+				std::vector<AutoTradeElement>& autoImportElements = townManagerBase->autoImportElements();
+				for (AutoTradeElement& element : autoImportElements) {
+					focusBox->AddRichText(FText::Format(INVTEXT("Import {0}({1}) {2}"), 
+						TEXT_NUM(element.calculatedFulfillmentLeft()),
+						TEXT_NUM(element.calculatedTradeAmountNextRound),
+						ResourceNameT(element.resourceEnum))
+					);
+				}
+
+				focusBox->AddRichText(FText::Format(INVTEXT("villagers: {0}"), minorCityBld.occupantCount()));
+			}
+			
 			else if (buildingEnum == CardEnum::Townhall) {
 				_objectDescriptionUI->DescriptionPunBox->AddWGT_ObjectFocus_Title(
 					FText::Format(LOCTEXT("Townhall Title", "Townhall Lv {0}"), TEXT_NUM(building.subclass<TownHall>().townhallLvl)),
@@ -2719,12 +2775,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								cardButton->cardAnimationOrigin = cards[i].lastPosition();
 								cardButton->cardAnimationStartTime = cards[i].animationStartTime100 / 100.0f; // Animation start time is when FUseCard arrived
 
-								SetChildHUD(cardButton);
+								//SetChildHUD(cardButton);
 
 								cardButton->RefreshBuildingIcon(dataSource()->assetLoader());
 								cardButton->SetCardStatus(CardHandEnum::CardSlots, false, false, IsRareCard(cardEnum));
 
-								cardButton->SellButton->SetVisibility(ESlateVisibility::Collapsed);
+								//cardButton->SellButton->SetVisibility(ESlateVisibility::Collapsed);
 
 								_objectDescriptionUI->CardSlots->AddChild(cardButton);
 							}
@@ -2866,6 +2922,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								dataSource()->ShowDeliveryArrow(displayLocation, displayLocationScope, true, true);
 							}
 						}
+					}
+					else if (building.isEnum(CardEnum::MinorCity)) {
+						// Don't do anything for minor City
 					}
 					// Special case: Job Buildings
 					else if (building.isConstructed() && 
@@ -3023,7 +3082,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								else if (resourceEnum == ResourceEnum::Paper) { showResourceText("Paper"); }
 								else if (resourceEnum == ResourceEnum::Glass) { showResourceText("Glass"); }
 								else if (resourceEnum == ResourceEnum::Concrete) { showResourceText("Concrete"); }
-								else if (resourceEnum == ResourceEnum::SteelBeam) { showResourceText("SteelBeam"); }
+								else if (resourceEnum == ResourceEnum::Steel) { showResourceText("SteelBeam"); }
 								else {
 									PUN_CHECK(resourceEnum == ResourceEnum::None);
 									
@@ -3170,7 +3229,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 			if (unit.townId() != -1) 
 			{
-				focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Player", "Player"), sim.playerNameT(unit.playerId()), nullptr);
+				if (unit.playerId() != -1) {
+					focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Player", "Player"), sim.playerNameT(unit.playerId()), nullptr);
+				}
 				focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("City", "City"), sim.townNameT(unit.townId()), nullptr);
 				
 				focusBox->AddLineSpacer();
@@ -4014,7 +4075,7 @@ void UObjectDescriptionUISystem::AddSelectStartLocationButton(int32 provinceId, 
 		
 		bool canClaim = true;
 
-		if (simulation().provinceOwnerTown(provinceId) != -1) {
+		if (simulation().provinceOwnerTown_Major(provinceId) != -1) {
 			descriptionBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Already has owner.", "Already has owner.")));
 			canClaim = false;
 		}
@@ -4103,9 +4164,9 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 			}
 
 			// Claim by influence
-			if (simulation().unlockedInfluence(playerId()))
+			if (sim.unlockedInfluence(playerId()))
 			{
-				bool canClaim = simulation().influence(playerId()) >= provincePrice;
+				bool canClaim = sim.influence(playerId()) >= provincePrice;
 
 				TArray<FText> args;
 				AppendClaimConnectionString(args, false, claimConnectionEnum);
@@ -4118,14 +4179,33 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 			// Claim by money
 			{
 				int32 provincePriceMoney = provincePrice * GameConstants::ClaimProvinceByMoneyMultiplier;
-				bool canClaim = simulation().moneyCap32(playerId()) >= provincePriceMoney;
+				bool canClaim = sim.moneyCap32(playerId()) >= provincePriceMoney;
 
 				TArray<FText> args;
 				AppendClaimConnectionString(args, false, claimConnectionEnum);
-				ADDTEXT_(INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(FText::AsNumber(provincePriceMoney), !canClaim));
+				ADDTEXT_(INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(TEXT_NUM(provincePriceMoney), !canClaim));
 
 				descriptionBox->AddSpacer();
-				descriptionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::ClaimLandMoney, canClaim, false, provinceId);
+				UPunButton* button = descriptionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::ClaimLandMoney, canClaim, false, provinceId);
+
+				{
+					// Tip
+					args.Empty();
+					int32 claimPrice = sim.GetProvinceBaseClaimPrice(provinceId);
+					args.Add(FText::Format(LOCTEXT("ClaimByMoneyButton_Tip", "<img id=\"Coin\"/>{0} base"), TEXT_NUM(claimPrice)));
+					
+					std::vector<BonusPair> pairs = sim.GetProvinceClaimPriceStructure(provinceId, playerId(), claimConnectionEnum, claimPrice);
+
+					for (const BonusPair& pair : pairs) {
+						args.Add(FText::Format(INVTEXT("\n  +<img id=\"Coin\"/>{0} {1}"), TEXT_100(pair.value), pair.name));
+					}
+					// Double with money claim
+					args.Add(FText::Format(LOCTEXT("Claim by money", "\n  +<img id=\"Coin\"/>{0} claim by money (x2)"), TEXT_NUM(provincePrice)));
+
+					args.Add(FText::Format(LOCTEXT("ClaimByMoneyButton_Tip", "\nTotal: {0}<img id=\"Coin\"/>"), TEXT_NUM(provincePriceMoney)));
+					
+					AddToolTip(button, JOINTEXT(args));
+				}
 			}
 
 			// Claim by food

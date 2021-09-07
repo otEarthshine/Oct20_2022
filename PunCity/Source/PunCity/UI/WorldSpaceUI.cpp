@@ -1018,7 +1018,7 @@ void UWorldSpaceUI::TickUnits()
 			unitLists.ExecuteRegion(WorldRegion2(sampleRegionId), [&](int32_t unitId) {
 				UnitStateAI& unitAI = data->GetUnitStateAI(unitId);
 				int32 townId = unitAI.townId();
-				if (townId != -1) {
+				if (IsValidMajorTown(townId)) {
 					townIdToUnitIdsToDisplay[townId].push_back(unitId);
 				}
 			});

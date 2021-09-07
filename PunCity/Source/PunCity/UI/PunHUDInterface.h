@@ -51,7 +51,7 @@ public:
 	virtual void OpenTargetConfirmUI_IntercityTrade(int32 townhallId, ResourceEnum resourceEnum) = 0;
 
 	virtual void OpenSendImmigrantsUI(int32 townIdIn) = 0;
-	virtual void OpenGiftUI(int32 targetPlayerId) = 0;
+	virtual void OpenGiftUI(int32 sourcePlayerIdIn, int32 targetTownIdIn, TradeDealStageEnum dealStageEnumIn) = 0;
 	virtual void OpenDiplomacyUI(int32 targetPlayerId) = 0;
 	virtual void OpenTrainUnitsUI(int32 townIdIn) = 0;
 

@@ -13,7 +13,8 @@
 
 #include "Building.h"
 #include "ProvinceSystem.h"
-#include "GameRegionSystem.h"
+#include "ProvinceInfoSystem.h"
+#include "WorldTradeSystem.h"
 
 
 using namespace std;
@@ -203,18 +204,240 @@ struct AutoTradeElement
 class TownManagerBase
 {
 public:
-
 	int32 _playerId = -1;
 	int32 _townId = -1;
 	int32 townHallId = -1;
+
+	static const int32 BaseAutoTradeFeePercent = 40;
+
+	bool isValid() { return _townId != -1; }
 
 	TownManagerBase(int32 playerId, int32 townId, IGameSimulationCore* simulation) :
 		_playerId(playerId),
 		_townId(townId),
 		_simulation(simulation)
-	{}
-	
+	{
 
+	}
+
+	virtual ~TownManagerBase() {}
+
+	/*
+	 * Auto Trade
+	 */
+
+	std::vector<AutoTradeElement>& autoExportElements() { return _autoExportElements; }
+	std::vector<AutoTradeElement>& autoImportElements() { return _autoImportElements; }
+
+	void InitAutoTrade(int32 provinceId)
+	{
+		GeoresourceEnum georesourceEnum = _simulation->georesource(provinceId).georesourceEnum;
+
+		AutoTradeElement element;
+		int32 tradeAmount = 100;
+		element.targetInventory = tradeAmount;
+		element.maxTradeAmount = tradeAmount;
+		element.calculatedTradeAmountNextRound = tradeAmount;
+
+		// Usually export food, fuel, raw material
+		{
+			ResourceEnum chosenResourceEnum;
+			
+			if (georesourceEnum != GeoresourceEnum::None) {
+				chosenResourceEnum = GeoresourceEnumToResourceEnum(georesourceEnum);
+			}
+			else {
+				std::vector<ResourceEnum> exportEnums = FoodEnums_Input;
+				exportEnums.push_back(ResourceEnum::Coal);
+				exportEnums.push_back(ResourceEnum::Wood);
+				exportEnums.push_back(ResourceEnum::Stone);
+				exportEnums.push_back(ResourceEnum::Clay);
+				chosenResourceEnum = exportEnums[GameRand::Rand() % exportEnums.size()];
+			}
+
+			element.isImport = false;
+			element.resourceEnum = chosenResourceEnum;
+
+			_autoExportElements.push_back(element);
+		}
+
+		
+
+		// Usually import processed luxury
+		{
+			std::vector<ResourceEnum> importEnums = {
+				ResourceEnum::Beer,
+				ResourceEnum::Furniture,
+				ResourceEnum::Pottery,
+			};
+
+			element.isImport = true;
+			element.resourceEnum = importEnums[GameRand::Rand() % importEnums.size()];
+			
+			_autoImportElements.push_back(element);
+		}
+	}
+
+	int32 lastRoundAutoTradeProfit() { return _lastRoundAutoTradeProfit; }
+	void SetLastRoundAutoTradeProfit(int32 lastRoundAutoTradeProfit) {
+		_lastRoundAutoTradeProfit = lastRoundAutoTradeProfit;
+	}
+
+	void CalculateAutoTradeProfit(
+		int32& exportMoneyTotal,
+		int32& importMoneyTotal,
+		int32& feeTotal,
+		int32& feeDiscountTotal,
+		TArray<FText>& exportTooltipText,
+		TArray<FText>& importTooltipText,
+		TArray<FText>& feeTooltipText,
+		TArray<FText>& feeDiscountTooltipText,
+		bool shouldFillTipText)
+	{
+		auto& worldTradeSys = _simulation->worldTradeSystem();
+
+		const std::vector<AutoTradeElement>& autoExportElements = _autoExportElements;
+		const std::vector<AutoTradeElement>& autoImportElements = _autoImportElements;
+
+		// Check all Trade Route to find any fee discount
+		// - Do this separately with TradeRoutePair so we can show which TradeRoute is giving the discount
+
+		auto addResource = [&](std::vector<ResourcePair>& vec, ResourcePair pair)
+		{
+			for (int32 i = 0; i < vec.size(); i++) {
+				if (vec[i].resourceEnum == pair.resourceEnum) {
+					vec[i].count += pair.count;
+					return;
+				}
+			}
+			vec.push_back(pair);
+		};
+
+		auto findDirectResource = [&](std::vector<ResourcePair>& vec, ResourceEnum resourceEnum) {
+			for (int32 i = 0; i < vec.size(); i++) {
+				if (vec[i].resourceEnum == resourceEnum) {
+					return vec[i].count;
+				}
+			}
+			return 0;
+		};
+
+		const int32 feePercent = 40; // TODO: allow people to manipulate this by building more Trading Company etc.
+
+
+		std::vector<ResourcePair> directExportResources;
+		std::vector<ResourcePair> directImportResources;
+
+		//! fill directExport/ImportResources
+		//! fee tooltip text
+		const std::vector<TradeRoutePair>& tradeRoutePairs = worldTradeSys.tradeRoutePairs();
+		for (const TradeRoutePair& tradeRoutePair : tradeRoutePairs)
+		{
+			if (tradeRoutePair.HasTownId(_townId))
+			{
+				for (const TradeRouteResourcePair& tradeResourcePair : tradeRoutePair.tradeResources)
+				{
+					bool isExport = (tradeRoutePair.townId1 == _townId && tradeResourcePair.isTown1ToTown2) ||
+						(tradeRoutePair.townId2 == _townId && !tradeResourcePair.isTown1ToTown2);
+
+					ResourcePair pair = tradeResourcePair.resourcePair;
+
+					if (isExport) {
+						addResource(directExportResources, pair);
+					}
+					else {
+						addResource(directImportResources, pair);
+					}
+
+					// feeDiscountTooltipText
+					if (shouldFillTipText)
+					{
+						int32 feeDiscount = pair.count * worldTradeSys.price100(pair.resourceEnum) * feePercent / 100;
+						if (feeDiscount > 0) {
+							FText mainText = isExport ?
+								NSLOCTEXT("AutoTradeUI", "feeDiscountTooltipText_Export", "\n  {0}<img id=\"Coin\"/> export {1} {2} to {3}") :
+								NSLOCTEXT("AutoTradeUI", "feeDiscountTooltipText_Import", "\n  {0}<img id=\"Coin\"/> import {1} {2} from {3}");
+
+							feeDiscountTooltipText.Add(FText::Format(
+								mainText,
+								TEXT_100(feeDiscount),
+								TEXT_NUM(pair.count),
+								GetResourceInfo(pair.resourceEnum).name,
+								_simulation->townNameT(_townId)
+							));
+						}
+					}
+				}
+			}
+		}
+
+
+		for (const AutoTradeElement& exportElement : autoExportElements)
+		{
+			int32 price100 = worldTradeSys.price100(exportElement.resourceEnum);
+			int32 exportMoney = exportElement.calculatedTradeAmountNextRound * price100;
+
+			FText resourceName = GetResourceInfo(exportElement.resourceEnum).GetName();
+
+			exportMoneyTotal += exportMoney;
+
+
+			int32 directTradeAmount = findDirectResource(directExportResources, exportElement.resourceEnum);
+
+			int32 feeDiscount = directTradeAmount * price100 * feePercent / 100;
+			int32 fee = exportMoney - feeDiscount;
+
+			feeDiscountTotal += feeDiscount;
+			feeTotal += fee;
+
+			if (shouldFillTipText)
+			{
+				exportTooltipText.Add(FText::Format(
+					NSLOCTEXT("AutoTradeUI", "exportTooltipText_Elem", "  {0}<img id=\"Coin\"/> {1}\n"), TEXT_100(exportMoney), resourceName
+				));
+
+				if (fee > 0) {
+					feeTooltipText.Add(FText::Format(
+						NSLOCTEXT("AutoTradeUI", "exportFeeTooltipText_Elem", "  {0}<img id=\"Coin\"/> {1} export\n"), TEXT_100(fee), resourceName
+					));
+				}
+			}
+		}
+
+		for (const AutoTradeElement& importElement : autoImportElements)
+		{
+			int32 price100 = worldTradeSys.price100(importElement.resourceEnum);
+			int32 importMoney = importElement.calculatedTradeAmountNextRound * price100;
+
+			FText resourceName = GetResourceInfo(importElement.resourceEnum).GetName();
+
+			importMoneyTotal += importMoney;
+
+			int32 directTradeAmount = findDirectResource(directImportResources, importElement.resourceEnum);
+
+			int32 feeDiscount = directTradeAmount * price100 * feePercent / 100;
+			int32 fee = (importMoney * feePercent / 100) - feeDiscount;
+
+			feeDiscountTotal += feeDiscount;
+			feeTotal += fee;
+
+			if (shouldFillTipText)
+			{
+				importTooltipText.Add(FText::Format(
+					NSLOCTEXT("AutoTradeUI", "importTooltipText_Elem", "  {0}<img id=\"Coin\"/> {1}\n"), TEXT_100(importMoney), resourceName
+				));
+
+				if (fee > 0) {
+					feeTooltipText.Add(FText::Format(
+						NSLOCTEXT("AutoTradeUI", "importFeeTooltipText_Elem", "  {0}<img id=\"Coin\"/> {1} import\n"), TEXT_100(fee), resourceName
+					));
+				}
+			}
+		}
+
+	}
+	
+	
 	/*
 	 * Claim Province
 	 */
@@ -262,15 +485,21 @@ public:
 		Ar << townHallId;
 
 		SerializeVecValue(Ar, _provincesClaimed);
-	}
 
-	static const int32 MinorTownShift = 10000;
-	static bool IsMinorTownId(int32 townId) {
-		return townId >= MinorTownShift;
+		SerializeVecValue(Ar, _autoExportElements);
+		SerializeVecValue(Ar, _autoImportElements);
+
+		Ar << _lastRoundAutoTradeProfit;
 	}
 
 protected:
 	std::vector<int32> _provincesClaimed;
+
+	// Auto Trade
+	std::vector<AutoTradeElement> _autoExportElements;
+	std::vector<AutoTradeElement> _autoImportElements;
+
+	int32 _lastRoundAutoTradeProfit = 0;
 
 	/*
 	 * Non-Serialize
@@ -955,9 +1184,6 @@ public:
 		}
 	}
 
-	std::vector<AutoTradeElement>& autoExportElements() { return _autoExportElements; }
-	std::vector<AutoTradeElement>& autoImportElements() { return _autoImportElements; }
-
 	int32 GetMaxAutoTradeAmount();
 
 	void CalculateAutoTradeAmountNextRound() {
@@ -1167,7 +1393,7 @@ private:
 						connection.tileType == TerrainTileType::None)
 					{
 						// If this province is claimed by us
-						if (_simulation->provinceOwnerTown(connection.provinceId) == _townId)
+						if (_simulation->provinceOwnerTown_Major(connection.provinceId) == _townId)
 						{
 							// Set the provincesFromTownhall if needed
 							for (int32 i = 0; i < _provincesClaimed.size(); i++) {
@@ -1302,9 +1528,6 @@ public:
 		
 		SerializeVecValue(Ar, _trainUnitsQueue);
 		Ar << _trainUnitsTicks100;
-
-		SerializeVecValue(Ar, _autoExportElements);
-		SerializeVecValue(Ar, _autoImportElements);
 		
 		Ar << _electricityProductionCapacity;
 		Ar << _electricityConsumption;
@@ -1393,9 +1616,6 @@ private:
 	int32 _trainUnitsTicks100 = 0;
 
 
-	// Auto Trade
-	std::vector<AutoTradeElement> _autoExportElements;
-	std::vector<AutoTradeElement> _autoImportElements;
 
 	int32 _electricityProductionCapacity = 0;
 	int32 _electricityConsumption = 0;

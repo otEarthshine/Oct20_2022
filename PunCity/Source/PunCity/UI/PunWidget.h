@@ -123,9 +123,11 @@ public:
 
 	UToolTipWidgetBase* AddToolTip(UWidget* widget);
 	UToolTipWidgetBase* AddToolTip(UWidget* widget, FText message);
-	UToolTipWidgetBase* AddToolTip(UWidget* widget, TArray<FText>& args) {
+	UToolTipWidgetBase* AddToolTip(UWidget* widget, TArray<FText>& args, bool emptyArgs = true) {
 		auto tooltip = AddToolTip(widget, FText::Join(FText(), args));
-		args.Empty();
+		if (emptyArgs) {
+			args.Empty();
+		}
 		return tooltip;
 	}
 	

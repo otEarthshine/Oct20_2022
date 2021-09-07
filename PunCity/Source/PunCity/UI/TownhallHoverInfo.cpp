@@ -150,6 +150,7 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 			GiftButton->SetVisibility(ESlateVisibility::Visible);
 			TradeButton->SetVisibility(ESlateVisibility::Visible);
 			BUTTON_ON_CLICK(GiftButton, this, &UTownhallHoverInfo::OnClickGiftButton);
+			BUTTON_ON_CLICK(TradeButton, this, &UTownhallHoverInfo::OnClickTradeDealButton);
 
 			// Diplomacy
 			DiplomacyButton->SetVisibility(ESlateVisibility::Visible);

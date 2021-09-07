@@ -108,6 +108,7 @@ static TArray<FText> RelationshipModifierName
 	LOCTEXT("RelationStrong", "You are strong"),
 	LOCTEXT("RelationBefriended", "You befriended us"),
 	LOCTEXT("RelationFamily", "We are family"),
+	LOCTEXT("RelationGoodTradeDeal", "Good Trade Deal"),
 
 	LOCTEXT("RelationAdjacentBorders", "Adjacent borders spark tensions"),
 	LOCTEXT("RelationProximity", "Townhalls proximity spark tensions"),
@@ -195,9 +196,6 @@ void AppendClaimConnectionString(TArray<FText>& args, bool isConquering, ClaimCo
 	
 	if (claimConnectionEnum == ClaimConnectionEnum::ShallowWater) {
 		ADDTEXT_LOCTEXT("shallow_water", " (shallow water)");
-	}
-	else if (claimConnectionEnum == ClaimConnectionEnum::Deepwater) {
-		ADDTEXT_LOCTEXT("oversea", " (oversea)");
 	}
 }
 

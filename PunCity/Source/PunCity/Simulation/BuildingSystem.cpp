@@ -314,7 +314,8 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		  CASE_BUILDING(CardEnum::RegionPort, Building);
 		  CASE_BUILDING(CardEnum::RegionCrates, Building);
 
-		  CASE_BUILDING(CardEnum::MinorCity, Building);
+		  CASE_BUILDING(CardEnum::MinorCity, MinorCity);
+		  CASE_BUILDING(CardEnum::MinorCityPort, MinorCityChild);
 
 		  CASE_BUILDING(CardEnum::ConsultingFirm, Building);
 		  CASE_BUILDING(CardEnum::ImmigrationPropagandaOffice, Building);
@@ -337,7 +338,7 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 }
 
 int BuildingSystem::AddBuilding(FPlaceBuilding parameters)
-{
+{	
 	// Special case: Colony turn into townhall
 	if (IsTownPlacement(static_cast<CardEnum>(parameters.buildingEnum))) {
 		parameters.buildingEnum = static_cast<uint8>(CardEnum::Townhall);
@@ -369,6 +370,12 @@ int BuildingSystem::AddBuilding(FPlaceBuilding parameters)
 			return -1;
 		}
 	}
+	else
+	{
+		if (parameters.townId != -1) {
+			townId = parameters.townId;
+		}
+	}
 
 	//if (parameters.playerId != -1 && buildingEnum != CardEnum::DirtRoad) {
 	//	//PUN_LOG("parameters.area after %s", *ToFString(parameters.area.ToString()));
@@ -392,7 +399,10 @@ int BuildingSystem::AddBuilding(FPlaceBuilding parameters)
 	int32 buildingId = _buildings.size() - 1;
 	TileArea area = parameters.area;
 
-	_townIdPlus1ToEnumToBuildingIds[townId + 1][static_cast<int>(buildingEnum)].push_back(buildingId);
+	if (IsValidMajorTown(townId)) {
+		_townIdPlus1ToEnumToBuildingIds[townId + 1][static_cast<int>(buildingEnum)].push_back(buildingId);
+	}
+	
 	_isBuildingIdConnected.push_back(-1);
 
 	// Special cases:
@@ -426,6 +436,10 @@ int BuildingSystem::AddBuilding(FPlaceBuilding parameters)
 
 	// Should CheckAdjacency after placing it on world map
 	building->CheckAdjacency();
+
+
+
+	PUN_LOG("AddBuilding enum:%d buildingId:%d", parameters.buildingEnum, buildingId);
 
 	return buildingId;
 }
@@ -559,8 +573,10 @@ void BuildingSystem::RemoveBuilding(int buildingId)
 	else {
 		_buildingSubregionList.Remove(centerTile, buildingId);
 	}
-	
-	CppUtils::Remove(_townIdPlus1ToEnumToBuildingIds[townId + 1][static_cast<int>(buildingEnum)], buildingId);
+
+	if (IsValidMajorTown(townId)) {
+		CppUtils::Remove(_townIdPlus1ToEnumToBuildingIds[townId + 1][static_cast<int>(buildingEnum)], buildingId);
+	}
 	_alive[buildingId] = false;
 
 	// Reset display/UI

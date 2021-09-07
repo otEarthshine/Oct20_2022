@@ -152,6 +152,8 @@ enum class UIEnum
 	DamageFloatup,
 
 	PunMidRowText,
+	TradeDealResourceRow,
+	
 
 	WGT_Button,
 

@@ -1109,7 +1109,7 @@ enum class ResourceEnum : uint8
 	
 	Glass,
 	Concrete,
-	SteelBeam,
+	Steel,
 
 	Glassware,
 	PocketWatch,
@@ -1296,7 +1296,7 @@ static const ResourceInfo ResourceInfos[]
 	
 	ResourceInfo(ResourceEnum::Glass,		LOCTEXT("Glass", "Glass"),	30, LOCTEXT("Glass Desc", "Transparent construction material made from Sand")),
 	ResourceInfo(ResourceEnum::Concrete,	LOCTEXT("Concrete", "Concrete"),	30, LOCTEXT("Concrete Desc", "Sturdy, versatile construction material")),
-	ResourceInfo(ResourceEnum::SteelBeam,	LOCTEXT("Steel Beam", "Steel Beam"), 50, LOCTEXT("Steel Beam Desc", "Sturdy, versatile construction material")),
+	ResourceInfo(ResourceEnum::Steel,	LOCTEXT("Steel", "Steel"), 50, LOCTEXT("Steel Desc", "Sturdy, versatile construction material")),
 
 	ResourceInfo(ResourceEnum::Glassware,	LOCTEXT("Glassware", "Glassware"),	30, LOCTEXT("Glassware Desc", "Beautiful liquid container made from Glass. (Luxury tier 2)")),
 	ResourceInfo(ResourceEnum::PocketWatch,		LOCTEXT("Pocket Watch", "Pocket Watch"),	75, LOCTEXT("Pocket Watch Desc", "Elegant timepiece crafted by Clockmakers. (Luxury tier 3)")),
@@ -1420,6 +1420,8 @@ static const std::vector<ResourceEnum> FoodEnums_NonInput
 	ResourceEnum::GameMeat,
 	ResourceEnum::Beef,
 	ResourceEnum::Lamb,
+
+	ResourceEnum::Melon,
 };
 
 static const std::vector<ResourceEnum> FoodEnums_Input
@@ -1432,7 +1434,6 @@ static const std::vector<ResourceEnum> FoodEnums_Input
 	ResourceEnum::Grape,
 
 	ResourceEnum::Blueberries,
-	ResourceEnum::Melon,
 	ResourceEnum::Pumpkin,
 	ResourceEnum::Potato,
 };
@@ -1582,7 +1583,7 @@ static const ResourceEnum ConstructionResources[] = {
 	ResourceEnum::Brick,
 	ResourceEnum::Glass,
 	ResourceEnum::Concrete,
-	ResourceEnum::SteelBeam,
+	ResourceEnum::Steel,
 };
 static const int32 ConstructionResourceCount = _countof(ConstructionResources);
 
@@ -2237,6 +2238,7 @@ enum class CardEnum : uint16
 
 	// Aug 25
 	MinorCity,
+	MinorCityPort,
 	//MinorPortCity,
 	//GuildWarrior,
 	//GuildAssassin,
@@ -2463,6 +2465,9 @@ enum class CardHandEnum : uint8
 	ConverterHand,
 	RareHand,
 	TrainUnits,
+	
+	TradeDealSelect,
+	TradeDealOffer,
 
 	None,
 };
@@ -3453,8 +3458,8 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::IndustrialIronSmelter, _LOCTEXT("Industrial Iron Smelter", "Industrial Iron Smelter"), LOCTEXT("Industrial Iron Smelter (Plural)", "Industrial Iron Smelters"), LOCTEXT("Industrial Iron Smelter Desc", "Produce Iron Bars on the industrial scale."),
 		WorldTile2(10, 14), GetBldResourceInfo(4, { ResourceEnum::IronOre, ResourceEnum::Coal, ResourceEnum::Iron }, { 0, 0, 0, 5, 0 }, 20)
 	),
-	BldInfo(CardEnum::Steelworks, _LOCTEXT("Steelworks", "Steelworks"), LOCTEXT("Steelworks (Plural)", "Steelworks"), LOCTEXT("Steelworks Desc", "Produce Steel Beam from Iron Bars and Coal."),
-		WorldTile2(10, 14), GetBldResourceInfo(4, { ResourceEnum::Iron, ResourceEnum::Coal, ResourceEnum::SteelBeam }, { 0, 0, 0, 5, 0, 5 }, 20)
+	BldInfo(CardEnum::Steelworks, _LOCTEXT("Steelworks", "Steelworks"), LOCTEXT("Steelworks (Plural)", "Steelworks"), LOCTEXT("Steelworks Desc", "Produce Steel from Iron Bars and Coal."),
+		WorldTile2(10, 14), GetBldResourceInfo(4, { ResourceEnum::Iron, ResourceEnum::Coal, ResourceEnum::Steel }, { 0, 0, 0, 5, 0, 5 }, 20)
 	),
 	BldInfo(CardEnum::StoneToolsShop, _LOCTEXT("StoneToolsShop", "Stone Tools Shop"), LOCTEXT("StoneToolsShop (Plural)", "Stone Tools Shops"), LOCTEXT("Stone Tools Shop Desc", "Craft Stone Tools from Stone and Wood."),
 		WorldTile2(4, 6), GetBldResourceInfo(1, { ResourceEnum::Stone, ResourceEnum::Wood, ResourceEnum::StoneTools }, { 1, 1 })
@@ -3569,6 +3574,10 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::MinorCity, _LOCTEXT("Minor City", "Minor City"), LOCTEXT("Minor City (Plural)", "Minor Cities"), LOCTEXT("Minor City Desc", ""),
 		WorldTile2(12, 12), GetBldResourceInfoManual({})
 	),
+	BldInfo(CardEnum::MinorCityPort, _LOCTEXT("Minor City Port", "Minor City Port"), LOCTEXT("Minor City Port (Plural)", "Minor City Ports"), LOCTEXT("Minor City Port Desc", ""),
+		WorldTile2(10, 9), GetBldResourceInfoManual({})
+	),
+
 	
 	// Can no longer pickup cards
 	//BldInfo("Necromancer tower",	WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0,	{30, 30, 0},	"All citizens become zombie minions. Happiness becomes irrelevant. Immigration ceased."),
@@ -4498,6 +4507,7 @@ static bool IsCritterBuildingEnum(CardEnum buildingEnum) {
 
 static const std::vector<CardEnum> RegionalBuildingEnums
 {
+	CardEnum::MinorCity,
 	CardEnum::RegionTribalVillage,
 	CardEnum::RegionShrine,
 	CardEnum::RegionCrates,
@@ -4527,6 +4537,7 @@ static bool IsPortBuilding(CardEnum buildingEnum)
 	case CardEnum::SandMine:
 	case CardEnum::PaperMaker:
 	case CardEnum::TradingPort:
+	case CardEnum::MinorCityPort:
 	case CardEnum::IntercityLogisticsPort:
 		return true;
 	default: return false;
@@ -5455,6 +5466,18 @@ public:
 		UE_DEBUG_BREAK();
 		return 0;
 	}
+	static bool IsLastStep(Direction faceDirection, TileArea area, WorldTile2 tile)
+	{
+		switch (faceDirection)
+		{
+		case Direction::N: return area.minX == tile.x; // Step going -x
+		case Direction::S: return tile.x == area.maxX; // Step going +x
+		case Direction::E: return area.minY == tile.y; // Step going -y
+		case Direction::W: return tile.y == area.maxY; // Step going +y
+		}
+		UE_DEBUG_BREAK();
+		return false;
+	}
 };
 
 class GameInfo
@@ -6148,6 +6171,7 @@ enum class ClaimConnectionEnum : uint8
 {
 	None,
 	Flat,
+	River,
 	ShallowWater,
 	Deepwater,
 };
@@ -7152,7 +7176,9 @@ static FLinearColor PlayerColor2(int32 playerId)
 	\
 	entry(ClearLuxuryTier1) \
 	\
-	entry(AISpyNest)
+	entry(AISpyNest) \
+	\
+	entry(TestAITradeDeal)
 
 #define CREATE_ENUM(name) name,
 #define CREATE_STRINGS(name) #name,
@@ -7502,6 +7528,8 @@ enum class PopupReceiverEnum : uint8
 	EraPopup_IndustrialAge,
 
 	DoneResearchEvent_ShowAllTrees,
+
+	ShowTradeDeal,
 };
 
 struct PopupInfo
@@ -7513,9 +7541,24 @@ struct PopupInfo
 	
 	PopupReceiverEnum replyReceiver = PopupReceiverEnum::None;
 	std::string popupSound;
+	
 	int32 replyVar1;
 	int32 replyVar2;
 	int32 replyVar3;
+	int32 replyVar4;
+	int32 replyVar5;
+	int32 replyVar6;
+	int32 replyVar7;
+	int32 replyVar8;
+
+	TArray<int32> array1;
+	TArray<int32> array2;
+	TArray<int32> array3;
+	TArray<int32> array4;
+	TArray<int32> array5;
+	TArray<int32> array6;
+	TArray<int32> array7;
+	TArray<int32> array8;
 
 	bool forcedNetworking = false;
 	bool forcedSkipNetworking = false;
@@ -7572,6 +7615,20 @@ struct PopupInfo
 		Ar << replyVar1;
 		Ar << replyVar2;
 		Ar << replyVar3;
+		Ar << replyVar4;
+		Ar << replyVar5;
+		Ar << replyVar6;
+		Ar << replyVar7;
+		Ar << replyVar8;
+
+		Ar << array1;
+		Ar << array2;
+		Ar << array3;
+		Ar << array4;
+		Ar << array5;
+		Ar << array6;
+		Ar << array7;
+		Ar << array8;
 
 		Ar << forcedNetworking;
 		//Ar << forcedSkipNetworking;
@@ -8378,6 +8435,30 @@ static bool IsSpecialSeedCard(CardEnum cardEnumIn)
 static bool IsSeedCard(CardEnum cardEnumIn) {
 	return IsCommonSeedCard(cardEnumIn) || IsSpecialSeedCard(cardEnumIn);
 }
+
+static ResourceEnum GeoresourceEnumToResourceEnum(GeoresourceEnum georesourceEnum)
+{
+	if (IsFarmGeoresource(georesourceEnum))
+	{
+		SeedInfo seedInfo = GetSeedInfo(georesourceEnum);
+		check(seedInfo.isValid());
+		return GetTileObjInfo(seedInfo.tileObjEnum).cutDownResourceBase100.resourceEnum;
+	}
+	
+	switch (georesourceEnum)
+	{
+	case GeoresourceEnum::IronOre: return ResourceEnum::IronOre;
+	case GeoresourceEnum::CoalOre: return ResourceEnum::Coal;
+	case GeoresourceEnum::GoldOre: return ResourceEnum::GoldOre;
+	case GeoresourceEnum::Gemstone: return ResourceEnum::Gemstone;
+	case GeoresourceEnum::Oil: return ResourceEnum::Oil;
+		
+	default:
+		UE_DEBUG_BREAK();
+		return ResourceEnum::Wheat;
+	}
+}
+
 
 struct FarmTile
 {
@@ -9200,7 +9281,15 @@ enum class CallbackEnum : uint8
 	// Spy
 	SpyEstablishNest,
 	SpyEnsureAnonymity,
-	
+
+	// TradeDeal
+	AddTradeDealResource,
+	RemoveTradeDealResource,
+	AddTradeDealCard,
+	RemoveTradeDealCard,
+
+	UpdateTradeDealMoney,
+	UpdateTradeDealResource,
 };
 
 static bool IsAutoTradeCallback(CallbackEnum callbackEnum)
@@ -9401,6 +9490,7 @@ enum class RelationshipModifierEnum : uint8
 	YouAreStrong,
 	YouBefriendedUs,
 	WeAreFamily,
+	GoodTradeDeal,
 
 	AdjacentBordersSparkTensions,
 	TownhallProximitySparkTensions,
@@ -9413,6 +9503,26 @@ enum class RelationshipModifierEnum : uint8
 
 FText RelationshipModifierNameInt(int32 index);
 int32 RelationshipModifierCount();
+
+enum class TradeDealStageEnum : uint8
+{
+	None,
+	
+	Gifting,
+	CreateDeal,
+	ExamineDeal,
+	PrepareCounterOfferDeal,
+	ExamineCounterOfferDeal,
+	AcceptDeal,
+};
+
+struct TradeDealSideInfo
+{
+	int32 moneyAmount = 0;
+	std::vector<ResourcePair> resourcePairs;
+	std::vector<CardStatus> cardStatuses;
+};
+
 
 enum class GameSaveChunkEnum : uint8
 {
@@ -9479,6 +9589,19 @@ static int32 GetDefaultAICount(MapSizeEnum mapSizeEnum)
 	}
 }
 
+static const int32 MinorTownShift = 10000;
+static bool IsMinorTown(int32 townId) {
+	return townId >= MinorTownShift;
+}
+static bool IsMajorTown(int32 townId) {
+	return townId < MinorTownShift;
+}
+static bool IsValidMajorTown(int32 townId) {
+	return townId != -1 && townId < MinorTownShift;
+}
+static int32 TownIdToMinorTownId(int32 townId) {
+	return townId - MinorTownShift;
+}
 
 /*
  * Light weight alternative to UE4's FArchive FMemoryReader etc.

@@ -1231,7 +1231,7 @@ public:
 				provinceSys.ExecuteAdjacentProvinces(provinceId, [&](ProvinceConnection connection) 
 				{
 					if (sim.IsProvinceValid(connection.provinceId) &&
-						sim.provinceOwnerTown(connection.provinceId) == -1)
+						sim.provinceOwnerTown_Major(connection.provinceId) == -1)
 					{
 						auto command = SimUtils::MakeCommand<FClaimLand>(playerId());
 						command->provinceId = connection.provinceId;

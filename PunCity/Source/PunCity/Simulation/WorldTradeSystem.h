@@ -36,40 +36,26 @@ struct TradeRouteResourcePair
 struct TradeRoutePair
 {
 	int32 townId1;
-	int32 buildingId1;
-
 	int32 townId2;
-	int32 buildingId2;
 
 	int32 distance;
 
 	std::vector<TradeRouteResourcePair> tradeResources;
 
-	bool HasBuildingId(int32 buildingId) const {
-		return buildingId == buildingId1 ||
-			buildingId == buildingId2;
-	}
-
 	bool HasTownId(int32 townId) const {
-		return townId == townId1 ||
-			townId == townId2;
+		return townId == townId1 || 
+				townId == townId2;
 	}
 
-	int32 GetCounterpartTownId(int32 buildingIdIn) const {
-		if (buildingIdIn == buildingId1) {
-			return townId2;
-		}
-		return townId1;
+	int32 GetCounterpartTownId(int32 townIdIn) const {
+		return townIdIn == townId1 ? townId2 : townId1;
 	}
 	
 
 	//! Serialize
 	FArchive& operator>>(FArchive &Ar) {
 		Ar << townId1;
-		Ar << buildingId1;
-		
 		Ar << townId2;
-		Ar << buildingId2;
 
 		Ar << distance;
 
@@ -79,10 +65,7 @@ struct TradeRoutePair
 
 	bool operator==(const TradeRoutePair& a) const {
 		return townId1 == a.townId1 &&
-			buildingId1 == a.buildingId1 &&
-
-			townId2 == a.townId2 &&
-			buildingId2 == a.buildingId2;
+			townId2 == a.townId2;
 	}
 };
 
@@ -222,24 +205,16 @@ public:
 		});
 	}
 	
-	std::vector<TradeRoutePair> GetTradeRoutesTo(int32 buildingIdIn) {
+	std::vector<TradeRoutePair> GetTradeRoutesTo(int32 townIdIn) {
 		std::vector<TradeRoutePair> routes;
 		for (const TradeRoutePair& route : _tradeRoutePairs) {
-			if (route.HasBuildingId(buildingIdIn)) {
+			if (route.HasTownId(townIdIn)) {
 				routes.push_back(route);
 			}
 		}
 		return routes;
 	}
 
-	void CalculateTradeRouteBuildings(TradeRoutePair& tradeRoutePair) const {
-		if (tradeRoutePair.townId1 != -1) {
-			tradeRoutePair.buildingId1 = _simulation->GetTownhallId(tradeRoutePair.townId1);
-		}
-		if (tradeRoutePair.townId2 != -1) {
-			tradeRoutePair.buildingId2 = _simulation->GetTownhallId(tradeRoutePair.townId2);
-		}
-	}
 	
 	bool HasTradeRoute(const TradeRoutePair& tradeRoutePairIn) const {
 		for (const TradeRoutePair& tradeRoutePair : _tradeRoutePairs) {
@@ -258,10 +233,10 @@ public:
 	
 	
 	FText GetTradeRouteNodeName1(const TradeRoutePair& tradeRoutePair) {
-		return tradeRoutePair.townId1 != -1 ? _simulation->townNameT(tradeRoutePair.townId1) : _simulation->building(tradeRoutePair.buildingId1).buildingInfo().GetName();
+		return _simulation->townNameT(tradeRoutePair.townId1);
 	}
 	FText GetTradeRouteNodeName2(const TradeRoutePair& tradeRoutePair) {
-		return tradeRoutePair.townId2 != -1 ? _simulation->townNameT(tradeRoutePair.townId2) : _simulation->building(tradeRoutePair.buildingId2).buildingInfo().GetName();
+		return _simulation->townNameT(tradeRoutePair.townId2);
 	}
 
 	// Intercity Trade

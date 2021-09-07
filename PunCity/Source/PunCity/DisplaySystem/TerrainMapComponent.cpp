@@ -83,6 +83,11 @@ UTerrainMapComponent::UTerrainMapComponent()
 	_defenseCityNodeMeshes->AttachToComponent(_mapMeshesParent, FAttachmentTransformRules::KeepRelativeTransform);
 	_defenseFortNodeMeshes->AttachToComponent(_mapMeshesParent, FAttachmentTransformRules::KeepRelativeTransform);
 	_defenseLineMeshes->AttachToComponent(_mapMeshesParent, FAttachmentTransformRules::KeepRelativeTransform);
+
+	_defenseNodeMeshes->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	_defenseCityNodeMeshes->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	_defenseFortNodeMeshes->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	_defenseLineMeshes->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void UTerrainMapComponent::UpdateTerrainMapDisplay(bool mapTerrainVisible, bool mapTerrainWaterVisible, bool tileDisplayNoRegionSkip)
@@ -603,7 +608,7 @@ void UTerrainMapComponent::PaintProvinceTexture(ProvinceSystem& provinceSys, Gam
 	}
 	else if (IsValidNonEdgeProvinceId(provinceId))
 	{
-		int32 townId = sim.provinceOwnerTown(provinceId);
+		int32 townId = sim.provinceOwnerTown_Major(provinceId);
 
 		if (townId != -1)
 		{

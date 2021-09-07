@@ -493,33 +493,16 @@ void UnitStateAI::Update()
 		}
 		else if (unitEnum() == UnitEnum::WildMan)
 		{
-			auto& unitSubregionLists = _simulation->unitSubregionLists();
-
-			if (_homeProvinceId != -1)
+			if (_houseId != -1)
 			{
-				int32 tribeCount = 0;
+				MinorCity& minorCity = _simulation->building(_houseId).subclass<MinorCity>(CardEnum::MinorCity);
 
-				const std::vector<WorldRegion2>& regionOverlaps = _simulation->provinceSystem().GetRegionOverlaps(_homeProvinceId);
-				for (WorldRegion2 regionOverlap : regionOverlaps)
+				if (minorCity.occupantCount() < 5) 
 				{
-					unitSubregionLists.ExecuteRegion(regionOverlap, [&](int32_t unitId)
-					{
-						if (_simulation->unitEnum(unitId) == UnitEnum::WildMan)
-						{
-							WorldTile2 curTile = _simulation->unitAtom(unitId).worldTile2();
-
-							if (_simulation->GetProvinceIdClean(curTile) == _homeProvinceId)
-							{
-								tribeCount++;
-							}
-						}
-					});
-				}
-
-				if (tribeCount < 5) {
-					auto& tribalVillage = _simulation->building(_houseId);
-					int32 newBornId = _simulation->AddUnit(unitEnum(), -1, tribalVillage.gateTile().worldAtom2(), 0);
+					int32 newBornId = _simulation->AddUnit(unitEnum(), minorCity.townId(), minorCity.gateTile().worldAtom2(), 0);
 					_simulation->unitAI(newBornId).SetHouseId(_houseId);
+					minorCity.AddOccupant(newBornId);
+					
 					PUN_LOG("Wildman Born id:%d", newBornId);
 				}
 			}

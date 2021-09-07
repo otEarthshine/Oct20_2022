@@ -18,12 +18,11 @@ class PROTOTYPECITY_API UTownAutoTradeUI : public UPunWidget
 public:
 
 	void PunInit()
-	{
-		SetChildHUD(ChooseResourceBox);
-		
+	{	
 		CloseButton->OnClicked.AddUniqueDynamic(this, &UTownAutoTradeUI::CloseUI);
 		CloseXButton->CoreButton->OnClicked.AddUniqueDynamic(this, &UTownAutoTradeUI::CloseUI);
 
+		SetChildHUD(ChooseResourceBox);
 		ChooseResourceCloseButton->OnClicked.AddUniqueDynamic(this, &UTownAutoTradeUI::CloseChooseResourceUI);
 		ChooseResourceCloseXButton->CoreButton->OnClicked.AddUniqueDynamic(this, &UTownAutoTradeUI::CloseChooseResourceUI);
 
@@ -44,6 +43,8 @@ public:
 		ChooseResourceOverlay->SetVisibility(ESlateVisibility::Collapsed);
 		
 		CitiesTradeOffersBox->ClearChildren();
+
+		justOpenedUI = true;
 	}
 	
 	void TickUI();
@@ -78,15 +79,13 @@ public:
 		{
 			command->intVar1 = punWidgetCaller->callbackVar1;
 			command->intVar2 = punWidgetCaller->callbackVar2;
-			command->intVar3 = punWidgetCaller->callbackVar3;
-			command->intVar4 = punWidgetCaller->callbackVar4;
 
 			networkInterface()->SendNetworkCommand(command);
 			return;
 		}
 	
-
-		auto& townManager = simulation().townManager(uiTownId);
+		// Only Major towns can have the Auto Trade UI
+		TownManager& townManager = simulation().townManager(uiTownId);
 
 		bool isImport = true;
 		ResourceEnum resourceEnum = ResourceEnum::None;
@@ -134,6 +133,7 @@ public:
 
 
 
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* LastRoundProfitText;
 
 	UPROPERTY(meta = (BindWidget)) UTextBlock* CityMaxAutoTradeAmount;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* FeeDiscountText;
@@ -147,6 +147,11 @@ public:
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* ImportMoneyText;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* FeeText;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* NetTotalText;
+
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* ExportMoneyLeftText;
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* ImportMoneyLeftText;
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* FeeLeftText;
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* NetTotalLeftText;
 
 	UPROPERTY(meta = (BindWidget)) UScrollBox* CitiesTradeOffersBox;
 	
@@ -162,4 +167,6 @@ public:
 	bool chooseResourceForExport = true;
 
 	int32 uiTownId = -1;
+
+	bool justOpenedUI = false;
 };

@@ -3,7 +3,7 @@
 #include "TerritoryDisplayComponent.h"
 #include "../MapUtil.h"
 #include "PunCity/GameConstants.h"
-#include "../Simulation/GameRegionSystem.h"
+#include "../Simulation/ProvinceInfoSystem.h"
 
 using namespace std;
 
@@ -150,7 +150,7 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 	else {
 		// Show non-player's province only
 		for (int32 provinceId : sampleProvinceIds) {
-			if (simulation().provinceOwnerTown(provinceId) == -1) {
+			if (simulation().provinceOwnerTown_Major(provinceId) == -1) {
 				sampleProvinceIdsNonPlayer.push_back(provinceId);
 			}
 		}
@@ -219,25 +219,37 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 
 		auto material = _gameManager->ZoomDistanceBelow(WorldZoomTransition_GameToMap) ? comp->MaterialInstance : comp->MaterialInstance_Top;
 
-		// Fade when it is not near our territory
-		int32 provinceTownId = simulation().provinceOwnerTown(comp->provinceId);
 		bool isFade = false; // Fade when province has no owner, and province is not next to player
-		if (provinceTownId == -1) {
-			// Is Province next to player???
-			const auto& townIds = simulation().GetTownIds(playerId());
-			bool isNextToPlayer = false;
-			for (int32 townId : townIds) {
-				if (simulation().IsProvinceNextToTown(comp->provinceId, townId)) {
-					isNextToPlayer = true;
-					break;
+		FLinearColor minorCityColor = FLinearColor::Black; // 
+		
+		int32 minorProvinceTownId = simulation().provinceOwnerTown_Minor(comp->provinceId);
+		if (minorProvinceTownId != -1)
+		{
+			minorCityColor = FLinearColor::MakeFromHSV8(GameRand::Rand(minorProvinceTownId) % 255, 255, 255);;
+		}
+		else
+		{
+			// Fade when it is not near our territory
+			int32 provinceTownId = simulation().provinceOwnerTown_Major(comp->provinceId);
+			if (provinceTownId == -1) {
+				// Is Province next to player???
+				const auto& townIds = simulation().GetTownIds(playerId());
+				bool isNextToPlayer = false;
+				for (int32 townId : townIds) {
+					if (simulation().IsProvinceNextToTown(comp->provinceId, townId)) {
+						isNextToPlayer = true;
+						break;
+					}
+				}
+				if (!isNextToPlayer) {
+					isFade = true;
 				}
 			}
-			if (!isNextToPlayer) {
-				isFade = true;
-			}
 		}
+		
 		material->SetScalarParameterValue("IsFade", isFade);
 		//material->SetScalarParameterValue("IsFade", (owner == -1) && !simulation().IsProvinceNextToPlayer(comp->provinceId, playerId()));
+		material->SetVectorParameterValue("MinorCityColor", minorCityColor);
 
 		comp->SetMaterial(0, material);
 	}
@@ -254,7 +266,7 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 		{
 			for (int32 provinceId : sampleProvinceIds)
 			{
-				int32 townId = simulation().provinceOwnerTown(provinceId);
+				int32 townId = simulation().provinceOwnerTown_Major(provinceId);
 				if (townId != -1) {
 					CppUtils::TryAdd(sampleTerritoryTownIds, townId);
 				}

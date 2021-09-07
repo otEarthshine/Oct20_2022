@@ -192,10 +192,16 @@ private:
 		int32 townId = simulation().building(_buildingId).townId();
 		GetPunHUD()->OpenSendImmigrantsUI(townId);
 	}
+	
 	UFUNCTION() void OnClickGiftButton() {
 		int32 targetPlayerId = simulation().building(_buildingId).playerId();
-		GetPunHUD()->OpenGiftUI(targetPlayerId);
+		GetPunHUD()->OpenGiftUI(playerId(), targetPlayerId, TradeDealStageEnum::Gifting);
 	}
+	UFUNCTION() void OnClickTradeDealButton() {
+		int32 targetPlayerId = simulation().building(_buildingId).playerId();
+		GetPunHUD()->OpenGiftUI(playerId(), targetPlayerId, TradeDealStageEnum::CreateDeal);
+	}
+	
 	UFUNCTION() void OnClickDiplomacyButton() {
 		int32 targetPlayerId = simulation().building(_buildingId).playerId();
 		GetPunHUD()->OpenDiplomacyUI(targetPlayerId);

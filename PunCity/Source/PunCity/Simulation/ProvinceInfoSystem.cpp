@@ -1,19 +1,19 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "GameRegionSystem.h"
+#include "ProvinceInfoSystem.h"
 #include "PunCity/CppUtils.h"
 #include "UnitSystem.h"
 #include "UnitStateAI.h"
 #include "SimUtils.h"
 
-void GameRegionSystem::RemoveBoarBurrow(int32 provinceId, int32 buildingId)
+void ProvinceInfoSystem::RemoveBoarBurrow(int32 provinceId, int32 buildingId)
 {
 	check(CppUtils::Contains(_boarBurrowsToProvince[provinceId], buildingId));
 	CppUtils::Remove(_boarBurrowsToProvince[provinceId], buildingId);
 }
 
 
-void GameRegionSystem::AddAnimalColony(UnitEnum unitEnum, WorldTile2 center, int32 radius, int32 chancePercentMultiplier)
+void ProvinceInfoSystem::AddAnimalColony(UnitEnum unitEnum, WorldTile2 center, int32 radius, int32 chancePercentMultiplier)
 {
 	int32 provinceId = _simulation->GetProvinceIdClean(center);
 	if (provinceId == -1) {
@@ -48,7 +48,7 @@ void GameRegionSystem::AddAnimalColony(UnitEnum unitEnum, WorldTile2 center, int
 
 	_animalColonies.push_back({ unitEnum, provinceId, center, radius, unitIds });
 }
-void GameRegionSystem::RemoveAnimalColony(UnitEnum unitEnum)
+void ProvinceInfoSystem::RemoveAnimalColony(UnitEnum unitEnum)
 {
 	for (size_t i = _animalColonies.size(); i-- > 0;) {
 		if (_animalColonies[i].unitEnum == unitEnum)

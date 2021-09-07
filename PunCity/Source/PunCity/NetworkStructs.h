@@ -493,6 +493,18 @@ public:
 	int32 intVar3 = -1;
 	int32 intVar4 = -1;
 	int32 intVar5 = -1;
+	int32 intVar6 = -1;
+	int32 intVar7 = -1;
+	int32 intVar8 = -1;
+	
+	TArray<int32> array1;
+	TArray<int32> array2;
+	TArray<int32> array3;
+	TArray<int32> array4;
+	TArray<int32> array5;
+	TArray<int32> array6;
+	TArray<int32> array7;
+	TArray<int32> array8;
 
 	void Serialize(PunSerializedData& blob) override
 	{
@@ -504,6 +516,18 @@ public:
 		blob << intVar3;
 		blob << intVar4;
 		blob << intVar5;
+		blob << intVar6;
+		blob << intVar7;
+		blob << intVar8;
+
+		blob << array1;
+		blob << array2;
+		blob << array3;
+		blob << array4;
+		blob << array5;
+		blob << array6;
+		blob << array7;
+		blob << array8;
 	}
 
 	bool operator==(const FGenericCommand& a)
@@ -514,7 +538,19 @@ public:
 			intVar2 == a.intVar2 ||
 			intVar3 == a.intVar3 ||
 			intVar4 == a.intVar4 ||
-			intVar5 == a.intVar5;
+			intVar5 == a.intVar5 ||
+			intVar6 == a.intVar6 ||
+			intVar7 == a.intVar7 ||
+			intVar8 == a.intVar8 ||
+
+			array1 == a.array1 ||
+			array2 == a.array2 ||
+			array3 == a.array3 ||
+			array4 == a.array4 ||
+			array5 == a.array5 ||
+			array6 == a.array6 ||
+			array7 == a.array7 ||
+			array8 == a.array8;
 	}
 };
 

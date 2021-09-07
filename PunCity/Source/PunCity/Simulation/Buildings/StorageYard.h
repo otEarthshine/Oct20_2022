@@ -75,7 +75,7 @@ public:
 	}
 
 	// Gate on the S in the middle.
-	virtual WorldTile2 gateTile() override {
+	virtual WorldTile2 gateTile() const override {
 		return WorldTile2(_area.minX, _area.minY / 2 + _area.maxY / 2);
 	}
 
@@ -201,7 +201,7 @@ public:
 		return 30;
 	}
 
-	WorldTile2 gateTile() override {
+	WorldTile2 gateTile() const override {
 		return Building::gateTile();
 	}
 
@@ -217,7 +217,7 @@ public:
 		return 30;
 	}
 
-	WorldTile2 gateTile() override {
+	WorldTile2 gateTile() const override {
 		return Building::gateTile();
 	}
 

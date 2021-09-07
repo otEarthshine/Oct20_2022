@@ -1686,7 +1686,7 @@ UBuildingPlacementButton* UMainGameUI::AddCard(CardHandEnum cardHandEnum, CardSt
 
 	cardButton->PunInit(cardStatus, cardHandIndex, this, callbackEnum, cardHandEnum);
 
-	SetChildHUD(cardButton);
+	//SetChildHUD(cardButton);
 
 	cardButton->RefreshBuildingIcon(dataSource()->assetLoader());
 	cardButton->SetCardStatus(cardHandEnum, false, false, IsRareCard(cardStatus.cardEnum));

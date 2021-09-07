@@ -4,7 +4,7 @@
 
 #include "ProceduralMeshComponent.h"
 #include "PunCity/Simulation/GameSimulationConstants.h"
-#include "PunCity/Simulation/GameRegionSystem.h"
+#include "PunCity/Simulation/ProvinceInfoSystem.h"
 #include "PunCity/AssetLoaderComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 

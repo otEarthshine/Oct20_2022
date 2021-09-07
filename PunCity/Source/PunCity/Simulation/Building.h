@@ -241,7 +241,7 @@ public:
 	}
 
 	//WorldTile2 buildingSize() { return BuildingInfo[buildingEnumInt()].size; }
-	WorldTile2 buildingSize() {
+	WorldTile2 buildingSize() const {
 		if (isEnum(CardEnum::Farm)) {
 			return _area.size();
 		}
@@ -257,7 +257,7 @@ public:
 	}
 	
 
-	WorldTile2 gateTileFromDirection(Direction faceDirection) {
+	WorldTile2 gateTileFromDirection(Direction faceDirection) const {
 		return CalculateGateTile(faceDirection, _centerTile, buildingSize());
 	}
 	static WorldTile2 CalculateGateTile(Direction faceDirection, WorldTile2 centerTile, WorldTile2 size)
@@ -265,7 +265,7 @@ public:
 		int32 centerToGate = (size.x - 1) / 2;
 		return centerTile + WorldTile2::DirectionTile(faceDirection) * centerToGate;
 	}
-	virtual WorldTile2 gateTile() { return gateTileFromDirection(_faceDirection); }
+	virtual WorldTile2 gateTile() const { return gateTileFromDirection(_faceDirection); }
 
 
 	BiomeEnum centerBiomeEnum() {

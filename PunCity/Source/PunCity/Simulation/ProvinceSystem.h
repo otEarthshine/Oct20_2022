@@ -542,8 +542,11 @@ public:
 		  */
 		for (int32 provinceId = 0; provinceId < proviceIdsSize; provinceId++)
 		{
-			if (terrainGen.terrainTileType(_provinceCenters[provinceId].worldTile2()) != TerrainTileType::None) {
-				_provinceCenters[provinceId] = WorldTile2x2();
+			WorldTile2 lastTile = _provinceCenters[provinceId].worldTile2();
+			if (lastTile.isValid()) {
+				if (terrainGen.terrainTileType(lastTile) != TerrainTileType::None) {
+					_provinceCenters[provinceId] = WorldTile2x2();
+				}
 			}
 		}
 

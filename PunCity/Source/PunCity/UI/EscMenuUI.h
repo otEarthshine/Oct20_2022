@@ -58,6 +58,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UCheckBox* OverlayCheckBox_Animals;
 	UPROPERTY(meta = (BindWidget)) UCheckBox* MapCheckBox_HideTrees;
 	UPROPERTY(meta = (BindWidget)) UCheckBox* MapCheckBox_ProvinceOverlay;
+	UPROPERTY(meta = (BindWidget)) UCheckBox* MapCheckBox_DefenseOverlay;
 
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* OverlayOuterBox_None;
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* OverlayOuterBox_Appeal;
@@ -310,12 +311,65 @@ public:
 		}
 
 
-		//
+		/*
+		 * Overlay
+		 */
 		if (overlayTypeToChangeTo != OverlayType::None) {
 			dataSource()->SetOverlayType(overlayTypeToChangeTo, OverlaySetterType::OverlayToggler);
 			overlayTypeToChangeTo = OverlayType::None;
 		}
 
+		//! Set Overlay Row Text Color
+		auto setOverlayRowText = [&](UWidget* widget, const FText& frontText, const FText& backText, bool isNotGray)
+		{
+			UPanelWidget* box = widget->GetParent();
+			for (int32 i = 0; i < box->GetChildrenCount(); i++) {
+				if (URichTextBlock* textBlock = Cast<URichTextBlock>(box->GetChildAt(i))) 
+				{
+					textBlock->SetText(FText::Format(
+						INVTEXT("<{0}>{1}</><{2}>{3}</>"),
+						isNotGray ? INVTEXT("Default") : INVTEXT("Gray"),
+						frontText,
+						isNotGray ? INVTEXT("Orange") : INVTEXT("Gray"),
+						backText
+					));
+					break;
+				}
+			}
+		};
+
+		bool overlayIsNotGray = dataSource()->ZoomDistanceBelow(WorldToMapZoomAmount);
+
+		setOverlayRowText(OverlayCheckBox_Fertility, 
+			NSLOCTEXT("OverlayToggleUI", "Fertility", "Fertility "),
+			INVTEXT("[Ctrl-F]"),
+			overlayIsNotGray
+		);
+		setOverlayRowText(OverlayCheckBox_Appeal,
+			NSLOCTEXT("OverlayToggleUI", "Appeal", "Appeal"),
+			FText(),
+			overlayIsNotGray
+		);
+		setOverlayRowText(OverlayCheckBox_Animals,
+			NSLOCTEXT("OverlayToggleUI", "Animals", "Animals"),
+			FText(),
+			overlayIsNotGray
+		);
+
+		setOverlayRowText(MapCheckBox_HideTrees,
+	NSLOCTEXT("OverlayToggleUI", "Hide Trees/Bushes ", "Hide Trees/Bushes "),
+			INVTEXT("[Ctrl-T]"),
+			dataSource()->ZoomDistanceBelow(WorldZoomTransition_Region4x4ToMap)
+		);
+		setOverlayRowText(MapCheckBox_ProvinceOverlay, 
+			NSLOCTEXT("OverlayToggleUI", "Province Overlay ", "Province Overlay "),
+			INVTEXT("[Ctrl-P]"),
+			dataSource()->ZoomDistanceBelow(WorldZoomTransition_Region4x4ToMap)
+		);
+		
+
+		// ---
+		
 		TickLoadingScreen();
 	}
 
@@ -556,6 +610,7 @@ private:
 			// Ensure checkboxes are up to date
 			MapCheckBox_HideTrees->SetIsChecked(dataSource()->isHidingTree());
 			MapCheckBox_ProvinceOverlay->SetIsChecked(dataSource()->isShowingProvinceOverlay());
+			MapCheckBox_DefenseOverlay->SetIsChecked(dataSource()->isShowingDefenseOverlay());
 			
 			//dataSource()->SetOverlayType(OverlayType::Farm, OverlaySetterType::OverlayToggler);
 			//SetOverlayCheckBox(OverlayCheckBox_Fertility);
@@ -589,7 +644,9 @@ private:
 	UFUNCTION() void OnCheckMap_ProvinceOverlay(bool active) {
 		dataSource()->SetOverlayProvince(active);
 	}
-
+	UFUNCTION() void OnCheckMap_DefenseOverlay(bool active) {
+		dataSource()->SetOverlayDefense(active);
+	}
 	
 
 	UFUNCTION() void OnClickVictoryPopupScoreScreen() {

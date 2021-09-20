@@ -26,6 +26,8 @@ class IDisplaySystemDataSource
 	GENERATED_BODY()
 public:
 	virtual int32 playerId() = 0;
+
+	virtual FPlayerInfo playerInfo(int32 playerId) = 0;
 	
 	virtual class UAssetLoaderComponent* assetLoader() = 0;
 
@@ -39,6 +41,7 @@ public:
 	virtual OverlayType GetOverlayType() = 0;
 	virtual bool isHidingTree() = 0;
 	virtual bool isShowingProvinceOverlay() = 0;
+	virtual bool isShowingDefenseOverlay() = 0;
 	
 	virtual class ULineBatchComponent* lineBatch() = 0;
 

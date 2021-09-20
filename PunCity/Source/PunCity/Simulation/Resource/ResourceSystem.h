@@ -1137,6 +1137,14 @@ public:
 			);
 		}
 	}
+
+	int32 AddResourceGlobal_ReturnLeftover(ResourceEnum resourceEnum, int32 amount)
+	{
+		check(amount >= 0);
+		return holderGroup(resourceEnum).AddResourceGlobal(amount, *this);
+	}
+
+	//! Remove any piles including unreserved
 	void RemoveResourceGlobal(ResourceEnum resourceEnum, int32 amount)
 	{
 		check(amount >= 0);
@@ -1154,6 +1162,8 @@ public:
 		
 		holderGroup(resourceEnum).RemoveResourceGlobal(amount, *this);
 	}
+
+	//! Only Remove Unreserved Resource
 	void RemoveResourceGlobal_Unreserved(ResourceEnum resourceEnum, int32 amount)
 	{
 		//if (resourceEnum == ResourceEnum::Food) {

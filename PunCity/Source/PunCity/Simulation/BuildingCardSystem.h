@@ -416,6 +416,12 @@ public:
 		return _cardsBought;
 	}
 
+	std::vector<CardStatus> GetCardsBought_Display() {
+		std::vector<CardStatus> cardsBought = _cardsBought;
+		RemoveCards(cardsBought, pendingMilitarySlotCards);
+		return cardsBought;
+	}
+
 	static const int32 maxCardsBought = 7;
 	bool CanAddCardToBoughtHand(CardEnum buildingEnum, int32 additionalCards, bool checkHand1Reserved = false)
 	{
@@ -466,14 +472,14 @@ public:
 		return false;
 	}
 
-	bool TryAddCardStatusToBoughtHand(CardStatus cardStatus)
-	{
-		if (maxCardsBought > _cardsBought.size()) {
-			_cardsBought.push_back(cardStatus);
-			return true;
-		}
-		return false;
-	}
+	//bool TryAddCardStatusToBoughtHand(CardStatus cardStatus)
+	//{
+	//	if (maxCardsBought > _cardsBought.size()) {
+	//		_cardsBought.push_back(cardStatus);
+	//		return true;
+	//	}
+	//	return false;
+	//}
 
 	CardStatus GetActualBoughtCardStatus(const CardStatus& cardStatusIn)
 	{
@@ -486,7 +492,7 @@ public:
 		return CardStatus::None;
 	}
 
-	int32 BoughtCardCount(CardEnum cardEnum)
+	int32 BoughtCardCount(CardEnum cardEnum, bool includeInventory = true)
 	{
 		for (size_t i = _cardsBought.size(); i-- > 0;) {
 			if (_cardsBought[i].cardEnum == cardEnum) {
@@ -494,15 +500,29 @@ public:
 			}
 		}
 
-		for (size_t i = _cardsInventory.size(); i-- > 0;) {
-			if (_cardsInventory[i].cardEnum == cardEnum) {
-				return _cardsInventory[i].stackSize;
+		if (includeInventory) {
+			for (size_t i = _cardsInventory.size(); i-- > 0;) {
+				if (_cardsInventory[i].cardEnum == cardEnum) {
+					return _cardsInventory[i].stackSize;
+				}
 			}
 		}
 		
 		return 0;
 	}
 	bool HasBoughtCard(CardEnum cardEnum) { return BoughtCardCount(cardEnum) > 0; }
+
+	int32 DisplayedBoughtCardCount(CardEnum cardEnum, bool includeInventory = true)
+	{
+		int32 boughtCardCount = BoughtCardCount(cardEnum, includeInventory);
+		for (int32 i = 0; i < pendingMilitarySlotCards.size(); i++) {
+			if (pendingMilitarySlotCards[i].cardEnum == cardEnum) {
+				return boughtCardCount - pendingMilitarySlotCards[i].stackSize;
+			}
+		}
+		return boughtCardCount;
+	}
+	
 
 	bool CanUseBoughtCard(CardEnum buildingEnum, int32 numberOfCards = 1)
 	{
@@ -752,6 +772,48 @@ public:
 		loop(_cardsDrawPile);
 		loop(_cardsDiscardPile);
 	}
+
+
+	bool ReturnBuildingSlotCardsToHand(const std::vector<CardStatus>& slotCards)
+	{
+		// Note: Still need to ResetCardSlots after
+		// Return cards to hand
+		std::vector<CardEnum> addedCards;
+
+		for (CardStatus card : slotCards)
+		{
+			if (CanAddCardToBoughtHand(card.cardEnum, 1))
+			{
+				addedCards.push_back(card.cardEnum);
+				AddCardToHand2(card.cardEnum);
+			}
+			else {
+				// Remove the added cards from the Hand (added on previous iterations)
+				for (CardEnum addedCard : addedCards) {
+					RemoveCardsOld(addedCard, 1);
+				}
+
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/*
+	 * 
+	 */
+	static void RemoveCards(std::vector<CardStatus>& cardStatus, const std::vector<CardStatus>& cardsToRemove)
+	{
+		for (int32 i = 0; i < cardStatus.size(); i++) {
+			for (int32 j = 0; j < cardsToRemove.size(); j++) {
+				if (cardStatus[i].cardEnum == cardsToRemove[j].cardEnum) {
+					cardStatus[i].stackSize -= cardsToRemove[j].stackSize;
+					check(cardStatus[i].stackSize >= 0);
+				}
+			}
+		}
+	}
 	
 
 	/*
@@ -760,7 +822,6 @@ public:
 	void Serialize(FArchive& Ar)
 	{
 		Ar << justRerollButtonPressed;
-		Ar << needHand1Refresh;
 
 		Ar << justRerolledRareHand;
 
@@ -835,7 +896,6 @@ public:
 	 * Serialize
 	 */
 	bool justRerollButtonPressed = false;
-	bool needHand1Refresh = false;
 
 	bool justRerolledRareHand = false;
 	bool justRerolledClaimLandHand = false;
@@ -847,6 +907,10 @@ public:
 	 * Non-Serialize
 	 */
 	bool allowMaxCardHandQueuePopup = true;
+
+	bool needHand1Refresh = false;
+
+	std::vector<CardStatus> pendingMilitarySlotCards;
 	
 private:
 	IGameSimulationCore* _simulation = nullptr;

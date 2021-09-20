@@ -19,15 +19,15 @@ public:
 
 	void PunInit()
 	{	
-		CloseButton->OnClicked.AddUniqueDynamic(this, &UTownAutoTradeUI::CloseUI);
-		CloseXButton->CoreButton->OnClicked.AddUniqueDynamic(this, &UTownAutoTradeUI::CloseUI);
+		BUTTON_ON_CLICK(CloseButton, this, &UTownAutoTradeUI::CloseUI);
+		BUTTON_ON_CLICK(CloseXButton->CoreButton, this, &UTownAutoTradeUI::CloseUI);
 
 		SetChildHUD(ChooseResourceBox);
-		ChooseResourceCloseButton->OnClicked.AddUniqueDynamic(this, &UTownAutoTradeUI::CloseChooseResourceUI);
-		ChooseResourceCloseXButton->CoreButton->OnClicked.AddUniqueDynamic(this, &UTownAutoTradeUI::CloseChooseResourceUI);
+		BUTTON_ON_CLICK(ChooseResourceCloseButton, this, &UTownAutoTradeUI::CloseChooseResourceUI);
+		BUTTON_ON_CLICK(ChooseResourceCloseXButton->CoreButton, this, &UTownAutoTradeUI::CloseChooseResourceUI);
 
-		AddAutoExportOrderButton->OnClicked.AddUniqueDynamic(this, &UTownAutoTradeUI::UTownAutoTradeUI::OnClickAddAutoExportOrder);
-		AddAutoImportOrderButton->OnClicked.AddUniqueDynamic(this, &UTownAutoTradeUI::UTownAutoTradeUI::OnClickAddAutoImportOrder);
+		BUTTON_ON_CLICK(AddAutoExportOrderButton, this, &UTownAutoTradeUI::UTownAutoTradeUI::OnClickAddAutoExportOrder);
+		BUTTON_ON_CLICK(AddAutoImportOrderButton, this, &UTownAutoTradeUI::UTownAutoTradeUI::OnClickAddAutoImportOrder);
 
 		CloseUI();
 	}

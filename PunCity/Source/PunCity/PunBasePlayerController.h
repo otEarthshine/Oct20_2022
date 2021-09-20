@@ -51,7 +51,7 @@ public:
 	 * Sync player state
 	 */
 	// Call Server_SyncPlayerStateToAllControllers to sync to all controllers
-	UFUNCTION(Reliable, Client) void SyncPlayersState_ToClient(const TArray<FString>& playerNamesF,
+	UFUNCTION(Reliable, Client) void SyncPlayersState_ToClient(const TArray<FPlayerInfo>& playerNamesF,
 															const TArray<bool>& playerReadyStates,
 															const TArray<bool>& playerConnectedStates,
 															const TArray<int32>& clientDataReceived,

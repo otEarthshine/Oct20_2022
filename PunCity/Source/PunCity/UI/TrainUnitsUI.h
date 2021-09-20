@@ -17,8 +17,8 @@ public:
 
 	void PunInit()
 	{
-		CloseButton->OnClicked.AddUniqueDynamic(this, &UTrainUnitsUI::CloseUI);
-		XCloseButton->CoreButton->OnClicked.AddUniqueDynamic(this, &UTrainUnitsUI::CloseUI);
+		BUTTON_ON_CLICK(CloseButton, this, &UTrainUnitsUI::CloseUI);
+		BUTTON_ON_CLICK(XCloseButton->CoreButton, this, &UTrainUnitsUI::CloseUI);
 		
 		auto setChildHUD = [&](UWrapBox* box)
 		{

@@ -60,7 +60,8 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 	{
 		int32 index = 0;
 
-		if (_gameManager->ZoomDistanceBelow(WorldZoomTransition_GameToMap))
+		if (gameManager()->isShowingDefenseOverlay() &&
+			_gameManager->ZoomDistanceBelow(WorldZoomTransition_GameToMap))
 		{
 			auto spawnMesh = [&]()
 			{
@@ -308,9 +309,15 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 							paintPlayerId = playerOwned.lordPlayerId();
 						}
 
+						FPlayerInfo playerInfo = gameManager()->playerInfo(paintPlayerId);
+
 						auto material = _gameManager->ZoomDistanceBelow(WorldZoomTransition_GameToMap) ? comp->MaterialInstance : comp->MaterialInstance_Top;
-						material->SetVectorParameterValue("PlayerColor1", paintPlayerId != -1 ? PlayerColor1(paintPlayerId) : FLinearColor(0, 0, 0, 0));
-						material->SetVectorParameterValue("PlayerColor2", paintPlayerId != -1 ? PlayerColor2(paintPlayerId) : FLinearColor(0, 0, 0, 0));
+						material->SetVectorParameterValue("PlayerColor1", playerInfo.logoColorBackground);
+						material->SetVectorParameterValue("PlayerColor2", playerInfo.logoColorForeground);
+						material->SetTextureParameterValue("Logo", _assetLoader->GetPlayerLogo(playerInfo.logoIndex));
+						
+						//material->SetVectorParameterValue("PlayerColor1", paintPlayerId != -1 ? PlayerColor1(paintPlayerId) : FLinearColor(0, 0, 0, 0));
+						//material->SetVectorParameterValue("PlayerColor2", paintPlayerId != -1 ? PlayerColor2(paintPlayerId) : FLinearColor(0, 0, 0, 0));
 						comp->SetMaterial(0, material);
 					}
 					else {

@@ -280,14 +280,22 @@ public:
 						{
 							if (command->cheatEnum == CheatEnum::PunTog ||
 								command->cheatEnum == CheatEnum::PunGet ||
-								command->cheatEnum == CheatEnum::GetResourceTypeHolders) 
+								command->cheatEnum == CheatEnum::GetResourceTypeHolders)
 							{
 								command->stringVar1 = FString(commandAndParams[2].c_str());
 							}
-							else if (command->cheatEnum == CheatEnum::PunSet) {
+							else if (command->cheatEnum == CheatEnum::PunSet ||
+								command->cheatEnum == CheatEnum::TestAIForeignBuild) 
+							{
 								command->stringVar1 = FString(commandAndParams[2].c_str());
 								if (commandAndParams.size() >= 4) {
 									command->var1 = FCString::Atoi(commandAndParams[3].c_str());
+								}
+								if (commandAndParams.size() >= 5) {
+									command->var2 = FCString::Atoi(commandAndParams[4].c_str());
+								}
+								if (commandAndParams.size() >= 6) {
+									command->var3 = FCString::Atoi(commandAndParams[5].c_str());
 								}
 							}
 							else {
@@ -357,7 +365,7 @@ public:
 		// AddCard
 		if (commandAndParams.size() >= 2 && commandAndParams[0] == TEXT("AddCard"))
 		{
-			CardEnum cardEnum = FindCardEnumByName(commandAndParams[1]);
+			CardEnum cardEnum = FindCardEnumByName(FString(commandAndParams[1].c_str()));
 			if (cardEnum == CardEnum::None) {
 				return;
 			}

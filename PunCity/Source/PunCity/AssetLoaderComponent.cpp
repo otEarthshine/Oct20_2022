@@ -26,6 +26,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 
+	_mainMenuAssetLoader = CreateDefaultSubobject<UMainMenuAssetLoaderComponent>("MainMenuAssetLoaderComponent");
+
 	// Note: omit check() since error comes out in the log anyway
 	GroundMesh = Load<UStaticMesh>("/Game/Models/Ground/Ground");
 
@@ -208,6 +210,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	// TODO:
 	LinkBuildingEras(CardEnum::MinorCityPort, "TradingPort_Era", 1);
+	LinkBuildingEras(CardEnum::ForeignPort, "TradingPort_Era", 1);
 	
 	LoadBuilding(CardEnum::TradingPost, "TradingPost_Era", "TradingPost", 1);
 	LoadBuilding(CardEnum::TradingCompany, "TradingCompany_Era", "TradingCompany", 2);
@@ -702,13 +705,15 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 			case CardEnum::IntercityRoad: addBuildIcon(CardEnum::IntercityRoad, FString(TO_STR(DirtRoadIcon)), FString("SpecialIconAlpha"), true); break;
 			case CardEnum::IntercityBridge: addBuildIcon(CardEnum::IntercityBridge, FString(TO_STR(BridgeIcon)), FString("SpecialIconAlpha"), true); break;
 
-			// Temp
-			case CardEnum::MinorCity: addBuildIcon(CardEnum::MinorCity, FString(TO_STR(DirtRoadIcon)), FString("SpecialIconAlpha"), true); break;
-			case CardEnum::MinorCityPort: addBuildIcon(CardEnum::MinorCityPort, FString(TO_STR(DirtRoadIcon)), FString("SpecialIconAlpha"), true); break;
-#undef CASE
 #undef CASE
 		default:
-			addBuildIcon(buildingEnum, FString("BuildingIcon") + FString::FromInt(i), FString("BuildingIconAlpha") + FString::FromInt(i), false);
+			int32 buildingEnumInt = static_cast<int32>(buildingEnum);
+			if (static_cast<int32>(CardEnum::Caravansary) >= buildingEnumInt && buildingEnumInt >= static_cast<int32>(CardEnum::MinorCity)) {
+				// Temp
+				addBuildIcon(buildingEnum, FString(TO_STR(DirtRoadIcon)), FString("SpecialIconAlpha"), true);
+			} else {
+				addBuildIcon(buildingEnum, FString("BuildingIcon") + FString::FromInt(i), FString("BuildingIconAlpha") + FString::FromInt(i), false);
+			}
 			break;
 		}
 	}
@@ -871,28 +876,6 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	check(addCardIconCount == 70);
 
-	/*
-	 * Add Player Logos
-	 */
-	int32 playerLogoCount = 97;
-
-	for (int32 i = 0; i < playerLogoCount; i++)
-	{
-		FString number = FString::FromInt(i + 1);
-		if (number.Len() == 1) {
-			number = FString("0") + number;
-		}
-		FString path = FString("UI/PlayerLogos/LogoTeam_") + number;
-
-		IPlatformFile& platformFile = FPlatformFileManager::Get().GetPlatformFile();
-		check(platformFile.FileExists(*(FPaths::ProjectContentDir() + path + FString(".uasset"))));
-
-		UObject* playerLogosTextureObj = StaticLoadObject(UTexture2D::StaticClass(), NULL, *(FString("/Game/") + path));
-		UTexture2D* playerLogosTexture = Cast<UTexture2D>(playerLogosTextureObj);
-		check(playerLogosTexture);
-		
-		_playerLogos.Add(playerLogosTexture);
-	}
 	
 	
 	//BorealFishing

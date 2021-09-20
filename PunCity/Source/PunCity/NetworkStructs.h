@@ -933,11 +933,16 @@ public:
 
 	int32 provinceId = -1;
 	CallbackEnum claimEnum = CallbackEnum::ClaimLandMoney;
+	TArray<int32> cardEnums;
+	TArray<int32> cardCount;
 
 	void Serialize(PunSerializedData& blob) final {
 		FNetworkCommand::Serialize(blob);
 		blob << provinceId;
 		blob << claimEnum;
+
+		blob << cardEnums;
+		blob << cardCount;
 	}
 };
 

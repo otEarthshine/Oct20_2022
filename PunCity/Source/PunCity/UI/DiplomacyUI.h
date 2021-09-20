@@ -13,19 +13,21 @@ class PROTOTYPECITY_API UDiplomacyUI : public UPunWidget
 {
 	GENERATED_BODY()
 public:
+	UPROPERTY(meta = (BindWidget)) UImage* LogoPreviewImage;
+	UPROPERTY(meta = (BindWidget)) UImage* CharacterPreviewImage;
 
 	UPROPERTY(meta = (BindWidget)) UTextBlock* PlayerNameText;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* RelationshipText;
 	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* InteractionBox;
 	UPROPERTY(meta = (BindWidget)) UButton* CloseButton;
-	UPROPERTY(meta = (BindWidget)) UButton* CloseButton2;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* CloseXButton;
 
 	int32 aiPlayerId = -1;
 
 	void PunInit()
 	{
 		BUTTON_ON_CLICK(CloseButton, this, &UDiplomacyUI::CloseUI);
-		BUTTON_ON_CLICK(CloseButton2, this, &UDiplomacyUI::CloseUI);
+		BUTTON_ON_CLICK(CloseXButton->CoreButton, this, &UDiplomacyUI::CloseUI);
 
 		SetChildHUD(InteractionBox);
 		

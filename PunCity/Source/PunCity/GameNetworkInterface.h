@@ -25,7 +25,7 @@ public:
 	virtual int32 playerId() = 0;
 	virtual int32 currentTownId() = 0;
 	
-	virtual const TArray<FString>& playerNamesF() = 0;
+	virtual const TArray<struct FPlayerInfo>& playerNamesF() = 0;
 	virtual bool IsPlayerConnected(int32 playerId) = 0;
 
 	virtual void SetTickDisabled(bool tickDisabled) = 0;

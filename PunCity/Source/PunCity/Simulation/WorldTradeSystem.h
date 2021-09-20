@@ -91,62 +91,7 @@ public:
 		_intercityTradeOffers.push_back(std::vector<IntercityTradeOffer>());
 	}
 
-	void Tick1Sec()
-	{
-		//PUN_LOG("WorldTrade Tick1Sec");
-		// Initialize after allplayers started
-		if (!_isInitialized && _simulation->AllPlayerHasTownhallAfterInitialTicks())
-		{
-			for (size_t i = 0; i < _enumToSupplyValue100.size(); i++) {
-				_enumToSupplyValue100[i] = EquilibriumSupplyValue100_PerPerson(static_cast<ResourceEnum>(i)) * worldPopulationWithBase();
-			}
-			_isInitialized = true;
-		}
-
-		// Non-Food
-		for (int32 i = 0; i < ResourceEnumCount; i++)
-		{
-			ResourceEnum resourceEnum = static_cast<ResourceEnum>(i);
-			int64 buyValue100PerSec = EquilibriumSupplyValue100(resourceEnum) / Time::SecondsPerYear; // Assumes total bought/sold per year is equal to EquilibriumSupply
-			int64 buyValue100TimesSupplyValue100 = buyValue100PerSec * SupplyValue100(resourceEnum);
-			buyValue100PerSec = buyValue100TimesSupplyValue100 / EquilibriumSupplyValue100(resourceEnum); // Buy more when Supply goes up
-			buyValue100PerSec = GameRand::RandFluctuate(buyValue100PerSec, WorldTradeFluctuationPercent);
-			_enumToSupplyValue100[i] -= buyValue100PerSec;
-
-			int64 sellValue100PerSec = EquilibriumSupplyValue100(resourceEnum) / Time::SecondsPerYear;
-			sellValue100PerSec = GameRand::RandFluctuate(sellValue100PerSec, WorldTradeFluctuationPercent);
-			_enumToSupplyValue100[i] += sellValue100PerSec;
-
-			_enumToSupplyValue100[i] = std::max(_enumToSupplyValue100[i], MinSupplyValue100_PerPerson * worldPopulationWithBase());
-
-			//PUN_LOG("Resource:%s, buy:%d sell:%d supply:%d eq:%d", *ResourceNameF(resourceEnum), buyValue100PerSec, sellValue100PerSec, _enumToSupplyValue100[i], EquilibriumSupplyValue100());
-		}
-
-		/*
-		 * Stat: Add Data
-		 */
-		if (Time::Ticks() % TicksPerStatInterval == 0)
-		{
-			for (int32 i = 0; i < ResourceEnumCount; i++) {
-				_resourceEnumToPrice100Vec[i].push_back(price100(static_cast<ResourceEnum>(i)));
-			}
-		}
-
-		/*
-		 *
-		 */
-		if (Time::IsSeasonStart())
-		{
-			// Remove trade record that are more than 1 years old
-			for (std::vector<PlayerSupplyChange>& vecPlayerSupplyChanges : _resourceEnumToPlayerSupplyChanges) {
-				for (size_t i = vecPlayerSupplyChanges.size(); i-- > 0;) {
-					if (Time::Ticks() - vecPlayerSupplyChanges[i].tick >= Time::TicksPerYear) {
-						vecPlayerSupplyChanges.erase(vecPlayerSupplyChanges.begin() + i);
-					}
-				}
-			}
-		}
-	}
+	void Tick1Sec();
 
 	/*
 	 * Interface
@@ -229,6 +174,17 @@ public:
 
 	std::vector<TradeRoutePair>& tradeRoutePairs() {
 		return _tradeRoutePairs;
+	}
+
+	std::vector<TradeRoutePair> GetTradeRouteTo(int32 originTownId)
+	{
+		std::vector<TradeRoutePair> resultPairs;
+		for (const TradeRoutePair& routePair : _tradeRoutePairs) {
+			if (routePair.HasTownId(originTownId)) {
+				resultPairs.push_back(routePair);
+			}
+		}
+		return resultPairs;
 	}
 	
 	

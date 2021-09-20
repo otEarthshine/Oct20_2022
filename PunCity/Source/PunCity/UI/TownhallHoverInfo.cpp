@@ -12,6 +12,7 @@ void UTownhallHoverInfo::PunInit(int buildingId)
 	_buildingId = buildingId;
 	//CityNameEditableText->OnTextCommitted.AddDynamic(this, &UTownhallHoverInfo::ChangedCityName);
 
+	LaborerManualCheckBox->OnCheckStateChanged.Clear();
 	LaborerManualCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UTownhallHoverInfo::OnCheckManualLaborer);
 	AddToolTip(LaborerManualCheckBox,
 		LOCTEXT("LaborerManualCheckBox_Tip", "Check this box to manually adjust the number of Laborers.<space>If unchecked, Laborers will be assigned after all Building Jobs (Employed) are already filled.<space>If checked, Laborers will be assigned before the Normal-Priority Building Jobs are filled (according to the number you manually set).")
@@ -20,6 +21,7 @@ void UTownhallHoverInfo::PunInit(int buildingId)
 	BUTTON_ON_CLICK(LaborerArrowUp, this, &UTownhallHoverInfo::IncreaseLaborers);
 	BUTTON_ON_CLICK(LaborerArrowDown, this, &UTownhallHoverInfo::DecreaseLaborers);
 
+	BuilderManualCheckBox->OnCheckStateChanged.Clear();
 	BuilderManualCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UTownhallHoverInfo::OnCheckManualBuilder);
 	AddToolTip(BuilderManualCheckBox,
 		LOCTEXT("BuilderManualCheckBox_Tip", "Check this box to manually adjust the number of Builders.<space>If unchecked, Builders will be assigned after all Building Jobs (Employed) are already filled.<space>If checked, Builders will be assigned before the Normal-Priority Building Jobs are filled (according to the number you manually set).")
@@ -169,10 +171,15 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 						!townhallPlayerOwned.GetDefendingClaimProgress(townhall.provinceId()).isValid())
 					{
 						// Vassalize (AttackButton1)
+						//SetText(AttackButton1RichText, FText::Format(
+						//	LOCTEXT("VassalizeButtonRichText_Text", "Conquer (Vassalize)\n<img id=\"Influence\"/>{0}"),
+						//	TEXT_NUM(sim.GetProvinceVassalizeStartPrice(townhall.provinceId()))
+						//));
 						SetText(AttackButton1RichText, FText::Format(
-							LOCTEXT("VassalizeButtonRichText_Text", "Conquer (Vassalize)\n<img id=\"Influence\"/>{0}"),
+							LOCTEXT("VassalizeButtonRichText_Text", "Conquer (Vassalize)"),
 							TEXT_NUM(sim.GetProvinceVassalizeStartPrice(townhall.provinceId()))
 						));
+						
 						BUTTON_ON_CLICK(AttackButton1, this, &UTownhallHoverInfo::OnClickVassalizeButton);
 						AttackButton1->SetVisibility(ESlateVisibility::Visible);
 
@@ -290,6 +297,7 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 		}
 	}
 
+	
 	// Townhall name
 	FText displayedName = CityNameText->GetText();
 	FText newDisplayName = townhall.townNameT();
@@ -300,9 +308,9 @@ void UTownhallHoverInfo::UpdateUI(bool isMini)
 
 
 	// PlayerColorImage
-	PlayerColorCircle->GetDynamicMaterial()->SetVectorParameterValue("PlayerColor1", PlayerColor1(townhallPlayerOwned.playerIdForColor()));
-	PlayerColorCircle->GetDynamicMaterial()->SetVectorParameterValue("PlayerColor2", PlayerColor2(townhallPlayerOwned.playerIdForColor()));
+	FPlayerInfo playerInfo = dataSource()->playerInfo(townhallPlayerOwned.playerIdForColor());
 
+	PunUIUtils::SetPlayerLogo(PlayerColorCircle->GetDynamicMaterial(), playerInfo, assetLoader());
 
 	/*
 	 * Update TradeInfoOverlay

@@ -2023,5 +2023,122 @@ void MinorCity::OnDeinit()
 	}
 }
 
+/*
+ * Zoo
+ */
+
+
+void Zoo::FinishConstruction()
+{
+	AddUpgrades({
+		MakeUpgrade(LOCTEXT("ZooUpgrade_AnimalUniqueness", "Animal Uniqueness"), LOCTEXT("ZooUpgrade_AnimalUniqueness Desc", "Each unique kind of animal increases service quality by additional 10%"), ResourceEnum::Brick, 50),
+	});
+
+	Building::FinishConstruction();
+}
+
+std::vector<BonusPair> Zoo::GetBonuses()
+{
+	std::vector<BonusPair> bonuses = Building::GetBonuses();
+
+	// Animal Uniqueness
+	if (IsUpgraded(0)) 
+	{
+		const std::vector<CardStatus>& cards = slotCards();
+		TSet<CardEnum> cardEnums;
+		for (const CardStatus& card: cards) {
+			if (IsAnimalCard(card.cardEnum)) {
+				cardEnums.Add(card.cardEnum);
+			}
+		}
+		
+		bonuses.push_back({ GetUpgrade(0).name, 10 * cardEnums.Num() });
+	}
+
+	return bonuses;
+}
+
+/*
+ * Museum
+ */
+void Museum::FinishConstruction()
+{
+	AddUpgrades({
+
+	});
+
+	Building::FinishConstruction();
+}
+
+/*
+ * Diplomatic Building
+ */
+void DiplomaticBuilding::FinishConstruction()
+{
+	Building::FinishConstruction();
+	_simulation->playerOwned(foreignBuilder()).AddDiplomaticBuilding(buildingId());
+}
+
+void DiplomaticBuilding::OnDeinit() {
+	_simulation->playerOwned(foreignBuilder()).RemoveDiplomaticBuilding(buildingId());
+}
+
+/*
+ * Embassy
+ */
+void Embassy::FinishConstruction()
+{
+	/*
+		- Upgrade.. Encourage building Foreign Quarter
+		- Upgrade: Trade Deal ... 
+	 */
+	AddUpgrades({
+		MakeUpgrade(
+			LOCTEXT("EmbassyUpgrade_ForeignInvestment", "Foreign Investment"), 
+			LOCTEXT("EmbassyUpgrade_ForeignInvestment Desc", "Each foreign building built gives influence equals to 50% of its cost"), 
+			50
+		),
+		MakeUpgrade(
+			LOCTEXT("EmbassyUpgrade_Hotels", "Hotel Chain"),
+			LOCTEXT("EmbassyUpgrade_Hotels Desc", "Gain <img id=\"Coin\"/> income equals to 20% of the revenue from Hotels in this town that is built by you."),
+			50
+		),
+		MakeUpgrade(
+			LOCTEXT("EmbassyUpgrade_ForeignQuarter", "Foreign Quarter Synergy"),
+			LOCTEXT("EmbassyUpgrade_ForeignQuarter Desc", "+30<img id=\"Influence\"/> income if we have Foreign Quarter in this city."),
+			50
+		),
+	});
+
+	DiplomaticBuilding::FinishConstruction();
+}
+
+/*
+ * Foreign Quarter
+ */
+void ForeignQuarter::FinishConstruction()
+{
+	/*
+		- Sci.. Hotel give sci etc.
+		Upgrade: Pub ... money
+		Trading Company, Foreign Manufacturing (Factory), School, Library etc.
+	 */
+	AddUpgrades({
+		MakeLevelUpgrade(
+			LOCTEXT("ForeignQuarterUpgrade_MilitaryQuarter", "Military Quarter"),
+			LOCTEXT("EmbassyUpgrade_ForeignInvestment Desc", "Each Upgrade Level Increases <img id=\"Influence\"/> gain by 100"),
+			ResourceEnum::Money, 30
+		),
+		MakeLevelUpgrade(
+			LOCTEXT("ForeignQuarterUpgrade_MerchantQuarter", "Merchant Quarter"),
+			LOCTEXT("EmbassyUpgrade_ForeignInvestment Desc", "Each Upgrade Level Increases <img id=\"Coin\"/> gain by 100"),
+			ResourceEnum::Money, 30
+		),
+	});
+
+	DiplomaticBuilding::FinishConstruction();
+}
+
+
 
 #undef LOCTEXT_NAMESPACE 

@@ -451,9 +451,6 @@ public:
 		}
 	}
 
-	/*
-	 * Helpers
-	 */
 
 	void AddResourceTooltip(UWidget* widget, ResourceEnum resourceEnum, bool skipWidgetHoverCheck = false);
 
@@ -478,57 +475,25 @@ public:
 	}
 	
 
-	void AddArmyTooltip(UWidget* widget, int32 armyEnumInt, ArmyGroup& armyGroup, ArmyNode& node)
+	template<typename T>
+	static T* FindChildRecursive(UPanelWidget* widget)
 	{
-		if (!widget->IsHovered()) {
-			ResetTooltip(widget);
-			return;
+		for (int32 i = 0; i < widget->GetChildrenCount(); i++)
+		{
+			if (T* result = Cast<T>(widget->GetChildAt(i))) {
+				return result;
+			}
+
+			if (UPanelWidget* panelWidget = Cast<UPanelWidget>(widget->GetChildAt(i))) {
+				if (T* result = FindChildRecursive<T>(panelWidget)) {
+					return result;
+				}
+			}
 		}
 		
-		//ArmyInfo info = GetArmyInfoInt(armyEnumInt);
-
-		//std::stringstream ss;
-		//ss << "<Bold>" << info.name << "</>";
-		//ss << "<space>";
-
-		//int32 hp = armyGroup.HPs[armyEnumInt];
-		//int32 initialHP = armyGroup.initialHPs[armyEnumInt];
-		//ss << "Total HP: ";
-		//if (hp > initialHP * 2 / 3) {
-		//	ss << "<Green>";
-		//} else if (hp > initialHP / 3) {
-		//	ss << "<Yellow>";
-		//} else {
-		//	ss << "<Red>";
-		//}
-		//ss << hp << "/" << initialHP << "</>\n";
-		//ss << "Count: " << armyGroup.TroopCount(armyEnumInt);
-
-		//ss << "<space>";
-		//ss << "Upkeep: " << (info.upkeep100() / 100.0f) << "<img id=\"Coin\"/>";
-		//ss << "<space>";
-		//
-		//ss << "Attack: "<< info.attack << "\n";
-		//
-		//ss << std::setprecision(2);
-		//int32 attackDelayPenalty = node.PlayerAttackDelayPenaltyPercent(armyGroup.playerId);
-		//int32 attackSpeedPenalty = 100 - 100 * 100 / (100 + attackDelayPenalty);
-		//
-		//int32 attackDelaySec100 = info.attackDelaySec100 * (100 + attackDelayPenalty) / 100;
-		//if (attackDelayPenalty > 0) {
-		//	ss << "Attacks per sec: <Red>" << static_cast<float>(100) / attackDelaySec100 << "</> (<Red>-" << attackSpeedPenalty << "%</>)" << "\n";
-		//} else {
-		//	ss << "Attacks per sec: " << static_cast<float>(100) / attackDelaySec100 << "\n";
-		//}
-
-		//
-		//ss << "Defense: " << info.defense << "\n";
-		//ss << "HP per unit: " << info.maxHp;
-	
-	
-		
-		//AddToolTip(widget, ss.str());
+		return nullptr;
 	}
+	
 
 public:
 

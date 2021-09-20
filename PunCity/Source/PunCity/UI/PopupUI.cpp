@@ -94,6 +94,9 @@ void UPopupUI::Tick()
 		else if (shouldShowExclusive(ExclusiveUIEnum::TownAutoTradeUI)) {
 			shouldPopup = true;
 		}
+		else if (shouldShowExclusive(ExclusiveUIEnum::DeployMilitaryUI)) {
+			shouldPopup = true;
+		}
 	}
 	
 	if (!shouldPopup) {

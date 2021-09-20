@@ -21,7 +21,7 @@ void UDiplomacyUI::TickUI()
 		// Relationship
 		auto& aiPlayerSys = sim.aiPlayerSystem(aiPlayerId);
 		TArray<FText> args;
-		aiPlayerSys.GetAIRelationshipText(args, playerId());
+		aiPlayerSys.relationship().GetAIRelationshipText(args, playerId());
 		SetText(RelationshipText, args);
 
 		// Interactions

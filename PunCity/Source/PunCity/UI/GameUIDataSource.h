@@ -153,7 +153,15 @@ enum class UIEnum
 
 	PunMidRowText,
 	TradeDealResourceRow,
-	
+
+	ChooseCharacterElement,
+	ChooseLogoElement,
+	ChooseColorElement,
+
+	WG_MinorTownWorldUI,
+	WG_BattlefieldUI,
+	WG_BattlefieldArmyUI,
+	WG_BattlefieldUnitIcon,
 
 	WGT_Button,
 
@@ -175,6 +183,31 @@ enum class UIEnum
 };
 static const int UIEnumCount = static_cast<int>(UIEnum::Count);
 
+
+USTRUCT()
+struct FPlayerInfo
+{
+	GENERATED_BODY();
+
+	UPROPERTY() FText name;
+
+	UPROPERTY() int32 logoIndex = 0;
+	UPROPERTY() FLinearColor logoColorBackground = FLinearColor::Black;
+	UPROPERTY() FLinearColor logoColorForeground = FLinearColor::Yellow;
+	UPROPERTY() int32 characterIndex = 0;
+	UPROPERTY() int32 factionIndex = 0;
+
+	friend FArchive& operator<<(FArchive& Ar, FPlayerInfo& object)
+	{
+		Ar << object.name;
+		Ar << object.logoIndex;
+		Ar << object.logoColorBackground;
+		Ar << object.logoColorForeground;
+		Ar << object.characterIndex;
+		Ar << object.factionIndex;
+		return Ar;
+	}
+};
 
 
 // This class does not need to be modified.
@@ -243,6 +276,7 @@ class IGameUIDataSource
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
 	virtual int32 playerId() = 0;
+	virtual FPlayerInfo playerInfo(int32 playerId) = 0;
 	virtual FString playerNameF(int32 playerId) = 0;
 
 	virtual class FMapSettings GetMapSettings() = 0;
@@ -286,6 +320,7 @@ public:
 
 	virtual void SetOverlayHideTree(bool isHiding) = 0;
 	virtual void SetOverlayProvince(bool showProvinceOverlay) = 0;
+	virtual void SetOverlayDefense(bool showOverlay) = 0;
 
 	virtual bool isCtrlDown() = 0;
 	virtual bool isShiftDown() = 0;
@@ -301,6 +336,7 @@ public:
 
 	virtual bool isHidingTree() = 0;
 	virtual bool isShowingProvinceOverlay() = 0;
+	virtual bool isShowingDefenseOverlay() = 0;
 	
 	virtual float zoomDistance() = 0;
 	virtual bool ZoomDistanceBelow(float threshold) = 0;
@@ -364,5 +400,12 @@ public:
 		else {
 			TownSwapHorizontalBox->SetVisibility(ESlateVisibility::Collapsed);
 		}
+	}
+
+	static void SetPlayerLogo(UMaterialInstanceDynamic* material, const FPlayerInfo& playerInfo, UAssetLoaderComponent* assetLoader)
+	{
+		material->SetVectorParameterValue("ColorBackground", playerInfo.logoColorBackground);
+		material->SetVectorParameterValue("ColorForeground", playerInfo.logoColorForeground);
+		material->SetTextureParameterValue("Logo", assetLoader->GetPlayerLogo(playerInfo.logoIndex));
 	}
 };

@@ -30,6 +30,11 @@ class UBuildingJobUI : public UPunWidget
 	GENERATED_BODY()
 public:
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* HumanSlotsUI;
+
+	UPROPERTY(meta = (BindWidget)) UImage* ForeignLogo;
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* ForeignAllowBox;
+	UPROPERTY(meta = (BindWidget)) UButton* ForeignAllowButton;
+	UPROPERTY(meta = (BindWidget)) UButton* ForeignDisallowButton;
 	
 	UPROPERTY(meta = (BindWidget)) UButton* ArrowUp;
 	UPROPERTY(meta = (BindWidget)) UButton* ArrowDown;
@@ -355,6 +360,21 @@ private:
 	UFUNCTION() void OnClickJobPriorityButton() {
 		GetPunHUD()->OpenJobPriorityUI(playerId()); // Open capital statistics UI first
 	}
+
+	UFUNCTION() void OnClickForeignAllowButton() {
+		ForeignAllowDisallowBuilding(CallbackEnum::ForeignBuildingAllow);
+	}
+	UFUNCTION() void OnClickForeignDisallowButton() {
+		ForeignAllowDisallowBuilding(CallbackEnum::ForeignBuildingDisallow);
+	}
+	void ForeignAllowDisallowBuilding(CallbackEnum callbackEnum)
+	{
+		auto command = std::make_shared<FGenericCommand>();
+		command->callbackEnum = callbackEnum;
+		command->intVar1 = _buildingId;
+		networkInterface()->SendNetworkCommand(command);
+	}
+	
 
 	void SetPriorityButton(PriorityEnum priority)
 	{

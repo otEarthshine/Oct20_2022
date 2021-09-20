@@ -69,11 +69,12 @@ void Building::Init(IGameSimulationCore& simulation, int32 objectId, int32 townI
 	SetBuildingResourceUIDirty();
 	_justFinishedConstructionJobUIDirty = false;
 
+	OnPreInit_IncludeMinorTown();
 
 	if (_playerId == -1 && 
 		!IsBridgeOrTunnel(_buildingEnum))
 	{
-		return;  // Animal Controlled
+		return;  // Animal Controlled / Minor Town Control
 	}
 
 	//PUN_LOG("Building start: %s", *FString(info.name.c_str()));
@@ -194,8 +195,14 @@ void Building::InstantClearArea()
 		//}
 		_simulation->dropSystem().ForceRemoveDrop(tile);
 	});
-	
-	_simulation->treeSystem().ForceRemoveTileObjArea(_area);
+
+	auto& treeSys = _simulation->treeSystem();
+	treeSys.ForceRemoveTileObjArea(_area);
+
+	// Remove the tree at the gate tile to prevent inaccessibility
+	frontArea().ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+		treeSys.ForceRemoveTileObj(tile.tileId(), false);
+	});
 }
 
 void Building::FinishConstruction()
@@ -277,6 +284,26 @@ void Building::FinishConstruction()
 	// Quest
 	if (_buildingEnum == CardEnum::StorageYard) {
 		_simulation->QuestUpdateStatus(_playerId, QuestEnum::BuildStorageQuest);
+	}
+
+
+	// Foreign Builder
+	if (foreignBuilder() != -1)
+	{
+		// Foreign Investment
+		if (_simulation->HasForeignBuildingWithUpgrade(foreignBuilder(), _townId, CardEnum::Embassy, 0))
+		{
+			int32 influenceGained = GetQuickBuildBaseCost(buildingEnum(), GetConstructionResourceCost(), [&](ResourceEnum resourceEnum) { return 0; }) / 2;
+			_simulation->ChangeInfluence(foreignBuilder(), influenceGained);
+			_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainInfluence, centerTile(), TEXT_NUMSIGNED(influenceGained));
+		}
+
+		// Popup Once
+		if (_simulation->TryDoCallOnceAction(foreignBuilder(), PlayerCallOnceActionEnum::ForeignBuiltSuccessfulPopup)) {
+			_simulation->AddPopupToFront(foreignBuilder(),
+				LOCTEXT("ForeignBuiltSuccessful_Popup", "Successfully built on foreign land.<space>Note: You retain the rights to demolish this building.")
+			);
+		}
 	}
 }
 
@@ -642,55 +669,46 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& 
 	
 
 	ResourcePair resourceNeeded = upgrade.currentUpgradeResourceNeeded();
-	int32 moneyNeeded = upgrade.moneyNeeded;
 	
 	// Resource Upgrade
-	if (resourceNeeded.isValid())
+	check(resourceNeeded.isValid());
+
+	PUN_CHECK(resourceNeeded.count > 0);
+
+	int32 resourceCount = (resourceNeeded.resourceEnum == ResourceEnum::Money) ? _simulation->moneyCap32(_playerId) : resourceSystem().resourceCount(resourceNeeded.resourceEnum);
+	
+	if (resourceCount >= resourceNeeded.count)
 	{
-		PUN_CHECK(resourceNeeded.count > 0);
-		if (resourceSystem().resourceCount(resourceNeeded.resourceEnum) >= resourceNeeded.count)
-		{
-			PUN_CHECK(moneyNeeded == 0);
+		// Remove Resource or Money
+		if (resourceNeeded.resourceEnum == ResourceEnum::Money) {
+			globalResourceSystem().ChangeMoney(-resourceNeeded.count);
+		}
+		else {
 			resourceSystem().RemoveResourceGlobal(resourceNeeded.resourceEnum, resourceNeeded.count);
+		}
 
-			if (upgrade.isEraUpgrade()) {
-				if (upgrade.upgradeLevel < upgrade.maxUpgradeLevel(buildingEnum())) {
-					upgrade.upgradeLevel++;
-					ResetDisplay();
-					
-					if (upgrade.upgradeLevel >= upgrade.maxUpgradeLevel(buildingEnum())) {
-						upgrade.isUpgraded = true;
-					}
+		if (upgrade.isEraUpgrade()) 
+		{
+			check(upgrade.upgradeLevel != -1);
+			if (upgrade.upgradeLevel < upgrade.maxUpgradeLevel(buildingEnum())) {
+				upgrade.upgradeLevel++;
+				ResetDisplay();
+				
+				if (upgrade.upgradeLevel >= upgrade.maxUpgradeLevel(buildingEnum())) {
+					upgrade.isUpgraded = true;
 				}
-			} else {
-				upgrade.isUpgraded = true;
 			}
+		}
+		else if (upgrade.isLevelUpgrade())
+		{
+			check(upgrade.upgradeLevel != -1);
 
+			upgrade.upgradeLevel++;
 			ResetDisplay();
-
-			if (showPopups) {
-				_simulation->soundInterface()->Spawn2DSound("UI", "UpgradeBuilding", _playerId, _centerTile);
-			}
-
-			OnUpgradeBuildingBase(upgradeIndex);
-			return true;
 		}
-
-		if (showPopups) {
-			_simulation->AddPopupToFront(_playerId, FText::Format(LOCTEXT("NotEnoughResourceForUpgrade", "Not enough {0} for upgrade."), ResourceNameT(resourceNeeded.resourceEnum)),
-											ExclusiveUIEnum::None, "PopupCannot");
+		else {
+			upgrade.isUpgraded = true;
 		}
-		needResourceEnumOut = resourceNeeded.resourceEnum;
-		return false;
-	}
-	
-	
-	// Money Upgrade
-	PUN_CHECK(moneyNeeded > 0);
-	if (globalResourceSystem().moneyCap32() >= moneyNeeded)
-	{
-		globalResourceSystem().ChangeMoney(-moneyNeeded);
-		_upgrades[upgradeIndex].isUpgraded = true;
 
 		ResetDisplay();
 
@@ -703,23 +721,60 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& 
 	}
 
 	if (showPopups) {
-		_simulation->AddPopupToFront(_playerId, LOCTEXT("NoUpgradeMoney", "Not enough money for upgrade."), ExclusiveUIEnum::None, "PopupCannot");
+		_simulation->AddPopupToFront(_playerId, FText::Format(
+			LOCTEXT("NotEnoughResourceForUpgrade", "Not enough {0} for upgrade."), 
+			ResourceNameT(resourceNeeded.resourceEnum)
+		), ExclusiveUIEnum::None, "PopupCannot");
 	}
-	needResourceEnumOut = ResourceEnum::Money;
+	
+	needResourceEnumOut = resourceNeeded.resourceEnum;
 	return false;
+	
+	
+	//// Money Upgrade
+	//PUN_CHECK(moneyNeeded > 0);
+	//if (globalResourceSystem().moneyCap32() >= moneyNeeded)
+	//{
+	//	globalResourceSystem().ChangeMoney(-moneyNeeded);
+	//	_upgrades[upgradeIndex].isUpgraded = true;
+
+	//	ResetDisplay();
+
+	//	if (showPopups) {
+	//		_simulation->soundInterface()->Spawn2DSound("UI", "UpgradeBuilding", _playerId, _centerTile);
+	//	}
+
+	//	OnUpgradeBuildingBase(upgradeIndex);
+	//	return true;
+	//}
+
+	//if (showPopups) {
+	//	_simulation->AddPopupToFront(_playerId, LOCTEXT("NoUpgradeMoney", "Not enough money for upgrade."), ExclusiveUIEnum::None, "PopupCannot");
+	//}
+	//needResourceEnumOut = ResourceEnum::Money;
+	//return false;
 }
 
-FText Building::GetUpgradeDisplayDescription(int32 index) {
+FText Building::GetUpgradeDisplayDescription(int32 index)
+{
 	BuildingUpgrade& upgrade = _upgrades[index];
 	if (upgrade.isEraUpgrade()) 
 	{
+		check(upgrade.upgradeLevel != -1);
 		int32 nextEra = upgrade.upgradeLevel + buildingInfo().minEra() + 1;
 		
 		// Special case: Trading Post/Port
 		if (IsTradingPostLike(buildingEnum())) {
 			return NSLOCTEXT("BuildingUpgrade", "Trader Level Desc", "Decrease Trading Fee by 5% per Upgrade Level");
 		}
-		
+
+		if (nextEra > 5)
+		{
+			return FText::Format(
+				NSLOCTEXT("BuildingUpgrade", "Advanced Machinery Level Desc", "Increases Efficiency by {0}% per level"),
+				TEXT_NUM(10)
+			);
+		}
 		if (nextEra == 5) 
 		{
 			int32 electricityPerBatch = ElectricityAmountNeeded();
@@ -736,11 +791,15 @@ FText Building::GetUpgradeDisplayDescription(int32 index) {
 	}
 	return upgrade.description;
 }
-FText Building::GetUpgradeDisplayName(int32 index) {
+FText Building::GetUpgradeDisplayName(int32 index)
+{
 	BuildingUpgrade& upgrade = _upgrades[index];
-	if (upgrade.isEraUpgrade()) {
+	if (upgrade.isEraUpgrade()) 
+	{
+		check(upgrade.upgradeLevel != -1);
+		
 		int32 currentEraLevel = upgrade.upgradeLevel + buildingInfo().minEra();
-		if (currentEraLevel == 5) {
+		if (upgrade.upgradeLevel == upgrade.maxUpgradeLevel(buildingEnum())) {
 			return NSLOCTEXT("BuildingUpgrade", "Level Maxed", " Level Maxed");
 		}
 		if (currentEraLevel == 4) {
@@ -749,7 +808,17 @@ FText Building::GetUpgradeDisplayName(int32 index) {
 			}
 			return NSLOCTEXT("BuildingUpgrade", "Electric Machinery", "Electric Machinery");
 		}
+
+		// Advanced machinery
+		if (currentEraLevel > 4) {
+			return FText::Format(NSLOCTEXT("BuildingUpgrade", "Advanced Machinery Lv", "Advanced Machinery Lv {0}"), TEXT_NUM(currentEraLevel - 4));
+		}
 		return FText::Format(NSLOCTEXT("BuildingUpgrade", "Level", "Level ({0})"), _simulation->unlockSystem(_playerId)->GetEraText(currentEraLevel + 1));
+	}
+	
+	if (upgrade.isLevelUpgrade())
+	{
+		return FText::Format(NSLOCTEXT("BuildingUpgrade", "LevelUpgradeDisplay", "{0} Lv {1}"), upgrade.name, TEXT_NUM(upgrade.upgradeLevel + 1));
 	}
 	return upgrade.name;
 }
@@ -1236,6 +1305,10 @@ void Building::ChangeWorkMode(const WorkMode& workMode)
 
 std::vector<BonusPair> Building::GetBonuses()
 {
+	if (_playerId == -1) {
+		return {};
+	}
+	
 	std::vector<BonusPair> bonuses;
 
 	// Budget
@@ -1352,6 +1425,12 @@ std::vector<BonusPair> Building::GetBonuses()
 
 			int32 finalComboEfficiencyBonus = upgrade.comboEfficiencyBonus * comboLevel;
 			bonuses.push_back({ upgrade.name, finalComboEfficiencyBonus });
+		}
+
+		// Advanced Machinery
+		if (upgrade.isEraUpgrade() && upgrade.GetAdvancedMachineryLevel() > 0)
+		{
+			bonuses.push_back({ LOCTEXT("Advanced Machinery", "Advanced Machinery"), upgrade.GetAdvancedMachineryLevel() * 10 });
 		}
 	}
 
@@ -1497,7 +1576,7 @@ BuildingUpgrade Building::MakeUpgrade(FText name, FText description, int32 perce
 {
 	int32 totalCost = buildingInfo().constructionCostAsMoney();
 	int32 upgradeCost = totalCost * percentOfTotalPrice / 100;
-	return BuildingUpgrade(name, description, upgradeCost);
+	return BuildingUpgrade(name, description, ResourceEnum::Money, upgradeCost);
 }
 
 BuildingUpgrade Building::MakeProductionUpgrade(FText name, ResourceEnum resourceEnum, int32 efficiencyBonus)
@@ -1547,14 +1626,15 @@ BuildingUpgrade Building::MakeWorkerSlotUpgrade(int32 percentOfTotalPrice, int32
 
 BuildingUpgrade Building::MakeEraUpgrade(int32 startEra)
 {
-	BuildingUpgrade upgrade = BuildingUpgrade(FText(), FText(), 0);
+	BuildingUpgrade upgrade = BuildingUpgrade(FText(), FText(), ResourceEnum::Money, 0);
 	upgrade.startEra = startEra;
 	upgrade.upgradeLevel = 0;
 
 	// Fill in alll the Era upgrades including "Upgrade Electric Machinery"
 	int32 baseResourceCostMoney = buildingInfo().resourceInfo.baseResourceCostMoney;
 	int32 upgradeCount = 0;
-	for (int32 i = startEra; i <= 4; i++) 
+	
+	for (int32 i = startEra; i <= 4; i++)
 	{
 		auto getUpgradeResourceEnum = [&]() {
 			switch (i) {
@@ -1571,6 +1651,20 @@ BuildingUpgrade Building::MakeEraUpgrade(int32 startEra)
 		
 		upgrade.resourceNeededPerLevel.push_back(ResourcePair(getUpgradeResourceEnum(), upgradeResourceCostMoney / GetResourceInfo(getUpgradeResourceEnum()).basePrice));
 	}
+	
+	return upgrade;
+}
+
+BuildingUpgrade Building::MakeLevelUpgrade(FText name, FText description, ResourceEnum resourceEnum, int32 percentOfTotalPrice)
+{
+	int32 totalCost = buildingInfo().constructionCostAsMoney();
+	
+	int32 price = (resourceEnum == ResourceEnum::Money) ? 1 : GetResourceInfo(resourceEnum).basePrice;
+	int32 resourceCount = 1 + totalCost * percentOfTotalPrice / 100 / price;
+	BuildingUpgrade upgrade(name, description, resourceEnum, resourceCount);
+
+	upgrade.upgradeLevel = 0;
+	
 	return upgrade;
 }
 

@@ -68,6 +68,7 @@ public:
 	virtual bool IsStatisticsUIOpened() = 0;
 	virtual void OpenStatisticsUI(int32 townIdIn) = 0;
 	virtual void OpenJobPriorityUI(int32 townIdIn) = 0;
+	virtual void OpenReinforcementUI(int32 provinceId, CallbackEnum callbackEnum) = 0;
 	
 	virtual bool IsResourcePriceUIOpened(ResourceEnum resourceEnum) = 0;
 	virtual void OpenResourcePriceUI(ResourceEnum resourceEnum) = 0;

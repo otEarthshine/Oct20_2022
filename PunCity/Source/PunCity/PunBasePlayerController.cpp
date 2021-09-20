@@ -23,7 +23,7 @@ void APunBasePlayerController::SetClientId_Implementation(int32 clientPlayerIdIn
 	_controllerPlayerId = clientPlayerIdIn;
 }
 
-void APunBasePlayerController::SyncPlayersState_ToClient_Implementation(const TArray<FString>& playerNamesF,
+void APunBasePlayerController::SyncPlayersState_ToClient_Implementation(const TArray<FPlayerInfo>& playerNamesF,
 																const TArray<bool>& playerReadyStates, 
 																const TArray<bool>& playerConnectedStates,
 																const TArray<int32>& clientDataReceived,

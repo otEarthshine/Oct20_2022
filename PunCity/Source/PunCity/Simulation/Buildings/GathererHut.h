@@ -1389,117 +1389,6 @@ public:
 };
 
 
-//class Barracfk final : public Building
-//{
-//public:
-//	void FinishConstruction() final {
-//		Building::FinishConstruction();
-//	}
-//
-//	const ArmyInfo& armyInfo() { return GetArmyInfo(_armyEnum); }
-//
-//	void QueueTrainUnit()
-//	{
-//		resourceSystem().ChangeMoney(-armyInfo().moneyCost);
-//		for (ResourcePair pair : armyInfo().resourceCost) {
-//			resourceSystem().RemoveResourceGlobal(pair.resourceEnum, pair.count);
-//		}
-//		
-//		if (_queueCount < maxQueueSize()) {
-//			_queueCount++;
-//		}
-//		TryStartTraining();
-//	}
-//
-//	// Done Training
-//	void ScheduleTick() override;
-//
-//	float trainingPercent() {
-//		if (_trainingStartTick == -1) {
-//			return 0;
-//		}
-//		return (Time::Ticks() - _trainingStartTick) * 100.0f / armyInfo().timeCostTicks();
-//	}
-//
-//	static int32 maxQueueSize() { return 10; }
-//	int32 queueCount() { return _queueCount; }
-//
-//	/*
-//	 * Build/Unit cost scaling
-//	 * - Clubman 1
-//	 * - Swordman 3
-//	 * - Archer 2
-//	 *
-//	 */
-//
-//	void SetArmyEnum(ArmyEnum armyEnum) {
-//		_armyEnum = armyEnum;
-//	}
-//
-//	void TryCancelTrainingQueue()
-//	{
-//		if (_queueCount > 0) {
-//			if (_queueCount == 1) {
-//				CancelCurrentTraining();
-//			}
-//			
-//			_queueCount--;
-//			AddBackTrainingResource();
-//		}
-//	}
-//
-//	void Serialize(FArchive& Ar) override
-//	{
-//		Building::Serialize(Ar);
-//		Ar << _armyEnum;
-//		Ar << _queueCount;
-//		Ar << _trainingStartTick;
-//	}
-//
-//private:
-//	void TryStartTraining()
-//	{
-//		if (_queueCount > 0 && _trainingStartTick == -1) {
-//			_trainingStartTick = Time::Ticks();
-//
-//			int32 timeCost = armyInfo().timeCostTicks();
-//			if (SimSettings::IsOn("CheatFastBuild")) {
-//				timeCost /= 60;
-//			}
-//			
-//			_simulation->ScheduleTickBuilding(buildingId(), _trainingStartTick + timeCost);
-//		}
-//	}
-//
-//	void CancelCurrentTraining()
-//	{
-//		if (_trainingStartTick != -1) {
-//			_trainingStartTick = -1;
-//			_simulation->RemoveScheduleTickBuilding(buildingId());
-//		}
-//	}
-//
-//	void RemoveTrainingResource()
-//	{
-//		resourceSystem().ChangeMoney(-armyInfo().moneyCost);
-//		for (ResourcePair pair : armyInfo().resourceCost) {
-//			resourceSystem().RemoveResourceGlobal(pair.resourceEnum, pair.count);
-//		}
-//	}
-//	void AddBackTrainingResource()
-//	{
-//		resourceSystem().ChangeMoney(armyInfo().moneyCost);
-//		for (ResourcePair pair : armyInfo().resourceCost) {
-//			resourceSystem().AddResourceGlobal(pair.resourceEnum, pair.count, *_simulation);
-//		}
-//	}
-//	
-//private:
-//	ArmyEnum _armyEnum = ArmyEnum::Clubman;
-//	int32 _queueCount = 0;
-//	int32 _trainingStartTick = -1;
-//};
-
 class ProvinceBuilding : public Building
 {
 public:
@@ -1673,6 +1562,7 @@ public:
 	static const int32 Radius = 12;
 };
 
+
 class MinorCityChild : public Building
 {
 public:
@@ -1690,6 +1580,7 @@ public:
 private:
 	int32 _parentId = -1;
 };
+
 
 class MinorCity : public Building
 {
@@ -1735,3 +1626,262 @@ private:
 	std::vector<int32> _childBuildingIds;
 };
 
+
+class ProvinceRuin : public Building
+{
+public:
+
+
+};
+
+
+class ProvinceOasis : public Building
+{
+public:
+
+
+};
+
+/*
+ * TODO: Hotel service quality increase for: Tavern, Zoo, Ruin, Museum
+ */
+class Hotel : public Building
+{
+public:
+	struct Room
+	{
+		int32 endTicks = -1;
+		int32 originTownId = -1;
+
+		bool isAvailable() { return endTicks == -1; }
+		bool stayCompleted() { return endTicks != -1 && Time::Ticks() >= endTicks; }
+
+		FArchive& operator>>(FArchive &Ar) {
+			Ar << endTicks;
+			Ar << originTownId;
+			return Ar;
+		}
+	};
+	
+	virtual void OnPreInit_IncludeMinorTown() override
+	{
+		const int32 maxVisitorCount = 20;
+		
+		_visitors.resize(maxVisitorCount, Room());
+		_feePerVisitor = 5;
+	}
+
+	
+	int32 visitorStayLength() { return Time::TicksPerRound; }
+
+
+	int32 serviceQuality()
+	{
+		std::vector<BonusPair> bonuses = GetBonuses();
+		int32 quality = 100 + std::max(0, GetAppealPercent() / 4);
+		for (BonusPair bonus : bonuses) {
+			quality += bonus.value;
+		}
+
+		// Quality decreases with higher feePerVisitor
+		//  At 5 ... full 100%
+		//  At 10 ... 50%
+
+		quality = quality * 5 / std::max(3, _feePerVisitor);
+		
+		return quality;
+	}
+
+	int32 feePerVisitor() { return _feePerVisitor; }
+	int32 feePerVisitorDisplay() {
+		return _pendingFeePerVisitor != -1 ? _pendingFeePerVisitor : _feePerVisitor;
+	}
+
+	void SetFeePerVisitor(int32 feePerVisitorIn) {
+		if (feePerVisitorIn == _pendingFeePerVisitor) {
+			_pendingFeePerVisitor = -1;
+		}
+		_feePerVisitor = feePerVisitorIn;
+	}
+	void SetPendingFeePerVisitor(int32 feePerVisitorIn) {
+		_pendingFeePerVisitor = feePerVisitorIn;
+	}
+	
+
+	int32 currentVisitorCount() { return _currentVisitorCount; }
+
+	int32 maxVisitorCount() { return _visitors.size(); }
+
+	bool isAvailable() { return currentVisitorCount() < maxVisitorCount(); }
+
+	TMap<int32, int32> GetTownToVisitors()
+	{
+		TMap<int32, int32> townToVisitors;
+		for (const Room& room : _visitors) 
+		{
+			if (room.originTownId != -1) {
+				if (townToVisitors.Contains(room.originTownId)) {
+					townToVisitors[room.originTownId]++;
+				} else {
+					townToVisitors.Add(room.originTownId, 1);
+				}
+			}
+		}
+		
+		return townToVisitors;
+	}
+	
+
+	void Visit(int32 originTownId)
+	{
+		for (int32 i = 0; i < _visitors.size(); i++) {
+			if (_visitors[i].isAvailable()) {
+				_visitors[i] = { Time::Ticks() + visitorStayLength(), originTownId };
+				_currentVisitorCount++;
+				return;
+			}
+		}
+		UE_DEBUG_BREAK();
+	}
+
+	virtual void OnTick1Sec() override
+	{
+		// Remove finished visitors
+		for (int32 i = 0; i < _visitors.size(); i++) {
+			if (_visitors[i].stayCompleted()) {
+				_visitors[i] = Room();
+				_currentVisitorCount--;
+			}
+		}
+	}
+
+	
+
+	virtual void Serialize(FArchive& Ar) override {
+		Building::Serialize(Ar);
+
+		Ar << _feePerVisitor;
+		SerializeVecObj(Ar, _visitors);
+
+		Ar << _currentVisitorCount;
+	}
+
+private:
+	int32 _feePerVisitor = -1;
+
+	std::vector<Room> _visitors;
+
+	int32 _currentVisitorCount = 0;
+
+	//! Non Serialized
+	int32 _pendingFeePerVisitor = -1;
+};
+
+
+class Zoo : public FunBuilding
+{
+public:
+	static const int32 Radius = 30;
+
+	virtual bool shouldDisplayParticles() override { return true; }
+
+	virtual void FinishConstruction() override;
+
+	virtual std::vector<BonusPair> GetBonuses() override;
+
+	virtual int32 maxCardSlots() override { return 6; }
+};
+
+
+class Museum : public FunBuilding
+{
+public:
+	static const int32 Radius = 30;
+
+	virtual bool shouldDisplayParticles() override { return true; }
+
+	virtual void FinishConstruction() override;
+
+	virtual int32 maxCardSlots() override { return 6; }
+};
+
+
+class DiplomaticBuilding : public Building
+{
+public:
+	virtual void FinishConstruction() override;
+
+	virtual void OnDeinit() override;
+
+	virtual int32 influenceIncome100(int32 playerId) const { return 0; }
+	virtual int32 moneyIncome100(int32 playerId) const { return 0; }
+
+	virtual void TickRound() override
+	{
+		auto addMoney = [&](int32 playerId) {
+			int32 moneyIncome100Temp = moneyIncome100(playerId);
+			if (moneyIncome100Temp > 0) {
+				_simulation->ChangeMoney100(playerId, moneyIncome100Temp);
+				_simulation->uiInterface()->ShowFloatupInfo(playerId, FloatupEnum::GainMoney, centerTile(), TEXT_100SIGNED(moneyIncome100Temp));
+			}
+		};
+		
+		addMoney(_playerId);
+		addMoney(foreignBuilder());
+	}
+};
+
+class Embassy : public DiplomaticBuilding
+{
+public:
+	virtual void FinishConstruction() override;
+
+	virtual int32 influenceIncome100(int32 playerId) const override {
+		int32 income = 50;
+		if (IsUpgraded(2) && _simulation->HasForeignBuilding(foreignBuilder(), _townId, CardEnum::ForeignQuarter)) {
+			income += 30;
+		}
+		return income * 100;
+	}
+
+	
+};
+
+
+class ForeignQuarter : public DiplomaticBuilding
+{
+public:
+	virtual void FinishConstruction() override;
+
+	virtual int32 influenceIncome100(int32 playerId) const override {
+		int32 income = 100;
+		if (IsUpgraded(0)) {
+			income += GetUpgrade(1).upgradeLevel * 20;
+		}
+		return income * 100;
+	}
+
+	virtual int32 moneyIncome100(int32 playerId) const override { return GetUpgrade(1).upgradeLevel * 20 * 100; }
+	
+};
+
+
+class ForeignPort : public DiplomaticBuilding
+{
+public:
+	virtual int32 moneyIncome100(int32 playerId) const override {
+		if (_simulation->HasForeignBuilding(foreignBuilder(), _townId, CardEnum::ForeignQuarter)) {
+			return 100 * 100;
+		}
+		return 0;
+	}
+
+};
+
+
+class SpyCenter : public Building
+{
+public:
+
+
+};

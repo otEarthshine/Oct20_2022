@@ -128,6 +128,9 @@ void UTownAutoTradeUI::TickUI()
 						numberBox->resourceEnum = resourceEnum;
 						numberBox->amount = amount;
 						numberBox->callbackWidgetCaller = autoTradeRow;
+						numberBox->minAmount = 0;
+						numberBox->ctrlClickIncrementAmount = 100;
+						numberBox->ctrlClickDecrementAmount = 100;
 
 						if (!networkInterface()->HasUserFocus(numberBox->EditableNumber)) {
 							numberBox->UpdateText();
@@ -177,8 +180,8 @@ void UTownAutoTradeUI::TickUI()
 			
 			TownManagerBase* townManagerBase = sim.townManagerBase(townId);
 
-			const std::vector<AutoTradeElement>& autoExportElements = townManagerBase->autoExportElements();
-			const std::vector<AutoTradeElement>& autoImportElements = townManagerBase->autoImportElements();
+			const std::vector<AutoTradeElement>& autoExportElements = townManagerBase->autoExportElementsConst();
+			const std::vector<AutoTradeElement>& autoImportElements = townManagerBase->autoExportElementsConst();
 
 
 			int32 hash = townId;

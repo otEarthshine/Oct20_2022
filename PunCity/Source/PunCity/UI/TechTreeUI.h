@@ -82,10 +82,10 @@ public:
 		TechScrollBox->SetScrollOffset(std::max(0, (era - 1) * 294 - 30));
 
 		SetVisibility(show ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
-		TickUI();
+		TickUI(false);
 	}
 
-	virtual void TickUI();
+	virtual void TickUI(bool shouldCallSetShowUI);
 
 protected: 
 	virtual UOverlay* GetTechSpecialLine(TechEnum techEnum) {

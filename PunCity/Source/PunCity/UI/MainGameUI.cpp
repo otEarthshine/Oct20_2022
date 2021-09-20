@@ -158,17 +158,30 @@ void UMainGameUI::PunInit()
 	LeaderSkillButton->bOverride_Cursor = false;
 
 	/*
+	 * Reinforcement
+	 */
+	ReinforcementOverlay->SetVisibility(ESlateVisibility::Collapsed);
+	for (int32 i = 0; i < ReinforcementSlots->GetChildrenCount(); i++) {
+		SetChildHUD(CastChecked<UPunWidget>(ReinforcementSlots->GetChildAt(i)));
+	}
+	for (int32 i = 0; i < ReinforcementRemovedSlots->GetChildrenCount(); i++) {
+		SetChildHUD(CastChecked<UPunWidget>(ReinforcementRemovedSlots->GetChildAt(i)));
+	}
+
+	/*
 	 * Job Priority
 	 */
-	JobPriorityCloseButton->OnClicked.AddDynamic(this, &UMainGameUI::OnClickJobPriorityCloseButton);
-	JobPriorityCloseButton2->OnClicked.AddDynamic(this, &UMainGameUI::OnClickJobPriorityCloseButton);
+	BUTTON_ON_CLICK(JobPriorityCloseButton, this, &UMainGameUI::OnClickJobPriorityCloseButton);
+	BUTTON_ON_CLICK(JobPriorityCloseButton2, this, &UMainGameUI::OnClickJobPriorityCloseButton);
 	JobPriorityOverlay->SetVisibility(ESlateVisibility::Collapsed);
 	_laborerPriorityState.lastPriorityInputTime = -999.0f;
 
+	LaborerManualCheckBox->OnCheckStateChanged.Clear();
 	LaborerManualCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UMainGameUI::OnCheckManualLaborer);
 	BUTTON_ON_CLICK(LaborerArrowUp, this, &UMainGameUI::IncreaseLaborers);
 	BUTTON_ON_CLICK(LaborerArrowDown, this, &UMainGameUI::DecreaseLaborers);
 
+	BuilderManualCheckBox->OnCheckStateChanged.Clear();
 	BuilderManualCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UMainGameUI::OnCheckManualBuilder);
 	BUTTON_ON_CLICK(BuilderArrowUp, this, &UMainGameUI::IncreaseBuilders);
 	BUTTON_ON_CLICK(BuilderArrowDown, this, &UMainGameUI::DecreaseBuilders);
@@ -767,11 +780,11 @@ void UMainGameUI::Tick()
 		 // Card being placed, taking into account network delay
 		CardEnum cardEnumBeingPlaced = inputSystemInterface()->GetBuildingEnumBeingPlaced();
 		
-		if (_lastDisplayBought != cardSystem.GetCardsBought() ||
+		if (_lastDisplayBought != cardSystem.GetCardsBought_Display() ||
 			_lastCardEnumBeingPlaced != cardEnumBeingPlaced ||
 			_lastConverterCardState != cardSystem.converterCardState)
 		{
-			_lastDisplayBought = cardSystem.GetCardsBought();
+			_lastDisplayBought = cardSystem.GetCardsBought_Display();
 			_lastCardEnumBeingPlaced = cardEnumBeingPlaced;
 			_lastConverterCardState = cardSystem.converterCardState;
 
@@ -1611,6 +1624,8 @@ void UMainGameUI::Tick()
 	}
 
 
+	TickReinforcementUI();
+	
 	
 	/*
 	 * Card animation, the beginning part
@@ -2361,11 +2376,77 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 			PUN_LOG("Not Building Card %s", *GetBuildingInfo(buildingEnum).nameF());
 			if (IsSpellCard(buildingEnum)) 
 			{
+				// Zoo Slot
 				if (IsAnimalCard(buildingEnum)) {
-					//cardStatus.cardStateValue1 = 
+					if (descriptionUIState.objectType == ObjectTypeEnum::Building)
+					{
+						Building& building = simulation().building(descriptionUIState.objectId);
+
+						if (building.playerId() == playerId() &&
+							building.CanAddSlotCard())
+						{
+							FVector2D initialPosition = GetViewportPosition(cardButton->GetCachedGeometry());
+
+							auto command = make_shared<FUseCard>();
+							command->cardStatus = cardStatus;
+							command->variable1 = descriptionUIState.objectId;
+							command->SetPosition(initialPosition);
+							networkInterface()->SendNetworkCommand(command);
+							return;
+						}
+					}
 				}
 				
 				inputSystemInterface()->StartBuildingPlacement(cardButton->cardStatus, true);
+				return;
+			}
+
+			/*
+			 * Army Card
+			 */
+			if (IsMilitaryCardEnum(buildingEnum))
+			{
+				if (ReinforcementOverlay->IsVisible())
+				{
+					if (IsLandMilitaryCardEnum(buildingEnum))
+					{
+						std::vector<CardStatus>& cards = cardSystem.pendingMilitarySlotCards;
+						int32 boughtCardCount = cardSystem.DisplayedBoughtCardCount(buildingEnum, false);
+
+						if (boughtCardCount > 0)
+						{
+							int32 cardCount = dataSource()->isShiftDown() ? boughtCardCount : 1;
+
+							auto tryAddPendingMilitarySlotCards = [&]()
+							{
+								for (int32 i = 0; i < cards.size(); i++) {
+									if (cards[i].cardEnum == buildingEnum) {
+										cards[i].stackSize += cardCount;
+										return;
+									}
+								}
+
+								if (cards.size() < ReinforcementSlots->GetChildrenCount()) {
+									cards.push_back(CardStatus(buildingEnum, cardCount));
+								}
+							};
+
+							tryAddPendingMilitarySlotCards();
+						}
+					}
+					else {
+						simulation().AddPopupToFront(playerId(),
+							LOCTEXT("NeedLandMilitaryCard_Pop", "This battle requires Land Military Cards to be deployed."),
+							ExclusiveUIEnum::None, "PopupCannot"
+						);
+					}
+					return;
+				}
+
+				simulation().AddPopupToFront(playerId(),
+					LOCTEXT("MilitaryCardsAreUsedInBattle_Pop", "Military Unit Cards are used in battles.<space>Deploy them when you defend or attack your enemy."),
+					ExclusiveUIEnum::None, "PopupCannot"
+				);
 				return;
 			}
 
@@ -2663,7 +2744,17 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 		
 		return;
 	}
-	
+
+	/*
+	 * SelectDeployMilitarySlotCard,
+	 */
+	if (callbackEnum == CallbackEnum::SelectDeployMilitarySlotCard)
+	{
+		std::vector<CardStatus>& cards = cardSystem.pendingMilitarySlotCards;
+		CppUtils::RemoveIf(cards, [&](CardStatus& cardIn) { return cardIn.cardEnum == cardButton->cardStatus.cardEnum; });
+
+		return;
+	}
 
 	/*
 	 * Sell Card
@@ -2791,12 +2882,14 @@ int32 UMainGameUI::MoneyNeededForTentativeBuy()
 	auto& cardSystem = simulation().cardSystem(playerId());
 	std::vector<bool> reserveStatus = cardSystem.GetHand1ReserveStatus();
 	
-	TArray<UWidget*> cardButtons = CardHand1Box->GetAllChildren();
-	int32 loopSize = min(cardButtons.Num(), static_cast<int32>(reserveStatus.size()));
+	//TArray<UWidget*> cardButtons = CardHand1Box->GetAllChildren();
+
+	const std::vector<CardEnum>& cardHand = cardSystem.GetHand();
+	
+	int32 loopSize = min(cardHand.size(), reserveStatus.size()); // TODO: not needed?
 	for (int i = 0; i < loopSize; i++) {
-		auto cardButton = CastChecked<UBuildingPlacementButton>(cardButtons[i]);
 		if (reserveStatus[i]) {
-			moneyNeeded += cardSystem.GetCardPrice(cardButton->cardEnum());
+			moneyNeeded += cardSystem.GetCardPrice(cardHand[i]);
 		}
 	}
 	return moneyNeeded;

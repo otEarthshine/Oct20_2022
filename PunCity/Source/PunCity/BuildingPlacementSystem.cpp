@@ -569,12 +569,20 @@ void ABuildingPlacementSystem::StartBuildingPlacement(CardStatus cardStatus, boo
 		ShowRadius(HaulingServices::Radius, OverlayType::HaulingServices);
 	}
 	
-	else if (buildingEnum == CardEnum::Theatre) {
-		ShowRadius(Theatre::Radius, OverlayType::Theatre);
-		_gameInterface->SetOverlayType(OverlayType::Appeal, OverlaySetterType::BuildingPlacement);
-	}
-	else if (buildingEnum == CardEnum::Tavern) {
-		ShowRadius(Tavern::Radius, OverlayType::Tavern);
+	else if (IsFunServiceBuilding(buildingEnum)) 
+	{
+		OverlayType overlayType = OverlayType::Tavern;
+		switch(buildingEnum)
+		{
+		case CardEnum::Museum: overlayType = OverlayType::Museum; break;
+		case CardEnum::Zoo: overlayType = OverlayType::Zoo; break;
+		case CardEnum::Theatre: overlayType = OverlayType::Theatre; break;
+		case CardEnum::Tavern: overlayType = OverlayType::Tavern; break;
+		default:
+			UE_DEBUG_BREAK();
+		}
+		
+		ShowRadius(Theatre::Radius, overlayType);
 		_gameInterface->SetOverlayType(OverlayType::Appeal, OverlaySetterType::BuildingPlacement);
 	}
 	// Shrine
@@ -1810,10 +1818,17 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 	if (IsIndustryOrMine(_buildingEnum))
 	{
 		std::vector<int32> buildingIds = simulation.buildingIds(_gameInterface->playerId(), CardEnum::House);
-		const std::vector<int32>& tavernIds = simulation.buildingIds(_gameInterface->playerId(), CardEnum::Tavern);
-		const std::vector<int32>& theatreIds = simulation.buildingIds(_gameInterface->playerId(), CardEnum::Theatre);
-		buildingIds.insert(buildingIds.begin(), tavernIds.begin(), tavernIds.end());
-		buildingIds.insert(buildingIds.begin(), theatreIds.begin(), theatreIds.end());
+
+		for (const FunServiceInfo& funServiceInfo : FunServiceToCardEnum)
+		{
+			const std::vector<int32>& funBuildingIds = simulation.buildingIds(_gameInterface->playerId(), funServiceInfo.buildingEnum);
+			buildingIds.insert(buildingIds.begin(), funBuildingIds.begin(), funBuildingIds.end());
+		}
+		
+		//const std::vector<int32>& tavernIds = simulation.buildingIds(_gameInterface->playerId(), CardEnum::Tavern);
+		//const std::vector<int32>& theatreIds = simulation.buildingIds(_gameInterface->playerId(), CardEnum::Theatre);
+		//buildingIds.insert(buildingIds.begin(), tavernIds.begin(), tavernIds.end());
+		//buildingIds.insert(buildingIds.begin(), theatreIds.begin(), theatreIds.end());
 
 		bool hasHouseAffectedByBadAppeal = false;
 		for (int32 buildingId : buildingIds) {
@@ -1882,11 +1897,24 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 					}
 					else if (IsAnimalCard(_buildingEnum))
 					{
-						if (simulation.IsWalkable(location)) {
-							_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, location);
+						if (buildingId != -1)
+						{
+							Building& bld = simulation.building(buildingId);
+
+							// If center is Zoo..
+							if (bld.isEnum(CardEnum::Zoo)) {
+								_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, location);
+							}
 						}
-						else {
-							_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
+						else
+						{
+							if (simulation.IsWalkable(location)) {
+								_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, location);
+							}
+							else {
+								_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
+							}
+							SetInstruction(PlacementInstructionEnum::Generic, true, LOCTEXT("Animal should be placed in a Zoo", "Animal should be placed in a Zoo"));
 						}
 						return;
 					}
@@ -1989,6 +2017,9 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 	 * Placement grids
 	 */
 
+	const FText foreignBuild_NotInsideTargetTown = LOCTEXT("ForeignBuild_NotInsideTargetTown", "<Red>All tiles must be in the same Town.</>");
+	const FText foreignOnlyBuild_MustBeForeignTown = LOCTEXT("ForeignOnlyBuild_NeedToBeInForeignTown", "<Red>Must be built on other player's town.</>");
+
 	if (useNormalPlacement)
 	{
 		//// Building Mesh
@@ -1997,18 +2028,42 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		// Dock Grid
 		if (IsPortBuilding(_buildingEnum))
 		{
-			bool setDockInstruct = false;
-			std::vector<PlacementGridInfo> grids;
-			simulation.CheckPortArea(_area, _faceDirection, _buildingEnum, grids, setDockInstruct, playerId);
+			auto addPortGrid = [&](int32 portPlayerId)
+			{
+				bool setDockInstruct = false;
+				std::vector<PlacementGridInfo> grids;
+				simulation.CheckPortArea(_area, _faceDirection, _buildingEnum, grids, setDockInstruct, portPlayerId);
 
-			for (PlacementGridInfo& gridInfo : grids) {
-				_placementGrid.SpawnGrid(gridInfo.gridEnum, cameraAtom, gridInfo.location, gridInfo.direction);
+				for (PlacementGridInfo& gridInfo : grids) {
+					_placementGrid.SpawnGrid(gridInfo.gridEnum, cameraAtom, gridInfo.location, gridInfo.direction);
+				}
+
+				if (setDockInstruct) {
+					SetInstruction(PlacementInstructionEnum::Dock, true);
+				}
+			};
+
+			if (IsForeignOnlyBuilding(_buildingEnum)) {
+				int32 tilePlayerId = simulation.tileOwnerPlayer(_mouseOnTile);
+				
+				if (tilePlayerId == -1 ||
+					tilePlayerId == playerId) 
+				{
+					// Must be built in foreign town
+					_area.ExecuteOnArea_WorldTile2([&](WorldTile2 location) {
+						_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
+					});
+					SetInstruction(PlacementInstructionEnum::Generic, true, foreignOnlyBuild_MustBeForeignTown);
+				}
+				else {
+					// Try to build on foreign town
+					addPortGrid(tilePlayerId);
+				}
 			}
-			
-			if (setDockInstruct) {
-				SetInstruction(PlacementInstructionEnum::Dock, true);
+			else {
+				// Normal Port
+				addPortGrid(playerId);
 			}
-			
 		}
 		// Mine grid
 		else if (IsMountainMine(_buildingEnum))
@@ -2573,34 +2628,9 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				bool isGreen = isForeign && GameMap::IsInGrid(tile) && simulation.IsBuildable(tile);
 				_placementGrid.SpawnGrid(isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, tile);
 			});
-		}
-		// Cheat FastBuild... Build anywhere
-		else if (SimSettings::IsOn("CheatFastBuild") ||
-				simulation.IsResearched(playerId, TechEnum::QuickBuild))
-		{
-			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 location)
-			{
-				bool isGreen = GameMap::IsInGrid(location) && _gameInterface->simulation().IsBuildable(location);
-				_placementGrid.SpawnGrid(isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, location);
-			});
-		}
-		// Grid
-		else
-		{
-			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 location)
-			{
-				bool isGreen = IsPlayerBuildable(location) && !isAllRed;
-				_placementGrid.SpawnGrid(isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, location);
-			});
-		}
 
-		/*
-		 * Front grid
-		 */
-		if (_buildingEnum == CardEnum::HumanitarianAidCamp)
-		{
 			TileArea frontArea = _area.GetFrontArea(_faceDirection);
-			
+
 			frontArea.ExecuteOnArea_WorldTile2([&](WorldTile2 tile)
 			{
 				PlacementGridEnum gridEnum = PlacementGridEnum::ArrowRed;
@@ -2614,46 +2644,111 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				_placementGrid.SpawnGrid(gridEnum, cameraAtom, tile, _faceDirection);
 			});
 		}
-		else if (
-			//_buildingEnum != BuildingEnum::Fence &&
-			//_buildingEnum != BuildingEnum::Bridge &&
-			!IsRoadOverlapBuilding(_buildingEnum) &&
+		//! Tech Researched... Build Foreign
+		else if (simulation.IsForeignPlacement(_area.centerTile(), playerId))
+		{
+			bool canPlace = simulation.IsForeignBuildable(_area, 
+				[&](WorldTile2 tile, bool isGreen, bool isInsideTargetTownIn) {
+					_placementGrid.SpawnGrid(isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, tile);
+					
+					if (!isInsideTargetTownIn) {
+						SetInstruction(PlacementInstructionEnum::Generic, true, foreignBuild_NotInsideTargetTown);
+					}
+				}, 
+				_area.centerTile(), 
+				[&](WorldTile2 tile) { return simulation.IsBuildable(tile); }
+			);
+
+			if (canPlace) {
+				SetInstruction(PlacementInstructionEnum::Generic, true, FText::Format(
+					LOCTEXT("ForeignBuildCost", "Build Cost\n<img id=\"Coin\"/>{0}"),
+					TEXT_NUM(Building::GetQuickBuildBaseCost(_buildingEnum, GetBuildingInfo(_buildingEnum).constructionResources, [&](ResourceEnum resourceEnum) { return 0; }))
+				));
+			}
+		}
+		//! Foreign-only Building
+		else if (IsForeignOnlyBuilding(_buildingEnum))
+		{
+			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 location) {
+				_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
+			});
+			SetInstruction(PlacementInstructionEnum::Generic, true, foreignOnlyBuild_MustBeForeignTown);
+		}
+		//! Grid
+		else
+		{
+			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 location)
+			{
+				bool isGreen = IsPlayerBuildable(location) && !isAllRed;
+				_placementGrid.SpawnGrid(isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, location);
+			});
+		}
+
+		/*
+		 * Front grid
+		 */
+		if (!IsRoadOverlapBuilding(_buildingEnum) &&
 			!IsTownPlacement(_buildingEnum) &&
 			_buildingEnum != CardEnum::Farm &&
 			_buildingEnum != CardEnum::StorageYard &&
 			!IsDecorativeBuilding(_buildingEnum))
 		{
-			bool isFastBuild = SimSettings::IsOn("CheatFastBuild");
-			
 			TileArea frontArea = _area.GetFrontArea(_faceDirection);
 
-			frontArea.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) 
+			//! Foreign Placement
+			if (simulation.IsForeignPlacement(_area.centerTile(), playerId))
 			{
-				PlacementGridEnum gridEnum = PlacementGridEnum::ArrowRed;
+				simulation.IsForeignBuildable(frontArea, 
+					[&](WorldTile2 tile, bool isGreen, bool isInsideTargetTownIn) {
+						PlacementGridEnum gridEnum = PlacementGridEnum::ArrowRed;
+						if (isGreen) {
+							gridEnum = simulation.overlaySystem().IsRoad(tile) ? PlacementGridEnum::ArrowGreen : PlacementGridEnum::ArrowYellow;
+						}
 
-				if (tile.isValid())
-				{
-					bool isFrontBuildable = IsPlayerFrontBuildable(tile);
+						_placementGrid.SpawnGrid(gridEnum, cameraAtom, tile, _faceDirection);
 
-					if (isFastBuild && IsForeignFrontBuildable(tile)) {
-						isFrontBuildable = true;
-					}
-					
-					if (simulation.overlaySystem().IsRoad(tile)) {
-						gridEnum = PlacementGridEnum::ArrowGreen;
-					}
-					else if (isFrontBuildable) {
-						gridEnum = PlacementGridEnum::ArrowYellow;
-					}
-				}
+						if (!isInsideTargetTownIn) {
+							SetInstruction(PlacementInstructionEnum::Generic, true, foreignBuild_NotInsideTargetTown);
+						}
+					}, 
+					_area.centerTile(), 
+					[&](WorldTile2 tile) { return simulation.IsFrontBuildable(tile); }
+				); // Use centerTile of the main area
+
 				
-				_placementGrid.SpawnGrid(gridEnum, cameraAtom, tile, _faceDirection);
+			}
+			//! Foreign-only Building
+			else if (IsForeignOnlyBuilding(_buildingEnum))
+			{
+				frontArea.ExecuteOnArea_WorldTile2([&](WorldTile2 location) {
+					_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
+				});
+				SetInstruction(PlacementInstructionEnum::Generic, true, foreignOnlyBuild_MustBeForeignTown);
+			}
+			else
+			{
+				frontArea.ExecuteOnArea_WorldTile2([&](WorldTile2 tile)
+				{
+					PlacementGridEnum gridEnum = PlacementGridEnum::ArrowRed;
 
-				//if (!regionSystem.IsOwnedByPlayer(tile.region(), playerId)) {
-				if (simulation.tileOwnerPlayer(tile) != playerId) {
-					SetInstruction(PlacementInstructionEnum::OutsideTerritory, true);
-				}
-			});
+					if (tile.isValid())
+					{
+						if (simulation.overlaySystem().IsRoad(tile)) {
+							gridEnum = PlacementGridEnum::ArrowGreen;
+						}
+						else if (IsPlayerFrontBuildable(tile)) {
+							gridEnum = PlacementGridEnum::ArrowYellow;
+						}
+					}
+
+					_placementGrid.SpawnGrid(gridEnum, cameraAtom, tile, _faceDirection);
+
+					if (simulation.tileOwnerPlayer(tile) != playerId) {
+						SetInstruction(PlacementInstructionEnum::OutsideTerritory, true);
+					}
+				});
+
+			}
 		}
 	}
 
@@ -2672,7 +2767,8 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 	// If cannot place, check if this is caused by being outside territory.
 	if (!_canPlace) 
 	{
-		if (!IsTownPlacement(_buildingEnum))
+		if (!IsTownPlacement(_buildingEnum) &&
+			!IsForeignOnlyBuilding(_buildingEnum))
 		{
 			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 				if (simulation.tileOwnerPlayer(tile) != playerId) {

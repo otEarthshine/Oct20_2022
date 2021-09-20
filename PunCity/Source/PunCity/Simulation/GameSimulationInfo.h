@@ -32,10 +32,10 @@
 
 // SAVE_VERSION
 #define MAJOR_SAVE_VERSION 0
-#define MINOR_SAVE_VERSION 33 // 3 digit
+#define MINOR_SAVE_VERSION 34 // 3 digit
 
-#define VERSION_SAVE_DAY 5
-#define VERSION_SAVE_MONTH 8
+#define VERSION_SAVE_DAY 14
+#define VERSION_SAVE_MONTH 9
 #define VERSION_SAVE_YEAR 21
 #define VERSION_SAVE_DATE (VERSION_SAVE_YEAR * 10000) + (VERSION_SAVE_MONTH * 100) + VERSION_SAVE_DAY
 
@@ -1340,6 +1340,9 @@ inline std::wstring ResourceNameW(ResourceEnum resourceEnum) {
 }
 inline FText ResourceNameT(ResourceEnum resourceEnum) {
 	PUN_CHECK(resourceEnum != ResourceEnum::None);
+	if (resourceEnum == ResourceEnum::Money) {
+		return NSLOCTEXT("GameSimulationInfo", "Money", "Money");
+	}
 	return ResourceInfos[static_cast<int>(resourceEnum)].name;
 }
 
@@ -2239,26 +2242,29 @@ enum class CardEnum : uint16
 	// Aug 25
 	MinorCity,
 	MinorCityPort,
-	//MinorPortCity,
-	//GuildWarrior,
-	//GuildAssassin,
-	//GuildEngineer,
-	//GuildScientist,
-	//GuildMerchant,
 
-	//MayanPyramid,
-	//EgyptianPyramid,
-	//StoneHenge,
-	//EasterIsland,
-	//Oasis,
+	TourismAgency,
+	Hotel,
+	Zoo,
+	Museum,
+	Embassy,
+	ForeignQuarter,
+	ForeignPort,
+	SpyCenter,
 
-	//Embassy,
-	//MachinePartsFactory,
-	//Zoo,
-	//GlobalHotel,
-	//GlobalCompanyHeadquarter,
-	//GlobalCompanyBranch,
-	//SpyCenter,
+	MayanPyramid,
+	EgyptianPyramid,
+	StoneHenge,
+	EasterIsland,
+	Oasis,
+
+	IrrigationPump,
+	IrrigationDitch,
+	CarpetWeaver,
+	BathHouse,
+	Caravansary,
+
+	
 	
 	
 	//! Non-Building Cards
@@ -2321,6 +2327,7 @@ enum class CardEnum : uint16
 	Sheep,
 	Cow,
 
+	//! Zoo Animals
 	Boar,
 	RedDeer,
 	YellowDeer,
@@ -2334,7 +2341,13 @@ enum class CardEnum : uint16
 	Hippo,
 	Penguin,
 	Bobcat,
+
+	//! Artifacts
+	Artifact1,
+	Artifact2,
+	Artifact3,
 	
+	//
 	FireStarter,
 	Steal,
 	Snatch,
@@ -2469,17 +2482,24 @@ enum class CardHandEnum : uint8
 	TradeDealSelect,
 	TradeDealOffer,
 
+	DeployMilitarySlots,
+
 	None,
 };
 
-static const std::vector<std::pair<CardEnum, int32>> BuildingEnumToUpkeep =
+static const TMap<CardEnum, int32> BuildingEnumToUpkeep =
 {
 	{ CardEnum::Garden, 5 },
 	
 	{ CardEnum::Library, 15 },
 	{ CardEnum::School, 18 },
+
+	{ CardEnum::Museum, 100 },
+	{ CardEnum::Zoo, 100 },
 	{ CardEnum::Theatre, 50 },
 	{ CardEnum::Tavern, 15 },
+
+	{ CardEnum::Hotel, 100 },
 
 	{ CardEnum::Granary, 10 },
 
@@ -2500,11 +2520,14 @@ static const std::vector<std::pair<CardEnum, int32>> BuildingEnumToUpkeep =
 // Building upkeep per round
 static int32 GetCardUpkeepBase(CardEnum buildingEnum)
 {
-	auto found = std::find_if(BuildingEnumToUpkeep.begin(), BuildingEnumToUpkeep.end(), 
-								[&](std::pair<CardEnum, int32> pair) { return pair.first == buildingEnum; });
-	if (found != BuildingEnumToUpkeep.end()) {
-		return found->second;
+	if (BuildingEnumToUpkeep.Contains(buildingEnum)) {
+		return BuildingEnumToUpkeep[buildingEnum];
 	}
+	//auto found = std::find_if(BuildingEnumToUpkeep.begin(), BuildingEnumToUpkeep.end(), 
+	//							[&](std::pair<CardEnum, int32> pair) { return pair.first == buildingEnum; });
+	//if (found != BuildingEnumToUpkeep.end()) {
+	//	return found->second;
+	//}
 	return 0;
 }
 
@@ -2680,11 +2703,11 @@ struct BldResourceInfo
 
 	// TODO:
 	static const int32 BaseCostPercentEraMultiplier = 140;
-	static const int32 BaseProfitPercentEraMultiplier = 130;
+	static const int32 BaseProfitPercentEraMultiplier = 120;
 
 	// For calculating upgrade cost and final base production
 	static const int32 UpgradeCostPercentEraMultiplier = 150;
-	static const int32 UpgradeProfitPercentEraMultiplier = 120;
+	static const int32 UpgradeProfitPercentEraMultiplier = 115;
 
 	static const int32 FirstIndustryIncentiveMultiplier = 80;
 
@@ -3197,6 +3220,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::School, _LOCTEXT("School", "School"),	LOCTEXT("School (Plural)", "Schools"), LOCTEXT("School Desc", "+120%<img id=\"Science\"/> for surrounding Houses (effect doesn't stack)"),
 		WorldTile2(6, 8), GetBldResourceInfo(3, {}, { 2, 1, 1, 1 }, 50, 100, -999)
 	),
+	
 	BldInfo(CardEnum::Theatre, _LOCTEXT("Theatre", "Theatre"),	LOCTEXT("Theatre (Plural)", "Theatres"), LOCTEXT("Theatre Desc", "Increase visitor's Fun. Base Service quality 70."),
 		WorldTile2(10, 8), GetBldResourceInfo(3, {}, { 0, 0, 1, 1, 1 }, 0, 100, -999)
 	),
@@ -3360,7 +3384,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::Fort, _LOCTEXT("Fort", "Fort"),				LOCTEXT("Fort (Plural)", "Forts"), LOCTEXT("Fort Desc", "+100% province's defense."),
 		WorldTile2(9, 9), GetBldResourceInfoMoney(3000)
 	),
-	BldInfo(CardEnum::ResourceOutpost, _LOCTEXT("Resource Outpost", "Resource Outpost"),	LOCTEXT("Resource Outpost (Plural)", "Resource Outposts"), LOCTEXT("Resource Outpost Desc", "Extract resource from province."),
+	BldInfo(CardEnum::ResourceOutpost, _LOCTEXT("Resource Camp", "Resource Camp"),	LOCTEXT("Resource Camp (Plural)", "Resource Camps"), LOCTEXT("Resource Camp Desc", "Extract resource from province."),
 		WorldTile2(10, 10), GetBldResourceInfoMoney(10000)
 	),
 	BldInfo(CardEnum::ResearchLab, _LOCTEXT("Research Lab", "Research Lab"), LOCTEXT("Research Lab (Plural)", "Research Labs"), LOCTEXT("Research Lab Desc", "Generate Science Points. Uses Paper as input."),
@@ -3480,7 +3504,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::Cathedral, _LOCTEXT("Cathedral", "Cathedral"), LOCTEXT("Cathedral (Plural)", "Cathedrals"), LOCTEXT("Cathedral Desc", "First Cathedral grants X Victory Score. +10% Job Happiness in the city"),
 		WorldTile2(21, 13), GetBldResourceInfo(3, {}, { 0, 0, 0, 5, 2 }, 5000, 100, -999)
 	),
-	BldInfo(CardEnum::Castle, _LOCTEXT("Castle", "Castle"), LOCTEXT("Castle (Plural)", "Castles"), LOCTEXT("Castle Desc", "First Castle grants X Victory Score. +15%<img id=\"Influence\"/> Income from city population"),
+	BldInfo(CardEnum::Castle, _LOCTEXT("Castle", "Castle"), LOCTEXT("Castle (Plural)", "Castles"), LOCTEXT("Castle Desc", "First Castle grants X Victory Score. +15%<img id=\"Influence\"/> Income from Houses"),
 		WorldTile2(16, 16), GetBldResourceInfo(3, {}, { 0, 5, 1, 0, 1 }, 8000, 100, -999)
 	),
 	BldInfo(CardEnum::GrandPalace, _LOCTEXT("Grand Palace", "Grand Palace"), LOCTEXT("Grand Palace (Plural)", "Grand Palaces"), LOCTEXT("Grand Palace Desc", "First Grand Palace grants X Victory Score. +20% Building Appeal in the city. "),
@@ -3577,7 +3601,65 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::MinorCityPort, _LOCTEXT("Minor City Port", "Minor City Port"), LOCTEXT("Minor City Port (Plural)", "Minor City Ports"), LOCTEXT("Minor City Port Desc", ""),
 		WorldTile2(10, 9), GetBldResourceInfoManual({})
 	),
+	BldInfo(CardEnum::TourismAgency, _LOCTEXT("Tourism Agency", "Tourism Agency"), LOCTEXT("Tourism Agency (Plural)", "Tourism Agencies"), LOCTEXT("Tourism Agency Desc", ""),
+		WorldTile2(6, 6), GetBldResourceInfoManual({})
+	),
+	BldInfo(CardEnum::Hotel, _LOCTEXT("Hotel", "Hotel"), LOCTEXT("Hotel (Plural)", "Hotels"), LOCTEXT("Hotel Desc", "Allow visitors from other towns to stay (for <img id=\"Coin\"/>)."),
+		WorldTile2(6, 6), GetBldResourceInfoManual({})
+	),
+	BldInfo(CardEnum::Zoo, _LOCTEXT("Zoo", "Zoo"), LOCTEXT("Zoo (Plural)", "Zoos"), LOCTEXT("Zoo Desc", "Increase visitor's Fun. Service Quality depends on slotted animals."),
+		WorldTile2(12, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 100, 100, 100 })
+	),
+	BldInfo(CardEnum::Museum, _LOCTEXT("Museum", "Museum"), LOCTEXT("Museum (Plural)", "Museums"), LOCTEXT("Museum Desc", ""),
+		WorldTile2(12, 12), GetBldResourceInfoManual({})
+	),
+	BldInfo(CardEnum::Embassy, _LOCTEXT("Embassy", "Embassy"), LOCTEXT("Embassy (Plural)", "Embassy"), LOCTEXT("Embassy Desc", "+50<img id=\"Influence\"/> income for builder and host player."),
+		WorldTile2(6, 6), GetBldResourceInfoManual({ 200 })
+	),
+	BldInfo(CardEnum::ForeignQuarter, _LOCTEXT("Foreign Quarter", "Foreign Quarter"), LOCTEXT("Foreign Quarter (Plural)", "Foreign Quarters"), LOCTEXT("Foreign Quarter Desc", "+100<img id=\"Influence\"/> income for builder and host player."),
+		WorldTile2(12, 12), GetBldResourceInfoManual({ 500 })
+	),
+	BldInfo(CardEnum::ForeignPort, _LOCTEXT("Foreign Port", "Foreign Port"), LOCTEXT("Foreign Port (Plural)", "Foreign Ports"), LOCTEXT("Foreign Port Desc", "+100<img id=\"Coin\"/> if this town has our Foreign Quarters"),
+		WorldTile2(10, 9), GetBldResourceInfoManual({ 300 })
+	),
+	BldInfo(CardEnum::SpyCenter, _LOCTEXT("Spy Center", "Spy Center"), LOCTEXT("Spy Center (Plural)", "Spy Center"), LOCTEXT("Spy Center Desc", ""),
+		WorldTile2(12, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 100, 100 })
+	),
 
+	BldInfo(CardEnum::MayanPyramid, _LOCTEXT("Jungle Ruin", "Jungle Ruin"), LOCTEXT("Jungle Ruin (Plural)", "Jungle Ruins"), LOCTEXT("Jungle Ruin Desc", ""),
+		WorldTile2(12, 12), GetBldResourceInfoManual({})
+	),
+	BldInfo(CardEnum::EgyptianPyramid, _LOCTEXT("Desert Ruin", "Desert Ruin"), LOCTEXT("Desert Ruin (Plural)", "Desert Ruins"), LOCTEXT("Desert Ruin Desc", ""),
+		WorldTile2(12, 12), GetBldResourceInfoManual({})
+	),
+	BldInfo(CardEnum::StoneHenge, _LOCTEXT("Ruin", "Ruin"), LOCTEXT("Ruin (Plural)", "Ruins"), LOCTEXT("Ruin Desc", ""),
+		WorldTile2(12, 12), GetBldResourceInfoManual({})
+	),
+	BldInfo(CardEnum::EasterIsland, _LOCTEXT("Ruin", "Ruin"), LOCTEXT("Ruin (Plural)", "Ruins"), LOCTEXT("Ruin Desc", ""),
+		WorldTile2(12, 12), GetBldResourceInfoManual({})
+	),
+	
+	BldInfo(CardEnum::Oasis, _LOCTEXT("Oasis", "Oasis"), LOCTEXT("Oasis (Plural)", "Oases"), LOCTEXT("Oasis Desc", ""),
+		WorldTile2(12, 12), GetBldResourceInfoManual({})
+	),
+
+	BldInfo(CardEnum::IrrigationPump, _LOCTEXT("Irrigation Pump", "Irrigation Pump"), LOCTEXT("Irrigation Pump (Plural)", "Irrigation Pumps"), LOCTEXT("Irrigation Pump Desc", ""),
+		WorldTile2(12, 12), GetBldResourceInfoManual({})
+	),
+	BldInfo(CardEnum::IrrigationDitch, _LOCTEXT("Irrigation Ditch", "Irrigation Ditch"), LOCTEXT("Irrigation Ditch (Plural)", "Irrigation Ditches"), LOCTEXT("Irrigation Ditch Desc", ""),
+		WorldTile2(12, 12), GetBldResourceInfoManual({})
+	),
+	BldInfo(CardEnum::CarpetWeaver, _LOCTEXT("Carpet Weaver", "Carpet Weaver"), LOCTEXT("Carpet Weaver (Plural)", "Carpet Weavers"), LOCTEXT("Carpet Weaver Desc", ""),
+		WorldTile2(12, 12), GetBldResourceInfoManual({})
+	),
+	BldInfo(CardEnum::BathHouse, _LOCTEXT("Bath House", "Bath House"), LOCTEXT("Bath House (Plural)", "Bath Houses"), LOCTEXT("Bath House Desc", ""),
+		WorldTile2(12, 12), GetBldResourceInfoManual({})
+	),
+	BldInfo(CardEnum::Caravansary, _LOCTEXT("Caravansary", "Caravansary"), LOCTEXT("Caravansary (Plural)", "Caravansaries"), LOCTEXT("Caravansary Desc", ""),
+		WorldTile2(12, 12), GetBldResourceInfoManual({})
+	),
+
+	
 	
 	// Can no longer pickup cards
 	//BldInfo("Necromancer tower",	WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0,	{30, 30, 0},	"All citizens become zombie minions. Happiness becomes irrelevant. Immigration ceased."),
@@ -3596,6 +3678,16 @@ static int32 GetMilitaryCost(int32 baseCost, int32 era)
 
 	return cost;
 }
+
+
+static int32 GetMilitaryHP(int32 cost)
+{
+	const int32 baseCost = 1000;
+	const int32 baseHP = 1000;
+	return baseHP * cost * cost / cost;
+}
+
+
 
 static const BldInfo CardInfos[]
 {
@@ -3665,21 +3757,26 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::Cow,				_INVTEXT("Cow"), 300, INVTEXT("Spawn 3 Cows on a Ranch.")),
 
 	// Zoo animals
-	BldInfo(CardEnum::Boar,				_INVTEXT("Boar"), 1000, INVTEXT("Zoo.")),
-	BldInfo(CardEnum::RedDeer,			_INVTEXT("RedDeer"), 1000, INVTEXT("Zoo.")),
-	BldInfo(CardEnum::YellowDeer,		_INVTEXT("YellowDeer"), 1000, INVTEXT("Zoo.")),
-	BldInfo(CardEnum::DarkDeer,			_INVTEXT("DarkDeer"), 1000, INVTEXT("Zoo.")),
+	BldInfo(CardEnum::Boar,				_LOCTEXT("Boar", "Boar"), 1000, LOCTEXT("Boar Desc", "+5% city attractiveness when placed in Zoo (does not stack)")),
+	BldInfo(CardEnum::RedDeer,			_LOCTEXT("Red Deer", "Red Deer"), 1000, LOCTEXT("Red Deer Desc", "+5% city attractiveness when placed in Zoo (does not stack)")),
+	BldInfo(CardEnum::YellowDeer,		_LOCTEXT("Yellow Deer", "Yellow Deer"), 1000, LOCTEXT("Yellow Deer Desc", "+5% city attractiveness when placed in Zoo (does not stack)")),
+	BldInfo(CardEnum::DarkDeer,			_LOCTEXT("Dark Deer", "Dark Deer"), 1000, LOCTEXT("Dark Deer Desc", "+5% city attractiveness when placed in Zoo (does not stack)")),
 
-	BldInfo(CardEnum::BrownBear,		_INVTEXT("BrownBear"), 1000, INVTEXT("Zoo.")),
-	BldInfo(CardEnum::BlackBear,		_INVTEXT("BlackBear"), 1000, INVTEXT("Zoo.")),
-	BldInfo(CardEnum::Panda,			_INVTEXT("Panda"), 1000, INVTEXT("Zoo.")),
+	BldInfo(CardEnum::BrownBear,		_LOCTEXT("Brown Bear", "Brown Bear"), 1000, LOCTEXT("Brown Bear Desc", "+5% city attractiveness when placed in Zoo (does not stack)")),
+	BldInfo(CardEnum::BlackBear,		_LOCTEXT("Black Bear", "Black Bear"), 1000, LOCTEXT("Black Bear Desc", "+5% city attractiveness when placed in Zoo (does not stack)")),
+	BldInfo(CardEnum::Panda,			_LOCTEXT("Panda", "Panda"), 1000, LOCTEXT("Panda Desc", "+5% city attractiveness when placed in Zoo (does not stack)")),
 
-	BldInfo(CardEnum::Moose,			_INVTEXT("Moose"), 1000, INVTEXT("Zoo.")),
-	BldInfo(CardEnum::Hippo,			_INVTEXT("Hippo"), 1000, INVTEXT("Zoo.")),
-	BldInfo(CardEnum::Penguin,			_INVTEXT("Penguin"), 1000, INVTEXT("Zoo.")),
-	BldInfo(CardEnum::Bobcat,			_INVTEXT("Bobcat"), 1000, INVTEXT("Zoo.")),
+	BldInfo(CardEnum::Moose,			_LOCTEXT("Moose", "Moose"), 1000, LOCTEXT("Moose Desc", "+5% city attractiveness when placed in Zoo (does not stack)")),
+	BldInfo(CardEnum::Hippo,			_LOCTEXT("Hippo", "Hippo"), 1000, LOCTEXT("Hippo Desc", "+5% city attractiveness when placed in Zoo (does not stack)")),
+	BldInfo(CardEnum::Penguin,			_LOCTEXT("Penguin", "Penguin"), 1000, LOCTEXT("Penguin Desc", "+5% city attractiveness when placed in Zoo (does not stack)")),
+	BldInfo(CardEnum::Bobcat,			_LOCTEXT("Bobcat", "Bobcat"), 1000, LOCTEXT("Bobcat Desc", "+5% city attractiveness when placed in Zoo (does not stack)")),
 
+	//! Artifacts
+	BldInfo(CardEnum::Artifact1,			_LOCTEXT("Artifact1", "Artifact1"), 1000, LOCTEXT("Artifact1 Desc","")),
+	BldInfo(CardEnum::Artifact2,			_LOCTEXT("Artifact2", "Artifact2"), 1000, LOCTEXT("Artifact2 Desc","")),
+	BldInfo(CardEnum::Artifact3,			_LOCTEXT("Artifact3", "Artifact3"), 1000, LOCTEXT("Artifact3 Desc","")),
 
+	//
 	BldInfo(CardEnum::FireStarter,		_LOCTEXT("Fire Starter", "Fire Starter"), 200,	LOCTEXT("Fire Starter Desc", "Start a fire in an area (3 tiles radius).")),
 	BldInfo(CardEnum::Steal,			_LOCTEXT("Steal", "Steal"), 200,					LOCTEXT("Steal Desc", "Steal 30% of target player's treasury<img id=\"Coin\"/>. Use on Townhall.")),
 	BldInfo(CardEnum::Snatch,			_LOCTEXT("Snatch", "Snatch"), 50,				LOCTEXT("Snatch Desc", "Steal <img id=\"Coin\"/> equal to target player's population X 5. Use on Townhall.")),
@@ -3939,6 +4036,44 @@ struct CardStatus
 	void Serialize(class PunSerializedData& blob);
 };
 
+static const std::vector<CardEnum> ZooAnimalCards
+{
+	CardEnum::Boar,
+	CardEnum::RedDeer,
+	CardEnum::YellowDeer,
+	CardEnum::DarkDeer,
+	
+	CardEnum::BrownBear,
+	CardEnum::BlackBear,
+	CardEnum::Panda,
+
+	CardEnum::Moose,
+	CardEnum::Hippo,
+	CardEnum::Penguin,
+	CardEnum::Bobcat, 
+};
+
+static bool IsCardEnumInList(CardEnum cardEnum, const std::vector<CardEnum>& vec)
+{
+	int32 cardEnumInt = static_cast<int32>(cardEnum);
+	return static_cast<int32>(vec[0]) <= cardEnumInt && cardEnumInt <= static_cast<int32>(vec[vec.size() - 1]);
+}
+
+static bool IsZooAnimalCard(CardEnum cardEnum) {
+	return IsCardEnumInList(cardEnum, ZooAnimalCards);
+}
+
+static const std::vector<CardEnum> ArtifactCards
+{
+	CardEnum::Artifact1,
+	CardEnum::Artifact2,
+	CardEnum::Artifact3,
+};
+
+static bool IsArtifactCard(CardEnum cardEnum) {
+	return IsCardEnumInList(cardEnum, ArtifactCards);
+}
+
 static const std::vector<CardEnum> BuildingSlotCards
 {
 	CardEnum::ProductivityBook,
@@ -3950,12 +4085,13 @@ static const std::vector<CardEnum> BuildingSlotCards
 
 static bool IsBuildingSlotCard(CardEnum cardEnum)
 {
-	for (CardEnum slotCardEnum : BuildingSlotCards) {
-		if (slotCardEnum == cardEnum) {
-			return true;
-		}
+	if (IsZooAnimalCard(cardEnum)) {
+		return true;
 	}
-	return false;
+	if (IsArtifactCard(cardEnum)) {
+		return true;
+	}
+	return IsCardEnumInList(cardEnum, BuildingSlotCards);
 }
 
 static const CardEnum RareCards[]
@@ -4097,14 +4233,14 @@ inline const BldInfo& GetBuildingInfo(CardEnum cardEnum) {
 	return GetBuildingInfoInt(static_cast<int32>(cardEnum));
 }
 
-inline CardEnum FindCardEnumByName(std::wstring nameIn)
+inline CardEnum FindCardEnumByName(FString nameIn)
 {
-	ToLowerCase(nameIn);
+	nameIn = nameIn.ToLower();
 	
 	auto tryAddCard = [&](CardEnum cardEnum)
 	{
-		std::wstring name = GetBuildingInfo(cardEnum).nameW();
-		ToLowerCase(name);
+		FString name = GetBuildingInfo(cardEnum).nameF();
+		name = name.ToLower();
 
 		if (name == nameIn) {
 			return cardEnum;
@@ -4128,6 +4264,9 @@ inline CardEnum FindCardEnumByName(std::wstring nameIn)
 	return CardEnum::None;
 }
 
+
+
+
 static std::vector<CardEnum> GetSortedBuildingEnum()
 {
 	std::vector<std::wstring> cardNames;
@@ -4140,7 +4279,7 @@ static std::vector<CardEnum> GetSortedBuildingEnum()
 
 	std::vector<CardEnum> results;
 	for (const std::wstring& name : cardNames) {
-		CardEnum cardEnum = FindCardEnumByName(name);
+		CardEnum cardEnum = FindCardEnumByName(FString(name.c_str()));
 		PUN_CHECK(IsBuildingCard(cardEnum));
 		results.push_back(cardEnum);
 	}
@@ -4299,9 +4438,12 @@ static bool IsRanch(CardEnum cardEnum) {
 
 static bool IsServiceBuilding(CardEnum buildingEnum)
 {
-	switch (buildingEnum) {
+	switch (buildingEnum)
+	{
 	case CardEnum::Tavern:
 	case CardEnum::Theatre:
+	case CardEnum::Zoo:
+	case CardEnum::Museum:
 		
 	case CardEnum::Library:
 	case CardEnum::School:
@@ -4505,6 +4647,33 @@ static bool IsCritterBuildingEnum(CardEnum buildingEnum) {
 	}
 }
 
+static bool IsBuildingInList_Loop(CardEnum buildingEnum, const std::vector<CardEnum>& list) {
+	for (CardEnum regionalBldEnum : list) {
+		if (buildingEnum == regionalBldEnum) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/*
+ * Foreign-only Buildings
+ */
+static const std::vector<CardEnum> ForeignOnlyBuildingEnums
+{
+	CardEnum::Embassy,
+	CardEnum::ForeignQuarter,
+	CardEnum::ForeignPort,
+};
+
+static bool IsForeignOnlyBuilding(CardEnum buildingEnum) {
+	return IsBuildingInList_Loop(buildingEnum, ForeignOnlyBuildingEnums);
+}
+
+
+/*
+ * Province Buildings
+ */
 static const std::vector<CardEnum> RegionalBuildingEnums
 {
 	CardEnum::MinorCity,
@@ -4539,6 +4708,7 @@ static bool IsPortBuilding(CardEnum buildingEnum)
 	case CardEnum::TradingPort:
 	case CardEnum::MinorCityPort:
 	case CardEnum::IntercityLogisticsPort:
+	case CardEnum::ForeignPort:
 		return true;
 	default: return false;
 	}
@@ -4688,7 +4858,6 @@ struct BuildingUpgrade
 	FText name;
 	FText description;
 	ResourcePair baseUpgradeResourceNeeded;
-	int32 moneyNeeded;
 
 	int32 efficiencyBonus = 0;
 	int32 comboEfficiencyBonus = 0;
@@ -4702,25 +4871,46 @@ struct BuildingUpgrade
 	 *  - Weird to have Steelworks buildable, but can't upgrade Mine lvl 2 on remote colony
 	 */
 	int32 startEra = -1;
-	int32 upgradeLevel = 0;
+	int32 upgradeLevel = -1;
 	std::vector<ResourcePair> resourceNeededPerLevel;
 	
 	bool isEraUpgrade() const { return startEra != -1; }
+	bool isLevelUpgrade() const { return upgradeLevel != -1; }
+
+	int32 GetAdvancedMachineryLevel() const { return upgradeLevel - resourceNeededPerLevel.size(); }
+	
 	
 	int32 maxUpgradeLevel(CardEnum cardEnum) const
 	{
 		if (IsTradingPostLike(cardEnum)) {
 			return 3;
 		}
-		return 5 - startEra;
+		return 100;
+		//return 5 - startEra; // Old
 	}
 
-	ResourcePair currentUpgradeResourceNeeded() {
-		if (isEraUpgrade()) {
+	ResourcePair currentUpgradeResourceNeeded()
+	{
+		if (isEraUpgrade())
+		{
 			if (upgradeLevel < resourceNeededPerLevel.size()) {
 				return resourceNeededPerLevel[upgradeLevel];
 			}
-			return ResourcePair();
+			int32 upgradeResourceCount = resourceNeededPerLevel.back().count;
+			for (int32 i = resourceNeededPerLevel.size(); i <= upgradeLevel; i++) {
+				upgradeResourceCount = upgradeResourceCount * 2;
+			}
+			
+			return ResourcePair(resourceNeededPerLevel.back().resourceEnum, upgradeResourceCount);
+		}
+		if (isLevelUpgrade()) 
+		{
+			int32 upgradeResourceCount = baseUpgradeResourceNeeded.count;
+			for (int32 i = 1; i <= upgradeLevel; i++) {
+				upgradeResourceCount = upgradeResourceCount * 2;
+			}
+
+			return ResourcePair(baseUpgradeResourceNeeded.resourceEnum, upgradeResourceCount);
 		}
 		return baseUpgradeResourceNeeded;
 	}
@@ -4730,23 +4920,22 @@ struct BuildingUpgrade
 	}
 	
 
-	BuildingUpgrade() : name(FText()), description(FText()), baseUpgradeResourceNeeded(ResourcePair()), moneyNeeded(-1) {}
+	BuildingUpgrade() : name(FText()), description(FText()), baseUpgradeResourceNeeded(ResourcePair()) {}
 	
-	BuildingUpgrade(FText name, FText description, ResourcePair resourceNeeded, int32 moneyNeeded = 0)
-		: name(name), description(description), baseUpgradeResourceNeeded(resourceNeeded), moneyNeeded(moneyNeeded) {}
+	BuildingUpgrade(FText name, FText description, ResourcePair resourceNeeded)
+		: name(name), description(description), baseUpgradeResourceNeeded(resourceNeeded) {}
 
 	BuildingUpgrade(FText name, FText description, int32 moneyNeeded)
-		: name(name), description(description), baseUpgradeResourceNeeded(ResourcePair()), moneyNeeded(moneyNeeded) {}
+		: name(name), description(description), baseUpgradeResourceNeeded(ResourcePair(ResourceEnum::Money, moneyNeeded)) {}
 
 	BuildingUpgrade(FText name, FText description, ResourceEnum resourceEnum, int32 resourceCount)
-		: name(name), description(description), baseUpgradeResourceNeeded(ResourcePair(resourceEnum, resourceCount)), moneyNeeded(0) {}
+		: name(name), description(description), baseUpgradeResourceNeeded(ResourcePair(resourceEnum, resourceCount)) {}
 
 	void operator>>(FArchive& Ar)
 	{
 		Ar << name;
 		Ar << description;
 		baseUpgradeResourceNeeded >> Ar;
-		Ar << moneyNeeded;
 		
 		Ar << efficiencyBonus;
 		Ar << comboEfficiencyBonus;
@@ -4781,6 +4970,8 @@ enum class ProvinceAttackEnum : uint8
 
 	VassalCompetition,
 	ConquerColony,
+
+	Reinforce,
 };
 
 
@@ -5694,6 +5885,8 @@ enum class OverlayType
 	
 	Theatre,
 	Tavern,
+	Zoo,
+	Museum,
 
 	BadAppeal,
 };
@@ -5720,11 +5913,12 @@ enum class InfluenceIncomeEnum : uint8
 {
 	Townhall,
 	Population,
-	Luxury,
-	GrasslandRoamer,
+	//Luxury,
+	//Castle,
+	DiplomaticBuildings,
+	
 	TerritoryUpkeep,
-	BorderProvinceUpkeep,
-	TooMuchInfluencePoints,
+	UnsafeProvinceUpkeep,
 
 	Fort,
 	Colony,
@@ -5735,16 +5929,19 @@ static const TArray<FText> InfluenceIncomeEnumName
 {
 	LOCTEXT("Townhall", "Townhall"),
 	LOCTEXT("Population", "Population"),
-	LOCTEXT("Luxury Consumption", "Luxury Consumption"),
-	LOCTEXT("Grassland Roamer", "Grassland Roamer"),
-	LOCTEXT("Territory Upkeep", "Territory Upkeep"),
-	LOCTEXT("Flat-Land Border Province Upkeep", "Flat-Land Border Province Upkeep"),
-	LOCTEXT("Too Much Stored Influence Points", "Too Much Stored Influence Points"),
+	//LOCTEXT("Luxury Consumption", "Luxury Consumption"),
+	//LOCTEXT("Castle", "Castle"),
+	LOCTEXT("Diplomatic Buildings", "Diplomatic Buildings"),
+	
+	LOCTEXT("Province Upkeep", "Province Upkeep"),
+	LOCTEXT("Unsafe Province Upkeep", "Unsafe Province Upkeep"),
 
 	LOCTEXT("Fort", "Fort"),
 	LOCTEXT("Colony", "Colony"),
 };
 static int32 InfluenceIncomeEnumCount = static_cast<int32>(InfluenceIncomeEnum::Count);
+
+static const FText& GetInfluenceIncomeName(InfluenceIncomeEnum influenceIncomeEnum) { return InfluenceIncomeEnumName[static_cast<int32>(influenceIncomeEnum)]; }
 
 #undef LOCTEXT_NAMESPACE
 
@@ -5765,7 +5962,7 @@ enum class IncomeEnum : uint8
 	// HouseIncomeEnumCount!!!
 
 	// Other income
-	TownhallIncome, // HouseIncomeEnumCount!!!
+	//TownhallIncome, // HouseIncomeEnumCount!!!
 	BankProfit,
 	ArchivesProfit,
 	InvestmentProfit,
@@ -5799,7 +5996,7 @@ static const TArray<FText> IncomeEnumName
 	LOCTEXT("Card Desert Pilgrim", "Card Desert Pilgrim"),
 	LOCTEXT("Bank", "Bank"),
 
-	LOCTEXT("Townhall Income", "Townhall Income"),
+	//LOCTEXT("Townhall Income", "Townhall Income"),
 	LOCTEXT("Bank Profit", "Bank Profit"),
 	LOCTEXT("Archives Income", "Archives Income"),
 	LOCTEXT("Investment Profit", "Investment Profit"),
@@ -5821,7 +6018,7 @@ static const TArray<FText> IncomeEnumName
 };
 #undef LOCTEXT_NAMESPACE
 
-static const int32 HouseIncomeEnumCount = static_cast<int32>(IncomeEnum::TownhallIncome);
+static const int32 HouseIncomeEnumCount = static_cast<int32>(IncomeEnum::BankProfit);
 
 static int32 IncomeEnumCount = static_cast<int32>(IncomeEnum::Count);
 
@@ -6640,6 +6837,11 @@ static UnitInfo GetUnitInfo(int32_t unitEnumInt) {
 /*
  * Unit Cards
  */
+static bool IsCardEnumBetween(CardEnum cardEnum, CardEnum cardEnumMin, CardEnum cardEnumMax) {
+	int32 cardEnumInt = static_cast<int32>(cardEnum);
+	return static_cast<int32>(cardEnumMin) <= cardEnumInt && cardEnumInt <= static_cast<int32>(cardEnumMax);
+}
+
 static UnitEnum GetAnimalUnitEnumFromCardEnum(CardEnum cardEnum)
 {
 	int32 shift = static_cast<int32>(cardEnum) - static_cast<int32>(CardEnum::Boar);
@@ -6650,11 +6852,21 @@ static CardEnum GetAnimalCardEnumFromUnitEnum(UnitEnum unitEnum)
 	int32 shift = static_cast<int32>(unitEnum) - static_cast<int32>(UnitEnum::Boar);
 	return static_cast<CardEnum>(static_cast<int32>(CardEnum::Boar) + shift);
 }
-static bool IsAnimalCard(CardEnum cardEnum)
-{
-	int32 cardEnumInt = static_cast<int32>(cardEnum);
-	return static_cast<int32>(CardEnum::Boar) <= cardEnumInt && cardEnumInt <= static_cast<int32>(CardEnum::Bobcat);
+static bool IsAnimalCard(CardEnum cardEnum) {
+	return IsCardEnumBetween(cardEnum, CardEnum::Boar, CardEnum::Bobcat);
 }
+
+
+static bool IsLandMilitaryCardEnum(CardEnum cardEnum) {
+	return IsCardEnumBetween(cardEnum, CardEnum::Warrior, CardEnum::Artillery);
+};
+static bool IsNavyCardEnum(CardEnum cardEnum) {
+	return IsCardEnumBetween(cardEnum, CardEnum::Galley, CardEnum::Battleship);
+};
+static bool IsMilitaryCardEnum(CardEnum cardEnum) {
+	return IsCardEnumBetween(cardEnum, CardEnum::Warrior, CardEnum::Battleship);
+};
+
 
 /*
  * Spell Cards
@@ -7178,7 +7390,8 @@ static FLinearColor PlayerColor2(int32 playerId)
 	\
 	entry(AISpyNest) \
 	\
-	entry(TestAITradeDeal)
+	entry(TestAITradeDeal) \
+	entry(TestAIForeignBuild)
 
 #define CREATE_ENUM(name) name,
 #define CREATE_STRINGS(name) #name,
@@ -7361,6 +7574,16 @@ enum class NonRepeatActionEnum
 	Count,
 };
 
+enum class PlayerCallOnceActionEnum : uint8
+{
+	ForeignBuiltSuccessfulPopup,
+	LowTourismHappinessPopup,
+	Count
+};
+static const int32 CallOnceEnumCount = static_cast<int32>(PlayerCallOnceActionEnum::Count);
+
+
+
 // Flood
 struct NonWalkableTileAccessInfo
 {
@@ -7437,7 +7660,7 @@ enum class ExclusiveUIEnum : uint8
 	CardInventory,
 	RareCardHand,
 	ConverterCardHand,
-	
+
 	BuildMenu,
 	Placement,
 	ConfirmingAction,
@@ -7446,7 +7669,7 @@ enum class ExclusiveUIEnum : uint8
 	Trading,
 	IntercityTrading,
 	TargetConfirm,
-	
+
 	TechTreeUI,
 	QuestUI,
 	//ObjectDescription, // shouldn't be one, to easy to misclick on this...
@@ -7463,6 +7686,8 @@ enum class ExclusiveUIEnum : uint8
 	SendImmigrantsUI,
 	GiftResourceUI,
 	ProsperityUI,
+
+	DeployMilitaryUI,
 
 	Count,
 
@@ -7492,7 +7717,9 @@ static std::string TutorialLinkString(TutorialLinkEnum linkEnum)
 }
 
 
-//!
+/*
+ * Popup
+ */
 enum class PopupReceiverEnum : uint8
 {
 	None,
@@ -7645,6 +7872,8 @@ struct PopupInfo
 			TextArrayEquals(choices, a.choices);
 	}
 };
+
+
 
 enum class RareHandEnum : uint8
 {
@@ -8669,6 +8898,7 @@ enum class HappinessEnum
 	Entertainment,
 	Job,
 	CityAttractiveness, // New Colonists, Cannibalism, Tax etc.
+	Tourism,
 };
 
 #define LOCTEXT_NAMESPACE "HappinessName"
@@ -8682,6 +8912,8 @@ static const TArray<FText> HappinessEnumName
 	LOCTEXT("Entertainment", "Entertainment"),
 	LOCTEXT("Job", "Job"),
 	LOCTEXT("City Attractiveness", "City Attractiveness"),
+	
+	LOCTEXT("Tourism", "Tourism"),
 };
 static const TArray<FText> HappinessEnumTip
 {
@@ -8693,6 +8925,8 @@ static const TArray<FText> HappinessEnumTip
 	LOCTEXT("EntertainmentHappiness_Tip", "To Increase Entertain Happiness, provide your Citizens with access to Entertainment Services (Tavern, Theatre etc.)."),
 	LOCTEXT("JobHappiness_Tip", "Job Happiness is affected by:<bullet>Job type of your Citizens</><bullet>Building's Budget and Work Hours</>"),
 	LOCTEXT("CityAttractivenessHappiness_Tip", "City Attractiveness is affected by Tax and Card Bonuses. City Attractivenss starts off high with hopes and dreams of initial settlers, but decay over time."),
+	
+	LOCTEXT("TourismHappiness_Tip", "Citizens of our town will gain Tourism Happiness if they can visit Hotels other towns via trade routes."),
 };
 static FText GetHappinessEnumTip(HappinessEnum happinessEnum) { return HappinessEnumTip[static_cast<int>(happinessEnum)]; }
 #undef LOCTEXT_NAMESPACE
@@ -8748,8 +8982,13 @@ static FText GetHappinessFace(int32 value)
 	}
 }
 
+/*
+ * Fun Service
+ */
 enum class FunServiceEnum : uint8
 {
+	Museum,
+	Zoo,
 	Theatre,
 	Tavern,
 	
@@ -8767,6 +9006,8 @@ struct FunServiceInfo
 
 const std::vector<FunServiceInfo> FunServiceToCardEnum
 {
+	{FunServiceEnum::Museum, CardEnum::Museum, 100, 95 },
+	{FunServiceEnum::Zoo, CardEnum::Zoo, 100, 95 },
 	{FunServiceEnum::Theatre, CardEnum::Theatre, 100, 95 },
 	{FunServiceEnum::Tavern, CardEnum::Tavern, 75, 70 },
 };
@@ -8825,6 +9066,10 @@ static CardEnum FunServiceToBuildingEnum(FunServiceEnum funEnum)
 	return CardEnum::Tavern;
 }
 
+
+/*
+ * Happiness Modifier
+ */
 
 enum class HappinessModifierEnum
 {
@@ -9193,6 +9438,7 @@ enum class CallbackEnum : uint8
 	SellCard,
 	SelectBuildingSlotCard,
 	SelectInventorySlotCard,
+	SelectDeployMilitarySlotCard,
 	CardInventorySlotting,
 	ArchivesSlotting,
 
@@ -9213,6 +9459,7 @@ enum class CallbackEnum : uint8
 	OpenManageStorage,
 
 	EditableNumberSetOutputTarget,
+	EditableNumberSetHotelFeePerVisitor,
 
 	SetDeliveryTarget,
 	RemoveDeliveryTarget,
@@ -9290,6 +9537,16 @@ enum class CallbackEnum : uint8
 
 	UpdateTradeDealMoney,
 	UpdateTradeDealResource,
+
+	// ForeignBuilding
+	ForeignBuildingAllow,
+	ForeignBuildingDisallow,
+
+	// Lobby Player Settings
+	ChoosePlayerLogo,
+	ChoosePlayerColor1,
+	ChoosePlayerColor2,
+	ChoosePlayerCharacter,
 };
 
 static bool IsAutoTradeCallback(CallbackEnum callbackEnum)
@@ -9504,6 +9761,54 @@ enum class RelationshipModifierEnum : uint8
 FText RelationshipModifierNameInt(int32 index);
 int32 RelationshipModifierCount();
 
+class RelationshipModifiers
+{
+public:
+	RelationshipModifiers()
+	{
+		_relationshipModifiers.resize(GameConstants::MaxPlayersAndAI);
+		for (size_t i = 0; i < _relationshipModifiers.size(); i++) {
+			_relationshipModifiers[i].resize(RelationshipModifierCount());
+		}
+	}
+
+	
+	friend FArchive& operator<<(FArchive& Ar, RelationshipModifiers& object)
+	{
+		SerializeVecVecValue(Ar, object._relationshipModifiers);
+		return Ar;
+	}
+
+	void GetAIRelationshipText(TArray<FText>& args, int32 playerId) const;
+
+	int32 GetTotalRelationship(int32 towardPlayerId) const;
+
+	void SetModifier(int32 askingPlayerId, RelationshipModifierEnum modifier, int32 value) {
+		_relationshipModifiers[askingPlayerId][static_cast<int>(modifier)] = value;
+	}
+	void ChangeModifier(int32 askingPlayerId, RelationshipModifierEnum modifier, int32 value) {
+		_relationshipModifiers[askingPlayerId][static_cast<int>(modifier)] += value;
+	}
+
+	int32& GetModifierMutable(int32 askingPlayerId, RelationshipModifierEnum modifier) {
+		return _relationshipModifiers[askingPlayerId][static_cast<int>(modifier)];
+	}
+	int32 GetModifier(int32 askingPlayerId, RelationshipModifierEnum modifier) const {
+		return _relationshipModifiers[askingPlayerId][static_cast<int>(modifier)];
+	}
+
+	// TODO: for abandon town
+	void ClearRelationshipModifiers(int32 towardPlayerId) {
+		std::vector<int32>& modifiers = _relationshipModifiers[towardPlayerId];
+		std::fill(modifiers.begin(), modifiers.end(), 0);
+	}
+
+private:
+	std::vector<std::vector<int32>> _relationshipModifiers;
+};
+
+
+
 enum class TradeDealStageEnum : uint8
 {
 	None,
@@ -9518,6 +9823,7 @@ enum class TradeDealStageEnum : uint8
 
 struct TradeDealSideInfo
 {
+	int32 playerId = -1;
 	int32 moneyAmount = 0;
 	std::vector<ResourcePair> resourcePairs;
 	std::vector<CardStatus> cardStatuses;
@@ -9602,6 +9908,148 @@ static bool IsValidMajorTown(int32 townId) {
 static int32 TownIdToMinorTownId(int32 townId) {
 	return townId - MinorTownShift;
 }
+
+/*
+ * Faction
+ */
+
+enum class FactionEnum : uint8
+{	
+	Europe,
+	Arab,
+
+	None,
+};
+
+class FactionInfo
+{
+public:
+	FactionEnum factionEnum = FactionEnum::None;
+
+	FText name;
+	
+	FactionInfo(FactionEnum factionEnum, FText name) :
+		factionEnum(factionEnum),
+		name(name)
+	{}
+
+};
+
+#define LOCTEXT_NAMESPACE "FactionInfo"
+
+static const std::vector<FactionInfo> FactionInfos =
+{
+	FactionInfo(FactionEnum::Europe, LOCTEXT("Europe", "Europe")),
+	FactionInfo(FactionEnum::Arab, LOCTEXT("Arab", "Arab"))
+};
+
+#undef LOCTEXT_NAMESPACE
+
+static const FactionInfo& GetFactionInfo(FactionEnum factionEnum) {
+	return FactionInfos[static_cast<int32>(factionEnum)];
+}
+static const FactionInfo& GetFactionInfoInt(int32 factionEnumInt) {
+	return FactionInfos[factionEnumInt];
+}
+
+// TODO:
+enum class AIPersonalityEnum
+{
+	Warlike,
+	Raider,
+	Friendly,
+	Peaceful,
+	DislikeWar,
+	Kind,
+	Militaristic,
+	ZooLover,
+	ArtifactLover,
+	Financier,
+	Expansionist,
+	AdmireExpansionist,
+	HateStrictWorkCondition,
+	LoveStrictWorkCondition,
+	Xenophobic,
+	Xenophilic,
+};
+
+enum class AIArchetypeEnum
+{
+	Peaceful1,
+	Peaceful2,
+	//Peaceful3,
+	//Peaceful4,
+	//Peaceful5,
+	//Peaceful6,
+	//Peaceful7,
+	//Peaceful8,
+	//
+	//Merchant1,
+	//Warlike1,
+};
+
+class AIArchetypeInfo
+{
+public:
+	AIArchetypeEnum archetypeEnum;
+	std::vector<FText> names;
+	
+	std::vector<int32> logoIndices;
+	FLinearColor logoColor1;
+	FLinearColor logoColor2;
+	int32 characterIndex;
+	int32 factionIndex;
+	
+	std::vector<AIPersonalityEnum> personalityEnums;
+
+	const FText& name(int32 seed) const {
+		return names[seed % names.size()];
+	}
+	
+	int32 logoIndex(int32 seed) const {
+		return logoIndices[seed % logoIndices.size()];
+	}
+
+	//AIArchetypeInfo(AIArchetypeEnum archetypeEnum, FText name) :
+	//	archetypeEnum(archetypeEnum),
+	//	name(name)
+	//{}
+};
+
+
+#define LOCTEXT_NAMESPACE "AIPlayerArchetypeInfo"
+
+static const std::vector<AIArchetypeInfo> AIArchetypeInfos =
+{
+	{ AIArchetypeEnum::Peaceful1,
+		{ LOCTEXT("Peaceful1", "Peaceful1") },
+		{ 0, 1, 2, 3, 4, 5, 6, 7, 8 },
+		FLinearColor::Black,
+		FLinearColor::Yellow,
+		1,
+		0
+	},
+	{ AIArchetypeEnum::Peaceful2,
+		{ LOCTEXT("Peaceful2", "Peaceful2") },
+		{ 0, 1, 2, 3, 4, 5, 6, 7, 8 },
+		FLinearColor::Black,
+		FLinearColor::Yellow,
+		1,
+		0
+	},
+};
+
+#undef LOCTEXT_NAMESPACE
+
+static const int32 AIArchetypeCount = AIArchetypeInfos.size();
+
+static const AIArchetypeInfo& GetAIArchetypeInfo(AIArchetypeEnum aiArchetypeEnum)
+{
+	return AIArchetypeInfos[static_cast<int32>(aiArchetypeEnum)];
+}
+
+
+
 
 /*
  * Light weight alternative to UE4's FArchive FMemoryReader etc.

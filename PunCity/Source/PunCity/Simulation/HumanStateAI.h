@@ -220,6 +220,13 @@ public:
 		}
 	}
 
+	void ChangeHappiness(HappinessEnum happinessEnum, int32 changeValue) {
+		int32 happinessEnumInt = static_cast<int32>(happinessEnum);
+		if (happinessEnumInt < _happiness.size()) {
+			_happiness[static_cast<int>(happinessEnum)] = std::max(0, _happiness[static_cast<int>(happinessEnum)] + changeValue);
+		}
+	}
+
 	void UpdateHappiness();
 
 	void OnUnitUpdate() override {

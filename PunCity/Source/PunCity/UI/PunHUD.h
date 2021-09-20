@@ -179,6 +179,11 @@ public:
 		_mainGameUI->ToggleJobPriorityUI(townIdIn);
 	}
 
+	virtual void OpenReinforcementUI(int32 provinceId, CallbackEnum callbackEnum) override {
+		ResetGameUI();
+		_mainGameUI->OpenReinforcementUI(provinceId, callbackEnum);
+	}
+
 	
 	bool IsResourcePriceUIOpened(ResourceEnum resourceEnum) override {
 		return _statisticsUI->GetVisibility() != ESlateVisibility::Collapsed &&
@@ -358,6 +363,7 @@ public:
 		case ExclusiveUIEnum::GiftResourceUI:	return _giftResourceUI->IsVisible();
 
 		case ExclusiveUIEnum::TownAutoTradeUI: return _townAutoTradeUI->IsVisible();
+		case ExclusiveUIEnum::DeployMilitaryUI: return _mainGameUI->ReinforcementOverlay->IsVisible();
 			
 		default:
 			UE_DEBUG_BREAK();
@@ -422,6 +428,13 @@ public:
 		if (dataSource()->IsInSampleRange(tile)) {
 			FloatupInfo floatupInfo(floatupEnum, Time::Ticks(), tile, text, resourceEnum, text2);
 			_worldSpaceUI->AddFloatupInfo(floatupInfo);
+		}
+	}
+
+	virtual void ShowFloatupInfo(int32 playerIdIn, FloatupEnum floatupEnum, WorldTile2 tile, FText text, ResourceEnum resourceEnum = ResourceEnum::None, FText text2 = FText()) override
+	{
+		if (playerId() == playerIdIn) {
+			ShowFloatupInfo(floatupEnum, tile, text, resourceEnum, text2);
 		}
 	}
 

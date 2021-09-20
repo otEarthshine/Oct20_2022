@@ -32,4 +32,6 @@ private:
 	TSubclassOf<UUserWidget> _lobbyClass;
 
 	UPROPERTY() ULobbyUI* _lobbyUI;
+
+	UPROPERTY() UMainMenuAssetLoaderComponent* _mainMenuAssetLoader;
 };

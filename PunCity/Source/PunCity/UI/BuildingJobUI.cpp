@@ -22,12 +22,12 @@ void UBuildingJobUI::PunInit(int buildingId, bool isHouse)
 	NonPriorityButton->OnClicked.Clear();
 	DisabledButton->OnClicked.Clear();
 
-	ArrowUp->OnClicked.AddDynamic(this, &UBuildingJobUI::ArrowUpButtonDown);
-	ArrowDown->OnClicked.AddDynamic(this, &UBuildingJobUI::ArrowDownButtonDown);
+	BUTTON_ON_CLICK(ArrowUp, this, &UBuildingJobUI::ArrowUpButtonDown);
+	BUTTON_ON_CLICK(ArrowDown, this, &UBuildingJobUI::ArrowDownButtonDown);
 
-	PriorityButton->OnClicked.AddDynamic(this, &UBuildingJobUI::PriorityButtonDown);
-	NonPriorityButton->OnClicked.AddDynamic(this, &UBuildingJobUI::NonPriorityButtonDown);
-	DisabledButton->OnClicked.AddDynamic(this, &UBuildingJobUI::DisabledButtonDown);
+	BUTTON_ON_CLICK(PriorityButton, this, &UBuildingJobUI::PriorityButtonDown);
+	BUTTON_ON_CLICK(NonPriorityButton, this, &UBuildingJobUI::NonPriorityButtonDown);
+	BUTTON_ON_CLICK(DisabledButton, this, &UBuildingJobUI::DisabledButtonDown);
 
 	PriorityButton->SetVisibility(ESlateVisibility::Collapsed);
 	NonPriorityButton->SetVisibility(ESlateVisibility::Visible);
@@ -50,6 +50,9 @@ void UBuildingJobUI::PunInit(int buildingId, bool isHouse)
 
 	BUTTON_ON_CLICK(AutoTradeButton, this, &UBuildingJobUI::OnClickAutoTradeButton);
 	AutoTradeButton->SetVisibility(ESlateVisibility::Collapsed);
+
+	BUTTON_ON_CLICK(ForeignAllowButton, this, &UBuildingJobUI::OnClickForeignAllowButton);
+	BUTTON_ON_CLICK(ForeignDisallowButton, this, &UBuildingJobUI::OnClickForeignDisallowButton);
 
 	AddToolTip(HumanSlotCount1, LOCTEXT("HumanSlotCount1 Tip", "Current Workers / Allowed Workers Slots"));
 	AddToolTip(HumanSlotCount2, LOCTEXT("HumanSlotCount2 Tip", "(Max possible Worker Slots)"));

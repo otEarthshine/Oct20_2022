@@ -281,6 +281,7 @@ private:
 
 	bool _isHidingTrees = false;
 	bool _showProvinceOverlay = false;
+	bool _showDefenseOverlay = false;
 
 	bool _isCtrlDown = false;
 	bool _isShiftDown = false;
@@ -488,15 +489,41 @@ public:
 	 * IGameManagerInterface
 	 */
 
-	int32 playerCount() final {
+	virtual int32 playerCount() final {
 		return gameInstance()->playerCount();
 	}
 
-	FString playerNameF(int32 playerId) final {
+	virtual FPlayerInfo playerInfo(int32 playerId) override
+	{
+		if (playerId == -1) {
+			return FPlayerInfo();
+		}
+		if (playerId >= GameConstants::MaxPlayersPossible) {
+			PUN_CHECK(playerId < GameConstants::MaxPlayersAndAI);
+
+			const AIArchetypeInfo& archetypeInfo = simulation().aiPlayerSystem(playerId).aiArchetypeInfo();
+
+			FPlayerInfo info;
+			info.name = archetypeInfo.name(playerId);
+			info.logoIndex = archetypeInfo.logoIndex(playerId);
+			info.logoColorBackground = archetypeInfo.logoColor1;
+			info.logoColorForeground = archetypeInfo.logoColor2;
+			info.characterIndex = archetypeInfo.characterIndex;
+			info.factionIndex = archetypeInfo.factionIndex;
+
+			return info;
+		}
+
+		const TArray<FPlayerInfo>& playerInfoList = gameInstance()->playerInfoList();
+
+		return playerId < playerInfoList.Num() ? playerInfoList[playerId] : FPlayerInfo();
+	}
+	
+	virtual FString playerNameF(int32 playerId) final {
 		return gameInstance()->playerNameF(playerId);
 	}
-	const TArray<FString>& playerNamesF() {
-		return gameInstance()->playerNamesF();
+	const TArray<FPlayerInfo>& playerNamesF() {
+		return gameInstance()->playerInfoList();
 	}
 
 	std::vector<int32> allHumanPlayerIds() final {
@@ -818,6 +845,11 @@ public:
 	}
 	virtual void ToggleOverlayProvince() final {
 		_showProvinceOverlay = !_showProvinceOverlay;
+	}
+
+	virtual bool isShowingDefenseOverlay() override { return _showDefenseOverlay; }
+	virtual void SetOverlayDefense(bool showOverlay) override {
+		_showDefenseOverlay = showOverlay;
 	}
 	
 	virtual void ToggleOverlayFertility() final {

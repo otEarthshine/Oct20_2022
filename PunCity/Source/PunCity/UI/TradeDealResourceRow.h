@@ -19,6 +19,8 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) UPunEditableNumberBox* TargetAmount;
 
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* InventoryRichText;
+
 	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* CloseXButton;
 
 	UPROPERTY() UPunWidget* callbackParent;
@@ -28,7 +30,7 @@ public:
 
 	void OnInit() override {
 		SetChildHUD(TargetAmount);
-		CloseXButton->CoreButton->OnClicked.AddUniqueDynamic(this, &UTradeDealResourceRow::OnClickCloseXButton);
+		BUTTON_ON_CLICK(CloseXButton->CoreButton, this, &UTradeDealResourceRow::OnClickCloseXButton);
 	}
 
 	UFUNCTION() void OnClickCloseXButton() {

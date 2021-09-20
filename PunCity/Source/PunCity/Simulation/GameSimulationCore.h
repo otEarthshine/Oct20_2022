@@ -465,7 +465,7 @@ public:
 	void ChangeRelationshipModifier(int32 aiPlayerId, int32 towardPlayerId, RelationshipModifierEnum modifierEnum, int32 amount) final
 	{
 		if (IsAIPlayer(aiPlayerId)) {
-			aiPlayerSystem(aiPlayerId).ChangeRelationshipModifier(towardPlayerId, RelationshipModifierEnum::YouGaveUsGifts, amount / GoldToRelationship);
+			aiPlayerSystem(aiPlayerId).relationship().ChangeModifier(towardPlayerId, RelationshipModifierEnum::YouGaveUsGifts, amount / GoldToRelationship);
 		}
 	}
 	
@@ -846,6 +846,8 @@ public:
 				!overlaySystem().IsRoad(tile);
 	}
 
+	
+
 	bool IsFrontBuildable(WorldTile2 tile) final
 	{
 		if (!tile.isValid()) {
@@ -895,6 +897,16 @@ public:
 	{
 		if (playerId == -1) return true;
 		return tileOwnerPlayer(tile) == playerId;
+	}
+
+	bool IsForeignPlacement(WorldTile2 tile, int32 playerId) override
+	{
+		if (tileOwnerPlayer(tile) != playerId) {
+			return SimSettings::IsOn("CheatFastBuild") ||
+					IsResearched(playerId, TechEnum::QuickBuild) ||
+					IsAIPlayer(playerId);
+		}
+		return false;
 	}
 
 	/*
@@ -1145,6 +1157,31 @@ public:
 			}
 		}
 		return resultIds;
+	}
+
+	virtual bool HasForeignBuilding(int32 foreignBuilderId, int32 townId, CardEnum buildingEnum) override
+	{
+		std::vector<int32> bldIds = buildingIds(townId, buildingEnum);
+		for (int32 bldId : bldIds) {
+			Building& bld = building(bldId);
+			if (bld.foreignBuilder() == foreignBuilderId) {
+				return true;
+			}
+		}
+		return false;
+	}
+	virtual bool HasForeignBuildingWithUpgrade(int32 foreignBuilderId, int32 townId, CardEnum buildingEnum, int32 upgradeIndex) override
+	{
+		std::vector<int32> bldIds = buildingIds(townId, buildingEnum);
+		for (int32 bldId : bldIds) {
+			Building& bld = building(bldId);
+			if (bld.foreignBuilder() == foreignBuilderId &&
+				bld.IsUpgraded(upgradeIndex)) 
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 	
 	
@@ -1775,6 +1812,20 @@ public:
 	//  - Vassalize is researched
 	//  - you are not a vassal yourself
 	//  - no battle at home
+	ProvinceAttackEnum GetProvinceAttackEnum(int32 playerId, int32 provinceId, CallbackEnum claimEnum)
+	{
+		int32 provincePlayerId = provinceOwnerPlayer(provinceId);
+		check(provincePlayerId != -1);
+		
+		ProvinceAttackEnum attackEnum = ProvinceAttackEnum::DeclareIndependence;
+		if (claimEnum != CallbackEnum::Liberate) {
+			attackEnum = playerOwned(provincePlayerId).GetProvinceAttackEnum(provinceId, playerId);
+		}
+
+		return attackEnum;
+	}
+
+	
 	bool CanVassalizeOtherPlayers(int32 playerIdIn)
 	{
 		if (IsAIPlayer(playerIdIn)) { //TODO: this is for testing for now..
@@ -2278,6 +2329,11 @@ public:
 	void RefreshJobDelayed(int32 townId) override {
 		_townManagers[townId]->RefreshJobDelayed();
 	}
+
+	virtual const std::vector<int32>& GetDiplomaticBuildings(int32 playerId) override {
+		return playerOwned(playerId).GetDiplomaticBuilding();
+	}
+	
 	
 	bool IsInDarkAge(int32 playerId) final { return _playerOwnedManagers[playerId].IsInDarkAge(); }
 	
@@ -2525,8 +2581,18 @@ public:
 
 
 	bool TryDoNonRepeatAction(int32 playerId, NonRepeatActionEnum actionEnum, int32 nonRepeatTicks) final {
-		if (Time::Ticks() > _playerIdToNonRepeatActionToAvailableTick[playerId][static_cast<int>(actionEnum)]) {
+		if (Time::Ticks() > _playerIdToNonRepeatActionToAvailableTick[playerId][static_cast<int>(actionEnum)]) 
+		{
 			_playerIdToNonRepeatActionToAvailableTick[playerId][static_cast<int>(actionEnum)] = Time::Ticks() + nonRepeatTicks;
+			return true;
+		}
+		return false;
+	}
+
+	bool TryDoCallOnceAction(int32 playerId, PlayerCallOnceActionEnum actionEnum)
+	{
+		if (!_playerIdToCallOnceActionWasCalled[playerId][static_cast<int>(actionEnum)]) {
+			_playerIdToCallOnceActionWasCalled[playerId][static_cast<int>(actionEnum)] = true;
 			return true;
 		}
 		return false;
@@ -2725,6 +2791,13 @@ public:
 		PUN_CHECK(happinessModifier < 1000 && happinessModifier > -1000);
 		return happinessModifier;
 	}
+
+	virtual void DecreaseTourismHappinessByAction(int32 townId, int32 actionCost) override
+	{
+		check(IsMajorTown(townId));
+		townManager(townId).DecreaseTourismHappinessByAction(actionCost);
+	}
+	
 
 	void AddMigrationPendingCount(int32 townId, int32 migrationCount) final
 	{
@@ -3389,6 +3462,10 @@ public:
 	void PopupInstantReply(const PopupInfo& popupInfo, int32 choiceIndex);
 
 	int32 GetTradeDealValue(const TradeDealSideInfo& tradeDealSideInfo);
+	void UnpackPopupInfoToTradeDealInfo(const PopupInfo& popupInfo, TradeDealSideInfo& sourceDealInfo, TradeDealSideInfo& targetDealInfo);
+
+	std::shared_ptr<FGenericCommand> PackTradeDealInfoToCommand(const TradeDealSideInfo& sourceDealInfo, const TradeDealSideInfo& targetDealInfo, TradeDealStageEnum nextStage);
+	
 	void ProcessTradeDeal(const PopupInfo& popupInfo);
 
 	/*
@@ -3401,6 +3478,8 @@ public:
 		
 		PUN_CHECK(Ar.IsSaving() || Ar.IsLoading());
 
+		//! Save only the SaveChunk that matched saveChunkEnum
+		//! Each thread take one SaveChunk
 		auto checkChunkEnum = [&](GameSaveChunkEnum saveChunkEnumScope) {
 			return saveChunkEnum == saveChunkEnumScope ||
 					saveChunkEnum == GameSaveChunkEnum::All;
@@ -3539,7 +3618,7 @@ public:
 
 				LOOP("AI", _aiPlayerSystem[i].Serialize(Ar));
 				LOOP("NonRepeatAction", SerializeVecValue(Ar, _playerIdToNonRepeatActionToAvailableTick[i]));
-
+				LOOP("CallOnceAction", SerializeVecValue(Ar, _playerIdToCallOnceActionWasCalled[i]));
 #undef LOOP
 			}
 
@@ -3961,6 +4040,7 @@ private:
 	std::vector<AIPlayerSystem> _aiPlayerSystem;
 	
 	std::vector<std::vector<int32>> _playerIdToNonRepeatActionToAvailableTick;
+	std::vector<std::vector<int32>> _playerIdToCallOnceActionWasCalled;
 
 	// Per Minor Town
 	std::vector<std::unique_ptr<TownManagerBase>> _minorTownManagers; // id starting with 10000

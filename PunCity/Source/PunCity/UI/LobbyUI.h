@@ -3,6 +3,7 @@
 #pragma once
 
 #include "LobbySettingsUI.h"
+#include "PunButtonImage.h"
 
 #include "LobbyUI.generated.h"
 
@@ -14,7 +15,7 @@ class ULobbyUI : public UPunWidget
 {
 	GENERATED_BODY()
 public:
-	void Init();
+	void Init(UMainMenuAssetLoaderComponent* maimMenuAssetLoaderIn);
 	void Tick();
 
 	UPROPERTY(meta = (BindWidget)) UOverlay* GameStartBlocker;
@@ -34,7 +35,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UOverlay* ChatOverlay;
 
 	UPROPERTY(meta = (BindWidget)) UButton* LobbyBackButton;
-	UPROPERTY(meta = (BindWidget)) UVerticalBox* LobbyPlayerListBox;
+	UPROPERTY(meta = (BindWidget)) UWrapBox* LobbyPlayerListBox;
 	UPROPERTY(meta = (BindWidget)) UButton* LobbyStartGameButton;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* StartGameButtonText;
 
@@ -79,9 +80,70 @@ public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* LobbyPopupText;
 	UPROPERTY(meta = (BindWidget)) UButton* LobbyPopupCloseButton;
 
+public:
 	// Choose Logo
-	UPROPERTY(meta = (BindWidget)) USizeBox* LobbyChooseLogoMenu;
-	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* LobbyChooseLogoMenuCloseXButton;
+	UPROPERTY(meta = (BindWidget)) UOverlay* LobbyChooseLogoOverlay;
+	UPROPERTY(meta = (BindWidget)) UButton* LobbyChooseLogoDoneButton;
+
+	UPROPERTY(meta = (BindWidget)) UImage* LogoPreviewImage;
+	UPROPERTY(meta = (BindWidget)) UImage* CharacterPreviewImage;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* PlayerSettingsPreviewFactionName;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* PlayerSettingsPreviewPlayerName;
+	
+	UPROPERTY(meta = (BindWidget)) UButton* ChooseFactionSectionButton;
+	UPROPERTY(meta = (BindWidget)) UButton* ChooseIconSectionButton;
+	UPROPERTY(meta = (BindWidget)) UButton* ChooseIconColorSectionButton;
+	UPROPERTY(meta = (BindWidget)) UButton* ChooseCharacterSectionButton;
+
+	UPROPERTY(meta = (BindWidget)) UWrapBox* ChooseFactionWrapBox;
+	UPROPERTY(meta = (BindWidget)) UButton* ChooseFactionButton1;
+	UPROPERTY(meta = (BindWidget)) UButton* ChooseFactionButton2;
+	
+	UPROPERTY(meta = (BindWidget)) UWrapBox* ChooseIconWrapBox;
+	
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* ChooseIconColorOuterVerticalBox;
+	UPROPERTY(meta = (BindWidget)) UWrapBox* ChooseIconColorWrapBox1;
+	UPROPERTY(meta = (BindWidget)) UWrapBox* ChooseIconColorWrapBox2;
+	
+	UPROPERTY(meta = (BindWidget)) UWrapBox* ChooseCharacterWrapBox;
+
+	FPlayerInfo previewPlayerInfo;
+
+	void SetPlayerSettingsTab(int32 index)
+	{
+		ChooseFactionWrapBox->SetVisibility(index == 0 ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+		ChooseIconWrapBox->SetVisibility(index == 1 ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+		ChooseIconColorOuterVerticalBox->SetVisibility(index == 2 ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+		ChooseCharacterWrapBox->SetVisibility(index == 3 ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+	}
+	
+	UFUNCTION() void OnClickChooseFactionSectionButton() {
+		SetPlayerSettingsTab(0);
+	}
+	UFUNCTION() void OnClickChooseIconSectionButton() {
+		SetPlayerSettingsTab(1);
+	}
+	UFUNCTION() void OnClickChooseIconColorSectionButton() {
+		SetPlayerSettingsTab(2);
+	}
+	UFUNCTION() void OnClickChooseCharacterSectionButton() {
+		SetPlayerSettingsTab(3);
+	}
+
+	UFUNCTION() void OnClickChooseFaction0() {
+		previewPlayerInfo.factionIndex = 0;
+		UpdatePreviewPlayerInfoDisplay();
+	}
+	UFUNCTION() void OnClickChooseFaction1() {
+		previewPlayerInfo.factionIndex = 1;
+		UpdatePreviewPlayerInfoDisplay();
+	}
+
+	void UpdatePreviewPlayerInfoDisplay();
+
+	UFUNCTION() void OnClickChoosePlayerLogoCloseButton();
+
+public:
 
 	void AddPopup(FText message) {
 		LobbyPopupOverlay->SetVisibility(ESlateVisibility::Visible);
@@ -90,10 +152,9 @@ public:
 
 	//bool isSinglePlayer() { return serverMapSettings.isSinglePlayer; }
 
-public:
 	void UpdateLobbyUI();
 
-	void CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum) override;
+	virtual void CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum) override;
 	
 public:
 	UFUNCTION() void OnChatInputBoxTextCommitted(const FText& text, ETextCommit::Type CommitMethod);
@@ -106,10 +167,6 @@ public:
 		LobbyPopupOverlay->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
-	UFUNCTION() void OnClickChoosePlayerLogoCloseButton() {
-		gameInstance()->Spawn2DSound("UI", "UIWindowClose");
-		LobbyChooseLogoMenu->SetVisibility(ESlateVisibility::Collapsed);
-	}
 
 	UFUNCTION() void OnClickGenerateWorldButton() {
 		if (_isGeneratingTerrain) {
@@ -147,6 +204,8 @@ private:
 
 	UFUNCTION() void ReturnToMainMenu();
 	UFUNCTION() void OnClickLobbyStartGameButton();
+
+	
 	
 
 	void LobbyStartGame();
@@ -181,6 +240,9 @@ private:
 	//TArray<class ULobbyPlayerInfoUI*> _playerInfos;
 
 	UPROPERTY() TArray<UPlayerListElementUI*> _playerListElements;
+
+
+	UPROPERTY() UMainMenuAssetLoaderComponent* _mainMenuAssetLoader;
 
 private:
 	FMapSettings clientLastMapSettings;

@@ -193,7 +193,8 @@ void UTerrainMapComponent::UpdateTerrainMapDisplay(bool mapTerrainVisible, bool 
 	/*
 	 * Defense Nodes
 	 */
-	bool defenseNodesVisible = !_dataSource->ZoomDistanceBelow(WorldZoomTransition_GameToMap);
+	bool defenseNodesVisible =  _dataSource->isShowingDefenseOverlay() &&
+								!_dataSource->ZoomDistanceBelow(WorldZoomTransition_GameToMap);
 	if (defenseNodesVisible && !_mapMeshesParent->IsVisible())
 	{
 		RefreshDefenseMap();

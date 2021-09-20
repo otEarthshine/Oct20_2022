@@ -1,6 +1,7 @@
 #include "PunCity/Simulation/GameSimulationInfo.h"
 #include <algorithm>
 #include "Kismet/GameplayStatics.h"
+#include "PunCity/CppUtils.h"
 //#include "PunCity/PunUtils.h"
 
 
@@ -123,6 +124,26 @@ FText RelationshipModifierNameInt(int32 index) {
 	return RelationshipModifierName[index];
 }
 int32 RelationshipModifierCount() { return RelationshipModifierName.Num(); }
+
+
+
+void RelationshipModifiers::GetAIRelationshipText(TArray<FText>& args, int32 playerId) const
+{
+	ADDTEXT_(LOCTEXT("Overall: ", "Overall: {0}\n"), FText::AsNumber(GetTotalRelationship(playerId)));
+
+	const std::vector<int32>& modifiers = _relationshipModifiers[playerId];
+	for (int32 i = 0; i < modifiers.size(); i++) {
+		if (modifiers[i] != 0) {
+			ADDTEXT_(INVTEXT("{0} {1}\n"), TEXT_NUMSIGNED(modifiers[i]), RelationshipModifierNameInt(i));
+		}
+	}
+}
+
+int32 RelationshipModifiers::GetTotalRelationship(int32 towardPlayerId) const
+{
+	return CppUtils::Sum(_relationshipModifiers[towardPlayerId]);
+}
+
 
 
 /*

@@ -106,6 +106,10 @@ public:
 	
 	void InitProvinceBuildingSlots()
 	{
+		if (_simulation->isLoadingFromFile()) {
+			return;
+		}
+		
 		ProvinceSystem& provinceSys = _simulation->provinceSystem();
 		PunTerrainGenerator& terrainGen = _simulation->terrainGenerator();
 

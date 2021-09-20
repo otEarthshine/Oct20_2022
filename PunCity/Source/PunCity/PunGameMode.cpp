@@ -136,7 +136,7 @@ void APunGameMode::Server_SyncPlayerStateToAllControllers()
 
 		//PUN_DEBUG2("controller loop count:%d", gameInst->playerNamesF().Num());
 		
-		controller->SyncPlayersState_ToClient(gameInst->playerNamesF(),
+		controller->SyncPlayersState_ToClient(gameInst->playerInfoList(),
 												gameInst->playerReadyStates(),
 												gameInst->playerConnectedStates,
 												gameInst->clientPacketsReceived,

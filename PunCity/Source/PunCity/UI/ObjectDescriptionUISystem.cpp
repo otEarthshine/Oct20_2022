@@ -651,13 +651,6 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			else if (buildingEnum == CardEnum::MinorCity ||
 					buildingEnum == CardEnum::MinorCityPort)
 			{
-				int32 minorCityId;
-				if (buildingEnum == CardEnum::MinorCity) {
-					minorCityId = objectId;
-				} else {
-					minorCityId = building.subclass<MinorCityChild>().parentId();
-				}
-
 				int32 townId = building.townId();
 				MinorCity& minorCityBld = sim.building<MinorCity>(sim.GetTownhallId(townId));
 				
@@ -683,8 +676,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				TownManagerBase* townManagerBase = sim.townManagerBase(townId);
 				focusBox->AddRichText(FText::Format(INVTEXT("TownhallId {0}"), townManagerBase->townHallId));
 
-				std::vector<AutoTradeElement>& autoExportElements = townManagerBase->autoExportElements();
-				for (AutoTradeElement& element : autoExportElements) {
+				const std::vector<AutoTradeElement>& autoExportElements = townManagerBase->autoExportElementsConst();
+				for (const AutoTradeElement& element : autoExportElements) {
 					focusBox->AddRichText(FText::Format(INVTEXT("Export {0}({1}) {2}"), 
 						TEXT_NUM(element.calculatedFulfillmentLeft()), 
 						TEXT_NUM(element.calculatedTradeAmountNextRound), 
@@ -692,8 +685,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					);
 				}
 
-				std::vector<AutoTradeElement>& autoImportElements = townManagerBase->autoImportElements();
-				for (AutoTradeElement& element : autoImportElements) {
+				const std::vector<AutoTradeElement>& autoImportElements = townManagerBase->autoImportElementsConst();
+				for (const AutoTradeElement& element : autoImportElements) {
 					focusBox->AddRichText(FText::Format(INVTEXT("Import {0}({1}) {2}"), 
 						TEXT_NUM(element.calculatedFulfillmentLeft()),
 						TEXT_NUM(element.calculatedTradeAmountNextRound),
@@ -785,6 +778,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				building.isEnum(CardEnum::ShippingDepot) || 
 				building.isEnum(CardEnum::Market) || 
 				building.isEnum(CardEnum::TradingCompany) ||
+				building.isEnum(CardEnum::Hotel) ||
 				IsDecorativeBuilding(building.buildingEnum()))
 			{
 				focusBox->AddWGT_PunRichText(UIEnum::WGT_ObjectFocus_FlavorText, building.buildingInfo().GetDescription()); // Autowrap off prevent flash
@@ -1226,13 +1220,13 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						//);
 
 						// Only show these if it is player's townhall
-						if (townPlayerId == playerId()) {
-							focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
-								LOCTEXT("TownhallIncome", "Townhall Income"),
-								FText::AsNumber(townhall.townhallIncome()),
-								assetLoader->CoinIcon
-							);
-						}
+						//if (townPlayerId == playerId()) {
+						//	focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+						//		LOCTEXT("TownhallIncome", "Townhall Income"),
+						//		FText::AsNumber(townhall.townhallIncome()),
+						//		assetLoader->CoinIcon
+						//	);
+						//}
 
 						// Show how much money he has..
 						if (townPlayerId != playerId())
@@ -1521,8 +1515,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							focusBox->AddSpacer();
 						}
 					}
-					else if (building.isEnum(CardEnum::Tavern) || 
-							building.isEnum(CardEnum::Theatre))
+					else if (IsFunServiceBuilding(building.buildingEnum()))
 					{
 						FunBuilding& funBuilding = building.subclass<FunBuilding>();
 						int32 guestCount = funBuilding.guestCountLastRound() + funBuilding.guestCountThisRound();
@@ -1748,6 +1741,93 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 						
 					}
+					else if (building.isEnum(CardEnum::TourismAgency))
+					{
+						int32 townId = building.townId();
+						TownManager& townManager = sim.townManager(townId);
+						int32 aveHappiness = townManager.aveHappinessByType(HappinessEnum::Tourism);
+						
+						focusBox->AddRichText(
+							LOCTEXT("Tourism Happiness", "Tourism Happiness"), 
+							FText::Format(
+								INVTEXT("{0}{1}"),
+								GetHappinessFace(aveHappiness),
+								ColorHappinessText(aveHappiness, FText::Format(INVTEXT("{0}%"), TEXT_NUM(aveHappiness)))
+							)
+						);
+
+						int32 hotelsOnTradeRoutes = 0;
+						int32 aveHotelServiceQuality = 0;
+						
+						std::vector<TradeRoutePair> routes = sim.worldTradeSystem().GetTradeRouteTo(townId);
+						for (TradeRoutePair& route : routes) {
+							const std::vector<int32>& hotelIds = sim.buildingIds(route.GetCounterpartTownId(townId), CardEnum::Hotel);
+							hotelsOnTradeRoutes += hotelIds.size();
+							for (int32 hotelId : hotelIds) {
+								aveHotelServiceQuality += sim.building<Hotel>(hotelId).serviceQuality();
+							}
+						}
+
+						aveHotelServiceQuality = aveHotelServiceQuality / std::max(1, hotelsOnTradeRoutes);
+
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Trade Routes", "Trade Routes"), TEXT_NUM(routes.size()));
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Hotels on Trade Routes", "Hotels on Trade Routes"), TEXT_NUM(hotelsOnTradeRoutes));
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Average Hotel Service Quality", "Average Hotel Service Quality"), TEXT_PERCENT(aveHotelServiceQuality));
+						
+						focusBox->AddSpacer();
+					}
+					else if (building.isEnum(CardEnum::Hotel))
+					{
+						Hotel& hotel = building.subclass<Hotel>();
+						
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Service Quality", "Service Quality"), TEXT_PERCENT(hotel.serviceQuality()));
+
+						focusBox->AddSpacer();
+						UPunEditableNumberBox* numberBox = focusBox->AddEditableNumberBox(this, CallbackEnum::EditableNumberSetHotelFeePerVisitor, building.buildingId(),
+							LOCTEXT("Fee per visitor", "Fee per visitor"), hotel.feePerVisitorDisplay()
+						);
+						numberBox->incrementMultiplier = 1;
+						numberBox->shiftIncrementMultiplier = 10;
+						numberBox->minAmount = 0;
+
+						focusBox->AddSpacer();
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Visitors", "Visitors"), FText::Format(
+							INVTEXT("{0}/{1}"),
+							TEXT_NUM(hotel.currentVisitorCount()),
+							TEXT_NUM(hotel.maxVisitorCount())
+						));
+
+						focusBox->AddSpacer();
+
+						args.Empty();
+						TMap<int32, int32> townToVisitors = hotel.GetTownToVisitors();
+
+						if (townToVisitors.Num() > 0)
+						{
+							args.Add(LOCTEXT("Visitors from:", "Visitors from:\n"));
+							for (const auto& townToVisitor : townToVisitors) {
+								args.Add(FText::Format(INVTEXT("  {0} {1}"), sim.townNameT(townToVisitor.Key), TEXT_NUM(townToVisitor.Value)));
+							}
+						}
+						focusBox->AddRichText(JOINTEXT(args));
+
+						focusBox->AddSpacer();
+						std::vector<TradeRoutePair> routes = sim.worldTradeSystem().GetTradeRouteTo(hotel.townId());
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Trade Routes", "Trade Routes"), TEXT_NUM(routes.size()));
+						
+					}
+					else if (IsForeignOnlyBuilding(building.buildingEnum()))
+					{
+						const DiplomaticBuilding& diplomaticBuilding = building.subclass<DiplomaticBuilding>();
+
+						bool isHostOrForeignBuilder = building.playerId() == playerId() || building.foreignBuilder() == playerId();
+						if (isHostOrForeignBuilder) {
+							focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Influence Income", "Influence Income"), TEXT_100(diplomaticBuilding.influenceIncome100(playerId())), assetLoader->InfluenceIcon);
+							focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Money Income", "Money Income"), TEXT_100(diplomaticBuilding.moneyIncome100(playerId())), assetLoader->CoinIcon);
+						}
+						
+					}
+					
 					else if (building.isEnum(CardEnum::ShippingDepot))
 					{
 						focusBox->AddWGT_PunRichText(UIEnum::WGT_ObjectFocus_FlavorText,
@@ -2971,7 +3051,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 					case CardEnum::HaulingServices: overlayType = OverlayType::HaulingServices; break;
 					case CardEnum::Granary: overlayType = OverlayType::Granary; break;
-						
+
+					case CardEnum::Museum: overlayType = OverlayType::Museum; break;
+					case CardEnum::Zoo: overlayType = OverlayType::Zoo; break;
 					case CardEnum::Theatre: overlayType = OverlayType::Theatre; break;
 					case CardEnum::Tavern: overlayType = OverlayType::Tavern; break;
 				}
@@ -2988,7 +3070,14 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					//_objectDescriptionUI->ToolCheckBox->SetVisibility(ESlateVisibility::Collapsed);
 				//}
 
-				if (building.playerId() == playerId())
+				bool isUpgraderPlayer;
+				if (IsForeignOnlyBuilding(buildingEnum)) {
+					isUpgraderPlayer = building.foreignBuilder() == playerId();
+				} else {
+					isUpgraderPlayer = building.playerId() == playerId();
+				}
+				
+				if (isUpgraderPlayer)
 				{
 					const FText upgradeEraRequiresText = LOCTEXT("Upgrade Requires", "\n<Red>Requires {0}</>");
 					
@@ -3046,6 +3135,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					else
 					{
 						CLEARTEXT_();
+
+						auto unlockSys = sim.unlockSystem(playerId());
+						
 						
 						auto setUpgradeButton = [&](BuildingUpgrade upgrade, int32 upgradeIndex)
 						{
@@ -3059,18 +3151,17 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								ADDTEXT_LOCTEXT("Done", "Done");
 								showEnabled = false;
 							}
-							else {
+							else 
+							{
 								auto showResourceText = [&](FString resourceTagString)
 								{
 									bool isRed = resourceSys.resourceCount(resourceEnum) < upgrade.currentUpgradeResourceNeeded().count;
 									ADDTEXT_(INVTEXT("\n<img id=\"{0}\"/>{1}"), FText::FromString(resourceTagString), TextRed(TEXT_NUM(upgrade.currentUpgradeResourceNeeded().count), isRed));
 								};
-
-								auto unlockSys = sim.unlockSystem(playerId());
 								
-								bool requireEra = upgrade.isEraUpgrade() && !building.IsEraUpgradable();
+								bool isEraUpgradedToFull = upgrade.isEraUpgrade() && !building.IsEraUpgradable();
 
-								if (requireEra) {
+								if (isEraUpgradedToFull) {
 									ADDTEXT_(upgradeEraRequiresText, unlockSys->GetEraText(building.GetUpgradeEraLevel() + 1));
 									showEnabled = false;
 								}
@@ -3084,9 +3175,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								else if (resourceEnum == ResourceEnum::Concrete) { showResourceText("Concrete"); }
 								else if (resourceEnum == ResourceEnum::Steel) { showResourceText("SteelBeam"); }
 								else {
-									PUN_CHECK(resourceEnum == ResourceEnum::None);
-									
-									FText moneyText = TextRed(TEXT_NUM(upgrade.moneyNeeded), globalResourceSys.moneyCap32() < upgrade.moneyNeeded);
+									PUN_CHECK(resourceEnum == ResourceEnum::Money);
+
+									int32 moneyNeeded = upgrade.currentUpgradeResourceNeeded().count;
+									FText moneyText = TextRed(TEXT_NUM(moneyNeeded), globalResourceSys.moneyCap32() < moneyNeeded);
 									
 									ADDTEXT_(INVTEXT("\n<img id=\"Coin\"/>{0}"), moneyText);
 								}
@@ -3101,12 +3193,13 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 							if (!upgrade.isUpgraded) {
 								const FText costText = LOCTEXT("cost", "cost");
-								if (resourceEnum == ResourceEnum::None) {
-									ADDTEXT_(INVTEXT("{0}: <img id=\"Coin\"/>{1}"), costText, TEXT_NUM(upgrade.moneyNeeded));
+								int32 resourceNeeded = upgrade.currentUpgradeResourceNeeded().count;
+								if (resourceEnum == ResourceEnum::Money) {
+									ADDTEXT_(INVTEXT("{0}: <img id=\"Coin\"/>{1}"), costText, TEXT_NUM(resourceNeeded));
 								}
 								else {
 									check(static_cast<int>(resourceEnum) < ResourceEnumCount);
-									ADDTEXT_(INVTEXT("{0}: {1} {2}"), costText, TEXT_NUM(upgrade.currentUpgradeResourceNeeded().count), ResourceNameT(resourceEnum));
+									ADDTEXT_(INVTEXT("{0}: {1} {2}"), costText, TEXT_NUM(resourceNeeded), ResourceNameT(resourceEnum));
 								}
 								ADDTEXT_INV_("<space>");
 							}
@@ -4344,6 +4437,11 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 					}
 				}
 			}
+			// Townhall overlap ... show Vassalize
+			else
+			{
+				
+			}
 		}
 		
 	}
@@ -4634,6 +4732,21 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 
 		auto& townManager = simulation().townManager(townId);
 		townManager.SetOutputTargetDisplay(static_cast<ResourceEnum>(editableBox->callbackVar1), amount);
+	}
+	else if (callbackEnum == CallbackEnum::EditableNumberSetHotelFeePerVisitor)
+	{
+		auto editableBox = CastChecked<UPunEditableNumberBox>(punWidgetCaller);
+
+		auto command = make_shared<FGenericCommand>();
+		command->callbackEnum = callbackEnum;
+		command->intVar1 = editableBox->punId;
+		command->intVar2 = editableBox->amount;
+
+		networkInterface()->SendNetworkCommand(command);
+
+		if (Building* bld = simulation().buildingPtr(editableBox->punId)) {
+			bld->subclass<Hotel>(CardEnum::Hotel).SetPendingFeePerVisitor(editableBox->amount);
+		}
 	}
 
 	else if (callbackEnum == CallbackEnum::OpenManageStorage)
@@ -5037,13 +5150,11 @@ void UObjectDescriptionUISystem::AddProvinceUpkeepInfo(int32 provinceIdClean, UP
 				assetLoader()->InfluenceIcon
 			);
 
-			if (sim.IsBorderProvince(provinceIdClean)) {
-				//focusBox->AddRichText(
-				//	LOCTEXT("Border Upkeep: InfluenceX", "Border Upkeep: <img id=\"Influence\"/>5")
-				//);
+			if (!sim.provinceInfoSystem().provinceOwnerInfo(provinceIdClean).isSafe) 
+			{
 				focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
-					LOCTEXT("Border Upkeep", "Border Upkeep"),
-					TEXT_100(500),
+					GetInfluenceIncomeName(InfluenceIncomeEnum::UnsafeProvinceUpkeep),
+					TEXT_100(1000),
 					assetLoader()->InfluenceIcon
 				);
 			}
@@ -5105,10 +5216,12 @@ void UObjectDescriptionUISystem::AddProvinceUpkeepInfo(int32 provinceIdClean, UP
 	);
 
 #if !UE_BUILD_SHIPPING
-	if (PunSettings::IsOn("DebugFocusUI")) {
+	if (PunSettings::IsOn("DebugFocusUI")) 
+	{
 		TArray<FText> args;
-		ADDTEXT_(INVTEXT("GetProvinceBaseClaimPrice: {0}"), TEXT_NUM(simulation().GetProvinceBaseClaimPrice(provinceIdClean)));
-		ADDTEXT_(INVTEXT("GetProvinceClaimCostPenalty_DistanceFromTownhall: {0}"), TEXT_NUM(simulation().GetProvinceClaimCostPenalty_DistanceFromTownhall(provinceIdClean, playerId())));
+		ADDTEXT_(INVTEXT("ProvinceId: {0}\n"), TEXT_NUM(provinceIdClean));
+		ADDTEXT_(INVTEXT("GetProvinceBaseClaimPrice: {0}\n"), TEXT_NUM(simulation().GetProvinceBaseClaimPrice(provinceIdClean)));
+		ADDTEXT_(INVTEXT("GetProvinceClaimCostPenalty_DistanceFromTownhall: {0}\n"), TEXT_NUM(simulation().GetProvinceClaimCostPenalty_DistanceFromTownhall(provinceIdClean, playerId())));
 		ADDTEXT_(INVTEXT("GetProvinceClaimPrice: {0}"), TEXT_NUM(simulation().GetProvinceClaimPrice(provinceIdClean, playerId(), ClaimConnectionEnum::Flat)));
 		focusBox->AddRichText(JOINTEXT(args));
 	}

@@ -128,10 +128,13 @@ struct ProvinceClaimProgress
 	int32 provinceId = -1;
 	int32 attackerPlayerId = -1;
 
-	int32 committedInfluencesAttacker = 0;
-	int32 committedInfluencesDefender = 0;
+	//int32 committedInfluencesAttacker = 0;
+	//int32 committedInfluencesDefender = 0;
 
 	int32 ticksElapsed = 0;
+
+	std::vector<CardStatus> attackerMilitary; // cardStateValue1 = playerId, cardStateValue2 = HP
+	std::vector<CardStatus> defenderMilitary;
 
 	bool isValid() { return provinceId != -1; }
 
@@ -139,12 +142,14 @@ struct ProvinceClaimProgress
 	{
 		//int32 attackerScaled = committedInfluencesAttacker * simulation->
 
-		if (committedInfluencesAttacker > committedInfluencesDefender) {
-			ticksElapsed += Time::TicksPerSecond * committedInfluencesAttacker / (committedInfluencesDefender + BattleInfluencePrice);
-		}
-		else {
-			ticksElapsed -= Time::TicksPerSecond * (committedInfluencesDefender + BattleInfluencePrice) / committedInfluencesAttacker;
-		}
+		//if (committedInfluencesAttacker > committedInfluencesDefender) {
+		//	ticksElapsed += Time::TicksPerSecond * committedInfluencesAttacker / (committedInfluencesDefender + BattleInfluencePrice);
+		//}
+		//else {
+		//	ticksElapsed -= Time::TicksPerSecond * (committedInfluencesDefender + BattleInfluencePrice) / committedInfluencesAttacker;
+		//}
+
+		// TODO: Fight
 	}
 
 
@@ -152,9 +157,13 @@ struct ProvinceClaimProgress
 	FArchive& operator>>(FArchive &Ar) {
 		Ar << provinceId;
 		Ar << attackerPlayerId;
-		Ar << committedInfluencesAttacker;
-		Ar << committedInfluencesDefender;
+		//Ar << committedInfluencesAttacker;
+		//Ar << committedInfluencesDefender;
 		Ar << ticksElapsed;
+
+		SerializeVecObj(Ar, attackerMilitary);
+		SerializeVecObj(Ar, defenderMilitary);
+		
 		return Ar;
 	}
 };
@@ -169,9 +178,46 @@ struct AutoTradeElement
 	int32 calculatedTradeAmountNextRound = 0;
 	int32 calculatedFulfilledTradeAmountNextRound = 0;
 
+	int32 price100 = 0;
+	int32 directTradeAmount = 0;
+	int32 feePercent = 0;
+
+	int32 calculatedMoney = 0;
+	int32 calculatedFeeDiscount = 0;
+	int32 calculatedFee = 0;
+
 	int32 calculatedFulfillmentLeft() const {
 		return calculatedTradeAmountNextRound - calculatedFulfilledTradeAmountNextRound;
 	}
+
+	// Import may not complete successfully due to not having enough storage space
+	int32 GetImportLeftoverRefund100(int32 leftoverAmount) const
+	{
+		check(leftoverAmount >= 0);
+		int32 previousNetMoney = calculatedMoney + calculatedFee;
+
+		int32 newTradeAmount = calculatedTradeAmountNextRound - leftoverAmount;
+		int32 newImportMoney = newTradeAmount * price100;
+		int32 newFeeDiscount = std::min(directTradeAmount, newTradeAmount) * price100 * feePercent / 100;
+		int32 newFee = (newImportMoney * feePercent / 100) - newFeeDiscount;
+		
+		int32 newNetMoney = newImportMoney * newFee;
+		
+		return previousNetMoney - newNetMoney;
+	}
+
+	void CalculateMoney(int32 price100In, int32 directTradeAmountIn, int32 feePercentIn)
+	{
+		price100 = price100In;
+		directTradeAmount = directTradeAmountIn;
+		feePercent = feePercentIn;
+		
+		calculatedMoney = calculatedTradeAmountNextRound * price100;
+
+		calculatedFeeDiscount = directTradeAmount * price100 * feePercent / 100;
+		calculatedFee = (calculatedMoney * feePercent / 100) - calculatedFeeDiscount;
+	}
+	
 
 	//! Serialize
 	FArchive& operator>>(FArchive &Ar) {
@@ -182,6 +228,14 @@ struct AutoTradeElement
 		
 		Ar << calculatedTradeAmountNextRound;
 		Ar << calculatedFulfilledTradeAmountNextRound;
+
+		Ar << price100;
+		Ar << directTradeAmount;
+		Ar << feePercent;
+
+		Ar << calculatedMoney;
+		Ar << calculatedFeeDiscount;
+		Ar << calculatedFee;
 		return Ar;
 	}
 
@@ -222,12 +276,17 @@ public:
 
 	virtual ~TownManagerBase() {}
 
+	RelationshipModifiers& minorTownRelationship() { return _minorTownRelationshipModifiers; }
+
 	/*
 	 * Auto Trade
 	 */
 
 	std::vector<AutoTradeElement>& autoExportElements() { return _autoExportElements; }
 	std::vector<AutoTradeElement>& autoImportElements() { return _autoImportElements; }
+
+	const std::vector<AutoTradeElement>& autoExportElementsConst() { return _autoExportElements; }
+	const std::vector<AutoTradeElement>& autoImportElementsConst() { return _autoImportElements; }
 
 	void InitAutoTrade(int32 provinceId)
 	{
@@ -295,9 +354,6 @@ public:
 		bool shouldFillTipText)
 	{
 		auto& worldTradeSys = _simulation->worldTradeSystem();
-
-		const std::vector<AutoTradeElement>& autoExportElements = _autoExportElements;
-		const std::vector<AutoTradeElement>& autoImportElements = _autoImportElements;
 
 		// Check all Trade Route to find any fee discount
 		// - Do this separately with TradeRoutePair so we can show which TradeRoute is giving the discount
@@ -372,64 +428,58 @@ public:
 		}
 
 
-		for (const AutoTradeElement& exportElement : autoExportElements)
+		for (AutoTradeElement& exportElement : _autoExportElements)
 		{
-			int32 price100 = worldTradeSys.price100(exportElement.resourceEnum);
-			int32 exportMoney = exportElement.calculatedTradeAmountNextRound * price100;
+			exportElement.CalculateMoney(
+				worldTradeSys.price100(exportElement.resourceEnum),
+				findDirectResource(directExportResources, exportElement.resourceEnum),
+				feePercent
+			);
 
-			FText resourceName = GetResourceInfo(exportElement.resourceEnum).GetName();
-
-			exportMoneyTotal += exportMoney;
-
-
-			int32 directTradeAmount = findDirectResource(directExportResources, exportElement.resourceEnum);
-
-			int32 feeDiscount = directTradeAmount * price100 * feePercent / 100;
-			int32 fee = exportMoney - feeDiscount;
-
-			feeDiscountTotal += feeDiscount;
-			feeTotal += fee;
+			exportMoneyTotal += exportElement.calculatedMoney;
+			feeDiscountTotal += exportElement.calculatedFeeDiscount;
+			feeTotal += exportElement.calculatedFee;
 
 			if (shouldFillTipText)
 			{
+				FText resourceName = GetResourceInfo(exportElement.resourceEnum).GetName();
+				
 				exportTooltipText.Add(FText::Format(
-					NSLOCTEXT("AutoTradeUI", "exportTooltipText_Elem", "  {0}<img id=\"Coin\"/> {1}\n"), TEXT_100(exportMoney), resourceName
+					NSLOCTEXT("AutoTradeUI", "exportTooltipText_Elem", "  {0}<img id=\"Coin\"/> {1}\n"), TEXT_100(exportElement.calculatedMoney), resourceName
 				));
 
-				if (fee > 0) {
+				if (exportElement.calculatedFee > 0) {
 					feeTooltipText.Add(FText::Format(
-						NSLOCTEXT("AutoTradeUI", "exportFeeTooltipText_Elem", "  {0}<img id=\"Coin\"/> {1} export\n"), TEXT_100(fee), resourceName
+						NSLOCTEXT("AutoTradeUI", "exportFeeTooltipText_Elem", "  {0}<img id=\"Coin\"/> {1} export\n"), TEXT_100(exportElement.calculatedFee), resourceName
 					));
 				}
 			}
 		}
 
-		for (const AutoTradeElement& importElement : autoImportElements)
+		for (AutoTradeElement& importElement : _autoImportElements)
 		{
-			int32 price100 = worldTradeSys.price100(importElement.resourceEnum);
-			int32 importMoney = importElement.calculatedTradeAmountNextRound * price100;
+			importElement.CalculateMoney(
+				worldTradeSys.price100(importElement.resourceEnum),
+				findDirectResource(directImportResources, importElement.resourceEnum),
+				feePercent
+			);
 
-			FText resourceName = GetResourceInfo(importElement.resourceEnum).GetName();
+			importMoneyTotal += importElement.calculatedMoney;
+			feeDiscountTotal += importElement.calculatedFeeDiscount;
+			feeTotal += importElement.calculatedFee;
 
-			importMoneyTotal += importMoney;
-
-			int32 directTradeAmount = findDirectResource(directImportResources, importElement.resourceEnum);
-
-			int32 feeDiscount = directTradeAmount * price100 * feePercent / 100;
-			int32 fee = (importMoney * feePercent / 100) - feeDiscount;
-
-			feeDiscountTotal += feeDiscount;
-			feeTotal += fee;
 
 			if (shouldFillTipText)
 			{
+				FText resourceName = GetResourceInfo(importElement.resourceEnum).GetName();
+				
 				importTooltipText.Add(FText::Format(
-					NSLOCTEXT("AutoTradeUI", "importTooltipText_Elem", "  {0}<img id=\"Coin\"/> {1}\n"), TEXT_100(importMoney), resourceName
+					NSLOCTEXT("AutoTradeUI", "importTooltipText_Elem", "  {0}<img id=\"Coin\"/> {1}\n"), TEXT_100(importElement.calculatedMoney), resourceName
 				));
 
-				if (fee > 0) {
+				if (importElement.calculatedFee > 0) {
 					feeTooltipText.Add(FText::Format(
-						NSLOCTEXT("AutoTradeUI", "importFeeTooltipText_Elem", "  {0}<img id=\"Coin\"/> {1} import\n"), TEXT_100(fee), resourceName
+						NSLOCTEXT("AutoTradeUI", "importFeeTooltipText_Elem", "  {0}<img id=\"Coin\"/> {1} import\n"), TEXT_100(importElement.calculatedFee), resourceName
 					));
 				}
 			}
@@ -490,6 +540,8 @@ public:
 		SerializeVecValue(Ar, _autoImportElements);
 
 		Ar << _lastRoundAutoTradeProfit;
+
+		Ar << _minorTownRelationshipModifiers;
 	}
 
 protected:
@@ -500,6 +552,9 @@ protected:
 	std::vector<AutoTradeElement> _autoImportElements;
 
 	int32 _lastRoundAutoTradeProfit = 0;
+
+	// Relationship
+	RelationshipModifiers _minorTownRelationshipModifiers;
 
 	/*
 	 * Non-Serialize
@@ -547,6 +602,9 @@ public:
 		_lastResourceCounts.resize(ResourceEnumCount);
 
 		_jobBuildingEnumToIds.resize(BuildingEnumCount);
+
+		_tourismIncreaseIndex = 0;
+		_tourismDecreaseIndex = 0;
 	}
 
 	
@@ -990,6 +1048,10 @@ public:
 		}
 		return CardEnum::None;
 	}
+	void ClearCardsFromTownhall() {
+		_cardsInTownhall.clear();
+	}
+	
 
 	bool TownhallHasCard(CardEnum cardEnum)
 	{
@@ -1319,12 +1381,33 @@ public:
 	}
 
 
-	void TickRound_AutoTrade()
+	/*
+	 * Tourism
+	 */
+
+	void DecreaseTourismHappinessByAction(int32 actionCost);
+
+	template <typename Func>
+	void LoopPopulation(int32 loopCount, int32& index, Func func)
 	{
-		
+		for (int32 i = 0; i < loopCount; i++)
+		{
+			int32 unitId;
+			if (index < _adultIds.size()) {
+				unitId = _adultIds[index];
+			}
+			else {
+				unitId = _childIds[index - _adultIds.size()];
+			}
+
+			func(unitId);
+
+			index++;
+			if (index >= _childIds.size() + _adultIds.size()) {
+				index = 0;
+			}
+		}
 	}
-
-
 	
 	
 
@@ -1417,7 +1500,6 @@ private:
 			PUN_LOG("Refresh province:%d distance:%d", _provincesClaimed[i], regionSys.provinceDistanceMap(_provincesClaimed[i]));
 		}
 	}
-	
 
 	/*
 	 * Influence Price
@@ -1531,6 +1613,9 @@ public:
 		
 		Ar << _electricityProductionCapacity;
 		Ar << _electricityConsumption;
+
+		Ar << _tourismIncreaseIndex;
+		Ar << _tourismDecreaseIndex;
 	}
 
 public:
@@ -1620,6 +1705,9 @@ private:
 	int32 _electricityProductionCapacity = 0;
 	int32 _electricityConsumption = 0;
 
+
+	int32 _tourismIncreaseIndex = 0;
+	int32 _tourismDecreaseIndex = 0;
 	
 private:
 	/*

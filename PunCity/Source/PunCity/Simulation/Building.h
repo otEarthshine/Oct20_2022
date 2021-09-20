@@ -49,6 +49,7 @@ public:
 		_simulation = simulation;
 	}
 
+	virtual void OnPreInit_IncludeMinorTown() {}
 	virtual void OnPreInit() {}
 	virtual void OnInit() {}
 	virtual void OnDeinit() {}
@@ -178,27 +179,57 @@ public:
 			return 0;
 		}
 
+		return GetQuickBuildBaseCost(_buildingEnum, GetConstructionResourceCost(), [&](ResourceEnum resourceEnum) { return GetResourceCount(resourceEnum); });
+
+		//int32 quickBuildCost_Resource = 0;
+		//int32 quickBuildCost_Work = 0;
+		//std::vector<int32> constructionCosts = GetConstructionResourceCost();
+		//for (size_t i = 0; i < ConstructionResourceCount; i++) 
+		//{
+		//	int32 basePrice = GetResourceInfo(ConstructionResources[i]).basePrice;
+		//	
+		//	if (constructionCosts[i] > 0) {
+		//		int32 resourceCount = GetResourceCount(ConstructionResources[i]);
+		//		quickBuildCost_Resource += std::max(0, (constructionCosts[i] - resourceCount) * basePrice);
+		//	}
+		//	quickBuildCost_Work += constructionCosts[i] * basePrice;
+		//}
+
+		//// Road extra work equals to 1 wood
+		//if (IsRoad(buildingEnum())) {
+		//	quickBuildCost_Work += GetResourceInfo(ResourceEnum::Wood).basePrice;
+		//}
+
+		//// base 
+		//quickBuildCost_Work = quickBuildCost_Work * (110 - constructionPercent()) / 100;
+
+		//return (quickBuildCost_Resource * GameConstants::QuickBuildMultiplier_Resource) + (quickBuildCost_Work * GameConstants::QuickBuildMultiplier_Work);
+	}
+
+	template<typename Func>
+	static int32 GetQuickBuildBaseCost(CardEnum buildingEnum, std::vector<int32> constructionCosts, Func getResourceCount)
+	{
 		int32 quickBuildCost_Resource = 0;
 		int32 quickBuildCost_Work = 0;
-		std::vector<int32> constructionCosts = GetConstructionResourceCost();
-		for (size_t i = 0; i < ConstructionResourceCount; i++) 
+		
+		for (size_t i = 0; i < ConstructionResourceCount; i++)
 		{
 			int32 basePrice = GetResourceInfo(ConstructionResources[i]).basePrice;
-			
+
 			if (constructionCosts[i] > 0) {
-				int32 resourceCount = GetResourceCount(ConstructionResources[i]);
+				int32 resourceCount = getResourceCount(ConstructionResources[i]);
 				quickBuildCost_Resource += std::max(0, (constructionCosts[i] - resourceCount) * basePrice);
 			}
 			quickBuildCost_Work += constructionCosts[i] * basePrice;
 		}
 
 		// Road extra work equals to 1 wood
-		if (IsRoad(buildingEnum())) {
+		if (IsRoad(buildingEnum)) {
 			quickBuildCost_Work += GetResourceInfo(ResourceEnum::Wood).basePrice;
 		}
 
 		// base 
-		quickBuildCost_Work = quickBuildCost_Work * (110 - constructionPercent()) / 100;
+		quickBuildCost_Work = quickBuildCost_Work * 110 / 100;
 
 		return (quickBuildCost_Resource * GameConstants::QuickBuildMultiplier_Resource) + (quickBuildCost_Work * GameConstants::QuickBuildMultiplier_Work);
 	}
@@ -348,7 +379,7 @@ public:
 
 	//! Upgrades
 	const std::vector<BuildingUpgrade>& upgrades() { return _upgrades; }
-	const BuildingUpgrade& GetUpgrade(int32 upgradeIndex) { return _upgrades[upgradeIndex]; }
+	const BuildingUpgrade& GetUpgrade(int32 upgradeIndex) const { return _upgrades[upgradeIndex]; }
 	
 	bool UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& needResourceEnumOut);
 	
@@ -383,6 +414,8 @@ public:
 
 	BuildingUpgrade MakeWorkerSlotUpgrade(int32 percentOfTotalPrice, int32 workerSlotBonus = 1);
 	BuildingUpgrade MakeEraUpgrade(int32 startEra);
+
+	BuildingUpgrade MakeLevelUpgrade(FText name, FText description, ResourceEnum resourceEnum, int32 percentOfTotalPrice);
 
 	BuildingUpgrade MakeComboUpgrade(FText name, ResourceEnum resourceEnum);
 
@@ -1152,7 +1185,7 @@ public:
 	}
 	bool IsElectricityUpgraded() {
 		// Last era is electricity
-		return GetUpgradeEraLevel() == 5;
+		return GetUpgradeEraLevel() >= 5;
 	}
 	void SetElectricityAmountUsage(int32 electricityReceivedIn) {
 		_electricityReceived = electricityReceivedIn;
@@ -1233,7 +1266,7 @@ public:
 
 	//bool NeedRoadConnection();
 
-	bool IsUpgraded(int index) {
+	bool IsUpgraded(int index) const {
 		return _upgrades.size() > index ? _upgrades[index].isUpgraded : false;
 	}
 
@@ -1266,16 +1299,24 @@ public:
 	}
 
 	int32 GetEraUpgradeCount() {
-		return (_upgrades.size() > 0 && _upgrades[0].isEraUpgrade()) ? _upgrades[0].upgradeLevel : 0;
+		if (_upgrades.size() > 0 && _upgrades[0].isEraUpgrade()) {
+			check(_upgrades[0].upgradeLevel != -1);
+			return _upgrades[0].upgradeLevel;
+		}
+		return 0;
 	}
 
 	int32 GetUpgradeEraLevel() {
 		if (_upgrades.size() > 0 && _upgrades[0].isEraUpgrade()) {
+			check(_upgrades[0].upgradeLevel != -1);
 			return _upgrades[0].upgradeLevel + buildingInfo().minEra();
 		}
 		return -1;
 	}
 	bool IsEraUpgradable() {
+		if (GetUpgradeEraLevel() > 4) {
+			return true;
+		}
 		if (GetUpgradeEraLevel() == 4) {
 			return _simulation->IsResearched(playerId(), TechEnum::Electricity);
 		}
@@ -1307,6 +1348,25 @@ public:
 		}
 		check(_deliverySourceIds.size() == 0);
 	}
+
+	int32 foreignBuilder() const { return _foreignBuilder; }
+	void SetForeignBuilder(int32 foreignBuilder) {
+		_foreignBuilder = foreignBuilder;
+		_isForeignBuildingApproved = false;
+
+		// Foreign buildling should have no constructor
+		FinishConstructionResourceAndWorkerReset();
+		_maxOccupants = 0;
+		_allowedOccupants = 0;
+	}
+	void ApproveForeignBuilder()
+	{
+		_isForeignBuildingApproved = true;
+		InstantClearArea();
+		_simulation->AddQuickBuild(_objectId);
+	}
+	bool isForeignBuildingApproved() { return _isForeignBuildingApproved; }
+	
 
 	// Cached Path
 	const std::vector<std::vector<WorldTile2>>& cachedWaypoints() { return _cachedWaypoints; }
@@ -1591,6 +1651,7 @@ public:
 			_buildingEnum == CardEnum::Farm ||
 			_buildingEnum == CardEnum::StatisticsBureau ||
 			_buildingEnum == CardEnum::JobManagementBureau ||
+			_buildingEnum == CardEnum::TourismAgency ||
 			_buildingEnum == CardEnum::ArchitectStudio ||
 			_buildingEnum == CardEnum::DepartmentOfAgriculture ||
 			_buildingEnum == CardEnum::EngineeringOffice) 
@@ -1706,6 +1767,10 @@ public:
 		// Delivery
 		Ar << _deliveryTargetId;
 		SerializeVecValue(Ar, _deliverySourceIds);
+
+		// Foreign
+		Ar << _foreignBuilder;
+		Ar << _isForeignBuildingApproved;
 
 		// Cached Path
 		SerializeVecVecObj(Ar, _cachedWaypoints);
@@ -2077,6 +2142,9 @@ protected:
 
 	int32 _deliveryTargetId = -1;
 	std::vector<int32> _deliverySourceIds;
+
+	int32 _foreignBuilder = -1;
+	bool _isForeignBuildingApproved = false;
 
 	// Waypoint Cache
 	std::vector<std::vector<WorldTile2>> _cachedWaypoints;

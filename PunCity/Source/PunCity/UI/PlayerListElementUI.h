@@ -16,7 +16,7 @@ class PROTOTYPECITY_API UPlayerListElementUI : public UPunWidget
 	GENERATED_BODY()
 public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* PlayerName;
-	UPROPERTY(meta = (BindWidget)) UTextBlock* LastPlayerName;
+	//UPROPERTY(meta = (BindWidget)) UTextBlock* LastPlayerName;
 
 	UPROPERTY(meta = (BindWidget)) UButton* PlayerReadyButton;
 	UPROPERTY(meta = (BindWidget)) UImage* PlayerReadyFill;
@@ -35,6 +35,10 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) UButton* PlayerLogoChangeButton;
 
+	UPROPERTY(meta = (BindWidget)) UImage* PlayerLogoBackground;
+	UPROPERTY(meta = (BindWidget)) UImage* PlayerLogoForeground;
+	UPROPERTY(meta = (BindWidget)) UImage* PlayerCharacterImage;
+
 	FString playerName;
 	
 	void PunInit(UPunWidget* parent, int32 slotIdIn) {
@@ -42,7 +46,7 @@ public:
 		slotId = slotIdIn;
 		BUTTON_ON_CLICK(PlayerKickButton->CoreButton, this, &UPlayerListElementUI::OnClickPlayerKickButton);
 		BUTTON_ON_CLICK(EmptySelectButton, this, &UPlayerListElementUI::OnClickEmptySelectButton);
-		PlayerLogoChangeButton->OnClicked.AddUniqueDynamic(this, &UPlayerListElementUI::OnClickPlayerLogoChangeButton);
+		BUTTON_ON_CLICK(PlayerLogoChangeButton, this, &UPlayerListElementUI::OnClickPlayerLogoChangeButton);
 	}
 	
 	UFUNCTION() void OnClickPlayerKickButton();

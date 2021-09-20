@@ -24,13 +24,13 @@ GameSaveInfo GameSaveSystem::SaveDataToFile(FString saveName, bool isCachingForS
 	saveInfo.playerNames = _controller->networkInterface()->playerNamesF();
 
 	// Remove any connected player with Old in front of the name (meaning it is marked old by game)
-	for (int32 i = 0; i < saveInfo.playerNames.Num(); i++) {
-		if (!_controller->networkInterface()->IsPlayerConnected(i) &&
-			saveInfo.playerNames[i].Left(4) == "Old ")
-		{
-			saveInfo.playerNames[i] = saveInfo.playerNames[i].RightChop(4);
-		}
-	}
+	//for (int32 i = 0; i < saveInfo.playerNames.Num(); i++) {
+	//	if (!_controller->networkInterface()->IsPlayerConnected(i) &&
+	//		saveInfo.playerNames[i].name.ToString().Left(4) == "Old ")
+	//	{
+	//		saveInfo.playerNames[i].name = saveInfo.playerNames[i].name.ToString().RightChop(4);
+	//	}
+	//}
 
 	FString folderPath = GetSaveDirectoryPath();
 	folderPath += FormatStringForPath(saveName);

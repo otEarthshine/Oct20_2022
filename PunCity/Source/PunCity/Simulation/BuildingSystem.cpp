@@ -262,6 +262,9 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 
 		  CASE_BUILDING(CardEnum::Theatre, Theatre);
 		  CASE_BUILDING(CardEnum::Tavern, Tavern);
+		  CASE_BUILDING(CardEnum::Zoo, Zoo);
+		  CASE_BUILDING(CardEnum::Museum, Museum);
+		
 		  CASE_BUILDING(CardEnum::Tailor, Tailor);
 
 		  CASE_BUILDING(CardEnum::CharcoalMaker, CharcoalBurner);
@@ -317,6 +320,20 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		  CASE_BUILDING(CardEnum::MinorCity, MinorCity);
 		  CASE_BUILDING(CardEnum::MinorCityPort, MinorCityChild);
 
+		  CASE_BUILDING(CardEnum::Oasis, ProvinceOasis);
+		  CASE_BUILDING(CardEnum::MayanPyramid, ProvinceRuin);
+		  CASE_BUILDING(CardEnum::EgyptianPyramid, ProvinceRuin);
+		  CASE_BUILDING(CardEnum::StoneHenge, ProvinceRuin);
+		  CASE_BUILDING(CardEnum::EasterIsland, ProvinceRuin);
+
+		  CASE_BUILDING(CardEnum::TourismAgency, Building);
+		  CASE_BUILDING(CardEnum::Hotel, Hotel);
+		  CASE_BUILDING(CardEnum::Embassy, Embassy);
+		  CASE_BUILDING(CardEnum::ForeignQuarter, ForeignQuarter);
+		  CASE_BUILDING(CardEnum::ForeignPort, ForeignPort);
+		  CASE_BUILDING(CardEnum::SpyCenter, SpyCenter);
+
+
 		  CASE_BUILDING(CardEnum::ConsultingFirm, Building);
 		  CASE_BUILDING(CardEnum::ImmigrationPropagandaOffice, Building);
 		  CASE_BUILDING(CardEnum::MerchantGuild, Building);
@@ -352,7 +369,8 @@ int BuildingSystem::AddBuilding(FPlaceBuilding parameters)
 	}
 	
 	int32 townId = -1;
-	if (parameters.playerId != -1) {
+	if (parameters.playerId != -1) 
+	{
 		townId = _simulation->tileOwnerTown(center);
 
 		// Special case: Tunnel can start in our territory
@@ -369,6 +387,12 @@ int BuildingSystem::AddBuilding(FPlaceBuilding parameters)
 			UE_DEBUG_BREAK();
 			return -1;
 		}
+
+		// Foreign Building
+		//if (parameters.playerId )
+		//{
+		//	
+		//}
 	}
 	else
 	{
@@ -401,6 +425,11 @@ int BuildingSystem::AddBuilding(FPlaceBuilding parameters)
 
 	if (IsValidMajorTown(townId)) {
 		_townIdPlus1ToEnumToBuildingIds[townId + 1][static_cast<int>(buildingEnum)].push_back(buildingId);
+	}
+	else if (IsMinorTown(townId)) {
+		int32 minorTownId = TownIdToMinorTownId(townId);
+		EnsureMinorTownArrayLength(minorTownId);
+		_minorTownIndexToEnumToBuildingIds[minorTownId][static_cast<int>(buildingEnum)].push_back(buildingId);
 	}
 	
 	_isBuildingIdConnected.push_back(-1);
@@ -577,6 +606,12 @@ void BuildingSystem::RemoveBuilding(int buildingId)
 	if (IsValidMajorTown(townId)) {
 		CppUtils::Remove(_townIdPlus1ToEnumToBuildingIds[townId + 1][static_cast<int>(buildingEnum)], buildingId);
 	}
+	else if (IsMinorTown(townId)) {
+		int32 minorTownId = TownIdToMinorTownId(townId);
+		EnsureMinorTownArrayLength(minorTownId);
+		CppUtils::Remove(_minorTownIndexToEnumToBuildingIds[minorTownId][static_cast<int>(buildingEnum)], buildingId);
+	}
+	
 	_alive[buildingId] = false;
 
 	// Reset display/UI

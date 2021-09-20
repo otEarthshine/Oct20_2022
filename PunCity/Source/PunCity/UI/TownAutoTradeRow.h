@@ -43,11 +43,11 @@ public:
 		SetChildHUD(TargetInventoryEditableNumber);
 		SetChildHUD(MaxTradeAmountEditableNumber);
 
-		ArrowUpButton->OnClicked.AddUniqueDynamic(this, &UTownAutoTradeRow::OnClickedArrowUpButton);
-		ArrowDownButton->OnClicked.AddUniqueDynamic(this, &UTownAutoTradeRow::OnClickedArrowDownButton);
-		ArrowFastUpButton->OnClicked.AddUniqueDynamic(this, &UTownAutoTradeRow::OnClickedArrowFastUpButton);
-		ArrowFastDownButton->OnClicked.AddUniqueDynamic(this, &UTownAutoTradeRow::OnClickedArrowFastDownButton);
-		CloseButton->OnClicked.AddUniqueDynamic(this, &UTownAutoTradeRow::OnClickedArrowCloseXButton);
+		BUTTON_ON_CLICK(ArrowUpButton, this, &UTownAutoTradeRow::OnClickedArrowUpButton);
+		BUTTON_ON_CLICK(ArrowDownButton, this, &UTownAutoTradeRow::OnClickedArrowDownButton);
+		BUTTON_ON_CLICK(ArrowFastUpButton, this, &UTownAutoTradeRow::OnClickedArrowFastUpButton);
+		BUTTON_ON_CLICK(ArrowFastDownButton, this, &UTownAutoTradeRow::OnClickedArrowFastDownButton);
+		BUTTON_ON_CLICK(CloseButton, this, &UTownAutoTradeRow::OnClickedArrowCloseXButton);
 	}
 
 	UFUNCTION() void OnClickedArrowUpButton() { parentWidget->CallBack1(this, CallbackEnum::ShiftAutoTradeRowUp); }

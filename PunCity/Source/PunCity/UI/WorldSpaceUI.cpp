@@ -205,113 +205,10 @@ void UWorldSpaceUI::TickBuildings()
 				{
 					URegionHoverUI* regionHoverUI = getRegionHoverUI();
 
-					bool isUIPlayerAttacker = claimProgress.attackerPlayerId == playerId();
-
-					//std::stringstream ss;
-					//std::string textType = (isUIPlayerAttacker ? "<Large>" : "<LargeRed>");
-					//ss << textType << "Attacker: " << simulation().playerName(claimProgress.attackerPlayerId) << "</>\n";
-					//ss << textType << claimProgress.committedInfluences << "</><img id=\"Influence\"/>";
-					//SetText(regionHoverUI->ClaimingText, ss.str());
-					//regionHoverUI->AutoChoseText->SetVisibility(ESlateVisibility::Collapsed);
-
-					// Battle Bar
-					float fraction = static_cast<float>(claimProgress.ticksElapsed) / BattleClaimTicks;
-					regionHoverUI->BattleBarImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", 1.0f - fraction);
-					regionHoverUI->BattleBarImage->GetDynamicMaterial()->SetScalarParameterValue("IsGreenLeft", isUIPlayerAttacker);
-					regionHoverUI->BattleBarImage->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-
-					
-					// Player Logo
-					regionHoverUI->PlayerLogoLeft->GetDynamicMaterial()->SetVectorParameterValue("PlayerColor1", PlayerColor1(claimProgress.attackerPlayerId));
-					AddToolTip(regionHoverUI->PlayerLogoLeft, FText::Format(
-						LOCTEXT("AttackPlayerLogo_Tip", "Attacker: {0}"),
-						sim.playerNameT(claimProgress.attackerPlayerId)
-					));
-
-					int32 defenderPlayerId = provincePlayerId;
-					bool isDeclaringIndependence = (claimProgress.attackerPlayerId == provincePlayerId);
-					if (isDeclaringIndependence) {
-						defenderPlayerId = sim.playerOwned(provincePlayerId).lordPlayerId(); // Declare Independence
-					} // TODO: Declare Independence should init attack from the Lord
-					regionHoverUI->PlayerLogoRight->GetDynamicMaterial()->SetVectorParameterValue("PlayerColor2", PlayerColor2(defenderPlayerId));
-					AddToolTip(regionHoverUI->PlayerLogoRight, FText::Format(
-						LOCTEXT("DefenderPlayerLogo_Tip", "Defender: {0}"),
-						sim.playerNameT(defenderPlayerId)
-					));
-					
-
-					// 
-					SetText(regionHoverUI->BattleInfluenceLeft, FText::Format(INVTEXT("<img id=\"Influence\"/><Shadowed>{0}</>"), TEXT_NUM(claimProgress.committedInfluencesAttacker)));
-					SetText(regionHoverUI->BattleInfluenceRight, FText::Format(INVTEXT("<img id=\"Influence\"/><Shadowed>{0}</>"), TEXT_NUM(claimProgress.committedInfluencesDefender)));
-					SetText(regionHoverUI->DefenseBonusLeft, FText::Format(INVTEXT("<img id=\"Shield\"/><Shadowed>{0}</>"), TEXT_NUM(0)));
-
-					AddToolTip(regionHoverUI->DefenseBonusLeft, 
-						LOCTEXT("Attack Bonus: 0%", "Attack Bonus: 0%")
-					);
-					
-					std::string defenderDefenseBonus = (isDeclaringIndependence ? to_string(0) : to_string(sim.GetProvinceAttackCostPercent(provinceId))) + "%</>";
-					SetText(regionHoverUI->DefenseBonusRight, "<img id=\"Shield\"/><Shadowed>" + defenderDefenseBonus);
-					AddToolTip(regionHoverUI->DefenseBonusLeft, sim.GetProvinceDefenseBonusTip(provinceId));
-
-					// Fight at home province = Vassalize
-					if (sim.homeProvinceId(provincePlayerId) == provinceId) {
-						SetText(regionHoverUI->BattleText, TEXT_TAG("<Shadowed>", LOCTEXT("Vassalize", "Vassalize")));
-					}
-					else {
-						SetText(regionHoverUI->BattleText, TEXT_TAG("<Shadowed>", LOCTEXT("Annex Province", "Annex Province")));
-					}
-					
-
-					// UI-Player is Attacker
-					if (claimProgress.attackerPlayerId == playerId()) 
-					{
-						int32 provincePlayerIdTemp = sim.provinceOwnerPlayer(claimProgress.provinceId); //TODO: does it needs claimProgress.provinceId?
-						auto& provincePlayerOwner = sim.playerOwned(provincePlayerIdTemp);
-						
-						ClaimConnectionEnum claimConnectionEnum = sim.GetProvinceClaimConnectionEnumPlayer(provinceId, claimProgress.attackerPlayerId);
-						ProvinceAttackEnum attackEnum = provincePlayerOwner.GetProvinceAttackEnum(provinceId, claimProgress.attackerPlayerId);
-						
-						int32 reinforcePrice = (attackEnum == ProvinceAttackEnum::DeclareIndependence) ? BattleInfluencePrice : sim.GetProvinceAttackReinforcePrice(provinceId, claimConnectionEnum);
-						bool hasEnoughInfluence = sim.influence(playerId()) >= reinforcePrice;
-
-						SetText(regionHoverUI->ReinforceLeftButtonText, 
-							FText::Format(INVTEXT("{0}\n<img id=\"Influence\"/>{1}"), LOCTEXT("Reinforce", "Reinforce"), TextRed(TEXT_NUM(reinforcePrice), !hasEnoughInfluence))
-						);
-						regionHoverUI->ReinforceLeftButton->SetIsEnabled(hasEnoughInfluence);
-						
-						regionHoverUI->ReinforceLeftButtonText->SetVisibility(ESlateVisibility::Visible);
-						regionHoverUI->ReinforceRightButtonText->SetVisibility(ESlateVisibility::Collapsed);
-						regionHoverUI->ReinforceMoneyRightButtonText->SetVisibility(ESlateVisibility::Collapsed);
-					}
-					// UI-Player is Defender
-					else if (provincePlayerId == playerId())
-					{
-						int32 hasEnoughInfluence = sim.influence(playerId()) >= BattleInfluencePrice;
-						SetText(regionHoverUI->ReinforceRightButtonText, 
-							FText::Format(INVTEXT("{0}\n<img id=\"Influence\"/>{1}"), LOCTEXT("Reinforce", "Reinforce"), TextRed(TEXT_NUM(BattleInfluencePrice), !hasEnoughInfluence))
-						);
-						regionHoverUI->ReinforceRightButton->SetIsEnabled(hasEnoughInfluence);
-
-						int32 hasEnoughMoney = sim.moneyCap32(playerId()) >= BattleInfluencePrice;
-						SetText(regionHoverUI->ReinforceMoneyRightButtonText,
-							FText::Format(INVTEXT("{0}\n<img id=\"Coin\"/>{1}"), LOCTEXT("Reinforce", "Reinforce"), TextRed(TEXT_NUM(BattleInfluencePrice), !hasEnoughMoney))
-						);
-						regionHoverUI->ReinforceMoneyRightButton->SetIsEnabled(hasEnoughMoney);
-						
-						regionHoverUI->ReinforceLeftButtonText->SetVisibility(ESlateVisibility::Collapsed);
-						regionHoverUI->ReinforceRightButtonText->SetVisibility(ESlateVisibility::Visible);
-						regionHoverUI->ReinforceMoneyRightButtonText->SetVisibility(ESlateVisibility::Visible);
-					}
-					else {
-						regionHoverUI->ReinforceLeftButtonText->SetVisibility(ESlateVisibility::Collapsed);
-						regionHoverUI->ReinforceRightButtonText->SetVisibility(ESlateVisibility::Collapsed);
-						regionHoverUI->ReinforceMoneyRightButtonText->SetVisibility(ESlateVisibility::Collapsed);
-					}
-					
-					regionHoverUI->UpdateUI(provinceId);
+					regionHoverUI->UpdateBattlefieldUI(provinceId, claimProgress);
 
 					regionHoverUI->ProvinceOverlay->SetVisibility(ESlateVisibility::Collapsed);
-					regionHoverUI->BattleOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+					regionHoverUI->BattlefieldUI->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
 					showingBattle = true;
 				}
@@ -325,7 +222,7 @@ void UWorldSpaceUI::TickBuildings()
 				regionHoverUI->UpdateProvinceOverlayInfo(provinceId);
 
 				regionHoverUI->ProvinceOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-				regionHoverUI->BattleOverlay->SetVisibility(ESlateVisibility::Collapsed);
+				regionHoverUI->BattlefieldUI->SetVisibility(ESlateVisibility::Collapsed);
 			}
 		}
 	}
@@ -439,16 +336,24 @@ void UWorldSpaceUI::TickBuildings()
 					building.playerId() == playerId();
 			};
 
+			auto showHoverIcon = [&](UTexture2D* image, const FText& prefix, const FText& suffix)
+			{
+				UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
+					_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
+
+				hoverIcon->SetImage(image);
+				hoverIcon->SetText(prefix, suffix);
+
+				return hoverIcon;
+			};
+
 			/*
 			 * Science
 			 */
 
 			if (isInOverlayRadiusHouse(OverlayType::Library, Library::MinHouseLvl, Library::Radius))
 			{
-				UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
-					_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
-
-				hoverIcon->SetImage(assetLoader()->ScienceIcon);
+				UIconTextPairWidget* hoverIcon = showHoverIcon(assetLoader()->ScienceIcon, INVTEXT("+"), INVTEXT(""));
 
 				bool alreadyHasLibrary = false; ;
 				int32 radiusBonus = building.GetRadiusBonus(CardEnum::Library, Library::Radius, [&](int32 bonus, Building& buildingScope) {
@@ -458,15 +363,11 @@ void UWorldSpaceUI::TickBuildings()
 					alreadyHasLibrary = true;
 				}
 
-				hoverIcon->SetText("+", "");
 				hoverIcon->SetTextColor(alreadyHasLibrary ? FLinearColor(0.38, 0.38, 0.38, 0.5) : FLinearColor::White);
 			}
 			else if (isInOverlayRadiusHouse(OverlayType::School, School::MinHouseLvl, School::Radius))
 			{
-				UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
-					_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
-
-				hoverIcon->SetImage(assetLoader()->ScienceIcon);
+				UIconTextPairWidget* hoverIcon = showHoverIcon(assetLoader()->ScienceIcon, INVTEXT("+"), INVTEXT(""));
 
 				bool alreadyHasSchool = false; ;
 				int32 radiusBonus = building.GetRadiusBonus(CardEnum::School, School::Radius, [&](int32 bonus, Building& buildingScope) {
@@ -476,7 +377,6 @@ void UWorldSpaceUI::TickBuildings()
 					alreadyHasSchool = true;
 				}
 
-				hoverIcon->SetText("+", "");
 				hoverIcon->SetTextColor(alreadyHasSchool ? FLinearColor(0.38, 0.38, 0.38) : FLinearColor::White);
 			}
 			/*
@@ -484,19 +384,19 @@ void UWorldSpaceUI::TickBuildings()
 			 */
 			else if (isInOverlayRadiusHouse(OverlayType::Tavern, 1, Tavern::Radius))
 			{
-				UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
-					_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
-
-				hoverIcon->SetImage(assetLoader()->SmileIcon);
-				hoverIcon->SetText(FText(), FText());
+				showHoverIcon(assetLoader()->SmileIcon, FText(), FText());
 			}
 			else if (isInOverlayRadiusHouse(OverlayType::Theatre, Theatre::MinHouseLvl, Theatre::Radius))
 			{
-				UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
-					_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
-
-				hoverIcon->SetImage(assetLoader()->SmileIcon);
-				hoverIcon->SetText(FText(), FText());
+				showHoverIcon(assetLoader()->SmileIcon, FText(), FText());
+			}
+			else if (isInOverlayRadiusHouse(OverlayType::Zoo, 1, Zoo::Radius))
+			{
+				showHoverIcon(assetLoader()->SmileIcon, FText(), FText());
+			}
+			else if (isInOverlayRadiusHouse(OverlayType::Museum, 1, Museum::Radius))
+			{
+				showHoverIcon(assetLoader()->SmileIcon, FText(), FText());
 			}
 
 
@@ -505,23 +405,14 @@ void UWorldSpaceUI::TickBuildings()
 			 */
 			else if (isInOverlayRadiusHouse(OverlayType::Bank, Bank::MinHouseLvl, Bank::Radius))
 			{
-				UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
-					_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
-
-				hoverIcon->SetImage(assetLoader()->CoinIcon);
-				hoverIcon->SetText("+", "");
+				showHoverIcon(assetLoader()->CoinIcon, INVTEXT("+"), FText());
 			}
 			// Bad Appeal
 			else if (overlayType == OverlayType::BadAppeal &&
 				(IsHumanHouse(building.buildingEnum()) || IsFunServiceBuilding(building.buildingEnum())) &&
 				WorldTile2::Distance(building.centerTile(), overlayTile) < BadAppealRadius)
 			{
-				UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
-					_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {},
-					WorldZoomTransition_WorldSpaceUIShrink, 1.5);
-
-				hoverIcon->SetImage(assetLoader()->UnhappyIcon);
-				hoverIcon->SetText(FText(), FText());
+				showHoverIcon(assetLoader()->UnhappyIcon, FText(), FText());
 			}
 
 			/*
@@ -550,23 +441,6 @@ void UWorldSpaceUI::TickBuildings()
 			}
 
 
-
-			//else if (overlayType == OverlayType::Theatre && IsHumanHouse(building.buildingEnum()) &&
-			//		WorldTile2::Distance(building.centerTile(), overlayTile) < Theatre::Radius) 
-			//{
-			//	UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, -1000, this,
-			//		_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), [&](UIconTextPairWidget* ui) {});
-			//	hoverIcon->SetImage(assetLoader()->CultureIcon);
-			//	hoverIcon->SetText("", "+" + to_string(Theatre::BaseCultureByLvl[0]));
-			//}
-			//else if (overlayType == OverlayType::Tavern && IsHumanHouse(building.buildingEnum()) &&
-			//		WorldTile2::Distance(building.centerTile(), overlayTile) < Tavern::Radius) 
-			//{
-			//	UIconTextPairWidget* hoverIcon = _iconTextHoverIcons.GetHoverUI<UIconTextPairWidget>(buildingId, UIEnum::HoverTextIconPair, this,
-			//																						_worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), zoomDistance, [&](UIconTextPairWidget* ui) {});
-			//	hoverIcon->SetImage(assetLoader()->SmileIcon);
-			//	hoverIcon->SetText("", "+" + to_string(Tavern::BaseHappinessByLvl[0]));
-			//}
 		}
 
 		//! Remove unused UIs
@@ -695,6 +569,38 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 		return;
 	}
 
+
+	auto setForeignLogo = [&](UBuildingJobUI* buildingJobUI)
+	{
+		int32 foreignBuilderId = building.foreignBuilder();
+		if (foreignBuilderId != -1)
+		{
+			buildingJobUI->ForeignLogo->SetVisibility(ESlateVisibility::Visible);
+
+			FPlayerInfo playerInfo = dataSource()->playerInfo(foreignBuilderId);
+
+			UMaterialInstanceDynamic* material = buildingJobUI->ForeignLogo->GetDynamicMaterial();
+			material->SetVectorParameterValue("ColorBackground", playerInfo.logoColorBackground);
+			material->SetVectorParameterValue("ColorForeground", playerInfo.logoColorForeground);
+			material->SetTextureParameterValue("Logo", assetLoader()->GetPlayerLogo(playerInfo.logoIndex));
+
+			AddToolTip(buildingJobUI->ForeignLogo, FText::Format(
+				LOCTEXT("ForeignLogo_Tip", "This building was built by {0}."),
+				simulation().playerNameT(foreignBuilderId)
+			));
+
+			bool shouldShowForeignBuildingAllow = building.playerId() == playerId() &&
+				!building.isForeignBuildingApproved();
+
+			buildingJobUI->ForeignAllowBox->SetVisibility(shouldShowForeignBuildingAllow ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+		}
+		else {
+			buildingJobUI->ForeignLogo->SetVisibility(ESlateVisibility::Collapsed);
+			buildingJobUI->ForeignAllowBox->SetVisibility(ESlateVisibility::Collapsed);
+		}
+	};
+	
+
 	FLinearColor brown(1, .75, .5);
 
 	bool isTileBld = IsRoad(building.buildingEnum()) || building.isEnum(CardEnum::Fence);
@@ -715,6 +621,9 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 		
 		buildingJobUI->SetShowBar(false);
 		//buildingJobUI->SetStars(0);
+
+		setForeignLogo(buildingJobUI);
+		
 		return;
 	}
 
@@ -752,6 +661,9 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 
 	buildingJobUI->LargeWhiteText->SetVisibility(ESlateVisibility::Collapsed);
 	buildingJobUI->MediumGrayText->SetVisibility(ESlateVisibility::Collapsed);
+
+	
+	setForeignLogo(buildingJobUI);
 	
 
 	// Under construction
@@ -766,16 +678,23 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 				buildingJobUI->SetShowBar(true);
 				buildingJobUI->SetBarFraction(building.constructionFraction());
 
-				std::vector<int32> constructionResourceCounts;
-				std::vector<int32> constructionResourceRequired = building.GetConstructionResourceCost();
-
-				for (size_t i = 0; i < constructionResourceRequired.size(); i++) {
-					constructionResourceCounts.push_back(0);
-					if (constructionResourceRequired[i] > 0) {
-						constructionResourceCounts[i] = building.resourceCountSafe(ConstructionResources[i]);
+				if (building.foreignBuilder() == -1)
+				{
+					std::vector<int32> constructionResourceCounts;
+					std::vector<int32> constructionResourceRequired = building.GetConstructionResourceCost();
+					
+					for (size_t i = 0; i < constructionResourceRequired.size(); i++) {
+						constructionResourceCounts.push_back(0);
+						if (constructionResourceRequired[i] > 0) {
+							constructionResourceCounts[i] = building.resourceCountSafe(ConstructionResources[i]);
+						}
 					}
+
+					buildingJobUI->SetConstructionResource(constructionResourceCounts, building);
 				}
-				buildingJobUI->SetConstructionResource(constructionResourceCounts, building);
+				else {
+					BoxAfterAdd(buildingJobUI->ResourceCompletionIconBox, 0);
+				}
 
 				buildingJobUI->SetHoverWarning(building);
 			};
@@ -783,7 +702,7 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 			// Full UI
 			if (jobUIState == JobUIState::Job)
 			{
-				bool canManipulateOccupant = playerId() == building.playerId();
+				bool canManipulateOccupant = (playerId() == building.playerId()) && building.maxOccupants() > 0;
 				buildingJobUI->SetShowHumanSlots(true, canManipulateOccupant);
 				buildingJobUI->SetSlots(building.occupantCount(), building.allowedOccupants(), building.maxOccupants(), brown);
 
@@ -1546,8 +1465,7 @@ void UWorldSpaceUI::TickPlacementInstructions()
 		punBox->AddSpacer(12);
 	}
 	// Building with Instructions
-	else if (placementInfo.buildingEnum == CardEnum::Tavern ||
-		placementInfo.buildingEnum == CardEnum::Theatre)
+	else if (IsFunServiceBuilding(placementInfo.buildingEnum))
 	{
 		int32 appealPercent = simulation().overlaySystem().GetAppealPercent(placementInfo.mouseOnTile);
 		int32 serviceQuality = FunBuilding::ServiceQuality(placementInfo.buildingEnum, appealPercent);

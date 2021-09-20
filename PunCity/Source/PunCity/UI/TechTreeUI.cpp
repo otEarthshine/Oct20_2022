@@ -59,7 +59,7 @@ void UTechTreeUI::SetupTechBoxColumn(const std::vector<TechEnum>& techEnums, UVe
 
 
 
-void UTechTreeUI::TickUI()
+void UTechTreeUI::TickUI(bool shouldCallSetShowUI)
 {
 	LEAN_PROFILING_UI(TickTechTreeUI);
 	
@@ -69,7 +69,9 @@ void UTechTreeUI::TickUI()
 	if (GetVisibility() == ESlateVisibility::Collapsed) {
 		// Open tech UI if there is no more queue...
 		if (GetShouldOpenUI()) {
-			SetShowUI(true);
+			if (shouldCallSetShowUI) { // Prevent Recursion
+				SetShowUI(true);
+			}
 			SetShouldOpenUI(false);
 		}
 		return;

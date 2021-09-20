@@ -1027,6 +1027,8 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 
 		SetHighlight(_moduleMeshes[meshId], CardEnum::Theatre, overlayType == OverlayType::Theatre);
 		SetHighlight(_moduleMeshes[meshId], CardEnum::Tavern, overlayType == OverlayType::Tavern);
+		SetHighlight(_moduleMeshes[meshId], CardEnum::Zoo, overlayType == OverlayType::Zoo);
+		SetHighlight(_moduleMeshes[meshId], CardEnum::Museum, overlayType == OverlayType::Museum);
 
 		_lastModuleMeshesOverlayType[meshId] = overlayType;
 	}
@@ -1243,6 +1245,12 @@ void UBuildingDisplayComponent::UpdateDisplayOverlay(Building& building, Overlay
 	}
 	else if (overlayType == OverlayType::Tavern && building.isEnum(CardEnum::Tavern)) {
 		ShowRadius(Tavern::Radius, centerAtom, building);
+	}
+	else if (overlayType == OverlayType::Zoo && building.isEnum(CardEnum::Zoo)) {
+		ShowRadius(Zoo::Radius, centerAtom, building);
+	}
+	else if (overlayType == OverlayType::Museum && building.isEnum(CardEnum::Museum)) {
+		ShowRadius(Museum::Radius, centerAtom, building);
 	}
 	
 #undef SHOW_RADIUS

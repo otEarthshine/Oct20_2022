@@ -11,6 +11,8 @@ APunLobbyHUD::APunLobbyHUD()
 	static ConstructorHelpers::FClassFinder<UUserWidget> lobbyUIFinder(TEXT("/Game/UI/MainMenu/LobbyUIWidget"));
 	check(lobbyUIFinder.Class);
 	_lobbyClass = lobbyUIFinder.Class;
+
+	_mainMenuAssetLoader = CreateDefaultSubobject<UMainMenuAssetLoaderComponent>("MainMenuAssetLoader");
 }
 
 void APunLobbyHUD::BeginPlay()
@@ -37,7 +39,7 @@ void APunLobbyHUD::Init()
 	check(_lobbyUI);
 	_lobbyUI->AddToViewport();
 	_lobbyUI->SetHUD(this, UIEnum::None);
-	_lobbyUI->Init();
+	_lobbyUI->Init(_mainMenuAssetLoader);
 }
 
 void APunLobbyHUD::Tick(float DeltaTime)

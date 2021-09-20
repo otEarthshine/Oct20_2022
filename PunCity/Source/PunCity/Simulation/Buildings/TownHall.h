@@ -20,20 +20,20 @@ public:
 		return townhallLvl - 1;
 	}
 
-	int32 townhallIncome()
-	{
-		switch(townhallLvl)
-		{
-		case 1: return 10;
-		case 2: return 20;
-		case 3: return 30;
-		case 4: return 50;
-		case 5: return 80;
-		default:
-			UE_DEBUG_BREAK();
-			return 0;
-		}
-	}
+	//int32 townhallIncome()
+	//{
+	//	switch(townhallLvl)
+	//	{
+	//	case 1: return 10;
+	//	case 2: return 20;
+	//	case 3: return 30;
+	//	case 4: return 50;
+	//	case 5: return 80;
+	//	default:
+	//		UE_DEBUG_BREAK();
+	//		return 0;
+	//	}
+	//}
 
 	FString townNameF() { return _townName; }
 	FText townNameT() { return FText::FromString(_townName); }

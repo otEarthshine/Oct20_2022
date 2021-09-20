@@ -15,6 +15,7 @@
 
 #include "PunUnrealUtils.h"
 #include "CppUtils.h"
+#include "MainMenuAssetLoaderComponent.h"
 
 #include "AssetLoaderComponent.generated.h"
 
@@ -451,8 +452,14 @@ public:
 	}
 
 
-	const TArray<UTexture2D*>& GetPlayerLogos() {
-		return _playerLogos;
+	const TArray<UTexture2D*>& GetPlayerLogos() const {
+		return _mainMenuAssetLoader->PlayerLogos;
+	}
+	UTexture2D* GetPlayerLogo(int32 playerId) const {
+		return _mainMenuAssetLoader->PlayerLogos[playerId];
+	}
+	const TArray<UTexture2D*>& GetPlayerCharacters() const {
+		return _mainMenuAssetLoader->PlayerCharacters;
 	}
 	
 
@@ -934,7 +941,8 @@ private:
 
 	UPROPERTY() TMap<int32, UTexture2D*> _cardIcons;
 
-	UPROPERTY() TArray<UTexture2D*> _playerLogos;
+
+	UPROPERTY() UMainMenuAssetLoaderComponent* _mainMenuAssetLoader;
 
 	//! ArmyIcon
 	UPROPERTY() TArray<UTexture2D*> _armyIcons;

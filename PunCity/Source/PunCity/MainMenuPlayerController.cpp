@@ -243,6 +243,18 @@ void AMainMenuPlayerController::SendReadyStatus_ToServer_Implementation(bool pla
 	gameMode->Server_SyncPlayerStateToAllControllers();
 }
 
+void AMainMenuPlayerController::SendPlayerInfo_ToServer_Implementation(const FPlayerInfo& playerInfo)
+{
+	if (ShouldSkipLobbyNetworkCommand()) {
+		return;
+	}
+
+	gameInstance()->SetPlayerInfo(controllerPlayerId(), playerInfo);
+
+	auto gameMode = CastChecked<APunGameMode>(UGameplayStatics::GetGameMode(this));
+	gameMode->Server_SyncPlayerStateToAllControllers();
+}
+
 
 
 void AMainMenuPlayerController::SetMapSettings_Implementation(const TArray<int32>& mapSettingsBlob)

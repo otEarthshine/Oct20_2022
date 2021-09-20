@@ -147,6 +147,16 @@ APunHUD::APunHUD()
 	LoadClass(UIEnum::PunMidRowText, "PunMidRowText");
 
 	LoadClass(UIEnum::TradeDealResourceRow, "W_TradeDealResourceRow");
+
+	LoadClass(UIEnum::ChooseCharacterElement, "MainMenu/W_ChooseCharacterElement");
+	LoadClass(UIEnum::ChooseLogoElement, "MainMenu/W_ChooseLogoElement");
+	LoadClass(UIEnum::ChooseColorElement, "MainMenu/W_ChooseColorElement");
+
+	
+	LoadClass(UIEnum::WG_MinorTownWorldUI, "WorldSpaceUI/WG_MinorTownWorldUI");
+	LoadClass(UIEnum::WG_BattlefieldUI, "WorldSpaceUI/WG_BattlefieldUI");
+	LoadClass(UIEnum::WG_BattlefieldArmyUI, "WorldSpaceUI/WG_BattlefieldArmyUI");
+	LoadClass(UIEnum::WG_BattlefieldUnitIcon, "WorldSpaceUI/WG_BattlefieldUnitIcon");
 	
 
 	LoadClass(UIEnum::WGT_Button, "Components/Buttons/WGT_Button");
@@ -270,8 +280,8 @@ void APunHUD::PunTick(bool isPhotoMode)
 
 	_townAutoTradeUI->TickUI();
 	
-	_techUI->TickUI();
-	_prosperityUI->TickUI();
+	_techUI->TickUI(true);
+	_prosperityUI->TickUI(true);
 	
 	_statisticsUI->TickUI();
 	//_armyMoveUI->TickUI();

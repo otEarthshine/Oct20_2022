@@ -123,7 +123,7 @@ void UBuildingPlacementButton::PunInit(CardStatus cardStatusIn, int32 cardHandIn
 	}
 	else {
 		SellButton->SetVisibility(ESlateVisibility::Visible);
-		SellButton->OnClicked.AddUniqueDynamic(this, &UBuildingPlacementButton::OnSellButtonClicked);
+		BUTTON_ON_CLICK(SellButton, this, &UBuildingPlacementButton::OnSellButtonClicked);
 	}
 
 	if (IsTownSlotCard(buildingEnum)) {

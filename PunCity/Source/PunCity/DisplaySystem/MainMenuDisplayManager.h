@@ -61,6 +61,9 @@ public:
 	 * IDisplaySystemDataSource
 	 */
 	int32 playerId() final { return 0; }
+
+	virtual FPlayerInfo playerInfo(int32 playerId) final { return FPlayerInfo(); }
+	
 	UAssetLoaderComponent* assetLoader() final { return _assetLoader; }
 
 	IGameNetworkInterface* networkInterface() final { return nullptr; }
@@ -69,8 +72,9 @@ public:
 	USceneComponent* componentToAttach() final { return _root; }
 
 	OverlayType GetOverlayType() final { return OverlayType::None; }
-	bool isHidingTree() override { return false; }
-	bool isShowingProvinceOverlay() override { return false; }
+	virtual bool isHidingTree() override { return false; }
+	virtual bool isShowingProvinceOverlay() override { return false; }
+	virtual bool isShowingDefenseOverlay() override { return false; }
 
 	ULineBatchComponent* lineBatch() final {
 		if (UWorld* world = GetWorld()) {

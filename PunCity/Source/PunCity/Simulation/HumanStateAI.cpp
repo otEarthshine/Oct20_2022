@@ -3413,6 +3413,19 @@ void HumanStateAI::UpdateHappiness()
 		if (_simulation->HasGlobalBonus(_playerId, CardEnum::Romanticism)) {
 			targetHappiness += std::min(30, _simulation->GetHouseLvlCount(_playerId, 5, true));
 		}
+
+		
+		// Zoo
+		const std::vector<int32>& zooIds = _simulation->buildingIds(_townId, CardEnum::Zoo);
+		TSet<CardEnum> uniqueAnimals;
+		for (int32 zooId : zooIds) {
+			Zoo& zoo = _simulation->building<Zoo>(zooId, CardEnum::Zoo);
+			const std::vector<CardStatus>& cardStatuses = zoo.slotCards();
+			for (const CardStatus& cardStatus : cardStatuses) {
+				uniqueAnimals.Add(cardStatus.cardEnum);
+			}
+		}
+		targetHappiness += 5 * uniqueAnimals.Num(); // +5% city attractiveness when placed in Zoo (does not stack)
 		
 
 		// Tax

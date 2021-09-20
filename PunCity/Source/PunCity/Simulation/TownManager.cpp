@@ -913,7 +913,9 @@ void TownManager::Tick1Sec()
 			//}
 
 			for (size_t i = 0; i < _aveHappiness.size(); i++) {
-				_aveHappiness[i] += human.GetHappinessByType(static_cast<HappinessEnum>(i));
+				int32 happinessByType = human.GetHappinessByType(static_cast<HappinessEnum>(i));
+				_aveHappiness[i] += happinessByType;
+				PUN_CHECK(happinessByType < 1000 && happinessByType > -1000);
 			}
 		}
 
@@ -1034,6 +1036,62 @@ void TownManager::Tick1Sec()
 
 	_electricityConsumption = totalElectricityUsage;
 	_electricityProductionCapacity = totalElectricityProductionCapacity;
+
+	/*
+	 * Tourism
+	 */
+	{
+		std::vector<TradeRoutePair> tradeRoutes = _simulation->worldTradeSystem().GetTradeRouteTo(_townId);
+
+		// Get Hotels on Trade Route
+		std::vector<Hotel*> hotels;
+		for (const TradeRoutePair& route : tradeRoutes) {
+			int32 destinationTownId = route.GetCounterpartTownId(_townId);
+			const std::vector<int32>& localHotelIds = _simulation->buildingIds(destinationTownId, CardEnum::Hotel);
+			for (int32 localHotelId : localHotelIds) {
+				Hotel* hotel = static_cast<Hotel*>(_simulation->buildingPtr(localHotelId));
+				if (hotel->isAvailable()) {
+					hotels.push_back(hotel);
+				}
+			}
+		}
+
+		if (hotels.size() > 0)
+		{
+			// Sort Hotels by Service Quality
+			std::sort(hotels.begin(), hotels.end(), [&](Hotel* a, Hotel* b) {
+				return a->serviceQuality() > b->serviceQuality();
+			});
+
+			const int32 clusterSize = GameRand::RandRound(population(), Time::SecondsPerRound);
+
+			int32 hotelIndex = 0;
+
+			LoopPopulation(clusterSize, _tourismIncreaseIndex, [&](int32 unitId)
+			{
+				HumanStateAI& humanAI = _simulation->unitAI(unitId).subclass<HumanStateAI>(UnitEnum::Human);
+
+				hotelIndex = (hotelIndex + 1) % hotels.size();
+
+				Hotel* hotel = hotels[hotelIndex];
+				hotel->Visit(_townId);
+
+				_simulation->ChangeMoney(hotel->playerId(), hotel->feePerVisitor());
+				_simulation->uiInterface()->ShowFloatupInfo(hotel->playerId(), FloatupEnum::GainMoney, hotel->centerTile(), TEXT_NUMSIGNED(hotel->feePerVisitor()));
+
+				// Embassy Hotel Chain
+				if (_simulation->HasForeignBuildingWithUpgrade(hotel->foreignBuilder(), _townId, CardEnum::Embassy, 1))
+				{
+					int32 moneyGain100 = hotel->feePerVisitor() * 100 * 20 / 100;
+					_simulation->ChangeMoney(hotel->foreignBuilder(), moneyGain100);
+					_simulation->uiInterface()->ShowFloatupInfo(hotel->foreignBuilder(), FloatupEnum::GainMoney, hotel->centerTile(), TEXT_100SIGNED(moneyGain100));
+				}
+
+				humanAI.SetHappiness(HappinessEnum::Tourism, hotel->serviceQuality());
+			});
+
+		}
+	}
 	
 
 	/*
@@ -1052,7 +1110,7 @@ void TownManager::Tick1Sec()
 		AddDataPoint(PlotStatEnum::Science, science100PerRound() / 100);
 		AddDataPoint(PlotStatEnum::Food, _simulation->foodCount(_townId));
 		AddDataPoint(PlotStatEnum::Fuel, _simulation->resourceCountTown(_townId, ResourceEnum::Wood) +
-													_simulation->resourceCountTown(_townId, ResourceEnum::Coal));
+												_simulation->resourceCountTown(_townId, ResourceEnum::Coal));
 
 		AddDataPoint(PlotStatEnum::Technologies, _simulation->sciTechsCompleted(_playerId));
 		AddDataPoint(PlotStatEnum::InfluencePoints, _simulation->influence(_playerId));
@@ -1090,8 +1148,75 @@ void TownManager::TickRound()
 		//AddDataPoint(PlotStatEnum::TradeBalance, (exportMoney100 - importMoney100) / 100, Time::TicksPerSeason);
 	}
 
-	TickRound_AutoTrade();
-	
+	/*
+	 * Auto Trade
+	 */
+	{
+		//! Calculate AutoTrade
+		int32 exportMoneyTotal = 0;
+		int32 importMoneyTotal = 0;
+		int32 feeTotal = 0;
+		int32 feeDiscountTotal = 0;
+
+		TArray<FText> exportTooltipText;
+		TArray<FText> importTooltipText;
+		TArray<FText> feeTooltipText;
+		TArray<FText> feeDiscountTooltipText;
+
+		CalculateAutoTradeProfit(
+			exportMoneyTotal,
+			importMoneyTotal,
+			feeTotal,
+			feeDiscountTotal,
+
+			exportTooltipText,
+			importTooltipText,
+			feeTooltipText,
+			feeDiscountTooltipText,
+			false
+		);
+
+		int32 netTotal100 = exportMoneyTotal - importMoneyTotal - feeTotal;
+
+		
+		//! AutoTrade Exchange goods
+		auto& resourceSys = _simulation->resourceSystem(_townId);
+		
+		for (const AutoTradeElement& element : _autoExportElements) {
+			resourceSys.RemoveResourceGlobal(element.resourceEnum, element.calculatedTradeAmountNextRound);
+		}
+
+		int32 totalRefundAmount100 = 0;
+		
+		for (const AutoTradeElement& element : _autoImportElements) {
+			// For resources that failed to be added, remove the price from the netTotal100
+			int32 leftOverAmount = resourceSys.AddResourceGlobal_ReturnLeftover(element.resourceEnum, element.calculatedTradeAmountNextRound);
+
+			if (leftOverAmount > 0) {
+				int32 refundAmount100 = element.GetImportLeftoverRefund100(leftOverAmount);
+				totalRefundAmount100 += refundAmount100;
+				netTotal100 -= refundAmount100;
+			}
+		}
+
+		
+		//! AutoTrade Receive net
+		_simulation->ChangeMoney100(_playerId, netTotal100);
+
+		SetLastRoundAutoTradeProfit(netTotal100);
+		
+		//! UI Display
+		WorldTile2 floatupCenter = _simulation->building(townHallId).centerTile();
+		_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, floatupCenter, TEXT_100SIGNED(netTotal100));
+
+		if (totalRefundAmount100 > 0)
+		{
+			_simulation->AddPopup(_playerId, FText::Format(
+				LOCTEXT("AutoTrade_NotEnoughStorage_Pop", "Auto-trade import did not complete fully because storages are full.<space>You were refunded {0}<img id=\"Coin\"/> for the incomplete import."),
+				TEXT_100(totalRefundAmount100)
+			));
+		}
+	}
 
 	/*
 	 * Migration accumulate and migrate out
@@ -1171,17 +1296,13 @@ void TownManager::RecalculateTax(bool showFloatup)
 			incomes100[i] += house.GetIncome100Int(i);
 		}
 
-		// influence from Luxury resource consumption
-		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Luxury)] += house.GetInfluenceIncome100();
+		//// influence from Luxury resource consumption
+		//influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Luxury)] += house.GetInfluenceIncome100();
 
-		if (_simulation->HasTownBonus(_townId, CardEnum::SavannaGrasslandRoamer)) {
-			if (IsGrassDominant(house.centerBiomeEnum())) {
-				influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::GrasslandRoamer)] += house.GetInfluenceIncome100() * 50 / 100;
-			}
-		}
-
-		//if (showFloatup) {
-		//	_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, house.centerTile(), "+" + to_string(house.totalHouseIncome()));
+		//if (_simulation->HasTownBonus(_townId, CardEnum::SavannaGrasslandRoamer)) {
+		//	if (IsGrassDominant(house.centerBiomeEnum())) {
+		//		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::GrasslandRoamer)] += house.GetInfluenceIncome100() * 50 / 100;
+		//	}
 		//}
 	}
 
@@ -1198,14 +1319,14 @@ void TownManager::RecalculateTax(bool showFloatup)
 	/*
 	 * Townhall
 	 */
-	if (townHallId != -1) {
-		auto& townhall = _simulation->building(townHallId).subclass<TownHall>(CardEnum::Townhall);
-		incomes100[static_cast<int>(IncomeEnum::TownhallIncome)] += townhall.townhallIncome() * 100;
+	//if (townHallId != -1) {
+	//	auto& townhall = _simulation->building(townHallId).subclass<TownHall>(CardEnum::Townhall);
+	//	incomes100[static_cast<int>(IncomeEnum::TownhallIncome)] += townhall.townhallIncome() * 100;
 
-		if (showFloatup) {
-			_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, townhall.centerTile(), TEXT_NUMSIGNED(townhall.townhallIncome()));
-		}
-	}
+	//	if (showFloatup) {
+	//		_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, townhall.centerTile(), TEXT_NUMSIGNED(townhall.townhallIncome()));
+	//	}
+	//}
 
 	/*
 	 * Workplaces
@@ -1447,25 +1568,41 @@ void TownManager::RecalculateTax(bool showFloatup)
 	{
 		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Townhall)] += 20 * 100;
 
-		// Population: Influence gain equals to population
-		int32 incomeFromPopulation = _simulation->populationTown(_townId) * 100;
-		if (_simulation->townBuildingFinishedCount(_townId, CardEnum::Castle) > 0) {
-			incomeFromPopulation = incomeFromPopulation * 115 / 100;
+		// Population: Influence gain equals to population / 2
+		int32 incomeFromPopulation = _simulation->populationTown(_townId) * 100 / 2;
+		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Population)] += incomeFromPopulation;
+
+		//! Castle
+		//if (_simulation->townBuildingFinishedCount(_townId, CardEnum::Castle) > 0) {
+		//	influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Castle)] += incomeFromPopulation * 15 / 100;
+		//}
+
+		// Capital Benefits from embassy
+		if (isCapital())
+		{
+			const std::vector<int32>& diplomaticBuildings = _simulation->GetDiplomaticBuildings(_playerId);
+			for (int32 diplomaticBuildingId : diplomaticBuildings) {
+				influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::DiplomaticBuildings)] += _simulation->building<DiplomaticBuilding>(diplomaticBuildingId).influenceIncome100(_playerId);
+			}
 		}
 		
-		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Population)] += incomeFromPopulation;
+		//if (_simulation->townBuildingFinishedCount(_townId, CardEnum::Embassy) > 0) {
+		//	influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Castle)] += incomeFromPopulation * 15 / 100;
+		//}
+		
 
 		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::TerritoryUpkeep)] -= territoryUpkeep100;
 
 
-		// Border Province Upkeep
-		int32 numberOfBorderProvinces = 0;
+		// Unprotected Province Upkeep
+		auto& provinceInfoSys = _simulation->provinceInfoSystem();
+		int32 numberOfUnprotectedProvinces = 0;
 		for (int32 provinceId : _provincesClaimed) {
-			if (_simulation->IsBorderProvince(provinceId)) {
-				numberOfBorderProvinces++;
+			if (!provinceInfoSys.provinceOwnerInfo(provinceId).isSafe) {
+				numberOfUnprotectedProvinces++;
 			}
 		}
-		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::BorderProvinceUpkeep)] -= numberOfBorderProvinces * 500; // 5 upkeep per border province
+		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::UnsafeProvinceUpkeep)] -= numberOfUnprotectedProvinces * 1000; // 10 upkeep per unprotected province
 
 		// Fort/Colony
 		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Fort)] -= _simulation->buildingCount(_townId, CardEnum::Fort) * 10 * 100;
@@ -1480,15 +1617,15 @@ void TownManager::RecalculateTax(bool showFloatup)
 
 	// Influence beyond 1 year accumulation gets damped
 	// At 2 years worth accumulation. The influence income becomes 0;
-	int64 influenceIncomeBeforeCapDamp100 = totalInfluenceIncome100();
-	int64 maxInfluence100 = _simulation->playerOwned(_playerId).maxStoredInfluence100();
-	if (influence100 > maxInfluence100 && influenceIncomeBeforeCapDamp100 > 0) {
-		// Fully damp to 0 influence income at x2 maxStoredInfluence
-		int64 influenceIncomeDamp100 = influenceIncomeBeforeCapDamp100 * (influence100 - maxInfluence100) / max(static_cast<int64>(1), maxInfluence100); // More damp as influence stored is closer to fullYearInfluenceIncome100
-		influenceIncomeDamp100 = min(influenceIncomeDamp100, influenceIncomeBeforeCapDamp100); // Can't damp more than existing influence income
-		PUN_CHECK(influenceIncomeDamp100 >= 0);
-		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::TooMuchInfluencePoints)] = -influenceIncomeDamp100;
-	}
+	//int64 influenceIncomeBeforeCapDamp100 = totalInfluenceIncome100();
+	//int64 maxInfluence100 = _simulation->playerOwned(_playerId).maxStoredInfluence100();
+	//if (influence100 > maxInfluence100 && influenceIncomeBeforeCapDamp100 > 0) {
+	//	// Fully damp to 0 influence income at x2 maxStoredInfluence
+	//	int64 influenceIncomeDamp100 = influenceIncomeBeforeCapDamp100 * (influence100 - maxInfluence100) / max(static_cast<int64>(1), maxInfluence100); // More damp as influence stored is closer to fullYearInfluenceIncome100
+	//	influenceIncomeDamp100 = min(influenceIncomeDamp100, influenceIncomeBeforeCapDamp100); // Can't damp more than existing influence income
+	//	PUN_CHECK(influenceIncomeDamp100 >= 0);
+	//	influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::TooMuchInfluencePoints)] = -influenceIncomeDamp100;
+	//}
 }
 
 
@@ -1526,6 +1663,36 @@ int32 TownManager::GetMaxAutoTradeAmount()
 		maxAutoTradeAmount += tradingCompany.tradeMaximumPerRound();
 	}
 	return maxAutoTradeAmount;
+}
+
+void TownManager::DecreaseTourismHappinessByAction(int32 actionCost)
+{
+	check(actionCost >= 0);
+	const int32 actionCostPerHappiness = 50;
+
+	int32 happinessDeduction = GameRand::RandRound(actionCost, actionCostPerHappiness);
+
+	const int32 deductionClusterSize = 20;
+
+	LoopPopulation(deductionClusterSize, _tourismDecreaseIndex, [&](int32 unitId)
+	{
+		int32 deductionValue = GameRand::RandRound(happinessDeduction, deductionClusterSize);
+		HumanStateAI& humanAI = _simulation->unitAI(unitId).subclass<HumanStateAI>(UnitEnum::Human);
+		humanAI.ChangeHappiness(HappinessEnum::Tourism, -deductionValue);
+
+		int32 tourismHappiness = humanAI.GetHappinessByType(HappinessEnum::Tourism);
+		PUN_CHECK(tourismHappiness < 1000 && tourismHappiness > -1000);
+
+		// Popups
+		if (_simulation->GetAverageHappinessByType(_townId, HappinessEnum::Tourism) < 50 &&
+			_simulation->TryDoCallOnceAction(humanAI.playerId(), PlayerCallOnceActionEnum::LowTourismHappinessPopup))
+		{
+			_simulation->AddPopupToFront(humanAI.playerId(),
+				LOCTEXT("LowTourismHappinessPopup_Popup", "Tourism Happiness is low.<space>Tourism Happiness decreases with more import/export.<space>The more exchange of goods, the more your citizens want to see the outside world.<space>To increase your citizen's Tourism Happiness:<bullet>Build Tourism Agency</><bullet>Encourage neighboring towns to build Hotels</><bullet>Help your poor neighbors build Hotels yourself.</>")
+			);
+		}
+	});
+
 }
 
 #undef LOCTEXT_NAMESPACE

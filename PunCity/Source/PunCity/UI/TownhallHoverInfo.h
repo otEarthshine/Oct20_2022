@@ -211,45 +211,39 @@ private:
 		GetPunHUD()->OpenTrainUnitsUI(townId);
 	}
 
-	void AttackDefenseHelper(CallbackEnum claimEnum)
-	{
-		auto command = make_shared<FClaimLand>();
-		command->claimEnum = claimEnum;
-		command->provinceId = GetTownhall().provinceId();
-		PUN_CHECK(command->provinceId != -1);
+	//void AttackDefenseHelper(CallbackEnum claimEnum)
+	//{
+	//	auto command = make_shared<FClaimLand>();
+	//	command->claimEnum = claimEnum;
+	//	command->provinceId = GetTownhall().provinceId();
+	//	PUN_CHECK(command->provinceId != -1);
 
-		networkInterface()->SendNetworkCommand(command);
-	}
+	//	networkInterface()->SendNetworkCommand(command);
+	//}
 	// Note: vassalize/independence/conquerColony are all CallbackEnum::StartAttackProvince for now
 	// later on, there will be
 	UFUNCTION() void OnClickVassalizeButton()
 	{
 		check(playerId() != GetTownhall().playerId());
-		AttackDefenseHelper(CallbackEnum::StartAttackProvince);
-	}
-	
-	UFUNCTION() void OnClickVassalizeReinforceButton()
-	{
-		check(playerId() != GetTownhall().playerId());
-		AttackDefenseHelper(CallbackEnum::ReinforceAttackProvince);
+		GetPunHUD()->OpenReinforcementUI(GetTownhall().provinceId(), CallbackEnum::StartAttackProvince);
 	}
 	
 	UFUNCTION() void OnClickDeclareIndependenceButton()
 	{
 		check(playerId() == GetTownhall().playerId());
-		AttackDefenseHelper(CallbackEnum::StartAttackProvince);
+		GetPunHUD()->OpenReinforcementUI(GetTownhall().provinceId(), CallbackEnum::StartAttackProvince);
 	}
 
 	UFUNCTION() void OnClickConquerColonyButton()
 	{
 		check(playerId() == GetTownhall().playerId());
-		AttackDefenseHelper(CallbackEnum::StartAttackProvince);
+		GetPunHUD()->OpenReinforcementUI(GetTownhall().provinceId(), CallbackEnum::StartAttackProvince);
 	}
 
 	UFUNCTION() void OnClickLiberateButton()
 	{
 		check(playerId() != GetTownhall().playerId());
-		AttackDefenseHelper(CallbackEnum::Liberate);
+		GetPunHUD()->OpenReinforcementUI(GetTownhall().provinceId(), CallbackEnum::Liberate);
 	}
 
 	/*

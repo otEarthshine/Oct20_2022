@@ -30,6 +30,7 @@
 //}
 
 
+
 struct GameSaveInfo
 {
 	int32 version = -1;
@@ -39,7 +40,7 @@ struct GameSaveInfo
 	int32 gameTicks = 0;
 	int32 population = 0;
 	FMapSettings mapSettings;
-	TArray<FString> playerNames;
+	TArray<FPlayerInfo> playerNames;
 
 	FString folderPath;
 	
@@ -69,7 +70,7 @@ struct GameSaveInfo
 		if (playerId >= playerNames.Num()) {
 			return "";
 		}
-		return playerNames[playerId];
+		return playerNames[playerId].name.ToString();
 	}
 
 	void Serialize(FArchive& Ar)
@@ -81,9 +82,10 @@ struct GameSaveInfo
 			return;
 		}
 
-		SerializeTArrayLoop(Ar, playerNames, [&](FString& fstring) {
-			Ar << fstring;
-		});
+		//SerializeTArrayLoop(Ar, playerNames, [&](FString& fstring) {
+		//	Ar << fstring;
+		//});
+		Ar << playerNames;
 
 		Ar << name;
 		Ar << dateTime;
@@ -102,6 +104,9 @@ struct GameSaveInfo
 		return folderPath == a.folderPath;
 	}
 };
+
+
+
 
 /**
  * 

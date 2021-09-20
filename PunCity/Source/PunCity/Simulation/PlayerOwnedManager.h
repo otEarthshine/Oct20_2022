@@ -147,14 +147,26 @@ public:
 	/*
 	 * Claim Province Attack
 	 */
-	void StartConquerProvince(int32 attackerPlayerId, int32 provinceId)
+	static void PrepareCardStatusForMilitary(int32 playerId, std::vector<CardStatus>& initialMilitaryCards)
+	{
+		// cardStateValue1 = playerId, cardStateValue2 = HP
+		for (CardStatus& cardStatus : initialMilitaryCards) {
+			cardStatus.cardStateValue1 = playerId;
+			cardStatus.cardStateValue2 = GetMilitaryHP(GetBuildingInfo(cardStatus.cardEnum).baseCardPrice);
+		}
+	}
+	
+	void StartConquerProvince(int32 attackerPlayerId, int32 provinceId, std::vector<CardStatus>& initialMilitaryCards)
 	{
 		ProvinceClaimProgress claimProgress;
 		claimProgress.provinceId = provinceId;
 		claimProgress.attackerPlayerId = attackerPlayerId;
-		claimProgress.committedInfluencesAttacker = BattleInfluencePrice;
-		claimProgress.committedInfluencesDefender = 0;
+		//claimProgress.committedInfluencesAttacker = BattleInfluencePrice;
+		//claimProgress.committedInfluencesDefender = 0;
 		claimProgress.ticksElapsed = BattleClaimTicks / 4; // Start at 25% for attacker
+
+		PrepareCardStatusForMilitary(attackerPlayerId, initialMilitaryCards);
+		claimProgress.attackerMilitary = initialMilitaryCards;
 		
 		_defendingClaimProgress.push_back(claimProgress);
 	}
@@ -163,18 +175,20 @@ public:
 	}
 	void ReinforceAttacker(int32 provinceId, int32 influenceAmount)
 	{
+		//TODO: ReinforceAttacker
 		for (auto& claimProgress : _defendingClaimProgress) {
 			if (claimProgress.provinceId == provinceId) {
-				claimProgress.committedInfluencesAttacker += influenceAmount;
+				//claimProgress.committedInfluencesAttacker += influenceAmount;
 				break;
 			}
 		}
 	}
 	void ReinforceDefender(int32 provinceId, int32 influenceAmount)
 	{
+		//TODO: ReinforceDefender
 		for (auto& claimProgress : _defendingClaimProgress) {
 			if (claimProgress.provinceId == provinceId) {
-				claimProgress.committedInfluencesDefender += influenceAmount;
+				//claimProgress.committedInfluencesDefender += influenceAmount;
 				break;
 			}
 		}
@@ -373,6 +387,17 @@ public:
 
 	bool IsInDarkAge() { return _isInDarkAge; }
 
+	/*
+	 * Diplomacy
+	 */
+	const std::vector<int32>& GetDiplomaticBuilding() { return _diplomaticBuildingIds; }
+	
+	void AddDiplomaticBuilding(int32 buildingId) {
+		_diplomaticBuildingIds.push_back(buildingId);
+	}
+	void RemoveDiplomaticBuilding(int32 buildingId) {
+		CppUtils::TryRemove(_diplomaticBuildingIds, buildingId);
+	}
 
 	/*
 	 * Serialize
@@ -432,11 +457,14 @@ public:
 
 		SerializeVecValue(Ar, _globalBonuses);
 
+		//
+		SerializeVecValue(Ar, _diplomaticBuildingIds);
+
 		//_LOG(PunPlayerOwned, "Serialize[%d] After isSaving:%d, %d %d %d", _playerId, Ar.IsSaving(), _roadConstructionIds.size(), _constructionIds.size(), _jobBuildingEnumToIds.size());
 	}
-
 	
 public:
+	//! Serialized
 	bool needChooseLocation = true;
 	bool justChoseLocation = false;
 	FChooseInitialResources initialResources;
@@ -479,6 +507,8 @@ private:
 	std::vector<int32> _buffTicksLeft;
 
 	std::vector<CardEnum> _globalBonuses;
+
+	std::vector<int32> _diplomaticBuildingIds;
 
 	// Dark Age
 	bool _isInDarkAge;

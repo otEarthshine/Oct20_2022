@@ -270,6 +270,13 @@ void SerializeVecVecObj(FArchive& Ar, std::vector<std::vector<TObj>>& vecVecObj)
 	});
 }
 
+template<typename TObj>
+void SerializeVecUE4(FArchive& Ar, std::vector<TObj>& v) {
+	SerializeVecLoop(Ar, v, [&](TObj& obj) {
+		Ar << obj;
+	});
+}
+
 template<typename TPtr, typename TClassEnum, typename PtrCreateFunc>
 void SerializePtr(FArchive& Ar, TPtr& ptr, PtrCreateFunc ptrCreateFunc)
 {

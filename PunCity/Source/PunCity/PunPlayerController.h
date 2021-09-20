@@ -176,7 +176,7 @@ public:
 		return (townId != -1) ? townId : playerId();
 	}
 
-	const TArray<FString>& playerNamesF() final {
+	const TArray<FPlayerInfo>& playerNamesF() final {
 		return gameManager->playerNamesF();
 	}
 
@@ -554,7 +554,7 @@ public:
 	 */
 	FString playerNameF(int32_t playerId) final {
 		auto gameInstance = CastChecked<UPunGameInstance>(GetGameInstance());
-		if (gameInstance->playerNamesF().Num() == 0) {
+		if (gameInstance->playerInfoList().Num() == 0) {
 			return "EditorPlayer";
 		}
 		
@@ -992,8 +992,7 @@ public:
 
 	UFUNCTION(Exec) void PlaceBuilding(const FString& buildingName, int32 tileX, int32 tileY)
 	{
-		std::wstring name = ToWString(buildingName);
-		CardEnum buildingEnum = FindCardEnumByName(name);
+		CardEnum buildingEnum = FindCardEnumByName(buildingName);
 
 		int32 tileOwner = simulation().tileOwnerTown(WorldTile2(tileX, tileY));
 		if (tileOwner == -1) {

@@ -19,6 +19,7 @@ public:
 		_buildingSubregionList.Init();
 
 		_townIdPlus1ToEnumToBuildingIds.resize(GameConstants::MaxPlayersAndAI + 1, std::vector<std::vector<int32>>(BuildingEnumCount));
+		_minorTownIndexToEnumToBuildingIds.clear();
 
 		_buildingIdMap.resize(GameMapConstants::TilesPerWorld, -1);
 		_buildingFrontIdMap.resize(GameMapConstants::TilesPerWorld * 4, -1);
@@ -127,13 +128,19 @@ public:
 
 	const SubregionLists<int32>& buildingSubregionList() { return _buildingSubregionList; }
 
-	const std::vector<int32>& buildingIds(int32 townId, CardEnum buildingEnum) {
+	const std::vector<int32>& buildingIds(int32 townId, CardEnum buildingEnum)
+	{
+		if (IsMinorTown(townId)) {
+			int32 minorTownId = TownIdToMinorTownId(townId);
+			EnsureMinorTownArrayLength(minorTownId);
+			return _minorTownIndexToEnumToBuildingIds[minorTownId][static_cast<int>(buildingEnum)];
+		}
 		return _townIdPlus1ToEnumToBuildingIds[townId + 1][static_cast<int>(buildingEnum)];
 	}
 	size_t GetBuildingCount(int32 townId, CardEnum buildingEnum) {
 		return buildingIds(townId, buildingEnum).size();
 	}
-	void AddTown(int32 townId) {
+	void AddMajorTown(int32 townId) {
 		_townIdPlus1ToEnumToBuildingIds.push_back(std::vector<std::vector<int32>>(BuildingEnumCount));
 		check(_townIdPlus1ToEnumToBuildingIds.size() == townId + 2);
 	}
@@ -146,6 +153,12 @@ public:
 			for (int32 bldId : bldIds) {
 				building(bldId).ChangeTownOwningPlayer(newPlayerId);
 			}
+		}
+	}
+
+	void EnsureMinorTownArrayLength(int32 minorTownId) {
+		if (minorTownId >= _minorTownIndexToEnumToBuildingIds.size()) {
+			_minorTownIndexToEnumToBuildingIds.resize(minorTownId + 1, std::vector<std::vector<int32>>(BuildingEnumCount));
 		}
 	}
 	
@@ -253,6 +266,10 @@ public:
 				SerializeVecVecValue(Ar, vecVecValue);
 			});
 
+			SerializeVecLoop(Ar, _minorTownIndexToEnumToBuildingIds, [&](std::vector<std::vector<int32>>& vecVecValue) {
+				SerializeVecVecValue(Ar, vecVecValue);
+			});
+
 			SerializeVecValue(Ar, _buildingsToTick);
 			SerializeVecValue(Ar, _buildingsOnFire);
 			SerializeVecValue(Ar, _quickBuildList);
@@ -341,6 +358,7 @@ private:
 	std::vector<std::unique_ptr<Building>> _buildings;
 
 	std::vector<std::vector<std::vector<int32>>> _townIdPlus1ToEnumToBuildingIds;
+	std::vector<std::vector<std::vector<int32>>> _minorTownIndexToEnumToBuildingIds;
 
 	//
 	std::vector<int32> _buildingsToTick;

@@ -101,6 +101,8 @@ void TradeBuilding::ExecuteTrade(FTradeResource tradeCommand, int32 baseTradingF
 	PUN_LOG("ShowFloatupInfo Trade: %s source:%d", *floatupNumber.ToString(), exportMoney100 - importMoney100);
 	
 	simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, tile, floatupNumber);
+
+	simulation->DecreaseTourismHappinessByAction(townId, exportMoney100 + importMoney100);
 }
 
 

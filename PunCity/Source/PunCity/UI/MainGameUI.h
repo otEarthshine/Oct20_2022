@@ -56,6 +56,8 @@ public:
 
 	void ResetGameUI()
 	{
+		// Needed for ExclusiveUIEnum
+		
 		ResetBottomMenuDisplay();
 
 		if (RareCardHandOverlay->GetVisibility() != ESlateVisibility::Collapsed) {
@@ -73,6 +75,8 @@ public:
 		BuildMenuOverlay->SetVisibility(ESlateVisibility::Collapsed);
 		
 		ConfirmationOverlay->SetVisibility(ESlateVisibility::Collapsed);
+
+		ReinforcementOverlay->SetVisibility(ESlateVisibility::Collapsed);
 	}
 	
 	
@@ -521,6 +525,97 @@ private:
 
 	UPROPERTY(meta = (BindWidget)) USizeBox* QuickDebugDesyncBox;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* QuickDebugDesyncText;
+
+
+	/*
+	 * Reinforcement UI
+	 */
+	UPROPERTY(meta = (BindWidget)) UTextBlock* ReinforcementTitleText;
+	UPROPERTY(meta = (BindWidget)) UWrapBox* ReinforcementSlots;
+
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* ReinforcementRemovedOuterBox;
+	UPROPERTY(meta = (BindWidget)) UWrapBox* ReinforcementRemovedSlots;
+
+	UPROPERTY(meta = (BindWidget)) UButton* ReinforcementSubmitButton;
+	UPROPERTY(meta = (BindWidget)) UButton* ReinforcementCancelButton;
+
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* ReinforcementCloseXButton;
+
+	int32 reinforcementProvinceId = -1;
+	CallbackEnum reinforcementCallbackEnum = CallbackEnum::None;
+
+public:
+	UPROPERTY(meta = (BindWidget)) UOverlay* ReinforcementOverlay;
+	
+	void OpenReinforcementUI(int32 provinceId, CallbackEnum callbackEnum)
+	{
+		reinforcementProvinceId = provinceId;
+		reinforcementCallbackEnum = callbackEnum;
+		
+		ReinforcementOverlay->SetVisibility(ESlateVisibility::Visible);
+
+		ReinforcementRemovedOuterBox->SetVisibility(ESlateVisibility::Collapsed);
+
+		ProvinceAttackEnum provinceAttackEnum = simulation().GetProvinceAttackEnum(playerId(), provinceId, callbackEnum);
+
+		BUTTON_ON_CLICK(ReinforcementSubmitButton, this, &UMainGameUI::OnClickReinforcementSubmitButton);
+		BUTTON_ON_CLICK(ReinforcementCancelButton, this, &UMainGameUI::OnClickReinforcementCancelButton);
+		BUTTON_ON_CLICK(ReinforcementCloseXButton->CoreButton, this, &UMainGameUI::OnClickReinforcementCancelButton);
+
+		for (int i = ReinforcementSlots->GetChildrenCount(); i-- > 0;) {
+			auto cardButton = CastChecked<UBuildingPlacementButton>(ReinforcementSlots->GetChildAt(i));
+			SetChildHUD(cardButton);
+		}
+
+
+		TickReinforcementUI();
+	}
+
+	void TickReinforcementUI()
+	{
+		std::vector<CardStatus>& cards = simulation().cardSystem(playerId()).pendingMilitarySlotCards;
+		
+		for (int i = ReinforcementSlots->GetChildrenCount(); i-- > 0;) 
+		{
+			auto cardButton = CastChecked<UBuildingPlacementButton>(ReinforcementSlots->GetChildAt(i));
+			
+			cardButton->SetVisibility(ESlateVisibility::Visible);
+			
+			cardButton->PunInit(i < cards.size() ? cards[i] : CardStatus(), i, this, CallbackEnum::SelectDeployMilitarySlotCard, CardHandEnum::DeployMilitarySlots);
+			cardButton->SetCardStatus(CardHandEnum::DeployMilitarySlots, false, false);
+			cardButton->RefreshBuildingIcon(assetLoader());
+		}
+	}
+
+	UFUNCTION() void OnClickReinforcementSubmitButton()
+	{
+		auto command = make_shared<FClaimLand>();
+		command->claimEnum = reinforcementCallbackEnum;
+		command->provinceId = reinforcementProvinceId;
+		PUN_CHECK(command->provinceId != -1);
+
+		std::vector<CardStatus> cards = simulation().cardSystem(playerId()).pendingMilitarySlotCards;
+		for (int32 i = 0; i < cards.size(); i++) {
+			command->cardEnums.Add(static_cast<int32>(cards[i].cardEnum));
+			command->cardCount.Add(cards[i].stackSize);
+		}
+
+		networkInterface()->SendNetworkCommand(command);
+
+		CloseReinforcementUI();
+	}
+	UFUNCTION() void OnClickReinforcementCancelButton() {
+		CloseReinforcementUI();
+		simulation().cardSystem(playerId()).pendingMilitarySlotCards.clear();
+	}
+
+	void CloseReinforcementUI()
+	{
+		ReinforcementOverlay->SetVisibility(ESlateVisibility::Collapsed);
+		reinforcementProvinceId = -1;
+		reinforcementCallbackEnum = CallbackEnum::None;
+	}
+	
 	
 private:
 	// Confirmation

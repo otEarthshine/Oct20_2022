@@ -45,9 +45,9 @@ public:
 	
 	virtual void SetupTechBoxUIs() override;
 
-	virtual void TickUI() override
+	virtual void TickUI(bool shouldCallSetShowUI) override
 	{
-		UTechTreeUI::TickUI();
+		UTechTreeUI::TickUI(shouldCallSetShowUI);
 		
 		auto& sim = simulation();
 		/*

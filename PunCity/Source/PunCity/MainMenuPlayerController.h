@@ -46,10 +46,11 @@ public:
 	bool isStartingGame;
 
 	UFUNCTION(Reliable, Server) void SendReadyStatus_ToServer(bool playerReadyState);
-
+	UFUNCTION(Reliable, Server) void SendPlayerInfo_ToServer(const FPlayerInfo& playerInfo);
 
 	UFUNCTION(Reliable, Client, WithValidation) void SetMapSettings(const TArray<int32>& mapSettingsBlob);
 
+	
 	// Send clients the mapSeed, and make client display GameStartBlocker
 	UFUNCTION(Reliable, Client) void ServerStartGame(const TArray<int32>& mapSettingsBlob);
 

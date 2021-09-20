@@ -40,12 +40,14 @@ public:
 		ExportBox->ClearChildren();
 		ImportBox->ClearChildren();
 		
-		EstablishTradeRouteButton->OnClicked.AddUniqueDynamic(this, &UTownTradeOffersRow::OnClickEstablishTradeRouteButton);
-		TradeRouteCloseXButton->OnClicked.AddUniqueDynamic(this, &UTownTradeOffersRow::OnClickTradeRouteCloseXButton);
+		BUTTON_ON_CLICK(EstablishTradeRouteButton, this, &UTownTradeOffersRow::OnClickEstablishTradeRouteButton);
+		BUTTON_ON_CLICK(TradeRouteCloseXButton, this, &UTownTradeOffersRow::OnClickTradeRouteCloseXButton);
 
+		TownZoomButton->OnHovered.Clear();
+		TownZoomButton->OnUnhovered.Clear();
 		TownZoomButton->OnHovered.AddUniqueDynamic(this, &UTownTradeOffersRow::OnHoveredTownZoomButton);
 		TownZoomButton->OnUnhovered.AddUniqueDynamic(this, &UTownTradeOffersRow::OnUnhoveredTownZoomButton);
-		TownZoomButton->OnClicked.AddUniqueDynamic(this, &UTownTradeOffersRow::OnClickTownZoomButton);
+		BUTTON_ON_CLICK(TownZoomButton, this, &UTownTradeOffersRow::OnClickTownZoomButton);
 	}
 
 

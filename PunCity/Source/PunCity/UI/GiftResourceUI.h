@@ -33,6 +33,9 @@ public:
 
 	//! Trade
 	// Left
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* LeftPlayerNameTextOuterBox;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* LeftPlayerNameText;
+	
 	UPROPERTY(meta = (BindWidget)) UButton* LeftAddMoneyButton;
 	UPROPERTY(meta = (BindWidget)) UButton* LeftAddResourceButton;
 	UPROPERTY(meta = (BindWidget)) UButton* LeftAddCardButton;
@@ -48,6 +51,9 @@ public:
 	UPROPERTY(meta = (BindWidget)) UWrapBox* LeftCardBox;
 
 	// Right
+	UPROPERTY(meta = (BindWidget)) USizeBox* RightPlayerNameTextOuterSizeBox;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* RightPlayerNameText;
+	
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* RightDealBox;
 	UPROPERTY(meta = (BindWidget)) UButton* RightAddMoneyButton;
 	UPROPERTY(meta = (BindWidget)) UButton* RightAddResourceButton;
@@ -82,7 +88,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* CardChooseCloseXButton;
 	bool isChoosingLeftCards = false;
 	
-	int32 sourceTownId = -1;
+	int32 sourceTownId = -1; // Left
 	int32 targetTownId = -1;
 	TradeDealStageEnum dealStageEnum = TradeDealStageEnum::None;
 	
@@ -91,6 +97,7 @@ public:
 	void PunInit()
 	{
 		BUTTON_ON_CLICK(MakeOfferButton, this, &UGiftResourceUI::OnClickConfirmButton);
+		BUTTON_ON_CLICK(AcceptOfferButton, this, &UGiftResourceUI::OnClickConfirmButton);
 		BUTTON_ON_CLICK(CancelButton, this, &UGiftResourceUI::OnClickCloseButton);
 		BUTTON_ON_CLICK(CloseXButton->CoreButton, this, &UGiftResourceUI::OnClickCloseButton);
 
@@ -104,30 +111,30 @@ public:
 		SetChildHUD(LeftMoneyTargetAmount);
 		LeftMoneyTargetAmount->minAmount = 0;
 
-		LeftAddMoneyButton->OnClicked.AddUniqueDynamic(this, &UGiftResourceUI::OnClickLeftAddMoneyButton);
-		LeftAddResourceButton->OnClicked.AddUniqueDynamic(this, &UGiftResourceUI::OnClickLeftAddResourceButton);
-		LeftAddCardButton->OnClicked.AddUniqueDynamic(this, &UGiftResourceUI::OnClickLeftAddCardButton);
+		BUTTON_ON_CLICK(LeftAddMoneyButton, this, &UGiftResourceUI::OnClickLeftAddMoneyButton);
+		BUTTON_ON_CLICK(LeftAddResourceButton, this, &UGiftResourceUI::OnClickLeftAddResourceButton);
+		BUTTON_ON_CLICK(LeftAddCardButton, this, &UGiftResourceUI::OnClickLeftAddCardButton);
 
-		LeftMoneyCloseXButton->CoreButton->OnClicked.AddUniqueDynamic(this, &UGiftResourceUI::OnClickAddMoneyCloseXButton);
+		BUTTON_ON_CLICK(LeftMoneyCloseXButton->CoreButton, this, &UGiftResourceUI::OnClickAddMoneyCloseXButton);
 
 		//! Right
 		SetChildHUD(RightMoneyTargetAmount);
 		RightMoneyTargetAmount->minAmount = 0;
 
-		RightAddMoneyButton->OnClicked.AddUniqueDynamic(this, &UGiftResourceUI::OnClickRightAddMoneyButton);
-		RightAddResourceButton->OnClicked.AddUniqueDynamic(this, &UGiftResourceUI::OnClickRightAddResourceButton);
-		RightAddCardButton->OnClicked.AddUniqueDynamic(this, &UGiftResourceUI::OnClickRightAddCardButton);
+		BUTTON_ON_CLICK(RightAddMoneyButton, this, &UGiftResourceUI::OnClickRightAddMoneyButton);
+		BUTTON_ON_CLICK(RightAddResourceButton, this, &UGiftResourceUI::OnClickRightAddResourceButton);
+		BUTTON_ON_CLICK(RightAddCardButton, this, &UGiftResourceUI::OnClickRightAddCardButton);
 
-		RightMoneyCloseXButton->CoreButton->OnClicked.AddUniqueDynamic(this, &UGiftResourceUI::OnClickAddMoneyCloseXButton);
+		BUTTON_ON_CLICK(RightMoneyCloseXButton->CoreButton, this, &UGiftResourceUI::OnClickAddMoneyCloseXButton);
 		
 
 		SetChildHUD(ChooseResourceBox);
-		ChooseResourceCloseButton->OnClicked.AddUniqueDynamic(this, &UGiftResourceUI::CloseChooseResourceUI);
-		ChooseResourceCloseXButton->CoreButton->OnClicked.AddUniqueDynamic(this, &UGiftResourceUI::CloseChooseResourceUI);
+		BUTTON_ON_CLICK(ChooseResourceCloseButton, this, &UGiftResourceUI::CloseChooseResourceUI);
+		BUTTON_ON_CLICK(ChooseResourceCloseXButton->CoreButton, this, &UGiftResourceUI::CloseChooseResourceUI);
 
 
-		CardChooseCloseButton->OnClicked.AddUniqueDynamic(this, &UGiftResourceUI::CloseCardChooseOverlay);
-		CardChooseCloseXButton->CoreButton->OnClicked.AddUniqueDynamic(this, &UGiftResourceUI::CloseCardChooseOverlay);
+		BUTTON_ON_CLICK(CardChooseCloseButton, this, &UGiftResourceUI::CloseCardChooseOverlay);
+		BUTTON_ON_CLICK(CardChooseCloseXButton->CoreButton, this, &UGiftResourceUI::CloseCardChooseOverlay);
 		
 
 		SetVisibility(ESlateVisibility::Collapsed);
@@ -139,20 +146,29 @@ public:
 		targetTownId = targetTownIdIn;
 
 		dealStageEnum = dealStageEnumIn;
+
+		auto& sim = simulation();
 		
-		if (dealStageEnum == TradeDealStageEnum::Gifting) {
+		if (dealStageEnum == TradeDealStageEnum::Gifting) 
+		{
 			SetText(GiftTitleText, FText::Format(
 				NSLOCTEXT("GiftResourceUI", "GiftToX", "Gift to {0}"),
-				simulation().townNameT(targetTownId)
+				sim.townNameT(targetTownId)
 			));
 			RightDealBox->SetVisibility(ESlateVisibility::Collapsed);
+
+			LeftPlayerNameTextOuterBox->SetVisibility(ESlateVisibility::Collapsed);
+			RightPlayerNameTextOuterSizeBox->SetVisibility(ESlateVisibility::Collapsed);
 		}
 		else {
-			SetText(GiftTitleText, FText::Format(
-				NSLOCTEXT("TradeDealUI", "TradeDealTitle", "Trade Deal with {0}"),
-				simulation().townNameT(targetTownId)
-			));
+			SetText(GiftTitleText, NSLOCTEXT("TradeDealUI", "TradeDealTitle", "Trade Deal"));
 			RightDealBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+
+			LeftPlayerNameTextOuterBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			RightPlayerNameTextOuterSizeBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+
+			LeftPlayerNameText->SetText(sim.playerNameT(sim.townPlayerId(sourceTownId)));
+			RightPlayerNameText->SetText(sim.playerNameT(sim.townPlayerId(targetTownId)));
 		}
 
 		// Left and Right
@@ -301,8 +317,13 @@ public:
 		/*
 		 * Trade Deals
 		 */
-		auto updateResourceValue = [&](UVerticalBox* resourceValueBox, URichTextBlock* resourceValueText, UVerticalBox* tradeResourceRows)
+		auto updateResourceValue = [&](UVerticalBox* resourceValueBox, URichTextBlock* resourceValueText, UVerticalBox* tradeResourceRows, int32 townId)
 		{
+			// Close resourceValueBox if there is no more tradeResourceRows
+			if (tradeResourceRows->GetChildrenCount() == 0) {
+				resourceValueBox->SetVisibility(ESlateVisibility::Collapsed);
+			}
+			
 			if (resourceValueBox->IsVisible())
 			{
 				int32 totalValue100 = 0;
@@ -310,12 +331,14 @@ public:
 				{
 					auto row = CastChecked<UTradeDealResourceRow>(tradeResourceRows->GetChildAt(i));
 					totalValue100 += sim.price100(row->resourceEnum) * row->TargetAmount->amount;
+
+					row->InventoryRichText->SetText(FText::Format(INVTEXT("/{0}"), sim.resourceCountPlayer(sim.townPlayerId(townId), row->resourceEnum)));
 				}
 				resourceValueText->SetText(FText::Format(INVTEXT("<img id=\"Coin\"/>{0}"), TEXT_100(totalValue100)));
 			}
 		};
-		updateResourceValue(LeftResourceValueBox, LeftResourceValueText, LeftTradeResourceRows);
-		updateResourceValue(RightResourceValueBox, RightResourceValueText, RightTradeResourceRows);
+		updateResourceValue(LeftResourceValueBox, LeftResourceValueText, LeftTradeResourceRows, sourceTownId);
+		updateResourceValue(RightResourceValueBox, RightResourceValueText, RightTradeResourceRows, targetTownId);
 
 
 		if (CardChooseOverlay->IsVisible()) 

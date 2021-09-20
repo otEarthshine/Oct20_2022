@@ -136,7 +136,7 @@ public:
 	int32 GetIncome100Int(int32 incomeEnumInt) { return GetIncome100(static_cast<IncomeEnum>(incomeEnumInt)); }
 	int32 GetIncome100(IncomeEnum incomeEnum);
 
-	int32 GetInfluenceIncome100() { return _roundLuxuryConsumption100 * 2 / 10;} // 20% of Luxury goes to influence
+	//int32 GetInfluenceIncome100() { return _roundLuxuryConsumption100 * 2 / 10;} // 20% of Luxury goes to influence
 	
 	// Note: these two includes occupancy factor built in...
 	int32 _roundLuxuryConsumption100 = 0;

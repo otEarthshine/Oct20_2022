@@ -18,12 +18,11 @@ public:
 	{
 		DescriptionText->SetVisibility(ESlateVisibility::Collapsed);
 
+		EnableCheckBox->OnCheckStateChanged.Clear();
 		EnableCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UPunEditableNumberBox::OnEnableCheckBox);
 
-		ArrowDownButton->OnClicked.Clear();
-		ArrowUpButton->OnClicked.Clear();
-		ArrowDownButton->OnClicked.AddUniqueDynamic(this, &UPunEditableNumberBox::ClickArrowDownButton);
-		ArrowUpButton->OnClicked.AddUniqueDynamic(this, &UPunEditableNumberBox::ClickArrowUpButton);
+		BUTTON_ON_CLICK(ArrowDownButton, this, &UPunEditableNumberBox::ClickArrowDownButton);
+		BUTTON_ON_CLICK(ArrowUpButton, this, &UPunEditableNumberBox::ClickArrowUpButton);
 		
 		EditableNumber->PunEditableTextBox->OnTextCommitted.Clear();
 		EditableNumber->PunEditableTextBox->OnTextCommitted.AddDynamic(this, &UPunEditableNumberBox::NumberChanged);

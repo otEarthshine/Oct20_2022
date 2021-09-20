@@ -32,8 +32,11 @@ public:
 class IGameUIInterface
 {
 public:
+	virtual int32 playerId() = 0;
+	
 	virtual void ShowFloatupInfo(FloatupInfo floatupInfo) = 0;
 	virtual void ShowFloatupInfo(FloatupEnum floatupEnum, WorldTile2 tile, FText text, ResourceEnum resourceEnum = ResourceEnum::None, FText text2 = FText()) = 0;
+	virtual void ShowFloatupInfo(int32 playerId, FloatupEnum floatupEnum, WorldTile2 tile, FText text, ResourceEnum resourceEnum = ResourceEnum::None, FText text2 = FText()) = 0;
 	
 	virtual void PunLog(std::string text) = 0;
 
@@ -227,6 +230,9 @@ public:
 	virtual std::vector<int32> GetBuildingsWithinRadius(WorldTile2 tileIn, int32 radius, int32 townId, CardEnum buildingEnum) = 0;
 	virtual std::vector<int32> GetConstructedBuildingsWithinRadius(WorldTile2 tileIn, int32 radius, int32 townId, CardEnum buildingEnum) = 0;
 	virtual std::vector<int32> GetBuildingsWithinRadiusMultiple(WorldTile2 tileIn, int32 radius, int32 townId, std::vector<CardEnum> buildingEnums) = 0;
+
+	virtual bool HasForeignBuilding(int32 foreignBuilderId, int32 townId, CardEnum buildingEnum) = 0;
+	virtual bool HasForeignBuildingWithUpgrade(int32 foreignBuilderId, int32 townId, CardEnum buildingEnum, int32 upgradeIndex) = 0;
 	
 	template<typename Func>
 	std::vector<int32> buildingIdsFiltered(int32 playerId, CardEnum cardEnum, Func shouldRemove) {
@@ -342,8 +348,43 @@ public:
 	
 	virtual bool IsBuildable(WorldTile2 tile) = 0;
 
+	template<typename Func, typename Func2>
+	bool IsForeignBuildable(TileArea area, Func func, WorldTile2 centerTile, Func2 isBuildable) {
+		// buildable in foreign land if
+		// - whole building is on the same town (not -1)
+		auto fillRed = [&]() {
+			area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+				func(tile, false, false);
+			});
+		};
+		
+		int32 mainTownId = tileOwnerTown(centerTile);
+		if (mainTownId == -1) {
+			fillRed();
+			return false;
+		}
+
+		bool canPlace = true;
+		
+		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile)
+		{
+			bool isInsideTargetTown = tileOwnerTown(tile) == mainTownId;
+			bool isGreen = GameMap::IsInGrid(tile) && isBuildable(tile) && isInsideTargetTown;
+			func(tile, isGreen, isInsideTargetTown);
+			
+			if (!isGreen) {
+				canPlace = false;
+			}
+		});
+
+		return canPlace;
+	}
+
 	virtual bool IsPlayerBuildable(WorldTile2 tile, int32 playerId) = 0;
 	virtual bool IsBuildableForPlayer(WorldTile2 tile, int32 playerId) = 0;
+
+	virtual bool IsForeignPlacement(WorldTile2 tile, int32 playerId) = 0;
+	
 
 	virtual bool IsCritterBuildingIncludeFronts(WorldTile2 tile) = 0;
 
@@ -451,6 +492,7 @@ public:
 	virtual void QuestUpdateStatus(int32 playerId, QuestEnum questEnum, int32 value = -1) = 0;
 
 	virtual bool TryDoNonRepeatAction(int32 playerId, NonRepeatActionEnum actionEnum, int32 nonRepeatTicks) = 0;
+	virtual bool TryDoCallOnceAction(int32 playerId, PlayerCallOnceActionEnum actionEnum) = 0;
 
 	virtual int32 gameSpeedMultiplier() = 0;
 
@@ -472,6 +514,8 @@ public:
 	virtual void PlayerAddJobBuilding(int32 townId, Building& building, bool isConstructed) = 0;
 	virtual void PlayerRemoveJobBuilding(int32 townId, Building& building, bool isConstructed) = 0;
 	virtual void RefreshJobDelayed(int32 townId) = 0;
+
+	virtual const std::vector<int32>& GetDiplomaticBuildings(int32 playerId) = 0;
 
 	virtual bool IsInDarkAge(int32 playerId) = 0;
 
@@ -546,6 +590,8 @@ public:
 	virtual int32 GetAverageHappinessByType(int32 townId, HappinessEnum happinessEnum) = 0;
 	virtual int32 taxHappinessModifier(int32 townId) = 0;
 	virtual int32 citizenDeathHappinessModifier(int32 townId, SeasonStatEnum seasonStatEnum) = 0;
+
+	virtual void DecreaseTourismHappinessByAction(int32 townId, int32 actionCost) = 0;
 	
 	//! Immigration
 	virtual void AddMigrationPendingCount(int32 townId, int32 migrationCount) = 0;

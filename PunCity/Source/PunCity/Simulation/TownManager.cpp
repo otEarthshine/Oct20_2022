@@ -851,6 +851,43 @@ void TownManager::CollectRoundIncome()
  * Tick
  */
 
+void TownManager::Tick()
+{
+	if (_needTaxRecalculation) {
+		_needTaxRecalculation = false;
+		RecalculateTax(false);
+	}
+
+	// Unit Training
+	if (_trainUnitsQueue.size() > 0)
+	{
+		_trainUnitsTicks100 += 1 * 100;
+
+		if (_trainUnitsTicks100 >= GetTrainingLengthTicks(_trainUnitsQueue[0].cardEnum))
+		{
+			if (_simulation->TryAddCardToBoughtHand(_playerId, _trainUnitsQueue[0].cardEnum))
+			{
+				_trainUnitsTicks100 = 0;
+				_trainUnitsQueue[0].stackSize--;
+
+				// Take away 3 population
+				std::vector<int32> humanIds = adultIds();
+				std::vector<int32> childIdsTemp = childIds();
+				humanIds.insert(humanIds.end(), childIdsTemp.begin(), childIdsTemp.end());
+
+				int32 killCount = std::min(3, static_cast<int>(humanIds.size()));
+				for (int32 i = 0; i < killCount; i++) {
+					_simulation->unitAI(humanIds[i]).Die();
+				}
+
+				if (_trainUnitsQueue[0].stackSize <= 0) {
+					_trainUnitsQueue.erase(_trainUnitsQueue.begin());
+				}
+			}
+		}
+	}
+}
+
 void TownManager::Tick1Sec()
 {
 	if (!_simulation->HasChosenLocation(_playerId)) return;

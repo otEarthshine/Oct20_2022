@@ -145,7 +145,7 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 	{TechEnum::BeerBrewery, { LOCTEXT("Beer Brewing", "Beer Brewing") }},
 	{TechEnum::Pottery, { LOCTEXT("Pottery", "Pottery") }},
 
-	{TechEnum::FurnitureWorkshop, { LOCTEXT("Wood Industry", "Wood Industry") }},
+	{TechEnum::FurnitureWorkshop, { LOCTEXT("Woodworking", "Woodworking") }},
 
 	{TechEnum::AgriculturalRevolution, {
 		LOCTEXT("Agricultural Revolution", "Agricultural Revolution"),

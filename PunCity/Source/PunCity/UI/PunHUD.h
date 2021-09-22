@@ -179,7 +179,8 @@ public:
 		_mainGameUI->ToggleJobPriorityUI(townIdIn);
 	}
 
-	virtual void OpenReinforcementUI(int32 provinceId, CallbackEnum callbackEnum) override {
+	virtual void OpenReinforcementUI(int32 provinceId, CallbackEnum callbackEnum) override
+	{
 		ResetGameUI();
 		_mainGameUI->OpenReinforcementUI(provinceId, callbackEnum);
 	}

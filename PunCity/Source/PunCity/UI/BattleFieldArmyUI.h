@@ -13,7 +13,7 @@ class PROTOTYPECITY_API UBattleFieldArmyUI : public UPunWidget
 {
 	GENERATED_BODY()
 public:
-	UPROPERTY(meta = (BindWidget)) UHorizontalBox* ArmyHorizontalBox;
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* ArmyBox;
 
 
 

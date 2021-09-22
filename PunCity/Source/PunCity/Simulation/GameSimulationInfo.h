@@ -2438,6 +2438,9 @@ enum class CardEnum : uint16
 	/* 
 	 * Military
 	 */
+	Militia,
+	Conscript,
+	
 	Warrior,
 	Swordman,
 	Musketeer,
@@ -2500,6 +2503,8 @@ static const TMap<CardEnum, int32> BuildingEnumToUpkeep =
 	{ CardEnum::Tavern, 15 },
 
 	{ CardEnum::Hotel, 100 },
+
+	{ CardEnum::SpyCenter, 300 },
 
 	{ CardEnum::Granary, 10 },
 
@@ -3680,15 +3685,6 @@ static int32 GetMilitaryCost(int32 baseCost, int32 era)
 }
 
 
-static int32 GetMilitaryHP(int32 cost)
-{
-	const int32 baseCost = 1000;
-	const int32 baseHP = 1000;
-	return baseHP * cost * cost / cost;
-}
-
-
-
 static const BldInfo CardInfos[]
 {
 	BldInfo(CardEnum::Investment,		_LOCTEXT("Investment", "Investment"), 300, LOCTEXT("Investment Desc", "+1<img id=\"Coin\"/> income for every 20<img id=\"Coin\"/> you own\n<Gray>(max +100)</>")),
@@ -3864,6 +3860,9 @@ static const BldInfo CardInfos[]
 		BldInfo(CardEnum::WondersScoreMultiplier, _LOCTEXT("Wonders Score", "Wonders Score"), 0, LOCTEXT("Wonders Score Desc", "+100% Scores from Wonders.")),
 		BldInfo(CardEnum::PopulationScoreMultiplier, _LOCTEXT("Population Score", "Population Score"), 0, LOCTEXT("Population Score Desc", "+100% Scores from Population and Happiness.")),
 
+
+		BldInfo(CardEnum::Militia, _LOCTEXT("Militia", "Militia"), 300, LOCTEXT("Militia Desc", "")),
+		BldInfo(CardEnum::Conscript, _LOCTEXT("Conscript", "Conscript"), 300, LOCTEXT("Conscript Desc", "")),
 	
 		BldInfo(CardEnum::Warrior, _LOCTEXT("Warrior", "Warrior"),		GetMilitaryCost(1000, 1), LOCTEXT("Warrior Desc", "")),
 		BldInfo(CardEnum::Swordman, _LOCTEXT("Swordman", "Swordman"),	GetMilitaryCost(1000, 2), LOCTEXT("Swordman Desc", "")),
@@ -3982,7 +3981,7 @@ struct CardStatus
 {
 	CardEnum cardEnum = CardEnum::None;
 	
-	// Status
+	//! Status
 	int32 cardBirthTicks = -1; // used for tracking down the right card stack (network delay means we cannot use index)
 	int32 stackSize = 1;
 
@@ -3990,10 +3989,14 @@ struct CardStatus
 	int32 cardStateValue2 = 0;
 	int32 cardStateValue3 = 0;
 
-	// Animation
+	//! Animation
 	int32 lastPositionX100 = -1;
 	int32 lastPositionY100 = -1;
 	int32 animationStartTime100 = -1;
+
+	//! Display
+	int32 displayCardStateValue1 = -1;
+	int32 displayCardStateValue2 = -1;
 
 
 	FVector2D lastPosition() const {
@@ -6253,48 +6256,48 @@ enum class TechEnum : uint8
 
 	SmelterCombo,
 	MiningEquipment,
-	FarmWaterManagement,
-	CoalPipeline,
-	CoalTreatment,
+FarmWaterManagement,
+CoalPipeline,
+CoalTreatment,
 
-	Lockdown,
-	SlaveLabor,
-	DesertPilgrim,
-	SocialWelfare,
+Lockdown,
+SlaveLabor,
+DesertPilgrim,
+SocialWelfare,
 
-	Conglomerate,
-	TO_CHANGE_WineSnob,
-	BlingBling,
-	BookWorm,
-	BirthControl,
-	HappyBreadDay,
-	AllYouCanEat,
+Conglomerate,
+TO_CHANGE_WineSnob,
+BlingBling,
+BookWorm,
+BirthControl,
+HappyBreadDay,
+AllYouCanEat,
 
-	DepartmentOfAgriculture,
-	EngineeringOffice,
-	ArchitectsStudio,
+DepartmentOfAgriculture,
+EngineeringOffice,
+ArchitectsStudio,
 
-	//Bridge,
-	HumanitarianAid,
+//Bridge,
+HumanitarianAid,
 
-	TradingCompany,
+TradingCompany,
 
-	BarrackArcher,
-	BarrackKnight,
+BarrackArcher,
+BarrackKnight,
 
-	Irrigation,
-	Logistics2,
-	Logistics4,
+Irrigation,
+Logistics2,
+Logistics4,
 
-	Machinery,
-	Colony,
-	PortColony,
+Machinery,
+Colony,
+PortColony,
 
-	IndustrialAdjacency,
+IndustrialAdjacency,
 
-	/*
-	 * Bonuses
-	 */
+/*
+ * Bonuses
+ */
 
 	MushroomSubstrateSterilization,
 	Sawmill,
@@ -6306,7 +6309,7 @@ enum class TechEnum : uint8
 	CropBreeding,
 
 	MoreGoldPerHouse,
-	
+
 	WinerySnob,
 
 	TraderDiscount,
@@ -6324,7 +6327,7 @@ enum class TechEnum : uint8
 
 	ScientificTheories,
 	EconomicTheories,
-	
+
 	Fertilizers,
 	MilitaryLastEra,
 
@@ -6352,6 +6355,21 @@ enum class TechEnum : uint8
 	CardInventory1,
 	CardInventory2,
 
+	MilitaryEngineering1,
+	MilitaryEngineering2,
+
+	Knight,
+	Tank,
+
+	Conscription,
+	
+	Musketeer,
+	Infantry,
+	
+	MachineGun,
+	Artillery,
+	Battleship,
+	
 	Count,
 };
 
@@ -6856,16 +6874,113 @@ static bool IsAnimalCard(CardEnum cardEnum) {
 	return IsCardEnumBetween(cardEnum, CardEnum::Boar, CardEnum::Bobcat);
 }
 
+/*
+ * Military
+ */
 
 static bool IsLandMilitaryCardEnum(CardEnum cardEnum) {
-	return IsCardEnumBetween(cardEnum, CardEnum::Warrior, CardEnum::Artillery);
+	return IsCardEnumBetween(cardEnum, CardEnum::Militia, CardEnum::Artillery);
 };
+
+static bool IsConscriptMilitaryCardEnum(CardEnum cardEnum) {
+	return IsCardEnumBetween(cardEnum, CardEnum::Militia, CardEnum::Conscript);
+};
+static bool IsInfantryMilitaryCardEnum(CardEnum cardEnum) {
+	return IsCardEnumBetween(cardEnum, CardEnum::Warrior, CardEnum::Infantry);
+};
+static bool IsCavalryMilitaryCardEnum(CardEnum cardEnum) {
+	return IsCardEnumBetween(cardEnum, CardEnum::Knight, CardEnum::Tank);
+};
+static bool IsRangedMilitaryCardEnum(CardEnum cardEnum) {
+	return IsCardEnumBetween(cardEnum, CardEnum::Archer, CardEnum::MachineGun);
+};
+static bool IsArtilleryMilitaryCardEnum(CardEnum cardEnum) {
+	return IsCardEnumBetween(cardEnum, CardEnum::Catapult, CardEnum::Artillery);
+};
+
 static bool IsNavyCardEnum(CardEnum cardEnum) {
 	return IsCardEnumBetween(cardEnum, CardEnum::Galley, CardEnum::Battleship);
 };
 static bool IsMilitaryCardEnum(CardEnum cardEnum) {
-	return IsCardEnumBetween(cardEnum, CardEnum::Warrior, CardEnum::Battleship);
+	return IsCardEnumBetween(cardEnum, CardEnum::Militia, CardEnum::Battleship);
 };
+
+static bool IsFrontlineCardEnum(CardEnum cardEnum) {
+	return IsCardEnumBetween(cardEnum, CardEnum::Militia, CardEnum::Tank);
+}
+
+class MilitaryConstants
+{
+public:
+	static const int32 RoundsToWinAtEqualStrength = 4;
+	static const int32 SecondsPerAttack = 8;
+
+	static const int32 BaseAttack100 = 10000 / (Time::SecondsPerRound * RoundsToWinAtEqualStrength / SecondsPerAttack);
+	static const int32 BaseDefense100 = 100;
+	static const int32 BaseHP100 = 10000;
+};
+
+struct MilitaryCardInfo
+{
+	int32 hp100;
+	int32 defense100; // attack / def = damage
+	int32 attack100;
+
+	int32 strength() { return hp100 * defense100 / MilitaryConstants::BaseDefense100 * attack100 / MilitaryConstants::BaseAttack100; }
+};
+
+static MilitaryCardInfo GetMilitaryInfo(CardEnum cardEnum)
+{
+	int32 cost = GetBuildingInfo(cardEnum).baseCardPrice;
+	
+	const int32 baseCost = 1000;
+
+	MilitaryCardInfo result;
+	result.hp100 = MilitaryConstants::BaseHP100 * cost * cost / (baseCost * baseCost);
+	result.defense100 = MilitaryConstants::BaseDefense100 * cost * cost / (baseCost * baseCost);
+	result.attack100 = MilitaryConstants::BaseAttack100 * cost * cost / (baseCost * baseCost);
+
+	if (IsConscriptMilitaryCardEnum(cardEnum)) {
+		result.hp100 = MilitaryConstants::BaseHP100 * (cardEnum == CardEnum::Conscript ? 100 : 50) / 100; // conscript meat shield...
+		result.defense100 = MilitaryConstants::BaseDefense100;
+	}
+	else if (IsInfantryMilitaryCardEnum(cardEnum)) {
+		result.hp100 = result.hp100 * 150 / 100;
+	}
+	else if (IsCavalryMilitaryCardEnum(cardEnum)) {
+		result.attack100 = result.attack100 * 150 / 100;
+	}
+	else if (IsRangedMilitaryCardEnum(cardEnum)) {
+		result.hp100 = result.hp100 * 50 / 100;
+		result.attack100 = result.attack100 * 150 / 100;
+	}
+	else if (IsArtilleryMilitaryCardEnum(cardEnum)) {
+		result.hp100 = result.hp100 * 20 / 100;
+		result.attack100 = result.attack100 * 170 / 100;
+	}
+	
+	return result;
+}
+
+static FText GetMilitaryInfoDescription(CardEnum cardEnum)
+{
+	MilitaryCardInfo militaryInfo = GetMilitaryInfo(cardEnum);
+	return FText::Format(
+		NSLOCTEXT("Military", "Military Description", "HP: {0}\nDefense: {1}\nAttack: {2}"),
+		TEXT_100(militaryInfo.hp100),
+		TEXT_100(militaryInfo.defense100),
+		TEXT_100(militaryInfo.attack100)
+	);
+}
+
+static int32 GetArmyStrength(const std::vector<CardStatus>& cards)
+{
+	int32 strength = 0;
+	for (const CardStatus& card : cards) {
+		strength += GetMilitaryInfo(card.cardEnum).strength() * card.stackSize;
+	}
+	return strength;
+}
 
 
 /*
@@ -9417,9 +9532,11 @@ enum class CallbackEnum : uint8
 
 	StartAttackProvince,
 	ReinforceAttackProvince,
-	DefendProvinceInfluence,
+	ReinforceDefendProvince,
 	DefendProvinceMoney,
 	Liberate,
+
+	BattleRetreat,
 
 	ClaimLandArmy,
 	CancelClaimLandArmy,

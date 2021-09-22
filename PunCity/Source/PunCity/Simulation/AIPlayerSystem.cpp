@@ -1058,15 +1058,16 @@ void AIPlayerSystem::Tick1Sec()
 			ProvinceClaimProgress claimProgress = playerOwned.GetDefendingClaimProgress(provinceId);
 			if (claimProgress.isValid())
 			{
+				// TODO: AI Defense
 				//_LOG(PunAI, "%s CheckDefendLand Send Command provinceId:%d", AIPrintPrefix(), provinceId);
 
-				auto command = make_shared<FClaimLand>();
-				command->playerId = _aiPlayerId;
-				command->claimEnum = CallbackEnum::DefendProvinceMoney;
-				command->provinceId = provinceId;
-				PUN_CHECK(command->provinceId != -1);
+				//auto command = make_shared<FClaimLand>();
+				//command->playerId = _aiPlayerId;
+				//command->claimEnum = CallbackEnum::DefendProvinceMoney;
+				//command->provinceId = provinceId;
+				//PUN_CHECK(command->provinceId != -1);
 
-				_simulation->ExecuteNetworkCommand(command);
+				//_simulation->ExecuteNetworkCommand(command);
 			}
 		}
 	}

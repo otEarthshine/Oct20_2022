@@ -178,21 +178,6 @@ struct ProvinceClaimProgress
 			}
 		}
 	}
-
-	void Retreat(int32 unitPlayerId)
-	{
-		auto retreat = [&](std::vector<CardStatus>& line) {
-			for (int32 i = line.size(); i-- > 0;) {
-				if (line[i].cardStateValue2 == unitPlayerId) {
-					line.erase(line.begin() + i);
-				}
-			}
-		};
-		retreat(attackerFrontLine);
-		retreat(attackerBackLine);
-		retreat(defenderFrontLine);
-		retreat(defenderBackLine);
-	}
 	
 
 	void Tick1Sec(IGameSimulationCore* simulation)

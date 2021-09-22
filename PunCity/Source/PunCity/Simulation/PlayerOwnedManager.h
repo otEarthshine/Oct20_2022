@@ -147,52 +147,28 @@ public:
 	/*
 	 * Claim Province Attack
 	 */
-	static void PrepareCardStatusForMilitary(int32 playerId, std::vector<CardStatus>& initialMilitaryCards)
-	{
-		// cardStateValue1 = playerId, cardStateValue2 = HP
-		for (CardStatus& cardStatus : initialMilitaryCards) {
-			cardStatus.cardStateValue1 = playerId;
-			cardStatus.cardStateValue2 = GetMilitaryHP(GetBuildingInfo(cardStatus.cardEnum).baseCardPrice);
-		}
-	}
 	
 	void StartConquerProvince(int32 attackerPlayerId, int32 provinceId, std::vector<CardStatus>& initialMilitaryCards)
 	{
 		ProvinceClaimProgress claimProgress;
 		claimProgress.provinceId = provinceId;
 		claimProgress.attackerPlayerId = attackerPlayerId;
-		//claimProgress.committedInfluencesAttacker = BattleInfluencePrice;
-		//claimProgress.committedInfluencesDefender = 0;
 		claimProgress.ticksElapsed = BattleClaimTicks / 4; // Start at 25% for attacker
 
-		PrepareCardStatusForMilitary(attackerPlayerId, initialMilitaryCards);
-		claimProgress.attackerMilitary = initialMilitaryCards;
+		//! Fill Attacker Military Units
+		claimProgress.Reinforce(initialMilitaryCards, true, attackerPlayerId);
+
+		//! Fill Defender Military Units
+		std::vector<CardStatus> defenderCards = { CardStatus(CardEnum::Warrior, 5) };
+		claimProgress.Reinforce(defenderCards, false, defenderPlayerId());
+		
 		
 		_defendingClaimProgress.push_back(claimProgress);
 	}
 	void StartConquerProvince_Attacker(int32 provinceId) {
 		_attackingProvinceIds.push_back(provinceId);
 	}
-	void ReinforceAttacker(int32 provinceId, int32 influenceAmount)
-	{
-		//TODO: ReinforceAttacker
-		for (auto& claimProgress : _defendingClaimProgress) {
-			if (claimProgress.provinceId == provinceId) {
-				//claimProgress.committedInfluencesAttacker += influenceAmount;
-				break;
-			}
-		}
-	}
-	void ReinforceDefender(int32 provinceId, int32 influenceAmount)
-	{
-		//TODO: ReinforceDefender
-		for (auto& claimProgress : _defendingClaimProgress) {
-			if (claimProgress.provinceId == provinceId) {
-				//claimProgress.committedInfluencesDefender += influenceAmount;
-				break;
-			}
-		}
-	}
+
 	const std::vector<ProvinceClaimProgress>& defendingClaimProgress() { return _defendingClaimProgress; }
 
 	ProvinceClaimProgress GetDefendingClaimProgress(int32 provinceId) const {
@@ -203,14 +179,32 @@ public:
 		}
 		return ProvinceClaimProgress();
 	}
+
+	void ReturnMilitaryUnitCards(std::vector<CardStatus>& cards, int32 playerId, bool forcedAll = true);
 	
-	
-	void EndConquer(int32 provinceId) {
+	void EndConquer(int32 provinceId)
+	{
+		// Return Military Units
+		for (int32 i = 0; i < _defendingClaimProgress.size(); i++) 
+		{
+			ProvinceClaimProgress& claimProgress = _defendingClaimProgress[i];
+			if (claimProgress.provinceId == provinceId) {
+				ReturnMilitaryUnitCards(claimProgress.attackerFrontLine, claimProgress.attackerPlayerId);
+				ReturnMilitaryUnitCards(claimProgress.attackerBackLine, claimProgress.attackerPlayerId);
+				ReturnMilitaryUnitCards(claimProgress.defenderFrontLine, _playerId);
+				ReturnMilitaryUnitCards(claimProgress.defenderBackLine, _playerId);
+				break;
+			}
+		}
+		
 		CppUtils::RemoveOneIf(_defendingClaimProgress, [&](ProvinceClaimProgress& claimProgress) { return claimProgress.provinceId == provinceId; });
 	}
-	void EndConquer_Attacker(int32 provinceId) {
+	void EndConquer_Attacker(int32 provinceId)
+	{
 		CppUtils::Remove(_attackingProvinceIds, provinceId);
 	}
+
+	
 
 	// provinceId and attackerPlayerId is needed because this maybe called before the attack started
 	ProvinceAttackEnum GetProvinceAttackEnum(int32 provinceId, int32 attackerPlayerId)
@@ -269,6 +263,10 @@ public:
 		if (_lordPlayerId != -1) {
 			return _lordPlayerId;
 		}
+		return _playerId;
+	}
+
+	int32 defenderPlayerId() {
 		return _playerId;
 	}
 	

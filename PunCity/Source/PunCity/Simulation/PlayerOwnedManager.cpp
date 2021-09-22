@@ -224,4 +224,13 @@ void PlayerOwnedManager::AddInfluenceIncomeToString(TArray<FText>& args)
 	//addStoredInfluenceRow(InfluenceIncomeEnum::Luxury);
 }
 
+void PlayerOwnedManager::ReturnMilitaryUnitCards(std::vector<CardStatus>& cards, int32 playerId, bool forcedAll)
+{
+	for (CardStatus& card : cards) {
+		if (forcedAll || playerId == card.cardStateValue1) {
+			_simulation->cardSystem(playerId).AddCards_BoughtHandAndInventory(card);
+		}
+	}
+}
+
 #undef LOCTEXT_NAMESPACE

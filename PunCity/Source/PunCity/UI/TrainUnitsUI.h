@@ -28,11 +28,9 @@ public:
 			}
 		};
 
-		setChildHUD(MeleeUnitsBox);
-		setChildHUD(CavalryUnitsBox);
-		setChildHUD(RangedUnitsBox);
-		setChildHUD(SiegeUnitsBox);
-		setChildHUD(NavalUnitsBox);
+		setChildHUD(FrontlineUnitsBox);
+		setChildHUD(BacklineUnitsBox);
+		setChildHUD(NavyUnitsBox);
 
 		setChildHUD(TrainingQueueBox);
 
@@ -43,11 +41,18 @@ public:
 	UBuildingPlacementButton* SetupButton(UWrapBox* box, int32 index, CardEnum cardEnum, int32 cardCount = 1, CallbackEnum callbackEnum = CallbackEnum::TrainUnit)
 	{
 		auto cardButton = CastChecked<UBuildingPlacementButton>(box->GetChildAt(index));
-		cardButton->PunInit(CardStatus(cardEnum, cardCount), 0, this, callbackEnum, CardHandEnum::TrainUnits);
-		cardButton->SetCardStatus(CardHandEnum::TrainUnits, false, false);
-		cardButton->RefreshBuildingIcon(assetLoader());
-		cardButton->SellButton->SetVisibility(ESlateVisibility::Collapsed);
-		cardButton->SetPrice(cardEnum != CardEnum::None ? GetBuildingInfo(cardEnum).baseCardPrice : 0);
+		
+		if (callbackEnum == CallbackEnum::TrainUnit && cardEnum == CardEnum::None) {
+			cardButton->SetVisibility(ESlateVisibility::Collapsed);
+		}
+		else {
+			cardButton->PunInit(CardStatus(cardEnum, cardCount), 0, this, callbackEnum, CardHandEnum::TrainUnits);
+			cardButton->SetCardStatus(CardHandEnum::TrainUnits, false, false);
+			cardButton->RefreshBuildingIcon(assetLoader());
+			cardButton->SellButton->SetVisibility(ESlateVisibility::Collapsed);
+			cardButton->SetPrice(cardEnum != CardEnum::None ? GetBuildingInfo(cardEnum).baseCardPrice : 0, 3);
+			cardButton->SetVisibility(ESlateVisibility::Visible);
+		}
 		
 		return cardButton;
 	};
@@ -57,24 +62,54 @@ public:
 		townId = townIdIn;
 		SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
-		SetupButton(MeleeUnitsBox, 0, CardEnum::Warrior);
-		SetupButton(MeleeUnitsBox, 1, CardEnum::Swordman);
-		SetupButton(MeleeUnitsBox, 2, CardEnum::Musketeer);
-		SetupButton(MeleeUnitsBox, 3, CardEnum::Infantry);
+		// Military resources: Food, Wood, Iron, Steel
 
-		SetupButton(CavalryUnitsBox, 0, CardEnum::Knight);
-		SetupButton(CavalryUnitsBox, 1, CardEnum::Tank);
+		auto& sim = simulation();
 
-		SetupButton(RangedUnitsBox, 0, CardEnum::Archer);
-		SetupButton(RangedUnitsBox, 1, CardEnum::MachineGun);
+		auto isResearched = [&](TechEnum techEnum) { return sim.IsResearched(playerId(), techEnum); };
 
-		SetupButton(SiegeUnitsBox, 0, CardEnum::Artillery);
-		SetupButton(SiegeUnitsBox, 1, CardEnum::Catapult);
-		SetupButton(SiegeUnitsBox, 2, CardEnum::Cannon);
+		
+		CardEnum infantryEnum = CardEnum::Warrior;
+		if (isResearched(TechEnum::Infantry)) infantryEnum = CardEnum::Infantry;
+		else if (isResearched(TechEnum::Musketeer)) infantryEnum = CardEnum::Musketeer;
+		else if (isResearched(TechEnum::Ironworks)) infantryEnum = CardEnum::Swordman;
 
-		SetupButton(NavalUnitsBox, 0, CardEnum::Galley);
-		SetupButton(NavalUnitsBox, 1, CardEnum::Frigate);
-		SetupButton(NavalUnitsBox, 2, CardEnum::Battleship);
+		
+		CardEnum cavalryEnum = CardEnum::None;
+		if (isResearched(TechEnum::Tank)) infantryEnum = CardEnum::Tank;
+		else if (isResearched(TechEnum::Knight)) infantryEnum = CardEnum::Knight;
+		
+
+		CardEnum conscriptEnum = isResearched(TechEnum::Conscription) ? CardEnum::Conscript : CardEnum::None;
+		
+
+		CardEnum rangedEnum = CardEnum::None;
+		if (isResearched(TechEnum::MachineGun)) rangedEnum = CardEnum::MachineGun;
+		else if (isResearched(TechEnum::FurnitureWorkshop)) rangedEnum = CardEnum::Archer;
+		
+
+		CardEnum siegeEnum = CardEnum::None;
+		if (isResearched(TechEnum::Artillery)) siegeEnum = CardEnum::Artillery;
+		else if (isResearched(TechEnum::MilitaryEngineering2)) siegeEnum = CardEnum::Cannon;
+		else if (isResearched(TechEnum::MilitaryEngineering1)) siegeEnum = CardEnum::Catapult;
+
+		
+		CardEnum navyEnum = CardEnum::None;
+		if (isResearched(TechEnum::Battleship)) siegeEnum = CardEnum::Battleship;
+		else if (isResearched(TechEnum::MilitaryEngineering2)) siegeEnum = CardEnum::Frigate;
+		else if (isResearched(TechEnum::MilitaryEngineering1)) siegeEnum = CardEnum::Galley;
+		
+
+		SetupButton(FrontlineUnitsBox, 0, infantryEnum);
+		SetupButton(FrontlineUnitsBox, 1, cavalryEnum);
+		SetupButton(FrontlineUnitsBox, 2, conscriptEnum);
+
+		BacklineBox->SetVisibility(rangedEnum != CardEnum::None || siegeEnum != CardEnum::None ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+		SetupButton(BacklineUnitsBox, 0, rangedEnum);
+		SetupButton(BacklineUnitsBox, 1, siegeEnum);
+
+		NavyBox->SetVisibility(navyEnum != CardEnum::None ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+		SetupButton(NavyUnitsBox, 0, navyEnum);
 	}
 
 	
@@ -150,22 +185,14 @@ public:
 	}
 
 	
-	UPROPERTY(meta = (BindWidget)) UVerticalBox* BackLineBox;
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* BacklineBox;
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* NavyBox;
 
-	UPROPERTY(meta = (BindWidget)) UTextBlock* FrontLineHeader;
-	UPROPERTY(meta = (BindWidget)) UTextBlock* BackLineHeader;
-	UPROPERTY(meta = (BindWidget)) UTextBlock* NavalHeader;
+	UPROPERTY(meta = (BindWidget)) UWrapBox* FrontlineUnitsBox;
+	UPROPERTY(meta = (BindWidget)) UWrapBox* BacklineUnitsBox;
+	UPROPERTY(meta = (BindWidget)) UWrapBox* NavyUnitsBox;
 
-	UPROPERTY(meta = (BindWidget)) UTextBlock* MeleeSubheader;
-	UPROPERTY(meta = (BindWidget)) UTextBlock* CavalrySubheader;
-	UPROPERTY(meta = (BindWidget)) UTextBlock* RangedSubheader;
-	UPROPERTY(meta = (BindWidget)) UTextBlock* SiegeSubheader;
-
-	UPROPERTY(meta = (BindWidget)) UWrapBox* MeleeUnitsBox;
-	UPROPERTY(meta = (BindWidget)) UWrapBox* CavalryUnitsBox;
-	UPROPERTY(meta = (BindWidget)) UWrapBox* RangedUnitsBox;
-	UPROPERTY(meta = (BindWidget)) UWrapBox* SiegeUnitsBox;
-	UPROPERTY(meta = (BindWidget)) UWrapBox* NavalUnitsBox;
+	
 
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* TrainingQueueOuterBox;
 	UPROPERTY(meta = (BindWidget)) UWrapBox* TrainingQueueBox;

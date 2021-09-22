@@ -5151,8 +5151,6 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 			provincePlayerOwner.ReturnMilitaryUnitCards(claimProgress.attackerBackLine, command.playerId, false);
 			provincePlayerOwner.ReturnMilitaryUnitCards(claimProgress.defenderFrontLine, command.playerId, false);
 			provincePlayerOwner.ReturnMilitaryUnitCards(claimProgress.defenderBackLine, command.playerId, false);
-
-			
 		}
 	}
 	//else if (command.claimEnum == CallbackEnum::DefendProvinceMoney)

@@ -550,7 +550,7 @@ public:
 class CardMaker final : public ConsumerIndustrialBuilding
 {
 public:
-	void OnInit() override;
+	virtual void OnInit() override;
 	
 	void FinishConstruction() final;
 	std::vector<BonusPair> GetBonuses() override;
@@ -1882,6 +1882,12 @@ public:
 class SpyCenter : public Building
 {
 public:
+	virtual void OnInit() override;
+	
+	void ResetWorkModes();
 
+
+
+	
 
 };

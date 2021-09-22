@@ -22,8 +22,17 @@ void UPunBoxWidget::AddBuildingTooltip(UWidget* widget, CardEnum buildingEnum, U
 		tooltipBox->AddRichText(INVTEXT("<Orange>[Z]</>"));
 	}
 
+
+	//! Description
 	tooltipBox->AddSpacer();
-	tooltipBox->AddRichTextWrap(info.GetDescription());
+	
+	if (IsMilitaryCardEnum(buildingEnum)) {
+		tooltipBox->AddRichTextWrap(GetMilitaryInfoDescription(buildingEnum));
+	}
+	else {
+		tooltipBox->AddRichTextWrap(info.GetDescription());
+	}
+	
 	tooltipBox->AddLineSpacer(12);
 
 	// Card type
@@ -50,6 +59,9 @@ void UPunBoxWidget::AddBuildingTooltip(UWidget* widget, CardEnum buildingEnum, U
 	}
 	else if (IsActionCard(buildingEnum)) {
 		tooltipBox->AddRichText(LOCTEXT("Type: Action", "Type: Action"));
+	}
+	else if (IsMilitaryCardEnum(buildingEnum)) {
+		tooltipBox->AddRichText(LOCTEXT("Type: Military", "Type: Military"));
 	}
 	//else {
 	//	UE_DEBUG_BREAK();

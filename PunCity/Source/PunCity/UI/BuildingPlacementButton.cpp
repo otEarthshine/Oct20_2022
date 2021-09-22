@@ -48,7 +48,7 @@ void UBuildingPlacementButton::PunInit(CardStatus cardStatusIn, int32 cardHandIn
 	CardEnum buildingEnum = cardStatus.cardEnum;
 
 	// Prevent Crash for None
-	if (buildingEnum == CardEnum::None) 
+	if (buildingEnum == CardEnum::None)
 	{
 		ParentOverlay->SetVisibility(ESlateVisibility::Collapsed);
 		CardSlotUnderneath->SetVisibility(ESlateVisibility::HitTestInvisible);
@@ -67,6 +67,9 @@ void UBuildingPlacementButton::PunInit(CardStatus cardStatusIn, int32 cardHandIn
 	}
 	if (IsBuildingSlotCard(buildingEnum)) {
 		ADDTEXT_(INVTEXT("\n<Gray>({0})</>"), LOCTEXT("building slot", "building slot"));
+	}
+	if (IsMilitaryCardEnum(buildingEnum)) {
+		args.Add(GetMilitaryInfoDescription(buildingEnum));
 	}
 
 	SetText(DescriptionRichText, args);
@@ -145,6 +148,7 @@ void UBuildingPlacementButton::PunInit(CardStatus cardStatusIn, int32 cardHandIn
 
 	// Close pricing/combi
 	PriceTextBox->SetVisibility(ESlateVisibility::Collapsed);
+	HumanPriceTextBox->SetVisibility(ESlateVisibility::Collapsed);
 
 	NeedResourcesText->SetVisibility(ESlateVisibility::Collapsed);
 

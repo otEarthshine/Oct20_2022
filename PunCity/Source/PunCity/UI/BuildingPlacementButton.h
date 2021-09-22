@@ -272,10 +272,13 @@ public:
 	}
 
 
-	void SetPrice(int32 price)
+	void SetPrice(int32 price, int32 humanPrice = 0)
 	{
-		SetText(PriceText, to_string(price));
+		PriceText->SetText(TEXT_NUM(price));
 		PriceTextBox->SetVisibility(price > 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+
+		HumanPriceText->SetText(TEXT_NUM(humanPrice));
+		HumanPriceTextBox->SetVisibility(humanPrice > 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 	}
 
 	UPROPERTY(meta = (BindWidget)) UOverlay* ParentOverlay;
@@ -287,6 +290,9 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) UTextBlock* PriceText;
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* PriceTextBox;
+
+	UPROPERTY(meta = (BindWidget)) UTextBlock* HumanPriceText;
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* HumanPriceTextBox;
 
 	UPROPERTY(meta = (BindWidget)) UTextBlock* Count;
 
@@ -301,6 +307,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) UImage* CardSlotUnderneath;
 
 	//UPROPERTY(meta = (BindWidget)) UExclamationIcon* ExclamationIcon;
+
+
 
 private:
 	UPROPERTY() UPunWidget* _callbackParent;

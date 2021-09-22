@@ -76,7 +76,7 @@ public:
 		
 		ConfirmationOverlay->SetVisibility(ESlateVisibility::Collapsed);
 
-		ReinforcementOverlay->SetVisibility(ESlateVisibility::Collapsed);
+		CloseReinforcementUI();
 	}
 	
 	
@@ -602,18 +602,21 @@ public:
 
 		networkInterface()->SendNetworkCommand(command);
 
-		CloseReinforcementUI();
+		CloseReinforcementUI(false);
 	}
 	UFUNCTION() void OnClickReinforcementCancelButton() {
 		CloseReinforcementUI();
-		simulation().cardSystem(playerId()).pendingMilitarySlotCards.clear();
 	}
 
-	void CloseReinforcementUI()
+	void CloseReinforcementUI(bool clearPendingMilitarySlotCards = true)
 	{
 		ReinforcementOverlay->SetVisibility(ESlateVisibility::Collapsed);
 		reinforcementProvinceId = -1;
 		reinforcementCallbackEnum = CallbackEnum::None;
+
+		if (clearPendingMilitarySlotCards) {
+			simulation().cardSystem(playerId()).pendingMilitarySlotCards.clear();
+		}
 	}
 	
 	

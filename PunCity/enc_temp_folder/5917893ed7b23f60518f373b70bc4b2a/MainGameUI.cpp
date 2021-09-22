@@ -2380,9 +2380,8 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 			{
 				simulation().AddPopupToFront(playerId(),
 					LOCTEXT("MilitaryCardsDeploy_Pop", "Click on Military Cards to deploy them for battle.<space>This Card cannot be deployed."),
-					ExclusiveUIEnum::DeployMilitaryUI, "PopupCannot"
+					ExclusiveUIEnum::None, "PopupCannot"
 				);
-				return;
 			}
 			
 			if (IsMilitaryCardEnum(buildingEnum))

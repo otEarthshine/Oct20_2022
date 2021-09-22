@@ -4496,7 +4496,7 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 
 		callbackEnum == CallbackEnum::StartAttackProvince ||
 		callbackEnum == CallbackEnum::ReinforceAttackProvince ||
-		callbackEnum == CallbackEnum::DefendProvinceInfluence ||
+		callbackEnum == CallbackEnum::ReinforceDefendProvince ||
 		callbackEnum == CallbackEnum::DefendProvinceMoney ||
 
 		callbackEnum == CallbackEnum::ClaimLandArmy ||

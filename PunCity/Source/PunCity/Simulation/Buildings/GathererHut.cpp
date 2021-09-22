@@ -2139,6 +2139,34 @@ void ForeignQuarter::FinishConstruction()
 	DiplomaticBuilding::FinishConstruction();
 }
 
+/*
+ * Spy Center
+ */
+
+void SpyCenter::OnInit()
+{
+	ResetWorkModes();
+}
+
+void SpyCenter::ResetWorkModes()
+{
+	/*
+	 * Kidnap
+	 * Steal
+	 * Defame
+	 * RevealSpyNests
+	 */
+	SetupWorkMode({
+		{ LOCTEXT("Leather Clothes", "Leather Clothes"), ResourceEnum::Leather, ResourceEnum::None },
+
+
+	});
+
+	if (_simulation->IsResearched(_playerId, TechEnum::HighFashion)) {
+		AddWorkMode(WorkMode::Create(LOCTEXT("Fashionable Clothes (Dyed Fabric)", "Fashionable Clothes (Dyed Fabric)"), FText(), ResourceEnum::DyedCottonFabric, ResourceEnum::None, ResourceEnum::LuxuriousClothes));
+	}
+}
+
 
 
 #undef LOCTEXT_NAMESPACE 

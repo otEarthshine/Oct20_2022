@@ -16,5 +16,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UImage* UnitImage;
 	UPROPERTY(meta = (BindWidget)) UOverlay* DamageFloatupOverlay;
 
-	
+	UPROPERTY(meta = (BindWidget)) UTextBlock* UnitCountText;
+
+	int32 lastDamageTick = -1;
 };

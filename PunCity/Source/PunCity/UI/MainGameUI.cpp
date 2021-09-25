@@ -902,7 +902,7 @@ void UMainGameUI::Tick()
 			{
 				needExclamation = true;
 				
-				auto cardsBought = sim.cardSystem(playerId()).GetCardsBought();
+				const std::vector<CardStatus>& cardsBought = sim.cardSystem(playerId()).GetCardsBought();
 				for (const auto& cardStack : cardsBought) {
 					if (IsAgricultureBuilding(cardStack.cardEnum)) {
 						needExclamation = false; // Food card alreay bought, don't need too buy more...
@@ -2369,22 +2369,24 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 			}
 		}
 
+		/*
+		 * Military Card
+		 */
+		if (ReinforcementOverlay->IsVisible() && !IsMilitaryCardEnum(buildingEnum))
+		{
+			simulation().AddPopupToFront(playerId(),
+				LOCTEXT("MilitaryCardsDeploy_Pop", "Click on Military Cards to deploy them for battle.<space>This Card cannot be deployed."),
+				ExclusiveUIEnum::DeployMilitaryUI, "PopupCannot"
+			);
+			return;
+		}
 		
-		// Non-Building Cards
+		/*
+		 * Non-Building Cards
+		 */
 		if (!IsBuildingCard(buildingEnum))
 		{
-			/*
-			 * Military Card
-			 */
-			if (ReinforcementOverlay->IsVisible() && !IsMilitaryCardEnum(buildingEnum))
-			{
-				simulation().AddPopupToFront(playerId(),
-					LOCTEXT("MilitaryCardsDeploy_Pop", "Click on Military Cards to deploy them for battle.<space>This Card cannot be deployed."),
-					ExclusiveUIEnum::DeployMilitaryUI, "PopupCannot"
-				);
-				return;
-			}
-			
+			//! Military
 			if (IsMilitaryCardEnum(buildingEnum))
 			{
 				PUN_LOG("Not Building Card %s", *GetBuildingInfo(buildingEnum).nameF());

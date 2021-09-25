@@ -114,6 +114,7 @@ public:
 
 	void StartBuildingPlacement(CardStatus cardStatus, bool useBoughtCard, CardEnum useWildCard);
 	void StartSetDeliveryTarget(int32 buildingId);
+	void StartRevealSpyNest();
 	
 	void StartHarvestPlacement(bool isRemoving, ResourceEnum resourceEnum);
 	void StartDemolish();

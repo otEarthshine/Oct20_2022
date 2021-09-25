@@ -56,8 +56,12 @@ public:
 	
 	void SetImage(UTexture2D* texture)
 	{
-		IconImage->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-		IconImage->SetBrushFromTexture(texture);
+		if (texture) {
+			IconImage->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			IconImage->SetBrushFromTexture(texture);
+		} else {
+			IconImage->SetVisibility(ESlateVisibility::Collapsed);
+		}
 	}
 
 	

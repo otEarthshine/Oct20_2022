@@ -298,6 +298,10 @@ public:
 		_networkInterface->ResetGameUI();
 		buildingPlacementSystem->StartSetDeliveryTarget(buildingId);
 	}
+	virtual void StartRevealSpyNest() override {
+		_networkInterface->ResetGameUI();
+		buildingPlacementSystem->StartRevealSpyNest();
+	}
 
 	//int32_t GetCardHandIndexBeingPlaced() final { return buildingPlacementSystem->GetCardHandIndexBeingPlaced(); }
 	CardEnum GetBuildingEnumBeingPlaced() final { return buildingPlacementSystem->GetBuildingEnumBeingPlaced(); }

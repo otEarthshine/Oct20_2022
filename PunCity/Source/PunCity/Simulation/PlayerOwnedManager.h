@@ -22,6 +22,8 @@ public:
 		_currentSkill = CardEnum::SpeedBoost;
 
 		_isInDarkAge = false;
+
+		_uniqueBuildingIds.resize(BuildingEnumCount, -1);
 	}
 
 	void Tick()
@@ -144,96 +146,7 @@ public:
 		return statVecResult;
 	}
 	
-	/*
-	 * Claim Province Attack
-	 */
-	
-	void StartConquerProvince(int32 attackerPlayerId, int32 provinceId, std::vector<CardStatus>& initialMilitaryCards)
-	{
-		ProvinceClaimProgress claimProgress;
-		claimProgress.provinceId = provinceId;
-		claimProgress.attackerPlayerId = attackerPlayerId;
-		claimProgress.ticksElapsed = BattleClaimTicks / 4; // Start at 25% for attacker
 
-		//! Fill Attacker Military Units
-		claimProgress.Reinforce(initialMilitaryCards, true, attackerPlayerId);
-
-		//! Fill Defender Military Units
-		std::vector<CardStatus> defenderCards = { CardStatus(CardEnum::Warrior, 5) };
-		claimProgress.Reinforce(defenderCards, false, defenderPlayerId());
-		
-		
-		_defendingClaimProgress.push_back(claimProgress);
-	}
-	void StartConquerProvince_Attacker(int32 provinceId) {
-		_attackingProvinceIds.push_back(provinceId);
-	}
-
-	const std::vector<ProvinceClaimProgress>& defendingClaimProgress() { return _defendingClaimProgress; }
-
-	ProvinceClaimProgress GetDefendingClaimProgress(int32 provinceId) const {
-		for (const ProvinceClaimProgress& claimProgress : _defendingClaimProgress) {
-			if (claimProgress.provinceId == provinceId) {
-				return claimProgress;
-			}
-		}
-		return ProvinceClaimProgress();
-	}
-
-	void ReturnMilitaryUnitCards(std::vector<CardStatus>& cards, int32 playerId, bool forcedAll = true);
-	
-	void EndConquer(int32 provinceId)
-	{
-		// Return Military Units
-		for (int32 i = 0; i < _defendingClaimProgress.size(); i++) 
-		{
-			ProvinceClaimProgress& claimProgress = _defendingClaimProgress[i];
-			if (claimProgress.provinceId == provinceId) {
-				ReturnMilitaryUnitCards(claimProgress.attackerFrontLine, claimProgress.attackerPlayerId);
-				ReturnMilitaryUnitCards(claimProgress.attackerBackLine, claimProgress.attackerPlayerId);
-				ReturnMilitaryUnitCards(claimProgress.defenderFrontLine, _playerId);
-				ReturnMilitaryUnitCards(claimProgress.defenderBackLine, _playerId);
-				break;
-			}
-		}
-		
-		CppUtils::RemoveOneIf(_defendingClaimProgress, [&](ProvinceClaimProgress& claimProgress) { return claimProgress.provinceId == provinceId; });
-	}
-	void EndConquer_Attacker(int32 provinceId)
-	{
-		CppUtils::Remove(_attackingProvinceIds, provinceId);
-	}
-
-	
-
-	// provinceId and attackerPlayerId is needed because this maybe called before the attack started
-	ProvinceAttackEnum GetProvinceAttackEnum(int32 provinceId, int32 attackerPlayerId)
-	{
-		int32 provincePlayerId = _simulation->provinceOwnerPlayer(provinceId);
-
-		if (_simulation->homeProvinceId(provincePlayerId) == provinceId) 
-		{
-			if (lordPlayerId() != -1)
-			{
-				// The attacker is the townhall owner, trying to expel the lord
-				if (attackerPlayerId == _playerId) {
-					return ProvinceAttackEnum::DeclareIndependence;
-				}
-				return ProvinceAttackEnum::VassalCompetition;
-			}
-			return ProvinceAttackEnum::Vassalize;
-		}
-
-		// Town Conquer
-		int32 townId = _simulation->provinceOwnerTown_Major(provinceId);
-		if (townId != -1 &&
-			_simulation->IsTownhallOverlapProvince(provinceId, provincePlayerId))
-		{
-			return ProvinceAttackEnum::ConquerColony;
-		}
-		
-		return ProvinceAttackEnum::ConquerProvince;
-	}
 	
 
 	//bool IsProvinceEasilyConnected(int32 provinceId) {
@@ -251,65 +164,7 @@ public:
 	}
 
 
-	/*
-	 * Vassal
-	 */
-	int32 lordPlayerId() { return _lordPlayerId; }
-	void SetLordPlayerId(int32 lordPlayerId) {
-		_lordPlayerId = lordPlayerId;
-	}
 
-	int32 playerIdForColor() {
-		if (_lordPlayerId != -1) {
-			return _lordPlayerId;
-		}
-		return _playerId;
-	}
-
-	int32 defenderPlayerId() {
-		return _playerId;
-	}
-	
-	const std::vector<int32>& vassalBuildingIds() const { return _vassalBuildingIds; }
-	void GainVassal(int32 vassalBuildingId) {
-		_vassalBuildingIds.push_back(vassalBuildingId);
-	}
-	void LoseVassal(int32 vassalBuildingId) {
-		CppUtils::TryRemove(_vassalBuildingIds, vassalBuildingId);
-	}
-	bool IsVassal(int32 vassalBuildingId) {
-		return CppUtils::Contains(_vassalBuildingIds, vassalBuildingId);
-	}
-
-	/*
-	 * Ally
-	 */
-	const std::vector<int32>& allyPlayerIds() { return _allyPlayerIds; }
-	void GainAlly(int32 allyPlayerId) {
-		_allyPlayerIds.push_back(allyPlayerId);
-	}
-	void LoseAlly(int32 allyPlayerId) {
-		CppUtils::TryRemove(_allyPlayerIds, allyPlayerId);
-	}
-	bool IsAlly(int32 playerId) {
-		return CppUtils::Contains(_allyPlayerIds, playerId);
-	}
-
-
-	int32 vassalTaxPercent() {
-		return 5;
-		//switch (taxLevel)
-		//{
-		//case 0: return 0;
-		//case 1: return 10;
-		//case 2: return 20;
-		//case 3: return 30;
-		//case 4: return 40;
-		//default:
-		//	UE_DEBUG_BREAK();
-		//}
-		//return -1;
-	}
 
 	/*
 	 * Buffs
@@ -390,11 +245,19 @@ public:
 	 */
 	const std::vector<int32>& GetDiplomaticBuilding() { return _diplomaticBuildingIds; }
 	
-	void AddDiplomaticBuilding(int32 buildingId) {
-		_diplomaticBuildingIds.push_back(buildingId);
-	}
-	void RemoveDiplomaticBuilding(int32 buildingId) {
-		CppUtils::TryRemove(_diplomaticBuildingIds, buildingId);
+	void AddDiplomaticBuilding(int32 buildingId) { _diplomaticBuildingIds.push_back(buildingId); }
+	void RemoveDiplomaticBuilding(int32 buildingId) { CppUtils::TryRemove(_diplomaticBuildingIds, buildingId); }
+
+	const std::vector<int32>& GetSpyNestIds() { return _spyNestIds; }
+	void AddSpyNestId(int32 buildingId) { _spyNestIds.push_back(buildingId); }
+	void RemoveSpyNestId(int32 buildingId) { CppUtils::TryRemove(_spyNestIds, buildingId); }
+
+	int32 GetUniqueBuildingId(CardEnum buildingEnum) { return _uniqueBuildingIds[static_cast<int32>(buildingEnum)]; }
+	void AddUniqueBuildingId(CardEnum buildingEnum, int32 buildingId) { _uniqueBuildingIds[static_cast<int32>(buildingEnum)] = buildingId; }
+	void RemoveUniqueBuildingId(CardEnum buildingEnum, int32 buildingId)
+	{
+		check(_uniqueBuildingIds[static_cast<int32>(buildingEnum)] == buildingId);
+		_uniqueBuildingIds[static_cast<int32>(buildingEnum)] = -1;
 	}
 
 	/*
@@ -429,15 +292,6 @@ public:
 		 */
 		SerializeVecValue(Ar, _townIds);
 
-		// Vassal/Annex
-		Ar << _lordPlayerId;
-		SerializeVecValue(Ar, _vassalBuildingIds);
-		SerializeVecValue(Ar, _allyPlayerIds);
-		//SerializeVecValue(Ar, _armyNodesVisited);
-		//_battle.Serialize(Ar);
-
-		SerializeVecValue(Ar, _attackingProvinceIds);
-		SerializeVecObj(Ar, _defendingClaimProgress);
 
 		// SP
 		Ar << _spTicks;
@@ -455,8 +309,10 @@ public:
 
 		SerializeVecValue(Ar, _globalBonuses);
 
-		//
+		// 
 		SerializeVecValue(Ar, _diplomaticBuildingIds);
+		SerializeVecValue(Ar, _spyNestIds);
+		SerializeVecValue(Ar, _uniqueBuildingIds);
 
 		//_LOG(PunPlayerOwned, "Serialize[%d] After isSaving:%d, %d %d %d", _playerId, Ar.IsSaving(), _roadConstructionIds.size(), _constructionIds.size(), _jobBuildingEnumToIds.size());
 	}
@@ -480,13 +336,6 @@ public:
 private:
 	std::vector<int32> _townIds;
 	// 
-	// Vassal/Annex
-	int32 _lordPlayerId = -1;
-	std::vector<int32> _vassalBuildingIds;
-	std::vector<int32> _allyPlayerIds;
-
-	std::vector<int32> _attackingProvinceIds;
-	std::vector<ProvinceClaimProgress> _defendingClaimProgress;
 
 	
 	// SP
@@ -507,6 +356,8 @@ private:
 	std::vector<CardEnum> _globalBonuses;
 
 	std::vector<int32> _diplomaticBuildingIds;
+	std::vector<int32> _spyNestIds;
+	std::vector<int32> _uniqueBuildingIds; // unique buildings from buildingEnum
 
 	// Dark Age
 	bool _isInDarkAge;

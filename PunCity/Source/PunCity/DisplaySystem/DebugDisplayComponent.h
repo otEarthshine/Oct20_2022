@@ -458,6 +458,11 @@ protected:
 					drawAreaBox(area, FLinearColor::Yellow);
 					drawAreaBox(area.GetExpandedArea(), FLinearColor::Yellow, false);
 				}
+				if (slot.largeLandSlot.isValid()) {
+					TileArea area = BuildingArea(slot.largeLandSlot, GetBuildingInfo(CardEnum::MayanPyramid).size, slot.largeLandSlotFaceDirection);
+					drawAreaBox(area, FLinearColor(1, 0, 1));
+					drawAreaBox(area.GetFrontArea(slot.largeLandSlotFaceDirection), FLinearColor(1, 0, 1));
+				}
 			}
 
 			const ProvinceOwnerInfo& provinceOwnerInfo = simulation().provinceInfoSystem().provinceOwnerInfo(regionId);

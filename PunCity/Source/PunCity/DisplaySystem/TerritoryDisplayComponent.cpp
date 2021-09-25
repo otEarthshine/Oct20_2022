@@ -303,21 +303,13 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 						comp->SetVisibility(true);
 						comp->SetRelativeLocation(displayLocation);
 
-						// If there is a lord, use lord's color instead
-						int32 paintPlayerId = townManage.playerId();
-						if (playerOwned.lordPlayerId() != -1) {
-							paintPlayerId = playerOwned.lordPlayerId();
-						}
-
-						FPlayerInfo playerInfo = gameManager()->playerInfo(paintPlayerId);
+						FPlayerInfo playerInfo = gameManager()->playerInfo(townManage.playerIdForLogo());
 
 						auto material = _gameManager->ZoomDistanceBelow(WorldZoomTransition_GameToMap) ? comp->MaterialInstance : comp->MaterialInstance_Top;
 						material->SetVectorParameterValue("PlayerColor1", playerInfo.logoColorBackground);
 						material->SetVectorParameterValue("PlayerColor2", playerInfo.logoColorForeground);
 						material->SetTextureParameterValue("Logo", _assetLoader->GetPlayerLogo(playerInfo.logoIndex));
-						
-						//material->SetVectorParameterValue("PlayerColor1", paintPlayerId != -1 ? PlayerColor1(paintPlayerId) : FLinearColor(0, 0, 0, 0));
-						//material->SetVectorParameterValue("PlayerColor2", paintPlayerId != -1 ? PlayerColor2(paintPlayerId) : FLinearColor(0, 0, 0, 0));
+
 						comp->SetMaterial(0, material);
 					}
 					else {

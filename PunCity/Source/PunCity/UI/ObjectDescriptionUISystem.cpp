@@ -674,7 +674,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 #endif			
 
 				TownManagerBase* townManagerBase = sim.townManagerBase(townId);
-				focusBox->AddRichText(FText::Format(INVTEXT("TownhallId {0}"), townManagerBase->townHallId));
+				focusBox->AddRichText(FText::Format(INVTEXT("TownhallId {0}"), townManagerBase->townhallId));
 
 				const std::vector<AutoTradeElement>& autoExportElements = townManagerBase->autoExportElementsConst();
 				for (const AutoTradeElement& element : autoExportElements) {
@@ -1300,10 +1300,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							focusBox->AddSpacer();
 							
 							// Lord
-							if (townhallPlayerOwned.lordPlayerId() != -1) {
+							if (townManager.lordPlayerId() != -1) {
 								focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
 									LOCTEXT("Lord", "Lord"), 
-									sim.playerNameT(townhallPlayerOwned.lordPlayerId())
+									sim.playerNameT(townManager.lordPlayerId())
 								);
 							}
 							else {
@@ -1313,7 +1313,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							}
 
 							// Allies
-							const auto& allyPlayerIds = townhallPlayerOwned.allyPlayerIds();
+							const auto& allyPlayerIds = townManager.allyPlayerIds();
 							if (allyPlayerIds.size() > 0)
 							{
 								// Expanded text part
@@ -1331,27 +1331,16 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							}
 
 							// Vassals
-							const auto& vassalBuildingIds = townhallPlayerOwned.vassalBuildingIds();
+							const auto& vassalTownIds = townManager.vassalTownIds();
 							{
 								TArray<FText> vassalArgs;
 
-								auto getVassalName = [&](int32 vassalBuildingId)
-								{
-									Building& vassalBld = sim.building(vassalBuildingId);
-									if (vassalBld.isEnum(CardEnum::Townhall)) {
-										return sim.GetTownhallCapital(vassalBld.playerId()).townNameT();
-									}
-									else {
-										return LOCTEXT("Non-player Vassal", "Non-player Vassal");
-									}
-								};
-
-								for (int32 i = 1; i < vassalBuildingIds.size(); i++) {
-									ADDTEXT(vassalArgs, INVTEXT("{0}\n"), getVassalName(vassalBuildingIds[i]));
+								for (int32 i = 1; i < vassalTownIds.size(); i++) {
+									ADDTEXT(vassalArgs, INVTEXT("{0}\n"), sim.townOrPlayerNameT(vassalTownIds[i]));
 								}
 
-								if (vassalBuildingIds.size() > 0) {
-									focusBox->AddRichText(LOCTEXT("Vassals", "Vassals"), getVassalName(vassalBuildingIds[0]), ResourceEnum::None, JOINTEXT(vassalArgs));
+								if (vassalTownIds.size() > 0) {
+									focusBox->AddRichText(LOCTEXT("Vassals", "Vassals"), sim.townOrPlayerNameT(vassalTownIds[0]), ResourceEnum::None, JOINTEXT(vassalArgs));
 								}
 								else {
 									focusBox->AddRichText(LOCTEXT("Vassals", "Vassals"), LOCTEXT("None", "None"));
@@ -1576,166 +1565,165 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						// Shouldn't be able to tamper with other ppl's trade
 						if (showWhenOwnedByCurrentPlayer)
 						{
+							//// Display status only if the trade type was chosen...
+							//if (tradingCompany.activeResourceEnum != ResourceEnum::None)
+							//{
+							//	focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+							//		LOCTEXT("Max trade per round", "Max trade per round"), 
+							//		TEXT_NUM(tradingCompany.tradeMaximumPerRound())
+							//	);
 
-							// Display status only if the trade type was chosen...
-							if (tradingCompany.activeResourceEnum != ResourceEnum::None)
-							{
-								focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
-									LOCTEXT("Max trade per round", "Max trade per round"), 
-									TEXT_NUM(tradingCompany.tradeMaximumPerRound())
-								);
+							//	AddTradeFeeText(building.subclass<TradeBuilding>(), focusBox);
 
-								AddTradeFeeText(building.subclass<TradeBuilding>(), focusBox);
+							//	AddEfficiencyText(building, focusBox);
 
-								AddEfficiencyText(building, focusBox);
+							//	focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+							//		LOCTEXT("Profit", "Profit"),
+							//		TEXT_100SIGNED(tradingCompany.exportMoney100() - tradingCompany.importMoney100()),
+							//		assetLoader->CoinIcon
+							//	);
 
-								focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
-									LOCTEXT("Profit", "Profit"),
-									TEXT_100SIGNED(tradingCompany.exportMoney100() - tradingCompany.importMoney100()),
-									assetLoader->CoinIcon
-								);
+							//	focusBox->AddLineSpacer();
+							//}
 
-								focusBox->AddLineSpacer();
-							}
+							//if (tradingCompany.activeResourceEnum == ResourceEnum::None) 
+							//{
+							//	focusBox->AddSpacer();
+							//	focusBox->AddRichText(
+							//		TEXT_TAG("<Red>", LOCTEXT("Setup automatic trade below.", "Setup automatic trade below."))
+							//	);
+							//}
+							//else {
+							//	FText importExportText = tradingCompany.isImport ? LOCTEXT("Importing", "Importing") : LOCTEXT("Exporting", "Exporting");
+							//	ADDTEXT_(LOCTEXT("ImportUntil", "{0} until {1}"), importExportText, TEXT_NUM(tradingCompany.targetAmount));
+							//	
+							//	focusBox->AddIconPair(JOINTEXT(args), tradingCompany.activeResourceEnum, LOCTEXT("ImportTarget", " target"));
+							//	args.Empty();
 
-							if (tradingCompany.activeResourceEnum == ResourceEnum::None) 
-							{
-								focusBox->AddSpacer();
-								focusBox->AddRichText(
-									TEXT_TAG("<Red>", LOCTEXT("Setup automatic trade below.", "Setup automatic trade below."))
-								);
-							}
-							else {
-								FText importExportText = tradingCompany.isImport ? LOCTEXT("Importing", "Importing") : LOCTEXT("Exporting", "Exporting");
-								ADDTEXT_(LOCTEXT("ImportUntil", "{0} until {1}"), importExportText, TEXT_NUM(tradingCompany.targetAmount));
-								
-								focusBox->AddIconPair(JOINTEXT(args), tradingCompany.activeResourceEnum, LOCTEXT("ImportTarget", " target"));
-								args.Empty();
+							//	if (tradingCompany.activeResourceEnum != ResourceEnum::None)
+							//	{
+							//		int32 target = tradingCompany.targetAmount;
+							//		int32 count = resourceSys.resourceCount(tradingCompany.activeResourceEnum);
 
-								if (tradingCompany.activeResourceEnum != ResourceEnum::None)
-								{
-									int32 target = tradingCompany.targetAmount;
-									int32 count = resourceSys.resourceCount(tradingCompany.activeResourceEnum);
+							//		if (tradingCompany.isImport) {
+							//			if (target > count) {
+							//				ADDTEXT_(LOCTEXT("ImportRemaining", "(import remaining: {0})"), TEXT_NUM(target - count));
+							//			}
+							//			else {
+							//				ADDTEXT_LOCTEXT("ImportTarget", "(import storage-target reached)");
+							//			}
+							//		}
+							//		else {
+							//			// Export
+							//			if (target < count) {
+							//				ADDTEXT_(LOCTEXT("ExportRemaining", "(export remaining: {0})"), TEXT_NUM(count - target));
+							//			}
+							//			else {
+							//				ADDTEXT_LOCTEXT("StorageBelowTarget", "(resources in storage already below storage-target)");
+							//			}
+							//		}
+							//		focusBox->AddRichText(args);
+							//	}
+							//}
 
-									if (tradingCompany.isImport) {
-										if (target > count) {
-											ADDTEXT_(LOCTEXT("ImportRemaining", "(import remaining: {0})"), TEXT_NUM(target - count));
-										}
-										else {
-											ADDTEXT_LOCTEXT("ImportTarget", "(import storage-target reached)");
-										}
-									}
-									else {
-										// Export
-										if (target < count) {
-											ADDTEXT_(LOCTEXT("ExportRemaining", "(export remaining: {0})"), TEXT_NUM(count - target));
-										}
-										else {
-											ADDTEXT_LOCTEXT("StorageBelowTarget", "(resources in storage already below storage-target)");
-										}
-									}
-									focusBox->AddRichText(args);
-								}
-							}
+							//focusBox->AddSpacer();
 
-							focusBox->AddSpacer();
+							//if (showWhenOwnedByCurrentPlayer)
+							//{
+							//	static const FText importText = LOCTEXT("Import", "Import");
+							//	static const FText exportText = LOCTEXT("Export", "Export");
+							//	
+							//	focusBox->AddDropdown(
+							//		building.buildingId(),
+							//		{ importText, exportText },
+							//		tradingCompany.isImport ? importText : exportText,
+							//		[&](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex)
+							//	{
+							//		auto& trader = dataSource->simulation().building(objectId).subclass<TradingCompany>(CardEnum::TradingCompany);
 
-							if (showWhenOwnedByCurrentPlayer)
-							{
-								static const FText importText = LOCTEXT("Import", "Import");
-								static const FText exportText = LOCTEXT("Export", "Export");
-								
-								focusBox->AddDropdown(
-									building.buildingId(),
-									{ importText, exportText },
-									tradingCompany.isImport ? importText : exportText,
-									[&](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex)
-								{
-									auto& trader = dataSource->simulation().building(objectId).subclass<TradingCompany>(CardEnum::TradingCompany);
+							//		auto command = make_shared<FChangeWorkMode>();
+							//		command->buildingId = objectId;
+							//		command->intVar1 = static_cast<int32>(trader.activeResourceEnum);
+							//		command->intVar2 = (sItem == importText.ToString()) ? 1 : 0;
+							//		command->intVar3 = trader.targetAmount;
+							//		networkInterface->SendNetworkCommand(command);
+							//	});
+							//}
 
-									auto command = make_shared<FChangeWorkMode>();
-									command->buildingId = objectId;
-									command->intVar1 = static_cast<int32>(trader.activeResourceEnum);
-									command->intVar2 = (sItem == importText.ToString()) ? 1 : 0;
-									command->intVar3 = trader.targetAmount;
-									networkInterface->SendNetworkCommand(command);
-								});
-							}
+							//focusBox->AddSpacer(12);
 
-							focusBox->AddSpacer(12);
+							//// Show choose box
+							//focusBox->AddChooseResourceElement(tradingCompany.activeResourceEnum, this, CallbackEnum::OpenChooseResource);
 
-							// Show choose box
-							focusBox->AddChooseResourceElement(tradingCompany.activeResourceEnum, this, CallbackEnum::OpenChooseResource);
+							//focusBox->AddSpacer(12);
 
-							focusBox->AddSpacer(12);
+							//// targetAmount
+							//// - just opened UI, get it from targetAmount (actual value)
+							//// - after opened, we keep value in lastTargetAmountSet
+							//if (_justOpenedDescriptionUI) {
+							//	tradingCompany.lastTargetAmountSet = tradingCompany.targetAmount;
+							//}
+							//int32 targetAmount = tradingCompany.lastTargetAmountSet;
+							//
+							//focusBox->AddEditableNumberBox(this, CallbackEnum::EditNumberChooseResource, building.buildingId(), 
+							//	FText::Format(INVTEXT("{0}: "), LOCTEXT("Target", "Target")), targetAmount
+							//);
 
-							// targetAmount
-							// - just opened UI, get it from targetAmount (actual value)
-							// - after opened, we keep value in lastTargetAmountSet
-							if (_justOpenedDescriptionUI) {
-								tradingCompany.lastTargetAmountSet = tradingCompany.targetAmount;
-							}
-							int32 targetAmount = tradingCompany.lastTargetAmountSet;
-							
-							focusBox->AddEditableNumberBox(this, CallbackEnum::EditNumberChooseResource, building.buildingId(), 
-								FText::Format(INVTEXT("{0}: "), LOCTEXT("Target", "Target")), targetAmount
-							);
+							//focusBox->AddLineSpacer();
+							//if (tradingCompany.HasPendingTrade()) {
+							//	focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
+							//		LOCTEXT("Trade complete in", "Trade complete in"), 
+							//		FText::Format(LOCTEXT("{0} secs", "{0} secs"), TEXT_NUM(tradingCompany.CountdownSecondsDisplayInt()))
+							//	);
+							//}
+							//else 
+							//{
+							//	// TODO: do we need args on the right?
+							//	if (tradingCompany.hoverWarning == HoverWarning::NotEnoughMoney) {
+							//		focusBox->AddWGT_WarningText(TEXT_TAG("<Red>", LOCTEXT("Import Failed", "Import Failed")));
+							//		focusBox->AddWGT_WarningText(TEXT_TAG("<Red>", LOCTEXT("Not enough Money", "Not enough Money")));
+							//	}
+							//	else if (tradingCompany.hoverWarning == HoverWarning::AlreadyReachedTarget) {
+							//		focusBox->AddWGT_WarningText(TEXT_TAG("<Red>", LOCTEXT("Import Failed", "Import Failed")));
+							//		focusBox->AddWGT_WarningText(TEXT_TAG("<Red>", LOCTEXT("Already reached import target", "Already reached import target")));
+							//	}
+							//	else if (tradingCompany.hoverWarning == HoverWarning::ResourcesBelowTarget) {
+							//		focusBox->AddWGT_WarningText(TEXT_TAG("<Red>", LOCTEXT("Export Failed", "Export Failed")));
+							//		focusBox->AddWGT_WarningText(TEXT_TAG("<Red>", LOCTEXT("Resource below target", "Resource count below storage target")));
+							//	}
 
-							focusBox->AddLineSpacer();
-							if (tradingCompany.HasPendingTrade()) {
-								focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
-									LOCTEXT("Trade complete in", "Trade complete in"), 
-									FText::Format(LOCTEXT("{0} secs", "{0} secs"), TEXT_NUM(tradingCompany.CountdownSecondsDisplayInt()))
-								);
-							}
-							else 
-							{
-								// TODO: do we need args on the right?
-								if (tradingCompany.hoverWarning == HoverWarning::NotEnoughMoney) {
-									focusBox->AddWGT_WarningText(TEXT_TAG("<Red>", LOCTEXT("Import Failed", "Import Failed")));
-									focusBox->AddWGT_WarningText(TEXT_TAG("<Red>", LOCTEXT("Not enough Money", "Not enough Money")));
-								}
-								else if (tradingCompany.hoverWarning == HoverWarning::AlreadyReachedTarget) {
-									focusBox->AddWGT_WarningText(TEXT_TAG("<Red>", LOCTEXT("Import Failed", "Import Failed")));
-									focusBox->AddWGT_WarningText(TEXT_TAG("<Red>", LOCTEXT("Already reached import target", "Already reached import target")));
-								}
-								else if (tradingCompany.hoverWarning == HoverWarning::ResourcesBelowTarget) {
-									focusBox->AddWGT_WarningText(TEXT_TAG("<Red>", LOCTEXT("Export Failed", "Export Failed")));
-									focusBox->AddWGT_WarningText(TEXT_TAG("<Red>", LOCTEXT("Resource below target", "Resource count below storage target")));
-								}
+							//	int32 tradeRetryCountdown = max(0, tradingCompany.TradeRetryCountDownTicks() / Time::TicksPerSecond);
 
-								int32 tradeRetryCountdown = max(0, tradingCompany.TradeRetryCountDownTicks() / Time::TicksPerSecond);
+							//	focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
+							//		LOCTEXT("Retry trade in", "Retry trade in"), 
+							//		FText::Format(LOCTEXT("{0} secs", "{0} secs"), TEXT_NUM(tradeRetryCountdown))
+							//	);
+							//}
 
-								focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
-									LOCTEXT("Retry trade in", "Retry trade in"), 
-									FText::Format(LOCTEXT("{0} secs", "{0} secs"), TEXT_NUM(tradeRetryCountdown))
-								);
-							}
+							//// Dropdown / EditableNumberBox set in ObjectDescriptionUI.cpp
+							////_objectDescriptionUI->SetEditableNumberBox(building.buildingId(), this, CallbackEnum::EditNumberChooseResource);
 
-							// Dropdown / EditableNumberBox set in ObjectDescriptionUI.cpp
-							//_objectDescriptionUI->SetEditableNumberBox(building.buildingId(), this, CallbackEnum::EditNumberChooseResource);
+							///*
+							// * Fill choose resource box
+							// */
+							//UPunBoxWidget* chooseResourceBox = _objectDescriptionUI->ChooseResourceBox;
+							//FString searchString = _objectDescriptionUI->SearchBox->GetText().ToString();
 
-							/*
-							 * Fill choose resource box
-							 */
-							UPunBoxWidget* chooseResourceBox = _objectDescriptionUI->ChooseResourceBox;
-							FString searchString = _objectDescriptionUI->SearchBox->GetText().ToString();
+							//for (const ResourceInfo& info : SortedNameResourceInfo)
+							//{
+							//	FString name = info.name.ToString();
 
-							for (const ResourceInfo& info : SortedNameResourceInfo)
-							{
-								FString name = info.name.ToString();
-
-								if (IsTradeResource(info.resourceEnum))
-								{
-									if (searchString.IsEmpty() ||
-										name.Find(searchString, ESearchCase::Type::IgnoreCase, ESearchDir::FromStart) != INDEX_NONE)
-									{
-										auto widget = chooseResourceBox->AddChooseResourceElement(info.resourceEnum, this, CallbackEnum::PickChooseResource);
-										widget->punId = building.buildingId();
-									}
-								}
-							}
-							chooseResourceBox->AfterAdd();
+							//	if (IsTradeResource(info.resourceEnum))
+							//	{
+							//		if (searchString.IsEmpty() ||
+							//			name.Find(searchString, ESearchCase::Type::IgnoreCase, ESearchDir::FromStart) != INDEX_NONE)
+							//		{
+							//			auto widget = chooseResourceBox->AddChooseResourceElement(info.resourceEnum, this, CallbackEnum::PickChooseResource);
+							//			widget->punId = building.buildingId();
+							//		}
+							//	}
+							//}
+							//chooseResourceBox->AfterAdd();
 
 						}
 
@@ -1816,6 +1804,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Trade Routes", "Trade Routes"), TEXT_NUM(routes.size()));
 						
 					}
+					//! Diplomatic
 					else if (IsForeignOnlyBuilding(building.buildingEnum()))
 					{
 						const DiplomaticBuilding& diplomaticBuilding = building.subclass<DiplomaticBuilding>();
@@ -1826,6 +1815,21 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Money Income", "Money Income"), TEXT_100(diplomaticBuilding.moneyIncome100(playerId())), assetLoader->CoinIcon);
 						}
 						
+					}
+					//! Spy Center
+					else if (building.isEnum(CardEnum::SpyCenter))
+					{
+						auto spyEffectivenessWidget = focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Spy Effectiveness", "Spy Effectiveness"), TEXT_PERCENT(sim.GetSpyEffectiveness(building.playerId())));
+						AddToolTip(spyEffectivenessWidget, LOCTEXT("Spy Effectiveness Tip", "Effectiveness of Spy Nest, Steal, Kidnap, Terrorism"));
+
+						auto counterspyEffectivenessWidget = focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Counterintelligence", "Counterintelligence"), TEXT_PERCENT(sim.GetSpyEffectiveness(building.playerId(), true)));
+						AddToolTip(counterspyEffectivenessWidget, LOCTEXT("Counterintelligence Effectiveness Tip", "Counterintelligence Effectiveness nullify opponent's Spy Effectiveness"));
+
+						focusBox->AddSpacer();
+						int32 cardsReadyIn = building.subclass<SpyCenter>().secsToCardProduction();
+						if (cardsReadyIn != -1) {
+							focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Card ready in", "Card ready in"), FText::Format(LOCTEXT("{0}seconds", "{0}s"), TEXT_NUM(cardsReadyIn)));
+						}
 					}
 					
 					else if (building.isEnum(CardEnum::ShippingDepot))
@@ -4241,9 +4245,9 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 	/*
 	 * Not owned by anyone
 	 */
-	int32 provincePlayerId = sim.provinceOwnerPlayer(provinceId);
+	int32 provinceTownId = sim.provinceOwnerTownSafe(provinceId);
 	
-	if (provincePlayerId == -1)
+	if (provinceTownId == -1)
 	{	
 		auto addClaimButtons = [&](ClaimConnectionEnum claimConnectionEnum)
 		{	
@@ -4262,7 +4266,8 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 				bool canClaim = sim.influence(playerId()) >= provincePrice;
 
 				TArray<FText> args;
-				AppendClaimConnectionString(args, false, claimConnectionEnum);
+				ADDTEXT_LOCTEXT("ClaimProvince", "Claim Province");
+				AppendClaimConnectionString(args, claimConnectionEnum);
 				ADDTEXT_(INVTEXT("\n<img id=\"Influence\"/>{0}"), TextRed(FText::AsNumber(provincePrice), !canClaim));
 
 				descriptionBox->AddSpacer();
@@ -4275,7 +4280,8 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 				bool canClaim = sim.moneyCap32(playerId()) >= provincePriceMoney;
 
 				TArray<FText> args;
-				AppendClaimConnectionString(args, false, claimConnectionEnum);
+				ADDTEXT_LOCTEXT("ClaimProvince", "Claim Province");
+				AppendClaimConnectionString(args, claimConnectionEnum);
 				ADDTEXT_(INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(TEXT_NUM(provincePriceMoney), !canClaim));
 
 				descriptionBox->AddSpacer();
@@ -4301,25 +4307,6 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 				}
 			}
 
-			// Claim by food
-			//{
-			//	int32 foodNeeded = provincePrice / FoodCost;
-
-			//	int32 foodCount = 0;
-			//	const auto& townIds = sim.GetTownIds(playerId());
-			//	for (int32 townId : townIds) {
-			//		foodCount += sim.foodCount(townId);
-			//	}
-			//	
-			//	bool canClaim = foodCount >= foodNeeded;
-
-			//	TArray<FText> args;
-			//	AppendClaimConnectionString(args, false, claimConnectionEnum);
-			//	ADDTEXT_(LOCTEXT("ClaimFood", "\n{0} food"), TextRed(FText::AsNumber(foodNeeded), !canClaim));
-
-			//	descriptionBox->AddSpacer();
-			//	descriptionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::ClaimLandFood, canClaim, false, provinceId);
-			//}
 		};
 
 		
@@ -4351,134 +4338,65 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 		}
 
 		descriptionBox->AddSpacer();
-
-		//// Claim by army
-		//int32 totalArmyCount = CppUtils::Sum(simulation().GetTotalArmyCounts(playerId(), true));
-		//if (totalArmyCount > 0 &&
-		//	playerOwned.IsProvinceClaimQueuable(provinceId))
-		//{
-		//	std::vector<RegionClaimProgress> claimQueue = playerOwned.armyRegionsClaimQueue();
-		//	
-		//	if (CppUtils::Contains(claimQueue, [&](RegionClaimProgress& claimProgress) { return claimProgress.provinceId == provinceId; }))
-		//	{
-		//		descriptionBox->AddButton("Cancel claim using army", nullptr, "",
-		//									this, CallbackEnum::CancelClaimLandArmy, true, false, provinceId);
-		//	}
-		//	else if (claimQueue.size() > 0)
-		//	{
-		//		descriptionBox->AddButton("Claim Land with Army (Queue)", nullptr, "",
-		//			this, CallbackEnum::ClaimLandArmy, true, false, provinceId);
-		//	}
-		//	else
-		//	{
-		//		descriptionBox->AddButton("Claim Land with Army", nullptr, "",
-		//			this, CallbackEnum::ClaimLandArmy, true, false, provinceId);
-		//	}
-		//}
 	}
 	/*
-	 * Other player
-	 * Conquer
+	 * Own by someone
 	 */
-	else if (provincePlayerId != playerId())
-	{
-		// Conquer
-		/*if (simulation().unlockedInfluence(playerId()))*/
-		if (sim.HasTownhall(provincePlayerId))
-		{
-			// Not province that overlap with some townhall
-			if (!sim.IsTownhallOverlapProvince(provinceId, provincePlayerId))
-			{
-				if (simulation().IsResearched(playerId(), TechEnum::Conquer))
-				{
-					auto addAttackButtons = [&](ClaimConnectionEnum claimConnectionEnum)
-					{
-						ProvinceClaimProgress claimProgress = simulation().playerOwned(provincePlayerId).GetDefendingClaimProgress(provinceId);
-
-						// Already a claim, reinforce
-						if (claimProgress.isValid())
-						{
-							// TODO: don't need buttons since there is already a battle UI?
-							//int32 attackReinforcePrice = simulation().GetProvinceAttackReinforcePrice(provinceId, claimConnectionEnum);
-							//bool canClaim = simulation().influence(playerId()) >= attackReinforcePrice;
-
-							//stringstream ss;
-							//ss << "Reinforce (Annex)\n";
-							//ss << TextRed(to_string(attackReinforcePrice), !canClaim) << "<img id=\"Influence\"/>";
-
-							//descriptionBox->AddSpacer();
-							//descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::ReinforceAttackProvince, canClaim, false, provinceId);
-						}
-						// Start a new claim (Claim or Conquer Province)
-						else
-						{
-							int32 startAttackPrice = simulation().GetProvinceAttackStartPrice(provinceId, claimConnectionEnum);
-							bool canClaim = simulation().influence(playerId()) >= startAttackPrice;
-
-							TArray<FText> args;
-							AppendClaimConnectionString(args, true, claimConnectionEnum);
-							ADDTEXT_(INVTEXT("\n{0}<img id=\"Influence\"/>"), TextRed(FText::AsNumber(startAttackPrice), !canClaim));
-
-							descriptionBox->AddSpacer();
-							descriptionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::StartAttackProvince, canClaim, false, provinceId);
-						}
-					};
-
-					ClaimConnectionEnum claimConnectionEnum = sim.GetProvinceClaimConnectionEnumPlayer(provinceId, playerId());
-					if (claimConnectionEnum != ClaimConnectionEnum::None) {
-						addAttackButtons(claimConnectionEnum);
-					}
-					else if (sim.IsProvinceNextToPlayerIncludingNonFlatLand(provinceId, playerId()))
-					{
-						descriptionBox->AddSpacer();
-						descriptionBox->AddRichText(
-							TEXT_TAG("<Red>", LOCTEXT("NoAttackThroughMtnSea", "Cannot attack through mountain and sea"))
-						);
-					}
-				}
-			}
-			// Townhall overlap ... show Vassalize
-			else
-			{
-				
-			}
-		}
-		
-	}
-	// Self, check if this province is being conquered
 	else
 	{
-		ProvinceClaimProgress claimProgress = simulation().playerOwned(provincePlayerId).GetDefendingClaimProgress(provinceId);
+		TownManagerBase* townManagerBase = sim.townManagerBase(provinceTownId);
 
-		// Already a claimProgress, and isn't the attacking player, allow anyone to help defend
-		if (claimProgress.isValid() &&
-			claimProgress.attackerPlayerId != playerId())
+		// if this province overlaps with Townhall, act as if this is the home province
+		bool isVassalizing = false;
+		if (sim.IsTownhallOverlapProvince(provinceId, provinceTownId)) {
+			isVassalizing = true;
+			provinceId = sim.building(townManagerBase->townhallId).provinceId();
+		}
+
+		if (townManagerBase->playerIdForLogo() != playerId())
 		{
-			// TODO: don't need buttons since there is already a battle UI?
-			//// Defend by Influence
-			//if (simulation().unlockedInfluence(playerId()))
-			//{
-			//	bool canClaim = simulation().influence(playerId()) >= BattleInfluencePrice;
+			if (simulation().IsResearched(playerId(), TechEnum::Conquer))
+			{
+				auto addAttackButtons = [&](ClaimConnectionEnum claimConnectionEnum)
+				{
+					ProvinceClaimProgress claimProgress = townManagerBase->GetDefendingClaimProgress(provinceId);
 
-			//	std::stringstream ss;
-			//	ss << "Defend Province\n";
-			//	ss << TextRed(to_string(BattleInfluencePrice), !canClaim) << "<img id=\"Influence\"/>";
+					// Start a new claim (Claim or Conquer Province)
+					if (!claimProgress.isValid())
+					{
+						int32 startAttackPrice = simulation().GetProvinceAttackStartPrice(provinceId, claimConnectionEnum);
+						bool canClaim = simulation().influence(playerId()) >= startAttackPrice;
 
-			//	descriptionBox->AddSpacer();
-			//	descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::DefendProvinceInfluence, canClaim, false, provinceId);
-			//}
+						TArray<FText> args;
+						
+						if (isVassalizing) 	{
+							ADDTEXT_LOCTEXT("Vassalize", "Vassalize");
+						}
+						else {
+							ADDTEXT_LOCTEXT("ConquerProvince", "Conquer Province (Annex)");
+						}
+						
+						AppendClaimConnectionString(args, claimConnectionEnum);
+						ADDTEXT_(INVTEXT("\n{0}<img id=\"Influence\"/>"), TextRed(FText::AsNumber(startAttackPrice), !canClaim));
 
-			//// Defend by money
-			//{
-			//	bool canClaim = simulation().money(playerId()) >= BattleInfluencePrice;
+						descriptionBox->AddSpacer();
+						descriptionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::StartAttackProvince, canClaim, false, provinceId);
+					}
+				};
 
-			//	std::stringstream ss;
-			//	ss << "Defend Province\n";
-			//	ss << TextRed(to_string(BattleInfluencePrice), !canClaim) << "<img id=\"Coin\"/>";
-
-			//	descriptionBox->AddSpacer();
-			//	descriptionBox->AddButton2Lines(ss.str(), this, CallbackEnum::DefendProvinceMoney, canClaim, false, provinceId);
-			//}
+				ClaimConnectionEnum claimConnectionEnum = sim.GetProvinceClaimConnectionEnumPlayer(provinceId, playerId());
+				if (claimConnectionEnum != ClaimConnectionEnum::None) {
+					addAttackButtons(claimConnectionEnum);
+				}
+				else if (sim.IsProvinceNextToPlayerIncludingNonFlatLand(provinceId, playerId()))
+				{
+					descriptionBox->AddSpacer();
+					descriptionBox->AddRichText(
+						TEXT_TAG("<Red>", LOCTEXT("NoAttackThroughMtnSea", "Cannot attack through mountain and sea"))
+					);
+				}
+			}
+		
 		}
 	}
 }
@@ -4487,6 +4405,13 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 
 void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum)
 {
+	if (callbackEnum == CallbackEnum::StartAttackProvince)
+	{
+		GetPunHUD()->OpenReinforcementUI(punWidgetCaller->callbackVar1, CallbackEnum::StartAttackProvince);
+		return;
+	}
+
+	
 	/*
 	 * Regions
 	 */
@@ -4494,7 +4419,7 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 		callbackEnum == CallbackEnum::ClaimLandInfluence ||
 		//callbackEnum == CallbackEnum::ClaimLandFood ||
 
-		callbackEnum == CallbackEnum::StartAttackProvince ||
+		//callbackEnum == CallbackEnum::StartAttackProvince ||
 		callbackEnum == CallbackEnum::ReinforceAttackProvince ||
 		callbackEnum == CallbackEnum::ReinforceDefendProvince ||
 		callbackEnum == CallbackEnum::DefendProvinceMoney ||

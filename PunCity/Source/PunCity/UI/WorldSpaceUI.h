@@ -274,6 +274,7 @@ public:
 		_townhallHoverInfos.AfterAdd(); // Double times to ensure there townhallHover is gone.
 		
 		_regionHoverUIs.AfterAdd();
+		_raidHoverIcons.AfterAdd();
 		
 		_buildingHoverIcons.AfterAdd();
 		_iconTextHoverIcons.AfterAdd();
@@ -310,7 +311,9 @@ private:
 	//! Show building's job status
 	UPROPERTY() FHoverUIs _buildingJobUIs;
 	UPROPERTY() FHoverUIs _townhallHoverInfos;
+	
 	UPROPERTY() FHoverUIs _regionHoverUIs; // Claim Land
+	UPROPERTY() FHoverUIs _raidHoverIcons;
 
 	DescriptionUIState _lastUIState; // if Focus UI state changed, we need to reset the jobUI
 	bool _uiStateDirty = false;

@@ -10,6 +10,7 @@
 #include "PunSimpleButton.h"
 #include "PunBoxWidget.h"
 #include "BuffIcon.h"
+#include "MinorTownWorldUI.h"
 
 #include "TownhallHoverInfo.generated.h"
 
@@ -18,21 +19,16 @@
  * 
  */
 UCLASS()
-class UTownhallHoverInfo : public UPunWidget
+class UTownhallHoverInfo : public UMinorTownWorldUI
 {
 	GENERATED_BODY()
 public:
-	void PunInit(int buildingId);
-
-	int buildingId() { return _buildingId; }
-	TownHall& GetTownhall() {
-		return simulation().building(_buildingId).subclass<TownHall>(CardEnum::Townhall);
-	}
+	void PunInit(int townIdIn);
 
 	void UpdateUI(bool isMini);
 
-	ArmyNode _lastArmyNode; // Used to compare to the current armyNode and show damage...
-	TArray<UWidget*> _damageFloatups;
+	//ArmyNode _lastArmyNode; // Used to compare to the current armyNode and show damage...
+	//TArray<UWidget*> _damageFloatups;targetTownId
 
 	/*
 	 * Buttons callback
@@ -48,7 +44,7 @@ public:
 			ResourceEnum resourceEnum = CastChecked<UChooseResourceElement>(punWidgetCaller)->resourceEnum;
 			_LOG(LogNetworkInput, "Callback1 IntercityTrade %s", ToTChar(ResourceName(resourceEnum)));
 			
-			GetPunHUD()->OpenTargetConfirmUI_IntercityTrade(_buildingId, resourceEnum);
+			GetPunHUD()->OpenTargetConfirmUI_IntercityTrade(townBuildingId(), resourceEnum);
 			return;
 		}
 
@@ -106,22 +102,18 @@ public:
 	//UPROPERTY(meta = (BindWidget)) UPunBoxWidget* SellingBox;
 
 	UPROPERTY(meta = (BindWidget)) UButton* SendImmigrantsButton;
-	UPROPERTY(meta = (BindWidget)) UButton* GiftButton;
-	UPROPERTY(meta = (BindWidget)) UButton* DiplomacyButton;
+	
+	
+	
 
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* TrainUnitsRow;
 	UPROPERTY(meta = (BindWidget)) UButton* TrainUnitsButton;
 	UPROPERTY(meta = (BindWidget)) UImage* TrainUnitsClock;
 	
-	UPROPERTY(meta = (BindWidget)) UButton* AttackButton1;
-	UPROPERTY(meta = (BindWidget)) URichTextBlock* AttackButton1RichText;
-	UPROPERTY(meta = (BindWidget)) UButton* AttackButton2;
-	UPROPERTY(meta = (BindWidget)) URichTextBlock* AttackButton2RichText;
 
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* BuffRow;
 	
 	UPROPERTY(meta = (BindWidget)) UTextBlock* TownHoverPopulationText;
-	UPROPERTY(meta = (BindWidget)) UTextBlock* CityNameText;
 	UPROPERTY(meta = (BindWidget)) UImage* PlayerColorCircle;
 
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* LaborerBuilderBox;
@@ -166,14 +158,14 @@ private:
 
 
 	UFUNCTION() void OnClickSetTradeOfferButton() {
-		GetPunHUD()->OpenIntercityTradeUI(_buildingId);
+		GetPunHUD()->OpenIntercityTradeUI(townBuildingId());
 	}
 	UFUNCTION() void OnClickEstablishTradeRouteButton()
 	{
 		auto command = make_shared<FSetIntercityTrade>();
 		//command->townId = townId();
 		//if (command->townId != -1) {
-			command->buildingIdToEstablishTradeRoute = _buildingId;
+			command->buildingIdToEstablishTradeRoute = townBuildingId();
 			networkInterface()->SendNetworkCommand(command);
 		//}
 	}
@@ -182,68 +174,60 @@ private:
 		auto command = make_shared<FSetIntercityTrade>();
 		//command->townId = townId();
 		//if (command->townId != -1) {
-			command->buildingIdToEstablishTradeRoute = _buildingId;
+			command->buildingIdToEstablishTradeRoute = townBuildingId();
 			command->isCancelingTradeRoute = 1;
 			networkInterface()->SendNetworkCommand(command);
 		//}
 	}
 
 	UFUNCTION() void OnClickSendImmigrantsButton() {
-		int32 townId = simulation().building(_buildingId).townId();
+		int32 townId = simulation().building(townBuildingId()).townId();
 		GetPunHUD()->OpenSendImmigrantsUI(townId);
 	}
 	
-	UFUNCTION() void OnClickGiftButton() {
-		int32 targetPlayerId = simulation().building(_buildingId).playerId();
-		GetPunHUD()->OpenGiftUI(playerId(), targetPlayerId, TradeDealStageEnum::Gifting);
-	}
+	//UFUNCTION() void OnClickGiftButton() {
+	//	int32 targetTownId = simulation().building(townBuildingId()).townId();
+	//	GetPunHUD()->OpenGiftUI(playerId(), targetTownId, TradeDealStageEnum::Gifting);
+	//}
 	UFUNCTION() void OnClickTradeDealButton() {
-		int32 targetPlayerId = simulation().building(_buildingId).playerId();
-		GetPunHUD()->OpenGiftUI(playerId(), targetPlayerId, TradeDealStageEnum::CreateDeal);
+		int32 targetTownId = simulation().building(townBuildingId()).townId();
+		GetPunHUD()->OpenGiftUI(playerId(), targetTownId, TradeDealStageEnum::CreateDeal);
 	}
 	
-	UFUNCTION() void OnClickDiplomacyButton() {
-		int32 targetPlayerId = simulation().building(_buildingId).playerId();
-		GetPunHUD()->OpenDiplomacyUI(targetPlayerId);
-	}
+	//UFUNCTION() void OnClickDiplomacyButton() {
+	//	int32 targetPlayerId = simulation().building(townBuildingId()).playerId();
+	//	GetPunHUD()->OpenDiplomacyUI(targetPlayerId);
+	//}
 	UFUNCTION() void OnClickTrainUnitsButton() {
-		int32 townId = simulation().building(_buildingId).townId();
+		int32 townId = simulation().building(townBuildingId()).townId();
 		GetPunHUD()->OpenTrainUnitsUI(townId);
 	}
 
-	//void AttackDefenseHelper(CallbackEnum claimEnum)
-	//{
-	//	auto command = make_shared<FClaimLand>();
-	//	command->claimEnum = claimEnum;
-	//	command->provinceId = GetTownhall().provinceId();
-	//	PUN_CHECK(command->provinceId != -1);
 
-	//	networkInterface()->SendNetworkCommand(command);
-	//}
 	// Note: vassalize/independence/conquerColony are all CallbackEnum::StartAttackProvince for now
 	// later on, there will be
 	UFUNCTION() void OnClickVassalizeButton()
 	{
-		check(playerId() != GetTownhall().playerId());
-		GetPunHUD()->OpenReinforcementUI(GetTownhall().provinceId(), CallbackEnum::StartAttackProvince);
+		check(playerId() != townPlayerId());
+		GetPunHUD()->OpenReinforcementUI(townProvinceId(), CallbackEnum::StartAttackProvince);
 	}
 	
 	UFUNCTION() void OnClickDeclareIndependenceButton()
 	{
-		check(playerId() == GetTownhall().playerId());
-		GetPunHUD()->OpenReinforcementUI(GetTownhall().provinceId(), CallbackEnum::StartAttackProvince);
+		check(playerId() == townPlayerId());
+		GetPunHUD()->OpenReinforcementUI(townProvinceId(), CallbackEnum::StartAttackProvince);
 	}
 
 	UFUNCTION() void OnClickConquerColonyButton()
 	{
-		check(playerId() == GetTownhall().playerId());
-		GetPunHUD()->OpenReinforcementUI(GetTownhall().provinceId(), CallbackEnum::StartAttackProvince);
+		check(playerId() == townPlayerId());
+		GetPunHUD()->OpenReinforcementUI(townProvinceId(), CallbackEnum::StartAttackProvince);
 	}
 
 	UFUNCTION() void OnClickLiberateButton()
 	{
-		check(playerId() != GetTownhall().playerId());
-		GetPunHUD()->OpenReinforcementUI(GetTownhall().provinceId(), CallbackEnum::Liberate);
+		check(playerId() != townPlayerId());
+		GetPunHUD()->OpenReinforcementUI(townProvinceId(), CallbackEnum::Liberate);
 	}
 
 	/*
@@ -384,12 +368,5 @@ private:
 	//int32 _laborerCount = -1;
 	//int32 _builderCount = -1;
 	//int32 _roadMakerCount = -1;
-
-
-	int32 townId() {
-		return simulation().building(_buildingId).subclass<TownHall>(CardEnum::Townhall).townId();
-	}
 	
-private:
-	int _buildingId; // Townhall Id
 };

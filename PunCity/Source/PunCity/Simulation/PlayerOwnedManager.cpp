@@ -81,11 +81,25 @@ void PlayerOwnedManager::Tick1Sec()
 	}
 
 	/*
-	 * ProvinceClaimProgress
+	 * Spy Nest every 2 secs
 	 */
-	for (ProvinceClaimProgress& claimProgress : _defendingClaimProgress) {
-		claimProgress.Tick1Sec(_simulation);
+	if (Time::Seconds() % 2 == 0)
+	{
+		for (int32 spyNestId : _spyNestIds)
+		{
+			if (House* nest = _simulation->buildingPtr<House>(spyNestId, CardEnum::House))
+			{
+				int32 spyInfluenceGainPerRound = _simulation->GetSpyNestInfluenceGainPerRound(nest->spyPlayerId(), nest->townId());
+
+				int32 spyInfluenceGainPer2Sec = GameRand::RandRound(spyInfluenceGainPerRound * 2, Time::TicksPerSecond);
+
+				_simulation->ChangeInfluence(nest->playerId(), -spyInfluenceGainPer2Sec);
+				_simulation->ChangeInfluence(_playerId, spyInfluenceGainPer2Sec);
+				_simulation->uiInterface()->ShowFloatupInfo(_playerId, FloatupEnum::GainInfluence, nest->centerTile(), TEXT_NUMSIGNED(spyInfluenceGainPer2Sec));
+			}
+		}
 	}
+
 }
 
 void PlayerOwnedManager::TickRound()
@@ -224,13 +238,5 @@ void PlayerOwnedManager::AddInfluenceIncomeToString(TArray<FText>& args)
 	//addStoredInfluenceRow(InfluenceIncomeEnum::Luxury);
 }
 
-void PlayerOwnedManager::ReturnMilitaryUnitCards(std::vector<CardStatus>& cards, int32 playerId, bool forcedAll)
-{
-	for (CardStatus& card : cards) {
-		if (forcedAll || playerId == card.cardStateValue1) {
-			_simulation->cardSystem(playerId).AddCards_BoughtHandAndInventory(card);
-		}
-	}
-}
 
 #undef LOCTEXT_NAMESPACE

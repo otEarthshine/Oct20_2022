@@ -847,7 +847,9 @@ public:
 		_showProvinceOverlay = !_showProvinceOverlay;
 	}
 
-	virtual bool isShowingDefenseOverlay() override { return _showDefenseOverlay; }
+	virtual bool isShowingDefenseOverlay() override {
+		return _showDefenseOverlay || GetOverlayType() == OverlayType::Raid;
+	}
 	virtual void SetOverlayDefense(bool showOverlay) override {
 		_showDefenseOverlay = showOverlay;
 	}

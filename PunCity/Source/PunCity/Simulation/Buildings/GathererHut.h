@@ -1883,11 +1883,31 @@ class SpyCenter : public Building
 {
 public:
 	virtual void OnInit() override;
+
+	virtual void FinishConstruction() override;
 	
 	void ResetWorkModes();
 
+	int32 spyEffectiveness() {
+		int32 effectiveness = (100 + GetUpgrade(1).upgradeLevel * 10);
+		return effectiveness;
+	}
 
+	int32 spyNestBonus();
 
-	
+	int32 counterspyEffectiveness();
 
+	virtual void OnTick1Sec() override;
+
+	virtual void Serialize(FArchive& Ar) override {
+		Building::Serialize(Ar);
+		Ar << _cardCreationMode;
+		Ar << _secsToCardProduction;
+	}
+
+	int32 secsToCardProduction() { return _secsToCardProduction; }
+
+private:
+	int32 _cardCreationMode = -1;
+	int32 _secsToCardProduction = -1;
 };

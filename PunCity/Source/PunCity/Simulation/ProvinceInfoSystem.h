@@ -34,8 +34,11 @@ struct ProvinceBuildingSlot
 	
 	WorldTile2 portSlot = WorldTile2::Invalid;
 	WorldTile2 landSlot = WorldTile2::Invalid;
+	WorldTile2 largeLandSlot = WorldTile2::Invalid;
+	
 	Direction portSlotFaceDirection = Direction::E;
 	Direction landSlotFaceDirection = Direction::E;
+	Direction largeLandSlotFaceDirection = Direction::E;
 
 	int32 townId = -1;
 
@@ -50,8 +53,11 @@ struct ProvinceBuildingSlot
 		
 		portSlot >> Ar;
 		landSlot >> Ar;
+		largeLandSlot >> Ar;
+		
 		Ar << portSlotFaceDirection;
 		Ar << landSlotFaceDirection;
+		Ar << largeLandSlotFaceDirection;
 		
 		Ar << townId;
 	}
@@ -62,7 +68,9 @@ struct ProvinceOwnerInfo
 	int32 provinceId = -1;
 	int32 townId = -1;
 	int32 distanceFromTownhall = MAX_int32;
+	
 	bool isSafe = false;
+	int32 lastRaidedTick = 0;
 	
 	std::vector<int32> fortIds;
 
@@ -71,7 +79,9 @@ struct ProvinceOwnerInfo
 		Ar << provinceId;
 		Ar << townId;
 		Ar << distanceFromTownhall;
+		
 		Ar << isSafe;
+		Ar << lastRaidedTick;
 		
 		SerializeVecValue(Ar, fortIds);
 	}
@@ -187,12 +197,39 @@ public:
 				if (hasNearbyFilledSlot) {
 					continue;
 				}
-				
+
+				/*
+				 * Large Land Slot
+				 *  Low probabilility...
+				 */
+				auto findLargeLandSlot = [&]()
+				{
+					WorldTile2 centerTile = provinceSys.GetProvinceCenterTile(provinceId);
+
+					// Also need to be able to add the main Minor City Building
+					WorldTile2 largeLandSlotSize = GetBuildingInfo(CardEnum::MayanPyramid).size;
+					Direction faceDirection = static_cast<Direction>(GameRand::Rand(provinceId) % 4);
+					TileArea largeLandSlotArea = BuildingArea(centerTile, largeLandSlotSize, faceDirection);
+
+					bool isLandSlotNotBuildable = largeLandSlotArea.GetExpandedArea().ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 tile) {
+						return !isBuildable(tile); // Should exit
+					});
+					if (!isLandSlotNotBuildable)
+					{
+						provinceBuildingSlot.largeLandSlot = centerTile;
+						provinceBuildingSlot.largeLandSlotFaceDirection = faceDirection;
+						_largeLandSlotProvinceIds.push_back(provinceId);
+					}
+				};
+				if (GameRand::Rand(provinceId) % 5 == 0) {
+					findLargeLandSlot();
+				}
 
 				/*
 				 * Port Slot
 				 */
-				if (provinceBuildingSlot.coastalTiles.size() > 0)
+				if (!provinceBuildingSlot.largeLandSlot.isValid() &&
+					provinceBuildingSlot.coastalTiles.size() > 0)
 				{
 					auto findPortSlotTile = [&]()
 					{
@@ -277,10 +314,19 @@ public:
 					findPortSlotTile();
 				}
 
+				
 				/*
 				 * Land Slot
 				 */
-				if (!provinceBuildingSlot.portSlot.isValid())
+				if (!provinceBuildingSlot.largeLandSlot.isValid() &&
+					!provinceBuildingSlot.portSlot.isValid())
+				{
+					findLargeLandSlot();
+				}
+
+				
+				if (!provinceBuildingSlot.largeLandSlot.isValid() && 
+					!provinceBuildingSlot.portSlot.isValid())
 				{
 					WorldTile2 centerTile = provinceSys.GetProvinceCenterTile(provinceId);
 					
@@ -301,6 +347,8 @@ public:
 				}
 			}
 		}
+
+		PUN_LOG("ProvinceSlots: large:%d port:%d small:%d", _largeLandSlotProvinceIds.size(), _portSlotProvinceIds.size(), _landSlotProvinceIds.size());
 	}
 
 	const ProvinceBuildingSlot& provinceBuildingSlot(int32 provinceId) {
@@ -327,7 +375,7 @@ public:
 	{
 		// Also update last owned town
 		int32 lastTownId = _provinceOwnerInfos[provinceId].townId;
-		if (lastTownId != -1) {
+		if (IsValidMajorTown(lastTownId)) {
 			_simulation->AddNeedDisplayUpdateId(DisplayGlobalEnum::Territory, lastTownId);
 		}
 
@@ -350,7 +398,7 @@ public:
 
 		_simulation->SetNeedDisplayUpdate(DisplayGlobalEnum::MapDefenseNode, true);
 
-		if (townId != -1) {
+		if (IsValidMajorTown(townId)) {
 			_simulation->AddNeedDisplayUpdateId(DisplayGlobalEnum::Territory, townId, true);
 			PUN_LOG("SetProvinceOwner province:%d pid:%d", provinceId, townId);
 		}
@@ -451,6 +499,16 @@ public:
 	}
 
 	/*
+	 * Raid
+	 */
+	void SetLastRaidTick(int32 provinceId, int32 lastRaidedTick)
+	{
+		check(_provinceOwnerInfos[provinceId].provinceId == provinceId);
+		_provinceOwnerInfos[provinceId].lastRaidedTick = lastRaidedTick;
+	}
+	
+
+	/*
 	 * Province Distance Map
 	 */
 	// provinceDistanceMap does not take into account bridge etc.
@@ -546,6 +604,7 @@ public:
 		SerializeVecObj(Ar, _provinceBuildingSlots);
 		SerializeVecValue(Ar, _portSlotProvinceIds);
 		SerializeVecValue(Ar, _landSlotProvinceIds);
+		SerializeVecValue(Ar, _largeLandSlotProvinceIds);
 	}
 
 
@@ -568,4 +627,5 @@ private:
 	std::vector<ProvinceBuildingSlot> _provinceBuildingSlots;
 	std::vector<int32> _portSlotProvinceIds;
 	std::vector<int32> _landSlotProvinceIds;
+	std::vector<int32> _largeLandSlotProvinceIds;
 };

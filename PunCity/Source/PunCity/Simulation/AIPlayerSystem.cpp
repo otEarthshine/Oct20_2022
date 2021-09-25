@@ -1055,7 +1055,7 @@ void AIPlayerSystem::Tick1Sec()
 		{
 			//_LOG(PunAI, "%s CheckDefendLand provinceId:%d", AIPrintPrefix(), provinceId);
 
-			ProvinceClaimProgress claimProgress = playerOwned.GetDefendingClaimProgress(provinceId);
+			ProvinceClaimProgress claimProgress = townManage.GetDefendingClaimProgress(provinceId);
 			if (claimProgress.isValid())
 			{
 				// TODO: AI Defense

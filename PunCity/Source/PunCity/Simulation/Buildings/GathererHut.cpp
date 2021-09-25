@@ -2148,25 +2148,120 @@ void SpyCenter::OnInit()
 	ResetWorkModes();
 }
 
+void SpyCenter::FinishConstruction()
+{
+	AddUpgrades({
+		MakeLevelUpgrade(
+			LOCTEXT("SpyCenterUpgrade_SpyNestInfluence", "Spy Nest Influence Gain"),
+			LOCTEXT("SpyCenterUpgrade_SpyNestInfluence Desc", "TODO: Desc"),
+			ResourceEnum::Money, 30
+		),
+		MakeLevelUpgrade(
+			LOCTEXT("SpyCenterUpgrade_SpyEffectiveness", "Spy Effectiveness"),
+			LOCTEXT("SpyCenterUpgrade_SpyEffectiveness Desc", "TODO: Desc"),
+			ResourceEnum::Money, 30
+		),
+		MakeLevelUpgrade(
+			LOCTEXT("SpyCenterUpgrade_CounterIntelligence", "Counter Intelligence"),
+			LOCTEXT("SpyCenterUpgrade_CounterIntelligence Desc", "TODO: Espionage on this city is less effective"),
+			ResourceEnum::Money, 30
+		),
+	});
+
+	_simulation->playerOwned(_playerId).AddUniqueBuildingId(CardEnum::SpyCenter, buildingId());
+	
+	Building::FinishConstruction();
+}
+
+static const FText spyNestSupportText = LOCTEXT("Spy Nest Support", "Spy Nest Support");
+static const FText counterintelligenceText = LOCTEXT("Counterintelligence", "Counterintelligence");
+static const FText planStealText = LOCTEXT("Plan Steal", "Plan Steal");
+static const FText planKidnapText = LOCTEXT("Plan Kidnap", "Plan Kidnap");
+static const FText planTerrorismText = LOCTEXT("Plan Terrorism", "Plan Terrorism");
+
 void SpyCenter::ResetWorkModes()
 {
 	/*
-	 * Kidnap
-	 * Steal
-	 * Defame
-	 * RevealSpyNests
+	 * choose workMode: Spy Nest Support/Steal/Kidnap/Terrorism cards every X sec
+	 * 
 	 */
 	SetupWorkMode({
-		{ LOCTEXT("Leather Clothes", "Leather Clothes"), ResourceEnum::Leather, ResourceEnum::None },
-
-
+		WorkMode::Create(spyNestSupportText, LOCTEXT("Spy Nest Support Desc", "Increase Spy Nest effectiveness by 100%")),
+		WorkMode::Create(counterintelligenceText, LOCTEXT("Conserve resource desc", "Increase Counterintelligence effectiveness by 100%")),
+		WorkMode::Create(planStealText, LOCTEXT("Plan Steal desc", "")),
+		WorkMode::Create(planKidnapText, LOCTEXT("Plan Kidnap desc", "")),
+		WorkMode::Create(planTerrorismText, LOCTEXT("Plan Terrorism desc", "")),
 	});
-
-	if (_simulation->IsResearched(_playerId, TechEnum::HighFashion)) {
-		AddWorkMode(WorkMode::Create(LOCTEXT("Fashionable Clothes (Dyed Fabric)", "Fashionable Clothes (Dyed Fabric)"), FText(), ResourceEnum::DyedCottonFabric, ResourceEnum::None, ResourceEnum::LuxuriousClothes));
-	}
 }
 
+int32 SpyCenter::spyNestBonus() {
+	int32 bonus = GetUpgrade(0).upgradeLevel * 10;
+	if (_workMode.name.IdenticalTo(spyNestSupportText)) {
+		bonus += 100;
+	}
+	
+	return bonus;
+}
+
+int32 SpyCenter::counterspyEffectiveness() {
+	int32 result = 100 + GetUpgrade(2).upgradeLevel * 10;
+	if (_workMode.name.IdenticalTo(counterintelligenceText)) {
+		result += 100;
+	}
+	return result;
+}
+
+void SpyCenter::OnTick1Sec()
+{
+	int32 cardCreationMode = -1;
+	CardEnum cardEnum = CardEnum::None;
+	if (_workMode.name.IdenticalTo(planStealText)) {
+		cardCreationMode = 0;
+		cardEnum = CardEnum::Snatch;
+	}
+	else if (_workMode.name.IdenticalTo(planKidnapText)) {
+		cardCreationMode = 1;
+		cardEnum = CardEnum::Kidnap;
+	}
+	else if (_workMode.name.IdenticalTo(planTerrorismText)) {
+		cardCreationMode = 2;
+		cardEnum = CardEnum::Terrorism;
+	}
+
+	auto resetCardProduction = [&]()
+	{
+		// Use the 300 upkeep to cheaply produce the target card
+		int32 targetCardPrice = GetBuildingInfo(cardEnum).baseCardPrice;
+		int32 secsToProduce = targetCardPrice * Time::SecondsPerRound / upkeep();
+
+		secsToProduce /= 2; // Discount
+
+		_secsToCardProduction = secsToProduce;
+	};
+	
+	if (_cardCreationMode != cardCreationMode)
+	{
+		_cardCreationMode = cardCreationMode;
+
+		if (_cardCreationMode >= 0) {
+			resetCardProduction();
+		}
+		else {
+			_secsToCardProduction = -1;
+		}
+	}
+	else if (_cardCreationMode != -1) 
+	{
+		_secsToCardProduction--;
+		if (_secsToCardProduction == 0) 
+		{
+			_simulation->TryAddCardToBoughtHand(_playerId, cardEnum);
+			
+			resetCardProduction();
+		}
+	}
+	
+}
 
 
 #undef LOCTEXT_NAMESPACE 

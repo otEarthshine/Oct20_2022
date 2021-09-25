@@ -95,6 +95,7 @@ public:
 	virtual class TownManager* townManagerPtr(int32 townId) = 0;
 
 	virtual class TownManagerBase* townManagerBase(int32 townId) = 0;
+	
 	virtual TownManagerBase* townManager_Minor(int32 townId) = 0;
 	
 	virtual class ResourceSystem& resourceSystem(int32 townId) = 0;
@@ -129,7 +130,7 @@ public:
 	virtual int32 GetNextTown(bool forward, int32 currentTownId, int32 playerId) = 0;
 	
 	virtual bool IsTownOwnedByPlayer(int32 townIdIn, int32 playerId) = 0;
-	virtual bool IsTownhallOverlapProvince(int32 provinceId, int32 provincePlayerId) = 0;
+	virtual bool IsTownhallOverlapProvince(int32 provinceId, int32 townId) = 0;
 
 	virtual FString playerNameF(int32 playerId) = 0;
 	virtual FText playerNameT(int32 playerId) = 0;
@@ -173,6 +174,7 @@ public:
 	virtual WorldTile2 GetTownhallGateFast(int32 townId) = 0;
 	virtual WorldTile2 GetTownhallGate(int32 townId) = 0;
 	virtual FText townNameT(int32 townId) = 0;
+	virtual FText townOrPlayerNameT(int32 townId) = 0;
 
 	virtual int32 GetTownAgeTicks(int32 townId) = 0;
 
@@ -211,6 +213,14 @@ public:
 	template<class T>
 	T& building(int id) {
 		return building(id).subclass<T>();
+	}
+
+	template<class T>
+	T* buildingPtr(int32 id, CardEnum buildingEnumIn) {
+		if (IsValidBuilding(id) && buildingEnum(id) == buildingEnumIn) {
+			return static_cast<T*>(buildingPtr(id));
+		}
+		return nullptr;
 	}
 
 	virtual bool IsPermanentBuilding(int32 playerId, CardEnum cardEnum) = 0;
@@ -279,12 +289,14 @@ public:
 	virtual bool IsLandCleared_SmallOnly(int32 townId, TileArea area) = 0;
 
 	// Military
-	virtual int32 lordPlayerId(int32 playerId) = 0;
+	virtual int32 lordPlayerId(int32 townId) = 0;
 	//virtual std::vector<int32> GetArmyNodeIds(int32 playerId) = 0;
 	//virtual class ArmyNode& GetArmyNode(int32 buildingId) = 0;
 
 	//virtual std::vector<int32> GetCapitalArmyCounts(int32 playerId, bool skipWall = false) = 0;
 	//virtual std::vector<int32> GetTotalArmyCounts(int32 playerId, bool skipWall = false) = 0;
+
+	virtual void LoseVassalHelper(int32 oldLordPlayerId, int32 formerVassalTownId) = 0;
 
 	virtual void AddFortToProvince(int32 provinceId, int32 fortId) = 0;
 	virtual void TryRemoveFortFromProvince(int32 provinceId, int32 fortId) = 0;
@@ -448,6 +460,10 @@ public:
 
 	virtual const std::vector<ProvinceConnection>& GetProvinceConnections(int32 provinceId) = 0;
 	virtual void AddTunnelProvinceConnections(int32 provinceId1, int32 provinceId2) = 0;
+
+	virtual int32 GetSpyEffectiveness(int32 playerId, bool isCounterSpy = false) = 0;
+	virtual int32 GetSpyEffectivenessOnTarget(int32 playerId, int32 targetPlayerId) = 0;
+	virtual int32 GetSpyNestInfluenceGainPerRound(int32 nestOwnerPlayerId, int32 nestTownId) = 0;
 	
 	/*
 	 * 

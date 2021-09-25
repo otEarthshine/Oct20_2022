@@ -64,11 +64,14 @@ public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* DepletedText;
 
 	UPROPERTY(meta = (BindWidget)) UTextBlock* LargeWhiteText;
-	UPROPERTY(meta = (BindWidget)) UTextBlock* MediumGrayText;
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* MediumGrayText;
 
 	UPROPERTY(meta = (BindWidget)) USizeBox* SpeedBoostIcon;
 	UPROPERTY(meta = (BindWidget)) UButton* TradeButton;
 	UPROPERTY(meta = (BindWidget)) UButton* AutoTradeButton;
+
+	UPROPERTY(meta = (BindWidget)) UButton* RevealSpyNestButton;
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* RevealSpyNestButtonText;
 
 	UPROPERTY(meta = (BindWidget)) UButton* StatisticsButton;
 	UPROPERTY(meta = (BindWidget)) UButton* JobPriorityButton;
@@ -126,9 +129,19 @@ public:
 		}
 		if (building.isEnum(CardEnum::TradingCompany)) 
 		{
-			// Note StatisticsButton gets its visibility set to Collapsed when it gets init
 			if (building.ownedBy(playerId()) || SimSettings::IsOn("CheatFastBuild")) {
 				AutoTradeButton->SetVisibility(ESlateVisibility::Visible);
+			}
+			return;
+		}
+		if (building.isEnum(CardEnum::SpyCenter))
+		{
+			if (building.ownedBy(playerId()) || SimSettings::IsOn("CheatFastBuild")) {
+				RevealSpyNestButton->SetVisibility(ESlateVisibility::Visible);
+				RevealSpyNestButtonText->SetText(FText::Format(
+					NSLOCTEXT("BuildingJobUI", "Reveal Spy Nest Button", "Reveal Spy Nest <img id=\"Coin\"/>{0}"), 
+					TEXT_NUM(simulation().GetRevealSpyNestPrice()))
+				);
 			}
 			return;
 		}
@@ -352,6 +365,10 @@ private:
 		PUN_CHECK(building.buildingEnum() == CardEnum::TradingCompany);
 
 		GetPunHUD()->OpenTownAutoTradeUI(building.townId());
+	}
+
+	UFUNCTION() void OnClickRevealSpyNestButton() {
+		inputSystemInterface()->StartRevealSpyNest();
 	}
 
 	UFUNCTION() void OnClickStatisticsButton() {

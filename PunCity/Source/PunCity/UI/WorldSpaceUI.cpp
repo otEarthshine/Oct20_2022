@@ -85,6 +85,7 @@ void UWorldSpaceUI::SetupClasses(TSharedPtr<FSlateStyleSet> style, USceneCompone
 	_buildingJobUIs.Init();
 	_townhallHoverInfos.Init();
 	_regionHoverUIs.Init();
+	_raidHoverIcons.Init();
 	_iconTextHoverIcons.Init();
 	_unitHoverIcons.Init();
 	_mapHoverIcons.Init();
@@ -183,12 +184,13 @@ void UWorldSpaceUI::TickBuildings()
 		
 		for (int32 provinceId : sampleProvinceIds)
 		{
-			int32 provincePlayerId = sim.provinceOwnerPlayer(provinceId);
+			int32 provinceTownId = sim.provinceOwnerTownSafe(provinceId);
 			bool showingBattle = false;
 
+			WorldTile2 provinceCenter = provinceSys.GetProvinceCenterTile(provinceId);
+			FVector displayLocation = MapUtil::DisplayLocation(data->cameraAtom(), provinceCenter.worldAtom2(), 50.0f);
+			
 			auto getRegionHoverUI = [&]() {
-				WorldTile2 provinceCenter = provinceSys.GetProvinceCenterTile(provinceId);
-				FVector displayLocation = MapUtil::DisplayLocation(data->cameraAtom(), provinceCenter.worldAtom2(), 50.0f);
 				return _regionHoverUIs.GetHoverUI<URegionHoverUI>(provinceId, UIEnum::RegionHoverUI, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
 					[&](URegionHoverUI* ui) 
 					{
@@ -198,9 +200,9 @@ void UWorldSpaceUI::TickBuildings()
 				);
 			};
 			
-			if (provincePlayerId != -1)
+			if (provinceTownId != -1)
 			{	
-				ProvinceClaimProgress claimProgress = sim.playerOwned(provincePlayerId).GetDefendingClaimProgress(provinceId);
+				ProvinceClaimProgress claimProgress = sim.townManagerBase(provinceTownId)->GetDefendingClaimProgress(provinceId);
 				if (claimProgress.isValid())
 				{
 					URegionHoverUI* regionHoverUI = getRegionHoverUI();
@@ -215,15 +217,48 @@ void UWorldSpaceUI::TickBuildings()
 			}
 
 			if (!showingBattle &&
-				zoomDistance < WorldZoomTransition_Region4x4ToMap &&
-				dataSource()->isShowingProvinceOverlay())
+				zoomDistance < WorldZoomTransition_Region4x4ToMap)
 			{
-				URegionHoverUI* regionHoverUI = getRegionHoverUI();
-				regionHoverUI->UpdateProvinceOverlayInfo(provinceId);
+				if (dataSource()->GetOverlayType() == OverlayType::Raid)
+				{
+					UIconTextPair2Lines* hoverIcon = _raidHoverIcons.GetHoverUI<UIconTextPair2Lines>(provinceId, UIEnum::HoverTextIconPair3Lines, this,
+						_worldWidgetParent, displayLocation, dataSource()->zoomDistance(), [&](UIconTextPair2Lines* ui) {},
+						WorldZoomTransition_Region4x4ToMap
+					);
 
-				regionHoverUI->ProvinceOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-				regionHoverUI->BattlefieldUI->SetVisibility(ESlateVisibility::Collapsed);
+					int32 originTownId = sim.provinceOwnerTownSafe(provinceId);
+					if (originTownId == -1)
+					{
+						hoverIcon->SetPair(hoverIcon->IconPair1, LOCTEXT("Empty Province Not Raidable", "Empty Province\nNot Raidable"));
+						hoverIcon->SetPair(hoverIcon->IconPair2);
+						hoverIcon->SetPair(hoverIcon->IconPair3);
+					}
+					else if (sim.townPlayerId(originTownId) == playerId())
+					{
+						hoverIcon->SetPair(hoverIcon->IconPair1, LOCTEXT("Our Province Not Raidable","Our Province\nNot Raidable"));
+						hoverIcon->SetPair(hoverIcon->IconPair2);
+						hoverIcon->SetPair(hoverIcon->IconPair3);
+					}
+					else
+					{
+						int32 raidMoney100 = sim.GetProvinceRaidMoney100(provinceId);
+						int32 raidInfluence100 = raidMoney100 / 2;
+
+						hoverIcon->SetPair(hoverIcon->IconPair1, FText(), assetLoader()->CoinIcon, TEXT_100(raidMoney100));
+						hoverIcon->SetPair(hoverIcon->IconPair2, FText(), assetLoader()->InfluenceIcon, TEXT_100(raidInfluence100));
+						hoverIcon->SetPair(hoverIcon->IconPair3);
+					}
+				}
+				else if (dataSource()->isShowingProvinceOverlay())
+				{
+					URegionHoverUI* regionHoverUI = getRegionHoverUI();
+					regionHoverUI->UpdateProvinceOverlayInfo(provinceId);
+
+					regionHoverUI->ProvinceOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+					regionHoverUI->BattlefieldUI->SetVisibility(ESlateVisibility::Collapsed);
+				}
 			}
+
 		}
 	}
 
@@ -447,6 +482,7 @@ void UWorldSpaceUI::TickBuildings()
 		_buildingJobUIs.AfterAdd();
 		_townhallHoverInfos.AfterAdd();
 		_regionHoverUIs.AfterAdd();
+		_raidHoverIcons.AfterAdd();
 
 		_buildingHoverIcons.AfterAdd();
 
@@ -768,31 +804,31 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 				buildingJobUI->LargeWhiteText->SetVisibility(ESlateVisibility::Visible);
 				buildingJobUI->MediumGrayText->SetVisibility(ESlateVisibility::Visible);
 
-				std::vector<BonusPair> bonuses = simulation().GetSpyBonuses(playerId(), house.townId());
+				//std::vector<BonusPair> bonuses = simulation().GetSpyBonuses(playerId(), house.townId());
 
 				buildingJobUI->LargeWhiteText->SetText(LOCTEXT("Spy Nest", "Spy Nest"));
 
-				TArray<FText> args;
-				int32 bonusValue = 0;
-				for (BonusPair bonus : bonuses) {
-					if (bonus.value > 0) {
-						ADDTEXT(args, INVTEXT("\n  +{0}% {1}"), TEXT_NUM(bonus.value), bonus.name);
-						bonusValue += bonus.value;
-					}
-				}
+				//TArray<FText> args;
+				//int32 bonusValue = 0;
+				//for (BonusPair bonus : bonuses) {
+				//	if (bonus.value > 0) {
+				//		ADDTEXT(args, INVTEXT("\n  +{0}% {1}"), TEXT_NUM(bonus.value), bonus.name);
+				//		bonusValue += bonus.value;
+				//	}
+				//}
 
-				args.Insert(FText::Format(
-					LOCTEXT("Spy Bonus:", "Spy Bonus: {0}%"),
-					FText::AsNumber(bonusValue)
-				), 0);
-				
-				FText bonusText = JOINTEXT(args);
-				AddToolTip(buildingJobUI->LargeWhiteText, bonusText);
-				AddToolTip(buildingJobUI->MediumGrayText, bonusText);
-				
+				//args.Insert(FText::Format(
+				//	LOCTEXT("Spy Bonus:", "Spy Bonus: {0}%"),
+				//	FText::AsNumber(bonusValue)
+				//), 0);
+				//
+				//FText bonusText = JOINTEXT(args);
+				//AddToolTip(buildingJobUI->LargeWhiteText, bonusText);
+				//AddToolTip(buildingJobUI->MediumGrayText, bonusText);
+				//
 				buildingJobUI->MediumGrayText->SetText(FText::Format(
-					LOCTEXT("Spy Bonus {0}%", "Spy Bonus {0}%"),
-					TEXT_NUM(bonusValue)
+					LOCTEXT("+{0}<img id=\"Influence\"/> per round", "+{0}<img id=\"Influence\"/> per round"),
+					TEXT_NUM(simulation().GetSpyNestInfluenceGainPerRound(house.spyPlayerId(), house.townId()))
 				));
 			}
 			
@@ -814,6 +850,7 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 						IsSpecialProducer(building.buildingEnum()) ||
 						IsTradingPostLike(building.buildingEnum()) ||
 						building.isEnum(CardEnum::TradingCompany) ||
+						building.isEnum(CardEnum::SpyCenter) ||
 						IsBarrack(building.buildingEnum()) ||
 
 						building.isEnum(CardEnum::HuntingLodge) ||
@@ -894,7 +931,7 @@ void UWorldSpaceUI::TickTownhallInfo(int buildingId, bool isMini)
 	{
 		TownHall* townhall = static_cast<TownHall*>(&building);
 
-		UTownhallHoverInfo* townhallInfo = _townhallHoverInfos.GetHoverUI<UTownhallHoverInfo>(buildingId, UIEnum::HoverTownhall, this, _worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), dataSource()->zoomDistance(),
+		UTownhallHoverInfo* townhallInfo = _townhallHoverInfos.GetHoverUI<UTownhallHoverInfo>(townhall->townId(), UIEnum::HoverTownhall, this, _worldWidgetParent, GetBuildingTrueCenterDisplayLocation(buildingId), dataSource()->zoomDistance(),
 			[&](UTownhallHoverInfo* ui) {
 				ui->CityNameText->SetText(townhall->townNameT());
 				ui->CityNameText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
@@ -902,7 +939,7 @@ void UWorldSpaceUI::TickTownhallInfo(int buildingId, bool isMini)
 				AddToolTip(ui->Laborer, 
 					LOCTEXT("TownhallLaborerUI_Tip", "Citizens without assigned workplaces become laborers. Laborers helps with hauling, gathering, and land clearing.")
 				);
-				ui->PunInit(buildingId);
+				ui->PunInit(townhall->townId());
 			}
 		);
 
@@ -1141,7 +1178,7 @@ void UWorldSpaceUI::TickMap()
 
 			for (int32 townId : townIds)
 			{
-				int32 townhallId = simulation.townManager(townId).townHallId;
+				int32 townhallId = simulation.townManager(townId).townhallId;
 				if (townhallId != -1)
 				{
 					Building& building = simulation.building(townhallId);
@@ -1255,10 +1292,11 @@ void UWorldSpaceUI::TickPlacementInstructions()
 		punBox->AddRichTextParsed(getInstruction(PlacementInstructionEnum::DragFarm).instruction);
 	}
 	
-	else if (needInstruction(PlacementInstructionEnum::Kidnap)) {
-		punBox->AddRichTextParsed(getInstruction(PlacementInstructionEnum::Kidnap).instruction);
-	}
+	//else if (needInstruction(PlacementInstructionEnum::Kidnap)) {
+	//	punBox->AddRichTextParsed(getInstruction(PlacementInstructionEnum::Kidnap).instruction);
+	//}
 	else if (needInstruction(PlacementInstructionEnum::Generic)) {
+		LOCTEXT("Terrorism_PlaceInstruction", "Use on opponent's Townhall.");
 		punBox->AddRichTextParsed(getInstruction(PlacementInstructionEnum::Generic).instruction);
 	}
 	

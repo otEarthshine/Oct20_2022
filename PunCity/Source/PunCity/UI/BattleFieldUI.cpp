@@ -31,7 +31,7 @@ void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimPro
 	auto& sim = simulation();
 
 	int32 provincePlayerId = sim.provinceOwnerPlayer(provinceId);
-
+	int32 provinceTownId = sim.provinceOwnerTownSafe(provinceId);
 
 
 	//! Player Logo
@@ -51,7 +51,7 @@ void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimPro
 	int32 defenderPlayerId = provincePlayerId;
 	bool isDeclaringIndependence = (claimProgress.attackerPlayerId == provincePlayerId);
 	if (isDeclaringIndependence) {
-		defenderPlayerId = sim.playerOwned(provincePlayerId).lordPlayerId(); // Declare Independence
+		defenderPlayerId = sim.townManagerBase(provinceTownId)->lordPlayerId(); // Declare Independence
 	} // TODO: Declare Independence should init attack from the Lord
 
 	PunUIUtils::SetPlayerLogo(

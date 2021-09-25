@@ -333,17 +333,28 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 			SetInstruction(PlacementInstructionEnum::DragRoadIntercity, true, goldNeeded);
 		}
 	}
-	else if (_buildingEnum == CardEnum::Kidnap)
-	{
-		if (_canPlace)
-		{
-			ClearInstructions();
-			
-			TArray<FText> args;
-			ADDTEXT_LOCTEXT("Kidnap_PlaceInstruction", "Kidnap 3 people\nUse on opponent's Townhall.");
-			SetInstruction(PlacementInstructionEnum::Kidnap, true, JOINTEXT(args));
-		}
-	}
+	//else if (_buildingEnum == CardEnum::Kidnap)
+	//{
+	//	if (_canPlace)
+	//	{
+	//		ClearInstructions();
+	//		
+	//		TArray<FText> args;
+	//		ADDTEXT_LOCTEXT("Kidnap_PlaceInstruction", "Kidnap 3 people\nUse on opponent's Townhall.");
+	//		SetInstruction(PlacementInstructionEnum::Kidnap, true, JOINTEXT(args));
+	//	}
+	//}
+	//else if (_buildingEnum == CardEnum::Terrorism)
+	//{
+	//	if (_canPlace)
+	//	{
+	//		ClearInstructions();
+
+	//		TArray<FText> args;
+	//		ADDTEXT_LOCTEXT("Terrorism_PlaceInstruction", "Use on opponent's Townhall.");
+	//		SetInstruction(PlacementInstructionEnum::Kidnap, true, JOINTEXT(args));
+	//	}
+	//}
 
 	// Gather/Demolish Drag states
 	else if (_dragState == DragState::NeedDragStart)
@@ -598,7 +609,11 @@ void ABuildingPlacementSystem::StartBuildingPlacement(CardStatus cardStatus, boo
 #undef SHOW_RADIUS
 
 	// Spell
-	if (IsSpellCard(buildingEnum)) {
+	else if (buildingEnum == CardEnum::Raid) {
+		_gameInterface->SetOverlayType(OverlayType::Raid, OverlaySetterType::BuildingPlacement);
+		showGridGuide = false;
+	}
+	else if (IsSpellCard(buildingEnum)) {
 		showGridGuide = false;
 	}
 
@@ -621,6 +636,11 @@ void ABuildingPlacementSystem::StartSetDeliveryTarget(int32 buildingId)
 {
 	_placementType = PlacementType::DeliveryTarget;
 	_deliverySourceBuildingId = buildingId;
+}
+
+void ABuildingPlacementSystem::StartRevealSpyNest()
+{
+	_placementType = PlacementType::RevealSpyNest;
 }
 
 void ABuildingPlacementSystem::StartHarvestPlacement(bool isRemoving, ResourceEnum resourceEnum)
@@ -1771,6 +1791,11 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		
 		return;
 	}
+
+	if (_placementType == PlacementType::RevealSpyNest)
+	{
+		
+	}
 	
 	
 	/*
@@ -1855,12 +1880,12 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			{
 				if (WorldAtom2::DistanceLessThan(_mouseOnTile, location, AreaSpellRadius(_buildingEnum)))
 				{
-					int32 buildingId = simulation.buildingIdAtTileSafe(location);
+					int32 buildingIdAtTile = simulation.buildingIdAtTileSafe(location);
 
 					if (_buildingEnum == CardEnum::FireStarter) {
 						// Casting on townhall requires additional influence
-						if (buildingId != -1) {
-							Building& building = simulation.building(buildingId);
+						if (buildingIdAtTile != -1) {
+							Building& building = simulation.building(buildingIdAtTile);
 							int32_t targetPlayerId = building.playerId();
 
 							if (building.isEnum(CardEnum::Townhall)) {
@@ -1875,13 +1900,14 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 							_placementGrid.SpawnGrid(PlacementGridEnum::Gray, cameraAtom, location);
 						}
 					}
-					else if (_buildingEnum == CardEnum::Steal ||
+					else if (/*_buildingEnum == CardEnum::Steal ||*/
 						_buildingEnum == CardEnum::Snatch ||
 						_buildingEnum == CardEnum::Kidnap ||
+						_buildingEnum == CardEnum::Terrorism ||
 						_buildingEnum == CardEnum::SharingIsCaring)
 					{
-						if (buildingId != -1) {
-							Building& building = simulation.building(buildingId);
+						if (buildingIdAtTile != -1) {
+							Building& building = simulation.building(buildingIdAtTile);
 							int32 targetPlayerId = building.playerId();
 
 							if (building.isEnum(CardEnum::Townhall) && targetPlayerId != playerId) {
@@ -1895,11 +1921,47 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 						_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
 						return;
 					}
+					else if (_buildingEnum == CardEnum::Raid)
+					{
+						int32 provinceId = simulation.GetProvinceIdClean(location);
+						if (provinceId != -1)
+						{
+							int32 targetPlayerId = simulation.provinceOwnerPlayer(provinceId);
+							if (targetPlayerId != -1 && targetPlayerId != playerId)
+							{
+								//! Cannot Raid on safe province
+								if (simulation.provinceInfoSystem().provinceOwnerInfo(provinceId).isSafe)
+								{
+									SetInstruction(PlacementInstructionEnum::Generic, true,
+										LOCTEXT("Raid Provinces Instruction Protected", "Cannot raid a protected Provinces.")
+									);
+									_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
+									return;
+								}
+
+								//! Raid
+								int32 raidMoney100 = simulation.GetProvinceRaidMoney100(provinceId);
+								int32 raidInfluence100 = raidMoney100 / 2;
+
+								SetInstruction(PlacementInstructionEnum::Generic, true, FText::Format(
+									LOCTEXT("Raid Provinces Instruction 2", "Raid Enemy Provinces for <img id=\"Coin\"/>{0} and <img id=\"Influence\"/>{1}."),
+									TEXT_100(raidMoney100), TEXT_100(raidInfluence100)
+								));
+								_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, location);
+								return;
+							}
+						}
+
+						SetInstruction(PlacementInstructionEnum::Generic, true, LOCTEXT("Raid Provinces Instruction", "<Red>Raid Enemy Provinces for Money and Influence.</>"));
+
+						_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
+						return;
+					}
 					else if (IsAnimalCard(_buildingEnum))
 					{
-						if (buildingId != -1)
+						if (buildingIdAtTile != -1)
 						{
-							Building& bld = simulation.building(buildingId);
+							Building& bld = simulation.building(buildingIdAtTile);
 
 							// If center is Zoo..
 							if (bld.isEnum(CardEnum::Zoo)) {
@@ -1920,8 +1982,8 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 					}
 					else if (_buildingEnum == CardEnum::InstantBuild)
 					{
-						if (buildingId != -1) {
-							Building& building = simulation.building(buildingId);
+						if (buildingIdAtTile != -1) {
+							Building& building = simulation.building(buildingIdAtTile);
 
 							if (!building.isConstructed()) {
 								int32 cost = building.buildingInfo().constructionCostAsMoney() * 3;
@@ -1946,9 +2008,9 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 					 */
 					else if (_buildingEnum == CardEnum::SpeedBoost)
 					{
-						if (buildingId != -1)
+						if (buildingIdAtTile != -1)
 						{
-							Building& building = simulation.building(buildingId);
+							Building& building = simulation.building(buildingIdAtTile);
 
 
 							// Show the building that has mouse over it.
@@ -3191,6 +3253,17 @@ void ABuildingPlacementSystem::NetworkTryPlaceBuilding(IGameNetworkInterface* ne
 		else {
 			_gameInterface->Spawn2DSound("UI", "PopupCannot");
 		}
+	}
+
+	else if (_placementType == PlacementType::RevealSpyNest)
+	{
+		auto command = make_shared<FPlaceBuilding>();
+		command->placementType = PlacementType::RevealSpyNest;
+		command->center = _mouseOnTile;
+
+		networkInterface->SendNetworkCommand(command);
+
+		CancelPlacement();
 	}
 }
 

@@ -116,6 +116,7 @@ static TArray<FText> RelationshipModifierName
 	LOCTEXT("RelationWeakling", "Weaklings don't deserve our respect"),
 	LOCTEXT("RelationStole", "You stole from us"),
 	LOCTEXT("RelationKidnapped", "You kidnapped our citizens"),
+	LOCTEXT("RelationTerrorized", "Terrorism"),
 	LOCTEXT("RelationAttacked", "You attacked us"),
 	LOCTEXT("RelationCannibals", "We fear cannibals"),
 };
@@ -207,15 +208,12 @@ void CardStatus::Serialize(class PunSerializedData& blob)
  * Claim
  */
 
-void AppendClaimConnectionString(TArray<FText>& args, bool isConquering, ClaimConnectionEnum claimConnectionEnum)
+void AppendClaimConnectionString(TArray<FText>& args, ClaimConnectionEnum claimConnectionEnum)
 {
-	if (isConquering) {
-		ADDTEXT_LOCTEXT("ConquerProvince", "Conquer Province (Annex)");
-	} else {
-		ADDTEXT_LOCTEXT("ClaimProvince", "Claim Province");
+	if (claimConnectionEnum == ClaimConnectionEnum::River) {
+		ADDTEXT_LOCTEXT("river_claim", " (cross river)");
 	}
-	
-	if (claimConnectionEnum == ClaimConnectionEnum::ShallowWater) {
+	else if (claimConnectionEnum == ClaimConnectionEnum::ShallowWater) {
 		ADDTEXT_LOCTEXT("shallow_water", " (shallow water)");
 	}
 }

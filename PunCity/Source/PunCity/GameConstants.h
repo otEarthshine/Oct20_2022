@@ -47,7 +47,7 @@ public:
 
 	static const int32 InitialMoney = 3000;
 
-	static const int32 ClaimProvinceByMoneyMultiplier = 2;
+	static const int32 ClaimProvinceByMoneyMultiplier = 3;
 
 
 	static const int32 StoneNeededPerRoadTile = 2;

@@ -316,7 +316,8 @@ class FPlaceBuilding final : public FNetworkCommand
 public:
 	virtual ~FPlaceBuilding() {}
 
-	uint8 buildingEnum;
+	PlacementType placementType = PlacementType::Building;
+	uint16 buildingEnum;
 	int32 intVar1 = 0; // Note TrailerMode - Farm: use buildingLevel to specify plant type (need after-edit..)
 
 	TileArea area; // Needed in the case for manipulable area
@@ -335,6 +336,7 @@ public:
 	void Serialize(PunSerializedData& blob) override {
 		FNetworkCommand::Serialize(blob);
 
+		blob << placementType;
 		blob << buildingEnum;
 		blob << intVar1;
 		

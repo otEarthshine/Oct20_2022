@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "../Building.h"
 #include "PunCity/CppUtils.h"
+#include "PunCity/Simulation/PlayerOwnedManager.h"
 
 
 /**
@@ -315,9 +316,10 @@ public:
 			if (_spyPlayerId == -1) {
 				_spyPlayerId = command.playerId;
 				_isConcealed = false;
+				_simulation->playerOwned(_spyPlayerId).AddSpyNestId(buildingId());
 
 				_simulation->AddPopupToFront(command.playerId,
-					NSLOCTEXT("HouseSpy", "SpyEstablishNest_Succeed", "Established a Spy Nest.<space>Spy Nest gives Spy Bonus to Spy Cards such as Kidnap, Steal, Snatch.")
+					NSLOCTEXT("HouseSpy", "SpyEstablishNest_Succeed", "Established a Spy Nest.<space>Spy Nest gives you influence gain that scales with the city's population.")
 				);
 			}
 			else {
@@ -362,6 +364,7 @@ public:
 
 		_spyPlayerId = -1;
 		_isConcealed = false;
+		_simulation->playerOwned(_spyPlayerId).RemoveSpyNestId(buildingId());
 	}
 
 private:

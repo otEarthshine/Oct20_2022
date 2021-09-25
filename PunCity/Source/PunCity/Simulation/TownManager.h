@@ -183,7 +183,7 @@ struct ProvinceClaimProgress
 	{
 		auto retreat = [&](std::vector<CardStatus>& line) {
 			for (int32 i = line.size(); i-- > 0;) {
-				if (line[i].cardStateValue2 == unitPlayerId) {
+				if (line[i].cardStateValue1 == unitPlayerId) {
 					line.erase(line.begin() + i);
 				}
 			}
@@ -380,7 +380,7 @@ class TownManagerBase
 public:
 	int32 _playerId = -1;
 	int32 _townId = -1;
-	int32 townHallId = -1;
+	int32 townhallId = -1;
 
 	static const int32 BaseAutoTradeFeePercent = 40;
 
@@ -396,8 +396,29 @@ public:
 
 	virtual ~TownManagerBase() {}
 
+	/*
+	 * Get
+	 */
+	
 	RelationshipModifiers& minorTownRelationship() { return _minorTownRelationshipModifiers; }
 
+	int32 playerId() { return _playerId; }
+
+	int32 townId() { return _townId; }
+
+	bool hasTownhall() { return townhallId != -1; }
+
+	bool isCapital() { return _townId == _playerId; }
+
+	const std::vector<int32>& provincesClaimed() { return _provincesClaimed; }
+
+	/*
+	 * 
+	 */
+	virtual void RecalculateTaxDelayed() {}
+	
+	void Tick1Sec_TownBase();
+	
 	/*
 	 * Auto Trade
 	 */
@@ -638,6 +659,182 @@ public:
 	}
 
 	/*
+	 * Claim Province Attack
+	 */
+
+	void StartConquerProvince(int32 attackerPlayerId, int32 provinceId, std::vector<CardStatus>& initialMilitaryCards)
+	{
+		ProvinceClaimProgress claimProgress;
+		claimProgress.provinceId = provinceId;
+		claimProgress.attackerPlayerId = attackerPlayerId;
+		claimProgress.ticksElapsed = BattleClaimTicks / 4; // Start at 25% for attacker
+
+		//! Fill Attacker Military Units
+		claimProgress.Reinforce(initialMilitaryCards, true, attackerPlayerId);
+
+		//! Fill Defender Military Units
+		std::vector<CardStatus> defenderCards = { CardStatus(CardEnum::Warrior, 5) };
+		claimProgress.Reinforce(defenderCards, false, defenderPlayerId());
+
+
+		_defendingClaimProgress.push_back(claimProgress);
+	}
+	void StartConquerProvince_Attacker(int32 provinceId) {
+		_attackingProvinceIds.push_back(provinceId);
+	}
+
+	const std::vector<ProvinceClaimProgress>& defendingClaimProgress() { return _defendingClaimProgress; }
+
+	ProvinceClaimProgress GetDefendingClaimProgress(int32 provinceId) const {
+		for (const ProvinceClaimProgress& claimProgress : _defendingClaimProgress) {
+			if (claimProgress.provinceId == provinceId) {
+				return claimProgress;
+			}
+		}
+		return ProvinceClaimProgress();
+	}
+
+	ProvinceClaimProgress* GetDefendingClaimProgressPtr(int32 provinceId) {
+		for (ProvinceClaimProgress& claimProgress : _defendingClaimProgress) {
+			if (claimProgress.provinceId == provinceId) {
+				return &claimProgress;
+			}
+		}
+		return nullptr;
+	}
+
+
+	void ReturnMilitaryUnitCards(std::vector<CardStatus>& cards, int32 playerId, bool forcedAll = true);
+
+	void EndConquer(int32 provinceId)
+	{
+		// Return Military Units
+		for (int32 i = 0; i < _defendingClaimProgress.size(); i++)
+		{
+			ProvinceClaimProgress& claimProgress = _defendingClaimProgress[i];
+			if (claimProgress.provinceId == provinceId) {
+				ReturnMilitaryUnitCards(claimProgress.attackerFrontLine, claimProgress.attackerPlayerId);
+				ReturnMilitaryUnitCards(claimProgress.attackerBackLine, claimProgress.attackerPlayerId);
+				ReturnMilitaryUnitCards(claimProgress.defenderFrontLine, _playerId);
+				ReturnMilitaryUnitCards(claimProgress.defenderBackLine, _playerId);
+				break;
+			}
+		}
+
+		CppUtils::RemoveOneIf(_defendingClaimProgress, [&](ProvinceClaimProgress& claimProgress) { return claimProgress.provinceId == provinceId; });
+	}
+	void EndConquer_Attacker(int32 provinceId)
+	{
+		CppUtils::Remove(_attackingProvinceIds, provinceId);
+	}
+
+
+
+	// provinceId and attackerPlayerId is needed because this maybe called before the attack started
+	ProvinceAttackEnum GetProvinceAttackEnum(int32 provinceId, int32 attackerPlayerId)
+	{
+		auto getMainCityAttackEnum = [&]()
+		{
+			if (lordPlayerId() != -1)
+			{
+				// The attacker is the townhall owner, trying to expel the lord
+				if (attackerPlayerId == _playerId) {
+					return ProvinceAttackEnum::DeclareIndependence;
+				}
+				return ProvinceAttackEnum::VassalCompetition;
+			}
+			return ProvinceAttackEnum::Vassalize;
+		};
+		
+		int32 provincePlayerId = _simulation->provinceOwnerPlayer(provinceId);
+
+		//! Minor Town
+		if (provincePlayerId == -1)
+		{
+			return getMainCityAttackEnum();
+		}
+	
+		//! Capital
+		if (_simulation->homeProvinceId(provincePlayerId) == provinceId)
+		{
+			return getMainCityAttackEnum();
+		}
+
+		//! Colony
+		int32 townId = _simulation->provinceOwnerTown_Major(provinceId);
+		if (townId != -1 &&
+			_simulation->IsTownhallOverlapProvince(provinceId, townId))
+		{
+			return ProvinceAttackEnum::ConquerColony;
+		}
+
+		return ProvinceAttackEnum::ConquerProvince;
+	}
+
+	/*
+	 * Vassal
+	 */
+	int32 lordPlayerId() { return _lordPlayerId; }
+	void SetLordPlayerId(int32 lordPlayerId) {
+		_lordPlayerId = lordPlayerId;
+	}
+
+	int32 playerIdForLogo() {
+		if (_lordPlayerId != -1) {
+			return _lordPlayerId;
+		}
+		return _playerId;
+	}
+
+	int32 defenderPlayerId() {
+		return _playerId;
+	}
+
+	const std::vector<int32>& vassalTownIds() const { return _vassalTownIds; }
+	void GainVassal(int32 vassalTownId) {
+		_vassalTownIds.push_back(vassalTownId);
+	}
+	void LoseVassal(int32 vassalTownId) {
+		CppUtils::TryRemove(_vassalTownIds, vassalTownId);
+	}
+	bool IsVassal(int32 vassalTownId) {
+		return CppUtils::Contains(_vassalTownIds, vassalTownId);
+	}
+
+	/*
+	 * Ally
+	 */
+	const std::vector<int32>& allyPlayerIds() { return _allyPlayerIds; }
+	void GainAlly(int32 allyPlayerId) {
+		_allyPlayerIds.push_back(allyPlayerId);
+	}
+	void LoseAlly(int32 allyPlayerId) {
+		CppUtils::TryRemove(_allyPlayerIds, allyPlayerId);
+	}
+	bool IsAlly(int32 playerId) {
+		return CppUtils::Contains(_allyPlayerIds, playerId);
+	}
+
+
+	int32 vassalTaxPercent() {
+		return 5;
+		//switch (taxLevel)
+		//{
+		//case 0: return 0;
+		//case 1: return 10;
+		//case 2: return 20;
+		//case 3: return 30;
+		//case 4: return 40;
+		//default:
+		//	UE_DEBUG_BREAK();
+		//}
+		//return -1;
+	}
+	int32 vassalInfluencePercent() {
+		return 50;
+	}
+
+	/*
 	 * Helpers
 	 */
 	virtual void RefreshProvinceInfo() {}
@@ -652,7 +849,7 @@ public:
 		//! Public
 		Ar << _playerId;
 		Ar << _townId;
-		Ar << townHallId;
+		Ar << townhallId;
 
 		SerializeVecValue(Ar, _provincesClaimed);
 
@@ -662,6 +859,15 @@ public:
 		Ar << _lastRoundAutoTradeProfit;
 
 		Ar << _minorTownRelationshipModifiers;
+
+		
+		//! Vassal/Annex
+		Ar << _lordPlayerId;
+		SerializeVecValue(Ar, _vassalTownIds);
+		SerializeVecValue(Ar, _allyPlayerIds);
+
+		SerializeVecValue(Ar, _attackingProvinceIds);
+		SerializeVecObj(Ar, _defendingClaimProgress);
 	}
 
 protected:
@@ -675,6 +881,14 @@ protected:
 
 	// Relationship
 	RelationshipModifiers _minorTownRelationshipModifiers;
+
+	// Vassal/Annex
+	int32 _lordPlayerId = -1;
+	std::vector<int32> _vassalTownIds;
+	std::vector<int32> _allyPlayerIds;
+
+	std::vector<int32> _attackingProvinceIds;
+	std::vector<ProvinceClaimProgress> _defendingClaimProgress;
 
 	/*
 	 * Non-Serialize
@@ -742,13 +956,6 @@ public:
 	/*
 	 * Get Variables
 	 */
-	int32 playerId() { return _playerId; }
-
-	bool hasTownhall() { return townHallId != -1; }
-
-	bool isCapital() { return _townId == _playerId; }
-	
-	const std::vector<int32>& provincesClaimed() { return _provincesClaimed; }
 	
 
 	int32 aveHappinessByType(HappinessEnum happinessEnum) {
@@ -829,7 +1036,7 @@ public:
 		return totalRevenue100() - totalExpense100();
 	}
 
-	void RecalculateTaxDelayed() {
+	virtual void RecalculateTaxDelayed() override {
 		//PUN_LOG("RecalculateTaxDelayed");
 		_needTaxRecalculation = true;
 	}

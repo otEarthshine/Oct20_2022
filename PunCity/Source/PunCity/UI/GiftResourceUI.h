@@ -143,7 +143,7 @@ public:
 	void OpenGiftUI(int32 sourcePlayerIdIn, int32 targetTownIdIn, TradeDealStageEnum dealStageEnumIn)
 	{
 		sourceTownId = sourcePlayerIdIn;
-		targetTownId = targetTownIdIn;
+		targetTownId = targetTownIdIn; // use targetTownIdIn to handle Minor Town Id
 
 		dealStageEnum = dealStageEnumIn;
 
@@ -416,10 +416,7 @@ public:
 		auto& cardSys = sim.cardSystem(cardOwnerId);
 
 
-		std::vector<CardStatus> cards = cardSys.GetCardsBought();
-		const std::vector<CardStatus>& cardInventory = cardSys.cardInventory();
-
-		cards.insert(cards.begin(), cardInventory.begin(), cardInventory.end());
+		std::vector<CardStatus> cards = cardSys.GetCardsBoughtAndInventory();
 
 		// Remove Added Card
 		{

@@ -2354,6 +2354,8 @@ enum class CardEnum : uint16
 	SharingIsCaring,
 	Kidnap,
 	KidnapGuard,
+	Raid,
+	Terrorism,
 	TreasuryGuard,
 	Cannibalism,
 
@@ -3632,16 +3634,16 @@ static const BldInfo BuildingInfo[]
 	),
 
 	BldInfo(CardEnum::MayanPyramid, _LOCTEXT("Jungle Ruin", "Jungle Ruin"), LOCTEXT("Jungle Ruin (Plural)", "Jungle Ruins"), LOCTEXT("Jungle Ruin Desc", ""),
-		WorldTile2(12, 12), GetBldResourceInfoManual({})
+		WorldTile2(18, 18), GetBldResourceInfoManual({})
 	),
 	BldInfo(CardEnum::EgyptianPyramid, _LOCTEXT("Desert Ruin", "Desert Ruin"), LOCTEXT("Desert Ruin (Plural)", "Desert Ruins"), LOCTEXT("Desert Ruin Desc", ""),
-		WorldTile2(12, 12), GetBldResourceInfoManual({})
+		WorldTile2(18, 18), GetBldResourceInfoManual({})
 	),
 	BldInfo(CardEnum::StoneHenge, _LOCTEXT("Ruin", "Ruin"), LOCTEXT("Ruin (Plural)", "Ruins"), LOCTEXT("Ruin Desc", ""),
-		WorldTile2(12, 12), GetBldResourceInfoManual({})
+		WorldTile2(18, 18), GetBldResourceInfoManual({})
 	),
 	BldInfo(CardEnum::EasterIsland, _LOCTEXT("Ruin", "Ruin"), LOCTEXT("Ruin (Plural)", "Ruins"), LOCTEXT("Ruin Desc", ""),
-		WorldTile2(12, 12), GetBldResourceInfoManual({})
+		WorldTile2(18, 18), GetBldResourceInfoManual({})
 	),
 	
 	BldInfo(CardEnum::Oasis, _LOCTEXT("Oasis", "Oasis"), LOCTEXT("Oasis (Plural)", "Oases"), LOCTEXT("Oasis Desc", ""),
@@ -3774,11 +3776,13 @@ static const BldInfo CardInfos[]
 
 	//
 	BldInfo(CardEnum::FireStarter,		_LOCTEXT("Fire Starter", "Fire Starter"), 200,	LOCTEXT("Fire Starter Desc", "Start a fire in an area (3 tiles radius).")),
-	BldInfo(CardEnum::Steal,			_LOCTEXT("Steal", "Steal"), 200,					LOCTEXT("Steal Desc", "Steal 30% of target player's treasury<img id=\"Coin\"/>. Use on Townhall.")),
-	BldInfo(CardEnum::Snatch,			_LOCTEXT("Snatch", "Snatch"), 50,				LOCTEXT("Snatch Desc", "Steal <img id=\"Coin\"/> equal to target player's population X 5. Use on Townhall.")),
+	BldInfo(CardEnum::Steal,			_LOCTEXT("Steal", "Steal"), 200,					LOCTEXT("Steal Desc", "Steal 30% of target player's treasury<img id=\"Coin\"/>. Use on Townhall. <Gray>(max 10000)</>")),
+	BldInfo(CardEnum::Snatch,			_LOCTEXT("Steal", "Steal"), 100,				LOCTEXT("Snatch Desc", "Steal <img id=\"Coin\"/> equal to target player's population X 10. Use on Townhall.")),
 	BldInfo(CardEnum::SharingIsCaring,	_LOCTEXT("Sharing is Caring", "Sharing is Caring"), 120, LOCTEXT("Sharing is Caring Desc", "Give 100 Wheat to the target player. Use on Townhall.")),
 	BldInfo(CardEnum::Kidnap,			_LOCTEXT("Kidnap", "Kidnap"), 350,				LOCTEXT("Kidnap Desc", "Steal up to 3 citizens from target player. Apply on Townhall.")),
 	BldInfo(CardEnum::KidnapGuard,		_LOCTEXT("Kidnap Guard", "Kidnap Guard"), 20,	LOCTEXT("Kidnap Guard Desc", "Guard your city against Kidnap for two years. Require <img id=\"Coin\"/>xPopulation to activate.")),
+	BldInfo(CardEnum::Raid,				_LOCTEXT("Raid", "Raid"), 350,				LOCTEXT("Raid Desc", "")),
+	BldInfo(CardEnum::Terrorism,		_LOCTEXT("Terrorism", "Terrorism"), 350,	LOCTEXT("Terrorism Desc", "Kill 5 citizens at target Town, opponent loses 1000 influence")),
 	BldInfo(CardEnum::TreasuryGuard,	_LOCTEXT("Treasury Guard", "Treasury Guard"), 20, LOCTEXT("Treasury Guard Desc", "Guard your city against Steal and Snatch for two years. Require <img id=\"Coin\"/>xPopulation to activate.")),
 
 	
@@ -3901,7 +3905,7 @@ static const std::vector<CardEnum> ActionCards
 	CardEnum::EmergencyRations,
 
 	CardEnum::FireStarter,
-	CardEnum::Steal,
+	//CardEnum::Steal,
 	CardEnum::Snatch,
 	CardEnum::SharingIsCaring,
 	CardEnum::Kidnap,
@@ -4901,7 +4905,7 @@ struct BuildingUpgrade
 			}
 			int32 upgradeResourceCount = resourceNeededPerLevel.back().count;
 			for (int32 i = resourceNeededPerLevel.size(); i <= upgradeLevel; i++) {
-				upgradeResourceCount = upgradeResourceCount * 2;
+				upgradeResourceCount = upgradeResourceCount * 150 / 100; // Only Applies Beyond Max Era
 			}
 			
 			return ResourcePair(resourceNeededPerLevel.back().resourceEnum, upgradeResourceCount);
@@ -4910,7 +4914,7 @@ struct BuildingUpgrade
 		{
 			int32 upgradeResourceCount = baseUpgradeResourceNeeded.count;
 			for (int32 i = 1; i <= upgradeLevel; i++) {
-				upgradeResourceCount = upgradeResourceCount * 2;
+				upgradeResourceCount = upgradeResourceCount * 150 / 100;
 			}
 
 			return ResourcePair(baseUpgradeResourceNeeded.resourceEnum, upgradeResourceCount);
@@ -4968,6 +4972,7 @@ enum class ProvinceAttackEnum : uint8
 	None,
 	
 	ConquerProvince,
+	Raid,
 	Vassalize,
 	DeclareIndependence,
 
@@ -5686,7 +5691,7 @@ public:
 	static const int64_t MoveAtomsPerTick = CoordinateConstants::AtomsPerTile / Time::TicksPerSecond * 2;// *3;
 };
 
-enum class PlacementType
+enum class PlacementType : uint8
 {
 	None,
 	Building,
@@ -5705,6 +5710,7 @@ enum class PlacementType
 	Tunnel,
 
 	DeliveryTarget,
+	RevealSpyNest,
 };
 
 static bool IsRoadPlacement(PlacementType placementType) {
@@ -5892,6 +5898,8 @@ enum class OverlayType
 	Museum,
 
 	BadAppeal,
+
+	Raid,
 };
 
 static bool IsGridOverlay(OverlayType overlayEnum)
@@ -5925,6 +5933,9 @@ enum class InfluenceIncomeEnum : uint8
 
 	Fort,
 	Colony,
+
+	GainFromVassal,
+	LoseToLord,
 	
 	Count,
 };
@@ -5978,7 +5989,7 @@ enum class IncomeEnum : uint8
 	ArmyUpkeep,
 	
 	TerritoryRevenue,
-	TerritoryUpkeep,
+	TerritoryUpkeep, // Upkeep goes to influence unless that is 0...
 	TradeRoute,
 	
 	EconomicTheories,
@@ -6391,7 +6402,7 @@ enum class ClaimConnectionEnum : uint8
 	Deepwater,
 };
 
-void AppendClaimConnectionString(TArray<FText>& args, bool isConquering, ClaimConnectionEnum claimConnectionEnum);
+void AppendClaimConnectionString(TArray<FText>& args, ClaimConnectionEnum claimConnectionEnum);
 
 /*
  * Quest
@@ -6962,11 +6973,18 @@ static MilitaryCardInfo GetMilitaryInfo(CardEnum cardEnum)
 	return result;
 }
 
+static int32 GetMilitaryUpkeep(CardEnum cardEnum)
+{
+	int32 roundsToEqualUpfrontCost = 200;
+	return (GetBuildingInfo(cardEnum).baseCardPrice + 500) / roundsToEqualUpfrontCost;
+}
+
 static FText GetMilitaryInfoDescription(CardEnum cardEnum)
 {
 	MilitaryCardInfo militaryInfo = GetMilitaryInfo(cardEnum);
 	return FText::Format(
-		NSLOCTEXT("Military", "Military Description", "HP: {0}\nDefense: {1}\nAttack: {2}"),
+		NSLOCTEXT("Military", "Military Description", "Upkeep: -{0}<img id=\"Coin\"/><space>HP: {1}\nDefense: {2}\nAttack: {3}"),
+		TEXT_NUM(GetMilitaryUpkeep(cardEnum)),
 		TEXT_100(militaryInfo.hp100),
 		TEXT_100(militaryInfo.defense100),
 		TEXT_100(militaryInfo.attack100)
@@ -6977,7 +6995,9 @@ static int32 GetArmyStrength(const std::vector<CardStatus>& cards)
 {
 	int32 strength = 0;
 	for (const CardStatus& card : cards) {
-		strength += GetMilitaryInfo(card.cardEnum).strength() * card.stackSize;
+		MilitaryCardInfo militaryInfo = GetMilitaryInfo(card.cardEnum);
+		strength += militaryInfo.strength() * std::max(0, card.stackSize - 1);
+		strength += militaryInfo.strength() * card.cardStateValue2 / militaryInfo.hp100;
 	}
 	return strength;
 }
@@ -6989,9 +7009,11 @@ static int32 GetArmyStrength(const std::vector<CardStatus>& cards)
 static std::vector<CardEnum> SpellCards
 {
 	CardEnum::FireStarter,
-	CardEnum::Steal,
+	//CardEnum::Steal,
 	CardEnum::Snatch,
 	CardEnum::Kidnap,
+	CardEnum::Terrorism,
+	CardEnum::Raid,
 	CardEnum::SharingIsCaring,
 
 	// Skill
@@ -7872,6 +7894,8 @@ enum class PopupReceiverEnum : uint8
 	DoneResearchEvent_ShowAllTrees,
 
 	ShowTradeDeal,
+
+	RaidHandleDecision,
 };
 
 struct PopupInfo
@@ -9678,6 +9702,8 @@ static bool IsSpyCallback(CallbackEnum callbackEnum)
 		callbackEnum == CallbackEnum::SpyEnsureAnonymity;
 }
 
+static const int32 SpyNestBasePrice = 3000;
+
 
 static const int32 GameSpeedHalf = -12;
 static const int32 GameSpeedValue1 = GameSpeedHalf;
@@ -9727,7 +9753,7 @@ static bool IsEdgeProvinceId(int32 provinceId) {
 	return 0 > provinceId && provinceId > EmptyProvinceId; // Edge marked with negative...
 }
 
-static const int32 Income100PerFertilityPercent = 10;
+static const int32 Income100PerFertilityPercent = 30; // 10 -> Sep: 30 ->
 static const int32 ClaimToIncomeRatio = 50; // When 2, actual is 4 since upkeep is half the income
 
 struct ProvinceConnection
@@ -9871,11 +9897,12 @@ enum class RelationshipModifierEnum : uint8
 	YouAreWeak,
 	YouStealFromUs,
 	YouKidnapFromUs,
+	YouTerrorizedUs,
 	YouAttackedUs,
 	WeFearCannibals,
 };
 
-FText RelationshipModifierNameInt(int32 index);
+FText RelationshipModifierNameInt(int32 index); // Names
 int32 RelationshipModifierCount();
 
 class RelationshipModifiers

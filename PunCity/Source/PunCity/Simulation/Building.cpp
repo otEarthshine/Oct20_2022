@@ -1569,7 +1569,14 @@ std::vector<BonusPair> Building::GetTradingFeeBonuses()
 BuildingUpgrade Building::MakeUpgrade(FText name, FText description, ResourceEnum resourceEnum, int32 percentOfTotalPrice)
 {
 	int32 totalCost = buildingInfo().constructionCostAsMoney();
-	int32 resourceCount = 1 + totalCost * percentOfTotalPrice / 100 / GetResourceInfo(resourceEnum).basePrice;
+	
+	int32 resourceCount;
+	if (resourceEnum == ResourceEnum::Money) {
+		resourceCount = totalCost * percentOfTotalPrice / 100;
+	} else {
+		resourceCount = 1 + totalCost * percentOfTotalPrice / 100 / GetResourceInfo(resourceEnum).basePrice;
+	}
+	
 	return BuildingUpgrade(name, description, resourceEnum, resourceCount);
 }
 BuildingUpgrade Building::MakeUpgrade(FText name, FText description, int32 percentOfTotalPrice)

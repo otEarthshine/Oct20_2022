@@ -51,6 +51,9 @@ void UBuildingJobUI::PunInit(int buildingId, bool isHouse)
 	BUTTON_ON_CLICK(AutoTradeButton, this, &UBuildingJobUI::OnClickAutoTradeButton);
 	AutoTradeButton->SetVisibility(ESlateVisibility::Collapsed);
 
+	BUTTON_ON_CLICK(RevealSpyNestButton, this, &UBuildingJobUI::OnClickRevealSpyNestButton);
+	RevealSpyNestButton->SetVisibility(ESlateVisibility::Collapsed);
+
 	BUTTON_ON_CLICK(ForeignAllowButton, this, &UBuildingJobUI::OnClickForeignAllowButton);
 	BUTTON_ON_CLICK(ForeignDisallowButton, this, &UBuildingJobUI::OnClickForeignDisallowButton);
 

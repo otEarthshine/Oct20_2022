@@ -67,6 +67,25 @@ FText TownManager::GetTownSizeName() {
 	return FText();
 }
 
+/*
+ * Town Manager Base
+ */
+
+void TownManagerBase::Tick1Sec_TownBase()
+{
+	for (ProvinceClaimProgress& claimProgress : _defendingClaimProgress) {
+		claimProgress.Tick1Sec(_simulation);
+	}
+}
+
+void TownManagerBase::ReturnMilitaryUnitCards(std::vector<CardStatus>& cards, int32 playerId, bool forcedAll)
+{
+	for (CardStatus& card : cards) {
+		if (forcedAll || playerId == card.cardStateValue1) {
+			_simulation->cardSystem(playerId).AddCards_BoughtHandAndInventory(card);
+		}
+	}
+}
 
 
 /*
@@ -591,7 +610,7 @@ void TownManager::RefreshJobs()
 			PUN_CHECK(_simulation->unitAI(humanId).workplaceId() == -1);
 
 			_roadMakerIds.push_back(humanId);
-			_simulation->unitAI(humanId).SetWorkplaceId(townHallId); // roadBuilder just use townHall as workplace for easy query...	
+			_simulation->unitAI(humanId).SetWorkplaceId(townhallId); // roadBuilder just use townHall as workplace for easy query...	
 		}
 	}
 
@@ -1243,7 +1262,7 @@ void TownManager::TickRound()
 		SetLastRoundAutoTradeProfit(netTotal100);
 		
 		//! UI Display
-		WorldTile2 floatupCenter = _simulation->building(townHallId).centerTile();
+		WorldTile2 floatupCenter = _simulation->building(townhallId).centerTile();
 		_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, floatupCenter, TEXT_100SIGNED(netTotal100));
 
 		if (totalRefundAmount100 > 0)
@@ -1301,12 +1320,12 @@ void TownManager::RecalculateTax(bool showFloatup)
 	if (!_simulation->HasTownhall(_playerId)) {
 		return;
 	}
-	if (!_simulation->isValidBuildingId(townHallId)) {
-		_LOG(PunBuilding, "RecalculateTax BuildingId Invalid pid:%d townhallId:%d", _playerId, townHallId);
+	if (!_simulation->isValidBuildingId(townhallId)) {
+		_LOG(PunBuilding, "RecalculateTax BuildingId Invalid pid:%d townhallId:%d", _playerId, townhallId);
 		return;
 	}
-	if (_simulation->buildingEnum(townHallId) != CardEnum::Townhall) {
-		_LOG(PunBuilding, "RecalculateTax Building-Not-Townhall pid:%d townhallId:%d", _playerId, townHallId);
+	if (_simulation->buildingEnum(townhallId) != CardEnum::Townhall) {
+		_LOG(PunBuilding, "RecalculateTax Building-Not-Townhall pid:%d townhallId:%d", _playerId, townhallId);
 		return;
 	}
 
@@ -1448,6 +1467,16 @@ void TownManager::RecalculateTax(bool showFloatup)
 		}
 	}
 
+	if (isCapital()) {
+		BuildingCardSystem& cardSystem = _simulation->cardSystem(_playerId);
+		std::vector<CardStatus> cards = cardSystem.GetCardsBoughtAndInventory();
+		for (const CardStatus& card : cards) {
+			if (IsMilitaryCardEnum(card.cardEnum)) {
+				incomes100[static_cast<int>(IncomeEnum::ArmyUpkeep)] -= card.stackSize * GetMilitaryUpkeep(card.cardEnum) * 100;
+			}
+		}
+	}
+
 	//// Stock market
 	//auto& stockMarketIds = _simulation->buildingIds(_townId, CardEnum::StockMarket);;
 	//if (stockMarketIds.size() > 0)
@@ -1508,9 +1537,8 @@ void TownManager::RecalculateTax(bool showFloatup)
 	int64 sumFromHouses = CppUtils::Sum(sciences100);
 
 	// Less tech than lord, get +20% sci
-	int32 lordPlayerId = _simulation->playerOwned(_playerId).lordPlayerId();
-	if (lordPlayerId != -1 &&
-		_simulation->sciTechsCompleted(_playerId) < _simulation->sciTechsCompleted(lordPlayerId))
+	if (lordPlayerId() != -1 &&
+		_simulation->sciTechsCompleted(_playerId) < _simulation->sciTechsCompleted(lordPlayerId()))
 	{
 		sciences100[static_cast<int>(ScienceEnum::KnowledgeTransfer)] += sumFromHouses * 20LL / 100LL;
 	}
@@ -1542,27 +1570,23 @@ void TownManager::RecalculateTax(bool showFloatup)
 	 */
 	if (isCapital())
 	{
-		auto& playerOwned = _simulation->playerOwned(_playerId);
-		const auto& vassalBuildingIds = playerOwned.vassalBuildingIds();
-		
-		for (int32 vassalBuildingId : vassalBuildingIds)
+		for (int32 vassalTownId : _vassalTownIds)
 		{
-			int32 vassalTownId = _simulation->building<TownHall>(vassalBuildingId, CardEnum::Townhall).townId();
 			auto& vassalTownManager = _simulation->townManager(vassalTownId);
 
 			// Tax
 			vassalTownManager.RecalculateTax(false);
-			incomes100[static_cast<int>(IncomeEnum::FromVassalTax)] += vassalTownManager.totalRevenue100() * playerOwned.vassalTaxPercent() / 100;
-
+			incomes100[static_cast<int>(IncomeEnum::FromVassalTax)] += vassalTownManager.totalRevenue100() * vassalTownManager.vassalTaxPercent() / 100;
+			influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::GainFromVassal)] += vassalTownManager.totalInfluenceIncome100() * vassalTownManager.vassalInfluencePercent() / 100;
 		}
 	}
 
 	/*
 	 * Pay lord the tax...
 	 */
-	if (lordPlayerId != -1) {
-		auto& lordPlayerOwned = _simulation->playerOwned(lordPlayerId);
-		incomes100[static_cast<int>(IncomeEnum::ToLordTax)] -= totalIncome100() * lordPlayerOwned.vassalTaxPercent() / 100;
+	if (lordPlayerId() != -1) {
+		incomes100[static_cast<int>(IncomeEnum::ToLordTax)] -= totalIncome100() * vassalTaxPercent() / 100;
+		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::LoseToLord)] += totalInfluenceIncome100() * vassalInfluencePercent() / 100;
 	}
 
 	/*
@@ -1581,7 +1605,7 @@ void TownManager::RecalculateTax(bool showFloatup)
 	int32 tradeClusterTotalPopulation = 0;
 	for (const TradeRoutePair& route : tradeRoutesTo) 
 	{
-		int32 counterPartTownId = route.GetCounterpartTownId(townHallId);
+		int32 counterPartTownId = route.GetCounterpartTownId(townhallId);
 		if (counterPartTownId != -1) {
 			tradeClusterTotalPopulation += _simulation->populationTown(counterPartTownId);
 		}
@@ -1639,7 +1663,7 @@ void TownManager::RecalculateTax(bool showFloatup)
 				numberOfUnprotectedProvinces++;
 			}
 		}
-		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::UnsafeProvinceUpkeep)] -= numberOfUnprotectedProvinces * 1000; // 10 upkeep per unprotected province
+		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::UnsafeProvinceUpkeep)] -= territoryUpkeep100 * numberOfUnprotectedProvinces / _provincesClaimed.size(); // double upkeep per unprotected province
 
 		// Fort/Colony
 		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Fort)] -= _simulation->buildingCount(_townId, CardEnum::Fort) * 10 * 100;

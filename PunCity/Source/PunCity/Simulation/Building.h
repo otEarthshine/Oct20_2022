@@ -1652,6 +1652,7 @@ public:
 			_buildingEnum == CardEnum::StatisticsBureau ||
 			_buildingEnum == CardEnum::JobManagementBureau ||
 			_buildingEnum == CardEnum::TourismAgency ||
+			_buildingEnum == CardEnum::SpyCenter ||
 			_buildingEnum == CardEnum::ArchitectStudio ||
 			_buildingEnum == CardEnum::DepartmentOfAgriculture ||
 			_buildingEnum == CardEnum::EngineeringOffice) 

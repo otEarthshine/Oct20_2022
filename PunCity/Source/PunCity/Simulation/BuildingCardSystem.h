@@ -412,8 +412,14 @@ public:
 		}
 	}
 
-	std::vector<CardStatus> GetCardsBought() {
+	const std::vector<CardStatus>& GetCardsBought() {
 		return _cardsBought;
+	}
+	std::vector<CardStatus> GetCardsBoughtAndInventory()
+	{
+		std::vector<CardStatus> cards = GetCardsBought();
+		cards.insert(cards.begin(), _cardsInventory.begin(), _cardsInventory.end());
+		return cards;
 	}
 
 	std::vector<CardStatus> GetCardsBought_Display() {
@@ -573,8 +579,8 @@ public:
 	{
 		for (size_t i = _cardsBought.size(); i-- > 0;)
 		{
-			if (_cardsBought[i].cardEnum == cardStatus.cardEnum &&
-				_cardsBought[i].cardBirthTicks == cardStatus.cardBirthTicks)
+			if (_cardsBought[i].cardEnum == cardStatus.cardEnum) // &&
+				//_cardsBought[i].cardBirthTicks == cardStatus.cardBirthTicks)
 			{
 				int32_t actualSellStackSize = std::min(_cardsBought[i].stackSize, removeCount);
 				_cardsBought[i].stackSize -= actualSellStackSize;

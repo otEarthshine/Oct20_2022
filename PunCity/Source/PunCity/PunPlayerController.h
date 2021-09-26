@@ -409,6 +409,13 @@ public:
 		return cameraPawn->buildingPlacementSystem->GetDemolishHighlightArea();
 	}
 
+
+	virtual void OpenReinforcementUI(int32 provinceId, CallbackEnum callbackEnum) override
+	{
+		GetPunHUD()->OpenReinforcementUI(provinceId, callbackEnum);
+	}
+	
+
 	// Closes only bottom menu display
 	// For: clicking objectDescriptionUI
 	void ResetBottomMenuDisplay() final {

@@ -641,6 +641,7 @@ void ABuildingPlacementSystem::StartSetDeliveryTarget(int32 buildingId)
 void ABuildingPlacementSystem::StartRevealSpyNest()
 {
 	_placementType = PlacementType::RevealSpyNest;
+	ShowRadius(_simulation->GetRevealSpyNestRadius(), OverlayType::RevealSpyNest);
 }
 
 void ABuildingPlacementSystem::StartHarvestPlacement(bool isRemoving, ResourceEnum resourceEnum)
@@ -937,6 +938,16 @@ void ABuildingPlacementSystem::LeftClickDown(IGameNetworkInterface* networkInter
 			}
 			else {
 				_gameInterface->Spawn2DSound("UI", "PopupCannot");
+			}
+			return;
+		}
+
+		
+		if (_buildingEnum == CardEnum::Raid)
+		{
+			int32 provinceId = _simulation->GetProvinceIdClean(_mouseOnTile);
+			if (provinceId != -1) {
+				_networkInterface->OpenReinforcementUI(provinceId, CallbackEnum::RaidBattle);
 			}
 			return;
 		}

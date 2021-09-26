@@ -648,13 +648,22 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					FText::Format(LOCTEXT("TribeName", "{0} tribe"), GenerateTribeName(objectId))
 				);
 			}
+			/*
+			 * Minor City
+			 */
 			else if (buildingEnum == CardEnum::MinorCity ||
 					buildingEnum == CardEnum::MinorCityPort)
 			{
 				int32 townId = building.townId();
+				TownManagerBase* townManagerBase = sim.townManagerBase(townId);
 				MinorCity& minorCityBld = sim.building<MinorCity>(sim.GetTownhallId(townId));
+
+				int32 level;
+				int32 currentMoney;
+				int32 moneyToNextLevel;
+				townManagerBase->GetMinorCityLevelAndCurrentMoney(level, currentMoney, moneyToNextLevel);
 				
-				if (minorCityBld.minorCityLevel() == 1) {
+				if (level == 1) {
 					_objectDescriptionUI->DescriptionPunBox->AddWGT_ObjectFocus_Title(
 						FText::Format(LOCTEXT("TribeName", "{0} tribe"), sim.townNameT(townId))
 					);
@@ -665,17 +674,20 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					);
 				}
 
-				focusBox->AddRichText(FText::Format(INVTEXT("Level {0}"), minorCityBld.minorCityLevel()));
+				//focusBox->AddRichText(FText::Format(INVTEXT("Level {0}"), minorCityBld.minorCityLevel()));
 
 #if !UE_BUILD_SHIPPING
 				//if (PunSettings::IsOn("DebugFocusUI")) {
 					focusBox->AddRichText(FText::Format(INVTEXT("TownId {0}"), townId));
 				//}
-#endif			
+#endif
 
-				TownManagerBase* townManagerBase = sim.townManagerBase(townId);
+				focusBox->AddSpacer();
+
 				focusBox->AddRichText(FText::Format(INVTEXT("TownhallId {0}"), townManagerBase->townhallId));
 
+				focusBox->AddSpacer();
+				
 				const std::vector<AutoTradeElement>& autoExportElements = townManagerBase->autoExportElementsConst();
 				for (const AutoTradeElement& element : autoExportElements) {
 					focusBox->AddRichText(FText::Format(INVTEXT("Export {0}({1}) {2}"), 
@@ -694,7 +706,23 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					);
 				}
 
-				focusBox->AddRichText(FText::Format(INVTEXT("villagers: {0}"), minorCityBld.occupantCount()));
+				focusBox->AddSpacer();
+
+				focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+					LOCTEXT("Level", "Level"),
+					TEXT_NUM(level)
+				);
+				focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+					LOCTEXT("Wealth", "Wealth"),
+					FText::Format(
+						INVTEXT("{0}/{1}"),
+						TEXT_NUM(currentMoney),
+						TEXT_NUM(moneyToNextLevel)
+					),
+					assetLoader->CoinIcon
+				);
+
+				
 			}
 			
 			else if (buildingEnum == CardEnum::Townhall) {

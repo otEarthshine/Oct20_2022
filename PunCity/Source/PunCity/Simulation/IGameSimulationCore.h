@@ -46,6 +46,8 @@ public:
 	virtual void OpenGiftUI(int32 sourcePlayerIdIn, int32 targetTownIdIn, TradeDealStageEnum dealStageEnumIn) = 0;
 	virtual void FillDealInfo(const TradeDealSideInfo& sourceDealInfo, const TradeDealSideInfo& targetDealInfo) = 0;
 
+	virtual void OpenReinforcementUI(int32 provinceId, CallbackEnum callbackEnum) = 0;
+
 	virtual void SetLoadingText(FText message) = 0;
 
 	virtual void AutosaveGame() = 0;
@@ -173,6 +175,7 @@ public:
 	virtual WorldTile2 GetTownhallGateCapital(int32 playerId) = 0;
 	virtual WorldTile2 GetTownhallGateFast(int32 townId) = 0;
 	virtual WorldTile2 GetTownhallGate(int32 townId) = 0;
+	
 	virtual FText townNameT(int32 townId) = 0;
 	virtual FText townOrPlayerNameT(int32 townId) = 0;
 

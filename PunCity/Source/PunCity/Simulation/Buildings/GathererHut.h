@@ -1566,64 +1566,29 @@ public:
 class MinorCityChild : public Building
 {
 public:
-	virtual void Serialize(FArchive& Ar) override {
-		Building::Serialize(Ar);
-		Ar << _parentId;
-	}
-
-	int32 parentId() { return _parentId; }
-	
-	void SetParentId(int32 parentIdIn) {
-		_parentId = parentIdIn;
-	}
-
-private:
-	int32 _parentId = -1;
+//	virtual void Serialize(FArchive& Ar) override {
+//		Building::Serialize(Ar);
+//		Ar << _parentId;
+//	}
+//
+//	int32 parentId() { return _parentId; }
+//	
+//	void SetParentId(int32 parentIdIn) {
+//		_parentId = parentIdIn;
+//	}
+//
+//private:
+//	int32 _parentId = -1;
 };
 
 
 class MinorCity : public Building
 {
 public:
-
-	virtual void Serialize(FArchive& Ar) override {
-		Building::Serialize(Ar);
-		SerializeVecObj(Ar, _autoExportElements);
-		SerializeVecObj(Ar, _autoImportElements);
-	}
-
 	virtual void FinishConstruction() override;
 
 	virtual void OnDeinit() override;
 
-	int32 minorCityLevel() { return _minorCityLevel; }
-
-	void AddChildBuilding(MinorCityChild& child) {
-		child.SetParentId(buildingId());
-		_childBuildingIds.push_back(child.buildingId());
-	}
-
-	const std::vector<int32>& childBuildingIds() {
-		return _childBuildingIds;
-	}
-
-	std::vector<int32> GetPortIds()
-	{
-		for (int32 childBuildingId : _childBuildingIds) {
-			if (_simulation->building(childBuildingId).isEnum(CardEnum::MinorCityPort)) {
-				return _childBuildingIds;
-			}
-		}
-		return {};
-	}
-
-private:
-	std::vector<AutoTradeElement> _autoExportElements;
-	std::vector<AutoTradeElement> _autoImportElements;
-
-	int32 _minorCityLevel = -1;
-
-	std::vector<int32> _childBuildingIds;
 };
 
 

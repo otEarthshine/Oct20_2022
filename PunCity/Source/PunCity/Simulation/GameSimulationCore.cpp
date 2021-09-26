@@ -355,7 +355,8 @@ void GameSimulationCore::InitProvinceBuildings()
 
 				MinorCity& minorCity = building<MinorCity>(minorCityBuildingId);
 				MinorCityChild& minorCityPort = building<MinorCityChild>(minorCityPortId);
-				minorCity.AddChildBuilding(minorCityPort);
+				
+				townManagerBase(minorCity.townId())->AddChildBuilding(minorCityPort);
 
 				PUN_LOG("portSlotProvinceIds2 provinceId:%d minorCityPortId:%d", provinceId, minorCityPortId);
 
@@ -1147,8 +1148,13 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 							 * Non-Military
 							 */
 
+							//! Raid
+							if (claimProgress.attackEnum == ProvinceAttackEnum::RaidBattle)
+							{
+								CompleteRaid(claimProgress.provinceId, claimProgress.attackerPlayerId, provinceTownId);
+							}
 							//! Minor Town
-							if (provincePlayerId == -1)
+							else if (provincePlayerId == -1)
 							{
 								// If there is an existing lord, the lord lose the vassal
 								int32 oldLordPlayerId = provinceTownManager->lordPlayerId();
@@ -1773,35 +1779,6 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 					_buildingSystem->StartFire(buildingId);
 				}
 			});
-		}
-		else if (cardEnum == CardEnum::Raid)
-		{
-			int32 provinceId = GetProvinceIdClean(parameters.center);
-			if (provinceId != -1)
-			{
-				int32 targetPlayerId = provinceOwnerPlayer(provinceId);
-				if (targetPlayerId != -1 &&
-					targetPlayerId != playerId)
-				{
-					int32 raidMoney100 = GetProvinceRaidMoney100(provinceId);
-					int32 raidInfluence100 = raidMoney100 / 2;
-
-					PopupInfo info(targetPlayerId, 
-						FText::Format(
-							LOCTEXT("RaidHandleDecision_Pop", "{0} is launching a raid against you.<space>You can ignore the raid and stay in a fortified position or fight in an open field (without defensive advantage).<bullet> If you stay fortified, you will lose <img id=\"Coin\"/>{1} and <img id=\"Influence\"/>{2}.</>If you fight, you may lose your army.<bullet></>"),
-							playerNameT(parameters.playerId),
-							TEXT_100(raidMoney100),
-							TEXT_100(raidInfluence100)
-						),
-						{
-							LOCTEXT("Stay safe, ignore the Raid", "Stay safe, ignore the Raid"),
-							LOCTEXT("Fight Raiders", "Fight Raiders")
-						},
-						PopupReceiverEnum::RaidHandleDecision
-					);
-					
-				}
-			}
 		}
 
 		//! Building Spell
@@ -4503,13 +4480,15 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 	}
 	else if (replyReceiver == PopupReceiverEnum::RaidHandleDecision)
 	{
-		if (command.choiceIndex == 0)
-		{
-
+		int32 provinceId = command.replyVar1;
+		int32 raiderPlayerId = command.replyVar2;
+		int32 defenderPlayerId = command.playerId;
+		
+		if (command.choiceIndex == 0) {
+			CompleteRaid(provinceId, raiderPlayerId, defenderPlayerId);
 		}
-		else if (command.choiceIndex == 1)
-		{
-
+		else if (command.choiceIndex == 1) {
+			_uiInterface->OpenReinforcementUI(provinceId, CallbackEnum::RaidBattle);
 		}
 	}
 	
@@ -4569,6 +4548,39 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 		UE_DEBUG_BREAK();
 	}
 
+}
+
+void GameSimulationCore::CompleteRaid(int32 provinceId, int32 raiderPlayerId, int32 defenderTownId)
+{
+	int32 raidMoney = GetProvinceRaidMoney100(provinceId) / 100;
+	int32 raidInfluence = raidMoney / 2;
+
+	ChangeMoney(raiderPlayerId, raidMoney);
+	ChangeInfluence(raiderPlayerId, raidInfluence);
+
+	int32 defenderPlayerId = townPlayerId(defenderTownId);
+	
+	if (IsMinorTown(defenderTownId)) {
+		townManagerBase(defenderTownId)->ChangeMoney(-raidMoney);
+	}
+	else {
+		ChangeMoney(defenderPlayerId, -raidMoney);
+		ChangeInfluence(defenderPlayerId, -raidInfluence);
+	}
+
+	AddPopup(raiderPlayerId, FText::Format(
+		LOCTEXT("RaidComplete_Pop_Attacker", "You raided {0}.<space>You received <img id=\"Coin\"/>{1} and <img id=\"Influence\"/>{2}."),
+		townNameT(defenderTownId),
+		TEXT_NUM(raidMoney),
+		TEXT_NUM(raidInfluence)
+	));
+
+	AddPopup(defenderPlayerId, FText::Format(
+		LOCTEXT("RaidComplete_Pop_Defender", "{0} raided you.<space>You lost <img id=\"Coin\"/>{1} and <img id=\"Influence\"/>{2}."),
+		playerNameT(raiderPlayerId),
+		TEXT_NUM(raidMoney),
+		TEXT_NUM(raidInfluence)
+	));
 }
 
 void GameSimulationCore::RerollCards(FRerollCards command)
@@ -5235,7 +5247,8 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	 * Battle
 	 */
 	else if (command.claimEnum == CallbackEnum::StartAttackProvince ||
-			command.claimEnum == CallbackEnum::Liberate)
+			command.claimEnum == CallbackEnum::Liberate ||
+			command.claimEnum == CallbackEnum::RaidBattle)
 	{
 		// Attack could be: Conquer Province, Vassalize, or Declare Independence
 
@@ -5289,11 +5302,26 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 			/*
 			 * Conquer Part!!!
 			 */
-			provinceTownManager->StartConquerProvince(attackerPlayerId, command.provinceId, militaryCards);
-			townManagerBase(attackerPlayerId)->StartConquerProvince_Attacker(command.provinceId);
+			provinceTownManager->StartAttack_Defender(attackerPlayerId, command.provinceId, attackEnum, militaryCards);
+			townManagerBase(attackerPlayerId)->StartAttack_Attacker(command.provinceId);
 
 			//! Popups
-			if (attackEnum == ProvinceAttackEnum::ConquerProvince) 
+			if (attackEnum == ProvinceAttackEnum::RaidBattle)
+			{
+				if (command.provinceId != -1 && provincePlayerId != -1)
+				{
+					int32 raidMoney100 = GetProvinceRaidMoney100(command.provinceId);
+					int32 raidInfluence100 = raidMoney100 / 2;
+
+					AddPopup(provincePlayerId, FText::Format(
+							LOCTEXT("RaidHandleDecision_Pop", "{0} is launching a raid against you.<space>You can ignore the raid and stay in a fortified position or fight in an open field (without defensive advantage).<bullet> If you stay fortified, you will lose <img id=\"Coin\"/>{1} and <img id=\"Influence\"/>{2}.</>If you fight, you may lose your army.<bullet></>"),
+							playerNameT(attackerPlayerId),
+							TEXT_100(raidMoney100),
+							TEXT_100(raidInfluence100)
+					));
+				}
+			}
+			else if (attackEnum == ProvinceAttackEnum::ConquerProvince) 
 			{
 				AddPopup(provincePlayerId, 
 					FText::Format(

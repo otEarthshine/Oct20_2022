@@ -32,53 +32,9 @@ public:
 
 
 
-	void UpdateUIBase(bool isMini)
-	{
-		/*
-		 * City Name
-		 */
-		// Make sure town's name is up to date with sim (only for non player's town)
-		if (townPlayerId() == playerId()) {
-			CityNameText->SetColorAndOpacity(FLinearColor(0.7, 0.85, 1.0)); // Our Capital
-		}
-		else
-		{
-			if (simulation().townManagerBase(playerId())->IsVassal(townId())) {
-				CityNameText->SetColorAndOpacity(FLinearColor(0.5, 0.6, 0.7)); // Vassal
-			}
-			else if (simulation().townManagerBase(playerId())->IsAlly(townPlayerId())) {
-				CityNameText->SetColorAndOpacity(FLinearColor(.7, 1, .7));
-			}
-			else {
-				CityNameText->SetColorAndOpacity(FLinearColor(1, 1, .7));
-			}
-		}
-
-			
-		// Townhall name
-		FText displayedName = CityNameText->GetText();
-		FText newDisplayName = simulation().townNameT(townId());
-
-		if (!TextEquals(displayedName, newDisplayName)) {
-			CityNameText->SetText(newDisplayName);
-		}
-
-	}
+	void UpdateUIBase(bool isMini);
 	
-
-	void UpdateMinorTownUI()
-	{
-
-		// Gift
-		GiftButton->SetVisibility(ESlateVisibility::Visible);
-		BUTTON_ON_CLICK(GiftButton, this, &UMinorTownWorldUI::OnClickGiftButton);
-
-		// Diplomacy
-		DiplomacyButton->SetVisibility(ESlateVisibility::Visible);
-		BUTTON_ON_CLICK(DiplomacyButton, this, &UMinorTownWorldUI::OnClickDiplomacyButton);
-
-		
-	}
+	void UpdateMinorTownUI(bool isMini);
 
 
 		
@@ -86,9 +42,21 @@ public:
 	UFUNCTION() void OnClickGiftButton() {
 		GetPunHUD()->OpenGiftUI(playerId(), townId(), TradeDealStageEnum::Gifting);
 	}
+	
 	UFUNCTION() void OnClickDiplomacyButton() {
 		GetPunHUD()->OpenDiplomacyUI(townPlayerId());
 	}
 
+	UFUNCTION() void OnClickVassalizeButton()
+	{
+		check(playerId() != townPlayerId());
+		GetPunHUD()->OpenReinforcementUI(townProvinceId(), CallbackEnum::StartAttackProvince);
+	}
+	
+	UFUNCTION() void OnClickLiberateButton()
+	{
+		check(playerId() != townPlayerId());
+		GetPunHUD()->OpenReinforcementUI(townProvinceId(), CallbackEnum::Liberate);
+	}
 		
 };

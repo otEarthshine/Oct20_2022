@@ -25,7 +25,7 @@ class UTownhallHoverInfo : public UMinorTownWorldUI
 public:
 	void PunInit(int townIdIn);
 
-	void UpdateUI(bool isMini);
+	void UpdateTownhallHoverInfo(bool isMini);
 
 	//ArmyNode _lastArmyNode; // Used to compare to the current armyNode and show damage...
 	//TArray<UWidget*> _damageFloatups;targetTownId
@@ -206,12 +206,6 @@ private:
 
 	// Note: vassalize/independence/conquerColony are all CallbackEnum::StartAttackProvince for now
 	// later on, there will be
-	UFUNCTION() void OnClickVassalizeButton()
-	{
-		check(playerId() != townPlayerId());
-		GetPunHUD()->OpenReinforcementUI(townProvinceId(), CallbackEnum::StartAttackProvince);
-	}
-	
 	UFUNCTION() void OnClickDeclareIndependenceButton()
 	{
 		check(playerId() == townPlayerId());
@@ -224,11 +218,6 @@ private:
 		GetPunHUD()->OpenReinforcementUI(townProvinceId(), CallbackEnum::StartAttackProvince);
 	}
 
-	UFUNCTION() void OnClickLiberateButton()
-	{
-		check(playerId() != townPlayerId());
-		GetPunHUD()->OpenReinforcementUI(townProvinceId(), CallbackEnum::Liberate);
-	}
 
 	/*
 	 * Laborer

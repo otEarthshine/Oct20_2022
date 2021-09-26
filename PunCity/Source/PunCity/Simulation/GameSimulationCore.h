@@ -647,6 +647,7 @@ public:
 		return building(townhallId).gateTile();
 	}
 	
+	
 	FText townNameT(int32 townId) final {
 		if (townId == -1) {
 			return NSLOCTEXT("GameSimulationCore", "None", "None");
@@ -1478,7 +1479,7 @@ public:
 	virtual std::vector<int32> GetPortIds(int32 townId) override
 	{
 		if (IsMinorTown(townId)) {
-			return building<MinorCity>(GetTownhallId(townId)).GetPortIds();
+			return townManagerBase(townId)->GetPortIds();
 		}
 		
 		std::vector<int32> portIds = buildingIds(townId, CardEnum::TradingPort);
@@ -1669,7 +1670,20 @@ public:
 	int32 GetProvinceRaidMoney100(int32 originProvinceId)
 	{
 		int32 originTownId = provinceOwnerTownSafe(originProvinceId);
+
+		//! Minor Town
+		if (IsMinorTown(originTownId))
+		{
+			int32 level;
+			int32 currentMoney;
+			int32 moneyToNextLevel;
+			townManagerBase(originTownId)->GetMinorCityLevelAndCurrentMoney(level, currentMoney, moneyToNextLevel);
+
+			return currentMoney * 100; // Take all the current money...
+		}
 		
+		
+		//! Player
 		int32 totalRaidIncome100 = 0;
 
 		TSet<int32> visitedProvinceIds;
@@ -1708,6 +1722,8 @@ public:
 		
 		return totalRaidIncome100;
 	}
+
+	void CompleteRaid(int32 provinceId, int32 raiderPlayerId, int32 defenderTownId);
 
 
 	int32 GetProvinceBaseClaimPrice(int32 provinceId)
@@ -1870,8 +1886,14 @@ public:
 		int32 provinceTownId = provinceOwnerTownSafe(provinceId);
 		check(provinceTownId != -1);
 		
-		ProvinceAttackEnum attackEnum = ProvinceAttackEnum::DeclareIndependence;
-		if (claimEnum != CallbackEnum::Liberate) {
+		ProvinceAttackEnum attackEnum;
+		if (claimEnum == CallbackEnum::Liberate) {
+			attackEnum = ProvinceAttackEnum::DeclareIndependence;
+		}
+		else if (claimEnum == CallbackEnum::RaidBattle) {
+			attackEnum = ProvinceAttackEnum::RaidBattle;
+		}
+		else {
 			attackEnum = townManagerBase(provinceTownId)->GetProvinceAttackEnum(provinceId, playerId);
 		}
 

@@ -96,6 +96,8 @@ public:
 	virtual void ShowConfirmationUI(FText confirmationStr, std::shared_ptr<FNetworkCommand> commandIn) = 0;
 	virtual bool IsShowingConfirmationUI(FText confirmationStr) = 0;
 
+	virtual void OpenReinforcementUI(int32 provinceId, CallbackEnum callbackEnum) = 0;
+
 	virtual void KeyPressed_H() = 0;
 	virtual void KeyPressed_F() = 0;
 	virtual void KeyPressed_Y() = 0;

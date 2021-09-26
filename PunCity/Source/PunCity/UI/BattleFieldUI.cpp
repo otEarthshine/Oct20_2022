@@ -78,11 +78,17 @@ void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimPro
 	AddToolTip(LeftDefenseBonus, sim.GetProvinceDefenseBonusTip(provinceId));
 
 	// Fight at home province = Vassalize
-	if (sim.homeProvinceId(provincePlayerId) == provinceId) {
-		SetText(BattleText, TEXT_TAG("<Shadowed>", LOCTEXT("Vassalize", "Vassalize")));
-	}
-	else {
-		SetText(BattleText, TEXT_TAG("<Shadowed>", LOCTEXT("Annex Province", "Annex Province")));
+	{
+		TArray<FText> args;
+		if (sim.homeProvinceId(provincePlayerId) == provinceId) {
+			args.Add(LOCTEXT("Vassalize", "Vassalize"));
+		} else {
+			args.Add(LOCTEXT("Annex Province", "Annex Province"));
+		}
+		if (claimProgress.battleFinishCountdownSecs != -1) {
+			args.Add(FText::Format(LOCTEXT(" end in {0}s", " end in {0}s"), TEXT_NUM(claimProgress.battleFinishCountdownSecs)));
+		}
+		SetText(BattleText, TEXT_TAG("<Shadowed>", JOINTEXT(args)));
 	}
 
 

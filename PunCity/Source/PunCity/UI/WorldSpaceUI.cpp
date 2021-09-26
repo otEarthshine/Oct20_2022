@@ -947,7 +947,7 @@ void UWorldSpaceUI::TickTownhallInfo(int buildingId, bool isMini)
 		//bool isPlacing = inputSystemInterface()->placementState() != PlacementType::None;
 		//townhallInfo->SetVisibility(isPlacing ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 
-		townhallInfo->UpdateUI(isMini);
+		townhallInfo->UpdateTownhallHoverInfo(isMini);
 	}
 }
 

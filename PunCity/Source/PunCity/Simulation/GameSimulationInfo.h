@@ -4972,7 +4972,7 @@ enum class ProvinceAttackEnum : uint8
 	None,
 	
 	ConquerProvince,
-	Raid,
+	RaidBattle,
 	Vassalize,
 	DeclareIndependence,
 
@@ -5900,6 +5900,7 @@ enum class OverlayType
 	BadAppeal,
 
 	Raid,
+	RevealSpyNest,
 };
 
 static bool IsGridOverlay(OverlayType overlayEnum)
@@ -9559,6 +9560,7 @@ enum class CallbackEnum : uint8
 	ReinforceDefendProvince,
 	DefendProvinceMoney,
 	Liberate,
+	RaidBattle,
 
 	BattleRetreat,
 

@@ -1983,8 +1983,6 @@ void MinorCity::FinishConstruction()
 		}
 	}
 
-	_minorCityLevel = 1;
-
 	
 	// Place road around townhall
 	WorldTile2 roadMin(_area.minX - 1, _area.minY - 1);

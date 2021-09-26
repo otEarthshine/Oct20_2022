@@ -67,26 +67,6 @@ FText TownManager::GetTownSizeName() {
 	return FText();
 }
 
-/*
- * Town Manager Base
- */
-
-void TownManagerBase::Tick1Sec_TownBase()
-{
-	for (ProvinceClaimProgress& claimProgress : _defendingClaimProgress) {
-		claimProgress.Tick1Sec(_simulation);
-	}
-}
-
-void TownManagerBase::ReturnMilitaryUnitCards(std::vector<CardStatus>& cards, int32 playerId, bool forcedAll)
-{
-	for (CardStatus& card : cards) {
-		if (forcedAll || playerId == card.cardStateValue1) {
-			_simulation->cardSystem(playerId).AddCards_BoughtHandAndInventory(card);
-		}
-	}
-}
-
 
 /*
  * Job

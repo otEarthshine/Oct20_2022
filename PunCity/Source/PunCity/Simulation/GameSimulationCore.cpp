@@ -2456,7 +2456,8 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 		}
 
 		// Special case: Foreign Building
-		if (IsForeignPlacement(area.centerTile(), playerId))
+		if (playerId != -1 &&
+			IsForeignPlacement(area.centerTile(), playerId))
 		{
 			bld.SetForeignBuilder(playerId);
 			
@@ -3352,9 +3353,9 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 		popupInfo.forcedSkipNetworking = true;
 		
 		// Convert command to poupInfo
-		popupInfo.replyVar1 = command.intVar1;
-		popupInfo.replyVar2 = command.intVar2;
-		popupInfo.replyVar3 = command.intVar3;
+		popupInfo.replyVar1 = command.intVar1; // sourcePlayerId
+		popupInfo.replyVar2 = command.intVar2; // targetTownId
+		popupInfo.replyVar3 = command.intVar3; // sourceDealInfo.moneyAmount
 		popupInfo.replyVar4 = command.intVar4;
 		popupInfo.replyVar5 = command.intVar5; // deal stage
 		
@@ -3371,6 +3372,15 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 		if (dealStageEnum == TradeDealStageEnum::Gifting ||
 			dealStageEnum == TradeDealStageEnum::AcceptDeal)
 		{
+			//! Special Case: Minor Town
+			if (IsMinorTown(targetTownId))
+			{
+				int32 moneyAmount = command.intVar3;
+				ChangeMoney(giverPlayerId, -moneyAmount);
+				townManagerBase(targetTownId)->ChangeMoney(moneyAmount);
+				return;
+			}
+			
 			ProcessTradeDeal(popupInfo);
 			return;
 		}
@@ -3498,8 +3508,8 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 		int32 adultsTargetCount = std::min(command.intVar3, static_cast<int32>(adultIds.size()));
 		int32 childrenTargetCount = std::min(command.intVar4, static_cast<int32>(childIds.size()));
 
-		WorldTile2 startTownGate = GetTownhallGate(startTownId);
-		WorldTile2 endTownGate = GetTownhallGate(endTownId);
+		WorldTile2 startTownGate = GetMajorTownhallGate(startTownId);
+		WorldTile2 endTownGate = GetMajorTownhallGate(endTownId);
 
 		bool sendByLand = false;
 
@@ -6035,7 +6045,7 @@ void GameSimulationCore::Cheat(FCheat command)
 			SimSettings::Set("CheatFastBuild", 1);
 				
 			//SimSettings::Set("CheatHouseLevel", command.var1);
-			WorldTile2 curTile = GetTownhallGate(command.playerId);
+			WorldTile2 curTile = GetMajorTownhallGate(command.playerId);
 			if (curTile.isValid())
 			{
 				int32 addCount = command.var1;

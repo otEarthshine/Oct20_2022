@@ -358,9 +358,9 @@ public:
 	TArray<FString>& animModuleNames() { return _animModuleNames; }
 	TArray<FString>& togglableModuleNames() { return _togglableModuleNames; }
 
-
-	TArray<TArray<ModuleTransformGroup>> buildingEnumToVariationToModuleTransforms() { return _buildingEnumToModuleGroups; }
-	int32 GetMinEraDisplay(CardEnum buildingEnum) { return _buildingEnumToMinEraModel[static_cast<int>(buildingEnum)]; }
+	// TODO: ARAB FIX
+	TArray<TArray<ModuleTransformGroup>> buildingEnumToVariationToModuleTransforms(FactionEnum factionEnum) { return _factionEnumToBuildingEnumToModuleGroups[static_cast<int32>(factionEnum)]; }
+	int32 GetMinEraDisplay(FactionEnum factionEnum, CardEnum buildingEnum) { return _factionEnumToBuildingEnumToMinEraModel[static_cast<int32>(factionEnum)][static_cast<int>(buildingEnum)]; }
 	
 
 	int32 unitMeshCount(UnitEnum unitEnum) {
@@ -821,44 +821,72 @@ private:
 	void LoadAnimModule(FString moduleName, FString meshFile);
 
 
-	void LoadBuilding(CardEnum buildingEnum, FString moduleGroupName, FString moduleGroupFolderName, bool useOldMethod = false, ModuleTransformGroup auxGroup = ModuleTransformGroup(), int32 minEra = 1, int32 era = 1) {
-		TryLoadBuildingModuleSet(moduleGroupName, moduleGroupFolderName, useOldMethod, buildingEnum, era);
-
-		LinkBuilding(buildingEnum, moduleGroupName, auxGroup, minEra);
+	void LoadBuilding(FactionEnum factionEnum, CardEnum buildingEnum, FString moduleGroupName, FString moduleGroupFolderName, ModuleTransformGroup auxGroup = ModuleTransformGroup(), int32 minEra = 1, int32 era = 1) {
+		//TryLoadBuildingModuleSet_Old(factionEnum, moduleGroupName, moduleGroupFolderName, useOldMethod, buildingEnum, era);
+		TryLoadBuildingModuleSet(factionEnum, moduleGroupName, moduleGroupFolderName, buildingEnum, era);
+		LinkBuilding(factionEnum, buildingEnum, moduleGroupName, auxGroup, minEra);
 	}
-	void LinkBuilding(CardEnum buildingEnum, FString moduleGroupName, ModuleTransformGroup auxGroup = ModuleTransformGroup(), int32 minEra = 1) {
+	void LinkBuilding(FactionEnum factionEnum, CardEnum buildingEnum, FString moduleGroupName, ModuleTransformGroup auxGroup = ModuleTransformGroup(), int32 minEra = 1) {
 		CppUtils::AppendVec(auxGroup.particleInfos, _tempAuxGroup.particleInfos);
 		CppUtils::AppendVec(auxGroup.animTransforms, _tempAuxGroup.animTransforms);
 		CppUtils::AppendVec(auxGroup.togglableTransforms, _tempAuxGroup.togglableTransforms);
 		_tempAuxGroup = ModuleTransformGroup();
 		_lastTempAuxGroup = auxGroup;
 
-		_buildingEnumToModuleGroups[static_cast<int>(buildingEnum)].Add(
-			ModuleTransformGroup::CreateSet(moduleGroupName, auxGroup)
+		_factionEnumToBuildingEnumToModuleGroups[static_cast<int32>(factionEnum)][static_cast<int>(buildingEnum)].Add(
+			ModuleTransformGroup::CreateSet(WithFactionName(factionEnum, moduleGroupName), auxGroup)
 		);
-		_buildingEnumToMinEraModel[static_cast<int>(buildingEnum)] = minEra;
-	}
-	void LoadBuilding(CardEnum buildingEnum, FString moduleGroupPrefix, FString moduleGroupFolderPrefix, int32 minEra, int32 maxEra = 4, ModuleTransformGroup auxGroup = ModuleTransformGroup())
-	{
-		for (int32 i = minEra; i <= maxEra; i++) {
-			FString moduleGroupName = moduleGroupPrefix + FString::FromInt(i);
-			FString moduleGroupFolderName = moduleGroupFolderPrefix + FString::FromInt(i);
-			LoadBuilding(buildingEnum, moduleGroupPrefix + FString::FromInt(i), moduleGroupFolderPrefix + FString("/Era") + FString::FromInt(i), 
-				false, auxGroup, minEra, i);
-		}
-		check(_buildingEnumToModuleGroups[static_cast<int>(buildingEnum)].Num() == (maxEra - minEra + 1));
-	}
-	void LinkBuildingEras(CardEnum buildingEnum, FString moduleGroupPrefix, int32 minEra, int32 maxEra = 4, ModuleTransformGroup auxGroup = ModuleTransformGroup())
-	{
-		for (int32 i = minEra; i <= maxEra; i++) {
-			FString moduleGroupName = moduleGroupPrefix + FString::FromInt(i);
-			LinkBuilding(buildingEnum, moduleGroupPrefix + FString::FromInt(i), auxGroup, minEra);
-		}
-		check(_buildingEnumToModuleGroups[static_cast<int>(buildingEnum)].Num() == (maxEra - minEra + 1));
+		_factionEnumToBuildingEnumToMinEraModel[static_cast<int32>(factionEnum)][static_cast<int>(buildingEnum)] = minEra;
 	}
 	
-	void TryLoadBuildingModuleSet(FString moduleSetName, FString meshSetFolder, bool useOldMethod = true, CardEnum buildingEnum = CardEnum::None, int32 era = 1);
+	void LoadBuilding(CardEnum buildingEnum, 
+		FString moduleGroupPrefix_europe, FString moduleGroupPrefix_arab, FString moduleGroupFolderPrefix,
+		int32 minEra, int32 maxEra = 4, ModuleTransformGroup auxGroup = ModuleTransformGroup())
+	{
+		auto loadBuildingEras = [&](FString moduleGroupPrefix, FactionEnum factionEnum)
+		{
+			if (moduleGroupPrefix == "") {
+				return;
+			}
+			for (int32 i = minEra; i <= maxEra; i++) {
+				FString moduleGroupName = moduleGroupPrefix + FString::FromInt(i);
+				FString moduleGroupFolderName = moduleGroupFolderPrefix + FString::FromInt(i);
+				LoadBuilding(factionEnum, buildingEnum, moduleGroupPrefix + FString::FromInt(i), moduleGroupFolderPrefix + FString("/Era") + FString::FromInt(i),
+					auxGroup, minEra, i
+				);
+			}
+			check(_factionEnumToBuildingEnumToModuleGroups[static_cast<int32>(factionEnum)][static_cast<int>(buildingEnum)].Num() == (maxEra - minEra + 1));
+		};
 
+		loadBuildingEras(moduleGroupPrefix_europe, FactionEnum::Europe);
+		loadBuildingEras(moduleGroupPrefix_arab, FactionEnum::Arab);
+	}
+	
+	void LinkBuildingEras(FactionEnum factionEnum, CardEnum buildingEnum, FString moduleGroupPrefix, int32 minEra, int32 maxEra = 4, ModuleTransformGroup auxGroup = ModuleTransformGroup())
+	{
+		for (int32 i = minEra; i <= maxEra; i++) {
+			FString moduleGroupName = moduleGroupPrefix + FString::FromInt(i);
+			LinkBuilding(factionEnum, buildingEnum, moduleGroupPrefix + FString::FromInt(i), auxGroup, minEra);
+		}
+		check(_factionEnumToBuildingEnumToModuleGroups[static_cast<int32>(factionEnum)][static_cast<int>(buildingEnum)].Num() == (maxEra - minEra + 1));
+	}
+	
+	void TryLoadBuildingModuleSet_Old(FactionEnum factionEnum, FString moduleSetName, FString meshSetFolder);
+
+	void TryLoadBuildingModuleSet(FactionEnum factionEnum, FString moduleSetName, FString meshSetFolder, CardEnum buildingEnum = CardEnum::None, int32 era = 1);
+
+
+	static FString GetBuildingPath(FactionEnum factionEnum)
+	{
+		FString buildingPath;
+		if (factionEnum == FactionEnum::Europe) {
+			buildingPath = "Models/Buildings/";
+		}
+		else {
+			buildingPath = "Models/Desertfaction/Models/";
+		}
+		return buildingPath;
+	}
 	
 
 	void LoadGeoresource(GeoresourceEnum georesourceEnum, std::string folder, std::string meshFileNamePrefix, int32 numberOfMeshes);
@@ -894,8 +922,8 @@ private:
 
 	UPROPERTY() TArray<FString> _recentlyAddedModuleNames;
 
-	TArray<TArray<ModuleTransformGroup>> _buildingEnumToModuleGroups;
-	TArray<int32> _buildingEnumToMinEraModel;
+	TArray<TArray<TArray<ModuleTransformGroup>>> _factionEnumToBuildingEnumToModuleGroups; // _buildingEnumToModuleGroups
+	TArray<TArray<int32>> _factionEnumToBuildingEnumToMinEraModel;
 	ModuleTransformGroup _tempAuxGroup; // Temp variable for particleSystem detection
 	ModuleTransformGroup _lastTempAuxGroup; // Temp variable
 	

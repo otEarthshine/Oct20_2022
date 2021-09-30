@@ -31,6 +31,8 @@ public:
 	virtual int32 playerCount() = 0;
 	virtual FString playerNameF(int32 playerId) = 0;
 
+	virtual struct FPlayerInfo playerInfo(int32 playerId) = 0;
+
 	virtual std::vector<int32> allHumanPlayerIds() = 0;
 	virtual std::vector<int32> connectedPlayerIds(bool withReplayPlayers = true) = 0;
 	virtual std::vector<int32> disconnectedPlayerIds() = 0;
@@ -45,7 +47,7 @@ public:
 
 	virtual bool IsPlayerTunnelBuildable(WorldTile2 tile) const = 0;
 
-	virtual int32 GetMinEraDisplay(CardEnum buildingEnum) const = 0;
+	virtual int32 GetMinEraDisplay(FactionEnum factionEnum, CardEnum buildingEnum) const = 0;
 
 	virtual GeoresourceNode RegionGeoresource(WorldRegion2 region) = 0;
 

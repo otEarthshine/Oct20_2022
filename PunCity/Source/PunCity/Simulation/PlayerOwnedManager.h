@@ -73,6 +73,8 @@ public:
 		return 0;
 	}
 
+	FactionEnum factionEnum() { return _factionEnum; }
+
 	/*
 	 * Variables
 	 */
@@ -291,7 +293,7 @@ public:
 		 * Private
 		 */
 		SerializeVecValue(Ar, _townIds);
-
+		Ar << _factionEnum;
 
 		// SP
 		Ar << _spTicks;
@@ -335,8 +337,9 @@ public:
 
 private:
 	std::vector<int32> _townIds;
-	// 
-
+	
+	// FactionEnum
+	FactionEnum _factionEnum = FactionEnum::Arab;
 	
 	// SP
 	static int32 ticksPerSP() { return Time::TicksPerSecond * 2; }

@@ -272,6 +272,7 @@ public:
 		
 		_townhallHoverInfos.AfterAdd();
 		_townhallHoverInfos.AfterAdd(); // Double times to ensure there townhallHover is gone.
+		_minorTownHoverInfos.AfterAdd();
 		
 		_regionHoverUIs.AfterAdd();
 		_raidHoverIcons.AfterAdd();
@@ -293,6 +294,7 @@ private:
 	void TickBuildings();
 	void TickJobUI(int buildingId);
 	void TickTownhallInfo(int buildingId, bool isMini = false);
+	void TickMinorTownInfo(int32 townId, bool isMini = false);
 	void TickRegionUIs();
 
 	void TickUnits();
@@ -311,6 +313,7 @@ private:
 	//! Show building's job status
 	UPROPERTY() FHoverUIs _buildingJobUIs;
 	UPROPERTY() FHoverUIs _townhallHoverInfos;
+	UPROPERTY() FHoverUIs _minorTownHoverInfos;
 	
 	UPROPERTY() FHoverUIs _regionHoverUIs; // Claim Land
 	UPROPERTY() FHoverUIs _raidHoverIcons;

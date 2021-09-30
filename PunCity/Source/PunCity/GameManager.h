@@ -613,8 +613,8 @@ public:
 				_simulation->IsCritterBuilding(tile);
 	}
 
-	int32 GetMinEraDisplay(CardEnum buildingEnum) const final {
-		return _assetLoader->GetMinEraDisplay(buildingEnum);
+	int32 GetMinEraDisplay(FactionEnum factionEnum, CardEnum buildingEnum) const final {
+		return _assetLoader->GetMinEraDisplay(factionEnum, buildingEnum);
 	}
 	
 

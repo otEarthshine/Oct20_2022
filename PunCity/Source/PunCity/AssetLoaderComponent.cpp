@@ -170,129 +170,136 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	/*
 	 * Building Modules
 	 */
-	_buildingEnumToModuleGroups.SetNum(BuildingEnumCount);
-	_buildingEnumToMinEraModel.SetNum(BuildingEnumCount);
+	_factionEnumToBuildingEnumToModuleGroups.SetNum(FactionEnumCount);
+	_factionEnumToBuildingEnumToMinEraModel.SetNum(FactionEnumCount);
+	for (int32 i = 0; i < FactionEnumCount; i++) {
+		_factionEnumToBuildingEnumToModuleGroups[i].SetNum(BuildingEnumCount);
+		_factionEnumToBuildingEnumToMinEraModel[i].SetNum(BuildingEnumCount);
+	}
 	
-	LoadBuilding(CardEnum::FruitGatherer, "Fruit_GathererEra", "FruitGatherer", 1);
-	LoadBuilding(CardEnum::Bank, "Bank_Era", "Bank", 3);
+	LoadBuilding(CardEnum::FruitGatherer, "Fruit_GathererEra", "", "FruitGatherer", 1);
+	LoadBuilding(CardEnum::Bank, "Bank_Era", "Bank_Era", "Bank", 3);
 
-	LoadBuilding(CardEnum::StoneToolsShop, "StoneToolsShop", "StoneToolShop");
-	LoadBuilding(CardEnum::Blacksmith, "Blacksmith_Era", "Blacksmith", 2);
-	LoadBuilding(CardEnum::MedicineMaker, "MedicineMaker_Era", "MedicineMaker", 2);
+	LoadBuilding(CardEnum::StoneToolsShop, "StoneToolsShop", "StoneToolsShop", "StoneToolShop", 1, 1);
+	LoadBuilding(CardEnum::Blacksmith, "Blacksmith_Era", "Blacksmith_Era", "Blacksmith", 2);
+	LoadBuilding(CardEnum::MedicineMaker, "MedicineMaker_Era", "MedicineMaker_Era", "MedicineMaker", 2);
 
-	LoadBuilding(CardEnum::BeerBrewery, "Brewery_Era", "BeerBrewery", 1);
+	LoadBuilding(CardEnum::BeerBrewery, "Brewery_Era", "BeerBrewery", "BeerBrewery", 1);
 	
-	LoadBuilding(CardEnum::Chocolatier, "Chocolatier_Era", "Chocolatier", 3);
+	LoadBuilding(CardEnum::Chocolatier, "Chocolatier_Era", "", "Chocolatier", 3);
 
-	LoadBuilding(CardEnum::MushroomFarm, "Mushroom_FarmEra", "MushroomFarm", 1, 4);
+	LoadBuilding(CardEnum::MushroomFarm, "Mushroom_FarmEra", "", "MushroomFarm", 1, 4);
 
-	LoadBuilding(CardEnum::Garden, "Garden_Variation1", "Garden/Variation1");
+	// TODO: Garden
+	LoadBuilding(FactionEnum::Europe, CardEnum::Garden, "Garden_Variation1", "Garden/Variation1");
 	//TryLoadBuildingModuleSet("Garden2", "Garden/Variation2");
 	//TryLoadBuildingModuleSet("Garden3", "Garden/Variation3");
 
-	LoadBuilding(CardEnum::Fisher, "Fishing_Lodge_Era_", "FishingLodge", 1);
+	LoadBuilding(CardEnum::Fisher, "Fishing_Lodge_Era_", "FishingLodge_Era", "FishingLodge", 1);
 
-	LoadBuilding(CardEnum::Winery, "Winery_Era_", "Winery", 2);
+	LoadBuilding(CardEnum::Winery, "Winery_Era_", "", "Winery", 2);
 
-	LoadBuilding(CardEnum::Library, "Library_Era", "Library", 2);
-	LoadBuilding(CardEnum::School, "College_Era", "College", 3);
+	LoadBuilding(CardEnum::Library, "Library_Era", "Library_Era", "Library", 2);
+	LoadBuilding(CardEnum::School, "College_Era", "College_Era", "College", 3);
 
-	LoadBuilding(CardEnum::PaperMaker, "PaperMakerEra", "PaperMaker", 2, 2);
+	LoadBuilding(CardEnum::PaperMaker, "PaperMakerEra", "PaperMaker_Era", "PaperMaker", 2, 2);
 	
-	LoadBuilding(CardEnum::Theatre, "Theatre_Era_", "Theatre", 3);
-	LoadBuilding(CardEnum::Tavern, "TavernEra", "Tavern", 1);
-	LoadBuilding(CardEnum::Tailor, "TailorEra", "Tailor", 2);
+	LoadBuilding(CardEnum::Theatre, "Theatre_Era_", "Theatre_Era_", "Theatre", 3);
+	LoadBuilding(CardEnum::Tavern, "TavernEra", "TavernEra", "Tavern", 1);
+	LoadBuilding(CardEnum::Tailor, "TailorEra", "Tailor_Era", "Tailor", 2);
 
-	LoadBuilding(CardEnum::ClayPit, "ClayPit_Era", "ClayPit", 1, 1);
-	LoadBuilding(CardEnum::Potter, "potterEra", "Potter", 1);
+	LoadBuilding(CardEnum::ClayPit, "ClayPit_Era", "", "ClayPit", 1, 1);
+	LoadBuilding(CardEnum::Potter, "potterEra", "DesertPotte", "Potter", 1);
 
-	LoadBuilding(CardEnum::TradingPort, "TradingPort_Era", "TradingPort", 1);
+	LoadBuilding(CardEnum::TradingPort, "TradingPort_Era", "TradingPort_Era", "TradingPort", 1);
 
 	// TODO:
-	LinkBuildingEras(CardEnum::MinorCityPort, "TradingPort_Era", 1);
-	LinkBuildingEras(CardEnum::ForeignPort, "TradingPort_Era", 1);
+	LinkBuildingEras(FactionEnum::Europe, CardEnum::MinorCityPort, "TradingPort_Era", 1);
+	LinkBuildingEras(FactionEnum::Europe, CardEnum::ForeignPort, "TradingPort_Era", 1);
 	
-	LoadBuilding(CardEnum::TradingPost, "TradingPost_Era", "TradingPost", 1);
-	LoadBuilding(CardEnum::TradingCompany, "TradingCompany_Era", "TradingCompany", 2);
+	LoadBuilding(CardEnum::TradingPost, "TradingPost_Era", "TradingPost_Era", "TradingPost", 1);
+	LoadBuilding(CardEnum::TradingCompany, "TradingCompany_Era", "", "TradingCompany", 2);
 
-	//LoadBuilding(CardEnum::CardMaker, "Scholars_Office_Era_", "ScholarsOffice", 2);
-	LoadBuilding(CardEnum::CardMaker, "ScholarsOffice_Era2", "ScholarsOffice/Era2", false, {}, 2);
-	LoadBuilding(CardEnum::CardMaker, "ScholarsOffice_Era3", "ScholarsOffice/Era3", false, {}, 3);
-	LoadBuilding(CardEnum::CardMaker, "Scholars_Office_Era_4", "ScholarsOffice/Era4", false, {}, 4);
+	LoadBuilding(CardEnum::CardMaker, "ScholarsOffice_Era", "ScholarsOffice_Era", "ScholarsOffice", 2);
+
 	
-	LoadBuilding(CardEnum::Archives, "Archives_Era", "Archives", 2);
+	LoadBuilding(CardEnum::Archives, "Archives_Era", "Archives_Era", "Archives", 2);
 
-	LoadBuilding(CardEnum::ImmigrationOffice, "Immigration_Office_Era_", "ImmigrationOffice", 1);
+	LoadBuilding(CardEnum::ImmigrationOffice, "Immigration_Office_Era_", "ImmigrationOffice_Era", "ImmigrationOffice", 1);
 	
-	LoadBuilding(CardEnum::HuntingLodge, "Hunting_LodgeERA", "HuntingLodge", 1);
+	LoadBuilding(CardEnum::HuntingLodge, "Hunting_LodgeERA", "", "HuntingLodge", 1);
 
-	LoadBuilding(CardEnum::RanchPig, "pigranchERA", "Ranch", 1);
-	LinkBuildingEras(CardEnum::RanchSheep, "pigranchERA", 1);
-	LinkBuildingEras(CardEnum::RanchCow, "pigranchERA", 1);
+	LoadBuilding(CardEnum::RanchPig, "pigranchERA", "", "Ranch", 1);
+	LinkBuildingEras(FactionEnum::Europe, CardEnum::RanchSheep, "pigranchERA", 1);
+	LinkBuildingEras(FactionEnum::Europe, CardEnum::RanchCow, "pigranchERA", 1);
 
-	LoadBuilding(CardEnum::GoldSmelter, "GoldSmelter_Era", "SmelterGold", 2);
-	LoadBuilding(CardEnum::Mint, "Mint_Era", "Mint", 3);
-	LoadBuilding(CardEnum::Jeweler, "Jeweler_Era", "Jeweler", 4);
-	LoadBuilding(CardEnum::CandleMaker, "CandleMaker_Era", "CandleMaker", 2);
-
-	LoadBuilding(CardEnum::CottonMill, "CottonMill_Era", "TextileMill", 4);
-	LoadBuilding(CardEnum::PrintingPress, "PrintingPress_Industrial_PrintingPress_Era", "PrintingPress", 4);
-
-	LoadBuilding(CardEnum::Warehouse, "wherehouse_era", "Warehouse", 2);
-	LoadBuilding(CardEnum::ShippingDepot, "LogisticsSenderOfficeERA", "LogisticsSender", 3);
-	LoadBuilding(CardEnum::HaulingServices, "HaulingServicecERA", "HaulingServices", 2);
-
-	LoadBuilding(CardEnum::MagicMushroomFarm, "ShroomFarmEra", "MagicMushroomFarm", 3);
-
-	LoadBuilding(CardEnum::VodkaDistillery, "Vodka_DistilleryERA", "VodkaDistillery", 2);
-
-	LoadBuilding(CardEnum::CoffeeRoaster, "CoffeeRoaster_Era", "CoffeeRoaster", 3);
-
-	LoadBuilding(CardEnum::Granary, "GRANARY_ERA", "Granary", 2);
-
-	LoadBuilding(CardEnum::SandMine, "SandMine_Era", "SandMine", 3);
-	LoadBuilding(CardEnum::GlassSmelter, "GlassSmelter_Era", "GlassSmelter", 3);
-	LoadBuilding(CardEnum::Glassworks, "GlassWorks_Era", "GlassWorks", 3);
-	LoadBuilding(CardEnum::ConcreteFactory, "concretefactoryERA", "ConcreteFactory", 4);
+	LoadBuilding(CardEnum::GoldSmelter, "GoldSmelter_Era", "Gold_Smelter_Era", "SmelterGold", 2);
 	
-	LoadBuilding(CardEnum::CoalPowerPlant, "coalpowerplant", "CoalPowerPlant/Era4");
-	LoadBuilding(CardEnum::IndustrialIronSmelter, "IndustrialIronSmelterERA", "IndustrialIronSmelter/Era4");
-	LoadBuilding(CardEnum::Steelworks, "SteelworksEra4", "Steelworks");
-	LoadBuilding(CardEnum::OilRig, "OilWell_Era", "OilWell");
-	LoadBuilding(CardEnum::OilPowerPlant, "OilPowerPlantERA", "OilPowerPlant/Era4");
-	LoadBuilding(CardEnum::PaperMill, "PaperMill_PaperMill_Era4", "PaperMill");
-	LoadBuilding(CardEnum::ClockMakers, "Clock_Maker_Era", "ClockMaker");
+	LoadBuilding(CardEnum::Mint, "Mint_Era", "Mint_Era", "Mint", 3);
+	LoadBuilding(CardEnum::Jeweler, "Jeweler_Era", "Jeweler_Era", "Jeweler", 4);
+	LoadBuilding(CardEnum::CandleMaker, "CandleMaker_Era", "", "CandleMaker", 2);
 
-	LoadBuilding(CardEnum::Cathedral, "Cathedral_Era2", "Cathedral");
-	LoadBuilding(CardEnum::GrandPalace, "Grand_Museum_Era_", "GrandMuseum", 4);
-	LoadBuilding(CardEnum::ExhibitionHall, "Crystal_Palace", "CrystalPalace", false, ModuleTransformGroup::CreateAuxSet(
+	LoadBuilding(CardEnum::CottonMill, "CottonMill_Era", "CottonMill_Era", "TextileMill", 4);
+	LoadBuilding(CardEnum::PrintingPress, "PrintingPress_Era", "PrintingPress_Era", "PrintingPress", 4);
+
+	LoadBuilding(CardEnum::Warehouse, "wherehouse_era", "Warehouse_Era", "Warehouse", 2);
+	LoadBuilding(CardEnum::ShippingDepot, "LogisticsSenderOfficeERA", "LogisticsSenderOffice_Era", "LogisticsSender", 3);
+	LoadBuilding(CardEnum::HaulingServices, "HaulingServicecERA", "HaulingService_Era", "HaulingServices", 2);
+
+	LoadBuilding(CardEnum::MagicMushroomFarm, "ShroomFarmEra", "", "MagicMushroomFarm", 3);
+
+	LoadBuilding(CardEnum::VodkaDistillery, "Vodka_DistilleryERA", "Vodka", "VodkaDistillery", 2);
+
+	LoadBuilding(CardEnum::CoffeeRoaster, "CoffeeRoaster_Era", "", "CoffeeRoaster", 3);
+
+	LoadBuilding(CardEnum::Granary, "GRANARY_ERA", "", "Granary", 2);
+
+	LoadBuilding(CardEnum::SandMine, "SandMine_Era", "SandMine_Era", "SandMine", 3);
+	LoadBuilding(CardEnum::GlassSmelter, "GlassSmelter_Era", "GlassSmelter_Era", "GlassSmelter", 3);
+	LoadBuilding(CardEnum::Glassworks, "GlassWorks_Era", "GlassWorks_Era", "GlassWorks", 3);
+	LoadBuilding(CardEnum::ConcreteFactory, "concretefactoryERA", "Concretefactory_Era", "ConcreteFactory", 4);
+	
+	LoadBuilding(CardEnum::CoalPowerPlant, "coalpowerplant", "CoalPowerPlant_Era", "CoalPowerPlant", 4);
+	LoadBuilding(CardEnum::IndustrialIronSmelter, "IndustrialIronSmelterERA", "IndustrialIronSmelterERA", "IndustrialIronSmelter", 4);
+	LoadBuilding(CardEnum::Steelworks, "SteelworksEra", "SteelWork_Era", "Steelworks", 4);
+	LoadBuilding(CardEnum::OilRig, "OilWell_Era", "OilWell_Era", "OilWell", 4);
+	LoadBuilding(CardEnum::OilPowerPlant, "OilPowerPlantERA", "OilPowerPlant_Era", "OilPowerPlant", 4);
+	LoadBuilding(CardEnum::PaperMill, "PaperMill_PaperMill_Era", "PeperMill_Era", "PaperMill", 4);
+	LoadBuilding(CardEnum::ClockMakers, "Clock_Maker_Era", "ClockMaker_ClockMakerEra", "ClockMaker", 4);
+
+	LoadBuilding(FactionEnum::Europe, CardEnum::Cathedral, "Cathedral_Era2", "Cathedral");
+	LoadBuilding(FactionEnum::Europe, CardEnum::GrandPalace, "Grand_Museum_Era_", "GrandMuseum/Era4");
+	LoadBuilding(FactionEnum::Europe, CardEnum::ExhibitionHall, "Crystal_Palace", "CrystalPalace", ModuleTransformGroup::CreateAuxSet(
 		{}, {}, {},
 		{
 			{0.4f, 70.0f, FLinearColor(1, 0.651, 0.246), FVector(-40, 0, 20), FVector::OneVector},
 			{0.4f, 70.0f, FLinearColor(1, 0.651, 0.246), FVector(70, 0, 20), FVector::OneVector}
 		}
 	));
-	LoadBuilding(CardEnum::Castle, "Castle", "Castle");
+	LoadBuilding(FactionEnum::Europe, CardEnum::Castle, "Castle", "Castle");
 
-	LoadBuilding(CardEnum::StatisticsBureau, "Statistic_Bureau_Era_", "StatisticsBureau", 1);
-	LoadBuilding(CardEnum::JobManagementBureau, "Employment_Bureau_Era_", "EmploymentBureau", 1);
+	LoadBuilding(CardEnum::StatisticsBureau, "Statistic_Bureau_Era_", "StatisticBureau_Era", "StatisticsBureau", 1);
+	LoadBuilding(CardEnum::JobManagementBureau, "Employment_Bureau_Era_", "EmploymentBureau_Era", "EmploymentBureau", 1);
 
-	// Test Townhall
-	LoadBuilding(CardEnum::Townhall, "Townhall_Era0", "Townhall/Era0", false, ModuleTransformGroup::CreateAuxSet(
+	/*
+	 * Townhall
+	 */
+	//! Europe
+	LoadBuilding(FactionEnum::Europe, CardEnum::Townhall, "Townhall_Era0", "Townhall/Era0", ModuleTransformGroup::CreateAuxSet(
 		{
 			{ParticleEnum::CampFire, TransformFromPositionYawScale(-5.65, -.669, 1, 0, 0.17)}
 		},
 		{}, {},
 		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-5.65, -.669, 5), FVector::OneVector} }
 	));
-	LoadBuilding(CardEnum::Townhall, "Townhall_Era1", "Townhall/Era1", false, ModuleTransformGroup::CreateAuxSet(
+	LoadBuilding(FactionEnum::Europe, CardEnum::Townhall, "Townhall_Era1", "Townhall/Era1", ModuleTransformGroup::CreateAuxSet(
 		{
 			{ParticleEnum::CampFire, TransformFromPositionYawScale(-10.7, 14.6, 1.85, 0, 0.17)}
 		},
 		{}, {},
 		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-10.7, 14.6, 8.5), FVector::OneVector} }
 	));
-	LoadBuilding(CardEnum::Townhall, "Townhall_Era2", "Townhall/Era2", false, ModuleTransformGroup::CreateAuxSet(
+	LoadBuilding(FactionEnum::Europe, CardEnum::Townhall, "Townhall_Era2", "Townhall/Era2", ModuleTransformGroup::CreateAuxSet(
 		{
 			//{ParticleEnum::Smoke, TransformFromPosition(51.6, -24.3, 38.8)},
 			{ParticleEnum::CampFire, TransformFromPositionYawScale(-15.38, 6.41, 1.85, 0, 0.17)}
@@ -300,44 +307,110 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 		{}, {},
 		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-15.38, 6.41, 1.85), FVector::OneVector} }
 	));
-	LoadBuilding(CardEnum::Townhall, "Townhall_Era3", "Townhall/Era3", false, ModuleTransformGroup::CreateAuxSet(
+	LoadBuilding(FactionEnum::Europe, CardEnum::Townhall, "Townhall_Era3", "Townhall/Era3", ModuleTransformGroup::CreateAuxSet(
 		{},
 		{}, {},
 		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-2.3, 10.2, 8.5), FVector::OneVector} }
 	));
-	LoadBuilding(CardEnum::Townhall, "Townhall_Era4", "Townhall/Era4", false, ModuleTransformGroup::CreateAuxSet(
+	LoadBuilding(FactionEnum::Europe, CardEnum::Townhall, "Townhall_Era4", "Townhall/Era4", ModuleTransformGroup::CreateAuxSet(
 		{},
 		{}, {},
 		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-2.3, 10.2, 8.5), FVector::OneVector} }
 	));
 
-	
-	LinkBuilding(CardEnum::Colony, "Townhall_Era0");
-	LinkBuilding(CardEnum::PortColony, "Townhall_Era0");
-	
+	//! Arab
+	LoadBuilding(FactionEnum::Arab, CardEnum::Townhall, "Townhall_Era0", "Townhall/Era0", ModuleTransformGroup::CreateAuxSet(
+		{
+			{ParticleEnum::CampFire, TransformFromPositionYawScale(-5.65, -.669, 1, 0, 0.17)}
+		},
+		{}, {},
+		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-5.65, -.669, 5), FVector::OneVector} }
+	));
+	LoadBuilding(FactionEnum::Arab, CardEnum::Townhall, "Townhall_Era1", "Townhall/Era1", ModuleTransformGroup::CreateAuxSet(
+		{
+			{ParticleEnum::CampFire, TransformFromPositionYawScale(-10.7, 14.6, 1.85, 0, 0.17)}
+		},
+		{}, {},
+		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-10.7, 14.6, 8.5), FVector::OneVector} }
+	));
+	LoadBuilding(FactionEnum::Arab, CardEnum::Townhall, "Townhall_Era2", "Townhall/Era2", ModuleTransformGroup::CreateAuxSet(
+		{
+			//{ParticleEnum::Smoke, TransformFromPosition(51.6, -24.3, 38.8)},
+			{ParticleEnum::CampFire, TransformFromPositionYawScale(-15.38, 6.41, 1.85, 0, 0.17)}
+		},
+		{}, {},
+		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-15.38, 6.41, 1.85), FVector::OneVector} }
+	));
+	LoadBuilding(FactionEnum::Arab, CardEnum::Townhall, "Townhall_Era3", "Townhall/Era3", ModuleTransformGroup::CreateAuxSet(
+		{},
+		{}, {},
+		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-2.3, 10.2, 8.5), FVector::OneVector} }
+	));
+	LoadBuilding(FactionEnum::Arab, CardEnum::Townhall, "Townhall_Era4", "Townhall/Era4", ModuleTransformGroup::CreateAuxSet(
+		{},
+		{}, {},
+		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-2.3, 10.2, 8.5), FVector::OneVector} }
+	));
 
-	LoadBuilding(CardEnum::FurnitureWorkshop, "Furniture_Workshop_Era", "FurnitureWorkshop", 1);
 
 
-	LoadBuilding(CardEnum::CharcoalMaker, "CharcoalMakerEra1", "CharcoalBurner/Era1", false, ModuleTransformGroup::CreateAuxSet(
+	//! Colonies
+	LinkBuilding(FactionEnum::Europe, CardEnum::Colony, "Townhall_Era0");
+	LinkBuilding(FactionEnum::Europe, CardEnum::PortColony, "Townhall_Era0");
+	LinkBuilding(FactionEnum::Arab, CardEnum::Colony, "Townhall_Era0");
+	LinkBuilding(FactionEnum::Arab, CardEnum::PortColony, "Townhall_Era0");
+
+	LoadBuilding(CardEnum::FurnitureWorkshop, "Furniture_Workshop_Era", "FurnitureWorkshop_Era", "FurnitureWorkshop", 1);
+
+	/*
+	 * Charcoal Burner
+	 */
+	//! Europe
+	LoadBuilding(FactionEnum::Europe, CardEnum::CharcoalMaker, "CharcoalMakerEra1", "CharcoalBurner/Era1", ModuleTransformGroup::CreateAuxSet(
 		{
 			{ParticleEnum::BlackSmoke,  TransformFromPosition(3.6, 7.92, 9.0)}, // 8.2 -> 5.6 ... decrease by 2.6
 			{ParticleEnum::TorchFire,  FTransform(FRotator::ZeroRotator, FVector(3.6, 7.92, 11.5), FVector(1, 1, 1))}
 		}
 	));
-	LoadBuilding(CardEnum::CharcoalMaker, "CharcoalMakerEra2", "CharcoalBurner/Era2", false, ModuleTransformGroup::CreateAuxSet(
+	LoadBuilding(FactionEnum::Europe, CardEnum::CharcoalMaker, "CharcoalMakerEra2", "CharcoalBurner/Era2", ModuleTransformGroup::CreateAuxSet(
 		{
 			{ParticleEnum::BlackSmoke,  TransformFromPosition(3.6, 8.53, 9.0)}, // 8.2 -> 5.6 ... decrease by 2.6
 			{ParticleEnum::TorchFire,  FTransform(FRotator::ZeroRotator, FVector(3.6, 8.53, 11.5), FVector(1, 1, 1))}
 		}
 	));
-	LoadBuilding(CardEnum::CharcoalMaker, "CharcoalMakerEra3", "CharcoalBurner/Era3", false, ModuleTransformGroup::CreateAuxSet(
+	LoadBuilding(FactionEnum::Europe, CardEnum::CharcoalMaker, "CharcoalMakerEra3", "CharcoalBurner/Era3", ModuleTransformGroup::CreateAuxSet(
 		{
 			{ParticleEnum::BlackSmoke,  TransformFromPosition(3.6, 8.3, 20.0)}, // 8.2 -> 5.6 ... decrease by 2.6
 			{ParticleEnum::TorchFire,  FTransform(FRotator::ZeroRotator, FVector(3.6, 8.3, 22.6), FVector(1, 1, 1))}
 		}
 	));
-	LoadBuilding(CardEnum::CharcoalMaker, "CharcoalMakerEra4", "CharcoalBurner/Era4", false, ModuleTransformGroup::CreateAuxSet(
+	LoadBuilding(FactionEnum::Europe, CardEnum::CharcoalMaker, "CharcoalMakerEra4", "CharcoalBurner/Era4", ModuleTransformGroup::CreateAuxSet(
+		{
+			{ParticleEnum::BlackSmoke,  TransformFromPosition(3.3, 8.37, 21.3)}, // 8.2 -> 5.6 ... decrease by 2.6
+			{ParticleEnum::TorchFire,  FTransform(FRotator::ZeroRotator, FVector(3.3, 8.37, 23.9), FVector(1, 1, 1))}
+		}
+	));
+
+	//! Arab
+	LoadBuilding(FactionEnum::Arab, CardEnum::CharcoalMaker, "CharcoalMakerEra1", "CharcoalMaker/Era1", ModuleTransformGroup::CreateAuxSet(
+		{
+			{ParticleEnum::BlackSmoke,  TransformFromPosition(3.6, 7.92, 9.0)}, // 8.2 -> 5.6 ... decrease by 2.6
+			{ParticleEnum::TorchFire,  FTransform(FRotator::ZeroRotator, FVector(3.6, 7.92, 11.5), FVector(1, 1, 1))}
+		}
+	));
+	LoadBuilding(FactionEnum::Arab, CardEnum::CharcoalMaker, "CharcoalMakerEra2", "CharcoalMaker/Era2", ModuleTransformGroup::CreateAuxSet(
+		{
+			{ParticleEnum::BlackSmoke,  TransformFromPosition(3.6, 8.53, 9.0)}, // 8.2 -> 5.6 ... decrease by 2.6
+			{ParticleEnum::TorchFire,  FTransform(FRotator::ZeroRotator, FVector(3.6, 8.53, 11.5), FVector(1, 1, 1))}
+		}
+	));
+	LoadBuilding(FactionEnum::Arab, CardEnum::CharcoalMaker, "CharcoalMakerEra3", "CharcoalMaker/Era3", ModuleTransformGroup::CreateAuxSet(
+		{
+			{ParticleEnum::BlackSmoke,  TransformFromPosition(3.6, 8.3, 20.0)}, // 8.2 -> 5.6 ... decrease by 2.6
+			{ParticleEnum::TorchFire,  FTransform(FRotator::ZeroRotator, FVector(3.6, 8.3, 22.6), FVector(1, 1, 1))}
+		}
+	));
+	LoadBuilding(FactionEnum::Arab, CardEnum::CharcoalMaker, "CharcoalMakerEra4", "CharcoalMaker/Era4", ModuleTransformGroup::CreateAuxSet(
 		{
 			{ParticleEnum::BlackSmoke,  TransformFromPosition(3.3, 8.37, 21.3)}, // 8.2 -> 5.6 ... decrease by 2.6
 			{ParticleEnum::TorchFire,  FTransform(FRotator::ZeroRotator, FVector(3.3, 8.37, 23.9), FVector(1, 1, 1))}
@@ -345,26 +418,30 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	));
 
 	
-	LoadBuilding(CardEnum::Brickworks, "BrickworkEra", "Brickworks", 2);
+	LoadBuilding(CardEnum::Brickworks, "BrickworkEra", "brickwork_Era", "Brickworks", 2);
 	
-	LoadBuilding(CardEnum::Beekeeper, "BeeKeeper_Era", "Beekeeper", 2);
-	LoadBuilding(CardEnum::Market, "Market__Era", "Market", 2, 2);
+	LoadBuilding(CardEnum::Beekeeper, "BeeKeeper_Era", "", "Beekeeper", 2);
 
-	LoadBuilding(CardEnum::IrrigationReservoir, "IrrigationReservoir", "IrrigationReservoir");
+	// TODO: ARAB FIX
+	LoadBuilding(CardEnum::Market, "Market__Era", "", "Market", 2, 2);
+
+	// TODO: ARAB FIX
+	LoadBuilding(FactionEnum::Europe, CardEnum::IrrigationReservoir, "IrrigationReservoir", "IrrigationReservoir");
 	
-	LoadBuilding(CardEnum::Bakery, "Bakery_Era", "Bakery", 2);
-	LoadBuilding(CardEnum::IronSmelter, "Iron_Smelter_Era", "IronSmelter", 2, 2);
+	LoadBuilding(CardEnum::Bakery, "Bakery_Era", "PitaBakery_Era", "Bakery", 2);
+	LoadBuilding(CardEnum::IronSmelter, "Iron_Smelter_Era", "Iron_Smelter_Era", "IronSmelter", 2, 2);
 
 	
-	LoadBuilding(CardEnum::Quarry, "Quarry_Era", "Quarry", 1);
+	LoadBuilding(CardEnum::Quarry, "Quarry_Era", "Quarry_Era", "Quarry", 1);
 
+	FactionEnum factionEnum = FactionEnum::Europe;
 	for (int32 eraInt = 1; eraInt <= 4; eraInt++)
 	{
 		FString era = FString::FromInt(eraInt);
-		LoadBuilding(CardEnum::GoldMine, "Ore_Mine_Era" + era, "OreMine/Era" + era);
-		LinkBuilding(CardEnum::IronMine, "Ore_Mine_Era" + era, _lastTempAuxGroup);
-		LinkBuilding(CardEnum::GemstoneMine, "Ore_Mine_Era" + era, _lastTempAuxGroup);
-		LinkBuilding(CardEnum::CoalMine, "Ore_Mine_Era" + era, _lastTempAuxGroup);
+		LoadBuilding(factionEnum, CardEnum::GoldMine, "Ore_Mine_Era" + era, "OreMine/Era" + era);
+		LinkBuilding(factionEnum, CardEnum::IronMine, "Ore_Mine_Era" + era, _lastTempAuxGroup);
+		LinkBuilding(factionEnum, CardEnum::GemstoneMine, "Ore_Mine_Era" + era, _lastTempAuxGroup);
+		LinkBuilding(factionEnum, CardEnum::CoalMine, "Ore_Mine_Era" + era, _lastTempAuxGroup);
 
 		{
 			//PUN_LOG("_recentlyAddedModuleNames %d", _recentlyAddedModuleNames.Num());
@@ -375,13 +452,13 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 					if (_recentlyAddedModuleNames[i].Contains("_Manual_"))
 					{
 						if (_recentlyAddedModuleNames[i].Contains(searchString)) {
-							_buildingEnumToModuleGroups[static_cast<int>(buildingEnum)][eraInt - 1].transforms.push_back(ModuleTransform(_recentlyAddedModuleNames[i]));
+							_factionEnumToBuildingEnumToModuleGroups[static_cast<int>(factionEnum)][static_cast<int>(buildingEnum)][eraInt - 1].transforms.push_back(ModuleTransform(_recentlyAddedModuleNames[i]));
 						}
 					}
 					else if (_recentlyAddedModuleNames[i].Contains("_ManualToggle_"))
 					{
 						if (_recentlyAddedModuleNames[i].Contains(searchString)) {
-							_buildingEnumToModuleGroups[static_cast<int>(buildingEnum)][eraInt - 1].togglableTransforms.push_back(ModuleTransform(_recentlyAddedModuleNames[i]));
+							_factionEnumToBuildingEnumToModuleGroups[static_cast<int>(factionEnum)][static_cast<int>(buildingEnum)][eraInt - 1].togglableTransforms.push_back(ModuleTransform(_recentlyAddedModuleNames[i]));
 						}
 					}
 				}
@@ -412,10 +489,10 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 		//	//
 		//
 
-	TryLoadBuildingModuleSet("Quarry", "Quarry");
+	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "Quarry", "Quarry");
 	LoadAnimModule("QuarrySpecialToggle", "Quarry/QuarrySpecialToggle");
 	
-	TryLoadBuildingModuleSet("OreMine", "OreMine");
+	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "OreMine", "OreMine");
 	//LoadAnimModule("OreMineSpecial_Stone", "OreMine/OreMineSpecial_Stone");
 	LoadAnimModule("OreMineSpecial_Coal", "OreMine/OreMineSpecial_Coal");
 	LoadAnimModule("OreMineSpecial_Iron", "OreMine/OreMineSpecial_Iron");
@@ -430,26 +507,26 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	
 	
 	//TryLoadBuildingModuleSet("Smelter", "Smelter");
-	TryLoadBuildingModuleSet("SmelterGold", "SmelterGold");
-	TryLoadBuildingModuleSet("SmelterGiant", "SmelterGiant");
+	//TryLoadBuildingModuleSet( "SmelterGold", "SmelterGold");
+	//TryLoadBuildingModuleSet("SmelterGiant", "SmelterGiant");
 	
 	//TryLoadBuildingModuleSet("CharcoalMaker", "CharcoalMaker");
-	TryLoadBuildingModuleSet("Forester", "Forester");
+	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "Forester", "Forester");
 
 	
-	TryLoadBuildingModuleSet("StorageYard", "StorageYard");
+	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "StorageYard", "StorageYard");
 
-	TryLoadBuildingModuleSet("FlowerBed", "FlowerBed");
-	TryLoadBuildingModuleSet("GardenCypress", "GardenCypress");
-	TryLoadBuildingModuleSet("GardenShrubbery1", "GardenShrubbery1");
+	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "FlowerBed", "FlowerBed");
+	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "GardenCypress", "GardenCypress");
+	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "GardenShrubbery1", "GardenShrubbery1");
 
-	TryLoadBuildingModuleSet("IntercityLogisticsHub", "IntercityLogisticsHub");
-	TryLoadBuildingModuleSet("IntercityLogisticsPort", "IntercityLogisticsPort");
+	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "IntercityLogisticsHub", "IntercityLogisticsHub");
+	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "IntercityLogisticsPort", "IntercityLogisticsPort");
 	
 
 
 	// Animal modules
-	LoadBuilding(CardEnum::BoarBurrow, "BoarBurrow", "BoarBurrow");
+	LoadBuilding(FactionEnum::Europe, CardEnum::BoarBurrow, "BoarBurrow", "BoarBurrow");
 
 	// Houses
 	// Note: Model count starts with House Lvl 0 (legacy imports, not worth the change)
@@ -460,38 +537,38 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	for (int32 i = 1; i <= 3; i++) {
 		FString moduleGroupName = "HouseERA0V" + FString::FromInt(i);
 		FString moduleGroupFolderName = "House/Level0/V" + FString::FromInt(i);
-		LoadBuilding(CardEnum::House, moduleGroupName, moduleGroupFolderName);
+		LoadBuilding(FactionEnum::Europe, CardEnum::House, moduleGroupName, moduleGroupFolderName);
 	}
-	TryLoadBuildingModuleSet("HouseClayLvl1", "HouseClayLvl1");
-	LinkBuilding(CardEnum::House, "HouseClayLvl1");
-	LinkBuilding(CardEnum::House, "HouseClayLvl1");
+	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "HouseClayLvl1", "HouseClayLvl1");
+	LinkBuilding(FactionEnum::Europe, CardEnum::House, "HouseClayLvl1");
+	LinkBuilding(FactionEnum::Europe, CardEnum::House, "HouseClayLvl1");
 
 	// Lvl 1 (2)
 	for (int32 i = 1; i <= 3; i++) {
 		FString moduleGroupName = "House_Lvl1_Var" + FString::FromInt(i);
 		FString moduleGroupFolderName = "House/Level1/V" + FString::FromInt(i);
-		LoadBuilding(CardEnum::House, moduleGroupName, moduleGroupFolderName);
+		LoadBuilding(FactionEnum::Europe, CardEnum::House, moduleGroupName, moduleGroupFolderName);
 	}
-	LinkBuilding(CardEnum::House, "HouseClayLvl1");
-	LinkBuilding(CardEnum::House, "HouseClayLvl1"); // Buffer
+	LinkBuilding(FactionEnum::Europe, CardEnum::House, "HouseClayLvl1");
+	LinkBuilding(FactionEnum::Europe, CardEnum::House, "HouseClayLvl1"); // Buffer
 
 	// Lvl 2 (3)
 	for (int32 i = 1; i <= 4; i++) {
 		FString moduleGroupName = "House_LV2_V" + FString::FromInt(i);
 		FString moduleGroupFolderName = "House/Level2/V" + FString::FromInt(i);
-		LoadBuilding(CardEnum::House, moduleGroupName, moduleGroupFolderName);
+		LoadBuilding(FactionEnum::Europe, CardEnum::House, moduleGroupName, moduleGroupFolderName);
 	}
-	TryLoadBuildingModuleSet("HouseClayLvl2", "HouseClayLvl2");
-	LinkBuilding(CardEnum::House, "HouseClayLvl2");
+	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "HouseClayLvl2", "HouseClayLvl2");
+	LinkBuilding(FactionEnum::Europe, CardEnum::House, "HouseClayLvl2");
 
 	// Lvl 3 (4)
 	for (int32 i = 1; i <= 4; i++) {
 		FString moduleGroupName = "House_LV3_V" + FString::FromInt(i);
 		FString moduleGroupFolderName = "House/Level3/V" + FString::FromInt(i);
-		LoadBuilding(CardEnum::House, moduleGroupName, moduleGroupFolderName);
+		LoadBuilding(FactionEnum::Europe, CardEnum::House, moduleGroupName, moduleGroupFolderName);
 	}
-	TryLoadBuildingModuleSet("HouseClayLvl3", "HouseClayLvl3");
-	LinkBuilding(CardEnum::House, "HouseClayLvl3");
+	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "HouseClayLvl3", "HouseClayLvl3");
+	LinkBuilding(FactionEnum::Europe, CardEnum::House, "HouseClayLvl3");
 
 	
 
@@ -499,38 +576,38 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	for (int32 i = 1; i <= 4; i++) {
 		FString moduleGroupName = "House_LV5_V" + FString::FromInt(i);
 		FString moduleGroupFolderName = "House/Level5/V" + FString::FromInt(i);
-		LoadBuilding(CardEnum::House, moduleGroupName, moduleGroupFolderName);
+		LoadBuilding(FactionEnum::Europe, CardEnum::House, moduleGroupName, moduleGroupFolderName);
 	}
-	LinkBuilding(CardEnum::House, "HouseClayLvl1"); // Buffer
+	LinkBuilding(FactionEnum::Europe, CardEnum::House, "HouseClayLvl1"); // Buffer
 
 	// Lvl 5 (6)
 	for (int32 i = 1; i <= 3; i++) {
 		FString moduleGroupName = "House_LV6_V" + FString::FromInt(i);
 		FString moduleGroupFolderName = "House/Level6/V" + FString::FromInt(i);
-		LoadBuilding(CardEnum::House, moduleGroupName, moduleGroupFolderName);
+		LoadBuilding(FactionEnum::Europe, CardEnum::House, moduleGroupName, moduleGroupFolderName);
 	}
-	LinkBuilding(CardEnum::House, "HouseClayLvl1"); // Buffer
-	LinkBuilding(CardEnum::House, "HouseClayLvl1"); // Buffer
+	LinkBuilding(FactionEnum::Europe, CardEnum::House, "HouseClayLvl1"); // Buffer
+	LinkBuilding(FactionEnum::Europe, CardEnum::House, "HouseClayLvl1"); // Buffer
 
 	// Lvl 6 (7)
 	for (int32 i = 1; i <= 2; i++) {
 		FString moduleGroupName = "House_LV7_V" + FString::FromInt(i);
 		FString moduleGroupFolderName = "House/Level7/V" + FString::FromInt(i);
-		LoadBuilding(CardEnum::House, moduleGroupName, moduleGroupFolderName);
+		LoadBuilding(FactionEnum::Europe, CardEnum::House, moduleGroupName, moduleGroupFolderName);
 	}
-	LinkBuilding(CardEnum::House, "HouseClayLvl1"); // Buffer
-	LinkBuilding(CardEnum::House, "HouseClayLvl1"); // Buffer
-	LinkBuilding(CardEnum::House, "HouseClayLvl1"); // Buffer
+	LinkBuilding(FactionEnum::Europe, CardEnum::House, "HouseClayLvl1"); // Buffer
+	LinkBuilding(FactionEnum::Europe, CardEnum::House, "HouseClayLvl1"); // Buffer
+	LinkBuilding(FactionEnum::Europe, CardEnum::House, "HouseClayLvl1"); // Buffer
 
 		// Lvl 7 (8)
 	for (int32 i = 1; i <= 2; i++) {
 		FString moduleGroupName = "House_LV8_V" + FString::FromInt(i);
 		FString moduleGroupFolderName = "House/Level8/V" + FString::FromInt(i);
-		LoadBuilding(CardEnum::House, moduleGroupName, moduleGroupFolderName);
+		LoadBuilding(FactionEnum::Europe, CardEnum::House, moduleGroupName, moduleGroupFolderName);
 	}
-	LinkBuilding(CardEnum::House, "HouseClayLvl1"); // Buffer
-	LinkBuilding(CardEnum::House, "HouseClayLvl1"); // Buffer
-	LinkBuilding(CardEnum::House, "HouseClayLvl1"); // Buffer
+	LinkBuilding(FactionEnum::Europe, CardEnum::House, "HouseClayLvl1"); // Buffer
+	LinkBuilding(FactionEnum::Europe, CardEnum::House, "HouseClayLvl1"); // Buffer
+	LinkBuilding(FactionEnum::Europe, CardEnum::House, "HouseClayLvl1"); // Buffer
 	
 	
 	//TryLoadBuildingModuleSet("HouseLvl2", "HouseLvl2");
@@ -572,10 +649,10 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadModule("BuildingBaseBurnt", "BuildingModule1/ConstructionBase/BuildingBaseBurnt");
 
 	// Townhall Modules
-	TryLoadBuildingModuleSet("TownhallThatch", "TownhallThatch");
-	TryLoadBuildingModuleSet("Townhall0", "TownhallModules");
-	TryLoadBuildingModuleSet("Townhall3", "TownhallLvl3");
-	TryLoadBuildingModuleSet("Townhall4", "TownhallLvl3");
+	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "TownhallThatch", "TownhallThatch");
+	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "Townhall0", "TownhallModules");
+	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "Townhall3", "TownhallLvl3");
+	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "Townhall4", "TownhallLvl3");
 	LoadModule("TownhallLvl5GardenAndSpire", "TownhallLvl5/TownhallLvl5GardenAndSpire");
 	
 	//PUN_CHECK(moduleMesh("Townhall3Special2"));
@@ -584,38 +661,32 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	//
 	//TryLoadBuildingModuleSet("PaperMaker", "PaperMaker");
 
-	TryLoadBuildingModuleSet("ConstructionOffice", "ConstructionOffice");
-	TryLoadBuildingModuleSet("Ministry", "Ministry");
-
-	TryLoadBuildingModuleSet("BeerBreweryFamous", "BeerBreweryFamous");
-
-	// Ranch Barn Modules
-	TryLoadBuildingModuleSet("RanchBarn", "RanchBarnModules/RanchBarn"); // TODO: This won't work...
+	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "Ministry", "Ministry");
 
 	// Barrack Modules
-	TryLoadBuildingModuleSet("Barrack", "Barrack");
+	//TryLoadBuildingModuleSet("Barrack", "Barrack");
 
 	//TryLoadBuildingModuleSet("Bakery", "Bakery");
-	TryLoadBuildingModuleSet("Windmill", "Windmill");
+	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "Windmill", "Windmill");
 
 	//TryLoadBuildingModuleSet("Beekeeper", "Beekeeper");
 	//TryLoadBuildingModuleSet("Brickworks", "Brickworks");
 
-	TryLoadBuildingModuleSet("Colony", "Colony");
-	TryLoadBuildingModuleSet("Outpost", "Outpost");
-	TryLoadBuildingModuleSet("InventorsWorkshop", "InventorsWorkshop");
+	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "Colony", "Colony");
+	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "Outpost", "Outpost");
+	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "InventorsWorkshop", "InventorsWorkshop");
 
 
-	TryLoadBuildingModuleSet("ChichenItza", "ChichenItza");
+	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "ChichenItza", "ChichenItza");
 
 	//TryLoadBuildingModuleSet("Market", "Market");
 	//TryLoadBuildingModuleSet("IrrigationReservoir", "IrrigationReservoir");
 	
 
-	TryLoadBuildingModuleSet("TribalVillage", "RegionTribalVillage");
-	TryLoadBuildingModuleSet("AncientShrine", "RegionShrine");
-	TryLoadBuildingModuleSet("PortVillage", "RegionPortVillage");
-	TryLoadBuildingModuleSet("RegionCratePile", "RegionCratePile");
+	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "TribalVillage", "RegionTribalVillage");
+	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "AncientShrine", "RegionShrine");
+	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "PortVillage", "RegionPortVillage");
+	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "RegionCratePile", "RegionCratePile");
 
 
 	// Fence Modules
@@ -1469,276 +1540,279 @@ void UAssetLoaderComponent::LoadAnimModule(FString moduleName, FString meshFile)
 	AddBuildingModule(moduleName, mesh, _animModuleNames);
 }
 
-void UAssetLoaderComponent::TryLoadBuildingModuleSet(FString moduleSetName, FString meshSetFolder, bool useOldMethod, CardEnum buildingEnum, int32 era)
+void UAssetLoaderComponent::TryLoadBuildingModuleSet_Old(FactionEnum factionEnum, FString moduleSetNameIn, FString meshSetFolder)
 {
-	const FString buildingPath = "Models/Buildings/";
+	FString buildingPath = GetBuildingPath(factionEnum);
 	IPlatformFile& platformFile = FPlatformFileManager::Get().GetPlatformFile();
 
-	if (useOldMethod)
+	FString moduleSetNameWithFaction = WithFactionName(moduleSetNameIn);
+
+	TArray<FString> meshTypeNames = {
+		"SpecialInstant",
+		"Frame",
+		"Floor",
+		"Chimney",
+		"Body",
+		"Roof",
+
+		"RoofEdge",
+		"WindowFrame",
+		"FrameAux",
+	};
+	meshTypeNames.Add(FString("Special"));
+	for (int32 i = 1; i < 30; i++)  {
+		meshTypeNames.Add(FString("Special") + FString::FromInt(i));
+	}
+
+	for (int i = 0; i < meshTypeNames.Num(); i++)
 	{
-		TArray<FString> meshTypeNames = {
-			"SpecialInstant",
-			"Frame",
-			"Floor",
-			"Chimney",
-			"Body",
-			"Roof",
+		FString moduleName = moduleSetNameIn + meshTypeNames[i];
+		FString path = buildingPath + meshSetFolder + FString("/") + moduleName;
 
-			"RoofEdge",
-			"WindowFrame",
-			"FrameAux",
-		};
-		meshTypeNames.Add(FString("Special"));
-		for (int32 i = 1; i < 30; i++)  {
-			meshTypeNames.Add(FString("Special") + FString::FromInt(i));
-		}
+		//_LOG(PunLogAsset, "Try Adding Module: %s path: %s", *moduleName, *path);
 
-		for (int i = 0; i < meshTypeNames.Num(); i++)
+		if (platformFile.FileExists(*(FPaths::ProjectContentDir() + path + FString(".uasset"))))
 		{
-			FString moduleName = moduleSetName + meshTypeNames[i];
-			FString path = buildingPath + meshSetFolder + FString("/") + moduleName;
+			const auto mesh = LoadF<UStaticMesh>("/Game/" + path);
 
-			//_LOG(PunLogAsset, "Try Adding Module: %s path: %s", *moduleName, *path);
+			AddBuildingModule(moduleSetNameWithFaction + meshTypeNames[i], mesh, _moduleNames);
+			_LOG(PunLogAsset, "TryLoadBuildingModuleSet Old: %s _ %s", *_moduleNames.Last(), *mesh->GetName());
 
-			if (platformFile.FileExists(*(FPaths::ProjectContentDir() + path + FString(".uasset"))))
+			if (meshTypeNames[i].Equals(FString("Frame"))) {
+				_modulesNeedingPaintConstruction.Add(moduleSetNameWithFaction + meshTypeNames[i]);
+			}
+		}
+	}
+
+	/*
+	 * WorkStatic: Meshes that are shown only when the building is working
+	 */
+	static const TArray<FString> togglableMeshTypeNames = {
+		"WorkStatic", // This needs manual specification in DisplayInfo to input position
+		"WindowGlass",
+	};
+
+	for (int i = 0; i < togglableMeshTypeNames.Num(); i++) {
+		FString moduleName = moduleSetNameIn + togglableMeshTypeNames[i];
+		FString path = buildingPath + meshSetFolder + FString("/") + moduleName;
+
+		if (platformFile.FileExists(*(FPaths::ProjectContentDir() + path + FString(".uasset"))))
+		{
+			const auto mesh = LoadF<UStaticMesh>("/Game/" + path);
+
+			AddBuildingModule(moduleSetNameWithFaction + togglableMeshTypeNames[i], mesh, _togglableModuleNames);
+		}
+	}
+
+	/*
+	 * Animated Meshes
+	 */
+	static const TArray<FString> animMeshTypeNames = {
+		"WorkRotation1", // This needs manual specification in DisplayInfo to input position
+		"WorkRotation2", // This needs manual specification in DisplayInfo to input position
+		"WorkShaderAnimate",
+		"WorkShaderOnOff", // If we set scale to turn building on and off (such as beer brewery boiler scaling toggle)
+	};
+
+
+	for (int i = 0; i < animMeshTypeNames.Num(); i++) 
+	{
+		FString moduleName = moduleSetNameIn + animMeshTypeNames[i];
+		FString path = buildingPath + meshSetFolder + FString("/") + moduleName;
+
+		if (platformFile.FileExists(*(FPaths::ProjectContentDir() + path + FString(".uasset"))))
+		{
+			const auto mesh = LoadF<UStaticMesh>("/Game/" + path);
+			
+			AddBuildingModule(moduleSetNameWithFaction + animMeshTypeNames[i], mesh, _animModuleNames);
+		}
+	}
+	
+}
+
+void UAssetLoaderComponent::TryLoadBuildingModuleSet(FactionEnum factionEnum, FString moduleSetName, FString meshSetFolder, CardEnum buildingEnum, int32 era)
+{
+	FString buildingPath = GetBuildingPath(factionEnum);
+	moduleSetName = WithFactionName(factionEnum, moduleSetName);
+	
+	TArray<FString> foundFiles;
+
+	FString findDirectory = FPaths::ProjectContentDir() + buildingPath + meshSetFolder + FString("/");
+	IFileManager::Get().FindFiles(foundFiles, *findDirectory, TEXT(".uasset"));
+
+	check(foundFiles.Num() > 0);
+
+	_recentlyAddedModuleNames.Empty();
+
+	//// foundFiles are just file names, so we append the folder to it
+	int32 bodyMainIndex = 1;
+	int32 bodySpecialIndex = 1;
+	int32 alwaysOnIndex = 1;
+
+	auto loadMesh = [&](int32 fileIndex)
+	{
+		FString path = "/Game/" + buildingPath + meshSetFolder + FString("/") + foundFiles[fileIndex];
+		return LoadF<UStaticMesh>(path.LeftChop(7)); // Chop out .uasset
+	};
+
+	for (int32 i = 0; i < foundFiles.Num(); i++)
+	{
+		//foundFiles[i] = folderPath + FString("/") + foundFiles[i];
+		_LOG(PunLogAsset, "Files:%s", *(foundFiles[i]));
+
+		// Is from this set
+		//if (moduleSetNameIn == foundFiles[i].Left(moduleSetNameIn.Len()))
+		{
+			_LOG(PunLogAsset, "- File is from set");
+
+			auto addMesh = [&](FString moduleTypeName, bool isSpecial = false)
 			{
-				const auto mesh = LoadF<UStaticMesh>("/Game/" + path);
+				FString moduleName = moduleSetName + moduleTypeName;
+
+				//FString path = "/Game/" + buildingPath + meshSetFolder + FString("/") + foundFiles[i];
+				//const auto mesh = LoadF<UStaticMesh>(path.LeftChop(7)); // Chop out .uasset
+
+				const auto mesh = loadMesh(i);
+				check(mesh);
+
+				// Use Lightmap Resolution 100 to mark
+				if (moduleTypeName != "Frame" &&
+					moduleTypeName != "AlwaysOn" &&
+					(mesh->LightMapResolution == 100 || mesh->GetMaterial(0)->GetName().Contains(TEXT("Roof"), ESearchCase::Type::IgnoreCase))
+					&& bodyMainIndex <= 3)
+				{
+					moduleName = moduleSetName + FString("Body") + FString::FromInt(bodyMainIndex);
+					bodyMainIndex++;
+				}
+				else if (isSpecial) {
+					bodySpecialIndex++;
+				}
 
 				AddBuildingModule(moduleName, mesh, _moduleNames);
-				_LOG(PunLogAsset, "TryLoadBuildingModuleSet Old: %s _ %s", *_moduleNames.Last(), *mesh->GetName());
 
-				if (meshTypeNames[i].Equals(FString("Frame"))) {
-					_modulesNeedingPaintConstruction.Add(moduleName);
-				}
+				_LOG(PunLogAsset, "TryLoadBuildingModuleSet New: %s _ %s", *_moduleNames.Last(), *mesh->GetName());
+
+				return moduleName;
+			};
+
+
+			if (foundFiles[i].Contains("_AlwaysOn_")) {
+				addMesh("AlwaysOn");
+				alwaysOnIndex++;
 			}
-		}
-
-		/*
-		 * WorkStatic: Meshes that are shown only when the building is working
-		 */
-		static const TArray<FString> togglableMeshTypeNames = {
-			"WorkStatic", // This needs manual specification in DisplayInfo to input position
-			"WindowGlass",
-		};
-
-		for (int i = 0; i < togglableMeshTypeNames.Num(); i++) {
-			FString moduleName = moduleSetName + togglableMeshTypeNames[i];
-			FString path = buildingPath + meshSetFolder + FString("/") + moduleName;
-
-			if (platformFile.FileExists(*(FPaths::ProjectContentDir() + path + FString(".uasset"))))
+			else if (foundFiles[i].Contains("_Body_") ||
+				foundFiles[i].Contains("_Body1_") ||
+				foundFiles[i].Contains("_Body2_") ||
+				foundFiles[i].Contains("_Body3_") ||
+				foundFiles[i].Contains("_Windows_") ||
+				foundFiles[i].Contains("_Window_"))
 			{
-				const auto mesh = LoadF<UStaticMesh>("/Game/" + path);
+				FString moduleTypeNameIn = FString("Special") + FString::FromInt(bodySpecialIndex);
+				addMesh(moduleTypeNameIn, true);
+			}
+			else if (foundFiles[i].Contains("_Scaffolding_")) {
+				FString meshName = addMesh("Frame");
 
+				_modulesNeedingPaintConstruction.Add(meshName);
+			}
+			else if (foundFiles[i].Contains("_Manual_"))
+			{
+				const auto mesh = loadMesh(i);
+				FString moduleName = moduleSetName + "_Manual_" + foundFiles[i];
+				AddBuildingModule(moduleName, mesh, _moduleNames);
+			}
+			else if (foundFiles[i].Contains("_ManualToggle_"))
+			{
+				const auto mesh = loadMesh(i);
+				FString moduleName = moduleSetName + "_ManualToggle_" + foundFiles[i];
 				AddBuildingModule(moduleName, mesh, _togglableModuleNames);
 			}
-		}
-
-		/*
-		 * Animated Meshes
-		 */
-		static const TArray<FString> animMeshTypeNames = {
-			"WorkRotation1", // This needs manual specification in DisplayInfo to input position
-			"WorkRotation2", // This needs manual specification in DisplayInfo to input position
-			"WorkShaderAnimate",
-			"WorkShaderOnOff", // If we set scale to turn building on and off (such as beer brewery boiler scaling toggle)
-		};
-
-
-		for (int i = 0; i < animMeshTypeNames.Num(); i++) {
-			FString moduleName = moduleSetName + animMeshTypeNames[i];
-			FString path = buildingPath + meshSetFolder + FString("/") + moduleName;
-
-			if (platformFile.FileExists(*(FPaths::ProjectContentDir() + path + FString(".uasset"))))
+			else if (foundFiles[i].Contains("_WorkStatic"))
 			{
-				const auto mesh = LoadF<UStaticMesh>("/Game/" + path);
-				
+				const auto mesh = loadMesh(i);
+				FString moduleName = moduleSetName + "WorkStatic";
+
+				AddBuildingModule(moduleName, mesh, _togglableModuleNames);
+
+				_tempAuxGroup.togglableTransforms.push_back(ModuleTransform(moduleName));
+			}
+			else if (foundFiles[i].Contains("_WorkShaderAnimate"))
+			{
+				const auto mesh = loadMesh(i);
+				FString moduleName = moduleSetName + "WorkShaderAnimate";
+
 				AddBuildingModule(moduleName, mesh, _animModuleNames);
+
+				_tempAuxGroup.animTransforms.push_back(ModuleTransform(moduleName, FTransform::Identity, 0.0f, ModuleTypeEnum::ShaderAnimate));
 			}
-		}
-	}
-	else
-	{
-		TArray<FString> foundFiles;
-
-		FString findDirectory = FPaths::ProjectContentDir() + buildingPath + meshSetFolder + FString("/");
-		IFileManager::Get().FindFiles(foundFiles, *findDirectory, TEXT(".uasset"));
-
-		check(foundFiles.Num() > 0);
-
-		_recentlyAddedModuleNames.Empty();
-
-		//// foundFiles are just file names, so we append the folder to it
-		int32 bodyMainIndex = 1;
-		int32 bodySpecialIndex = 1;
-		int32 alwaysOnIndex = 1;
-
-		auto loadMesh = [&](int32 fileIndex)
-		{
-			FString path = "/Game/" + buildingPath + meshSetFolder + FString("/") + foundFiles[fileIndex];
-			return LoadF<UStaticMesh>(path.LeftChop(7)); // Chop out .uasset
-		};
-		
-		for (int32 i = 0; i < foundFiles.Num(); i++) 
-		{
-			//foundFiles[i] = folderPath + FString("/") + foundFiles[i];
-			_LOG(PunLogAsset, "Files:%s", *(foundFiles[i]));
-
-			// Is from this set
-			if (moduleSetName == foundFiles[i].Left(moduleSetName.Len()))
+			else if (foundFiles[i].Contains("_WorkShaderOnOff"))
 			{
-				_LOG(PunLogAsset, "- File is from set");
+				const auto mesh = loadMesh(i);
+				FString moduleName = moduleSetName + "WorkShaderOnOff";
 
-				auto addMesh = [&](FString moduleTypeName, bool isSpecial = false)
-				{
-					FString moduleName = moduleSetName + moduleTypeName;
+				AddBuildingModule(moduleName, mesh, _animModuleNames);
 
-					//FString path = "/Game/" + buildingPath + meshSetFolder + FString("/") + foundFiles[i];
-					//const auto mesh = LoadF<UStaticMesh>(path.LeftChop(7)); // Chop out .uasset
+				_tempAuxGroup.animTransforms.push_back(ModuleTransform(moduleName, FTransform::Identity, 0, ModuleTypeEnum::ShaderOnOff));
+			}
+			// Work Rotation
+			else if (foundFiles[i].Contains("_WorkRotation1"))
+			{
+				const auto mesh = loadMesh(i);
+				FString moduleName = moduleSetName + "WorkRotation1";
 
-					const auto mesh = loadMesh(i);
-					check(mesh);
+				AddBuildingModule(moduleName, mesh, _animModuleNames);
 
-					// Use Lightmap Resolution 100 to mark
-					if (moduleTypeName != "Frame" &&
-						moduleTypeName != "AlwaysOn" &&
-						(mesh->LightMapResolution == 100 || mesh->GetMaterial(0)->GetName().Contains(TEXT("Roof"), ESearchCase::Type::IgnoreCase))
-						&& bodyMainIndex <= 3) 
-					{
-						moduleName = moduleSetName + FString("Body") + FString::FromInt(bodyMainIndex);
-						bodyMainIndex++;
-					}
-					else if (isSpecial) {
-						bodySpecialIndex++;
-					}
+				FTransform transform;
+				ModuleTypeEnum moduleTypeEnum = ModuleTypeEnum::RotateRoll;
 
-					AddBuildingModule(moduleName, mesh, _moduleNames);
-					
-					_LOG(PunLogAsset, "TryLoadBuildingModuleSet New: %s _ %s", *_moduleNames.Last(), *mesh->GetName());
-					
-					return moduleName;
-				};
-
-				
-				if (foundFiles[i].Contains("_AlwaysOn_")) {
-					addMesh("AlwaysOn");
-					alwaysOnIndex++;
+				if (buildingEnum == CardEnum::Quarry) {
+					transform = TransformFromPosition(0, -11.122, 7.325);
+					moduleTypeEnum = ModuleTypeEnum::RotateRollQuarry;
 				}
-				else if (foundFiles[i].Contains("_Body_") ||
-					foundFiles[i].Contains("_Body1_") ||
-					foundFiles[i].Contains("_Body2_") ||
-					foundFiles[i].Contains("_Body3_") ||
-					foundFiles[i].Contains("_Windows_") ||
-					foundFiles[i].Contains("_Window_"))
-				{
-					FString moduleTypeNameIn = FString("Special") + FString::FromInt(bodySpecialIndex);
-					addMesh(moduleTypeNameIn, true);
+				else if (IsMountainMine(buildingEnum)) {
+					transform = TransformFromPosition(2.3193, 0, 5.1714);
+					moduleTypeEnum = ModuleTypeEnum::RotateRollMine;
 				}
-				else if (foundFiles[i].Contains("_Scaffolding_")) {
-					FString meshName = addMesh("Frame");
-
-					_modulesNeedingPaintConstruction.Add(meshName);
+				else if (buildingEnum == CardEnum::FurnitureWorkshop) {
+					transform = TransformFromPosition(6.506, 0, 13.303);
+					moduleTypeEnum = ModuleTypeEnum::RotateRollFurniture;
 				}
-				else if (foundFiles[i].Contains("_Manual_"))
-				{
-					const auto mesh = loadMesh(i);
-					FString moduleName = moduleSetName + "_Manual_" + foundFiles[i];
-					AddBuildingModule(moduleName, mesh, _moduleNames);
+				else if (buildingEnum == CardEnum::PaperMaker) {
+					transform = TransformFromPosition(0, 0, 7.388654);
 				}
-				else if (foundFiles[i].Contains("_ManualToggle_"))
-				{
-					const auto mesh = loadMesh(i);
-					FString moduleName = moduleSetName + "_ManualToggle_" + foundFiles[i];
-					AddBuildingModule(moduleName, mesh, _togglableModuleNames);
+				else {
+					UE_DEBUG_BREAK();
 				}
-				else if (foundFiles[i].Contains("_WorkStatic"))
-				{
-					const auto mesh = loadMesh(i);
-					FString moduleName = moduleSetName + "WorkStatic";
 
-					AddBuildingModule(moduleName, mesh, _togglableModuleNames);
+				_tempAuxGroup.animTransforms.push_back(ModuleTransform(moduleName, transform, 0.0f, moduleTypeEnum));
+			}
+			else if (foundFiles[i].Contains("_WorkRotation2"))
+			{
+				const auto mesh = loadMesh(i);
+				FString moduleName = moduleSetName + "WorkRotation2";
 
-					_tempAuxGroup.togglableTransforms.push_back(ModuleTransform(moduleName));
+				AddBuildingModule(moduleName, mesh, _animModuleNames);
+
+				FTransform transform;
+				ModuleTypeEnum moduleTypeEnum = ModuleTypeEnum::RotateRoll;
+
+				if (IsMountainMine(buildingEnum) && buildingEnum != CardEnum::Quarry) {
+					transform = TransformFromPosition(21.994, 0, 27.776);
+					moduleTypeEnum = ModuleTypeEnum::RotateRollMine2;
 				}
-				else if (foundFiles[i].Contains("_WorkShaderAnimate"))
-				{
-					const auto mesh = loadMesh(i);
-					FString moduleName = moduleSetName + "WorkShaderAnimate";
 
-					AddBuildingModule(moduleName, mesh, _animModuleNames);
-
-					_tempAuxGroup.animTransforms.push_back(ModuleTransform(moduleName, FTransform::Identity, 0.0f, ModuleTypeEnum::ShaderAnimate));
-				}
-				else if (foundFiles[i].Contains("_WorkShaderOnOff"))
-				{
-					const auto mesh = loadMesh(i);
-					FString moduleName = moduleSetName + "WorkShaderOnOff";
-
-					AddBuildingModule(moduleName, mesh, _animModuleNames);
-					
-					_tempAuxGroup.animTransforms.push_back(ModuleTransform(moduleName, FTransform::Identity, 0, ModuleTypeEnum::ShaderOnOff));
-				}
-				// Work Rotation
-				else if (foundFiles[i].Contains("_WorkRotation1"))
-				{
-					const auto mesh = loadMesh(i);
-					FString moduleName = moduleSetName + "WorkRotation1";
-
-					AddBuildingModule(moduleName, mesh, _animModuleNames);
-
-					FTransform transform;
-					ModuleTypeEnum moduleTypeEnum = ModuleTypeEnum::RotateRoll;
-
-					if (buildingEnum == CardEnum::Quarry) {
-						transform = TransformFromPosition(0, -11.122, 7.325);
-						moduleTypeEnum = ModuleTypeEnum::RotateRollQuarry;
-					}
-					else if (IsMountainMine(buildingEnum)) {
-						transform = TransformFromPosition(2.3193, 0, 5.1714);
-						moduleTypeEnum = ModuleTypeEnum::RotateRollMine;
-					}
-					else if (buildingEnum == CardEnum::FurnitureWorkshop) {
-						transform = TransformFromPosition(6.506, 0, 13.303);
-						moduleTypeEnum = ModuleTypeEnum::RotateRollFurniture;
-					}
-					else if (buildingEnum == CardEnum::PaperMaker) {
-						transform = TransformFromPosition(0, 0, 7.388654);
-					}
-					else {
-						UE_DEBUG_BREAK();
-					}
-					
-					_tempAuxGroup.animTransforms.push_back(ModuleTransform(moduleName, transform, 0.0f, moduleTypeEnum));
-				}
-				else if (foundFiles[i].Contains("_WorkRotation2"))
-				{
-					const auto mesh = loadMesh(i);
-					FString moduleName = moduleSetName + "WorkRotation2";
-
-					AddBuildingModule(moduleName, mesh, _animModuleNames);
-
-					FTransform transform;
-					ModuleTypeEnum moduleTypeEnum = ModuleTypeEnum::RotateRoll;
-					
-					if (IsMountainMine(buildingEnum) && buildingEnum != CardEnum::Quarry) {
-						transform = TransformFromPosition(21.994, 0, 27.776);
-						moduleTypeEnum = ModuleTypeEnum::RotateRollMine2;
-					}
-
-					_tempAuxGroup.animTransforms.push_back(ModuleTransform(moduleName, transform, 0.0f, moduleTypeEnum));
-				}
-				else if (foundFiles[i].Contains("_Smoke")) {
-					const auto mesh = loadMesh(i);
-					DetectParticleSystemPosition(buildingEnum, mesh);
-				}
+				_tempAuxGroup.animTransforms.push_back(ModuleTransform(moduleName, transform, 0.0f, moduleTypeEnum));
+			}
+			else if (foundFiles[i].Contains("_Smoke")) {
+				const auto mesh = loadMesh(i);
+				DetectParticleSystemPosition(buildingEnum, mesh);
 			}
 		}
-
-		// Hit here means Body needs to be specified. Body is for showing model from far away.
-		//  Set with LightMapResolution == 100
-		check(bodyMainIndex > 1 || alwaysOnIndex > 1);
 	}
 
-
+	// Hit here means Body needs to be specified. Body is for showing model from far away.
+	//  Set with LightMapResolution == 100
+	check(bodyMainIndex >= 1 || alwaysOnIndex > 1);
 }
 
 /**
@@ -2125,6 +2199,11 @@ void UAssetLoaderComponent::DetectParticleSystemPosition(CardEnum buildingEnum, 
 			}
 		}
 	}
+
+	if (!meshName_to_vertexPositions.Contains(mesh->GetName())) {
+		return;
+	}
+	
 
 	vertexPositions = meshName_to_vertexPositions[mesh->GetName()];
 	groupIndexToConnectedVertIndices = meshName_to_groupIndexToConnectedVertIndices[ToStdString(mesh->GetName())];

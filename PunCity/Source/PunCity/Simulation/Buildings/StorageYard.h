@@ -386,7 +386,7 @@ public:
 		const auto& tradableTownIds = GetApproximateTradableTownIdsByDistance(gateTile(), _playerId, _buildingEnum, _townId, _simulation);
 		for (int32 tradableTownId : tradableTownIds) {
 			// Ensure the town can be connected by land
-			WorldTile2 targetTile = _simulation->GetTownhallGate(tradableTownId);
+			WorldTile2 targetTile = _simulation->GetMajorTownhallGate(tradableTownId);
 			if (targetTile.isValid()) {
 				//std::vector<uint32_t> path;
 				//bool succeed = _simulation->pathAI(true)->FindPathRoadOnly(hubGate.x, hubGate.y, townGateTile.x, townGateTile.y, path);
@@ -403,7 +403,7 @@ public:
 					}
 
 					// Might be able to use townhall as startTile instead
-					startTile = _simulation->GetTownhallGate(townId());
+					startTile = _simulation->GetMajorTownhallGate(townId());
 					succeed = _simulation->pathAI()->FindPathRoadOnly(startTile.x, startTile.y, targetTile.x, targetTile.y, path);
 					if (!succeed) {
 						continue;
@@ -442,7 +442,7 @@ public:
 			if (townId != townToOmit)
 			{
 				// Ensure the town isn't too far
-				WorldTile2 townGateTile = sim->GetTownhallGate(townId);
+				WorldTile2 townGateTile = sim->GetMajorTownhallGate(townId);
 				if (townGateTile.isValid() && WorldTile2::Distance(townGateTile, originTile) <= maxTownDistance) {
 					tradableTownIds.push_back(townId);
 				}

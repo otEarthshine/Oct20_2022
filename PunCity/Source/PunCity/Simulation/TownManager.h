@@ -13,6 +13,7 @@
 
 #include "Building.h"
 #include "ProvinceSystem.h"
+#include "ProvinceInfoSystem.h"
 
 #include "TownManagerBase.h"
 
@@ -925,6 +926,9 @@ public:
 	{
 		for (int32 i = 0; i < loopCount; i++)
 		{
+			if (index >= _childIds.size() + _adultIds.size()) {
+				index = 0;
+			}
 			int32 unitId;
 			if (index < _adultIds.size()) {
 				unitId = _adultIds[index];
@@ -936,9 +940,6 @@ public:
 			func(unitId);
 
 			index++;
-			if (index >= _childIds.size() + _adultIds.size()) {
-				index = 0;
-			}
 		}
 	}
 	

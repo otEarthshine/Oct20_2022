@@ -823,7 +823,7 @@ public:
 
 		// If outside territory, warp them back
 		if (_simulation->tileOwnerTown(unitTile()) != _townId) {
-			WorldTile2 townGate = _simulation->GetTownhallGate(_townId);
+			WorldTile2 townGate = _simulation->GetMajorTownhallGate(_townId);
 			if (townGate.isValid()) {
 				_unitData->MoveUnitInstantly(_id, townGate.worldAtom2());
 			}

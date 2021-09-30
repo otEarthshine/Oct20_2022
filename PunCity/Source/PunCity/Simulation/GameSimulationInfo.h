@@ -3776,8 +3776,8 @@ static const BldInfo CardInfos[]
 
 	//
 	BldInfo(CardEnum::FireStarter,		_LOCTEXT("Fire Starter", "Fire Starter"), 200,	LOCTEXT("Fire Starter Desc", "Start a fire in an area (3 tiles radius).")),
-	BldInfo(CardEnum::Steal,			_LOCTEXT("Steal", "Steal"), 200,					LOCTEXT("Steal Desc", "Steal 30% of target player's treasury<img id=\"Coin\"/>. Use on Townhall. <Gray>(max 10000)</>")),
-	BldInfo(CardEnum::Snatch,			_LOCTEXT("Steal", "Steal"), 100,				LOCTEXT("Snatch Desc", "Steal <img id=\"Coin\"/> equal to target player's population X 10. Use on Townhall.")),
+	BldInfo(CardEnum::Steal,			_LOCTEXT("StealOld", "StealOld"), 200,					LOCTEXT("StealOld Desc", "Steal 30% of target player's treasury<img id=\"Coin\"/>. Use on Townhall. <Gray>(max 10000)</>")),
+	BldInfo(CardEnum::Snatch,			_LOCTEXT("Steal", "Steal"), 100,				LOCTEXT("Steal Desc", "Steal <img id=\"Coin\"/> equal to target player's population X 10. Use on Townhall.")),
 	BldInfo(CardEnum::SharingIsCaring,	_LOCTEXT("Sharing is Caring", "Sharing is Caring"), 120, LOCTEXT("Sharing is Caring Desc", "Give 100 Wheat to the target player. Use on Townhall.")),
 	BldInfo(CardEnum::Kidnap,			_LOCTEXT("Kidnap", "Kidnap"), 350,				LOCTEXT("Kidnap Desc", "Steal up to 3 citizens from target player. Apply on Townhall.")),
 	BldInfo(CardEnum::KidnapGuard,		_LOCTEXT("Kidnap Guard", "Kidnap Guard"), 20,	LOCTEXT("Kidnap Guard Desc", "Guard your city against Kidnap for two years. Require <img id=\"Coin\"/>xPopulation to activate.")),
@@ -10091,12 +10091,23 @@ static const std::vector<FactionInfo> FactionInfos =
 
 #undef LOCTEXT_NAMESPACE
 
+
+static int32 FactionEnumCount = FactionInfos.size();
+
 static const FactionInfo& GetFactionInfo(FactionEnum factionEnum) {
 	return FactionInfos[static_cast<int32>(factionEnum)];
 }
 static const FactionInfo& GetFactionInfoInt(int32 factionEnumInt) {
 	return FactionInfos[factionEnumInt];
 }
+
+static FString WithFactionName(FactionEnum factionEnum, const FString& moduleSetName) {
+	return moduleSetName + GetFactionInfo(factionEnum).name.ToString();
+}
+static FString WithFactionName(const FString& moduleSetName) {
+	return moduleSetName + GetFactionInfo(FactionEnum::Europe).name.ToString();
+}
+
 
 // TODO:
 enum class AIPersonalityEnum

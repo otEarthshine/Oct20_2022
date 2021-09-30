@@ -244,6 +244,9 @@ public:
 
 	virtual TownManagerBase* townManagerBase(int32 townId) override
 	{
+		if (townId == -1) {
+			return nullptr;
+		}
 		if (townId >= MinorTownShift) {
 			int32 minorTownId = townId - MinorTownShift;
 			check(minorTownId < _minorTownManagers.size());
@@ -357,7 +360,11 @@ public:
 
 	virtual bool IsTownhallOverlapProvince(int32 provinceId, int32 townId) override
 	{
-		TileArea townhallArea = building(townManagerBase(townId)->townhallId).area();
+		int32 townhallId = townManagerBase(townId)->townhallId;
+		if (townhallId == -1) {
+			return false;
+		}
+		TileArea townhallArea = building(townhallId).area();
 		vector<int32> townhallOverlapProvinceIds = provinceSystem().GetProvinceIdsFromArea(townhallArea, true);
 		for (int32 townhallOverlapProvinceId : townhallOverlapProvinceIds) {
 			if (townhallOverlapProvinceId == provinceId) {
@@ -640,9 +647,19 @@ public:
 	WorldTile2 GetTownhallGateFast(int32 townId) final {
 		return GetTownhall(townId).gateTile();
 	}
-	WorldTile2 GetTownhallGate(int32 townId) final {
-		if (townId == -1) return WorldTile2::Invalid;
+	WorldTile2 GetMajorTownhallGate(int32 townId) final
+	{
+		if (townId == -1 || IsMinorTown(townId)) {
+			return WorldTile2::Invalid;
+		}
 		int32 townhallId = townManager(townId).townhallId;
+		if (townhallId == -1) return WorldTile2::Invalid;
+		return building(townhallId).gateTile();
+	}
+	virtual WorldTile2 GetTownhallGate_All(int32 townId) override
+	{
+		if (townId == -1) return WorldTile2::Invalid;
+		int32 townhallId = townManagerBase(townId)->townhallId;
 		if (townhallId == -1) return WorldTile2::Invalid;
 		return building(townhallId).gateTile();
 	}
@@ -688,7 +705,7 @@ public:
 	{
 		const auto& townIds = GetTownIds(playerId);
 		for (int32 townIdTemp : townIds) {
-			WorldTile2 gateTile = GetTownhallGate(townIdTemp);
+			WorldTile2 gateTile = GetMajorTownhallGate(townIdTemp);
 			if (gateTile.isValid() &&
 				pathAI()->FindPathRoadOnly(tile.x, tile.y, gateTile.x, gateTile.y, path))
 			{
@@ -1493,7 +1510,7 @@ public:
 		startPortId = -1;
 		endPortId = -1;
 
-		WorldTile2 startTownGate = GetTownhallGate(startTownId);
+		WorldTile2 startTownGate = GetMajorTownhallGate(startTownId);
 		if (!startTownGate.isValid()) { return false; }
 
 		// Rank port by how close it is to origin
@@ -2229,7 +2246,7 @@ public:
 		const std::vector<int32>& townIds = GetTownIds(playerId);
 		int32 nearestDistance = INT_MAX;
 		for (int32 townId : townIds) {
-			int32 dist = WorldTile2::Distance(GetTownhallGate(townId), tile);
+			int32 dist = WorldTile2::Distance(GetMajorTownhallGate(townId), tile);
 			if (dist < nearestDistance) {
 				nearestDistance = dist;
 			}
@@ -3266,8 +3283,8 @@ public:
 		return _gameManager->connectedPlayerIds();
 	}
 
-	int32 GetMinEraDisplay(CardEnum buildingEnum) final {
-		return _gameManager->GetMinEraDisplay(buildingEnum);
+	int32 GetMinEraDisplay(FactionEnum factionEnum, CardEnum buildingEnum) final {
+		return _gameManager->GetMinEraDisplay(factionEnum, buildingEnum);
 	}
 	
 

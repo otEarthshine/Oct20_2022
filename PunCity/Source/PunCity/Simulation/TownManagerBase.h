@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "ProvinceInfoSystem.h"
 #include "WorldTradeSystem.h"
 
 
@@ -28,18 +27,17 @@ struct ProvinceClaimProgress
 	int32 battleFinishCountdownSecs = -1; // Countdown after Finishing battle
 	
 
-	bool attackerWon(bool checkCountdown = true) const {
-		if (checkCountdown && battleFinishCountdownSecs != 0) {
-			return false;
-		}
-		return defenderFrontLine.size() == 0 && defenderBackLine.size() == 0;
+	bool attackerWon() const {
+		return battleFinishCountdownSecs == 0 && defenderFrontLine.size() == 0 && defenderBackLine.size() == 0;
 	}
-	bool attackerLost(bool checkCountdown = true) const {
-		if (checkCountdown && battleFinishCountdownSecs != 0) {
-			return false;
-		}
-		return attackerFrontLine.size() == 0 && attackerBackLine.size() == 0;
+	bool attackerLost() const {
+		return battleFinishCountdownSecs == 0 && attackerFrontLine.size() == 0 && attackerBackLine.size() == 0;
 	}
+	bool isWaitingForBattleFinishCountdown() {
+		return (defenderFrontLine.size() == 0 && defenderBackLine.size() == 0) || 
+				(attackerFrontLine.size() == 0 && attackerBackLine.size() == 0);
+	}
+	
 
 	bool isValid() { return provinceId != -1; }
 
@@ -200,6 +198,8 @@ public:
 
 	bool isCapital() { return _townId == _playerId; }
 
+	//FactionEnum factionEnum() { return _factionEnum; }
+
 	const std::vector<int32>& provincesClaimed() { return _provincesClaimed; }
 
 	virtual int32 baseDefenderUnits() {
@@ -329,6 +329,7 @@ public:
 		claimProgress.attackEnum = provinceAttackEnum;
 		claimProgress.provinceId = provinceId;
 		claimProgress.attackerPlayerId = attackerPlayerId;
+		claimProgress.battleFinishCountdownSecs = Time::SecondsPerRound;
 
 		//! Fill Attacker Military Units
 		claimProgress.Reinforce(initialMilitaryCards, true, attackerPlayerId);
@@ -579,6 +580,8 @@ public:
 		Ar << _townId;
 		Ar << townhallId;
 
+		//Ar << _factionEnum;
+
 		SerializeVecValue(Ar, _provincesClaimed);
 
 		SerializeVecValue(Ar, _autoExportElements);
@@ -610,6 +613,9 @@ public:
 	static const int32 BaseAutoTradeFeePercent = 40;
 
 protected:
+	// FactionEnum
+	//FactionEnum _factionEnum = FactionEnum::Arab;
+	
 	//
 	std::vector<int32> _provincesClaimed;
 

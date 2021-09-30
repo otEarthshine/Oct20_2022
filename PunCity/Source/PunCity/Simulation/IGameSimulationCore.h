@@ -146,7 +146,7 @@ public:
 
 	virtual bool AllPlayerHasTownhallAfterInitialTicks() = 0;
 
-	virtual int32 GetMinEraDisplay(CardEnum buildingEnum) = 0;
+	virtual int32 GetMinEraDisplay(FactionEnum factionEnum, CardEnum buildingEnum) = 0;
 
 	// Unit
 	virtual void ResetUnitActions(int id, int32 waitTicks = 1) = 0;
@@ -174,7 +174,8 @@ public:
 	
 	virtual WorldTile2 GetTownhallGateCapital(int32 playerId) = 0;
 	virtual WorldTile2 GetTownhallGateFast(int32 townId) = 0;
-	virtual WorldTile2 GetTownhallGate(int32 townId) = 0;
+	virtual WorldTile2 GetMajorTownhallGate(int32 townId) = 0;
+	virtual WorldTile2 GetTownhallGate_All(int32 townId) = 0;
 	
 	virtual FText townNameT(int32 townId) = 0;
 	virtual FText townOrPlayerNameT(int32 townId) = 0;

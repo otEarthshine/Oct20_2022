@@ -454,7 +454,7 @@ void UObjectDescriptionUISystem::LeftMouseDown()
 
 							if (building.isConstructed())
 							{
-								const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(building.buildingEnum(), building.displayVariationIndex());
+								const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(building.factionEnum(), building.buildingEnum(), building.displayVariationIndex());
 								std::vector<ModuleTransform> modules = modulePrototype.transforms;
 
 								FTransform transform(FRotator(0, RotationFromDirection(building.faceDirection()), 0), 
@@ -4373,6 +4373,11 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 	else
 	{
 		TownManagerBase* townManagerBase = sim.townManagerBase(provinceTownId);
+
+		// No townhall, don't do anything
+		if (townManagerBase == nullptr || townManagerBase->townhallId == -1) {
+			return;
+		}
 
 		// if this province overlaps with Townhall, act as if this is the home province
 		bool isVassalizing = false;

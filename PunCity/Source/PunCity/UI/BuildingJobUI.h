@@ -139,7 +139,7 @@ public:
 			if (building.ownedBy(playerId()) || SimSettings::IsOn("CheatFastBuild")) {
 				RevealSpyNestButton->SetVisibility(ESlateVisibility::Visible);
 				RevealSpyNestButtonText->SetText(FText::Format(
-					NSLOCTEXT("BuildingJobUI", "Reveal Spy Nest Button", "Reveal Spy Nest <img id=\"Coin\"/>{0}"), 
+					NSLOCTEXT("BuildingJobUI", "Reveal Spy Nest Button", "Reveal Spy Nest\n<img id=\"Coin\"/>{0}"), 
 					TEXT_NUM(simulation().GetRevealSpyNestPrice()))
 				);
 			}

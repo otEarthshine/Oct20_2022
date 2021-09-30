@@ -119,6 +119,9 @@ public:
 	TileArea area() const { return _area; }
 	TileArea frontArea() const { return _area.GetFrontArea(_faceDirection); }
 
+	FactionEnum factionEnum() { return FactionEnum::Arab; }
+	
+
 	virtual int32 tileCount() { return _area.tileCount(); }
 
 	static WorldTile2 GetPortTile(WorldTile2 gateTile, Direction faceDirection, CardEnum buildingEnum) {

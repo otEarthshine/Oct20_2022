@@ -2,7 +2,6 @@
 
 
 #include "TownManagerBase.h"
-#include "Buildings/GathererHut.h"
 #include "BuildingCardSystem.h"
 
 void ProvinceClaimProgress::Reinforce(std::vector<CardStatus>& militaryCards, bool isReinforcingAttacker, int32 unitPlayerId)
@@ -111,20 +110,7 @@ void ProvinceClaimProgress::Tick1Sec(IGameSimulationCore* simulation)
 	}
 
 	//! Battle Countdown once it is done
-	if (attackerWon(false) || 
-		attackerLost(false)) 
-	{
-		if (battleFinishCountdownSecs == -1) {
-			battleFinishCountdownSecs = Time::SecondsPerRound * 2;
-		} else {
-			battleFinishCountdownSecs = std::max(0, battleFinishCountdownSecs - 1);
-		}
-	}
-	else {
-		battleFinishCountdownSecs = -1;
-	}
-
-	
+	battleFinishCountdownSecs = std::max(0, battleFinishCountdownSecs - 1);
 }
 
 /*
@@ -165,7 +151,8 @@ void TownManagerBase::ReturnMilitaryUnitCards(std::vector<CardStatus>& cards, in
 {
 	for (CardStatus& card : cards) {
 		if (forcedAll || playerId == card.cardStateValue1) {
-			_simulation->cardSystem(playerId).AddCards_BoughtHandAndInventory(card);
+			// TODO:
+			//_simulation->cardSystem(playerId).AddCards_BoughtHandAndInventory(card);
 		}
 	}
 }
@@ -174,23 +161,26 @@ void TownManagerBase::RefreshMinorCityTargetWealth()
 {
 	const int32 maxTileDistanceToCheck = 300;
 	int32 maxTownRevenue = 0;
-	WorldTile2 thisTownGateTile = _simulation->GetTownhallGate(_townId);
+	WorldTile2 thisTownGateTile = _simulation->GetTownhallGate_All(_townId);
 	
 	_simulation->ExecuteOnMajorTowns([&](int32 townId) 
 	{
-		WorldTile2 gateTile = _simulation->GetTownhallGate(townId);
+		WorldTile2 gateTile = _simulation->GetMajorTownhallGate(townId);
 		if (gateTile.isValid() &&
 			WorldTile2::Distance(gateTile, thisTownGateTile) < maxTileDistanceToCheck)
 		{
-			maxTownRevenue = std::max(maxTownRevenue, _simulation->townManager(townId).totalRevenue100() / 100);
+			// TODO: ARAB FIX
+			//maxTownRevenue = std::max(maxTownRevenue, _simulation->townManager(townId).totalRevenue100() / 100);
 		}
 	});
+
+	_minorCityTargetWealth = maxTownRevenue;
 }
 
 void TownManagerBase::AddChildBuilding(MinorCityChild& child)
 {
-	//child.SetParentId(buildingId());
-	_childBuildingIds.push_back(child.buildingId());
+	// TODO: ARAB FIX
+	//_childBuildingIds.push_back(child.buildingId());
 }
 
 void TownManagerBase::CalculateAutoTradeProfit(

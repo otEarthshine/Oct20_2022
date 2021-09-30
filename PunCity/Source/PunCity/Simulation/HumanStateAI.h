@@ -339,8 +339,8 @@ public:
 	{
 		_simulation->ResetUnitActions(_id, 0);
 		
-		WorldTile2 lastTownGate = _simulation->GetTownhallGate(lastTownId);
-		WorldTile2 newTownGate = _simulation->GetTownhallGate(newTownId);
+		WorldTile2 lastTownGate = _simulation->GetMajorTownhallGate(lastTownId);
+		WorldTile2 newTownGate = _simulation->GetMajorTownhallGate(newTownId);
 
 		_townId = newTownId;
 		_playerId = _simulation->townPlayerId(newTownId);
@@ -355,8 +355,8 @@ public:
 		_simulation->ResetUnitActions(_id, 0);
 
 		// Go to old townhall, go to startPort, go to endPort, go to new townhall
-		WorldTile2 lastTownGate = _simulation->GetTownhallGate(lastTownId);
-		WorldTile2 newTownGate = _simulation->GetTownhallGate(newTownId);
+		WorldTile2 lastTownGate = _simulation->GetMajorTownhallGate(lastTownId);
+		WorldTile2 newTownGate = _simulation->GetMajorTownhallGate(newTownId);
 
 		WorldTile2 startPortGate = _simulation->building(startPortId).gateTile();
 		WorldTile2 endPortGate = _simulation->building(endPortId).gateTile();

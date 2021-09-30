@@ -84,6 +84,8 @@ void UWorldSpaceUI::SetupClasses(TSharedPtr<FSlateStyleSet> style, USceneCompone
 
 	_buildingJobUIs.Init();
 	_townhallHoverInfos.Init();
+	_minorTownHoverInfos.Init();
+	
 	_regionHoverUIs.Init();
 	_raidHoverIcons.Init();
 	_iconTextHoverIcons.Init();
@@ -330,6 +332,15 @@ void UWorldSpaceUI::TickBuildings()
 				}
 
 			}
+			else if (building.isEnum(CardEnum::MinorCity))
+			{
+				if (townhallUIActive)
+				{
+					LEAN_PROFILING_UI(TickWorldSpaceUI_Townhall);
+					
+					TickMinorTownInfo(building.townId());
+				}
+			}
 			else {
 				// Don't show jobUI at all beyond some zoom
 				//  (Zoom distance... 455 to 541)
@@ -481,6 +492,8 @@ void UWorldSpaceUI::TickBuildings()
 		//! Remove unused UIs
 		_buildingJobUIs.AfterAdd();
 		_townhallHoverInfos.AfterAdd();
+		_minorTownHoverInfos.AfterAdd();
+		
 		_regionHoverUIs.AfterAdd();
 		_raidHoverIcons.AfterAdd();
 
@@ -951,6 +964,22 @@ void UWorldSpaceUI::TickTownhallInfo(int buildingId, bool isMini)
 	}
 }
 
+void UWorldSpaceUI::TickMinorTownInfo(int32 townId, bool isMini)
+{
+	if (InterfacesInvalid()) return;
+
+	auto& sim = dataSource()->simulation();
+	TownManagerBase* townManagerBase = sim.townManagerBase(townId);
+
+	UMinorTownWorldUI* minorTownInfo = _minorTownHoverInfos.GetHoverUI<UMinorTownWorldUI>(townId, UIEnum::WG_MinorTownWorldUI, this, _worldWidgetParent, 
+		GetBuildingTrueCenterDisplayLocation(townManagerBase->townhallId), dataSource()->zoomDistance(),
+		[&](UMinorTownWorldUI* ui) {}
+	);
+
+	minorTownInfo->uiTownId = townId;
+	minorTownInfo->UpdateMinorTownUI(isMini);
+}
+
 void UWorldSpaceUI::TickUnits()
 {
 	
@@ -1191,6 +1220,8 @@ void UWorldSpaceUI::TickMap()
 				}
 			}
 		});
+
+		
 
 	}
 	

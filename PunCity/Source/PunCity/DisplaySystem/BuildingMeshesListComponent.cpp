@@ -26,7 +26,7 @@ UBuildingMeshesComponent* BuildingMeshesListComponent::ShowBuildingMesh(Building
 {
 	UBuildingMeshesComponent* buildingMeshes = GetBuildingMeshes();
 
-	auto& modules = _dataSource->displayInfo().GetDisplayModules(building.buildingEnum(), building.displayVariationIndex()).transforms;
+	auto& modules = _dataSource->displayInfo().GetDisplayModules(building.factionEnum(), building.buildingEnum(), building.displayVariationIndex()).transforms;
 
 	if (building.isEnum(CardEnum::Bridge) ||
 		building.isEnum(CardEnum::IntercityBridge))

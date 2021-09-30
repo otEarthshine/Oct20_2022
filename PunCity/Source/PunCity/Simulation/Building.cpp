@@ -1709,7 +1709,7 @@ int32 Building::displayVariationIndex()
 			}
 			
 			// Some building upgrade according to Town Lvl
-			int32 variationIndex = (_simulation->GetTownLvl(_townId) - 1) - _simulation->GetMinEraDisplay(_buildingEnum);
+			int32 variationIndex = (_simulation->GetTownLvl(_townId) - 1) - _simulation->GetMinEraDisplay(factionEnum(), _buildingEnum);
 			variationIndex = max(variationIndex, 0);
 			return variationIndex;
 		}

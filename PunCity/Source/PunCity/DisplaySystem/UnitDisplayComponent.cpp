@@ -414,14 +414,15 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 		{
 			Building& building = buildingSystem.building(buildingId);
 			CardEnum buildingEnum = building.buildingEnum();
+			FactionEnum factionEnum = building.factionEnum();
 
-			if (displayInfo.GetVariationCount(buildingEnum) == 0) {
+			if (displayInfo.GetVariationCount(factionEnum, buildingEnum) == 0) {
 				return;
 			}
 			
 			// Building mesh
 			int32_t displayVariationIndex = building.displayVariationIndex();
-			const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(buildingEnum, displayVariationIndex);
+			const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(factionEnum, buildingEnum, displayVariationIndex);
 			std::vector<ModuleTransform> modules = modulePrototype.animTransforms;
 
 			if (modules.size() == 0) {

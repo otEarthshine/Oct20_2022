@@ -941,16 +941,6 @@ void ABuildingPlacementSystem::LeftClickDown(IGameNetworkInterface* networkInter
 			}
 			return;
 		}
-
-		
-		if (_buildingEnum == CardEnum::Raid)
-		{
-			int32 provinceId = _simulation->GetProvinceIdClean(_mouseOnTile);
-			if (provinceId != -1) {
-				_networkInterface->OpenReinforcementUI(provinceId, CallbackEnum::RaidBattle);
-			}
-			return;
-		}
 	}
 
 	// TODO: use for ranch
@@ -1805,7 +1795,14 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 
 	if (_placementType == PlacementType::RevealSpyNest)
 	{
-		
+		_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, _mouseOnTile);
+		_canPlace = true;
+
+		_placementGrid.AfterAdd();
+
+		FVector meshLocation = MapUtil::DisplayLocation(cameraAtom, _mouseOnTile.worldAtom2());
+		_radiusMesh->SetWorldLocation(meshLocation);
+		return;
 	}
 	
 	
@@ -1937,6 +1934,23 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 						int32 provinceId = simulation.GetProvinceIdClean(location);
 						if (provinceId != -1)
 						{
+							int32 targetTownId = simulation.provinceOwnerTownSafe(provinceId);
+
+							//! Minor Town
+							if (IsMinorTown(targetTownId)) 
+							{
+								//! Raid
+								int32 raidMoney100 = simulation.GetProvinceRaidMoney100(provinceId);
+								int32 raidInfluence100 = raidMoney100 / 2;
+								
+								SetInstruction(PlacementInstructionEnum::Generic, true, FText::Format(
+									LOCTEXT("Raid Provinces Instruction MinorTown", "Raid Enemy Provinces for <img id=\"Coin\"/>{0} and <img id=\"Influence\"/>{1}."),
+									TEXT_100(raidMoney100), TEXT_100(raidInfluence100)
+								));
+								_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, location);
+								return;
+							}
+							
 							int32 targetPlayerId = simulation.provinceOwnerPlayer(provinceId);
 							if (targetPlayerId != -1 && targetPlayerId != playerId)
 							{
@@ -2868,7 +2882,9 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			return;
 		}
 
-		std::vector<ModuleTransform> modules = _gameInterface->displayInfo().GetDisplayModules(_buildingEnum, 0).transforms;
+		FactionEnum factionEnum = /*(townId != -1) ? _simulation->townManagerBase(townId)->factionEnum() :*/ FactionEnum::Europe;
+
+		std::vector<ModuleTransform> modules = _gameInterface->displayInfo().GetDisplayModules(factionEnum, _buildingEnum, 0).transforms;
 		_gameInterface->ShowBuildingMesh(_mouseOnTile, _faceDirection, modules, 0, false);
 	}
 }
@@ -3173,6 +3189,17 @@ void ABuildingPlacementSystem::NetworkTryPlaceBuilding(IGameNetworkInterface* ne
 	{
 		if (_canPlace)
 		{
+			// Special Case: Raid
+			if (_buildingEnum == CardEnum::Raid)
+			{
+				int32 provinceId = _simulation->GetProvinceIdClean(_mouseOnTile);
+				if (provinceId != -1) {
+					_networkInterface->OpenReinforcementUI(provinceId, CallbackEnum::RaidBattle);
+				}
+				CancelPlacement();
+				return;
+			}
+			
 			auto& sim = _gameInterface->simulation();
 
 			auto command = make_shared<FPlaceBuilding>();

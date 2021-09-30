@@ -779,8 +779,9 @@ void UTerrainMapComponent::RefreshAnnotations()
 			for (int32 buildingId : buildingIds) 
 			{
 				Building& building = sim.building(buildingId);
+				FactionEnum factionEnum = building.factionEnum();
 				
-				if (building.isConstructed() && displayInfo.GetVariationCount(buildingEnum) > 0)
+				if (building.isConstructed() && displayInfo.GetVariationCount(factionEnum, buildingEnum) > 0)
 				{
 					// Building mesh
 					int32 displayVariationIndex = building.displayVariationIndex();
@@ -797,7 +798,7 @@ void UTerrainMapComponent::RefreshAnnotations()
 					FTransform transform(FRotator(0, buildingRotation, 0), displayLocation);
 					//_dataSource->DisplayLocation(centerTile.worldAtom2())
 
-					const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(buildingEnum, displayVariationIndex);
+					const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(factionEnum, buildingEnum, displayVariationIndex);
 					std::vector<ModuleTransform> modules = modulePrototype.transforms;
 
 					auto showMesh = [&](int32 i) {

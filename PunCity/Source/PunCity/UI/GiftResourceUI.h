@@ -27,9 +27,6 @@ public:
 	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* CloseXButton;
 
 	UPROPERTY(meta = (BindWidget)) UTextBlock* GiftTitleText;
-	//UPROPERTY(meta = (BindWidget)) UImage* GiftIcon;
-	//UPROPERTY(meta = (BindWidget)) UComboBoxString* GiftTypeDropdown;
-	//UPROPERTY(meta = (BindWidget)) UPunEditableNumberBox* GiftTargetAmount;
 
 	//! Trade
 	// Left
@@ -172,7 +169,6 @@ public:
 		}
 
 		// Left and Right
-		LeftAddMoneyButton->SetVisibility(ESlateVisibility::Visible);
 		LeftMoneyTargetBox->SetVisibility(ESlateVisibility::Collapsed);
 		LeftResourceValueBox->SetVisibility(ESlateVisibility::Collapsed);
 		LeftCardBox->SetVisibility(ESlateVisibility::Collapsed);
@@ -188,6 +184,11 @@ public:
 		RightTradeResourceRows->ClearChildren();
 		RightCardBox->ClearChildren();
 
+		//! Minor Town shouldn't display Resource/Card
+		LeftAddMoneyButton->SetVisibility(ESlateVisibility::Visible);
+		LeftAddResourceButton->SetVisibility(IsMinorTown(targetTownId) ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+		LeftAddCardButton->SetVisibility(IsMinorTown(targetTownId) ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+
 		//! Shared
 		ChooseResourceOverlay->SetVisibility(ESlateVisibility::Collapsed);
 		
@@ -195,16 +196,6 @@ public:
 		CardChooseBox->ClearChildren();
 		
 
-		// Gift Type Dropdown
-		//GiftTypeDropdown->ClearOptions();
-		//GiftTypeDropdown->AddOption(MoneyText.ToString());
-		//for (ResourceInfo info : SortedNameResourceInfo) {
-		//	GiftTypeDropdown->AddOption(info.name.ToString());
-		//}
-		//GiftTypeDropdown->SetSelectedOption(MoneyText.ToString());
-
-		
-		//GiftIcon->SetBrushFromTexture(assetLoader()->CoinIcon);
 		
 		SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	}
@@ -364,7 +355,7 @@ public:
 
 		RightMoneyTargetAmount->amount = 0;
 		RightMoneyTargetBox->SetVisibility(ESlateVisibility::Collapsed);
-		RightAddMoneyButton->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		RightAddMoneyButton->SetVisibility(ESlateVisibility::Visible);
 	}
 	UFUNCTION() void OnClickLeftAddResourceButton() {
 		ChooseResourceOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
@@ -384,7 +375,7 @@ public:
 
 		LeftMoneyTargetAmount->amount = 0;
 		LeftMoneyTargetBox->SetVisibility(ESlateVisibility::Collapsed);
-		LeftAddMoneyButton->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		LeftAddMoneyButton->SetVisibility(ESlateVisibility::Visible);
 	}
 	UFUNCTION() void OnClickRightAddResourceButton() {
 		ChooseResourceOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
@@ -400,11 +391,11 @@ public:
 	{
 		LeftMoneyTargetAmount->amount = 0;
 		LeftMoneyTargetBox->SetVisibility(ESlateVisibility::Collapsed);
-		LeftAddMoneyButton->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		LeftAddMoneyButton->SetVisibility(ESlateVisibility::Visible);
 
 		RightMoneyTargetAmount->amount = 0;
 		RightMoneyTargetBox->SetVisibility(ESlateVisibility::Collapsed);
-		RightAddMoneyButton->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		RightAddMoneyButton->SetVisibility(ESlateVisibility::Visible);
 	}
 	
 

@@ -10,252 +10,36 @@
 class GameDisplayInfo
 {
 public:
-	
-	void InitBuildingSets(UAssetLoaderComponent* assetLoader)
+	/*
+	 * Get
+	 */
+	int32 GetVariationCount(FactionEnum factionEnum, CardEnum buildingEnum) const {
+		return BuildingEnumToVariationToModuleTransforms(factionEnum)[static_cast<int>(buildingEnum)].Num();
+	}
+
+	const ModuleTransformGroup& GetDisplayModules(FactionEnum factionEnum, CardEnum buildingEnum, int32 variationIndex) const
 	{
-		BuildingEnumToVariationToModuleTransforms = assetLoader->buildingEnumToVariationToModuleTransforms();
-
-		auto set = [&](CardEnum buildingEnum, TArray<ModuleTransformGroup> moduleGroups) {
-			BuildingEnumToVariationToModuleTransforms[static_cast<int>(buildingEnum)] = moduleGroups;
-		};
-		auto setName = [&](CardEnum buildingEnum, FString name) {
-			BuildingEnumToVariationToModuleTransforms[static_cast<int>(buildingEnum)] = { ModuleTransformGroup::CreateSet(name) };
-		};
-
-
-		auto add = [&](CardEnum buildingEnum, TArray<ModuleTransformGroup> moduleGroups) {
-			for (int32 i = 0; i < moduleGroups.Num(); i++) {
-				BuildingEnumToVariationToModuleTransforms[static_cast<int>(buildingEnum)].Add(moduleGroups[i]);
-			}
-		};
-		add(CardEnum::House, {
-			// // House level 1
-			// ModuleTransformGroup::CreateSet("House_Lvl1_Var1"),
-			// ModuleTransformGroup::CreateSet("House_Lvl1_Var2"),
-			// ModuleTransformGroup::CreateSet("House_Lvl1_Var3"),
-			// ModuleTransformGroup::CreateSet("House_Lvl1_Var1"),
-			// ModuleTransformGroup::CreateSet("HouseClayLvl1",
-			//	 {},
-			//	 { {ParticleEnum::Smoke, TransformFromPosition(23.8, -5.7, 29.4)} }
-			// ),
-
-			//// House level 2
-			//ModuleTransformGroup::CreateSet("House_Lvl1_Var1"),
-			//ModuleTransformGroup::CreateSet("HouseClayLvl2"),
-
-			//// House level 3
-			//ModuleTransformGroup::CreateSet("HouseLvl3",
-			//	{
-			//	},
-			//	{ {ParticleEnum::Smoke, TransformFromPosition(17.5, 13.3, 43.7)} }
-			//),
-			//ModuleTransformGroup::CreateSet("HouseLvl3V2",
-			//	{
-			//	},
-			//	{ {ParticleEnum::Smoke, TransformFromPosition(16.9, -2.4, 48.4)} }
-			//),
-			//ModuleTransformGroup::CreateSet("HouseClayLvl3", {},
-			//	{ {ParticleEnum::Smoke, TransformFromPosition(24.65, -4.72, 42.16)} }
-			//),
-
-			//// House level 4
-			//ModuleTransformGroup::CreateSet("HouseLvl4", {},
-			//	{ {ParticleEnum::Smoke, TransformFromPosition(14.5, 4.7, 41.3)} }
-			//),
-			//ModuleTransformGroup::CreateSet("HouseLvl4V2", {},
-			//	{ {ParticleEnum::Smoke, TransformFromPosition(17.1, 21.24, 40.05)} }
-			//),
-			//ModuleTransformGroup::CreateSet("HouseLvl4"),
-			//ModuleTransformGroup::CreateSet("HouseLvl4"),
-			//ModuleTransformGroup::CreateSet("HouseLvl4"),
-
-			//// House level 5
-			//ModuleTransformGroup::CreateSet("HouseLvl5", {},
-			//	{ {ParticleEnum::Smoke, TransformFromPosition(1.10, 4.99, 42.03)} }
-			//),
-			//ModuleTransformGroup::CreateSet("HouseLvl5V2", {},
-			//	{ {ParticleEnum::Smoke, TransformFromPosition(18.04, 15.43, 39.4)} }
-			//),
-			//ModuleTransformGroup::CreateSet("HouseLvl5"),
-			//ModuleTransformGroup::CreateSet("HouseLvl5"),
-			//ModuleTransformGroup::CreateSet("HouseLvl5"),
-
-			//// House level 6
-			//ModuleTransformGroup::CreateSet("HouseLvl6", {},
-			//	{ {ParticleEnum::Smoke, TransformFromPosition(22.12, -7.4, 50.88)} }
-			//),
-			//ModuleTransformGroup::CreateSet("HouseLvl6V2", {},
-			//	{ {ParticleEnum::Smoke, TransformFromPosition(20.94, -7.36, 45.18)} }
-			//),
-			//ModuleTransformGroup::CreateSet("HouseLvl6"),
-			//ModuleTransformGroup::CreateSet("HouseLvl6"),
-			//ModuleTransformGroup::CreateSet("HouseLvl6"),
-			//
-			//// House level 7
-			//ModuleTransformGroup::CreateSet("HouseLvl7", {},
-			//	{ {ParticleEnum::Smoke, TransformFromPosition(5.95, -15.14, 62.02)} }
-			//),
-			//ModuleTransformGroup::CreateSet("HouseLvl7V2", {},
-			//	{ {ParticleEnum::Smoke, TransformFromPosition(5.74, 25.3, 62.0)} }
-			//),
-			//ModuleTransformGroup::CreateSet("HouseLvl7"),
-			//ModuleTransformGroup::CreateSet("HouseLvl7"),
-			//ModuleTransformGroup::CreateSet("HouseLvl7"),
-		});
-		
-
-		set(CardEnum::StorageYard, {
-			ModuleTransformGroup(),
-		});
-
-		//set(CardEnum::Quarry, {
-		//	ModuleTransformGroup::CreateSet("Quarry", {}, {
-		//			//{ParticleEnum::BlackSmoke, TransformFromPosition(-.27, 11.4, 21.6)},
-		//		}, {
-		//			//ModuleTransform("OreMineWorkRotation2", TransformFromPosition(4.99, -8.10, 22.899), 0.0f, ModuleTypeEnum::RotateRoll),
-		//			ModuleTransform("QuarrySpecialToggle", FTransform::Identity, 0, ModuleTypeEnum::ShaderOnOff),
-		//		},
-		//		{
-		//			ModuleTransform("OreMineWorkStatic_Stone"),
-		//		}
-		//	),
-		//});
-
-
-		set(CardEnum::Fence, {
-			ModuleTransformGroup({ ModuleTransform("FenceFour", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
-			ModuleTransformGroup({ ModuleTransform("FenceThree", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
-			ModuleTransformGroup({ ModuleTransform("FenceOpposite", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
-			ModuleTransformGroup({ ModuleTransform("FenceAdjacent", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
-		});
-
-		set(CardEnum::FenceGate, {
-			ModuleTransformGroup({ ModuleTransform("FenceGate", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)})
-		});
-
-		set(CardEnum::Bridge, {
-			ModuleTransformGroup({ ModuleTransform("Bridge1", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
-		});
-
-		set(CardEnum::Forester, {
-			ModuleTransformGroup::CreateSet("Forester", {}, {{ParticleEnum::Smoke, TransformFromPosition(9.5, 10.2, 29.5)}})
-		});
-
-		//set(CardEnum::IronSmelter, {
-		//	ModuleTransformGroup::CreateSet("Smelter", {},
-		//		{
-		//			{ParticleEnum::HeavyBlackSmoke, TransformFromPosition(10.7, -11.1, 37.4)},
-		//		}, {},
-		//		{
-		//			ModuleTransform("SmelterWorkStatic"),
-		//		}
-		//	)
-		//});
-
-
-		set(CardEnum::DirtRoad, { ModuleTransformGroup({ ModuleTransform("DirtRoad") }) });
-		set(CardEnum::StoneRoad, { ModuleTransformGroup({ ModuleTransform("StoneRoad") }) });
-
-
-		
-		setName(CardEnum::BarrackClubman, "Barrack");
-		setName(CardEnum::BarrackArcher, "Barrack");
-		setName(CardEnum::BarrackSwordman, "Barrack");
-
-		setName(CardEnum::LaborerGuild, "LaborerGuild");
-
-		setName(CardEnum::HumanitarianAidCamp, "StorageYard");
-
-		set(CardEnum::RegionTribalVillage, {
-			ModuleTransformGroup::CreateSet("TribalVillage", {},
-				{
-					{ParticleEnum::CampFire, TransformFromPositionYawScale(-5.4, -0.82, 0.62, 0, 0.17)}
-				},
-				{}, {},
-				{{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-5.4, -0.82, 8.5), FVector::OneVector}}
-			),
-		});
-
-		setName(CardEnum::RegionShrine, "AncientShrine");
-		setName(CardEnum::RegionPort, "PortVillage");
-		setName(CardEnum::RegionCrates, "RegionCratePile");
-
-		set(CardEnum::MinorCity, {
-				ModuleTransformGroup::CreateSet("TribalVillage", {},
-					{
-						{ParticleEnum::CampFire, TransformFromPositionYawScale(-5.4, -0.82, 0.62, 0, 0.17)}
-					}
-				),
-		});
-
-		
-
-		set(CardEnum::Windmill, {
-			ModuleTransformGroup::CreateSet("Windmill", {}, {},
-			{
-				ModuleTransform("WindmillWorkRotation1", TransformFromPosition(0, 0, 60), 0.0f, ModuleTypeEnum::RotateRoll),
-			})
-		});
-
-
-
-		setName(CardEnum::Fort, "Outpost");
-		setName(CardEnum::ResourceOutpost, "Colony");
-		setName(CardEnum::ResearchLab, "InventorsWorkshop");
-
-		set(CardEnum::IntercityRoad, {
-			ModuleTransformGroup({ ModuleTransform("DirtRoad")})
-		});
-
-		setName(CardEnum::FakeTownhall, "Townhall0");
-
-		set(CardEnum::FakeTribalVillage, {
-			ModuleTransformGroup::CreateSet("TribalVillage", {},
-				{
-					{ParticleEnum::CampFire, TransformFromPositionYawScale(-5.4, -0.82, 0.62, 0, 0.17)}
-				},
-				{}, {},
-				{{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-5.4, -0.82, 8.5), FVector::OneVector}}
-			)
-		});
-
-		setName(CardEnum::ChichenItza, "ChichenItza");
-
-		setName(CardEnum::IrrigationReservoir, "IrrigationReservoir");
-
-		set(CardEnum::Tunnel, {
-			ModuleTransformGroup({ ModuleTransform("Tunnel", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
-		});
-
-
-		//setName(CardEnum::Colony, "Townhall0");
-		//setName(CardEnum::PortColony, "Townhall0");
-
-		setName(CardEnum::IntercityLogisticsHub, "IntercityLogisticsHub");
-		setName(CardEnum::IntercityLogisticsPort, "IntercityLogisticsPort");
-
-		set(CardEnum::IntercityBridge, {
-			ModuleTransformGroup({ ModuleTransform("Bridge1", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
-		});
-
-
-		setName(CardEnum::FlowerBed, "FlowerBed");
-		setName(CardEnum::GardenShrubbery1, "GardenShrubbery1");
-		setName(CardEnum::GardenCypress, "GardenCypress");
-		
-
-
-		
-
-
-		for (int32 i = 0; i < BuildingEnumCount; i++) {
-			if (BuildingEnumToVariationToModuleTransforms[i].Num() == 0) {
-				CardEnum buildingEnum = static_cast<CardEnum>(i);
-				if (buildingEnum != CardEnum::Farm) {
-					setName(buildingEnum, "Ministry");
-				}
-			}
+		int buildingEnumInt = static_cast<int>(buildingEnum);
+		check(static_cast<int>(buildingEnum) < BuildingEnumToVariationToModuleTransforms(factionEnum).Num()); // !!! Hit here? Forgot to put int GameDisplayInfo?
+		check(variationIndex != -1);
+		int32 variationCount = BuildingEnumToVariationToModuleTransforms(factionEnum)[buildingEnumInt].Num();
+		if (variationCount == 0) {
+			return ModuleTransformGroup::Empty;
 		}
+		if (variationIndex >= variationCount) {
+			variationIndex = variationCount - 1;
+		}
+		return BuildingEnumToVariationToModuleTransforms(factionEnum)[buildingEnumInt][variationIndex];
+	}
+
+	const TArray<TArray<ModuleTransformGroup>>& BuildingEnumToVariationToModuleTransforms(FactionEnum factionEnum) const {
+		return FactionEnumToBuildingEnumToVariationToModuleTransforms[static_cast<int>(factionEnum)];
+	}
+
+	void LoadBuildingSets(UAssetLoaderComponent* assetLoader)
+	{
+		LoadBuildingSets(assetLoader, FactionEnum::Europe);
+		LoadBuildingSets(assetLoader, FactionEnum::Arab);
 	}
 
 	// Things that gets added when zoomed out
@@ -283,14 +67,162 @@ public:
 		return false;
 	}
 
-	void LoadBuildingSets(UAssetLoaderComponent* assetLoader)
+
+private:
+	void InitBuildingSets(FactionEnum factionEnum, UAssetLoaderComponent* assetLoader)
 	{
-		InitBuildingSets(assetLoader);
+		FactionEnumToBuildingEnumToVariationToModuleTransforms.Add(assetLoader->buildingEnumToVariationToModuleTransforms(factionEnum));
+		check(FactionEnumToBuildingEnumToVariationToModuleTransforms.Num() == static_cast<int>(factionEnum) + 1);
+
+		TArray<TArray<ModuleTransformGroup>>& buildingEnumToVariationToModuleTransforms = FactionEnumToBuildingEnumToVariationToModuleTransforms[static_cast<int>(factionEnum)];
+
+		auto set = [&](CardEnum buildingEnum, TArray<ModuleTransformGroup> moduleGroups) {
+			buildingEnumToVariationToModuleTransforms[static_cast<int>(buildingEnum)] = moduleGroups;
+		};
+		auto setName = [&](CardEnum buildingEnum, FString name) {
+			buildingEnumToVariationToModuleTransforms[static_cast<int>(buildingEnum)] = { ModuleTransformGroup::CreateSet(name) };
+		};
+
+
+		auto add = [&](CardEnum buildingEnum, TArray<ModuleTransformGroup> moduleGroups) {
+			for (int32 i = 0; i < moduleGroups.Num(); i++) {
+				buildingEnumToVariationToModuleTransforms[static_cast<int>(buildingEnum)].Add(moduleGroups[i]);
+			}
+		};
+		add(CardEnum::House, {});
+		
+
+		set(CardEnum::StorageYard, {
+			ModuleTransformGroup(),
+		});
+
+
+		//set(CardEnum::Fence, {
+		//	ModuleTransformGroup({ ModuleTransform("FenceFour", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
+		//	ModuleTransformGroup({ ModuleTransform("FenceThree", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
+		//	ModuleTransformGroup({ ModuleTransform("FenceOpposite", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
+		//	ModuleTransformGroup({ ModuleTransform("FenceAdjacent", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
+		//});
+
+		//set(CardEnum::FenceGate, {
+		//	ModuleTransformGroup({ ModuleTransform("FenceGate", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)})
+		//});
+
+		set(CardEnum::Bridge, {
+			ModuleTransformGroup({ ModuleTransform("Bridge1", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
+		});
+
+		set(CardEnum::Forester, {
+			ModuleTransformGroup::CreateSet(WithFactionName("Forester"), {}, {{ParticleEnum::Smoke, TransformFromPosition(9.5, 10.2, 29.5)}})
+		});
+
+
+
+		set(CardEnum::DirtRoad, { ModuleTransformGroup({ ModuleTransform("DirtRoad") }) });
+		set(CardEnum::StoneRoad, { ModuleTransformGroup({ ModuleTransform("StoneRoad") }) });
+
+
+		setName(CardEnum::HumanitarianAidCamp, WithFactionName("StorageYard"));
+
+		set(CardEnum::RegionTribalVillage, {
+			ModuleTransformGroup::CreateSet(WithFactionName("TribalVillage"), {},
+				{
+					{ParticleEnum::CampFire, TransformFromPositionYawScale(-5.4, -0.82, 0.62, 0, 0.17)}
+				},
+				{}, {},
+				{{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-5.4, -0.82, 8.5), FVector::OneVector}}
+			),
+		});
+
+		setName(CardEnum::RegionShrine, WithFactionName("AncientShrine"));
+		//setName(CardEnum::RegionPort, "PortVillage");
+		setName(CardEnum::RegionCrates, WithFactionName("RegionCratePile"));
+
+		set(CardEnum::MinorCity, {
+				ModuleTransformGroup::CreateSet(WithFactionName("TribalVillage"), {},
+					{
+						{ParticleEnum::CampFire, TransformFromPositionYawScale(-5.4, -0.82, 0.62, 0, 0.17)}
+					}
+				),
+		});
+
+		
+
+		set(CardEnum::Windmill, {
+			ModuleTransformGroup::CreateSet(WithFactionName("Windmill"), {}, {},
+			{
+				ModuleTransform("WindmillEuropeWorkRotation1", TransformFromPosition(0, 0, 60), 0.0f, ModuleTypeEnum::RotateRoll),
+			})
+		});
+
+
+
+		setName(CardEnum::Fort, WithFactionName("Outpost"));
+		setName(CardEnum::ResourceOutpost, WithFactionName("Colony"));
+		setName(CardEnum::ResearchLab, WithFactionName("InventorsWorkshop"));
+
+		set(CardEnum::IntercityRoad, {
+			ModuleTransformGroup({ ModuleTransform("DirtRoad")})
+		});
+
+		setName(CardEnum::ChichenItza, WithFactionName("ChichenItza"));
+
+		setName(CardEnum::IrrigationReservoir, WithFactionName("IrrigationReservoir"));
+
+		set(CardEnum::Tunnel, {
+			ModuleTransformGroup({ ModuleTransform(WithFactionName("Tunnel"), FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
+		});
+
+
+
+		setName(CardEnum::IntercityLogisticsHub, WithFactionName("IntercityLogisticsHub"));
+		setName(CardEnum::IntercityLogisticsPort, WithFactionName("IntercityLogisticsPort"));
+
+		set(CardEnum::IntercityBridge, {
+			ModuleTransformGroup({ ModuleTransform("Bridge1", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
+		});
+
+
+		setName(CardEnum::FlowerBed, WithFactionName("FlowerBed"));
+		setName(CardEnum::GardenShrubbery1, WithFactionName("GardenShrubbery1"));
+		setName(CardEnum::GardenCypress, WithFactionName("GardenCypress"));
+		
+
+		//! Trailer
+		setName(CardEnum::FakeTownhall, WithFactionName("Townhall0"));
+		
+		set(CardEnum::FakeTribalVillage, {
+			ModuleTransformGroup::CreateSet(WithFactionName("TribalVillage"), {},
+				{
+					{ParticleEnum::CampFire, TransformFromPositionYawScale(-5.4, -0.82, 0.62, 0, 0.17)}
+				},
+				{}, {},
+				{{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-5.4, -0.82, 8.5), FVector::OneVector}}
+			)
+		});
+		
+
+
+		for (int32 i = 0; i < BuildingEnumCount; i++) {
+			if (buildingEnumToVariationToModuleTransforms[i].Num() == 0) {
+				CardEnum buildingEnum = static_cast<CardEnum>(i);
+				if (buildingEnum != CardEnum::Farm) {
+					setName(buildingEnum, "Ministry");
+				}
+			}
+		}
+	}
+
+	void LoadBuildingSets(UAssetLoaderComponent* assetLoader, FactionEnum factionEnum)
+	{
+		InitBuildingSets(factionEnum, assetLoader);
+
+		auto& buildingEnumToVariationToModuleTransforms = FactionEnumToBuildingEnumToVariationToModuleTransforms[static_cast<int>(factionEnum)];
 
 		// For each building
-		for (size_t buildingEnumInt = BuildingEnumToVariationToModuleTransforms.Num(); buildingEnumInt-- > 0;) 
+		for (size_t buildingEnumInt = buildingEnumToVariationToModuleTransforms.Num(); buildingEnumInt-- > 0;)
 		{
-			auto& variationToModuleTransforms = BuildingEnumToVariationToModuleTransforms[buildingEnumInt];
+			auto& variationToModuleTransforms = buildingEnumToVariationToModuleTransforms[buildingEnumInt];
 
 			// For each variations specified
 			for (auto& moduleTransforms : variationToModuleTransforms) 
@@ -402,7 +334,7 @@ public:
 			CardEnum buildingEnum = static_cast<CardEnum>(j);
 			if (IsAutoEraUpgrade(buildingEnum)) 
 			{
-				TArray<ModuleTransformGroup>& moduleGroups = BuildingEnumToVariationToModuleTransforms[static_cast<int>(buildingEnum)];
+				TArray<ModuleTransformGroup>& moduleGroups = buildingEnumToVariationToModuleTransforms[static_cast<int>(buildingEnum)];
 				for (int32 era = 1; era < moduleGroups.Num(); era++)
 				{
 					std::vector<ModuleTransform>& curEraModules = moduleGroups[era].transforms;
@@ -431,26 +363,11 @@ public:
 		}
 	}
 
-	int32 GetVariationCount(CardEnum buildingEnum) const {
-		return BuildingEnumToVariationToModuleTransforms[static_cast<int>(buildingEnum)].Num();
-	}
+
 	
-	const ModuleTransformGroup& GetDisplayModules(CardEnum buildingEnum, int32 variationIndex) const {
-		int buildingEnumInt = static_cast<int>(buildingEnum);
-		check(buildingEnumInt < BuildingEnumToVariationToModuleTransforms.Num()); // !!! Hit here? Forgot to put int GameDisplayInfo?
-		check(variationIndex != -1);
-		int32 variationCount = BuildingEnumToVariationToModuleTransforms[buildingEnumInt].Num();
-		if (variationCount == 0) {
-			return ModuleTransformGroup::Empty;
-		}
-		if (variationIndex >= variationCount) {
-			variationIndex = variationCount - 1;
-		}
-		return BuildingEnumToVariationToModuleTransforms[buildingEnumInt][variationIndex];
-	}
 
 private:
-	TArray<TArray<ModuleTransformGroup>> BuildingEnumToVariationToModuleTransforms;
+	TArray<TArray<TArray<ModuleTransformGroup>>> FactionEnumToBuildingEnumToVariationToModuleTransforms;
 };
 
 class GameDisplayUtils

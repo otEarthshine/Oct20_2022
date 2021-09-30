@@ -1834,7 +1834,7 @@ bool HumanStateAI::TryBulkHaul_Intercity()
 	}
 
 	WorldTile2 startTile = hub.gateTile();
-	WorldTile2 targetTile = _simulation->GetTownhallGate(hub.targetTownId);
+	WorldTile2 targetTile = _simulation->GetMajorTownhallGate(hub.targetTownId);
 	
 	std::vector<uint32_t> path;
 	bool succeed = _simulation->pathAI()->FindPathRoadOnly(startTile.x, startTile.y, targetTile.x, targetTile.y, path);
@@ -1846,7 +1846,7 @@ bool HumanStateAI::TryBulkHaul_Intercity()
 		}
 
 		// Might be able to use townhall as startTile instead
-		startTile = _simulation->GetTownhallGate(hub.townId());
+		startTile = _simulation->GetMajorTownhallGate(hub.townId());
 		succeed = _simulation->pathAI()->FindPathRoadOnly(startTile.x, startTile.y, targetTile.x, targetTile.y, path);
 		if (!succeed) {
 			WorkFailed(TryWorkFailEnum::NeedRoadConnectionBetweenIntercityLogisticsHubAndTargetTownhall);
@@ -3037,8 +3037,8 @@ bool HumanStateAI::TryCheckBadTile_Human()
 			int32 startTownId = tileTownId;
 			int32 endTownId = _townId;
 
-			WorldTile2 startTownGate = _simulation->GetTownhallGate(startTownId);
-			WorldTile2 endTownGate = _simulation->GetTownhallGate(endTownId);
+			WorldTile2 startTownGate = _simulation->GetMajorTownhallGate(startTownId);
+			WorldTile2 endTownGate = _simulation->GetMajorTownhallGate(endTownId);
 
 			std::vector<uint32_t> path;
 			bool succeed = _simulation->pathAI()->FindPathRoadOnly(startTownGate.x, startTownGate.y, endTownGate.x, endTownGate.y, path);
@@ -3067,7 +3067,7 @@ bool HumanStateAI::TryCheckBadTile_Human()
 		// Just warp to the townhall
 		_simulation->ResetUnitActions(_id);
 
-		WorldTile2 endTownGate = _simulation->GetTownhallGate(_townId);
+		WorldTile2 endTownGate = _simulation->GetMajorTownhallGate(_townId);
 		_simulation->MoveUnitInstantly(_id, endTownGate.worldAtom2());
 
 		AddDebugSpeech("(Succeed)TryCheckBadTile_Human:");
@@ -3098,7 +3098,7 @@ bool HumanStateAI::TryCheckBadTile_Human()
 	/*
 	 * Check TownGate (No House or house check failed)
 	 */
-	WorldTile2 townGate = _simulation->GetTownhallGate(_townId);
+	WorldTile2 townGate = _simulation->GetMajorTownhallGate(_townId);
 
 	if (!IsMoveValid(townGate))
 	{

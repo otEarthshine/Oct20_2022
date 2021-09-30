@@ -58,6 +58,7 @@ void UMiniBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, Worl
 		{
 			Building& building = buildingSystem.building(buildingId);
 			CardEnum buildingEnum = building.buildingEnum();
+			FactionEnum factionEnum = building.factionEnum();
 			const std::vector<BuildingUpgrade>& upgrades = building.upgrades();
 
 			// Don't display road
@@ -80,7 +81,7 @@ void UMiniBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, Worl
 			WorldTile2 centerTile = building.centerTile();
 			FTransform transform(FRotator(0, buildingRotation, 0), centerTile.localTile().localDisplayLocation());
 
-			const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(buildingEnum, displayVariationIndex);
+			const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(factionEnum, buildingEnum, displayVariationIndex);
 			std::vector<ModuleTransform> modules = modulePrototype.miniModules;
 
 			if (building.isBurnedRuin())

@@ -147,10 +147,10 @@ public:
 					heightAdjustment = -5;
 				}
 
-				if (displayInfo.GetVariationCount(buildingEnum) == 0) {
+				if (displayInfo.GetVariationCount(FactionEnum::Europe, buildingEnum) == 0) {
 					continue;
 				}
-				const ModuleTransformGroup& modules = displayInfo.GetDisplayModules(buildingEnum, 0);
+				const ModuleTransformGroup& modules = displayInfo.GetDisplayModules(FactionEnum::Arab, buildingEnum, 0);
 				std::vector<ModuleTransform> moduleTransforms = modules.transforms;
 
 				PUN_LOG("BakeIcons %d %s size:%d", i, *modules.setName,modules.transforms.size());

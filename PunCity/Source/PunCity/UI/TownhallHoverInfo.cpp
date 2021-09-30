@@ -171,20 +171,14 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 						!uiTownManagerBase->GetDefendingClaimProgress(townProvinceId()).isValid())
 					{
 						// Vassalize (AttackButton1)
-						SetText(AttackButton1RichText, FText::Format(
-							LOCTEXT("VassalizeButtonRichText_Text", "Conquer (Vassalize)"),
-							TEXT_NUM(sim.GetProvinceVassalizeStartPrice(townProvinceId()))
-						));
+						SetText(AttackButton1RichText, LOCTEXT("VassalizeButtonRichText_Text", "Conquer (Vassalize)"));
 						
 						BUTTON_ON_CLICK(AttackButton1, this, &UMinorTownWorldUI::OnClickVassalizeButton);
 						AttackButton1->SetVisibility(ESlateVisibility::Visible);
 
 						// Can also liberate if there is an existing conquerer
 						if (uiTownManagerBase->lordPlayerId() != -1) {
-							SetText(AttackButton2RichText, FText::Format(
-								LOCTEXT("LiberationButtonRichText_Text", "Liberation\n<img id=\"Influence\"/>{0}"),
-								TEXT_NUM(BattleInfluencePrice)
-							));
+							SetText(AttackButton2RichText, LOCTEXT("LiberationButtonRichText_Text", "Liberation\n<img id=\"Influence\"/>{0}"));
 							AttackButton2->SetVisibility(ESlateVisibility::Visible);
 							BUTTON_ON_CLICK(AttackButton2, this, &UMinorTownWorldUI::OnClickLiberateButton);
 						}
@@ -198,10 +192,7 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 					!uiTownManagerBase->GetDefendingClaimProgress(townProvinceId()).isValid())
 				{
 					// Vassalize (AttackButton1)
-					SetText(AttackButton1RichText, FText::Format(
-						LOCTEXT("ConquerColonyButtonRichText_Text", "Conquer (Annex)\n<img id=\"Influence\"/>{0}"),
-						TEXT_NUM(sim.GetProvinceConquerColonyStartPrice(townProvinceId()))
-					));
+					SetText(AttackButton1RichText, LOCTEXT("ConquerColonyButtonRichText_Text", "Conquer (Annex)\n<img id=\"Influence\"/>{0}"));
 					BUTTON_ON_CLICK(AttackButton1, this, &UMinorTownWorldUI::OnClickVassalizeButton);
 					AttackButton1->SetVisibility(ESlateVisibility::Visible);
 

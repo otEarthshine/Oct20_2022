@@ -80,13 +80,17 @@ void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimPro
 	// Fight at home province = Vassalize
 	{
 		TArray<FText> args;
-		if (sim.homeProvinceId(provincePlayerId) == provinceId) {
+		if (claimProgress.attackEnum == ProvinceAttackEnum::RaidBattle) {
+			args.Add(LOCTEXT("Raid", "Raid"));
+		}
+		else if (sim.homeProvinceId(provincePlayerId) == provinceId) {
 			args.Add(LOCTEXT("Vassalize", "Vassalize"));
-		} else {
+		}
+		else {
 			args.Add(LOCTEXT("Annex Province", "Annex Province"));
 		}
-		if (claimProgress.battleFinishCountdownSecs != -1) {
-			args.Add(FText::Format(LOCTEXT(" end in {0}s", " end in {0}s"), TEXT_NUM(claimProgress.battleFinishCountdownSecs)));
+		if (claimProgress.isWaitingForBattleFinishCountdown()) {
+			args.Add(FText::Format(LOCTEXT(" ends in {0}s", " ends in {0}s"), TEXT_NUM(claimProgress.battleFinishCountdownSecs)));
 		}
 		SetText(BattleText, TEXT_TAG("<Shadowed>", JOINTEXT(args)));
 	}

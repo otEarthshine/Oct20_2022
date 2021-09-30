@@ -333,7 +333,7 @@ private:
 		if (IsValidMajorTown(townId))
 		{
 			PUN_CHECK(buildingId < _isBuildingIdConnected.size());
-			WorldTile2 townGate = _simulation->GetTownhallGate(townId);
+			WorldTile2 townGate = _simulation->GetMajorTownhallGate(townId);
 
 			if (townGate.isValid()) {
 				DEBUG_ISCONNECTED_VAR(RefreshIsBuildingConnected);

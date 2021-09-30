@@ -794,7 +794,7 @@ void APunPlayerController::SendTickToClient(NetworkTickInfo& tickInfo)
 	}
 	//PUN_DEBUG(FString::Printf(TEXT("Server Add Tick:%d queue:%d"), tickInfo.tickCount, gameManager->networkTickQueueCount()));
 
-	check(networkTickInfoBlob.Num() <= MaxPacketSize32);
+	check(networkTickInfoBlob.Num() <= MaxPacketSize32 || gameInstance()->isSinglePlayer);
 
 	// TickSimulations
 	if (gameInstance()->shouldDelayInput()) {

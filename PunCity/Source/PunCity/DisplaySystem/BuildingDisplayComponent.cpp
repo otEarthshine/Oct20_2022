@@ -233,6 +233,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 		{
 			Building& building = buildingSystem.building(buildingId);
 			CardEnum buildingEnum = building.buildingEnum();
+			FactionEnum factionEnum = building.factionEnum();
 			const std::vector<BuildingUpgrade>& upgrades = building.upgrades();
 
 			//PUN_LOG(" -- Display Construction[%d] (1) %s construct:%d", building.buildingId(), ToTChar(building.buildingInfo().name), building.constructionPercent());
@@ -298,7 +299,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 
 			//PUN_LOG("GetModules %s %d", *ToFString(building.buildingInfo().name), building.displayVariationIndex());
 
-			const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(buildingEnum, displayVariationIndex);
+			const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(factionEnum, buildingEnum, displayVariationIndex);
 			std::vector<ModuleTransform> modules = modulePrototype.transforms;
 
 			if (building.isBurnedRuin())
@@ -693,6 +694,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 			{
 				Building& building = buildingSystem.building(buildingId);
 				CardEnum buildingEnum = building.buildingEnum();
+				FactionEnum factionEnum = building.factionEnum();
 
 				// Don't display road
 				if (IsRoad(buildingEnum)) {
@@ -710,7 +712,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 
 				//PUN_LOG("GetModules %s %d", *ToFString(building.buildingInfo().name), building.displayVariationIndex());
 
-				const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(buildingEnum, displayVariationIndex);
+				const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(factionEnum, buildingEnum, displayVariationIndex);
 
 				/*
 				 * Particles
@@ -1004,7 +1006,6 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 	if (_lastModuleMeshesOverlayType[meshId] != overlayType)
 	{
 		SCOPE_TIMER("Tick Building: SetHighlight");
-		
 		SetHighlight(_moduleMeshes[meshId], CardEnum::Fisher, overlayType == OverlayType::Fish);
 		SetHighlight(_moduleMeshes[meshId], CardEnum::FruitGatherer, overlayType == OverlayType::Gatherer);
 		SetHighlight(_moduleMeshes[meshId], CardEnum::HuntingLodge, overlayType == OverlayType::Hunter);
@@ -1261,7 +1262,7 @@ void UBuildingDisplayComponent::UpdateDisplayLight(Building& building)
 {
 	const GameDisplayInfo& displayInfo = gameManager()->displayInfo();
 
-	const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(building.buildingEnum(), building.displayVariationIndex());
+	const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(building.factionEnum(), building.buildingEnum(), building.displayVariationIndex());
 	const std::vector<PointLightInfo>& lightInfos = modulePrototype.lightInfos;
 	if (lightInfos.size() > 0)
 	{

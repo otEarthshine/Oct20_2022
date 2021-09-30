@@ -89,7 +89,10 @@ void PlayerOwnedManager::Tick1Sec()
 		{
 			if (House* nest = _simulation->buildingPtr<House>(spyNestId, CardEnum::House))
 			{
-				int32 spyInfluenceGainPerRound = _simulation->GetSpyNestInfluenceGainPerRound(nest->spyPlayerId(), nest->townId());
+				int32 spyPlayerId = nest->spyPlayerId();
+				check(spyPlayerId != -1);
+				
+				int32 spyInfluenceGainPerRound = _simulation->GetSpyNestInfluenceGainPerRound(spyPlayerId, nest->townId());
 
 				int32 spyInfluenceGainPer2Sec = GameRand::RandRound(spyInfluenceGainPerRound * 2, Time::TicksPerSecond);
 

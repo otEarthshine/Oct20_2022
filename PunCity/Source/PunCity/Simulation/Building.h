@@ -119,7 +119,7 @@ public:
 	TileArea area() const { return _area; }
 	TileArea frontArea() const { return _area.GetFrontArea(_faceDirection); }
 
-	FactionEnum factionEnum() { return FactionEnum::Arab; }
+	FactionEnum factionEnum();
 	
 
 	virtual int32 tileCount() { return _area.tileCount(); }

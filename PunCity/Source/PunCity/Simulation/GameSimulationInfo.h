@@ -10156,6 +10156,8 @@ public:
 	FLinearColor logoColor2;
 	int32 characterIndex;
 	int32 factionIndex;
+
+	FactionEnum factionEnum() const { return static_cast<FactionEnum>(factionIndex); }
 	
 	std::vector<AIPersonalityEnum> personalityEnums;
 

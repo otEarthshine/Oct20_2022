@@ -34,6 +34,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) UOverlay* PlayerListOverlay;
 	UPROPERTY(meta = (BindWidget)) UOverlay* ChatOverlay;
 
+	UPROPERTY(meta = (BindWidget)) UPlayerListElementUI* SinglePlayerPortraitUI;
+
 	UPROPERTY(meta = (BindWidget)) UButton* LobbyBackButton;
 	UPROPERTY(meta = (BindWidget)) UWrapBox* LobbyPlayerListBox;
 	UPROPERTY(meta = (BindWidget)) UButton* LobbyStartGameButton;
@@ -42,8 +44,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UScrollBox* LobbyChatScrollBox;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* LobbyChatContentRichText;
 	UPROPERTY(meta = (BindWidget)) UEditableTextBox* LobbyChatInputBox;
-
-
+	
 	UPROPERTY(meta = (BindWidget)) ULobbySettingsUI* LobbySettingsUI;
 
 	FMapSettings& serverMapSettings() { return LobbySettingsUI->serverMapSettings; }
@@ -206,7 +207,7 @@ private:
 	UFUNCTION() void OnClickLobbyStartGameButton();
 
 	
-	
+	void UpdatePlayerPortraitUI(UPlayerListElementUI* element, int32 playerId, const GameSaveInfo& saveInfo);
 
 	void LobbyStartGame();
 

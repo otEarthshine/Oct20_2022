@@ -197,6 +197,8 @@ struct FPlayerInfo
 	UPROPERTY() int32 characterIndex = 0;
 	UPROPERTY() int32 factionIndex = 0;
 
+	FactionEnum factionEnum() { return static_cast<FactionEnum>(factionIndex); }
+
 	friend FArchive& operator<<(FArchive& Ar, FPlayerInfo& object)
 	{
 		Ar << object.name;

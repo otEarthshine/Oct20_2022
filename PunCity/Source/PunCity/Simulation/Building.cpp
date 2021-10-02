@@ -1718,4 +1718,13 @@ int32 Building::displayVariationIndex()
 	return 0;
 }
 
+FactionEnum Building::factionEnum()
+{
+	if (foreignBuilder() != -1) {
+		return _simulation->playerOwned(foreignBuilder()).factionEnum();
+	}
+	TownManagerBase* townManagerBase = _simulation->townManagerBase(_townId);
+	return townManagerBase ? townManagerBase->factionEnum() : FactionEnum::Europe;
+}
+
 #undef LOCTEXT_NAMESPACE 

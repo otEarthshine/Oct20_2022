@@ -10,9 +10,10 @@
 class PlayerOwnedManager
 {
 public:
-	PlayerOwnedManager(int32 playerId, IGameSimulationCore* simulation)
+	PlayerOwnedManager(int32 playerId, FactionEnum factionEnum, IGameSimulationCore* simulation)
 	{
 		_playerId = playerId;
+		_factionEnum = factionEnum;
 		_simulation = simulation;
 
 		_buffTicksLeft.resize(NonBuildingCardEnumCount, -1);
@@ -339,7 +340,7 @@ private:
 	std::vector<int32> _townIds;
 	
 	// FactionEnum
-	FactionEnum _factionEnum = FactionEnum::Arab;
+	FactionEnum _factionEnum = FactionEnum::None;
 	
 	// SP
 	static int32 ticksPerSP() { return Time::TicksPerSecond * 2; }

@@ -307,6 +307,8 @@ void AIPlayerSystem::Tick1Sec()
 			command->intVar2 = static_cast<int>(ResourceEnum::Money);
 			command->intVar3 = std::min(100, _simulation->moneyCap32(_aiPlayerId) - 500);
 
+			check(_simulation->IsValidPlayer(maxRelationshipPlayerId));
+
 			_playerInterface->GenericCommand(*command);
 		}
 

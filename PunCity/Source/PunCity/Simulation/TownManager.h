@@ -133,8 +133,8 @@ static const std::vector<CardEnum> DefaultJobPriorityListAllSeason
 class TownManager : public TownManagerBase
 {
 public:
-	TownManager(int32 playerId, int32 townId, IGameSimulationCore* simulation) :
-		TownManagerBase(playerId, townId, simulation)
+	TownManager(int32 playerId, int32 townId, FactionEnum factionEnum, IGameSimulationCore* simulation) :
+		TownManagerBase(playerId, townId, factionEnum, simulation)
 	{
 		//_playerId = playerId;
 		//_townId = townId;

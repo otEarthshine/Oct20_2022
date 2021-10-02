@@ -173,9 +173,10 @@ class TownManagerBase
 public:
 	bool isValid() { return _townId != -1; }
 
-	TownManagerBase(int32 playerId, int32 townId, IGameSimulationCore* simulation) :
+	TownManagerBase(int32 playerId, int32 townId, FactionEnum factionEnum, IGameSimulationCore* simulation) :
 		_playerId(playerId),
 		_townId(townId),
+		_factionEnum(factionEnum),
 		_simulation(simulation)
 	{
 		_minorCityWealth = 10 + GameRand::Rand() % 90;
@@ -198,7 +199,7 @@ public:
 
 	bool isCapital() { return _townId == _playerId; }
 
-	//FactionEnum factionEnum() { return _factionEnum; }
+	FactionEnum factionEnum() { return _factionEnum; }
 
 	const std::vector<int32>& provincesClaimed() { return _provincesClaimed; }
 
@@ -578,9 +579,9 @@ public:
 		//! Public
 		Ar << _playerId;
 		Ar << _townId;
+		Ar << _factionEnum;
+		
 		Ar << townhallId;
-
-		//Ar << _factionEnum;
 
 		SerializeVecValue(Ar, _provincesClaimed);
 
@@ -608,6 +609,8 @@ public:
 public:
 	int32 _playerId = -1;
 	int32 _townId = -1;
+	FactionEnum _factionEnum = FactionEnum::None;
+	
 	int32 townhallId = -1;
 
 	static const int32 BaseAutoTradeFeePercent = 40;

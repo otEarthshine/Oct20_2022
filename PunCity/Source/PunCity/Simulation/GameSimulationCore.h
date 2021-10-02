@@ -766,12 +766,12 @@ public:
 		//}
 		
 		int32 townId = _minorTownManagers.size() + MinorTownShift;
-		_minorTownManagers.push_back(std::make_unique<TownManagerBase>(-1, townId, this));
+		_minorTownManagers.push_back(std::make_unique<TownManagerBase>(-1, townId, FactionEnum::Europe, this));
 		_minorTownManagers.back()->InitAutoTrade(provinceId);
 		return townId;
 	}
 	void RemoveMinorTown(int32 townId) {
-		_minorTownManagers[TownIdToMinorTownId(townId)] = std::make_unique<TownManagerBase>(-1, -1, nullptr);
+		_minorTownManagers[TownIdToMinorTownId(townId)] = std::make_unique<TownManagerBase>(-1, -1, FactionEnum::None, nullptr);
 	}
 
 	virtual int32 minorTownCount() override { return _minorTownManagers.size(); }
@@ -3744,7 +3744,7 @@ public:
 					// Ensure same town count as before
 					for (int32 townId = _resourceSystems.size(); townId < townCountAr; townId++) {
 						_resourceSystems.push_back(ResourceSystem(townId, this));
-						_townManagers.push_back(make_unique<TownManager>(-1, townId, this));
+						_townManagers.push_back(make_unique<TownManager>(-1, townId, FactionEnum::None, this));
 					}
 				}
 
@@ -3794,7 +3794,7 @@ public:
 				if (Ar.IsLoading()) {
 					// Ensure same town count as before
 					for (int32 i = _minorTownManagers.size(); i < minorTownCountAr; i++) {
-						_minorTownManagers.push_back(std::make_unique<TownManagerBase>(-1, -1, this));
+						_minorTownManagers.push_back(std::make_unique<TownManagerBase>(-1, -1, FactionEnum::None, this));
 					}
 				}
 

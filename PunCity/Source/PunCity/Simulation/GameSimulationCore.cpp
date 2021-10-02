@@ -9,6 +9,7 @@
 #include <chrono>
 #include <functional>
 #include "Buildings/StorageYard.h"
+#include "PunCity/UI/GameUIDataSource.h"
 
 using namespace std;
 using namespace std::chrono;
@@ -157,14 +158,18 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 	{
 		int32 playerId = _resourceSystems.size();
 
-		_playerOwnedManagers.push_back(PlayerOwnedManager(playerId, this));
+		_aiPlayerSystem.push_back(AIPlayerSystem(playerId, this, this)); // AI Player system first to determine AI Archetype
+		
+		FactionEnum factionEnum = _gameManager->playerInfo(playerId).factionEnum();
+		
+		_playerOwnedManagers.push_back(PlayerOwnedManager(playerId, factionEnum, this));
 
 		// Add town
 		int32 townId = _resourceSystems.size();
 		_resourceSystems.push_back(ResourceSystem(townId, this));
 		_statSystem.AddTown(townId);
 		_worldTradeSystem.AddTown(townId);
-		_townManagers.push_back(make_unique<TownManager>(playerId, townId, this));
+		_townManagers.push_back(make_unique<TownManager>(playerId, townId, factionEnum, this));
 		_playerOwnedManagers[playerId].AddTownId(townId);
 
 		
@@ -175,9 +180,6 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 		_popupSystems.push_back(PopupSystem(playerId, this));
 		_cardSystem.push_back(BuildingCardSystem(playerId, this));
 
-		
-
-		_aiPlayerSystem.push_back(AIPlayerSystem(playerId, this, this));
 		
 		_eventLogSystem.AddPlayer();
 		_replaySystem.AddPlayer();
@@ -2416,11 +2418,13 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 					{
 						// Add town
 						int32 townId = _resourceSystems.size();
+						FactionEnum factionEnum = _playerOwnedManagers[playerId].factionEnum();
+						
 						_resourceSystems.push_back(ResourceSystem(townId, this));
 						_statSystem.AddTown(townId);
 						_worldTradeSystem.AddTown(townId);
 						_buildingSystem->AddMajorTown(townId);
-						_townManagers.push_back(make_unique<TownManager>(playerId, townId, this));
+						_townManagers.push_back(make_unique<TownManager>(playerId, townId, factionEnum, this));
 						_playerOwnedManagers[playerId].AddTownId(townId);
 
 						// Conquer Land
@@ -4107,6 +4111,9 @@ std::shared_ptr<FGenericCommand> GameSimulationCore::PackTradeDealInfoToCommand(
 	command->intVar3 = sourceDealInfo.moneyAmount;
 	command->intVar4 = targetDealInfo.moneyAmount;
 	command->intVar5 = static_cast<int32>(nextStage);
+
+	check(IsValidPlayer(sourceDealInfo.playerId));
+	check(IsValidPlayer(targetDealInfo.playerId));
 
 	auto fillResourceValues = [&](const TradeDealSideInfo& dealInfo, TArray<int32>& arrayResourceEnum, TArray<int32>& arrayResourceCount)
 	{

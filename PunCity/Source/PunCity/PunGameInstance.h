@@ -555,10 +555,10 @@ public:
 		_playerNames[playerId].name = FText::FromString(playerNameF);
 	}
 
-	void CachePlayerNames() {
+	void CachePlayerInfos() {
 		_playerNamesCache = _playerNames;
 	}
-	void UseCachePlayerNames() {
+	void UseCachePlayerInfos() {
 		_playerNames = _playerNamesCache;
 	}
 

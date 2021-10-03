@@ -333,6 +333,8 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		  CASE_BUILDING(CardEnum::ForeignPort, ForeignPort);
 		  CASE_BUILDING(CardEnum::SpyCenter, SpyCenter);
 
+		  CASE_BUILDING(CardEnum::PitaBakery, PitaBakery);
+
 
 		  CASE_BUILDING(CardEnum::ConsultingFirm, Building);
 		  CASE_BUILDING(CardEnum::ImmigrationPropagandaOffice, Building);
@@ -440,7 +442,7 @@ int BuildingSystem::AddBuilding(FPlaceBuilding parameters)
 	}
 	
 	
-	WorldTile2 assumedGateTile = Building::CalculateGateTile(static_cast<Direction>(parameters.faceDirection), center, GetBuildingInfo(buildingEnum).size);
+	WorldTile2 assumedGateTile = Building::CalculateGateTile(static_cast<Direction>(parameters.faceDirection), center, building->buildingSize());
 	RefreshIsBuildingConnected(townId, buildingId, assumedGateTile); // Some building needs IsConnected during Init()
 
 	building->Init(*_simulation, buildingId, townId, parameters.buildingEnum,

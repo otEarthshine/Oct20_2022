@@ -429,8 +429,8 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 				return;
 			}
 			
-			WorldTile2 centerTile = building.centerTile();
-			float buildingRotation = RotationFromDirection(building.faceDirection());
+			WorldTile2 centerTile = building.displayCenterTile();
+			float buildingRotation = RotationFromDirection(building.displayFaceDirection());
 
 			FVector displayLocation = MapUtil::DisplayLocation(cameraAtom, centerTile.worldAtom2());
 			

@@ -3319,7 +3319,8 @@ void HumanStateAI::UpdateHappiness()
 		int32 targetFoodVarietyHappiness = 70 + townManager.townFoodVariety() * 3;
 
 		if (_simulation->TownhallCardCountTown(_townId, CardEnum::HappyBreadDay) > 0 &&
-			_simulation->resourceCountTown(_townId, ResourceEnum::Bread) >= 1000) {
+			_simulation->resourceCountTown(_townId, ResourceEnum::Bread) + _simulation->resourceCountTown(_townId, ResourceEnum::PitaBread) >= 1000)
+		{
 			targetFoodVarietyHappiness += 20;
 		}
 		if (_simulation->TownhallCardCountTown(_townId, CardEnum::AllYouCanEat) > 0) {

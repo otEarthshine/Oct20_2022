@@ -183,30 +183,164 @@ public:
 	
 	int32 displayVariationIndex() override
 	{
-		if (_simulation->GetBiomeEnum(centerTile()) == BiomeEnum::Desert &&
-			(2 <= _houseLvl && _houseLvl <= 4))
+		if (factionEnum() == FactionEnum::Europe)
 		{
-			const int32 desertShift = 4;
-			return (_houseLvl - 1) * houseTypesPerLevel + desertShift;
-		}
-		int32 maxLocalIndex = 2;
-		switch(_houseLvl) {
-		case 1: maxLocalIndex = 3; break;
-		case 2: maxLocalIndex = 3; break;
-		case 3: maxLocalIndex = 4; break;
-		case 4: maxLocalIndex = 4; break;
+			//if (_simulation->GetBiomeEnum(centerTile()) == BiomeEnum::Desert &&
+			//	(2 <= _houseLvl && _houseLvl <= 4))
+			//{
+			//	const int32 desertShift = 4;
+			//	return (_houseLvl - 1) * houseTypesPerLevel + desertShift;
+			//}
+			int32 maxLocalIndex = 2;
+			switch (_houseLvl) {
+			case 1: maxLocalIndex = 3; break;
+			case 2: maxLocalIndex = 3; break;
+			case 3: maxLocalIndex = 4; break;
+			case 4: maxLocalIndex = 4; break;
 
-		case 5: maxLocalIndex = 4; break;
-		case 6: maxLocalIndex = 3; break;
-		case 7: maxLocalIndex = 2; break;
-		case 8: maxLocalIndex = 2; break;
-		default: break;
+			case 5: maxLocalIndex = 4; break;
+			case 6: maxLocalIndex = 3; break;
+			case 7: maxLocalIndex = 2; break;
+			case 8: maxLocalIndex = 2; break;
+			default: break;
+			}
+
+			// Checker board like pattern so houses doesn't look the same next to each other...
+			int32 localIndex = (((centerTile().x / 6) % 2) + ((centerTile().y / 6) % 2) + 1) % maxLocalIndex;
+			return (_houseLvl - 1) * houseTypesPerLevel + localIndex;
+		}
+
+		if (factionEnum() == FactionEnum::Arab)
+		{
+			if (_houseLvl == 7 ||
+				_houseLvl == 8)
+			{
+				// Corner
+				Direction faceDirection = Direction::S;
+				int32 localIndex = 0;
+				bool isCorner = GetCornerVariationIndexAndFaceDirection(localIndex, faceDirection);
+				
+				if (!isCorner) {
+					int32 maxLinearIndex = _houseLvl == 7 ? 3 : 2;
+
+					// Checker board like pattern so houses doesn't look the same next to each other...
+					localIndex = 2 + (((centerTile().x / 6) % 2) + ((centerTile().y / 6) % 2) + 1) % maxLinearIndex;
+				}
+				
+				return (_houseLvl - 1) * houseTypesPerLevel + localIndex;
+			}
+			
+			int32 maxLocalIndex = 2;
+			switch (_houseLvl) {
+			case 1: maxLocalIndex = 4; break;
+			case 2: maxLocalIndex = 3; break;
+			case 3: maxLocalIndex = 3; break;
+			case 4: maxLocalIndex = 3; break;
+
+			case 5: maxLocalIndex = 3; break;
+			case 6: maxLocalIndex = 3; break;
+			case 7: maxLocalIndex = 5; break;
+			case 8: maxLocalIndex = 4; break;
+			default: break;
+			}
+
+			// Checker board like pattern so houses doesn't look the same next to each other...
+			int32 localIndex = (((centerTile().x / 6) % 2) + ((centerTile().y / 6) % 2) + 1) % maxLocalIndex;
+			return (_houseLvl - 1) * houseTypesPerLevel + localIndex;
 		}
 		
-		// Checker board like pattern so houses doesn't look the same next to each other...
-		int32 localIndex = (((centerTile().x / 6) % 2) + ((centerTile().y / 6) % 2) + 1) % maxLocalIndex;
-		return (_houseLvl - 1) * houseTypesPerLevel + localIndex;
+		UE_DEBUG_BREAK();
+		return 0;
 	}
+	
+	virtual Direction displayFaceDirection() const override
+	{
+		if (factionEnum() == FactionEnum::Arab) {
+			if (_houseLvl == 7 || _houseLvl == 8)
+			{
+				int32 variationIndex = 0;
+				Direction faceDirection = Direction::S;
+				if (GetCornerVariationIndexAndFaceDirection(variationIndex, faceDirection)) {
+					return faceDirection;
+				}
+			}
+		}
+		return faceDirection();
+	}
+
+	virtual WorldTile2 displayCenterTile() const override
+	{
+		if (factionEnum() == FactionEnum::Arab) {
+			if (_houseLvl == 7 || _houseLvl == 8)
+			{
+				Direction displayDirection = displayFaceDirection();
+				if (displayDirection == Direction::S) {
+					if (_faceDirection == Direction::W) {
+						return _centerTile + WorldTile2(-1, 0);
+					}
+					if (_faceDirection == Direction::E) {
+						return _centerTile + WorldTile2(0, -1);
+					}
+				}
+				if (displayDirection == Direction::N) {
+					if (_faceDirection == Direction::W) {
+						return _centerTile + WorldTile2(0, 1);
+					}
+					if (_faceDirection == Direction::E) {
+						return _centerTile + WorldTile2(1, 0);
+					}
+				}
+			}
+		}
+		return _centerTile;
+	}
+	
+	
+
+	//! For display of later levels
+	void CheckHouseAdjacentConnection(bool shouldCheckNearby)
+	{
+		_adjacentConnectionMask.resize(4, false);
+		
+		for (int32 i = 0; i < _adjacentConnectionMask.size(); i++)
+		{
+			Direction direction = static_cast<Direction>(i);
+
+			int32 outerAdjacentHouseId = -1;
+			bool isNotConnected = area().ExecuteOnAdjacentTilesWithExit(direction, [&](WorldTile2 tile)
+			{
+				int32 adjacentBldId = _simulation->buildingIdAtTile(tile);
+				if (adjacentBldId == -1) {
+					return true;
+				}
+				if (_simulation->buildingEnum(adjacentBldId) != CardEnum::House) {
+					return true;
+				}
+				
+				if (outerAdjacentHouseId == -1) {
+					outerAdjacentHouseId = adjacentBldId;
+					return false;
+				}
+				if (outerAdjacentHouseId == adjacentBldId) {
+					return false;
+				}
+				return true;
+			});
+			
+			_adjacentConnectionMask[i] = !isNotConnected;
+			if (shouldCheckNearby && _adjacentConnectionMask[i]) {
+				_simulation->building<House>(outerAdjacentHouseId).CheckHouseAdjacentConnection(false);
+			}
+		}
+	}
+
+	bool IsHouseConnected(Direction direction) {
+		if (_adjacentConnectionMask.size() == 0) {
+			return false;
+		}
+		return _adjacentConnectionMask[static_cast<int>(direction)];
+	}
+	
 
 	int32 GetBuildingSelectorHeight() override
 	{
@@ -280,6 +414,8 @@ public:
 		Ar << _lastHouseUpgradeTick;
 		
 		Ar << _spyPlayerId;
+		Ar << _isConcealed;
+		SerializeVecValue(Ar, _adjacentConnectionMask);
 	}
 
 	void ScheduleTick() override {
@@ -381,7 +517,60 @@ private:
 		return typeCount;
 	}
 	
-	//void UpdateSubscription();
+
+	// Helper
+	std::vector<Direction> GetConnectedDirections() const
+	{
+		std::vector<Direction> connectedDirections;
+		for (int32 i = 0; i < _adjacentConnectionMask.size(); i++) {
+			if (_adjacentConnectionMask[i]) {
+				connectedDirections.push_back(static_cast<Direction>(i));
+			}
+		}
+		return connectedDirections;
+	}
+
+	bool GetCornerVariationIndexAndFaceDirection(int32& variationIndex, Direction& faceDirection) const
+	{
+		std::vector<Direction> connectedDirections = GetConnectedDirections();
+
+		// Corner
+		if (connectedDirections.size() == 2 &&
+			OppositeDirection(connectedDirections[0]) != connectedDirections[1])
+		{
+
+			if (connectedDirections[0] == Direction::S &&
+				connectedDirections[1] == Direction::E)
+			{
+				variationIndex = 0;
+				faceDirection = Direction::N;
+			}
+			else if (connectedDirections[0] == Direction::E &&
+				connectedDirections[1] == Direction::N)
+			{
+				variationIndex = 1;
+				faceDirection = Direction::S;
+			}
+			else if (connectedDirections[0] == Direction::N &&
+				connectedDirections[1] == Direction::W)
+			{
+				variationIndex = 0;
+				faceDirection = Direction::S;
+			}
+			else if (connectedDirections[0] == Direction::S &&
+				connectedDirections[1] == Direction::W)
+			{
+				variationIndex = 1;
+				faceDirection = Direction::N;
+			}
+			else {
+				UE_DEBUG_BREAK();
+			}
+
+			return true;
+		}
+		return false;
+	}
 
 private:
 	int32 _houseLvl = 1;
@@ -389,6 +578,8 @@ private:
 
 	int32 _spyPlayerId = -1;
 	bool _isConcealed = false;
+	
+	std::vector<uint8> _adjacentConnectionMask; // 
 	
 	const int32 houseUpgradeDelayTicks = Time::TicksPerSecond * 8;
 

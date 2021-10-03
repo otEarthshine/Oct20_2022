@@ -35,6 +35,7 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "ShippingGrid", 0 },
 	{ "BuildingId", 0 },
 	{ "FarmDebugLines", 0 },
+	{ "HouseAdjacentLines", 0 },
 
 	{ "ShowProvinceSlots", 0 },
 	

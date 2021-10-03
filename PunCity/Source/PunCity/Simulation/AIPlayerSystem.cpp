@@ -442,7 +442,7 @@ void AIPlayerSystem::Tick1Sec()
 		if (Time::Ticks() > Time::TicksPerYear &&
 			_simulation->buildingCount(_aiPlayerId, CardEnum::TradingPost) == 0)
 		{
-			block = AICityBlock::MakeBlock(
+			block = AICityBlock::MakeBlock(factionEnum(),
 				{ CardEnum::TradingPost }
 			);
 		}
@@ -450,7 +450,7 @@ void AIPlayerSystem::Tick1Sec()
 		else if (housingCapacity < maxHouseCapacity && population > housingCapacity - 5)
 		{
 			// Group 4 houses into a block...
-			block = AICityBlock::MakeBlock(
+			block = AICityBlock::MakeBlock(factionEnum(),
 				{ CardEnum::House, CardEnum::House },
 				{ CardEnum::House, CardEnum::House }
 			);
@@ -458,7 +458,7 @@ void AIPlayerSystem::Tick1Sec()
 		// Tavern (One for every 50 citizens)
 		else if (population / 50 + 1 > _simulation->buildingCount(_aiPlayerId, CardEnum::Tavern))
 		{
-			block = AICityBlock::MakeBlock(
+			block = AICityBlock::MakeBlock(factionEnum(),
 				{ CardEnum::Tavern },
 				{ }
 			);
@@ -472,7 +472,7 @@ void AIPlayerSystem::Tick1Sec()
 				if (_simulation->resourceCountTown(_aiPlayerId, ResourceEnum::Wood) > 200 &&
 					_simulation->buildingCount(_aiPlayerId, CardEnum::FurnitureWorkshop) == 0)
 				{
-					block = AICityBlock::MakeBlock(
+					block = AICityBlock::MakeBlock(factionEnum(),
 						{ CardEnum::FurnitureWorkshop },
 						{ }
 					);
@@ -481,7 +481,7 @@ void AIPlayerSystem::Tick1Sec()
 				else if (_simulation->resourceCountTown(_aiPlayerId, ResourceEnum::Wheat) > 100 &&
 					_simulation->buildingCount(_aiPlayerId, CardEnum::BeerBrewery) == 0)
 				{
-					block = AICityBlock::MakeBlock(
+					block = AICityBlock::MakeBlock(factionEnum(),
 						{ CardEnum::BeerBrewery, },
 						{ }
 					);
@@ -491,7 +491,7 @@ void AIPlayerSystem::Tick1Sec()
 					_simulation->buildingCount(_aiPlayerId, CardEnum::BeerBrewery) > 0 &&
 					_simulation->buildingCount(_aiPlayerId, CardEnum::Tailor) == 0)
 				{
-					block = AICityBlock::MakeBlock(
+					block = AICityBlock::MakeBlock(factionEnum(),
 						{ CardEnum::Tailor, },
 						{ }
 					);
@@ -507,7 +507,7 @@ void AIPlayerSystem::Tick1Sec()
 
 				if (usedSlots >= totalSlots * 9 / 10) // 90% full
 				{
-					block = AICityBlock::MakeBlock(
+					block = AICityBlock::MakeBlock(factionEnum(),
 						{ CardEnum::StorageYard, CardEnum::StorageYard, },
 						{ CardEnum::StorageYard,  CardEnum::StorageYard }
 					);
@@ -676,7 +676,7 @@ void AIPlayerSystem::Tick1Sec()
 							for (int32 i = 0; i < DirectionCount; i++)
 							{
 								Direction faceDirection = static_cast<Direction>(i);
-								TileArea area = BuildingArea(coastalTile, GetBuildingInfo(CardEnum::Fisher).size, faceDirection);
+								TileArea area = BuildingArea(coastalTile, GetBuildingInfo(CardEnum::Fisher).GetSize(factionEnum()), faceDirection);
 
 								std::vector<PlacementGridInfo> grids;
 								bool setDockInstruction;
@@ -708,7 +708,7 @@ void AIPlayerSystem::Tick1Sec()
 						auto command = MakeCommand<FPlaceBuilding>();
 						command->playerId = _aiPlayerId;
 						command->buildingEnum = static_cast<uint8>(CardEnum::Fisher);
-						command->area = BuildingArea(bestCenterTile, GetBuildingInfo(CardEnum::Fisher).size, bestFaceDirection);
+						command->area = BuildingArea(bestCenterTile, GetBuildingInfo(CardEnum::Fisher).GetSize(factionEnum()), bestFaceDirection);
 						command->center = bestCenterTile;
 						command->faceDirection = uint8(bestFaceDirection);
 
@@ -776,7 +776,7 @@ void AIPlayerSystem::Tick1Sec()
 					if (status.currentPurpose == AIRegionPurposeEnum::None &&
 						status.proposedPurpose == proposedPurposeEnum)
 					{
-						AICityBlock block = AICityBlock::MakeBlock(
+						AICityBlock block = AICityBlock::MakeBlock(factionEnum(),
 							topBuildingEnumsIn,
 							bottomBuildingEnumsIn
 						);

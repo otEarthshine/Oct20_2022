@@ -496,7 +496,8 @@ public:
 	//		func(playerId);
 	//	}
 	//}
-	
+
+	FactionEnum playerFactionEnum(int32 playerId) { return playerOwned(playerId).factionEnum(); }
 
 	int32 GetHouseLvlCount(int32 townId, int32 houseLvl, bool includeHigherLvl) final {
 		return _buildingSystem->GetHouseLvlCount(townId, houseLvl, includeHigherLvl);

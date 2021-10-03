@@ -2258,7 +2258,9 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		{
 			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 				if (IsPlayerBuildable(tile)) {
-					if (terrainGenerator.riverFraction(tile) > GetRiverFractionPercentThreshold(_buildingEnum) / 100.0f) {
+					if (terrainGenerator.riverFraction(tile) > GetRiverFractionPercentThreshold(_buildingEnum) / 100.0f ||
+						PunSettings::IsOn("CheatFastBuild")) 
+					{
 						_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, tile);
 						return;
 					}

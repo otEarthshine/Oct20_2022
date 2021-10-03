@@ -60,6 +60,8 @@ public:
 	virtual void SetResourceActive(bool workActive);
 	void SetHolderTypeAndTarget(ResourceEnum resourceEnum, ResourceHolderType type, int32 target);
 
+	void AddRoadAroundBuilding();
+
 	void Deinit();
 
 	virtual void OnProduce(int32 productionAmount) {}
@@ -119,16 +121,16 @@ public:
 	TileArea area() const { return _area; }
 	TileArea frontArea() const { return _area.GetFrontArea(_faceDirection); }
 
-	FactionEnum factionEnum();
+	virtual FactionEnum factionEnum() const;
 	
 
 	virtual int32 tileCount() { return _area.tileCount(); }
 
-	static WorldTile2 GetPortTile(WorldTile2 gateTile, Direction faceDirection, CardEnum buildingEnum) {
-		return gateTile + WorldTile2::RotateTileVector(WorldTile2(GetBuildingInfo(buildingEnum).size.x - 1, 0), faceDirection);
+	static WorldTile2 GetPortTile(WorldTile2 gateTile, Direction faceDirection, CardEnum buildingEnum, FactionEnum factionEnum) {
+		return gateTile + WorldTile2::RotateTileVector(WorldTile2(GetBuildingInfo(buildingEnum).GetSize(factionEnum).x - 1, 0), faceDirection);
 	}
 	WorldTile2 GetPortTile() {
-		return GetPortTile(gateTile(), _faceDirection, _buildingEnum);
+		return GetPortTile(gateTile(), _faceDirection, _buildingEnum, factionEnum());
 	}
 	
 
@@ -280,7 +282,7 @@ public:
 			return _area.size();
 		}
 		// Storage Yard??
-		return GetBuildingInfoInt(buildingEnumInt()).size;
+		return GetBuildingInfoInt(buildingEnumInt()).GetSize(factionEnum());
 	}
 
 	virtual int32 storageSlotCount() {
@@ -1267,6 +1269,10 @@ public:
 
 	virtual int32 displayVariationIndex();
 
+	virtual Direction displayFaceDirection() const { return faceDirection(); }
+
+	virtual WorldTile2 displayCenterTile() const { return _centerTile; }
+	
 	//bool NeedRoadConnection();
 
 	bool IsUpgraded(int index) const {

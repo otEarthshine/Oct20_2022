@@ -84,6 +84,8 @@ public:
 		return GetAIArchetypeInfo(_aiArchetypeEnum);
 	}
 
+	FactionEnum factionEnum() { return aiArchetypeInfo().factionEnum(); }
+
 	void SetActive(bool active) {
 		_active = active;
 	}

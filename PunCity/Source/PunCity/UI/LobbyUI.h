@@ -209,7 +209,7 @@ private:
 	
 	void UpdatePlayerPortraitUI(UPlayerListElementUI* element, int32 playerId, const GameSaveInfo& saveInfo);
 
-	void LobbyStartGame();
+	void LobbyStartGame_Multiplayer();
 
 	//void RefreshAICountDropdown()
 	//{

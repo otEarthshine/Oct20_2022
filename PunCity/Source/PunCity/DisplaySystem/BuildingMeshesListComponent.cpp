@@ -40,10 +40,10 @@ UBuildingMeshesComponent* BuildingMeshesListComponent::ShowBuildingMesh(Building
 		buildingMeshes->ShowStorageMesh(building, _dataSource->assetLoader(), customDepth);
 	}
 	else {
-		buildingMeshes->Show(building.faceDirection(), modules, _dataSource->assetLoader(), customDepth, receiveDecal);
+		buildingMeshes->Show(building.displayFaceDirection(), modules, _dataSource->assetLoader(), customDepth, receiveDecal);
 	}
 
-	buildingMeshes->SetWorldLocation(_dataSource->DisplayLocation(building.centerTile().worldAtom2()));
+	buildingMeshes->SetWorldLocation(_dataSource->DisplayLocation(building.displayCenterTile().worldAtom2()));
 
 	return buildingMeshes;
 }

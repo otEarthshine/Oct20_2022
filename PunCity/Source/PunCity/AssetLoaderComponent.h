@@ -912,7 +912,7 @@ private:
 	
 	void DetectMeshGroups(UStaticMesh* mesh, TArray<FVector>& vertexPositions);
 	
-	void DetectParticleSystemPosition(CardEnum buildingEnum, UStaticMesh* mesh);
+	void DetectParticleSystemPosition(CardEnum buildingEnum, FactionEnum factionEnum, UStaticMesh* mesh);
 	
 	void PaintMeshForConstruction(FString moduleName);
 

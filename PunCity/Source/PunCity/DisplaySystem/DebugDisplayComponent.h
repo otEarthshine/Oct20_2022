@@ -99,6 +99,7 @@ protected:
 			PunSettings::Settings["BuildingGrid"] ||
 			PunSettings::Settings["BuildingId"] ||
 			PunSettings::Settings["FarmDebugLines"] ||
+			PunSettings::Settings["HouseAdjacentLines"] ||
 			PunSettings::Settings["FloodId"] ||
 			PunSettings::Settings["FloodIdHuman"] ||
 			PunSettings::Settings["Province"])
@@ -343,6 +344,27 @@ protected:
 											drawLine(tileVec + FVector(0, 0, 10 * c), neighborVec + FVector(0, 0, 10 * c), colorFromTileType(connections[c].tileType));
 										}
 									}
+								}
+							}
+						}
+					}
+
+					if (PunSettings::Settings["HouseAdjacentLines"])
+					{
+						int32 buildingId = simulation().buildingIdAtTile(curTile);
+						if (buildingId != -1)
+						{
+							Building& bld = simulation().building(buildingId);
+							if (bld.isEnum(CardEnum::House))
+							{
+								FVector centerVec = MapUtil::DisplayLocation(cameraAtom, bld.centerTile().worldAtom2());
+								
+								for (int32 i = 0; i < 4; i++) {
+									Direction direction = static_cast<Direction>(i);
+									FVector shiftedVec = MapUtil::DisplayLocation(cameraAtom, (bld.centerTile() + WorldTile2::DirectionTile(direction) * 2).worldAtom2());
+									FLinearColor color = bld.subclass<House>().IsHouseConnected(direction) ? FLinearColor::Green : FLinearColor::Red;
+
+									drawLine(centerVec, shiftedVec, color);
 								}
 							}
 						}

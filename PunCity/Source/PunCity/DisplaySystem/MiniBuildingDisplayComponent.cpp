@@ -76,9 +76,9 @@ void UMiniBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, Worl
 			}
 
 			float displayVariationIndex = building.displayVariationIndex();
-			int32_t buildingRotation = RotationFromDirection(building.faceDirection());
+			int32_t buildingRotation = RotationFromDirection(building.displayFaceDirection());
 
-			WorldTile2 centerTile = building.centerTile();
+			WorldTile2 centerTile = building.displayCenterTile();
 			FTransform transform(FRotator(0, buildingRotation, 0), centerTile.localTile().localDisplayLocation());
 
 			const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(factionEnum, buildingEnum, displayVariationIndex);

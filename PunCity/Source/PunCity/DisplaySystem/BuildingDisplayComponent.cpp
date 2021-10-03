@@ -291,10 +291,10 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 			}
 			else {
 				displayVariationIndex = building.displayVariationIndex();
-				buildingRotation = RotationFromDirection(building.faceDirection());
+				buildingRotation = RotationFromDirection(building.displayFaceDirection());
 			}
 
-			WorldTile2 centerTile = building.centerTile();
+			WorldTile2 centerTile = building.displayCenterTile();
 			FTransform transform(FRotator(0, buildingRotation, 0), centerTile.localTile().localDisplayLocation());
 
 			//PUN_LOG("GetModules %s %d", *ToFString(building.buildingInfo().name), building.displayVariationIndex());
@@ -704,10 +704,10 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 				bool shouldDisplayParticles = building.shouldDisplayParticles() || isMainMenuDisplay || PunSettings::TrailerSession || PunSettings::IsOn("ForceWorkAnimation");
 
 				// Building mesh
-				float buildingRotation = RotationFromDirection(building.faceDirection());
+				float buildingRotation = RotationFromDirection(building.displayFaceDirection());
 				int32 displayVariationIndex = building.displayVariationIndex();
 
-				WorldTile2 centerTile = building.centerTile();
+				WorldTile2 centerTile = building.displayCenterTile();
 				FTransform transform(FRotator(0, buildingRotation, 0), centerTile.localTile().localDisplayLocation());
 
 				//PUN_LOG("GetModules %s %d", *ToFString(building.buildingInfo().name), building.displayVariationIndex());

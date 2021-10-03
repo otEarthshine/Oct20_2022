@@ -60,6 +60,8 @@ inline float RotationFromDirection(Direction direction)
 	}
 }
 
+//! Note: Direction to tile using WorldTile2::DirectionTile()
+
 
 struct Float2
 {
@@ -841,6 +843,42 @@ struct TileArea
 			functor(WorldTile2(x, maxY));
 		}
 	}
+
+	template<typename Func>
+	bool ExecuteOnAdjacentTilesWithExit(Direction direction, Func func) const
+	{
+		if (direction == Direction::N) {
+			for (int16 y = minY; y <= maxY; y++) {
+				if (func(WorldTile2(maxX + 1, y))) {
+					return true;
+				}
+			}
+		}
+		else if (direction == Direction::S) {
+			for (int16 y = minY; y <= maxY; y++) {
+				if (func(WorldTile2(minX - 1, y))) {
+					return true;
+				}
+			}
+		}
+		else if (direction == Direction::E) {
+			for (int16 x = minX; x <= maxX; x++) {
+				if (func(WorldTile2(x, maxY + 1))) {
+					return true;
+				}
+			}
+		}
+		else if (direction == Direction::W) {
+			for (int16 x = minX; x <= maxX; x++) {
+				if (func(WorldTile2(x, minY - 1))) {
+					return true;
+				}
+			}
+		}
+		
+		return false;
+	}
+
 	
 
 	std::vector<WorldRegion2> GetOverlapRegions(bool isSmallArea) const {

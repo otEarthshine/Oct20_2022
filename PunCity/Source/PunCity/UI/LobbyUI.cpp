@@ -369,7 +369,7 @@ void ULobbyUI::Tick()
 		SetText(StartGameButtonText, "Cancel");
 		
 		if (countdownTime < 0) {
-			LobbyStartGame();
+			LobbyStartGame_Multiplayer();
 			return;
 		}
 
@@ -632,6 +632,7 @@ void ULobbyUI::OnClickLobbyStartGameButton()
 		CheckMapReady();
 		if (_isMapReady) {
 			// Travel
+			gameInstance()->CachePlayerInfos();
 			GetWorld()->ServerTravel("/Game/Maps/GameMap");
 			GameStartBlocker->SetVisibility(ESlateVisibility::Visible);
 		}
@@ -678,7 +679,7 @@ void ULobbyUI::OnClickLobbyStartGameButton()
 	gameInstance()->ServerOnStartedGame();
 }
 
-void ULobbyUI::LobbyStartGame()
+void ULobbyUI::LobbyStartGame_Multiplayer()
 {
 	APunGameMode* gameMode = CastChecked<APunGameMode>(UGameplayStatics::GetGameMode(this));
 	
@@ -714,7 +715,7 @@ void ULobbyUI::LobbyStartGame()
 	}
 
 	gameInstance()->DebugPunSync("Traveling to GameMap");
-	gameInstance()->CachePlayerNames();
+	gameInstance()->CachePlayerInfos();
 
 	GetWorld()->ServerTravel("/Game/Maps/GameMap");
 
@@ -895,6 +896,8 @@ void ULobbyUI::UpdatePlayerPortraitUI(UPlayerListElementUI* element, int32 playe
 			(gameInst->hostPlayerId == i ? LOCTEXT("(Host)", "(Host)").ToString() : "")
 		));
 		element->PlayerName->SetVisibility(ESlateVisibility::Visible);
+		
+		element->FactionName->SetText(GetFactionInfo(names[i].factionEnum()).name);
 
 		element->PlayerLogoForeground->GetDynamicMaterial()->SetTextureParameterValue("Logo", _mainMenuAssetLoader->PlayerLogos[names[i].logoIndex]);
 		element->PlayerLogoForeground->GetDynamicMaterial()->SetVectorParameterValue("ColorBackground", names[i].logoColorBackground);

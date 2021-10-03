@@ -6490,7 +6490,7 @@ void GameSimulationCore::Cheat(FCheat command)
 			placeCommand->center = WorldTile2(command.var2, command.var3);
 			placeCommand->buildingEnum = static_cast<uint8>(cardEnum);
 			placeCommand->faceDirection = static_cast<uint8>(Direction::S);
-			placeCommand->area = BuildingArea(placeCommand->center, GetBuildingInfo(cardEnum).size, Direction::S);
+			placeCommand->area = BuildingArea(placeCommand->center, GetBuildingInfo(cardEnum).GetSize(playerFactionEnum(placeCommand->playerId)), Direction::S);
 
 			check(tileOwnerPlayer(placeCommand->center) != -1);
 				
@@ -6918,8 +6918,10 @@ void GameSimulationCore::TestCityNetworkStage()
 	{
 		WorldTile2 curTile(PunSettings::Get("TestCityNetwork_CurTileId"));
 
+		WorldTile2 size = GetBuildingInfo(buildingEnum).GetSize(playerFactionEnum(commandPlayerId));
+
 		const WorldTile2 buildingSpacing(3, 3);
-		TileArea startArea(curTile, GetBuildingInfo(buildingEnum).size + WorldTile2(2, 2) + buildingSpacing);
+		TileArea startArea(curTile, size + WorldTile2(2, 2) + buildingSpacing);
 
 		TileArea endArea = SimUtils::SpiralFindAvailableBuildArea(startArea,
 			[&](WorldTile2 tile) {
@@ -6941,7 +6943,7 @@ void GameSimulationCore::TestCityNetworkStage()
 			command->center = endArea.centerTile();
 			command->buildingEnum = static_cast<uint8>(buildingEnum);
 			command->faceDirection = static_cast<uint8>(Direction::S);
-			command->area = BuildingArea(command->center, GetBuildingInfo(buildingEnum).size, static_cast<Direction>(command->faceDirection));
+			command->area = BuildingArea(command->center, size, static_cast<Direction>(command->faceDirection));
 			_gameManager->SendNetworkCommand(command);
 
 			PUN_LOG("TestCityNetworkStage FPlaceBuilding:%s", *GetBuildingInfo(buildingEnum).nameF());

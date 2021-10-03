@@ -74,7 +74,7 @@ public:
 		return 0;
 	}
 
-	FactionEnum factionEnum() { return _factionEnum; }
+	FactionEnum factionEnum() const { return _factionEnum; }
 
 	/*
 	 * Variables

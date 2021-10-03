@@ -308,14 +308,14 @@ public:
 		return command;
 	}
 
-	static void PlaceBuildingRow(const std::vector<CardEnum>& buildingEnums, WorldTile2 start, bool isFaceSouth, int32 playerId, std::vector<std::shared_ptr<FNetworkCommand>>& commands)
+	static void PlaceBuildingRow(const std::vector<CardEnum>& buildingEnums, WorldTile2 start, bool isFaceSouth, int32 playerId, std::vector<std::shared_ptr<FNetworkCommand>>& commands, FactionEnum factionEnum)
 	{
 		int32 currentY = start.y;
 		int32 currentX = start.x;
 
 		auto placeRow = [&](CardEnum buildingEnum, int32 sign)
 		{
-			WorldTile2 size = GetBuildingInfo(buildingEnum).size;
+			WorldTile2 size = GetBuildingInfo(buildingEnum).GetSize(factionEnum);
 
 			// Storage yard always 4x4
 			if (buildingEnum == CardEnum::StorageYard) {
@@ -382,8 +382,8 @@ public:
 
 		// Build buildings
 		{
-			PlaceBuildingRow(block.topBuildingEnums, blockArea.max(), false, playerId, commands);
-			PlaceBuildingRow(block.bottomBuildingEnums, blockArea.min(), true, playerId, commands);
+			PlaceBuildingRow(block.topBuildingEnums, blockArea.max(), false, playerId, commands, block.factionEnum);
+			PlaceBuildingRow(block.bottomBuildingEnums, blockArea.min(), true, playerId, commands, block.factionEnum);
 		}
 	}
 
@@ -398,8 +398,8 @@ public:
 		PUN_LOG("PlaceForestBlock[%d] %s", playerId, *ToFString(blockArea.ToString()));
 
 		// Face up row
-		PlaceBuildingRow(block.topBuildingEnums, WorldTile2(roadTileX, blockArea.maxY), false, playerId, commands);
-		PlaceBuildingRow(block.bottomBuildingEnums, WorldTile2(roadTileX, blockArea.minY), true, playerId, commands);
+		PlaceBuildingRow(block.topBuildingEnums, WorldTile2(roadTileX, blockArea.maxY), false, playerId, commands, block.factionEnum);
+		PlaceBuildingRow(block.bottomBuildingEnums, WorldTile2(roadTileX, blockArea.minY), true, playerId, commands, block.factionEnum);
 	}
 
 	template <typename Func>

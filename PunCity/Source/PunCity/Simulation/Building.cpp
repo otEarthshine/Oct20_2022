@@ -281,13 +281,13 @@ void Building::FinishConstruction()
 		AddJobBuilding(workerCount);
 	}
 
-	// Quest
+	//! Quest
 	if (_buildingEnum == CardEnum::StorageYard) {
 		_simulation->QuestUpdateStatus(_playerId, QuestEnum::BuildStorageQuest);
 	}
 
 
-	// Foreign Builder
+	//! Foreign Builder
 	if (foreignBuilder() != -1)
 	{
 		// Foreign Investment
@@ -304,6 +304,12 @@ void Building::FinishConstruction()
 				LOCTEXT("ForeignBuiltSuccessful_Popup", "Successfully built on foreign land.<space>Note: You retain the rights to demolish this building.")
 			);
 		}
+	}
+
+	
+	//! Cheat TestCityNetwork
+	if (PunSettings::Get("TestCityNetwork_Stage") >= 0) {
+		AddRoadAroundBuilding();
 	}
 }
 
@@ -395,6 +401,38 @@ void Building::SetHolderTypeAndTarget(ResourceEnum resourceEnum, ResourceHolderT
 	
 	ResourceHolderInfo info = holderInfo(resourceEnum);
 	resourceSystem().SetHolderTypeAndTarget(info, type, target);
+}
+
+void Building::AddRoadAroundBuilding()
+{
+	// Place road around area
+	WorldTile2 roadMin(_area.minX - 1, _area.minY - 1);
+	WorldTile2 roadMax(_area.maxX + 1, _area.maxY + 1);
+	int32 sizeX = roadMax.x - roadMin.x + 1;
+	int32 sizeY = roadMax.y - roadMin.y - 1;
+
+	std::vector<TileArea> roadAreas;
+	roadAreas.push_back(TileArea(roadMin, WorldTile2(sizeX, 1)));
+	roadAreas.push_back(TileArea(WorldTile2(roadMin.x, roadMax.y), WorldTile2(sizeX, 1)));
+	roadAreas.push_back(TileArea(WorldTile2(roadMin.x, roadMin.y + 1), WorldTile2(1, sizeY)));
+	roadAreas.push_back(TileArea(WorldTile2(roadMax.x, roadMin.y + 1), WorldTile2(1, sizeY)));
+
+	auto& treeSys = _simulation->treeSystem();
+
+	auto tryAddRoad = [&](WorldTile2 tile) {
+		if (_simulation->IsFrontBuildable(tile) && !_simulation->overlaySystem().IsRoad(tile)) {
+			//PUN_LOG("tryAddRoad %s", ToTChar(tile.ToString()));
+			treeSys.ForceRemoveTileObj(tile, false);
+			overlaySystem().AddRoad(tile, true, true);
+		}
+	};
+
+	for (size_t i = 0; i < roadAreas.size(); i++) {
+		treeSys.ForceRemoveTileObjArea(roadAreas[i]);
+		roadAreas[i].ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+			tryAddRoad(tile);
+		});
+	}
 }
 
 void Building::Deinit()
@@ -1718,8 +1756,11 @@ int32 Building::displayVariationIndex()
 	return 0;
 }
 
-FactionEnum Building::factionEnum()
+FactionEnum Building::factionEnum() const
 {
+	if (_simulation == nullptr) {
+		return FactionEnum::None;
+	}
 	if (foreignBuilder() != -1) {
 		return _simulation->playerOwned(foreignBuilder()).factionEnum();
 	}

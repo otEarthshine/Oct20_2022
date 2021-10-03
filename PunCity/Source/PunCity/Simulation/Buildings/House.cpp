@@ -125,6 +125,8 @@ void House::FinishConstruction()
 		ForceSetHouseLevel(SimSettings::Get("CheatHouseLevel"));
 	}
 
+	CheckHouseAdjacentConnection(true);
+	
 	//if (SimSettings::Get("CheatHouseLevel") > 1) {
 	//	switch(SimSettings::Get("CheatHouseLevel"))
 	//	{

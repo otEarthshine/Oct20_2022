@@ -1033,7 +1033,7 @@ void Bakery::FinishConstruction() {
 	AddResourceHolder(ResourceEnum::Flour, ResourceHolderType::Requester, 0);
 	AddResourceHolder(ResourceEnum::Coal, ResourceHolderType::Requester, 0);
 	AddResourceHolder(ResourceEnum::Wood, ResourceHolderType::Requester, 0);
-	AddResourceHolder(ResourceEnum::Bread, ResourceHolderType::Provider, 0);
+	AddResourceHolder(GetBuildingInfo(buildingEnum()).produce, ResourceHolderType::Provider, 0);
 
 	AddUpgrades({
 		MakeProductionUpgrade(LOCTEXT("Improved Oven", "Improved Oven"), ResourceEnum::Brick, 30),
@@ -1983,35 +1983,7 @@ void MinorCity::FinishConstruction()
 		}
 	}
 
-	
-	// Place road around townhall
-	WorldTile2 roadMin(_area.minX - 1, _area.minY - 1);
-	WorldTile2 roadMax(_area.maxX + 1, _area.maxY + 1);
-	int32 sizeX = roadMax.x - roadMin.x + 1;
-	int32 sizeY = roadMax.y - roadMin.y - 1;
-	
-	std::vector<TileArea> roadAreas;
-	roadAreas.push_back(TileArea(roadMin, WorldTile2(sizeX, 1)));
-	roadAreas.push_back(TileArea(WorldTile2(roadMin.x, roadMax.y), WorldTile2(sizeX, 1)));
-	roadAreas.push_back(TileArea(WorldTile2(roadMin.x, roadMin.y + 1), WorldTile2(1, sizeY)));
-	roadAreas.push_back(TileArea(WorldTile2(roadMax.x, roadMin.y + 1), WorldTile2(1, sizeY)));
-
-	auto& treeSys = _simulation->treeSystem();
-	
-	auto tryAddRoad = [&](WorldTile2 tile) {
-		if (_simulation->IsFrontBuildable(tile) && !_simulation->overlaySystem().IsRoad(tile)) {
-			//PUN_LOG("tryAddRoad %s", ToTChar(tile.ToString()));
-			treeSys.ForceRemoveTileObj(tile, false);
-			overlaySystem().AddRoad(tile, true, true);
-		}
-	};
-
-	for (size_t i = 0; i < roadAreas.size(); i++) {
-		treeSys.ForceRemoveTileObjArea(roadAreas[i]);
-		roadAreas[i].ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-			tryAddRoad(tile);
-		});
-	}
+	AddRoadAroundBuilding();
 }
 
 void MinorCity::OnDeinit()

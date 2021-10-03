@@ -50,11 +50,12 @@ public:
 
 	//static bool TryPlaceBlockHelper(WorldTile2 centerTile, int32 aiPlayerId, IGameSimulationCore* simulation);
 
-	static AICityBlock MakeBlock(std::vector<CardEnum> topBuildingEnumsIn, std::vector<CardEnum> bottomBuildingEnumsIn = {})
+	static AICityBlock MakeBlock(FactionEnum factionEnum, std::vector<CardEnum> topBuildingEnumsIn, std::vector<CardEnum> bottomBuildingEnumsIn = {})
 	{
 		AICityBlock block;
 		block.topBuildingEnums = topBuildingEnumsIn;
 		block.bottomBuildingEnums = bottomBuildingEnumsIn;
+		block.factionEnum = factionEnum;
 		block.CalculateSize();
 		return block;
 	}
@@ -84,7 +85,7 @@ public:
 			if (buildingEnum == CardEnum::StorageYard) {
 				return WorldTile2(4, 4);
 			}
-			return GetBuildingInfo(buildingEnum).size;
+			return GetBuildingInfo(buildingEnum).GetSize(factionEnum);
 		};
 		
 		topTileSizeX = 0;
@@ -230,6 +231,7 @@ public:
 	{
 		SerializeVecValue(Ar, topBuildingEnums);
 		SerializeVecValue(Ar, bottomBuildingEnums);
+		Ar << factionEnum;
 
 		Ar << topTileSizeX;
 		Ar << bottomTileSizeX;
@@ -243,6 +245,7 @@ public:
 	// arranged from left to right
 	std::vector<CardEnum> topBuildingEnums;
 	std::vector<CardEnum> bottomBuildingEnums;
+	FactionEnum factionEnum = FactionEnum::None;
 
 	int32 topTileSizeX = 0;
 	int32 bottomTileSizeX = 0;

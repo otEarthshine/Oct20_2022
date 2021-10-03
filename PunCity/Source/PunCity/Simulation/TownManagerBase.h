@@ -199,7 +199,7 @@ public:
 
 	bool isCapital() { return _townId == _playerId; }
 
-	FactionEnum factionEnum() { return _factionEnum; }
+	FactionEnum factionEnum() const { return _factionEnum; }
 
 	const std::vector<int32>& provincesClaimed() { return _provincesClaimed; }
 

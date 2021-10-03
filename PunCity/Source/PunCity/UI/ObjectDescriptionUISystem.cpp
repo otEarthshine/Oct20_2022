@@ -457,8 +457,8 @@ void UObjectDescriptionUISystem::LeftMouseDown()
 								const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(building.factionEnum(), building.buildingEnum(), building.displayVariationIndex());
 								std::vector<ModuleTransform> modules = modulePrototype.transforms;
 
-								FTransform transform(FRotator(0, RotationFromDirection(building.faceDirection()), 0), 
-															dataSource()->DisplayLocation(building.centerTile().worldAtom2()));
+								FTransform transform(FRotator(0, RotationFromDirection(building.displayFaceDirection()), 0),
+															dataSource()->DisplayLocation(building.displayCenterTile().worldAtom2()));
 
 								for (int i = 0; i < modules.size(); i++) 
 								{

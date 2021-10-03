@@ -321,35 +321,35 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	//! Arab
 	LoadBuilding(FactionEnum::Arab, CardEnum::Townhall, "Townhall_Era0", "Townhall/Era0", ModuleTransformGroup::CreateAuxSet(
 		{
-			{ParticleEnum::CampFire, TransformFromPositionYawScale(-5.65, -.669, 1, 0, 0.17)}
+			{ParticleEnum::CampFire, TransformFromPositionYawScale(-0.62, -10, 2.6, 0, 0.17)}
 		},
 		{}, {},
-		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-5.65, -.669, 5), FVector::OneVector} }
+		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-0.62, -10, 6.6), FVector::OneVector} }
 	));
 	LoadBuilding(FactionEnum::Arab, CardEnum::Townhall, "Townhall_Era1", "Townhall/Era1", ModuleTransformGroup::CreateAuxSet(
 		{
-			{ParticleEnum::CampFire, TransformFromPositionYawScale(-10.7, 14.6, 1.85, 0, 0.17)}
+			{ParticleEnum::CampFire, TransformFromPositionYawScale(1, 1, 4, 0, 0.17)}
 		},
 		{}, {},
-		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-10.7, 14.6, 8.5), FVector::OneVector} }
+		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(1, 1, 10.5), FVector::OneVector} }
 	));
 	LoadBuilding(FactionEnum::Arab, CardEnum::Townhall, "Townhall_Era2", "Townhall/Era2", ModuleTransformGroup::CreateAuxSet(
 		{
 			//{ParticleEnum::Smoke, TransformFromPosition(51.6, -24.3, 38.8)},
-			{ParticleEnum::CampFire, TransformFromPositionYawScale(-15.38, 6.41, 1.85, 0, 0.17)}
+			//{ParticleEnum::CampFire, TransformFromPositionYawScale(-15.38, 6.41, 1.85, 0, 0.17)}
 		},
 		{}, {},
-		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-15.38, 6.41, 1.85), FVector::OneVector} }
+		{ /*{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-15.38, 6.41, 1.85), FVector::OneVector}*/ }
 	));
 	LoadBuilding(FactionEnum::Arab, CardEnum::Townhall, "Townhall_Era3", "Townhall/Era3", ModuleTransformGroup::CreateAuxSet(
 		{},
 		{}, {},
-		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-2.3, 10.2, 8.5), FVector::OneVector} }
+		{/* {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-2.3, 10.2, 8.5), FVector::OneVector}*/ }
 	));
 	LoadBuilding(FactionEnum::Arab, CardEnum::Townhall, "Townhall_Era4", "Townhall/Era4", ModuleTransformGroup::CreateAuxSet(
 		{},
 		{}, {},
-		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-2.3, 10.2, 8.5), FVector::OneVector} }
+		{ /*{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-2.3, 10.2, 8.5), FVector::OneVector}*/ }
 	));
 
 
@@ -428,46 +428,49 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	// TODO: ARAB FIX
 	LoadBuilding(FactionEnum::Europe, CardEnum::IrrigationReservoir, "IrrigationReservoir", "IrrigationReservoir");
 	
-	LoadBuilding(CardEnum::Bakery, "Bakery_Era", "PitaBakery_Era", "Bakery", 2);
+	LoadBuilding(CardEnum::Bakery, "Bakery_Era", "", "Bakery", 2);
+	LoadBuilding(CardEnum::PitaBakery, "", "PitaBakery_Era", "Bakery", 2);
 	LoadBuilding(CardEnum::IronSmelter, "Iron_Smelter_Era", "Iron_Smelter_Era", "IronSmelter", 2, 2);
 
 	
 	LoadBuilding(CardEnum::Quarry, "Quarry_Era", "Quarry_Era", "Quarry", 1);
 
-	FactionEnum factionEnum = FactionEnum::Europe;
-	for (int32 eraInt = 1; eraInt <= 4; eraInt++)
 	{
-		FString era = FString::FromInt(eraInt);
-		LoadBuilding(factionEnum, CardEnum::GoldMine, "Ore_Mine_Era" + era, "OreMine/Era" + era);
-		LinkBuilding(factionEnum, CardEnum::IronMine, "Ore_Mine_Era" + era, _lastTempAuxGroup);
-		LinkBuilding(factionEnum, CardEnum::GemstoneMine, "Ore_Mine_Era" + era, _lastTempAuxGroup);
-		LinkBuilding(factionEnum, CardEnum::CoalMine, "Ore_Mine_Era" + era, _lastTempAuxGroup);
-
+		FactionEnum factionEnum = FactionEnum::Europe;
+		for (int32 eraInt = 1; eraInt <= 4; eraInt++)
 		{
-			//PUN_LOG("_recentlyAddedModuleNames %d", _recentlyAddedModuleNames.Num());
+			FString era = FString::FromInt(eraInt);
+			LoadBuilding(factionEnum, CardEnum::GoldMine, "Ore_Mine_Era" + era, "OreMine/Era" + era);
+			LinkBuilding(factionEnum, CardEnum::IronMine, "Ore_Mine_Era" + era, _lastTempAuxGroup);
+			LinkBuilding(factionEnum, CardEnum::GemstoneMine, "Ore_Mine_Era" + era, _lastTempAuxGroup);
+			LinkBuilding(factionEnum, CardEnum::CoalMine, "Ore_Mine_Era" + era, _lastTempAuxGroup);
 
-			auto manualAddTransforms = [&](CardEnum buildingEnum, FString searchString)
 			{
-				for (int32 i = _recentlyAddedModuleNames.Num(); i-- > 0;) {
-					if (_recentlyAddedModuleNames[i].Contains("_Manual_"))
-					{
-						if (_recentlyAddedModuleNames[i].Contains(searchString)) {
-							_factionEnumToBuildingEnumToModuleGroups[static_cast<int>(factionEnum)][static_cast<int>(buildingEnum)][eraInt - 1].transforms.push_back(ModuleTransform(_recentlyAddedModuleNames[i]));
-						}
-					}
-					else if (_recentlyAddedModuleNames[i].Contains("_ManualToggle_"))
-					{
-						if (_recentlyAddedModuleNames[i].Contains(searchString)) {
-							_factionEnumToBuildingEnumToModuleGroups[static_cast<int>(factionEnum)][static_cast<int>(buildingEnum)][eraInt - 1].togglableTransforms.push_back(ModuleTransform(_recentlyAddedModuleNames[i]));
-						}
-					}
-				}
-			};
+				//PUN_LOG("_recentlyAddedModuleNames %d", _recentlyAddedModuleNames.Num());
 
-			manualAddTransforms(CardEnum::GoldMine, "Gold");
-			manualAddTransforms(CardEnum::IronMine, "Iron");
-			manualAddTransforms(CardEnum::CoalMine, "Coal");
-			manualAddTransforms(CardEnum::GemstoneMine, "Gem");
+				auto manualAddTransforms = [&](CardEnum buildingEnum, FString searchString)
+				{
+					for (int32 i = _recentlyAddedModuleNames.Num(); i-- > 0;) {
+						if (_recentlyAddedModuleNames[i].Contains("_Manual_"))
+						{
+							if (_recentlyAddedModuleNames[i].Contains(searchString)) {
+								_factionEnumToBuildingEnumToModuleGroups[static_cast<int>(factionEnum)][static_cast<int>(buildingEnum)][eraInt - 1].transforms.push_back(ModuleTransform(_recentlyAddedModuleNames[i]));
+							}
+						}
+						else if (_recentlyAddedModuleNames[i].Contains("_ManualToggle_"))
+						{
+							if (_recentlyAddedModuleNames[i].Contains(searchString)) {
+								_factionEnumToBuildingEnumToModuleGroups[static_cast<int>(factionEnum)][static_cast<int>(buildingEnum)][eraInt - 1].togglableTransforms.push_back(ModuleTransform(_recentlyAddedModuleNames[i]));
+							}
+						}
+					}
+				};
+
+				manualAddTransforms(CardEnum::GoldMine, "Gold");
+				manualAddTransforms(CardEnum::IronMine, "Iron");
+				manualAddTransforms(CardEnum::CoalMine, "Coal");
+				manualAddTransforms(CardEnum::GemstoneMine, "Gem");
+			}
 		}
 	}
 
@@ -528,7 +531,9 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	// Animal modules
 	LoadBuilding(FactionEnum::Europe, CardEnum::BoarBurrow, "BoarBurrow", "BoarBurrow");
 
-	// Houses
+	/*
+	 * Houses (European)
+	 */
 	// Note: Model count starts with House Lvl 0 (legacy imports, not worth the change)
 
 	// 5 Variations per house lvl
@@ -609,29 +614,47 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LinkBuilding(FactionEnum::Europe, CardEnum::House, "HouseClayLvl1"); // Buffer
 	LinkBuilding(FactionEnum::Europe, CardEnum::House, "HouseClayLvl1"); // Buffer
 	
-	
-	//TryLoadBuildingModuleSet("HouseLvl2", "HouseLvl2");
-	//TryLoadBuildingModuleSet("HouseLvl2V2", "HouseLvl2");
-	//TryLoadBuildingModuleSet("HouseClayLvl2", "HouseClayLvl2");
-	
-	//TryLoadBuildingModuleSet("HouseLvl3", "HouseLvl3");
-	//TryLoadBuildingModuleSet("HouseLvl3V2", "HouseLvl3");
-	//TryLoadBuildingModuleSet("HouseClayLvl3", "HouseClayLvl3");
 
-	//!!! June 18
-	//TryLoadBuildingModuleSet("HouseLvl4", "HouseLvl4");
-	//TryLoadBuildingModuleSet("HouseLvl4V2", "HouseLvl4");
-	//
-	//TryLoadBuildingModuleSet("HouseLvl5", "HouseLvl5");
-	//TryLoadBuildingModuleSet("HouseLvl5V2", "HouseLvl5");
-	//
-	//TryLoadBuildingModuleSet("HouseLvl6", "HouseLvl6");
-	//TryLoadBuildingModuleSet("HouseLvl6V2", "HouseLvl6");
-	//
-	//TryLoadBuildingModuleSet("HouseLvl7", "HouseLvl7");
-	//TryLoadBuildingModuleSet("HouseLvl7V2", "HouseLvl7");
+	/*
+	 * Houses (Arab)
+	 */
+	const int32 maxHouseVariation = 5;
+
+	auto loadHouseSet = [&](FactionEnum factionEnum, int32 lvlCount, int32 variationCount)
+	{
+		for (int32 i = 1; i <= variationCount; i++) {
+			FString moduleGroupName = "HouseLv" + FString::FromInt(lvlCount) + "_0" + FString::FromInt(i);
+			FString moduleGroupFolderName = "House/Lv" + FString::FromInt(lvlCount) + "/V" + FString::FromInt(i);
+			LoadBuilding(factionEnum, CardEnum::House, moduleGroupName, moduleGroupFolderName);
+		}
+		for (int32 i = variationCount + 1; i <= maxHouseVariation; i++) {
+			LinkBuilding(factionEnum, CardEnum::House, "HouseClayLvl1");
+		}
+	};
+
+	loadHouseSet(FactionEnum::Arab, 1, 4);
+	loadHouseSet(FactionEnum::Arab, 2, 3);
+	loadHouseSet(FactionEnum::Arab, 3, 3);
+	loadHouseSet(FactionEnum::Arab, 4, 3);
+	loadHouseSet(FactionEnum::Arab, 5, 3);
+	loadHouseSet(FactionEnum::Arab, 6, 3);
+	loadHouseSet(FactionEnum::Arab, 7, 5);
+	loadHouseSet(FactionEnum::Arab, 8, 4);
+
+
+	/*
+	 * Arab Special
+	 */
 	
-	// Construction
+	LoadBuilding(FactionEnum::Arab, CardEnum::Oasis, "Oasis", "Oasis");
+
+
+
+	
+	
+	/*
+	 * Construction
+	 */
 	//LoadModule("ConstructionBase", "BuildingModule1/ConstructionBase/ConstructionBase");
 	LoadModule("ConstructionBaseHighlight", "BuildingModule1/ConstructionBase/ConstructionBase");
 	LoadModule("ConstructionPoles", "BuildingModule1/ConstructionBase/ConstructionPoles");
@@ -779,7 +802,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 #undef CASE
 		default:
 			int32 buildingEnumInt = static_cast<int32>(buildingEnum);
-			if (static_cast<int32>(CardEnum::Caravansary) >= buildingEnumInt && buildingEnumInt >= static_cast<int32>(CardEnum::MinorCity)) {
+			if (static_cast<int32>(CardEnum::PitaBakery) >= buildingEnumInt && buildingEnumInt >= static_cast<int32>(CardEnum::MinorCity)) {
 				// Temp
 				addBuildIcon(buildingEnum, FString(TO_STR(DirtRoadIcon)), FString("SpecialIconAlpha"), true);
 			} else {
@@ -1170,6 +1193,12 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadResource2(ResourceEnum::Steel, "SteelBeam/SteelBeam");
 	LoadResource2(ResourceEnum::Glassware, "Glassware/Glassware");
 	LoadResource2(ResourceEnum::PocketWatch, "PocketWatch/Pocketwatch");
+
+	LoadResource2(ResourceEnum::PitaBread, "PocketWatch/Pocketwatch");
+	LoadResource2(ResourceEnum::Carpet, "PocketWatch/Pocketwatch");
+	LoadResource2(ResourceEnum::DateFruit, "PocketWatch/Pocketwatch");
+	LoadResource2(ResourceEnum::ToiletPaper, "PocketWatch/Pocketwatch");
+	
 	
 	//LoadResource2(ResourceEnum::Oyster, "Pottery/Pottery");
 	//LoadResource2(ResourceEnum::Truffle, "Pottery/Pottery");
@@ -1805,7 +1834,7 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FactionEnum factionEnum, FS
 			}
 			else if (foundFiles[i].Contains("_Smoke")) {
 				const auto mesh = loadMesh(i);
-				DetectParticleSystemPosition(buildingEnum, mesh);
+				DetectParticleSystemPosition(buildingEnum, factionEnum, mesh);
 			}
 		}
 	}
@@ -2135,20 +2164,22 @@ void UAssetLoaderComponent::TraverseTris_July10(uint32 mergedVertIndex, int32 gr
 	}
 };
 
-void UAssetLoaderComponent::DetectParticleSystemPosition(CardEnum buildingEnum, UStaticMesh* mesh)
+void UAssetLoaderComponent::DetectParticleSystemPosition(CardEnum buildingEnum, FactionEnum factionEnum, UStaticMesh* mesh)
 {
 	TArray<FVector> vertexPositions;
 
-//#if WITH_EDITOR
+	FString meshName = WithFactionName(factionEnum, mesh->GetName());
+
+#if (WITH_EDITOR && 0)
 	// In the editor, we DetectMeshGroups and cache results in meshName_to_groupIndexToConnectedVertIndices
 	
-	//isPrinting = true;
-	//DetectMeshGroups(mesh, vertexPositions);
+	isPrinting = true;
+	DetectMeshGroups(mesh, vertexPositions);
 	isPrinting = false;
 
-	//meshName_to_vertexPositions.Add(mesh->GetName(), vertexPositions);
-	//meshName_to_groupIndexToConnectedVertIndices[ToStdString(mesh->GetName())] = groupIndexToConnectedVertIndices;
-//#else
+	meshName_to_vertexPositions.Add(meshName, vertexPositions);
+	meshName_to_groupIndexToConnectedVertIndices[ToStdString(meshName)] = groupIndexToConnectedVertIndices;
+#else
 	/*
 	 * Load groupIndexToConnectedVertIndices
 	 *  -  In the actual game, we fill meshName_to_groupIndexToConnectedVertIndices from json file
@@ -2168,15 +2199,15 @@ void UAssetLoaderComponent::DetectParticleSystemPosition(CardEnum buildingEnum, 
 
 		for (auto& all_jsonObj_it : all_jsonObj->Values)
 		{
-			const FString& meshName = all_jsonObj_it.Key;
-			const TSharedPtr<FJsonObject>& mesh_jsonObj = all_jsonObj->GetObjectField(meshName);
+			const FString& meshNameTemp = all_jsonObj_it.Key;
+			const TSharedPtr<FJsonObject>& mesh_jsonObj = all_jsonObj->GetObjectField(meshNameTemp);
 
-			meshName_to_vertexPositions.Add(meshName, {});
+			meshName_to_vertexPositions.Add(meshNameTemp, {});
 			const TArray<TSharedPtr<FJsonValue>>& vertexPositions_jsonArray = mesh_jsonObj->GetArrayField("vertexPosition");
 			for (int32 j = 0; j < vertexPositions_jsonArray.Num(); j++)
 			{
 				TSharedPtr<FJsonObject> vertexPosition_jsonObj = vertexPositions_jsonArray[j]->AsObject();
-				meshName_to_vertexPositions[meshName].Add(
+				meshName_to_vertexPositions[meshNameTemp].Add(
 					FVector(vertexPosition_jsonObj->GetNumberField("X"),
 								vertexPosition_jsonObj->GetNumberField("Y"),
 								vertexPosition_jsonObj->GetNumberField("Z"))
@@ -2195,20 +2226,20 @@ void UAssetLoaderComponent::DetectParticleSystemPosition(CardEnum buildingEnum, 
 					connectedIndices.push_back(FMath::RoundToInt(vertIndices_jsonObj[i]->AsNumber()));
 				}
 				
-				meshName_to_groupIndexToConnectedVertIndices[ToStdString(meshName)][FCString::Atoi(*groupIndex)] = connectedIndices;
+				meshName_to_groupIndexToConnectedVertIndices[ToStdString(meshNameTemp)][FCString::Atoi(*groupIndex)] = connectedIndices;
 			}
 		}
 	}
 
-	if (!meshName_to_vertexPositions.Contains(mesh->GetName())) {
+	if (!meshName_to_vertexPositions.Contains(meshName)) {
 		return;
 	}
 	
 
-	vertexPositions = meshName_to_vertexPositions[mesh->GetName()];
-	groupIndexToConnectedVertIndices = meshName_to_groupIndexToConnectedVertIndices[ToStdString(mesh->GetName())];
+	vertexPositions = meshName_to_vertexPositions[meshName];
+	groupIndexToConnectedVertIndices = meshName_to_groupIndexToConnectedVertIndices[ToStdString(meshName)];
 
-//#endif
+#endif
 
 	for (const auto& it : groupIndexToConnectedVertIndices) 
 	{

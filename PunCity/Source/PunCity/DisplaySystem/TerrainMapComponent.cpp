@@ -785,10 +785,10 @@ void UTerrainMapComponent::RefreshAnnotations()
 				{
 					// Building mesh
 					int32 displayVariationIndex = building.displayVariationIndex();
-					float buildingRotation = RotationFromDirection(building.faceDirection());
+					float buildingRotation = RotationFromDirection(building.displayFaceDirection());
 
 
-					WorldTile2 centerTile = building.centerTile();
+					WorldTile2 centerTile = building.displayCenterTile();
 					FVector displayLocation(centerTile.x * CoordinateConstants::DisplayUnitPerTile,
 						centerTile.y * CoordinateConstants::DisplayUnitPerTile, 0);
 					//FVector displayLocation(centerTile.x * _tileToWorldMapX, centerTile.y * _tileToWorldMapY, 0);

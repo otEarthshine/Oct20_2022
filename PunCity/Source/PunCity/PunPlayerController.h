@@ -1012,7 +1012,7 @@ public:
 		command->buildingEnum = static_cast<uint8>(buildingEnum);
 		command->intVar1 = 1;
 		command->center = WorldTile2(tileX, tileY);
-		command->area = BuildingArea(command->center, GetBuildingInfo(buildingEnum).size, Direction::S);
+		command->area = BuildingArea(command->center, GetBuildingInfo(buildingEnum).GetSize(simulation().playerFactionEnum(command->playerId)), Direction::S);
 		command->faceDirection = static_cast<uint8_t>(Direction::S);
 
 		SendNetworkCommand(command);
@@ -1345,11 +1345,12 @@ public:
 		PunSettings::TrailerAtomTarget_Ship = WorldAtom2::Invalid;
 	}
 
-	UFUNCTION(Exec) void RestartGame()
+	//! This is only for Command Restart Game??
+	UFUNCTION(Exec) void RestartGameCommand()
 	{
 		gameInstance()->UnreadyAll(); // Unready all, so readyStates can be used to determine if the player is loaded
 		gameInstance()->DebugPunSync("Traveling to GameMap");
-		gameInstance()->CachePlayerNames();
+		gameInstance()->CachePlayerInfos();
 
 		TrailerModeStop();
 		

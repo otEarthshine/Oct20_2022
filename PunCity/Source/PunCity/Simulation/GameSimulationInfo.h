@@ -1114,6 +1114,12 @@ enum class ResourceEnum : uint8
 	Glassware,
 	PocketWatch,
 
+	// Added Oct 2
+	PitaBread,
+	Carpet,
+	DateFruit,
+	ToiletPaper,
+
 	// --- End
 	None,
 
@@ -1300,6 +1306,11 @@ static const ResourceInfo ResourceInfos[]
 
 	ResourceInfo(ResourceEnum::Glassware,	LOCTEXT("Glassware", "Glassware"),	30, LOCTEXT("Glassware Desc", "Beautiful liquid container made from Glass. (Luxury tier 2)")),
 	ResourceInfo(ResourceEnum::PocketWatch,		LOCTEXT("Pocket Watch", "Pocket Watch"),	75, LOCTEXT("Pocket Watch Desc", "Elegant timepiece crafted by Clockmakers. (Luxury tier 3)")),
+
+	ResourceInfo(ResourceEnum::PitaBread, LOCTEXT("Pita Bread", "Pita Bread"), FoodCost, LOCTEXT("Pita Bread Desc", "Delicious food baked from Wheat Flour")),
+	ResourceInfo(ResourceEnum::Carpet, LOCTEXT("Carpet", "Carpet"), 50, LOCTEXT("Carpet Desc", "Luxury tier 3 used for housing upgrade.")),
+	ResourceInfo(ResourceEnum::ToiletPaper, LOCTEXT("Toilet Paper", "Toilet Paper"), 50, LOCTEXT("Toilet Paper Desc", "Luxury tier 3 used for housing upgrade.")),
+	ResourceInfo(ResourceEnum::DateFruit,		LOCTEXT("Date Fruit", "Date Fruit"), FoodCost, LOCTEXT("Date Fruit Desc", "Fruit with delicate, mildly-flavored flesh.")),
 	
 };
 
@@ -1414,6 +1425,7 @@ static const std::vector<ResourceEnum> FoodEnums_NonInput
 {
 	// Arrange food from high to low grabbing priority
 	ResourceEnum::Bread,
+	ResourceEnum::PitaBread,
 	ResourceEnum::Cabbage,
 	ResourceEnum::Papaya,
 	ResourceEnum::Coconut,
@@ -2263,7 +2275,7 @@ enum class CardEnum : uint16
 	CarpetWeaver,
 	BathHouse,
 	Caravansary,
-
+	PitaBakery,
 	
 	
 	
@@ -2853,6 +2865,14 @@ struct BldResourceInfo
 };
 
 
+enum class FactionEnum : uint8
+{
+	Europe,
+	Arab,
+
+	None,
+};
+
 
 struct BldInfo
 {
@@ -2881,6 +2901,15 @@ struct BldInfo
 
 	BldResourceInfo resourceInfo;
 
+	std::vector<WorldTile2> sizeByFactions;
+
+	WorldTile2 GetSize(FactionEnum factionEnum) const {
+		if (factionEnum != FactionEnum::None && sizeByFactions.size() > 0) {
+			return sizeByFactions[static_cast<int>(factionEnum)];
+		}
+		return size;
+	}
+
 	std::string nameStd() const { return FTextToStd(name); }
 	std::wstring nameW() const { return FTextToW(name); }
 	FString nameF() const { return nameFString; }
@@ -2903,6 +2932,20 @@ struct BldInfo
 	}
 
 	int32 minEra() const { return resourceInfo.era; }
+
+	BldInfo(CardEnum buildingEnum,
+		FText nameIn,
+		FString nameFStringIn,
+		FText namePluralIn,
+		FText descriptionIn,
+
+		std::vector<WorldTile2> sizeByFactionsIn,
+		BldResourceInfo bldResourceInfoIn
+	) :
+		BldInfo(buildingEnum, nameIn, nameFStringIn, namePluralIn, descriptionIn, sizeByFactionsIn[0], bldResourceInfoIn)
+	{
+		sizeByFactions = sizeByFactionsIn;
+	}
 	
 
 	BldInfo(CardEnum buildingEnum,
@@ -3186,7 +3229,7 @@ static const BldInfo BuildingInfo[]
 
 	
 	BldInfo(CardEnum::FurnitureWorkshop, _LOCTEXT("Furniture Workshop", "Furniture Workshop"), LOCTEXT("Furniture Workshop (Plural)", "Furniture Workshops"), LOCTEXT("Furniture Workshop Desc", "Make Furniture from Wood."),
-		WorldTile2(6, 7),	GetBldResourceInfo(1, {ResourceEnum::Wood, ResourceEnum::Furniture}, {2, 1})
+		{ WorldTile2(6, 7), WorldTile2(6, 6)},	GetBldResourceInfo(1, {ResourceEnum::Wood, ResourceEnum::Furniture}, {2, 1})
 	),
 	BldInfo(CardEnum::Chocolatier,	_LOCTEXT("Chocolatier", "Chocolatier"),	LOCTEXT("Chocolatier (Plural)", "Chocolatiers"), LOCTEXT("Chocolatier Desc", "Make Chocolate from Milk and Cocoa."),
 		WorldTile2(6, 8),	GetBldResourceInfo(3, {ResourceEnum::Cocoa, ResourceEnum::Milk, ResourceEnum::Chocolate}, {0, 1, 1, 1}, 80)
@@ -3647,7 +3690,7 @@ static const BldInfo BuildingInfo[]
 	),
 	
 	BldInfo(CardEnum::Oasis, _LOCTEXT("Oasis", "Oasis"), LOCTEXT("Oasis (Plural)", "Oases"), LOCTEXT("Oasis Desc", ""),
-		WorldTile2(12, 12), GetBldResourceInfoManual({})
+		WorldTile2(18, 18), GetBldResourceInfoManual({})
 	),
 
 	BldInfo(CardEnum::IrrigationPump, _LOCTEXT("Irrigation Pump", "Irrigation Pump"), LOCTEXT("Irrigation Pump (Plural)", "Irrigation Pumps"), LOCTEXT("Irrigation Pump Desc", ""),
@@ -3664,6 +3707,9 @@ static const BldInfo BuildingInfo[]
 	),
 	BldInfo(CardEnum::Caravansary, _LOCTEXT("Caravansary", "Caravansary"), LOCTEXT("Caravansary (Plural)", "Caravansaries"), LOCTEXT("Caravansary Desc", ""),
 		WorldTile2(12, 12), GetBldResourceInfoManual({})
+	),
+	BldInfo(CardEnum::PitaBakery, _LOCTEXT("Pita Bakery", "Pita Bakery"), LOCTEXT("Pita Bakery (Plural)", "Pita Bakeries"), LOCTEXT("Pita Bakery Desc", "Bakes Bread with Wheat Flour and heat."),
+		WorldTile2(8, 6), GetBldResourceInfo(2, { ResourceEnum::Flour, ResourceEnum::Coal, ResourceEnum::PitaBread }, { 0, 1, 0, 2 })
 	),
 
 	
@@ -4345,6 +4391,7 @@ static bool IsDirtyProducer(CardEnum buildingEnum)
 		case CardEnum::MushroomFarm:
 		case CardEnum::Windmill:
 		case CardEnum::Bakery:
+		case CardEnum::PitaBakery:
 		case CardEnum::Beekeeper:
 
 			return false;
@@ -10058,14 +10105,6 @@ static int32 TownIdToMinorTownId(int32 townId) {
 /*
  * Faction
  */
-
-enum class FactionEnum : uint8
-{	
-	Europe,
-	Arab,
-
-	None,
-};
 
 class FactionInfo
 {

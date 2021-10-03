@@ -28,8 +28,8 @@ public:
 
 	virtual void OnInit() override
 	{
-		BuildingSwapArrowLeftButton->OnClicked.AddDynamic(this, &UWGT_ObjectFocus_Title_Cpp::OnClickBuildingSwapArrowLeftButton);
-		BuildingSwapArrowRightButton->OnClicked.AddDynamic(this, &UWGT_ObjectFocus_Title_Cpp::OnClickBuildingSwapArrowRightButton);
+		BUTTON_ON_CLICK(BuildingSwapArrowLeftButton, this, &UWGT_ObjectFocus_Title_Cpp::OnClickBuildingSwapArrowLeftButton);
+		BUTTON_ON_CLICK(BuildingSwapArrowRightButton, this, &UWGT_ObjectFocus_Title_Cpp::OnClickBuildingSwapArrowRightButton);
 		const FText buildingSwapTip = NSLOCTEXT("ObjectDescriptionUI", "BuildingSwapArrow_Tip", "Click to switch between buildings of the same type <Orange>[TAB]</>");
 		AddToolTip(BuildingSwapArrowLeftButton, buildingSwapTip);
 		AddToolTip(BuildingSwapArrowRightButton, buildingSwapTip);

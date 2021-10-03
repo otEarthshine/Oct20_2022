@@ -57,6 +57,7 @@ void APunGameMode::PostLogin(APlayerController* NewPlayer)
 	auto newController = CastChecked<APunBasePlayerController>(NewPlayer);
 	auto gameInst = newController->gameInstance();
 	auto punPlayer = Cast<APunPlayerController>(NewPlayer);
+	bool isInGame = punPlayer != nullptr;
 
 	gameInst->DebugPunSync("PostLogin Sync1");
 	
@@ -74,12 +75,6 @@ void APunGameMode::PostLogin(APlayerController* NewPlayer)
 			// Clear game save when exiting to the lobby search. This prevent the next lobby from showing "Load"
 			gameInst->saveSystem().ClearSyncData();
 		}
-
-		// If this is the GameMap, load the cached playerNames
-		if (punPlayer) {
-			gameInst->UseCachePlayerNames();
-			gameInst->DebugPunSync("PostLogin Used Cache");
-		}
 	}
 
 	// Cleanup for singlePlayer
@@ -87,9 +82,11 @@ void APunGameMode::PostLogin(APlayerController* NewPlayer)
 		gameInst->ResetPlayerCount();
 	}
 	
-	
 	int32 newPlayerId = gameInst->ConnectPlayer(playerName);
 	newController->SetControllerPlayerId(newPlayerId);
+
+
+	// Sync
 	Server_SyncPlayerStateToAllControllers();
 
 	gameInst->DebugPunSync("PostLogin Sync2");

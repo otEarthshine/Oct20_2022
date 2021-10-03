@@ -464,11 +464,11 @@ public:
 	bool ReplayCount() { return replayFilesToLoad.Num(); }
 
 private:
-	TArray<FPlayerInfo> _playerNames;
+	TArray<FPlayerInfo> _playerInfos;
 	TArray<bool> _playerReadyStates; // ReadyStates in Game Map is used to determined if that player is loaded
 
-	// Cache playerNames for map transition
-	TArray<FPlayerInfo> _playerNamesCache;
+	// Cache playerInfos for map transition
+	TArray<FPlayerInfo> _playerInfosCache;
 
 	//! This is only used by server's main controller...
 	//! Count the ticks getting sent out 
@@ -492,8 +492,8 @@ public:
 		std::stringstream ss;
 		
 		ss << message << ": ";
-		for (int32 i = 0; i < _playerNames.Num(); i++) {
-			ss << "[" << ToStdString(_playerNames[i].name.ToString());
+		for (int32 i = 0; i < _playerInfos.Num(); i++) {
+			ss << "[" << ToStdString(_playerInfos[i].name.ToString());
 			ss << "," << playerConnectedStates[i] << "," << _playerReadyStates[i] << "] ";
 		}
 		_LOG(PunSync, " %s", ToTChar(ss.str()));
@@ -503,7 +503,7 @@ public:
 	
 	void SetPlayerCount(int32 count)
 	{
-		_playerNames.SetNum(count);
+		_playerInfos.SetNum(count);
 		_playerReadyStates.SetNum(count);
 		playerConnectedStates.SetNum(count);
 
@@ -516,7 +516,7 @@ public:
 	// - Go to singleplayer mode
 	void ResetPlayerCount()
 	{
-		_playerNames.SetNum(0);
+		_playerInfos.SetNum(0);
 		_playerReadyStates.SetNum(0);
 		playerConnectedStates.SetNum(0);
 
@@ -524,8 +524,8 @@ public:
 	}
 	void ResetPlayers()
 	{
-		for (int32 i = 0; i < _playerNames.Num(); i++) {
-			_playerNames[i] = FPlayerInfo();
+		for (int32 i = 0; i < _playerInfos.Num(); i++) {
+			_playerInfos[i] = FPlayerInfo();
 			_playerReadyStates[i] = false;
 			playerConnectedStates[i] = false;
 			clientPacketsReceived[i] = 0;
@@ -533,12 +533,12 @@ public:
 	}
 
 	// Player Name
-	void SetPlayerNamesF(TArray<FPlayerInfo> playerNamesF) {
-		_playerNames = playerNamesF;
+	void SetPlayerNamesF(TArray<FPlayerInfo> playerInfosIn) {
+		_playerInfos = playerInfosIn;
 	}
 	
 	const TArray<FPlayerInfo>& playerInfoList() {
-		return _playerNames;
+		return _playerInfos;
 	}
 	
 	FString playerNameF(int32 playerId) {
@@ -548,18 +548,24 @@ public:
 		}
 		//PUN_ENSURE(playerId < _playerNames.Num(), return FString("None"));
 		
-		return playerId < _playerNames.Num() ? _playerNames[playerId].name.ToString() : FString("None"); // Empty _playerNames may happen on Load
+		return playerId < _playerInfos.Num() ? _playerInfos[playerId].name.ToString() : FString("None"); // Empty _playerNames may happen on Load
 	}
 	void SetPlayerNameF(int32 playerId, FString playerNameF) {
 		_LOG(PunSync, "SetPlayerNameF %d, %s", playerId, *playerNameF);
-		_playerNames[playerId].name = FText::FromString(playerNameF);
+		_playerInfos[playerId].name = FText::FromString(playerNameF);
 	}
 
 	void CachePlayerInfos() {
-		_playerNamesCache = _playerNames;
+		_playerInfosCache = _playerInfos;
 	}
-	void UseCachePlayerInfos() {
-		_playerNames = _playerNamesCache;
+	FPlayerInfo GetCachedPlayerInfo(FString playerNameF)
+	{
+		for (const FPlayerInfo& playerInfo : _playerInfosCache) {
+			if (playerInfo.name.ToString() == playerNameF) {
+				return playerInfo;
+			}
+		}
+		return FPlayerInfo();
 	}
 
 
@@ -598,7 +604,7 @@ public:
 
 	void SetPlayerInfo(int32 playerId, const FPlayerInfo& playerInfo)
 	{
-		_playerNames[playerId] = playerInfo;
+		_playerInfos[playerId] = playerInfo;
 	}
 	
 
@@ -623,12 +629,13 @@ public:
 	{
 		auto setToExistingSlot = [&](int32 playerId)
 		{
-			_playerNames[playerId].name = FText::FromString(playerNameF);
+			_playerInfos[playerId].name = FText::FromString(playerNameF);
 			_playerReadyStates[playerId] = false;
 			playerConnectedStates[playerId] = true;
 			clientPacketsReceived[playerId] = 0;
 		};
-		
+
+		//! Load Saved Game
 		// If we are loading a save, try to put the player in the old spot
 		//GameSaveInfo saveInfo = GetSavedGameToLoad();
 		if (saveSystem().HasSyncData())
@@ -640,7 +647,7 @@ public:
 				if (!IsPlayerConnected(i) && playerNameF == saveInfo.playerNames[i].name.ToString()) 
 				{
 					// If this player was host, change hostPlayerId
-					if (playerNameF == _playerNames[hostPlayerId].name.ToString()) {
+					if (playerNameF == _playerInfos[hostPlayerId].name.ToString()) {
 						hostPlayerId = i;
 					}
 
@@ -652,10 +659,11 @@ public:
 			}
 		}
 
+		//!
 		// Try Add to the slot with same name first
-		for (int32 i = 0; i < _playerNames.Num(); i++) {
+		for (int32 i = 0; i < _playerInfos.Num(); i++) {
 			if (!IsPlayerConnected(i) && 
-				playerNameF == _playerNames[i].name.ToString())
+				playerNameF == _playerInfos[i].name.ToString())
 			{
 				setToExistingSlot(i);
 
@@ -665,7 +673,7 @@ public:
 		}
 		
 		// Add to empty slot
-		for (int32 i = 0; i < _playerNames.Num(); i++) {
+		for (int32 i = 0; i < _playerInfos.Num(); i++) {
 			if (!IsPlayerConnected(i))
 			{
 				setToExistingSlot(i);
@@ -677,16 +685,20 @@ public:
 
 		// Make new slot
 		FPlayerInfo playerInfo;
-		playerInfo.name = FText::FromString(playerNameF);
+		if (IsInGame()) {
+			playerInfo = GetCachedPlayerInfo(playerNameF);
+		} else {
+			playerInfo.name = FText::FromString(playerNameF);
+		}
 		
-		_playerNames.Add(playerInfo);
+		_playerInfos.Add(playerInfo);
 		_playerReadyStates.Add(false);
 		playerConnectedStates.Add(true);
 		clientPacketsReceived.Add(0);
 
 		_LOG(PunSync, "ConnectPlayer (New slot): %s size:%d", *playerNameF, playerInfoList().Num());
 
-		return _playerNames.Num() - 1;
+		return _playerInfos.Num() - 1;
 	}
 
 	bool TryChangePlayerId(int32 originalId, int32 newId)
@@ -698,14 +710,14 @@ public:
 
 		_LOG(PunSync, "TryChangePlayerId %d, %d", originalId, newId);
 		
-		_playerNames[newId] = _playerNames[originalId];
+		_playerInfos[newId] = _playerInfos[originalId];
 		_playerReadyStates[newId] = _playerReadyStates[originalId];
 		playerConnectedStates[newId] = playerConnectedStates[originalId];
 
 		clientPacketsReceived[newId] = clientPacketsReceived[originalId];
 		
 		
-		_playerNames[originalId].name = FText();
+		_playerInfos[originalId].name = FText();
 		_playerReadyStates[originalId] = false;
 		playerConnectedStates[originalId] = false;
 
@@ -717,10 +729,10 @@ public:
 
 	void DisconnectPlayer(FString playerNameF)
 	{
-		for (int32 i = 0; i < _playerNames.Num(); i++) {
-			if (_playerNames[i].name.ToString() == playerNameF) 
+		for (int32 i = 0; i < _playerInfos.Num(); i++) {
+			if (_playerInfos[i].name.ToString() == playerNameF) 
 			{
-				_playerNames[i].name = FText();
+				_playerInfos[i].name = FText();
 				_playerReadyStates[i] = false;
 				playerConnectedStates[i] = false;
 
@@ -758,7 +770,7 @@ public:
 		
 		// Count playerNames skipping empty slot
 		int32 count = 0;
-		for (int32 i = 0; i < _playerNames.Num(); i++) {
+		for (int32 i = 0; i < _playerInfos.Num(); i++) {
 			if (playerConnectedStates[i]) {
 				count++;
 			}
@@ -775,8 +787,8 @@ public:
 
 		// Add players skipping any empty slot (that is empty from the beginning)
 		std::vector<int32> results;
-		for (int32 i = 0; i < _playerNames.Num(); i++) {
-			if (!_playerNames[i].name.IsEmpty()) {
+		for (int32 i = 0; i < _playerInfos.Num(); i++) {
+			if (!_playerInfos[i].name.IsEmpty()) {
 				results.push_back(i);
 			}
 		}
@@ -792,7 +804,7 @@ public:
 
 		// Add players skipping disconnected
 		std::vector<int32> results;
-		for (int32 i = 0; i < _playerNames.Num(); i++) {
+		for (int32 i = 0; i < _playerInfos.Num(); i++) {
 			if (playerConnectedStates[i]) {
 				results.push_back(i);
 			}
@@ -809,8 +821,8 @@ public:
 
 		// Add players with name but no connection
 		std::vector<int32> results;
-		for (int32 i = 0; i < _playerNames.Num(); i++) {
-			if (!_playerNames[i].name.IsEmpty() && !playerConnectedStates[i]) {
+		for (int32 i = 0; i < _playerInfos.Num(); i++) {
+			if (!_playerInfos[i].name.IsEmpty() && !playerConnectedStates[i]) {
 				results.push_back(i);
 			}
 		}

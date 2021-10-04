@@ -3417,17 +3417,29 @@ void HumanStateAI::UpdateHappiness()
 
 		
 		// Zoo
-		const std::vector<int32>& zooIds = _simulation->buildingIds(_townId, CardEnum::Zoo);
-		TSet<CardEnum> uniqueAnimals;
-		for (int32 zooId : zooIds) {
-			Zoo& zoo = _simulation->building<Zoo>(zooId, CardEnum::Zoo);
-			const std::vector<CardStatus>& cardStatuses = zoo.slotCards();
-			for (const CardStatus& cardStatus : cardStatuses) {
-				uniqueAnimals.Add(cardStatus.cardEnum);
+		{
+			const std::vector<int32>& zooIds = _simulation->buildingIds(_townId, CardEnum::Zoo);
+			TSet<CardEnum> uniqueAnimals;
+			for (int32 zooId : zooIds) {
+				Zoo& zoo = _simulation->building<Zoo>(zooId, CardEnum::Zoo);
+				const std::vector<CardStatus>& cardStatuses = zoo.slotCards();
+				for (const CardStatus& cardStatus : cardStatuses) {
+					uniqueAnimals.Add(cardStatus.cardEnum);
+				}
+			}
+			targetHappiness += 5 * uniqueAnimals.Num(); // +5% city attractiveness when placed in Zoo (does not stack)
+		}
+
+		// Policy Office
+		{
+			const std::vector<int32>& policyOfficeIds = _simulation->buildingIds(_townId, CardEnum::PolicyOffice);
+			if (policyOfficeIds.size() > 0)
+			{
+				PolicyOffice& policyOffice = _simulation->building<PolicyOffice>(policyOfficeIds[0], CardEnum::PolicyOffice);
+				targetHappiness += 5 * policyOffice.GetUpgrade(0).upgradeLevel;
 			}
 		}
-		targetHappiness += 5 * uniqueAnimals.Num(); // +5% city attractiveness when placed in Zoo (does not stack)
-		
+
 
 		// Tax
 		targetHappiness += townManager.taxHappinessModifier();

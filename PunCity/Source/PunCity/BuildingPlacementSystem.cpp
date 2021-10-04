@@ -609,8 +609,14 @@ void ABuildingPlacementSystem::StartBuildingPlacement(CardStatus cardStatus, boo
 #undef SHOW_RADIUS
 
 	// Spell
-	else if (buildingEnum == CardEnum::Raid) {
+	else if (buildingEnum == CardEnum::Raid) 
+	{
 		_gameInterface->SetOverlayType(OverlayType::Raid, OverlaySetterType::BuildingPlacement);
+		showGridGuide = false;
+	}
+	else if (buildingEnum == CardEnum::Fort)
+	{
+		_gameInterface->SetOverlayType(OverlayType::Fort, OverlaySetterType::BuildingPlacement);
 		showGridGuide = false;
 	}
 	else if (IsSpellCard(buildingEnum)) {
@@ -2772,6 +2778,16 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				_placementGrid.SpawnGrid(isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, location);
 			});
 		}
+
+
+		/*
+		 * Special case: Instructions
+		 */
+		if (_buildingEnum == CardEnum::Fort)
+		{
+			SetInstruction(PlacementInstructionEnum::Generic, true, LOCTEXT("Fort_BuildInstructions", "Build on choke point\nto protect inner provinces"));
+		}
+		
 
 		/*
 		 * Front grid

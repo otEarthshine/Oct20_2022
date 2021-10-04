@@ -648,8 +648,11 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	
 	LoadBuilding(FactionEnum::Arab, CardEnum::Oasis, "Oasis", "Oasis");
 
-
-
+	
+	LoadBuilding(FactionEnum::Arab, CardEnum::EasterIsland, "EasterIsland", "EasterIsland");
+	LoadBuilding(FactionEnum::Arab, CardEnum::EgyptianPyramid, "EgyptianPyramid", "EgyptianPyramid");
+	LoadBuilding(FactionEnum::Arab, CardEnum::MayanPyramid, "MayanPyramid", "MayanPyramid");
+	LoadBuilding(FactionEnum::Arab, CardEnum::StoneHenge, "StoneHenge", "StoneHenge");
 	
 	
 	/*
@@ -1733,55 +1736,12 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FactionEnum factionEnum, FS
 				foundFiles[i].Contains("_Body1_") ||
 				foundFiles[i].Contains("_Body2_") ||
 				foundFiles[i].Contains("_Body3_") ||
+				foundFiles[i].Contains("_Nature_") ||
 				foundFiles[i].Contains("_Windows_") ||
 				foundFiles[i].Contains("_Window_"))
 			{
 				FString moduleTypeNameIn = FString("Special") + FString::FromInt(bodySpecialIndex);
 				addMesh(moduleTypeNameIn, true);
-			}
-			else if (foundFiles[i].Contains("_Scaffolding_")) {
-				FString meshName = addMesh("Frame");
-
-				_modulesNeedingPaintConstruction.Add(meshName);
-			}
-			else if (foundFiles[i].Contains("_Manual_"))
-			{
-				const auto mesh = loadMesh(i);
-				FString moduleName = moduleSetName + "_Manual_" + foundFiles[i];
-				AddBuildingModule(moduleName, mesh, _moduleNames);
-			}
-			else if (foundFiles[i].Contains("_ManualToggle_"))
-			{
-				const auto mesh = loadMesh(i);
-				FString moduleName = moduleSetName + "_ManualToggle_" + foundFiles[i];
-				AddBuildingModule(moduleName, mesh, _togglableModuleNames);
-			}
-			else if (foundFiles[i].Contains("_WorkStatic"))
-			{
-				const auto mesh = loadMesh(i);
-				FString moduleName = moduleSetName + "WorkStatic";
-
-				AddBuildingModule(moduleName, mesh, _togglableModuleNames);
-
-				_tempAuxGroup.togglableTransforms.push_back(ModuleTransform(moduleName));
-			}
-			else if (foundFiles[i].Contains("_WorkShaderAnimate"))
-			{
-				const auto mesh = loadMesh(i);
-				FString moduleName = moduleSetName + "WorkShaderAnimate";
-
-				AddBuildingModule(moduleName, mesh, _animModuleNames);
-
-				_tempAuxGroup.animTransforms.push_back(ModuleTransform(moduleName, FTransform::Identity, 0.0f, ModuleTypeEnum::ShaderAnimate));
-			}
-			else if (foundFiles[i].Contains("_WorkShaderOnOff"))
-			{
-				const auto mesh = loadMesh(i);
-				FString moduleName = moduleSetName + "WorkShaderOnOff";
-
-				AddBuildingModule(moduleName, mesh, _animModuleNames);
-
-				_tempAuxGroup.animTransforms.push_back(ModuleTransform(moduleName, FTransform::Identity, 0, ModuleTypeEnum::ShaderOnOff));
 			}
 			// Work Rotation
 			else if (foundFiles[i].Contains("_WorkRotation1"))
@@ -1831,6 +1791,50 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FactionEnum factionEnum, FS
 				}
 
 				_tempAuxGroup.animTransforms.push_back(ModuleTransform(moduleName, transform, 0.0f, moduleTypeEnum));
+			}
+			else if (foundFiles[i].Contains("_Scaffolding_")) {
+				FString meshName = addMesh("Frame");
+
+				_modulesNeedingPaintConstruction.Add(meshName);
+			}
+			else if (foundFiles[i].Contains("_Manual_"))
+			{
+				const auto mesh = loadMesh(i);
+				FString moduleName = moduleSetName + "_Manual_" + foundFiles[i];
+				AddBuildingModule(moduleName, mesh, _moduleNames);
+			}
+			else if (foundFiles[i].Contains("_ManualToggle_"))
+			{
+				const auto mesh = loadMesh(i);
+				FString moduleName = moduleSetName + "_ManualToggle_" + foundFiles[i];
+				AddBuildingModule(moduleName, mesh, _togglableModuleNames);
+			}
+			else if (foundFiles[i].Contains("_WorkStatic"))
+			{
+				const auto mesh = loadMesh(i);
+				FString moduleName = moduleSetName + "WorkStatic";
+
+				AddBuildingModule(moduleName, mesh, _togglableModuleNames);
+
+				_tempAuxGroup.togglableTransforms.push_back(ModuleTransform(moduleName));
+			}
+			else if (foundFiles[i].Contains("_WorkShaderAnimate"))
+			{
+				const auto mesh = loadMesh(i);
+				FString moduleName = moduleSetName + "WorkShaderAnimate";
+
+				AddBuildingModule(moduleName, mesh, _animModuleNames);
+
+				_tempAuxGroup.animTransforms.push_back(ModuleTransform(moduleName, FTransform::Identity, 0.0f, ModuleTypeEnum::ShaderAnimate));
+			}
+			else if (foundFiles[i].Contains("_WorkShaderOnOff"))
+			{
+				const auto mesh = loadMesh(i);
+				FString moduleName = moduleSetName + "WorkShaderOnOff";
+
+				AddBuildingModule(moduleName, mesh, _animModuleNames);
+
+				_tempAuxGroup.animTransforms.push_back(ModuleTransform(moduleName, FTransform::Identity, 0, ModuleTypeEnum::ShaderOnOff));
 			}
 			else if (foundFiles[i].Contains("_Smoke")) {
 				const auto mesh = loadMesh(i);

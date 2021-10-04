@@ -1599,8 +1599,13 @@ public:
 class ProvinceRuin : public Building
 {
 public:
+	virtual FactionEnum factionEnum() const override {
+		return FactionEnum::Arab;
+	}
 
+	virtual void FinishConstruction() override;
 
+	virtual void OnUpgradeBuilding(int upgradeIndex) override;
 };
 
 
@@ -1947,4 +1952,13 @@ public:
 private:
 	int32 _cardCreationMode = -1;
 	int32 _secsToCardProduction = -1;
+};
+
+
+class PolicyOffice : public Building
+{
+public:
+	virtual void FinishConstruction() override;
+	
+	virtual int32 maxCardSlots() override { return 6; }
 };

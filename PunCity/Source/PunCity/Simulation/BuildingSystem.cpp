@@ -332,6 +332,7 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		  CASE_BUILDING(CardEnum::ForeignQuarter, ForeignQuarter);
 		  CASE_BUILDING(CardEnum::ForeignPort, ForeignPort);
 		  CASE_BUILDING(CardEnum::SpyCenter, SpyCenter);
+		  CASE_BUILDING(CardEnum::PolicyOffice, PolicyOffice);
 
 		  CASE_BUILDING(CardEnum::PitaBakery, PitaBakery);
 

@@ -721,6 +721,9 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& 
 		if (resourceNeeded.resourceEnum == ResourceEnum::Money) {
 			globalResourceSystem().ChangeMoney(-resourceNeeded.count);
 		}
+		else if (resourceNeeded.resourceEnum == ResourceEnum::Influence) {
+			globalResourceSystem().ChangeInfluence(-resourceNeeded.count);
+		}
 		else {
 			resourceSystem().RemoveResourceGlobal(resourceNeeded.resourceEnum, resourceNeeded.count);
 		}
@@ -1432,6 +1435,17 @@ std::vector<BonusPair> Building::GetBonuses()
 	if (_simulation->HasGlobalBonus(_playerId, CardEnum::Communism) && product() != ResourceEnum::None) {
 		bonuses.push_back({ LOCTEXT("Communism", "Communism"), 25 });
 	}
+
+	
+	// Policy Office
+	{
+		const std::vector<int32>& policyOfficeIds = _simulation->buildingIds(_townId, CardEnum::PolicyOffice);
+		if (policyOfficeIds.size() > 0)
+		{
+			PolicyOffice& policyOffice = _simulation->building<PolicyOffice>(policyOfficeIds[0], CardEnum::PolicyOffice);
+			bonuses.push_back({ LOCTEXT("Economic Hegemony", "Economic Hegemony"), 3 * policyOffice.GetUpgrade(1).upgradeLevel });
+		}
+	}
 	
 
 	// Upgrade bonuses
@@ -1704,7 +1718,7 @@ BuildingUpgrade Building::MakeLevelUpgrade(FText name, FText description, Resour
 {
 	int32 totalCost = buildingInfo().constructionCostAsMoney();
 	
-	int32 price = (resourceEnum == ResourceEnum::Money) ? 1 : GetResourceInfo(resourceEnum).basePrice;
+	int32 price = (resourceEnum == ResourceEnum::Money || resourceEnum == ResourceEnum::Influence) ? 1 : GetResourceInfo(resourceEnum).basePrice;
 	int32 resourceCount = 1 + totalCost * percentOfTotalPrice / 100 / price;
 	BuildingUpgrade upgrade(name, description, resourceEnum, resourceCount);
 

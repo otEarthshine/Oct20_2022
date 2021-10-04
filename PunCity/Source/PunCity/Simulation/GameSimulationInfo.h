@@ -1127,6 +1127,8 @@ enum class ResourceEnum : uint8
 	Food,
 	Luxury,
 	Fuel,
+
+	Influence,
 };
 
 struct ResourceInfo
@@ -2263,6 +2265,7 @@ enum class CardEnum : uint16
 	ForeignQuarter,
 	ForeignPort,
 	SpyCenter,
+	PolicyOffice,
 
 	MayanPyramid,
 	EgyptianPyramid,
@@ -2519,6 +2522,8 @@ static const TMap<CardEnum, int32> BuildingEnumToUpkeep =
 	{ CardEnum::Hotel, 100 },
 
 	{ CardEnum::SpyCenter, 300 },
+
+	{ CardEnum::PolicyOffice, 100 },
 
 	{ CardEnum::Granary, 10 },
 
@@ -3292,7 +3297,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(6, 6), GetBldResourceInfo(1, { ResourceEnum::Clay }, { 1, 1 }, -30)
 	),
 	BldInfo(CardEnum::Potter, _LOCTEXT("Potter", "Potter"), LOCTEXT("Potter (Plural)", "Potters"), LOCTEXT("Potter Desc", "Make Pottery from Clay."),
-		WorldTile2(5, 6), GetBldResourceInfo(1, { ResourceEnum::Clay, ResourceEnum::Pottery }, { 1, 2 })	
+		{ WorldTile2(5, 6), WorldTile2(6, 6) }, GetBldResourceInfo(1, { ResourceEnum::Clay, ResourceEnum::Pottery }, { 1, 2 })
 	),
 	BldInfo(CardEnum::HolySlimeRanch, _INVTEXT("Holy Slime Ranch"),	FText(), INVTEXT("Raise holy slime. Bonus from nearby slime ranches/pyramid"),
 		WorldTile2(10, 10), GetBldResourceInfoManual({})
@@ -3675,18 +3680,21 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::SpyCenter, _LOCTEXT("Spy Center", "Spy Center"), LOCTEXT("Spy Center (Plural)", "Spy Center"), LOCTEXT("Spy Center Desc", ""),
 		WorldTile2(12, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 100, 100 })
 	),
+	BldInfo(CardEnum::PolicyOffice, _LOCTEXT("Policy Office", "Policy Office"), LOCTEXT("Policy Office (Plural)", "Policy Office"), LOCTEXT("Policy Office Desc", ""),
+		WorldTile2(8, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 100, 100 })
+	),
 
 	BldInfo(CardEnum::MayanPyramid, _LOCTEXT("Jungle Ruin", "Jungle Ruin"), LOCTEXT("Jungle Ruin (Plural)", "Jungle Ruins"), LOCTEXT("Jungle Ruin Desc", ""),
-		WorldTile2(18, 18), GetBldResourceInfoManual({})
+		WorldTile2(18, 18), GetBldResourceInfoManual({ 100 })
 	),
 	BldInfo(CardEnum::EgyptianPyramid, _LOCTEXT("Desert Ruin", "Desert Ruin"), LOCTEXT("Desert Ruin (Plural)", "Desert Ruins"), LOCTEXT("Desert Ruin Desc", ""),
-		WorldTile2(18, 18), GetBldResourceInfoManual({})
+		WorldTile2(18, 18), GetBldResourceInfoManual({ 100 })
 	),
 	BldInfo(CardEnum::StoneHenge, _LOCTEXT("Ruin", "Ruin"), LOCTEXT("Ruin (Plural)", "Ruins"), LOCTEXT("Ruin Desc", ""),
-		WorldTile2(18, 18), GetBldResourceInfoManual({})
+		WorldTile2(18, 18), GetBldResourceInfoManual({ 100 })
 	),
 	BldInfo(CardEnum::EasterIsland, _LOCTEXT("Ruin", "Ruin"), LOCTEXT("Ruin (Plural)", "Ruins"), LOCTEXT("Ruin Desc", ""),
-		WorldTile2(18, 18), GetBldResourceInfoManual({})
+		WorldTile2(18, 18), GetBldResourceInfoManual({ 100 })
 	),
 	
 	BldInfo(CardEnum::Oasis, _LOCTEXT("Oasis", "Oasis"), LOCTEXT("Oasis (Plural)", "Oases"), LOCTEXT("Oasis Desc", ""),
@@ -5947,6 +5955,7 @@ enum class OverlayType
 	BadAppeal,
 
 	Raid,
+	Fort,
 	RevealSpyNest,
 };
 
@@ -6937,6 +6946,9 @@ static bool IsAnimalCard(CardEnum cardEnum) {
  * Military
  */
 
+static const CardEnum MilitaryCardEnumMin = CardEnum::Militia;
+static const CardEnum MilitaryCardEnumMax = CardEnum::Battleship;
+
 static bool IsLandMilitaryCardEnum(CardEnum cardEnum) {
 	return IsCardEnumBetween(cardEnum, CardEnum::Militia, CardEnum::Artillery);
 };
@@ -6961,12 +6973,14 @@ static bool IsNavyCardEnum(CardEnum cardEnum) {
 	return IsCardEnumBetween(cardEnum, CardEnum::Galley, CardEnum::Battleship);
 };
 static bool IsMilitaryCardEnum(CardEnum cardEnum) {
-	return IsCardEnumBetween(cardEnum, CardEnum::Militia, CardEnum::Battleship);
+	return IsCardEnumBetween(cardEnum, MilitaryCardEnumMin, MilitaryCardEnumMax);
 };
 
 static bool IsFrontlineCardEnum(CardEnum cardEnum) {
 	return IsCardEnumBetween(cardEnum, CardEnum::Militia, CardEnum::Tank);
 }
+
+
 
 class MilitaryConstants
 {

@@ -518,6 +518,18 @@ public:
 	}
 	bool HasBoughtCard(CardEnum cardEnum) { return BoughtCardCount(cardEnum) > 0; }
 
+	bool HasBoughtMilitaryCard()
+	{
+		for (int32 i = static_cast<int>(MilitaryCardEnumMin); i < static_cast<int>(MilitaryCardEnumMax); i++) {
+			if (HasBoughtCard(static_cast<CardEnum>(i))) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	
+
 	int32 DisplayedBoughtCardCount(CardEnum cardEnum, bool includeInventory = true)
 	{
 		int32 boughtCardCount = BoughtCardCount(cardEnum, includeInventory);

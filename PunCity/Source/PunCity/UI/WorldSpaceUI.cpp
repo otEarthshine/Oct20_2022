@@ -251,6 +251,29 @@ void UWorldSpaceUI::TickBuildings()
 						hoverIcon->SetPair(hoverIcon->IconPair3);
 					}
 				}
+				else if (dataSource()->GetOverlayType() == OverlayType::Fort)
+				{
+					UIconTextPair2Lines* hoverIcon = _raidHoverIcons.GetHoverUI<UIconTextPair2Lines>(provinceId, UIEnum::HoverTextIconPair3Lines, this,
+						_worldWidgetParent, displayLocation, dataSource()->zoomDistance(), [&](UIconTextPair2Lines* ui) {},
+						WorldZoomTransition_Region4x4ToMap
+					);
+
+					int32 originTownId = sim.provinceOwnerTownSafe(provinceId);
+					if (sim.townPlayerId(originTownId) == playerId())
+					{
+						const ProvinceOwnerInfo& provinceOwnerInfo = sim.provinceInfoSystem().provinceOwnerInfo(provinceId);
+						hoverIcon->SetPair(hoverIcon->IconPair1, 
+							provinceOwnerInfo.isSafe ? LOCTEXT("Protected", "Protected") : LOCTEXT("Unprotected", "Unprotected")
+						);
+						hoverIcon->SetPair(hoverIcon->IconPair2);
+						hoverIcon->SetPair(hoverIcon->IconPair3);
+					}
+					else {
+						hoverIcon->SetPair(hoverIcon->IconPair1);
+						hoverIcon->SetPair(hoverIcon->IconPair2);
+						hoverIcon->SetPair(hoverIcon->IconPair3);
+					}
+				}
 				else if (dataSource()->isShowingProvinceOverlay())
 				{
 					URegionHoverUI* regionHoverUI = getRegionHoverUI();

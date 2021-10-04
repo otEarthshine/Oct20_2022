@@ -179,7 +179,7 @@ public:
 		_factionEnum(factionEnum),
 		_simulation(simulation)
 	{
-		_minorCityWealth = 10 + GameRand::Rand() % 90;
+		_minorCityWealth = 100;
 		_minorCityTargetWealth = 0;
 	}
 
@@ -548,7 +548,7 @@ public:
 		return _minorCityWealth * 10 / 100 - (_minorCityWealth * _minorCityWealth);
 	}
 
-	void AddChildBuilding(class MinorCityChild& child);
+	void AddChildBuilding(Building& child);
 
 	const std::vector<int32>& childBuildingIds() {
 		return _childBuildingIds;
@@ -563,6 +563,7 @@ public:
 		}
 		return {};
 	}
+
 
 	/*
 	 * Helpers

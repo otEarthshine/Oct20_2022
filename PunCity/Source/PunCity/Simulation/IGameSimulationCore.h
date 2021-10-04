@@ -182,6 +182,8 @@ public:
 
 	virtual int32 GetTownAgeTicks(int32 townId) = 0;
 
+	virtual int32 GetMajorTownTotalRevenue100(int32 townId) = 0;
+
 	virtual bool IsConnectedToTowns(WorldTile2 tile, int32 playerId, std::vector<uint32>& path) = 0;
 
 	bool unlockedInfluence(int32 playerId) {

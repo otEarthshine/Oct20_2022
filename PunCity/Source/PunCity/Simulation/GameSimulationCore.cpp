@@ -319,6 +319,10 @@ void GameSimulationCore::InitProvinceBuildings()
 		const ProvinceBuildingSlot& slot = provinceInfoSys.provinceBuildingSlot(provinceId);
 		check(slot.landSlot.isValid());
 
+		if (slot.hasBuilding()) {
+			return -1;
+		}
+
 		int32 townId = AddMinorTown(provinceId);
 		provinceInfoSys.SetSlotTownId(provinceId, townId);
 		SetProvinceOwner(provinceId, townId, true);
@@ -326,6 +330,7 @@ void GameSimulationCore::InitProvinceBuildings()
 		int32 minorCityBuildingId = createBuilding(townId, CardEnum::MinorCity, slot.landSlot, slot.landSlotFaceDirection, 7);
 		if (minorCityBuildingId != -1) {
 			townManagerBase(townId)->townhallId = minorCityBuildingId;
+			provinceInfoSys.SetSlotBuildingId(provinceId, minorCityBuildingId);
 		}
 		else {
 			// Failed to create building, remove Town
@@ -337,6 +342,9 @@ void GameSimulationCore::InitProvinceBuildings()
 		return minorCityBuildingId;
 	};
 
+	/*
+	 * Minor City with Port
+	 */
 	for (int32 i = 0; i < skipCount; i++) {
 		for (int32 j = i; j < portSlotProvinceIds.size(); j += skipCount)
 		{
@@ -356,7 +364,7 @@ void GameSimulationCore::InitProvinceBuildings()
 				int32 minorCityPortId = createBuilding(slot.townId, CardEnum::MinorCityPort, slot.portSlot, slot.portSlotFaceDirection, 7);
 
 				MinorCity& minorCity = building<MinorCity>(minorCityBuildingId);
-				MinorCityChild& minorCityPort = building<MinorCityChild>(minorCityPortId);
+				Building& minorCityPort = building(minorCityPortId);
 				
 				townManagerBase(minorCity.townId())->AddChildBuilding(minorCityPort);
 
@@ -372,7 +380,71 @@ void GameSimulationCore::InitProvinceBuildings()
 	}
 	endPortLoop:
 
+	/*
+	 * Ancient Wonders
+	 */
+	std::vector<CardEnum> AncientWonderEnums =
+	{
+		CardEnum::MayanPyramid,
+		CardEnum::EgyptianPyramid,
+		CardEnum::StoneHenge,
+		CardEnum::EasterIsland,
+	};
+	std::vector<std::vector<BiomeEnum>> AncientWonderToBiomeEnums =
+	{
+		{ BiomeEnum::Jungle, BiomeEnum::Savanna, BiomeEnum::Forest },
+		{ BiomeEnum::Desert, BiomeEnum::Savanna, BiomeEnum::Forest  },
+		{ BiomeEnum::BorealForest, BiomeEnum::Forest,  BiomeEnum::Tundra },
+		{ BiomeEnum::Forest, BiomeEnum::Jungle,  BiomeEnum::Savanna },
+	};
+	std::vector<int32> ancientWondersCounts(AncientWonderEnums.size(), 0);
+
+	
+	const std::vector<int32>& largeLandSlotProvinceIds = provinceInfoSys.largeLandSlotProvinceIds();
+
+	auto tryBuildAncientWonder = [&](bool checkBiome, int32 biomeIndex)
+	{
+		for (int32 i = 0; i < skipCount; i++) {
+			for (int32 j = i; j < largeLandSlotProvinceIds.size(); j += skipCount)
+			{
+				check(j < largeLandSlotProvinceIds.size());
+				int32 provinceId = largeLandSlotProvinceIds[j];
+				const ProvinceBuildingSlot& slot = provinceInfoSys.provinceBuildingSlot(provinceId);
+				BiomeEnum biomeEnum = GetBiomeProvince(provinceId);
+
+				// Try putting in different types of wonders
+				for (int32 k = 0; k < AncientWonderEnums.size(); k++)
+				{
+					if (ancientWondersCounts[k] == 0)
+					{
+						if (!checkBiome || biomeEnum == AncientWonderToBiomeEnums[k][biomeIndex])
+						{
+							int32 buildingId = createBuilding(-1, AncientWonderEnums[k], slot.largeLandSlot, Direction::S, 14);
+							if (buildingId != -1) {
+								provinceInfoSys.SetSlotBuildingId(provinceId, buildingId);
+								ancientWondersCounts[k]++;
+							}
+						}
+					}
+				}
+			}
+		}
+	};
+
+	//! Ancient Wonders: Biomes
+	tryBuildAncientWonder(true, 0);
+	tryBuildAncientWonder(true, 1);
+	tryBuildAncientWonder(true, 2);
+
+	//! Ancient Wonders: Anywhere
+	tryBuildAncientWonder(false, 0);
+	
+
+	/*
+	 * Minor City
+	 */
 	const std::vector<int32>& landSlotProvinceIds = provinceInfoSys.landSlotProvinceIds();
+	
 
 	for (int32 i = 0; i < skipCount; i++) {
 		for (int32 j = i; j < landSlotProvinceIds.size(); j += skipCount)
@@ -382,7 +454,10 @@ void GameSimulationCore::InitProvinceBuildings()
 
 			PUN_LOG("landSlotProvinceIds provinceId:%d minorCityBuildingId:%d", landSlotProvinceIds[j], minorCityBuildingId);
 
-			minorCityCount++;
+			if (minorCityBuildingId != -1) {
+				minorCityCount++;
+			}
+			
 			if (minorCityCount >= targetMinorCityCount) {
 				goto endLandLoop;
 			}
@@ -3726,6 +3801,11 @@ void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
 
 					if (neededResource == ResourceEnum::Money) {
 						ADDTEXT_NAMED_(LOCTEXT("ShiftUpgradeWarnMoney_Pop", "<space>Note: Not enough Money to upgrade all {BuildingName}."),
+							TEXT("BuildingName"), bld->buildingInfo().name
+						);
+					}
+					else if (neededResource == ResourceEnum::Influence) {
+						ADDTEXT_NAMED_(LOCTEXT("ShiftUpgradeWarnInfluence_Pop", "<space>Note: Not enough Influence to upgrade all {BuildingName}."),
 							TEXT("BuildingName"), bld->buildingInfo().name
 						);
 					}

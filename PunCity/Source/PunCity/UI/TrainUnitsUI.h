@@ -32,6 +32,8 @@ public:
 		setChildHUD(BacklineUnitsBox);
 		setChildHUD(NavyUnitsBox);
 
+		setChildHUD(ActionCardsBox);
+
 		setChildHUD(TrainingQueueBox);
 
 		SetVisibility(ESlateVisibility::Collapsed);
@@ -110,6 +112,10 @@ public:
 
 		NavyBox->SetVisibility(navyEnum != CardEnum::None ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 		SetupButton(NavyUnitsBox, 0, navyEnum);
+
+
+		ActionBox->SetVisibility(sim.cardSystem(playerId()).HasBoughtMilitaryCard() ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+		SetupButton(ActionCardsBox, 0, CardEnum::Raid);
 	}
 
 	
@@ -187,11 +193,12 @@ public:
 	
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* BacklineBox;
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* NavyBox;
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* ActionBox;
 
 	UPROPERTY(meta = (BindWidget)) UWrapBox* FrontlineUnitsBox;
 	UPROPERTY(meta = (BindWidget)) UWrapBox* BacklineUnitsBox;
 	UPROPERTY(meta = (BindWidget)) UWrapBox* NavyUnitsBox;
-
+	UPROPERTY(meta = (BindWidget)) UWrapBox* ActionCardsBox;
 	
 
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* TrainingQueueOuterBox;

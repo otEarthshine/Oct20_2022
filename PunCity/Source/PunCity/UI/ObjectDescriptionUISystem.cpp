@@ -3206,6 +3206,12 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								else if (resourceEnum == ResourceEnum::Glass) { showResourceText("Glass"); }
 								else if (resourceEnum == ResourceEnum::Concrete) { showResourceText("Concrete"); }
 								else if (resourceEnum == ResourceEnum::Steel) { showResourceText("SteelBeam"); }
+								else if (resourceEnum == ResourceEnum::Influence) {
+									int32 influenceNeeded = upgrade.currentUpgradeResourceNeeded().count;
+									FText influenceText = TextRed(TEXT_NUM(influenceNeeded), globalResourceSys.moneyCap32() < influenceNeeded);
+
+									ADDTEXT_(INVTEXT("\n<img id=\"Influence\"/>{0}"), influenceText);
+								}
 								else {
 									PUN_CHECK(resourceEnum == ResourceEnum::Money);
 
@@ -3228,6 +3234,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								int32 resourceNeeded = upgrade.currentUpgradeResourceNeeded().count;
 								if (resourceEnum == ResourceEnum::Money) {
 									ADDTEXT_(INVTEXT("{0}: <img id=\"Coin\"/>{1}"), costText, TEXT_NUM(resourceNeeded));
+								}
+								else if (resourceEnum == ResourceEnum::Influence) {
+									ADDTEXT_(INVTEXT("{0}: <img id=\"Influence\"/>{1}"), costText, TEXT_NUM(resourceNeeded));
 								}
 								else {
 									check(static_cast<int>(resourceEnum) < ResourceEnumCount);

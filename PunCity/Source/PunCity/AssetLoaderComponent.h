@@ -358,7 +358,6 @@ public:
 	TArray<FString>& animModuleNames() { return _animModuleNames; }
 	TArray<FString>& togglableModuleNames() { return _togglableModuleNames; }
 
-	// TODO: ARAB FIX
 	TArray<TArray<ModuleTransformGroup>> buildingEnumToVariationToModuleTransforms(FactionEnum factionEnum) { return _factionEnumToBuildingEnumToModuleGroups[static_cast<int32>(factionEnum)]; }
 	int32 GetMinEraDisplay(FactionEnum factionEnum, CardEnum buildingEnum) { return _factionEnumToBuildingEnumToMinEraModel[static_cast<int32>(factionEnum)][static_cast<int>(buildingEnum)]; }
 	

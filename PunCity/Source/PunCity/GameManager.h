@@ -848,7 +848,9 @@ public:
 	}
 
 	virtual bool isShowingDefenseOverlay() override {
-		return _showDefenseOverlay || GetOverlayType() == OverlayType::Raid;
+		return _showDefenseOverlay || 
+			GetOverlayType() == OverlayType::Raid || 
+			GetOverlayType() == OverlayType::Fort;
 	}
 	virtual void SetOverlayDefense(bool showOverlay) override {
 		_showDefenseOverlay = showOverlay;

@@ -702,6 +702,10 @@ public:
 		return GetTownhall(townId).townAgeTicks();
 	}
 
+	virtual int32 GetMajorTownTotalRevenue100(int32 townId) override {
+		return townManager(townId).totalRevenue100();
+	}
+
 	bool IsConnectedToTowns(WorldTile2 tile, int32 playerId, std::vector<uint32>& path) final
 	{
 		const auto& townIds = GetTownIds(playerId);

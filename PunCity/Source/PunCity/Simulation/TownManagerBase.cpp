@@ -169,18 +169,16 @@ void TownManagerBase::RefreshMinorCityTargetWealth()
 		if (gateTile.isValid() &&
 			WorldTile2::Distance(gateTile, thisTownGateTile) < maxTileDistanceToCheck)
 		{
-			// TODO: ARAB FIX
-			//maxTownRevenue = std::max(maxTownRevenue, _simulation->townManager(townId).totalRevenue100() / 100);
+			maxTownRevenue = std::max(maxTownRevenue, _simulation->GetMajorTownTotalRevenue100(townId) / 100);
 		}
 	});
 
 	_minorCityTargetWealth = maxTownRevenue;
 }
 
-void TownManagerBase::AddChildBuilding(MinorCityChild& child)
+void TownManagerBase::AddChildBuilding(Building& child)
 {
-	// TODO: ARAB FIX
-	//_childBuildingIds.push_back(child.buildingId());
+	_childBuildingIds.push_back(child.buildingId());
 }
 
 void TownManagerBase::CalculateAutoTradeProfit(

@@ -1994,6 +1994,30 @@ void MinorCity::OnDeinit()
 }
 
 /*
+ * ProvinceRuin
+ */
+void ProvinceRuin::FinishConstruction()
+{
+	AddUpgrades({
+		MakeLevelUpgrade(
+			LOCTEXT("ProvinceRuinUpgrade_Dig", "Archaeological Excavation"),
+			LOCTEXT("ProvinceRuinUpgrade_Dig Desc", "Excavate the site for Artifacts"),
+			ResourceEnum::Money, 100
+		),
+	});
+
+	Building::FinishConstruction();
+}
+
+void ProvinceRuin::OnUpgradeBuilding(int upgradeIndex)
+{
+	if (upgradeIndex == 0)
+	{
+		_simulation->TryAddCardToBoughtHand(_playerId, CardEnum::Artifact1);
+	}
+}
+
+/*
  * Zoo
  */
 
@@ -2231,6 +2255,29 @@ void SpyCenter::OnTick1Sec()
 		}
 	}
 	
+}
+
+/*
+ * Policy Office
+ */
+void PolicyOffice::FinishConstruction()
+{
+	AddUpgrades({
+		MakeLevelUpgrade(
+			LOCTEXT("PolicyOfficeUpgrade_NationalPride", "National Pride"),
+			LOCTEXT("PolicyOfficeUpgrade_NationalPride Desc", "+5% City Attractiveness if you have more than X Influence"),
+			ResourceEnum::Influence, 30
+		),
+		MakeLevelUpgrade(
+			LOCTEXT("PolicyOfficeUpgrade_EconomicHegemony", "Economic Hegemony"),
+			LOCTEXT("PolicyOfficeUpgrade_EconomicHegemony Desc", "+3% production bonus.. if you have more than X Influence"),
+			ResourceEnum::Influence, 30
+		),
+	});
+
+	_simulation->playerOwned(_playerId).AddUniqueBuildingId(CardEnum::SpyCenter, buildingId());
+
+	Building::FinishConstruction();
 }
 
 

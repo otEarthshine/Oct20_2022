@@ -32,7 +32,7 @@ struct ProvinceBuildingSlot
 	std::vector<WorldTile2> coastalTiles;
 	std::vector<WorldTile2> mountainTiles;
 	
-	WorldTile2 portSlot = WorldTile2::Invalid;
+	WorldTile2 portSlot = WorldTile2::Invalid; // Slots are center tiles
 	WorldTile2 landSlot = WorldTile2::Invalid;
 	WorldTile2 largeLandSlot = WorldTile2::Invalid;
 	
@@ -41,8 +41,11 @@ struct ProvinceBuildingSlot
 	Direction largeLandSlotFaceDirection = Direction::E;
 
 	int32 townId = -1;
+	int32 buildingId = -1;
 
 	bool isValid() const { return provinceId != -1; }
+
+	bool hasBuilding() const { return buildingId != -1; }
 	
 	void operator>>(FArchive& Ar)
 	{
@@ -60,6 +63,7 @@ struct ProvinceBuildingSlot
 		Ar << largeLandSlotFaceDirection;
 		
 		Ar << townId;
+		Ar << buildingId;
 	}
 };
 
@@ -361,10 +365,19 @@ public:
 
 	const std::vector<int32>& portSlotProvinceIds() { return _portSlotProvinceIds; }
 	const std::vector<int32>& landSlotProvinceIds() { return _landSlotProvinceIds; }
+	const std::vector<int32>& largeLandSlotProvinceIds() { return _largeLandSlotProvinceIds; }
 
 	void SetSlotTownId(int32 provinceId, int32 townId) {
-		check(_provinceBuildingSlots[provinceId].landSlot.isValid());
+		check(_provinceBuildingSlots[provinceId].landSlot.isValid() ||
+			_provinceBuildingSlots[provinceId].largeLandSlot.isValid());
+		
 		_provinceBuildingSlots[provinceId].townId = townId;
+	}
+	void SetSlotBuildingId(int32 provinceId, int32 buildingId) {
+		check(_provinceBuildingSlots[provinceId].landSlot.isValid() ||
+			_provinceBuildingSlots[provinceId].largeLandSlot.isValid());
+		
+		_provinceBuildingSlots[provinceId].buildingId = buildingId;
 	}
 
 	/*

@@ -420,7 +420,7 @@ public:
 	BuildingUpgrade MakeWorkerSlotUpgrade(int32 percentOfTotalPrice, int32 workerSlotBonus = 1);
 	BuildingUpgrade MakeEraUpgrade(int32 startEra);
 
-	BuildingUpgrade MakeLevelUpgrade(FText name, FText description, ResourceEnum resourceEnum, int32 percentOfTotalPrice);
+	BuildingUpgrade MakeLevelUpgrade(FText name, FText description, ResourceEnum resourceEnum, int32 percentOfTotalPrice, int32 percentScaling = 50);
 
 	BuildingUpgrade MakeComboUpgrade(FText name, ResourceEnum resourceEnum);
 

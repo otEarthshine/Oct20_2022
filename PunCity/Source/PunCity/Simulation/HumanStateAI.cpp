@@ -3436,7 +3436,9 @@ void HumanStateAI::UpdateHappiness()
 			if (policyOfficeIds.size() > 0)
 			{
 				PolicyOffice& policyOffice = _simulation->building<PolicyOffice>(policyOfficeIds[0], CardEnum::PolicyOffice);
-				targetHappiness += 5 * policyOffice.GetUpgrade(0).upgradeLevel;
+				if (policyOffice.isConstructed()) {
+					targetHappiness += 5 * policyOffice.GetUpgrade(0).upgradeLevel;
+				}
 			}
 		}
 

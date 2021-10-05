@@ -3108,6 +3108,11 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				} else {
 					isUpgraderPlayer = building.playerId() == playerId();
 				}
+
+				// Special case:
+				if (IsAncientWonderCardEnum(buildingEnum)) {
+					isUpgraderPlayer = true;
+				}
 				
 				if (isUpgraderPlayer)
 				{

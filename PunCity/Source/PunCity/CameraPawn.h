@@ -282,6 +282,15 @@ public:
 		// Ensure TileObj Refresh to hide trees
 		_gameInterface->simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Trees, _gameInterface->sampleRegionIds());
 	}
+	virtual void StartIrrigationDitchPlacement() override
+	{
+		_networkInterface->ResetGameUI();
+		buildingPlacementSystem->StartIrrigationDitch();
+
+		// Ensure TileObj Refresh to hide trees
+		_gameInterface->simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Trees, _gameInterface->sampleRegionIds());
+	}
+	
 	void StartFencePlacement() final {
 		_networkInterface->ResetGameUI();
 		buildingPlacementSystem->StartFence();

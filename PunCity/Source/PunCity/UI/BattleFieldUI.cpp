@@ -54,17 +54,24 @@ void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimPro
 		defenderPlayerId = sim.townManagerBase(provinceTownId)->lordPlayerId(); // Declare Independence
 	} // TODO: Declare Independence should init attack from the Lord
 
-	PunUIUtils::SetPlayerLogo(
-		PlayerLogoRight->GetDynamicMaterial(),
-		dataSource()->playerInfo(defenderPlayerId),
-		assetLoader()
-	);
-	
-	AddToolTip(PlayerLogoRight, FText::Format(
-		LOCTEXT("DefenderPlayerLogo_Tip", "Defender: {0}"),
-		sim.playerNameT(defenderPlayerId)
-	));
+	if (defenderPlayerId != -1)
+	{
+		PunUIUtils::SetPlayerLogo(
+			PlayerLogoRight->GetDynamicMaterial(),
+			dataSource()->playerInfo(defenderPlayerId),
+			assetLoader()
+		);
 
+		AddToolTip(PlayerLogoRight, FText::Format(
+			LOCTEXT("DefenderPlayerLogo_Tip", "Defender: {0}"),
+			sim.playerNameT(defenderPlayerId)
+		));
+
+		PlayerLogoRight->SetVisibility(ESlateVisibility::Visible);
+	}
+	else {
+		PlayerLogoRight->SetVisibility(ESlateVisibility::Collapsed);
+	}
 	
 
 	SetText(LeftDefenseBonus, FText::Format(INVTEXT("<img id=\"Shield\"/><Shadowed>{0}</>"), TEXT_NUM(0)));

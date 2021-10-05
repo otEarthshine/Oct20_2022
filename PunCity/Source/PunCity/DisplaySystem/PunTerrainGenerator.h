@@ -84,6 +84,17 @@ public:
 	float riverFraction(WorldTile2 tile) {
 		return riverFraction100(tile) / 100.0f;
 	}
+
+	// TODO: for Desert Palm ???
+	//int32 riverMoisture100(WorldTile2 tile) {
+	//	return WorldTile4x4::Get4x4Lerped(tile, GameMapConstants::Tiles4x4PerWorldX, GameMapConstants::Tiles4x4PerWorldY,
+	//		[&](int32_t tile4x4Id)
+	//	{
+	//		return std::min(255, static_cast<int32>(_river4x4Map[tile4x4Id]) * 5) * 100 / 255; // Oct 5: * 9
+	//	});
+	//}
+
+	
 	float rainfall255(WorldTile2 tile)
 	{
 		int32 lerped= WorldTile4x4::Get4x4Lerped(tile, GameMapConstants::Tiles4x4PerWorldX, GameMapConstants::Tiles4x4PerWorldY,

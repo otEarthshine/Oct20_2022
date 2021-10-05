@@ -1874,6 +1874,9 @@ void UMainGameUI::SelectPermanentCard(CardEnum buildingEnum)
 	if (buildingEnum == CardEnum::IntercityRoad) {
 		inputSystemInterface()->StartRoadPlacement(false, true);
 	}
+	else if (buildingEnum == CardEnum::IrrigationDitch) {
+		inputSystemInterface()->StartIrrigationDitchPlacement();
+	}
 	else if (buildingEnum == CardEnum::Demolish) {
 		inputSystemInterface()->StartDemolish();
 	}

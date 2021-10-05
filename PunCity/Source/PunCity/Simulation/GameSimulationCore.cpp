@@ -327,7 +327,7 @@ void GameSimulationCore::InitProvinceBuildings()
 		provinceInfoSys.SetSlotTownId(provinceId, townId);
 		SetProvinceOwner(provinceId, townId, true);
 
-		int32 minorCityBuildingId = createBuilding(townId, CardEnum::MinorCity, slot.landSlot, slot.landSlotFaceDirection, 7);
+		int32 minorCityBuildingId = createBuilding(townId, CardEnum::MinorCity, slot.landSlot.centerTile, slot.landSlot.faceDirection, 7);
 		if (minorCityBuildingId != -1) {
 			townManagerBase(townId)->townhallId = minorCityBuildingId;
 			provinceInfoSys.SetSlotBuildingId(provinceId, minorCityBuildingId);
@@ -341,6 +341,38 @@ void GameSimulationCore::InitProvinceBuildings()
 		
 		return minorCityBuildingId;
 	};
+
+	
+	/*
+	 * Oasis
+	 */
+	int32 maxOasisCount = 2;
+	if (_mapSettings.mapSizeEnum() == MapSizeEnum::Medium) {
+		maxOasisCount = 6;
+	}
+	else if (_mapSettings.mapSizeEnum() == MapSizeEnum::Large) {
+		maxOasisCount = 18;
+	}
+	
+	const std::vector<int32>& oasisSlotProvinceIds = provinceInfoSys.oasisSlotProvinceIds();
+	for (int32 i = 0; i < skipCount; i++) {
+		for (int32 j = i; j < oasisSlotProvinceIds.size(); j += skipCount)
+		{
+			int32 provinceId = oasisSlotProvinceIds[j];
+			const ProvinceBuildingSlot& slot = provinceInfoSys.provinceBuildingSlot(provinceId);
+			
+			int32 buildingId = createBuilding(-1, CardEnum::Oasis, slot.oasisSlot.centerTile, Direction::S, 14);
+			if (buildingId != -1) {
+				provinceInfoSys.SetSlotBuildingId(provinceId, buildingId);
+				maxOasisCount--;
+				if (maxOasisCount == 0) {
+					goto endOasisLoop;
+				}
+			}
+		}
+	}
+	endOasisLoop:
+	
 
 	/*
 	 * Minor City with Port
@@ -361,7 +393,7 @@ void GameSimulationCore::InitProvinceBuildings()
 				const ProvinceBuildingSlot& slot = provinceInfoSys.provinceBuildingSlot(provinceId);
 
 				// Create Port
-				int32 minorCityPortId = createBuilding(slot.townId, CardEnum::MinorCityPort, slot.portSlot, slot.portSlotFaceDirection, 7);
+				int32 minorCityPortId = createBuilding(slot.townId, CardEnum::MinorCityPort, slot.portSlot.centerTile, slot.portSlot.faceDirection, 7);
 
 				MinorCity& minorCity = building<MinorCity>(minorCityBuildingId);
 				Building& minorCityPort = building(minorCityPortId);
@@ -380,23 +412,10 @@ void GameSimulationCore::InitProvinceBuildings()
 	}
 	endPortLoop:
 
+	
 	/*
 	 * Ancient Wonders
 	 */
-	std::vector<CardEnum> AncientWonderEnums =
-	{
-		CardEnum::MayanPyramid,
-		CardEnum::EgyptianPyramid,
-		CardEnum::StoneHenge,
-		CardEnum::EasterIsland,
-	};
-	std::vector<std::vector<BiomeEnum>> AncientWonderToBiomeEnums =
-	{
-		{ BiomeEnum::Jungle, BiomeEnum::Savanna, BiomeEnum::Forest },
-		{ BiomeEnum::Desert, BiomeEnum::Savanna, BiomeEnum::Forest  },
-		{ BiomeEnum::BorealForest, BiomeEnum::Forest,  BiomeEnum::Tundra },
-		{ BiomeEnum::Forest, BiomeEnum::Jungle,  BiomeEnum::Savanna },
-	};
 	std::vector<int32> ancientWondersCounts(AncientWonderEnums.size(), 0);
 
 	
@@ -419,7 +438,7 @@ void GameSimulationCore::InitProvinceBuildings()
 					{
 						if (!checkBiome || biomeEnum == AncientWonderToBiomeEnums[k][biomeIndex])
 						{
-							int32 buildingId = createBuilding(-1, AncientWonderEnums[k], slot.largeLandSlot, Direction::S, 14);
+							int32 buildingId = createBuilding(-1, AncientWonderEnums[k], slot.largeLandSlot.centerTile, Direction::S, 14);
 							if (buildingId != -1) {
 								provinceInfoSys.SetSlotBuildingId(provinceId, buildingId);
 								ancientWondersCounts[k]++;
@@ -5349,11 +5368,11 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	{
 		// Attack could be: Conquer Province, Vassalize, or Declare Independence
 
-		int32 provinceTownId = provinceOwnerTown_Major(command.provinceId);
-		int32 provincePlayerId = provinceOwnerPlayer(command.provinceId);
-		check(provincePlayerId != -1);
-		TownManagerBase* provinceTownManager = townManagerBase(provincePlayerId);
-		
+		int32 provinceTownId = provinceOwnerTownSafe(command.provinceId);
+		check(provinceTownId != -1);
+		TownManagerBase* provinceTownManager = townManagerBase(provinceTownId);
+
+		int32 provincePlayerId = provinceTownManager->playerId();
 
 		ProvinceAttackEnum attackEnum = GetProvinceAttackEnum(command.playerId, command.provinceId, command.claimEnum);
 
@@ -5443,7 +5462,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 						FText::Format(
 							LOCTEXT("VassalGotAttack", "{0} started attacking on your vassal city, {1}, to gain control of the vassal.<space>If you lose this battle, you will lose control of the vassal."),
 							playerNameT(command.playerId),
-							playerNameT(provincePlayerId)
+							townNameT(provinceTownId)
 						)
 					);
 					
@@ -5459,7 +5478,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 						FText::Format(
 							LOCTEXT("YouStartedAttackingForVassal_Pop", "You started attacking {0} to take {1} as your vassal."),
 							playerNameT(oldLordPlayerId),
-							playerNameT(provincePlayerId)
+							townNameT(provinceTownId)
 						)
 					);
 				}
@@ -5473,7 +5492,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 					AddPopup(command.playerId,
 						FText::Format(
 							LOCTEXT("YouStartVassalize_Pop", "You started attacking to vassalize {0}."),
-							playerNameT(provincePlayerId)
+							townNameT(provinceTownId)
 						)
 					);
 				}

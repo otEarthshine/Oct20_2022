@@ -1356,6 +1356,9 @@ inline FText ResourceNameT(ResourceEnum resourceEnum) {
 	if (resourceEnum == ResourceEnum::Money) {
 		return NSLOCTEXT("GameSimulationInfo", "Money", "Money");
 	}
+	if (resourceEnum == ResourceEnum::Influence) {
+		return NSLOCTEXT("GameSimulationInfo", "Influence", "Influence");
+	}
 	return ResourceInfos[static_cast<int>(resourceEnum)].name;
 }
 
@@ -3690,10 +3693,10 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::EgyptianPyramid, _LOCTEXT("Desert Ruin", "Desert Ruin"), LOCTEXT("Desert Ruin (Plural)", "Desert Ruins"), LOCTEXT("Desert Ruin Desc", ""),
 		WorldTile2(18, 18), GetBldResourceInfoManual({ 100 })
 	),
-	BldInfo(CardEnum::StoneHenge, _LOCTEXT("Ruin", "Ruin"), LOCTEXT("Ruin (Plural)", "Ruins"), LOCTEXT("Ruin Desc", ""),
+	BldInfo(CardEnum::StoneHenge, _LOCTEXT("StoneHenge", "StoneHenge"), LOCTEXT("Ruin (Plural)", "Ruins"), LOCTEXT("Ruin Desc", ""),
 		WorldTile2(18, 18), GetBldResourceInfoManual({ 100 })
 	),
-	BldInfo(CardEnum::EasterIsland, _LOCTEXT("Ruin", "Ruin"), LOCTEXT("Ruin (Plural)", "Ruins"), LOCTEXT("Ruin Desc", ""),
+	BldInfo(CardEnum::EasterIsland, _LOCTEXT("EasterIsland", "EasterIsland"), LOCTEXT("Ruin (Plural)", "Ruins"), LOCTEXT("Ruin Desc", ""),
 		WorldTile2(18, 18), GetBldResourceInfoManual({ 100 })
 	),
 	
@@ -3701,11 +3704,11 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(18, 18), GetBldResourceInfoManual({})
 	),
 
-	BldInfo(CardEnum::IrrigationPump, _LOCTEXT("Irrigation Pump", "Irrigation Pump"), LOCTEXT("Irrigation Pump (Plural)", "Irrigation Pumps"), LOCTEXT("Irrigation Pump Desc", ""),
-		WorldTile2(12, 12), GetBldResourceInfoManual({})
+	BldInfo(CardEnum::IrrigationPump, _LOCTEXT("Irrigation Pump", "Irrigation Pump"), LOCTEXT("Irrigation Pump (Plural)", "Irrigation Pumps"), LOCTEXT("Irrigation Pump Desc", "TODO:TEXT"),
+		WorldTile2(6, 4), GetBldResourceInfoManual({})
 	),
-	BldInfo(CardEnum::IrrigationDitch, _LOCTEXT("Irrigation Ditch", "Irrigation Ditch"), LOCTEXT("Irrigation Ditch (Plural)", "Irrigation Ditches"), LOCTEXT("Irrigation Ditch Desc", ""),
-		WorldTile2(12, 12), GetBldResourceInfoManual({})
+	BldInfo(CardEnum::IrrigationDitch, _LOCTEXT("Irrigation Ditch", "Irrigation Ditch"), LOCTEXT("Irrigation Ditch (Plural)", "Irrigation Ditches"), LOCTEXT("Irrigation Ditch Desc", "TODO:TEXT"),
+		WorldTile2(1, 1), GetBldResourceInfoManual({})
 	),
 	BldInfo(CardEnum::CarpetWeaver, _LOCTEXT("Carpet Weaver", "Carpet Weaver"), LOCTEXT("Carpet Weaver (Plural)", "Carpet Weavers"), LOCTEXT("Carpet Weaver Desc", ""),
 		WorldTile2(12, 12), GetBldResourceInfoManual({})
@@ -4765,6 +4768,7 @@ static bool IsPortBuilding(CardEnum buildingEnum)
 {
 	switch (buildingEnum) {
 	case CardEnum::Fisher:
+	case CardEnum::IrrigationPump:
 	case CardEnum::SandMine:
 	case CardEnum::PaperMaker:
 	case CardEnum::TradingPort:
@@ -4934,6 +4938,7 @@ struct BuildingUpgrade
 	 */
 	int32 startEra = -1;
 	int32 upgradeLevel = -1;
+	int32 upgradeLevelResourceScalePercent = 50;
 	std::vector<ResourcePair> resourceNeededPerLevel;
 	
 	bool isEraUpgrade() const { return startEra != -1; }
@@ -4960,7 +4965,7 @@ struct BuildingUpgrade
 			}
 			int32 upgradeResourceCount = resourceNeededPerLevel.back().count;
 			for (int32 i = resourceNeededPerLevel.size(); i <= upgradeLevel; i++) {
-				upgradeResourceCount = upgradeResourceCount * 150 / 100; // Only Applies Beyond Max Era
+				upgradeResourceCount = upgradeResourceCount * (100 + upgradeLevelResourceScalePercent) / 100; // !! Only Applies Beyond Max Era
 			}
 			
 			return ResourcePair(resourceNeededPerLevel.back().resourceEnum, upgradeResourceCount);
@@ -4969,7 +4974,7 @@ struct BuildingUpgrade
 		{
 			int32 upgradeResourceCount = baseUpgradeResourceNeeded.count;
 			for (int32 i = 1; i <= upgradeLevel; i++) {
-				upgradeResourceCount = upgradeResourceCount * 150 / 100;
+				upgradeResourceCount = upgradeResourceCount * (100 + upgradeLevelResourceScalePercent) / 100;
 			}
 
 			return ResourcePair(baseUpgradeResourceNeeded.resourceEnum, upgradeResourceCount);
@@ -5008,6 +5013,7 @@ struct BuildingUpgrade
 
 		Ar << startEra;
 		Ar << upgradeLevel;
+		Ar << upgradeLevelResourceScalePercent;
 		SerializeVecObj(Ar, resourceNeededPerLevel);
 	}
 };
@@ -5240,13 +5246,17 @@ enum class TileObjEnum : uint8
 	// Oak,
 	// Cherry tree
 	// Peach tree
-	
+
+	DesertDatePalm,
+	DesertGingerbreadTree,
 
 	// ... TreeEnumSize ... Don't forget!!!
 	GrassGreen, // Currently includes savanna grass
 
 	OreganoBush,
 	CommonBush,
+	DesertBush1,
+	DesertBush2,
 	
 	Fern,
 	SavannaGrass, // Currently unused...
@@ -5310,7 +5320,7 @@ enum class TileObjEnum : uint8
 	None,
 };
 
-const static int32 TreeEnumSize = 14; // TileObjEnum up to last tree... TODO: change to last tree...
+const static int32 TreeEnumSize = static_cast<int32>(TileObjEnum::GrassGreen); // TileObjEnum up to last tree... TODO: change to last tree...
 const static int32 TileObjEnumSize = static_cast<int32>(TileObjEnum::Count);
 
 static bool IsTileObjEnumValid(TileObjEnum tileObjEnum) {
@@ -5549,11 +5559,18 @@ static const TileObjInfo TreeInfos[] = {
 
 	TileObjInfo(TileObjEnum::Cactus1,	LOCTEXT("Cactus", "Cactus"),	ResourceTileType::Tree,	ResourcePair::Invalid(),						defaultWood100, LOCTEXT("Cactus Desc", "Desert plant with thick leafless stem covered in sharp spikes. Hurts to touch.")),
 	TileObjInfo(TileObjEnum::SavannaTree1,	LOCTEXT("Savanna Acacia", "Savanna Acacia"),	ResourceTileType::Tree,	ResourcePair::Invalid(),						defaultWood100, LOCTEXT("Savanna Acacia Desc", "Myths say acacia trees descended from an ancient tree of life.")),
-	
+
+	TileObjInfo(TileObjEnum::DesertDatePalm,	LOCTEXT("Date Palm", "Date Palm"),	ResourceTileType::Tree,	ResourcePair::Invalid(),						defaultWood100, LOCTEXT("Date Palm Desc", "TODO:TEXT")),
+	TileObjInfo(TileObjEnum::DesertGingerbreadTree,	LOCTEXT("Gingerbread Tree", "Gingerbread Tree"),	ResourceTileType::Tree,	ResourcePair::Invalid(),						defaultWood100, LOCTEXT("Gingerbread Tree Desc", "TODO:TEXT")),
+
+
+	//! Bushes
 	TileObjInfo(TileObjEnum::GrassGreen, LOCTEXT("Grass", "Grass"),	ResourceTileType::Bush,	ResourcePair::Invalid(),		defaultGrass100, LOCTEXT("Grass Desc", "Common grass. A nice food-source for grazing animals.")),
 
 	TileObjInfo(TileObjEnum::OreganoBush, LOCTEXT("Common Bush", "Common Bush"),	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, LOCTEXT("Common Bush Desc", "Fluffy little bush. A nice food-source for grazing animals.")),
 	TileObjInfo(TileObjEnum::CommonBush, LOCTEXT("Common Bush", "Common Bush"), ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, LOCTEXT("Common Bush Desc", "Fluffy little  bush. A nice food-source for grazing animals.")),
+	TileObjInfo(TileObjEnum::DesertBush1, LOCTEXT("Desert Bush", "Desert Bush"), ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, LOCTEXT("Common Bush Desc", "Fluffy little  bush. A nice food-source for grazing animals.")),
+	TileObjInfo(TileObjEnum::DesertBush2, LOCTEXT("Desert Bush", "Desert Bush"), ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100, LOCTEXT("Common Bush Desc", "Fluffy little  bush. A nice food-source for grazing animals.")),
 
 	TileObjInfo(TileObjEnum::Fern, LOCTEXT("Fern", "Fern"),				ResourceTileType::Bush,	ResourcePair::Invalid(), defaultHay100,  LOCTEXT("Fern Desc", "Common plant. A nice food-source for grazing animals.")),
 	TileObjInfo(TileObjEnum::SavannaGrass, LOCTEXT("Savanna Grass", "Savanna Grass"),	ResourceTileType::Bush,	ResourcePair::Invalid(), defaultGrass100, LOCTEXT("Savanna Grass Desc", "Common plant. A nice food-source for grazing animals.")),
@@ -5763,6 +5780,7 @@ enum class PlacementType : uint8
 	Bridge,
 	IntercityBridge,
 	Tunnel,
+	IrrigationDitch,
 
 	DeliveryTarget,
 	RevealSpyNest,
@@ -5785,6 +5803,8 @@ static bool IsBridgePlacement(PlacementType placementType)
 }
 
 static const int32 IntercityRoadTileCost = 20;
+
+static const int32 IrrigationDitchTileCost = 100;
 
 enum class PlacementGridEnum : uint8
 {
@@ -6661,8 +6681,8 @@ static const BiomeInfo BiomeInfos[]
 	},
 	{ LOCTEXT("Desert", "Desert"),
 		LOCTEXT("Desert Desc", "Dry barren land with just sand and stone, but rich with mineral deposits."),
-		{ TileObjEnum::Cactus1  },
-		{ TileObjEnum::GrassGreen },
+		{ TileObjEnum::DesertDatePalm,  TileObjEnum::DesertGingerbreadTree  },
+		{ TileObjEnum::DesertBush1, TileObjEnum::DesertBush2 },
 		{TileObjEnum::WhiteFlowerBush},
 		{},
 		{}
@@ -10261,6 +10281,28 @@ static const AIArchetypeInfo& GetAIArchetypeInfo(AIArchetypeEnum aiArchetypeEnum
 }
 
 
+/*
+ * Ancient Wonders
+ */
+
+static const std::vector<CardEnum> AncientWonderEnums =
+{
+	CardEnum::MayanPyramid,
+	CardEnum::EgyptianPyramid,
+	CardEnum::StoneHenge,
+	CardEnum::EasterIsland,
+};
+static const std::vector<std::vector<BiomeEnum>> AncientWonderToBiomeEnums =
+{
+	{ BiomeEnum::Jungle, BiomeEnum::Savanna, BiomeEnum::Forest },
+	{ BiomeEnum::Desert, BiomeEnum::Savanna, BiomeEnum::Forest  },
+	{ BiomeEnum::BorealForest, BiomeEnum::Forest,  BiomeEnum::Tundra },
+	{ BiomeEnum::Forest, BiomeEnum::Jungle,  BiomeEnum::Savanna },
+};
+
+static bool IsAncientWonderCardEnum(CardEnum cardEnum) {
+	return IsCardEnumBetween(cardEnum, CardEnum::MayanPyramid, CardEnum::EasterIsland);
+}
 
 
 /*

@@ -315,8 +315,8 @@ void PunTerrainGenerator::GenerateMoisture()
 			}
 
 			// Calculate rainfall ... Affected by mountain block
-			const int32 maxMountainRainFactor1000 = 124;
-			int32 rainFactor1000 = 20 + maxMountainRainFactor1000 * _isMountain4x4Map[centerId] / 255;
+			const int32 maxMountainRainFactor1000 = 124; // Oct 5: 124
+			int32 rainFactor1000 = 30 + maxMountainRainFactor1000 * _isMountain4x4Map[centerId] / 255; // Oct 5: 20 base
 			int32 rainAmount = cloudLeft * rainFactor1000 / 1000;
 
 			// Rain down increasing rainfall
@@ -335,9 +335,8 @@ void PunTerrainGenerator::GenerateMoisture()
 		/*
 		 * Parameters
 		 */
-		// Note: 5800,3000 is for Trailer
-		const int32 normalCloudStartSize_MediumWet = 5800;// +2000; // 12000 // 20000;
-		const int32 desertCloudStartSize_MediumWet = 3000;// +1000; // 5000;
+		const int32 normalCloudStartSize_MediumWet = 5800 * 2 / 3;// Oct5: 5800
+		const int32 desertCloudStartSize_MediumWet = 2000 * 2 / 3;// Oct5: 3000
 
 		int32 moistureInt = static_cast<int>(_mapSettings.mapMoisture);
 		int32 normalCloudStartSize = moistureInt * normalCloudStartSize_MediumWet / 2;
@@ -471,15 +470,16 @@ void PunTerrainGenerator::GenerateMoisture()
 				//	rainfall = max(rainfall, RandomFertilityMinCutoffPercent);
 				//}
 
-				int32 riverMoisture = min(255, _river4x4Map[x4 + y4 * _tile4x4DimX] * 9);
+				// TODO: Old River to Rainfall
+				//int32 riverMoisture = min(255, _river4x4Map[x4 + y4 * _tile4x4DimX] * 9);
 
-				PUN_DEBUG_EXPR(if (riverMoisture > 0) riverCount++;);
+				//PUN_DEBUG_EXPR(if (riverMoisture > 0) riverCount++;);
 
-				// river is always a fertile...
-				if (riverMoisture > rainfall) {
-					PUN_DEBUG_EXPR(riverOverride++;);
-					rainfall = riverMoisture;
-				}
+				//// river is always a fertile...
+				//if (riverMoisture > rainfall) {
+				//	PUN_DEBUG_EXPR(riverOverride++;);
+				//	rainfall = riverMoisture;
+				//}
 
 				// Taiga's fertility is 80% normal (at 90% ... taiga will be 72%)
 				if (GetTemperatureFraction10000(x4 * 4, rainfall100) > (borealTemperatureStart100 * 100) &&
@@ -1556,7 +1556,9 @@ int32 PunTerrainGenerator::GetFertilityPercent(WorldTile2 tile)
 	if (!tile.isValid()) return 0;
 
 	int32 fertility = WorldTile4x4::Get4x4Lerped(tile, _tile4x4DimX, _tile4x4DimY, [&](int32_t tile4x4Id) {
-		return static_cast<int32>(_rainfall4x4Map[tile4x4Id]) * 100 / 255;
+		int32 rainfall255 = _rainfall4x4Map[tile4x4Id];
+		int32 riverMoisture255 = std::min(255, static_cast<int32>(_river4x4Map[tile4x4Id]) * 1); // Oct 5: *9
+		return (rainfall255 + riverMoisture255) * 100 / 255;
 	});
 
 	// beyond tundra decrease fertility

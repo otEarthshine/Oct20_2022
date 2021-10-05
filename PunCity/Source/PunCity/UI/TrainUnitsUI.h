@@ -63,59 +63,6 @@ public:
 	{
 		townId = townIdIn;
 		SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-
-		// Military resources: Food, Wood, Iron, Steel
-
-		auto& sim = simulation();
-
-		auto isResearched = [&](TechEnum techEnum) { return sim.IsResearched(playerId(), techEnum); };
-
-		
-		CardEnum infantryEnum = CardEnum::Warrior;
-		if (isResearched(TechEnum::Infantry)) infantryEnum = CardEnum::Infantry;
-		else if (isResearched(TechEnum::Musketeer)) infantryEnum = CardEnum::Musketeer;
-		else if (isResearched(TechEnum::Ironworks)) infantryEnum = CardEnum::Swordman;
-
-		
-		CardEnum cavalryEnum = CardEnum::None;
-		if (isResearched(TechEnum::Tank)) infantryEnum = CardEnum::Tank;
-		else if (isResearched(TechEnum::Knight)) infantryEnum = CardEnum::Knight;
-		
-
-		CardEnum conscriptEnum = isResearched(TechEnum::Conscription) ? CardEnum::Conscript : CardEnum::None;
-		
-
-		CardEnum rangedEnum = CardEnum::None;
-		if (isResearched(TechEnum::MachineGun)) rangedEnum = CardEnum::MachineGun;
-		else if (isResearched(TechEnum::FurnitureWorkshop)) rangedEnum = CardEnum::Archer;
-		
-
-		CardEnum siegeEnum = CardEnum::None;
-		if (isResearched(TechEnum::Artillery)) siegeEnum = CardEnum::Artillery;
-		else if (isResearched(TechEnum::MilitaryEngineering2)) siegeEnum = CardEnum::Cannon;
-		else if (isResearched(TechEnum::MilitaryEngineering1)) siegeEnum = CardEnum::Catapult;
-
-		
-		CardEnum navyEnum = CardEnum::None;
-		if (isResearched(TechEnum::Battleship)) siegeEnum = CardEnum::Battleship;
-		else if (isResearched(TechEnum::MilitaryEngineering2)) siegeEnum = CardEnum::Frigate;
-		else if (isResearched(TechEnum::MilitaryEngineering1)) siegeEnum = CardEnum::Galley;
-		
-
-		SetupButton(FrontlineUnitsBox, 0, infantryEnum);
-		SetupButton(FrontlineUnitsBox, 1, cavalryEnum);
-		SetupButton(FrontlineUnitsBox, 2, conscriptEnum);
-
-		BacklineBox->SetVisibility(rangedEnum != CardEnum::None || siegeEnum != CardEnum::None ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
-		SetupButton(BacklineUnitsBox, 0, rangedEnum);
-		SetupButton(BacklineUnitsBox, 1, siegeEnum);
-
-		NavyBox->SetVisibility(navyEnum != CardEnum::None ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
-		SetupButton(NavyUnitsBox, 0, navyEnum);
-
-
-		ActionBox->SetVisibility(sim.cardSystem(playerId()).HasBoughtMilitaryCard() ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
-		SetupButton(ActionCardsBox, 0, CardEnum::Raid);
 	}
 
 	
@@ -181,13 +128,69 @@ public:
 			cardButton->callbackVar1 = cardStatus.cardBirthTicks;
 		}
 
-		// clock
+		//! Training Clock
 		if (trainingQueue.size() > 0) {
 			TrainingClock->GetDynamicMaterial()->SetScalarParameterValue(FName("Fraction"), townManager.GetTrainingFraction());
 			TrainingClock->SetVisibility(ESlateVisibility::Visible);
 		} else {
 			TrainingClock->SetVisibility(ESlateVisibility::Collapsed);
 		}
+
+
+
+		/*
+		 * Military Training Buttons
+		 */
+		// TODO: Military resources: Food, Wood, Iron, Steel
+
+		auto& sim = simulation();
+
+		auto isResearched = [&](TechEnum techEnum) { return sim.IsResearched(playerId(), techEnum); };
+
+		CardEnum infantryEnum = CardEnum::Warrior;
+		if (isResearched(TechEnum::Infantry)) infantryEnum = CardEnum::Infantry;
+		else if (isResearched(TechEnum::Musketeer)) infantryEnum = CardEnum::Musketeer;
+		else if (isResearched(TechEnum::Ironworks)) infantryEnum = CardEnum::Swordman;
+
+
+		CardEnum cavalryEnum = CardEnum::None;
+		if (isResearched(TechEnum::Tank)) infantryEnum = CardEnum::Tank;
+		else if (isResearched(TechEnum::Knight)) infantryEnum = CardEnum::Knight;
+
+
+		CardEnum conscriptEnum = isResearched(TechEnum::Conscription) ? CardEnum::Conscript : CardEnum::None;
+
+
+		CardEnum rangedEnum = CardEnum::None;
+		if (isResearched(TechEnum::MachineGun)) rangedEnum = CardEnum::MachineGun;
+		else if (isResearched(TechEnum::FurnitureWorkshop)) rangedEnum = CardEnum::Archer;
+
+
+		CardEnum siegeEnum = CardEnum::None;
+		if (isResearched(TechEnum::Artillery)) siegeEnum = CardEnum::Artillery;
+		else if (isResearched(TechEnum::MilitaryEngineering2)) siegeEnum = CardEnum::Cannon;
+		else if (isResearched(TechEnum::MilitaryEngineering1)) siegeEnum = CardEnum::Catapult;
+
+
+		CardEnum navyEnum = CardEnum::None;
+		if (isResearched(TechEnum::Battleship)) siegeEnum = CardEnum::Battleship;
+		else if (isResearched(TechEnum::MilitaryEngineering2)) siegeEnum = CardEnum::Frigate;
+		else if (isResearched(TechEnum::MilitaryEngineering1)) siegeEnum = CardEnum::Galley;
+
+
+		SetupButton(FrontlineUnitsBox, 0, infantryEnum);
+		SetupButton(FrontlineUnitsBox, 1, cavalryEnum);
+		SetupButton(FrontlineUnitsBox, 2, conscriptEnum);
+
+		BacklineBox->SetVisibility(rangedEnum != CardEnum::None || siegeEnum != CardEnum::None ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+		SetupButton(BacklineUnitsBox, 0, rangedEnum);
+		SetupButton(BacklineUnitsBox, 1, siegeEnum);
+
+		NavyBox->SetVisibility(navyEnum != CardEnum::None ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+		SetupButton(NavyUnitsBox, 0, navyEnum);
+
+		ActionBox->SetVisibility(sim.cardSystem(playerId()).HasBoughtMilitaryCard() ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+		SetupButton(ActionCardsBox, 0, CardEnum::Raid);
 	}
 
 	

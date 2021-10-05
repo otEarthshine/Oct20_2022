@@ -1961,6 +1961,20 @@ void IrrigationReservoir::FinishConstruction() {
 	}); // extra 20 just in case it is farm's rim
 }
 
+void IrrigationPump::FinishConstruction() {
+	Building::FinishConstruction();
+
+	UnlockSystem* unlockSys = _simulation->unlockSystem(_playerId);
+	if (!unlockSys->isUnlocked(CardEnum::IrrigationDitch)) {
+		_simulation->AddPopupToFront(_playerId,
+			LOCTEXT("Unlocked Irrigation Ditch!", "Unlocked Irrigation Ditch!"),
+			ExclusiveUIEnum::None, "PopupNeutral"
+		);
+		unlockSys->UnlockBuilding(CardEnum::IrrigationDitch);
+	}
+}
+
+
 /*
  * Provincial Building
  */
@@ -2000,9 +2014,9 @@ void ProvinceRuin::FinishConstruction()
 {
 	AddUpgrades({
 		MakeLevelUpgrade(
-			LOCTEXT("ProvinceRuinUpgrade_Dig", "Archaeological Excavation"),
+			LOCTEXT("ProvinceRuinUpgrade_Dig", "Artifact Excavation"),
 			LOCTEXT("ProvinceRuinUpgrade_Dig Desc", "Excavate the site for Artifacts"),
-			ResourceEnum::Money, 100
+			ResourceEnum::Money, 100, 100
 		),
 	});
 

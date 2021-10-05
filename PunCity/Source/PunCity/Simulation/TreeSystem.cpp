@@ -617,82 +617,101 @@ void TreeSystem::PlantInitial()
 			//if (GameRand::Rand() % initialPlantChance == 0 && !treeShade(i) && GameMap::PathAI->isWalkable(x, y)) {
 			int32 fertilityPercent = _simulation->GetFertilityPercent(tile);
 
-			if (biomeEnum == BiomeEnum::Desert ||
-				biomeEnum == BiomeEnum::Savanna)
+			auto tryPlantHardyTree = [&](TileObjEnum treeEnum)
 			{
-				if (fertilityPercent >= HardyTreeFertility)
-				{
-					int actualInitialPlantChance = initialPlantChance * HardyTreeChance;
-					
-					if (GameRand::Rand() % actualInitialPlantChance == 0 &&
-						!treeShade(i) &&
-						pathAI->isWalkable(x, y))
-					{
-						//WorldTile2 tile(x, y);
-						TileObjEnum treeEnum = GetBiomeInfo(biomeEnum).GetRandomTreeEnum();
+				int actualInitialPlantChance = initialPlantChance * HardyTreeChance;
 
+				if (GameRand::Rand() % actualInitialPlantChance == 0 &&
+					!treeShade(i) &&
+					pathAI->isWalkable(x, y))
+				{
+					//WorldTile2 tile(x, y);
+					//TileObjEnum treeEnum = GetBiomeInfo(biomeEnum).GetRandomTreeEnum();
+
+					int32 coastal = terrainGenerator.IsOceanCoast(tile);
+					if (coastal > 125) {
+						treeEnum = TileObjEnum::Coconut;
+					}
+
+					PlantTree(x, y, treeEnum, true);
+
+					int32 maxGrowth = GetTileObjInfo(treeEnum).maxGrowthTick;
+					if (maxGrowth > 0) {
+						_tileObjAge[i] = static_cast<int32>(GameRand::Rand() % maxGrowth + maxGrowth);
+						check(_tileObjAge[i] > 0);
+					}
+				}
+			};
+
+			auto tryPlantNormalTree = [&](int32 plantChanceMultiplier = 1) // more plantChanceMultiplier, less chance
+			{
+				// Plant chance is less likely with less fertility close to TreeFertility
+				int32 cappedFertilityPercent = min(fertilityPercent, TreeFertilityAtMaxPlantChance);
+				int32 cappedFertilityAboveTree = cappedFertilityPercent - TreeFertility;
+				PUN_CHECK(cappedFertilityAboveTree > 0);
+
+				int actualInitialPlantChance = initialPlantChance * (TreeFertilityAtMaxPlantChance - TreeFertility) * plantChanceMultiplier / cappedFertilityAboveTree;
+
+				if (actualInitialPlantChance > 0 &&
+					GameRand::Rand() % actualInitialPlantChance == 0 &&
+					!treeShade(i) &&
+					terrainGenerator.resourcePerlin(tile) >= TreePerlinMaxCutoff &&
+					pathAI->isWalkable(x, y))
+				{
+					//WorldTile2 tile(x, y);
+					BiomeInfo biomeInfo = GetBiomeInfo(biomeEnum);
+					TileObjEnum treeEnum = biomeInfo.GetRandomTreeEnum();
+
+					if (biomeEnum != BiomeEnum::BorealForest)
+					{
 						int32 coastal = terrainGenerator.IsOceanCoast(tile);
 						if (coastal > 125) {
 							treeEnum = TileObjEnum::Coconut;
 						}
-						
-						PlantTree(x, y, treeEnum, true);
+					}
 
-						int32 maxGrowth = GetTileObjInfo(treeEnum).maxGrowthTick;
-						if (maxGrowth > 0) {
-							_tileObjAge[i] = static_cast<int32>(GameRand::Rand() % maxGrowth + maxGrowth);
-							check(_tileObjAge[i] > 0);
+					//uint32_t treeEnumInt = GameRand::Rand() % TreeEnumSize; //TileObjEnum
+
+					PlantTree(x, y, treeEnum, true);
+
+					//testPerlin[i] = perlinGenerator.noise01(x * freq, y * freq);
+
+					int32 maxGrowth = GetTileObjInfo(treeEnum).maxGrowthTick;
+					if (maxGrowth > 0) {
+						// TODO: proper max growth distribution... horizontal line ... then decay drop....
+						_tileObjAge[i] = static_cast<int32>(GameRand::Rand() % maxGrowth + maxGrowth);
+						check(_tileObjAge[i] > 0);
+
+						// Give 1/8 chance to have fruit to show players building Fruit gatherer right away fruits are available...
+						if (tileInfo(i).IsFruitBearer() && GameRand::Rand() % 8 == 0) {
+							AddFruit(tile);
 						}
 					}
+				}
+			};
+			
+
+			if (biomeEnum == BiomeEnum::Desert)
+			{
+				if (fertilityPercent > TreeFertility)
+				{
+					tryPlantNormalTree(3);
+				}
+				else if (fertilityPercent >= HardyTreeFertility) {
+					tryPlantHardyTree(TileObjEnum::Cactus1);
+				}
+			}
+			else if (biomeEnum == BiomeEnum::Savanna)
+			{
+				if (fertilityPercent >= HardyTreeFertility) {
+					tryPlantHardyTree(GetBiomeInfo(biomeEnum).GetRandomTreeEnum());
 				}
 			}
 			else
 			{
 				if (fertilityPercent > TreeFertility)
 				{
-					// Plant chance is less likely with less fertility close to TreeFertility
-					int32 cappedFertilityPercent = min(fertilityPercent, TreeFertilityAtMaxPlantChance);
-					int32 cappedFertilityAboveTree = cappedFertilityPercent - TreeFertility;
-					PUN_CHECK(cappedFertilityAboveTree > 0);
-
-					int actualInitialPlantChance = initialPlantChance * (TreeFertilityAtMaxPlantChance - TreeFertility) / cappedFertilityAboveTree;
-
-					if (actualInitialPlantChance > 0 &&
-						GameRand::Rand() % actualInitialPlantChance == 0 &&
-						!treeShade(i) &&
-						terrainGenerator.resourcePerlin(tile) >= TreePerlinMaxCutoff &&
-						pathAI->isWalkable(x, y))
-					{
-						//WorldTile2 tile(x, y);
-						BiomeInfo biomeInfo = GetBiomeInfo(biomeEnum);
-						TileObjEnum treeEnum = biomeInfo.GetRandomTreeEnum();
-
-						if (biomeEnum != BiomeEnum::BorealForest)
-						{
-							int32 coastal = terrainGenerator.IsOceanCoast(tile);
-							if (coastal > 125) {
-								treeEnum = TileObjEnum::Coconut;
-							}
-						}
-
-						//uint32_t treeEnumInt = GameRand::Rand() % TreeEnumSize; //TileObjEnum
-
-						PlantTree(x, y, treeEnum, true);
-
-						//testPerlin[i] = perlinGenerator.noise01(x * freq, y * freq);
-
-						int32 maxGrowth = GetTileObjInfo(treeEnum).maxGrowthTick;
-						if (maxGrowth > 0) {
-							// TODO: proper max growth distribution... horizontal line ... then decay drop....
-							_tileObjAge[i] = static_cast<int32>(GameRand::Rand() % maxGrowth + maxGrowth);
-							check(_tileObjAge[i] > 0);
-
-							// Give 1/8 chance to have fruit to show players building Fruit gatherer right away fruits are available...
-							if (tileInfo(i).IsFruitBearer() && GameRand::Rand() % 8 == 0) {
-								AddFruit(tile);
-							}
-						}
-					}
+					tryPlantNormalTree();
 				}
 			}
 

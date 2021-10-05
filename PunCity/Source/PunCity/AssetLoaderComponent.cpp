@@ -432,6 +432,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::PitaBakery, "", "PitaBakery_Era", "Bakery", 2);
 	LoadBuilding(CardEnum::IronSmelter, "Iron_Smelter_Era", "Iron_Smelter_Era", "IronSmelter", 2, 2);
 
+	LoadBuilding(CardEnum::IrrigationPump, "", "IrrigationPump_Era", "IrrigationPump", 2);
+
 	
 	LoadBuilding(CardEnum::Quarry, "Quarry_Era", "Quarry_Era", "Quarry", 1);
 
@@ -1245,6 +1247,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadTree(TileObjEnum::SavannaTree1, "SavannaTree1/SavannaTree1Trunk", "SavannaTree1/SavannaTree1Leaf", defaultFruit, "OrangeTree/TreeLeaf_lo", "SavannaTree1/SavannaTree1Leaf", "SavannaTree1/SavannaTree1Stump");
 	LoadTree(TileObjEnum::Cactus1, "BirchSeed", "Cactus1/Cactus1", defaultFruit, "Cactus1/Cactus1", "Cactus1/Cactus1", "Cactus1/Cactus1");
 	
+	LoadTree(TileObjEnum::DesertDatePalm, "OrangeTrunk", "DesertPlants/DesertDatePalm", defaultFruit, "DesertPlants/DesertDatePalm", "DesertPlants/DesertDatePalm", "OrangeStump");
+	LoadTree(TileObjEnum::DesertGingerbreadTree, "OrangeTrunk", "DesertPlants/DesertGingerbreadTree", defaultFruit, "DesertPlants/DesertGingerbreadTree", "DesertPlants/DesertGingerbreadTree", "OrangeStump");
 
 	
 	LoadTileObject(TileObjEnum::Stone, { "Trees/StoneOutcrop/StoneOutcropMegascan1", 
@@ -1273,6 +1277,12 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	});
 	LoadTileObject(TileObjEnum::CommonBush2, {
 		"Trees/CommonBush1/CommonBush2",
+	});
+	LoadTileObject(TileObjEnum::DesertBush1, {
+		"Trees/DesertPlants/DesertBush1",
+	});
+	LoadTileObject(TileObjEnum::DesertBush2, {
+		"Trees/DesertPlants/DesertBush2",
 	});
 	
 	LoadTileObject(TileObjEnum::Fern, {
@@ -1768,6 +1778,9 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FactionEnum factionEnum, FS
 				}
 				else if (buildingEnum == CardEnum::PaperMaker) {
 					transform = TransformFromPosition(0, 0, 7.388654);
+				}
+				else if (buildingEnum == CardEnum::IrrigationPump) {
+					transform = TransformFromPosition(0, 0, 0);
 				}
 				else {
 					UE_DEBUG_BREAK();

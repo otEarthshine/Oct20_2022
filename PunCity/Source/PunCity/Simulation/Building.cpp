@@ -713,7 +713,16 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& 
 
 	PUN_CHECK(resourceNeeded.count > 0);
 
-	int32 resourceCount = (resourceNeeded.resourceEnum == ResourceEnum::Money) ? _simulation->moneyCap32(_playerId) : resourceSystem().resourceCount(resourceNeeded.resourceEnum);
+	int32 resourceCount;
+	if (resourceNeeded.resourceEnum == ResourceEnum::Money) {
+		resourceCount = _simulation->moneyCap32(_playerId);
+	}
+	else if (resourceNeeded.resourceEnum == ResourceEnum::Influence) {
+		resourceCount = _simulation->influence(_playerId);
+	}
+	else {
+		resourceCount = resourceSystem().resourceCount(resourceNeeded.resourceEnum);
+	}
 	
 	if (resourceCount >= resourceNeeded.count)
 	{
@@ -1271,6 +1280,7 @@ void Building::CheckCombo()
 	case CardEnum::DirtRoad:
 	case CardEnum::StoneRoad:
 	case CardEnum::IntercityRoad:
+	case CardEnum::IrrigationDitch:
 	case CardEnum::Fence:
 	case CardEnum::FenceGate:
 	case CardEnum::Bridge:
@@ -1443,7 +1453,9 @@ std::vector<BonusPair> Building::GetBonuses()
 		if (policyOfficeIds.size() > 0)
 		{
 			PolicyOffice& policyOffice = _simulation->building<PolicyOffice>(policyOfficeIds[0], CardEnum::PolicyOffice);
-			bonuses.push_back({ LOCTEXT("Economic Hegemony", "Economic Hegemony"), 3 * policyOffice.GetUpgrade(1).upgradeLevel });
+			if (policyOffice.isConstructed()) {
+				bonuses.push_back({ LOCTEXT("Economic Hegemony", "Economic Hegemony"), 3 * policyOffice.GetUpgrade(1).upgradeLevel });
+			}
 		}
 	}
 	
@@ -1714,7 +1726,7 @@ BuildingUpgrade Building::MakeEraUpgrade(int32 startEra)
 	return upgrade;
 }
 
-BuildingUpgrade Building::MakeLevelUpgrade(FText name, FText description, ResourceEnum resourceEnum, int32 percentOfTotalPrice)
+BuildingUpgrade Building::MakeLevelUpgrade(FText name, FText description, ResourceEnum resourceEnum, int32 percentOfTotalPrice, int32 percentScaling)
 {
 	int32 totalCost = buildingInfo().constructionCostAsMoney();
 	
@@ -1723,6 +1735,7 @@ BuildingUpgrade Building::MakeLevelUpgrade(FText name, FText description, Resour
 	BuildingUpgrade upgrade(name, description, resourceEnum, resourceCount);
 
 	upgrade.upgradeLevel = 0;
+	upgrade.upgradeLevelResourceScalePercent = percentScaling;
 	
 	return upgrade;
 }

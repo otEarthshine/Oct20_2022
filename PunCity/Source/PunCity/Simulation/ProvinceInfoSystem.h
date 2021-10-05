@@ -32,13 +32,10 @@ struct ProvinceBuildingSlot
 	std::vector<WorldTile2> coastalTiles;
 	std::vector<WorldTile2> mountainTiles;
 	
-	WorldTile2 portSlot = WorldTile2::Invalid; // Slots are center tiles
-	WorldTile2 landSlot = WorldTile2::Invalid;
-	WorldTile2 largeLandSlot = WorldTile2::Invalid;
-	
-	Direction portSlotFaceDirection = Direction::E;
-	Direction landSlotFaceDirection = Direction::E;
-	Direction largeLandSlotFaceDirection = Direction::E;
+	BuildPlacement portSlot; // Slots are center tiles
+	BuildPlacement landSlot;
+	BuildPlacement largeLandSlot;
+	BuildPlacement oasisSlot;
 
 	int32 townId = -1;
 	int32 buildingId = -1;
@@ -57,10 +54,7 @@ struct ProvinceBuildingSlot
 		portSlot >> Ar;
 		landSlot >> Ar;
 		largeLandSlot >> Ar;
-		
-		Ar << portSlotFaceDirection;
-		Ar << landSlotFaceDirection;
-		Ar << largeLandSlotFaceDirection;
+		oasisSlot >> Ar;
 		
 		Ar << townId;
 		Ar << buildingId;
@@ -127,6 +121,10 @@ public:
 		ProvinceSystem& provinceSys = _simulation->provinceSystem();
 		PunTerrainGenerator& terrainGen = _simulation->terrainGenerator();
 
+
+		/*
+		 * Oasis
+		 */
 		for (int32 provinceId = 0; provinceId < GameMapConstants::TotalRegions; provinceId++)
 		{
 			if (provinceSys.IsProvinceValid(provinceId))
@@ -134,6 +132,64 @@ public:
 				// _provinceOwnerInfos init
 				_provinceOwnerInfos[provinceId].provinceId = provinceId;
 				
+
+				auto isEmptyDesert = [&](int32 provinceIdIn)
+				{
+					return _simulation->GetBiomeProvince(provinceIdIn) == BiomeEnum::Desert &&
+						!_provinceBuildingSlots[provinceIdIn].oasisSlot.isValid();
+				};
+
+				// Check if nearby provinces are desert
+				bool isMidDesert = isEmptyDesert(provinceId);
+				if (isMidDesert) {
+					const std::vector<ProvinceConnection>& connections = provinceSys.GetProvinceConnections(provinceId);
+					for (const ProvinceConnection& connection : connections) {
+						if (!isEmptyDesert(connection.provinceId)) {
+							isMidDesert = false;
+							break;
+						}
+					}
+				}
+
+				if (isMidDesert)
+				{
+					WorldTile2 centerTile = provinceSys.GetProvinceCenterTile(provinceId);
+
+					// Also need to be able to add the main Minor City Building
+					WorldTile2 oasisSize = GetBuildingInfo(CardEnum::Oasis).size;
+					Direction faceDirection = static_cast<Direction>(GameRand::Rand(provinceId) % 4);
+					TileArea largeLandSlotArea = BuildingArea(centerTile, oasisSize, faceDirection);
+
+					bool isLandSlotNotBuildable = largeLandSlotArea.GetExpandedArea().ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 tile) {
+						return !(terrainGen.terrainTileType(tile) == TerrainTileType::None &&
+							_simulation->GetProvinceIdClean(tile) != -1); // Should exit
+					});
+					if (!isLandSlotNotBuildable)
+					{
+						_provinceBuildingSlots[provinceId].oasisSlot = { centerTile, oasisSize, faceDirection };
+						_oasisSlotProvinceIds.push_back(provinceId);
+					}
+				}
+			}
+		}
+
+
+		auto isSlotEmpty = [&](const ProvinceBuildingSlot& provinceBuildingSlot)
+		{
+			return !provinceBuildingSlot.largeLandSlot.isValid() &&
+				!provinceBuildingSlot.portSlot.isValid() &&
+				!provinceBuildingSlot.landSlot.isValid() &&
+				!provinceBuildingSlot.oasisSlot.isValid();
+		};
+
+		
+		/*
+		 * 
+		 */
+		for (int32 provinceId = 0; provinceId < GameMapConstants::TotalRegions; provinceId++)
+		{
+			if (provinceSys.IsProvinceValid(provinceId))
+			{	
 				ProvinceBuildingSlot& provinceBuildingSlot = _provinceBuildingSlots[provinceId];
 
 				provinceBuildingSlot.provinceId = provinceId;
@@ -220,8 +276,7 @@ public:
 					});
 					if (!isLandSlotNotBuildable)
 					{
-						provinceBuildingSlot.largeLandSlot = centerTile;
-						provinceBuildingSlot.largeLandSlotFaceDirection = faceDirection;
+						provinceBuildingSlot.largeLandSlot = { centerTile, largeLandSlotSize, faceDirection };
 						_largeLandSlotProvinceIds.push_back(provinceId);
 					}
 				};
@@ -232,7 +287,7 @@ public:
 				/*
 				 * Port Slot
 				 */
-				if (!provinceBuildingSlot.largeLandSlot.isValid() &&
+				if (isSlotEmpty(provinceBuildingSlot) &&
 					provinceBuildingSlot.coastalTiles.size() > 0)
 				{
 					auto findPortSlotTile = [&]()
@@ -283,12 +338,10 @@ public:
 									return false;
 								}
 
-								provinceBuildingSlot.portSlot = centerTile;
-								provinceBuildingSlot.portSlotFaceDirection = faceDirection;
+								provinceBuildingSlot.portSlot = { centerTile, portSize, faceDirection };
 								_portSlotProvinceIds.push_back(provinceId);
 
-								provinceBuildingSlot.landSlot = minorCityCenterTile;
-								provinceBuildingSlot.landSlotFaceDirection = faceDirection;
+								provinceBuildingSlot.landSlot = { minorCityCenterTile, minorCitySize, faceDirection };
 								_landSlotProvinceIds.push_back(provinceId);
 
 								return true;
@@ -322,15 +375,13 @@ public:
 				/*
 				 * Land Slot
 				 */
-				if (!provinceBuildingSlot.largeLandSlot.isValid() &&
-					!provinceBuildingSlot.portSlot.isValid())
+				if (isSlotEmpty(provinceBuildingSlot))
 				{
 					findLargeLandSlot();
 				}
 
 				
-				if (!provinceBuildingSlot.largeLandSlot.isValid() && 
-					!provinceBuildingSlot.portSlot.isValid())
+				if (isSlotEmpty(provinceBuildingSlot))
 				{
 					WorldTile2 centerTile = provinceSys.GetProvinceCenterTile(provinceId);
 					
@@ -344,15 +395,17 @@ public:
 					});
 					if (!isCityNotBuildable)
 					{
-						provinceBuildingSlot.landSlot = centerTile;
-						provinceBuildingSlot.landSlotFaceDirection = faceDirection;
+						provinceBuildingSlot.landSlot = { centerTile, minorCitySize, faceDirection };
 						_landSlotProvinceIds.push_back(provinceId);
 					}
 				}
 			}
 		}
 
-		PUN_LOG("ProvinceSlots: large:%d port:%d small:%d", _largeLandSlotProvinceIds.size(), _portSlotProvinceIds.size(), _landSlotProvinceIds.size());
+		PUN_LOG("ProvinceSlots: oasis:%d large:%d port:%d small:%d", 
+			_oasisSlotProvinceIds.size(), _largeLandSlotProvinceIds.size(), 
+			_portSlotProvinceIds.size(), _landSlotProvinceIds.size()
+		);
 	}
 
 	const ProvinceBuildingSlot& provinceBuildingSlot(int32 provinceId) {
@@ -366,6 +419,7 @@ public:
 	const std::vector<int32>& portSlotProvinceIds() { return _portSlotProvinceIds; }
 	const std::vector<int32>& landSlotProvinceIds() { return _landSlotProvinceIds; }
 	const std::vector<int32>& largeLandSlotProvinceIds() { return _largeLandSlotProvinceIds; }
+	const std::vector<int32>& oasisSlotProvinceIds() { return _oasisSlotProvinceIds; }
 
 	void SetSlotTownId(int32 provinceId, int32 townId) {
 		check(_provinceBuildingSlots[provinceId].landSlot.isValid() ||
@@ -375,7 +429,8 @@ public:
 	}
 	void SetSlotBuildingId(int32 provinceId, int32 buildingId) {
 		check(_provinceBuildingSlots[provinceId].landSlot.isValid() ||
-			_provinceBuildingSlots[provinceId].largeLandSlot.isValid());
+			_provinceBuildingSlots[provinceId].largeLandSlot.isValid() ||
+			_provinceBuildingSlots[provinceId].oasisSlot.isValid());
 		
 		_provinceBuildingSlots[provinceId].buildingId = buildingId;
 	}
@@ -618,6 +673,7 @@ public:
 		SerializeVecValue(Ar, _portSlotProvinceIds);
 		SerializeVecValue(Ar, _landSlotProvinceIds);
 		SerializeVecValue(Ar, _largeLandSlotProvinceIds);
+		SerializeVecValue(Ar, _oasisSlotProvinceIds);
 	}
 
 
@@ -641,4 +697,5 @@ private:
 	std::vector<int32> _portSlotProvinceIds;
 	std::vector<int32> _landSlotProvinceIds;
 	std::vector<int32> _largeLandSlotProvinceIds;
+	std::vector<int32> _oasisSlotProvinceIds;
 };

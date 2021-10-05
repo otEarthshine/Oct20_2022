@@ -1566,6 +1566,13 @@ public:
 	static const int32 Radius = 12;
 };
 
+class IrrigationPump final : public Building
+{
+public:
+	virtual void FinishConstruction() override;
+	
+};
+
 
 class MinorCityChild : public Building
 {
@@ -1960,5 +1967,5 @@ class PolicyOffice : public Building
 public:
 	virtual void FinishConstruction() override;
 	
-	virtual int32 maxCardSlots() override { return 6; }
+	virtual int32 maxCardSlots() override { return 0; }
 };

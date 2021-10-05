@@ -119,6 +119,7 @@ public:
 	void StartHarvestPlacement(bool isRemoving, ResourceEnum resourceEnum);
 	void StartDemolish();
 	void StartRoad(bool isStoneRoad, bool isIntercity);
+	void StartIrrigationDitch();
 	void StartFence();
 	void StartBridge(bool isIntercity);
 	void StartTunnel();
@@ -205,12 +206,12 @@ private:
 
 	void StartDrag();
 
-	void TickLineDrag(WorldAtom2 cameraAtom, std::function<bool(WorldTile2)> isBuildableFunc, bool checkTerritory = false);
+	void TickLineDrag(WorldAtom2 cameraAtom, std::function<bool(WorldTile2)> isBuildableFunc, bool checkTerritory = false, bool hasDiagonal = true);
 	void TickAreaDrag(WorldAtom2 cameraAtom, std::function<PlacementGridEnum(WorldTile2)> getPlacementGridEnum);
 	void FinishDrag(IGameNetworkInterface* networkInterface);
 
 	void CalculateDragArea();
-	void CalculateRoadLineDrag(std::function<bool(WorldTile2)> isBuildableFunc);
+	void CalculateRoadLineDrag(std::function<bool(WorldTile2)> isBuildableFunc, bool hasDiagonal);
 	void CalculateLineDrag();
 	void CalculateBridgeLineDrag();
 

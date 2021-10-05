@@ -26,6 +26,7 @@ public:
 	virtual void StartHarvestPlacement(bool isRemoving, ResourceEnum resourceEnum) = 0;
 	virtual void StartDemolish() = 0;
 	virtual void StartRoadPlacement(bool isStoneRoad, bool isIntercity = false) = 0;
+	virtual void StartIrrigationDitchPlacement() = 0;
 	virtual void StartFencePlacement() = 0;
 	virtual void StartBridgePlacement(bool isIntercity) = 0;
 	virtual void StartTunnelPlacement() = 0;

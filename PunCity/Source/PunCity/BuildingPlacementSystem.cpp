@@ -333,6 +333,21 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 			SetInstruction(PlacementInstructionEnum::DragRoadIntercity, true, goldNeeded);
 		}
 	}
+	else if (_placementType == PlacementType::IrrigationDitch)
+	{
+		ClearInstructions();
+
+		if (_dragState == DragState::Dragging && _canPlace) {
+			int32 goldNeeded = 0;
+			for (int32 roadTileId : _roadPathTileIds) {
+				if (!_gameInterface->simulation().IsRoadTile(WorldTile2(roadTileId))) {
+					goldNeeded += IrrigationDitchTileCost;
+				}
+			}
+
+			SetInstruction(PlacementInstructionEnum::DragRoadIntercity, true, goldNeeded);
+		}
+	}
 	//else if (_buildingEnum == CardEnum::Kidnap)
 	//{
 	//	if (_canPlace)
@@ -673,6 +688,12 @@ void ABuildingPlacementSystem::StartRoad(bool isStoneRoad, bool isIntercity)
 	StartDrag();
 }
 
+void ABuildingPlacementSystem::StartIrrigationDitch()
+{
+	_placementType = PlacementType::IrrigationDitch;
+	StartDrag();
+}
+
 void ABuildingPlacementSystem::StartFence()
 {
 	_placementType = PlacementType::Fence;
@@ -704,7 +725,7 @@ void ABuildingPlacementSystem::StartDrag()
 	_placementGrid.SetActive(true);
 }
 
-void ABuildingPlacementSystem::TickLineDrag(WorldAtom2 cameraAtom, function<bool(WorldTile2)> isBuildableFunc, bool checkTerritory)
+void ABuildingPlacementSystem::TickLineDrag(WorldAtom2 cameraAtom, function<bool(WorldTile2)> isBuildableFunc, bool checkTerritory, bool hasDiagonal)
 {
 	auto& simulation = _gameInterface->simulation();
 	
@@ -791,9 +812,10 @@ void ABuildingPlacementSystem::TickLineDrag(WorldAtom2 cameraAtom, function<bool
 			});
 			
 		}
+		//! Not Bridge/Tunnel
 		else 
 		{
-			CalculateRoadLineDrag(isBuildableFunc);
+			CalculateRoadLineDrag(isBuildableFunc, hasDiagonal);
 
 			// Use roadPath if there is one.
 			if (_roadPathTileIds.Num() > 0)
@@ -1140,7 +1162,7 @@ void ABuildingPlacementSystem::CalculateDragArea()
 	check(_area.minY > -1000);
 }
 
-void ABuildingPlacementSystem::CalculateRoadLineDrag(function<bool(WorldTile2)> isBuildableFunc)
+void ABuildingPlacementSystem::CalculateRoadLineDrag(function<bool(WorldTile2)> isBuildableFunc, bool hasDiagonal)
 {
 	// Use BFS
 	_roadPathTileIds.Empty();
@@ -1226,10 +1248,12 @@ void ABuildingPlacementSystem::CalculateRoadLineDrag(function<bool(WorldTile2)> 
 		addNeighbor(WorldTile2(curTile.x, curTile.y - 1), curTile); // left
 		addNeighbor(WorldTile2(curTile.x - 1, curTile.y), curTile); // down
 
-		addNeighbor(WorldTile2(curTile.x + 1, curTile.y + 1), curTile); // up+right
-		addNeighbor(WorldTile2(curTile.x + 1, curTile.y - 1), curTile); // up+left
-		addNeighbor(WorldTile2(curTile.x - 1, curTile.y + 1), curTile); // down+right
-		addNeighbor(WorldTile2(curTile.x - 1, curTile.y - 1), curTile); // down+left
+		if (hasDiagonal) {
+			addNeighbor(WorldTile2(curTile.x + 1, curTile.y + 1), curTile); // up+right
+			addNeighbor(WorldTile2(curTile.x + 1, curTile.y - 1), curTile); // up+left
+			addNeighbor(WorldTile2(curTile.x - 1, curTile.y + 1), curTile); // down+right
+			addNeighbor(WorldTile2(curTile.x - 1, curTile.y - 1), curTile); // down+left
+		}
 	}
 
 	CalculateLineDrag();
@@ -1652,6 +1676,14 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		TickLineDrag(cameraAtom, [&](WorldTile2 tile) {
 			return _gameInterface->IsIntercityRoadBuildable(tile);
 		});
+		return;
+	}
+
+	if (_placementType == PlacementType::IrrigationDitch)
+	{
+		TickLineDrag(cameraAtom, [&](WorldTile2 tile) {
+			return IsPlayerBuildable(tile); // TODO: allow building on road???
+		}, false);
 		return;
 	}
 
@@ -3132,6 +3164,31 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 		if (goldNeeded > 0 && goldNeeded > _gameInterface->simulation().moneyCap32(playerId)) {
 			_gameInterface->simulation().AddEventLog(playerId, 
 				LOCTEXT("PlacementNoMoney", "Not enough money."), 
+				true
+			);
+			return;
+		}
+	}
+
+	// Irrigation Ditch, don't allow building if !canPlace or not enough money
+	// TODO: same as Intercity.. combine??
+	if (placementType == PlacementType::IrrigationDitch)
+	{
+		int32 playerId = _gameInterface->playerId();
+		if (!_canPlace) {
+			return;
+		}
+
+		int32 goldNeeded = 0;
+		for (int32 roadTileId : _roadPathTileIds) {
+			if (!_gameInterface->simulation().IsRoadTile(WorldTile2(roadTileId))) {
+				goldNeeded += IrrigationDitchTileCost;
+			}
+		}
+
+		if (goldNeeded > 0 && goldNeeded > _gameInterface->simulation().moneyCap32(playerId)) {
+			_gameInterface->simulation().AddEventLog(playerId,
+				LOCTEXT("PlacementNoMoney", "Not enough money."),
 				true
 			);
 			return;

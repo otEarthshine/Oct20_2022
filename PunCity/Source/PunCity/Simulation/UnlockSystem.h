@@ -1132,7 +1132,7 @@ public:
 			);
 			
 			AddTech_Building(TechEnum::Irrigation, { TechEnum::CropBreeding, TechEnum::CandleMaker },
-				{ CardEnum::IrrigationReservoir }
+				{ CardEnum::IrrigationReservoir, CardEnum::IrrigationPump }
 			);
 			
 			

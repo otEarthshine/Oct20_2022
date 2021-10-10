@@ -22,7 +22,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* CloseButton;
 	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* CloseXButton;
 
-	int32 aiPlayerId = -1;
+	int32 targetTownId = -1;
 
 	void PunInit()
 	{
@@ -34,9 +34,9 @@ public:
 		CloseUI();
 	}
 
-	void OpenUI(int32 playerIdIn)
+	void OpenDiplomacyUI(int32 targetTownIdIn)
 	{
-		aiPlayerId = playerIdIn;
+		targetTownId = targetTownIdIn;
 		SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	}
 
@@ -46,11 +46,11 @@ public:
 
 	void TickUI();
 
-	void CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum) override
+	virtual void CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum) override
 	{
 		auto command = make_shared<FGenericCommand>();
 		command->callbackEnum = callbackEnum;
-		command->intVar1 = static_cast<int>(aiPlayerId);
+		command->intVar1 = static_cast<int>(targetTownId);
 
 		networkInterface()->SendNetworkCommand(command);
 	}

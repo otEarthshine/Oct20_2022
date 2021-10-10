@@ -229,7 +229,8 @@ public:
 	}
 	
 
-	int32 totalRevenue100() {
+	virtual int32 totalRevenue100() override
+	{
 		int32 revenue100 = 0;
 		for (size_t i = 0; i < incomes100.size(); i++) {
 			if (incomes100[i] > 0) revenue100 += incomes100[i];
@@ -282,7 +283,7 @@ public:
 		}
 	}
 
-	int32 totalInfluenceIncome100()
+	virtual int32 totalInfluenceIncome100() override
 	{
 		int32 influence100 = 0;
 		for (size_t i = 0; i < influenceIncomes100.size(); i++) {

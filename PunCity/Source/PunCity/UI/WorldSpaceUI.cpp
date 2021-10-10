@@ -360,8 +360,9 @@ void UWorldSpaceUI::TickBuildings()
 				if (townhallUIActive)
 				{
 					LEAN_PROFILING_UI(TickWorldSpaceUI_Townhall);
-					
-					TickMinorTownInfo(building.townId());
+					if (sim.townManagerBase(building.townId())->GetMinorCityLevel()) {
+						TickMinorTownInfo(building.townId());
+					}
 				}
 			}
 			else {

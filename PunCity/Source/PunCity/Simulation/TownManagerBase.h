@@ -4,7 +4,7 @@
 
 #include "WorldTradeSystem.h"
 
-
+DECLARE_CYCLE_STAT(TEXT("PUN: [TM]UpdateRelationship"), STAT_PunAIUpdateRelationship, STATGROUP_Game);
 
 struct ProvinceClaimProgress
 {
@@ -52,6 +52,18 @@ struct ProvinceClaimProgress
 	}
 
 	void Reinforce(std::vector<CardStatus>& militaryCards, bool isReinforcingAttacker, int32 unitPlayerId);
+
+	static void AddMilitaryCards(std::vector<CardStatus>& militaryCards, CardStatus militaryCard)
+	{
+		for (int32 i = 0; i < militaryCards.size(); i++) {
+			if (militaryCards[i].cardEnum == militaryCard.cardEnum) {
+				militaryCards[i].stackSize += militaryCard.stackSize;
+				return;
+			}
+		}
+		militaryCards.push_back(militaryCard);
+	}
+	
 
 	void Retreat(int32 unitPlayerId);
 
@@ -189,7 +201,7 @@ public:
 	 * Get
 	 */
 
-	RelationshipModifiers& minorTownRelationship() { return _minorTownRelationshipModifiers; }
+	RelationshipModifiers& relationship() { return _relationships; }
 
 	int32 playerId() { return _playerId; }
 
@@ -337,8 +349,11 @@ public:
 
 		//! Fill Defender Military Units
 		std::vector<CardStatus> defenderCards;
-		if (provinceAttackEnum != ProvinceAttackEnum::RaidBattle) {
-			defenderCards = { CardStatus(CardEnum::Warrior, baseDefenderUnits()) }; // Town Population help is this is not a raid
+		if (provinceAttackEnum == ProvinceAttackEnum::Raze) {
+			defenderCards = { CardStatus(CardEnum::Militia, baseDefenderUnits() * 3 / 2) }; // More resistance if the intent is to raze...
+		}
+		else if (provinceAttackEnum != ProvinceAttackEnum::RaidBattle) {
+			defenderCards = { CardStatus(CardEnum::Militia, baseDefenderUnits()) }; // Town Population help is this is not a raid
 		}
 
 		claimProgress.Reinforce(defenderCards, false, defenderPlayerId());
@@ -538,15 +553,26 @@ public:
 		}
 	}
 
-	int32 money() { return _minorCityWealth; }
-	void ChangeMoney(int32 value) {
+	int32 GetMinorCityLevel()
+	{
+		int32 level, currentMoney, moneyToNextLevel;
+		GetMinorCityLevelAndCurrentMoney(level, currentMoney, moneyToNextLevel);
+		return level;
+	}
+	
+
+	int32 totalWealth_MinorCity() { return _minorCityWealth; }
+	void ChangeWealth_MinorCity(int32 value) {
 		_minorCityWealth += value;
 	}
 
-	int32 minorCityIncome100() {
-		// At 200k -> revenue 20k ... should also make cost ~20k
-		return _minorCityWealth * 10 / 100 - (_minorCityWealth * _minorCityWealth);
-	}
+	// Target wealth is equal to the revenue of nearby major city
+	virtual int32 totalRevenue100() { return _minorCityWealth * 100 / 10; }
+	virtual int32 totalInfluenceIncome100() { return totalRevenue100() / 2; }
+
+	/*
+	 * Children
+	 */
 
 	void AddChildBuilding(Building& child);
 
@@ -563,6 +589,44 @@ public:
 		}
 		return {};
 	}
+
+	/*
+	 * Relationship
+	 */
+
+	// Friendship
+	bool shouldShow_DeclareFriendship(int32 askingPlayerId) {
+		if (_relationships.GetModifier(askingPlayerId, RelationshipModifierEnum::YouAttackedUs) > 0) {
+			return false;
+		}
+		return _relationships.GetModifier(askingPlayerId, RelationshipModifierEnum::YouBefriendedUs) == 0;
+	}
+	int32 friendshipPrice() { return 200; }
+	void DeclareFriendship(int32 askingPlayerId) {
+		_relationships.SetModifier(askingPlayerId, RelationshipModifierEnum::YouBefriendedUs, friendshipPrice() / GoldToRelationship);
+		_simulation->ChangeMoney(askingPlayerId, -friendshipPrice());
+	}
+
+	// Marriage
+	bool shouldShow_MarryOut(int32 askingPlayerId) {
+		return _relationships.GetModifier(askingPlayerId, RelationshipModifierEnum::WeAreFamily) == 0;
+	}
+	int32 marryOutPrice() { return 1000; }
+	void MarryOut(int32 askingPlayerId) {
+		_relationships.SetModifier(askingPlayerId, RelationshipModifierEnum::WeAreFamily, marryOutPrice() / GoldToRelationship);
+		_simulation->ChangeMoney(askingPlayerId, -marryOutPrice());
+	}
+
+	// 
+
+
+	void DeclareWar(int32 askingPlayerId)
+	{
+		_relationships.SetModifier(askingPlayerId, RelationshipModifierEnum::YouAttackedUs, -100);
+		_relationships.SetModifier(askingPlayerId, RelationshipModifierEnum::YouBefriendedUs, 0);
+	}
+
+	void Tick1SecRelationship();
 
 
 	/*
@@ -591,7 +655,7 @@ public:
 
 		Ar << _lastRoundAutoTradeProfit;
 
-		Ar << _minorTownRelationshipModifiers;
+		Ar << _relationships;
 
 
 		//! Vassal/Annex
@@ -630,7 +694,8 @@ protected:
 	int32 _lastRoundAutoTradeProfit = 0;
 
 	// Relationship
-	RelationshipModifiers _minorTownRelationshipModifiers;
+	// 1 relationship should cost around 20 gold
+	RelationshipModifiers _relationships;
 
 	// Vassal/Annex
 	int32 _lordPlayerId = -1;

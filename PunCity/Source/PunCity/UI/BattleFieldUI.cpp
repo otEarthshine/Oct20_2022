@@ -70,7 +70,7 @@ void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimPro
 		PlayerLogoRight->SetVisibility(ESlateVisibility::Visible);
 	}
 	else {
-		PlayerLogoRight->SetVisibility(ESlateVisibility::Collapsed);
+		PlayerLogoRight->SetVisibility(ESlateVisibility::Hidden);
 	}
 	
 
@@ -90,12 +90,23 @@ void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimPro
 		if (claimProgress.attackEnum == ProvinceAttackEnum::RaidBattle) {
 			args.Add(LOCTEXT("Raid", "Raid"));
 		}
-		else if (sim.homeProvinceId(provincePlayerId) == provinceId) {
+		else if (claimProgress.attackEnum == ProvinceAttackEnum::Raze) {
+			args.Add(LOCTEXT("Raze", "Raze"));
+		}
+		// Major Town Vassalize
+		else if (provincePlayerId != -1 && sim.homeProvinceId(provincePlayerId) == provinceId) 
+		{
+			args.Add(LOCTEXT("Vassalize", "Vassalize"));
+		}
+		// Minor Town Vassalize
+		else if (IsMinorTown(provinceTownId))
+		{
 			args.Add(LOCTEXT("Vassalize", "Vassalize"));
 		}
 		else {
 			args.Add(LOCTEXT("Annex Province", "Annex Province"));
 		}
+		
 		if (claimProgress.isWaitingForBattleFinishCountdown()) {
 			args.Add(FText::Format(LOCTEXT(" ends in {0}s", " ends in {0}s"), TEXT_NUM(claimProgress.battleFinishCountdownSecs)));
 		}

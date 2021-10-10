@@ -227,7 +227,7 @@ public:
 	GameMapFlood& floodSystem() final { return _floodSystem; }
 	//GameMapFlood& floodSystemHuman() final { return _floodSystemHuman; }
 	ProvinceSystem& provinceSystem() final { return _provinceSystem; }
-	ProvinceInfoSystem& provinceInfoSystem() final { return *_regionSystem; }
+	ProvinceInfoSystem& provinceInfoSystem() final { return *_provinceInfoSystem; }
 	
 	ResourceDropSystem& dropSystem() final { return _dropSystem; }
 	//GameEventSource& eventSource(EventSourceEnum eventEnum) final { return _gameEventSystem.source(eventEnum); }
@@ -454,8 +454,8 @@ public:
 
 	int32 aiStartIndex() final { return GameConstants::MaxPlayersPossible; }
 	int32 aiEndIndex() final { return GameConstants::MaxPlayersAndAI - 1; }
-	bool IsAIPlayer(int32 playerId) final { return playerId >= GameConstants::MaxPlayersPossible; }
-	//bool isAIPlayer(int32_t playerId) { return aiPlayerStartIndex() <= playerId && playerId <= aiPlayerEndIndex(); }
+	
+	virtual bool IsAIPlayer(int32 playerId) override { return  GameConstants::MaxPlayersPossible <= playerId && playerId < GameConstants::MaxPlayersAndAI; }
 
 	virtual bool IsAIActive(int32 playerId) override {
 		return _aiPlayerSystem[playerId].active();
@@ -467,12 +467,17 @@ public:
 		ss << "[" << aiPlayerId << "_" << playerName(aiPlayerId) << "]";
 		return ToTChar(ss.str());
 	}
+
+	// AI Town Major or Minor
+	virtual bool IsAITown(int32 townId) override {
+		return townId >= GameConstants::MaxPlayersPossible;
+	}
 	
 
-	void ChangeRelationshipModifier(int32 aiPlayerId, int32 towardPlayerId, RelationshipModifierEnum modifierEnum, int32 amount) final
+	virtual void ChangeRelationshipModifier(int32 aiTownId, int32 towardPlayerId, RelationshipModifierEnum modifierEnum, int32 amount) override
 	{
-		if (IsAIPlayer(aiPlayerId)) {
-			aiPlayerSystem(aiPlayerId).relationship().ChangeModifier(towardPlayerId, RelationshipModifierEnum::YouGaveUsGifts, amount / GoldToRelationship);
+		if (IsAITown(aiTownId)) {
+			townManagerBase(aiTownId)->relationship().ChangeModifier(towardPlayerId, RelationshipModifierEnum::YouGaveUsGifts, amount / GoldToRelationship);
 		}
 	}
 	
@@ -583,7 +588,7 @@ public:
 		check(townhallId != -1);
 		return building(townhallId).subclass<TownHall>(CardEnum::Townhall);
 	}
-	TownHall& GetTownhall(int32 townId) final {
+	TownHall& GetTownhallMajor(int32 townId) final {
 		int32 townhallId = townManager(townId).townhallId;
 		check(townhallId != -1);
 		return building(townhallId).subclass<TownHall>(CardEnum::Townhall);
@@ -631,7 +636,7 @@ public:
 	}
 
 	int32 GetTownLvl(int32 townId) final {
-		return GetTownhall(townId).townhallLvl;
+		return GetTownhallMajor(townId).townhallLvl;
 	}
 	int32 GetTownLvlMax(int32 playerId) final {
 		const auto& townIds = playerOwned(playerId).townIds();
@@ -645,8 +650,8 @@ public:
 	WorldTile2 GetTownhallGateCapital(int32 playerId) final {
 		return GetTownhallCapital(playerId).gateTile();
 	}
-	WorldTile2 GetTownhallGateFast(int32 townId) final {
-		return GetTownhall(townId).gateTile();
+	WorldTile2 GetMajorTownhallGateFast(int32 townId) final {
+		return GetTownhallMajor(townId).gateTile();
 	}
 	WorldTile2 GetMajorTownhallGate(int32 townId) final
 	{
@@ -699,7 +704,7 @@ public:
 	}
 
 	int32 GetTownAgeTicks(int32 townId) final {
-		return GetTownhall(townId).townAgeTicks();
+		return GetTownhallMajor(townId).townAgeTicks();
 	}
 
 	virtual int32 GetMajorTownTotalRevenue100(int32 townId) override {
@@ -723,7 +728,7 @@ public:
 
 	void AddImmigrants(int32 townId, int32 count, WorldTile2 tile) final {
 		if (townId != -1) {
-			GetTownhall(townId).AddImmigrants(count, tile);
+			GetTownhallMajor(townId).AddImmigrants(count, tile);
 		}
 	}
 
@@ -747,7 +752,7 @@ public:
 		
 		// Go to townhall center if there is townhall
 		if (HasTownhall(townPlayerId(townId))) {
-			return GetTownhall(townId).centerTile().worldAtom2();
+			return GetTownhallMajor(townId).centerTile().worldAtom2();
 		}
 		// No townhall case, use province center
 		if (townManager(townId).provincesClaimed().size() > 0) {
@@ -775,7 +780,32 @@ public:
 		_minorTownManagers.back()->InitAutoTrade(provinceId);
 		return townId;
 	}
-	void RemoveMinorTown(int32 townId) {
+	void RemoveMinorTown(int32 townId)
+	{
+		TownManagerBase* townMgr = townManagerBase(townId);
+
+		int32 provinceId = townMgr->provincesClaimed()[0];
+		provinceInfoSystem().RemoveTown(provinceId);
+
+		check(_provinceInfoSystem->provinceOwnerTown(provinceId) == -1);
+		check(provinceOwnerTown_Minor(provinceId) == -1);
+		
+		if (townMgr->townhallId != -1)
+		{
+			Building& townhall = building(townMgr->townhallId);
+			
+			// Demolish surrounding Road
+			townhall.area().GetExpandedArea().ExecuteOnBorder_WorldTile2([&](WorldTile2 tile) {
+				_overlaySystem.RemoveRoad(tile);
+			});
+			InstantDemolishBuilding(townhall);
+			
+			const std::vector<int32>& childBuildingIds = townMgr->childBuildingIds();
+			for (int32 childBuildingId : childBuildingIds) {
+				InstantDemolishBuilding(building(childBuildingId));
+			}
+		}
+		
 		_minorTownManagers[TownIdToMinorTownId(townId)] = std::make_unique<TownManagerBase>(-1, -1, FactionEnum::None, nullptr);
 	}
 
@@ -854,7 +884,7 @@ public:
 		if (provinceId == -1) {
 			return -1;
 		}
-		return _regionSystem->provinceOwner(provinceId);
+		return _provinceInfoSystem->provinceOwnerTown(provinceId);
 	}
 	virtual int32 tileOwnerPlayer(WorldTile2 tile) final {
 		int32 townId = tileOwnerTown(tile);
@@ -1612,7 +1642,7 @@ public:
 
 	int32 GetTreeCount(int32 provinceId) final
 	{
-		int32 treeCount = _regionSystem->provinceToTreeCountCache[provinceId];
+		int32 treeCount = _provinceInfoSystem->provinceToTreeCountCache[provinceId];
 		if (treeCount == -1) {
 			// !!! Very Expensive...
 			treeCount = 0;
@@ -1621,7 +1651,7 @@ public:
 					treeCount++;
 				}
 			});
-			_regionSystem->provinceToTreeCountCache[provinceId] = treeCount;
+			_provinceInfoSystem->provinceToTreeCountCache[provinceId] = treeCount;
 		}
 		
 		return treeCount;
@@ -1915,6 +1945,9 @@ public:
 		else if (claimEnum == CallbackEnum::RaidBattle) {
 			attackEnum = ProvinceAttackEnum::RaidBattle;
 		}
+		else if (claimEnum == CallbackEnum::Raze) {
+			attackEnum = ProvinceAttackEnum::Raze;
+		}
 		else {
 			attackEnum = townManagerBase(provinceTownId)->GetProvinceAttackEnum(provinceId, playerId);
 		}
@@ -2053,10 +2086,10 @@ public:
 	}
 
 	virtual void AddFortToProvince(int32 provinceId, int32 fortId) override {
-		_regionSystem->AddFortToProvince(provinceId, fortId);
+		_provinceInfoSystem->AddFortToProvince(provinceId, fortId);
 	}
 	virtual void TryRemoveFortFromProvince(int32 provinceId, int32 fortId) override {
-		_regionSystem->TryRemoveFortFromProvince(provinceId, fortId);
+		_provinceInfoSystem->TryRemoveFortFromProvince(provinceId, fortId);
 	}
 
 	// NOT NEEDED YET
@@ -2508,20 +2541,20 @@ public:
 		_townManagers[townId]->RecalculateTaxDelayed();
 	}
 
-	const std::vector<int32>& boarBurrows(int32 provinceId) override { return _regionSystem->boarBurrows(provinceId); }
+	const std::vector<int32>& boarBurrows(int32 provinceId) override { return _provinceInfoSystem->boarBurrows(provinceId); }
 	void AddBoarBurrow(int32 provinceId, int32 buildingId) override {
-		_regionSystem->AddBoarBurrow(provinceId, buildingId);
+		_provinceInfoSystem->AddBoarBurrow(provinceId, buildingId);
 	}
 	void RemoveBoarBurrow(int32 provinceId, int32 buildingId) override {
-		_regionSystem->RemoveBoarBurrow(provinceId, buildingId);
+		_provinceInfoSystem->RemoveBoarBurrow(provinceId, buildingId);
 	}
 
-	const std::vector<int32>& provinceAnimals(int32 regionId) override { return _regionSystem->provinceAnimals(regionId); }
+	const std::vector<int32>& provinceAnimals(int32 regionId) override { return _provinceInfoSystem->provinceAnimals(regionId); }
 	void AddProvinceAnimals(int32 provinceId, int32 animalId) override {
-		_regionSystem->AddProvinceAnimals(provinceId, animalId);
+		_provinceInfoSystem->AddProvinceAnimals(provinceId, animalId);
 	}
 	void RemoveProvinceAnimals(int32 provinceId, int32 animalId) override {
-		_regionSystem->RemoveProvinceAnimals(provinceId, animalId);
+		_provinceInfoSystem->RemoveProvinceAnimals(provinceId, animalId);
 	}
 
 	int32 HousingCapacity(int32 playerId) override { return _townManagers[playerId]->housingCapacity(); }
@@ -2568,22 +2601,30 @@ public:
 		});
 	}
 
+	void InstantDemolishBuilding(Building& bld)
+	{
+		soundInterface()->TryStopBuildingWorkSound(bld);
+		_buildingSystem->RemoveBuilding(bld.buildingId());
+
+		AddDemolishDisplayInfo(bld.centerTile(), { bld.buildingEnum(), bld.area(), Time::Ticks() });
+	}
+
 	void SetProvinceOwner(int32 provinceId, int32 townId, bool lightMode = false);
 	void SetProvinceOwnerFull(int32 provinceId, int32 townId) final;
 
 	void SetProvinceOwner_Popup(int32 provinceId, int32 attackerPlayerId, bool isFull);
 
 	virtual int32 provinceOwnerTown_Major(int32 provinceId) override {
-		int32 townId = _regionSystem->provinceOwner(provinceId);
+		int32 townId = _provinceInfoSystem->provinceOwnerTown(provinceId);
 		return IsMinorTown(townId) ? -1 : townId;
 	}
 
 	virtual int32 provinceOwnerTown_Minor(int32 provinceId) override {
-		int32 townId = _regionSystem->provinceOwner(provinceId);
+		int32 townId = _provinceInfoSystem->provinceOwnerTown(provinceId);
 		return IsMinorTown(townId) ? townId : -1;
 	}
 	
-	int32 provinceOwnerTownSafe(int32 provinceId) { return _regionSystem->provinceOwnerSafe(provinceId); }
+	int32 provinceOwnerTownSafe(int32 provinceId) { return _provinceInfoSystem->provinceOwnerTownSafe(provinceId); }
 	
 	int32 provinceOwnerPlayer(int32 provinceId) final
 	{
@@ -2887,6 +2928,7 @@ public:
 	 *  Demolish
 	 */
 
+	 // TODO: this might not work anymore?
 	void AddDemolishDisplayInfo(WorldTile2 tile, DemolishDisplayInfo demolishInfo)
 	{
 		if (_gameManager->IsInSampleRange(tile) &&
@@ -3695,7 +3737,7 @@ public:
 
 				_provinceSystem.Serialize(Ar);
 
-				_regionSystem->Serialize(Ar);
+				_provinceInfoSystem->Serialize(Ar);
 				_georesourceSystem->Serialize(Ar);
 				_terrainChanges.Serialize(Ar);
 
@@ -4140,7 +4182,8 @@ public:
 
 private:
 	void PlaceInitialTownhallHelper(FPlaceBuilding command, int32 townhallId);
-	
+
+	void InitOasis();
 	void InitProvinceBuildings();
 
 	void DemolishCritterBuildingsIncludingFronts(WorldTile2 tile, int32 playerId);
@@ -4162,7 +4205,7 @@ private:
 
 	std::unique_ptr<PunTerrainGenerator> _terrainGenerator;
 	std::unique_ptr<TreeSystem> _treeSystem;
-	std::unique_ptr<ProvinceInfoSystem> _regionSystem;
+	std::unique_ptr<ProvinceInfoSystem> _provinceInfoSystem;
 	std::unique_ptr<GeoresourceSystem> _georesourceSystem;
 	PunTerrainChanges _terrainChanges;
 

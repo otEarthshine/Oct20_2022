@@ -1570,7 +1570,12 @@ class IrrigationPump final : public Building
 {
 public:
 	virtual void FinishConstruction() override;
-	
+
+	virtual bool shouldDisplayParticles() override {
+		return isConstructed();
+	}
+
+	virtual void OnDeinit() override;
 };
 
 
@@ -1612,7 +1617,10 @@ public:
 
 	virtual void FinishConstruction() override;
 
-	virtual void OnUpgradeBuilding(int upgradeIndex) override;
+	virtual void OnUpgradeBuildingWithPlayerId(int32 upgradeIndex, int32 upgraderPlayerId) override;
+
+	int32 GetDigDistance(int32 upgraderPlayerId) const;
+	int32 GetDigDistanceFactor(int32 upgraderPlayerId) const;
 };
 
 
@@ -1651,8 +1659,7 @@ public:
 			// X
 		};
 
-		for (int32 j = 0; j < size.x; j++)
-		{
+		for (int32 j = 0; j < size.x; j++) {
 			for (int32 i = 0; i < size.y / 2; i++) {
 				std::swap(isHole[i + j * size.y], isHole[(size.y - 1 - i) + j * size.y]);
 			}
@@ -1675,7 +1682,7 @@ public:
 		});
 	}
 
-	virtual void OnInit() override
+	virtual void OnPreInit_IncludeNonPlayer() override
 	{
 		DigArea([&](WorldTile2 tile) {
 			_simulation->terrainChanges().AddHole(tile);
@@ -1712,7 +1719,7 @@ public:
 		}
 	};
 	
-	virtual void OnPreInit_IncludeMinorTown() override
+	virtual void OnPreInit_IncludeNonPlayer() override
 	{
 		const int32 maxVisitorCount = 20;
 		

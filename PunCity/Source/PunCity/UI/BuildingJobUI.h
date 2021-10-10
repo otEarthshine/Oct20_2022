@@ -226,9 +226,10 @@ public:
 
 
 		// ResourceUI Dirty?
-		if (building.isBuildingResourceUIDirty()) 
+		// TODO: this broke the resourceIcon Tip
+		//if (building.isBuildingResourceUIDirty()) 
 		{
-			building.SetBuildingResourceUIDirty(false);
+			//building.SetBuildingResourceUIDirty(false);
 
 
 			if (IsSpecialProducer(building.buildingEnum())) {

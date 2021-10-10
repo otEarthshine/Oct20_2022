@@ -52,7 +52,7 @@ public:
 			cardButton->SetCardStatus(CardHandEnum::TrainUnits, false, false);
 			cardButton->RefreshBuildingIcon(assetLoader());
 			cardButton->SellButton->SetVisibility(ESlateVisibility::Collapsed);
-			cardButton->SetPrice(cardEnum != CardEnum::None ? GetBuildingInfo(cardEnum).baseCardPrice : 0, 3);
+			cardButton->SetPrice(cardEnum != CardEnum::None ? GetBuildingInfo(cardEnum).baseCardPrice : 0, GetMilitaryHumanCost(cardEnum));
 			cardButton->SetVisibility(ESlateVisibility::Visible);
 		}
 		
@@ -150,7 +150,7 @@ public:
 		CardEnum infantryEnum = CardEnum::Warrior;
 		if (isResearched(TechEnum::Infantry)) infantryEnum = CardEnum::Infantry;
 		else if (isResearched(TechEnum::Musketeer)) infantryEnum = CardEnum::Musketeer;
-		else if (isResearched(TechEnum::Ironworks)) infantryEnum = CardEnum::Swordman;
+		else if (isResearched(TechEnum::Ironworks)) infantryEnum = CardEnum::Swordsman;
 
 
 		CardEnum cavalryEnum = CardEnum::None;

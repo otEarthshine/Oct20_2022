@@ -1832,6 +1832,23 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Trade Routes", "Trade Routes"), TEXT_NUM(routes.size()));
 						
 					}
+					//! AncientWonder
+					else if (IsAncientWonderCardEnum(building.buildingEnum()))
+					{
+						const ProvinceRuin& provinceRuin = building.subclass<ProvinceRuin>();
+						int32 digDistance = provinceRuin.GetDigDistance(playerId());
+						if (digDistance != INT32_MAX)
+						{
+							focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+								LOCTEXT("Distance to your nearest Townhall", "Distance to Townhall"),
+								TEXT_NUM(digDistance)
+							);
+						}
+
+						if (provinceRuin.GetDigDistanceFactor(playerId()) > 100) {
+							focusBox->AddWGT_WarningText(TEXT_TAG("<Red>", LOCTEXT("RuinFarFromTownhall_FocusUI", "Excavating far from Townhall incur cost penalty")));
+						}
+					}
 					//! Diplomatic
 					else if (IsForeignOnlyBuilding(building.buildingEnum()))
 					{
@@ -3178,9 +3195,20 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						
 						auto setUpgradeButton = [&](BuildingUpgrade upgrade, int32 upgradeIndex)
 						{
-							ADDTEXT_(LOCTEXT("Upgrade {0}", "Upgrade {0}"), building.GetUpgradeDisplayName(upgradeIndex));
 
-							ResourceEnum resourceEnum = upgrade.currentUpgradeResourceNeeded().resourceEnum;
+							ResourcePair resourceNeededPair = upgrade.currentUpgradeResourceNeeded();
+
+							// Special case: Ancient Wonders
+							if (IsAncientWonderCardEnum(building.buildingEnum())) {
+								ADDTEXT_(INVTEXT("{0}"), building.GetUpgradeDisplayName(upgradeIndex));
+								resourceNeededPair.count = resourceNeededPair.count * building.subclass<ProvinceRuin>().GetDigDistanceFactor(playerId()) / 100;
+							}
+							else {
+								ADDTEXT_(LOCTEXT("Upgrade {0}", "Upgrade {0}"), building.GetUpgradeDisplayName(upgradeIndex));
+							}
+
+							
+							ResourceEnum resourceEnum = resourceNeededPair.resourceEnum;
 							bool showEnabled = true;
 							
 							if (upgrade.isUpgraded) {
@@ -3192,8 +3220,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							{
 								auto showResourceText = [&](FString resourceTagString)
 								{
-									bool isRed = resourceSys.resourceCount(resourceEnum) < upgrade.currentUpgradeResourceNeeded().count;
-									ADDTEXT_(INVTEXT("\n<img id=\"{0}\"/>{1}"), FText::FromString(resourceTagString), TextRed(TEXT_NUM(upgrade.currentUpgradeResourceNeeded().count), isRed));
+									bool isRed = resourceSys.resourceCount(resourceEnum) < resourceNeededPair.count;
+									ADDTEXT_(INVTEXT("\n<img id=\"{0}\"/>{1}"), FText::FromString(resourceTagString), TextRed(TEXT_NUM(resourceNeededPair.count), isRed));
 								};
 								
 								bool isEraUpgradedToFull = upgrade.isEraUpgrade() && !building.IsEraUpgradable();
@@ -3212,7 +3240,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								else if (resourceEnum == ResourceEnum::Concrete) { showResourceText("Concrete"); }
 								else if (resourceEnum == ResourceEnum::Steel) { showResourceText("SteelBeam"); }
 								else if (resourceEnum == ResourceEnum::Influence) {
-									int32 influenceNeeded = upgrade.currentUpgradeResourceNeeded().count;
+									int32 influenceNeeded = resourceNeededPair.count;
 									FText influenceText = TextRed(TEXT_NUM(influenceNeeded), globalResourceSys.moneyCap32() < influenceNeeded);
 
 									ADDTEXT_(INVTEXT("\n<img id=\"Influence\"/>{0}"), influenceText);
@@ -3220,7 +3248,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								else {
 									PUN_CHECK(resourceEnum == ResourceEnum::Money);
 
-									int32 moneyNeeded = upgrade.currentUpgradeResourceNeeded().count;
+									int32 moneyNeeded = resourceNeededPair.count;
 									FText moneyText = TextRed(TEXT_NUM(moneyNeeded), globalResourceSys.moneyCap32() < moneyNeeded);
 									
 									ADDTEXT_(INVTEXT("\n<img id=\"Coin\"/>{0}"), moneyText);
@@ -3236,7 +3264,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 							if (!upgrade.isUpgraded) {
 								const FText costText = LOCTEXT("cost", "cost");
-								int32 resourceNeeded = upgrade.currentUpgradeResourceNeeded().count;
+								int32 resourceNeeded = resourceNeededPair.count;
 								if (resourceEnum == ResourceEnum::Money) {
 									ADDTEXT_(INVTEXT("{0}: <img id=\"Coin\"/>{1}"), costText, TEXT_NUM(resourceNeeded));
 								}
@@ -4288,8 +4316,15 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 	 * Not owned by anyone
 	 */
 	int32 provinceTownId = sim.provinceOwnerTownSafe(provinceId);
+
+	int32 allowResourceClaim = (provinceTownId == -1);
+
+	// Allow claiming level 1 Minor City
+	if (IsMinorTown(provinceTownId)) {
+		allowResourceClaim = sim.townManagerBase(provinceTownId)->GetMinorCityLevel() <= 1;
+	}
 	
-	if (provinceTownId == -1)
+	if (allowResourceClaim)
 	{	
 		auto addClaimButtons = [&](ClaimConnectionEnum claimConnectionEnum)
 		{	

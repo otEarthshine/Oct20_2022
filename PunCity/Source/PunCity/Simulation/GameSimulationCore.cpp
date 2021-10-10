@@ -114,11 +114,15 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 	_buildingSystem = make_unique<BuildingSystem>();
 	_buildingSystem->Init(this);
 
-	_regionSystem = make_unique<ProvinceInfoSystem>();
-	_regionSystem->InitProvinceInfoSystem(this);
+	_provinceInfoSystem = make_unique<ProvinceInfoSystem>();
+	_provinceInfoSystem->InitProvinceInfoSystem(this);
 
 	_georesourceSystem = make_unique<GeoresourceSystem>();
 	_georesourceSystem->InitGeoresourceSystem(this, !isLoadingFromFile);
+
+	_terrainChanges.Init(this);
+
+	InitOasis();
 
 	{
 		PUN_LLM(PunSimLLMTag::Trees);
@@ -144,8 +148,6 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 	_debugLineSystem.Init();
 
 	_worldTradeSystem.Init(this, GameConstants::MaxPlayersAndAI);
-
-	_terrainChanges.Init(this);
 
 	_replaySystem.Init(this);
 
@@ -253,6 +255,94 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 	GameRand::SetRandUsageValid(false);
 }
 
+void GameSimulationCore::InitOasis()
+{
+	/*
+	 * Oasis
+	 */
+	auto plantOasis = [&](WorldTile2 oasisCenterTile, Direction oasisFaceDirection)
+	{
+		WorldTile2 size = GetBuildingInfo(CardEnum::Oasis).size;
+		std::vector<uint8> isHole = {
+			// Front Side... (-y)
+			0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, // Y
+			0, 0, 0, 0, 1,   1, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0,
+			0, 0, 1, 1, 1,   1, 1, 1, 1, 1,   1, 1, 0, 0, 0,   0, 0, 0,
+			0, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 1, 0, 0, 0,   0, 0, 0,
+			0, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 1, 1, 1, 1,   0, 0, 0,
+
+			0, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 1, 1, 1, 1,   0, 0, 0,
+			0, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 0, 0,
+			0, 0, 1, 1, 1,   1, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 0, 0,
+			0, 0, 0, 1, 1,   1, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 1, 0,
+			0, 0, 0, 0, 1,   1, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 1, 0,
+
+			0, 0, 0, 0, 1,   1, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 0, 0,
+			0, 0, 0, 0, 1,   1, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 0, 0,
+			0, 0, 0, 0, 0,   0, 0, 0, 0, 1,   1, 1, 1, 1, 1,   1, 0, 0,
+			0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   1, 1, 1, 1, 1,   1, 0, 0,
+			0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 1, 1, 1, 1,   1, 0, 0,
+
+			0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 1, 1, 1,   1, 0, 0,
+			0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0,
+			0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0,
+			// X
+		};
+
+		for (int32 j = 0; j < size.x; j++) {
+			for (int32 i = 0; i < size.y / 2; i++) {
+				std::swap(isHole[i + j * size.y], isHole[(size.y - 1 - i) + j * size.y]);
+			}
+		}
+
+		BuildingArea(oasisCenterTile, size, oasisFaceDirection).ExecuteOnArea_WorldTile2([&](WorldTile2 tile)
+		{
+			WorldTile2 bldTileBeforeRotation = Building::UndoRotateBuildingTileByDirection(tile - oasisCenterTile, oasisFaceDirection);
+			bldTileBeforeRotation = bldTileBeforeRotation + (size - 1) / 2;
+			check(bldTileBeforeRotation.x >= 0);
+			check(bldTileBeforeRotation.x < 18);
+			check(bldTileBeforeRotation.y >= 0);
+			check(bldTileBeforeRotation.y < 18);
+			PUN_LOG("bldTileBeforeRotation %d %d", bldTileBeforeRotation.x, bldTileBeforeRotation.y);
+			int32 index = bldTileBeforeRotation.y + bldTileBeforeRotation.x * size.y;
+			check(isHole.size() > index && index >= 0);
+			if (isHole[index]) {
+				_terrainGenerator->SetWaterTile(tile);
+				_terrainChanges.AddHole(tile);
+			}
+		});
+
+	};
+
+	int32 oasisCount = 2;
+	if (_mapSettings.mapSizeEnum() == MapSizeEnum::Medium) {
+		oasisCount = 3;
+	}
+	else if (_mapSettings.mapSizeEnum() == MapSizeEnum::Large) {
+		oasisCount = 5;
+	}
+	const int32 oasisSkipCount = 3;
+
+	std::vector<int32> oasisSlotProvinceIds = _provinceInfoSystem->oasisSlotProvinceIds();
+	for (int32 i = 0; i < oasisSkipCount; i++) {
+		for (int32 j = i; j < oasisSlotProvinceIds.size(); j += oasisSkipCount)
+		{
+			int32 provinceId = oasisSlotProvinceIds[j];
+			ProvinceBuildingSlot slot = _provinceInfoSystem->provinceBuildingSlot(provinceId);
+
+			if (oasisCount > 0) {
+				plantOasis(slot.oasisSlot.centerTile, Direction::S);
+				oasisCount--;
+			}
+			// Remove Oasis
+			else {
+				_provinceInfoSystem->RemoveOasisSlot(provinceId);
+			}
+		}
+	}
+
+}
+
 void GameSimulationCore::InitProvinceBuildings()
 {
 	std::vector<CardEnum> provinceBuildings(GameMapConstants::TotalRegions, CardEnum::None);
@@ -273,6 +363,7 @@ void GameSimulationCore::InitProvinceBuildings()
 
 	const int32 targetMinorPortCityCount = 10;
 	const int32 targetMinorCityCount = 20;
+	
 
 	std::vector<int32> portSlotProvinceIds = provinceInfoSys.portSlotProvinceIds();
 
@@ -324,7 +415,6 @@ void GameSimulationCore::InitProvinceBuildings()
 		}
 
 		int32 townId = AddMinorTown(provinceId);
-		provinceInfoSys.SetSlotTownId(provinceId, townId);
 		SetProvinceOwner(provinceId, townId, true);
 
 		int32 minorCityBuildingId = createBuilding(townId, CardEnum::MinorCity, slot.landSlot.centerTile, slot.landSlot.faceDirection, 7);
@@ -335,7 +425,6 @@ void GameSimulationCore::InitProvinceBuildings()
 		else {
 			// Failed to create building, remove Town
 			RemoveMinorTown(townId);
-			provinceInfoSys.SetSlotTownId(provinceId, -1);
 			SetProvinceOwner(provinceId, -1, true);
 		}
 		
@@ -343,35 +432,7 @@ void GameSimulationCore::InitProvinceBuildings()
 	};
 
 	
-	/*
-	 * Oasis
-	 */
-	int32 maxOasisCount = 2;
-	if (_mapSettings.mapSizeEnum() == MapSizeEnum::Medium) {
-		maxOasisCount = 6;
-	}
-	else if (_mapSettings.mapSizeEnum() == MapSizeEnum::Large) {
-		maxOasisCount = 18;
-	}
 	
-	const std::vector<int32>& oasisSlotProvinceIds = provinceInfoSys.oasisSlotProvinceIds();
-	for (int32 i = 0; i < skipCount; i++) {
-		for (int32 j = i; j < oasisSlotProvinceIds.size(); j += skipCount)
-		{
-			int32 provinceId = oasisSlotProvinceIds[j];
-			const ProvinceBuildingSlot& slot = provinceInfoSys.provinceBuildingSlot(provinceId);
-			
-			int32 buildingId = createBuilding(-1, CardEnum::Oasis, slot.oasisSlot.centerTile, Direction::S, 14);
-			if (buildingId != -1) {
-				provinceInfoSys.SetSlotBuildingId(provinceId, buildingId);
-				maxOasisCount--;
-				if (maxOasisCount == 0) {
-					goto endOasisLoop;
-				}
-			}
-		}
-	}
-	endOasisLoop:
 	
 
 	/*
@@ -393,7 +454,7 @@ void GameSimulationCore::InitProvinceBuildings()
 				const ProvinceBuildingSlot& slot = provinceInfoSys.provinceBuildingSlot(provinceId);
 
 				// Create Port
-				int32 minorCityPortId = createBuilding(slot.townId, CardEnum::MinorCityPort, slot.portSlot.centerTile, slot.portSlot.faceDirection, 7);
+				int32 minorCityPortId = createBuilding(provinceInfoSys.provinceOwnerTown(provinceId), CardEnum::MinorCityPort, slot.portSlot.centerTile, slot.portSlot.faceDirection, 7);
 
 				MinorCity& minorCity = building<MinorCity>(minorCityBuildingId);
 				Building& minorCityPort = building(minorCityPortId);
@@ -438,10 +499,14 @@ void GameSimulationCore::InitProvinceBuildings()
 					{
 						if (!checkBiome || biomeEnum == AncientWonderToBiomeEnums[k][biomeIndex])
 						{
-							int32 buildingId = createBuilding(-1, AncientWonderEnums[k], slot.largeLandSlot.centerTile, Direction::S, 14);
-							if (buildingId != -1) {
-								provinceInfoSys.SetSlotBuildingId(provinceId, buildingId);
-								ancientWondersCounts[k]++;
+							// Check georesource
+							if (!georesource(provinceId).HasResource())
+							{
+								int32 buildingId = createBuilding(-1, AncientWonderEnums[k], slot.largeLandSlot.centerTile, Direction::S, 14);
+								if (buildingId != -1) {
+									provinceInfoSys.SetSlotBuildingId(provinceId, buildingId);
+									ancientWondersCounts[k]++;
+								}
 							}
 						}
 					}
@@ -464,7 +529,6 @@ void GameSimulationCore::InitProvinceBuildings()
 	 */
 	const std::vector<int32>& landSlotProvinceIds = provinceInfoSys.landSlotProvinceIds();
 	
-
 	for (int32 i = 0; i < skipCount; i++) {
 		for (int32 j = i; j < landSlotProvinceIds.size(); j += skipCount)
 		{
@@ -478,11 +542,35 @@ void GameSimulationCore::InitProvinceBuildings()
 			}
 			
 			if (minorCityCount >= targetMinorCityCount) {
-				goto endLandLoop;
+				goto endMinorCityLoop;
 			}
 		}
 	}
-	endLandLoop:
+	endMinorCityLoop:
+
+	/*
+	 * Crates/Shrines
+	 *  - Fill whatever is left
+	 */
+
+	for (int32 j = 0; j < landSlotProvinceIds.size(); j += 1)
+	{
+		check(j < landSlotProvinceIds.size());
+		int32 provinceId = landSlotProvinceIds[j];
+		const ProvinceBuildingSlot& slot = provinceInfoSys.provinceBuildingSlot(provinceId);
+
+		if (!slot.hasBuilding())
+		{
+			CardEnum buildingEnum = GameRand::Rand(j) % 3 == 0 ? CardEnum::RegionShrine : CardEnum::RegionCrates;
+			int32 buildingId = createBuilding(-1, buildingEnum, slot.landSlot.centerTile, Direction::S, 7);
+			if (buildingId != -1) {
+				provinceInfoSys.SetSlotBuildingId(provinceId, buildingId);
+			}
+		}
+	}
+	
+
+	
 
 	PUN_LOG("InitProvinceBuildings port:%d/%d all:%d/%d", minorPortCityCount, portSlotProvinceIds.size(), minorCityCount, landSlotProvinceIds.size());
 
@@ -922,147 +1010,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 							);
 						}
 
-						///*
-						// * ClaimProgress
-						// */
-						//// Conquer Province
-						//std::vector<ProvinceClaimProgress> claimProgresses = _playerOwnedManagers[playerId].defendingClaimProgress();
-						//for (const ProvinceClaimProgress& claimProgress : claimProgresses) 
-						//{
-						//	// One season to conquer in normal case
-						//	//if (claimProgress.ticksElapsed > BattleClaimTicks)
-						//	if (claimProgress.attackerWon())
-						//	{
-						//		ProvinceAttackEnum provinceAttackEnum = _playerOwnedManagers[playerId].GetProvinceAttackEnum(claimProgress.provinceId, claimProgress.attackerPlayerId);
-						//		int32 provinceOwnerTownId = provinceOwnerTown_Major(claimProgress.provinceId);
-						//		
-						//		_playerOwnedManagers[playerId].EndConquer(claimProgress.provinceId);
-						//		_playerOwnedManagers[claimProgress.attackerPlayerId].EndConquer_Attacker(claimProgress.provinceId);
 
-						//		// Capital
-						//		if (homeProvinceId(playerId) == claimProgress.provinceId)
-						//		{
-						//			// Home town, vassalize/declare independence instead
-						//			//  For Declare Independence, the attacker is the town owner
-						//			if (claimProgress.attackerPlayerId == playerId)
-						//			{
-						//				// Declare Independence
-						//				int32 oldLordPlayerId = lordPlayerId(playerId);
-
-						//				LoseVassalHelper(oldLordPlayerId, playerId);
-
-						//				AddPopupAll(PopupInfo(playerId,
-						//					FText::Format(LOCTEXT("IndependenceAll_Pop", "{0} declared independence from {1}."), playerNameT(playerId), playerNameT(oldLordPlayerId))
-						//				), -1);
-						//			}
-						//			else
-						//			{
-						//				// Player getting vassalized lose all of its own vassals (player vassal only)
-						//				const std::vector<int32>& vassalBuildingIds = _playerOwnedManagers[playerId].vassalBuildingIds();
-						//				for (int32 vassalBuildingId : vassalBuildingIds) {
-						//					if (building(vassalBuildingId).isEnum(CardEnum::Townhall)) {
-						//						LoseVassalHelper(playerId, building(vassalBuildingId).playerId());
-						//					}
-						//				}
-
-						//				// If there is an existing lord, the lord lose the vassal
-						//				int32 oldLordPlayerId = _playerOwnedManagers[playerId].lordPlayerId();
-						//				if (oldLordPlayerId != -1) {
-						//					LoseVassalHelper(oldLordPlayerId, playerId);
-						//				}
-
-						//				// Vassalize
-						//				int32 lordId = claimProgress.attackerPlayerId;
-						//				_playerOwnedManagers[lordId].GainVassal(GetTownhallCapital(playerId).buildingId());
-						//				_playerOwnedManagers[playerId].SetLordPlayerId(lordId);
-
-						//				_LOG(PunNetwork, "Vassalize [sim] pid:%d lordId:%d", playerId, _playerOwnedManagers[playerId].lordPlayerId());
-						//				
-						//				AddPopupAll(PopupInfo(lordId, 
-						//					FText::Format(LOCTEXT("XhasConqueredY", "{0} has conquered {1}."), playerNameT(lordId), playerNameT(playerId))
-						//				), -1);
-						//				AddPopup(playerId, 
-						//					FText::Format(LOCTEXT("NewLord_Pop", "<Bold>You became {0}'s vassal.</><space><bullet>As a vassal, you pay your lord 5% <img id=\"Coin\"/> revenue as a tribute each round.</><bullet>Half of your <img id=\"Influence\"/> income goes to your lord.</><bullet>If your lord is ahead of you in science, you gain +20% <img id=\"Science\"/> from knowledge transfer.</>"),
-						//						playerNameT(lordId)
-						//					)
-						//				);
-
-						//				// Recalculate Tax
-						//				const std::vector<int32>& lordTownIds = _playerOwnedManagers[lordId].townIds();
-						//				for (int32 townId : lordTownIds) {
-						//					_townManagers[townId]->RecalculateTaxDelayed();
-						//				}
-						//				
-						//				const std::vector<int32>& playerTownIds = _playerOwnedManagers[playerId].townIds();
-						//				for (int32 townId : playerTownIds) {
-						//					_townManagers[townId]->RecalculateTaxDelayed();
-						//				}
-						//				//_playerOwnedManagers[lordId].RecalculateTaxDelayed();
-						//				//_playerOwnedManagers[playerId].RecalculateTaxDelayed();
-
-						//				// CheckDominationVictory(lordPlayerId);
-						//			}
-						//		}
-						//		// ConquerColony
-						//		else if (provinceAttackEnum == ProvinceAttackEnum::ConquerColony)
-						//		{
-						//			// town swap hands
-						//			ChangeTownOwningPlayer(provinceOwnerTownId, claimProgress.attackerPlayerId);
-
-						//			AddPopupAll(PopupInfo(playerId,
-						//				FText::Format(LOCTEXT("ConquerColonyAll_Pop", "{0} has taken control of {1} from {2}."), playerNameT(claimProgress.attackerPlayerId), townNameT(provinceOwnerTownId), playerNameT(playerId))
-						//			), -1);
-
-						//			// If this is AI player's capital, set the AI inactive
-						//			if (IsAIPlayer(playerId)) {
-						//				_aiPlayerSystem[playerId].SetActive(false);
-
-						//				AddPopupAll(PopupInfo(playerId,
-						//					FText::Format(LOCTEXT("AIEliminated_Pop", "{0} is eliminated."), playerNameT(playerId))
-						//				), -1);
-						//			}
-						//		}
-						//		// ConquerProvince
-						//		else
-						//		{
-						//			// Attacker now owns the province
-						//			// Destroy any leftover building owned by player
-						//			ClearProvinceBuildings(claimProgress.provinceId);
-
-						//			SetProvinceOwner_Popup(claimProgress.provinceId, claimProgress.attackerPlayerId, false);
-						//			
-						//			//SetProvinceOwner(claimProgress.provinceId, attackerTownId);
-						//		}
-						//	}
-						//	// Failed to conquer
-						//	//else if (claimProgress.ticksElapsed <= 0)
-						//	else if (claimProgress.attackerLost()) 
-						//	{
-						//		ProvinceAttackEnum provinceAttackEnum = _playerOwnedManagers[playerId].GetProvinceAttackEnum(claimProgress.provinceId, claimProgress.attackerPlayerId);
-						//		int32 townId = provinceOwnerTown_Major(claimProgress.provinceId);
-						//		
-						//		_playerOwnedManagers[playerId].EndConquer(claimProgress.provinceId);
-						//		_playerOwnedManagers[claimProgress.attackerPlayerId].EndConquer_Attacker(claimProgress.provinceId);
-						//		
-						//		// Note: no point in trying to pipe claimProgress here, too confusing...
-						//		if (homeProvinceId(playerId) == claimProgress.provinceId)
-						//		{
-						//			// Home town, vassalize instead
-						//			AddPopupToFront(playerId, FText::Format(LOCTEXT("DefendSuccessfulMain", "You successfully defend your independence against {0}"), playerNameT(claimProgress.attackerPlayerId)));
-						//			AddPopupToFront(claimProgress.attackerPlayerId, FText::Format(LOCTEXT("VassalizeNotSuccessful", "Your attempt to vassalize {0} was not successful."), playerNameT(playerId)));
-						//		}
-						//		else if (provinceAttackEnum == ProvinceAttackEnum::ConquerColony)
-						//		{
-						//			AddPopupToFront(playerId, FText::Format(LOCTEXT("DefendSuccessful_Colony", "You successfully defend your town against {0}"), playerNameT(claimProgress.attackerPlayerId)));
-						//			AddPopupToFront(claimProgress.attackerPlayerId, FText::Format(LOCTEXT("ConquerNotSuccessful_Colony", "Your attempt to gain control of {0} was not successful."), townNameT(townId)));
-						//		}
-						//		// ConquerProvince
-						//		else {
-						//			AddPopupToFront(playerId, FText::Format(LOCTEXT("DefendSuccessfulProvince", "You successfully defended your Province against {0}"), playerNameT(claimProgress.attackerPlayerId)));
-						//			AddPopupToFront(claimProgress.attackerPlayerId, FText::Format(LOCTEXT("ConquerNotSuccessful", "Your attempt to conquer {0}'s Province was not successful."), playerNameT(playerId)));
-						//		}
-						//	}
-						//}
 
 
 						/*
@@ -1230,8 +1178,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 						 */
 						if (claimProgress.attackerWon())
 						{
-							ProvinceAttackEnum provinceAttackEnum = provinceTownManager->GetProvinceAttackEnum(claimProgress.provinceId, claimProgress.attackerPlayerId);
-							int32 provinceOwnerTownId = provinceOwnerTown_Major(claimProgress.provinceId);
+							ProvinceAttackEnum provinceAttackEnum = claimProgress.attackEnum;
 
 							/*
 							 * Military
@@ -1258,17 +1205,37 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 									LoseVassalHelper(oldLordPlayerId, provincePlayerId);
 								}
 
-								
-								// Vassalize
-								int32 lordId = claimProgress.attackerPlayerId;
-								townManagerBase(lordId)->GainVassal(provinceTownManager->townId());
-								provinceTownManager->SetLordPlayerId(lordId);
+								//! Raze
+								if (provinceAttackEnum == ProvinceAttackEnum::Raze)
+								{
+									int32 totalWealth = provinceTownManager->totalWealth_MinorCity();
+									int32 razeWealth = totalWealth / 4;
 
-								
-								AddPopupAll(PopupInfo(lordId,
-									FText::Format(LOCTEXT("XhasConqueredMinorTownY", "{0} has conquered {1}."), playerNameT(lordId), playerNameT(provincePlayerId))
-								), -1);
-								
+									AddPopup(claimProgress.attackerPlayerId, FText::Format(
+										LOCTEXT("WeRazedMinorTownY", "You razed {0}.<space>Your army looted <img id=\"Coin\"/>{1}."),
+										townNameT(provinceTownId), razeWealth
+									));
+
+									AddPopupAll(PopupInfo(claimProgress.attackerPlayerId,
+										FText::Format(LOCTEXT("XhasRazedMinorTownY", "{0} has razed {1}."), playerNameT(claimProgress.attackerPlayerId), townNameT(provinceTownId))
+									), -1);
+									
+									RemoveMinorTown(provinceTownId);
+
+									ChangeMoney(claimProgress.attackerPlayerId, razeWealth);
+								}
+								else
+								{
+									//! Vassalize
+									int32 lordId = claimProgress.attackerPlayerId;
+									townManagerBase(lordId)->GainVassal(provinceTownManager->townId());
+									provinceTownManager->SetLordPlayerId(lordId);
+
+
+									AddPopupAll(PopupInfo(lordId,
+										FText::Format(LOCTEXT("XhasConqueredMinorTownY", "{0} has conquered {1}."), playerNameT(lordId), townNameT(provinceTownId))
+									), -1);
+								}
 							}
 							//! Capital
 							else if (homeProvinceId(provincePlayerId) == claimProgress.provinceId)
@@ -1333,6 +1300,8 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 							//! ConquerColony
 							else if (provinceAttackEnum == ProvinceAttackEnum::ConquerColony)
 							{
+								int32 provinceOwnerTownId = provinceOwnerTown_Major(claimProgress.provinceId);
+								
 								// town swap hands
 								ChangeTownOwningPlayer(provinceOwnerTownId, claimProgress.attackerPlayerId);
 
@@ -1366,7 +1335,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 						 */
 						else if (claimProgress.attackerLost())
 						{
-							ProvinceAttackEnum provinceAttackEnum = provinceTownManager->GetProvinceAttackEnum(claimProgress.provinceId, claimProgress.attackerPlayerId);
+							ProvinceAttackEnum provinceAttackEnum = claimProgress.attackEnum;
 
 							/*
 							 * Military
@@ -1377,7 +1346,12 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 							// Note: no point in trying to pipe claimProgress here, too confusing...
 							if (provincePlayerId == -1) // Minor Town
 							{
-								AddPopupToFront(claimProgress.attackerPlayerId, FText::Format(LOCTEXT("VassalizeNotSuccessful", "Your attempt to vassalize {0} was not successful."), townNameT(provinceTownId)));
+								if (provinceAttackEnum == ProvinceAttackEnum::Raze) {
+									AddPopupToFront(claimProgress.attackerPlayerId, FText::Format(LOCTEXT("RazeNotSuccessful", "Your attempt to raze {0} was not successful."), townNameT(provinceTownId)));
+								}
+								else {
+									AddPopupToFront(claimProgress.attackerPlayerId, FText::Format(LOCTEXT("VassalizeNotSuccessful", "Your attempt to vassalize {0} was not successful."), townNameT(provinceTownId)));
+								}
 							}
 							else if (homeProvinceId(provincePlayerId) == claimProgress.provinceId)
 							{
@@ -2418,18 +2392,9 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 		};
 		
 		const int32 relationshipToAllowForeignBuilding = 0;
-		if (IsMinorTown(tileTownId))
+		if (IsAITown(tileTownId))
 		{
-			if (townManagerBase(tileTownId)->minorTownRelationship().GetTotalRelationship(playerId) < relationshipToAllowForeignBuilding)
-			{
-				popupRelationshipWarning();
-				return -1;
-			}
-		}
-		int32 tilePlayerId = tileOwnerPlayer(centerTile);
-		if (IsAIPlayer(tilePlayerId))
-		{
-			if (aiPlayerSystem(tilePlayerId).relationship().GetTotalRelationship(playerId) < relationshipToAllowForeignBuilding) 
+			if (townManagerBase(tileTownId)->relationship().GetTotalRelationship(playerId) < relationshipToAllowForeignBuilding)
 			{
 				popupRelationshipWarning();
 				return -1;
@@ -2895,7 +2860,13 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 					_overlaySystem.RemoveRoad(tile);
 					PUN_CHECK(IsFrontBuildable(tile));
 
-					AddDemolishDisplayInfo(tile, { roadTile.isDirt ? CardEnum::DirtRoad : CardEnum::StoneRoad, TileArea(tile, WorldTile2(1, 1)), Time::Ticks() });
+					// TODO: this might not work anymore?
+					//AddDemolishDisplayInfo(tile, { roadTile.isDirt ? CardEnum::DirtRoad : CardEnum::StoneRoad, TileArea(tile, WorldTile2(1, 1)), Time::Ticks() });
+				}
+
+				if (_overlaySystem.RemoveIrrigationDitch(tile)) {
+					SetNeedDisplayUpdate(DisplayClusterEnum::Building, tile.regionId(), true);
+					AddFireOnceParticleInfo(ParticleEnum::OnPlacement, TileArea(tile, WorldTile2(1, 1)));
 				}
 			}
 		});
@@ -2925,6 +2896,11 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 		case PlacementType::Fence: {
 			buildingEnum = CardEnum::Fence;
 			canBuild = [&](WorldTile2 tile) { return IsBuildableForPlayer(tile, parameters.playerId); };
+			break;
+		}
+		case PlacementType::IrrigationDitch: {
+			buildingEnum = CardEnum::IrrigationDitch;
+			canBuild = [&](WorldTile2 tile) { return IsFrontBuildable(tile); };
 			break;
 		}
 		default:
@@ -2961,6 +2937,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 		const TArray<int32>& path = parameters.path;
 		if (parameters.path.Num() > 0)
 		{
+			//! IntercityRoad
 			if (placementType == PlacementType::IntercityRoad)
 			{
 				vector<int32> foreignPlayerIds;
@@ -2997,7 +2974,36 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 				
 				return;
 			}
+			//! IrrigationDitch
+			if (placementType == PlacementType::IrrigationDitch)
+			{
+				for (int32 i = 0; i < path.Num(); i++)
+				{
+					WorldTile2 tile(path[i]);
 
+					DemolishCritterBuildingsIncludingFronts(tile, parameters.playerId);
+
+					if (IsFrontBuildable(tile))
+					{
+						// If there is a road construction here, complete it right away
+						if (Building* bld = buildingAtTile(tile))  {
+							if (IsRoad(bld->buildingEnum())) {
+								bld->FinishConstruction();
+							}
+						}
+						
+						_treeSystem->ForceRemoveTileObj(tile, false);
+						overlaySystem().AddIrrigationDitch(tile);
+
+						ChangeMoney(parameters.playerId, -IrrigationDitchTileCost);
+
+						SetNeedDisplayUpdate(DisplayClusterEnum::Trees, tile.regionId(), true);
+						SetNeedDisplayUpdate(DisplayClusterEnum::Building, tile.regionId(), true);
+					}
+				}
+
+				return;
+			}
 			// Trailer instant road
 			if (PunSettings::TrailerMode())
 			{
@@ -3235,10 +3241,10 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 	if (command.callbackEnum != CallbackEnum::None)
 	{
 		if (command.callbackEnum == CallbackEnum::DeclareFriendship) {
-			aiPlayerSystem(command.intVar1).DeclareFriendship(command.playerId);
+			townManagerBase(command.intVar1)->DeclareFriendship(command.playerId);
 		}
 		else if (command.callbackEnum == CallbackEnum::MarryOut) {
-			aiPlayerSystem(command.intVar1).MarryOut(command.playerId);
+			townManagerBase(command.intVar1)->MarryOut(command.playerId);
 		}
 		else if (command.callbackEnum == CallbackEnum::EditableNumberSetOutputTarget) {
 			if (command.intVar1 != -1) {
@@ -3475,7 +3481,7 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 			{
 				int32 moneyAmount = command.intVar3;
 				ChangeMoney(giverPlayerId, -moneyAmount);
-				townManagerBase(targetTownId)->ChangeMoney(moneyAmount);
+				townManagerBase(targetTownId)->ChangeWealth_MinorCity(moneyAmount);
 				return;
 			}
 			
@@ -3638,7 +3644,7 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 			LOCTEXT("SendImmigrants_TargetPop", "Sent immigrants to {2}.<bullet>Adults: {0}</><bullet>Children: {1}</>"),
 			TEXT_NUM(adultsTargetCount),
 			TEXT_NUM(childrenTargetCount),
-			GetTownhall(endTownId).townNameT())
+			GetTownhallMajor(endTownId).townNameT())
 		);
 
 		auto replaceAndSendUnitToNewTown = [&](int32 unitId)
@@ -3761,7 +3767,14 @@ void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
 			}
 		}
 	}
-	// Other buildings
+	//! Artifact Excavation
+	else if (IsAncientWonderCardEnum(bld->buildingEnum()))
+	{
+		ResourceEnum neededResourceOut = ResourceEnum::None;
+		bld->UpgradeBuilding(command.upgradeType, true, neededResourceOut, command.playerId);
+		
+	}
+	//! Other buildings
 	else
 	{
 		ResourceEnum neededResource = ResourceEnum::None;
@@ -4677,7 +4690,7 @@ void GameSimulationCore::CompleteRaid(int32 provinceId, int32 raiderPlayerId, in
 	int32 defenderPlayerId = townPlayerId(defenderTownId);
 	
 	if (IsMinorTown(defenderTownId)) {
-		townManagerBase(defenderTownId)->ChangeMoney(-raidMoney);
+		townManagerBase(defenderTownId)->ChangeWealth_MinorCity(-raidMoney);
 	}
 	else {
 		ChangeMoney(defenderPlayerId, -raidMoney);
@@ -5075,7 +5088,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 	{
 		if (IsValidTown(command.townId))
 		{
-			GetTownhall(command.townId).AddImmigrants(5);
+			GetTownhallMajor(command.townId).AddImmigrants(5);
 			AddPopupToFront(command.playerId,
 				LOCTEXT("ImmigrantsJoinedFromAds", "5 immigrants joined after hearing the advertisement.")
 			);
@@ -5364,6 +5377,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	 */
 	else if (command.claimEnum == CallbackEnum::StartAttackProvince ||
 			command.claimEnum == CallbackEnum::Liberate ||
+			command.claimEnum == CallbackEnum::Raze ||
 			command.claimEnum == CallbackEnum::RaidBattle)
 	{
 		// Attack could be: Conquer Province, Vassalize, or Declare Independence
@@ -5416,10 +5430,13 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 			attackerPlayerId = (command.claimEnum == CallbackEnum::Liberate) ? provincePlayerId : command.playerId;
 
 			/*
-			 * Conquer Part!!!
+			 * Military Part !!!
 			 */
+			
 			provinceTownManager->StartAttack_Defender(attackerPlayerId, command.provinceId, attackEnum, militaryCards);
 			townManagerBase(attackerPlayerId)->StartAttack_Attacker(command.provinceId);
+
+			// !!!
 
 			//! Popups
 			if (attackEnum == ProvinceAttackEnum::RaidBattle)
@@ -5451,7 +5468,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 				);
 
 				if (IsAIPlayer(provincePlayerId)) {
-					aiPlayerSystem(provincePlayerId).DeclareWar(command.playerId);
+					townManagerBase(provincePlayerId)->DeclareWar(command.playerId);
 				}
 			}
 			else if (attackEnum == ProvinceAttackEnum::Vassalize) 
@@ -5498,7 +5515,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 				}
 
 				if (IsAIPlayer(provincePlayerId)) {
-					aiPlayerSystem(provincePlayerId).DeclareWar(command.playerId);
+					townManagerBase(provincePlayerId)->DeclareWar(command.playerId);
 				}
 			}
 			else if (attackEnum == ProvinceAttackEnum::ConquerColony)
@@ -5522,7 +5539,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 				);
 
 				if (IsAIPlayer(provincePlayerId)) {
-					aiPlayerSystem(provincePlayerId).DeclareWar(command.playerId);
+					townManagerBase(provincePlayerId)->DeclareWar(command.playerId);
 				}
 			}
 			else if (attackEnum == ProvinceAttackEnum::DeclareIndependence) 
@@ -5577,8 +5594,8 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	
 	else if (command.claimEnum == CallbackEnum::ReinforceAttackProvince)
 	{
-		auto& provinceTownManager = townManager(provinceOwnerTownSafe(command.provinceId));
-		ProvinceClaimProgress* claimProgress = provinceTownManager.GetDefendingClaimProgressPtr(command.provinceId);
+		TownManagerBase* provinceTownManager = townManagerBase(provinceOwnerTownSafe(command.provinceId));
+		ProvinceClaimProgress* claimProgress = provinceTownManager->GetDefendingClaimProgressPtr(command.provinceId);
 		
 		if (claimProgress) {
 			claimProgress->Reinforce(militaryCards, true, command.playerId);
@@ -5587,8 +5604,8 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	
 	else if (command.claimEnum == CallbackEnum::ReinforceDefendProvince)
 	{
-		auto& provinceTownManager = townManager(provinceOwnerTownSafe(command.provinceId));
-		ProvinceClaimProgress* claimProgress = provinceTownManager.GetDefendingClaimProgressPtr(command.provinceId);
+		TownManagerBase* provinceTownManager = townManagerBase(provinceOwnerTownSafe(command.provinceId));
+		ProvinceClaimProgress* claimProgress = provinceTownManager->GetDefendingClaimProgressPtr(command.provinceId);
 
 		if (claimProgress) {
 			claimProgress->Reinforce(militaryCards, false, command.playerId);
@@ -5597,15 +5614,15 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	
 	else if (command.claimEnum == CallbackEnum::BattleRetreat)
 	{
-		auto& provinceTownManager = townManager(provinceOwnerTownSafe(command.provinceId));
-		ProvinceClaimProgress* claimProgress = provinceTownManager.GetDefendingClaimProgressPtr(command.provinceId);
+		TownManagerBase* provinceTownManager = townManagerBase(provinceOwnerTownSafe(command.provinceId));
+		ProvinceClaimProgress* claimProgress = provinceTownManager->GetDefendingClaimProgressPtr(command.provinceId);
 		
 		if (claimProgress) {
 			// Return Military Units
-			provinceTownManager.ReturnMilitaryUnitCards(claimProgress->attackerFrontLine, command.playerId, false);
-			provinceTownManager.ReturnMilitaryUnitCards(claimProgress->attackerBackLine, command.playerId, false);
-			provinceTownManager.ReturnMilitaryUnitCards(claimProgress->defenderFrontLine, command.playerId, false);
-			provinceTownManager.ReturnMilitaryUnitCards(claimProgress->defenderBackLine, command.playerId, false);
+			provinceTownManager->ReturnMilitaryUnitCards(claimProgress->attackerFrontLine, command.playerId, false);
+			provinceTownManager->ReturnMilitaryUnitCards(claimProgress->attackerBackLine, command.playerId, false);
+			provinceTownManager->ReturnMilitaryUnitCards(claimProgress->defenderFrontLine, command.playerId, false);
+			provinceTownManager->ReturnMilitaryUnitCards(claimProgress->defenderBackLine, command.playerId, false);
 
 			claimProgress->Retreat(command.playerId);
 		}
@@ -5645,7 +5662,7 @@ void GameSimulationCore::SetProvinceOwner(int32 provinceId, int32 townId, bool l
 		townManagerBase(oldTownId)->TryRemoveProvinceClaim(provinceId, lightMode); // TODO: Try moving this below???
 	}
 
-	_regionSystem->SetProvinceOwner(provinceId, townId, lightMode);
+	_provinceInfoSystem->SetProvinceOwner(provinceId, townId, lightMode);
 
 	if (townId != -1) {
 		townManagerBase(townId)->ClaimProvince(provinceId, lightMode);
@@ -5706,55 +5723,24 @@ void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 townId)
 		{
 			ExecuteOnProvinceBuildings(provinceId, [&](Building& bld, const std::vector<WorldRegion2>& regionOverlaps)
 			{
-				if (bld.isEnum(CardEnum::RegionTribalVillage))
+				if (bld.isEnum(CardEnum::MinorCity))
 				{
-					// Clear Wildmen
-					for (WorldRegion2 curRegionOverlap : regionOverlaps) {
-						unitSubregionLists().ExecuteRegion(curRegionOverlap, [&](int32_t unitId)
-						{
-							if (unitEnum(unitId) == UnitEnum::WildMan)
-							{
-								WorldTile2 curTile = unitAtom(unitId).worldTile2();
-								if (GetProvinceIdClean(curTile) == provinceId) {
-									unitAI(unitId).Die();
-								}
-							}
-						});
-					}
-
 					ImmigrationEvent(townId, 5,
 						FText::Format(LOCTEXT("TribalImmigrantAsk_Pop", "{0} wish to join your city."), GenerateTribeName(bld.buildingId())),
 						PopupReceiverEnum::TribalJoinEvent
 					);
-					//townhall(playerId).ImmigrationEvent(5, GenerateTribeName(bld.buildingId()) + " wish to join your city.", PopupReceiverEnum::TribalJoinEvent);
-					ClearProvinceBuildings(bld.provinceId());
+
+					RemoveMinorTown(bld.townId());
 				}
 				else if (bld.isEnum(CardEnum::RegionCrates)) {
 					GenerateRareCardSelection(playerId, RareHandEnum::BuildingSlotCards, LOCTEXT("CratesUseCardSelection", "Searching through the crates you found."));
-					ClearProvinceBuildings(bld.provinceId());
+					InstantDemolishBuilding(bld);
 				}
 				else if (bld.isEnum(CardEnum::RegionShrine)) {
 					GenerateRareCardSelection(playerId, RareHandEnum::BuildingSlotCards, LOCTEXT("ShrineUseCardSelection", "The Shrine bestows its wisdom upon us."));
 					//bld.subclass<RegionShrine>().PlayerTookOver(playerId);
 				}
 			});
-			
-			//const std::vector<WorldRegion2>& regionOverlaps = _provinceSystem.GetRegionOverlaps(provinceId);
-
-			//for (WorldRegion2 regionOverlap : regionOverlaps)
-			//{
-			//	auto& buildingList = buildingSystem().buildingSubregionList();
-			//	buildingList.ExecuteRegion(regionOverlap, [&](int32 buildingId)
-			//	{
-			//		auto bld = building(buildingId);
-			//		if (IsRegionalBuilding(bld.buildingEnum()) && 
-			//			GetProvinceIdClean(bld.centerTile()) == provinceId)
-			//		{
-			//			
-
-			//		}
-			//	});
-			//}
 		}
 
 	}
@@ -6429,7 +6415,7 @@ void GameSimulationCore::Cheat(FCheat command)
 			// Loop through whole map setting
 			for (int32 provinceId = 0; provinceId < GameMapConstants::TotalRegions; provinceId++) {
 				if (_provinceSystem.IsProvinceValid(provinceId) &&
-					_regionSystem->provinceOwner(provinceId) != command.playerId)
+					_provinceInfoSystem->provinceOwnerTown(provinceId) != command.playerId)
 				{
 					SetProvinceOwner(provinceId, command.playerId);
 				}
@@ -6866,7 +6852,7 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 		// Buy the large chunk of map
 		for (int32 provinceId = 0; provinceId < GameMapConstants::TotalRegions; provinceId++) {
 			if (_provinceSystem.IsProvinceValid(provinceId) &&
-				_regionSystem->provinceOwner(provinceId) != command.playerId)
+				_provinceInfoSystem->provinceOwnerTown(provinceId) != command.playerId)
 			{
 				SetProvinceOwner(provinceId, command.playerId, true);
 			}

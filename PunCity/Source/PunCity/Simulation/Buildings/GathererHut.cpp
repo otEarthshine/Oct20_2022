@@ -1967,13 +1967,29 @@ void IrrigationPump::FinishConstruction() {
 	UnlockSystem* unlockSys = _simulation->unlockSystem(_playerId);
 	if (!unlockSys->isUnlocked(CardEnum::IrrigationDitch)) {
 		_simulation->AddPopupToFront(_playerId,
-			LOCTEXT("Unlocked Irrigation Ditch!", "Unlocked Irrigation Ditch!"),
+			LOCTEXT("Unlocked Irrigation Ditch!", "Unlocked Irrigation Ditch!<space>Irrigation Ditch is now available in the Build Menu."),
 			ExclusiveUIEnum::None, "PopupNeutral"
 		);
 		unlockSys->UnlockBuilding(CardEnum::IrrigationDitch);
 	}
+
+	_simulation->overlaySystem().AddIrrigationDitch(centerTile() + WorldTile2::RotateTileVector(WorldTile2(-3, 1), _faceDirection));
+
+	// Invisible Irrigation Connection
+	_area.ExecuteOnBorder_WorldTile2([&](WorldTile2 tile) {
+		_simulation->overlaySystem().AddIrrigationDitch(tile, false);
+	});
 }
 
+void IrrigationPump::OnDeinit()
+{
+	_simulation->overlaySystem().RemoveIrrigationDitch(centerTile() + WorldTile2::RotateTileVector(WorldTile2(-3, 1), _faceDirection));
+	
+	// Invisible Irrigation Connection
+	_area.ExecuteOnBorder_WorldTile2([&](WorldTile2 tile) {
+		_simulation->overlaySystem().RemoveIrrigationDitch(tile);
+	});
+}
 
 /*
  * Provincial Building
@@ -2016,19 +2032,49 @@ void ProvinceRuin::FinishConstruction()
 		MakeLevelUpgrade(
 			LOCTEXT("ProvinceRuinUpgrade_Dig", "Artifact Excavation"),
 			LOCTEXT("ProvinceRuinUpgrade_Dig Desc", "Excavate the site for Artifacts"),
-			ResourceEnum::Money, 100, 100
+			ResourceEnum::Money, 100, 70 // roughly half mil to get to lvl 10...
 		),
 	});
 
 	Building::FinishConstruction();
 }
 
-void ProvinceRuin::OnUpgradeBuilding(int upgradeIndex)
+void ProvinceRuin::OnUpgradeBuildingWithPlayerId(int32 upgradeIndex, int32 upgraderPlayerId)
 {
 	if (upgradeIndex == 0)
 	{
-		_simulation->TryAddCardToBoughtHand(_playerId, CardEnum::Artifact1);
+		_simulation->TryAddCardToBoughtHand(upgraderPlayerId, CardEnum::Artifact1);
 	}
+}
+
+int32 ProvinceRuin::GetDigDistance(int32 upgraderPlayerId) const
+{
+	// The farther from nearest townhall, the more cost
+	int32 distanceToNearestTown = INT32_MAX;
+
+	const std::vector<int32>& townIds = _simulation->GetTownIds(upgraderPlayerId);
+	for (int32 townId : townIds) {
+		if (_simulation->townManagerBase(townId)->townhallId != -1) {
+			int32 distance = WorldTile2::Distance(_simulation->GetMajorTownhallGateFast(townId), centerTile());
+			distanceToNearestTown = std::min(distanceToNearestTown, distance);
+		}
+	}
+
+	return distanceToNearestTown;
+}
+
+int32 ProvinceRuin::GetDigDistanceFactor(int32 upgraderPlayerId) const
+{
+
+	const int32 distanceToDoublePrice = 300;
+	const int32 maxFactor = 500;
+
+	int32 digDistance = GetDigDistance(upgraderPlayerId);
+	if (digDistance == INT32_MAX) {
+		return maxFactor;
+	}
+	
+	return std::min(maxFactor, 100 + 100 * std::max(0, digDistance - distanceToDoublePrice) / distanceToDoublePrice);
 }
 
 /*

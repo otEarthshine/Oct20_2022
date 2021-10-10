@@ -8,41 +8,49 @@
 void UDiplomacyUI::TickUI()
 {
 	LEAN_PROFILING_UI(TickDiplomacyUI);
+
+	if (!IsVisible() || targetTownId == -1) {
+		return;
+	}
 	
 	auto& sim = simulation();
+	
 
-	if (IsVisible() &&
-		aiPlayerId != -1 &&
-		sim.IsAIPlayer(aiPlayerId))
+	/*
+	 * AI Town
+	 */
+	if (sim.IsAITown(targetTownId))
 	{
 		// Name
-		SetText(PlayerNameText, sim.playerName(aiPlayerId));
+		SetText(PlayerNameText, sim.townNameT(targetTownId));
 
 		// Relationship
-		auto& aiPlayerSys = sim.aiPlayerSystem(aiPlayerId);
+		TownManagerBase* townManagerBase = sim.townManagerBase(targetTownId);
 		TArray<FText> args;
-		aiPlayerSys.relationship().GetAIRelationshipText(args, playerId());
+		townManagerBase->relationship().GetAIRelationshipText(args, playerId());
 		SetText(RelationshipText, args);
 
 		// Interactions
-		if (aiPlayerSys.shouldShow_DeclareFriendship(playerId()))
+		if (townManagerBase->shouldShow_DeclareFriendship(playerId()))
 		{
-			bool isRed = sim.moneyCap32(playerId()) < aiPlayerSys.friendshipPrice();
+			bool isRed = sim.moneyCap32(playerId()) < townManagerBase->friendshipPrice();
 			ADDTEXT_LOCTEXT("Declare Friendship", "Declare Friendship");
-			ADDTEXT_(INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(TEXT_NUM(aiPlayerSys.friendshipPrice()), isRed));
+			ADDTEXT_(INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(TEXT_NUM(townManagerBase->friendshipPrice()), isRed));
 			InteractionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::DeclareFriendship, !isRed, false);
 		}
 
 		args.Empty();
-		if (aiPlayerSys.shouldShow_MarryOut(playerId()))
+		if (townManagerBase->shouldShow_MarryOut(playerId()))
 		{
-			bool isRed = sim.moneyCap32(playerId()) < aiPlayerSys.marryOutPrice();
+			bool isRed = sim.moneyCap32(playerId()) < townManagerBase->marryOutPrice();
 			ADDTEXT_LOCTEXT("Marry out", "Marry out daughter or son");
-			ADDTEXT_(INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(TEXT_NUM(aiPlayerSys.marryOutPrice()), isRed));
+			ADDTEXT_(INVTEXT("\n<img id=\"Coin\"/>{0}"), TextRed(TEXT_NUM(townManagerBase->marryOutPrice()), isRed));
 			InteractionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::MarryOut, !isRed, false);
 		}
+		
 		InteractionBox->AfterAdd();
 	}
+	
 }
 
 

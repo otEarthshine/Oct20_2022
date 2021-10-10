@@ -90,8 +90,134 @@ private:
 
 	//void ShowSmoke(int radius, WorldAtom2 centerAtom);
 
+
+	std::pair<GridConnectType, int8_t> GetGridConnectType_Fence(WorldTile2 tile, bool isGate)
+	{
+		return GetGridConnectType(tile, [&](WorldTile2 tileLocal) {
+			Building* bld = simulation().buildingAtTile(tileLocal);
+			return (bld != nullptr) && (bld->isEnum(CardEnum::Fence) || bld->isEnum(CardEnum::FenceGate));
+		}, false, isGate);
+	}
+	
 	// give back connectionType and mesh rotation from default
-	std::pair<GridConnectType, int8_t> GetGridConnectType(WorldTile2 tile, bool isGate = false);
+	template <typename Func>
+	std::pair<GridConnectType, int8_t> GetGridConnectType(WorldTile2 tile, Func isConnected, bool hasEnd, bool isGate)
+	{
+		bool top = false;
+		bool bottom = false;
+		bool right = false;
+		bool left = false;
+		int connectCount = 0;
+
+		WorldTile2 topTile = tile + WorldTile2(1, 0);
+		WorldTile2 rightTile = tile + WorldTile2(0, 1);
+		WorldTile2 leftTile = tile + WorldTile2(0, -1);
+		WorldTile2 bottomTile = tile + WorldTile2(-1, 0);
+
+		// Special case: Gate's road
+		if (isGate) {
+			const auto& overlaySys = simulation().overlaySystem();
+			if (overlaySys.IsRoad(topTile) || overlaySys.IsRoad(bottomTile)) {
+				return { GridConnectType::Opposite, 1 };
+			}
+			if (overlaySys.IsRoad(rightTile) || overlaySys.IsRoad(leftTile)) {
+				return { GridConnectType::Opposite, 0 };
+			}
+		}
+
+		// Calc bools
+		if (topTile.x < GameMapConstants::TilesPerWorldX) {
+			top = isConnected(topTile);
+			connectCount += top;
+		}
+		if (rightTile.y < GameMapConstants::TilesPerWorldY) {
+			right = isConnected(rightTile);
+			connectCount += right;
+		}
+		if (leftTile.y >= 0) {
+			left = isConnected(leftTile);
+			connectCount += left;
+		}
+		if (bottomTile.y >= 0) {
+			bottom = isConnected(bottomTile);
+			connectCount += bottom;
+		}
+
+		// Each GridConnectType's default... Clockwise, first arm start on +x
+		// { GridConnectType::Three, 2 } means it rotates 2 times from default
+
+		if (connectCount == 4) {
+			return { GridConnectType::Four, 0 };
+		}
+		if (connectCount == 3) {
+			if (!left) {
+				return { GridConnectType::Three, 0 };
+			}
+			if (!top) {
+				return { GridConnectType::Three, 1 };
+			}
+			if (!right) {
+				return { GridConnectType::Three, 2 };
+			}
+			else {
+				check(!bottom);
+				return { GridConnectType::Three, 3 };
+			}
+		}
+		if (connectCount == 2) {
+			// Opposite
+			if (top && bottom) {
+				return { GridConnectType::Opposite, 0 };
+			}
+			if (left && right) {
+				return { GridConnectType::Opposite, 1 };
+			}
+			// Adjacent
+			if (top && right) {
+				return { GridConnectType::Adjacent, 0 };
+			}
+			if (right && bottom) {
+				return { GridConnectType::Adjacent, 1 };
+			}
+			if (bottom && left) {
+				return { GridConnectType::Adjacent, 2 };
+			}
+			if (left && top) {
+				return { GridConnectType::Adjacent, 3 };
+			}
+			else {
+				UE_DEBUG_BREAK();
+			}
+		}
+		else if (connectCount == 1) 
+		{
+			if (hasEnd)
+			{
+				if (top) return { GridConnectType::End, 0 };
+				if (right) return { GridConnectType::End, 1 };
+				if (bottom) return { GridConnectType::End, 2 };
+				if (left) return { GridConnectType::End, 3 };
+			}
+			else
+			{
+				if (top || bottom) {
+					return { GridConnectType::Opposite, 0 };
+				}
+				return { GridConnectType::Opposite, 1 };
+			}
+		}
+		else if (connectCount == 0) {
+			return { GridConnectType::Opposite, 1 };
+		}
+
+		UE_DEBUG_BREAK();
+		return pair<GridConnectType, int8_t>();
+	}
+
+
+
+
+	
 
 	void UpdateDisplayOverlay(Building& building, OverlayType overlayType);
 	void UpdateDisplayLight(Building& building);

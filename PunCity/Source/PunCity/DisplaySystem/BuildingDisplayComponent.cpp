@@ -196,7 +196,8 @@ void UBuildingDisplayComponent::OnSpawnDisplay(int objectId, int meshId, WorldAt
 void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom, bool justSpawned, bool justCreated)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_DisplayBuilding);
-	
+
+	auto& sim = simulation();
 	auto& buildingList = simulation().buildingSystem().buildingSubregionList();
 	BuildingSystem& buildingSystem = simulation().buildingSystem();
 	WorldRegion2 region(regionId);
@@ -214,7 +215,10 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 	OverlayType overlayType = gameManager()->GetOverlayType();
 	const GameDisplayInfo& displayInfo = gameManager()->displayInfo();
 
-	if (simulation().NeedDisplayUpdate(DisplayClusterEnum::Building, regionId) || isMainMenuDisplay)
+	/*
+	 * Building Modules
+	 */
+	if (sim.NeedDisplayUpdate(DisplayClusterEnum::Building, regionId) || isMainMenuDisplay)
 	{
 		//PUN_LOG("--- Display Construction NeedDisplayUpdate regionId:%d", regionId);
 		
@@ -258,7 +262,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 				return;
 			}
 
-			// Special case Tunnel
+			// Special case: Tunnel
 			if (buildingEnum == CardEnum::Tunnel)
 			{
 				TileArea area = building.area();
@@ -277,17 +281,18 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 				return;
 			}
 
+
 			// Building mesh
 			float buildingRotation;
 			int32 displayVariationIndex;
 			if (buildingEnum == CardEnum::Fence) {
-				pair<GridConnectType, int8_t> connectInfo = GetGridConnectType(building.centerTile());
+				pair<GridConnectType, int8_t> connectInfo = GetGridConnectType_Fence(building.centerTile(), false);
 				displayVariationIndex = static_cast<int32_t>(connectInfo.first);
 				buildingRotation = connectInfo.second * 90;
 			}
 			else if (buildingEnum == CardEnum::FenceGate) {
 				displayVariationIndex = building.displayVariationIndex();
-				buildingRotation = GetGridConnectType(building.centerTile(), true).second * 90 - 90; // Wall has 0 rotation as up/down. Gate must be adjusted since 0 rotation is right/left.
+				buildingRotation = GetGridConnectType_Fence(building.centerTile(), true).second * 90 - 90; // Wall has 0 rotation as up/down. Gate must be adjusted since 0 rotation is right/left.
 			}
 			else {
 				displayVariationIndex = building.displayVariationIndex();
@@ -334,8 +339,6 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 			// Special case: Farm
 			else if (buildingEnum == CardEnum::Farm)
 			{
-				auto& sim = simulation();
-
 				const std::vector<FarmTile>& farmTiles = building.subclass<Farm>().farmTiles();
 
 				// Check Duplicate
@@ -399,50 +402,6 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 			}
 			else if (building.isConstructed())
 			{
-
-				
-				//// Special case (before focus check): Farm
-				//if (buildingEnum == CardEnum::Farm)
-				//{
-				//	auto& sim = simulation();
-
-				//	const std::vector<FarmTile>& farmTiles = building.subclass<Farm>().farmTiles();
-
-				//	// Check Duplicate
-				//	TSet<int32> farmWorldTilesTemp;
-				//	for (FarmTile farmTile : farmTiles) {
-				//		check(!farmWorldTilesTemp.Contains(farmTile.worldTile.tileId()));
-				//		farmWorldTilesTemp.Add(farmTile.worldTile.tileId());
-				//	}
-
-				//	for (int32 i = 0; i < farmTiles.size(); i++)
-				//	{
-				//		WorldTile2 tile = farmTiles[i].worldTile;
-
-				//		uint32 height = 0;
-
-				//		if (sim.buildingIdAtTile(tile + WorldTile2(-1, -1)) != buildingId) height += 1;
-				//		if (sim.buildingIdAtTile(tile + WorldTile2(-1, 0)) != buildingId) height += 2;
-				//		if (sim.buildingIdAtTile(tile + WorldTile2(-1, 1)) != buildingId) height += 4;
-				//		if (sim.buildingIdAtTile(tile + WorldTile2(0, -1)) != buildingId) height += 8;
-				//		if (sim.buildingIdAtTile(tile + WorldTile2(0, 1)) != buildingId) height += 16;
-				//		if (sim.buildingIdAtTile(tile + WorldTile2(1, -1)) != buildingId) height += 32;
-				//		if (sim.buildingIdAtTile(tile + WorldTile2(1, 0)) != buildingId) height += 64;
-				//		if (sim.buildingIdAtTile(tile + WorldTile2(1, 1)) != buildingId) height += 128;
-				//		
-				//		if (buildingId == selectedBuildingId) height += 256;
-
-				//		int32 instanceKey = tile.tileId() + height * GameMapConstants::TilesPerWorld;
-
-				//		FTransform farmTransform(
-				//			FRotator(0, 0, 0),
-				//			tile.localTile(region).localDisplayLocation() + FVector(0, 0, height)
-				//		);
-				//		_moduleMeshes[meshId]->Add("FarmTile", instanceKey, farmTransform, 0, buildingId);
-				//	}
-
-				//	return;
-				//}
 				
 				/*
 				 * Focus Check
@@ -642,6 +601,62 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 
 		});
 
+		/*
+		 * Special Buildings
+		 */
+		//! Ditch
+		{
+			auto& overlaySys = sim.overlaySystem();
+			const std::vector<DitchTile>& ditches = overlaySys.irrigationDitches(regionId);
+
+			for (const DitchTile& ditchTile : ditches)
+			{
+				if (ditchTile.isVisible)
+				{
+					pair<GridConnectType, int8_t> connectInfo = GetGridConnectType(ditchTile.tile, [&](WorldTile2 tileLocal) {
+						return overlaySys.IsIrrigationDitch(tileLocal);
+					}, true, false);
+
+					int32 buildingRotation = connectInfo.second * 90;
+					FTransform transform(FRotator(0, buildingRotation, 0), ditchTile.tile.localTile().localDisplayLocation());
+
+					auto addMeshes = [&](int32 displayVariationIndex)
+					{
+						const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(FactionEnum::Arab, CardEnum::IrrigationDitch, displayVariationIndex);
+						std::vector<ModuleTransform> modules = modulePrototype.transforms;
+						for (const ModuleTransform& moduleTransform : modules) {
+							_moduleMeshes[meshId]->Add(moduleTransform.moduleName, ditchTile.tile.tileId(), transform, 0);
+						}
+					};
+
+					addMeshes(static_cast<int32_t>(connectInfo.first));
+
+					// Ditch Road Bridge
+					if (sim.IsRoadTile(ditchTile.tile)) {
+						addMeshes(5);
+					}
+				}
+			}
+		}
+		
+		//! Oasis
+		{
+			const ProvinceBuildingSlot& slot = sim.provinceInfoSystem().provinceBuildingSlot(regionId);
+			if (slot.isValid() && slot.oasisSlot.isValid())
+			{
+				WorldTile2 centerTile = slot.oasisSlot.centerTile;
+				LocalTile2 localTile = centerTile.localTile(region);
+				
+				const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(FactionEnum::Arab, CardEnum::Oasis, 0);
+				FTransform transform(FRotator::ZeroRotator, localTile.localDisplayLocation());
+
+				std::vector<ModuleTransform> modules = modulePrototype.transforms;
+				_moduleMeshes[meshId]->Add(modules[2].moduleName, centerTile.tileId(), transform, 0);
+				_moduleMeshes[meshId]->Add(modules[4].moduleName, centerTile.tileId(), transform, 0);
+			}
+		}
+		
+
 		// Hidden part highlight on base
 		_moduleMeshes[meshId]->SetCustomDepth("ConstructionBaseHighlight", 4);
 		_moduleMeshes[meshId]->SetReceivesDecals("ConstructionBaseHighlight", true);
@@ -655,8 +670,9 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 
 		_moduleMeshes[meshId]->AfterAdd();
 
-		simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Building, regionId, false);
+		sim.SetNeedDisplayUpdate(DisplayClusterEnum::Building, regionId, false);
 	}
+	
 	
 
 	/*
@@ -840,13 +856,13 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 			
 			for (size_t i = demolishInfos.size(); i-- > 0;) 
 			{
-				// Trailer only show dust on DirtRoad
-				if (PunSettings::TrailerSession && 
-					demolishInfos[i].buildingEnum != CardEnum::DirtRoad)
-				{
-					demolishInfos.erase(demolishInfos.begin() + i);
-					continue;
-				}
+				//// Trailer only show dust on DirtRoad
+				//if (PunSettings::TrailerSession && 
+				//	demolishInfos[i].buildingEnum != CardEnum::DirtRoad)
+				//{
+				//	demolishInfos.erase(demolishInfos.begin() + i);
+				//	continue;
+				//}
 
 				// Find and spawn
 				for (int32 j = 0; j < _demolishInfos.size(); j++) {
@@ -886,8 +902,12 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 			demolishInfos.clear();
 		}
 	}
+	
 
 
+	/*
+	 * Decals/Light
+	 */
 	{
 		//SCOPE_TIMER("Tick Building: Decals");
 		
@@ -1035,111 +1055,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 	}
 }
 
-pair<GridConnectType, int8_t> UBuildingDisplayComponent::GetGridConnectType(WorldTile2 tile, bool isGate)
-{
-	bool top = false;
-	bool bottom = false;
-	bool right = false;
-	bool left = false;
-	int connectCount = 0;
 
-	WorldTile2 topTile = tile + WorldTile2(1, 0);
-	WorldTile2 rightTile = tile + WorldTile2(0, 1);
-	WorldTile2 leftTile = tile + WorldTile2(0, -1);
-	WorldTile2 bottomTile = tile + WorldTile2(-1, 0);
-
-	// Gate's road special case
-	if (isGate) {
-		const auto& overlaySys = simulation().overlaySystem();
-		if (overlaySys.IsRoad(topTile) || overlaySys.IsRoad(bottomTile)) {
-			return { GridConnectType::Opposite, 1 };
-		}
-		if (overlaySys.IsRoad(rightTile) || overlaySys.IsRoad(leftTile)) {
-			return { GridConnectType::Opposite, 0 };
-		}
-	}
-
-	// Calc bools
-	if (topTile.x < GameMapConstants::TilesPerWorldX) {
-		Building* bld = simulation().buildingAtTile(topTile);
-		top = (bld != nullptr) && (bld->isEnum(CardEnum::Fence) || bld->isEnum(CardEnum::FenceGate));
-		connectCount += top;
-	}
-	if (rightTile.y < GameMapConstants::TilesPerWorldY) {
-		Building* bld = simulation().buildingAtTile(rightTile);
-		right = (bld != nullptr) && (bld->isEnum(CardEnum::Fence) || bld->isEnum(CardEnum::FenceGate));
-		connectCount += right;
-	}
-	if (leftTile.y >= 0) {
-		Building* bld = simulation().buildingAtTile(leftTile);
-		left = (bld != nullptr) && (bld->isEnum(CardEnum::Fence) || bld->isEnum(CardEnum::FenceGate));
-		connectCount += left;
-	}
-	if (bottomTile.y >= 0) {
-		Building* bld = simulation().buildingAtTile(bottomTile);
-		bottom = (bld != nullptr) && (bld->isEnum(CardEnum::Fence) || bld->isEnum(CardEnum::FenceGate));
-		connectCount += bottom;
-	}
-
-	// Each GridConnectType's default... Clockwise, first arm start on +x
-	// { GridConnectType::Three, 2 } means it rotates 2 times from default
-
-	if (connectCount == 4) {
-		return { GridConnectType::Four, 0 };
-	}
-	if (connectCount == 3) {
-		if (!left) {
-			return { GridConnectType::Three, 0 };
-		}
-		if (!top) {
-			return { GridConnectType::Three, 1 };
-		}
-		if (!right) {
-			return { GridConnectType::Three, 2 };
-		}
-		else {
-			check(!bottom);
-			return { GridConnectType::Three, 3 };
-		}
-	}
-	if (connectCount == 2) {
-		// Opposite
-		if (top && bottom) {
-			return { GridConnectType::Opposite, 0 };
-		}
-		if (left && right) {
-			return { GridConnectType::Opposite, 1 };
-		}
-		// Adjacent
-		if (top && right) {
-			return { GridConnectType::Adjacent, 0 };
-		}
-		if (right && bottom) {
-			return { GridConnectType::Adjacent, 1 };
-		}
-		if (bottom && left) {
-			return { GridConnectType::Adjacent, 2 };
-		}
-		if (left && top) {
-			return { GridConnectType::Adjacent, 3 };
-		}
-		else {
-			UE_DEBUG_BREAK();
-		}
-	}
-	else if (connectCount == 1) {
-		if (top || bottom) {
-			return { GridConnectType::Opposite, 0 };
-		}
-		return { GridConnectType::Opposite, 1 };
-	}
-	else if (connectCount == 0) {
-		return { GridConnectType::Opposite, 1 };
-	}
-
-	UE_DEBUG_BREAK();
-	return pair<GridConnectType, int8_t>();
-}
 
 
 void UBuildingDisplayComponent::UpdateDisplayBuilding(int objectId, int meshId, WorldAtom2 cameraAtom)

@@ -556,8 +556,6 @@ public:
 
 		ReinforcementRemovedOuterBox->SetVisibility(ESlateVisibility::Collapsed);
 
-		ProvinceAttackEnum provinceAttackEnum = simulation().GetProvinceAttackEnum(playerId(), provinceId, callbackEnum);
-
 		BUTTON_ON_CLICK(ReinforcementSubmitButton, this, &UMainGameUI::OnClickReinforcementSubmitButton);
 		BUTTON_ON_CLICK(ReinforcementCancelButton, this, &UMainGameUI::OnClickReinforcementCancelButton);
 		BUTTON_ON_CLICK(ReinforcementCloseXButton->CoreButton, this, &UMainGameUI::OnClickReinforcementCancelButton);

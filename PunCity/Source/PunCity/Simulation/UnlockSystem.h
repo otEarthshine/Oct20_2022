@@ -387,6 +387,22 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 		LOCTEXT("Card Inventory II", "Card Inventory II"),
 		LOCTEXT("Card Inventory II Desc", "Expand the number of slots in the Card Inventory (14 slots)."),
 	}},
+
+	/*
+	 * October 7
+	 */
+	{ TechEnum::Fort, {
+		LOCTEXT("Border Protection", "Border Protection"),
+		LOCTEXT("Border Protection Desc", "TODO:TEXT"),
+	} },
+	{ TechEnum::TradeRoute, {
+		LOCTEXT("Trade Route", "Trade Route"),
+		LOCTEXT("Trade Route Desc", "TODO:TEXT"),
+	} },
+	{ TechEnum::ForeignRelation, {
+		LOCTEXT("Foreign Relation", "Foreign Relation"),
+		LOCTEXT("Foreign Relation Desc", "TODO:TEXT"), // Unlock Influence??
+	} },
 };
 
 enum class TechClassEnum
@@ -1061,11 +1077,11 @@ public:
 			AddTech_Building(TechEnum::Blacksmith, { TechEnum::Ironworks, TechEnum::BrickMaking },
 				CardEnum::Blacksmith
 			);
-			AddTech_Building(TechEnum::PaperMaker, { TechEnum::Library },
-				CardEnum::PaperMaker
+			AddTech_Building(TechEnum::Fort, { TechEnum::BrickMaking },
+				CardEnum::Fort
 			);
-			AddTech_Building(TechEnum::Archives, { TechEnum::Library },
-				CardEnum::Archives
+			AddTech_Building(TechEnum::TradingCompany, { TechEnum::Library },
+				CardEnum::TradingCompany
 			);
 			AddTech_Building(TechEnum::Logistics2, { TechEnum::AgriculturalRevolution, TechEnum::Logistics1 },
 				{ CardEnum::Market }
@@ -1088,21 +1104,21 @@ public:
 				{ CardEnum::GoldSmelter }
 			);
 			AddTech_Bonus(TechEnum::QuickBuild, { TechEnum::Blacksmith });
-			AddTech_Building(TechEnum::Medicine, { TechEnum::PaperMaker },
-				CardEnum::MedicineMaker
-			);
-			AddTech_Building(TechEnum::CardMaker, { TechEnum::PaperMaker, TechEnum::Archives, TechEnum::Logistics2 },
-				CardEnum::CardMaker
+			AddTech_Bonus(TechEnum::TradeRoute, { TechEnum::Fort });
+			AddTech_Building(TechEnum::ForeignRelation, { TechEnum::Fort, TechEnum::TradingCompany, TechEnum::Logistics2 },
+				CardEnum::Embassy
 			);
 			AddTech_BuildingPermanent(TechEnum::Logistics3, { TechEnum::Logistics2 },
 				{ CardEnum::Warehouse }
 			);
 
-			AddTech_Building(TechEnum::Winery, { TechEnum::Baking },
+			AddTech_Building(TechEnum::Winery, { TechEnum::Baking, TechEnum::VodkaDistillery },
 				CardEnum::Winery,
 				TechRequirements::HouseLvlCount(4, 15)
 			);
-			AddTech_Bonus(TechEnum::CropBreeding, { TechEnum::VodkaDistillery, TechEnum::Beekeeper });
+			AddTech_Building(TechEnum::Medicine, { TechEnum::VodkaDistillery, TechEnum::Beekeeper },
+				CardEnum::MedicineMaker
+			);
 			AddTech_Building(TechEnum::CandleMaker, { TechEnum::Beekeeper },
 				CardEnum::CandleMaker,
 				TechRequirements::HouseLvlCount(2, 30)
@@ -1117,11 +1133,11 @@ public:
 			AddTech_Building(TechEnum::GlassSmelting, { TechEnum::QuickBuild, TechEnum::GoldSmelting },
 				{ CardEnum::SandMine, CardEnum::GlassSmelter }
 			);
-			AddTech_Building(TechEnum::CoffeeRoaster, { TechEnum::Medicine },
+			AddTech_Building(TechEnum::CoffeeRoaster, { TechEnum::TradeRoute },
 				CardEnum::CoffeeRoaster,
 				TechRequirements::HouseLvlCount(4, 40)
 			);
-			AddTech_Building(TechEnum::School, { TechEnum::Medicine, TechEnum::CardMaker },
+			AddTech_Building(TechEnum::School, { TechEnum::TradeRoute, TechEnum::ForeignRelation },
 				CardEnum::School
 			);
 			AddTech_Building(TechEnum::Logistics4, { TechEnum::Logistics3 },
@@ -1131,7 +1147,7 @@ public:
 				{ CardEnum::StoneRoad }
 			);
 			
-			AddTech_Building(TechEnum::Irrigation, { TechEnum::CropBreeding, TechEnum::CandleMaker },
+			AddTech_Building(TechEnum::Irrigation, { TechEnum::Medicine, TechEnum::CandleMaker },
 				{ CardEnum::IrrigationReservoir, CardEnum::IrrigationPump }
 			);
 			
@@ -1295,8 +1311,8 @@ public:
 			
 			//
 			_columnIndex = 3;
-			AddTech_Building(TechEnum::TradingCompany, {},
-				{ CardEnum::TradingCompany }
+			AddTech_Building(TechEnum::Archives, {},
+				{ CardEnum::Archives }
 			);
 			AddTech_CardGiving(TechEnum::SmelterCombo, { TechEnum::QuarryImprovement },
 				CardEnum::SmeltCombo
@@ -1317,7 +1333,7 @@ public:
 			
 			//
 			_columnIndex = 4;
-			AddTech_Bonus(TechEnum::TradeRelations, { TechEnum::TradingCompany });
+			AddTech_Bonus(TechEnum::TradeRelations, { TechEnum::Archives });
 			AddTech_CardGiving(TechEnum::CoalPipeline, { TechEnum::SmelterCombo },
 				CardEnum::CoalPipeline
 			);
@@ -1361,8 +1377,8 @@ public:
 			AddTech_CardGiving(TechEnum::Lockdown, { TechEnum::SlaveLabor },
 				{ CardEnum::Lockdown }
 			);
-			AddTech_Building(TechEnum::Fort, { TechEnum::Vassalize },
-				CardEnum::Fort
+			AddTech_Building(TechEnum::PaperMaker, { TechEnum::Vassalize },
+				CardEnum::PaperMaker
 			);
 
 			

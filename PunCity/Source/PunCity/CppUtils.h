@@ -23,6 +23,18 @@ public:
 		return false;
 	}
 
+
+	template<typename T, typename Func>
+	static bool TryAdd_If(std::vector<T>& v, const T& value, Func checkFunc) {
+		auto found = std::find_if(v.begin(), v.end(), checkFunc);
+		if (found == v.end()) {
+			v.push_back(value);
+			return true;
+		}
+		return false;
+	}
+	
+
 	template<typename T>
 	static void AppendVec(std::vector<T>& v1, const std::vector<T>& v2) {
 		v1.insert(v1.end(), v2.begin(), v2.end());
@@ -67,6 +79,19 @@ public:
 		}
 		return false;
 	}
+
+	template<typename T, typename Func>
+	static bool TryRemoveIf(std::vector<T>& v, Func shouldRemove) {
+		bool removed = false;
+		for (int i = v.size(); i-- > 0;) {
+			if (shouldRemove(v[i])) {
+				v.erase(v.begin() + i);
+				removed = true;
+			}
+		}
+		return removed;
+	}
+	
 
 	template<typename T>
 	static void RemoveAll(std::vector<T>& v, T value) {

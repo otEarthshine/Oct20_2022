@@ -315,7 +315,7 @@ void PunTerrainGenerator::GenerateMoisture()
 			}
 
 			// Calculate rainfall ... Affected by mountain block
-			const int32 maxMountainRainFactor1000 = 124; // Oct 5: 124
+			const int32 maxMountainRainFactor1000 = 90; // Oct 5: 124
 			int32 rainFactor1000 = 30 + maxMountainRainFactor1000 * _isMountain4x4Map[centerId] / 255; // Oct 5: 20 base
 			int32 rainAmount = cloudLeft * rainFactor1000 / 1000;
 
@@ -326,17 +326,11 @@ void PunTerrainGenerator::GenerateMoisture()
 		
 		const int half4x4DimX = _tile4x4DimX / 2;
 
-		// At desert latitude, we get less rain...
-		auto isDesertLatitude = [&] (int x4) {
-			int32 latitudeFraction100 = abs(x4 - half4x4DimX) * 100 / half4x4DimX;
-			return forestTemperatureStart100 < latitudeFraction100 && latitudeFraction100 < borealTemperatureStart100;
-		};
-
 		/*
 		 * Parameters
 		 */
-		const int32 normalCloudStartSize_MediumWet = 5800 * 2 / 3;// Oct5: 5800
-		const int32 desertCloudStartSize_MediumWet = 2000 * 2 / 3;// Oct5: 3000
+		const int32 normalCloudStartSize_MediumWet = 5000; // Oct5: 5800
+		const int32 desertCloudStartSize_MediumWet = 1200 * 3 / 4;// Oct5: 3000
 
 		int32 moistureInt = static_cast<int>(_mapSettings.mapMoisture);
 		int32 normalCloudStartSize = moistureInt * normalCloudStartSize_MediumWet / 2;
@@ -354,6 +348,18 @@ void PunTerrainGenerator::GenerateMoisture()
 			normalCloudStartSize = normalCloudStartSize * 20;
 			desertCloudStartSize = desertCloudStartSize * 20;
 		}
+
+		// At desert latitude, we get less rain...
+		auto isDesertLatitudeLongitude = [&](int x4, int y4) {
+			int32 latitudeFraction100 = abs(x4 - half4x4DimX) * 100 / half4x4DimX;
+			// latitudeFraction100... 0 at equator .. 1 at poles
+			if (forestTemperatureStart100 < latitudeFraction100 && latitudeFraction100 < borealTemperatureStart100) {
+				int32 longitudeFraction100 = abs(y4 - _tile4x4DimY / 2) * 100 / (_tile4x4DimY / 2);
+				// longitudeFraction100 .. 0 at middle of map .. 1 at outer part of map
+				return longitudeFraction100 > 18; // middle 18% of map is forced to be forest
+			}
+			return false;
+		};
 		
 
 #define WESTWARD_WIND
@@ -365,7 +371,7 @@ void PunTerrainGenerator::GenerateMoisture()
 			// Calculate all tiles perpendicular to the wind
 			for (int x4 = 0; x4 < _tile4x4DimX; x4++) 
 			{
-				int32 startCloudSize = isDesertLatitude(x4) ? desertCloudStartSize : 0;
+				int32 startCloudSize = isDesertLatitudeLongitude(x4, y4) ? desertCloudStartSize : 0;
 				wind(x4 + y4 * _tile4x4DimX, cloudLeftVec[x4], startCloudSize);
 			}
 
@@ -392,7 +398,7 @@ void PunTerrainGenerator::GenerateMoisture()
 		for (int y4 = 0; y4 < _tile4x4DimY; y4++) 
 		{
 			for (int x4 = 0; x4 < _tile4x4DimX; x4++) {
-				int32 startCloudSize = isDesertLatitude(x4) ? 0 : normalCloudStartSize;
+				int32 startCloudSize = isDesertLatitudeLongitude(x4, y4) ? 0 : normalCloudStartSize;
 				wind(x4 + y4 * _tile4x4DimX, cloudLeftVec[x4], startCloudSize);
 			}
 
@@ -1557,7 +1563,7 @@ int32 PunTerrainGenerator::GetFertilityPercent(WorldTile2 tile)
 
 	int32 fertility = WorldTile4x4::Get4x4Lerped(tile, _tile4x4DimX, _tile4x4DimY, [&](int32_t tile4x4Id) {
 		int32 rainfall255 = _rainfall4x4Map[tile4x4Id];
-		int32 riverMoisture255 = std::min(255, static_cast<int32>(_river4x4Map[tile4x4Id]) * 1); // Oct 5: *9
+		int32 riverMoisture255 = std::min(255, static_cast<int32>(_river4x4Map[tile4x4Id]) * 2); // Oct 5: *9
 		return (rainfall255 + riverMoisture255) * 100 / 255;
 	});
 
@@ -1582,19 +1588,37 @@ int32 PunTerrainGenerator::GetFertilityPercent(WorldTile2 tile)
 
 	int32 provinceId = _simulation->GetProvinceIdClean(tile);
 	if (provinceId != -1)
-	{
-		GeoresourceEnum georesourceEnum = _simulation->georesource(provinceId).georesourceEnum;
+	{	
 		if (fertility <= 100)
 		{
+			// Farm Georesource
+			GeoresourceEnum georesourceEnum = _simulation->georesource(provinceId).georesourceEnum;
+			
 			if (IsFarmGeoresource(georesourceEnum))
 			{
-				int32 fertilityBuff100 = max(0, 20 - WorldTile2::Distance(tile.region().centerTile(), tile));
+				int32 fertilityBuff100 = max(0, 20 - WorldTile2::Distance(tile.region().centerTile(), tile)); // Use region center so it doesn't leak out of province
 				fertilityBuff100 = fertilityBuff100 * 50 / 16;
 				fertility = fertility + fertilityBuff100;
 
 				fertility = min(100, fertility);
 			}
 		}
+
+		if (fertility <= 100)
+		{
+			// Oasis
+			const std::vector<int32>& oasisProvinceIds = _simulation->provinceInfoSystem().oasisSlotProvinceIds();
+			for (int32 oasisProvinceId : oasisProvinceIds) {
+				int32 oasisDistance = WorldTile2::Distance(WorldRegion2(oasisProvinceId).centerTile(), tile);
+				if (oasisDistance < 50) {
+					int32 fertilityOasis = max(0, 30 - WorldTile2::Distance(_simulation->GetProvinceCenterTile(oasisProvinceId), tile)); // Use region center so it doesn't leak out of province
+					fertilityOasis = min(100, fertilityOasis * 120 / 30); // 20% higher fertility
+					fertility = max(fertility, fertilityOasis);
+					break;
+				}
+			}
+		}
+		
 
 		// nearby
 		int32 provinceTownId = _simulation->provinceOwnerTown_Major(provinceId);

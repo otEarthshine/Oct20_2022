@@ -221,12 +221,18 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 		auto material = _gameManager->ZoomDistanceBelow(WorldZoomTransition_GameToMap) ? comp->MaterialInstance : comp->MaterialInstance_Top;
 
 		bool isFade = false; // Fade when province has no owner, and province is not next to player
+		bool isVisible = true;
 		FLinearColor minorCityColor = FLinearColor::Black; // 
 		
 		int32 minorProvinceTownId = simulation().provinceOwnerTown_Minor(comp->provinceId);
 		if (minorProvinceTownId != -1)
 		{
-			minorCityColor = FLinearColor::MakeFromHSV8(GameRand::Rand(minorProvinceTownId) % 255, 255, 255);;
+			minorCityColor = FLinearColor::MakeFromHSV8(GameRand::Rand(minorProvinceTownId) % 255, 255, 255);
+
+			// Don't show lvl 1 Minor Town
+			if (simulation().townManagerBase(minorProvinceTownId)->GetMinorCityLevel() == 1) {
+				isVisible = false;
+			}
 		}
 		else
 		{
@@ -249,7 +255,7 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 		}
 		
 		material->SetScalarParameterValue("IsFade", isFade);
-		//material->SetScalarParameterValue("IsFade", (owner == -1) && !simulation().IsProvinceNextToPlayer(comp->provinceId, playerId()));
+		material->SetScalarParameterValue("IsVisible", isVisible);
 		material->SetVectorParameterValue("MinorCityColor", minorCityColor);
 
 		comp->SetMaterial(0, material);

@@ -281,9 +281,9 @@ public:
 		_giftResourceUI->FillDealInfo(sourceDealInfo, targetDealInfo);
 	}
 	
-	void OpenDiplomacyUI(int32 targetPlayerId) override {
+	virtual void OpenDiplomacyUI(int32 targetTownId) override {
 		networkInterface()->ResetGameUI();
-		_diplomacyUI->OpenUI(targetPlayerId);
+		_diplomacyUI->OpenDiplomacyUI(targetTownId);
 	}
 
 	virtual void OpenTrainUnitsUI(int32 townIdIn) override {

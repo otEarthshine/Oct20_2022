@@ -1121,7 +1121,7 @@ bool UnitStateAI::TryGoNearbyHome()
 	if (homeId == -1) {
 		// Human has townhall as backup
 		if (isEnum(UnitEnum::Human)) {
-			homeId = _simulation->GetTownhall(_townId).buildingId();
+			homeId = _simulation->GetTownhallMajor(_townId).buildingId();
 		}
 		else {
 			AddDebugSpeech("(Failed)TryGoNearbyHome: No Home");

@@ -1452,7 +1452,7 @@ public:
 	}
 	void resourcedebugStr(std::stringstream& ss) const
 	{
-		WorldTile2 townCenterTile = _simulation->GetTownhallGateFast(_townId);
+		WorldTile2 townCenterTile = _simulation->GetMajorTownhallGateFast(_townId);
 		
 		ss << "\n--- RESOURCE SYS --- \n";
 		for (const ResourceTypeHolders& holders : _enumToHolders) {
@@ -1462,7 +1462,7 @@ public:
 	}
 	void resourcedebugStr(std::stringstream& ss, ResourceEnum resourceEnum) const
 	{
-		WorldTile2 townCenterTile = _simulation->GetTownhallGateFast(_townId);
+		WorldTile2 townCenterTile = _simulation->GetMajorTownhallGateFast(_townId);
 
 		ss << "\n--- RESOURCE SYS --- \n";
 		holderGroupConst(resourceEnum).resourcedebugStr(ss, townCenterTile, _simulation);

@@ -204,64 +204,64 @@ void AIPlayerSystem::Tick1Sec()
 	}
 
 
-	/*
-	 * Update Relationship
-	 */
-	{
-		SCOPE_CYCLE_COUNTER(STAT_PunAIUpdateRelationship);
-
-		std::vector<int32> allPlayersAndAI = _simulation->GetAllPlayersAndAI();
-		for (int32 playerId = 0; playerId < allPlayersAndAI.size(); playerId++)
-		{
-			if (_simulation->HasTownhall(playerId))
-			{
-#define MODIFIER(EnumName) _relationshipModifiers.GetModifierMutable(playerId, RelationshipModifierEnum::EnumName)
-
-				// Decaying modifiers (decay every season)
-				if (Time::Ticks() % Time::TicksPerSeason == 0)
-				{
-					DecreaseToZero(MODIFIER(YouGaveUsGifts));
-					IncreaseToZero(MODIFIER(YouStealFromUs));
-					IncreaseToZero(MODIFIER(YouKidnapFromUs));
-				}
-
-				//if (Time::Ticks() % Time::TicksPerMinute == 0)
-				{
-					// Calculated modifiers
-					auto calculateStrength = [&](int32 playerIdScope) {
-						return _simulation->influence(playerIdScope) + _simulation->playerOwned(playerIdScope).totalInfluenceIncome100() * Time::RoundsPerYear;
-					};
-					int32 aiStrength = calculateStrength(_aiPlayerId);
-					int32 counterPartyStrength = calculateStrength(playerId);
-
-					MODIFIER(YouAreStrong) = Clamp((counterPartyStrength - aiStrength) / 50, 0, 20);
-					MODIFIER(YouAreWeak) = Clamp((aiStrength - counterPartyStrength) / 50, 0, 20);
-
-					const std::vector<int32>& provinceIds = _simulation->GetProvincesPlayer(_aiPlayerId);
-					int32 borderCount = 0;
-					for (int32 provinceId : provinceIds) {
-						const std::vector<ProvinceConnection>& connections = _simulation->GetProvinceConnections(provinceId);
-						for (const ProvinceConnection& connection : connections) {
-							if (_simulation->provinceOwnerPlayer(connection.provinceId) == playerId) {
-								borderCount++;
-							}
-						}
-					}
-					MODIFIER(AdjacentBordersSparkTensions) = std::max(-borderCount * 5, -20);
-
-					// townhall nearer 500 tiles will cause tensions
-					int32 townhallDistance = WorldTile2::Distance(_simulation->GetTownhallGateCapital(_aiPlayerId), _simulation->GetTownhallGateCapital(playerId));
-					if (townhallDistance <= 500) {
-						MODIFIER(TownhallProximitySparkTensions) = -20 * (500 - townhallDistance) / 500;
-					}
-					else {
-						MODIFIER(TownhallProximitySparkTensions) = 0;
-					}
-				}
-#undef MODIFIER
-			}
-		}
-	}
+//	/*
+//	 * Update Relationship
+//	 */
+//	{
+//		SCOPE_CYCLE_COUNTER(STAT_PunAIUpdateRelationship);
+//
+//		std::vector<int32> allPlayersAndAI = _simulation->GetAllPlayersAndAI();
+//		for (int32 playerId = 0; playerId < allPlayersAndAI.size(); playerId++)
+//		{
+//			if (_simulation->HasTownhall(playerId))
+//			{
+//#define MODIFIER(EnumName) _relationshipModifiers.GetModifierMutable(playerId, RelationshipModifierEnum::EnumName)
+//
+//				// Decaying modifiers (decay every season)
+//				if (Time::Ticks() % Time::TicksPerSeason == 0)
+//				{
+//					DecreaseToZero(MODIFIER(YouGaveUsGifts));
+//					IncreaseToZero(MODIFIER(YouStealFromUs));
+//					IncreaseToZero(MODIFIER(YouKidnapFromUs));
+//				}
+//
+//				//if (Time::Ticks() % Time::TicksPerMinute == 0)
+//				{
+//					// Calculated modifiers
+//					auto calculateStrength = [&](int32 playerIdScope) {
+//						return _simulation->influence(playerIdScope) + _simulation->playerOwned(playerIdScope).totalInfluenceIncome100() * Time::RoundsPerYear;
+//					};
+//					int32 aiStrength = calculateStrength(_aiPlayerId);
+//					int32 counterPartyStrength = calculateStrength(playerId);
+//
+//					MODIFIER(YouAreStrong) = Clamp((counterPartyStrength - aiStrength) / 50, 0, 20);
+//					MODIFIER(YouAreWeak) = Clamp((aiStrength - counterPartyStrength) / 50, 0, 20);
+//
+//					const std::vector<int32>& provinceIds = _simulation->GetProvincesPlayer(_aiPlayerId);
+//					int32 borderCount = 0;
+//					for (int32 provinceId : provinceIds) {
+//						const std::vector<ProvinceConnection>& connections = _simulation->GetProvinceConnections(provinceId);
+//						for (const ProvinceConnection& connection : connections) {
+//							if (_simulation->provinceOwnerPlayer(connection.provinceId) == playerId) {
+//								borderCount++;
+//							}
+//						}
+//					}
+//					MODIFIER(AdjacentBordersSparkTensions) = std::max(-borderCount * 5, -20);
+//
+//					// townhall nearer 500 tiles will cause tensions
+//					int32 townhallDistance = WorldTile2::Distance(_simulation->GetTownhallGateCapital(_aiPlayerId), _simulation->GetTownhallGateCapital(playerId));
+//					if (townhallDistance <= 500) {
+//						MODIFIER(TownhallProximitySparkTensions) = -20 * (500 - townhallDistance) / 500;
+//					}
+//					else {
+//						MODIFIER(TownhallProximitySparkTensions) = 0;
+//					}
+//				}
+//#undef MODIFIER
+//			}
+//		}
+//	}
 
 	/*
 	 * Do good/bad act once every year
@@ -281,7 +281,7 @@ void AIPlayerSystem::Tick1Sec()
 		int32 minRelationship = 0;
 		_simulation->ExecuteOnPlayersAndAI([&](int32 playerId)
 		{
-			int32 relationship = _relationshipModifiers.GetTotalRelationship(playerId);
+			int32 relationship = _simulation->townManagerBase(_aiPlayerId)->relationship().GetTotalRelationship(playerId);
 			if (relationship > maxRelationship) {
 				maxRelationship = relationship;
 				maxRelationshipPlayerId = playerId;

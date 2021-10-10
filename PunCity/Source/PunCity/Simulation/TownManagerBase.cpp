@@ -3,6 +3,7 @@
 
 #include "TownManagerBase.h"
 #include "BuildingCardSystem.h"
+#include "PlayerOwnedManager.h"
 
 void ProvinceClaimProgress::Reinforce(std::vector<CardStatus>& militaryCards, bool isReinforcingAttacker, int32 unitPlayerId)
 {
@@ -15,10 +16,9 @@ void ProvinceClaimProgress::Reinforce(std::vector<CardStatus>& militaryCards, bo
 	{
 		check(IsLandMilitaryCardEnum(card.cardEnum));
 		if (IsFrontlineCardEnum(card.cardEnum)) {
-			frontLine.push_back(card);
-		}
-		else {
-			backLine.push_back(card);
+			AddMilitaryCards(frontLine, card);
+		} else {
+			AddMilitaryCards(backLine, card);
 		}
 	}
 }
@@ -145,14 +145,16 @@ void TownManagerBase::Tick1Sec_TownBase()
 			RefreshMinorCityTargetWealth();
 		}
 	}
+
+
+	Tick1SecRelationship();
 }
 
 void TownManagerBase::ReturnMilitaryUnitCards(std::vector<CardStatus>& cards, int32 playerId, bool forcedAll)
 {
 	for (CardStatus& card : cards) {
 		if (forcedAll || playerId == card.cardStateValue1) {
-			// TODO:
-			//_simulation->cardSystem(playerId).AddCards_BoughtHandAndInventory(card);
+			_simulation->cardSystem(playerId).AddCards_BoughtHandAndInventory(card);
 		}
 	}
 }
@@ -324,4 +326,73 @@ void TownManagerBase::CalculateAutoTradeProfit(
 		}
 	}
 
+}
+
+void TownManagerBase::Tick1SecRelationship()
+{
+	SCOPE_CYCLE_COUNTER(STAT_PunAIUpdateRelationship);
+
+	if (!_simulation->IsAITown(_townId)) {
+		return;
+	}
+
+	std::vector<int32> allPlayersAndAI = _simulation->GetAllPlayersAndAI();
+	for (int32 playerId = 0; playerId < allPlayersAndAI.size(); playerId++)
+	{
+		if (_simulation->HasTownhall(playerId))
+		{
+#define MODIFIER(EnumName) _relationships.GetModifierMutable(playerId, RelationshipModifierEnum::EnumName)
+
+			// Decaying modifiers (decay every season)
+			if (Time::Ticks() % Time::TicksPerSeason == 0)
+			{
+				DecreaseToZero(MODIFIER(YouGaveUsGifts));
+				IncreaseToZero(MODIFIER(YouStealFromUs));
+				IncreaseToZero(MODIFIER(YouKidnapFromUs));
+			}
+
+			//if (Time::Ticks() % Time::TicksPerMinute == 0)
+			{
+				// Calculated modifiers
+				auto calculateStrength = [&](int32 townIdScope) {
+					if (IsMajorTown(townIdScope)) {
+						int32 playerIdScope = _simulation->townPlayerId(townIdScope);
+						return _simulation->influence(playerIdScope) + _simulation->playerOwned(playerIdScope).totalInfluenceIncome100() * Time::RoundsPerYear;
+					}
+					return 1000;
+				};
+				int32 aiStrength = calculateStrength(_townId);
+				int32 counterPartyStrength = calculateStrength(playerId);
+
+				MODIFIER(YouAreStrong) = Clamp((counterPartyStrength - aiStrength) / 50, 0, 20);
+				MODIFIER(YouAreWeak) = Clamp((aiStrength - counterPartyStrength) / 50, 0, 20);
+
+				if (IsMajorTown(_townId))
+				{
+					int32 aiPlayerId = _simulation->townPlayerId(_townId);
+					const std::vector<int32>& provinceIds = _simulation->GetProvincesPlayer(aiPlayerId);
+					int32 borderCount = 0;
+					for (int32 provinceId : provinceIds) {
+						const std::vector<ProvinceConnection>& connections = _simulation->GetProvinceConnections(provinceId);
+						for (const ProvinceConnection& connection : connections) {
+							if (_simulation->provinceOwnerPlayer(connection.provinceId) == playerId) {
+								borderCount++;
+							}
+						}
+					}
+					MODIFIER(AdjacentBordersSparkTensions) = std::max(-borderCount * 5, -20);
+
+					// townhall nearer 500 tiles will cause tensions
+					int32 townhallDistance = WorldTile2::Distance(_simulation->GetTownhallGateCapital(aiPlayerId), _simulation->GetTownhallGateCapital(playerId));
+					if (townhallDistance <= 500) {
+						MODIFIER(TownhallProximitySparkTensions) = -20 * (500 - townhallDistance) / 500;
+					}
+					else {
+						MODIFIER(TownhallProximitySparkTensions) = 0;
+					}
+				}
+			}
+#undef MODIFIER
+		}
+	}
 }

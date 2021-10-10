@@ -49,7 +49,7 @@ public:
 		_simulation = simulation;
 	}
 
-	virtual void OnPreInit_IncludeMinorTown() {}
+	virtual void OnPreInit_IncludeNonPlayer() {}
 	virtual void OnPreInit() {}
 	virtual void OnInit() {}
 	virtual void OnDeinit() {}
@@ -88,7 +88,10 @@ public:
 		}
 	}
 	WorldTile2 UndoRotateBuildingTileByDirection(WorldTile2 bldTile) const {
-		switch (_faceDirection) {
+		return UndoRotateBuildingTileByDirection(bldTile, _faceDirection);
+	}
+	static WorldTile2 UndoRotateBuildingTileByDirection(WorldTile2 bldTile, Direction faceDirection) {
+		switch (faceDirection) {
 		case Direction::S: return bldTile;
 		case Direction::E: {
 			return WorldTile2(-bldTile.y, bldTile.x);
@@ -386,10 +389,13 @@ public:
 	const std::vector<BuildingUpgrade>& upgrades() { return _upgrades; }
 	const BuildingUpgrade& GetUpgrade(int32 upgradeIndex) const { return _upgrades[upgradeIndex]; }
 	
-	bool UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& needResourceEnumOut);
+	bool UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& needResourceEnumOut, int32 upgraderPlayerId = -1);
 	
 	virtual void OnUpgradeBuilding(int upgradeIndex) {}
-	void OnUpgradeBuildingBase(int upgradeIndex) {
+	virtual void OnUpgradeBuildingWithPlayerId(int upgradeIndex, int32 upgraderPlayerId) {}
+	
+	void OnUpgradeBuildingBase(int upgradeIndex)
+	{
 		OnUpgradeBuilding(upgradeIndex);
 		if (upgradeIndex < _upgrades.size() && _upgrades[upgradeIndex].workerSlotBonus > 0) {
 			SetJobBuilding(maxOccupants() + _upgrades[upgradeIndex].workerSlotBonus);
@@ -1928,7 +1934,7 @@ public:
 			// Construction site check all tiles
 			bool isAccessible = area().ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 tile) {
 				DEBUG_ISCONNECTED_VAR(RefreshHoverWarning);
-				return _simulation->IsConnected(_simulation->GetTownhallGateFast(_townId), tile, GameConstants::MaxFloodDistance_HumanLogistics);
+				return _simulation->IsConnected(_simulation->GetMajorTownhallGateFast(_townId), tile, GameConstants::MaxFloodDistance_HumanLogistics);
 			});
 
 			if (!isAccessible) {

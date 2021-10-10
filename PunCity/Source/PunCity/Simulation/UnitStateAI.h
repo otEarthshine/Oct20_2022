@@ -679,7 +679,7 @@ public:
 		//  This allow for a lot longer travel check range.
 		//  (Otherwise, IsMoveValid fail could be because IsConnectedBuilding is only rough estimate from townhall)
 		if (!isMoveValid && isIntelligent && _townId != -1) {
-			WorldTile2 gateTile = _simulation->GetTownhallGateFast(_townId);
+			WorldTile2 gateTile = _simulation->GetMajorTownhallGateFast(_townId);
 			isMoveValid = _simulation->IsConnected(gateTile, tile, customFloodDistance) &&
 							_simulation->IsConnected(gateTile, unitTile(), customFloodDistance);
 		}

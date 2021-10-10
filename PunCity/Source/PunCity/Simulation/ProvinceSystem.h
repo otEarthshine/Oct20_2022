@@ -321,14 +321,22 @@ public:
 
 		/*
 		 * Merge small provinces
+		 * - merge when very small
+		 * - or when size of both provinces doesn't exceed X
 		 */
-		const int32 mergeThresholdSize = CoordinateConstants::TileIdsPerRegion * 4 / 5;
+		const int32 mergeThresholdSizeForced = CoordinateConstants::TileIdsPerRegion * 4 / 5;
+		const int32 mergeThresholdSizeBase = CoordinateConstants::TileIdsPerRegion * 9 / 5;
 
 		for (int32 provinceId = 0; provinceId < proviceIdsSize; provinceId++)
 		{
 			// Only use valid provinces
 			if (_provinceFlatTileCount[provinceId] == 0) {
 				continue;
+			}
+
+			int32 mergeThresholdSize = mergeThresholdSizeBase;
+			if (_simulation->GetBiomeProvince(provinceId) == BiomeEnum::Desert) {
+				mergeThresholdSize = mergeThresholdSize * 3 / 2;
 			}
 
 			if (_provinceFlatTileCount[provinceId] < mergeThresholdSize)
@@ -352,8 +360,9 @@ public:
 
 						TerrainTileType tileType = simulation->terraintileType(neighborTile2x2.worldTile2().tileId());
 
-						// Only merge across land
-						if (tileType == TerrainTileType::None)
+						// Only merge across land, to province smaller than threshold
+						if (tileType == TerrainTileType::None && 
+							(_provinceFlatTileCount[provinceId] < mergeThresholdSizeForced || _provinceFlatTileCount[neighborProvinceId] < mergeThresholdSize))
 						{
 							size_t provinceIndex = -1;
 							for (size_t j = 0; j < provinceIds.size(); j++) {

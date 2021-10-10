@@ -37,7 +37,6 @@ struct ProvinceBuildingSlot
 	BuildPlacement largeLandSlot;
 	BuildPlacement oasisSlot;
 
-	int32 townId = -1;
 	int32 buildingId = -1;
 
 	bool isValid() const { return provinceId != -1; }
@@ -56,7 +55,6 @@ struct ProvinceBuildingSlot
 		largeLandSlot >> Ar;
 		oasisSlot >> Ar;
 		
-		Ar << townId;
 		Ar << buildingId;
 	}
 };
@@ -121,75 +119,14 @@ public:
 		ProvinceSystem& provinceSys = _simulation->provinceSystem();
 		PunTerrainGenerator& terrainGen = _simulation->terrainGenerator();
 
-
 		/*
-		 * Oasis
+		 * Fill Coastal Tiles
 		 */
+
 		for (int32 provinceId = 0; provinceId < GameMapConstants::TotalRegions; provinceId++)
 		{
 			if (provinceSys.IsProvinceValid(provinceId))
 			{
-				// _provinceOwnerInfos init
-				_provinceOwnerInfos[provinceId].provinceId = provinceId;
-				
-
-				auto isEmptyDesert = [&](int32 provinceIdIn)
-				{
-					return _simulation->GetBiomeProvince(provinceIdIn) == BiomeEnum::Desert &&
-						!_provinceBuildingSlots[provinceIdIn].oasisSlot.isValid();
-				};
-
-				// Check if nearby provinces are desert
-				bool isMidDesert = isEmptyDesert(provinceId);
-				if (isMidDesert) {
-					const std::vector<ProvinceConnection>& connections = provinceSys.GetProvinceConnections(provinceId);
-					for (const ProvinceConnection& connection : connections) {
-						if (!isEmptyDesert(connection.provinceId)) {
-							isMidDesert = false;
-							break;
-						}
-					}
-				}
-
-				if (isMidDesert)
-				{
-					WorldTile2 centerTile = provinceSys.GetProvinceCenterTile(provinceId);
-
-					// Also need to be able to add the main Minor City Building
-					WorldTile2 oasisSize = GetBuildingInfo(CardEnum::Oasis).size;
-					Direction faceDirection = static_cast<Direction>(GameRand::Rand(provinceId) % 4);
-					TileArea largeLandSlotArea = BuildingArea(centerTile, oasisSize, faceDirection);
-
-					bool isLandSlotNotBuildable = largeLandSlotArea.GetExpandedArea().ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 tile) {
-						return !(terrainGen.terrainTileType(tile) == TerrainTileType::None &&
-							_simulation->GetProvinceIdClean(tile) != -1); // Should exit
-					});
-					if (!isLandSlotNotBuildable)
-					{
-						_provinceBuildingSlots[provinceId].oasisSlot = { centerTile, oasisSize, faceDirection };
-						_oasisSlotProvinceIds.push_back(provinceId);
-					}
-				}
-			}
-		}
-
-
-		auto isSlotEmpty = [&](const ProvinceBuildingSlot& provinceBuildingSlot)
-		{
-			return !provinceBuildingSlot.largeLandSlot.isValid() &&
-				!provinceBuildingSlot.portSlot.isValid() &&
-				!provinceBuildingSlot.landSlot.isValid() &&
-				!provinceBuildingSlot.oasisSlot.isValid();
-		};
-
-		
-		/*
-		 * 
-		 */
-		for (int32 provinceId = 0; provinceId < GameMapConstants::TotalRegions; provinceId++)
-		{
-			if (provinceSys.IsProvinceValid(provinceId))
-			{	
 				ProvinceBuildingSlot& provinceBuildingSlot = _provinceBuildingSlots[provinceId];
 
 				provinceBuildingSlot.provinceId = provinceId;
@@ -198,8 +135,7 @@ public:
 					return terrainGen.terrainTileType(tile) == TerrainTileType::None &&
 						_simulation->GetProvinceIdClean(tile) == provinceId;
 				};
-				
-				
+
 				// Fill Coastal Tiles
 				if (provinceSys.provinceOceanTileCount(provinceId) > 1)
 				{
@@ -241,6 +177,116 @@ public:
 						}
 					});
 				}
+			}
+		}
+		
+
+		/*
+		 * Oasis
+		 */
+
+		for (int32 provinceId = 0; provinceId < GameMapConstants::TotalRegions; provinceId++)
+		{
+			if (provinceSys.IsProvinceValid(provinceId))
+			{
+				// _provinceOwnerInfos init
+				_provinceOwnerInfos[provinceId].provinceId = provinceId;
+				
+
+				bool canSpawnOasis = [&]()
+				{
+					if (_simulation->GetBiomeProvince(provinceId) != BiomeEnum::Desert) {
+						return false;
+					}
+					
+					// Check if nearby provinces are desert
+					{
+						const std::vector<ProvinceConnection>& connections = provinceSys.GetProvinceConnections(provinceId);
+						for (const ProvinceConnection& connection : connections) {
+							if (_simulation->GetBiomeProvince(connection.provinceId) != BiomeEnum::Desert) {
+								return false;
+							}
+						}
+					}
+
+					// Check for nearby Oasis
+					TSet<int32> visitedProvinceIds;
+					std::function<bool(int32, int32, TerrainTileType)> hasNearbyOasisHelper = [&](int32 provinceIdTemp, int32 distance, TerrainTileType connectionType)
+					{
+						if (distance > 3) {
+							return false;
+						}
+						
+						if (visitedProvinceIds.Contains(provinceIdTemp)) {
+							return false;
+						}
+						visitedProvinceIds.Add(provinceIdTemp);
+						
+						if (distance <= 1 && connectionType == TerrainTileType::River) {
+							return true;
+						}
+						if (_provinceBuildingSlots[provinceIdTemp].oasisSlot.isValid()) {
+							return true;
+						}
+						const std::vector<ProvinceConnection>& connections = provinceSys.GetProvinceConnections(provinceIdTemp);
+						for (const ProvinceConnection& connection : connections) {
+							if (hasNearbyOasisHelper(connection.provinceId, distance + 1, connection.tileType)) {
+								return true;
+							}
+						}
+						return false;
+					};
+
+					return !hasNearbyOasisHelper(provinceId, 0, TerrainTileType::None);
+				}();
+
+				if (canSpawnOasis)
+				{
+					WorldTile2 centerTile = provinceSys.GetProvinceCenterTile(provinceId);
+
+					// Also need to be able to add the main Minor City Building
+					WorldTile2 oasisSize = GetBuildingInfo(CardEnum::Oasis).size;
+					Direction faceDirection = static_cast<Direction>(GameRand::Rand(provinceId) % 4);
+					TileArea largeLandSlotArea = BuildingArea(centerTile, oasisSize, faceDirection);
+
+					bool isLandSlotNotBuildable = largeLandSlotArea.GetExpandedArea().ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 tile) {
+						return !(terrainGen.terrainTileType(tile) == TerrainTileType::None &&
+							_simulation->GetProvinceIdClean(tile) != -1); // Should exit
+					});
+					if (!isLandSlotNotBuildable && _provinceBuildingSlots[provinceId].coastalTiles.size() < 8)
+					{
+						PUN_LOG("Spawn Oasis provinceId:%d coastalTiles:%d", provinceId, _provinceBuildingSlots[provinceId].coastalTiles.size());
+						
+						_provinceBuildingSlots[provinceId].oasisSlot = { centerTile, oasisSize, faceDirection };
+						_oasisSlotProvinceIds.push_back(provinceId);
+					}
+				}
+			}
+		}
+
+
+		auto isSlotEmpty = [&](const ProvinceBuildingSlot& provinceBuildingSlot)
+		{
+			return !provinceBuildingSlot.largeLandSlot.isValid() &&
+				!provinceBuildingSlot.portSlot.isValid() &&
+				!provinceBuildingSlot.landSlot.isValid() &&
+				!provinceBuildingSlot.oasisSlot.isValid();
+		};
+
+		
+		/*
+		 * Land/Port Slots
+		 */
+		for (int32 provinceId = 0; provinceId < GameMapConstants::TotalRegions; provinceId++)
+		{
+			if (provinceSys.IsProvinceValid(provinceId))
+			{	
+				ProvinceBuildingSlot& provinceBuildingSlot = _provinceBuildingSlots[provinceId];
+
+				auto isBuildable = [&](WorldTile2 tile) {
+					return terrainGen.terrainTileType(tile) == TerrainTileType::None &&
+						_simulation->GetProvinceIdClean(tile) == provinceId;
+				};
 
 				/*
 				 * Don't put next to each other
@@ -421,18 +467,22 @@ public:
 	const std::vector<int32>& largeLandSlotProvinceIds() { return _largeLandSlotProvinceIds; }
 	const std::vector<int32>& oasisSlotProvinceIds() { return _oasisSlotProvinceIds; }
 
-	void SetSlotTownId(int32 provinceId, int32 townId) {
-		check(_provinceBuildingSlots[provinceId].landSlot.isValid() ||
-			_provinceBuildingSlots[provinceId].largeLandSlot.isValid());
-		
-		_provinceBuildingSlots[provinceId].townId = townId;
-	}
 	void SetSlotBuildingId(int32 provinceId, int32 buildingId) {
 		check(_provinceBuildingSlots[provinceId].landSlot.isValid() ||
 			_provinceBuildingSlots[provinceId].largeLandSlot.isValid() ||
 			_provinceBuildingSlots[provinceId].oasisSlot.isValid());
 		
 		_provinceBuildingSlots[provinceId].buildingId = buildingId;
+	}
+	void RemoveOasisSlot(int32 provinceId) {
+		CppUtils::Remove(_oasisSlotProvinceIds, provinceId);
+		_provinceBuildingSlots[provinceId].oasisSlot = BuildPlacement();
+	}
+
+	void RemoveTown(int32 provinceId) {
+		_provinceOwnerInfos[provinceId].townId = -1;
+		_provinceBuildingSlots[provinceId].buildingId = -1;
+		check(provinceOwnerTown(provinceId) == -1);
 	}
 
 	/*
@@ -472,9 +522,9 @@ public:
 		}
 	}
 	
-	int32 provinceOwner(int32 provinceId) { return _provinceOwnerInfos[provinceId].townId; }
+	int32 provinceOwnerTown(int32 provinceId) { return _provinceOwnerInfos[provinceId].townId; }
 
-	int32 provinceOwnerSafe(int32 provinceId)
+	int32 provinceOwnerTownSafe(int32 provinceId)
 	{
 		if (_provinceOwnerInfos.size() > provinceId && provinceId >= 0) {
 			return _provinceOwnerInfos[provinceId].townId;

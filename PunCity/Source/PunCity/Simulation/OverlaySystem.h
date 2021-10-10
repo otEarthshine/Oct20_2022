@@ -33,6 +33,22 @@ struct RoadTile
 	}
 };
 
+
+
+struct DitchTile
+{
+	WorldTile2 tile;
+	bool isVisible = false;
+
+	//! Serialize
+	FArchive& operator>>(FArchive &Ar)
+	{
+		tile >> Ar;
+		Ar << isVisible;
+		return Ar;
+	}
+};
+
 /**
  * 
  */
@@ -45,13 +61,18 @@ public:
 		//_manmadeAppeal.resize(GameMapConstants::TilesPerWorldX * GameMapConstants::TilesPerWorldY, 0);
 
 		_regionToRoad.resize(GameMapConstants::TotalRegions);
+		_regionToIrrigationDitch.resize(GameMapConstants::TotalRegions);
 		//_regionToFence.resize(GameMapConstants::TotalRegions);
+		
 		_simulation = simulation;
 	}
 
 	//std::vector<uint8_t>& appeal() { return _manmadeAppeal; }
 	int32 GetAppealPercent(WorldTile2 tile);
 
+	/*
+	 * Road
+	 */
 	bool IsRoad(WorldTile2 tile) const
 	{
 		PUN_ENSURE(tile.isValid(), return false);
@@ -105,17 +126,6 @@ public:
 		return false;
 	}
 
-	//void ClearRoadInRegion(int32 regionId)
-	//{
-	//	std::vector<RoadTile> roadTiles = _regionToRoad[regionId];
-	//	for (RoadTile roadTile : roadTiles) {
-	//		_simulation->SetRoadPathAI(roadTile.tile, false);
-	//		_simulation->SetRoadWorldTexture(roadTile.tile, false, true);
-	//	}
-	//	_regionToRoad[regionId].clear();
-	//	_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Road, regionId, true);
-	//}
-
 	void ClearRoadInProvince(int32 provinceId)
 	{
 		const std::vector<WorldRegion2>& overlapRegions = _simulation->provinceSystem().GetRegionOverlaps(provinceId);
@@ -139,13 +149,51 @@ public:
 		return _regionToRoad[regionId];
 	}
 
+	/*
+	 * Irrigation
+	 */
+
+	const std::vector<DitchTile>& irrigationDitches(int32 regionId) {
+		return _regionToIrrigationDitch[regionId];
+	}
+
+	bool IsIrrigationDitch(WorldTile2 tile) const {
+		return CppUtils::Contains(_regionToIrrigationDitch[tile.regionId()], [&](const DitchTile& ditchTile) {
+			return ditchTile.tile == tile;
+		});
+	}
+
+	void AddIrrigationDitch(WorldTile2 tile, bool isVisible = true) {
+		DitchTile newDitchTile;
+		newDitchTile.tile = tile;
+		newDitchTile.isVisible = isVisible;
+		
+		CppUtils::TryAdd_If(_regionToIrrigationDitch[tile.regionId()], newDitchTile, [&](const DitchTile& ditchTileTemp) {
+			return ditchTileTemp.tile == tile;
+		});
+	}
+	bool RemoveIrrigationDitch(WorldTile2 tile) {
+		return CppUtils::TryRemoveIf(_regionToIrrigationDitch[tile.regionId()], [&](const DitchTile& ditchTile) {
+			return ditchTile.tile == tile;
+		});
+	}
+
+	
+	
+
+	/*
+	 * Serialize
+	 */
 	void Serialize(FArchive& Ar)
 	{
 		SerializeVecVecObj(Ar, _regionToRoad);
+		SerializeVecVecObj(Ar, _regionToIrrigationDitch);
 	}
 
 private:
 	std::vector<std::vector<RoadTile>> _regionToRoad;
+
+	std::vector<std::vector<DitchTile>> _regionToIrrigationDitch;
 
 	IGameSimulationCore* _simulation = nullptr;
 };

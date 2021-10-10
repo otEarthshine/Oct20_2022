@@ -217,21 +217,6 @@ struct ModuleTransformGroup
 	}
 
 
-	static ModuleTransformGroup CreateOreMineSet(FString oreMineSpecialName, FString oreMineWorkStaticName)
-	{
-		return CreateSet("OreMine", {}, 
-			{
-				{ParticleEnum::BlackSmoke, TransformFromPosition(-.27, 11.4, 21.6)},
-			}, 
-			{
-				ModuleTransform("OreMineWorkRotation2", TransformFromPosition(4.99, -8.10, 22.899), 0.0f, ModuleTypeEnum::RotateRoll),
-				ModuleTransform(oreMineSpecialName, FTransform::Identity, 0, ModuleTypeEnum::ShaderOnOff),
-			},
-			{
-				ModuleTransform(oreMineWorkStaticName),
-			}
-		);
-	}
 };
 
 /*

@@ -6,7 +6,7 @@
 #include "MinorTownWorldUI.generated.h"
 
 /**
- * 
+ * Base class.. (But also used for MinorTown, too lazy to separate)
  */
 UCLASS()
 class PROTOTYPECITY_API UMinorTownWorldUI : public UPunWidget
@@ -20,6 +20,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* AttackButton1RichText;
 	UPROPERTY(meta = (BindWidget)) UButton* AttackButton2;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* AttackButton2RichText;
+	UPROPERTY(meta = (BindWidget)) UButton* AttackButton3;
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* AttackButton3RichText;
 
 	UPROPERTY(meta = (BindWidget)) UTextBlock* CityNameText;
 
@@ -44,7 +46,7 @@ public:
 	}
 	
 	UFUNCTION() void OnClickDiplomacyButton() {
-		GetPunHUD()->OpenDiplomacyUI(townPlayerId());
+		GetPunHUD()->OpenDiplomacyUI(townId());
 	}
 
 	UFUNCTION() void OnClickVassalizeButton()
@@ -58,5 +60,10 @@ public:
 		check(playerId() != townPlayerId());
 		GetPunHUD()->OpenReinforcementUI(townProvinceId(), CallbackEnum::Liberate);
 	}
-		
+
+	UFUNCTION() void OnClickRazeButton()
+	{
+		check(playerId() != townPlayerId());
+		GetPunHUD()->OpenReinforcementUI(townProvinceId(), CallbackEnum::Raze);
+	}
 };

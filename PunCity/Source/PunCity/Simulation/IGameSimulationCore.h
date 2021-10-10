@@ -164,7 +164,7 @@ public:
 
 	// Building
 	virtual class TownHall& GetTownhallCapital(int32 playerId) = 0;
-	virtual class TownHall& GetTownhall(int32 townId) = 0;
+	virtual class TownHall& GetTownhallMajor(int32 townId) = 0;
 	virtual class TownHall* GetTownhallPtr(int32 townId) = 0;
 	virtual int32 GetTownhallId(int32 townId) = 0;
 	virtual bool IsValidTown(int32 townId) = 0;
@@ -173,7 +173,7 @@ public:
 	virtual int32 GetTownLvlMax(int32 playerId) = 0;
 	
 	virtual WorldTile2 GetTownhallGateCapital(int32 playerId) = 0;
-	virtual WorldTile2 GetTownhallGateFast(int32 townId) = 0;
+	virtual WorldTile2 GetMajorTownhallGateFast(int32 townId) = 0;
 	virtual WorldTile2 GetMajorTownhallGate(int32 townId) = 0;
 	virtual WorldTile2 GetTownhallGate_All(int32 townId) = 0;
 	
@@ -675,6 +675,8 @@ public:
 	virtual bool IsAIActive(int32 playerId) = 0;
 
 	virtual TCHAR* AIPrintPrefix(int32 aiPlayerId) = 0;
+
+	virtual bool IsAITown(int32 townId) = 0;
 
 	virtual void ChangeRelationshipModifier(int32 aiPlayerId, int32 towardPlayerId, RelationshipModifierEnum modifierEnum, int32 amount) = 0;
 

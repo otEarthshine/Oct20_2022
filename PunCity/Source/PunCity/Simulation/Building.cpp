@@ -69,7 +69,7 @@ void Building::Init(IGameSimulationCore& simulation, int32 objectId, int32 townI
 	SetBuildingResourceUIDirty();
 	_justFinishedConstructionJobUIDirty = false;
 
-	OnPreInit_IncludeMinorTown();
+	OnPreInit_IncludeNonPlayer();
 
 	if (_playerId == -1 && 
 		!IsBridgeOrTunnel(_buildingEnum))
@@ -675,31 +675,36 @@ bool Building::NeedConstruct()
 }
 
 
-bool Building::UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& needResourceEnumOut)
+bool Building::UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& needResourceEnumOut, int32 upgraderPlayerId)
 {
 	PUN_ENSURE(upgradeIndex < _upgrades.size(), return false; );
 
 	needResourceEnumOut = ResourceEnum::None;
+
+	if (upgraderPlayerId == -1) {
+		upgraderPlayerId = _playerId;
+	}
+	
 	
 	if (IsUpgraded(upgradeIndex)) {
 		if (showPopups) {
-			_simulation->AddPopup(_playerId, LOCTEXT("Already upgraded", "Already upgraded"));
+			_simulation->AddPopup(upgraderPlayerId, LOCTEXT("Already upgraded", "Already upgraded"));
 		}
 		return false;
 	}
 
 	// Is Era upgrade valid?
 	BuildingUpgrade& upgrade = _upgrades[upgradeIndex];
-	auto unlockSys = _simulation->unlockSystem(_playerId);
+	auto unlockSys = _simulation->unlockSystem(upgraderPlayerId);
 	if (upgrade.isEraUpgrade() && !IsEraUpgradable()) {
 		if (showPopups) {
 			if (GetUpgradeEraLevel() <= 4) {
-				_simulation->AddPopupToFront(_playerId, FText::Format(LOCTEXT("UpgradeRequiresEra", "Upgrade Failed.<space>Advance to the {0} to unlock this Upgrade."), 
+				_simulation->AddPopupToFront(upgraderPlayerId, FText::Format(LOCTEXT("UpgradeRequiresEra", "Upgrade Failed.<space>Advance to the {0} to unlock this Upgrade."),
 					unlockSys->GetEraText(unlockSys->GetEra() + 1)),
 					ExclusiveUIEnum::None, "PopupCannot"
 				);
 			} else {
-				_simulation->AddPopupToFront(_playerId, LOCTEXT("UpgradeRequiresElectricity", "Upgrade Failed.<space>Unlock Electricity Technology to unlock this Upgrade."));
+				_simulation->AddPopupToFront(upgraderPlayerId, LOCTEXT("UpgradeRequiresElectricity", "Upgrade Failed.<space>Unlock Electricity Technology to unlock this Upgrade."));
 			}
 		}
 		return false;
@@ -707,6 +712,12 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& 
 	
 
 	ResourcePair resourceNeeded = upgrade.currentUpgradeResourceNeeded();
+
+	// Special case: Ancient Wonders
+	if (IsAncientWonderCardEnum(buildingEnum())) {
+		resourceNeeded.count = resourceNeeded.count * subclass<ProvinceRuin>().GetDigDistanceFactor(upgraderPlayerId) / 100;
+	}
+	
 	
 	// Resource Upgrade
 	check(resourceNeeded.isValid());
@@ -715,10 +726,10 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& 
 
 	int32 resourceCount;
 	if (resourceNeeded.resourceEnum == ResourceEnum::Money) {
-		resourceCount = _simulation->moneyCap32(_playerId);
+		resourceCount = _simulation->moneyCap32(upgraderPlayerId);
 	}
 	else if (resourceNeeded.resourceEnum == ResourceEnum::Influence) {
-		resourceCount = _simulation->influence(_playerId);
+		resourceCount = _simulation->influence(upgraderPlayerId);
 	}
 	else {
 		resourceCount = resourceSystem().resourceCount(resourceNeeded.resourceEnum);
@@ -763,15 +774,16 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& 
 		ResetDisplay();
 
 		if (showPopups) {
-			_simulation->soundInterface()->Spawn2DSound("UI", "UpgradeBuilding", _playerId, _centerTile);
+			_simulation->soundInterface()->Spawn2DSound("UI", "UpgradeBuilding", upgraderPlayerId, _centerTile);
 		}
 
 		OnUpgradeBuildingBase(upgradeIndex);
+		OnUpgradeBuildingWithPlayerId(upgradeIndex, upgraderPlayerId);
 		return true;
 	}
 
 	if (showPopups) {
-		_simulation->AddPopupToFront(_playerId, FText::Format(
+		_simulation->AddPopupToFront(upgraderPlayerId, FText::Format(
 			LOCTEXT("NotEnoughResourceForUpgrade", "Not enough {0} for upgrade."), 
 			ResourceNameT(resourceNeeded.resourceEnum)
 		), ExclusiveUIEnum::None, "PopupCannot");
@@ -1728,10 +1740,19 @@ BuildingUpgrade Building::MakeEraUpgrade(int32 startEra)
 
 BuildingUpgrade Building::MakeLevelUpgrade(FText name, FText description, ResourceEnum resourceEnum, int32 percentOfTotalPrice, int32 percentScaling)
 {
-	int32 totalCost = buildingInfo().constructionCostAsMoney();
+	int32 resourceCount;
+	// Special case:
+	if (IsAncientWonderCardEnum(buildingEnum())) {
+		resourceCount = BaseArtifactExcavationCost;
+	}
+	else 
+	{
+		int32 totalCost = buildingInfo().constructionCostAsMoney();
+		int32 price = (resourceEnum == ResourceEnum::Money || resourceEnum == ResourceEnum::Influence) ? 1 : GetResourceInfo(resourceEnum).basePrice;
+		resourceCount = 1 + totalCost * percentOfTotalPrice / 100 / price;
+	}
+
 	
-	int32 price = (resourceEnum == ResourceEnum::Money || resourceEnum == ResourceEnum::Influence) ? 1 : GetResourceInfo(resourceEnum).basePrice;
-	int32 resourceCount = 1 + totalCost * percentOfTotalPrice / 100 / price;
 	BuildingUpgrade upgrade(name, description, resourceEnum, resourceCount);
 
 	upgrade.upgradeLevel = 0;

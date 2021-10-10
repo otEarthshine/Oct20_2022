@@ -583,10 +583,8 @@ void TreeSystem::PlantInitial()
 		WorldTile2 tile(x, y);
 
 		// Water? Make it fish
-		if (_simulation->IsWater(tile))
-		{
-			_tileObjAge[i] = 0; // Fish use treeAge for number of fishing lodge.
-			_treeEnum[i] = TileObjEnum::Fish;
+		if (_simulation->IsWater(tile)) {
+			SetFishTile(i);
 		}
 		// Plant Stone randomly
 		else if (GameRand::Rand() % initialStonePlaceChance == 0 &&
@@ -803,6 +801,10 @@ void TreeSystem::PlantInitial()
 				BiomeEnum biomeEnum = terrainGenerator.GetBiome(WorldTile2(x, y));
 
 				if (biomeEnum == BiomeEnum::Tundra) {
+					continue;
+				}
+
+				if (biomeEnum == BiomeEnum::Desert && fertility < 28) { // Special case Desert
 					continue;
 				}
 				

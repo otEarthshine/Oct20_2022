@@ -424,9 +424,9 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	// TODO: ARAB FIX
 	LoadBuilding(CardEnum::Market, "Market__Era", "", "Market", 2, 2);
-
-	// TODO: ARAB FIX
 	LoadBuilding(FactionEnum::Europe, CardEnum::IrrigationReservoir, "IrrigationReservoir", "IrrigationReservoir");
+
+	//--
 	
 	LoadBuilding(CardEnum::Bakery, "Bakery_Era", "", "Bakery", 2);
 	LoadBuilding(CardEnum::PitaBakery, "", "PitaBakery_Era", "Bakery", 2);
@@ -434,44 +434,66 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	LoadBuilding(CardEnum::IrrigationPump, "", "IrrigationPump_Era", "IrrigationPump", 2);
 
+	/*
+	 * Irrigation
+	 */
+	for (int32 era = 2; era <= 4; era++) {
+		for (int32 i = 1; i <= 6; i++) {
+			FString moduleGroupName = "IrrigationDitch_Era" + FString::FromInt(era) + "_0" + FString::FromInt(i);
+			FString moduleGroupFolderName = "IrrigationDitch/Era" + FString::FromInt(era) + "/V" + FString::FromInt(i);
+			LoadBuilding(FactionEnum::Arab, CardEnum::IrrigationDitch, moduleGroupName, moduleGroupFolderName);
+		}
+	}
+	
+	
+
 	
 	LoadBuilding(CardEnum::Quarry, "Quarry_Era", "Quarry_Era", "Quarry", 1);
 
+	/*
+	 * Ore Mine
+	 */
 	{
-		FactionEnum factionEnum = FactionEnum::Europe;
-		for (int32 eraInt = 1; eraInt <= 4; eraInt++)
+		for (int32 factionInt = 0; factionInt < FactionEnumCount; factionInt++)
 		{
-			FString era = FString::FromInt(eraInt);
-			LoadBuilding(factionEnum, CardEnum::GoldMine, "Ore_Mine_Era" + era, "OreMine/Era" + era);
-			LinkBuilding(factionEnum, CardEnum::IronMine, "Ore_Mine_Era" + era, _lastTempAuxGroup);
-			LinkBuilding(factionEnum, CardEnum::GemstoneMine, "Ore_Mine_Era" + era, _lastTempAuxGroup);
-			LinkBuilding(factionEnum, CardEnum::CoalMine, "Ore_Mine_Era" + era, _lastTempAuxGroup);
-
+			FactionEnum factionEnum = static_cast<FactionEnum>(factionInt);
+			
+			for (int32 eraInt = 1; eraInt <= 4; eraInt++)
 			{
-				//PUN_LOG("_recentlyAddedModuleNames %d", _recentlyAddedModuleNames.Num());
+				FString era = FString::FromInt(eraInt);
+				LoadBuilding(factionEnum, CardEnum::GoldMine, "Ore_Mine_Era" + era, "OreMine/Era" + era);
+				LinkBuilding(factionEnum, CardEnum::IronMine, "Ore_Mine_Era" + era, _lastTempAuxGroup);
+				LinkBuilding(factionEnum, CardEnum::GemstoneMine, "Ore_Mine_Era" + era, _lastTempAuxGroup);
+				LinkBuilding(factionEnum, CardEnum::CoalMine, "Ore_Mine_Era" + era, _lastTempAuxGroup);
 
-				auto manualAddTransforms = [&](CardEnum buildingEnum, FString searchString)
+				// For each Mine type... Add the according mesh group
+				// (Manually compose transforms/togglableTransforms)
 				{
-					for (int32 i = _recentlyAddedModuleNames.Num(); i-- > 0;) {
-						if (_recentlyAddedModuleNames[i].Contains("_Manual_"))
-						{
-							if (_recentlyAddedModuleNames[i].Contains(searchString)) {
-								_factionEnumToBuildingEnumToModuleGroups[static_cast<int>(factionEnum)][static_cast<int>(buildingEnum)][eraInt - 1].transforms.push_back(ModuleTransform(_recentlyAddedModuleNames[i]));
-							}
-						}
-						else if (_recentlyAddedModuleNames[i].Contains("_ManualToggle_"))
-						{
-							if (_recentlyAddedModuleNames[i].Contains(searchString)) {
-								_factionEnumToBuildingEnumToModuleGroups[static_cast<int>(factionEnum)][static_cast<int>(buildingEnum)][eraInt - 1].togglableTransforms.push_back(ModuleTransform(_recentlyAddedModuleNames[i]));
-							}
-						}
-					}
-				};
+					//PUN_LOG("_recentlyAddedModuleNames %d", _recentlyAddedModuleNames.Num());
 
-				manualAddTransforms(CardEnum::GoldMine, "Gold");
-				manualAddTransforms(CardEnum::IronMine, "Iron");
-				manualAddTransforms(CardEnum::CoalMine, "Coal");
-				manualAddTransforms(CardEnum::GemstoneMine, "Gem");
+					auto manualAddTransforms = [&](CardEnum buildingEnum, FString searchString)
+					{
+						for (int32 i = _recentlyAddedModuleNames.Num(); i-- > 0;) {
+							if (_recentlyAddedModuleNames[i].Contains("_Manual_"))
+							{
+								if (_recentlyAddedModuleNames[i].Contains(searchString)) {
+									_factionEnumToBuildingEnumToModuleGroups[static_cast<int>(factionEnum)][static_cast<int>(buildingEnum)][eraInt - 1].transforms.push_back(ModuleTransform(_recentlyAddedModuleNames[i]));
+								}
+							}
+							else if (_recentlyAddedModuleNames[i].Contains("_ManualToggle_"))
+							{
+								if (_recentlyAddedModuleNames[i].Contains(searchString)) {
+									_factionEnumToBuildingEnumToModuleGroups[static_cast<int>(factionEnum)][static_cast<int>(buildingEnum)][eraInt - 1].togglableTransforms.push_back(ModuleTransform(_recentlyAddedModuleNames[i]));
+								}
+							}
+						}
+					};
+
+					manualAddTransforms(CardEnum::GoldMine, "Gold");
+					manualAddTransforms(CardEnum::IronMine, "Iron");
+					manualAddTransforms(CardEnum::CoalMine, "Coal");
+					manualAddTransforms(CardEnum::GemstoneMine, "Gem");
+				}
 			}
 		}
 	}
@@ -494,28 +516,25 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 		//	//
 		//
 
-	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "Quarry", "Quarry");
-	LoadAnimModule("QuarrySpecialToggle", "Quarry/QuarrySpecialToggle");
+	// OCT 6 remove
+	//TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "Quarry", "Quarry");
+	//LoadAnimModule("QuarrySpecialToggle", "Quarry/QuarrySpecialToggle");
+	//
+	//TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "OreMine", "OreMine");
+	////LoadAnimModule("OreMineSpecial_Stone", "OreMine/OreMineSpecial_Stone");
+	//LoadAnimModule("OreMineSpecial_Coal", "OreMine/OreMineSpecial_Coal");
+	//LoadAnimModule("OreMineSpecial_Iron", "OreMine/OreMineSpecial_Iron");
+	//LoadAnimModule("OreMineSpecial_Gold", "OreMine/OreMineSpecial_Gold");
+	//LoadAnimModule("OreMineSpecial_Gemstone", "OreMine/OreMineSpecial_Gemstone");
+	//
+	//LoadTogglableModule("OreMineWorkStatic_Stone", "OreMine/StoneSpecial");
+	//LoadTogglableModule("OreMineWorkStatic_Coal", "OreMine/CoalSpecial");
+	//LoadTogglableModule("OreMineWorkStatic_Iron", "OreMine/IronOreSpecial");
+	//LoadTogglableModule("OreMineWorkStatic_Gold", "OreMine/GoldOreSpecial");
+	//LoadTogglableModule("OreMineWorkStatic_Gemstone", "OreMine/GemstoneSpecial");
+
+	// ---
 	
-	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "OreMine", "OreMine");
-	//LoadAnimModule("OreMineSpecial_Stone", "OreMine/OreMineSpecial_Stone");
-	LoadAnimModule("OreMineSpecial_Coal", "OreMine/OreMineSpecial_Coal");
-	LoadAnimModule("OreMineSpecial_Iron", "OreMine/OreMineSpecial_Iron");
-	LoadAnimModule("OreMineSpecial_Gold", "OreMine/OreMineSpecial_Gold");
-	LoadAnimModule("OreMineSpecial_Gemstone", "OreMine/OreMineSpecial_Gemstone");
-	
-	LoadTogglableModule("OreMineWorkStatic_Stone", "OreMine/StoneSpecial");
-	LoadTogglableModule("OreMineWorkStatic_Coal", "OreMine/CoalSpecial");
-	LoadTogglableModule("OreMineWorkStatic_Iron", "OreMine/IronOreSpecial");
-	LoadTogglableModule("OreMineWorkStatic_Gold", "OreMine/GoldOreSpecial");
-	LoadTogglableModule("OreMineWorkStatic_Gemstone", "OreMine/GemstoneSpecial");
-	
-	
-	//TryLoadBuildingModuleSet("Smelter", "Smelter");
-	//TryLoadBuildingModuleSet( "SmelterGold", "SmelterGold");
-	//TryLoadBuildingModuleSet("SmelterGiant", "SmelterGiant");
-	
-	//TryLoadBuildingModuleSet("CharcoalMaker", "CharcoalMaker");
 	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "Forester", "Forester");
 
 	
@@ -1746,6 +1765,10 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FactionEnum factionEnum, FS
 				foundFiles[i].Contains("_Body1_") ||
 				foundFiles[i].Contains("_Body2_") ||
 				foundFiles[i].Contains("_Body3_") ||
+				foundFiles[i].Contains("_Body4_") ||
+				foundFiles[i].Contains("_Body5_") ||
+				foundFiles[i].Contains("_Body6_") ||
+				foundFiles[i].Contains("_Single") ||
 				foundFiles[i].Contains("_Nature_") ||
 				foundFiles[i].Contains("_Windows_") ||
 				foundFiles[i].Contains("_Window_"))
@@ -1780,7 +1803,7 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FactionEnum factionEnum, FS
 					transform = TransformFromPosition(0, 0, 7.388654);
 				}
 				else if (buildingEnum == CardEnum::IrrigationPump) {
-					transform = TransformFromPosition(0, 0, 0);
+					transform = TransformFromPosition(0, 4.76, 6.64);
 				}
 				else {
 					UE_DEBUG_BREAK();
@@ -1810,6 +1833,7 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FactionEnum factionEnum, FS
 
 				_modulesNeedingPaintConstruction.Add(meshName);
 			}
+			// These "_Manual_" and "_ManualToggle_" can be extracted in code to follow using _recentlyAddedModuleNames
 			else if (foundFiles[i].Contains("_Manual_"))
 			{
 				const auto mesh = loadMesh(i);
@@ -1822,6 +1846,7 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FactionEnum factionEnum, FS
 				FString moduleName = moduleSetName + "_ManualToggle_" + foundFiles[i];
 				AddBuildingModule(moduleName, mesh, _togglableModuleNames);
 			}
+			// ---
 			else if (foundFiles[i].Contains("_WorkStatic"))
 			{
 				const auto mesh = loadMesh(i);

@@ -2462,7 +2462,7 @@ enum class CardEnum : uint16
 	Conscript,
 	
 	Warrior,
-	Swordman,
+	Swordsman,
 	Musketeer,
 	Infantry,
 	
@@ -3926,7 +3926,7 @@ static const BldInfo CardInfos[]
 		BldInfo(CardEnum::Conscript, _LOCTEXT("Conscript", "Conscript"), 300, LOCTEXT("Conscript Desc", "")),
 	
 		BldInfo(CardEnum::Warrior, _LOCTEXT("Warrior", "Warrior"),		GetMilitaryCost(1000, 1), LOCTEXT("Warrior Desc", "")),
-		BldInfo(CardEnum::Swordman, _LOCTEXT("Swordman", "Swordman"),	GetMilitaryCost(1000, 2), LOCTEXT("Swordman Desc", "")),
+		BldInfo(CardEnum::Swordsman, _LOCTEXT("Swordsman", "Swordsman"),	GetMilitaryCost(1000, 2), LOCTEXT("Swordsman Desc", "")),
 		BldInfo(CardEnum::Musketeer, _LOCTEXT("Musketeer", "Musketeer"), GetMilitaryCost(1000, 3), LOCTEXT("Musketeer Desc", "")),
 		BldInfo(CardEnum::Infantry, _LOCTEXT("Infantry", "Infantry"), GetMilitaryCost(1000, 4), LOCTEXT("Infantry Desc", "")), // (Trench Warfare = Defense Bonus for Infantry)
 
@@ -4137,6 +4137,9 @@ static const std::vector<CardEnum> ArtifactCards
 static bool IsArtifactCard(CardEnum cardEnum) {
 	return IsCardEnumInList(cardEnum, ArtifactCards);
 }
+
+static const int32 BaseArtifactExcavationCost = 1000;
+
 
 static const std::vector<CardEnum> BuildingSlotCards
 {
@@ -4956,7 +4959,7 @@ struct BuildingUpgrade
 		//return 5 - startEra; // Old
 	}
 
-	ResourcePair currentUpgradeResourceNeeded()
+	ResourcePair currentUpgradeResourceNeeded(int32 upgraderPlayerId = -1)
 	{
 		if (isEraUpgrade())
 		{
@@ -5034,6 +5037,7 @@ enum class ProvinceAttackEnum : uint8
 	
 	ConquerProvince,
 	RaidBattle,
+	Raze,
 	Vassalize,
 	DeclareIndependence,
 
@@ -5803,7 +5807,6 @@ static bool IsBridgePlacement(PlacementType placementType)
 }
 
 static const int32 IntercityRoadTileCost = 20;
-
 static const int32 IrrigationDitchTileCost = 100;
 
 enum class PlacementGridEnum : uint8
@@ -6029,6 +6032,9 @@ static const TArray<FText> InfluenceIncomeEnumName
 
 	LOCTEXT("Fort", "Fort"),
 	LOCTEXT("Colony", "Colony"),
+
+	LOCTEXT("Gain from Vassal", "Gain from Vassal"),
+	LOCTEXT("Lose to Lord", "Lose to Lord"),
 };
 static int32 InfluenceIncomeEnumCount = static_cast<int32>(InfluenceIncomeEnum::Count);
 
@@ -6457,6 +6463,9 @@ IndustrialAdjacency,
 	MachineGun,
 	Artillery,
 	Battleship,
+
+	TradeRoute,
+	ForeignRelation,
 	
 	Count,
 };
@@ -7053,6 +7062,17 @@ static MilitaryCardInfo GetMilitaryInfo(CardEnum cardEnum)
 	}
 	
 	return result;
+}
+
+static int32 GetMilitaryHumanCost(CardEnum cardEnum)
+{
+	if (IsMilitaryCardEnum(cardEnum)) {
+		if (cardEnum == CardEnum::Conscript) {
+			return 5;
+		}
+		return 3;
+	}
+	return 0;
 }
 
 static int32 GetMilitaryUpkeep(CardEnum cardEnum)
@@ -7709,6 +7729,7 @@ enum class DisplayClusterEnum
 	TechTree,
 	BuildingAnimation,
 	Terrain,
+	//IrrigationDitch,
 
 	Count,
 };
@@ -7863,10 +7884,11 @@ private:
 //!
 
 enum class GridConnectType {
-	Four,
-	Three,
 	Opposite,
 	Adjacent,
+	Four,
+	Three,
+	End,
 };
 
 /*
@@ -9642,6 +9664,7 @@ enum class CallbackEnum : uint8
 	DefendProvinceMoney,
 	Liberate,
 	RaidBattle,
+	Raze,
 
 	BattleRetreat,
 

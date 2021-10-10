@@ -41,7 +41,8 @@ void UMiniBuildingDisplayComponent::OnSpawnDisplay(int regionId, int meshId, Wor
 void UMiniBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 cameraAtom, bool justSpawned, bool justCreated)
 {
 	auto& buildingList = simulation().buildingSystem().buildingSubregionList();
-	BuildingSystem& buildingSystem = simulation().buildingSystem();
+	auto& sim = simulation();
+	BuildingSystem& buildingSystem = sim.buildingSystem();
 	const GameDisplayInfo& displayInfo = gameManager()->displayInfo();
 	
 	WorldRegion2 region(regionId);
@@ -102,6 +103,23 @@ void UMiniBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, Worl
 
 			}
 		});
+
+		//! Oasis
+		{
+			const ProvinceBuildingSlot& slot = sim.provinceInfoSystem().provinceBuildingSlot(regionId);
+			if (slot.isValid() && slot.oasisSlot.isValid())
+			{
+				WorldTile2 centerTile = slot.oasisSlot.centerTile;
+				LocalTile2 localTile = centerTile.localTile(region);
+				
+				const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(FactionEnum::Arab, CardEnum::Oasis, 0);
+				FTransform transform(FRotator::ZeroRotator, localTile.localDisplayLocation());
+
+				std::vector<ModuleTransform> modules = modulePrototype.transforms;
+				_moduleMeshes[meshId]->Add(modules[0].moduleName, centerTile.tileId(), transform, 0); // Oasis MiniMesh
+				_moduleMeshes[meshId]->Add(modules[1].moduleName, centerTile.tileId(), transform, 0); // Oasis MiniMeshWater
+			}
+		}
 
 		_moduleMeshes[meshId]->AfterAdd();
 	}

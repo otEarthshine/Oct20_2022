@@ -226,6 +226,11 @@ public:
 			_tileObjAge[id] += valueChange;
 		}
 	}
+	void SetFishTile(int32 id) {
+		_tileObjAge[id] = 0; // Fish use treeAge for number of fishing lodge.
+		_treeEnum[id] = TileObjEnum::Fish;
+	}
+	
 
 	bool treeShade(int32 id) {
 		uint32 shift = id & 0b111;

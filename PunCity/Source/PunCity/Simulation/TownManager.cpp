@@ -190,7 +190,7 @@ int32 TownManager::housingCapacity()
 int32 TownManager::TryFillJobBuildings(const std::vector<int32>& jobBuildingIds, PriorityEnum priority, int& index, bool shouldDoDistanceSort, int32 maximumFill)
 {
 	// Sort job buildings by distance from townhall
-	WorldTile2 gateTile = _simulation->GetTownhallGateFast(_townId);
+	WorldTile2 gateTile = _simulation->GetMajorTownhallGateFast(_townId);
 	std::vector<int32> sortedJobBuildingIds;
 
 	if (shouldDoDistanceSort)
@@ -874,7 +874,7 @@ void TownManager::Tick()
 				std::vector<int32> childIdsTemp = childIds();
 				humanIds.insert(humanIds.end(), childIdsTemp.begin(), childIdsTemp.end());
 
-				int32 killCount = std::min(3, static_cast<int>(humanIds.size()));
+				int32 killCount = std::min(GetMilitaryHumanCost(_trainUnitsQueue[0].cardEnum), static_cast<int>(humanIds.size()));
 				for (int32 i = 0; i < killCount; i++) {
 					_simulation->unitAI(humanIds[i]).Die();
 				}
@@ -1552,12 +1552,12 @@ void TownManager::RecalculateTax(bool showFloatup)
 	{
 		for (int32 vassalTownId : _vassalTownIds)
 		{
-			auto& vassalTownManager = _simulation->townManager(vassalTownId);
+			TownManagerBase* vassalTownManager = _simulation->townManagerBase(vassalTownId);
 
 			// Tax
-			vassalTownManager.RecalculateTax(false);
-			incomes100[static_cast<int>(IncomeEnum::FromVassalTax)] += vassalTownManager.totalRevenue100() * vassalTownManager.vassalTaxPercent() / 100;
-			influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::GainFromVassal)] += vassalTownManager.totalInfluenceIncome100() * vassalTownManager.vassalInfluencePercent() / 100;
+ 			vassalTownManager->RecalculateTax(false);
+			incomes100[static_cast<int>(IncomeEnum::FromVassalTax)] += vassalTownManager->totalRevenue100() * vassalTownManager->vassalTaxPercent() / 100;
+			influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::GainFromVassal)] += vassalTownManager->totalInfluenceIncome100() * vassalTownManager->vassalInfluencePercent() / 100;
 		}
 	}
 

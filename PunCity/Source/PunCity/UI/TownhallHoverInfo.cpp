@@ -63,6 +63,10 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 	/*
 	 * 
 	 */
+	AttackButton1->SetVisibility(ESlateVisibility::Collapsed);
+	AttackButton2->SetVisibility(ESlateVisibility::Collapsed);
+	AttackButton3->SetVisibility(ESlateVisibility::Collapsed);
+	
 	if (sim.HasTownhall(playerId())) // Need to have townhall, otherwise don't show anything
 	{
 		/*
@@ -115,7 +119,6 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 			else {
 				AttackButton1->SetVisibility(ESlateVisibility::Collapsed);
 			}
-			AttackButton2->SetVisibility(ESlateVisibility::Collapsed);
 
 
 			// Buffs
@@ -160,8 +163,8 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 			//! Capital
 			if (uiTownManagerBase->isCapital())
 			{
-				AttackButton1->SetVisibility(ESlateVisibility::Collapsed);
-				AttackButton2->SetVisibility(ESlateVisibility::Collapsed);
+				//AttackButton1->SetVisibility(ESlateVisibility::Collapsed);
+				//AttackButton2->SetVisibility(ESlateVisibility::Collapsed);
 				
 				// Not already a vassal? Might be able to attack
 				if (!sim.townManagerBase(playerId())->IsVassal(townId()))
@@ -196,11 +199,11 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 					BUTTON_ON_CLICK(AttackButton1, this, &UMinorTownWorldUI::OnClickVassalizeButton);
 					AttackButton1->SetVisibility(ESlateVisibility::Visible);
 
-					AttackButton2->SetVisibility(ESlateVisibility::Collapsed);
+					//AttackButton2->SetVisibility(ESlateVisibility::Collapsed);
 				}
 				else {
-					AttackButton1->SetVisibility(ESlateVisibility::Collapsed);
-					AttackButton2->SetVisibility(ESlateVisibility::Collapsed);
+					//AttackButton1->SetVisibility(ESlateVisibility::Collapsed);
+					//AttackButton2->SetVisibility(ESlateVisibility::Collapsed);
 				}
 			}
 
@@ -219,8 +222,8 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 		
 		TrainUnitsRow->SetVisibility(ESlateVisibility::Collapsed);
 
-		AttackButton1->SetVisibility(ESlateVisibility::Collapsed);
-		AttackButton2->SetVisibility(ESlateVisibility::Collapsed);
+		//AttackButton1->SetVisibility(ESlateVisibility::Collapsed);
+		//AttackButton2->SetVisibility(ESlateVisibility::Collapsed);
 
 		BuffRow->SetVisibility(ESlateVisibility::Collapsed);
 	}

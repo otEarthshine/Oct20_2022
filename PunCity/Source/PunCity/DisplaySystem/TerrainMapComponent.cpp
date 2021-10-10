@@ -523,7 +523,7 @@ void UTerrainMapComponent::SetupGlobalTextures(int tileDimXIn, int tileDimYIn, I
 				uint8 height = min(255, abs(heightMap[(x4 * 4) + (y4 * 4) * tileDimX]) / 16);
 				height = 255 - height;
 				
-				uint8 riverWithHeight = std::min(riverMap[tile4x4Id], static_cast<uint8_t>(127)) + 128 - (height / 2);
+				uint8 riverWithHeight = std::min(riverMap[tile4x4Id] / 2, 127) + (128 - height / 2);
 
 				//uint8 riverWithHeight = (riverMap[tile4x4Id]);
 

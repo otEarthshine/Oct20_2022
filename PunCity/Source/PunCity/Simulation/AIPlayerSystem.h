@@ -19,8 +19,6 @@
 
 DECLARE_CYCLE_STAT(TEXT("PUN: [AI]Tick1Sec"), STAT_PunAITick1Sec, STATGROUP_Game);
 
-DECLARE_CYCLE_STAT(TEXT("PUN: [AI]UpdateRelationship"), STAT_PunAIUpdateRelationship, STATGROUP_Game);
-
 DECLARE_CYCLE_STAT(TEXT("PUN: [AI]PlaceCityBlock"), STAT_PunAIPlaceCityBlock, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: [AI]PlaceForestBlock"), STAT_PunAIPlaceForestBlock, STATGROUP_Game);
 DECLARE_CYCLE_STAT(TEXT("PUN: [AI]PlaceFarm"), STAT_PunAIPlaceFarm, STATGROUP_Game);
@@ -103,44 +101,6 @@ public:
 
 	void Tick1Sec();
 
-	/*
-	 * UI Interface
-	 */
-
-	RelationshipModifiers& relationship() { return _relationshipModifiers; }
-	
-
-	// Friendship
-	bool shouldShow_DeclareFriendship(int32 askingPlayerId) {
-		if (_relationshipModifiers.GetModifier(askingPlayerId, RelationshipModifierEnum::YouAttackedUs) > 0) {
-			return false;
-		}
-		return _relationshipModifiers.GetModifier(askingPlayerId, RelationshipModifierEnum::YouBefriendedUs) == 0;
-	}
-	int32 friendshipPrice() { return 200; }
-	void DeclareFriendship(int32 askingPlayerId) {
-		_relationshipModifiers.SetModifier(askingPlayerId, RelationshipModifierEnum::YouBefriendedUs, friendshipPrice() / GoldToRelationship);
-		_simulation->ChangeMoney(askingPlayerId, -friendshipPrice());
-	}
-
-	// Marriage
-	bool shouldShow_MarryOut(int32 askingPlayerId) {
-		return _relationshipModifiers.GetModifier(askingPlayerId, RelationshipModifierEnum::WeAreFamily) == 0;
-	}
-	int32 marryOutPrice() { return 1000; }
-	void MarryOut(int32 askingPlayerId) {
-		_relationshipModifiers.SetModifier(askingPlayerId, RelationshipModifierEnum::WeAreFamily, marryOutPrice() / GoldToRelationship);
-		_simulation->ChangeMoney(askingPlayerId, -marryOutPrice());
-	}
-
-	// 
-
-	
-	void DeclareWar(int32 askingPlayerId)
-	{
-		_relationshipModifiers.SetModifier(askingPlayerId, RelationshipModifierEnum::YouAttackedUs, -100);
-		_relationshipModifiers.SetModifier(askingPlayerId, RelationshipModifierEnum::YouBefriendedUs, 0);
-	}
 
 	//
 	
@@ -155,8 +115,6 @@ public:
 		SerializeVecObj(Ar, _regionStatuses);
 		Ar << _active;
 
-		//SerializeVecVecValue(Ar, _relationshipModifiers);
-		Ar << _relationshipModifiers;
 	}
 
 	void AIDebugString(std::stringstream& ss) {
@@ -224,7 +182,4 @@ private:
 	
 	std::vector<AIRegionStatus> _regionStatuses;
 	bool _active = false;
-
-	// 1 relationship should cost around 20 gold
-	RelationshipModifiers _relationshipModifiers;
 };

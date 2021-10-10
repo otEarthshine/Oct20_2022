@@ -1659,7 +1659,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				return _gameInterface->IsIntercityRoadBuildable(tile);
 			}
 			return _gameInterface->IsPlayerRoadBuildable(tile);
-		});
+		}, true);
 		return;
 	}
 	
@@ -1675,15 +1675,15 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 	{
 		TickLineDrag(cameraAtom, [&](WorldTile2 tile) {
 			return _gameInterface->IsIntercityRoadBuildable(tile);
-		});
+		}, false);
 		return;
 	}
 
 	if (_placementType == PlacementType::IrrigationDitch)
 	{
 		TickLineDrag(cameraAtom, [&](WorldTile2 tile) {
-			return IsPlayerBuildable(tile); // TODO: allow building on road???
-		}, false);
+			return _simulation->IsFrontBuildableForPlayer(tile, playerId);
+		}, true, false);
 		return;
 	}
 

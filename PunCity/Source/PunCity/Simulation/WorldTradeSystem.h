@@ -149,16 +149,7 @@ public:
 			return a.distance < b.distance;
 		});
 	}
-	
-	std::vector<TradeRoutePair> GetTradeRoutesTo(int32 townIdIn) {
-		std::vector<TradeRoutePair> routes;
-		for (const TradeRoutePair& route : _tradeRoutePairs) {
-			if (route.HasTownId(townIdIn)) {
-				routes.push_back(route);
-			}
-		}
-		return routes;
-	}
+
 
 	
 	bool HasTradeRoute(const TradeRoutePair& tradeRoutePairIn) const {
@@ -169,23 +160,34 @@ public:
 		}
 		return false;
 	}
-	void TryEstablishTradeRoute(const FGenericCommand& command);
+	bool TryEstablishTradeRoute(const FGenericCommand& command);
 	void TryCancelTradeRoute(const FGenericCommand& command);
 
 	std::vector<TradeRoutePair>& tradeRoutePairs() {
 		return _tradeRoutePairs;
 	}
 
-	std::vector<TradeRoutePair> GetTradeRouteTo(int32 originTownId)
-	{
-		std::vector<TradeRoutePair> resultPairs;
-		for (const TradeRoutePair& routePair : _tradeRoutePairs) {
-			if (routePair.HasTownId(originTownId)) {
-				resultPairs.push_back(routePair);
+	
+	std::vector<TradeRoutePair> GetTradeRoutesTo(int32 originTownId) {
+		std::vector<TradeRoutePair> routes;
+		for (const TradeRoutePair& route : _tradeRoutePairs) {
+			if (route.HasTownId(originTownId)) {
+				routes.push_back(route);
 			}
 		}
-		return resultPairs;
+		return routes;
 	}
+	
+	//std::vector<TradeRoutePair> GetTradeRouteTo(int32 originTownId)
+	//{
+	//	std::vector<TradeRoutePair> resultPairs;
+	//	for (const TradeRoutePair& routePair : _tradeRoutePairs) {
+	//		if (routePair.HasTownId(originTownId)) {
+	//			resultPairs.push_back(routePair);
+	//		}
+	//	}
+	//	return resultPairs;
+	//}
 	
 	
 	FText GetTradeRouteNodeName1(const TradeRoutePair& tradeRoutePair) {

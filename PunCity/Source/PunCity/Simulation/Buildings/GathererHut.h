@@ -1976,3 +1976,44 @@ public:
 	
 	virtual int32 maxCardSlots() override { return 0; }
 };
+
+class Caravansary final : public Building
+{
+public:
+	virtual void Serialize(FArchive& Ar) override {
+		Building::Serialize(Ar);
+		Ar << _targetTownId;
+		Ar << _cumulativeRouteMoney;
+	}
+
+	int32 targetTownId() { return _targetTownId; }
+
+	void SetTargetTownId(int32 targetTownId) {
+		if (targetTownId != _targetTownId) {
+			_cumulativeRouteMoney = 0;
+			_targetTownId = targetTownId;
+		}
+	}
+
+	void AddRouteMoney(int32 money) {
+		_cumulativeRouteMoney += money;
+	}
+
+	// Use Modulus to get level??
+
+	/*
+	 * Trade money depends on:
+	 *  - Distance
+	 *  - cumulative trade experience..
+	 */
+	int32 GetTradeMoney(WorldTile2 tradeTargetTile)
+	{
+		return WorldTile2::Distance(tradeTargetTile, centerTile());
+	}
+
+	int32 lastTargetTownId = -1;
+
+private:
+	int32 _targetTownId = -1;
+	int32 _cumulativeRouteMoney = 0;
+};

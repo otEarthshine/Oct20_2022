@@ -25,10 +25,12 @@ public:
 		Dropdown->OnSelectionChanged.AddDynamic(this, &UPunDropdown::OnDropdownChanged);
 	}
 
-	void Set(int32 objectId, TArray<FText> options, FText selectedOption, std::function<void(int32, FString, IGameUIDataSource*, IGameNetworkInterface*, int32)> onDropdownChanged)
+	void Set(int32 objectId, TArray<FText> options, FText selectedOption, std::function<void(int32, FString, IGameUIDataSource*, IGameNetworkInterface*, int32, int32)> onDropdownChanged, TArray<int32> optionInts = {})
 	{
-		if (!TextArrayEquals(options, _lastOptions)) {
+		if (!TextArrayEquals(options, _lastOptions)) 
+		{
 			_lastOptions = options;
+			_lastOptionInts = optionInts;
 
 			//Dropdown->OnGenerateWidgetEvent.BindUFunction(this, "OnGenerateWidget");
 			
@@ -51,11 +53,20 @@ public:
 		PUN_LOG("OnDropDownChanged: %s ... %d", *sItem, (int)seltype);
 		if (sItem.IsEmpty()) return;
 
-		_onDropdownChanged(punId, sItem, dataSource(), networkInterface(), dropdownIndex);
+		
+		int32 optionInt = -1;
+		for (int32 i = 0; i < _lastOptions.Num(); i++) {
+			if (_lastOptions[i].ToString() == sItem) {
+				optionInt = _lastOptionInts[i];
+			}
+		}
+		
+		_onDropdownChanged(punId, sItem, dataSource(), networkInterface(), dropdownIndex, optionInt);
 	}
 
 private:
 	TArray<FText> _lastOptions;
+	TArray<int32> _lastOptionInts;
 	
-	std::function<void(int32, FString, IGameUIDataSource*, IGameNetworkInterface*, int32)> _onDropdownChanged;
+	std::function<void(int32, FString, IGameUIDataSource*, IGameNetworkInterface*, int32, int32)> _onDropdownChanged;
 };

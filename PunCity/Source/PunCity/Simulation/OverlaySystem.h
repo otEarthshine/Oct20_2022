@@ -62,9 +62,14 @@ public:
 
 		_regionToRoad.resize(GameMapConstants::TotalRegions);
 		_regionToIrrigationDitch.resize(GameMapConstants::TotalRegions);
+		_regionToHumanFertility.resize(GameMapConstants::TotalRegions);
 		//_regionToFence.resize(GameMapConstants::TotalRegions);
 		
 		_simulation = simulation;
+	}
+
+	void Tick() {
+		RefreshHumanFertility();
 	}
 
 	//std::vector<uint8_t>& appeal() { return _manmadeAppeal; }
@@ -163,7 +168,10 @@ public:
 		});
 	}
 
-	void AddIrrigationDitch(WorldTile2 tile, bool isVisible = true) {
+	void AddIrrigationDitch(WorldTile2 tile, bool isVisible = true)
+	{
+		AddTileForHumanFertilityRefresh(tile);
+		
 		DitchTile newDitchTile;
 		newDitchTile.tile = tile;
 		newDitchTile.isVisible = isVisible;
@@ -172,13 +180,55 @@ public:
 			return ditchTileTemp.tile == tile;
 		});
 	}
-	bool RemoveIrrigationDitch(WorldTile2 tile) {
+	bool RemoveIrrigationDitch(WorldTile2 tile)
+	{
+		AddTileForHumanFertilityRefresh(tile);
+		
 		return CppUtils::TryRemoveIf(_regionToIrrigationDitch[tile.regionId()], [&](const DitchTile& ditchTile) {
 			return ditchTile.tile == tile;
 		});
 	}
-
 	
+
+	uint8 GetHumanFertility(WorldTile2 tile)
+	{
+		std::vector<uint8>& humanFertility = _regionToHumanFertility[tile.regionId()];
+		if (humanFertility.size() == 0) {
+			return 0;
+		}
+		return humanFertility[tile.localTileId()];
+	}
+
+	void AddTileForHumanFertilityRefresh(WorldTile2 tile) {
+		tile.region().ExecuteOnNearbyRegions([&](WorldRegion2 region) {
+			CppUtils::TryAdd(_regionsToRefreshHumanFertility, region);
+		});
+	}
+	void RefreshHumanFertility()
+	{
+		for (WorldRegion2 region : _regionsToRefreshHumanFertility)
+		{
+			if (_regionToHumanFertility[region.regionId()].size() == 0) {
+				_regionToHumanFertility[region.regionId()].resize(CoordinateConstants::TileIdsPerRegion);
+			}
+			
+			region.ExecuteOnRegion_WorldTile([&](WorldTile2 tile) 
+			{
+				int32 fertility = 0;
+				
+				region.ExecuteOnNearbyRegions([&](WorldRegion2 nearbyRegions) {
+					const std::vector<DitchTile>& ditchTiles = _regionToIrrigationDitch[nearbyRegions.regionId()];
+					for (const DitchTile& ditchTile : ditchTiles) {
+						fertility = std::max(fertility, (10 - WorldTile2::Distance(ditchTile.tile, tile)) * 100 / 5);
+					}
+				});
+
+				fertility = std::min(fertility, 95);
+				_regionToHumanFertility[region.regionId()][tile.localTileId()] = static_cast<uint8>(fertility);
+			});
+		}
+		_regionsToRefreshHumanFertility.clear();
+	}
 	
 
 	/*
@@ -188,12 +238,17 @@ public:
 	{
 		SerializeVecVecObj(Ar, _regionToRoad);
 		SerializeVecVecObj(Ar, _regionToIrrigationDitch);
+		SerializeVecVecValue(Ar, _regionToHumanFertility);
 	}
 
 private:
 	std::vector<std::vector<RoadTile>> _regionToRoad;
 
 	std::vector<std::vector<DitchTile>> _regionToIrrigationDitch;
+	std::vector<std::vector<uint8>> _regionToHumanFertility;
 
+	//! Not Serialized
 	IGameSimulationCore* _simulation = nullptr;
+
+	std::vector<WorldRegion2> _regionsToRefreshHumanFertility;
 };

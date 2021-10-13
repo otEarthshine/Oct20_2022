@@ -110,7 +110,8 @@ static const std::vector<CardEnum> DefaultJobPriorityListAllSeason
 	CardEnum::OilPowerPlant,
 	CardEnum::PaperMill,
 	CardEnum::ClockMakers,
-
+	
+	CardEnum::Caravansary,
 
 	CardEnum::Market,
 	CardEnum::ShippingDepot,

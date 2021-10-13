@@ -692,6 +692,7 @@ void ABuildingPlacementSystem::StartIrrigationDitch()
 {
 	_placementType = PlacementType::IrrigationDitch;
 	StartDrag();
+	_gameInterface->SetOverlayType(OverlayType::Farm, OverlaySetterType::BuildingPlacement);
 }
 
 void ABuildingPlacementSystem::StartFence()
@@ -1213,7 +1214,8 @@ void ABuildingPlacementSystem::CalculateRoadLineDrag(function<bool(WorldTile2)> 
 
 			// Add corners to non-diagonal road.
 			// When there are 2 tiles adjacent before and after the current tile, we fill in the corner
-			if (_roadPathTileIds.Num() > 5) {
+			if (hasDiagonal && _roadPathTileIds.Num() > 5) 
+			{
 				for (int32 i = _roadPathTileIds.Num() - 2; i-- > 2;) {
 					WorldTile2 prev1Tile(_roadPathTileIds[i + 1]);
 					WorldTile2 prev2Tile(_roadPathTileIds[i + 2]);

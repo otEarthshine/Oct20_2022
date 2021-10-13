@@ -338,6 +338,8 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 
 		  CASE_BUILDING(CardEnum::IrrigationPump, IrrigationPump);
 
+		  CASE_BUILDING(CardEnum::Caravansary, Caravansary);
+
 		  CASE_BUILDING(CardEnum::ConsultingFirm, Building);
 		  CASE_BUILDING(CardEnum::ImmigrationPropagandaOffice, Building);
 		  CASE_BUILDING(CardEnum::MerchantGuild, Building);

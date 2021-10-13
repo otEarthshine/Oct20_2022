@@ -542,8 +542,11 @@ public:
 	{
 		const int32 firstLevelRequirement = 500;
 
+		// TODO: use mod instead???
+
 		level = 1;
 		currentMoney = _minorCityWealth;
+		
 		moneyToNextLevel = firstLevelRequirement;
 
 		while (currentMoney >= moneyToNextLevel) {

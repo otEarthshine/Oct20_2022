@@ -170,6 +170,7 @@ enum class TryWorkFailEnum : uint8
 
 	// TryBulkHaul_Intercity
 	NeedRoadConnectionBetweenIntercityLogisticsHubAndTargetTownhall,
+	NeedRoadConnectionBetweenCaravansaryAndTargetTownhall,
 
 	// TryBulkHaul_IntercityWater
 	CannotFindShippingRouteToTargetTown,
@@ -215,6 +216,9 @@ const TArray<FText> TryWorkFailEnumName
 
 	// TryBulkHaul_Intercity
 	LOCTEXT("NeedRoadConnectionBetweenIntercityLogisticsHubAndTargetTownhall", "Need Road Connection between Intercity Logistics Hub and target Townhall"),
+	LOCTEXT("NeedRoadConnectionBetweenCaravansaryAndTargetTownhall", "Need Road Connection between Caravansary and target Townhall"),
+	
+	// TryBulkHaul_IntercityWater
 	LOCTEXT("CannotFindShippingRouteToTargetTown", "Cannot find shipping route to target town"),
 };
 static const FText& GetTryWorkFailEnumName(TryWorkFailEnum tryWorkFailEnum) {
@@ -296,6 +300,8 @@ public:
 
 		IntercityHaulPickup,
 		IntercityHaulDropoff,
+
+		CaravanGiveMoney,
 
 		PickupFoodAnimal,
 		DropoffFoodAnimal,
@@ -455,7 +461,8 @@ public:
 
 			CASE(IntercityHaulPickup);
 			CASE(IntercityHaulDropoff);
-
+			CASE(CaravanGiveMoney);
+			
 			CASE(PickupFoodAnimal);
 			CASE(DropoffFoodAnimal);
 
@@ -518,6 +525,8 @@ public:
 
 	void Add_IntercityHaulPickup(int32 workplaceId, int32 townId);		void IntercityHaulPickup();
 	void Add_IntercityHaulDropoff(int32 workplaceId);					void IntercityHaulDropoff();
+
+	void Add_CaravanGiveMoney(int32 workplaceId, int32 targetBuildingId);		void CaravanGiveMoney();
 
 	void Add_PickupFoodAnimal();		void PickupFoodAnimal();
 	void Add_DropoffFoodAnimal();		void DropoffFoodAnimal();

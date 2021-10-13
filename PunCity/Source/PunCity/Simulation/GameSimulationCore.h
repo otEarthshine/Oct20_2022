@@ -1829,6 +1829,13 @@ public:
 			}
 		});
 
+		int32 provinceBuildingId = provinceInfoSystem().provinceBuildingSlot(provinceId).buildingId;
+		if (provinceBuildingId != -1)
+		{
+			if (IsAncientWonderCardEnum(building(provinceBuildingId).buildingEnum())) {
+				result.push_back({ NSLOCTEXT("ProvinceClaim", "ClaimPricePenalty_AncientWonder", "ancient wonder"), 500 });
+			}
+		}
 
 		return result;
 	}
@@ -2649,8 +2656,12 @@ public:
 	/*
 	 * Terran Gen
 	 */
-	int32 GetFertilityPercent(WorldTile2 tile) override {
-		return terrainGenerator().GetFertilityPercentBase(tile);
+	virtual int32 GetFertilityPercent(WorldTile2 tile) override
+	{
+		int32 fertility = terrainGenerator().GetFertilityPercentBase(tile);
+		fertility = std::max(fertility, static_cast<int32>(overlaySystem().GetHumanFertility(tile)));
+
+		return fertility;
 	}
 	BiomeEnum GetBiomeEnum(WorldTile2 tile) override {
 		return terrainGenerator().GetBiome(tile);

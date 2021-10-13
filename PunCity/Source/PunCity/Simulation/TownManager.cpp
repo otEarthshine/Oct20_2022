@@ -1077,7 +1077,7 @@ void TownManager::Tick1Sec()
 	 * Tourism
 	 */
 	{
-		std::vector<TradeRoutePair> tradeRoutes = _simulation->worldTradeSystem().GetTradeRouteTo(_townId);
+		std::vector<TradeRoutePair> tradeRoutes = _simulation->worldTradeSystem().GetTradeRoutesTo(_townId);
 
 		// Get Hotels on Trade Route
 		std::vector<Hotel*> hotels;

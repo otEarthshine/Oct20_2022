@@ -529,8 +529,10 @@ private:
 
 	/*
 	 * Reinforcement UI
+	 * 	- Deploy Military
 	 */
 	UPROPERTY(meta = (BindWidget)) UTextBlock* ReinforcementTitleText;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* ReinforcementTitleText2;
 	UPROPERTY(meta = (BindWidget)) UWrapBox* ReinforcementSlots;
 
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* ReinforcementRemovedOuterBox;
@@ -553,6 +555,31 @@ public:
 		reinforcementCallbackEnum = callbackEnum;
 		
 		ReinforcementOverlay->SetVisibility(ESlateVisibility::Visible);
+
+		if (reinforcementCallbackEnum == CallbackEnum::ReinforceAttackProvince ||
+			reinforcementCallbackEnum == CallbackEnum::ReinforceDefendProvince)
+		{
+			ReinforcementTitleText2->SetText(NSLOCTEXT("ReinforceUI", "Reinforce", "Reinforce"));
+		}
+		else if (reinforcementCallbackEnum == CallbackEnum::StartAttackProvince) {
+			ReinforcementTitleText2->SetText(NSLOCTEXT("ReinforceUI", "Vassalize", "Vassalize"));
+		}
+		else if (reinforcementCallbackEnum == CallbackEnum::DefendProvinceMoney) {
+			ReinforcementTitleText2->SetText(NSLOCTEXT("ReinforceUI", "Defend", "Defend"));
+		}
+		else if (reinforcementCallbackEnum == CallbackEnum::Liberate) {
+			ReinforcementTitleText2->SetText(NSLOCTEXT("ReinforceUI", "Liberate", "Liberate"));
+		}
+		else if (reinforcementCallbackEnum == CallbackEnum::RaidBattle) {
+			ReinforcementTitleText2->SetText(NSLOCTEXT("ReinforceUI", "Raid", "Raid"));
+		}
+		else if (reinforcementCallbackEnum == CallbackEnum::Raze) {
+			ReinforcementTitleText2->SetText(NSLOCTEXT("ReinforceUI", "Raze", "Raze"));
+		}
+		else {
+			UE_DEBUG_BREAK();
+		}
+		
 
 		ReinforcementRemovedOuterBox->SetVisibility(ESlateVisibility::Collapsed);
 

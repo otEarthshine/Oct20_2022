@@ -3103,6 +3103,42 @@ void UnitStateAI::IntercityHaulDropoff()
 }
 
 
+void UnitStateAI::Add_CaravanGiveMoney(int32 workplaceId, int32 targetBuildingId) {
+	AddAction(ActionEnum::CaravanGiveMoney, workplaceId, targetBuildingId);
+}
+
+void UnitStateAI::CaravanGiveMoney()
+{
+	int32 workplaceId = action().int32val1;
+	int32 targetBuildingId = action().int32val2;
+
+	if (Building* workplace = _simulation->buildingPtr(workplaceId)) {
+		if (workplace->isEnum(CardEnum::Caravansary))
+		{
+			if (Building* targetBuilding = _simulation->buildingPtr(targetBuildingId)) {
+				Caravansary& caravansary = workplace->subclass<Caravansary>();
+				int32 tradeMoney = caravansary.GetTradeMoney(targetBuilding->centerTile());
+
+				int32 townId = targetBuilding->townId();
+				
+				if (IsMinorTown(townId)) {
+					_simulation->townManagerBase(townId)->ChangeWealth_MinorCity(tradeMoney);
+				}
+				else if (IsValidMajorTown(townId)) {
+					_simulation->ChangeMoney(_simulation->townPlayerId(townId), tradeMoney);
+				}
+
+				// Caravan Experience
+				caravansary.AddRouteMoney(tradeMoney);
+
+				// Floatup
+				_simulation->uiInterface()->ShowFloatupInfo(workplace->playerId(), FloatupEnum::GainMoney, targetBuilding->centerTile(), TEXT_NUMSIGNED(tradeMoney));
+				_simulation->uiInterface()->ShowFloatupInfo(targetBuilding->playerId(), FloatupEnum::GainMoney, targetBuilding->centerTile(), TEXT_NUMSIGNED(tradeMoney));
+			}
+		}
+	}
+}
+
 
 //! Work reservations
 void UnitStateAI::ReserveWork(int32 amount, int32 workplaceId)

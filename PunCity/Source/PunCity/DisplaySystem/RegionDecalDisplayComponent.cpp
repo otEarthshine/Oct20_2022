@@ -134,6 +134,8 @@ void URegionDecalDisplayComponent::UpdateDisplay(int regionId, int meshId, World
 
 	_roadDecals[meshId].decal->SetRelativeLocation(displayLocation);
 
+	auto& sim = simulation();
+
 
 	/*
 	 * Ore
@@ -170,7 +172,7 @@ void URegionDecalDisplayComponent::UpdateDisplay(int regionId, int meshId, World
 	{
 		if (!overlayWasVisible ||
 			//_lastOverlayType != overlayType ||
-			simulation().NeedDisplayUpdate(DisplayClusterEnum::Overlay, regionId) ||
+			sim.NeedDisplayUpdate(DisplayClusterEnum::Overlay, regionId) ||
 			updateCount++ % 60 == 0)
 		{
 			//SCOPE_TIMER("Tick Region Overlay");
@@ -182,9 +184,9 @@ void URegionDecalDisplayComponent::UpdateDisplay(int regionId, int meshId, World
 			int32 regionMinTileX = region.x * CoordinateConstants::TilesPerRegion;
 			int32 regionMinTileY = region.y * CoordinateConstants::TilesPerRegion;
 
-			OverlaySystem& overlaySys = simulation().overlaySystem();
+			OverlaySystem& overlaySys = sim.overlaySystem();
 
-			PunTerrainGenerator& generator = simulation().terrainGenerator();
+			PunTerrainGenerator& generator = sim.terrainGenerator();
 
 			for (int y = 0; y < CoordinateConstants::TilesPerRegion; y++) {
 				for (int x = 0; x < CoordinateConstants::TilesPerRegion; x++)
@@ -210,7 +212,7 @@ void URegionDecalDisplayComponent::UpdateDisplay(int regionId, int meshId, World
 						/*WorldTile2 tile(x + regionMinTileX, y + regionMinTileY);*/
 						if (!simulation().IsWaterOrMountain(worldTile)) {
 							// Color range... 50% - 100%
-							int32 fertilityShaved = max(0, generator.GetFertilityPercentBase(worldTile) - OverlayFertilityMaxRed);
+							int32 fertilityShaved = max(0, sim.GetFertilityPercent(worldTile) - OverlayFertilityMaxRed);
 							overlayColor = fertilityShaved * 254 / (MaxFertility - OverlayFertilityMaxRed) + 1; // 0 overlayData is blank tile
 						}
 					}

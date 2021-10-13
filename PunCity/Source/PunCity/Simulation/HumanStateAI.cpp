@@ -176,6 +176,11 @@ void HumanStateAI::CalculateActions()
 				return;
 			}
 		}
+		else if (workplc->isEnum(CardEnum::Caravansary)) {
+			if (TryCaravanTrade() || justReset()) {
+				return;
+			}
+		}
 		else if (workplc->isEnum(CardEnum::HaulingServices)) {
 			if (TryHaulingServices() || justReset()) {
 				//DEBUG_AI_VAR(TryHaulingServices);
@@ -2244,6 +2249,45 @@ bool HumanStateAI::TryDistribute_Market()
 	}
 	
 	return false;
+}
+
+bool HumanStateAI::TryCaravanTrade()
+{
+	Caravansary& bld = workplace()->subclass<Caravansary>(CardEnum::Caravansary);
+
+	if (bld.targetTownId() == -1) {
+		WorkFailed(TryWorkFailEnum::RequireWorkplaceSetup);
+		return false;
+	}
+
+	WorldTile2 startTile = bld.gateTile();
+	WorldTile2 targetTile = _simulation->GetTownhallGate_All(bld.targetTownId());
+
+	std::vector<uint32_t> path;
+	bool succeed = _simulation->pathAI()->FindPathRoadOnly(startTile.x, startTile.y, targetTile.x, targetTile.y, path);
+	if (!succeed) {
+		// Try to go to townhall first
+		if (!_simulation->IsConnectedBuilding(bld.buildingId())) {
+			WorkFailed(TryWorkFailEnum::NeedRoadConnectionBetweenIntercityLogisticsHubAndTargetTownhall);
+			return false;
+		}
+
+		// Might be able to use townhall as startTile instead
+		startTile = _simulation->GetMajorTownhallGate(bld.townId());
+		succeed = _simulation->pathAI()->FindPathRoadOnly(startTile.x, startTile.y, targetTile.x, targetTile.y, path);
+		if (!succeed) {
+			WorkFailed(TryWorkFailEnum::NeedRoadConnectionBetweenIntercityLogisticsHubAndTargetTownhall);
+			return false;
+		}
+	}
+
+	Add_CaravanGiveMoney(bld.buildingId(), bld.buildingId());
+	Add_MoveToCaravan(startTile, UnitAnimationEnum::HorseCaravan);
+	Add_CaravanGiveMoney(bld.buildingId(), _simulation->GetTownhallId(bld.targetTownId()));
+	Add_MoveToCaravan(targetTile, UnitAnimationEnum::HorseCaravan);
+	Add_MoveTo(startTile);
+
+	return true;
 }
 
 

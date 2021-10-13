@@ -663,10 +663,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					focusBox->AddRichTextCenter(FText::Format(INVTEXT("<FaintGreen12>{0}</>"), LOCTEXT("Ally", "Ally")));
 				}
 				else if (townManagerBase->relationship().isEnemy(playerId())) {
-					focusBox->AddRichTextCenter(LOCTEXT("Neutral", "Neutral"));
+					focusBox->AddRichTextCenter(FText::Format(INVTEXT("<FaintRed12>{0}</>"), LOCTEXT("Enemy", "Enemy")));
 				}
 				else {
-					focusBox->AddRichTextCenter(FText::Format(INVTEXT("<FaintRed12>{0}</>"), LOCTEXT("Enemy", "Enemy")));
+					focusBox->AddRichTextCenter(LOCTEXT("Neutral", "Neutral"));
 				}
 				
 				focusBox->AddSpacer();
@@ -1806,7 +1806,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						int32 hotelsOnTradeRoutes = 0;
 						int32 aveHotelServiceQuality = 0;
 						
-						std::vector<TradeRoutePair> routes = sim.worldTradeSystem().GetTradeRouteTo(townId);
+						std::vector<TradeRoutePair> routes = sim.worldTradeSystem().GetTradeRoutesTo(townId);
 						for (TradeRoutePair& route : routes) {
 							const std::vector<int32>& hotelIds = sim.buildingIds(route.GetCounterpartTownId(townId), CardEnum::Hotel);
 							hotelsOnTradeRoutes += hotelIds.size();
@@ -1859,7 +1859,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						focusBox->AddRichText(JOINTEXT(args));
 
 						focusBox->AddSpacer();
-						std::vector<TradeRoutePair> routes = sim.worldTradeSystem().GetTradeRouteTo(hotel.townId());
+						std::vector<TradeRoutePair> routes = sim.worldTradeSystem().GetTradeRoutesTo(hotel.townId());
 						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Trade Routes", "Trade Routes"), TEXT_NUM(routes.size()));
 						
 					}
@@ -1929,7 +1929,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								building.buildingId(),
 								options,
 								ResourceName_WithNone(resourceEnum),
-								[](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex)
+								[](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex, int32 optionInt)
 							{
 								auto command = make_shared<FChangeWorkMode>();
 								command->buildingId = objectId;
@@ -2005,7 +2005,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 									building.buildingId(),
 									options,
 									sim.townNameT(targetTownId),
-									[](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex)
+									[](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex, int32 optionInt)
 									{
 										auto command = make_shared<FChangeWorkMode>();
 										command->buildingId = objectId;
@@ -2037,7 +2037,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 										building.buildingId(),
 										options,
 										ResourceName_WithNone(resourceEnum),
-										[](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex)
+										[](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex, int32 optionInt)
 									{
 										std::wstring resourceName = ToWString(sItem);
 
@@ -2083,6 +2083,66 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							}
 						}
 					}
+					else if (building.isEnum(CardEnum::Caravansary))
+					{
+						if (showWhenOwnedByCurrentPlayer)
+						{
+							auto& caravansary = building.subclass<Caravansary>();
+
+							// targetAmount
+							// - just opened UI, get it from targetAmount (actual value)
+							// - after opened, we keep value in lastTargetAmountSet
+							if (_justOpenedDescriptionUI) {
+								caravansary.lastTargetTownId = caravansary.targetTownId();
+							}
+							int32 targetTownId = caravansary.lastTargetTownId;
+
+							const FText noneText = LOCTEXT("None", "None");
+
+							// Target Town Dropdown
+							{
+								focusBox->AddWGT_PunText(UIEnum::WGT_ObjectFocus_Subheader,
+									LOCTEXT("TargetTownDropdown", "Town Target:")
+								);
+
+								TArray<FText> options;
+								TArray<int32> optionInts;
+								options.Add(noneText);
+								optionInts.Add(-1);
+
+								std::vector<TradeRoutePair> tradeRoutes = sim.worldTradeSystem().GetTradeRoutesTo(caravansary.townId());
+
+								for (TradeRoutePair tradeRoutePair : tradeRoutes) {
+									int32 possibleTownId = tradeRoutePair.GetCounterpartTownId(building.townId());
+									options.Add(sim.townNameT(possibleTownId));
+									optionInts.Add(possibleTownId);
+								}
+
+							
+								if (tradeRoutes.size() > 0)
+								{
+									focusBox->AddDropdown(
+										building.buildingId(),
+										options,
+										targetTownId != -1 ? sim.townNameT(targetTownId) : noneText,
+										[](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex, int32 optionInt)
+										{
+											auto command = make_shared<FChangeWorkMode>();
+											command->buildingId = objectId;
+											command->intVar1 = optionInt;
+											networkInterface->SendNetworkCommand(command);
+										},
+										0,
+										optionInts
+									);
+									focusBox->AddSpacer(18);
+								}
+								else {
+									focusBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Need Trade Route", "Need Trade Route")));
+								}
+							}
+						}
+					}
 					else if (IsMountainMine(building.buildingEnum()))
 					{
 						int32 oreLeft = building.subclass<Mine>().oreLeft();
@@ -2093,7 +2153,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								building.product()
 							);
 						} else {
-							focusBox->AddRichText(TEXT_TAG("<Red", LOCTEXT("Mine Depleted", "Mine Depleted")));
+							focusBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Mine Depleted", "Mine Depleted")));
 						}
 					}
 					else if (IsRegionalBuilding(building.buildingEnum()))
@@ -2386,7 +2446,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						building.buildingId(),
 						building.workModeNames(),
 						building.workMode().name,
-						[](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex)
+						[](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex, int32 optionInt)
 					{
 						auto command = make_shared<FChangeWorkMode>();
 						command->buildingId = objectId;
@@ -2557,7 +2617,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							building.buildingId(),
 							options,
 							defaultOption,
-							[options](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex)
+							[options](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex, int32 optionInt)
 						{
 							auto FindCutTreeEnumFromName = [&](FString name) {
 								for (int32 i = 0; i < options.Num(); i++) {
@@ -3828,7 +3888,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 				Indent(40);
 				focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Biome", "Biome"), terrainGen.GetBiomeNameT(tile));
-				focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Fertility", "Fertility"), TEXT_PERCENT(terrainGen.GetFertilityPercentBase(tile)));
+				focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Fertility", "Fertility"), TEXT_PERCENT(sim.GetFertilityPercent(tile)));
 				focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Appeal", "Appeal"), TEXT_PERCENT(terrainGen.GetAppealPercent(tile)));
 				ResetIndent();
 				
@@ -4896,7 +4956,7 @@ void UObjectDescriptionUISystem::AddBiomeInfo(WorldTile2 tile, UPunBoxWidget* fo
 	else {
 		//ADDTEXT_(LOCTEXT("BiomeInfoFertility", "<Bold>Fertility:</> {0}\n"), TEXT_PERCENT(terrainGenerator.GetFertilityPercent(tile)));
 		focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
-			LOCTEXT("BiomeInfoFertility", "Fertility"), TEXT_PERCENT(terrainGenerator.GetFertilityPercentBase(tile))
+			LOCTEXT("BiomeInfoFertility", "Fertility"), TEXT_PERCENT(sim.GetFertilityPercent(tile))
 		);
 
 		int32 provinceId = provinceSys.GetProvinceIdClean(tile);

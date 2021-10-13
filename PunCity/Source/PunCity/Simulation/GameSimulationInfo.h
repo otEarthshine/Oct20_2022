@@ -3722,7 +3722,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(12, 12), GetBldResourceInfoManual({})
 	),
 	BldInfo(CardEnum::Caravansary, _LOCTEXT("Caravansary", "Caravansary"), LOCTEXT("Caravansary (Plural)", "Caravansaries"), LOCTEXT("Caravansary Desc", ""),
-		WorldTile2(12, 12), GetBldResourceInfoManual({})
+		WorldTile2(12, 12), GetBldResourceInfoManual({ 100, 50 }, 1)
 	),
 	BldInfo(CardEnum::PitaBakery, _LOCTEXT("Pita Bakery", "Pita Bakery"), LOCTEXT("Pita Bakery (Plural)", "Pita Bakeries"), LOCTEXT("Pita Bakery Desc", "Bakes Bread with Wheat Flour and heat."),
 		WorldTile2(8, 6), GetBldResourceInfo(2, { ResourceEnum::Flour, ResourceEnum::Coal, ResourceEnum::PitaBread }, { 0, 1, 0, 2 })

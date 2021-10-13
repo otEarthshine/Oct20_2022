@@ -69,6 +69,8 @@ public:
 	bool TryDistribute_Market();
 	//bool TryConsumerWork();
 
+	bool TryCaravanTrade();
+
 	bool TryGather(bool treeOnly);
 
 	bool TryForestingCut(bool cutAndPlant);

@@ -18,7 +18,7 @@ void WorldTradeSystem::RefreshTradeRoutes()
 	
 }
 
-void WorldTradeSystem::TryEstablishTradeRoute(const FGenericCommand& command)
+bool WorldTradeSystem::TryEstablishTradeRoute(const FGenericCommand& command)
 {
 	SCOPE_TIMER("TryEstablishTradeRoute");
 	
@@ -44,7 +44,7 @@ void WorldTradeSystem::TryEstablishTradeRoute(const FGenericCommand& command)
 			LOCTEXT("AlreadyHasTradeRoute","Already establish the trade route."), 
 			ExclusiveUIEnum::None, "PopupCannot"
 		);
-		return;
+		return false;
 	}
 
 	auto connectTradeRoute = [&]()
@@ -103,7 +103,7 @@ void WorldTradeSystem::TryEstablishTradeRoute(const FGenericCommand& command)
 
 		if (succeed) {
 			connectTradeRoute();
-			return;
+			return true;
 		}
 	}
 
@@ -120,7 +120,7 @@ void WorldTradeSystem::TryEstablishTradeRoute(const FGenericCommand& command)
 			LOCTEXT("NeedIntercityRoadToMakeTradeRoute", "Need intercity road to establish the trade route. Connect your Townhall to target Townhall with Road."),
 			ExclusiveUIEnum::TownAutoTradeUI, "PopupCannot"
 		);
-		return;
+		return false;
 	}
 
 
@@ -132,12 +132,12 @@ void WorldTradeSystem::TryEstablishTradeRoute(const FGenericCommand& command)
 			LOCTEXT("NeedPortToMakeTradeRoute", "Need Trading Port to establish the trade route."),
 			ExclusiveUIEnum::TownAutoTradeUI, "PopupCannot"
 		);
-		return;
+		return false;
 	}
 
 
 	connectTradeRoute();
-	
+	return true;
 
 	// TODO: Province flood to see if the water tiles are connected
 	

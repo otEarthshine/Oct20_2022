@@ -1482,6 +1482,8 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 		{
 			//PUN_LLM(PunSimLLMTag::Trees);
 			_treeSystem->Tick();
+
+			_overlaySystem.Tick();
 		}
 
 		if (PunSettings::IsOn("TickUnlocks"))
@@ -2999,6 +3001,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 
 						SetNeedDisplayUpdate(DisplayClusterEnum::Trees, tile.regionId(), true);
 						SetNeedDisplayUpdate(DisplayClusterEnum::Building, tile.regionId(), true);
+						SetNeedDisplayUpdate(DisplayClusterEnum::Overlay, tile.regionId(), true);
 					}
 				}
 
@@ -3986,6 +3989,10 @@ void GameSimulationCore::ChangeWorkMode(FChangeWorkMode command)
 		else {
 			hub.SetTargetTownId(command.intVar2);
 		}
+	}
+	else if (bld.isEnum(CardEnum::Caravansary))
+	{
+		bld.subclass<Caravansary>().SetTargetTownId(command.intVar1);
 	}
 	else {
 		UE_DEBUG_BREAK();

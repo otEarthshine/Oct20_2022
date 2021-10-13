@@ -184,86 +184,91 @@ public:
 		/*
 		 * Oasis
 		 */
-
-		for (int32 provinceId = 0; provinceId < GameMapConstants::TotalRegions; provinceId++)
+		auto trySpawnOasis = [&](int32 nearbyOasisDistance, int32 riverDistance)
 		{
-			if (provinceSys.IsProvinceValid(provinceId))
+			for (int32 provinceId = 0; provinceId < GameMapConstants::TotalRegions; provinceId++)
 			{
-				// _provinceOwnerInfos init
-				_provinceOwnerInfos[provinceId].provinceId = provinceId;
-				
-
-				bool canSpawnOasis = [&]()
+				if (provinceSys.IsProvinceValid(provinceId))
 				{
-					if (_simulation->GetBiomeProvince(provinceId) != BiomeEnum::Desert) {
-						return false;
-					}
-					
-					// Check if nearby provinces are desert
+					// _provinceOwnerInfos init
+					_provinceOwnerInfos[provinceId].provinceId = provinceId;
+
+
+					bool canSpawnOasis = [&]()
 					{
-						const std::vector<ProvinceConnection>& connections = provinceSys.GetProvinceConnections(provinceId);
-						for (const ProvinceConnection& connection : connections) {
-							if (_simulation->GetBiomeProvince(connection.provinceId) != BiomeEnum::Desert) {
+						if (_simulation->GetBiomeProvince(provinceId) != BiomeEnum::Desert) {
+							return false;
+						}
+
+						// Check if nearby provinces are desert
+						{
+							const std::vector<ProvinceConnection>& connections = provinceSys.GetProvinceConnections(provinceId);
+							for (const ProvinceConnection& connection : connections) {
+								if (_simulation->GetBiomeProvince(connection.provinceId) != BiomeEnum::Desert) {
+									return false;
+								}
+							}
+						}
+
+						// Check for nearby Oasis
+						TSet<int32> visitedProvinceIds;
+						std::function<bool(int32, int32, TerrainTileType)> hasNearbyOasisHelper = [&](int32 provinceIdTemp, int32 distance, TerrainTileType connectionType)
+						{
+							if (distance > nearbyOasisDistance) {
 								return false;
 							}
-						}
-					}
 
-					// Check for nearby Oasis
-					TSet<int32> visitedProvinceIds;
-					std::function<bool(int32, int32, TerrainTileType)> hasNearbyOasisHelper = [&](int32 provinceIdTemp, int32 distance, TerrainTileType connectionType)
-					{
-						if (distance > 3) {
-							return false;
-						}
-						
-						if (visitedProvinceIds.Contains(provinceIdTemp)) {
-							return false;
-						}
-						visitedProvinceIds.Add(provinceIdTemp);
-						
-						if (distance <= 1 && connectionType == TerrainTileType::River) {
-							return true;
-						}
-						if (_provinceBuildingSlots[provinceIdTemp].oasisSlot.isValid()) {
-							return true;
-						}
-						const std::vector<ProvinceConnection>& connections = provinceSys.GetProvinceConnections(provinceIdTemp);
-						for (const ProvinceConnection& connection : connections) {
-							if (hasNearbyOasisHelper(connection.provinceId, distance + 1, connection.tileType)) {
+							if (visitedProvinceIds.Contains(provinceIdTemp)) {
+								return false;
+							}
+							visitedProvinceIds.Add(provinceIdTemp);
+
+							if (distance <= riverDistance && connectionType == TerrainTileType::River) {
 								return true;
 							}
-						}
-						return false;
-					};
+							if (_provinceBuildingSlots[provinceIdTemp].oasisSlot.isValid()) {
+								return true;
+							}
+							const std::vector<ProvinceConnection>& connections = provinceSys.GetProvinceConnections(provinceIdTemp);
+							for (const ProvinceConnection& connection : connections) {
+								if (hasNearbyOasisHelper(connection.provinceId, distance + 1, connection.tileType)) {
+									return true;
+								}
+							}
+							return false;
+						};
 
-					return !hasNearbyOasisHelper(provinceId, 0, TerrainTileType::None);
-				}();
+						return !hasNearbyOasisHelper(provinceId, 0, TerrainTileType::None);
+					}();
 
-				if (canSpawnOasis)
-				{
-					WorldTile2 centerTile = provinceSys.GetProvinceCenterTile(provinceId);
-
-					// Also need to be able to add the main Minor City Building
-					WorldTile2 oasisSize = GetBuildingInfo(CardEnum::Oasis).size;
-					Direction faceDirection = static_cast<Direction>(GameRand::Rand(provinceId) % 4);
-					TileArea largeLandSlotArea = BuildingArea(centerTile, oasisSize, faceDirection);
-
-					bool isLandSlotNotBuildable = largeLandSlotArea.GetExpandedArea().ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 tile) {
-						return !(terrainGen.terrainTileType(tile) == TerrainTileType::None &&
-							_simulation->GetProvinceIdClean(tile) != -1); // Should exit
-					});
-					if (!isLandSlotNotBuildable && _provinceBuildingSlots[provinceId].coastalTiles.size() < 8)
+					if (canSpawnOasis)
 					{
-						PUN_LOG("Spawn Oasis provinceId:%d coastalTiles:%d", provinceId, _provinceBuildingSlots[provinceId].coastalTiles.size());
-						
-						_provinceBuildingSlots[provinceId].oasisSlot = { centerTile, oasisSize, faceDirection };
-						_oasisSlotProvinceIds.push_back(provinceId);
+						WorldTile2 centerTile = provinceSys.GetProvinceCenterTile(provinceId);
+
+						// Also need to be able to add the main Minor City Building
+						WorldTile2 oasisSize = GetBuildingInfo(CardEnum::Oasis).size;
+						Direction faceDirection = static_cast<Direction>(GameRand::Rand(provinceId) % 4);
+						TileArea largeLandSlotArea = BuildingArea(centerTile, oasisSize, faceDirection);
+
+						bool isLandSlotNotBuildable = largeLandSlotArea.GetExpandedArea().ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 tile) {
+							return !(terrainGen.terrainTileType(tile) == TerrainTileType::None &&
+								_simulation->GetProvinceIdClean(tile) != -1); // Should exit
+						});
+						if (!isLandSlotNotBuildable && _provinceBuildingSlots[provinceId].coastalTiles.size() < 8)
+						{
+							PUN_LOG("Spawn Oasis provinceId:%d coastalTiles:%d", provinceId, _provinceBuildingSlots[provinceId].coastalTiles.size());
+
+							_provinceBuildingSlots[provinceId].oasisSlot = { centerTile, oasisSize, faceDirection };
+							_oasisSlotProvinceIds.push_back(provinceId);
+						}
 					}
 				}
 			}
-		}
+			
+		};
 
+		trySpawnOasis(4, 2);
+		trySpawnOasis(3, 1);
 
 		auto isSlotEmpty = [&](const ProvinceBuildingSlot& provinceBuildingSlot)
 		{

@@ -481,10 +481,10 @@ public:
 	}
 
 	UPunDropdown* AddDropdown(int32 objectId, TArray<FText> options, FText selectedOption,
-								std::function<void(int32, FString, IGameUIDataSource*, IGameNetworkInterface*, int32)> onSelectOption, int32 dropdownIndex = 0)
+								std::function<void(int32, FString, IGameUIDataSource*, IGameNetworkInterface*, int32, int32)> onSelectOption, int32 dropdownIndex = 0, TArray<int32> optionInts = {})
 	{
 		auto widget = GetChildElement<UPunDropdown>(UIEnum::PunDropdown);
-		widget->Set(objectId, options, selectedOption, onSelectOption);
+		widget->Set(objectId, options, selectedOption, onSelectOption, optionInts);
 		widget->dropdownIndex = dropdownIndex;
 		return widget;
 	}

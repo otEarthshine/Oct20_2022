@@ -2043,7 +2043,7 @@ void ProvinceRuin::OnUpgradeBuildingWithPlayerId(int32 upgradeIndex, int32 upgra
 {
 	if (upgradeIndex == 0)
 	{
-		_simulation->TryAddCardToBoughtHand(upgraderPlayerId, CardEnum::Artifact1);
+		_simulation->TryAddCardToBoughtHand(upgraderPlayerId, CardEnum::DecorativePlates);
 	}
 }
 

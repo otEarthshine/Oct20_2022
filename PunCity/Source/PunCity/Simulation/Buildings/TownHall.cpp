@@ -194,16 +194,21 @@ void TownHall::UpgradeTownhall()
 		cardSys.AddDrawCards(CardEnum::Immigration, 1);
 		cardSys.AddDrawCards(CardEnum::Kidnap, 1);
 
+
+	}
+	else if (townhallLvl == 4) {
+		cardSys.AddDrawCards(CardEnum::SharingIsCaring, 1);
+
 		{
 			_simulation->AddPopup(_playerId, {
 				LOCTEXT("UnlockedSetDeliveryTarget1_Pop", "Unlocked ability to Set Delivery Target!<space>You can set the storage/market where the building's output will be stored.<space>"),
 				LOCTEXT("UnlockedSetDeliveryTarget2_Pop", "To set the delivery target:<bullet>Click on a production building to bring up its panel</><bullet>Click the [Set Delivery Target] button</><bullet>Select the target you wish to deliver to</>")
-				});
+			});
 			unlockSys->unlockedSetDeliveryTarget = true;
 		}
 	}
-	else if (townhallLvl == 4) {
-		cardSys.AddDrawCards(CardEnum::SharingIsCaring, 1);
+	else if (townhallLvl == 5) 
+	{
 
 		{
 			_simulation->AddPopup(_playerId,
@@ -211,9 +216,6 @@ void TownHall::UpgradeTownhall()
 			);
 			unlockSys->unlockedSetTradeAmount = true;
 		}
-	}
-	else if (townhallLvl == 5) {
-		
 	}
 
 	_simulation->QuestUpdateStatus(_playerId, QuestEnum::TownhallUpgradeQuest);

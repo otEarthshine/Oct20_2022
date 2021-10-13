@@ -227,10 +227,14 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 		int32 minorProvinceTownId = simulation().provinceOwnerTown_Minor(comp->provinceId);
 		if (minorProvinceTownId != -1)
 		{
+			TownManagerBase* townManagerBase = sim.townManagerBase(minorProvinceTownId);
+			
 			minorCityColor = FLinearColor::MakeFromHSV8(GameRand::Rand(minorProvinceTownId) % 255, 255, 255);
 
-			// Don't show lvl 1 Minor Town
-			if (simulation().townManagerBase(minorProvinceTownId)->GetMinorCityLevel() == 1) {
+			// Without foreign relation, don't show lvl 1 Minor Town
+			if (!sim.IsResearched(playerId(), TechEnum::ForeignRelation) &&
+				townManagerBase->GetMinorCityLevel() == 1)
+			{
 				isVisible = false;
 			}
 		}

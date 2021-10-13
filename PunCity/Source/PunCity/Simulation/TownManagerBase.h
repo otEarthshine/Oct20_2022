@@ -590,33 +590,6 @@ public:
 		return {};
 	}
 
-	/*
-	 * Relationship
-	 */
-
-	// Friendship
-	bool shouldShow_DeclareFriendship(int32 askingPlayerId) {
-		if (_relationships.GetModifier(askingPlayerId, RelationshipModifierEnum::YouAttackedUs) > 0) {
-			return false;
-		}
-		return _relationships.GetModifier(askingPlayerId, RelationshipModifierEnum::YouBefriendedUs) == 0;
-	}
-	int32 friendshipPrice() { return 200; }
-	void DeclareFriendship(int32 askingPlayerId) {
-		_relationships.SetModifier(askingPlayerId, RelationshipModifierEnum::YouBefriendedUs, friendshipPrice() / GoldToRelationship);
-		_simulation->ChangeMoney(askingPlayerId, -friendshipPrice());
-	}
-
-	// Marriage
-	bool shouldShow_MarryOut(int32 askingPlayerId) {
-		return _relationships.GetModifier(askingPlayerId, RelationshipModifierEnum::WeAreFamily) == 0;
-	}
-	int32 marryOutPrice() { return 1000; }
-	void MarryOut(int32 askingPlayerId) {
-		_relationships.SetModifier(askingPlayerId, RelationshipModifierEnum::WeAreFamily, marryOutPrice() / GoldToRelationship);
-		_simulation->ChangeMoney(askingPlayerId, -marryOutPrice());
-	}
-
 	// 
 
 

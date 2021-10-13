@@ -235,11 +235,6 @@ static void DrawAdjacentTrisPairs(std::vector<CircleTile2>& circles, std::vector
 void PunTerrainGenerator::GenerateMoisture()
 {
 	/*
-	 * River
-	 */
-	WorldTile4x4::Blur(2, _river4x4Map, _tile4x4DimX, _tile4x4DimY);
-
-	/*
 	 * Ocean
 	 */
 	std::vector<uint8> isOcean4x4Map(_tile4x4DimX * _tile4x4DimY, 0);
@@ -555,22 +550,27 @@ void PunTerrainGenerator::Erode(std::vector<int16_t>& heightMapBeforeFlatten, st
 			// Start on flat land
 			if (FD0_XXX(124) <= height && height <= FD0_XXX(130)) 
 			{
-				// also shouldn't start near other river...
-				bool nearOtherRiver = false;
+				// Start on high rainfall place
+				int32 rainfall255 = _rainfall4x4Map[(sourceX / 4) + (sourceY / 4) * _tile4x4DimX];
+				if (rainfall255 > 125 || GameRand::Rand() % 7 == 0)
+				{
+					// also shouldn't start near other river...
+					bool nearOtherRiver = false;
 
-				int32_t x4mid = (sourceX / 4);
-				int32_t y4mid = (sourceY / 4);
-				int32_t span = 4; // 5
-				for (int32_t y4 = y4mid - span; y4 <= y4mid + span; y4++) {
-					for (int32_t x4 = x4mid - span; x4 <= x4mid + span; x4++) {
-						if (passedRivers[x4 + y4 * _tile4x4DimX] > 0) {
-							nearOtherRiver = true;
+					int32_t x4mid = (sourceX / 4);
+					int32_t y4mid = (sourceY / 4);
+					int32_t span = 4; // 5
+					for (int32_t y4 = y4mid - span; y4 <= y4mid + span; y4++) {
+						for (int32_t x4 = x4mid - span; x4 <= x4mid + span; x4++) {
+							if (passedRivers[x4 + y4 * _tile4x4DimX] > 0) {
+								nearOtherRiver = true;
+							}
 						}
 					}
-				}
 
-				if (!nearOtherRiver) {
-					break;
+					if (!nearOtherRiver) {
+						break;
+					}
 				}
 			}
 			
@@ -1504,10 +1504,11 @@ uint8 PunTerrainGenerator::Init4()
 uint8 PunTerrainGenerator::Init5()
 {
 	INIT_LOG("WorldInit5: %d, %d .. %d", _tileDimX, _tileDimY, GameMapConstants::TilesPerWorldX);
-	
-	Erode(continentPerlin1, continentPerlin2, mirroredRoughness);
 
 	GenerateMoisture(); // rainfall4x4map
+
+	Erode(continentPerlin1, continentPerlin2, mirroredRoughness);
+	WorldTile4x4::Blur(2, _river4x4Map, _tile4x4DimX, _tile4x4DimY); // Blur River
 
 	SaveOrLoad(true);
 	
@@ -1557,7 +1558,7 @@ void PunTerrainGenerator::CalculateAppeal()
 }
 
 // Sample fertility from _rainfall4x4Map using bilinear interpolation.
-int32 PunTerrainGenerator::GetFertilityPercent(WorldTile2 tile)
+int32 PunTerrainGenerator::GetFertilityPercentBase(WorldTile2 tile)
 {
 	if (!tile.isValid()) return 0;
 

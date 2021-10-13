@@ -43,11 +43,21 @@ void Building_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulation
 		
 		cardSystem.AddDrawCards(buildingEnum, cardCount);
 
+		int32 buildingEnumInt = static_cast<int32>(buildingEnum);
+
 		// TODO: Forced Popup to force people to choose whether to buy or refuse... (For all  Event popups? But then there is UnlockAll... Trim popup by choosing "refuse" in that case)
-		if (IsBuildingCard(buildingEnum))
+		if (buildingEnum == CardEnum::Fort ||
+			buildingEnum == CardEnum::Embassy)
 		{
-			int32 buildingEnumInt = static_cast<int32>(buildingEnum);
+			_simulation->AddPopup(playerId, FText::Format(
+				LOCTEXT("UnlockedBuildingFree_Pop", "Unlocked {0}.<space>You received a free {0} Card."),
+				GetBuildingInfo(buildingEnum).name
+			));
 			
+			cardSystem.AddCardToHand2(buildingEnum);
+		}
+		else if (IsBuildingCard(buildingEnum))
+		{	
 			_simulation->AddPopup(
 				PopupInfo(playerId, 
 					FText::Format(
@@ -151,26 +161,21 @@ void UnlockSystem::Research(int64 science100PerRound, int32 updatesPerSec)
 			_simulation->AddPopupToFront(popup);
 
 			auto& cardSys = _simulation->cardSystem(_playerId);
-			if (GetEra() == 2) {
+			if (GetEra() == 2) 
+			{
+				// Unlock Influence
+				_simulation->AddPopup(_playerId,
+					LOCTEXT("UnlockedInfluencePop", "Unlocked Influence Points <img id=\"Influence\"/>.<space><img id=\"Influence\"/> can be used to claim/maintain territory and enact policies.")
+				);
+				SetUnlockState(UnlockStateEnum::InfluencePoints, true);
+
+				// Unlock WildCard
 				cardSys.AddDrawCards(CardEnum::WildCard, 5);
-				//cardSys.AddDrawCards(CardEnum::WildCardFood, 2);
-				//cardSys.AddDrawCards(CardEnum::WildCardIndustry, 2);
-				//cardSys.AddDrawCards(CardEnum::WildCardMine, 1);
-				//cardSys.AddDrawCards(CardEnum::WildCardService, 1);
 
 				TArray<FText> args;
 				ADDTEXT_LOCTEXT("Unlocked Wild Card", "Unlocked Wild Card!<space>Wild Card can be used to build any building that you have unlocked.");
-				//ADDTEXT_TAG_("<bullet>", LOCTEXT("Wild Card", "Wild Card"));
-				//ADDTEXT_TAG_("<bullet>", LOCTEXT("Agriculture Wild Card", "Agriculture Wild Card"));
-				//ADDTEXT_TAG_("<bullet>", LOCTEXT("Industry Wild Card", "Industry Wild Card"));
-				//ADDTEXT_TAG_("<bullet>", LOCTEXT("Mine Wild Card", "Mine Wild Card"));
-				//ADDTEXT_TAG_("<bullet>", LOCTEXT("Service Wild Card", "Service Wild Card"));
-				//ADDTEXT_TAG_("<bullet>", LOCTEXT("Card Removal Card", "Card Removal Card"));
 
 				_simulation->AddPopup(_playerId, JOINTEXT(args));
-
-				//_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::Era2_1_Cards, FText());
-				//_simulation->GenerateRareCardSelection(_playerId, RareHandEnum::Era2_2_Cards, FText());
 			}
 			else if (GetEra() == 3) {
 				cardSys.AddDrawCards(CardEnum::CardRemoval, 1);
@@ -287,11 +292,11 @@ void BonusToggle_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulat
 	//	}
 	//}
 
-	if (techEnum == TechEnum::InfluencePoints) {
-		simulation->AddPopup(playerId, 
-			LOCTEXT("UnlockedInfluencePop", "Unlocked Influence Points <img id=\"Influence\"/> used to claim land.")
-		);
-	}
+	//if (techEnum == TechEnum::InfluencePoints) {
+	//	simulation->AddPopup(playerId, 
+	//		LOCTEXT("UnlockedInfluencePop", "Unlocked Influence Points <img id=\"Influence\"/> used to claim land.")
+	//	);
+	//}
 	if (techEnum == TechEnum::Conquer) {
 		simulation->AddPopup(playerId, 
 			LOCTEXT("UnlockedProvinceConqueringPop", "Unlocked Province Conquering<space>You can now conquer opponent's provinces with Influence Points <img id=\"Influence\"/>.")

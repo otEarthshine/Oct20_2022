@@ -186,9 +186,7 @@ public:
 
 	virtual bool IsConnectedToTowns(WorldTile2 tile, int32 playerId, std::vector<uint32>& path) = 0;
 
-	bool unlockedInfluence(int32 playerId) {
-		return IsResearched(playerId, TechEnum::InfluencePoints);
-	}
+	virtual bool unlockedInfluence(int32 playerId) = 0;
 	virtual int32 GetEra(int32 playerId) = 0;
 	
 	virtual void ResetTechTreeDisplay(int32 playerId, bool resetTechTree = true, bool resetUpgradesTree = true) = 0;

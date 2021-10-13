@@ -44,6 +44,12 @@ struct TechBoxLocation
 	}
 };
 
+enum class UnlockStateEnum
+{
+	InfluencePoints,
+	Count,
+};
+
 /*
  * For research with custom name (that isn't building name etc.)
  * - [0] is name
@@ -145,7 +151,7 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 	{TechEnum::BeerBrewery, { LOCTEXT("Beer Brewing", "Beer Brewing") }},
 	{TechEnum::Pottery, { LOCTEXT("Pottery", "Pottery") }},
 
-	{TechEnum::FurnitureWorkshop, { LOCTEXT("Woodworking", "Woodworking") }},
+	{TechEnum::FurnitureWorkshop, { LOCTEXT("Furniture", "Furniture") }},
 
 	{TechEnum::AgriculturalRevolution, {
 		LOCTEXT("Agricultural Revolution", "Agricultural Revolution"),
@@ -393,15 +399,15 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 	 */
 	{ TechEnum::Fort, {
 		LOCTEXT("Border Protection", "Border Protection"),
-		LOCTEXT("Border Protection Desc", "TODO:TEXT"),
+		LOCTEXT("Border Protection Desc", "Protected Provinces Gives x3 more <img id=\"Coin\"/> income."),
 	} },
 	{ TechEnum::TradeRoute, {
 		LOCTEXT("Trade Route", "Trade Route"),
-		LOCTEXT("Trade Route Desc", "TODO:TEXT"),
+		LOCTEXT("Trade Route Desc", "Allows Establishing Trade Route to other city"),
 	} },
 	{ TechEnum::ForeignRelation, {
 		LOCTEXT("Foreign Relation", "Foreign Relation"),
-		LOCTEXT("Foreign Relation Desc", "TODO:TEXT"), // Unlock Influence??
+		LOCTEXT("Foreign Relation Desc", "Unlocks Diplomacy, Gifting, and Trade Deal"),
 	} },
 };
 
@@ -1255,6 +1261,8 @@ public:
 			unlockedSetTradeAmount = false;
 			unlockedSetDeliveryTarget = false;
 
+			_unlockStates.resize(static_cast<int>(UnlockStateEnum::Count));
+
 			/*
 			 * Prosperity Tech UI
 			 *  500 pop is 100 houses
@@ -1857,7 +1865,13 @@ public:
 	}
 
 	int64 science100() { return science100XsecPerRound / Time::SecondsPerRound; }
-	
+
+
+	bool unlockState(UnlockStateEnum unlockStateEnum) { return _unlockStates[static_cast<int>(unlockStateEnum)]; }
+	void SetUnlockState(UnlockStateEnum unlockStateEnum, bool value) {
+		_unlockStates[static_cast<int>(unlockStateEnum)] = value;
+	}
+
 	
 	/*
 	 * Serialize
@@ -1934,6 +1948,8 @@ public:
 		//SerializeVecVecValue(Ar, _houseLvlToUnlockCount);
 
 		SerializeVecValue(Ar, _resourceEnumToProductionCount);
+
+		SerializeVecValue(Ar, _unlockStates);
 		
 		//SerializeVecLoop(Ar, _techQueue, [&](std::shared_ptr<ResearchInfo>& tech) {
 		//	serializeTechPtr(tech);
@@ -2006,6 +2022,8 @@ private:
 
 	// Resource Required
 	std::vector<int32> _resourceEnumToProductionCount;
+
+	std::vector<uint8> _unlockStates;
 };
 
 

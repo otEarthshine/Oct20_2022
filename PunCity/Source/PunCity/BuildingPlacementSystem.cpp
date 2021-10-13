@@ -2144,6 +2144,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 
 	const FText foreignBuild_NotInsideTargetTown = LOCTEXT("ForeignBuild_NotInsideTargetTown", "<Red>All tiles must be in the same Town.</>");
 	const FText foreignOnlyBuild_MustBeForeignTown = LOCTEXT("ForeignOnlyBuild_NeedToBeInForeignTown", "<Red>Must be built on other player's town.</>");
+	
 
 	if (useNormalPlacement)
 	{
@@ -2771,35 +2772,37 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				_placementGrid.SpawnGrid(gridEnum, cameraAtom, tile, _faceDirection);
 			});
 		}
-		//! Tech Researched... Build Foreign
-		else if (simulation.IsForeignPlacement(_area.centerTile(), playerId))
-		{
-			bool canPlace = simulation.IsForeignBuildable(_area, 
-				[&](WorldTile2 tile, bool isGreen, bool isInsideTargetTownIn) {
-					_placementGrid.SpawnGrid(isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, tile);
-					
-					if (!isInsideTargetTownIn) {
-						SetInstruction(PlacementInstructionEnum::Generic, true, foreignBuild_NotInsideTargetTown);
-					}
-				}, 
-				_area.centerTile(), 
-				[&](WorldTile2 tile) { return simulation.IsBuildable(tile); }
-			);
-
-			if (canPlace) {
-				SetInstruction(PlacementInstructionEnum::Generic, true, FText::Format(
-					LOCTEXT("ForeignBuildCost", "Build Cost\n<img id=\"Coin\"/>{0}"),
-					TEXT_NUM(Building::GetQuickBuildBaseCost(_buildingEnum, GetBuildingInfo(_buildingEnum).constructionResources, [&](ResourceEnum resourceEnum) { return 0; }))
-				));
-			}
-		}
 		//! Foreign-only Building
-		else if (IsForeignOnlyBuilding(_buildingEnum))
+		else if (IsForeignOnlyBuilding(_buildingEnum) &&
+				simulation.tileOwnerPlayer(_area.centerTile()) == playerId)
 		{
 			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 location) {
 				_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
 			});
 			SetInstruction(PlacementInstructionEnum::Generic, true, foreignOnlyBuild_MustBeForeignTown);
+		}
+		//! Tech Researched... Build Foreign
+		else if (simulation.IsForeignPlacement(_area.centerTile(), playerId) ||
+				IsForeignOnlyBuilding(_buildingEnum))
+		{
+			bool canForeignPlace = simulation.IsForeignBuildable(_area,
+				[&](WorldTile2 tile, bool isGreen, bool isInsideTargetTownIn) {
+					_placementGrid.SpawnGrid(isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, tile);
+
+					if (!isInsideTargetTownIn) {
+						SetInstruction(PlacementInstructionEnum::Generic, true, foreignBuild_NotInsideTargetTown);
+					}
+				},
+				_area.centerTile(),
+				[&](WorldTile2 tile) { return simulation.IsBuildable(tile); }
+			);
+			
+			if (canForeignPlace) {
+				SetInstruction(PlacementInstructionEnum::Generic, true, FText::Format(
+					LOCTEXT("ForeignBuildCost", "Build Cost\n<img id=\"Coin\"/>{0}"),
+					TEXT_NUM(Building::GetQuickBuildBaseCost(_buildingEnum, GetBuildingInfo(_buildingEnum).constructionResources, [&](ResourceEnum resourceEnum) { return 0; }))
+				));
+			}
 		}
 		//! Grid
 		else
@@ -2833,7 +2836,16 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			TileArea frontArea = _area.GetFrontArea(_faceDirection);
 
 			//! Foreign Placement
-			if (simulation.IsForeignPlacement(_area.centerTile(), playerId))
+			if (IsForeignOnlyBuilding(_buildingEnum) &&
+				simulation.tileOwnerPlayer(_area.centerTile()) == playerId)
+			{
+				frontArea.ExecuteOnArea_WorldTile2([&](WorldTile2 location) {
+					_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
+				});
+				SetInstruction(PlacementInstructionEnum::Generic, true, foreignOnlyBuild_MustBeForeignTown);
+			}
+			else if (simulation.IsForeignPlacement(_area.centerTile(), playerId) ||
+					IsForeignOnlyBuilding(_buildingEnum))
 			{
 				simulation.IsForeignBuildable(frontArea, 
 					[&](WorldTile2 tile, bool isGreen, bool isInsideTargetTownIn) {
@@ -2853,14 +2865,6 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				); // Use centerTile of the main area
 
 				
-			}
-			//! Foreign-only Building
-			else if (IsForeignOnlyBuilding(_buildingEnum))
-			{
-				frontArea.ExecuteOnArea_WorldTile2([&](WorldTile2 location) {
-					_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
-				});
-				SetInstruction(PlacementInstructionEnum::Generic, true, foreignOnlyBuild_MustBeForeignTown);
 			}
 			else
 			{

@@ -2361,9 +2361,18 @@ enum class CardEnum : uint16
 	Bobcat,
 
 	//! Artifacts
-	Artifact1,
-	Artifact2,
-	Artifact3,
+	DecorativePlates,
+	BallCourtGoals,
+	//Codex,
+	//StoneStele,
+	//MortuaryMask,
+	//
+	//FeatherCrown,
+	//TempleMurals,
+	//IncenseHolders,
+	//SacrificialAltar,
+	//BloodlettingKnife,
+	RitualHeaddress,
 	
 	//
 	FireStarter,
@@ -2535,10 +2544,6 @@ static const TMap<CardEnum, int32> BuildingEnumToUpkeep =
 	{ CardEnum::TradingPort, 20 },
 	{ CardEnum::CardMaker, 20 },
 	{ CardEnum::ImmigrationOffice, 10 },
-
-	{ CardEnum::BarrackClubman, 10 },
-	{ CardEnum::BarrackSwordman, 20 },
-	{ CardEnum::BarrackArcher, 20 },
 
 
 	{ CardEnum::AdventurersGuild, 50 },
@@ -3827,9 +3832,9 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::Bobcat,			_LOCTEXT("Bobcat", "Bobcat"), 1000, LOCTEXT("Bobcat Desc", "+5% city attractiveness when placed in Zoo (does not stack)")),
 
 	//! Artifacts
-	BldInfo(CardEnum::Artifact1,			_LOCTEXT("Artifact1", "Artifact1"), 1000, LOCTEXT("Artifact1 Desc","")),
-	BldInfo(CardEnum::Artifact2,			_LOCTEXT("Artifact2", "Artifact2"), 1000, LOCTEXT("Artifact2 Desc","")),
-	BldInfo(CardEnum::Artifact3,			_LOCTEXT("Artifact3", "Artifact3"), 1000, LOCTEXT("Artifact3 Desc","")),
+	BldInfo(CardEnum::DecorativePlates,			_LOCTEXT("Artifact1", "Artifact1"), 1000, LOCTEXT("Artifact1 Desc","")),
+	BldInfo(CardEnum::BallCourtGoals,			_LOCTEXT("Artifact2", "Artifact2"), 1000, LOCTEXT("Artifact2 Desc","")),
+	BldInfo(CardEnum::RitualHeaddress,			_LOCTEXT("Artifact3", "Artifact3"), 1000, LOCTEXT("Artifact3 Desc","")),
 
 	//
 	BldInfo(CardEnum::FireStarter,		_LOCTEXT("Fire Starter", "Fire Starter"), 200,	LOCTEXT("Fire Starter Desc", "Start a fire in an area (3 tiles radius).")),
@@ -4117,28 +4122,26 @@ static const std::vector<CardEnum> ZooAnimalCards
 	CardEnum::Bobcat, 
 };
 
+// CardEnum List Helper
 static bool IsCardEnumInList(CardEnum cardEnum, const std::vector<CardEnum>& vec)
 {
 	int32 cardEnumInt = static_cast<int32>(cardEnum);
 	return static_cast<int32>(vec[0]) <= cardEnumInt && cardEnumInt <= static_cast<int32>(vec[vec.size() - 1]);
 }
 
+static bool IsCardEnumBetween(CardEnum cardEnum, CardEnum cardEnumMin, CardEnum cardEnumMax) {
+	int32 cardEnumInt = static_cast<int32>(cardEnum);
+	return static_cast<int32>(cardEnumMin) <= cardEnumInt && cardEnumInt <= static_cast<int32>(cardEnumMax);
+}
+
+
 static bool IsZooAnimalCard(CardEnum cardEnum) {
 	return IsCardEnumInList(cardEnum, ZooAnimalCards);
 }
 
-static const std::vector<CardEnum> ArtifactCards
-{
-	CardEnum::Artifact1,
-	CardEnum::Artifact2,
-	CardEnum::Artifact3,
-};
-
 static bool IsArtifactCard(CardEnum cardEnum) {
-	return IsCardEnumInList(cardEnum, ArtifactCards);
+	return IsCardEnumBetween(cardEnum, CardEnum::DecorativePlates, CardEnum::RitualHeaddress);
 }
-
-static const int32 BaseArtifactExcavationCost = 1000;
 
 
 static const std::vector<CardEnum> BuildingSlotCards
@@ -4593,10 +4596,9 @@ static bool IsSpecialProducer(CardEnum buildingEnum)
 	//case CardEnum::RegionShrine:
 	case CardEnum::ImmigrationOffice:
 
-	case CardEnum::BarrackArcher:
-	case CardEnum::BarrackSwordman:
 		return true;
-	default: return false;
+	default: 
+		return false;
 	}
 }
 
@@ -6350,48 +6352,48 @@ enum class TechEnum : uint8
 
 	SmelterCombo,
 	MiningEquipment,
-FarmWaterManagement,
-CoalPipeline,
-CoalTreatment,
+	FarmWaterManagement,
+	CoalPipeline,
+	CoalTreatment,
 
-Lockdown,
-SlaveLabor,
-DesertPilgrim,
-SocialWelfare,
+	Lockdown,
+	SlaveLabor,
+	DesertPilgrim,
+	SocialWelfare,
 
-Conglomerate,
-TO_CHANGE_WineSnob,
-BlingBling,
-BookWorm,
-BirthControl,
-HappyBreadDay,
-AllYouCanEat,
+	Conglomerate,
+	TO_CHANGE_WineSnob,
+	BlingBling,
+	BookWorm,
+	BirthControl,
+	HappyBreadDay,
+	AllYouCanEat,
 
-DepartmentOfAgriculture,
-EngineeringOffice,
-ArchitectsStudio,
+	DepartmentOfAgriculture,
+	EngineeringOffice,
+	ArchitectsStudio,
 
-//Bridge,
-HumanitarianAid,
+	//Bridge,
+	HumanitarianAid,
 
-TradingCompany,
+	TradingCompany,
 
-BarrackArcher,
-BarrackKnight,
+	BarrackArcher,
+	BarrackKnight,
 
-Irrigation,
-Logistics2,
-Logistics4,
+	Irrigation,
+	Logistics2,
+	Logistics4,
 
-Machinery,
-Colony,
-PortColony,
+	Machinery,
+	Colony,
+	PortColony,
 
-IndustrialAdjacency,
+	IndustrialAdjacency,
 
-/*
- * Bonuses
- */
+	/*
+	 * Bonuses
+	 */
 
 	MushroomSubstrateSterilization,
 	Sawmill,
@@ -6952,10 +6954,6 @@ static UnitInfo GetUnitInfo(int32_t unitEnumInt) {
 /*
  * Unit Cards
  */
-static bool IsCardEnumBetween(CardEnum cardEnum, CardEnum cardEnumMin, CardEnum cardEnumMax) {
-	int32 cardEnumInt = static_cast<int32>(cardEnum);
-	return static_cast<int32>(cardEnumMin) <= cardEnumInt && cardEnumInt <= static_cast<int32>(cardEnumMax);
-}
 
 static UnitEnum GetAnimalUnitEnumFromCardEnum(CardEnum cardEnum)
 {
@@ -9759,6 +9757,7 @@ enum class CallbackEnum : uint8
 
 	DeclareFriendship,
 	MarryOut,
+	ProposeAlliance,
 
 	// AutoTrade
 	AddAutoTradeResource,
@@ -9859,8 +9858,8 @@ static bool IsEdgeProvinceId(int32 provinceId) {
 	return 0 > provinceId && provinceId > EmptyProvinceId; // Edge marked with negative...
 }
 
-static const int32 Income100PerFertilityPercent = 30; // 10 -> Sep: 30 ->
-static const int32 ClaimToIncomeRatio = 50; // When 2, actual is 4 since upkeep is half the income
+static const int32 Income100PerFertilityPercent = 15; // 10 -> Sep: 30 ->
+static const int32 ClaimToIncomeRatio = 50; // When 2, actual is 4 since upkeep is half the income...
 
 struct ProvinceConnection
 {
@@ -10020,13 +10019,7 @@ public:
 		for (size_t i = 0; i < _relationshipModifiers.size(); i++) {
 			_relationshipModifiers[i].resize(RelationshipModifierCount());
 		}
-	}
-
-	
-	friend FArchive& operator<<(FArchive& Ar, RelationshipModifiers& object)
-	{
-		SerializeVecVecValue(Ar, object._relationshipModifiers);
-		return Ar;
+		_isAlly.SetNum(GameConstants::MaxPlayersAndAI);
 	}
 
 	void GetAIRelationshipText(TArray<FText>& args, int32 playerId) const;
@@ -10035,14 +10028,23 @@ public:
 
 	void SetModifier(int32 askingPlayerId, RelationshipModifierEnum modifier, int32 value) {
 		_relationshipModifiers[askingPlayerId][static_cast<int>(modifier)] = value;
+		CheckAllianceState(askingPlayerId);
 	}
 	void ChangeModifier(int32 askingPlayerId, RelationshipModifierEnum modifier, int32 value) {
 		_relationshipModifiers[askingPlayerId][static_cast<int>(modifier)] += value;
+		CheckAllianceState(askingPlayerId);
+	}
+	void DecayModifier(int32 askingPlayerId, RelationshipModifierEnum modifier, int32 changeValue = 1) {
+		int32& modifierValue = _relationshipModifiers[askingPlayerId][static_cast<int>(modifier)];
+		if (modifierValue > 0) modifierValue = std::max(0, modifierValue - changeValue);
+		if (modifierValue < 0) modifierValue = std::min(0, modifierValue + changeValue);
+
+		CheckAllianceState(askingPlayerId);
 	}
 
-	int32& GetModifierMutable(int32 askingPlayerId, RelationshipModifierEnum modifier) {
-		return _relationshipModifiers[askingPlayerId][static_cast<int>(modifier)];
-	}
+	//int32& GetModifierMutable(int32 askingPlayerId, RelationshipModifierEnum modifier) {
+	//	return _relationshipModifiers[askingPlayerId][static_cast<int>(modifier)];
+	//}
 	int32 GetModifier(int32 askingPlayerId, RelationshipModifierEnum modifier) const {
 		return _relationshipModifiers[askingPlayerId][static_cast<int>(modifier)];
 	}
@@ -10052,11 +10054,63 @@ public:
 		std::vector<int32>& modifiers = _relationshipModifiers[towardPlayerId];
 		std::fill(modifiers.begin(), modifiers.end(), 0);
 	}
+	
+
+	//! Friendship
+	bool shouldShow_DeclareFriendship(int32 askingPlayerId) {
+		if (GetModifier(askingPlayerId, RelationshipModifierEnum::YouAttackedUs) > 0) {
+			return false;
+		}
+		return GetModifier(askingPlayerId, RelationshipModifierEnum::YouBefriendedUs) == 0;
+	}
+	int32 friendshipPrice() { return 200; }
+	void DeclareFriendship(int32 askingPlayerId) {
+		SetModifier(askingPlayerId, RelationshipModifierEnum::YouBefriendedUs, friendshipPrice() / GoldToRelationship);
+	}
+	
+
+	//! Marriage
+	bool shouldShow_MarryOut(int32 askingPlayerId) {
+		return GetModifier(askingPlayerId, RelationshipModifierEnum::WeAreFamily) == 0;
+	}
+	int32 marryOutPrice() { return 1000; }
+	void MarryOut(int32 askingPlayerId) {
+		SetModifier(askingPlayerId, RelationshipModifierEnum::WeAreFamily, marryOutPrice() / GoldToRelationship);
+	}
+
+	//! Alliance
+	bool isAlly(int32 askingPlayerId) { return _isAlly[askingPlayerId]; }
+	bool CanCreateAlliance(int32 askingPlayerId) { return GetTotalRelationship(askingPlayerId) >= AllyRelationshipThreshold; }
+	void ProposeAlliance(int32 askingPlayerId) {
+		if (CanCreateAlliance(askingPlayerId)) {
+			_isAlly[askingPlayerId] = true;
+		}
+	}
+	void CheckAllianceState(int32 askingPlayerId) {
+		if (!CanCreateAlliance(askingPlayerId)) {
+			_isAlly[askingPlayerId] = false;
+		}
+	}
+
+	bool isEnemy(int32 askingPlayerId) { return GetTotalRelationship(askingPlayerId) < 0; }
+	
+
+	static const int32 AllyRelationshipThreshold = 100;
+
+	
+	//! Serialize
+	friend FArchive& operator<<(FArchive& Ar, RelationshipModifiers& object)
+	{
+		SerializeVecVecValue(Ar, object._relationshipModifiers);
+		Ar << object._isAlly;
+		return Ar;
+	}
+
 
 private:
 	std::vector<std::vector<int32>> _relationshipModifiers;
+	TArray<uint8> _isAlly;
 };
-
 
 
 enum class TradeDealStageEnum : uint8
@@ -10326,6 +10380,13 @@ static const std::vector<std::vector<BiomeEnum>> AncientWonderToBiomeEnums =
 static bool IsAncientWonderCardEnum(CardEnum cardEnum) {
 	return IsCardEnumBetween(cardEnum, CardEnum::MayanPyramid, CardEnum::EasterIsland);
 }
+
+/*
+ * Artifacts
+ */
+
+
+static const int32 BaseArtifactExcavationCost = 1000;
 
 
 /*

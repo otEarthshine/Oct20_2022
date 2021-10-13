@@ -658,6 +658,20 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				TownManagerBase* townManagerBase = sim.townManagerBase(townId);
 				MinorCity& minorCityBld = sim.building<MinorCity>(sim.GetTownhallId(townId));
 
+
+				if (townManagerBase->relationship().isAlly(playerId())) {
+					focusBox->AddRichTextCenter(FText::Format(INVTEXT("<FaintGreen12>{0}</>"), LOCTEXT("Ally", "Ally")));
+				}
+				else if (townManagerBase->relationship().isEnemy(playerId())) {
+					focusBox->AddRichTextCenter(LOCTEXT("Neutral", "Neutral"));
+				}
+				else {
+					focusBox->AddRichTextCenter(FText::Format(INVTEXT("<FaintRed12>{0}</>"), LOCTEXT("Enemy", "Enemy")));
+				}
+				
+				focusBox->AddSpacer();
+				
+
 				int32 level;
 				int32 currentMoney;
 				int32 moneyToNextLevel;
@@ -722,7 +736,24 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					assetLoader->CoinIcon
 				);
 
-				
+				focusBox->AddSpacer();
+
+				if (townManagerBase->lordPlayerId() != -1) {
+					focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+						LOCTEXT("Lord", "Lord"),
+						sim.playerNameT(townManagerBase->lordPlayerId())
+					);
+				}
+				else {
+					focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+						LOCTEXT("Relationship", "Relationship"),
+						FText::Format(
+							INVTEXT("{0}/{1}"),
+							TEXT_NUM(townManagerBase->relationship().GetTotalRelationship(playerId())),
+							TEXT_NUM(RelationshipModifiers::AllyRelationshipThreshold)
+						)
+					);
+				}
 			}
 			
 			else if (buildingEnum == CardEnum::Townhall) {
@@ -3797,7 +3828,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 				Indent(40);
 				focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Biome", "Biome"), terrainGen.GetBiomeNameT(tile));
-				focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Fertility", "Fertility"), TEXT_PERCENT(terrainGen.GetFertilityPercent(tile)));
+				focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Fertility", "Fertility"), TEXT_PERCENT(terrainGen.GetFertilityPercentBase(tile)));
 				focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Appeal", "Appeal"), TEXT_PERCENT(terrainGen.GetAppealPercent(tile)));
 				ResetIndent();
 				
@@ -4865,7 +4896,7 @@ void UObjectDescriptionUISystem::AddBiomeInfo(WorldTile2 tile, UPunBoxWidget* fo
 	else {
 		//ADDTEXT_(LOCTEXT("BiomeInfoFertility", "<Bold>Fertility:</> {0}\n"), TEXT_PERCENT(terrainGenerator.GetFertilityPercent(tile)));
 		focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
-			LOCTEXT("BiomeInfoFertility", "Fertility"), TEXT_PERCENT(terrainGenerator.GetFertilityPercent(tile))
+			LOCTEXT("BiomeInfoFertility", "Fertility"), TEXT_PERCENT(terrainGenerator.GetFertilityPercentBase(tile))
 		);
 
 		int32 provinceId = provinceSys.GetProvinceIdClean(tile);

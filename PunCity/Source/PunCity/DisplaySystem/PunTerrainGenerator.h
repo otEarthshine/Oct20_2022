@@ -53,7 +53,7 @@ public:
 
 
 	void CalculateAppeal();
-	int32 GetFertilityPercent(WorldTile2 tile);
+	int32 GetFertilityPercentBase(WorldTile2 tile);
 
 	int32 GetRegionFertility(WorldRegion2 region);
 

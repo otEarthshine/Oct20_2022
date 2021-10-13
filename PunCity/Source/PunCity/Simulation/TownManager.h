@@ -679,10 +679,11 @@ public:
 	
 	void TrainUnits_Helper(const FUseCard& command, std::vector<CardStatus>& trainUnitsQueue, bool isRealAction)
 	{
-		check(_pendingTrainCommands.size() > 0);
-		check(_pendingTrainCommands[0] == command);
+		//check(_pendingTrainCommands.size() > 0);
+		//check(_pendingTrainCommands[0] == command);
 		if (isRealAction) {
-			_pendingTrainCommands.erase(_pendingTrainCommands.begin());
+			// Remove the command if possible
+			CppUtils::TryRemove(_pendingTrainCommands, command);
 		}
 
 		CardEnum cardEnum = command.cardStatus.cardEnum;
@@ -838,9 +839,10 @@ public:
 
 	void ExecuteAutoTradeCommand(const FGenericCommand& command)
 	{
-		check(_pendingAutoTradeCommands.size() > 0);
-		check(_pendingAutoTradeCommands[0] == command);
-		_pendingAutoTradeCommands.erase(_pendingAutoTradeCommands.begin());
+		//check(_pendingAutoTradeCommands.size() > 0);
+		//check(_pendingAutoTradeCommands[0] == command);
+		//_pendingAutoTradeCommands.erase(_pendingAutoTradeCommands.begin());
+		CppUtils::TryRemove(_pendingAutoTradeCommands, command);
 		
 		ExecuteAutoTradeCommand_Helper(command, _autoExportElements, _autoImportElements);
 	}

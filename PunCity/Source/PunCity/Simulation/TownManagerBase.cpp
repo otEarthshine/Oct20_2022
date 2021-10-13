@@ -346,9 +346,9 @@ void TownManagerBase::Tick1SecRelationship()
 			// Decaying modifiers (decay every season)
 			if (Time::Ticks() % Time::TicksPerSeason == 0)
 			{
-				DecreaseToZero(MODIFIER(YouGaveUsGifts));
-				IncreaseToZero(MODIFIER(YouStealFromUs));
-				IncreaseToZero(MODIFIER(YouKidnapFromUs));
+				_relationships.DecayModifier(playerId, RelationshipModifierEnum::YouGaveUsGifts);
+				_relationships.DecayModifier(playerId, RelationshipModifierEnum::YouStealFromUs);
+				_relationships.DecayModifier(playerId, RelationshipModifierEnum::YouKidnapFromUs);
 			}
 
 			//if (Time::Ticks() % Time::TicksPerMinute == 0)
@@ -364,8 +364,10 @@ void TownManagerBase::Tick1SecRelationship()
 				int32 aiStrength = calculateStrength(_townId);
 				int32 counterPartyStrength = calculateStrength(playerId);
 
-				MODIFIER(YouAreStrong) = Clamp((counterPartyStrength - aiStrength) / 50, 0, 20);
-				MODIFIER(YouAreWeak) = Clamp((aiStrength - counterPartyStrength) / 50, 0, 20);
+				_relationships.SetModifier(playerId, RelationshipModifierEnum::YouAreStrong, Clamp((counterPartyStrength - aiStrength) / 50, 0, 20));
+				_relationships.SetModifier(playerId, RelationshipModifierEnum::YouAreWeak, Clamp((aiStrength - counterPartyStrength) / 50, 0, 20));
+				//MODIFIER(YouAreStrong) = Clamp((counterPartyStrength - aiStrength) / 50, 0, 20);
+				//MODIFIER(YouAreWeak) = Clamp((aiStrength - counterPartyStrength) / 50, 0, 20);
 
 				if (IsMajorTown(_townId))
 				{
@@ -380,15 +382,18 @@ void TownManagerBase::Tick1SecRelationship()
 							}
 						}
 					}
-					MODIFIER(AdjacentBordersSparkTensions) = std::max(-borderCount * 5, -20);
+					_relationships.SetModifier(playerId, RelationshipModifierEnum::AdjacentBordersSparkTensions, std::max(-borderCount * 5, -20));
+					//MODIFIER(AdjacentBordersSparkTensions) = std::max(-borderCount * 5, -20);
 
 					// townhall nearer 500 tiles will cause tensions
 					int32 townhallDistance = WorldTile2::Distance(_simulation->GetTownhallGateCapital(aiPlayerId), _simulation->GetTownhallGateCapital(playerId));
 					if (townhallDistance <= 500) {
-						MODIFIER(TownhallProximitySparkTensions) = -20 * (500 - townhallDistance) / 500;
+						_relationships.SetModifier(playerId, RelationshipModifierEnum::TownhallProximitySparkTensions, -20 * (500 - townhallDistance) / 500);
+						//MODIFIER(TownhallProximitySparkTensions) = -20 * (500 - townhallDistance) / 500;
 					}
 					else {
-						MODIFIER(TownhallProximitySparkTensions) = 0;
+						_relationships.SetModifier(playerId, RelationshipModifierEnum::TownhallProximitySparkTensions, 0);
+						//MODIFIER(TownhallProximitySparkTensions) = 0;
 					}
 				}
 			}

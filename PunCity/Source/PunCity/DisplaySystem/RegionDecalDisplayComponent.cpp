@@ -210,7 +210,7 @@ void URegionDecalDisplayComponent::UpdateDisplay(int regionId, int meshId, World
 						/*WorldTile2 tile(x + regionMinTileX, y + regionMinTileY);*/
 						if (!simulation().IsWaterOrMountain(worldTile)) {
 							// Color range... 50% - 100%
-							int32 fertilityShaved = max(0, generator.GetFertilityPercent(worldTile) - OverlayFertilityMaxRed);
+							int32 fertilityShaved = max(0, generator.GetFertilityPercentBase(worldTile) - OverlayFertilityMaxRed);
 							overlayColor = fertilityShaved * 254 / (MaxFertility - OverlayFertilityMaxRed) + 1; // 0 overlayData is blank tile
 						}
 					}

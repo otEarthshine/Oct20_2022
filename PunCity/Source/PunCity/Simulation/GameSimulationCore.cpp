@@ -3240,11 +3240,28 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 	// TODO: move this out?
 	if (command.callbackEnum != CallbackEnum::None)
 	{
-		if (command.callbackEnum == CallbackEnum::DeclareFriendship) {
-			townManagerBase(command.intVar1)->DeclareFriendship(command.playerId);
+		if (command.callbackEnum == CallbackEnum::DeclareFriendship) 
+		{
+			RelationshipModifiers& relationship = townManagerBase(command.intVar1)->relationship();
+			relationship.DeclareFriendship(command.playerId);
+			ChangeMoney(command.playerId, -relationship.friendshipPrice());
 		}
-		else if (command.callbackEnum == CallbackEnum::MarryOut) {
-			townManagerBase(command.intVar1)->MarryOut(command.playerId);
+		else if (command.callbackEnum == CallbackEnum::MarryOut) 
+		{
+			RelationshipModifiers& relationship = townManagerBase(command.intVar1)->relationship();
+			relationship.MarryOut(command.playerId);
+			ChangeMoney(command.playerId, -relationship.marryOutPrice());
+		}
+		else if (command.callbackEnum == CallbackEnum::ProposeAlliance) 
+		{
+			RelationshipModifiers& relationship = townManagerBase(command.intVar1)->relationship();
+			relationship.ProposeAlliance(command.playerId);
+			if (relationship.isAlly(command.playerId)) {
+				AddPopupToFront(command.playerId, FText::Format(
+					LOCTEXT("ProposeAlliance_AcceptedPopup", "{0} accepted your alliance request"),
+					townNameT(command.intVar1)
+				), ExclusiveUIEnum::DiplomacyUI, "");
+			}
 		}
 		else if (command.callbackEnum == CallbackEnum::EditableNumberSetOutputTarget) {
 			if (command.intVar1 != -1) {
@@ -3482,12 +3499,14 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 				int32 moneyAmount = command.intVar3;
 				ChangeMoney(giverPlayerId, -moneyAmount);
 				townManagerBase(targetTownId)->ChangeWealth_MinorCity(moneyAmount);
+				townManagerBase(targetTownId)->relationship().ChangeModifier(giverPlayerId, RelationshipModifierEnum::YouGaveUsGifts, moneyAmount / GoldToRelationship);
 				return;
 			}
 			
 			ProcessTradeDeal(popupInfo);
 			return;
 		}
+
 		
 		//! AI deal handling
 		if (IsAIPlayer(targetPlayerId))
@@ -4224,8 +4243,8 @@ std::shared_ptr<FGenericCommand> GameSimulationCore::PackTradeDealInfoToCommand(
 	command->intVar4 = targetDealInfo.moneyAmount;
 	command->intVar5 = static_cast<int32>(nextStage);
 
-	check(IsValidPlayer(sourceDealInfo.playerId));
-	check(IsValidPlayer(targetDealInfo.playerId));
+	check(IsValidPlayer(sourceDealInfo.playerId) || IsMinorTown(sourceDealInfo.playerId));
+	check(IsValidPlayer(targetDealInfo.playerId) || IsMinorTown(targetDealInfo.playerId));
 
 	auto fillResourceValues = [&](const TradeDealSideInfo& dealInfo, TArray<int32>& arrayResourceEnum, TArray<int32>& arrayResourceCount)
 	{

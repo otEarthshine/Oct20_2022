@@ -37,23 +37,56 @@ void UMinorTownWorldUI::UpdateUIBase(bool isMini)
 	if (!TextEquals(displayedName, newDisplayName)) {
 		CityNameText->SetText(newDisplayName);
 	}
+
+	
+	// PlayerColorImage
+	// TODO: move to Minor Town
+	int32 playerIdForLogo = simulation().townManagerBase(uiTownId)->playerIdForLogo();
+	if (playerIdForLogo != -1)
+	{
+		PunUIUtils::SetPlayerLogo(PlayerColorCircle->GetDynamicMaterial(), dataSource()->playerInfo(playerIdForLogo), assetLoader());
+		PlayerColorCircle->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	}
+	else {
+		PlayerColorCircle->SetVisibility(ESlateVisibility::Collapsed);
+	}
 }
 
 
 void UMinorTownWorldUI::UpdateMinorTownUI(bool isMini)
 {
-	UpdateUIBase(isMini);
-
 	auto& sim = simulation();
 	TownManagerBase* uiTownManagerBase = sim.townManagerBase(uiTownId);
 
-	// Gift
-	GiftButton->SetVisibility(ESlateVisibility::Visible);
-	BUTTON_ON_CLICK(GiftButton, this, &UMinorTownWorldUI::OnClickGiftButton);
+	if (!sim.IsResearched(playerId(), TechEnum::ForeignRelation) &&
+		uiTownManagerBase->GetMinorCityLevel() == 1) 
+	{
+		SetVisibility(ESlateVisibility::Collapsed);
+		return;
+	}
+	SetVisibility(ESlateVisibility::Visible);
+	
+	UpdateUIBase(isMini);
 
-	// Diplomacy
-	DiplomacyButton->SetVisibility(ESlateVisibility::Visible);
-	BUTTON_ON_CLICK(DiplomacyButton, this, &UMinorTownWorldUI::OnClickDiplomacyButton);
+
+
+	
+	if (sim.IsResearched(playerId(), TechEnum::ForeignRelation))
+	{
+		// Gift
+		GiftButton->SetVisibility(ESlateVisibility::Visible);
+		BUTTON_ON_CLICK(GiftButton, this, &UMinorTownWorldUI::OnClickGiftButton);
+
+		// Diplomacy
+		DiplomacyButton->SetVisibility(ESlateVisibility::Visible);
+		BUTTON_ON_CLICK(DiplomacyButton, this, &UMinorTownWorldUI::OnClickDiplomacyButton);
+	}
+	else
+	{
+		GiftButton->SetVisibility(ESlateVisibility::Collapsed);
+		DiplomacyButton->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	
 
 	/*
 	 * AttackButtons
@@ -92,6 +125,11 @@ void UMinorTownWorldUI::UpdateMinorTownUI(bool isMini)
 		}
 	}
 
+
+	// Update population
+	TownHoverPopulationText->SetText(FText::Format(LOCTEXT("Lv {0}", "Lv {0}"), TEXT_NUM(uiTownManagerBase->GetMinorCityLevel())));
+
+	
 }
 
 

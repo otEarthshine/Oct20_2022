@@ -87,19 +87,8 @@ public:
 	}
 
 public:
-	//UPROPERTY(meta = (BindWidget)) UVerticalBox* BattleBox;
-	//UPROPERTY(meta = (BindWidget)) UCanvasPanel* ArmyFightBox;
-	//UPROPERTY(meta = (BindWidget)) UVerticalBox* LeftArmyBox;
-	//UPROPERTY(meta = (BindWidget)) UVerticalBox* RightArmyBox;
-	//UPROPERTY(meta = (BindWidget)) USizeBox* FightIcon;
-	
-	//UPROPERTY(meta = (BindWidget)) UVerticalBox* MilitaryButtons;
-
 	UPROPERTY(meta = (BindWidget)) UButton* TradeButton;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* TradeButtonText;
-	//UPROPERTY(meta = (BindWidget)) UOverlay* TradeInfoOverlay;
-	//UPROPERTY(meta = (BindWidget)) UPunBoxWidget* BuyingBox;
-	//UPROPERTY(meta = (BindWidget)) UPunBoxWidget* SellingBox;
 
 	UPROPERTY(meta = (BindWidget)) UButton* SendImmigrantsButton;
 	
@@ -112,9 +101,6 @@ public:
 	
 
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* BuffRow;
-	
-	UPROPERTY(meta = (BindWidget)) UTextBlock* TownHoverPopulationText;
-	UPROPERTY(meta = (BindWidget)) UImage* PlayerColorCircle;
 
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* LaborerBuilderBox;
 

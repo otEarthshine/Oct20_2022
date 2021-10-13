@@ -63,9 +63,23 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 	/*
 	 * 
 	 */
+	SendImmigrantsButton->SetVisibility(ESlateVisibility::Collapsed);
+
+	GiftButton->SetVisibility(ESlateVisibility::Collapsed);
+	DiplomacyButton->SetVisibility(ESlateVisibility::Collapsed);
+
+	TradeButton->SetVisibility(ESlateVisibility::Collapsed);
+
+	TrainUnitsRow->SetVisibility(ESlateVisibility::Collapsed);
+	TrainUnitsClock->SetVisibility(ESlateVisibility::Collapsed);
+	
+	BuffRow->SetVisibility(ESlateVisibility::Collapsed);
+
+	
 	AttackButton1->SetVisibility(ESlateVisibility::Collapsed);
 	AttackButton2->SetVisibility(ESlateVisibility::Collapsed);
 	AttackButton3->SetVisibility(ESlateVisibility::Collapsed);
+	
 	
 	if (sim.HasTownhall(playerId())) // Need to have townhall, otherwise don't show anything
 	{
@@ -80,16 +94,6 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 				SendImmigrantsButton->SetVisibility(ESlateVisibility::Visible);
 				BUTTON_ON_CLICK(SendImmigrantsButton, this, &UTownhallHoverInfo::OnClickSendImmigrantsButton);
 			}
-			else {
-				SendImmigrantsButton->SetVisibility(ESlateVisibility::Collapsed);
-			}
-
-			// Gift
-			GiftButton->SetVisibility(ESlateVisibility::Collapsed);
-			TradeButton->SetVisibility(ESlateVisibility::Collapsed);
-
-			// Diplomacy
-			DiplomacyButton->SetVisibility(ESlateVisibility::Collapsed);
 
 			// TrainUnits
 			TrainUnitsRow->SetVisibility(ESlateVisibility::Visible);
@@ -103,9 +107,6 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 				material->SetTextureParameterValue(FName("UnitIcon"), assetLoader()->GetCardIconNullable(trainCards[0].cardEnum));
 				TrainUnitsClock->SetVisibility(ESlateVisibility::Visible);
 			}
-			else {
-				TrainUnitsClock->SetVisibility(ESlateVisibility::Collapsed);
-			}
 
 			// Vassalize
 			// (Declare Independence)
@@ -115,9 +116,6 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 				BUTTON_ON_CLICK(AttackButton1, this, &UTownhallHoverInfo::OnClickDeclareIndependenceButton);
 
 				AttackButton1->SetVisibility(ESlateVisibility::Visible);
-			}
-			else {
-				AttackButton1->SetVisibility(ESlateVisibility::Collapsed);
 			}
 
 
@@ -141,21 +139,19 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 		 */
 		else
 		{
-			// SendImmigrants
-			SendImmigrantsButton->SetVisibility(ESlateVisibility::Collapsed);
+			if (sim.IsResearched(playerId(), TechEnum::ForeignRelation))
+			{
+				// Gift
+				GiftButton->SetVisibility(ESlateVisibility::Visible);
+				TradeButton->SetVisibility(ESlateVisibility::Visible);
+				BUTTON_ON_CLICK(GiftButton, this, &UMinorTownWorldUI::OnClickGiftButton);
+				BUTTON_ON_CLICK(TradeButton, this, &UTownhallHoverInfo::OnClickTradeDealButton);
 
-			// Gift
-			GiftButton->SetVisibility(ESlateVisibility::Visible);
-			TradeButton->SetVisibility(ESlateVisibility::Visible);
-			BUTTON_ON_CLICK(GiftButton, this, &UMinorTownWorldUI::OnClickGiftButton);
-			BUTTON_ON_CLICK(TradeButton, this, &UTownhallHoverInfo::OnClickTradeDealButton);
+				// Diplomacy
+				DiplomacyButton->SetVisibility(ESlateVisibility::Visible);
+				BUTTON_ON_CLICK(DiplomacyButton, this, &UMinorTownWorldUI::OnClickDiplomacyButton);
+			}
 
-			// Diplomacy
-			DiplomacyButton->SetVisibility(ESlateVisibility::Visible);
-			BUTTON_ON_CLICK(DiplomacyButton, this, &UMinorTownWorldUI::OnClickDiplomacyButton);
-
-			// Train Units
-			TrainUnitsRow->SetVisibility(ESlateVisibility::Collapsed);
 
 			/*
 			 * Set AttackButtons
@@ -163,9 +159,6 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 			//! Capital
 			if (uiTownManagerBase->isCapital())
 			{
-				//AttackButton1->SetVisibility(ESlateVisibility::Collapsed);
-				//AttackButton2->SetVisibility(ESlateVisibility::Collapsed);
-				
 				// Not already a vassal? Might be able to attack
 				if (!sim.townManagerBase(playerId())->IsVassal(townId()))
 				{
@@ -198,34 +191,10 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 					SetText(AttackButton1RichText, LOCTEXT("ConquerColonyButtonRichText_Text", "Conquer (Annex)\n<img id=\"Influence\"/>{0}"));
 					BUTTON_ON_CLICK(AttackButton1, this, &UMinorTownWorldUI::OnClickVassalizeButton);
 					AttackButton1->SetVisibility(ESlateVisibility::Visible);
-
-					//AttackButton2->SetVisibility(ESlateVisibility::Collapsed);
-				}
-				else {
-					//AttackButton1->SetVisibility(ESlateVisibility::Collapsed);
-					//AttackButton2->SetVisibility(ESlateVisibility::Collapsed);
 				}
 			}
-
-			// Buffs
-			BuffRow->SetVisibility(ESlateVisibility::Collapsed);
+			
 		}
-	}
-	else 
-	{
-		SendImmigrantsButton->SetVisibility(ESlateVisibility::Collapsed);
-		
-		GiftButton->SetVisibility(ESlateVisibility::Collapsed);
-		DiplomacyButton->SetVisibility(ESlateVisibility::Collapsed);
-
-		TradeButton->SetVisibility(ESlateVisibility::Collapsed);
-		
-		TrainUnitsRow->SetVisibility(ESlateVisibility::Collapsed);
-
-		//AttackButton1->SetVisibility(ESlateVisibility::Collapsed);
-		//AttackButton2->SetVisibility(ESlateVisibility::Collapsed);
-
-		BuffRow->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
 
@@ -258,20 +227,6 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 		LaborerBuilderBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	}
 
-
-
-	// PlayerColorImage
-	// TODO: move to Minor Town
-	int32 playerIdForLogo = uiTownManagerBase->playerIdForLogo();
-
-	if (playerIdForLogo != -1)
-	{
-		PunUIUtils::SetPlayerLogo(PlayerColorCircle->GetDynamicMaterial(), dataSource()->playerInfo(playerIdForLogo), assetLoader());
-		PlayerColorCircle->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-	}
-	else {
-		PlayerColorCircle->SetVisibility(ESlateVisibility::Collapsed);
-	}
 
 
 	//

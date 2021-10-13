@@ -325,7 +325,7 @@ public:
 		 * - or when size of both provinces doesn't exceed X
 		 */
 		const int32 mergeThresholdSizeForced = CoordinateConstants::TileIdsPerRegion * 4 / 5;
-		const int32 mergeThresholdSizeBase = CoordinateConstants::TileIdsPerRegion * 9 / 5;
+		const int32 mergeThresholdSizeBase = CoordinateConstants::TileIdsPerRegion * 6 / 5;
 
 		for (int32 provinceId = 0; provinceId < proviceIdsSize; provinceId++)
 		{
@@ -336,7 +336,7 @@ public:
 
 			int32 mergeThresholdSize = mergeThresholdSizeBase;
 			if (_simulation->GetBiomeProvince(provinceId) == BiomeEnum::Desert) {
-				mergeThresholdSize = mergeThresholdSize * 3 / 2;
+				mergeThresholdSize = mergeThresholdSize * 4 / 3;
 			}
 
 			if (_provinceFlatTileCount[provinceId] < mergeThresholdSize)

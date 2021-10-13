@@ -1681,8 +1681,7 @@ public:
 	/*
 	 * Province Income/Upkeep/Costs
 	 */
-
-	virtual int32 GetProvinceIncome100(int32 provinceId) override
+	int32 GetProvinceBaseIncome100(int32 provinceId)
 	{
 		// Sample fertility, and take that into province income's calculation
 		TileArea area = _provinceSystem.GetProvinceRectArea(provinceId);
@@ -1693,9 +1692,9 @@ public:
 			for (int32 x = area.minX; x <= area.maxX; x += 4) {
 				WorldTile2 tile(x, y);
 				if (_provinceSystem.GetProvinceIdClean(tile) == provinceId &&
-					_terrainGenerator->terrainTileType(tile) == TerrainTileType::None) 
+					_terrainGenerator->terrainTileType(tile) == TerrainTileType::None)
 				{
-					fertilityPercentTotal += std::max(10, _terrainGenerator->GetFertilityPercent(WorldTile2(x, y) - 20));
+					fertilityPercentTotal += std::max(10, _terrainGenerator->GetFertilityPercentBase(WorldTile2(x, y) - 20));
 					//tilesExamined++;
 				}
 			}
@@ -1704,19 +1703,28 @@ public:
 		int32 provinceIncome100 = fertilityPercentTotal * Income100PerFertilityPercent / 100;
 		return std::max(100, provinceIncome100 + 1);
 	}
-	int32 GetProvinceBaseUpkeep100(int32 provinceId)
+
+	virtual int32 GetProvinceIncome100(int32 provinceId) override
 	{
-		return GetProvinceIncome100(provinceId) / 2; // Upkeep half the income as base
-	}
-	int32 GetProvinceUpkeep100(int32 provinceId, int32 playerId) final
-	{
-		int32 income100 = GetProvinceBaseUpkeep100(provinceId); // Upkeep half the income as base
+		int32 income100 = GetProvinceBaseIncome100(provinceId);
 		
-		if (IsOverseaProvince(provinceId, playerId)) {
-			income100 = income100 * 3; // +200%
+		if (provinceOwnerPlayer(provinceId) != -1 &&
+			IsResearched(provinceOwnerPlayer(provinceId), TechEnum::Fort) &&
+			provinceInfoSystem().provinceOwnerInfo(provinceId).isSafe)
+		{
+			income100 = income100 * 3;
 		}
 		
 		return income100;
+	}
+	int32 GetProvinceBaseUpkeep100(int32 provinceId) {
+		return GetProvinceBaseIncome100(provinceId) / 2; // Upkeep half the income as base
+	}
+	virtual int32 GetProvinceUpkeep100(int32 provinceId, int32 playerId) final
+	{
+		int32 upkeep100 = GetProvinceBaseUpkeep100(provinceId); // Upkeep half the income as base
+		
+		return upkeep100;
 	}
 
 	int32 GetProvinceRaidMoney100(int32 originProvinceId)
@@ -2642,7 +2650,7 @@ public:
 	 * Terran Gen
 	 */
 	int32 GetFertilityPercent(WorldTile2 tile) override {
-		return terrainGenerator().GetFertilityPercent(tile);
+		return terrainGenerator().GetFertilityPercentBase(tile);
 	}
 	BiomeEnum GetBiomeEnum(WorldTile2 tile) override {
 		return terrainGenerator().GetBiome(tile);
@@ -2838,6 +2846,10 @@ public:
 
 	bool IsBuildingUnlocked(int32 playerId, CardEnum cardEnumIn) final {
 		return unlockSystem(playerId)->isUnlocked(cardEnumIn);
+	}
+
+	virtual bool unlockedInfluence(int32 playerId) override {
+		return unlockSystem(playerId)->unlockState(UnlockStateEnum::InfluencePoints);
 	}
 
 	int32 GetEra(int32 playerId) final {
